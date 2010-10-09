@@ -540,7 +540,8 @@ PURE_LIBRARY
 
 PURE_MORE
     Shell command to be used for paging through output of the show command,
-    when the interpreter runs in interactive mode.
+    when the interpreter runs in interactive mode. PURE_LESS is the same for
+    evaluation results printed by the interpreter.
 
 PURE_PS
     Command prompt used in the interactive command loop ("> " by default).
@@ -548,9 +549,10 @@ PURE_PS
 PURE_STACK
     Maximum stack size in kilobytes (default: 0 = unlimited).
 
-(Besides these, the interpreter also understands a number of other environment
-variables for controlling various code generation options; please see `Code
-Generation Options`_ above for details.)
+Besides these, the interpreter also understands a number of other environment
+variables for setting various code generation options (see `Code Generation
+Options`_ above) and commands to invoke different LLVM compilers on inline
+code (see `Inline Code`_).
 
 Pure Overview
 =============
@@ -3274,6 +3276,13 @@ and Fortran code to your Pure scripts and have the Pure interpreter compile
 them on the fly, provided that you have the corresponding compilers from the
 LLVM project installed.
 
+In some cases you will still have to rely on big and complicated third-party
+and system libraries which aren't readily available in bitcode form. It goes
+without saying that writing all the ``extern`` declarations for such libraries
+can be a daunting task. Fortunately, there is a utility to help with this, by
+extracting the ``extern`` declarations automatically from C headers. Please
+see `External C Functions`_ in the `Caveats and Notes`_ section for details.
+
 Extern Declarations
 -------------------
 
@@ -3368,7 +3377,8 @@ also possible to combine a namespace qualifier with an alias::
   > c::mysin 0.3;
   0.29552020666134
 
-Different aliases of the same external function can be declared in slightly
+Different aliases of the same external function (or, equivalently, instances
+of the function declared in different namespaces) can be declared in slightly
 different ways, which makes it possible to adjust the interpretation of
 pointer values on the Pure side. This is particularly useful for string
 arguments which, as described below, may be passed both as ``char*`` (which
@@ -3381,11 +3391,23 @@ implies copying and conversion to or from the system encoding) and as
   "bar"
   #<pointer 0x12c2f24>
 
-It goes without saying that writing all the ``extern`` declarations for large
-and complicated libraries can be a daunting task. Fortunately, there is a
-utility to help with this, by extracting the ``extern`` declarations
-automatically from C headers. Please see `External C Functions`_ in the
-`Caveats and Notes`_ section for details.
+Also note that, as far as Pure is concerned, different aliases of an external
+function are really different functions. In particular, they can each have
+their own set of augmenting Pure equations. For instance::
+
+  > extern double sin(double);
+  > extern double sin(double) = mysin;
+  > sin === sin;
+  1
+  > sin === mysin;
+  0
+  > sin 1.0; mysin 1.0;
+  0.841470984807897
+  0.841470984807897
+  > sin x::int = sin (double x);
+  > sin 1; mysin 1;
+  0.841470984807897
+  mysin 1
 
 C Types
 -------
@@ -3533,8 +3555,8 @@ As of Pure 0.44, the interpreter also provides a direct way to import LLVM
 bitcode modules in Pure scripts. The main advantage of this method over the
 "plain" C interface explained above is that the bitcode loader knows all the
 call interfaces and generates the necessary ``extern`` declarations
-automatically. This is more than just a convenience, as it also eliminates any
-mistakes in ``extern`` declarations that you may make when importing functions
+automatically. This is more than just a convenience, as it also eliminates
+mistakes in ``extern`` declarations that may arise when importing functions
 manually from dynamic libraries.
 
 LLVM bitcode is loaded in a Pure script using the following special format of
@@ -3553,6 +3575,21 @@ bitcode module, and generates the corresponding wrappers to make the functions
 callable from Pure. (This also works when batch-compiling a Pure script. In
 this case, the bitcode file actually gets linked into the output code, so the
 loaded bitcode module only needs to be present at compile time.)
+
+By default the imported symbols will be public. You can also specify the
+desired scope of the symbols explicitly, by placing the ``public`` our
+``private`` keyword before the module name. For instance::
+
+  using private "bc:modname";
+
+You can also import the same bitcode module several times, possibly in
+different namespaces. This will not actually reload the module, but it will
+create aliases for the external functions in different namespaces::
+
+  namespace foo;
+  using "bc:modname";
+  namespace bar;
+  using private "bc:modname";
 
 Let's take a look at a concrete example to see how this actually
 works. Consider the following C code which defines a little function to
@@ -3600,9 +3637,8 @@ of the bitcode loader, which is selected with the ``dsp`` tag in the ``using``
 clause). Please refer to the corresponding examples in the distribution for
 further details.
 
-Caveat: The LLVM bitcode interface is still considered somewhat experimental.
-It already works fairly well with simple C and Fortran code, but there are
-some known limitations:
+Please note that at this time the LLVM bitcode interface is still considered
+somewhat experimental, and there are some known limitations:
 
 * LLVM doesn't distinguish between ``char*`` and ``void*`` in bitcode, so all
   ``char*`` parameters and return values in C code will by default be promoted
@@ -3619,17 +3655,90 @@ some known limitations:
   print a warning; the affected functions will still be linked in, but they
   will not be callable from Pure.
 
-* The bitcode linker doesn't verify loaded modules for self-containedness. The
-  Pure interpreter will try to resolve external references from loaded
-  libraries and other bitcode modules when the code is JIT-compiled, but if
-  this fails then you'll get a fatal error message from the LLVM runtime. So
-  you'll have to make sure that all required libraries and bitcode modules
-  have been loaded before trying to execute the loaded functions.
+* The Pure interpreter will try to satisfy external references in an imported
+  bitcode module from other loaded libraries and bitcode modules. This happens
+  at the time the code is JIT-compiled. At present, the JIT generates a fatal
+  error if this fails, so you better make sure that all required libraries and
+  bitcode modules have been loaded before trying to execute the loaded
+  functions.
 
 Inline Code
 -----------
 
-TODO
+Instead of manually compiling source files to bitcode modules, you can also
+just place the source code into a Pure script, enclosing it in ``%{ ... %}``.
+(Optionally, the opening brace may also be preceded with a ``public`` or
+``private`` scope specifier, which is used in the same way as the scope
+specifier following the ``using`` keyword when importing bitcode files.)
+
+For instance, here is a little script showing inline code for the ``mygcd``
+function from the previous subsection::
+
+  %{
+  int mygcd(int x, int y)
+  {
+    if (y == 0)
+      return x;
+    else
+      return mygcd(y, x%y);
+  }
+  %}
+
+  mygcd 75 105;
+
+The interpreter automatically compiles the inlined code to LLVM bitcode which
+is then loaded as usual. (Of course, this will only work if you have the
+corresponding LLVM compilers installed.) This method has the advantage that
+you don't have to write a Makefile and you can create self-contained Pure
+scripts which include all required external functions. The downside is that
+the inline code sections will have to be recompiled every time you run the
+script with the interpreter.
+
+Currently, C, Fortran and Faust are supported as foreign source languages,
+with llvm-gcc (or clang), llvm-gfortran and faust2 as the corresponding
+compilers. C is the default language. The desired source language can be
+selected by placing an appropriate tag into the inline code section,
+immediately after the opening brace. (The tag is removed before the code is
+submitted to compilation.) For instance::
+
+  %{ -*- Fortran90 -*-
+  function fact(n) result(p)
+    integer n, p
+    p = 1
+    do i = 1, n
+       p = p*i
+    end do
+  end function fact
+  %}
+
+  fact n::int = fact_ {n};
+  map fact (1..10);
+
+As indicated, the language tag takes the form ``-*- lang -*-`` where ``lang``
+can currently be any of ``c``, ``fortran`` and ``dsp`` (the latter indicates
+the Faust language). Case is insignificant here, so you can also write ``C``,
+``Fortran``, ``DSP`` etc. For the ``fortran`` tag, you may also have to
+specify the appropriate language standard, such as ``fortran90`` which is used
+in the example above. The language tag can also be followed by a module name,
+using the format ``-*- lang:name -*-``. This is optional for C and Fortran,
+but mandatory for Faust (where it specifies the namespace for the interface
+routines of the Faust module). So, e.g., a Faust DSP named ``test`` would be
+specified with a ``dsp:test`` tag. Case is *significant* in the module name.
+
+The Pure interpreter has some built-in knowledge on how to invoke the LLVM
+compilers to produce a working bitcode file ready to be loaded by the
+interpreter, so the examples above should work out of the box if you have the
+required compilers installed on your PATH. However, there are also some
+environment variables you can set for customization purposes. Specifically,
+PURE_CC is the command to invoke the C compiler. This variable lets you
+specify the exact name of the executable along with any debugging and
+optimization options that you may want to add. Likewise, PURE_FC is used for
+the Fortran and PURE_FAUST for the Faust compiler, respectively. For instance,
+if you prefer to use clang as your C compiler, and you'd like to invoke it
+with the -O3 optimization option, you would set PURE_CC to ``"clang -O3"``.
+(To verify the settings you made, you can have the interpreter print the
+compilation commands which are actually executed by running Pure with the
+-v0100 option, see `Verbosity and Debugging Options`_.)
 
 Standard Library
 ================

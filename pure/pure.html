@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>The Pure Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-10-09" />
+<meta name="date" content="2010-10-10" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-10-09</td></tr>
+<td>2010-10-10</td></tr>
 </tbody>
 </table>
 <!-- Note: This document is formatted using docutils. The Makefile has rules -->
@@ -850,15 +850,17 @@ included scripts.</dd>
 dynamic libraries.</dd>
 <dt>PURE_MORE</dt>
 <dd>Shell command to be used for paging through output of the show command,
-when the interpreter runs in interactive mode.</dd>
+when the interpreter runs in interactive mode. PURE_LESS is the same for
+evaluation results printed by the interpreter.</dd>
 <dt>PURE_PS</dt>
 <dd>Command prompt used in the interactive command loop (&quot;&gt; &quot; by default).</dd>
 <dt>PURE_STACK</dt>
 <dd>Maximum stack size in kilobytes (default: 0 = unlimited).</dd>
 </dl>
-<p>(Besides these, the interpreter also understands a number of other environment
-variables for controlling various code generation options; please see <a class="reference internal" href="#code-generation-options">Code
-Generation Options</a> above for details.)</p>
+<p>Besides these, the interpreter also understands a number of other environment
+variables for setting various code generation options (see <a class="reference internal" href="#code-generation-options">Code Generation
+Options</a> above) and commands to invoke different LLVM compilers on inline
+code (see <a class="reference internal" href="#inline-code">Inline Code</a>).</p>
 </div>
 </div>
 <div class="section" id="pure-overview">
@@ -3447,6 +3449,12 @@ interpreter will do that for you. As of Pure 0.45, you can even add inline C
 and Fortran code to your Pure scripts and have the Pure interpreter compile
 them on the fly, provided that you have the corresponding compilers from the
 LLVM project installed.</p>
+<p>In some cases you will still have to rely on big and complicated third-party
+and system libraries which aren't readily available in bitcode form. It goes
+without saying that writing all the <tt class="docutils literal"><span class="pre">extern</span></tt> declarations for such libraries
+can be a daunting task. Fortunately, there is a utility to help with this, by
+extracting the <tt class="docutils literal"><span class="pre">extern</span></tt> declarations automatically from C headers. Please
+see <a class="reference internal" href="#external-c-functions">External C Functions</a> in the <a class="reference internal" href="#caveats-and-notes">Caveats and Notes</a> section for details.</p>
 <div class="section" id="extern-declarations">
 <h2><a class="toc-backref" href="#id49">9.1&nbsp;&nbsp;&nbsp;Extern Declarations</a></h2>
 <p>To access an existing C function in Pure, you need an <tt class="docutils literal"><span class="pre">extern</span></tt> declaration
@@ -3539,7 +3547,8 @@ also possible to combine a namespace qualifier with an alias:</p>
 &gt; c::mysin 0.3;
 0.29552020666134
 </pre>
-<p>Different aliases of the same external function can be declared in slightly
+<p>Different aliases of the same external function (or, equivalently, instances
+of the function declared in different namespaces) can be declared in slightly
 different ways, which makes it possible to adjust the interpretation of
 pointer values on the Pure side. This is particularly useful for string
 arguments which, as described below, may be passed both as <tt class="docutils literal"><span class="pre">char*</span></tt> (which
@@ -3552,11 +3561,24 @@ implies copying and conversion to or from the system encoding) and as
 &quot;bar&quot;
 #&lt;pointer 0x12c2f24&gt;
 </pre>
-<p>It goes without saying that writing all the <tt class="docutils literal"><span class="pre">extern</span></tt> declarations for large
-and complicated libraries can be a daunting task. Fortunately, there is a
-utility to help with this, by extracting the <tt class="docutils literal"><span class="pre">extern</span></tt> declarations
-automatically from C headers. Please see <a class="reference internal" href="#external-c-functions">External C Functions</a> in the
-<a class="reference internal" href="#caveats-and-notes">Caveats and Notes</a> section for details.</p>
+<p>Also note that, as far as Pure is concerned, different aliases of an external
+function are really different functions. In particular, they can each have
+their own set of augmenting Pure equations. For instance:</p>
+<pre class="literal-block">
+&gt; extern double sin(double);
+&gt; extern double sin(double) = mysin;
+&gt; sin === sin;
+1
+&gt; sin === mysin;
+0
+&gt; sin 1.0; mysin 1.0;
+0.841470984807897
+0.841470984807897
+&gt; sin x::int = sin (double x);
+&gt; sin 1; mysin 1;
+0.841470984807897
+mysin 1
+</pre>
 </div>
 <div class="section" id="c-types">
 <h2><a class="toc-backref" href="#id50">9.2&nbsp;&nbsp;&nbsp;C Types</a></h2>
@@ -3690,8 +3712,8 @@ appropriate error message is printed.</p>
 bitcode modules in Pure scripts. The main advantage of this method over the
 &quot;plain&quot; C interface explained above is that the bitcode loader knows all the
 call interfaces and generates the necessary <tt class="docutils literal"><span class="pre">extern</span></tt> declarations
-automatically. This is more than just a convenience, as it also eliminates any
-mistakes in <tt class="docutils literal"><span class="pre">extern</span></tt> declarations that you may make when importing functions
+automatically. This is more than just a convenience, as it also eliminates
+mistakes in <tt class="docutils literal"><span class="pre">extern</span></tt> declarations that may arise when importing functions
 manually from dynamic libraries.</p>
 <p>LLVM bitcode is loaded in a Pure script using the following special format of
 the <tt class="docutils literal"><span class="pre">using</span></tt> clause:</p>
@@ -3708,6 +3730,21 @@ bitcode module, and generates the corresponding wrappers to make the functions
 callable from Pure. (This also works when batch-compiling a Pure script. In
 this case, the bitcode file actually gets linked into the output code, so the
 loaded bitcode module only needs to be present at compile time.)</p>
+<p>By default the imported symbols will be public. You can also specify the
+desired scope of the symbols explicitly, by placing the <tt class="docutils literal"><span class="pre">public</span></tt> our
+<tt class="docutils literal"><span class="pre">private</span></tt> keyword before the module name. For instance:</p>
+<pre class="literal-block">
+using private &quot;bc:modname&quot;;
+</pre>
+<p>You can also import the same bitcode module several times, possibly in
+different namespaces. This will not actually reload the module, but it will
+create aliases for the external functions in different namespaces:</p>
+<pre class="literal-block">
+namespace foo;
+using &quot;bc:modname&quot;;
+namespace bar;
+using private &quot;bc:modname&quot;;
+</pre>
 <p>Let's take a look at a concrete example to see how this actually
 works. Consider the following C code which defines a little function to
 compute the greatest common divisor of two (machine) integers:</p>
@@ -3752,9 +3789,8 @@ functional DSP programming language <a class="reference internal" href="#faust">
 of the bitcode loader, which is selected with the <tt class="docutils literal"><span class="pre">dsp</span></tt> tag in the <tt class="docutils literal"><span class="pre">using</span></tt>
 clause). Please refer to the corresponding examples in the distribution for
 further details.</p>
-<p>Caveat: The LLVM bitcode interface is still considered somewhat experimental.
-It already works fairly well with simple C and Fortran code, but there are
-some known limitations:</p>
+<p>Please note that at this time the LLVM bitcode interface is still considered
+somewhat experimental, and there are some known limitations:</p>
 <ul class="simple">
 <li>LLVM doesn't distinguish between <tt class="docutils literal"><span class="pre">char*</span></tt> and <tt class="docutils literal"><span class="pre">void*</span></tt> in bitcode, so all
 <tt class="docutils literal"><span class="pre">char*</span></tt> parameters and return values in C code will by default be promoted
@@ -3769,17 +3805,87 @@ certainly possible that you run into unsupported types for arguments and
 return values (such as C structs passed by value). The compiler will then
 print a warning; the affected functions will still be linked in, but they
 will not be callable from Pure.</li>
-<li>The bitcode linker doesn't verify loaded modules for self-containedness. The
-Pure interpreter will try to resolve external references from loaded
-libraries and other bitcode modules when the code is JIT-compiled, but if
-this fails then you'll get a fatal error message from the LLVM runtime. So
-you'll have to make sure that all required libraries and bitcode modules
-have been loaded before trying to execute the loaded functions.</li>
+<li>The Pure interpreter will try to satisfy external references in an imported
+bitcode module from other loaded libraries and bitcode modules. This happens
+at the time the code is JIT-compiled. At present, the JIT generates a fatal
+error if this fails, so you better make sure that all required libraries and
+bitcode modules have been loaded before trying to execute the loaded
+functions.</li>
 </ul>
 </div>
 <div class="section" id="inline-code">
 <h2><a class="toc-backref" href="#id53">9.5&nbsp;&nbsp;&nbsp;Inline Code</a></h2>
-<p>TODO</p>
+<p>Instead of manually compiling source files to bitcode modules, you can also
+just place the source code into a Pure script, enclosing it in <tt class="docutils literal"><span class="pre">%{</span> <span class="pre">...</span> <span class="pre">%}</span></tt>.
+(Optionally, the opening brace may also be preceded with a <tt class="docutils literal"><span class="pre">public</span></tt> or
+<tt class="docutils literal"><span class="pre">private</span></tt> scope specifier, which is used in the same way as the scope
+specifier following the <tt class="docutils literal"><span class="pre">using</span></tt> keyword when importing bitcode files.)</p>
+<p>For instance, here is a little script showing inline code for the <tt class="docutils literal"><span class="pre">mygcd</span></tt>
+function from the previous subsection:</p>
+<pre class="literal-block">
+%{
+int mygcd(int x, int y)
+{
+  if (y == 0)
+    return x;
+  else
+    return mygcd(y, x%y);
+}
+%}
+
+mygcd 75 105;
+</pre>
+<p>The interpreter automatically compiles the inlined code to LLVM bitcode which
+is then loaded as usual. (Of course, this will only work if you have the
+corresponding LLVM compilers installed.) This method has the advantage that
+you don't have to write a Makefile and you can create self-contained Pure
+scripts which include all required external functions. The downside is that
+the inline code sections will have to be recompiled every time you run the
+script with the interpreter.</p>
+<p>Currently, C, Fortran and Faust are supported as foreign source languages,
+with llvm-gcc (or clang), llvm-gfortran and faust2 as the corresponding
+compilers. C is the default language. The desired source language can be
+selected by placing an appropriate tag into the inline code section,
+immediately after the opening brace. (The tag is removed before the code is
+submitted to compilation.) For instance:</p>
+<pre class="literal-block">
+%{ -*- Fortran90 -*-
+function fact(n) result(p)
+  integer n, p
+  p = 1
+  do i = 1, n
+     p = p*i
+  end do
+end function fact
+%}
+
+fact n::int = fact_ {n};
+map fact (1..10);
+</pre>
+<p>As indicated, the language tag takes the form <tt class="docutils literal"><span class="pre">-*-</span> <span class="pre">lang</span> <span class="pre">-*-</span></tt> where <tt class="docutils literal"><span class="pre">lang</span></tt>
+can currently be any of <tt class="docutils literal"><span class="pre">c</span></tt>, <tt class="docutils literal"><span class="pre">fortran</span></tt> and <tt class="docutils literal"><span class="pre">dsp</span></tt> (the latter indicates
+the Faust language). Case is insignificant here, so you can also write <tt class="docutils literal"><span class="pre">C</span></tt>,
+<tt class="docutils literal"><span class="pre">Fortran</span></tt>, <tt class="docutils literal"><span class="pre">DSP</span></tt> etc. For the <tt class="docutils literal"><span class="pre">fortran</span></tt> tag, you may also have to
+specify the appropriate language standard, such as <tt class="docutils literal"><span class="pre">fortran90</span></tt> which is used
+in the example above. The language tag can also be followed by a module name,
+using the format <tt class="docutils literal"><span class="pre">-*-</span> <span class="pre">lang:name</span> <span class="pre">-*-</span></tt>. This is optional for C and Fortran,
+but mandatory for Faust (where it specifies the namespace for the interface
+routines of the Faust module). So, e.g., a Faust DSP named <tt class="docutils literal"><span class="pre">test</span></tt> would be
+specified with a <tt class="docutils literal"><span class="pre">dsp:test</span></tt> tag. Case is <em>significant</em> in the module name.</p>
+<p>The Pure interpreter has some built-in knowledge on how to invoke the LLVM
+compilers to produce a working bitcode file ready to be loaded by the
+interpreter, so the examples above should work out of the box if you have the
+required compilers installed on your PATH. However, there are also some
+environment variables you can set for customization purposes. Specifically,
+PURE_CC is the command to invoke the C compiler. This variable lets you
+specify the exact name of the executable along with any debugging and
+optimization options that you may want to add. Likewise, PURE_FC is used for
+the Fortran and PURE_FAUST for the Faust compiler, respectively. For instance,
+if you prefer to use clang as your C compiler, and you'd like to invoke it
+with the -O3 optimization option, you would set PURE_CC to <tt class="docutils literal"><span class="pre">&quot;clang</span> <span class="pre">-O3&quot;</span></tt>.
+(To verify the settings you made, you can have the interpreter print the
+compilation commands which are actually executed by running Pure with the
+-v0100 option, see <a class="reference internal" href="#verbosity-and-debugging-options">Verbosity and Debugging Options</a>.)</p>
 </div>
 </div>
 <div class="section" id="standard-library">
