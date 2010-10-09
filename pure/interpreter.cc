@@ -1949,6 +1949,12 @@ static string lang_tag(string &code, string &modname)
   return tag;
 }
 
+#ifdef __MINGW32__
+#include <process.h>
+#define WIFEXITED(w)   (((w) & 0XFFFFFF00) == 0)
+#define WEXITSTATUS(w) (w)
+#endif
+
 void interpreter::inline_code(bool priv, string &code)
 {
   // Get the language tag and configure accordingly.
@@ -5954,12 +5960,6 @@ static string& quote(string& s)
   }
   return s;
 }
-
-#ifdef __MINGW32__
-#include <process.h>
-#define WIFEXITED(w)   (((w) & 0XFFFFFF00) == 0)
-#define WEXITSTATUS(w) (w)
-#endif
 
 #define DEBUG_USED 0
 #define DEBUG_UNUSED 0
