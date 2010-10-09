@@ -1963,6 +1963,9 @@ void interpreter::inline_code(bool priv, string &code)
   if (tag == "c") {
     env = "PURE_CC"; drv = "llvm-gcc";
     args = " -x c -emit-llvm -c ";
+  } else if (tag == "c++") {
+    env = "PURE_CXX"; drv = "llvm-g++";
+    args = " -x c++ -emit-llvm -c ";
   } else if (tag.compare(0, 7, "fortran") == 0) {
     string std = tag.substr(7);
     if (!std.empty() &&
