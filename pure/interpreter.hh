@@ -425,10 +425,11 @@ struct nsinfo {
 
 struct bcdata_t {
   map <string,bool> priv; // private flag (per namespace)
-  time_t t; // timestamp
-  bcdata_t() : t(0) {}
-  bcdata_t(bool _priv, const string& _ns, time_t _t = 0)
-    : t(_t) { priv[_ns] = _priv; }
+  bool dbl; // data representation (Faust dsp only)
+  time_t t; // timestamp (Faust dsp only)
+  bcdata_t() : dbl(false), t(0) {}
+  void declare(const string& _ns, bool _priv)
+  { priv[_ns] = _priv; }
   bool declared(const string& ns)
   { return priv.find(ns) != priv.end(); }
 };

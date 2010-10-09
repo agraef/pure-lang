@@ -1,9 +1,17 @@
 2010-10-09  Albert Graef  <Dr.Graef@t-online.de>
 
+	* interpreter.cc (LoadBitcode, LoadFaustDSP): Allow bitcode
+	modules to be imported into different namespaces. (This doesn't
+	actually reload the external operations but only creates new
+	aliases of the same externs in a new namespace.) Also strengthened
+	the error handling when reloading Faust dsps, so that we catch
+	sudden changes in the ABI (faust -single vs. -double), which would
+	otherwise break the Pure interface to the dsp.
+
 	* parser.yy, lexer.ll, interpreter.cc/hh: Allow 'public' and
 	'private' keywords after 'using' and before '%{...%}' to indicate
-	the desired scope of imported symbols (default is 'public', as
-	before).
+	the desired scope of symbols imported from bitcode files (default
+	is 'public', as before).
 
 2010-10-08  Albert Graef  <Dr.Graef@t-online.de>
 

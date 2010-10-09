@@ -1543,6 +1543,7 @@ static void dsp_errmsg(string name, string* msg)
 bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
 			       const char *modnm)
 {
+  using namespace llvm;
   // Determine the basename of the Faust module. This will be used to mangle
   // the Faust functions and give the namespace of the Faust functions in Pure
   // land (so for easy access it's better if the basename is a valid Pure
@@ -1556,33 +1557,55 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
   if (!stat(name, &st)) mtime = st.st_mtime;
   // Check whether the module has already been loaded.
   bool loaded = loaded_dsps.find(modname) != loaded_dsps.end();
+  bool declared = loaded &&
+    loaded_dsps[modname].declared(*symtab.current_namespace);
+  bool modified = !loaded || loaded_dsps[modname].t < mtime;
   if (loaded) {
-    // Module already loaded.
-    if (loaded_dsps[modname].declared(*symtab.current_namespace) &&
+    // Module already loaded. Do some consistency checks.
+    if (declared &&
 	loaded_dsps[modname].priv[*symtab.current_namespace] != priv) {
-      const char *scope = (!priv)?"private":"public";
-      ostringstream msg;
-      msg << "module '" << modname
-	  << "' was previously a " << scope << " import in this namespace";
-      throw err(msg.str());
+      string scope = (!priv)?"private":"public";
+      if (msg)
+	*msg = "Module was previously '" + scope + "' in this namespace";
+      dsp_errmsg(name, msg);
+      return false;
     }
-    // Check the modification time.
-    if (loaded_dsps[modname].t >= mtime) return true;
+    // Check whether there's anything to do.
+    if (declared && !modified) return true;
   }
-  llvm::MemoryBuffer *buf = llvm::MemoryBuffer::getFile(name, msg);
+  MemoryBuffer *buf = MemoryBuffer::getFile(name, msg);
   if (!buf) {
     dsp_errmsg(name, msg);
     return false;
   }
-  llvm::Module *M = llvm::ParseBitcodeFile(buf,
+  Module *M = ParseBitcodeFile(buf,
 #ifdef LLVM26
-					   llvm::getGlobalContext(),
+			       getGlobalContext(),
 #endif
-					   msg);
+			       msg);
   delete buf;
   if (!M) {
     dsp_errmsg(name, msg);
     return false;
+  }
+  // Figure out whether our dsp uses float or double values.
+  Function *compute = M->getFunction("compute_llvm");
+  const Type *type = compute->getFunctionType()->getParamType(2);
+  bool is_double = type ==
+    PointerType::get(PointerType::get(double_type(), 0), 0);
+  if (loaded && modified) {
+    // Do some more checking to make sure that the programmer didn't suddenly
+    // change his mind about the precision of floating point data (-double
+    // vs. -single). Note that we can't allow sudden changes in the ABI since
+    // we only patch up function pointers when reloading a Faust module, which
+    // would render existing wrappers invalid if the ABI was changed on the fly.
+    if (loaded_dsps[modname].dbl != is_double) {
+      string prec = (!is_double)?"double":"single";
+      if (msg)
+	*msg = "Module was previously compiled for " + prec + " precision";
+      dsp_errmsg(name, msg);
+      return false;
+    }
   }
   // Fix up the target layout and triple set by the Faust compiler, in case
   // the dsp module was created on a different platform. (FIXME: We assume
@@ -1593,9 +1616,9 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
   // Mangle the names of the Faust module since they are the same for every
   // module.
   list<string> funs;
-  for (llvm::Module::iterator it = M->begin(), end = M->end();
+  for (Module::iterator it = M->begin(), end = M->end();
        it != end; ) {
-    llvm::Function &f = *(it++);
+    Function &f = *(it++);
     string name = f.getName();
     // Faust interface routines are stropped with the '_llvm' suffix.
     size_t p = name.find("_llvm");
@@ -1603,9 +1626,9 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
       string fname = name.substr(0, p);
       f.setName("$$faust$"+modname+"$"+fname);
       funs.push_back(fname);
-      if (loaded) {
+      if (loaded && modified) {
 	/* Get rid of a previously loaded function. */
-	llvm::Function *g = module->getFunction("$$faust$"+modname+"$"+fname);
+	Function *g = module->getFunction("$$faust$"+modname+"$"+fname);
 	if (g) {
 	  JIT->freeMachineCodeForFunction(g);
 	  g->eraseFromParent();
@@ -1613,16 +1636,17 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
       }
     }
   }
-  // Link the mangled module into the Pure module.
-  if (llvm::Linker::LinkModules(module, M, msg)) {
+  // Link the mangled module into the Pure module. This only needs to be done
+  // if the module was modified.
+  if (modified && Linker::LinkModules(module, M, msg)) {
     delete M;
     dsp_errmsg(name, msg);
     return false;
   }
   delete M;
   // Add an interface function to create the UI description.
-  {
-    using namespace llvm;
+  funs.push_back("ui");
+  if (modified) {
     if (loaded) {
       Function *g = module->getFunction("$$faust$"+modname+"$ui");
       if (g) {
@@ -1634,19 +1658,13 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
     FunctionType *ft = FunctionType::get(ExprPtrTy, argt, false);
     Function *f = Function::Create(ft, Function::ExternalLinkage,
 				   "$$faust$"+modname+"$ui", module);
-    funs.push_back("ui");
     BasicBlock *bb = basic_block("entry", f);
 #ifdef LLVM26
-    Builder b(llvm::getGlobalContext());
+    Builder b(getGlobalContext());
 #else
     Builder b;
 #endif
     b.SetInsertPoint(bb);
-    // First we need to figure out whether our dsp uses float or double values.
-    Function *compute = module->getFunction("$$faust$"+modname+"$compute");
-    const Type *type = compute->getFunctionType()->getParamType(2);
-    bool is_double = type ==
-      PointerType::get(PointerType::get(double_type(), 0), 0);
     // Call the runtime function to create the internal UI data structure.
     Function *uifun = module->getFunction
       (is_double?"faust_double_ui":"faust_float_ui");
@@ -1682,34 +1700,33 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
   for (list<string>::iterator it = funs.begin(), end = funs.end();
        it != end; ++it) {
     string fname = "$$faust$"+modname+"$"+*it;
-    llvm::Function *f = module->getFunction(fname);
+    Function *f = module->getFunction(fname);
     assert(f);
     // The name under which the function is accessible in Pure.
     string asname = modname+"::"+*it;
     // The function type.
-    const llvm::FunctionType *ft = f->getFunctionType();
-    if (loaded) {
-      /* No need to regenerate the wrapper, we only need to patch up the
-         function pointer. NOTE: This requires that the ABI doesn't change
-         when reloading the module, so you shouldn't suddenly switch, say,
-         from -double to -single when recompiling the Faust program. */
-      llvm::GlobalVariable *v = module->getNamedGlobal("$"+fname);
-      assert(v);
-      void **fp = (void**)JIT->getPointerToGlobal(v);
-      assert(fp);
-      *fp = JIT->getPointerToFunction(f);
-      continue;
-    }
-    const llvm::Type* rest = ft->getReturnType();
+    const FunctionType *ft = f->getFunctionType();
+    const Type* rest = ft->getReturnType();
     size_t n = ft->getNumParams();
-    vector<const llvm::Type*> argt(n);
+    vector<const Type*> argt(n);
     for (size_t i = 0; i < n; i++) argt[i] = ft->getParamType(i);
     string restype = dsptype_name(rest);
     list<string> argtypes;
     for (size_t i = 0; i < n; i++) argtypes.push_back(dsptype_name(argt[i]));
-    // Manufacture an extern declaration for the function so that it
-    // can be called in Pure land.
-    declare_extern(priv, fname, restype, argtypes, false, 0, asname, false);
+    if (loaded && modified) {
+      /* There's no need to actually regenerate the wrapper, we only need to
+         patch up the function pointer. */
+      GlobalVariable *v = module->getNamedGlobal("$"+fname);
+      assert(v);
+      void **fp = (void**)JIT->getPointerToGlobal(v);
+      assert(fp);
+      *fp = JIT->getPointerToFunction(f);
+    }
+    if (!declared) {
+      // Manufacture an extern declaration for the function so that it can be
+      // called in Pure land.
+      declare_extern(priv, fname, restype, argtypes, false, 0, asname, false);
+    }
 #if 0 // debugging
     symbol *sym = symtab.sym(asname);
     if (!sym) continue;
@@ -1720,10 +1737,10 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
     f->dump();
 #endif
   }
-  if (loaded)
-    loaded_dsps[modname].t = mtime; // update the timestamp
-  else
-    loaded_dsps[modname] = bcdata_t(priv, *symtab.current_namespace, mtime);
+  // update the module data
+  loaded_dsps[modname].t = mtime;
+  loaded_dsps[modname].dbl = is_double;
+  loaded_dsps[modname].declare(*symtab.current_namespace, priv);
   return true;
 }
 
@@ -1739,29 +1756,34 @@ static void bc_errmsg(string name, string* msg)
 
 bool interpreter::LoadBitcode(bool priv, const char *name, string *msg)
 {
+  using namespace llvm;
   string modname = strip_modname(name);
-  if (loaded_bcs.find(modname) != loaded_bcs.end()) {
-    // Module already loaded.
-    if (loaded_bcs[modname].declared(*symtab.current_namespace) &&
+  bool loaded = loaded_bcs.find(modname) != loaded_bcs.end();
+  bool declared = loaded &&
+    loaded_bcs[modname].declared(*symtab.current_namespace);
+  if (loaded) {
+    // Module already loaded. Do some consistency checks.
+    if (declared &&
 	loaded_bcs[modname].priv[*symtab.current_namespace] != priv) {
-      const char *scope = (!priv)?"private":"public";
-      ostringstream msg;
-      msg << "module '" << modname
-	  << "' was previously a " << scope << " import in this namespace";
-      throw err(msg.str());
+      string scope = (!priv)?"private":"public";
+      if (msg)
+	*msg = "Module was previously '" + scope + "' in this namespace";
+      bc_errmsg(name, msg);
+      return false;
     }
-    return true;
+    // Check whether there's anything to do.
+    if (declared) return true;
   }
-  llvm::MemoryBuffer *buf = llvm::MemoryBuffer::getFile(name, msg);
+  MemoryBuffer *buf = MemoryBuffer::getFile(name, msg);
   if (!buf) {
     bc_errmsg(name, msg);
     return false;
   }
-  llvm::Module *M = llvm::ParseBitcodeFile(buf,
+  Module *M = ParseBitcodeFile(buf,
 #ifdef LLVM26
-					   llvm::getGlobalContext(),
+			       getGlobalContext(),
 #endif
-					   msg);
+			       msg);
   delete buf;
   if (!M) {
     bc_errmsg(name, msg);
@@ -1774,7 +1796,10 @@ bool interpreter::LoadBitcode(bool priv, const char *name, string *msg)
   // valid.
   string layout = JIT->getTargetData()->getStringRepresentation(),
     triple = HOST;
-  if ((!M->getDataLayout().empty() && M->getDataLayout() != layout)
+  // We only give diagnostics on first load, to prevent a cascade of error
+  // messages.
+  if (!loaded &&
+      (!M->getDataLayout().empty() && M->getDataLayout() != layout)
 #if 0
       || (!M->getTargetTriple().empty() && M->getTargetTriple() != triple)
 #endif
@@ -1788,15 +1813,16 @@ bool interpreter::LoadBitcode(bool priv, const char *name, string *msg)
   // Build a list of the external functions of the module so that we can wrap
   // them later.
   list<string> funs;
-  for (llvm::Module::iterator it = M->begin(), end = M->end(); it != end; ) {
-    llvm::Function &f = *(it++);
+  for (Module::iterator it = M->begin(), end = M->end(); it != end; ) {
+    Function &f = *(it++);
     if (!f.isDeclaration() &&
-	f.getLinkage() == llvm::Function::ExternalLinkage) {
+	f.getLinkage() == Function::ExternalLinkage) {
       funs.push_back(f.getName());
     }
   }
-  // Link the bitcode module into the Pure module.
-  if (llvm::Linker::LinkModules(module, M, msg)) {
+  // Link the bitcode module into the Pure module. This only needs to be done
+  // if the module wasnd't loaded before.
+  if (!loaded && Linker::LinkModules(module, M, msg)) {
     delete M;
     bc_errmsg(name, msg);
     return false;
@@ -1806,32 +1832,41 @@ bool interpreter::LoadBitcode(bool priv, const char *name, string *msg)
   for (list<string>::iterator it = funs.begin(), end = funs.end();
        it != end; ++it) {
     string fname = *it;
-    llvm::Function *f = module->getFunction(fname);
+    Function *f = module->getFunction(fname);
     assert(f);
     // The name under which the function is accessible in Pure.
     string asname = fname;
     // The function type.
-    const llvm::FunctionType *ft = f->getFunctionType();
-    const llvm::Type* rest = ft->getReturnType();
+    const FunctionType *ft = f->getFunctionType();
+    const Type* rest = ft->getReturnType();
     size_t n = ft->getNumParams();
-    vector<const llvm::Type*> argt(n);
+    vector<const Type*> argt(n);
     for (size_t i = 0; i < n; i++) argt[i] = ft->getParamType(i);
     string restype = bctype_name(rest);
     list<string> argtypes;
-    // Check the result type for compatibility with Pure.
-    bool ok = restype != "<unknown C type>";
-    for (size_t i = 0; i < n; i++) {
-      string argtype = bctype_name(argt[i]);
-      // Check the argument type.
-      if (argtype == "<unknown C type>") {
-	ok = false;
-	break;
+    bool ok = true;
+    if (!loaded) {
+      // Check the result type for compatibility with Pure.
+      ok = restype != "<unknown C type>";
+      for (size_t i = 0; i < n; i++) {
+	string argtype = bctype_name(argt[i]);
+	// Check the argument type.
+	if (argtype == "<unknown C type>") {
+	  ok = false;
+	  break;
+	}
+	argtypes.push_back(argtype);
       }
-      argtypes.push_back(argtype);
+    } else {
+      // Module has been loaded before, so assume that we're ok.
+      for (size_t i = 0; i < n; i++) {
+	string argtype = bctype_name(argt[i]);
+	argtypes.push_back(argtype);
+      }
     }
     if (ok) {
-      // Manufacture an extern declaration for the function so that it
-      // can be called in Pure land.
+      // Manufacture an extern declaration for the function so that it can be
+      // called in Pure land.
       declare_extern(priv, fname, restype, argtypes, false, 0, asname, false);
 #if 0 // debugging
       symbol *sym = symtab.sym(asname);
@@ -1854,7 +1889,7 @@ bool interpreter::LoadBitcode(bool priv, const char *name, string *msg)
       warning(msg.str());
     }
   }
-  loaded_bcs[modname] = bcdata_t(priv, *symtab.current_namespace);
+  loaded_bcs[modname].declare(*symtab.current_namespace, priv);
   return true;
 }
 
