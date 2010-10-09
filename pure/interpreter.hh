@@ -423,12 +423,14 @@ struct nsinfo {
     : priv(false), parent(ns), search_namespaces(nss) {}
 };
 
-typedef bool bcdata_t;
-struct dspdata_t {
-  bool priv; // private flag
+struct bcdata_t {
+  map <string,bool> priv; // private flag (per namespace)
   time_t t; // timestamp
-  dspdata_t() : priv(false), t(0) {}
-  dspdata_t(bool _priv, time_t _t) : priv(_priv), t(_t) {}
+  bcdata_t() : t(0) {}
+  bcdata_t(bool _priv, const string& _ns, time_t _t = 0)
+    : t(_t) { priv[_ns] = _priv; }
+  bool declared(const string& ns)
+  { return priv.find(ns) != priv.end(); }
 };
 
 class interpreter
@@ -487,7 +489,7 @@ public:
   set<string> namespaces; // the set of all declared namespaces
   list<string> loaded_libs; // the list of all loaded libs (lib:...)
   map<string,bcdata_t> loaded_bcs; // the set of all loaded bitcode modules
-  map<string,dspdata_t> loaded_dsps; // the set of all loaded Faust dsps
+  map<string,bcdata_t> loaded_dsps; // the set of all loaded Faust dsps
   list<int> required; // required symbols (--required pragma)
   ostream *output;   // redirected output stream for interactive commands
   symtable symtab;   // the symbol table

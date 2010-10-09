@@ -1558,11 +1558,12 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
   bool loaded = loaded_dsps.find(modname) != loaded_dsps.end();
   if (loaded) {
     // Module already loaded.
-    if (loaded_dsps[modname].priv != priv) {
-      const char *scope = loaded_dsps[modname].priv?"private":"public";
+    if (loaded_dsps[modname].declared(*symtab.current_namespace) &&
+	loaded_dsps[modname].priv[*symtab.current_namespace] != priv) {
+      const char *scope = (!priv)?"private":"public";
       ostringstream msg;
       msg << "module '" << modname
-	  << "' was previously a " << scope << " import";
+	  << "' was previously a " << scope << " import in this namespace";
       throw err(msg.str());
     }
     // Check the modification time.
@@ -1719,7 +1720,10 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
     f->dump();
 #endif
   }
-  loaded_dsps[modname] = dspdata_t(priv, mtime);
+  if (loaded)
+    loaded_dsps[modname].t = mtime; // update the timestamp
+  else
+    loaded_dsps[modname] = bcdata_t(priv, *symtab.current_namespace, mtime);
   return true;
 }
 
@@ -1738,11 +1742,12 @@ bool interpreter::LoadBitcode(bool priv, const char *name, string *msg)
   string modname = strip_modname(name);
   if (loaded_bcs.find(modname) != loaded_bcs.end()) {
     // Module already loaded.
-    if (loaded_bcs[modname] != priv) {
-      const char *scope = loaded_bcs[modname]?"private":"public";
+    if (loaded_bcs[modname].declared(*symtab.current_namespace) &&
+	loaded_bcs[modname].priv[*symtab.current_namespace] != priv) {
+      const char *scope = (!priv)?"private":"public";
       ostringstream msg;
       msg << "module '" << modname
-	  << "' was previously a " << scope << " import";
+	  << "' was previously a " << scope << " import in this namespace";
       throw err(msg.str());
     }
     return true;
@@ -1849,7 +1854,7 @@ bool interpreter::LoadBitcode(bool priv, const char *name, string *msg)
       warning(msg.str());
     }
   }
-  loaded_bcs[modname] = priv;
+  loaded_bcs[modname] = bcdata_t(priv, *symtab.current_namespace);
   return true;
 }
 
