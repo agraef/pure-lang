@@ -1279,6 +1279,35 @@ static const bool yes_or_no(const string& msg)
 #define PATHSEP ":"
 #endif
 
+static string decl_str(interpreter &interp, const symbol& sym)
+{
+  ostringstream sout;
+  if (sym.fix == nonfix)
+    sout << "nonfix " << sym.s << ";\n";
+  else if (sym.fix == outfix && sym.g)
+    sout << "outfix " << sym.s << " "
+	 << interp.symtab.sym(sym.g).s << ";\n";
+  else if (sym.prec < PREC_MAX) {
+    switch (sym.fix) {
+    case infix:
+      sout << "infix"; break;
+    case infixl:
+      sout << "infixl"; break;
+    case infixr:
+      sout << "infixr"; break;
+    case prefix:
+      sout << "prefix"; break;
+    case postfix:
+      sout << "postfix"; break;
+    case nonfix:
+    case outfix:
+      assert(0 && "this can't happen"); break;
+    }
+    sout << " " << (int)sym.prec << " " << sym.s << ";\n";
+  }
+  return sout.str();
+}
+
 static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const char *cmd, const char *cmdline)
 {
   if (interp.restricted) {
@@ -1728,11 +1757,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	if (jt == interp.globenv.end() && kt == interp.macenv.end() &&
 	    xt != interp.externals.end()) {
 	  const ExternInfo& info = xt->second;
-	  if (sym.fix == nonfix)
-	    sout << "nonfix " << sym.s << ";\n";
-	  else if (sym.fix == outfix && sym.g)
-	    sout << "outfix " << sym.s << " "
-		 << interp.symtab.sym(sym.g).s << ";\n";
+	  sout << decl_str(interp, sym);
 	  sout << info << ";";
 	  if ((!sflag||lflag) && dflag) {
 	    if (!sflag) sout << '\n';
@@ -1749,8 +1774,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	  ++nfuns;
 	} else if (jt != interp.globenv.end() &&
 		   jt->second.t == env_info::fvar) {
-	  if (sym.fix == nonfix)
-	    sout << "nonfix " << sym.s << ";\n";
+	  sout << decl_str(interp, sym);
 	  nvars++;
 	  if (sflag) {
 	    sout << sym.s << string(maxsize-sym.s.size(), ' ')
@@ -1763,8 +1787,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 		 << ";\n";
 	} else if (jt != interp.globenv.end() &&
 		   jt->second.t == env_info::cvar) {
-	  if (sym.fix == nonfix)
-	    sout << "nonfix " << sym.s << ";\n";
+	  sout << decl_str(interp, sym);
 	  ncsts++;
 	  if (sflag) {
 	    sout << sym.s << string(maxsize-sym.s.size(), ' ')
@@ -1776,29 +1799,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	    sout << "const " << sym.s << " = " << *jt->second.cval
 		 << ";\n";
 	} else {
-	  if (sym.fix == nonfix)
-	    sout << "nonfix " << sym.s << ";\n";
-	  else if (sym.fix == outfix && sym.g)
-	    sout << "outfix " << sym.s << " "
-		 << interp.symtab.sym(sym.g).s << ";\n";
-	  else if (sym.prec < PREC_MAX) {
-	    switch (sym.fix) {
-	    case infix:
-	      sout << "infix"; break;
-	    case infixl:
-	      sout << "infixl"; break;
-	    case infixr:
-	      sout << "infixr"; break;
-	    case prefix:
-	      sout << "prefix"; break;
-	    case postfix:
-	      sout << "postfix"; break;
-	    case nonfix:
-	    case outfix:
-	      assert(0 && "this can't happen"); break;
-	    }
-	    sout << " " << (int)sym.prec << " " << sym.s << ";\n";
-	  }
+	  sout << decl_str(interp, sym);
 	  if (fflag && xt != interp.externals.end()) {
 	    const ExternInfo& info = xt->second;
 	    sout << info << ";";
@@ -2061,49 +2062,21 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	const extmap::const_iterator xt = it->xt;
 	if (jt == interp.globenv.end() && kt == interp.macenv.end() &&
 	    xt != interp.externals.end()) {
-	  if (sym.fix == nonfix)
-	    fout << "nonfix " << sym.s << ";\n";
-	  else if (sym.fix == outfix && sym.g)
-	    fout << "outfix " << sym.s << " "
-		 << interp.symtab.sym(sym.g).s << ";\n";
+	  fout << decl_str(interp, sym);
 	  const ExternInfo& info = xt->second;
 	  fout << info << ";\n";
 	} else if (jt != interp.globenv.end() &&
 		   jt->second.t == env_info::fvar) {
-	  if (sym.fix == nonfix)
-	    fout << "nonfix " << sym.s << ";\n";
+	  fout << decl_str(interp, sym);
 	  fout << "let " << sym.s << " = " << *(pure_expr**)jt->second.val
 	       << ";\n";
 	} else if (jt != interp.globenv.end() &&
 		   jt->second.t == env_info::cvar) {
-	  if (sym.fix == nonfix)
-	    fout << "nonfix " << sym.s << ";\n";
+	  fout << decl_str(interp, sym);
 	  fout << "const " << sym.s << " = " << *jt->second.cval
 	       << ";\n";
 	} else {
-	  if (sym.fix == nonfix)
-	    fout << "nonfix " << sym.s << ";\n";
-	  else if (sym.fix == outfix && sym.g)
-	    fout << "outfix " << sym.s << " "
-		 << interp.symtab.sym(sym.g).s << ";\n";
-	  else if (sym.prec < PREC_MAX) {
-	    switch (sym.fix) {
-	    case infix:
-	      fout << "infix"; break;
-	    case infixl:
-	      fout << "infixl"; break;
-	    case infixr:
-	      fout << "infixr"; break;
-	    case prefix:
-	      fout << "prefix"; break;
-	    case postfix:
-	      fout << "postfix"; break;
-	    case nonfix:
-	    case outfix:
-	      assert(0 && "this can't happen"); break;
-	    }
-	    fout << " " << (int)sym.prec << " " << sym.s << ";\n";
-	  }
+	  fout << decl_str(interp, sym);
 	  if (fflag && xt != interp.externals.end()) {
 	    const ExternInfo& info = xt->second;
 	    fout << info << ";\n";
