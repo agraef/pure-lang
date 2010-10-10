@@ -1282,6 +1282,8 @@ static const bool yes_or_no(const string& msg)
 static string decl_str(interpreter &interp, const symbol& sym)
 {
   ostringstream sout;
+  if (sym.priv)
+    sout << "private ";
   if (sym.fix == nonfix)
     sout << "nonfix " << sym.s << ";\n";
   else if (sym.fix == outfix && sym.g)
