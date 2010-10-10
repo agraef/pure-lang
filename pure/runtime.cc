@@ -3993,12 +3993,16 @@ void *pure_get_matrix_data(pure_expr *x)
   }
 }
 
+enum cvd_type {
+  cvd_none, cvd_short, cvd_int, cvd_float, cvd_double
+};
+
 struct cvector_data {
   pure_expr *x;
   void *v;
-  bool t;
-  cvector_data(pure_expr *_x, void *_v, bool _t) : x(_x), v(_v), t(_t) {}
-  cvector_data(void *_v) : x(0), v(_v), t(false) {}
+  cvd_type ty;
+  cvector_data(pure_expr *_x, void *_v, cvd_type _ty) : x(_x), v(_v), ty(_ty) {}
+  cvector_data(void *_v) : x(0), v(_v), ty(cvd_none) {}
 };
 
 list<cvector_data> cvector_temps; // XXXFIXME: This should be TLD.
@@ -4038,6 +4042,52 @@ void *pure_get_matrix_data_double(pure_expr *x)
   return v;
 }
 
+static void *matrix_to_int_vector(pure_expr *x)
+{
+  switch (x->tag) {
+  case EXPR::IMATRIX: {
+    gsl_matrix_int *m1 = (gsl_matrix_int*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    if (n==0 || m==0) return 0;
+    int **p = (int**)malloc(n*sizeof(int*));
+    if (!p) return 0;
+    for (size_t i = 0; i < n; i++)
+      p[i] = m1->data+(i*m1->tda);
+    return p;
+  }
+  default:
+    return 0;
+  }
+}
+
+static void *matrix_to_short_vector(pure_expr *x)
+{
+  switch (x->tag) {
+  case EXPR::IMATRIX: {
+    gsl_matrix_int *m1 = (gsl_matrix_int*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    if (n==0 || m==0) return 0;
+    short **p = (short**)malloc(n*sizeof(short*));
+    if (!p) return 0;
+    for (size_t i = 0; i < n; i++) {
+      p[i] = (short*)malloc(m*sizeof(short));
+      if (!p[i]) {
+	for (size_t j = 0; j < i; j++) free(p[j]);
+	free(p); p = 0;
+	break;
+      }
+    }
+    if (!p) return 0;
+    for (size_t i = 0; i < n; i++)
+      for (size_t j = 0; j < m; j++)
+	p[i][j] = (short)m1->data[i*m1->tda+j];
+    return p;
+  }
+  default:
+    return 0;
+  }
+}
+
 static void *matrix_to_double_vector(pure_expr *x)
 {
   switch (x->tag) {
@@ -4049,6 +4099,16 @@ static void *matrix_to_double_vector(pure_expr *x)
     if (!p) return 0;
     for (size_t i = 0; i < n; i++)
       p[i] = m1->data+(i*m1->tda);
+    return p;
+  }
+  case EXPR::CMATRIX: {
+    gsl_matrix_complex *m1 = (gsl_matrix_complex*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    if (n==0 || m==0) return 0;
+    double **p = (double**)malloc(n*sizeof(double*));
+    if (!p) return 0;
+    for (size_t i = 0; i < n; i++)
+      p[i] = m1->data+(2*i*m1->tda);
     return p;
   }
   default:
@@ -4079,6 +4139,47 @@ static void *matrix_to_float_vector(pure_expr *x)
 	p[i][j] = (float)m1->data[i*m1->tda+j];
     return p;
   }
+  case EXPR::CMATRIX: {
+    gsl_matrix_complex *m1 = (gsl_matrix_complex*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    if (n==0 || m==0) return 0;
+    float **p = (float**)malloc(n*sizeof(float*));
+    if (!p) return 0;
+    for (size_t i = 0; i < n; i++) {
+      p[i] = (float*)malloc(2*m*sizeof(float));
+      if (!p[i]) {
+	for (size_t j = 0; j < i; j++) free(p[j]);
+	free(p); p = 0;
+	break;
+      }
+    }
+    if (!p) return 0;
+    for (size_t i = 0; i < n; i++)
+      for (size_t j = 0; j < 2*m; j++)
+	p[i][j] = (float)m1->data[2*i*m1->tda+j];
+    return p;
+  }
+  default:
+    return 0;
+  }
+}
+
+static void *short_vector_to_matrix(pure_expr *x, void *q)
+{
+  short **p = (short**)q;
+  if (!p) return 0;
+  switch (x->tag) {
+  case EXPR::IMATRIX: {
+    gsl_matrix_int *m1 = (gsl_matrix_int*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    if (n==0 || m==0) return p;
+    for (size_t i = 0; i < n; i++) {
+      for (size_t j = 0; j < m; j++)
+	m1->data[i*m1->tda+j] = (int)p[i][j];
+      free(p[i]);
+    }
+    return p;
+  }
   default:
     return 0;
   }
@@ -4105,17 +4206,31 @@ static void *float_vector_to_matrix(pure_expr *x, void *q)
   }
 }
 
+void *pure_get_matrix_vector_short(pure_expr *x)
+{
+  void *v = matrix_to_short_vector(x);
+  cvector_temps.push_back(cvector_data(x, v, cvd_short));
+  return v;
+}
+
+void *pure_get_matrix_vector_int(pure_expr *x)
+{
+  void *v = matrix_to_int_vector(x);
+  cvector_temps.push_back(cvector_data(x, v, cvd_int));
+  return v;
+}
+
 void *pure_get_matrix_vector_float(pure_expr *x)
 {
   void *v = matrix_to_float_vector(x);
-  cvector_temps.push_back(cvector_data(x, v, true));
+  cvector_temps.push_back(cvector_data(x, v, cvd_float));
   return v;
 }
 
 void *pure_get_matrix_vector_double(pure_expr *x)
 {
   void *v = matrix_to_double_vector(x);
-  cvector_temps.push_back(cvector_data(x, v, false));
+  cvector_temps.push_back(cvector_data(x, v, cvd_double));
   return v;
 }
 
@@ -4125,7 +4240,12 @@ void pure_free_cvectors()
   for (list<cvector_data>::iterator t = cvector_temps.begin();
        t != cvector_temps.end(); t++) {
     if (t->v) {
-      if (t->x && t->t) float_vector_to_matrix(t->x, t->v);
+      if (t->x && t->ty)
+	switch (t->ty) {
+	case cvd_short: short_vector_to_matrix(t->x, t->v); break;
+	case cvd_float: float_vector_to_matrix(t->x, t->v); break;
+	default: break;
+	}
       free(t->v);
     }
   }

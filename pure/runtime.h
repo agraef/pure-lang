@@ -660,10 +660,10 @@ void pure_free_cvectors();
    pointers (pointing to the rows of the matrix) in temporary storage which
    allows the matrices to be modified in-place. Any necessary data type
    conversions are done on the fly. pure_free_cvectors is to be called
-   afterwards to free the temporary storage and convert back results.
-   NOTE: Currently this is implemented only for the float** and double**
-   arguments used in the Faust interface. */
+   afterwards to free the temporary storage and convert back results. */
 
+void *pure_get_matrix_vector_short(pure_expr *x);
+void *pure_get_matrix_vector_int(pure_expr *x);
 void *pure_get_matrix_vector_float(pure_expr *x);
 void *pure_get_matrix_vector_double(pure_expr *x);
 
