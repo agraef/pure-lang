@@ -1896,8 +1896,12 @@ bool interpreter::LoadBitcode(bool priv, const char *name, string *msg)
    - "-*- c -*-" (or "-*- C -*-", case is insignificant in the language label)
      selects the C language, which is also the default. The command with which
      the compiler is to be invoked can be set with the PURE_CC environment
-     variable, by default this is llvm-gcc. The necessary options to switch
-     llvm-gcc to bitcode output are supplied automatically.
+     variable, by default this is llvm-gcc (or clang if it was used to compile
+     Pure). The necessary options to switch llvm-gcc to bitcode output are
+     supplied automatically.
+
+   - "-*- c++ -*-" selects C++ (PURE_CXX environment variable, llvm-g++ or
+     clang++ by default).
 
    - "-*- fortran -*-" selects Fortran (PURE_FC environment variable,
      llvm-gfortran by default). Optionally, the fortran tag may be followed by
@@ -1956,10 +1960,20 @@ void interpreter::inline_code(bool priv, string &code)
   string modname, tag = lang_tag(code, modname), ext = "";
   const char *env, *drv, *args;
   if (tag == "c") {
-    env = "PURE_CC"; drv = "llvm-gcc";
+    env = "PURE_CC";
+#if __clang__
+    drv = "clang";
+#else
+    drv = "llvm-gcc";
+#endif
     args = " -x c -emit-llvm -c ";
   } else if (tag == "c++") {
-    env = "PURE_CXX"; drv = "llvm-g++";
+    env = "PURE_CXX";
+#if __clang__
+    drv = "clang++";
+#else
+    drv = "llvm-g++";
+#endif
     args = " -x c++ -emit-llvm -c ";
   } else if (tag.compare(0, 7, "fortran") == 0) {
     string std = tag.substr(7);
