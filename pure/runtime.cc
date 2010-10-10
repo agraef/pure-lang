@@ -3994,15 +3994,28 @@ void *pure_get_matrix_data(pure_expr *x)
 }
 
 enum cvd_type {
-  cvd_none, cvd_short, cvd_int, cvd_float, cvd_double
+  cvd_none, cvd_void, cvd_char, cvd_short, cvd_int, cvd_float, cvd_double
 };
 
 struct cvector_data {
   pure_expr *x;
-  void *v;
+  void *v, *w;
   cvd_type ty;
-  cvector_data(pure_expr *_x, void *_v, cvd_type _ty) : x(_x), v(_v), ty(_ty) {}
-  cvector_data(void *_v) : x(0), v(_v), ty(cvd_none) {}
+  cvector_data(pure_expr *_x, void *_v, cvd_type _ty) :
+    x(_x), v(_v), w(0), ty(_ty)
+  {
+    if (ty == cvd_char) {
+      // Back up the original vector, so that we can free the temporary
+      // strings afterwards.
+      size_t n = 0;
+      char **s = (char**)v;
+      for (; s[n]; n++) ;
+      w = malloc((n+1)*sizeof(char*));
+      if (!w) return;
+      memcpy(w, v, (n+1)*sizeof(char*));
+    }
+  }
+  cvector_data(void *_v) : x(0), v(_v), w(0), ty(cvd_none) {}
 };
 
 list<cvector_data> cvector_temps; // XXXFIXME: This should be TLD.
@@ -4040,6 +4053,63 @@ void *pure_get_matrix_data_double(pure_expr *x)
   void *v = matrix_to_double_array(0, x);
   cvector_temps.push_back(cvector_data(v));
   return v;
+}
+
+static void *matrix_to_void_vector(pure_expr *x)
+{
+  switch (x->tag) {
+  case EXPR::MATRIX: {
+    gsl_matrix_symbolic *m1 = (gsl_matrix_symbolic*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2, l = n*m;
+    if (l==0) return 0;
+    void **p = (void**)malloc((l+1)*sizeof(void*));
+    if (!p) return 0;
+    for (size_t k = 0, i = 0; i < n; i++)
+      for (size_t j = 0; j < m; j++)  {
+	void *ptr;
+	const char *s;
+	if (pure_is_pointer(m1->data[i*m1->tda+j], &ptr))
+	  p[k++] = ptr;
+	else if (pure_is_string(m1->data[i*m1->tda+j], &s))
+	  p[k++] = (void*)s;
+	else {
+	  free(p);
+	  return 0;
+	}
+      }
+    p[l] = 0;
+    return p;
+  }
+  default:
+    return 0;
+  }
+}
+
+static void *matrix_to_char_vector(pure_expr *x)
+{
+  switch (x->tag) {
+  case EXPR::MATRIX: {
+    gsl_matrix_symbolic *m1 = (gsl_matrix_symbolic*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2, l = n*m;
+    if (l==0) return 0;
+    void **p = (void**)malloc((l+1)*sizeof(char*));
+    if (!p) return 0;
+    for (size_t k = 0, i = 0; i < n; i++)
+      for (size_t j = 0; j < m; j++)  {
+	char *s;
+	if (pure_is_cstring_dup(m1->data[i*m1->tda+j], &s))
+	  p[k++] = (void*)s;
+	else {
+	  free(p);
+	  return 0;
+	}
+      }
+    p[l] = 0;
+    return p;
+  }
+  default:
+    return 0;
+  }
 }
 
 static void *matrix_to_int_vector(pure_expr *x)
@@ -4164,6 +4234,17 @@ static void *matrix_to_float_vector(pure_expr *x)
   }
 }
 
+static void *char_vector_to_matrix(pure_expr *x, void *v, void *w)
+{
+  // We can't modify the matrix in place here, but we still need to collect
+  // the converted strings.
+  char **p = (char**)w;
+  if (!p) return v;
+  for (size_t i = 0; p[i]; i++) free(p[i]);
+  free(w);
+  return v;
+}
+
 static void *short_vector_to_matrix(pure_expr *x, void *q)
 {
   short **p = (short**)q;
@@ -4206,6 +4287,20 @@ static void *float_vector_to_matrix(pure_expr *x, void *q)
   }
 }
 
+void *pure_get_matrix_vector_void(pure_expr *x)
+{
+  void *v = matrix_to_void_vector(x);
+  cvector_temps.push_back(cvector_data(x, v, cvd_void));
+  return v;
+}
+
+void *pure_get_matrix_vector_char(pure_expr *x)
+{
+  void *v = matrix_to_char_vector(x);
+  cvector_temps.push_back(cvector_data(x, v, cvd_char));
+  return v;
+}
+
 void *pure_get_matrix_vector_short(pure_expr *x)
 {
   void *v = matrix_to_short_vector(x);
@@ -4242,6 +4337,7 @@ void pure_free_cvectors()
     if (t->v) {
       if (t->x && t->ty)
 	switch (t->ty) {
+	case cvd_char: char_vector_to_matrix(t->x, t->v, t->w); break;
 	case cvd_short: short_vector_to_matrix(t->x, t->v); break;
 	case cvd_float: float_vector_to_matrix(t->x, t->v); break;
 	default: break;

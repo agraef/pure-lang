@@ -582,6 +582,10 @@ void interpreter::init()
 		 "pure_get_matrix_data_float", "void*", 1, "expr*");
   declare_extern((void*)pure_get_matrix_data_double,
 		 "pure_get_matrix_data_double", "void*", 1, "expr*");
+  declare_extern((void*)pure_get_matrix_vector_void,
+		 "pure_get_matrix_vector_void", "void*", 1, "expr*");
+  declare_extern((void*)pure_get_matrix_vector_char,
+		 "pure_get_matrix_vector_char", "void*", 1, "expr*");
   declare_extern((void*)pure_get_matrix_vector_short,
 		 "pure_get_matrix_vector_short", "void*", 1, "expr*");
   declare_extern((void*)pure_get_matrix_vector_int,
@@ -7382,6 +7386,12 @@ const Type *interpreter::named_type(string name)
     return PointerType::get(float_type(), 0);
   else if (name == "double*")
     return PointerType::get(double_type(), 0);
+  else if (name == "void**")
+    return PointerType::get(VoidPtrTy, 0);
+  else if (name == "void**")
+    return PointerType::get(VoidPtrTy, 0);
+  else if (name == "char**")
+    return PointerType::get(CharPtrTy, 0);
   else if (name == "short**" || name == "int16**")
     return PointerType::get(PointerType::get(int16_type(), 0), 0);
   else if (name == "int**" || name == "int32**")
@@ -7405,8 +7415,12 @@ const Type *interpreter::named_type(string name)
   else if (name == "void*")
     return VoidPtrTy;
   else if (name.size() > 0 && name[name.size()-1] == '*')
-    // all other pointer types effectively treated as void*
-    return VoidPtrTy;
+    if (name.size() > 1 && name[name.size()-2] == '*')
+      // generic pointer to pointer
+      return PointerType::get(VoidPtrTy, 0);
+    else
+      // all other pointer types effectively treated as void*
+      return VoidPtrTy;
   else
     throw err("unknown C type '"+name+"'");
 }
@@ -7457,6 +7471,10 @@ const char *interpreter::type_name(const Type *type)
     return "float*";
   else if (type == PointerType::get(double_type(), 0))
     return "double*";
+  else if (type == PointerType::get(VoidPtrTy, 0))
+    return "void**";
+  else if (type == PointerType::get(CharPtrTy, 0))
+    return "char**";
   else if (type == PointerType::get(PointerType::get(int16_type(), 0), 0))
     return "short**";
   else if (type == PointerType::get(PointerType::get(int32_type(), 0), 0))
@@ -7506,6 +7524,8 @@ const char *interpreter::bctype_name(const Type *type)
      and we can't tell which is which, so we have to map i8* to void* here. */
   if (type == CharPtrTy)
     return "void*";
+  else if (type == PointerType::get(CharPtrTy, 0))
+    return "void**";
   else if (type->isPointerTy()) {
     const Type *elem_type = type->getContainedType(0);
     /* XXXFIXME: These checks really need to be rewritten so that they're less
@@ -7544,6 +7564,8 @@ const char *interpreter::dsptype_name(const Type *type)
      Pure expression and GSL matrix types, but still maps i8* to void*. */
   if (type == CharPtrTy)
     return "void*";
+  else if (type == PointerType::get(CharPtrTy, 0))
+    return "void**";
   else
     return type_name(type);
 }
@@ -7999,6 +8021,37 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       phi->addIncoming(ptrv, ptrbb);
       phi->addIncoming(matrixv, matrixbb);
       unboxed[i] = b.CreateBitCast(phi, gt->getParamType(i)); vtemps = true;
+    } else if (argt[i] == PointerType::get(VoidPtrTy, 0) ||
+	       argt[i] == PointerType::get(CharPtrTy, 0)) {
+      /* Conversion of symbolic vectors to void** and char**. */
+      bool is_char = argt[i] == PointerType::get(CharPtrTy, 0);
+      BasicBlock *ptrbb = basic_block("ptr");
+      BasicBlock *matrixbb = basic_block("matrix");
+      BasicBlock *okbb = basic_block("ok");
+      Value *idx[2] = { Zero, Zero };
+      Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
+      SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 2);
+      Function *get_fun = module->getFunction
+	(is_char ? "pure_get_matrix_vector_char" :
+	 "pure_get_matrix_vector_void");
+      sw->addCase(SInt(EXPR::PTR), ptrbb);
+      sw->addCase(SInt(EXPR::MATRIX), matrixbb);
+      f->getBasicBlockList().push_back(ptrbb);
+      b.SetInsertPoint(ptrbb);
+      Value *pv = b.CreateBitCast(x, PtrExprPtrTy, "ptrexpr");
+      idx[1] = ValFldIndex;
+      Value *ptrv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "ptrval");
+      b.CreateBr(okbb);
+      f->getBasicBlockList().push_back(matrixbb);
+      b.SetInsertPoint(matrixbb);
+      Value *matrixv = b.CreateCall(get_fun, x);
+      b.CreateBr(okbb);
+      f->getBasicBlockList().push_back(okbb);
+      b.SetInsertPoint(okbb);
+      PHINode *phi = b.CreatePHI(VoidPtrTy);
+      phi->addIncoming(ptrv, ptrbb);
+      phi->addIncoming(matrixv, matrixbb);
+      unboxed[i] = b.CreateBitCast(phi, gt->getParamType(i)); vtemps = true;
     } else if (argt[i] ==
 	       PointerType::get(PointerType::get(int16_type(), 0), 0) ||
 	       argt[i] ==
@@ -8245,10 +8298,10 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	   type == PointerType::get(int32_type(), 0) ||
 	   type == PointerType::get(int64_type(), 0) ||
 	   type == PointerType::get(float_type(), 0) ||
-	   type == PointerType::get(double_type(), 0))
-    u = b.CreateCall(module->getFunction("pure_pointer"),
-		     b.CreateBitCast(u, VoidPtrTy));
-  else if (type == PointerType::get(PointerType::get(int16_type(), 0), 0) ||
+	   type == PointerType::get(double_type(), 0) ||
+	   type == PointerType::get(VoidPtrTy, 0) ||
+	   type == PointerType::get(CharPtrTy, 0) ||
+	   type == PointerType::get(PointerType::get(int16_type(), 0), 0) ||
 	   type == PointerType::get(PointerType::get(int32_type(), 0), 0) ||
 	   type == PointerType::get(PointerType::get(int64_type(), 0), 0) ||
 	   type == PointerType::get(PointerType::get(float_type(), 0), 0) ||

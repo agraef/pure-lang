@@ -667,6 +667,18 @@ void *pure_get_matrix_vector_int(pure_expr *x);
 void *pure_get_matrix_vector_float(pure_expr *x);
 void *pure_get_matrix_vector_double(pure_expr *x);
 
+/* In addition, the following routines allow symbolic matrices of pointers
+   and/or strings to be passed as void** and char** to a C function. The
+   vector is always terminated with a NULL pointer. The data pointed to can be
+   modified by the callee (with care), but the input matrix itself is never
+   modified. In the char** case, the Pure strings are converted to the system
+   encoding, so the callee only sees a copy of the string data.
+   pure_free_cvectors is to be called afterwards to free the temporary storage
+   for the C vector. */
+
+void *pure_get_matrix_vector_void(pure_expr *x);
+void *pure_get_matrix_vector_char(pure_expr *x);
+
 /* Additional matrix constructors. These work like pure_matrix_rowsl and
    pure_matrix_columnsl in the public API, but are intended to be called
    directly from generated code and raise the appropriate Pure exceptions in
