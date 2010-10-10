@@ -3662,16 +3662,65 @@ value semantics:</p>
 <p>Most GSL matrix routines can be wrapped in this fashion quite easily. A
 ready-made GSL interface providing access to all of GSL's numeric functions is
 in the works; please check the Pure website for details.</p>
+<p>Any kind of matrix (including symbolic matrices) can also be passed for a
+generic <tt class="docutils literal"><span class="pre">void*</span></tt> pointer. In this case no conversions are done and a pointer
+to the raw matrix data is passed, which allows the matrix to be modified
+in-place. (Similarly, <tt class="docutils literal"><span class="pre">void*</span></tt> also allows you to pass a bigint argument as a
+raw <tt class="docutils literal"><span class="pre">mpz_t</span></tt> value, which makes it possible to call most GMP integer routines
+directly from Pure.)</p>
 <p>For convenience, it is also possible to pass a numeric matrix for a
 <tt class="docutils literal"><span class="pre">short*</span></tt>, <tt class="docutils literal"><span class="pre">int*</span></tt>, <tt class="docutils literal"><span class="pre">float*</span></tt> or <tt class="docutils literal"><span class="pre">double*</span></tt> parameter. The required
 conversions are then done automatically, on the fly, and the matrix data is
-copied to temporary storage in order to preserve value sematics.</p>
-<p>In addition, any kind of matrix (including symbolic matrices) can also be
-passed for a generic <tt class="docutils literal"><span class="pre">void*</span></tt> pointer. In this case no conversions are done
-and a pointer to the raw matrix data is passed, which allows the matrix to be
-modified in-place. Similarly, <tt class="docutils literal"><span class="pre">void*</span></tt> also allows you to pass a bigint
-argument as a raw <tt class="docutils literal"><span class="pre">mpz_t</span></tt> value. This makes it possible to call most GMP
-integer routines directly from Pure.</p>
+copied to temporary storage in order to preserve value semantics. For
+instance, if you have a C routine <tt class="docutils literal"><span class="pre">sumsq</span></tt> which expects a double vector
+<tt class="docutils literal"><span class="pre">x</span></tt> of length <tt class="docutils literal"><span class="pre">n</span></tt> and returns the sum of squares of the vector elements,
+then you can call this function in Pure simply as follows:</p>
+<pre class="literal-block">
+&gt; extern sumsq(int n, double *x);
+&gt; sumsq 3 {1.0,2.0,3.0};
+14.0
+</pre>
+<p>Pure 0.45 and later also support <tt class="docutils literal"><span class="pre">short**</span></tt>, <tt class="docutils literal"><span class="pre">int**</span></tt>, <tt class="docutils literal"><span class="pre">float**</span></tt> and
+<tt class="docutils literal"><span class="pre">double**</span></tt> parameters which encode a matrix as a vector of row
+pointers. This requires that the pointer and the matrix type match up;
+conversions between <tt class="docutils literal"><span class="pre">short</span></tt> and <tt class="docutils literal"><span class="pre">int</span></tt> data and, likewise, between
+<tt class="docutils literal"><span class="pre">float</span></tt> and <tt class="docutils literal"><span class="pre">double</span></tt> are handled automatically. In addition, the original
+matrix can also be updated in-place (this avoids copying the row data if
+possible, so these operations work most efficiently with the <tt class="docutils literal"><span class="pre">int**</span></tt> and
+<tt class="docutils literal"><span class="pre">double**</span></tt> data types). This kind of matrix representation is often found in
+audio and video processing software, where the rows of the matrix might denote
+different audio channels, display lines or video frames. For a contrived
+example, consider the following C function which multiplies the members of
+each row with the maximum element in that row:</p>
+<pre class="literal-block">
+void foo(double **x, int n, int m)
+{
+  int i, j;
+  if (m == 0) return;
+  for (i = 0; i &lt; n; i++) {
+    double f = x[i][0];
+    for (j = 0; j &lt; m; j++)
+      if (x[i][j] &gt; f)
+        f = x[i][j];
+    for (j = 0; j &lt; m; j++)
+      x[i][j] = f*x[i][j];
+  }
+}
+</pre>
+<p>You declare this function in Pure as:</p>
+<pre class="literal-block">
+extern void foo(double**, int, int);
+</pre>
+<p>Now you can call the function on a Pure matrix to modify the matrix
+in-place. E.g.:</p>
+<pre class="literal-block">
+&gt; let x = dmatrix {1,2,3;4,5,6}; x;
+{1.0,2.0,3.0;4.0,5.0,6.0}
+&gt; foo x n m $$ x;
+{3.0,6.0,9.0;24.0,30.0,36.0}
+&gt; foo x n m $$ x;
+{27.0,54.0,81.0;864.0,1080.0,1296.0}
+</pre>
 </div>
 <div class="section" id="importing-dynamic-libraries">
 <h2><a class="toc-backref" href="#id51">9.3&nbsp;&nbsp;&nbsp;Importing Dynamic Libraries</a></h2>

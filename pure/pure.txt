@@ -3501,17 +3501,65 @@ Most GSL matrix routines can be wrapped in this fashion quite easily. A
 ready-made GSL interface providing access to all of GSL's numeric functions is
 in the works; please check the Pure website for details.
 
+Any kind of matrix (including symbolic matrices) can also be passed for a
+generic ``void*`` pointer. In this case no conversions are done and a pointer
+to the raw matrix data is passed, which allows the matrix to be modified
+in-place. (Similarly, ``void*`` also allows you to pass a bigint argument as a
+raw ``mpz_t`` value, which makes it possible to call most GMP integer routines
+directly from Pure.)
+
 For convenience, it is also possible to pass a numeric matrix for a
 ``short*``, ``int*``, ``float*`` or ``double*`` parameter. The required
 conversions are then done automatically, on the fly, and the matrix data is
-copied to temporary storage in order to preserve value sematics.
+copied to temporary storage in order to preserve value semantics. For
+instance, if you have a C routine ``sumsq`` which expects a double vector
+``x`` of length ``n`` and returns the sum of squares of the vector elements,
+then you can call this function in Pure simply as follows::
 
-In addition, any kind of matrix (including symbolic matrices) can also be
-passed for a generic ``void*`` pointer. In this case no conversions are done
-and a pointer to the raw matrix data is passed, which allows the matrix to be
-modified in-place. Similarly, ``void*`` also allows you to pass a bigint
-argument as a raw ``mpz_t`` value. This makes it possible to call most GMP
-integer routines directly from Pure.
+  > extern sumsq(int n, double *x);
+  > sumsq 3 {1.0,2.0,3.0};
+  14.0
+
+Pure 0.45 and later also support ``short**``, ``int**``, ``float**`` and
+``double**`` parameters which encode a matrix as a vector of row
+pointers. This requires that the pointer and the matrix type match up;
+conversions between ``short`` and ``int`` data and, likewise, between
+``float`` and ``double`` are handled automatically. In addition, the original
+matrix can also be updated in-place (this avoids copying the row data if
+possible, so these operations work most efficiently with the ``int**`` and
+``double**`` data types). This kind of matrix representation is often found in
+audio and video processing software, where the rows of the matrix might denote
+different audio channels, display lines or video frames. For a contrived
+example, consider the following C function which multiplies the members of
+each row with the maximum element in that row::
+
+  void foo(double **x, int n, int m)
+  {
+    int i, j;
+    if (m == 0) return;
+    for (i = 0; i < n; i++) {
+      double f = x[i][0];
+      for (j = 0; j < m; j++)
+        if (x[i][j] > f)
+          f = x[i][j];
+      for (j = 0; j < m; j++)
+        x[i][j] = f*x[i][j];
+    }
+  }
+
+You declare this function in Pure as::
+
+  extern void foo(double**, int, int);
+
+Now you can call the function on a Pure matrix to modify the matrix
+in-place. E.g.::
+
+  > let x = dmatrix {1,2,3;4,5,6}; x;
+  {1.0,2.0,3.0;4.0,5.0,6.0}
+  > foo x n m $$ x;
+  {3.0,6.0,9.0;24.0,30.0,36.0}
+  > foo x n m $$ x;
+  {27.0,54.0,81.0;864.0,1080.0,1296.0}
 
 Importing Dynamic Libraries
 ---------------------------
