@@ -48,15 +48,6 @@
 
 #include "gsl_structs.h"
 
-#if LLVM27
-/* XXXFIXME: Temporary workarounds for LLVM 2.7 JIT quirks.
-   LLVM 2.7 with lazy JITing currently requires that we keep the IR of
-   anonymous globals (doeval, dodefn) around until the last reference to the
-   global environment is released. This should go away as soon as PR#6360 is
-   fixed, see (http://llvm.org/bugs/show_bug.cgi?id=6360). */
-#define LLVM27_JIT_HACKS 1
-#endif
-
 uint8_t interpreter::g_verbose = 0;
 bool interpreter::g_interactive = false;
 interpreter* interpreter::g_interp = 0;
@@ -6796,9 +6787,13 @@ void Env::clear()
     // now that all references have been removed, delete the function pointers
     for (list<Function*>::iterator fi = to_be_deleted.begin();
 	 fi != to_be_deleted.end(); fi++) {
-#if LLVM27_JIT_HACKS
-      // LLVM 2.7 collects the function code anyway if we erase the IR, so we
-      // just delete the body instead.
+#if LLVM27
+      /* XXXFIXME: This appears to be necessary to work around a bug in the
+	 lazy JIT of LLVM >=2.7, cf. http://llvm.org/bugs/show_bug.cgi?id=6360.
+	 PR#6360 has apparently been fixed since, but test052.pure still fails
+	 for me as of LLVM 2.8, so we leave this enabled for now. */
+      // LLVM >=2.7 collects the function code anyway if we erase the IR, so
+      // we just delete the body instead.
       (*fi)->deleteBody();
 #else
       (*fi)->eraseFromParent();
