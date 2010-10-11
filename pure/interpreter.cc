@@ -653,10 +653,12 @@ void interpreter::init()
 		 "faust_float_ui",  "void*",  0);
   declare_extern((void*)faust_double_ui,
 		 "faust_double_ui", "void*",  0);
-  declare_extern((void*)faust_get_ui,
-		 "faust_get_ui",  "expr*",    1, "void*");
   declare_extern((void*)faust_free_ui,
 		 "faust_free_ui", "void",     1, "void*");
+  declare_extern((void*)faust_get_info,
+		 "faust_get_info","expr*",    1, "void*");
+  declare_extern((void*)faust_get_ui,
+		 "faust_get_ui",  "expr*",    1, "void*");
 }
 
 interpreter::interpreter()
@@ -1643,53 +1645,140 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
     return false;
   }
   delete M;
-  // Add an interface function to create the UI description.
-  funs.push_back("ui");
+  // Add some convenience functions.
+  list<string> myfuns;
+  myfuns.push_back("newinit");
+  myfuns.push_back("info");
+  myfuns.push_back("ui");
   if (modified) {
     if (loaded) {
-      Function *g = module->getFunction("$$faust$"+modname+"$ui");
-      if (g) {
-	JIT->freeMachineCodeForFunction(g);
-	g->eraseFromParent();
+      for (list<string>::const_iterator it = myfuns.begin();
+	   it != myfuns.end(); ++it) {
+	Function *g = module->getFunction("$$faust$"+modname+"$"+*it);
+	if (g) {
+	  JIT->freeMachineCodeForFunction(g);
+	  g->eraseFromParent();
+	}
       }
     }
-    vector<const Type*> argt(1, VoidPtrTy);
-    FunctionType *ft = FunctionType::get(ExprPtrTy, argt, false);
-    Function *f = Function::Create(ft, Function::ExternalLinkage,
-				   "$$faust$"+modname+"$ui", module);
-    BasicBlock *bb = basic_block("entry", f);
+    // The newinit function calls new then init, yielding a properly
+    // initialized dsp instance. It takes one i32 argument, the samplerate.
+    {
+      Function *newfun = module->getFunction("$$faust$"+modname+"$new");
+      Function *initfun = module->getFunction("$$faust$"+modname+"$init");
+      const Type *dsp_ty = newfun->getReturnType();
+      vector<const Type*> argt(1, int32_type());
+      FunctionType *ft = FunctionType::get(dsp_ty, argt, false);
+      Function *f = Function::Create(ft, Function::ExternalLinkage,
+				     "$$faust$"+modname+"$newinit", module);
+      BasicBlock *bb = basic_block("entry", f);
 #ifdef LLVM26
-    Builder b(getGlobalContext());
+      Builder b(getGlobalContext());
 #else
-    Builder b;
+      Builder b;
 #endif
-    b.SetInsertPoint(bb);
-    // Call the runtime function to create the internal UI data structure.
-    Function *uifun = module->getFunction
-      (is_double?"faust_double_ui":"faust_float_ui");
-    vector<Value*> args;
-    Value *v = b.CreateCall(uifun, args.begin(), args.end());
-    // Call the Faust function to initialize the UI data structure.
-    Function *buildUserInterface = module->getFunction
-      ("$$faust$"+modname+"$buildUserInterface");
-    // We need to cast the void* arguments to the proper pointer types
-    // expected by the buildUserInterface routine.
-    const FunctionType *gt = buildUserInterface->getFunctionType();
-    Function::arg_iterator a = f->arg_begin();
-    args.push_back(b.CreateBitCast(a++, gt->getParamType(0)));
-    args.push_back(b.CreateBitCast(v, gt->getParamType(1)));
-    b.CreateCall(buildUserInterface, args.begin(), args.end());
-    // Construct the UI description.
-    Function *infofun = module->getFunction("faust_get_ui");
-    args.clear();
-    args.push_back(v);
-    Value *u = b.CreateCall(infofun, args.begin(), args.end());
-    // Get rid of the internal UI data structure.
-    Function *freefun = module->getFunction("faust_free_ui");
-    b.CreateCall(freefun, args.begin(), args.end());
-    // Return the result.
-    b.CreateRet(u);
+      b.SetInsertPoint(bb);
+      // Call new.
+      vector<Value*> args;
+      Value *v = b.CreateCall(newfun, args.begin(), args.end());
+      // Check for null pointer results.
+      BasicBlock *okbb = basic_block("ok"), *skipbb = basic_block("skip");
+      b.CreateCondBr
+	(b.CreateICmpNE
+	 (v, ConstantPointerNull::get(dyn_cast<PointerType>(dsp_ty)), "cmp"),
+	 okbb, skipbb);
+      f->getBasicBlockList().push_back(okbb);
+      b.SetInsertPoint(okbb);
+      // Call init.
+      args.push_back(v);
+      Function::arg_iterator a = f->arg_begin();
+      args.push_back(a);
+      b.CreateCall(initfun, args.begin(), args.end());
+      b.CreateBr(skipbb);
+      // Return the result.
+      f->getBasicBlockList().push_back(skipbb);
+      b.SetInsertPoint(skipbb);
+      b.CreateRet(v);
+    }
+    // The info function takes a dsp as parameter and returns a triple with
+    // the number of inputs and outputs and a flag indicating whether the dsp
+    // was compiled for single or double precision data.
+    {
+      vector<const Type*> argt(1, VoidPtrTy);
+      FunctionType *ft = FunctionType::get(ExprPtrTy, argt, false);
+      Function *f = Function::Create(ft, Function::ExternalLinkage,
+				     "$$faust$"+modname+"$info", module);
+      BasicBlock *bb = basic_block("entry", f);
+#ifdef LLVM26
+      Builder b(getGlobalContext());
+#else
+      Builder b;
+#endif
+      b.SetInsertPoint(bb);
+      // Call getNumInputs and getNumOutputs to obtain the number of input and
+      // output channels.
+      Function *getNumInputs =
+	module->getFunction("$$faust$"+modname+"$getNumInputs");
+      Function *getNumOutputs =
+	module->getFunction("$$faust$"+modname+"$getNumOutputs");
+      vector<Value*> args;
+      Function::arg_iterator a = f->arg_begin();
+      const FunctionType *gt = getNumInputs->getFunctionType();
+      args.push_back(b.CreateBitCast(a, gt->getParamType(0)));
+      Value *n_in = b.CreateCall(getNumInputs, args.begin(), args.end());
+      Value *n_out = b.CreateCall(getNumOutputs, args.begin(), args.end());
+      // Construct the info tuple.
+      Function *infofun = module->getFunction("faust_get_info");
+      args.clear();
+      args.push_back(n_in);
+      args.push_back(n_out);
+      args.push_back(ConstantInt::get(interpreter::int32_type(), is_double));
+      Value *u = b.CreateCall(infofun, args.begin(), args.end());
+      // Return the result.
+      b.CreateRet(u);
+    }
+    // The ui function returns a Pure-friendly description of the control
+    // variables of the dsp.
+    {
+      vector<const Type*> argt(1, VoidPtrTy);
+      FunctionType *ft = FunctionType::get(ExprPtrTy, argt, false);
+      Function *f = Function::Create(ft, Function::ExternalLinkage,
+				     "$$faust$"+modname+"$ui", module);
+      BasicBlock *bb = basic_block("entry", f);
+#ifdef LLVM26
+      Builder b(getGlobalContext());
+#else
+      Builder b;
+#endif
+      b.SetInsertPoint(bb);
+      // Call the runtime function to create the internal UI data structure.
+      Function *uifun = module->getFunction
+	(is_double?"faust_double_ui":"faust_float_ui");
+      vector<Value*> args;
+      Value *v = b.CreateCall(uifun, args.begin(), args.end());
+      // Call the Faust function to initialize the UI data structure.
+      Function *buildUserInterface = module->getFunction
+	("$$faust$"+modname+"$buildUserInterface");
+      // We need to cast the void* arguments to the proper pointer types
+      // expected by the buildUserInterface routine.
+      const FunctionType *gt = buildUserInterface->getFunctionType();
+      Function::arg_iterator a = f->arg_begin();
+      args.push_back(b.CreateBitCast(a, gt->getParamType(0)));
+      args.push_back(b.CreateBitCast(v, gt->getParamType(1)));
+      b.CreateCall(buildUserInterface, args.begin(), args.end());
+      // Construct the UI description.
+      Function *infofun = module->getFunction("faust_get_ui");
+      args.clear();
+      args.push_back(v);
+      Value *u = b.CreateCall(infofun, args.begin(), args.end());
+      // Get rid of the internal UI data structure.
+      Function *freefun = module->getFunction("faust_free_ui");
+      b.CreateCall(freefun, args.begin(), args.end());
+      // Return the result.
+      b.CreateRet(u);
+    }
   }
+  funs.insert(funs.end(), myfuns.begin(), myfuns.end());
   // Create the namespace if necessary.
   if (symtab.current_namespace->empty())
     namespaces.insert(modname);

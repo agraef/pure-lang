@@ -15779,4 +15779,12 @@ pure_expr *faust_get_ui(void *p)
   return x;
 }
 
+/* Return other dsp-related information which is independent from the UI
+   data. */
+
+pure_expr *faust_get_info(int n_in, int n_out, int flags)
+{
+  return pure_tuplel(3, pure_int(n_in), pure_int(n_out), pure_int(flags));
+}
+
 }
