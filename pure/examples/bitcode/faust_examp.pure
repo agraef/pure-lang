@@ -1,0 +1,83 @@
+
+// Manifest constants.
+const SR = 44100; // samplerate for the DSP
+const n  = 10;    // #samples per block
+
+/* The Faust dsp. This dsp just mixes its two input channels and applies a
+   gain factor which can be set using a corresponding control. In this example
+   we simply inline the Faust code. Of course, you can also compile the Faust
+   code separately and then import it with a 'using' clause. The freeverb
+   example in this directory shows how to do this. */
+
+%{ -*- dsp:test -*-
+gain = nentry("gain", 0.3, 0, 10, 0.01);
+process = + : *(gain);
+%}
+
+/* Create an instance of the Faust dsp and initialize it. This returns a
+   pointer to a block of memory holding the dsp's internal state, which is
+   then passed to the other operations of the Faust module. */
+
+let dsp = test::newinit SR;
+
+/* Get manifest information about the dsp (number of I/O channels and sample
+   format). This information is in fact the same for every dsp instance
+   created by the Faust module. The dbl flag indicates whether the dsp uses
+   double precision samples and control values; we use this information below
+   to gain access to the control values. NOTE: We recommend to always use
+   double samples (faust -double) since this avoids conversion of the sample
+   data and is thus more efficient. This is also the default with inlined
+   Faust code. However, the code below will work with either sample format. */
+
+let k,l,dbl = test::info dsp;
+
+// Print the information.
+using system;
+puts "-- test dsp --";
+printf "#inputs:  %d\n" k;    // => 2
+printf "#outputs: %d\n" l;    // => 1
+printf "sample format: %s\n" (if dbl then "double" else "float");
+
+/* Set up some input and output buffers. On the Pure side, these are
+   represented as double matrices with one row per input/output channel. The
+   number of columns determines the block size (number of samples per channel
+   to be processed) and must be the same for input and output. */
+
+let in  = {i*10.0+j | i = 1..k; j = 1..n};
+let out = {0.0 | i = 1..l; j = 1..n};
+
+// Process some samples and print the result.
+test::compute dsp n in out;
+printf "in:  %s\n" $ str in;  // => {11.0,12.0,13.0,...;21.0,22.0,23.0,...}
+printf "out: %s\n" $ str out; // => {9.6,10.2,10.8,...}
+
+/* Get the UI description. This is a tree data structure which contains
+   information about all the groups and the controls of the dsp in a Pure-
+   friendly format, which is described in detail in the faustui.pure module.
+   Here we employ one of the utility functions in this module, 'controls', to
+   convert this data to a flat Pure list. */
+
+using faustui;
+let ui = controls $ test::ui dsp;
+printf "controls: %s\n" $ str ui;
+
+/* For easier access, we turn the controls list into a record mapping control
+   names to the corresponding pointers. */
+
+let ui = control_map ui;
+
+/* Define some shortcuts to access the control variables. This makes the code
+   below work no matter which sample format is used by the Faust dsp. */
+
+let get_control = if dbl then get_double else get_float;
+let put_control = if dbl then put_double else put_float;
+
+// Play with the 'gain' control variable.
+let gain = ui!"gain";
+printf "current gain: %g\n" $ get_control gain;
+put_control gain 1.0;
+printf "new gain:     %g\n" $ get_control gain;
+// Compute some more samples with the new gain value.
+test::compute dsp n in out;
+printf "in:  %s\n" $ str in;  // => {11.0,12.0,13.0,...;21.0,22.0,23.0,...}
+printf "out: %s\n" $ str out; // => {32.0,34.0,36.0,...}
