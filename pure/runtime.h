@@ -425,6 +425,18 @@ pure_expr *pure_sentry(pure_expr *sentry, pure_expr *x);
 pure_expr *pure_get_sentry(pure_expr *x);
 pure_expr *pure_clear_sentry(pure_expr *x);
 
+/* Pointer tags. As of Pure 0.45 this provides a new way to do some basic
+   bookkeeping of pointer values. The most important use is to keep track of
+   the element types behind pointers. The provided operations allow you to set
+   a tag on a Pure pointer value, to get the current tag, and to check the tag
+   against a given value. In addition, a new tag can be created with the
+   pure_make_tag() function. */
+
+pure_expr *pure_tag(int tag, pure_expr *x);
+int pure_get_tag(pure_expr *x);
+bool pure_check_tag(int tag, pure_expr *x);
+int pure_make_tag();
+
 /* Variable and constant definitions. These allow you to directly bind
    variable and constant symbols to pure_expr* values, as the 'let' and
    'const' constructs do in the Pure language. The functions return true if

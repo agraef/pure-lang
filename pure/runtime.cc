@@ -681,6 +681,7 @@ static inline pure_expr *new_expr()
   x->refc = 0;
   x->xp = interp.tmps;
   x->data.x[2] = 0; // initialize the sentry
+  x->data.x[1] = 0; // initialize the pointer tag
   interp.tmps = x;
   return x;
 }
@@ -3222,6 +3223,56 @@ extern "C"
 pure_expr *pure_clear_sentry(pure_expr *x)
 {
   return pure_sentry(0, x);
+}
+
+extern "C"
+pure_expr *pure_tag(int tag, pure_expr *x)
+{
+  if (pure_is_pointer(x, 0)) {
+#if SIZEOF_VOID_P==8
+    x->data.x[1] = (pure_expr*)(int64_t)tag;
+#else
+    x->data.x[1] = (pure_expr*)tag;
+#endif
+    return x;
+  } else
+    return 0;
+}
+
+extern "C"
+int pure_get_tag(pure_expr *x)
+{
+  if (pure_is_pointer(x, 0)) {
+#if SIZEOF_VOID_P==8
+    int tag = (int)(int64_t)x->data.x[1];
+#else
+    int tag = (int)x->data.x[1];
+#endif
+    return tag;
+  } else
+    return 0;
+}
+
+extern "C"
+bool pure_check_tag(int tag, pure_expr *x)
+{
+  if (pure_is_pointer(x, 0)) {
+#if SIZEOF_VOID_P==8
+    int mytag = (int)(int64_t)x->data.x[1];
+#else
+    int mytag = (int)x->data.x[1];
+#endif
+    return mytag==tag;
+  } else
+    return tag==0;
+}
+
+extern "C"
+int pure_make_tag()
+{
+  // XXXFIXME: When Pure goes multithreaded, this must be protected by a mutex.
+  static int tag = 0;
+  return ++tag;
 }
 
 extern "C"
