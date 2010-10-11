@@ -649,6 +649,8 @@ void interpreter::init()
 		 "int", "char*", "void*", "void*", "int*", "void*",
 		 "void*", "void*");
 
+  declare_extern((void*)pure_sentry,
+		 "pure_sentry",     "expr*",  2, "expr*", "expr*");
   declare_extern((void*)pure_tag,
 		 "pure_tag",        "expr*",  2, "int", "expr*");
   declare_extern((void*)pure_check_tag,
@@ -8277,6 +8279,15 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       // Cast the pointer to the proper target type if necessary.
       if (type != VoidPtrTy)
 	unboxed[i] = b.CreateBitCast(unboxed[i], type);
+      if (faust_fun == "delete") {
+	// Remove the sentry from the dsp pointer which is about to be deleted.
+	Function *f = module->getFunction("pure_sentry");
+	assert(f);
+	vector<Value*> args;
+	args.push_back(NullExprPtr);
+	args.push_back(x);
+	b.CreateCall(f, args.begin(), args.end());
+      }
     } else if (argt[i] == VoidPtrTy) {
       BasicBlock *ptrbb = basic_block("ptr");
       BasicBlock *mpzbb = basic_block("mpz");
@@ -8437,6 +8448,24 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       args.push_back(SInt(faust_tag));
       args.push_back(u);
       b.CreateCall(f, args.begin(), args.end());
+      // Now add the delete routine as a sentry on the dsp pointer, so that
+      // dsp instances free themselves when garbage-collected. FIXME: This
+      // assumes that the delete routine always comes before any dsp-creating
+      // routines in the Faust module, as we can't do any forward linking
+      // here.
+      symbol *sym = symtab.lookup(make_absid(faust_mod+"::delete"));
+      if (sym) {
+	map<int32_t,GlobalVar>::iterator gv = globalvars.find(sym->f);
+	if (gv != globalvars.end()) {
+	  GlobalVar& v = gv->second;
+	  Function *f = module->getFunction("pure_sentry");
+	  assert(f);
+	  vector<Value*> args;
+	  args.push_back(b.CreateLoad(v.v));
+	  args.push_back(u);
+	  b.CreateCall(f, args.begin(), args.end());
+	}
+      }
     }
   } else
     assert(0 && "invalid C type");
