@@ -649,6 +649,11 @@ void interpreter::init()
 		 "int", "char*", "void*", "void*", "int*", "void*",
 		 "void*", "void*");
 
+  declare_extern((void*)pure_tag,
+		 "pure_tag",        "expr*",  2, "int", "expr*");
+  declare_extern((void*)pure_check_tag,
+		 "pure_check_tag",  "bool",   2, "int", "expr*");
+
   declare_extern((void*)faust_float_ui,
 		 "faust_float_ui",  "void*",  0);
   declare_extern((void*)faust_double_ui,
@@ -1784,6 +1789,12 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
     namespaces.insert(modname);
   else
     namespaces.insert(*symtab.current_namespace+"::"+modname);
+  // Update the module data. This must be done here so that the type tag is
+  // initialized when generating the wrappers.
+  loaded_dsps[modname].t = mtime;
+  loaded_dsps[modname].dbl = is_double;
+  loaded_dsps[modname].declare(*symtab.current_namespace, priv);
+  loaded_dsps[modname].tag = pure_make_tag();
   // Create wrappers.
   for (list<string>::iterator it = funs.begin(), end = funs.end();
        it != end; ++it) {
@@ -1825,10 +1836,6 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
     f->dump();
 #endif
   }
-  // update the module data
-  loaded_dsps[modname].t = mtime;
-  loaded_dsps[modname].dbl = is_double;
-  loaded_dsps[modname].declare(*symtab.current_namespace, priv);
   return true;
 }
 
@@ -6045,6 +6052,17 @@ static inline bool is_faust_var(const string& name)
   return name.compare(0, 9, "$$$faust$") == 0;
 }
 
+static bool parse_faust_name(const string& name, string& mod, string& fun)
+{
+  if (name.compare(0, 8, "$$faust$") != 0) return false;
+  mod = name.substr(8);
+  size_t p = mod.find('$');
+  if (p == string::npos) return false;
+  fun = mod.substr(p+1);
+  mod.erase(p);
+  return true;
+}
+
 static inline bool is_tmpvar(const string& name, string& label)
 {
   if (name.compare(0, 8, "$$tmpvar") == 0) {
@@ -7882,9 +7900,15 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     vector<Value*> argv;
     b.CreateCall(module->getFunction("pure_checks"));
   }
+  // check for Faust functions, do needed setup
+  bool is_faust_fun = is_faust(name);
+  string faust_mod, faust_fun; int faust_tag = 0;
+  if (is_faust_fun) {
+    parse_faust_name(name, faust_mod, faust_fun);
+    faust_tag = loaded_dsps[faust_mod].tag; 
+  }
   // unbox arguments
   bool temps = false, vtemps = false;
-  bool is_faust_fun = is_faust(name);
   for (size_t i = 0; i < n; i++) {
     Value *x = args[i];
     // check for thunks which must be forced
@@ -8223,57 +8247,36 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       const Type *type = gt->getParamType(i);
       if (type != ExprPtrTy)
 	unboxed[i] = b.CreateBitCast(unboxed[i], type);
-#if 0
-    /* As of Pure 0.45, this is now obsolete, since double** and float** are
-       handled by the standard conversions anyway. */
-    } else if (argt[i] == VoidPtrTy && is_faust_fun) {
-      /* Here we have to cast a generic pointer to whatever the interface of
-	 the Faust function requires. This only supports either plain pointers
-	 or double matrices. The latter case requires that the Faust interface
-	 actually expects a double** or float** vector of pointers. Otherwise
-	 we just skip the matrix case. */
+    } else if (i == 0 && argt[i] == VoidPtrTy && is_faust_fun) {
+      /* The first argument in a Faust call, if it is a pointer, is always the
+	 dsp. Check the pointer against the module tag. */
       const Type *type = gt->getParamType(i);
-      bool is_double = type ==
-	PointerType::get(PointerType::get(double_type(), 0), 0);
-      bool is_float = type ==
-	PointerType::get(PointerType::get(float_type(), 0), 0);
       BasicBlock *ptrbb = basic_block("ptr");
-      BasicBlock *matrixbb = (is_double||is_float)?basic_block("matrix"):0;
       BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
       Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
-      SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 2);
+      SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 1);
       sw->addCase(SInt(EXPR::PTR), ptrbb);
-      if (matrixbb) sw->addCase(SInt(EXPR::DMATRIX), matrixbb);
       f->getBasicBlockList().push_back(ptrbb);
       b.SetInsertPoint(ptrbb);
-      // The following will work with pointer expressions.
       Value *pv = b.CreateBitCast(x, PtrExprPtrTy, "ptrexpr");
       idx[1] = ValFldIndex;
       Value *ptrv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "ptrval");
-      b.CreateBr(okbb);
-      // Handle the case of a matrix (gsl_matrix*).
-      Value *matrixv = 0;
-      if (matrixbb) {
-	f->getBasicBlockList().push_back(matrixbb);
-	b.SetInsertPoint(matrixbb);
-	Function *get_fun = is_double ?
-	  module->getFunction("pure_get_matrix_vector_double") :
-	  module->getFunction("pure_get_matrix_vector_float");
-	matrixv = b.CreateCall(get_fun, x);
-	b.CreateBr(okbb);
-	vtemps = true;
-      }
+      Function *g = module->getFunction("pure_check_tag");
+      assert(g);
+      vector<Value*> args;
+      args.push_back(SInt(faust_tag));
+      args.push_back(x);
+      Value *chk = b.CreateCall(g, args.begin(), args.end());
+      b.CreateCondBr(chk, okbb, failedbb);
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
       PHINode *phi = b.CreatePHI(VoidPtrTy);
       phi->addIncoming(ptrv, ptrbb);
-      if (matrixbb) phi->addIncoming(matrixv, matrixbb);
       unboxed[i] = phi;
       // Cast the pointer to the proper target type if necessary.
       if (type != VoidPtrTy)
 	unboxed[i] = b.CreateBitCast(unboxed[i], type);
-#endif
     } else if (argt[i] == VoidPtrTy) {
       BasicBlock *ptrbb = basic_block("ptr");
       BasicBlock *mpzbb = basic_block("mpz");
@@ -8425,6 +8428,16 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       // bitcast the pointer result to a void*
       u = b.CreateBitCast(u, VoidPtrTy);
     u = b.CreateCall(module->getFunction("pure_pointer"), u);
+    if (is_faust_fun) {
+      // This is a pointer to a Faust dsp instance, tag it with the
+      // appropriate module key.
+      Function *f = module->getFunction("pure_tag");
+      assert(f);
+      vector<Value*> args;
+      args.push_back(SInt(faust_tag));
+      args.push_back(u);
+      b.CreateCall(f, args.begin(), args.end());
+    }
   } else
     assert(0 && "invalid C type");
   // free temporaries

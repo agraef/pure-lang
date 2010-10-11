@@ -427,6 +427,7 @@ struct bcdata_t {
   map <string,bool> priv; // private flag (per namespace)
   bool dbl; // data representation (Faust dsp only)
   time_t t; // timestamp (Faust dsp only)
+  int tag; // type tag (Faust dsp only)
   bcdata_t() : dbl(false), t(0) {}
   void declare(const string& _ns, bool _priv)
   { priv[_ns] = _priv; }
