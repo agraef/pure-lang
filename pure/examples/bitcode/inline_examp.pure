@@ -16,19 +16,91 @@ int mygcd(int x, int y)
 
 map (mygcd 25) (30..35);
 
+/****************************************************************************/
+
 /* C++ is supported as well, but this requires that you call into the C++ code
-   using a function with C binding. */
+   using functions with C binding (extern "C"). The following example shows
+   how to work with STL maps from Pure. */
 
 %{ -*- C++ -*-
-#include <iostream>
+
+#include <pure/runtime.h>
+#include <string>
+#include <map>
+
+// An STL map mapping strings to Pure expressions.
+
 using namespace std;
-extern "C" void hello(char *s)
+typedef map<string,pure_expr*> exprmap;
+
+// Since we can't directly deal with C++ classes in Pure, provide some C
+// functions to create, destroy and manipulate these objects.
+
+extern "C" exprmap *map_create()
 {
-  cerr << "Hello, " << s << "!\n";
+  return new exprmap;
 }
+
+extern "C" void map_add(exprmap *m, const char *key, pure_expr *x)
+{
+  exprmap::iterator it = m->find(string(key));
+  if (it != m->end()) pure_free(it->second);
+  (*m)[key] = pure_new(x);
+}
+
+extern "C" void map_del(exprmap *m, const char *key)
+{
+  exprmap::iterator it = m->find(key);
+  if (it != m->end()) {
+    pure_free(it->second);
+    m->erase(it);
+  }
+}
+
+extern "C" pure_expr *map_get(exprmap *m, const char *key)
+{
+  exprmap::iterator it = m->find(key);
+  return (it != m->end())?it->second:0;
+}
+
+extern "C" pure_expr *map_keys(exprmap *m)
+{
+  size_t i = 0, n = m->size();
+  pure_expr **xs = new pure_expr*[n];
+  for (exprmap::iterator it = m->begin(); it != m->end(); ++it)
+    xs[i++] = pure_string_dup(it->first.c_str());
+  pure_expr *x = pure_listv(n, xs);
+  delete[] xs;
+  return x;
+}
+
+extern "C" void map_destroy(exprmap *m)
+{
+  for (exprmap::iterator it = m->begin(); it != m->end(); ++it)
+    pure_free(it->second);
+  delete m;
+}
+
 %}
 
-hello "world";
+public bar; // constructor symbol used below
+
+// Create the STL map and add a sentry so that it garbage-collects itself.
+let m = sentry map_destroy map_create;
+
+// Populate the map with some arbitrary Pure data.
+do (\(x=>y) -> map_add m x y) ["foo"=>99, "bar"=>bar 4711L, "baz"=>1..5];
+
+// Query the map.
+map_keys m; // => ["bar","baz","foo"]
+map (map_get m) (map_keys m); // => [bar 4711L,[1,2,3,4,5],99]
+
+// Delete an element.
+map_del m "foo";
+map_keys m; // => ["bar","baz"]
+map (map_get m) (map_keys m); // => [bar 4711L,[1,2,3,4,5]]
+
+/****************************************************************************/
 
 /* Fortran (requires llvm-gfortran). */
 
