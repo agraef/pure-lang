@@ -52,6 +52,13 @@ reset = do (writemsg out 0) $ [{0xff}] +
    and messages are encoded as vectors of byte values (the format used by
    midi::readmsg and midi::writemsg). */
 
+/* NOTE: rec as well as play below are realtime functions. We mark these with
+   the --eager pragma so that the JIT compiles them eagerly, which avoids the
+   annoying hiccups due to the Pure interpreter compiling functions on the fly
+   when they are first invoked. (This requires Pure 0.45 or later to work,
+   otherwise you might get a warning about an unrecognized pragma.) */
+
+#! --eager rec
 rec = rec [] with
   rec seq = catch (\_->reverse seq) (case readmsg in of
     ev@(t,msg) = reverse seq if msg!0==0xfc; // stop
@@ -64,6 +71,7 @@ end;
    by 'rec'. So, e.g., 'play rec' will first record a sequence and then play
    it back immediately. */
 
+#! --eager play
 play [] = ();
 play ((s0,msg):seq) = catch (\_->reset) $ play s0 t0 seq when
   t0 = time;
