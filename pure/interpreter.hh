@@ -493,6 +493,7 @@ public:
   map<string,bcdata_t> loaded_bcs; // the set of all loaded bitcode modules
   map<string,bcdata_t> loaded_dsps; // the set of all loaded Faust dsps
   list<int> required; // required symbols (--required pragma)
+  set<int> eager;    // eager compilation symbols (--eager pragma)
   ostream *output;   // redirected output stream for interactive commands
   symtable symtab;   // the symbol table
   pure_expr *result; // last result computed by exec() or parse()
@@ -608,6 +609,24 @@ public:
   /* Process pending compilations of function definitions. This is also done
      automatically when eval() or defn()/const_defn() is invoked. */
   void compile();
+
+  /* Force the given functions and all its callees to be JIT-compiled
+     immediately. This is also done automatically by compile() whenever a
+     function marked eager is recompiled. NOTE: Passing the empty set of
+     function symbols JITs all functions. This is *very* slow and not
+     recommended. */
+  void jit_now(const set<int> fnos = set<int>(), bool recurse = false);
+  // Simplified interface which lets you specify either a single function to
+  // be JITed, or to JIT everything (fno==-1).
+  void jit_now(int32_t fno = -1, bool recurse = false)
+  {
+    if (fno<0)
+      jit_now(set<int>(), recurse);
+    else {
+      set<int> fnos; fnos.insert(fno);
+      jit_now(fnos, recurse);
+    }
+  }
 
   /* Convert a runtime to a compile time expression. If 'check' is true then
      attempts to convert non-const values (non-NULL pointers and closures)

@@ -3724,37 +3724,7 @@ void pure_interp_compile(pure_interp *interp, int32_t fno)
 {
   assert(interp);
   interpreter *_interp = (interpreter*)interp;
-  llvm::Module *module = _interp->module;
-  _interp->compile();
-  if (fno > 0) {
-    /* TODO: We should cache the results of analyzing the call graph and reuse
-       these results as much as possible. But the LLVM JIT seems to take the
-       lion share of the compilation time anyway, so this isn't really worth
-       the effort until the JIT gets much faster. */
-    set<llvm::Function*> used;
-    map<llvm::GlobalVariable*,llvm::Function*> varmap;
-    map<int32_t,Env>::iterator g = _interp->globalfuns.find(fno);
-    if (g != _interp->globalfuns.end()) {
-      llvm::Function *f = g->second.f, *h = g->second.h;
-      if (f) used.insert(f);
-      if (h) used.insert(h);
-    }
-    _interp->check_used(used, varmap);
-    // Force compilation of the given function and everything it might use.
-    for (llvm::Module::iterator it = module->begin(), end = module->end();
-	 it != end; ++it) {
-      llvm::Function *fn = &*it;
-      if (used.find(fn) != used.end())
-	_interp->JIT->getPointerToFunction(fn);
-    }
-  } else {
-    // Force compilation of everything. This is slow.
-    for (llvm::Module::iterator it = module->begin(), end = module->end();
-	 it != end; ++it) {
-      llvm::Function *fn = &*it;
-      _interp->JIT->getPointerToFunction(fn);
-    }
-  }
+  _interp->jit_now(fno);
 }
 
 /* END OF PUBLIC API. *******************************************************/

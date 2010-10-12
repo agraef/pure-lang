@@ -3091,6 +3091,7 @@ void interpreter::compile()
   if (!dirty.empty()) {
     // there are some fundefs in the global environment waiting to be
     // recompiled, do it now
+    set<int> to_be_jited;
     for (funset::const_iterator f = dirty.begin(); f != dirty.end(); f++) {
       env::iterator e = globenv.find(*f);
       if (e != globenv.end()) {
@@ -3118,6 +3119,8 @@ void interpreter::compile()
 	push("compile", &f);
 	fun_body(info.m);
 	pop(&f);
+	if (eager.find(ftag) != eager.end())
+	  to_be_jited.insert(ftag);
 #if DEFER_GLOBALS
 	// defer JIT until the function is called somewhere
 	void *fp = 0;
@@ -3148,8 +3151,58 @@ void interpreter::compile()
 #endif
       }
     }
+    if (!to_be_jited.empty())
+      // eager compilation
+      jit_now(to_be_jited, true);
     dirty.clear();
     clear_cache();
+  }
+}
+
+void interpreter::jit_now(const set<int> fnos, bool recurse)
+{
+  if (!recurse) {
+    bool done = fnos.empty();
+    for (set<int>::const_iterator it = fnos.begin(), end = fnos.end();
+	 !done && it != end; ++it) {
+      int fno = *it;
+      done = dirty.find(fno) != dirty.end() && eager.find(fno) != eager.end();
+    }
+    compile();
+    if (done) return;
+  }
+  if (fnos.empty()) {
+    // Force compilation of everything. This is slow.
+    for (llvm::Module::iterator it = module->begin(), end = module->end();
+	 it != end; ++it) {
+      llvm::Function *fn = &*it;
+      JIT->getPointerToFunction(fn);
+    }
+  } else {
+    /* TODO: We should cache the results of analyzing the call graph and reuse
+       these results as much as possible. But the LLVM JIT seems to take the
+       lion share of the compilation time anyway, so this isn't really worth
+       the effort until the JIT gets much faster. */
+    set<llvm::Function*> used;
+    map<llvm::GlobalVariable*,llvm::Function*> varmap;
+    for (set<int>::const_iterator it = fnos.begin(), end = fnos.end();
+	 it != end; ++it) {
+      int fno = *it;
+      map<int32_t,Env>::iterator g = globalfuns.find(fno);
+      if (g != globalfuns.end()) {
+	llvm::Function *f = g->second.f, *h = g->second.h;
+	if (f) used.insert(f);
+	if (h) used.insert(h);
+      }
+    }
+    check_used(used, varmap);
+    // Force compilation of the given functions and everything they might use.
+    for (llvm::Module::iterator it = module->begin(), end = module->end();
+	 it != end; ++it) {
+      llvm::Function *fn = &*it;
+      if (used.find(fn) != used.end())
+	JIT->getPointerToFunction(fn);
+    }
   }
 }
 
