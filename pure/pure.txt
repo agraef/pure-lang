@@ -477,19 +477,29 @@ Currently, the following code generation options are recognized:
     compiling the Pure interpreter, in which case these options have no
     effect; see the installation documentation for details.)
 
-Besides these, there's also a special pragma for telling the batch compiler
-about "required" functions:
+Besides these, there are the following special pragmas affecting the code
+generation of some given function, which is specified in the pragma. These
+pragmas can only be used in source code, there are no command line options for
+them.
+
+``--eager fun``
+    Instruct the interpreter to JIT-compile the given function eagerly. This
+    means that native code will be created for the function, as well as all
+    other (global or local) functions that may be called by the compiled
+    function, as soon as the function gets recompiled. This avoids the hiccups
+    you get when a function is compiled on the fly if it is run for the first
+    time, which is particularly useful for functions which are to be run in
+    realtime, such as in audio and MIDI applications. Please note that, in
+    difference to the --eager-jit option, this feature is available for all
+    LLVM versions (it doesn't require LLVM 2.7 or later).
 
 ``--required fun``
     Inform the batch compiler (cf. `Compiling Scripts`_) that the given
-    function symbol ``fun`` should never be stripped from the program. This
-    is useful, e.g., if a function is never called explicitly but only through
+    function symbol ``fun`` should never be stripped from the program. This is
+    useful, e.g., if a function is never called explicitly but only through
     ``eval``. Adding a ``--required`` pragma for the function then makes sure
-    that the function is always linked into the program.
-
-Note that the ``--required`` pragma can only be used in source code, there's
-no command line option for it. An example showing how to use this option can
-be found in the `Batch Compilation`_ section.
+    that the function is always linked into the program. Please see the `Batch
+    Compilation`_ section for an example.
 
 Startup Files
 -------------
@@ -3427,8 +3437,17 @@ Pure supports the usual range of basic C types: ``void``, ``bool``, ``char``,
 pointer types, such as ``void*`` and ``char*``, and provides rules for
 "marshalling" (converting) between Pure data and these types.
 
-Single precision float arguments and return values are converted from/to
-Pure's double precision floating point numbers automatically.
+The special ``expr*`` pointer type can be used to pass Pure expressions as is
+between Pure and C. C functions can create and inspect such values through the
+appropriate runtime functions. (Countless examples for this can be found in
+the C++ code of the Pure runtime.) All other types of Pure values are
+"unboxed" when they are passed as arguments (i.e., from Pure to C) and "boxed"
+again when they are returned as function results (from C to Pure). All of this
+is handled by the runtime system in a transparent way, of course.
+
+Concerning the floating point types, single precision float arguments and
+return values are converted from/to Pure's double precision floating point
+numbers automatically.
 
 A variety of C integer types (``char``, ``short``, ``int``, ``long``) are
 provided which are converted from/to the available Pure integer types in a
@@ -3456,38 +3475,84 @@ negative. In this case, depending on the target type, you can use the
 ``ubyte``, ``ushort``, ``uint``, ``ulong`` and ``uint64`` functions provided
 by the prelude to convert the result back to an unsigned quantity.
 
-Concerning the pointer types, ``char*`` is for string arguments and return
-values which need translation between Pure's internal utf-8 representation and
-the system encoding, while ``void*`` is for any generic kind of pointer
-(including strings, which are not translated when passed/returned as
-``void*``). Any other kind of pointer (except ``expr*`` and the GSL matrix
-pointer types, which are discussed below) is effectively treated as ``void*``.
-This also includes "pointers to pointers", such as ``void**``, as well as
-pointers to arbitrary named types which don't have a predefined meaning in
-Pure, such as ``FILE*``. (In the future the interpreter may keep track of the
-element types for the purpose of checking parameter types, but this isn't the
-case right now.)
+The use of pointer types such as ``void*`` is also fairly straightforward, but
+Pure has some special rules for the conversion of certain pointer types, which
+are supposed to cover the most common idioms for pointer usage in C:
 
-The ``expr*`` pointer type is special; it indicates a Pure expression
-parameter or return value which is just passed through unchanged. All other
-types of values have to be "unboxed" when they are passed as arguments (i.e.,
-from Pure to C) and "boxed" again when they are returned as function results
-(from C to Pure). All of this is handled by the runtime system in a
-transparent way, of course.
+* ``char*`` is used for string arguments and return values. This type of value
+  is always converted from Pure's internal utf-8 based string representation
+  to the system encoding and vice versa. (Thus a C routine cannot modify
+  the Pure string value in-place; if this is required then you'll have to pass
+  the string argument as a ``void*``, see below.)
 
+* ``void*`` is for any generic pointer, which is simply passed through
+  unchanged. When used as an argument, you can also pass Pure strings,
+  matrices and bigints. In this case the raw underlying data pointer
+  (``char*`` in the case of strings, ``int*``, ``double*`` or ``expr*`` in the
+  case of numeric and symbolic matrices, and ``mpz_t`` in the case of bigints)
+  is passed, which allows the data to be modified in place (with care). In
+  particular, passing bigints as ``void*`` makes it possible to call most GMP
+  integer routines directly from Pure.
+
+* ``char**`` and ``void**``, when used as arguments, are for ``argv``-style
+  vectors. In this case, the argument may be a symbolic vector of strings or
+  generic pointer values. ``char**`` converts the string elements to the
+  system encoding, whereas ``void**`` passes through character string data and
+  other pointers unchanged and allows in-place modification. A temporary C
+  vector of these elements is passed to the C function, which is always
+  ``NULL``-terminated and can thus be used for all kinds of uses which
+  requires such ``argv``-style vectors.
+
+* ``dmatrix*``, ``cmatrix*`` and ``imatrix*`` allow you to pass numeric Pure
+  matrices of the appropriate types (double, complex, int) as arguments or
+  results. Here a pointer to the underlying GSL matrix is passed (not the data
+  itself). This makes it possible to pass Pure matrices directly to GSL
+  routines, which can also modify the matrix in-place.
+
+* ``short*``, ``int*``, ``float*``, ``double*`` can also be used to pass
+  numeric matrices as arguments. However, in this case a temporary copy of the
+  matrix data is created, and the source data is converted to the indicated
+  type on the fly. This makes it possible to pass matrix data to generic
+  (non-GSL) C routines, but note that it is not possible for the C function to
+  modify the data in-place, meaning that the matrix is essentially passed "by
+  value" (analogous to what ``char*`` does for strings).
+
+* ``short**``, ``int**``, ``float**``, ``double**`` provide yet another way to
+  pass numeric matrix arguments. In this case a temporary C vector of pointers
+  is passed to the C function, whose elements point to the rows of the matrix
+  and allow the original matrix to be modified in-place. You can either pass
+  an int matrix as a ``short**`` or ``int**`` argument, or a double or complex
+  matrix as a ``float**`` or ``double**`` argument (complex values are then
+  represented as two separate double numbers, first the real, then the
+  imaginary part). Necessary conversions between ``int`` and ``short`` as well
+  as between ``float`` and ``double`` data are handled automatically. (Note
+  that in the case of ``short**`` and ``float**`` this requires the use of
+  temporary storage, which is then written back to the original matrix. This
+  is less efficient than ``int**`` and ``double**`` where the row pointers
+  really point into the original matrix and no data conversions are
+  necessary.)
+
+* Any other kind of pointer is effectively treated as ``void*`` right now.
+  This also includes pointers to arbitrary named types which don't have a
+  predefined meaning in Pure, such as ``FILE*`` and ``foo_t**``. (The actual
+  type names are currently not recorded anywhere, although the interpreter may
+  keep track of the pointer element types for the purpose of checking
+  parameter types in the future.)
+
+Let's have a look at some instructive examples for the trickier pointer types.
 The matrix pointer types ``dmatrix*``, ``cmatrix*`` and ``imatrix*`` can be
 used to pass double, complex double and int matrices to GSL functions taking
 pointers to the corresponding GSL types (``gsl_matrix``,
 ``gsl_matrix_complex`` and ``gsl_matrix_int``) as arguments or returning them
-as results. (Note that there is no marshalling of Pure's symbolic matrix type,
-as these aren't supported by GSL anyway.) Also note that matrices are always
-passed by reference. Thus, if you need to pass a matrix as an output parameter
-of a GSL matrix routine, you can either create a zero matrix or a copy of an
-existing matrix to hold the result. The prelude provides various operations
-for that purpose (in particular, see the ``dmatrix``, ``cmatrix``, ``imatrix``
-and ``pack`` functions in matrices.pure). For instance, here is how you can
-quickly wrap up GSL's double matrix addition function in a way that preserves
-value semantics::
+as results. (Note that there is no special marshalling of Pure's symbolic
+matrix type, as these aren't supported by GSL anyway.) Also note that matrices
+are always passed by reference. Thus, if you need to pass a matrix as an
+output parameter of a GSL matrix routine, you can either create a zero matrix
+or a copy of an existing matrix to hold the result. The prelude provides
+various operations for that purpose (in particular, see the ``dmatrix``,
+``cmatrix``, ``imatrix`` and ``pack`` functions in matrices.pure). For
+instance, here is how you can quickly wrap up GSL's double matrix addition
+function in a way that preserves value semantics::
 
   > using "lib:gsl";
   > extern int gsl_matrix_add(dmatrix*, dmatrix*);
@@ -3501,14 +3566,7 @@ Most GSL matrix routines can be wrapped in this fashion quite easily. A
 ready-made GSL interface providing access to all of GSL's numeric functions is
 in the works; please check the Pure website for details.
 
-Any kind of matrix (including symbolic matrices) can also be passed for a
-generic ``void*`` pointer. In this case no conversions are done and a pointer
-to the raw matrix data is passed, which allows the matrix to be modified
-in-place. (Similarly, ``void*`` also allows you to pass a bigint argument as a
-raw ``mpz_t`` value, which makes it possible to call most GMP integer routines
-directly from Pure.)
-
-For convenience, it is also possible to pass a numeric matrix for a
+For convenience, it is also possible to pass any kind of numeric matrix for a
 ``short*``, ``int*``, ``float*`` or ``double*`` parameter. The required
 conversions are then done automatically, on the fly, and the matrix data is
 copied to temporary storage in order to preserve value semantics. For
@@ -3560,6 +3618,27 @@ in-place. E.g.::
   {3.0,6.0,9.0;24.0,30.0,36.0}
   > foo x n m $$ x;
   {27.0,54.0,81.0;864.0,1080.0,1296.0}
+
+Also new in Pure 0.45 is the support for passing ``argv``-style vectors as
+arguments. For instance, here is how you can use ``fork`` and ``execvp`` to
+implement a poor man's version of the C ``system`` function. (This is
+UNIX-specific and doesn't do much error-checking, but you get the idea.)
+
+::
+
+  extern int fork();
+  extern int execvp(char *path, char **argv);
+  extern int waitpid(int pid, int *status, int options);
+
+  system cmd::string = case fork of
+    // child: execute the shell, bail out if error
+    0 = execvp "/bin/sh" {"/bin/sh","-c",cmd} $$ exit 1;
+    // parent: wait for the child to finish
+    pid = waitpid pid NULL 0 if pid>=0;
+  end;
+
+  system "echo Hello, world!";
+  system "ls -l *.pure";
 
 Importing Dynamic Libraries
 ---------------------------
@@ -3740,7 +3819,10 @@ corresponding LLVM compilers installed.) This method has the advantage that
 you don't have to write a Makefile and you can create self-contained Pure
 scripts which include all required external functions. The downside is that
 the inline code sections will have to be recompiled every time you run the
-script with the interpreter.
+script with the interpreter which may considerably increase startup times. If
+this is a problem then it's usually bettwer to import a separate bitcode
+module instead (see `Importing LLVM Bitcode`_), or at least batch-compile your
+script to an executable (see `Batch Compilation`_).
 
 Currently, C, C++, Fortran and Faust are supported as foreign source
 languages, with llvm-gcc, llvm-g++, llvm-gfortran and faust2 as the
