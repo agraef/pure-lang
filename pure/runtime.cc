@@ -15802,9 +15802,10 @@ static pure_expr *faust_make_ui(void *p)
 
 /* Return dsp-related information, including the UI data. */
 
-pure_expr *faust_make_info(int n_in, int n_out, void *ui)
+pure_expr *faust_make_info(int n_in, int n_out, bool dbl, void *ui)
 {
-  return pure_tuplel(3, pure_int(n_in), pure_int(n_out), faust_make_ui(ui));
+  return pure_tuplel(4, pure_int(n_in), pure_int(n_out),
+		     pure_int(dbl), faust_make_ui(ui));
 }
 
 /* Get runtime type information about a Faust dsp. */

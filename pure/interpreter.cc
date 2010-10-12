@@ -663,7 +663,7 @@ void interpreter::init()
   declare_extern((void*)faust_free_ui,
 		 "faust_free_ui", "void",     1, "void*");
   declare_extern((void*)faust_make_info,
-		 "faust_make_info","expr*",   3, "int", "int", "void*");
+		 "faust_make_info","expr*",   4, "int", "int", "bool", "void*");
 }
 
 interpreter::interpreter()
@@ -1750,6 +1750,7 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
       args.clear();
       args.push_back(n_in);
       args.push_back(n_out);
+      args.push_back(ConstantInt::get(interpreter::int1_type(), is_double));
       args.push_back(v);
       Value *u = b.CreateCall(infofun, args.begin(), args.end());
       // Get rid of the internal UI data structure.
