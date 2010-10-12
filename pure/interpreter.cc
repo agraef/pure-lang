@@ -662,10 +662,8 @@ void interpreter::init()
 		 "faust_double_ui", "void*",  0);
   declare_extern((void*)faust_free_ui,
 		 "faust_free_ui", "void",     1, "void*");
-  declare_extern((void*)faust_get_info,
-		 "faust_get_info","expr*",    3, "int", "int", "int");
-  declare_extern((void*)faust_get_ui,
-		 "faust_get_ui",  "expr*",    1, "void*");
+  declare_extern((void*)faust_make_info,
+		 "faust_make_info","expr*",   3, "int", "int", "void*");
 }
 
 interpreter::interpreter()
@@ -1656,7 +1654,6 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
   list<string> myfuns;
   myfuns.push_back("newinit");
   myfuns.push_back("info");
-  myfuns.push_back("ui");
   if (modified) {
     if (loaded) {
       for (list<string>::const_iterator it = myfuns.begin();
@@ -1708,8 +1705,8 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
       b.CreateRet(v);
     }
     // The info function takes a dsp as parameter and returns a triple with
-    // the number of inputs and outputs and a flag indicating whether the dsp
-    // was compiled for single or double precision data.
+    // the number of inputs and outputs and the UI description, in the same
+    // format as the faust_info function in the pure-faust module.
     {
       vector<const Type*> argt(1, VoidPtrTy);
       FunctionType *ft = FunctionType::get(ExprPtrTy, argt, false);
@@ -1734,52 +1731,31 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
       args.push_back(b.CreateBitCast(a, gt->getParamType(0)));
       Value *n_in = b.CreateCall(getNumInputs, args.begin(), args.end());
       Value *n_out = b.CreateCall(getNumOutputs, args.begin(), args.end());
-      // Construct the info tuple.
-      Function *infofun = module->getFunction("faust_get_info");
-      args.clear();
-      args.push_back(n_in);
-      args.push_back(n_out);
-      args.push_back(ConstantInt::get(interpreter::int32_type(), is_double));
-      Value *u = b.CreateCall(infofun, args.begin(), args.end());
-      // Return the result.
-      b.CreateRet(u);
-    }
-    // The ui function returns a Pure-friendly description of the control
-    // variables of the dsp.
-    {
-      vector<const Type*> argt(1, VoidPtrTy);
-      FunctionType *ft = FunctionType::get(ExprPtrTy, argt, false);
-      Function *f = Function::Create(ft, Function::ExternalLinkage,
-				     "$$faust$"+modname+"$ui", module);
-      BasicBlock *bb = basic_block("entry", f);
-#ifdef LLVM26
-      Builder b(getGlobalContext());
-#else
-      Builder b;
-#endif
-      b.SetInsertPoint(bb);
       // Call the runtime function to create the internal UI data structure.
       Function *uifun = module->getFunction
 	(is_double?"faust_double_ui":"faust_float_ui");
-      vector<Value*> args;
+      args.clear();
       Value *v = b.CreateCall(uifun, args.begin(), args.end());
       // Call the Faust function to initialize the UI data structure.
       Function *buildUserInterface = module->getFunction
 	("$$faust$"+modname+"$buildUserInterface");
       // We need to cast the void* arguments to the proper pointer types
       // expected by the buildUserInterface routine.
-      const FunctionType *gt = buildUserInterface->getFunctionType();
-      Function::arg_iterator a = f->arg_begin();
-      args.push_back(b.CreateBitCast(a, gt->getParamType(0)));
-      args.push_back(b.CreateBitCast(v, gt->getParamType(1)));
+      const FunctionType *ht = buildUserInterface->getFunctionType();
+      args.push_back(b.CreateBitCast(a, ht->getParamType(0)));
+      args.push_back(b.CreateBitCast(v, ht->getParamType(1)));
       b.CreateCall(buildUserInterface, args.begin(), args.end());
-      // Construct the UI description.
-      Function *infofun = module->getFunction("faust_get_ui");
+      // Construct the info tuple.
+      Function *infofun = module->getFunction("faust_make_info");
       args.clear();
+      args.push_back(n_in);
+      args.push_back(n_out);
       args.push_back(v);
       Value *u = b.CreateCall(infofun, args.begin(), args.end());
       // Get rid of the internal UI data structure.
       Function *freefun = module->getFunction("faust_free_ui");
+      args.clear();
+      args.push_back(v);
       b.CreateCall(freefun, args.begin(), args.end());
       // Return the result.
       b.CreateRet(u);
@@ -1796,7 +1772,9 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
   loaded_dsps[modname].t = mtime;
   loaded_dsps[modname].dbl = is_double;
   loaded_dsps[modname].declare(*symtab.current_namespace, priv);
-  loaded_dsps[modname].tag = pure_make_tag();
+  if (loaded_dsps[modname].tag == 0)
+    loaded_dsps[modname].tag = pure_make_tag();
+  dsp_mods[loaded_dsps[modname].tag] = modname;
   // Create wrappers.
   for (list<string>::iterator it = funs.begin(), end = funs.end();
        it != end; ++it) {

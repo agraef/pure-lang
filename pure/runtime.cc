@@ -15685,7 +15685,7 @@ static int pop(int &type, const char *&label, int &n, pure_expr **&xv)
   return 1;
 }
 
-pure_expr *faust_get_ui(void *p)
+static pure_expr *faust_make_ui(void *p)
 {
   UIGlue *glue = (UIGlue*)p;
   PureFaustUI *ui = static_cast<PureFaustUI*>(glue->uiInterface);
@@ -15800,12 +15800,54 @@ pure_expr *faust_get_ui(void *p)
   return x;
 }
 
-/* Return other dsp-related information which is independent from the UI
-   data. */
+/* Return dsp-related information, including the UI data. */
 
-pure_expr *faust_get_info(int n_in, int n_out, int flags)
+pure_expr *faust_make_info(int n_in, int n_out, void *ui)
 {
-  return pure_tuplel(3, pure_int(n_in), pure_int(n_out), pure_int(flags));
+  return pure_tuplel(3, pure_int(n_in), pure_int(n_out), faust_make_ui(ui));
+}
+
+/* Get runtime type information about a Faust dsp. */
+
+pure_expr *faust_rtti(pure_expr *dsp)
+{
+  int tag = pure_get_tag(dsp);
+  if (tag == 0) return 0;
+  interpreter& interp = *interpreter::g_interp;
+  map<int,string>::const_iterator it = interp.dsp_mods.find(tag);
+  if (it == interp.dsp_mods.end()) return 0;
+  const string& modname = it->second;
+  const bcdata_t& info = interp.loaded_dsps[modname];
+  return pure_tuplel(2, pure_cstring_dup(modname.c_str()), pure_int(info.dbl));
+}
+
+/* Build a list of all Faust modules currently loaded, along with the
+   lists of namespaces in which each module is visible. */
+
+pure_expr *faust_mods()
+{
+  interpreter& interp = *interpreter::g_interp;
+  size_t i = 0, n = interp.loaded_dsps.size();
+  pure_expr **xs = new pure_expr*[n];
+  for (map<string,bcdata_t>::const_iterator m = interp.loaded_dsps.begin(),
+	 end = interp.loaded_dsps.end(); m != end; ++m) {
+    const string& modname = m->first;
+    const bcdata_t& info = m->second;
+    size_t j = 0, k = info.priv.size();
+    pure_expr **ys = new pure_expr*[k];
+    for (map<string,bool>::const_iterator p = info.priv.begin(),
+	   end = info.priv.end(); p != end; ++p) {
+      const string& ns = p->first;
+      ys[j++] = pure_cstring_dup(ns.c_str());
+    }
+    pure_expr *u = pure_cstring_dup(modname.c_str()),
+      *v = pure_tuplel(2, pure_int(info.dbl), pure_listv(k, ys));
+    xs[i++] = pure_appl(pure_symbol(interp.symtab.mapsto_sym().f), 2, u, v);
+    delete[] ys;
+  }
+  pure_expr *x = pure_listv(n, xs);
+  delete[] xs;
+  return x;
 }
 
 }

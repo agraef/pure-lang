@@ -424,11 +424,11 @@ struct nsinfo {
 };
 
 struct bcdata_t {
-  map <string,bool> priv; // private flag (per namespace)
+  map<string,bool> priv; // private flag (per namespace)
   bool dbl; // data representation (Faust dsp only)
   time_t t; // timestamp (Faust dsp only)
   int tag; // type tag (Faust dsp only)
-  bcdata_t() : dbl(false), t(0) {}
+  bcdata_t() : dbl(false), t(0), tag(0) {}
   void declare(const string& _ns, bool _priv)
   { priv[_ns] = _priv; }
   bool declared(const string& ns)
@@ -491,7 +491,8 @@ public:
   set<string> namespaces; // the set of all declared namespaces
   list<string> loaded_libs; // the list of all loaded libs (lib:...)
   map<string,bcdata_t> loaded_bcs; // the set of all loaded bitcode modules
-  map<string,bcdata_t> loaded_dsps; // the set of all loaded Faust dsps
+  map<string,bcdata_t> loaded_dsps; // the set of all loaded Faust modules
+  map<int,string> dsp_mods; // reverse mapping of Faust type tags to modules
   list<int> required; // required symbols (--required pragma)
   set<int> eager;    // eager compilation symbols (--eager pragma)
   ostream *output;   // redirected output stream for interactive commands
