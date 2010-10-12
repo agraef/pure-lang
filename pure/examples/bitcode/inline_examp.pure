@@ -1,0 +1,134 @@
+
+/* Some little inline code examples (Pure 0.45). */
+
+/* The default language for inline code is C. This requires that you have an
+   LLVM C compiler installed (llvm-gcc or clang will do). */
+
+%{
+int mygcd(int x, int y)
+{
+  if (y == 0)
+    return x;
+  else
+    return mygcd(y, x%y);
+}
+%}
+
+map (mygcd 25) (30..35);
+
+/* C++ is supported as well, but this requires that you call into the C++ code
+   using a function with C binding. */
+
+%{ -*- C++ -*-
+#include <iostream>
+using namespace std;
+extern "C" void hello(char *s)
+{
+  cerr << "Hello, " << s << "!\n";
+}
+%}
+
+hello "world";
+
+/* Fortran (requires llvm-gfortran). */
+
+%{ -*- Fortran90 -*-
+function fact(n) result(p)
+  integer n, p
+  p = 1
+  do i = 1, n
+     p = p*i
+  end do
+end function fact
+%}
+
+/* Note that Fortran function names have a trailing underscore, and parameters
+   are always passed by reference. (llvm-gfortran-4.2 doesn't seem to support
+   the 'value' attribute yet, YMMV.) This means that the function above is
+   actually to be called as 'fact_(int*)', you can verify this with 'show
+   fact_'. The following little wrapper function takes care of this. */
+
+fact n::int = fact_ {n};
+map fact (1..10);
+
+/* Another Fortran example, using matrices (Gaussian elimination). This is
+   basically the same as in examples/fortran.f90. */
+
+%{ -*- Fortran90 -*-
+! Matrix example (Gaussian elimination). This brings the given mxn matrix A
+! into (column) echelon form. The algorithm uses partial pivoting. The
+! permutation of the columns is returned in the index array.
+
+! Note that this algorithm is prepared to work on transposed matrices, as Pure
+! matrices are stored in row-major order. Hence it computes a column echelon
+! form. In Pure land this becomes a row echelon form which is what we want.
+
+subroutine gauss(m, n, A, index)
+  implicit none
+  integer i, j, k, p, q, n, m
+  double precision A(m,n), pivot, x, y
+  integer index(n)
+  do i = 1, n
+     index(i) = i
+  end do
+  do i = 1, n
+     ! partial pivoting
+     k = 0; pivot = 0.0
+     do j = i, n
+        x = A(i, index(j))
+        if (abs(x) > abs(pivot)) then
+           k = j; pivot = x
+        end if
+     end do
+     x = pivot
+     if (abs(x) == 0.0) exit ! zero pivot, bail out
+     ! the pivot column
+     p = index(k)
+     if (i /= k) then
+        index(k) = index(i); index(i) = p
+     end if
+     ! normalize the pivot column
+     A(:, p) = A(:, p) / x
+     ! subtract multiples of the pivot column from the remaining columns
+     do k = i+1, n
+        q = index(k); y = A(i, q)
+        A(:, q) = A(:, q) - y*A(:, p)
+     end do
+  end do
+end subroutine gauss
+%}
+
+/* Pure matrices are passed as void* parameters here (meaning that the raw data
+   pointer will be passed), enabling the Fortran routine to modify the matrix
+   in-place. The following wrapper function takes care of this. */
+
+gauss A::matrix = index, A when
+  // Get the dimensions and pack the matrix into contiguous storage. This also
+  // allocates a new matrix which can be modified in-place.
+  n,m = dim A; A = pack A;
+  // Create the index vector to be passed to the Fortran routine.
+  index = imatrix n;
+  // Call the Fortran routine to do all the hard work. Note that in this
+  // example the Fortran routine is prepared to work on the columns of the
+  // input matrix, so that we don't have to transpose inputs and outputs here.
+  gauss_ {m} {n} A index;
+  // Translate to zero-based indices.
+  index = map pred index;
+  // Apply the row permutation to the result matrix, in order to bring the
+  // matrix into triangle form. (You may want to comment this out to just
+  // return the result as is.)
+  A = rowcat [row A (index!i) | i = 0..n-1];
+end if dmatrixp A;
+
+/* For convenience, print a double matrix in "short" format a la Octave. */
+
+using system;
+__show__ x::matrix
+= strcat [printd j (x!(i,j))|i=0..n-1; j=0..m-1] + "\n"
+with printd 0 = sprintf "\n%10.5f"; printd _ = sprintf "%10.5f" end
+when n,m = dim x end if dmatrixp x;
+
+/* Example: */
+
+let x = dmatrix {2,1,-1,8; -3,-1,2,-11; -2,1,2,-3};
+x; gauss x;
