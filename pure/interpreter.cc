@@ -663,7 +663,7 @@ void interpreter::init()
   declare_extern((void*)faust_free_ui,
 		 "faust_free_ui", "void",     1, "void*");
   declare_extern((void*)faust_get_info,
-		 "faust_get_info","expr*",    1, "void*");
+		 "faust_get_info","expr*",    3, "int", "int", "int");
   declare_extern((void*)faust_get_ui,
 		 "faust_get_ui",  "expr*",    1, "void*");
 }
