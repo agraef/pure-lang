@@ -3828,10 +3828,8 @@ Currently, C, C++, Fortran and Faust are supported as foreign source
 languages, with llvm-gcc, llvm-g++, llvm-gfortran and faust2 as the
 corresponding compilers. Alternatively, the LLVM clang and clang++ compilers
 can be used for C/C++ compilation (this will actually be default if the Pure
-interpreter itself was compiled with clang). Please note that C++ support
-hasn't got much testing yet and should thus be considered very experimental.
-In any case, you'll need to call into C++ code via functions using C binding,
-as Pure really only knows how to call C functions.
+interpreter itself was compiled with clang). Examples for all of these can be
+found in the Pure sources.
 
 C is the default language. The desired source language can be selected by
 placing an appropriate tag into the inline code section, immediately after the
@@ -5726,7 +5724,9 @@ The interpreter always takes your ``extern`` declarations of C routines at
 face value. It will not go and read any C header files to determine whether
 you actually declared the function correctly! So you have to be careful to
 give the proper declarations, otherwise your program will probably segfault
-calling the function.
+calling the function. (This mischief can be avoided when using the bitcode
+interface, however. See `Importing LLVM Bitcode`_ and `Inline Code`_ in the `C
+Interface`_ section.)
 
 You also have to be careful when passing generic pointer values to external C
 routines, since currently there is no type checking for these; any pointer
