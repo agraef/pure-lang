@@ -24,28 +24,27 @@ process = + : *(gain);
 let dsp = test::newinit SR;
 
 /* Get manifest information about the dsp. This returns the number of I/O
-   channels, the sample and control data format (this is simply a flag, true
-   denotes double precision) and the description of the control variables (the
-   "UI" of the dsp in Faust parlance) in a Pure-friendly format. The UI data
-   is used below to get access to the control values.
+   channels and the description of the control variables (the "UI" of the dsp
+   in Faust parlance) in a Pure-friendly format. The UI data is used below to
+   get access to the control values. It takes the form of a tree data
+   structure described in the faustui.pure module distributed with Pure.
+   (Incidentally, this is the same format that the pure-faust module uses.)
+   Here we employ one of the utility functions in the faustui module,
+   'controls', to convert this data to a flat Pure list which is more
+   convenient for our purposes.
 
-   NOTE: We recommend to always use double samples (faust -double) since this
-   avoids conversion of the sample data and is thus more efficient. This is
-   also the default with inlined Faust code. However, the code below will work
-   with either double or single precision format.
-
-   The UI data format is a tree data structure described in detail in the
-   faustui.pure module in this directory. (Incidentally, this is the same
-   format that the pure-faust module uses.) Here we employ one of the utility
-   functions in the faustui module, 'controls', to convert this data to a flat
-   Pure list which is more convenient for our purposes. */
+   We also use the Faust RTTI interface in the faustui module to retrieve the
+   name of the Faust module (as a string) as well as the sample and control
+   data format of the dsp (this is simply a flag, true denotes double
+   precision). NOTE: We recommend to always use double precision (faust
+   -double) with Pure since this avoids conversion of the sample data and is
+   thus more efficient. This is also the default with inlined Faust
+   code. However, the code below will work with either double or single
+   precision format. */
 
 using faustui;
 let k,l,ui = test::info dsp;
 let ui = controls ui;
-
-// Get the module name and the sample format of the dsp. This uses the
-// reflection facilities provided by the runtime, see faustui.pure.
 let name,dbl = dsp_name dsp, dsp_doublep dsp;
 
 // Print some information about the dsp.
