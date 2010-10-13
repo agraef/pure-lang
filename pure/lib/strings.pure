@@ -355,7 +355,48 @@ end if (listp xs || smatrixp xs) && all stringp xs;
    denotes the number of strings to retrieve. If you know that the vector is
    ``NULL``-terminated then this can also be an infinite value (``inf``) in
    which case the number of elements will be figured out automatically.
-   Processing always stops at the first ``NULL`` pointer encountered. */
+   Processing always stops at the first ``NULL`` pointer encountered.
+
+   Also note that, as of version 0.45, Pure has built-in support for passing
+   ``argv``-style vectors as arguments by means of the ``char**`` and
+   ``void**`` pointer types. However, the operations provided here are more
+   general in that they allow you to both encode and decode such values in an
+   explicit fashion. This is useful, e.g., for operations like ``getopt``\ (3)
+   which may mutate the given ``char**`` vector.
+
+   If you have ``getopt`` in your C library, you can try the following
+   example. First enter these definitions::
+
+     extern int getopt(int argc, char **argv, char *optstring);
+     optind = get_int $ addr "optind";
+     optarg = cstring_dup $ get_pointer $ addr "optarg";
+
+   Now let's run ``getopt`` on a byte string vector constructed from an
+   argument vector (which includes the "program name" in the first element)::
+
+     > let args = byte_cstring_pointer {"progname","boo","-n","-tfoo","bar"};
+     > getopt 5 args "nt:", optarg;
+     110,#<pointer 0>
+     > getopt 5 args "nt:", optarg;
+     116,"foo"
+     > getopt 5 args "nt:", optarg;
+     -1,#<pointer 0>
+
+   Note that 110 and 116 are the character codes of the option characters
+   ``n`` and ``t``, where the latter option takes an argument, as returned by
+   ``optarg``. Finally, ``getopt`` returns -1 to indicate that there are
+   no more options, and we can retrieve the current ``optindex`` value and the
+   mutated argument vector to see which non-option arguments remain to be
+   processed, as follows::
+
+     > optind, cstring_vector 5 args;
+     3,{"progname","-n","-tfoo","boo","bar"}
+
+   It is now an easy exercise to design your own high-level wrapper around
+   ``getopt`` to process command line arguments in Pure. However, this isn't
+   really necessary since the Pure library already offers such an operation
+   which doesn't rely on any special system functions, see `Option Parsing`_
+   in the `System Interface`_ section. */
 
 string_list n p::pointer = list $ takewhile stringp [p!i | i = 0..n-1]
 with

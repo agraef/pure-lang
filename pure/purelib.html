@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>Pure Library Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-10-10" />
+<meta name="date" content="2010-10-13" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-10-10</td></tr>
+<td>2010-10-13</td></tr>
 </tbody>
 </table>
 <!-- We use docutils to produce the documentation. Docstrings are extracted -->
@@ -1184,6 +1184,45 @@ denotes the number of strings to retrieve. If you know that the vector is
 <tt class="docutils literal"><span class="pre">NULL</span></tt>-terminated then this can also be an infinite value (<tt class="docutils literal"><span class="pre">inf</span></tt>) in
 which case the number of elements will be figured out automatically.
 Processing always stops at the first <tt class="docutils literal"><span class="pre">NULL</span></tt> pointer encountered.</p>
+<p>Also note that, as of version 0.45, Pure has built-in support for passing
+<tt class="docutils literal"><span class="pre">argv</span></tt>-style vectors as arguments by means of the <tt class="docutils literal"><span class="pre">char**</span></tt> and
+<tt class="docutils literal"><span class="pre">void**</span></tt> pointer types. However, the operations provided here are more
+general in that they allow you to both encode and decode such values in an
+explicit fashion. This is useful, e.g., for operations like <tt class="docutils literal"><span class="pre">getopt</span></tt>(3)
+which may mutate the given <tt class="docutils literal"><span class="pre">char**</span></tt> vector.</p>
+<p>If you have <tt class="docutils literal"><span class="pre">getopt</span></tt> in your C library, you can try the following
+example. First enter these definitions:</p>
+<pre class="literal-block">
+extern int getopt(int argc, char **argv, char *optstring);
+optind = get_int $ addr &quot;optind&quot;;
+optarg = cstring_dup $ get_pointer $ addr &quot;optarg&quot;;
+</pre>
+<p>Now let's run <tt class="docutils literal"><span class="pre">getopt</span></tt> on a byte string vector constructed from an
+argument vector (which includes the &quot;program name&quot; in the first element):</p>
+<pre class="literal-block">
+&gt; let args = byte_cstring_pointer {&quot;progname&quot;,&quot;boo&quot;,&quot;-n&quot;,&quot;-tfoo&quot;,&quot;bar&quot;};
+&gt; getopt 5 args &quot;nt:&quot;, optarg;
+110,#&lt;pointer 0&gt;
+&gt; getopt 5 args &quot;nt:&quot;, optarg;
+116,&quot;foo&quot;
+&gt; getopt 5 args &quot;nt:&quot;, optarg;
+-1,#&lt;pointer 0&gt;
+</pre>
+<p>Note that 110 and 116 are the character codes of the option characters
+<tt class="docutils literal"><span class="pre">n</span></tt> and <tt class="docutils literal"><span class="pre">t</span></tt>, where the latter option takes an argument, as returned by
+<tt class="docutils literal"><span class="pre">optarg</span></tt>. Finally, <tt class="docutils literal"><span class="pre">getopt</span></tt> returns -1 to indicate that there are
+no more options, and we can retrieve the current <tt class="docutils literal"><span class="pre">optindex</span></tt> value and the
+mutated argument vector to see which non-option arguments remain to be
+processed, as follows:</p>
+<pre class="literal-block">
+&gt; optind, cstring_vector 5 args;
+3,{&quot;progname&quot;,&quot;-n&quot;,&quot;-tfoo&quot;,&quot;boo&quot;,&quot;bar&quot;}
+</pre>
+<p>It is now an easy exercise to design your own high-level wrapper around
+<tt class="docutils literal"><span class="pre">getopt</span></tt> to process command line arguments in Pure. However, this isn't
+really necessary since the Pure library already offers such an operation
+which doesn't rely on any special system functions, see <a class="reference internal" href="#option-parsing">Option Parsing</a>
+in the <a class="reference internal" href="#system-interface">System Interface</a> section.</p>
 <!--  -->
 </div>
 </div>
@@ -3744,11 +3783,9 @@ form <tt class="docutils literal"><span class="pre">&quot;var=value&quot;</span>
 search. The <tt class="docutils literal"><span class="pre">execve</span></tt> function is like <tt class="docutils literal"><span class="pre">execv</span></tt>, but also specifies an
 environment to be passed to the process. In either case, the new process
 replaces the current process. For convenience, both <tt class="docutils literal"><span class="pre">argv</span></tt> and <tt class="docutils literal"><span class="pre">envp</span></tt>
-can be specified as Pure string lists, which are automatically translated
-to the raw, <tt class="docutils literal"><span class="pre">NULL</span></tt>-terminated C string vectors (i.e., <tt class="docutils literal"><span class="pre">char**</span></tt>)
-required by the underlying C functions, using the
-<tt class="docutils literal"><span class="pre">byte_cstring_pointer</span></tt> function (see <a class="reference internal" href="#low-level-operations">Low-Level Operations</a> in the
-<a class="reference internal" href="#string-functions">String Functions</a> section).</dd>
+can be specified as a Pure string vector or a list, which is automatically
+translated to the raw, <tt class="docutils literal"><span class="pre">NULL</span></tt>-terminated C string vectors (i.e.,
+<tt class="docutils literal"><span class="pre">char**</span></tt>) required by the underlying C functions.</dd>
 </dl>
 <a name="spawnv"><a name="spawnvp"><a name="spawnve"><dl class="docutils" id="spawnve">
 <span id="spawnvp"></span><span id="spawnv"></span><dt><tt class="docutils literal"><span class="pre">spawnv</span> <span class="pre">mode</span> <span class="pre">prog</span> <span class="pre">argv</span></tt>, <tt class="docutils literal"><span class="pre">spawnvp</span> <span class="pre">mode</span> <span class="pre">prog</span> <span class="pre">argv</span></tt>, <tt class="docutils literal"><span class="pre">spawnve</span> <span class="pre">mode</span> <span class="pre">prog</span> <span class="pre">argv</span> <span class="pre">envp</span></tt></dt>
@@ -4415,9 +4452,8 @@ in the <tt class="docutils literal"><span class="pre">opts</span></tt> argument,
 (<tt class="docutils literal"><span class="pre">()</span></tt> if none). Note that this format is ready to be passed to the
 <a class="reference internal" href="#dict"><tt class="docutils literal"><span class="pre">dict</span></tt></a> or <a class="reference internal" href="#hdict"><tt class="docutils literal"><span class="pre">hdict</span></tt></a> function, cf. <a class="reference internal" href="#dictionaries">Dictionaries</a>, which makes it easy to
 retrieve option values or check for the presence of options. (As of Pure
-0.41, you can also convert the list into a vector using the <a class="reference internal" href="#id16"><tt class="docutils literal"><span class="pre">matrix</span></tt></a>
-function, and employ the record functions to access the option data,
-cf. <a class="reference internal" href="#record-functions">Record Functions</a>.)</p>
+0.41, you can also just convert the list to a record and employ the record
+functions to access the option data, cf. <a class="reference internal" href="#record-functions">Record Functions</a>.)</p>
 <p>The <tt class="docutils literal"><span class="pre">opts</span></tt> argument of <tt class="docutils literal"><span class="pre">getopt</span></tt> must be a list of triples <tt class="docutils literal"><span class="pre">(long_opt,</span>
 <span class="pre">short_opt,</span> <span class="pre">flag)</span></tt>, where <tt class="docutils literal"><span class="pre">long_opt</span></tt> denotes the long option,
 <tt class="docutils literal"><span class="pre">short_opt</span></tt> the equivalent short option, and <tt class="docutils literal"><span class="pre">flag</span></tt> is one of the

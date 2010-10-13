@@ -449,11 +449,9 @@ extern expr* pure_strptime(char *s, char *format, void *tm) = strptime;
      search. The ``execve`` function is like ``execv``, but also specifies an
      environment to be passed to the process. In either case, the new process
      replaces the current process. For convenience, both ``argv`` and ``envp``
-     can be specified as Pure string lists, which are automatically translated
-     to the raw, ``NULL``-terminated C string vectors (i.e., ``char**``)
-     required by the underlying C functions, using the
-     ``byte_cstring_pointer`` function (see `Low-Level Operations`_ in the
-     `String Functions`_ section).
+     can be specified as a Pure string vector or a list, which is automatically
+     translated to the raw, ``NULL``-terminated C string vectors (i.e.,
+     ``char**``) required by the underlying C functions.
 
    .. _spawnv:
    .. _spawnvp:
@@ -500,11 +498,11 @@ extern int execvp(char *prog, char **argv);
 extern int execve(char *prog, char **argv, char **envp);
 
 execv prog::string argv =
-  execv prog (byte_cstring_pointer argv) if listp argv;
+  execv prog (smatrix argv) if listp argv;
 execvp prog::string argv =
-  execvp prog (byte_cstring_pointer argv) if listp argv;
+  execvp prog (smatrix argv) if listp argv;
 execve prog::string argv envp =
-  execve prog (byte_cstring_pointer argv) (byte_cstring_pointer envp)
+  execve prog (smatrix argv) (smatrix envp)
   if listp argv && listp envp;
 
 extern int spawnv(int mode, char *prog, char **argv);
@@ -512,11 +510,11 @@ extern int spawnvp(int mode, char *prog, char **argv);
 extern int spawnve(int mode, char *prog, char **argv, char **envp);
 
 spawnv mode::int prog::string argv =
-  spawnv mode prog (byte_cstring_pointer argv) if listp argv;
+  spawnv mode prog (smatrix argv) if listp argv;
 spawnvp mode::int prog::string argv =
-  spawnvp mode prog (byte_cstring_pointer argv) if listp argv;
+  spawnvp mode prog (smatrix argv) if listp argv;
 spawnve mode::int prog::string argv envp =
-  spawnve mode prog (byte_cstring_pointer argv) (byte_cstring_pointer envp)
+  spawnve mode prog (smatrix argv) (smatrix envp)
   if listp argv && listp envp;
 
 /* ..
