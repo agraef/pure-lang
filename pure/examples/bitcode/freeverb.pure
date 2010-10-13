@@ -1,16 +1,11 @@
-// Load the dsp bitcode module.
+
+// Load the Faust bitcode module.
 using "dsp:freeverb";
 
-// Create a new dsp instance.
-let dsp = freeverb::new;
-// This returns the control interface in Pure format.
-let ui = freeverb::ui dsp;
-
-// Get the number of input and output channels.
-let k,l = freeverb::getNumInputs dsp, freeverb::getNumOutputs dsp;
-
-// Initialize the dsp with the given sample rate.
-freeverb::init dsp 44100;
+// Create a new dsp instance and initialize it with the given sample rate.
+let dsp = freeverb::newinit 44100;
+// Get the number of I/O channels and the control interface in Pure format.
+let k,l,ui = freeverb::info dsp;
 
 // Create suitable Pure matrices to hold the input and output samples. There's
 // one row for each channel and one column for each frame of samples, so a 2xn
