@@ -15800,51 +15800,69 @@ static pure_expr *faust_make_ui(void *p)
   return x;
 }
 
-/* Return dsp-related information, including the UI data. */
+/* Create dsp-related information, including the UI data. */
 
-pure_expr *faust_make_info(int n_in, int n_out, bool dbl, void *ui)
+pure_expr *faust_make_info(int n_in, int n_out, void *ui)
 {
-  return pure_tuplel(4, pure_int(n_in), pure_int(n_out),
-		     pure_int(dbl), faust_make_ui(ui));
+  return pure_tuplel(3, pure_int(n_in), pure_int(n_out), faust_make_ui(ui));
 }
 
-/* Get runtime type information about a Faust dsp. */
+/* Initialize runtime type information about Faust dsps in batch-compiled
+   scripts. */
 
-pure_expr *faust_rtti(pure_expr *dsp)
+void faust_add_rtti(const char *name, int tag, bool dbl)
+{
+  interpreter& interp = *interpreter::g_interp;
+  bcmap::iterator m = interp.loaded_dsps.find(name);
+  if (m == interp.loaded_dsps.end()) {
+    interp.loaded_dsps[name].tag = tag;
+    interp.loaded_dsps[name].dbl = dbl;
+  }
+  map<int,bcmap::iterator>::const_iterator t = interp.dsp_mods.find(tag);
+  if (t == interp.dsp_mods.end()) {
+    m = interp.loaded_dsps.find(name);
+    if (m != interp.loaded_dsps.end())
+      interp.dsp_mods[tag] = m;
+  }
+}
+
+/* Runtime type information about Faust dsps. */
+
+pure_expr *faust_name(pure_expr *dsp)
 {
   int tag = pure_get_tag(dsp);
   if (tag == 0) return 0;
   interpreter& interp = *interpreter::g_interp;
-  map<int,string>::const_iterator it = interp.dsp_mods.find(tag);
+  map<int,bcmap::iterator>::const_iterator it = interp.dsp_mods.find(tag);
   if (it == interp.dsp_mods.end()) return 0;
-  const string& modname = it->second;
-  const bcdata_t& info = interp.loaded_dsps[modname];
-  return pure_tuplel(2, pure_cstring_dup(modname.c_str()), pure_int(info.dbl));
+  const string& name = it->second->first;
+  return pure_cstring_dup(name.c_str());
 }
 
-/* Build a list of all Faust modules currently loaded, along with the
-   lists of namespaces in which each module is visible. */
+pure_expr *faust_dbl(pure_expr *dsp)
+{
+  int tag = pure_get_tag(dsp);
+  if (tag == 0) return 0;
+  interpreter& interp = *interpreter::g_interp;
+  map<int,bcmap::iterator>::const_iterator it = interp.dsp_mods.find(tag);
+  if (it == interp.dsp_mods.end()) return 0;
+  const bcdata_t& info = it->second->second;
+  return pure_int(info.dbl);
+}
+
+/* Build a list of all Faust modules currently loaded. */
 
 pure_expr *faust_mods()
 {
   interpreter& interp = *interpreter::g_interp;
   size_t i = 0, n = interp.loaded_dsps.size();
   pure_expr **xs = new pure_expr*[n];
-  for (map<string,bcdata_t>::const_iterator m = interp.loaded_dsps.begin(),
+  for (bcmap::const_iterator m = interp.loaded_dsps.begin(),
 	 end = interp.loaded_dsps.end(); m != end; ++m) {
     const string& modname = m->first;
     const bcdata_t& info = m->second;
-    size_t j = 0, k = info.priv.size();
-    pure_expr **ys = new pure_expr*[k];
-    for (map<string,bool>::const_iterator p = info.priv.begin(),
-	   end = info.priv.end(); p != end; ++p) {
-      const string& ns = p->first;
-      ys[j++] = pure_cstring_dup(ns.c_str());
-    }
-    pure_expr *u = pure_cstring_dup(modname.c_str()),
-      *v = pure_tuplel(2, pure_int(info.dbl), pure_listv(k, ys));
+    pure_expr *u = pure_cstring_dup(modname.c_str()), *v = pure_int(info.dbl);
     xs[i++] = pure_appl(pure_symbol(interp.symtab.mapsto_sym().f), 2, u, v);
-    delete[] ys;
   }
   pure_expr *x = pure_listv(n, xs);
   delete[] xs;

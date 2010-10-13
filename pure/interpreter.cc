@@ -663,7 +663,9 @@ void interpreter::init()
   declare_extern((void*)faust_free_ui,
 		 "faust_free_ui", "void",     1, "void*");
   declare_extern((void*)faust_make_info,
-		 "faust_make_info","expr*",   4, "int", "int", "bool", "void*");
+		 "faust_make_info","expr*",   3, "int", "int", "void*");
+  declare_extern((void*)faust_add_rtti,
+		 "faust_add_rtti", "void",    3, "char*", "int", "bool");
 }
 
 interpreter::interpreter()
@@ -1750,7 +1752,6 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
       args.clear();
       args.push_back(n_in);
       args.push_back(n_out);
-      args.push_back(ConstantInt::get(interpreter::int1_type(), is_double));
       args.push_back(v);
       Value *u = b.CreateCall(infofun, args.begin(), args.end());
       // Get rid of the internal UI data structure.
@@ -1770,12 +1771,14 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
     namespaces.insert(*symtab.current_namespace+"::"+modname);
   // Update the module data. This must be done here so that the type tag is
   // initialized when generating the wrappers.
-  loaded_dsps[modname].t = mtime;
-  loaded_dsps[modname].dbl = is_double;
   loaded_dsps[modname].declare(*symtab.current_namespace, priv);
-  if (loaded_dsps[modname].tag == 0)
-    loaded_dsps[modname].tag = pure_make_tag();
-  dsp_mods[loaded_dsps[modname].tag] = modname;
+  bcmap::iterator mod = loaded_dsps.find(modname);
+  assert(mod != loaded_dsps.end());
+  mod->second.t = mtime;
+  mod->second.dbl = is_double;
+  if (mod->second.tag == 0)
+    mod->second.tag = pure_make_tag();
+  dsp_mods[mod->second.tag] = mod;
   // Create wrappers.
   for (list<string>::iterator it = funs.begin(), end = funs.end();
        it != end; ++it) {
@@ -1806,6 +1809,11 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
       // Manufacture an extern declaration for the function so that it can be
       // called in Pure land.
       declare_extern(priv, fname, restype, argtypes, false, 0, asname, false);
+      // Always require this function, so that it can be called in
+      // batch-compiled scripts.
+      symbol *sym = symtab.sym(asname);
+      assert(sym);
+      required.push_back(sym->f);
     }
 #if 0 // debugging
     symbol *sym = symtab.sym(asname);
@@ -6590,6 +6598,25 @@ int interpreter::compiler(string out, list<string> libnames)
   args.push_back(b.CreateBitCast(sstkvar, VoidPtrTy));
   args.push_back(b.CreateBitCast(fptrvar, VoidPtrTy));
   b.CreateCall(initfun, args.begin(), args.end());
+  // Make Faust RTTI available if present.
+  Function *faust_rttifun = module->getFunction("faust_add_rtti");
+  for (bcmap::const_iterator m = loaded_dsps.begin(),
+	 end = loaded_dsps.end(); m != end; ++m) {
+    const string& modname = m->first;
+    const bcdata_t& info = m->second;
+    vector<Value*> argv(3);
+    GlobalVariable *v = global_variable
+      (module, ArrayType::get(int8_type(), modname.size()+1), true,
+       GlobalVariable::InternalLinkage, constant_char_array(modname.c_str()),
+       "$$faust_str");
+    // "cast" the char array to a char*
+    Value *idx[2] = { Zero, Zero };
+    Value *p = b.CreateGEP(v, idx, idx+2);
+    argv[0] = p;
+    argv[1] = SInt(info.tag);
+    argv[2] = Bool(info.dbl);
+    b.CreateCall(faust_rttifun, argv.begin(), argv.end());
+  }
   // Execute the initialization code of the Pure program (global expressions
   // and variable definitions).
   for (Module::iterator it = module->begin(), end = module->end();

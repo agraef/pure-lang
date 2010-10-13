@@ -88,33 +88,23 @@ end;
 control_map ui = { control_label c => control_ref c | c = ui };
 
 /* As of Pure 0.45, the Faust interface now also offers some rudimentary
-   reflection capabilities. Currently the following functions are provided by
-   the runtime:
+   reflection capabilities, which are declared below. Currently the following
+   functions are provided (note that for cosmetic purposes these have slightly
+   different names than in the runtime API):
 
-   - faust_rtti returns runtime type information about a Faust dsp. The result
-     is a pair (name,dbl) where name is the name of the Faust module and dbl
-     denotes the sample format. The latter is just a flag which is true iff
-     double samples and control values are used; false indicates single
-     precision.
+   - dsp_name and dsp_doublep return the module name (as a string) and the
+     sample format of the given dsp object. The latter is just a flag which is
+     true iff double samples and control values are used; false indicates
+     single precision.
 
-   - faust_mods builds a list of all Faust modules currently loaded; each
-     element is a hash pair name=>(dbl,ns), where name is the module name, dbl
-     denotes the sample format, and ns is the list of all namespaces in which
-     the module is visible. This information is useful if you need to create
+   - dsp_modules builds a list of all Faust modules currently loaded. It
+     returns a list of hash pairs name=>dbl, where name is the module name and
+     dbl the sample format. This information is useful if you need to create
      and manipulate Faust dsps dynamically.
 
-   NOTE: Since this information is maintained by the Faust bitcode loader, it
-   is only available in the interpreter, not in standalone executables. Thus,
-   if you plan to batch-compile your script, you should retrieve the
-   information at compile time and assign it to a constant, e.g.:
+   All these functions work both in the interpreter and in batch-compiled
+   scripts. */
 
-     const mod_info = faust_mods;
-     // Create a dummy dsp to extract the runtime data.
-     const name,dbl = faust_rtti dsp when dsp = modname::newinit 0 end;
-
-   But note that with a batch-compiled script you won't get much Faust
-   "livecoding" anyway, so if you really need to recompile and reload Faust
-   dsps on the fly, then you should do that in the interpreter. */
-
-extern expr *faust_rtti(expr *dsp);
-extern expr *faust_mods();
+extern expr *faust_name(expr *dsp) = dsp_name;
+extern expr *faust_dbl(expr *dsp) = dsp_doublep;
+extern expr *faust_mods() = dsp_modules;

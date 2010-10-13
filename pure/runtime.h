@@ -814,19 +814,22 @@ void pure_debug_redn(void *e, void *r, pure_expr *x);
 void *faust_float_ui();
 void *faust_double_ui();
 void faust_free_ui(void *ui);
-pure_expr *faust_make_info(int n_in, int n_out, bool dbl, void *ui);
+pure_expr *faust_make_info(int n_in, int n_out, void *ui);
 
-/* Inspection functions. faust_rtti returns some useful runtime type
-   information about a Faust dsp (module name and sample format, the latter is
-   just a flag which is true iff double samples and control values are used;
-   false indicates single precision). faust_mods builds a list of all Faust
-   modules currently loaded; each element is a hash pair of the module name
-   and a pair with the sample format and the list of all namespaces in which
-   the module is visible. These routines are supposed to be called in
-   applications. (They actually belong to the library API, but we put them
+/* This is to be called in initialization functions to make RTTI (see below)
+   available in batch-compiled scripts. */
+void faust_add_rtti(const char *name, int tag, bool dbl);
+
+/* Runtime type information. Currently this comprises the module name of a dsp
+   (faust_name, a string) and its sample format (faust_dbl, a flag which is
+   true iff double samples and control values are used; false indicates single
+   precision). Also, faust_mods builds a list of all Faust modules currently
+   loaded; each element is a hash pair name=>dbl of the module name and the
+   sample format. (These actually belong to the library API, but we put them
    here to keep the Faust-related stuff together.) */
 
-pure_expr *faust_rtti(pure_expr *dsp);
+pure_expr *faust_name(pure_expr *dsp);
+pure_expr *faust_dbl(pure_expr *dsp);
 pure_expr *faust_mods();
 
 /* LIBRARY API. *************************************************************/
