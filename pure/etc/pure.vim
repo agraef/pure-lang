@@ -38,7 +38,7 @@ syn keyword pureKeyword namespace nonfix private public
 syn keyword pureKeyword	case const def else end extern if let of otherwise then
 syn keyword pureKeyword	using when with
 syn keyword pureSpecial catch throw
-syn keyword pureType bigint bool char short int long double
+syn keyword pureType bigint bool char short int long float double
 syn keyword pureType expr string pointer void
 syn keyword pureType int8 int16 int32 int64
 syn keyword pureType matrix dmatrix cmatrix imatrix
