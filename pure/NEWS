@@ -1,4 +1,38 @@
 
+** Pure 0.45 (in progress)
+
+This is mainly a maintenance release, which straightens out some quirks in the
+C interface. The most important user-visible changes are listed below.
+
+* Improvements and bugfixes in the bitcode interface. In particular, bitcode
+  modules can now be imported into different namespaces and can be made
+  'public' or 'private' on a per-namespace basis. Also, there's now more
+  leeway in redeclaring external functions in different ways, which gives a
+  way to work around the char* versus void* issue in the bitcode interface.
+  Last but not least, Faust bitcode modules can now be reloaded on the fly,
+  dsp pointers are now fully type-checked, and some new convenience functions
+  as well as a little bit of runtime type information for Faust modules has
+  been added.
+
+* Inlining of C, C++, Fortran and Faust code in Pure scripts. The interpreter
+  now compiles these to bitcode and loads the bitcode modules on the fly,
+  provided that you have the necessary compilers installed (llvm-gcc or clang,
+  faust2). See the new "Inline Code" section in the manual for details.
+
+* New int** and double** conversions for matrices which generate a vector of
+  row pointers on the fly. (This was already used in the Faust interface
+  anyway, but is now available for all applications.) For consistency, the
+  related int* and double* conversions now also treat the matrices as
+  reference arguments, so that they can be modified in-place. Moreover, the
+  missing byte vector conversions (int matrix to char* or char**) were added,
+  and there's now also support for argv-style vector arguments (char**,
+  void**). This is all described in detail in the "C Interface" section of the
+  manual which was completely rewritten.
+
+* The new --eager pragma instructs the interpreter to compile the given
+  function eagerly (particularly useful to avoid hiccups in realtime
+  functions).
+
 ** Pure 0.44 2010-10-01
 
 This release sports a bunch of bugfixes and OSX and FreeBSD compatibility
