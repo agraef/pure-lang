@@ -1,3 +1,28 @@
+2010-10-14  Albert Graef  <Dr.Graef@t-online.de>
+
+	* interpreter.cc (declare_extern), runtime.cc/h: Overhaul of
+	matrix-pointer argument conversions to make the handling of
+	pointer parameters more consistent. int*, double* etc. now do call
+	by reference so that the matrix can be modified in-place, handling
+	the necessary conversions between differently sized int or
+	floating point types on the fly. This now works analogously to
+	int**, double** etc., except that the matrix is passed as a simple
+	pointer instead of a vector of pointers. In addition, int matrices
+	can now also be passed for char* and char** parameters,
+	interpreting them as byte vectors. So, e.g., puts {72,65,76,0} now
+	does what you'd expect it to do (namely interpret the numeric
+	values as character codes and thus output the string
+	"HAL"). Similarly, int matrices can now be passed as character
+	buffers into externals writing into a char* parameter (if you do
+	it with care).
+
+	NOTE: The change from pass-by-value to pass-by-reference semantics
+	in short*, int*, float* and double* raises backward compatibility
+	issues, so some scripts may need fixing. In particular, all matrix
+	arguments which are to be passed by value need to be copied now,
+	and parameter type checking is more strict (e.g., an int*
+	parameter won't accept double matrices any more).
+
 2010-10-13  Albert Graef  <Dr.Graef@t-online.de>
 
 	* lib/strings.pure: Add an example showing the use of explicit

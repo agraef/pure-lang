@@ -650,30 +650,39 @@ int64_t pure_get_int64(pure_expr *x);
 int32_t pure_get_int(pure_expr *x);
 
 /* Convert a matrix expression to a pointer to the corresponding GSL matrix
-   struct or a pointer to the data itself. This is used to marshall matrix
+   struct or a pointer to the data itself. This allows to pass matrix data per
+   reference to generic pointer arguments. It is used to marshall matrix
    arguments in the C interface. */
 
 void *pure_get_matrix(pure_expr *x);
 void *pure_get_matrix_data(pure_expr *x);
 
-/* These work like pure_get_matrix_data above, but do conversions to the
-   corresponding target data type on the fly, copying the data to newly
-   allocated storage. pure_free_cvectors is to be called afterwards to free
-   the temporary storage. */
+/* These work like pure_get_matrix_data above, but do the necessary
+   conversions to and from conformant target data types (char <-> int, short
+   <-> int, float <-> double) on the fly, copying the data to temporary
+   storage if necessary. These operations maintain the illusion that the
+   matrices are in contiguous storage (copying the data to temporary storage
+   if the original matrix has a stride which doesn't match its row length) and
+   that (in spite of the conversions) the matrices are passed per reference so
+   that their data can be modified in-place; results are converted back to the
+   matrix as necessary. pure_free_cvectors is to be called afterwards to free
+   the temporary storage and convert back results. */
+
+void pure_free_cvectors();
 
 void *pure_get_matrix_data_byte(pure_expr *x);
 void *pure_get_matrix_data_short(pure_expr *x);
 void *pure_get_matrix_data_int(pure_expr *x);
 void *pure_get_matrix_data_float(pure_expr *x);
 void *pure_get_matrix_data_double(pure_expr *x);
-void pure_free_cvectors();
 
-/* These allow matrices of the appropriate type to be passed for a vector of
-   pointers (pointing to the rows of the matrix) in temporary storage which
-   allows the matrices to be modified in-place. Any necessary data type
-   conversions are done on the fly. pure_free_cvectors is to be called
-   afterwards to free the temporary storage and convert back results. */
+/* Variations of the above which allow matrices of the appropriate type to be
+   passed for a vector of pointers (pointing to the rows of the matrix) in
+   temporary storage. Any necessary data type conversions are done on the
+   fly. pure_free_cvectors is to be called afterwards to free the temporary
+   storage and convert back results. */
 
+void *pure_get_matrix_vector_byte(pure_expr *x);
 void *pure_get_matrix_vector_short(pure_expr *x);
 void *pure_get_matrix_vector_int(pure_expr *x);
 void *pure_get_matrix_vector_float(pure_expr *x);

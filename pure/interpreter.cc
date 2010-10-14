@@ -586,6 +586,8 @@ void interpreter::init()
 		 "pure_get_matrix_vector_void", "void*", 1, "expr*");
   declare_extern((void*)pure_get_matrix_vector_char,
 		 "pure_get_matrix_vector_char", "void*", 1, "expr*");
+  declare_extern((void*)pure_get_matrix_vector_byte,
+		 "pure_get_matrix_vector_byte", "void*", 1, "expr*");
   declare_extern((void*)pure_get_matrix_vector_short,
 		 "pure_get_matrix_vector_short", "void*", 1, "expr*");
   declare_extern((void*)pure_get_matrix_vector_int,
@@ -8131,15 +8133,31 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       Value *dv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "dblval");
       unboxed[i] = dv;
     } else if (argt[i] == CharPtrTy) {
+      /* String conversion. As of Pure 0.45, we also allow int matrices as
+	 byte* inputs here. */
+      BasicBlock *strbb = basic_block("str");
+      BasicBlock *matrixbb = basic_block("matrix");
       BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
       Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
-      b.CreateCondBr
-	(b.CreateICmpEQ(tagv, SInt(EXPR::STR), "cmp"), okbb, failedbb);
+      SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 2);
+      sw->addCase(SInt(EXPR::STR), strbb);
+      sw->addCase(SInt(EXPR::IMATRIX), matrixbb);
+      f->getBasicBlockList().push_back(strbb);
+      b.SetInsertPoint(strbb);
+      Value *sv = b.CreateCall(module->getFunction("pure_get_cstring"), x);
+      b.CreateBr(okbb);
+      f->getBasicBlockList().push_back(matrixbb);
+      b.SetInsertPoint(matrixbb);
+      Function *get_fun = module->getFunction("pure_get_matrix_data_byte");
+      Value *matrixv = b.CreateBitCast(b.CreateCall(get_fun, x), CharPtrTy);
+      b.CreateBr(okbb);
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
-      Value *sv = b.CreateCall(module->getFunction("pure_get_cstring"), x);
-      unboxed[i] = sv; temps = true;
+      PHINode *phi = b.CreatePHI(CharPtrTy);
+      phi->addIncoming(sv, strbb);
+      phi->addIncoming(matrixv, matrixbb);
+      unboxed[i] = phi; temps = true; vtemps = true;
       const Type *type = gt->getParamType(i);
       if (type != CharPtrTy)
 	unboxed[i] = b.CreateBitCast(unboxed[i], type);
@@ -8161,24 +8179,30 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	       argt[i] == PointerType::get(float_type(), 0)) {
       /* These get special treatment, because we also allow numeric matrices
 	 to be passed as an integer or floating point vector here. */
+      const Type *type = gt->getParamType(i);
+      bool is_short = type == PointerType::get(int16_type(), 0);
+      bool is_int = type == PointerType::get(int32_type(), 0);
+      bool is_float = type == PointerType::get(float_type(), 0);
+      bool is_double = type == PointerType::get(double_type(), 0);
       BasicBlock *ptrbb = basic_block("ptr");
       BasicBlock *matrixbb = basic_block("matrix");
       BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
       Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
-      SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 4);
-      Function *get_fun = module->getFunction
-	((argt[i] == PointerType::get(int16_type(), 0)) ?
-	 "pure_get_matrix_data_short" :
-	 (argt[i] == PointerType::get(int32_type(), 0)) ?
-	 "pure_get_matrix_data_int" :
-	 (argt[i] == PointerType::get(float_type(), 0)) ?
-	 "pure_get_matrix_data_float" :
-	 "pure_get_matrix_data_double");
+      SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 3);
+      Function *get_fun =
+	is_short ? module->getFunction("pure_get_matrix_data_short") :
+	is_int ? module->getFunction("pure_get_matrix_data_int") :
+	is_float ? module->getFunction("pure_get_matrix_data_float") :
+	is_double ? module->getFunction("pure_get_matrix_data_double") :
+	0;
       sw->addCase(SInt(EXPR::PTR), ptrbb);
-      sw->addCase(SInt(EXPR::DMATRIX), matrixbb);
-      sw->addCase(SInt(EXPR::CMATRIX), matrixbb);
-      sw->addCase(SInt(EXPR::IMATRIX), matrixbb);
+      if (is_short || is_int)
+	sw->addCase(SInt(EXPR::IMATRIX), matrixbb);
+      else if (is_float || is_double) {
+	sw->addCase(SInt(EXPR::DMATRIX), matrixbb);
+	sw->addCase(SInt(EXPR::CMATRIX), matrixbb);
+      }
       f->getBasicBlockList().push_back(ptrbb);
       b.SetInsertPoint(ptrbb);
       Value *pv = b.CreateBitCast(x, PtrExprPtrTy, "ptrexpr");
@@ -8201,30 +8225,42 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       bool is_char = argt[i] == PointerType::get(CharPtrTy, 0);
       BasicBlock *ptrbb = basic_block("ptr");
       BasicBlock *matrixbb = basic_block("matrix");
+      BasicBlock *smatrixbb = basic_block("smatrix");
       BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
       Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
-      SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 2);
-      Function *get_fun = module->getFunction
+      SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 3);
+      Function *sget_fun = module->getFunction
 	(is_char ? "pure_get_matrix_vector_char" :
 	 "pure_get_matrix_vector_void");
+      Function *get_fun = is_char ?
+	module->getFunction("pure_get_matrix_vector_byte") : 0;
       sw->addCase(SInt(EXPR::PTR), ptrbb);
-      sw->addCase(SInt(EXPR::MATRIX), matrixbb);
+      if (is_char) sw->addCase(SInt(EXPR::IMATRIX), matrixbb);
+      sw->addCase(SInt(EXPR::MATRIX), smatrixbb);
       f->getBasicBlockList().push_back(ptrbb);
       b.SetInsertPoint(ptrbb);
       Value *pv = b.CreateBitCast(x, PtrExprPtrTy, "ptrexpr");
       idx[1] = ValFldIndex;
       Value *ptrv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "ptrval");
       b.CreateBr(okbb);
-      f->getBasicBlockList().push_back(matrixbb);
-      b.SetInsertPoint(matrixbb);
-      Value *matrixv = b.CreateCall(get_fun, x);
+      Value *matrixv = 0;
+      if (is_char) {
+	f->getBasicBlockList().push_back(matrixbb);
+	b.SetInsertPoint(matrixbb);
+	matrixv = b.CreateCall(get_fun, x);
+	b.CreateBr(okbb);
+      }
+      f->getBasicBlockList().push_back(smatrixbb);
+      b.SetInsertPoint(smatrixbb);
+      Value *smatrixv = b.CreateCall(sget_fun, x);
       b.CreateBr(okbb);
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
       PHINode *phi = b.CreatePHI(VoidPtrTy);
       phi->addIncoming(ptrv, ptrbb);
-      phi->addIncoming(matrixv, matrixbb);
+      if (is_char) phi->addIncoming(matrixv, matrixbb);
+      phi->addIncoming(smatrixv, smatrixbb);
       unboxed[i] = b.CreateBitCast(phi, gt->getParamType(i)); vtemps = true;
     } else if (argt[i] ==
 	       PointerType::get(PointerType::get(int16_type(), 0), 0) ||
@@ -8243,21 +8279,24 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	PointerType::get(PointerType::get(int32_type(), 0), 0);
       bool is_float = type ==
 	PointerType::get(PointerType::get(float_type(), 0), 0);
+      bool is_double = type ==
+	PointerType::get(PointerType::get(double_type(), 0), 0);
       BasicBlock *ptrbb = basic_block("ptr");
       BasicBlock *matrixbb = basic_block("matrix");
       BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
       Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
       SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 3);
-      Function *get_fun = module->getFunction
-	(is_short ? "pure_get_matrix_vector_short" :
-	 is_int ? "pure_get_matrix_vector_int" :
-	 is_float ? "pure_get_matrix_vector_float" :
-	 "pure_get_matrix_vector_double");
+      Function *get_fun =
+	is_short ? module->getFunction("pure_get_matrix_vector_short") :
+	is_int ? module->getFunction("pure_get_matrix_vector_int") :
+	is_float ? module->getFunction("pure_get_matrix_vector_float") :
+	is_double ? module->getFunction("pure_get_matrix_vector_double") :
+	0;
       sw->addCase(SInt(EXPR::PTR), ptrbb);
       if (is_short || is_int)
 	sw->addCase(SInt(EXPR::IMATRIX), matrixbb);
-      else {
+      else if (is_float || is_double) {
 	sw->addCase(SInt(EXPR::DMATRIX), matrixbb);
 	sw->addCase(SInt(EXPR::CMATRIX), matrixbb);
       }

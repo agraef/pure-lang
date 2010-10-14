@@ -4015,17 +4015,19 @@ void *pure_get_matrix_data(pure_expr *x)
 }
 
 enum cvd_type {
-  cvd_none, cvd_void, cvd_char, cvd_short, cvd_int, cvd_float, cvd_double
+  cvd_none, cvd_void, cvd_char,
+  cvd_byte, cvd_short, cvd_int, cvd_float, cvd_double
 };
 
 struct cvector_data {
   pure_expr *x;
   void *v, *w;
   cvd_type ty;
-  cvector_data(pure_expr *_x, void *_v, cvd_type _ty) :
-    x(_x), v(_v), w(0), ty(_ty)
+  bool vdata;
+  cvector_data(pure_expr *_x, void *_v, cvd_type _ty, bool _vdata = false) :
+    x(_x), v(_v), w(0), ty(_ty), vdata(_vdata)
   {
-    if (ty == cvd_char) {
+    if (vdata && ty == cvd_char) {
       // Back up the original vector, so that we can free the temporary
       // strings afterwards.
       size_t n = 0;
@@ -4036,43 +4038,195 @@ struct cvector_data {
       memcpy(w, v, (n+1)*sizeof(char*));
     }
   }
-  cvector_data(void *_v) : x(0), v(_v), w(0), ty(cvd_none) {}
 };
 
 list<cvector_data> cvector_temps; // XXXFIXME: This should be TLD.
 
+bool is_contiguous(pure_expr *x)
+{
+  switch (x->tag) {
+  case EXPR::MATRIX: {
+    gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
+    return m->size2 == m->tda;
+  }
+  case EXPR::DMATRIX: {
+    gsl_matrix *m = (gsl_matrix*)x->data.mat.p;
+    return m->size2 == m->tda;
+  }
+  case EXPR::CMATRIX: {
+    gsl_matrix_complex *m = (gsl_matrix_complex*)x->data.mat.p;
+    return m->size2 == m->tda;
+  }
+  case EXPR::IMATRIX:{
+    gsl_matrix_int *m = (gsl_matrix_int*)x->data.mat.p;
+    return m->size2 == m->tda;
+  }
+  default:
+    assert(0 && "not a matrix");
+    return false;
+  }
+}
+
+static void *byte_array_to_matrix(pure_expr *x, void *q)
+{
+  char *p = (char*)q;
+  if (!p) return 0;
+  switch (x->tag) {
+  case EXPR::IMATRIX: {
+    gsl_matrix_int *m1 = (gsl_matrix_int*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    if (n==0 || m==0) return p;
+    for (size_t i = 0; i < n; i++) {
+      for (size_t j = 0; j < m; j++)
+	m1->data[i*m1->tda+j] = (int)p[i*m+j];
+    }
+    return p;
+  }
+  default:
+    return 0;
+  }
+}
+
+static void *short_array_to_matrix(pure_expr *x, void *q)
+{
+  short *p = (short*)q;
+  if (!p) return 0;
+  switch (x->tag) {
+  case EXPR::IMATRIX: {
+    gsl_matrix_int *m1 = (gsl_matrix_int*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    if (n==0 || m==0) return p;
+    for (size_t i = 0; i < n; i++) {
+      for (size_t j = 0; j < m; j++)
+	m1->data[i*m1->tda+j] = (int)p[i*m+j];
+    }
+    return p;
+  }
+  default:
+    return 0;
+  }
+}
+
+static void *int_array_to_matrix(pure_expr *x, void *q)
+{
+  int *p = (int*)q;
+  if (!p) return 0;
+  switch (x->tag) {
+  case EXPR::IMATRIX: {
+    gsl_matrix_int *m1 = (gsl_matrix_int*)x->data.mat.p;
+    if (m1->data != p) {
+      size_t n = m1->size1, m = m1->size2;
+      if (n==0 || m==0) return p;
+      for (size_t i = 0; i < n; i++) {
+	for (size_t j = 0; j < m; j++)
+	  m1->data[i*m1->tda+j] = (int)p[i*m+j];
+      }
+    }
+    return p;
+  }
+  default:
+    return 0;
+  }
+}
+
+static void *float_array_to_matrix(pure_expr *x, void *q)
+{
+  float *p = (float*)q;
+  if (!p) return 0;
+  switch (x->tag) {
+  case EXPR::DMATRIX: {
+    gsl_matrix *m1 = (gsl_matrix*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    if (n==0 || m==0) return p;
+    for (size_t i = 0; i < n; i++) {
+      for (size_t j = 0; j < m; j++)
+	m1->data[i*m1->tda+j] = (double)p[i*m+j];
+    }
+    return p;
+  }
+  case EXPR::CMATRIX: {
+    gsl_matrix_complex *m1 = (gsl_matrix_complex*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    if (n==0 || m==0) return p;
+    for (size_t i = 0; i < n; i++) {
+      for (size_t j = 0; j < 2*m; j++)
+	m1->data[2*i*m1->tda+j] = (double)p[2*i*m+j];
+    }
+    return p;
+  }
+  default:
+    return 0;
+  }
+}
+
+static void *double_array_to_matrix(pure_expr *x, void *q)
+{
+  double *p = (double*)q;
+  if (!p) return 0;
+  switch (x->tag) {
+  case EXPR::DMATRIX: {
+    gsl_matrix *m1 = (gsl_matrix*)x->data.mat.p;
+    if (m1->data != p) {
+      size_t n = m1->size1, m = m1->size2;
+      if (n==0 || m==0) return p;
+      for (size_t i = 0; i < n; i++) {
+	for (size_t j = 0; j < m; j++)
+	  m1->data[i*m1->tda+j] = (double)p[i*m+j];
+      }
+    }
+    return p;
+  }
+  case EXPR::CMATRIX: {
+    gsl_matrix_complex *m1 = (gsl_matrix_complex*)x->data.mat.p;
+    if (m1->data != p) {
+      size_t n = m1->size1, m = m1->size2;
+      if (n==0 || m==0) return p;
+      for (size_t i = 0; i < n; i++) {
+	for (size_t j = 0; j < 2*m; j++)
+	  m1->data[2*i*m1->tda+j] = (double)p[2*i*m+j];
+      }
+    }
+    return p;
+  }
+  default:
+    return 0;
+  }
+}
+
 void *pure_get_matrix_data_byte(pure_expr *x)
 {
   void *v = matrix_to_byte_array(0, x);
-  cvector_temps.push_back(cvector_data(v));
+  cvector_temps.push_back(cvector_data(x, v, cvd_byte));
   return v;
 }
 
 void *pure_get_matrix_data_short(pure_expr *x)
 {
   void *v = matrix_to_short_array(0, x);
-  cvector_temps.push_back(cvector_data(v));
+  cvector_temps.push_back(cvector_data(x, v, cvd_short));
   return v;
 }
 
 void *pure_get_matrix_data_int(pure_expr *x)
 {
-  void *v = matrix_to_int_array(0, x);
-  cvector_temps.push_back(cvector_data(v));
+  void *v = is_contiguous(x)?pure_get_matrix_data(x):
+    matrix_to_int_array(0, x);
+  cvector_temps.push_back(cvector_data(x, v, cvd_int));
   return v;
 }
 
 void *pure_get_matrix_data_float(pure_expr *x)
 {
   void *v = matrix_to_float_array(0, x);
-  cvector_temps.push_back(cvector_data(v));
+  cvector_temps.push_back(cvector_data(x, v, cvd_float));
   return v;
 }
 
 void *pure_get_matrix_data_double(pure_expr *x)
 {
-  void *v = matrix_to_double_array(0, x);
-  cvector_temps.push_back(cvector_data(v));
+  void *v = is_contiguous(x)?pure_get_matrix_data(x):
+    matrix_to_double_array(0, x);
+  cvector_temps.push_back(cvector_data(x, v, cvd_double));
   return v;
 }
 
@@ -4179,6 +4333,34 @@ static void *matrix_to_short_vector(pure_expr *x)
   }
 }
 
+static void *matrix_to_byte_vector(pure_expr *x)
+{
+  switch (x->tag) {
+  case EXPR::IMATRIX: {
+    gsl_matrix_int *m1 = (gsl_matrix_int*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    if (n==0 || m==0) return 0;
+    char **p = (char**)malloc(n*sizeof(char*));
+    if (!p) return 0;
+    for (size_t i = 0; i < n; i++) {
+      p[i] = (char*)malloc(m);
+      if (!p[i]) {
+	for (size_t j = 0; j < i; j++) free(p[j]);
+	free(p); p = 0;
+	break;
+      }
+    }
+    if (!p) return 0;
+    for (size_t i = 0; i < n; i++)
+      for (size_t j = 0; j < m; j++)
+	p[i][j] = (char)m1->data[i*m1->tda+j];
+    return p;
+  }
+  default:
+    return 0;
+  }
+}
+
 static void *matrix_to_double_vector(pure_expr *x)
 {
   switch (x->tag) {
@@ -4266,6 +4448,27 @@ static void *char_vector_to_matrix(pure_expr *x, void *v, void *w)
   return v;
 }
 
+static void *byte_vector_to_matrix(pure_expr *x, void *q)
+{
+  char **p = (char**)q;
+  if (!p) return 0;
+  switch (x->tag) {
+  case EXPR::IMATRIX: {
+    gsl_matrix_int *m1 = (gsl_matrix_int*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    if (n==0 || m==0) return p;
+    for (size_t i = 0; i < n; i++) {
+      for (size_t j = 0; j < m; j++)
+	m1->data[i*m1->tda+j] = (int)p[i][j];
+      free(p[i]);
+    }
+    return p;
+  }
+  default:
+    return 0;
+  }
+}
+
 static void *short_vector_to_matrix(pure_expr *x, void *q)
 {
   short **p = (short**)q;
@@ -4303,6 +4506,17 @@ static void *float_vector_to_matrix(pure_expr *x, void *q)
     }
     return p;
   }
+  case EXPR::CMATRIX: {
+    gsl_matrix_complex *m1 = (gsl_matrix_complex*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    if (n==0 || m==0) return p;
+    for (size_t i = 0; i < n; i++) {
+      for (size_t j = 0; j < 2*m; j++)
+	m1->data[2*i*m1->tda+j] = (double)p[i][j];
+      free(p[i]);
+    }
+    return p;
+  }
   default:
     return 0;
   }
@@ -4311,42 +4525,49 @@ static void *float_vector_to_matrix(pure_expr *x, void *q)
 void *pure_get_matrix_vector_void(pure_expr *x)
 {
   void *v = matrix_to_void_vector(x);
-  cvector_temps.push_back(cvector_data(x, v, cvd_void));
+  cvector_temps.push_back(cvector_data(x, v, cvd_void, true));
   return v;
 }
 
 void *pure_get_matrix_vector_char(pure_expr *x)
 {
   void *v = matrix_to_char_vector(x);
-  cvector_temps.push_back(cvector_data(x, v, cvd_char));
+  cvector_temps.push_back(cvector_data(x, v, cvd_char, true));
+  return v;
+}
+
+void *pure_get_matrix_vector_byte(pure_expr *x)
+{
+  void *v = matrix_to_byte_vector(x);
+  cvector_temps.push_back(cvector_data(x, v, cvd_byte, true));
   return v;
 }
 
 void *pure_get_matrix_vector_short(pure_expr *x)
 {
   void *v = matrix_to_short_vector(x);
-  cvector_temps.push_back(cvector_data(x, v, cvd_short));
+  cvector_temps.push_back(cvector_data(x, v, cvd_short, true));
   return v;
 }
 
 void *pure_get_matrix_vector_int(pure_expr *x)
 {
   void *v = matrix_to_int_vector(x);
-  cvector_temps.push_back(cvector_data(x, v, cvd_int));
+  cvector_temps.push_back(cvector_data(x, v, cvd_int, true));
   return v;
 }
 
 void *pure_get_matrix_vector_float(pure_expr *x)
 {
   void *v = matrix_to_float_vector(x);
-  cvector_temps.push_back(cvector_data(x, v, cvd_float));
+  cvector_temps.push_back(cvector_data(x, v, cvd_float, true));
   return v;
 }
 
 void *pure_get_matrix_vector_double(pure_expr *x)
 {
   void *v = matrix_to_double_vector(x);
-  cvector_temps.push_back(cvector_data(x, v, cvd_double));
+  cvector_temps.push_back(cvector_data(x, v, cvd_double, true));
   return v;
 }
 
@@ -4356,14 +4577,27 @@ void pure_free_cvectors()
   for (list<cvector_data>::iterator t = cvector_temps.begin();
        t != cvector_temps.end(); t++) {
     if (t->v) {
-      if (t->x && t->ty)
-	switch (t->ty) {
-	case cvd_char: char_vector_to_matrix(t->x, t->v, t->w); break;
-	case cvd_short: short_vector_to_matrix(t->x, t->v); break;
-	case cvd_float: float_vector_to_matrix(t->x, t->v); break;
-	default: break;
+      if (t->x && t->ty) {
+	if (t->vdata) {
+	  switch (t->ty) {
+	  case cvd_char: char_vector_to_matrix(t->x, t->v, t->w); break;
+	  case cvd_byte: byte_vector_to_matrix(t->x, t->v); break;
+	  case cvd_short: short_vector_to_matrix(t->x, t->v); break;
+	  case cvd_float: float_vector_to_matrix(t->x, t->v); break;
+	  default: break;
+	  }
+	} else {
+	  switch (t->ty) {
+	  case cvd_byte: byte_array_to_matrix(t->x, t->v); break;
+	  case cvd_short: short_array_to_matrix(t->x, t->v); break;
+	  case cvd_int: int_array_to_matrix(t->x, t->v); break;
+	  case cvd_float: float_array_to_matrix(t->x, t->v); break;
+	  case cvd_double: double_array_to_matrix(t->x, t->v); break;
+	  default: break;
+	  }
 	}
-      free(t->v);
+      }
+      if (!t->x || pure_get_matrix_data(t->x) != t->v) free(t->v);
     }
   }
   cvector_temps.clear();
