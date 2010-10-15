@@ -8199,16 +8199,41 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       Value *dv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "dblval");
       unboxed[i] = dv;
     } else if (argt[i] == CharPtrTy) {
-      /* String conversion. As of Pure 0.45, we also allow int matrices as
-	 byte* inputs here. */
+      /* String conversion. As of Pure 0.45, we also allow real char* pointers
+	 and int matrices as byte* inputs here. */
+      BasicBlock *ptrbb = basic_block("ptr");
       BasicBlock *strbb = basic_block("str");
       BasicBlock *matrixbb = basic_block("matrix");
       BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
       Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
-      SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 2);
+      SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 3);
+      sw->addCase(SInt(EXPR::PTR), ptrbb);
       sw->addCase(SInt(EXPR::STR), strbb);
       sw->addCase(SInt(EXPR::IMATRIX), matrixbb);
+      f->getBasicBlockList().push_back(ptrbb);
+      b.SetInsertPoint(ptrbb);
+      int tag = pointer_type_tag(CharPtrTy);
+      if (tag) {
+	// We must check the pointer tag here.
+	BasicBlock *checkedbb = basic_block("checked");
+	Function *g = module->getFunction("pure_check_tag");
+	assert(g);
+	vector<Value*> args;
+	args.push_back(SInt(tag));
+	args.push_back(x);
+	Value *chk = b.CreateCall(g, args.begin(), args.end());
+	b.CreateCondBr(chk, checkedbb, failedbb);
+	f->getBasicBlockList().push_back(checkedbb);
+	b.SetInsertPoint(checkedbb);
+	ptrbb = checkedbb;
+      }
+      Value *pv = b.CreateBitCast(x, PtrExprPtrTy, "ptrexpr");
+      idx[1] = ValFldIndex;
+      Value *ptrv = b.CreateBitCast
+	(b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "ptrval"),
+	 CharPtrTy);
+      b.CreateBr(okbb);
       f->getBasicBlockList().push_back(strbb);
       b.SetInsertPoint(strbb);
       Value *sv = b.CreateCall(module->getFunction("pure_get_cstring"), x);
@@ -8221,6 +8246,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
       PHINode *phi = b.CreatePHI(CharPtrTy);
+      phi->addIncoming(ptrv, ptrbb);
       phi->addIncoming(sv, strbb);
       phi->addIncoming(matrixv, matrixbb);
       unboxed[i] = phi; temps = true; vtemps = true;
