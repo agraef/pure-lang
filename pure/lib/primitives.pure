@@ -1560,21 +1560,33 @@ extern int pure_make_tag() = make_ptrtag; // IMPURE!
      > map pointer_type (0..make_ptrtag);
      ["void*","char*",#<pointer 0>]
 
+   If you have to do many casts to a given type, you can avoid the overhead of
+   repeatedly looking up the type name by assigning the tag to a variable,
+   which can then be passed to ``pointer_cast`` instead::
+
+     > let ty = pointer_tag "long*";
+     > pointer_cast ty p, pointer_cast ty q;
+
    Note that you have to be careful when casting a cooked pointer, because
-   ``pointer_cast`` will usually create a copy of the original pointer value
-   in order not to globber the original type tag. The sentry will then still
-   be with the original cooked pointer value, thus you have to ensure that
-   this value survives its type-cast duplicate. Otherwise, if the duplicate
+   ``pointer_cast`` may have to create a copy of the original pointer value in
+   order not to globber the original type tag. The sentry will then still be
+   with the original cooked pointer value, thus you have to ensure that this
+   value survives its type-cast duplicate. Otherwise, if the duplicate
    survives its original, you may be left with a dangling pointer pointing
    nowhere. Therefore we recommend that you should apply type casts to cooked
-   pointers only locally, right at the spot where the pointer gets passed to
-   an external function. E.g.::
+   pointers right at the spot where the pointer gets passed to an external
+   function, e.g.::
 
-     > foo (pointer_cast "foo_t*" p) when p = cooked $ malloc 10 end;
+     > extern char *gets(char*);
+     > gets (pointer_cast "char*" p) when p = cooked $ malloc 1000 end;
 
-   Such usage is always safe. If this isn't possible, simply use ``ptrtag``
-   instead. This will globber the type tag of the pointer, but you can always
-   change it back afterwards. */
+   Such usage is always safe. (Of course, in the above example you could also
+   have cast the result of ``malloc`` to the proper target type right away.)
+   If this approach isn't possible, simply use ``ptrtag`` instead. This will
+   globber the type tag of the pointer, but you can always change it back
+   afterwards.
+
+*/
 
 extern int pure_pointer_tag(char *type) = pointer_tag;
 extern char *pure_pointer_type(int tag) = pointer_type;

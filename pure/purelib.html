@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>Pure Library Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-10-15" />
+<meta name="date" content="2010-10-16" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-10-15</td></tr>
+<td>2010-10-16</td></tr>
 </tbody>
 </table>
 <!-- We use docutils to produce the documentation. Docstrings are extracted -->
@@ -2508,21 +2508,31 @@ operation).</dd>
 &gt; map pointer_type (0..make_ptrtag);
 [&quot;void*&quot;,&quot;char*&quot;,#&lt;pointer 0&gt;]
 </pre>
+<p>If you have to do many casts to a given type, you can avoid the overhead of
+repeatedly looking up the type name by assigning the tag to a variable,
+which can then be passed to <tt class="docutils literal"><span class="pre">pointer_cast</span></tt> instead:</p>
+<pre class="literal-block">
+&gt; let ty = pointer_tag &quot;long*&quot;;
+&gt; pointer_cast ty p, pointer_cast ty q;
+</pre>
 <p>Note that you have to be careful when casting a cooked pointer, because
-<tt class="docutils literal"><span class="pre">pointer_cast</span></tt> will usually create a copy of the original pointer value
-in order not to globber the original type tag. The sentry will then still
-be with the original cooked pointer value, thus you have to ensure that
-this value survives its type-cast duplicate. Otherwise, if the duplicate
+<tt class="docutils literal"><span class="pre">pointer_cast</span></tt> may have to create a copy of the original pointer value in
+order not to globber the original type tag. The sentry will then still be
+with the original cooked pointer value, thus you have to ensure that this
+value survives its type-cast duplicate. Otherwise, if the duplicate
 survives its original, you may be left with a dangling pointer pointing
 nowhere. Therefore we recommend that you should apply type casts to cooked
-pointers only locally, right at the spot where the pointer gets passed to
-an external function. E.g.:</p>
+pointers right at the spot where the pointer gets passed to an external
+function, e.g.:</p>
 <pre class="literal-block">
-&gt; foo (pointer_cast &quot;foo_t*&quot; p) when p = cooked $ malloc 10 end;
+&gt; extern char *gets(char*);
+&gt; gets (pointer_cast &quot;char*&quot; p) when p = cooked $ malloc 1000 end;
 </pre>
-<p>Such usage is always safe. If this isn't possible, simply use <tt class="docutils literal"><span class="pre">ptrtag</span></tt>
-instead. This will globber the type tag of the pointer, but you can always
-change it back afterwards.</p>
+<p>Such usage is always safe. (Of course, in the above example you could also
+have cast the result of <tt class="docutils literal"><span class="pre">malloc</span></tt> to the proper target type right away.)
+If this approach isn't possible, simply use <tt class="docutils literal"><span class="pre">ptrtag</span></tt> instead. This will
+globber the type tag of the pointer, but you can always change it back
+afterwards.</p>
 <!--  -->
 </div>
 <div class="section" id="expression-references">
