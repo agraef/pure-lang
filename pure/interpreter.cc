@@ -657,6 +657,8 @@ void interpreter::init()
 		 "pure_tag",        "expr*",  2, "int", "expr*");
   declare_extern((void*)pure_check_tag,
 		 "pure_check_tag",  "bool",   2, "int", "expr*");
+  declare_extern((void*)pure_add_rtti,
+		 "pure_add_rtti",   "void",   2, "char*", "int");
 
   declare_extern((void*)faust_float_ui,
 		 "faust_float_ui",  "void*",  0);
@@ -6605,6 +6607,24 @@ int interpreter::compiler(string out, list<string> libnames)
   args.push_back(b.CreateBitCast(sstkvar, VoidPtrTy));
   args.push_back(b.CreateBitCast(fptrvar, VoidPtrTy));
   b.CreateCall(initfun, args.begin(), args.end());
+  // Make Pure pointer RTTI available if present.
+  Function *pure_rttifun = module->getFunction("pure_add_rtti");
+  for (map<string,int>::const_iterator it = pointer_tags.begin(),
+	 end = pointer_tags.end(); it != end; ++it) {
+    const string& name = it->first;
+    const int tag = it->second;
+    vector<Value*> argv(2);
+    GlobalVariable *v = global_variable
+      (module, ArrayType::get(int8_type(), name.size()+1), true,
+       GlobalVariable::InternalLinkage, constant_char_array(name.c_str()),
+       "$$str");
+    // "cast" the char array to a char*
+    Value *idx[2] = { Zero, Zero };
+    Value *p = b.CreateGEP(v, idx, idx+2);
+    argv[0] = p;
+    argv[1] = SInt(tag);
+    b.CreateCall(pure_rttifun, argv.begin(), argv.end());
+  }
   // Make Faust RTTI available if present.
   Function *faust_rttifun = module->getFunction("faust_add_rtti");
   for (bcmap::const_iterator m = loaded_dsps.begin(),
@@ -7556,6 +7576,20 @@ string interpreter::pointer_type_name(const Type *type)
   return "void*";
 }
 
+int interpreter::pointer_type_tag(const string& name)
+{
+  if (name == "void*") return 0; // generic pointer
+  map<string,int>::iterator it = pointer_tags.find(name);
+  if (it == pointer_tags.end()) {
+    int tag = pure_make_tag();
+    pointer_tags[name] = tag;
+    it = pointer_tags.find(name);
+    assert(it != pointer_tags.end());
+    pointer_type_with_tag[tag] = it;
+  }
+  return it->second;
+}
+
 const Type *interpreter::named_type(string name)
 {
   if (name == "void")
@@ -8193,19 +8227,6 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       const Type *type = gt->getParamType(i);
       if (type != CharPtrTy)
 	unboxed[i] = b.CreateBitCast(unboxed[i], type);
-    } else if (argt[i] == PointerType::get(int64_type(), 0)) {
-      BasicBlock *okbb = basic_block("ok");
-      Value *idx[2] = { Zero, Zero };
-      Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
-      b.CreateCondBr
-	(b.CreateICmpEQ(tagv, SInt(EXPR::PTR), "cmp"), okbb, failedbb);
-      f->getBasicBlockList().push_back(okbb);
-      b.SetInsertPoint(okbb);
-      // XXXTODO: Must check pointer tag here.
-      Value *pv = b.CreateBitCast(x, PtrExprPtrTy, "ptrexpr");
-      idx[1] = ValFldIndex;
-      Value *ptrv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "ptrval");
-      unboxed[i] = b.CreateBitCast(ptrv, gt->getParamType(i));
     } else if (argt[i] == PointerType::get(int16_type(), 0) ||
 	       argt[i] == PointerType::get(int32_type(), 0) ||
 	       argt[i] == PointerType::get(double_type(), 0) ||
@@ -8238,7 +8259,21 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       }
       f->getBasicBlockList().push_back(ptrbb);
       b.SetInsertPoint(ptrbb);
-      // XXXTODO: Must check pointer tag here.
+      int tag = pointer_type_tag(argt[i]);
+      if (tag) {
+	// We must check the pointer tag here.
+	BasicBlock *checkedbb = basic_block("checked");
+	Function *g = module->getFunction("pure_check_tag");
+	assert(g);
+	vector<Value*> args;
+	args.push_back(SInt(tag));
+	args.push_back(x);
+	Value *chk = b.CreateCall(g, args.begin(), args.end());
+	b.CreateCondBr(chk, checkedbb, failedbb);
+	f->getBasicBlockList().push_back(checkedbb);
+	b.SetInsertPoint(checkedbb);
+	ptrbb = checkedbb;
+      }
       Value *pv = b.CreateBitCast(x, PtrExprPtrTy, "ptrexpr");
       idx[1] = ValFldIndex;
       Value *ptrv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "ptrval");
@@ -8274,7 +8309,21 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       sw->addCase(SInt(EXPR::MATRIX), smatrixbb);
       f->getBasicBlockList().push_back(ptrbb);
       b.SetInsertPoint(ptrbb);
-      // XXXTODO: Must check pointer tag here.
+      int tag = pointer_type_tag(argt[i]);
+      if (tag) {
+	// We must check the pointer tag here.
+	BasicBlock *checkedbb = basic_block("checked");
+	Function *g = module->getFunction("pure_check_tag");
+	assert(g);
+	vector<Value*> args;
+	args.push_back(SInt(tag));
+	args.push_back(x);
+	Value *chk = b.CreateCall(g, args.begin(), args.end());
+	b.CreateCondBr(chk, checkedbb, failedbb);
+	f->getBasicBlockList().push_back(checkedbb);
+	b.SetInsertPoint(checkedbb);
+	ptrbb = checkedbb;
+      }
       Value *pv = b.CreateBitCast(x, PtrExprPtrTy, "ptrexpr");
       idx[1] = ValFldIndex;
       Value *ptrv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "ptrval");
@@ -8337,7 +8386,21 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       }
       f->getBasicBlockList().push_back(ptrbb);
       b.SetInsertPoint(ptrbb);
-      // XXXTODO: Must check pointer tag here.
+      int tag = pointer_type_tag(argt[i]);
+      if (tag) {
+	// We must check the pointer tag here.
+	BasicBlock *checkedbb = basic_block("checked");
+	Function *g = module->getFunction("pure_check_tag");
+	assert(g);
+	vector<Value*> args;
+	args.push_back(SInt(tag));
+	args.push_back(x);
+	Value *chk = b.CreateCall(g, args.begin(), args.end());
+	b.CreateCondBr(chk, checkedbb, failedbb);
+	f->getBasicBlockList().push_back(checkedbb);
+	b.SetInsertPoint(checkedbb);
+	ptrbb = checkedbb;
+      }
       Value *pv = b.CreateBitCast(x, PtrExprPtrTy, "ptrexpr");
       idx[1] = ValFldIndex;
       Value *ptrv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "ptrval");
@@ -8484,7 +8547,20 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	(b.CreateICmpEQ(tagv, SInt(EXPR::PTR), "cmp"), okbb, failedbb);
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
-      // XXXTODO: Must check pointer tag here.
+      int tag = pointer_type_tag(argt[i]);
+      if (tag) {
+	// We must check the pointer tag here.
+	BasicBlock *checkedbb = basic_block("checked");
+	Function *g = module->getFunction("pure_check_tag");
+	assert(g);
+	vector<Value*> args;
+	args.push_back(SInt(tag));
+	args.push_back(x);
+	Value *chk = b.CreateCall(g, args.begin(), args.end());
+	b.CreateCondBr(chk, checkedbb, failedbb);
+	f->getBasicBlockList().push_back(checkedbb);
+	b.SetInsertPoint(checkedbb);
+      }
       Value *pv = b.CreateBitCast(x, PtrExprPtrTy, "ptrexpr");
       idx[1] = ValFldIndex;
       Value *ptrv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "ptrval");
@@ -8551,9 +8627,18 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   else if (type == CharPtrTy)
     u = b.CreateCall(module->getFunction("pure_cstring_dup"), u);
   else if (type->isPointerTy() && type->getContainedType(0)->isPointerTy()) {
-    // XXXTODO: May have to set proper pointer tag here.
     u = b.CreateCall(module->getFunction("pure_pointer"),
 		     b.CreateBitCast(u, VoidPtrTy));
+    // We may have to set the proper pointer tag here.
+    int tag = pointer_type_tag(type);
+    if (tag) {
+      Function *f = module->getFunction("pure_tag");
+      assert(f);
+      vector<Value*> args;
+      args.push_back(SInt(tag));
+      args.push_back(u);
+      b.CreateCall(f, args.begin(), args.end());
+    }
   } else if (type == GSLMatrixPtrTy)
     u = b.CreateCall(module->getFunction("pure_symbolic_matrix"),
 		     b.CreateBitCast(u, VoidPtrTy));
@@ -8610,7 +8695,16 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	}
       }
     } else {
-      // XXXTODO: May have to set proper pointer tag here.
+      // We may have to set the proper pointer tag here.
+      int tag = pointer_type_tag(type);
+      if (tag) {
+	Function *f = module->getFunction("pure_tag");
+	assert(f);
+	vector<Value*> args;
+	args.push_back(SInt(tag));
+	args.push_back(u);
+	b.CreateCall(f, args.begin(), args.end());
+      }
     }
   } else
     assert(0 && "invalid C type");

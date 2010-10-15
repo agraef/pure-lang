@@ -848,9 +848,17 @@ public:
 
   type_map pointer_types;
   map<const llvm::Type*,type_map::iterator> pointer_type_of;
+  map<string,int> pointer_tags;
+  map<int,map<string,int>::iterator> pointer_type_with_tag;
 
   const llvm::Type *make_pointer_type(const string& name);
   string pointer_type_name(const llvm::Type *type);
+  int pointer_type_tag(const string& name);
+  int pointer_type_tag(const llvm::Type *type)
+  {
+    assert(type->isPointerTy());
+    return pointer_type_tag(type_name(type));
+  }
 
   const llvm::Type *named_type(string name);
   const char *type_name(const llvm::Type *type);

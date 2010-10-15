@@ -1,8 +1,9 @@
 
 ** Pure 0.45 (in progress)
 
-This is mainly a maintenance release, which straightens out some quirks in the
-C interface. The most important user-visible changes are listed below.
+This is mainly a maintenance release, which straightens out quite a few
+remaining quirks in the C interface. The most important user-visible changes
+are listed below.
 
 * Improvements and bugfixes in the bitcode interface. In particular, bitcode
   modules can now be imported into different namespaces and can be made
@@ -29,9 +30,21 @@ C interface. The most important user-visible changes are listed below.
   void**). This is all described in detail in the "C Interface" section of the
   manual which was completely rewritten.
 
-* The new --eager pragma instructs the interpreter to compile the given
-  function eagerly (particularly useful to avoid hiccups in realtime
-  functions).
+* Full checking of pointer types in the C interface. To these ends, pointer
+  values can now be tagged with type information at runtime, and the compiler
+  keeps track of all C pointer types used in extern declarations. void* can
+  still be used to pass any kind of pointer, but otherwise the pointer types
+  will have to match when calling an external function (or you'll have to use
+  a type cast; operations for that are provided in the prelude).
+
+  There's no doubt that this change will raise lots of backward compatibility
+  issues. But with all the C library modules out there, checking pointers for
+  C type compatibility was becoming a real issue, and the workarounds were
+  ugly. A real solution was needed, so better we do this now than after 1.0 is
+  out and a lot more library modules have been written.
+
+* The new --eager pragma instructs the interpreter to compile a given function
+  eagerly. This is particularly useful to avoid hiccups in realtime functions.
 
 ** Pure 0.44 2010-10-01
 

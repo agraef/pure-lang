@@ -425,17 +425,35 @@ pure_expr *pure_sentry(pure_expr *sentry, pure_expr *x);
 pure_expr *pure_get_sentry(pure_expr *x);
 pure_expr *pure_clear_sentry(pure_expr *x);
 
-/* Pointer tags. As of Pure 0.45 this provides a new way to do some basic
-   bookkeeping of pointer values. The most important use is to keep track of
-   the element types behind pointers. The provided operations allow you to set
-   a tag on a Pure pointer value, to get the current tag, and to check the tag
-   against a given value. In addition, a new tag can be created with the
-   pure_make_tag() function. */
+/* Pointer tags. As of Pure 0.45 this provides a way to keep track of C
+   pointer types. The basic operations below allow you to set a tag on a Pure
+   pointer value, to get the current tag, and to check the tag against a given
+   value. In addition, a new tag can be created with the pure_make_tag()
+   function. These operations give you direct access to the lowlevel pointer
+   tagging machinery, in order to implement your own pointer typing schemes if
+   necessary. (Normally this shouldn't be necessary, since the code generator
+   already keeps track of pointer types in extern declarations now.) */
 
 pure_expr *pure_tag(int tag, pure_expr *x);
 int pure_get_tag(pure_expr *x);
 bool pure_check_tag(int tag, pure_expr *x);
 int pure_make_tag();
+
+/* Highlevel pointer tag operations. These associate pointer tags with actual
+   pointer types in extern declarations. pure_pointer_tag() returns the tag
+   for a given pointer type (this will automatically create a new tag if
+   necessary). pure_pointer_type() retrieves the pointer type name associated
+   with a pointer tag. This will be NULL in the case of an "anonymous" tag,
+   which may have been created with pure_make_tag() above, or if the tag is
+   simply unknown because it hasn't been created yet. Finally,
+   pure_pointer_cast() allows you to create a copy of a given pointer value
+   with the given tag on it, thereby "casting" the pointer to the new
+   type. (This simply returns the original pointer value if the new tag is the
+   same as x's current tag.) */
+
+int pure_pointer_tag(const char *name);
+const char *pure_pointer_type(int tag);
+pure_expr *pure_pointer_cast(int tag, pure_expr *x);
 
 /* Variable and constant definitions. These allow you to directly bind
    variable and constant symbols to pure_expr* values, as the 'let' and
@@ -814,6 +832,12 @@ void pure_debug(int32_t tag, const char *format, ...);
 void pure_debug_rule(void *e, void *r);
 void pure_debug_redn(void *e, void *r, pure_expr *x);
 
+/* Pure runtime type information (RTTI). This maintains the necessary
+   information about pointer type names and tags and makes these available to
+   Pure programs. */
+
+void pure_add_rtti(const char *name, int tag);
+
 /* Internal Faust interface (Pure 0.45 and later). These provide the necessary
    helper functions to create useful information about a Faust dsp. NOTE: You
    should never have to call any of these directly; instead, applications
@@ -829,13 +853,13 @@ pure_expr *faust_make_info(int n_in, int n_out, void *ui);
    available in batch-compiled scripts. */
 void faust_add_rtti(const char *name, int tag, bool dbl);
 
-/* Runtime type information. Currently this comprises the module name of a dsp
-   (faust_name, a string) and its sample format (faust_dbl, a flag which is
-   true iff double samples and control values are used; false indicates single
-   precision). Also, faust_mods builds a list of all Faust modules currently
-   loaded; each element is a hash pair name=>dbl of the module name and the
-   sample format. (These actually belong to the library API, but we put them
-   here to keep the Faust-related stuff together.) */
+/* Faust RTTI. Currently this comprises the module name of a dsp (faust_name,
+   a string) and its sample format (faust_dbl, a flag which is true iff double
+   samples and control values are used; false indicates single precision).
+   Also, faust_mods builds a list of all Faust modules currently loaded; each
+   element is a hash pair name=>dbl of the module name and the sample format.
+   (These actually belong to the library API, but we put them here to keep the
+   Faust-related stuff together.) */
 
 pure_expr *faust_name(pure_expr *dsp);
 pure_expr *faust_dbl(pure_expr *dsp);

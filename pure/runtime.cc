@@ -3275,6 +3275,75 @@ int pure_make_tag()
 }
 
 extern "C"
+void pure_add_rtti(const char *name, int tag)
+{
+  interpreter& interp = *interpreter::g_interp;
+  map<string,int>::iterator it = interp.pointer_tags.find(name);
+  if (it == interp.pointer_tags.end()) {
+    interp.pointer_tags[name] = tag;
+    it = interp.pointer_tags.find(name);
+    if (it != interp.pointer_tags.end())
+      interp.pointer_type_with_tag[tag] = it;
+  }
+}
+
+extern "C"
+int pure_pointer_tag(const char *s)
+{
+  if (!s) return 0;
+  interpreter& interp = *interpreter::g_interp;
+  string name = s;
+  if (name.find_first_of(" \t\n\r\f\v") != string::npos) {
+    // We allow whitespace in the type name, remove it here.
+    name.clear();
+    for (; *s; ++s) if (!isspace(*s)) name.append(1, *s);
+  }
+  if (name == "void*") return 0; // generic pointer
+  map<string,int>::iterator it = interp.pointer_tags.find(name);
+  if (it != interp.pointer_tags.end())
+    return it->second;
+  else {
+    // unknown type, create a new one on the fly
+    int tag = pure_make_tag();
+    pure_add_rtti(name.c_str(), tag);
+    return tag;
+  }
+}
+
+extern "C"
+const char *pure_pointer_type(int tag)
+{
+  if (tag == 0) return "void*";
+  interpreter& interp = *interpreter::g_interp;
+  map<int,map<string,int>::iterator>::iterator it =
+    interp.pointer_type_with_tag.find(tag);
+  if (it != interp.pointer_type_with_tag.end())
+    return it->second->first.c_str();
+  else
+    // unknown type
+    return 0;
+}
+
+extern "C"
+pure_expr *pure_pointer_cast(int tag, pure_expr *x)
+{
+  void *p;
+  if (pure_is_pointer(x, &p)) {
+    int old_tag = pure_get_tag(x);
+    if (tag == old_tag)
+      // nothing to do
+      return x;
+    else if (x->refc <= 1)
+      // we can safely modify this object in-place
+      return pure_tag(tag, x);
+    else
+      // create a copy of the pointer with the new tag on it
+      return pure_tag(tag, pure_pointer(p));
+  } else
+    return 0;
+}
+
+extern "C"
 bool pure_let(int32_t sym, pure_expr *x)
 {
   if (sym <= 0 || !x) return false;

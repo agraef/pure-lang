@@ -3800,10 +3800,17 @@ encompasses most kinds of aggregate Pure data. E.g.::
 Tagged Pointers
 ~~~~~~~~~~~~~~~
 
-Pure's C interface doesn't provide much checking on pointer types, so the
-following operations might come in handy if you need to associate type tags
-with a pointer value. In particular, this is useful to verify the validity
-of pointer arguments.
+As of Pure 0.45, the C interface now fully checks pointer parameter types
+at runtime (see the `C Types`_ section in the `Pure Manual`_ for details).
+To these ends, pointer values are now internally tagged with machine ints
+to keep track of the pointer types. The operations described in this
+section give you access to these pointer tags in Pure programs.
+
+.. _C Types: pure.html#c-types
+
+At the lowest level, a pointer tag is simply a machine int associated with
+a pointer value. The following operations are provided to create such tags,
+and set, get or verify the tag of a pointer value.
 
 .. raw:: html
 
@@ -3843,7 +3850,7 @@ of pointer arguments.
 ``make_ptrtag``
   Returns a new, unique tag each time it is invoked.
 
-Example::
+Examples::
 
   > let p = malloc 10;
   > get_ptrtag p; // zero by default
@@ -3858,6 +3865,81 @@ Example::
   1
   > check_ptrtag 0 p;
   0
+
+..
+
+However, you'll rarely have to deal with pointer tags at this level
+yourself. The operations above are provided so that you can design your
+own, more elaborate type systems for pointer values if the need arises. For
+most applications, all that's needed are means to inspect the type of a
+Pure pointer, and maybe modify that type by "casting" it to a suitable
+target type. The following high-level operations provide these
+capabilities.
+
+.. raw:: html
+
+   <a name="pointer_tag">
+
+.. _pointer_tag:
+
+``pointer_tag type``, ``pointer_type x``
+  Returns the pointer tag for the given ``type``, given as a string, or the
+  given pointer value ``x``. In the former case, the type should be
+  specified in the C-like syntax used in ``extern`` declarations; a new tag
+  will be created using ``make_ptrtag`` if needed. In the latter case,
+  ``pointer_tag`` simply acts as a frontend for ``get_ptrtag`` above.
+
+.. raw:: html
+
+   <a name="pointer_type">
+
+.. _pointer_type:
+
+``pointer_type tag``, ``pointer_type x``
+  Returns the type name associated with the given int value ``tag`` or
+  pointer value ``x``. Please note that this may be NULL in the case of an
+  "anonymous" tag, which may have been created with ``make_ptrtag`` above,
+  or if the tag is simply unknown because it hasn't been created yet.
+
+.. raw:: html
+
+   <a name="pointer_cast">
+
+.. _pointer_cast:
+
+``pointer_cast tag x``, ``pointer_cast type x``
+  Casts ``x`` (which must be a pointer value) to the given pointer type,
+  which may be specified either as a tag or a string denoting the type
+  name. This returns a new pointer value with the appropriate type tag on
+  it (the tag on the original pointer value ``x`` isn't affected by this
+  operation).
+
+Example::
+
+  > let p = malloc 10;
+  > let q = pointer_cast "char*" p;
+  > map pointer_type [p,q];
+  ["void*","char*"]
+  > map pointer_tag [p,q];
+  [0,1]
+  > map pointer_type (0..make_ptrtag);
+  ["void*","char*",#<pointer 0>]
+
+Note that you have to be careful when casting a cooked pointer, because
+``pointer_cast`` will usually create a copy of the original pointer value
+in order not to globber the original type tag. The sentry will then still
+be with the original cooked pointer value, thus you have to ensure that
+this value survives its type-cast duplicate. Otherwise, if the duplicate
+survives its original, you may be left with a dangling pointer pointing
+nowhere. Therefore we recommend that you should apply type casts to cooked
+pointers only locally, right at the spot where the pointer gets passed to
+an external function. E.g.::
+
+  > foo (pointer_cast "foo_t*" p) when p = cooked $ malloc 10 end;
+
+Such usage is always safe. If this isn't possible, simply use ``ptrtag``
+instead. This will globber the type tag of the pointer, but you can always
+change it back afterwards.
 
 ..
 
@@ -7684,6 +7766,9 @@ Index
 | `perror`_
 | `pointer`_
 | `pointer (matrix)`_
+| `pointer_cast`_
+| `pointer_tag`_
+| `pointer_type`_
 | `pointerp`_
 | `polar`_
 | `popen`_
