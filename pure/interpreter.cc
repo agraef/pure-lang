@@ -7654,7 +7654,25 @@ const Type *interpreter::named_type(string name)
     return GSLIntMatrixPtrTy;
   else if (name == "void*")
     return VoidPtrTy;
-  else if (name.size() > 0 && name[name.size()-1] == '*')
+  else if (name.size() > 0 && name[name.size()-1] == '*') {
+    // Generic pointer type. First normalize this a bit, then create a
+    // placeholder type which uniquely identifies the type.
+    size_t pos = name.find_last_not_of('*');
+    if (pos != string::npos) {
+      string ptr = name.substr(pos+1);
+      name.erase(pos+1);
+      if (name == "int8")
+	name = "char";
+      else if (name == "int16")
+	name = "short";
+      else if (name == "int32")
+	name = "int";
+#if SIZEOF_LONG==8
+      else if (name == "int64")
+	name = "long";
+#endif
+      name += ptr;
+    }
     if (name.size() > 1 && name[name.size()-2] == '*')
       // generic pointer to pointer (effectively treated as void**)
       return PointerType::get
@@ -7662,7 +7680,7 @@ const Type *interpreter::named_type(string name)
     else
       // simple pointer type (effectively treated as void*)
       return make_pointer_type(name);
-  else
+  } else
     throw err("unknown C type '"+name+"'");
 }
 

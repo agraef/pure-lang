@@ -3298,6 +3298,13 @@ int pure_pointer_tag(const char *s)
     name.clear();
     for (; *s; ++s) if (!isspace(*s)) name.append(1, *s);
   }
+  // If the type is valid Pure syntax, normalize it a bit.
+  try {
+    const llvm::Type *ty = interp.named_type(name);
+    assert(ty);
+    name = interp.type_name(ty);
+  } catch (err &e) {
+  }
   if (name == "void*") return 0; // generic pointer
   map<string,int>::iterator it = interp.pointer_tags.find(name);
   if (it != interp.pointer_tags.end())
