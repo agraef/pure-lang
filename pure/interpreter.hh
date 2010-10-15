@@ -437,6 +437,8 @@ struct bcdata_t {
 
 typedef map<string,bcdata_t> bcmap;
 
+typedef map<string,const llvm::Type*> type_map;
+
 class interpreter
 {
 public:
@@ -843,6 +845,12 @@ public:
 #else
   { return llvm::BasicBlock::Create(name, f); }
 #endif
+
+  type_map pointer_types;
+  map<const llvm::Type*,type_map::iterator> pointer_type_of;
+
+  const llvm::Type *make_pointer_type(const string& name);
+  string pointer_type_name(const llvm::Type *type);
 
   const llvm::Type *named_type(string name);
   const char *type_name(const llvm::Type *type);

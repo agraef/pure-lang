@@ -7523,6 +7523,39 @@ Env *interpreter::find_stacked(int32_t tag)
     return 0;
 }
 
+const Type *interpreter::make_pointer_type(const string& name)
+{
+  type_map::iterator it = pointer_types.find(name);
+  if (it == pointer_types.end()) {
+    const Type *ty = opaque_type();
+    pointer_types[name] = PointerType::get(ty, 0);
+    it = pointer_types.find(name);
+    assert(it != pointer_types.end());
+    pointer_type_of[ty] = it;
+  }
+  return it->second;
+}
+
+string interpreter::pointer_type_name(const Type *type)
+{
+  assert(type->isPointerTy());
+  const Type *elem_type = type->getContainedType(0);
+  if (elem_type->isPointerTy()) {
+    const Type *ty = elem_type->getContainedType(0);
+    map<const Type*,type_map::iterator>::const_iterator it =
+      pointer_type_of.find(ty);
+    if (it != pointer_type_of.end())
+      return it->second->first+"*";
+    return "void**";
+  }
+  map<const Type*,type_map::iterator>::const_iterator it =
+    pointer_type_of.find(elem_type);
+  if (it != pointer_type_of.end())
+    return it->second->first;
+  // Assume void* by default.
+  return "void*";
+}
+
 const Type *interpreter::named_type(string name)
 {
   if (name == "void")
@@ -7563,8 +7596,6 @@ const Type *interpreter::named_type(string name)
     return PointerType::get(double_type(), 0);
   else if (name == "void**")
     return PointerType::get(VoidPtrTy, 0);
-  else if (name == "void**")
-    return PointerType::get(VoidPtrTy, 0);
   else if (name == "char**")
     return PointerType::get(CharPtrTy, 0);
   else if (name == "short**" || name == "int16**")
@@ -7591,11 +7622,12 @@ const Type *interpreter::named_type(string name)
     return VoidPtrTy;
   else if (name.size() > 0 && name[name.size()-1] == '*')
     if (name.size() > 1 && name[name.size()-2] == '*')
-      // generic pointer to pointer
-      return PointerType::get(VoidPtrTy, 0);
+      // generic pointer to pointer (effectively treated as void**)
+      return PointerType::get
+	(make_pointer_type(name.substr(0, name.size()-1)), 0);
     else
-      // all other pointer types effectively treated as void*
-      return VoidPtrTy;
+      // simple pointer type (effectively treated as void*)
+      return make_pointer_type(name);
   else
     throw err("unknown C type '"+name+"'");
 }
@@ -7671,7 +7703,7 @@ const char *interpreter::type_name(const Type *type)
   else if (type == GSLIntMatrixPtrTy)
     return "imatrix*";
   else if (type->isPointerTy())
-    return "void*";
+    return pointer_type_name(type).c_str();
   else
     return "<unknown C type>";
 }
@@ -7806,18 +7838,13 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     return f;
   }
   // External C function visible in the Pure program. No varargs are allowed
-  // here for now. Also, we have to translate some of the parameter types
-  // (expr** becomes void*, int32_t gets promoted to int64_t if the default
-  // int type of the target platform has 64 bit).
+  // here for now. Also, int32_t gets promoted to int64_t if the default int
+  // type of the target platform has 64 bit.
   assert(!varargs);
-  if (type == ExprPtrPtrTy)
-    type = VoidPtrTy;
-  else if (type == int32_type() && sizeof(int) > 4)
+  if (type == int32_type() && sizeof(int) > 4)
     type = int64_type();
   for (size_t i = 0; i < n; i++, atype++)
-    if (argt[i] == ExprPtrPtrTy)
-      argt[i] = VoidPtrTy;
-    else if (argt[i] == int32_type() && sizeof(int) > 4)
+    if (argt[i] == int32_type() && sizeof(int) > 4)
       argt[i] = int64_type();
   if (asname.empty()) asname = name;
   string asid = make_qualid(asname), absasid = make_absid(asname);
@@ -8174,6 +8201,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	(b.CreateICmpEQ(tagv, SInt(EXPR::PTR), "cmp"), okbb, failedbb);
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
+      // XXXTODO: Must check pointer tag here.
       Value *pv = b.CreateBitCast(x, PtrExprPtrTy, "ptrexpr");
       idx[1] = ValFldIndex;
       Value *ptrv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "ptrval");
@@ -8210,6 +8238,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       }
       f->getBasicBlockList().push_back(ptrbb);
       b.SetInsertPoint(ptrbb);
+      // XXXTODO: Must check pointer tag here.
       Value *pv = b.CreateBitCast(x, PtrExprPtrTy, "ptrexpr");
       idx[1] = ValFldIndex;
       Value *ptrv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "ptrval");
@@ -8245,6 +8274,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       sw->addCase(SInt(EXPR::MATRIX), smatrixbb);
       f->getBasicBlockList().push_back(ptrbb);
       b.SetInsertPoint(ptrbb);
+      // XXXTODO: Must check pointer tag here.
       Value *pv = b.CreateBitCast(x, PtrExprPtrTy, "ptrexpr");
       idx[1] = ValFldIndex;
       Value *ptrv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "ptrval");
@@ -8307,6 +8337,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       }
       f->getBasicBlockList().push_back(ptrbb);
       b.SetInsertPoint(ptrbb);
+      // XXXTODO: Must check pointer tag here.
       Value *pv = b.CreateBitCast(x, PtrExprPtrTy, "ptrexpr");
       idx[1] = ValFldIndex;
       Value *ptrv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "ptrval");
@@ -8352,7 +8383,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       const Type *type = gt->getParamType(i);
       if (type != ExprPtrTy)
 	unboxed[i] = b.CreateBitCast(unboxed[i], type);
-    } else if (i == 0 && argt[i] == VoidPtrTy && is_faust_fun) {
+    } else if (i == 0 && argt[i]->isPointerTy() && is_faust_fun) {
       /* The first argument in a Faust call, if it is a pointer, is always the
 	 dsp. Check the pointer against the module tag. */
       const Type *type = gt->getParamType(i);
@@ -8443,6 +8474,25 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       const Type *type = gt->getParamType(i);
       if (type != VoidPtrTy)
 	unboxed[i] = b.CreateBitCast(unboxed[i], type);
+    } else if (argt[i]->isPointerTy()) {
+      /* Generic pointer type. Only a proper pointer is allowed here, and we
+	 may have to check its tag. */
+      BasicBlock *okbb = basic_block("ok");
+      Value *idx[2] = { Zero, Zero };
+      Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
+      b.CreateCondBr
+	(b.CreateICmpEQ(tagv, SInt(EXPR::PTR), "cmp"), okbb, failedbb);
+      f->getBasicBlockList().push_back(okbb);
+      b.SetInsertPoint(okbb);
+      // XXXTODO: Must check pointer tag here.
+      Value *pv = b.CreateBitCast(x, PtrExprPtrTy, "ptrexpr");
+      idx[1] = ValFldIndex;
+      Value *ptrv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "ptrval");
+      unboxed[i] = ptrv;
+      // Cast the pointer to the proper target type if necessary.
+      const Type *type = gt->getParamType(i);
+      if (type != VoidPtrTy)
+	unboxed[i] = b.CreateBitCast(unboxed[i], type);
     } else
       assert(0 && "invalid C type");
   }
@@ -8500,21 +8550,11 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     u = b.CreateCall(module->getFunction("pure_double"), u);
   else if (type == CharPtrTy)
     u = b.CreateCall(module->getFunction("pure_cstring_dup"), u);
-  else if (type == PointerType::get(int16_type(), 0) ||
-	   type == PointerType::get(int32_type(), 0) ||
-	   type == PointerType::get(int64_type(), 0) ||
-	   type == PointerType::get(float_type(), 0) ||
-	   type == PointerType::get(double_type(), 0) ||
-	   type == PointerType::get(VoidPtrTy, 0) ||
-	   type == PointerType::get(CharPtrTy, 0) ||
-	   type == PointerType::get(PointerType::get(int16_type(), 0), 0) ||
-	   type == PointerType::get(PointerType::get(int32_type(), 0), 0) ||
-	   type == PointerType::get(PointerType::get(int64_type(), 0), 0) ||
-	   type == PointerType::get(PointerType::get(float_type(), 0), 0) ||
-	   type == PointerType::get(PointerType::get(double_type(), 0), 0))
+  else if (type->isPointerTy() && type->getContainedType(0)->isPointerTy()) {
+    // XXXTODO: May have to set proper pointer tag here.
     u = b.CreateCall(module->getFunction("pure_pointer"),
 		     b.CreateBitCast(u, VoidPtrTy));
-  else if (type == GSLMatrixPtrTy)
+  } else if (type == GSLMatrixPtrTy)
     u = b.CreateCall(module->getFunction("pure_symbolic_matrix"),
 		     b.CreateBitCast(u, VoidPtrTy));
   else if (type == GSLDoubleMatrixPtrTy)
@@ -8537,7 +8577,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     f->getBasicBlockList().push_back(okbb);
     b.SetInsertPoint(okbb);
     // value is passed through
-  } else if (type == VoidPtrTy) {
+  } else if (type->isPointerTy()) {
     if (gt->getReturnType() != VoidPtrTy)
       // bitcast the pointer result to a void*
       u = b.CreateBitCast(u, VoidPtrTy);
@@ -8569,6 +8609,8 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	  b.CreateCall(f, args.begin(), args.end());
 	}
       }
+    } else {
+      // XXXTODO: May have to set proper pointer tag here.
     }
   } else
     assert(0 && "invalid C type");
