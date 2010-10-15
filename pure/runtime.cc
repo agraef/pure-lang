@@ -3270,9 +3270,8 @@ bool pure_check_tag(int tag, pure_expr *x)
 extern "C"
 int pure_make_tag()
 {
-  // XXXFIXME: When Pure goes multithreaded, this must be protected by a mutex.
-  static int tag = 0;
-  return ++tag;
+  interpreter& interp = *interpreter::g_interp;
+  return ++interp.last_tag;
 }
 
 extern "C"

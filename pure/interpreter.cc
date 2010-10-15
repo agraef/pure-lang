@@ -677,7 +677,7 @@ interpreter::interpreter()
     pic(false), strip(true), restricted(false), ttymode(false), override(false),
     stats(false), stats_mem(false), temp(0),  ps("> "), libdir(""),
     histfile("/.pure_history"), modname("pure"),
-    nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
+    last_tag(0), nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
     result(0), lastres(0), mem(0), exps(0), tmps(0), freectr(0), module(0),
     JIT(0), FPM(0), astk(0), sstk(__sstk), stoplevel(0), debug_skip(false),
     fptr(__fptr), tags(0), line(0), column(0), tags_init(false),
@@ -696,6 +696,11 @@ interpreter::interpreter(int32_t nsyms, char *syms,
     pic(false), strip(true), restricted(true), ttymode(false), override(false),
     stats(false), stats_mem(false), temp(0), ps("> "), libdir(""),
     histfile("/.pure_history"), modname("pure"),
+    /* NOTE: We use a different range of pointer tags here, so that tags
+       generated at compile time won't conflict with those generated at run
+       time. If we start out with 0x7fffffff, the first tag generated at run
+       time will become the smallest negative number in the 32 bit range. */
+    last_tag(0x7fffffff),
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
     result(0), lastres(0), mem(0), exps(0), tmps(0), freectr(0), module(0),
     JIT(0), FPM(0), astk(0), sstk(*_sstk), stoplevel(0), debug_skip(false),

@@ -482,6 +482,7 @@ public:
   list<string> includedirs, librarydirs;
 
   // Interpreter state. For internal use only.
+  int32_t last_tag;  // pointer tags
   bool qual;	     // whether qualified vars are permitted in binding
   int nerrs;	     // current error count
   string errmsg;     // last reported error (runstr)
