@@ -3797,6 +3797,70 @@ encompasses most kinds of aggregate Pure data. E.g.::
 
 ..
 
+Tagged Pointers
+~~~~~~~~~~~~~~~
+
+Pure's C interface doesn't provide much checking on pointer types, so the
+following operations might come in handy if you need to associate type tags
+with a pointer value. In particular, this is useful to verify the validity
+of pointer arguments.
+
+.. raw:: html
+
+   <a name="ptrtag">
+
+.. _ptrtag:
+
+``ptrtag t x``
+  Places an integer tag ``t`` at an expression ``x`` and returns the
+  modified expression. ``x`` must be a pointer value.
+
+.. raw:: html
+
+   <a name="get_ptrtag">
+
+.. _get_ptrtag:
+
+``get_ptrtag x``
+  Retrieves the tag associated with ``x``.
+
+.. raw:: html
+
+   <a name="check_ptrtag">
+
+.. _check_ptrtag:
+
+``check_ptrtag t x``
+  Compares the tag associated with ``x`` against ``t`` and returns true iff
+  the tags match.
+
+.. raw:: html
+
+   <a name="make_ptrtag">
+
+.. _make_ptrtag:
+
+``make_ptrtag``
+  Returns a new, unique tag each time it is invoked.
+
+Example::
+
+  > let p = malloc 10;
+  > get_ptrtag p; // zero by default
+  0
+  > let t = make_ptrtag; t;
+  1
+  > ptrtag t p;
+  #<pointer 0xc42da0>
+  > get_ptrtag p;
+  1
+  > check_ptrtag t p;
+  1
+  > check_ptrtag 0 p;
+  0
+
+..
+
 Expression References
 ~~~~~~~~~~~~~~~~~~~~~
 
@@ -7329,6 +7393,7 @@ Index
 | `character arithmetic`_
 | `charp`_
 | `chars`_
+| `check_ptrtag`_
 | `chr`_
 | `cis`_
 | `clear_sentry`_
@@ -7472,6 +7537,7 @@ Index
 | `get_int64`_
 | `get_long`_
 | `get_pointer`_
+| `get_ptrtag`_
 | `get_sentry`_
 | `get_short`_
 | `get_string`_
@@ -7558,6 +7624,7 @@ Index
 | `log`_
 | `lstat`_
 
+| `make_ptrtag`_
 | `malloc`_
 | `malloc_error`_
 | `map`_
@@ -7623,6 +7690,7 @@ Index
 | `pow`_
 | `pred`_
 | `printf`_
+| `ptrtag`_
 | `put`_
 | `put_byte`_
 | `put_double`_

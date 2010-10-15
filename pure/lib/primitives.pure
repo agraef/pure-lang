@@ -1449,6 +1449,63 @@ cookedp p = case p of
 	      _ = 0;
 	    end;
 
+/* Tagged pointers (experimental). This was added in Pure 0.45. */
+
+/* ..
+
+   Tagged Pointers
+   ~~~~~~~~~~~~~~~
+
+   Pure's C interface doesn't provide much checking on pointer types, so the
+   following operations might come in handy if you need to associate type tags
+   with a pointer value. In particular, this is useful to verify the validity
+   of pointer arguments.
+
+   .. _ptrtag:
+
+   ``ptrtag t x``
+     Places an integer tag ``t`` at an expression ``x`` and returns the
+     modified expression. ``x`` must be a pointer value.
+
+   .. _get_ptrtag:
+
+   ``get_ptrtag x``
+     Retrieves the tag associated with ``x``.
+
+   .. _check_ptrtag:
+
+   ``check_ptrtag t x``
+     Compares the tag associated with ``x`` against ``t`` and returns true iff
+     the tags match.
+
+   .. _make_ptrtag:
+
+   ``make_ptrtag``
+     Returns a new, unique tag each time it is invoked.
+
+   Example::
+
+     > let p = malloc 10;
+     > get_ptrtag p; // zero by default
+     0
+     > let t = make_ptrtag; t;
+     1
+     > ptrtag t p;
+     #<pointer 0xc42da0>
+     > get_ptrtag p;
+     1
+     > check_ptrtag t p;
+     1
+     > check_ptrtag 0 p;
+     0
+
+*/
+
+extern expr *pure_tag(int, expr*) = ptrtag; // IMPURE!
+extern int pure_get_tag(expr*) = get_ptrtag;
+extern bool pure_check_tag(int, expr*) = check_ptrtag;
+extern int pure_make_tag() = make_ptrtag; // IMPURE!
+
 /* ..
 
    Expression References
