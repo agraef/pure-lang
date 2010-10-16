@@ -257,6 +257,14 @@ a::string:b::string..c::string
      take a copy of the string, leaving the original C string untouched. */
 
 namespace __C;
+// Some common pointer types, cached here for efficiency.
+const voidp_t  = pointer_tag "void*";
+const voidpp_t = pointer_tag "void**";
+const charp_t  = pointer_tag "char*";
+const charpp_t = pointer_tag "char**";
+namespace;
+
+namespace __C;
 extern expr* pure_string(void* s);
 extern expr* pure_cstring(void* s);
 extern expr* pure_string_dup(void* s);
@@ -289,8 +297,8 @@ extern expr* pure_byte_string(void *s);
 extern expr* pure_byte_cstring(void *s);
 namespace;
 
-byte_string s::string	= pure_byte_string s;
-byte_cstring s::string	= pure_byte_cstring s;
+byte_string s::string	= ptrtag charp_t $ pure_byte_string s;
+byte_cstring s::string	= ptrtag charp_t $ pure_byte_cstring s;
 
 /* ..
 
@@ -313,7 +321,7 @@ byte_cstring s::string	= pure_byte_cstring s;
 byte_string_pointer xs	= if null p then throw malloc_error
 			  else make_pointer (map byte_string xs)
 with
-  make_pointer xs = sentry free_pointer p when
+  make_pointer xs = ptrtag charpp_t $ sentry free_pointer p when
     dowith (\i x -> put_pointer (p+i*SIZEOF_POINTER) x) (0..n-1) xs;
   end;
   free_pointer p = free p when
@@ -328,7 +336,7 @@ end if (listp xs || smatrixp xs) && all stringp xs;
 byte_cstring_pointer xs	= if null p then throw malloc_error
 			  else make_pointer (map byte_cstring xs)
 with
-  make_pointer xs = sentry free_pointer p when
+  make_pointer xs = ptrtag charpp_t $ sentry free_pointer p when
     dowith (\i x -> put_pointer (p+i*SIZEOF_POINTER) x) (0..n-1) xs;
   end;
   free_pointer p = free p when
