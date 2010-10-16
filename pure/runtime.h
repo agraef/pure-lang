@@ -1398,9 +1398,7 @@ pure_expr *globlist(const glob_t *pglob);
 #include <sys/types.h>
 #include <regex.h>
 
-/* Old regex interface (Pure 0.41 and earlier). The following support routines
-   are still provided in the library for backward compatibility, but shouldn't
-   be used any more. They may go away at any time. */
+/* Old regex interface (Pure 0.41 and earlier). */
 
 #if 0
 /* Return the number of subre's and allocate storage for the matches. */
