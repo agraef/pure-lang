@@ -16003,6 +16003,8 @@ static pure_expr *faust_make_ui(void *p)
 {
   UIGlue *glue = (UIGlue*)p;
   PureFaustUI *ui = static_cast<PureFaustUI*>(glue->uiInterface);
+  bool is_double = glue->addButton == (void*)addButtonDoubleGlue;
+  int ty = pure_pointer_tag(is_double?"double*":"float*");
   if (ui->nelems <= 0) return pure_tuplel(0);
   pure_expr **xv = NULL;
   int n = 0;
@@ -16021,7 +16023,7 @@ static pure_expr *faust_make_ui(void *p)
     switch (ui->elems[i].type) {
     case UI_BUTTON:
       xv[n++] = pure_appl(pure_symbol(pure_sym("button")), 2,
-			  pure_pointer(ui->elems[i].zone),
+			  pure_tag(ty, pure_pointer(ui->elems[i].zone)),
 			  pure_cstring_dup(ui->elems[i].label));
       break;
     case UI_TOGGLE_BUTTON:
@@ -16029,12 +16031,12 @@ static pure_expr *faust_make_ui(void *p)
 	 checkbox for now. */
     case UI_CHECK_BUTTON:
       xv[n++] = pure_appl(pure_symbol(pure_sym("checkbox")), 2,
-			  pure_pointer(ui->elems[i].zone),
+			  pure_tag(ty, pure_pointer(ui->elems[i].zone)),
 			  pure_cstring_dup(ui->elems[i].label));
       break;
     case UI_V_SLIDER:
       xv[n++] = pure_appl(pure_symbol(pure_sym("vslider")), 2,
-			  pure_pointer(ui->elems[i].zone),
+			  pure_tag(ty, pure_pointer(ui->elems[i].zone)),
 			  pure_tuplel(5, pure_cstring_dup(ui->elems[i].label),
 				      pure_double(ui->elems[i].init),
 				      pure_double(ui->elems[i].min),
@@ -16043,7 +16045,7 @@ static pure_expr *faust_make_ui(void *p)
       break;
     case UI_H_SLIDER:
       xv[n++] = pure_appl(pure_symbol(pure_sym("hslider")), 2,
-			  pure_pointer(ui->elems[i].zone),
+			  pure_tag(ty, pure_pointer(ui->elems[i].zone)),
 			  pure_tuplel(5, pure_cstring_dup(ui->elems[i].label),
 				      pure_double(ui->elems[i].init),
 				      pure_double(ui->elems[i].min),
@@ -16052,7 +16054,7 @@ static pure_expr *faust_make_ui(void *p)
       break;
     case UI_NUM_ENTRY:
       xv[n++] = pure_appl(pure_symbol(pure_sym("nentry")), 2,
-			    pure_pointer(ui->elems[i].zone),
+			  pure_tag(ty, pure_pointer(ui->elems[i].zone)),
 			  pure_tuplel(5, pure_cstring_dup(ui->elems[i].label),
 				      pure_double(ui->elems[i].init),
 				      pure_double(ui->elems[i].min),
@@ -16061,14 +16063,14 @@ static pure_expr *faust_make_ui(void *p)
       break;
     case UI_V_BARGRAPH:
       xv[n++] = pure_appl(pure_symbol(pure_sym("vbargraph")), 2,
-			  pure_pointer(ui->elems[i].zone),
+			  pure_tag(ty, pure_pointer(ui->elems[i].zone)),
 			  pure_tuplel(3, pure_cstring_dup(ui->elems[i].label),
 				      pure_double(ui->elems[i].min),
 				      pure_double(ui->elems[i].max)));
       break;
     case UI_H_BARGRAPH:
       xv[n++] = pure_appl(pure_symbol(pure_sym("hbargraph")), 2,
-			  pure_pointer(ui->elems[i].zone),
+			  pure_tag(ty, pure_pointer(ui->elems[i].zone)),
 			  pure_tuplel(3, pure_cstring_dup(ui->elems[i].label),
 				      pure_double(ui->elems[i].min),
 				      pure_double(ui->elems[i].max)));

@@ -103,6 +103,15 @@ end;
 
 control_map ui = { control_label c => control_ref c | c = ui };
 
+/* Convenience functions to get and set a control value, based on the actual
+   pointer type of the control. */
+
+get_control x::pointer = get_float x if get_ptrtag x == __C::floatp_t;
+	    	       = get_double x if get_ptrtag x == __C::doublep_t;
+
+put_control x::pointer = put_float x if get_ptrtag x == __C::floatp_t;
+	    	       = put_double x if get_ptrtag x == __C::doublep_t;
+
 /* As of Pure 0.45, the Faust interface now also offers some rudimentary
    reflection capabilities, which are declared below. Currently the following
    functions are provided (note that for cosmetic purposes these have slightly
