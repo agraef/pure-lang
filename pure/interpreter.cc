@@ -7566,14 +7566,24 @@ string interpreter::pointer_type_name(const Type *type)
       pointer_type_of.find(ty);
     if (it != pointer_type_of.end())
       return it->second->first+"*";
-    return "void**";
   }
   map<const Type*,type_map::iterator>::const_iterator it =
     pointer_type_of.find(elem_type);
   if (it != pointer_type_of.end())
     return it->second->first;
-  // Assume void* by default.
-  return "void*";
+  /* This is an unknown pointer type, presumably from a bitcode file. Let's
+     count the levels of indirection to get the number of *'s right. */
+  size_t count = 1;
+  while (elem_type->isPointerTy()) {
+    elem_type = elem_type->getContainedType(0);
+    count++;
+  }
+  /* What remains is a non-pointer type. Try to resolve that recursively, if
+     that doesn't work then just give up and assume "void". */
+  string name = type_name(elem_type);
+  if (name == "<unknown C type>") name = "void";
+  name.append(count, '*');
+  return name;
 }
 
 int interpreter::pointer_type_tag(const string& name)
@@ -7779,13 +7789,8 @@ const char *interpreter::bctype_name(const Type *type)
   /* This is basically like type_name above, but we need to give special
      treatment to some pointer types (Pure expressions, GSL matrices) which
      may have different representations when coming from an external bitcode
-     file. Moreover, i8* is used for both void* and char* in bitcode modules
-     and we can't tell which is which, so we have to map i8* to void* here. */
-  if (type == CharPtrTy)
-    return "void*";
-  else if (type == PointerType::get(CharPtrTy, 0))
-    return "void**";
-  else if (type->isPointerTy()) {
+     file. */
+  if (type->isPointerTy()) {
     const Type *elem_type = type->getContainedType(0);
     /* XXXFIXME: These checks really need to be rewritten so that they're less
        compiler-specific. Currently they only work with recent llvm-gcc and
@@ -7820,7 +7825,7 @@ const char *interpreter::bctype_name(const Type *type)
 const char *interpreter::dsptype_name(const Type *type)
 {
   /* Special version of bctype_name for Faust modules. This doesn't have the
-     Pure expression and GSL matrix types, but still maps i8* to void*. */
+     Pure expression and GSL matrix types, but instead we map i8* to void*. */
   if (type == CharPtrTy)
     return "void*";
   else if (type == PointerType::get(CharPtrTy, 0))
