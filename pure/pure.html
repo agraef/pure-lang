@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>The Pure Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-10-15" />
+<meta name="date" content="2010-10-16" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-10-15</td></tr>
+<td>2010-10-16</td></tr>
 </tbody>
 </table>
 <!-- Note: This document is formatted using docutils. The Makefile has rules -->
@@ -3507,11 +3507,10 @@ or more asterisks, as in C. For instance:</p>
 &gt; strchr &quot;foo bar&quot; (ord &quot;b&quot;);
 &quot;bar&quot;
 </pre>
-<p>Pure essentially lumps all pointer types together (basically, they're all
-equivalent to <tt class="docutils literal"><span class="pre">void*</span></tt>), but, as you can see in the previous example, some
-pointer types get special treatment, allowing you to pass certain kinds of
-Pure data (such as Pure strings as <tt class="docutils literal"><span class="pre">char*</span></tt> in this example). This is
-discussed in more detail in <a class="reference internal" href="#c-types">C Types</a> below.</p>
+<p>As you can see in the previous example, some pointer types get special
+treatment, allowing you to pass certain kinds of Pure data (such as Pure
+strings as <tt class="docutils literal"><span class="pre">char*</span></tt> in this example). This is discussed in more detail in <a class="reference internal" href="#c-types">C
+Types</a> below.</p>
 <p>The interpreter makes sure that the parameters in a call match; if not, then
 by default the call is treated as a normal form expression:</p>
 <pre class="literal-block">
@@ -3608,11 +3607,11 @@ converted back from C to Pure. All of this is handled by the runtime system in
 a transparent way, of course.</p>
 <p>Note that, to keep things simple, Pure does <em>not</em> provide any notations for C
 structs or function types, although it is possible to represent pointers to
-such objects using <tt class="docutils literal"><span class="pre">void*</span></tt>. In practice, this simplified system should cover
-most kinds of calls that need to be done when interfacing to C libraries.
-However, there are ways to work around these limitations if you need to access
-C structs or call back from C to Pure, see <a class="reference internal" href="#external-c-functions">External C Functions</a> in the
-<a class="reference internal" href="#caveats-and-notes">Caveats and Notes</a> section for details.</p>
+such objects using <tt class="docutils literal"><span class="pre">void*</span></tt> or some other appropriate pointer types. In
+practice, this simplified system should cover most kinds of calls that need to
+be done when interfacing to C libraries, but there are ways to work around
+these limitations if you need to access C structs or call back from C to Pure,
+see <a class="reference internal" href="#external-c-functions">External C Functions</a> in the <a class="reference internal" href="#caveats-and-notes">Caveats and Notes</a> section for details.</p>
 <div class="section" id="basic-c-types">
 <h3><a class="toc-backref" href="#id51">9.2.1&nbsp;&nbsp;&nbsp;Basic C Types</a></h3>
 <p>Pure supports the usual range of basic C types: <tt class="docutils literal"><span class="pre">void</span></tt>, <tt class="docutils literal"><span class="pre">bool</span></tt>, <tt class="docutils literal"><span class="pre">char</span></tt>,
@@ -3623,16 +3622,16 @@ values) in a straightforward way.</p>
 empty tuple <tt class="docutils literal"><span class="pre">()</span></tt>.</p>
 <p>Both <tt class="docutils literal"><span class="pre">float</span></tt> and <tt class="docutils literal"><span class="pre">double</span></tt> are supported as floating point types. Single
 precision <tt class="docutils literal"><span class="pre">float</span></tt> arguments and return values are converted from/to Pure's
-double precision floating point numbers automatically.</p>
-<p>A variety of C integer types (<tt class="docutils literal"><span class="pre">char</span></tt>, <tt class="docutils literal"><span class="pre">short</span></tt>, <tt class="docutils literal"><span class="pre">int</span></tt>, <tt class="docutils literal"><span class="pre">long</span></tt>) are
-provided which are converted from/to the available Pure integer types in a
-straightforward way. In addition, the synonyms <tt class="docutils literal"><span class="pre">int8</span></tt>, <tt class="docutils literal"><span class="pre">int16</span></tt> and
-<tt class="docutils literal"><span class="pre">int32</span></tt> are provided for <tt class="docutils literal"><span class="pre">char</span></tt>, <tt class="docutils literal"><span class="pre">short</span></tt> and <tt class="docutils literal"><span class="pre">int</span></tt>, respectively, and
-<tt class="docutils literal"><span class="pre">int64</span></tt> denotes 64 bit integers (a.k.a. ISO C99 <tt class="docutils literal"><span class="pre">long</span> <span class="pre">long</span></tt>). Note that
-<tt class="docutils literal"><span class="pre">long</span></tt> is equivalent to <tt class="docutils literal"><span class="pre">int32</span></tt> on 32 bit systems, whereas it is the same
-as <tt class="docutils literal"><span class="pre">int64</span></tt> on most 64 bit systems. To make it easier to interface to various
-system routines, there's also a special <tt class="docutils literal"><span class="pre">size_t</span></tt> integer type which usually
-is 4 bytes on 32 bit and 8 bytes on 64 bit systems.</p>
+double precision floating point numbers.</p>
+<p>A variety of C integer types (<tt class="docutils literal"><span class="pre">bool</span></tt>, <tt class="docutils literal"><span class="pre">char</span></tt>, <tt class="docutils literal"><span class="pre">short</span></tt>, <tt class="docutils literal"><span class="pre">int</span></tt>,
+<tt class="docutils literal"><span class="pre">long</span></tt>) are provided which are converted from/to the available Pure integer
+types in a straightforward way. In addition, the synonyms <tt class="docutils literal"><span class="pre">int8</span></tt>, <tt class="docutils literal"><span class="pre">int16</span></tt>
+and <tt class="docutils literal"><span class="pre">int32</span></tt> are provided for <tt class="docutils literal"><span class="pre">char</span></tt>, <tt class="docutils literal"><span class="pre">short</span></tt> and <tt class="docutils literal"><span class="pre">int</span></tt>, respectively,
+and <tt class="docutils literal"><span class="pre">int64</span></tt> denotes 64 bit integers (a.k.a. ISO C99 <tt class="docutils literal"><span class="pre">long</span> <span class="pre">long</span></tt>). Note
+that <tt class="docutils literal"><span class="pre">long</span></tt> is equivalent to <tt class="docutils literal"><span class="pre">int32</span></tt> on 32 bit systems, whereas it is the
+same as <tt class="docutils literal"><span class="pre">int64</span></tt> on most 64 bit systems. To make it easier to interface to
+various system routines, there's also a special <tt class="docutils literal"><span class="pre">size_t</span></tt> integer type which
+usually is 4 bytes on 32 bit and 8 bytes on 64 bit systems.</p>
 <p>All integer parameters take both Pure ints and bigints as actual arguments;
 truncation or sign extension is performed as needed, so that the C interface
 behaves as if the argument was &quot;cast&quot; to the C target type. Returned integers
@@ -3650,16 +3649,17 @@ by the prelude to convert the result back to an unsigned quantity.</p>
 <div class="section" id="pointer-types">
 <h3><a class="toc-backref" href="#id52">9.2.2&nbsp;&nbsp;&nbsp;Pointer Types</a></h3>
 <p>The use of pointer types is also fairly straightforward, but Pure has some
-special rules for the conversion of certain pointer types, which are supposed
-to cover the most common idioms for pointer usage in C. The following types of
-pointers are recognized both as arguments and return values of C functions.</p>
+special rules for the conversion of certain pointer types which make it easy
+to pass aggregate Pure data to and from C routines, while also following the
+most common idioms for pointer usage in C. The following types of pointers are
+recognized both as arguments and return values of C functions.</p>
 <p>Bidirectional pointer conversions:</p>
 <ul class="simple">
-<li><tt class="docutils literal"><span class="pre">char*</span></tt> is used for string arguments and return values. This type of value
-is always converted from Pure's internal utf-8 based string representation
-to the system encoding and vice versa. (Thus a C routine cannot modify
-the Pure string value in-place; if this is required then you'll have to pass
-the string argument as a <tt class="docutils literal"><span class="pre">void*</span></tt>, see below.)</li>
+<li><tt class="docutils literal"><span class="pre">char*</span></tt> is used for string arguments and return values which are converted
+from Pure's internal utf-8 based string representation to the system
+encoding and vice versa. (Thus a C routine can never modify the raw Pure
+string data in-place; if this is required then you'll have to pass the
+string argument as a <tt class="docutils literal"><span class="pre">void*</span></tt>, see below.)</li>
 <li><tt class="docutils literal"><span class="pre">void*</span></tt> is for any generic pointer value, which is simply passed through
 unchanged. When used as an argument, you can also pass Pure strings,
 matrices and bigints. In this case the raw underlying data pointer
@@ -3670,21 +3670,29 @@ case of bigints) is passed, which allows the data to be modified in place
 to call most GMP integer routines directly from Pure.</li>
 <li><tt class="docutils literal"><span class="pre">dmatrix*</span></tt>, <tt class="docutils literal"><span class="pre">cmatrix*</span></tt> and <tt class="docutils literal"><span class="pre">imatrix*</span></tt> allow you to pass numeric Pure
 matrices of the appropriate types (double, complex, int). Here a pointer to
-the underlying GSL matrix is passed (not the data itself). This makes it
-possible to pass matrices between Pure and GSL routines in a direct fashion.</li>
+the underlying GSL matrix structure is passed (not just the data itself).
+This makes it possible to transfer GSL matrices between Pure and GSL
+routines in a direct fashion without any overhead. (For convenience, there
+are also some other pointer conversions for marshalling matrix arguments to
+numeric C vectors, which are described in <a class="reference internal" href="#pointers-and-matrices">Pointers and Matrices</a> below.)</li>
 <li><tt class="docutils literal"><span class="pre">expr*</span></tt> is for any kind of Pure value. A pointer to the expression node is
 passed to or from the C function. This type is to be used for C routines
-which are prepared to deal with the original Pure data, using the
-corresponding functions provided by the runtime. You can find many examples
-of this in the standard library.</li>
+which are prepared to deal with pristine Pure data, using the corresponding
+functions provided by the runtime. You can find many examples of this in the
+standard library.</li>
 </ul>
-<p>There are some more pointer conversions for matrix arguments, which are
-described in <a class="reference internal" href="#pointers-and-matrices">Pointers and Matrices</a> below. Any other kind of pointer is
-effectively treated as <tt class="docutils literal"><span class="pre">void*</span></tt> right now. This also includes pointers to
-arbitrary named types which don't have a predefined meaning in Pure, such as
-<tt class="docutils literal"><span class="pre">FILE*</span></tt> and <tt class="docutils literal"><span class="pre">time_t**</span></tt>. (In the future the interpreter may actually keep
-track of the pointer element types in such cases, but this hasn't been
-implemented yet.)</p>
+<p>All other pointer types are simply taken at face value, allowing you to pass
+Pure pointer values as is, without any conversions. This also includes
+pointers to arbitrary named types which don't have a predefined meaning in
+Pure, such as <tt class="docutils literal"><span class="pre">FILE*</span></tt>. As of Pure 0.45, the interpreter keeps track of the
+actual names of all pointer types and checks (at runtime) that the types match
+in an external call, so that you can't accidentally get a core dump by
+passing, say, a <tt class="docutils literal"><span class="pre">FILE*</span></tt> for a <tt class="docutils literal"><span class="pre">char*</span></tt>. (The call will then simply fail and
+yield a normal form, which gives you the opportunity to hook into the function
+with your own Pure definitions which may supply any desired data conversions.)
+Typing information about pointer values is also available to Pure scripts by
+means of corresponding library functions, please see the <a class="reference external" href="purelib.html#tagged-pointers">Tagged Pointers</a>
+section in the <a class="reference external" href="purelib.html">Pure Library Manual</a> for details.</p>
 </div>
 <div class="section" id="pointers-and-matrices">
 <h3><a class="toc-backref" href="#id53">9.2.3&nbsp;&nbsp;&nbsp;Pointers and Matrices</a></h3>
@@ -3693,28 +3701,26 @@ matrix values in arguments of C functions, i.e., on the input side. These
 enable you to pass Pure matrices for certain kinds of C vectors. Note that in
 any case, you can also simply pass a suitable plain pointer value instead.
 Also, these types aren't special in return values, where they will simply
-yield a pointer value. (That is, with the exception of <tt class="docutils literal"><span class="pre">char*</span></tt> which gets
-special treatment as explained in the previous subsection.) Thus you will have
-to decode such results manually if needed. The standard library provides
-various routines to do this, please see the <a class="reference external" href="purelib.html#string-functions">String Functions</a> and <a class="reference external" href="purelib.html#matrix-functions">Matrix
+yield a pointer value (with the exception of <tt class="docutils literal"><span class="pre">char*</span></tt> which gets special
+treatment as explained in the previous subsection). Thus you will have to
+decode such results manually if needed. The standard library provides various
+routines to do this, please see the <a class="reference external" href="purelib.html#string-functions">String Functions</a> and <a class="reference external" href="purelib.html#matrix-functions">Matrix
 Functions</a> sections in the <a class="reference external" href="purelib.html">Pure Library Manual</a> for details.</p>
 <p>Numeric pointer conversions (input only):</p>
 <ul class="simple">
 <li><tt class="docutils literal"><span class="pre">char*</span></tt>, <tt class="docutils literal"><span class="pre">short*</span></tt>, <tt class="docutils literal"><span class="pre">int*</span></tt>, <tt class="docutils literal"><span class="pre">float*</span></tt>, <tt class="docutils literal"><span class="pre">double*</span></tt> can be used to pass
 numeric matrices as C vectors. This kind of conversion passes just the
-matrix data (not the GSL matrix) and does conversions between integer or
-floating point data of different sizes on the fly. You can either pass an
-int matrix as a <tt class="docutils literal"><span class="pre">char*</span></tt>, <tt class="docutils literal"><span class="pre">short*</span></tt> or <tt class="docutils literal"><span class="pre">int*</span></tt> argument, or a double or
-complex matrix as a <tt class="docutils literal"><span class="pre">float*</span></tt> or <tt class="docutils literal"><span class="pre">double*</span></tt> argument (complex values are
-then represented as two separate double numbers, first the real, then the
-imaginary part).</li>
+matrix data (not the GSL matrix structure, as the <tt class="docutils literal"><span class="pre">dmatrix*</span></tt> et al
+conversions do) and does conversions between integer or floating point data
+of different sizes on the fly. You can either pass an int matrix as a
+<tt class="docutils literal"><span class="pre">char*</span></tt>, <tt class="docutils literal"><span class="pre">short*</span></tt> or <tt class="docutils literal"><span class="pre">int*</span></tt> argument, or a double or complex matrix as
+a <tt class="docutils literal"><span class="pre">float*</span></tt> or <tt class="docutils literal"><span class="pre">double*</span></tt> argument (complex values are then represented as
+two separate double numbers, first the real, then the imaginary part, for
+each matrix element).</li>
 <li><tt class="docutils literal"><span class="pre">char**</span></tt>, <tt class="docutils literal"><span class="pre">short**</span></tt>, <tt class="docutils literal"><span class="pre">int**</span></tt>, <tt class="docutils literal"><span class="pre">float**</span></tt>, <tt class="docutils literal"><span class="pre">double**</span></tt> provide yet
 another way to pass numeric matrix arguments. This works analogously to the
 numeric vector conversions above, but here a temporary C vector of pointers
-is passed to the C function, whose elements point to the rows of the matrix.
-(This kind of matrix representation is often found in audio and video
-processing software, where the rows of the matrix might denote different
-audio channels, display lines or video frames.)</li>
+is passed to the C function, whose elements point to the rows of the matrix.</li>
 </ul>
 <p>Argv-style conversions (input only):</p>
 <ul class="simple">
@@ -3722,10 +3728,10 @@ audio channels, display lines or video frames.)</li>
 arguments to C functions. In this case, the Pure argument must be a symbolic
 vector of strings or generic pointer values. <tt class="docutils literal"><span class="pre">char**</span></tt> converts the string
 elements to the system encoding, whereas <tt class="docutils literal"><span class="pre">void**</span></tt> passes through character
-string data and other pointers unchanged (and allows in-place modification).
-A temporary C vector of these elements is passed to the C function, which is
-always <tt class="docutils literal"><span class="pre">NULL</span></tt>-terminated and can thus be used for almost any purpose which
-requires such <tt class="docutils literal"><span class="pre">argv</span></tt>-style vectors.</li>
+string data and other pointers unchanged (and allows in-place modification
+of the data). A temporary C vector of these elements is passed to the C
+function, which is always <tt class="docutils literal"><span class="pre">NULL</span></tt>-terminated and can thus be used for
+almost any purpose which requires such <tt class="docutils literal"><span class="pre">argv</span></tt>-style vectors.</li>
 </ul>
 <p>Note that in the numeric pointer conversions, the matrix data is passed &quot;per
 reference&quot; to C routines, i.e., the C function may modify the data &quot;in
@@ -3749,12 +3755,12 @@ taking pointers to the corresponding GSL types (<tt class="docutils literal"><sp
 as results. (Note that there is no special marshalling of Pure's symbolic
 matrix type, as these aren't supported by GSL anyway.) Also note that matrices
 are always passed by reference. Thus, if you need to pass a matrix as an
-output parameter of a GSL matrix routine, you can either create a zero matrix
-or a copy of an existing matrix to hold the result. The prelude provides
-various operations for that purpose (in particular, see the <tt class="docutils literal"><span class="pre">dmatrix</span></tt>,
-<tt class="docutils literal"><span class="pre">cmatrix</span></tt>, <tt class="docutils literal"><span class="pre">imatrix</span></tt> and <tt class="docutils literal"><span class="pre">pack</span></tt> functions in matrices.pure). For
-instance, here is how you can quickly wrap up GSL's double matrix addition
-function in a way that preserves value semantics:</p>
+output parameter of a GSL matrix routine, you should either create a zero
+matrix or a copy of an existing matrix to hold the result. The prelude
+provides various operations for that purpose (in particular, see the
+<tt class="docutils literal"><span class="pre">dmatrix</span></tt>, <tt class="docutils literal"><span class="pre">cmatrix</span></tt>, <tt class="docutils literal"><span class="pre">imatrix</span></tt> and <tt class="docutils literal"><span class="pre">pack</span></tt> functions in
+matrices.pure). For instance, here is how you can quickly wrap up GSL's double
+matrix addition function in a way that preserves value semantics:</p>
 <pre class="literal-block">
 &gt; using &quot;lib:gsl&quot;;
 &gt; extern int gsl_matrix_add(dmatrix*, dmatrix*);
@@ -3782,8 +3788,9 @@ Hello, world!
 </pre>
 <p>Pure 0.45 and later also support <tt class="docutils literal"><span class="pre">char**</span></tt>, <tt class="docutils literal"><span class="pre">short**</span></tt>, <tt class="docutils literal"><span class="pre">int**</span></tt>,
 <tt class="docutils literal"><span class="pre">float**</span></tt> and <tt class="docutils literal"><span class="pre">double**</span></tt> parameters which encode a matrix as a vector of
-row pointers instead. As already mentioned, this kind of matrix representation
-is often used in audio and video processing software, but it's also fairly
+row pointers instead. This kind of matrix representation is often found in
+audio and video processing software (where the rows of the matrix might denote
+different audio channels, display lines or video frames), but it's also fairly
 convenient to do any kind of matrix processing in C. For instance, here's how
 to do matrix multiplication (the naive algorithm):</p>
 <pre class="literal-block">
@@ -3819,14 +3826,16 @@ extern int execvp(char *path, char **argv);
 extern int waitpid(int pid, int *status, int options);
 
 system cmd::string = case fork of
-  // child: execute the shell, bail out if error
+  // child: execute the program, bail out if error
   0 = execvp &quot;/bin/sh&quot; {&quot;/bin/sh&quot;,&quot;-c&quot;,cmd} $$ exit 1;
-  // parent: wait for the child to finish
-  pid = waitpid pid NULL 0 if pid&gt;=0;
+  // parent: wait for the child and return its exit code
+  pid = waitpid pid status 0 $$ status!0 &gt;&gt; 8
+        when status = {0} end if pid&gt;=0;
 end;
 
 system &quot;echo Hello, world!&quot;;
 system &quot;ls -l *.pure&quot;;
+system &quot;exit 1&quot;;
 </pre>
 </div>
 </div>
@@ -3888,7 +3897,7 @@ callable from Pure. (This also works when batch-compiling a Pure script. In
 this case, the bitcode file actually gets linked into the output code, so the
 loaded bitcode module only needs to be present at compile time.)</p>
 <p>By default the imported symbols will be public. You can also specify the
-desired scope of the symbols explicitly, by placing the <tt class="docutils literal"><span class="pre">public</span></tt> our
+desired scope of the symbols explicitly, by placing the <tt class="docutils literal"><span class="pre">public</span></tt> or
 <tt class="docutils literal"><span class="pre">private</span></tt> keyword before the module name. For instance:</p>
 <pre class="literal-block">
 using private &quot;bc:modname&quot;;
@@ -3959,9 +3968,8 @@ after loading the bitcode module.</li>
 <li>The bitcode interface is limited to the same range of C types as Pure's
 plain C interface. In practice, this should cover most C code, but it's
 certainly possible that you run into unsupported types for arguments and
-return values (such as C structs passed by value). The compiler will then
-print a warning; the affected functions will still be linked in, but they
-will not be callable from Pure.</li>
+return values. The compiler will then print a warning; the affected
+functions will still be linked in, but they will not be callable from Pure.</li>
 <li>The Pure interpreter will try to satisfy external references in an imported
 bitcode module from other loaded libraries and bitcode modules. This happens
 at the time the code is JIT-compiled. At present, the JIT generates a fatal
@@ -5377,12 +5385,15 @@ option can be used to get warnings about unqualified symbols which are
 resolved to a different namespace than previously. It also provides a means to
 check your scripts for implicit declarations which might indicate missing or
 mistyped function symbols.</p>
-<p>Pure 0.45 changed the interpretation of numeric pointer arguments (<tt class="docutils literal"><span class="pre">int*</span></tt>
-etc.) in the C interface, to bring them in line with the other new numeric
-matrix conversions (<tt class="docutils literal"><span class="pre">int**</span></tt> etc.). In particular, the matrix data can now be
-modified in-place and type checking is more strict (<tt class="docutils literal"><span class="pre">int*</span></tt> requires an int
-matrix, etc.). Also, there's now support for <tt class="docutils literal"><span class="pre">argv</span></tt>-style vector arguments
-(<tt class="docutils literal"><span class="pre">char**</span></tt> and <tt class="docutils literal"><span class="pre">void**</span></tt>). Please see the <a class="reference internal" href="#c-types">C Types</a> section for details.</p>
+<p>Pure 0.45 added support for checking arbitrary pointer types in the C
+interface, so that you don't have to worry about passing the wrong kinds of
+pointers to system and library routines any more. Moreover, the interpretation
+of numeric pointer arguments (<tt class="docutils literal"><span class="pre">int*</span></tt> etc.) was changed to bring them in line
+with the other new numeric matrix conversions (<tt class="docutils literal"><span class="pre">int**</span></tt> etc.). In particular,
+the matrix data can now be modified in-place and type checking is more strict
+(<tt class="docutils literal"><span class="pre">int*</span></tt> requires an int matrix, etc.). Also, there's now support for
+<tt class="docutils literal"><span class="pre">argv</span></tt>-style vector arguments (<tt class="docutils literal"><span class="pre">char**</span></tt> and <tt class="docutils literal"><span class="pre">void**</span></tt>). Please see the <a class="reference internal" href="#c-types">C
+Types</a> section for details.</p>
 </div>
 <div class="section" id="error-recovery">
 <h2><a class="toc-backref" href="#id76">13.3&nbsp;&nbsp;&nbsp;Error Recovery</a></h2>
@@ -5798,19 +5809,10 @@ Unstripped Executables</a> for details.)</p>
 <p>The interpreter always takes your <tt class="docutils literal"><span class="pre">extern</span></tt> declarations of C routines at
 face value. It will not go and read any C header files to determine whether
 you actually declared the function correctly! So you have to be careful to
-give the proper declarations, otherwise your program will probably segfault
-calling the function. (This mischief can be avoided when using the bitcode
-interface, however. See <a class="reference internal" href="#importing-llvm-bitcode">Importing LLVM Bitcode</a> and <a class="reference internal" href="#inline-code">Inline Code</a> in the <a class="reference internal" href="#c-interface">C
-Interface</a> section.)</p>
-<p>You also have to be careful when passing generic pointer values to external C
-routines, since currently there is no type checking for these; any pointer
-type other than <tt class="docutils literal"><span class="pre">char*</span></tt>, <tt class="docutils literal"><span class="pre">expr*</span></tt> and the matrix pointer types is
-effectively treated as <tt class="docutils literal"><span class="pre">void*</span></tt>. This considerably simplifies lowlevel
-programming and interfacing to C libraries, but also makes it very easy to
-have your program segfault all over the place. Therefore it is highly
-recommended that you wrap your lowlevel code in Pure routines and data
-structures which do all the checks necessary to ensure that only the right
-kind of data is passed to C routines.</p>
+give the proper declarations, otherwise your program might well give a
+segfault when calling the function. (This mischief can mostly be avoided when
+using the bitcode interface, however. See <a class="reference internal" href="#importing-llvm-bitcode">Importing LLVM Bitcode</a> and
+<a class="reference internal" href="#inline-code">Inline Code</a> in the <a class="reference internal" href="#c-interface">C Interface</a> section.)</p>
 <p>Another limitation of the C interface is that it does not offer any special
 support for C structs and C function parameters. However, an optional addon
 module is available which interfaces to the <a class="reference external" href="http://sourceware.org/libffi/">libffi</a> library to provide that

@@ -3330,11 +3330,10 @@ or more asterisks, as in C. For instance::
   > strchr "foo bar" (ord "b");
   "bar"
 
-Pure essentially lumps all pointer types together (basically, they're all
-equivalent to ``void*``), but, as you can see in the previous example, some
-pointer types get special treatment, allowing you to pass certain kinds of
-Pure data (such as Pure strings as ``char*`` in this example). This is
-discussed in more detail in `C Types`_ below.
+As you can see in the previous example, some pointer types get special
+treatment, allowing you to pass certain kinds of Pure data (such as Pure
+strings as ``char*`` in this example). This is discussed in more detail in `C
+Types`_ below.
 
 The interpreter makes sure that the parameters in a call match; if not, then
 by default the call is treated as a normal form expression::
@@ -3433,11 +3432,11 @@ a transparent way, of course.
 
 Note that, to keep things simple, Pure does *not* provide any notations for C
 structs or function types, although it is possible to represent pointers to
-such objects using ``void*``. In practice, this simplified system should cover
-most kinds of calls that need to be done when interfacing to C libraries.
-However, there are ways to work around these limitations if you need to access
-C structs or call back from C to Pure, see `External C Functions`_ in the
-`Caveats and Notes`_ section for details.
+such objects using ``void*`` or some other appropriate pointer types. In
+practice, this simplified system should cover most kinds of calls that need to
+be done when interfacing to C libraries, but there are ways to work around
+these limitations if you need to access C structs or call back from C to Pure,
+see `External C Functions`_ in the `Caveats and Notes`_ section for details.
 
 Basic C Types
 ~~~~~~~~~~~~~
@@ -3452,17 +3451,17 @@ empty tuple ``()``.
 
 Both ``float`` and ``double`` are supported as floating point types. Single
 precision ``float`` arguments and return values are converted from/to Pure's
-double precision floating point numbers automatically.
+double precision floating point numbers.
 
-A variety of C integer types (``char``, ``short``, ``int``, ``long``) are
-provided which are converted from/to the available Pure integer types in a
-straightforward way. In addition, the synonyms ``int8``, ``int16`` and
-``int32`` are provided for ``char``, ``short`` and ``int``, respectively, and
-``int64`` denotes 64 bit integers (a.k.a. ISO C99 ``long long``). Note that
-``long`` is equivalent to ``int32`` on 32 bit systems, whereas it is the same
-as ``int64`` on most 64 bit systems. To make it easier to interface to various
-system routines, there's also a special ``size_t`` integer type which usually
-is 4 bytes on 32 bit and 8 bytes on 64 bit systems.
+A variety of C integer types (``bool``, ``char``, ``short``, ``int``,
+``long``) are provided which are converted from/to the available Pure integer
+types in a straightforward way. In addition, the synonyms ``int8``, ``int16``
+and ``int32`` are provided for ``char``, ``short`` and ``int``, respectively,
+and ``int64`` denotes 64 bit integers (a.k.a. ISO C99 ``long long``). Note
+that ``long`` is equivalent to ``int32`` on 32 bit systems, whereas it is the
+same as ``int64`` on most 64 bit systems. To make it easier to interface to
+various system routines, there's also a special ``size_t`` integer type which
+usually is 4 bytes on 32 bit and 8 bytes on 64 bit systems.
 
 All integer parameters take both Pure ints and bigints as actual arguments;
 truncation or sign extension is performed as needed, so that the C interface
@@ -3483,17 +3482,18 @@ Pointer Types
 ~~~~~~~~~~~~~
 
 The use of pointer types is also fairly straightforward, but Pure has some
-special rules for the conversion of certain pointer types, which are supposed
-to cover the most common idioms for pointer usage in C. The following types of
-pointers are recognized both as arguments and return values of C functions.
+special rules for the conversion of certain pointer types which make it easy
+to pass aggregate Pure data to and from C routines, while also following the
+most common idioms for pointer usage in C. The following types of pointers are
+recognized both as arguments and return values of C functions.
 
 Bidirectional pointer conversions:
 
-* ``char*`` is used for string arguments and return values. This type of value
-  is always converted from Pure's internal utf-8 based string representation
-  to the system encoding and vice versa. (Thus a C routine cannot modify
-  the Pure string value in-place; if this is required then you'll have to pass
-  the string argument as a ``void*``, see below.)
+* ``char*`` is used for string arguments and return values which are converted
+  from Pure's internal utf-8 based string representation to the system
+  encoding and vice versa. (Thus a C routine can never modify the raw Pure
+  string data in-place; if this is required then you'll have to pass the
+  string argument as a ``void*``, see below.)
 
 * ``void*`` is for any generic pointer value, which is simply passed through
   unchanged. When used as an argument, you can also pass Pure strings,
@@ -3506,22 +3506,32 @@ Bidirectional pointer conversions:
 
 * ``dmatrix*``, ``cmatrix*`` and ``imatrix*`` allow you to pass numeric Pure
   matrices of the appropriate types (double, complex, int). Here a pointer to
-  the underlying GSL matrix is passed (not the data itself). This makes it
-  possible to pass matrices between Pure and GSL routines in a direct fashion.
+  the underlying GSL matrix structure is passed (not just the data itself).
+  This makes it possible to transfer GSL matrices between Pure and GSL
+  routines in a direct fashion without any overhead. (For convenience, there
+  are also some other pointer conversions for marshalling matrix arguments to
+  numeric C vectors, which are described in `Pointers and Matrices`_ below.)
 
 * ``expr*`` is for any kind of Pure value. A pointer to the expression node is
   passed to or from the C function. This type is to be used for C routines
-  which are prepared to deal with the original Pure data, using the
-  corresponding functions provided by the runtime. You can find many examples
-  of this in the standard library.
+  which are prepared to deal with pristine Pure data, using the corresponding
+  functions provided by the runtime. You can find many examples of this in the
+  standard library.
 
-There are some more pointer conversions for matrix arguments, which are
-described in `Pointers and Matrices`_ below. Any other kind of pointer is
-effectively treated as ``void*`` right now. This also includes pointers to
-arbitrary named types which don't have a predefined meaning in Pure, such as
-``FILE*`` and ``time_t**``. (In the future the interpreter may actually keep
-track of the pointer element types in such cases, but this hasn't been
-implemented yet.)
+All other pointer types are simply taken at face value, allowing you to pass
+Pure pointer values as is, without any conversions. This also includes
+pointers to arbitrary named types which don't have a predefined meaning in
+Pure, such as ``FILE*``. As of Pure 0.45, the interpreter keeps track of the
+actual names of all pointer types and checks (at runtime) that the types match
+in an external call, so that you can't accidentally get a core dump by
+passing, say, a ``FILE*`` for a ``char*``. (The call will then simply fail and
+yield a normal form, which gives you the opportunity to hook into the function
+with your own Pure definitions which may supply any desired data conversions.)
+Typing information about pointer values is also available to Pure scripts by
+means of corresponding library functions, please see the `Tagged Pointers`_
+section in the `Pure Library Manual`_ for details.
+
+.. _Tagged Pointers: purelib.html#tagged-pointers
 
 Pointers and Matrices
 ~~~~~~~~~~~~~~~~~~~~~
@@ -3531,10 +3541,10 @@ matrix values in arguments of C functions, i.e., on the input side. These
 enable you to pass Pure matrices for certain kinds of C vectors. Note that in
 any case, you can also simply pass a suitable plain pointer value instead.
 Also, these types aren't special in return values, where they will simply
-yield a pointer value. (That is, with the exception of ``char*`` which gets
-special treatment as explained in the previous subsection.) Thus you will have
-to decode such results manually if needed. The standard library provides
-various routines to do this, please see the `String Functions`_ and `Matrix
+yield a pointer value (with the exception of ``char*`` which gets special
+treatment as explained in the previous subsection). Thus you will have to
+decode such results manually if needed. The standard library provides various
+routines to do this, please see the `String Functions`_ and `Matrix
 Functions`_ sections in the `Pure Library Manual`_ for details.
 
 .. _String Functions: purelib.html#string-functions
@@ -3544,20 +3554,18 @@ Numeric pointer conversions (input only):
 
 * ``char*``, ``short*``, ``int*``, ``float*``, ``double*`` can be used to pass
   numeric matrices as C vectors. This kind of conversion passes just the
-  matrix data (not the GSL matrix) and does conversions between integer or
-  floating point data of different sizes on the fly. You can either pass an
-  int matrix as a ``char*``, ``short*`` or ``int*`` argument, or a double or
-  complex matrix as a ``float*`` or ``double*`` argument (complex values are
-  then represented as two separate double numbers, first the real, then the
-  imaginary part).
+  matrix data (not the GSL matrix structure, as the ``dmatrix*`` et al
+  conversions do) and does conversions between integer or floating point data
+  of different sizes on the fly. You can either pass an int matrix as a
+  ``char*``, ``short*`` or ``int*`` argument, or a double or complex matrix as
+  a ``float*`` or ``double*`` argument (complex values are then represented as
+  two separate double numbers, first the real, then the imaginary part, for
+  each matrix element).
 
 * ``char**``, ``short**``, ``int**``, ``float**``, ``double**`` provide yet
   another way to pass numeric matrix arguments. This works analogously to the
   numeric vector conversions above, but here a temporary C vector of pointers
   is passed to the C function, whose elements point to the rows of the matrix.
-  (This kind of matrix representation is often found in audio and video
-  processing software, where the rows of the matrix might denote different
-  audio channels, display lines or video frames.)
 
 Argv-style conversions (input only):
 
@@ -3565,10 +3573,10 @@ Argv-style conversions (input only):
   arguments to C functions. In this case, the Pure argument must be a symbolic
   vector of strings or generic pointer values. ``char**`` converts the string
   elements to the system encoding, whereas ``void**`` passes through character
-  string data and other pointers unchanged (and allows in-place modification).
-  A temporary C vector of these elements is passed to the C function, which is
-  always ``NULL``-terminated and can thus be used for almost any purpose which
-  requires such ``argv``-style vectors.
+  string data and other pointers unchanged (and allows in-place modification
+  of the data). A temporary C vector of these elements is passed to the C
+  function, which is always ``NULL``-terminated and can thus be used for
+  almost any purpose which requires such ``argv``-style vectors.
 
 Note that in the numeric pointer conversions, the matrix data is passed "per
 reference" to C routines, i.e., the C function may modify the data "in
@@ -3594,12 +3602,12 @@ taking pointers to the corresponding GSL types (``gsl_matrix``,
 as results. (Note that there is no special marshalling of Pure's symbolic
 matrix type, as these aren't supported by GSL anyway.) Also note that matrices
 are always passed by reference. Thus, if you need to pass a matrix as an
-output parameter of a GSL matrix routine, you can either create a zero matrix
-or a copy of an existing matrix to hold the result. The prelude provides
-various operations for that purpose (in particular, see the ``dmatrix``,
-``cmatrix``, ``imatrix`` and ``pack`` functions in matrices.pure). For
-instance, here is how you can quickly wrap up GSL's double matrix addition
-function in a way that preserves value semantics::
+output parameter of a GSL matrix routine, you should either create a zero
+matrix or a copy of an existing matrix to hold the result. The prelude
+provides various operations for that purpose (in particular, see the
+``dmatrix``, ``cmatrix``, ``imatrix`` and ``pack`` functions in
+matrices.pure). For instance, here is how you can quickly wrap up GSL's double
+matrix addition function in a way that preserves value semantics::
 
   > using "lib:gsl";
   > extern int gsl_matrix_add(dmatrix*, dmatrix*);
@@ -3628,8 +3636,9 @@ the string ``"Hello, world!"`` as byte values (ASCII codes)::
 
 Pure 0.45 and later also support ``char**``, ``short**``, ``int**``,
 ``float**`` and ``double**`` parameters which encode a matrix as a vector of
-row pointers instead. As already mentioned, this kind of matrix representation
-is often used in audio and video processing software, but it's also fairly
+row pointers instead. This kind of matrix representation is often found in
+audio and video processing software (where the rows of the matrix might denote
+different audio channels, display lines or video frames), but it's also fairly
 convenient to do any kind of matrix processing in C. For instance, here's how
 to do matrix multiplication (the naive algorithm)::
 
@@ -3667,14 +3676,16 @@ UNIX-specific and doesn't do much error-checking, but you get the idea.)
   extern int waitpid(int pid, int *status, int options);
 
   system cmd::string = case fork of
-    // child: execute the shell, bail out if error
+    // child: execute the program, bail out if error
     0 = execvp "/bin/sh" {"/bin/sh","-c",cmd} $$ exit 1;
-    // parent: wait for the child to finish
-    pid = waitpid pid NULL 0 if pid>=0;
+    // parent: wait for the child and return its exit code
+    pid = waitpid pid status 0 $$ status!0 >> 8
+          when status = {0} end if pid>=0;
   end;
 
   system "echo Hello, world!";
   system "ls -l *.pure";
+  system "exit 1";
 
 Importing Dynamic Libraries
 ---------------------------
@@ -3740,7 +3751,7 @@ this case, the bitcode file actually gets linked into the output code, so the
 loaded bitcode module only needs to be present at compile time.)
 
 By default the imported symbols will be public. You can also specify the
-desired scope of the symbols explicitly, by placing the ``public`` our
+desired scope of the symbols explicitly, by placing the ``public`` or
 ``private`` keyword before the module name. For instance::
 
   using private "bc:modname";
@@ -3814,9 +3825,8 @@ experimental, and there are some known limitations:
 * The bitcode interface is limited to the same range of C types as Pure's
   plain C interface. In practice, this should cover most C code, but it's
   certainly possible that you run into unsupported types for arguments and
-  return values (such as C structs passed by value). The compiler will then
-  print a warning; the affected functions will still be linked in, but they
-  will not be callable from Pure.
+  return values. The compiler will then print a warning; the affected
+  functions will still be linked in, but they will not be callable from Pure.
 
 * The Pure interpreter will try to satisfy external references in an imported
   bitcode module from other loaded libraries and bitcode modules. This happens
@@ -5327,12 +5337,15 @@ resolved to a different namespace than previously. It also provides a means to
 check your scripts for implicit declarations which might indicate missing or
 mistyped function symbols.
 
-Pure 0.45 changed the interpretation of numeric pointer arguments (``int*``
-etc.) in the C interface, to bring them in line with the other new numeric
-matrix conversions (``int**`` etc.). In particular, the matrix data can now be
-modified in-place and type checking is more strict (``int*`` requires an int
-matrix, etc.). Also, there's now support for ``argv``-style vector arguments
-(``char**`` and ``void**``). Please see the `C Types`_ section for details.
+Pure 0.45 added support for checking arbitrary pointer types in the C
+interface, so that you don't have to worry about passing the wrong kinds of
+pointers to system and library routines any more. Moreover, the interpretation
+of numeric pointer arguments (``int*`` etc.) was changed to bring them in line
+with the other new numeric matrix conversions (``int**`` etc.). In particular,
+the matrix data can now be modified in-place and type checking is more strict
+(``int*`` requires an int matrix, etc.). Also, there's now support for
+``argv``-style vector arguments (``char**`` and ``void**``). Please see the `C
+Types`_ section for details.
 
 Error Recovery
 --------------
@@ -5766,20 +5779,10 @@ External C Functions
 The interpreter always takes your ``extern`` declarations of C routines at
 face value. It will not go and read any C header files to determine whether
 you actually declared the function correctly! So you have to be careful to
-give the proper declarations, otherwise your program will probably segfault
-calling the function. (This mischief can be avoided when using the bitcode
-interface, however. See `Importing LLVM Bitcode`_ and `Inline Code`_ in the `C
-Interface`_ section.)
-
-You also have to be careful when passing generic pointer values to external C
-routines, since currently there is no type checking for these; any pointer
-type other than ``char*``, ``expr*`` and the matrix pointer types is
-effectively treated as ``void*``. This considerably simplifies lowlevel
-programming and interfacing to C libraries, but also makes it very easy to
-have your program segfault all over the place. Therefore it is highly
-recommended that you wrap your lowlevel code in Pure routines and data
-structures which do all the checks necessary to ensure that only the right
-kind of data is passed to C routines.
+give the proper declarations, otherwise your program might well give a
+segfault when calling the function. (This mischief can mostly be avoided when
+using the bitcode interface, however. See `Importing LLVM Bitcode`_ and
+`Inline Code`_ in the `C Interface`_ section.)
 
 Another limitation of the C interface is that it does not offer any special
 support for C structs and C function parameters. However, an optional addon
