@@ -12318,9 +12318,23 @@ pure_expr *globlist(const glob_t *pglob)
 #include <sys/types.h>
 #include <regex.h>
 
-/* FIXME: This is the old regex interface helper functions for Pure <= 0.41.
-   These are still provided here for backward compatibility, but should
-   eventually be removed. */
+static int translate_pos(char *s, int p, int l)
+{
+  assert(p >= 0 && p <= l);
+  char c = s[p]; s[p] = 0;
+  /* XXXFIXME: This probably won't work for stateful encodings, because we're
+     converting a substring here. */
+  char *t = toutf8(s); assert(t);
+  int res = strlen(t);
+  free(t); s[p] = c;
+  return res;
+}
+
+#if 0
+
+/* This is the old regex interface helper functions for Pure <= 0.41. These
+   are still listed here for documentation purposes, but aren't included in
+   the runtime any more. */
 
 extern "C"
 pure_expr *regmatches(const regex_t *preg, int flags)
@@ -12333,18 +12347,6 @@ pure_expr *regmatches(const regex_t *preg, int flags)
   pure_expr *x = pure_apply2(pure_apply2(f, pure_int(n)),
 			     pure_pointer(matches));
   return x;
-}
-
-static int translate_pos(char *s, int p, int l)
-{
-  assert(p >= 0 && p <= l);
-  char c = s[p]; s[p] = 0;
-  /* XXXFIXME: This probably won't work for stateful encodings, because we're
-     converting a substring here. */
-  char *t = toutf8(s); assert(t);
-  int res = strlen(t);
-  free(t); s[p] = c;
-  return res;
 }
 
 extern "C"
@@ -12414,6 +12416,8 @@ pure_expr *reglist(const regex_t *preg, const char *s,
   free(t);
   return x;
 }
+
+#endif
 
 /* New regex interface (Pure 0.42 and later). We now maintain our own regex
    pattern buffer which supports additional convenience operations for
