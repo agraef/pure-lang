@@ -2426,12 +2426,12 @@ sentry#2
 <h3><a class="toc-backref" href="#id97">1.7.10&nbsp;&nbsp;&nbsp;Tagged Pointers</a></h3>
 <p>As of Pure 0.45, the C interface now fully checks pointer parameter types
 at runtime (see the <a class="reference external" href="pure.html#c-types">C Types</a> section in the <a class="reference external" href="pure.html">Pure Manual</a> for details).
-To these ends, pointer values are now internally tagged with machine ints
-to keep track of the pointer types. The operations described in this
-section give you access to these pointer tags in Pure programs.</p>
-<p>At the lowest level, a pointer tag is simply a machine int associated with
-a pointer value. The following operations are provided to create such tags,
-and set, get or verify the tag of a pointer value.</p>
+To these ends, pointer values are internally tagged to keep track of the
+pointer types. The operations described in this section give you access to
+these tags in Pure programs. At the lowest level, a pointer tag is simply a
+machine int associated with a pointer value. The following operations are
+provided to create such tags, and set, get or verify the tag of a pointer
+value.</p>
 <a name="ptrtag"><dl class="docutils" id="ptrtag">
 <dt><tt class="docutils literal"><span class="pre">ptrtag</span> <span class="pre">t</span> <span class="pre">x</span></tt></dt>
 <dd>Places an integer tag <tt class="docutils literal"><span class="pre">t</span></tt> at an expression <tt class="docutils literal"><span class="pre">x</span></tt> and returns the
@@ -2467,13 +2467,12 @@ the tags match.</dd>
 0
 </pre>
 <!--  -->
-<p>However, you'll rarely have to deal with pointer tags at this level
-yourself. The operations above are provided so that you can design your
-own, more elaborate type systems for pointer values if the need arises. For
-most applications, all that's needed are means to inspect the type of a
-Pure pointer, and maybe modify that type by &quot;casting&quot; it to a suitable
-target type. The following high-level operations provide these
-capabilities.</p>
+<p>The operations above are provided so that you can design your own, more
+elaborate type systems for pointer values if the need arises. However,
+you'll rarely have to deal with pointer tags at this level yourself. For
+most applications, it's enough to inspect the type of a Pure pointer and
+maybe modify it by &quot;casting&quot; it to a new target type. The following
+high-level operations provide these capabilities.</p>
 <a name="pointer_tag"><dl class="docutils" id="pointer-tag">
 <dt><tt class="docutils literal"><span class="pre">pointer_tag</span> <span class="pre">type</span></tt>, <tt class="docutils literal"><span class="pre">pointer_type</span> <span class="pre">x</span></tt></dt>
 <dd>Returns the pointer tag for the given <tt class="docutils literal"><span class="pre">type</span></tt>, given as a string, or the
@@ -2505,9 +2504,14 @@ operation).</dd>
 [&quot;void*&quot;,&quot;char*&quot;]
 &gt; map pointer_tag [p,q];
 [0,1]
-&gt; map pointer_type (0..make_ptrtag);
-[&quot;void*&quot;,&quot;char*&quot;,#&lt;pointer 0&gt;]
+&gt; map pointer_type (0..make_ptrtag-1);
+[&quot;void*&quot;,&quot;char*&quot;,&quot;void**&quot;,&quot;char**&quot;,&quot;short*&quot;,&quot;short**&quot;,&quot;int*&quot;,&quot;int**&quot;,
+&quot;float*&quot;,&quot;float**&quot;,&quot;double*&quot;,&quot;double**&quot;]
 </pre>
+<p>(The last command shows a quick and dirty way to retrieve the currently
+defined type tags in the interpreter. This won't work in batch-compiled
+scripts, however, since in this case the range of type tags is in general
+non-contiguous.)</p>
 <p>If you have to do many casts to a given type, you can avoid the overhead of
 repeatedly looking up the type name by assigning the tag to a variable,
 which can then be passed to <tt class="docutils literal"><span class="pre">pointer_cast</span></tt> instead:</p>
@@ -2519,20 +2523,17 @@ which can then be passed to <tt class="docutils literal"><span class="pre">point
 <tt class="docutils literal"><span class="pre">pointer_cast</span></tt> may have to create a copy of the original pointer value in
 order not to globber the original type tag. The sentry will then still be
 with the original cooked pointer value, thus you have to ensure that this
-value survives its type-cast duplicate. Otherwise, if the duplicate
-survives its original, you may be left with a dangling pointer pointing
-nowhere. Therefore we recommend that you should apply type casts to cooked
-pointers right at the spot where the pointer gets passed to an external
-function, e.g.:</p>
+value survives its type-cast duplicate. It's usually best to apply the cast
+right at the spot where the pointer gets passed to an external function,
+e.g.:</p>
 <pre class="literal-block">
 &gt; extern char *gets(char*);
-&gt; gets (pointer_cast &quot;char*&quot; p) when p = cooked $ malloc 1000 end;
+&gt; let p = cooked $ malloc 1000;
+&gt; gets (pointer_cast &quot;char*&quot; p);
 </pre>
-<p>Such usage is always safe. (Of course, in the above example you could also
-have cast the result of <tt class="docutils literal"><span class="pre">malloc</span></tt> to the proper target type right away.)
-If this approach isn't possible, simply use <tt class="docutils literal"><span class="pre">ptrtag</span></tt> instead. This will
-globber the type tag of the pointer, but you can always change it back
-afterwards.</p>
+<p>Such usage is always safe. If this approach isn't possible, you might want
+to use the lowlevel <tt class="docutils literal"><span class="pre">ptrtag</span></tt> operation instead. (This will globber the
+type tag of the pointer, but you can always change it back afterwards.)</p>
 <!--  -->
 </div>
 <div class="section" id="expression-references">

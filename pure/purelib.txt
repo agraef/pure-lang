@@ -3802,15 +3802,14 @@ Tagged Pointers
 
 As of Pure 0.45, the C interface now fully checks pointer parameter types
 at runtime (see the `C Types`_ section in the `Pure Manual`_ for details).
-To these ends, pointer values are now internally tagged with machine ints
-to keep track of the pointer types. The operations described in this
-section give you access to these pointer tags in Pure programs.
+To these ends, pointer values are internally tagged to keep track of the
+pointer types. The operations described in this section give you access to
+these tags in Pure programs. At the lowest level, a pointer tag is simply a
+machine int associated with a pointer value. The following operations are
+provided to create such tags, and set, get or verify the tag of a pointer
+value.
 
 .. _C Types: pure.html#c-types
-
-At the lowest level, a pointer tag is simply a machine int associated with
-a pointer value. The following operations are provided to create such tags,
-and set, get or verify the tag of a pointer value.
 
 .. raw:: html
 
@@ -3868,13 +3867,12 @@ Examples::
 
 ..
 
-However, you'll rarely have to deal with pointer tags at this level
-yourself. The operations above are provided so that you can design your
-own, more elaborate type systems for pointer values if the need arises. For
-most applications, all that's needed are means to inspect the type of a
-Pure pointer, and maybe modify that type by "casting" it to a suitable
-target type. The following high-level operations provide these
-capabilities.
+The operations above are provided so that you can design your own, more
+elaborate type systems for pointer values if the need arises. However,
+you'll rarely have to deal with pointer tags at this level yourself. For
+most applications, it's enough to inspect the type of a Pure pointer and
+maybe modify it by "casting" it to a new target type. The following
+high-level operations provide these capabilities.
 
 .. raw:: html
 
@@ -3922,8 +3920,14 @@ Example::
   ["void*","char*"]
   > map pointer_tag [p,q];
   [0,1]
-  > map pointer_type (0..make_ptrtag);
-  ["void*","char*",#<pointer 0>]
+  > map pointer_type (0..make_ptrtag-1);
+  ["void*","char*","void**","char**","short*","short**","int*","int**",
+  "float*","float**","double*","double**"]
+
+(The last command shows a quick and dirty way to retrieve the currently
+defined type tags in the interpreter. This won't work in batch-compiled
+scripts, however, since in this case the range of type tags is in general
+non-contiguous.)
 
 If you have to do many casts to a given type, you can avoid the overhead of
 repeatedly looking up the type name by assigning the tag to a variable,
@@ -3936,20 +3940,17 @@ Note that you have to be careful when casting a cooked pointer, because
 ``pointer_cast`` may have to create a copy of the original pointer value in
 order not to globber the original type tag. The sentry will then still be
 with the original cooked pointer value, thus you have to ensure that this
-value survives its type-cast duplicate. Otherwise, if the duplicate
-survives its original, you may be left with a dangling pointer pointing
-nowhere. Therefore we recommend that you should apply type casts to cooked
-pointers right at the spot where the pointer gets passed to an external
-function, e.g.::
+value survives its type-cast duplicate. It's usually best to apply the cast
+right at the spot where the pointer gets passed to an external function,
+e.g.::
 
   > extern char *gets(char*);
-  > gets (pointer_cast "char*" p) when p = cooked $ malloc 1000 end;
+  > let p = cooked $ malloc 1000;
+  > gets (pointer_cast "char*" p);
 
-Such usage is always safe. (Of course, in the above example you could also
-have cast the result of ``malloc`` to the proper target type right away.)
-If this approach isn't possible, simply use ``ptrtag`` instead. This will
-globber the type tag of the pointer, but you can always change it back
-afterwards.
+Such usage is always safe. If this approach isn't possible, you might want
+to use the lowlevel ``ptrtag`` operation instead. (This will globber the
+type tag of the pointer, but you can always change it back afterwards.)
 
 ..
 
