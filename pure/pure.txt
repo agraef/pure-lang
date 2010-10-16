@@ -3281,7 +3281,7 @@ as described below. By these means, all functions in the standard C library
 and the Pure runtime are readily available to Pure scripts. Functions can also
 be loaded from dynamic libraries and LLVM bitcode files at runtime. In the
 latter case, you don't even need to write any ``extern`` declarations, the
-interpreter will do that for you. As of Pure 0.45, you can even add inline
+interpreter will do that for you. As of Pure 0.45, you can also add inline
 C/C++ and Fortran code to your Pure scripts and have the Pure interpreter
 compile them on the fly, provided that you have the corresponding compilers
 from the LLVM project installed.
@@ -3729,9 +3729,9 @@ As of Pure 0.44, the interpreter also provides a direct way to import LLVM
 bitcode modules in Pure scripts. The main advantage of this method over the
 "plain" C interface explained above is that the bitcode loader knows all the
 call interfaces and generates the necessary ``extern`` declarations
-automatically. This is more than just a convenience, as it also eliminates
-mistakes in ``extern`` declarations that may arise when importing functions
-manually from dynamic libraries.
+automatically. This is more than just a convenience, as it also eliminates at
+least some of the mistakes in ``extern`` declarations that may arise when
+importing functions manually from dynamic libraries.
 
 LLVM bitcode is loaded in a Pure script using the following special format of
 the ``using`` clause::
@@ -3814,13 +3814,15 @@ further details.
 Please note that at this time the LLVM bitcode interface is still somewhat
 experimental, and there are some known limitations:
 
-* LLVM doesn't distinguish between ``char*`` and ``void*`` in bitcode, so all
-  ``char*`` parameters and return values in C code will by default be promoted
-  to ``void*`` on the Pure side. This means that string values won't be
-  converted between Pure's internal UTF-8 encoding and the system encoding. If
-  this is a problem then you can redeclare the function with the proper
-  parameter and result types under a different name (alias and/or namespace)
-  after loading the bitcode module.
+* Much of the type information of the original C module isn't available in the
+  bitcode file.  In particular, LLVM doesn't distinguish between ``char*`` and
+  ``void*`` in bitcode, so all ``void*`` parameters and return values in C
+  code will be promoted to ``char*`` on the Pure side. Moreover, pointers to
+  custom C types which don't have a predefined meaning in Pure will generally
+  end up being some kind of generic pointer (``void*``, ``void**``, etc.) in
+  Pure. If this is a problem then after loading the bitcode module you'll have
+  to redeclare the corresponding functions yourself (under an alias), giving
+  the precise parameter and result types that you need.
 
 * The bitcode interface is limited to the same range of C types as Pure's
   plain C interface. In practice, this should cover most C code, but it's
@@ -5780,8 +5782,8 @@ The interpreter always takes your ``extern`` declarations of C routines at
 face value. It will not go and read any C header files to determine whether
 you actually declared the function correctly! So you have to be careful to
 give the proper declarations, otherwise your program might well give a
-segfault when calling the function. (This mischief can mostly be avoided when
-using the bitcode interface, however. See `Importing LLVM Bitcode`_ and
+segfault when calling the function. (This problem can to some extent be
+alleviated by using the bitcode interface. See `Importing LLVM Bitcode`_ and
 `Inline Code`_ in the `C Interface`_ section.)
 
 Another limitation of the C interface is that it does not offer any special
