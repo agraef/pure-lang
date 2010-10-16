@@ -12692,9 +12692,10 @@ void pure_sys_vars(void)
 {
   interpreter& interp = *interpreter::g_interp;
   // standard I/O streams
-  df(interp, "stdin",	pure_pointer(stdin));
-  df(interp, "stdout",	pure_pointer(stdout));
-  df(interp, "stderr",	pure_pointer(stderr));
+  int ty = pure_pointer_tag("FILE*");
+  df(interp, "stdin",	pure_tag(ty, pure_pointer(stdin)));
+  df(interp, "stdout",	pure_tag(ty, pure_pointer(stdout)));
+  df(interp, "stderr",	pure_tag(ty, pure_pointer(stderr)));
   // time functions
   cdf(interp, "CLOCKS_PER_SEC",	pure_int(CLOCKS_PER_SEC));
   cdf(interp, "SIZEOF_TM",	pure_int(sizeof(struct tm)));
