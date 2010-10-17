@@ -5598,6 +5598,12 @@ void pure_trap(int32_t action, int32_t sig)
     signal(sig, SIG_DFL);
 }
 
+// Debugging routines.
+static string pname(interpreter& interp, Env *e);
+static bool stop(interpreter& interp, Env *e);
+static bool traced(interpreter& interp, Env *e);
+static string printx(pure_expr *x, size_t n = 30);
+
 extern "C"
 pure_expr *pure_catch(pure_expr *h, pure_expr *x)
 {
@@ -5613,7 +5619,8 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x)
     size_t m = x->data.clos->m;
     assert(x->data.clos->local || m == 0);
     pure_expr **env = 0;
-    size_t oldsz = interp.sstk_sz;
+    size_t oldsz = interp.sstk_sz, old_di_sz = 0;
+    if (interp.debugging) old_di_sz = interp.debug_info.size();
     if (m>0 || !interp.debugging) {
       // construct a stack frame
       size_t sz = oldsz;
@@ -5665,6 +5672,21 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x)
 	if (interp.sstk[i] && interp.sstk[i]->refc > 0)
 	  pure_free_internal(interp.sstk[i]);
       interp.sstk_sz = sz;
+      if (interp.debugging) {
+	DebugInfo& d = interp.debug_info.back();
+	if (stop(interp, d.e) || traced(interp, d.e)) {
+	  /* We're running in debugging mode. Print a little debugging
+	     message so that the user knows what's going on. */
+	  cout << "++ [" << d.n << "] " << pname(interp, d.e)
+	       << ": *** caught exception ***\n";
+	  if (e)
+	    cout << "     --> " << printx(e, 68) << endl;
+	}
+	/* Unwind the debug info. */
+	size_t new_di_sz = interp.debug_info.size();
+	while (new_di_sz-- > old_di_sz)
+	  interp.debug_info.pop_back();
+      }
       if (!e)
 	e = pure_new_internal(mk_void());
       assert(e && e->refc > 0);
@@ -6126,7 +6148,7 @@ static pure_expr *subterm(size_t n, pure_expr **xs, path p, bool b)
   return x;
 }
 
-static string printx(pure_expr *x, size_t n = 30)
+static string printx(pure_expr *x, size_t n)
 {
   static const string dots = "...";
   static const size_t l = dots.size();
@@ -6263,7 +6285,7 @@ static expr localvars(interpreter& interp, DebugInfo& d, pure_expr *x)
   }
 }
 
-static inline bool stop(interpreter& interp, Env *e)
+static bool stop(interpreter& interp, Env *e)
 {
   if (!interp.interactive)
     return false;
@@ -6283,13 +6305,13 @@ static inline bool stop(interpreter& interp, Env *e)
   return false;
 }
 
-static inline bool traced(interpreter& interp, Env *e)
+static bool traced(interpreter& interp, Env *e)
 {
   return interp.interactive && e->tag>0 &&
     interp.tracepoints.find(e->tag) != interp.tracepoints.end();
 }
 
-static inline string psym(const string& s, bool local = false)
+static string psym(const string& s, bool local = false)
 {
   if (local) {
     size_t pos = symsplit(s);
@@ -6301,7 +6323,7 @@ static inline string psym(const string& s, bool local = false)
     return s;
 }
 
-static inline string pname(interpreter& interp, Env *e)
+static string pname(interpreter& interp, Env *e)
 {
   if (e->tag > 0) {
     ostringstream sout;
