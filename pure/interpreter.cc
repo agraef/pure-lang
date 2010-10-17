@@ -7556,6 +7556,21 @@ const Type *interpreter::make_pointer_type(const string& name)
   return it->second;
 }
 
+string mangle_type_name(string name)
+{
+  /* Type names in LLVM bitcode may well contain special characters not
+     permitted in identifiers, so we mangle them here. (This is very
+     simplistic and may easily map different bitcode names into the same
+     identifier. Oh well.) */
+  if (name.empty() || isdigit(name[0]))
+    // Probably a temporary name, we don't want those.
+    return "";
+  for (size_t i = 0, n = name.size(); i < n; i++)
+    if (!isalnum(name[i]))
+      name[i] = '_';
+  return name;
+}
+
 string interpreter::pointer_type_name(const Type *type)
 {
   assert(type->isPointerTy());
@@ -7578,10 +7593,15 @@ string interpreter::pointer_type_name(const Type *type)
     elem_type = elem_type->getContainedType(0);
     count++;
   }
-  /* What remains is a non-pointer type. Try to resolve that recursively, if
-     that doesn't work then just give up and assume "void". */
+  /* What remains is a non-pointer type, which we consider irreducible. Try to
+     resolve that recursively, to get our name for it. If that doesn't work,
+     check whether the bitcode file has a name for it. If that doesn't work
+     either then just give up and assume "void". */
   string name = type_name(elem_type);
-  if (name == "<unknown C type>") name = "void";
+  if (name == "<unknown C type>") {
+    name = mangle_type_name(module->getTypeName(elem_type));
+    if (name.empty()) name = "void";
+  }
   name.append(count, '*');
   return name;
 }
