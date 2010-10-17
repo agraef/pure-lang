@@ -3814,21 +3814,24 @@ further details.
 Please note that at this time the LLVM bitcode interface is still somewhat
 experimental, and there are some known limitations:
 
-* Much of the type information of the original C module isn't available in the
-  bitcode file.  In particular, LLVM doesn't distinguish between ``char*`` and
-  ``void*`` in bitcode, so all ``void*`` parameters and return values in C
-  code will be promoted to ``char*`` on the Pure side. Moreover, pointers to
-  custom C types which don't have a predefined meaning in Pure will generally
-  end up being some kind of generic pointer (``void*``, ``void**``, etc.) in
-  Pure. If this is a problem then after loading the bitcode module you'll have
-  to redeclare the corresponding functions yourself (under an alias), giving
-  the precise parameter and result types that you need.
+* LLVM doesn't distinguish between ``char*`` and ``void*`` in bitcode, so all
+  ``void*`` parameters and return values in C code will be promoted to
+  ``char*`` on the Pure side. Also, pointers to types which neither have a
+  predefined meaning in Pure nor a proper type name in the bitcode file, will
+  become a generic pointer type (``void*``, ``void**``, etc.) in Pure. If this
+  is a problem then you can just redeclare the corresponding functions under
+  an alias *after* loading the bitcode module, giving the proper argument and
+  result types (see `Extern Declarations`_ above).
 
 * The bitcode interface is limited to the same range of C types as Pure's
   plain C interface. In practice, this should cover most C code, but it's
   certainly possible that you run into unsupported types for arguments and
   return values. The compiler will then print a warning; the affected
   functions will still be linked in, but they will not be callable from Pure.
+  Also note that calling conventions for passing C structs *by value* depend
+  on the host ABI, so you should have a look at the resulting ``extern``
+  declaration (using ``show``) to determine how the function is actually to be
+  called from Pure.
 
 * The Pure interpreter will try to satisfy external references in an imported
   bitcode module from other loaded libraries and bitcode modules. This happens

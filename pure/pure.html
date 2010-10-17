@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>The Pure Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-10-16" />
+<meta name="date" content="2010-10-17" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-10-16</td></tr>
+<td>2010-10-17</td></tr>
 </tbody>
 </table>
 <!-- Note: This document is formatted using docutils. The Makefile has rules -->
@@ -3958,20 +3958,23 @@ further details.</p>
 <p>Please note that at this time the LLVM bitcode interface is still somewhat
 experimental, and there are some known limitations:</p>
 <ul class="simple">
-<li>Much of the type information of the original C module isn't available in the
-bitcode file.  In particular, LLVM doesn't distinguish between <tt class="docutils literal"><span class="pre">char*</span></tt> and
-<tt class="docutils literal"><span class="pre">void*</span></tt> in bitcode, so all <tt class="docutils literal"><span class="pre">void*</span></tt> parameters and return values in C
-code will be promoted to <tt class="docutils literal"><span class="pre">char*</span></tt> on the Pure side. Moreover, pointers to
-custom C types which don't have a predefined meaning in Pure will generally
-end up being some kind of generic pointer (<tt class="docutils literal"><span class="pre">void*</span></tt>, <tt class="docutils literal"><span class="pre">void**</span></tt>, etc.) in
-Pure. If this is a problem then after loading the bitcode module you'll have
-to redeclare the corresponding functions yourself (under an alias), giving
-the precise parameter and result types that you need.</li>
+<li>LLVM doesn't distinguish between <tt class="docutils literal"><span class="pre">char*</span></tt> and <tt class="docutils literal"><span class="pre">void*</span></tt> in bitcode, so all
+<tt class="docutils literal"><span class="pre">void*</span></tt> parameters and return values in C code will be promoted to
+<tt class="docutils literal"><span class="pre">char*</span></tt> on the Pure side. Also, pointers to types which neither have a
+predefined meaning in Pure nor a proper type name in the bitcode file, will
+become a generic pointer type (<tt class="docutils literal"><span class="pre">void*</span></tt>, <tt class="docutils literal"><span class="pre">void**</span></tt>, etc.) in Pure. If this
+is a problem then you can just redeclare the corresponding functions under
+an alias <em>after</em> loading the bitcode module, giving the proper argument and
+result types (see <a class="reference internal" href="#extern-declarations">Extern Declarations</a> above).</li>
 <li>The bitcode interface is limited to the same range of C types as Pure's
 plain C interface. In practice, this should cover most C code, but it's
 certainly possible that you run into unsupported types for arguments and
 return values. The compiler will then print a warning; the affected
-functions will still be linked in, but they will not be callable from Pure.</li>
+functions will still be linked in, but they will not be callable from Pure.
+Also note that calling conventions for passing C structs <em>by value</em> depend
+on the host ABI, so you should have a look at the resulting <tt class="docutils literal"><span class="pre">extern</span></tt>
+declaration (using <tt class="docutils literal"><span class="pre">show</span></tt>) to determine how the function is actually to be
+called from Pure.</li>
 <li>The Pure interpreter will try to satisfy external references in an imported
 bitcode module from other loaded libraries and bitcode modules. This happens
 at the time the code is JIT-compiled. At present, the JIT generates a fatal
