@@ -3574,7 +3574,7 @@ pure_interp *pure_create_interp(int argc, char *argv[])
   // This is pretty much the same as pure.cc:main(), except that some options
   // are ignored and there's no user interaction.
   char base;
-  interpreter *_interp = new interpreter, &interp = *_interp;
+  interpreter *_interp = new interpreter(0, 0), &interp = *_interp;
   int count = 0;
   bool want_prelude = true, have_prelude = false;
   // We use some stuff which is not safe to call while another interpreter is

@@ -442,7 +442,8 @@ typedef map<string,const llvm::Type*> type_map;
 class interpreter
 {
 public:
-  interpreter();
+  int argc; char **argv; // saved command line of the interpreter
+  interpreter(int argc, char **argv);
   interpreter(int32_t nsyms, char *syms,
 	      pure_expr ***vars, void **vals,
 	      int32_t *arities, void **externs,

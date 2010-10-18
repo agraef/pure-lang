@@ -674,8 +674,9 @@ void interpreter::init()
 		 "faust_add_rtti", "void",    3, "char*", "int", "bool");
 }
 
-interpreter::interpreter()
-  : verbose(0), compat(false), compat2(false), compiling(false),
+interpreter::interpreter(int _argc, char **_argv)
+    : argc(_argc), argv(_argv),
+    verbose(0), compat(false), compat2(false), compiling(false),
     eager_jit(false), interactive(false), debugging(false),
     checks(true), folding(true), consts(true), use_fastcc(true),
     pic(false), strip(true), restricted(false), ttymode(false), override(false),
@@ -694,7 +695,8 @@ interpreter::interpreter(int32_t nsyms, char *syms,
 			 pure_expr ***vars, void **vals,
 			 int32_t *arities, void **externs,
 			 pure_expr ***_sstk, void **_fptr)
-  : verbose(0), compat(false), compat2(false), compiling(false),
+  : argc(0), argv(0),
+    verbose(0), compat(false), compat2(false), compiling(false),
     eager_jit(false), interactive(false), debugging(false),
     checks(true), folding(true), consts(true), use_fastcc(true),
     pic(false), strip(true), restricted(true), ttymode(false), override(false),

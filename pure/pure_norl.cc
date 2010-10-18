@@ -105,7 +105,7 @@ static void sig_handler(int sig)
   interpreter::brkflag = sig;
 }
 
-static void exit_handler()
+void pure_exit_handler()
 {
   /* Add any finalizations to be executed at exit time here. */
 }
@@ -220,7 +220,7 @@ main(int argc, char *argv[])
   signal(SIGPIPE, SIG_IGN);
 #endif
   // set up an exit function which saves the history if needed
-  atexit(exit_handler);
+  atexit(pure_exit_handler);
   // set the system locale
   setlocale(LC_ALL, "");
   // get some settings from the environment

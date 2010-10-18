@@ -312,7 +312,7 @@ static void sig_handler(int sig)
 static const char *histfile = 0;
 #endif
 
-static void exit_handler()
+void pure_exit_handler()
 {
 #ifdef HAVE_READLINE_HISTORY
   if (histfile) write_history(histfile);
@@ -410,7 +410,7 @@ int
 main(int argc, char *argv[])
 {
   char base;
-  interpreter interp;
+  interpreter interp(argc, argv);
   int count = 0;
   bool quiet = false, force_interactive = false,
     want_prelude = true, have_prelude = false,
@@ -429,7 +429,7 @@ main(int argc, char *argv[])
   signal(SIGPIPE, SIG_IGN);
 #endif
   // set up an exit function which saves the history if needed
-  atexit(exit_handler);
+  atexit(pure_exit_handler);
   // set the system locale
   setlocale(LC_ALL, "");
   // get some settings from the environment

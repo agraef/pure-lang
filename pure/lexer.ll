@@ -2341,7 +2341,29 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
     argl args(s, "run");
     if (!args.ok)
       ;
-    else if (args.c == 0 || (args.c == 1 && args.l.begin()->empty()))
+    else if (args.c == 0) {
+      // Rerun the interpreter.
+      void pure_exit_handler();
+      int argc = interp.argc;
+      char **argv = interp.argv;
+      if (argc > 0 && argv) {
+	if (argc <= 1 || strcmp(argv[1], "-q") != 0) {
+	  // Add -q to the command line options, to suppress the sign-on
+	  // message.
+	  static char opt[] = "-q";
+	  argv = (char**)malloc((argc+2)*sizeof(char*));
+	  if (!argv) goto run_err;
+	  argv[0] = interp.argv[0];
+	  argv[1] = opt;
+	  memcpy(argv+2, interp.argv+1, argc*sizeof(char*));
+	}
+	pure_exit_handler();
+	execvp(argv[0], argv);
+      run_err:
+	if (argv != interp.argv && argv) free(argv);
+      }
+      cerr << "run: exec failed\n";
+    } else if (args.c == 1 && args.l.begin()->empty())
       cerr << "run: no script name specified\n";
     else if (args.c > 1)
       cerr << "run: extra parameter\n";
