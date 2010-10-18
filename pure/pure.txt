@@ -4162,12 +4162,12 @@ currently supported operations:
     reloaded automatically the next time the interpreter starts up in
     interactive mode in the same directory. This provides a quick-and-dirty
     way to save an interactive session and have it restored later, but note
-    that this isn't perfect yet. In particular, declarations of ``extern``
-    symbols won't be saved unless they're specified explicitly, and some
-    objects like closures, thunks and pointers don't have a textual
-    representation from which they could be reconstructed. To handle these,
-    you'll probably have to prepare a corresponding .purerc file yourself, see
-    `Interactive Startup`_ below.
+    that this isn't perfect. In particular, declarations of ``extern`` symbols
+    won't be saved unless they're specified explicitly, and some objects like
+    closures, thunks and pointers don't have a textual representation from
+    which they could be reconstructed. To handle these, you'll probably have
+    to prepare a corresponding .purerc file yourself, see `Interactive
+    Startup`_ below.
 
     A different filename can be specified with the -n option, which expects
     the name of the script to be written in the next argument, e.g: ``dump -n
@@ -4204,16 +4204,23 @@ currently supported operations:
 ``quit``
     Exits the interpreter.
 
-``run script``
-    Loads the given script file and adds its definitions to the current
-    environment. This works more or less like a ``using`` clause, but only
-    searches for the script in the current directory and places the
-    definitions in the script at the current temporary level, so that
-    ``clear`` can be used to remove them again. In particular, this makes it
-    possible to quickly reload a script without exiting the interpreter, by
-    issuing the ``clear`` command followed by ``run``. (This works best if you
-    start out from a clean environment, with no scripts loaded on the command
-    line.)
+``run [script]``
+    When invoked without arguments, ``run`` does a "cold" restart of the
+    interpreter, with the scripts and options given on the interpreter's
+    original command line. This provides a quick way to rerun the interpreter
+    after changes in some of the loaded script files. (You'll also loose any
+    definitions that you entered interactively in the interpreter, so you may
+    want to back them up with ``dump`` beforehand.)
+
+    When invoked with a script name as argument, ``run`` loads the given
+    script file and adds its definitions to the current environment. This
+    works more or less like a ``using`` clause, but only searches for the
+    script in the current directory and places the definitions in the script
+    at the current temporary level, so that ``clear`` can be used to remove
+    them again. In particular, this makes it possible to quickly reload a
+    script without exiting or rerunning the interpreter, by issuing the
+    ``clear`` command followed by ``run``. (This works best if you start out
+    from a clean environment, with no scripts loaded on the command line.)
 
     Also note that namespace and pragma settings of scripts loaded with
     ``run`` stick around after loading the script. This allows you to quickly
@@ -4472,20 +4479,32 @@ are available in your program. For instance::
 Definition Levels
 -----------------
 
-To help with incremental development, the interpreter offers some facilities
-to manipulate the current set of definitions interactively. To these ends,
+To help with incremental development, the interpreter offers some commands to
+manipulate the current set of definitions interactively. To these ends,
 definitions are organized into different subsets called `levels`. As already
 mentioned, the prelude, as well as other source programs specified when
 invoking the interpreter, are always at level 0, while the interactive
-environment starts at level 1.
+environment starts at level 1. Each ``save`` command introduces a new
+temporary level, and each subsequent ``clear`` command (without any arguments)
+"pops" the definitions on the current level and returns you to the previous
+one (if any). This gives you a "stack" of temporary environments which enables
+you to "plug and play" in a (more or less) safe fashion, without affecting the
+rest of your program.
 
-Each ``save`` command introduces a new temporary level, and each subsequent
-``clear`` command (without any arguments) "pops" the definitions on the
-current level and returns you to the previous one (if any). This gives you a
-"stack" of temporary environments which enables you to "plug and play" in a
-(more or less) safe fashion, without affecting the rest of your program. For
-all practical purposes, this stack is unlimited, so that you can create as
-many levels as you like. Example::
+For all practical purposes, this stack is unlimited, so that you can create as
+many levels as you like. However, this facility does have its limitations. The
+interpreter doesn't really keep a full history of everything you entered
+interactively, it only records the level a variable, constant, and function or
+macro rule belongs to so that the corresponding definitions can be removed
+again when the level is popped. On the other hand, intermediate changes in
+variable values are not recorded anywhere and cannot be undone. Moreover,
+global declarations (which encompasses ``using`` clauses, ``extern``
+declarations and special symbol declarations) always apply to all levels, so
+they can't be undone either.
+
+That said, the temporary levels can still be pretty useful when you're playing
+around with the interpreter. Here's a little example which shows how to use
+``clear`` to quickly get rid of a definition that you entered interactively::
 
   > foo (x:xs) = x+foo xs;
   > foo [] = 0;
@@ -4525,8 +4544,8 @@ command::
   warning: rule never reduced: foo (x:xs) = x+foo xs;
   0
 
-Note that the equation ``foo (x:xs) = x*foo xs;`` was inserted before the
-previous ``foo (x:xs) = x+foo xs;`` rule, which is at level #1. (The latter
+Note that the equation ``foo (x:xs) = x*foo xs`` was inserted before the
+previous rule ``foo (x:xs) = x+foo xs``, which is at level #1. (The latter
 equation is now "shadowed" by the rule we just entered, hence the compiler
 warns us that this rule can't be reduced any more.)
 
@@ -4546,7 +4565,7 @@ high-priority definitions overriding lower-priority ones::
   3628800
 
 Again, the new equation was inserted above the existing lower-priority rules,
-but below our previous ``foo (x:xs) = x*foo xs;`` equation entered at the same
+but below our previous equation ``foo (x:xs) = x*foo xs`` entered at the same
 level. As you can see, we have now effectively replaced our original
 definition of ``foo`` with a version that calculates list products instead of
 sums, but of course we can easily go back one level to restore the previous
@@ -4570,9 +4589,8 @@ to the normal behaviour of adding new equations below existing ones::
 
   > underride
 
-Finally, it's also possible to use ``clear`` to back out multiple levels at
-once, if you specify the target level to be cleared with the -t option. For
-instance::
+It's also possible to use ``clear`` to back out multiple levels at once, if
+you specify the target level to be cleared with the -t option. For instance::
 
   > save
   save: now at temporary definitions level #2

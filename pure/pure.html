@@ -4278,12 +4278,12 @@ default output file is .pure in the current directory, which is then
 reloaded automatically the next time the interpreter starts up in
 interactive mode in the same directory. This provides a quick-and-dirty
 way to save an interactive session and have it restored later, but note
-that this isn't perfect yet. In particular, declarations of <tt class="docutils literal"><span class="pre">extern</span></tt>
-symbols won't be saved unless they're specified explicitly, and some
-objects like closures, thunks and pointers don't have a textual
-representation from which they could be reconstructed. To handle these,
-you'll probably have to prepare a corresponding .purerc file yourself, see
-<a class="reference internal" href="#interactive-startup">Interactive Startup</a> below.</p>
+that this isn't perfect. In particular, declarations of <tt class="docutils literal"><span class="pre">extern</span></tt> symbols
+won't be saved unless they're specified explicitly, and some objects like
+closures, thunks and pointers don't have a textual representation from
+which they could be reconstructed. To handle these, you'll probably have
+to prepare a corresponding .purerc file yourself, see <a class="reference internal" href="#interactive-startup">Interactive
+Startup</a> below.</p>
 <p class="last">A different filename can be specified with the -n option, which expects
 the name of the script to be written in the next argument, e.g: <tt class="docutils literal"><span class="pre">dump</span> <span class="pre">-n</span>
 <span class="pre">myscript.pure</span></tt>. You can then edit that file and use it as a starting
@@ -4313,16 +4313,22 @@ equations. See <a class="reference internal" href="#definition-levels">Definitio
 <dd>Print the current working dir (shell pwd(1) command).</dd>
 <dt><tt class="docutils literal"><span class="pre">quit</span></tt></dt>
 <dd>Exits the interpreter.</dd>
-<dt><tt class="docutils literal"><span class="pre">run</span> <span class="pre">script</span></tt></dt>
-<dd><p class="first">Loads the given script file and adds its definitions to the current
-environment. This works more or less like a <tt class="docutils literal"><span class="pre">using</span></tt> clause, but only
-searches for the script in the current directory and places the
-definitions in the script at the current temporary level, so that
-<tt class="docutils literal"><span class="pre">clear</span></tt> can be used to remove them again. In particular, this makes it
-possible to quickly reload a script without exiting the interpreter, by
-issuing the <tt class="docutils literal"><span class="pre">clear</span></tt> command followed by <tt class="docutils literal"><span class="pre">run</span></tt>. (This works best if you
-start out from a clean environment, with no scripts loaded on the command
-line.)</p>
+<dt><tt class="docutils literal"><span class="pre">run</span> <span class="pre">[script]</span></tt></dt>
+<dd><p class="first">When invoked without arguments, <tt class="docutils literal"><span class="pre">run</span></tt> does a &quot;cold&quot; restart of the
+interpreter, with the scripts and options given on the interpreter's
+original command line. This provides a quick way to rerun the interpreter
+after changes in some of the loaded script files. (You'll also loose any
+definitions that you entered interactively in the interpreter, so you may
+want to back them up with <tt class="docutils literal"><span class="pre">dump</span></tt> beforehand.)</p>
+<p>When invoked with a script name as argument, <tt class="docutils literal"><span class="pre">run</span></tt> loads the given
+script file and adds its definitions to the current environment. This
+works more or less like a <tt class="docutils literal"><span class="pre">using</span></tt> clause, but only searches for the
+script in the current directory and places the definitions in the script
+at the current temporary level, so that <tt class="docutils literal"><span class="pre">clear</span></tt> can be used to remove
+them again. In particular, this makes it possible to quickly reload a
+script without exiting or rerunning the interpreter, by issuing the
+<tt class="docutils literal"><span class="pre">clear</span></tt> command followed by <tt class="docutils literal"><span class="pre">run</span></tt>. (This works best if you start out
+from a clean environment, with no scripts loaded on the command line.)</p>
 <p class="last">Also note that namespace and pragma settings of scripts loaded with
 <tt class="docutils literal"><span class="pre">run</span></tt> stick around after loading the script. This allows you to quickly
 set up your environment by just running a script containing the necessary
@@ -4575,19 +4581,30 @@ using namespace C;
 </div>
 <div class="section" id="definition-levels">
 <h2><a class="toc-backref" href="#id65">11.6&nbsp;&nbsp;&nbsp;Definition Levels</a></h2>
-<p>To help with incremental development, the interpreter offers some facilities
-to manipulate the current set of definitions interactively. To these ends,
+<p>To help with incremental development, the interpreter offers some commands to
+manipulate the current set of definitions interactively. To these ends,
 definitions are organized into different subsets called <strong class="dfn">levels</strong>. As already
 mentioned, the prelude, as well as other source programs specified when
 invoking the interpreter, are always at level 0, while the interactive
-environment starts at level 1.</p>
-<p>Each <tt class="docutils literal"><span class="pre">save</span></tt> command introduces a new temporary level, and each subsequent
-<tt class="docutils literal"><span class="pre">clear</span></tt> command (without any arguments) &quot;pops&quot; the definitions on the
-current level and returns you to the previous one (if any). This gives you a
-&quot;stack&quot; of temporary environments which enables you to &quot;plug and play&quot; in a
-(more or less) safe fashion, without affecting the rest of your program. For
-all practical purposes, this stack is unlimited, so that you can create as
-many levels as you like. Example:</p>
+environment starts at level 1. Each <tt class="docutils literal"><span class="pre">save</span></tt> command introduces a new
+temporary level, and each subsequent <tt class="docutils literal"><span class="pre">clear</span></tt> command (without any arguments)
+&quot;pops&quot; the definitions on the current level and returns you to the previous
+one (if any). This gives you a &quot;stack&quot; of temporary environments which enables
+you to &quot;plug and play&quot; in a (more or less) safe fashion, without affecting the
+rest of your program.</p>
+<p>For all practical purposes, this stack is unlimited, so that you can create as
+many levels as you like. However, this facility does have its limitations. The
+interpreter doesn't really keep a full history of everything you entered
+interactively, it only records the level a variable, constant, and function or
+macro rule belongs to so that the corresponding definitions can be removed
+again when the level is popped. On the other hand, intermediate changes in
+variable values are not recorded anywhere and cannot be undone. Moreover,
+global declarations (which encompasses <tt class="docutils literal"><span class="pre">using</span></tt> clauses, <tt class="docutils literal"><span class="pre">extern</span></tt>
+declarations and special symbol declarations) always apply to all levels, so
+they can't be undone either.</p>
+<p>That said, the temporary levels can still be pretty useful when you're playing
+around with the interpreter. Here's a little example which shows how to use
+<tt class="docutils literal"><span class="pre">clear</span></tt> to quickly get rid of a definition that you entered interactively:</p>
 <pre class="literal-block">
 &gt; foo (x:xs) = x+foo xs;
 &gt; foo [] = 0;
@@ -4627,8 +4644,8 @@ foo [] = 0;
 warning: rule never reduced: foo (x:xs) = x+foo xs;
 0
 </pre>
-<p>Note that the equation <tt class="docutils literal"><span class="pre">foo</span> <span class="pre">(x:xs)</span> <span class="pre">=</span> <span class="pre">x*foo</span> <span class="pre">xs;</span></tt> was inserted before the
-previous <tt class="docutils literal"><span class="pre">foo</span> <span class="pre">(x:xs)</span> <span class="pre">=</span> <span class="pre">x+foo</span> <span class="pre">xs;</span></tt> rule, which is at level #1. (The latter
+<p>Note that the equation <tt class="docutils literal"><span class="pre">foo</span> <span class="pre">(x:xs)</span> <span class="pre">=</span> <span class="pre">x*foo</span> <span class="pre">xs</span></tt> was inserted before the
+previous rule <tt class="docutils literal"><span class="pre">foo</span> <span class="pre">(x:xs)</span> <span class="pre">=</span> <span class="pre">x+foo</span> <span class="pre">xs</span></tt>, which is at level #1. (The latter
 equation is now &quot;shadowed&quot; by the rule we just entered, hence the compiler
 warns us that this rule can't be reduced any more.)</p>
 <p>Even in override mode, new definitions will be added after other definitions
@@ -4647,7 +4664,7 @@ warning: rule never reduced: foo [] = 0;
 3628800
 </pre>
 <p>Again, the new equation was inserted above the existing lower-priority rules,
-but below our previous <tt class="docutils literal"><span class="pre">foo</span> <span class="pre">(x:xs)</span> <span class="pre">=</span> <span class="pre">x*foo</span> <span class="pre">xs;</span></tt> equation entered at the same
+but below our previous equation <tt class="docutils literal"><span class="pre">foo</span> <span class="pre">(x:xs)</span> <span class="pre">=</span> <span class="pre">x*foo</span> <span class="pre">xs</span></tt> entered at the same
 level. As you can see, we have now effectively replaced our original
 definition of <tt class="docutils literal"><span class="pre">foo</span></tt> with a version that calculates list products instead of
 sums, but of course we can easily go back one level to restore the previous
@@ -4671,9 +4688,8 @@ to the normal behaviour of adding new equations below existing ones:</p>
 <pre class="literal-block">
 &gt; underride
 </pre>
-<p>Finally, it's also possible to use <tt class="docutils literal"><span class="pre">clear</span></tt> to back out multiple levels at
-once, if you specify the target level to be cleared with the -t option. For
-instance:</p>
+<p>It's also possible to use <tt class="docutils literal"><span class="pre">clear</span></tt> to back out multiple levels at once, if
+you specify the target level to be cleared with the -t option. For instance:</p>
 <pre class="literal-block">
 &gt; save
 save: now at temporary definitions level #2
