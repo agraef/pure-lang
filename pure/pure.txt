@@ -4204,29 +4204,29 @@ currently supported operations:
 ``quit``
     Exits the interpreter.
 
-``run [script]``
-    When invoked without arguments, ``run`` does a "cold" restart of the
-    interpreter, with the scripts and options given on the interpreter's
-    original command line. This provides a quick way to rerun the interpreter
-    after changes in some of the loaded script files. (You'll also loose any
+``run [-g|script]``
+    When invoked without arguments or with the ``-g`` option, ``run`` does a
+    "cold" restart of the interpreter, with the scripts and options given on
+    the interpreter's original command line. If just ``-g`` is specified as
+    the argument, the interpreter is run with debugging enabled. Otherwise the
+    interpreter is invoked without debugging support. (This overrides the
+    corresponding option from the interpreter's command line.) This command
+    provides a quick way to rerun the interpreter after changes in some of the
+    loaded script files, or if you want to enable or disable debugging on the
+    fly (which requires a restart of the interpreter). You'll also loose any
     definitions that you entered interactively in the interpreter, so you may
-    want to back them up with ``dump`` beforehand.)
+    want to back them up with ``dump`` beforehand.
 
     When invoked with a script name as argument, ``run`` loads the given
     script file and adds its definitions to the current environment. This
     works more or less like a ``using`` clause, but only searches for the
     script in the current directory and places the definitions in the script
     at the current temporary level, so that ``clear`` can be used to remove
-    them again. In particular, this makes it possible to quickly reload a
-    script without exiting or rerunning the interpreter, by issuing the
-    ``clear`` command followed by ``run``. (This works best if you start out
-    from a clean environment, with no scripts loaded on the command line.)
-
-    Also note that namespace and pragma settings of scripts loaded with
-    ``run`` stick around after loading the script. This allows you to quickly
-    set up your environment by just running a script containing the necessary
-    namespace declarations and compiler directives. (Alternatively, you can
-    also use the interpreter's startup files for that purpose, see
+    them again. Also note that namespace and pragma settings of scripts loaded
+    with ``run`` stick around after loading the script. This allows you to
+    quickly set up your environment by just running a script containing the
+    necessary namespace declarations and compiler directives. (Alternatively,
+    you can also use the interpreter's startup files for that purpose, see
     `Interactive Startup`_ below.)
 
 ``save``
@@ -4611,15 +4611,13 @@ Debugging
 
 The interpreter provides a simple but reasonably convenient symbolic debugging
 facility when running interactively. To make this work, you have to specify
-the -g option when invoking the interpreter::
-
-  $ pure -g
-
-This option disables tail call optimization (see `Stack Size and Tail
-Recursion`_) to make it easier to debug programs. It also causes special
-debugging code to be generated which will make your program run *much*
-slower. Therefore the -g option should only be used if you actually need the
-debugger.
+the -g option when invoking the interpreter (``pure -g``). If you're already
+at the interpreter's command line, you can also use the ``run -g`` command to
+enable the debugger. The ``-g`` option disables tail call optimization (see
+`Stack Size and Tail Recursion`_) to make it easier to debug programs. It also
+causes special debugging code to be generated which will make your program run
+*much* slower. Therefore the -g option should only be used if you actually
+need the debugger.
 
 One common use of the debugger is "post mortem" debugging after an evaluation
 ended with an unhandled exception. In such a case, the ``bt`` command of the
@@ -4842,17 +4840,17 @@ assuming the same example as above, let's first remove the breakpoint on
        --> 1
   1
 
-(The ``break`` and ``trace`` commands can also be used in concert if you want
-to debug some functions while only tracing others.)
+The ``break`` and ``trace`` commands can also be used in concert if you want
+to debug some functions while only tracing others.
 
-Note that the current sets of breakpoints and tracepoints can only be changed
-with the ``break``, ``trace`` and ``del`` commands of the interpreter, see
-`Interactive Commands`_ above. Use ``break`` (or ``trace``) without arguments
-to list the currently defined breakpoints (or tracepoints). Breakpoints and
-tracepoints can be deleted with the ``del`` command, which is followed by the
-function and operator symbols to be removed from the breakpoint and tracepoint
-lists. If ``del`` is invoked without arguments, it clears all breakpoints and
-tracepoints (after confirmation).
+The current sets of breakpoints and tracepoints can be changed with the
+``break``, ``trace`` and ``del`` commands, as shown above, and just ``break``
+or ``trace`` without any arguments lists the currently defined breakpoints or
+tracepoints, respectively. Please see `Interactive Commands`_ above for
+details. Also note that these are really interpreter commands, so to enter
+them you first have to exit the debugger (using the ``a`` or ``r`` command) if
+an evaluation is currently in progress. (However, it's possible to set a
+temporary breakpoint in the debugger with the ``c`` command, see above.)
 
 Interactive Startup
 -------------------

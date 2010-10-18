@@ -4313,27 +4313,28 @@ equations. See <a class="reference internal" href="#definition-levels">Definitio
 <dd>Print the current working dir (shell pwd(1) command).</dd>
 <dt><tt class="docutils literal"><span class="pre">quit</span></tt></dt>
 <dd>Exits the interpreter.</dd>
-<dt><tt class="docutils literal"><span class="pre">run</span> <span class="pre">[script]</span></tt></dt>
-<dd><p class="first">When invoked without arguments, <tt class="docutils literal"><span class="pre">run</span></tt> does a &quot;cold&quot; restart of the
-interpreter, with the scripts and options given on the interpreter's
-original command line. This provides a quick way to rerun the interpreter
-after changes in some of the loaded script files. (You'll also loose any
+<dt><tt class="docutils literal"><span class="pre">run</span> <span class="pre">[-g|script]</span></tt></dt>
+<dd><p class="first">When invoked without arguments or with the <tt class="docutils literal"><span class="pre">-g</span></tt> option, <tt class="docutils literal"><span class="pre">run</span></tt> does a
+&quot;cold&quot; restart of the interpreter, with the scripts and options given on
+the interpreter's original command line. If just <tt class="docutils literal"><span class="pre">-g</span></tt> is specified as
+the argument, the interpreter is run with debugging enabled. Otherwise the
+interpreter is invoked without debugging support. (This overrides the
+corresponding option from the interpreter's command line.) This command
+provides a quick way to rerun the interpreter after changes in some of the
+loaded script files, or if you want to enable or disable debugging on the
+fly (which requires a restart of the interpreter). You'll also loose any
 definitions that you entered interactively in the interpreter, so you may
-want to back them up with <tt class="docutils literal"><span class="pre">dump</span></tt> beforehand.)</p>
-<p>When invoked with a script name as argument, <tt class="docutils literal"><span class="pre">run</span></tt> loads the given
+want to back them up with <tt class="docutils literal"><span class="pre">dump</span></tt> beforehand.</p>
+<p class="last">When invoked with a script name as argument, <tt class="docutils literal"><span class="pre">run</span></tt> loads the given
 script file and adds its definitions to the current environment. This
 works more or less like a <tt class="docutils literal"><span class="pre">using</span></tt> clause, but only searches for the
 script in the current directory and places the definitions in the script
 at the current temporary level, so that <tt class="docutils literal"><span class="pre">clear</span></tt> can be used to remove
-them again. In particular, this makes it possible to quickly reload a
-script without exiting or rerunning the interpreter, by issuing the
-<tt class="docutils literal"><span class="pre">clear</span></tt> command followed by <tt class="docutils literal"><span class="pre">run</span></tt>. (This works best if you start out
-from a clean environment, with no scripts loaded on the command line.)</p>
-<p class="last">Also note that namespace and pragma settings of scripts loaded with
-<tt class="docutils literal"><span class="pre">run</span></tt> stick around after loading the script. This allows you to quickly
-set up your environment by just running a script containing the necessary
-namespace declarations and compiler directives. (Alternatively, you can
-also use the interpreter's startup files for that purpose, see
+them again. Also note that namespace and pragma settings of scripts loaded
+with <tt class="docutils literal"><span class="pre">run</span></tt> stick around after loading the script. This allows you to
+quickly set up your environment by just running a script containing the
+necessary namespace declarations and compiler directives. (Alternatively,
+you can also use the interpreter's startup files for that purpose, see
 <a class="reference internal" href="#interactive-startup">Interactive Startup</a> below.)</p>
 </dd>
 <dt><tt class="docutils literal"><span class="pre">save</span></tt></dt>
@@ -4710,15 +4711,13 @@ clear: now at temporary definitions level #1
 <h2><a class="toc-backref" href="#id66">11.7&nbsp;&nbsp;&nbsp;Debugging</a></h2>
 <p>The interpreter provides a simple but reasonably convenient symbolic debugging
 facility when running interactively. To make this work, you have to specify
-the -g option when invoking the interpreter:</p>
-<pre class="literal-block">
-$ pure -g
-</pre>
-<p>This option disables tail call optimization (see <a class="reference internal" href="#stack-size-and-tail-recursion">Stack Size and Tail
-Recursion</a>) to make it easier to debug programs. It also causes special
-debugging code to be generated which will make your program run <em>much</em>
-slower. Therefore the -g option should only be used if you actually need the
-debugger.</p>
+the -g option when invoking the interpreter (<tt class="docutils literal"><span class="pre">pure</span> <span class="pre">-g</span></tt>). If you're already
+at the interpreter's command line, you can also use the <tt class="docutils literal"><span class="pre">run</span> <span class="pre">-g</span></tt> command to
+enable the debugger. The <tt class="docutils literal"><span class="pre">-g</span></tt> option disables tail call optimization (see
+<a class="reference internal" href="#stack-size-and-tail-recursion">Stack Size and Tail Recursion</a>) to make it easier to debug programs. It also
+causes special debugging code to be generated which will make your program run
+<em>much</em> slower. Therefore the -g option should only be used if you actually
+need the debugger.</p>
 <p>One common use of the debugger is &quot;post mortem&quot; debugging after an evaluation
 ended with an unhandled exception. In such a case, the <tt class="docutils literal"><span class="pre">bt</span></tt> command of the
 interpreter prints a backtrace of the call sequence which caused the
@@ -4933,16 +4932,16 @@ assuming the same example as above, let's first remove the breakpoint on
      --&gt; 1
 1
 </pre>
-<p>(The <tt class="docutils literal"><span class="pre">break</span></tt> and <tt class="docutils literal"><span class="pre">trace</span></tt> commands can also be used in concert if you want
-to debug some functions while only tracing others.)</p>
-<p>Note that the current sets of breakpoints and tracepoints can only be changed
-with the <tt class="docutils literal"><span class="pre">break</span></tt>, <tt class="docutils literal"><span class="pre">trace</span></tt> and <tt class="docutils literal"><span class="pre">del</span></tt> commands of the interpreter, see
-<a class="reference internal" href="#interactive-commands">Interactive Commands</a> above. Use <tt class="docutils literal"><span class="pre">break</span></tt> (or <tt class="docutils literal"><span class="pre">trace</span></tt>) without arguments
-to list the currently defined breakpoints (or tracepoints). Breakpoints and
-tracepoints can be deleted with the <tt class="docutils literal"><span class="pre">del</span></tt> command, which is followed by the
-function and operator symbols to be removed from the breakpoint and tracepoint
-lists. If <tt class="docutils literal"><span class="pre">del</span></tt> is invoked without arguments, it clears all breakpoints and
-tracepoints (after confirmation).</p>
+<p>The <tt class="docutils literal"><span class="pre">break</span></tt> and <tt class="docutils literal"><span class="pre">trace</span></tt> commands can also be used in concert if you want
+to debug some functions while only tracing others.</p>
+<p>The current sets of breakpoints and tracepoints can be changed with the
+<tt class="docutils literal"><span class="pre">break</span></tt>, <tt class="docutils literal"><span class="pre">trace</span></tt> and <tt class="docutils literal"><span class="pre">del</span></tt> commands, as shown above, and just <tt class="docutils literal"><span class="pre">break</span></tt>
+or <tt class="docutils literal"><span class="pre">trace</span></tt> without any arguments lists the currently defined breakpoints or
+tracepoints, respectively. Please see <a class="reference internal" href="#interactive-commands">Interactive Commands</a> above for
+details. Also note that these are really interpreter commands, so to enter
+them you first have to exit the debugger (using the <tt class="docutils literal"><span class="pre">a</span></tt> or <tt class="docutils literal"><span class="pre">r</span></tt> command) if
+an evaluation is currently in progress. (However, it's possible to set a
+temporary breakpoint in the debugger with the <tt class="docutils literal"><span class="pre">c</span></tt> command, see above.)</p>
 </div>
 <div class="section" id="interactive-startup">
 <h2><a class="toc-backref" href="#id67">11.8&nbsp;&nbsp;&nbsp;Interactive Startup</a></h2>
