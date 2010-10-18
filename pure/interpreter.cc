@@ -60,12 +60,14 @@ bool interpreter::g_init = false;
 
 static void* resolve_external(const std::string& name)
 {
-  // This is just to give a little more informative error message before we
-  // bail out anyway.
+  /* If we come here, the dynamic loader has already tried everything to
+     resolve the function, so instead we just print an error message and
+     return a dummy function which raises a Pure exception when called. In any
+     case that's better than aborting the program (which is what the JIT will
+     do when we return NULL here). */
   cout.flush();
   cerr << "error trying to resolve external: " << name << '\n';
-  assert(0);
-  return 0;
+  return (void*)pure_unresolved;
 }
 
 /* Check the C stack direction (pilfered from the Chicken sources). A value >0

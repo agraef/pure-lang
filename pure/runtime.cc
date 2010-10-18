@@ -606,6 +606,11 @@ static inline pure_expr* signal_exception(int sig)
   return pure_apply2(f, x);
 }
 
+static inline pure_expr* unresolved_exception()
+{
+  return pure_const(pure_sym("unresolved_external"));
+}
+
 static inline pure_expr* stack_exception()
 {
   if (!interpreter::g_interp) return 0;
@@ -5569,6 +5574,12 @@ void pure_throw(pure_expr* e)
     interp.astk->e = e;
     longjmp(interp.astk->jmp, 1);
   }
+}
+
+extern "C"
+void pure_unresolved()
+{
+  pure_throw(unresolved_exception());
 }
 
 #include <signal.h>

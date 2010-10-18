@@ -763,6 +763,10 @@ typedef struct _pure_aframe {
 
 /* NOTE: pure_throw() and pure_trap() are in the library API now. */
 
+/* Throw an 'unresolved_external' exception. */
+
+void pure_unresolved();
+
 /* Throw a 'signal SIGFPE' exception. This is used to signal division by
    zero. */
 
