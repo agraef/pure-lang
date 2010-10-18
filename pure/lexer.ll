@@ -1339,7 +1339,7 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
     if (!args.ok)
       ;
     else if (!interp.debugging)
-      cerr << "bt: debugging not enabled (add -g when invoking the interpreter)\n";
+      cerr << "bt: debugging not enabled (try run -g)\n";
     else if (args.c > 0)
       cerr << "bt: extra parameter\n";
     else if (interp.output)
@@ -1362,7 +1362,7 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
     if (!args.ok)
       ;
     else if (!interp.debugging)
-      cerr << "break: debugging not enabled (add -g when invoking the interpreter)\n";
+      cerr << "break: debugging not enabled (try run -g)\n";
     else if (args.c == 0) {
       ostringstream sout;
       list<string> syms;
@@ -1402,7 +1402,7 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
     if (!args.ok)
       ;
     else if (!interp.debugging)
-      cerr << "trace: debugging not enabled (add -g when invoking the interpreter)\n";
+      cerr << "trace: debugging not enabled (try run -g)\n";
     else if (args.c == 0) {
       ostringstream sout;
       list<string> syms;
@@ -2339,24 +2339,52 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
   } else if (strcmp(cmd, "run") == 0)  {
     const char *s = cmdline+3;
     argl args(s, "run");
+    bool debug = false, quiet = true;
     if (!args.ok)
       ;
-    else if (args.c == 0) {
+    else if (args.c == 0 || (debug = args.c == 1 && args.l.front() == "-g")) {
       // Rerun the interpreter.
       void pure_exit_handler();
       int argc = interp.argc;
       char **argv = interp.argv;
       if (argc > 0 && argv) {
-	if (argc <= 1 || strcmp(argv[1], "-q") != 0) {
+	size_t j = 0;
+	// Create a temporary copy since we may have to edit the command line.
+	argv = (char**)malloc((argc+3)*sizeof(char*));
+	if (!argv) goto run_err;
+	argv[j++] = interp.argv[0];
+	for (size_t i = 1; interp.argv[i]; i++)
+	  if (strcmp(interp.argv[i], "-g") == 0) {
+	    if (debug) {
+	      argv[j++] = interp.argv[i];
+	      debug = false;
+	    }
+	  } else if (strcmp(interp.argv[i], "-q") == 0) {
+	    argv[j++] = interp.argv[i];
+	    quiet = false;
+	  } else if (strncmp(interp.argv[i], "-T", 2) == 0 ||
+		     strncmp(interp.argv[i], "-o", 2) == 0 ||
+		     strncmp(interp.argv[i], "-l", 2) == 0 ||
+		     strncmp(interp.argv[i], "-I", 2) == 0 ||
+		     strncmp(interp.argv[i], "-L", 2) == 0) {
+	    if (interp.argv[i][2] == 0 && interp.argv[i+1])
+	      argv[j++] = interp.argv[i++];
+	    argv[j++] = interp.argv[i];
+	  } else {
+	    argv[j++] = interp.argv[i];
+	  }
+	if (debug) {
+	  // Add -g to the command line options, to enable debugging.
+	  static char opt[] = "-g";
+	  argv[j++] = opt;
+	}
+	if (quiet) {
 	  // Add -q to the command line options, to suppress the sign-on
 	  // message.
 	  static char opt[] = "-q";
-	  argv = (char**)malloc((argc+2)*sizeof(char*));
-	  if (!argv) goto run_err;
-	  argv[0] = interp.argv[0];
-	  argv[1] = opt;
-	  memcpy(argv+2, interp.argv+1, argc*sizeof(char*));
+	  argv[j++] = opt;
 	}
+	argv[j++] = 0;
 	pure_exit_handler();
 	execvp(argv[0], argv);
       run_err:
