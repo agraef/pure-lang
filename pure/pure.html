@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>The Pure Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-10-17" />
+<meta name="date" content="2010-10-18" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-10-17</td></tr>
+<td>2010-10-18</td></tr>
 </tbody>
 </table>
 <!-- Note: This document is formatted using docutils. The Makefile has rules -->
@@ -3911,6 +3911,15 @@ using &quot;bc:modname&quot;;
 namespace bar;
 using private &quot;bc:modname&quot;;
 </pre>
+<p>You can load any number of bitcode modules along with shared libraries in a
+Pure script, in any order. The JIT will try to satisfy external references in
+modules and libraries from other loaded libraries and bitcode modules. This is
+deferred until the code is actually JIT-compiled, so that you can make sure
+beforehand that all required libraries and bitcode modules have been loaded.
+If the JIT fails to resolve a function, the interpreter will print its name
+and also raise an exception at runtime when the function is being called from
+other C code. (You can then run your script in the debugger to locate the
+external visible in Pure from which the unresolved function is called.)</p>
 <p>Let's take a look at a concrete example to see how this actually
 works. Consider the following C code which defines a little function to
 compute the greatest common divisor of two (machine) integers:</p>
@@ -3975,12 +3984,6 @@ Also note that calling conventions for passing C structs <em>by value</em> depen
 on the host ABI, so you should have a look at the resulting <tt class="docutils literal"><span class="pre">extern</span></tt>
 declaration (using <tt class="docutils literal"><span class="pre">show</span></tt>) to determine how the function is actually to be
 called from Pure.</li>
-<li>The Pure interpreter will try to satisfy external references in an imported
-bitcode module from other loaded libraries and bitcode modules. This happens
-at the time the code is JIT-compiled. At present, the JIT generates a fatal
-error if this fails, so you better make sure that all required libraries and
-bitcode modules have been loaded before trying to execute the loaded
-functions.</li>
 </ul>
 </div>
 <div class="section" id="inline-code">

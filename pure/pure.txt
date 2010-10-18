@@ -3765,6 +3765,16 @@ create aliases for the external functions in different namespaces::
   namespace bar;
   using private "bc:modname";
 
+You can load any number of bitcode modules along with shared libraries in a
+Pure script, in any order. The JIT will try to satisfy external references in
+modules and libraries from other loaded libraries and bitcode modules. This is
+deferred until the code is actually JIT-compiled, so that you can make sure
+beforehand that all required libraries and bitcode modules have been loaded.
+If the JIT fails to resolve a function, the interpreter will print its name
+and also raise an exception at runtime when the function is being called from
+other C code. (You can then run your script in the debugger to locate the
+external visible in Pure from which the unresolved function is called.)
+
 Let's take a look at a concrete example to see how this actually
 works. Consider the following C code which defines a little function to
 compute the greatest common divisor of two (machine) integers::
@@ -3832,13 +3842,6 @@ experimental, and there are some known limitations:
   on the host ABI, so you should have a look at the resulting ``extern``
   declaration (using ``show``) to determine how the function is actually to be
   called from Pure.
-
-* The Pure interpreter will try to satisfy external references in an imported
-  bitcode module from other loaded libraries and bitcode modules. This happens
-  at the time the code is JIT-compiled. At present, the JIT generates a fatal
-  error if this fails, so you better make sure that all required libraries and
-  bitcode modules have been loaded before trying to execute the loaded
-  functions.
 
 Inline Code
 -----------
