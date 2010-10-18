@@ -24,6 +24,63 @@ other systems are also available; see the SYSTEM NOTES section below for
 details.
 
 
+QUICK SUMMARY
+===== =======
+
+Here is the executive summary for the impatient. This assumes that you're
+using LLVM 2.8 and Pure 0.45, please substitute your actual version numbers in
+the commands given below.
+
+Prerequisites: gcc, GNU make, flex/bison (Pure from svn only), libltdl, libgmp
+(including header files for development). These should all be available as
+binary packages on most systems.
+
+Installing LLVM and clang (the latter is optional but recommended):
+
+$ tar xfvz llvm-2.8.tgz
+$ tar xfvz clang-2.8.tgz && mv clang-2.8 llvm-2.8/tools/clang
+$ cd llvm-2.8
+$ ./configure --enable-shared --enable-optimized --enable-targets=host-only
+$ make && sudo make install
+
+You may want to leave out --enable-shared to install LLVM as static libraries
+only, and --enable-targets=host-only if you want to enable cross compilation
+for all supported targets in LLVM. (With some older LLVM versions you may also
+have to add --disable-assertions --disable-expensive-checks to disable stuff
+that makes LLVM very slow and/or breaks it on some systems.)
+
+Installing Pure:
+
+$ tar xfvz pure-0.45.tar.gz
+$ cd pure-0.45
+$ ./configure --enable-release
+$ make && sudo make install
+
+Also, it's recommended that you run the following in the Pure source directory
+after compilation to make sure that the Pure interpreter works correctly on
+your platform (see step 5 below for details):
+
+$ make check
+
+Finally, depending on your system you may have to run a utility to announce
+the shared LLVM and Pure libraries to the dynamic loader. E.g., on Linux:
+
+$ sudo /sbin/ldconfig
+
+That's it, Pure should be ready to go now:
+
+$ pure
+
+Uninstalling:
+
+$ cd pure-0.45
+$ sudo make uninstall
+$ cd ../llvm-2.8
+$ sudo make uninstall
+
+Please see below for much more detailed installation instructions.
+
+
 BASIC INSTALLATION
 ===== ============
 
@@ -100,7 +157,7 @@ STEP 2. Get and unpack the latest LLVM sources at:
 http://llvm.org/releases/download.html
 
 You only need the llvm-2.x tarball which contains the LLVM library as well as
-most of the LLVM toolchain. LLVM 2.7 is the latest stable release at the time
+most of the LLVM toolchain. LLVM 2.8 is the latest stable release at the time
 of this writing. LLVM versions 2.5 thru 2.8 have all been tested and are known
 to work with Pure. LLVM 2.3 and 2.4 might still work, too, but you'll probably
 have to fiddle with the sources. We really recommend using LLVM 2.5 or later,
@@ -115,6 +172,15 @@ available, we're not able to track LLVM development in the trunk very closely.
 So you might run into intermittent compilation problems, bugs and other
 incompatibilities when going with the svn version.
 
+At this point we also recommend getting an LLVM-capable C/C++ compiler. This
+is completely optional, but you'll need it to take advantage of the new
+bitcode loader in Pure 0.44 and later. The easiest way to go is to take the
+clang-2.x tarball which corresponds to your LLVM version, unpack its contents
+into the LLVM tools directory and rename the clang-2.x directory to just
+'clang'. The clang compiler will then be built and installed along with LLVM.
+You can also use llvm-gcc instead, or even both at the same time. Please see
+step 3a below for further details.
+
 NOTE: Some (older) Linux and *BSD distributions provide LLVM packages and
 ports which are compiled with wrong configure options and are thus broken. If
 the Pure interpreter segfaults on startup or fails its test suite ('make
@@ -123,10 +189,16 @@ for your system, or compile LLVM yourself.
 
 STEP 3. Configure, build and install LLVM as follows:
 
-$ cd llvm-2.7
-$ ./configure --enable-optimized --disable-assertions --disable-expensive-checks --enable-targets=host-only
+$ cd llvm-2.8
+$ ./configure --enable-shared --enable-optimized --disable-assertions --disable-expensive-checks --enable-targets=host-only
 $ make
 $ sudo make install
+
+Note that the --enable-shared option builds and installs LLVM as a shared
+library, which is often preferable if you're running different LLVM-based
+tools and compilers on your system. This requires LLVM 2.7 or later and may be
+broken on some systems. You can always leave out that option, in which case
+LLVM will be linked statically into the Pure runtime library.
 
 *IMPORTANT:* With LLVM 2.5 and earlier, on x86-64 systems you have to add
 --enable-pic to the configure command, so that the static LLVM libraries can
@@ -135,24 +207,51 @@ compiling on a 32 bit system, it's broken there.) With LLVM 2.6 and later this
 option isn't needed anymore. See the comments on 32/64 bit support in the
 SYSTEM NOTES section below for details.
 
-Note that the configure flags are for an optimized (non-debug) build and
+Also note that the configure flags are for an optimized (non-debug) build and
 disable all compilation targets but the one for your system. You might wish to
 play with the configure options, but note that some options (especially
 --enable-expensive-checks) make LLVM very slow and may even break the Pure
 interpreter on some systems.
 
-*OPTIONAL:* Finally, you may also want to install llvm-gcc. This is completely
-optional (Pure doesn't rely on llvm-gcc in any way), but if you plan to use
-the bitcode interface in Pure 0.44 and later, then you'll probably need a
-C/C++ compiler capable of producing LLVM bitcode output, and at present
-llvm-gcc is the most mature option for that. Assuming that you have unpacked
-both the LLVM and the llvm-gcc sources in the same directory, you can build
-and install llvm-gcc as follows:
+STEP 3a (OPTIONAL). Build and install an LLVM-capable C/C++ compiler:
 
-$ cd llvm-gcc4.2-2.7.source
+As already mentioned above, we suggest that you also install a C/C++ compiler
+with an LLVM backend. Both clang and llvm-gcc are fully supported by Pure.
+Pure can be used without this, but then you'll miss out on the great LLVM
+bitcode loader and C/C++ inlining facilities in Pure 0.44 and later. (However,
+you can always install clang and/or llvm-gcc at a later time to enable these
+features.)
+
+clang:
+
+With LLVM 2.8 and later, we recommend installing clang, the new LLVM-based
+C/C++ compiler (http://clang.llvm.org/), because it's much easier to build,
+runs faster and has better diagnostics than llvm-gcc. If you haven't built
+clang along with LLVM yet, you can now just drop the contents of the clang-2.x
+tarball into the llvm-2.x/tools directory, renaming the resulting clang-2.x
+directory to just 'clang'. Then build and install clang as follows:
+
+$ cd llvm-2.8/tools/clang
+$ make
+$ sudo make install
+
+llvm-gcc:
+
+You may also want to install llvm-gcc (also available from the LLVM website),
+either as an alternative or in addition to clang. The advantage of llvm-gcc
+over clang is that it has additional language frontends (Ada and Fortran) and
+that it works on all platforms supported by LLVM. (At the time of this
+writing, clang isn't supported on Windows yet, so you will have to stick to
+llvm-gcc there.)
+
+Installing llvm-gcc from source actually isn't all that difficult, if a bit
+time-consuming. Assuming that you have unpacked both the LLVM and the llvm-gcc
+sources in the same directory, you can build and install llvm-gcc as follows:
+
+$ cd llvm-gcc4.2-2.8.source
 $ mkdir obj
 $ cd obj
-$ ../configure --program-prefix=llvm- --enable-llvm=$PWD/../../llvm-2.7 --enable-languages=c,c++
+$ ../configure --program-prefix=llvm- --enable-llvm=$PWD/../../llvm-2.8 --enable-languages=c,c++
 $ make
 $ sudo make install
 
@@ -230,6 +329,20 @@ all that doesn't help then you might be running into LLVM bugs and limitations
 on not-so-well supported platforms; in that case please also report the
 results of 'make check' as described above, so that we can try to figure out
 what is going on and whether there's a fix or workaround for the problem.
+
+NOTE: If you have one of the LLVM C/C++ compilers installed (see step 3a), you
+can use those to compile Pure by passing the appropriate compiler names on the
+configure line:
+
+$ ./configure --enable-release CC=clang CXX=clang++
+
+Or, when using llvm-gcc:
+
+$ ./configure --enable-release CC=llvm-gcc CXX=llvm-g++
+
+llvm-gcc 4.2 and clang 2.8 or later should build Pure cleanly and pass all
+checks. When compiling Pure with CXX=clang++, the Pure interpreter will also
+use clang as the default for compiling inline C/C++ code in Pure scripts.
 
 STEP 6. The Pure interpreter should be ready to go now.
 
