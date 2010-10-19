@@ -66,6 +66,7 @@ static void check(const yy::location& l, const char* s, bool decl);
 
 /* Hook for interactive command input. */
 char *(*command_input)(const char *prompt);
+void (*exit_handler)();
 static void lex_input(const char *prompt, char *buf,
 		      size_t &result, size_t max_size);
 
@@ -2344,7 +2345,6 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
       ;
     else if (args.c == 0 || (debug = args.c == 1 && args.l.front() == "-g")) {
       // Rerun the interpreter.
-      void pure_exit_handler();
       int argc = interp.argc;
       char **argv = interp.argv;
       if (argc > 0 && argv) {
@@ -2385,7 +2385,7 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
 	  argv[j++] = opt;
 	}
 	argv[j++] = 0;
-	pure_exit_handler();
+	if (exit_handler) exit_handler();
 	execvp(argv[0], argv);
       run_err:
 	if (argv != interp.argv && argv) free(argv);

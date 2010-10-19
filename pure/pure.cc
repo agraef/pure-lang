@@ -288,6 +288,7 @@ pure_completion(const char *text, int start, int end)
 /* Interactive command line, using readline/libedit. */
 
 extern char *(*command_input)(const char *prompt);
+extern void (*exit_handler)();
 
 static char *my_command_input(const char *prompt)
 {
@@ -312,7 +313,7 @@ static void sig_handler(int sig)
 static const char *histfile = 0;
 #endif
 
-void pure_exit_handler()
+static void my_exit_handler()
 {
 #ifdef HAVE_READLINE_HISTORY
   if (histfile) write_history(histfile);
@@ -429,7 +430,7 @@ main(int argc, char *argv[])
   signal(SIGPIPE, SIG_IGN);
 #endif
   // set up an exit function which saves the history if needed
-  atexit(pure_exit_handler);
+  atexit(my_exit_handler);
   // set the system locale
   setlocale(LC_ALL, "");
   // get some settings from the environment
@@ -723,6 +724,7 @@ main(int argc, char *argv[])
   if (want_editing && isatty(fileno(stdin))) {
     // initialize readline
     command_input = my_command_input;
+    exit_handler = my_exit_handler;
     rl_readline_name = (char*)"Pure";
     rl_attempted_completion_function = pure_completion;
 #ifdef HAVE_READLINE_HISTORY
