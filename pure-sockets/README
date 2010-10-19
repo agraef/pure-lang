@@ -1,0 +1,177 @@
+
+====================================
+pure-sockets: Pure Sockets Interface
+====================================
+
+:Author: Albert Gräf <Dr.Graef@t-online.de>
+:Date: |date|
+
+.. |date| date::
+
+This is a simple interface to the Berkeley socket functions. It provides most
+of the core functionality, so you can create internet sockets for both stream
+and datagram based protocols and use these to transmit messages. (Unix-style
+file sockets are not supported at this time.)
+
+Installation
+============
+
+This package uses Pure's new bitcode loader to ease porting, so you'll need
+Pure 0.45 or later and an LLVM-based C compiler installed. We recommend clang,
+but you can also use llvm-gcc if you run make as ``make CC=llvm-gcc`` or edit
+one line at the beginning of the Makefile accordingly. Then do the usual
+``make && sudo make install`` and you should be set.
+
+Usage
+=====
+
+To use the operations of this module, put the following in your Pure script::
+
+  using sockets;
+
+NOTE: On some systems you may also have to pull in a special system library to
+get the socket functions. E.g.::
+
+  using "lib:wsock32", sockets;
+
+With the ``sockets`` module loaded, all the standard socket functions are
+available and work pretty much like in C. The only real difference is that,
+for convenience, functions taking socket addresses as parameters
+(``struct_sockaddr*`` pointers in Pure), are called without the ``addrlen``
+parameter; the size of the socket address structure will be inferred
+automatically and passed to the underlying C functions. Also, there are some
+convenience functions which act as wrappers around ``getaddrinfo`` and
+``getnameinfo`` to create socket addresses from symbolic information (hostname
+or ip, port names or numbers) and return information about existing address
+pointers, see `Creating and Inspecting Socket Addresses`_ below.
+
+The following functions are provided. Please see the corresponding manual
+pages for details, and check the Pure scripts in the examples subdirectory for
+some examples.
+
+Creating and Inspecting Socket Addresses
+----------------------------------------
+
+These functions are Pure-specific. The created socket addresses are
+``malloc``'ed and free themselves automatically when garbage-collected.
+
+``struct_sockaddr *sockaddr();``
+
+    Create a pointer to an empty socket address suitable to hold the socket
+    address result of routines like ``accept``, ``getsockname``, ``recvfrom``,
+    etc. which return a socket address.
+
+``struct_sockaddr *sockaddr([int family,] char *host, char *port);``
+
+``struct_sockaddr *sockaddr([int family,] char *host, int port);``
+
+    This uses ``getaddrinfo`` to retrieve an ``AF_INET`` or ``AF_INET6``
+    address for the given hostname (or numeric IP address in string form) and
+    port (specified either as an int or a string). If ``family`` is omitted,
+    it defaults to ``AF_UNSPEC`` which matches both ``AF_INET`` and
+    ``AF_INET6`` addresses.
+
+``struct_sockaddr *sockaddrs([int family,] char *host, char *port);``
+
+``struct_sockaddr *sockaddrs([int family,] char *host, int port);``
+
+    This works like ``sockaddr`` above, but returns a list with *all* matching
+    addresses.
+
+``int sockaddr_family(struct_sockaddr *addr);``
+
+    Returns the address family of the given address.
+
+``char *sockaddr_hostname(struct_sockaddr *addr);``
+
+    Returns the hostname if available, the IP address otherwise.
+
+``char *sockaddr_ip(struct_sockaddr *addr);``
+
+    Returns the IP address.
+
+``char *sockaddr_service(struct_sockaddr *addr);``
+
+    Returns the service (a.k.a. port) name.
+
+``int sockaddr_port(struct_sockaddr *addr);``
+
+    Returns the port number.
+
+``expr *sockaddr_info(struct_sockaddr *addr);``
+
+    Returns a readable description of a socket address, as a
+    ``(family,hostname,port)`` tuple. You should be able to pass this into
+    ``sockaddr`` again to get the original address.
+
+Creating and Closing Sockets
+----------------------------
+
+``int socket(int domain, int type, int protocol);``
+
+    Creates a socket for the given protocol family (``AF_INET`` or
+    ``AF_INET6``), socket type (like ``SOCK_STREAM``, ``SOCK_DGRAM``, etc.)
+    and protocol. The protocol can be 0, denoting the default protocol, or any
+    of the defined ``IPPROTO`` constants, try ``show -g IPPROTO_*`` for a list
+    of those. Note that on Linux we also support the ``SOCK_NONBLOCK`` and
+    ``SOCK_CLOEXEC`` flags which can be or'ed with the socket type to get
+    sockets with the corresponding features.
+
+``int socketpair(int domain, int type, int protocol, int *sv);``
+
+    Create a pair of sockets. The descriptors are returned in the integer
+    vector passed in the last argument.
+
+``int shutdown(int fd, int how);``
+
+  Perform shutdown on a socket. The second argument should be one of
+  ``SHUT_RD``, ``SHUT_WR`` and ``SHUT_RDWR``.
+
+``closesocket(int fd);``
+
+  This is provided for Windows compatibility. On POSIX systems this is just
+  ``close``.
+
+Establishing Connections
+------------------------
+
+``int accept(int sockfd, struct_sockaddr *addr);``
+
+``int bind(int sockfd, struct_sockaddr *addr);``
+
+``int connect(int sockfd, struct_sockaddr *addr);``
+
+``int listen(int sockfd, int backlog);``
+
+Socket I/O
+----------
+
+``size_t recv(int fd, void *buf, size_t len, int flags);``
+
+``size_t send(int fd, void *buf, size_t len, int flags);``
+
+``size_t recvfrom(int fd, void *buf, size_t len, int flags, struct_sockaddr *addr);``
+
+``size_t sendto(int fd, void *buf, size_t len, int flags, struct_sockaddr *addr);``
+
+The usual ``send``/``recv`` flags specified by POSIX (``MSG_EOR``,
+``MSG_OOB``, ``MSG_PEEK``, ``MSG_WAITALL``) are provided. On Linux we also
+support ``MSG_DONTWAIT``. Note that on POSIX systems you can also just
+``fdopen`` the socket descriptor and use the standard file I/O operations from
+the ``system`` module instead.
+
+Socket Information
+------------------
+
+``int getsockname(int fd, struct_sockaddr *addr);``
+
+``int getpeername(int fd, struct_sockaddr *addr);``
+
+``int getsockopt(int fd, int level, int name, void *val, int *len);``
+
+``int setsockopt(int fd, int level, int name, void *val, int len);``
+
+Currently only the ``SOL_SOCKET`` level is defined, which can be passed as the
+second argument to ``getsockopt``/``setsockopt``, along with the available
+POSIX socket options (``name`` argument), try ``show -g SO_*`` to get a list
+of those.

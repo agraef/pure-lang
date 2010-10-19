@@ -1,0 +1,436 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
+<title>pure-sockets: Pure Sockets Interface</title>
+<meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
+<meta name="date" content="2010-10-20" />
+<style type="text/css">
+
+/*
+:Author: David Goodger (goodger@python.org)
+:Id: $Id: html4css1.css 5631 2008-08-24 13:01:23Z goodger $
+:Copyright: This stylesheet has been placed in the public domain.
+
+Default cascading style sheet for the HTML output of Docutils.
+
+See http://docutils.sf.net/docs/howto/html-stylesheets.html for how to
+customize this style sheet.
+*/
+
+/* used to remove borders from tables and images */
+.borderless, table.borderless td, table.borderless th {
+  border: 0 }
+
+table.borderless td, table.borderless th {
+  /* Override padding for "table.docutils td" with "! important".
+     The right padding separates the table cells. */
+  padding: 0 0.5em 0 0 ! important }
+
+.first {
+  /* Override more specific margin styles with "! important". */
+  margin-top: 0 ! important }
+
+.last, .with-subtitle {
+  margin-bottom: 0 ! important }
+
+.hidden {
+  display: none }
+
+a.toc-backref {
+  text-decoration: none ;
+  color: black }
+
+blockquote.epigraph {
+  margin: 2em 5em ; }
+
+dl.docutils dd {
+  margin-bottom: 0.5em }
+
+/* Uncomment (and remove this text!) to get bold-faced definition list terms
+dl.docutils dt {
+  font-weight: bold }
+*/
+
+div.abstract {
+  margin: 2em 5em }
+
+div.abstract p.topic-title {
+  font-weight: bold ;
+  text-align: center }
+
+div.admonition, div.attention, div.caution, div.danger, div.error,
+div.hint, div.important, div.note, div.tip, div.warning {
+  margin: 2em ;
+  border: medium outset ;
+  padding: 1em }
+
+div.admonition p.admonition-title, div.hint p.admonition-title,
+div.important p.admonition-title, div.note p.admonition-title,
+div.tip p.admonition-title {
+  font-weight: bold ;
+  font-family: sans-serif }
+
+div.attention p.admonition-title, div.caution p.admonition-title,
+div.danger p.admonition-title, div.error p.admonition-title,
+div.warning p.admonition-title {
+  color: red ;
+  font-weight: bold ;
+  font-family: sans-serif }
+
+/* Uncomment (and remove this text!) to get reduced vertical space in
+   compound paragraphs.
+div.compound .compound-first, div.compound .compound-middle {
+  margin-bottom: 0.5em }
+
+div.compound .compound-last, div.compound .compound-middle {
+  margin-top: 0.5em }
+*/
+
+div.dedication {
+  margin: 2em 5em ;
+  text-align: center ;
+  font-style: italic }
+
+div.dedication p.topic-title {
+  font-weight: bold ;
+  font-style: normal }
+
+div.figure {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+div.footer, div.header {
+  clear: both;
+  font-size: smaller }
+
+div.line-block {
+  display: block ;
+  margin-top: 1em ;
+  margin-bottom: 1em }
+
+div.line-block div.line-block {
+  margin-top: 0 ;
+  margin-bottom: 0 ;
+  margin-left: 1.5em }
+
+div.sidebar {
+  margin: 0 0 0.5em 1em ;
+  border: medium outset ;
+  padding: 1em ;
+  background-color: #ffffee ;
+  width: 40% ;
+  float: right ;
+  clear: right }
+
+div.sidebar p.rubric {
+  font-family: sans-serif ;
+  font-size: medium }
+
+div.system-messages {
+  margin: 5em }
+
+div.system-messages h1 {
+  color: red }
+
+div.system-message {
+  border: medium outset ;
+  padding: 1em }
+
+div.system-message p.system-message-title {
+  color: red ;
+  font-weight: bold }
+
+div.topic {
+  margin: 2em }
+
+h1.section-subtitle, h2.section-subtitle, h3.section-subtitle,
+h4.section-subtitle, h5.section-subtitle, h6.section-subtitle {
+  margin-top: 0.4em }
+
+h1.title {
+  text-align: center }
+
+h2.subtitle {
+  text-align: center }
+
+hr.docutils {
+  width: 75% }
+
+img.align-left {
+  clear: left }
+
+img.align-right {
+  clear: right }
+
+ol.simple, ul.simple {
+  margin-bottom: 1em }
+
+ol.arabic {
+  list-style: decimal }
+
+ol.loweralpha {
+  list-style: lower-alpha }
+
+ol.upperalpha {
+  list-style: upper-alpha }
+
+ol.lowerroman {
+  list-style: lower-roman }
+
+ol.upperroman {
+  list-style: upper-roman }
+
+p.attribution {
+  text-align: right ;
+  margin-left: 50% }
+
+p.caption {
+  font-style: italic }
+
+p.credits {
+  font-style: italic ;
+  font-size: smaller }
+
+p.label {
+  white-space: nowrap }
+
+p.rubric {
+  font-weight: bold ;
+  font-size: larger ;
+  color: maroon ;
+  text-align: center }
+
+p.sidebar-title {
+  font-family: sans-serif ;
+  font-weight: bold ;
+  font-size: larger }
+
+p.sidebar-subtitle {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+p.topic-title {
+  font-weight: bold }
+
+pre.address {
+  margin-bottom: 0 ;
+  margin-top: 0 ;
+  font: inherit }
+
+pre.literal-block, pre.doctest-block {
+  margin-left: 2em ;
+  margin-right: 2em }
+
+span.classifier {
+  font-family: sans-serif ;
+  font-style: oblique }
+
+span.classifier-delimiter {
+  font-family: sans-serif ;
+  font-weight: bold }
+
+span.interpreted {
+  font-family: sans-serif }
+
+span.option {
+  white-space: nowrap }
+
+span.pre {
+  white-space: pre }
+
+span.problematic {
+  color: red }
+
+span.section-subtitle {
+  /* font-size relative to parent (h1..h6 element) */
+  font-size: 80% }
+
+table.citation {
+  border-left: solid 1px gray;
+  margin-left: 1px }
+
+table.docinfo {
+  margin: 2em 4em }
+
+table.docutils {
+  margin-top: 0.5em ;
+  margin-bottom: 0.5em }
+
+table.footnote {
+  border-left: solid 1px black;
+  margin-left: 1px }
+
+table.docutils td, table.docutils th,
+table.docinfo td, table.docinfo th {
+  padding-left: 0.5em ;
+  padding-right: 0.5em ;
+  vertical-align: top }
+
+table.docutils th.field-name, table.docinfo th.docinfo-name {
+  font-weight: bold ;
+  text-align: left ;
+  white-space: nowrap ;
+  padding-left: 0 }
+
+h1 tt.docutils, h2 tt.docutils, h3 tt.docutils,
+h4 tt.docutils, h5 tt.docutils, h6 tt.docutils {
+  font-size: 100% }
+
+ul.auto-toc {
+  list-style-type: none }
+
+</style>
+</head>
+<body>
+<div class="document" id="pure-sockets-pure-sockets-interface">
+<h1 class="title">pure-sockets: Pure Sockets Interface</h1>
+<table class="docinfo" frame="void" rules="none">
+<col class="docinfo-name" />
+<col class="docinfo-content" />
+<tbody valign="top">
+<tr><th class="docinfo-name">Author:</th>
+<td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
+<tr><th class="docinfo-name">Date:</th>
+<td>2010-10-20</td></tr>
+</tbody>
+</table>
+<p>This is a simple interface to the Berkeley socket functions. It provides most
+of the core functionality, so you can create internet sockets for both stream
+and datagram based protocols and use these to transmit messages. (Unix-style
+file sockets are not supported at this time.)</p>
+<div class="section" id="installation">
+<h1>Installation</h1>
+<p>This package uses Pure's new bitcode loader to ease porting, so you'll need
+Pure 0.45 or later and an LLVM-based C compiler installed. We recommend clang,
+but you can also use llvm-gcc if you run make as <tt class="docutils literal"><span class="pre">make</span> <span class="pre">CC=llvm-gcc</span></tt> or edit
+one line at the beginning of the Makefile accordingly. Then do the usual
+<tt class="docutils literal"><span class="pre">make</span> <span class="pre">&amp;&amp;</span> <span class="pre">sudo</span> <span class="pre">make</span> <span class="pre">install</span></tt> and you should be set.</p>
+</div>
+<div class="section" id="usage">
+<h1>Usage</h1>
+<p>To use the operations of this module, put the following in your Pure script:</p>
+<pre class="literal-block">
+using sockets;
+</pre>
+<p>NOTE: On some systems you may also have to pull in a special system library to
+get the socket functions. E.g.:</p>
+<pre class="literal-block">
+using &quot;lib:wsock32&quot;, sockets;
+</pre>
+<p>With the <tt class="docutils literal"><span class="pre">sockets</span></tt> module loaded, all the standard socket functions are
+available and work pretty much like in C. The only real difference is that,
+for convenience, functions taking socket addresses as parameters
+(<tt class="docutils literal"><span class="pre">struct_sockaddr*</span></tt> pointers in Pure), are called without the <tt class="docutils literal"><span class="pre">addrlen</span></tt>
+parameter; the size of the socket address structure will be inferred
+automatically and passed to the underlying C functions. Also, there are some
+convenience functions which act as wrappers around <tt class="docutils literal"><span class="pre">getaddrinfo</span></tt> and
+<tt class="docutils literal"><span class="pre">getnameinfo</span></tt> to create socket addresses from symbolic information (hostname
+or ip, port names or numbers) and return information about existing address
+pointers, see <a class="reference internal" href="#creating-and-inspecting-socket-addresses">Creating and Inspecting Socket Addresses</a> below.</p>
+<p>The following functions are provided. Please see the corresponding manual
+pages for details, and check the Pure scripts in the examples subdirectory for
+some examples.</p>
+<div class="section" id="creating-and-inspecting-socket-addresses">
+<h2>Creating and Inspecting Socket Addresses</h2>
+<p>These functions are Pure-specific. The created socket addresses are
+<tt class="docutils literal"><span class="pre">malloc</span></tt>'ed and free themselves automatically when garbage-collected.</p>
+<p><tt class="docutils literal"><span class="pre">struct_sockaddr</span> <span class="pre">*sockaddr();</span></tt></p>
+<blockquote>
+Create a pointer to an empty socket address suitable to hold the socket
+address result of routines like <tt class="docutils literal"><span class="pre">accept</span></tt>, <tt class="docutils literal"><span class="pre">getsockname</span></tt>, <tt class="docutils literal"><span class="pre">recvfrom</span></tt>,
+etc. which return a socket address.</blockquote>
+<p><tt class="docutils literal"><span class="pre">struct_sockaddr</span> <span class="pre">*sockaddr([int</span> <span class="pre">family,]</span> <span class="pre">char</span> <span class="pre">*host,</span> <span class="pre">char</span> <span class="pre">*port);</span></tt></p>
+<p><tt class="docutils literal"><span class="pre">struct_sockaddr</span> <span class="pre">*sockaddr([int</span> <span class="pre">family,]</span> <span class="pre">char</span> <span class="pre">*host,</span> <span class="pre">int</span> <span class="pre">port);</span></tt></p>
+<blockquote>
+This uses <tt class="docutils literal"><span class="pre">getaddrinfo</span></tt> to retrieve an <tt class="docutils literal"><span class="pre">AF_INET</span></tt> or <tt class="docutils literal"><span class="pre">AF_INET6</span></tt>
+address for the given hostname (or numeric IP address in string form) and
+port (specified either as an int or a string). If <tt class="docutils literal"><span class="pre">family</span></tt> is omitted,
+it defaults to <tt class="docutils literal"><span class="pre">AF_UNSPEC</span></tt> which matches both <tt class="docutils literal"><span class="pre">AF_INET</span></tt> and
+<tt class="docutils literal"><span class="pre">AF_INET6</span></tt> addresses.</blockquote>
+<p><tt class="docutils literal"><span class="pre">struct_sockaddr</span> <span class="pre">*sockaddrs([int</span> <span class="pre">family,]</span> <span class="pre">char</span> <span class="pre">*host,</span> <span class="pre">char</span> <span class="pre">*port);</span></tt></p>
+<p><tt class="docutils literal"><span class="pre">struct_sockaddr</span> <span class="pre">*sockaddrs([int</span> <span class="pre">family,]</span> <span class="pre">char</span> <span class="pre">*host,</span> <span class="pre">int</span> <span class="pre">port);</span></tt></p>
+<blockquote>
+This works like <tt class="docutils literal"><span class="pre">sockaddr</span></tt> above, but returns a list with <em>all</em> matching
+addresses.</blockquote>
+<p><tt class="docutils literal"><span class="pre">int</span> <span class="pre">sockaddr_family(struct_sockaddr</span> <span class="pre">*addr);</span></tt></p>
+<blockquote>
+Returns the address family of the given address.</blockquote>
+<p><tt class="docutils literal"><span class="pre">char</span> <span class="pre">*sockaddr_hostname(struct_sockaddr</span> <span class="pre">*addr);</span></tt></p>
+<blockquote>
+Returns the hostname if available, the IP address otherwise.</blockquote>
+<p><tt class="docutils literal"><span class="pre">char</span> <span class="pre">*sockaddr_ip(struct_sockaddr</span> <span class="pre">*addr);</span></tt></p>
+<blockquote>
+Returns the IP address.</blockquote>
+<p><tt class="docutils literal"><span class="pre">char</span> <span class="pre">*sockaddr_service(struct_sockaddr</span> <span class="pre">*addr);</span></tt></p>
+<blockquote>
+Returns the service (a.k.a. port) name.</blockquote>
+<p><tt class="docutils literal"><span class="pre">int</span> <span class="pre">sockaddr_port(struct_sockaddr</span> <span class="pre">*addr);</span></tt></p>
+<blockquote>
+Returns the port number.</blockquote>
+<p><tt class="docutils literal"><span class="pre">expr</span> <span class="pre">*sockaddr_info(struct_sockaddr</span> <span class="pre">*addr);</span></tt></p>
+<blockquote>
+Returns a readable description of a socket address, as a
+<tt class="docutils literal"><span class="pre">(family,hostname,port)</span></tt> tuple. You should be able to pass this into
+<tt class="docutils literal"><span class="pre">sockaddr</span></tt> again to get the original address.</blockquote>
+</div>
+<div class="section" id="creating-and-closing-sockets">
+<h2>Creating and Closing Sockets</h2>
+<p><tt class="docutils literal"><span class="pre">int</span> <span class="pre">socket(int</span> <span class="pre">domain,</span> <span class="pre">int</span> <span class="pre">type,</span> <span class="pre">int</span> <span class="pre">protocol);</span></tt></p>
+<blockquote>
+Creates a socket for the given protocol family (<tt class="docutils literal"><span class="pre">AF_INET</span></tt> or
+<tt class="docutils literal"><span class="pre">AF_INET6</span></tt>), socket type (like <tt class="docutils literal"><span class="pre">SOCK_STREAM</span></tt>, <tt class="docutils literal"><span class="pre">SOCK_DGRAM</span></tt>, etc.)
+and protocol. The protocol can be 0, denoting the default protocol, or any
+of the defined <tt class="docutils literal"><span class="pre">IPPROTO</span></tt> constants, try <tt class="docutils literal"><span class="pre">show</span> <span class="pre">-g</span> <span class="pre">IPPROTO_*</span></tt> for a list
+of those. Note that on Linux we also support the <tt class="docutils literal"><span class="pre">SOCK_NONBLOCK</span></tt> and
+<tt class="docutils literal"><span class="pre">SOCK_CLOEXEC</span></tt> flags which can be or'ed with the socket type to get
+sockets with the corresponding features.</blockquote>
+<p><tt class="docutils literal"><span class="pre">int</span> <span class="pre">socketpair(int</span> <span class="pre">domain,</span> <span class="pre">int</span> <span class="pre">type,</span> <span class="pre">int</span> <span class="pre">protocol,</span> <span class="pre">int</span> <span class="pre">*sv);</span></tt></p>
+<blockquote>
+Create a pair of sockets. The descriptors are returned in the integer
+vector passed in the last argument.</blockquote>
+<p><tt class="docutils literal"><span class="pre">int</span> <span class="pre">shutdown(int</span> <span class="pre">fd,</span> <span class="pre">int</span> <span class="pre">how);</span></tt></p>
+<blockquote>
+Perform shutdown on a socket. The second argument should be one of
+<tt class="docutils literal"><span class="pre">SHUT_RD</span></tt>, <tt class="docutils literal"><span class="pre">SHUT_WR</span></tt> and <tt class="docutils literal"><span class="pre">SHUT_RDWR</span></tt>.</blockquote>
+<p><tt class="docutils literal"><span class="pre">closesocket(int</span> <span class="pre">fd);</span></tt></p>
+<blockquote>
+This is provided for Windows compatibility. On POSIX systems this is just
+<tt class="docutils literal"><span class="pre">close</span></tt>.</blockquote>
+</div>
+<div class="section" id="establishing-connections">
+<h2>Establishing Connections</h2>
+<p><tt class="docutils literal"><span class="pre">int</span> <span class="pre">accept(int</span> <span class="pre">sockfd,</span> <span class="pre">struct_sockaddr</span> <span class="pre">*addr);</span></tt></p>
+<p><tt class="docutils literal"><span class="pre">int</span> <span class="pre">bind(int</span> <span class="pre">sockfd,</span> <span class="pre">struct_sockaddr</span> <span class="pre">*addr);</span></tt></p>
+<p><tt class="docutils literal"><span class="pre">int</span> <span class="pre">connect(int</span> <span class="pre">sockfd,</span> <span class="pre">struct_sockaddr</span> <span class="pre">*addr);</span></tt></p>
+<p><tt class="docutils literal"><span class="pre">int</span> <span class="pre">listen(int</span> <span class="pre">sockfd,</span> <span class="pre">int</span> <span class="pre">backlog);</span></tt></p>
+</div>
+<div class="section" id="socket-i-o">
+<h2>Socket I/O</h2>
+<p><tt class="docutils literal"><span class="pre">size_t</span> <span class="pre">recv(int</span> <span class="pre">fd,</span> <span class="pre">void</span> <span class="pre">*buf,</span> <span class="pre">size_t</span> <span class="pre">len,</span> <span class="pre">int</span> <span class="pre">flags);</span></tt></p>
+<p><tt class="docutils literal"><span class="pre">size_t</span> <span class="pre">send(int</span> <span class="pre">fd,</span> <span class="pre">void</span> <span class="pre">*buf,</span> <span class="pre">size_t</span> <span class="pre">len,</span> <span class="pre">int</span> <span class="pre">flags);</span></tt></p>
+<p><tt class="docutils literal"><span class="pre">size_t</span> <span class="pre">recvfrom(int</span> <span class="pre">fd,</span> <span class="pre">void</span> <span class="pre">*buf,</span> <span class="pre">size_t</span> <span class="pre">len,</span> <span class="pre">int</span> <span class="pre">flags,</span> <span class="pre">struct_sockaddr</span> <span class="pre">*addr);</span></tt></p>
+<p><tt class="docutils literal"><span class="pre">size_t</span> <span class="pre">sendto(int</span> <span class="pre">fd,</span> <span class="pre">void</span> <span class="pre">*buf,</span> <span class="pre">size_t</span> <span class="pre">len,</span> <span class="pre">int</span> <span class="pre">flags,</span> <span class="pre">struct_sockaddr</span> <span class="pre">*addr);</span></tt></p>
+<p>The usual <tt class="docutils literal"><span class="pre">send</span></tt>/<tt class="docutils literal"><span class="pre">recv</span></tt> flags specified by POSIX (<tt class="docutils literal"><span class="pre">MSG_EOR</span></tt>,
+<tt class="docutils literal"><span class="pre">MSG_OOB</span></tt>, <tt class="docutils literal"><span class="pre">MSG_PEEK</span></tt>, <tt class="docutils literal"><span class="pre">MSG_WAITALL</span></tt>) are provided. On Linux we also
+support <tt class="docutils literal"><span class="pre">MSG_DONTWAIT</span></tt>. Note that on POSIX systems you can also just
+<tt class="docutils literal"><span class="pre">fdopen</span></tt> the socket descriptor and use the standard file I/O operations from
+the <tt class="docutils literal"><span class="pre">system</span></tt> module instead.</p>
+</div>
+<div class="section" id="socket-information">
+<h2>Socket Information</h2>
+<p><tt class="docutils literal"><span class="pre">int</span> <span class="pre">getsockname(int</span> <span class="pre">fd,</span> <span class="pre">struct_sockaddr</span> <span class="pre">*addr);</span></tt></p>
+<p><tt class="docutils literal"><span class="pre">int</span> <span class="pre">getpeername(int</span> <span class="pre">fd,</span> <span class="pre">struct_sockaddr</span> <span class="pre">*addr);</span></tt></p>
+<p><tt class="docutils literal"><span class="pre">int</span> <span class="pre">getsockopt(int</span> <span class="pre">fd,</span> <span class="pre">int</span> <span class="pre">level,</span> <span class="pre">int</span> <span class="pre">name,</span> <span class="pre">void</span> <span class="pre">*val,</span> <span class="pre">int</span> <span class="pre">*len);</span></tt></p>
+<p><tt class="docutils literal"><span class="pre">int</span> <span class="pre">setsockopt(int</span> <span class="pre">fd,</span> <span class="pre">int</span> <span class="pre">level,</span> <span class="pre">int</span> <span class="pre">name,</span> <span class="pre">void</span> <span class="pre">*val,</span> <span class="pre">int</span> <span class="pre">len);</span></tt></p>
+<p>Currently only the <tt class="docutils literal"><span class="pre">SOL_SOCKET</span></tt> level is defined, which can be passed as the
+second argument to <tt class="docutils literal"><span class="pre">getsockopt</span></tt>/<tt class="docutils literal"><span class="pre">setsockopt</span></tt>, along with the available
+POSIX socket options (<tt class="docutils literal"><span class="pre">name</span></tt> argument), try <tt class="docutils literal"><span class="pre">show</span> <span class="pre">-g</span> <span class="pre">SO_*</span></tt> to get a list
+of those.</p>
+</div>
+</div>
+</div>
+</body>
+</html>

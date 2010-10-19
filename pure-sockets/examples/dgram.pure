@@ -1,0 +1,155 @@
+#!/usr/local/bin/pure -x
+
+/* dgram.pure: Connectionless datagram server/client example. */
+
+/* USAGE: You can run this as a standalone program, to be invoked as follows:
+
+   - './dgram server' starts the server on port 5001
+   - './dgram client' starts a client on port 5002
+   - './dgram client port' starts another client on the given port number
+
+   You'll need at least one server and one client instance. The clients take
+   input from the user and send it to the server, which evaluates it as a Pure
+   expression (using 'eval'), and sends the result back to the client which
+   then prints the result.
+
+   Example: The following runs a server and a single client from the same shell.
+
+   $ (./dgram server &) && ./dgram client
+   server: localhost:5001	<-- startup message from the server
+   client: localhost:5002	<-- startup message from the client
+   client> 2*3*7		<-- expression entered in client
+   client: localhost:5002	<-- server prints client address ...
+   server> 2*3*7		<-- ... and the received expression
+   42				<-- evaluated result printed by client
+   client> foldl (*) 1 (1..15)
+   client: localhost:5002
+   server> foldl (*) 1 (1..15)
+   2004310016
+   client> quit
+
+   Typing 'quit' at the client prompt terminates both the client and the
+   server. Entering an empty line (or EOF) terminates just the client.
+
+   NOTE: You can compile this script to a native executable as usual, but
+   since it uses 'eval' you should specify -u to produce an unstripped
+   executable, so that the entire standard library gets linked into the
+   program: pure -u -c dgram.pure -o dgram. (Note that if you leave out the -u
+   option then the program will still work, but the server won't be able to do
+   much evaluation. I.e., most expressions will just be normal forms because
+   most of the standard library ops will be missing.) */
+
+using sockets, system;
+
+/* Input buffer size. This must be large enough to hold any encoded Pure value
+   that we transmit. (If you get a socket_error exception without any error
+   message from the system, then most likely the packets are too large and the
+   bufsz value must be increased.) */
+
+const bufsz = 1024;
+
+/* Helper macro to handle for all kinds of socket errors. This is invoked as
+   'check fd x' where fd is the socket descriptor and x the condition to be
+   evaluated. If x returns anything but true, check closes the socket (if
+   fd>=0) and throws a socket_error exception. */
+
+public socket_error;
+def check fd x = x ||
+  throw (errno==0 || perror "dgram" $$ fd<0 || closesocket fd $$ socket_error);
+
+/* Helper function to print a socket address. */
+
+print_addr msg::string addr::pointer = printf "%s: %s:%d\n"
+  (msg,sockaddr_hostname addr,sockaddr_port addr);
+
+/* "Safe" eval function which also encodes the result as a blob. We don't want
+   to bail out if the evaluation failed or the result couldn't be encoded as a
+   blob. Instead we return an appropriate error message in these cases, so
+   that the client always gets a reply from the server. */
+
+public eval_error;
+safe_eval s::string = case eval s of
+  _ = blob $ eval_error $ head $ split "\n" lasterr if ~null lasterr;
+  x = case blob x of
+        b::pointer = b;
+	_ = blob $ eval_error $ sprintf "bad value: %s" (str x);
+      end;
+end;
+
+/* The server receives Pure strings, evaluates them and sends back the
+   resulting value to the client which sent the message. Note that all data
+   (also the string data received from the client) is encoded as blobs here,
+   which allows almost any Pure expression to be transmitted on a socket in a
+   safe fashion. */
+
+// Fixed server address, so that the clients know where to find it.
+let server_addr = sockaddr ("localhost",5001);
+
+server = server_loop
+with
+  server_loop = server_loop when
+    print_addr "client" addr;
+    printf "server> %s\n" s;
+    // Evaluate the string, encode the result and send it back to the client.
+    b = safe_eval s;
+    check fd (sendto fd b (#b) 0 addr >= 0);
+  end if stringp s && ~null s && s~="quit" when
+    // Receive a packet and decode it. We use recvfrom here so that we know
+    // which client we're talking to.
+    check fd (recvfrom fd buf bufsz 0 addr >= 0 && blobp buf);
+    s = val buf;
+  end;
+  // Empty input or "quit" => close the socket and exit.
+  server_loop = closesocket fd;
+end when
+  // Create the input buffer and the addr argument for recvfrom.
+  buf = cooked $ malloc bufsz; addr = sockaddr ();
+  ~null buf && ~null addr || throw malloc_error;
+  // Open the socket and bind it to the server address.
+  fd = socket AF_INET SOCK_DGRAM 0;
+  check fd (fd >= 0 && bind fd server_addr >= 0);
+  print_addr "server" server_addr;
+end;
+
+/* The client is invoked with a port number, so that we can have multiple
+   clients talking to the same server. It sends input read from the user to
+   the server and prints the results received from the server. Entering an
+   empty input line exits the client. Entering "quit" on a line by itself
+   causes both client and server to exit. */
+
+client port = client_loop
+with
+  client_loop = client_loop when
+    // Get the reply from the server, decode and print it.
+    check fd (recv fd buf bufsz 0 >= 0 && blobp buf);
+    puts (str $ val buf);
+  end if ~null s && s~="quit" when
+    // Read input from the user and encode it as a blob.
+    fputs "client> " stdout; s = gets; b = blob s;
+    // If we got some input, send it to the server.
+    null s || check fd (sendto fd b (#b) 0 server_addr >= 0);
+  end;
+  // Empty input or "quit" => close the socket and exit.
+  client_loop = closesocket fd;
+end when
+  // Create the input buffer.
+  buf = cooked $ malloc bufsz;
+  ~null buf || throw malloc_error;
+  // Open the socket and bind it to the client address.
+  addr = sockaddr ("localhost",port);
+  fd = socket AF_INET SOCK_DGRAM 0;
+  check fd (fd >= 0 && bind fd addr >= 0);
+  print_addr "client" addr;
+end;
+
+/* This is a little main program which lets us run this script directly from
+   the command line. */
+
+main with
+  main = case argv of
+    [_,"server"] = server;
+    [_,"client"] = client 5002;
+    [_,"client",port] = client port if intp port when port = val port end;
+    _ = fprintf stderr "Usage: %s server | %s client [port]\n" (argv!0,argv!0);
+  end if ~compiling && argc>0;
+end;
