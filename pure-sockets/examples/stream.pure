@@ -1,0 +1,86 @@
+#!/usr/local/bin/pure -x
+
+/* Unix stream socket example. This illustrates AF_UNIX sockets, and opening
+   the socket as a FILE* so that we can use the standard I/O operations from
+   the system module on the socket. */
+
+using sockets, system;
+
+// Pathname of the socket file. Clients use this to connect to the server.
+const path = "server_socket";
+
+// We need to explicitly remove the socket file when we're done with it, the
+// unlink operation from the C library does that for us.
+extern int unlink(char *name);
+
+// Deal with various kinds of socket errors.
+socket_error msg::string fd::int
+  = throw (errno==0 || perror msg $$ fd<0 || closesocket fd $$ socket_error);
+
+/* The server reads requests, evaluates them as Pure expressions and sends
+   back the results to the client(s). Note that this implementation only reads
+   a single request from each client at a time, so that we can serve many
+   different clients simultaneously. */
+
+server = loop 0 with
+  loop no = loop (no+1) when
+    // Evaluate s as a Pure expression, send back the result.
+    printf "server[%d]> %s\n" (no,s);
+    s = case eval s of
+      	  _ = head $ split "\n" lasterr if ~null lasterr;
+	  x = str x otherwise;
+	end;
+    fprintf fp "%s\n" s;
+  end if ~done when
+    // Connect to a client.
+    addr = sockaddr (); cfd = accept fd addr;
+    cfd >= 0 || socket_error "server" fd;
+    // We got a connection, open it as a FILE* and read a request.
+    fp = fdopen cfd "r+"; s = fgets fp;
+    // We have to remove the trailing linefeed if any.
+    s = if ~null s && last s == "\n" then init s else s;
+    done = null s || s=="quit";
+  end;
+  loop no = no when
+    puts "server is exiting";
+    closesocket fd; unlink path;
+  end otherwise;
+end when
+  // Create the server socket and start listening.
+  unlink path;
+  fd = socket AF_UNIX SOCK_STREAM 0;
+  fd >= 0 && bind fd (sockaddr path) >= 0 && listen fd 5 >= 0 ||
+    socket_error "server" fd;
+  printf "server listening at '%s'\n" path;
+end;
+
+/* The client reads input from the user and sends it to the server, printing
+   the replies it gets back. Note that as the server only processes a single
+   request at a time, we have to open a new connection for each input. */
+
+client = loop 0 with
+  loop no = loop (no+1) if ~done when
+    printf "client[%d]> " no; s = gets;
+    done = null s || request s;
+  end;
+  loop no = no otherwise;
+  request s::string = done when
+    fd = socket AF_UNIX SOCK_STREAM 0;
+    fd >= 0 && connect fd (sockaddr path) >= 0 ||
+      socket_error "client" fd;
+    fp = fdopen fd "r+"; fprintf fp "%s\n" s;
+    done = s=="quit";
+    done || printf "%s" $ fgets fp;
+  end;
+end;
+
+/* This is a little main program which lets us run this script directly from
+   the command line. */
+
+main with
+  main = case argv of
+    [_,"server"] = server;
+    [_,"client"] = client;
+    _ = fprintf stderr "Usage: %s server|client\n" (argv!0);
+  end if ~compiling && argc>0;
+end;
