@@ -87,11 +87,21 @@ extern int setsockopt(int fd, int level, int name, void *val, int len);
 
 /* Construction of socket addresses for bind et al. */
 
+// Declare this here in case it isn't defined, to prevent compiler warnings.
+public AF_UNIX;
+
+// Compile time check to see whether we have AF_UNIX.
+const HAVE_AF_UNIX = intp AF_UNIX;
+
 /* Return a readable description of a socket address. You should be able to
-   pass this into sockaddr again and it should give you the same address. */
+   pass this into sockaddr again to get the original address. */
 
 sockaddr_info addr::pointer
-  = sockaddr_family addr, sockaddr_ip addr, sockaddr_port addr;
+  = if family == AF_INET || family == AF_INET6 then
+      family, sockaddr_ip addr, sockaddr_port addr
+    else if HAVE_AF_UNIX && family == AF_UNIX then
+      family, sockaddr_path addr
+    else () when family = sockaddr_family addr end;
 
 /* Use this to create a pointer to an empty socket address suitable to hold
    the socket address result of routines like accept, getsockname and recvfrom
@@ -101,6 +111,14 @@ sockaddr_info addr::pointer
 sockaddr ()
   = cooked addr if ~null addr
     when addr = new_sockaddr end;
+
+/* Use this to create a local (AF_UNIX) address. */
+
+sockaddr path::string
+  = cooked addr if ~null addr
+    when addr = local_sockaddr path end;
+sockaddr (family::int,path::string)
+  = sockaddr path if HAVE_AF_UNIX && family == AF_UNIX;
 
 /* Convenience wrapper around make_sockaddr. This uses getaddrinfo() from the
    library to retrieve an AF_INET or AF_INET6 address for the given hostname

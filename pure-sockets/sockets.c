@@ -4,6 +4,9 @@
 #include <unistd.h>
 #include <string.h>
 #include <sys/socket.h>
+#ifndef _WIN32
+#include <sys/un.h>
+#endif
 #include <netdb.h>
 
 #include <pure/runtime.h>
@@ -39,6 +42,21 @@ struct sockaddr *new_sockaddr()
   struct sockaddr *addr = malloc(sizeof(struct sockaddr_storage));
   if (addr) memset(addr, 0, sizeof(struct sockaddr_storage));
   return addr;
+}
+
+struct sockaddr *local_sockaddr(const char *path)
+{
+#ifdef AF_UNIX
+  struct sockaddr_un *addr = malloc(sizeof(struct sockaddr_un));
+  if (addr) {
+    memset(addr, 0, sizeof(struct sockaddr_un));
+    addr->sun_family = AF_UNIX;
+    strncpy(addr->sun_path, path, sizeof(addr->sun_path)-1);
+  }
+  return (struct sockaddr*)addr;
+#else
+  return 0;
+#endif
 }
 
 struct sockaddr *make_sockaddr(int family, const char *host, const char *port)
@@ -124,6 +142,18 @@ int sockaddr_family(struct sockaddr *addr)
     return addr->sa_family;
 }
 
+const char *sockaddr_path(struct sockaddr *addr)
+{
+  if (!addr)
+    return 0;
+#ifdef AF_UNIX
+  else if (addr->sa_family == AF_UNIX)
+    return ((struct sockaddr_un*)addr)->sun_path;
+#endif
+  else
+    return 0;
+}
+
 int sockaddr_port(struct sockaddr *addr)
 {
   if (!addr)
@@ -195,6 +225,10 @@ socklen_t sockaddr_len(struct sockaddr *addr)
     return 0;
   else if (addr->sa_family == 0)
     return sizeof(struct sockaddr_storage);
+#ifdef AF_UNIX
+  else if (addr->sa_family == AF_UNIX)
+    return sizeof(struct sockaddr_un);
+#endif
   else if (addr->sa_family == AF_INET)
     return sizeof(struct sockaddr_in);
   else if (addr->sa_family == AF_INET6)
@@ -214,9 +248,7 @@ int closesocket(int fd)
 
 void __socket_defs(void)
 {
-  // Address families. Note that this module only supports internet sockets
-  // (AF_INET, AF_INET6) right now, but we also provide the other constants
-  // for completeness.
+  // Address families.
   define(AF_UNSPEC);
 #ifdef AF_LOCAL
   define(AF_LOCAL);

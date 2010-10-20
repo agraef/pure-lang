@@ -297,17 +297,23 @@ ul.auto-toc {
 <td>2010-10-20</td></tr>
 </tbody>
 </table>
-<p>This is a simple interface to the Berkeley socket functions. It provides most
-of the core functionality, so you can create internet sockets for both stream
-and datagram based protocols and use these to transmit messages. (Unix-style
-file sockets are not supported at this time.)</p>
+<p>This is an interface to the Berkeley socket functions. It provides most of the
+core functionality, so you can create sockets for both stream and datagram
+based protocols and use these to transmit messages. Unix-style file sockets
+are also available if the host system supports them.</p>
 <div class="section" id="installation">
 <h1>Installation</h1>
 <p>This package uses Pure's new bitcode loader to ease porting, so you'll need
-Pure 0.45 or later and an LLVM-based C compiler installed. We recommend clang,
-but you can also use llvm-gcc if you run make as <tt class="docutils literal"><span class="pre">make</span> <span class="pre">CC=llvm-gcc</span></tt> or edit
-one line at the beginning of the Makefile accordingly. Then do the usual
-<tt class="docutils literal"><span class="pre">make</span> <span class="pre">&amp;&amp;</span> <span class="pre">sudo</span> <span class="pre">make</span> <span class="pre">install</span></tt> and you should be set.</p>
+Pure 0.45 or later and an LLVM-based C compiler installed. The Makefile is set
+up for clang (<a class="reference external" href="http://clang.llvm.org/">http://clang.llvm.org/</a>) by default, because it's easier to
+install, but you can also use llvm-gcc if you set the CC make variable
+accordingly.</p>
+<p>For clang compilation, do the usual <tt class="docutils literal"><span class="pre">make</span> <span class="pre">&amp;&amp;</span> <span class="pre">sudo</span> <span class="pre">make</span> <span class="pre">install</span></tt> and you
+should be set. To use llvm-gcc, replace <tt class="docutils literal"><span class="pre">make</span></tt> with <tt class="docutils literal"><span class="pre">make</span> <span class="pre">CC=llvm-gcc</span></tt>.
+You can also set custom compilation options with the CFLAGS variable, e.g.:
+<tt class="docutils literal"><span class="pre">make</span> <span class="pre">CFLAGS=-O3</span></tt>.</p>
+<p>To uninstall the module, use <tt class="docutils literal"><span class="pre">sudo</span> <span class="pre">make</span> <span class="pre">uninstall</span></tt>. There are a number of
+other targets (mostly for maintainers), please see the Makefile for details.</p>
 </div>
 <div class="section" id="usage">
 <h1>Usage</h1>
@@ -330,7 +336,7 @@ convenience functions which act as wrappers around <tt class="docutils literal">
 <tt class="docutils literal"><span class="pre">getnameinfo</span></tt> to create socket addresses from symbolic information (hostname
 or ip, port names or numbers) and return information about existing address
 pointers, see <a class="reference internal" href="#creating-and-inspecting-socket-addresses">Creating and Inspecting Socket Addresses</a> below.</p>
-<p>The following functions are provided. Please see the corresponding manual
+<p>Below is a list of the provided functions. Please see the corresponding manual
 pages for details, and check the Pure scripts in the examples subdirectory for
 some examples.</p>
 <div class="section" id="creating-and-inspecting-socket-addresses">
@@ -342,6 +348,13 @@ some examples.</p>
 Create a pointer to an empty socket address suitable to hold the socket
 address result of routines like <tt class="docutils literal"><span class="pre">accept</span></tt>, <tt class="docutils literal"><span class="pre">getsockname</span></tt>, <tt class="docutils literal"><span class="pre">recvfrom</span></tt>,
 etc. which return a socket address.</blockquote>
+<p><tt class="docutils literal"><span class="pre">struct_sockaddr</span> <span class="pre">*sockaddr([int</span> <span class="pre">family,]</span> <span class="pre">char</span> <span class="pre">*path);</span></tt></p>
+<blockquote>
+Create a local (a.k.a. file) socket for the given pathname. The <tt class="docutils literal"><span class="pre">family</span></tt>
+parameter, if specified, must be <tt class="docutils literal"><span class="pre">AF_UNIX</span></tt> here. Please note that
+<tt class="docutils literal"><span class="pre">AF_UNIX</span></tt> is not supported on all platforms. You can check for this by
+testing the <tt class="docutils literal"><span class="pre">HAVE_AF_UNIX</span></tt> constant, which is a truth value specifying
+whether <tt class="docutils literal"><span class="pre">AF_UNIX</span></tt> is available on your system.</blockquote>
 <p><tt class="docutils literal"><span class="pre">struct_sockaddr</span> <span class="pre">*sockaddr([int</span> <span class="pre">family,]</span> <span class="pre">char</span> <span class="pre">*host,</span> <span class="pre">char</span> <span class="pre">*port);</span></tt></p>
 <p><tt class="docutils literal"><span class="pre">struct_sockaddr</span> <span class="pre">*sockaddr([int</span> <span class="pre">family,]</span> <span class="pre">char</span> <span class="pre">*host,</span> <span class="pre">int</span> <span class="pre">port);</span></tt></p>
 <blockquote>
@@ -358,6 +371,9 @@ addresses.</blockquote>
 <p><tt class="docutils literal"><span class="pre">int</span> <span class="pre">sockaddr_family(struct_sockaddr</span> <span class="pre">*addr);</span></tt></p>
 <blockquote>
 Returns the address family of the given address.</blockquote>
+<p><tt class="docutils literal"><span class="pre">char</span> <span class="pre">*sockaddr_path(struct_sockaddr</span> <span class="pre">*addr);</span></tt></p>
+<blockquote>
+Returns the pathname for <tt class="docutils literal"><span class="pre">AF_UNIX</span></tt> addresses.</blockquote>
 <p><tt class="docutils literal"><span class="pre">char</span> <span class="pre">*sockaddr_hostname(struct_sockaddr</span> <span class="pre">*addr);</span></tt></p>
 <blockquote>
 Returns the hostname if available, the IP address otherwise.</blockquote>
@@ -380,11 +396,11 @@ Returns a readable description of a socket address, as a
 <h2>Creating and Closing Sockets</h2>
 <p><tt class="docutils literal"><span class="pre">int</span> <span class="pre">socket(int</span> <span class="pre">domain,</span> <span class="pre">int</span> <span class="pre">type,</span> <span class="pre">int</span> <span class="pre">protocol);</span></tt></p>
 <blockquote>
-Creates a socket for the given protocol family (<tt class="docutils literal"><span class="pre">AF_INET</span></tt> or
-<tt class="docutils literal"><span class="pre">AF_INET6</span></tt>), socket type (like <tt class="docutils literal"><span class="pre">SOCK_STREAM</span></tt>, <tt class="docutils literal"><span class="pre">SOCK_DGRAM</span></tt>, etc.)
-and protocol. The protocol can be 0, denoting the default protocol, or any
-of the defined <tt class="docutils literal"><span class="pre">IPPROTO</span></tt> constants, try <tt class="docutils literal"><span class="pre">show</span> <span class="pre">-g</span> <span class="pre">IPPROTO_*</span></tt> for a list
-of those. Note that on Linux we also support the <tt class="docutils literal"><span class="pre">SOCK_NONBLOCK</span></tt> and
+Creates a socket for the given protocol family (<tt class="docutils literal"><span class="pre">AF_UNIX</span></tt>, <tt class="docutils literal"><span class="pre">AF_INET</span></tt>
+or <tt class="docutils literal"><span class="pre">AF_INET6</span></tt>), socket type (<tt class="docutils literal"><span class="pre">SOCK_STREAM</span></tt>, <tt class="docutils literal"><span class="pre">SOCK_DGRAM</span></tt>, etc.) and
+protocol. The protocol can be 0, denoting the default protocol, or any of
+the defined <tt class="docutils literal"><span class="pre">IPPROTO</span></tt> constants, try <tt class="docutils literal"><span class="pre">show</span> <span class="pre">-g</span> <span class="pre">IPPROTO_*</span></tt> for a list of
+those. Note that on Linux we also support the <tt class="docutils literal"><span class="pre">SOCK_NONBLOCK</span></tt> and
 <tt class="docutils literal"><span class="pre">SOCK_CLOEXEC</span></tt> flags which can be or'ed with the socket type to get
 sockets with the corresponding features.</blockquote>
 <p><tt class="docutils literal"><span class="pre">int</span> <span class="pre">socketpair(int</span> <span class="pre">domain,</span> <span class="pre">int</span> <span class="pre">type,</span> <span class="pre">int</span> <span class="pre">protocol,</span> <span class="pre">int</span> <span class="pre">*sv);</span></tt></p>
@@ -425,10 +441,12 @@ the <tt class="docutils literal"><span class="pre">system</span></tt> module ins
 <p><tt class="docutils literal"><span class="pre">int</span> <span class="pre">getpeername(int</span> <span class="pre">fd,</span> <span class="pre">struct_sockaddr</span> <span class="pre">*addr);</span></tt></p>
 <p><tt class="docutils literal"><span class="pre">int</span> <span class="pre">getsockopt(int</span> <span class="pre">fd,</span> <span class="pre">int</span> <span class="pre">level,</span> <span class="pre">int</span> <span class="pre">name,</span> <span class="pre">void</span> <span class="pre">*val,</span> <span class="pre">int</span> <span class="pre">*len);</span></tt></p>
 <p><tt class="docutils literal"><span class="pre">int</span> <span class="pre">setsockopt(int</span> <span class="pre">fd,</span> <span class="pre">int</span> <span class="pre">level,</span> <span class="pre">int</span> <span class="pre">name,</span> <span class="pre">void</span> <span class="pre">*val,</span> <span class="pre">int</span> <span class="pre">len);</span></tt></p>
-<p>Currently only the <tt class="docutils literal"><span class="pre">SOL_SOCKET</span></tt> level is defined, which can be passed as the
-second argument to <tt class="docutils literal"><span class="pre">getsockopt</span></tt>/<tt class="docutils literal"><span class="pre">setsockopt</span></tt>, along with the available
-POSIX socket options (<tt class="docutils literal"><span class="pre">name</span></tt> argument), try <tt class="docutils literal"><span class="pre">show</span> <span class="pre">-g</span> <span class="pre">SO_*</span></tt> to get a list
-of those.</p>
+<p>For <tt class="docutils literal"><span class="pre">getsockopt</span></tt> and <tt class="docutils literal"><span class="pre">setsockopt</span></tt>, currently only the <tt class="docutils literal"><span class="pre">SOL_SOCKET</span></tt> level
+is defined (<tt class="docutils literal"><span class="pre">level</span></tt> argument) along with the available POSIX socket options
+(<tt class="docutils literal"><span class="pre">name</span></tt> argument). Try <tt class="docutils literal"><span class="pre">show</span> <span class="pre">-g</span> <span class="pre">SO_*</span></tt> to get a list of those. Also note
+that for most socket level options the <tt class="docutils literal"><span class="pre">val</span></tt> argument is actually an
+<tt class="docutils literal"><span class="pre">int*</span></tt>, so you can pass a Pure int vector (with <tt class="docutils literal"><span class="pre">len</span> <span class="pre">=</span> <span class="pre">SIZEOF_INT</span></tt>) for
+that parameter.</p>
 </div>
 </div>
 </div>

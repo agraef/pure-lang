@@ -8,19 +8,27 @@ pure-sockets: Pure Sockets Interface
 
 .. |date| date::
 
-This is a simple interface to the Berkeley socket functions. It provides most
-of the core functionality, so you can create internet sockets for both stream
-and datagram based protocols and use these to transmit messages. (Unix-style
-file sockets are not supported at this time.)
+This is an interface to the Berkeley socket functions. It provides most of the
+core functionality, so you can create sockets for both stream and datagram
+based protocols and use these to transmit messages. Unix-style file sockets
+are also available if the host system supports them.
 
 Installation
 ============
 
 This package uses Pure's new bitcode loader to ease porting, so you'll need
-Pure 0.45 or later and an LLVM-based C compiler installed. We recommend clang,
-but you can also use llvm-gcc if you run make as ``make CC=llvm-gcc`` or edit
-one line at the beginning of the Makefile accordingly. Then do the usual
-``make && sudo make install`` and you should be set.
+Pure 0.45 or later and an LLVM-based C compiler installed. The Makefile is set
+up for clang (http://clang.llvm.org/) by default, because it's easier to
+install, but you can also use llvm-gcc if you set the CC make variable
+accordingly.
+
+For clang compilation, do the usual ``make && sudo make install`` and you
+should be set. To use llvm-gcc, replace ``make`` with ``make CC=llvm-gcc``.
+You can also set custom compilation options with the CFLAGS variable, e.g.:
+``make CFLAGS=-O3``.
+
+To uninstall the module, use ``sudo make uninstall``. There are a number of
+other targets (mostly for maintainers), please see the Makefile for details.
 
 Usage
 =====
@@ -45,7 +53,7 @@ convenience functions which act as wrappers around ``getaddrinfo`` and
 or ip, port names or numbers) and return information about existing address
 pointers, see `Creating and Inspecting Socket Addresses`_ below.
 
-The following functions are provided. Please see the corresponding manual
+Below is a list of the provided functions. Please see the corresponding manual
 pages for details, and check the Pure scripts in the examples subdirectory for
 some examples.
 
@@ -60,6 +68,14 @@ These functions are Pure-specific. The created socket addresses are
     Create a pointer to an empty socket address suitable to hold the socket
     address result of routines like ``accept``, ``getsockname``, ``recvfrom``,
     etc. which return a socket address.
+
+``struct_sockaddr *sockaddr([int family,] char *path);``
+
+    Create a local (a.k.a. file) socket for the given pathname. The ``family``
+    parameter, if specified, must be ``AF_UNIX`` here. Please note that
+    ``AF_UNIX`` is not supported on all platforms. You can check for this by
+    testing the ``HAVE_AF_UNIX`` constant, which is a truth value specifying
+    whether ``AF_UNIX`` is available on your system.
 
 ``struct_sockaddr *sockaddr([int family,] char *host, char *port);``
 
@@ -81,6 +97,10 @@ These functions are Pure-specific. The created socket addresses are
 ``int sockaddr_family(struct_sockaddr *addr);``
 
     Returns the address family of the given address.
+
+``char *sockaddr_path(struct_sockaddr *addr);``
+
+    Returns the pathname for ``AF_UNIX`` addresses.
 
 ``char *sockaddr_hostname(struct_sockaddr *addr);``
 
@@ -109,11 +129,11 @@ Creating and Closing Sockets
 
 ``int socket(int domain, int type, int protocol);``
 
-    Creates a socket for the given protocol family (``AF_INET`` or
-    ``AF_INET6``), socket type (like ``SOCK_STREAM``, ``SOCK_DGRAM``, etc.)
-    and protocol. The protocol can be 0, denoting the default protocol, or any
-    of the defined ``IPPROTO`` constants, try ``show -g IPPROTO_*`` for a list
-    of those. Note that on Linux we also support the ``SOCK_NONBLOCK`` and
+    Creates a socket for the given protocol family (``AF_UNIX``, ``AF_INET``
+    or ``AF_INET6``), socket type (``SOCK_STREAM``, ``SOCK_DGRAM``, etc.) and
+    protocol. The protocol can be 0, denoting the default protocol, or any of
+    the defined ``IPPROTO`` constants, try ``show -g IPPROTO_*`` for a list of
+    those. Note that on Linux we also support the ``SOCK_NONBLOCK`` and
     ``SOCK_CLOEXEC`` flags which can be or'ed with the socket type to get
     sockets with the corresponding features.
 
@@ -171,7 +191,9 @@ Socket Information
 
 ``int setsockopt(int fd, int level, int name, void *val, int len);``
 
-Currently only the ``SOL_SOCKET`` level is defined, which can be passed as the
-second argument to ``getsockopt``/``setsockopt``, along with the available
-POSIX socket options (``name`` argument), try ``show -g SO_*`` to get a list
-of those.
+For ``getsockopt`` and ``setsockopt``, currently only the ``SOL_SOCKET`` level
+is defined (``level`` argument) along with the available POSIX socket options
+(``name`` argument). Try ``show -g SO_*`` to get a list of those. Also note
+that for most socket level options the ``val`` argument is actually an
+``int*``, so you can pass a Pure int vector (with ``len = SIZEOF_INT``) for
+that parameter.
