@@ -415,7 +415,8 @@ void pure_unref(pure_expr *x);
    expression when it is garbage-collected. pure_sentry places a sentry at an
    expression (or removes it if sentry is NULL) and returns the modified
    expression, pure_get_sentry returns the current sentry of an expression, if
-   any (NULL otherwise). pure_clear_sentry(x) is a convenience function for
+   any (NULL otherwise), and pure_has_sentry returns a flag indicating whether
+   the expression currently has a sentry. pure_clear_sentry(x) is the same as
    pure_sentry(NULL, x). NOTE: In the current implementation sentries can only
    be placed at applications and pointer objects, pure_sentry will return NULL
    if you apply it to other kinds of expressions. The sentry itself can be any
@@ -423,6 +424,7 @@ void pure_unref(pure_expr *x);
 
 pure_expr *pure_sentry(pure_expr *sentry, pure_expr *x);
 pure_expr *pure_get_sentry(pure_expr *x);
+bool pure_has_sentry(pure_expr *x);
 pure_expr *pure_clear_sentry(pure_expr *x);
 
 /* Pointer tags. As of Pure 0.45 this provides a way to keep track of C

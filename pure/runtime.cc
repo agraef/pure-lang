@@ -3225,6 +3225,12 @@ pure_expr *pure_get_sentry(pure_expr *x)
 }
 
 extern "C"
+bool pure_has_sentry(pure_expr *x)
+{
+  return get_sentry(x) != 0;
+}
+
+extern "C"
 pure_expr *pure_clear_sentry(pure_expr *x)
 {
   return pure_sentry(0, x);

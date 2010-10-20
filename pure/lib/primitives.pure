@@ -1420,7 +1420,7 @@ put_pointer x::pointer y::pointer = pointer_put_pointer x y;
    garbage-collected when its hosting expression gets freed, so it will *not*
    work if the original sentry is a global::
 
-     > let p = chain_sentry g $ sentry f $ malloc 10;
+     > let p = attach_sentry g $ sentry f $ malloc 10;
      > clear p
      sentry#1
 
@@ -1428,7 +1428,7 @@ put_pointer x::pointer y::pointer = pointer_put_pointer x y;
    original sentry is a (partial or constructor) application, which also
    encompasses most kinds of aggregate Pure data. E.g.::
 
-     > let p = chain_sentry g $ sentry (f$) $ malloc 10;
+     > let p = attach_sentry g $ sentry (f$) $ malloc 10;
      > clear p
      sentry#1
      sentry#2
@@ -1438,16 +1438,9 @@ put_pointer x::pointer y::pointer = pointer_put_pointer x y;
 extern expr* pure_sentry(expr*,expr*) = sentry; // IMPURE!
 extern expr* pure_clear_sentry(expr*) = clear_sentry; // IMPURE!
 extern expr* pure_get_sentry(expr*) = get_sentry;
+extern bool  pure_has_sentry(expr*) = cookedp;
 
 cooked p::pointer = sentry free p;
-cookedp p = case p of
-	      _::pointer =
-	       case get_sentry p of
-	         get_sentry _ = 0;
-	         _ = 1;
-	       end;
-	      _ = 0;
-	    end;
 
 /* Tagged pointers (experimental). This was added in Pure 0.45. */
 
