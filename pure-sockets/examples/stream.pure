@@ -23,9 +23,9 @@ socket_error msg::string fd::int
    different clients simultaneously. */
 
 server = loop 0 with
-  loop no = loop (no+1) when
+  loop count = loop (count+1) when
     // Evaluate s as a Pure expression, send back the result.
-    printf "server[%d]> %s\n" (no,s);
+    printf "server[%d]> %s\n" (count,s);
     s = case eval s of
       	  _ = head $ split "\n" lasterr if ~null lasterr;
 	  x = str x otherwise;
@@ -41,7 +41,7 @@ server = loop 0 with
     s = if ~null s && last s == "\n" then init s else s;
     done = null s || s=="quit";
   end;
-  loop no = no when
+  loop count = count when
     puts "server is exiting";
     closesocket fd; unlink path;
   end otherwise;
@@ -59,11 +59,11 @@ end;
    request at a time, we have to open a new connection for each input. */
 
 client = loop 0 with
-  loop no = loop (no+1) if ~done when
-    printf "client[%d]> " no; s = gets;
+  loop count = loop (count+1) if ~done when
+    printf "client[%d]> " count; s = gets;
     done = null s || request s;
   end;
-  loop no = no otherwise;
+  loop count = count otherwise;
   request s::string = done when
     fd = socket AF_UNIX SOCK_STREAM 0;
     fd >= 0 && connect fd (sockaddr path) >= 0 ||
