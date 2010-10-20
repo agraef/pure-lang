@@ -3782,7 +3782,7 @@ place a sentry on. It also requires that the sentry will actually be
 garbage-collected when its hosting expression gets freed, so it will *not*
 work if the original sentry is a global::
 
-  > let p = chain_sentry g $ sentry f $ malloc 10;
+  > let p = attach_sentry g $ sentry f $ malloc 10;
   > clear p
   sentry#1
 
@@ -3790,7 +3790,7 @@ However, the attached sentry will work ok if you can ensure that the
 original sentry is a (partial or constructor) application, which also
 encompasses most kinds of aggregate Pure data. E.g.::
 
-  > let p = chain_sentry g $ sentry (f$) $ malloc 10;
+  > let p = attach_sentry g $ sentry (f$) $ malloc 10;
   > clear p
   sentry#1
   sentry#2
