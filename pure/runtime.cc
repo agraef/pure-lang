@@ -627,14 +627,14 @@ static inline pure_expr* bad_matrix_exception(pure_expr *x)
     return f;
 }
 
-#define sentryp(f) (x->tag >= 0 || x->tag == EXPR::APP || x->tag == EXPR::PTR)
+#define sentryp(f) (x->tag >= 0 || (x->tag <= EXPR::APP && x->tag >= EXPR::PTR))
 
 static inline pure_expr *get_sentry(pure_expr *x)
 {
   if (x==0)
     return 0;
   else if (sentryp(x->tag))
-    return x->data.x[2];
+    return x->data.sy.x;
   else
     return 0;
 }
@@ -642,7 +642,7 @@ static inline pure_expr *get_sentry(pure_expr *x)
 static inline void call_sentry(pure_expr *x)
 {
   if (sentryp(x->tag)) {
-    pure_expr *s = x->data.x[2];
+    pure_expr *s = x->data.sy.x;
     if (s) {
       ++x->refc;
       pure_freenew(pure_apply2(s, x));
@@ -654,7 +654,7 @@ static inline void call_sentry(pure_expr *x)
 static inline void free_sentry(pure_expr *x)
 {
   if (sentryp(x->tag)) {
-    pure_expr *s = x->data.x[2];
+    pure_expr *s = x->data.sy.x;
     if (s) pure_free(s);
   }
 }
@@ -685,7 +685,7 @@ static inline pure_expr *new_expr()
   }
   x->refc = 0;
   x->xp = interp.tmps;
-  x->data.x[2] = 0; // initialize the sentry
+  x->data.sy.x = 0; // initialize the sentry
   x->data.x[1] = 0; // initialize the pointer tag
   interp.tmps = x;
   return x;
@@ -713,7 +713,7 @@ static inline pure_expr *new_ref_expr()
   }
   x->refc = 1;
   x->xp = 0;
-  x->data.x[2] = 0; // initialize the sentry
+  x->data.sy.x = 0; // initialize the sentry
   return x;
 }
 
@@ -3210,9 +3210,9 @@ pure_expr *pure_sentry(pure_expr *sentry, pure_expr *x)
   if (x==0)
     return 0;
   else if (sentryp(x->tag)) {
-    if (x->data.x[2])
-      pure_free_internal(x->data.x[2]);
-    x->data.x[2] = sentry?pure_new_internal(sentry):0;
+    if (x->data.sy.x)
+      pure_free_internal(x->data.sy.x);
+    x->data.sy.x = sentry?pure_new_internal(sentry):0;
     return x;
   } else
     return 0;
@@ -5374,15 +5374,20 @@ pure_expr *pure_force(pure_expr *x)
     switch (x->tag) {
     case EXPR::BIGINT:
       mpz_init_set(x->data.z, ret->data.z);
+      if (x->data.sy.x) pure_new_internal(x->data.sy.x);
       break;
     case EXPR::APP:
       pure_new_internal(x->data.x[0]);
       pure_new_internal(x->data.x[1]);
+      // falls through
+    case EXPR::INT:
+    case EXPR::DBL:
     case EXPR::PTR:
-      if (x->data.x[2]) pure_new_internal(x->data.x[2]);
+      if (x->data.sy.x) pure_new_internal(x->data.sy.x);
       break;
     case EXPR::STR:
       x->data.s = strdup(x->data.s);
+      if (x->data.sy.x) pure_new_internal(x->data.sy.x);
       break;
     case EXPR::MATRIX: {
       // Create a new view of the matrix.
@@ -5429,8 +5434,11 @@ pure_expr *pure_force(pure_expr *x)
       break;
     }
     default:
-      if (x->tag >= 0 && x->data.clos)
-	x->data.clos = pure_copy_clos(x->data.clos);
+      if (x->tag >= 0) {
+	if (x->data.clos)
+	  x->data.clos = pure_copy_clos(x->data.clos);
+	if (x->data.sy.x) pure_new_internal(x->data.sy.x);
+      }
       break;
     }
     pure_free_internal(ret);

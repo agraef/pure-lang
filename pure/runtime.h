@@ -60,6 +60,20 @@ typedef struct {
   void *q;			// used internally, do not touch
 } pure_matrix;
 
+/* Sentry structure. This needs some padding at the front so that the sentry
+   pointer never overlaps with atomic or application data in the expression
+   data structure. The critical member is mpz_t here which is typically the
+   same size as three pointers on 32 bit systems, so we need the equivalent of
+   an extra pointer there. Matrix data is always excluded since sentries on
+   these would be fairly costly on 64 bit systems which are the norm now. */
+
+typedef struct {
+  union {
+    void *x[2]; int32_t i; double d; mpz_t z;
+  } __pad;
+  struct _pure_expr *x;
+} pure_sentry_t;
+
 /* The runtime expression data structure. Keep this lean and mean. */
 
 typedef struct _pure_expr {
@@ -68,7 +82,7 @@ typedef struct _pure_expr {
   int32_t tag; // type tag or symbol, see expr.hh for possible values
   uint32_t refc;		// reference counter
   union {
-    struct _pure_expr *x[3];	// application arguments (EXPR::APP), sentry
+    struct _pure_expr *x[2];	// application arguments (EXPR::APP)
     int32_t i;			// integer (EXPR::INT)
     mpz_t z;			// GMP bigint (EXPR::BIGINT)
     double d;			// double (EXPR::DBL)
@@ -76,6 +90,7 @@ typedef struct _pure_expr {
     void *p;			// generic pointer (EXPR::PTR)
     pure_matrix mat;		// matrix data (EXPR::MATRIX et al)
     pure_closure *clos;		// closure (0 if none)
+    pure_sentry_t sy;		// sentry (in sy.x, 0 if none)
   } data;
   /* Internal fields (DO NOT TOUCH). The JIT doesn't care about these. */
   struct _pure_expr *xp;	// freelist pointer
