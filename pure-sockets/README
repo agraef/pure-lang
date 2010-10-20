@@ -131,11 +131,13 @@ Creating and Closing Sockets
 
     Creates a socket for the given protocol family (``AF_UNIX``, ``AF_INET``
     or ``AF_INET6``), socket type (``SOCK_STREAM``, ``SOCK_DGRAM``, etc.) and
-    protocol. The protocol can be 0, denoting the default protocol, or any of
-    the defined ``IPPROTO`` constants, try ``show -g IPPROTO_*`` for a list of
-    those. Note that on Linux we also support the ``SOCK_NONBLOCK`` and
-    ``SOCK_CLOEXEC`` flags which can be or'ed with the socket type to get
-    sockets with the corresponding features.
+    protocol. Note that on Linux we also support the ``SOCK_NONBLOCK``
+    (non-blocking) and ``SOCK_CLOEXEC`` (close-on-exec) flags which can be
+    or'ed with the socket type to get sockets with the corresponding
+    features. The protocol number is usually 0, denoting the default protocol,
+    but it can also be any of the prescribed ``IPPROTO`` constants (a few
+    common ones are predefined by this module, try ``show -g IPPROTO_*`` for a
+    list of those).
 
 ``int socketpair(int domain, int type, int protocol, int *sv);``
 
@@ -197,3 +199,86 @@ is defined (``level`` argument) along with the available POSIX socket options
 that for most socket level options the ``val`` argument is actually an
 ``int*``, so you can pass a Pure int vector (with ``len = SIZEOF_INT``) for
 that parameter.
+
+Example
+=======
+
+Here is a fairly minimal example using Unix stream sockets. To keep things
+simple, this does no error checking whatsoever and just keeps sending strings
+back and forth. More elaborate examples can be found in the examples directory
+in the sources.
+
+::
+
+  using sockets, system;
+
+  const path = "server_socket";
+  extern int unlink(char *name);
+
+  server = loop with
+    loop = loop if ~null s && ~response fp s when
+      // Connect to a client.
+      cfd = accept fd $ sockaddr ();
+      // Open the client socket as a FILE* and read a request.
+      fp = fdopen cfd "r+"; s = fgets fp;
+    end;
+    loop = puts "server is exiting" $$ closesocket fd $$
+           unlink path $$ () otherwise;
+    response fp s::string = s=="quit\n" when
+      // Process the request. (Here we just print the received
+      // message and echo it back to the client.)
+      printf "server> %s" s;
+      fputs s fp;
+    end;
+  end when
+    // Create the server socket and start listening.
+    unlink path;
+    fd = socket AF_UNIX SOCK_STREAM 0;
+    bind fd (sockaddr path); listen fd 5;
+    printf "server listening at '%s'\n" path;
+  end;
+
+  client = loop with
+    // Keep reading requests from stdin.
+    loop = loop if ~null s && ~request s when
+      fputs "client> " stdout; s = fgets stdin;
+    end;
+    loop = puts "client is exiting" $$ () otherwise;
+    request s::string = s=="quit\n" when
+      fd = socket AF_UNIX SOCK_STREAM 0;
+      connect fd (sockaddr path);
+      // Send the request to the server.
+      fp = fdopen fd "r+"; fputs s fp;
+      // Get the reply.
+      s = fgets fp;
+    end;
+  end;
+
+To use this example, run the ``server`` function in one instance of the Pure
+interpreter and the ``client`` function in another. Enter a line when the
+client prompts you for input; it will be printed by the server. Behind the
+scenes, the server also sends the line back to the client. After receiving the
+reply, the client prompts for the next input line. Entering end-of-file at the
+client prompt terminates the client but keeps the server running, so that you
+can start another client and reconnect to the server. Entering just ``quit``
+in the client terminates both server and client. Here is how a typical
+interaction may look like::
+
+  > client;
+  client> 1+1
+  client> foo bar
+  client> quit
+  client is exiting
+  ()
+
+  > server;
+  server listening at 'server_socket'
+  server> 1+1
+  server> foo bar
+  server> quit
+  server is exiting
+  ()
+
+Note that while the server processes requests sequentially, it accepts
+connections from a new client after each request, so that you can run as many
+clients as you like.

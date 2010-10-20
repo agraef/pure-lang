@@ -398,11 +398,13 @@ Returns a readable description of a socket address, as a
 <blockquote>
 Creates a socket for the given protocol family (<tt class="docutils literal"><span class="pre">AF_UNIX</span></tt>, <tt class="docutils literal"><span class="pre">AF_INET</span></tt>
 or <tt class="docutils literal"><span class="pre">AF_INET6</span></tt>), socket type (<tt class="docutils literal"><span class="pre">SOCK_STREAM</span></tt>, <tt class="docutils literal"><span class="pre">SOCK_DGRAM</span></tt>, etc.) and
-protocol. The protocol can be 0, denoting the default protocol, or any of
-the defined <tt class="docutils literal"><span class="pre">IPPROTO</span></tt> constants, try <tt class="docutils literal"><span class="pre">show</span> <span class="pre">-g</span> <span class="pre">IPPROTO_*</span></tt> for a list of
-those. Note that on Linux we also support the <tt class="docutils literal"><span class="pre">SOCK_NONBLOCK</span></tt> and
-<tt class="docutils literal"><span class="pre">SOCK_CLOEXEC</span></tt> flags which can be or'ed with the socket type to get
-sockets with the corresponding features.</blockquote>
+protocol. Note that on Linux we also support the <tt class="docutils literal"><span class="pre">SOCK_NONBLOCK</span></tt>
+(non-blocking) and <tt class="docutils literal"><span class="pre">SOCK_CLOEXEC</span></tt> (close-on-exec) flags which can be
+or'ed with the socket type to get sockets with the corresponding
+features. The protocol number is usually 0, denoting the default protocol,
+but it can also be any of the prescribed <tt class="docutils literal"><span class="pre">IPPROTO</span></tt> constants (a few
+common ones are predefined by this module, try <tt class="docutils literal"><span class="pre">show</span> <span class="pre">-g</span> <span class="pre">IPPROTO_*</span></tt> for a
+list of those).</blockquote>
 <p><tt class="docutils literal"><span class="pre">int</span> <span class="pre">socketpair(int</span> <span class="pre">domain,</span> <span class="pre">int</span> <span class="pre">type,</span> <span class="pre">int</span> <span class="pre">protocol,</span> <span class="pre">int</span> <span class="pre">*sv);</span></tt></p>
 <blockquote>
 Create a pair of sockets. The descriptors are returned in the integer
@@ -448,6 +450,86 @@ that for most socket level options the <tt class="docutils literal"><span class=
 <tt class="docutils literal"><span class="pre">int*</span></tt>, so you can pass a Pure int vector (with <tt class="docutils literal"><span class="pre">len</span> <span class="pre">=</span> <span class="pre">SIZEOF_INT</span></tt>) for
 that parameter.</p>
 </div>
+</div>
+<div class="section" id="example">
+<h1>Example</h1>
+<p>Here is a fairly minimal example using Unix stream sockets. To keep things
+simple, this does no error checking whatsoever and just keeps sending strings
+back and forth. More elaborate examples can be found in the examples directory
+in the sources.</p>
+<pre class="literal-block">
+using sockets, system;
+
+const path = &quot;server_socket&quot;;
+extern int unlink(char *name);
+
+server = loop with
+  loop = loop if ~null s &amp;&amp; ~response fp s when
+    // Connect to a client.
+    cfd = accept fd $ sockaddr ();
+    // Open the client socket as a FILE* and read a request.
+    fp = fdopen cfd &quot;r+&quot;; s = fgets fp;
+  end;
+  loop = puts &quot;server is exiting&quot; $$ closesocket fd $$
+         unlink path $$ () otherwise;
+  response fp s::string = s==&quot;quit\n&quot; when
+    // Process the request. (Here we just print the received
+    // message and echo it back to the client.)
+    printf &quot;server&gt; %s&quot; s;
+    fputs s fp;
+  end;
+end when
+  // Create the server socket and start listening.
+  unlink path;
+  fd = socket AF_UNIX SOCK_STREAM 0;
+  bind fd (sockaddr path); listen fd 5;
+  printf &quot;server listening at '%s'\n&quot; path;
+end;
+
+client = loop with
+  // Keep reading requests from stdin.
+  loop = loop if ~null s &amp;&amp; ~request s when
+    fputs &quot;client&gt; &quot; stdout; s = fgets stdin;
+  end;
+  loop = puts &quot;client is exiting&quot; $$ () otherwise;
+  request s::string = s==&quot;quit\n&quot; when
+    fd = socket AF_UNIX SOCK_STREAM 0;
+    connect fd (sockaddr path);
+    // Send the request to the server.
+    fp = fdopen fd &quot;r+&quot;; fputs s fp;
+    // Get the reply.
+    s = fgets fp;
+  end;
+end;
+</pre>
+<p>To use this example, run the <tt class="docutils literal"><span class="pre">server</span></tt> function in one instance of the Pure
+interpreter and the <tt class="docutils literal"><span class="pre">client</span></tt> function in another. Enter a line when the
+client prompts you for input; it will be printed by the server. Behind the
+scenes, the server also sends the line back to the client. After receiving the
+reply, the client prompts for the next input line. Entering end-of-file at the
+client prompt terminates the client but keeps the server running, so that you
+can start another client and reconnect to the server. Entering just <tt class="docutils literal"><span class="pre">quit</span></tt>
+in the client terminates both server and client. Here is how a typical
+interaction may look like:</p>
+<pre class="literal-block">
+&gt; client;
+client&gt; 1+1
+client&gt; foo bar
+client&gt; quit
+client is exiting
+()
+
+&gt; server;
+server listening at 'server_socket'
+server&gt; 1+1
+server&gt; foo bar
+server&gt; quit
+server is exiting
+()
+</pre>
+<p>Note that while the server processes requests sequentially, it accepts
+connections from a new client after each request, so that you can run as many
+clients as you like.</p>
 </div>
 </div>
 </body>
