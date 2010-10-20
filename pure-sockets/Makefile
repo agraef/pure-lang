@@ -14,7 +14,7 @@ endif
 # instead of $(prefix).
 libdir = $(prefix)/lib
 
-# Anything listed below will be included in the tarball. Adjust as needed.
+# Anything listed below will also be included in the tarball. Adjust as needed.
 extradirs = examples
 extradist = examples/*.pure
 
@@ -34,8 +34,13 @@ CC = clang
 #CXX = llvm-g++
 CXX = clang++
 
-CFLAGS = -g -O2
-CXXFLAGS = -g -O2
+# NOTE: The combination -g -O2 doesn't seem to work with clang 2.8.
+# llvm-gcc -g -O2 seems to be fine, though.
+
+#CFLAGS = -g -O2
+#CXXFLAGS = -g -O2
+CFLAGS = -O2
+CXXFLAGS = -O2
 
 BCFLAGS = -emit-llvm
 
