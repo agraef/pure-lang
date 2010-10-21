@@ -2289,12 +2289,9 @@ expression.</dd>
 <dt><tt class="docutils literal"><span class="pre">get_sentry</span> <span class="pre">x</span></tt></dt>
 <dd>Returns the sentry of an expression <tt class="docutils literal"><span class="pre">x</span></tt> (if any, fails otherwise).</dd>
 </dl>
-<p>Note that, for technical reasons, sentries cannot be placed on matrix
-values in the current implementation. (They can be placed on the elements
-of symbolic matrices, though, provided that these are not matrices
-themselves.) The sentry itself can be any type of object (but usually it's
-a function).</p>
-<p>Example:</p>
+<p>As of Pure 0.45, sentries can be placed on any Pure expression. The sentry
+itself can also be any type of object (but usually it's a function).
+Example:</p>
 <pre class="literal-block">
 &gt; using system;
 &gt; sentry (\_-&gt;puts &quot;I'm done for!&quot;) (1..3);
@@ -2302,10 +2299,10 @@ a function).</p>
 &gt; clear ans
 I'm done for!
 </pre>
-<p>Also note that setting a finalizer on a global symbol won't usually be of
-much use since such values are cached by the interpreter. (However, the
-sentry <em>will</em> be invoked if the symbol gets recompiled because its
-definition has changed. This may be useful for some purposes.)</p>
+<p>Note that setting a finalizer on a global symbol won't usually be of much
+use since such values are cached by the interpreter. (However, the sentry
+<em>will</em> be invoked if the symbol gets recompiled because its definition has
+changed. This may be useful for some purposes.)</p>
 <p>In Pure parlance, we call an expression <strong class="dfn">cooked</strong> if a sentry has been
 attached to it. The following predicate can be used to check for this
 condition. Also, there is a convenience function to create cooked pointers
