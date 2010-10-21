@@ -2,16 +2,17 @@
 #include <pure/runtime.h>
 #include <fcgi_stdio.h>
 
-extern void *fastcgi_to_file(FILE *fp)
+extern FILE *fastcgi_to_file(FCGI_FILE *fp)
 {
-  return FCGI_ToFILE(fp);
+  return (FILE*)FCGI_ToFILE(fp);
 }
 
 extern void fastcgi_defs(void)
 {
-  pure_let(pure_sym("fastcgi::stdin"), pure_pointer(stdin));
-  pure_let(pure_sym("fastcgi::stdout"), pure_pointer(stdout));
-  pure_let(pure_sym("fastcgi::stderr"), pure_pointer(stderr));
+  int ty = pure_pointer_tag("FCGI_FILE*");
+  pure_let(pure_sym("fastcgi::stdin"), pure_tag(ty, pure_pointer(stdin)));
+  pure_let(pure_sym("fastcgi::stdout"), pure_tag(ty, pure_pointer(stdout)));
+  pure_let(pure_sym("fastcgi::stderr"), pure_tag(ty, pure_pointer(stderr)));
 }
 
 extern int fastcgi_fprintf(FILE *fp, const char *format)
