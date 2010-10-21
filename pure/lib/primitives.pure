@@ -1295,52 +1295,53 @@ put_pointer x::pointer y::pointer = pointer_put_pointer x y;
    ``get_sentry x``
      Returns the sentry of an expression ``x`` (if any, fails otherwise).
 
-   Note that in the current implementation sentries can only be placed at
-   symbols, applications, as well as function and pointer objects, but the
-   department of fake statistics has assured us that this covers 99.7% of all
-   practical uses. The sentry itself can be any type of object (but usually
-   it's a function).
+   Note that, for technical reasons, sentries cannot be placed on matrix
+   values in the current implementation. (They can be placed on the elements
+   of symbolic matrices, though, provided that these are not matrices
+   themselves.) The sentry itself can be any type of object (but usually it's
+   a function).
 
    Example::
 
      > using system;
-     > sentry (\_->puts "Hello, world!") (1..3);
+     > sentry (\_->puts "I'm done for!") (1..3);
      [1,2,3]
      > clear ans
-     Hello, world!
+     I'm done for!
 
-   Note that setting a finalizer on a global symbol won't usually be of much
-   use since such values are cached by the interpreter. (However, the sentry
-   *will* be invoked if the symbol gets recompiled because its definition
-   has changed. This may be useful for some purposes.)
+   Also note that setting a finalizer on a global symbol won't usually be of
+   much use since such values are cached by the interpreter. (However, the
+   sentry *will* be invoked if the symbol gets recompiled because its
+   definition has changed. This may be useful for some purposes.)
 
-   One common case where sentries are particularly useful are pointers. The
-   library provides some special support for these by means of the following
-   operations:
+   In Pure parlance, we call an expression `cooked` if a sentry has been
+   attached to it. The following predicate can be used to check for this
+   condition. Also, there is a convenience function to create cooked pointers
+   which take care of freeing themselves when they are no longer needed.
+
+   .. _cookedp:
+
+   ``cookedp x``
+     Check whether a given object has a sentry set on it.
 
    .. _cooked:
 
    ``cooked ptr``
-     Create a `cooked` pointer which disposes itself after use. This is just a
+     Create a pointer which disposes itself after use. This is just a
      shorthand for ``sentry free``. The given pointer ``ptr`` must be
      |malloc|_\ ed to make this work.
 
    .. |malloc| replace:: ``malloc``
 
-   .. _cookedp:
-
-   ``cookedp ptr``
-     Check whether a given pointer is cooked (this predicate actually assumes
-     any pointer to be cooked which has a sentry set on it).
-
    Example::
 
      > using system;
-     > let p = sentry (\p->puts "I'm done for!" $$ free p) (malloc 1024);
+     > let p = cooked (malloc 1024);
      > cookedp p;
      1
+     > get_sentry p;
+     free
      > clear p
-     I'm done for!
 
    Besides their use as finalizers, sentries can also be handy in other
    circumstances, when you need to associate an expression with another,
@@ -1398,35 +1399,25 @@ put_pointer x::pointer y::pointer = pointer_put_pointer x y;
      sentry#1
      sentry#2
 
-   You can chain any number of sentries that way::
-
-     > h _ = puts "sentry#3";
-     > let p = chain_sentry h $ chain_sentry g $ sentry f $ malloc 10;
-     > clear p
-     sentry#1
-     sentry#2
-     sentry#3
-
-   This scheme should work in most cases in which sentries are used just as
-   finalizers. However, there are other uses, like the "hashed function"
-   example above, where you'd like the original sentry to stay intact. This
-   can be achieved by placing the new sentry as a sentry on the *original
-   sentry* rather than the expression itself::
+   You can chain any number of sentries that way. This scheme should work in
+   most cases in which sentries are used just as finalizers. However, there
+   are other uses, like the "hashed function" example above, where you'd like
+   the original sentry to stay intact. This can be achieved by placing the new
+   sentry as a sentry on the *original sentry* rather than the expression
+   itself::
 
      attach_sentry f x = sentry (sentry f (get_sentry x)) x;
 
-   Of course, this assumes that the original sentry is something that you can
-   place a sentry on. It also requires that the sentry will actually be
-   garbage-collected when its hosting expression gets freed, so it will *not*
-   work if the original sentry is a global::
+   This requires that the sentry will actually be garbage-collected when its
+   hosting expression gets freed, so it will *not* work if the original sentry
+   is a global::
 
      > let p = attach_sentry g $ sentry f $ malloc 10;
      > clear p
      sentry#1
 
    However, the attached sentry will work ok if you can ensure that the
-   original sentry is a (partial or constructor) application, which also
-   encompasses most kinds of aggregate Pure data. E.g.::
+   original sentry is a (partial or constructor) application. E.g.::
 
      > let p = attach_sentry g $ sentry (f$) $ malloc 10;
      > clear p

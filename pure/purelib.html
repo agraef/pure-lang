@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>Pure Library Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-10-20" />
+<meta name="date" content="2010-10-21" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-10-20</td></tr>
+<td>2010-10-21</td></tr>
 </tbody>
 </table>
 <!-- We use docutils to produce the documentation. Docstrings are extracted -->
@@ -2289,45 +2289,46 @@ expression.</dd>
 <dt><tt class="docutils literal"><span class="pre">get_sentry</span> <span class="pre">x</span></tt></dt>
 <dd>Returns the sentry of an expression <tt class="docutils literal"><span class="pre">x</span></tt> (if any, fails otherwise).</dd>
 </dl>
-<p>Note that in the current implementation sentries can only be placed at
-symbols, applications, as well as function and pointer objects, but the
-department of fake statistics has assured us that this covers 99.7% of all
-practical uses. The sentry itself can be any type of object (but usually
-it's a function).</p>
+<p>Note that, for technical reasons, sentries cannot be placed on matrix
+values in the current implementation. (They can be placed on the elements
+of symbolic matrices, though, provided that these are not matrices
+themselves.) The sentry itself can be any type of object (but usually it's
+a function).</p>
 <p>Example:</p>
 <pre class="literal-block">
 &gt; using system;
-&gt; sentry (\_-&gt;puts &quot;Hello, world!&quot;) (1..3);
+&gt; sentry (\_-&gt;puts &quot;I'm done for!&quot;) (1..3);
 [1,2,3]
 &gt; clear ans
-Hello, world!
+I'm done for!
 </pre>
-<p>Note that setting a finalizer on a global symbol won't usually be of much
-use since such values are cached by the interpreter. (However, the sentry
-<em>will</em> be invoked if the symbol gets recompiled because its definition
-has changed. This may be useful for some purposes.)</p>
-<p>One common case where sentries are particularly useful are pointers. The
-library provides some special support for these by means of the following
-operations:</p>
+<p>Also note that setting a finalizer on a global symbol won't usually be of
+much use since such values are cached by the interpreter. (However, the
+sentry <em>will</em> be invoked if the symbol gets recompiled because its
+definition has changed. This may be useful for some purposes.)</p>
+<p>In Pure parlance, we call an expression <strong class="dfn">cooked</strong> if a sentry has been
+attached to it. The following predicate can be used to check for this
+condition. Also, there is a convenience function to create cooked pointers
+which take care of freeing themselves when they are no longer needed.</p>
+<a name="cookedp"><dl class="docutils" id="cookedp">
+<dt><tt class="docutils literal"><span class="pre">cookedp</span> <span class="pre">x</span></tt></dt>
+<dd>Check whether a given object has a sentry set on it.</dd>
+</dl>
 <a name="cooked"><dl class="docutils" id="cooked">
 <dt><tt class="docutils literal"><span class="pre">cooked</span> <span class="pre">ptr</span></tt></dt>
-<dd>Create a <strong class="dfn">cooked</strong> pointer which disposes itself after use. This is just a
+<dd>Create a pointer which disposes itself after use. This is just a
 shorthand for <tt class="docutils literal"><span class="pre">sentry</span> <span class="pre">free</span></tt>. The given pointer <tt class="docutils literal"><span class="pre">ptr</span></tt> must be
 <a class="reference internal" href="#malloc"><tt class="docutils literal"><span class="pre">malloc</span></tt></a>ed to make this work.</dd>
 </dl>
-<a name="cookedp"><dl class="docutils" id="cookedp">
-<dt><tt class="docutils literal"><span class="pre">cookedp</span> <span class="pre">ptr</span></tt></dt>
-<dd>Check whether a given pointer is cooked (this predicate actually assumes
-any pointer to be cooked which has a sentry set on it).</dd>
-</dl>
 <p>Example:</p>
 <pre class="literal-block">
 &gt; using system;
-&gt; let p = sentry (\p-&gt;puts &quot;I'm done for!&quot; $$ free p) (malloc 1024);
+&gt; let p = cooked (malloc 1024);
 &gt; cookedp p;
 1
+&gt; get_sentry p;
+free
 &gt; clear p
-I'm done for!
 </pre>
 <p>Besides their use as finalizers, sentries can also be handy in other
 circumstances, when you need to associate an expression with another,
@@ -2385,35 +2386,25 @@ end;
 sentry#1
 sentry#2
 </pre>
-<p>You can chain any number of sentries that way:</p>
-<pre class="literal-block">
-&gt; h _ = puts &quot;sentry#3&quot;;
-&gt; let p = chain_sentry h $ chain_sentry g $ sentry f $ malloc 10;
-&gt; clear p
-sentry#1
-sentry#2
-sentry#3
-</pre>
-<p>This scheme should work in most cases in which sentries are used just as
-finalizers. However, there are other uses, like the &quot;hashed function&quot;
-example above, where you'd like the original sentry to stay intact. This
-can be achieved by placing the new sentry as a sentry on the <em>original
-sentry</em> rather than the expression itself:</p>
+<p>You can chain any number of sentries that way. This scheme should work in
+most cases in which sentries are used just as finalizers. However, there
+are other uses, like the &quot;hashed function&quot; example above, where you'd like
+the original sentry to stay intact. This can be achieved by placing the new
+sentry as a sentry on the <em>original sentry</em> rather than the expression
+itself:</p>
 <pre class="literal-block">
 attach_sentry f x = sentry (sentry f (get_sentry x)) x;
 </pre>
-<p>Of course, this assumes that the original sentry is something that you can
-place a sentry on. It also requires that the sentry will actually be
-garbage-collected when its hosting expression gets freed, so it will <em>not</em>
-work if the original sentry is a global:</p>
+<p>This requires that the sentry will actually be garbage-collected when its
+hosting expression gets freed, so it will <em>not</em> work if the original sentry
+is a global:</p>
 <pre class="literal-block">
 &gt; let p = attach_sentry g $ sentry f $ malloc 10;
 &gt; clear p
 sentry#1
 </pre>
 <p>However, the attached sentry will work ok if you can ensure that the
-original sentry is a (partial or constructor) application, which also
-encompasses most kinds of aggregate Pure data. E.g.:</p>
+original sentry is a (partial or constructor) application. E.g.:</p>
 <pre class="literal-block">
 &gt; let p = attach_sentry g $ sentry (f$) $ malloc 10;
 &gt; clear p
