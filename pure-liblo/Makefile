@@ -127,7 +127,12 @@ generate:
 	rm -rf lo.pure lo.c
 	$(MAKE) all
 
+# NOTE: For compatibility with Pure 0.45 and later, we edit the final Pure
+# module to substitute void* for lo_timetag* so that we can easily pass Pure
+# int vectors as timestamps. (Using void* rather than int* will also work with
+# older Pure versions. In the future we really want to use int* instead.)
+
 lo.pure lo.c: lo-add.pure
 	pure-gen -fc-auto -p lo -m lo -s '$(includedir)/lo/*.h;' -x $(excludes) '$(includedir)/lo/lo.h'
 	sed -e 's|#include \"$(includedir)/\(\([A-Za-z-]\+/\)\?[A-Za-z-]\+\.h\)\"|#include <\1>|g' < lo.c > lo.c.new && rm lo.c && mv lo.c.new lo.c
-	cat lo.pure lo-add.pure > lo.pure.new && rm lo.pure && mv lo.pure.new lo.pure
+	cat lo.pure lo-add.pure | sed -e 's|lo_timetag[*]|void/*lo_timetag*/*|g' > lo.pure.new && rm lo.pure && mv lo.pure.new lo.pure

@@ -48,7 +48,7 @@ extern int lo_message_add_float(void*, float) = message_add_float;
 extern int lo_message_add_string(void*, char*) = message_add_string;
 extern int lo_message_add_blob(void*, void*) = message_add_blob;
 extern int lo_message_add_int64(void*, int) = message_add_int64;
-extern int Pure_lo_message_add_timetag(void*, lo_timetag*) = message_add_timetag;
+extern int Pure_lo_message_add_timetag(void*, void/*lo_timetag*/*) = message_add_timetag;
 extern int lo_message_add_double(void*, double) = message_add_double;
 extern int lo_message_add_symbol(void*, char*) = message_add_symbol;
 extern int lo_message_add_char(void*, char) = message_add_char;
@@ -58,7 +58,7 @@ extern int lo_message_add_false(void*) = message_add_false;
 extern int lo_message_add_nil(void*) = message_add_nil;
 extern int lo_message_add_infinitum(void*) = message_add_infinitum;
 extern void* lo_message_get_source(void*) = message_get_source;
-extern lo_timetag* Pure_lo_message_get_timestamp(void*) = message_get_timestamp;
+extern void/*lo_timetag*/* Pure_lo_message_get_timestamp(void*) = message_get_timestamp;
 extern char* lo_message_get_types(void*) = message_get_types;
 extern int lo_message_get_argc(void*) = message_get_argc;
 extern lo_arg** lo_message_get_argv(void*) = message_get_argv;
@@ -71,7 +71,7 @@ extern char* lo_address_get_port(void*) = address_get_port;
 extern int lo_address_get_protocol(void*) = address_get_protocol;
 extern void lo_address_set_ttl(void*, int) = address_set_ttl;
 extern int lo_address_get_ttl(void*) = address_get_ttl;
-extern void* Pure_lo_bundle_new(lo_timetag*) = bundle_new;
+extern void* Pure_lo_bundle_new(void/*lo_timetag*/*) = bundle_new;
 extern int lo_bundle_add_message(void*, char*, void*) = bundle_add_message;
 extern long lo_bundle_length(void*) = bundle_length;
 extern void* lo_bundle_serialise(void*, void*, long*) = bundle_serialise;
@@ -103,8 +103,8 @@ extern char* lo_url_get_path(char*) = url_get_path;
 extern int lo_strsize(char*) = strsize;
 extern int lo_blobsize(void*) = blobsize;
 extern int lo_pattern_match(char*, char*) = pattern_match;
-extern double Pure_lo_timetag_diff(lo_timetag*, lo_timetag*) = timetag_diff;
-extern void lo_timetag_now(lo_timetag*) = timetag_now;
+extern double Pure_lo_timetag_diff(void/*lo_timetag*/*, void/*lo_timetag*/*) = timetag_diff;
+extern void lo_timetag_now(void/*lo_timetag*/*) = timetag_now;
 extern long lo_arg_size(int, void*) = arg_size;
 extern char* lo_get_path(void*, long) = get_path;
 extern void lo_arg_host_endian(int, void*) = arg_host_endian;
@@ -151,9 +151,9 @@ const lo::TT_IMMEDIATE = {0,1};
 
 extern int Pure_lo_message_add(void*, char*, expr*) = message_add;
 extern int Pure_lo_send(void*, char*, char*, expr*) = send;
-extern int Pure_lo_send_timestamped(void*, lo_timetag*, char*, char*, expr*)
+extern int Pure_lo_send_timestamped(void*, void/*lo_timetag*/*, char*, char*, expr*)
  = send_timestamped;
-extern int Pure_lo_send_from(void*, void*, lo_timetag*, char*, char*, expr*)
+extern int Pure_lo_send_from(void*, void*, void/*lo_timetag*/*, char*, char*, expr*)
  = send_from;
 
 /* These need special treatment, so that we do not leak memory on the
