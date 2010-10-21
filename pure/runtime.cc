@@ -9469,7 +9469,7 @@ pure_expr *matrix_slice(pure_expr *x, int32_t i1, int32_t j1,
   pure_expr *y = new_expr();
   y->tag = x->tag;
   y->data.mat.p = p;
-  x->data.mat.q = 0;
+  y->data.mat.q = 0;
   y->data.mat.refc = x->data.mat.refc;
   (*y->data.mat.refc)++;
   MEMDEBUG_NEW(y)
@@ -9904,7 +9904,7 @@ pure_expr *matrix_redim(pure_expr *x, int32_t n, int32_t m)
   pure_expr *y = new_expr();
   y->tag = x->tag;
   y->data.mat.p = p;
-  x->data.mat.q = 0;
+  y->data.mat.q = 0;
   y->data.mat.refc = x->data.mat.refc;
   (*y->data.mat.refc)++;
   MEMDEBUG_NEW(y)
