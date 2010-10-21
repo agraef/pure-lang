@@ -9,6 +9,20 @@
 #define HAVE_LONG_DOUBLE 1
 #endif
 
+#if PURE_POINTER_TAG
+/* Convenience macros to handle tagged pointers (new in Pure 0.45). */
+#define __pointer(ty, p) pure_tag(ty, pure_pointer(p))
+#define __check_tag(ty, x) pure_check_tag(ty, x)
+#define __get_tag(x) pure_get_tag(x)
+#define __tag(ty) pure_pointer_tag(#ty)
+#else
+/* For compatibility with older Pure versions. */
+#define __pointer(ty, p) pure_pointer(p)
+#define __check_tag(ty, x) 1
+#define __get_tag(x) 0
+#define __tag(ty) 0
+#endif
+
 void ffi_defs(void)
 {
   /* Platform-specific ABI constants. This is probably incomplete; the
@@ -236,9 +250,11 @@ pure_expr *ffi_type_info(ffi_type *type)
   xs[0] = pure_int(type->size);
   xs[1] = pure_int(type->alignment);
   xs[2] = pure_int(type->type);
-  if (type->type == FFI_TYPE_STRUCT)
+  if (type->type == FFI_TYPE_STRUCT) {
+    int ty = __tag(ffi_type*);
     for (i = 0; i < nelems; i++)
-      xs[3+i] = pure_pointer(ffi_ref_type(type->elements[i]));
+      xs[3+i] = __pointer(ty, ffi_ref_type(type->elements[i]));
+  }
   x = pure_tuplev(3+nelems, xs);
   free(xs);
   return x;
@@ -254,7 +270,7 @@ static inline pure_expr *pure_struct(ffi_type *type, void *v)
 {
   pure_expr *x = pure_pointer(v),
     *y = pure_app(pure_symbol(pure_sym("__C::ffi_free_struct")),
-		  pure_pointer(type));
+		  __pointer(__tag(ffi_type*), type));
   assert(x && y);
   return pure_sentry(y, x);
 }
@@ -265,7 +281,8 @@ static inline bool pure_is_struct(pure_expr *x, ffi_type **type, void **v)
   return pure_is_pointer(x, v) && (y = pure_get_sentry(x)) &&
     pure_is_app(y, &f, &z) && f->tag > 0 &&
     strcmp(pure_sym_pname(f->tag), "__C::ffi_free_struct") == 0 &&
-    pure_is_pointer(z, (void**)type) && *type &&
+    pure_is_pointer(z, (void**)type) &&
+    __check_tag(__tag(ffi_type*), z) && *type &&
     (*type)->type == FFI_TYPE_STRUCT;
 }
 
@@ -393,7 +410,7 @@ pure_expr *ffi_struct_type(pure_expr *x)
   ffi_type *type;
   void *data;
   if (pure_is_struct(x, &type, &data))
-    return pure_pointer(type);
+    return __pointer(__tag(ffi_type*), type);
   else
     return 0;
 }
@@ -543,16 +560,17 @@ ffi_type **ffi_typevect(pure_expr *types)
   size_t i, j, n;
   pure_expr **xs;
   if (pure_is_tuplev(types, &n, &xs)) {
-    int32_t tag;
+    int32_t tag, ttag;
     if (n == 0) {
       v = malloc(sizeof(ffi_type*));
       assert(v != 0);
       v[0] = 0;
       return v;
     }
-    tag = xs[0]->tag;
+    tag = xs[0]->tag; ttag = __get_tag(xs[0]);
     for (i = 1; i < n; i++)
-      if (xs[i]->tag != tag) goto err;
+      if (xs[i]->tag != tag || !__check_tag(ttag, xs[i]))
+	goto err;
   } else
     return 0;
   if (pure_is_pointer(xs[0], &p)) {
