@@ -436,6 +436,9 @@ pure_expr *pure_clear_sentry(pure_expr *x);
    necessary. (Normally this shouldn't be necessary, since the code generator
    already keeps track of pointer types in extern declarations now.) */
 
+/* Define this symbol here so that modules can check for this feature. */
+#define PURE_POINTER_TAG 1
+
 pure_expr *pure_tag(int tag, pure_expr *x);
 int pure_get_tag(pure_expr *x);
 bool pure_check_tag(int tag, pure_expr *x);
