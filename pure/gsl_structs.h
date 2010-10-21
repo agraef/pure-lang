@@ -92,6 +92,7 @@ typedef struct _gsl_matrix_symbolic
   pure_expr **data;
   gsl_block_symbolic *block;
   int owner;
+  void *q; // used internally, do not touch
 } gsl_matrix_symbolic;
 
 typedef struct _gsl_matrix_symbolic_view

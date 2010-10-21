@@ -453,6 +453,7 @@ gsl_matrix_symbolic_alloc(const size_t n1, const size_t n2)
   m->tda = n2; 
   m->block = block;
   m->owner = 1;
+  m->q = 0;
   return m;
 }
 
@@ -465,11 +466,14 @@ gsl_matrix_symbolic_calloc(const size_t n1, const size_t n2)
   return m;
 }
 
+static void free_record(void *q);
+
 static void gsl_matrix_symbolic_free(gsl_matrix_symbolic *m)
 {
   if (m->owner) {
     if (m->block) free(m->block->data);
     free(m->block);
+    if (m->q) free_record(m->q);
   }
   free(m);
 }
@@ -479,18 +483,19 @@ gsl_matrix_symbolic_submatrix(gsl_matrix_symbolic *m,
 			      const size_t i, const size_t j, 
 			      const size_t n1, const size_t n2)
 {
-  gsl_matrix_symbolic_view view = {{0, 0, 0, 0, 0, 0}}; 
+  gsl_matrix_symbolic_view view = {{0, 0, 0, 0, 0, 0, 0}}; 
   if (i >= m->size1 || j >= m->size2 || n1 == 0 || n2 == 0 ||
       i + n1 > m->size1 || j + n2 > m->size2)
     return view;
   else {
-     gsl_matrix_symbolic s = {0, 0, 0, 0, 0, 0};
+     gsl_matrix_symbolic s = {0, 0, 0, 0, 0, 0, 0};
      s.data = m->data + i * m->tda + j;
      s.size1 = n1;
      s.size2 = n2;
      s.tda = m->tda;
      s.block = m->block;
      s.owner = 0;
+     s.q = 0;
      view.matrix = s;
      return view;
   }
@@ -627,36 +632,28 @@ static inline pure_expr* bad_matrix_exception(pure_expr *x)
     return f;
 }
 
-#define sentryp(f) (x->tag >= 0 || (x->tag <= EXPR::APP && x->tag >= EXPR::PTR))
-
 static inline pure_expr *get_sentry(pure_expr *x)
 {
   if (x==0)
     return 0;
-  else if (sentryp(x->tag))
-    return x->data.sy.x;
   else
-    return 0;
+    return x->sy;
 }
 
 static inline void call_sentry(pure_expr *x)
 {
-  if (sentryp(x->tag)) {
-    pure_expr *s = x->data.sy.x;
-    if (s) {
-      ++x->refc;
-      pure_freenew(pure_apply2(s, x));
-      --x->refc;
-    }
+  pure_expr *s = x->sy;
+  if (s) {
+    ++x->refc;
+    pure_freenew(pure_apply2(s, x));
+    --x->refc;
   }
 }
 
 static inline void free_sentry(pure_expr *x)
 {
-  if (sentryp(x->tag)) {
-    pure_expr *s = x->data.sy.x;
-    if (s) pure_free(s);
-  }
+  pure_expr *s = x->sy;
+  if (s) pure_free(s);
 }
 
 // Expression pointers are allocated in larger chunks for better performance.
@@ -685,7 +682,7 @@ static inline pure_expr *new_expr()
   }
   x->refc = 0;
   x->xp = interp.tmps;
-  x->data.sy.x = 0; // initialize the sentry
+  x->sy = 0; // initialize the sentry
   x->data.x[1] = 0; // initialize the pointer tag
   interp.tmps = x;
   return x;
@@ -713,7 +710,7 @@ static inline pure_expr *new_ref_expr()
   }
   x->refc = 1;
   x->xp = 0;
-  x->data.sy.x = 0; // initialize the sentry
+  x->sy = 0; // initialize the sentry
   return x;
 }
 
@@ -904,8 +901,6 @@ static pure_closure *pure_copy_clos(pure_closure *clos)
   return ret;
 }
 
-static void free_record(void *q);
-
 static void pure_free_matrix(pure_expr *x)
 {
   if (!x->data.mat.p) return;
@@ -946,10 +941,7 @@ static void pure_free_matrix(pure_expr *x)
   default:
     break;
   }
-  if (owner) {
-    if (x->data.mat.q) free_record(x->data.mat.q);
-    delete x->data.mat.refc;
-  }
+  if (owner) delete x->data.mat.refc;
 }
 
 #if 1
@@ -1413,7 +1405,6 @@ pure_expr *pure_symbolic_matrix(void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::MATRIX;
   x->data.mat.p = p;
-  x->data.mat.q = 0;
   // count references
   const size_t k = m->size1, l = m->size2, tda = m->tda;
   pure_new_vect2(k, l, tda, m->data);
@@ -1432,7 +1423,6 @@ pure_expr *pure_double_matrix(void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::DMATRIX;
   x->data.mat.p = p;
-  x->data.mat.q = 0;
   x->data.mat.refc = new uint32_t;
   *x->data.mat.refc = 1;
   MEMDEBUG_NEW(x)
@@ -1448,7 +1438,6 @@ pure_expr *pure_complex_matrix(void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::CMATRIX;
   x->data.mat.p = p;
-  x->data.mat.q = 0;
   x->data.mat.refc = new uint32_t;
   *x->data.mat.refc = 1;
   MEMDEBUG_NEW(x)
@@ -1464,7 +1453,6 @@ pure_expr *pure_int_matrix(void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::IMATRIX;
   x->data.mat.p = p;
-  x->data.mat.q = 0;
   x->data.mat.refc = new uint32_t;
   *x->data.mat.refc = 1;
   MEMDEBUG_NEW(x)
@@ -3209,13 +3197,12 @@ pure_expr *pure_sentry(pure_expr *sentry, pure_expr *x)
 {
   if (x==0)
     return 0;
-  else if (sentryp(x->tag)) {
-    if (x->data.sy.x)
-      pure_free_internal(x->data.sy.x);
-    x->data.sy.x = sentry?pure_new_internal(sentry):0;
+  else {
+    if (x->sy)
+      pure_free_internal(x->sy);
+    x->sy = sentry?pure_new_internal(sentry):0;
     return x;
-  } else
-    return 0;
+  }
 }
 
 extern "C"
@@ -5369,25 +5356,32 @@ pure_expr *pure_force(pure_expr *x)
 	 command line, that's a minor issue.) */
       x->data.clos->ep = 0;
     pure_free_clos(x);
+    if (x->sy) {
+      pure_free_internal(x->sy); x->sy = 0;
+    }
     x->tag = ret->tag;
     x->data = ret->data;
+    /* XXXFIXME: It's hard to decide what to do with the sentry here, since
+       the overwritten thunk and the value being memoized are separate
+       objects, so we can't tell which will go the way of the dodo first. In
+       principle, the two objects should be linked so that either may call the
+       sentry if it's the last one to survive, but that would make things
+       awfully complicated. So for the moment we just assume that if the
+       return value is a temporary then we take over its sentry, otherwise it
+       remains with the original expression. */
+    if (ret->refc <= 1) {
+      x->sy = ret->sy; ret->sy = 0;
+    }
     switch (x->tag) {
     case EXPR::BIGINT:
       mpz_init_set(x->data.z, ret->data.z);
-      if (x->data.sy.x) pure_new_internal(x->data.sy.x);
       break;
     case EXPR::APP:
       pure_new_internal(x->data.x[0]);
       pure_new_internal(x->data.x[1]);
-      // falls through
-    case EXPR::INT:
-    case EXPR::DBL:
-    case EXPR::PTR:
-      if (x->data.sy.x) pure_new_internal(x->data.sy.x);
       break;
     case EXPR::STR:
       x->data.s = strdup(x->data.s);
-      if (x->data.sy.x) pure_new_internal(x->data.sy.x);
       break;
     case EXPR::MATRIX: {
       // Create a new view of the matrix.
@@ -5395,9 +5389,8 @@ pure_expr *pure_force(pure_expr *x)
       gsl_matrix_symbolic *m1 =
 	(gsl_matrix_symbolic*)malloc(sizeof(gsl_matrix_symbolic));
       assert(m1);
-      *m1 = *m;
+      *m1 = *m; m1->q = 0;
       x->data.mat.p = m1;
-      x->data.mat.q = 0;
       (*x->data.mat.refc)++;
       break;
     }
@@ -5407,7 +5400,6 @@ pure_expr *pure_force(pure_expr *x)
       assert(m1);
       *m1 = *m;
       x->data.mat.p = m1;
-      x->data.mat.q = 0;
       (*x->data.mat.refc)++;
       break;
     }
@@ -5418,7 +5410,6 @@ pure_expr *pure_force(pure_expr *x)
       assert(m1);
       *m1 = *m;
       x->data.mat.p = m1;
-      x->data.mat.q = 0;
       (*x->data.mat.refc)++;
       break;
     }
@@ -5429,7 +5420,6 @@ pure_expr *pure_force(pure_expr *x)
       assert(m1);
       *m1 = *m;
       x->data.mat.p = m1;
-      x->data.mat.q = 0;
       (*x->data.mat.refc)++;
       break;
     }
@@ -5437,7 +5427,6 @@ pure_expr *pure_force(pure_expr *x)
       if (x->tag >= 0) {
 	if (x->data.clos)
 	  x->data.clos = pure_copy_clos(x->data.clos);
-	if (x->data.sy.x) pure_new_internal(x->data.sy.x);
       }
       break;
     }
@@ -9469,7 +9458,6 @@ pure_expr *matrix_slice(pure_expr *x, int32_t i1, int32_t j1,
   pure_expr *y = new_expr();
   y->tag = x->tag;
   y->data.mat.p = p;
-  y->data.mat.q = 0;
   y->data.mat.refc = x->data.mat.refc;
   (*y->data.mat.refc)++;
   MEMDEBUG_NEW(y)
@@ -9811,7 +9799,7 @@ pure_expr *matrix_redim(pure_expr *x, int32_t n, int32_t m)
       gsl_matrix_symbolic *m1 =
 	(gsl_matrix_symbolic*)malloc(sizeof(gsl_matrix_symbolic));
       assert(m1);
-      *m1 = *m;
+      *m1 = *m; m1->q = 0;
       m1->size1 = n1; m1->tda = m1->size2 = n2;
       if (m1->tda == 0) m1->tda = 1;
       p = m1;
@@ -9904,7 +9892,6 @@ pure_expr *matrix_redim(pure_expr *x, int32_t n, int32_t m)
   pure_expr *y = new_expr();
   y->tag = x->tag;
   y->data.mat.p = p;
-  y->data.mat.q = 0;
   y->data.mat.refc = x->data.mat.refc;
   (*y->data.mat.refc)++;
   MEMDEBUG_NEW(y)
@@ -10630,7 +10617,6 @@ pure_expr *matrix_from_double_array_nodup(uint32_t n1, uint32_t n2, void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::DMATRIX;
   x->data.mat.p = m;
-  x->data.mat.q = 0;
   x->data.mat.refc = new uint32_t;
   *x->data.mat.refc = 1;
   MEMDEBUG_NEW(x)
@@ -10653,7 +10639,6 @@ pure_expr *matrix_from_complex_array_nodup(uint32_t n1, uint32_t n2, void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::CMATRIX;
   x->data.mat.p = m;
-  x->data.mat.q = 0;
   x->data.mat.refc = new uint32_t;
   *x->data.mat.refc = 1;
   MEMDEBUG_NEW(x)
@@ -10674,7 +10659,6 @@ pure_expr *matrix_from_int_array_nodup(uint32_t n1, uint32_t n2, void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::IMATRIX;
   x->data.mat.p = m;
-  x->data.mat.q = 0;
   x->data.mat.refc = new uint32_t;
   *x->data.mat.refc = 1;
   MEMDEBUG_NEW(x)
@@ -10706,7 +10690,6 @@ pure_expr *matrix_from_double_array(uint32_t n1, uint32_t n2, void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::DMATRIX;
   x->data.mat.p = m;
-  x->data.mat.q = 0;
   x->data.mat.refc = new uint32_t;
   *x->data.mat.refc = 1;
   MEMDEBUG_NEW(x)
@@ -10740,7 +10723,6 @@ pure_expr *matrix_from_complex_array(uint32_t n1, uint32_t n2, void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::CMATRIX;
   x->data.mat.p = m;
-  x->data.mat.q = 0;
   x->data.mat.refc = new uint32_t;
   *x->data.mat.refc = 1;
   MEMDEBUG_NEW(x)
@@ -10772,7 +10754,6 @@ pure_expr *matrix_from_int_array(uint32_t n1, uint32_t n2, void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::IMATRIX;
   x->data.mat.p = m;
-  x->data.mat.q = 0;
   x->data.mat.refc = new uint32_t;
   *x->data.mat.refc = 1;
   MEMDEBUG_NEW(x)
@@ -10962,7 +10943,6 @@ pure_expr *matrix_from_float_array(uint32_t n1, uint32_t n2, void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::DMATRIX;
   x->data.mat.p = m;
-  x->data.mat.q = 0;
   x->data.mat.refc = new uint32_t;
   *x->data.mat.refc = 1;
   MEMDEBUG_NEW(x)
@@ -10997,7 +10977,6 @@ pure_expr *matrix_from_complex_float_array(uint32_t n1, uint32_t n2, void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::CMATRIX;
   x->data.mat.p = m;
-  x->data.mat.q = 0;
   x->data.mat.refc = new uint32_t;
   *x->data.mat.refc = 1;
   MEMDEBUG_NEW(x)
@@ -11030,7 +11009,6 @@ pure_expr *matrix_from_short_array(uint32_t n1, uint32_t n2, void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::IMATRIX;
   x->data.mat.p = m;
-  x->data.mat.q = 0;
   x->data.mat.refc = new uint32_t;
   *x->data.mat.refc = 1;
   MEMDEBUG_NEW(x)
@@ -11063,7 +11041,6 @@ pure_expr *matrix_from_byte_array(uint32_t n1, uint32_t n2, void *p)
   pure_expr *x = new_expr();
   x->tag = EXPR::IMATRIX;
   x->data.mat.p = m;
-  x->data.mat.q = 0;
   x->data.mat.refc = new uint32_t;
   *x->data.mat.refc = 1;
   MEMDEBUG_NEW(x)
@@ -15299,9 +15276,9 @@ static bool is_record(pure_expr *x, pure_expr** &data, index_t* &idx)
   if (x->tag == EXPR::MATRIX) {
     gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
     const size_t n1 = m->size1, n2 = m->size2;
-    if (x->data.mat.q) {
+    if (m->q) {
       data = m->data;
-      idx = (index_t*)x->data.mat.q;
+      idx = (index_t*)m->q;
       return true;
     } else if (n1 <= 1 || n2 <= 1) {
       size_t n = n1*n2;
@@ -15350,7 +15327,7 @@ static bool is_record(pure_expr *x, pure_expr** &data, index_t* &idx)
 	idx->n = idx->k = 0;
 	idx->ix = 0;
       }
-      x->data.mat.q = idx;
+      m->q = idx;
       return true;
     } else
       return false;
