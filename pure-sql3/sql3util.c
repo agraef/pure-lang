@@ -6,12 +6,20 @@
 #include <string.h>
 #include <sqlite3.h>
 
+#if PURE_POINTER_TAG
+/* Convenience macros to handle tagged pointers (new in Pure 0.45). */
+#define __pointer(ty, p) pure_tag(pure_pointer_tag(#ty), pure_pointer(p))
+#else
+/* For compatibility with older Pure versions. */
+#define __pointer(ty, p) pure_pointer(p)
+#endif
+
 
 //==>(db_ptr,ec)
 pure_expr* sql3util_open(char* path, int flags) {
   sqlite3* dbp;
   int ec = sqlite3_open_v2(path , &dbp, flags, NULL);
-  pure_expr *p_dbp = pure_pointer(dbp);
+  pure_expr *p_dbp = __pointer(sqlite3*, dbp);
   pure_expr *p_errCode = pure_int(ec);
   pure_expr *p_ret = pure_tuplel(2, p_dbp, p_errCode);
   return p_ret;
@@ -25,7 +33,7 @@ pure_expr* sql3util_prepare(sqlite3 *db, char *sql)
   size_t maxlen = strlen(sql) + 1;
   int ec = sqlite3_prepare_v2(db, sql, maxlen, &stmtp, &zTail);
 
-  pure_expr *p_stmtp = pure_pointer(stmtp);
+  pure_expr *p_stmtp = __pointer(sqlite3_stmt*, stmtp);
   pure_expr *p_errCode = pure_int(ec);
   pure_expr *p_ret = pure_tuplel(2, p_stmtp, p_errCode);
   return p_ret;
