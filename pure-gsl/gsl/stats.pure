@@ -123,13 +123,13 @@ private
 
 def apply1  f  m  =
   if rowvectorp m then
-    (v when v = f (pointer m) 1 (#m) end)
+    (v when v = f m 1 (#m) end)
   else
     f m;
     
 def apply1_w  f  m  =
   if rowvectorp m then
-    (v when v = f (pointer m) (#m) end)
+    (v when v = f m (#m) end)
   else
     f m;
 
@@ -137,7 +137,7 @@ def dapply1  f  m  =
   if rowvectorp m then
     (v when 
          x = dmatrix m;
-         v = f (pointer x) 1 (#m)
+         v = f x 1 (#m)
        end)
   else
     f m;
@@ -146,7 +146,7 @@ def dapply1_d  f  m  d  =
   if rowvectorp m then
     (v when
          x = dmatrix m;
-         v = f (pointer x) 1 (#m) (double d)
+         v = f x 1 (#m) (double d)
        end)
   else
     f m d;
@@ -155,7 +155,7 @@ def dapply1_dd  f  m  d1  d2  =
   if rowvectorp m then
     (v when
          x = dmatrix m;
-         v = f (pointer x) 1 (#m) (double d1) (double d2)
+         v = f x 1 (#m) (double d1) (double d2)
        end)
   else
     f m d1 d2;
@@ -164,7 +164,7 @@ def dapply2  f  m1  m2  =
   if rowvectorp m1 && rowvectorp m2 && #m1 == #m2 then
     (v when
          x1, x2 = dmatrix m1, dmatrix m2;
-         v = f (pointer x1) 1 (pointer x2) 1 (#m1);
+         v = f x1 1 x2 1 (#m1);
        end)
   else
     f m1 m2;
@@ -173,7 +173,7 @@ def dapply2_d  f  m1  m2  d  =
   if rowvectorp m1 && rowvectorp m2 && #m1 == #m2 then
     (v when
          x1, x2 = dmatrix m1, dmatrix m2;
-         v = f (pointer x1) 1 (pointer x2) 1 (#m1) (double d);
+         v = f x1 1 x2 1 (#m1) (double d);
        end)
   else
     f m1 m2 d;
@@ -182,7 +182,7 @@ def dapply2_dd  f  m1  m2  d1  d2  =
   if rowvectorp m1 && rowvectorp m2 && #m1 == #m2 then
     (v when
          x1, x2 = dmatrix m1, dmatrix m2;
-         v = f (pointer x1) 1 (pointer x2) 1 (#m1) (double d1) (double d2);
+         v = f x1 1 x2 1 (#m1) (double d1) (double d2);
        end)
   else
     f m1 m2 d1 d2;

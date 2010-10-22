@@ -87,14 +87,24 @@ private extern double gsl_ran_logarithmic_pdf(int, double);
 /* P.d.f. macro. */
 
 private
-  apply2_ran;
+  apply2_ran apply2_ran_di;
 
 def apply2_ran  f  m1  m2  =
   if rowvectorp m1 && rowvectorp m2 && #m1 == #m2 then
     (v
      when
        x1, x2 = dmatrix m1, dmatrix m2;
-       v = f (#m1) (pointer x1) (pointer x2);
+       v = f (#m1) x1 x2;
+     end)
+  else
+    f m1 m2;
+
+def apply2_ran_di  f  m1  m2  =
+  if rowvectorp m1 && rowvectorp m2 && #m1 == #m2 then
+    (v
+     when
+       x1, x2 = dmatrix m1, imatrix m2;
+       v = f (#m1) x1 x2;
      end)
   else
     f m1 m2;
@@ -399,7 +409,7 @@ discrete_preproc  p::matrix
   = v
     when
       x = dmatrix p;
-      v = gsl_ran_discrete_preproc (#p) (pointer x);
+      v = gsl_ran_discrete_preproc (#p) x;
     end
     if rowvectorp p;
 
@@ -456,7 +466,7 @@ binomial_pdf  k::int  p  n::int
 */
 
 multinomial_pdf  p::matrix  n::matrix
-  = apply2_ran gsl_ran_multinomial_pdf p n;
+  = apply2_ran_di gsl_ran_multinomial_pdf p n;
 
 /* .. _multinomial_lnpdf:
    
@@ -465,7 +475,7 @@ multinomial_pdf  p::matrix  n::matrix
 */
 
 multinomial_lnpdf  p::matrix  n::matrix
-  = apply2_ran gsl_ran_multinomial_lnpdf p n;
+  = apply2_ran_di gsl_ran_multinomial_lnpdf p n;
 
 /* .. _negative_binomial_pdf:
    

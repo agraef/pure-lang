@@ -102,7 +102,7 @@ public
 private ap_airy;
 
 def ap_airy f x mode
-  = f (double x) mode (pointer m) $$ list m  when m = {0.0, 0.0} end;
+  = f (double x) mode m $$ list m  when m = {0.0, 0.0} end;
 
 airy_Ai  (x, mode::int) = gsl_sf_airy_Ai (double x) mode;
 
@@ -315,7 +315,7 @@ private
   ap_airy_z;
 
 def ap_airy_z f s 
-  = f s (pointer m) $$ list m when m = {0.0,0.0} end;
+  = f s m $$ list m when m = {0.0,0.0} end;
 
 airy_zero_Ai  s::int = gsl_sf_airy_zero_Ai s if s >= 0;
 
@@ -1186,19 +1186,19 @@ private
   ap_bessel_3
   ap_func_2;
 
-def ap_func_1 f x = f (double x) (pointer m) $$ list m
+def ap_func_1 f x = f (double x) m $$ list m
   when m = {0.0,0.0} end;
 
-def ap_bessel_2 f n x = f n (double x) (pointer m) $$ list m
+def ap_bessel_2 f n x = f n (double x) m $$ list m
   when m = {0.0,0.0} end;
 
-def ap_bessel_2l f n x = f n (double x) (pointer m) $$ list m
+def ap_bessel_2l f n x = f n (double x) m $$ list m
   when m = {0.0 | i = 0..n} end;
 
-def ap_bessel_3 f n1 n2 x = f n1 n2 (double x) (pointer m) $$ list m
+def ap_bessel_3 f n1 n2 x = f n1 n2 (double x) m $$ list m
   when m = {0.0 | i = n1..n2} end;
 
-def ap_func_2 f nu x = f (double nu) (double x) (pointer m) $$ list m
+def ap_func_2 f nu x = f (double nu) (double x) m $$ list m
   when m = {0.0, 0.0} end;
 
 bessel_J0  x = gsl_sf_bessel_J0 (double x);
@@ -1388,7 +1388,7 @@ bessel_Jnu  nu  x = gsl_sf_bessel_Jnu (double nu) (double x);
 bessel_Jnu_e  nu  x = ap_func_2 gsl_sf_bessel_Jnu_e nu x;
 
 bessel_sequence_Jnu_e  nu  v::matrix
-  = gsl_sf_bessel_sequence_Jnu_e (double nu) GSL_PREC_DOUBLE (#v) (pointer m)
+  = gsl_sf_bessel_sequence_Jnu_e (double nu) GSL_PREC_DOUBLE (#v) m
     $$ list m when m = dmatrix v end if rowvectorp v;
 
 bessel_Ynu  nu  x = gsl_sf_bessel_Ynu (double nu) (double x);
@@ -1427,19 +1427,19 @@ bessel_Knu_scaled_e  nu  x
 
 bessel_zero_J0  s::int = gsl_sf_bessel_zero_J0 s if s > 0;
 
-bessel_zero_J0_e  s::int = gsl_sf_bessel_zero_J0_e s (pointer m) $$ list m
+bessel_zero_J0_e  s::int = gsl_sf_bessel_zero_J0_e s m $$ list m
   when m = {0.0,0.0} end if s > 0;
 
 bessel_zero_J1  s::int = gsl_sf_bessel_zero_J1 s if s > 0;
 
-bessel_zero_J1_e  s::int = gsl_sf_bessel_zero_J1_e s (pointer m) $$ list m
+bessel_zero_J1_e  s::int = gsl_sf_bessel_zero_J1_e s m $$ list m
   when m =  {0.0,0.0} end if s > 0;
 
 bessel_zero_Jnu  nu  s::int
   = gsl_sf_bessel_zero_Jnu (double nu) s if nu >= 0.0 && s > 0;
 
 bessel_zero_Jnu_e  nu  s::int
-  = gsl_sf_bessel_zero_Jnu_e (double nu) s (pointer m) $$ list m
+  = gsl_sf_bessel_zero_Jnu_e (double nu) s m $$ list m
       when m = {0.0,0.0} end if nu >= 0.0 && s > 0;
 
 /* ..
@@ -1793,13 +1793,12 @@ hydrogenicR  n::int  l::int  Z  r
   = gsl_sf_hydrogenicR n l (double Z) (double r) if n > l;
 
 hydrogenicR_e  n::int  l::int  Z  r
-  = gsl_sf_hydrogenicR_e n l (double Z) (double r) (pointer m) $$ list m
+  = gsl_sf_hydrogenicR_e n l (double Z) (double r) m $$ list m
       when m = {0.0,0.0} end;
 
 coulomb_wave_FG_e  eta  x  L_F  k::int
   = gsl_sf_coulomb_wave_FG_e (double eta) (double x) (double L_F) k
-      (pointer F) (pointer Fp) (pointer G) (pointer Gp) 
-      (pointer exp_F) (pointer exp_G) $$ [F, Fp, G, Gp, exp_F!0, exp_G!0] 
+      F Fp G Gp exp_F exp_G $$ [F, Fp, G, Gp, exp_F!0, exp_G!0] 
     when
       F = {0.0,0.0};
       Fp = {0.0,0.0};
@@ -1811,7 +1810,7 @@ coulomb_wave_FG_e  eta  x  L_F  k::int
 
 coulomb_wave_F_array  L_min  kmax::int  eta  x 
   = gsl_sf_coulomb_wave_F_array (double L_min) kmax (double eta) (double x)
-      (pointer fc) (pointer F_exp) $$ [fc, F_exp!0]
+      fc F_exp $$ [fc, F_exp!0]
     when
       fc = {0.0 | i = L_min..L_min+kmax};
       F_exp = {0.0};
@@ -1819,8 +1818,7 @@ coulomb_wave_F_array  L_min  kmax::int  eta  x
 
 coulomb_wave_FG_array  L_min  kmax::int  eta  x
   = gsl_sf_coulomb_wave_FG_array (double L_min) kmax (double eta) (double x)
-      (pointer fc) (pointer gc) (pointer F_exp) (pointer G_exp) 
-    $$ [fc, gc, F_exp!0, G_exp!0]
+      fc gc F_exp G_exp $$ [fc, gc, F_exp!0, G_exp!0]
     when
       fc = {0.0 | i = L_min..L_min+kmax};
       gc = {0.0 | i = L_min..L_min+kmax};
@@ -1830,9 +1828,7 @@ coulomb_wave_FG_array  L_min  kmax::int  eta  x
 
 coulomb_wave_FGp_array  L_min  kmax::int  eta  x
   = gsl_sf_coulomb_wave_FGp_array (double L_min) kmax (double eta) (double x)
-      (pointer fc) (pointer fcp) (pointer gc) (pointer gcp) 
-      (pointer F_exp) (pointer G_exp) 
-    $$ [fc, gc, F_exp!0, G_exp!0]
+      fc fcp gc gcp F_exp G_exp $$ [fc, gc, F_exp!0, G_exp!0]
     when
       fc = {0.0 | i = L_min..L_min+kmax};
       fcp = {0.0 | i = L_min..L_min+kmax};
@@ -1844,8 +1840,7 @@ coulomb_wave_FGp_array  L_min  kmax::int  eta  x
 
 coulomb_wave_sphF_array  L_min  kmax::int  eta  x
   = gsl_sf_coulomb_wave_sphF_array (double L_min) kmax (double eta) (double x)
-      (pointer fc) (pointer F_exp)
-    $$ [fc, F_exp!0]
+      fc F_exp $$ [fc, F_exp!0]
     when
       fc = {0.0 | i = L_min..L_min+kmax};
       F_exp = {0.0};
@@ -1855,7 +1850,7 @@ coulomb_CL_e  L  eta
   = ap_func_2 gsl_sf_coulomb_CL_e L eta if L > -1.0;
 
 coulomb_CL_array  Lmin  kmax  eta
-  = gsl_sf_coulomb_CL_array Lmin kmax eta (pointer cl) $$ list cl
+  = gsl_sf_coulomb_CL_array Lmin kmax eta cl $$ list cl
       when cl = {0.0 | i = Lmin..Lmin+kmax} end if Lmin > -1.0;
 
 /* ..
@@ -1959,7 +1954,7 @@ coupling_3j  m::matrix
 coupling_3j_e  m::matrix
   = gsl_sf_coupling_3j_e (m!(0,0)) (m!(0,1)) (m!(0,2))
     		       	 (m!(1,0)) (m!(1,1)) (m!(1,2))
-			 (pointer r) $$ list r
+			 r $$ list r
     when r = {0.0,0.0} end
     if (imatrixp m) && (dim m) == (2,3);
 
@@ -1971,7 +1966,7 @@ coupling_6j  m::matrix
 coupling_6j_e  m::matrix
   = gsl_sf_coupling_6j_e (m!(0,0)) (m!(0,1)) (m!(0,2))
     		       	 (m!(1,0)) (m!(1,1)) (m!(1,2))
-			 (pointer r) $$ list r
+			 r $$ list r
     when r = {0.0,0.0} end
     if (imatrixp m) && (dim m) == (2,3);
 
@@ -1985,7 +1980,7 @@ coupling_9j_e  m::matrix
   = gsl_sf_coupling_9j_e (m!(0,0)) (m!(0,1)) (m!(0,2))
     		       	 (m!(1,0)) (m!(1,1)) (m!(1,2))
 			 (m!(2,0)) (m!(2,1)) (m!(2,2))
-			 (pointer r) $$ list r
+			 r $$ list r
     when r = {0.0,0.0} end
     if (imatrixp m) && (dim m) == (3,3);
 
@@ -2239,7 +2234,7 @@ dilog  x::bigint |
 dilog  x::double = gsl_sf_dilog (double x);
 dilog  (a%b) = gsl_sf_dilog (double (a/b));
 dilog  (r<:theta)
-  = gsl_sf_complex_dilog_e (double r) (double theta) (pointer re) (pointer im)
+  = gsl_sf_complex_dilog_e (double r) (double theta) re im
     $$ (re!0)+:(im!0)
     when
       re = {0.0,0.0};
@@ -2251,7 +2246,7 @@ dilog_e  x::bigint |
 dilog_e  x::double = ap_func_1 gsl_sf_dilog_e x;
 dilog_e  (a%b) = ap_func_1 gsl_sf_dilog_e (a/b);
 dilog_e  (r<:theta)
-  = gsl_sf_complex_dilog_e (double r) (double theta) (pointer re) (pointer im)
+  = gsl_sf_complex_dilog_e (double r) (double theta) re im
     $$ [(re!0)+:(im!0), re!1, im!1]
     when
       re = {0.0,0.0};
@@ -2300,8 +2295,8 @@ public
 multiply_e  x  y  = ap_func_2 gsl_sf_multiply_e  x  y;
 
 multiply_err_e  x  dx  y  dy
-  = gsl_sf_multiply_err_e (double x) (double dx) (double y) (double dy)
-    			  (pointer m) $$ list m  when m = {0.0, 0.0} end;
+  = gsl_sf_multiply_err_e (double x) (double dx) (double y) (double dy) m
+    $$ list m  when m = {0.0, 0.0} end;
 
 /* ..
   
