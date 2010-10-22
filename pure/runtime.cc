@@ -3254,13 +3254,16 @@ int pure_get_tag(pure_expr *x)
 extern "C"
 bool pure_check_tag(int tag, pure_expr *x)
 {
-  if (pure_is_pointer(x, 0)) {
+  void *p;
+  if (pure_is_pointer(x, &p)) {
 #if SIZEOF_VOID_P==8
     int mytag = (int)(int64_t)x->data.x[1];
 #else
     int mytag = (int)x->data.x[1];
 #endif
-    return mytag==tag;
+    /* (void*)NULL matches any pointer type, like it is in C. Otherwise the
+       type tags must match literally. */
+    return mytag==tag || (p==NULL && mytag==0);
   } else
     return tag==0;
 }
