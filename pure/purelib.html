@@ -2417,9 +2417,10 @@ at runtime (see the <a class="reference external" href="pure.html#c-types">C Typ
 To these ends, pointer values are internally tagged to keep track of the
 pointer types. The operations described in this section give you access to
 these tags in Pure programs. At the lowest level, a pointer tag is simply a
-machine int associated with a pointer value. The following operations are
-provided to create such tags, and set, get or verify the tag of a pointer
-value.</p>
+machine int associated with a pointer value. The default tag is 0, which
+denotes a generic pointer value, i.e., <tt class="docutils literal"><span class="pre">void*</span></tt> in C. The following
+operations are provided to create such tags, and set, get or verify the tag
+of a pointer value.</p>
 <a name="ptrtag"><dl class="docutils" id="ptrtag">
 <dt><tt class="docutils literal"><span class="pre">ptrtag</span> <span class="pre">t</span> <span class="pre">x</span></tt></dt>
 <dd>Places an integer tag <tt class="docutils literal"><span class="pre">t</span></tt> at an expression <tt class="docutils literal"><span class="pre">x</span></tt> and returns the
@@ -2432,7 +2433,8 @@ modified expression. <tt class="docutils literal"><span class="pre">x</span></tt
 <a name="check_ptrtag"><dl class="docutils" id="check-ptrtag">
 <dt><tt class="docutils literal"><span class="pre">check_ptrtag</span> <span class="pre">t</span> <span class="pre">x</span></tt></dt>
 <dd>Compares the tag associated with <tt class="docutils literal"><span class="pre">x</span></tt> against <tt class="docutils literal"><span class="pre">t</span></tt> and returns true iff
-the tags match.</dd>
+the tags match. If <tt class="docutils literal"><span class="pre">x</span></tt> is a pointer value, this is equivalent to
+<tt class="docutils literal"><span class="pre">get_ptrtag</span> <span class="pre">x==t</span> <span class="pre">||</span> <span class="pre">null</span> <span class="pre">x</span> <span class="pre">&amp;&amp;</span> <span class="pre">get_ptrtag</span> <span class="pre">x==0</span></tt>.</dd>
 </dl>
 <a name="make_ptrtag"><dl class="docutils" id="make-ptrtag">
 <dt><tt class="docutils literal"><span class="pre">make_ptrtag</span></tt></dt>
@@ -2444,14 +2446,27 @@ the tags match.</dd>
 &gt; get_ptrtag p; // zero by default
 0
 &gt; let t = make_ptrtag; t;
-1
+12
 &gt; ptrtag t p;
 #&lt;pointer 0xc42da0&gt;
 &gt; get_ptrtag p;
-1
+12
 &gt; check_ptrtag t p;
 1
 &gt; check_ptrtag 0 p;
+0
+</pre>
+<p>Note that in the case of a non-<tt class="docutils literal"><span class="pre">NULL</span></tt> pointer, <tt class="docutils literal"><span class="pre">check_ptrtag</span></tt> just
+tests the tags for equality. On the other hand, a generic <tt class="docutils literal"><span class="pre">NULL</span></tt> pointer,
+like in C, is considered compatible with all pointer types:</p>
+<pre class="literal-block">
+&gt; let t1 = make_ptrtag; t1;
+13
+&gt; check_ptrtag t1 p;
+0
+&gt; check_ptrtag t1 NULL;
+1
+&gt; get_ptrtag NULL;
 0
 </pre>
 <!--  -->

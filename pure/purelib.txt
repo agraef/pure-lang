@@ -3792,9 +3792,10 @@ at runtime (see the `C Types`_ section in the `Pure Manual`_ for details).
 To these ends, pointer values are internally tagged to keep track of the
 pointer types. The operations described in this section give you access to
 these tags in Pure programs. At the lowest level, a pointer tag is simply a
-machine int associated with a pointer value. The following operations are
-provided to create such tags, and set, get or verify the tag of a pointer
-value.
+machine int associated with a pointer value. The default tag is 0, which
+denotes a generic pointer value, i.e., ``void*`` in C. The following
+operations are provided to create such tags, and set, get or verify the tag
+of a pointer value.
 
 .. _C Types: pure.html#c-types
 
@@ -3825,7 +3826,8 @@ value.
 
 ``check_ptrtag t x``
   Compares the tag associated with ``x`` against ``t`` and returns true iff
-  the tags match.
+  the tags match. If ``x`` is a pointer value, this is equivalent to
+  ``get_ptrtag x==t || null x && get_ptrtag x==0``.
 
 .. raw:: html
 
@@ -3842,14 +3844,27 @@ Examples::
   > get_ptrtag p; // zero by default
   0
   > let t = make_ptrtag; t;
-  1
+  12
   > ptrtag t p;
   #<pointer 0xc42da0>
   > get_ptrtag p;
-  1
+  12
   > check_ptrtag t p;
   1
   > check_ptrtag 0 p;
+  0
+
+Note that in the case of a non-``NULL`` pointer, ``check_ptrtag`` just
+tests the tags for equality. On the other hand, a generic ``NULL`` pointer,
+like in C, is considered compatible with all pointer types::
+
+  > let t1 = make_ptrtag; t1;
+  13
+  > check_ptrtag t1 p;
+  0
+  > check_ptrtag t1 NULL;
+  1
+  > get_ptrtag NULL;
   0
 
 ..
