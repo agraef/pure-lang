@@ -4092,7 +4092,7 @@ void *pure_get_matrix_data(pure_expr *x)
 
 enum cvd_type {
   cvd_none, cvd_void, cvd_char,
-  cvd_byte, cvd_short, cvd_int, cvd_float, cvd_double
+  cvd_byte, cvd_short, cvd_int, cvd_int64, cvd_float, cvd_double
 };
 
 struct cvector_data {
@@ -4205,6 +4205,26 @@ static void *int_array_to_matrix(pure_expr *x, void *q)
   }
 }
 
+static void *int64_array_to_matrix(pure_expr *x, void *q)
+{
+  int64_t *p = (int64_t*)q;
+  if (!p) return 0;
+  switch (x->tag) {
+  case EXPR::IMATRIX: {
+    gsl_matrix_int *m1 = (gsl_matrix_int*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    if (n==0 || m==0) return p;
+    for (size_t i = 0; i < n; i++) {
+      for (size_t j = 0; j < m; j++)
+	m1->data[i*m1->tda+j] = (int)p[i*m+j];
+    }
+    return p;
+  }
+  default:
+    return 0;
+  }
+}
+
 static void *float_array_to_matrix(pure_expr *x, void *q)
 {
   float *p = (float*)q;
@@ -4269,6 +4289,28 @@ static void *double_array_to_matrix(pure_expr *x, void *q)
   }
 }
 
+// This isn't in the library API, so we provide a (stripped-down) version here.
+static void *matrix_to_int64_array(void *p, pure_expr *x)
+{
+  switch (x->tag) {
+  case EXPR::IMATRIX: {
+    gsl_matrix_int *m1 = (gsl_matrix_int*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    if (n==0 || m==0) return p;
+    if (!p) p = malloc(n*m*sizeof(int64_t));
+    if (!p) return 0;
+    int64_t *q = (int64_t*)p;
+    size_t k = 0;
+    for (size_t i = 0; i < n; i++)
+      for (size_t j = 0; j < m; j++)
+	q[k++] = m1->data[i*m1->tda+j];
+    return p;
+  }
+  default:
+    return 0;
+  }
+}
+
 void *pure_get_matrix_data_byte(pure_expr *x)
 {
   void *v = matrix_to_byte_array(0, x);
@@ -4288,6 +4330,13 @@ void *pure_get_matrix_data_int(pure_expr *x)
   void *v = is_contiguous(x)?pure_get_matrix_data(x):
     matrix_to_int_array(0, x);
   cvector_temps.push_back(cvector_data(x, v, cvd_int));
+  return v;
+}
+
+void *pure_get_matrix_data_int64(pure_expr *x)
+{
+  void *v = matrix_to_int64_array(0, x);
+  cvector_temps.push_back(cvector_data(x, v, cvd_int64));
   return v;
 }
 
@@ -4374,6 +4423,34 @@ static void *matrix_to_int_vector(pure_expr *x)
     if (!p) return 0;
     for (size_t i = 0; i < n; i++)
       p[i] = m1->data+(i*m1->tda);
+    return p;
+  }
+  default:
+    return 0;
+  }
+}
+
+static void *matrix_to_int64_vector(pure_expr *x)
+{
+  switch (x->tag) {
+  case EXPR::IMATRIX: {
+    gsl_matrix_int *m1 = (gsl_matrix_int*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    if (n==0 || m==0) return 0;
+    int64_t **p = (int64_t**)malloc(n*sizeof(int64_t*));
+    if (!p) return 0;
+    for (size_t i = 0; i < n; i++) {
+      p[i] = (int64_t*)malloc(m*sizeof(int64_t));
+      if (!p[i]) {
+	for (size_t j = 0; j < i; j++) free(p[j]);
+	free(p); p = 0;
+	break;
+      }
+    }
+    if (!p) return 0;
+    for (size_t i = 0; i < n; i++)
+      for (size_t j = 0; j < m; j++)
+	p[i][j] = (int64_t)m1->data[i*m1->tda+j];
     return p;
   }
   default:
@@ -4566,6 +4643,27 @@ static void *short_vector_to_matrix(pure_expr *x, void *q)
   }
 }
 
+static void *int64_vector_to_matrix(pure_expr *x, void *q)
+{
+  int64_t **p = (int64_t**)q;
+  if (!p) return 0;
+  switch (x->tag) {
+  case EXPR::IMATRIX: {
+    gsl_matrix_int *m1 = (gsl_matrix_int*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    if (n==0 || m==0) return p;
+    for (size_t i = 0; i < n; i++) {
+      for (size_t j = 0; j < m; j++)
+	m1->data[i*m1->tda+j] = (int)p[i][j];
+      free(p[i]);
+    }
+    return p;
+  }
+  default:
+    return 0;
+  }
+}
+
 static void *float_vector_to_matrix(pure_expr *x, void *q)
 {
   float **p = (float**)q;
@@ -4633,6 +4731,13 @@ void *pure_get_matrix_vector_int(pure_expr *x)
   return v;
 }
 
+void *pure_get_matrix_vector_int64(pure_expr *x)
+{
+  void *v = matrix_to_int64_vector(x);
+  cvector_temps.push_back(cvector_data(x, v, cvd_int64, true));
+  return v;
+}
+
 void *pure_get_matrix_vector_float(pure_expr *x)
 {
   void *v = matrix_to_float_vector(x);
@@ -4659,6 +4764,7 @@ void pure_free_cvectors()
 	  case cvd_char: char_vector_to_matrix(t->x, t->v, t->w); break;
 	  case cvd_byte: byte_vector_to_matrix(t->x, t->v); break;
 	  case cvd_short: short_vector_to_matrix(t->x, t->v); break;
+	  case cvd_int64: int64_vector_to_matrix(t->x, t->v); break;
 	  case cvd_float: float_vector_to_matrix(t->x, t->v); break;
 	  default: break;
 	  }
@@ -4667,6 +4773,7 @@ void pure_free_cvectors()
 	  case cvd_byte: byte_array_to_matrix(t->x, t->v); break;
 	  case cvd_short: short_array_to_matrix(t->x, t->v); break;
 	  case cvd_int: int_array_to_matrix(t->x, t->v); break;
+	  case cvd_int64: int64_array_to_matrix(t->x, t->v); break;
 	  case cvd_float: float_array_to_matrix(t->x, t->v); break;
 	  case cvd_double: double_array_to_matrix(t->x, t->v); break;
 	  default: break;

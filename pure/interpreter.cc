@@ -580,6 +580,8 @@ void interpreter::init()
 		 "pure_get_matrix_data_short", "void*", 1, "expr*");
   declare_extern((void*)pure_get_matrix_data_int,
 		 "pure_get_matrix_data_int", "void*", 1, "expr*");
+  declare_extern((void*)pure_get_matrix_data_int64,
+		 "pure_get_matrix_data_int64", "void*", 1, "expr*");
   declare_extern((void*)pure_get_matrix_data_float,
 		 "pure_get_matrix_data_float", "void*", 1, "expr*");
   declare_extern((void*)pure_get_matrix_data_double,
@@ -594,6 +596,8 @@ void interpreter::init()
 		 "pure_get_matrix_vector_short", "void*", 1, "expr*");
   declare_extern((void*)pure_get_matrix_vector_int,
 		 "pure_get_matrix_vector_int", "void*", 1, "expr*");
+  declare_extern((void*)pure_get_matrix_vector_int64,
+		 "pure_get_matrix_vector_int64", "void*", 1, "expr*");
   declare_extern((void*)pure_get_matrix_vector_float,
 		 "pure_get_matrix_vector_float", "void*", 1, "expr*");
   declare_extern((void*)pure_get_matrix_vector_double,
@@ -8302,6 +8306,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	unboxed[i] = b.CreateBitCast(unboxed[i], type);
     } else if (argt[i] == PointerType::get(int16_type(), 0) ||
 	       argt[i] == PointerType::get(int32_type(), 0) ||
+	       argt[i] == PointerType::get(int64_type(), 0) ||
 	       argt[i] == PointerType::get(double_type(), 0) ||
 	       argt[i] == PointerType::get(float_type(), 0)) {
       /* These get special treatment, because we also allow numeric matrices
@@ -8309,6 +8314,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       const Type *type = gt->getParamType(i);
       bool is_short = type == PointerType::get(int16_type(), 0);
       bool is_int = type == PointerType::get(int32_type(), 0);
+      bool is_int64 = type == PointerType::get(int64_type(), 0);
       bool is_float = type == PointerType::get(float_type(), 0);
       bool is_double = type == PointerType::get(double_type(), 0);
       BasicBlock *ptrbb = basic_block("ptr");
@@ -8320,11 +8326,12 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       Function *get_fun =
 	is_short ? module->getFunction("pure_get_matrix_data_short") :
 	is_int ? module->getFunction("pure_get_matrix_data_int") :
+	is_int64 ? module->getFunction("pure_get_matrix_data_int64") :
 	is_float ? module->getFunction("pure_get_matrix_data_float") :
 	is_double ? module->getFunction("pure_get_matrix_data_double") :
 	0;
       sw->addCase(SInt(EXPR::PTR), ptrbb);
-      if (is_short || is_int)
+      if (is_short || is_int || is_int64)
 	sw->addCase(SInt(EXPR::IMATRIX), matrixbb);
       else if (is_float || is_double) {
 	sw->addCase(SInt(EXPR::DMATRIX), matrixbb);
@@ -8424,6 +8431,8 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	       argt[i] ==
 	       PointerType::get(PointerType::get(int32_type(), 0), 0) ||
 	       argt[i] ==
+	       PointerType::get(PointerType::get(int64_type(), 0), 0) ||
+	       argt[i] ==
 	       PointerType::get(PointerType::get(double_type(), 0), 0) ||
 	       argt[i] ==
 	       PointerType::get(PointerType::get(float_type(), 0), 0)) {
@@ -8434,6 +8443,8 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	PointerType::get(PointerType::get(int16_type(), 0), 0);
       bool is_int = type ==
 	PointerType::get(PointerType::get(int32_type(), 0), 0);
+      bool is_int64 = type ==
+	PointerType::get(PointerType::get(int64_type(), 0), 0);
       bool is_float = type ==
 	PointerType::get(PointerType::get(float_type(), 0), 0);
       bool is_double = type ==
@@ -8447,11 +8458,12 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       Function *get_fun =
 	is_short ? module->getFunction("pure_get_matrix_vector_short") :
 	is_int ? module->getFunction("pure_get_matrix_vector_int") :
+	is_int64 ? module->getFunction("pure_get_matrix_vector_int64") :
 	is_float ? module->getFunction("pure_get_matrix_vector_float") :
 	is_double ? module->getFunction("pure_get_matrix_vector_double") :
 	0;
       sw->addCase(SInt(EXPR::PTR), ptrbb);
-      if (is_short || is_int)
+      if (is_short || is_int || is_int64)
 	sw->addCase(SInt(EXPR::IMATRIX), matrixbb);
       else if (is_float || is_double) {
 	sw->addCase(SInt(EXPR::DMATRIX), matrixbb);

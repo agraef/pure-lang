@@ -696,6 +696,7 @@ void pure_free_cvectors();
 void *pure_get_matrix_data_byte(pure_expr *x);
 void *pure_get_matrix_data_short(pure_expr *x);
 void *pure_get_matrix_data_int(pure_expr *x);
+void *pure_get_matrix_data_int64(pure_expr *x);
 void *pure_get_matrix_data_float(pure_expr *x);
 void *pure_get_matrix_data_double(pure_expr *x);
 
@@ -708,6 +709,7 @@ void *pure_get_matrix_data_double(pure_expr *x);
 void *pure_get_matrix_vector_byte(pure_expr *x);
 void *pure_get_matrix_vector_short(pure_expr *x);
 void *pure_get_matrix_vector_int(pure_expr *x);
+void *pure_get_matrix_vector_int64(pure_expr *x);
 void *pure_get_matrix_vector_float(pure_expr *x);
 void *pure_get_matrix_vector_double(pure_expr *x);
 
