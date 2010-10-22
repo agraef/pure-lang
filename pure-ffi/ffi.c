@@ -13,13 +13,11 @@
 /* Convenience macros to handle tagged pointers (new in Pure 0.45). */
 #define __pointer(ty, p) pure_tag(ty, pure_pointer(p))
 #define __check_tag(ty, x) pure_check_tag(ty, x)
-#define __get_tag(x) pure_get_tag(x)
 #define __tag(ty) pure_pointer_tag(#ty)
 #else
 /* For compatibility with older Pure versions. */
 #define __pointer(ty, p) pure_pointer(p)
 #define __check_tag(ty, x) 1
-#define __get_tag(x) 0
 #define __tag(ty) 0
 #endif
 
@@ -560,28 +558,25 @@ ffi_type **ffi_typevect(pure_expr *types)
   size_t i, j, n;
   pure_expr **xs;
   if (pure_is_tuplev(types, &n, &xs)) {
-    int32_t tag, ttag;
+    int ty = __tag(ffi_type*);
     if (n == 0) {
       v = malloc(sizeof(ffi_type*));
       assert(v != 0);
       v[0] = 0;
       return v;
     }
-    tag = xs[0]->tag; ttag = __get_tag(xs[0]);
-    for (i = 1; i < n; i++)
-      if (xs[i]->tag != tag || !__check_tag(ttag, xs[i]))
+    for (i = 0; i < n; i++)
+      if (!pure_is_pointer(xs[i], 0) || !__check_tag(ty, xs[i]))
 	goto err;
   } else
     return 0;
-  if (pure_is_pointer(xs[0], &p)) {
-    v = malloc((n+1)*sizeof(ffi_type*));
-    assert(v != 0);
-    v[n] = 0;
-    v[0] = (ffi_type*)p;
-    for (i = 1; i < n; i++) {
-      pure_is_pointer(xs[i], &p);
-      v[i] = (ffi_type*)p;
-    }
+  v = malloc((n+1)*sizeof(ffi_type*));
+  assert(v != 0);
+  v[n] = 0;
+  v[0] = (ffi_type*)p;
+  for (i = 0; i < n; i++) {
+    pure_is_pointer(xs[i], &p);
+    v[i] = (ffi_type*)p;
   }
  err:
   free(xs);
