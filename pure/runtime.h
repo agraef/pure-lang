@@ -682,14 +682,14 @@ void *pure_get_matrix_data(pure_expr *x);
 
 /* These work like pure_get_matrix_data above, but do the necessary
    conversions to and from conformant target data types (char <-> int, short
-   <-> int, float <-> double) on the fly, copying the data to temporary
-   storage if necessary. These operations maintain the illusion that the
-   matrices are in contiguous storage (copying the data to temporary storage
-   if the original matrix has a stride which doesn't match its row length) and
-   that (in spite of the conversions) the matrices are passed per reference so
-   that their data can be modified in-place; results are converted back to the
-   matrix as necessary. pure_free_cvectors is to be called afterwards to free
-   the temporary storage and convert back results. */
+   <-> int, int64_t <-> int, float <-> double) on the fly, copying the data to
+   temporary storage if necessary. These operations maintain the illusion that
+   the matrices are in contiguous storage (copying the data to temporary
+   storage if the original matrix has a stride which doesn't match its row
+   length) and that (in spite of the conversions) the matrices are passed per
+   reference so that their data can be modified in-place; results are
+   converted back to the matrix as necessary. pure_free_cvectors is to be
+   called afterwards to free the temporary storage and convert back results. */
 
 void pure_free_cvectors();
 
