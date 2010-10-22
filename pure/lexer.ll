@@ -1776,6 +1776,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	    xt != interp.externals.end()) {
 	  const ExternInfo& info = xt->second;
 	  sout << decl_str(interp, sym);
+	  if (sym.priv) sout << "private ";
 	  sout << info << ";";
 	  if ((!sflag||lflag) && dflag) {
 	    if (!sflag) sout << '\n';
@@ -1820,6 +1821,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	  sout << decl_str(interp, sym);
 	  if (fflag && xt != interp.externals.end()) {
 	    const ExternInfo& info = xt->second;
+	    if (sym.priv) sout << "private ";
 	    sout << info << ";";
 	    if ((!sflag||lflag) && dflag) {
 	      if (!sflag) sout << '\n';
@@ -2082,6 +2084,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	    xt != interp.externals.end()) {
 	  fout << decl_str(interp, sym);
 	  const ExternInfo& info = xt->second;
+	  if (sym.priv) fout << "private ";
 	  fout << info << ";\n";
 	} else if (jt != interp.globenv.end() &&
 		   jt->second.t == env_info::fvar) {
@@ -2097,6 +2100,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	  fout << decl_str(interp, sym);
 	  if (fflag && xt != interp.externals.end()) {
 	    const ExternInfo& info = xt->second;
+	    if (sym.priv) fout << "private ";
 	    fout << info << ";\n";
 	  }
 	  if (mflag && kt != interp.macenv.end()) {
