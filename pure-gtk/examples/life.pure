@@ -59,11 +59,24 @@ end;
 
 /* Graphics output. */
 
+public animate box clr; // defined below
+
+// Some colors to be used with the drawing operations below.
+const black = (0.0,0.0,0.0);
+const white = (1.0,1.0,1.0);
+const red   = (1.0,0.0,0.0);
+const green = (0.0,1.0,0.0);
+const blue  = (0.0,0.0,1.0);
+
+// Preferred foreground and background colors, adjust as needed.
+//let fg:bg = black:white;
+let fg:bg = green:black;
+
 life (n,m) b = animate "Pure LIFE" draw (next (n,m)) 100 b with
   draw d@(cr,w::int,h::int) b = () when
     sx::double = w/n; sy::double = h/n;
     clr d; do draw_cell b with
-      draw_cell (x::int,y::int) = box d black (x*sx,y*sy) (sx,sy);
+      draw_cell (x::int,y::int) = box d fg (x*sx,y*sy) (sx,sy);
     end;
   end;
 end;
@@ -74,12 +87,17 @@ end;
 
 using ffi, gtk, glib, cairo;
 
+const GTK_WINDOW = pointer_cast $ pointer_tag "GtkWindow*";
+const GTK_CONTAINER = pointer_cast $ pointer_tag "GtkContainer*";
+const GTK_WIDGET = pointer_cast $ pointer_tag "GtkWidget*";
+const GDK_DRAWABLE = pointer_cast $ pointer_tag "GdkDrawable*";
+
 // Initialize. This also passes arguments to GTK.
-let argcp, argvp = {argc}, byte_cstring_pointer argv;
-gtk::init argcp (ptr argvp) with
-  // Create a reference to a pointer value.
-  ptr p::pointer = sentry free q when
-    q = malloc SIZEOF_POINTER; put_pointer q p;
+gtk::init argcp argvp when
+  argcp, argvp = {argc}, ptr (byte_cstring_pointer argv) with
+    ptr p::pointer = pointer_cast (pointer_type p+"*") q when
+      q = malloc SIZEOF_POINTER; put_pointer q $ clear_sentry p;
+    end;
   end;
 end;
 
@@ -117,8 +135,8 @@ animate title draw next delta data = () when
 
   // Create the main window and define some window properties.
   window = gtk::window_new gtk::WINDOW_TOPLEVEL;
-  gtk::window_set_title window title;
-  gtk::window_set_default_size window 400 400;
+  gtk::window_set_title (GTK_WINDOW window) title;
+  gtk::window_set_default_size (GTK_WINDOW window) 400 400;
 
   // Create the callbacks.
   destroy_cb = callback destroy;
@@ -154,8 +172,8 @@ end with
   destroy (widget, data) = gtk::main_quit;
 
   expose_event (widget, event, _) = false when
-    win = gtk::widget_get_window widget;
-    cr = gdk::cairo_create win;
+    win = gtk::widget_get_window (GTK_WIDGET widget);
+    cr = gdk::cairo_create (GDK_DRAWABLE win);
     w,h = winsize widget;
     draw (cr,w,h) (get data);
     cairo::destroy cr;
@@ -164,13 +182,13 @@ end with
   timer_event widget = true when
     put data (next (get data));
     w,h = winsize widget;
-    gtk::widget_queue_draw_area widget 0 0 w h;
+    gtk::widget_queue_draw_area (GTK_WIDGET widget) 0 0 w h;
   end;
 
   // Get the dimensions of a Gtk window
   winsize widget = w!0,h!0 when
     w = {0}; h = {0};
-    gtk::window_get_size widget (pointer w) (pointer h);
+    gtk::window_get_size (GTK_WINDOW widget) w h;
   end;
 end when
   // Store the callback data in a reference so that we can update it during
@@ -178,15 +196,8 @@ end when
   data = ref data;
 end;
 
-// Some colors to be used with the drawing operations below.
-let black = (0.0,0.0,0.0);
-let white = (1.0,1.0,1.0);
-let red   = (1.0,0.0,0.0);
-let green = (0.0,1.0,0.0);
-let blue  = (0.0,0.0,1.0);
-
 // Clear the drawing area.
-clr d@(cr,w,h) = box d white (0.0,0.0) (double w,double h);
+clr d@(cr,w,h) = box d bg (0.0,0.0) (double w,double h);
 
 // Draw a filled rectangle with the given color and dimensions.
 box (cr,_,_) (r,g,b) (x,y) (w,h) = () when

@@ -6,13 +6,13 @@
 using ffi, gtk, glib;
 
 // Convenience function to create a reference to a pointer value.
-ptr p::pointer = sentry free q when
-  q = malloc SIZEOF_POINTER; put_pointer q p;
+ptr p::pointer = pointer_cast (pointer_type p+"*") q when
+  q = malloc SIZEOF_POINTER; put_pointer q $ clear_sentry p;
 end;
 
 // Initialize. This also passes arguments to GTK.
-let argcp, argvp = {argc}, byte_cstring_pointer argv;
-gtk::init argcp (ptr argvp);
+let argcp, argvp = {argc}, ptr (byte_cstring_pointer argv);
+gtk::init argcp argvp;
 
 // Convenience macro to connect a signal to a callback.
 def signal_connect instance signal c_handler data =
@@ -34,18 +34,23 @@ let delete_cb = event_callback delete_event;
 let destroy_cb = callback destroy;
 let hello_cb = callback hello;
 
+// As of Pure 0.45, the following type casts are needed (these are defined as
+// macros in the Gtk headers, but are not included in the wrapper).
+const GTK_WINDOW = pointer_cast $ pointer_tag "GtkWindow*";
+const GTK_CONTAINER = pointer_cast $ pointer_tag "GtkContainer*";
+
 // The main routine.
 main = gtk::main // enter the main loop
 when
   // Create the main window and define some window properties.
   window = gtk::window_new gtk::WINDOW_TOPLEVEL;
-  gtk::window_set_title window "Hello - Pure GTK Example";
-  gtk::window_set_default_size window 300 100;
-  gtk::container_set_border_width window 10;
+  gtk::window_set_title (GTK_WINDOW window) "Hello - Pure GTK Example";
+  gtk::window_set_default_size (GTK_WINDOW window) 300 100;
+  gtk::container_set_border_width (GTK_CONTAINER window) 10;
 
   // Create a button and add it to the main window.
   button = gtk::button_new_with_mnemonic "_Hello World";
-  gtk::container_add window button;
+  gtk::container_add (GTK_CONTAINER window) button;
 
   // Connect the callbacks to the corresponding signals.
   signal_connect window "delete_event" delete_cb NULL;

@@ -6,11 +6,6 @@ using ffi, gtk, glib, system;
 
 /* Helper functions. */
 
-// Create a pointer to a pointer value.
-g_pointer p::pointer = sentry glib::free q when
-  q = glib::malloc SIZEOF_POINTER; put_pointer q p;
-end;
-
 // Grab a malloced string from GTK without leaking memory.
 g_string s::pointer = cstring_dup $ sentry glib::free s;
 
@@ -27,26 +22,35 @@ def event_callback cb = fclos cb FFI_DEFAULT_ABI sint_t
    expects a string in UTF-8 encoding, which is what Pure already uses
    internally, so we don't want to convert that argument either. */
 
-if index sysinfo "mingw">=0 then
+index sysinfo "mingw"<0 ||
 // On Windows, we need this dll to get the following functions.
-eval "using \"lib:libgtk-win32-2.0-0\";" else ();
+eval "using \"lib:libgtk-win32-2.0-0\";";
 
 extern void *gtk_file_chooser_get_filename(GtkFileChooser*);
 extern void gtk_text_buffer_set_text(GtkTextBuffer*, void*, int);
 
 /* Initialize. This also passes arguments to GTK. */
 
-let argcp, argvp = {argc}, byte_cstring_pointer argv;
-gtk::init argcp (g_pointer argvp);
+gtk::init argcp argvp when
+  argcp, argvp = {argc}, ptr (byte_cstring_pointer argv) with
+    ptr p::pointer = pointer_cast (pointer_type p+"*") q when
+      q = malloc SIZEOF_POINTER; put_pointer q $ clear_sentry p;
+    end;
+  end;
+end;
 
 /* Callback definitions. */
+
+const GTK_WIDGET = pointer_cast $ pointer_tag "GtkWidget*";
+const GTK_TEXT_VIEW = pointer_cast $ pointer_tag "GtkTextView*";
+const GTK_FILE_CHOOSER = pointer_cast $ pointer_tag "GtkFileChooser*";
 
 // main window 'destroy' signal
 destroy (widget, data) = gtk::main_quit;
 
 // new button 'clicked'
 new (widget, data) = () when
-  buffer = gtk::text_view_get_buffer widget;
+  buffer = gtk::text_view_get_buffer (GTK_TEXT_VIEW widget);
   gtk::text_buffer_set_text buffer "" (-1);
 end;
 
@@ -54,17 +58,16 @@ end;
 // NOTE: GTK+ 2.15.4 is needed to make this work properly. Earlier versions
 // also emit this signal when the dialog is canceled.
 file (widget, data) = () when
-  fname = g_string $ gtk_file_chooser_get_filename data;
+  fname = g_string $ gtk_file_chooser_get_filename (GTK_FILE_CHOOSER data);
   text = fget (fopen fname "r");
-  buffer = gtk::text_view_get_buffer widget;
+  buffer = gtk::text_view_get_buffer (GTK_TEXT_VIEW widget);
   gtk_text_buffer_set_text buffer text (-1);
 end;
 
 // quit button 'clicked'
-quitb (widget, data) = gtk::widget_destroy widget;
+quitb (widget, data) = gtk::widget_destroy (GTK_WIDGET widget);
 
 // Turn these into C callbacks so that GTK can call them.
-let delete_cb = event_callback delete_event;
 let destroy_cb = callback destroy;
 let new_cb = callback new;
 let file_cb = callback file;
@@ -100,7 +103,7 @@ when
   gtk::builder_connect_signals_full builder connect_cb NULL;
   // get the main window and show it
   window = gtk::builder_get_object builder "window1";
-  gtk::widget_show window;
+  gtk::widget_show (GTK_WIDGET window);
 end;
 
 if compiling then () else main;
