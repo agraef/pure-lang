@@ -18,6 +18,9 @@ Pm::MessageStatus msg::int = msg and 0xff;
 Pm::MessageData1 msg::int = (msg>>8) and 0xff;
 Pm::MessageData2 msg::int = (msg>>16) and 0xff;
 
+/* Pointer tag for the PmEvent* data type. */
+const Pm::Event = pointer_tag "PmEvent*";
+
 /*****************************************************************************/
 
 /* High-level convenience functions. These are dumbed-down, more Pure-friendly
@@ -94,7 +97,7 @@ midi::open_input id::int bufsize::int =
     0 = sentry midi::close $ get_pointer stream;
     res = res;
   end when
-    stream = cooked $ malloc SIZEOF_POINTER;
+    stream = ptrtag __C::voidpp_t $ cooked $ malloc SIZEOF_POINTER;
   end;
 
 /* Open a stream for output. Here the bufsize arguments determines how many
@@ -113,7 +116,7 @@ midi::open_output id::int bufsize::int latency::int =
     0 = sentry midi::close $ get_pointer stream;
     res = res;
   end when
-    stream = cooked $ malloc SIZEOF_POINTER;
+    stream = ptrtag __C::voidpp_t $ cooked $ malloc SIZEOF_POINTER;
   end;
 
 /* Close a stream. This is also done automatically when a stream object is
@@ -177,6 +180,8 @@ midi::set_channel_mask stream::pointer channels::int =
    status byte (0xf0), and the last message ends with the EOX (0xf7) status
    byte. (Again, any surplus bytes are filled with zeros.) */
 
+def midi::event buf = ptrtag Pm::Event $ pointer buf;
+
 /* Check whether an input message is currently available. This returns either
    true, false or a PortMidi error code. */
 
@@ -188,7 +193,7 @@ midi::poll stream::pointer = Pm::Poll stream;
    non-blocking; it returns zero if no message is currently available. */
 
 midi::read stream::pointer buf::matrix =
-  Pm::Read stream buf (#buf>>1) if imatrixp buf;
+  Pm::Read stream (midi::event buf) (#buf>>1) if imatrixp buf;
 
 /* Output MIDI events from a buffer. Zero (a.k.a. Pm::NoError) is returned if
    successful, otherwise the return code denotes an error which can be decoded
@@ -196,7 +201,7 @@ midi::read stream::pointer buf::matrix =
    after scheduling events to be delivered later. */
 
 midi::write stream::pointer buf::matrix =
-  Pm::Write stream buf (#buf>>1) if imatrixp buf;
+  Pm::Write stream (midi::event buf) (#buf>>1) if imatrixp buf;
 
 /* Convenience functions to read and write single MIDI messages. Here, a MIDI
    message is represented using Pure byte vectors, as given by midi::bytes. */
@@ -211,7 +216,7 @@ midi::write stream::pointer buf::matrix =
    EOX while reading a sysex message, it will simply give up and return what's
    been read. (In this case, the next message will be lost, so beware.) */
 
-midi::readmsg stream::pointer = case Pm::Read stream buf 1 of
+midi::readmsg stream::pointer = case Pm::Read stream (midi::event buf) 1 of
   0 = midi::sleep 1 $$ midi::readmsg stream;
   1 = if data!0 == 0xf0 then read_sysex time data [] else time, data when
         msg, time = buf!0, buf!1;
@@ -226,7 +231,7 @@ midi::readmsg stream::pointer = case Pm::Read stream buf 1 of
 	  = read_sysex time next_sysex (data:parts); // keep reading
 	// Grab the next part of the sysex message.
 	next_sysex
-	  = case Pm::Read stream buf 1 of
+	  = case Pm::Read stream (midi::event buf) 1 of
   	      0 = midi::sleep 1 $$ next_sysex;
 	      1 = midi::bytes msg when msg,_ = buf!0, buf!1 end;
 	      ret = ret;
@@ -247,7 +252,7 @@ midi::writemsg stream::pointer time::int data::matrix =
 
 midi::writemsg stream::pointer time::int data::matrix =
   Pm::WriteSysEx stream time msg when
-    msg = cooked $ byte_pointer NULL data;
+    msg = ptrtag __C::charp_t $ cooked $ byte_pointer NULL data;
   end if imatrixp data && ~null data && data!0==0xf0;
 
 /*****************************************************************************/

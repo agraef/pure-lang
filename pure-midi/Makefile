@@ -83,17 +83,10 @@ generate:
 	rm -f portmidi.pure
 	make portmidi.pure
 
-# NOTE: Unfortunately, portmidi.h declares Pm_WriteSysEx with an unsigned
-# char* in the last argument, which we really want to be a void* in Pure. We
-# fix this on the fly.
-
 portmidi.pure: portmidi.h porttime.h pmdev.h
-	pure-gen -m Pm -p Pm -sportmidi.h:: portmidi.h -lpmlib -o portmidi.orig
-	pure-gen -N -m Pt -p Pt -sporttime.h:: porttime.h -o portmidi.orig
-	pure-gen -N -m midi -p pm -spmdev.h:: pmdev.h -o portmidi.orig
-# Fix up the botched Pm_WriteSysEx prototype.
-	sed -e 's/Pm_WriteSysEx(void\*, int, char\*)/Pm_WriteSysEx(void\*, int, void\*)/' < portmidi.orig > $@
-	rm -f portmidi.orig
+	pure-gen -m Pm -p Pm -sportmidi.h:: portmidi.h -lpmlib -o $@
+	pure-gen -N -m Pt -p Pt -sporttime.h:: porttime.h -o $@
+	pure-gen -N -m midi -p pm -spmdev.h:: pmdev.h -o $@
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
