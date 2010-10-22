@@ -3554,20 +3554,21 @@ Functions`_ sections in the `Pure Library Manual`_ for details.
 
 Numeric pointer conversions (input only):
 
-* ``char*``, ``short*``, ``int*``, ``float*``, ``double*`` can be used to pass
-  numeric matrices as C vectors. This kind of conversion passes just the
-  matrix data (not the GSL matrix structure, as the ``dmatrix*`` et al
-  conversions do) and does conversions between integer or floating point data
-  of different sizes on the fly. You can either pass an int matrix as a
-  ``char*``, ``short*`` or ``int*`` argument, or a double or complex matrix as
-  a ``float*`` or ``double*`` argument (complex values are then represented as
-  two separate double numbers, first the real, then the imaginary part, for
-  each matrix element).
+* ``char*``, ``short*``, ``int*``, ``int64*``, ``float*``, ``double*`` can be
+  used to pass numeric matrices as C vectors. This kind of conversion passes
+  just the matrix data (not the GSL matrix structure, as the ``dmatrix*`` et
+  al conversions do) and does conversions between integer or floating point
+  data of different sizes on the fly. You can either pass an int matrix as a
+  ``char*``, ``short*`` ``int*`` or ``int64*`` argument, or a double or
+  complex matrix as a ``float*`` or ``double*`` argument (complex values are
+  then represented as two separate double numbers, first the real, then the
+  imaginary part, for each matrix element).
 
-* ``char**``, ``short**``, ``int**``, ``float**``, ``double**`` provide yet
-  another way to pass numeric matrix arguments. This works analogously to the
-  numeric vector conversions above, but here a temporary C vector of pointers
-  is passed to the C function, whose elements point to the rows of the matrix.
+* ``char**``, ``short**``, ``int**``, ``int64**``, ``float**``, ``double**``
+  provide yet another way to pass numeric matrix arguments. This works
+  analogously to the numeric vector conversions above, but here a temporary C
+  vector of pointers is passed to the C function, whose elements point to the
+  rows of the matrix.
 
 Argv-style conversions (input only):
 
@@ -3624,12 +3625,13 @@ ready-made GSL interface providing access to all of GSL's numeric functions is
 in the works; please check the Pure website for details.
 
 For convenience, it is also possible to pass any kind of numeric matrix for a
-``char*``, ``short*``, ``int*``, ``float*`` or ``double*`` parameter. This
-requires that the pointer and the matrix type match up; conversions between
-``char``, ``short`` and ``int`` data and, likewise, between ``float`` and
-``double`` are handled automatically, however. For instance, here is how you
-can call the ``puts`` routine from the C library with an int matrix encoding
-the string ``"Hello, world!"`` as byte values (ASCII codes)::
+``char*``, ``short*``, ``int*``, ``int64*``, ``float*`` or ``double*``
+parameter. This requires that the pointer and the matrix type match up;
+conversions between ``char``, ``short``, ``int64`` and ``int`` data and,
+likewise, between ``float`` and ``double`` are handled automatically,
+however. For instance, here is how you can call the ``puts`` routine from the
+C library with an int matrix encoding the string ``"Hello, world!"`` as byte
+values (ASCII codes)::
 
   > extern int puts(char*);
   > puts {72,101,108,108,111,44,32,119,111,114,108,100,33,0};
@@ -3637,12 +3639,12 @@ the string ``"Hello, world!"`` as byte values (ASCII codes)::
   14
 
 Pure 0.45 and later also support ``char**``, ``short**``, ``int**``,
-``float**`` and ``double**`` parameters which encode a matrix as a vector of
-row pointers instead. This kind of matrix representation is often found in
-audio and video processing software (where the rows of the matrix might denote
-different audio channels, display lines or video frames), but it's also fairly
-convenient to do any kind of matrix processing in C. For instance, here's how
-to do matrix multiplication (the naive algorithm)::
+``int64**``, ``float**`` and ``double**`` parameters which encode a matrix as
+a vector of row pointers instead. This kind of matrix representation is often
+found in audio and video processing software (where the rows of the matrix
+might denote different audio channels, display lines or video frames), but
+it's also fairly convenient to do any kind of matrix processing in C. For
+instance, here's how to do matrix multiplication (the naive algorithm)::
 
   void matmult(int n, int l, int m, double **x, double **y, double **z)
   {

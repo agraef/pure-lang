@@ -6,7 +6,7 @@
 <meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
 <title>The Pure Manual</title>
 <meta name="author" content="Albert Gräf &lt;Dr.Graef&#64;t-online.de&gt;" />
-<meta name="date" content="2010-10-22" />
+<meta name="date" content="2010-10-23" />
 <style type="text/css">
 
 /*
@@ -294,7 +294,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Albert Gräf &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-10-22</td></tr>
+<td>2010-10-23</td></tr>
 </tbody>
 </table>
 <!-- Note: This document is formatted using docutils. The Makefile has rules -->
@@ -3710,19 +3710,20 @@ routines to do this, please see the <a class="reference external" href="purelib.
 Functions</a> sections in the <a class="reference external" href="purelib.html">Pure Library Manual</a> for details.</p>
 <p>Numeric pointer conversions (input only):</p>
 <ul class="simple">
-<li><tt class="docutils literal"><span class="pre">char*</span></tt>, <tt class="docutils literal"><span class="pre">short*</span></tt>, <tt class="docutils literal"><span class="pre">int*</span></tt>, <tt class="docutils literal"><span class="pre">float*</span></tt>, <tt class="docutils literal"><span class="pre">double*</span></tt> can be used to pass
-numeric matrices as C vectors. This kind of conversion passes just the
-matrix data (not the GSL matrix structure, as the <tt class="docutils literal"><span class="pre">dmatrix*</span></tt> et al
-conversions do) and does conversions between integer or floating point data
-of different sizes on the fly. You can either pass an int matrix as a
-<tt class="docutils literal"><span class="pre">char*</span></tt>, <tt class="docutils literal"><span class="pre">short*</span></tt> or <tt class="docutils literal"><span class="pre">int*</span></tt> argument, or a double or complex matrix as
-a <tt class="docutils literal"><span class="pre">float*</span></tt> or <tt class="docutils literal"><span class="pre">double*</span></tt> argument (complex values are then represented as
-two separate double numbers, first the real, then the imaginary part, for
-each matrix element).</li>
-<li><tt class="docutils literal"><span class="pre">char**</span></tt>, <tt class="docutils literal"><span class="pre">short**</span></tt>, <tt class="docutils literal"><span class="pre">int**</span></tt>, <tt class="docutils literal"><span class="pre">float**</span></tt>, <tt class="docutils literal"><span class="pre">double**</span></tt> provide yet
-another way to pass numeric matrix arguments. This works analogously to the
-numeric vector conversions above, but here a temporary C vector of pointers
-is passed to the C function, whose elements point to the rows of the matrix.</li>
+<li><tt class="docutils literal"><span class="pre">char*</span></tt>, <tt class="docutils literal"><span class="pre">short*</span></tt>, <tt class="docutils literal"><span class="pre">int*</span></tt>, <tt class="docutils literal"><span class="pre">int64*</span></tt>, <tt class="docutils literal"><span class="pre">float*</span></tt>, <tt class="docutils literal"><span class="pre">double*</span></tt> can be
+used to pass numeric matrices as C vectors. This kind of conversion passes
+just the matrix data (not the GSL matrix structure, as the <tt class="docutils literal"><span class="pre">dmatrix*</span></tt> et
+al conversions do) and does conversions between integer or floating point
+data of different sizes on the fly. You can either pass an int matrix as a
+<tt class="docutils literal"><span class="pre">char*</span></tt>, <tt class="docutils literal"><span class="pre">short*</span></tt> <tt class="docutils literal"><span class="pre">int*</span></tt> or <tt class="docutils literal"><span class="pre">int64*</span></tt> argument, or a double or
+complex matrix as a <tt class="docutils literal"><span class="pre">float*</span></tt> or <tt class="docutils literal"><span class="pre">double*</span></tt> argument (complex values are
+then represented as two separate double numbers, first the real, then the
+imaginary part, for each matrix element).</li>
+<li><tt class="docutils literal"><span class="pre">char**</span></tt>, <tt class="docutils literal"><span class="pre">short**</span></tt>, <tt class="docutils literal"><span class="pre">int**</span></tt>, <tt class="docutils literal"><span class="pre">int64**</span></tt>, <tt class="docutils literal"><span class="pre">float**</span></tt>, <tt class="docutils literal"><span class="pre">double**</span></tt>
+provide yet another way to pass numeric matrix arguments. This works
+analogously to the numeric vector conversions above, but here a temporary C
+vector of pointers is passed to the C function, whose elements point to the
+rows of the matrix.</li>
 </ul>
 <p>Argv-style conversions (input only):</p>
 <ul class="simple">
@@ -3776,12 +3777,13 @@ matrix addition function in a way that preserves value semantics:</p>
 ready-made GSL interface providing access to all of GSL's numeric functions is
 in the works; please check the Pure website for details.</p>
 <p>For convenience, it is also possible to pass any kind of numeric matrix for a
-<tt class="docutils literal"><span class="pre">char*</span></tt>, <tt class="docutils literal"><span class="pre">short*</span></tt>, <tt class="docutils literal"><span class="pre">int*</span></tt>, <tt class="docutils literal"><span class="pre">float*</span></tt> or <tt class="docutils literal"><span class="pre">double*</span></tt> parameter. This
-requires that the pointer and the matrix type match up; conversions between
-<tt class="docutils literal"><span class="pre">char</span></tt>, <tt class="docutils literal"><span class="pre">short</span></tt> and <tt class="docutils literal"><span class="pre">int</span></tt> data and, likewise, between <tt class="docutils literal"><span class="pre">float</span></tt> and
-<tt class="docutils literal"><span class="pre">double</span></tt> are handled automatically, however. For instance, here is how you
-can call the <tt class="docutils literal"><span class="pre">puts</span></tt> routine from the C library with an int matrix encoding
-the string <tt class="docutils literal"><span class="pre">&quot;Hello,</span> <span class="pre">world!&quot;</span></tt> as byte values (ASCII codes):</p>
+<tt class="docutils literal"><span class="pre">char*</span></tt>, <tt class="docutils literal"><span class="pre">short*</span></tt>, <tt class="docutils literal"><span class="pre">int*</span></tt>, <tt class="docutils literal"><span class="pre">int64*</span></tt>, <tt class="docutils literal"><span class="pre">float*</span></tt> or <tt class="docutils literal"><span class="pre">double*</span></tt>
+parameter. This requires that the pointer and the matrix type match up;
+conversions between <tt class="docutils literal"><span class="pre">char</span></tt>, <tt class="docutils literal"><span class="pre">short</span></tt>, <tt class="docutils literal"><span class="pre">int64</span></tt> and <tt class="docutils literal"><span class="pre">int</span></tt> data and,
+likewise, between <tt class="docutils literal"><span class="pre">float</span></tt> and <tt class="docutils literal"><span class="pre">double</span></tt> are handled automatically,
+however. For instance, here is how you can call the <tt class="docutils literal"><span class="pre">puts</span></tt> routine from the
+C library with an int matrix encoding the string <tt class="docutils literal"><span class="pre">&quot;Hello,</span> <span class="pre">world!&quot;</span></tt> as byte
+values (ASCII codes):</p>
 <pre class="literal-block">
 &gt; extern int puts(char*);
 &gt; puts {72,101,108,108,111,44,32,119,111,114,108,100,33,0};
@@ -3789,12 +3791,12 @@ Hello, world!
 14
 </pre>
 <p>Pure 0.45 and later also support <tt class="docutils literal"><span class="pre">char**</span></tt>, <tt class="docutils literal"><span class="pre">short**</span></tt>, <tt class="docutils literal"><span class="pre">int**</span></tt>,
-<tt class="docutils literal"><span class="pre">float**</span></tt> and <tt class="docutils literal"><span class="pre">double**</span></tt> parameters which encode a matrix as a vector of
-row pointers instead. This kind of matrix representation is often found in
-audio and video processing software (where the rows of the matrix might denote
-different audio channels, display lines or video frames), but it's also fairly
-convenient to do any kind of matrix processing in C. For instance, here's how
-to do matrix multiplication (the naive algorithm):</p>
+<tt class="docutils literal"><span class="pre">int64**</span></tt>, <tt class="docutils literal"><span class="pre">float**</span></tt> and <tt class="docutils literal"><span class="pre">double**</span></tt> parameters which encode a matrix as
+a vector of row pointers instead. This kind of matrix representation is often
+found in audio and video processing software (where the rows of the matrix
+might denote different audio channels, display lines or video frames), but
+it's also fairly convenient to do any kind of matrix processing in C. For
+instance, here's how to do matrix multiplication (the naive algorithm):</p>
 <pre class="literal-block">
 void matmult(int n, int l, int m, double **x, double **y, double **z)
 {
