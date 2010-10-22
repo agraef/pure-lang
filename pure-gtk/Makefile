@@ -24,7 +24,7 @@ host = $(shell ./config.guess)
 DLL = .so
 shared = -shared
 
-PURE_COPTS=-I. -L.
+PURE_COPTS=-I.. -L..
 
 # Take care of some common systems.
 ifneq "$(findstring -mingw,$(host))" ""
@@ -95,7 +95,7 @@ generate:
 examples: $(examples)
 
 examples/%: examples/%.pure
-	pure $(PURE_COPTS) -c $< -o $@
+	(cd examples && pure $(PURE_COPTS) -c $(notdir $<) -o $(notdir $@))
 
 # Install targets.
 

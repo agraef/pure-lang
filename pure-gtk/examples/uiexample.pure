@@ -94,11 +94,15 @@ let connect_cb = fclos connect FFI_DEFAULT_ABI void_t
 
 /* Main function. */
 
+// We read the contents of the UI file into a string constant here, so that
+// the UI file isn't needed at runtime when the script is batch-compiled.
+const ui::string = fget $ fopen "uiexample.glade" "r";
+
 main = gtk::main // enter the main loop
 when
-  // read the application from the UI file
+  // create the application from the UI description
   builder = gtk::builder_new;
-  gtk::builder_add_from_file builder "uiexample.glade" NULL;
+  gtk::builder_add_from_string builder ui (-1) NULL;
   // connect signals
   gtk::builder_connect_signals_full builder connect_cb NULL;
   // get the main window and show it
