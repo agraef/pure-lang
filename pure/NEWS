@@ -1,9 +1,9 @@
 
 ** Pure 0.45 (in progress)
 
-This is mainly a maintenance release, which straightens out remaining quirks
-and adds missing features, mostly in the C interface. The most important
-user-visible changes are listed below.
+This release is mostly concerned with the C interface in general and the
+bitcode interface in particular, featuring many improvements and bugfixes in
+this area. The most important user-visible changes are listed below.
 
 * Improvements and bugfixes in the bitcode interface. In particular, bitcode
   modules can now be imported into different namespaces and can be made
@@ -22,7 +22,7 @@ user-visible changes are listed below.
 
 * New int** and double** conversions for matrices which generate a vector of
   row pointers on the fly. (This was already used in the Faust interface
-  anyway, but is now available for all applications.) For consistency, the
+  previously, but is now available for all applications.) For consistency, the
   related int* and double* conversions now also treat the matrices as
   reference arguments, so that they can be modified in-place. Moreover, the
   missing byte and long long vector conversions (int matrix to char* or
@@ -36,7 +36,8 @@ user-visible changes are listed below.
   keeps track of all C pointer types used in extern declarations. void* can
   still be used to pass any kind of pointer, but otherwise the pointer types
   will have to match when calling an external function (or you'll have to use
-  a type cast; operations for that are provided in the prelude).
+  a type cast; operations for that as well as runtime type information are
+  provided in the prelude).
 
   There's no doubt that this change will raise lots of backward compatibility
   issues. But with all the C library modules out there, checking pointers for
@@ -50,12 +51,14 @@ user-visible changes are listed below.
   expression node on 32 bit systems. Storage size on 64 bit systems is still
   the same, though.)
 
+Besides these changes, the interpreter also sports the following new features:
+
 * The new --eager pragma instructs the interpreter to compile a given function
   eagerly. This is particularly useful to avoid hiccups in realtime functions.
 
 * The interpreter can now do a "cold" restart (reloading all scripts) using
-  'run' without a script argument. You can also use this to quickly rerun the
-  interpreter with debugging enabled using 'run -g'.
+  'run' without a script argument. You can also employ this to quickly rerun
+  the interpreter with debugging enabled using 'run -g'.
 
 ** Pure 0.44 2010-10-01
 
