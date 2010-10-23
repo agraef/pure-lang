@@ -7597,9 +7597,9 @@ string mangle_type_name(string name)
 
 string interpreter::pointer_type_name(const Type *type)
 {
-  assert(type->isPointerTy());
+  assert(is_pointer_type(type));
   const Type *elem_type = type->getContainedType(0);
-  if (elem_type->isPointerTy()) {
+  if (is_pointer_type(elem_type)) {
     const Type *ty = elem_type->getContainedType(0);
     map<const Type*,type_map::iterator>::const_iterator it =
       pointer_type_of.find(ty);
@@ -7613,7 +7613,7 @@ string interpreter::pointer_type_name(const Type *type)
   /* This is an unknown pointer type, presumably from a bitcode file. Let's
      count the levels of indirection to get the number of *'s right. */
   size_t count = 1;
-  while (elem_type->isPointerTy()) {
+  while (is_pointer_type(elem_type)) {
     elem_type = elem_type->getContainedType(0);
     count++;
   }
@@ -7808,7 +7808,7 @@ const char *interpreter::type_name(const Type *type)
     return "cmatrix*";
   else if (type == GSLIntMatrixPtrTy)
     return "imatrix*";
-  else if (type->isPointerTy())
+  else if (is_pointer_type(type))
     return pointer_type_name(type).c_str();
   else
     return "<unknown C type>";
@@ -7834,7 +7834,7 @@ const char *interpreter::bctype_name(const Type *type)
      treatment to some pointer types (Pure expressions, GSL matrices) which
      may have different representations when coming from an external bitcode
      file. */
-  if (type->isPointerTy()) {
+  if (is_pointer_type(type)) {
     const Type *elem_type = type->getContainedType(0);
     /* XXXFIXME: These checks really need to be rewritten so that they're less
        compiler-specific. Currently they only work with recent llvm-gcc and
@@ -7883,7 +7883,7 @@ bool interpreter::compatible_types(const Type *type1, const Type *type2)
   if (type1 == type2)
     return true;
   else {
-    bool t1 = type1->isPointerTy(), t2 = type2->isPointerTy();
+    bool t1 = is_pointer_type(type1), t2 = is_pointer_type(type2);
     return t1 && t1 == t2;
   }
 }
@@ -8547,7 +8547,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       const Type *type = gt->getParamType(i);
       if (type != ExprPtrTy)
 	unboxed[i] = b.CreateBitCast(unboxed[i], type);
-    } else if (i == 0 && argt[i]->isPointerTy() && is_faust_fun) {
+    } else if (i == 0 && is_pointer_type(argt[i]) && is_faust_fun) {
       /* The first argument in a Faust call, if it is a pointer, is always the
 	 dsp. Check the pointer against the module tag. */
       const Type *type = gt->getParamType(i);
@@ -8638,7 +8638,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       const Type *type = gt->getParamType(i);
       if (type != VoidPtrTy)
 	unboxed[i] = b.CreateBitCast(unboxed[i], type);
-    } else if (argt[i]->isPointerTy()) {
+    } else if (is_pointer_type(argt[i])) {
       /* Generic pointer type. Only a proper pointer is allowed here, and we
 	 may have to check its tag. */
       BasicBlock *okbb = basic_block("ok");
@@ -8727,7 +8727,8 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     u = b.CreateCall(module->getFunction("pure_double"), u);
   else if (type == CharPtrTy)
     u = b.CreateCall(module->getFunction("pure_cstring_dup"), u);
-  else if (type->isPointerTy() && type->getContainedType(0)->isPointerTy()) {
+  else if (is_pointer_type(type) &&
+	   is_pointer_type(type->getContainedType(0))) {
     u = b.CreateCall(module->getFunction("pure_pointer"),
 		     b.CreateBitCast(u, VoidPtrTy));
     // We may have to set the proper pointer tag here.
@@ -8763,7 +8764,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     f->getBasicBlockList().push_back(okbb);
     b.SetInsertPoint(okbb);
     // value is passed through
-  } else if (type->isPointerTy()) {
+  } else if (is_pointer_type(type)) {
     if (gt->getReturnType() != VoidPtrTy)
       // bitcast the pointer result to a void*
       u = b.CreateBitCast(u, VoidPtrTy);

@@ -823,6 +823,13 @@ public:
   { return llvm::StructType::get(elts); }
 #endif
 
+  static bool is_pointer_type(const llvm::Type *ty)
+#ifdef LLVM27
+  { return ty->isPointerTy(); }
+#else
+  { return ty->getTypeID() == llvm::Type::PointerTyID; }
+#endif
+
   static llvm::Constant* constant_char_array(const char *s)
 #ifdef LLVM26
   { return llvm::ConstantArray::get(llvm::getGlobalContext(), s); }
@@ -857,7 +864,7 @@ public:
   int pointer_type_tag(const string& name);
   int pointer_type_tag(const llvm::Type *type)
   {
-    assert(type->isPointerTy());
+    assert(is_pointer_type(type));
     return pointer_type_tag(type_name(type));
   }
 
