@@ -17,21 +17,39 @@ shortcomings in the interpreter. -ag)
   This will make it possible to do batch compilation without having the LLVM
   toolchain installed.
 
-- Better error recovery in the parser. Unfortunately, Pure's terseness makes
-  this rather difficult. The current panic mode recovery seems to cope
-  surprisingly well with most common kinds of errors, although it might catch
-  errors much too late in some cases.
-
-- Support for externals from languages with other calling conventions already
-  fully supported by LLVM (Fortran, Ada?).
+- Better error recovery in the parser. Pure's terseness makes this rather
+  difficult, however. Fortunately, the current panic mode recovery seems to
+  cope surprisingly well with most common kinds of errors, although it might
+  catch errors much too late in some cases.
 
 - Multithreading support. This requires thread-local data instead of globals
   in a few places, and synchronization where interpreter globals are used
   (most notably, runtime compilation and expression memory management). We
   also need to add the necessary support functions to the runtime.
 
-- More aggressive optimizations (common subexpression elimination for "pure"
-  a.k.a. side-effect-free function calls, unboxed specializations of functions
-  which only deal with basic numeric data types, etc.).
+- Separate compilation and the ability to have several separate Pure libraries
+  coexist in a single program. Unfortunately, Pure doesn't lend itself to
+  separate compilation, as Pure function definitions consist of individual
+  equational rules which may be scattered out over any number of source files,
+  and may even be extended dynamically with equations entered by the user in
+  the interpreter. Thus a Pure linker would need the capability to merge
+  several existing function definitions into one.
 
-- Support for Wadler views (or similar).
+- More aggressive optimizations, such as: common subexpression elimination for
+  "pure" a.k.a. side-effect-free function calls; unboxed specializations of
+  functions which only deal with basic numeric data types; call global
+  functions directly when possible. (The latter is already done for direct
+  recursive calls of globals, but this isn't really possible when using the
+  JIT since in the interpreter we need the capability to patch up global
+  functions dynamically. However, in principle it should be possible to design
+  an LLVM optimization pass for batch compilation which substitutes direct
+  calls for saturated applications of global functions.)
+
+- More elaborate reflection capabilities, in the form of a C API for
+  constructing internal data structures of the compiler and calling the
+  compiler in a direct fashion rather than through eval/evalcmd.
+
+- Better support for abstract data types. This could take the form of a system
+  of interface specifications (a la Google Go, but with generics), an object
+  system (a la CLOS), or simply some tree grammar approach augmented with
+  Wadler views or similar (a la Q).
