@@ -1,0 +1,40 @@
+h n/*0:01*/::int x/*0:1*/ = printf "sentry#%d: %s\n" (n/*0:01*/,str x/*0:1*/);
+{
+  rule #0: h n::int x = printf "sentry#%d: %s\n" (n,str x)
+  state 0: #0
+	<var>::int state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+}
+sentry (h 1) head;
+head
+1;
+1
+head 99 = 98;
+{
+  rule #0: head x::matrix = x!0 if ~null x
+  rule #1: head s::string = s!0 if ~null s
+  rule #2: head (x:xs) = x
+  rule #3: head 99 = 98
+  state 0: #0 #1 #2 #3
+	<var>::string state 1
+	<var>::matrix state 2
+	<app> state 3
+	99::int state 8
+  state 1: #1
+  state 2: #0
+  state 3: #2
+	<app> state 4
+  state 4: #2
+	: state 5
+  state 5: #2
+	<var> state 6
+  state 6: #2
+	<var> state 7
+  state 7: #2
+  state 8: #3
+}
+sentry#1: head
+head 99;
+98
