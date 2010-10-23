@@ -3093,9 +3093,16 @@ void interpreter::compile()
 {
   using namespace llvm;
   if (!dirty.empty()) {
+#if DEBUG>1
+    // Check for recursive invocations. This is always bad.
+    static bool recursive = false;
+    assert(!recursive);
+    recursive = true;
+#endif
     // there are some fundefs in the global environment waiting to be
     // recompiled, do it now
     set<int> to_be_jited;
+    list<pure_expr*> to_be_freed;
     for (funset::const_iterator f = dirty.begin(); f != dirty.end(); f++) {
       env::iterator e = globenv.find(*f);
       if (e != globenv.end()) {
@@ -3147,7 +3154,10 @@ void interpreter::compile()
 	     mkvarlabel(f.tag));
 	  JIT->addGlobalMapping(v.v, &v.x);
 	}
-	if (v.x) pure_free(v.x); v.x = pure_new(fv);
+	/* It's not safe to free any old value v.x right here, as it might
+	   have a sentry to execute which in turn might cause the compiler to
+	   be invoked recursively. So we defer this until we're finished. */
+	if (v.x) to_be_freed.push_back(v.x); v.x = pure_new(fv);
 #if DEBUG>1
 	std::cerr << "global " << &v.x << " (== "
 		  << JIT->getPointerToGlobal(v.v) << ") -> "
@@ -3160,6 +3170,12 @@ void interpreter::compile()
       jit_now(to_be_jited, true);
     dirty.clear();
     clear_cache();
+#if DEBUG>1
+    recursive = false;
+#endif
+    for (list<pure_expr*>::iterator it = to_be_freed.begin();
+	 it != to_be_freed.end(); ++it)
+      pure_free(*it);
   }
 }
 
