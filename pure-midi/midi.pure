@@ -50,6 +50,61 @@ midi::device_count = Pm::CountDevices;
 extern expr* pm_device_info(int) = device_info;
 midi::devices = [device_info dev | dev = 0..midi::device_count-1];
 
+/* Advanced device discovery. If PortMidi's default devices are not what you
+   want then you can use the following convenience functions to determine
+   alternative input/output devices. They first inspect the PURE_MIDI_IN,
+   PURE_MIDI_OUT environment variables. If these are set to device numbers,
+   the corresponding entries from the midi::devices list will be used. Instead
+   of a device number, you can also specify a shell glob pattern matching the
+   interface and device name, separated by a colon. For instance, the pattern
+   "ALSA:EMU10K1 MPU-401*" will match the ALSA device for the external MIDI
+   port of a SoundBlaster Live, while "*:*Port 1*" will match any device on
+   any interface which has 'Port 1' in its name. If no device can be found
+   that way, we just pick the first eligible input or output device. If this
+   also fails, the PortMidi defaults are used. (NOTE: The device discovery
+   mechanism can also be used directly by invoking midi::find_device with the
+   appropriate argument, see below.) */
+
+public find_device;
+private extern char *getenv(char *name);
+midi::input = find_device (getenv "PURE_MIDI_IN",0);
+midi::output = find_device (getenv "PURE_MIDI_OUT",1);
+
+/* Helper functions to select devices according to different criteria. See the
+   description of midi::input and midi::output above. If specified, idx=0
+   restricts matches to input, idx=1 to output devices. A return value of -1
+   indicates that no matching device was found. */
+
+// Find a device by its number. (The idx argument is ignored here.)
+midi::find_device d::int = if d>=0 && d<device_count then d else -1;
+midi::find_device (d::int,idx::int) = find_device d;
+midi::find_device s::string |
+midi::find_device (s::string,idx::int) =
+  find_device d if intp d when d = val s end;
+
+// Find a device by matching a glob pattern against interface and name.
+private extern int fnmatch(char *pat, char *s, int flags);
+midi::find_device pat::string = find_device ok
+  with
+    ok (interf,name,_) = fnmatch pat (interf+":"+name) 0 == 0;
+  end if ~null pat;
+midi::find_device (pat::string,idx::int) = find_device ok
+  with
+    ok (interf,name,chan) = fnmatch pat (interf+":"+name) 0 == 0 && chan!idx>0;
+  end if ~null pat && (idx==0 || idx==1);
+
+// Fallback rules.
+midi::find_device (_,idx::int) =
+  case find_device (\(_,_,chan) -> chan!idx) of
+    -1 = if idx then default_output else default_input;
+    d  = d otherwise;
+  end if idx==0 || idx==1;
+
+// Find a device matching a given predicate p.
+midi::find_device p =
+  head $ [d | d,info = stream $ zip (0..#devs-1) devs; p info] + [-1]
+  when devs = devices end if closurep p;
+
 /* Use this to get a human-readable message for PortMidi's error codes. */
 
 midi::errmsg errno::int = Pm::GetErrorText errno;
