@@ -29,10 +29,13 @@ const Pm::Event = pointer_tag "PmEvent*";
 
 namespace midi;
 
-/* Initialization and device enumeration. */
+/* Start and stop PortMidi. First-time initialization is done automatically
+   when this module is loaded. However, you can reinvoke midi::start later at
+   any time, in order to update the device table, hence this function comes in
+   handy if new devices have to be detected at runtime. */
 
-midi::initialize = Pm::Initialize;
-midi::terminate = Pm::Terminate;
+midi::start = Pm::Terminate $$ Pm::Initialize;
+midi::stop  = Pm::Terminate;
 
 /* The default MIDI devices for input and output. These can be set with
    PortMidi's pmdefaults application. */
@@ -60,8 +63,7 @@ midi::devices = [device_info dev | dev = 0..midi::device_count-1];
    "ALSA:EMU10K1 MPU-401*" will match the ALSA device for the external MIDI
    port of a SoundBlaster Live, while "*:*Port 1*" will match any device on
    any interface which has 'Port 1' in its name. If no device can be found
-   that way, we just pick the first eligible input or output device. If this
-   also fails, the PortMidi defaults are used. (NOTE: The device discovery
+   that way, the PortMidi defaults are used. (NOTE: The device discovery
    mechanism can also be used directly by invoking midi::find_device with the
    appropriate argument, see below.) */
 
@@ -95,10 +97,8 @@ midi::find_device (pat::string,idx::int) = find_device ok
 
 // Fallback rules.
 midi::find_device (_,idx::int) =
-  case find_device (\(_,_,chan) -> chan!idx) of
-    -1 = if idx then default_output else default_input;
-    d  = d otherwise;
-  end if idx==0 || idx==1;
+  if idx then default_output else default_input
+  if idx==0 || idx==1;
 
 // Find a device matching a given predicate p.
 midi::find_device p =
@@ -323,7 +323,7 @@ midi::sleep dur::int = Pt::Sleep dur;
 
 /*****************************************************************************/
 
-/* Initialization. Initialize PortMidi and kick off the timer. */
+/* Initialize PortMidi and kick off the timer. */
 
-midi::initialize;
+midi::start;
 Pt::Start 1 NULL NULL;

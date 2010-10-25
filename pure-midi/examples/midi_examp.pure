@@ -8,11 +8,14 @@ using namespace midi;
 // Have a look at this to see which devices are available on your system.
 let devs = map device_info (0..device_count-1);
 
-/* Default input and output device. These can be set with the pmdefaults
-   program distributed with PortMidi. */
+/* Open the default input and output devices. You'll probably have to adjust
+   these. The easiest way to do this by setting the PURE_MIDI_IN and
+   PURE_MIDI_OUT environment variables accordingly, see midi.pure for
+   details. Otherwise the PortMidi defaults will be used, which can be set
+   with the pmdefaults program distributed with PortMidi. */
 
-let in = open_input default_input 512;
-let out = open_output default_output 512 0;
+let in = open_input input 512;
+let out = open_output output 512 0;
 
 /* A little helper function to print MIDI messages and events in hexadecimal
    format. */
