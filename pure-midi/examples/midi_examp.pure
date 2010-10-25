@@ -65,7 +65,7 @@ reset = do (writemsg out 0) $ [{0xff}] +
 rec = rec [] with
   rec seq = catch (\_->reverse seq) (case readmsg in of
     ev@(t,msg) = reverse seq if msg!0==0xfc; // stop
-    	       = rec (ev:seq);
+    	       = puts $ str ev $$ rec (ev:seq);
   end);
 end;
 
