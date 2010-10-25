@@ -40,14 +40,15 @@ midi::terminate = Pm::Terminate;
 midi::default_input = Pm::GetDefaultInputDeviceID;
 midi::default_output = Pm::GetDefaultOutputDeviceID;
 
-/* The number of available devices, and the information for a given device id,
-   decoded as a Pure tuple. Note that the legal device ids run from 0 to
-   midi::device_count-1, so map midi::device_info (0..midi::device_count-1)
-   gives you the entire list. */
+/* The table of available devices. Each entry is a tuple with the interface
+   and device name, followed by three flags input, output, opened which denote
+   whether the device is available as input and/or output and whether it has
+   been opened, respectively. */
 
 midi::device_count = Pm::CountDevices;
 // This comes from pmdev.c.
 extern expr* pm_device_info(int) = device_info;
+midi::devices = {device_info dev | dev = 0..midi::device_count-1};
 
 /* Use this to get a human-readable message for PortMidi's error codes. */
 
