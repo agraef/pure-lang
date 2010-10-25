@@ -1,0 +1,63 @@
+
+// Some convenience functions.
+
+extern void __sndfile_defs(); __sndfile_defs;
+
+// Create an auto-collecting SF_INFO structure for use with sf_open.
+
+sf_info () = cooked sf_new_info;
+sf_info (samplerate::int, channels::int, format::int) =
+  cooked $ sf_make_info samplerate channels format;
+
+// Create an auto-collecting SF_FORMAT_INFO structure for use with sf_command.
+
+sf_format_info format::int = cooked $ sf_make_format_info format;
+
+// Get the info for the given format id.
+
+sf_get_format_info format::int = sf_get_format_info info if res==0 when
+  info = sf_format_info format;
+  res = sf_command NULL SFC_GET_FORMAT_INFO info SIZEOF_SF_FORMAT_INFO;
+end;
+
+// Enumerate all available simple formats.
+
+sf_simple_formats = map sf_get_simple_format $ 0..sf_get_simple_format_count-1
+with
+  sf_get_simple_format_count = count!0 if res==0 when
+    count = {0};
+    res = sf_command NULL SFC_GET_SIMPLE_FORMAT_COUNT count SIZEOF_INT;
+  end;
+  sf_get_simple_format k::int = sf_get_format_info info if res==0 when
+    info = sf_format_info k;
+    res = sf_command NULL SFC_GET_SIMPLE_FORMAT info SIZEOF_SF_FORMAT_INFO;
+  end;
+end;
+
+// Enumerate all available major formats.
+
+sf_major_formats = map sf_get_major_format $ 0..sf_get_major_format_count-1
+with
+  sf_get_major_format_count = count!0 if res==0 when
+    count = {0};
+    res = sf_command NULL SFC_GET_FORMAT_MAJOR_COUNT count SIZEOF_INT;
+  end;
+  sf_get_major_format k::int = sf_get_format_info info if res==0 when
+    info = sf_format_info k;
+    res = sf_command NULL SFC_GET_FORMAT_MAJOR info SIZEOF_SF_FORMAT_INFO;
+  end;
+end;
+
+// Enumerate all available subtypes.
+
+sf_subtypes = map sf_get_subtype $ 0..sf_get_subtype_count-1
+with
+  sf_get_subtype_count = count!0 if res==0 when
+    count = {0};
+    res = sf_command NULL SFC_GET_FORMAT_SUBTYPE_COUNT count SIZEOF_INT;
+  end;
+  sf_get_subtype k::int = sf_get_format_info info if res==0 when
+    info = sf_format_info k;
+    res = sf_command NULL SFC_GET_FORMAT_SUBTYPE info SIZEOF_SF_FORMAT_INFO;
+  end;
+end;

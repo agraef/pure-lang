@@ -1,0 +1,81 @@
+
+using audio, system;
+using namespace audio;
+
+/* Uncomment this to get realtime priority. You'll need the realtime module
+   from pure-midi for this. */
+//using realtime; realtime SCHED_RR 10;
+
+/* Get the list of audio devices, and the default input and output device.
+   You may have to adjust the default devices to your preferences by setting
+   the PURE_AUDIO_IN and PURE_AUDIO_OUT environment variables accordingly,
+   please see audio.pure for details. */
+
+let devs = devices;
+let in,out = input,output;
+
+/* Stream parameters. You may have to adjust this for your system. In
+   particular, if you hear garbled sound because of audio dropouts then you
+   should try to increase the buffer size. */
+
+let SR = devs!out!4; // samplerate, taken from the default output device
+let size = 512; // block size, frames (samples per channel)
+
+/* Open full-duplex, input-only and output-only streams on the default I/O
+   devices. Note that 2 is the number of channels and Pa::Float32 denotes the
+   sample format.  */
+
+open_full = open_stream {in,2,Pa::Float32} {out,2,Pa::Float32} SR size 0;
+open_input = open_stream {in,2,Pa::Float32} {} SR size 0;
+open_output = open_stream {} {out,2,Pa::Float32} SR size 0;
+
+/* The PortAudio 'wire' example, done in Pure. This simply passes the audio
+   from input to output unchanged. Type Ctrl-C when you get bored. With the
+   proper device settings this will most likely route your mic input to the
+   speakers. To make this more interesting you may want to adjust the I/O
+   devices so that they are connected to some sound processing software. E.g.,
+   to connect to Pd using Jack on Linux:
+
+   using namespace audio;
+   let pd = find_device "*:pure_data*";
+   let as = open_stream {pd,2,Pa::Float32} {pd,2,Pa::Float32} SR size 0;
+
+   You can then arrange for some audio from Pd and read back the output of
+   'wire' in Pd. (See the included audio_test.pd patch for an example.) The
+   two signals should not differ (apart from some amount of time shift due to
+   the buffering). */
+
+wire = catch (cst ()) loop with
+  loop = loop when
+    read_stream as buf size;
+    write_stream as buf size;
+  end;
+end when
+  // Open the audio stream (both input and output).
+  as = open_full;
+  // Buffer for 'size' stereo (interleaved) floating point samples.
+  buf = dmatrix (size,2);
+end;
+
+/* Play a soundfile. XXXFIXME: This currently doesn't do any sample rate
+   conversion, but simply plays back the file at whatever sample rate is used
+   by the output device. We need libsamplerate to make this really work. */
+
+using sndfile;
+
+play name::string = catch (cst ()) loop with
+  // Loop reading a buffer of samples, output them to the audio device.
+  loop = loop if read>0 when
+    read = int $ sf_readf_double sf buf size;
+    write_stream as buf read;
+  end;
+  // Last read had zero frames, so presumably we're done.
+  loop = ();
+end when
+  // Open an audio file for reading.
+  info = sf_info (); sf = sf_open name SFM_READ info;
+  // Open an audio stream (output only).
+  as = open_output;
+  // Buffer for 'size' stereo (interleaved) floating point samples.
+  buf = dmatrix (size,2);
+end;

@@ -1,0 +1,269 @@
+
+/* High-level interface to PortAudio for the Pure programmer. */
+
+using portaudio;
+
+namespace Pa;
+
+/* For some reason these are not in the wrapper, so define them here. */
+
+const Pa::Float32        = 0x00000001;
+const Pa::Int32          = 0x00000002;
+const Pa::Int24          = 0x00000004;
+const Pa::Int16          = 0x00000008;
+const Pa::Int8           = 0x00000010;
+const Pa::UInt8          = 0x00000020;
+const Pa::CustomFormat   = 0x00010000;
+const Pa::NonInterleaved = int 0x80000000;
+
+const Pa::NoDevice = -1;
+
+/* High-level convenience functions. These are dumbed-down, more Pure-friendly
+   versions of the PortAudio operations. We place these in their own namespace
+   to keep them separate from the lowlevel API. */
+
+namespace audio;
+
+/* Start and stop audio processing. Initially, audio processing is active.
+   Running audio::stop closes all currently open audio streams and stops audio
+   processing, audio::start restarts it again (after an automatic audio::stop
+   if audio processing is currently active). This also updates the device
+   table, hence this function comes in handy if new drivers and/or devices
+   have to be detected at runtime. */
+
+extern void start_audio() = start;
+extern void stop_audio() = stop;
+
+audio::start;
+
+/* Device enumeration. PortAudio distinguishes different drivers (a.k.a.
+   "host apis") and gives access to all devices on all host apis, so there are
+   two tables, one for the drivers and one for the devices themselves. */
+
+/* Default driver and information about available drivers. The information for
+   each driver has the form (name,type,devs,in,out), where name is the name of
+   the driver (a string), type is the host api type (Pa::ALSA etc.), devs is
+   the list of device ids (indices into the audio::devices table, see below)
+   for the driver, and in and out are the driver's default input and output
+   device ids. */
+
+audio::default_driver = Pa::GetDefaultHostApi;
+audio::driver_count = Pa::GetHostApiCount;
+extern expr *audio_driver_info(int drv) = driver_info;
+audio::drivers = [driver_info drv | drv = 0..driver_count-1];
+
+/* Default I/O devices and information about available devices. The data for
+   each device has the form (name,drv,in,out,sr), where name is the name of
+   the device (a string), drv is the driver id (index into the audio::drivers
+   table, see above), in and out are the maximum number of input and output
+   channels, and sr is the default samplerate. */
+
+audio::default_input = Pa::GetDefaultInputDevice;
+audio::default_output = Pa::GetDefaultOutputDevice;
+audio::device_count = Pa::GetDeviceCount;
+extern expr *audio_device_info(int dev) = device_info;
+audio::devices = [device_info dev | dev = 0..device_count-1];
+
+/* If PortAudio's default devices are not what you want, you can use the
+   following convenience functions to determine alternative input/output
+   devices. They first inspect the PURE_AUDIO_IN, PURE_AUDIO_OUT environment
+   variables. If these are set to device numbers, the corresponding entries
+   from the audio::devices list will be used. Instead of a device number, you
+   can also specify a shell glob pattern matching the interface and device
+   name, separated by a colon. For instance, "ALSA:SBLive*" will match the
+   ALSA device for a SoundBlaster Live. If no device can be found that way, we
+   look for Jack and use its default input/output ports if we can. Failing
+   that, we just pick the first devices with a nonzero number of input/output
+   channels. If this also fails, the PortAudio defaults are used. (NOTE: The
+   device discovery mechanism can also be used directly by invoking
+   audio::find_device with the appropriate argument, see below.) */
+
+public find_device;
+private extern char *getenv(char *name);
+audio::input = find_device (getenv "PURE_AUDIO_IN",0);
+audio::output = find_device (getenv "PURE_AUDIO_OUT",1);
+
+/* Helper functions to select devices according to different criteria. See the
+   description of audio::input and audio::output above. If specified, idx=0
+   restricts matches to input, idx=1 to output devices. A return value of -1
+   indicates that no matching device was found. */
+
+// Find the default Jack devices (in,out).
+audio::jack_devices = head $
+  [in,out | _,h,_,in,out = stream drivers; h==Pa::JACK] + [(-1,-1)];
+
+// Find a device by its number. (The idx argument is ignored here.)
+audio::find_device d::int = if d>=0 && d<device_count then d else -1;
+audio::find_device (d::int,idx::int) = find_device d;
+audio::find_device s::string |
+audio::find_device (s::string,idx::int) =
+  find_device d if intp d when d = val s end;
+
+// Find a device by matching a glob pattern against its name.
+private extern int fnmatch(char *pat, char *s, int flags);
+audio::find_device pat::string = find_device ok
+  with
+    ok (name,d,_) = fnmatch pat (drv!d!0+":"+name) 0 == 0;
+  end when drv = vector drivers end if ~null pat;
+audio::find_device (pat::string,idx::int) = find_device ok
+  with
+    ok (name,d,chan) = fnmatch pat (drv!d!0+":"+name) 0 == 0 && chan!idx>0;
+  end when drv = vector drivers end if ~null pat && (idx==0 || idx==1);
+
+// Fallback rules.
+audio::find_device (_,idx::int) =
+  case jack_devices!idx of
+    -1 = case find_device (\(_,_,chan) -> chan!idx>0) of
+       	   -1 = if idx then default_output else default_input;
+      	   d  = d otherwise;
+    	 end;
+    d  = d otherwise;
+  end if idx==0 || idx==1;
+
+// Find a device matching a given predicate p.
+audio::find_device p =
+  head $ [d | d,info = stream $ zip (0..#devs-1) devs; p info] + [-1]
+  when devs = devices end if closurep p;
+
+/* Use this to get a human-readable message for PortAudio's error codes. */
+
+audio::errmsg errno::int = Pa::GetErrorText errno;
+
+/* Opening and closing audio streams. */
+
+private extern expr *open_audio_stream
+  (int *in, int *out, double sr, long size, int flags);
+private extern void audio_sentry(void *v, void *as);
+
+/* Open and audio stream for reading, writing or both.
+
+   - inparams and outparams specify the I/O parameters and must take the form
+     {dev, channels, format, realtime} where dev is the device id, channels
+     the number of audio channels, format the sample format (one of the
+     Pa::Float32, Pa::Int32 etc. constants define above, possibly or'ed with
+     Pa::NonInterleaved) and realtime is a flag denoting whether the stream
+     should be configured for low-latency realtime processing. Missing values
+     are filled with zeros and a zero channel count means that input or output
+     is disabled. You can specify either inparams our outparams as {} if only
+     single-duplex processing is wanted.
+
+   - sr denotes the samplerate, often 44100 or 48000. This can be an int or a
+     double value.
+
+   - size denotes the block size (maximum number of samples per channel which
+     can be read or written without blocking). If this is zero or negative, a
+     reasonable default is chosen (512 in the current implementation).
+
+   - flags can be used to specify special processing options for the stream,
+     by or'ing together the corresponding flag values (Pa::ClipOff,
+     Pa::DitherOff, etc.). */
+
+audio::open_stream inparams::matrix outparams::matrix sr::int size::int
+  flags::int = open_stream inparams outparams (double sr) size flags;
+
+audio::open_stream inparams::matrix outparams::matrix sr::double size::int
+  flags::int = open_audio_stream inparams outparams sr size flags
+    when
+      inparams = {inparams,{0|i=1..4-#inparams}};
+      outparams = {outparams,{0|i=1..4-#outparams}};
+    end if sr>0.0 && size>0 &&
+      (null inparams || rowvectorp inparams) && #inparams<=4 &&
+      (null outparams || rowvectorp outparams) && #outparams<=4;
+
+/* Close an audio stream. */
+
+public streamp;
+audio::close_stream as::pointer = get_sentry as $ clear_sentry as
+  if streamp as;
+
+/* Check for a valid open audio stream object and get its associated data. */
+
+audio::streamp as::pointer = case get_sentry as of
+  audio_sentry v = pointerp v; _ = false;
+end;
+audio::streamp _ = false otherwise;
+
+private stream_data;
+audio::stream_data as::pointer = case get_sentry as of
+  audio_sentry v::pointer = v; _ = NULL;
+end;
+
+/* Stream information.
+
+   - audio::stream_info returns a tuple of the form (sr,size,in,out) where sr
+     is the sample rate, size the number of frames per block and in and out
+     provide information about the input and output devices in the form
+     {dev,channels,format,bps}, where dev is the device id, channels is the
+     number of channels, format is the sample format and bps is the
+     corresponding size of a sample in bytes. (Either the input our output
+     information may also be empty in case of a single-duplex stream.)
+
+   - audio::stream_latencies returns a pair with the input and output
+     latencies of the stream.
+
+   - audio::stream_time returns the current time of the stream, which is
+     useful for synchonizing between different audio and MIDI devices. */
+
+private extern expr *audio_stream_info(void *v, void *as);
+private extern expr *audio_stream_latencies(void *v, void *as);
+private extern double audio_stream_time(void *v, void *as);
+
+audio::stream_info as::pointer =
+  audio_stream_info (stream_data as) as if streamp as;
+audio::stream_latencies as::pointer =
+  audio_stream_latencies (stream_data as) as if streamp as;
+audio::stream_time as::pointer =
+  audio_stream_time (stream_data as) as if streamp as;
+audio::stream_cpu_load as::pointer = Pa::GetStreamCpuLoad as if streamp as;
+
+/* Stream I/O. These block until the given number of frames have been read or
+   written, and return the number of frames actually read or written (which
+   should be the same as the size specified, unless an error occurred). A
+   return value of -1 indicates a generic error (such as, e.g., trying to read
+   from a stream which has only be opened for output). */
+
+/* These take a (suitably malloc'ed) buffer pointer for the sample data. */
+
+private extern int read_audio_stream(void *v, void *as, void *buf, long size);
+private extern int write_audio_stream(void *v, void *as, void *buf, long size);
+
+audio::read_stream as::pointer buf::pointer size::int =
+  read_audio_stream (stream_data as) as buf size if streamp as;
+
+audio::write_stream as::pointer buf::pointer size::int =
+  write_audio_stream (stream_data as) as buf size if streamp as;
+
+/* For convenience, we also allow the buffer to be specified as an int or
+   double matrix. In this case, the sample format of the stream must match the
+   type of matrix (Pa::Int32 et al for int, Pa::Float32 for double matrices)
+   and the necessary conversions are handled automatically. Also, the matrix
+   data must be in contiguous storage. (If necessary, you can ensure this by
+   packing or converting the matrix first.) */
+
+private extern int read_audio_stream_int(void*, void*, int*, long);
+private extern int read_audio_stream_double(void*, void*, double*, long);
+private extern int write_audio_stream_int(void*, void*, int*, long);
+private extern int write_audio_stream_double(void*, void*, double*, long);
+
+private check_matrix;
+audio::check_matrix x =
+  (imatrixp x || dmatrixp x) && (null x || vectorp x || packed x);
+
+audio::read_stream as::pointer buf::matrix size::int =
+  (if imatrixp buf then read_audio_stream_int else read_audio_stream_double)
+  (stream_data as) as buf size if streamp as && check_matrix buf;
+
+audio::write_stream as::pointer buf::matrix size::int =
+  (if imatrixp buf then write_audio_stream_int else write_audio_stream_double)
+  (stream_data as) as buf size if streamp as && check_matrix buf;
+
+/* Check how many frames can be read from or written to a stream without
+   blocking. */
+
+private extern int audio_stream_readable(void *v, void *as);
+private extern int audio_stream_writeable(void *v, void *as);
+
+audio::stream_readable as::pointer = audio_stream_readable (stream_data as) as
+  if streamp as;
+audio::stream_writeable as::pointer = audio_stream_writeable (stream_data as) as
+  if streamp as;
