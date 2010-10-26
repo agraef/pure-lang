@@ -158,8 +158,11 @@ private extern void audio_sentry(void *v, void *as);
      by or'ing together the corresponding flag values (Pa::ClipOff,
      Pa::DitherOff, etc.). */
 
-audio::open_stream inparams::matrix outparams::matrix sr::int size::int
-  flags::int = open_stream inparams outparams (double sr) size flags;
+audio::open_stream inparams outparams sr::int size flags =
+  open_stream inparams outparams (double sr) size flags;
+
+audio::open_stream inparams outparams sr size::bigint flags =
+  open_stream inparams outparams sr (int size) flags;
 
 audio::open_stream inparams::matrix outparams::matrix sr::double size::int
   flags::int = open_audio_stream inparams outparams sr size flags
@@ -227,9 +230,11 @@ audio::stream_cpu_load as::pointer = Pa::GetStreamCpuLoad as if streamp as;
 private extern int read_audio_stream(void *v, void *as, void *buf, long size);
 private extern int write_audio_stream(void *v, void *as, void *buf, long size);
 
+audio::read_stream as buf size::bigint = read_stream as buf (int size);
 audio::read_stream as::pointer buf::pointer size::int =
   read_audio_stream (stream_data as) as buf size if streamp as;
 
+audio::write_stream as buf size::bigint = write_stream as buf (int size);
 audio::write_stream as::pointer buf::pointer size::int =
   write_audio_stream (stream_data as) as buf size if streamp as;
 
