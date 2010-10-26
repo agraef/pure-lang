@@ -22,12 +22,15 @@ let SR = devs!out!4; // samplerate, taken from the default output device
 let size = 512; // block size, frames (samples per channel)
 
 /* Open full-duplex, input-only and output-only streams on the default I/O
-   devices. Note that 2 is the number of channels and Pa::Float32 denotes the
-   sample format.  */
+   devices. Note that nchannels is the number of channels, size the block
+   size, and Pa::Float32 denotes the sample format. */
 
-open_full = open_stream {in,2,Pa::Float32} {out,2,Pa::Float32} SR size 0;
-open_input = open_stream {in,2,Pa::Float32} {} SR size 0;
-open_output = open_stream {} {out,2,Pa::Float32} SR size 0;
+open_full nchannels::int size::int =
+  open_stream {in,nchannels,Pa::Float32} {out,nchannels,Pa::Float32} SR size 0;
+open_input nchannels::int size::int =
+  open_stream {in,nchannels,Pa::Float32} {} SR size 0;
+open_output nchannels::int size::int =
+  open_stream {} {out,nchannels,Pa::Float32} SR size 0;
 
 /* The PortAudio 'wire' example, done in Pure. This simply passes the audio
    from input to output unchanged. Type Ctrl-C when you get bored. With the
@@ -51,31 +54,55 @@ wire = catch (cst ()) loop with
     write_stream as buf size;
   end;
 end when
-  // Open the audio stream (both input and output).
-  as = open_full;
+  // Open the audio stream (both input and output, stereo).
+  as = open_full 2 size;
   // Buffer for 'size' stereo (interleaved) floating point samples.
   buf = dmatrix (size,2);
 end;
 
-/* Play a soundfile. XXXFIXME: This currently doesn't do any sample rate
-   conversion, but simply plays back the file at whatever sample rate is used
-   by the output device. We need libsamplerate to make this really work. */
+/* Play a soundfile at a given speed, do sample rate conversion on the fly.
+   Use speed = 1 to play back at nominal speed, larger values yield faster,
+   smaller values slower than nominal speed. */
 
-using sndfile;
+using samplerate, sndfile, system;
 
-play name::string = catch (cst ()) loop with
-  // Loop reading a buffer of samples, output them to the audio device.
+play speed::double name::string = catch (cst ()) loop with
   loop = loop if read>0 when
-    read = sf_readf_double sf buf size;
-    write_stream as buf read;
+    // Read one block of samples.
+    read = sf_readf_double sf buf0 size0;
+    // Convert to device sample rate.
+    res,used,written = src_process state (buf0,buf,read,size,ratio,read==0);
+    res==0 && used>=read || throw "error in sample rate conversion";
+    // Write the converted samples.
+    write_stream as buf written;
   end;
   // Last read had zero frames, so presumably we're done.
   loop = ();
 end when
   // Open an audio file for reading.
   info = sf_info (); sf = sf_open name SFM_READ info;
+  // Get some information about the file.
+  nsamples,SR0,nchannels,_ = sf_get_info info;
+  // Conversion ratio.
+  ratio = SR/SR0/speed;
+  ratio == 1.0 && speed == 1.0 ||
+  printf "Converting %g Hz -> %g Hz samples at speed %g (ratio %g)\n"
+  (double SR0,double SR,speed,ratio);
+  // Make the target buffer larger here, so that we can keep up with the
+  // sample rate conversion.
+  size = 8192;
+  // Source buffer size. This must be small enough so that we don't overflow
+  // the target buffer.
+  size0 = (int $ round $ size/ratio)-128;
+  size0 >= 128 || throw "bad conversion ratio";
   // Open an audio stream (output only).
-  as = open_output;
-  // Buffer for 'size' stereo (interleaved) floating point samples.
-  buf = dmatrix (size,2);
-end;
+  as = open_output nchannels size;
+  // Create an initial state for the sample rate conversion.
+  state = src_state SRC_SINC_FASTEST nchannels;
+  // Buffer for the original samples.
+  buf0 = dmatrix (size0,nchannels);
+  // Buffer for the converted samples.
+  buf = dmatrix (size,nchannels);
+end if speed>0.0;
+
+play speed name::string = play (double speed) name if realp speed;
