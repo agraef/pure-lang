@@ -161,15 +161,12 @@ private extern void audio_sentry(void *v, void *as);
 audio::open_stream inparams outparams sr::int size flags =
   open_stream inparams outparams (double sr) size flags;
 
-audio::open_stream inparams outparams sr size::bigint flags =
-  open_stream inparams outparams sr (int size) flags;
-
-audio::open_stream inparams::matrix outparams::matrix sr::double size::int
+audio::open_stream inparams::matrix outparams::matrix sr::double size
   flags::int = open_audio_stream inparams outparams sr size flags
     when
       inparams = {inparams,{0|i=1..4-#inparams}};
       outparams = {outparams,{0|i=1..4-#outparams}};
-    end if sr>0.0 && size>0 &&
+    end if integerp size && sr>0.0 && size>0 &&
       (null inparams || rowvectorp inparams) && #inparams<=4 &&
       (null outparams || rowvectorp outparams) && #outparams<=4;
 
@@ -230,13 +227,13 @@ audio::stream_cpu_load as::pointer = Pa::GetStreamCpuLoad as if streamp as;
 private extern int read_audio_stream(void *v, void *as, void *buf, long size);
 private extern int write_audio_stream(void *v, void *as, void *buf, long size);
 
-audio::read_stream as buf size::bigint = read_stream as buf (int size);
-audio::read_stream as::pointer buf::pointer size::int =
-  read_audio_stream (stream_data as) as buf size if streamp as;
+audio::read_stream as::pointer buf::pointer size =
+  read_audio_stream (stream_data as) as buf size
+  if streamp as && integerp size;
 
-audio::write_stream as buf size::bigint = write_stream as buf (int size);
-audio::write_stream as::pointer buf::pointer size::int =
-  write_audio_stream (stream_data as) as buf size if streamp as;
+audio::write_stream as::pointer buf::pointer size =
+  write_audio_stream (stream_data as) as buf size
+  if streamp as && integerp size;
 
 /* For convenience, we also allow the buffer to be specified as an int or
    double matrix. In this case, the sample format of the stream must match the
@@ -254,13 +251,15 @@ private check_matrix;
 audio::check_matrix x =
   (imatrixp x || dmatrixp x) && (null x || vectorp x || packed x);
 
-audio::read_stream as::pointer buf::matrix size::int =
+audio::read_stream as::pointer buf::matrix size =
   (if imatrixp buf then read_audio_stream_int else read_audio_stream_double)
-  (stream_data as) as buf size if streamp as && check_matrix buf;
+  (stream_data as) as buf size
+  if streamp as && check_matrix buf && integerp size;
 
-audio::write_stream as::pointer buf::matrix size::int =
+audio::write_stream as::pointer buf::matrix size =
   (if imatrixp buf then write_audio_stream_int else write_audio_stream_double)
-  (stream_data as) as buf size if streamp as && check_matrix buf;
+  (stream_data as) as buf size
+  if streamp as && check_matrix buf && integerp size;
 
 /* Check how many frames can be read from or written to a stream without
    blocking. */
