@@ -1,0 +1,61 @@
+
+/* Convenience wrapper around src_new which either returns an integer error
+   code or a SRC_STATE* pointer. It also sets a sentry on the pointer so that
+   it frees itself when garbage-collected. */
+
+src_state conv_type::int channels::int
+  = if null state then error!0 else sentry src_delete state
+    when error = {0}; state = src_new conv_type channels error end;
+
+/* Convenience wrapper around src_process which takes care of filling in the
+   the SRC_DATA* pointer. The argument matrices must be of double type. The
+   result is a triple (res,in_read,out_written) consisting of the int result
+   code res as returned by SRC's src_process, and a pair of bigint values
+   which denotes the number of processed input frames in_read and produced
+   output frames out_written. */
+
+// Add optional wrap parameter.
+src_process state::pointer (in::matrix, out::matrix,
+	    		    in_size, out_size,
+			    ratio)
+  = src_process state (in,out,in_size,out_size,ratio,false)
+    if realp ratio;
+
+// Convert ratio from int, bigint and rational to double.
+src_process state::pointer (in::matrix, out::matrix,
+	    		    in_size, out_size,
+			    ratio,wrap::int)
+  = src_process state (in,out,in_size,out_size,double ratio,wrap)
+    if integerp ratio;
+src_process state::pointer (in::matrix, out::matrix,
+	    		    in_size, out_size,
+			    ratio@(p%q),wrap::int)
+  = src_process state (in,out,in_size,out_size,p/q,wrap)
+    if realp ratio;
+
+// Do the actual processing.
+src_process state::pointer (in::matrix, out::matrix,
+	    		    in_size, out_size,
+			    ratio::double,wrap::int)
+  = src_process_data state in in_size out out_size ratio wrap
+    if dmatrixp in && dmatrixp out &&
+       integerp in_size && integerp out_size;
+
+/* Same for the src_simple API. */
+
+// Convert ratio from int, bigint and rational to double.
+src_simple (in::matrix, out::matrix, in_size, out_size, ratio)
+  conv_type::int channels::int
+  = src_simple (in,out,in_size,out_size,double ratio) conv_type channels
+    if integerp ratio;
+src_simple (in::matrix, out::matrix, in_size, out_size, ratio@(p%q))
+  conv_type::int channels::int
+  = src_simple (in,out,in_size,out_size,p/q) conv_type channels
+    if realp ratio;
+
+// Do the actual processing.
+src_simple (in::matrix, out::matrix, in_size, out_size, ratio::double)
+  conv_type::int channels::int
+  = src_simple_data conv_type channels in in_size out out_size ratio
+    if dmatrixp in && dmatrixp out &&
+       integerp in_size && integerp out_size;
