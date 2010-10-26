@@ -3,6 +3,26 @@
 
 extern void __sndfile_defs(); __sndfile_defs;
 
+// Wrappers around sf_open, sf_open_fd and sf_close to provide for
+// auto-collecting SNDFILE* pointers.
+
+namespace __C with
+extern SNDFILE* sf_open(char*, int, SF_INFO*);
+extern SNDFILE* sf_open_fd(int, int, SF_INFO*, int);
+extern int sf_close(SNDFILE*);
+end;
+
+sf_open name::string mode::int info::pointer
+  = if null sf then sf else sentry __C::sf_close sf if pointerp sf
+    when sf = __C::sf_open name mode info end;
+
+sf_open_fd fd::int mode::int info::pointer close_desc::int
+  = if null sf then sf else sentry __C::sf_close sf if pointerp sf
+    when sf = __C::sf_open_fd fd mode info close_desc end;
+
+sf_close sf::pointer = __C::sf_close $ clear_sentry sf
+  if get_sentry sf === __C::sf_close;
+
 // Create an auto-collecting SF_INFO structure for use with sf_open.
 
 sf_info () = cooked sf_new_info;

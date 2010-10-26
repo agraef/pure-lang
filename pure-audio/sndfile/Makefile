@@ -51,7 +51,10 @@ generate:
 	rm -f sndfile.pure
 	make sndfile.pure
 
+# NOTE: sf_open, sf_open_fd and sf_close are excluded here since we provide
+# wrappers for those. (sf_open_virtual is not supported in the Pure wrapper.)
+
 sndfile.pure: $(includedir)/sndfile.h sfinfo.h sf.pure
-	pure-gen -s '$(includedir)/sndfile.h::' $< -lsfinfo -o $@
+	pure-gen -s '$(includedir)/sndfile.h::' -x '(sf_open|sf_close)' $< -lsfinfo -o $@
 	pure-gen -N -s sfinfo.h:: sfinfo.h -o $@
 	cat sf.pure >> $@

@@ -158,9 +158,6 @@ const SF_LOOP_NONE = 800;
 const SF_LOOP_FORWARD = 801;
 const SF_LOOP_BACKWARD = 802;
 const SF_LOOP_ALTERNATING = 803;
-extern SNDFILE* sf_open(char*, int, SF_INFO*);
-extern SNDFILE* sf_open_fd(int, int, SF_INFO*, int);
-extern SNDFILE* sf_open_virtual(SF_VIRTUAL_IO*, int, SF_INFO*, void*);
 extern int sf_error(SNDFILE*);
 extern char* sf_strerror(SNDFILE*);
 extern char* sf_error_number(int);
@@ -190,7 +187,6 @@ extern long sf_read_float(SNDFILE*, float*, long);
 extern long sf_write_float(SNDFILE*, float*, long);
 extern long sf_read_double(SNDFILE*, double*, long);
 extern long sf_write_double(SNDFILE*, double*, long);
-extern int sf_close(SNDFILE*);
 extern void sf_write_sync(SNDFILE*);
 /* sfinfo.h: */
 extern SF_INFO* sf_make_info(int, int, int);
@@ -202,6 +198,26 @@ extern expr* sf_get_format_info(SF_FORMAT_INFO*);
 // Some convenience functions.
 
 extern void __sndfile_defs(); __sndfile_defs;
+
+// Wrappers around sf_open, sf_open_fd and sf_close to provide for
+// auto-collecting SNDFILE* pointers.
+
+namespace __C with
+extern SNDFILE* sf_open(char*, int, SF_INFO*);
+extern SNDFILE* sf_open_fd(int, int, SF_INFO*, int);
+extern int sf_close(SNDFILE*);
+end;
+
+sf_open name::string mode::int info::pointer
+  = if null sf then sf else sentry __C::sf_close sf if pointerp sf
+    when sf = __C::sf_open name mode info end;
+
+sf_open_fd fd::int mode::int info::pointer close_desc::int
+  = if null sf then sf else sentry __C::sf_close sf if pointerp sf
+    when sf = __C::sf_open_fd fd mode info close_desc end;
+
+sf_close sf::pointer = __C::sf_close $ clear_sentry sf
+  if get_sentry sf === __C::sf_close;
 
 // Create an auto-collecting SF_INFO structure for use with sf_open.
 
