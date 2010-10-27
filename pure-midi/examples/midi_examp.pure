@@ -18,15 +18,16 @@ let devs = devices;
 let in = open_input input 512;
 let out = open_output output 512 0;
 
-/* A little helper function to print MIDI messages and events in hexadecimal
-   format. */
+/* A little helper function to print MIDI messages and events with the status
+   byte in hexadecimal format. */
 
 printmsg (t::int,msg::matrix) = () when
-  printf "%d: %s\n" (t, (join " " (map (sprintf "%0x") (list msg))));
+  printf "%d: " t; printmsg msg;
 end;
 
 printmsg msg::matrix = () when
-  printf "%s\n" (join " " (map (sprintf "%0x") (list msg)));
+  status:data = list msg;
+  printf "%s\n" $ join " " (sprintf "0x%0x" status:map (sprintf "%d") data);
 end;
 
 /* Here's a little example showing how to send and receive sysex messages.
@@ -66,7 +67,7 @@ reset = do (writemsg out 0) $ [{0xff}] +
 rec = rec [] with
   rec seq = catch (\_->reverse seq) (case readmsg in of
     ev@(t,msg) = reverse seq if msg!0==0xfc; // stop
-    	       = puts $ str ev $$ rec (ev:seq);
+    	       = printmsg ev $$ rec (ev:seq);
   end);
 end;
 
@@ -79,13 +80,13 @@ end;
 play [] = ();
 play ((s0,msg):seq) = catch (\_->reset) $ play s0 t0 seq when
   t0 = time;
-  puts $ str (time,msg);
+  printmsg (time,msg);
   writemsg out t0 msg;
 end with
   play s0 t0 [] = ();
   play s0 t0 ((s1,msg):seq) = play s1 t1 seq when
     t1 = t0+s1-s0; sleep $ max 0 (t1-time);
-    puts $ str (time,msg);
+    printmsg (time,msg);
     writemsg out t1 msg;
   end;
 end;
