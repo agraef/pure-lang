@@ -18,6 +18,11 @@ currently includes the following modules:
 * samplerate.pure: Perform sample rate conversion on audio data. This uses
   Erik's libsamplerate library, see http://www.mega-nerd.com/SRC/.
 
+* realtime.pure: A little utility module, provides access to realtime
+  scheduling to applications which need it, on systems which have the required
+  functionality in the POSIX threads library. (Linux, OSX and other Un*x
+  systems should offer this, Windows probably needs some work.)
+
 Documentation still needs to be written, so for the time being please read the
 source modules listed above and have a look at the examples provided in the
 distribution.
@@ -27,26 +32,22 @@ Installation
 
 You need to have libportaudio (v19), libsndfile (1.x) and libsamplerate
 (0.1.x) installed on your system. Any fairly recent version of these libraries
-should do.
+should do. For the realtime module you also need a POSIX-compatible threads
+library (libpthread).
 
-The wrappers contained in the distribution are for 64 bit POSIX systems. If
-you're running a 32 bit system, or Windows, then you should regenerate them
-using 'make generate'. This requires the header files portaudio.h,
-samplerate.h and sndfile.h (and pure-gen, of course). If you do this, check
-the includedir variables defined in the Makefiles, these need to point to the
-directories where the corresponding header files are to be found (the default
-is /usr/include).
+The Pure wrappers contained in the distribution are for 64 bit POSIX
+systems. If you're running a 32 bit system, or Windows, then you should
+regenerate them using 'make generate'. This requires the header files
+portaudio.h, samplerate.h and sndfile.h (and pure-gen, of course). If you do
+this, check the includedir variables defined in the Makefiles, these need to
+point to the directories where the corresponding header files are to be found
+(the default is /usr/include).
 
 Then just run 'make' to compile the package. If you're lucky and everything
 compiles smoothly, you can install with 'sudo make install'.
 
 If you're not so lucky, you can get help on the Pure mailing list, see
 http://groups.google.com/group/pure-lang.
-
-NOTE: You may also want to install the related pure-midi package. In
-particular, pure-midi also provides realtime.pure, a little utility module
-which gives Pure programs access to realtime scheduling (you almost surely
-need this for low-latency realtime audio work).
 
 License
 -------

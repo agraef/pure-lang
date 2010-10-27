@@ -52,7 +52,8 @@ examples/*.pure examples/*.pd audio.c audio.pure portaudio.pure \
 samplerate/Makefile samplerate/srcprocess.c samplerate/srcprocess.h \
 samplerate/src.pure samplerate/samplerate.pure \
 sndfile/Makefile sndfile/sfinfo.c sndfile/sfinfo.h sndfile/sf.pure \
-sndfile/sndfile.pure
+sndfile/sndfile.pure \
+realtime/Makefile realtime/realtime.c realtime/realtime.pure
 
 # Makefile to build the PortAudio wrapper and the libsamplerate and libsndfile
 # support libraries.
@@ -64,16 +65,19 @@ all: audio$(DLL) portaudio.pure subdirs
 subdirs:
 	$(MAKE) -C samplerate all
 	$(MAKE) -C sndfile all
+	$(MAKE) -C realtime all
 
 clean:
 	rm -f *.o *$(DLL)
 	$(MAKE) -C samplerate clean
 	$(MAKE) -C sndfile clean
+	$(MAKE) -C realtime clean
 
 realclean:
 	rm -f *.o *$(DLL) portaudio.pure
 	$(MAKE) -C samplerate realclean
 	$(MAKE) -C sndfile realclean
+	$(MAKE) -C realtime clean
 
 audio$(DLL): audio.c
 	$(CC) $(shared) -o $@ $< $(FLAGS) -lportaudio -lpthread -lpure $(LIBS)
@@ -95,14 +99,14 @@ portaudio.pure: $(includedir)/portaudio.h
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
-	cp audio.pure portaudio.pure audio$(DLL) samplerate/samplerate.pure samplerate/srcprocess$(DLL) sndfile/sndfile.pure sndfile/sfinfo$(DLL) "$(DESTDIR)$(libdir)/pure"
+	cp audio.pure portaudio.pure audio$(DLL) samplerate/samplerate.pure samplerate/srcprocess$(DLL) sndfile/sndfile.pure sndfile/sfinfo$(DLL) realtime/realtime.pure realtime/realtime$(DLL) "$(DESTDIR)$(libdir)/pure"
 
 uninstall:
-	rm -f "$(DESTDIR)$(libdir)/pure/audio.pure" "$(DESTDIR)$(libdir)/pure/portaudio.pure" "$(DESTDIR)$(libdir)/pure/samplerate.pure" "$(DESTDIR)$(libdir)/pure/sndfile.pure" "$(DESTDIR)$(libdir)/pure/audio$(DLL)" "$(DESTDIR)$(libdir)/pure/srcprocess$(DLL)" "$(DESTDIR)$(libdir)/pure/sfinfo$(DLL)"
+	rm -f "$(DESTDIR)$(libdir)/pure/audio.pure" "$(DESTDIR)$(libdir)/pure/portaudio.pure" "$(DESTDIR)$(libdir)/pure/samplerate.pure" "$(DESTDIR)$(libdir)/pure/sndfile.pure" "$(DESTDIR)$(libdir)/pure/audio$(DLL)" "$(DESTDIR)$(libdir)/pure/srcprocess$(DLL)" "$(DESTDIR)$(libdir)/pure/sfinfo$(DLL)" "$(DESTDIR)$(libdir)/pure/realtime.pure" "$(DESTDIR)$(libdir)/pure/realtime$(DLL)"
 
 dist:
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/examples && mkdir $(dist)/samplerate && mkdir $(dist)/sndfile
+	mkdir $(dist) && mkdir $(dist)/examples && mkdir $(dist)/samplerate && mkdir $(dist)/sndfile && mkdir $(dist)/realtime
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
