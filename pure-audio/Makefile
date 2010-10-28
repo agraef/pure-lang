@@ -21,11 +21,13 @@ host = $(shell ./config.guess)
 #PIC = -fPIC # uncomment for x86-64 compilation
 DLL = .so
 shared = -shared
+realtime = realtime
 
 # Take care of some common systems.
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows (untested)
 DLL = .dll
+realtime = 
 endif
 ifneq "$(findstring -darwin,$(host))" ""
 # OSX (untested)
@@ -55,6 +57,8 @@ sndfile/Makefile sndfile/sfinfo.c sndfile/sfinfo.h sndfile/sf.pure \
 sndfile/sndfile.pure \
 realtime/Makefile realtime/realtime.c realtime/realtime.pure
 
+subdirs = samplerate sndfile $(realtime)
+
 # Makefile to build the PortAudio wrapper and the libsamplerate and libsndfile
 # support libraries.
 
@@ -63,21 +67,15 @@ realtime/Makefile realtime/realtime.c realtime/realtime.pure
 all: audio$(DLL) portaudio.pure subdirs
 
 subdirs:
-	$(MAKE) -C samplerate all
-	$(MAKE) -C sndfile all
-	$(MAKE) -C realtime all
+	for dir in $(subdirs); do $(MAKE) -C $$dir all; done
 
 clean:
 	rm -f *.o *$(DLL)
-	$(MAKE) -C samplerate clean
-	$(MAKE) -C sndfile clean
-	$(MAKE) -C realtime clean
+	for dir in $(subdirs); do $(MAKE) -C $$dir clean; done
 
 realclean:
 	rm -f *.o *$(DLL) portaudio.pure
-	$(MAKE) -C samplerate realclean
-	$(MAKE) -C sndfile realclean
-	$(MAKE) -C realtime clean
+	for dir in $(subdirs); do $(MAKE) -C $$dir realclean; done
 
 audio$(DLL): audio.c
 	$(CC) $(shared) -o $@ $< $(FLAGS) -lportaudio -lpthread -lpure $(LIBS)
@@ -99,10 +97,16 @@ portaudio.pure: $(includedir)/portaudio.h
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
-	cp audio.pure portaudio.pure audio$(DLL) samplerate/samplerate.pure samplerate/srcprocess$(DLL) sndfile/sndfile.pure sndfile/sfinfo$(DLL) realtime/realtime.pure realtime/realtime$(DLL) "$(DESTDIR)$(libdir)/pure"
+	cp audio.pure portaudio.pure audio$(DLL) samplerate/samplerate.pure samplerate/srcprocess$(DLL) sndfile/sndfile.pure sndfile/sfinfo$(DLL) "$(DESTDIR)$(libdir)/pure"
+ifneq ($(strip $(realtime)),)
+	cp realtime/realtime.pure realtime/realtime$(DLL) "$(DESTDIR)$(libdir)/pure"
+endif
 
 uninstall:
-	rm -f "$(DESTDIR)$(libdir)/pure/audio.pure" "$(DESTDIR)$(libdir)/pure/portaudio.pure" "$(DESTDIR)$(libdir)/pure/samplerate.pure" "$(DESTDIR)$(libdir)/pure/sndfile.pure" "$(DESTDIR)$(libdir)/pure/audio$(DLL)" "$(DESTDIR)$(libdir)/pure/srcprocess$(DLL)" "$(DESTDIR)$(libdir)/pure/sfinfo$(DLL)" "$(DESTDIR)$(libdir)/pure/realtime.pure" "$(DESTDIR)$(libdir)/pure/realtime$(DLL)"
+	rm -f "$(DESTDIR)$(libdir)/pure/audio.pure" "$(DESTDIR)$(libdir)/pure/portaudio.pure" "$(DESTDIR)$(libdir)/pure/samplerate.pure" "$(DESTDIR)$(libdir)/pure/sndfile.pure" "$(DESTDIR)$(libdir)/pure/audio$(DLL)" "$(DESTDIR)$(libdir)/pure/srcprocess$(DLL)" "$(DESTDIR)$(libdir)/pure/sfinfo$(DLL)"
+ifneq ($(strip $(realtime)),)
+	rm -f "$(DESTDIR)$(libdir)/pure/realtime.pure" "$(DESTDIR)$(libdir)/pure/realtime$(DLL)"
+endif
 
 dist:
 	rm -rf $(dist)

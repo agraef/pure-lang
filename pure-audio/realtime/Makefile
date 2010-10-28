@@ -37,5 +37,8 @@ all: realtime$(DLL)
 clean:
 	rm -f *.o *$(DLL)
 
+realclean:
+	rm -f *.o *$(DLL)
+
 realtime$(DLL): realtime.c
 	$(CC) $(shared) -o $@ $< $(FLAGS) -lpthread -lpure $(LIBS)
