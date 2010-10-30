@@ -31,9 +31,9 @@ Here is the executive summary for the impatient. This assumes that you're
 using LLVM 2.8 and Pure 0.45, please substitute your actual version numbers in
 the commands given below.
 
-Prerequisites: gcc, GNU make, flex/bison (Pure from svn only), libltdl, libgmp
-(including header files for development). These should all be available as
-binary packages on most systems.
+Prerequisites: gcc, GNU make, flex/bison (development sources only), libltdl,
+libgmp (including header files for development). These should all be available
+as binary packages on most systems.
 
 Installing LLVM and clang (the latter is optional but recommended):
 
@@ -87,10 +87,11 @@ BASIC INSTALLATION
 The basic installation process is as follows. Note that steps 1-3 are only
 required once. Steps 2-3 can be avoided if binary LLVM packages are available
 for your system (but see the caveats about broken LLVM packages on some
-systems below). Additional instructions for compiling Pure from SVN sources
-can be found in the INSTALLING FROM SVN SOURCES section below. Moreover, you
-can refer to the OTHER BUILD AND INSTALLATION OPTIONS section below for
-details about various options available when building and installing Pure.
+systems below). Additional instructions for compiling Pure from the latest
+repository sources can be found in the INSTALLING FROM DEVELOPMENT SOURCES
+section below. Moreover, you can refer to the OTHER BUILD AND INSTALLATION
+OPTIONS section below for details about various options available when
+building and installing Pure.
 
 STEP 1. Make sure you have all the necessary dependencies installed (-dev
 denotes corresponding development packages):
@@ -99,14 +100,14 @@ denotes corresponding development packages):
 
 - the GNU multiprecision library (libgmp, -dev);
 
-In addition, the following will be required to compile the svn version (see
-the INSTALLING FROM SVN SOURCES section below):
+In addition, the following will be required to compile the development version
+(see the INSTALLING FROM DEVELOPMENT SOURCES section below):
 
 - autoconf;
 
 - flex and bison;
 
-- subversion (needed to fetch the SVN sources).
+- mercurial (needed to fetch the development sources).
 
 The following may be required to build some LLVM versions:
 
@@ -114,7 +115,7 @@ The following may be required to build some LLVM versions:
 
 E.g., at the time of this writing the required packages for Ubuntu are:
 autoconf, make, g++, g++ 4.0 multilib, flex, bison, libgmp3c2, libgmp3-dev,
-libltdl3, libldtl3-dev, subversion. (To get command line editing in the
+libltdl3, libldtl3-dev, mercurial. (To get command line editing in the
 interactive interpreter, you also might wish to install the readline5-dev
 package; see the comments on readline support below.)
 
@@ -135,8 +136,8 @@ need or want to install the dependencies from source:
 
 - GNU ltdl (part of the libtool software): http://www.gnu.org/software/libtool
 
-- Subversion: http://subversion.tigris.org (There's also a very nice Windows
-  frontend, TortoiseSVN, see http://tortoisesvn.tigris.org.)
+- Mercurial: http://mercurial.selenic.com (There's also a very nice Windows
+  frontend, TortoiseHg, see http://tortoisehg.bitbucket.org.)
 
 NOTE: To make command line editing work in the interactive interpreter, you'll
 also need GNU readline or some compatible replacement such as BSD editline/
@@ -306,7 +307,7 @@ that case please zip up the entire test directory and mail it to the author,
 post it on the Pure mailing list, or enter a bug report at
 http://code.google.com/p/pure-lang/issues/list. Also please include precise
 information about your platform (operating system and cpu architecture) and
-the Pure and LLVM versions or svn revision numbers you're running.
+the Pure and LLVM versions and/or source revision numbers you're running.
 
 Note that 'make check' executes the 'run-tests' script which is generated at
 configure time. If necessary, you can also run individual tests by running
@@ -386,15 +387,16 @@ is a nice GUI application named "PurePad" which makes it easy to edit and run
 your Pure scripts.
 
 
-INSTALLING FROM SVN SOURCES
-========== ==== === =======
+INSTALLING FROM DEVELOPMENT SOURCES
+========== ==== =========== =======
 
-The latest development version of Pure is available in its subversion (SVN)
+The latest development version of Pure is available in its Mercurial (Hg)
 source code repository. You can browse the repository at:
 
 http://code.google.com/p/pure-lang/source/browse/
 
-(See the trunk/pure subdirectory for the latest Pure sources.)
+(You'll notice that the repository also contains various addon modules. See
+the pure subdirectory for the latest sources of the Pure interpreter itself.)
 
 Note that if you're going with the development sources, you'll also need
 fairly recent versions of autoconf, flex and bison (autoconf 2.63, flex 2.5.31
@@ -402,29 +404,23 @@ and bison 2.3 should be ok).
 
 To compile from the development sources, replace steps 4 and 5 above with:
 
-STEP 4': Fetch the SVN sources.
+STEP 4': Fetch the latest sources from the repository.
 
-$ svn co http://pure-lang.googlecode.com/svn/trunk/pure pure
+$ hg clone http://pure-lang.googlecode.com/hg pure-lang
 
-This fetches the latest development sources (the "trunk") from svn and puts it
-into the 'pure' subdirectory in the current directory. This step needs to be
-done only once; once you've checked out your working copy, you can update it
-to the latest revision at any time by running 'svn up'.
-
-(The above command is for an anonymous, read-only copy. Project members please
-use https: instead of http: if you're planning to commit any changes. Also,
-you might want to check out the entire trunk instead of just the trunk/pure
-directory if you plan to also compile some of the addon modules, or the
-complete svn tree if you want the whole shebang including all documentation
-and wiki files.)
+This clones the repository and puts it into the 'pure-lang' subdirectory in
+the current directory. (Project members please use https: instead of http: if
+you're planning to push any changes back to the server.) This step needs to be
+done only once; once you've cloned the repository, you can update it to the
+latest revision at any time by running 'hg pull -u'.
 
 STEP 5': Configure, build and install Pure.
 
 This is pretty much the same as with the distribution tarball, except that you
 need to run 'autoreconf' once to generate the configure script which isn't
-included in the svn sources.
+included in the source repository.
 
-$ cd pure
+$ cd pure-lang/pure
 $ autoreconf
 $ ./configure --enable-release
 $ make
@@ -687,7 +683,7 @@ this option isn't needed anymore.
 If you still use LLVM 2.3 on x86-64, there is a patch by Cyrille Berger which
 you need to apply in the llvm-2.3 source directory to make that version link
 properly with the Pure runtime library. The patch is available at:
-http://pure-lang.googlecode.com/svn/wiki/X86JITInfo.cpp.pic.2.3.patch. After
+http://wiki.pure-lang.googlecode.com/hg/X86JITInfo.cpp.pic.2.3.patch. After
 applying the patch, configure LLVM with --enable-pic and build it as usual.
 
 POWERPC
@@ -789,6 +785,6 @@ compiler work. Just unzip these into some convenient location on your
 harddrive and set up PATH so that it points to the llvm-x.y directory.
 
 
-March 2010
+October 2010
 Albert Graef <Dr.Graef at t-online.de>
 Eddie Rucker <erucker at bmc.edu>
