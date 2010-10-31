@@ -1,0 +1,30 @@
+
+using "lib:fftw";
+
+/* NOTE: Only real-valued input signals are supported right now, but this
+   should be good enough for analyzing audio signals. */
+
+namespace __C;
+extern bool fft(int n, double *wave, double *mag, double *phase);
+extern bool ifft(int n, double *mag, double *phase, double *wave);
+namespace;
+
+/* fft wave takes a packed double matrix wave (of even size) and returns the
+   amplitude and phase spectrum as a pair of double matrices mag and phase. */
+
+fft wave::matrix = mag, phase
+if dmatrixp wave && __C::fft n wave mag phase
+when
+  n = #wave; m = n div 2+1;
+  mag = dmatrix m; phase = dmatrix m;
+end;
+
+/* ifft reconstructs a wave from a pair of double matrices (mag,phase)
+   denoting the amplitude and phase spectrum. */
+
+ifft (mag::matrix,phase::matrix) = wave
+if dmatrixp mag && dmatrixp phase && #mag==#phase &&
+  __C::ifft n mag phase wave
+when
+  m = #mag; n = 2*(m-1); wave = dmatrix n;
+end;
