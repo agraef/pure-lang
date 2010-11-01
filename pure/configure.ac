@@ -180,8 +180,9 @@ AC_DEFINE_UNQUOTED(LLVM_VERSION, "${llvm_version}", [Define to the LLVM version 
 
 dnl If we got LLVM installed as a shared library, use that.
 AC_CHECK_LIB(LLVM-${llvm_version}, LLVMFreeMachineCodeForFunction,
-[LLVM_LIBS=-lLLVM-${llvm_version}], [LLVM_LIBS=$($LLVMCONF --ldflags --libs core bitreader bitwriter linker jit native | tr '\r\n' '  ')])
+[LLVM_LIBS=-lLLVM-${llvm_version}; LLVM_EXE_LIBS=-lLLVM-${llvm_version}], [LLVM_LIBS=$($LLVMCONF --ldflags --libs core bitreader bitwriter linker jit native | tr '\r\n' '  ')])
 AC_SUBST(LLVM_LIBS)
+AC_SUBST(LLVM_EXE_LIBS)
 
 LLVM_FLAGS=$($LLVMCONF --cppflags | sed -e s/-DNDEBUG//g)
 AC_SUBST(LLVM_FLAGS)
