@@ -123,18 +123,7 @@ extern void perror(char*), char* strerror(int);
 
 */
 
-namespace __C;
-extern void* setlocale(int category, void* locale);
-namespace;
-
-setlocale category::int locale = cstring_dup res if ~null res when
-  res = case locale of
-          _::string  = __C::setlocale category $ sentry free $
-                       byte_cstring locale;
-          _::pointer = __C::setlocale category locale if null locale;
-          _          = pointer 0 otherwise;
-        end;
-end;
+extern char* setlocale(int category, char* locale);
 
 /* ..
 
@@ -341,7 +330,7 @@ extern void pure_tzset() = tzset;
    struct is given by the ``SIZEOF_TM`` constant, so a safe way to allocate
    suitable dynamic storage for the ``strptime`` function is as follows::
 
-     > let tm = calloc 1 SIZEOF_TM;
+     > let tm = pointer_cast "int*" $ calloc 1 SIZEOF_TM;
      > strptime "4/2/10" "%D" tm, int_matrix 9 tm;
      "",{0,0,0,2,3,110,5,91,0}
 
@@ -414,12 +403,12 @@ extern void pure_tzset() = tzset;
    supports the C locale. */
 
 extern char* pure_ctime(int64) = ctime;
-extern void* pure_gmtime(int64) = gmtime;
-extern void* pure_localtime(int64) = localtime;
-extern int64 pure_mktime(void *tm) = mktime;
-extern char* asctime(void *tm);
-extern char* pure_strftime(char *format, void *tm) = strftime;
-extern expr* pure_strptime(char *s, char *format, void *tm) = strptime;
+extern int*  pure_gmtime(int64) = gmtime;
+extern int*  pure_localtime(int64) = localtime;
+extern int64 pure_mktime(int *tm) = mktime;
+extern char* asctime(int *tm);
+extern char* pure_strftime(char *format, int *tm) = strftime;
+extern expr* pure_strptime(char *s, char *format, int *tm) = strptime;
 
 /* ..
 
