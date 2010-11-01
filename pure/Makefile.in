@@ -240,30 +240,31 @@ purelib.txt: $(libfiles)
 %.html: %.txt
 	$(rst2html) $< $@
 
-# Note: This requires a fairly recent (>= 07-2009) svn version of rst2latex.
-# For older rst2latex versions, you might have to remove some or all of the
-# extra formatting options.
+# Note: This requires a fairly recent (>= 2009) svn version of rst2latex. For
+# older rst2latex versions, you might have to remove some or all of the extra
+# formatting options.
 
 LATEXOPT=--use-latex-toc --use-latex-docinfo --stylesheet=preamble.tex --documentoptions="11pt" --literal-block-env=lstlisting
 
+# If the variable 'fixdoc' is defined on the make command line, we assume an
+# older rst2latex version whose output still needs fixing. (The fixdoc utility
+# is contained in the pure-doc package.) Hopefully, this can eventually go
+# away, but current rst2latex versions still have issues with hyperlink
+# generation which make them unusable to create print versions of the Pure
+# documentation right now, so we still use an older rst2latex for that
+# (snapshot 2009-03-30, r5886, is known to work).
+
 %.tex: %.txt
+ifdef fixdoc
+	$(rst2latex) --no-section-numbering $(LATEXOPT) $< | fixdoc > $@
+else
 	$(rst2latex) $(LATEXOPT) $< > $@
+endif
 
 %.pdf: %.tex preamble.tex
 	pdflatex $<
 	pdflatex $<
 	pdflatex $<
-
-# Private stuff. This is for an older svn snapshot of rst2latex that the
-# author uses. Requires fixdoc from the pure-doc package. Hopefully, this can
-# eventually go away, but current rst2latex versions still have issues with
-# hyperlink generation which make them unusable to create print versions of
-# the Pure documentation right now.
-
-pdf-fixed: pure-fixed.pdf purelib-fixed.pdf
-
-%-fixed.tex: %.txt
-	$(rst2latex) --no-section-numbering $(LATEXOPT) $< | fixdoc > $@
 
 # cleaning
 
