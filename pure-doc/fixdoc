@@ -15,7 +15,10 @@
 # the index is in its own section named 'Index'.
 
 # This script shouldn't be needed for the latest svn versions of rst2latex any
-# more.
+# more. (Unfortunately, these have their own share of bugs, such as broken
+# hyperlink generation. So in order to get the best possible pdf output, we
+# might still have to live with older docutils versions and this script for
+# some time.)
 
 BEGIN { RS = ""; FS = ""; idx = 0 }
 {
@@ -23,7 +26,7 @@ BEGIN { RS = ""; FS = ""; idx = 0 }
   # Remove nested link targets (bug in rst2latex?).
   while (gsub(/\{\\hypertarget\{[^}]*\}\{[^}]*\}\}/, "{}") > 0) { }
   x = $0
-  # Merge adjacent itemize and description environments, tro prevent extra
+  # Merge adjacent itemize and description environments, to prevent extra
   # vspace.
   x = gensub(/\\end{itemize}\n*((\\hypertarget\{[^}]*\}\{[^}]*\})*)\n*\\begin{itemize}/, "\\1", "g", x)
   x = gensub(/\\end{description}\n*((\\hypertarget\{[^}]*\}\{[^}]*\})*)\n*\\begin{description}/, "\\1", "g", x)
