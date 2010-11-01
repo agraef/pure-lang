@@ -6209,7 +6209,7 @@ contain additional public and private fields. The actual size of a ``tm``
 struct is given by the ``SIZEOF_TM`` constant, so a safe way to allocate
 suitable dynamic storage for the ``strptime`` function is as follows::
 
-  > let tm = calloc 1 SIZEOF_TM;
+  > let tm = pointer_cast "int*" $ calloc 1 SIZEOF_TM;
   > strptime "4/2/10" "%D" tm, int_matrix 9 tm;
   "",{0,0,0,2,3,110,5,91,0}
 
@@ -7038,14 +7038,15 @@ alternatives are available:
 .. _regexggs:
 .. _regsplits:
 
-``regexgs f pat cflags s eflags``
+* ``regexgs f pat cflags s eflags``
 
-``regexggs f pat cflags s eflags``
+* ``regexggs f pat cflags s eflags``
 
-``regsplits pat cflags s eflags``
-  These work like ``regexg``, ``regexgg`` and ``regsplit`` above, but
-  return a stream result which enables you to process the matches one by
-  one, using "call by need" evaluation.
+* ``regsplits pat cflags s eflags``
+
+These work like ``regexg``, ``regexgg`` and ``regsplit`` above, but
+return a stream result which enables you to process the matches one by
+one, using "call by need" evaluation.
 
 ..
 
