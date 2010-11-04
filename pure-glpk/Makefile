@@ -75,7 +75,7 @@ pure-glpk.html: README
 	$(rst2html) $< $@
 
 pure-glpk.tex: README
-	$(rst2latex) $< $@
+	$(rst2latex) -i utf8 -o utf8 $< $@
 
 pure-glpk.pdf: pure-glpk.tex
 	pdflatex $<
