@@ -1,0 +1,16 @@
+#! /bin/awk -f
+
+# This program needs GNU awk.
+
+# Synopsis: fixdoc rst-input-file > rst-output-file
+
+BEGIN { RS = ""; FS = ""; idx = 0 }
+{
+  x = $0
+  # Put the contents directive under .. only:: html and make it local.
+  x = gensub(/\.\. contents::[ \t]*/, ".. only:: html\n\n   .. contents:: :local:", "g", x)
+  # Remove the sectnum directive, it doesn't work with sphinx.
+  x = gensub(/\.\. sectnum::[ \t]*/, "", "g", x)
+  print x
+  print ""
+}
