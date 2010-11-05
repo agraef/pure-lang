@@ -95,8 +95,10 @@ rst2latex = $(shell which rst2latex 2>/dev/null || which rst2latex.py 2>/dev/nul
 sources = xml.pure
 target = pure-xml
 
+pure-doc = pure-doc
+
 $(target).txt: README $(sources)
-	pure-doc $(sources) | cat README - > $@
+	$(pure-doc) $(sources) | cat README - > $@
 
 .PHONY: html tex pdf
 

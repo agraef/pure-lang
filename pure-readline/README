@@ -1,11 +1,12 @@
 
+=============
 pure-readline
 =============
 
 This is a trivial wrapper around GNU readline, which gives Pure scripts access
-to the readline and add_history functions. The wrapper can also be used with
-the BSD editline a.k.a. libedit library, a readline replacement licensed under
-the 3-clause BSD license. You can find these at:
+to the ``readline`` and ``add_history`` functions. The wrapper can also be
+used with the BSD editline a.k.a. libedit library, a readline replacement
+licensed under the 3-clause BSD license. You can find these at:
 
 - GNU readline: http://tiswww.tis.case.edu/~chet/readline/rltop.html
 
@@ -26,3 +27,26 @@ readline in any way.) By default, the module will be built with GNU readline.
 To select editline/libedit instead, you only have to uncomment a line at the
 beginning of the Makefile. Also, you might want to check the beginning of
 readline.c for the proper location of the corresponding header files.
+
+The module provides two functions:
+
+.. _readline:
+
+``readline prompt``
+  Read a line of input from the user, with prompting and command line
+  editing. Returns the input line (with the trailing newline removed), or
+  ``NULL`` when reaching end of file.
+
+``add_history line``
+  Adds the given line (a string) to the command history.
+
+Example::
+
+  > readline "input> ";
+  input> Hello, world!
+  "Hello, world!"
+  > add_history ans;
+  ()
+  > readline "input> ";
+  input> <EOF>
+  #<pointer 0>

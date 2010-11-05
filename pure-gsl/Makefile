@@ -88,8 +88,10 @@ distcheck: dist
 sources = gsl.pure gsl/poly.pure gsl/sf.pure gsl/matrix.pure gsl/fit.pure gsl/stats.pure gsl/randist.pure gsl/sort.pure
 target = pure-gsl
 
+pure-doc = pure-doc
+
 $(target).txt: $(sources)
-	pure-doc $(sources) > $@
+	$(pure-doc) $(sources) > $@
 
 rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
 rst2latex = $(shell which rst2latex 2>/dev/null || which rst2latex.py 2>/dev/null || echo rst2latex)
