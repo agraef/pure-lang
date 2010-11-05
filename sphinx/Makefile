@@ -1,5 +1,24 @@
-# Makefile for Sphinx documentation
+
+# This requires GNU make. No, really.
+
+##############################################################################
 #
+# Brief instructions:
+#
+# - Running just 'make' grabs and patches the rst source.
+#
+# - Then just run 'make html', 'make latex' etc. as usual to invoke the Sphinx
+#   builder. (Run 'make help' to see which formats can be built.)
+#
+# - To get rid of the generated stuff, run 'make clean' (everything that
+#   Sphinx built), 'make cleandocs' (our rst source), or 'make realclean'
+#   (really everything that's generated, no questions asked).
+#
+##############################################################################
+
+# The rst sources we want to use. This is pretty much the only definition that
+# needs to be updated (along with the toctree in the master document
+# puredoc.txt) when the set of documentation changes.
 
 rst_sources = pure/pure.txt pure/purelib.txt faust2pd/faust2pd.txt gnumeric-pure/gnumeric-pure.txt pd-pure/pd-pure.txt pure-audio/pure-audio.txt pure-csv/pure-csv.txt pure-doc/pure-doc.txt pure-fastcgi/pure-fastcgi.txt pure-faust/pure-faust.txt pure-ffi/pure-ffi.txt pure-g2/pure-g2.txt pure-gen/pure-gen.txt pure-gl/pure-gl.txt pure-gplot/pure-gplot.txt pure-gsl/pure-gsl.txt pure-gtk/pure-gtk.txt pure-liblo/pure-liblo.txt pure-midi/pure-midi.txt pure-octave/pure-octave.txt pure-odbc/pure-odbc.txt pure-readline/pure-readline.txt pure-sockets/pure-sockets.txt pure-sql3/pure-sql3.txt pure-tk/pure-tk.txt pure-xml/pure-xml.txt
 
@@ -16,23 +35,43 @@ ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
 .PHONY: all sources help clean cleandocs realclean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest
 
+# Try to grab as many rst sources as we can. This can never fail.
+
 all:
-	@rm -rf $(dir $(rst_sources)) $(notdir $(rst_sources)) 
+	@rm -rf $(dir $(rst_sources))
 	@make sources
-	@cp */*.txt .
+	@for x in */*.txt; do test -f $$x && cp $$x . || true; done
 	@rm -rf $(dir $(rst_sources))
 
 sources: $(rst_sources)
 
+# A little helper function which patches up a rst document and checks whether
+# it's different from what we already have (if so, then get rid of it
+# immediately). $(1) is the original rst source from .., $(2) the target file
+# to be built.
+
+check = ./fixdoc < $(1) > $(2); if diff $(notdir $(2)) $(2) >/dev/null 2>&1; then rm $(2); echo "$(notdir $(2)) is unchanged"; else echo "creating $(notdir $(2)) from: $(1)"; fi
+
+# This is actually a phony rule as the documentation we want to create might
+# be up-to-date (in which case it won't be updated) or may be missing
+# altogether. Note that we first create the rst source in a corresponding
+# subdirectory, the 'all' target above moves them back up.
+
 %.txt:
 	@(test -d $(dir $@) || mkdir -p $(dir $@))
-	@(test -f ../$@ && mv ../$@ $@.bak; if $(MAKE) -C ../$(dir $@) $(notdir $@) pure-doc="pure-doc -s" >/dev/null 2>&1; then echo "creating $(notdir $@) from: ../$@"; ./fixdoc < ../$@ > $@; test -f $@.bak && mv $@.bak ../$@ || (echo "deleting ../$@"; rm ../$@); elif test -f $@.bak; then mv $@.bak ../$@; echo "creating $(notdir $@) from: ../$@"; ./fixdoc < ../$@ > $@; elif test -f ../$(dir $@)/README; then echo "creating $(notdir $@) from: ../$(dir $@)README"; ./fixdoc < ../$(dir $@)README > $@; else echo "no source for $(notdir $@)"; fi)
+	@(test -f ../$@ && mv ../$@ $@.bak; if $(MAKE) -C ../$(dir $@) $(notdir $@) pure-doc="pure-doc -s" >/dev/null 2>&1; then $(call check,../$@,$@); test -f $@.bak && mv $@.bak ../$@ || (echo "deleting ../$@"; rm ../$@); elif test -f $@.bak; then mv $@.bak ../$@; $(call check,../$@,$@); elif test -f ../$(dir $@)README; then $(call check,../$(dir $@)README,$@); else echo "no source for $(notdir $@)"; fi)
+
+# Get rid of the rst source we created. You might want to run this to force a
+# fresh build.
 
 cleandocs:
 	rm -rf $(notdir $(rst_sources)) 
 
+# Get rid of really *everything* that we generated, and other unneccessary
+# stuff that may be lying around.
+
 realclean: clean cleandocs
-	rm -rf auto _build
+	rm -rf *~ *.bak auto _build
 
 help:
 	@echo "Please use \`make <target>' where <target> is one of"
@@ -57,47 +96,47 @@ clean:
 	-rm -rf $(BUILDDIR)/*
 
 html:
-	$(SPHINXBUILD) -Q -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 
 dirhtml:
-	$(SPHINXBUILD) -Q -b dirhtml $(ALLSPHINXOPTS) $(BUILDDIR)/dirhtml
+	$(SPHINXBUILD) -b dirhtml $(ALLSPHINXOPTS) $(BUILDDIR)/dirhtml
 
 singlehtml:
-	$(SPHINXBUILD) -Q -b singlehtml $(ALLSPHINXOPTS) $(BUILDDIR)/singlehtml
+	$(SPHINXBUILD) -b singlehtml $(ALLSPHINXOPTS) $(BUILDDIR)/singlehtml
 
 pickle:
-	$(SPHINXBUILD) -Q -b pickle $(ALLSPHINXOPTS) $(BUILDDIR)/pickle
+	$(SPHINXBUILD) -b pickle $(ALLSPHINXOPTS) $(BUILDDIR)/pickle
 
 json:
-	$(SPHINXBUILD) -Q -b json $(ALLSPHINXOPTS) $(BUILDDIR)/json
+	$(SPHINXBUILD) -b json $(ALLSPHINXOPTS) $(BUILDDIR)/json
 
 htmlhelp:
-	$(SPHINXBUILD) -Q -b htmlhelp $(ALLSPHINXOPTS) $(BUILDDIR)/htmlhelp
+	$(SPHINXBUILD) -b htmlhelp $(ALLSPHINXOPTS) $(BUILDDIR)/htmlhelp
 
 qthelp:
-	$(SPHINXBUILD) -Q -b qthelp $(ALLSPHINXOPTS) $(BUILDDIR)/qthelp
+	$(SPHINXBUILD) -b qthelp $(ALLSPHINXOPTS) $(BUILDDIR)/qthelp
 
 devhelp:
-	$(SPHINXBUILD) -Q -b devhelp $(ALLSPHINXOPTS) $(BUILDDIR)/devhelp
+	$(SPHINXBUILD) -b devhelp $(ALLSPHINXOPTS) $(BUILDDIR)/devhelp
 
 epub:
-	$(SPHINXBUILD) -Q -b epub $(ALLSPHINXOPTS) $(BUILDDIR)/epub
+	$(SPHINXBUILD) -b epub $(ALLSPHINXOPTS) $(BUILDDIR)/epub
 
 latex:
-	$(SPHINXBUILD) -Q -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
+	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
 
 latexpdf:
-	$(SPHINXBUILD) -Q -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
+	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
 	make -C $(BUILDDIR)/latex all-pdf
 
 text:
-	$(SPHINXBUILD) -Q -b text $(ALLSPHINXOPTS) $(BUILDDIR)/text
+	$(SPHINXBUILD) -b text $(ALLSPHINXOPTS) $(BUILDDIR)/text
 
 man:
-	$(SPHINXBUILD) -Q -b man $(ALLSPHINXOPTS) $(BUILDDIR)/man
+	$(SPHINXBUILD) -b man $(ALLSPHINXOPTS) $(BUILDDIR)/man
 
 changes:
-	$(SPHINXBUILD) -Q -b changes $(ALLSPHINXOPTS) $(BUILDDIR)/changes
+	$(SPHINXBUILD) -b changes $(ALLSPHINXOPTS) $(BUILDDIR)/changes
 
 linkcheck:
 	$(SPHINXBUILD) -b linkcheck $(ALLSPHINXOPTS) $(BUILDDIR)/linkcheck
