@@ -3,15 +3,15 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta name="generator" content="Docutils 0.5: http://docutils.sourceforge.net/" />
+<meta name="generator" content="Docutils 0.7: http://docutils.sourceforge.net/" />
 <title>Pure-GLPK - GLPK interface for the Pure programming language</title>
 <meta name="author" content="Jiri Spitz &lt;jiri.spitz&#64;bluetone.cz&gt;" />
-<meta name="date" content="2010-02-04" />
+<meta name="date" content="2010-11-05" />
 <style type="text/css">
 
 /*
 :Author: David Goodger (goodger@python.org)
-:Id: $Id: html4css1.css 5196 2007-06-03 20:25:28Z wiemann $
+:Id: $Id: html4css1.css 5951 2009-05-18 18:03:10Z milde $
 :Copyright: This stylesheet has been placed in the public domain.
 
 Default cascading style sheet for the HTML output of Docutils.
@@ -159,11 +159,32 @@ h2.subtitle {
 hr.docutils {
   width: 75% }
 
-img.align-left {
-  clear: left }
+img.align-left, .figure.align-left{
+  clear: left ;
+  float: left ;
+  margin-right: 1em }
 
-img.align-right {
-  clear: right }
+img.align-right, .figure.align-right {
+  clear: right ;
+  float: right ;
+  margin-left: 1em }
+
+.align-left {
+  text-align: left }
+
+.align-center {
+  clear: both ;
+  text-align: center }
+
+.align-right {
+  text-align: right }
+
+/* reset inner alignment in figures */
+div.align-right {
+  text-align: left }
+
+/* div.align-center * { */
+/*   text-align: left } */
 
 ol.simple, ul.simple {
   margin-bottom: 1em }
@@ -218,8 +239,7 @@ p.topic-title {
 pre.address {
   margin-bottom: 0 ;
   margin-top: 0 ;
-  font-family: serif ;
-  font-size: 100% }
+  font: inherit }
 
 pre.literal-block, pre.doctest-block {
   margin-left: 2em ;
@@ -295,7 +315,7 @@ ul.auto-toc {
 <tr><th class="docinfo-name">Author:</th>
 <td>Jiri Spitz &lt;<a class="reference external" href="mailto:jiri.spitz&#64;bluetone.cz">jiri.spitz&#64;bluetone.cz</a>&gt;</td></tr>
 <tr><th class="docinfo-name">Date:</th>
-<td>2010-02-04</td></tr>
+<td>2010-11-05</td></tr>
 </tbody>
 </table>
 <p>This module provides a feature complete GLPK interface for the Pure programming
@@ -587,7 +607,7 @@ in a variety of formats, using the docutils text formatting system
 (http://docutils.sourceforge.net/). -->
 <div class="section" id="installation">
 <h1><a class="toc-backref" href="#id1">1&nbsp;&nbsp;&nbsp;Installation</a></h1>
-<p>Run <tt class="docutils literal"><span class="pre">make</span></tt> to compile the module and <tt class="docutils literal"><span class="pre">make</span> <span class="pre">install</span></tt> (as root) to install
+<p>Run <tt class="docutils literal">make</tt> to compile the module and <tt class="docutils literal">make install</tt> (as root) to install
 it in the Pure library directory. This requires GNU make, and of course you
 need to have Pure installed.</p>
 <p>The default make options suppose that GLPK was configured with the following
@@ -606,11 +626,11 @@ within the GNU MathProg language translator.</li>
 <li>ltdl dlopen library - must be enabled together with any of ODBC, zlib or
 MySQL.</li>
 </ul>
-<p><tt class="docutils literal"><span class="pre">make</span></tt> tries to guess your Pure installation directory and platform-specific
+<p><tt class="docutils literal">make</tt> tries to guess your Pure installation directory and platform-specific
 setup. If it gets this wrong, you can set some variables manually. In
-particular, <tt class="docutils literal"><span class="pre">make</span> <span class="pre">install</span> <span class="pre">prefix=/usr</span></tt> sets the installation prefix, and
-<tt class="docutils literal"><span class="pre">make</span> <span class="pre">PIC=-fPIC</span></tt> or some similar flag might be needed for compilation on 64
-bit systems. The variable <tt class="docutils literal"><span class="pre">ODBCLIB</span></tt> specifies the ODBC library to be linked
+particular, <tt class="docutils literal">make install <span class="pre">prefix=/usr</span></tt> sets the installation prefix, and
+<tt class="docutils literal">make <span class="pre">PIC=-fPIC</span></tt> or some similar flag might be needed for compilation on 64
+bit systems. The variable <tt class="docutils literal">ODBCLIB</tt> specifies the ODBC library to be linked
 with. The default value is <tt class="docutils literal"><span class="pre">ODBCLIB=-lodbc</span></tt>. Please see the Makefile for
 details.</p>
 </div>
@@ -623,14 +643,14 @@ the most common errors like indices out of bounds. On such an error an
 appropriate message is returned to the interpreter. The less common errors
 are still trapped by the GLPK library.</p>
 <p>When one of the most common errors occurs, an error term of the form
-<tt class="docutils literal"><span class="pre">glp::error</span> <span class="pre">message</span></tt> will be returned, which specifies what kind of error
+<tt class="docutils literal"><span class="pre">glp::error</span> message</tt> will be returned, which specifies what kind of error
 happend. For instance, an index out of boundsd will cause a report like the
 following:</p>
-<p><tt class="docutils literal"><span class="pre">glp::error</span> <span class="pre">&quot;[Pure</span> <span class="pre">GLPK</span> <span class="pre">error]</span> <span class="pre">row</span> <span class="pre">index</span> <span class="pre">out</span> <span class="pre">of</span> <span class="pre">bounds&quot;</span></tt></p>
+<p><tt class="docutils literal"><span class="pre">glp::error</span> &quot;[Pure GLPK error] row index out of bounds&quot;</tt></p>
 <p>You can check for such return values and take some appropriate action. By
 redefining <tt class="docutils literal"><span class="pre">glp::error</span></tt> accordingly, you can also have it generate exceptions
 or print an error message. For instance:</p>
-<p><tt class="docutils literal"><span class="pre">glp::error</span> <span class="pre">message</span> <span class="pre">=</span> <span class="pre">fprintf</span> <span class="pre">stderr</span> <span class="pre">&quot;%s\n&quot;</span> <span class="pre">message</span> <span class="pre">$$</span> <span class="pre">();</span></tt></p>
+<p><tt class="docutils literal"><span class="pre">glp::error</span> message = fprintf stderr &quot;%s\n&quot; message $$ ();</tt></p>
 <p><strong>NOTE:</strong> When redefining <tt class="docutils literal"><span class="pre">glp::error</span></tt> in this manner, you should be aware
 that the return value of <tt class="docutils literal"><span class="pre">glp::error</span></tt> is what will be returned by the other
 operations of this module in case of an error condition. These return values
@@ -650,12 +670,12 @@ can be found in the examples directory.</p>
 </div>
 <div class="section" id="interface-description">
 <h1><a class="toc-backref" href="#id4">4&nbsp;&nbsp;&nbsp;Interface description</a></h1>
-<p>Most GLPK functions and symbols live in the namespace <tt class="docutils literal"><span class="pre">glp</span></tt>. There are a few
-functions and symbols in the namespace <tt class="docutils literal"><span class="pre">lpx</span></tt>. These functions and symbols
+<p>Most GLPK functions and symbols live in the namespace <tt class="docutils literal">glp</tt>. There are a few
+functions and symbols in the namespace <tt class="docutils literal">lpx</tt>. These functions and symbols
 are likely to be removed and replaced by new ones in the future.</p>
-<p>In general, when you replace the <tt class="docutils literal"><span class="pre">glp_</span></tt> prefix from the GLPK Reference Manual
-with the namespace specification <tt class="docutils literal"><span class="pre">glp::</span></tt> then you receive the function name
-in this module. The same is valid for <tt class="docutils literal"><span class="pre">lpx_</span></tt> and <tt class="docutils literal"><span class="pre">lpx::</span></tt>. The symbolic
+<p>In general, when you replace the <tt class="docutils literal">glp_</tt> prefix from the GLPK Reference Manual
+with the namespace specification <tt class="docutils literal">glp::</tt> then you receive the function name
+in this module. The same is valid for <tt class="docutils literal">lpx_</tt> and <tt class="docutils literal">lpx::</tt>. The symbolic
 constants are converted into lower case in this module, again obeying the
 same prefix rules.</p>
 </div>
@@ -706,7 +726,7 @@ glp::set_prob_name lp name
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_prob_name lp &quot;Testing problem&quot;;
@@ -735,7 +755,7 @@ glp::set_obj_name lp name
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_obj_name lp &quot;Total costs&quot;;
@@ -776,7 +796,7 @@ glp::set_obj_dir lp direction
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_obj_dir lp glp::min;
@@ -867,7 +887,7 @@ glp::set_row_name lp (rowindex, rowname)
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_row_name lp (3, &quot;The third row&quot;);
@@ -898,7 +918,7 @@ glp::set_col_name lp (colindex, colname)
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_col_name lp (3, &quot;The third column&quot;);
@@ -954,9 +974,9 @@ glp::set_row_bnds lp (rowindex, rowtype, lowerbound, upperbound)
 </blockquote>
 <dl class="docutils">
 <dt><strong>Returns</strong>:</dt>
-<dd><tt class="docutils literal"><span class="pre">()</span></tt></dd>
+<dd><tt class="docutils literal">()</tt></dd>
 <dt><strong>Example</strong>::</dt>
-<dd><tt class="docutils literal"><span class="pre">glp::set_row_bnds</span> <span class="pre">lp</span> <span class="pre">(3,</span> <span class="pre">glp::up,</span> <span class="pre">0.0,</span> <span class="pre">150.0);</span></tt></dd>
+<dd><tt class="docutils literal"><span class="pre">glp::set_row_bnds</span> lp (3, <span class="pre">glp::up,</span> 0.0, 150.0);</tt></dd>
 </dl>
 </div>
 <div class="section" id="set-change-column-bounds">
@@ -1007,7 +1027,7 @@ glp::set_col_bnds lp (colindex, coltype, lowerbound, upperbound)
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_col_bnds lp (3, glp::db, 100.0, 150.0);
@@ -1037,7 +1057,7 @@ glp::set_obj_coef lp (colindex, coefficient)
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_obj_coef lp (3, 15.8);
@@ -1070,7 +1090,7 @@ indices is not important, duplicates are <strong>not</strong> allowed</td>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_mat_row lp (3, [(1, 3.0), (4, 5.2)]);
@@ -1103,7 +1123,7 @@ indices is not important, duplicates are <strong>not</strong> allowed</td>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_mat_col lp (2, [(4, 2.0), (2, 1.5)]);
@@ -1134,7 +1154,7 @@ important, duplicates are <strong>not</strong> allowed</td>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::load_matrix lp [(1, 3, 5.0), (2, 2, 3.5), (3, 1, -2.0), (3, 2, 1.0)];
@@ -1185,7 +1205,7 @@ important</td>
 </blockquote>
 <p><strong>Remark:</strong></p>
 <blockquote>
-Notice, that <tt class="docutils literal"><span class="pre">k</span></tt> counts from 1, whereas list members are counted from 0.</blockquote>
+Notice, that <tt class="docutils literal">k</tt> counts from 1, whereas list members are counted from 0.</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::check_dup 3 3  [(1, 3), (2, 2), (3, 1), (2, 2)];
@@ -1212,7 +1232,7 @@ glp::sort_matrix lp
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::sort_matrix lp;
@@ -1242,7 +1262,7 @@ important, duplicates are <strong>not</strong> allowed</td>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Remark:</strong></p>
 <blockquote>
 Deleting rows involves changing ordinal numbers of other rows
@@ -1278,7 +1298,7 @@ important, duplicates are <strong>not</strong> allowed</td>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Remark:</strong></p>
 <blockquote>
 Deleting columns involves changing ordinal numbers of other columns
@@ -1329,7 +1349,7 @@ exist)</p>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::copy_prob lp_dest lp_src glp::on;
@@ -1357,7 +1377,7 @@ the function call</td>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::erase_prob lp;
@@ -1385,7 +1405,7 @@ the function call</td>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::delete_prob lp;
@@ -1957,7 +1977,7 @@ glp::create_index lp
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::create_index lp;
@@ -2048,7 +2068,7 @@ glp::delete_index lp
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::delete:index lp;
@@ -2082,7 +2102,7 @@ glp::set_rii lp (rowindex, coefficient)
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_rii lp (3, 258.6);
@@ -2113,7 +2133,7 @@ glp::set_sjj lp (colindex, coefficient)
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_sjj lp (2, 12.8);
@@ -2219,7 +2239,7 @@ by arithmetic <cite>or</cite>; the possible constants are:</p>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::scale_prob lp (glp::sf_gm || glp::sf_2n);
@@ -2246,7 +2266,7 @@ glp::unscale_prob lp
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::unscale_prob lp;
@@ -2301,7 +2321,7 @@ equivalent to glp::nl (only in the case of this routine)</td>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_row_stat lp (3, glp::nu);
@@ -2353,7 +2373,7 @@ equivalent to glp::nl (only in the case of this routine)</td>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_col_stat lp (2, glp::bs);
@@ -2380,7 +2400,7 @@ glp::std_basis lp
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::std_basis lp;
@@ -2407,7 +2427,7 @@ glp::adv_basis lp
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::adv_basis lp;
@@ -2434,7 +2454,7 @@ glp::cpx_basis lp
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::cpx_basis lp;
@@ -2465,66 +2485,41 @@ glp::simplex lp options
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">glp::msg_lev:</th><td class="field-body"><p class="first">(default: glp::msg_all) - message level for
-terminal output:</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">glp::msg_off:</th><td class="field-body">no output</td>
-</tr>
-<tr class="field"><th class="field-name">glp::msg_err:</th><td class="field-body">error and warning messages only</td>
-</tr>
-<tr class="field"><th class="field-name">glp::msg_on:</th><td class="field-body">normal output;</td>
-</tr>
-<tr class="field"><th class="field-name">glp::msg_all:</th><td class="field-body">full output (including
-informational messages)</td>
-</tr>
-</tbody>
-</table>
+<tr class="field"><th class="field-name">glp::msg_lev:</th><td class="field-body"><dl class="first docutils">
+<dt>(default: glp::msg_all) - message level for</dt>
+<dd><p class="first last">terminal output:</p>
+</dd>
+</dl>
+<div class="line-block">
+<div class="line"><strong>glp::msg_off:</strong> no output</div>
+<div class="line"><strong>glp::msg_err:</strong> error and warning messages only</div>
+<div class="line"><strong>glp::msg_on:</strong>  normal output;</div>
+<div class="line"><strong>glp::msg_all:</strong> full output (including informational
+messages)</div>
+</div>
 </td>
 </tr>
 <tr class="field"><th class="field-name">glp::meth:</th><td class="field-body"><p class="first">(default: glp::primal) - simplex method option</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">glp::primal:</th><td class="field-body">use two-phase primal simplex</td>
-</tr>
-<tr class="field"><th class="field-name">glp::dual:</th><td class="field-body">use two-phase dual simplex;</td>
-</tr>
-<tr class="field"><th class="field-name">glp::dualp:</th><td class="field-body">use two-phase dual simplex,
-and if it fails, switch to the
-primal simplex</td>
-</tr>
-</tbody>
-</table>
+<div class="line-block">
+<div class="line"><strong>glp::primal:</strong> use two-phase primal simplex</div>
+<div class="line"><strong>glp::dual:</strong> use two-phase dual simplex;</div>
+<div class="line"><strong>glp::dualp:</strong> use two-phase dual simplex,
+and if it fails, switch to the primal simplex</div>
+</div>
 </td>
 </tr>
 <tr class="field"><th class="field-name">glp::pricing:</th><td class="field-body"><p class="first">(default: glp::pt_pse) - pricing technique</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">glp::pt_std:</th><td class="field-body">standard (textbook)</td>
-</tr>
-<tr class="field"><th class="field-name">glp::pt_pse:</th><td class="field-body">projected steepest edge</td>
-</tr>
-</tbody>
-</table>
+<div class="line-block">
+<div class="line"><strong>glp::pt_std:</strong> standard (textbook)</div>
+<div class="line"><strong>glp::pt_pse:</strong> projected steepest edge</div>
+</div>
 </td>
 </tr>
 <tr class="field"><th class="field-name">glp::r_test:</th><td class="field-body"><p class="first">(default: glp::rt_har) - ratio test technique</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">glp::rt_std:</th><td class="field-body">standard (textbook)</td>
-</tr>
-<tr class="field"><th class="field-name">glp::rt_har:</th><td class="field-body">Harris' two-pass ratio test</td>
-</tr>
-</tbody>
-</table>
+<div class="line-block">
+<div class="line"><strong>glp::rt_std:</strong> standard (textbook)</div>
+<div class="line"><strong>glp::rt_har:</strong> Harris' two-pass ratio test</div>
+</div>
 </td>
 </tr>
 <tr class="field"><th class="field-name">glp::tol_bnd:</th><td class="field-body"><p class="first">(default: 1e-7) - tolerance used to check if the
@@ -2573,16 +2568,10 @@ solution process to the terminal</p>
 </td>
 </tr>
 <tr class="field"><th class="field-name">glp::presolve:</th><td class="field-body"><p class="first">(default: glp::off) - LP presolver option:</p>
-<table class="last docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">glp::on:</th><td class="field-body">enable using the LP presolver</td>
-</tr>
-<tr class="field"><th class="field-name">glp::off:</th><td class="field-body">disable using the LP presolver</td>
-</tr>
-</tbody>
-</table>
+<div class="last line-block">
+<div class="line"><strong>glp::on:</strong> enable using the LP presolver</div>
+<div class="line"><strong>glp::off:</strong> disable using the LP presolver</div>
+</div>
 </td>
 </tr>
 </tbody>
@@ -3179,42 +3168,26 @@ glp::interior lp options
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">glp::msg_lev:</th><td class="field-body"><p class="first">(default: glp::msg_all) - message level for
-terminal output:</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">glp::msg_off:</th><td class="field-body">no output</td>
-</tr>
-<tr class="field"><th class="field-name">glp::msg_err:</th><td class="field-body">error and warning messages only</td>
-</tr>
-<tr class="field"><th class="field-name">glp::msg_on:</th><td class="field-body">normal output;</td>
-</tr>
-<tr class="field"><th class="field-name">glp::msg_all:</th><td class="field-body">full output (including
-informational messages)</td>
-</tr>
-</tbody>
-</table>
+<tr class="field"><th class="field-name">glp::msg_lev:</th><td class="field-body"><dl class="first docutils">
+<dt>(default: glp::msg_all) - message level for</dt>
+<dd><p class="first last">terminal output:</p>
+</dd>
+</dl>
+<div class="line-block">
+<div class="line"><strong>glp::msg_off:</strong> no output</div>
+<div class="line"><strong>glp::msg_err:</strong> error and warning messages only</div>
+<div class="line"><strong>glp::msg_on:</strong> normal output;</div>
+<div class="line"><strong>glp::msg_all:</strong> full output (including informational messages)</div>
+</div>
 </td>
 </tr>
 <tr class="field"><th class="field-name">glp::ord_alg:</th><td class="field-body"><p class="first">(default: glp::ord_amd) - ordering algorithm option</p>
-<table class="last docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">glp::ord_none:</th><td class="field-body">use natural (original) ordering</td>
-</tr>
-<tr class="field"><th class="field-name">glp::ord_qmd:</th><td class="field-body">quotient minimum degree (QMD)</td>
-</tr>
-<tr class="field"><th class="field-name">glp::ord_amd:</th><td class="field-body">approximate minimum degree (AMD)</td>
-</tr>
-<tr class="field"><th class="field-name" colspan="2">glp::ord_sysamd:</th></tr>
-<tr><td>&nbsp;</td><td class="field-body">approximate minimum degree
-(SYSAMD)</td>
-</tr>
-</tbody>
-</table>
+<div class="last line-block">
+<div class="line"><strong>glp::ord_none:</strong> use natural (original) ordering</div>
+<div class="line"><strong>glp::ord_qmd:</strong> quotient minimum degree (QMD)</div>
+<div class="line"><strong>glp::ord_amd:</strong> approximate minimum degree (AMD)</div>
+<div class="line"><strong>glp::ord_sysamd:</strong> approximate minimum degree (SYSAMD)</div>
+</div>
 </td>
 </tr>
 </tbody>
@@ -3501,7 +3474,7 @@ glp::set_col_kind lp (colindex, colkind)
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::set_col_kind lp (1, glp::iv);
@@ -3625,146 +3598,88 @@ glp::intopt lp options
 <col class="field-name" />
 <col class="field-body" />
 <tbody valign="top">
-<tr class="field"><th class="field-name">glp::msg_lev:</th><td class="field-body"><p class="first">(default: glp::msg_all) - message level for
-terminal output:</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">glp::msg_off:</th><td class="field-body">no output</td>
-</tr>
-<tr class="field"><th class="field-name">glp::msg_err:</th><td class="field-body">error and warning messages only</td>
-</tr>
-<tr class="field"><th class="field-name">glp::msg_on:</th><td class="field-body">normal output;</td>
-</tr>
-<tr class="field"><th class="field-name">glp::msg_all:</th><td class="field-body">full output (including
-informational messages)</td>
-</tr>
-</tbody>
-</table>
+<tr class="field"><th class="field-name">glp::msg_lev:</th><td class="field-body"><dl class="first docutils">
+<dt>(default: glp::msg_all) - message level for</dt>
+<dd><p class="first last">terminal output:</p>
+</dd>
+</dl>
+<div class="line-block">
+<div class="line"><strong>glp::msg_off:</strong> no output</div>
+<div class="line"><strong>glp::msg_err:</strong> error and warning messages only</div>
+<div class="line"><strong>glp::msg_on:</strong> normal output;</div>
+<div class="line"><strong>glp::msg_all:</strong> full output (including informational messages)</div>
+</div>
 </td>
 </tr>
 <tr class="field"><th class="field-name">glp::br_tech:</th><td class="field-body"><p class="first">(default: glp::bt::blb) - branching technique</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">glp::br_ffv:</th><td class="field-body">first fractional variable</td>
-</tr>
-<tr class="field"><th class="field-name">glp::br_lfv:</th><td class="field-body">last fractional variable</td>
-</tr>
-<tr class="field"><th class="field-name">glp::br_mfv:</th><td class="field-body">most fractional variable</td>
-</tr>
-<tr class="field"><th class="field-name">glp::br_dth:</th><td class="field-body">heuristic by Driebeck and Tomlin</td>
-</tr>
-<tr class="field"><th class="field-name">glp::br_pch:</th><td class="field-body">hybrid pseudocost heuristic</td>
-</tr>
-</tbody>
-</table>
+<div class="line-block">
+<div class="line"><strong>glp::br_ffv:</strong> first fractional variable</div>
+<div class="line"><strong>glp::br_lfv:</strong> last fractional variable</div>
+<div class="line"><strong>glp::br_mfv:</strong> most fractional variable</div>
+<div class="line"><strong>glp::br_dth:</strong> heuristic by Driebeck and Tomlin</div>
+<div class="line"><strong>glp::br_pch:</strong> hybrid pseudocost heuristic</div>
+</div>
 </td>
 </tr>
 <tr class="field"><th class="field-name">glp::bt_tech:</th><td class="field-body"><p class="first">(default: glp::pt_pse) - backtracking technique</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">glp::bt_dfs:</th><td class="field-body">depth first search;</td>
-</tr>
-<tr class="field"><th class="field-name">glp::bt_bfs:</th><td class="field-body">breadth first search;</td>
-</tr>
-<tr class="field"><th class="field-name">glp::bt_blb:</th><td class="field-body">best local bound;</td>
-</tr>
-<tr class="field"><th class="field-name">glp::bt_bph:</th><td class="field-body">best projection heuristic.</td>
-</tr>
-</tbody>
-</table>
+<div class="line-block">
+<div class="line"><strong>glp::bt_dfs:</strong> depth first search;</div>
+<div class="line"><strong>glp::bt_bfs:</strong> breadth first search;</div>
+<div class="line"><strong>glp::bt_blb:</strong> best local bound;</div>
+<div class="line"><strong>glp::bt_bph:</strong> best projection heuristic.</div>
+</div>
 </td>
 </tr>
 <tr class="field"><th class="field-name">glp::pp_tech:</th><td class="field-body"><p class="first">(default: glp::pp_all) - preprocessing technique</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">glp::pp_none:</th><td class="field-body">disable preprocessing;</td>
-</tr>
-<tr class="field"><th class="field-name">glp::pp_root:</th><td class="field-body">perform preprocessing only
-on the root level</td>
-</tr>
-<tr class="field"><th class="field-name">glp::pp_all:</th><td class="field-body">perform preprocessing on all
-levels</td>
-</tr>
-</tbody>
-</table>
+<div class="line-block">
+<div class="line"><strong>glp::pp_none:</strong> disable preprocessing;</div>
+<div class="line"><strong>glp::pp_root:</strong> perform preprocessing only on the root level</div>
+<div class="line"><strong>glp::pp_all:</strong> perform preprocessing on all levels</div>
+</div>
 </td>
 </tr>
 <tr class="field"><th class="field-name">glp::fp_heur:</th><td class="field-body"><p class="first">(default: glp::off) - feasibility pump heuristic:</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">glp::on:</th><td class="field-body">enable applying the feasibility
-pump heuristic</td>
-</tr>
-<tr class="field"><th class="field-name">glp::off:</th><td class="field-body">disable applying the feasibility
-pump heuristic</td>
-</tr>
-</tbody>
-</table>
+<div class="line-block">
+<div class="line"><strong>glp::on:</strong> enable applying the feasibility pump heuristic</div>
+<div class="line"><strong>glp::off:</strong> disable applying the feasibility pump heuristic</div>
+</div>
 </td>
 </tr>
-<tr class="field"><th class="field-name">glp::gmi_cuts:</th><td class="field-body"><p class="first">(default: glp::off) - Gomory’s mixed integer
-cuts:</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">glp::on:</th><td class="field-body">enable generating Gomory’s cuts;</td>
-</tr>
-<tr class="field"><th class="field-name">glp::off:</th><td class="field-body">disable generating Gomory’s cuts.</td>
-</tr>
-</tbody>
-</table>
+<tr class="field"><th class="field-name">glp::gmi_cuts:</th><td class="field-body"><dl class="first docutils">
+<dt>(default: glp::off) - Gomory’s mixed integer</dt>
+<dd><p class="first last">cuts:</p>
+</dd>
+</dl>
+<div class="line-block">
+<div class="line"><strong>glp::on:</strong> enable generating Gomory’s cuts;</div>
+<div class="line"><strong>glp::off:</strong> disable generating Gomory’s cuts.</div>
+</div>
 </td>
 </tr>
-<tr class="field"><th class="field-name">glp::mir_cuts:</th><td class="field-body"><p class="first">(default: glp::off) - mixed integer rounding
-(MIR) cuts:</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">glp::on:</th><td class="field-body">enable generating MIR cuts;</td>
-</tr>
-<tr class="field"><th class="field-name">glp::off:</th><td class="field-body">disable generating MIR cuts.</td>
-</tr>
-</tbody>
-</table>
+<tr class="field"><th class="field-name">glp::mir_cuts:</th><td class="field-body"><dl class="first docutils">
+<dt>(default: glp::off) - mixed integer rounding</dt>
+<dd><p class="first last">(MIR) cuts:</p>
+</dd>
+</dl>
+<div class="line-block">
+<div class="line"><strong>glp::on:</strong> enable generating MIR cuts;</div>
+<div class="line"><strong>glp::off:</strong> disable generating MIR cuts.</div>
+</div>
 </td>
 </tr>
 <tr class="field"><th class="field-name">glp::cov_cuts:</th><td class="field-body"><p class="first">(default: glp::off) - mixed cover cuts:</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">glp::on:</th><td class="field-body">enable generating mixed cover cuts;</td>
-</tr>
-<tr class="field"><th class="field-name">glp::off:</th><td class="field-body">disable generating mixed cover cuts.</td>
-</tr>
-</tbody>
-</table>
+<div class="line-block">
+<div class="line"><strong>glp::on:</strong> enable generating mixed cover cuts;</div>
+<div class="line"><strong>glp::off:</strong> disable generating mixed cover cuts.</div>
+</div>
 </td>
 </tr>
 <tr class="field"><th class="field-name" colspan="2">glp::clq_cuts (default:</th></tr>
 <tr><td>&nbsp;</td><td class="field-body"><p class="first">glp::off) - clique cuts:</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">glp::on:</th><td class="field-body">enable generating clique cuts;</td>
-</tr>
-<tr class="field"><th class="field-name">glp::off:</th><td class="field-body">disable generating clique cuts.</td>
-</tr>
-</tbody>
-</table>
+<div class="line-block">
+<div class="line"><strong>glp::on:</strong> enable generating clique cuts;</div>
+<div class="line"><strong>glp::off:</strong> disable generating clique cuts.</div>
+</div>
 </td>
 </tr>
 <tr class="field"><th class="field-name">glp::tol_int:</th><td class="field-body"><p class="first">(default: 1e-5) - absolute tolerance used to
@@ -3804,25 +3719,20 @@ solution of the current LP relaxation with the
 simplex method to the terminal</p>
 </td>
 </tr>
-<tr class="field"><th class="field-name">glp::cb_func:</th><td class="field-body"><p class="first">(default: glp::off) - specifies whether to use
-the user-defined callback routine</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">glp::on:</th><td class="field-body">use user-defined callback function -
-the function <tt class="docutils literal"><span class="pre">glp::mip_cb</span> <span class="pre">tree</span> <span class="pre">info</span></tt>
-<strong>must</strong> be defined by the user</td>
-</tr>
-<tr class="field"><th class="field-name">glp::off:</th><td class="field-body">do not use user-defined callback
-function</td>
-</tr>
-</tbody>
-</table>
+<tr class="field"><th class="field-name">glp::cb_func:</th><td class="field-body"><dl class="first docutils">
+<dt>(default: glp::off) - specifies whether to use</dt>
+<dd><p class="first last">the user-defined callback routine</p>
+</dd>
+</dl>
+<div class="line-block">
+<div class="line"><strong>glp::on:</strong> use user-defined callback function - the function
+<tt class="docutils literal"><span class="pre">glp::mip_cb</span> tree info</tt> <strong>must</strong> be defined by the user</div>
+<div class="line"><strong>glp::off:</strong> do not use user-defined callback function</div>
+</div>
 </td>
 </tr>
 <tr class="field"><th class="field-name">glp::cb_info:</th><td class="field-body"><p class="first">(default: NULL) - transit pointer passed to the
-routine <tt class="docutils literal"><span class="pre">glp::mip_cb</span> <span class="pre">tree</span> <span class="pre">info</span></tt> (see above)</p>
+routine <tt class="docutils literal"><span class="pre">glp::mip_cb</span> tree info</tt> (see above)</p>
 </td>
 </tr>
 <tr class="field"><th class="field-name">glp::cb_size:</th><td class="field-body"><p class="first">(default: 0) - the number of extra (up to 256)
@@ -3833,31 +3743,21 @@ node these bytes are initialized by binary zeros</p>
 </td>
 </tr>
 <tr class="field"><th class="field-name">glp::presolve:</th><td class="field-body"><p class="first">(default: glp::off) - LP presolver option:</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">glp::on:</th><td class="field-body">enable using the MIP presolver</td>
-</tr>
-<tr class="field"><th class="field-name">glp::off:</th><td class="field-body">disable using the MIP presolver</td>
-</tr>
-</tbody>
-</table>
+<div class="line-block">
+<div class="line"><strong>glp::on:</strong> enable using the MIP presolver</div>
+<div class="line"><strong>glp::off:</strong> disable using the MIP presolver</div>
+</div>
 </td>
 </tr>
-<tr class="field"><th class="field-name">glp::binarize:</th><td class="field-body"><p class="first">(default: glp::off) - binarization (used only if
-the presolver is enabled):</p>
-<table class="last docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">glp::on:</th><td class="field-body">replace general integer variables by
-binary ones</td>
-</tr>
-<tr class="field"><th class="field-name">glp::off:</th><td class="field-body">do not use binarization</td>
-</tr>
-</tbody>
-</table>
+<tr class="field"><th class="field-name">glp::binarize:</th><td class="field-body"><dl class="first docutils">
+<dt>(default: glp::off) - binarization (used only if</dt>
+<dd><p class="first last">the presolver is enabled):</p>
+</dd>
+</dl>
+<div class="last line-block">
+<div class="line"><strong>glp::on:</strong> replace general integer variables by binary ones</div>
+<div class="line"><strong>glp::off:</strong> do not use binarization</div>
+</div>
 </td>
 </tr>
 </tbody>
@@ -4592,7 +4492,7 @@ glp::mpl_build_prob tranobject lp
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::mpl_build_prob mpt lp;
@@ -4666,7 +4566,7 @@ glp::mpl_free_wksp tranobject
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::mpl_free_wksp mpt;
@@ -5347,7 +5247,7 @@ is supplied.</p>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt> if all options are OK, otherwise returns a list of bad options</blockquote>
+<tt class="docutils literal">()</tt> if all options are OK, otherwise returns a list of bad options</blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp_set_bfcp lp [(glp::type, glp::bf_ft), (glp::piv_tol, 0.15)];
@@ -7367,16 +7267,10 @@ arc flow - if a_cost &lt; 0, it is assumed cij = 0 for all arcs</p>
 <col class="field-body" />
 <tbody valign="top">
 <tr class="field"><th class="field-name">parm[1]:</th><td class="field-body"><p class="first">two-ways arcs indicator:</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">1:</th><td class="field-body">if links in both direction should be generated</td>
-</tr>
-<tr class="field"><th class="field-name">0:</th><td class="field-body">otherwise</td>
-</tr>
-</tbody>
-</table>
+<div class="line-block">
+<div class="line"><strong>1:</strong> if links in both direction should be generated</div>
+<div class="line"><strong>0:</strong> otherwise</div>
+</div>
 </td>
 </tr>
 <tr class="field"><th class="field-name">parm[2]:</th><td class="field-body"><p class="first">random number seed (a positive integer)</p>
@@ -7402,16 +7296,10 @@ slightly different to make the network a grid)</p>
 </td>
 </tr>
 <tr class="field"><th class="field-name">parm[9]:</th><td class="field-body"><p class="first">distribution of arc costs:</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">1:</th><td class="field-body">uniform</td>
-</tr>
-<tr class="field"><th class="field-name">2:</th><td class="field-body">exponential</td>
-</tr>
-</tbody>
-</table>
+<div class="line-block">
+<div class="line"><strong>1:</strong> uniform</div>
+<div class="line"><strong>2:</strong> exponential</div>
+</div>
 </td>
 </tr>
 <tr class="field"><th class="field-name">parm[10]:</th><td class="field-body"><p class="first">lower bound for arc cost (uniform),
@@ -7423,16 +7311,10 @@ not used (exponential)</p>
 </td>
 </tr>
 <tr class="field"><th class="field-name">parm[12]:</th><td class="field-body"><p class="first">distribution of arc capacities:</p>
-<table class="docutils field-list" frame="void" rules="none">
-<col class="field-name" />
-<col class="field-body" />
-<tbody valign="top">
-<tr class="field"><th class="field-name">1:</th><td class="field-body">uniform</td>
-</tr>
-<tr class="field"><th class="field-name">2:</th><td class="field-body">exponential</td>
-</tr>
-</tbody>
-</table>
+<div class="line-block">
+<div class="line"><strong>1:</strong> uniform</div>
+<div class="line"><strong>2:</strong> exponential</div>
+</div>
 </td>
 </tr>
 <tr class="field"><th class="field-name">parm[13]:</th><td class="field-body"><p class="first">lower bound for arc capacity (uniform),
@@ -7633,7 +7515,7 @@ glp::term_out switch
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::term_out glp:off;
@@ -7675,7 +7557,7 @@ additional information to the terminal callback function</p>
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::term_hook glp::on NULL;
@@ -7697,12 +7579,12 @@ none</blockquote>
 <p>tuple consisting of four numbers:</p>
 <blockquote>
 <ul class="simple">
-<li><tt class="docutils literal"><span class="pre">count</span></tt> (int) - the number of currently allocated memory blocks</li>
-<li><tt class="docutils literal"><span class="pre">cpeak</span></tt> (int) - the peak value of <tt class="docutils literal"><span class="pre">count</span></tt> reached since the
+<li><tt class="docutils literal">count</tt> (int) - the number of currently allocated memory blocks</li>
+<li><tt class="docutils literal">cpeak</tt> (int) - the peak value of <tt class="docutils literal">count</tt> reached since the
 initialization of the GLPK library environment</li>
-<li><tt class="docutils literal"><span class="pre">total</span></tt> (bigint) - the total amount, in bytes, of currently
+<li><tt class="docutils literal">total</tt> (bigint) - the total amount, in bytes, of currently
 allocated memory blocks</li>
-<li><tt class="docutils literal"><span class="pre">tpeak</span></tt> (bigint) - the peak value of <tt class="docutils literal"><span class="pre">total</span></tt> reached since the
+<li><tt class="docutils literal">tpeak</tt> (bigint) - the peak value of <tt class="docutils literal">total</tt> reached since the
 initialization of the GLPK library envirionment</li>
 </ul>
 </blockquote>
@@ -7733,7 +7615,7 @@ glp::mem_limit limit
 </blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp::mem_limit 200;
@@ -7752,7 +7634,7 @@ glp::free_env
 none</blockquote>
 <p><strong>Returns</strong>:</p>
 <blockquote>
-<tt class="docutils literal"><span class="pre">()</span></tt></blockquote>
+<tt class="docutils literal">()</tt></blockquote>
 <p><strong>Example</strong>:</p>
 <pre class="literal-block">
 &gt; glp_free_env;
