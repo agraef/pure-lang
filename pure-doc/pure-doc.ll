@@ -15,7 +15,7 @@
 # undef yywrap
 # define yywrap() 1
 
-/* Uncomment this to get latex labels for explicit hypelink targets
+/* Uncomment this to get latex labels for explicit hyperlink targets
    (experimental). This is needed to get proper page numbers in the
    TeX-formatted index. Unfortunately, this also messes up the formatting of
    bulleted and description lists with embedded targets, so it's disabled by
@@ -27,6 +27,7 @@ using namespace std;
 
 static char *prog, **files;
 static bool literate = false;
+static bool sphinx = false;
 static unsigned col = 0, start;
 static unsigned tabsize = 8;
 static string buf, comment_text, literate_text;
@@ -207,12 +208,19 @@ static bool targetp(const string& text)
 	// take care of escapes
 	while ((p = target.find("\\:")) != string::npos)
 	  target.erase(p, 1);
+	while ((p = target.find("\\_")) != string::npos)
+	  target.erase(p, 1);
 	if (target.empty()) goto notarget;
 	size_t n = target.size();
 	if (target[0]=='`' && n>1 && target[n-1]=='`')
 	  target = target.substr(1, n-2);
 	if (target.empty()) goto notarget;
-	if (labels.find(target) == labels.end()) {
+	if (sphinx) {
+	  /* Sphinx-compatible output. Generate an index entry. */
+	  cache += text; cache += "\n";
+	  string indent = text.substr(0, p0);
+	  cout << indent << ".. index:: " << target << endl;
+	} else if (labels.find(target) == labels.end()) {
 	  /* We found a new hyperlink target. Store it away in the cache, to
 	     be emitted later, and create a raw html target for it. */
 	  targets.push_back(target);
@@ -378,9 +386,13 @@ int main(int argc, char *argv[])
   if (*argv && **argv == '-') {
     char *s = *argv, *end = s;
     if (s[1] == 'h' && !s[2]) {
-      cerr << "Usage: " << prog << " [-h|-tn] [source-files ...]" << endl
-	   << "-h: print this message, -tn: tabs are n spaces wide" << endl;
+      cerr << "Usage: " << prog << " [-h|-s|-tn] [source-files ...]" << endl
+	   << "-h   print this message" << endl
+	   << "-s   generate Sphinx-compatible output" << endl
+	   << "-tn  tabs are n spaces wide" << endl;
       exit(0);
+    } else if (s[1] == 's' && !s[2]) {
+      sphinx = true; end = s+2;
     } else if (s[1] == 't' && s[2])
       tabsize = strtoul(s+2, &end, 10);
     if (*end) {

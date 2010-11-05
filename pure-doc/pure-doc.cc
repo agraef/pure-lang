@@ -497,7 +497,7 @@ char *yytext;
 # undef yywrap
 # define yywrap() 1
 
-/* Uncomment this to get latex labels for explicit hypelink targets
+/* Uncomment this to get latex labels for explicit hyperlink targets
    (experimental). This is needed to get proper page numbers in the
    TeX-formatted index. Unfortunately, this also messes up the formatting of
    bulleted and description lists with embedded targets, so it's disabled by
@@ -509,6 +509,7 @@ using namespace std;
 
 static char *prog, **files;
 static bool literate = false;
+static bool sphinx = false;
 static unsigned col = 0, start;
 static unsigned tabsize = 8;
 static string buf, comment_text, literate_text;
@@ -525,7 +526,7 @@ static inline void echo(const char *s)
   }
 }
 
-#line 529 "pure-doc.cc"
+#line 530 "pure-doc.cc"
 
 #define INITIAL 0
 #define comment 1
@@ -710,10 +711,10 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 54 "pure-doc.ll"
+#line 55 "pure-doc.ll"
 
 
-#line 717 "pure-doc.cc"
+#line 718 "pure-doc.cc"
 
 	if ( !(yy_init) )
 		{
@@ -799,16 +800,16 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 /* rule 1 can match eol */
-#line 57 "pure-doc.ll"
+#line 58 "pure-doc.ll"
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 57 "pure-doc.ll"
+#line 58 "pure-doc.ll"
 echo(yytext); tabs(col, yytext, yyleng);
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 59 "pure-doc.ll"
+#line 60 "pure-doc.ll"
 {
   start = col; buf = yytext+2;
   comment_text = yytext;
@@ -818,7 +819,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 65 "pure-doc.ll"
+#line 66 "pure-doc.ll"
 {
   col += yyleng; start = col; buf.clear();
   comment_text = yytext;
@@ -831,12 +832,12 @@ case 5:
 (yy_c_buf_p) = yy_cp = yy_bp + 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 71 "pure-doc.ll"
+#line 72 "pure-doc.ll"
 comment_text += yytext; tabs(col, yytext, yyleng);
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 72 "pure-doc.ll"
+#line 73 "pure-doc.ll"
 {
   buf += string("\n")+(yytext+2);
   comment_text += yytext;
@@ -845,17 +846,17 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 /* rule 7 can match eol */
-#line 78 "pure-doc.ll"
+#line 79 "pure-doc.ll"
 case 8:
 /* rule 8 can match eol */
 YY_RULE_SETUP
-#line 78 "pure-doc.ll"
+#line 79 "pure-doc.ll"
 print(start, buf); yyless(0); BEGIN(INITIAL);
 	YY_BREAK
 case 9:
 /* rule 9 can match eol */
 YY_RULE_SETUP
-#line 80 "pure-doc.ll"
+#line 81 "pure-doc.ll"
 {
   tabs(col, yytext, yyleng);
   buf += yytext; comment_text += yytext;
@@ -864,7 +865,7 @@ YY_RULE_SETUP
 case 10:
 /* rule 10 can match eol */
 YY_RULE_SETUP
-#line 84 "pure-doc.ll"
+#line 85 "pure-doc.ll"
 {
   tabs(col, yytext, yyleng);
   buf += yytext; comment_text += yytext;
@@ -872,7 +873,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 88 "pure-doc.ll"
+#line 89 "pure-doc.ll"
 {
   col += yyleng;
   comment_text += yytext;
@@ -882,22 +883,22 @@ YY_RULE_SETUP
 	YY_BREAK
 case 12:
 /* rule 12 can match eol */
-#line 96 "pure-doc.ll"
+#line 97 "pure-doc.ll"
 case 13:
 /* rule 13 can match eol */
 YY_RULE_SETUP
-#line 96 "pure-doc.ll"
+#line 97 "pure-doc.ll"
 echo(yytext); tabs(col, yytext, yyleng);
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 97 "pure-doc.ll"
+#line 98 "pure-doc.ll"
 echo(yytext); col++;
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(comment):
 case YY_STATE_EOF(lcomment):
-#line 99 "pure-doc.ll"
+#line 100 "pure-doc.ll"
 {
   if (YY_START != INITIAL)
     print(start, buf); BEGIN(INITIAL);
@@ -915,10 +916,10 @@ case YY_STATE_EOF(lcomment):
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 114 "pure-doc.ll"
+#line 115 "pure-doc.ll"
 ECHO;
 	YY_BREAK
-#line 922 "pure-doc.cc"
+#line 923 "pure-doc.cc"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -1880,7 +1881,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 114 "pure-doc.ll"
+#line 115 "pure-doc.ll"
 
 
 
@@ -1978,12 +1979,19 @@ static bool targetp(const string& text)
 	// take care of escapes
 	while ((p = target.find("\\:")) != string::npos)
 	  target.erase(p, 1);
+	while ((p = target.find("\\_")) != string::npos)
+	  target.erase(p, 1);
 	if (target.empty()) goto notarget;
 	size_t n = target.size();
 	if (target[0]=='`' && n>1 && target[n-1]=='`')
 	  target = target.substr(1, n-2);
 	if (target.empty()) goto notarget;
-	if (labels.find(target) == labels.end()) {
+	if (sphinx) {
+	  /* Sphinx-compatible output. Generate an index entry. */
+	  cache += text; cache += "\n";
+	  string indent = text.substr(0, p0);
+	  cout << indent << ".. index:: " << target << endl;
+	} else if (labels.find(target) == labels.end()) {
 	  /* We found a new hyperlink target. Store it away in the cache, to
 	     be emitted later, and create a raw html target for it. */
 	  targets.push_back(target);
@@ -2149,9 +2157,13 @@ int main(int argc, char *argv[])
   if (*argv && **argv == '-') {
     char *s = *argv, *end = s;
     if (s[1] == 'h' && !s[2]) {
-      cerr << "Usage: " << prog << " [-h|-tn] [source-files ...]" << endl
-	   << "-h: print this message, -tn: tabs are n spaces wide" << endl;
+      cerr << "Usage: " << prog << " [-h|-s|-tn] [source-files ...]" << endl
+	   << "-h   print this message" << endl
+	   << "-s   generate Sphinx-compatible output" << endl
+	   << "-tn  tabs are n spaces wide" << endl;
       exit(0);
+    } else if (s[1] == 's' && !s[2]) {
+      sphinx = true; end = s+2;
     } else if (s[1] == 't' && s[2])
       tabsize = strtoul(s+2, &end, 10);
     if (*end) {
