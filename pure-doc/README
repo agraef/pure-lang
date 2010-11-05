@@ -124,10 +124,11 @@ If you prefer to write the output to a file, you can do that as follows::
 
   pure-doc source-files ... > rst-file
 
-pure-doc also understands the following two options. These must come before
-any file arguments.
+pure-doc also understands the following options. These must come before any
+file arguments.
 
 -h          Print a short help message.
+-s   	    Generate Sphinx-compatible output.
 -twidth     Set the tab width to the given number of spaces.
 
 There are no other options. By its design pure-doc is just a plain simple
@@ -137,12 +138,14 @@ options to change the appearance of the generated output; please refer to the
 docutils_ documentation for details.
 
 If docutils isn't enough for you, then you should consider one of the other
-available RST-based documentation frameworks, such as Sphinx_. These provide
-even more elaborate formatting options, but are usually somewhat
-Python-centric and harder to use. Also, you should take into account that many
-Pure users read documentation in a text-based browser while running the
-interpreter, so including all the latest html gizmos is not going to do them
-much good and might in fact impair readability.
+available RST-based documentation frameworks. In particular, pure-doc can be
+run with the -s option which makes its output compatible with Sphinx_, the RST
+formatter used by the Python project. Sphinx provides cross-document indexing
+and referencing, and even more elaborate formatting options and much prettier
+output. (However, you should take into account that many Pure users read
+documentation in a text-based browser while running the interpreter, so
+including all the latest html gizmos is not going to do them much good and
+might in fact impair readability.)
 
 .. _Sphinx: http://sphinx.pocoo.org
 
@@ -219,17 +222,14 @@ collected *up to that point*, sorted alphabetically. This also resets the list
 of collected targets, so that you can have multiple smaller indices in your
 document instead of one big one.
 
-Note: docutils doesn't allow multiple explicit targets with the same name, so
-you should take that into consideration when devising your index terms.
+Please note that docutils doesn't allow multiple explicit targets with the
+same name, so you should take that into consideration when devising your index
+terms.
 
-It goes without saying that this facility is rather simplistic, and can't
-compete with a carefully hand-made index. But we decided to toss it in because
-docutils currently doesn't provide an automatic index facility of its own, and
-the simple kind of index generated with pure-doc is certainly better than
-having no index at all. (An alternative to pure-doc's indexing facility would
-be to introduce a special RST "text role" for indexing purposes and use a
-custom utility to process this kind of markup. But at present this is beyond
-pure-doc's scope, so you're on your own if you take that route.)
+Also note that in Sphinx compatibility mode (-s), pure-doc will generate the
+appropriate Sphinx markup for index entries (``index::``) instead, and the
+``makeindex::`` directive will be ignored. You should then use Sphinx to
+generate the index.
 
 Generating Documentation
 ========================
