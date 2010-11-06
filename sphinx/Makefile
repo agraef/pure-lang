@@ -126,10 +126,11 @@ epub:
 	$(SPHINXBUILD) -b epub $(ALLSPHINXOPTS) $(BUILDDIR)/epub
 
 # We have to fix a glitch in the Sphinx output here so that we can
-# \usepackage[utf8x]{inputenc}.
+# \usepackage[utf8x]{inputenc}. Moreover, add -Q to the build command to
+# suppress the silly warnings about unknown references to local html files.
 
 latex:
-	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
+	$(SPHINXBUILD) -Q -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
 	@(cd $(BUILDDIR)/latex && sed -e 's/\\DeclareUnicodeCharacter{00A0}{\\nobreakspace}/%\\DeclareUnicodeCharacter{00A0}{\\nobreakspace}/g' < puredoc.tex > puredoc.fixed && rm -f puredoc.tex && mv puredoc.fixed puredoc.tex)
 
 latexpdf: latex

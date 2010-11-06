@@ -202,16 +202,15 @@ latex_logo = u"waterdrop.png"
 # If true, show URL addresses after external links.
 #latex_show_urls = False
 
-# Additional stuff for the LaTeX preamble.
-#latex_preamble = '\\input{../../preamble}'
-
 # Documents to append as an appendix to all manuals.
 #latex_appendices = []
 
 # If false, no module index is generated.
 #latex_domain_indices = True
 
-latex_elements = {'inputenc': '\\usepackage[utf8x]{inputenc}', 'preamble': '\\input{../../preamble}','fncychap': ''}
+latex_elements = {'inputenc': '\\usepackage[utf8x]{inputenc}', 'preamble': '\\input{preamble.ltx}','fncychap': ''}
+
+latex_additional_files = [u"preamble.ltx"]
 
 # -- Options for manual page output --------------------------------------------
 
