@@ -40,10 +40,10 @@
 /******************************************************************************/
 
 /*
- * ratutils.pure
+ * rational.pure
  */
 
-using rat_interval, dict, math, strings, system;
+using rat_interval, dict, math, system;
 using namespace interval;
 namespace rational;
 
@@ -85,8 +85,7 @@ str_rsplit_at s::string n::int
       pos = (#s) - n
     end;
 
-private num_den;
-num_den q = (num q, den q) if rationalp q;
+num_den q = (num q, den q) if ratvalp q;
 
 /* Semantic number predicates */
 // public intvalp ratvalp realvalp compvalp;
@@ -98,7 +97,7 @@ intcompvalp x
     if numberp x;
 
 ratcompvalp x
-  = (complexp x) && (rationalp (re x)) && (rationalp (im x))
+  = (complexp x) && (ratvalp (re x)) && (ratvalp (im x))
     if numberp x;
 
 /*****************************************************************************
@@ -861,10 +860,10 @@ private seek_rational_approx_epsilon;
 /* 0 < epsilon << 1 */
 seek_rational_approx_epsilon epsilon fract l u
   = simplest_epsilon epsilon fract l u
-    if rationalp l && rationalp u &&
+    if ratvalp l && ratvalp u &&
 	((abs (l - fract) <= epsilon) || (abs (u - fract) <= epsilon));
   = seek_rational_approx_epsilon epsilon fract l m
-    if rationalp l && rationalp u && (fract < m)
+    if ratvalp l && ratvalp u && (fract < m)
     when
       m = mediant l u
     end;
@@ -872,7 +871,7 @@ seek_rational_approx_epsilon epsilon fract l u
     when
       m = mediant l u
     end	/* if fract >= m */
-    if rationalp l && rationalp u;
+    if ratvalp l && ratvalp u;
 
 /*
  * find a rational interval no bigger than epsilon containing float fract
@@ -886,9 +885,9 @@ private seek_rational_interval_epsilon;
 /* 0 < epsilon << 1 */
 seek_rational_interval_epsilon epsilon fract l u
   = interval (l, u)
-    if rationalp l && rationalp u && (u - l) <= epsilon;
+    if ratvalp l && ratvalp u && (u - l) <= epsilon;
   = seek_rational_interval_epsilon epsilon fract l m
-    if rationalp l && rationalp u && (fract < m)
+    if ratvalp l && ratvalp u && (fract < m)
     when
       m = mediant l u
     end;
@@ -896,7 +895,7 @@ seek_rational_interval_epsilon epsilon fract l u
     when
       m = mediant l u
     end
-    if rationalp l && rationalp u;
+    if ratvalp l && ratvalp u;
 
 /*
  * given float fract in [0,1],
@@ -944,17 +943,17 @@ private seek_rational_approxs_epsilon;
 /* 0 < epsilon << 1 */
 seek_rational_approxs_epsilon epsilon fract l u
   = [u, l]
-    if rationalp l && rationalp u && ((fract - l) <= epsilon)
+    if ratvalp l && ratvalp u && ((fract - l) <= epsilon)
        && ((fract - l) < (u - fract));
   = [l, u]
-    if rationalp l && rationalp u && ((u - fract) <= epsilon);
+    if ratvalp l && ratvalp u && ((u - fract) <= epsilon);
   = (u : seek_rational_approxs_epsilon epsilon fract l m)
-    if rationalp l && rationalp u && (fract < m)
+    if ratvalp l && ratvalp u && (fract < m)
     when
       m = mediant l u
     end;
   = (l : seek_rational_approxs_epsilon epsilon fract m u)
-    if rationalp l && rationalp u
+    if ratvalp l && ratvalp u
     when
       m = mediant l u
     end;
@@ -1006,20 +1005,20 @@ private seek_rational_approx_max_den;
 /* maxDen > 1 */
 seek_rational_approx_max_den maxDen fract l u
   = seek_rational_approx_max_den maxDen fract l m
-    if rationalp l && rationalp u && (den m <= maxDen) && (fract < m)
+    if ratvalp l && ratvalp u && (den m <= maxDen) && (fract < m)
     when
       m = mediant l u
     end;
   = seek_rational_approx_max_den maxDen fract m u
-    if rationalp l && rationalp u && (den m <= maxDen)
+    if ratvalp l && ratvalp u && (den m <= maxDen)
 	/* and then (fract >= m) */
     when
       m = mediant l u
     end;
   = l
-    if rationalp l && rationalp u && ((fract - l) < (u - fract));
+    if ratvalp l && ratvalp u && ((fract - l) < (u - fract));
   = u
-    if rationalp l && rationalp u;
+    if ratvalp l && ratvalp u;
 
 /*
  * find a rational interval no bigger than maxDen containing float fract
@@ -1033,18 +1032,18 @@ private seek_rational_interval_max_den;
 /* 0 < maxDen << 1 */
 seek_rational_interval_max_den maxDen fract l u
   = seek_rational_interval_max_den maxDen fract l m
-    if rationalp l && rationalp u && ((den m) <= maxDen) && (fract < m)
+    if ratvalp l && ratvalp u && ((den m) <= maxDen) && (fract < m)
     when
       m = mediant l u
     end;
   = seek_rational_interval_max_den maxDen fract m u
-    if rationalp l && rationalp u && ((den m) <= maxDen)
+    if ratvalp l && ratvalp u && ((den m) <= maxDen)
       /* and then (fract >= m) */
     when
       m = mediant l u
     end;
   = interval (l, u)
-    if rationalp l && rationalp u;
+    if ratvalp l && ratvalp u;
 
 /*
  * given float fract in [0,1],
@@ -1083,22 +1082,22 @@ private seek_rational_approxs_max_den;
 /* 0 < maxDen << 1 */
 seek_rational_approxs_max_den maxDen fract l u
   = [l]
-    if rationalp l && rationalp u && (l == u);
+    if ratvalp l && ratvalp u && (l == u);
   = (u : seek_rational_approxs_max_den maxDen fract l m)
-    if rationalp l && rationalp u && ((den m) <= maxDen) && (fract < m)
+    if ratvalp l && ratvalp u && ((den m) <= maxDen) && (fract < m)
     when
       m = mediant l u
     end;
   = (l : seek_rational_approxs_max_den maxDen fract m u)
-    if rationalp l && rationalp u && ((den m) <= maxDen)
+    if ratvalp l && ratvalp u && ((den m) <= maxDen)
 	/* and then (fract >= m) */
     when
       m = mediant l u
     end;
   = [u, l]
-    if rationalp l && rationalp u && ((fract - l) < (u - fract));
+    if ratvalp l && ratvalp u && ((fract - l) < (u - fract));
   = [l, u]
-    if rationalp l && rationalp u;
+    if ratvalp l && ratvalp u;
 
 
 /*****************************************************************************
@@ -1121,7 +1120,7 @@ seek_rational_approxs_max_den maxDen fract l u
  * find rational q s.t. abs (q-r) <= epsilon.
  */
 public rational_approx_epsilon;
-rational_approx_epsilon epsilon::double r
+rational_approx_epsilon epsilon r
   = -(rational_approx_epsilon epsilon (-r)) if r < 0;
   = (i + q)
     when
@@ -1142,7 +1141,7 @@ rational_approx_epsilon epsilon::double r
  * Find a list of ever better approximations
  */
 public rational_approxs_epsilon;
-rational_approxs_epsilon epsilon::double r
+rational_approxs_epsilon epsilon r
   = filter_better_rational_approxs r qq
     when
       r_floor = (rational (floor r));
@@ -1159,7 +1158,7 @@ rational_approxs_epsilon epsilon::double r
  * find rationals l, u s.t. u-l <= epsilon and j <= r <= u.
  */
 public rational_interval_epsilon;
-rational_interval_epsilon epsilon::double r
+rational_interval_epsilon epsilon r
   = (-v)
     when
       v = rational_interval_epsilon epsilon (-r)
@@ -2006,7 +2005,7 @@ find_int_and_recur_expansion rx q
     when
       (s, i, expn, start, len) = find_int_and_recur_expansion rx (-q)
     end
-    if integerp rx && rationalp q && q < 0;
+    if integerp rx && ratvalp q && q < 0;
   = ("+", i, expn, start, len)
     when
       i = trunc q;
@@ -2014,7 +2013,7 @@ find_int_and_recur_expansion rx q
       (n, d) = num_den fract;
       (expn, start, len) = small_find_recur_expansion rx 0 emptydict [] n d
     end
-    if integerp rx && rationalp q;
+    if integerp rx && ratvalp q;
 
 /* DP / SF / SCI / ENG */
 
@@ -2306,7 +2305,7 @@ strs_real_recur radix q
     when
       (s, i, expn, start, len) = find_int_and_recur_expansion radix q
     end
-    if integerp radix && rationalp q && radix >= 2;
+    if integerp radix && ratvalp q && radix >= 2;
 	// do nothing otherwise;
 /*
  * convert a rational
@@ -2320,7 +2319,7 @@ str_real_recur fmt radix intGroup q
     when
       (s, z, initial, recur) = strs_real_recur radix q
     end
-    if integerp radix && integerp intGroup && rationalp q && radix >= 2;
+    if integerp radix && integerp intGroup && ratvalp q && radix >= 2;
 	// do nothing otherwise;
 
 /*
