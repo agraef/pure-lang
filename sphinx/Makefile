@@ -125,11 +125,14 @@ devhelp:
 epub:
 	$(SPHINXBUILD) -b epub $(ALLSPHINXOPTS) $(BUILDDIR)/epub
 
+# We have to fix a glitch in the Sphinx output here so that we can
+# \usepackage[utf8x]{inputenc}.
+
 latex:
 	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
+	@(cd $(BUILDDIR)/latex && sed -e 's/\\DeclareUnicodeCharacter{00A0}{\\nobreakspace}/%\\DeclareUnicodeCharacter{00A0}{\\nobreakspace}/g' < puredoc.tex > puredoc.fixed && rm -f puredoc.tex && mv puredoc.fixed puredoc.tex)
 
-latexpdf:
-	$(SPHINXBUILD) -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
+latexpdf: latex
 	make -C $(BUILDDIR)/latex all-pdf
 
 text:

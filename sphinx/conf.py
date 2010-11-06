@@ -211,7 +211,7 @@ latex_logo = u"waterdrop.png"
 # If false, no module index is generated.
 #latex_domain_indices = True
 
-latex_elements = {'preamble': '\\input{../../preamble}','fncychap': ''}
+latex_elements = {'inputenc': '\\usepackage[utf8x]{inputenc}', 'preamble': '\\input{../../preamble}','fncychap': ''}
 
 # -- Options for manual page output --------------------------------------------
 
