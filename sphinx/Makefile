@@ -50,7 +50,7 @@ sources: $(rst_sources)
 # immediately). $(1) is the original rst source from .., $(2) the target file
 # to be built.
 
-check = ./fixdoc < $(1) > $(2); if diff $(notdir $(2)) $(2) >/dev/null 2>&1; then rm $(2); echo "$(notdir $(2)) is unchanged"; else echo "creating $(notdir $(2)) from: $(1)"; fi
+check = ./fixdoc < $(1) > $(2); if diff $(notdir $(2)) $(2) >/dev/null 2>&1; then rm $(2); else echo "creating $(notdir $(2)) from: $(1)"; fi
 
 # This is actually a phony rule as the documentation we want to create might
 # be up-to-date (in which case it won't be updated) or may be missing
@@ -59,7 +59,7 @@ check = ./fixdoc < $(1) > $(2); if diff $(notdir $(2)) $(2) >/dev/null 2>&1; the
 
 %.txt:
 	@(test -d $(dir $@) || mkdir -p $(dir $@))
-	@(test -f ../$@ && mv ../$@ $@.bak; if $(MAKE) -C ../$(dir $@) $(notdir $@) pure-doc="pure-doc -s" >/dev/null 2>&1; then $(call check,../$@,$@); test -f $@.bak && mv $@.bak ../$@ || (echo "deleting ../$@"; rm ../$@); elif test -f $@.bak; then mv $@.bak ../$@; $(call check,../$@,$@); elif test -f ../$(dir $@)README; then $(call check,../$(dir $@)README,$@); else echo "no source for $(notdir $@)"; fi)
+	@(test -f ../$@ && mv ../$@ $@.bak; if $(MAKE) -C ../$(dir $@) $(notdir $@) pure-doc="pure-doc -s" >/dev/null 2>&1; then $(call check,../$@,$@); test -f $@.bak && mv $@.bak ../$@ || rm ../$@; elif test -f $@.bak; then mv $@.bak ../$@; $(call check,../$@,$@); elif test -f ../$(dir $@)README; then $(call check,../$(dir $@)README,$@); else echo "no source for $(notdir $@)"; fi)
 
 # Get rid of the rst source we created. You might want to run this to force a
 # fresh build.
