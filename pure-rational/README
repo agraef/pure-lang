@@ -24,7 +24,7 @@ access to the symbols of these modules (as the examples in this manual assume)
 then you'll have to import the modules as follows::
 
   using rational, rat_interval;
-  using namespace rational, rat_interval;
+  using namespace rational, interval;
 
 Also note that ``rational`` always pulls in the ``math`` module, so you don't
 have to import the latter explicitly if you are using ``rational``.
@@ -269,17 +269,17 @@ double type. However, these functions may be combined with `exactp`_.
   > let l = [9, 9%1, 9%2, 4.5, sqrt 2, 1+i, inf, nan];
   > map exactp l;
   [1,1,1,0,0,1,0,0]
-  > map inexactp l
+  > map inexactp l;
   [0,0,0,1,1,0,1,1]
   > map rationalp l;
   [0,1,1,0,0,0,0,0]
   > map ratvalp l;
   [1,1,1,1,1,0,0,0]
-  > map (\x -> (exactp x && ratvalp x)) l // "has exact rational value"
+  > map (\x -> (exactp x && ratvalp x)) l; // "has exact rational value"
   [1,1,1,0,0,0,0,0]
   > map intvalp l // for comparison
   [1,1,0,0,0,0,0,0]
-  > map (\x -> (exactp x && intvalp x)) l // "has exact integer value"
+  > map (\x -> (exactp x && intvalp x)) l; // "has exact integer value"
   [1,1,0,0,0,0,0,0]
 
 See `Rational Complex Numbers`_ for details about rational complex numbers, and
@@ -934,7 +934,7 @@ functions.
 
 **Example 27** Illustration of the different rounding modes::
 
-  > let l = iterwhile (<= 3) (+(1%2)) (- rational 3)
+  > let l = iterwhile (<= 3) (+(1%2)) (- rational 3);
   > map double l; // (just to show the values in a familiar format)
   [-3.0,-2.5,-2.0,-1.5,-1.0,-0.5,0.0,0.5,1.0,1.5,2.0,2.5,3.0]
   > map floor l;
@@ -1299,7 +1299,7 @@ right operand is an interval containing 0.
   interval::Ivl (1L%19L) (1L%11L)
   > 2 % a;
   interval::Ivl (2L%19L) (2L%11L)
-  > a % b
+  > a % b;
   interval::Ivl 11L%24L 19L%16L
   > a % a; // notice that the intervals are mutually independent here
   interval::Ivl (11L%19L) (19L%11L)
@@ -1554,7 +1554,7 @@ approximations are always reverse consecutive Fibonacci numbers (from f1: 1, 1,
 
 **Example 47** Rational interval surrounding the golden ratio φ::
 
-  > rational_interval_epsilon .001 phi
+  > rational_interval_epsilon .001 phi;
   interval::Ivl (55L%34L) (89L%55L)
   > #ans;
   1L%1870L
@@ -1613,7 +1613,7 @@ Best Approximation with Bounded Denominator
 
 **Example 52** Rational interval surrounding π::
 
-  > let i_Pi = rational_interval_max_den 100 pi ; i_Pi
+  > let i_Pi = rational_interval_max_den 100 pi ; i_Pi;
   interval::Ivl (311L%99L) (22L%7L)
   > double (lower i_Pi); pi; double (upper i_Pi);
   3.14141414141414
@@ -1622,7 +1622,7 @@ Best Approximation with Bounded Denominator
 
 **Example 53** Rational interval surrounding the golden ratio φ::
 
-  > rational_interval_max_den 1000 phi
+  > rational_interval_max_den 1000 phi;
   interval::Ivl (987L%610L) (1597L%987L)
 
 (The symbol phi was defined in `Example 43`_.)
@@ -1902,9 +1902,9 @@ The d\ :sub:`x`, d\ :sub:`y` are not unique, but can be chosen such that d\
   1+:2,3+:3
   > let (n,d) = num_den cq; (n, d);
   1+:2,3+:3
-  > n % d
+  > n % d;
   1L%2L+:1L%6L
-  > abs d
+  > abs d;
   4.24264068711928
   > (re . num) cq;
   1L
@@ -2008,13 +2008,13 @@ overloaded to have at least one complex and/or rational operand, but (<), (<=),
   4L%3L+:13L%8L
   > w % z;
   618L%841L+:108L%841L
-  > w / z
+  > w / z;
   0.734839476813318+:0.128418549346017
   > w ^ 2;
   -0.3125+:0.75
-  > w == z
+  > w == z;
   0
-  > w == w
+  > w == w;
   1
 
 Rational Complex Maths
