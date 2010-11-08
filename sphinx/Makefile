@@ -57,12 +57,15 @@ alldocs:
 	@(manifest=`ls */*.txt 2>/dev/null || true`; test -n "$$manifest" && cp $$manifest .; rm -rf $(dir $(rst_sources)); true)
 	@$(MAKE) --no-print-directory $(BUILDDIR)/html/puredoc.html $(BUILDDIR)/latex/puredoc.pdf
 
-sources: $(rst_sources)
+sources: conf.py $(rst_sources)
 
-$(BUILDDIR)/html/puredoc.html: $(notdir $(rst_sources))
+conf.py: conf.py.in Makefile
+	sed -e 's/@version@/$(version)/g' < $< > $@
+
+$(BUILDDIR)/html/puredoc.html: conf.py puredoc.txt $(notdir $(rst_sources))
 	@$(MAKE) --no-print-directory html
 
-$(BUILDDIR)/latex/puredoc.pdf: $(notdir $(rst_sources))
+$(BUILDDIR)/latex/puredoc.pdf: conf.py puredoc.txt $(notdir $(rst_sources))
 	@$(MAKE) --no-print-directory latexpdf
 
 # Same as above, but only update the html docs. This is used internally for
@@ -87,9 +90,11 @@ rst:
 # A little helper function which patches up a rst document and checks whether
 # it's different from what we already have (if so, then get rid of it
 # immediately). $(1) is the original rst source from .., $(2) the target file
-# to be built.
+# to be built. If the directory of $(1) contains a Makefile which has a
+# definition for the 'version' variable in it, we also patch up occurrences of
+# '@version@' in the rst source with the appropriate version string.
 
-check = ./fixdoc < $(1) > $(2); if diff $(notdir $(2)) $(2) >/dev/null 2>&1; then rm $(2); else echo "creating $(notdir $(2)) from: $(1)"; fi
+check = (version=`(grep '^version[ \t]*=' $(dir $(1))/Makefile 2>/dev/null | sed -e 's/^version[ \t]*=[ \t]*\(.*\)$$/\1/' 2>/dev/null) || true`; ./fixdoc < $(1) | sed -e "s?@version@?$$version?g" > $(2)); if diff $(notdir $(2)) $(2) >/dev/null 2>&1; then rm $(2); else echo "creating $(notdir $(2)) from: $(1)"; fi
 
 # This is actually a phony rule as the documentation we want to create might
 # be up-to-date (in which case it won't be updated) or may be missing
@@ -159,7 +164,7 @@ cleanrst:
 # stuff that may be lying around.
 
 realclean: clean cleanrst
-	rm -rf *~ *.bak auto $(BUILDDIR)
+	rm -rf *~ *.bak auto $(BUILDDIR) conf.py
 
 # Improved help target by Roman Neuhauser.
 
