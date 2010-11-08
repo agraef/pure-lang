@@ -170,8 +170,6 @@ cleanrst:
 realclean: clean cleanrst
 	rm -rf *~ *.bak auto $(BUILDDIR) conf.py
 
-# Improved help target by Roman Neuhauser.
-
 help:
 	@printf "\nJust 'make' grabs new rst sources and builds the html and pdf files.\n"
 	@printf "Or use 'make rst' followed by 'make <target>' where <target> is one of:\n\n"
