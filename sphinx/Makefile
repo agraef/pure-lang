@@ -110,7 +110,11 @@ check = (version=`(grep '^version[ \t]*=' $(dir $(1))/Makefile 2>/dev/null | sed
 
 datadir = $(libdir)/pure/docs
 
-install: allhtml
+# KLUDGE: Running 'make allhtml' under 'sudo' doesn't work if root doesn't
+# have the required tools on its path. So we omit the 'allhtml' dependency
+# here and instead assume that the user has run 'make' beforehand.
+
+install: # allhtml
 	rm -rf $(DESTDIR)$(datadir)
 	test -d $(DESTDIR)$(datadir) || mkdir -p $(DESTDIR)$(datadir)
 	cp -r $(addprefix $(BUILDDIR)/html/, _images _sources _static $(htmlfiles)) $(DESTDIR)$(datadir)
