@@ -27,7 +27,7 @@ endif
 
 DESTDIR=
 
-DISTFILES = Makefile COPYING ChangeLog README faust2pd.html config.guess *.pure *.pd examples/README examples/*/Makefile examples/*/*.dsp examples/*/*.syn examples/*/*.pd examples/*/*.pure examples/*/*.xml
+DISTFILES = Makefile COPYING ChangeLog README config.guess *.pure *.pd examples/README examples/*/Makefile examples/*/*.dsp examples/*/*.syn examples/*/*.pd examples/*/*.pure examples/*/*.xml
 
 .PHONY: all examples clean distclean realclean install uninstall
 

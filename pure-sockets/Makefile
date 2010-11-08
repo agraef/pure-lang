@@ -19,11 +19,11 @@ extradirs = examples
 extradist = examples/*.pure
 
 # Distribution files for dist and distcheck targets below.
-distfiles = COPYING COPYING.LESSER Makefile README $(html) $(source) \
+distfiles = COPYING COPYING.LESSER Makefile README $(source) \
 $(extradist)
 
 # Installation files for install and uninstall targets.
-instfiles = $(pure_source) $(bitcode) $(html)
+instfiles = $(pure_source) $(bitcode)
 
 # The stuff below is pretty generic. It will build bitcode modules for all C
 # and C++ sources in this directory, and the documentation in html format from

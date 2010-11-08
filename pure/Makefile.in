@@ -159,7 +159,7 @@ ChangeLog INSTALL NEWS README TODO \
 Makefile.in acinclude.m4 aclocal.m4 configure.ac configure config.h.in \
 config/config.guess config/config.sub config/install-sh \
 $(SOURCE) $(EXTRA_SOURCE) w3centities.c strptime.c pure.cc pure_main.c \
-pure.1 pure.txt pure.html purelib.txt purelib.html preamble.tex run-tests.in \
+pure.1 pure.txt purelib.txt preamble.tex run-tests.in \
 run-test.in \
 etc/pure-mode.el.in etc/pure.* etc/gpure.lang \
 examples/COPYING examples/Makefile.in examples/*.pure examples/*.purerc \
@@ -230,6 +230,10 @@ libsources = prelude.pure strings.pure matrices.pure records.pure \
 primitives.pure math.pure array.pure heap.pure dict.pure set.pure system.pure \
 posix.pure getopt.pure
 libfiles = $(addprefix $(srcdir)/lib/, $(libsources))
+
+# NOTE: The html and pdf targets are now obsolete, as the documentation is now
+# built in a separate package using sphinx. They are still provided here for
+# historical reasons, but you shouldn't rely on them working any more.
 
 html: pure.html purelib.html
 tex: pure.tex purelib.tex
@@ -334,7 +338,6 @@ endif
 	$(INSTALL) -m 644 $(srcdir)/runtime.h $(DESTDIR)$(pure_includedir)
 	$(INSTALL) -m 644 $(srcdir)/pure_main.c pure_main.o $(DESTDIR)$(pure_libdir)
 	for x in $(srcdir)/lib/*.pure; do $(INSTALL) -m 644 $$x $(DESTDIR)$(pure_libdir); done
-	$(INSTALL) -m 644 $(srcdir)/pure.html $(srcdir)/purelib.html $(DESTDIR)$(pure_libdir)
 	$(INSTALL) -m 644 $(srcdir)/pure.1 $(DESTDIR)$(man1dir)/$(pure_1)
 ifeq ($(versioned), yes)
 	ln -sf $(bindir)/$(pure_exe) $(DESTDIR)$(bindir)/pure$(EXE)

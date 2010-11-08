@@ -37,7 +37,7 @@ endif
 # Pure loads the module.
 RLD_FLAG=`mkoctfile -p RLD_FLAG`
 
-DISTFILES = COPYING Makefile README pure-octave.html config.guess \
+DISTFILES = COPYING Makefile README config.guess \
 embed.cc embed.h gsl_structs.h octave.pure examples/*.pure
 
 all: octave_embed$(DLL)
@@ -70,10 +70,10 @@ pure-octave.pdf: pure-octave.tex
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
-	cp octave.pure octave_embed$(DLL) pure-octave.html "$(DESTDIR)$(libdir)/pure"
+	cp octave.pure octave_embed$(DLL) "$(DESTDIR)$(libdir)/pure"
 
 uninstall:
-	rm -f "$(DESTDIR)$(libdir)/pure/octave.pure" "$(DESTDIR)$(libdir)/pure/octave_embed$(DLL)" "$(DESTDIR)$(libdir)/pure/pure-octave.html"
+	rm -f "$(DESTDIR)$(libdir)/pure/octave.pure" "$(DESTDIR)$(libdir)/pure/octave_embed$(DLL)"
 
 dist:
 	rm -rf $(dist)

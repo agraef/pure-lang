@@ -53,8 +53,7 @@ GLDEPS=gtkglext-1.0 gtkglext-x11-1.0
 # Functions' in the plugin list under 'Tools | Plug-ins'. A few sample
 # functions can be found in .../plugins/pure-func/pure_func.pure. Edit that
 # script as needed and edit the plugin.xml file in that directory to add the
-# functions that you want. See the README file or gnumeric-pure.html for more
-# information.
+# functions that you want. See the README file for more information.
 
 # Try to guess the Gnumeric version number:
 #gnmversion=$(shell gnumeric --version | sed -n -e "s/^gnumeric version '\([0-9.]*\)'.*/\1/" -e "/^[0-9.]*$$/p")
@@ -126,7 +125,7 @@ CFLAGS = -g -O2
 CPPFLAGS = -Wall
 
 DISTFILES = ChangeLog COPYING Makefile README config.guess \
-doc/gnumeric-pure.html doc/preamble.tex doc/*.png \
+doc/preamble.tex doc/*.png \
 pure-loader/boot.c pure-loader/pure-gnumeric.c pure-loader/pure-gnumeric.h \
 pure-loader/pure-loader.c pure-loader/pure-loader.h \
 pure-loader/plugin.xml pure-loader/pure-ui.xml \
@@ -171,7 +170,7 @@ install:
 	test -d "$(DESTDIR)$(gnmplugindir)/$(purefuncdir)" || mkdir -p "$(DESTDIR)$(gnmplugindir)/$(purefuncdir)"
 	test -d "$(DESTDIR)$(gnmplugindir)/$(pureglfuncdir)" || mkdir -p "$(DESTDIR)$(gnmplugindir)/$(pureglfuncdir)"
 	test -d "$(DESTDIR)$(gnmplugindir)/$(pureloaderdir)" || mkdir -p "$(DESTDIR)$(gnmplugindir)/$(pureloaderdir)"
-	cp COPYING README doc/gnumeric-pure.html doc/*.png pure-func/*.pure pure-func/plugin.xml "$(DESTDIR)$(gnmplugindir)/$(purefuncdir)"
+	cp COPYING README pure-func/*.pure pure-func/plugin.xml "$(DESTDIR)$(gnmplugindir)/$(purefuncdir)"
 	cp pure-glfunc/*.pure pure-glfunc/plugin.xml "$(DESTDIR)$(gnmplugindir)/$(pureglfuncdir)"
 	cp pure-loader/pure_loader$(DLL) pure-loader/plugin.xml pure-loader/pure-ui.xml "$(DESTDIR)$(gnmplugindir)/$(pureloaderdir)"
 
@@ -179,7 +178,7 @@ install-local:
 	test -d "$(DESTDIR)$(gnmlocalplugindir)/$(purefuncdir)" || mkdir -p "$(DESTDIR)$(gnmlocalplugindir)/$(purefuncdir)"
 	test -d "$(DESTDIR)$(gnmlocalplugindir)/$(pureglfuncdir)" || mkdir -p "$(DESTDIR)$(gnmlocalplugindir)/$(pureglfuncdir)"
 	test -d "$(DESTDIR)$(gnmlocalplugindir)/$(pureloaderdir)" || mkdir -p "$(DESTDIR)$(gnmlocalplugindir)/$(pureloaderdir)"
-	cp COPYING README doc/gnumeric-pure.html doc/*.png pure-func/*.pure pure-func/plugin.xml "$(DESTDIR)$(gnmlocalplugindir)/$(purefuncdir)"
+	cp COPYING README pure-func/*.pure pure-func/plugin.xml "$(DESTDIR)$(gnmlocalplugindir)/$(purefuncdir)"
 	cp pure-glfunc/*.pure pure-glfunc/plugin.xml "$(DESTDIR)$(gnmlocalplugindir)/$(pureglfuncdir)"
 	cp pure-loader/pure_loader$(DLL) pure-loader/plugin.xml pure-loader/pure-ui.xml "$(DESTDIR)$(gnmlocalplugindir)/$(pureloaderdir)"
 

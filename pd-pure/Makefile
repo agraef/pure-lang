@@ -95,7 +95,7 @@ ifneq "$(VERBOSE)" ""
 override CPPFLAGS += $(VERBOSE)
 endif
 
-DISTFILES = COPYING Makefile README pd-pure.html config.guess pure.c \
+DISTFILES = COPYING Makefile README config.guess pure.c \
 examples/*.pure examples/*.pd examples/*.el
 
 all: pure$(DLL)
@@ -131,12 +131,11 @@ pd-pure.pdf: pd-pure.tex
 
 install:
 	test -d "$(DESTDIR)$(pdextradir)" || mkdir -p "$(DESTDIR)$(pdextradir)"
-	cp COPYING README pd-pure.html Makefile pure.c pure$(DLL) examples/*.pure examples/*.pd examples/*.el "$(DESTDIR)$(pdextradir)"
+	cp COPYING README Makefile pure.c pure$(DLL) examples/*.pure examples/*.pd examples/*.el "$(DESTDIR)$(pdextradir)"
 	test -d "$(DESTDIR)$(puredatadir)" || mkdir -p "$(DESTDIR)$(puredatadir)"
-	ln -sf "$(pdextradir)"/pd-pure.html "$(DESTDIR)$(puredatadir)"
 
 uninstall:
-	rm -rf "$(DESTDIR)$(pdextradir)" "$(DESTDIR)$(puredatadir)"/pd-pure.html
+	rm -rf "$(DESTDIR)$(pdextradir)"
 
 dist:
 	rm -rf $(dist)

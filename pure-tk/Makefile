@@ -53,7 +53,7 @@ CFLAGS = -g -O2
 
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
-DISTFILES = COPYING Makefile README pure-tk.html config.guess tk.c tk.pure \
+DISTFILES = COPYING Makefile README config.guess tk.c tk.pure \
 gnocl.pure examples/Makefile examples/*.pure examples/*.tcl examples/*.glade
 
 all: tk$(DLL)
@@ -86,10 +86,10 @@ pure-tk.pdf: pure-tk.tex
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
-	cp gnocl.pure tk.pure tk$(DLL) pure-tk.html "$(DESTDIR)$(libdir)/pure"
+	cp gnocl.pure tk.pure tk$(DLL) "$(DESTDIR)$(libdir)/pure"
 
 uninstall:
-	rm -f "$(DESTDIR)$(libdir)/pure/gnocl.pure" "$(DESTDIR)$(libdir)/pure/tk.pure" "$(DESTDIR)$(libdir)/pure/tk$(DLL)" "$(DESTDIR)$(libdir)/pure/pure-tk.html"
+	rm -f "$(DESTDIR)$(libdir)/pure/gnocl.pure" "$(DESTDIR)$(libdir)/pure/tk.pure" "$(DESTDIR)$(libdir)/pure/tk$(DLL)"
 
 dist:
 	rm -rf $(dist)

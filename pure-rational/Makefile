@@ -17,8 +17,7 @@ libdir = $(prefix)/lib
 # Try to guess the host system type.
 host = $(shell ./config.guess)
 
-DISTFILES = COPYING Makefile rational.pure rat_interval.pure config.guess \
-rational.html
+DISTFILES = COPYING Makefile rational.pure rat_interval.pure config.guess
 
 all:
 
@@ -26,10 +25,10 @@ clean:
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
-	cp rational.pure rat_interval.pure pure-rational.html "$(DESTDIR)$(libdir)/pure"
+	cp rational.pure rat_interval.pure "$(DESTDIR)$(libdir)/pure"
 
 uninstall:
-	rm -f "$(DESTDIR)$(libdir)/pure/rational.pure" "$(DESTDIR)$(libdir)/pure/rat_interval.pure" "$(DESTDIR)$(libdir)/pure/pure-rational.html"
+	rm -f "$(DESTDIR)$(libdir)/pure/rational.pure" "$(DESTDIR)$(libdir)/pure/rat_interval.pure"
 
 # Generate the documentation. This needs docutils.
 
