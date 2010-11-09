@@ -4,6 +4,8 @@
 Pure-Sql3
 =========
 
+Version @version@, |today|
+
 | Peter Summerland
 | Albert Graef <Dr.Graef@t-online.de>
 
@@ -142,6 +144,9 @@ Please see the COPYING file for the actual license applicable to Sql3.
 Installation
 ============
 
+Get the latest source from
+http://pure-lang.googlecode.com/files/pure-sql3-@version@.tar.gz.
+
 Unless you already have them on your machine, download SQLite and
 sqlite3 from the SQLite website and install as indicated. To install
 Sql3, cd to the pure-sql3 directory, run ``make``, and then run ``sudo
@@ -192,11 +197,7 @@ Opening a Database Connection
 In Sql3 ``open`` constructs a database connection and returns a db_ptr
 that refers to the connection.
 
-.. raw:: html
-
-   <a name="open">
-
-.. _open:
+.. index:: open
 
 ``open (file_path::string [,access_mode::int,custom_bindings]])``
   opens a SQLite database file whose name is given by the file_path
@@ -260,20 +261,12 @@ Testing a db_ptr
 For argument checking and other purposes Sql3 provides the following
 functions:
 
-.. raw:: html
-
-   <a name="is_db_ptr">
-
-.. _is_db_ptr:
+.. index:: is_db_ptr
 
 ``is_db_ptr ptr::pointer``
   returns 1 if ptr is a db_ptr returned by open, and 0 if it is not.
 
-.. raw:: html
-
-   <a name="is_open">
-
-.. _is_open:
+.. index:: is_open
 
 ``is_open ptr::pointer``
   returns 1 if the database connection referenced by ptr is open.
@@ -284,11 +277,7 @@ Closing a Database Connection
 When a database connection object is no longer needed, it should be closed
 so that SQLite can free the associated resources.
 
-.. raw:: html
-
-   <a name="close">
-
-.. _close:
+.. index:: close
 
 ``close dbp::pointer``
   if the database connection referenced by the db_ptr dbp is open,
@@ -357,11 +346,7 @@ Constructing Prepared Statements
 In Sql3 you can use ``prep`` to construct a prepared statement and
 obtain a stmt_ptr that refers to it.
 
-.. raw:: html
-
-   <a name="prep">
-
-.. _prep:
+.. index:: prep
 
 ``prep dbp::pointer binding_string::string sql_statement::string``
   constructs a prepared statement object and returns a stmt_ptr that
@@ -446,11 +431,7 @@ Testing a stmt_ptr
 For argument checking and other purposes it is sometimes useful to
 determine if a given expression is a valid stmt_ptr.
 
-.. raw:: html
-
-   <a name="is_stmt_ptr">
-
-.. _is_stmt_ptr:
+.. index:: is_stmt_ptr
 
 ``is_stmt_ptr ptr::pointer``
   returns 1 if ``ptr`` is a stmt_ptr, otherwise returns 0.
@@ -461,11 +442,7 @@ Executing Prepared Statements
 In Sql3, the bind, step, column, step, column ... cycle is encapsulated in
 the ``exec`` and ``lexec`` functions.
 
-.. raw:: html
-
-   <a name="exec">
-
-.. _exec:
+.. index:: exec
 
 ``exec sp::pointer args`` 
   use ``args`` to bind the prepared statement referenced by ``sp``, execute it
@@ -524,11 +501,7 @@ sometimes be inefficient or simply not feasible for large result
 sets. In such cases it is preferable to use ``lexec`` instead of
 ``exec``.
 
-.. raw:: html
-
-   <a name="lexec">
-
-.. _lexec:
+.. index:: lexec
 
 ``lexec stmp::pointer args``
   same as ``exec`` except that it returns a lazy list.
@@ -548,11 +521,7 @@ Executing Directly on a db_ptr
 For statements that have no parameters and which do not return results,
 ``exec`` can be applied to a db_ptr.
 
-.. raw:: html
-
-   <a name="exec_db dbp">
-
-.. _exec dbp:
+.. index:: exec dbp
 
 ``exec dbp::pointer sql_statement::string`` constructs a temporary
   prepared statement using ``sql_statement``.  The SQL statement
@@ -640,11 +609,7 @@ Finalizing Prepared Statements
 When a prepared statement is no longer needed it should be finalized
 so that SQLite can free the associated resources.
 
-.. raw:: html
-
-   <a name="finalize">
-
-.. _finalize:
+.. index:: finalize
 
 ``finalize sp::pointer``
   finalize the prepared statement referenced by ``sp``, which must be a
@@ -680,11 +645,7 @@ Exceptions
 Sql3 throws two types of exceptions, one for outright errors and one
 for database "busy" conditions.
 
-.. raw:: html
-
-   <a name="db_error">
-
-.. _db_error:
+.. index:: db_error
 
 db_error
 ~~~~~~~~
@@ -706,11 +667,7 @@ the error. E.g., ::
   > catch db_error_handler (exec dbp "select * from NO_TABLE");
   SQLite db_error: ec 1, no such table: NO_TABLE
 
-.. raw:: html
-
-   <a name="db_busy">
-
-.. _db_busy:
+.. index:: db_busy
 
 db_busy
 ~~~~~~~
@@ -780,12 +737,7 @@ Scalar SQL Functions
 You can add a custom SQL scalar function to SQLite by passing a single
 Pure function to ``create_function``.
 
-.. raw:: html
-
-   <a name="create_function">
-
-.. _create_function:
-
+.. index:: create_function
 
 ``create_function dbp::pointer name::string nargs::int pure_fun``
   registers a new SQL scalar function of ``nargs`` arguments that can be
