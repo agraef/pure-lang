@@ -1322,7 +1322,7 @@ euclid_alg_initial isZero divfun x y
     when
       q = divfun x y;
       r = x - q * y;
-      [k, i, j] = euclid_alg_initial isZero div y r;
+      [k, i, j] = euclid_alg_initial isZero divfun y r;
      /* e.g. [k, i, j] = euclid d r where r = (n mod d) */
      /* i.e. i*y+j*r=k */
      /* so i*y+j*(x-q*y)=k */
@@ -1334,10 +1334,10 @@ euclid_alg_initial isZero divfun x y
     otherwise;
 
 euclid_alg isZero divfun x y
-  = normalise_eqn (euclid_alg_initial isZero divfun x y)
+  = tuple $ normalise_eqn (euclid_alg_initial isZero divfun x y)
     if numberp x && numberp y && ratcompvalp x && exactp x
 	&& ratcompvalp y && exactp y;
-  = euclid_alg_initial isZero divfun x y
+  = tuple $ euclid_alg_initial isZero divfun x y
     otherwise;
 
 /*
