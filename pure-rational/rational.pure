@@ -43,7 +43,7 @@
  * rational.pure
  */
 
-using rat_interval, math;
+using rat_interval, math, dict;
 using namespace interval;
 namespace rational;
 
@@ -1774,7 +1774,7 @@ format_unerror (l, r) numb
 
 public create_format;
 create_format options
-  = {
+  = dict [
       "sm"  => format_sign (options ! "sign"),
       "se"  => format_sign (options ! "exponent sign"),
       "-s"  => format_unsign,
@@ -1793,12 +1793,12 @@ create_format options
       "e"   => format_error (options ! "error sign")
 			    (options ! "error brackets"),
       "-e"  => format_unerror (options ! "error brackets")
-    };
+    ];
 
 //UK-specific examples
 public options_uk format_uk;
 const options_uk
-  = {
+  = dict [
       "sign" => ("-","",""), //alternative: ("-"," ","+")
       "exponent sign" => ("-","",""), //alternative: ("-","","+")
       "group separator" => ",", //might be " " or "." or "'" elsewhere
@@ -1811,7 +1811,7 @@ const options_uk
       "error sign" => ("-","","+"),
       "error brackets" => ("(",")")
       //??? ("separatrix", "/"),
-    };
+    ];
 
 const format_uk = create_format options_uk;
 
@@ -2014,7 +2014,7 @@ find_int_and_recur_expansion rx q
       i = trunc q;
       fract = q - i;
       (n, d) = num_den fract;
-      (expn, start, len) = small_find_recur_expansion rx 0 {} [] n d
+      (expn, start, len) = small_find_recur_expansion rx 0 emptydict [] n d
     end
     if integerp rx && ratvalp q;
 
