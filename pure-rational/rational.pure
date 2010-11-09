@@ -617,6 +617,8 @@ round_unbiased q
     if rationalp q;
 
 /* extend to ints and floats */
+/* trunc and round return doubles in Pure,
+   so we return doubles for double inputs */
 round_unbiased i
   = i
     if integerp i;
@@ -626,18 +628,18 @@ round_unbiased f
       - round_unbiased (-f)
     else if intvalp f
 	 then
-	    round f
+	    f
 	 else if intvalp f2 && ((i2 mod 4) == 1)
 	      then
-		i2 div 2
+		double (i2 div 2)
 	      else if intvalp f2
 		   then
-		     i2 div 2 + 1
+		     double (i2 div 2 + 1)
 		   else
 		     round f
     when
       f2 = f * 2;
-      i2 = round (f2)
+      i2 = bigint $ round (f2)
     end
     if doublep f;
 
