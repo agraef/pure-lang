@@ -94,32 +94,9 @@ distcheck: dist
 	cd $(dist) && make all examples && make install install-pd DESTDIR=./BUILD
 	rm -rf $(dist)
 
-# Generate the documentation. This needs docutils.
-
-rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
-rst2latex = $(shell which rst2latex 2>/dev/null || which rst2latex.py 2>/dev/null || echo rst2latex)
+# Generate the documentation.
 
 sources = faustxml.pure
-target = faust2pd
 
-.PHONY: html tex pdf
-
-html: $(target).html
-tex: $(target).tex
-pdf: $(target).pdf
-
-$(target).txt: README $(sources)
+faust2pd.txt: README $(sources)
 	pure-doc $(sources) | cat README - > $@
-
-%.html: %.txt
-	$(rst2html) $< $@
-
-%.tex: %.txt
-	$(rst2latex) $< $@
-
-# This also requires that you have TeX installed.
-
-%.pdf: %.tex
-	pdflatex $<
-	pdflatex $<
-	rm -f *.aux *.log *.out

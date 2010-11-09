@@ -104,7 +104,7 @@ check = (version=`(grep '^version[ \t]*=' $(dir $(1))/Makefile 2>/dev/null | sed
 
 %.txt:
 	@(test -d $(dir $@) || mkdir -p $(dir $@))
-	@(test -f ../$@ && mv ../$@ $@.bak; if $(MAKE) -C ../$(dir $@) $(notdir $@) pure-doc="pure-doc -s" >/dev/null 2>&1; then $(call check,../$@,$@); test -f $@.bak && mv $@.bak ../$@ || rm ../$@; elif test -f $@.bak; then mv $@.bak ../$@; $(call check,../$@,$@); elif test -f ../$(dir $@)README; then $(call check,../$(dir $@)README,$@); else echo "no source for $(notdir $@)"; fi)
+	@(test -f ../$@ && mv ../$@ $@.bak; if $(MAKE) -C ../$(dir $@) $(notdir $@) >/dev/null 2>&1; then $(call check,../$@,$@); test -f $@.bak && mv $@.bak ../$@ || rm ../$@; elif test -f $@.bak; then mv $@.bak ../$@; $(call check,../$@,$@); elif test -f ../$(dir $@)README; then $(call check,../$(dir $@)README,$@); else echo "no source for $(notdir $@)"; fi)
 
 # Install/uninstall targets.
 

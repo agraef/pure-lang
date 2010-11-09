@@ -87,34 +87,9 @@ distcheck: dist
 	cd $(dist) && make && make install DESTDIR=./BUILD
 	rm -rf $(dist)
 
-# Generate the documentation. This needs docutils.
-
-rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
-rst2latex = $(shell which rst2latex 2>/dev/null || which rst2latex.py 2>/dev/null || echo rst2latex)
+# Generate the documentation.
 
 sources = xml.pure
-target = pure-xml
 
-pure-doc = pure-doc
-
-$(target).txt: README $(sources)
-	$(pure-doc) $(sources) | cat README - > $@
-
-.PHONY: html tex pdf
-
-html: $(target).html
-tex: $(target).tex
-pdf: $(target).pdf
-
-%.html: %.txt
-	$(rst2html) $< $@
-
-%.tex: %.txt
-	$(rst2latex) $< $@
-
-# This also requires that you have TeX installed.
-
-%.pdf: %.tex
-	pdflatex $<
-	pdflatex $<
-	rm -f *.aux *.log *.out
+pure-xml.txt: README $(sources)
+	pure-doc -is $(sources) | cat README - > $@

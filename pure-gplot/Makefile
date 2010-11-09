@@ -21,10 +21,8 @@ all:
 
 clean:
 
-pure-doc = pure-doc
-
 pure-gplot.txt: gplot.pure
-	$(pure-doc) $< > $@
+	pure-doc $< > $@
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"

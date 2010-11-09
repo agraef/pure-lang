@@ -220,10 +220,7 @@ etc/pure-mode.el: Makefile etc/pure-mode.el.in
 	sed -e 's,@bindir\@,$(bindir),g' -e 's,@libdir\@,$(libdir),g' $(srcdir)/etc/pure-mode.el.in > etc/pure-mode.el.tmp
 	mv etc/pure-mode.el.tmp etc/pure-mode.el
 
-# documentation in various formats (this requires docutils and pure-doc)
-
-rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
-rst2latex = $(shell which rst2latex 2>/dev/null || which rst2latex.py 2>/dev/null || echo rst2latex)
+# generate the library documentation (this requires pure-doc)
 
 # make sure to get these into the right order
 libsources = prelude.pure strings.pure matrices.pure records.pure \
@@ -231,18 +228,21 @@ primitives.pure math.pure array.pure heap.pure dict.pure set.pure system.pure \
 posix.pure getopt.pure
 libfiles = $(addprefix $(srcdir)/lib/, $(libsources))
 
+purelib.txt: $(libfiles)
+	pure-doc -is $(libfiles) > $@
+
+# documentation in various formats (this requires docutils)
+
 # NOTE: The html and pdf targets are now obsolete, as the documentation is now
 # built in a separate package using sphinx. They are still provided here for
 # historical reasons, but you shouldn't rely on them working any more.
 
+rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
+rst2latex = $(shell which rst2latex 2>/dev/null || which rst2latex.py 2>/dev/null || echo rst2latex)
+
 html: pure.html purelib.html
 tex: pure.tex purelib.tex
 pdf: pure.pdf purelib.pdf
-
-pure-doc = pure-doc
-
-purelib.txt: $(libfiles)
-	$(pure-doc) $(libfiles) > $@
 
 %.html: %.txt
 	$(rst2html) $< $@
@@ -255,11 +255,7 @@ LATEXOPT=--use-latex-toc --use-latex-docinfo --stylesheet=preamble.tex --documen
 
 # If the variable 'fixdoc' is defined on the make command line, we assume an
 # older rst2latex version whose output still needs fixing. (The fixdoc utility
-# is contained in the pure-doc package.) Hopefully, this can eventually go
-# away, but current rst2latex versions still have issues with hyperlink
-# generation which make them unusable to create print versions of the Pure
-# documentation right now, so we still use an older rst2latex for that
-# (snapshot 2009-03-30, r5886, is known to work).
+# is contained in the pure-doc package.)
 
 %.tex: %.txt
 ifdef fixdoc
