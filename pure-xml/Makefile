@@ -56,7 +56,7 @@ CFLAGS = -g -O2
 
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
-DISTFILES = COPYING COPYING.LESSER Makefile README pure-xml.html config.guess \
+DISTFILES = COPYING COPYING.LESSER Makefile README config.guess \
 xml.c xml.pure examples/*.pure examples/*.xml examples/*.xsl
 
 all: xml$(DLL)
@@ -69,10 +69,10 @@ clean:
 
 install:
 	test -d "$(DESTDIR)$(datadir)" || mkdir -p "$(DESTDIR)$(datadir)"
-	cp xml.pure xml$(DLL) pure-xml.html "$(DESTDIR)$(datadir)"
+	cp xml.pure xml$(DLL) "$(DESTDIR)$(datadir)"
 
 uninstall:
-	rm -f "$(DESTDIR)$(datadir)/xml.pure" "$(DESTDIR)$(datadir)/xml$(DLL)" "$(DESTDIR)$(datadir)/pure-xml.html"
+	rm -f "$(DESTDIR)$(datadir)/xml.pure" "$(DESTDIR)$(datadir)/xml$(DLL)"
 
 dist:
 	rm -rf $(dist)

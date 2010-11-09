@@ -51,7 +51,7 @@ CFLAGS = -g -O2
 
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
-DISTFILES = COPYING Makefile README pure-glpk.html config.guess \
+DISTFILES = COPYING Makefile README config.guess \
 examples/*.pure glpk.c glpk.pure
 
 all: glpk$(DLL)
@@ -83,10 +83,10 @@ pure-glpk.pdf: pure-glpk.tex
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
-	cp glpk.pure glpk$(DLL) pure-glpk.html "$(DESTDIR)$(libdir)/pure"
+	cp glpk.pure glpk$(DLL) "$(DESTDIR)$(libdir)/pure"
 
 uninstall:
-	rm -f "$(DESTDIR)$(libdir)/pure/glpk.pure" "$(DESTDIR)$(libdir)/pure/glpk$(DLL)" "$(DESTDIR)$(libdir)/pure/pure-glpk.html"
+	rm -f "$(DESTDIR)$(libdir)/pure/glpk.pure" "$(DESTDIR)$(libdir)/pure/glpk$(DLL)"
 
 dist:
 	rm -rf $(dist)

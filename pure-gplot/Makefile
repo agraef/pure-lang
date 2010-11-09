@@ -19,6 +19,8 @@ distfiles = COPYING COPYING.LESSER Makefile gplot.pure gplot_test.pure
 all:
 	@echo "Try 'make install' to install, 'make uninstall' to uninstall the package."
 
+clean:
+
 pure-doc = pure-doc
 
 pure-gplot.txt: gplot.pure

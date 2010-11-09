@@ -48,7 +48,7 @@ CFLAGS = -g -O2
 
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
-DISTFILES = COPYING Makefile README config.guess pure-gsl.html examples/*.pure gsl/*.pure gsl.c gsl.pure
+DISTFILES = COPYING Makefile README config.guess examples/*.pure gsl/*.pure gsl.c gsl.pure
 
 all: gsl$(DLL)
 
@@ -63,7 +63,6 @@ install:
 	mkdir -p "$(DESTDIR)$(libdir)/pure/gsl"
 	cp gsl.pure gsl$(DLL) "$(DESTDIR)$(libdir)/pure"
 	cp gsl/*.pure "$(DESTDIR)$(libdir)/pure/gsl/"
-	cp pure-gsl.html "$(DESTDIR)$(libdir)/pure/"
 
 uninstall:
 	rm -f "$(DESTDIR)$(libdir)/pure/gsl.pure" "$(DESTDIR)$(libdir)/pure/gsl$(DLL)"

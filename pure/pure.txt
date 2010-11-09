@@ -4058,53 +4058,56 @@ installed for that. By default, the ``help`` command uses w3m(1), but you can
 change this by setting either the PURE_HELP or the BROWSER environment
 variable accordingly.
 
-When invoked without arguments, the ``help`` command displays this manual::
+As of Pure 0.46, the interpreter provides a much improved ``help`` command
+which gives you access to all the available documentation in html format,
+which includes this manual, the `Pure Library Manual`_, as well as all manuals
+of the addon modules available from the Pure website.
+
+When invoked without arguments, the ``help`` command displays an overview of
+the available documentation, from which you can follow the links to the
+provided manuals::
 
   > help
 
-The ``help`` command also accepts a parameter which lets you specify a topic
-to show in the accompanying Pure Library manual, e.g.::
+(If your browser gives you an error message when you do this then you haven't
+installed the documentation yet. The complete set of manuals is provided as a
+separate package at the Pure website, please see the Pure installation
+instructions for details.)
+
+The ``help`` command also accepts a parameter which lets you specify a search
+term which is looked up in the global index, e.g.::
 
   > help foldl
 
-The help files distributed with the Pure interpreter are located in the Pure
-library directory (/usr/local/lib/pure by default). You can install additional
-documentation in html format in this directory, and look up topics in those
-help files with a command like the following::
+If the search term doesn't appear in the index, it is assumed to be a topic (a
+link target) in the Pure manual. Note that the docutils_ tools used to
+generate the html source of the Pure documentation mangle the section titles
+so that they are in lowercase and blanks are replaced with hyphens. So to look
+up the present section in this manual you'd have to type::
 
-  > help mydoc#foo
-
-Here ``mydoc`` is the basename of your help file (library path and .html
-suffix are supplied automatically), and ``foo`` can be any link target in the
-document (as specified with a ``<a name=...>`` tag or an ``id`` attribute in
-the html source). To just read the mydoc.html file without specifying a
-target, type the following::
-
-  > help mydoc#
-
-Note that just ``help mydoc`` wouldn't work, since it would look for an entry
-``mydoc`` in the standard library documentation.
-
-If the basename of the help file is missing, it defaults to the library
-manual, so ``help #foldl`` does the same as ``help foldl``, and just ``help
-#`` is a convenient shorthand to bring up the library manual without a
-specific topic. Of course, this syntax also works for looking up sections in
-the Pure manual::
-
-  > help pure#declarations
-
-Note that the docutils_ tools used to generate the html source of the Pure
-manual mangle the section titles so that they are in lowercase and blanks are
-replaced with hyphens. So to look up the present section in this manual you'd
-have to type::
-
-  > help pure#online-help
+  > help online-help
 
 .. _docutils: http://docutils.sourceforge.net/
 
-You can also point the help browser to a proper URL, either a local file or
-some website (provided that your browser program can handle these). For
-instance::
+The help files are in html format and located in the docs subdirectory of the
+Pure library directory (i.e., /usr/local/lib/pure/docs by default). You can
+look up topics in any of the help files with a command like the following::
+
+  > help pure-gsl#matrices
+
+Here ``pure-gsl`` is the basename of the help file (library path and .html
+suffix are supplied automatically), and ``matrices`` is a link target in that
+document. To just read the pure-gsl.html file without specifying a target,
+type the following::
+
+  > help pure-gsl#
+
+(Note that just ``help pure-gsl`` won't work, since it would look for a search
+term in the index or a topic in the Pure manual.)
+
+Last but not least, you can also point the help browser to any html document
+(either a local file or some website) denoted by a proper URL, provided that
+your browser program can handle these. For instance::
 
   > help file:mydoc.html#foo
   > help http://pure-lang.googlecode.com
@@ -4179,10 +4182,11 @@ currently supported operations:
     file with the ``run`` command (see below) to restore the definitions in a
     subsequent interpreter session.
 
-``help [target]``
-    Display the Pure manual or some other bit of documentation. In particular,
-    ``help foo`` looks up the symbol ``foo`` in the Pure Library manual. See
-    `Online Help`_ above for details.
+``help [topic]``
+    Display online documentation. If a topic is given, it is looked up in the
+    index. Alternatively, you can also specify a link target in any of the
+    installed help files, or any other html document denoted by a proper URL.
+    Please see `Online Help`_ above for details.
 
 ``ls [args]``
     List files (shell ls(1) command).

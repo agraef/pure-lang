@@ -49,7 +49,7 @@ CFLAGS = -g -O2
 
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
-DISTFILES = COPYING Makefile README pure-fastcgi.html config.guess \
+DISTFILES = COPYING Makefile README config.guess \
 examples/*.pure fastcgi.c fastcgi.pure
 
 all: fastcgi$(DLL)
@@ -82,10 +82,10 @@ pure-fastcgi.pdf: pure-fastcgi.tex
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
-	cp fastcgi.pure fastcgi$(DLL) pure-fastcgi.html "$(DESTDIR)$(libdir)/pure"
+	cp fastcgi.pure fastcgi$(DLL) "$(DESTDIR)$(libdir)/pure"
 
 uninstall:
-	rm -f "$(DESTDIR)$(libdir)/pure/fastcgi.pure" "$(DESTDIR)$(libdir)/pure/fastcgi$(DLL)" "$(DESTDIR)$(libdir)/pure/pure-fastcgi.html"
+	rm -f "$(DESTDIR)$(libdir)/pure/fastcgi.pure" "$(DESTDIR)$(libdir)/pure/fastcgi$(DLL)"
 
 dist:
 	rm -rf $(dist)

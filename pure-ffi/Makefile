@@ -49,7 +49,7 @@ CFLAGS = -g -O2
 
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
-DISTFILES = COPYING COPYING.LESSER Makefile README pure-ffi.html config.guess \
+DISTFILES = COPYING COPYING.LESSER Makefile README config.guess \
 examples/*.pure ffi.c ffi.pure
 
 all: ffi$(DLL)
@@ -82,10 +82,10 @@ pure-ffi.pdf: pure-ffi.tex
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
-	cp ffi.pure ffi$(DLL) pure-ffi.html "$(DESTDIR)$(libdir)/pure"
+	cp ffi.pure ffi$(DLL) "$(DESTDIR)$(libdir)/pure"
 
 uninstall:
-	rm -f "$(DESTDIR)$(libdir)/pure/ffi.pure" "$(DESTDIR)$(libdir)/pure/ffi$(DLL)" "$(DESTDIR)$(libdir)/pure/pure-ffi.html"
+	rm -f "$(DESTDIR)$(libdir)/pure/ffi.pure" "$(DESTDIR)$(libdir)/pure/ffi$(DLL)"
 
 dist:
 	rm -rf $(dist)

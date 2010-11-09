@@ -49,7 +49,7 @@ CFLAGS = -g -O2 -std=c99
 
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
-DISTFILES = COPYING Makefile README pure-sql3.html config.guess \
+DISTFILES = COPYING Makefile README config.guess \
 sql3util.c sql3.pure examples/*.pure
 
 all: sql3util$(DLL)
@@ -84,10 +84,10 @@ pure-sql3.pdf: pure-sql3.tex
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
-	cp sql3.pure sql3util$(DLL) pure-sql3.html "$(DESTDIR)$(libdir)/pure"
+	cp sql3.pure sql3util$(DLL) "$(DESTDIR)$(libdir)/pure"
 
 uninstall:
-	rm -f "$(DESTDIR)$(libdir)/pure/sql3.pure"  "$(DESTDIR)$(libdir)/pure/sql3util$(DLL)"  "$(DESTDIR)$(libdir)/pure/pure-sql3.html"
+	rm -f "$(DESTDIR)$(libdir)/pure/sql3.pure"  "$(DESTDIR)$(libdir)/pure/sql3util$(DLL)"
 
 dist:
 	rm -rf $(dist)

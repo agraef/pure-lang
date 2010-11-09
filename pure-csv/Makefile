@@ -47,8 +47,7 @@ CFLAGS = -g -O2
 
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
-DISTFILES = COPYING Makefile README config.guess csv.c \
-csv.pure pure-csv.html
+DISTFILES = COPYING Makefile README config.guess csv.c csv.pure
 
 all: csv$(DLL)
 
@@ -80,10 +79,10 @@ pure-csv.pdf: pure-csv.tex
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
-	cp csv.pure csv$(DLL) pure-csv.html "$(DESTDIR)$(libdir)/pure"
+	cp csv.pure csv$(DLL) "$(DESTDIR)$(libdir)/pure"
 
 uninstall:
-	rm -f "$(DESTDIR)$(libdir)/pure/csv.pure" "$(DESTDIR)$(libdir)/pure/csv$(DLL)" "$(DESTDIR)$(libdir)/pure/pure-csv.html"
+	rm -f "$(DESTDIR)$(libdir)/pure/csv.pure" "$(DESTDIR)$(libdir)/pure/csv$(DLL)"
 
 dist:
 	rm -rf $(dist)

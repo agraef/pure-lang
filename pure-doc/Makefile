@@ -16,7 +16,7 @@ bindir = $(prefix)/bin
 libdir = $(prefix)/lib
 datadir = $(libdir)/pure
 
-DISTFILES = COPYING Makefile README fixdoc pure-doc.html pure-doc.ll pure-doc.cc
+DISTFILES = COPYING Makefile README fixdoc pure-doc.ll pure-doc.cc
 
 all: pure-doc
 
@@ -35,10 +35,9 @@ install:
 	test -d "$(DESTDIR)$(bindir)" || mkdir -p "$(DESTDIR)$(bindir)"
 	test -d "$(DESTDIR)$(datadir)" || mkdir -p "$(DESTDIR)$(datadir)"
 	cp pure-doc "$(DESTDIR)$(bindir)"
-	cp pure-doc.html "$(DESTDIR)$(datadir)"
 
 uninstall:
-	rm -f "$(DESTDIR)$(bindir)/pure-doc" "$(DESTDIR)$(datadir)/pure-doc.html"
+	rm -f "$(DESTDIR)$(bindir)/pure-doc"
 
 dist:
 	rm -rf $(dist)
