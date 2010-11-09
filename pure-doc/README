@@ -3,6 +3,10 @@
 pure-doc
 ========
 
+Version @version@, |today|
+
+.. |today| date::
+
 Albert Graef <Dr.Graef@t-online.de>
 
 .. |RST| replace:: reStructuredText
@@ -27,7 +31,7 @@ rst2latex.py to create the documentation in a variety of formats.
 Copying
 =======
 
-Copyright (c) 2009 by Albert Graef.
+Copyright (c) 2009-2010 by Albert Graef.
 
 pure-doc is free software: you can redistribute it and/or modify it under the
 terms of the GNU General Public License as published by the Free Software
@@ -44,8 +48,11 @@ this program.  If not, see <http://www.gnu.org/licenses/>.
 Installation
 ============
 
-Just do the customary ``make && sudo make install``. This only needs flex and
-a standards-compliant C++ compiler.
+Get the latest source from
+http://pure-lang.googlecode.com/files/pure-doc-@version@.tar.gz.
+
+Unpack and do the customary ``make && sudo make install``. This only needs
+flex and a standards-compliant C++ compiler.
 
 Usage
 =====
@@ -128,7 +135,8 @@ pure-doc also understands the following options. These must come before any
 file arguments.
 
 -h          Print a short help message.
--s   	    Generate Sphinx-compatible output.
+-i          Automatic index creation (see below).
+-s          Generate Sphinx-compatible output (see below).
 -twidth     Set the tab width to the given number of spaces.
 
 There are no other options. By its design pure-doc is just a plain simple
@@ -137,15 +145,14 @@ actual formatting is handled by the docutils programs which offer plenty of
 options to change the appearance of the generated output; please refer to the
 docutils_ documentation for details.
 
-If docutils isn't enough for you, then you should consider one of the other
-available RST-based documentation frameworks. In particular, pure-doc can be
-run with the -s option which makes its output compatible with Sphinx_, the RST
-formatter used by the Python project. Sphinx provides cross-document indexing
-and referencing, and even more elaborate formatting options and much prettier
-output. (However, you should take into account that many Pure users read
-documentation in a text-based browser while running the interpreter, so
-including all the latest html gizmos is not going to do them much good and
-might in fact impair readability.)
+Note that since Pure 0.46, all Pure documentation is usually formatted using
+Sphinx_, the RST formatter used by the Python project which provides
+cross-document indexing and referencing, and even more elaborate formatting
+options and prettier output than docutils. pure-doc versions since 0.6 support
+this by adding the ``-s`` option which makes its output compatible with
+Sphinx. (At present this option actually has any effect only when combined
+with the ``-i`` index generation option, see `Hyperlink Targets and Index
+Generation`_ below.)
 
 .. _Sphinx: http://sphinx.pocoo.org
 
@@ -196,20 +203,20 @@ also do the following to get nicely formatted documentation::
 
   rst2html.py README pure-doc.html
 
-(You can also just type ``make html`` to get this.)
-
 Hyperlink Targets and Index Generation
 ======================================
 
-To supplement the normal hyperlink target processing by the docutils tools,
-pure-doc recognizes explicit hyperlink targets of the form::
+.. note:: This feature is now largely obsolete as Pure uses Sphinx for
+   formatting its documentation these days. Thus, as of version 0.6, the
+   indexing feature must be enabled explicitly with the ``-i`` option.
 
-  .. _target:
-
-pure-doc automatically creates raw html targets (``<a name=...>``) for those.
-This works around the docutils name mangling (which is undesirable if you're
-indexing, say, function names). It also resolves a quirk with w3m which
-doesn't pick up all ``id`` attributes in the docutils-generated html source.
+When run with the ``-i`` option, pure-doc supplements the normal hyperlink
+target processing by the docutils tools, by recognizing explicit hyperlink
+targets of the form ``.. _target:`` and automatically creating raw html
+targets (``<a name=...>``) for them. This works around the docutils name
+mangling (which is undesirable if you're indexing, say, function names). It
+also resolves a quirk with some w3m versions which don't pick up all ``id``
+attributes in the docutils-generated html source.
 
 In addition, you can also have pure-doc generate an index from all explicit
 targets. To these ends, just add the following special directive at the place
@@ -222,22 +229,39 @@ collected *up to that point*, sorted alphabetically. This also resets the list
 of collected targets, so that you can have multiple smaller indices in your
 document instead of one big one.
 
-Please note that docutils doesn't allow multiple explicit targets with the
-same name, so you should take that into consideration when devising your index
-terms.
+It goes without saying that this facility is rather simplistic, but it may be
+useful when you are working with plain docutils which does not provide its own
+indexing facility. Note, however, that docutils doesn't allow multiple
+explicit targets with the same name, so you should take that into
+consideration when devising your index terms.
 
-Also note that in Sphinx compatibility mode (-s), pure-doc will generate the
-appropriate Sphinx markup for index entries (``index::``) instead, and the
+Also note that in Sphinx compatibility mode (``-s``), pure-doc will generate
+the appropriate Sphinx markup for index entries (``index::``) instead, and the
 ``makeindex::`` directive will be ignored. You should then use Sphinx to
 generate the index.
 
-Generating Documentation
-========================
+Finally, if the ``-i`` option isn't specified, then all this special
+processing is disabled and the ``makeindex::`` directive won't be recognized
+at all. This is the recommended way to process Pure documentation files which
+have been fully converted to Sphinx.
+
+Generating and Installing Local Documentation
+=============================================
+
+.. note:: This section only applies to 3rd party packages with their own
+   bundled documentation which isn't part of the "official" Pure
+   documentation. In this case it is possible to use docutils or some other
+   RST formatting software to generate additional documentation files for use
+   with the Pure interpreter. Please note that the method sketched out in this
+   section doesn't provide full integration with the rest of Pure's
+   documentation, but at least it makes it possible to read the local
+   documentation in the interpreter.
 
 If you're generating some library documentation for which you have to process
 a bigger collection of source files, then it is often convenient to have a few
 Makefile rules to automatize the process. To these ends, simply add rules
-similar to the following to your Makefile::
+similar to the following to your Makefile (the following assumes GNU make and
+that you're using docutils to format the documentation)::
 
   # The sources. Order matters here. The generated documentation will have the
   # comments from each source file in the indicated order.
@@ -272,21 +296,22 @@ similar to the following to your Makefile::
   clean:
           rm -f *.html *.tex *.pdf
 
-(This assumes GNU make. If you use some other make utility then you will have
-to adapt the pattern rules accordingly.)
+You might want to add ``-i`` to the pure-doc command line if you want to
+enable the indexing feature described in the previous section. If you want to
+use some other RST formatting software, please check the corresponding
+documentation for information on how to format your documents and adjust the
+above rules for the html, tex and pdf targets accordingly.
 
-Now you can just type ``make`` or ``make html`` to generate the documentation
-in html format, and ``make tex`` or ``make pdf`` to generate the other
-formats. The ``clean`` target removes the generated files.
+Now you can just type ``make html`` to generate the documentation in html
+format, and ``make tex`` or ``make pdf`` to generate the other formats. The
+``clean`` target removes the generated files.
 
-Installing Documentation
-========================
-
-Now that you generated the documentation for your Pure library, you might want
-to make the Pure interpreter know about it, so that you can read your
-documentation with the ``help`` command of the interpreter. This isn't
-difficult either. You just install the html files on the Pure library
-path. The following Makefile rule automatizes this process. Add this to the
+Having generated the documentation files in html format, you can install them
+in the docs subdirectory of the Pure library directory to make it known to the
+Pure interpreter, so that you can read your documentation with the ``help``
+command of the interpreter. (When doing this, name your documentation files in
+such a manner that you don't overwrite any of the Pure documentation files
+there.) The following Makefile rule automatizes this process. Add this to the
 Makefile in the previous section::
 
   # Try to guess the installation prefix (this needs GNU make):
@@ -297,35 +322,29 @@ Makefile in the previous section::
   endif
 
   libdir = $(prefix)/lib
-  datadir = $(libdir)/pure
+  docsdir = $(libdir)/pure/docs
 
   install:
-          test -d "$(DESTDIR)$(datadir)" || mkdir -p "$(DESTDIR)$(datadir)"
-          cp $(target).html "$(DESTDIR)$(datadir)"
+          test -d "$(DESTDIR)$(docsdir)" || mkdir -p "$(DESTDIR)$(docsdir)"
+          cp $(target).html "$(DESTDIR)$(docsdir)"
 
-After a ``make install`` your documentation should now end up in the Pure
-library directory, and you can read it in the Pure interpreter using a
-command like the following::
+After a ``make install`` your documentation should now end up in the
+appropriate place in the Pure library directory and you can read it in the
+Pure interpreter using a command like the following::
 
   > help foo#
 
-For a concrete example, you can find all this and more in pure-doc's own
-Makefile. In fact, after installation this document ends up as pure-doc.html
-in the Pure library directory, so that you can read it with::
-
-  > help pure-doc#
-
 Note the hash character. This tells the ``help`` command that this is an
-auxiliary documentation file, rather than a function name to be looked up in
-the Pure Library Manual. You can also look up a specific section in the
-pure-doc manual as follows::
+auxiliary documentation file, rather than a search term to be looked up in the
+Pure documentation. You can also look up a specific section in your manual as
+follows::
 
-  > help pure-doc#literate-programming
+  > help foo#section-name
 
 Please also refer to the `Pure Manual`_ for more information on how to use the
 interpreter's online help.
 
-.. _Pure Manual: pure.html
+.. _Pure Manual: pure.html#online-help
 
 Formatting Tips
 ===============
@@ -334,7 +353,7 @@ If you're generating documentation in pdf format via LaTeX, you might have to
 fiddle with the formatting to get results suitable for publication purposes.
 Newer versions of the rts2latex.py program provide some options which let you
 adjust the formatting of various document elements. Here are the options that
-the author found particularly helpful:
+the author found particularly helpful when working with plain docutils:
 
 * The table of contents that RST produces isn't all that useful in printed
   documentation, since it lacks page numbers. As a remedy, you can invoke
@@ -359,8 +378,7 @@ the author found particularly helpful:
   need a preamble which loads the corresponding package.).
 
 To learn more about this, please consult the rts2latex.py documentation at the
-docutils website, or have a look at how the LaTeX version of the Pure manual
-included in the Pure main distribution is formatted.
+docutils website.
 
 In addition, the pure-doc package contains a little GNU awk script called
 fixdoc, which attempts to improve the LaTeX output produced by older svn

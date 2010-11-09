@@ -510,6 +510,7 @@ using namespace std;
 static char *prog, **files;
 static bool literate = false;
 static bool sphinx = false;
+static bool autoindex = false;
 static unsigned col = 0, start;
 static unsigned tabsize = 8;
 static string buf, comment_text, literate_text;
@@ -526,7 +527,7 @@ static inline void echo(const char *s)
   }
 }
 
-#line 530 "pure-doc.cc"
+#line 531 "pure-doc.cc"
 
 #define INITIAL 0
 #define comment 1
@@ -711,10 +712,10 @@ YY_DECL
 	register char *yy_cp, *yy_bp;
 	register int yy_act;
     
-#line 55 "pure-doc.ll"
+#line 56 "pure-doc.ll"
 
 
-#line 718 "pure-doc.cc"
+#line 719 "pure-doc.cc"
 
 	if ( !(yy_init) )
 		{
@@ -800,16 +801,16 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 /* rule 1 can match eol */
-#line 58 "pure-doc.ll"
+#line 59 "pure-doc.ll"
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-#line 58 "pure-doc.ll"
+#line 59 "pure-doc.ll"
 echo(yytext); tabs(col, yytext, yyleng);
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-#line 60 "pure-doc.ll"
+#line 61 "pure-doc.ll"
 {
   start = col; buf = yytext+2;
   comment_text = yytext;
@@ -819,7 +820,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-#line 66 "pure-doc.ll"
+#line 67 "pure-doc.ll"
 {
   col += yyleng; start = col; buf.clear();
   comment_text = yytext;
@@ -832,12 +833,12 @@ case 5:
 (yy_c_buf_p) = yy_cp = yy_bp + 1;
 YY_DO_BEFORE_ACTION; /* set up yytext again */
 YY_RULE_SETUP
-#line 72 "pure-doc.ll"
+#line 73 "pure-doc.ll"
 comment_text += yytext; tabs(col, yytext, yyleng);
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-#line 73 "pure-doc.ll"
+#line 74 "pure-doc.ll"
 {
   buf += string("\n")+(yytext+2);
   comment_text += yytext;
@@ -846,17 +847,17 @@ YY_RULE_SETUP
 	YY_BREAK
 case 7:
 /* rule 7 can match eol */
-#line 79 "pure-doc.ll"
+#line 80 "pure-doc.ll"
 case 8:
 /* rule 8 can match eol */
 YY_RULE_SETUP
-#line 79 "pure-doc.ll"
+#line 80 "pure-doc.ll"
 print(start, buf); yyless(0); BEGIN(INITIAL);
 	YY_BREAK
 case 9:
 /* rule 9 can match eol */
 YY_RULE_SETUP
-#line 81 "pure-doc.ll"
+#line 82 "pure-doc.ll"
 {
   tabs(col, yytext, yyleng);
   buf += yytext; comment_text += yytext;
@@ -865,7 +866,7 @@ YY_RULE_SETUP
 case 10:
 /* rule 10 can match eol */
 YY_RULE_SETUP
-#line 85 "pure-doc.ll"
+#line 86 "pure-doc.ll"
 {
   tabs(col, yytext, yyleng);
   buf += yytext; comment_text += yytext;
@@ -873,7 +874,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-#line 89 "pure-doc.ll"
+#line 90 "pure-doc.ll"
 {
   col += yyleng;
   comment_text += yytext;
@@ -883,22 +884,22 @@ YY_RULE_SETUP
 	YY_BREAK
 case 12:
 /* rule 12 can match eol */
-#line 97 "pure-doc.ll"
+#line 98 "pure-doc.ll"
 case 13:
 /* rule 13 can match eol */
 YY_RULE_SETUP
-#line 97 "pure-doc.ll"
+#line 98 "pure-doc.ll"
 echo(yytext); tabs(col, yytext, yyleng);
 	YY_BREAK
 case 14:
 YY_RULE_SETUP
-#line 98 "pure-doc.ll"
+#line 99 "pure-doc.ll"
 echo(yytext); col++;
 	YY_BREAK
 case YY_STATE_EOF(INITIAL):
 case YY_STATE_EOF(comment):
 case YY_STATE_EOF(lcomment):
-#line 100 "pure-doc.ll"
+#line 101 "pure-doc.ll"
 {
   if (YY_START != INITIAL)
     print(start, buf); BEGIN(INITIAL);
@@ -916,10 +917,10 @@ case YY_STATE_EOF(lcomment):
 	YY_BREAK
 case 15:
 YY_RULE_SETUP
-#line 115 "pure-doc.ll"
+#line 116 "pure-doc.ll"
 ECHO;
 	YY_BREAK
-#line 923 "pure-doc.cc"
+#line 924 "pure-doc.cc"
 
 	case YY_END_OF_BUFFER:
 		{
@@ -1881,7 +1882,7 @@ void yyfree (void * ptr )
 
 #define YYTABLES_NAME "yytables"
 
-#line 115 "pure-doc.ll"
+#line 116 "pure-doc.ll"
 
 
 
@@ -2121,7 +2122,7 @@ static void print(unsigned col, string& text)
   if (t) {
     string text = t;
     last_t = t+text.size();
-    if (!targetp(text))
+    if (!autoindex || !targetp(text))
       cout << text << endl;
     t = strtok(NULL, "\n");
     while (t) {
@@ -2135,7 +2136,7 @@ static void print(unsigned col, string& text)
       size_t p = text.find_first_not_of(" \t");
       if (p != string::npos) {
 	last_indent = trim(text, col);
-	if (!targetp(text))
+	if (!autoindex || !targetp(text))
 	  cout << text << endl;
       } else {
 	flush_cache();
@@ -2154,21 +2155,39 @@ extern "C"
 int main(int argc, char *argv[])
 {
   prog = *argv++;
-  if (*argv && **argv == '-') {
-    char *s = *argv, *end = s;
-    if (s[1] == 'h' && !s[2]) {
-      cerr << "Usage: " << prog << " [-h|-s|-tn] [source-files ...]" << endl
-	   << "-h   print this message" << endl
-	   << "-s   generate Sphinx-compatible output" << endl
-	   << "-tn  tabs are n spaces wide" << endl;
-      exit(0);
-    } else if (s[1] == 's' && !s[2]) {
-      sphinx = true; end = s+2;
-    } else if (s[1] == 't' && s[2])
-      tabsize = strtoul(s+2, &end, 10);
-    if (*end) {
-      cerr << prog << ": invalid option " << s
-	   << ", try '" << prog << " -h' for help" << endl;
+  while (*argv && **argv == '-') {
+    char *s = (*argv)+1;
+    if (s[0] == '-' && !s[1]) {
+      // stop option processing
+      argv++; break;
+    }
+    bool ok = *s != 0;
+    while (ok && *s) {
+      if (s[0] == 'h') {
+	cerr << "Usage: " << prog
+	     << " [options ...] [source-files ...]" << endl
+	     << "Options: " << endl
+	     << "-h   print this message" << endl
+	     << "-i   automatic index creation" << endl
+	     << "-s   generate Sphinx-compatible output" << endl
+	     << "-tn  tabs are n spaces wide" << endl
+	     << "--   stop option processing" << endl;
+	exit(0);
+      } else if (s[0] == 'i') {
+	autoindex = true; s++;
+      } else if (s[0] == 's') {
+	sphinx = true; s++;
+      } else if (s[0] == 't' && s[1]) {
+	char *end = s;
+	tabsize = strtoul(s+1, &end, 10);
+	ok = *end==0; s = end;
+      } else
+	ok = false;
+    }
+    if (!ok) {
+      if (*s) s[1] = 0;
+      cerr << prog << ": invalid option '-" << s
+	   << "', try '" << prog << " -h' for help" << endl;
       exit(1);
     }
     argv++;

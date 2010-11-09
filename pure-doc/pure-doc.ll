@@ -28,6 +28,7 @@ using namespace std;
 static char *prog, **files;
 static bool literate = false;
 static bool sphinx = false;
+static bool autoindex = false;
 static unsigned col = 0, start;
 static unsigned tabsize = 8;
 static string buf, comment_text, literate_text;
@@ -350,7 +351,7 @@ static void print(unsigned col, string& text)
   if (t) {
     string text = t;
     last_t = t+text.size();
-    if (!targetp(text))
+    if (!autoindex || !targetp(text))
       cout << text << endl;
     t = strtok(NULL, "\n");
     while (t) {
@@ -364,7 +365,7 @@ static void print(unsigned col, string& text)
       size_t p = text.find_first_not_of(" \t");
       if (p != string::npos) {
 	last_indent = trim(text, col);
-	if (!targetp(text))
+	if (!autoindex || !targetp(text))
 	  cout << text << endl;
       } else {
 	flush_cache();
@@ -383,21 +384,39 @@ extern "C"
 int main(int argc, char *argv[])
 {
   prog = *argv++;
-  if (*argv && **argv == '-') {
-    char *s = *argv, *end = s;
-    if (s[1] == 'h' && !s[2]) {
-      cerr << "Usage: " << prog << " [-h|-s|-tn] [source-files ...]" << endl
-	   << "-h   print this message" << endl
-	   << "-s   generate Sphinx-compatible output" << endl
-	   << "-tn  tabs are n spaces wide" << endl;
-      exit(0);
-    } else if (s[1] == 's' && !s[2]) {
-      sphinx = true; end = s+2;
-    } else if (s[1] == 't' && s[2])
-      tabsize = strtoul(s+2, &end, 10);
-    if (*end) {
-      cerr << prog << ": invalid option " << s
-	   << ", try '" << prog << " -h' for help" << endl;
+  while (*argv && **argv == '-') {
+    char *s = (*argv)+1;
+    if (s[0] == '-' && !s[1]) {
+      // stop option processing
+      argv++; break;
+    }
+    bool ok = *s != 0;
+    while (ok && *s) {
+      if (s[0] == 'h') {
+	cerr << "Usage: " << prog
+	     << " [options ...] [source-files ...]" << endl
+	     << "Options: " << endl
+	     << "-h   print this message" << endl
+	     << "-i   automatic index creation" << endl
+	     << "-s   generate Sphinx-compatible output" << endl
+	     << "-tn  tabs are n spaces wide" << endl
+	     << "--   stop option processing" << endl;
+	exit(0);
+      } else if (s[0] == 'i') {
+	autoindex = true; s++;
+      } else if (s[0] == 's') {
+	sphinx = true; s++;
+      } else if (s[0] == 't' && s[1]) {
+	char *end = s;
+	tabsize = strtoul(s+1, &end, 10);
+	ok = *end==0; s = end;
+      } else
+	ok = false;
+    }
+    if (!ok) {
+      if (*s) s[1] = 0;
+      cerr << prog << ": invalid option '-" << s
+	   << "', try '" << prog << " -h' for help" << endl;
       exit(1);
     }
     argv++;
