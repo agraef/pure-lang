@@ -1,7 +1,12 @@
 
-# Pure lexer for Pygments (http://pygments.org). You can add this to
-# pygments/lexers/functional.py to get syntax highlighting for Pure scripts,
-# using Pygments directly or via some Pygments-enabled software like Sphinx.
+# Pure lexer for Pygments (http://pygments.org). This enables syntax
+# highlighting for Pure scripts and interactive Pure sessions in Pygments and
+# other Pygments-enabled software such as Sphinx.
+
+# For the time being, you'll have to install this manually. Add the Python
+# code below to pygments/lexers/functional.py in the Pygment sources and rerun
+# pygments/lexers/_mapping.py to have this lexer included in Pygment. Then
+# reinstall Pygment as usual.
 
 class PureLexer(RegexLexer):
     """
@@ -41,8 +46,10 @@ class PureLexer(RegexLexer):
             # Inline foreign language code. Avoid highlighting these.
             (r'%{(.|\n)*?%}', Text),
 
-            # Interactive interpreter commands. No highlighting.
-            (r'^> (%s)\b.*?\n' % '|'.join(commands), Text),
+            # Interactive prompts and error messages.
+            (r'^> ?$', Generic.Prompt), # lone prompt at end of snippet
+            (r'^> ', Generic.Prompt, 'prompt'),
+            (r'^[^,\n]+, line [0-9]+: ', Generic.Error, 'error'),
 
             # Various kinds of keywords and built-in punctuation.
             (r'\b(%s)\b' % '|'.join(keywords), Keyword.Reserved),
@@ -60,6 +67,9 @@ class PureLexer(RegexLexer):
             # Strings.
             (r'"', String, 'string'),
 
+            # Specials (thunks, closures, pointers, etc.).
+            (r'#<[^>\n]+>', Keyword.Type),
+
             # Pretty much everything else can be a legal (utf-8) identifier or
             # operator symbol in Pure, we just highlight these as text for now.
             (r'\S', Text),
@@ -72,4 +82,15 @@ class PureLexer(RegexLexer):
             (r'\\\n', String), # line continuation
             (r'\\', String), # stray backslash
         ],
+        'prompt': [
+            # Interactive interpreter commands. No highlighting.
+            (r'(%s)\b.*?\n' % '|'.join(commands), Text, '#pop'),
+            # Interactively typed pragmas.
+            (r'#!.*?\n', Comment.Preproc, '#pop'),
+            # Anything else is highlighted as usual.
+            ('', Text, '#pop'),
+        ],
+        'error': [
+            (r'.*?\n', Text, '#pop'),
+        ]
     }
