@@ -179,8 +179,23 @@ llvm_version=`$LLVMCONF --version`
 AC_DEFINE_UNQUOTED(LLVM_VERSION, "${llvm_version}", [Define to the LLVM version string.])
 
 dnl If we got LLVM installed as a shared library, use that.
-AC_CHECK_LIB(LLVM-${llvm_version}, LLVMFreeMachineCodeForFunction,
-[LLVM_LIBS=-lLLVM-${llvm_version}; LLVM_EXE_LIBS=-lLLVM-${llvm_version}], [LLVM_LIBS=$($LLVMCONF --ldflags --libs core bitreader bitwriter linker jit native | tr '\r\n' '  ')], -L`$LLVMCONF --libdir`)
+dnl FIXME: This should be moved to acinclude.m4.
+save_LIBS="$LIBS"
+llvm_lib_flags="-L`$LLVMCONF --libdir`"
+LIBS="$LIBS ${llvm_lib_flags} -lLLVM-${llvm_version}"
+AC_MSG_CHECKING([for shared LLVM library])
+AC_TRY_LINK([#ifdef __cplusplus
+extern "C"
+#endif
+char LLVMFreeMachineCodeForFunction ();],
+[return LLVMFreeMachineCodeForFunction ();
+ ;
+ return 0;],
+[LLVM_LIBS="${llvm_lib_flags} -lLLVM-${llvm_version}"; LLVM_EXE_LIBS="${LLVM_LIBS}"
+AC_MSG_RESULT([$]LLVM_LIBS)],
+[LLVM_LIBS=$($LLVMCONF --ldflags --libs core bitreader bitwriter linker jit native | tr '\r\n' '  ')
+AC_MSG_RESULT(no)])
+LIBS="$save_LIBS"
 AC_SUBST(LLVM_LIBS)
 AC_SUBST(LLVM_EXE_LIBS)
 
