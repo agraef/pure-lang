@@ -75,6 +75,11 @@ get_proc_addr(const char *name)
 #include <GLUT/glut.h>
 #include <mach-o/dyld.h>
 
+/* APIENTRY is undefined after inclusion of stock glut.h on OSX, as reported
+   by autotelicum. So define it as empty once again. */
+
+#define APIENTRY 
+
 static void*
 get_proc_addr(const char *name)
 {
