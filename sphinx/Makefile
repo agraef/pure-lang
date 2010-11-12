@@ -144,7 +144,7 @@ check = (version=`(grep '^version[ \t]*=' $(dir $(1))/Makefile 2>/dev/null | sed
 
 %.txt:
 	@(test -d $(dir $@) || mkdir -p $(dir $@))
-	@(test -f ../$@ && mv ../$@ $@.bak; if $(MAKE) -C ../$(dir $@) $(notdir $@) >/dev/null 2>&1; then $(call check,../$@,$@); test -f $@.bak && mv $@.bak ../$@ || rm ../$@; elif test -f $@.bak; then mv $@.bak ../$@; $(call check,../$@,$@); elif test -f ../$(dir $@)README; then $(call check,../$(dir $@)README,$@); else echo "no source for $(notdir $@)"; fi)
+	@(if test -f ../$@; then $(call check,../$@,$@); elif $(MAKE) -C ../$(dir $@) $(notdir $@) >/dev/null 2>&1 && test -f ../$@; then $(call check,../$@,$@); rm -f ../$@; elif test -f ../$(dir $@)README; then $(call check,../$(dir $@)README,$@); else echo "no source for $(notdir $@)"; fi)
 
 # Install/uninstall targets.
 
@@ -202,6 +202,7 @@ dist: alldocs docs/Makefile
 # fresh build.
 
 cleanrst:
+	rm -rf $(dir $(rst_sources))
 	rm -rf $(notdir $(rst_sources))
 
 # Get rid of really *everything* that we generated, and other unneccessary
