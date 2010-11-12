@@ -72,10 +72,13 @@ BUILDDIR      = build
 #HTMLOPTS  = -D pygments_style='pygments.styles.bw.BlackWhiteStyle'
 LATEXOPTS = -D pygments_style='pygments.styles.bw.BlackWhiteStyle'
 
+AWK = $(shell for a in gawk awk nawk mawk; do command which $$a && break; done 2>/dev/null)
+
 # Internal variables.
 PAPEROPT_a4     = -D latex_paper_size=a4
 PAPEROPT_letter = -D latex_paper_size=letter
 ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
+FIXDOC          = $(AWK) -f fixdoc
 
 .PHONY: all docs rst alldocs allhtml dist install uninstall update update-html sources help clean cleanrst realclean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest
 
@@ -131,7 +134,7 @@ rst:
 # definition for the 'version' variable in it, we also patch up occurrences of
 # '@version@' in the rst source with the appropriate version string.
 
-check = (version=`(grep '^version[ \t]*=' $(dir $(1))/Makefile 2>/dev/null | sed -e 's/^version[ \t]*=[ \t]*\(.*\)$$/\1/' 2>/dev/null) || true`; ./fixdoc < $(1) | sed -e "s?@version@?$$version?g" > $(2)); if diff $(notdir $(2)) $(2) >/dev/null 2>&1; then rm $(2); else echo "creating $(notdir $(2)) from: $(1)"; fi
+check = (version=`(grep '^version[ \t]*=' $(dir $(1))/Makefile 2>/dev/null | sed -e 's/^version[ \t]*=[ \t]*\(.*\)$$/\1/' 2>/dev/null) || true`; $(FIXDOC) < $(1) | sed -e "s?@version@?$$version?g" > $(2)); if diff $(notdir $(2)) $(2) >/dev/null 2>&1; then rm $(2); else echo "creating $(notdir $(2)) from: $(1)"; fi
 
 # This is actually a phony rule as the documentation we want to create might
 # be up-to-date (in which case it won't be updated) or may be missing
