@@ -172,7 +172,9 @@ When invoked with the ``-n`` option, pure-gen performs a dry run in which it
 only parses the input without actually generating any output files. This is
 useful for checking the input (possibly in combination with the ``-e``, ``-v``
 and/or ``-w`` options) before generating output. A particularly useful example
-is ::
+is
+
+.. code-block:: sh
 
   pure-gen -ne foo.h \
     | awk '$1=="#" && $2~/^[0-9]+$/ && $3!~/^"<.*>"$/  { print $3 }' \
@@ -320,7 +322,9 @@ declaration ``using foo;`` into your programs. The same approach also works
 with the ffi interface if you replace the ``-fc`` option with ``-fc-ffi``.
 
 You can also adjust the C wrapper code to some extent by providing your own
-template file, which has the following format::
+template file, which has the following format:
+
+.. code-block:: c
 
   /* frontmatter here */
   #include %h
@@ -367,7 +371,9 @@ foo.templ and invoke pure-gen on the foo.h header file as follows::
 
   pure-gen -fc -t foo.templ foo.h
 
-Then in foo.c you'd get C output code like the following::
+Then in foo.c you'd get C output code like the following:
+
+.. code-block:: c
 
   /* frontmatter here */
   #include "foo.h"
@@ -388,7 +394,9 @@ As indicated, the wrapper function names are usually stropped with the
 ``Pure_`` prefix. You can change this with the ``-P`` option.
 
 This also works great to create boilerplate code for new modules. For this
-purpose the following template will do the trick::
+purpose the following template will do the trick:
+
+.. code-block:: c
 
   /* Add #includes etc. here. */
   %%
@@ -425,12 +433,16 @@ the ffi interface) to only generate the C wrapper when required. This saves
 the overhead of an extra function call if it's not actually needed.
 
 Struct arguments in the original C function then become struct pointers in the
-wrapper function. E.g., if the function is declared in the header as follows::
+wrapper function. E.g., if the function is declared in the header as follows:
+
+.. code-block:: c
 
   typedef struct { double x, y; } point;
   extern double foo(point p);
 
-Then the generated wrapper code becomes::
+Then the generated wrapper code becomes:
+
+.. code-block:: c
 
   double Pure_foo(point* arg0)
   {
@@ -442,11 +454,15 @@ Which is declared in the Pure interface as::
   extern double Pure_foo(point*) = foo;
 
 Struct return values are handled by returning a pointer to a static variable
-holding the return value. E.g., ::
+holding the return value. E.g.,
+
+.. code-block:: c
 
   extern point bar(double x, double y);
 
-becomes::
+becomes:
+
+.. code-block:: c
 
   point* Pure_bar(double arg0, double arg1)
   {
@@ -537,7 +553,9 @@ Example
 
 For the sake of a substantial, real-world example, here is how you can wrap
 the entire GNU Scientific Library in a single Pure module mygsl.pure, with the
-accompanying C module in mygsl.c::
+accompanying C module in mygsl.c:
+
+.. code-block:: sh
 
   rm -f mygsl.pure mygsl.c
   DEFS=-DGSL_DISABLE_DEPRECATED
@@ -545,7 +563,9 @@ accompanying C module in mygsl.c::
     pure-gen $DEFS -N -fc-auto -s "$x::" $x -o mygsl.pure -c mygsl.c
   done
 
-The C module can then be compiled with::
+The C module can then be compiled with:
+
+.. code-block:: sh
 
   gcc $DEFS -shared -o mygsl.so mygsl.c
 
