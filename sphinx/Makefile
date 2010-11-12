@@ -16,6 +16,40 @@ endif
 # instead of $(prefix).
 libdir = $(prefix)/lib
 
+all: docs
+
+help:
+	@printf "\nJust 'make' grabs new rst sources and builds the html and pdf files.\n"
+	@printf "Or use 'make rst' followed by 'make <target>' where <target> is one of:\n\n"
+	@printf "  %-12s%s\n" \
+	  html       "to make standalone HTML files" \
+	  dirhtml    "to make HTML files named index.html in directories" \
+	  singlehtml "to make a single large HTML file" \
+	  pickle     "to make pickle files" \
+	  json       "to make JSON files" \
+	  htmlhelp   "to make HTML files and a HTML help project" \
+	  qthelp     "to make HTML files and a qthelp project" \
+	  devhelp    "to make HTML files and a Devhelp project" \
+	  epub       "to make an epub" \
+	  latex      "to make LaTeX files, you can set PAPER=a4 or PAPER=letter" \
+	  latexpdf   "to make LaTeX files and run them through pdflatex" \
+	  text       "to make text files" \
+	  man        "to make manual pages" \
+	  changes    "to make an overview of all changed/added/deprecated items" \
+	  linkcheck  "to check all external links for integrity" \
+	  doctest    "to run all doctests embedded in the documentation (if enabled)"
+	@printf "\nOther targets of interest:\n\n"
+	@printf "  %-12s%s\n" \
+	  dist       "to create a distribution tarball" \
+	  install    "to install the generated docs on the Pure library path" \
+	  clean      "to remove the Sphinx-built files" \
+	  cleanrst   "to remove intermediate rst files" \
+	  realclean  "to remove all generated files"
+	@printf "\nMaintainers only (this requires a checkout of the 'docs' repository):\n\n"
+	@printf "  %-12s%s\n" \
+	  update     "to copy the generated docs to a staging area for online viewing" \
+	  update-html "to copy only the html docs to the staging area"
+
 # The rst sources we want to use. This is pretty much the only definition that
 # needs to be updated (along with the toctree in the master document
 # puredoc.txt) when the set of documentation changes.
@@ -35,18 +69,21 @@ SPHINXBUILD   = sphinx-build
 PAPER         =
 BUILDDIR      = build
 
+#HTMLOPTS  = -D pygments_style='pygments.styles.bw.BlackWhiteStyle'
+LATEXOPTS = -D pygments_style='pygments.styles.bw.BlackWhiteStyle'
+
 # Internal variables.
 PAPEROPT_a4     = -D latex_paper_size=a4
 PAPEROPT_letter = -D latex_paper_size=letter
 ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 
-.PHONY: all rst alldocs allhtml dist install uninstall update update-html sources help clean cleanrst realclean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest
+.PHONY: all docs rst alldocs allhtml dist install uninstall update update-html sources help clean cleanrst realclean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest
 
 # Try to grab as many rst sources as we can, then go ahead and build the html
 # and pdf targets if necessary. This requires an installation of docutils,
 # Sphinx and LaTeX.
 
-all: alldocs
+docs: alldocs
 	@printf "The html and pdf docs in $(BUILDDIR)/html and $(BUILDDIR)/latex should be up to date now.\nPlease try 'make help' for a list of other available options.\n"
 
 # This is also used internally for the 'dist' and 'update' targets.
@@ -170,38 +207,6 @@ cleanrst:
 realclean: clean cleanrst
 	rm -rf *~ *.bak auto $(BUILDDIR) conf.py
 
-help:
-	@printf "\nJust 'make' grabs new rst sources and builds the html and pdf files.\n"
-	@printf "Or use 'make rst' followed by 'make <target>' where <target> is one of:\n\n"
-	@printf "  %-12s%s\n" \
-	  html       "to make standalone HTML files" \
-	  dirhtml    "to make HTML files named index.html in directories" \
-	  singlehtml "to make a single large HTML file" \
-	  pickle     "to make pickle files" \
-	  json       "to make JSON files" \
-	  htmlhelp   "to make HTML files and a HTML help project" \
-	  qthelp     "to make HTML files and a qthelp project" \
-	  devhelp    "to make HTML files and a Devhelp project" \
-	  epub       "to make an epub" \
-	  latex      "to make LaTeX files, you can set PAPER=a4 or PAPER=letter" \
-	  latexpdf   "to make LaTeX files and run them through pdflatex" \
-	  text       "to make text files" \
-	  man        "to make manual pages" \
-	  changes    "to make an overview of all changed/added/deprecated items" \
-	  linkcheck  "to check all external links for integrity" \
-	  doctest    "to run all doctests embedded in the documentation (if enabled)"
-	@printf "\nOther targets of interest:\n\n"
-	@printf "  %-12s%s\n" \
-	  dist       "to create a distribution tarball" \
-	  install    "to install the generated docs on the Pure library path" \
-	  clean      "to remove the Sphinx-built files" \
-	  cleanrst   "to remove intermediate rst files" \
-	  realclean  "to remove all generated files"
-	@printf "\nMaintainers only (this requires a checkout of the 'docs' repository):\n\n"
-	@printf "  %-12s%s\n" \
-	  update     "to copy the generated docs to a staging area for online viewing" \
-	  update-html "to copy only the html docs to the staging area"
-
 # These are the targets generated by sphinx-quickstart, slightly massaged to
 # be somewhat less verbose.
 
@@ -209,13 +214,13 @@ clean:
 	-rm -rf $(BUILDDIR)/*
 
 html:
-	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
+	$(SPHINXBUILD) -b html $(HTMLOPTS) $(ALLSPHINXOPTS) $(BUILDDIR)/html
 
 dirhtml:
-	$(SPHINXBUILD) -b dirhtml $(ALLSPHINXOPTS) $(BUILDDIR)/dirhtml
+	$(SPHINXBUILD) -b dirhtml $(HTMLOPTS) $(ALLSPHINXOPTS) $(BUILDDIR)/dirhtml
 
 singlehtml:
-	$(SPHINXBUILD) -b singlehtml $(ALLSPHINXOPTS) $(BUILDDIR)/singlehtml
+	$(SPHINXBUILD) -b singlehtml $(HTMLOPTS) $(ALLSPHINXOPTS) $(BUILDDIR)/singlehtml
 
 pickle:
 	$(SPHINXBUILD) -b pickle $(ALLSPHINXOPTS) $(BUILDDIR)/pickle
@@ -224,7 +229,7 @@ json:
 	$(SPHINXBUILD) -b json $(ALLSPHINXOPTS) $(BUILDDIR)/json
 
 htmlhelp:
-	$(SPHINXBUILD) -b htmlhelp $(ALLSPHINXOPTS) $(BUILDDIR)/htmlhelp
+	$(SPHINXBUILD) -b htmlhelp $(HTMLOPTS) $(ALLSPHINXOPTS) $(BUILDDIR)/htmlhelp
 
 qthelp:
 	$(SPHINXBUILD) -b qthelp $(ALLSPHINXOPTS) $(BUILDDIR)/qthelp
@@ -240,7 +245,7 @@ epub:
 # suppress the silly warnings about unknown references to local html files.
 
 latex:
-	$(SPHINXBUILD) -Q -b latex $(ALLSPHINXOPTS) $(BUILDDIR)/latex
+	$(SPHINXBUILD) -Q -b latex $(LATEXOPTS) $(ALLSPHINXOPTS) $(BUILDDIR)/latex
 	@(cd $(BUILDDIR)/latex && sed -e 's/\\DeclareUnicodeCharacter{00A0}{\\nobreakspace}/%\\DeclareUnicodeCharacter{00A0}{\\nobreakspace}/g' < puredoc.tex > puredoc.fixed && rm -f puredoc.tex && mv puredoc.fixed puredoc.tex)
 
 latexpdf: latex
