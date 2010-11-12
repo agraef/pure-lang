@@ -84,7 +84,9 @@ acronym for the "Pure Universal Rewriting Engine".)
 Invoking the Pure Interpreter
 =============================
 
-The Pure interpreter is invoked as follows::
+The Pure interpreter is invoked as follows:
+
+.. code-block:: none
 
   pure [options ...] [script ...] [-- args ...]
   pure [options ...] -x script [args ...]
@@ -3645,7 +3647,9 @@ a vector of row pointers instead. This kind of matrix representation is often
 found in audio and video processing software (where the rows of the matrix
 might denote different audio channels, display lines or video frames), but
 it's also fairly convenient to do any kind of matrix processing in C. For
-instance, here's how to do matrix multiplication (the naive algorithm)::
+instance, here's how to do matrix multiplication (the naive algorithm):
+
+.. code-block:: c
 
   void matmult(int n, int l, int m, double **x, double **y, double **z)
   {
@@ -3782,7 +3786,9 @@ external visible in Pure from which the unresolved function is called.)
 
 Let's take a look at a concrete example to see how this actually
 works. Consider the following C code which defines a little function to
-compute the greatest common divisor of two (machine) integers::
+compute the greatest common divisor of two (machine) integers:
+
+.. code-block:: c
 
   int mygcd(int x, int y)
   {
@@ -4608,7 +4614,8 @@ you specify the target level to be cleared with the -t option. For instance::
   let bar = 99;
   foo (x:xs) = x+foo xs;
   foo [] = 0;
-  > clear -t1 // this scraps all our scribblings!
+  > // this scraps all our scribblings!
+  > clear -t1
   This will clear all temporary definitions at level #1 and above.
   Continue (y/n)? y
   clear: now at temporary definitions level #1
@@ -4705,7 +4712,9 @@ are provided to walk through an evaluation, print and navigate the call stack,
 step over the current call, or continue the evaluation unattended until you
 hit another breakpoint. If you know other source level debuggers like gdb then
 you should feel right at home. You can type ``h`` at the debugger prompt to
-print the following list::
+print the following list:
+
+.. code-block:: none
 
   : h
   Debugger commands:
@@ -5077,7 +5086,9 @@ case the output code includes *all* functions defined in the compiled program
 or imported through a ``using`` clause, even if they don't seem to be used
 anywhere. This considerably increases compilation times and makes the compiled
 executable much larger. For instance, on a 64 bit Linux systems with ELF
-binaries the executable of our hello.pure example is about thrice as large::
+binaries the executable of our hello.pure example is about thrice as large:
+
+.. code-block:: none
 
   $ pure -o hello -c -x hello.pure 7 && ls -l hello
   -rwxr-xr-x 1 ag users 178484 2010-01-12 06:21 hello
@@ -5139,14 +5150,18 @@ Other Output Code Formats
 
 Note that while the batch compiler generates native executables by default, it
 can just as well create object files which can be linked into other C/C++
-programs and libraries::
+programs and libraries:
+
+.. code-block:: none
 
   $ pure -o hello.o -c -x hello.pure 7
 
 The .o extension tells the compiler that you want an object file. When linking
 the object module, you also need to supply an initialization routine which
 calls the ``__pure_main__`` function in hello.o to initialize the compiled
-module. This routine is declared in C/C++ code as follows::
+module. This routine is declared in C/C++ code as follows:
+
+.. code-block:: c
 
   extern "C" void __pure_main__(int argc, char** argv);
 
@@ -5160,7 +5175,9 @@ the Pure program, and to invoke all "initialization code" (variable
 definitions and toplevel expressions) of the program itself.
 
 A minimal C ``main`` function which does the job of initializing the Pure
-module looks as follows::
+module looks as follows:
+
+.. code-block:: c
 
   extern void __pure_main__(int argc, char** argv);
 
@@ -5192,7 +5209,9 @@ have to link with those; *all* external references have to be resolved at
 compile time. This is taken care of automatically when creating
 executables. Otherwise it is a good idea to run ``pure -c`` with the
 ``-v0100`` verbosity option so that it prints the libraries to be linked (in
-addition to the commands which are invoked in the compilation process)::
+addition to the commands which are invoked in the compilation process):
+
+.. code-block:: none
 
   $ pure -v0100 -c hello.pure -o hello.o
   opt -f -std-compile-opts hello.o.bc | llc -f -o hello.o.s
@@ -5200,7 +5219,9 @@ addition to the commands which are invoked in the compilation process)::
   Link with: g++ hello.o -lpure
 
 Well, we already knew that, so let's consider a slightly more interesting
-example from Pure's ODBC module::
+example from Pure's ODBC module:
+
+.. code-block:: none
 
   $ pure -v0100 -c pure-odbc/examples/menagerie.pure -o menagerie.o
   opt -f -std-compile-opts menagerie.o.bc | llc -f -o menagerie.o.s
@@ -5252,7 +5273,9 @@ stack frame for the function. However, there's a convenience function called
 pointer to the Pure function, the argument count and the arguments themselves
 (as ``pure_expr*`` objects) as parameters. For instance, here is a pure_main.c
 module which can be linked against the hello.pure program from above, which
-calls the ``fact`` function from the Pure program::
+calls the ``fact`` function from the Pure program:
+
+.. code-block:: c
 
   #include <stdio.h>
   #include <pure/runtime.h>
