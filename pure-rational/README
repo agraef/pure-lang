@@ -2040,9 +2040,9 @@ numbers, but the results are inexact.
 
 **Example 64** Rational complex maths::
 
-  > polar (1%2) (1%2);
-  0.438791280945186+:0.239712769302102
-  > abs (4%2 +: 3%2);
+  > polar (1%2+:1%2);
+  0.707106781186548<:0.785398163397448
+  > abs (4%2+:3%2);
   2.5
   > arg (-1%1);
   3.14159265358979
@@ -2132,12 +2132,12 @@ numbers and more general mathematical values.
   1L+:0L
   > euclid_gcd (==0) (mod) 25 15;
   5
-  > let (g, a, c) = euclid_alg (==0) (div_gauss) (1 +: 2) (3 +: 4); g;
-  1+:0
+  > let (g, a, b) = euclid_alg (==0) (div_gauss) (1 +: 2) (3 +: 4); g;
+  1L+:0L
   > (a, b);
-  -2+:0,1+:0
-  > a * (1 +: 2) + B * (3 +: 4);
-  1+:0
+  -2L+:0L,1L+:0L
+  > a * (1 +: 2) + b * (3 +: 4);
+  1L+:0L
   > let (g, a, b) = euclid_alg (==0) (div) 25 15; g;
   5
   > (a, b);
@@ -2166,7 +2166,7 @@ Rational Complex Type Simplification
   > let l = [9+:1, 9%1+:1, 9%2+:1, 4.5+:1, 9%1+:0, 9%2+:0, 4.5+:0.0];
   > l;
   [9+:1,9L%1L+:1,9L%2L+:1,4.5+:1,9L%1L+:0,9L%2L+:0,4.5+:0.0]
-  > map_comp_simplify l;
+  > map comp_simplify l;
   [9+:1,9L%1L+:1,9L%2L+:1,4.5+:1,9L%1L,9L%2L,4.5+:0.0]
   > map ratcomp_simplify l;
   [9+:1,9+:1,9L%2L+:1,4.5+:1,9,9L%2L,4.5+:0.0]
@@ -2413,11 +2413,11 @@ Formatting to Fraction Strings
   > l;
   [(-3L)%2L,(-1L)%1L,(-1L)%2L,0L%1L,1L%2L,1L%1L,3L%2L]
   > map str_vulgar l;
-  ["-3L/2L","-1L/1L","-1L/2L","0/1","1/2","1/1","3/2"]
+  ["-3L/2L","-1L/1L","-1L/2L","0L/1L","1L/2L","1L/1L","3L/2L"]
   > map str_vulgar_or_int l;
-  ["-3L/2L","-1L","-1L/2L","0L","1/2","1L","3/2"]
+  ["-3L/2L","-1L","-1L/2L","0L","1L/2L","1L","3L/2L"]
   > map str_mixed l;
-  ["-(1+1/2)","-1L","-1L/2L","0L","1/2","1L","1L+1L/2L"]
+  ["-(1L+1L/2L)","-1L","-1L/2L","0L","1L/2L","1L","1L+1L/2L"]
 
 These might be compared to the behaviour of the standard function ``str``.
 
@@ -2517,7 +2517,7 @@ simplest denominator of q.
   "-0.1111111"
   > str_real_recur format_uk 16 4 (127%128);
   "0.FE"
-  > str_real_recur format_uk 10 0 (70057%350) // 1%7 + 10001%50;
+  > str_real_recur format_uk 10 0 (70057%350); // 1%7 + 10001%50;
   "200.16[285714...]"
 
 The function allows expansion to different radices (bases).
