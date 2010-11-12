@@ -62,27 +62,7 @@ tk$(DLL): tk.c
 	$(CC) $(shared) -o $@ -Wall $< $(FLAGS) -ltcl$(tclvers) -ltk$(tclvers) -lpure $(LIBS)
 
 clean:
-	rm -f *$(DLL) *~ *.a *.o *.tex *.pdf *.aux *.log *.out
-
-# documentation (this needs docutils)
-
-rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
-rst2latex = $(shell which rst2latex 2>/dev/null || which rst2latex.py 2>/dev/null || echo rst2latex)
-
-html: pure-tk.html
-latex: pure-tk.tex
-pdf: pure-tk.pdf
-
-pure-tk.html: README
-	$(rst2html) $< $@
-
-pure-tk.tex: README
-	$(rst2latex) $< $@
-
-pure-tk.pdf: pure-tk.tex
-	pdflatex $<
-	pdflatex $<
-	rm -f *.aux *.log *.out
+	rm -f *$(DLL) *~ *.a *.o
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"

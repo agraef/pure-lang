@@ -159,8 +159,7 @@ ChangeLog INSTALL NEWS README TODO \
 Makefile.in acinclude.m4 aclocal.m4 configure.ac configure config.h.in \
 config/config.guess config/config.sub config/install-sh \
 $(SOURCE) $(EXTRA_SOURCE) w3centities.c strptime.c pure.cc pure_main.c \
-pure.1 pure.txt purelib.txt preamble.tex run-tests.in \
-run-test.in \
+pure.1 pure.txt purelib.txt run-tests.in run-test.in \
 etc/pure-mode.el.in etc/pure.* etc/gpure.lang \
 examples/COPYING examples/Makefile.in examples/*.pure examples/*.purerc \
 examples/*.c examples/*.f90 examples/libor/COPYING examples/libor/*.pure \
@@ -231,57 +230,16 @@ libfiles = $(addprefix $(srcdir)/lib/, $(libsources))
 purelib.txt: $(libfiles)
 	pure-doc -is $(libfiles) > $@
 
-# documentation in various formats (this requires docutils)
-
-# NOTE: The html and pdf targets are now obsolete, as the documentation is now
-# built in a separate package using sphinx. They are still provided here for
-# historical reasons, but you shouldn't rely on them working any more.
-
-rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
-rst2latex = $(shell which rst2latex 2>/dev/null || which rst2latex.py 2>/dev/null || echo rst2latex)
-
-html: pure.html purelib.html
-tex: pure.tex purelib.tex
-pdf: pure.pdf purelib.pdf
-
-%.html: %.txt
-	$(rst2html) $< $@
-
-# Note: This requires a fairly recent (>= 2009) svn version of rst2latex. For
-# older rst2latex versions, you might have to remove some or all of the extra
-# formatting options.
-
-LATEXOPT=--use-latex-toc --use-latex-docinfo --stylesheet=preamble.tex --documentoptions="11pt" --literal-block-env=lstlisting
-
-# If the variable 'fixdoc' is defined on the make command line, we assume an
-# older rst2latex version whose output still needs fixing. (The fixdoc utility
-# is contained in the pure-doc package.)
-
-%.tex: %.txt
-ifdef fixdoc
-	$(rst2latex) --no-section-numbering $(LATEXOPT) $< | fixdoc > $@
-else
-	$(rst2latex) $(LATEXOPT) $< > $@
-endif
-
-%.pdf: %.tex preamble.tex
-	pdflatex $<
-	pdflatex $<
-	pdflatex $<
-
 # cleaning
 
 clean:
-	rm -f *~ *.bak pure*.tex pure*.pdf pure*.aux pure*.log pure*.out pure*.toc pure$(EXE) $(OBJECT) pure.o pure_main.o $(libpure_lnkname) $(libpure_soname) $(libpure) parser.output
+	rm -f *~ *.bak pure$(EXE) $(OBJECT) pure.o pure_main.o $(libpure_lnkname) $(libpure_soname) $(libpure) parser.output
 
 distclean: clean
 	rm -f Makefile config.h config.log config.status etc/pure-mode.el $(dist).tar.gz
 
 realclean: distclean
-	rm -f $(addprefix $(srcdir)/, test/*.log $(EXTRA_SOURCE) *.html)
-
-cleandocs:
-	rm -f *~ *.bak pure*.tex pure*.pdf pure*.aux pure*.log pure*.out pure*.toc
+	rm -f $(addprefix $(srcdir)/, $(EXTRA_SOURCE))
 
 # dependencies (rerun configure after this)
 

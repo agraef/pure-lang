@@ -26,10 +26,9 @@ pure-doc.cc: pure-doc.ll
 	flex -o $@ $<
 
 clean:
-	rm -f pure-doc *.pdf *.tex *.aux *.log *.out
+	rm -f pure-doc
 
 realclean: clean
-	rm -f *.html
 
 install:
 	test -d "$(DESTDIR)$(bindir)" || mkdir -p "$(DESTDIR)$(bindir)"

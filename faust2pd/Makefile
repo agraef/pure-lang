@@ -41,11 +41,11 @@ clean:
 	for x in basic faust synth seqdemo; do make -C examples/$$x clean; done
 
 distclean:
-	rm -f faust2pd$(EXE) *.txt *.tex *.pdf
+	rm -f faust2pd$(EXE)
 	for x in basic faust synth seqdemo; do make -C examples/$$x distclean; done
 
 realclean:
-	rm -f faust2pd$(EXE) *.txt *.tex *.pdf
+	rm -f faust2pd$(EXE)
 	for x in basic faust synth seqdemo; do make -C examples/$$x realclean; done
 
 # as of pure-0.21, we can compile the script to an executable

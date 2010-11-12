@@ -124,8 +124,7 @@ endif
 CFLAGS = -g -O2
 CPPFLAGS = -Wall
 
-DISTFILES = ChangeLog COPYING Makefile README config.guess \
-doc/preamble.tex doc/*.png \
+DISTFILES = ChangeLog COPYING Makefile README config.guess doc/*.png \
 pure-loader/boot.c pure-loader/pure-gnumeric.c pure-loader/pure-gnumeric.h \
 pure-loader/pure-loader.c pure-loader/pure-loader.h \
 pure-loader/plugin.xml pure-loader/pure-ui.xml \
@@ -142,29 +141,7 @@ pure-loader/pure_loader$(DLL): pure-loader/boot.o pure-loader/pure-gnumeric.o pu
 
 clean:
 	(cd pure-loader/ && rm -f pure_loader$(DLL) *~ *.a *.o)
-	rm -f *~ doc/gnumeric-pure.tex doc/*.dvi doc/*.aux doc/*.log doc/*.out doc/*.toc
-
-# documentation (this needs docutils)
-
-rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
-rst2latex = $(shell which rst2latex 2>/dev/null || which rst2latex.py 2>/dev/null || echo rst2latex)
-
-html: doc/gnumeric-pure.html
-latex: doc/gnumeric-pure.tex
-pdf: doc/gnumeric-pure.pdf
-
-doc/gnumeric-pure.html: README
-	$(rst2html) $< $@
-
-# Adjust these as needed.
-LATEXOPT = --use-latex-toc --use-latex-docinfo --stylesheet=preamble.tex --documentoptions="11pt" --no-section-numbering
-
-doc/gnumeric-pure.tex: README
-	$(rst2latex) $(LATEXOPT) $< $@
-
-doc/%.pdf: doc/%.tex doc/preamble.tex
-	(cd doc && pdflatex ../$< && pdflatex ../$< && pdflatex ../$<)
-	rm -f doc/*.aux doc/*.log doc/*.out doc/*.toc
+	rm -f *~
 
 install:
 	test -d "$(DESTDIR)$(gnmplugindir)/$(purefuncdir)" || mkdir -p "$(DESTDIR)$(gnmplugindir)/$(purefuncdir)"

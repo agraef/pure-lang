@@ -48,26 +48,6 @@ octave_embed$(DLL): embed.cc embed.h
 clean:
 	rm -f embed.o octave_embed$(DLL) *~ core octave-core
 
-# documentation (this needs docutils)
-
-rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
-rst2latex = $(shell which rst2latex 2>/dev/null || which rst2latex.py 2>/dev/null || echo rst2latex)
-
-html: pure-octave.html
-latex: pure-octave.tex
-pdf: pure-octave.pdf
-
-pure-octave.html: README
-	$(rst2html) $< $@
-
-pure-octave.tex: README
-	$(rst2latex) $< $@
-
-pure-octave.pdf: pure-octave.tex
-	pdflatex $<
-	pdflatex $<
-	rm -f *.aux *.log *.out
-
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
 	cp octave.pure octave_embed$(DLL) "$(DESTDIR)$(libdir)/pure"

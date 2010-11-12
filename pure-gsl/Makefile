@@ -81,7 +81,7 @@ distcheck: dist
 	cd $(dist) && make && make install DESTDIR=./BUILD
 	rm -rf $(dist)
 
-# Generate the documentation. This needs docutils.
+# Generate the documentation from the library sources.
 # Keep the files in order of the GSL manual Chapter order.
 
 sources = gsl.pure gsl/poly.pure gsl/sf.pure gsl/matrix.pure gsl/fit.pure gsl/stats.pure gsl/randist.pure gsl/sort.pure
@@ -89,25 +89,3 @@ target = pure-gsl
 
 $(target).txt: $(sources)
 	pure-doc -is $(sources) > $@
-
-rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
-rst2latex = $(shell which rst2latex 2>/dev/null || which rst2latex.py 2>/dev/null || echo rst2latex)
-
-.PHONY: html tex pdf
-
-html: $(target).html
-tex: $(target).tex
-pdf: $(target).pdf
-
-%.html: %.txt
-	$(rst2html) $< $@
-
-%.tex: %.txt
-	$(rst2latex) $< $@
-
-# This also requires that you have TeX installed.
-
-%.pdf: %.tex
-	pdflatex $<
-	pdflatex $<
-	rm -f *.aux *.log *.out

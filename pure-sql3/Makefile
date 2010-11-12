@@ -59,7 +59,7 @@ sql3util$(DLL): sql3util.c
 	-lpure -lsqlite3 -lgmp $(LIBS)
 
 clean:
-	rm -f *$(DLL) *~ *.a *.o *.tex *.pdf *.aux *.log *.out
+	rm -f *$(DLL) *~ *.a *.o
 	rm -f *.db examples/*.db
 
 install:

@@ -58,27 +58,7 @@ faust.o: faust.cc
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(PIC) -o $@ -c $<
 
 clean:
-	rm -f faust$(DLL) *~ *.a *.o *.tex *.dvi *.pdf *.aux *.log *.out
-
-# documentation (this needs docutils)
-
-rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
-rst2latex = $(shell which rst2latex 2>/dev/null || which rst2latex.py 2>/dev/null || echo rst2latex)
-
-html: pure-faust.html
-latex: pure-faust.tex
-pdf: pure-faust.pdf
-
-pure-faust.html: README
-	$(rst2html) $< $@
-
-pure-faust.tex: README
-	$(rst2latex) $< $@
-
-pure-faust.pdf: pure-faust.tex
-	pdflatex $<
-	pdflatex $<
-	rm -f *.aux *.log *.out
+	rm -f faust$(DLL) *~ *.a *.o
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"

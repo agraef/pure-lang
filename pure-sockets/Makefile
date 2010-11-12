@@ -63,17 +63,6 @@ clean:
 %.bc: %.cc
 	-$(CXX) $(CXXFLAGS) $(BCFLAGS) -c $< -o $@
 
-# html target (needs docutils).
-
-rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
-
-html = $(pkgname).html
-
-html: $(html)
-
-$(html): README
-	$(rst2html) $< $@
-
 # install and uninstall targets.
 
 pkgdir = $(DESTDIR)$(libdir)/pure

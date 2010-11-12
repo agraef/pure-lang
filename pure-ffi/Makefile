@@ -58,27 +58,7 @@ ffi$(DLL): ffi.c
 	$(CC) $(shared) -o $@ $< $(FLAGS) -lffi -lpure -lgmp $(LIBS)
 
 clean:
-	rm -f *$(DLL) *~ *.a *.o *.tex *.pdf *.aux *.log *.out
-
-# documentation (this needs docutils)
-
-rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
-rst2latex = $(shell which rst2latex 2>/dev/null || which rst2latex.py 2>/dev/null || echo rst2latex)
-
-html: pure-ffi.html
-latex: pure-ffi.tex
-pdf: pure-ffi.pdf
-
-pure-ffi.html: README
-	$(rst2html) $< $@
-
-pure-ffi.tex: README
-	$(rst2latex) $< $@
-
-pure-ffi.pdf: pure-ffi.tex
-	pdflatex $<
-	pdflatex $<
-	rm -f *.aux *.log *.out
+	rm -f *$(DLL) *~ *.a *.o
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"

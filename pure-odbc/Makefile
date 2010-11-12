@@ -62,26 +62,6 @@ odbc$(DLL): odbc.c
 clean:
 	rm -f *$(DLL) *~ *.a *.o
 
-# documentation (this needs docutils)
-
-rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
-rst2latex = $(shell which rst2latex 2>/dev/null || which rst2latex.py 2>/dev/null || echo rst2latex)
-
-html: pure-odbc.html
-latex: pure-odbc.tex
-pdf: pure-odbc.pdf
-
-pure-odbc.html: README
-	$(rst2html) $< $@
-
-pure-odbc.tex: README
-	$(rst2latex) $< $@
-
-pure-odbc.pdf: pure-odbc.tex
-	pdflatex $<
-	pdflatex $<
-	rm -f *.aux *.log *.out
-
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
 	cp odbc.pure odbc$(DLL) "$(DESTDIR)$(libdir)/pure"

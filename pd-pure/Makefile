@@ -107,27 +107,7 @@ pure.o: pure.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(PIC) -o $@ -c $< -DVERSION="\"$(version)\"" -DLIBDIR="\"$(pdlibdir)\""
 
 clean:
-	rm -f pure$(DLL) *~ *.a *.o *.tex *.dvi *.pdf *.aux *.log *.out
-
-# documentation (this needs docutils)
-
-rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
-rst2latex = $(shell which rst2latex 2>/dev/null || which rst2latex.py 2>/dev/null || echo rst2latex)
-
-html: pd-pure.html
-latex: pd-pure.tex
-pdf: pd-pure.pdf
-
-pd-pure.html: README
-	$(rst2html) $< $@
-
-pd-pure.tex: README
-	$(rst2latex) $< $@
-
-pd-pure.pdf: pd-pure.tex
-	pdflatex $<
-	pdflatex $<
-	rm -f *.aux *.log *.out
+	rm -f pure$(DLL) *~ *.a *.o
 
 install:
 	test -d "$(DESTDIR)$(pdextradir)" || mkdir -p "$(DESTDIR)$(pdextradir)"
