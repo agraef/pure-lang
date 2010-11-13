@@ -282,7 +282,7 @@ double type. However, these functions may be combined with `exactp`_.
   [1,1,1,1,1,0,0,0]
   > map (\x -> (exactp x && ratvalp x)) l; // "has exact rational value"
   [1,1,1,0,0,0,0,0]
-  > map intvalp l // for comparison
+  > map intvalp l; // for comparison
   [1,1,0,0,0,0,0,0]
   > map (\x -> (exactp x && intvalp x)) l; // "has exact integer value"
   [1,1,0,0,0,0,0,0]
@@ -943,17 +943,17 @@ functions.
   > map double l; // (just to show the values in a familiar format)
   [-3.0,-2.5,-2.0,-1.5,-1.0,-0.5,0.0,0.5,1.0,1.5,2.0,2.5,3.0]
   > map floor l;
-  [-3,-3,-2,-2,-1,-1,0,0,1,1,2,2,3]
+  [-3L,-3L,-2L,-2L,-1L,-1L,0L,0L,1L,1L,2L,2L,3L]
   > map ceil l;
-  [-3,-2,-2,-1,-1,0,0,1,1,2,2,3,3]
+  [-3L,-2L,-2L,-1L,-1L,0L,0L,1L,1L,2L,2L,3L,3L]
   > map trunc l;
-  [-3,-2,-2,-1,-1,0,0,0,1,1,2,2,3]
+  [-3L,-2L,-2L,-1L,-1L,0L,0L,0L,1L,1L,2L,2L,3L]
   > map round l;
-  [-3,-3,-2,-2,-1,-1,0,1,1,2,2,3,3]
+  [-3L,-3L,-2L,-2L,-1L,-1L,0L,1L,1L,2L,2L,3L,3L]
   > map round_zero_bias l;
-  [-3,-2,-2,-1,-1,0,0,0,1,1,2,2,3]
+  [-3L,-2L,-2L,-1L,-1L,0L,0L,0L,1L,1L,2L,2L,3L]
   > map round_unbiased l;
-  [-3,-2,-2,-2,-1,0,0,0,1,2,2,2,3]
+  [-3L,-2L,-2L,-2L,-1L,0L,0L,0L,1L,2L,2L,2L,3L]
 
 (See the function `double`_.)
 
@@ -969,11 +969,11 @@ Integer and Fraction Parts
 
   > let nc = -22%7;
   > integer_and_fraction floor nc;
-  -4,6L%7L
+  -4L,6L%7L
   > integer_and_fraction trunc nc;
-  -3,(-1L)%7L
+  -3L,(-1L)%7L
   > integer_and_fraction round nc;
-  -3,(-1L)%7L
+  -3L,(-1L)%7L
 
 It is always the case that z and f have the property that q = z + f. However,
 the remaining properties depend upon the choice of `roundfun`_.
@@ -1014,9 +1014,9 @@ If `roundfun`_ = `round`_, `roundfun`_ = `round_zero_bias`_ or `roundfun`_ =
 
   > let nc = -22%7;
   > int nc;
-  -3.0
+  -3
   > frac nc;
-  -0.142857142857143
+  (-1L)%7L
 
 Rounding to Multiples
 =====================
@@ -1074,17 +1074,17 @@ Rounding to Multiples
   > map double l; // (just to show the values in a familiar format)
   [34.9,35.0,35.0,35.0,35.1]
   > map (floor_multiple 10) l;
-  [30,30,30,30,30]
+  [30,30L,30L,30,30]
   > map (ceil_multiple 10) l;
-  [40,40,40,40,40]
+  [40,40L,40L,40,40]
   > map (trunc_multiple 10) l;
-  [30,30,30,30,30]
+  [30,30L,30L,30,30]
   > map (round_multiple 10) l;
-  [30,40,40,40,40]
+  [30,40L,40L,40,40]
   > map (round_multiple_zero_bias 10) l;
-  [30,30,30,30,40]
+  [30,30L,30L,30,40]
   > map (round_multiple_unbiased 10) l;
-  [30,40,40,40,40]
+  [30,40L,40L,40,40]
 
 (See the function `double`_.)
 
@@ -1100,7 +1100,7 @@ Approximation with Bounded Denominator`_).
   > let co_E = exp (-1);
   co_E;
   0.367879441171442
-  > round_multiple (1%1000) co_E;
+  > round_multiple (1%1000) (rational co_E);
   46L%125L
   > 1000 * ans;
   368L%1L
@@ -1109,7 +1109,7 @@ Approximation with Bounded Denominator`_).
 :sup:`5` = 243 (actually, where d\|243)::
 
   > let co_Phi = (sqrt 5 - 1) / 2;
-  > round_multiple (1%243) co_Phi;
+  > round_multiple (1%243) (rational co_Phi);
   50L%81L
 
 Other methods for obtaining a rational approximation of a number are
@@ -1240,7 +1240,7 @@ Interval Type Tests
   > let l = [interval(0,1), interval(0,1%1), interval(0,3%2), interval(0,1.5)];
   > map exactp l;
   [1,1,1,0]
-  > map inexactp l
+  > map inexactp l;
   [0,0,0,1]
   > map intervalp l;
   [1,1,1,1]
@@ -1285,17 +1285,17 @@ right operand is an interval containing 0.
   > a + b;
   interval::Ivl 27 43
   > a - b;
-  interval::Ivl -13 3
+  interval::Ivl (-13) 3
   > a * b;
   interval::Ivl 176 456
   > p * 2;
   interval::Ivl 0 2
   > (-2) * p;
-  interval::Ivl -2 0
+  interval::Ivl (-2) 0
   > -c;
-  interval::Ivl -29 -21
+  interval::Ivl (-29) (-21)
   > s * a;
-  interval::Ivl -19 19
+  interval::Ivl (-19) 19
   > a % 2;
   interval::Ivl (11L%2L) (19L%2L)
   > a / 2;
@@ -1305,7 +1305,7 @@ right operand is an interval containing 0.
   > 2 % a;
   interval::Ivl (2L%19L) (2L%11L)
   > a % b;
-  interval::Ivl 11L%24L 19L%16L
+  interval::Ivl (11L%24L) (19L%16L)
   > a % a; // notice that the intervals are mutually independent here
   interval::Ivl (11L%19L) (19L%11L)
 
@@ -1679,7 +1679,7 @@ Exact
 **Example 54** The rational 1234/1001::
 
   > continued_fraction (1234%1001);
-  [1,4,3,2,1,1,1,8]
+  [1L,4L,3L,2L,1L,1L,1L,8L]
   > evaluate_continued_fraction ans;
   1234L%1001L
 
@@ -1697,7 +1697,7 @@ Inexact
 **Example 55** First 5 terms of the continued fraction for the golden ratio φ::
 
   > continued_fraction_max_terms 5 phi;
-    [1,1,1,1,1,1.61803398874989]
+    [1.0,1.0,1.0,1.0,1.0,1.61803398874989]
   > evaluate_continued_fraction ans;
   1.61803398874989
 
@@ -1713,7 +1713,7 @@ Inexact
 **Example 56** First few terms of the value √2::
 
   > continued_fraction_epsilon .001 (sqrt 2);
-  [1,2,2,2,2,2.41421356237241]
+  [1.0,2.0,2.0,2.0,2.0,2.41421356237241]
   > map double (convergents ans);
   [1.0,1.5,1.4,1.41666666666667,1.41379310344828,1.41421356237309]
 
@@ -1734,11 +1734,11 @@ Evaluating Continued Fractions
   > evaluate_continued_fraction [1,2,3,4];
   43L%30L
   > continued_fraction ans;
-  [1,2,3,4]
+  [1L,2L,3L,4L]
   > evaluate_continued_fraction [4,3,2,1];
   43L%10L
   > continued_fraction ans;
-  [4,3,3]
+  [4L,3L,3L]
 
 Convergents
 ~~~~~~~~~~~
@@ -1754,9 +1754,9 @@ Convergents
 √2::
 
   > continued_fraction_max_terms 5 (sqrt 2);
-  [1,2,2,2,2,2.41421356237241]
+  [1.0,2.0,2.0,2.0,2.0,2.41421356237241]
   > convergents ans;
-  [1L%1L,3L%2L,7L%5L,17L%12L,41L%29L,1.41421356237309]
+  [1L%1L,3L%2L,7L%5L,17L%12L,41L%29L,261169948480459693L%184675041612674289L]
 
 Rational Complex Numbers
 ========================
@@ -1777,7 +1777,7 @@ Complex numbers can have rational parts.
 **Example 59** Forming a rational complex::
 
   > 1 +: 1 * (1%2);
-  1L%1L+:1L%2L
+  1+:1L%2L
   > ans * ans;
   3L%4L+:1L%1L
 
@@ -1904,9 +1904,9 @@ The d\ :sub:`x`, d\ :sub:`y` are not unique, but can be chosen such that d\
   > abs d_nat;
   6.0
   > let (n, d) = num_den_gauss cq; (n, d);
-  1+:2,3+:3
+  1L+:2L,3L+:3L
   > let (n,d) = num_den cq; (n, d);
-  1+:2,3+:3
+  1L+:2L,3L+:3L
   > n % d;
   1L%2L+:1L%6L
   > abs d;
