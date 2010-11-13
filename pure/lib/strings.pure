@@ -20,15 +20,15 @@
 
 using namespace __C;
 
-/* ..
+/* .. _String Functions:
 
    String Functions
    ----------------
 
-   .. _strings:
+   .. index:: strings
 
    Pure strings are null-terminated character strings encoded in UTF-8, see
-   the `Pure Manual`_ for details. The prelude provides various operations on
+   the Pure Manual for details. The prelude provides various operations on
    strings, including a complete set of list-like operations, so that strings
    can be used mostly as if they were lists, although they are really
    implemented as C character arrays for reasons of efficiency. Pure also has
@@ -38,12 +38,12 @@ using namespace __C;
    Basic String Functions
    ~~~~~~~~~~~~~~~~~~~~~~
 
-   .. _string concatenation:
-   .. _string indexing:
-   .. _string slicing:
-   .. _+ (string):
-   .. _! (string):
-   .. _!! (string):
+   .. index:: string concatenation
+   .. index:: string indexing
+   .. index:: string slicing
+   .. index:: + (string)
+   .. index:: ! (string)
+   .. index:: !! (string)
 
    Concatenation, indexing and slicing works just like with lists::
 
@@ -55,9 +55,9 @@ using namespace __C;
      > s!!(20..24);
      "jumps"
 
-   .. _string size:
-   .. _null (string):
-   .. _# (string):
+   .. index:: string size
+   .. index:: null (string)
+   .. index:: # (string)
 
    Checking for empty strings and determining the size of a string also works
    as expected::
@@ -72,13 +72,13 @@ using namespace __C;
    You can search for the location of a substring in a string, and extract a
    substring of a given length:
 
-   .. _index (string):
+   .. index:: index (string)
 
    ``index s u``
      Returns the (zero-based) index of the first occurrence of the substring
      ``u`` in ``s``, or -1 if ``u`` is not found in ``s``.
 
-   .. _substr:
+   .. index:: substr
 
    ``substr s i n``
      Extracts a substring of (at most) ``n`` characters at position ``i`` in
@@ -98,19 +98,19 @@ using namespace __C;
    character strings to the corresponding integer character codes, and vice
    versa:
 
-   .. _ord:
+   .. index:: ord
 
    ``ord c``
      Ordinal number of a single character string ``c``. This is the
      character's code point in the Unicode character set.
 
-   .. _chr:
+   .. index:: chr
 
    ``chr n``
      Converts an integer back to the character with the corresponding code
      point.
 
-   .. _character arithmetic:
+   .. index:: character arithmetic
 
    In addition, the usual character arithmetic works, including arithmetic
    sequences of characters, so that you can write stuff like the following::
@@ -132,26 +132,26 @@ using namespace __C;
    For convenience, the prelude provides the following functions to convert
    between strings and lists (or other aggregates) of characters.
 
-   .. _chars:
-   .. _list (string):
+   .. index:: chars
+   .. index:: list (string)
 
    ``chars s``, ``list s``
      Convert a string ``s`` to a list of characters.
 
-   .. _tuple (string):
-   .. _matrix (string):
+   .. index:: tuple (string)
+   .. index:: matrix (string)
 
    ``tuple s``, ``matrix s``
      Convert a string ``s`` to a tuple or (symbolic) matrix of characters,
      respectively.
 
-   .. _strcat:
+   .. index:: strcat
 
    ``strcat xs``
      Concatenate a list ``xs`` of strings (in particular, this converts a
      list of characters back to a string).
 
-   .. _string:
+   .. index:: string
 
    ``string xs``
      Convert a list, tuple or (symbolic) matrix of strings to a string.
@@ -168,12 +168,12 @@ using namespace __C;
    The following functions are provided to deal with strings of "tokens"
    separated by a given delimiter string.
 
-   .. _split:
+   .. index:: split
 
    ``split delim s``
      Splits ``s`` into a list of substrings delimited by ``delim``.
 
-   .. _join:
+   .. index:: join
 
    ``join delim xs``
      Joins the list of strings ``xs`` to a single string, interpolating the
@@ -239,18 +239,18 @@ a::string:b::string..c::string
    following, the ``cstring`` routines also convert the string between the
    system encoding and Pure's internal UTF-8 representation.
 
-   .. _string (pointer):
-   .. _cstring:
+   .. index:: string (pointer)
+   .. index:: cstring
 
    ``string s``, ``cstring s``
      Convert a pointer ``s`` to a Pure string. ``s`` must point to a
      null-terminated C string. These routines take ownership of the original
-     string value, assuming it to be ``malloc``\ ed, so you should only use
+     string value, assuming it to be malloced, so you should only use
      these for C strings which are specifically intended to be freed by the
      user.
 
-   .. _string_dup:
-   .. _cstring_dup:
+   .. index:: string_dup
+   .. index:: cstring_dup
 
    ``string_dup s``, ``cstring_dup s``
      Convert a pointer ``s`` to a Pure string. Like above, but these functions
@@ -273,14 +273,14 @@ cstring_dup s::pointer	= pure_cstring_dup s;
    The reverse transformations are also provided. These take a Pure string to
    a byte string (raw ``char*``).
 
-   .. _byte_string:
-   .. _byte_cstring:
+   .. index:: byte_string
+   .. index:: byte_cstring
 
    ``byte_string s``, ``byte_cstring s``
      Construct a byte string from a Pure string ``s``. The result is a raw
      pointer object pointing to the converted string. The original Pure string
      is always copied (and, in the case of ``byte_cstring``, converted to the
-     system encoding). The resulting byte string is a ``malloc``\ ed pointer
+     system encoding). The resulting byte string is a malloced pointer
      which can be used like a C ``char*``, and has to be freed explicitly by
      the caller when no longer needed. */
 
@@ -297,15 +297,15 @@ byte_cstring s::string	= ptrtag charp_t $ pure_byte_cstring s;
    It is also possible to convert Pure string lists or symbolic vectors of
    strings to byte string vectors and vice versa. These are useful if you need
    to pass an ``argv``-like string vector (i.e., a ``char**`` or ``char*[]``)
-   to C routines. The computed C vectors are ``malloc``\ ed pointers which
+   to C routines. The computed C vectors are malloced pointers which
    have an extra ``NULL`` pointer as the last entry, and should thus be usable
    for almost any purpose which requires such a string vector in C. They also
    take care of garbage-collecting themselves. The original string data is
    always copied. As usual, the ``cstring`` variants do automatic conversions
    to the system encoding.
 
-   .. _byte_string_pointer:
-   .. _byte_cstring_pointer:
+   .. index:: byte_string_pointer
+   .. index:: byte_cstring_pointer
 
    ``byte_string_pointer xs``, ``byte_cstring_pointer xs``
      Convert a list or vector of Pure strings to a C ``char**``. */
@@ -340,10 +340,10 @@ when
   xs = if smatrixp xs then list xs else xs;
 end if (listp xs || smatrixp xs) && all stringp xs;
 
-/* .. _string_list:
-   .. _cstring_list:
-   .. _string_vector:
-   .. _cstring_vector:
+/* .. index:: string_list
+   .. index:: cstring_list
+   .. index:: string_vector
+   .. index:: cstring_vector
 
    ``string_list n p``, ``cstring_list n p``
      Convert a C ``char**`` to a list of Pure strings.

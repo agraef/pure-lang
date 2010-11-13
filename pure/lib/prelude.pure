@@ -36,8 +36,6 @@
    .. _FDL: http://www.gnu.org/copyleft/fdl.html
    .. _GPL: http://www.gnu.org/copyleft/gpl.html
 
-   .. _Pure Manual: pure.html
-
    Version @version@, |today|
 
    Albert Gräf <Dr.Graef@t-online.de>
@@ -49,13 +47,15 @@
    including the prelude and the other library modules which come bundled with
    the interpreter.
 
-   There is a companion to this manual, the `Pure Manual`_ which describes the
-   Pure language and the operation of the Pure interpreter.
+   There is a companion to this manual, :doc:`pure` which describes the Pure
+   language and the operation of the Pure interpreter.
 
    .. Table of contents, switch on section numbering.
 
    .. contents::
    .. sectnum::
+
+   .. _Prelude:
 
    Prelude
    =======
@@ -71,8 +71,8 @@
    option), all operations discussed in this section are normally available in
    Pure programs without requiring any explicit import declarations.
 
-   .. _true:
-   .. _false:
+   .. index:: true
+   .. index:: false
 
    The prelude also declares a signature of commonly used constant and
    operator symbols. This includes the truth values ``true`` and ``false``.
@@ -85,10 +85,10 @@
 
    In addition, the following special exception symbols are provided:
 
-   .. _failed_cond:
-   .. _failed_match:
-   .. _stack_fault:
-   .. _malloc_error:
+   .. index:: failed_cond
+   .. index:: failed_match
+   .. index:: stack_fault
+   .. index:: malloc_error
 
    * Built-in exception values: ``failed_cond`` (failed conditional in guard
      or if-then-else), ``failed_match`` (failed pattern match in lambda,
@@ -96,17 +96,17 @@
      ``PURE_STACK`` limit exceeded) and ``malloc_error`` (memory allocation
      error).
 
-   .. _bad_list_value:
-   .. _bad_tuple_value:
-   .. _bad_string_value:
-   .. _bad_matrix_value:
+   .. index:: bad_list_value
+   .. index:: bad_tuple_value
+   .. index:: bad_string_value
+   .. index:: bad_matrix_value
 
    * Value mismatches a.k.a. dynamic typing errors: ``bad_string_value x``,
      ``bad_matrix_value x``, ``bad_list_value x``, ``bad_tuple_value x``.
      These are thrown by some operations when they fail to find an expected
      value of the corresponding type.
 
-   .. _out_of_bounds:
+   .. index:: out_of_bounds
 
    * Index range exceptions: ``out_of_bounds`` is thrown by the index operator
      ``!`` if a list, tuple or matrix index is out of bounds.
@@ -116,7 +116,7 @@
 nonfix failed_cond failed_match stack_fault out_of_bounds malloc_error;
 public bad_matrix_value bad_list_value bad_tuple_value bad_string_value;
 
-/* .. _operators:
+/* .. index:: operators
 
    Here's the list of predefined operator symbols. Note that the parser will
    automagically give unary minus the same precedence level as the
@@ -163,9 +163,9 @@ using primitives, matrices, records, strings;
    Basic Combinators
    -----------------
 
-   .. _combinators:
-   .. _$:
-   .. _.:
+   .. index:: combinators
+   .. index:: $
+   .. index:: .
 
    The most important function combinators are ``$`` (right-associative
    application) and ``.`` (function composition), which are also defined as
@@ -177,8 +177,8 @@ using primitives, matrices, records, strings;
      > (foo.bar) 99;
      foo (bar 99)
 
-   .. _id:
-   .. _cst:
+   .. index:: id
+   .. index:: cst
 
    The customary identity and constant combinators from the combinatorial
    calculus are also available, in Pure these are named ``id`` and ``cst``,
@@ -189,7 +189,7 @@ using primitives, matrices, records, strings;
      > map (cst 0) (1..5);
      [0,0,0,0,0]
 
-   .. _void:
+   .. index:: void
 
    There's also a combinator ``void`` which is basically equivalent to ``cst
    ()``, but with the special twist that it is also defined as a macro
@@ -207,15 +207,11 @@ using primitives, matrices, records, strings;
      424238335
      ()
 
-   Note that the above list comprehension is actually implemented using |do|_
-   (instead of |map|_, which would normally be the case), so that the
-   intermediate list value of the comprehension is never constructed. This is
-   described in more detail in section `Optimization Rules`_ of the Pure
-   Manual.
-
-   .. |do| replace:: ``do``
-   .. |map| replace:: ``map``
-   .. _Optimization Rules: pure.html#optimization-rules
+   Note that the above list comprehension is actually implemented using
+   :ref:`do <do>` (instead of :ref:`map <map>`, which would normally be the
+   case), so that the intermediate list value of the comprehension is never
+   constructed. This is described in more detail in section :ref:`Optimization
+   Rules` of the Pure Manual.
 
 */
 
@@ -231,7 +227,7 @@ cst x y		= x;
    In addition, Pure also provides the following combinators adopted from
    Haskell:
 
-   .. _flip:
+   .. index:: flip
 
    * ``flip f`` swaps arguments of a binary function ``f``, e.g.::
 
@@ -244,7 +240,7 @@ cst x y		= x;
        > map (/2) (1..3);
        [0.5,1.0,1.5]
 
-   .. _curry:
+   .. index:: curry
 
    * ``curry f`` turns a function ``f`` expecting a pair of values into a
      curried function of two arguments::
@@ -256,7 +252,7 @@ cst x y		= x;
        2: 3.14
        ()
 
-   .. _uncurry:
+   .. index:: uncurry
 
    * Conversely, ``uncurry f`` turns a curried function ``f`` expecting two
      arguments into a function processing a single pair argument::
@@ -264,8 +260,8 @@ cst x y		= x;
        > map (uncurry (*)) [(2,3),(4,5),(6,7)];
        [6,20,42]
 
-   .. _curry3:
-   .. _uncurry3:
+   .. index:: curry3
+   .. index:: uncurry3
 
    * ``curry3`` and ``uncurry3`` are defined analogously, but are used to work
      with ternary functions.
@@ -279,7 +275,7 @@ uncurry f (x,y)	= f x y;
 uncurry3 f (x,y,z)
 		= f x y z;
 
-/* .. _fix:
+/* .. index:: fix
 
    * The (normal order) fixed point combinator ``fix`` allows you to create
      recursive anonymous functions. It takes another function ``f`` as its
@@ -326,17 +322,17 @@ def void (listmap f x) = do f x;
    Lists and Tuples
    ----------------
 
-   .. _lists:
-   .. _tuples:
-   .. _list size:
-   .. _tuple size:
-   .. _null:
-   .. _reverse:
-   .. _#:
-   .. _\::
-   .. _,:
-   .. _!:
-   .. _!!:
+   .. index:: lists
+   .. index:: tuples
+   .. index:: list size
+   .. index:: tuple size
+   .. index:: null
+   .. index:: reverse
+   .. index:: #
+   .. index:: :
+   .. index:: ,
+   .. index:: !
+   .. index:: !!
 
    The prelude defines the list and tuple constructors (``x:y``, ``x,y``), as
    well as equality (``==``) and inequality (``~=``) on these structures. (The
@@ -363,8 +359,8 @@ def void (listmap f x) = do f x;
      > (a,b,c),();
      a,b,c
 
-   .. _key:
-   .. _val:
+   .. index:: key
+   .. index:: val
 
    The prelude also provides another special kind of pairs called "hash
    pairs", which take the form ``key=>value``. These are used in various
@@ -386,8 +382,8 @@ def void (listmap f x) = do f x;
    parenthesized, as in ``"foo"=>(1,2)`` (whereas ``"foo"=>1,2`` denotes a
    tuple whose first element happens to be a hash pair).
 
-   .. _list concatenation:
-   .. _+ (list):
+   .. index:: list concatenation
+   .. index:: + (list)
 
    Lists are the usual right-recursive aggregates, pretty much the same as in
    Lisp or Prolog except that they use a Haskell-like syntax. In difference to
@@ -400,12 +396,10 @@ def void (listmap f x) = do f x;
      [1,2,3,u,v,w,3.14]
 
    Lists are `eager` in Pure by default, but they can also be made `lazy`, see
-   section `Lazy Evaluation and Streams`_ in the Pure Manual.
+   section :ref:`Lazy Evaluation and Streams` in the Pure Manual.
 
-   .. _Lazy Evaluation and Streams: pure.html#lazy-evaluation-and-streams
-
-   .. _arithmetic sequences:
-   .. _..:
+   .. index:: arithmetic sequences
+   .. index:: ..
 
    Arithmetic sequences can be constructed with the infix ``..`` operator::
 
@@ -427,7 +421,7 @@ def void (listmap f x) = do f x;
 
    The lower bounds of an arithmetic sequence must always be finite.
 
-   .. _sort:
+   .. index:: sort
 
    Non-lazy lists can be sorted using the ``sort`` function, which provides an
    interface to the C ``qsort()`` routine, please see your local qsort(3)
@@ -440,8 +434,8 @@ def void (listmap f x) = do f x;
      > sort (<) ans;
      [1,2,3,4,5,6,7,8,9,10]
 
-   .. _list:
-   .. _tuple:
+   .. index:: list
+   .. index:: tuple
 
    You can convert between (finite) lists and tuples using the ``list`` and
    ``tuple`` operations::
@@ -463,7 +457,7 @@ def void (listmap f x) = do f x;
      > (-1:-3..-inf)!!(0..9);
      [-1,-3,-5,-7,-9,-11,-13,-15,-17,-19]
 
-   .. _stream:
+   .. index:: stream
 
    Conversely, it is also possible to convert a list to a stream::
 
@@ -475,9 +469,9 @@ def void (listmap f x) = do f x;
    to apply other functions to the list and have them evaluated in a lazy
    fashion.
 
-   .. _list indexing:
-   .. _tuple indexing:
-   .. _! (indexing):
+   .. index:: list indexing
+   .. index:: tuple indexing
+   .. index:: ! (indexing)
 
    Indexing of lists and tuples is always zero-based (i.e., indices run from
    ``0`` to ``#x-1``), and an exception will be raised if the index is out of
@@ -489,9 +483,9 @@ def void (listmap f x) = do f x;
      <stdin>, line 34: unhandled exception 'out_of_bounds' while evaluating
      '[1,2,3]!4'
 
-   .. _list slicing:
-   .. _tuple slicing:
-   .. _!! (slicing):
+   .. index:: list slicing
+   .. index:: tuple slicing
+   .. index:: !! (slicing)
 
    The slicing operator ``!!`` takes a list or tuple and a list of indices and
    returns the list or tuple of the corresponding elements, respectively.
@@ -513,13 +507,11 @@ def void (listmap f x) = do f x;
    repeated traversals of the list for each index. For larger lists you should
    hence use vectors or matrices instead, to avoid the quadratic complexity.
 
-   .. |catmap| replace:: ``catmap``
-
    (The prelude actually implements the slicing operation in a fairly generic
    way, so that it works with any kind of container data structure which
    defines ``!`` in such a manner that it throws an exception when the index
    is out of bounds. It also works with any kind of index container that
-   implements the |catmap|_ operation.) */
+   implements the :ref:`catmap <catmap>` operation.) */
 
 /* The hash rocket. This constructor is declared here so that it can be used
    in other standard library modules to denote special kinds of pairs which
@@ -733,84 +725,86 @@ n..m		= if m===inf then iterate (+1) n
    Common List Functions
    ~~~~~~~~~~~~~~~~~~~~~
 
-   .. _any:
+   .. index:: any
 
    ``any p xs``
      tests whether the predicate ``p`` holds for any of the members of ``xs``
 
-   .. _all:
+   .. index:: all
 
    ``all p xs``
      tests whether the predicate ``p`` holds for all of the members of ``xs``
 
+   .. index:: cat
    .. _cat:
-   .. |cat| replace:: ``cat``
 
    ``cat xs``
      concatenate a list of lists
 
+   .. index:: catmap
    .. _catmap:
 
    ``catmap f xs``
-     convenience function which combines |cat|_ and |map|_; this is also used
-     to implement list comprehensions
+     convenience function which combines :ref:`cat <cat>` and :ref:`map
+     <map>`; this is also used to implement list comprehensions
 
+   .. index:: do
    .. _do:
 
    ``do f xs``
-     apply ``f`` to all members of ``xs``, like |map|_, but throw away all
-     intermediate results and return ``()``
+     apply ``f`` to all members of ``xs``, like :ref:`map <map>`, but throw
+     away all intermediate results and return ``()``
 
-   .. _drop:
+   .. index:: drop
 
    ``drop n xs``
      remove ``n`` elements from the front of ``xs``
 
-   .. _dropwhile:
+   .. index:: dropwhile
 
    ``dropwhile p xs``
      remove elements from the front of ``xs`` while the predicate ``p`` is
      satisfied
 
-   .. _filter:
+   .. index:: filter
 
    ``filter p xs``
      return the list of all members of ``xs`` satisfying the predicate ``p``
 
-   .. _foldl:
+   .. index:: foldl
 
    ``foldl f a xs``
      accumulate the binary function ``f`` over all members of ``xs``,
      starting from the initial value ``a`` and working from the front of the
      list towards its end
 
-   .. _foldl1:
+   .. index:: foldl1
 
    ``foldl1 f xs``
      accumulate the binary function ``f`` over all members of ``xs``,
      starting from the value ``head xs`` and working from the front of the
      list towards its end; ``xs`` must be nonempty
 
-   .. _foldr:
+   .. index:: foldr
 
    ``foldr f a xs``
      accumulate the binary function ``f`` over all members of ``xs``,
      starting from the initial value ``a`` and working from the end of the
      list towards its front
 
-   .. _foldr1:
+   .. index:: foldr1
 
    ``foldr1 f xs``
      accumulate the binary function ``f`` over all members of ``xs``,
      starting from the value ``last xs`` and working from the end of the
      list towards its front; ``xs`` must be nonempty
 
-   .. _head:
+   .. index:: head
 
    ``head xs``
      return the first element of ``xs``; ``xs`` must be nonempty
 
-   .. _index:
+   .. index:: index
 
    ``index xs x``
      search for an occurrence of ``x`` in ``xs`` and return the index of the
@@ -820,53 +814,54 @@ n..m		= if m===inf then iterate (+1) n
      an occurrence of ``x``, so ``==`` must have an appropriate definition on
      the list members.
 
-   .. _init:
+   .. index:: init
 
    ``init xs``
      return all but the last element of ``xs``; ``xs`` must be nonempty
 
-   .. _last:
+   .. index:: last
 
    ``last xs``
      return the last element of ``xs``; ``xs`` must be nonempty
 
-   .. _listmap:
+   .. index:: listmap
 
    ``listmap f xs``
-     convenience function which works like |map|_, but also deals with matrix
-     and string arguments while ensuring that the result is always a list;
-     this is primarily used to implement list comprehensions
+     convenience function which works like :ref:`map <map>`, but also deals
+     with matrix and string arguments while ensuring that the result is always
+     a list; this is primarily used to implement list comprehensions
 
+   .. index:: map
    .. _map:
 
    ``map f xs``
      apply ``f`` to each member of ``xs``
 
-   .. _scanl:
+   .. index:: scanl
 
    ``scanl f a xs``
      accumulate the binary function ``f`` over all members of ``xs``,
      as with ``foldl``, but return all intermediate results as a list
 
-   .. _scanl1:
+   .. index:: scanl1
 
    ``scanl1 f xs``
      accumulate the binary function ``f`` over all members of ``xs``,
      as with ``foldl1``, but return all intermediate results as a list
 
-   .. _scanr:
+   .. index:: scanr
 
    ``scanr f a xs``
      accumulate the binary function ``f`` over all members of ``xs``,
      as with ``foldr``, but return all intermediate results as a list
 
-   .. _scanr1:
+   .. index:: scanr1
 
    ``scanr1 f xs``
      accumulate the binary function ``f`` over all members of ``xs``,
      as with ``foldr1``, but return all intermediate results as a list
 
-   .. _sort (list):
+   .. index:: sort (list)
 
    ``sort p xs``
      Sorts the elements of the list ``xs`` in ascending order according to the
@@ -876,17 +871,17 @@ n..m		= if m===inf then iterate (+1) n
      exception is raised if the result of a comparison is not a machine
      integer.)
 
-   .. _tail:
+   .. index:: tail
 
    ``tail xs``
      return all but the first element of ``xs``; ``xs`` must be nonempty
 
-   .. _take:
+   .. index:: take
 
    ``take n xs``
      take ``n`` elements from the front of ``xs``
 
-   .. _takewhile:
+   .. index:: takewhile
 
    ``takewhile p xs``
      take elements from the front of ``xs`` while the predicate ``p`` is
@@ -1146,41 +1141,41 @@ end;
    ``takewhile`` and the former, but are implemented directly for better
    efficiency.
 
-   .. _cycle:
+   .. index:: cycle
 
    ``cycle xs``
      cycles through the elements of the nonempty list ``xs``, ad infinitum
 
-   .. _cyclen:
+   .. index:: cyclen
 
    ``cyclen n xs``
      eager version of ``cycle``, returns the first ``n`` elements of
      ``cycle xs``
 
-   .. _iterate:
+   .. index:: iterate
 
    ``iterate f x``
      returns the stream containing ``x``, ``f x``, ``f (f x)``, etc.,
      ad infinitum
 
-   .. _iteraten:
+   .. index:: iteraten
 
    ``iteraten n f x``
      eager version of ``iterate``, returns the first ``n`` elements of
      ``iterate f x``
 
-   .. _iterwhile:
+   .. index:: iterwhile
 
    ``iterwhile p f x``
      another eager version of ``iterate``, returns the list of all elements
      from the front of ``iterate f x`` for which the predicate ``p`` holds
 
-   .. _repeat:
+   .. index:: repeat
 
    ``repeat x``
      returns an infinite stream of ``x``\ s
 
-   .. _repeatn:
+   .. index:: repeatn
 
    ``repeatn n x``
      eager version of ``repeat``, returns a list with ``n`` ``x``\ s
@@ -1225,35 +1220,35 @@ cyclen n::int (x:xs)	= [] if n<=0;
    Zip and Friends
    ~~~~~~~~~~~~~~~
 
-   .. _unzip:
+   .. index:: unzip
 
    ``unzip xys``
      takes a list of pairs to a pair of lists of corresponding elements
 
-   .. _unzip3:
+   .. index:: unzip3
 
    ``unzip3 xyzs``
      ``unzip`` with triples
 
-   .. _zip:
+   .. index:: zip
 
    ``zip xs ys``
      return the list of corresponding pairs ``(x,y)`` where ``x`` runs
      through the elements of ``xs`` and ``y`` runs through the elements
      of ``y``
 
-   .. _zip3:
+   .. index:: zip3
 
    ``zip3 xs ys zs``
      ``zip`` with three lists, returns a list of triples
 
-   .. _zipwith:
+   .. index:: zipwith
 
    ``zipwith f xs ys``
      apply the binary function ``f`` to corresponding elements of ``xs``
      and ``ys``
 
-   .. _zipwith3:
+   .. index:: zipwith3
 
    ``zipwith3 f xs ys zs``
      apply the ternary function ``f`` to corresponding elements of ``xs``,
@@ -1261,15 +1256,16 @@ cyclen n::int (x:xs)	= [] if n<=0;
 
    Pure also has the following variations of ``zipwith``/``zipwith3`` which
    throw away all intermediate results and return ``()``. That is, these work
-   like |do|_ but pull arguments from two or three lists, respectively:
+   like :ref:`do <do>` but pull arguments from two or three lists,
+   respectively:
 
-   .. _dowith:
+   .. index:: dowith
 
    ``dowith f xs ys``
      apply the binary function ``f`` to corresponding elements of ``xs``
      and ``ys``, return ``()``
 
-   .. _dowith3:
+   .. index:: dowith3
 
    ``dowith3 f xs ys zs``
      apply the ternary function ``f`` to corresponding elements of ``xs``,

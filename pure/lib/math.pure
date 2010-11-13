@@ -51,23 +51,23 @@
 
    .. _Mersenne twister: http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/emt.html
 
-   .. _random:
+   .. index:: random
 
    ``random``
      Return 32 bit pseudo random ints in the range ``-0x80000000..0x7fffffff``.
 
-   .. _random31:
+   .. index:: random31
 
    ``random31``
      Return 31 bit pseudo random ints in the range ``0..0x7fffffff``.
 
-   .. _random53:
+   .. index:: random53
 
    ``random53``
      Return pseudo random doubles in the range ``[0,1)`` with 53 bits
      resolution.
 
-   .. _srandom:
+   .. index:: srandom
 
    ``srandom seed``
      Sets the seed of the generator to the given 32 bit integer. You can also
@@ -92,48 +92,48 @@ srandom x::matrix = srandom_array x (#x) if imatrixp x && dim x!0 == 1;
    result is always a double. For further explanations please see the
    descriptions of the corresponding functions from the C math library.
 
-   .. _sqrt:
+   .. index:: sqrt
 
    ``sqrt x``
      The square root function.
 
-   .. _exp:
-   .. _ln:
-   .. _log:
+   .. index:: exp
+   .. index:: ln
+   .. index:: log
 
    ``exp x``, ``ln x``, ``log x``
      Exponential function, natural and decadic logarithms.
 
-   .. _sin:
-   .. _cos:
-   .. _tan:
+   .. index:: sin
+   .. index:: cos
+   .. index:: tan
 
    ``sin x``, ``cos x``, ``tan x``
      Trigonometric functions.
 
-   .. _asin:
-   .. _acos:
-   .. _atan:
+   .. index:: asin
+   .. index:: acos
+   .. index:: atan
 
    ``asin x``, ``acos x``, ``atan x``
      Inverse trigonometric functions.
 
-   .. _atan2:
+   .. index:: atan2
 
    ``atan2 y x``
      Computes the arcus tangent of ``y/x``, using the signs of the two
      arguments to determine the quadrant of the result.
 
-   .. _sinh:
-   .. _cosh:
-   .. _tanh:
+   .. index:: sinh
+   .. index:: cosh
+   .. index:: tanh
 
    ``sinh x``, ``cosh x``, ``tanh x``
      Hyperbolic trigonometric functions.
 
-   .. _asinh:
-   .. _acosh:
-   .. _atanh:
+   .. index:: asinh
+   .. index:: acosh
+   .. index:: atanh
 
    ``asinh x``, ``acosh x``, ``atanh x``
      Inverse hyperbolic trigonometric functions. */
@@ -252,7 +252,8 @@ const i = 0+:1;
 /* We mostly follow Bronstein/Semendjajew here. Please mail me if you know
    better formulas for any of these. */
 
-/* .. _complex:
+/* .. index:: complex
+   .. _complex:
 
    ``complex x``
      Convert any kind of number to a complex value. */
@@ -261,7 +262,9 @@ complex z@(x+:y) | complex z@(r<:t) = z;
 complex x::int | complex x::bigint = x+:0;
 complex x::double = x+:0.0;
 
-/* .. _polar:
+/* .. index:: polar
+   .. index:: rect
+   .. _polar:
    .. _rect:
 
    ``polar z``, ``rect z``
@@ -281,7 +284,8 @@ polar x::double = x<:0.0;
 rect x::int | rect x::bigint = x+:0;
 rect x::double = x+:0.0;
 
-/* .. _cis:
+/* .. index:: cis
+   .. _cis:
 
    ``cis t``
      Create complex values on the unit circle. Note: To quickly compute
@@ -289,8 +293,8 @@ rect x::double = x+:0.0;
 
 cis t::int | cis t::bigint | cis t::double = rect (1<:t);
 
-/* .. _abs (complex):
-   .. _arg:
+/* .. index:: abs (complex)
+   .. index:: arg
 
    ``abs z``, ``arg z``
      Modulus (absolute value) and argument (angle, a.k.a. phase). Note that
@@ -306,8 +310,8 @@ arg x::int	|
 arg x::bigint	|
 arg x::double	= atan2 0 x;
 
-/* .. _re:
-   .. _im:
+/* .. index:: re
+   .. index:: im
 
    ``re z``, ``im z``
      Real and imaginary part. */
@@ -326,7 +330,7 @@ im x::int	= 0;
 im x::bigint	= 0L;
 im x::double	= 0.0;
 
-/* .. _conj:
+/* .. index:: conj
 
    ``conj z``
      Complex conjugate. */
@@ -509,7 +513,7 @@ x1~=z2@(r2<:t2)		= (x1<:0) ~= z2 if realp x1;
    Rational Numbers
    ----------------
 
-   .. _%:
+   .. index:: %
 
    Pure's rational numbers are constructed with the `exact division` operator
    ``%`` (declared in the prelude) which has the same precedence and fixity as
@@ -573,7 +577,7 @@ x%y::double		= x/y if numberp x;
 
 /* Conversions. */
 
-/* .. _rational:
+/* .. index:: rational
 
    ``rational x``
      Converts a real or complex value ``x`` to a rational or complex
@@ -581,18 +585,10 @@ x%y::double		= x/y if numberp x;
      rounding, so it is guaranteed that converting the resulting rational back
      to a double reconstructs the original value.
 
-     Conversely, the |int|_, |bigint|_, |double|_, |complex|_, |rect|_,
-     |polar|_ and |cis|_ conversion functions are overloaded so that they
-     convert a rational to one of the other number types.
-
-   .. |int| replace:: ``int``
-   .. |bigint| replace:: ``bigint``
-   .. |double| replace:: ``double``
-   .. |complex| replace:: ``complex``
-   .. |rect| replace:: ``rect``
-   .. |polar| replace:: ``polar``
-   .. |cis| replace:: ``cis``
-*/
+     Conversely, the :ref:`int <int>`, :ref:`bigint <bigint>`, :ref:`double
+     <double>`, :ref:`complex <complex>`, :ref:`rect <rect>`, :ref:`polar
+     <polar>` and :ref:`cis <cis>` conversion functions are overloaded so that
+     they convert a rational to one of the other number types. */
 
 rational x@(_%_)	= x;
 rational x::int		|
@@ -624,8 +620,8 @@ r<:t@(_%_)	= r <: atan2 (sin t) (cos t) if t<-pi || t>pi;
 
 cis (x%y)	 = rect (1<:x/y);
 
-/* .. _num:
-   .. _den:
+/* .. index:: num
+   .. index:: den
 
    ``num x``, ``den x``
      Numerator and denominator of a rational ``x``. */
@@ -805,30 +801,28 @@ x1 >= x2%y2	= x1*y2 >= x2 if realp x2;
    ``X``, then it is also of semantic type ``X``. Moreover, ``intvalp x =>
    bigintvalp x => ratvalp x => realvalp x => compvalp x <=> numberp x``.
 
-   .. _compvalp:
+   .. index:: compvalp
 
    ``compvalp x``
-     Check for complex values (this is the same as |numberp|_).
+     Check for complex values (this is the same as :ref:`numberp <numberp>`).
 
-   .. |numberp| replace:: ``numberp``
-
-   .. _realvalp:
+   .. index:: realvalp
 
    ``realvalp x``
      Check for real values (``im x==0``).
 
-   .. _ratvalp:
+   .. index:: ratvalp
 
    ``ratvalp x``
      Check for rational values (same as ``realvalp``, except that IEEE 754
      infinities and NaNs are excluded).
 
-   .. _bigintvalp:
+   .. index:: bigintvalp
 
    ``bigintvalp x``
      Check for "big" integer values which can be represented as a bigint.
 
-   .. _intvalp:
+   .. index:: intvalp
 
    ``intvalp x``
      Check for "small" integer values which can be represented as a machine

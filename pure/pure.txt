@@ -11,9 +11,6 @@ The Pure Manual
 .. role:: dfn(strong)
 .. default-role:: dfn
 
-.. |date| date::
-.. |time| date:: %H:%M
-
 .. |GPL| replace:: GNU General Public License
 .. |LGPL| replace:: GNU Lesser General Public License
 .. |FDL| replace:: GNU Free Documentation License
@@ -21,8 +18,6 @@ The Pure Manual
 .. _FDL: http://www.gnu.org/copyleft/fdl.html
 .. _GPL: http://www.gnu.org/copyleft/gpl.html
 .. _LGPL: http://www.gnu.org/copyleft/lgpl.html
-
-.. _Pure Library Manual: purelib.html
 
 .. Teach TeX how to hyphenate 'namespace' and 'whitespace'.
 
@@ -44,9 +39,9 @@ This manual describes the Pure programming language and how to invoke the Pure
 interpreter program. To read the manual inside the interpreter, just type
 ``help`` at the command prompt. See the `Online Help`_ section for details.
 
-There is a companion to this manual, the `Pure Library Manual`_ which contains
-the description of the standard library operations. More information about
-Pure can be found under the following URLs:
+There is a companion to this manual, the :doc:`purelib` which contains the
+description of the standard library operations. More information about Pure
+can be found under the following URLs:
 
 * Pure website: http://pure-lang.googlecode.com
 * Pure mailing list: http://groups.google.com/group/pure-lang
@@ -1003,18 +998,19 @@ binds stronger than all operators. Parentheses can be used to override default
 precedences and associativities as usual.
 
 The common operator symbols like ``+``, ``-``, ``*``, ``/`` etc. are all
-declared at the beginning of the prelude, see the `Pure Library Manual`_ for a
-list of these. Arithmetic and relational operators mostly follow C
-conventions. However, out of necessity (``!``, ``&`` and ``|`` are used for
-other purposes in Pure) the logical and bitwise operations, as well as the
-negated equality predicates are named a bit differently: ``~``, ``&&`` and
-``||`` denote logical negation, conjunction and disjunction, while the
-corresponding bitwise operations are named ``not``, ``and`` and
-``or``. Moreover, following these conventions, inequality is denoted
-``~=``. Also note that ``&&`` and ``||`` are special forms which are evaluated
-in short-circuit mode (see below), whereas the bitwise connectives receive
-their arguments using call-by-value, just like the other arithmetic
-operations.
+declared at the beginning of the prelude, see the :doc:`purelib` for a list of
+these. Arithmetic and relational operators mostly follow C conventions.
+However, out of necessity (``!``, ``&`` and ``|`` are used for other purposes
+in Pure) the logical and bitwise operations, as well as the negated equality
+predicates are named a bit differently: ``~``, ``&&`` and ``||`` denote
+logical negation, conjunction and disjunction, while the corresponding bitwise
+operations are named ``not``, ``and`` and ``or``. Moreover, following these
+conventions, inequality is denoted ``~=``. Also note that ``&&`` and ``||``
+are special forms which are evaluated in short-circuit mode (see below),
+whereas the bitwise connectives receive their arguments using call-by-value,
+just like the other arithmetic operations.
+
+.. _Special Forms:
 
 Special Forms
 -------------
@@ -1314,14 +1310,11 @@ will frequently encounter rules such as the following::
   > a*(3*4)+a*5;
   a*17
 
-.. _same: purelib.html#same
-.. |same| replace:: ``same``
-
 The notion of "sameness" employed here is that of syntactical identity, which
 means that the matched subterms must be identical in structure and content.
-The prelude provides syntactic equality as a function |same|_ and a comparison
-predicate '``===``'. Thus the above definition of ``foo`` is roughly
-equivalent to the following::
+The prelude provides syntactic equality as a function :ref:`same <same>` and a
+comparison predicate '``===``'. Thus the above definition of ``foo`` is
+roughly equivalent to the following::
 
   foo x y = x if same x y;
 
@@ -1384,6 +1377,8 @@ always work around this by adding spaces around the '``::``' symbol, as in
 ``foo :: bar``. Spaces are never permitted in qualified symbols, so this makes
 it clear that the construct denotes a type tag.
 
+.. _Type Tags:
+
 Type Tags
 ---------
 
@@ -1436,8 +1431,8 @@ these definitions as follows::
   Point (4,5)
 
 Some data types in Pure's standard library (specifically, the container data
-types) are actually represented in this fashion, see the `Pure Library
-Manual`_ for details.
+types) are actually represented in this fashion, see the :doc:`purelib` for
+details.
 
 General Rules
 -------------
@@ -1649,6 +1644,8 @@ in check::
 (Again, this algorithm is rather inefficient, see the examples included in the
 Pure distribution for a much better algorithm by Libor Spacek.)
 
+.. _Lazy Evaluation and Streams:
+
 Lazy Evaluation and Streams
 ---------------------------
 
@@ -1765,6 +1762,8 @@ stream stored in ``P`` will grow with the number of elements printed until
 memory is exhausted. Calling ``do`` on a fresh instance of the stream of
 primes allows ``do`` to get rid of each "cons" cell after having printed the
 corresponding stream element.)
+
+.. _Matrix Computations:
 
 Matrix Computations
 -------------------
@@ -1986,6 +1985,8 @@ vector brackets::
 (Both macros and ``outfix`` symbol declarations are described later in the
 appropriate sections, see Macros_ and `Symbol Declarations`_.)
 
+.. _Record Data:
+
 Record Data
 -----------
 
@@ -1998,15 +1999,12 @@ components are stored in which order, just knowing the keys of the required
 members is enough. In contrast, tuples, lists and other kinds of constructor
 terms quickly become unwieldy for such purposes.
 
-.. _Record Functions: purelib.html#record-functions
-
 The keys used for indexing the record data must be either symbols or strings,
 while the corresponding values may be arbitrary Pure values. The prelude
 provides some operations on these special kinds of matrices, which let you
 retrieve vector elements by indexing and perform non-destructive updates, see
-the `Record Functions`_ section in the `Pure Library Manual`_ for
-details. Here are a few examples which illustrate how to create records and
-work with them::
+the :ref:`Record Functions` section in the :doc:`purelib` for details. Here
+are a few examples which illustrate how to create records and work with them::
 
   > let r = {x=>5, y=>12};
   > recordp r, member r x;
@@ -2023,10 +2021,10 @@ work with them::
 
 Note the use of the "hash rocket" ``=>`` which denotes the ``key=>value``
 associations in a record. The hash rocket is a constructor declared as an
-infix operator in the prelude, see the Prelude_ section in the `Pure Library
-Manual`_. There's one caveat here, however. Since neither ``=>`` nor ``!``
-treat their key operand in a special way, symbols used as keys must not be
-bound to a value, or you'll have to protect them from being evaluated by
+infix operator in the prelude, see the :ref:`Prelude` section in the
+:doc:`purelib`. There's one caveat here, however. Since neither ``=>`` nor
+``!`` treat their key operand in a special way, symbols used as keys must not
+be bound to a value, or you'll have to protect them from being evaluated by
 quoting them. Thus, to be on the safe side, you should actually write::
 
   > let r = {'x=>5, 'y=>12};
@@ -2113,14 +2111,12 @@ records in conventional programming languages which are usually limited to
 constructing records and accessing or modifying their components. Note that
 since the values stored in records can be arbitrary Pure values, you can also
 have mutable records by making use of Pure's expression references (see
-`Expression References`_ in the library manual). And of course records can be
-nested, too::
+:ref:`Expression References` in the library manual). And of course records can
+be nested, too::
 
   > let r = {a => {b=>1,c=>2}, b => 2};
   > r!a, r!b, r!a!b;
   {b=>1,c=>2},2,1
-
-.. _Expression References: purelib.html#expression-references
 
 Macros
 ======
@@ -2145,6 +2141,8 @@ before constant substitutions and the actual compilation step. Macros can be
 defined in terms of other macros (also recursively), and are evaluated using
 call by value (i.e., macro calls in macro arguments are expanded before the
 macro gets applied to its parameters).
+
+.. _Optimization Rules:
 
 Optimization Rules
 ------------------
@@ -2484,15 +2482,13 @@ Operator declarations: ``infix level symbol ...;``
     left-associative), ``infixr`` (binary right-associative), ``prefix``
     (unary prefix) and ``postfix`` (unary postfix) operators. For instance,
     here is a typical excerpt from the prelude (the full table can be found in
-    the Prelude_ section of the `Pure Library Manual`_)::
+    the :ref:`Prelude` section of the :doc:`purelib`)::
 
       infix  1800 < > <= >= == ~= ;
       infixl 2200 + - ;
       infixl 2300 * / div mod ;
       infixr 2500 ^ ;
       prefix 2600 # ;
-
-    .. _Prelude: purelib.html#prelude
 
     Instead of denoting the precedence by an explicit integer value, you can
     also specify an existing operator symbol enclosed in parentheses. Thus the
@@ -3191,6 +3187,8 @@ big projects and large teams of developers. Nevertheless they should be useful
 if your programs grow beyond a small collection of simple source modules, and
 enable you to manage most Pure projects with ease.
 
+.. _Exception Handling:
+
 Exception Handling
 ==================
 
@@ -3424,6 +3422,8 @@ their own set of augmenting Pure equations. For instance::
   0.841470984807897
   mysin 1
 
+.. _C Types:
+
 C Types
 -------
 
@@ -3534,10 +3534,8 @@ passing, say, a ``FILE*`` for a ``char*``. (The call will then simply fail and
 yield a normal form, which gives you the opportunity to hook into the function
 with your own Pure definitions which may supply any desired data conversions.)
 Typing information about pointer values is also available to Pure scripts by
-means of corresponding library functions, please see the `Tagged Pointers`_
-section in the `Pure Library Manual`_ for details.
-
-.. _Tagged Pointers: purelib.html#tagged-pointers
+means of corresponding library functions, please see the :ref:`Tagged
+Pointers` section in the :doc:`purelib` for details.
 
 Pointers and Matrices
 ~~~~~~~~~~~~~~~~~~~~~
@@ -3550,11 +3548,8 @@ Also, these types aren't special in return values, where they will simply
 yield a pointer value (with the exception of ``char*`` which gets special
 treatment as explained in the previous subsection). Thus you will have to
 decode such results manually if needed. The standard library provides various
-routines to do this, please see the `String Functions`_ and `Matrix
-Functions`_ sections in the `Pure Library Manual`_ for details.
-
-.. _String Functions: purelib.html#string-functions
-.. _Matrix Functions: purelib.html#matrix-functions
+routines to do this, please see the :ref:`String Functions` and :ref:`Matrix
+Functions` sections in the :doc:`purelib` for details.
 
 Numeric pointer conversions (input only):
 
@@ -3594,7 +3589,7 @@ the original matrix when the function returns, to maintain the illusion of
 in-place modification. Temporary storage is also needed when the GSL matrix
 has the data in non-contiguous storage. You may want to avoid this if
 performance is critical, by always using "packed" matrices (see ``pack`` in
-`Matrix Functions`_) of the appropriate types.
+:ref:`Matrix Functions`) of the appropriate types.
 
 Pointer Examples
 ~~~~~~~~~~~~~~~~
@@ -3952,8 +3947,8 @@ which can be loaded explicitly with a ``using`` clause. The prelude offers the
 necessary functions to work with the built-in types (including arithmetic and
 logical operations) and to do most kind of list processing you can find in ML-
 and Haskell-like languages. It also provides a collection of basic string and
-matrix operations. Please refer to the `Pure Library Manual`_ for details on
-the provided operations. Here is a very brief summary of some of the prelude
+matrix operations. Please refer to the :doc:`purelib` for details on the
+provided operations. Here is a very brief summary of some of the prelude
 operations which, besides the usual arithmetic and logical operators, are
 probably used most frequently:
 
@@ -4020,8 +4015,7 @@ structures like sets and dictionaries are implemented in the set.pure and
 dict.pure modules, among others. Moreover, the (beginnings of a) system
 interface can be found in the system.pure module. In particular, this module
 also provides operations to do basic C-style I/O, including ``printf`` and
-``scanf``. These are all described in much more detail in the `Pure Library
-Manual`_.
+``scanf``. These are all described in much more detail in the :doc:`purelib`.
 
 Interactive Usage
 =================
@@ -4069,8 +4063,8 @@ variable accordingly.
 
 As of Pure 0.46, the interpreter provides a much improved ``help`` command
 which gives you access to all the available documentation in html format,
-which includes this manual, the `Pure Library Manual`_, as well as all manuals
-of the addon modules available from the Pure website.
+which includes this manual, the :doc:`purelib`, as well as all manuals of the
+addon modules available from the Pure website.
 
 When invoked without arguments, the ``help`` command displays an overview of
 the available documentation, from which you can follow the links to the
@@ -4659,7 +4653,8 @@ raised the exception. The format is similar to the ``p`` command of the
 debugger, see below, but ``bt`` always prints a full backtrace. (As with the
 ``show`` command of the interpreter, you can set the PURE_MORE environment
 variable to pipe the output through the corresponding command, or use
-|evalcmd|_ to capture the output of ``bt`` in a string, cf. Reflection_.)
+:ref:`evalcmd <evalcmd>` to capture the output of ``bt`` in a string,
+cf. Reflection_.)
 
 The debugger can also be used interactively. To these ends, you can set
 breakpoints on functions with the ``break`` command. The debugger then gets
@@ -4905,11 +4900,6 @@ is executed on the "bare metal", without a hosting interpreter. Only a minimal
 runtime system is provided. This considerably reduces startup times, but also
 implies the following quirks and limitations:
 
-.. _eval: purelib.html#eval
-.. _evalcmd: purelib.html#evalcmd
-.. |eval| replace:: ``eval``
-.. |evalcmd| replace:: ``evalcmd``
-
 * All toplevel expressions and ``let`` bindings are evaluated *after* all
   functions have been defined. This might cause inconsistent behaviour with an
   interpreted run of the same program, which executes expressions and variable
@@ -4925,22 +4915,22 @@ implies the following quirks and limitations:
   placed after all the function and variable definitions, at the end of your
   program.
 
-* The |eval|_ function can only be used to evaluate plain toplevel
+* The :ref:`eval <eval>` function can only be used to evaluate plain toplevel
   expressions.  You can define local functions and variables in ``with`` and
   ``when`` clauses inside an expression, but you can't use ``eval`` to define
   new global variables and functions. In other words, anything which changes
   the executing program is "verboten". Moreover, the introspective
-  capabilities provided by |evalcmd|_ (discussed under Reflection_ in the
-  `Caveats and Notes`_ section) won't work either because the interactive
-  commands are all disabled. If you need any of these capabilities, you have
-  to run your program with the interpreter.
+  capabilities provided by :ref:`evalcmd <evalcmd>` (discussed under
+  Reflection_ in the `Caveats and Notes`_ section) won't work either because
+  the interactive commands are all disabled. If you need any of these
+  capabilities, you have to run your program with the interpreter.
 
 * Constant and macro definitions, being compile time features, aren't
-  available in the compiled program. If you need to use these with |eval|_ at
-  run time, you have to provide them through variable and function definitions
-  instead. Also, the compiler usually strips unused functions from the output
-  code, so that only functions which are actually called somewhere in the
-  static program text are available to ``eval``. (The -u option and the
+  available in the compiled program. If you need to use these with :ref:`eval
+  <eval>` at run time, you have to provide them through variable and function
+  definitions instead. Also, the compiler usually strips unused functions from
+  the output code, so that only functions which are actually called somewhere
+  in the static program text are available to ``eval``. (The -u option and the
   --required pragma can be used to avoid this, see `Code Size and Unstripped
   Executables`_ below.)
 
@@ -4957,9 +4947,10 @@ implies the following quirks and limitations:
 What all this boils down to is that anything which requires the compile time
 or interactive facilities of the interpreter, is unavailable. These
 restrictions only apply at run time, of course. At compile time the program
-*is* being executed by the interpreter so you can use |eval|_ and |evalcmd|_
-in any desired way. See the description of the ``compiling`` variable below
-for how to distinguish these cases in your script.
+*is* being executed by the interpreter so you can use :ref:`eval <eval>` and
+:ref:`evalcmd <evalcmd>` in any desired way. See the description of the
+``compiling`` variable below for how to distinguish these cases in your
+script.
 
 For most kinds of scripts, the above restrictions aren't really that much of
 an obstacle, or can easily be worked around. For the few scripts which
@@ -5518,12 +5509,12 @@ same variable in a pattern (so-called non-linearities)::
 
 This rule will only be matched if both occurrences of ``x`` are bound to the
 same value. More precisely, the two instances of ``x`` will checked for
-syntactic equality during pattern matching, using the |same|_ primitive
-provided by the prelude. This may need time proportional to the sizes of both
-argument terms, and thus become quite costly for big terms. In fact, ``same``
-might not even terminate at all if the compared terms are both infinite lazy
-data structures, such as in ``foo (1..inf) (1..inf)``. So you have to be
-careful to avoid such uses.
+syntactic equality during pattern matching, using the :ref:`same <same>`
+primitive provided by the prelude. This may need time proportional to the
+sizes of both argument terms, and thus become quite costly for big terms. In
+fact, ``same`` might not even terminate at all if the compared terms are both
+infinite lazy data structures, such as in ``foo (1..inf) (1..inf)``. So you
+have to be careful to avoid such uses.
 
 When using non-linearities in conjunction with "as" patterns, you also have to
 make sure that the "as" variable does not occur inside the corresponding

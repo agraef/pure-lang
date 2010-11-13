@@ -25,15 +25,15 @@ using namespace __C;
 
 public all any cat cst do list map reverse uncurry uncurry3;
 
-/* ..
+/* .. _Matrix Functions:
 
    Matrix Functions
    ----------------
 
-   .. _matrix size:
-   .. _matrix dimensions:
-   .. _# (matrix):
-   .. _dim:
+   .. index:: matrix size
+   .. index:: matrix dimensions
+   .. index:: # (matrix)
+   .. index:: dim
 
    The size of a matrix (number of elements) can be obtained using ``#``, and
    the ``dim`` function can be used to return its dimensions (number of rows
@@ -44,12 +44,12 @@ public all any cat cst do list map reverse uncurry uncurry3;
      > dim x;
      2,3
 
-   .. _null (matrix):
+   .. index:: null (matrix)
 
    ``null x`` can be used to check for empty matrices. Note that there are
    various kinds of these, as a matrix may have zero rows or columns, or both.
 
-   .. _! (matrix):
+   .. index:: ! (matrix)
 
    Indexing and slicing works pretty much like in MATLAB and Octave, except
    that the Pure operators ``!`` and ``!!`` are used (and indices are
@@ -64,7 +64,7 @@ public all any cat cst do list map reverse uncurry uncurry3;
      > x!(1,0);
      4
 
-   .. _!! (matrix):
+   .. index:: !! (matrix)
 
    Slicing works accordingly. You can either specify a list of (one- or
    two-dimensional) indices, in which case the result is always a row vector::
@@ -104,18 +104,14 @@ public all any cat cst do list map reverse uncurry uncurry3;
    operations, including all the necessary operations for matrix
    comprehensions. We briefly summarize the most important operations below;
    please refer to matrices.pure for all the gory details. Also make sure you
-   check `Matrix Computations`_ in the Pure Manual for some more examples, and
-   the `Record Functions`_ section for an implementation of records using
+   check :ref:`Matrix Computations` in the Pure Manual for some more examples,
+   and the `Record Functions`_ section for an implementation of records using
    symbolic vectors.
-
-   .. _Matrix Computations: pure.html#matrix-computations
 
    Matrix Construction and Conversions
    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-   .. _matrix:
-
-   .. |matrix| replace:: ``matrix``
+   .. index:: matrix
 
    The ``matrix`` function converts a list or tuple to a corresponding matrix.
    ``matrix`` also turns a list of lists or matrices specifying the rows of
@@ -129,9 +125,9 @@ public all any cat cst do list map reverse uncurry uncurry3;
      > matrix [[1,2,3],[4,5,6]];
      {1,2,3;4,5,6}
 
-   .. _rowvector:
-   .. _colvector:
-   .. _vector:
+   .. index:: rowvector
+   .. index:: colvector
+   .. index:: vector
 
    The ``rowvector`` and ``colvector`` functions work in a similar fashion,
    but expect a list, tuple or matrix of elements and always return a row or
@@ -148,9 +144,9 @@ public all any cat cst do list map reverse uncurry uncurry3;
      > vector [rowvector [1,2,3],colvector [4,5,6]];
      {{1,2,3},{4;5;6}}
 
-   .. _rowvectorseq:
-   .. _colvectorseq:
-   .. _vectorseq:
+   .. index:: rowvectorseq
+   .. index:: colvectorseq
+   .. index:: vectorseq
 
    It's also possible to create a row or column vector from an arithmetic
    sequence using the ``rowvectorseq`` and ``colvectorseq`` functions. Again,
@@ -182,10 +178,10 @@ public all any cat cst do list map reverse uncurry uncurry3;
    (Note that the library doesn't contain any such macro rules, so you'll have
    to add them yourself if you want to take advantage of these optimizations.)
 
-   .. _dmatrix:
-   .. _cmatrix:
-   .. _imatrix:
-   .. _smatrix:
+   .. index:: dmatrix
+   .. index:: cmatrix
+   .. index:: imatrix
+   .. index:: smatrix
 
    The ``dmatrix``, ``cmatrix``, ``imatrix`` and ``smatrix`` functions convert
    a list or matrix to a matrix of the corresponding type (integer, double,
@@ -212,9 +208,9 @@ public all any cat cst do list map reverse uncurry uncurry3;
    There's also a number of more specialized conversions operations which are
    discussed under `Matrix Inspection and Manipulation`_ below.
 
-   .. _list (matrix):
-   .. _list2 (matrix):
-   .. _tuple (matrix):
+   .. index:: list (matrix)
+   .. index:: list2 (matrix)
+   .. index:: tuple (matrix)
 
    Conversely, a matrix can be converted back to a flat list or tuple with the
    ``list`` and ``tuple`` functions. In addition, the ``list2`` function
@@ -233,19 +229,19 @@ public all any cat cst do list map reverse uncurry uncurry3;
    Matrix Inspection and Manipulation
    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-   .. _dmatrixp:
-   .. _cmatrixp:
-   .. _imatrixp:
-   .. _smatrixp:
-   .. _nmatrixp:
+   .. index:: dmatrixp
+   .. index:: cmatrixp
+   .. index:: imatrixp
+   .. index:: smatrixp
+   .. index:: nmatrixp
 
    ``dmatrixp x``, ``cmatrixp x``, ``imatrixp x``, ``smatrixp x``, ``nmatrixp x``
      Check for different kinds of matrices (double, complex, int, symbolic and
      numeric, i.e., non-symbolic).
 
-   .. _vectorp:
-   .. _rowvectorp:
-   .. _colvectorp:
+   .. index:: vectorp
+   .. index:: rowvectorp
+   .. index:: colvectorp
 
    ``vectorp x``, ``rowvectorp x``, ``colvectorp x``
      Check for different kinds of vectors (these are just matrices with one
@@ -306,13 +302,13 @@ namespace;
 dim x::matrix		= matrix_dim x;
 null x::matrix		= #x==0;
 
-/* .. _stride:
+/* .. index:: stride
 
    ``stride x``
      The stride of a matrix denotes the real row size of the underlying C
-     array, see the description of the |pack|_ function below for further
-     details. There's little use for this value in Pure, but it may be needed
-     when interfacing to C. */
+     array, see the description of the :ref:`pack <pack>` function below for
+     further details. There's little use for this value in Pure, but it may be
+     needed when interfacing to C. */
 
 namespace __C;
 extern int matrix_stride(expr *x);
@@ -383,8 +379,8 @@ namespace __C;
 extern expr* matrix_slice(expr* x, int i1, int j1, int i2, int j2);
 namespace;
 
-/* .. _row:
-   .. _col:
+/* .. index:: row
+   .. index:: col
 
    ``row x i``, ``col x i``
      Extract the ``i``\ th row or column of a matrix. */
@@ -397,8 +393,8 @@ col x::matrix j::int	= if j>=0 && j<m then matrix_slice x 0 j (n-1) j
 			  else throw out_of_bounds
 			  when n::int,m::int = dim x end;
 
-/* .. _rows:
-   .. _cols:
+/* .. index:: rows
+   .. index:: cols
 
    ``rows x``, ``cols x``
      Return the list of all rows or columns of a matrix. */
@@ -519,9 +515,9 @@ colvectorseq n m s = x if matrixp x when x = colvector (n:n+s..m) end;
 
 vectorseq n m s = x if matrixp x when x = rowvectorseq n m s end;
 
-/* .. _diag:
-   .. _subdiag:
-   .. _supdiag:
+/* .. index:: diag
+   .. index:: subdiag
+   .. index:: supdiag
 
    ``diag x``, ``subdiag x k``, ``supdiag x k``:
      Extract (sub-,super-) diagonals from a matrix. Sub- and super-diagonals
@@ -534,7 +530,8 @@ extern expr* matrix_diag(expr* x) = diag;
 extern expr* matrix_subdiag(expr* x, int k) = subdiag;
 extern expr* matrix_supdiag(expr* x, int k) = supdiag;
 
-/* .. _submat:
+/* .. index:: submat
+   .. _submat:
 
    ``submat x (i,j) (n,m)``
      Extract a submatrix of a given size at a given offset. The result shares
@@ -544,7 +541,9 @@ extern expr* matrix_supdiag(expr* x, int k) = supdiag;
 submat x::matrix (i::int,j::int) (n::int,m::int)
 			= matrix_slice x i j (i+n-1) (j+m-1);
 
-/* .. _rowcat:
+/* .. index:: rowcat
+   .. index:: colcat
+   .. _rowcat:
    .. _colcat:
 
    ``rowcat xs``, ``colcat xs``
@@ -559,7 +558,7 @@ submat x::matrix (i::int,j::int) (n::int,m::int)
 extern expr* matrix_rows(expr *x) = rowcat;
 extern expr* matrix_columns(expr *x) = colcat;
 
-/* .. _matcat:
+/* .. index:: matcat
 
    ``matcat xs``
      Construct a matrix from a (symbolic) matrix of other matrices and/or
@@ -571,15 +570,13 @@ extern expr* matrix_columns(expr *x) = colcat;
 
 extern expr* matrix_matcat(expr *x) = matcat;
 
-/* .. _rowcatmap:
-   .. _colcatmap:
-
-   .. |rowcat| replace:: ``rowcat``
-   .. |colcat| replace:: ``colcat``
+/* .. index:: rowcatmap
+   .. index:: colcatmap
 
    ``rowcatmap f xs``, ``colcatmap f xs``
-     Combinations of |rowcat|_, |colcat|_ and |map|_. These are used, in
-     particular, for implementing matrix comprehensions. */
+     Combinations of :ref:`rowcat <rowcat>`, :ref:`colcat <colcat>` and
+     :ref:`map <map>`. These are used, in particular, for implementing matrix
+     comprehensions. */
 
 rowcatmap f []		= {};
 rowcatmap f xs@(_:_)	= rowcat (map f xs);
@@ -595,9 +592,9 @@ def void (colcatmap f x) = do f x;
 def void (rowmap f x) = do f x;
 def void (colmap f x) = do f x;
 
-/* .. _diagmat:
-   .. _subdiagmat:
-   .. _supdiagmat:
+/* .. index:: diagmat
+   .. index:: subdiagmat
+   .. index:: supdiagmat
 
    ``diagmat x``, ``subdiagmat x k``, ``supdiagmat x k``
      Create a (sub-,super-) diagonal matrix from a row vector ``x`` of size
@@ -611,9 +608,9 @@ extern expr* matrix_diagm(expr* x) = diagmat;
 extern expr* matrix_subdiagm(expr* x, int k) = subdiagmat;
 extern expr* matrix_supdiagm(expr* x, int k) = supdiagmat;
 
-/* .. _re (matrix):
-   .. _im (matrix):
-   .. _conj (matrix):
+/* .. index:: re (matrix)
+   .. index:: im (matrix)
+   .. index:: conj (matrix)
 
    ``re x``, ``im x``, ``conj x``
      Extract the real and imaginary parts and compute the conjugate of a
@@ -628,34 +625,33 @@ re x::matrix		= matrix_re x if nmatrixp x;
 im x::matrix		= matrix_im x if nmatrixp x;
 conj x::matrix		= matrix_conj x if nmatrixp x;
 
-/* .. _pack:
+/* .. index:: pack
+   .. index:: packed
+   .. _pack:
    .. _packed:
-
-   .. |pack| replace:: ``pack``
-   .. |packed| replace:: ``packed``
-   .. |submat| replace:: ``submat``
 
    ``pack x``, ``packed x``
      Pack a matrix. This creates a copy of the matrix which has the data in
      contiguous storage. It also frees up extra memory if the matrix was
-     created as a slice from a bigger matrix (see |submat|_ above) which has
-     since gone the way of the dodo. The ``packed`` predicate can be used to
-     verify whether a matrix is already packed. Note that even if a matrix is
-     already packed, ``pack`` will make a copy of it anyway, so ``pack`` also
-     provides a quick way to copy a matrix, e.g., if you want to pass it as an
-     input/output parameter to a GSL routine. */
+     created as a slice from a bigger matrix (see :ref:`submat <submat>`
+     above) which has since gone the way of the dodo. The ``packed`` predicate
+     can be used to verify whether a matrix is already packed. Note that even
+     if a matrix is already packed, ``pack`` will make a copy of it anyway, so
+     ``pack`` also provides a quick way to copy a matrix, e.g., if you want to
+     pass it as an input/output parameter to a GSL routine. */
 
 pack x::matrix		= colcat [x,{}];
 packed x::matrix	= stride x==dim x!1;
 
-/* .. _redim:
+/* .. index:: redim
 
    ``redim (n,m) x``, ``redim n x``
      Change the dimensions of a matrix without changing its size. The total
      number of elements must match that of the input matrix. Reuses the
      underlying storage of the input matrix if possible (i.e., if the matrix
-     is |packed|_). You can also redim a matrix to a given row size ``n``. In
-     this case the row size must divide the total size of the matrix. */
+     is :ref:`packed <packed>`). You can also redim a matrix to a given row
+     size ``n``. In this case the row size must divide the total size of the
+     matrix. */
 
 namespace __C;
 extern expr* matrix_redim(expr* x, int n, int m);
@@ -667,7 +663,7 @@ redim (n::int,m::int) x::matrix
 redim m::int x::matrix	= redim (#x div m,m) x if m>0 && #x mod m==0;
 			= x if m==0 && #x==0;
 
-/* .. _sort (matrix):
+/* .. index:: sort (matrix)
 
    ``sort p x``
      Sorts the elements of a matrix (non-destructively, i.e., without changing
@@ -711,7 +707,7 @@ sort p x::matrix	= case sort p (smatrix x) of
 			    y = y otherwise;
 			  end;
 
-/* .. _transpose (matrix):
+/* .. index:: transpose (matrix)
 
    ``transpose x``
      Transpose a matrix. Example::
@@ -725,9 +721,9 @@ namespace;
 
 transpose x::matrix	= matrix_transpose x;
 
-/* .. _rowrev:
-   .. _colrev:
-   .. _reverse (matrix):
+/* .. index:: rowrev
+   .. index:: colrev
+   .. index:: reverse (matrix)
 
    ``rowrev x``, ``colrev x``, ``reverse x``
      Reverse a matrix. ``rowrev`` reverses the rows, ``colrev`` the columns,
@@ -857,14 +853,14 @@ unzip3 x::matrix	= {u | u,_ = x},{v | _,v,_ = x},{w | _,_,w = x}
    important consideration (e.g., graphics, video and audio applications). The
    usual caveats concerning direct pointer manipulations apply.
 
-   .. _pointer (matrix):
+   .. index:: pointer (matrix)
 
    ``pointer x``
      Get a pointer to the underlying C array of a matrix. The data is *not*
      copied. Hence you have to be careful when passing such a pointer to C
      functions if the underlying data is non-contiguous; when in doubt, first
-     use the |pack|_ function to place the data in contiguous storage, or use
-     one of the matrix-pointer conversion routines below. */
+     use the :ref:`pack <pack>` function to place the data in contiguous
+     storage, or use one of the matrix-pointer conversion routines below. */
 
 namespace __C;
 extern expr* pure_pointerval(expr*);
@@ -872,13 +868,13 @@ namespace;
 
 pointer x::matrix	= pure_pointerval x;
 
-/* .. _double_pointer:
-   .. _float_pointer:
-   .. _complex_pointer:
-   .. _complex_float_pointer:
-   .. _int_pointer:
-   .. _short_pointer:
-   .. _byte_pointer:
+/* .. index:: double_pointer
+   .. index:: float_pointer
+   .. index:: complex_pointer
+   .. index:: complex_float_pointer
+   .. index:: int_pointer
+   .. index:: short_pointer
+   .. index:: byte_pointer
 
    The following operations copy the contents of a matrix to a given pointer
    and return that pointer, converting to the target data type on the fly if
@@ -922,13 +918,14 @@ short_pointer p::pointer x::matrix
 byte_pointer p::pointer x::matrix
 			= matrix_to_byte_array p x if nmatrixp x;
 
-/* .. _double_matrix:
-   .. _float_matrix:
-   .. _complex_matrix:
-   .. _complex_float_matrix:
+/* .. index:: double_matrix
+   .. index:: float_matrix
+   .. index:: complex_matrix
+   .. index:: complex_float_matrix
+   .. index:: int_matrix
+   .. index:: short_matrix
+   .. index:: byte_matrix
    .. _int_matrix:
-   .. _short_matrix:
-   .. _byte_matrix:
 
    Conversely, the following functions allow you to create a numeric matrix
    from a pointer, copying the data and converting it from the source type on
@@ -988,9 +985,9 @@ short_matrix n::int p::pointer
 byte_matrix n::int p::pointer
 			= byte_matrix (1,n) p;
 
-/* .. _double_matrix_view:
-   .. _complex_matrix_view:
-   .. _int_matrix_view:
+/* .. index:: double_matrix_view
+   .. index:: complex_matrix_view
+   .. index:: int_matrix_view
 
    Finally, you can use the following operations to create a numeric matrix
    view of existing data, without copying the data. The data must be double,

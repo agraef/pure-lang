@@ -61,10 +61,10 @@ namespace;
    Errno and Friends
    -----------------
 
-   .. _errno:
-   .. _set_errno:
-   .. _perror:
-   .. _strerror:
+   .. index:: errno
+   .. index:: set_errno
+   .. index:: perror
+   .. index:: strerror
 
    ``errno``, ``set_errno n``, ``perror msg``, ``strerror n``
      This value and the related routines are indispensable to give proper
@@ -89,7 +89,7 @@ extern void perror(char*), char* strerror(int);
    POSIX Locale
    ------------
 
-   .. _setlocale:
+   .. index:: setlocale
 
    ``setlocale category locale``
      Set or retrieve the current locale.
@@ -130,7 +130,7 @@ extern char* setlocale(int category, char* locale);
    Signal Handling
    ---------------
 
-   .. _trap:
+   .. index:: trap
 
    ``trap action sig``
      Establish or remove Pure signal handlers.
@@ -147,7 +147,8 @@ extern char* setlocale(int category, char* locale);
    corresponding Pure exceptions; if this is not desired, you can use ``trap``
    to either ignore these or revert to the default handlers instead.
 
-   See `Exception Handling`_ in the Pure Manual for details and examples. */
+   See :ref:`Exception Handling` in the Pure Manual for details and
+   examples. */
 
 extern void pure_trap(int action, int sig) = trap;
 
@@ -160,7 +161,7 @@ extern void pure_trap(int action, int sig) = trap;
    includes some functions to retrieve wallclock and cpu time which usually
    offer much better resolution than the venerable ``time`` function.
 
-   .. _time:
+   .. index:: time
 
    ``time``
      Reports the current time in seconds since the `epoch`, 00:00:00 UTC, Jan
@@ -169,7 +170,7 @@ extern void pure_trap(int action, int sig) = trap;
 
 extern int64 pure_time() = time;
 
-/* .. _gettimeofday:
+/* .. index:: gettimeofday
 
    ``gettimeofday``
      Returns wallclock time as seconds since the epoch, like ``time``, but
@@ -181,7 +182,7 @@ extern int64 pure_time() = time;
 
 extern double pure_gettimeofday() = gettimeofday;
 
-/* .. _clock:
+/* .. index:: clock
 
    ``clock``
      Returns the current CPU (not wallclock) time since an arbitrary point in
@@ -191,8 +192,8 @@ extern double pure_gettimeofday() = gettimeofday;
 
 extern int clock();
 
-/* .. _sleep:
-   .. _nanosleep:
+/* .. index:: sleep
+   .. index:: nanosleep
 
    ``sleep t``, ``nanosleep t``
      Suspend execution for a given time interval in seconds. ``sleep`` takes
@@ -229,10 +230,10 @@ extern double pure_nanosleep(double) = nanosleep;
 
 nanosleep t::int | nanosleep t::bigint = nanosleep (double t);
 
-/* .. _tzset:
-   .. _tzname:
-   .. _timezone:
-   .. _daylight:
+/* .. index:: tzset
+   .. index:: tzname
+   .. index:: timezone
+   .. index:: daylight
 
    The ``tzset`` function calls the corresponding routine from the C library
    and initializes the (Pure) variables ``tzname``, ``timezone`` and
@@ -259,39 +260,37 @@ extern void pure_tzset() = tzset;
    mktime(3), asctime(3), strftime(3) and strptime(3) manual pages for
    details.
 
-   .. _ctime:
+   .. index:: ctime
 
    ``ctime t``
      Convert a time value as returned by the ``time`` function to a string in
      local time.
 
-   .. _gmtime:
-   .. _localtime:
+   .. index:: gmtime
+   .. index:: localtime
 
    ``gmtime t``, ``localtime t``
      Convert a time value to UTC or local time in "broken-down" form (a static
      pointer to a ``tm`` struct containing a bunch of ``int`` fields) which
      can then be passed to the ``asctime`` and ``strftime`` functions, or to
-     |int_matrix|_ if you want to convert the data to a matrix; see the
-     example below.
+     :ref:`int_matrix <int_matrix>` if you want to convert the data to a
+     matrix; see the example below.
 
-   .. |int_matrix| replace:: ``int_matrix``
-
-   .. _mktime:
+   .. index:: mktime
 
    ``mktime tm``
      Converts broken-down time to a time value (seconds since the epoch). As
      with ``time``, the result is always a bigint.
 
-   .. _asctime:
-   .. _strftime:
+   .. index:: asctime
+   .. index:: strftime
 
    ``asctime tm``, ``strftime format tm``
      Format broken-down time as a string. ``strftime`` also uses a format
      string supplied by the user, see below for a list of the most important
      conversion specifiers.
 
-   .. _strptime:
+   .. index:: strptime
 
    ``strptime s format tm``
      Parse a date/time string ``s`` according to the given format (using more
@@ -420,14 +419,14 @@ extern expr* pure_strptime(char *s, char *format, int *tm) = strptime;
    and ``waitpid`` are available in the posix module, see `Additional POSIX
    Functions`_.)
 
-   .. _system:
+   .. index:: system
 
    ``system cmd``
      Execute a shell command.
 
-   .. _execv:
-   .. _execvp:
-   .. _execve:
+   .. index:: execv
+   .. index:: execvp
+   .. index:: execve
 
    ``execv prog argv``, ``execvp prog argv``, ``execve prog argv envp``
      Execute a new process. ``prog`` denotes the name of the executable to be
@@ -442,9 +441,9 @@ extern expr* pure_strptime(char *s, char *format, int *tm) = strptime;
      translated to the raw, ``NULL``-terminated C string vectors (i.e.,
      ``char**``) required by the underlying C functions.
 
-   .. _spawnv:
-   .. _spawnvp:
-   .. _spawnve:
+   .. index:: spawnv
+   .. index:: spawnvp
+   .. index:: spawnve
 
    ``spawnv mode prog argv``, ``spawnvp mode prog argv``, ``spawnve mode prog argv envp``
      Spawn a new child process. These work like the corresponding MS Windows
@@ -516,8 +515,8 @@ spawnve mode::int prog::string argv envp =
    some of the following routines are actually Pure wrappers, rather than just
    providing the raw C library routines.
 
-   .. _fopen:
-   .. _popen:
+   .. index:: fopen
+   .. index:: popen
 
    ``fopen name mode``, ``popen cmd mode``
      Open a file or a pipe. These take care of closing a file object
@@ -525,80 +524,80 @@ spawnve mode::int prog::string argv envp =
      a null pointer) in case of error, so that you can provide any desired
      error handling simply by adding suitable equations.
 
-   .. _fdopen:
+   .. index:: fdopen
 
    ``fdopen fd mode``
      Associates a file object with a given existing file descriptor. Otherwise
      works like ``fopen``, so the resulting file is closed automatically when
      it's garbage-collected.
 
-   .. _freopen:
+   .. index:: freopen
 
    ``freopen path mode fp``
      Reopens a file object. The existing file object is closed. Otherwise
      works like ``fopen``, so the resulting file is closed automatically when
      it's garbage-collected.
 
-   .. _fclose:
-   .. _pclose:
+   .. index:: fclose
+   .. index:: pclose
 
    ``fclose fp``, ``pclose fp``
      Close a file or a pipe.
 
-   .. _tmpfile:
+   .. index:: tmpfile
 
    ``tmpfile``
      Creates a unique temporary file (opened in ``"w+b"`` mode) which gets
      deleted automatically when it is closed or the file object gets
      garbage-collected.
 
-   .. _feof:
-   .. _ferror:
-   .. _clearerr:
+   .. index:: feof
+   .. index:: ferror
+   .. index:: clearerr
 
    ``feof fp``, ``ferror fp``, ``clearerr fp``
      Check the end-of-file and error bits. ``clearerr`` clears the error bit.
 
-   .. _fileno:
+   .. index:: fileno
 
    ``fileno fp``
      Returns the file descriptor associated with the given file.
 
-   .. _fflush:
+   .. index:: fflush
 
    ``fflush fp``
      Flushes the given file (or all open files if ``fp`` is ``NULL``).
 
-   .. _fgets:
-   .. _gets:
+   .. index:: fgets
+   .. index:: gets
 
    ``fgets fp``, ``gets``
      Pure wrappers for the C ``fgets`` and ``gets`` functions which handle the
      necessary buffering automatically.
 
-   .. _fget:
+   .. index:: fget
 
    ``fget fp``
      A variation of ``fgets`` which slurps in an entire text file at once.
 
-   .. _fputs:
-   .. _puts:
+   .. index:: fputs
+   .. index:: puts
 
    ``fputs s fp``, ``puts s``
      Output a string to the given file or ``stdout``, respectively. These
      are just the plain C functions. Note that ``puts`` automatically adds
      a newline, while ``fputs`` doesn't. Hmm.
 
-   .. _fread:
-   .. _fwrite:
+   .. index:: fread
+   .. index:: fwrite
 
    ``fread ptr size nmemb fp``, ``fwrite ptr size nmemb fp``
      Binary read/writes. Here you'll have to manage the buffers yourself.
      See the corresponding manual pages for details.
 
-   .. _fseek:
-   .. _ftell:
-   .. _rewind:
+   .. index:: fseek
+   .. index:: ftell
+   .. index:: rewind
 
    ``fseek fp offset whence``, ``ftell fp``, ``rewind fp``
      Reposition the file pointer and retrieve its current value. The constants
@@ -607,8 +606,8 @@ spawnve mode::int prog::string argv envp =
      ``fseek fp 0 SEEK_SET`` (except that the latter also returns a result
      code). See the corresponding manual pages for details.
 
-   .. _setbuf:
-   .. _setvbuf:
+   .. index:: setbuf
+   .. index:: setvbuf
 
    ``setbuf fp buf``, ``setvbuf fp buf mode size``
      Set the buffering of a file object, given as the first argument. The
@@ -747,8 +746,8 @@ end;
    shouldn't segfault. However, only simple formats derived from ``%cdioux``,
    ``%efg``, ``%s`` and ``%p`` are supported right now.
 
-   .. _printf:
-   .. _fprintf:
+   .. index:: printf
+   .. index:: fprintf
 
    ``printf format args``, ``fprintf fp format args``
      Print a formatted string to ``stdout`` or the given file, respectively.
@@ -757,7 +756,7 @@ end;
      an abnormal condition in the wrapper function (error in format string,
      argument mismatch), they will throw an exception.
 
-   .. _sprintf:
+   .. index:: sprintf
 
    ``sprintf format args``
      Print a formatted string to a buffer and return the result as a string.
@@ -892,8 +891,8 @@ end with
                 = buf otherwise;
 end;
 
-/* .. _scanf:
-   .. _fscanf:
+/* .. index:: scanf
+   .. index:: fscanf
 
    ``scanf format``, ``fscanf fp format``
      Read formatted input from ``stdin`` or the given file, respectively.
@@ -1009,7 +1008,7 @@ with
   kludge _ u = u otherwise;
 end;
 
-/* .. _sscanf:
+/* .. index:: sscanf
 
    ``sscanf s format``
      This works exactly like ``fscanf``, but input comes from a string (first
@@ -1099,7 +1098,7 @@ using namespace;
    Stat and Friends
    ----------------
 
-   .. _stat:
+   .. index:: stat
 
    ``stat path``
      Return information about the given file. This is a simple wrapper around
@@ -1111,14 +1110,14 @@ using namespace;
      ``st_mode``, ``st_nlink``, ``st_uid`` and ``st_gid`` are simple machine
      integers, the rest is encoded as bigints (even on 32 bit platforms).
 
-   .. _lstat:
+   .. index:: lstat
 
    ``lstat path``
      Return information about the given symbolic link (rather than the file
      it points to). On systems where this function isn't supported (e.g.,
      Windows), ``lstat`` is identical to ``stat``.
 
-   .. _fstat:
+   .. index:: fstat
 
    ``fstat fp``
      Return information about the given file object. Same as ``stat``, but
@@ -1166,7 +1165,7 @@ extern expr* pure_fstat(FILE* fp) = fstat;
    Readdir
    -------
 
-   .. _readdir:
+   .. index:: readdir
 
    ``readdir name``
      Read the contents of the given directory and return the names of all
@@ -1188,13 +1187,13 @@ extern expr *pure_readdir(char *name) = readdir;
    Shell Globbing
    --------------
 
-   .. _fnmatch:
+   .. index:: fnmatch
 
    ``fnmatch pat s flags``
      Returns a simple truth value (1 if ``pat`` matches ``s``, 0 if it
      doesn't), instead of an error code like the C function.
 
-   .. _glob:
+   .. index:: glob
 
    ``glob pat flags``
      Returns a Pure list with the matches (unless there is an error in which
@@ -1261,7 +1260,7 @@ extern expr* pure_regmatch(void* reg) = regmatch;
 extern expr* pure_regskip(void* reg) = regskip;
 namespace;
 
-/* .. _regex:
+/* .. index:: regex
 
    ``regex pat cflags s eflags``
      Compiles and matches a regex in one go, and returns the list of
@@ -1335,7 +1334,7 @@ regex pat::string cflags::int s::string eflags::int
    The following helper functions are provided to analyze the result returned
    by ``regex``.
 
-   .. _reg_result:
+   .. index:: reg_result
 
    ``reg_result res``
      Returns the result of a ``regex`` call, i.e., a ``regerr`` term if
@@ -1346,7 +1345,7 @@ reg_result (regerr code msg) = regerr code msg;
 reg_result b::int = b;
 reg_result (b::int,_) = b;
 
-/* .. _reg_info:
+/* .. index:: reg_info
 
    ``reg_info res``
      Returns the submatch info if any, otherwise it returns ``()``. */
@@ -1354,7 +1353,7 @@ reg_result (b::int,_) = b;
 reg_info (_::int,info) = info;
 reg_info _ = () otherwise;
 
-/* .. _reg:
+/* .. index:: reg
 
    ``reg n info``
      Returns the ``n``\ th submatch of the given submatch info, where ``info``
@@ -1364,7 +1363,7 @@ reg 0 (p,s,_) = p,s;
 reg 0 (p,s) = p,s;
 reg n::int (_,_,infos) = reg (n-1) infos if n>0;
 
-/* .. _regs:
+/* .. index:: regs
 
    ``regs info``
      Returns all valid submatches, i.e., the list of all triples ``(n,p,s)``
@@ -1383,7 +1382,7 @@ end;
    global regex searches, to perform substitutions, and to tokenize a string
    according to a given delimiter regex.
 
-   .. _regexg:
+   .. index:: regexg
 
    ``regexg f pat cflags s eflags``
      Perform a global regular expression search. This routine will scan the
@@ -1402,7 +1401,7 @@ with
 end when re = sentry regfree (regcomp pat cflags) end
 if ~(cflags and REG_NOSUB);
 
-/* .. _regexgg:
+/* .. index:: regexgg
 
    ``regexgg f pat cflags s eflags``
      This works like ``regexg``, but allows overlapping matches. */
@@ -1417,7 +1416,7 @@ with
 end when re = sentry regfree (regcomp pat cflags) end
 if ~(cflags and REG_NOSUB);
 
-/* .. _regsub:
+/* .. index:: regsub
 
    ``regsub f pat cflags s eflags``
      Replaces all non-overlapping instances of a pattern with a computed
@@ -1439,7 +1438,7 @@ with
 end when re = sentry regfree (regcomp pat cflags) end
 if ~(cflags and REG_NOSUB);
 
-/* .. _regsplit:
+/* .. index:: regsplit
 
    ``regsplit pat cflags s eflags``
      Splits a string into constituents delimited by substrings matching the
@@ -1463,9 +1462,9 @@ if ~(cflags and REG_NOSUB);
    least inefficient for huge amounts of text. As a remedy, the following lazy
    alternatives are available:
 
-   .. _regexgs:
-   .. _regexggs:
-   .. _regsplits:
+   .. index:: regexgs
+   .. index:: regexggs
+   .. index:: regsplits
 
    * ``regexgs f pat cflags s eflags``
 
