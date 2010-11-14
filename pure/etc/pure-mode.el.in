@@ -261,6 +261,11 @@ See the Pure manual for a list of available options."
   :type 'string
   :group 'pure)
 
+(defcustom pure-docs-dir (concat pure-libdir "/docs")
+  "*Location of the Pure documentation directory."
+  :type 'string
+  :group 'pure)
+
 (defcustom pure-histfile "~/.pure_history"
   "*Name of the command history file."
   :type 'string
@@ -517,7 +522,7 @@ Entry to this mode runs the hooks on `comint-mode-hook' and
   "Read online help in html format.
 This works pretty much like the interpreter's help command. Uses
 emacs-w3m if it is available. The command searches for help files
-in the current directory, the `pure-library-dir', and all
+in the current directory, the `pure-docs-dir', and all
 directories specified in `pure-includes'. The given TOPIC may
 specify a help file and/or section/index entry, see topic
 pure#online-help for details."
@@ -526,19 +531,26 @@ pure#online-help for details."
    (let ((default (word-at-point)))
      (list (read-string "Pure help topic: " default))))
   (let* ((args (split-string (if topic topic "") "#"))
+	 (args (if (or (null args) (not (zerop (length (car args))))) args
+		 (list topic)))
 	 (base
 	  (cond
-	   ((null args) (cons "pure" ""))
+	   ((null args) (cons "puredoc" ""))
 	   ((null (cdr args))
-	    (if (zerop (length (car args))) (cons "pure" "")
-	      (cons "purelib" (car args))))
+	    (if (zerop (length (car args))) (cons "puredoc" "")
+;; Keyword search. XXXFIXME: As of Pure 0.46, this is broken. To duplicate the
+;; functionality of the interpreter's 'help' command, we should now perform a
+;; search of the global index in genindex.html here, and only fall back to a
+;; link target in pure.html if this fails. The former part isn't implemented
+;; yet, so currently this will always send the user to pure.html#key.
+	      (cons "pure" (car args))))
 	   (t
-	    (cons (if (zerop (length (car args))) "purelib" (car args))
+	    (cons (if (zerop (length (car args))) "pure" (car args))
 	     (mapconcat 'identity (cdr args) "#")))))
 	 (file (concat (car base) ".html"))
 	 (anchor (if (zerop (length (cdr base))) "" (concat "#" (cdr base))))
 	 (helpfile
-	  (locate-library file t (append (list "." pure-library-dir)
+	  (locate-library file t (append (list "." pure-docs-dir)
 					 pure-includes))))
     (cond
      ((null helpfile) (error (concat "Couldn't locate help file " file)))
