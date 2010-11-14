@@ -159,7 +159,7 @@ ChangeLog INSTALL NEWS README TODO \
 Makefile.in acinclude.m4 aclocal.m4 configure.ac configure config.h.in \
 config/config.guess config/config.sub config/install-sh \
 $(SOURCE) $(EXTRA_SOURCE) w3centities.c strptime.c pure.cc pure_main.c \
-pure.1 pure.txt run-tests.in run-test.in \
+pure.1 pure.txt install-docs.sh run-tests.in run-test.in \
 etc/pure-mode.el.in etc/pure.* etc/gpure.lang \
 examples/COPYING examples/Makefile.in examples/*.pure examples/*.purerc \
 examples/*.c examples/*.f90 examples/libor/COPYING examples/libor/*.pure \
@@ -167,8 +167,8 @@ examples/bitcode/Makefile examples/bitcode/*.c examples/bitcode/*.f90 \
 examples/bitcode/*.dsp examples/bitcode/*.pure \
 lib/*.pure test/*.pure test/*.log test/*.blob
 
-.PHONY: all html dvi ps pdf clean realclean depend install uninstall strip \
-dist distcheck cleanlogs logs check config
+.PHONY: all html dvi ps pdf clean realclean depend install uninstall \
+install-docs strip dist distcheck cleanlogs logs check config
 
 # compilation
 
@@ -305,6 +305,15 @@ uninstall:
 ifeq ($(versioned), yes)
 	rm -rf $(addprefix $(DESTDIR), $(bindir)/$(pure_exe) $(pure_includedir) $(pure_libdir) $(man1dir)/$(pure_1))
 endif
+
+# install the online documentation (requires wget)
+
+# you can set this on the command line to point 'install-docs' to an
+# alternative url or a local file:
+docs = http://pure-lang.googlecode.com/files/pure-docs-$(version).tar.gz
+
+install-docs:
+	@MAKE=$(MAKE) ./install-docs.sh "$(docs)"
 
 # roll a distribution tarball
 

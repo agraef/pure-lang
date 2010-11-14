@@ -28,12 +28,13 @@ QUICK SUMMARY
 ===== =======
 
 Here is the executive summary for the impatient. This assumes that you're
-using LLVM 2.8 and Pure 0.45, please substitute your actual version numbers in
+using LLVM 2.8 and Pure 0.46, please substitute your actual version numbers in
 the commands given below.
 
 Prerequisites: gcc, GNU make, flex/bison (development sources only), libltdl,
-libgmp (including header files for development). These should all be available
-as binary packages on most systems.
+libgmp (including header files for development), wget (for downloading and
+installing the online documentation). These should all be available as binary
+packages on most systems.
 
 Installing LLVM and clang (the latter is optional but recommended):
 
@@ -51,12 +52,19 @@ that makes LLVM very slow and/or breaks it on some systems.)
 
 Installing Pure:
 
-$ tar xfvz pure-0.45.tar.gz
-$ cd pure-0.45
+$ tar xfvz pure-0.46.tar.gz
+$ cd pure-0.46
 $ ./configure --enable-release
 $ make && sudo make install
 
-Also, it's recommended that you run the following in the Pure source directory
+Download and install the online documentation:
+
+$ sudo make install-docs
+
+(You can also download the pure-docs tarball manually and then install it from
+a local file, e.g.: sudo make install-docs docs=pure-docs-0.46.tar.gz.)
+
+It is also recommended that you run the following in the Pure source directory
 after compilation to make sure that the Pure interpreter works correctly on
 your platform (see step 5 below for details):
 
@@ -73,7 +81,7 @@ $ pure
 
 Uninstalling:
 
-$ cd pure-0.45
+$ cd pure-0.46
 $ sudo make uninstall
 $ cd ../llvm-2.8
 $ sudo make uninstall
@@ -345,7 +353,31 @@ llvm-gcc 4.2 and clang 2.8 or later should build Pure cleanly and pass all
 checks. When compiling Pure with CXX=clang++, the Pure interpreter will also
 use clang as the default for compiling inline C/C++ code in Pure scripts.
 
-STEP 6. The Pure interpreter should be ready to go now.
+STEP 6. Download and install the online documentation as follows:
+
+$ sudo make install-docs
+
+This isn't necessary to run the interpreter, but highly recommended, as it
+gives you a complete set of manuals in html format which covers the Pure
+language and interpreter, the standard library, and all addon modules
+available from the Pure website. You can read these manuals with the 'help'
+command in the interpreter. You also need to have a html browser installed to
+make this work. By default, the interpreter assumes w3m (a text-based
+browser), you can change this by setting the BROWSER or the PURE_HELP variable
+accordingly.
+
+By default, the 'install-docs' target requires a working Internet connection
+and the wget command.  Instead, you can also download the pure-docs-x.y.tar.gz
+tarball manually and then install the documentation from the downloaded
+tarball (the x.y version number of the documentation tarball should correspond
+to your interpreter version):
+
+$ sudo make install-docs docs=pure-docs-x.y.tar.gz
+
+As a bonus, downloading the package manually also gives you the documentation
+in pdf format, so that you can print it if you like.
+
+STEP 7. The Pure interpreter should be ready to go now.
 
 Run Pure interactively as:
 
@@ -364,17 +396,6 @@ Check that it works:
 Read the online documentation:
 
 > help
-
-This invokes the Pure manual; you need to have a html browser installed to
-make this work. By default, the interpreter assumes w3m (a text-based
-browser), you can change this by setting the BROWSER or the PURE_HELP variable
-accordingly. For instance:
-
-$ export BROWSER=firefox
-
-The manual is also available in a number of other formats (you can find these
-at the Pure website), and the Windows package includes a html help version of
-the manual which can be read with the Windows help reader.
 
 Exit the interpreter (you can also just type the end-of-file character at the
 beginning of a line, i.e., Ctrl-D on Unix):
@@ -428,6 +449,19 @@ $ sudo make install
 
 (Don't forget to also run 'make check' to make sure that the interpreter is in
 good working condition.)
+
+STEP 6': In addition, you can also build and install a recent snapshot of the
+documentation from the repository.
+
+You need to have a recent Sphinx version installed to do that; you can find
+this at http://sphinx.pocoo.org/. Have a look at the Makefile in the
+pure-lang/sphinx subdirectory or type 'make help' there for instructions.
+
+Alternatively, a ready-made recent snapshot of the documentation in html and
+pdf formats is also available in its own repository, which can be cloned as
+follows:
+
+$ hg clone http://docs.pure-lang.googlecode.com/hg pure-lang-docs
 
 
 OTHER BUILD AND INSTALLATION OPTIONS
