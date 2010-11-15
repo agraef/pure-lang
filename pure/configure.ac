@@ -119,6 +119,13 @@ else
   vl_readline_libs="$vl_readline_libs $vl_editline_libs"
 fi
 vl_editline_libs=""
+dnl How to link LLVM.
+static_llvm_libs="no"
+AC_ARG_WITH(static-llvm,
+  [  --with-static-llvm      link with the static LLVM libraries],
+  [case "${withval}" in
+     yes) static_llvm_libs="yes" ;;
+   esac])
 dnl Check for libraries.
 PURE_LIBGMP_PREFIX
 AC_CHECK_LIB(gmp, __gmpz_init, ,
@@ -178,8 +185,9 @@ dnl Determine the LLVM version.
 llvm_version=`$LLVMCONF --version`
 AC_DEFINE_UNQUOTED(LLVM_VERSION, "${llvm_version}", [Define to the LLVM version string.])
 
-dnl If we got LLVM installed as a shared library, use that.
-dnl FIXME: This should be moved to acinclude.m4.
+dnl If we got LLVM installed as a shared library, use that unless the user
+dnl specified --with-static-llvm.
+if test "${static_llvm_libs}" != "yes"; then
 save_LIBS="$LIBS"
 llvm_lib_flags="-L`$LLVMCONF --libdir`"
 LIBS="$LIBS ${llvm_lib_flags} -lLLVM-${llvm_version}"
@@ -196,6 +204,9 @@ AC_MSG_RESULT([$]LLVM_LIBS)],
 [LLVM_LIBS=$($LLVMCONF --ldflags --libs core bitreader bitwriter linker jit native | tr '\r\n' '  ')
 AC_MSG_RESULT(no)])
 LIBS="$save_LIBS"
+else
+LLVM_LIBS=$($LLVMCONF --ldflags --libs core bitreader bitwriter linker jit native | tr '\r\n' '  ')
+fi
 AC_SUBST(LLVM_LIBS)
 AC_SUBST(LLVM_EXE_LIBS)
 
