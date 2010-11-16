@@ -95,16 +95,14 @@ class PureObject(ObjectDescription):
 
     def _resolve_module_name(self, signode, modname, name):
         # determine module name, as well as full name
-        env_modname = self.options.get(
-            'module', self.env.temp_data.get('pure:module'))
-        env_modname = strip_modname(env_modname)
+        if not modname:
+            modname = self.options.get(
+                'module', self.env.temp_data.get('pure:module'))
+            modname = modname and modname+'::' or ''
+        modname = strip_modname(modname)
         if modname:
-            modname = strip_modname(modname)
             fullname = modname + name
-            signode['module'] = modname[:-1]
-        elif env_modname:
-            fullname = env_modname + '::' + name
-            signode['module'] = env_modname
+            signode['module'] = modname[:-2]
         else:
             fullname = name
             signode['module'] = ''
