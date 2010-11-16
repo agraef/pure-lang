@@ -158,7 +158,7 @@ Unqualified access in a custom namespace
 
 .. pure:currentmodule:: gsl
 
-Current namespace is :pure:obj:`gsl`.
+Current namespace is `gsl`.
 
 See `sort_vector` and `sort_vector_index` above.
 
