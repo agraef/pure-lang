@@ -45,7 +45,7 @@ pure_paramlist_re = re.compile(r'(\s+)')  # split at whitespace
 
 pure_tagged_name_re = re.compile(r'^(\S+)[/](\w+)$')
 
-def strip_modname(name):
+def strip_qual(name):
     if name is None:
         return None
     if name[0:2] == "::":
@@ -93,25 +93,25 @@ class PureObject(ObjectDescription):
             return self._handle_data_signature(sig, signode)
         return self._handle_function_signature(sig, signode)
 
-    def _resolve_module_name(self, signode, modname, name):
-        # determine module name, as well as full name
-        if not modname:
-            modname = self.options.get(
-                'module', self.env.temp_data.get('pure:module'))
-            modname = modname and modname+'::' or ''
-        modname = strip_modname(modname)
-        if modname:
-            fullname = modname + name
-            signode['module'] = modname[:-2]
+    def _resolve_namespace(self, signode, namesp, name):
+        # determine namespace, as well as full name
+        if not namesp:
+            namesp = self.options.get( # XXXFIXME
+                'module', self.env.temp_data.get('pure:namespace'))
+            namesp = namesp and namesp+'::' or ''
+        namesp = strip_qual(namesp)
+        if namesp:
+            fullname = namesp + name
+            signode['namespace'] = namesp[:-2]
         else:
             fullname = name
-            signode['module'] = ''
+            signode['namespace'] = ''
         signode['fullname'] = fullname
         return fullname
 
     def _add_desc_name(self, signode, name):
-        if signode['module']:
-            name_prefix = signode['module'] + '::'
+        if signode['namespace']:
+            name_prefix = signode['namespace'] + '::'
             signode += addnodes.desc_addname(name_prefix, name_prefix)
         signode += addnodes.desc_name(name, name)
 
@@ -119,8 +119,8 @@ class PureObject(ObjectDescription):
         m = pure_data_sig_re.match(sig)
         if m is None:
             raise ValueError
-        modname, name, ann = m.groups()
-        fullname = self._resolve_module_name(signode, modname, name)
+        namesp, name, ann = m.groups()
+        fullname = self._resolve_namespace(signode, namesp, name)
         self.add_signature_prefix(signode)
         self._add_desc_name(signode, name)
         if ann:
@@ -132,9 +132,9 @@ class PureObject(ObjectDescription):
         m = pure_func_sig_re.match(sig)
         if m is None:
             raise ValueError
-        fixity, modname, name, tag, arglist, retsym, retann = m.groups()
+        fixity, namesp, name, tag, arglist, retsym, retann = m.groups()
 
-        fullname = self._resolve_module_name(signode, modname, name)
+        fullname = self._resolve_namespace(signode, namesp, name)
         if tag:
             fullname += "/%s" % tag
         self.add_signature_prefix(signode)
@@ -235,7 +235,7 @@ class PureObject(ObjectDescription):
 
 class PureModule(Directive):
     """
-    Directive to mark description of a new module (actually a Pure namespace).
+    Directive to mark description of a new module.
     """
 
     has_content = False
@@ -252,12 +252,6 @@ class PureModule(Directive):
     def run(self):
         env = self.state.document.settings.env
         modname = self.arguments[0].strip()
-        # Remove a leading '\' which might be used to escape a '::' argument.
-        modname = modname.lstrip('\\')
-        modname = strip_modname(modname)
-        if not modname:
-            env.temp_data['pure:module'] = ''
-            return []
         noindex = 'noindex' in self.options
         env.temp_data['pure:module'] = modname
         env.domaindata['pure']['modules'][modname] = \
@@ -276,7 +270,7 @@ class PureModule(Directive):
         # the synopsis isn't printed; in fact, it is only used in the
         # modindex currently
         if not noindex:
-            indextext = _('%s (namespace)') % modname
+            indextext = _('%s (module)') % modname
             inode = addnodes.index(entries=[('single', indextext,
                                              'module-' + modname, modname)])
             ret.append(inode)
@@ -298,23 +292,44 @@ class PureCurrentModule(Directive):
     def run(self):
         env = self.state.document.settings.env
         modname = self.arguments[0].strip()
-        # Remove a leading '\' which might be used to escape a '::' argument.
-        modname = modname.lstrip('\\')
         if modname == 'None':
             env.temp_data['pure:module'] = None
         else:
-            modname = strip_modname(modname)
             env.temp_data['pure:module'] = modname
+        return []
+
+
+class PureNamespace(Directive):
+    """
+    Sets the current Pure namespace.
+    """
+
+    has_content = False
+    required_arguments = 1
+    optional_arguments = 0
+    final_argument_whitespace = False
+    option_spec = {}
+
+    def run(self):
+        env = self.state.document.settings.env
+        nsname = self.arguments[0].strip()
+        # Remove a leading '\' which might be used to escape a '::' argument.
+        nsname = nsname.lstrip('\\')
+        if nsname == 'None':
+            env.temp_data['pure:namespace'] = None
+        else:
+            nsname = strip_qual(nsname)
+            env.temp_data['pure:namespace'] = nsname
         return []
 
 
 class PureXRefRole(XRefRole):
     def process_link(self, env, refnode, has_explicit_title, title, target):
-        refnode['pure:module'] = env.temp_data.get('pure:module')
+        refnode['pure:namespace'] = env.temp_data.get('pure:namespace')
         if not has_explicit_title:
             # remove the tag from the title
             title,_ = split_name(title)
-            title = strip_modname(title) # only has a meaning for the target
+            #title = strip_qual(title) # only has a meaning for the target
             target = target.lstrip('~')  # only has a meaning for the title
             # if the first character is a tilde, don't display the module/class
             # parts of the contents
@@ -332,8 +347,8 @@ class PureModuleIndex(Index):
     """
 
     name = 'modindex'
-    localname = l_('Namespace Index')
-    shortname = l_('namespaces')
+    localname = l_('Module Index')
+    shortname = l_('modules')
 
     def generate(self, docnames=None):
         content = {}
@@ -414,6 +429,7 @@ class PureDomain(Domain):
         'macro':         PureObject,
         'variable':      PureObject,
         'constant':      PureObject,
+        'namespace':     PureNamespace,
         'module':        PureModule,
         'currentmodule': PureCurrentModule,
     }
@@ -445,18 +461,19 @@ class PureDomain(Domain):
             if fn == docname:
                 del self.data['modules'][modname]
 
-    def find_obj(self, env, modname, name, objtype, searchorder=0):
+    def find_obj(self, env, namesp, name, objtype, searchorder=0):
         """
-        Find a Pure object for "name", perhaps using the given module name.
+        Find a Pure object for "name", perhaps using the given namespace.
         """
         if not name:
             return None, None
         objects = self.data['objects']
-        if modname and "::" not in name:
-            name = "%s::%s" % (modname, name)
-        # Remove leading '::'. This is done so that a toplevel identifier 'foo'
-        # can be escaped as '::foo' if a module directive is currently active.
-        name = strip_modname(name)
+        if namesp and "::" not in name:
+            name = "%s::%s" % (namesp, name)
+        # Remove leading '::'. This is done so that a toplevel identifier
+        # 'foo' can be escaped as '::foo' if a namespace directive is
+        # currently active.
+        name = strip_qual(name)
         fname, tag = split_name(name)
         if fname in objects:
             tags = objects[fname]
@@ -479,9 +496,9 @@ class PureDomain(Domain):
                 return make_refnode(builder, fromdocname, docname,
                                     'module-' + target, contnode, title)
         else:
-            modname = node.get('pure:module')
+            namesp = node.get('pure:namespace')
             searchorder = node.hasattr('refspecific') and 1 or 0
-            name, obj = self.find_obj(env, modname, target, typ, searchorder)
+            name, obj = self.find_obj(env, namesp, target, typ, searchorder)
             if not obj:
                 return None
             else:

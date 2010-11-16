@@ -4,20 +4,29 @@ Reference
 .. highlight:: rst
 
 The Pure domain (name **pure**) provides the following directives for module
-declarations. Almost all directives are decidely similar to Python's.
+declarations. Most of the directives work analogously to the Python domain, so
+if you know Sphinx's Python markup then you should feel right at home.
 
 .. rst:directive:: .. pure:module:: name
 
-   This works like :rst:dir:`py:module`, but actually denotes a Pure namespace
-   in the Pure domain. Subsequent objects will be taken to belong to the given
-   namespace, and the directive normally also causes an entry in the global
-   module index to be created. The usual options are provided (``noindex``,
-   ``platform``, ``synopsis`` and ``deprecated``).
+   Marks the beginning of the descriptions for the given Pure module. This
+   directive usually does not create any content (unless the ``platform``
+   option is specified), but causes an entry in the global module index to be
+   created. An entry in the general index will be created as well, unless the
+   ``noindex`` option is specified. The usual options are provided
+   (``noindex``, ``platform``, ``synopsis`` and ``deprecated``), see
+   :rst:dir:`py:module` for details.
 
 .. rst:directive:: .. pure:currentmodule:: name
 
    Like :rst:dir:`py:currentmodule`, this just switches over to the given
-   namespace, but doesn't create any index entries.
+   module, but doesn't create any index entries.
+
+.. rst:directive:: .. pure:namespace:: name
+
+   Selects the current Pure namespace for the following objects. (This only
+   sets a default, an object directive may always override this setting by
+   specifying a qualified object name.)
 
 The following directives are provided for actually producing contents:
 
@@ -56,14 +65,14 @@ domain.
 
 .. rst:role:: pure:mod
 
-   Reference a Pure namespace.
+   Reference a Pure module.
 
 .. rst:role:: pure:func
 
    Reference a Pure function; the name may be qualified to refer to a symbol
-   outside the current namespace, as set with :rst:dir:`pure:module` or
-   :rst:dir:`pure:currentmodule`. Moreover, a tag may be used to differentiate
-   between different descriptions of an overloaded function (see above).
+   outside the current namespace, as set with the :rst:dir:`pure:namespace`
+   directive. Moreover, a tag may be used to differentiate between different
+   descriptions of an overloaded function (see above).
 
 .. rst:role:: pure:macro
 
@@ -83,5 +92,5 @@ domain.
 
 .. rst:role:: pure:obj
 
-   Generic reference to any kind of Pure object, including namespaces. Useful
-   as the default role.
+   Generic reference to any kind of Pure object, including Pure modules.
+   Useful as the default role.

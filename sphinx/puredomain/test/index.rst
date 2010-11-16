@@ -19,9 +19,9 @@ sphinxcontrib-puredomain test
    .. We'd like to use the standard :ref:`modindex` target below, but this is
       apparently hardwirded to 'py-modindex'. :(
 
-   .. |Namespace Index| replace:: *Namespace Index*
-   .. _Namespace Index: pure-modindex.html
+   .. |Module Index| replace:: *Module Index*
+   .. _Module Index: pure-modindex.html
 
    * :ref:`genindex`
-   * |Namespace Index|_
+   * |Module Index|_
    * :ref:`search`

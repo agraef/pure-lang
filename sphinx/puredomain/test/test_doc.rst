@@ -8,98 +8,76 @@ Sample descriptions
 ===================
 
 .. default-role:: emphasis
+.. default-domain:: pure
 
 Default Namespace
 -----------------
 
 This is a function in the default namespace:
 
-.. pure:function:: sort p xs
+.. function:: sort p xs
 
    Sorts the elements of the list `xs` in ascending order according to the
-   given predicate `p`, using the C `qsort` function. The predicate `p` is
-   invoked with two arguments and should return a truth value indicating
-   whether the first argument is "less than" the second. An exception is
-   raised if the result of a comparison is not a machine integer. Example::
-
-     > sort (>) (1..10);
-     [10,9,8,7,6,5,4,3,2,1]
-     > sort (<) ans;
-     [1,2,3,4,5,6,7,8,9,10]
-
-   This function also works with matrices, see :pure:func:`sort/matrix` below.
+   given predicate `p`.
 
 Another entry for the same function. This happens a lot in Pure, as functions
-are frequently overloaded. The Pure domain handles these gently, if you
-specify a unique tag of the form ``/id`` after the function name for each
-overloaded instance. Also note that in contrast to the other Sphinx domains,
-parameter lists are generally written in Pure's curried style and they may
-contain arbitrary extra annotations such as type tags.
+are frequently overloaded.
 
-.. pure:function:: sort /matrix p x::matrix
+.. function:: sort /matrix p x::matrix
 
-   Sorts the elements of a matrix `x` (non-destructively, i.e., without
-   changing the original matrix) according to the given predicate `p`, using
-   the C `qsort` function. This works exactly the same as with lists (see
-   :pure:func:`sort` above), except that it takes and returns a matrix instead
-   of a list. Note that the function sorts *all* elements of the matrix in one
-   go (regardless of the dimensions), as if the matrix was a single big
-   vector. The result matrix has the same dimensions as the input
-   matrix. Example::
+   Like :func:`sort` above. Sorts the elements of a matrix `x` according to
+   the given predicate `p`.
 
-     > sort (<) {10,9;8,7;6,5};
-     {5,6;7,8;9,10}
+Operator notation is supported as well.
 
-Operator notation is supported as well. To these ends, add one of ``prefix``,
-``postfix``, ``infix`` and ``outfix`` at the beginning of the function
-signature.
-
-.. pure:function:: infix + x y
+.. function:: infix + x y
 
    Add two values. This works with numbers, strings and lists.
 
-.. pure:function:: prefix - x
+.. function:: prefix - x
 
-   Unary minus. Negates a number. This operator is special in Pure, as it's
-   the only infix operator which is also used as a prefix operator.
+   Unary minus. Negates a number.
 
-.. pure:function:: postfix & x
+.. function:: postfix & x
 
    Creates a thunk which gets evaluated lazily. This is the only postfix
    operator defined in the prelude.
 
-.. pure:function:: outfix {: :} x
+.. function:: outfix {: :} x
 
    An outfix operator.
 
-.. pure:module:: gsl
+Module and Namespace
+--------------------
 
-Custom Namespace
-----------------
+.. module:: gsl
+   :synopsis: Pure GSL module
+   :platform: Windows, Mac, Unix
 
-The following functions are declared in the :pure:mod:`gsl` namespace. (The
-rst markup used here is the same as in the Python domain, but note that it
-actually refers to Pure *namespaces* instead of source modules.)
+This is documentation for the :mod:`gsl` module.
 
-.. pure:function:: sort_vector m::matrix
+The following functions are also declared in the `gsl` namespace (modules and
+namespaces are separate in Pure, like in C++).
 
-   Implements `gsl_sort` and `gsl_sort_int` without `stride` and `n`
-   parameters.
+.. namespace:: gsl
 
-.. pure:function:: sort_vector_index m::matrix
+.. function:: sort_vector m::matrix
 
-   Implements `gsl_sort_index` and `gsl_sort_int_index` without `stride`
-   and `n` parameters.
+   Implements `gsl_sort` and `gsl_sort_int`.
+
+.. function:: sort_vector_index m::matrix
+
+   Implements `gsl_sort_index` and `gsl_sort_int_index`.
 
 More markup
 -----------
 
-.. pure:currentmodule:: None
+.. currentmodule:: None
+.. namespace:: None
 
-The usual markup for embellished function descriptions is supported as well,
-e.g.:
+The usual markup for embellished function descriptions is supported as well.
 
-.. pure:function:: foldl f a xs -> b
+.. function:: foldl f a xs -> b
 
    Accumulate the binary function `f` over all members of `xs`, starting from
    the initial value `a` and working from the front of the list towards its
@@ -117,22 +95,21 @@ e.g.:
 There's also special markup for extern functions, macros, variables and
 constants.
 
-.. pure:extern:: puts s::string
+.. extern:: puts s::string
 
    Output a string on the terminal.
 
-.. pure:macro:: void (catmap f x) = do f x
+.. macro:: void (catmap f x) = do f x
    		void (listmap f x) = do f x
 
    Helper macro to execute a list comprehension which is evaluated solely for
-   its side-effects. This turns the implicit `map` of the comprehension into a
-   `do` and thereby optimizes away the intermediate list result.
+   its side-effects.
 
-.. pure:variable:: stdin
+.. variable:: stdin
 
    The standard input stream. This is a built-in variable.
 
-.. pure:constant:: c = 299792
+.. constant:: c = 299792
 
    A constant. The speed of light, what else?
 
@@ -142,13 +119,12 @@ Test cases
 Unqualified access in the default namespace
 -------------------------------------------
 
-See :pure:func:`foldl` and :pure:func:`sort` above. Also see
-:pure:func:`sort/matrix` for the matrix version. Also see :pure:macro:`void`,
-:pure:var:`stdin`, :pure:const:`c`.
+See :func:`foldl` and :func:`sort` above. Also see :func:`sort/matrix` for the
+matrix version. Also see :macro:`void`, :var:`stdin`, :const:`c`.
 
 This should work just as well (using ``pure:obj`` as the default role):
 
-.. default-role:: pure:obj
+.. default-role:: obj
 
 See `foldl` and `sort` above. Also see `sort/matrix` for the matrix
 version. Also see `void`, `stdin`, `c`.
@@ -156,23 +132,32 @@ version. Also see `void`, `stdin`, `c`.
 Unqualified access in a custom namespace
 ----------------------------------------
 
-.. pure:currentmodule:: gsl
+.. namespace:: gsl
 
-Current namespace is `gsl`.
+Current namespace is "gsl" from the `gsl` module.
 
 See `sort_vector` and `sort_vector_index` above.
 
-.. pure:module:: dummy
+Qualified access work, too:
+
+See `gsl::sort_vector` and `gsl::sort_vector_index` above.
 
 Qualified access in a different namespace
 -----------------------------------------
+
+.. namespace:: dummy
+
+Current namespace is "dummy".
 
 See `gsl::sort_vector` and `gsl::sort_vector_index` above.
 
 See `::foldl` and `::sort` above. Also see `::sort/matrix` for the matrix
 version. Also see `::void`, `::stdin`, `::c`.
 
-Qualified access suppressing the namespace
-------------------------------------------
+Qualified access suppressing the namespace qualifier in the display
+-------------------------------------------------------------------
 
 See `~gsl::sort_vector` and `~gsl::sort_vector_index` above.
+
+See `~::foldl` and `~::sort` above. Also see `~::sort/matrix` for the matrix
+version. Also see `~::void`, `~::stdin`, `~::c`.
