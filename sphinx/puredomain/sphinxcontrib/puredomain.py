@@ -252,6 +252,12 @@ class PureModule(Directive):
     def run(self):
         env = self.state.document.settings.env
         modname = self.arguments[0].strip()
+        # Remove a leading '\' which might be used to escape a '::' argument.
+        modname = modname.lstrip('\\')
+        modname = strip_modname(modname)
+        if not modname:
+            env.temp_data['pure:module'] = ''
+            return []
         noindex = 'noindex' in self.options
         env.temp_data['pure:module'] = modname
         env.domaindata['pure']['modules'][modname] = \
@@ -292,9 +298,12 @@ class PureCurrentModule(Directive):
     def run(self):
         env = self.state.document.settings.env
         modname = self.arguments[0].strip()
+        # Remove a leading '\' which might be used to escape a '::' argument.
+        modname = modname.lstrip('\\')
         if modname == 'None':
             env.temp_data['pure:module'] = None
         else:
+            modname = strip_modname(modname)
             env.temp_data['pure:module'] = modname
         return []
 
