@@ -25,36 +25,134 @@ if you know Sphinx's Python markup then you should feel right at home.
 .. rst:directive:: .. pure:namespace:: name
 
    Selects the current Pure namespace for the following objects. (This only
-   sets a default, an object directive may always override this setting by
-   specifying a qualified object name.)
+   sets a default, an object directive or reference may always override this
+   setting by specifying a qualified object name.)
 
 The following directives are provided for actually producing contents:
 
-.. rst:directive:: .. pure:function:: name parameter ...
+.. rst:directive:: .. pure:function:: [fixity] name [/tag] parameter ...
 
-   Describes a Pure function. The parameter list takes the following form:
+   Describes a Pure function with the given name. The name may be qualified
+   with a namespace prefix, otherwise the current namespace is assumed (if
+   any). Also, if the function is actually an operator, you can specify its
+   fixity by placing one of the keywords ``prefix``, ``postfix``, ``infix``
+   and ``outfix`` before the name, e.g.::
 
-   TODO
+     .. pure:function:: infix + x y -> the sum of x and y
 
-   .. seealso:: :rst:dir:`py:function`
+   Operator and operands will then be arranged so that they appear in the
+   right order. E.g., the above is rendered as follows:
+
+      .. pure:function:: infix + x y -> the sum of x and y
+     	:noindex:
+
+   The parameter list takes the form of a whitespace-delimited list of
+   parameter names. Actually, the parameter "names" can be pretty much
+   anything, including extra annotations such as type tags. The usual markup
+   for embellished function descriptions is supported as well, see
+   :rst:dir:`py:function` for details. Also, return annotations of the form
+   ``= value`` are supported in addition to the standard ``-> value``
+   format. For instance::
+
+     .. pure:function:: foldl f a xs = f ... (f a (xs!0)) ... (xs!n)
+
+        Accumulate the binary function `f` over all members of `xs`,
+        starting from the initial value `a` and working from the front
+        of the list towards its end.
+   
+	:param f:  accumulating function
+	:type  f:  closure
+   	:param a:  initial value
+   	:type  a:  any type
+   	:param xs: values to be accumulated
+   	:type  xs: list
+   	:return:   accumulated value
+   	:rtype:    any (usually the same as `a`)
+
+   This is rendered as follows:
+
+     .. pure:function:: foldl f a xs = f ... (f a (xs!0)) ... (xs!n)
+     	:noindex:
+
+        Accumulate the binary function `f` over all members of `xs`,
+        starting from the initial value `a` and working from the front
+        of the list towards its end.
+   
+	:param f:  accumulating function
+	:type  f:  closure
+   	:param a:  initial value
+   	:type  a:  any type
+   	:param xs: values to be accumulated
+   	:type  xs: list
+   	:return:   accumulated value
+   	:rtype:    any (usually the same as `a`)
+
+   Finally, to account for the fact that functions are overloaded (or rather
+   extended) all the time in Pure, and function descriptions may therefore be
+   scattered out over different documents, separate entries for the same
+   function can be specified by supplying a unique tag for the different
+   instances. The tag may consist of arbitrary alphanumeric characters and
+   will be invisible in the output. The tag can then be specified when
+   referring to a specific instance of the described function. For instance::
+
+     .. pure:function:: foo x y z
+
+     	Just the plain :pure:func:`foo`.
+
+     .. pure:function:: foo /matic x y z (matrix version)
+
+     	:pure:func:`foo/matic` works like :pure:func:`foo` above, but
+	uses matrices instead of lists.
+
+   This is rendered as follows:
+
+     .. pure:function:: foo x y z
+
+     	Just the plain :pure:func:`foo`.
+
+     .. pure:function:: foo /matic x y z (matrix version)
+
+     	:pure:func:`foo/matic` works like :pure:func:`foo` above, but
+	uses matrices instead of lists.
 
 .. rst:directive:: .. pure:macro:: name parameter ...
 
-   Same as above, but describes a Pure macro.
+   Same as above, but describes a Pure macro. For instance:
+
+     .. pure:macro:: infix . (f g) x = f (g x)
+     	:noindex:
+
+	Macro to optimize away function compositions.
 
 .. rst:directive:: .. pure:extern:: name parameter ...
 
-   Same as above, but describes an external function.
+   Same as above, but describes an external function. Example:
 
-.. rst:directive:: .. pure:variable:: name
+     .. pure:extern:: puts s::string
+     	:noindex:
+
+     	Output a string on the terminal.
+
+.. rst:directive:: .. pure:variable:: name ...
 
    Describes a variable. Additional annotations like an initial value may
-   follow the variable name.
+   follow the variable name. Example:
 
-.. rst:directive:: .. pure:constant:: name
+     .. pure:variable:: stdin
+     			stdout
+			stderr
+     	:noindex:
 
-   Same as above, but describes a constant.
-   
+     	The standard I/O streams. These are built-in variables.
+
+.. rst:directive:: .. pure:constant:: name ...
+
+   Same as above, but describes a constant. Example:
+
+     .. pure:constant:: c = 299792
+     	:noindex:
+
+     	A constant. The speed of light, what else?
 
 Cross-referencing Pure objects
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
