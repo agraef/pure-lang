@@ -6,6 +6,8 @@
    Rewritten: June 11, 2010
    updated: July 7, 2010 add space_before_quote_flag and trim_space_flag
    updated: July 15, 2010 handle space after quote and code cleanup
+   updated: November 7, 2010 sniff for correct line terminators, including
+            \r for EXCEL on MAC, and allow the user to define their own.
 */
 
 /*
@@ -118,7 +120,7 @@ typedef struct {
   unsigned long line; // line number for errors
 } csv_t;
 
-void dialect_free(dialect_t *d)
+static void dialect_free(dialect_t *d)
 {
   free(d->quote);
   free(d->escape);
@@ -127,27 +129,81 @@ void dialect_free(dialect_t *d)
   free(d);
 }
 
-dialect_t *dialect_new(char *quote,
-		       char *escape,
-		       char *delimiter,
-		       char *terminator,
-		       int flags)
+/* Sniff file for line terminator */
+static char *sniff_quoted(char *fname, char *rw, char *quote)
+{
+  int qf = 0;
+  if (*rw == 'w') { // check for platform
+#ifdef WINDOWS
+    return "\r\n";
+#else
+    return "\n";
+#endif
+  } else {
+    FILE *fp = fopen(fname, "r");
+    if (fp == NULL) {
+#ifdef WINDOWS
+      return "\r\n";
+#else
+      return "\n";
+#endif
+    }
+    char ch, *t = quote;
+    while ((ch = getc(fp)) != EOF) { // start sniffing
+      if (*t == 0) { // skip quote
+	qf ^= 1;
+	t = quote;
+      }
+      if (ch == *t) {
+	++t;
+	continue;
+      }
+      if (*t == ch)
+	++t;
+      if (!qf && ch == '\n') {
+	fclose(fp);
+	return "\n";
+      } else if (!qf && ch == '\r') {
+	if (getc(fp) == '\n') {
+	  fclose(fp);
+	  return "\r\n";
+	} else {
+	  fclose(fp);
+	  return "\r";
+	}
+      }
+    }
+    fclose(fp);
+    return "\r\n"; // who knows?
+  }
+}
+
+#define KEY(w) pure_symbol(pure_sym(w))
+
+static dialect_t *dialect_new(char *fname, char *rw, pure_expr *rec)
 {
   dialect_t *d;
   if (d = (dialect_t *)malloc(sizeof(dialect_t))) {
     d->quote = d->escape = d->delimiter = d->terminator = NULL;
-    if ((d->quote = strdup(quote)) &&
-	(d->escape = strdup(escape)) &&
-	(d->delimiter = strdup(delimiter)) &&
-	(d->terminator = strdup(terminator))) {
-      d->quote_n = strlen(quote);
-      d->escape_n = strlen(escape);
-      d->delimiter_n = strlen(delimiter);
-      d->terminator_n = strlen(terminator);
-      d->flags = flags;
-      return d;
+    
+    pure_is_cstring_dup(record_elem_at(rec, KEY("csv::quote")),
+			&d->quote);
+    pure_is_cstring_dup(record_elem_at(rec, KEY("csv::escape")),
+			&d->escape);
+    pure_is_cstring_dup(record_elem_at(rec, KEY("csv::delimiter")),
+			&d->delimiter);
+    pure_is_cstring_dup(record_elem_at(rec, KEY("csv::terminator")),
+			&d->terminator);
+    pure_is_int(record_elem_at(rec, KEY("csv::flags")), &d->flags);
+    d->quote_n = strlen(d->quote);
+    d->escape_n = strlen(d->escape);
+    d->delimiter_n = strlen(d->delimiter);
+    if (!strcmp(d->terminator, "")) {
+      free(d->terminator);
+      d->terminator = strdup(sniff_quoted(fname, rw, d->quote));
     }
-    dialect_free(d);
+    d->terminator_n = strlen(d->terminator);
+    return d;
   }
   return NULL;
 }
@@ -248,25 +304,29 @@ static buffer_t *buffer_del(buffer_t *b, size_t pos, int count)
 
 /* Reads from file past buffer->len. If buffer address changes, offset
    is the difference between the old and new address. */
-
 static int buffer_fill(csv_t *csv, long *offset)
 {
   buffer_t *b = csv->buffer;
-  int ch;
+  dialect_t *d = csv->dialect;
+  int ch, brk = 0;
   size_t n = b->growto - b->len;
   char *s = b->c + b->len;
   char *ofs = b->c;
   while (1) {
-    // be sure there is room for at least two chars
-    while (n-2 > 0 && (ch = getc(csv->fp)) != '\n' && ch != EOF) {
+    // be sure there is room for a \0
+    while (n-d->terminator_n-1 > 0 && (ch = getc(csv->fp)) != EOF) {
       --n;
       *s++ = ch;
+      if (n > d->terminator_n &&
+	  !strncmp(s-d->terminator_n, d->terminator, d->terminator_n)) {
+	brk = 1;
+	break;
+      }
     }
-    *s++ = '\n';
     *s = '\0';
-    n += 2;
+    ++n;
     if (ferror(csv->fp)) return ERR_READ;
-    if (ch == '\n')
+    if (brk)
       break;
     else if (ch == EOF) {
       if (s-1 == b->c)
@@ -292,17 +352,9 @@ void csv_close(csv_t *csv)
   if (csv->buffer) buffer_free(csv->buffer);
   if (csv->record) record_free(csv->record);
   if (csv->header) pure_free(csv->header);
+  if (csv->dialect) dialect_free(csv->dialect);
   if (csv->fp) fclose(csv->fp);
-  csv->buffer = NULL;
-  csv->record = NULL;
-  csv->header = NULL;
-  csv->fp = NULL;
-}
-
-void csv_free(csv_t *csv)
-{
-  csv_close(csv);
-  free(csv);
+  if (csv) free(csv);
 }
 
 pure_expr *csv_read(csv_t *csv);
@@ -318,9 +370,15 @@ static pure_expr *create_header(csv_t *csv)
   return pure_matrix_columnsvq(csv->record->len, xs);
 }
 
-csv_t *csv_open(char *fname, char *rw, dialect_t *d, unsigned int opts)
+csv_t *csv_open(char *fname, 
+		char *rw, 
+		pure_expr *dialect,
+		unsigned int opts)
 {
   csv_t *t;
+  dialect_t *d;
+  if ((d = dialect_new(fname, rw, dialect)) == NULL)
+    return NULL;
   if (t = (csv_t *)malloc(sizeof(csv_t))) {
     t->line = 1;
     t->buffer = NULL;
@@ -328,10 +386,10 @@ csv_t *csv_open(char *fname, char *rw, dialect_t *d, unsigned int opts)
     t->header = NULL;
     if (t->buffer = buffer_new()) {
       t->rw = *rw; // get first char since rw is one of "r", "w", "a".
-      if (t->fp = fopen(fname, rw))
+      if (t->fp = fopen(fname, rw)) {
 	if (t->record = record_new()) {
 	  t->dialect = d;
-	  if ((opts & HEADER) && *rw == 'r') {
+	  if ((opts & HEADER) && rw[0] == 'r') {
 	    unsigned int temp_flags = d->flags;
 	    t->dialect->flags &= 0xFFFC; // header must return strings
 	    t->opts = 0; // cut options off
@@ -341,8 +399,10 @@ csv_t *csv_open(char *fname, char *rw, dialect_t *d, unsigned int opts)
 	  t->opts = opts;
 	  return t;
 	}
+      }
     }
-    csv_free(t);
+    dialect_free(d);
+    csv_close(t);
   }
   return NULL;
 }
@@ -393,10 +453,10 @@ static int write_quoted(csv_t *csv, pure_expr **xs, size_t len)
 	} else if (!strncmp(p, d->delimiter, d->delimiter_n)) {
 	  qflag = 1;
 	  p += d->delimiter_n;
-	} else if (*p == '\n') {
+	} else if (!strncmp(p, d->terminator, d->terminator_n)) {
 	  ++csv->line;
 	  qflag = 1;
-	  ++p;
+	  p += d->terminator_n;
 	} else
 	  ++p;
       }
@@ -543,7 +603,7 @@ static int read_quoted(csv_t *csv)
   buffer_clear(csv->buffer);
   if (res = buffer_fill(csv, &offset))
     return res;
-  s = csv->buffer->c; 
+  s = csv->buffer->c;
   while (*s) {
   outer_loop:
     t = w = s;
@@ -554,14 +614,11 @@ static int read_quoted(csv_t *csv)
 	  s += d->quote_n; // skip escape quote
 	  if (is_space(s, d) && (d->flags & SPACE_AFTER_QUOTE)) {
 	    ++s;
-	    while (is_space(s, d)) ++s;
+	    while (is_space(s, d))
+	      ++s;
 	  }
-	  if (*s == '\n') {
-	    ++s;
-	    ++csv->line;
-	    break;
-	  } else if (!strncmp(s, "\r\n", 2)) {
-	    s += 2;
+	  if (!strncmp(s, d->terminator, d->terminator_n)) {
+	    s += d->terminator_n;
 	    ++csv->line;
 	    break;
 	  } else if (!strncmp(s, d->delimiter, d->delimiter_n)) {
@@ -573,10 +630,12 @@ static int read_quoted(csv_t *csv)
 	    s += d->quote_n;
 	  } else 
 	    return ERR_PARSE;
-	} else if (*s == '\n') { // inside quotes
+	} else if (!strncmp(s, d->terminator, d->terminator_n)) { // inside ""
 	  ++csv->line;
-	  *w++ = *s++;
-	  if ((res = buffer_fill(csv, &offset)) != 0) // get more data
+	  memcpy(w, s, d->terminator_n);
+	  w += d->terminator_n;
+	  s += d->terminator_n;
+	  if ((res = buffer_fill(csv, &offset)) != 0) // get more
 	    return res;
 	  w += offset;
 	  s += offset;
@@ -584,13 +643,9 @@ static int read_quoted(csv_t *csv)
 	} else
 	  *w++ = *s++; // copy over escape quote
     } else if (strncmp(s, d->delimiter, d->delimiter_n)) // not delimiter
-      while (*s)
-	if (!strncmp(s, "\r\n", 2)) {
-	  s += 2;
-	  ++csv->line;
-	  break;
-	} else if (*s == '\n') {
-	  ++s;
+      while (*s) {
+	if (!strncmp(s, d->terminator, d->terminator_n)) {
+	  s += d->terminator_n;
 	  ++csv->line;
 	  break;
 	} else if (!strncmp(s, d->delimiter, d->delimiter_n)) {
@@ -603,6 +658,7 @@ static int read_quoted(csv_t *csv)
 	    return ERR_PARSE;
 	} else
 	  *w++ = *s++;
+      }
     else // s is the delimiter
       s += d->delimiter_n;
     *w = '\0'; // terminate field
@@ -637,31 +693,19 @@ static int read_escaped(csv_t *csv)
 	  memcpy(w, s, d->delimiter_n);
 	  w += d->delimiter_n;
 	  s += d->delimiter_n;
-	} else if (!strncmp(s, "\r\n", 2)) {
+	} else if (!strncmp(s, d->terminator, d->terminator_n)) {
 	  ++csv->line;
-	  memcpy(w, "\r\n", 2);
-	  w += 2;
-	  s += 2;
-	  if ((res = buffer_fill(csv, &offset)) != 0) // read some more data
-	    return res;
-	  w += offset;
-	  s += offset;
-	  t += offset;
-	} else if (*s == '\n') {
-	  ++csv->line;
-	  *w++ = *s++;
-	  if ((res = buffer_fill(csv, &offset)) != 0) // read some more data
+	  memcpy(w, d->terminator, d->terminator_n);
+	  w += d->terminator_n;
+	  s += d->terminator_n;
+	  if ((res = buffer_fill(csv, &offset)) != 0) // read more data
 	    return res;
 	  w += offset;
 	  s += offset;
 	  t += offset;
 	}
-      } else if (!strncmp(s, "\r\n", 2)) {
-	s += 2;
-	++csv->line;
-	break;
-      } else if (*s == '\n') {
-	++s;
+      } else if (!strncmp(s, d->terminator, d->terminator_n)) {
+	s += d->terminator_n;
 	++csv->line;
 	break;
       } else if (!strncmp(s, d->delimiter, d->delimiter_n)) {

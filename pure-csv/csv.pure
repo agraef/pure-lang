@@ -12,20 +12,18 @@
    Updated: July 16, 2010 added optional optional key selection of fields
    Updated: July 21, 2010 fixed write_escaped and write_quoted warnings
    Updated: Sep. 13, 2010 fixed problem writing integer or double matrices
+   Updated: Nov. 17, 2010 handle user defined line terminators
 */
 
 namespace csv;
 
-using "lib:csv";
+using "lib:csv.so";
 
-private extern dialect_t *dialect_new(char *, char *, char *, char *, int);
-private extern void dialect_free(dialect_t *);
-private extern csv_t *csv_open(char *, char *, void *, int);
+private extern csv_t *csv_open(char *, char *, expr *, int);
 private extern void csv_close(csv_t *t);
-private extern void csv_free(csv_t *t);
 private extern expr *csv_write(csv_t *, void *, int);
-private extern expr *csv_read(csv_t *csv);
-private extern expr *csv_getheader(csv_t *csv);
+private extern expr *csv_read(csv_t *);
+private extern expr *csv_getheader(csv_t *);
 
 public
   MINIMAL
@@ -50,10 +48,9 @@ public
   quote_flag
   space_around_quoted_field
   trim_space
-  default
   open
   close
-  getkeys
+  header
   getr
   fgetr
   fgetr_lazy
@@ -85,11 +82,12 @@ public
               Default: "\""
 
   terminator: Value used for record termination when writing.
-              Type: One of {LF, CRLF}. LF = "\n" and CRLF = "\r\n".
-              Default: LF
-	      Notes: 
-                Reading: "\r" are always ignored except when embedded in
-                         fields.
+              Type: string.
+              Default: 
+	        Reading: Either a user specified string or if not specivied
+                         the file is sniffed for a "\r", "\r\n", or "\n".
+		Writing: Either a user specified string or "\r\n" for
+         		 Windows platforms or "\n" for everything else.
 
   quote_flag: Sets whether strings or numbers should be quoted.
               Type: One of {ALL, STRING, MINIMAL}
@@ -138,65 +136,30 @@ private
   allow_space_opts
   trim_space_opts;
 
-const terminator_opts = {LF=>"\n", CRLF=>"\r\n"};
 const quote_flag_opts = {ALL=>0, STRING=>1, MINIMAL=>2};
 const allow_space_opts = {NO=>0, LEFT=>32, RIGHT=>16, BOTH=>48};
 const trim_space_opts = {NO=>0, LEFT=>8, RIGHT=>4, BOTH=>12};
 
-dialect d::matrix
-  = if ~null opts then
-      throw (error ("invalid dialect option(s) " + str opts))
-    else if ~install_str quote then
-      throw (error ("dialect [quote] must be a string"))
-    else if ~install_str escape then
-      throw (error ("dialect [escape] must be a string"))
-    else if ~install_str delimiter then
-      throw (error ("dialect [delimiter] must be a string"))
-    else if ~install_sym terminator terminator_opts then
-      throw (error ("dialect [terminator] must be one of " +
-                    str (keys terminator_opts)))
-    else if ~install_sym quote_flag quote_flag_opts then
-      throw (error ("dialect [quote_flag] must be one of " +
-                    str (keys quote_flag_opts)))
-    else if ~install_sym space_around_quoted_field allow_space_opts then
-      throw (error ("dialect [space_around_quoted_field] must be one of " +
-                    str (keys allow_space_opts)))
-    else if ~install_sym trim_space trim_space_opts then
-      throw (error ("dialect [trim_space] must be one of " +
-                    str (keys trim_space_opts)))
-    else 
-      sentry dialect_free 
-        (dialect_new (m!quote) (m!escape) (m!delimiter) (m!terminator)
-                     (m!quote_flag or m!space_around_quoted_field
-                                   or m!trim_space)
-                           when m = get df end)
-    with 
-      install_str k
-        = if ~member d k then
-            1
-          else if stringp (d!k) then
-            put df (update (get df) k (d!k)) $$ 1
-          else
-            0;
-      install_sym k sd
-        = if ~member d k then
-            1
-          else if member sd (d!k) then
-            put df (update (get df) k (sd!(d!k))) $$ 1
-          else
-            0;
-    end when
-      df = ref {quote=>"\"", escape=>"", delimiter=>",", terminator=>"\n",
-                quote_flag=>0, space_around_quoted_field=>0, 
-                trim_space=>0};
-      opts = filter (\(x=>y) -> ~member m x) d when m = get df end;
+dialect rec::matrix
+  = do (\(x=>y) -> if (member (get dfr) x) then
+                     put dfr (update (get dfr) x y)
+                   else
+                     ()) rec $$
+    ({quote=>dfq!quote, escape=>dfq!escape, delimiter=>dfq!delimiter, 
+      terminator=>dfq!terminator, flags=> 
+      (quote_flag_opts!(dfq!quote_flag) or
+       allow_space_opts!(dfq!space_around_quoted_field) or
+       trim_space_opts!(dfq!trim_space))} when dfq = get dfr end)
+    when
+      df = {quote=>"\"", escape=>"", delimiter=>",", terminator=>"", 
+            quote_flag=>ALL, space_around_quoted_field=>NO, trim_space=>NO};
+      dfr = ref df;
     end;
 
 /* Predefined dialects */
 const default = dialect {};
-const RFC4180 = dialect {terminator=>CRLF};
+const RFC4180 = dialect {terminator=>"\r\n"};
 const EXCEL = dialect {quote_flag=>MINIMAL, 
-                       terminator=>CRLF,
                        space_around_quoted_field=>BOTH,
                        trim_space=>BOTH};
 
@@ -208,31 +171,33 @@ const file_opts = {LIST=>1, HEADER=>2};
    with dialect d. For list output, put LIST in the options list and for
    using a header when reading, put HEADER in the options list
 */
-open (fname::string, rw_flag::string, d::pointer, opts)
+open (fname::string, rw_flag::string, d::matrix, opts)
   = if rw_flag ~= "r" && rw_flag ~= "w" && rw_flag ~= "a" then
       throw (error "bad read/write/append flag")
-    else if null d || null f then
+    else if null f then
       throw (error ("cannot open file [" + fname + "]"))
     else
-      (sentry csv_free f $$ sentry csv_close f)
+      sentry csv_close f
     when
       badopts = filter (\x -> ~member file_opts x) opts;
-      flags = if null badopts then
-                foldl (or) 0 (map ((!) file_opts) opts)
-	      else
-	        throw (error ("bad option(s) " + (str badopts)));
-      f = csv_open fname rw_flag d flags;
+      flag_opts = if null badopts then
+               	    foldl (or) 0 (map ((!) file_opts) opts)
+	          else
+	            throw (error ("bad option(s) " + (str badopts)));
+      f = csv_open fname rw_flag d flag_opts;
     end;
 
 /* Open a CSV file like above but with the library but output is a vector */
-open (fname::string, rw_flag::string, d::pointer)
+open (fname::string, rw_flag::string, d::matrix)
   = open (fname, rw_flag, d, []);
 
 /* Open a CSV file like above but with the library default dialect */
-open (fname::string, rw_flag::string) = open (fname, rw_flag, default, []);
+open (fname::string, rw_flag::string)
+  = open (fname, rw_flag, default, []);
 
 /* Open a CSV file for reading with the library default dialect */
-open fname::string = open (fname, "r", default, []);
+open fname::string
+  = open (fname, "r", default, []);
 
 /* Close a CSV file. Sentries ensure files will automatically be closed
    and internal buffers will be freed when the file pointer goes out of
@@ -259,7 +224,7 @@ getr f::pointer = csv_read f;
 
 /* Read a list of records from a CSV file */
 fgetr f::pointer = loop (getr f) [] with
-  loop () xs = reverse xs;
+  loop x xs = reverse xs if null x;
   loop x xs = loop (getr f) (x:xs);
 end;
 

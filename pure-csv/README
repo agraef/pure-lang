@@ -3,12 +3,13 @@
 Pure-CSV - Comma Separated Value Interface for the Pure Programming Language
 ============================================================================
 
-Version @version@, |today|
+:Version: 1.4
+:Author: Eddie Rucker <erucker@bmc.edu>
+:Date: |date|
+:Copyright: 2008, 2009, 2010 by Eddie Rucker
+:License: 3-clause BSD license, see the accompanying COPYING file for details
 
-Eddie Rucker <erucker@bmc.edu>
-
-| Copyright (c) 2008, 2009, 2010 by Eddie Rucker
-| License: 3-clause BSD license, see the accompanying COPYING file for details
+.. |date| date::
 
 The CSV library provides an interface for reading and writing comma 
 separated value files. The module is very loosely based on Python's CSV
@@ -19,9 +20,6 @@ module (http://docs.python.org/lib/module-csv.html).
 
 Installation
 ------------
-
-Get the latest source from
-http://pure-lang.googlecode.com/files/pure-csv-@version@.tar.gz.
 
 Run ``make`` to compile the module and ``make install`` (as root) to 
 install it in the Pure library directory. This requires GNU make. The 
@@ -94,13 +92,11 @@ Creating Dialects
 
   - ``terminator`` - Record termination string.
 
-    * Value - One of {``LF``, ``CRLF``} where ``LF = "\n"`` and 
-      ``CRLF = "\r\n"``.
-    * Default - ``LF``.
-    * Reading - Carriage returns, ``"\r"``, are always ignored except when
-      embedded in quotes or escaped.
-    * Writing - Every writen record is terminated with the the defined 
-      terminator string.
+    * Value - any string. 
+    * Reading - Either a user specified string or if not specivied
+      the file is sniffed for a ``\r``, ``\r\n``, or ``\n``.
+    * Writing - Either a user specified string, ``\r\n`` for
+      Windows platforms, or ``\n`` for everything else.
 
   - ``quote_flag`` - Sets the quoting style of strings and/or numbers.
 
@@ -166,8 +162,6 @@ Example
   > using csv;
   > using namespace csv;
   > let d = dialect {delimiter=>"\t", quote_flag=>STRING};
-  > d;
-  #<pointer 0x9d75280>
   > 
 
 Opening CSV Files
@@ -189,11 +183,11 @@ Opening CSV Files
   opened for appending and the file exists, new records are appended to
   the end of the file, otherwise a new empty file is created.
 
-``open (name::string, rw_flag::string, d::pointer)``
+``open (name::string, rw_flag::string, d::matrix)``
   exactly as above except reading/writing is done according to a user defined
   dialect ``d``.
 
-``open (name::string, rw_flag::string, d::pointer, opts@(_:_))``
+``open (name::string, rw_flag::string, d::matrix, opts@(_:_))``
   exactly as above except allows for list output or header options when 
   reading.
   
@@ -248,11 +242,11 @@ Notice how the ``LIST`` option affects the return of ``getr`` and how the
   "HOPE, BOB"
   > let k = header f;
   > k;
-  ["NAME"=>0,"TEST1"=>1,"TEST2"=>2]
+  {"NAME"=>0,"TEST1"=>1,"TEST2"=>2}
   > r!(k!"NAME");
   "HOPE, BOB"
   > r!!(k!!["NAME","TEST1"]);
-  ["HOPE, BOB",95]
+  ["HOPE, BOB",90]
   >
 
 File Reading Functions
@@ -391,7 +385,7 @@ file can still be read.
   >
 
 The ``trim_space`` flag should be used with caution. A field with space in
-font of a number should be interpreted as a string, but consider the following
+front of a number should be interpreted as a string, but consider the following
 file.
 
 ::
