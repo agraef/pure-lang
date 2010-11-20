@@ -92,8 +92,8 @@ The usual markup for embellished function descriptions is supported as well.
    :return:   accumulated value `b`
    :rtype:    any (usually the same as `a`, but that depends on `f`)
 
-There's also special markup for extern functions, macros, variables and
-constants.
+There's also special markup for extern functions, macros, constructors,
+variables and constants.
 
 .. extern:: puts s::string
 
@@ -104,6 +104,10 @@ constants.
 
    Helper macro to execute a list comprehension which is evaluated solely for
    its side-effects.
+
+.. constructor:: infix : x xs
+
+   The list constructor. Note that ``[x1,x2,...,xn] === x1:x2:...:xn:[]``.
 
 .. variable:: stdin
 

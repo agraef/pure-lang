@@ -133,6 +133,15 @@ The following directives are provided for actually producing contents:
 
      	Output a string on the terminal.
 
+.. rst:directive:: .. pure:constructor:: name parameter ...
+
+   Same as above, but this can be used to denote a constructor symbol (which
+   is just a function without equations in Pure). For instance:
+
+     .. pure:constructor:: infix : x xs
+
+     	The list constructor.
+
 .. rst:directive:: .. pure:variable:: name ...
 
    Describes a variable. Additional annotations like an initial value may
@@ -153,6 +162,16 @@ The following directives are provided for actually producing contents:
      	:noindex:
 
      	A constant. The speed of light, what else?
+
+Note that the directives :rst:dir:`pure:function`, :rst:dir:`pure:macro`,
+:rst:dir:`pure:extern` and :rst:dir:`pure:constructor` work alike and can, to
+some extent, be used interchangeably. They just denote different semantic
+categories of function symbols in Pure. In some cases, a function symbol may
+be in multiple categories (such as an extern function which also has a
+definition as an ordinary Pure function, or a function which is also
+implemented as a macro). Thus some authors may prefer to just mark up all
+function symbols using :rst:dir:`pure:function` and point out the categories
+that the symbol belongs to in the description instead.
 
 Cross-referencing Pure objects
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -179,6 +198,10 @@ domain.
 .. rst:role:: pure:ext
 
    Reference an external function.
+
+.. rst:role:: pure:cons
+
+   Reference a constructor.
 
 .. rst:role:: pure:var
 

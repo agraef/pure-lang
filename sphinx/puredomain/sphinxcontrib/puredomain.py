@@ -198,6 +198,8 @@ class PureObject(ObjectDescription):
             return _('%s (extern %sfunction)') % (fname,fixity)
         elif self.objtype == 'macro':
             return _('%s (%smacro)') % (fname,fixity)
+        elif self.objtype == 'constructor':
+            return _('%s (%sconstructor)') % (fname,fixity)
         elif self.objtype == 'variable':
             return _('%s (variable)') % name
         elif self.objtype == 'constant':
@@ -415,18 +417,20 @@ class PureDomain(Domain):
     name = 'pure'
     label = 'Pure'
     object_types = {
-        'function': ObjType(l_('function'), 'func', 'obj'),
-        'extern':   ObjType(l_('extern'),   'ext', 'obj'),
-        'macro':    ObjType(l_('macro'),    'macro', 'obj'),
-        'var':      ObjType(l_('variable'), 'var', 'obj'),
-        'const':    ObjType(l_('constant'), 'const', 'obj'),
-        'module':   ObjType(l_('module'),   'mod', 'obj'),
+        'function':    ObjType(l_('function'),    'func', 'obj'),
+        'extern':      ObjType(l_('extern'),      'ext', 'obj'),
+        'macro':       ObjType(l_('macro'),       'macro', 'obj'),
+        'constructor': ObjType(l_('constructor'), 'cons', 'obj'),
+        'var':         ObjType(l_('variable'),    'var', 'obj'),
+        'const':       ObjType(l_('constant'),    'const', 'obj'),
+        'module':      ObjType(l_('module'),      'mod', 'obj'),
     }
 
     directives = {
         'function':      PureObject,
         'extern':        PureObject,
         'macro':         PureObject,
+        'constructor':   PureObject,
         'variable':      PureObject,
         'constant':      PureObject,
         'namespace':     PureNamespace,
@@ -437,6 +441,7 @@ class PureDomain(Domain):
         'func' :  PureXRefRole(),
         'ext' :   PureXRefRole(),
         'macro':  PureXRefRole(),
+        'cons':   PureXRefRole(),
         'var':    PureXRefRole(),
         'const':  PureXRefRole(),
         'mod':    PureXRefRole(),
