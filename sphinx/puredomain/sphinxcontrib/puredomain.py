@@ -30,8 +30,8 @@ pure_func_sig_re = re.compile(
           ([\w:]*::)?            # module/namespace prefix
           (\S+)  \s*             # thing name
           (?: [/](\s*\w+))? \s*  # optional: extra name tag
-          (?: ((?:[^-=]|-[^>])*) # optional: arguments/extra annotations
-           (?:\s* (->|=) \s* (.*))? #        return annotation
+          (?: ((?:\S|\s[^-=]|\s-[^>])*) # optional: arguments/extra annotations
+           (?:\s* (->|=) \s* (.*))?     #           return annotation
           )? $                   # and nothing more
           ''', re.VERBOSE)
 
