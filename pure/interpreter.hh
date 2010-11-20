@@ -29,7 +29,13 @@
 #include <llvm/Transforms/Scalar.h>
 #include <llvm/Support/IRBuilder.h>
 
-#include "config.h"
+#include <time.h>
+#include <set>
+#include <string>
+#include "expr.hh"
+#include "matcher.hh"
+#include "symtable.hh"
+#include "runtime.h"
 
 #ifdef HAVE_LLVM_MODULEPROVIDER_H
 #include <llvm/ModuleProvider.h>
@@ -41,14 +47,6 @@
 #if LLVM26
 #include "llvm/LLVMContext.h"
 #endif
-
-#include <time.h>
-#include <set>
-#include <string>
-#include "expr.hh"
-#include "matcher.hh"
-#include "symtable.hh"
-#include "runtime.h"
 
 #include "parserdefs.hh"
 #include "parser.hh"

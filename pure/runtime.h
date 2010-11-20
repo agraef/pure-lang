@@ -21,10 +21,20 @@
    You should have received a copy of the GNU Lesser General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
+/* Define this to use the MPIR header instead of GMP. NOTE: If you have both
+   gmp.h and mpir.h installed on your system, it should be ok to just include
+   gmp.h here, as MPIR is supposed to be binary-compatible with GMP and we
+   only use the mpz_t type here. */
+/* #undef USE_MPIR */
+
 #include <stdint.h>
 #include <stdbool.h>
 #include <setjmp.h>
+#ifdef USE_MPIR
+#include <mpir.h>
+#else
 #include <gmp.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {

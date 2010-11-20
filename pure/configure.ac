@@ -126,12 +126,22 @@ AC_ARG_WITH(static-llvm,
   [case "${withval}" in
      yes) static_llvm_libs="yes" ;;
    esac])
-dnl Check for libraries.
+dnl How to link GMP/MPIR.
+pure_cv_gmp="gmp"
+AC_ARG_WITH(mpir,
+  [  --with-mpir             use MPIR as a GMP replacement],
+  [case "${withval}" in
+     yes) pure_cv_gmp="mpir" ;;
+   esac])
 PURE_LIBGMP_PREFIX
-AC_CHECK_LIB(gmp, __gmpz_init, ,
-[AC_MSG_ERROR([Cannot find the GMP library, please install libgmp.])])
-AC_CHECK_HEADERS([gmp.h], ,
-[AC_MSG_ERROR([Cannot find the GMP header file, please install libgmp.])])
+AC_CHECK_LIB(${pure_cv_gmp}, __gmpz_init, ,
+[AC_MSG_ERROR([Cannot find the GMP library, please install libgmp or libmpir.])])
+AC_CHECK_HEADERS(${pure_cv_gmp}.h, [],
+[AC_MSG_ERROR([Cannot find the GMP header file, please install libgmp or libmpir.])])
+if test "${pure_cv_gmp}" = "mpir"; then
+  AC_DEFINE(USE_MPIR, 1, [Define to use MPIR instead of GMP (experimental).])
+fi
+dnl Other checks for libraries.
 AC_CHECK_LIB(m, cos)
 dnl On some systems iconv is in a separate library, and may actually be named
 dnl libiconv.

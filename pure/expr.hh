@@ -19,9 +19,16 @@
 #ifndef EXPR_HH
 #define EXPR_HH
 
+#include "config.h"
+
 #include <stdint.h>
 #include <assert.h>
+#ifdef USE_MPIR
+#include <mpir.h>
+#else
 #include <gmp.h>
+#endif
+
 #include <bitset>
 #include <list>
 #include <map>

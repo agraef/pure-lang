@@ -36,10 +36,6 @@ char *alloca ();
 #include <malloc.h>
 #endif
 
-#include "runtime.h"
-#include "expr.hh"
-#include "interpreter.hh"
-#include "util.hh"
 #include <stdlib.h>
 #include <stdarg.h>
 #include <unistd.h>
@@ -49,7 +45,9 @@ char *alloca ();
 #include <iostream>
 #include <sstream>
 
-#include "config.h"
+#include "interpreter.hh"
+#include "util.hh"
+
 #include "funcall.h"
 
 #include <sys/types.h>
