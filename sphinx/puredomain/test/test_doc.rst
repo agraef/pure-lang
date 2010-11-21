@@ -142,7 +142,7 @@ Current namespace is "gsl" from the `gsl` module.
 
 See `sort_vector` and `sort_vector_index` above.
 
-Qualified access work, too:
+Qualified access works, too:
 
 See `gsl::sort_vector` and `gsl::sort_vector_index` above.
 
