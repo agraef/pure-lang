@@ -60,14 +60,14 @@ The following directives are provided for actually producing contents:
         starting from the initial value `a` and working from the front
         of the list towards its end.
    
-	:param f:  accumulating function
-	:type  f:  closure
-   	:param a:  initial value
-   	:type  a:  any type
-   	:param xs: values to be accumulated
-   	:type  xs: list
-   	:return:   accumulated value
-   	:rtype:    any (usually the same as `a`)
+        :param f:  accumulating function
+        :type  f:  closure
+        :param a:  initial value
+        :type  a:  any type
+        :param xs: values to be accumulated
+        :type  xs: list
+        :return:   accumulated value
+        :rtype:    any (usually the same as `a`)
 
    This is rendered as follows:
 
@@ -78,14 +78,14 @@ The following directives are provided for actually producing contents:
         starting from the initial value `a` and working from the front
         of the list towards its end.
    
-	:param f:  accumulating function
-	:type  f:  closure
-   	:param a:  initial value
-   	:type  a:  any type
-   	:param xs: values to be accumulated
-   	:type  xs: list
-   	:return:   accumulated value
-   	:rtype:    any (usually the same as `a`)
+        :param f:  accumulating function
+        :type  f:  closure
+        :param a:  initial value
+        :type  a:  any type
+        :param xs: values to be accumulated
+        :type  xs: list
+        :return:   accumulated value
+        :rtype:    any (usually the same as `a`)
 
    Finally, to account for the fact that functions are overloaded (or rather
    extended) all the time in Pure, and function descriptions may therefore be
@@ -178,7 +178,12 @@ Cross-referencing Pure objects
 
 The following roles refer to Pure objects and are hyperlinked if a matching
 identifier is found. They mostly work like their counterparts from the Python
-domain.
+domain. In addition, a tag may be used to differentiate between different
+descriptions of an overloaded function (see above). Moreover, the name of a
+function, variable, etc. may be qualified with a namespace prefix to refer to
+a symbol outside the current namespace, as set with the
+:rst:dir:`pure:namespace` directive. In this case, if the qualifier is
+prefixed with a tilde character, its display is suppressed in the output.
 
 .. rst:role:: pure:mod
 
@@ -186,10 +191,7 @@ domain.
 
 .. rst:role:: pure:func
 
-   Reference a Pure function; the name may be qualified to refer to a symbol
-   outside the current namespace, as set with the :rst:dir:`pure:namespace`
-   directive. Moreover, a tag may be used to differentiate between different
-   descriptions of an overloaded function (see above).
+   Reference a Pure function.
 
 .. rst:role:: pure:macro
 

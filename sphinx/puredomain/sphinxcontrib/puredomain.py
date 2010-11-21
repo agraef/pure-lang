@@ -331,15 +331,22 @@ class PureXRefRole(XRefRole):
         if not has_explicit_title:
             # remove the tag from the title
             title,_ = split_name(title)
-            #title = strip_qual(title) # only has a meaning for the target
-            target = target.lstrip('~')  # only has a meaning for the title
-            # if the first character is a tilde, don't display the module/class
-            # parts of the contents
+            # If the first character is a tilde followed by a namespace
+            # qualifier, suppress the display of the qualifier. NOTE: This is
+            # a bit different from the processing done in the Python, C++ and
+            # Erlang domains, as the initial '~' is only recognized and
+            # processed if it is actually followed by a qualifier. This
+            # additional constraint is necessary because '~' is a legal symbol
+            # constituent in Pure. (You'll still be out of luck if the
+            # qualifier itself happens to begin with a tilde, but this
+            # pathological case should hopefully never arise in practice, and
+            # if it does then you can easily work around it by using an
+            # explicit title.)
             if title[0:1] == '~':
-                title = title[1:]
-                colon = title.rfind('::')
-                if colon != -1:
-                    title = title[colon+2:]
+                dcolon = title.rfind('::')
+                if dcolon != -1:
+                    title = title[dcolon+2:]
+                    target = target[1:]
         return title, target
 
 
