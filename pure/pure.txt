@@ -574,8 +574,8 @@ facility. These are all described below and in the following sections.
 
 Here's a first example which demonstrates how to define a simple recursive
 function in Pure, entered interactively in the interpreter (note that the
-'``>``' symbol at the beginning of each input line is the interpreter's
-default command prompt)::
+'\ :func:`>`\ ' symbol at the beginning of each input line is the
+interpreter's default command prompt)::
 
   > // my first Pure example
   > fact 0 = 1;
@@ -1289,7 +1289,7 @@ Constants in patterns must be matched literally. For instance::
 
 This will only match an application of ``foo`` to the machine integer ``0``,
 not ``0.0`` or ``0L`` (even though these compare equal to ``0`` using the
-'``==``' operator).
+'\ :func:`==`\ ' operator).
 
 In difference to Haskell, patterns may contain repeated variables (other than
 the anonymous variable), i.e., they may be `non-linear`. Thus rules like the
@@ -1312,18 +1312,19 @@ will frequently encounter rules such as the following::
 
 The notion of "sameness" employed here is that of syntactical identity, which
 means that the matched subterms must be identical in structure and content.
-The prelude provides syntactic equality as a function :ref:`same <same>` and a
-comparison predicate '``===``'. Thus the above definition of ``foo`` is
-roughly equivalent to the following::
+The prelude provides syntactic equality as a function :func:`same` and a
+comparison predicate '\ :func:`===`\ '. Thus the above definition of ``foo``
+is roughly equivalent to the following::
 
   foo x y = x if same x y;
 
 It is important to note the differences between syntactic equality embodied by
-``same`` and '``===``', and the "semantic" equality operator '``==``'. The
-former are always defined on all terms, whereas '``==``' is only available on
-data where it has been defined explicitly, either in the prelude or by the
-programmer. Also note that '``==``' may assert that two terms are equal even
-if they are syntactically different. Consider, e.g.::
+:func:`same` and '\ :func:`===`\ ', and the "semantic" equality operator
+'\ :func:`==`\ '. The former are always defined on all terms, whereas
+'\ :func:`==`\ ' is only available on data where it has been defined
+explicitly, either in the prelude or by the programmer. Also note that
+'\ :func:`==`\ ' may assert that two terms are equal even if they are
+syntactically different. Consider, e.g.::
 
   > 0==0.0;
   1
@@ -1331,9 +1332,9 @@ if they are syntactically different. Consider, e.g.::
   0
 
 This distinction is actually quite useful. It gives the programmer the
-flexibility to define '``==``' in any way that he sees fit, which is
-consistent with the way the other comparison operators like '``<``' and
-'``>``' are handled in Pure.
+flexibility to define '\ :func:`==`\ ' in any way that he sees fit, which is
+consistent with the way the other comparison operators like '\ :func:`<`\ '
+and '\ :func:`>`\ ' are handled in Pure.
 
 Patterns may also contain the following special elements which are not
 permitted in right-hand side expressions:
@@ -4032,7 +4033,8 @@ The input language is just the same as for source scripts, and hence
 individual definitions and expressions must be terminated with a semicolon
 before they are processed. For instance, here is a simple interaction which
 defines the factorial and then uses that definition in some evaluations. Input
-lines begin with '``>``', which is the interpreter's default command prompt::
+lines begin with '\ :func:`>`\ ', which is the interpreter's default command
+prompt::
 
   > fact 1 = 1;
   > fact n = n*fact (n-1) if n>1;
@@ -4653,8 +4655,7 @@ raised the exception. The format is similar to the ``p`` command of the
 debugger, see below, but ``bt`` always prints a full backtrace. (As with the
 ``show`` command of the interpreter, you can set the PURE_MORE environment
 variable to pipe the output through the corresponding command, or use
-:ref:`evalcmd <evalcmd>` to capture the output of ``bt`` in a string,
-cf. Reflection_.)
+:func:`evalcmd` to capture the output of ``bt`` in a string, cf. Reflection_.)
 
 The debugger can also be used interactively. To these ends, you can set
 breakpoints on functions with the ``break`` command. The debugger then gets
@@ -4915,24 +4916,24 @@ implies the following quirks and limitations:
   placed after all the function and variable definitions, at the end of your
   program.
 
-* The :ref:`eval <eval>` function can only be used to evaluate plain toplevel
+* The :func:`eval` function can only be used to evaluate plain toplevel
   expressions.  You can define local functions and variables in ``with`` and
   ``when`` clauses inside an expression, but you can't use ``eval`` to define
   new global variables and functions. In other words, anything which changes
   the executing program is "verboten". Moreover, the introspective
-  capabilities provided by :ref:`evalcmd <evalcmd>` (discussed under
-  Reflection_ in the `Caveats and Notes`_ section) won't work either because
-  the interactive commands are all disabled. If you need any of these
-  capabilities, you have to run your program with the interpreter.
+  capabilities provided by :func:`evalcmd` (discussed under Reflection_ in the
+  `Caveats and Notes`_ section) won't work either because the interactive
+  commands are all disabled. If you need any of these capabilities, you have
+  to run your program with the interpreter.
 
 * Constant and macro definitions, being compile time features, aren't
-  available in the compiled program. If you need to use these with :ref:`eval
-  <eval>` at run time, you have to provide them through variable and function
-  definitions instead. Also, the compiler usually strips unused functions from
-  the output code, so that only functions which are actually called somewhere
-  in the static program text are available to ``eval``. (The -u option and the
-  --required pragma can be used to avoid this, see `Code Size and Unstripped
-  Executables`_ below.)
+  available in the compiled program. If you need to use these with
+  :func:`eval` at run time, you have to provide them through variable and
+  function definitions instead. Also, the compiler usually strips unused
+  functions from the output code, so that only functions which are actually
+  called somewhere in the static program text are available to ``eval``. (The
+  -u option and the --required pragma can be used to avoid this, see `Code
+  Size and Unstripped Executables`_ below.)
 
 * Code which gets executed to compute constant values at compile time will
   generally *not* be executed in the compiled executable, so your program
@@ -4947,10 +4948,9 @@ implies the following quirks and limitations:
 What all this boils down to is that anything which requires the compile time
 or interactive facilities of the interpreter, is unavailable. These
 restrictions only apply at run time, of course. At compile time the program
-*is* being executed by the interpreter so you can use :ref:`eval <eval>` and
-:ref:`evalcmd <evalcmd>` in any desired way. See the description of the
-``compiling`` variable below for how to distinguish these cases in your
-script.
+*is* being executed by the interpreter so you can use :func:`eval` and
+:func:`evalcmd` in any desired way. See the description of the ``compiling``
+variable below for how to distinguish these cases in your script.
 
 For most kinds of scripts, the above restrictions aren't really that much of
 an obstacle, or can easily be worked around. For the few scripts which
@@ -5509,10 +5509,10 @@ same variable in a pattern (so-called non-linearities)::
 
 This rule will only be matched if both occurrences of ``x`` are bound to the
 same value. More precisely, the two instances of ``x`` will checked for
-syntactic equality during pattern matching, using the :ref:`same <same>`
-primitive provided by the prelude. This may need time proportional to the
-sizes of both argument terms, and thus become quite costly for big terms. In
-fact, ``same`` might not even terminate at all if the compared terms are both
+syntactic equality during pattern matching, using the :func:`same` primitive
+provided by the prelude. This may need time proportional to the sizes of both
+argument terms, and thus become quite costly for big terms. In fact,
+:func:`same` might not even terminate at all if the compared terms are both
 infinite lazy data structures, such as in ``foo (1..inf) (1..inf)``. So you
 have to be careful to avoid such uses.
 

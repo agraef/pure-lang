@@ -25,12 +25,13 @@
 
    As of Pure 0.41, the prelude also provides a basic record data structure,
    implemented as symbolic vectors of ``key=>value`` pairs which support a few
-   dictionary-like operations such as ``member``, ``insert`` and indexing.
-   Records may be represented as row, column or empty vectors (i.e., the
-   number of rows or columns must be zero or one). They must be symbolic
-   matrices consisting only of "hash pairs" ``key=>value``, where the keys can
-   be either symbols or strings. The values can be any kind of Pure data; in
-   particular, they may themselves be records, so records can be nested.
+   dictionary-like operations such as :func:`member/record`,
+   :func:`insert/record` and indexing.  Records may be represented as row,
+   column or empty vectors (i.e., the number of rows or columns must be zero
+   or one). They must be symbolic matrices consisting only of "hash pairs"
+   ``key=>value``, where the keys can be either symbols or strings. The values
+   can be any kind of Pure data; in particular, they may themselves be
+   records, so records can be nested.
 
    The following operations are provided. Please note that all updates of
    record members are non-destructive and thus involve copying, which takes
@@ -47,67 +48,58 @@
    the following operations will always operate on the *last* entry for a
    given key.
 
-   .. index:: recordp
+   .. function:: recordp x
 
-   ``recordp x``
-     Check for record values.
+      Check for record values.
 
-   .. index:: record
+   .. function:: record x
 
-   ``record x``
-     Normalizes a record. This removes duplicate keys and orders the record by
-     keys (using an apparently random but well-defined order of the key
-     values), so that normalized records are syntactically equal (``===``) if
-     and only if they contain the same hash pairs. For convenience, this
-     function can also be used directly on lists and tuples of hash pairs to
-     convert them to a normalized record value.
+      Normalizes a record. This removes duplicate keys and orders the record
+      by keys (using an apparently random but well-defined order of the key
+      values), so that normalized records are syntactically equal
+      (:func:`===`) if and only if they contain the same hash pairs. For
+      convenience, this function can also be used directly on lists and tuples
+      of hash pairs to convert them to a normalized record value.
 
-   .. index:: # (record)
+   .. function:: prefix # /record x
 
-   ``#x``
-     The size of a record (number of entries it contains). Duplicate entries
-     are counted. (This is in fact just the standard matrix size operation.)
+      The size of a record (number of entries it contains). Duplicate entries
+      are counted. (This is in fact just the standard matrix size operation.)
 
-   .. index:: member (record)
+   .. function:: member /record x y
 
-   ``member x y``
-     Check whether ``x`` contains the key ``y``.
+      Check whether ``x`` contains the key ``y``.
 
-   .. index:: ! (record)
+   .. function:: infix ! /record x y
 
-   ``x!y``
-     Retrieves the (last) value associated with the key ``y`` in ``x``, if
-     any, otherwise throws an ``out_of_bound`` exception.
+      Retrieves the (last) value associated with the key ``y`` in ``x``, if
+      any, otherwise throws an :cons:`out_of_bound` exception.
 
-   .. index:: !! (record)
+   .. function:: infix !! /record x ys
 
-   ``x!!ys``
-     Slicing also works as expected, by virtue of the generic definition of
-     slicing provided by the matrix data structure.
+      Slicing also works as expected, by virtue of the generic definition of
+      slicing provided by the matrix data structure.
 
-   .. index:: insert (record)
-   .. index:: update (record)
+   .. function:: insert /record x (y=>z)
+                 update /record x y z
 
-   ``insert x (y=>z)``, ``update x y z``
-     Associate the key ``y`` with the value ``z`` in ``x``. If ``x`` already
-     contains the key ``y`` then the corresponding value is updated (the last
-     such value if ``x`` contains more than one association for ``y``),
-     otherwise a new member is inserted at the end of the record.
+      Associate the key ``y`` with the value ``z`` in ``x``. If ``x`` already
+      contains the key ``y`` then the corresponding value is updated (the last
+      such value if ``x`` contains more than one association for ``y``),
+      otherwise a new member is inserted at the end of the record.
 
-   .. index:: delete (record)
+   .. function:: delete /record x y
 
-   ``delete x y``
-     Delete the key ``y`` (and its associated value) from ``x``. If ``x``
-     contains more than one entry for ``y`` then the last such entry is
-     removed.
+      Delete the key ``y`` (and its associated value) from ``x``. If ``x``
+      contains more than one entry for ``y`` then the last such entry is
+      removed.
 
-   .. index:: keys (record)
-   .. index:: vals (record)
+   .. function:: keys /record x
+                 vals /record x
 
-   ``keys x``, ``vals x``
-     List the keys and associated values of ``x``. If the record contains
-     duplicate keys, they are all listed in the order in which they are stored
-     in the record.
+      List the keys and associated values of ``x``. If the record contains
+      duplicate keys, they are all listed in the order in which they are
+      stored in the record.
 
    Here are a few basic examples::
 

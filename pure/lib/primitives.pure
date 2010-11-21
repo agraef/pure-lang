@@ -35,30 +35,23 @@ using namespace __C;
    provided, as well as "sentries" (Pure's flavour of object finalizers) and
    "references" (mutable expression pointers).
 
+   Special Constants
+   ~~~~~~~~~~~~~~~~~
+
+   .. constant:: inf
+      		 nan
+
+      IEEE floating point infinities and NaNs. You can test for these using
+      the :func:`infp` and :func:`nanp` predicates, see Predicates_ below.
+
+   .. constant:: NULL = pointer 0
+
+      Generic null pointer. (This is actually a built-in constant.) You can
+      also check for null pointers with the :func:`null/pointer` predicate,
+      see Predicates_.
+
    Arithmetic
    ~~~~~~~~~~
-
-   .. index:: +
-   .. index:: -
-   .. index:: *
-   .. index:: /
-   .. index:: div
-   .. index:: mod
-   .. index:: ^
-   .. index:: ==
-   .. index:: ~=
-   .. index:: <
-   .. index:: >
-   .. index:: <=
-   .. index:: >=
-   .. index:: ~
-   .. index:: &&
-   .. index:: ||
-   .. index:: not
-   .. index:: and
-   .. index:: or
-   .. index:: <<
-   .. index:: >>
 
    The basic arithmetic and logic operations provided by this module are
    summarized in the following table:
@@ -111,106 +104,150 @@ using namespace __C;
    special call-by-name properties; see :ref:`Special Forms` in the Pure
    Manual for details.
 
-   The constants ``inf`` and ``nan`` are defined as the usual IEEE floating
-   point infinities and NaNs, and the predicates ``infp`` and ``nanp`` are
-   provided to check for these kinds of values.
+   A detailed listing of the basic arithmetic and logical operations follows
+   below.
+
+   .. function:: infix + x y
+      		 infix - x y
+		 infix * x y
+		 infix / x y
+		 infix ^ x y
+
+      Addition, subtraction, multiplication, division and exponentiation. The
+      latter two are inexact and will yield double results.
+
+   .. function:: prefix - /unary x
+
+      Unary minus. This has the same precedence as binary '\ :func:`-`\ '
+      above.
+
+   .. function:: infix div x y
+      		 infix mod x y
+
+      Exact int and bigint division and modulus.
+
+   .. function:: infix == x y
+      		 infix ~= x y
+
+      Equality and inequality.
+
+   .. function:: infix <= x y
+      		 infix >= x y
+		 infix > x y
+		 infix < x y
+
+      Comparisons.
+
+   .. function:: prefix ~ x
+      		 infix && x y
+		 infix || x y
+
+      Logical negation, conjunction and disjunction. These work with machine
+      ints only and are evaluated in short-circuit mode.
+
+   .. function:: prefix not x
+      		 infix and x y
+		 infix or x y
+
+      Bitwise negation, conjunction and disjunction. These work with both
+      machine ints and bigints.
+
+   .. function:: infix << x k
+      		 infix >> x k
+
+      Arithmetic bit shifts. The left operand ``x`` may be a machine int or a
+      bigint. The right operand ``k`` must be a machine int and denotes the
+      (nonnegative) number of bits to shift.
+
+      .. note:: This operation may expand to a single machine instruction in
+      	 the right circumstances, thus the condition that ``k`` be nonnegative
+      	 isn't always checked. This may lead to surprising results if you do
+      	 specify a negative value for ``k``. However, in the current
+      	 implementation bigint shifts do check the sign of ``k`` and handle it
+      	 in the appropriate way, by turning a left shift into a corresponding
+      	 right shift and vice versa.
 
    In addition, the following arithmetic and numeric functions are provided:
 
-   .. index:: abs
-   .. index:: sgn
+   .. function:: abs x
+                 sgn x
 
-   ``abs x``, ``sgn x``
-     Absolute value and sign of a number.
+      Absolute value and sign of a number.
 
-   .. index:: min
-   .. index:: max
+   .. function:: min x y
+                 max x y
 
-   ``min x y``, ``max x y``
-     Minimum and maximum of two values. This works with any kind of values
-     which have the ordering relations defined on them.
+      Minimum and maximum of two values. This works with any kind of values
+      which have the ordering relations defined on them.
 
-   .. index:: succ
-   .. index:: pred
+   .. function:: succ x
+                 pred x
 
-   ``succ x``, ``pred x``
-     Successor (``+1``) and predecessor (``-1``) functions.
+      Successor (``+1``) and predecessor (``-1``) functions.
 
-   .. index:: gcd
-   .. index:: lcd
+   .. function:: gcd x y
+                 lcd x y
 
-   ``gcd x y``, ``lcd x y``
-     The greatest common divisor and least common multiple functions from the
-     GMP library. These return a bigint if at least one of the arguments is a
-     bigint, a machine int otherwise.
+      The greatest common divisor and least common multiple functions from the
+      GMP library. These return a bigint if at least one of the arguments is a
+      bigint, a machine int otherwise.
 
-   .. index:: pow
+   .. function:: pow x y
 
-   ``pow x y``
-     Computes exact powers of ints and bigints. The result is always a
-     bigint. Note that ``y`` must always be nonnegative here, but see the math
-     module (`Mathematical Functions`_) which deals with the case ``y<0``
-     using rational numbers.
+      Computes exact powers of ints and bigints. The result is always a
+      bigint. Note that ``y`` must always be nonnegative here, but see the
+      math module (`Mathematical Functions`_) which deals with the case
+      ``y<0`` using rational numbers.
 
    Conversions
    ~~~~~~~~~~~
 
    These operations convert between various types of Pure values.
 
-   .. index:: hash
+   .. function:: hash x
 
-   ``hash x``
-     Compute a 32 bit hash code of a Pure expression.
+      Compute a 32 bit hash code of a Pure expression.
 
-   .. index:: int
-   .. index:: bigint
-   .. index:: double
-   .. index:: pointer
-   .. _int:
-   .. _bigint:
-   .. _double:
-   .. _pointer:
+   .. function:: int x
+                 bigint x
+                 double x
+                 pointer x
 
-   ``int x``, ``bigint x``, ``double x``, ``pointer x``
-     Conversions between the different numeric and pointer types.
+      Conversions between the different numeric and pointer types.
 
-   .. index:: ubyte
-   .. index:: ushort
-   .. index:: uint
-   .. index:: uint64
-   .. index:: ulong
+   .. function:: ubyte x
+                 ushort x
+                 uint x
+                 uint64 x
+                 ulong x
 
-   ``ubyte x``, ``ushort x``, ``uint x``, ``uint64 x``, ``ulong x``
-     Convert signed (8/16/32/64) bit integers to the corresponding unsigned
-     quantities. These functions behave as if the value was "cast" to the
-     corresponding unsigned C type, and are most useful for dealing with
-     unsigned integers returned by external C routines. The routines always
-     use the smallest Pure int type capable of holding the result: ``int`` for
-     ``ubyte`` and ``ushort``, ``bigint`` for ``uint``, ``uint64`` and
-     ``ulong``. All routines take int parameters. In the case of ``uint64``, a
-     bigint parameter is also permitted (which is what the C interface returns
-     for 64 bit values). Also note that ``ulong`` reduces to either ``uint``
-     or ``uint64``, depending on the size of ``long`` for the host
-     architecture.
+      Convert signed (8/16/32/64) bit integers to the corresponding unsigned
+      quantities. These functions behave as if the value was "cast" to the
+      corresponding unsigned C type, and are most useful for dealing with
+      unsigned integers returned by external C routines. The routines always
+      use the smallest Pure int type capable of holding the result: ``int``
+      for :func:`ubyte` and :func:`ushort`, ``bigint`` for :func:`uint`,
+      :func:`uint64` and :func:`ulong`. All routines take int parameters. In
+      the case of :func:`uint64`, a bigint parameter is also permitted (which
+      is what the C interface returns for 64 bit values). Also note that
+      :func:`ulong` reduces to either :func:`uint` or :func:`uint64`,
+      depending on the size of ``long`` for the host architecture.
 
    The following _`rounding functions` work with all kinds of numbers:
 
-   .. index:: floor
-   .. index:: ceil
+   .. function:: floor x
+                 ceil x
 
-   ``floor x``, ``ceil x``
-     Floor and ceil.
+      Floor and ceil.
 
-   .. index:: round
-   .. index:: trunc
+   .. function:: round x
+                 trunc x
 
-   ``round x``, ``trunc x``
-     Round or truncate to an integer.
+      Round or truncate to an integer.
 
-   .. index:: frac
+   .. function:: frac x
 
-   ``frac x``
-     Fractional part (``x-trunc x``).
+      Fractional part (``x-trunc x``).
 
    Note that all these functions return double values for double arguments, so
    if you need an integer result then you'll have to apply a suitable
@@ -222,74 +259,79 @@ using namespace __C;
    A syntactic equality test is provided, as well as various type checking
    predicates.
 
-   .. index:: same
-   .. index:: ===
-   .. index:: ~==
+   .. function:: same x y
+                 infix === x y
+                 infix ~== x y
 
-   ``x===y``, ``x~==y``, ``same x y``
-     Syntactic equality. In difference to ``==`` and ``~=`` this is defined on
-     all Pure expressions. Basically, two expressions are syntactically equal
-     if they print out the same in the interpreter. In the special case of
-     pointer objects and closures, which do not have a syntactic
-     representation in Pure, ``x`` and ``y`` must be the same object (same
-     pointer value or function).
+      Syntactic equality. In contrast to :func:`==` and :func:`~=`, this is
+      defined on all Pure expressions. Basically, two expressions are
+      syntactically equal if they print out the same in the interpreter. In
+      the special case of pointer objects and closures, which do not have a
+      syntactic representation in Pure, ``x`` and ``y`` must be the same
+      object (same pointer value or function).
 
-   .. index:: intp
-   .. index:: bigintp
-   .. index:: doublep
-   .. index:: stringp
-   .. index:: pointerp
-   .. index:: matrixp
+   .. function:: intp x
+                 bigintp x
+                 doublep x
+                 stringp x
+                 pointerp x
+                 matrixp x
 
-   ``intp x``, ``bigintp x``, ``doublep x``, ``stringp x``, ``pointerp x``, ``matrixp x``
-     Predicates to check for the built-in types.
+      Predicates to check for the built-in types.
 
-   .. index:: charp
+   .. function:: charp x
 
-   ``charp x``
-     Single character string predicate.
+      Single character string predicate.
 
-   .. _numberp:
-   .. index:: numberp
-   .. index:: complexp
-   .. index:: realp
-   .. index:: rationalp
-   .. index:: integerp
+   .. function:: numberp x
+                 complexp x
+                 realp x
+                 rationalp x
+                 integerp x
 
-   ``numberp x``, ``complexp x``, ``realp x``, ``rationalp x``, ``integerp x``
-     Additional number predicates.
+      Additional number predicates.
 
-   .. index:: exactp
-   .. index:: inexactp
+   .. function:: exactp x
+                 inexactp x
 
-   ``exactp x``, ``inexactp x``
-     Check whether a number is exact (i.e., doesn't contain any double
-     components).
+      Check whether a number is exact (i.e., doesn't contain any double
+      components).
 
-   .. index:: applp
-   .. index:: listp
-   .. index:: listnp
-   .. index:: tuplep
+   .. function:: infp x
+      		 nanp x
 
-   ``applp x``, ``listp x``, ``listnp x``, ``tuplep x``
-     Predicates to check for function applications, proper lists, list nodes
-     and proper tuples.
+      Check for :const:`inf` and :const:`nan` values.
 
-   .. index:: funp
-   .. index:: lambdap
-   .. index:: thunkp
-   .. index:: varp
+   .. function:: null /pointer p
 
-   ``funp x``, ``lambdap x``, ``thunkp x``, ``varp x``
-     Predicates to check for various kinds of function objects (named,
-     anonymous or thunk), and free variable symbols.
+      Check for null pointers.
 
-   .. index:: atomp
-   .. index:: closurep
+   .. function:: applp x
+                 listp x
+                 listnp x
+                 tuplep x
 
-   ``atomp x``, ``closurep x``
-     Convenience functions to check for atoms (named function or variable) and
-     closures (named function or lambda).
+      Predicates to check for function applications, proper lists, list nodes
+      and proper tuples. Note that :func:`listnp` only checks for a toplevel
+      list constructor, whereas :func:`listp` also recursively checks the
+      tails of the list; the latter may need time proportional to the list
+      size. The :func:`applp` and :func:`tuplep` predicates look for an
+      application or tuple constructor at the toplevel only, which can always
+      be done in constant time.
+
+   .. function:: funp x
+                 lambdap x
+                 thunkp x
+                 varp x
+
+      Predicates to check for various kinds of function objects (named,
+      anonymous or thunk), and free variable symbols.
+
+   .. function:: atomp x
+                 closurep x
+
+      Convenience functions to check for atoms (named function or variable)
+      and closures (named function or lambda).
 
    Inspection
    ~~~~~~~~~~
@@ -299,32 +341,30 @@ using namespace __C;
    metaprogramming purposes. They are complemented by the evaluation
    primitives discussed below, see `Eval and Friends`_.
 
-   .. index:: ans
+   .. function:: ans
 
-   ``ans``
-     Retrieve the most recently printed result of a toplevel expression
-     evaluated in the read-eval-print loop. This is just a convenience for
-     interactive usage. Note that the ``ans`` value will stick around until a
-     new expression is computed. (It is possible to clear the ``ans`` value
-     with the interactive command ``clear ans``, however.) Example::
+      Retrieve the most recently printed result of a toplevel expression
+      evaluated in the read-eval-print loop. This is just a convenience for
+      interactive usage. Note that the :func:`ans` value will stick around
+      until a new expression is computed. (It is possible to clear the
+      :func:`ans` value with the interactive command ``clear ans``, however.)
+      Example::
 
-       > 1/3;
-       0.333333333333333
-       > ans/2;
-       0.166666666666667
+        > 1/3;
+        0.333333333333333
+        > ans/2;
+        0.166666666666667
 
-   .. index:: __locals__
-   .. _\__locals__:
+   .. function:: __locals__
 
-   ``__locals__``
-     Return a list with the local function bindings (``with`` clauses) visible
-     at this point in the program. This is actually implemented as a
-     built-in. The return value is a list of "hash" pairs ``x=>f`` where ``x``
-     is the (quoted) symbol denoting the function and ``f`` is the function
-     itself (or its value, if ``f`` is a parameterless function). The
-     ``__locals__`` function is useful for debugging purposes, as well as to
-     implement dynamic environments. It is also used internally to implement
-     the :ref:`reduce <reduce>` macro, see `Eval and Friends`_. Example::
+      Return a list with the local function bindings (:keyword:`with` clauses)
+      visible at this point in the program. This is actually implemented as a
+      built-in. The return value is a list of hash pairs ``x=>f`` where ``x``
+      is the (quoted) symbol denoting the function and ``f`` is the function
+      itself (or its value, if ``f`` is a parameterless function). The
+      :func:`__locals__` function is useful for debugging purposes, as well as
+      to implement dynamic environments. It is also used internally to
+      implement the :func:`reduce` macro, see `Eval and Friends`_. Example::
 
        > __locals__ with foo x = x+1; x = a+b end;
        [x=>a+b,foo=>foo]
@@ -336,40 +376,37 @@ using namespace __C;
    operands or arguments. These functions all take a single argument, the
    symbol or function object to be inspected, and return an integer value.
 
-   .. index:: nargs
+   .. function:: nargs x
 
-   ``nargs x``
-     Get the argument count of a function object, i.e., the number of
-     arguments it expects. Returns 0 for thunks and saturated applications, -1
-     for over-saturated applications and non-functions.
+      Get the argument count of a function object, i.e., the number of
+      arguments it expects. Returns 0 for thunks and saturated applications,
+      -1 for over-saturated applications and non-functions.
 
-   .. index:: arity
+   .. function:: arity x
 
-   ``arity x``
-     Determine the arity of an operator symbol. The returned value is 0, 1 or
-     2 for nullary, unary and binary symbols, respectively, -1 for symbols
-     without a fixity declaration or other kinds of objects.
+      Determine the arity of an operator symbol. The returned value is 0, 1 or
+      2 for nullary, unary and binary symbols, respectively, -1 for symbols
+      without a fixity declaration or other kinds of objects.
 
-   .. index:: fixity
+   .. function:: fixity f
 
-   ``fixity f``
-     Determine the fixity of an operator symbol. The fixity is encoded as an
-     integer ``10*n+m`` where ``n`` is the precedence level (ranging
-     from ``0`` to ``PREC_MAX``, where ``PREC_MAX`` denotes the precedence of
-     primary expressions, 16777216 in the current implementation) and ``m``
-     indicates the actual fixity at each level, in the order of increasing
-     precedence (0 = infix, 1 = infixl, 2 = infixr, 3 = prefix, 4 =
-     postfix). The fixity value of nonfix and outfix symbols, as well as
-     symbols without a fixity declaration, is always given as ``10*PREC_MAX``,
-     and the same value is also reported for non-symbol objects. Infix, prefix
-     and postfix symbols always have a ``fixity`` value less than
-     ``10*PREC_MAX``. (``PREC_MAX`` isn't actually defined as a constant
-     anywhere, but you can easily do that yourself by setting ``PREC_MAX`` to
-     the fixity value of any nonfix symbol or non-symbol value, e.g.: ``const
-     PREC_MAX = fixity [];``)
+      Determine the fixity of an operator symbol. The fixity is encoded as an
+      integer ``10*n+m`` where ``n`` is the precedence level (ranging from
+      ``0`` to ``PREC_MAX``, where ``PREC_MAX`` denotes the precedence of
+      primary expressions, 16777216 in the current implementation) and ``m``
+      indicates the actual fixity at each level, in the order of increasing
+      precedence (0 = infix, 1 = infixl, 2 = infixr, 3 = prefix, 4 =
+      postfix). The fixity value of nonfix and outfix symbols, as well as
+      symbols without a fixity declaration, is always given as
+      ``10*PREC_MAX``, and the same value is also reported for non-symbol
+      objects. Infix, prefix and postfix symbols always have a :func:`fixity`
+      value less than ``10*PREC_MAX``. (``PREC_MAX`` isn't actually defined as
+      a constant anywhere, but you can easily do that yourself by setting
+      ``PREC_MAX`` to the fixity value of any nonfix symbol or non-symbol
+      value, e.g.: ``const PREC_MAX = fixity [];``)
 
    Note that only closures (i.e., named and anonymous functions and thunks)
-   have a defined argument count in Pure, otherwise ``nargs`` returns -1
+   have a defined argument count in Pure, otherwise :func:`nargs` returns -1
    indicating an unknown argument count. Partial applications of closures
    return the number of remaining arguments, which may be zero to indicate a
    `saturated` (but unevaluated) application, or -1 for `over-saturated` and
@@ -379,12 +416,13 @@ using namespace __C;
    because the application was quoted. If such a normal form application is
    then applied to some "extra" arguments it becomes over-saturated.)
 
-   The value returned by ``nargs`` always denotes the actual argument count of
-   the given function, regardless of the declared arity if the function also
-   happens to be an operator symbol. Often these will coincide (as, e.g., in
-   the case of ``+`` which is a binary operator and also expects two
-   arguments). But this is not necessarily the case, as shown in the following
-   example of a binary operator which actually takes *three* arguments::
+   The value returned by :func:`nargs` always denotes the actual argument
+   count of the given function, regardless of the declared arity if the
+   function also happens to be an operator symbol. Often these will coincide
+   (as, e.g., in the case of :func:`+` which is a binary operator and also
+   expects two arguments). But this is not necessarily the case, as shown in
+   the following example of a binary operator which actually takes *three*
+   arguments::
 
      > infix 0 oops;
      > (oops) x y z = x*z+y;
@@ -402,78 +440,70 @@ using namespace __C;
 
    Pure provides some rather powerful operations to convert between Pure
    expressions and their string representation, and to evaluate quoted
-   expressions (``'x``). The string conversions ``str``, ``val`` and ``eval``
-   also provide a convenient means to serialize Pure expressions, e.g., when
-   terms are to be transferred to/from persistent storage. (Note, however,
-   that this has its limitations. Specifically, some objects like pointers and
-   anonymous functions do not have a parsable string representation. Also see
-   the `Expression Serialization`_ section for some dedicated serialization
-   operations which provide a more compact binary serialization format.)
+   expressions (``'x``). The string conversions :func:`str`, :func:`val` and
+   :func:`eval` also provide a convenient means to serialize Pure expressions,
+   e.g., when terms are to be transferred to/from persistent storage. (Note,
+   however, that this has its limitations. Specifically, some objects like
+   pointers and anonymous functions do not have a parsable string
+   representation. Also see the `Expression Serialization`_ section for some
+   dedicated serialization operations which provide a more compact binary
+   serialization format.)
 
-   .. index:: str
+   .. function:: str x
 
-   ``str x``
-     Yields the print representation of an expression in Pure syntax, as a
-     string.
+      Yields the print representation of an expression in Pure syntax, as a
+      string.
 
-   .. index:: val (string)
+   .. function:: val /string s
 
-   ``val s``
-     Parses a single simple expression, specified as a string in Pure syntax,
-     and returns the result as is, without evaluating it. Note that this is
-     much more limited than the ``eval`` operation below, as the expression
-     must not contain any of the special constructs (conditional expressions,
-     ``when``, ``with``, etc.).
+      Parses a single simple expression, specified as a string in Pure syntax,
+      and returns the result as is, without evaluating it. Note that this is
+      much more limited than the :func:`eval` operation below, as the
+      expression must not contain any of the special constructs (conditional
+      expressions, :keyword:`when`, :keyword:`with`, etc.).
 
-   .. index:: eval
-   .. _eval:
+   .. function:: eval x
 
-   ``eval x``
-     Parses any expression, specified as a string in Pure syntax, and returns
-     its value. In fact, ``eval`` can also parse and execute arbitrary Pure
-     code. In that case it will return the last computed expression, if any.
-     Alternatively, ``eval`` can also be invoked on a (quoted) Pure
-     expression, which is recompiled and then evaluated. Exceptions during
-     evaluation are reported back to the caller.
+      Parses any expression, specified as a string in Pure syntax, and returns
+      its value. In fact, :func:`eval` can also parse and execute arbitrary
+      Pure code. In that case it will return the last computed expression, if
+      any.  Alternatively, :func:`eval` can also be invoked on a (quoted) Pure
+      expression, which is recompiled and then evaluated. Exceptions during
+      evaluation are reported back to the caller.
 
-   .. index:: evalcmd
-   .. _evalcmd:
+   .. function:: evalcmd x
 
-   ``evalcmd x``
-     Like ``eval``, but allows execution of interactive commands and returns
-     their captured output as a string. No other results are returned, so this
-     operation is most useful for executing Pure definitions and interactive
-     commands for their side-effects. (At this time, only the regular output
-     of a few commands can be captured, most notably ``bt``, ``clear``,
-     ``mem``, ``save`` and ``show``; otherwise the result string will be
-     empty.)
+      Like :func:`eval`, but allows execution of interactive commands and
+      returns their captured output as a string. No other results are
+      returned, so this operation is most useful for executing Pure
+      definitions and interactive commands for their side-effects. (At this
+      time, only the regular output of a few commands can be captured, most
+      notably :keyword:`bt`, :keyword:`clear`, :keyword:`mem`, :keyword:`save`
+      and :keyword:`show`; otherwise the result string will be empty.)
 
-   .. index:: lasterr
+   .. function:: lasterr
 
-   ``lasterr``
-     Reports errors in ``eval`` and ``evalcmd``. This string value will be
-     nonempty iff a compilation or execution error was encountered during the
-     most recent invokation of ``eval`` and ``evalcmd``. In that case each
-     reported error message is terminated with a newline character.
+      Reports errors in :func:`eval` and :func:`evalcmd`. This string value
+      will be nonempty iff a compilation or execution error was encountered
+      during the most recent invokation of :func:`eval` and :func:`evalcmd`.
+      In that case each reported error message is terminated with a newline
+      character.
 
-   .. index:: reduce
-   .. _reduce:
+   .. function:: reduce x
 
-   ``reduce x``
-     Reevaluates an expression in a local environment. This dynamically
-     rebinds function symbols in the given expression to whatever local
-     definitions are in effect at the point of the ``reduce`` call. Note that
-     ``reduce`` is actually implemented as a macro which expands to the
-     ``reduce_with`` primitive (see below), using the :ref:`__locals__
-     <__locals__>` builtin to enumerate the bindings which are in effect at
-     the call site.
+      Reevaluates an expression in a local environment. This dynamically
+      rebinds function symbols in the given expression to whatever local
+      definitions are in effect at the point of the :func:`reduce` call. Note
+      that :func:`reduce` is actually implemented as a macro which expands to
+      the :func:`reduce_with` primitive (see below), using the
+      :func:`__locals__` builtin to enumerate the bindings which are in effect
+      at the call site.
 
-   .. index:: reduce_with
+   .. function:: reduce_with env x
 
-   ``reduce_with env x``
-     Like ``reduce`` above, but takes a list of replacements (given as hash
-     pairs ``u=>v``) as the first argument. The ``reduce`` macro expands to
-     ``reduce_with __locals__``.
+      Like :func:`reduce` above, but takes a list of replacements (given as
+      hash pairs ``u=>v``) as the first argument. The :func:`reduce` macro
+      expands to ``reduce_with __locals__``.
 
    Examples::
 
@@ -493,10 +523,10 @@ using namespace __C;
      > lasterr;
      "<stdin>, line 1: syntax error, unexpected ')', expecting '=' or '|'\n"
 
-   The ``reduce`` macro provides a restricted form of dynamic binding which is
-   useful to implement local rewriting rules. It is invoked without parameters
-   and expands to the curried call ``reduce_with __locals__`` of the
-   ``reduce_with`` primitive, which takes one additional argument, the
+   The :func:`reduce` macro provides a restricted form of dynamic binding
+   which is useful to implement local rewriting rules. It is invoked without
+   parameters and expands to the curried call ``reduce_with __locals__`` of
+   the :func:`reduce_with` primitive, which takes one additional argument, the
    expression to be rewritten. The following example shows how to expand or
    factorize an expression using local rules for the corresponding laws of
    distributivity::
@@ -520,30 +550,30 @@ using namespace __C;
    not the local incarnations of ``*`` and ``+`` defined in ``expand`` and
    ``factor``, respectively.
 
-   ``reduce`` also adjusts to quoted arguments. In this case, the local rules
-   are applied as usual, but back-substituted globals are *not* evaluated in
-   the result::
+   :func:`reduce` also adjusts to quoted arguments. In this case, the local
+   rules are applied as usual, but back-substituted globals are *not*
+   evaluated in the result::
 
      > expand ((a+1)*2);
      a*2+2
      > expand ('((a+1)*2));
      a*2+1*2
 
-   Note that ``reduce`` only takes into account local *function* bindings from
-   ``with`` clauses, local *variable* bindings do not affect its operation in
-   any way::
+   Note that :func:`reduce` only takes into account local *function* bindings
+   from :keyword:`with` clauses, local *variable* bindings do not affect its
+   operation in any way::
 
      > let y = [x,x^2,x^3];
      > reduce y when x = u+v end;
      [x,x^2,x^3]
 
    However, in such cases you can perform the desired substitution by turning
-   the ``when`` into a ``with`` clause::
+   the :keyword:`when` into a :keyword:`with` clause::
 
      > reduce y with x = u+v end;
      [u+v,(u+v)^2,(u+v)^3]
 
-   Or you can just invoke the underlying ``reduce_with`` builtin directly,
+   Or you can just invoke the underlying :func:`reduce_with` builtin directly,
    with the desired substitutions given as hash pairs in the first argument::
 
      > reduce_with [x=>u+v] y;
@@ -552,47 +582,45 @@ using namespace __C;
    Expression Serialization
    ~~~~~~~~~~~~~~~~~~~~~~~~
 
-   Like ``str`` and ``eval``, the following ``blob`` and ``val`` operations
-   can be used to safely transfer expression data to/from persistent storage
-   and between different processes (using, e.g., POSIX shared memory, pipes or
-   sockets). However, ``blob`` and ``val`` use a binary format which is
-   usually much more compact and gets processed much faster than the string
-   representations used by ``str`` and ``eval``. Also, ``val`` offers some
-   additional protection against transmission errors through a crc check. (The
-   advantage of the string representation, however, is that it's readable
-   plain text in Pure syntax.)
+   Like :func:`str` and :func:`eval`, the following :func:`blob` and
+   :func:`val` operations can be used to safely transfer expression data
+   to/from persistent storage and between different processes (using, e.g.,
+   POSIX shared memory, pipes or sockets). However, :func:`blob` and
+   :func:`val` use a binary format which is usually much more compact and gets
+   processed much faster than the string representations used by :func:`str`
+   and :func:`eval`. Also, :func:`val` offers some additional protection
+   against transmission errors through a crc check. (The advantage of the
+   string representation, however, is that it's readable plain text in Pure
+   syntax.)
 
-   .. index:: blob
+   .. function:: blob x
 
-   ``blob x``
-     Stores the contents of the given expression as a binary object. The
-     return value is a cooked pointer which frees itself when
-     garbage-collected.
+      Stores the contents of the given expression as a binary object. The
+      return value is a cooked pointer which frees itself when
+      garbage-collected.
 
-   .. index:: val (blob)
+   .. function:: val /blob p
 
-   ``val p``
-     Reconstructs a serialized expression from the result of a previous
-     invocation of the ``blob`` function.
+      Reconstructs a serialized expression from the result of a previous
+      invocation of the :func:`blob` function.
 
-   .. index:: blobp
+   .. function:: blobp p
 
-   ``blobp p``
-     Checks for a valid ``blob`` object. (Note that ``val`` may fail even if
-     ``blobp`` returns ``true``, because for performance reasons ``blobp``
-     only does a quick plausibility check on the header information of the
-     blob, whereas ``val`` also performs a crc check and verifies data
-     integrity.)
+      Checks for a valid :func:`blob` object. (Note that :func:`val` may fail
+      even if :func:`blobp` returns ``true``, because for performance reasons
+      :func:`blobp` only does a quick plausibility check on the header
+      information of the blob, whereas :func:`val` also performs a crc check
+      and verifies data integrity.)
 
-   .. index:: blob_size
-   .. index:: blob_crc
+   .. function:: prefix # /blob p
+      		 blob_size p
+                 blob_crc p
 
-   ``blob_size p``, ``blob_crc p``
      Determines the size (in bytes) and crc checksum of a blob, respectively.
-     ``blob_size`` always returns a bigint, ``blob_crc`` a machine int (use
-     ``uint`` on the latter to get a proper unsigned 32 bit value). For
-     convenience, ``#p`` is defined as an alias for ``blob_size p`` on
-     ``blob`` pointers.
+     :func:`blob_size` always returns a bigint, :func:`blob_crc` a machine int
+     (use :func:`uint` on the latter to get a proper unsigned 32 bit
+     value). For convenience, ``#p`` is defined as an alias for ``blob_size
+     p`` on :func:`blob` pointers.
 
    Example::
 
@@ -606,39 +634,38 @@ using namespace __C;
 
    Please note that the current implementation has some limitations:
 
-   * Just as with ``str`` and ``eval``, runtime data (local closures and
-     pointers other than the ``NULL`` pointer) can't be serialized, causing
-     ``blob`` to fail. However, it *is* possible to transfer a global
-     function, provided that the function exists (and is the same) in both the
-     sending and the receiving process. (This condition can't be verified
-     by ``val`` and thus is at the programmer's responsibilty.)
+   * Just as with :func:`str` and :func:`eval`, runtime data (local closures
+     and pointers other than the :const:`NULL` pointer) can't be serialized,
+     causing :func:`blob` to fail. However, it *is* possible to transfer a
+     global function, provided that the function exists (and is the same) in
+     both the sending and the receiving process. (This condition can't be
+     verified by :func:`val` and thus is at the programmer's responsibilty.)
 
    * Sharing of subexpressions will in general be preserved, but sharing of
      list and tuple *tails* will be lost (unless the entire list or tuple is
      shared).
 
-   * The ``val`` function may fail to reconstruct the serialized expression
-     even for valid blobs, if there is a conflict in symbol fixities between
-     the symbol tables of the sending and the receiving process. To avoid
-     this, make sure that symbol declarations in the sending and the receiving
-     script match up.
+   * The :func:`val` function may fail to reconstruct the serialized
+     expression even for valid blobs, if there is a conflict in symbol
+     fixities between the symbol tables of the sending and the receiving
+     process. To avoid this, make sure that symbol declarations in the sending
+     and the receiving script match up.
 
    Other Special Primitives
    ~~~~~~~~~~~~~~~~~~~~~~~~
 
-   .. index:: exit
+   .. function:: exit status
 
-   ``exit status``
-     Terminate the program with the given status code.
+      Terminate the program with the given status code.
 
-   .. index:: throw
+   .. function:: throw x
 
-   ``throw x``
-     Throw an exception, cf. :ref:`Exception Handling`.
+      Throw an exception, cf. :ref:`Exception Handling`.
 
-   ``force x``
-     Force a thunk (``x&``), cf. :ref:`Special Forms`. This usually happens
-     automagically when the value of a thunk is needed.
+   .. function:: force x
+
+      Force a thunk (``x&``), cf. :ref:`Special Forms`. This usually happens
+      automagically when the value of a thunk is needed.
 
 */
 
@@ -1165,62 +1192,51 @@ extern expr* pure_sort(expr* p, expr *xs) = sort;
    These are lowlevel operations dealing with pointer values. The usual
    caveats apply, so *only* use these directly if you know what you're doing!
 
-   .. index:: addr
+   .. function:: addr symbol
 
-   ``addr symbol``
-     Get the address of a C symbol (given as a string) at runtime. The library
-     containing the symbol must already be loaded. Note that this can in fact
-     be any kind of externally visible C symbol, so it's also possible to get
-     the addresses of global variables. The result is returned as a
-     pointer. The function fails if the symbol was not found. */
+      Get the address of a C symbol (given as a string) at runtime. The
+      library containing the symbol must already be loaded. Note that this can
+      in fact be any kind of externally visible C symbol, so it's also
+      possible to get the addresses of global variables. The result is
+      returned as a pointer. The function fails if the symbol was not
+      found. */
 
 extern expr *pure_addr(char *s) = addr;
 
-/* .. index:: calloc
-   .. index:: malloc
-   .. index:: realloc
-   .. index:: free
-   .. _malloc:
+/* .. function:: calloc nmembers size
+                 malloc size
+                 realloc ptr size
+                 free ptr
 
-   ``calloc nmembers size``, ``malloc size``, ``realloc ptr size``, ``free ptr``
-     Interface to ``malloc``, ``free`` and friends. These let you allocate
-     dynamic buffers (represented as Pure pointer values) for various nasty
-     purposes. */
+      Interface to ``malloc``, ``free`` and friends. These let you allocate
+      dynamic buffers (represented as Pure pointer values) for various nasty
+      purposes. */
 
 extern void* calloc(size_t nmembers, size_t size);
 extern void* malloc(size_t size), void* realloc(void* ptr, size_t size);
 extern void free(void* ptr);
 
-/* .. index:: get_byte
-   .. index:: get_short
-   .. index:: get_int
-   .. index:: get_int64
-   .. index:: get_long
-   .. index:: get_float
-   .. index:: get_double
-   .. index:: get_string
-   .. index:: get_pointer
-   .. index:: put_byte
-   .. index:: put_short
-   .. index:: put_int
-   .. index:: put_int64
-   .. index:: put_long
-   .. index:: put_float
-   .. index:: put_double
-   .. index:: put_string
-   .. index:: put_pointer
+/* .. function:: get_byte ptr
+                 get_short ptr
+                 get_int ptr
+                 get_int64 ptr
+                 get_long ptr
+                 get_float ptr
+                 get_double ptr
+                 get_string ptr
+                 get_pointer ptr
+                 put_byte ptr x
+                 put_short ptr x
+                 put_int ptr x
+                 put_int64 ptr x
+                 put_long ptr x
+                 put_float ptr x
+                 put_double ptr x
+                 put_string ptr x
+                 put_pointer ptr x
 
-   The following operations perform direct memory accesses. Use with care
-   ... or else!
-
-   * ``get_byte ptr``, ``get_short ptr``, ``get_int ptr``, ``get_int64 ptr``,
-     ``get_long ptr``, ``get_float ptr``, ``get_double ptr``,
-     ``get_string ptr``, ``get_pointer ptr``
-
-   * ``put_byte ptr x``, ``put_short ptr x``, ``put_int ptr x``,
-     ``put_int64 ptr x``, ``put_long ptr x``, ``put_float ptr x``,
-     ``put_double ptr x``, ``put_string ptr x``, ``put_pointer ptr x``
-*/
+      These operations perform direct memory accesses. Use with care ... or
+      else! */
 
 namespace __C;
 extern int pointer_get_byte(void *ptr);
@@ -1282,21 +1298,18 @@ put_pointer x::pointer y::pointer = pointer_put_pointer x y;
    since it is guaranteed that they are called as soon as an object "goes out
    of scope", i.e., becomes inaccessible.
 
-   .. index:: sentry
+   .. function:: sentry f x
 
-   ``sentry f x``
-     Places a sentry ``f`` at an expression ``x`` and returns the modified
-     expression.
+      Places a sentry ``f`` at an expression ``x`` and returns the modified
+      expression.
 
-   .. index:: clear_sentry
+   .. function:: clear_sentry x
 
-   ``clear_sentry x``
-     Removes the sentry from an expression ``x``.
+      Removes the sentry from an expression ``x``.
 
-   .. index:: get_sentry
+   .. function:: get_sentry x
 
-   ``get_sentry x``
-     Returns the sentry of an expression ``x`` (if any, fails otherwise).
+      Returns the sentry of an expression ``x`` (if any, fails otherwise).
 
    As of Pure 0.45, sentries can be placed on any Pure expression. The sentry
    itself can also be any type of object (but usually it's a function).
@@ -1318,17 +1331,15 @@ put_pointer x::pointer y::pointer = pointer_put_pointer x y;
    condition. Also, there is a convenience function to create cooked pointers
    which take care of freeing themselves when they are no longer needed.
 
-   .. index:: cookedp
+   .. function:: cookedp x
 
-   ``cookedp x``
-     Check whether a given object has a sentry set on it.
+      Check whether a given object has a sentry set on it.
 
-   .. index:: cooked
+   .. function:: cooked ptr
 
-   ``cooked ptr``
-     Create a pointer which disposes itself after use. This is just a
-     shorthand for ``sentry free``. The given pointer ``ptr`` must be
-     :ref:`malloc <malloc>`\ ed to make this work.
+      Create a pointer which disposes itself after use. This is just a
+      shorthand for ``sentry free``. The given pointer ``ptr`` must be
+      :func:`malloc`\ ed to make this work.
 
    Example::
 
@@ -1447,28 +1458,24 @@ cooked p::pointer = sentry free p;
    operations are provided to create such tags, and set, get or verify the tag
    of a pointer value.
 
-   .. index:: ptrtag
+   .. function:: ptrtag t x
 
-   ``ptrtag t x``
-     Places an integer tag ``t`` at an expression ``x`` and returns the
-     modified expression. ``x`` must be a pointer value.
+      Places an integer tag ``t`` at an expression ``x`` and returns the
+      modified expression. ``x`` must be a pointer value.
 
-   .. index:: get_ptrtag
+   .. function:: get_ptrtag x
 
-   ``get_ptrtag x``
-     Retrieves the tag associated with ``x``.
+      Retrieves the tag associated with ``x``.
 
-   .. index:: check_ptrtag
+   .. function:: check_ptrtag t x
 
-   ``check_ptrtag t x``
-     Compares the tag associated with ``x`` against ``t`` and returns true iff
-     the tags match. If ``x`` is a pointer value, this is equivalent to
-     ``get_ptrtag x==t || null x && get_ptrtag x==0``.
+      Compares the tag associated with ``x`` against ``t`` and returns true
+      iff the tags match. If ``x`` is a pointer value, this is equivalent to
+      ``get_ptrtag x==t || null x && get_ptrtag x==0``.
 
-   .. index:: make_ptrtag
+   .. function:: make_ptrtag
 
-   ``make_ptrtag``
-     Returns a new, unique tag each time it is invoked.
+      Returns a new, unique tag each time it is invoked.
 
    Examples::
 
@@ -1486,9 +1493,10 @@ cooked p::pointer = sentry free p;
      > check_ptrtag 0 p;
      0
 
-   Note that in the case of a non-``NULL`` pointer, ``check_ptrtag`` just
-   tests the tags for equality. On the other hand, a generic ``NULL`` pointer,
-   like in C, is considered compatible with all pointer types::
+   Note that in the case of a non-:const:`NULL` pointer, :func:`check_ptrtag`
+   just tests the tags for equality. On the other hand, a generic
+   :const:`NULL` pointer, like in C, is considered compatible with all pointer
+   types::
 
      > let t1 = make_ptrtag; t1;
      13
@@ -1515,31 +1523,33 @@ extern int pure_make_tag() = make_ptrtag; // IMPURE!
    maybe modify it by "casting" it to a new target type. The following
    high-level operations provide these capabilities.
 
-   .. index:: pointer_tag
+   .. function:: pointer_tag type
+      		 pointer_tag x
 
-   ``pointer_tag type``, ``pointer_tag x``
-     Returns the pointer tag for the given ``type``, denoted as a string, or
-     the given pointer value ``x``. In the former case, the type should be
-     specified in the C-like syntax used in ``extern`` declarations; a new tag
-     will be created using ``make_ptrtag`` if needed. In the latter case,
-     ``pointer_tag`` simply acts as a frontend for ``get_ptrtag`` above.
+      Returns the pointer tag for the given ``type``, denoted as a string, or
+      the given pointer value ``x``. In the former case, the type should be
+      specified in the C-like syntax used in :keyword:`extern` declarations; a
+      new tag will be created using :func:`make_ptrtag` if needed. In the
+      latter case, :func:`pointer_tag` simply acts as a frontend for
+      :func:`get_ptrtag` above.
 
-   .. index:: pointer_type
+   .. function:: pointer_type tag
+      		 pointer_type x
 
-   ``pointer_type tag``, ``pointer_type x``
-     Returns the type name associated with the given int value ``tag`` or
-     pointer value ``x``. Please note that this may be NULL in the case of an
-     "anonymous" tag, which may have been created with ``make_ptrtag`` above,
-     or if the tag is simply unknown because it hasn't been created yet.
+      Returns the type name associated with the given int value ``tag`` or
+      pointer value ``x``. Please note that this may be :const:`NULL` in the
+      case of an "anonymous" tag, which may have been created with
+      :func:`make_ptrtag` above, or if the tag is simply unknown because it
+      hasn't been created yet.
 
-   .. index:: pointer_cast
+   .. function:: pointer_cast tag x
+      		 pointer_cast type x
 
-   ``pointer_cast tag x``, ``pointer_cast type x``
-     Casts ``x`` (which must be a pointer value) to the given pointer type,
-     which may be specified either as a tag or a string denoting the type
-     name. This returns a new pointer value with the appropriate type tag on
-     it (the tag on the original pointer value ``x`` isn't affected by this
-     operation).
+      Casts ``x`` (which must be a pointer value) to the given pointer type,
+      which may be specified either as a tag or a string denoting the type
+      name. This returns a new pointer value with the appropriate type tag on
+      it (the tag on the original pointer value ``x`` isn't affected by this
+      operation).
 
    Example::
 
@@ -1560,26 +1570,26 @@ extern int pure_make_tag() = make_ptrtag; // IMPURE!
 
    If you have to do many casts to a given type, you can avoid the overhead of
    repeatedly looking up the type name by assigning the tag to a variable,
-   which can then be passed to ``pointer_cast`` instead::
+   which can then be passed to :func:`pointer_cast` instead::
 
      > let ty = pointer_tag "long*";
      > pointer_cast ty p, pointer_cast ty q;
 
    Note that you have to be careful when casting a cooked pointer, because
-   ``pointer_cast`` may have to create a copy of the original pointer value in
-   order not to globber the original type tag. The sentry will then still be
-   with the original cooked pointer value, thus you have to ensure that this
-   value survives its type-cast duplicate. It's usually best to apply the cast
-   right at the spot where the pointer gets passed to an external function,
-   e.g.::
+   :func:`pointer_cast` may have to create a copy of the original pointer
+   value in order not to globber the original type tag. The sentry will then
+   still be with the original cooked pointer value, thus you have to ensure
+   that this value survives its type-cast duplicate. It's usually best to
+   apply the cast right at the spot where the pointer gets passed to an
+   external function, e.g.::
 
      > extern char *gets(char*);
      > let p = cooked $ malloc 1000;
      > gets (pointer_cast "char*" p);
 
    Such usage is always safe. If this approach isn't possible, you might want
-   to use the lowlevel ``ptrtag`` operation instead. (This will globber the
-   type tag of the pointer, but you can always change it back afterwards.)
+   to use the lowlevel :func:`ptrtag` operation instead. (This will globber
+   the type tag of the pointer, but you can always change it back afterwards.)
 
 */
 
@@ -1625,36 +1635,31 @@ namespace;
    pass them as pointers to a C function which expects a ``pure_expr**``
    parameter. This may even be useful at times.
 
-   .. index:: ref
+   .. function:: ref x
 
-   ``ref x``
-     Create a reference pointing to ``x`` initially.
+      Create a reference pointing to ``x`` initially.
 
-   .. index:: put
+   .. function:: put r x
 
-   ``put r x``
-     Set a new value ``x``, and return that value.
+      Set a new value ``x``, and return that value.
 
-   .. index:: get
+   .. function:: get r
 
-   ``get r``
-     Retrieve the current value ``r`` points to.
+      Retrieve the current value ``r`` points to.
 
-   .. index:: unref
+   .. function:: unref r
 
-   ``unref r``
-     Purge the referenced object and turn the reference into a dangling
-     pointer. (This is used as a sentry on reference objects and shouldn't
-     normally be called directly.)
+      Purge the referenced object and turn the reference into a dangling
+      pointer. (This is used as a sentry on reference objects and shouldn't
+      normally be called directly.)
 
-   .. index:: refp
+   .. function:: refp x
 
-   ``refp x``
-     Predicate to check for reference values.
+      Predicate to check for reference values.
 
-   Note that manually removing the ``unref`` sentry of a reference turns the
-   reference into just a normal pointer object and renders it unusable as a
-   reference. Doing this will also leak memory, so don't! */
+   Note that manually removing the :func:`unref` sentry of a reference turns
+   the reference into just a normal pointer object and renders it unusable as
+   a reference. Doing this will also leak memory, so don't! */
 
 namespace __C;
 extern expr* pure_new(expr*), expr* pure_expr_pointer();
