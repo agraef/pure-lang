@@ -49,7 +49,7 @@ class PureLexer(RegexLexer):
             # Interactive prompts and error messages.
             (r'^> ?$', Generic.Prompt), # lone prompt at end of snippet
             (r'^> ', Generic.Prompt, 'prompt'),
-            (r'^[^,\n]+, line [0-9]+: ', Generic.Error, 'error'),
+            (r'^[^"\s][^,\n]*, line [0-9]+: ', Generic.Error, 'error'),
 
             # Various kinds of keywords and built-in punctuation.
             (r'\b(%s)\b' % '|'.join(keywords), Keyword.Reserved),
