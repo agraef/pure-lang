@@ -23,6 +23,8 @@
    Mathematical Functions
    ======================
 
+   .. module:: math
+
    The math.pure module provides Pure's basic math routines. It also defines
    complex and rational numbers.
 
@@ -37,42 +39,48 @@
    Basic Math Functions
    --------------------
 
-   The module defines Euler's number ``e = 2.71828...`` and Ludolph's number
-   ``pi = 3.1415...`` as constants. It also provides a reasonably
-   comprehensive (pseudo) random number generator which uses the `Mersenne
-   twister`_ to avoid bad generators present in some C libraries.
+   The module defines the following real-valued constants:
+
+   .. constant:: e = 2.71828...
+
+      Euler's number.
+
+   .. constant:: pi = 3.1415...
+
+      Ludolph's number.
+
+   It also provides a reasonably comprehensive (pseudo) random number
+   generator which uses the `Mersenne twister`_ to avoid bad generators
+   present in some C libraries.
 
    Please note that as of Pure 0.41, the runtime library includes a newer
    release of the Mersenne twister which fixes issues with some kinds of seed
    values, and will yield different values for given seeds. Also, the
-   ``random31`` and ``random53`` functions have been added as a convenience to
-   compute unsigned 31 bit integers and 53 bit double values, and the
-   ``srandom`` function now also accepts an ``int`` matrix as seed value.
+   :func:`random31` and :func:`random53` functions have been added as a
+   convenience to compute unsigned 31 bit integers and 53 bit double values,
+   and the :func:`srandom` function now also accepts an int matrix as seed
+   value.
 
    .. _Mersenne twister: http://www.math.sci.hiroshima-u.ac.jp/~m-mat/MT/emt.html
 
-   .. index:: random
+   .. function:: random
 
-   ``random``
-     Return 32 bit pseudo random ints in the range ``-0x80000000..0x7fffffff``.
+      Return 32 bit pseudo random ints in the range ``-0x80000000..0x7fffffff``.
 
-   .. index:: random31
+   .. function:: random31
 
-   ``random31``
-     Return 31 bit pseudo random ints in the range ``0..0x7fffffff``.
+      Return 31 bit pseudo random ints in the range ``0..0x7fffffff``.
 
-   .. index:: random53
+   .. function:: random53
 
-   ``random53``
-     Return pseudo random doubles in the range ``[0,1)`` with 53 bits
-     resolution.
+      Return pseudo random doubles in the range ``[0,1)`` with 53 bits
+      resolution.
 
-   .. index:: srandom
+   .. function:: srandom seed
 
-   ``srandom seed``
-     Sets the seed of the generator to the given 32 bit integer. You can also
-     specify longer seeds using a nonempty row vector, e.g.: ``srandom {0x123,
-     0x234, 0x345, 0x456}``.
+      Sets the seed of the generator to the given 32 bit integer. You can also
+      specify longer seeds using a nonempty row vector, e.g.: ``srandom
+      {0x123, 0x234, 0x345, 0x456}``.
 
 */
 
@@ -92,51 +100,44 @@ srandom x::matrix = srandom_array x (#x) if imatrixp x && dim x!0 == 1;
    result is always a double. For further explanations please see the
    descriptions of the corresponding functions from the C math library.
 
-   .. index:: sqrt
+   .. function:: sqrt x
 
-   ``sqrt x``
-     The square root function.
+      The square root function.
 
-   .. index:: exp
-   .. index:: ln
-   .. index:: log
+   .. function:: exp x
+                 ln x
+                 log x
 
-   ``exp x``, ``ln x``, ``log x``
-     Exponential function, natural and decadic logarithms.
+      Exponential function, natural and decadic logarithms.
 
-   .. index:: sin
-   .. index:: cos
-   .. index:: tan
+   .. function:: sin x
+                 cos x
+                 tan x
 
-   ``sin x``, ``cos x``, ``tan x``
-     Trigonometric functions.
+      Trigonometric functions.
 
-   .. index:: asin
-   .. index:: acos
-   .. index:: atan
+   .. function:: asin x
+                 acos x
+                 atan x
 
-   ``asin x``, ``acos x``, ``atan x``
-     Inverse trigonometric functions.
+      Inverse trigonometric functions.
 
-   .. index:: atan2
+   .. function:: atan2 y x
 
-   ``atan2 y x``
-     Computes the arcus tangent of ``y/x``, using the signs of the two
-     arguments to determine the quadrant of the result.
+      Computes the arcus tangent of ``y/x``, using the signs of the two
+      arguments to determine the quadrant of the result.
 
-   .. index:: sinh
-   .. index:: cosh
-   .. index:: tanh
+   .. function:: sinh x
+                 cosh x
+                 tanh x
 
-   ``sinh x``, ``cosh x``, ``tanh x``
-     Hyperbolic trigonometric functions.
+      Hyperbolic trigonometric functions.
 
-   .. index:: asinh
-   .. index:: acosh
-   .. index:: atanh
+   .. function:: asinh x
+                 acosh x
+                 atanh x
 
-   ``asinh x``, ``acosh x``, ``atanh x``
-     Inverse hyperbolic trigonometric functions. */
+      Inverse hyperbolic trigonometric functions. */
 
 /* The sqrt function. */
 
@@ -203,28 +204,35 @@ atanh x::int | atanh x::bigint = atanh (double x);
    Complex Numbers
    ---------------
 
-   .. _+\::
-   .. _<\::
+   .. function:: infix +: x y
+      		 infix <: r t
+
+      Complex number constructors.
+
+   .. constant:: i = 0+:1
+
+      Imaginary unit.
 
    We provide both rectangular (``x+:y``) and polar (``r<:a``)
    representations, where ``(x,y)`` are the Cartesian coordinates and
    ``(r,t)`` the radius (absolute value) and angle (in radians) of a complex
-   number, respectively. The ``+:`` and ``<:`` constructors (declared in the
-   prelude) bind weaker than all other arithmetic operators and are
+   number, respectively. The :func:`+:` and :func:`<:` constructors (declared
+   in the prelude) bind weaker than all other arithmetic operators and are
    non-associative.
 
    The polar representation ``r<:t`` is normalized so that ``r`` is always
    nonnegative and ``t`` falls in the range ``-pi<t<=pi``.
 
-   The constant ``i`` is provided to denote the imaginary unit ``0+:1``.
+   The constant :const:`i` is provided to denote the imaginary unit ``0+:1``.
 
-   The arithmetic operations ``+``, ``*`` etc. and the equality relations
-   ``==`` and ``~=`` work as expected, and the square root, exponential,
-   logarithms, trigonometric and hyperbolic trigonometric functions (see
-   `Basic Math Functions`_) are extended to complex numbers accordingly. These
-   do *not* rely on complex number support in the C library, but should still
-   conform to IEEE 754 and POSIX, provided that the C library provides a
-   standards-compliant implementation of the basic math functions. */
+   The arithmetic operations :func:`+`, :func:`*` etc. and the equality
+   relations :func:`==` and :func:`~=` work as expected, and the square root,
+   exponential, logarithms, trigonometric and hyperbolic trigonometric
+   functions (see `Basic Math Functions`_) are extended to complex numbers
+   accordingly. These do *not* rely on complex number support in the C
+   library, but should still conform to IEEE 754 and POSIX, provided that the
+   C library provides a standards-compliant implementation of the basic math
+   functions. */
 
 r::int<:t	|
 r::bigint<:t	|
@@ -252,23 +260,18 @@ const i = 0+:1;
 /* We mostly follow Bronstein/Semendjajew here. Please mail me if you know
    better formulas for any of these. */
 
-/* .. index:: complex
-   .. _complex:
+/* .. function:: complex x
 
-   ``complex x``
-     Convert any kind of number to a complex value. */
+      Convert any kind of number to a complex value. */
 
 complex z@(x+:y) | complex z@(r<:t) = z;
 complex x::int | complex x::bigint = x+:0;
 complex x::double = x+:0.0;
 
-/* .. index:: polar
-   .. index:: rect
-   .. _polar:
-   .. _rect:
+/* .. function:: polar z
+                 rect z
 
-   ``polar z``, ``rect z``
-     Convert between polar and rectangular representations. */
+      Convert between polar and rectangular representations. */
 
 polar (x+:y)	= sqrt (x*x+y*y) <: atan2 y x;
 rect  (r<:t)	= r*cos t +: r*sin t;
@@ -284,21 +287,18 @@ polar x::double = x<:0.0;
 rect x::int | rect x::bigint = x+:0;
 rect x::double = x+:0.0;
 
-/* .. index:: cis
-   .. _cis:
+/* .. function:: cis t
 
-   ``cis t``
-     Create complex values on the unit circle. Note: To quickly compute
-     ``exp (x+:y)`` in polar form, use ``exp x <: y``. */
+      Create complex values on the unit circle. Note: To quickly compute
+      ``exp (x+:y)`` in polar form, use ``exp x <: y``. */
 
 cis t::int | cis t::bigint | cis t::double = rect (1<:t);
 
-/* .. index:: abs (complex)
-   .. index:: arg
+/* .. function:: abs /complex z
+                 arg z
 
-   ``abs z``, ``arg z``
-     Modulus (absolute value) and argument (angle, a.k.a. phase). Note that
-     you can also find both of these in one go by converting to polar form. */
+      Modulus (absolute value) and argument (angle, a.k.a. phase). Note that
+      you can also find both of these in one go by converting to polar form. */
 
 abs (x+:y)	= sqrt (x*x+y*y);
 abs (r<:t)	= r;
@@ -310,11 +310,10 @@ arg x::int	|
 arg x::bigint	|
 arg x::double	= atan2 0 x;
 
-/* .. index:: re
-   .. index:: im
+/* .. function:: re z
+                 im z
 
-   ``re z``, ``im z``
-     Real and imaginary part. */
+      Real and imaginary part. */
 
 re (x+:y)	= x;
 re (r<:t)	= r*cos t;
@@ -330,10 +329,9 @@ im x::int	= 0;
 im x::bigint	= 0L;
 im x::double	= 0.0;
 
-/* .. index:: conj
+/* .. function:: conj z
 
-   ``conj z``
-     Complex conjugate. */
+      Complex conjugate. */
 
 conj (x+:y)	= x +: -y;
 conj (r<:t)	= r <: -t;
@@ -501,9 +499,9 @@ x1~=z2@(r2<:t2)		= (x1<:0) ~= z2 if realp x1;
      > polar z;
      1.0<:-1.5707963267949
 
-   Please note that, as the ``+:`` and ``<:`` constructors bind weaker than
-   the other arithmetic operators, complex numbers *must* be parenthesized
-   accordingly, e.g.::
+   Please note that, as the :func:`+:` and :func:`<:` constructors bind weaker
+   than the other arithmetic operators, complex numbers *must* be
+   parenthesized accordingly, e.g.::
 
      > (1+:2)*(3+:4);
      -5+:10 */
@@ -513,22 +511,24 @@ x1~=z2@(r2<:t2)		= (x1<:0) ~= z2 if realp x1;
    Rational Numbers
    ----------------
 
-   .. index:: %
+   .. function:: infix % x y
+
+      Exact division operator and rational number constructor.
 
    Pure's rational numbers are constructed with the `exact division` operator
-   ``%`` (declared in the prelude) which has the same precedence and fixity as
-   the other division operators.
+   :func:`%` (declared in the prelude) which has the same precedence and
+   fixity as the other division operators.
 
-   The ``%`` operator returns a rational or complex rational for any
+   The :func:`%` operator returns a rational or complex rational for any
    combination of integer, rational and complex integer/rational arguments,
    provided that the denominator is nonzero (otherwise it behaves like ``x div
    0``, which will raise an exception). Machine int operands are always
    promoted to bigints, thus normalized rationals always take the form ``x%y``
    where both the numerator ``x`` and the denominator ``y`` are bigints. For
-   other numeric operands ``%`` works just like ``/``. Rational results are
-   normalized so that the sign is always in the numerator and numerator and
-   denominator are relatively prime. In particular, a rational zero is always
-   represented as ``0L%1L``.
+   other numeric operands :func:`%` works just like :func:`/`. Rational
+   results are normalized so that the sign is always in the numerator and
+   numerator and denominator are relatively prime. In particular, a rational
+   zero is always represented as ``0L%1L``.
 
    The usual arithmetic operations and equality/order relations are extended
    accordingly, as well as the `basic math functions`_ and the `rounding
@@ -577,18 +577,17 @@ x%y::double		= x/y if numberp x;
 
 /* Conversions. */
 
-/* .. index:: rational
+/* .. function:: rational x
 
-   ``rational x``
-     Converts a real or complex value ``x`` to a rational or complex
-     rational. Note that the conversion from double values doesn't do any
-     rounding, so it is guaranteed that converting the resulting rational back
-     to a double reconstructs the original value.
+      Converts a real or complex value ``x`` to a rational or complex
+      rational. Note that the conversion from double values doesn't do any
+      rounding, so it is guaranteed that converting the resulting rational
+      back to a double reconstructs the original value.
 
-     Conversely, the :func:`int`, :func:`bigint`, :func:`double`,
-     :func:`complex`, :func:`rect`, :func:`polar` and :func:`cis` conversion
-     functions are overloaded so that they convert a rational to one of the
-     other number types. */
+      Conversely, the :func:`int`, :func:`bigint`, :func:`double`,
+      :func:`complex`, :func:`rect`, :func:`polar` and :func:`cis` conversion
+      functions are overloaded so that they convert a rational to one of the
+      other number types. */
 
 rational x@(_%_)	= x;
 rational x::int		|
@@ -620,11 +619,10 @@ r<:t@(_%_)	= r <: atan2 (sin t) (cos t) if t<-pi || t>pi;
 
 cis (x%y)	 = rect (1<:x/y);
 
-/* .. index:: num
-   .. index:: den
+/* .. function:: num x
+                 den x
 
-   ``num x``, ``den x``
-     Numerator and denominator of a rational ``x``. */
+      Numerator and denominator of a rational ``x``. */
 
 num (x%y)	= x;
 den (x%y)	= y;
@@ -801,32 +799,27 @@ x1 >= x2%y2	= x1*y2 >= x2 if realp x2;
    ``X``, then it is also of semantic type ``X``. Moreover, ``intvalp x =>
    bigintvalp x => ratvalp x => realvalp x => compvalp x <=> numberp x``.
 
-   .. index:: compvalp
+   .. function:: compvalp x
 
-   ``compvalp x``
-     Check for complex values (this is the same as :func:`numberp`).
+      Check for complex values (this is the same as :func:`numberp`).
 
-   .. index:: realvalp
+   .. function:: realvalp x
 
-   ``realvalp x``
-     Check for real values (``im x==0``).
+      Check for real values (``im x==0``).
 
-   .. index:: ratvalp
+   .. function:: ratvalp x
 
-   ``ratvalp x``
-     Check for rational values (same as ``realvalp``, except that IEEE 754
-     infinities and NaNs are excluded).
+      Check for rational values (same as :func:`realvalp`, except that IEEE
+      754 infinities and NaNs are excluded).
 
-   .. index:: bigintvalp
+   .. function:: bigintvalp x
 
-   ``bigintvalp x``
-     Check for "big" integer values which can be represented as a bigint.
+      Check for "big" integer values which can be represented as a bigint.
 
-   .. index:: intvalp
+   .. function:: intvalp x
 
-   ``intvalp x``
-     Check for "small" integer values which can be represented as a machine
-     int. */
+      Check for "small" integer values which can be represented as a machine
+      int. */
 
 compvalp x	= numberp x;
 realvalp x	= compvalp x && im x==0;

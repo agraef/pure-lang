@@ -18,7 +18,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
-/* ..
+/* .. module:: set
 
    Sets and Bags
    -------------
@@ -41,15 +41,15 @@
      an order of the members. Distinct members are stored in an apparently
      random order.
 
-   The usual comparison predicates (``==``, ``~=``, ``<=``, ``<`` etc.) are
-   defined on all set and bag types, where two sets or bags are considered
-   "equal" (``m1==m2``) if they both contain the same elements, and ``m1<=m2``
-   means that ``m1`` is a subset or subbag of ``m2``, i.e., all elements of
-   ``m1`` are also contained in ``m2`` (taking into account multiplicities in
-   the multiset case). Ordered sets and bags compare elements using equality
-   (considering two elements ``a`` and ``b`` to be equal if neither ``a<b``
-   nor ``b<a`` holds), while hashed sets and bags check for syntactical
-   equality (using ``===``).
+   The usual comparison predicates (:func:`==`, :func:`~=`, :func:`<=`,
+   :func:`<` etc.) are defined on all set and bag types, where two sets or
+   bags are considered "equal" (``m1==m2``) if they both contain the same
+   elements, and ``m1<=m2`` means that ``m1`` is a subset or subbag of ``m2``,
+   i.e., all elements of ``m1`` are also contained in ``m2`` (taking into
+   account multiplicities in the multiset case). Ordered sets and bags compare
+   elements using equality (considering two elements ``a`` and ``b`` to be
+   equal if neither ``a<b`` nor ``b<a`` holds), while hashed sets and bags
+   check for syntactical equality (using :func:`===`).
 
    The underlying AVL tree data structure can be found in the avltrees.pure
    module which is included in the library, but not to be invoked directly.
@@ -76,14 +76,16 @@
    In any case, the internal data structure ``T`` is an AVL tree built with
    the following constructors (from the avltrees module):
 
-   ``avl::nil``
-     the empty tree.
+   .. constructor:: avl::nil
 
-   ``avl::bin key balance left right``
-     a nonempty tree with given ``key`` (set element) in the root node, where
-     ``left`` and ``right`` are the left and right subtree, and ``balance`` is
-     either 1, 0 or -1, denoting ``|left|-|right|`` = 1, 0, or -1,
-     respectively.
+      the empty tree.
+
+   .. constructor:: avl::bin key balance left right
+
+      a nonempty tree with given ``key`` (set element) in the root node, where
+      ``left`` and ``right`` are the left and right subtree, and ``balance``
+      is either 1, 0 or -1, denoting ``|left|-|right|`` = 1, 0, or -1,
+      respectively.
 
    (This is for informational purposes only. The tree constructors are
    private, and client modules must not rely on the internal representation.)
@@ -91,118 +93,89 @@
    Operations
    ~~~~~~~~~~
 
-   .. index:: emptyset
-   .. index:: emptybag
-   .. index:: emptyhset
-   .. index:: emptyhbag
+   .. function:: emptyset
+                 emptybag
+                 emptyhset
+                 emptyhbag
 
-   ``emptyset``, ``emptybag``, ``emptyhset``, ``emptyhbag``
-     return an empty set or bag
+      return an empty set or bag
 
-   .. index:: set
-   .. index:: bag
-   .. index:: hset
-   .. index:: hbag
+   .. function:: set xs
+                 bag xs
+                 hset xs
+                 hbag xs
 
-   ``set xs``, ``bag xs``, ``hset xs``, ``hbag xs``
-     create a set or bag of the corresponding type from a list or another set
-     or bag ``xs``; in the latter case the argument is converted to a set or
-     bag of the desired target type
+      create a set or bag of the corresponding type from a list or another set
+      or bag ``xs``; in the latter case the argument is converted to a set or
+      bag of the desired target type
 
-   .. index:: setp
-   .. index:: bagp
-   .. index:: hsetp
-   .. index:: hbagp
+   .. function:: setp x
+                 bagp x
+                 hsetp x
+                 hbagp x
 
-   ``setp x``, ``bagp x``, ``hsetp x``, ``hbagp x``
-     check whether ``x`` is a set or bag of the corresponding type
+      check whether ``x`` is a set or bag of the corresponding type
 
-   .. index:: + (set)
-   .. index:: + (bag)
+   .. function:: infix + /set m1 m2
 
-   ``m1+m2``
-     set and bag union: ``m1+m2`` adds the members of ``m2`` to ``m1``
+      set and bag union: ``m1+m2`` adds the members of ``m2`` to ``m1``
 
-   .. index:: - (set)
-   .. index:: - (bag)
+   .. function:: infix - /set m1 m2
 
-   ``m1-m2``
-     set and bag difference: ``m1-m2`` removes the members of ``m2`` from
-     ``m1``
+      set and bag difference: ``m1-m2`` removes the members of ``m2`` from
+      ``m1``
 
-   .. index:: * (set)
-   .. index:: * (bag)
+   .. function:: infix * /set m1 m2
 
-   ``m1*m2``
-     set and bag intersection: ``m1*m2`` removes the members *not* in ``m2``
-     from ``m1``
+      set and bag intersection: ``m1*m2`` removes the members *not* in ``m2``
+      from ``m1``
 
-   .. index:: # (set)
-   .. index:: # (bag)
+   .. function:: prefix # /set m
 
-   ``#m``
-     size of a set or bag ``m``
+      size of a set or bag ``m``
 
-   .. index:: null (set)
-   .. index:: null (bag)
+   .. function:: null /set m
 
-   ``null m``
-     test whether ``m`` is an empty set or bag
+      test whether ``m`` is an empty set or bag
 
-   .. index:: member (set)
-   .. index:: member (bag)
+   .. function:: member /set m x
 
-   ``member m x``
-     test whether ``m`` contains ``x``
+      test whether ``m`` contains ``x``
 
-   .. index:: members (set)
-   .. index:: members (bag)
-   .. index:: list (set)
-   .. index:: list (bag)
+   .. function:: members /set m
+                 list /set m
 
-   ``members m``, ``list m``
-     list the members of ``m`` (in ascending order for ordered sets and bags)
+      list the members of ``m`` (in ascending order for ordered sets and bags)
 
-   .. index:: first (set)
-   .. index:: first (bag)
-   .. index:: last (set)
-   .. index:: last (bag)
+   .. function:: first /set m
+                 last /set m
 
-   ``first m``, ``last m``
-     return the first and the last member of ``m``, respectively
+      return the first and the last member of ``m``, respectively
 
-   .. index:: rmfirst (set)
-   .. index:: rmfirst (bag)
-   .. index:: rmlast (set)
-   .. index:: rmlast (bag)
+   .. function:: rmfirst /set m
+                 rmlast /set m
 
-   ``rmfirst m``, ``rmlast m``
-     remove the first and the last member from ``m``, respectively
+      remove the first and the last member from ``m``, respectively
 
-   .. index:: insert (set)
-   .. index:: insert (bag)
+   .. function:: insert /set m x
 
-   ``insert m x``
-     insert ``x`` into ``m`` (replaces an existing element in the case of a set)
+      insert ``x`` into ``m`` (replaces an existing element in the case of a
+      set)
 
-   .. index:: delete (set)
-   .. index:: delete (bag)
+   .. function:: delete /set m x
 
-   ``delete m x``
-     remove ``x`` from ``m`` (in the ``bag`` case, only the first instance of
-     ``x`` is removed)
+      remove ``x`` from ``m`` (in the bag case, only the first instance of
+      ``x`` is removed)
 
-   .. index:: delete_all (set)
-   .. index:: delete_all (bag)
+   .. function:: delete_all /set m x
 
-   ``delete_all m x``
-     remove all instances of ``x`` from ``m`` (in the set case, this is just
-     the same as ``delete``)
+      remove all instances of ``x`` from ``m`` (in the set case, this is just
+      the same as :func:`delete/set`)
 
-   Note that the infix operators (``+``, ``-``, ``*``, as well as the
-   comparison operations) allow you to mix arbitrary operand types; the
-   necessary conversions from less general set types (ordered, set) to more
-   general types (hashed, multiset) are handled automatically.
+   Note that the infix operators (:func:`+/set`, :func:`-/set`, :func:`*\/set`,
+   as well as the comparison operations) allow you to mix arbitrary operand
+   types; the necessary conversions from less general set types (ordered, set)
+   to more general types (hashed, multiset) are handled automatically.
 
    Examples
    ~~~~~~~~

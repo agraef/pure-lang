@@ -23,6 +23,9 @@
    
    Polynomials
    -----------
+
+   .. module:: gsl::poly
+   .. namespace:: gsl::poly
    
    This module provides Pure wrappers for the GSL polynomial routines. For
    detail about the routines, see Chapter 6 of the GSL manual,
@@ -46,16 +49,15 @@ private extern expr* wrap_gsl_complex_poly_complex_eval
 
 public eval;
 
-/* .. _eval (gsl::poly):
-   
-   ``eval  c::matrix  x``  
-     implements ``gsl_poly_eval``, ``gsl_poly_complex_eval``, and 
-     ``gsl_complex_poly_eval`` without the ``len`` parameter.
+/* .. function:: eval  c::matrix  x
+
+      implements ``gsl_poly_eval``, ``gsl_poly_complex_eval``, and 
+      ``gsl_complex_poly_eval`` without the ``len`` parameter.
      
-     GSL does not supply an integer routine for evaluating polynomials 
-     with ``int`` or  ``bigint`` coefficients. Therefore, an integer 
-     routine has been provided in pure-gsl using the Chinese Remainder 
-     Theorem.
+      GSL does not supply an integer routine for evaluating polynomials 
+      with ``int`` or  ``bigint`` coefficients. Therefore, an integer 
+      routine has been provided in pure-gsl using the Chinese Remainder 
+      Theorem.
 */
 
 eval  c::matrix  (a+:b)
@@ -88,10 +90,9 @@ public
   dd_eval
   dd_taylor;
 
-/* .. _dd_init:
+/* .. function:: dd_init  x::matrix  y::matrix
 
-   ``dd_init  x::matrix  y::matrix``
-     implements ``gsl_poly_dd_init`` without the ``size`` parameter.
+      implements ``gsl_poly_dd_init`` without the ``size`` parameter.
 */
 
 dd_init  xa::matrix  ya::matrix
@@ -101,21 +102,19 @@ dd_init  xa::matrix  ya::matrix
     end
     if rowvectorp xa && rowvectorp ya;
 
-/* .. _dd_eval:
+/* .. function:: dd_eval  dd::matrix  xa::matrix  x::double
 
-   ``dd_eval  dd::matrix  xa::matrix  x::double``
-     implements ``gsl_poly_dd_eval`` without the ``size`` parameter.
+      implements ``gsl_poly_dd_eval`` without the ``size`` parameter.
 */
 
 dd_eval  dd::matrix  xa::matrix  x
   = gsl_poly_dd_eval (dmatrix dd) (dmatrix xa) (#dd) (double x)
     if rowvectorp dd && rowvectorp xa && realp x;
 
-/* .. _dd_talyor:
+/* .. function:: dd_taylor  xp::double  dd::matrix  xa::matrix
 
-   ``dd_taylor  xp::double  dd::matrix  xa::matrix``
-     implements ``gsl_poly_dd_taylor`` without the ``size`` and workspace
-     ``w`` arguments.
+      implements ``gsl_poly_dd_taylor`` without the ``size`` and workspace
+      ``w`` arguments.
 */
 
 dd_taylor  xp  dd::matrix  xa::matrix
@@ -140,47 +139,44 @@ public
   solve_cubic
   complex_solve_cubic;
 
-/* .. _solve_quadratic:
+/* .. function:: solve_quadratic  a  b  c
 
-   ``solve_quadratic  a  b  c``
-     implements ``gsl_poly_solve_quadratic``.  This function returns a list
-     of roots instead of passing them through the parameters ``x0`` and ``x1``.
+      implements ``gsl_poly_solve_quadratic``.  This function returns a list
+      of roots instead of passing them through the parameters ``x0`` and
+      ``x1``.
 */
 
 solve_quadratic  a  b  c
   = wrap_gsl_poly_solve_quadratic (double a) (double b) (double c)
     if realp a && realp b && realp c;
 
-/* .. _complex_solve_quadratic:
+/* .. function:: complex_solve_quadratic  a  b  c
 
-   ``complex_solve_quadratic  a  b  c``
-     implements ``gsl_poly_complex_solve_quadratic``. This function returns
-     a list of roots instead of passing trhough the parameters ``z0`` and
-     ``z1``.
+      implements ``gsl_poly_complex_solve_quadratic``. This function returns a
+      list of roots instead of passing trhough the parameters ``z0`` and
+      ``z1``.
 */
 
 complex_solve_quadratic  a  b  c
   = wrap_gsl_poly_complex_solve_quadratic (double a) (double b) (double c)
     if realp a && realp b && realp c;
 
-/* .. _solve_cubic:
+/* .. function:: solve_cubic a  b  c
 
-   ``solve_cubic a  b  c``
-     implements ``gsl_poly_solve_cubic``. This function returns a list of
-     roots instead of passing them through the parameters ``x0``, ``x1``, and
-     ``x2``.
+      implements ``gsl_poly_solve_cubic``. This function returns a list of
+      roots instead of passing them through the parameters ``x0``, ``x1``, and
+      ``x2``.
 */
 
 solve_cubic  a  b  c
   = wrap_gsl_poly_solve_cubic (double a) (double b) (double c)
     if realp a && realp b && realp c;
 
-/* .. _complex_colve_cubic:
+/* .. function:: complex_solve_cubic  a  b  c
 
-   ``complex_solve_cubic  a  b  c``
-     implements ``gsl_poly_complex_colve_cubic``. This function returns a 
-     list of roots instead of passing them through the parameters ``z0``, 
-     ``z1``, and ``z2``.
+      implements ``gsl_poly_complex_colve_cubic``. This function returns a 
+      list of roots instead of passing them through the parameters ``z0``, 
+      ``z1``, and ``z2``.
 */
 
 complex_solve_cubic  a  b  c
@@ -191,12 +187,11 @@ private extern expr* wrap_gsl_poly_complex_solve(double*, size_t);
 
 public complex_solve;
 
-/* .. _complex_solve:
-   
-   ``complex_solve  c::matrix``
-     implements ``gsl_poly_complex_solve`` omitting the parametrs ``n`` and
-     ``w``. The GSL routines for creating and freeing the workspace are
-     handled automatically.
+/* .. function:: complex_solve  c::matrix
+
+      implements ``gsl_poly_complex_solve`` omitting the parametrs ``n`` and
+      ``w``. The GSL routines for creating and freeing the workspace are
+      handled automatically.
 */
 
 complex_solve  c::matrix

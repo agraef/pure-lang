@@ -40,14 +40,16 @@
 
      shift a::Array = rmfirst a;
 
-   All container types implement the equality predicates ``==`` and ``~=`` by
-   recursively comparing their members. In addition, the dictionary, set and
-   bag data structures also provide the other comparison predicates (``<``,
-   ``<=`` etc.) which check whether one dictionary, set or bag is contained in
-   another.
+   All container types implement the equality predicates :func:`==` and
+   :func:`~=` by recursively comparing their members. In addition, the
+   dictionary, set and bag data structures also provide the other comparison
+   predicates (:func:`<`, :func:`<=` etc.) which check whether one dictionary,
+   set or bag is contained in another.
 
    Arrays
    ------
+
+   .. module:: array
 
    The array.pure module implements an efficient functional array data
    structure which allows to access and update individual array members, as
@@ -72,15 +74,18 @@
    The internal data structure ``T`` is a binary tree built with the following
    constructors:
 
-   ``array::nil``
-     the empty tree.
+   .. constructor:: array::nil
 
-   ``array::tip value``
-     a leaf of the tree, holding the given value.
+      the empty tree.
 
-   ``array::bin balance left right``
-     a nonempty tree with the given balance flag (0 or 1) and left and right
-     subtrees.
+   .. constructor:: array::tip value
+
+      a leaf of the tree, holding the given value.
+
+   .. constructor:: array::bin balance left right
+
+      a nonempty tree with the given balance flag (0 or 1) and left and right
+      subtrees.
 
    (This is for informational purposes only. The tree constructors are
    private, and client modules must not rely on the internal representation.)
@@ -88,97 +93,81 @@
    Operations
    ~~~~~~~~~~
 
-   .. index:: emptyarray
+   .. function:: emptyarray
 
-   ``emptyarray``
-     return the empty array
+      return the empty array
 
-   .. index:: array
+   .. function:: array xs
 
-   ``array xs``
-     create an array from a list ``xs``
+      create an array from a list ``xs``
 
-   .. index:: array2
+   .. function:: array2 xs
 
-   ``array2 xs``
-     create a two-dimensional array from a list of lists
+      create a two-dimensional array from a list of lists
 
-   .. index:: mkarray
+   .. function:: mkarray x n
 
-   ``mkarray x n``
-     create an array consisting of ``n`` ``x``'s
+      create an array consisting of ``n`` ``x``'s
 
-   .. index:: mkarray2
+   .. function:: mkarray2 x (n,m)
 
-   ``mkarray2 x (n,m)``
-     create a two-dimensional array of ``n*m`` ``x``'s
+      create a two-dimensional array of ``n*m`` ``x``'s
 
-   .. index:: arrayp
+   .. function:: arrayp x
 
-   ``arrayp x``
-     check whether ``x`` is an array
+      check whether ``x`` is an array
 
-   .. index:: # (array)
+   .. function:: prefix # /array a
 
-   ``#a``
-     size of ``a``
+      size of ``a``
 
-   .. index:: ! (array)
+   .. function:: infix ! /array a i
 
-   ``a!i``
-     return the ``i``\ th member of ``a``
+      return the ``i``\ th member of ``a``
 
-   ``a!(i,j)``
-     two-dimensional subscript
+   .. function:: infix ! /array a (i,j)
 
-   .. index:: null (array)
+      two-dimensional subscript
 
-   ``null a``
-     test whether ``a`` is the empty array
+   .. function:: null /array a
 
-   .. index:: members (array)
-   .. index:: list (array)
+      test whether ``a`` is the empty array
 
-   ``members a``, ``list a``
-     list of values stored in ``a``
+   .. function:: members /array a
+      		 list /array a
 
-   .. index:: members2 (array)
-   .. index:: list2 (array)
+      list of values stored in ``a``
 
-   ``members2 a``, ``list2 a``
-     list of members in a two-dimensional array
+   .. function:: members2 /array a
+      		 list2 /array a
 
-   .. index:: first (array)
-   .. index:: last (array)
+      list of members in a two-dimensional array
 
-   ``first a``, ``last a``
-     first and last member of ``a``
+   .. function:: first /array a
+      		 last /array a
 
-   .. index:: rmfirst (array)
-   .. index:: rmlast (array)
+      first and last member of ``a``
 
-   ``rmfirst a``, ``rmlast a``
-     remove first and last member from ``a``
+   .. function:: rmfirst /array a
+      		 rmlast /array a
 
-   .. index:: insert (array)
+      remove first and last member from ``a``
 
-   ``insert a x``
-     insert ``x`` at the beginning of ``a``
+   .. function:: insert /array a x
 
-   .. index:: append (array)
+      insert ``x`` at the beginning of ``a``
 
-   ``append a x``
-     append ``x`` to the end of ``a``
+   .. function:: append /array a x
 
-   .. index:: update (array)
+      append ``x`` to the end of ``a``
 
-   ``update a i x``
-     replace the ``i``\ th member of ``a`` by ``x``
+   .. function:: update /array a i x
 
-   .. index:: update2 (array)
+      replace the ``i``\ th member of ``a`` by ``x``
 
-   ``update2 a (i,j) x``
-     update two-dimensional array
+   .. function:: update2 /array a (i,j) x
+
+      update two-dimensional array
 
    Examples
    ~~~~~~~~
@@ -194,9 +183,9 @@
      11
      [0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
 
-   Indexing an array works in the usual way, using Pure's ``!`` operator. By
-   virtue of the prelude, slicing an array with ``!!`` also works as
-   expected::
+   Indexing an array works in the usual way, using Pure's :func:`\!`
+   operator. By virtue of the prelude, slicing an array with :func:`\!\!` also
+   works as expected::
 
      > a!5;
      0.5
@@ -209,7 +198,7 @@
      > members b;
      [0.0,2.0,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0]
 
-   Two-dimensional arrays can be created with ``array2`` from a list of
+   Two-dimensional arrays can be created with :func:`array2` from a list of
    lists::
 
      > let a2::Array = array2 [[i,x | x = [u,v,w]] | i = 1..2];

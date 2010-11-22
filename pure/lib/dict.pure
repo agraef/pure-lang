@@ -18,7 +18,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
-/* ..
+/* .. module:: dict
 
    Dictionaries
    ------------
@@ -29,7 +29,7 @@
    for the same key should be allowed or not.
 
    * ``Dict`` is an ordered dictionary. This assumes an ordered key type,
-     i.e., the predicate ``<`` must be defined on the keys.
+     i.e., the predicate :func:`<` must be defined on the keys.
 
    * ``HDict`` a hashed dictionary which works with any (mixture of) key types
      but stores members in an apparently random order.
@@ -44,19 +44,21 @@
    hashed) *multidicts*. This implementation guarantees that different members
    for the same key are always kept in the order in which they were inserted,
    and this is also the order in which they will be retrieved by the
-   ``members``, ``keys``, ``vals`` and indexing operations.
+   :func:`members/dict`, :func:`keys/dict`, :func:`vals/dict` and indexing
+   operations.
 
-   The usual comparison predicates (``==``, ``~=``, ``<=``, ``<`` etc.) are
-   defined on all dictionary types, where two dictionaries are considered
-   "equal" (``d1==d2``) if they both contain the same ``key=>value`` pairs,
-   and ``d1<=d2`` means that ``d1`` is a sub-dictionary of ``d2``, i.e., all
-   ``key=>value`` pairs of ``d1`` are also contained in ``d2`` (taking into
-   account multiplicities in the multidict case). Ordered dictionaries compare
-   keys using equality (assuming two keys ``a`` and ``b`` to be equal if
-   neither ``a<b`` nor ``b<a`` holds), while hashed dictionaries check for
-   syntactical equality (using ``===``).  The associated values are always
-   compared using the ``==`` predicate, so this needs to be defined if you
-   want to use any of the comparison operations.
+   The usual comparison predicates (:func:`==`, :func:`~=`, :func:`<=`,
+   :func:`<` etc.) are defined on all dictionary types, where two dictionaries
+   are considered "equal" (``d1==d2``) if they both contain the same
+   ``key=>value`` pairs, and ``d1<=d2`` means that ``d1`` is a sub-dictionary
+   of ``d2``, i.e., all ``key=>value`` pairs of ``d1`` are also contained in
+   ``d2`` (taking into account multiplicities in the multidict case). Ordered
+   dictionaries compare keys using equality (assuming two keys ``a`` and ``b``
+   to be equal if neither ``a<b`` nor ``b<a`` holds), while hashed
+   dictionaries check for syntactical equality (using :func:`===`). The
+   associated values are always compared using the :func:`==` predicate, so
+   this needs to be defined if you want to use any of the comparison
+   operations.
 
    The underlying AVL tree data structure can be found in the avltrees.pure
    module which is included in the library, but not to be invoked directly.
@@ -66,10 +68,11 @@
    and updated for SWI-Prolog by Jan Wielemaker. For the original source see
    http://www.swi-prolog.org.
 
-   The port from SWI-Prolog and the deletion stuff (``rmfirst``, ``rmlast``,
-   ``delete``) missing in the Prolog implementation was provided by Jiri
-   Spitz. The generalization of the code to arbitrary combinations of
-   ordered/hashed and single-/multi-valued keys was done by Albert Graef.
+   The port from SWI-Prolog and the deletion stuff (:func:`rmfirst/dict`,
+   :func:`rmlast/dict`, :func:`delete/dict`) missing in the Prolog
+   implementation was provided by Jiri Spitz. The generalization of the code
+   to arbitrary combinations of ordered/hashed and single-/multi-valued keys
+   was done by Albert Graef.
 
    Imports
    ~~~~~~~
@@ -90,14 +93,16 @@
    In any case, the internal data structure ``T`` is an AVL tree built with
    the following constructors (from the avltrees module):
 
-   ``avl::nil``
-     the empty tree.
+   .. constructor:: avl::nil
 
-   ``avl::bin (key=>value) balance left right``
-     a nonempty tree with given ``key`` and ``value`` in the root node, where
-     ``left`` and ``right`` are the left and right subtree, and ``balance``
-     is either 1, 0 or -1, denoting ``|left|-|right|`` = 1, 0, or -1,
-     respectively.
+      the empty tree.
+
+   .. constructor:: avl::bin (key=>value) balance left right
+
+      a nonempty tree with given ``key`` and ``value`` in the root node, where
+      ``left`` and ``right`` are the left and right subtree, and ``balance``
+      is either 1, 0 or -1, denoting ``|left|-|right|`` = 1, 0, or -1,
+      respectively.
 
    (This is for informational purposes only. The tree constructors are
    private, and client modules must not rely on the internal representation.)
@@ -105,159 +110,139 @@
    Operations
    ~~~~~~~~~~
 
-   .. index:: emptydict
-   .. index:: emptyhdict
-   .. index:: emptymdict
-   .. index:: emptyhmdict
+   .. function:: emptydict
+                 emptyhdict
+                 emptymdict
+                 emptyhmdict
 
-   ``emptydict``, ``emptyhdict``, ``emptymdict``, ``emptyhmdict``
-     return an empty dictionary
+      return an empty dictionary
 
-   .. _dict:
-   .. _hdict:
-   .. index:: dict
-   .. index:: hdict
-   .. index:: mdict
-   .. index:: hmdict
+   .. function:: dict xs
+                 hdict xs
+                 mdict xs
+                 hmdict xs
 
-   ``dict xs``, ``hdict xs``, ``mdict xs``, ``hmdict xs``
-     create a dictionary of the corresponding type either from a list ``xs``
-     of key-value pairs in the form ``key=>value``, or from another
-     dictionary; in the latter case the argument is converted to a dictionary
-     of the desired target type
+      create a dictionary of the corresponding type either from a list ``xs``
+      of key-value pairs in the form ``key=>value``, or from another
+      dictionary; in the latter case the argument is converted to a dictionary
+      of the desired target type
 
-   .. index:: dictp
-   .. index:: hdictp
-   .. index:: mdictp
-   .. index:: hmdictp
+   .. function:: dictp d
+                 hdictp d
+                 mdictp d
+                 hmdictp d
 
-   ``dictp d``, ``hdictp d``, ``mdictp d``, ``hmdictp d``
-     check whether ``x`` is a dictionary of the corresponding type
+      check whether ``x`` is a dictionary of the corresponding type
 
-   .. index:: mkdict
-   .. index:: mkhdict
-   .. index:: mkmdict
-   .. index:: mkhmdict
+   .. function:: mkdict y xs
+                 mkhdict y xs
+                 mkmdict y xs
+                 mkhmdict y xs
 
-   ``mkdict y xs``, ``mkhdict y xs``, ``mkmdict y xs``, ``mkhmdict y xs``
-     create a dictionary from a list of keys and a constant value
+      create a dictionary from a list of keys and a constant value
 
-   .. index:: + (dictionary)
+   .. function:: infix + /dict d1 d2
 
-   ``d1+d2``
-     union: ``d1+d2`` adds the members of ``d2`` to ``d1``
+      union: ``d1+d2`` adds the members of ``d2`` to ``d1``
 
-   .. index:: - (dictionary)
+   .. function:: infix - /dict d1 d2
 
-   ``d1-d2``
-     difference: ``d1-d2`` removes the members of ``d2`` from ``d1``
+      difference: ``d1-d2`` removes the members of ``d2`` from ``d1``
 
-   .. index:: * (dictionary)
+   .. function:: infix * /dict d1 d2
 
-   ``d1*d2``
-     intersection: ``d1*d2`` removes the members *not* in ``d2`` from ``d1``
+      intersection: ``d1*d2`` removes the members *not* in ``d2`` from ``d1``
 
-   .. index:: # (dictionary)
+   .. function:: prefix # /dict d
 
-   ``#d``
-     size of a dictionary (the number of members it contains)
+      size of a dictionary (the number of members it contains)
 
-   .. index:: ! (dictionary)
+   .. function:: infix ! /dict d x
 
-   ``d!x``
-     get the value from ``d`` by key ``x``; in the case of a multidict this
-     actually returns a list of values (which may be empty if ``d`` doesn't
-     contain ``x``)
+      get the value from ``d`` by key ``x``; in the case of a multidict this
+      actually returns a list of values (which may be empty if ``d`` doesn't
+      contain ``x``)
 
-   .. index:: null (dictionary)
+   .. function:: null /dict d
 
-   ``null d``
-     test whether ``d`` is an empty dictionary
+      test whether ``d`` is an empty dictionary
 
-   .. index:: member (dictionary)
+   .. function:: member /dict d x
 
-   ``member d x``
-     test whether ``d`` contains a member with key ``x``
+      test whether ``d`` contains a member with key ``x``
 
-   .. index:: members (dictionary)
-   .. index:: list (dictionary)
+   .. function:: members /dict d
+                 list /dict d
 
-   ``members d``, ``list d``
-     list the members of ``d`` (in ascending order for ordered dictionaries)
+      list the members of ``d`` (in ascending order for ordered dictionaries)
 
-   .. index:: keys (dictionary)
+   .. function:: keys /dict d
 
-   ``keys d``
-     list the keys of ``d`` (in ascending order for ordered dictionaries)
+      list the keys of ``d`` (in ascending order for ordered dictionaries)
 
-   .. index:: vals (dictionary)
+   .. function:: vals /dict d
 
-   ``vals d``
-     list the values of ``d``
+      list the values of ``d``
 
-   .. index:: first (dictionary)
-   .. index:: last (dictionary)
+   .. function:: first /dict d
+                 last /dict d
 
-   ``first d``, ``last d``
-     return the first and the last member of ``d``, respectively
+      return the first and the last member of ``d``, respectively
 
-   .. index:: rmfirst (dictionary)
-   .. index:: rmlast (dictionary)
+   .. function:: rmfirst /dict d
+                 rmlast /dict d
 
-   ``rmfirst d``, ``rmlast d``
-     remove the first and the last member from ``d``, respectively
+      remove the first and the last member from ``d``, respectively
 
-   .. index:: insert (dictionary)
-   .. index:: update (dictionary)
+   .. function:: insert /dict d (x=>y)
+                 update /dict d x y
 
-   ``insert d (x=>y)``, ``update d x y``
-     insert ``x=>y`` into ``d`` (this always adds a new member in a multidict,
-     otherwise it replaces an existing value if there is one); note that
-     ``update`` is just a fully curried version of ``insert``, so ``update d x
-     y`` behaves exactly like ``insert d (x=>y)``
+      insert ``x=>y`` into ``d`` (this always adds a new member in a
+      multidict, otherwise it replaces an existing value if there is one);
+      note that :func:`update/dict` is just a fully curried version of
+      :func:`insert/dict`, so ``update d x y`` behaves exactly like
+      ``insert d (x=>y)``
 
-   .. index:: delete (dictionary)
+   .. function:: delete /dict d x
 
-   ``delete d x``
-     remove ``x`` from ``d`` if present (in the multidict case, only the first
-     member with the given key ``x`` is removed)
+      remove ``x`` from ``d`` if present (in the multidict case, only the
+      first member with the given key ``x`` is removed)
 
-   .. index:: delete_val (dictionary)
+   .. function:: delete_val /dict d (x=>y)
 
-   ``delete_val d (x=>y)``
-     remove a specific key-value pair ``x=>y`` from ``d`` if present (in the
-     multidict case, only the first instance of ``x=>y`` is removed); please
-     also see the notes below regarding this operation
+      remove a specific key-value pair ``x=>y`` from ``d`` if present (in the
+      multidict case, only the first instance of ``x=>y`` is removed); please
+      also see the notes below regarding this operation
 
-   .. index:: delete_all (dictionary)
+   .. function:: delete_all /dict d x
 
-   ``delete_all d x``
-     remove all instances of ``x`` from ``d`` (in the non-multidict case, this
-     is just the same as ``delete``)
+      remove all instances of ``x`` from ``d`` (in the non-multidict case,
+      this is just the same as :func:`delete/dict`)
 
-   Notes:
+   .. note::
 
-   * The infix operators ``+``, ``-`` and ``*`` work like the corresponding
-     set and bag operations (see `Sets and Bags`_), treating dictionaries as
-     collections of ``key=>val`` pairs. You can mix arbitrary operand types
-     with these operations, as well as with the comparison operations; the
-     necessary conversions from less general dictionary types (ordered,
-     single-valued) to more general types (hashed, multi-valued) are handled
-     automatically.
+      * The infix operators :func:`+/dict`, :func:`-/dict` and :func:`*\/dict`
+      	work like the corresponding set and bag operations (see `Sets and
+      	Bags`_), treating dictionaries as collections of ``key=>val``
+      	pairs. You can mix arbitrary operand types with these operations, as
+      	well as with the comparison operations; the necessary conversions from
+      	less general dictionary types (ordered, single-valued) to more general
+      	types (hashed, multi-valued) are handled automatically.
 
-   * The ``delete_val`` function always compares values using equality
-     (``==``), so this predicate must be defined on the values stored in the
-     dictionary in order to make this operation work. If there is more than
-     one instance of the given value under the given key, the first such
-     instance will be removed (which may be any instance that compares equal,
-     not necessarily an exact match).
+      * The :func:`delete_val/dict` function always compares values using
+        equality (:func:`==`), so this predicate must be defined on the values
+        stored in the dictionary in order to make this operation work. If
+        there is more than one instance of the given value under the given
+        key, the first such instance will be removed (which may be any
+        instance that compares equal, not necessarily an exact match).
 
-   * In the multidict case, ``delete_val`` may require linear time with
-     respect to the number of different values stored under the given key.
-     Since this operation is also needed to implement some other multidict
-     operations like comparisons, difference and intersection, these may end
-     up requiring quadratic running times in degenerate cases (i.e., if the
-     majority of members happens to be associated with only very few keys).
+      * In the multidict case, :func:`delete_val/dict` may require linear time
+        with respect to the number of different values stored under the given
+        key.  Since this operation is also needed to implement some other
+        multidict operations like comparisons, difference and intersection,
+        these may end up requiring quadratic running times in degenerate cases
+        (i.e., if the majority of members happens to be associated with only
+        very few keys).
 
    Examples
    ~~~~~~~~
@@ -271,9 +256,9 @@
      [99.1,77]
      ["bar"=>99.1,"foo"=>77]
 
-   Indexing a dictionary works in the usual way, using Pure's ``!`` operator.
-   An ``out_of_bound`` exception is thrown if the key is not in the
-   dictionary::
+   Indexing a dictionary works in the usual way, using Pure's :func:`\!`
+   operator. An :cons:`out_of_bounds` exception is thrown if the key is not in
+   the dictionary::
 
      > d!"foo";
      77
@@ -281,8 +266,8 @@
      <stdin>, line 5: unhandled exception 'out_of_bounds' while evaluating
      'd!"baz"'
 
-   By virtue of the prelude, slicing a dictionary with ``!!`` also works as
-   expected::
+   By virtue of the prelude, slicing a dictionary with :func:`\!\!` also works
+   as expected::
 
      > d!!["foo","bar","baz"];
      [77,99.1]
@@ -304,7 +289,7 @@
    value for a given key to be stored in the dictionary. In this case, the
    indexing operation returns a list of all values for the given key, which
    may be empty if the key is not in the dictionary (rather than throwing an
-   ``out_of_bound`` exception)::
+   :cons:`out_of_bounds` exception)::
 
      > let d::MDict = mdict ["foo"=>77,"bar"=>99.1,"foo"=>99];
      > d!"foo"; d!"baz";

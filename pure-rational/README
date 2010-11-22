@@ -8,6 +8,8 @@ Version @version@, |today|
 | Albert Graef <Dr.Graef@t-online.de>
 | Jiri Spitz <jiri.spitz@bluetone.cz>
 
+.. default-domain:: pure
+
 This package provides a Pure port of `Q+Q`_, Rob Hubbard's rational number
 library for the Q programming language. The port was done by Jiri Spitz. It
 contains ``rational.pure``, a collection of utility functions for rational
@@ -28,8 +30,8 @@ then you'll have to import the modules as follows::
   using rational, rat_interval;
   using namespace rational, interval;
 
-Also note that ``rational`` always pulls in the ``math`` module, so you don't
-have to import the latter explicitly if you are using ``rational``.
+Also note that :mod:`rational` always pulls in the :mod:`math` module, so you
+don't have to import the latter explicitly if you are using :mod:`rational`.
 
 Another minor difference to the Q version of this module is that rational
 results always have Pure bigints as their numerators and denominators, hence
@@ -82,6 +84,9 @@ Introduction
 
 The Rational Module
 -------------------
+
+.. module:: rational
+.. namespace:: rational
 
 This module provides additional operations on the rational number type provided
 by the ``math.pure`` module in the standard library. The module is compatible
@@ -148,15 +153,14 @@ Rationals are constructed with the ``%`` exact division operator, and other
 kinds of numbers can be converted to rationals with the ``rational`` function.
 These are both defined in math.pure.
 
-``n1 % n2``
-  is the exact division operator, which may be used as a constructor (for
-  integers n1 and n2). This is described in `More on Division`_.
+.. function:: infix ::% /rational n1 n2
 
-.. _rational:
-.. index:: rational
+   is the exact division operator, which may be used as a constructor (for
+   integers n1 and n2). This is described in `More on Division`_.
 
-``rational x``
-  converts the given number ``x`` to a rational.
+.. function:: \::rational x
+
+   converts the given number ``x`` to a rational.
 
 **Example 1** Constructing a fraction::
 
@@ -177,29 +181,22 @@ coprime (i.e. do not have a factor in common) and the denominator is positive
 rational in simplest form. This is a property of the representation of the
 rational number and not of the number itself.
 
-.. _num:
-.. index:: num
+.. function:: \::num q
 
+   given a rational or integer q, returns the ‘(signed) simplest
+   numerator’, i.e.  the numerator of the normalised form of q.
 
-``num q``
-  given a rational or integer q, returns the ‘(signed) simplest
-  numerator’, i.e.  the numerator of the normalised form of q.
+.. function:: \::den q
 
-.. _den:
-.. index:: den
+   given a rational or integer q, returns the ‘(positive) simplest
+   denominator’,  i.e. the denominator of the normalised form of q.
 
-``den q``
-  given a rational or integer q, returns the ‘(positive) simplest
-  denominator’,  i.e. the denominator of the normalised form of q.
+.. function:: num_den q
 
-.. _num_den:
-.. index:: num_den
-
-``num_den q``
-  given a rational or integer q, returns a pair (n, d) containing the
-  (signed) simplest numerator n and the (positive) simplest denominator d. This
-  is the inverse (up to equivalence) of rational as defined on integer pairs
-  (see `Constructors`_).
+   given a rational or integer q, returns a pair (n, d) containing the
+   (signed) simplest numerator n and the (positive) simplest denominator
+   d. This is the inverse (up to equivalence) of rational as defined on
+   integer pairs (see `Constructors`_).
 
 **Example 3** Using num_den to obtain a representation in simplest form::
 
@@ -215,18 +212,18 @@ rational number and not of the number itself.
   > num_den (-3);
   -3L,1L
 
-Together, num and den are a pair of 'decomposition' operators, and `num_den`_ is
-also a decomposition operator. There are others (see `Decomposition`_). The
-integer and fraction function (see `Integer and Fraction Parts`_) may be used in
-conjunction with `num_den_gauss`_ to decompose a rational into integer,
-numerator and denominator parts.
+Together, :func:`~::num` and :func:`~::den` are a pair of 'decomposition'
+operators, and :func:`num_den` is also a decomposition operator. There are
+others (see `Decomposition`_). The integer and fraction function (see `Integer
+and Fraction Parts`_) may be used in conjunction with :func:`num_den_gauss` to
+decompose a rational into integer, numerator and denominator parts.
 
 Type and Value Tests
 --------------------
 
-The functions `rationalp`_ and `ratvalp`_ and other rational variants are new
-for rationals and the standard functions `exactp`_ and `inexactp`_ are
-extended for rationals.
+The functions :func:`~::rationalp` and :func:`~::ratvalp` and other rational
+variants are new for rationals and the standard functions :func:`~::exactp` and
+:func:`~::inexactp` are extended for rationals.
 
 A value is 'exact', or of an exact type, if it is of a type that is able to
 represent the values returned by arithmetical operations exactly; in a sense, it
@@ -242,32 +239,24 @@ are not stored exactly.)
 The rationals are an exact type. All rational numbers (subject to available
 resources, of course) are stored exactly. The results of the arithmetical
 operations on rationals are rationals represented exactly. Beware that the
-standard ``intvalp`` and `ratvalp`_ may return 1 even if the value is of
-double type. However, these functions may be combined with `exactp`_.
+standard ``intvalp`` and :func:`~::ratvalp` may return 1 even if the value is
+of double type. However, these functions may be combined with :func:`~::exactp`.
 
-.. _exactp:
-.. index:: exactp
+.. function:: \::exactp x
 
-``exactp x``
-  returns whether x has an exact value.
+   returns whether x has an exact value.
 
-.. _inexactp:
-.. index:: inexactp
+.. function:: \::inexactp x
 
-``inexactp x``
-  returns whether x has an inexact value.
+   returns whether x has an inexact value.
 
-.. _rationalp:
-.. index:: rationalp
+.. function:: \::rationalp x
 
-``rationalp x``
-  returns whether x is of rational type.
+   returns whether x is of rational type.
 
-.. _ratvalp:
-.. index:: ratvalp
+.. function:: \::ratvalp x
 
-``ratvalp x``
-  returns whether x has a rational value.
+   returns whether x has a rational value.
 
 **Example 4** Rational value tests::
 
@@ -297,28 +286,15 @@ Arithmetic
 Operators
 ---------
 
-.. _+:
-.. index:: + (rational)
-.. _-:
-.. index:: - (rational)
-.. _*:
-.. index:: * (rational)
-
 The standard arithmetic operators (+), (−) and (*) are overloaded to have at
 least one rational operand. If both operands are rational then the
 result is rational. If one operand is integer, then the result is
 rational. If one operand is double, then the result is double.
 
-.. _/:
-.. index:: / (rational)
-
 The operators (/) and (%) are overloaded for division on at least one
 rational operand. The value returned by (/) is always ``inexact`` (in the
 sense of `Type and Value Tests`_). The value returned by (%) is ``exact`` (if it
 exists).
-
-.. _pow:
-.. index:: pow (rational)
 
 The standard function ``pow`` is overloaded to have a rational left
 operand. If ``pow`` is passed integer operands where the right operand is
@@ -327,9 +303,6 @@ integer; negative values are permitted (because q\ :sup:`−z` =
 1/q\ :sup:`z`). It is not overloaded to also have a rational right operand
 because such values are not generally rational
 (e.g. q\ :sup:`1/n` = \ :sup:`n`\√q).
-
-.. _^:
-.. index:: ^ (rational)
 
 The standard arithmetic operator (^) is also overloaded, but produces a
 double value (as always).
@@ -355,7 +328,7 @@ double value (as always).
   > pow 3 (-5);
   1L%243L
 
-(See the function `str_mixed`_.)
+(See the function :func:`str_mixed`.)
 
 Beware that (/) on integers will not produce a rational result.
 
@@ -368,20 +341,18 @@ Beware that (/) on integers will not produce a rational result.
   > str_mixed ans;
   "3L+1L/7L"
 
-(See the function `str_mixed`_.)
+(See the function :func:`str_mixed`.)
 
 More on Division
 ----------------
 
-.. _%:
-.. index:: %
-
 There is a rational-aware divide operator on the numeric types:
 
-``n1 % n2``
-  returns the quotient (∈ **Q**) of n1 and n2. If n1 and n2 are rational or
-  integer then the result is rational. This operator has the precedence
-  of division (/).
+.. function:: infix ::% /rational n1 n2
+
+   returns the quotient (∈ **Q**) of n1 and n2. If n1 and n2 are rational or
+   integer then the result is rational. This operator has the precedence
+   of division (/).
 
 **Example 7** Using % like a constructor::
 
@@ -392,13 +363,11 @@ There is a rational-aware divide operator on the numeric types:
   > str_mixed ans;
   "2L+3L/8L"
 
-(See the function `str_mixed`_.)
+(See the function :func:`str_mixed`.)
 
-.. _reciprocal:
-.. index:: reciprocal
+.. function:: reciprocal n
 
-``reciprocal n``
-  returns the reciprocal of n: 1/n.
+   returns the reciprocal of n: 1/n.
 
 **Example 8** Reciprocal::
 
@@ -406,65 +375,43 @@ There is a rational-aware divide operator on the numeric types:
   7L%22L
 
 The following division functions are parameterised by a rounding mode
-`roundfun`_. The available rounding modes are described in `Rounding to
+``roundfun``. The available rounding modes are described in `Rounding to
 Integer`_.
 
-.. _divide:
-.. index:: divide
+.. function:: divide roundfun n d
 
-``divide roundfun n d``
-  for rationals n and d returns a pair (q, r) of 'quotient' and 'remainder'
-  where q is an integer and r is a rational such that \|r\| < \|d\| (or
-  better) and n = q * d + r. Further conditions may hold, depending on the
-  chosen rounding mode `roundfun`_ (see `Rounding to Integer`_).
-  If `roundfun`_ = `floor`_ then 0 ≤ r < d.
-  If `roundfun`_ = `ceil`_ then −d < r ≤ 0.
-  If `roundfun`_ = `trunc`_ then \|r\| < \|d\| and sgn r ∈ {0, sgn d}.
-  If `roundfun`_ = `round`_, `roundfun`_ = `round_zero_bias`_ or `roundfun`_ =
-  `round_unbiased`_ then \|r\| ≤ d/2.
+   for rationals n and d returns a pair (q, r) of 'quotient' and 'remainder'
+   where q is an integer and r is a rational such that \|r\| < \|d\| (or
+   better) and n = q * d + r. Further conditions may hold, depending on the
+   chosen rounding mode ``roundfun`` (see `Rounding to Integer`_).
+   If ``roundfun`` = :func:`~::floor` then 0 ≤ r < d.
+   If ``roundfun`` = :func:`~::ceil` then −d < r ≤ 0.
+   If ``roundfun`` = :func:`~::trunc` then \|r\| < \|d\| and sgn r ∈ {0, sgn d}.
+   If ``roundfun`` = :func:`~::round`, ``roundfun`` =
+   :func:`~::round_zero_bias` or ``roundfun`` = :func:`round_unbiased` then
+   \|r\| ≤ d/2.
 
-.. _quotient:
-.. index:: quotient
+.. function:: quotient roundfun nN d
 
-``quotient roundfun nN d``
-  returns just the quotient as produced by `divide`_ roundfun n d.
+   returns just the quotient as produced by :func:`divide` roundfun n d.
 
-.. _modulus:
-.. index:: modulus
+.. function:: modulus roundfun n d
 
-``modulus roundfun n d``
-  returns just the remainder as produced by `divide`_ roundfun n d.
+   returns just the remainder as produced by :func:`divide` roundfun n d.
 
-.. _div:
-.. index:: div (rational)
+.. function:: infix ::div /rational q1 q2
 
-``q1 div q2``
-  (overload of the built-in div) q1 and q2 may be rational or integer.
-  Returns an integer.
+   (overload of the built-in div) q1 and q2 may be rational or integer.
+   Returns an integer.
 
-.. _mod:
-.. index:: mod (rational)
+.. function:: infix ::mod /rational q1 q2
 
-``q1 mod q2``
-  (overload of the built-in mod) q1 and q2 may be rational or integer.
-  Returns a rational. If q = q1 div q2 and r = q1 mod q2 then
-  q1 = q * q2 + q, q ∈ **Z**, \|r\| < \|q2\| and sgn r ∈ {0, sgn q2}.
+   (overload of the built-in mod) q1 and q2 may be rational or integer.
+   Returns a rational. If q = q1 div q2 and r = q1 mod q2 then q1 = q * q2 +
+   q, q ∈ **Z**, \|r\| < \|q2\| and sgn r ∈ {0, sgn q2}.
 
 Relations — Equality and Inequality Tests
 -----------------------------------------
-
-.. _==:
-.. index:: == (rational)
-.. _~=:
-.. index:: ~= (rational)
-.. _<:
-.. index:: < (rational)
-.. _<=:
-.. index:: <= (rational)
-.. _>:
-.. index:: > (rational)
-.. _>=:
-.. index:: >= (rational)
 
 The standard arithmetic operators (==), (~=), (<), (<=), (>), (>=) are
 overloaded to have at least one rational operand. The other operand may be
@@ -478,12 +425,10 @@ rational, integer or double.
 Comparison Function
 -------------------
 
-.. _cmp:
-.. index:: cmp
+.. function:: cmp n1 n2
 
-``cmp n1 n2``
-  is the 'comparison' (or 'compare') function, and returns sgn (n1 − n2); that
-  is, it returns −1 if n1 < n2, 0 if n1 = n2, and +1 if n1 > n2.
+   is the 'comparison' (or 'compare') function, and returns sgn (n1 − n2);
+   that is, it returns −1 if n1 < n2, 0 if n1 = n2, and +1 if n1 > n2.
 
 **Example 10** Compare::
 
@@ -506,19 +451,15 @@ Absolute Value and Sign
 
 The standard ``abs`` and ``sgn`` functions are overloaded for rationals.
 
-.. _abs:
-.. index:: abs (rational)
+.. function:: \::abs q
 
-``abs q``
-  returns absolute value, or magnitude, \|q\| of q; abs q = \|q\| = q × sgn q
-  (see  below).
+   returns absolute value, or magnitude, \|q\| of q; abs q = \|q\| = q × sgn q
+   (see  below).
 
-.. _sgn:
-.. index:: sgn (rational)
+.. function:: \::sgn q
 
-``sgn q``
-  returns the sign of q as an integer; returns −1 if q < 0, 0 if q = 0, +1
-  if q > 0.
+   returns the sign of q as an integer; returns −1 if q < 0, 0 if q = 0, +1
+   if q > 0.
 
 Together, these functions satisfy the property ∀q • (sgn q) * (abs q) = q (i.e.
 ∀q • (sgn q) * \|q\| = q). Thus these provide a pair of 'decomposition'
@@ -530,15 +471,13 @@ Greatest Common Divisor (GCD) and Least Common Multiple (LCM)
 The standard functions ``gcd`` and ``lcm`` are overloaded for rationals, and
 mixtures of integer and rational.
 
-.. _gcd:
-.. index:: gcd (rational)
+.. function:: \::gcd n1 n2
 
-``gcd n1 n2``
-  The GCD is also known as the Highest Common Factor (HCF). The GCD of rationals
-  q1 and q2 is the largest (therefore positive) rational f such that f divides
-  into both q1 and q2 exactly, i.e. an integral number of times. This is not
-  defined for n1 and n2 both zero. For integral q1 and q2, this definition
-  coincides with the usual definition of GCD for integers.
+   The GCD is also known as the Highest Common Factor (HCF). The GCD of
+   rationals q1 and q2 is the largest (therefore positive) rational f such
+   that f divides into both q1 and q2 exactly, i.e. an integral number of
+   times. This is not defined for n1 and n2 both zero. For integral q1 and q2,
+   this definition coincides with the usual definition of GCD for integers.
 
 **Example 11** With two rationals::
 
@@ -578,14 +517,12 @@ mixtures of integer and rational.
   > gcd (rational (-18)) (rational (-24));
   6L%1L
 
-.. _lcm:
-.. index:: lcm (rational)
+.. function:: \::lcm n1 n2
 
-``lcm n1 n2``
-  The LCM of rationals q1 and q2 is the smallest positive rational m such that
-  both q1 and q2 divide m exactly. This is not defined for n1 and n2 both zero.
-  For integral q1 and q2, this definition coincides with the usual definition
-  of LCM for integers.
+   The LCM of rationals q1 and q2 is the smallest positive rational m such
+   that both q1 and q2 divide m exactly. This is not defined for n1 and n2
+   both zero.  For integral q1 and q2, this definition coincides with the
+   usual definition of LCM for integers.
 
 **Example 15** With two rationals::
 
@@ -622,11 +559,6 @@ numbers: (gcd q1 q2) * (lcm q1 q2) = \|q1 * q2\|.
 Extrema (Minima and Maxima)
 ---------------------------
 
-.. _min:
-.. index:: min (rational)
-.. _max:
-.. index:: max (rational)
-
 The standard ``min`` and ``max`` functions work with rational values.
 
 **Example 18** Maximum::
@@ -657,14 +589,12 @@ concerning 'complex numbers' (see `Rational Complex Numbers`_) are named with
 Complexity Relations
 ~~~~~~~~~~~~~~~~~~~~
 
-.. _eq_cplx:
-.. index:: eq_cplx
+.. function:: infix eq_cplx n1 n2
 
-``n1 eq_cplx n2``
-  "[is] equally complex [to]" — returns 1 if n1 and n2 are equally complex;
-  returns 0 otherwise. Equal complexity is not the same a equality; n1 and n2
-  are equally complex if their simplest denominators are equal. Equal
-  complexity forms an equivalence relation on rationals.
+   "[is] equally complex [to]" — returns 1 if n1 and n2 are equally complex;
+   returns 0 otherwise. Equal complexity is not the same a equality; n1 and n2
+   are equally complex if their simplest denominators are equal. Equal
+   complexity forms an equivalence relation on rationals.
 
 **Example 19** Complexity equality test::
 
@@ -675,20 +605,16 @@ Complexity Relations
   > (3%3) eq_cplx (1%3); // LHS is not in simplest form
   0
 
-.. _not_eq_cplx:
-.. index:: not_eq_cplx
+.. function:: infix not_eq_cplx n1 n2
 
-``n1 not_eq_cplx n2``
-  "not equally complex" — returns 0 if n1 and n2 are equally complex; returns 1
-  otherwise.
+   "not equally complex" — returns 0 if n1 and n2 are equally complex; returns
+   1 otherwise.
 
-.. _less_cplx:
-.. index:: less_cplx
+.. function:: infix less_cplx n1 n2
 
-``n1 less_cplx n2``
-  "[is] less complex [than]" (or "simpler") — returns 1 if n1 is strictly less
-  complex than n2; returns 0 otherwise. This forms a partial strict ordering
-  on rationals.
+   "[is] less complex [than]" (or "simpler") — returns 1 if n1 is strictly
+   less complex than n2; returns 0 otherwise. This forms a partial strict
+   ordering on rationals.
 
 **Example 20** Complexity inequality test::
 
@@ -699,40 +625,32 @@ Complexity Relations
   > (3%3) less_cplx (1%3); // LHS is not in simplest form
   1
 
-.. _less_eq_cplx:
-.. index:: less_eq_cplx
+.. function:: infix less_eq_cplx n1 n2
 
-``n1 less_eq_cplx n2``
-  "less or equally complex" (or "not more complex") — returns 1 if n1 is less
-  complex than or equally complex to n2; returns 0 otherwise. This forms a
-  partial non-strict ordering on rationals.
+   "less or equally complex" (or "not more complex") — returns 1 if n1 is less
+   complex than or equally complex to n2; returns 0 otherwise. This forms a
+   partial non-strict ordering on rationals.
 
-.. _more_cplx:
-.. index:: more_cplx
+.. function:: infix more_cplx n1 n2
 
-``n1 more_cplx n2``
-  "[is] more complex [than]" — returns 1 if n1 is strictly more complex than n2;
-  returns 0 otherwise. This forms a partial strict ordering on rationals.
+   "[is] more complex [than]" — returns 1 if n1 is strictly more complex than
+   n2; returns 0 otherwise. This forms a partial strict ordering on rationals.
 
-.. _more_eq_cplx:
-.. index:: more_eq_cplx
+.. function:: infix more_eq_cplx n1 n2
 
-``n1 more_eq_cplx n2``
-  "more or equally complex" (or "not less complex") — returns 1 if n1 is more
-  complex than or equally complex to n2; returns 0 otherwise. This forms a
-  partial non-strict ordering on rationals.
+   "more or equally complex" (or "not less complex") — returns 1 if n1 is more
+   complex than or equally complex to n2; returns 0 otherwise. This forms a
+   partial non-strict ordering on rationals.
 
 Complexity Comparison Function
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. _cmp_complexity:
-.. index:: cmp_complexity
+.. function:: cmp_complexity n1 n2
 
-``cmp_complexity n1 n2``
-  is the 'complexity comparison' function, and returns the sign of the
-  difference in complexity; that is, it returns −1 if n1 is less complex than
-  n2, 0 if n1 and n2 are equally complex (but not necessarily equal), and +1 if
-  n1 is more complex than n2.
+   is the 'complexity comparison' function, and returns the sign of the
+   difference in complexity; that is, it returns −1 if n1 is less complex than
+   n2, 0 if n1 and n2 are equally complex (but not necessarily equal), and +1
+   if n1 is more complex than n2.
 
 **Example 21** Complexity comparison::
 
@@ -746,12 +664,10 @@ Complexity Comparison Function
 Complexity Extrema
 ~~~~~~~~~~~~~~~~~~
 
-.. _least_cplx:
-.. index:: least_cplx
+.. function:: least_cplx n1 n2
 
-``least_cplx n1 n2``
-  returns the least complex of n1 and n2; if they’re equally complex, n1 is
-  returned.
+   returns the least complex of n1 and n2; if they’re equally complex, n1 is
+   returned.
 
 **Example 22** Complexity selection::
 
@@ -762,23 +678,19 @@ Complexity Extrema
   > least_cplx (1%3) (3%3); // second argument not in simplest form
   1L%1L
 
-.. _most_cplx:
-.. index:: most_cplx
+.. function:: most_cplx n1 n2
 
-``most_cplx n1 n2``
-  returns the most complex of n1 and n2; if they’re equally complex, n1 is
-  returned.
+   returns the most complex of n1 and n2; if they’re equally complex, n1 is
+   returned.
 
 Other Complexity Functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. _complexity_rel:
-.. index:: complexity_rel
+.. function:: complexity_rel n1 op n2
 
-``complexity_rel n1 op n2``
-  returns "complexity-of n1" compared by operator op to the “complexity-of n2”.
-  This is equivalent to prefix complexity rel op n1 n2 (below), but is the more
-  readable form.
+   returns "complexity-of n1" compared by operator op to the “complexity-of
+   n2”. This is equivalent to prefix complexity rel op n1 n2 (below), but is
+   the more readable form.
 
 **Example 23** Complexity relations::
 
@@ -789,41 +701,37 @@ Other Complexity Functions
   > complexity_rel (1%4) (>) (1%5);
   0
 
-.. _prefix_complexity_rel:
-.. index:: prefix_complexity_rel
+.. function:: prefix_complexity_rel op n1 n2
 
-``prefix_complexity_rel op n1 n2``
-  returns the same as complexity_rel n1 op n2, but this form is more convenient
-  for currying.
+   returns the same as complexity_rel n1 op n2, but this form is more
+   convenient for currying.
 
 Mediants and Farey Sequences
 ----------------------------
 
-.. _mediant:
-.. index:: mediant
+.. function:: mediant q1 q2
 
-``mediant q1 q2``
-  returns the canonical mediant of the rationals q1 and q2, a form of
-  (nonarithmetic) average on rationals. The mediant of the representations
-  n1/d1 = q1 and n2/d2 = q2, where d1 and d2 must be positive, is defined as
-  (n1 + n2)/(d1 + d2). A mediant of the rationals q1 and q2 is a mediant of some
-  representation of each of q1 and q2. That is, the mediant is dependent upon
-  the representations and therefore is not well-defined as a function on pairs
-  of rationals. The canonical mediant always assumes the simplest
-  representation, and therefore is well-defined as a function on pairs of
-  rationals.
+   returns the canonical mediant of the rationals q1 and q2, a form of
+   (nonarithmetic) average on rationals. The mediant of the representations
+   n1/d1 = q1 and n2/d2 = q2, where d1 and d2 must be positive, is defined as
+   (n1 + n2)/(d1 + d2). A mediant of the rationals q1 and q2 is a mediant of
+   some representation of each of q1 and q2. That is, the mediant is dependent
+   upon the representations and therefore is not well-defined as a function on
+   pairs of rationals. The canonical mediant always assumes the simplest
+   representation, and therefore is well-defined as a function on pairs of
+   rationals.
 
-  By the phrase “the mediant” (as opposed to just “a mediant”) we
-  always mean “the canonical mediant”.
+   By the phrase “the mediant” (as opposed to just “a mediant”) we
+   always mean “the canonical mediant”.
 
-  If q1 < q2, then any mediant q is always such that q1 < q < q2.
+   If q1 < q2, then any mediant q is always such that q1 < q < q2.
 
-  The (canonical) mediant has some special properties. If  q1 and q2 are
-  integers, then the mediant is the arithmetic mean. If q1 and q2  are unit
-  fractions (reciprocals of integers), then the mediant is the harmonic  mean.
-  The mediant of q and 1/q is ±1, (which happens to be a geometric mean   with
-  the correct sign, although this is a somewhat uninteresting and  degenerate
-  case).
+   The (canonical) mediant has some special properties. If q1 and q2 are
+   integers, then the mediant is the arithmetic mean. If q1 and q2 are unit
+   fractions (reciprocals of integers), then the mediant is the harmonic mean.
+   The mediant of q and 1/q is ±1, (which happens to be a geometric mean with
+   the correct sign, although this is a somewhat uninteresting and degenerate
+   case).
 
 **Example 24** Mediants::
 
@@ -840,13 +748,11 @@ Mediants and Farey Sequences
   > mediant (-10) (-1%10);
   (-1L)%1L
 
-.. _farey:
-.. index:: farey
+.. function:: farey k
 
-``farey -k``
-  for an integer k, farey returns the ordered list containing the order-k
-  Farey sequence, which is the ordered list of all rational numbers between 0
-  and 1 inclusive with (simplest) denominator at most k.
+   for an integer k, farey returns the ordered list containing the order-k
+   Farey sequence, which is the ordered list of all rational numbers between 0
+   and 1 inclusive with (simplest) denominator at most k.
 
 **Example 25** A Farey sequence::
 
@@ -854,7 +760,7 @@ Mediants and Farey Sequences
   ["0L","1L/6L","1L/5L","1L/4L","1L/3L","2L/5L","1L/2L","3L/5L","2L/3L",
   "3L/4L","4L/5L","5L/6L","1L"]
 
-(See the function `str_mixed`_.)
+(See the function :func:`str_mixed`.)
 
 Farey sequences and mediants are closely related. Three rationals q1 < q2 < q3
 are consecutive members of a Farey sequence if and only if q2 is the mediant of
@@ -864,11 +770,9 @@ Farey sequence, then n2d1 − n1d2 = 1.
 Rational Type Simplification
 ----------------------------
 
-.. _rat_simplify:
-.. index:: rat_simplify
+.. function:: rat_simplify q
 
-``rat_simplify q``
-  returns q with rationals simplified to integers, if possible.
+   returns q with rationals simplified to integers, if possible.
 
 **Example 26** Rational type simplification::
 
@@ -887,55 +791,40 @@ simplification.
 Rounding to Integer
 -------------------
 
-.. _roundfun:
-.. index:: roundfun
-
 Some of these are new functions, and some are overloads of standard functions.
 The behaviour of the overloads is consistent with that of the standard
 functions.
 
-.. _floor:
-.. index:: floor (rational)
+.. function:: \::floor q
 
-``floor q``
-  (overload of standard function) returns q rounded downwards, i.e. towards −1,
-  to an integer, usually denoted bQc.
+   (overload of standard function) returns q rounded downwards, i.e. towards
+   −1, to an integer, usually denoted bQc.
 
-.. _ceil:
-.. index:: ceil (rational)
+.. function:: \::ceil q
 
-``ceil q``
-  (overload of standard function) returns q rounded upwards, i.e. towards +1, to
-  an integer, usually denoted dQe. 
+   (overload of standard function) returns q rounded upwards, i.e. towards +1,
+   to an integer, usually denoted dQe.
 
-.. _trunc:
-.. index:: trunc (rational)
+.. function:: \::trunc q
 
-``trunc q``
-  (overload of standard function) returns q truncated, i.e. rounded towards 0,
-  to an integer.
+   (overload of standard function) returns q truncated, i.e. rounded towards
+   0, to an integer.
 
-.. _round:
-.. index:: round (rational)
+.. function:: \::round q
 
-``round q``
-  (overload of standard function) returns q 'rounded off', i.e. rounded to the
-  nearest integer, with ‘half-integers’ (values that are an integer plus a
-  half) rounded away from zero.
+   (overload of standard function) returns q 'rounded off', i.e. rounded to
+   the nearest integer, with ‘half-integers’ (values that are an integer plus
+   a half) rounded away from zero.
 
-.. _round_zero_bias:
-.. index:: round_zero_bias
+.. function:: round_zero_bias q
 
-``round_zero_bias q``
-  (new function) returns q 'rounded off', i.e. rounded to the nearest
-  integer, but with ‘half-integers’ rounded towards zero.
+   (new function) returns q 'rounded off', i.e. rounded to the nearest
+   integer, but with ‘half-integers’ rounded towards zero.
 
-.. _round_unbiased:
-.. index:: round_unbiased
+.. function:: round_unbiased q
 
-``round_unbiased q``
-  (new function) returns q rounded to the nearest integer, with
-  ‘half-integers’ rounded to the nearest even integer.
+   (new function) returns q rounded to the nearest integer, with
+   ‘half-integers’ rounded to the nearest even integer.
 
 **Example 27** Illustration of the different rounding modes::
 
@@ -955,15 +844,16 @@ functions.
   > map round_unbiased l;
   [-3L,-2L,-2L,-2L,-1L,0L,0L,0L,1L,2L,2L,2L,3L]
 
-(See the function `double`_.)
+(See the function :func:`~::double`.)
 
 Integer and Fraction Parts
 --------------------------
 
-``integer_and_fraction roundfun q``
-  returns a pair (z, f) where z is the 'integer part' as an integer, f is
-  the 'fraction part' as a rational, where the rounding operations are
-  performed using rounding mode `roundfun`_ (see `Rounding to Integer`_).
+.. function:: integer_and_fraction roundfun q
+
+   returns a pair (z, f) where z is the 'integer part' as an integer, f is the
+   'fraction part' as a rational, where the rounding operations are performed
+   using rounding mode ``roundfun`` (see `Rounding to Integer`_).
 
 **Example 28** Integer and fraction parts with the different rounding modes::
 
@@ -976,39 +866,34 @@ Integer and Fraction Parts
   -3L,(-1L)%7L
 
 It is always the case that z and f have the property that q = z + f. However,
-the remaining properties depend upon the choice of `roundfun`_.
+the remaining properties depend upon the choice of ``roundfun``.
 Thus this provides a 'decomposition' operator; there are others (see
 `Decomposition`_).
-If `roundfun`_ = `floor`_ then 0 ≤ f < 1. If Round = `ceil`_ then −1 < f ≤ 0.
-If `roundfun`_ = `trunc`_ then \|f\| < 1 and sgn f ∈ {0, sgn q}.
-If `roundfun`_ = `round`_, `roundfun`_ = `round_zero_bias`_ or `roundfun`_ =
-`round_unbiased`_ then \|f\| ≤ 1/2.
+If ``roundfun`` = :func:`~::floor` then 0 ≤ f < 1.
+If ``roundfun`` = :func:`~::ceil` then −1 < f ≤ 0.
+If ``roundfun`` = :func:`~::trunc` then \|f\| < 1 and sgn f ∈ {0, sgn q}.
+If ``roundfun`` = :func:`~::round`, ``roundfun`` = :func:`~::round_zero_bias` or
+``roundfun`` = :func:`round_unbiased` then \|f\| ≤ 1/2.
 
-.. _fraction:
-.. index:: fraction
+.. function:: fraction roundfun q
 
-``fraction roundfun q``
-  returns just the 'fraction part' as a rational, where the rounding
-  operations are performed using `roundfun`_. The corresponding function
-  'integer' is not provided, as integer `roundfun`_ q would be just
-  `roundfun`_ q. The integer and fraction function (probably with `trunc`_ or
-  `floor`_ rounding mode) may be used in conjunction with `num_den`_ (see
-  `'Deconstructors'`_) to decompose a rational into integer, numerator and
-  denominator parts.
+   returns just the 'fraction part' as a rational, where the rounding
+   operations are performed using ``roundfun``. The corresponding function
+   'integer' is not provided, as integer ``roundfun`` q would be just
+   ``roundfun`` q. The integer and fraction function (probably with
+   :func:`~::trunc` or :func:`~::floor` rounding mode) may be used in
+   conjunction with :func:`num_den` (see `'Deconstructors'`_) to decompose a
+   rational into integer, numerator and denominator parts.
 
-.. _int:
-.. index:: int (rational)
+.. function:: \::int q
 
-``int q``
-  overloads the built-in int and returns the 'integer part' of q consistent with
-  the built-in.
+   overloads the built-in int and returns the 'integer part' of q consistent
+   with the built-in.
 
-.. _frac:
-.. index:: frac (rational)
+.. function:: \::frac q
 
-``frac q``
-  overloads the built-in frac and returns the 'fraction part' of q consistent
-  with the built-in.
+   overloads the built-in frac and returns the 'fraction part' of q consistent
+   with the built-in.
 
 **Example 29** Standard integer and fraction parts::
 
@@ -1021,52 +906,42 @@ If `roundfun`_ = `round`_, `roundfun`_ = `round_zero_bias`_ or `roundfun`_ =
 Rounding to Multiples
 =====================
 
-``round_to_multiple roundfun multOf q``
-  returns q rounded to an integer multiple of a non-zero value multOf, using
-  `roundfun`_ as the rounding mode (see `Rounding to Integer`_). Note that it
-  is the multiple that is rounded in the prescribed way, and not the final
-  result, which may make a difference in the case that multOf is negative. If
-  that is not the desired behaviour, pass this function the absolute value of
-  multOf rather than multOf. Similar comments apply to the following functions.
+.. function:: round_to_multiple roundfun multOf q
 
-.. _floor_multiple:
-.. index:: floor_multiple
+   returns q rounded to an integer multiple of a non-zero value multOf, using
+   ``roundfun`` as the rounding mode (see `Rounding to Integer`_). Note that it
+   is the multiple that is rounded in the prescribed way, and not the final
+   result, which may make a difference in the case that multOf is negative. If
+   that is not the desired behaviour, pass this function the absolute value of
+   multOf rather than multOf. Similar comments apply to the following
+   functions.
 
-``floor_multiple multOf q``
-  returns q rounded to a downwards integer multiple of multOf.
+.. function:: floor_multiple multOf q
 
-.. _ceil_multiple:
-.. index:: ceil_multiple
+   returns q rounded to a downwards integer multiple of multOf.
 
-``ceil_multiple multOf q``
-  returns q rounded to an upwards integer multiple of multOf.
+.. function:: ceil_multiple multOf q
 
-.. _trunc_multiple:
-.. index:: trunc_multiple
+   returns q rounded to an upwards integer multiple of multOf.
 
-``trunc_multiple multOf q``
-  returns q rounded towards zero to an integer multiple of multOf.
+.. function:: trunc_multiple multOf q
 
-.. _round_multiple:
-.. index:: round_multiple
+   returns q rounded towards zero to an integer multiple of multOf.
 
-``round_multiple multOf q``
-  returns q rounded towards the nearest integer multiple of multOf, with
-  half-integer multiples rounded away from 0.
+.. function:: round_multiple multOf q
 
-.. _round_multiple_zero_bias:
-.. index:: round_multiple_zero_bias
+   returns q rounded towards the nearest integer multiple of multOf, with
+   half-integer multiples rounded away from 0.
 
-``round_multiple_zero_bias multOf q``
-  returns q rounded towards the nearest integer multiple of multOf, with
-  half-integer multiples rounded towards 0.
+.. function:: round_multiple_zero_bias multOf q
 
-.. _round_multiple_unbiased:
-.. index:: round_multiple_unbiased
+   returns q rounded towards the nearest integer multiple of multOf, with
+   half-integer multiples rounded towards 0.
 
-``round_multiple_unbiased multOf q``
-  returns q rounded towards the nearest integer multiple of multOf, with
-  half-integer multiples rounded to an even multiple.
+.. function:: round_multiple_unbiased multOf q
+
+   returns q rounded towards the nearest integer multiple of multOf, with
+   half-integer multiples rounded to an even multiple.
 
 **Example 30** Round to multiple::
 
@@ -1086,7 +961,7 @@ Rounding to Multiples
   > map (round_multiple_unbiased 10) l;
   [30.0,40L,40L,40.0,40.0]
 
-(See the function `double`_.)
+(See the function :func:`~::double`.)
 
 The round multiple functions may be used to find a fixed denominator
 approximation of a number. (The simplest denominator may actually be a proper
@@ -1118,15 +993,13 @@ described in `R -> Q — Approximation`_.
 **Q** -> **R** — Conversion / Casting
 =====================================
 
-.. _double:
-.. index:: double (rational)
+.. function:: \::double q
 
-``double q``
-  (overload of built-in) returns a double having a value as close as
-  possible to q. (Overflow, underflow and loss of accuracy are potential
-  problems. rationals that are too absolutely large or too absolutely small
-  may overflow or underflow; some rationals can not be represented exactly
-  as a double.)
+   (overload of built-in) returns a double having a value as close as possible
+   to q. (Overflow, underflow and loss of accuracy are potential problems.
+   rationals that are too absolutely large or too absolutely small may
+   overflow or underflow; some rationals can not be represented exactly as a
+   double.)
 
 **R** -> **Q** — Approximation
 ==============================
@@ -1139,6 +1012,9 @@ of a real number.
 
 Intervals
 ---------
+
+.. module:: rat_interval
+.. namespace:: interval
 
 Some of the approximation functions return an `interval`. The file
 ``rat_interval.pure`` is a basic implementation of interval arithmetic, and is
@@ -1154,12 +1030,10 @@ Interval Constructors and 'Deconstructors'
 
 Intervals are constructed with the function interval.
 
-.. _interval:
-.. index:: interval
+.. function:: interval (n1, n2)
 
-``interval (n1, n2)``
-  given a pair of numbers (z1 <= z2), this returns the interval z1..z2. This
-  is the inverse of ``lo_up``.
+   given a pair of numbers (z1 <= z2), this returns the interval z1..z2. This
+   is the inverse of ``lo_up``.
 
 **Example 33** Constructing an interval::
 
@@ -1167,24 +1041,18 @@ Intervals are constructed with the function interval.
   > v;
   interval::Ivl 3 8
 
-.. _lower:
-.. index:: lower
+.. function:: lower v
 
-``lower v``
-  returns the infimum (roughly, minimum) of v.
+   returns the infimum (roughly, minimum) of v.
 
-.. _upper:
-.. index:: upper
+.. function:: upper v
 
-``upper v``
-  returns the supremum (roughly, maximum) of v.
+   returns the supremum (roughly, maximum) of v.
 
-.. _lo_up:
-.. index:: lo_up
+.. function:: lo_up v
 
-``lo_up v``
-  returns a pair (l, u) containing the lower l and upper u extrema of the
-  interval v. This is the inverse of interval as defined on number pairs.
+   returns a pair (l, u) containing the lower l and upper u extrema of the
+   interval v. This is the inverse of interval as defined on number pairs.
 
 **Example 34** Deconstructing an interval::
 
@@ -1198,41 +1066,29 @@ Intervals are constructed with the function interval.
 Interval Type Tests
 ~~~~~~~~~~~~~~~~~~~
 
-.. _exactp (interval):
-.. index:: exactp (interval)
+.. function:: \::exactp v
 
-``exactp v``
-  returns whether an interval v has exact extrema.
+   returns whether an interval v has exact extrema.
 
-.. _inexactp (interval):
-.. index:: inexactp (interval)
+.. function:: \::inexactp v
 
-``inexactp v``
-  returns whether an interval v has an inexact extremum.
+   returns whether an interval v has an inexact extremum.
 
-.. _intervalp:
-.. index:: intervalp
+.. function:: intervalp x
 
-``intervalp x``
-  returns whether x is of type interval.
+   returns whether x is of type interval.
 
-.. _interval_valp:
-.. index:: interval_valp
+.. function:: interval_valp x
 
-``interval_valp x``
-  returns whether x has an interval value.
+   returns whether x has an interval value.
 
-.. _ratinterval_valp:
-.. index:: ratinterval_valp
+.. function:: ratinterval_valp x
 
-``ratinterval_valp x``
-  returns whether x has an interval value with rational extrema.
+   returns whether x has an interval value with rational extrema.
 
-.. _intinterval_valp:
-.. index:: intinterval_valp
+.. function:: intinterval_valp x
 
-``intinterval_valp x``
-  returns whether x has an interval value with integral extrema.
+   returns whether x has an interval value with integral extrema.
 
 
 **Example 35** Interval value tests::
@@ -1253,17 +1109,6 @@ Interval Type Tests
 
 Interval Arithmetic Operators and Relations
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. _+ (interval):
-.. index:: + (interval)
-.. _- (interval):
-.. index:: - (interval)
-.. _* (interval):
-.. index:: * (interval)
-.. _/ (interval):
-.. index:: / (interval)
-.. _% (interval):
-.. index:: % (interval)
 
 The standard arithmetic operators (+), (−), (*), (/) and (%) are overloaded for
 intervals. The divide operators (/) and (%) do not produce a result if the
@@ -1309,11 +1154,6 @@ right operand is an interval containing 0.
   > a % a; // notice that the intervals are mutually independent here
   interval::Ivl (11L%19L) (19L%11L)
 
-.. _== (interval):
-.. index:: == (interval)
-.. _~= (interval):
-.. index:: ~= (interval)
-
 There are also some relations defined for intervals. The standard relations
 (==) and (~=) are overloaded.
 
@@ -1322,69 +1162,49 @@ either ordering or containment with some ambiguity, the module defines
 ``(before)``, ``(within)``, and so on. 'Strictness' refers to the properties at
 the end-points.
 
-.. _before:
-.. index:: before
+.. function:: infix before v1 v2
 
-``v1 before v2``
-  returns whether v1 is entirely before v2.
+   returns whether v1 is entirely before v2.
 
-.. _strictly_before:
-.. index:: strictly_before
+.. function:: infix strictly_before v1 v2
 
-``v1 strictly_before v2``
-  returns whether v1 is strictly entirely before v2.
+   returns whether v1 is strictly entirely before v2.
 
-.. _after:
-.. index:: after
+.. function:: infix after v1 v2
 
-``v1 after v2``
-  returns whether v1 is entirely after v2.
+   returns whether v1 is entirely after v2.
 
-.. _strictly_after:
-.. index:: strictly_after
+.. function:: infix strictly_after v1 v2
 
-``v1 strictly_after v2``
-  returns whether v1 is strictly entirely after v2.
+   returns whether v1 is strictly entirely after v2.
 
-.. _within:
-.. index:: within
+.. function:: infix within v1 v2
 
-``v1 within v2``
-  returns whether v1 is entirely within v2; i.e. whether v1 is subinterval of
-  v2.
+   returns whether v1 is entirely within v2; i.e. whether v1 is subinterval of
+   v2.
 
-.. _strictly_within:
-.. index:: strictly_within
+.. function:: infix strictly_within v1 v2
 
-``v1 strictly_within v2``
-  returns whether v1 is strictly entirely within v2; i.e. whether v1 is proper
-  subinterval of v2.
+   returns whether v1 is strictly entirely within v2; i.e. whether v1 is proper
+   subinterval of v2.
 
-.. _without:
-.. index:: without
+.. function:: infix without v1 v2
 
-``v1 without v2``
-  returns whether v1 entirely contains v2; i.e. whether v1 is superinterval of
-  v2. 'Without' is used in the sense of outside or around.
+   returns whether v1 entirely contains v2; i.e. whether v1 is superinterval of
+   v2. 'Without' is used in the sense of outside or around.
 
-.. _strictly_without:
-.. index:: strictly_without
+.. function:: infix strictly_without v1 v2
 
-``v1 strictly_without v2``
-  returns whether v1 strictly entirely contains v2; i.e. whether v1 is proper
-  superinterval of v2.
+   returns whether v1 strictly entirely contains v2; i.e. whether v1 is proper
+   superinterval of v2.
 
-.. _disjoint:
-.. index:: disjoint
+.. function:: infix disjoint v1 v2
 
-``v1 disjoint v2``
-  returns whether v1 and v2 are entirely disjoint.
+   returns whether v1 and v2 are entirely disjoint.
 
-.. _strictly_disjoint:
-.. index:: strictly_disjoint
+.. function:: infix strictly_disjoint v v2
 
-``v strictly_disjoint v2``
-  returns whether v1 and v2 are entirely strictly disjoint.
+   returns whether v1 and v2 are entirely strictly disjoint.
 
 **Example 38** Interval relations::
   
@@ -1451,11 +1271,9 @@ Interval Maths
 Some standard functions are overloaded for intervals; some new functions are
 provided.
 
-.. _abs (interval):
-.. index:: abs (interval)
+.. function:: \::abs v
 
-``abs v``
-  returns the interval representing the range of (x) as x varies over v.
+   returns the interval representing the range of (x) as x varies over v.
 
 **Example 40** Absolute interval::
 
@@ -1466,17 +1284,13 @@ provided.
   > abs (interval (-5, -1));
   interval::Ivl 1 5
 
-.. _sgn (interval):
-.. index:: sgn (interval)
+.. function:: \::sgn v
 
-``sgn v``
-  returns the interval representing the range of sgn(x) as x varies over v.
+   returns the interval representing the range of sgn(x) as x varies over v.
 
-.. _# (interval):
-.. index:: # (interval)
+.. function:: prefix ::# v
 
-``#v``
-  returns the length of an interval.
+   returns the length of an interval.
 
 **Example 41** Absolute interval::
 
@@ -1485,16 +1299,16 @@ provided.
 
 (The symbol d was defined in `Example 36`_.)
 
+.. namespace:: rational
+
 Least Complex Approximation within Epsilon
 ------------------------------------------
 
-.. _rational_approx_epsilon:
-.. index:: rational_approx_epsilon
+.. function:: rational_approx_epsilon ε r
 
-``rational_approx_epsilon ε r``
-  Find the least complex (see `Complexity Extrema`_) rational approximation
-  to r (usually a double) that is ε-close. That is find the q with the
-  smallest possible denominator such that such that \|q − r\| ≤ ε. (ε > 0.)
+   Find the least complex (see `Complexity Extrema`_) rational approximation
+   to r (usually a double) that is ε-close. That is find the q with the
+   smallest possible denominator such that such that \|q − r\| ≤ ε. (ε > 0.)
 
 **Example 42** Rational approximation to π ≈ 3.142 ≈ 22/7::
 
@@ -1513,12 +1327,10 @@ Least Complex Approximation within Epsilon
   > abs (ans - phi);
   0.000386929926365465
 
-.. _rational_approxs_epsilon:
-.. index:: rational_approxs_epsilon
+.. function:: rational_approxs_epsilon ε r
 
-``rational_approxs_epsilon ε r``
-  Produce a list of ever better rational approximations to r (usually a
-  double) that is eventually ε-close. (ε > 0.)
+   Produce a list of ever better rational approximations to r (usually a
+   double) that is eventually ε-close. (ε > 0.)
 
 **Example 44** Rational approximations to π::
 
@@ -1535,14 +1347,12 @@ approximations are always reverse consecutive Fibonacci numbers (from f1: 1, 1,
 
 (The symbol phi was defined in `Example 43`_.)
 
-.. _rational_interval_epsilon:
-.. index:: rational_interval_epsilon
+.. function:: rational_interval_epsilon ε r
 
-``rational_interval_epsilon ε r``
-  Find the least complex (see `Complexity Extrema`_) rational interval
-  containing r (usually a double) that is ε-small. That is find the least
-  complex (see `Complexity Extrema`_) q1 ≤ q2 such that r ∈ [q1, q2] and
-  q2 − q1 ≤ ε. (ε > 0.)
+   Find the least complex (see `Complexity Extrema`_) rational interval
+   containing r (usually a double) that is ε-small. That is find the least
+   complex (see `Complexity Extrema`_) q1 ≤ q2 such that r ∈ [q1, q2] and
+   q2 − q1 ≤ ε. (ε > 0.)
 
 **Example 46** Rational interval surrounding π::
 
@@ -1564,18 +1374,16 @@ approximations are always reverse consecutive Fibonacci numbers (from f1: 1, 1,
   > #ans;
   1L%1870L
 
-(The symbol phi was defined in `Example 43`_. The function `# (interval)`_ is
-described in `Interval Maths`_.)
+(The symbol phi was defined in `Example 43`_. The function :func:`#/interval`
+is described in `Interval Maths`_.)
 
 Best Approximation with Bounded Denominator
 -------------------------------------------
 
-.. _rational_approx_max_den:
-.. index:: rational_approx_max_den
+.. function:: rational_approx_max_den maxDen r
 
-``rational_approx_max_den maxDen r``
-  Find the closest rational approximation to r (usually a double) that
-  has a denominator no greater than maxDen. (maxDen > 0).
+   Find the closest rational approximation to r (usually a double) that
+   has a denominator no greater than maxDen. (maxDen > 0).
 
 **Example 48** Rational approximation to π::
 
@@ -1589,12 +1397,10 @@ Best Approximation with Bounded Denominator
 
 (The symbol phi was defined in `Example 43`_.)
 
-.. _rational_approxs_max_den:
-.. index:: rational_approxs_max_den
+.. function:: rational_approxs_max_den maxDen r
 
-``rational_approxs_max_den maxDen r``
-  Produce a list of ever better rational approximations to r (usually a
-  double) while the denominator is bounded by maxDen (maxDen > 0).
+   Produce a list of ever better rational approximations to r (usually a
+   double) while the denominator is bounded by maxDen (maxDen > 0).
 
 **Example 50** Rational approximations to π::
 
@@ -1609,12 +1415,10 @@ Best Approximation with Bounded Denominator
 
 (The symbol phi was defined in `Example 43`_.)
 
-.. _rational_interval_max_den:
-.. index:: rational_interval_max_den
+.. function:: rational_interval_max_den maxDen r
 
-``rational_interval_max_den maxDen r``
-  Find the smallest rational interval containing r (usually a double)
-  that has endpoints with denominators no greater than maxDen (maxDen > 0).
+   Find the smallest rational interval containing r (usually a double)
+   that has endpoints with denominators no greater than maxDen (maxDen > 0).
 
 **Example 52** Rational interval surrounding π::
 
@@ -1669,12 +1473,10 @@ Generating Continued Fractions
 Exact
 ~~~~~
 
-.. _continued_fraction:
-.. index:: continued_fraction
+.. function:: continued_fraction q
 
-``continued_fraction q``
-  Find 'the' (exact) continued fraction of a rational (including, trivially,
-  integer) value q.
+   Find 'the' (exact) continued fraction of a rational (including, trivially,
+   integer) value q.
 
 **Example 54** The rational 1234/1001::
 
@@ -1686,13 +1488,11 @@ Exact
 Inexact
 ~~~~~~~
 
-.. _continued_fraction_max_terms:
-.. index:: continued_fraction_max_terms
+.. function:: continued_fraction_max_terms n r
 
-``continued_fraction_max_terms n r``
-  Find up to n initial terms of continued fraction of the value r with the
-  'remainder', if any, in the final element. (If continued_fraction_max_terms n
-  r returns a list of length n or less, then the result is exact.)
+   Find up to n initial terms of continued fraction of the value r with the
+   'remainder', if any, in the final element. (If continued_fraction_max_terms
+   n r returns a list of length n or less, then the result is exact.)
 
 **Example 55** First 5 terms of the continued fraction for the golden ratio φ::
 
@@ -1703,12 +1503,10 @@ Inexact
 
 (The symbol phi was defined in `Example 43`_.)
 
-.. _continued_fraction_epsilon:
-.. index:: continued_fraction_epsilon
+.. function:: continued_fraction_epsilon ε r
 
-``continued_fraction_epsilon ε r``
-  Find enough of the initial terms of a continued fraction to within ε of the
-  value r with the 'remainder', if any, in the final element.
+   Find enough of the initial terms of a continued fraction to within ε of the
+   value r with the 'remainder', if any, in the final element.
 
 **Example 56** First few terms of the value √2::
 
@@ -1720,13 +1518,11 @@ Inexact
 Evaluating Continued Fractions
 ------------------------------
 
-.. _evaluate_continued_fraction:
-.. index:: evaluate_continued_fraction
+.. function:: evaluate_continued_fraction aa
 
-``evaluate_continued_fraction aa``
-  Fold a continued fraction aa into the value it represents. This function is
-  not limited to simple continued fractions. (Exact simple continued fractions
-  are folded into a rational.)
+   Fold a continued fraction aa into the value it represents. This function is
+   not limited to simple continued fractions. (Exact simple continued
+   fractions are folded into a rational.)
 
 **Example 57** The continued fraction [1, 2, 3, 4] and the non-standard form [4,
 3, 2, 1]::
@@ -1743,12 +1539,10 @@ Evaluating Continued Fractions
 Convergents
 ~~~~~~~~~~~
 
-.. _convergents:
-.. index:: convergents
+.. function:: convergents aa
 
-``convergents aa``
-  Calculate the convergents of the continued fraction aa. This function is not
-  limited to simple continued fractions.
+   Calculate the convergents of the continued fraction aa. This function is not
+   limited to simple continued fractions.
 
 **Example 58** Convergents of a continued fraction approximation of the value
 √2::
@@ -1800,11 +1594,6 @@ And rational numbers can be given complex parts.
   > ((4%1) * (0 +: 1)) / (1 + (1%2) * (0 +: 1));
   1.6+:3.2
 
-.. _re:
-.. index:: re (rational)
-.. _im:
-.. index:: im (rational)
-
 The various parts of a complex rational may be deconstructed using combinations
 of num and den and the standard functions re and im.
 
@@ -1833,54 +1622,44 @@ The d\ :sub:`x`, d\ :sub:`y` are not unique, but can be chosen such that d\
 :sub:`x` > 0 and either \|d\ :sub:`y`\| < d\ :sub:`x` or d\ :sub:`y` = d\
 :sub:`x` > 0.
 
-.. _num_den_nat:
-.. index:: num_den_nat
+.. function:: num_den_nat c
 
-``num_den_nat c``
-  given a complex rational or integer c, returns a pair (n, d)
-  containing an integral complex (Gaussian integral) numerator n, and the
-  smallest natural (i.e. positive integral real) complex denominator d, i.e. a
-  complex number where ℜ(d) ∈ **Z**, ℜ(d) > 0, ℑ(d) = 0; i.e. the numerator and
-  denominator of one 'normalised' form of c.
+   given a complex rational or integer c, returns a pair (n, d)
+   containing an integral complex (Gaussian integral) numerator n, and the
+   smallest natural (i.e. positive integral real) complex denominator d,
+   i.e. a complex number where ℜ(d) ∈ **Z**, ℜ(d) > 0, ℑ(d) = 0; i.e. the
+   numerator and denominator of one 'normalised' form of c.
 
-  This is an inverse (up to equivalence) of rational as defined on integral
-  complex pairs (see `Constructors`_).
+   This is an inverse (up to equivalence) of rational as defined on integral
+   complex pairs (see `Constructors`_).
 
-.. _num_den_gauss:
-.. index:: num_den_gauss
+.. function:: num_den_gauss c
 
-``num_den_gauss c``
-  given a complex rational or integer c, returns a pair (n, d)
-  containing an integral complex (Gaussian integral) numerator n, and an
-  absolutely smallest integral complex denominator d chosen s.t. ℜ(d),=(d) ∈
-  **Z**,  ℜ(d) > 0, and either \|ℜ(d)\| < ℑ(d) or ℜ(d) = ℑ(d) > 0; i.e. the
-  numerator and denominator of another 'normalised' form of c.
+   given a complex rational or integer c, returns a pair (n, d)
+   containing an integral complex (Gaussian integral) numerator n, and an
+   absolutely smallest integral complex denominator d chosen s.t. ℜ(d),=(d) ∈
+   **Z**, ℜ(d) > 0, and either \|ℜ(d)\| < ℑ(d) or ℜ(d) = ℑ(d) > 0; i.e. the
+   numerator and denominator of another 'normalised' form of c.
 
-  This is an inverse (up to equivalence) of rational as defined on integral
-  complex pairs (see `Constructors`_).
+   This is an inverse (up to equivalence) of rational as defined on integral
+   complex pairs (see `Constructors`_).
 
-.. _num_den (rational complex):
-.. index:: num_den (rational complex)
+.. function:: num_den c
 
-``num_den c``
-  synonymous with num_den_gauss.
+   synonymous with num_den_gauss.
 
-  This is an inverse (up to equivalence) of rational as defined on integer pairs
-  (see `Constructors`_).
+   This is an inverse (up to equivalence) of rational as defined on integer
+   pairs (see `Constructors`_).
 
-.. _num (rational complex):
-.. index:: num (rational complex)
+.. function:: \::num c
 
-``num c``
-  given a complex rational or integer c, returns just the numerator
-  of the normalised form of c given by num_den c.
+   given a complex rational or integer c, returns just the numerator
+   of the normalised form of c given by num_den c.
 
-.. _den (rational complex):
-.. index:: den (rational complex)
+.. function:: \::den c
 
-``den c``
-  given a complex rational or integer c, returns just the
-  denominator of the normalised form of c given by num_den c.
+   given a complex rational or integer c, returns just the
+   denominator of the normalised form of c given by num_den c.
 
 **Example 61** Rational complex number deconstruction::
 
@@ -1927,29 +1706,23 @@ Beware that ``intcompvalp`` and ``ratcompvapl`` may return 1 even if the value
 is of complex type with double parts. However, these functions may be
 combined with ``exactp``.
 
-.. _complexp:
+.. function:: \::complexp x
 
-``complexp x``
-  standard function; returns whether x is of complex type.
+   standard function; returns whether x is of complex type.
 
-.. _compvalp:
+.. function:: \::compvalp x
 
-``compvalp x``
-  standard function; returns whether x has a complex value (∈ **C** =
-  **R**\ [i]).
+   standard function; returns whether x has a complex value (∈ **C** =
+   **R**\ [i]).
 
-.. _ratcompvalp:
-.. index:: ratcompvalp
+.. function:: ratcompvalp x
 
-``ratcompvalp x``
-  returns whether x has a rational complex value (∈ **Q**\ [i]).
+   returns whether x has a rational complex value (∈ **Q**\ [i]).
 
-.. _intcompvalp:
-.. index:: intcompvalp
+.. function:: intcompvalp x
 
-``intcompvalp x``
-  returns whether x has an integral complex value (∈ **Z**\ [i]), i.e. a
-  Gaussian  integer value.
+   returns whether x has an integral complex value (∈ **Z**\ [i]), i.e. a
+   Gaussian  integer value.
 
 **Example 62** Rational complex number value tests::
 
@@ -1986,21 +1759,6 @@ combined with ``exactp``.
 Rational Complex Arithmetic Operators and Relations
 ---------------------------------------------------
 
-.. _+ (rational complex):
-.. index:: + (rational complex)
-.. _- (rational complex):
-.. index:: - (rational complex)
-.. _* (rational complex):
-.. index:: * (rational complex)
-.. _/ (rational complex):
-.. index:: / (rational complex)
-.. _% (rational complex):
-.. index:: % (rational complex)
-.. _== (rational complex):
-.. index:: == (rational complex)
-.. _~= (rational complex):
-.. index:: ~= (rational complex)
-
 The standard arithmetic operators (+), (−), (*), (/), (%), (), (==) and (~=) are
 overloaded to have at least one complex and/or rational operand, but (<), (<=),
 (>), (>=) are not, as complex numbers are unordered.
@@ -2028,13 +1786,6 @@ Rational Complex Maths
 The standard functions ``re`` and ``im`` work with rational complex numbers (see
 `Rational Complex Constructors and 'Deconstructors'`_).
 
-.. _polar (rational complex):
-.. index:: polar (rational complex)
-.. _abs (rational complex):
-.. index:: abs (rational complex)
-.. _arg (rational complex):
-.. index:: arg (rational complex)
-
 The standard functions ``polar``, ``abs`` and ``arg`` work with rational complex
 numbers, but the results are inexact.
 
@@ -2050,60 +1801,47 @@ numbers, but the results are inexact.
 There are some additional useful functions for calculating with rational complex
 numbers and more general mathematical values.
 
-.. _norm_gauss:
-.. index:: norm_gauss
+.. function:: norm_gauss c
 
-``norm_gauss c``
-  returns the Gaussian norm \|\|c\|\| of any complex (or real) number c;
-  this is the square of the absolute value, and is returned as an (exact)
-  integer.
+   returns the Gaussian norm \|\|c\|\| of any complex (or real) number c;
+   this is the square of the absolute value, and is returned as an (exact)
+   integer.
 
-.. _div_mod_gauss:
-.. index:: div_mod_gauss
+.. function:: div_mod_gauss n d
 
-``div_mod_gauss n d``
-  performs Gaussian integer division, returning (q, r) where q is a (not always
-  unique) quotient, and r is a (not always unique) remainder. q and r are such
-  that n = q * d + r and \|\|r\|\| < \|\|d\|\| (equivalently, \|r\| < \|d\|).
+   performs Gaussian integer division, returning (q, r) where q is a (not
+   always unique) quotient, and r is a (not always unique) remainder. q and r
+   are such that n = q * d + r and \|\|r\|\| < \|\|d\|\| (equivalently, \|r\|
+   < \|d\|).
 
-.. _n_div_gauss:
-.. index:: n_div_gauss
+.. function:: n_div_gauss d
 
-``n_div_gauss d``
-  returns just a quotient from Gaussian integer division as produced by
-  div_mod_gauss n d.
+   returns just a quotient from Gaussian integer division as produced by
+   div_mod_gauss n d.
 
-.. _n_mod_gauss:
-.. index:: n_mod_gauss
+.. function:: n_mod_gauss d
 
-``n_mod_gauss d``
-  returns just a remainder from Gaussian integer division as produced by
-  div_mod_gauss n d.
+   returns just a remainder from Gaussian integer division as produced by
+   div_mod_gauss n d.
 
-.. _gcd_gauss:
-.. index:: gcd_gauss
+.. function:: gcd_gauss c1 c2
 
-``gcd_gauss c1 c2``
-  returns a GCD G of the Gaussian integers c1,c2. This is chosen so that s.t.
-  ℜ(G) > 0, and either \|ℑ(G)\| < ℜ(G) or ℑ(G) = ℜ(G) > 0;
+   returns a GCD G of the Gaussian integers c1,c2. This is chosen so that s.t.
+   ℜ(G) > 0, and either \|ℑ(G)\| < ℜ(G) or ℑ(G) = ℜ(G) > 0;
 
-.. _euclid_gcd:
-.. index:: euclid_gcd
+.. function:: euclid_gcd zerofun modfun x y
 
-``euclid_gcd zerofun modfun x y``
-  returns a (non-unique) GCD calculated by performing the Euclidean algorithm on
-  the values x and y (of any type) where zerofun is a predicate for equality to
-  0, and modfun is a binary modulus (remainder) function.
+   returns a (non-unique) GCD calculated by performing the Euclidean algorithm
+   on the values x and y (of any type) where zerofun is a predicate for
+   equality to 0, and modfun is a binary modulus (remainder) function.
 
-.. _euclid_alg:
-.. index:: euclid_alg
+.. function:: euclid_alg zerofun divfun x y
 
-``euclid_alg zerofun divfun x y``
-  returns (g, a, b) where the g is a (non-unique) GCD and a, b are (arbitrary,
-  non-unique) values such that a * x + b * y = g calculated by performing the  
-  generalised Euclidean algorithm on the values x and y (of any type) where 
-  zerofun is a predicate for equality to 0, and div is a binary quotient
-  function.
+   returns (g, a, b) where the g is a (non-unique) GCD and a, b are
+   (arbitrary, non-unique) values such that a * x + b * y = g calculated by
+   performing the generalised Euclidean algorithm on the values x and y (of
+   any type) where zerofun is a predicate for equality to 0, and div is a
+   binary quotient function.
 
 **Example 65** More rational complex and other maths::
 
@@ -2148,18 +1886,14 @@ numbers and more general mathematical values.
 Rational Complex Type Simplification
 ------------------------------------
 
-.. _comp_simplify:
-.. index:: comp_simplify
+.. function:: comp_simplify c
 
-``comp_simplify c``
-  returns q with complex numbers simplified to reals, if possible.
+   returns q with complex numbers simplified to reals, if possible.
 
-.. _ratcomp_simplify:
-.. index:: ratcomp_simplify
+.. function:: ratcomp_simplify c
 
-``ratcomp_simplify c``
-  returns q with rationals simplified to integers, and complex
-  numbers simplified to reals, if possible.
+   returns q with rationals simplified to integers, and complex
+   numbers simplified to reals, if possible.
 
 **Example 66** Rational complex number type simplification::
 
@@ -2196,21 +1930,18 @@ parameter. The ``sval_*`` functions convert from a tuple of string fragments.
 
 There are also ``join_*`` and ``split_*`` functions to join string fragments
 into formatted strings, and to split formatted strings into string fragments,
-respectively; these depend on a format structure parameter. These functions are
-not always invertible, because some of the functions reduce an error term to
-just a sign, e.g. `str_real_approx_dp`_ may round a value. Thus sometimes the
-``join_*`` and ``split_*`` pairs, and the ``str_*`` and ``val_*`` pairs are not 
-quite mutual inverses.
-
-.. _fmt:
-.. index:: fmt
+respectively; these depend on a format structure parameter. These functions
+are not always invertible, because some of the functions reduce an error term
+to just a sign, e.g. :func:`str_real_approx_dp` may round a value. Thus
+sometimes the ``join_*`` and ``split_*`` pairs, and the ``str_*`` and
+``val_*`` pairs are not quite mutual inverses.
 
 Internationalisation and Format Structures
 ------------------------------------------
 
 Many of the string formatting functions in the following sections are
 parameterised by a 'format structure'. Throughout this document, the formal
-parameter for the format structure will be `fmt`_. This is simply a record
+parameter for the format structure will be ``fmt``. This is simply a record
 mapping some string 'codes' to functions as follows. The functions are mostly
 from strings to a string, or from a string to a tuple of strings.
 
@@ -2286,13 +2017,11 @@ taking a format structure may have no effect. For example, an ``intGroup``
 parameter specifying the size of the integer digit groups will have no effect if
 the integer group separator is the empty string.
 
-.. _create_format:
-.. index:: create_format
+.. function:: create_format options
 
-``create_format options``
-  is a function that provides an easy way to prepare a 'format structure' from
-  the simpler 'options structure'. The options structure is another record,
-  but from more descriptive strings to a string or tuple of strings.
+   is a function that provides an easy way to prepare a 'format structure'
+   from the simpler 'options structure'. The options structure is another
+   record, but from more descriptive strings to a string or tuple of strings.
 
 For example, ``format_uk`` is generated from ``options_uk`` as follows::
 
@@ -2356,7 +2085,7 @@ as a fraction of the radix.
   > strs_real_approx_sf 10 ceil 3 (234567%100000);
   "+","2","35",(-433L)%1000L
 
-(See the function `strs_real_approx_sf`_.)
+(See the function :func:`strs_real_approx_sf`.)
 
 In strings, only the sign of the error term is given. A “+” should be read as
 “and a bit more”; “-” as “but a bit less”.
@@ -2368,7 +2097,7 @@ In strings, only the sign of the error term is given. A “+” should be read a
   > str_real_approx_sf format_uk 10 0 0 ceil 3 (234567%100000);
   "2.35(-)"
 
-(See the function `str_real_approx_sf`_.)
+(See the function :func:`str_real_approx_sf`.)
 
 **Q** <-> Fraction String (“i + n/d”)
 =====================================
@@ -2376,36 +2105,30 @@ In strings, only the sign of the error term is given. A “+” should be read a
 Formatting to Fraction Strings
 ------------------------------
 
-.. _str_vulgar:
-.. index:: str_vulgar
+.. function:: str_vulgar q
 
-``str_vulgar q``
-  returns a String representing the rational (or integer) q in the
-  form
+   returns a String representing the rational (or integer) q in the
+   form
 
-  * “[−]n/d”
+   * “[−]n/d”
 
-.. _str_vulgar_or_int:
-.. index:: str_vulgar_or_int
+.. function:: str_vulgar_or_int q
 
-``str_vulgar_or_int q``
-  returns a String representing the rational (or integer) q in one of
-  the forms 
+   returns a String representing the rational (or integer) q in one of
+   the forms 
 
-  * “[−]n/d” 
-  * “[−]i”
+   * “[−]n/d” 
+   * “[−]i”
 
-.. _str_mixed:
-.. index:: str_mixed
+.. function:: str_mixed q
 
-``str_mixed q``
-  returns a String representing the rational (or integer) q in one of
-  the forms
+   returns a String representing the rational (or integer) q in one of
+   the forms
 
-  * “i + n/d”
-  * “−(i + n/d)”
-  * “[−]n/d”
-  * “[−]i”
+   * “i + n/d”
+   * “−(i + n/d)”
+   * “[−]n/d”
+   * “[−]i”
 
 **Example 69** The fraction string representations::
 
@@ -2421,10 +2144,9 @@ Formatting to Fraction Strings
 
 These might be compared to the behaviour of the standard function ``str``.
 
-.. _str:
+.. function:: \::str x
 
-``str x``
-  returns a string representing the value x.
+   returns a string representing the value x.
 
 **Example 70** The standard function str::
 
@@ -2434,26 +2156,22 @@ These might be compared to the behaviour of the standard function ``str``.
 Evaluation of Fraction Strings
 ------------------------------
 
-.. _val_vulgar:
-.. index:: val_vulgar
+.. function:: val_vulgar strg
 
-``val_vulgar strg``
-  returns a rational q represented by the string strg in the form
+   returns a rational q represented by the string strg in the form
   
-  * “[−]n/d”
+   * “[−]n/d”
 
 Such strings can also be evaluated by the ``val_mixed`` function.
 
-.. _val_mixed:
-.. index:: val_mixed
+.. function:: val_mixed strg
 
-``val_mixed strg``
-  returns a rational q represented by the string strg
+   returns a rational q represented by the string strg
 
-  * “i + n/d”
-  * “−(i + n/d)”
-  * “[−]n/d” — thus val_mixed strictly extends val_vulgar
-  * “[−]i”
+   * “i + n/d”
+   * “−(i + n/d)”
+   * “[−]n/d” — thus val_mixed strictly extends val_vulgar
+   * “[−]i”
 
 **Example 71** Evaluating fraction strings::
 
@@ -2464,8 +2182,9 @@ Such strings can also be evaluated by the ``val_mixed`` function.
 
 These might be compared to the behaviour of the standard function eval.
 
-``eval s``
-  evaluates the string s.
+.. function:: \::eval s
+
+   evaluates the string s.
 
 **Example 72** The standard function eval::
 
@@ -2478,20 +2197,18 @@ These might be compared to the behaviour of the standard function eval.
 =====================================================
 
 See `Internationalisation and Format Structures`_ for information about the
-formatting structure to be supplied in the `fmt`_ parameter.
+formatting structure to be supplied in the ``fmt`` parameter.
 
 Formatting to Recurring Expansion Strings
 -----------------------------------------
 
-.. _str_real_recur:
-.. index:: str_real_recur
+.. function:: str_real_recur fmt radix intGroup q
 
-``str_real_recur fmt radix intGroup q``
-  returns a string (exactly) representing the rational (or integer)
-  q as base-Radix expansion of one the forms
+   returns a string (exactly) representing the rational (or integer)
+   q as base-Radix expansion of one the forms
 
-  * “[−]int.frac”
-  * “[−]int.init frac part[smallest recurring frac part ...]”
+   * “[−]int.frac”
+   * “[−]int.init frac part[smallest recurring frac part ...]”
 
 Note that there is no fracGroup parameter.
 
@@ -2539,16 +2256,14 @@ recurring numerals are indicated by a single dot over the initial and final
 numerals of the recurring part, or an overline over the recurring part. For
 example 1/70 = 0.0˙14285˙7 = 0.0142857 and 1/3 = 0.˙3 = 0.3.
 
-.. _strs_real_recur:
-.. index:: strs_real_recur
+.. function:: strs_real_recur radix q
 
-``strs_real_recur radix q``
-  returns a quadruple of the four strings:
+   returns a quadruple of the four strings:
 
-  * the sign,
-  * integer part (which is empty for 0),
-  * initial fraction part
-  * and recurring fraction part (either and both of which may be empty).
+   * the sign,
+   * integer part (which is empty for 0),
+   * initial fraction part
+   * and recurring fraction part (either and both of which may be empty).
 
 **Example 76** The recurring radix expansion in decimal — the fragments::
 
@@ -2562,12 +2277,10 @@ example 1/70 = 0.0˙14285˙7 = 0.0142857 and 1/3 = 0.˙3 = 0.3.
 This function may be used to also, e.g. format the integer part with
 comma-separated groupings.
 
-.. _join_str_real_recur:
-.. index:: join_str_real_recur
+.. function:: join_str_real_recur fmt intGroup sign i fracInit fracRecur
 
-``join_str_real_recur fmt intGroup sign i fracInit fracRecur``
-  formats the parts in the quadruple returned by `strs_real_recur`_ to the sort
-  of string as returned by `str_real_recur`_.
+   formats the parts in the quadruple returned by :func:`strs_real_recur` to the
+   sort of string as returned by :func:`str_real_recur`.
 
 Evaluation of Recurring Expansion Strings
 -----------------------------------------
@@ -2578,15 +2291,13 @@ differently formatted strings if a suitable alternative format structure is
 supplied. See `Internationalisation and Format Structures`_ for information
 about formatting structures.
 
-.. _val_real_recur:
-.. index:: val_real_recur
+.. function:: val_real_recur fmt radix strg
 
-``val_real_recur fmt radix strg``
-  returns the rational q represented by the base-radix expansion string
-  strg of one the forms
+   returns the rational q represented by the base-radix expansion string
+   strg of one the forms
 
-  * “[−]int.frac”
-  * “[−]int.init frac part[recurring frac part ...]”
+   * “[−]int.frac”
+   * “[−]int.init frac part[recurring frac part ...]”
 
 **Example 77** Conversion from the recurring radix expansion-type string
 representations::
@@ -2602,36 +2313,32 @@ representations::
   > val_real_recur format_uk 10 ".[9...]";
   1L%1L
 
-.. _sval_real_recur:
-.. index:: sval_real_recur
+.. function:: sval_real_recur radix sign iStr fracStr recurPartStr
 
-``sval_real_recur radix sign iStr fracStr recurPartStr``
-  returns the rational q represented by the parts
+   returns the rational q represented by the parts
 
-  * sign
-  * integer part
-  * initial fraction part
-  * recurring fraction part
+   * sign
+   * integer part
+   * initial fraction part
+   * recurring fraction part
 
-.. _split_str_real_recur:
-.. index:: split_str_real_recur
+.. function:: split_str_real_recur Fmt strg
 
-``split_str_real_recur Fmt strg``
-  returns a tuple containing the parts
+   returns a tuple containing the parts
 
-  * sign
-  * integer part
-  * initial fraction part
-  * recurring fraction part
-    of one the forms
-    - “[−]int.frac”
-    - “[−]int.init frac part[recurring frac part ...]”
+   * sign
+   * integer part
+   * initial fraction part
+   * recurring fraction part
+     of one the forms
+     - “[−]int.frac”
+     - “[−]int.init frac part[recurring frac part ...]”
 
 **Q** <-> Numeral Expansion String (“I.F × 10E”)
 ================================================
 
 See `Internationalisation and Format Structures`_ for information about the
-formatting structure to be supplied in the `fmt`_ parameter.
+formatting structure to be supplied in the ``fmt`` parameter.
 
 The exponent string "\*10^" need not depend on the radix, as the numerals for
 the number radix in that radix are always "10".
@@ -2642,15 +2349,14 @@ Formatting to Expansion Strings
 Functions for Fixed Decimal Places
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. _str_real_approx_dp:
-.. index:: str_real_approx_dp
+.. function:: str_real_approx_dp fmt radix intGroup fracGroup roundfun dp q
 
-``str_real_approx_dp fmt radix intGroup fracGroup roundfun dp q``
-  returns a string representing a numeral expansion approximation of q to dp
-  decimal places, using rounding mode `roundfun`_ (see `Rounding to Integer`_)
-  `roundfun`_ is usually `round`_ or `round_unbiased`_. (dp may be positive,
-  zero or negative; non-positive dps may look misleading — use e.g. scientific
-  notation instead.)
+   returns a string representing a numeral expansion approximation of q to dp
+   decimal places, using rounding mode ``roundfun`` (see `Rounding to
+   Integer`_) ``roundfun`` is usually :func:`~::round` or
+   :func:`round_unbiased`.  (dp may be positive, zero or negative;
+   non-positive dps may look misleading — use e.g. scientific notation
+   instead.)
 
 **Example 78** Decimal places::
 
@@ -2659,19 +2365,17 @@ Functions for Fixed Decimal Places
   > str_real_approx_dp format_uk 10 3 3 ceil 2 (22%7);
   "3.15(-)"
 
-.. _strs_real_approx_dp:
-.. index:: strs_real_approx_dp
+.. function:: strs_real_approx_dp radix roundfun do q
 
-``strs_real_approx_dp radix roundfun do q``
-  returns a tuple of strings
+   returns a tuple of strings
 
-  * sign
-  * integer part
-  * fraction part
+   * sign
+   * integer part
+   * fraction part
 
-  representing an expansion to a number of decimal places, together with
+   representing an expansion to a number of decimal places, together with
 
-  * the rounding “error”: a fraction representing the next numerals.
+   * the rounding “error”: a fraction representing the next numerals.
 
 **Example 79** Decimal places — the fragments::
 
@@ -2680,26 +2384,23 @@ Functions for Fixed Decimal Places
   > strs_real_approx_dp 10 ceil 2 (22%7);
   "+","3","15",(-5L)%7L
 
-.. _join_str_real_approx:
-.. index:: join_str_real_approx
+.. function:: join_str_real_approx fmt intGroup fracGroup sign i frac err
 
-``join_str_real_approx fmt intGroup fracGroup sign i frac err``
-  formats the parts in the quadruple returned by `strs_real_approx_dp`_ or 
-  `strs_real_approx_sf`_ to the sort of string as returned by
-  `str_real_approx_dp`_ or `str_real_approx_sf`_.
+   formats the parts in the quadruple returned by :func:`strs_real_approx_dp`
+   or :func:`strs_real_approx_sf` to the sort of string as returned by
+   :func:`str_real_approx_dp` or :func:`str_real_approx_sf`.
 
 Functions for Significant Figures
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. _str_real_approx_sf:
-.. index:: str_real_approx_sf
+.. function:: str_real_approx_sf fmt radix intGroup fracGroup roundfun sf q
 
-``str_real_approx_sf fmt radix intGroup fracGroup roundfun sf q``
-  returns a string representing a numeral expansion approximation of q to sf
-  significant figures, using rounding mode `roundfun`_ (see `Rounding to
-  Integer`_).
+   returns a string representing a numeral expansion approximation of q to sf
+   significant figures, using rounding mode ``roundfun`` (see `Rounding to
+   Integer`_).
 
-Round is usually `round`_ or `round_unbiased`_. (sf must be positive.)
+``roundfun`` is usually :func:`~::round` or :func:`round_unbiased`. (sf must
+be positive.)
 
 **Example 80** Significant figures::
 
@@ -2708,64 +2409,60 @@ Round is usually `round`_ or `round_unbiased`_. (sf must be positive.)
   > str_real_approx_sf format_uk 10 3 3 floor 2 ((-22)%7);
   "-3.2(+)"
 
-.. _strs_real_approx_sf:
-.. index:: strs_real_approx_sf
+.. function:: strs_real_approx_sf radix roundfun sf q
 
-``strs_real_approx_sf radix roundfun sf q``
-  returns a tuple of strings
+   returns a tuple of strings
 
-  * sign,
-  * integer part,
-  * fraction part, representing an expansion to a number of significant figures,
-    together with
-  * the rounding “error”: a fraction representing the next numerals
+   * sign,
+   * integer part,
+   * fraction part, representing an expansion to a number of significant
+     figures, together with
+   * the rounding “error”: a fraction representing the next numerals
 
-``join_str_real_approx``
-  see `join_str_real_approx`_.
+.. function:: join_str_real_approx
+
+   see :func:`join_str_real_approx`.
 
 Functions for Scientific Notation and Engineering Notation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. _str_real_approx_sci:
-.. index:: str_real_approx_sci
+.. function:: str_real_approx_sci fmt radix intGroup fracGroup roundfun sf q
 
-``str_real_approx_sci fmt radix intGroup fracGroup roundfun sf q``
-  returns a string expansion with a number of significant figures in scientific
-  notation, using rounding mode `roundfun`_ (see `Rounding to Integer`_).
+   returns a string expansion with a number of significant figures in
+   scientific notation, using rounding mode ``roundfun`` (see `Rounding to
+   Integer`_).
 
-  (sf must be positive; expStep is usually 3, radix is usually 10, `roundfun`_
-  is usually `round`_ or `round_unbiased`_; `str_real_approx_sci`_ is equivalent
-  to `str_real_approx_eng`_ (below) with expStep = 1.)
+   (sf must be positive; expStep is usually 3, radix is usually 10,
+   ``roundfun`` is usually :func:`~::round` or :func:`round_unbiased`;
+   :func:`str_real_approx_sci` is equivalent to :func:`str_real_approx_eng`
+   (below) with expStep = 1.)
 
-.. _strs_real_approx_sci:
-.. index:: strs_real_approx_sci
+.. function:: strs_real_approx_sci radix roundfun sf q
 
-``strs_real_approx_sci radix roundfun sf q``
-  returns a tuple of strings:
+   returns a tuple of strings:
 
-  * sign of mantissa,
-  * integer part of mantissa,
-  * fraction part of mantissa,
-  * sign of exponent,
-  * exponent magnitude
+   * sign of mantissa,
+   * integer part of mantissa,
+   * fraction part of mantissa,
+   * sign of exponent,
+   * exponent magnitude
 
-  representing an expansion to a number of significant figures in scientific
-  notation together with
+   representing an expansion to a number of significant figures in scientific
+   notation together with
 
-  * the rounding "error": a fraction representing the next numerals. 
+   * the rounding "error": a fraction representing the next numerals. 
 
-.. _str_real_approx_eng:
-.. index:: str_real_approx_eng
+.. function:: str_real_approx_eng fmt expStep radix intGroup fracGroup round sf q
 
-``str_real_approx_eng fmt expStep radix intGroup fracGroup round sf q``
-  returns a string expansion with a number of significant figures in engineering
-  notation, using rounding mode roundfun.
+   returns a string expansion with a number of significant figures in
+   engineering notation, using rounding mode roundfun.
 
-  The ExpStep parameter specifies the granularity of the exponent; specifically,
-  the exponent will always be divisible by expStep.
+   The ExpStep parameter specifies the granularity of the exponent;
+   specifically, the exponent will always be divisible by expStep.
 
-  (sf must be positive; expStep is usually 3 and must be positive, radix is
-  usually 10, `roundfun`_ is usually `round`_ or `round_unbiased`_.)
+   (sf must be positive; expStep is usually 3 and must be positive, radix is
+   usually 10, ``roundfun`` is usually :func:`~::round` or
+   :func:`round_unbiased`.)
 
 **Example 81** Engineering notation::
 
@@ -2774,22 +2471,20 @@ Functions for Scientific Notation and Engineering Notation
   > str_real_approx_eng format_uk 3 10 3 3 round 4 999950;
   "1.000*10^6(-)"
 
-.. _strs_real_approx_eng:
-.. index:: strs_real_approx_eng
+.. function:: strs_real_approx_eng expStep radix roundfun sf q
 
-``strs_real_approx_eng expStep radix roundfun sf q``
-  returns a tuple of strings:
+   returns a tuple of strings:
 
-  * sign of mantissa,
-  * integer part of mantissa,
-  * fraction part of mantissa,
-  * sign of exponent,
-  * exponent magnitude
+   * sign of mantissa,
+   * integer part of mantissa,
+   * fraction part of mantissa,
+   * sign of exponent,
+   * exponent magnitude
 
-  representing an expansion to a number of significant figures in engineering
-  notation together with
+   representing an expansion to a number of significant figures in engineering
+   notation together with
 
-  • the rounding “error”: a fraction representing the next numerals.
+   * the rounding “error”: a fraction representing the next numerals.
 
 **Example 82** Engineering notation — the fragments::
 
@@ -2798,13 +2493,11 @@ Functions for Scientific Notation and Engineering Notation
   > strs_real_approx_eng 3 10 round 4 999950;
   "+","1","000","+","6",(-1L)%20L
 
-.. _join_str_real_eng:
-.. index:: join_str_real_eng
+.. function:: join_str_real_eng fmt intGroup fracGroup mantSign mantI mantF rac expSign expI err
 
-``join_str_real_eng fmt intGroup fracGroup mantSign mantI mantF rac expSign expI err``
-  formats the parts in the quadruple returned by ``strs_real_approx_eng`` or
-  strs_real_approx_sci to the sort of string as returned by
-  `str_real_approx_eng`_ or `str_real_approx_sci`.
+   formats the parts in the quadruple returned by ``strs_real_approx_eng`` or
+   strs_real_approx_sci to the sort of string as returned by
+   :func:`str_real_approx_eng` or :func:`str_real_approx_sci`.
 
 Evaluation of Expansion Strings
 -------------------------------
@@ -2815,15 +2508,13 @@ differently formatted strings if a suitable alternative format structure is
 supplied. See `Internationalisation and Format Structures`_ for information
 about formatting structures.
 
-.. _val_real_eng:
-.. index:: val_real_eng
+.. function:: val_real_eng fmt radix strg
 
-``val_real_eng fmt radix strg``
-  returns the rational q represented by the base-radix expansion string
-  strg of one the forms
+   returns the rational q represented by the base-radix expansion string
+   strg of one the forms
 
-  * “[−]int.frac”
-  * “[−]int.frace[−]exponent”
+   * “[−]int.frac”
+   * “[−]int.frace[−]exponent”
 
 **Example 83** Conversion from the recurring radix expansion-type string
 representations::
@@ -2833,34 +2524,31 @@ representations::
   > val_real_eng format_uk 10 "-12.345*10^2";
   (-2469L)%2L
 
-.. _sval_real_eng:
-.. index:: sval_real_eng
+.. function:: sval_real_eng radix signStr mantIStr mantF racStr expSignStr expStr
 
-``sval_real_eng radix signStr mantIStr mantF racStr expSignStr expStr``
-  returns the rational q represented by the parts
+   returns the rational q represented by the parts
 
-  * sign
-  * integer part of mantissa
-  * fraction part of mantissa
-  * sign of exponent
-  * exponent
+   * sign
+   * integer part of mantissa
+   * fraction part of mantissa
+   * sign of exponent
+   * exponent
 
-.. _split_str_real_eng:
-.. index:: split_str_real_eng
+.. function:: split_str_real_eng fmt strg
 
-``split_str_real_eng fmt strg`` — returns a tuple containing the string parts
+   returns a tuple containing the string parts
 
-  * sign
-  * integer part of mantissa
-  * fraction part of mantissa
-  * sign of exponent
-  * exponent
-  * the “error” sign
+   * sign
+   * integer part of mantissa
+   * fraction part of mantissa
+   * sign of exponent
+   * exponent
+   * the “error” sign
 
-  of one the forms
+   of one the forms
 
-  * “[−]int.frac”
-  * “[−]int.frac ×10^[−]exponent”
+   * “[−]int.frac”
+   * “[−]int.frac ×10^[−]exponent”
 
 These functions can deal with the fixed decimal places, the significant figures
 and the scientific notation in addition to the engineering notation.
@@ -2879,17 +2567,15 @@ differently formatted strings if a format structure is supplied. See
 `Internationalisation and Format Structures`_ for information about formatting
 structures.
 
-.. _val_eng_approx_epsilon:
-.. index:: val_eng_approx_epsilon
+.. function:: val_eng_approx_epsilon fmt radix epsilon strg
 
-``val_eng_approx_epsilon fmt radix epsilon strg``
-  Find the least complex rational approximation q to the number represented
-  by the base-radix expansion string str in one of the forms
+   Find the least complex rational approximation q to the number represented
+   by the base-radix expansion string str in one of the forms
 
-  * “[−]int.frac”
-  * “[−]int.frac ×10^[−]exponent”
+   * “[−]int.frac”
+   * “[−]int.frac ×10^[−]exponent”
 
-  that is ε-close. That is find a q such that \|q − eval str\| ≤ ε.
+   that is ε-close. That is find a q such that \|q − eval str\| ≤ ε.
 
 **Example 84** Rational from a long string::
 
@@ -2909,41 +2595,35 @@ structures.
   > double q;
   1.23456789876543e+029
 
-.. _val_eng_interval_epsilon:
-.. index:: val_eng_interval_epsilon
+.. function:: val_eng_interval_epsilon fmt radix epsilon strg
 
-``val_eng_interval_epsilon fmt radix epsilon strg``
-  Find the least complex rational interval containing the number represented
-  by the base-radix expansion string strg in one of the forms
+   Find the least complex rational interval containing the number represented
+   by the base-radix expansion string strg in one of the forms
 
-  * “[−]int.frac”
-  * “[−]int.frac ×10^[−]exponent”
+   * “[−]int.frac”
+   * “[−]int.frac ×10^[−]exponent”
 
-  that is "-small.
+   that is "-small.
 
-.. _val_eng_approx_max_den:
-.. index:: val_eng_approx_max_den
+.. function:: val_eng_approx_max_den fmt radix maxDen strg
 
-``val_eng_approx_max_den fmt radix maxDen strg``
-  Find the closest rational approximation to the number represented by the
-  base-rRadix expansion string strg in one of the forms
+   Find the closest rational approximation to the number represented by the
+   base-rRadix expansion string strg in one of the forms
 
-  * “[−]int.frac”
-  * “[−]int.frac ×10^[−]exponent”
+   * “[−]int.frac”
+   * “[−]int.frac ×10^[−]exponent”
 
-  that has a denominator no greater than maxDen. (maxDen > 0)
+   that has a denominator no greater than maxDen. (maxDen > 0)
 
-.. _val_eng_interval_max_den:
-.. index:: val_eng_interval_max_den
+.. function:: val_eng_interval_max_den fmt radix maxDen strg
 
-``val_eng_interval_max_den fmt radix maxDen strg``
-  Find the smallest rational interval containing the number represented by
-  the base-radix expansion string strg in one of the forms
+   Find the smallest rational interval containing the number represented by
+   the base-radix expansion string strg in one of the forms
 
-  * “[−]int.frac”
-  * “[−]int.frac ×10^[−]exponent”
+   * “[−]int.frac”
+   * “[−]int.frac ×10^[−]exponent”
 
-  that has endpoints with denominators no greater than maxDen. (maxDen > 0)
+   that has endpoints with denominators no greater than maxDen. (maxDen > 0)
 
 **Example 85** Other rationals from a long string::
 

@@ -23,6 +23,8 @@
    
    Matrices
    --------
+
+   .. module:: gsl::matrix
    
    This module is loaded via the command ``using gsl::matrix`` and provides
    wrappers for many of the GSL matrix, BLAS, and linear algebra routines
@@ -44,6 +46,8 @@
    
    Matrix Creation
    ~~~~~~~~~~~~~~~
+
+   .. namespace:: gsl::matrix
    
    The utility functions ``zeros`` and ``ones`` create matrices with all
    elements zero or one, respectively, and ``eye`` creates identity
@@ -53,248 +57,261 @@
    matrix. Analogous functions ``izeros``, ``czeros``, etc. are provided to
    create integer and complex matrices, respectively.
 
-   .. _zeros:
+   .. function:: zeros (n :: int, m :: int)
 
-   ``zeros (n :: int, m :: int)``
-     creates an `n` x `m` double matrix with all of its entries being zero.
+      creates an `n` x `m` double matrix with all of its entries being zero.
 
-   ``zeros n :: int``
-     creates an `n` x `n` double matrix with all of its entries being zero.
+   .. function:: zeros n :: int
 
-   .. _izeros:
+      creates an `n` x `n` double matrix with all of its entries being zero.
 
-   ``izeros (n :: int, m :: int)``
-     creates an `n` x `m` integer matrix with all of its entries being zero.
+   .. function:: izeros (n :: int, m :: int)
 
-   ``izeros n :: int``
-     creates an `n`x`n` integer matrix with all of its entries being zero.
+      creates an `n` x `m` integer matrix with all of its entries being zero.
 
-   .. _czeros:
+   .. function:: izeros n :: int
 
-   ``czeros (n :: int, m :: int)``
-     creates an `n` x `m` complex matrix with all of its entries being zero.
+      creates an `n`x`n` integer matrix with all of its entries being zero.
 
-   ``czeros n :: int``
-     creates an `n` x `n` complex matrix with all of its entries being zero.
+   .. function:: czeros (n :: int, m :: int)
+
+      creates an `n` x `m` complex matrix with all of its entries being zero.
+
+   .. function:: czeros n :: int
+
+      creates an `n` x `n` complex matrix with all of its entries being zero.
    
-   .. _ones:
+   .. function:: ones (n :: int, m :: int)
+
+      creates an `n` x `m` double matrix with all of its entries being one.
    
-   ``ones (n :: int, m :: int)``
-     creates an `n` x `m` double matrix with all of its entries being one.
+   .. function:: ones n :: int
+
+      creates an `n` x `n` double matrix with all of its entries being one.
+
+   .. function:: iones (n :: int, m :: int)
+
+      creates an `n` x `m` integer matrix with all of its entries being one.
+
+   .. function:: iones n :: int
+
+      creates an `n` x `n` integer matrix with all of its entries being one.
+
+   .. function:: cones (n :: int, m :: int)
+
+      creates an `n` x `m` complex matrix with all of its entries being one.
+
+   .. function:: cones n :: int
+
+      creates an `n` x `n` complex matrix with all of its entries being one.
+
+   .. function:: eye (n :: int, m :: int)
+
+      creates an `n` x `m` identity matrix with double entries.
    
-   ``ones n :: int``
-     creates an `n` x `n` double matrix with all of its entries being one.
+   .. function:: eye n :: int
 
-   .. _iones:
+      creates an `n` x `n` identity matrix with double entries.
 
-   ``iones (n :: int, m :: int)``
-     creates an `n` x `m` integer matrix with all of its entries being one.
+   .. function:: ieye (n :: int, m :: int)
 
-   ``iones n :: int``
-     creates an `n` x `n` integer matrix with all of its entries being one.
+      creates an `n` x `m` identity matrix with integer entries.
 
-   .. _cones:
+   .. function:: ieye n :: int
 
-   ``cones (n :: int, m :: int)``
-     creates an `n` x `m` complex matrix with all of its entries being one.
+      creates an `n` x `n` identity matrix with integer entries.
 
-   ``cones n :: int``
-     creates an `n` x `n` complex matrix with all of its entries being one.
+   .. function:: ceye (n :: int, m :: int)
 
-   .. _eye:
-   
-   ``eye (n :: int, m :: int)``
-     creates an `n` x `m` identity matrix with double entries.
-   
-   ``eye n :: int``
-     creates an `n` x `n` identity matrix with double entries.
+      creates an `n` x `m` identity matrix with complex entries.
 
-   .. _ieye:
+   .. function:: ceye n :: int
 
-   ``ieye (n :: int, m :: int)``
-     creates an `n` x `m` identity matrix with integer entries.
-
-   ``ieye n :: int``
-     creates an `n` x `n` identity matrix with integer entries.
-
-   .. _ceye:
-
-   ``ceye (n :: int, m :: int)``
-     creates an `n` x `m` identity matrix with complex entries.
-
-   ``ceye n :: int``
-     creates an `n` x `n` identity matrix with complex entries.
+      creates an `n` x `n` identity matrix with complex entries.
    
    Matrix Operators and Functions
    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   .. namespace:: None
    
    The following operations are defined for constant ``a`` and matrices
    ``x`` and ``y``. Some operators are not defined in the GSL library but
    are provided here for convenience.
    
-   .. _+ (gsl::matrix):
+   .. function:: infix + /gsl_matrix a x
+                 infix + /gsl_matrix x a
+
+      returns a matrix with entries ``a + x!(i,j)``.
+
+   .. function:: infix + /gsl_matrix x y
+
+      adds matrix ``x`` to matrix ``y``.
+
+   .. function:: prefix - /gsl_matrix x
+
+      returns a matrix with entries ``- x!(i,j)``. Note that ``neg x`` is
+      equivalent to ``- x``.
+
+   .. function:: infix - /gsl_matrix a x
+
+      returns a matrix with entries ``a - x!(i,j)``.
+
+   .. function:: infix - /gsl_matrix x a
+
+      returns a matrix with entries ``x!(i,j) - a``.
+
+   .. function:: infix - /gsl_matrix x y
+
+      subtracts matrix ``y`` from matrix ``x``.
+
+   .. function:: infix * /gsl_matrix a x
+                 infix * /gsl_matrix x a
+
+      returns a matrix with entries ``a * x!(i,j)``.
+
+   .. function:: infix .* /gsl_matrix x y
+
+      multiplies, element-wise, matrix ``x`` to matrix ``y``.
+
+   .. function:: infix * /gsl_matrix x y
+
+      multiplies matrix ``x`` to matrix ``y``.
+
+   .. function:: infix / /gsl_matrix a x
+
+      returns a matrix with entries ``a / x!(i,j)``. Note that matrix ``x``
+      must not have any zero entries.
+
+   .. function:: infix / /gsl_matrix x a
+
+      returns a matrix with entries ``x!(i,j) / a``. Note that ``a`` must be
+      nonzero.
+
+   .. function:: infix ./ /gsl_matrix x y
+
+      divides, element-wise, matrix `x` by matrix `y`.
+
+   .. function:: infix / /gsl_matrix x y
+
+      right divides matrix `x` by matrix `y`.
+
+   .. function:: infix \\ /gsl_matrix x y
+
+      left divides matrix `x` by matrix `y`.
+
+   .. function:: infix div /gsl_matrix a x
+
+      returns an integer matrix with entries ``a div x!(i,j)``. Note that `a`
+      must be an integer and matrix ``x`` must be an integer matrix with
+      nonzero entries.
+
+   .. function:: infix div /gsl_matrix x a
+
+      returns an integer matrix with entries ``x!(i,j) div a``. Note that
+      ``a`` must be a nonzero integer and matrix ``x`` must have integer
+      entries.
+
+   .. function:: infix div /gsl_matrix x y
+
+      computes the quotient integer matrix ``x`` by integer matrix ``y``.
+
+   .. function:: infix mod /gsl_matrix a x
+
+      returns an integer matrix with entries ``a mod x!(i,j)``. Note that
+      ``a`` must be an integer and matrix ``x`` must be an integer matrix with
+      nonzero entries.
+
+   .. function:: infix mod /gsl_matrix x a
+
+      returns an integer matrix with entries ``a mod x!(i,j)``. Note that
+      ``a`` must be an integer and matrix ``x`` must be an integer matrix with
+      nonzero entries.
+
+   .. function:: infix mod /gsl_matrix x y
+
+      returns the remainder integer matrix ``x`` mod integer matrix ``y``.
    
-   ``a + x``, ``x + a`` 
-     returns a matrix with entries ``a + x!(i,j)``.
+   .. function:: prefix not /gsl_matrix x
 
-   ``x + y``
-     adds matrix ``x`` to matrix ``y``.
+      returns a matrix with integer entries ``not x!(i,j)``. Note that ``x``
+      must be a matrix with integer entries and ``not`` is the bitwise
+      negation operation.
 
-   .. _- (gsl::matrix):
-   
-   ``- x``
-     returns a matrix with entries ``- x!(i,j)``. Note that ``neg x`` is
-     equivalent to ``- x``.
+   .. function:: infix ^ /gsl_matrix a x
 
-   ``a - x``
-     returns a matrix with entries ``a - x!(i,j)``.
+      returns a matrix with entries ``a ^ x!(i,j)``. Note that ``0^0`` is
+      defined as 1.
 
-   ``x - a``
-     returns a matrix with entries ``x!(i,j) - a``.
+   .. function:: infix ^ /gsl_matrix x a
 
-   ``x - y``
-     subtracts matrix ``y`` from matrix ``x``.
+      returns a matrix with entries ``x!(i,j) ^ a``. Note that ``0^0`` is
+      defined as 1.
 
-   .. _* (gsl::matrix):
-   .. _.*:
+   .. function:: infix .^ /gsl_matrix x y
 
-   ``a * x``, ``x * a``
-     returns a matrix with entries ``a * x!(i,j)``.
+      returns a matrix with entries ``x!(i,j) ^ y!(i,j)``.
 
-   ``x .* y``
-     multiplies, element-wise, matrix ``x`` to matrix ``y``.
+   .. function:: infix ^ /gsl_matrix x y
 
-   ``x * y``
-     multiplies matrix ``x`` to matrix ``y``.
+      returns a matrix with entries ``x!(i,j) ^ y!(i,j)``.
 
-   .. _/ (gsl::matrix):
-   .. _\\:
-   .. _./:
-   
-   ``a / x``
-     returns a matrix with entries ``a / x!(i,j)``. Note that matrix ``x``
-     must not have any zero entries.
+   .. function:: infix << /gsl_matrix x a
 
-   ``x / a``
-     returns a matrix with entries ``x!(i,j) / a``. Note that ``a`` must be
-     nonzero.
+      returns an integer matrix with entries ``x!(i,j) << a``. Note that
+      ``a`` must be an integer and matrix ``x`` must have integer entries. 
 
-   ``x ./ y``
-     divides, element-wise, matrix `x` by matrix `y`.
+   .. function:: infix << /gsl_matrix x y
 
-   ``x / y``
-     right divides matrix `x` by matrix `y`.
+      returns an integer matrix with entries ``x!(i,j) << y!(i,j)``. Note
+      that ``x`` and ``y`` must have integer entries.
 
-   ``x \\ y``
-     left divides matrix `x` by matrix `y`.
+   .. function:: infix >> /gsl_matrix x a
 
-   .. _div (gsl::matrix):
-   
-   ``a div x``
-     returns an integer matrix with entries ``a div x!(i,j)``. Note that
-     `a` must be an integer and matrix ``x`` must be an integer matrix 
-     with nonzero entries.
+      returns an integer matrix with entries ``x!(i,j) >> a``. Note that
+      ``a`` must be an integer and matrix ``x`` must have integer entries.
 
-   ``x div a``
-     returns an integer matrix with entries ``x!(i,j) div a``. Note that
-     ``a`` must be a nonzero integer and matrix ``x`` must have integer
-     entries.
+   .. function:: infix >> /gsl_matrix x y
 
-   ``x div y``
-     computes the quotient integer matrix ``x`` by integer matrix ``y``.
+      returns an integer matrix with entries ``x!(i,j) >> y!(i,j)``. Note
+      that ``x`` and ``y`` must have integer entries.
 
-   .. _mod (gsl::matrix):
-   
-   ``a mod x``
-     returns an integer matrix with entries ``a mod x!(i,j)``. Note that
-     ``a`` must be an integer and matrix ``x`` must be an integer matrix 
-     with nonzero entries.
+   .. function:: infix and /gsl_matrix x a
+                 infix and /gsl_matrix a x
 
-   ``x mod a``
-     returns an integer matrix with entries ``a mod x!(i,j)``. Note that
-     ``a`` must be an integer and matrix ``x`` must be an integer matrix 
-     with nonzero entries.
+      returns an integer matrix with entries ``a and x!(i,j)``. Note that
+      ``a`` must be an integer, matrix ``x`` must have integer entries, and
+      ``and`` is a bitwise operator.
 
-   ``x mod y``
-     returns the remainder integer matrix ``x`` mod integer matrix ``y``.
-   
-   .. _not (gsl::matrix):
-   
-   ``not x``
-     returns a matrix with integer entries ``not x!(i,j)``. Note that ``x``
-     must be a matrix with integer entries and ``not`` is the bitwise
-     negation operation.
+   .. function:: infix and /gsl_matrix x y
 
-   .. _^ (gsl::matrix):
-   .. _.^:
-   
-   ``a ^ x``
-     returns a matrix with entries ``a ^ x!(i,j)``. Note that ``0^0`` is
-     defined as 1.
+      returns an integer matrix with entries ``x!(i,j) and y!(i,j)``. Note
+      that ``x`` and ``y`` must be matrices with integer entries.
 
-   ``x ^ a``
-     returns a matrix with entries ``x!(i,j) ^ a``. Note that ``0^0`` is
-     defined as 1.
+   .. function:: infix or /gsl_matrix x a
+                 infix or /gsl_matrix a x
 
-   ``x .^ y``
-     returns a matrix with entries ``x!(i,j) ^ y!(i,j)``.
+      returns an integer matrix with entries ``a or x!(i,j)``. Note that ``a``
+      must be an integer, matrix ``x`` must have integer entries, and ``or``
+      is a bitwise operator.
 
-   ``x ^ y``
-     returns a matrix with entries ``x!(i,j) ^ y!(i,j)``.
+   .. function:: infix or /gsl_matrix x y
 
-   .. _<< (gsl::matrix):
-   
-   ``x << a``
-     returns an integer matrix with entries ``x!(i,j) << a``. Note that
-     ``a`` must be an integer and matrix ``x`` must have integer entries. 
-
-   ``x << y``
-     returns an integer matrix with entries ``x!(i,j) << y!(i,j)``. Note
-     that ``x`` and ``y`` must have integer entries.
-
-   .. _>> (gsl::matrix):
-   
-   ``x >> a``
-     returns an integer matrix with entries ``x!(i,j) >> a``. Note that
-     ``a`` must be an integer and matrix ``x`` must have integer entries.
-
-   ``x >> y``
-     returns an integer matrix with entries ``x!(i,j) >> y!(i,j)``. Note
-     that ``x`` and ``y`` must have integer entries.
-
-   .. _and (gsl::matrix):
-   
-   ``x and a``, ``a and x``
-     returns an integer matrix with entries ``a and x!(i,j)``. Note that
-     ``a`` must be an integer, matrix ``x`` must have integer entries,
-     and ``and`` is a bitwise operator.
-
-   ``x and y``
-     returns an integer matrix with entries ``x!(i,j) and y!(i,j)``. Note
-     that ``x`` and ``y`` must be matrices with integer entries.
-
-   .. _or (gsl::matrix):
-   
-   ``x or a``, ``a or x``
-     returns an integer matrix with entries ``a or x!(i,j)``. Note that
-     ``a`` must be an integer, matrix ``x`` must have integer entries,
-     and ``or`` is a bitwise operator.
-
-   ``x or y``
-     returns an integer matrix with entries ``x!(i,j) or y!(i,j)``. Note
-     that ``x`` and ``y`` must be matrices with integer entries.
+      returns an integer matrix with entries ``x!(i,j) or y!(i,j)``. Note
+      that ``x`` and ``y`` must be matrices with integer entries.
 
    The ``pow`` function computes powers of matrices by repeated matrix
    multiplication.
 
-   .. _pow (gsl::matrix):
+   .. function:: pow /gsl_matrix x :: matrix  k :: int
+                 pow /gsl_matrix x :: matrix  k :: bigint
 
-   ``pow x :: matrix  k :: int``, ``pow x :: matrix  k :: bigint``
-     Raises matrix ``x`` to the ``k`` th power. Note ``x`` must be a
-     square matrix and ``k`` a nonnegative integer.
+      Raises matrix ``x`` to the ``k`` th power. Note ``x`` must be a
+      square matrix and ``k`` a nonnegative integer.
    
    Singular Value Decomposition
    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+   .. namespace:: gsl::matrix
 
    For a given `n` x `m` matrix ``x``, these functions yield a
    singular-value decomposition ``u``, ``s``, ``v`` of the matrix such
@@ -307,36 +324,35 @@
    by just adding a suitable number of zero rows in the underdetermined 
    case.
    
-   .. _svd:
-   
-   ``svd x``
-     singular-value decomposition of matrix ``x``.
+   .. function:: svd x
 
-   .. _svd_mod:
-   
-   ``svd_mod``
-     This uses the modified Golub-Reinsch algorithm, which is faster if
-     ``n > m`` but needs `O(m^2)` extra memory as internal workspace.
+      singular-value decomposition of matrix ``x``.
 
-   .. _svd_jacobi:
-   
-   ``svd_jacobi x``
-     This uses one-sided Jacobi orthogonalization which provides better
-     relative accuracy but is slower.
+   .. function:: svd_mod x
 
-   .. _svd_solve:
-   
-   ``svd_solve (u, s, v)  b``
-     Solve the system ``Ax=b``, using the SVD of ``A``. ``svd_solve`` takes
-     the result ``(u,s,v)`` of a ``svd`` call, and a column vector ``b`` of
-     the appropriate dimension. The result is another column vector solving
-     the system (possibly in the least-squares sense).
+      This uses the modified Golub-Reinsch algorithm, which is faster if
+      ``n > m`` but needs `O(m^2)` extra memory as internal workspace.
 
-   .. _pinv:
-   
-   ``pinv x``
-     Computes the pseudo inverse of a matrix from its singular value
-     decomposition.  */
+   .. function:: svd_jacobi x
+
+      This uses one-sided Jacobi orthogonalization which provides better
+      relative accuracy but is slower.
+
+   .. function:: svd_solve (u, s, v)  b
+
+      Solve the system ``Ax=b``, using the SVD of ``A``. ``svd_solve`` takes
+      the result ``(u,s,v)`` of a ``svd`` call, and a column vector ``b`` of
+      the appropriate dimension. The result is another column vector solving
+      the system (possibly in the least-squares sense).
+
+   .. function:: pinv x
+
+      Computes the pseudo inverse of a matrix from its singular value
+      decomposition.
+
+   .. namespace:: None
+
+*/
 
 using common, utils;
 
