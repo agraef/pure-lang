@@ -1340,8 +1340,37 @@ public:
     if (it != m.end()) {
       target = it->second;
       return true;
-    } else
+    }
+    size_t p = key.rfind('(');
+    if (p != string::npos && p>0)
       return false;
+    // Try to find a function, macro etc. of this name.
+    list<string> fixities, symtypes;
+    fixities.push_back("");
+    fixities.push_back("prefix");
+    fixities.push_back("postfix");
+    fixities.push_back("infix");
+    fixities.push_back("outfix");
+    symtypes.push_back("function");
+    symtypes.push_back("macro");
+    symtypes.push_back("extern");
+    symtypes.push_back("constructor");
+    symtypes.push_back("variable");
+    symtypes.push_back("constant");
+    symtypes.push_back("module");
+    for (list<string>::const_iterator f = fixities.begin();
+	 f != fixities.end(); f++) {
+      for (list<string>::const_iterator s = symtypes.begin();
+	   s != symtypes.end(); s++) {
+	string mykey = key+" ("+(f->empty()?*s:(*f)+" "+(*s))+")";
+	it = m.find(mykey);
+	if (it != m.end()) {
+	  target = it->second;
+	  return true;
+	}
+      }
+    }
+    return false;
   }
 };
 
@@ -1375,7 +1404,31 @@ void Index::scan()
       else if (tag == "/dl")
 	// end of subentry list
 	level--;
-      else if (level>0 &&
+      else if (level==1 && tag == "dt") {
+	if ((c = fgetc(fp)) != EOF && c != '<') {
+	  // this looks like an index entry which isn't a search key itself,
+	  // but to be prepended to the following subentries
+	  string key; key += c;
+	  while ((c = fgetc(fp)) != EOF && c != '<') {
+	    if (c == '&') {
+	      // scan an entity name
+	      string entity;
+	      while ((c = fgetc(fp)) != EOF && c != ';') entity += c;
+	      if (entity == "amp")
+		key += '&';
+	      else if (entity == "lt")
+		key += '<';
+	      else if (entity == "gt")
+		key += '>';
+	      else
+		key += "&"+entity+";";
+	    } else
+	      key += c;
+	  }
+	  last_key = key;
+	}
+	if (c != EOF) ungetc(c, fp);
+      } else if (level>0 &&
 	       tag.compare(0, 8, "a href=\"") == 0 && tag[8] != '#') {
 	// we found an index entry, get the target
 	string target, key;
@@ -1412,8 +1465,17 @@ void Index::scan()
 	  // this is a subentry, prepend the last key we found
 	  if (!last_key.empty()) key.insert(0, last_key+" ");
 	  last_subkey = key;
-	} else
-	  last_key = key;
+	} else {
+	  size_t p = key.rfind('(');
+	  if (p != string::npos && p>0) {
+	    p = key.find_last_not_of(' ', p-1);
+	    if (p != string::npos)
+	      last_key = key.substr(0, p+1);
+	    else
+	      last_key = key;
+	  } else
+	    last_key = key;
+	}
 	m[key] = target;
       }
     }
@@ -1620,7 +1682,7 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
 	cerr << "help: memory allocation error\n";
     } else {
       if (!browser) browser = "w3m"; // default
-      string helpcmd = string(browser) + " " + docname;
+      string helpcmd = string(browser) + " \"" + docname + "\"";
       if (system(helpcmd.c_str()) == -1) perror("system");
     }
   } else if (strcmp(cmd, "ls") == 0)  {
