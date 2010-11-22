@@ -3,6 +3,9 @@
 pure-octave
 ===========
 
+.. default-domain:: pure
+.. module:: octave
+
 Version @version@, |today|
 
 Albert Graef <Dr.Graef@t-online.de>
@@ -70,7 +73,11 @@ This will add an embedded instance of the Octave interpreter to your program.
 (You can import this module as often as you want, but there's always only one
 instance of Octave in each process.)
 
-Arbitrary Octave code can be executed with the ``octave_eval`` function::
+.. function:: octave_eval s
+
+   Executes arbitrary Octave code.
+
+::
 
   > octave_eval "eig([1 2;3 4])";
   ans =
@@ -87,16 +94,20 @@ Octave statement with a semicolon::
   > octave_eval "eig([1 2;3 4]);";
   0
 
-You can also set and get global variables in the Octave interpreter. This
-allows you to define values to be used when evaluating Octave code, and to
-transfer results back to Pure. However, before such globals can be accessed in
-Octave, you must explicitly declare them as globals::
+.. function:: octave_set var val
+   	      octave_get var
+
+   Set and get global variables in the Octave interpreter.
+
+This allows you to define values to be used when evaluating Octave code, and
+to transfer results back to Pure. However, before such globals can be accessed
+in Octave, you must explicitly declare them as globals::
 
   > octave_eval "global x y ans";
   0
 
-Now you can use ``octave_set`` and ``octave_get`` to transfer values between
-Pure and Octave as follows::
+Now you can use :func:`octave_set` and :func:`octave_get` to transfer values
+between Pure and Octave as follows::
 
   > octave_set "x" {1.0,2.0;3.0,4.0};
   {1.0,2.0;3.0,4.0}
@@ -117,9 +128,13 @@ follows::
 Direct Function Calls
 =====================
 
-Octave functions can also be called in a direct fashion with the
-``octave_call`` function, which gets invoked with the name of the function,
-the number of function results and the function arguments::
+.. function:: octave_call fun n args
+
+   Call an octave function in a direct fashion. ``fun`` denotes the name of
+   the function, ``n`` the number of function results and ``args`` the
+   function arguments.
+
+::
 
   > let x = {1.0,2.0;3.0,4.0};
   > octave_call "eig" 1 x;
@@ -145,24 +160,26 @@ list::
 Instead of a function name, you can also specify the function to be called
 using a special kind of Octave object, a function value. These are returned,
 e.g., by Octave's ``str2func`` and ``inline`` builtins. For your convenience,
-pure-octave provides a frontend to these builtins, the ``octave_func``
+pure-octave provides a frontend to these builtins, the :func:`octave_func`
 function, which lets you specify an Octave function in one of two ways:
 
-* ``octave_func name``, where ``name`` is the function name as a string,
-  returns the Octave function with the given name. This works like Octave's
-  ``str2func`` builtin.
+.. function:: octave_func /name name
 
-* ``octave_func expr``, where ``expr`` is an Octave expression (as a string)
-  describing the function value, returns an "inline" function. This works like
-  Octave's ``inline`` builtin. Instead of just an Octave expression, you can
-  also specify a tuple or a list consisting of the inline expression and the
-  parameter names. (Otherwise the parameters are determined automatically, see
-  the description of the ``inline`` function in the Octave manual for
-  details.)
+   Returns the Octave function with the given name. This works like Octave's
+   ``str2func`` builtin.
+
+.. function:: octave_func /expr expr
+
+   Returns an "inline" function, where ``expr`` is an Octave expression (as a
+   string) describing the function value. This works like Octave's ``inline``
+   builtin. Instead of just an Octave expression, you can also specify a tuple
+   or a list consisting of the inline expression and the parameter
+   names. (Otherwise the parameters are determined automatically, see the
+   description of the ``inline`` function in the Octave manual for details.)
 
 Note that inline functions allow you to call stuff that is not an Octave
-function and hence cannot be specified directly in ``octave_call``, such as an
-operator. Examples::
+function and hence cannot be specified directly in :func:`octave_call`, such
+as an operator. Examples::
 
   > let eig = octave_func "eig";
   > let mul = octave_func "x*y";
@@ -175,20 +192,26 @@ operator. Examples::
 Data Conversions
 ================
 
-As shown above, the ``octave_set``, ``octave_get`` and ``octave_call``
-functions convert Pure data to corresponding Octave values and vice versa.
-Octave scalars and matrices of boolean, integer, double, complex and character
-data are all supported by this interface, and are mapped to the corresponding
-Pure data types in a straightforward manner (scalars to scalars, matrices to
-matrices and strings to strings). Note that in any case these conversions
-create *copies* of the data, so modifying, say, an Octave matrix received via
-``octave_get`` in Pure only affects the Pure copy of the matrix and leaves the
-original Octave matrix unchanged.
+As shown above, the :func:`octave_set`, :func:`octave_get` and
+:func:`octave_call` functions convert Pure data to corresponding Octave values
+and vice versa.  Octave scalars and matrices of boolean, integer, double,
+complex and character data are all supported by this interface, and are mapped
+to the corresponding Pure data types in a straightforward manner (scalars to
+scalars, matrices to matrices and strings to strings). Note that in any case
+these conversions create *copies* of the data, so modifying, say, an Octave
+matrix received via :func:`octave_get` in Pure only affects the Pure copy of
+the matrix and leaves the original Octave matrix unchanged.
 
 Any other kind of Octave object (including Octave function objects, see
 `Direct Function Calls`_) is just passed through as is, in the form of a
 cooked pointer to an Octave value which frees itself when garbage-collected.
-You can check for such objects with the ``octave_valuep`` predicate::
+You can check for such objects with the :func:`octave_valuep` predicate:
+
+.. function:: octave_valuep x
+
+   Check for Octave value pointers.
+
+::
 
   > let eig = octave_func "eig";
   > eig; octave_valuep eig;
@@ -196,7 +219,7 @@ You can check for such objects with the ``octave_valuep`` predicate::
   1
 
 Such Octave value pointers can be used freely whereever an Octave value is
-needed (i.e., in invocations of ``octave_set`` and ``octave_call``).
+needed (i.e., in invocations of :func:`octave_set` and :func:`octave_call`).
 
 You should also note the following:
 

@@ -3,6 +3,9 @@
 pure-ffi
 ========
 
+.. default-domain:: pure
+.. module:: ffi
+
 Version @version@, |today|
 
 Albert Graef <Dr.Graef@t-online.de>
@@ -70,22 +73,25 @@ values using ``show -g FFI_* *_t`` after importing the ffi module.
 
 The primary interface for calling C from Pure and vice versa is as follows:
 
-- ``fcall name abi rtype atypes``: Creates a Pure function from a C function
-  with the given name, specified as a string. This makes the C function
-  callable in Pure, no matter whether it is already declared as an ``extern``
-  or not. But note that if the function resides in a shared library, you still
-  have to import that library using a Pure ``using`` declaration, see the
-  Pure manual for details.
+.. function:: fcall name abi rtype atypes
 
-- ``fclos fn abi rtype atypes``: Creates a pointer to a C function from the
-  given Pure function ``fn``. The resulting pointer can then be passed to
-  other C functions expecting functions as arguments. This allows you to
-  create C callbacks from Pure functions without writing a single line of C
-  code. (This functionality might not be available on some platforms.)
+   Creates a Pure function from a C function with the given name, specified as
+   a string. This makes the C function callable in Pure, no matter whether it
+   is already declared as an ``extern`` or not. But note that if the function
+   resides in a shared library, you still have to import that library using a
+   Pure ``using`` declaration, see the Pure manual for details.
 
-Note that in difference to ``extern`` functions, arguments to functions
-created with libffi are always passed in uncurried form, as a Pure
-tuple. E.g.::
+.. function:: fclos fn abi rtype atypes
+
+   Creates a pointer to a C function from the given Pure function ``fn``. The
+   resulting pointer can then be passed to other C functions expecting
+   functions as arguments. This allows you to create C callbacks from Pure
+   functions without writing a single line of C code. (This functionality
+   might not be available on some platforms.)
+
+Note that in difference to :keyword:`extern` functions, arguments to functions
+created with libffi are always passed in uncurried form, as a Pure tuple.
+E.g.::
 
   > using ffi;
   > let fmod = fcall "fmod" FFI_DEFAULT_ABI double_t (double_t,double_t);
@@ -102,7 +108,7 @@ instead.) For instance::
   > members (cexp (struct complex_t (0.0,1.0)));
   0.54030230586814,0.841470984807897
 
-See the ``examples`` folder in the sources for more examples.
+See the examples folder in the sources for more examples.
 
 TODO
 ====

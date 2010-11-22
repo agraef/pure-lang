@@ -4,6 +4,9 @@
 Pure-Sql3
 =========
 
+.. default-domain:: pure
+.. module:: sql3
+
 Version @version@, |today|
 
 | Peter Summerland
@@ -64,9 +67,11 @@ and executes a query.
   > exec sp2 18;
   [["Sam",20],["Fred",22]]
 
-The Sql3 functions, ``open``, ``prep`` and ``exec`` encapsulate the
-core functionality of SQLite, and in many cases are all you need to
-use SQLite effectively. 
+.. namespace:: sql3
+
+The Sql3 functions, :func:`open`, :func:`prep` and :func:`exec` encapsulate
+the core functionality of SQLite, and in many cases are all you need to use
+SQLite effectively.
 
 More Examples
 -------------
@@ -164,17 +169,17 @@ to the following two SQLite objects.
 * Database connection object - sqlite3
 * Prepared statement object  - sqlite3_stmt
 
-The Sql3 functions ``open`` and ``prep`` return "sentry-guarded"
-pointers to database connection objects and prepared statement
-objects, respectively. The pointers returned by these two functions
-are referred to herein as ``db_ptrs`` and ``stmt_ptrs``.
+The Sql3 functions :func:`open` and :func:`prep` return "sentry-guarded"
+pointers to database connection objects and prepared statement objects,
+respectively. The pointers returned by these two functions are referred to
+herein as ``db_ptrs`` and ``stmt_ptrs``.
 
-A db_ptr or a stmt_ptr is, as far as SQLite is concerned, the same as
-a sqlite3* returned by ``sqlite3_open_v2`` or a sqlite3_stmt* returned
-by ``sqlite3_prepare_v2``, the SQLite C interface functions
-corresponding to ``open`` and ``prep``. Thus, db_ptrs and stmt_ptrs
-can be used when calling functions provided by the SQLite C interface
-(See `Accessing the Rest of SQLite's C Interface`_).
+A db_ptr or a stmt_ptr is, as far as SQLite is concerned, the same as a
+sqlite3* returned by ``sqlite3_open_v2`` or a sqlite3_stmt* returned by
+``sqlite3_prepare_v2``, the SQLite C interface functions corresponding to
+:func:`open` and :func:`prep`. Thus, db_ptrs and stmt_ptrs can be used when
+calling functions provided by the SQLite C interface (See `Accessing the Rest
+of SQLite's C Interface`_).
 
 Core Database Operations
 ========================
@@ -196,15 +201,14 @@ automatically by Sql3 when the db_ptr goes out of scope).
 Opening a Database Connection
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In Sql3 ``open`` constructs a database connection and returns a db_ptr
+In Sql3 :func:`open` constructs a database connection and returns a db_ptr
 that refers to the connection.
 
-.. index:: open
+.. function:: open (file_path::string [,access_mode::int,custom_bindings]])
 
-``open (file_path::string [,access_mode::int,custom_bindings]])``
-  opens a SQLite database file whose name is given by the file_path
-  argument and returns a db_ptr for the associated database connection
-  object created by SQLite.
+   opens a SQLite database file whose name is given by the file_path argument
+   and returns a db_ptr for the associated database connection object created
+   by SQLite.
 
 Example::
 
@@ -245,7 +249,7 @@ Failure to Open a Database Connection
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If SQLite cannot open the connection, it still returns a pointer to a
-database connection object that must be closed. In this case, ``open``
+database connection object that must be closed. In this case, :func:`open`
 automatically closes the the connection object and then throws an
 exception. E.g.,::
 
@@ -263,15 +267,13 @@ Testing a db_ptr
 For argument checking and other purposes Sql3 provides the following
 functions:
 
-.. index:: is_db_ptr
+.. function:: is_db_ptr ptr::pointer
 
-``is_db_ptr ptr::pointer``
-  returns 1 if ptr is a db_ptr returned by open, and 0 if it is not.
+   returns 1 if ptr is a db_ptr returned by open, and 0 if it is not.
 
-.. index:: is_open
+.. function:: is_open ptr::pointer
 
-``is_open ptr::pointer``
-  returns 1 if the database connection referenced by ptr is open.
+   returns 1 if the database connection referenced by ptr is open.
 
 Closing a Database Connection
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -279,13 +281,12 @@ Closing a Database Connection
 When a database connection object is no longer needed, it should be closed
 so that SQLite can free the associated resources.
 
-.. index:: close
+.. function:: close dbp::pointer
 
-``close dbp::pointer``
-  if the database connection referenced by the db_ptr dbp is open,
-  close it using sqlite3_close; otherwise do nothing.
+   if the database connection referenced by the db_ptr dbp is open,
+   close it using sqlite3_close; otherwise do nothing.
 
-Before calling ``sqlite3_close``, ``close`` finalizes all prepared
+Before calling ``sqlite3_close``, :func:`close` finalizes all prepared
 statements associated with the connection being closed. Sql3 will
 detect and throw a db_error if an attempt is subsequently made to
 execute a statement associated with the closed database connection. ::
@@ -302,7 +303,7 @@ execute a statement associated with the closed database connection. ::
 
 If a db_ptr goes out of scope, Sql3 will automatically call
 ``sqlite3_close`` to close the referenced database connection, but
-only if the connection has not already been closed by ``close``. 
+only if the connection has not already been closed by :func:`close`. 
 
 When debugging, this activity can be observed by editing sql3.pure,
 changing "const SHOW_OPEN_CLOSE = 0;" to "const SHOW_OPEN_CLOSE = 1;"
@@ -312,7 +313,7 @@ or finalized.
 
 N.B. You should never call ``sqlite3_close`` with a db_ptr. If the
 referenced database connection is closed by such a call, a subsequent
-call to ``close`` on this db_ptr (including the call that will
+call to :func:`close` on this db_ptr (including the call that will
 automatically occur when the db_ptr goes out of scope) will cause a
 seg fault.
 
@@ -339,27 +340,26 @@ recognized by SQLite. Thus, for example, ``sqlite_bind_double`` is the
 function one would use to bind a prepared statement with an argument of type
 double.
 
-Sql3 encapsulates these procedures in four functions: ``prep``,
-``exec``, ``lexec`` and ``finalize``.
+Sql3 encapsulates these procedures in four functions: :func:`prep`,
+:func:`exec`, :func:`lexec` and :func:`finalize`.
 
 Constructing Prepared Statements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In Sql3 you can use ``prep`` to construct a prepared statement and
+In Sql3 you can use :func:`prep` to construct a prepared statement and
 obtain a stmt_ptr that refers to it.
 
-.. index:: prep
+.. function:: prep dbp::pointer binding_string::string sql_statement::string
 
-``prep dbp::pointer binding_string::string sql_statement::string``
-  constructs a prepared statement object and returns a stmt_ptr that
-  references it. ``dbp`` must be a db_ptr or the rule will not
-  match. ``sql_statement`` is the SQL statement that will be executed
-  when the prepared statement is passed to ``exec``.
+   constructs a prepared statement object and returns a stmt_ptr that
+   references it. ``dbp`` must be a db_ptr or the rule will not
+   match. ``sql_statement`` is the SQL statement that will be executed
+   when the prepared statement is passed to :func:`exec`.
 
-Basically, ``prep`` just passes ``dbp`` and ``sql_statement`` on to
+Basically, :func:`prep` just passes ``dbp`` and ``sql_statement`` on to
 ``sqlite3_prepare_v2`` and returns a sentry guarded version of the
 sqlite3_stmt* it receives back from ``sqlite3_prepare_v2``. SQL
-statements passed to ``prep`` (and ``sqlite3_prepare_v2``) can have
+statements passed to :func:`prep` (and ``sqlite3_prepare_v2``) can have
 argument placeholders, indicated by "?", "?nnn", ":AAA", etc, in which
 case the argument placeholders must be bound to values using
 ``sqlite_bind`` before the prepared statement is passed to
@@ -420,12 +420,13 @@ a type string. The "**v**" type stands for any of "b", "c", "d", "i"
 or "n", based on the type of the binding argument. A "v" type will be
 fetched from SQLite according to the native SQLite column type of the
 corresponding column.  The "**x**" type is used to store and
-reconstruct Pure expressions as binary objects, using the ``val`` and
-``blob`` functions provided by the Pure system module.
+reconstruct Pure expressions as binary objects, using the
+:func:`~::val/blob` and :func:`~::blob` functions provided by the Pure
+prelude.
 
 Users can define custom binding types and pass them as a third
-parameter to ``open``. The resulting db_ptr can be used with the
-custom binding types to construct prepared statements using ``prep``.
+parameter to :func:`open`. The resulting db_ptr can be used with the
+custom binding types to construct prepared statements using :func:`prep`.
 
 Testing a stmt_ptr
 ~~~~~~~~~~~~~~~~~~
@@ -433,27 +434,25 @@ Testing a stmt_ptr
 For argument checking and other purposes it is sometimes useful to
 determine if a given expression is a valid stmt_ptr.
 
-.. index:: is_stmt_ptr
+.. function:: is_stmt_ptr ptr::pointer
 
-``is_stmt_ptr ptr::pointer``
-  returns 1 if ``ptr`` is a stmt_ptr, otherwise returns 0.
+   returns 1 if ``ptr`` is a stmt_ptr, otherwise returns 0.
 
 Executing Prepared Statements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In Sql3, the bind, step, column, step, column ... cycle is encapsulated in
-the ``exec`` and ``lexec`` functions.
+the :func:`exec` and :func:`lexec` functions.
 
-.. index:: exec
+.. function:: exec sp::pointer args
 
-``exec sp::pointer args`` 
-  use ``args`` to bind the prepared statement referenced by ``sp``, execute it
-  and return the result set as a list. The first parameter, ``sp`` must
-  be a valid stmt_ptr or the rule will fail.
+   use ``args`` to bind the prepared statement referenced by ``sp``, execute
+   it and return the result set as a list. The first parameter, ``sp`` must be
+   a valid stmt_ptr or the rule will fail.
 
 The second parameter, ``args``, is a tuple or list of arguments whose
 number and type correspond to the bind parameter types specified in
-the call to ``prep`` that produced the first parameter ``sp``.
+the call to :func:`prep` that produced the first parameter ``sp``.
 
 Example::
 
@@ -471,7 +470,7 @@ An error is thrown if the args do not correspond to the specified types. ::
   error (sql3::db_error 0 "\"a\" does not have type int")
 
 If a prepared statement does not have any binding parameters,
-the call to ``exec`` should use ``()`` as the binding argument. ::
+the call to :func:`exec` should use ``()`` as the binding argument. ::
 
   > let sp3 = prep dbp "c:" "select name from RM";
 
@@ -498,15 +497,14 @@ stpx (a,blb,c)``" would produce a Sql3 binding exception.
 Executing Lazily
 ~~~~~~~~~~~~~~~~
 
-The ``exec`` function returns result sets as eager lists which can
+The :func:`exec` function returns result sets as eager lists which can
 sometimes be inefficient or simply not feasible for large result
-sets. In such cases it is preferable to use ``lexec`` instead of
-``exec``.
+sets. In such cases it is preferable to use :func:`lexec` instead of
+:func:`exec`.
 
-.. index:: lexec
+.. function:: lexec stmp::pointer args
 
-``lexec stmp::pointer args``
-  same as ``exec`` except that it returns a lazy list.
+   same as :func:`exec` except that it returns a lazy list.
 
 Example::
 
@@ -514,27 +512,24 @@ Example::
   ["Sam",20]:#<thunk 0xb6475ab0>
 
 Note that no changes to ``sp2`` were required. In addition, for most
-purposes the lazy list returned by ``lexec`` can be processed by the
-same code that processed the eager list returned by ``exec``.
+purposes the lazy list returned by :func:`lexec` can be processed by the
+same code that processed the eager list returned by :func:`exec`.
 
 Executing Directly on a db_ptr
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For statements that have no parameters and which do not return results,
-``exec`` can be applied to a db_ptr.
+:func:`exec` can be applied to a db_ptr.
 
-.. index:: exec dbp
+.. function:: exec dbp::pointer sql_statement::string
 
-``exec dbp::pointer sql_statement::string`` constructs a temporary
-  prepared statement using ``sql_statement``.  The SQL statement
-  cannot contain argument placeholders and cannot be a select
-  statement.
+   constructs a temporary prepared statement using ``sql_statement``. The SQL
+   statement cannot contain argument placeholders and cannot be a select
+   statement.
 
 Example::
 
   > exec dbp "create table if not exists RM (name varchar, age integer)";
-
-.. _Executing Against a Busy Database:
 
 Executing Against a Busy Database
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -544,9 +539,9 @@ database, but when any process wants to write, it locks the entire
 database file for the duration of its update.
 
 When ``sqlite3_step`` tries to access a file that is locked by another
-process, it treats the database as "busy" and returns the SQLITE_BUSY
-error code. If this happens in a call to ``exec`` or ``lexec``, a
-db_busy_ exception will be thrown. 
+process, it treats the database as "busy" and returns the SQLITE_BUSY error
+code. If this happens in a call to :func:`exec` or :func:`lexec`, a
+:cons:`db_busy` exception will be thrown.
 
 You can adjust SQLite's behavior using ``sqlite3_busy_handler`` or
 ``sqlite3_busy_timeout``.
@@ -575,7 +570,7 @@ automatically started transactions are committed as soon as the
 execution of the related statement completes.
 
 The upshot of this, in Sql3 terms, is that unless a transaction is
-started manually, the database will be updated each time ``exec`` is
+started manually, the database will be updated each time :func:`exec` is
 called. For a long series of updates or inserts this a can be very
 slow. The way to avoid this problem is to manually begin and end
 transactions manually.
@@ -584,26 +579,17 @@ Transactions created using BEGIN...COMMIT do not nest. For nested
 transactions, use the SAVEPOINT and RELEASE statements. 
 
 Sql3 provides the following convenience functions all of which simply
-call ``exec`` with the appropriate statement. For example ``begin
+call :func:`exec` with the appropriate statement. For example ``begin
 dbp`` is exactly the same as ``exec dbp "BEGIN"``.
 
-.. _begin:
-.. _begin_exclusive:
-.. _begin_immediate:
-.. _commit:
-.. _savepoint:
-.. _release:
-.. _rollback_to:
-.. _rollback:
-
-* ``begin dbp::pointer``
-* ``begin_exclusive dbp::pointer``
-* ``begin_immediate dbp::pointer``
-* ``commit dbp::pointer``
-* ``rollback dbp::pointer``
-* ``savepoint dbp::pointer save_point::string``
-* ``release dbp::pointer save_point::string``
-* ``rollback_to dbp::pointer save_point::string``
+.. function:: begin dbp::pointer
+.. function:: begin_exclusive dbp::pointer
+.. function:: begin_immediate dbp::pointer
+.. function:: commit dbp::pointer
+.. function:: rollback dbp::pointer
+.. function:: savepoint dbp::pointer save_point::string
+.. function:: release dbp::pointer save_point::string
+.. function:: rollback_to dbp::pointer save_point::string
 
 Finalizing Prepared Statements
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -611,13 +597,12 @@ Finalizing Prepared Statements
 When a prepared statement is no longer needed it should be finalized
 so that SQLite can free the associated resources.
 
-.. index:: finalize
+.. function:: finalize sp::pointer
 
-``finalize sp::pointer``
-  finalize the prepared statement referenced by ``sp``, which must be a
-  stmt_ptr previously returned by ``prep``.
+   finalize the prepared statement referenced by ``sp``, which must be a
+   stmt_ptr previously returned by :func:`prep`.
 
-Often there is no need to call ``finalize`` for a given stmt_ptr
+Often there is no need to call :func:`finalize` for a given stmt_ptr
 because it will be automatically called when the stmt_ptr goes out of
 scope. 
 
@@ -631,13 +616,13 @@ stmt_ptr goes out of scope, will cause an exception to be thrown.
   > catch error (finalize dbp2_sp);
   error (sql3::db_error 0 "finalize: STMT attached to a closed db_ptr.")
 
-Multiple calls to ``finalize`` are fine. In contrast, the corresponding
+Multiple calls to :func:`finalize` are fine. In contrast, the corresponding
 native C interface function, ``sqlite3_finalize`` will cause a seg
 fault if called with a pointer to a finalized prepared statement
 object. This is the main reason why you should never call
 ``sqlite3_finalize`` with a stmt_ptr. If the prepared statement
 referenced by the stmt_ptr is finalized by such a call, a subsequent
-call to ``finalize`` with the stmt_ptr (including the call that will
+call to :func:`finalize` with the stmt_ptr (including the call that will
 automatically occur when the stmt_ptr goes out of scope) will cause a
 seg fault.
 
@@ -647,37 +632,31 @@ Exceptions
 Sql3 throws two types of exceptions, one for outright errors and one
 for database "busy" conditions.
 
-.. index:: db_error
+.. constructor:: db_error ec msg
 
-db_error
-~~~~~~~~
+   When a Sql3 function detects an error it throws an exception of the form
+   "``db_error ec msg``" where ec is an error code and msg is the
+   corresponding error message. If ec>0, the error was detected by SQLite
+   itself, and ec and msg are those returned by SQLite. If ec==0, the error
+   was detected by Sql3 and msg is a Sql3 specific description of the
+   error. E.g., ::
 
-When a Sql3 function detects an error it throws an exception of the
-form "``db_error ec msg``" where ec is an error code and msg is the
-corresponding error message. If ec>0, the error was detected by SQLite
-itself, and ec and msg are those returned by SQLite. If ec==0, the
-error was detected by Sql3 and msg is a Sql3 specific description of
-the error. E.g., ::
+     > db_error_handler (db_error ec msg) = ()
+     > when
+     >   source = if ec > 0 then "SQLite" else "Sql3";
+     >   printf "%s db_error: ec %d, %s\n" (source,ec,msg);
+     > end;
+     > db_error_handler x = throw x;
 
-  > db_error_handler (db_error ec msg) = ()
-  > when
-  >   source = if ec > 0 then "SQLite" else "Sql3";
-  >   printf "%s db_error: ec %d, %s\n" (source,ec,msg);
-  > end;
-  > db_error_handler x = throw x;
+     > catch db_error_handler (exec dbp "select * from NO_TABLE");
+     SQLite db_error: ec 1, no such table: NO_TABLE
 
-  > catch db_error_handler (exec dbp "select * from NO_TABLE");
-  SQLite db_error: ec 1, no such table: NO_TABLE
+.. constructor:: db_busy dbp
 
-.. index:: db_busy
-
-db_busy
-~~~~~~~
-
-Sql3 functions ``exec`` and ``lexec`` throw exceptions of the form
-"``db_busy dbp``", where ``dbp`` is a db_ptr, if they are prevented from
-executing successfully because the database referenced by ``dbp`` is
-locked (See `Executing Against a Busy Database`_).
+   Sql3 functions :func:`exec` and :func:`lexec` throw exceptions of the form
+   "``db_busy dbp``", where ``dbp`` is a db_ptr, if they are prevented from
+   executing successfully because the database referenced by ``dbp`` is locked
+   (See `Executing Against a Busy Database`_).
 
 SQLite Error Codes
 ~~~~~~~~~~~~~~~~~~
@@ -730,26 +709,25 @@ interface is the ability to add new SQL scalar or aggregate
 functions. The new functions can be used in SQL statements the in same
 way as SQLites's prepackaged functions. Sql3 hides the complexity and
 seamlessly integrates all of this functionality, :), into Pure via
-``create_function``. This function is used to register both scalar SQL
+:func:`create_function`. This function is used to register both scalar SQL
 functions and aggregate SQL functions with SQlite.
 
 Scalar SQL Functions
 ~~~~~~~~~~~~~~~~~~~~
 
 You can add a custom SQL scalar function to SQLite by passing a single
-Pure function to ``create_function``.
+Pure function to :func:`create_function`.
 
-.. index:: create_function
+.. function:: create_function dbp::pointer name::string nargs::int pure_fun
 
-``create_function dbp::pointer name::string nargs::int pure_fun``
-  registers a new SQL scalar function of ``nargs`` arguments that can be
-  called, as ``name``, in SQL statements prepared with respect to ``dbp``, a
-  db_ptr. When the SQL function is called in a SQL statement, control
-  is passed to ``pure_fun``, a curried function written in Pure. If ``nargs``
-  is ``(-1)``, the SQL function ``name`` is variadic, and the arguments will
-  be passed to ``pure_fun`` as a single list.
+   registers a new SQL scalar function of ``nargs`` arguments that can be
+   called, as ``name``, in SQL statements prepared with respect to ``dbp``, a
+   db_ptr. When the SQL function is called in a SQL statement, control is
+   passed to ``pure_fun``, a curried function written in Pure. If ``nargs`` is
+   ``(-1)``, the SQL function ``name`` is variadic, and the arguments will be
+   passed to ``pure_fun`` as a single list.
 
-Note that ``create_function`` can also register aggregate functions (see
+Note that :func:`create_function` can also register aggregate functions (see
 `Aggregate SQL Functions`_).
 
 Here is an example of a scalar function that takes two parameters. Note
@@ -797,23 +775,22 @@ native SQLite C interface functions. However, such calls must not
 close the database connection nor finalize or reset the prepared
 statement in which the function is running.
 
-.. _Aggregate SQL Functions:
-
 Aggregate SQL Functions
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-You can use ``create_function`` to register an aggregate SQL function
+You can use :func:`create_function` to register an aggregate SQL function
 with SQLite by passing a triple consisting of two Pure functions and a
 start value, in lieu of a single Pure function.
 
-``create_function dbp::pointer name::string nargs::int (step,final,start)``
-  registers a new SQL aggregate function of ``nargs`` arguments that can
-  be called, as ``name`` in SQL statements prepared with respect to ``dbp``,
-  a db_ptr.  ``step`` and ``final`` are curried Pure functions and ``start`` is
-  the initial value for the aggregation. The ``step`` function is called
-  repeatedly to accumulate values from the database, starting from the
-  given ``start`` value, and finally the ``final`` function is applied to
-  the accumulated result.
+.. function:: create_function /aggregate dbp::pointer name::string nargs::int (step,final,start)
+
+   registers a new SQL aggregate function of ``nargs`` arguments that can be
+   called, as ``name`` in SQL statements prepared with respect to ``dbp``, a
+   db_ptr.  ``step`` and ``final`` are curried Pure functions and ``start`` is
+   the initial value for the aggregation. The ``step`` function is called
+   repeatedly to accumulate values from the database, starting from the given
+   ``start`` value, and finally the ``final`` function is applied to the
+   accumulated result.
 
 Note that for a single-argument step function, this works exactly as
 if the functions were invoked as "``final (foldl step start values)``",
@@ -830,20 +807,17 @@ where ``values`` is the list of aggregated values from the database. ::
   [[2,21.0]]
 
 
-.. _Accessing the Rest of SQLite's C Interface:
-
-
 Accessing the Rest of SQLite's C Interface
 ------------------------------------------
 
-The db_ptrs returned by ``open`` and stmt_ptrs returned by ``prep``
+The db_ptrs returned by :func:`open` and stmt_ptrs returned by :func:`prep`
 are sentry guarded versions of the actual pointers to the data base
 connection objects and prepared statement objects returned by their
 corresponding native C interface functions ``sqlite3_open_v2`` and
 ``sqlite3_prepare_v2``.  This makes it easy to call almost any
 external function in SQLite's C interface directly, passing it the
 same db_ptr or stmt_ptr that is passed to Sql3's functions, such as
-``prep`` or ``exec``.
+:func:`prep` or :func:`exec`.
 
 For example, you can override SQLite's default behavior with respect
 to a busy database as follows::
@@ -895,13 +869,11 @@ finalized by SQLite when they go out of scope. In addition, the
 sentries carry internal information used by Sql3 for other purposes.
 
 
-.. _Custom Binding Types for Prepared Statements:
-
 Custom Binding Types for Prepared Statements
 --------------------------------------------
 
 You can add your own binding types for preparing and executing
-prepared statements by specifying a third argument to ``open``.  The
+prepared statements by specifying a third argument to :func:`open`.  The
 third argument must be a list of "hash rocket pairs" in which the left
 side is a character for the custom binding type and the right side is
 a list with three members. The second and third members of the list

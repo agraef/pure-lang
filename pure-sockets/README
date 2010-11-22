@@ -3,6 +3,9 @@
 pure-sockets: Pure Sockets Interface
 ====================================
 
+.. default-domain:: pure
+.. module:: sockets
+
 Version @version@, |today|
 
 Albert Gräf <Dr.Graef@t-online.de>
@@ -39,12 +42,12 @@ To use the operations of this module, put the following in your Pure script::
 
   using sockets;
 
-NOTE: On some systems you may also have to pull in a special system library to
-get the socket functions. E.g.::
+On some systems you may also have to pull in a special system library to get
+the socket functions. E.g.::
 
   using "lib:wsock32", sockets;
 
-With the ``sockets`` module loaded, all the standard socket functions are
+With the :mod:`sockets` module loaded, all the standard socket functions are
 available and work pretty much like in C. The only real difference is that,
 for convenience, functions taking socket addresses as parameters
 (``struct_sockaddr*`` pointers in Pure), are called without the ``addrlen``
@@ -62,145 +65,143 @@ some examples.
 Creating and Inspecting Socket Addresses
 ----------------------------------------
 
-These functions are Pure-specific. The created socket addresses are
-``malloc``'ed and free themselves automatically when garbage-collected.
+These functions are Pure-specific. The created socket addresses are malloc'ed
+and free themselves automatically when garbage-collected.
 
-``struct_sockaddr *sockaddr();``
+.. function:: sockaddr ()
 
-    Create a pointer to an empty socket address suitable to hold the socket
-    address result of routines like ``accept``, ``getsockname``, ``recvfrom``,
-    etc. which return a socket address.
+   Create a pointer to an empty socket address suitable to hold the socket
+   address result of routines like :func:`accept`, :func:`getsockname`,
+   :func:`recvfrom`, etc. which return a socket address.
 
-``struct_sockaddr *sockaddr([int family,] char *path);``
+.. function:: sockaddr ([int family,] char *path)
 
-    Create a local (a.k.a. file) socket for the given pathname. The ``family``
-    parameter, if specified, must be ``AF_UNIX`` here. Please note that
-    ``AF_UNIX`` is not supported on all platforms. You can check for this by
-    testing the ``HAVE_AF_UNIX`` constant, which is a truth value specifying
-    whether ``AF_UNIX`` is available on your system.
+   Create a local (a.k.a. file) socket address for the given pathname. The
+   ``family`` parameter, if specified, must be :const:`AF_UNIX` here. Please
+   note that :const:`AF_UNIX` is not supported on all platforms. You can check
+   for this by testing the :const:`HAVE_AF_UNIX` constant, which is a truth
+   value specifying whether :const:`AF_UNIX` is available on your system.
 
-``struct_sockaddr *sockaddr([int family,] char *host, char *port);``
+.. function:: sockaddr ([int family,] char *host, char *port)
+              sockaddr ([int family,] char *host, int port)
 
-``struct_sockaddr *sockaddr([int family,] char *host, int port);``
+   This uses ``getaddrinfo`` to retrieve an :const:`AF_INET` or
+   :const:`AF_INET6` address for the given hostname (or numeric IP address in
+   string form) and port (specified either as an int or a string). If
+   ``family`` is omitted, it defaults to :const:`AF_UNSPEC` which matches both
+   :const:`AF_INET` and :const:`AF_INET6` addresses.
 
-    This uses ``getaddrinfo`` to retrieve an ``AF_INET`` or ``AF_INET6``
-    address for the given hostname (or numeric IP address in string form) and
-    port (specified either as an int or a string). If ``family`` is omitted,
-    it defaults to ``AF_UNSPEC`` which matches both ``AF_INET`` and
-    ``AF_INET6`` addresses.
+.. function:: sockaddrs ([int family,] char *host, char *port)
+              sockaddrs ([int family,] char *host, int port)
 
-``struct_sockaddr *sockaddrs([int family,] char *host, char *port);``
+   This works like :func:`sockaddr` above, but returns a list with *all*
+   matching addresses.
 
-``struct_sockaddr *sockaddrs([int family,] char *host, int port);``
+.. function:: sockaddr_family addr
 
-    This works like ``sockaddr`` above, but returns a list with *all* matching
-    addresses.
+   Returns the address family of the given address.
 
-``int sockaddr_family(struct_sockaddr *addr);``
+.. function:: sockaddr_path addr
 
-    Returns the address family of the given address.
+   Returns the pathname for :const:`AF_UNIX` addresses.
 
-``char *sockaddr_path(struct_sockaddr *addr);``
+.. function:: sockaddr_hostname addr
 
-    Returns the pathname for ``AF_UNIX`` addresses.
+   Returns the hostname if available, the IP address otherwise.
 
-``char *sockaddr_hostname(struct_sockaddr *addr);``
+.. function:: sockaddr_ip addr
 
-    Returns the hostname if available, the IP address otherwise.
+   Returns the IP address.
 
-``char *sockaddr_ip(struct_sockaddr *addr);``
+.. function:: sockaddr_service addr
 
-    Returns the IP address.
+   Returns the service (a.k.a. port) name.
 
-``char *sockaddr_service(struct_sockaddr *addr);``
+.. function:: sockaddr_port addr
 
-    Returns the service (a.k.a. port) name.
+   Returns the port number.
 
-``int sockaddr_port(struct_sockaddr *addr);``
+.. function:: sockaddr_info addr
 
-    Returns the port number.
-
-``expr *sockaddr_info(struct_sockaddr *addr);``
-
-    Returns a readable description of a socket address, as a
-    ``(family,hostname,port)`` tuple. You should be able to pass this into
-    ``sockaddr`` again to get the original address.
+   Returns a readable description of a socket address, as a
+   ``(family,hostname,port)`` tuple. You should be able to pass this into
+   :func:`sockaddr` again to get the original address.
 
 Creating and Closing Sockets
 ----------------------------
 
-``int socket(int domain, int type, int protocol);``
+.. function:: socket domain type protocol
 
-    Creates a socket for the given protocol family (``AF_UNIX``, ``AF_INET``
-    or ``AF_INET6``), socket type (``SOCK_STREAM``, ``SOCK_DGRAM``, etc.) and
-    protocol. Note that on Linux we also support the ``SOCK_NONBLOCK``
-    (non-blocking) and ``SOCK_CLOEXEC`` (close-on-exec) flags which can be
-    or'ed with the socket type to get sockets with the corresponding
-    features. The protocol number is usually 0, denoting the default protocol,
-    but it can also be any of the prescribed ``IPPROTO`` constants (a few
-    common ones are predefined by this module, try ``show -g IPPROTO_*`` for a
-    list of those).
+   Creates a socket for the given protocol family (:const:`AF_UNIX`,
+   :const:`AF_INET` or :const:`AF_INET6`), socket type (:const:`SOCK_STREAM`,
+   :const:`SOCK_DGRAM`, etc.) and protocol. Note that on Linux we also support
+   the :const:`SOCK_NONBLOCK` (non-blocking) and :const:`SOCK_CLOEXEC`
+   (close-on-exec) flags which can be or'ed with the socket type to get
+   sockets with the corresponding features. The protocol number is usually 0,
+   denoting the default protocol, but it can also be any of the prescribed
+   :const:`IPPROTO` constants (a few common ones are predefined by this
+   module, try ``show -g IPPROTO_*`` for a list of those).
 
-``int socketpair(int domain, int type, int protocol, int *sv);``
+.. function:: socketpair domain type protocol sv
 
-    Create a pair of sockets. The descriptors are returned in the integer
-    vector passed in the last argument.
+   Create a pair of sockets. The descriptors are returned in the integer
+   vector ``sv`` passed in the last argument.
 
-``int shutdown(int fd, int how);``
+.. function:: shutdown fd how
 
-  Perform shutdown on a socket. The second argument should be one of
-  ``SHUT_RD``, ``SHUT_WR`` and ``SHUT_RDWR``.
+   Perform shutdown on a socket. The second argument should be one of
+   :const:`SHUT_RD`, :const:`SHUT_WR` and :const:`SHUT_RDWR`.
 
-``closesocket(int fd);``
+.. function:: closesocket fd
 
-  This is provided for Windows compatibility. On POSIX systems this is just
-  ``close``.
+   This is provided for Windows compatibility. On POSIX systems this is just
+   ``close``.
 
 Establishing Connections
 ------------------------
 
-``int accept(int sockfd, struct_sockaddr *addr);``
+.. function:: accept sockfd addr
 
-``int bind(int sockfd, struct_sockaddr *addr);``
+.. function:: bind sockfd addr
 
-``int connect(int sockfd, struct_sockaddr *addr);``
+.. function:: connect sockfd addr
 
-``int listen(int sockfd, int backlog);``
+.. function:: listen sockfd backlog
 
 Socket I/O
 ----------
 
-``size_t recv(int fd, void *buf, size_t len, int flags);``
+.. function:: recv fd buf len flags
 
-``size_t send(int fd, void *buf, size_t len, int flags);``
+.. function:: send fd buf len flags
 
-``size_t recvfrom(int fd, void *buf, size_t len, int flags, struct_sockaddr *addr);``
+.. function:: recvfrom fd buf len flags addr
 
-``size_t sendto(int fd, void *buf, size_t len, int flags, struct_sockaddr *addr);``
+.. function:: sendto fd buf len flags addr
 
-The usual ``send``/``recv`` flags specified by POSIX (``MSG_EOR``,
-``MSG_OOB``, ``MSG_PEEK``, ``MSG_WAITALL``) are provided. On Linux we also
-support ``MSG_DONTWAIT``. Note that on POSIX systems you can also just
-``fdopen`` the socket descriptor and use the standard file I/O operations from
-the ``system`` module instead.
+The usual :func:`send`/:func:`recv` flags specified by POSIX
+(:const:`MSG_EOR`, :const:`MSG_OOB`, :const:`MSG_PEEK`, :const:`MSG_WAITALL`)
+are provided. On Linux we also support :const:`MSG_DONTWAIT`. Note that on
+POSIX systems you can also just :func:`fdopen` the socket descriptor and use
+the standard file I/O operations from the :mod:`system` module instead.
 
 Socket Information
 ------------------
 
-``int getsockname(int fd, struct_sockaddr *addr);``
+.. function:: getsockname fd addr
 
-``int getpeername(int fd, struct_sockaddr *addr);``
+.. function:: getpeername fd addr
 
-``int getsockopt(int fd, int level, int name, void *val, int *len);``
+.. function:: getsockopt fd level name val len
 
-``int setsockopt(int fd, int level, int name, void *val, int len);``
+.. function:: setsockopt fd level name val len
 
-For ``getsockopt`` and ``setsockopt``, currently only the ``SOL_SOCKET`` level
-is defined (``level`` argument) along with the available POSIX socket options
-(``name`` argument). Try ``show -g SO_*`` to get a list of those. Also note
-that for most socket level options the ``val`` argument is actually an
-``int*``, so you can pass a Pure int vector (with ``len = SIZEOF_INT``) for
-that parameter.
+For :func:`getsockopt` and :func:`setsockopt`, currently only the
+:const:`SOL_SOCKET` level is defined (``level`` argument) along with the
+available POSIX socket options (``name`` argument). Try ``show -g SO_*`` to
+get a list of those. Also note that for most socket level options the ``val``
+argument is actually an ``int*``, so you can pass a Pure int vector (with
+``len = SIZEOF_INT``) for that parameter.
 
 Example
 =======

@@ -3,6 +3,9 @@
 pure-fastcgi: FastCGI module for Pure
 =====================================
 
+.. default-domain:: pure
+.. module:: fastcgi
+
 Version @version@, |today|
 
 Albert Gräf <Dr.Graef@t-online.de>
@@ -46,10 +49,18 @@ Usage
 =====
 
 pure-fastcgi provides the ``accept`` function with which you tell the FastCGI
-server that your script is ready to accept another request. It also overrides
-a number of standard I/O functions so that they talk to the server instead.
-These routines are all in the ``fastcgi`` namespace. In your Pure script, you
-can set up a simple loop to process requests as follows::
+server that your script is ready to accept another request.
+
+.. namespace:: fastcgi
+
+.. function:: accept
+
+   Accept a FastCGI request.
+
+The module also overrides a number of standard I/O functions so that they talk
+to the server instead. These routines are all in the ``fastcgi`` namespace. In
+your Pure script, you can set up a simple loop to process requests as
+follows::
 
   #!/usr/local/bin/pure -x
 
@@ -75,13 +86,13 @@ If you're worried about startup times, or if your operating system doesn't
 support shebangs, then you can also use the Pure interpreter to compile the
 script to a native executable instead.)
 
-This script keeps running until ``accept`` returns ``-1`` to indicate that the
-script should exit. Each call to ``accept`` blocks until either a request is
-available or the FastCGI server detects an error or other kind of termination
-condition. As with ordinary CGI, additional information about the request is
-available through various environment variables. A list of commonly supported
-environment variables and their meaning can be found in `The Common Gateway
-Interface`_ specification.
+This script keeps running until :func:`accept` returns ``-1`` to indicate that
+the script should exit. Each call to :func:`accept` blocks until either a
+request is available or the FastCGI server detects an error or other kind of
+termination condition. As with ordinary CGI, additional information about the
+request is available through various environment variables. A list of commonly
+supported environment variables and their meaning can be found in `The Common
+Gateway Interface`_ specification.
 
 .. _The Common Gateway Interface: http://hoohoo.ncsa.uiuc.edu/cgi/
 

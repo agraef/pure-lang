@@ -49,19 +49,17 @@ const xml::NOBLANKS = 0x10; // suppress blank nodes
    You can also check for these types of pointers using the following
    predicates:
 
-   .. _docp:
+   .. function:: xml::docp x
 
-   * ``xml::docp x`` checks whether ``x`` is an XML document pointer.
+      checks whether ``x`` is an XML document pointer.
 
-   .. _nodep:
+   .. function:: xml::nodep x
 
-   * ``xml::nodep x`` checks whether ``x`` is a pointer to a node in an XML
-     document.
+      checks whether ``x`` is a pointer to a node in an XML document.
 
-   .. _stylesheetp:
+   .. function:: xslt::stylesheetp x
 
-   * ``xslt::stylesheetp x`` checks whether ``x`` is an XSLT stylesheet
-     pointer. */
+      checks whether ``x`` is an XSLT stylesheet pointer. */
 
 extern int xml_docp(expr *x) = docp;
 extern int xml_nodep(expr *x) = nodep;
@@ -78,50 +76,51 @@ extern int xml_nodep(expr *x) = nodep;
 
    .. _node info:
 
-   * ``xml::element tag ns attrs``
+   .. constructor:: xml::element tag ns attrs
 
-     An XML element with given (possibly qualified) name ``tag``, a (possibly
-     empty) list of namespace declarations ``ns`` and a (possibly empty) list
-     of attributes ``attrs``. Namespace declarations normally take the form of
-     a pair of strings ``(prefix,href)``, where ``prefix`` is the prefix
-     associated with the namespace and ``href`` the corresponding URI (the
-     name of the namespace), but they can also be just a string ``href`` if
-     the namespace prefix is missing. Attributes are encoded as ``key=>value``
-     pairs, where ``key`` is the attribute name and ``value`` the associated
-     value; both ``key`` and ``value`` are strings.
+      An XML element with given (possibly qualified) name ``tag``, a (possibly
+      empty) list of namespace declarations ``ns`` and a (possibly empty) list
+      of attributes ``attrs``. Namespace declarations normally take the form
+      of a pair of strings ``(prefix,href)``, where ``prefix`` is the prefix
+      associated with the namespace and ``href`` the corresponding URI (the
+      name of the namespace), but they can also be just a string ``href`` if
+      the namespace prefix is missing. Attributes are encoded as
+      ``key=>value`` pairs, where ``key`` is the attribute name and ``value``
+      the associated value; both ``key`` and ``value`` are strings.
 
-   * ``xml::element_text tag ns attrs content``
+   .. constructor:: xml::element_text tag ns attrs content
 
-     A convenience function which denotes a combination of an element node
-     with a text child. This is only used when creating a new node, and
-     indicates that a text node child is to be added to the node
-     automatically.
+      A convenience function which denotes a combination of an element node
+      with a text child. This is only used when creating a new node, and
+      indicates that a text node child is to be added to the node
+      automatically.
 
-   * ``xml::attr key val``
+   .. constructor:: xml::attr key val
 
-     An attribute node. These only occur as results of the select_ and attrs_
-     functions, and cannot be inserted directly into a document.
+      An attribute node. These only occur as results of the :func:`select` and
+      :func:`attrs` functions, and cannot be inserted directly into a
+      document.
 
-   * ``xml::text content``
+   .. constructor:: xml::text content
 
-     A text node with the given content (a string).
+      A text node with the given content (a string).
 
-   * ``xml::cdata content``
+   .. constructor:: xml::cdata content
 
-     Like ``xml::text``, but contains unparsed character data.
+      Like :func:`xml::text`, but contains unparsed character data.
 
-   * ``xml::comment content``
+   .. constructor:: xml::comment content
 
-     A comment.
+      A comment.
 
-   * ``xml::entity_ref name``
+   .. constructor:: xml::entity_ref name
 
-     An entity reference (``&name;``).
+      An entity reference (``&name;``).
 
-   * ``xml::pi name content``
+   .. constructor:: xml::pi name content
 
-     Processing instructions. ``name`` is the application name, ``content``
-     the text of the processing instructions.
+      Processing instructions. ``name`` is the application name, ``content``
+      the text of the processing instructions.
 
    Document Types
    --------------
@@ -130,23 +129,23 @@ extern int xml_nodep(expr *x) = nodep;
 
    Besides the node types described above, there are some additional node
    types used in the `document type definition`_ (DTD), which can be extracted
-   from a document using the int_subset_ and ext_subset_ functions. These are
-   for inspection purposes only; it is not possible to change the DTD of a
-   document in-place. (However, you can create a new document and attach a DTD
-   to it, using the new_doc_ function.)
+   from a document using the :func:`int_subset` and :func:`ext_subset`
+   functions. These are for inspection purposes only; it is not possible to
+   change the DTD of a document in-place. (However, you can create a new
+   document and attach a DTD to it, using the :func:`new_doc` function.)
 
    .. _document type definition: http://www.w3.org/TR/REC-xml/#dt-doctype
 
-   * ``xml::doctype name extid``
+   .. constructor:: xml::doctype name extid
 
      DTDs are represented using this special type of node, where ``name`` is
      the name of the root element, and ``extid`` is a pair consisting of the
      external identifier and the URI of the DTD (or just the URI if there is
-     no external identifier). The ``xml::doctype`` node has as its children
-     zero or more of the following kinds of DTD declaration nodes (these are
-     just straightforward abstract syntax for the !ELEMENT, !ATTLIST and
-     !ENTITY declarations inside a DTD declaration; see the XML specification
-     for details).
+     no external identifier). The :cons:`xml::doctype` node has as its
+     children zero or more of the following kinds of DTD declaration nodes
+     (these are just straightforward abstract syntax for the !ELEMENT,
+     !ATTLIST and !ENTITY declarations inside a DTD declaration; see the XML
+     specification for details).
 
    .. _element declaration:
 
@@ -155,26 +154,26 @@ extern int xml_nodep(expr *x) = nodep;
    supports various kinds of element types, please refer to `document type
    definition`_ in the XML specification for details.
 
-   * ``xml::undefined_element name``
+   .. constructor:: xml::undefined_element name
 
      An undefined element. This is in libxml2, but not in the XML
      specification, you shouldn't see this in normal operation.
 
-   * ``xml::empty_element name``
+   .. constructor:: xml::empty_element name
 
      An element without any content.
 
-   * ``xml::any_element name``
+   .. constructor:: xml::any_element name
 
      An element with unrestricted content.
 
-   * ``xml::mixed_element name content``
+   .. constructor:: xml::mixed_element name content
 
      A "mixed" element which can contain character data, optionally
      interspersed with child elements, as given in the ``content``
      specification.
 
-   * ``xml::std_element name content``
+   .. constructor:: xml::std_element name content
 
      A standard element consisting *only* of child elements, as given in the
      ``content`` specification.
@@ -188,16 +187,16 @@ extern int xml_nodep(expr *x) = nodep;
    defaults`_ below. XML supports a bunch of different attribute types, please
    refer to `document type definition`_ in the XML specification for details.
 
-   * ``xml::cdata_attr elem_name name default``
-   * ``xml::id_attr elem_name name default``
-   * ``xml::idref_attr elem_name name default``
-   * ``xml::idrefs_attr elem_name name default``
-   * ``xml::entity_attr elem_name name default``
-   * ``xml::entities_attr elem_name name default``
-   * ``xml::nmtoken_attr elem_name name default``
-   * ``xml::nmtokens_attr elem_name name default``
-   * ``xml::enum_attr elem_name name vals default``
-   * ``xml::notation_attr elem_name name vals default``
+   .. constructor:: xml::cdata_attr elem_name name default
+   .. constructor:: xml::id_attr elem_name name default
+   .. constructor:: xml::idref_attr elem_name name default
+   .. constructor:: xml::idrefs_attr elem_name name default
+   .. constructor:: xml::entity_attr elem_name name default
+   .. constructor:: xml::entities_attr elem_name name default
+   .. constructor:: xml::nmtoken_attr elem_name name default
+   .. constructor:: xml::nmtokens_attr elem_name name default
+   .. constructor:: xml::enum_attr elem_name name vals default
+   .. constructor:: xml::notation_attr elem_name name vals default
 
    .. _entity declaration:
 
@@ -206,10 +205,10 @@ extern int xml_nodep(expr *x) = nodep;
    definition. External entities also have an ``extid`` (external
    identifier/URI pair) identifying the entity.
 
-   * ``xml::int_entity name content``
-   * ``xml::int_param_entity name content``
-   * ``xml::ext_entity name extid content``
-   * ``xml::ext_param_entity name extid content``
+   .. constructor:: xml::int_entity name content
+   .. constructor:: xml::int_param_entity name content
+   .. constructor:: xml::ext_entity name extid content
+   .. constructor:: xml::ext_param_entity name extid content
 
 */
 
@@ -236,12 +235,12 @@ public
    declaration`_ nodes) is a kind of regular expression formed with tags
    (specified as strings) and the following constructors:
 
-   * ``xml::pcdata``: text data (``#PCDATA``)
-   * ``xml::sequence xs``: concatenation (``x,y,z``)
-   * ``xml::union xs``: alternatives (``x|y|z``)
-   * ``xml::opt x``: optional element (``x?``)
-   * ``xml::mult x``: repeated element (``x*``)
-   * ``xml::plus x``: non-optional repeated element (``x+``)
+   .. constructor:: xml::pcdata: text data (``#PCDATA``)
+   .. constructor:: xml::sequence xs: concatenation (``x,y,z``)
+   .. constructor:: xml::union xs: alternatives (``x|y|z``)
+   .. constructor:: xml::opt x: optional element (``x?``)
+   .. constructor:: xml::mult x: repeated element (``x*``)
+   .. constructor:: xml::plus x: non-optional repeated element (``x+``)
 
 */
 
@@ -253,11 +252,21 @@ public sequence union opt mult plus;
    Attribute defaults (the ``default`` argument of `attribute declaration`_
    nodes) are represented using the following constructor symbols:
 
-   * ``xml::required``: a required attribute, i.e., the user must specify this
-   * ``xml::implied``: an implied attribute, i.e., the user does not have to
-     specify this
-   * ``xml::default val``: an attribute with the given default value ``val``
-   * ``xml::fixed val``: an attribute with the given fixed value ``val``
+   .. constructor:: xml::required
+
+      a required attribute, i.e., the user must specify this
+
+   .. constructor:: xml::implied
+
+      an implied attribute, i.e., the user does not have to specify this
+
+   .. constructor:: xml::default val
+
+      an attribute with the given default value ``val``
+
+   .. constructor:: xml::fixed val
+
+      an attribute with the given fixed value ``val``
 
 */
 
@@ -294,77 +303,70 @@ mkunion x y				= union [x,y] otherwise;
    from or save them to a file or a string, and provide general information
    about a document.
 
-   .. _new_doc:
+   .. function:: xml::new_doc version dtd info
 
-   * ``xml::new_doc version dtd info``
+      This function creates an XML document. It returns a pointer to the new
+      document. ``version`` is a string denoting the XML version (or ``""`` to
+      indicate the default). ``info`` is the `node info`_ of the root node
+      (which should denote an element node). ``dtd`` denotes the document type
+      which can be ``()`` to denote an empty DTD, a string (the URI/filename
+      of the DTD), or a pair ``(pubid,sysid)`` where ``pubid`` denotes the
+      public identifier of the DTD and ``sysid`` its system identifier (URI).
 
-     This function creates an XML document. It returns a pointer to the new
-     document. ``version`` is a string denoting the XML version (or ``""`` to
-     indicate the default). ``info`` is the `node info`_ of the root node
-     (which should denote an element node). ``dtd`` denotes the document type
-     which can be ``()`` to denote an empty DTD, a string (the URI/filename of
-     the DTD), or a pair ``(pubid,sysid)`` where ``pubid`` denotes the public
-     identifier of the DTD and ``sysid`` its system identifier (URI).
-
-     Note that only simple kinds of documents with an internal DTD can be
-     created this way. Use the load_file_ or load_string_ function below to
-     create a skeleton document if a more elaborate prolog is required. */
+      Note that only simple kinds of documents with an internal DTD can be
+      created this way. Use the :func:`load_file` or :func:`load_string`
+      function below to create a skeleton document if a more elaborate prolog
+      is required. */
 
 extern expr *xml_new_doc(char *version, expr *dtd, expr *info) = new_doc;
 
-/* .. _load_file:
-   .. _load_string:
+/* .. function:: xml::load_file name flags
+      		 xml::load_string s flags
 
-   * ``xml::load_file name flags``, ``xml::load_string s flags``
+      Load an XML document from a file ``name`` or a string ``s``. ``flags``
+      denotes the parser flags, a bitwise disjunction of any of the following
+      constants, or 0 for the default:
 
-     Load an XML document from a file ``name`` or a string ``s``. ``flags``
-     denotes the parser flags, a bitwise disjunction of any of the following
-     constants, or 0 for the default:
+      - ``xml::DTDLOAD``: load DTD
+      - ``xml::DTDVALID``: validate
+      - ``xml::PEDANTIC``: pedantic parse
+      - ``xml::SUBENT``: substitute entities
+      - ``xml::NOBLANKS``: suppress blank nodes
 
-     - ``xml::DTDLOAD``: load DTD
-     - ``xml::DTDVALID``: validate
-     - ``xml::PEDANTIC``: pedantic parse
-     - ``xml::SUBENT``: substitute entities
-     - ``xml::NOBLANKS``: suppress blank nodes
-
-     The return value is the document pointer. These operations may also fail
-     if there is a fatal error parsing the document. */
+      The return value is the document pointer. These operations may also fail
+      if there is a fatal error parsing the document. */
 
 extern expr *xml_load_file(char *name, int flags) = load_file;
 extern expr *xml_load_string(char *s, int flags) = load_string;
 
-/* .. _save_file:
-   .. _save_string:
+/* .. function:: xml::save_file name doc encoding compression
+      		 xml::save_string doc
 
-   * ``xml::save_file name doc encoding compression``,
-     ``xml::save_string doc``
-
-     Save an XML document ``doc`` to a file or a string. When saving to a
-     file, ``encoding`` denotes the desired encoding (or ``""`` for the
-     default), ``compression`` the desired level of zlib compression (0 means
-     none, 9 is maximum, -1 indicates the default). Note that with
-     ``xml::save_string``, the result is always encoded as UTF-8. */
+      Save an XML document ``doc`` to a file or a string. When saving to a
+      file, ``encoding`` denotes the desired encoding (or ``""`` for the
+      default), ``compression`` the desired level of zlib compression (0 means
+      none, 9 is maximum, -1 indicates the default). Note that with
+      :func:`xml::save_string`, the result is always encoded as UTF-8. */
 
 extern expr *xml_save_file(char *name, expr *doc,
 			   char *encoding, int compression) = save_file;
 extern expr *xml_save_string(expr *doc) = save_string;
 
-/* .. _doc_info:
+/* .. function:: xml::doc_info doc
 
-   * ``xml::doc_info doc``
-
-     Retrieve general information about a document. Returns a tuple
-     ``(version,encoding,url,compression,standalone)``, where ``version`` is
-     the XML version of the document, ``encoding`` the external encoding (if
-     any), ``url`` the name/location of the document (if any), ``compression``
-     the level of zlib compression, and ``standalone`` is a flag indicating
-     whether the document contains any external markup declarations "which
-     affect the information passed from the XML processor to the application",
-     see the section on the `standalone document declaration`_ in the XML spec
-     for details. (Apparently, in libxml2 ``standalone`` is either a truth
-     value or one of the special values -1, indicating that there's no XML
-     declaration in the prolog, or -2, indicating that there's an XML
-     declaration but no ``standalone`` attribute.)
+      Retrieve general information about a document. Returns a tuple
+      ``(version,encoding,url,compression,standalone)``, where ``version`` is
+      the XML version of the document, ``encoding`` the external encoding (if
+      any), ``url`` the name/location of the document (if any),
+      ``compression`` the level of zlib compression, and ``standalone`` is a
+      flag indicating whether the document contains any external markup
+      declarations "which affect the information passed from the XML processor
+      to the application", see the section on the `standalone document
+      declaration`_ in the XML spec for details. (Apparently, in libxml2
+      ``standalone`` is either a truth value or one of the special values -1,
+      indicating that there's no XML declaration in the prolog, or -2,
+      indicating that there's an XML declaration but no ``standalone``
+      attribute.)
 
    .. _standalone document declaration: http://www.w3.org/TR/REC-xml/#sec-rmd
 
@@ -372,13 +374,11 @@ extern expr *xml_save_string(expr *doc) = save_string;
 
 extern expr *xml_doc_info(expr *doc) = doc_info;
 
-/* .. _int_subset:
-   .. _ext_subset:
+/* .. function:: xml::int_subset doc
+      		 xml::ext_subset doc
 
-   * ``xml::int_subset doc``, ``xml::ext_subset doc``
-
-     Retrieve the internal and external DTD subset of a document. Returns a
-     ``doctype`` node (fails if there's no corresponding DTD).
+      Retrieve the internal and external DTD subset of a document. Returns a
+      ``doctype`` node (fails if there's no corresponding DTD).
 
    **Example**
 
@@ -403,37 +403,36 @@ extern expr *xml_ext_subset(expr *doc) = ext_subset;
    These operations are used to traverse the document tree, i.e., the nodes of
    the document. They take either a document pointer ``doc`` or a node pointer
    ``node`` as argument, and yield a corresponding node pointer (or a document
-   pointer, in the case of ``xml::doc``). The node pointers can then be used
-   with the `Node Information`_ and `Node Manipulation`_ operations described
-   below.
+   pointer, in the case of :func:`xml::doc`). The node pointers can then be
+   used with the `Node Information`_ and `Node Manipulation`_ operations
+   described below.
 
-   .. _root:
+   .. function:: xml::root doc
 
-   * ``xml::root doc``: the root node of ``doc``
+      the root node of ``doc``
 
-   .. _doc:
+   .. function:: xml::doc node
 
-   * ``xml::doc node``: the document ``node`` belongs to
+      the document ``node`` belongs to
 
-   .. _parent:
+   .. function:: xml::parent node
 
-   * ``xml::parent node``: the parent of ``node``
+      the parent of ``node``
 
-   .. _first (xml):
-   .. _last (xml):
+   .. function:: xml::first node
+            	 xml::last node
 
-   * ``xml::first node``, ``xml::last node``: first and last child node
+      first and last child node
 
-   .. _next:
-   .. _prev:
+   .. function:: xml::next node
+            	 xml::prev node
 
-   * ``xml::next node``, ``xml::prev node``: next and previous sibling
+      next and previous sibling
 
-   .. _first_attr:
-   .. _last_attr:
+   .. function:: xml::first_attr node
+            	 xml::last_attr node
 
-   * ``xml::first_attr node``, ``xml::last_attr node``: first and last
-     attribute node
+      first and last attribute node
      
    All these operations fail if the corresponding target node does not exist,
    or if the type of the given node is not supported by this implementation. */
@@ -453,13 +452,13 @@ extern expr *xml_last_attr(expr *node) = last_attr;
    There are also two convenience functions to retrieve the children and
    attribute nodes of a node:
 
-   .. _children:
+   .. function:: xml::children node
 
-   * ``xml::children node``: returns the list of all child nodes of ``node``
+      returns the list of all child nodes of ``node``
 
-   .. _attrs:
+   .. function:: xml::attrs node
 
-   * ``xml::attrs node``: returns the list of all attribute nodes of ``node``
+      returns the list of all attribute nodes of ``node``
 
    Moreover, given a node pointer ``node``, ``node!i`` can be used to retrieve
    the ``i``\ th child of ``node``.
@@ -493,88 +492,72 @@ node ::! i::int	= children node!i if nodep node;
 
    These operations retrieve information about the nodes of an XML document.
 
-   .. _select:
+   .. function:: xml::select doc xpath
+               	 xml::select doc (xpath,ns)
 
-   * ``xml::select doc xpath``, ``xml::select doc (xpath,ns)``
+      Retrieve nodes using an XPath_ specification. Given an XPath (a string)
+      ``xpath``, this operation returns the list of all matching nodes in the
+      given document ``doc``. You can also specify a node as the first
+      argument, in which case the document of the given node is searched and
+      paths are interpreted relative to the given node (rather than the root
+      node of the document).
 
-     Retrieve nodes using an XPath_ specification. Given an XPath (a string)
-     ``xpath``, this operation returns the list of all matching nodes in the
-     given document ``doc``. You can also specify a node as the first
-     argument, in which case the document of the given node is searched and
-     paths are interpreted relative to the given node (rather than the root
-     node of the document).
+      Moreover, instead of just an XPath you can also specify a pair
+      ``(xpath,ns)`` consisting of an XPath ``xpath`` and a list ``ns`` of
+      ``prefix=>uri`` string pairs which describe the namespaces to be
+      recognized in the XPath expression. This is necessary to select nodes by
+      qualified tag or attribute names. Note that only the namespace URIs must
+      match up with those used in the queried document; the corresponding
+      namespace prefixes can be chosen freely, so you can use whatever
+      prefixes are convenient to formulate the XPath query. However, for each
+      namespace prefix used in the XPath expression (not the document!), there
+      *must* be a corresponding binding in the ``ns`` list. Otherwise the
+      underlying libxml2 function will complain about an undefined namespace
+      prefix and :func:`xml::select` will fail.
 
-     Moreover, instead of just an XPath you can also specify a pair
-     ``(xpath,ns)`` consisting of an XPath ``xpath`` and a list ``ns`` of
-     ``prefix=>uri`` string pairs which describe the namespaces to be
-     recognized in the XPath expression. This is necessary to select nodes by
-     qualified tag or attribute names. Note that only the namespace URIs must
-     match up with those used in the queried document; the corresponding
-     namespace prefixes can be chosen freely, so you can use whatever prefixes
-     are convenient to formulate the XPath query. However, for each namespace
-     prefix used in the XPath expression (not the document!), there *must* be
-     a corresponding binding in the ``ns`` list. Otherwise the underlying
-     libxml2 function will complain about an undefined namespace prefix and
-     ``xml::select`` will fail.
-
-     .. _XPath: http://www.w3.org/TR/xpath */
+      .. _XPath: http://www.w3.org/TR/xpath */
 
 extern expr *xml_select(expr *doc, expr *xpath) = select;
 
-/* .. _node_info:
+/* .. function:: xml::node_info node
 
-   * ``xml::node_info node``
-
-     Retrieve the node data from ``node``. Returns a `node info`_ value, as
-     described in `Data Structure`_ above. Fails if the node does not belong
-     to one of the supported node types. */
+      Retrieve the node data from ``node``. Returns a `node info`_ value, as
+      described in `Data Structure`_ above. Fails if the node does not belong
+      to one of the supported node types. */
 
 extern expr *xml_node_info(expr *node) = node_info;
 
-/* ..
+/* .. function:: xml::is_blank_node
 
-   .. _is_blank_node:
+      Checks whether a node is a blank node (empty or whitespace only) and
+      thus possibly ignorable.
 
-   * ``xml::is_blank_node``
+   .. function:: xml::node_base node
 
-     Checks whether a node is a blank node (empty or whitespace only) and thus
-     possibly ignorable.
+      Returns the base URI of the given node.
 
-   .. _node_base:
+   .. function:: xml::node_path node
 
-   * ``xml::node_base node``
+      Returns the path of a node in the document, in the format accepted by
+      :func:`select`.
 
-     Returns the base URI of the given node.
+   .. function:: xml::node_content node
 
-   .. _node_path:
-
-   * ``xml::node_path node``
-
-     Returns the path of a node in the document, in the format accepted by
-     select_.
-
-   .. _node_content:
-
-   * ``xml::node_content node``
-
-     Returns the text carried by the node, if any (after entity substitution).
+      Returns the text carried by the node, if any (after entity
+      substitution).
 
    In addition, you can retrieve and change attributes of element nodes with
    the following operations:
 
-   .. _node_attr:
+   .. function:: xml::node_attr node name
 
-   * ``xml::node_attr node name``
+      Retrieves the value of the attribute with the given ``name`` (after
+      entity substitution).
 
-     Retrieves the value of the attribute with the given ``name`` (after
-     entity substitution).
+   .. function:: xml::set_node_attr node name value
+      		 xml::unset_node_attr node name
 
-   .. _set_node_attr:
-   .. _unset_node_attr:
-
-   * ``xml::set_node_attr node name value``, ``xml::unset_node_attr node name``
-
-     Sets or unsets an attribute value.
+      Sets or unsets an attribute value.
 
    **Examples**
 
@@ -591,7 +574,7 @@ extern expr *xml_node_info(expr *node) = node_info;
      > xml::node_info r;
      xml::element "story" [] []
 
-   The select_ function is *very* powerful, and probably the single most
+   The :func:`select` function is *very* powerful, and probably the single most
    important operation of this module if you want to extract information from
    an existing XML document without traversing the entire structure. Here is a
    very simple example of its use::
@@ -626,27 +609,21 @@ extern expr *xml_unset_node_attr(expr *node, expr *name) = unset_node_attr;
    a new node to the document tree (specified through its `node info`_), and
    by removing (unlinking) existing nodes from the tree.
 
-   .. _replace:
+   .. function:: xml::replace node info
 
-   * ``xml::replace node info``
+      Add the new node specified by ``info`` in place of the given node
+      ``node``.
 
-     Add the new node specified by ``info`` in place of the given node
-     ``node``.
+   .. function:: xml::add_first node info
+      		 xml::add_last node info
 
-   .. _add_first:
-   .. _add_last:
+      Add the new node as the first or last child of ``node``, respectively.
 
-   * ``xml::add_first node info``, ``xml::add_last node info``
+   .. function:: xml::add_next node info
+      		 xml::add_prev node info
 
-     Add the new node as the first or last child of ``node``, respectively.
-
-   .. _add_next:
-   .. _add_prev:
-
-   * ``xml::add_next node info``, ``xml::add_prev node info``
-
-     Add the new node as the next or previous sibling of ``node``,
-     respectively.
+      Add the new node as the next or previous sibling of ``node``,
+      respectively.
 
    The operations above all return a pointer to the new XML node object. */
 
@@ -656,11 +633,9 @@ extern expr *xml_add_last(expr *node, expr *info) = add_last;
 extern expr *xml_add_next(expr *node, expr *info) = add_next;
 extern expr *xml_add_prev(expr *node, expr *info) = add_prev;
 
-/* .. _unlink:
+/* .. function:: xml::unlink node
 
-   * ``xml::unlink node``
-
-     Deletes an existing node from the document tree. Returns ``()``.
+      Deletes an existing node from the document tree. Returns ``()``.
 
    **Examples**
 
@@ -689,6 +664,8 @@ extern expr *xml_unlink(expr *node) = unlink;
    Transformations
    ---------------
 
+   .. namespace:: xslt
+
    The following operations provide basic XSLT support. As already mentioned,
    stylesheets are represented as pointers to the xsltStylesheet structure
    provided by libxslt. Note that, in difference to XML document pointers,
@@ -696,52 +673,48 @@ extern expr *xml_unlink(expr *node) = unlink;
    manipulate parsed stylesheets in memory using the operations of this
    module. However, a stylesheet is just a special kind of XML document and
    thus can be manipulated after reading the stylesheet as an ordinary XML
-   document. The load_stylesheet_ function then allows you to convert the
-   document pointer to an XSLT Stylesheet object.
+   document. The :func:`load_stylesheet` function then allows you to convert
+   the document pointer to an XSLT Stylesheet object.
 
    Applying a stylesheet to an XML document generally involves the following
    steps:
 
-   1. Load and parse the stylesheet using load_stylesheet_. The parameter to
-      load_stylesheet_ can be either the name of a stylesheet file or a
-      corresponding document pointer. The function returns a pointer to the
-      stylesheet object which is used in the subsequent processing.
+   1. Load and parse the stylesheet using :func:`load_stylesheet`. The
+      parameter to :func:`load_stylesheet` can be either the name of a
+      stylesheet file or a corresponding document pointer. The function
+      returns a pointer to the stylesheet object which is used in the
+      subsequent processing.
 
-   2. Invoke apply_stylesheet_ on the stylesheet and the target document.
-      This returns a new document containing the transformed XML document.
+   2. Invoke :func:`apply_stylesheet` on the stylesheet and the target
+      document.  This returns a new document containing the transformed XML
+      document.
 
-   3. Run save_result_file_ or save_result_string_ on the result and the
-      stylesheet to save the transformed document in a file or a string.
+   3. Run :func:`save_result_file` or :func:`save_result_string` on the result
+      and the stylesheet to save the transformed document in a file or a
+      string.
 
    Here is a brief summary of the XSLT operations. Please check the XSLT_
    documentation for details of the transformation process.
 
-   .. _load_stylesheet:
+   .. function:: xslt::load_stylesheet x
 
-   * ``xslt::load_stylesheet x``
+      Load a stylesheet. ``x`` can be either an XML document pointer, or a
+      string denoting the desired ``.xsl`` file.
 
-     Load a stylesheet. ``x`` can be either an XML document pointer, or a
-     string denoting the desired ``.xsl`` file.
+   .. function:: xslt::apply_stylesheet style doc params
 
-   .. _apply_stylesheet:
+      Apply the stylesheet ``style`` to the given document ``doc`` with the
+      given parameters ``params``. The third argument is a (possibly empty)
+      list of ``key=>value`` string pairs which allows you to pass additional
+      parameters to the stylesheet.
 
-   * ``xslt::apply_stylesheet style doc params``
+   .. function:: xslt::save_result_file name doc style compression
+      		 xslt::save_result_string doc style
 
-     Apply the stylesheet ``style`` to the given document ``doc`` with the
-     given parameters ``params``. The third argument is a (possibly empty)
-     list of ``key=>value`` string pairs which allows you to pass additional
-     parameters to the stylesheet.
-
-   .. _save_result_file:
-   .. _save_result_string:
-
-   * ``xslt::save_result_file name doc style compression``,
-     ``xslt::save_result_string doc style``
-
-     Save the transformation result ``doc`` obtained with the stylesheet
-     ``style`` to a file or a string. This works pretty much like save_file_
-     or save_string_, but also keeps track of some output-related information
-     contained in the stylesheet.
+      Save the transformation result ``doc`` obtained with the stylesheet
+      ``style`` to a file or a string. This works pretty much like
+      :func:`save_file` or :func:`save_string`, but also keeps track of some
+      output-related information contained in the stylesheet.
 
    **Example**
 
