@@ -60,7 +60,7 @@ rst_sources = pure/pure.txt pure/purelib.txt faust2pd/faust2pd.txt gnumeric-pure
 # are to be found in the appropriate subdirs (html, latex) of the $(BUILDDIR)
 # directory.
 
-htmlfiles = genindex.html puredoc.html $(patsubst %.txt,%.html,$(notdir $(rst_sources))) search.html searchindex.js
+htmlfiles = genindex.html pure-modindex.html puredoc.html $(patsubst %.txt,%.html,$(notdir $(rst_sources))) search.html searchindex.js
 pdffiles = puredoc.pdf
 
 # You can set these variables from the command line.
