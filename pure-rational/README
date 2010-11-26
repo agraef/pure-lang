@@ -158,7 +158,7 @@ These are both defined in math.pure.
    is the exact division operator, which may be used as a constructor (for
    integers n1 and n2). This is described in `More on Division`_.
 
-.. function:: \::rational x
+.. function:: \::rational /rational x
 
    converts the given number ``x`` to a rational.
 
@@ -181,12 +181,12 @@ coprime (i.e. do not have a factor in common) and the denominator is positive
 rational in simplest form. This is a property of the representation of the
 rational number and not of the number itself.
 
-.. function:: \::num q
+.. function:: \::num /rational q
 
    given a rational or integer q, returns the ‘(signed) simplest
    numerator’, i.e.  the numerator of the normalised form of q.
 
-.. function:: \::den q
+.. function:: \::den /rational q
 
    given a rational or integer q, returns the ‘(positive) simplest
    denominator’,  i.e. the denominator of the normalised form of q.
@@ -242,19 +242,19 @@ operations on rationals are rationals represented exactly. Beware that the
 standard ``intvalp`` and :func:`~::ratvalp` may return 1 even if the value is
 of double type. However, these functions may be combined with :func:`~::exactp`.
 
-.. function:: \::exactp x
+.. function:: \::exactp /rational x
 
    returns whether x has an exact value.
 
-.. function:: \::inexactp x
+.. function:: \::inexactp /rational x
 
    returns whether x has an inexact value.
 
-.. function:: \::rationalp x
+.. function:: \::rationalp /rational x
 
    returns whether x is of rational type.
 
-.. function:: \::ratvalp x
+.. function:: \::ratvalp /rational x
 
    returns whether x has a rational value.
 
@@ -451,12 +451,12 @@ Absolute Value and Sign
 
 The standard ``abs`` and ``sgn`` functions are overloaded for rationals.
 
-.. function:: \::abs q
+.. function:: \::abs /rational q
 
    returns absolute value, or magnitude, \|q\| of q; abs q = \|q\| = q × sgn q
    (see  below).
 
-.. function:: \::sgn q
+.. function:: \::sgn /rational q
 
    returns the sign of q as an integer; returns −1 if q < 0, 0 if q = 0, +1
    if q > 0.
@@ -471,7 +471,7 @@ Greatest Common Divisor (GCD) and Least Common Multiple (LCM)
 The standard functions ``gcd`` and ``lcm`` are overloaded for rationals, and
 mixtures of integer and rational.
 
-.. function:: \::gcd n1 n2
+.. function:: \::gcd /rational n1 n2
 
    The GCD is also known as the Highest Common Factor (HCF). The GCD of
    rationals q1 and q2 is the largest (therefore positive) rational f such
@@ -517,7 +517,7 @@ mixtures of integer and rational.
   > gcd (rational (-18)) (rational (-24));
   6L%1L
 
-.. function:: \::lcm n1 n2
+.. function:: \::lcm /rational n1 n2
 
    The LCM of rationals q1 and q2 is the smallest positive rational m such
    that both q1 and q2 divide m exactly. This is not defined for n1 and n2
@@ -795,22 +795,22 @@ Some of these are new functions, and some are overloads of standard functions.
 The behaviour of the overloads is consistent with that of the standard
 functions.
 
-.. function:: \::floor q
+.. function:: \::floor /rational q
 
    (overload of standard function) returns q rounded downwards, i.e. towards
    −1, to an integer, usually denoted bQc.
 
-.. function:: \::ceil q
+.. function:: \::ceil /rational q
 
    (overload of standard function) returns q rounded upwards, i.e. towards +1,
    to an integer, usually denoted dQe.
 
-.. function:: \::trunc q
+.. function:: \::trunc /rational q
 
    (overload of standard function) returns q truncated, i.e. rounded towards
    0, to an integer.
 
-.. function:: \::round q
+.. function:: \::round /rational q
 
    (overload of standard function) returns q 'rounded off', i.e. rounded to
    the nearest integer, with ‘half-integers’ (values that are an integer plus
@@ -872,7 +872,7 @@ Thus this provides a 'decomposition' operator; there are others (see
 If ``roundfun`` = :func:`~::floor` then 0 ≤ f < 1.
 If ``roundfun`` = :func:`~::ceil` then −1 < f ≤ 0.
 If ``roundfun`` = :func:`~::trunc` then \|f\| < 1 and sgn f ∈ {0, sgn q}.
-If ``roundfun`` = :func:`~::round`, ``roundfun`` = :func:`~::round_zero_bias` or
+If ``roundfun`` = :func:`~::round`, ``roundfun`` = :func:`round_zero_bias` or
 ``roundfun`` = :func:`round_unbiased` then \|f\| ≤ 1/2.
 
 .. function:: fraction roundfun q
@@ -885,12 +885,12 @@ If ``roundfun`` = :func:`~::round`, ``roundfun`` = :func:`~::round_zero_bias` or
    conjunction with :func:`num_den` (see `'Deconstructors'`_) to decompose a
    rational into integer, numerator and denominator parts.
 
-.. function:: \::int q
+.. function:: \::int /rational q
 
    overloads the built-in int and returns the 'integer part' of q consistent
    with the built-in.
 
-.. function:: \::frac q
+.. function:: \::frac /rational q
 
    overloads the built-in frac and returns the 'fraction part' of q consistent
    with the built-in.
@@ -993,7 +993,7 @@ described in `R -> Q — Approximation`_.
 **Q** -> **R** — Conversion / Casting
 =====================================
 
-.. function:: \::double q
+.. function:: \::double /rational q
 
    (overload of built-in) returns a double having a value as close as possible
    to q. (Overflow, underflow and loss of accuracy are potential problems.
@@ -1066,11 +1066,11 @@ Intervals are constructed with the function interval.
 Interval Type Tests
 ~~~~~~~~~~~~~~~~~~~
 
-.. function:: \::exactp v
+.. function:: \::exactp /rational v
 
    returns whether an interval v has exact extrema.
 
-.. function:: \::inexactp v
+.. function:: \::inexactp /rational v
 
    returns whether an interval v has an inexact extremum.
 
@@ -1271,7 +1271,7 @@ Interval Maths
 Some standard functions are overloaded for intervals; some new functions are
 provided.
 
-.. function:: \::abs v
+.. function:: \::abs /rational v
 
    returns the interval representing the range of (x) as x varies over v.
 
@@ -1284,11 +1284,11 @@ provided.
   > abs (interval (-5, -1));
   interval::Ivl 1 5
 
-.. function:: \::sgn v
+.. function:: \::sgn /rational v
 
    returns the interval representing the range of sgn(x) as x varies over v.
 
-.. function:: prefix ::# v
+.. function:: prefix ::# /rational v
 
    returns the length of an interval.
 
@@ -1651,12 +1651,12 @@ The d\ :sub:`x`, d\ :sub:`y` are not unique, but can be chosen such that d\
    This is an inverse (up to equivalence) of rational as defined on integer
    pairs (see `Constructors`_).
 
-.. function:: \::num c
+.. function:: \::num /rational c
 
    given a complex rational or integer c, returns just the numerator
    of the normalised form of c given by num_den c.
 
-.. function:: \::den c
+.. function:: \::den /rational c
 
    given a complex rational or integer c, returns just the
    denominator of the normalised form of c given by num_den c.
@@ -1706,11 +1706,11 @@ Beware that ``intcompvalp`` and ``ratcompvapl`` may return 1 even if the value
 is of complex type with double parts. However, these functions may be
 combined with ``exactp``.
 
-.. function:: \::complexp x
+.. function:: \::complexp /rational x
 
    standard function; returns whether x is of complex type.
 
-.. function:: \::compvalp x
+.. function:: \::compvalp /rational x
 
    standard function; returns whether x has a complex value (∈ **C** =
    **R**\ [i]).
@@ -2144,7 +2144,7 @@ Formatting to Fraction Strings
 
 These might be compared to the behaviour of the standard function ``str``.
 
-.. function:: \::str x
+.. function:: \::str /rational x
 
    returns a string representing the value x.
 
@@ -2182,7 +2182,7 @@ Such strings can also be evaluated by the ``val_mixed`` function.
 
 These might be compared to the behaviour of the standard function eval.
 
-.. function:: \::eval s
+.. function:: \::eval /rational s
 
    evaluates the string s.
 
