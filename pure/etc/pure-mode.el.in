@@ -518,6 +518,18 @@ Entry to this mode runs the hooks on `comint-mode-hook' and
 
 (require 'thingatpt)
 
+;; This is rather simplistic, it just looks for a sequence of alphanumeric
+;; characters including a possible namespace prefix.
+(put 'puresym 'end-op
+     (lambda ()
+       (re-search-forward "\\=[[:alnum:]_:]*" nil t)))
+(put 'puresym 'beginning-op
+     (lambda ()
+       (if (re-search-backward "[^[:alnum:]_:]" nil t)
+	   (forward-char)
+	 (goto-char (point-min)))))
+(defun puresym-at-point () (thing-at-point 'puresym))
+
 (defun pure-help (&optional topic)
   "Read online help in html format.
 This works pretty much like the interpreter's help command. Uses
@@ -528,7 +540,7 @@ specify a help file and/or section/index entry, see topic
 pure#online-help for details."
 ;;  (interactive "sPure help topic: ")
   (interactive
-   (let ((default (word-at-point)))
+   (let ((default (puresym-at-point)))
      (list (read-string "Pure help topic: " default))))
   (let* ((args (split-string (if topic topic "") "#"))
 	 (args (if (or (null args) (not (zerop (length (car args))))) args
