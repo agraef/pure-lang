@@ -244,13 +244,12 @@ devhelp:
 epub:
 	$(SPHINXBUILD) -b epub $(ALLSPHINXOPTS) $(BUILDDIR)/epub
 
-# We have to fix a glitch in the Sphinx output here so that we can
-# \usepackage[utf8x]{inputenc}. Moreover, add -Q to the build command to
-# suppress the silly warnings about unknown references to local html files.
+# We have to fix some glitches in the Sphinx output here to make double dashes
+# in options and \usepackage[utf8x]{inputenc} work.
 
 latex:
-	$(SPHINXBUILD) -Q -b latex $(LATEXOPTS) $(ALLSPHINXOPTS) $(BUILDDIR)/latex
-	@(cd $(BUILDDIR)/latex && sed -e 's/\\DeclareUnicodeCharacter{00A0}{\\nobreakspace}/%\\DeclareUnicodeCharacter{00A0}{\\nobreakspace}/g' < puredoc.tex > puredoc.fixed && rm -f puredoc.tex && mv puredoc.fixed puredoc.tex)
+	$(SPHINXBUILD) -b latex $(LATEXOPTS) $(ALLSPHINXOPTS) $(BUILDDIR)/latex
+	@(cd $(BUILDDIR)/latex && sed -e 's/\\DeclareUnicodeCharacter{00A0}{\\nobreakspace}/%\\DeclareUnicodeCharacter{00A0}{\\nobreakspace}/g' -e 's/bfcode{--/bfcode{-{}-/' < puredoc.tex > puredoc.fixed && rm -f puredoc.tex && mv puredoc.fixed puredoc.tex)
 
 latexpdf: latex
 	$(MAKE) -C $(BUILDDIR)/latex all-pdf
