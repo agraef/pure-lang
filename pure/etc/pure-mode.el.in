@@ -518,16 +518,10 @@ Entry to this mode runs the hooks on `comint-mode-hook' and
 
 (require 'thingatpt)
 
-;; This is rather simplistic, it just looks for a sequence of alphanumeric
-;; characters including a possible namespace prefix.
-(put 'puresym 'end-op
-     (lambda ()
-       (re-search-forward "\\=[[:alnum:]_:]*" nil t)))
-(put 'puresym 'beginning-op
-     (lambda ()
-       (if (re-search-backward "[^[:alnum:]_:]" nil t)
-	   (forward-char)
-	 (goto-char (point-min)))))
+;; This is rather simplistic, it just looks for a sequence of symbol
+;; constituents including a possible namespace prefix.
+(put 'puresym 'end-op (lambda () (skip-syntax-forward "w_")))
+(put 'puresym 'beginning-op (lambda () (skip-syntax-backward "w_")))
 (defun puresym-at-point () (thing-at-point 'puresym))
 
 (defun pure-help (&optional topic)
