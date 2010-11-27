@@ -1358,16 +1358,32 @@ public:
     symtypes.push_back("variable");
     symtypes.push_back("constant");
     symtypes.push_back("module");
-    for (list<string>::const_iterator f = fixities.begin();
-	 f != fixities.end(); f++) {
-      for (list<string>::const_iterator s = symtypes.begin();
-	   s != symtypes.end(); s++) {
+    for (list<string>::const_iterator s = symtypes.begin();
+	 s != symtypes.end(); s++) {
+      for (list<string>::const_iterator f = fixities.begin();
+	   f != fixities.end(); f++) {
 	string mykey = key+" ("+(f->empty()?*s:(*f)+" "+(*s))+")";
 	it = m.find(mykey);
 	if (it != m.end()) {
 	  target = it->second;
 	  return true;
 	}
+	if (*s == "variable" || *s == "constant" || *s == "module")
+	  // These don't have any fixities.
+	  break;
+      }
+      // Search for commands and options.
+      string mykey = key+" (command)";
+      it = m.find(mykey);
+      if (it != m.end()) {
+	target = it->second;
+	return true;
+      }
+      mykey = key+" command line option";
+      it = m.find(mykey);
+      if (it != m.end()) {
+	target = it->second;
+	return true;
       }
     }
     return false;
