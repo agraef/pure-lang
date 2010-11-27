@@ -249,7 +249,7 @@ epub:
 
 latex:
 	$(SPHINXBUILD) -b latex $(LATEXOPTS) $(ALLSPHINXOPTS) $(BUILDDIR)/latex
-	@(cd $(BUILDDIR)/latex && sed -e 's/\\DeclareUnicodeCharacter{00A0}{\\nobreakspace}/%\\DeclareUnicodeCharacter{00A0}{\\nobreakspace}/g' -e 's/bfcode{--/bfcode{-{}-/' < puredoc.tex > puredoc.fixed && rm -f puredoc.tex && mv puredoc.fixed puredoc.tex)
+	@(cd $(BUILDDIR)/latex && sed -e 's/\\DeclareUnicodeCharacter{00A0}{\\nobreakspace}/%\\DeclareUnicodeCharacter{00A0}{\\nobreakspace}/g' -e 's/bfcode{--/bfcode{-{}-/g' < puredoc.tex > puredoc.fixed && rm -f puredoc.tex && mv puredoc.fixed puredoc.tex)
 
 latexpdf: latex
 	$(MAKE) -C $(BUILDDIR)/latex all-pdf
