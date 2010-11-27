@@ -1642,12 +1642,31 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
     }
   } else if (strcmp(cmd, "help") == 0)  {
     static Index *idx = NULL;
+    static FILE *fp = NULL;
     const char *s = cmdline+4, *p, *q;
     while (isspace(*s)) ++s;
-    string docname = s;
+    string docname = s, default_doc = interp.libdir+"docs/puredoc.html";
+    const char *browser = getenv("PURE_HELP");
+    // Check that the documentation is installed.
+    if (!fp) {
+      fp = fopen(default_doc.c_str(), "r");
+      if (!fp) {
+	static bool init = false;
+	cerr << "help: couldn't find online documenation\n";
+	if (!init) {
+	  cerr << "\n\
+Most likely this just means that you haven't installed the documentation\n\
+files in the pure-docs package yet. Please check the Pure wiki or the INSTALL\n\
+file for instructions on how to do this.\n";
+	  init = true;
+	}
+	goto errout;
+      }
+      fclose(fp);
+    }
     if (!*s)
       // default is to load the top page
-      docname = "file:"+interp.libdir+"docs/puredoc.html";
+      docname = "file:"+default_doc;
     else if ((p = strchr(s, ':')) && p>s && (!(q = strchr(s, '#')) || q>p)) {
       // proper URL, take as is
       ;
@@ -1679,7 +1698,6 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
     if (docname[docname.length()-1] == '#')
       docname.erase(docname.length()-1);
     // invoke the browser
-    const char *browser = getenv("PURE_HELP");
     if (!browser && (browser = getenv("BROWSER"))) {
       char *browsercmd = strdup(browser);
       if (browsercmd) {
@@ -1701,6 +1719,7 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
       string helpcmd = string(browser) + " \"" + docname + "\"";
       if (system(helpcmd.c_str()) == -1) perror("system");
     }
+  errout: ;
   } else if (strcmp(cmd, "ls") == 0)  {
     if (system(cmdline) == -1) perror("system");
   } else if (strcmp(cmd, "pwd") == 0)  {
