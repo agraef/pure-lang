@@ -32,8 +32,7 @@ software.
 
 This manual describes the Pure programming language and how to invoke the Pure
 interpreter program. To read the manual inside the interpreter, just type
-:keyword:`help` at the command prompt. See the `Online Help`_ section for
-details.
+``help`` at the command prompt. See the `Online Help`_ section for details.
 
 There is a companion to this manual, the :doc:`purelib` which contains the
 description of the standard library operations. More information about Pure
@@ -89,9 +88,9 @@ evaluated::
   > map fact (1..10);
   [1,2,6,24,120,720,5040,40320,362880,3628800]
 
-Typing the :keyword:`quit` command or the end-of-file character
-(:kbd:`Control-d` on Unix systems) at the beginning of the command line exits
-the interpreter and takes you back to the shell.
+Typing the ``quit`` command or the end-of-file character (:kbd:`Ctrl-d` on
+Unix systems) at the beginning of the command line exits the interpreter and
+takes you back to the shell.
 
 Instead of typing definitions and evaluating expressions in an interactive
 fashion as shown above, you can also put the same code in an (ASCII or UTF-8)
@@ -164,8 +163,6 @@ line.
 
 Invoking Pure
 =============
-
-.. program:: pure
 
 The Pure interpreter is invoked as follows:
 
@@ -333,12 +330,12 @@ trick only works with Unix shells, though.)
 
   #!/usr/local/bin/pure -x
 
-On startup, the interpreter also defines the ``version`` variable, which is
-set to the version string of the Pure interpreter, and the ``sysinfo``
+On startup, the interpreter also defines the :var:`version` variable, which is
+set to the version string of the Pure interpreter, and the :var:`sysinfo`
 variable, which provides a string identifying the host system. These are
 useful if parts of your script depend on the particular version of the
 interpreter and the system it runs on. (Moreover, Pure 0.21 and later also
-define the variable ``compiling`` which indicates whether the program is
+define the variable :var:`compiling` which indicates whether the program is
 executed in a batch compilation, see `Compiling Scripts`_ below.)
 
 If available, the prelude script prelude.pure is loaded by the interpreter
@@ -414,13 +411,12 @@ compiled scripts also have some limitations, mostly concerning the use of the
 built-in :func:`eval` function. Please see the `Batch Compilation`_ section
 for details.
 
-The :option:`-v64` (or :option:`-v0100`) verbosity option can be used to have
-the interpreter print the commands it executes during compilation, see
-`Verbosity and Debugging Options`_ below. When creating an object file, this
-also prints the suggested linker command (including all the dynamic modules
-loaded by the script, which also have to be linked in to create a working
-executable), to which you only have to add the options describing the desired
-output file.
+The ``-v64`` (or ``-v0100``) verbosity option can be used to have the
+interpreter print the commands it executes during compilation, see `Verbosity
+and Debugging Options`_ below. When creating an object file, this also prints
+the suggested linker command (including all the dynamic modules loaded by the
+script, which also have to be linked in to create a working executable), to
+which you only have to add the options describing the desired output file.
 
 Tagging Scripts
 ---------------
@@ -461,8 +457,8 @@ input (which may be any legal Pure code or some special interpreter commands
 provided for interactive usage), and prints computed results. This is also
 known as the `read-eval-print` loop and is described in much more detail in
 the `Interactive Usage`_ section. To exit the interpreter, just type the
-:keyword:`quit` command or the end-of-file character (:kbd:`Control-d` on
-Unix) at the beginning of the command line.
+``quit`` command or the end-of-file character (:kbd:`Ctrl-d` on Unix) at the
+beginning of the command line.
 
 The interpreter may also source a few additional interactive startup files
 immediately before entering the interactive loop, unless the :option:`--norc`
@@ -540,9 +536,9 @@ Note that the :option:`-v` option is only applied after the prelude has been
 loaded. If you want to debug the prelude, use the :option:`-n` option and
 specify the prelude.pure file explicitly on the command line. Verbose output
 is also suppressed for modules imported through a :keyword:`using` clause. As
-a remedy, you can use the interactive :keyword:`show` command (see the
-`Interactive Usage`_ section) to list definitions along with additional
-debugging information.
+a remedy, you can use the interactive ``show`` command (see the `Interactive
+Usage`_ section) to list definitions along with additional debugging
+information.
 
 The :option:`-w` option enables some additional warnings which are useful to
 check your scripts for possible errors. Right now it will report implicit
@@ -720,9 +716,9 @@ shell environment variables:
 
 .. envvar:: PURE_MORE
 
-   Shell command to be used for paging through output of the :keyword:`show`
-   command, when the interpreter runs in interactive mode. :envvar:`PURE_LESS`
-   does the same for evaluation results printed by the interpreter.
+   Shell command to be used for paging through output of the ``show`` command,
+   when the interpreter runs in interactive mode. :envvar:`PURE_LESS` does the
+   same for evaluation results printed by the interpreter.
 
 .. envvar:: PURE_PS
 
@@ -827,9 +823,9 @@ user-defined data structures. This will be explained in more detail under
 Expressions are generally evaluated from left to right, innermost expressions
 first, i.e., using call by value semantics. Pure also has a few built-in
 special forms (most notably, conditional expressions, the short-circuit
-logical connectives ``&&`` and ``||``, the sequencing operator ``$$``, the
-lazy evaluation operator ``&``, and the ``quote``) which take some or all of
-their arguments unevaluated, using call by name.
+logical connectives :func:`&&` and :func:`||`, the sequencing operator
+:func:`$$`, the lazy evaluation operator :func:`&`, and the :func:`quote`)
+which take some or all of their arguments unevaluated, using call by name.
 
 Like in Haskell and ML, functions are often defined by pattern matching, i.e.,
 the left-hand side of a definition is compared to the target expression,
@@ -908,8 +904,8 @@ is quite intuitive and lets us get away without declaring the variables in
 equations. (There are some corner cases not covered here, however. In
 particular, Pure allows you to declare special constant symbols, if you need a
 symbol to be recognized as a literal even if it occurs in a variable
-position. This is done by means of a ``nonfix`` declaration, see `Symbol
-Declarations`_ for details.)
+position. This is done by means of a :keyword:`nonfix` declaration, see
+`Symbol Declarations`_ for details.)
 
 Expression Syntax
 -----------------
@@ -918,9 +914,9 @@ The Pure language provides built-in support for machine integers (32 bit),
 bigints (implemented using GMP_), floating point values (double precision IEEE
 754), character strings (UTF-8 encoded) and generic C pointers. The latter
 don't have a syntactic representation in Pure, except that the predefined
-constant ``NULL`` may be used to denote a generic null pointer; other pointer
-values need to be created with external C functions. Truth values are encoded
-as machine integers (as you might expect, zero denotes *false* and any
+constant :const:`NULL` may be used to denote a generic null pointer; other
+pointer values need to be created with external C functions. Truth values are
+encoded as machine integers (as you might expect, zero denotes *false* and any
 non-zero value *true*). Pure also provides some built-in support for lists and
 matrices, although most of the corresponding operations are actually defined
 in the prelude.
@@ -940,7 +936,7 @@ Numbers: ``4711``, ``4711L``, ``1.2e-3``
 
 Strings: ``"Hello, world!\n"``
     String constants are double-quoted and terminated with a null character,
-    like in C. In difference to C, strings are always encoded in UTF-8, and
+    like in C. In contrast to C, strings are always encoded in UTF-8, and
     character escapes in Pure strings have a more flexible syntax (borrowed
     from the author's Q language) which provides notations to specify any
     Unicode character. In particular, the notation ``\``\ *n*, where *n* is an
@@ -971,13 +967,13 @@ Function and variable symbols: ``foo``, ``foo_bar``, ``BAR``, ``foo::bar``
 Operator and constant symbols: ``x+y``, ``x==y``, ``not x``
     For convenience, Pure also provides you with a limited means to extend the
     syntax of the language with special operator and constant symbols by means
-    of a corresponding `fixity` declaration, as discussed in section
-    `Symbol Declarations`_. Besides the usual infix, prefix and postfix
-    operators, Pure also provides outfix (bracket) and nonfix (constant)
-    symbols. (Nonfix symbols actually work more or less like ordinary
-    identifiers, but the ``nonfix`` attribute tells the compiler that when
-    such a symbol occurs on the left-hand side of an equation, it is always to
-    be interpreted as a literal constant, cf. `Parameters in Equations`_.)
+    of a corresponding `fixity` declaration, as discussed in section `Symbol
+    Declarations`_. Besides the usual infix, prefix and postfix operators,
+    Pure also provides outfix (bracket) and nonfix (constant) symbols. (Nonfix
+    symbols actually work more or less like ordinary identifiers, but the
+    :keyword:`nonfix` attribute tells the compiler that when such a symbol
+    occurs on the left-hand side of an equation, it is always to be
+    interpreted as a literal constant, cf. `Parameters in Equations`_.)
 
     Operator and constant symbols may take the form of an identifier or a
     sequence of punctuation characters. They must always be declared before
@@ -996,8 +992,8 @@ Lists: ``[x,y,z]``, ``x:xs``, ``x..y``, ``x:y..z``
 
     There's also a way to denote arithmetic sequences such as ``1..5``, which
     denotes the list ``[1,2,3,4,5]``. (Haskell users should note the missing
-    brackets. In difference to Haskell, Pure doesn't use any special syntax
-    for arithmetic sequences, the '``..``' symbol is just an ordinary infix
+    brackets. In contrast to Haskell, Pure doesn't use any special syntax for
+    arithmetic sequences, the '``..``' symbol is just an ordinary infix
     operator declared and defined in the prelude.) Sequences with arbitrary
     stepsizes can be written by denoting the first two sequence elements using
     the '``:``' operator, as in ``1.0:1.2..3.0``. (To prevent unwanted
@@ -1110,13 +1106,13 @@ Function and operator applications: ``foo x y z``, ``-x``, ``x+y``, ``(+x)``
     so-called `operator sections`. A *left section* takes the form ``(x+)``
     which is equivalent to the partial application ``(+) x``. A *right
     section* takes the form ``(+x)`` and is equivalent to the term ``flip (+)
-    x``. (This uses the ``flip`` combinator from the prelude which is defined
-    as ``flip f x y = f y x``.) Thus ``(x+) y`` is equivalent to ``x+y``,
-    while ``(+x) y`` reduces to ``y+x``. For instance, ``(1/)`` denotes the
-    reciprocal and ``(+1)`` the successor function. (Note that, in contrast,
-    ``(-x)`` always denotes an application of unary minus; the section
-    ``(+-x)`` can be used to indicate a function which subtracts ``x`` from
-    its argument.)
+    x``. (This uses the :func:`flip` combinator from the prelude which is
+    defined as ``flip f x y = f y x``.) Thus ``(x+) y`` is equivalent to
+    ``x+y``, while ``(+x) y`` reduces to ``y+x``. For instance, ``(1/)``
+    denotes the reciprocal and ``(+1)`` the successor function. (Note that, in
+    contrast, ``(-x)`` always denotes an application of unary minus; the
+    section ``(+-x)`` can be used to indicate a function which subtracts ``x``
+    from its argument.)
 
 Conditional expressions: ``if x then y else z``
     Evaluates to ``y`` or ``z`` depending on whether ``x`` is "true" (i.e., a
@@ -1162,8 +1158,9 @@ Operators and Precedence
 ------------------------
 
 Expressions are parsed according to the following precedence rules: Lambda
-binds most weakly, followed by ``when``, ``with`` and ``case``, followed by
-conditional expressions (``if``-``then``-``else``), followed by the `simple
+binds most weakly, followed by :keyword:`when`, :keyword:`with` and
+:keyword:`case`, followed by conditional expressions
+(:keyword:`if`-:keyword:`then`-:keyword:`else`), followed by the `simple
 expressions`, i.e., all other kinds of expressions involving operators,
 function applications, constants, symbols and other primary
 expressions. Precedence and associativity of operator symbols are given by
@@ -1251,15 +1248,15 @@ imperative-style code such as the following prompt-input interaction::
   21.0
 
 We mention in passing here that the same effect can be achieved with a
-``when`` clause, which also allows you to execute a function solely for its
-side-effects and just ignore the return value::
+:keyword:`when` clause, which also allows you to execute a function solely for
+its side-effects and just ignore the return value::
 
   > scanf "%g" when puts "Enter a number:" end;
   Enter a number:
   21
   21.0
 
-The ``&`` operator does lazy evaluation. This is the only postfix operator
+The :func:`&` operator does lazy evaluation. This is the only postfix operator
 defined in the standard prelude, written as ``x&``, where ``x`` is an
 arbitrary Pure expression. It turns its operand into a kind of parameterless
 anonymous closure, deferring its evaluation. These kinds of objects are also
@@ -1273,10 +1270,10 @@ with a thunked tail, which allows it to be infinite. The Pure prelude defines
 many functions for creating and manipulating these kinds of objects; further
 details and examples can be found in the Examples_ section below.
 
-Last but not least, the special form ``quote`` quotes an expression, i.e.,
+Last but not least, the special form :func:`quote` quotes an expression, i.e.,
 ``quote x`` (or, equivalently, ``'x``) returns just ``x`` itself without
-evaluating it. The prelude also provides a function ``eval`` which can be used
-to evaluate a quoted expression at a later time. For instance::
+evaluating it. The prelude also provides a function :func:`eval` which can be
+used to evaluate a quoted expression at a later time. For instance::
 
   > let x = '(2*42+2^12); x;
   2*42+2^12
@@ -1291,9 +1288,9 @@ The quote also inhibits evaluation inside matrix values, including the
   > '{1,{2,3},4};
   {1,{2,3},4}
 
-The ``quote`` should be well familiar to Lisp programmers. However, there are
-some notable differences, please see `The Quote`_ in the `Caveats and Notes`_
-section for details and more examples.
+The :func:`quote` should be well familiar to Lisp programmers. However, there
+are some notable differences, please see `The Quote`_ in the `Caveats and
+Notes`_ section for details and more examples.
 
 Toplevel
 --------
@@ -1305,41 +1302,43 @@ and expressions to be evaluated:
 Rules: ``lhs = rhs;``
     Rewriting rules always combine a left-hand side pattern (which must be a
     simple expression) and a right-hand side (which can be any kind of Pure
-    expression described above). The same format is also used in ``with``,
-    ``when`` and ``case`` expressions. In toplevel rules, ``with`` and
-    ``case`` expressions, this basic form can also be augmented with a
-    condition ``if guard`` tacked on to the end of the rule, where ``guard``
-    is an integer expression which determines whether the rule is applicable.
-    Moreover, the keyword ``otherwise`` may be used to denote an empty guard
-    which is always true (this is syntactic sugar to point out the "default"
-    case of a definition; the interpreter just treats this as a comment). Pure
-    also provides some abbreviations for factoring out common left-hand or
+    expression described above). The same format is also used in
+    :keyword:`with`, :keyword:`when` and :keyword:`case` expressions. In
+    toplevel rules, :keyword:`with` and :keyword:`case` expressions, this
+    basic form can also be augmented with a condition ``if guard`` tacked on
+    to the end of the rule, where ``guard`` is an integer expression which
+    determines whether the rule is applicable.  Moreover, the keyword
+    :keyword:`otherwise` may be used to denote an empty guard which is always
+    true (this is syntactic sugar to point out the "default" case of a
+    definition; the interpreter just treats this as a comment). Pure also
+    provides some abbreviations for factoring out common left-hand or
     right-hand sides in collections of rules; see the `Rule Syntax`_ section
     for details.
 
 Macro rules: ``def lhs = rhs;``
-    A rule starting with the keyword ``def`` defines a macro function. No
-    guards or multiple left-hand and right-hand sides are permitted
-    here. Macro rules are used to preprocess expressions on the right-hand
-    side of other definitions at compile time, and are typically employed to
-    implement user-defined special forms and simple kinds of optimization
-    rules. See the Macros_ section below for details and examples.
+    A rule starting with the keyword :keyword:`def` defines a macro
+    function. No guards or multiple left-hand and right-hand sides are
+    permitted here. Macro rules are used to preprocess expressions on the
+    right-hand side of other definitions at compile time, and are typically
+    employed to implement user-defined special forms and simple kinds of
+    optimization rules. See the Macros_ section below for details and
+    examples.
 
 Global variable bindings: ``let lhs = rhs;``
     Binds every variable in the left-hand side pattern to the corresponding
     subterm of the right-hand side (after evaluating it). This works like a
-    ``when`` clause, but serves to bind global variables occurring free on the
-    right-hand side of other function and variable definitions.
+    :keyword:`when` clause, but serves to bind global variables occurring free
+    on the right-hand side of other function and variable definitions.
 
 Constant bindings: ``const lhs = rhs;``
-    An alternative form of ``let`` which defines constants rather than
+    An alternative form of :keyword:`let` which defines constants rather than
     variables. (These are not to be confused with nonfix symbols which simply
-    stand for themselves!) Like ``let``, this construct binds the variable
-    symbols on the left-hand side to the corresponding values on the
-    right-hand side (after evaluation). The difference is that ``const``
-    symbols can only be defined once, and thus their values do not change
-    during program execution. This also allows the compiler to apply some
-    special optimizations such as constant folding.
+    stand for themselves!) Like :keyword:`let`, this construct binds the
+    variable symbols on the left-hand side to the corresponding values on the
+    right-hand side (after evaluation). The difference is that
+    :keyword:`const` symbols can only be defined once, and thus their values
+    do not change during program execution. This also allows the compiler to
+    apply some special optimizations such as constant folding.
 
 Toplevel expressions: ``expr;``
     A singleton expression at the toplevel, terminated with a semicolon,
@@ -1381,7 +1380,7 @@ entered interactively or being read from a script, in order to ensure
 consistent behaviour between interactive and batch mode operation.
 
 So, for instance, you can easily bind a global variable to a new value by just
-entering a corresponding ``let`` command::
+entering a corresponding :keyword:`let` command::
 
   > foo x = c*x;
   > foo 99;
@@ -1392,10 +1391,11 @@ entering a corresponding ``let`` command::
   297
 
 This works pretty much like global variables in imperative languages, but note
-that in Pure the value of a global variable can only be changed with a ``let``
-command at the toplevel. Thus referential transparency is unimpaired; while
-the value of a global variable may change between different toplevel
-expressions, it will always take the same value in a single evaluation.
+that in Pure the value of a global variable can only be changed with a
+:keyword:`let` command at the toplevel. Thus referential transparency is
+unimpaired; while the value of a global variable may change between different
+toplevel expressions, it will always take the same value in a single
+evaluation.
 
 Similarly, you can also add new equations to an existing function at any
 time::
@@ -1427,14 +1427,15 @@ Rule Syntax
 ===========
 
 Basically, the same rule syntax is used in all kinds of global and local
-definitions. However, some constructs (specifically, ``when``, ``let``,
-``const`` and ``def``) use a restricted rule syntax where no guards or
-multiple left-hand and right-hand sides are permitted. When matching against a
-function or macro call, or the subject term in a ``case`` expression, the
-rules are always considered in the order in which they are written, and the
-first matching rule (whose guard evaluates to a nonzero value, if applicable)
-is picked. (Again, the ``when`` construct is treated differently, because each
-rule is actually a separate definition.)
+definitions. However, some constructs (specifically, :keyword:`when`,
+:keyword:`let`, :keyword:`const` and :keyword:`def`) use a restricted rule
+syntax where no guards or multiple left-hand and right-hand sides are
+permitted. When matching against a function or macro call, or the subject term
+in a :keyword:`case` expression, the rules are always considered in the order
+in which they are written, and the first matching rule (whose guard evaluates
+to a nonzero value, if applicable) is picked. (Again, the :keyword:`when`
+construct is treated differently, because each rule is actually a separate
+definition.)
 
 Patterns
 --------
@@ -1443,10 +1444,10 @@ The left-hand side of a rule is a special kind of simple expression, called a
 `pattern`. Patterns consist of function and operator applications as well as
 any of the "atomic" expression types (symbols, numbers, strings and list
 values). *Not* permitted are any of the special expression types (lambda,
-``case``, ``when``, ``with``, conditional expressions, as well as list and
-matrix comprehensions). For technical reasons, the current implementation also
-forbids matrix values in patterns, but it is possible to match a matrix value
-as a whole using the ``matrix`` type tag, see below.
+:keyword:`case`, :keyword:`when`, :keyword:`with`, conditional expressions, as
+well as list and matrix comprehensions). For technical reasons, the current
+implementation also forbids matrix values in patterns, but it is possible to
+match a matrix value as a whole using the ``matrix`` type tag, see below.
 
 As already mentioned, the '``_``' symbol is special in patterns; it denotes
 the `anonymous variable` which matches an arbitrary value (independently for
@@ -1465,7 +1466,7 @@ This will only match an application of ``foo`` to the machine integer ``0``,
 not ``0.0`` or ``0L`` (even though these compare equal to ``0`` using the
 '\ :func:`==`\ ' operator).
 
-In difference to Haskell, patterns may contain repeated variables (other than
+In contrast to Haskell, patterns may contain repeated variables (other than
 the anonymous variable), i.e., they may be `non-linear`. Thus rules like the
 following are legal in Pure, and will only be matched if all occurrences of
 the same variable in the left-hand side pattern are matched to the same
@@ -1612,12 +1613,12 @@ details.
 General Rules
 -------------
 
-The most general type of rule, used in function definitions and ``case``
-expressions, consists of a left-hand side pattern, a right-hand side
-expression and an optional guard. The left-hand side of a rule can be omitted
-if it is the same as for the previous rule. This provides a convenient means
-to write out a collection of equations for the same left-hand side which
-discriminates over different conditions::
+The most general type of rule, used in function definitions and
+:keyword:`case` expressions, consists of a left-hand side pattern, a
+right-hand side expression and an optional guard. The left-hand side of a rule
+can be omitted if it is the same as for the previous rule. This provides a
+convenient means to write out a collection of equations for the same left-hand
+side which discriminates over different conditions::
 
   lhs       = rhs if guard;
             = rhs if guard;
@@ -1658,16 +1659,17 @@ list or a list starting with an integer::
 
   foo xs@[] | foo xs@(_::int:_) = ... xs ...;
 
-The same construct also works in ``case`` expressions, which is convenient if
-different cases should be mapped to the same value, e.g.::
+The same construct also works in :keyword:`case` expressions, which is
+convenient if different cases should be mapped to the same value, e.g.::
 
   case ans of "y" | "Y" = 1; _ = 0; end;
 
-Sometimes it is useful if local definitions (``when`` and ``with``) can be
-shared by the right-hand side and the guard of a rule. This can be done by
-placing the local definitions behind the guard, as follows (we only show the
-case of a single ``when`` clause here, but of course there may be any number
-of ``when`` and ``with`` clauses behind the guard)::
+Sometimes it is useful if local definitions (:keyword:`when` and
+:keyword:`with`) can be shared by the right-hand side and the guard of a
+rule. This can be done by placing the local definitions behind the guard, as
+follows (we only show the case of a single :keyword:`when` clause here, but of
+course there may be any number of :keyword:`when` and :keyword:`with` clauses
+behind the guard)::
 
   lhs = rhs if guard when defns end;
 
@@ -1698,11 +1700,12 @@ undefined.
 Simple Rules
 ------------
 
-As already mentioned, ``when``, ``let`` and ``const`` use a simplified kind of
-rule syntax which just consists of a left-hand and a right-hand side separated
-by the equals sign. In this case the meaning of the rule is to bind the
-variables in the left-hand side of the rule to the corresponding subterms of
-the value of the right-hand side. This is also called a `pattern binding`.
+As already mentioned, :keyword:`when`, :keyword:`let` and :keyword:`const` use
+a simplified kind of rule syntax which just consists of a left-hand and a
+right-hand side separated by the equals sign. In this case the meaning of the
+rule is to bind the variables in the left-hand side of the rule to the
+corresponding subterms of the value of the right-hand side. This is also
+called a `pattern binding`.
 
 Guards or multiple left-hand or right-hand sides are not permitted in these
 rules. However, it is possible to omit the left-hand side if it is just the
@@ -1723,9 +1726,9 @@ prints the discriminant after it has been computed::
   solve 2 4
 
 Note that simple rules of the same form ``lhs = rhs`` are also used in macro
-definitions (``def``), to be discussed in the `Macros`_ section. In this case,
-however, the rule denotes a real rewriting rule, not a pattern binding, hence
-the left-hand side is mandatory in these rules.
+definitions (:keyword:`def`), to be discussed in the `Macros`_ section. In
+this case, however, the rule denotes a real rewriting rule, not a pattern
+binding, hence the left-hand side is mandatory in these rules.
 
 Examples
 ========
@@ -1760,8 +1763,8 @@ section for more details on this)::
 
 Here is an example showing how constants are defined and used. Constant
 definitions take pretty much the same form as variable definitions with
-``let`` (see above), but work more like the definition of a parameterless
-function whose value is precomputed at compile time::
+:keyword:`let` (see above), but work more like the definition of a
+parameterless function whose value is precomputed at compile time::
 
   > extern double atan(double);
   > const pi = 4*atan 1.0;
@@ -1835,18 +1838,18 @@ Fibonacci numbers::
   > fibs;
   0L:#<thunk 0xb5d54320>
 
-Note the ``&`` on the tail of the list in the definition of the local ``fibs``
-function. This turns the result of ``fibs`` into a stream, which is required
-to prevent the function from recursing into samadhi. Also note that we work
-with bigints in this example because the Fibonacci numbers grow quite rapidly,
-so with machine integers the values would soon start wrapping around to
-negative integers.
+Note the :func:`&` on the tail of the list in the definition of the local
+``fibs`` function. This turns the result of ``fibs`` into a stream, which is
+required to prevent the function from recursing into samadhi. Also note that
+we work with bigints in this example because the Fibonacci numbers grow quite
+rapidly, so with machine integers the values would soon start wrapping around
+to negative integers.
 
 Streams like these can be worked with in pretty much the same way as with
 lists. Of course, care must be taken not to invoke "eager" operations such as
-``#`` (which computes the size of a list) on infinite streams, to prevent
+:func:`#` (which computes the size of a list) on infinite streams, to prevent
 infinite recursion. However, many list operations work with infinite streams
-just fine, and return the appropriate stream results. E.g., the ``take``
+just fine, and return the appropriate stream results. E.g., the :func:`take`
 function (which retrieves a given number of elements from the front of a list)
 works with streams just as well as with "eager" lists::
 
@@ -1855,8 +1858,8 @@ works with streams just as well as with "eager" lists::
 
 Hmm, not much progress there, but that's just how streams work (or rather they
 don't, they're lazy bums indeed!). Nevertheless, the stream computed with
-``take`` is in fact finite and we can readily convert it to an ordinary list,
-forcing its evaluation::
+:func:`take` is in fact finite and we can readily convert it to an ordinary
+list, forcing its evaluation::
 
   > list (take 10 fibs);
   [0L,1L,1L,2L,3L,5L,8L,13L,21L,34L]
@@ -1885,10 +1888,10 @@ sequence, e.g.::
   [1,2,3,4,5,6,7,8,9,10,11]
   [-1.0,-1.2,-1.4,-1.6,-1.8,-2.0,-2.2,-2.4,-2.6,-2.8,-3.0]
 
-Other useful stream generator functions are ``iterate``, which keeps applying
-the same function over and over again, ``repeat``, which just repeats its
-argument forever, and ``cycle``, which cycles through the elements of the
-given list::
+Other useful stream generator functions are :func:`iterate`, which keeps
+applying the same function over and over again, :func:`repeat`, which just
+repeats its argument forever, and :func:`cycle`, which cycles through the
+elements of the given list::
 
   > iterate (*2) 1!!(0..10);
   [1,2,4,8,16,32,64,128,256,512,1024]
@@ -1922,7 +1925,7 @@ now never becomes empty. Example::
   1987
 
 You can also just print the entire stream. This will run forever, so hit
-``Ctrl-C`` when you get bored::
+:kbd:`Ctrl-c` when you get bored::
 
   > using system;
   > do (printf "%d\n") all_primes;
@@ -1934,9 +1937,9 @@ You can also just print the entire stream. This will run forever, so hit
 (Make sure that you really use the ``all_primes`` function instead of the
 ``P`` variable to print the stream. Otherwise, because of memoization the
 stream stored in ``P`` will grow with the number of elements printed until
-memory is exhausted. Calling ``do`` on a fresh instance of the stream of
-primes allows ``do`` to get rid of each "cons" cell after having printed the
-corresponding stream element.)
+memory is exhausted. Calling :func:`do` on a fresh instance of the stream of
+primes allows :func:`do` to get rid of each "cons" cell after having printed
+the corresponding stream element.)
 
 .. _Matrix Computations:
 
@@ -1954,18 +1957,18 @@ for the Pure language).
 
 But Pure's facilities for matrix and list processing also make it easy to roll
 your own, if desired. First, the prelude provides matrix versions of the
-common list operations like ``map``, ``fold``, ``zip`` etc., which provide a
-way to implement common matrix operations. E.g., multiplying a matrix ``x``
-with a scalar ``a`` amounts to mapping the function ``(a*)`` to x, which
-can be done as follows::
+common list operations like :func:`map`, :func:`fold`, :func:`zip` etc., which
+provide a way to implement common matrix operations. E.g., multiplying a
+matrix ``x`` with a scalar ``a`` amounts to mapping the function ``(a*)`` to
+x, which can be done as follows::
 
   > a * x::matrix = map (a*) x if ~matrixp a;
   > 2*{1,2,3;4,5,6};
   {2,4,6;8,10,12}
 
 Likewise, matrix addition and other element-wise operations can be realized
-using ``zipwith``, which combines corresponding elements of two matrices using
-a given binary function::
+using :func:`zipwith`, which combines corresponding elements of two matrices
+using a given binary function::
 
   > x::matrix + y::matrix = zipwith (+) x y;
   > {1,2,3;4,5,6}+{1,2,1;3,2,3};
@@ -2013,8 +2016,8 @@ definition of matrix multiplication in Pure. The building block here is the
 
 The general matrix product now boils down to a simple matrix comprehension
 which just computes the dot product of all rows of ``x`` with all columns of
-``y`` (the ``rows`` and ``cols`` functions are prelude operations found in
-matrices.pure)::
+``y`` (the :func:`rows` and :func:`cols` functions are prelude operations
+found in matrices.pure)::
 
   > x::matrix * y::matrix = {dot u v | u = rows x; v = cols y};
   > {0,1;1,0;1,1}*{1,2,3;4,5,6};
@@ -2084,8 +2087,8 @@ step) and to apply a transposition to a permutation (represented as a list)::
   with tr k = if k==i then j else if k==j then i else k end;
 
 Finally, let us define a convenient print representation of double matrices a
-la Octave_ (the meaning of the ``__show__`` function is explained in the
-`Caveats and Notes`_ section)::
+la Octave_ (the meaning of the :func:`__show__` function is explained in `The
+__show__ Function`_)::
 
   using system;
   __show__ x::matrix
@@ -2134,14 +2137,14 @@ Unfortunately, the quote operator in fact inhibits evaluation of *all*
 embedded subterms which may be undesirable if the matrix expression contains
 arithmetic (as in ``'{{1+1,2*3}}``), so this method works best for constant
 matrices. A more general way to create a symbolic vector of matrices is
-provided by the ``vector`` function from the prelude, which is applied to a
-list of the vector elements as follows::
+provided by the :func:`vector` function from the prelude, which is applied to
+a list of the vector elements as follows::
 
   > vector [{1,2},{3,4}];
   {{1,2},{3,4}}
 
-Calls to the ``vector`` function can be nested to an arbitrary depth to obtain
-higher-dimensional "arrays"::
+Calls to the :func:`vector` function can be nested to an arbitrary depth to
+obtain higher-dimensional "arrays"::
 
   > vector [vector [{1,2}],vector [{3,4}]];
   {{{1,2}},{{3,4}}}
@@ -2157,8 +2160,8 @@ vector brackets::
   > {:{:{1,2}:},{:{3,4}:}:};
   {{{1,2}},{{3,4}}}
 
-(Both macros and ``outfix`` symbol declarations are described later in the
-appropriate sections, see Macros_ and `Symbol Declarations`_.)
+(Both macros and :keyword:`outfix` symbol declarations are described later in
+the appropriate sections, see Macros_ and `Symbol Declarations`_.)
 
 .. _Record Data:
 
@@ -2194,13 +2197,13 @@ are a few examples which illustrate how to create records and work with them::
   > delete ans z;
   {x=>99,y=>12}
 
-Note the use of the "hash rocket" ``=>`` which denotes the ``key=>value``
+Note the use of the "hash rocket" :cons:`=>` which denotes the ``key=>value``
 associations in a record. The hash rocket is a constructor declared as an
 infix operator in the prelude, see the :ref:`Prelude` section in the
-:doc:`purelib`. There's one caveat here, however. Since neither ``=>`` nor
-``!`` treat their key operand in a special way, symbols used as keys must not
-be bound to a value, or you'll have to protect them from being evaluated by
-quoting them. Thus, to be on the safe side, you should actually write::
+:doc:`purelib`. There's one caveat here, however. Since neither :cons:`=>` nor
+:func:`!` treat their key operand in a special way, symbols used as keys must
+not be bound to a value, or you'll have to protect them from being evaluated
+by quoting them. Thus, to be on the safe side, you should actually write::
 
   > let r = {'x=>5, 'y=>12};
   > r!'y; r!!['y,'x];
@@ -2248,21 +2251,21 @@ key::
   > record r;
   {x=>7,y=>12,z=>3}
 
-In fact, the ``record`` operation not only removes duplicates, but also orders
-the record entries by keys. This produces a kind of normalized representation
-which is useful if you want to compare or combine two record values
-irrespective of the ordering of the fields. For instance::
+In fact, the :func:`record` operation not only removes duplicates, but also
+orders the record entries by keys. This produces a kind of normalized
+representation which is useful if you want to compare or combine two record
+values irrespective of the ordering of the fields. For instance::
 
   > record {x=>5, y=>12} === record {y=>12, x=>5};
   1
 
-The ``record`` function can also be used to construct a normalized record
+The :func:`record` function can also be used to construct a normalized record
 directly from a list or tuple of hash pairs::
 
   > record [x=>5, x=>7, y=>12];
   {x=>7,y=>12}
 
-Other matrix operations such as ``map``, ``foldl``, etc., and matrix
+Other matrix operations such as :func:`map`, :func:`foldl`, etc., and matrix
 comprehensions can be applied to records just as easily. This enables you to
 perform bulk updates of record data in a straightforward way. For instance,
 here's how you can define a function ``maprec`` which applies a function to
@@ -2304,18 +2307,20 @@ other simple kinds of source-level optimizations.
 Whereas the macro facilities of most programming languages simply provide a
 kind of textual substitution mechanism, Pure macros operate on symbolic
 expressions and are implemented by the same kind of rewriting rules that are
-also used to define ordinary functions in Pure. In difference to these, macro
-rules start out with the keyword ``def``, and only simple kinds of rules
-without any guards or multiple left-hand and right-hand sides are permitted.
+also used to define ordinary functions in Pure. In contrast to these, macro
+rules start out with the keyword :keyword:`def`, and only simple kinds of
+rules without any guards or multiple left-hand and right-hand sides are
+permitted.
 
 Syntactically, a macro definition looks just like a variable or constant
-definition, using ``def`` in lieu of ``let`` or ``const``, but they are
-processed in a different way. Macros are substituted into the right-hand sides
-of function, constant and variable definitions. All macro substitution happens
-before constant substitutions and the actual compilation step. Macros can be
-defined in terms of other macros (also recursively), and are evaluated using
-call by value (i.e., macro calls in macro arguments are expanded before the
-macro gets applied to its parameters).
+definition, using :keyword:`def` in lieu of :keyword:`let` or
+:keyword:`const`, but they are processed in a different way. Macros are
+substituted into the right-hand sides of function, constant and variable
+definitions. All macro substitution happens before constant substitutions and
+the actual compilation step. Macros can be defined in terms of other macros
+(also recursively), and are evaluated using call by value (i.e., macro calls
+in macro arguments are expanded before the macro gets applied to its
+parameters).
 
 .. _Optimization Rules:
 
@@ -2323,7 +2328,7 @@ Optimization Rules
 ------------------
 
 Here is a simple example, showing a rule which expands saturated calls of the
-``succ`` function (defined in the prelude) at compile time::
+:func:`succ` function (defined in the prelude) at compile time::
 
   > def succ x = x+1;
   > foo x::int = succ (succ x);
@@ -2358,11 +2363,11 @@ comprehension is evaluated solely for its side effects::
   def void (catmap f x) = do f x;
   def void (listmap f x) = do f x;
 
-Note that the ``void`` function simply throws away its argument and returns
-``()`` instead. The ``do`` function applies a function to every member of a
-list (like ``map``), but throws away all intermediate results and just returns
-``()``, which is much more efficient if you don't need those results
-anyway. These are both defined in the prelude.
+Note that the :func:`void` function simply throws away its argument and
+returns :cons:`()` instead. The :func:`do` function applies a function to
+every member of a list (like :func:`map`), but throws away all intermediate
+results and just returns :cons:`()`, which is much more efficient if you don't
+need those results anyway. These are both defined in the prelude.
 
 Before we delve into this example, a few remarks are in order about the way
 list comprehensions are implemented in Pure. As already mentioned, list
@@ -2370,16 +2375,17 @@ comprehensions are just syntactic sugar; the compiler immediately transforms
 them to an equivalent expression involving only lambdas and a few other list
 operations. Note that list comprehensions are essentially equivalent to piles
 of nested lambdas, filters and maps, but for various reasons they are actually
-implemented using two special helper operations, ``catmap`` and ``listmap``.
+implemented using two special helper operations, :func:`catmap` and
+:func:`listmap`.
 
-The ``catmap`` operation combines ``map`` and ``cat``; this is needed, in
-particular, to accumulate the results of nested generators, such as ``[i,j | i
-= 1..n; j = 1..m]``. The same operation is also used to implement filter
-clauses, you can see this below in the examples. However, for efficiency
-simple generators like ``[2*i | i = 1..n]`` are translated to a ``listmap``
-instead (which is basically just ``map``, but works with different aggregate
-types, so that list comprehensions can draw values from aggregates other than
-lists, such as matrices).
+The :func:`catmap` operation combines :func:`map` and :func:`cat`; this is
+needed, in particular, to accumulate the results of nested generators, such as
+``[i,j | i = 1..n; j = 1..m]``. The same operation is also used to implement
+filter clauses, you can see this below in the examples. However, for
+efficiency simple generators like ``[2*i | i = 1..n]`` are translated to a
+:func:`listmap` instead (which is basically just :func:`map`, but works with
+different aggregate types, so that list comprehensions can draw values from
+aggregates other than lists, such as matrices).
 
 Now let's see how the rules above transform a list comprehension if we
 "voidify" it::
@@ -2391,10 +2397,10 @@ Now let's see how the rules above transform a list comprehension if we
   f = catmap (\x -> if x mod 2 then [printf "%g\n" (2^x+1)] else []) (1..5);
   g = do (\x -> if x mod 2 then [printf "%g\n" (2^x+1)] else []) (1..5);
 
-Ok, so the ``catmap`` got replaced with a ``do`` which is just what we need to
-make this code go essentially as fast as a ``for`` loop in conventional
-programming languages (up to constant factors, of course). Here's how it looks
-like when we run the ``g`` function::
+Ok, so the :func:`catmap` got replaced with a :func:`do` which is just what we
+need to make this code go essentially as fast as a :keyword:`for` loop in
+conventional programming languages (up to constant factors, of course). Here's
+how it looks like when we run the ``g`` function::
 
   > g;
   3
@@ -2403,14 +2409,15 @@ like when we run the ``g`` function::
   ()
 
 It's not all roses, however, since the above macro rules will only get rid of
-the outermost ``catmap`` if the list comprehension binds multiple variables::
+the outermost :func:`catmap` if the list comprehension binds multiple
+variables::
 
   > u = void [puts $ str (x,y) | x=1..2; y=1..3];
   > show u
   u = do (\x -> listmap (\y -> puts (str (x,y))) (1..3)) (1..2);
 
-If you're bothered by this, you'll have to apply ``void`` recursively,
-creating a nested list comprehension which expands to a nested ``do``::
+If you're bothered by this, you'll have to apply :func:`void` recursively,
+creating a nested list comprehension which expands to a nested :func:`do`::
 
   > v = void [void [puts $ str (x,y) | y=1..3] | x=1..2];
   > show v
@@ -2419,7 +2426,7 @@ creating a nested list comprehension which expands to a nested ``do``::
 (It would be nice to have this handled automatically, but the left-hand side
 of a macro definition must be a simple expression, and thus it's not possible
 to write a macro which descends recursively into the lambda argument of
-``catmap``.)
+:func:`catmap`.)
 
 Recursive Macros
 ----------------
@@ -2449,7 +2456,7 @@ rule "splices" an argument list into an enclosing function application. The
 third rule recurses into subterms of a function application, and the fourth
 and last rule takes care of quoting the "atomic" subterms. Note that
 ``unquote`` and ``splice`` themselves are just passive constructor symbols,
-the real work is done by ``quasiquote``, using ``foldl`` at runtime to
+the real work is done by ``quasiquote``, using :func:`foldl` at runtime to
 actually perform the splicing. (Putting off the splicing until runtime makes
 it possible to splice argument lists computed at runtime.)
 
@@ -2476,8 +2483,9 @@ We mention in passing here that, technically, Pure macros are just as powerful
 as (unconditional) term rewriting systems and thus they are
 Turing-complete. This implies that a badly written macro may well send the
 Pure compiler into an infinite recursion, which results in a stack overflow at
-compile time. See the `Caveats and Notes`_ section for information on how to
-deal with these by setting the PURE_STACK environment variable.
+compile time. See `Stack Size and Tail Recursion`_ in the `Caveats and Notes`_
+section for information on how to deal with these by setting the
+:envvar:`PURE_STACK` environment variable.
 
 User-Defined Special Forms
 --------------------------
@@ -2575,12 +2583,12 @@ Macro Hygiene
 Pure macros are lexically scoped, i.e., the binding of symbols in the
 right-hand-side of a macro definition is determined statically by the text of
 the definition, and macro parameter substitution also takes into account
-binding constructs, such as ``with`` and ``when`` clauses, in the right-hand
-side of the definition. Macro facilities with these pleasant properties are
-also known as `hygienic macros`. They are not susceptible to so-called "name
-capture," which makes macros in less sophisticated languages bug-ridden and
-hard to use. (This is explained in more detail in the `Hygienic Macros`_
-section.)
+binding constructs, such as :keyword:`with` and :keyword:`when` clauses, in
+the right-hand side of the definition. Macro facilities with these pleasant
+properties are also known as `hygienic macros`. They are not susceptible to
+so-called "name capture," which makes macros in less sophisticated languages
+bug-ridden and hard to use. (This is explained in more detail in the `Hygienic
+Macros`_ section.)
 
 Pure macros also have their limitations. Specifically, the left-hand side of a
 macro rule must be a simple expression, just like in ordinary function
@@ -2598,13 +2606,13 @@ programs consisting of several source modules:
 
 * symbol declarations determine "scope" and "fixity" of a symbol;
 
-* ``extern`` declarations specify external C functions (described in the
-  `C Interface`_ section);
+* :keyword:`extern` declarations specify external C functions (described in
+  the `C Interface`_ section);
 
-* ``using`` clauses let you include other scripts in a Pure script;
+* :keyword:`using` clauses let you include other scripts in a Pure script;
 
-* ``namespace`` declarations let you avoid name clashes and thereby make it
-  easier to manage large programs consisting of many separate modules.
+* :keyword:`namespace` declarations let you avoid name clashes and thereby
+  make it easier to manage large programs consisting of many separate modules.
 
 Symbol Declarations
 -------------------
@@ -2630,10 +2638,10 @@ Note that to declare several symbols in a single declaration, you can list
 them all with whitespace in between. The same syntax applies to the other
 types of symbol declarations discussed below. (Commas are *not* allowed as
 delimiters here, as they may occur as legal symbol constituents in the list of
-symbols.) The ``public`` and ``private`` keywords can also be used as a prefix
-in any of the special symbol declarations discussed below, to specify the
-scope of the declared symbols (if the scope prefix is omitted, it defaults to
-``public``).
+symbols.) The :keyword:`public` and :keyword:`private` keywords can also be
+used as a prefix in any of the special symbol declarations discussed below, to
+specify the scope of the declared symbols (if the scope prefix is omitted, it
+defaults to :keyword:`public`).
 
 The following "fixity" declarations are available for introducing special
 operator and constant symbols. This changes the way that these symbols are
@@ -2653,11 +2661,12 @@ Operator declarations: ``infix level symbol ...;``
     symbols at low, high or intermediate precedences.)
 
     On each precedence level, you can declare (in order of increasing
-    precedence) ``infix`` (binary non-associative), ``infixl`` (binary
-    left-associative), ``infixr`` (binary right-associative), ``prefix``
-    (unary prefix) and ``postfix`` (unary postfix) operators. For instance,
-    here is a typical excerpt from the prelude (the full table can be found in
-    the :ref:`Prelude` section of the :doc:`purelib`)::
+    precedence) :keyword:`infix` (binary non-associative), :keyword:`infixl`
+    (binary left-associative), :keyword:`infixr` (binary right-associative),
+    :keyword:`prefix` (unary prefix) and :keyword:`postfix` (unary postfix)
+    operators. For instance, here is a typical excerpt from the prelude (the
+    full table can be found in the :ref:`Prelude` section of the
+    :doc:`purelib`)::
 
       infix  1800 < > <= >= == ~= ;
       infixl 2200 + - ;
@@ -2698,7 +2707,7 @@ Outfix symbol declarations: ``outfix left right ...;``
 Constant symbol declarations: ``nonfix symbol ...;``
     Pure also has a notation for "nullary" operators, i.e., "operators without
     operands", which are used to denote special constants. These are
-    introduced using a ``nonfix`` declaration, e.g.::
+    introduced using a :keyword:`nonfix` declaration, e.g.::
 
       nonfix red green blue;
 
@@ -2741,24 +2750,25 @@ minus operation can be denoted using the built-in ``neg`` function.
 Modules and Imports
 -------------------
 
-While Pure doesn't offer separate compilation, the ``using`` declaration
-provides a simple but effective way to assemble a Pure program from several
-source modules. It takes the following form (note that in contrast to symbol
-declarations, the comma is used as a delimiter symbol here)::
+While Pure doesn't offer separate compilation, the :keyword:`using`
+declaration provides a simple but effective way to assemble a Pure program
+from several source modules. It takes the following form (note that in
+contrast to symbol declarations, the comma is used as a delimiter symbol
+here)::
 
   using name, ...;
 
 This causes each given script to be included in the Pure program at the given
 point (if it wasn't already included before), which makes available all the
 definitions of the included script in your program. Note that each included
-script is loaded only *once*, when the first ``using`` clause for the script
-is encountered. Nested imports are allowed, i.e., an imported module may
-itself import other modules, etc. A Pure program then basically is the
+script is loaded only *once*, when the first :keyword:`using` clause for the
+script is encountered. Nested imports are allowed, i.e., an imported module
+may itself import other modules, etc. A Pure program then basically is the
 concatenation of all the source modules given as command line arguments, with
-other modules listed in ``using`` clauses inserted at the corresponding source
-locations.
+other modules listed in :keyword:`using` clauses inserted at the corresponding
+source locations.
 
-(The ``using`` clause also has an alternative form which allows dynamic
+(The :keyword:`using` clause also has an alternative form which allows dynamic
 libraries and LLVM bitcode modules to be loaded, this will be discussed in the
 `C Interface`_ section.)
 
@@ -2776,9 +2786,10 @@ used to denote scripts located in specific package directories, e.g.::
 
   using examples::libor::bits;
 
-In fact this is equivalent to the following ``using`` clause which spells out
-the real filename of the script between double quotes (the ``.pure`` suffix
-can also be omitted in which case it is added automatically)::
+In fact this is equivalent to the following :keyword:`using` clause which
+spells out the real filename of the script between double quotes (the
+``.pure`` suffix can also be omitted in which case it is added
+automatically)::
 
   using "examples/libor/bits.pure";
 
@@ -2806,31 +2817,31 @@ locate the script. The search algorithm considers the following directories in
 the given order:
 
 * the directory of the current script, which is the directory of the script
-  containing the ``using`` clause, or the current working directory if the
-  clause was read from standard input (as is the case, e.g., in an interactive
-  session);
+  containing the :keyword:`using` clause, or the current working directory if
+  the clause was read from standard input (as is the case, e.g., in an
+  interactive session);
 
-* the directories named in -I options on the command line (in the given
-  order);
+* the directories named in :option:`-I` options on the command line (in the
+  given order);
 
-* the colon-separated list of directories in the PURE_INCLUDE environment
-  variable (in the given order);
+* the colon-separated list of directories in the :envvar:`PURE_INCLUDE`
+  environment variable (in the given order);
 
-* finally the directory named by the PURELIB environment variable.
+* finally the directory named by the :envvar:`PURELIB` environment variable.
 
 Note that the current working directory is not searched by default (unless the
-``using`` clause is read from standard input), but of course you can force
-this by adding the option -I. to the command line, or by including '.' in the
-PURE_INCLUDE variable.
+:keyword:`using` clause is read from standard input), but of course you can
+force this by adding the option :option:`-I`. to the command line, or by
+including '.' in the :envvar:`PURE_INCLUDE` variable.
 
 The directory of the current script (the first item above) can be skipped by
 specifying the script to be loaded as a filename in double quotes, prefixed
 with the special ``sys:`` tag. The search then starts with the "system"
-directories (-I, PURE_INCLUDE and PURELIB) instead. This is useful, e.g., if
-you want to provide your own custom version of a standard library script which
-in turn imports that library script. For instance, a custom version of
-math.pure might employ the following ``using`` clause to load the math.pure
-script from the Pure library::
+directories (:option:`-I`, :envvar:`PURE_INCLUDE` and :envvar:`PURELIB`)
+instead. This is useful, e.g., if you want to provide your own custom version
+of a standard library script which in turn imports that library script. For
+instance, a custom version of math.pure might employ the following
+:keyword:`using` clause to load the math.pure script from the Pure library::
 
   using "sys:math";
   // custom definitions go here
@@ -2860,11 +2871,11 @@ More precisely, canonicalizing a pathname involves the following steps:
 The directory of the canonicalized pathname is also used when searching other
 scripts included in a script. This makes it possible to have an executable
 script with a shebang line in its own directory, which is then executed via a
-symbolic link placed on the system PATH. In this case the script search
-performed in ``using`` clauses will use the real script directory and thus
-other required scripts can be located there. This is the recommended practice
-for installing standalone Pure applications in source form which are to be run
-directly from the shell.
+symbolic link placed on the system :envvar:`PATH`. In this case the script
+search performed in :keyword:`using` clauses will use the real script
+directory and thus other required scripts can be located there. This is the
+recommended practice for installing standalone Pure applications in source
+form which are to be run directly from the shell.
 
 Namespaces
 ----------
@@ -2881,16 +2892,17 @@ constructs should be enough to start using it.)
 
 The global namespace is always available. By default, new symbols are created
 in this namespace, which is also called the `default namespace`. Additional
-namespaces can be created with the ``namespace`` declaration, which also
-switches to the given namespace (makes it the *current* namespace), so that
-new symbols are then created in that namespace rather than the default
+namespaces can be created with the :keyword:`namespace` declaration, which
+also switches to the given namespace (makes it the *current* namespace), so
+that new symbols are then created in that namespace rather than the default
 one. The current namespace also applies to all kinds of symbol declarations,
-including operator and constant symbol declarations, as well as ``extern``
-declarations (the latter are described in the `C Interface`_ section).
+including operator and constant symbol declarations, as well as
+:keyword:`extern` declarations (the latter are described in the `C Interface`_
+section).
 
-The basic form of the ``namespace`` declaration has the following syntax
-(there's also a "scoped" form of the ``namespace`` declaration which will be
-discussed in `Scoped Namespaces`_ at the end of this section)::
+The basic form of the :keyword:`namespace` declaration has the following
+syntax (there's also a "scoped" form of the :keyword:`namespace` declaration
+which will be discussed in `Scoped Namespaces`_ at the end of this section)::
 
   namespace name;
   // declarations and definitions in namespace 'name'
@@ -2922,9 +2934,9 @@ A namespace can be "reopened" at any time to add new symbols and definitions
 to it. This allows namespaces to be created that span several source
 modules. You can also create several different namespaces in the same module.
 
-Similar to the ``using`` declaration, a ``namespace`` declaration accepts
-either identifiers or double-quoted strings as namespace names. E.g., the
-following two declarations are equivalent::
+Similar to the :keyword:`using` declaration, a :keyword:`namespace`
+declaration accepts either identifiers or double-quoted strings as namespace
+names. E.g., the following two declarations are equivalent::
 
   namespace foo;
   namespace "foo";
@@ -2937,8 +2949,8 @@ e.g.::
 Note that the namespace prefix in a qualified identifier must be a legal
 identifier, so it isn't possible to access symbols in namespaces with such
 descriptive labels in a direct fashion. The only way to get at the symbols in
-this case is to use a ``namespace`` or ``using namespace`` declaration (for
-the latter see `Using Namespaces`_ below).
+this case is to use a :keyword:`namespace` or :keyword:`using namespace`
+declaration (for the latter see `Using Namespaces`_ below).
 
 Using Namespaces
 ~~~~~~~~~~~~~~~~
@@ -2946,15 +2958,16 @@ Using Namespaces
 Since it is rather inconvenient if you always have to write identifiers in
 their qualified form outside of their "home" namespace, Pure allows you to
 specify a list of *search* namespaces which are used to look up symbols not in
-the default or the current namespace. This is done with the ``using
-namespace`` declaration, which takes the following form::
+the default or the current namespace. This is done with the :keyword:`using
+namespace` declaration, which takes the following form::
 
   using namespace name1, name2, ...;
   // ...
   using namespace;
 
-(As with ``namespace`` declarations, the second form without any namespace
-arguments gets you back to the default empty list of search namespaces.)
+(As with :keyword:`namespace` declarations, the second form without any
+namespace arguments gets you back to the default empty list of search
+namespaces.)
 
 For instance, consider this example::
 
@@ -2977,11 +2990,11 @@ The symbols in these namespaces can be accessed unqualified as follows::
   100
 
 This method is often to be preferred over opening a namespace with the
-``namespace`` declaration, since ``using namespace`` only gives you "read
-access" to the imported symbols, so you can't accidentally mess up the
-definitions of the namespace you're using. Another advantage is that the
-``using namespace`` declaration also lets you search multiple namespaces at
-once::
+:keyword:`namespace` declaration, since :keyword:`using namespace` only gives
+you "read access" to the imported symbols, so you can't accidentally mess up
+the definitions of the namespace you're using. Another advantage is that the
+:keyword:`using namespace` declaration also lets you search multiple
+namespaces at once::
 
   using namespace foo, bar;
 
@@ -3060,10 +3073,11 @@ namespaces. To make these errors go away it's enough to just declare the
 symbols in their proper namespaces.
 
 New symbols are also created if a global unqualified (and yet undeclared)
-symbol is being "defined" in a rewriting rule or ``let``/``const`` definition,
-even if a symbol with the same print name from another namespace is already
-visible in the current scope. To distinguish "defining" from "referring" uses
-of a global symbol, Pure uses the following (purely syntactic) notions:
+symbol is being "defined" in a rewriting rule or
+:keyword:`let`/:keyword:`const` definition, even if a symbol with the same
+print name from another namespace is already visible in the current scope. To
+distinguish "defining" from "referring" uses of a global symbol, Pure uses the
+following (purely syntactic) notions:
 
 * A `defining occurrence` of a global *function* or *macro symbol* is any
   occurrence of the symbol as the *head symbol* on the left-hand side of a
@@ -3072,7 +3086,7 @@ of a global symbol, Pure uses the following (purely syntactic) notions:
 * A `defining occurrence` of a global *variable* or *constant symbol* is any
   occurrence of the symbol in a *variable position* (as given by the "head =
   function" rule, cf. `Parameters in Equations`_) on the left-hand side of a
-  ``let`` or ``const`` definition.
+  :keyword:`let` or :keyword:`const` definition.
 
 * All other occurrences of global symbols on the left-hand side, as well as
   *all* symbol occurrences on the right-hand side of a definition are
@@ -3087,13 +3101,14 @@ The following example illustrates these notions::
 
 Here, the first occurrence of ``bar`` on the left-hand side ``bar (bar x)`` of
 the first rule is a *defining* occurrence, as are the occurrences of ``x`` and
-``y`` on the left-hand side of the ``let`` definition. Hence these symbols are
-created as new symbols in the namespace ``foo``. On the other hand, the other
-occurrences of ``bar`` in the first rule, as well as the '\ ``,``\ ' symbol on
-the left-hand side of the ``let`` definition are *referring* occurrences. In
-the former case, ``bar`` refers to the ``bar`` symbol defined by the rule,
-while in the latter case the '\ ``,``\ ' operator is actually declared in the
-prelude and thus imported from the global namespace.
+``y`` on the left-hand side of the :keyword:`let` definition. Hence these
+symbols are created as new symbols in the namespace ``foo``. On the other
+hand, the other occurrences of ``bar`` in the first rule, as well as the '\
+``,``\ ' symbol on the left-hand side of the :keyword:`let` definition are
+*referring* occurrences. In the former case, ``bar`` refers to the ``bar``
+symbol defined by the rule, while in the latter case the '\ ``,``\ ' operator
+is actually declared in the prelude and thus imported from the global
+namespace.
 
 As an additional safety measure against missing or mistyped symbols, the
 interpreter provides the option :option:`-w` (see `Invoking Pure`_) to check
@@ -3176,7 +3191,7 @@ Pure also allows you to have private symbols, as a means to hide away internal
 operations which shouldn't be accessed directly outside the namespace in which
 they are declared. The scope of a private symbol is confined to its namespace,
 i.e., the symbol is only visible when its "home" namespace is current. Symbols
-are declared private by using the ``private`` keyword in the symbol
+are declared private by using the :keyword:`private` keyword in the symbol
 declaration::
 
   > namespace secret;
@@ -3235,8 +3250,8 @@ in name lookup accordingly, so that you can write::
 This works pretty much like a hierarchy of directories and files, where the
 namespaces play the role of the directories (with the default namespace as the
 root directory), the symbols in each namespace correspond to the files in a
-directory, and the ``using namespace`` declaration functions similar to the
-shell's ``PATH`` variable.
+directory, and the :keyword:`using namespace` declaration functions similar to
+the shell's :envvar:`PATH` variable.
 
 Sometimes it is necessary to tell the compiler to use a symbol in a specific
 namespace, bypassing the usual symbol lookup mechanism. For instance, suppose
@@ -3266,15 +3281,15 @@ Also note that, as a special case of the absolute qualifier notation,
 Scoped Namespaces
 ~~~~~~~~~~~~~~~~~
 
-Pure also provides an alternative scoped ``namespace`` construct which makes
-nested namespace definitions more convenient. This construct takes the
+Pure also provides an alternative scoped :keyword:`namespace` construct which
+makes nested namespace definitions more convenient. This construct takes the
 following form::
 
   namespace name with ... end;
 
-The part between ``with`` and ``end`` may contain arbitrary declarations and
-definitions, using the same syntax as the toplevel. These are processed in the
-context of the given namespace, as if you had written::
+The part between :keyword:`with` and :keyword:`end` may contain arbitrary
+declarations and definitions, using the same syntax as the toplevel. These are
+processed in the context of the given namespace, as if you had written::
 
   namespace name;
   ...
@@ -3303,10 +3318,10 @@ this by using the appropriate qualified namespace names::
     // ...
   end;
 
-Another special feature of the scoped namespace construct is that ``using
-namespace`` declarations are always local to the current namespace scope (and
-other nested namespace scopes inside it). Thus the previous setting is
-restored at the end of each scope::
+Another special feature of the scoped namespace construct is that
+:keyword:`using namespace` declarations are always local to the current
+namespace scope (and other nested namespace scopes inside it). Thus the
+previous setting is restored at the end of each scope::
 
   using namespace foo;
   namespace foo with
@@ -3353,9 +3368,9 @@ Pure's namespaces can thus be used pretty much like "modules" or "packages" in
 languages like Ada or Modula-2. They provide a structured way to describe
 program components offering collections of related data and operations, which
 can be brought into scope in a controlled way by making judicious use of
-``using namespace`` declarations. They also provide an abstraction barrier,
-since internal operations and data structures can be hidden away employing
-private symbols.
+:keyword:`using namespace` declarations. They also provide an abstraction
+barrier, since internal operations and data structures can be hidden away
+employing private symbols.
 
 Please note that these facilities are not Pure's main focus and thus they are
 somewhat limited compared to programming languages specifically designed for
@@ -3369,9 +3384,9 @@ Exception Handling
 ==================
 
 Pure also offers a useful exception handling facility. To raise an exception,
-you just invoke the built-in function ``throw`` with the value to be thrown as
-the argument. To catch an exception, you use the built-in special form
-``catch`` with the exception handler (a function to be applied to the
+you just invoke the built-in function :func:`throw` with the value to be
+thrown as the argument. To catch an exception, you use the built-in special
+form :func:`catch` with the exception handler (a function to be applied to the
 exception value) as the first and the expression to be evaluated as the second
 (call-by-name) argument. For instance::
 
@@ -3381,11 +3396,12 @@ exception value) as the first and the expression to be evaluated as the second
 Exceptions are also generated by the runtime system if the program runs out of
 stack space, when a guard does not evaluate to a truth value, and when the
 subject term fails to match the pattern in a pattern-matching lambda
-abstraction, or a ``let``, ``case`` or ``when`` construct. These types of
-exceptions are reported using the symbols ``stack_fault``, ``failed_cond`` and
-``failed_match``, respectively, which are declared as constant symbols in the
-standard prelude. You can use ``catch`` to handle these kinds of exceptions
-just like any other. For instance::
+abstraction, or a :keyword:`let`, :keyword:`case` or :keyword:`when`
+construct. These types of exceptions are reported using the symbols
+:cons:`stack_fault`, :cons:`failed_cond` and :cons:`failed_match`,
+respectively, which are declared as constant symbols in the standard
+prelude. You can use :func:`catch` to handle these kinds of exceptions just
+like any other. For instance::
 
   > fact n = if n>0 then n*fact(n-1) else 1;
   > catch error (fact foo);
@@ -3394,8 +3410,8 @@ just like any other. For instance::
   error stack_fault
 
 (You'll only get the latter kind of exception if the interpreter does stack
-checks, see the discussion of the PURE_STACK environment variable in the
-`Caveats and Notes`_ section.)
+checks, see the discussion of the :envvar:`PURE_STACK` environment variable in
+`Stack Size and Tail Recursion`_.)
 
 Note that unhandled exceptions are reported by the interpreter with a
 corresponding error message::
@@ -3405,16 +3421,16 @@ corresponding error message::
 
 Exceptions also provide a way to handle asynchronous signals. Pure's system
 module provides symbolic constants for common POSIX signals and also defines
-the operation ``trap`` which lets you rebind any signal to a signal
+the operation :func:`trap` which lets you rebind any signal to a signal
 exception. For instance, the following lets you handle the ``SIGQUIT``
 signal::
 
   > using system;
   > trap SIG_TRAP SIGQUIT;
 
-You can also use ``trap`` to just ignore a signal or revert to the system's
-default handler (which might take different actions depending on the type of
-signal, see signal(7) for details)::
+You can also use :func:`trap` to just ignore a signal or revert to the
+system's default handler (which might take different actions depending on the
+type of signal, see signal(7) for details)::
 
   > trap SIG_IGN SIGQUIT; // signal is ignored
   > trap SIG_DFL SIGQUIT; // reinstalls the default signal handler
@@ -3428,13 +3444,13 @@ program).
 
 Last but not least, exceptions can also be used to implement non-local value
 returns. For instance, here's a variation of our n queens algorithm which only
-returns the first solution. Note the use of ``throw`` in the recursive search
-routine to bail out with a solution as soon as we found one. The value thrown
-there is caught in the main routine. Also note the use of ``void`` in the
-second equation of ``search``. This effectively turns the list comprehension
-into a simple loop which suppresses the normal list result and just returns
-``()`` instead. Thus, if no value gets thrown then the function regularly
-returns with ``()`` to indicate that there is no solution.
+returns the first solution. Note the use of :func:`throw` in the recursive
+search routine to bail out with a solution as soon as we found one. The value
+thrown there is caught in the main routine. Also note the use of :func:`void`
+in the second equation of ``search``. This effectively turns the list
+comprehension into a simple loop which suppresses the normal list result and
+just returns ``()`` instead. Thus, if no value gets thrown then the function
+regularly returns with ``()`` to indicate that there is no solution.
 
 ::
 
@@ -3456,44 +3472,45 @@ C Interface
 
 Pure makes it very easy to call C functions (as well as functions in a number
 of other languages supported by the GNU compiler collection). To call an
-existing C function, you just need an ``extern`` declaration of the function,
-as described below. By these means, all functions in the standard C library
-and the Pure runtime are readily available to Pure scripts. Functions can also
-be loaded from dynamic libraries and LLVM bitcode files at runtime. In the
-latter case, you don't even need to write any ``extern`` declarations, the
-interpreter will do that for you. As of Pure 0.45, you can also add inline
-C/C++ and Fortran code to your Pure scripts and have the Pure interpreter
-compile them on the fly, provided that you have the corresponding compilers
-from the LLVM project installed.
+existing C function, you just need an :keyword:`extern` declaration of the
+function, as described below. By these means, all functions in the standard C
+library and the Pure runtime are readily available to Pure scripts. Functions
+can also be loaded from dynamic libraries and LLVM bitcode files at
+runtime. In the latter case, you don't even need to write any
+:keyword:`extern` declarations, the interpreter will do that for you. As of
+Pure 0.45, you can also add inline C/C++ and Fortran code to your Pure scripts
+and have the Pure interpreter compile them on the fly, provided that you have
+the corresponding compilers from the LLVM project installed.
 
 In some cases you will still have to rely on big and complicated third-party
 and system libraries which aren't readily available in bitcode form. It goes
-without saying that writing all the ``extern`` declarations for such libraries
-can be a daunting task. Fortunately, there is a utility to help with this, by
-extracting the ``extern`` declarations automatically from C headers. Please
-see `External C Functions`_ in the `Caveats and Notes`_ section for details.
+without saying that writing all the :keyword:`extern` declarations for such
+libraries can be a daunting task. Fortunately, there is a utility to help with
+this, by extracting the :keyword:`extern` declarations automatically from C
+headers. Please see `External C Functions`_ in the `Caveats and Notes`_
+section for details.
 
 Extern Declarations
 -------------------
 
-To access an existing C function in Pure, you need an ``extern`` declaration
-of the function, which is a simplified kind of C prototype. The function can
-then be called in Pure just like any other. For instance, the following
-commands, entered interactively in the interpreter, let you use the ``sin``
-function from the C library (of course you could just as well put the
-``extern`` declaration into a script)::
+To access an existing C function in Pure, you need an :keyword:`extern`
+declaration of the function, which is a simplified kind of C prototype. The
+function can then be called in Pure just like any other. For instance, the
+following commands, entered interactively in the interpreter, let you use the
+``sin`` function from the C library (of course you could just as well put the
+:keyword:`extern` declaration into a script)::
 
   > extern double sin(double);
   > sin 0.3;
   0.29552020666134
 
-An ``extern`` declaration can also be prefixed with a ``public``/``private``
-scope specifier::
+An :keyword:`extern` declaration can also be prefixed with a
+:keyword:`public`/:keyword:`private` scope specifier::
 
   private extern double sin(double);
 
-Multiple prototypes can be given in one ``extern`` declaration, separating
-them with commas::
+Multiple prototypes can be given in one :keyword:`extern` declaration,
+separating them with commas::
 
   extern double sin(double), double cos(double), double tan(double);
 
@@ -3525,9 +3542,9 @@ by default the call is treated as a normal form expression::
   sin 0
 
 This gives you the opportunity to augment the external function with your own
-Pure equations. To make this work, you have to make sure that the ``extern``
-declaration of the function comes first. For instance, we might want to extend
-the ``sin`` function with a rule to handle integers::
+Pure equations. To make this work, you have to make sure that the
+:keyword:`extern` declaration of the function comes first. For instance, we
+might want to extend the ``sin`` function with a rule to handle integers::
 
   > sin x::int = sin (double x);
   > sin 0;
@@ -3557,9 +3574,9 @@ As an alternative, you can also declare the C function in a special namespace
 Note that the namespace qualification only affects the Pure side; the
 underlying C function is still called under the unqualified name as usual. The
 way in which such qualified externs are accessed is the same as for ordinary
-qualified symbols. In particular, the ``using namespace`` declaration applies
-as usual, and you can declare such symbols as ``private`` if needed. It is
-also possible to combine a namespace qualifier with an alias::
+qualified symbols. In particular, the :keyword:`using namespace` declaration
+applies as usual, and you can declare such symbols as :keyword:`private` if
+needed. It is also possible to combine a namespace qualifier with an alias::
 
   > namespace c;
   > extern double sin(double) = mysin;
@@ -3603,7 +3620,7 @@ their own set of augmenting Pure equations. For instance::
 C Types
 -------
 
-As indicated in the previous section, the data types in ``extern``
+As indicated in the previous section, the data types in :keyword:`extern`
 declarations are either C type names or pointer types derived from these. The
 special ``expr*`` pointer type is simply passed through; this provides a means
 to deal with Pure data in C functions in a direct fashion. For all other C
@@ -3657,8 +3674,9 @@ values which are too big to fit into a machine int). Also note that when an
 unsigned integer is returned by a C routine, which is too big to fit into the
 corresponding signed integer type, it will "wrap around" and become
 negative. In this case, depending on the target type, you can use the
-``ubyte``, ``ushort``, ``uint``, ``ulong`` and ``uint64`` functions provided
-by the prelude to convert the result back to an unsigned quantity.
+:func:`ubyte`, :func:`ushort`, :func:`uint`, :func:`ulong` and :func:`uint64`
+functions provided by the prelude to convert the result back to an unsigned
+quantity.
 
 Pointer Types
 ~~~~~~~~~~~~~
@@ -3753,7 +3771,7 @@ Argv-style conversions (input only):
   elements to the system encoding, whereas ``void**`` passes through character
   string data and other pointers unchanged (and allows in-place modification
   of the data). A temporary C vector of these elements is passed to the C
-  function, which is always ``NULL``-terminated and can thus be used for
+  function, which is always :const:`NULL`-terminated and can thus be used for
   almost any purpose which requires such ``argv``-style vectors.
 
 Note that in the numeric pointer conversions, the matrix data is passed "per
@@ -3764,8 +3782,8 @@ storage. In this case the data from the temporary storage is written back to
 the original matrix when the function returns, to maintain the illusion of
 in-place modification. Temporary storage is also needed when the GSL matrix
 has the data in non-contiguous storage. You may want to avoid this if
-performance is critical, by always using "packed" matrices (see ``pack`` in
-:ref:`Matrix Functions`) of the appropriate types.
+performance is critical, by always using "packed" matrices (see :func:`pack`
+in :ref:`Matrix Functions`) of the appropriate types.
 
 Pointer Examples
 ~~~~~~~~~~~~~~~~
@@ -3783,9 +3801,9 @@ are always passed by reference. Thus, if you need to pass a matrix as an
 output parameter of a GSL matrix routine, you should either create a zero
 matrix or a copy of an existing matrix to hold the result. The prelude
 provides various operations for that purpose (in particular, see the
-``dmatrix``, ``cmatrix``, ``imatrix`` and ``pack`` functions in
-matrices.pure). For instance, here is how you can quickly wrap up GSL's double
-matrix addition function in a way that preserves value semantics::
+:func:`dmatrix`, :func:`cmatrix`, :func:`imatrix` and :func:`pack` functions
+in matrices.pure). For instance, here is how you can quickly wrap up GSL's
+double matrix addition function in a way that preserves value semantics::
 
   > using "lib:gsl";
   > extern int gsl_matrix_add(dmatrix*, dmatrix*);
@@ -3877,8 +3895,8 @@ interpreter executable, if the interpreter was linked statically). Thus all C
 library and Pure runtime functions are readily available in Pure programs.
 Other functions can be provided by adding them to the runtime, or by linking
 them into the runtime or the interpreter executable. Better yet, you can just
-"dlopen" shared libraries at runtime with a special form of the ``using``
-clause::
+"dlopen" shared libraries at runtime with a special form of the
+:keyword:`using` clause::
 
   using "lib:libname[.ext]";
 
@@ -3888,20 +3906,21 @@ from Pure::
   using "lib:libxyz";
 
 After this declaration the functions from the given library will be ready to
-be imported into your Pure program by means of corresponding ``extern``
+be imported into your Pure program by means of corresponding :keyword:`extern`
 declarations.
 
 Shared libraries opened with using clauses are searched for in the same way as
-source scripts (see section `Modules and Imports`_ above), using the -L option
-and the PURE_LIBRARY environment variable in place of -I and PURE_INCLUDE. If
-the library isn't found by these means, the interpreter will also consider
-other platform-specific locations searched by the dynamic linker, such as the
-system library directories and LD_LIBRARY_PATH on Linux. The necessary
-filename suffix (e.g., .so on Linux or .dll on Windows) will be supplied
-automatically when needed. Of course you can also specify a full pathname for
-the library if you prefer that. If a library file cannot be found, or if an
-``extern`` declaration names a function symbol which cannot be resolved, an
-appropriate error message is printed.
+source scripts (see section `Modules and Imports`_ above), using the
+:option:`-L` option and the :envvar:`PURE_LIBRARY` environment variable in
+place of :option:`-I` and :envvar:`PURE_INCLUDE`. If the library isn't found
+by these means, the interpreter will also consider other platform-specific
+locations searched by the dynamic linker, such as the system library
+directories and :envvar:`LD_LIBRARY_PATH` on Linux. The necessary filename
+suffix (e.g., .so on Linux or .dll on Windows) will be supplied automatically
+when needed. Of course you can also specify a full pathname for the library if
+you prefer that. If a library file cannot be found, or if an :keyword:`extern`
+declaration names a function symbol which cannot be resolved, an appropriate
+error message is printed.
 
 Importing LLVM Bitcode
 ----------------------
@@ -3909,13 +3928,13 @@ Importing LLVM Bitcode
 As of Pure 0.44, the interpreter also provides a direct way to import LLVM
 bitcode modules in Pure scripts. The main advantage of this method over the
 "plain" C interface explained above is that the bitcode loader knows all the
-call interfaces and generates the necessary ``extern`` declarations
+call interfaces and generates the necessary :keyword:`extern` declarations
 automatically. This is more than just a convenience, as it also eliminates at
-least some of the mistakes in ``extern`` declarations that may arise when
-importing functions manually from dynamic libraries.
+least some of the mistakes in :keyword:`extern` declarations that may arise
+when importing functions manually from dynamic libraries.
 
 LLVM bitcode is loaded in a Pure script using the following special format of
-the ``using`` clause::
+the :keyword:`using` clause::
 
   using "bc:modname[.bc]";
 
@@ -3923,17 +3942,17 @@ the ``using`` clause::
 filename extension is supplied automatically. Also, the bitcode file is
 searched for on the usual library search path.)
 
-That's it, no explicit ``extern`` declarations are required on the Pure
-side. The Pure interpreter automatically creates ``extern`` declarations (in
-the current namespace) for all the external functions defined in the LLVM
-bitcode module, and generates the corresponding wrappers to make the functions
-callable from Pure. (This also works when batch-compiling a Pure script. In
-this case, the bitcode file actually gets linked into the output code, so the
-loaded bitcode module only needs to be present at compile time.)
+That's it, no explicit :keyword:`extern` declarations are required on the Pure
+side. The Pure interpreter automatically creates :keyword:`extern`
+declarations (in the current namespace) for all the external functions defined
+in the LLVM bitcode module, and generates the corresponding wrappers to make
+the functions callable from Pure. (This also works when batch-compiling a Pure
+script. In this case, the bitcode file actually gets linked into the output
+code, so the loaded bitcode module only needs to be present at compile time.)
 
 By default the imported symbols will be public. You can also specify the
-desired scope of the symbols explicitly, by placing the ``public`` or
-``private`` keyword before the module name. For instance::
+desired scope of the symbols explicitly, by placing the :keyword:`public` or
+:keyword:`private` keyword before the module name. For instance::
 
   using private "bc:modname";
 
@@ -3990,8 +4009,8 @@ in the Pure interpreter simply as follows::
   > mygcd 75 105;
   15
 
-To actually see the generated ``extern`` declaration of the imported function,
-you can use the interactive ``show`` command::
+To actually see the generated :keyword:`extern` declaration of the imported
+function, you can use the interactive ``show`` command::
 
   > show mygcd
   extern int mygcd(int, int);
@@ -4000,9 +4019,9 @@ Some more examples showing how to use the bitcode interface can be found in
 the Pure sources. In particular, the interface also works with Fortran (using
 llvm-gfortran), and there is special support for interfacing to Grame's
 functional DSP programming language Faust_ (the latter uses a special variant
-of the bitcode loader, which is selected with the ``dsp`` tag in the ``using``
-clause). Please refer to the corresponding examples in the distribution for
-further details.
+of the bitcode loader, which is selected with the ``dsp`` tag in the
+:keyword:`using` clause). Please refer to the corresponding examples in the
+distribution for further details.
 
 Please note that at this time the LLVM bitcode interface is still somewhat
 experimental, and there are some known limitations:
@@ -4022,18 +4041,19 @@ experimental, and there are some known limitations:
   return values. The compiler will then print a warning; the affected
   functions will still be linked in, but they will not be callable from Pure.
   Also note that calling conventions for passing C structs *by value* depend
-  on the host ABI, so you should have a look at the resulting ``extern``
-  declaration (using ``show``) to determine how the function is actually to be
-  called from Pure.
+  on the host ABI, so you should have a look at the resulting
+  :keyword:`extern` declaration (using ``show``) to determine how the function
+  is actually to be called from Pure.
 
 Inline Code
 -----------
 
 Instead of manually compiling source files to bitcode modules, you can also
 just place the source code into a Pure script, enclosing it in ``%{ ... %}``.
-(Optionally, the opening brace may also be preceded with a ``public`` or
-``private`` scope specifier, which is used in the same way as the scope
-specifier following the ``using`` keyword when importing bitcode files.)
+(Optionally, the opening brace may also be preceded with a :keyword:`public`
+or :keyword:`private` scope specifier, which is used in the same way as the
+scope specifier following the :keyword:`using` keyword when importing bitcode
+files.)
 
 For instance, here is a little script showing inline code for the ``mygcd``
 function from the previous subsection::
@@ -4101,32 +4121,34 @@ DSP named ``test`` would be specified with a ``dsp:test`` tag. Case is
 The Pure interpreter has some built-in knowledge on how to invoke the LLVM
 compilers to produce a working bitcode file ready to be loaded by the
 interpreter, so the examples above should work out of the box if you have the
-required compilers installed on your PATH. However, there are also some
-environment variables you can set for customization purposes. Specifically,
-PURE_CC is the command to invoke the C compiler. This variable lets you
-specify the exact name of the executable along with any debugging and
-optimization options that you may want to add. Likewise, PURE_CXX, PURE_FC and
-PURE_FAUST are used for the C++, Fortran and Faust compilers, respectively.
+required compilers installed on your :envvar:`PATH`. However, there are also
+some environment variables you can set for customization purposes.
+Specifically, :envvar:`PURE_CC` is the command to invoke the C compiler. This
+variable lets you specify the exact name of the executable along with any
+debugging and optimization options that you may want to add. Likewise,
+:envvar:`PURE_CXX`, :envvar:`PURE_FC` and :envvar:`PURE_FAUST` are used for
+the C++, Fortran and Faust compilers, respectively.
 
 For instance, if you prefer to use clang as your C compiler, and you'd like to
-invoke it with the -O3 optimization option, you would set PURE_CC to ``"clang
--O3"``. (To verify the settings you made, you can have the interpreter echo
-the compilation commands which are actually executed, by running Pure with the
--v0100 option, see `Verbosity and Debugging Options`_.)
+invoke it with the ``-O3`` optimization option, you would set
+:envvar:`PURE_CC` to ``"clang -O3"``. (To verify the settings you made, you
+can have the interpreter echo the compilation commands which are actually
+executed, by running Pure with the ``-v0100`` option, see `Verbosity and
+Debugging Options`_.)
 
 Standard Library
 ================
 
 Pure comes with a collection of Pure library modules, which includes the
 standard prelude (loaded automatically at startup time) and some other modules
-which can be loaded explicitly with a ``using`` clause. The prelude offers the
-necessary functions to work with the built-in types (including arithmetic and
-logical operations) and to do most kind of list processing you can find in ML-
-and Haskell-like languages. It also provides a collection of basic string and
-matrix operations. Please refer to the :doc:`purelib` for details on the
-provided operations. Here is a very brief summary of some of the prelude
-operations which, besides the usual arithmetic and logical operators, are
-probably used most frequently:
+which can be loaded explicitly with a :keyword:`using` clause. The prelude
+offers the necessary functions to work with the built-in types (including
+arithmetic and logical operations) and to do most kind of list processing you
+can find in ML- and Haskell-like languages. It also provides a collection of
+basic string and matrix operations. Please refer to the :doc:`purelib` for
+details on the provided operations. Here is a very brief summary of some of
+the prelude operations which, besides the usual arithmetic and logical
+operators, are probably used most frequently:
 
 ``x+y``
     The arithmetic ``+`` operation is also used to denote list and string
@@ -4146,9 +4168,9 @@ probably used most frequently:
 ``x,y``
     This is the pair constructor, used to create tuples of arbitrary
     sizes. Tuples provide an alternative way to represent aggregate values in
-    Pure. In difference to lists, tuples are always "flat", so that
-    ``(x,y),z`` and ``x,(y,z)`` denote the same triple ``x,y,z``. (This is
-    explained in more detail in the `Pure Overview`_ section.)
+    Pure. In contrast to lists, tuples are always "flat", so that ``(x,y),z``
+    and ``x,(y,z)`` denote the same triple ``x,y,z``. (This is explained in
+    more detail in the `Pure Overview`_ section.)
 
 ``#x``
     The size (number of elements) of the list, tuple, matrix or string
@@ -4176,12 +4198,13 @@ probably used most frequently:
     specified as a pair of row/column index lists such as ``x!!(i..j,k..l)``.
 
 The prelude also offers support operations for the implementation of list and
-matrix comprehensions, as well as the customary list operations like ``head``,
-``tail``, ``drop``, ``take``, ``filter``, ``map``, ``foldl``, ``foldr``,
-``scanl``, ``scanr``, ``zip``, ``unzip``, etc., which make list programming so
-much fun in modern FPLs. In Pure, these also work on strings as well as
-matrices, although, for reasons of efficiency, these data structures are
-internally represented as arrays.
+matrix comprehensions, as well as the customary list operations like
+:func:`head`, :func:`tail`, :func:`drop`, :func:`take`, :func:`filter`,
+:func:`map`, :func:`foldl`, :func:`foldr`, :func:`scanl`, :func:`scanr`,
+:func:`zip`, :func:`unzip`, etc., which make list programming so much fun in
+modern FPLs. In Pure, these also work on strings as well as matrices,
+although, for reasons of efficiency, these data structures are internally
+represented as arrays.
 
 Besides the prelude, Pure's standard library also comprises a growing number
 of additional library modules which we can only mention in passing here. In
@@ -4190,26 +4213,27 @@ well as Pure's complex and rational number data types. Common container data
 structures like sets and dictionaries are implemented in the set.pure and
 dict.pure modules, among others. Moreover, the (beginnings of a) system
 interface can be found in the system.pure module. In particular, this module
-also provides operations to do basic C-style I/O, including ``printf`` and
-``scanf``. These are all described in much more detail in the :doc:`purelib`.
+also provides operations to do basic C-style I/O, including :func:`printf` and
+:func:`scanf`. These are all described in much more detail in the
+:doc:`purelib`.
 
 Interactive Usage
 =================
 
 In interactive mode, the interpreter reads definitions and expressions and
-processes them as usual. You can use the -i option to force interactive mode
-when invoking the interpreter with some script files. Additional scripts can
-be loaded interactively using either a using declaration or the interactive
-run command (see the description of the run command below for the differences
-between these). Or you can just start typing away, entering your own
-definitions and expressions to be evaluated.
+processes them as usual. You can use the :option:`-i` option to force
+interactive mode when invoking the interpreter with some script files.
+Additional scripts can be loaded interactively using either a :keyword:`using`
+declaration or the interactive ``run`` command (see the description of the
+``run`` command below for the differences between these). Or you can just
+start typing away, entering your own definitions and expressions to be
+evaluated.
 
 The input language is just the same as for source scripts, and hence
 individual definitions and expressions must be terminated with a semicolon
 before they are processed. For instance, here is a simple interaction which
 defines the factorial and then uses that definition in some evaluations. Input
-lines begin with '\ :func:`>`\ ', which is the interpreter's default command
-prompt::
+lines begin with '> ', which is the interpreter's default command prompt::
 
   > fact 1 = 1;
   > fact n = n*fact (n-1) if n>1;
@@ -4224,19 +4248,19 @@ printed after each expression is entered. We also call this the
 same form as you'd enter them. However, there are a few special kinds of
 objects like anonymous closures, thunks ("lazy" values to be evaluated when
 needed) and pointers which don't have a textual representation in the Pure
-syntax and will be printed in the format ``#<``\ object description\ ``>``
-by default. It is also possible to override the print representation of any
-kind of expression by means of the ``__show__`` function, see the `Caveats and
-Notes`_ section for details.
+syntax and will be printed in the format ``#<``\ object description\ ``>`` by
+default. It is also possible to override the print representation of any kind
+of expression by means of the :func:`__show__` function, see `The __show__
+Function`_ for details.
 
 Online Help
 -----------
 
 Online help is available in the interpreter with the interactive ``help``
 command, see `Interactive Commands`_ below. You need to have a html browser
-installed for that. By default, the ``help`` command uses w3m(1), but you can
-change this by setting either the PURE_HELP or the BROWSER environment
-variable accordingly.
+installed for that. By default, the ``help`` command uses :program:`w3m`, but
+you can change this by setting either the :envvar:`PURE_HELP` or the
+:envvar:`BROWSER` environment variable accordingly.
 
 As of Pure 0.46, the interpreter provides a much improved ``help`` command
 which gives you access to all the available documentation in html format,
@@ -4249,10 +4273,10 @@ provided manuals::
 
   > help
 
-(If your browser gives you an error message when you do this then you haven't
-installed the documentation yet. The complete set of manuals is provided as a
-separate package at the Pure website, please see the Pure installation
-instructions for details.)
+(If the interpreter gives you an error message when you do this then you
+haven't installed the documentation yet. The complete set of manuals is
+provided as a separate package at the Pure website, please see the Pure
+installation instructions for details.)
 
 The ``help`` command also accepts a parameter which lets you specify a search
 term which is looked up in the global index, e.g.::
@@ -4299,155 +4323,193 @@ When running interactively, the interpreter accepts a number of special
 commands useful for interactive purposes. Here is a quick rundown of the
 currently supported operations:
 
-``! command``
-    Shell escape.
+.. index:: ! (command)
+.. describe:: ! command
 
-``break [symbol ...]``
-    Sets breakpoints on the given function or operator symbols. All symbols
-    must be specified in fully qualified form, see the remarks below. If
-    invoked without arguments, prints all currently defined breakpoints. This
-    requires that the interpreter was invoked with the -g option to enable
-    debugging support. See Debugging_ below for details.
+   Shell escape.
 
-``bt``
-    Prints a full backtrace of the call sequence of the most recent evaluation,
-    if that evaluation ended with an unhandled exception. This requires
-    that the interpreter was invoked with the -g option to enable debugging
-    support. See Debugging_ below for details.
+.. index:: break (command)
+.. describe:: break [symbol ...]
 
-``cd dir``
-    Change the current working dir.
+   Sets breakpoints on the given function or operator symbols. All symbols
+   must be specified in fully qualified form, see the remarks below. If
+   invoked without arguments, prints all currently defined breakpoints. This
+   requires that the interpreter was invoked with the :option:`-g` option to
+   enable debugging support. See Debugging_ below for details.
 
-``clear [option ...] [symbol ...]``
-    Purge the definitions of the given symbols (functions, macros, constants
-    or global variables). All symbols must be specified in fully qualified
-    form, see the remarks below. If invoked as ``clear ans``, clears the
-    ``ans`` value (see `Last Result`_ below). When invoked without any
-    arguments, ``clear`` purges all definitions at the current interactive
-    "level" (after confirmation) and returns you to the previous level, if
-    any. (It might be a good idea to first check your current definitions with
-    ``show`` or back them up with ``dump`` before you do that.) The desired
-    level can be specified with the -t option. See the description of the
-    ``save`` command and `Definition Levels`_ below for further details. A
-    description of the common options accepted by the ``clear``, ``dump`` and
-    ``show`` commands can be found in `Specifying Symbol Selections`_ below.
+.. index:: bt (command)
+.. describe:: bt
 
-``del [symbol ...]``
-    Deletes breakpoints and tracepoints on the given function or operator
-    symbols. All symbols must be specified in fully qualified form, see the
-    remarks below. If invoked without arguments, clears all currently defined
-    breakpoints and tracepoints (after confirmation). See Debugging_ below for
-    details.
+   Prints a full backtrace of the call sequence of the most recent evaluation,
+   if that evaluation ended with an unhandled exception. This requires that
+   the interpreter was invoked with the :option:`-g` option to enable
+   debugging support. See Debugging_ below for details.
 
-``dump [-n filename] [option ...] [symbol ...]``
-    Dump a snapshot of the current function, macro, constant and variable
-    definitions in Pure syntax to a text file. All symbols must be specified
-    in fully qualified form, see the remarks below. This works similar to the
-    ``show`` command (see below), but writes the definitions to a file. The
-    default output file is .pure in the current directory, which is then
-    reloaded automatically the next time the interpreter starts up in
-    interactive mode in the same directory. This provides a quick-and-dirty
-    way to save an interactive session and have it restored later, but note
-    that this isn't perfect. In particular, declarations of ``extern`` symbols
-    won't be saved unless they're specified explicitly, and some objects like
-    closures, thunks and pointers don't have a textual representation from
-    which they could be reconstructed. To handle these, you'll probably have
-    to prepare a corresponding .purerc file yourself, see `Interactive
-    Startup`_ below.
+.. index:: cd (command)
+.. describe:: cd dir
 
-    A different filename can be specified with the -n option, which expects
-    the name of the script to be written in the next argument, e.g: ``dump -n
-    myscript.pure``. You can then edit that file and use it as a starting
-    point for an ordinary script or a .purerc file, or you can just run the
-    file with the ``run`` command (see below) to restore the definitions in a
-    subsequent interpreter session.
+   Change the current working dir.
 
-``help [topic]``
-    Display online documentation. If a topic is given, it is looked up in the
-    index. Alternatively, you can also specify a link target in any of the
-    installed help files, or any other html document denoted by a proper URL.
-    Please see `Online Help`_ above for details.
+.. index:: clear (command)
+.. describe:: clear [option ...] [symbol ...]
 
-``ls [args]``
-    List files (shell ls(1) command).
+   Purge the definitions of the given symbols (functions, macros, constants or
+   global variables). All symbols must be specified in fully qualified form,
+   see the remarks below. If invoked as ``clear ans``, clears the :func:`ans`
+   value (see `Last Result`_ below). When invoked without any arguments,
+   ``clear`` purges all definitions at the current interactive "level" (after
+   confirmation) and returns you to the previous level, if any. (It might be a
+   good idea to first check your current definitions with ``show`` or back
+   them up with ``dump`` before you do that.)  The desired level can be
+   specified with the ``-t`` option. See the description of the ``save``
+   command and `Definition Levels`_ below for further details. A description
+   of the common options accepted by the ``clear``, ``dump`` and ``show``
+   commands can be found in `Specifying Symbol Selections`_ below.
 
-``mem``
-    Print current memory usage. This reports the number of expression cells
-    currently in use by the program, along with the size of the freelist (the
-    number of allocated but currently unused expression cells). Note that the
-    actual size of the expression storage may be somewhat larger than this,
-    since the runtime always allocates expression memory in bigger chunks.
-    Also, this figure does not reflect other heap-allocated memory in use by
-    the program, such as strings or malloc'ed pointers.
+.. index:: del (command)
+.. describe:: del [symbol ...]
 
-``override``
-    Enter "override" mode. This allows you to add equations "above" existing
-    definitions in the source script, possibly overriding existing
-    equations. See `Definition Levels`_ below for details.
+   Deletes breakpoints and tracepoints on the given function or operator
+   symbols. All symbols must be specified in fully qualified form, see the
+   remarks below. If invoked without arguments, clears all currently defined
+   breakpoints and tracepoints (after confirmation). See Debugging_ below for
+   details.
 
-``pwd``
-    Print the current working dir (shell pwd(1) command).
+.. index:: dump (command)
+.. describe:: dump [-n filename] [option ...] [symbol ...]
 
-``quit``
-    Exits the interpreter.
+   Dump a snapshot of the current function, macro, constant and variable
+   definitions in Pure syntax to a text file. All symbols must be specified in
+   fully qualified form, see the remarks below. This works similar to the
+   ``show`` command (see below), but writes the definitions to a file. The
+   default output file is .pure in the current directory, which is then
+   reloaded automatically the next time the interpreter starts up in
+   interactive mode in the same directory. This provides a quick-and-dirty way
+   to save an interactive session and have it restored later, but note that
+   this isn't perfect. In particular, declarations of :keyword:`extern`
+   symbols won't be saved unless they're specified explicitly, and some
+   objects like closures, thunks and pointers don't have a textual
+   representation from which they could be reconstructed. To handle these,
+   you'll probably have to prepare a corresponding .purerc file yourself, see
+   `Interactive Startup`_ below.
 
-``run [-g|script]``
-    When invoked without arguments or with the ``-g`` option, ``run`` does a
-    "cold" restart of the interpreter, with the scripts and options given on
-    the interpreter's original command line. If just ``-g`` is specified as
-    the argument, the interpreter is run with debugging enabled. Otherwise the
-    interpreter is invoked without debugging support. (This overrides the
-    corresponding option from the interpreter's command line.) This command
-    provides a quick way to rerun the interpreter after changes in some of the
-    loaded script files, or if you want to enable or disable debugging on the
-    fly (which requires a restart of the interpreter). You'll also loose any
-    definitions that you entered interactively in the interpreter, so you may
-    want to back them up with ``dump`` beforehand.
+   A different filename can be specified with the ``-n`` option, which expects
+   the name of the script to be written in the next argument, e.g: ``dump -n
+   myscript.pure``. You can then edit that file and use it as a starting point
+   for an ordinary script or a .purerc file, or you can just run the file with
+   the ``run`` command (see below) to restore the definitions in a subsequent
+   interpreter session.
 
-    When invoked with a script name as argument, ``run`` loads the given
-    script file and adds its definitions to the current environment. This
-    works more or less like a ``using`` clause, but only searches for the
-    script in the current directory and places the definitions in the script
-    at the current temporary level, so that ``clear`` can be used to remove
-    them again. Also note that namespace and pragma settings of scripts loaded
-    with ``run`` stick around after loading the script. This allows you to
-    quickly set up your environment by just running a script containing the
-    necessary namespace declarations and compiler directives. (Alternatively,
-    you can also use the interpreter's startup files for that purpose, see
-    `Interactive Startup`_ below.)
+.. index:: help; command
+.. describe:: help [topic]
 
-``save``
-    Begin a new level of temporary definitions. A subsequent ``clear`` command
-    (see above) will purge the definitions made since the most recent ``save``
-    command. See `Definition Levels`_ below for details.
+   Display online documentation. If a topic is given, it is looked up in the
+   index. Alternatively, you can also specify a link target in any of the
+   installed help files, or any other html document denoted by a proper URL.
+   Please see `Online Help`_ above for details.
 
-``show [option ...] [symbol ...]``
-    Show the definitions of symbols in various formats. See `The show
-    Command`_ below for details. All symbols must be specified in fully
-    qualified form, see the remarks below. A description of the common options
-    accepted by the ``clear``, ``dump`` and ``show`` commands can be found in
-    `Specifying Symbol Selections`_ below.
+.. index:: ls (command)
+.. describe:: ls [args]
 
-``stats [-m] [on|off]``
-    Enables (default) or disables "stats" mode, in which some statistics are
-    printed after an expression has been evaluated. Invoking just ``stats`` or
-    ``stats on`` only prints the cpu time in seconds for each evaluation. If
-    the ``-m`` option is specified, memory usage is printed along with the cpu
-    time, which indicates the maximum amount of expression memory (in terms of
-    expression cells) used during the computation. Invoking ``stats off``
-    disables stats mode, while ``stats -m off`` just disables the printing of
-    the memory usage statistics.
+   List files (shell :command:`ls` command).
 
-``trace [symbol ...]``
-    Sets tracepoints on the given function or operator symbols. This works
-    like the the ``break`` command (see above) but only prints rule
-    invocations and reductions without actually interrupting the
-    evaluation. See Debugging_ below for details.
+.. index:: mem (command)
+.. describe:: mem
 
-``underride``
-    Exits "override" mode. This returns you to the normal mode of operation,
-    where new equations are added "below" previous rules of an existing
-    function. See `Definition Levels`_ below for details.
+   Print current memory usage. This reports the number of expression cells
+   currently in use by the program, along with the size of the freelist (the
+   number of allocated but currently unused expression cells). Note that the
+   actual size of the expression storage may be somewhat larger than this,
+   since the runtime always allocates expression memory in bigger chunks.
+   Also, this figure does not reflect other heap-allocated memory in use by
+   the program, such as strings or malloc'ed pointers.
+
+.. index:: override (command)
+.. describe:: override
+
+   Enter "override" mode. This allows you to add equations "above" existing
+   definitions in the source script, possibly overriding existing
+   equations. See `Definition Levels`_ below for details.
+
+.. index:: pwd (command)
+.. describe:: pwd
+
+   Print the current working dir (shell :command:`pwd` command).
+
+.. index:: quit (command)
+.. describe:: quit
+
+   Exits the interpreter.
+
+.. index:: run (command)
+.. describe:: run [-g|script]
+
+   When invoked without arguments or with the ``-g`` option, ``run`` does a
+   "cold" restart of the interpreter, with the scripts and options given on
+   the interpreter's original command line. If just ``-g`` is specified as the
+   argument, the interpreter is run with debugging enabled.  Otherwise the
+   interpreter is invoked without debugging support. (This overrides the
+   corresponding option from the interpreter's command line.)  This command
+   provides a quick way to rerun the interpreter after changes in some of the
+   loaded script files, or if you want to enable or disable debugging on the
+   fly (which requires a restart of the interpreter). You'll also loose any
+   definitions that you entered interactively in the interpreter, so you may
+   want to back them up with ``dump`` beforehand.
+
+   When invoked with a script name as argument, ``run`` loads the given script
+   file and adds its definitions to the current environment. This works more
+   or less like a :keyword:`using` clause, but only searches for the script in
+   the current directory and places the definitions in the script at the
+   current temporary level, so that ``clear`` can be used to remove them
+   again. Also note that namespace and pragma settings of scripts loaded with
+   ``run`` stick around after loading the script. This allows you to quickly
+   set up your environment by just running a script containing the necessary
+   namespace declarations and compiler directives. (Alternatively, you can
+   also use the interpreter's startup files for that purpose, see `Interactive
+   Startup`_ below.)
+
+.. index:: save (command)
+.. describe:: save
+
+   Begin a new level of temporary definitions. A subsequent ``clear`` command
+   (see above) will purge the definitions made since the most recent ``save``
+   command. See `Definition Levels`_ below for details.
+
+.. index:: show (command)
+.. describe:: show [option ...] [symbol ...]
+
+   Show the definitions of symbols in various formats. See `The show Command`_
+   below for details. All symbols must be specified in fully qualified form,
+   see the remarks below. A description of the common options accepted by the
+   ``clear``, ``dump`` and ``show`` commands can be found in `Specifying
+   Symbol Selections`_ below.
+
+.. index:: stats (command)
+.. describe:: stats [-m] [on|off]
+
+   Enables (default) or disables "stats" mode, in which some statistics are
+   printed after an expression has been evaluated. Invoking just ``stats`` or
+   ``stats on`` only prints the cpu time in seconds for each evaluation. If
+   the ``-m`` option is specified, memory usage is printed along with the cpu
+   time, which indicates the maximum amount of expression memory (in terms of
+   expression cells) used during the computation. Invoking ``stats off``
+   disables stats mode, while ``stats -m off`` just disables the printing of
+   the memory usage statistics.
+
+.. index:: trace (command)
+.. describe:: trace [symbol ...]
+
+   Sets tracepoints on the given function or operator symbols. This works like
+   the ``break`` command (see above) but only prints rule invocations and
+   reductions without actually interrupting the evaluation. See Debugging_
+   below for details.
+
+.. index:: underride (command)
+.. describe:: underride
+
+   Exits "override" mode. This returns you to the normal mode of operation,
+   where new equations are added "below" previous rules of an existing
+   function. See `Definition Levels`_ below for details.
 
 Note that these special commands are only recognized at the beginning of the
 interactive command line (they are not reserved keywords of the Pure
@@ -4462,7 +4524,7 @@ commands, so they always work the same no matter what ``namespace`` and
 Last Result
 -----------
 
-Another convenience for interactive usage is the ``ans`` function, which
+Another convenience for interactive usage is the :func`ans` function, which
 retrieves the most recent result printed in interactive mode. For instance::
 
   > fact n = if n<=1 then 1 else n*fact (n-1);
@@ -4471,10 +4533,10 @@ retrieves the most recent result printed in interactive mode. For instance::
   > scanl (+) 0 ans;
   [0,1,3,9,33,153,873,5913,46233,409113,4037913]
 
-Note that ``ans`` is just an ordinary function, defined in the prelude, not
-a special command. However, there is a special ``clear ans`` command which
-purges the ``ans`` value. This is useful, e.g., if you got a huge result
-which you want to erase from memory before starting the next computation.
+Note that :func:`ans` is just an ordinary function, defined in the prelude,
+not a special command. However, there is a special ``clear ans`` command which
+purges the ``ans`` value. This is useful, e.g., if you got a huge result which
+you want to erase from memory before starting the next computation.
 
 ::
 
@@ -4523,18 +4585,18 @@ option character if present, as in ``-t0``.
 -v
     Select defined variables.
 
-In addition, the -h option prints a short help message describing all
+In addition, the ``-h`` option prints a short help message describing all
 available options of the command at hand.
 
-If none of the -c, -f, -m and -v options are specified, then all kinds of
-symbols (constants, functions, macros and variables) are selected, otherwise
-only the specified categories will be considered.
+If none of the ``-c``, ``-f``, ``-m`` and ``-v`` options are specified, then
+all kinds of symbols (constants, functions, macros and variables) are
+selected, otherwise only the specified categories will be considered.
 
-A reasonable default is used if the -t option is omitted. By default, if no
-symbols are specified, only temporary definitions are considered, which
-corresponds to -t1. Otherwise the command applies to all corresponding
+A reasonable default is used if the ``-t`` option is omitted. By default, if
+no symbols are specified, only temporary definitions are considered, which
+corresponds to ``-t1``. Otherwise the command applies to all corresponding
 definitions, no matter whether they belong to the executing program, the
-prelude, or some temporary level, which has the same effect as -t0. This
+prelude, or some temporary level, which has the same effect as ``-t0``. This
 default choice can be overridden by specifying the desired level explicitly.
 
 As a special case, just ``clear`` (without any other options or symbol
@@ -4563,29 +4625,30 @@ command recognizes the following additional options for specifying the content
 to be listed and the format to use.
 
 -a
-    Disassembles pattern matching automata. Works like the -v4 option of the
-    interpreter.
+    Disassembles pattern matching automata. Works like the ``-v4`` option of
+    the interpreter.
 
 -d
     Disassembles LLVM IR, showing the generated LLVM assembler code of a
-    function. Works like the -v8 option of the interpreter.
+    function. Works like the ``-v8`` option of the interpreter.
 
 -e
     Annotate printed definitions with lexical environment information (de
-    Bruijn indices, subterm paths). Works like the -v2 option of the
+    Bruijn indices, subterm paths). Works like the ``-v2`` option of the
     interpreter.
 
 -l
     Long format, prints definitions along with the summary symbol
-    information. This implies -s.
+    information. This implies ``-s``.
 
 -s
     Summary format, print just summary information about listed symbols.
 
 Symbols are always listed in lexicographic order. Note that some of the
-options (in particular, -a and -d) may produce excessive amounts of
-information. By setting the PURE_MORE environment variable, you can specify a
-shell command to be used for paging, usually more(1) or less(1).
+options (in particular, ``-a`` and ``-d``) may produce excessive amounts of
+information. By setting the :envvar:`PURE_MORE` environment variable, you can
+specify a shell command to be used for paging, usually :command:`more` or
+:command:`less`.
 
 For instance, to list all temporary definitions made in an interactive
 session, simply say::
@@ -4601,8 +4664,8 @@ interactive command line, the executing script or the prelude::
   foldl f a [] = a;
   foldl f a (x:xs) = foldl f (f a x) xs;
 
-Wildcards can be used with the -g option, which is useful if you want to print
-an entire family of related functions, e.g.::
+Wildcards can be used with the ``-g`` option, which is useful if you want to
+print an entire family of related functions, e.g.::
 
   > show -g foldl*
   foldl f a x::matrix = foldl f a (list x);
@@ -4614,7 +4677,7 @@ an entire family of related functions, e.g.::
   foldl1 f (x:xs) = foldl f x xs;
 
 Or you can just specify multiple symbols as follows (this also works with
-multiple glob patterns when you add the -g option)::
+multiple glob patterns when you add the ``-g`` option)::
 
   > show min max
   max x y = if x>=y then x else y;
@@ -4679,15 +4742,15 @@ you to "plug and play" in a (more or less) safe fashion, without affecting the
 rest of your program.
 
 For all practical purposes, this stack is unlimited, so that you can create as
-many levels as you like. However, this facility does have its limitations. The
+many levels as you like. However, this facility also has its limitations. The
 interpreter doesn't really keep a full history of everything you entered
 interactively, it only records the level a variable, constant, and function or
 macro rule belongs to so that the corresponding definitions can be removed
 again when the level is popped. On the other hand, intermediate changes in
 variable values are not recorded anywhere and cannot be undone. Moreover,
-global declarations (which encompasses ``using`` clauses, ``extern``
-declarations and special symbol declarations) always apply to all levels, so
-they can't be undone either.
+global declarations (which encompasses :keyword:`using` clauses,
+:keyword:`extern` declarations and special symbol declarations) always apply
+to all levels, so they can't be undone either.
 
 That said, the temporary levels can still be pretty useful when you're playing
 around with the interpreter. Here's a little example which shows how to use
@@ -4794,18 +4857,23 @@ you specify the target level to be cleared with the -t option. For instance::
   > show
   > 
 
+Finally, it is worth noting here that the facilities described above are also
+available to Pure programs, as the ``save`` and ``clear`` commands can also be
+executed under program control using the :func:`evalcmd` primitive; see
+Reflection_ in the `Caveats and Notes`_ section for details.
+
 Debugging
 ---------
 
 The interpreter provides a simple but reasonably convenient symbolic debugging
 facility when running interactively. To make this work, you have to specify
-the -g option when invoking the interpreter (``pure -g``). If you're already
-at the interpreter's command line, you can also use the ``run -g`` command to
-enable the debugger. The ``-g`` option disables tail call optimization (see
-`Stack Size and Tail Recursion`_) to make it easier to debug programs. It also
-causes special debugging code to be generated which will make your program run
-*much* slower. Therefore the -g option should only be used if you actually
-need the debugger.
+the :option:`-g` option when invoking the interpreter (``pure -g``). If you're
+already at the interpreter's command line, you can also use the ``run -g``
+command to enable the debugger. The ``-g`` option disables tail call
+optimization (see `Stack Size and Tail Recursion`_) to make it easier to debug
+programs. It also causes special debugging code to be generated which will
+make your program run *much* slower. Therefore the :option:`-g` option should
+only be used if you actually need the debugger.
 
 One common use of the debugger is "post mortem" debugging after an evaluation
 ended with an unhandled exception. In such a case, the ``bt`` command of the
@@ -4828,9 +4896,9 @@ instance::
 The last call, which is also marked with the ``>>`` symbol, is the call that
 raised the exception. The format is similar to the ``p`` command of the
 debugger, see below, but ``bt`` always prints a full backtrace. (As with the
-``show`` command of the interpreter, you can set the PURE_MORE environment
-variable to pipe the output through the corresponding command, or use
-:func:`evalcmd` to capture the output of ``bt`` in a string, cf. Reflection_.)
+``show`` command of the interpreter, you can set the :envvar:`PURE_MORE`
+environment variable to pipe the output through the corresponding command, or
+use :func:`evalcmd` to capture the output of ``bt`` in a string.)
 
 The debugger can also be used interactively. To these ends, you can set
 breakpoints on functions with the ``break`` command. The debugger then gets
@@ -4869,8 +4937,8 @@ contrast, the prefix ``++`` denotes reductions which were actually performed
 during the evaluation and the results that were returned by the function call
 (printed as ``--> return value``).
 
-Sometimes you might also see funny symbols like ``#<case>``, ``#<when>`` or
-``#<closure>`` instead of the function name. These indicate lambdas and the
+Sometimes you might also see funny symbols like ``#<closure>``, ``#<case>`` or
+``#<when>`` instead of the function name. These indicate lambdas and the
 special variable-binding environments, which are all implemented as anonymous
 closures in Pure. Also note that the debugger doesn't know about the argument
 names of external functions (which are optional in Pure and not recorded
@@ -4882,9 +4950,9 @@ evaluation step by step, as we did in the example above. (Command line editing
 works as usual at the debugger prompt, if it is enabled.) The usual commands
 are provided to walk through an evaluation, print and navigate the call stack,
 step over the current call, or continue the evaluation unattended until you
-hit another breakpoint. If you know other source level debuggers like gdb then
-you should feel right at home. You can type ``h`` at the debugger prompt to
-print the following list:
+hit another breakpoint. If you know other source level debuggers like
+:program:`gdb` then you should feel right at home. You can type ``h`` at the
+debugger prompt to print the following list:
 
 .. code-block:: none
 
@@ -4926,7 +4994,7 @@ The debugger can be exited or suspended in the following ways:
 
 * The ``a`` ("auto") command single-steps through the rest of the evaluation,
   running unattended. This command can also be entered by just hitting the
-  end-of-file key (``Ctrl-D`` on Unix systems) at the debugger prompt.
+  end-of-file key (:kbd:`Ctrl-d` on Unix systems) at the debugger prompt.
 
 * You can also type ``x`` to exit from the debugger *and* the interpreter
   immediately (after confirmation).
@@ -5050,12 +5118,12 @@ startup, after loading the prelude and the scripts specified on the command
 line. This lets you tailor the interactive environment to your liking.
 
 The interpreter first looks for a .purerc file in the user's home directory
-(as given by the HOME environment variable) and then for a .purerc file in the
-current working directory. These are just ordinary Pure scripts which may
-contain any additional definitions that you need. The .purerc file in the home
-directory is for global definitions which should always be available when
-running interactively, while the .purerc file in the current directory can be
-used for project-specific definitions.
+(as given by the :envvar:`HOME` environment variable) and then for a .purerc
+file in the current working directory. These are just ordinary Pure scripts
+which may contain any additional definitions that you need. The .purerc file
+in the home directory is for global definitions which should always be
+available when running interactively, while the .purerc file in the current
+directory can be used for project-specific definitions.
 
 Finally, you can also have a .pure initialization file in the current
 directory, which is usually created with the ``dump`` command (see
@@ -5076,12 +5144,12 @@ hosting interpreter. Only a minimal runtime system is provided. This
 considerably reduces startup times, but also implies the following quirks and
 limitations:
 
-* All toplevel expressions and ``let`` bindings are evaluated *after* all
-  functions have been defined. This might cause inconsistent behaviour with an
-  interpreted run of the same program, which executes expressions and variable
-  definitions immediately, as the program is being processed. To avoid these
-  semantic differences, you'll have to make sure that expressions are
-  evaluated *after* all functions used in the evaluation have been defined
+* All toplevel expressions and :keyword:`let` bindings are evaluated *after*
+  all functions have been defined. This might cause inconsistent behaviour
+  with an interpreted run of the same program, which executes expressions and
+  variable definitions immediately, as the program is being processed. To
+  avoid these semantic differences, you'll have to make sure that expressions
+  are evaluated *after* all functions used in the evaluation have been defined
   completely.
 
 * Toplevel expressions won't be of much use in a batch-compiled program,
@@ -5092,23 +5160,23 @@ limitations:
   program.
 
 * The :func:`eval` function can only be used to evaluate plain toplevel
-  expressions.  You can define local functions and variables in ``with`` and
-  ``when`` clauses inside an expression, but you can't use ``eval`` to define
-  new global variables and functions. In other words, anything which changes
-  the executing program is "verboten". Moreover, the introspective
-  capabilities provided by :func:`evalcmd` (discussed under Reflection_ in the
-  `Caveats and Notes`_ section) won't work either because the interactive
-  commands are all disabled. If you need any of these capabilities, you have
-  to run your program with the interpreter.
+  expressions.  You can define local functions and variables in
+  :keyword:`with` and :keyword:`when` clauses inside an expression, but you
+  can't use :func:`eval` to define new global variables and functions. In
+  other words, anything which changes the executing program is "verboten".
+  Moreover, the introspective capabilities provided by :func:`evalcmd`
+  (discussed under Reflection_ in the `Caveats and Notes`_ section) won't work
+  either because the interactive commands are all disabled. If you need any of
+  these capabilities, you have to run your program with the interpreter.
 
 * Constant and macro definitions, being compile time features, aren't
   available in the compiled program. If you need to use these with
   :func:`eval` at run time, you have to provide them through variable and
   function definitions instead. Also, the compiler usually strips unused
   functions from the output code, so that only functions which are actually
-  called somewhere in the static program text are available to ``eval``. (The
-  -u option and the --required pragma can be used to avoid this, see `Code
-  Size and Unstripped Executables`_ below.)
+  called somewhere in the static program text are available to :func:`eval`.
+  (The :option:`-u` option and the :option:`--required` pragma can be used to
+  avoid this, see `Code Size and Unstripped Executables`_ below.)
 
 * Code which gets executed to compute constant values at compile time will
   generally *not* be executed in the compiled executable, so your program
@@ -5124,8 +5192,9 @@ What all this boils down to is that anything which requires the compile time
 or interactive facilities of the interpreter, is unavailable. These
 restrictions only apply at run time, of course. At compile time the program
 *is* being executed by the interpreter so you can use :func:`eval` and
-:func:`evalcmd` in any desired way. See the description of the ``compiling``
-variable below for how to distinguish these cases in your script.
+:func:`evalcmd` in any desired way. See the description of the
+:var:`compiling` variable below for how to distinguish these cases in your
+script.
 
 For most kinds of scripts, the above restrictions aren't really that much of
 an obstacle, or can easily be worked around. For the few scripts which
@@ -5142,10 +5211,10 @@ first seem to be a big annoyance, but it actually opens the door for some
 powerful programming techniques like `partial evaluation`_. It is also a
 necessity because of Pure's highly dynamic nature. For instance, Pure allows
 you to define constants by evaluating an arbitrary expression (see `Constant
-Definitions`_ below), and using ``eval`` a program can easily modify itself in
-even more unforeseeable ways. Therefore pretty much anything in your program
-can actually depend on previous computations performed while the program is
-being executed.
+Definitions`_ below), and using :func:`eval` a program can easily modify
+itself in even more unforeseeable ways. Therefore pretty much anything in your
+program can actually depend on previous computations performed while the
+program is being executed.
 
 .. _partial evaluation: http://en.wikipedia.org/wiki/Partial_evaluation
 
@@ -5182,8 +5251,8 @@ specified, so that the program can also be run interactively::
   > quit
 
 To turn the script into an executable, we just invoke the Pure interpreter
-with the -c option, using the -o option to specify the desired output file
-name::
+with the :option:`-c` option, using the :option:`-o` option to specify the
+desired output file name::
 
   $ pure -c hello.pure -o hello
   $ ./hello 10
@@ -5201,7 +5270,7 @@ command line.)
 
 Moreover, in such a case we usually want to skip the execution of the main
 function at compile time. The Pure runtime provides a special system variable
-``compiling`` which holds a truth value indicating whether the program is
+:var:`compiling` which holds a truth value indicating whether the program is
 actually running under the auspices of the batch compiler, so that it can
 adjust accordingly. In our example, the evaluation of ``main`` becomes::
 
@@ -5248,12 +5317,13 @@ Code Size and Unstripped Executables
 ------------------------------------
 
 By default, the batch compiler strips unused functions from the output code,
-to keep the code size small. You can disable this with the -u option, in which
-case the output code includes *all* functions defined in the compiled program
-or imported through a ``using`` clause, even if they don't seem to be used
-anywhere. This considerably increases compilation times and makes the compiled
-executable much larger. For instance, on a 64 bit Linux systems with ELF
-binaries the executable of our hello.pure example is about thrice as large:
+to keep the code size small. You can disable this with the :option:`-u`
+option, in which case the output code includes *all* functions defined in the
+compiled program or imported through a :keyword:`using` clause, even if they
+don't seem to be used anywhere. This considerably increases compilation times
+and makes the compiled executable much larger. For instance, on a 64 bit Linux
+systems with ELF binaries the executable of our hello.pure example is about
+thrice as large:
 
 .. code-block:: none
 
@@ -5267,32 +5337,33 @@ compiled C code, as it still contains the symbol table of the entire program,
 which is needed by the runtime environment.)
 
 Stripped executables should be fine for most purposes, but you have to be
-careful when using ``eval`` in your compiled program. The compiler only does a
-*static* analysis of which functions might be reached from the initialization
-code (i.e., toplevel expressions and ``let`` bindings). It does *not* take
-into account code run via the ``eval`` routine. Thus, functions used only in
-``eval``\ ed code will be stripped from the executable, as if they were never
-defined at all. If such a function is then being called using ``eval`` at
-runtime, it will evaluate to a plain constructor symbol.
+careful when using :func:`eval` in your compiled program. The compiler only
+does a *static* analysis of which functions might be reached from the
+initialization code (i.e., toplevel expressions and :keyword:`let`
+bindings). It does *not* take into account code run via the :func:`eval`
+routine. Thus, functions used only in :func:`eval`\ ed code will be stripped
+from the executable, as if they were never defined at all. If such a function
+is then being called using :func:`eval` at runtime, it will evaluate to a
+plain constructor symbol.
 
-If this is a problem then you can either use the -u option to produce an
-unstripped executable, or you can force functions to be included in the
-stripped executable with the ``--required`` pragma (cf. `Code Generation
-Options`_). For instance::
+If this is a problem then you can either use the :option:`-u` option to
+produce an unstripped executable, or you can force functions to be included in
+the stripped executable with the :option:`--required` pragma (cf. `Code
+Generation Options`_). For instance::
 
   #! --required foo
   foo x = bar (x-1);
   eval "foo 99";
 
 There is another code generation option which may have a substantial effect on
-code size, namely the ``--noconst`` option. Normally, constant values defined
-in a ``const`` definition are precomputed at compile time and then stored in
-the generated executable; this reduces startup times but may increase the code
-size considerably if your program contains big constant values such as lists.
-If you prefer smaller executables then you can use the ``--noconst`` option to
-force the value of the constant to be recomputed at run time (which
-effectively turns the constant into a kind of read-only variable). For
-instance::
+code size, namely the :option:`--noconst` option. Normally, constant values
+defined in a :func:`const` definition are precomputed at compile time and then
+stored in the generated executable; this reduces startup times but may
+increase the code size considerably if your program contains big constant
+values such as lists. If you prefer smaller executables then you can use the
+:option:`--noconst` option to force the value of the constant to be recomputed
+at run time (which effectively turns the constant into a kind of read-only
+variable). For instance::
 
   #! --noconst
   const xs = 1L..100000L;
@@ -5302,10 +5373,10 @@ instance::
   puts $ str $ sum xs;
 
 On my 64 bit Linux system this produces a 187115 bytes executable. Without
-``--noconst`` the code becomes almost an order of magnitude larger in this
-case (1788699 bytes). On the other hand, the smaller executable also takes a
-little longer to run since it must first recompute the value of the list
-constant at startup. So you have to consider the tradeoffs in a given
+:option:`--noconst` the code becomes almost an order of magnitude larger in
+this case (1788699 bytes). On the other hand, the smaller executable also
+takes a little longer to run since it must first recompute the value of the
+list constant at startup. So you have to consider the tradeoffs in a given
 situation. Usually big executables aren't much of a problem on modern
 operating systems, but if your program contains a lot of big constants then
 this may become an important consideration. However, if a constant value takes
@@ -5333,13 +5404,13 @@ module. This routine is declared in C/C++ code as follows:
   extern "C" void __pure_main__(int argc, char** argv);
 
 As indicated, ``__pure_main__`` is to be invoked with two parameters, the
-argument count and NULL-terminated argument vector which become the ``argc``
-and the ``argv`` of the Pure program, respectively. (You can also just pass 0
-for both arguments if you don't need to supply command line parameters.) The
-purpose of ``__pure_main__`` is to initialize a shell instance of the Pure
-interpreter which provides the minimal runtime support necessary to execute
-the Pure program, and to invoke all "initialization code" (variable
-definitions and toplevel expressions) of the program itself.
+argument count and :const:`NULL`-terminated argument vector which become the
+``argc`` and the ``argv`` of the Pure program, respectively. (You can also
+just pass 0 for both arguments if you don't need to supply command line
+parameters.) The purpose of ``__pure_main__`` is to initialize a shell
+instance of the Pure interpreter which provides the minimal runtime support
+necessary to execute the Pure program, and to invoke all "initialization code"
+(variable definitions and toplevel expressions) of the program itself.
 
 A minimal C ``main`` function which does the job of initializing the Pure
 module looks as follows:
@@ -5403,7 +5474,7 @@ linker command as needed to pull in additional required libraries.
 
 As this last example shows, you can also create shared libraries from Pure
 modules. However, on some systems (most notably x86_64), this requires that
-you pass the ``-fPIC`` option when batch-compiling the module, so that
+you pass the :option:`-fPIC` option when batch-compiling the module, so that
 position-independent code is generated::
 
   $ pure -c -fPIC pure-odbc/examples/menagerie.pure -o menagerie.o
@@ -5479,28 +5550,41 @@ This section is a grab bag of casual remarks, useful tips and tricks, and
 information on common pitfalls, quirks and limitations of the current
 implementation and how to deal with them.
 
-Purity
-------
+Etymology
+---------
 
 People keep asking me what's so "pure" about Pure. The long and apologetic
 answer is that Pure tries to stay as close as possible to the spirit of term
 rewriting without sacrificing practicality. It's possible and in fact quite
-easy to write purely functional programs in Pure, and you're encouraged to use
-it that way when possible. On the other hand, Pure doesn't get in your way if
-you want to call external operations with side effects; it does allow you to
-call any C function after all.
+easy to write purely functional programs in Pure, and you're encouraged to do
+so whenever this is possible or at least reasonable. On the other hand, Pure
+doesn't get in your way if you want to call external operations with side
+effects; it does allow you to call any C function after all.
 
-The short answer is that I simply liked the name, and there wasn't any
-programming language named "Pure" yet (quite a feat nowadays), so there's one
-now. :)
+The short (and true) answer is that I simply liked the name, and there wasn't
+any programming language named "Pure" yet (quite a feat nowadays), so there's
+one now. If you insist on a (recursive) backronym, just take "PURE" to stand
+for the "Pure Universal Rewriting Engine".
 
-Backward Compatibility
-----------------------
+History
+-------
+
+Pure is based on the author's earlier Q_ language, but it offers many new and
+powerful features and programs run much faster than their Q equivalents. The
+language also went through a thorough facelift in order to modernize the
+syntax and make it more similar to other modern-style functional languages, in
+particular Miranda_ and Haskell_. Thus porting Q scripts to Pure often
+involves a substantial amount of manual work, but it can (and has) been done.
+
+Since its modest beginnings in April 2008, Pure has gone through a lot of
+major and minor revisions which raise various backward compatibility issues.
+We document these in the following, in order to facilitate the porting of
+older Pure scripts.
 
 Pure 0.7 introduced built-in matrix structures, which called for some minor
-changes in the syntax of comprehensions and arithmetic
-sequences. Specifically, the template expression and generator/filter clauses
-of a comprehension are now separated with ``|`` instead of ``;``. Moreover,
+changes in the syntax of comprehensions and arithmetic sequences.
+Specifically, the template expression and generator/filter clauses of a
+comprehension are now separated with ``|`` instead of ``;``. Moreover,
 arithmetic sequences with arbitrary stepsize are now written ``x:y..z``
 instead of ``x,y..z``, and the '``..``' operator now has a higher precedence
 than the '``,``' operator. This makes writing matrix slices like
@@ -5528,12 +5612,12 @@ namespaces. This means that name lookup works in a slightly different fashion
 now (see `Hierarchical Namespaces`_ for details), but old code which doesn't
 use the new feature should continue to work unchanged.
 
-Pure 0.26 also changed the ``nullary`` keyword to ``nonfix``, which is more
-consistent with the other kinds of fixity declarations. Moreover, the parser
-was enhanced so that it can cope with a theoretically unbounded number of
-precedence levels, and the system of standard operators in the prelude was
-modified so that it becomes possible to sneak in new operator symbols with
-ease; details can be found in the `Symbol Declarations`_ section.
+Pure 0.26 also changed the :keyword:`nullary` keyword to :keyword:`nonfix`,
+which is more consistent with the other kinds of fixity declarations.
+Moreover, the parser was enhanced so that it can cope with a theoretically
+unbounded number of precedence levels, and the system of standard operators in
+the prelude was modified so that it becomes possible to sneak in new operator
+symbols with ease; details can be found in the `Symbol Declarations`_ section.
 
 Pure 0.41 added support for optimization of indirect tail calls, so that any
 previous restrictions on the use of tail recursion in indirect function calls
@@ -5547,18 +5631,19 @@ either the operands are already normalized, or you'll have to normalize the
 result yourself.
 
 Also, as of Pure 0.41 the batch compiler produces stripped executables by
-default. To create unstripped executables you now have to use the -u option,
-see `Code Size and Unstripped Executables`_ for details. The -s option to
-produce stripped executables is still provided for backward compatibility, but
-it won't have any effect unless you use it to override a previous -u option.
+default. To create unstripped executables you now have to use the :option:`-u`
+option, see `Code Size and Unstripped Executables`_ for details. The
+:option:`-s` option to produce stripped executables is still provided for
+backward compatibility, but it won't have any effect unless you use it to
+override a previous :option:`-u` option.
 
 Pure 0.43 changed the rules for looking up symbols in user-defined namespaces.
 Unqualified symbols are now created in the current (rather than the global)
-namespace by default, see `Symbol Lookup and Creation`_ for details. The -w
-option can be used to get warnings about unqualified symbols which are
-resolved to a different namespace than previously. It also provides a means to
-check your scripts for implicit declarations which might indicate missing or
-mistyped function symbols.
+namespace by default, see `Symbol Lookup and Creation`_ for details. The
+:option:`-w` option can be used to get warnings about unqualified symbols
+which are resolved to a different namespace than previously. It also provides
+a means to check your scripts for implicit declarations which might indicate
+missing or mistyped function symbols.
 
 Pure 0.45 added support for checking arbitrary pointer types in the C
 interface, so that you don't have to worry about passing the wrong kinds of
@@ -5585,22 +5670,23 @@ you back at the toplevel where you can start typing the definition again.
 The __show__ Function
 ---------------------
 
-The interpreter provides a "hook" to override the print representations of
-expressions at runtime by means of the ``__show__`` function, which works in a
-fashion similar to Haskell's ``show`` function. This feature is still a bit
-experimental, but seems to work reasonably well for the purposes for which it
-is intended.
+.. function:: __show__ x
 
-``__show__`` is just an ordinary Pure function expected to return a string
+   This function provides a "hook" to override the print representations of
+   expressions at runtime, which works in a fashion similar to Haskell's
+   ``show`` function.
+
+:func:`__show__` is just an ordinary Pure function expected to return a string
 with the desired custom representation of a normal form value given as the
-function's single argument. This function is not defined by default, so you
-are free to add any rules that you want. The interpreter prints the strings
-returned by ``__show__`` just as they are. It will not check whether they
-conform to Pure syntax and/or semantics, or modify them in any way.
+function's single argument. The interpreter prints the strings returned by
+:func:`__show__` just as they are. It will not check whether they conform to
+Pure syntax and/or semantics, or modify them in any way. Also, the library
+doesn't define this function anywhere, so you are free to add any rules that
+you want.
 
 Custom print representations are most useful for interactive purposes, if
 you're not happy with the default print syntax of some kinds of objects. One
-particularly useful application of ``__show__`` is to change the format of
+particularly useful application of :func:`__show__` is to change the format of
 numeric values. Here are some examples::
 
   > using system;
@@ -5615,29 +5701,29 @@ numeric values. Here are some examples::
   > cis (-pi/2);
   0.000000+-1.000000i
 
-The prelude function ``str``, which returns the print representation of any
-Pure expression, calls ``__show__`` as well::
+The prelude function :func:`str`, which returns the print representation of
+any Pure expression, calls :func:`__show__` as well::
 
   > str (1/7);
   "0.142857"
 
-Conversely, you can call the ``str`` function from ``__show__``, but in this
-case it always returns the default representation of an expression. This
-prevents the expression printer from going recursive, and allows you to define
-your custom representation in terms of the default one. E.g., the following
-rule removes the ``L`` suffixes from bigint values::
+Conversely, you can call the :func:`str` function from :func:`__show__`, but
+in this case it always returns the default representation of an
+expression. This prevents the expression printer from going recursive, and
+allows you to define your custom representation in terms of the default
+one. E.g., the following rule removes the ``L`` suffixes from bigint values::
 
   > __show__ x::bigint = init (str x);
   > fact n = foldl (*) 1L (1..n);
   > fact 30;
   265252859812191058636308480000000
 
-Of course, your definition of ``__show__`` can also call ``__show__`` itself
-recursively to determine the custom representation of an object.
+Of course, your definition of :func:`__show__` can also call :func:`__show__`
+itself recursively to determine the custom representation of an object.
 
 One case which needs special consideration are thunks (futures). The printer
-will *never* use ``__show__`` for those, to prevent them from being forced
-inadvertently. In fact, you *can* use ``__show__`` to define custom
+will *never* use :func:`__show__` for those, to prevent them from being forced
+inadvertently. In fact, you *can* use :func:`__show__` to define custom
 representations for thunks, but only in the context of a rule for other kinds
 of objects, such as lists. For instance::
 
@@ -5661,8 +5747,8 @@ idea)::
      1.00000   0.50000
      0.33333   4.00000
 
-Finally, by just purging the definition of the ``__show__`` function you can
-easily go back to the standard print syntax::
+Finally, by just purging the definition of the :func:`__show__` function you
+can easily go back to the standard print syntax::
 
   > clear __show__
   > 1/7; 1786; cis (-pi/2);
@@ -5670,9 +5756,9 @@ easily go back to the standard print syntax::
   1786
   6.12303176911189e-17+:-1.0
 
-Note that if you have a set of definitions for the ``__show__`` function which
-should always be loaded at startup, you can put them into the interpreter's
-interactive startup files, see `Interactive Usage`_.
+Note that if you have a set of definitions for the :func:`__show__` function
+which should always be loaded at startup, you can put them into the
+interpreter's interactive startup files, see `Interactive Usage`_.
 
 Non-Linear Patterns
 -------------------
@@ -5717,9 +5803,10 @@ message from the compiler::
   a@(foo x y) = a,x,y;
 
 This is because the spine of a function application is not available when the
-function is called at runtime. "As" patterns in pattern bindings (``let``,
-``const``, ``case``, ``when``) are not affected by this restriction since the
-entire value to be matched is available at runtime. For instance::
+function is called at runtime. "As" patterns in pattern bindings
+(:keyword:`let`, :keyword:`const`, :keyword:`case`, :keyword:`when`) are not
+affected by this restriction since the entire value to be matched is available
+at runtime. For instance::
 
   > case bar 99 of y@(bar x) = y,x+1; end;
   bar 99,100
@@ -5760,32 +5847,33 @@ function argument against a given function. Consider this code fragment::
 You might expect ``foop`` to return true for ``foo``, and false on all other
 values. Better think again, because in reality ``foop`` will always return
 true! In fact, the Pure compiler will warn you about the second rule of the
-``case`` expression not being used at all::
+:keyword:`case` expression not being used at all::
 
   > foop 99;
   warning: rule never reduced: _ = 0;
   1
 
 This happens because an identifier on the left-hand side of a rule, which is
-neither the head symbol of a function application nor a ``nonfix`` symbol, is
-always considered to be a variable (cf. `Parameters in Equations`_), even if
-that symbol is defined as a global function elsewhere. So ``foo`` isn't a
-literal name in the above ``case`` expression, it's a variable! (As a matter
-of fact, this is rather useful, since otherwise a rule like ``f g = g+1``
-would suddenly change meaning if you happen to add a definition like ``g x =
-x-1`` somewhere else in your program, which certainly isn't desirable.)
+neither the head symbol of a function application nor a :keyword:`nonfix`
+symbol, is always considered to be a variable (cf. `Parameters in
+Equations`_), even if that symbol is defined as a global function elsewhere.
+So ``foo`` isn't a literal name in the above :keyword:`case` expression, it's
+a variable! (As a matter of fact, this is rather useful, since otherwise a
+rule like ``f g = g+1`` would suddenly change meaning if you happen to add a
+definition like ``g x = x-1`` somewhere else in your program, which certainly
+isn't desirable.)
 
 A possible workaround is to "escape" the function symbol using an empty
 namespace qualifier::
 
   foop f = case f of ::foo = 1; _ = 0 end;
 
-This trick works in ``case`` expressions and function definitions, but fails
-in circumstances in which qualified variable symbols are permitted (i.e., in
-variable and constant definitions). A better solution is to employ the
-syntactic equality operator ``===`` defined in the prelude to match the target
-value against the function symbol. This allows you to define the ``foop``
-predicate as follows::
+This trick works in :keyword:`case` expressions and function definitions, but
+fails in circumstances in which qualified variable symbols are permitted
+(i.e., in variable and constant definitions). A better solution is to employ
+the syntactic equality operator ``===`` defined in the prelude to match the
+target value against the function symbol. This allows you to define the
+``foop`` predicate as follows::
 
   > foop f = f===foo;
   > foop foo, foop 99;
@@ -5807,24 +5895,25 @@ and thus there is no magic to figure out whether an equation like ``foo x =
 y`` by itself is meant as a definition of a function ``foo`` with formal
 parameter ``x`` and return value ``y``, or a pattern binding defining the
 local variable ``x`` by matching the pattern ``foo x`` against the value of
-``y``. The ``with`` construct does the former, ``when`` the latter. (As a
-mnemonic, you may consider that ``when`` conveys a sense of time, as the
-individual variable definitions in a ``when`` clause are executed in order,
-while the function definitions in a ``with`` clause are all done
-simultaneously.)
+``y``. The :keyword:`with` construct does the former, :keyword:`when` the
+latter. (As a mnemonic, you may consider that :keyword:`when` conveys a sense
+of time, as the individual variable definitions in a :keyword:`when` clause
+are executed in order, while the function definitions in a :keyword:`with`
+clause are all done simultaneously.)
 
-Another speciality is that ``with`` and ``when`` clauses are tacked on to the
-end of the expression they belong to. This mimics mathematical language and
-makes it easy to read and understand a definition in a "top-down" fashion.
-This style differs considerably from other block-structured programming
-languages, however, which often place local definitions in front of the code
-they apply to. To grasp the operational meaning of such nested definitions, it
-can be helpful to read the nested scopes "in reverse" (from bottom to
-top). Some people also prefer to write their programs that way. In difference
-to Haskell and ML which have ``let`` expressions to support that kind of
-notation, Pure doesn't provide any special syntax for this. But note that you
-can always write ``when`` clauses in the following style which places the
-"body" at the bottom of the clause::
+Another speciality is that :keyword:`with` and :keyword:`when` clauses are
+tacked on to the end of the expression they belong to. This mimics
+mathematical language and makes it easy to read and understand a definition in
+a "top-down" fashion.  This style differs considerably from other
+block-structured programming languages, however, which often place local
+definitions in front of the code they apply to. To grasp the operational
+meaning of such nested definitions, it can be helpful to read the nested
+scopes "in reverse" (from bottom to top). Some people also prefer to write
+their programs that way. In contrast to Haskell and ML which have
+:keyword:`let` expressions to support that kind of notation, Pure doesn't
+provide any special syntax for this. But note that you can always write
+:keyword:`when` clauses in the following style which places the "body" at the
+bottom of the clause::
 
   result when
     y = foo (x+1);
@@ -5913,10 +6002,10 @@ an existing constant or variable as a different kind of symbol. The same also
 holds if a symbol is currently defined as a function or a macro.)
 
 Constants can also be used in patterns (i.e., on the left-hand side of a rule
-in a definition or a ``case`` expression), but only if you also declare the
-corresponding symbol as ``nonfix``. This is useful, e.g., if you'd like to use
-constants such as ``true`` and ``false`` on the left-hand side of a
-definition, just like other ``nonfix`` symbols::
+in a definition or a :keyword:`case` expression), but only if you also declare
+the corresponding symbol as :keyword:`nonfix`. This is useful, e.g., if you'd
+like to use constants such as :const:`true` and :const:`false` on the
+left-hand side of a definition, just like other :keyword:`nonfix` symbols::
 
   > show false true
   const false = 0;
@@ -5929,12 +6018,13 @@ definition, just like other ``nonfix`` symbols::
   > check (5>0);
   "yes"
 
-Note that without the ``nonfix`` declaration, the above definition of
-``check`` wouldn't work as intended, because the ``true`` and ``false``
-symbols on the left-hand side of the two equations would be interpreted as
-local variables. Also note that the standard library never declares any
-constant symbols as ``nonfix``, since once a symbol is ``nonfix`` there's no
-going back. Thus the library leaves this to the programmer to decide.
+Note that without the :keyword:`nonfix` declaration, the above definition of
+``check`` wouldn't work as intended, because the :const:`true` and
+:const:`false` symbols on the left-hand side of the two equations would be
+interpreted as local variables. Also note that the standard library never
+declares any constant symbols as :keyword:`nonfix`, since once a symbol is
+:keyword:`nonfix` there's no going back. Thus the library leaves this to the
+programmer to decide.
 
 As the value of a constant is known at compile time, the compiler can apply
 various optimizations to uses of such values. In particular, the Pure compiler
@@ -5976,7 +6066,7 @@ involve functions with side effects::
   const table = [foo x | x = 1..1000000];
   process table;
 
-Note that this only works with ``const`` values which are completely
+Note that this only works with :keyword:`const` values which are completely
 determined at compile time. If a constant contains run time objects such as
 pointers and (local) functions, this is impossible, and the batch compiler
 will instead create code to recompute the value of the constant at run time.
@@ -5999,8 +6089,8 @@ Unstripped Executables`_ for details.)
 External C Functions
 --------------------
 
-The interpreter always takes your ``extern`` declarations of C routines at
-face value. It will not go and read any C header files to determine whether
+The interpreter always takes your :keyword:`extern` declarations of C routines
+at face value. It will not go and read any C header files to determine whether
 you actually declared the function correctly! So you have to be careful to
 give the proper declarations, otherwise your program might well give a
 segfault when calling the function. (This problem can to some extent be
@@ -6019,41 +6109,41 @@ the Pure website for details.
 Last but not least, to make it easier to create Pure interfaces to large C
 libraries, there's a separate pure-gen_ program available at the Pure
 website. This program takes a C header (.h) file and creates a corresponding
-Pure module with definitions and ``extern`` declarations for the constants and
-functions declared in the header. Please refer to the pure-gen(1) manual page
-for details.
+Pure module with definitions and :keyword:`extern` declarations for the
+constants and functions declared in the header. Please refer to the
+pure-gen(1) manual page for details.
 
 .. _pure-gen: http://code.google.com/p/pure-lang/wiki/Addons#pure-gen
 
 Calling Special Forms
 ---------------------
 
-Special forms are recognized at compile time only. Thus the ``catch``
-function, as well as ``quote`` and the operators ``&&``, ``||``, ``$$`` and
-``&``, are only treated as special forms in direct (saturated) calls. They can
-still be used if you pass them around as function values or in partial
-applications, but in this case they lose all their special call-by-name
-argument processing.
+Special forms are recognized at compile time only. Thus the :func:`catch`
+function, as well as :func:`quote` and the operators :func:`&&`, :func:`||`,
+:func:`$$` and :func:`&`, are only treated as special forms in direct
+(saturated) calls. They can still be used if you pass them around as function
+values or in partial applications, but in this case they lose all their
+special call-by-name argument processing.
 
 The Quote
 ---------
 
-Like in Lisp, the ``quote`` special form can be used to construct literal
+Like in Lisp, the :func:`quote` special form can be used to construct literal
 expressions which can then be manipulated before actually evaluating them
-using the built-in ``eval`` function. However, there are some notable
-differences to the Lisp version of ``quote``:
+using the built-in :func:`eval` function. However, there are some notable
+differences to the Lisp version of :func:`quote`:
 
 * Local variables (i.e., variables bound by the left-hand side of an equation,
-  a lambda expression or a ``case`` or ``when`` construct) can never be
-  quoted, so the corresponding value gets substituted even into quoted
-  expressions. Thus, e.g., ``'(2*42+2^n) when n = 12 end`` evaluates to
+  a lambda expression or a :keyword:`case` or :keyword:`when` construct) can
+  never be quoted, so the corresponding value gets substituted even into
+  quoted expressions. Thus, e.g., ``'(2*42+2^n) when n = 12 end`` evaluates to
   ``2*42+2^12`` rather than ``2*42+2^n``.
 
 * Only simple expressions can be quoted in Pure. Special constructs embedded
   in a quoted expression, such as conditionals and local bindings, are
   evaluated as usual. For instance, ``'(2*42+(2^n when n = 2*6 end))``
-  evaluates to ``2*42+4096.0`` rather than quoting the embedded ``when``
-  expression.
+  evaluates to ``2*42+4096.0`` rather than quoting the embedded
+  :keyword:`when` expression.
 
 While it's possible to define a Lisp-like ``quasiquote`` in Pure (see the
 `Recursive Macros`_ section for a simplified version, a full implementation
@@ -6070,8 +6160,9 @@ expressions, so that it is quite easy to fill in variable parts in a quoted
   2*(7/y)+1
 
 In fact, it is possible to perform arbitrary computations right in the middle
-of a quoted expression, using one of the special ``if``-``then``-``else``,
-``case``, ``when`` and ``with`` expressions, since these are never quoted
+of a quoted expression, using one of the special
+:keyword:`if`-:keyword:`then`-:keyword:`else`, :keyword:`case`,
+:keyword:`when` and :keyword:`with` expressions, since these are never quoted
 either. Example::
 
   > '(x+1 when x = '(2*3) end);
@@ -6079,7 +6170,7 @@ either. Example::
 
 Another useful feature of Lisp's ``quasiquote`` is the capability to splice
 arguments into a function application. It is possible to achieve pretty much
-the same in Pure with the following variation of the ``$`` operator which
+the same in Pure with the following variation of the :func:`$` operator which
 "curries" its second (tuple) operand::
 
   infixr 0 $@ ;
@@ -6092,12 +6183,12 @@ Now you can write, e.g.::
   > '(foo 1 2) $@ '(2/3,3/4);
   foo 1 2 (2/3) (3/4)
 
-One shortcoming of Pure's ``quote`` is that there is no way to quote special
-constructs such as lambdas. Macro expansion *is* inhibited in quoted
+One shortcoming of Pure's :func:`quote` is that there is no way to quote
+special constructs such as lambdas. Macro expansion *is* inhibited in quoted
 expressions, however, so it is possible to work around this limitation by
 defining a custom special form to be used as a symbolic representation for,
 say, a lambda expression, which reduces to a real lambda when evaluated. To
-these ends, the ``eval`` function can be invoked with a string argument as
+these ends, the :func:`eval` function can be invoked with a string argument as
 follows::
 
   def lambda x y = eval $ "\\ "+str ('x)+" -> "+str ('y);
@@ -6110,15 +6201,15 @@ Example::
   #<closure 0x7fdc3ca45be8>
   10
 
-Other special constructs, such as ``case``, ``when`` and ``with`` can be
-handled in a similar fashion.
+Other special constructs, such as :keyword:`case`, :keyword:`when` and
+:keyword:`with` can be handled in a similar fashion.
 
 Laziness
 --------
 
 Pure does lazy evaluation in the same way as `Alice ML`_, providing an
-explicit operation (``&``) to defer evaluation and create a "future" which is
-called by need. However, note that like any language with a basically eager
+explicit operation (:func:`&`) to defer evaluation and create a "future" which
+is called by need. However, note that like any language with a basically eager
 evaluation strategy, Pure cannot really support lazy evaluation in a fully
 automatic way. That is, coding an operation so that it works with infinite
 data structures usually requires additional thought, and sometimes special
@@ -6135,10 +6226,10 @@ The prelude goes to great lengths to implement all standard list operations in
 a way that properly deals with streams (a.k.a. lazy lists). What this all
 boils down to is that all list operations which can reasonably be expected to
 operate in a lazy way on streams, will do so. (Exceptions are inherently eager
-operations such as ``#``, ``reverse`` and ``foldl``.) Only those portions of
-an input stream will be traversed which are strictly required to produce the
-result. For most purposes, this works just like in fully lazy FPLs such as
-Haskell. However, there are some notable differences:
+operations such as :func:`#`, :func:`reverse` and :func:`foldl`.) Only those
+portions of an input stream will be traversed which are strictly required to
+produce the result. For most purposes, this works just like in fully lazy FPLs
+such as Haskell. However, there are some notable differences:
 
 * Since Pure uses dynamic typing, some of the list functions may have to peek
   ahead one element in input streams to check their arguments for validity,
@@ -6154,8 +6245,8 @@ Haskell. However, there are some notable differences:
 
 * Pattern matching is always refutable (and therefore eager) in Pure. If you
   need something like Haskell's irrefutable matches, you'll have to code them
-  explicitly using futures. See the definition of the ``unzip`` function in
-  the prelude for an example showing how to do this.
+  explicitly using futures. See the definition of the :func:`unzip` function
+  in the prelude for an example showing how to do this.
 
 Here are some common pitfalls with lazy data structures in Pure that you
 should be aware of:
@@ -6170,13 +6261,13 @@ should be aware of:
     > using math;
     > let xs = [random | _ = 1..inf];
 
-  This works as expected if only a single stream created with ``random``
-  exists in your program. However, as the ``random`` function in the ``math``
-  module modifies an internal data structure to produce a sequence of
-  pseudorandom numbers, using two or more such streams in your program will in
-  fact modify the same underlying data structure and thus produce two disjoint
-  subsequences of the same underlying pseudorandom sequence which might not
-  be distributed uniformly any more.
+  This works as expected if only a single stream created with :func:`random`
+  exists in your program. However, as the :func:`random` function in the
+  :mod:`math` module modifies an internal data structure to produce a
+  sequence of pseudorandom numbers, using two or more such streams in your
+  program will in fact modify the same underlying data structure and thus
+  produce two disjoint subsequences of the same underlying pseudorandom
+  sequence which might not be distributed uniformly any more.
 
 * You should avoid keeping references to potentially big (or even infinite)
   thunked data structures when traversing them (unless you specifically need
@@ -6191,13 +6282,13 @@ Reflection
 ----------
 
 Pure versions since 0.12 offer some basic reflection capabilities via the
-``evalcmd`` primitive. This function provides access to interactive commands
-like ``clear``, ``save`` and ``show``, which enable you to inspect and modify
-the running program. The only "canonical" way to represent an entire Pure
-program in Pure itself is the program text, hence ``evalcmd`` only provides a
-textual interface at this time. But of course custom higher-level
-representations can be built on top of that, similar to those discussed in
-section `The Quote`_.
+:func:`evalcmd` primitive. This function provides access to interactive
+commands like ``clear``, ``save`` and ``show``, which enable you to inspect
+and modify the running program. The only "canonical" way to represent an
+entire Pure program in Pure itself is the program text, hence :func:`evalcmd`
+only provides a textual interface at this time. But of course custom
+higher-level representations can be built on top of that, similar to those
+discussed in section `The Quote`_.
 
 Here's an example showing what can be done using the ``show`` command and a
 little bit of trivial text processing. The following ``sym_info`` function
@@ -6318,15 +6409,15 @@ Pure programs may need a considerable amount of stack space to handle
 recursive function and macro calls, and the interpreter itself also takes its
 toll. So you should configure your system accordingly (8 MB of stack space is
 recommended for 32 bit systems, systems with 64 bit pointers probably need
-more). If the PURE_STACK environment variable is defined, the interpreter
-performs advisory stack checks on function entry and raises a Pure exception
-if the current stack size exceeds the given limit. The value of PURE_STACK
-should be the maximum stack size in kilobytes. Please note that this is only
-an advisory limit which does not change the program's physical stack size.
-Your operating system should supply you with a command such as ulimit(1) to
-set the real process stack size. (The ``PURE_STACK`` limit should be a little
-less than that, to account for temporary stack usage by the interpreter
-itself.)
+more). If the :envvar:`PURE_STACK` environment variable is defined, the
+interpreter performs advisory stack checks on function entry and raises a Pure
+exception if the current stack size exceeds the given limit. The value of
+:envvar:`PURE_STACK` should be the maximum stack size in kilobytes. Please
+note that this is only an advisory limit which does not change the program's
+physical stack size.  Your operating system should supply you with a command
+such as ulimit(1) to set the real process stack size. (The
+:envvar:`PURE_STACK` limit should be a little less than that, to account for
+temporary stack usage by the interpreter itself.)
 
 Like Scheme, Pure does proper tail calls (if LLVM provides that feature on the
 platform at hand), so tail-recursive definitions should work fine in limited
@@ -6338,9 +6429,9 @@ your platform supports the required optimizations::
 
 This also works if your definition involves function parameters, guards and
 multiple equations, of course. Moreover, conditional expressions
-(``if``-``then``-``else``) are tail-recursive in both branches, and the
-logical operators ``&&`` and ``||``, as well as the sequence operator ``$$``,
-are tail-recursive in their second operand.
+(:keyword:`if`-:keyword:`then`-:keyword:`else`) are tail-recursive in both
+branches, and the logical operators :func:`&&` and :func:`||`, as well as the
+sequence operator :func:`$$`, are tail-recursive in their second operand.
 
 Also note that tail call optimization is *always* disabled if the debugger is
 enabled (-g). This makes it much easier to debug programs, but means that you
@@ -6517,6 +6608,12 @@ Haskell
 
 LLVM
     The LLVM code generator framework, http://llvm.org.
+
+.. _Miranda:
+
+Miranda
+   David Turner's non-strict FPL, http://miranda.org.uk. Miranda was fairly
+   successful in its time and one of the forerunners of Haskell_.
 
 .. _ML:
 
