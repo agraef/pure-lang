@@ -101,7 +101,8 @@ using namespace std;
 -w                Enable compiler warnings.\n\
 -x                Execute script with given command line arguments.\n\
 Type 'help' in the interpreter for more help.\n"
-#define LICENSE "This program is free software, and you are welcome to redistribute it under\ncertain conditions. There is ABSOLUTELY NO WARRANTY. (Type 'help copying'\nfor more information.)\n"
+#define LICENSE \
+"(Type 'help' for help, 'help copying' for license information.)\n"
 
 #ifdef HAVE_LIBREADLINE
 
