@@ -2,14 +2,9 @@
 The Pure Manual
 ===============
 
-.. Note: This document is formatted using docutils. The Makefile has rules
-.. to build the documentation in html and pdf format. The latter needs TeX
-.. and relies on the preamble.tex file to adjust the formatting. You might
-.. have to edit preamble.tex to make this work with your local TeX
-.. installation.
-
 .. role:: dfn(strong)
 .. default-role:: dfn
+.. default-domain:: pure
 
 .. |GPL| replace:: GNU General Public License
 .. |LGPL| replace:: GNU Lesser General Public License
@@ -37,11 +32,12 @@ software.
 
 This manual describes the Pure programming language and how to invoke the Pure
 interpreter program. To read the manual inside the interpreter, just type
-``help`` at the command prompt. See the `Online Help`_ section for details.
+:keyword:`help` at the command prompt. See the `Online Help`_ section for
+details.
 
 There is a companion to this manual, the :doc:`purelib` which contains the
 description of the standard library operations. More information about Pure
-can be found under the following URLs:
+and the latest sources can be found under the following URLs:
 
 * Pure website: http://pure-lang.googlecode.com
 * Pure mailing list: http://groups.google.com/group/pure-lang
@@ -52,114 +48,260 @@ can be found under the following URLs:
 Introduction
 ============
 
-Pure is a modern-style functional programming language based on term
-rewriting. Pure programs are basically collections of equational rules used to
-evaluate expressions in a symbolic fashion by reducing them to normal form. An
-overview of the language can be found in the `Pure Overview`_ section below,
-and subsequent sections discuss most language features in detail.
+Pure is a functional programming language based on term rewriting. This means
+that all your programs are essentially just collections of symbolic equations
+which the interpreter uses to reduce expressions to their simplest ("normal")
+form. This makes for a rather powerful and flexible programming model
+featuring dynamic typing and general polymorphism. In addition, Pure programs
+are compiled to efficient native code on the fly, using the LLVM_ compiler
+framework, so programs are executed reasonably fast and interfacing to C is
+very easy. If you have the necessary 3rd party compilers installed then you
+can even inline functions written in C and a number of other languages and
+call them just like any other Pure function. The ease with which you can
+interface to 3rd party software makes Pure useful for a wide range of
+applications from symbolic algebra and scientific programming to database, web
+and multimedia applications.
 
-The Pure interpreter has an LLVM_ backend which JIT-compiles Pure programs to
-machine code, hence programs run blazingly fast and interfacing to C modules
-is easy, while the interpreter still provides a convenient, fully interactive
-environment for running Pure scripts and evaluating expressions. You can also
-compile your scripts to standalone executables if you prefer that.
+The Pure language is implemented by the `Pure interpreter` program. Just like
+other programming language interpreters, the Pure interpreter provides an
+interactive environment in which you can type definitions and expressions,
+which are executed as you type them at the interpreter's command prompt.
+However, despite its name the Pure interpreter never really "interprets" any
+Pure code. Rather, it acts as a frontend to the `Pure compiler`, which takes
+care of incrementally compiling Pure code to native (machine) code. This has
+the benefit that the compiled code runs much faster than the usual kinds of
+"bytecode" that you find in traditional programming language interpreters.
 
-Pure programs (a.k.a. scripts) are just ordinary text files containing Pure
-code. They must be encoded in UTF-8 (which subsumes 7 bit ASCII), other
-encodings such as Latin-1 are not supported. A bunch of syntax highlighting
-files and programming modes for various popular text editors are included in
-the Pure sources. There's no difference between the Pure programming language
-and the input language accepted by the interpreter, except that the
-interpreter also understands some special commands when running in interactive
-mode; see the `Interactive Usage`_ section for details.
+You can use the interpreter as a sophisticated kind of "desktop calculator"
+program. Simply run the program from the shell as follows:
 
-(In case you're wondering, the name "Pure" actually refers to the
-adjective. But you can also write it as "PURE" and take this as a recursive
-acronym for the "Pure Universal Rewriting Engine".)
+.. code-block:: console
 
-Invoking the Pure Interpreter
-=============================
+   $ pure
+
+The interpreter then prints its sign-on message and leaves you at its '> '
+command prompt, where you can start typing definitions and expressions to be
+evaluated::
+
+  > 17/12+23;
+  24.4166666666667
+  > fact n = if n>0 then n*fact (n-1) else 1;
+  > map fact (1..10);
+  [1,2,6,24,120,720,5040,40320,362880,3628800]
+
+Typing the :keyword:`quit` command or the end-of-file character
+(:kbd:`Control-d` on Unix systems) at the beginning of the command line exits
+the interpreter and takes you back to the shell.
+
+Instead of typing definitions and evaluating expressions in an interactive
+fashion as shown above, you can also put the same code in an (ASCII or UTF-8)
+text file called a `Pure program` or `script` which can then be executed by
+the interpreter in "batch mode", or compiled to a standalone executable which
+can be run directly from the command line. As an aid for writing script files,
+a bunch of syntax highlighting files and programming modes for various popular
+text editors are included in the Pure sources.
+
+More information about invoking the Pure interpreter can be found in the
+`Invoking Pure`_ section below. This is followed by a description of the Pure
+language in `Pure Overview`_ and subsequent sections. The interactive
+facilities of the Pure interpreter are discussed in the `Interactive Usage`_
+section, while the `Batch Compilation`_ section explains how to translate Pure
+programs to native executables and a number of other object file formats. The
+`Caveats and Notes`_ section discusses useful tips and tricks, as well as
+various pitfalls and how to avoid them. The manual concludes with some
+authorship and licensing information and pointers to related software.
+
+Further Reading
+---------------
+
+This manual is not intended as a general introduction to functional
+programming, so at least some familiarity with this programming style is
+assumed. If Pure is your first functional language then you might want to look
+at the `Functional Programming`_ wikipedia article to see what it is all about
+and find pointers to current literature on the subject. In any case we hope
+that you'll find Pure helpful in exploring functional programming, as it is
+fairly easy to learn but a very powerful language.
+
+.. _Functional Programming: http://en.wikipedia.org/wiki/Functional_programming
+
+As already mentioned, Pure uses term rewriting as its underlying computational
+model, which goes well beyond functional programming in some ways. Term
+rewriting has long been used in computer algebra systems, and `Michael
+O'Donnell`_ pioneered its use as a programming language already in the
+1980s. But until recently implementations have not really been efficient
+enough to be useful as general-purpose programming languages; Pure strives to
+change that. A good introduction to the theory of the term rewriting calculus
+and its applications is the book by `Baader and Nipkow`_.
+
+Typographical Conventions
+-------------------------
+
+Program examples are always set in typewriter font. Here’s how a typical code
+sample may look like::
+
+  fact n = if n>0 then n*fact(n-1) else 1;
+
+These can either be saved to a file and then loaded into the interpreter, or
+you can also just type them directly in the interpreter. If some lines start
+with the interpreter prompt '> ', this indicates an example interaction with
+the interpreter. Everything following the prompt (excluding the '> ' itself)
+is meant to be typed exactly as written. Lines lacking the '> ' prefix show
+results printed by the interpreter. Example::
+
+  > fact n = if n>0 then n*fact(n-1) else 1;
+  > map fact (1..10);
+  [1,2,6,24,120,720,5040,40320,362880,3628800]
+
+Similarly, lines starting with the ‘$ ’ prompt indicate shell interactions.
+For instance,
+
+.. code-block:: console
+
+   $ pure
+
+indicates that you should type the command ``pure`` on your system’s command
+line.
+
+Invoking Pure
+=============
+
+.. program:: pure
 
 The Pure interpreter is invoked as follows:
 
-.. code-block:: none
+.. code-block:: console
 
-  pure [options ...] [script ...] [-- args ...]
-  pure [options ...] -x script [args ...]
+   pure [options ...] [script ...] [-- args ...]
+   pure [options ...] -x script [args ...]
+
+Use ``pure -h`` to get help about the command line options. As already
+mentioned, just the ``pure`` command without any command line parameters
+invokes the interpreter in interactive mode, see `Running Interactively`_
+below for details. Some other important ways to invoke the interpreter are
+summarized below.
+
+``pure -g``
+  Runs the interpreter interactively, with debugging support.
+
+``pure script ...``
+  Runs the given scripts in batch mode.
+
+``pure -i script ...``
+  Runs the given scripts in batch mode as above, but then enters the
+  interactive command loop. (Add :option:`-g` to also get debugging support,
+  and :option:`-q` to suppress the sign-on message.)
+
+``pure -x script [arg ...]``
+  Runs the given script with the given parameters. The script name and command
+  line arguments are available in the global ``argv`` variable.
+
+``pure -c script [-o prog]``
+  Batch compilation: Runs the given script, compiling it to a native
+  executable ``prog`` (a.out by default).
+
+Depending on your local setup, there may be additional ways to run the Pure
+interpreter. In particular, if you have Emacs Pure mode installed, then you
+can just open a script in Emacs and run it with the :kbd:`C-c C-c` keyboard
+command. For Emacs aficionados, this is probably the most convenient way to
+execute a Pure script interactively in the interpreter.
 
 Options
 -------
 
 The interpreter accepts various options which are described in more detail
-below:
+below.
 
-``-c``
-    Batch compilation.
+.. option:: -c
 
-``--ctags``, ``--etags``
-    Create a tags file in ctags (vi) or etags (emacs) format.
+   Batch compilation.
 
-``--eager-jit``
-    Enable eager JIT compilation. This requires LLVM 2.7 or later, otherwise
-    this flag will be ignored.
+.. option:: --ctags
+   	    --etags
 
-``-fPIC``, ``-fpic``
-    Create position-independent code (batch compilation).
+   Create a tags file in ctags (vi) or etags (emacs) format.
 
-``-g``
-    Enable symbolic debugging.
+.. option:: --eager-jit
 
-``--help``, ``-h``
-    Print help message and exit.
+   Enable eager JIT compilation. This requires LLVM 2.7 or later, otherwise
+   this flag will be ignored.
 
-``-i``
-    Force interactive mode (read commands from stdin).
+.. option:: -fPIC
+   	    -fpic
 
-``-I directory``
-    Add a directory to be searched for included source scripts.
+   Create position-independent code (batch compilation).
 
-``-L directory``
-    Add a directory to be searched for dynamic libraries.
+.. option:: -g
 
-``-l libname``
-    Library to be linked in batch compilation.
+   Enable symbolic debugging.
 
-``--noediting``
-    Disable command-line editing.
+.. option:: -h, --help
 
-``--noprelude``, ``-n``
-    Do not load the prelude.
+   Print help message and exit.
 
-``--norc``
-    Do not run the interactive startup files.
+.. option:: -i
 
-``-o filename``
-    Output filename for batch compilation.
+   Force interactive mode (read commands from stdin).
 
-``-q``
-    Quiet startup (suppresses sign-on message in interactive mode).
+.. option:: -I directory
 
-``-T filename``
-    Tags file to be written by ``--ctags`` or ``--etags``.
+   Add a directory to be searched for included source scripts.
 
-``-u``
-    Do not strip unused functions in batch compilation.
+.. option:: -L directory
 
-``-v[level]``
-    Set verbosity level. See below for details.
+   Add a directory to be searched for dynamic libraries.
 
-``--version``
-    Print version information and exit.
+.. option:: -l libname
 
-``-w``
-    Enable compiler warnings.
+   Library to be linked in batch compilation.
 
-``-x``
-    Execute script with given command line arguments.
+.. option:: --noediting
 
-``--``
-    Stop option processing and pass the remaining command line arguments in
-    the ``argv`` variable.
+   Disable command-line editing.
+
+.. option:: -n, --noprelude
+
+   Do not load the prelude.
+
+.. option:: --norc
+
+   Do not run the interactive startup files.
+
+.. option:: -o filename
+
+   Output filename for batch compilation.
+
+.. option:: -q
+
+   Quiet startup (suppresses sign-on message in interactive mode).
+
+.. option:: -T filename
+
+   Tags file to be written by :option:`--ctags` or :option:`--etags`.
+
+.. option:: -u
+
+   Do not strip unused functions in batch compilation.
+
+.. option:: -v[level]
+
+   Set verbosity level. See below for details.
+
+.. option:: --version
+
+   Print version information and exit.
+
+.. option:: -w
+
+   Enable compiler warnings.
+
+.. option:: -x
+
+   Execute script with given command line arguments.
+
+.. option:: --
+
+   Stop option processing and pass the remaining command line arguments in
+   the ``argv`` variable.
 
 (Besides these, the interpreter also understands a number of other command
 line switches for setting various code generation options; please see `Code
@@ -171,20 +313,21 @@ Overview of Operation
 If any source scripts are specified on the command line, they are loaded and
 executed, after which the interpreter exits. Otherwise the interpreter enters
 the interactive read-eval-print loop, see `Running Interactively`_ below. You
-can also use the -i option to enter the interactive loop (continue reading
-from stdin) even after processing some source scripts.
+can also use the :option:`-i` option to enter the interactive loop (continue
+reading from stdin) even after processing some source scripts.
 
 Options and source files are processed in the order in which they are given on
 the command line. Processing of options and source files ends when either the
--- or the -x option is encountered. The -x option must be followed by the name
-of a script to be executed, which becomes the "main script" of the
-application. In either case, any remaining parameters are passed to the
-executing script by means of the global ``argc`` and ``argv`` variables,
-denoting the number of arguments and the list of the actual parameter strings,
-respectively. In the case of -x this also includes the script name as
-``argv!0``. The -x option is useful, in particular, to turn Pure scripts into
-executable programs by including a "shebang" like the following as the first
-line in your main script. (This trick only works with Unix shells, though.)
+:option:`--` or the :option:`-x` option is encountered. The :option:`-x`
+option must be followed by the name of a script to be executed, which becomes
+the "main script" of the application. In either case, any remaining parameters
+are passed to the executing script by means of the global ``argc`` and
+``argv`` variables, denoting the number of arguments and the list of the
+actual parameter strings, respectively. In the case of :option:`-x` this also
+includes the script name as ``argv!0``. The :option:`-x` option is useful, in
+particular, to turn Pure scripts into executable programs by including a
+"shebang" like the following as the first line in your main script. (This
+trick only works with Unix shells, though.)
 
 ::
 
@@ -199,14 +342,15 @@ define the variable ``compiling`` which indicates whether the program is
 executed in a batch compilation, see `Compiling Scripts`_ below.)
 
 If available, the prelude script prelude.pure is loaded by the interpreter
-prior to any other definitions, unless the -n or --noprelude option is
-specified. The prelude is searched for in the directory specified with the
-PURELIB environment variable. If the PURELIB variable is not set, a
-system-specific default is used. Relative pathnames of other source scripts
-specified on the command line are interpreted relative to the current working
-directory. In addition, the executed program may load other scripts and
-libraries via a ``using`` declaration in the source, which are searched for in
-a number of locations, including the directories named with the -I and -L
+prior to any other definitions, unless the :option:`-n` or
+:option:`--noprelude` option is specified. The prelude is searched for in the
+directory specified with the :envvar:`PURELIB` environment variable. If the
+:envvar:`PURELIB` variable is not set, a system-specific default is
+used. Relative pathnames of other source scripts specified on the command line
+are interpreted relative to the current working directory. In addition, the
+executed program may load other scripts and libraries via a :keyword:`using`
+declaration in the source, which are searched for in a number of locations,
+including the directories named with the :option:`-I` and :option:`-L`
 options; see the Declarations_ and `C Interface`_ sections for details.
 
 Compiling Scripts
@@ -222,81 +366,87 @@ executed.
 
 Pure's LLVM backend does "lazy JIT compilation" by default, meaning that each
 function (global or local) is compiled no sooner than it is run for the first
-time. With the --eager-jit option, however, it will also compile all other
-(global or local) functions that may be called by the compiled function. (The
-PURE_EAGER_JIT environment variable, when set to any value, has the same
-effect, so that you do not have to specify the --eager--jit option each time
-you run the interpreter.) Eager JIT compilation may be more efficient in some
-cases (since bigger chunks of compilation work can be done in one go) and less
-efficient in others (e.g., eager JITing may compile large chunks of code which
-aren't actually called later, except in rare circumstances).
+time. With the :option:`--eager-jit` option, however, it will also compile all
+other (global or local) functions that may be called by the compiled
+function. (The :envvar:`PURE_EAGER_JIT` environment variable, when set to any
+value, has the same effect, so that you do not have to specify the
+:option:`--eager-jit` option each time you run the interpreter.) Eager JIT
+compilation may be more efficient in some cases (since bigger chunks of
+compilation work can be done in one go) and less efficient in others (e.g.,
+eager JITing may compile large chunks of code which aren't actually called
+later, except in rare circumstances).
 
 Note that the eager JIT mode is only available with LLVM 2.7 or later;
 otherwise this option will be ignored.
 
 It is also possible to compile your scripts to native code beforehand, using
-the -c batch compilation option. This options forces the interpreter to
-non-interactive mode (unless -i is specified as well, which overrides -c). Any
-scripts specified on the command line are then executed as usual, but after
-execution the interpreter takes a snapshot of the program and compiles it to
-one of several supported output formats, LLVM assembler (.ll) or bitcode
-(.bc), native assembler (.s) or object (.o), or a native executable, depending
-on the output filename specified with -o. If the output filename ends in the
-.ll extension, an LLVM assembler file is created which can then be processed
-with the LLVM toolchain. If the output filename is just '-', the assembler
-file is written to standard output, which is useful if you want to pass the
-generated code to the LLVM tools in a pipeline. If the output filename ends in
-the .bc extension, an LLVM bitcode file is created instead.
+the :option:`-c` batch compilation option. This options forces the interpreter
+to non-interactive mode (unless :option:`-i` is specified as well, which
+overrides :option:`-c`). Any scripts specified on the command line are then
+executed as usual, but after execution the interpreter takes a snapshot of the
+program and compiles it to one of several supported output formats, LLVM
+assembler (.ll) or bitcode (.bc), native assembler (.s) or object (.o), or a
+native executable, depending on the output filename specified with
+:option:`-o`. If the output filename ends in the .ll extension, an LLVM
+assembler file is created which can then be processed with the LLVM
+toolchain. If the output filename is just '-', the assembler file is written
+to standard output, which is useful if you want to pass the generated code to
+the LLVM tools in a pipeline. If the output filename ends in the .bc
+extension, an LLVM bitcode file is created instead.
 
 The .ll and .bc formats are supported natively by the Pure interpreter, no
 external tools are required to generate these. If the target is an .s, .o or
 executable file, the Pure interpreter creates a temporary bitcode file on
-which it invokes the LLVM tools opt and llc to create a native assembler file,
-and then uses gcc to assemble and link the resulting program (if requested).
-You can also specify additional libraries to be linked into the executable
-with the -l option. If the output filename is omitted, it defaults to
-``a.out`` (``a.exe`` on Windows).
+which it invokes the LLVM tools :program:`opt` and :program:`llc` to create a
+native assembler file, and then uses :program:`gcc` to assemble and link the
+resulting program (if requested). You can also specify additional libraries to
+be linked into the executable with the :option:`-l` option. If the output
+filename is omitted, it defaults to a.out (a.exe on Windows).
 
-The -c option provides a convenient way to quickly turn a Pure script into a
-standalone executable which can be invoked directly from the shell. One
-advantage of compiling your script is that this eliminates the JIT compilation
-time and thus considerably reduces the startup time of the program. Another
-reason to prefer a standalone executable is that it lets you deploy the
-program on systems without a full Pure installation (usually only the runtime
-library is required on the target system). On the other hand, compiled scripts
-also have some limitations, mostly concerning the use of the built-in ``eval``
-function. Please see the `Batch Compilation`_ section for details.
+The :option:`-c` option provides a convenient way to quickly turn a Pure
+script into a standalone executable which can be invoked directly from the
+shell. One advantage of compiling your script is that this eliminates the JIT
+compilation time and thus considerably reduces the startup time of the
+program. Another reason to prefer a standalone executable is that it lets you
+deploy the program on systems without a full Pure installation (usually only
+the runtime library is required on the target system). On the other hand,
+compiled scripts also have some limitations, mostly concerning the use of the
+built-in :func:`eval` function. Please see the `Batch Compilation`_ section
+for details.
 
-The -v64 (or -v0100) verbosity option can be used to have the interpreter
-print the commands it executes during compilation, see `Verbosity and
-Debugging Options`_ below. When creating an object file, this also prints the
-suggested linker command (including all the dynamic modules loaded by the
-script, which also have to be linked in to create a working executable), to
-which you only have to add the options describing the desired output file.
+The :option:`-v64` (or :option:`-v0100`) verbosity option can be used to have
+the interpreter print the commands it executes during compilation, see
+`Verbosity and Debugging Options`_ below. When creating an object file, this
+also prints the suggested linker command (including all the dynamic modules
+loaded by the script, which also have to be linked in to create a working
+executable), to which you only have to add the options describing the desired
+output file.
 
 Tagging Scripts
 ---------------
 
 Pure programs often have declarations and definitions of global symbols
-scattered out over many different source files. The --ctags and --etags
-options let you create a tags_ file which allows you to quickly locate these
-items in text editors such as vi and emacs which support this feature.
+scattered out over many different source files. The :option:`--ctags` and
+:option:`--etags` options let you create a tags_ file which allows you to
+quickly locate these items in text editors such as :program:`vi` and
+:program:`emacs` which support this feature.
 
 .. _tags: http://en.wikipedia.org/wiki/Ctags
 
-If --ctags or --etags is specified, the interpreter enters a special mode in
-which it only parses source files without executing them and collects
-information about the locations of global symbol declarations and definitions.
-The collected information is then written to a tags file in the ctags or etags
-format used by vi and emacs, respectively. The desired name of the tags file
-can be specified with the -T option; it defaults to ``tags`` for --ctags and
-``TAGS`` for --etags (which matches the default tags file names used by vi and
-emacs, respectively).
+If :option:`--ctags` or :option:`--etags` is specified, the interpreter enters
+a special mode in which it only parses source files without executing them and
+collects information about the locations of global symbol declarations and
+definitions. The collected information is then written to a tags file in the
+ctags or etags format used by :program:`vi` and :program:`emacs`,
+respectively. The desired name of the tags file can be specified with the
+:option:`-T` option; it defaults to tags for :option:`--ctags` and TAGS for
+:option:`--etags` (which matches the default tags file names used by
+:program:`vi` and :program:`emacs`, respectively).
 
 The tags file contains information about the global constant, variable, macro,
 function and operator symbols of all scripts specified on the command line, as
-well as the prelude and other scripts included via a ``using`` clause. Tagged
-scripts which are located in the same directory as the tags file (or,
+well as the prelude and other scripts included via a :keyword:`using` clause.
+Tagged scripts which are located in the same directory as the tags file (or,
 recursively, in one of its subdirectories) are specified using relative
 pathnames, while scripts outside this hierarchy (such as included scripts from
 the standard library) are denoted with absolute pathnames. This scheme makes
@@ -311,42 +461,40 @@ input (which may be any legal Pure code or some special interpreter commands
 provided for interactive usage), and prints computed results. This is also
 known as the `read-eval-print` loop and is described in much more detail in
 the `Interactive Usage`_ section. To exit the interpreter, just type the
-``quit`` command or the end-of-file character (``^D`` on Unix) at the
-beginning of the command line.
+:keyword:`quit` command or the end-of-file character (:kbd:`Control-d` on
+Unix) at the beginning of the command line.
 
 The interpreter may also source a few additional interactive startup files
-immediately before entering the interactive loop, unless the --norc option is
-specified. First .purerc in the user's home directory is read, then .purerc in
-the current working directory. These are ordinary Pure scripts which can be
-used to provide additional definitions for interactive usage. Finally, a .pure
-file in the current directory (containing a dump from a previous interactive
-session) is loaded if it is present.
+immediately before entering the interactive loop, unless the :option:`--norc`
+option is specified. First .purerc in the user's home directory is read, then
+.purerc in the current working directory. These are ordinary Pure scripts
+which can be used to provide additional definitions for interactive
+usage. Finally, a .pure file in the current directory (containing a dump from
+a previous interactive session) is loaded if it is present.
 
 When the interpreter is in interactive mode and reads from a tty, unless the
---noediting option is specified, commands are usually read using readline(3)
-or some compatible replacement, providing completion for all commands listed
-under `Interactive Usage`_, as well as for symbols defined in the running
-program. When exiting the interpreter, the command history is stored in
-~/.pure_history, from where it is restored the next time you run the
+:option:`--noediting` option is specified, commands are usually read using
+:program:`readline` or some compatible replacement, providing completion for
+all commands listed under `Interactive Usage`_, as well as for symbols defined
+in the running program. When exiting the interpreter, the command history is
+stored in ~/.pure_history, from where it is restored the next time you run the
 interpreter.
 
-As of Pure 0.22, the interpreter also provides a simple source level debugger
-when run in interactive mode, see Debugging_ for details. To enable the
-interactive debugger, you need to specify the -g option when invoking the
-interpreter. This option causes your script to run *much* slower and also
-disables tail call optimization, so you should only use this option if you
-want to run the debugger.
+The interpreter also provides a simple source level debugger when run in
+interactive mode, see Debugging_ for details. To enable the debugger, you need
+to specify the :option:`-g` option when invoking the interpreter. This option
+causes your script to run *much* slower, so you should only use this option if
+you want to run the debugger.
 
 Verbosity and Debugging Options
 -------------------------------
 
-The -v option is useful for debugging the interpreter, or if you are
+The :option:`-v` option is useful for debugging the interpreter, or if you are
 interested in the code your program gets compiled to. The level argument is
 optional; it defaults to 1. Seven different levels are implemented at this
-time (one more bit is reserved for future extensions). For most purposes, only
-the first two levels will be useful for the average Pure programmer; the
-remaining levels are most likely to be used by the Pure interpreter
-developers.
+time (one more bit is reserved for future extensions). Only the first two
+levels will be useful for the average Pure programmer; the remaining levels
+are mostly intended for maintenance purposes.
 
 1 (0x1, 001)
     denotes echoing of parsed definitions and expressions.
@@ -377,7 +525,8 @@ developers.
 
 64 (0x40, 0100)
     turns on verbose batch compilation; this is useful if you want to see
-    exactly which commands get executed during batch compilation (-c).
+    exactly which commands get executed during batch compilation
+    (:option:`-c`).
 
 These values can be or'ed together, and, for convenience, can be specified in
 either decimal, hexadecimal or octal. Thus 0xff or 0777 always gives you full
@@ -387,17 +536,18 @@ developers). Some useful flag combinations for experts are (in octal) 007
 (definitions and assembler code) and 021 (parser debugging output along with
 parsed definitions).
 
-Note that the -v option is only applied after the prelude has been loaded. If
-you want to debug the prelude, use the -n option and specify the prelude.pure
-file explicitly on the command line. Verbose output is also suppressed for
-modules imported through a ``using`` clause. As a remedy, you can use the
-interactive ``show`` command (see the `Interactive Usage`_ section) to list
-definitions along with additional debugging information.
+Note that the :option:`-v` option is only applied after the prelude has been
+loaded. If you want to debug the prelude, use the :option:`-n` option and
+specify the prelude.pure file explicitly on the command line. Verbose output
+is also suppressed for modules imported through a :keyword:`using` clause. As
+a remedy, you can use the interactive :keyword:`show` command (see the
+`Interactive Usage`_ section) to list definitions along with additional
+debugging information.
 
-The -w option enables some additional warnings which are useful to check your
-scripts for possible errors. Right now it will report implicit declarations of
-function symbols which might indicate missing or mistyped symbols that need to
-be fixed, see `Symbol Lookup and Creation`_ for details.
+The :option:`-w` option enables some additional warnings which are useful to
+check your scripts for possible errors. Right now it will report implicit
+declarations of function symbols which might indicate missing or mistyped
+symbols that need to be fixed, see `Symbol Lookup and Creation`_ for details.
 
 Code Generation Options
 -----------------------
@@ -418,7 +568,7 @@ For instance, the ``checks`` option controls stack and signal checks. Thus
 ``PURE_NOCHECKS`` environment variable makes this the default, in which case
 you can use ``--checks`` on the command line to reenable the option.
 
-Each code generation option can also be used as a *pragma* (compiler
+Each code generation option can also be used as a `pragma` (compiler
 directive) in source code so that you can control it on a per-rule basis. The
 pragma must be on a line by itself, starting in column 1, and takes the
 following form (using ``--nochecks`` as an example)::
@@ -427,94 +577,108 @@ following form (using ``--nochecks`` as an example)::
 
 Currently, the following code generation options are recognized:
 
-``--checks``, ``--nochecks``
-    Enable or disable various extra stack and signal checks. By default, the
-    interpreter checks for stack overflows (if the ``PURE_STACK`` environment
-    variable is set) and pending signals on entry to every function, see
-    `Stack Size and Tail Recursion`_ and `Handling of Asynchronous Signals`_
-    for details. This is needed to catch these conditions in a reliable way,
-    so we recommend to leave this enabled. However, these checks also make
-    programs run a little slower (typically some 5%, YMMV). If performance is
-    critical then you can disable the checks with the ``--nochecks``
-    option. (Even then, a minimal amount of checking will be done, usually on
-    entry to every global function.)
+.. option:: --checks
+   	    --nochecks
 
-``--const``, ``--noconst``
-    Enable or disable the precomputing of constant values in batch compilation
-    (cf. `Compiling Scripts`_). If enabled (which is the default), the values
-    of constants in ``const`` definitions are precomputed at compile time (if
-    possible) and then stored in the generated executable. This usually yields
-    faster startup times but bigger executables. You can disable this option
-    with ``--noconst`` to get smaller executables at the expense of slower
-    startup times. Please see the `Batch Compilation`_ section for an example.
+   Enable or disable various extra stack and signal checks. By default, the
+   interpreter checks for stack overflows (if the :envvar:`PURE_STACK`
+   environment variable is set) and pending signals on entry to every
+   function, see `Stack Size and Tail Recursion`_ and `Handling of
+   Asynchronous Signals`_ for details. This is needed to catch these
+   conditions in a reliable way, so we recommend to leave this enabled.
+   However, these checks also make programs run a little slower (typically
+   some 5%, YMMV). If performance is critical then you can disable the checks
+   with the :option:`--nochecks` option. (Even then, a minimal amount of
+   checking will be done, usually on entry to every global function.)
 
-``--fold``, ``--nofold``
-    Enable or disable constant folding in the compiler frontend. This means
-    that constant expressions involving int and double values and the usual
-    arithmetic and logical operations on these are precomputed at compile
-    time. (This is mostly for cosmetic purposes; the LLVM backend will perform
-    this optimization anyway when generating machine code.) For instance::
+.. option:: --const
+   	    --noconst
 
-      > foo x = 2*3*x;
-      > show foo
-      foo x = 6*x;
+   Enable or disable the precomputing of constant values in batch compilation
+   (cf. `Compiling Scripts`_). If enabled (which is the default), the values
+   of constants in :keyword:`const` definitions are precomputed at compile
+   time (if possible) and then stored in the generated executable. This
+   usually yields faster startup times but bigger executables. You can disable
+   this option with :option:`--noconst` to get smaller executables at the
+   expense of slower startup times. Please see the `Batch Compilation`_
+   section for an example.
 
-    Disabling constant folding in the frontend causes constant expressions to
-    be shown as you entered them::
+.. option:: --fold
+   	    --nofold
 
-      > #! --nofold
-      > bar x = 2*3*x;
-      > show bar
-      bar x = 2*3*x;
+   Enable or disable constant folding in the compiler frontend. This means
+   that constant expressions involving int and double values and the usual
+   arithmetic and logical operations on these are precomputed at compile
+   time. (This is mostly for cosmetic purposes; the LLVM backend will perform
+   this optimization anyway when generating machine code.) For instance::
 
-``--tc``, ``--notc``
-    Enable or disable tail call optimization (TCO). TCO is needed to make
-    tail-recursive functions execute in constant stack space, so we recommend
-    to leave this enabled. However, at the time of this writing LLVM's TCO
-    support is still bug-ridden on some platforms, so the ``--notc`` option
-    allows you to disable it. (Note that TCO can also be disabled when
-    compiling the Pure interpreter, in which case these options have no
-    effect; see the installation documentation for details.)
+     > foo x = 2*3*x;
+     > show foo
+     foo x = 6*x;
+
+   Disabling constant folding in the frontend causes constant expressions to
+   be shown as you entered them::
+
+     > #! --nofold
+     > bar x = 2*3*x;
+     > show bar
+     bar x = 2*3*x;
+
+.. option:: --tc
+   	    --notc
+
+   Enable or disable tail call optimization (TCO). TCO is needed to make
+   tail-recursive functions execute in constant stack space, so we recommend
+   to leave this enabled. However, at the time of this writing LLVM's TCO
+   support is still bug-ridden on some platforms, so the :option:`--notc`
+   option allows you to disable it. (Note that TCO can also be disabled when
+   compiling the Pure interpreter, in which case these options have no effect;
+   see the installation documentation for details.)
 
 Besides these, there are the following special pragmas affecting the code
 generation of some given function, which is specified in the pragma. These
 pragmas can only be used in source code, there are no command line options for
 them.
 
-``--eager fun``
-    Instruct the interpreter to JIT-compile the given function eagerly. This
-    means that native code will be created for the function, as well as all
-    other (global or local) functions that may be called by the compiled
-    function, as soon as the function gets recompiled. This avoids the hiccups
-    you get when a function is compiled on the fly if it is run for the first
-    time, which is particularly useful for functions which are to be run in
-    realtime, such as in audio and MIDI applications. Please note that, in
-    difference to the --eager-jit option, this feature is available for all
-    LLVM versions (it doesn't require LLVM 2.7 or later).
+.. option:: --eager fun
 
-``--required fun``
-    Inform the batch compiler (cf. `Compiling Scripts`_) that the given
-    function symbol ``fun`` should never be stripped from the program. This is
-    useful, e.g., if a function is never called explicitly but only through
-    ``eval``. Adding a ``--required`` pragma for the function then makes sure
-    that the function is always linked into the program. Please see the `Batch
-    Compilation`_ section for an example.
+   Instruct the interpreter to JIT-compile the given function eagerly. This
+   means that native code will be created for the function, as well as all
+   other (global or local) functions that may be called by the compiled
+   function, as soon as the function gets recompiled. This avoids the hiccups
+   you get when a function is compiled on the fly if it is run for the first
+   time, which is particularly useful for functions which are to be run in
+   realtime (typically in multimedia applications). Please note that, in
+   difference to the :option:`--eager-jit` option, this feature is available
+   for all LLVM versions (it doesn't require LLVM 2.7 or later).
+
+.. option:: --required fun
+
+   Inform the batch compiler (cf. `Compiling Scripts`_) that the given
+   function symbol ``fun`` should never be stripped from the program. This is
+   useful, e.g., if a function is never called explicitly but only through
+   :func:`eval`. Adding a :option:`--required` pragma for the function then
+   makes sure that the function is always linked into the program. Please see
+   the `Batch Compilation`_ section for an example.
 
 Startup Files
 -------------
 
 The interpreter may source various files during its startup. These are:
 
-~/.pure_history
-    Interactive command history.
+.. describe:: ~/.pure_history
 
-~/.purerc, .purerc, .pure
-    Interactive startup files. The latter is usually a dump from a previous
-    interactive session.
+   Interactive command history.
 
-prelude.pure
-    Standard prelude. If available, this script is loaded before any other
-    definitions, unless -n was specified.
+.. describe:: ~/.purerc, .purerc, .pure
+
+   Interactive startup files. The latter is usually a dump from a previous
+   interactive session.
+
+.. describe:: prelude.pure
+
+   Standard prelude. If available, this script is loaded before any other
+   definitions, unless :option:`-n` was specified.
 
 Environment
 -----------
@@ -522,41 +686,51 @@ Environment
 Various aspects of the interpreter can be configured through the following
 shell environment variables:
 
-BROWSER
-    If the PURE_HELP variable is not set (see below), this specifies a
-    colon-separated list of browsers to try for reading the online
-    documentation. See http://catb.org/~esr/BROWSER/.
+.. envvar:: BROWSER
 
-PURELIB
-    Directory to search for library scripts, including the prelude. If PURELIB
-    is not set, it defaults to some location specified at installation time.
+   If the :envvar:`PURE_HELP` variable is not set (see below), this specifies
+   a colon-separated list of browsers to try for reading the online
+   documentation. See http://catb.org/~esr/BROWSER/.
 
-PURE_EAGER_JIT
-    Enable eager JIT compilation (same as ``--eager-jit``), see `Compiling
-    Scripts`_ for details.
+.. envvar:: PURELIB
 
-PURE_HELP
-    Command used to browse the Pure manual. This must be a browser capable of
-    displaying html files. Default is w3m(1).
+   Directory to search for library scripts, including the prelude. If
+   :envvar:`PURELIB` is not set, it defaults to some location specified at
+   installation time.
 
-PURE_INCLUDE
-    Additional directories (in colon-separated format) to be searched for
-    included scripts.
+.. envvar:: PURE_EAGER_JIT
 
-PURE_LIBRARY
-    Additional directories (in colon-separated format) to be searched for
-    dynamic libraries.
+   Enable eager JIT compilation (same as :option:`--eager-jit`), see
+   `Compiling Scripts`_ for details.
 
-PURE_MORE
-    Shell command to be used for paging through output of the show command,
-    when the interpreter runs in interactive mode. PURE_LESS is the same for
-    evaluation results printed by the interpreter.
+.. envvar:: PURE_HELP
 
-PURE_PS
-    Command prompt used in the interactive command loop ("> " by default).
+   Command used to browse the Pure manual. This must be a browser capable of
+   displaying html files. Default is :program:`w3m`.
 
-PURE_STACK
-    Maximum stack size in kilobytes (default: 0 = unlimited).
+.. envvar:: PURE_INCLUDE
+
+   Additional directories (in colon-separated format) to be searched for
+   included scripts.
+
+.. envvar:: PURE_LIBRARY
+
+   Additional directories (in colon-separated format) to be searched for
+   dynamic libraries.
+
+.. envvar:: PURE_MORE
+
+   Shell command to be used for paging through output of the :keyword:`show`
+   command, when the interpreter runs in interactive mode. :envvar:`PURE_LESS`
+   does the same for evaluation results printed by the interpreter.
+
+.. envvar:: PURE_PS
+
+   Command prompt used in the interactive command loop ("> " by default).
+
+.. envvar:: PURE_STACK
+
+   Maximum stack size in kilobytes (default: 0 = unlimited).
 
 Besides these, the interpreter also understands a number of other environment
 variables for setting various code generation options (see `Code Generation
@@ -2335,7 +2509,7 @@ the ``x`` parameter would have been evaluated already before it is passed to
 ``timex``, making ``timex`` always return a zero time value. Try it!
 
 Here's yet another example, which is handy if you need to trace function
-calls. (As of Pure 0.22, the interpreter now has its own built-in debugging
+calls. (Note that the interpreter also has its own built-in debugging
 facility, see Debugging_. However, the following macro allows you to trace
 functions using your own custom output format, and may thus be useful in
 situations where the built-in debugger is not appropriate.)
@@ -2922,8 +3096,9 @@ while in the latter case the '\ ``,``\ ' operator is actually declared in the
 prelude and thus imported from the global namespace.
 
 As an additional safety measure against missing or mistyped symbols, the
-interpreter provides the option -w (see Options_) to check your scripts for
-non-defining uses of undeclared unqualified function symbols. For instance::
+interpreter provides the option :option:`-w` (see `Invoking Pure`_) to check
+your scripts for non-defining uses of undeclared unqualified function
+symbols. For instance::
 
   $ pure -w
   > puts "bla"; // missing import of system module
@@ -4893,13 +5068,13 @@ option on the command line if you wish to skip these initializations.
 Batch Compilation
 =================
 
-As of Pure 0.21, the interpreter has a new -c option which provides a
-convenient means to turn Pure scripts into standalone executables. This
-feature is still a bit experimental right now. In particular, note that the
-compiled executable is essentially a *static snapshot* of your program which
-is executed on the "bare metal", without a hosting interpreter. Only a minimal
-runtime system is provided. This considerably reduces startup times, but also
-implies the following quirks and limitations:
+The interpreter's :option:`-c` option provides a means to turn Pure scripts
+into standalone executables. This feature is still a bit experimental. In
+particular, note that the compiled executable is essentially a *static
+snapshot* of your program which is executed on the "bare metal", without a
+hosting interpreter. Only a minimal runtime system is provided. This
+considerably reduces startup times, but also implies the following quirks and
+limitations:
 
 * All toplevel expressions and ``let`` bindings are evaluated *after* all
   functions have been defined. This might cause inconsistent behaviour with an
@@ -5410,11 +5585,11 @@ you back at the toplevel where you can start typing the definition again.
 The __show__ Function
 ---------------------
 
-As of Pure 0.6, the interpreter provides a "hook" to override the print
-representations of expressions at runtime by means of the ``__show__``
-function, which works in a fashion similar to Haskell's ``show``
-function. This feature is still a bit experimental, but seems to work
-reasonably well for the purposes for which it is intended.
+The interpreter provides a "hook" to override the print representations of
+expressions at runtime by means of the ``__show__`` function, which works in a
+fashion similar to Haskell's ``show`` function. This feature is still a bit
+experimental, but seems to work reasonably well for the purposes for which it
+is intended.
 
 ``__show__`` is just an ordinary Pure function expected to return a string
 with the desired custom representation of a normal form value given as the
@@ -6215,6 +6390,19 @@ follows::
   with handler (signal k) = printf "Hey, I got signal %d.\n" k $$ 0 end;
   process x = printf "counting: %d\n" x $$ sleep 1 $$ x+1;
 
+Author
+======
+
+Albert Gräf <Dr.Graef@t-online.de>, Dept. of Computer Music, Johannes
+Gutenberg University of Mainz, Germany.
+
+The author gratefully acknowledges the contributions by Scott E. Dillard,
+Rooslan S. Khayrov, Eddie Rucker, Libor Spacek, Jiri Spitz and Sergei
+Winitzki, as well as Toni Graffy, Michel Salim and Ryan Schmidt who maintain
+the SUSE Linux, Fedora Core and OSX packages, respectively. Thanks are also
+due to Vili Aapro, Alvaro Castro Castilla, John Cowan, Chris Double, Tim
+Haynes, Roman Neuhauser, Wm Leler, John Lunney and Max Wolf.
+
 Copying
 =======
 
@@ -6259,21 +6447,8 @@ by the University of Illinois at Urbana-Champaign, and is licensed under a
 distribution for the exact licensing terms. You can also find the LLVM license
 at the LLVM_ website.
 
-Author
-======
-
-Albert Gräf <Dr.Graef@t-online.de>, Dept. of Computer Music, Johannes
-Gutenberg University of Mainz, Germany.
-
-The author gratefully acknowledges the contributions by Scott E. Dillard,
-Rooslan S. Khayrov, Eddie Rucker, Libor Spacek, Jiri Spitz and Sergei
-Winitzki, as well as Toni Graffy, Michel Salim and Ryan Schmidt who maintain
-the SUSE Linux, Fedora Core and OSX packages, respectively. Thanks are also
-due to Vili Aapro, Alvaro Castro Castilla, John Cowan, Chris Double, Tim
-Haynes, Roman Neuhauser, Wm Leler, John Lunney and Max Wolf.
-
-See Also
-========
+References and Links
+====================
 
 .. _Aardappel:
 
@@ -6286,6 +6461,11 @@ Aardappel
 Alice ML
     A version of ML (see below) from which Pure borrows its model of lazy
     evaluation, http://www.ps.uni-sb.de/alice.
+
+.. _Baader and Nipkow:
+
+Franz Baader and Tobias Nipkow
+    *Term Rewriting and All That.* Cambridge University Press, Cambridge, 1998.
 
 .. _Bertrand:
 
@@ -6342,15 +6522,16 @@ LLVM
 
 ML
     A popular strict FPL. See Robin Milner, Mads Tofte, Robert Harper,
-    D. MacQueen: The Definition of Standard ML (Revised). MIT Press, 1997.
+    D. MacQueen: *The Definition of Standard ML (Revised).* MIT Press, 1997.
 
-.. _Pure:
+.. _Michael O'Donnell:
 
-Pure
-    Find the latest releases and the mailing list at the Pure website,
-    http://pure-lang.googlecode.com.
+Michael O'Donnell
+    *Equational Logic as a Programming Language.* Series in the Foundations of
+    Computing. MIT Press, Cambridge, Mass., 1985.
 
 .. _Q:
 
 Q
     Another term rewriting language by yours truly, http://q-lang.sf.net.
+
