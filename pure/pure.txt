@@ -47,19 +47,19 @@ and the latest sources can be found under the following URLs:
 Introduction
 ============
 
-Pure is a functional programming language based on term rewriting. This means
-that all your programs are essentially just collections of symbolic equations
-which the interpreter uses to reduce expressions to their simplest ("normal")
-form. This makes for a rather powerful and flexible programming model
-featuring dynamic typing and general polymorphism. In addition, Pure programs
-are compiled to efficient native code on the fly, using the LLVM_ compiler
-framework, so programs are executed reasonably fast and interfacing to C is
-very easy. If you have the necessary 3rd party compilers installed then you
-can even inline functions written in C and a number of other languages and
-call them just like any other Pure function. The ease with which you can
-interface to 3rd party software makes Pure useful for a wide range of
-applications from symbolic algebra and scientific programming to database, web
-and multimedia applications.
+Pure is a functional programming language (FPL) based on term rewriting. This
+means that all your programs are essentially just collections of symbolic
+equations which the interpreter uses to reduce expressions to their simplest
+("normal") form. This makes for a rather powerful and flexible programming
+model featuring dynamic typing and general polymorphism. In addition, Pure
+programs are compiled to efficient native code on the fly, using the LLVM_
+compiler framework, so programs are executed reasonably fast and interfacing
+to C is very easy. If you have the necessary 3rd party compilers installed
+then you can even inline functions written in C and a number of other
+languages and call them just like any Pure function. The ease with which you
+can interface to 3rd party software makes Pure useful as a practical
+programming tool for a wide range of applications, from symbolic algebra and
+scientific programming to database, web and multimedia applications.
 
 The Pure language is implemented by the `Pure interpreter` program. Just like
 other programming language interpreters, the Pure interpreter provides an
@@ -741,16 +741,54 @@ code (see `Inline Code`_).
 Pure Overview
 =============
 
-Pure is a fairly simple yet powerful language. Programs are basically
-collections of rewriting rules and expressions to be evaluated. For
-convenience, it is also possible to define global variables and constants, and
-for advanced uses Pure offers macro functions as a kind of preprocessing
-facility. These are all described below and in the following sections.
+Pure is a fairly simple and small language, designed to be easy to learn and
+use - at least as functional programming languages go. Programs are
+essentially just collections of term rewriting rules, which are used to reduce
+expressions to `normal form` in a symbolic fashion. For convenience, Pure also
+offers some extensions to the basic term rewriting calculus, like global
+variables and constants, nested scopes of local function and variable
+definitions, anonymous functions (lambdas), exception handling and a built-in
+macro facility. These are all described below and in the following sections.
+
+Compared to other modern (as opposed to Lisp-like) functional programming
+languages, Pure is a bit unusual in that it is essentially a `typeless`
+language. Keeping with the spirit of term rewriting, all data belongs to the
+same universe of `terms`, which are formed by applying functions to other
+terms, with some special notations thrown in for denoting primitive data
+elements such as numbers and strings. Some terms may evaluate to something
+else, while others are just normal forms. Pure does not distinguish between
+"constructors" and "defined functions", so that any function symbol can also
+act as a data constructor. Pure also makes heavy use of `ad-hoc polymorphism`,
+and in fact it is possible to extend any operation at any time with new
+defining equations. This makes for a flexible programming model which is much
+different in style from other modern FPLs like Haskell, even though the syntax
+is superficially similar.
+
+Another fairly unique feature is that Pure, in addition to the usual list and
+algebraic data structures, also offers built-in matrices, which is like having
+Haskell and Octave under one hood, and makes it easy to express advanced
+mathematical operations. Pure’s matrix data structure is fully compatible with
+the `GNU Scientific Library`_ (GSL), so that you can easily interface to GSL’s
+extensive set of numerical algorithms.
+
+Pure normally does eager evaluation, but it also supports lazy data structures
+through the notion of lazy `futures` (a.k.a. `thunks`). This makes it possible
+to work with infinite lists and enables some powerful programming techniques
+not available in most mainstream languages.
+
+Most basic operations are defined in the standard `prelude`. This includes the
+usual arithmetic and logical operations, as well as the basic string, list and
+matrix functions. The prelude is always loaded by the interpreter, so that you
+can start using it as a sophisticated kind of desktop calculator right away.
+Other useful operations are provided through separate library modules. Some of
+these, like the system interface and the container data structures, are
+distributed with the interpreter, others are available as separate add-on
+packages from the Pure website.
 
 Here's a first example which demonstrates how to define a simple recursive
-function in Pure, entered interactively in the interpreter (note that the
-'\ :func:`>`\ ' symbol at the beginning of each input line is the
-interpreter's default command prompt)::
+function in Pure, entered interactively in the interpreter (note that the '> '
+symbol at the beginning of each input line is the interpreter's default
+command prompt)::
 
   > // my first Pure example
   > fact 0 = 1;
@@ -761,41 +799,132 @@ interpreter's default command prompt)::
 Lexical Matters
 ---------------
 
-Pure is a free-format language; whitespace is insignificant, except if it
-serves to delimit other symbols. Hence, as shown above, definitions and
-expressions at the toplevel have to be terminated with a semicolon, even in
-interactive mode.
+Pure is a `free-format` language, i.e., whitespace is insignificant (unless it
+is used to delimit other symbols). Thus, in contrast to "layout-based"
+languages like Haskell, you *must* use the proper delimiters (``;``) and
+keywords (:keyword:`end`) to terminate definitions and block structures.
+Hence, as shown in the example above, definitions and expressions at the
+toplevel have to be terminated with a semicolon, even in interactive mode.
 
-Comments have the same syntax as in C++ (using ``//`` for line-oriented and
-``/* ... */`` for multiline comments; the latter may not be nested). Lines
+Comments use the same syntax as in C++: ``//`` for line-oriented, and
+``/* ... */`` for multiline comments. The latter must not be nested. Lines
 beginning with ``#!`` are treated as comments, too; as already discussed
 above, on Unix-like systems this allows you to add a "shebang" to your main
 script in order to turn it into an executable program.
 
-There are a few reserved keywords which cannot be used as identifiers::
+A few ASCII symbols are reserved for special uses, namely the semicolon, the
+"at" symbol ``@``, the equals sign ``=``, the backslash ``\``, the Unix pipe
+symbol ``|``, parentheses ``()``, brackets ``[]`` and curly braces ``{}``.
+(Among these, only the semicolon is a "hard delimiter" which is always a
+lexeme by itself; the other symbols can be used inside operator symbols.)
+Moreover, there are some keywords which cannot be used as identifiers::
 
-  case const def else end extern if infix infixl infixr let namespace
-  nonfix of otherwise outfix postfix prefix private public then using
-  when with
+  case       const   def      else    end        extern  if
+  infix      infixl  infixr   let     namespace  nonfix  of
+  otherwise  outfix  postfix  prefix  private    public  then
+  using      when    with
+
+Pure fully supports the `Unicode` character set or, more precisely, UTF-8.
+This is an ASCII extension capable of representing all Unicode characters,
+which provides you with thousands of characters from most of the languages of
+the world, as well as an abundance of special symbols for almost any purpose.
+If your text editor supports the UTF-8 encoding (most editors do nowadays),
+you can use all Unicode characters in your Pure programs, not only inside
+strings, but also for denoting identifiers and special operator and constant
+symbols. 
 
 The customary notations for identifiers, numbers and strings are all
 provided. In addition, Pure also allows you to define your own operator
-symbols. Pure fully supports Unicode, so that you can write your programs in
-almost any language and make good use of the special symbols in the Unicode
-character set, provided that you encode your scripts in UTF-8. To keep this
-simple, besides the ASCII punctuation characters, Pure also considers the
-following code points in the Unicode repertoire as punctuation: U+00A1 through
-U+00BF, U+00D7, U+00F7, and U+20D0 through through U+2BFF. This comprises the
-special symbols in the Latin-1 repertoire, as well as the Combining
-Diacritical Marks for Symbols, Letterlike Symbols, Number Forms, Arrows,
-Mathematical Symbols, Miscellaneous Technical Symbols, Control Pictures, OCR,
-Enclosed Alphanumerics, Box Drawing, Blocks, Geometric Shapes, Miscellaneous
-Symbols, Dingbats, Miscellaneous Mathematical Symbols A, Supplemental Arrows
-A, Supplemental Arrows B, Miscellaneous Mathematical Symbols B, Supplemental
-Mathematical Operators, and Miscellaneous Symbols and Arrows. This should
-cover almost everything you'd ever want to use in an operator symbol. All
-other extended Unicode characters are effectively treated as "letters" which
-can be used as identifier constituents.
+symbols. Identifiers and other symbols are described by the following grammar
+rules in EBNF format:
+
+.. productionlist::
+   symbol : `identifier` | `special`
+   identifier : `letter` (`letter` | `digit`)*
+   special : `punct`+
+   letter : "A"|...|"Z"|"a"|...|"z"|"_"|...
+   digit : "0"|...|"9"
+   punct : "!"|"#"|"$"|"%"|"&"|...
+
+To keep things simple, Pure uses the following rules to distinguish
+"punctuation" (which may only occur in declared operator and constant symbols)
+and "letters" (identifier constituents). In addition to the punctuation
+symbols in the 7 bit ASCII range, the following code points in the Unicode
+repertoire are considered as punctuation: U+00A1 through U+00BF, U+00D7,
+U+00F7, and U+20D0 through U+2BFF. This comprises the special symbols in the
+Latin-1 repertoire, as well as the Combining Diacritical Marks for Symbols,
+Letterlike Symbols, Number Forms, Arrows, Mathematical Symbols, Miscellaneous
+Technical Symbols, Control Pictures, OCR, Enclosed Alphanumerics, Box Drawing,
+Blocks, Geometric Shapes, Miscellaneous Symbols, Dingbats, Miscellaneous
+Mathematical Symbols A, Supplemental Arrows A, Supplemental Arrows B,
+Miscellaneous Mathematical Symbols B, Supplemental Mathematical Operators, and
+Miscellaneous Symbols and Arrows. This should cover almost everything you'd
+ever want to use in an operator symbol. All other extended Unicode characters
+are effectively treated as "letters" which can be used as identifier
+constituents. (Charts of all Unicode symbols can be found at the `Code
+Charts`_ page of the `Unicode Consortium`_.)
+
+.. _Code Charts: http://www.unicode.org/charts/
+.. _Unicode Consortium: http://www.unicode.org/
+
+The following are examples of valid identifiers: ``foo``, ``foo_bar``,
+``FooBar``, ``BAR``, ``bar99``. Case is significant in identifiers, so ``Bar``
+and ``bar`` are distinct identifiers, but otherwise the case of letters
+carries no meaning. Special symbols consist entirely of punctuation, such as
+``::=``. These may be used as operator symbols, but have to be declared before
+they can be used (see `Symbol Declarations`_).
+
+Pure also has a notation for qualified symbols which carry a namespace prefix.
+These take the following format (note that no whitespace is permitted between
+the namespace prefix and the symbol):
+
+.. productionlist::
+   qualified_symbol : [`qualifier`] `symbol`
+   qualified_identifier : [`qualifier`] `identifier`
+   qualifier : [`identifier`] "::" (`identifier` "::")*
+
+Example: ``foo::bar``.
+
+Number literals come in three flavours: integers, bigints (denoted with an
+``L`` suffix) and floating point numbers (indicated by the presence of the
+decimal point and/or a base 10 scaling factor). Integers and bigints may be
+written in different bases (decimal, binary, octal and hexadecimal), while
+floating point numbers are always denoted in decimal.
+
+.. productionlist::
+   number : `integer` | `integer` "L" | `float`
+   integer : `digit`+
+   	   : | "0" ("X"|"x") `hex_digit`+
+           : | "0" ("B"|"b") `bin_digit`+
+           : | "0" `oct_digit`+
+   oct_digit : "0"|...|"7"
+   hex_digit : "0"|...|"9"|"A"|...|"F"|"a"|...|"f"
+   bin_digit : "0"|"1"
+   float : `digit`+ ["." `digit`+] `exponent`
+         : | `digit`* "." `digit`+ [`exponent`]
+   exponent : ("E"|"e") ["+"|"-"] `digit`+
+
+Examples: ``4711``, ``4711L``, ``1.2e-3``. Numbers in different bases:
+``1000`` (decimal), ``0x3e8`` (hexadecimal), ``01750`` (octal),
+``0b1111101000`` (binary).
+
+String literals are arbitrary sequences of characters enclosed in double
+quotes, such as ``"Hello, world!"``.
+
+.. productionlist::
+   string : '"' `char`* '"'
+
+Special escape sequences may be used to denote double quotes and backslashes
+(``\"``, ``\\``), control characters (``\b``, ``\f``, ``\n``, ``\r``, ``\t``,
+these have the same meaning as in C), and arbitrary Unicode characters given
+by their number or `XML entity name`__ (e.g., ``\169``, ``\0xa9`` and
+``\&copy;`` all denote the Unicode copyright character, code point U+00A9). As
+indicated, numeric escapes can be specified in any of the supported bases for
+integer literals. For disambiguating purposes, these can also be enclosed in
+parentheses. E.g., ``"\(123)4"`` is a string consisting of the character
+``\123`` followed by the digit ``4``.
+
+__ http://www.w3.org/TR/xml-entity-names/
 
 Definitions and Expression Evaluation
 -------------------------------------
