@@ -47,19 +47,19 @@ and the latest sources can be found under the following URLs:
 Introduction
 ============
 
-Pure is a functional programming language (FPL) based on term rewriting. This
-means that all your programs are essentially just collections of symbolic
-equations which the interpreter uses to reduce expressions to their simplest
-("normal") form. This makes for a rather powerful and flexible programming
-model featuring dynamic typing and general polymorphism. In addition, Pure
-programs are compiled to efficient native code on the fly, using the LLVM_
-compiler framework, so programs are executed reasonably fast and interfacing
-to C is very easy. If you have the necessary 3rd party compilers installed
-then you can even inline functions written in C and a number of other
-languages and call them just like any Pure function. The ease with which you
-can interface to 3rd party software makes Pure useful as a practical
-programming tool for a wide range of applications, from symbolic algebra and
-scientific programming to database, web and multimedia applications.
+Pure is a functional programming language based on term rewriting. This means
+that all your programs are essentially just collections of symbolic equations
+which the interpreter uses to reduce expressions to their simplest ("normal")
+form. This makes for a rather powerful and flexible programming model
+featuring dynamic typing and general polymorphism. In addition, Pure programs
+are compiled to efficient native code on the fly, using the LLVM_ compiler
+framework, so programs are executed reasonably fast and interfacing to C is
+very easy. If you have the necessary 3rd party compilers installed then you
+can even inline functions written in C and a number of other languages and
+call them just like any other Pure function. The ease with which you can
+interface to 3rd party software makes Pure useful for a wide range of
+applications from symbolic algebra and scientific programming to database, web
+and multimedia applications.
 
 The Pure language is implemented by the `Pure interpreter` program. Just like
 other programming language interpreters, the Pure interpreter provides an
@@ -741,49 +741,22 @@ code (see `Inline Code`_).
 Pure Overview
 =============
 
-Pure is a fairly simple and small language, designed to be easy to learn and
-use - at least as functional programming languages go. Programs are
-essentially just collections of term rewriting rules, which are used to reduce
-expressions to `normal form` in a symbolic fashion. For convenience, Pure also
-offers some extensions to the basic term rewriting calculus, like global
-variables and constants, nested scopes of local function and variable
-definitions, anonymous functions (lambdas), exception handling and a built-in
-macro facility. These are all described below and in the following sections.
+Pure is a fairly simple yet powerful language. Programs are basically
+collections of term rewriting rules, which are used to reduce expressions to
+`normal form` in a symbolic fashion. For convenience, Pure also offers some
+extensions to the basic term rewriting calculus, like global variables and
+constants, nested scopes of local function and variable definitions, anonymous
+functions (lambdas), exception handling and a built-in macro facility. These
+are all described below and in the following sections.
 
-Compared to other modern (as opposed to Lisp-like) functional programming
-languages, Pure is a bit unusual in that it is essentially a `typeless`
-language. Keeping with the spirit of term rewriting, all data belongs to the
-same universe of `terms`, which are formed by applying functions to other
-terms, with some special notations thrown in for denoting primitive data
-elements such as numbers and strings. Some terms may evaluate to something
-else, while others are just normal forms. Pure does not distinguish between
-"constructors" and "defined functions", so that any function symbol can also
-act as a data constructor. Pure also makes heavy use of `ad-hoc polymorphism`,
-and in fact it is possible to extend any operation at any time with new
-defining equations. This makes for a flexible programming model which is much
-different in style from other modern FPLs like Haskell, even though the syntax
-is superficially similar.
-
-Another fairly unique feature is that Pure, in addition to the usual list and
-algebraic data structures, also offers built-in matrices, which is like having
-Haskell and Octave under one hood, and makes it easy to express advanced
-mathematical operations. Pure’s matrix data structure is fully compatible with
-the `GNU Scientific Library`_ (GSL), so that you can easily interface to GSL’s
-extensive set of numerical algorithms.
-
-Pure normally does eager evaluation, but it also supports lazy data structures
-through the notion of lazy `futures` (a.k.a. `thunks`). This makes it possible
-to work with infinite lists and enables some powerful programming techniques
-not available in most mainstream languages.
-
-Most basic operations are defined in the standard `prelude`. This includes the
-usual arithmetic and logical operations, as well as the basic string, list and
-matrix functions. The prelude is always loaded by the interpreter, so that you
-can start using it as a sophisticated kind of desktop calculator right away.
-Other useful operations are provided through separate library modules. Some of
-these, like the system interface and the container data structures, are
-distributed with the interpreter, others are available as separate add-on
-packages from the Pure website.
+Most basic operations are defined in the standard :ref:`prelude <prelude>`.
+This includes the usual arithmetic and logical operations, as well as the
+basic string, list and matrix functions. The prelude is always loaded by the
+interpreter, so that you can start using it as a sophisticated kind of desktop
+calculator right away.  Other useful operations are provided through separate
+library modules. Some of these, like the system interface and the container
+data structures, are distributed with the interpreter, others are available as
+separate add-on packages from the Pure website.
 
 Here's a first example which demonstrates how to define a simple recursive
 function in Pure, entered interactively in the interpreter (note that the '> '
@@ -846,23 +819,23 @@ rules in EBNF format:
    digit : "0"|...|"9"
    punct : "!"|"#"|"$"|"%"|"&"|...
 
-To keep things simple, Pure uses the following rules to distinguish
-"punctuation" (which may only occur in declared operator and constant symbols)
-and "letters" (identifier constituents). In addition to the punctuation
-symbols in the 7 bit ASCII range, the following code points in the Unicode
-repertoire are considered as punctuation: U+00A1 through U+00BF, U+00D7,
-U+00F7, and U+20D0 through U+2BFF. This comprises the special symbols in the
-Latin-1 repertoire, as well as the Combining Diacritical Marks for Symbols,
-Letterlike Symbols, Number Forms, Arrows, Mathematical Symbols, Miscellaneous
-Technical Symbols, Control Pictures, OCR, Enclosed Alphanumerics, Box Drawing,
-Blocks, Geometric Shapes, Miscellaneous Symbols, Dingbats, Miscellaneous
-Mathematical Symbols A, Supplemental Arrows A, Supplemental Arrows B,
-Miscellaneous Mathematical Symbols B, Supplemental Mathematical Operators, and
-Miscellaneous Symbols and Arrows. This should cover almost everything you'd
-ever want to use in an operator symbol. All other extended Unicode characters
-are effectively treated as "letters" which can be used as identifier
-constituents. (Charts of all Unicode symbols can be found at the `Code
-Charts`_ page of the `Unicode Consortium`_.)
+Pure uses the following rules to distinguish "punctuation" (which may only
+occur in declared operator and constant symbols) and "letters" (identifier
+constituents). In addition to the punctuation symbols in the 7 bit ASCII
+range, the following code points in the Unicode repertoire are considered as
+punctuation: U+00A1 through U+00BF, U+00D7, U+00F7, and U+20D0 through
+U+2BFF. This comprises the special symbols in the Latin-1 repertoire, as well
+as the Combining Diacritical Marks for Symbols, Letterlike Symbols, Number
+Forms, Arrows, Mathematical Symbols, Miscellaneous Technical Symbols, Control
+Pictures, OCR, Enclosed Alphanumerics, Box Drawing, Blocks, Geometric Shapes,
+Miscellaneous Symbols, Dingbats, Miscellaneous Mathematical Symbols A,
+Supplemental Arrows A, Supplemental Arrows B, Miscellaneous Mathematical
+Symbols B, Supplemental Mathematical Operators, and Miscellaneous Symbols and
+Arrows. This should cover almost everything you'd ever want to use in an
+operator symbol. All other extended Unicode characters are effectively treated
+as "letters" which can be used as identifier constituents. (Charts of all
+Unicode symbols can be found at the `Code Charts`_ page of the `Unicode
+Consortium`_.)
 
 .. _Code Charts: http://www.unicode.org/charts/
 .. _Unicode Consortium: http://www.unicode.org/
@@ -933,7 +906,7 @@ On the surface, Pure is quite similar to other modern functional languages
 like Haskell_ and ML_. But under the hood it is a much more dynamic language,
 more akin to Lisp. In particular, Pure is dynamically typed, so functions can
 be fully polymorphic and you can add to the definition of an existing function
-at any time. For instance, we can extend the example above to make the
+at any time. For instance, we can extend our first example above to make the
 ``fact`` function work with floating point numbers, too::
 
   > fact 0.0 = 1.0;
