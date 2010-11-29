@@ -166,6 +166,25 @@ For instance,
 indicates that you should type the command ``pure`` on your system’s command
 line.
 
+The grammar notation in this manual uses an extended form of BNF (Backus-Naur
+form), which looks as follows:
+
+.. productionlist::
+   expression : "{" `expr_list` (";" `expr_list`)* [";"] "}"
+   expr_list : `expression` (',' `expression`)*
+
+Parentheses are used to group syntactical elements, while brackets denote
+optional elements. We also use the regular expression operators ``*`` and
+``+`` to denote repetitions (as usual, ``*`` denotes zero or more, ``+`` one
+or more repetitions of the preceding element). Terminals (literal elements
+such as keywords and delimiters) are enclosed in double or single quotes.
+
+These EBNF rules are used for both lexical and syntactical elements, but note
+that the former are concerned with entities formed from single characters and
+thus tokens are meant to be typed exactly as written, whereas the latter deal
+with larger syntactical structures where whitespace between tokens is
+generally insignificant.
+
 Invoking Pure
 =============
 
@@ -752,13 +771,13 @@ are all described below and in the following sections.
 Most basic operations are defined in the standard :ref:`prelude <prelude>`.
 This includes the usual arithmetic and logical operations, as well as the
 basic string, list and matrix functions. The prelude is always loaded by the
-interpreter, so that you can start using it as a sophisticated kind of desktop
-calculator right away.  Other useful operations are provided through separate
-library modules. Some of these, like the system interface and the container
-data structures, are distributed with the interpreter, others are available as
-separate add-on packages from the Pure website. A (very) brief overview of
-some of the modules distributed with the Pure interpreter can be found in the
-`Standard Library`_ section.
+interpreter, so that you can start using the interpreter as a sophisticated
+kind of desktop calculator right away.  Other useful operations are provided
+through separate library modules. Some of these, like the system interface and
+the container data structures, are distributed with the interpreter, others
+are available as separate add-on packages from the Pure website. A (very)
+brief overview of some of the modules distributed with the Pure interpreter
+can be found in the `Standard Library`_ section.
 
 Here's a first example which demonstrates how to define a simple recursive
 function in Pure, entered interactively in the interpreter (note that the '> '
@@ -777,8 +796,8 @@ Lexical Matters
 Pure is a `free-format` language, i.e., whitespace is insignificant (unless it
 is used to delimit other symbols). Thus, in contrast to "layout-based"
 languages like Haskell, you *must* use the proper delimiters (``;``) and
-keywords (:keyword:`end`) to terminate definitions and block structures.
-Hence, as shown in the example above, definitions and expressions at the
+keywords (:keyword:`end`) to terminate definitions and block structures. In
+particular, as shown in the example above, definitions and expressions at the
 toplevel have to be terminated with a semicolon, even in interactive mode.
 
 Comments use the same syntax as in C++: ``//`` for line-oriented, and
@@ -995,7 +1014,7 @@ The answer is that the interpreter considers the different positions in the
 left-hand side expression of an equation. Basically, a Pure expression is just
 a tree formed by applying expressions to other expressions, with the atomic
 subexpressions like numbers and symbols at the leaves of the tree. (This is
-even true for infix expressions like ``x+y``, since in Pure these are always
+true even for infix expressions like ``x+y``, since in Pure these are always
 equivalent to a function application of the form ``(+) x y`` which has the
 atomic subterms ``(+)``, ``x`` and ``y`` at its leaves.)
 
@@ -1020,18 +1039,101 @@ position. This is done by means of a :keyword:`nonfix` declaration, see
 Expression Syntax
 -----------------
 
+Like in other functional languages, expressions are the central ingredient of
+all Pure programs. All computation performed by a Pure program consists in the
+evaluation of expressions, and expressions also form the building blocks of
+the equational rules which are used to define the constants, variables,
+functions and macros of a Pure program.
+
+Pure's expression syntax can be summarized in the following grammar rules:
+
+.. productionlist::
+   expr : "\" `prim_expr`+ "->" `expr`
+    	: | "case" `expr` "of" `rules` "end"
+    	: | `expr` "when" `simple_rules` "end"
+    	: | `expr` "with" `rules` "end"
+    	: | "if" `expr` "then" `expr` "else" `expr`
+    	: | `simple_expr`
+   simple_expr : `simple_expr` `op` `simple_expr`
+               : | `op` `simple_expr`
+               : | `simple_expr` `op`
+               : | `application`
+   application : `application` `prim_expr`
+               : | `prim_expr`
+   prim_expr : `qualified_symbol`
+             : | `number`
+             : | `string`
+             : | "(" `op` ")"
+             : | "(" `left_op` `right_op` ")"
+             : | "(" `simple_expr` `op` ")"
+             : | "(" `op` `simple_expr` ")"
+             : | "(" `expr` ")"
+             : | `left_op` `expr` `right_op`
+   	     : | "[" `exprs` "]"
+   	     : | "{" `exprs` (";" `exprs`)* [";"] "}"
+   	     : | "[" `expr` "|" `simple_rules` "]"
+   	     : | "{" `expr` "|" `simple_rules` "}"
+   op : `qualified_symbol`
+   left_op : `qualified_symbol`
+   right_op : `qualified_symbol`
+   exprs : `expr` ("," `expr`)*
+   rules : `rule` (";" `rule`)* [";"]
+   simple_rules : `simple_rule` (";" `simple_rule`)* [";"]
+
+(Note that the :token:`rule` and :token:`simple_rule` elements are part of the
+definition syntax, which is explained in the `Rule Syntax`_ section.)
+
+Typical examples of the different expression types are summarized in the
+following table. Note that lambdas bind most weakly, followed by the special
+:keyword:`case`, :keyword:`when` and :keyword:`with` constructs, followed by
+conditional expressions (:keyword:`if`-:keyword:`then`-:keyword:`else`),
+followed by the simple expressions. Operators are a part of the simple
+expression syntax, and are parsed according to their declared precedences and
+associativities (cf. `Symbol Declarations`_). Function application binds
+stronger than all operators. Parentheses can be used to group expressions and
+override default precedences as usual.
+
+===========  ================================  ============================
+Type         Example                           Description
+===========  ================================  ============================
+Lambda       ``\x->x+1``                       anonymous function
+-----------  --------------------------------  ----------------------------
+Block        ``case x of y = z; ... end``      pattern-matching conditional
+\            ``x when y = z; ... end``         local variable definition
+\            ``x with f y = z; ... end``       local function definition
+-----------  --------------------------------  ----------------------------
+Conditional  ``if x then y else z``            conditional expression
+-----------  --------------------------------  ----------------------------
+Simple       ``x+y``, ``-x``, ``x mod y``      operator application
+\            ``sin x``, ``max a b``            function application
+-----------  --------------------------------  ----------------------------
+Primary      ``4711``, ``1.2e-3``              number
+\            ``"Hello, world!\n"``             string
+\            ``foo``, ``x``, ``(+)``           function or variable symbol
+\            ``[1,2,3]``, ``{1,2;3,4}``        list and matrix
+\            ``[x,-y | x=1..n; y=1..m; x<y]``  list comprehension
+\            ``{i==j | i=1..n; j=1..m}``       matrix comprehension
+===========  ================================  ============================
+
+Primary Expressions
+~~~~~~~~~~~~~~~~~~~
+
 The Pure language provides built-in support for machine integers (32 bit),
 bigints (implemented using GMP_), floating point values (double precision IEEE
-754), character strings (UTF-8 encoded) and generic C pointers. The latter
-don't have a syntactic representation in Pure, except that the predefined
-constant :const:`NULL` may be used to denote a generic null pointer; other
-pointer values need to be created with external C functions. Truth values are
-encoded as machine integers (as you might expect, zero denotes *false* and any
-non-zero value *true*). Pure also provides some built-in support for lists and
-matrices, although most of the corresponding operations are actually defined
-in the prelude.
+754) and character strings (UTF-8 encoded). These can all be denoted using the
+corresponding literals described in `Lexical Matters`_. Truth values are
+encoded as machine integers; as you might expect, zero denotes *false* and any
+non-zero value *true*, and the prelude also provides symbolic constants
+:const:`false` and :func:`true` to denote these. Pure also supports generic C
+pointers, but these don't have a syntactic representation in Pure, except that
+the predefined constant :const:`NULL` may be used to denote a generic null
+pointer; other pointer values need to be created with external C functions.
+Finally, Pure also provides some built-in support for compound primaries in
+the form of lists and matrices, although most of the corresponding operations
+are actually defined in the prelude.
 
-Expressions consist of the following elements:
+Together, these "atomic" types of expressions make up Pure's `primary
+expression` syntax. Here is a brief rundown of the primary expression types.
 
 Numbers: ``4711``, ``4711L``, ``1.2e-3``
     The usual C notations for integers (decimal: ``1000``, hexadecimal:
@@ -1049,20 +1151,7 @@ Strings: ``"Hello, world!\n"``
     like in C. In contrast to C, strings are always encoded in UTF-8, and
     character escapes in Pure strings have a more flexible syntax (borrowed
     from the author's Q language) which provides notations to specify any
-    Unicode character. In particular, the notation ``\``\ *n*, where *n* is an
-    integer literal written in decimal (no prefix), hexadecimal (``0x``
-    prefix), octal (``0`` prefix) or binary (``0b`` prefix) notation, denotes
-    the Unicode character (code point) #\ *n*. Since these escapes may consist
-    of a varying number of digits, parentheses may be used for disambiguation
-    purposes; thus, e.g. ``"\(123)4"`` denotes character #123 followed by the
-    ASCII character ``4``. The usual C-like escapes for special non-printable
-    characters such as ``\n`` are also supported. Moreover, you can use
-    symbolic character escapes of the form ``\&``\ *name*\ ``;``, where *name*
-    is any of the XML single character entity names specified in the `XML
-    Entity definitions for Characters`__. Thus, e.g., ``"\&copy;"`` denotes
-    the copyright character (code point 0x000A9).
-
-__ http://www.w3.org/TR/xml-entity-names/
+    Unicode character. Please refer to `Lexical Matters`_ for details.
 
 Function and variable symbols: ``foo``, ``foo_bar``, ``BAR``, ``foo::bar``
     These consist of the usual sequence of letters (including the underscore)
@@ -1074,7 +1163,7 @@ Function and variable symbols: ``foo``, ``foo_bar``, ``BAR``, ``foo::bar``
     like in ``foo::bar``. (This requires that the given namespace has already
     been created, as explained under Namespaces_ in the Declarations_ section.)
 
-Operator and constant symbols: ``x+y``, ``x==y``, ``not x``
+Operator and constant symbols: ``+``, ``==``, ``not``
     For convenience, Pure also provides you with a limited means to extend the
     syntax of the language with special operator and constant symbols by means
     of a corresponding `fixity` declaration, as discussed in section `Symbol
@@ -1093,39 +1182,62 @@ Operator and constant symbols: ``x+y``, ``x==y``, ``not x``
     ordinary function symbol. Also, operators and constant symbols can be
     qualified with a namespace just like normal identifiers.
 
+    .. note:: The common operator symbols like ``+``, ``-``, ``*``, ``/``
+       etc. are all declared at the beginning of the prelude, see the
+       :doc:`purelib` for a list of these. Arithmetic and relational operators
+       mostly follow C conventions. However, out of necessity (``!``, ``&``
+       and ``|`` are used for other purposes in Pure) the logical and bitwise
+       operations, as well as the negated equality predicates are named a bit
+       differently: ``~``, ``&&`` and ``||`` denote logical negation,
+       conjunction and disjunction, while the corresponding bitwise operations
+       are named ``not``, ``and`` and ``or``.  Moreover, following these
+       conventions, inequality is denoted ``~=``. Also note that ``&&`` and
+       ``||`` are special forms which are evaluated in short-circuit mode (see
+       `Special Forms`_ below), whereas the bitwise connectives receive their
+       arguments using call-by-value, just like the other arithmetic
+       operations.
+
 Lists: ``[x,y,z]``, ``x:xs``, ``x..y``, ``x:y..z``
     Pure's basic list syntax is the same as in Haskell, thus ``[]`` is the
     empty list and ``x:xs`` denotes a list with head element ``x`` and tail
-    list ``xs``. (The infix constructor symbol '``:``' is declared in the
-    prelude.) The usual syntactic sugar for list values in brackets is
+    list ``xs``. The infix constructor symbol '\ :cons:`:`\ ' is declared in
+    the prelude. The usual syntactic sugar for list values in brackets is
     provided, thus ``[x,y,z]`` is exactly the same as ``x:y:z:[]``.
 
     There's also a way to denote arithmetic sequences such as ``1..5``, which
-    denotes the list ``[1,2,3,4,5]``. (Haskell users should note the missing
+    denotes the list ``[1,2,3,4,5]``. Haskell users should note the missing
     brackets. In contrast to Haskell, Pure doesn't use any special syntax for
-    arithmetic sequences, the '``..``' symbol is just an ordinary infix
-    operator declared and defined in the prelude.) Sequences with arbitrary
-    stepsizes can be written by denoting the first two sequence elements using
-    the '``:``' operator, as in ``1.0:1.2..3.0``. (To prevent unwanted
-    artifacts due to rounding errors, the upper bound in a floating point
-    sequence is always rounded to the nearest grid point. Thus, e.g.,
-    ``0.0:0.1..0.29`` actually yields ``[0.0,0.1,0.2,0.3]``, as does
-    ``0.0:0.1..0.31``.)
+    arithmetic sequences, the '\ :func:`..`\ ' symbol is just an ordinary
+    infix operator declared and defined in the prelude. Sequences with
+    arbitrary stepsizes can be written by denoting the first two sequence
+    elements using the '\ :cons:`:`\ ' operator, as in ``1.0:1.2..3.0``. To
+    prevent unwanted artifacts due to rounding errors, the upper bound in a
+    floating point sequence is always rounded to the nearest grid point. Thus,
+    e.g., ``0.0:0.1..0.29`` actually yields ``[0.0,0.1,0.2,0.3]``, as does
+    ``0.0:0.1..0.31``.
 
 Tuples: ``x,y,z``
     Pure's tuples are a bit unusual: They are constructed by just "pairing"
-    things using the '``,``' operator, for which the empty tuple ``()`` acts
-    as a neutral element (i.e., ``(),x`` is just ``x``, as is ``x,()``). Pairs
-    always associate to the right, meaning that ``x,y,z == x,(y,z) ==
-    (x,y),z``, where ``x,(y,z)`` is the normalized representation. This
-    implies that tuples are always flat, i.e., there are no nested tuples
+    things using the '\ :cons:`,`\ ' operator, for which the empty tuple
+    :cons:`()` acts as a neutral element (i.e., ``(),x`` is just ``x``, as is
+    ``x,()``). Pairs always associate to the right, meaning that ``x,y,z ==
+    x,(y,z) == (x,y),z``, where ``x,(y,z)`` is the normalized representation.
+    This implies that tuples are always flat, i.e., there are no nested tuples
     (tuples of tuples); if you need such constructs then you should use lists
-    instead. Also note that parentheses are generally only used to group
-    expressions and are *not* part of the tuple syntax in Pure, *except* if
-    you need to include a tuple in a list or matrix. E.g., ``[(1,2),3,(4,5)]``
-    is a three element list consisting of the tuple ``1,2``, the integer
-    ``3``, and another tuple ``4,5``. Likewise, ``[(1,2,3)]`` is a list with a
-    single element, the tuple ``1,2,3``.
+    instead.
+
+    .. note:: Syntactically, tuples aren't really primary expressions, but we
+       still include them here because they are closely related to lists which
+       are also defined in the prelude. Also, tuples are often used as a
+       simpler replacement for lists, in particular in function arguments and
+       return values, when no elaborate hierarchical structure is needed.
+
+       Also note that parentheses are generally only used to group expressions
+       and are *not* part of the tuple syntax in Pure, although they will be
+       needed to include a tuple in a list or matrix. E.g.,
+       ``[(1,2),3,(4,5)]`` is a three element list consisting of the tuple
+       ``1,2``, the integer ``3``, and another tuple ``4,5``. Likewise,
+       ``[(1,2,3)]`` is a list with a single element, the tuple ``1,2,3``.
 
 Matrices: ``{1.0,2.0,3.0}``, ``{1,2;3,4}``, ``{1L,y+1;foo,bar}``
     Pure also offers matrices, a kind of two-dimensional arrays, as a built-in
@@ -1148,16 +1260,6 @@ Matrices: ``{1.0,2.0,3.0}``, ``{1,2;3,4}``, ``{1L,y+1;foo,bar}``
     "column-major" format (however, internally all matrices are stored in C's
     row-major format).
 
-    It is important to note here that, while the ``[...]`` and ``{...}``
-    constructs look superficially similar, they work in very different
-    ways. The former is just syntactic sugar for a corresponding constructor
-    term and can thus be used as a pattern on the left-hand side of an
-    equation. In contrast, the latter is special syntax for a built-in
-    operation which creates objects of a special matrix type. Thus matrix
-    expressions can *not* be used as patterns (instead, matrix values can be
-    matched as a whole using the special ``matrix`` type tag, see the `Rule
-    Syntax`_ section for details).
-
     Pure supports both numeric and symbolic matrices. The former are
     homogeneous arrays of double, complex double or (machine) int matrices,
     while the latter can contain any mixture of Pure expressions. Pure will
@@ -1173,6 +1275,15 @@ Matrices: ``{1.0,2.0,3.0}``, ``{1,2;3,4}``, ``{1L,y+1;foo,bar}``
 
     More information about matrices and corresponding examples can be found in
     the Examples_ section below.
+
+    .. note:: While the ``[...]`` and ``{...}`` constructs look superficially
+       similar, they work in very different ways. The former is just syntactic
+       sugar for a corresponding constructor term and can thus be used as a
+       pattern on the left-hand side of an equation, cf. Patterns_. In
+       contrast, the latter is special syntax for a built-in operation which
+       creates objects of a special matrix type. Thus matrix expressions can
+       *not* be used as patterns (instead, matrix values can be matched as a
+       whole using the special ``matrix`` type tag).
 
 Comprehensions: ``[x,y | x=1..n; y=1..m; x<y]``, ``{f x | x=1..n}``
     Pure provides both list and matrix comprehensions as a convenient means to
@@ -1192,37 +1303,69 @@ Comprehensions: ``[x,y | x=1..n; y=1..m; x<y]``, ``{f x | x=1..n}``
     common mathematical abbreviations carry over quite easily. Examples of
     both kinds of comprehensions can be found in the Examples_ section below.
 
-Function and operator applications: ``foo x y z``, ``-x``, ``x+y``, ``(+x)``
-    As in other modern FPLs, function applications are written simply as
-    juxtaposition (i.e., in "curried" form) and associate to the left. This
-    means that in fact all functions only take a single argument.
-    Multi-argument functions are represented as chains of single-argument
-    functions. For instance, in ``f x y = (f x) y`` first the function ``f``
-    is applied to the first argument ``x``, yielding the function ``f x``
-    which in turn gets applied to the second argument ``y``. This makes it
-    possible to derive new functions from existing ones using `partial
-    applications` which only specify some but not all arguments of a
-    function. For instance, taking the ``max`` function from the prelude as an
-    example, ``max 0`` is the function which, for a given ``x``, returns ``x``
-    itself if it is nonnegative and zero otherwise. This works because
-    ``(max 0) x = max 0 x`` is the maximum of ``0`` and ``x``.
+Simple Expressions
+~~~~~~~~~~~~~~~~~~
 
-    Operator applications are written using prefix, postfix, outfix or infix
-    notation, as the declaration of the operator demands, but are just
-    ordinary function applications in disguise. As already mentioned,
-    enclosing an operator in parentheses turns it into an ordinary function
-    symbol, thus ``x+y`` is exactly the same as ``(+) x y``. For convenience,
-    partial applications of infix operators can also be written using
-    so-called `operator sections`. A *left section* takes the form ``(x+)``
-    which is equivalent to the partial application ``(+) x``. A *right
-    section* takes the form ``(+x)`` and is equivalent to the term ``flip (+)
-    x``. (This uses the :func:`flip` combinator from the prelude which is
-    defined as ``flip f x y = f y x``.) Thus ``(x+) y`` is equivalent to
-    ``x+y``, while ``(+x) y`` reduces to ``y+x``. For instance, ``(1/)``
-    denotes the reciprocal and ``(+1)`` the successor function. (Note that, in
-    contrast, ``(-x)`` always denotes an application of unary minus; the
-    section ``(+-x)`` can be used to indicate a function which subtracts ``x``
-    from its argument.)
+The rest of Pure's expression syntax mostly revolves around the notion of
+function applications. For convenience, Pure also allows you to declare pre-,
+post-, out- and infix operator symbols, but these are in fact just syntactic
+sugar for function applications; see `Symbol Declarations`_ for details.
+Function and operator applications are used to combine primary expressions to
+compound terms, also referred to as `simple expressions`; these are the data
+elements which are manipulated by Pure programs.
+
+As in other modern FPLs, function applications are written simply as
+juxtaposition (i.e., in "curried" form) and associate to the left. This means
+that in fact all functions only take a single argument. Multi-argument
+functions are represented as chains of single-argument functions. For
+instance, in ``f x y = (f x) y`` first the function ``f`` is applied to the
+first argument ``x``, yielding the function ``f x`` which in turn gets applied
+to the second argument ``y``. This makes it possible to derive new functions
+from existing ones using `partial applications` which only specify some but
+not all arguments of a function. For instance, taking the ``max`` function
+from the prelude as an example, ``max 0`` is the function which, for a given
+``x``, returns ``x`` itself if it is nonnegative and zero otherwise. This
+works because ``(max 0) x = max 0 x`` is the maximum of ``0`` and ``x``.
+
+.. note:: The major advantage of having curried function applications is that,
+   without any further ado, functions become first-class objects. That is,
+   they can be passed around freely both as parameters and as function return
+   values. Functions which take other functions as arguments and/or yield them
+   as results are also known as `higher-order functions` (HOFs). Much of the
+   power of functional programming languages stems from this feature, so the
+   treatment of functions as first-class values is generally considered as one
+   of the defining characteristics of functional languages.
+
+Operator applications are written using prefix, postfix, outfix or infix
+notation, as the declaration of the operator demands, but are just ordinary
+function applications in disguise. As already mentioned, enclosing an operator
+in parentheses turns it into an ordinary function symbol, thus ``x+y`` is
+exactly the same as ``(+) x y``. For convenience, partial applications of
+infix operators can also be written using so-called `operator sections`. A
+*left section* takes the form ``(x+)`` which is equivalent to the partial
+application ``(+) x``. A *right section* takes the form ``(+x)`` and is
+equivalent to the term ``flip (+) x``. (This uses the :func:`flip` combinator
+from the prelude which is defined as ``flip f x y = f y x``.) Thus ``(x+) y``
+is equivalent to ``x+y``, while ``(+x) y`` reduces to ``y+x``. For instance,
+``(1/)`` denotes the reciprocal and ``(+1)`` the successor function. (Note
+that, in contrast, ``(-x)`` always denotes an application of unary minus; the
+section ``(+-x)`` can be used to indicate a function which subtracts ``x``
+from its argument.)
+
+.. _if:
+.. _then:
+.. _else:
+.. _case:
+.. _when:
+.. _with:
+.. _end:
+
+Special Expressions
+~~~~~~~~~~~~~~~~~~~
+
+Some special notations are provided for conditional expressions as well as
+anonymous functions (lambdas) and blocks of local function and variable
+definitions.
 
 Conditional expressions: ``if x then y else z``
     Evaluates to ``y`` or ``z`` depending on whether ``x`` is "true" (i.e., a
@@ -1263,33 +1406,6 @@ With expressions: ``x with rule; ... end``
     ``when``). Several functions can be defined in a single ``with`` clause,
     and the definitions can be mutually recursive and consist of as many
     equations as you want.
-
-Operators and Precedence
-------------------------
-
-Expressions are parsed according to the following precedence rules: Lambda
-binds most weakly, followed by :keyword:`when`, :keyword:`with` and
-:keyword:`case`, followed by conditional expressions
-(:keyword:`if`-:keyword:`then`-:keyword:`else`), followed by the `simple
-expressions`, i.e., all other kinds of expressions involving operators,
-function applications, constants, symbols and other primary
-expressions. Precedence and associativity of operator symbols are given by
-their declarations (cf. `Symbol Declarations`_), and function application
-binds stronger than all operators. Parentheses can be used to override default
-precedences and associativities as usual.
-
-The common operator symbols like ``+``, ``-``, ``*``, ``/`` etc. are all
-declared at the beginning of the prelude, see the :doc:`purelib` for a list of
-these. Arithmetic and relational operators mostly follow C conventions.
-However, out of necessity (``!``, ``&`` and ``|`` are used for other purposes
-in Pure) the logical and bitwise operations, as well as the negated equality
-predicates are named a bit differently: ``~``, ``&&`` and ``||`` denote
-logical negation, conjunction and disjunction, while the corresponding bitwise
-operations are named ``not``, ``and`` and ``or``. Moreover, following these
-conventions, inequality is denoted ``~=``. Also note that ``&&`` and ``||``
-are special forms which are evaluated in short-circuit mode (see below),
-whereas the bitwise connectives receive their arguments using call-by-value,
-just like the other arithmetic operations.
 
 .. _Special Forms:
 
@@ -1424,6 +1540,10 @@ The :func:`quote` should be well familiar to Lisp programmers. However, there
 are some notable differences, please see `The Quote`_ in the `Caveats and
 Notes`_ section for details and more examples.
 
+.. _def:
+.. _let:
+.. _const:
+
 Toplevel
 --------
 
@@ -1431,51 +1551,66 @@ At the toplevel, a Pure program basically consists of rewriting rules (which
 are used to define functions and macros), constant and variable definitions,
 and expressions to be evaluated:
 
-Rules: ``lhs = rhs;``
-    Rewriting rules always combine a left-hand side pattern (which must be a
-    simple expression) and a right-hand side (which can be any kind of Pure
-    expression described above). The same format is also used in
-    :keyword:`with`, :keyword:`when` and :keyword:`case` expressions. In
-    toplevel rules, :keyword:`with` and :keyword:`case` expressions, this
-    basic form can also be augmented with a condition ``if guard`` tacked on
-    to the end of the rule, where ``guard`` is an integer expression which
-    determines whether the rule is applicable.  Moreover, the keyword
-    :keyword:`otherwise` may be used to denote an empty guard which is always
-    true (this is syntactic sugar to point out the "default" case of a
-    definition; the interpreter just treats this as a comment). Pure also
-    provides some abbreviations for factoring out common left-hand or
-    right-hand sides in collections of rules; see the `Rule Syntax`_ section
-    for details.
+.. productionlist::
+   script : `item`*
+   item : "let" `simple_rule` ";"
+     	: | "const" `simple_rule` ";"
+     	: | "def" `simple_rule` ";"
+     	: | `rule` ";"
+     	: | `expr` ";"
 
-Macro rules: ``def lhs = rhs;``
-    A rule starting with the keyword :keyword:`def` defines a macro
-    function. No guards or multiple left-hand and right-hand sides are
-    permitted here. Macro rules are used to preprocess expressions on the
-    right-hand side of other definitions at compile time, and are typically
-    employed to implement user-defined special forms and simple kinds of
-    optimization rules. See the Macros_ section below for details and
-    examples.
+(The syntax of the :token:`rule` and :token:`simple_rule` elements is
+discussed in the `Rule Syntax`_ section below. Also, a few additional toplevel
+elements are provided in the declaration syntax, see Declarations_.)
 
-Global variable bindings: ``let lhs = rhs;``
-    Binds every variable in the left-hand side pattern to the corresponding
-    subterm of the right-hand side (after evaluating it). This works like a
-    :keyword:`when` clause, but serves to bind global variables occurring free
-    on the right-hand side of other function and variable definitions.
+.. describe:: lhs = rhs;
 
-Constant bindings: ``const lhs = rhs;``
-    An alternative form of :keyword:`let` which defines constants rather than
-    variables. (These are not to be confused with nonfix symbols which simply
-    stand for themselves!) Like :keyword:`let`, this construct binds the
-    variable symbols on the left-hand side to the corresponding values on the
-    right-hand side (after evaluation). The difference is that
-    :keyword:`const` symbols can only be defined once, and thus their values
-    do not change during program execution. This also allows the compiler to
-    apply some special optimizations such as constant folding.
+   Rewriting rules always combine a left-hand side pattern (which must be a
+   simple expression) and a right-hand side (which can be any kind of Pure
+   expression described above). The same format is also used in
+   :keyword:`with`, :keyword:`when` and :keyword:`case` expressions. In
+   toplevel rules, :keyword:`with` and :keyword:`case` expressions, this basic
+   form can also be augmented with a condition ``if guard`` tacked on to the
+   end of the rule, where ``guard`` is an integer expression which determines
+   whether the rule is applicable.  Moreover, the keyword :keyword:`otherwise`
+   may be used to denote an empty guard which is always true (this is
+   syntactic sugar to point out the "default" case of a definition; the
+   interpreter just treats this as a comment). Pure also provides some
+   abbreviations for factoring out common left-hand or right-hand sides in
+   collections of rules; see the `Rule Syntax`_ section for details.
 
-Toplevel expressions: ``expr;``
-    A singleton expression at the toplevel, terminated with a semicolon,
-    simply causes the given value to be evaluated (and the result to be
-    printed, when running in interactive mode).
+.. describe:: def lhs = rhs;
+
+   A rule starting with the keyword :keyword:`def` defines a macro
+   function. No guards or multiple left-hand and right-hand sides are
+   permitted here. Macro rules are used to preprocess expressions on the
+   right-hand side of other definitions at compile time, and are typically
+   employed to implement user-defined special forms and simple kinds of
+   optimization rules. See the Macros_ section below for details and examples.
+
+.. describe:: let lhs = rhs;
+
+   Binds every variable in the left-hand side pattern to the corresponding
+   subterm of the right-hand side (after evaluating it). This works like a
+   :keyword:`when` clause, but serves to bind global variables occurring free
+   on the right-hand side of other function and variable definitions.
+
+.. describe:: const lhs = rhs;
+
+   An alternative form of :keyword:`let` which defines constants rather than
+   variables. (These are not to be confused with nonfix symbols which simply
+   stand for themselves!) Like :keyword:`let`, this construct binds the
+   variable symbols on the left-hand side to the corresponding values on the
+   right-hand side (after evaluation). The difference is that :keyword:`const`
+   symbols can only be defined once, and thus their values do not change
+   during program execution. This also allows the compiler to apply some
+   special optimizations such as constant folding.
+
+.. describe:: expr;
+
+   A singleton expression at the toplevel, terminated with a semicolon, simply
+   causes the given value to be evaluated (and the result to be printed, when
+   running in interactive mode).
 
 Scoping Rules
 -------------
@@ -1562,10 +1697,23 @@ Basically, the same rule syntax is used in all kinds of global and local
 definitions. However, some constructs (specifically, :keyword:`when`,
 :keyword:`let`, :keyword:`const` and :keyword:`def`) use a restricted rule
 syntax where no guards or multiple left-hand and right-hand sides are
-permitted. When matching against a function or macro call, or the subject term
-in a :keyword:`case` expression, the rules are always considered in the order
-in which they are written, and the first matching rule (whose guard evaluates
-to a nonzero value, if applicable) is picked. (Again, the :keyword:`when`
+permitted. The syntax of these elements is captured by the following grammar
+rules:
+
+.. productionlist::
+   rule : `pattern` ("|" `pattern`)* "=" `expr` [`guard`]
+   	: (";" "=" `expr` [`guard`])*
+   simple_rule : `pattern` = `expr` "|" `expr`
+   pattern : `simple_expr`
+   guard : "if" `simple_expr`
+         : | "otherwise"
+         : | `guard` "when" `simple_rules` "end"
+         : | `guard` "with" `rules` "end"
+
+When matching against a function or macro call, or the subject term in a
+:keyword:`case` expression, the rules are always considered in the order in
+which they are written, and the first matching rule (whose guard evaluates to
+a nonzero value, if applicable) is picked. (Again, the :keyword:`when`
 construct is treated differently, because each rule is actually a separate
 definition.)
 
@@ -1661,8 +1809,17 @@ permitted in right-hand side expressions:
   only matches machine integers. See the `Type Tags`_ section below for
   details.
 
-Syntactically, both "as" patterns and type tags are primary expressions. If
-the subpattern of an "as" pattern is a compound expression, it *must* be
+To these ends, the expression syntax is augmented with the following grammar
+rule (but note that this form of expression is in fact only allowed on the
+left-hand side of a rule):
+
+.. productionlist::
+   prim_expr : `qualified_identifier`
+   	     : ("::" `qualified_identifier` | "@" `prim_expr`)
+
+As shown, both "as" patterns and type tags are primary expressions, and the
+subpattern of an "as" pattern is a primary expression, too. Thus, if a
+compound expression is to be used as the subpattern, it *must* be
 parenthesized. For instance, the following function duplicates the head
 element of a list::
 
@@ -2432,9 +2589,9 @@ Declarations
 ============
 
 Pure is a very terse language by design. Usually you don't declare much stuff,
-you just define it and be done with it. However, there are a few toplevel
-constructs which let you declare symbols with special attributes and manage
-programs consisting of several source modules:
+you just define it and be done with it. However, there are a few constructs
+which let you declare symbols with special attributes and manage programs
+consisting of several source modules:
 
 * symbol declarations determine "scope" and "fixity" of a symbol;
 
@@ -2446,20 +2603,46 @@ programs consisting of several source modules:
 * :keyword:`namespace` declarations let you avoid name clashes and thereby
   make it easier to manage large programs consisting of many separate modules.
 
+These are toplevel elements (cf. Toplevel_):
+
+.. productionlist::
+   item : `symbol_decl` | `extern_decl` | `using_decl` | `namespace_decl`
+
+The syntax of each of these is described in the following subsections, except
+:token:`extern_decl` which can be found in the `C Interface`_ section.
+
+.. _public:
+.. _private:
+.. _infix:
+.. _infixl:
+.. _infixr:
+.. _prefix:
+.. _postfix:
+.. _outfix:
+.. _nonfix:
+
 Symbol Declarations
 -------------------
 
-Scope declarations take the following form::
+.. productionlist::
+   symbol_decl : `scope` `symbol`+ ";"
+   	       : | [`scope`] `fixity` `symbol`+ ";"
+   scope : "public" | "private"
+   fixity : "nonfix" | "outfix"
+   	  : | ("infix"|"infixl"|"infixr"|"prefix"|"postfix") `precedence`
+   precedence : `integer` | "(" `qualified_symbol` ")"
 
-  public symbol ...;
-  private symbol ...;
+Scope declarations take the following form:
+
+.. describe:: public symbol ...;
+   	      private symbol ...;
 
 This declares the listed symbols as public or private, respectively. Each
-symbol must either be an identifier or a sequence of punctuation characters.
-The latter kind of symbols *must* always be declared before use, whereas
-ordinary identifiers can be used without a prior declaration in which case
-they are declared implicitly and default to public scope, meaning that they
-are visible everywhere in a program. An explicit public declaration of
+symbol must either be an identifier or a sequence of punctuation
+characters. The latter kind of symbols *must* always be declared before use,
+whereas ordinary identifiers can be used without a prior declaration in which
+case they are declared implicitly and default to public scope, meaning that
+they are visible everywhere in a program. An explicit public declaration of
 ordinary identifiers is thus rarely needed (unless you want to declare symbols
 as members of a specific namespace, see `Namespaces`_ below). Symbols can also
 be declared private, meaning that the symbol is visible only in the namespace
@@ -2480,93 +2663,99 @@ operator and constant symbols. This changes the way that these symbols are
 parsed and thus provides you with a limited means to extend the Pure language
 at the lexical and syntactical level.
 
-Operator declarations: ``infix level symbol ...;``
-    Pure provides you with a theoretically unlimited number of different
-    precedence levels for user-defined infix, prefix and postfix operators.
-    Precedence levels are numbered starting at 0; larger numbers indicate
-    higher precedence. (For practical reasons, the current implementation does
-    require that precedence numbers can be encoded as 24 bit unsigned machine
-    integers, giving you a range from 0 to 16777215, but this should be large
-    enough to incur no real limitations on applications. Also, the operator
-    declarations in the prelude have been set up to leave enough "space"
-    between the "standard" levels so that you can easily sneak in new operator
-    symbols at low, high or intermediate precedences.)
+.. describe:: infix level symbol ...;
+   	      infixl level symbol ...;
+	      infixr level symbol ...;
+	      prefix level symbol ...;
+	      postfix level symbol ...;
 
-    On each precedence level, you can declare (in order of increasing
-    precedence) :keyword:`infix` (binary non-associative), :keyword:`infixl`
-    (binary left-associative), :keyword:`infixr` (binary right-associative),
-    :keyword:`prefix` (unary prefix) and :keyword:`postfix` (unary postfix)
-    operators. For instance, here is a typical excerpt from the prelude (the
-    full table can be found in the :ref:`Prelude` section of the
-    :doc:`purelib`)::
+Pure provides you with a theoretically unlimited number of different
+precedence levels for user-defined infix, prefix and postfix operators.
+Precedence levels are numbered starting at 0; larger numbers indicate higher
+precedence. (For practical reasons, the current implementation does require
+that precedence numbers can be encoded as 24 bit unsigned machine integers,
+giving you a range from 0 to 16777215, but this should be large enough to
+incur no real limitations on applications. Also, the operator declarations in
+the prelude have been set up to leave enough "space" between the "standard"
+levels so that you can easily sneak in new operator symbols at low, high or
+intermediate precedences.)
 
-      infix  1800 < > <= >= == ~= ;
-      infixl 2200 + - ;
-      infixl 2300 * / div mod ;
-      infixr 2500 ^ ;
-      prefix 2600 # ;
+On each precedence level, you can declare (in order of increasing precedence)
+:keyword:`infix` (binary non-associative), :keyword:`infixl` (binary
+left-associative), :keyword:`infixr` (binary right-associative),
+:keyword:`prefix` (unary prefix) and :keyword:`postfix` (unary postfix)
+operators. For instance, here is a typical excerpt from the prelude (the full
+table can be found in the :ref:`Prelude` section of the :doc:`purelib`)::
 
-    Instead of denoting the precedence by an explicit integer value, you can
-    also specify an existing operator symbol enclosed in parentheses. Thus the
-    following declaration gives the ``++`` operator the same precedence as
-    ``+``::
+  infix  1800 < > <= >= == ~= ;
+  infixl 2200 + - ;
+  infixl 2300 * / div mod ;
+  infixr 2500 ^ ;
+  prefix 2600 # ;
 
-      infixl (+) ++ ;
+Instead of denoting the precedence by an explicit integer value, you can also
+specify an existing operator symbol enclosed in parentheses. Thus the
+following declaration gives the ``++`` operator the same precedence as ``+``::
 
-    The given symbol may be of a different fixity than the declaration, but it
-    must have a proper precedence level (i.e., it must be an infix, prefix or
-    postfix symbol). E.g., the following declaration gives ``^^`` the same
-    precedence level as the infix ``^`` symbol, but turns it into a postfix
-    operator::
+  infixl (+) ++ ;
 
-      postfix (^) ^^ ;
+The given symbol may be of a different fixity than the declaration, but it
+must have a proper precedence level (i.e., it must be an infix, prefix or
+postfix symbol). E.g., the following declaration gives ``^^`` the same
+precedence level as the infix ``^`` symbol, but turns it into a postfix
+operator::
 
-Outfix symbol declarations: ``outfix left right ...;``
-    Pure also provides unary outfix operators, which work like in Wm Leler's
-    constraint programming language Bertrand_. Outfix operators let you define
-    your own bracket structures. The operators must be given as pairs of
-    matching left and right symbols (which must be distinct). For instance::
+  postfix (^) ^^ ;
 
-      outfix |: :| BEGIN END;
+.. describe:: outfix left right ...;
 
-    After this declaration you can write bracketed expressions like ``|:x:|``
-    or ``BEGIN foo, bar END``. These are always at the highest precedence
-    level (i.e., syntactically they work like parenthesized expressions). Just
-    like other operators, you can turn outfix symbols into ordinary functions
-    by enclosing them in parentheses, but you have to specify the symbols in
-    matching pairs, such as ``(BEGIN END)``.
+Pure also provides unary outfix operators, which work like in Wm Leler's
+constraint programming language Bertrand_. Outfix operators let you define
+your own bracket structures. The operators must be given as pairs of matching
+left and right symbols (which must be distinct). For instance::
 
-Constant symbol declarations: ``nonfix symbol ...;``
-    Pure also has a notation for "nullary" operators, i.e., "operators without
-    operands", which are used to denote special constants. These are
-    introduced using a :keyword:`nonfix` declaration, e.g.::
+  outfix |: :| BEGIN END;
 
-      nonfix red green blue;
+After this declaration you can write bracketed expressions like ``|:x:|`` or
+``BEGIN foo, bar END``. These are always at the highest precedence level
+(i.e., syntactically they work like parenthesized expressions). Just like
+other operators, you can turn outfix symbols into ordinary functions by
+enclosing them in parentheses, but you have to specify the symbols in matching
+pairs, such as ``(BEGIN END)``.
 
-    Syntactically, these work just like ordinary identifiers, so they may
-    stand whereever an identifier is allowed (no parentheses are required to
-    "escape" them). The difference to ordinary identifiers is that nonfix
-    symbols are always interpreted as literals, even if they occur in a
-    variable position on the left-hand side of a rule. So, with the above
-    declaration, you can write something like::
+.. describe:: nonfix symbol ...;
 
-      > foo x = case x of red = green; green = blue; blue = red end;
-      > map foo [red,green,blue];
-      [green,blue,red]
+Pure also has a notation for "nullary" operators, i.e., "operators without
+operands", which are used to denote special constants. These are introduced
+using a :keyword:`nonfix` declaration, e.g.::
 
-    Thus nonfix symbols are pretty much like nullary constructor symbols in
-    languages like Haskell. Non-fixity is just a syntactic attribute,
-    however. Pure doesn't enforce that such values are really "constant", so
-    you can still write a "constructor equation" like the following::
+   nonfix red green blue;
 
-      > red = blue;
-      > map foo [red,green,blue];
-      [blue,blue,blue]
+Syntactically, these work just like ordinary identifiers, so they may stand
+whereever an identifier is allowed (no parentheses are required to "escape"
+them). The difference to ordinary identifiers is that nonfix symbols are
+always interpreted as literals, even if they occur in a variable position on
+the left-hand side of a rule. So, with the above declaration, you can write
+something like::
 
-Examples for all types of symbol declarations can be found in the prelude
-which declares a bunch of standard (arithmetic, relational, logical) operator
-symbols as well as the list and pair constructors '``:``' and '``,``', and a
-few nonfix symbols (mostly for denoting different kinds of exceptions).
+  > foo x = case x of red = green; green = blue; blue = red end;
+  > map foo [red,green,blue];
+  [green,blue,red]
+
+Thus nonfix symbols are pretty much like nullary constructor symbols in
+languages like Haskell. Non-fixity is just a syntactic attribute,
+however. Pure doesn't enforce that such values are really "constant", so you
+can still write a "constructor equation" like the following::
+
+  > red = blue;
+  > map foo [red,green,blue];
+  [blue,blue,blue]
+
+Examples for all types of symbol declarations can be found in the
+:ref:`prelude <prelude>` which declares a bunch of standard (arithmetic,
+relational, logical) operator symbols as well as the list and pair
+constructors '``:``' and '``,``', and a few nonfix symbols (mostly for
+denoting different kinds of exceptions).
 
 One final thing worth noting here is that unary minus plays a special role in
 the syntax. Like in Haskell and following mathematical tradition, unary minus
@@ -2579,16 +2768,22 @@ parsed as ``(-x)+y``, whereas ``-x*y`` is the same as ``-(x*y)``. Also note
 that the notation ``(-)`` always denotes the binary minus operator; the unary
 minus operation can be denoted using the built-in ``neg`` function.
 
+.. _using:
+
 Modules and Imports
 -------------------
+
+.. productionlist::
+   using_decl : "using" `name` ("," `name`)* ";"
+   name : `qualified_identifier` | `string`
 
 While Pure doesn't offer separate compilation, the :keyword:`using`
 declaration provides a simple but effective way to assemble a Pure program
 from several source modules. It takes the following form (note that in
 contrast to symbol declarations, the comma is used as a delimiter symbol
-here)::
+here):
 
-  using name, ...;
+.. describe:: using name, ...;
 
 This causes each given script to be included in the Pure program at the given
 point (if it wasn't already included before), which makes available all the
@@ -2709,8 +2904,16 @@ directory and thus other required scripts can be located there. This is the
 recommended practice for installing standalone Pure applications in source
 form which are to be run directly from the shell.
 
+.. _namespace:
+
 Namespaces
 ----------
+
+.. productionlist::
+   namespace_decl : "namespace" [`name`] ";"
+   		  : | "namespace" `name` "with" `item`+ "end" ";"
+   		  : | "using" "namespace" [`name_spec` ("," `name_spec`)*] ";"
+   name_spec : `name` ["(" `symbol`+ ")"]
 
 To facilitate modular development, Pure also provides namespaces as a means to
 avoid name clashes between symbols, and to keep the global namespace tidy and
@@ -2783,6 +2986,8 @@ identifier, so it isn't possible to access symbols in namespaces with such
 descriptive labels in a direct fashion. The only way to get at the symbols in
 this case is to use a :keyword:`namespace` or :keyword:`using namespace`
 declaration (for the latter see `Using Namespaces`_ below).
+
+.. _using namespace:
 
 Using Namespaces
 ~~~~~~~~~~~~~~~~
@@ -3628,12 +3833,23 @@ this, by extracting the :keyword:`extern` declarations automatically from C
 headers. Please see `External C Functions`_ in the `Caveats and Notes`_
 section for details.
 
+.. _extern:
+
 Extern Declarations
 -------------------
 
 To access an existing C function in Pure, you need an :keyword:`extern`
 declaration of the function, which is a simplified kind of C prototype. The
-function can then be called in Pure just like any other. For instance, the
+syntax of these declarations is described by the following grammar rules:
+
+.. productionlist::
+   extern_decl : [`scope`] "extern" `prototype` ("," `prototype`) ";"
+   prototype : `c_type` `identifier` "(" [`parameters`] ")" ["=" `identifier`]
+   parameters : `parameter` ("," `parameter`)*
+   parameter : `c_type` [`identifier`]
+   c_type : `identifier` "*"*
+
+Extern functions can be called in Pure just like any other. For instance, the
 following commands, entered interactively in the interpreter, let you use the
 ``sin`` function from the C library (of course you could just as well put the
 :keyword:`extern` declaration into a script)::
