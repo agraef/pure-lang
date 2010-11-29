@@ -3441,6 +3441,12 @@ the actual compilation step. Macros can be defined in terms of other macros
 in macro arguments are expanded before the macro gets applied to its
 parameters).
 
+Pure macros also have their limitations. Specifically, the left-hand side of a
+macro rule must be a simple expression, just like in ordinary function
+definitions. This restricts the kinds of expressions which can be rewritten by
+a macro. But Pure macros are certainly powerful enough for most common
+preprocessing purposes, while still being robust and easy to use.
+
 .. _Optimization Rules:
 
 Optimization Rules
@@ -3706,14 +3712,52 @@ binding constructs, such as :keyword:`with` and :keyword:`when` clauses, in
 the right-hand side of the definition. Macro facilities with these pleasant
 properties are also known as `hygienic macros`. They are not susceptible to
 so-called "name capture," which makes macros in less sophisticated languages
-bug-ridden and hard to use. (This is explained in more detail in the `Hygienic
-Macros`_ section.)
+bug-ridden and hard to use.
 
-Pure macros also have their limitations. Specifically, the left-hand side of a
-macro rule must be a simple expression, just like in ordinary function
-definitions. This restricts the kinds of expressions which can be rewritten by
-a macro. But Pure macros are certainly powerful enough for most common
-preprocessing purposes, while still being robust and easy to use.
+Macro hygiene is a somewhat esoteric topic for most programmers, so let us
+take a brief look at what it's all about. The problem avoided by hygienic
+macros is that of *name capture*. There are actually two kinds of name capture
+which may occur in unhygienic macro systems:
+
+* A free symbol in the macro *body* inadvertently becomes bound to the value
+  of a local symbol in the context in which the macro is called.
+
+* A free symbol in the macro *call* inadvertently becomes bound to the value
+  of a local symbol in the macro body.
+
+Pure's hygienic macros avoid both pitfalls. Here is an example for the first
+form of name capture::
+
+  > def G x = x+y;
+  > G 10 when y = 99 end;
+  10+y
+
+Note that the expansion of the ``G`` macro correctly uses the global instance
+of ``y``, even though ``y`` is locally defined in the context of the macro
+call. (In some languages this form of name capture is sometimes used
+deliberately in order to make the macro use the binding of the symbol which is
+active at the point of the macro call. This never works in Pure, hence in such
+cases you will have to explicitly pass such symbols to the macro.)
+
+In contrast, the second form of name capture is usually not intended, and is
+therefore more dangerous. Consider the following example::
+
+  > def F x = x+y when y = x+1 end;
+  > F y;
+  y+(y+1)
+
+Pure again gives the correct result here. You'd have to be worried if you got
+``(y+1)+(y+1)`` instead, which would result from the literal expansion ``y+y
+when y = y+1 end``, where the (free) variable ``y`` passed to ``F`` gets
+captured by the local binding of ``y``. In fact, that's exactly what you get
+with C macros:
+
+.. code-block:: c
+
+   #define F(x) { int y = x+1; return x+y; }
+
+Here ``F(y)`` expands to ``{ int y = y+1; return y+y; }`` which is usually
+*not* what you want.
 
 .. _Exception Handling:
 
@@ -6697,53 +6741,12 @@ Hygienic Macros
 ---------------
 
 As mentioned in the `Macro Hygiene`_ section, Pure macros are lexically scoped
-and thus "hygienic". Macro hygiene is a somewhat esoteric topic for most
-programmers, so let us take a brief look at what it's all about. The problem
-avoided by hygienic macros is that of *name capture*. There are actually two
-kinds of name capture which may occur in unhygienic macro systems:
-
-* A free symbol in the macro *body* inadvertently becomes bound to the value
-  of a local symbol in the context in which the macro is called.
-
-* A free symbol in the macro *call* inadvertently becomes bound to the value
-  of a local symbol in the macro body.
-
-Pure's hygienic macros avoid both pitfalls. Here is an example for the first
-form of name capture::
-
-  > def G x = x+y;
-  > G 10 when y = 99 end;
-  10+y
-
-Note that the expansion of the ``G`` macro correctly uses the global instance
-of ``y``, even though ``y`` is locally defined in the context of the macro
-call. (Sometimes this form of name capture is actually used deliberately in
-order to make the macro use the binding of the symbol which is active at the
-point of the macro call. This never works in Pure, hence in such cases you
-will have to explicitly pass such symbols to the macro.)
-
-In contrast, the second form of name capture is usually not intended, and is
-therefore more dangerous. Consider the following example::
+and thus "hygienic". So Pure macros are not suceptible to name capture, but
+there is also one Pure-related caveat here. The expression printer currently
+doesn't check for different bindings of the same variable identifier when it
+prints a (compile time) expression. For instance, consider::
 
   > def F x = x+y when y = x+1 end;
-  > F y;
-  y+(y+1)
-
-Pure again gives the correct result here. You'd have to be worried if you got
-``(y+1)+(y+1)`` instead, which would result from the literal expansion ``y+y
-when y = y+1 end``, where the (free) variable ``y`` passed to ``F`` gets
-captured by the local binding of ``y``. In fact, that's exactly what you get
-with C macros::
-
-  #define F(x) { int y = x+1; return x+y; }
-
-Here ``F(y)`` expands to ``{ int y = y+1; return y+y; }`` which is usually
-*not* what you want.
-
-There is also one Pure-related caveat here. The expression printer currently
-doesn't check for different bindings of the same variable identifier when it
-prints a (compile time) expression. E.g.::
-
   > foo y = F y;
   > show foo
   foo y = y+y when y = y+1 end;
@@ -6760,7 +6763,9 @@ sequence of bits behind it is the subterm path)::
 
 Alas, this means that if you use ``dump`` to write such a definition to a text
 file and read it back with ``run`` later, then you'll get the wrong
-definition. Currently you will have to correct this manually.
+definition. This is an outright bug in the expression printer which will
+hopefully be fixed some time. But for the time being you will have to correct
+such glitches manually.
 
 Stack Size and Tail Recursion
 -----------------------------
