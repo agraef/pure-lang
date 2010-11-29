@@ -930,9 +930,10 @@ user-defined data structures. This will be explained in more detail under
 Expressions are generally evaluated from left to right, innermost expressions
 first, i.e., using call by value semantics. Pure also has a few built-in
 special forms (most notably, conditional expressions, the short-circuit
-logical connectives :func:`&&` and :func:`||`, the sequencing operator
-:func:`$$`, the lazy evaluation operator :func:`&`, and the :func:`quote`)
-which take some or all of their arguments unevaluated, using call by name.
+logical connectives :func:`&&/special` and :func:`||/special`, the sequencing
+operator :func:`$$`, the lazy evaluation operator :func:`&`, and the
+:func:`quote`) which take some or all of their arguments unevaluated, using
+call by name.
 
 Like in Haskell and ML, functions are often defined by pattern matching, i.e.,
 the left-hand side of a definition is compared to the target expression,
@@ -1296,32 +1297,54 @@ Special Forms
 As already mentioned, some operations are actually implemented as special
 forms. In particular, the conditional expression ``if x then y else z`` is a
 special form with call-by-name arguments ``y`` and ``z``; only one of the
-branches is actually evaluated, depending on the value of ``x``. Similarly,
-the logical connectives ``&&`` and ``||`` evaluate their operands in
-short-circuit mode. Thus, e.g., ``x&&y`` immediately becomes false if ``x``
-evaluates to false, without ever evaluating ``y``. The built-in definitions of
-these operations work as if they were defined by the following equations (but
-note that the second operand is indeed passed "by name", so that it isn't
-evaluated unless its value is actually needed)::
+branches is actually evaluated, depending on the value of ``x``. This section
+discusses the other built-in special operations of Pure which process some or
+all of their arguments using call-by-name. These are:
+
+.. function:: infix && /special x y
+   	      infix || /special x y
+
+   Logical conjunction and disjunction.
+
+.. function:: infix $$ x y
+
+   The sequencing operator.
+
+.. function:: postfix & x
+
+   The thunking operator.
+
+.. function:: quote x
+   	      prefix ' x
+
+   The quote.
+
+The logical connectives :func:`&&/special` and :func:`||/special` evaluate
+their operands in short-circuit mode. Thus, e.g., ``x&&y`` immediately becomes
+false if ``x`` evaluates to false, without ever evaluating ``y``. The built-in
+definitions of these operations work as if they were defined by the following
+equations (but note that the second operand is indeed passed "by name", so
+that it isn't evaluated unless its value is actually needed)::
 
   x::int && y = if x then y else x;
   x::int || y = if x then x else y;
 
 (Note that this isn't quite the same as in C, as the results of these
 operations are *not* normalized, i.e., they may return nonzero values other
-than 1 to denote "true". This has the advantage that ``&&`` and ``||`` can be
-implemented tail-recursively, see `Stack Size and Tail Recursion`_. Thus, if
-you need a normalized truth value then you'll have to make sure that either
-both operands are already normalized, or you'll have to normalize the result
-yourself.)
+than 1 to denote "true". This has the advantage that :func:`&&/special` and
+:func:`||/special` can be implemented tail-recursively, see `Stack Size and
+Tail Recursion`_.  Thus, if you need a normalized truth value then you'll have
+to make sure that either both operands are already normalized, or you'll have
+to normalize the result yourself.)
 
-If the built-in definitions of ``&&`` and ``||`` fail then both operands are
-evaluated and the resulting symbolic term is reduced using the equations
-specified by the programmer, which allows you to extend the definitions of
-``&&`` and ``||`` just as with other builtins. Also note that if the result
-term is in normal form then it is returned as is, thus ``&&`` and ``||`` can
-be used in symbolic evaluations as usual. For instance, the following
-equations let you compute the disjunctive normal form of logical expressions::
+If the built-in definitions of :func:`&&/special` and :func:`||/special` fail
+then both operands are evaluated and the resulting symbolic term is reduced
+using the equations specified by the programmer, which allows you to extend
+the definitions of :func:`&&/special` and :func:`||/special` just as with
+other builtins. Also note that if the result term is in normal form then it is
+returned as is, thus :func:`&&/special` and :func:`||/special` can be used in
+symbolic evaluations as usual. For instance, the following equations let you
+compute the disjunctive normal form of logical expressions::
 
   // eliminate double negations:
   ~~a           = a;
@@ -1343,9 +1366,9 @@ Example::
   > a || ~(b || (c && ~d));
   a||~b&&~c||~b&&d
 
-The sequencing operator ``$$`` evaluates its left operand, immediately throws
-the result away and then goes on to evaluate the right operand which gives the
-result of the entire expression. This operator is useful to write
+The sequencing operator :func:`$$` evaluates its left operand, immediately
+throws the result away and then goes on to evaluate the right operand which
+gives the result of the entire expression. This operator is useful to write
 imperative-style code such as the following prompt-input interaction::
 
   > using system;
@@ -3492,10 +3515,16 @@ Exception Handling
 
 Pure also offers a useful exception handling facility. To raise an exception,
 you just invoke the built-in function :func:`throw` with the value to be
-thrown as the argument. To catch an exception, you use the built-in special
-form :func:`catch` with the exception handler (a function to be applied to the
-exception value) as the first and the expression to be evaluated as the second
-(call-by-name) argument. For instance::
+thrown as the argument. Exceptions are caught with the built-in special form
+:func:`catch` which is invoked as follows:
+
+.. function:: catch handler x
+
+   Catch an exception. The first argument denotes the exception handler (a
+   function to be applied to the exception value). The second (call-by-name)
+   argument is the expression to be evaluated.
+
+For instance::
 
   > catch error (throw hello_world);
   error hello_world
@@ -6227,11 +6256,11 @@ Calling Special Forms
 ---------------------
 
 Special forms are recognized at compile time only. Thus the :func:`catch`
-function, as well as :func:`quote` and the operators :func:`&&`, :func:`||`,
-:func:`$$` and :func:`&`, are only treated as special forms in direct
-(saturated) calls. They can still be used if you pass them around as function
-values or in partial applications, but in this case they lose all their
-special call-by-name argument processing.
+function, as well as :func:`quote` and the operators :func:`&&/special`,
+:func:`||/special`, :func:`$$` and :func:`&`, are only treated as special
+forms in direct (saturated) calls. They can still be used if you pass them
+around as function values or in partial applications, but in this case they
+lose all their special call-by-name argument processing.
 
 The Quote
 ---------
@@ -6538,8 +6567,9 @@ your platform supports the required optimizations::
 This also works if your definition involves function parameters, guards and
 multiple equations, of course. Moreover, conditional expressions
 (:keyword:`if`-:keyword:`then`-:keyword:`else`) are tail-recursive in both
-branches, and the logical operators :func:`&&` and :func:`||`, as well as the
-sequence operator :func:`$$`, are tail-recursive in their second operand.
+branches, and the logical operators :func:`&&/special` and :func:`||/special`,
+as well as the sequence operator :func:`$$`, are tail-recursive in their
+second operand.
 
 Also note that tail call optimization is *always* disabled if the debugger is
 enabled (-g). This makes it much easier to debug programs, but means that you
