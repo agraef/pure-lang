@@ -2426,306 +2426,6 @@ be nested, too::
   > r!a, r!b, r!a!b;
   {b=>1,c=>2},2,1
 
-Macros
-======
-
-Macros are a special type of functions to be executed as a kind of
-"preprocessing stage" at compile time. In Pure these are typically used to
-define custom special forms and to perform inlining of function calls and
-other simple kinds of source-level optimizations.
-
-Whereas the macro facilities of most programming languages simply provide a
-kind of textual substitution mechanism, Pure macros operate on symbolic
-expressions and are implemented by the same kind of rewriting rules that are
-also used to define ordinary functions in Pure. In contrast to these, macro
-rules start out with the keyword :keyword:`def`, and only simple kinds of
-rules without any guards or multiple left-hand and right-hand sides are
-permitted.
-
-Syntactically, a macro definition looks just like a variable or constant
-definition, using :keyword:`def` in lieu of :keyword:`let` or
-:keyword:`const`, but they are processed in a different way. Macros are
-substituted into the right-hand sides of function, constant and variable
-definitions. All macro substitution happens before constant substitutions and
-the actual compilation step. Macros can be defined in terms of other macros
-(also recursively), and are evaluated using call by value (i.e., macro calls
-in macro arguments are expanded before the macro gets applied to its
-parameters).
-
-.. _Optimization Rules:
-
-Optimization Rules
-------------------
-
-Here is a simple example, showing a rule which expands saturated calls of the
-:func:`succ` function (defined in the prelude) at compile time::
-
-  > def succ x = x+1;
-  > foo x::int = succ (succ x);
-  > show foo
-  foo x::int = x+1+1;
-
-Rules like these can be useful to help the compiler generate better code. Note
-that a macro may have the same name as an ordinary Pure function, which is
-essential if you want to optimize calls to an existing function, as in the
-previous example. (Just like ordinary functions, the number of parameters in
-each rule for a given macro must be the same, but a macro may have a different
-number of arguments than the corresponding function.)
-
-A somewhat more practical example is the following rule from the prelude,
-which eliminates saturated instances of the right-associative function
-application operator::
-
-  def f $ x = f x;
-
-Like in Haskell, this low-priority operator is handy to write cascading
-function calls. With the above macro rule, these will be "inlined" as ordinary
-function applications automatically. Example::
-
-  > foo x = bar $ bar $ 2*x;
-  > show foo
-  foo x = bar (bar (2*x));
-
-Here are two slightly more tricky rules from the prelude, which optimize the
-case of "throwaway" list comprehensions. This is useful if a list
-comprehension is evaluated solely for its side effects::
-
-  def void (catmap f x) = do f x;
-  def void (listmap f x) = do f x;
-
-Note that the :func:`void` function simply throws away its argument and
-returns :cons:`()` instead. The :func:`do` function applies a function to
-every member of a list (like :func:`map`), but throws away all intermediate
-results and just returns :cons:`()`, which is much more efficient if you don't
-need those results anyway. These are both defined in the prelude.
-
-Before we delve into this example, a few remarks are in order about the way
-list comprehensions are implemented in Pure. As already mentioned, list
-comprehensions are just syntactic sugar; the compiler immediately transforms
-them to an equivalent expression involving only lambdas and a few other list
-operations. Note that list comprehensions are essentially equivalent to piles
-of nested lambdas, filters and maps, but for various reasons they are actually
-implemented using two special helper operations, :func:`catmap` and
-:func:`listmap`.
-
-The :func:`catmap` operation combines :func:`map` and :func:`cat`; this is
-needed, in particular, to accumulate the results of nested generators, such as
-``[i,j | i = 1..n; j = 1..m]``. The same operation is also used to implement
-filter clauses, you can see this below in the examples. However, for
-efficiency simple generators like ``[2*i | i = 1..n]`` are translated to a
-:func:`listmap` instead (which is basically just :func:`map`, but works with
-different aggregate types, so that list comprehensions can draw values from
-aggregates other than lists, such as matrices).
-
-Now let's see how the rules above transform a list comprehension if we
-"voidify" it::
-
-  > using system;
-  > f = [printf "%g\n" (2^x+1) | x=1..5; x mod 2];
-  > g = void [printf "%g\n" (2^x+1) | x=1..5; x mod 2];
-  > show f g
-  f = catmap (\x -> if x mod 2 then [printf "%g\n" (2^x+1)] else []) (1..5);
-  g = do (\x -> if x mod 2 then [printf "%g\n" (2^x+1)] else []) (1..5);
-
-Ok, so the :func:`catmap` got replaced with a :func:`do` which is just what we
-need to make this code go essentially as fast as a :keyword:`for` loop in
-conventional programming languages (up to constant factors, of course). Here's
-how it looks like when we run the ``g`` function::
-
-  > g;
-  3
-  9
-  33
-  ()
-
-It's not all roses, however, since the above macro rules will only get rid of
-the outermost :func:`catmap` if the list comprehension binds multiple
-variables::
-
-  > u = void [puts $ str (x,y) | x=1..2; y=1..3];
-  > show u
-  u = do (\x -> listmap (\y -> puts (str (x,y))) (1..3)) (1..2);
-
-If you're bothered by this, you'll have to apply :func:`void` recursively,
-creating a nested list comprehension which expands to a nested :func:`do`::
-
-  > v = void [void [puts $ str (x,y) | y=1..3] | x=1..2];
-  > show v
-  v = do (\x -> do (\y -> puts (str (x,y))) (1..3)) (1..2);
-
-(It would be nice to have this handled automatically, but the left-hand side
-of a macro definition must be a simple expression, and thus it's not possible
-to write a macro which descends recursively into the lambda argument of
-:func:`catmap`.)
-
-Recursive Macros
-----------------
-
-Macros can also be recursive, in which case they usually consist of multiple
-rules and make use of pattern-matching like ordinary function definitions. As
-a simple example, let's implement a Pure version of Lisp's quasiquote which
-allows you to create a quoted expression from a "template" while substituting
-variable parts of the template. (For the sake of brevity, our definition is
-somewhat simplified and does not cover some corner cases. See the Pure
-distribution for a full version of this example.)
-
-::
-
-  def quasiquote (unquote x)      = x;
-  def quasiquote (f@_ (splice x)) = foldl ($) (quasiquote f) x;
-  def quasiquote (f@_ x)          = quasiquote f (quasiquote x);
-  def quasiquote x                = quote x;
-
-(Note the ``f@_``, which is an anonymous "as" pattern forcing the compiler to
-recognize ``f`` as a function variable, rather than a literal function
-symbol. See `Head = Function`_ in the `Caveats and Notes`_ section for an
-explanation of this trick.)
-
-The first rule above takes care of "unquoting" embedded subterms. The second
-rule "splices" an argument list into an enclosing function application. The
-third rule recurses into subterms of a function application, and the fourth
-and last rule takes care of quoting the "atomic" subterms. Note that
-``unquote`` and ``splice`` themselves are just passive constructor symbols,
-the real work is done by ``quasiquote``, using :func:`foldl` at runtime to
-actually perform the splicing. (Putting off the splicing until runtime makes
-it possible to splice argument lists computed at runtime.)
-
-If we want, we can also add some syntactic sugar for Lisp weenies. (Note that
-we cannot have '``,``' for unquoting, so we use '``,$``' instead.)
-
-::
-
-  prefix 9 ` ,$ ,@ ;
-  def `x = quasiquote x; def ,$x = unquote x; def ,@x = splice x;
-
-Examples::
-
-  > `(2*42+2^12);
-  2*42+2^12
-  > `(2*42+,$(2^12));
-  2*42+4096.0
-  > `foo 1 2 (,@'[2/3,3/4]) (5/6);
-  foo 1 2 (2/3) (3/4) (5/6)
-  > `foo 1 2 (,@'args) (5/6) when args = '[2/3,3/4] end;
-  foo 1 2 (2/3) (3/4) (5/6)
-
-We mention in passing here that, technically, Pure macros are just as powerful
-as (unconditional) term rewriting systems and thus they are
-Turing-complete. This implies that a badly written macro may well send the
-Pure compiler into an infinite recursion, which results in a stack overflow at
-compile time. See `Stack Size and Tail Recursion`_ in the `Caveats and Notes`_
-section for information on how to deal with these by setting the
-:envvar:`PURE_STACK` environment variable.
-
-User-Defined Special Forms
---------------------------
-
-The ``quasiquote`` macro in the preceding subsection also provides an example
-of how you can use macros to define your own special forms. This works because
-the actual evaluation of macro arguments is put off until runtime, and thus we
-can safely pass them to built-in special forms and other constructs which
-defer their evaluation at *runtime*. In fact, the right-hand side of a macro
-rule may be an arbitrary Pure expression involving conditional expressions,
-lambdas, binding clauses, etc. These are never evaluated during macro
-substitution, they just become part of the macro expansion (after substituting
-the macro parameters).
-
-Here is another useful example of a user-defined special form, the macro
-``timex`` which employs the system function ``clock`` to report the cpu time
-in seconds needed to evaluate a given expression, along with the computed
-result::
-
-  > using system;
-  > def timex x = (clock-t0)/CLOCKS_PER_SEC,y when t0 = clock; y = x end;
-  > sum = foldl (+) 0L;
-  > timex $ sum (1L..100000L);
-  0.43,5000050000L
-
-Note that the above definition of ``timex`` wouldn't work as an ordinary
-function definition, since by virtue of Pure's basic eager evaluation strategy
-the ``x`` parameter would have been evaluated already before it is passed to
-``timex``, making ``timex`` always return a zero time value. Try it!
-
-Here's yet another example, which is handy if you need to trace function
-calls. (Note that the interpreter also has its own built-in debugging
-facility, see Debugging_. However, the following macro allows you to trace
-functions using your own custom output format, and may thus be useful in
-situations where the built-in debugger is not appropriate.)
-
-::
-
-  using system;
-  def trace f x y = printf "** exit %s: %s -> %s\n" (str f,str x,str y) $$ y
-  when y = printf "** call %s: %s\n: " (str f,str x) $$ gets $$ y end;
-
-This macro is invoked with the function to be traced, the arguments (or
-whatever you want to be printed as additional debugging information) and the
-actual function call as parameters. (This is a rather simplistic version,
-which just prints a prompt on function entry and the final reduction after the
-call. You can easily make this as elaborate as you like. E.g., you might want
-to keep track of recursive levels and profiling information, add various
-interactive commands to selectively enable and disable tracing during the
-evaluation, etc.)
-
-We can still make this a bit more convenient by introducing the following
-ordinary function definition::
-
-  trace f x = trace f x (f x);
-
-This lets us patch up a call to trace a given function, as shown below,
-without having to change the definition of the function at all. This trick
-only works with global functions; for local functions you'll have to add an
-explicit call of the ``trace`` macro to the local definition yourself. Also
-note that the definition above only works with functions taking a single
-parameter; see the trace.pure example in the distribution for the full version
-which can deal with any number of arguments.
-
-::
-
-  // Uncomment this line to trace calls to the 'fact' function.
-  def fact n = trace fact n;
-  // Sample function to be traced.
-  fact n = if n>0 then n*fact(n-1) else 1;
-
-Here's a trace of the ``fact`` function obtained in this fashion (hit carriage
-return after each '``:``' prompt to proceed with the computation)::
-
-  > fact 2;
-  ** call fact: 2
-  : 
-  ** call fact: 1
-  : 
-  ** call fact: 0
-  : 
-  ** exit fact: 0 -> 1
-  ** exit fact: 1 -> 1
-  ** exit fact: 2 -> 2
-  2
-
-Note that by just removing the macro definition for ``fact`` above, you can
-make the function run untraced as usual again. This scheme is quite flexible,
-the only real drawback is that you have to explicitly add some code for each
-function you want to trace.
-
-Macro Hygiene
--------------
-
-Pure macros are lexically scoped, i.e., the binding of symbols in the
-right-hand-side of a macro definition is determined statically by the text of
-the definition, and macro parameter substitution also takes into account
-binding constructs, such as :keyword:`with` and :keyword:`when` clauses, in
-the right-hand side of the definition. Macro facilities with these pleasant
-properties are also known as `hygienic macros`. They are not susceptible to
-so-called "name capture," which makes macros in less sophisticated languages
-bug-ridden and hard to use. (This is explained in more detail in the `Hygienic
-Macros`_ section.)
-
-Pure macros also have their limitations. Specifically, the left-hand side of a
-macro rule must be a simple expression, just like in ordinary function
-definitions. This restricts the kinds of expressions which can be rewritten by
-a macro. But Pure macros are certainly powerful enough for most common
-preprocessing purposes, while still being robust and easy to use.
-
 Declarations
 ============
 
@@ -3507,6 +3207,306 @@ somewhat limited compared to programming languages specifically designed for
 big projects and large teams of developers. Nevertheless they should be useful
 if your programs grow beyond a small collection of simple source modules, and
 enable you to manage most Pure projects with ease.
+
+Macros
+======
+
+Macros are a special type of functions to be executed as a kind of
+"preprocessing stage" at compile time. In Pure these are typically used to
+define custom special forms and to perform inlining of function calls and
+other simple kinds of source-level optimizations.
+
+Whereas the macro facilities of most programming languages simply provide a
+kind of textual substitution mechanism, Pure macros operate on symbolic
+expressions and are implemented by the same kind of rewriting rules that are
+also used to define ordinary functions in Pure. In contrast to these, macro
+rules start out with the keyword :keyword:`def`, and only simple kinds of
+rules without any guards or multiple left-hand and right-hand sides are
+permitted.
+
+Syntactically, a macro definition looks just like a variable or constant
+definition, using :keyword:`def` in lieu of :keyword:`let` or
+:keyword:`const`, but they are processed in a different way. Macros are
+substituted into the right-hand sides of function, constant and variable
+definitions. All macro substitution happens before constant substitutions and
+the actual compilation step. Macros can be defined in terms of other macros
+(also recursively), and are evaluated using call by value (i.e., macro calls
+in macro arguments are expanded before the macro gets applied to its
+parameters).
+
+.. _Optimization Rules:
+
+Optimization Rules
+------------------
+
+Here is a simple example, showing a rule which expands saturated calls of the
+:func:`succ` function (defined in the prelude) at compile time::
+
+  > def succ x = x+1;
+  > foo x::int = succ (succ x);
+  > show foo
+  foo x::int = x+1+1;
+
+Rules like these can be useful to help the compiler generate better code. Note
+that a macro may have the same name as an ordinary Pure function, which is
+essential if you want to optimize calls to an existing function, as in the
+previous example. (Just like ordinary functions, the number of parameters in
+each rule for a given macro must be the same, but a macro may have a different
+number of arguments than the corresponding function.)
+
+A somewhat more practical example is the following rule from the prelude,
+which eliminates saturated instances of the right-associative function
+application operator::
+
+  def f $ x = f x;
+
+Like in Haskell, this low-priority operator is handy to write cascading
+function calls. With the above macro rule, these will be "inlined" as ordinary
+function applications automatically. Example::
+
+  > foo x = bar $ bar $ 2*x;
+  > show foo
+  foo x = bar (bar (2*x));
+
+Here are two slightly more tricky rules from the prelude, which optimize the
+case of "throwaway" list comprehensions. This is useful if a list
+comprehension is evaluated solely for its side effects::
+
+  def void (catmap f x) = do f x;
+  def void (listmap f x) = do f x;
+
+Note that the :func:`void` function simply throws away its argument and
+returns :cons:`()` instead. The :func:`do` function applies a function to
+every member of a list (like :func:`map`), but throws away all intermediate
+results and just returns :cons:`()`, which is much more efficient if you don't
+need those results anyway. These are both defined in the prelude.
+
+Before we delve into this example, a few remarks are in order about the way
+list comprehensions are implemented in Pure. As already mentioned, list
+comprehensions are just syntactic sugar; the compiler immediately transforms
+them to an equivalent expression involving only lambdas and a few other list
+operations. Note that list comprehensions are essentially equivalent to piles
+of nested lambdas, filters and maps, but for various reasons they are actually
+implemented using two special helper operations, :func:`catmap` and
+:func:`listmap`.
+
+The :func:`catmap` operation combines :func:`map` and :func:`cat`; this is
+needed, in particular, to accumulate the results of nested generators, such as
+``[i,j | i = 1..n; j = 1..m]``. The same operation is also used to implement
+filter clauses, you can see this below in the examples. However, for
+efficiency simple generators like ``[2*i | i = 1..n]`` are translated to a
+:func:`listmap` instead (which is basically just :func:`map`, but works with
+different aggregate types, so that list comprehensions can draw values from
+aggregates other than lists, such as matrices).
+
+Now let's see how the rules above transform a list comprehension if we
+"voidify" it::
+
+  > using system;
+  > f = [printf "%g\n" (2^x+1) | x=1..5; x mod 2];
+  > g = void [printf "%g\n" (2^x+1) | x=1..5; x mod 2];
+  > show f g
+  f = catmap (\x -> if x mod 2 then [printf "%g\n" (2^x+1)] else []) (1..5);
+  g = do (\x -> if x mod 2 then [printf "%g\n" (2^x+1)] else []) (1..5);
+
+Ok, so the :func:`catmap` got replaced with a :func:`do` which is just what we
+need to make this code go essentially as fast as a :keyword:`for` loop in
+conventional programming languages (up to constant factors, of course). Here's
+how it looks like when we run the ``g`` function::
+
+  > g;
+  3
+  9
+  33
+  ()
+
+It's not all roses, however, since the above macro rules will only get rid of
+the outermost :func:`catmap` if the list comprehension binds multiple
+variables::
+
+  > u = void [puts $ str (x,y) | x=1..2; y=1..3];
+  > show u
+  u = do (\x -> listmap (\y -> puts (str (x,y))) (1..3)) (1..2);
+
+If you're bothered by this, you'll have to apply :func:`void` recursively,
+creating a nested list comprehension which expands to a nested :func:`do`::
+
+  > v = void [void [puts $ str (x,y) | y=1..3] | x=1..2];
+  > show v
+  v = do (\x -> do (\y -> puts (str (x,y))) (1..3)) (1..2);
+
+(It would be nice to have this handled automatically, but the left-hand side
+of a macro definition must be a simple expression, and thus it's not possible
+to write a macro which descends recursively into the lambda argument of
+:func:`catmap`.)
+
+Recursive Macros
+----------------
+
+Macros can also be recursive, in which case they usually consist of multiple
+rules and make use of pattern-matching like ordinary function definitions. As
+a simple example, let's implement a Pure version of Lisp's quasiquote which
+allows you to create a quoted expression from a "template" while substituting
+variable parts of the template. (For the sake of brevity, our definition is
+somewhat simplified and does not cover some corner cases. See the Pure
+distribution for a full version of this example.)
+
+::
+
+  def quasiquote (unquote x)      = x;
+  def quasiquote (f@_ (splice x)) = foldl ($) (quasiquote f) x;
+  def quasiquote (f@_ x)          = quasiquote f (quasiquote x);
+  def quasiquote x                = quote x;
+
+(Note the ``f@_``, which is an anonymous "as" pattern forcing the compiler to
+recognize ``f`` as a function variable, rather than a literal function
+symbol. See `Head = Function`_ in the `Caveats and Notes`_ section for an
+explanation of this trick.)
+
+The first rule above takes care of "unquoting" embedded subterms. The second
+rule "splices" an argument list into an enclosing function application. The
+third rule recurses into subterms of a function application, and the fourth
+and last rule takes care of quoting the "atomic" subterms. Note that
+``unquote`` and ``splice`` themselves are just passive constructor symbols,
+the real work is done by ``quasiquote``, using :func:`foldl` at runtime to
+actually perform the splicing. (Putting off the splicing until runtime makes
+it possible to splice argument lists computed at runtime.)
+
+If we want, we can also add some syntactic sugar for Lisp weenies. (Note that
+we cannot have '``,``' for unquoting, so we use '``,$``' instead.)
+
+::
+
+  prefix 9 ` ,$ ,@ ;
+  def `x = quasiquote x; def ,$x = unquote x; def ,@x = splice x;
+
+Examples::
+
+  > `(2*42+2^12);
+  2*42+2^12
+  > `(2*42+,$(2^12));
+  2*42+4096.0
+  > `foo 1 2 (,@'[2/3,3/4]) (5/6);
+  foo 1 2 (2/3) (3/4) (5/6)
+  > `foo 1 2 (,@'args) (5/6) when args = '[2/3,3/4] end;
+  foo 1 2 (2/3) (3/4) (5/6)
+
+We mention in passing here that, technically, Pure macros are just as powerful
+as (unconditional) term rewriting systems and thus they are
+Turing-complete. This implies that a badly written macro may well send the
+Pure compiler into an infinite recursion, which results in a stack overflow at
+compile time. See `Stack Size and Tail Recursion`_ in the `Caveats and Notes`_
+section for information on how to deal with these by setting the
+:envvar:`PURE_STACK` environment variable.
+
+User-Defined Special Forms
+--------------------------
+
+The ``quasiquote`` macro in the preceding subsection also provides an example
+of how you can use macros to define your own special forms. This works because
+the actual evaluation of macro arguments is put off until runtime, and thus we
+can safely pass them to built-in special forms and other constructs which
+defer their evaluation at *runtime*. In fact, the right-hand side of a macro
+rule may be an arbitrary Pure expression involving conditional expressions,
+lambdas, binding clauses, etc. These are never evaluated during macro
+substitution, they just become part of the macro expansion (after substituting
+the macro parameters).
+
+Here is another useful example of a user-defined special form, the macro
+``timex`` which employs the system function ``clock`` to report the cpu time
+in seconds needed to evaluate a given expression, along with the computed
+result::
+
+  > using system;
+  > def timex x = (clock-t0)/CLOCKS_PER_SEC,y when t0 = clock; y = x end;
+  > sum = foldl (+) 0L;
+  > timex $ sum (1L..100000L);
+  0.43,5000050000L
+
+Note that the above definition of ``timex`` wouldn't work as an ordinary
+function definition, since by virtue of Pure's basic eager evaluation strategy
+the ``x`` parameter would have been evaluated already before it is passed to
+``timex``, making ``timex`` always return a zero time value. Try it!
+
+Here's yet another example, which is handy if you need to trace function
+calls. (Note that the interpreter also has its own built-in debugging
+facility, see Debugging_. However, the following macro allows you to trace
+functions using your own custom output format, and may thus be useful in
+situations where the built-in debugger is not appropriate.)
+
+::
+
+  using system;
+  def trace f x y = printf "** exit %s: %s -> %s\n" (str f,str x,str y) $$ y
+  when y = printf "** call %s: %s\n: " (str f,str x) $$ gets $$ y end;
+
+This macro is invoked with the function to be traced, the arguments (or
+whatever you want to be printed as additional debugging information) and the
+actual function call as parameters. (This is a rather simplistic version,
+which just prints a prompt on function entry and the final reduction after the
+call. You can easily make this as elaborate as you like. E.g., you might want
+to keep track of recursive levels and profiling information, add various
+interactive commands to selectively enable and disable tracing during the
+evaluation, etc.)
+
+We can still make this a bit more convenient by introducing the following
+ordinary function definition::
+
+  trace f x = trace f x (f x);
+
+This lets us patch up a call to trace a given function, as shown below,
+without having to change the definition of the function at all. This trick
+only works with global functions; for local functions you'll have to add an
+explicit call of the ``trace`` macro to the local definition yourself. Also
+note that the definition above only works with functions taking a single
+parameter; see the trace.pure example in the distribution for the full version
+which can deal with any number of arguments.
+
+::
+
+  // Uncomment this line to trace calls to the 'fact' function.
+  def fact n = trace fact n;
+  // Sample function to be traced.
+  fact n = if n>0 then n*fact(n-1) else 1;
+
+Here's a trace of the ``fact`` function obtained in this fashion (hit carriage
+return after each '``:``' prompt to proceed with the computation)::
+
+  > fact 2;
+  ** call fact: 2
+  : 
+  ** call fact: 1
+  : 
+  ** call fact: 0
+  : 
+  ** exit fact: 0 -> 1
+  ** exit fact: 1 -> 1
+  ** exit fact: 2 -> 2
+  2
+
+Note that by just removing the macro definition for ``fact`` above, you can
+make the function run untraced as usual again. This scheme is quite flexible,
+the only real drawback is that you have to explicitly add some code for each
+function you want to trace.
+
+Macro Hygiene
+-------------
+
+Pure macros are lexically scoped, i.e., the binding of symbols in the
+right-hand-side of a macro definition is determined statically by the text of
+the definition, and macro parameter substitution also takes into account
+binding constructs, such as :keyword:`with` and :keyword:`when` clauses, in
+the right-hand side of the definition. Macro facilities with these pleasant
+properties are also known as `hygienic macros`. They are not susceptible to
+so-called "name capture," which makes macros in less sophisticated languages
+bug-ridden and hard to use. (This is explained in more detail in the `Hygienic
+Macros`_ section.)
+
+Pure macros also have their limitations. Specifically, the left-hand side of a
+macro rule must be a simple expression, just like in ordinary function
+definitions. This restricts the kinds of expressions which can be rewritten by
+a macro. But Pure macros are certainly powerful enough for most common
+preprocessing purposes, while still being robust and easy to use.
 
 .. _Exception Handling:
 
