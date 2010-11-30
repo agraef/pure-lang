@@ -920,8 +920,8 @@ parentheses. E.g., ``"\(123)4"`` is a string consisting of the character
 
 __ http://www.w3.org/TR/xml-entity-names/
 
-Definitions and Expression Evaluation
--------------------------------------
+Definitions and Symbolic Evaluation
+-----------------------------------
 
 On the surface, Pure is quite similar to other modern functional languages
 like Haskell_ and ML_. But under the hood it is a much more dynamic language,
@@ -974,15 +974,15 @@ computations::
   > square (a+b);
   (a+b)*(a+b)
 
-Leaving aside the built-in support for some common data structures such as
-numbers and strings, all the Pure interpreter really does is evaluate
+In fact, leaving aside the built-in support for some common data structures
+such as numbers and strings, all the Pure interpreter really does is evaluate
 expressions in a symbolic fashion, rewriting expressions using the equations
 supplied by the programmer, until no more equations are applicable. The result
 of this process is called a `normal form` which represents the "value" of the
 original expression. Keeping with the tradition of term rewriting, there's no
-distinction between "defined" and "constructor" function symbols in
-Pure. Consequently, any function symbol or operator can be used *anywhere* on
-the left-hand side of an equation, and may act as a constructor symbol if it
+distinction between "defined" and "constructor" function symbols in Pure.
+Consequently, any function symbol or operator can be used *anywhere* on the
+left-hand side of an equation, and may act as a constructor symbol if it
 happens to occur in a normal form term. This enables you to work with
 algebraic rules like associativity and distributivity in a direct fashion::
 
@@ -991,16 +991,61 @@ algebraic rules like associativity and distributivity in a direct fashion::
   > square (a+b);
   a*a+a*b+b*a+b*b
 
-Note that, in contrast, languages like Haskell and ML always enforce the
-so-called "constructor discipline", which stipulates that only pure
-constructor symbols (without any defining equations) may occur as a subterm on
-the left-hand side of a definition. Thus equational definitions like the above
-are forbidden in these languages. In Pure such definitions are just normal
-business, which makes the language directly usable as a tool for symbolic
-algebra.
+Here's another basic symbolic algebra example, which lets you compute the
+disjunctive normal form of logical expressions::
 
-Parameters in Equations
------------------------
+  // eliminate double negations:
+  ~~a           = a;
+
+  // de Morgan's laws:
+  ~(a || b)     = ~a && ~b;
+  ~(a && b)     = ~a || ~b;
+
+  // distributivity:
+  a && (b || c) = a && b || a && c;
+  (a || b) && c = a && c || b && c;
+
+  // associativity:
+  (a && b) && c = a && (b && c);
+  (a || b) || c = a || (b || c);
+
+Example::
+
+  > a || ~(b || (c && ~d));
+  a||~b&&~c||~b&&d
+
+Note that the above isn't possible in languages like Haskell and ML which
+always enforce the so-called "constructor discipline", which stipulates that
+only pure constructor symbols (without any defining equations) may occur as a
+subterm on the left-hand side of a definition. Thus equational definitions
+like the above are forbidden in these languages. It's possible to work around
+this, but only at the cost of an extra layer of interpretation, which treats
+the expressions to be evaluated as data manipulated by an evaluation function.
+
+In Pure this extra layer is not necessary, you can just add equations like the
+above to your Pure program. In addition, you can also reduce an expression in
+a local context of algebraic equations specified in a :keyword:`with` clause.
+This can be done with the :macro:`reduce` macro defined in the prelude::
+
+  expand = reduce with
+    (a+b)*c = a*c+b*c;
+    a*(b+c) = a*b+a*c;
+  end;
+
+  factor = reduce with
+    a*c+b*c = (a+b)*c;
+    a*b+a*c = a*(b+c);
+  end;
+
+Example::
+
+  > expand ((a+b)*2);
+  a*2+b*2
+  > factor (a*2+b*2);
+  (a+b)*2
+
+Variables in Equations
+----------------------
 
 Taking a look at the above examples, you might have been wondering how the
 Pure interpreter figures out what the parameters (a.k.a. "variables") in an
@@ -1060,6 +1105,15 @@ Pure's expression syntax can be summarized in the following grammar rules:
                : | `application`
    application : `application` `prim_expr`
                : | `prim_expr`
+   rules : `rule` (";" `rule`)* [";"]
+   simple_rules : `simple_rule` (";" `simple_rule`)* [";"]
+
+.. Split the productionlist here to avoid bad page breaks in the pdf edition.
+
+(Note that the :token:`rule` and :token:`simple_rule` elements are part of the
+definition syntax, which is explained in the `Rule Syntax`_ section.)
+
+.. productionlist::
    prim_expr : `qualified_symbol`
              : | `number`
              : | `string`
@@ -1073,15 +1127,10 @@ Pure's expression syntax can be summarized in the following grammar rules:
    	     : | "{" `exprs` (";" `exprs`)* [";"] "}"
    	     : | "[" `expr` "|" `simple_rules` "]"
    	     : | "{" `expr` "|" `simple_rules` "}"
+   exprs : `expr` ("," `expr`)*
    op : `qualified_symbol`
    left_op : `qualified_symbol`
    right_op : `qualified_symbol`
-   exprs : `expr` ("," `expr`)*
-   rules : `rule` (";" `rule`)* [";"]
-   simple_rules : `simple_rule` (";" `simple_rule`)* [";"]
-
-(Note that the :token:`rule` and :token:`simple_rule` elements are part of the
-definition syntax, which is explained in the `Rule Syntax`_ section.)
 
 Typical examples of the different expression types are summarized in the
 following table. Note that lambdas bind most weakly, followed by the special
@@ -1172,7 +1221,7 @@ Operator and constant symbols: ``+``, ``==``, ``not``
     symbols actually work more or less like ordinary identifiers, but the
     :keyword:`nonfix` attribute tells the compiler that when such a symbol
     occurs on the left-hand side of an equation, it is always to be
-    interpreted as a literal constant, cf. `Parameters in Equations`_.)
+    interpreted as a literal constant, cf. `Variables in Equations`_.)
 
     Operator and constant symbols may take the form of an identifier or a
     sequence of punctuation characters. They must always be declared before
@@ -1413,132 +1462,101 @@ Special Forms
 -------------
 
 As already mentioned, some operations are actually implemented as special
-forms. In particular, the conditional expression ``if x then y else z`` is a
-special form with call-by-name arguments ``y`` and ``z``; only one of the
-branches is actually evaluated, depending on the value of ``x``. This section
-discusses the other built-in special operations of Pure which process some or
-all of their arguments using call-by-name. These are:
+forms which process some or all of their arguments using call-by-name.
+
+.. describe:: if x then y else z
+
+   The conditional expression is a special form with call-by-name arguments
+   ``y`` and ``z``; only one of the branches is actually evaluated, depending
+   on the value of ``x``.
 
 .. function:: infix && /special x y
    	      infix || /special x y
 
-   Logical conjunction and disjunction.
+   The logical connectives evaluate their operands in `short-circuit mode`.
+   Thus the second operand is passed by name and will only be evaluated if the
+   first operand fails to determine the value of the expression. For instance,
+   ``x&&y`` immediately becomes false if ``x`` evaluates to false; otherwise
+   ``y`` is evaluated to give the value of the expression. The built-in
+   definitions of these operations work as if they were defined by the
+   following equations (but note that the second operand is indeed passed by
+   name)::
+
+     x::int && y = if x then y else x;
+     x::int || y = if x then x else y;
+
+   Note that this isn't quite the same as in C, as the results of these
+   operations are *not* normalized, i.e., they may return nonzero values other
+   than 1 to denote "true". (This has the advantage that these operations can
+   be implemented tail-recursively, see `Stack Size and Tail Recursion`_.)
+   Thus, if you need a normalized truth value then you'll have to make sure
+   that either both operands are already normalized, or you'll have to
+   normalize the result yourself. (A quick way to turn a machine int ``x``
+   into a normalized truth value is to compute ``~~x`` or ``x~=0``.)
+
+   Moreover, if the built-in definition fails because the first operand is not
+   a machine int, then the second operand will be evaluated anyway and the
+   resulting application becomes a normal form, which gives you the
+   opportunity to extend these operations with your own definitions just like
+   the other built-in operations. Note, however, that in this case the
+   operands are effectively passed by value.
 
 .. function:: infix $$ x y
 
-   The sequencing operator.
+   The sequencing operator :func:`$$` evaluates its left operand, immediately
+   throws the result away and then goes on to evaluate the right operand which
+   gives the result of the entire expression. This operator is useful to write
+   imperative-style code such as the following prompt-input interaction::
+
+     > using system;
+     > puts "Enter a number:" $$ scanf "%g";
+     Enter a number:
+     21
+     21.0
+
+   We mention in passing here that the same effect can be achieved with a
+   :keyword:`when` clause, which also allows you to execute a function solely
+   for its side-effects and just ignore the return value::
+
+     > scanf "%g" when puts "Enter a number:" end;
+     Enter a number:
+     21
+     21.0
 
 .. function:: postfix & x
 
-   The thunking operator.
+   The :func:`&` operator does lazy evaluation. This is the only postfix
+   operator defined in the standard prelude. It turns its operand into a kind
+   of parameterless anonymous closure, deferring its evaluation. These kinds
+   of objects are also commonly known as `thunks` or `futures`. When the value
+   of a future is actually needed (during pattern-matching, or when the value
+   becomes an argument of a C call), it is evaluated automatically and gets
+   memoized, i.e., the computed result replaces the thunk so that it only has
+   to be computed once.
+
+   Futures are useful to implement all kinds of lazy data structures in Pure,
+   in particular: lazy lists a.k.a. streams. A `stream` is simply a list with
+   a thunked tail, which allows it to be infinite. The Pure prelude defines
+   many functions for creating and manipulating these kinds of objects;
+   further details and examples can be found in the Examples_ section below.
 
 .. function:: quote x
    	      prefix ' x
 
-   The quote.
+   This special form quotes an expression, i.e., ``quote x`` (or,
+   equivalently, ``'x``) returns just ``x`` itself without evaluating it. The
+   prelude also provides a function :func:`eval` which can be used to evaluate
+   a quoted expression at a later time. For instance::
 
-The logical connectives :func:`&&/special` and :func:`||/special` evaluate
-their operands in short-circuit mode. Thus, e.g., ``x&&y`` immediately becomes
-false if ``x`` evaluates to false, without ever evaluating ``y``. The built-in
-definitions of these operations work as if they were defined by the following
-equations (but note that the second operand is indeed passed "by name", so
-that it isn't evaluated unless its value is actually needed)::
+     > let x = '(2*42+2^12); x;
+     2*42+2^12
+     > eval x;
+     4180.0
 
-  x::int && y = if x then y else x;
-  x::int || y = if x then x else y;
-
-(Note that this isn't quite the same as in C, as the results of these
-operations are *not* normalized, i.e., they may return nonzero values other
-than 1 to denote "true". This has the advantage that :func:`&&/special` and
-:func:`||/special` can be implemented tail-recursively, see `Stack Size and
-Tail Recursion`_.  Thus, if you need a normalized truth value then you'll have
-to make sure that either both operands are already normalized, or you'll have
-to normalize the result yourself.)
-
-If the built-in definitions of :func:`&&/special` and :func:`||/special` fail
-then both operands are evaluated and the resulting symbolic term is reduced
-using the equations specified by the programmer, which allows you to extend
-the definitions of :func:`&&/special` and :func:`||/special` just as with
-other builtins. Also note that if the result term is in normal form then it is
-returned as is, thus :func:`&&/special` and :func:`||/special` can be used in
-symbolic evaluations as usual. For instance, the following equations let you
-compute the disjunctive normal form of logical expressions::
-
-  // eliminate double negations:
-  ~~a           = a;
-
-  // de Morgan's laws:
-  ~(a || b)     = ~a && ~b;
-  ~(a && b)     = ~a || ~b;
-
-  // distributivity:
-  a && (b || c) = a && b || a && c;
-  (a || b) && c = a && c || b && c;
-
-  // associativity:
-  (a && b) && c = a && (b && c);
-  (a || b) || c = a || (b || c);
-
-Example::
-
-  > a || ~(b || (c && ~d));
-  a||~b&&~c||~b&&d
-
-The sequencing operator :func:`$$` evaluates its left operand, immediately
-throws the result away and then goes on to evaluate the right operand which
-gives the result of the entire expression. This operator is useful to write
-imperative-style code such as the following prompt-input interaction::
-
-  > using system;
-  > puts "Enter a number:" $$ scanf "%g";
-  Enter a number:
-  21
-  21.0
-
-We mention in passing here that the same effect can be achieved with a
-:keyword:`when` clause, which also allows you to execute a function solely for
-its side-effects and just ignore the return value::
-
-  > scanf "%g" when puts "Enter a number:" end;
-  Enter a number:
-  21
-  21.0
-
-The :func:`&` operator does lazy evaluation. This is the only postfix operator
-defined in the standard prelude, written as ``x&``, where ``x`` is an
-arbitrary Pure expression. It turns its operand into a kind of parameterless
-anonymous closure, deferring its evaluation. These kinds of objects are also
-commonly known as `thunks` or `futures`. When the value of a future is
-actually needed (during pattern-matching, or when the value becomes an
-argument of a C call), it is evaluated automatically and gets memoized, i.e.,
-the computed result replaces the thunk so that it only has to be computed
-once. Futures are useful to implement all kinds of lazy data structures in
-Pure, in particular: lazy lists a.k.a. streams. A `stream` is simply a list
-with a thunked tail, which allows it to be infinite. The Pure prelude defines
-many functions for creating and manipulating these kinds of objects; further
-details and examples can be found in the Examples_ section below.
-
-Last but not least, the special form :func:`quote` quotes an expression, i.e.,
-``quote x`` (or, equivalently, ``'x``) returns just ``x`` itself without
-evaluating it. The prelude also provides a function :func:`eval` which can be
-used to evaluate a quoted expression at a later time. For instance::
-
-  > let x = '(2*42+2^12); x;
-  2*42+2^12
-  > eval x;
-  4180.0
-
-The quote also inhibits evaluation inside matrix values, including the
-"splicing" of embedded submatrices::
-
-  > '{1,2+3,2*3};
-  {1,2+3,2*3}
-  > '{1,{2,3},4};
-  {1,{2,3},4}
-
-The :func:`quote` should be well familiar to Lisp programmers. However, there
-are some notable differences, please see `The Quote`_ in the `Caveats and
-Notes`_ section for details and more examples.
+   This enables some powerful metaprogramming techniques, which should be well
+   familiar to Lisp programmers. However, there are some notable differences
+   to Lisp's quote, please see `The Quote`_ in the Examples_ section for
+   details and more examples.
 
 .. _def:
 .. _let:
@@ -1703,7 +1721,7 @@ rules:
 .. productionlist::
    rule : `pattern` ("|" `pattern`)* "=" `expr` [`guard`]
    	: (";" "=" `expr` [`guard`])*
-   simple_rule : `pattern` = `expr` "|" `expr`
+   simple_rule : `pattern` = `expr` | `expr`
    pattern : `simple_expr`
    guard : "if" `simple_expr`
          : | "otherwise"
@@ -2412,8 +2430,8 @@ submatrices to larger matrices. For instance::
   > {{1,2},{3,4}};
   {1,2,3,4}
 
-As already mentioned, one way to inhibit this "splicing" of the submatrices in
-a larger matrix is to use the "quote" operator (cf. `Special Forms`_)::
+One way to inhibit this "splicing" of the submatrices in a larger matrix is to
+use the "quote" operator (cf. `The Quote`_)::
 
   > '{{1,2},{3,4}};
   {{1,2},{3,4}}
@@ -2489,15 +2507,28 @@ are a few examples which illustrate how to create records and work with them::
 Note the use of the "hash rocket" :cons:`=>` which denotes the ``key=>value``
 associations in a record. The hash rocket is a constructor declared as an
 infix operator in the prelude, see the :ref:`Prelude` section in the
-:doc:`purelib`. There's one caveat here, however. Since neither :cons:`=>` nor
-:func:`!` treat their key operand in a special way, symbols used as keys must
-not be bound to a value, or you'll have to protect them from being evaluated
-by quoting them. Thus, to be on the safe side, you should actually write::
+:doc:`purelib`. There's one caveat here, however. Since neither '``=>``' nor
+'``!``' treat their key operand in a special way, you'll have to take care
+that the key symbols do not evaluate to something else, as might be the case
+if they are bound to a global or local variable or parameterless function::
 
-  > let r = {'x=>5, 'y=>12};
-  > r!'y; r!!['y,'x];
-  12
-  {12,5}
+  > let u = 99;
+  > {u=>u};
+  {99=>99}
+
+In the case of global variables and function symbols, you might also protect
+the symbol with a quote (see `The Quote`_)::
+
+  > {'u=>u};
+  {u=>99}
+
+However, even the quote doesn't save you from local variable substitution, so
+you'll just have to rename the local variable in such cases::
+
+  > {'u=>u} when u = 99 end;
+  {99=>99}
+  > {'u=>v} when v = 99 end;
+  {u=>99}
 
 It's also possible to use strings as keys instead, which may actually be more
 convenient in some cases::
@@ -2584,6 +2615,97 @@ be nested, too::
   > let r = {a => {b=>1,c=>2}, b => 2};
   > r!a, r!b, r!a!b;
   {b=>1,c=>2},2,1
+
+The Quote
+---------
+
+As already mentioned in `Special Forms`_, the :func:`quote` operation quotes
+an expression, so that it can be passed around and manipulated freely until
+its value is needed, in which case you can pass it to the :func:`eval`
+function to obtain its value. For instance::
+
+  > let x = '(2*42+2^12); x;
+  2*42+2^12
+  > eval x;
+  4180.0
+
+The quote also inhibits evaluation inside matrix values, including the
+"splicing" of embedded submatrices::
+
+  > '{1,2+3,2*3};
+  {1,2+3,2*3}
+  > '{1,{2,3},4};
+  {1,{2,3},4}
+
+Lisp programmers will be well familiar with this operation which enables some
+powerful metaprogramming techniques. However, there are some notable
+differences to Lisp's quote. First, :func:`quote` only inhibits the evaluation
+of global variables, *local* variables are substituted as usual::
+
+  > (\x -> '(2*x+1)) 99;
+  2*99+1
+  > foo x = '(2*x+1);
+  > foo 99; foo $ '(7/y);
+  2*99+1
+  2*(7/y)+1
+  > '(x+1) when x = '(2*3) end;
+  2*3+1
+  > '(2*42+2^n) when n = 12 end;
+  2*42+2^12
+
+This may come as a surprise (or even annoyance) to real Lisp weenies, but it
+does have its advantages. In particular, it makes it easy to fill in the
+variable parts in a quoted "template" expression, without any need for an
+arguably complex tool like Lisp's "quasiquote". (It is quite easy to define
+quasiquote in Pure if you want it, however. See the `Recursive Macros`_
+section for a simplified version; a full implementation can be found in the
+Pure library sources.)
+
+Another useful feature of Lisp's quasiquote is the capability to splice
+arguments into a function application. It is possible to achieve pretty much
+the same in Pure with the following variation of the :func:`$` operator which
+"curries" its second (tuple) operand::
+
+  infixr 0 $@ ;
+  f $@ ()     = f;
+  f $@ (x,xs) = f x $@ xs;
+  f $@ x      = f x;
+
+Now you can write, e.g.::
+
+  > '(foo 1 2) $@ '(2/3,3/4);
+  foo 1 2 (2/3) (3/4)
+
+Second, it is in fact possible to perform arbitrary computations right in the
+middle of a quoted expression. This is because :func:`quote` only ever quotes
+`simple expressions`_, embedded `special expressions`_ (conditionals, lambda
+and the :keyword:`case`, :keyword:`when` and :keyword:`with` constructs) are
+evaluated as usual. Example::
+
+  > '(x+1 when x = '(2*3) end);
+  2*3+1
+  > '(2*42+(2^n when n = 2*6 end));
+  2*42+4096.0
+
+The downside of this is that there is no way to quote special expressions.
+Macro expansion *is* inhibited in quoted expressions, however, so it is
+possible to work around this limitation by defining a custom special form (see
+Macros_) to be used as a symbolic representation for, say, a lambda
+expression, which reduces to a real lambda when evaluated. To these ends, the
+:func:`eval` function can be invoked with a string argument as follows::
+
+  def lambda x y = eval $ "\\ "+str ('x)+" -> "+str ('y);
+
+Example::
+
+  > let l = 'lambda x (x+1); l;
+  lambda x (x+1)
+  > let f = eval l; f; f 9;
+  #<closure 0x7fdc3ca45be8>
+  10
+
+Other special constructs, such as :keyword:`case`, :keyword:`when` and
+:keyword:`with` can be handled in a similar fashion.
 
 Declarations
 ============
@@ -2707,12 +2829,14 @@ operator::
 
   postfix (^) ^^ ;
 
+Pure also provides unary outfix operators, which work like in Wm Leler's
+constraint programming language Bertrand_. These can be declared as follows:
+
 .. describe:: outfix left right ...;
 
-Pure also provides unary outfix operators, which work like in Wm Leler's
-constraint programming language Bertrand_. Outfix operators let you define
-your own bracket structures. The operators must be given as pairs of matching
-left and right symbols (which must be distinct). For instance::
+Outfix operators let you define your own bracket structures. The operators
+must be given as pairs of matching left and right symbols (which must be
+distinct). For instance::
 
   outfix |: :| BEGIN END;
 
@@ -2723,13 +2847,15 @@ other operators, you can turn outfix symbols into ordinary functions by
 enclosing them in parentheses, but you have to specify the symbols in matching
 pairs, such as ``(BEGIN END)``.
 
-.. describe:: nonfix symbol ...;
-
 Pure also has a notation for "nullary" operators, i.e., "operators without
 operands", which are used to denote special constants. These are introduced
-using a :keyword:`nonfix` declaration, e.g.::
+using a :keyword:`nonfix` declaration:
 
-   nonfix red green blue;
+.. describe:: nonfix symbol ...;
+
+For instance::
+
+  nonfix red green blue;
 
 Syntactically, these work just like ordinary identifiers, so they may stand
 whereever an identifier is allowed (no parentheses are required to "escape"
@@ -3122,7 +3248,7 @@ following (purely syntactic) notions:
 
 * A `defining occurrence` of a global *variable* or *constant symbol* is any
   occurrence of the symbol in a *variable position* (as given by the "head =
-  function" rule, cf. `Parameters in Equations`_) on the left-hand side of a
+  function" rule, cf. `Variables in Equations`_) on the left-hand side of a
   :keyword:`let` or :keyword:`const` definition.
 
 * All other occurrences of global symbols on the left-hand side, as well as
@@ -6259,13 +6385,13 @@ true! In fact, the Pure compiler will warn you about the second rule of the
 
 This happens because an identifier on the left-hand side of a rule, which is
 neither the head symbol of a function application nor a :keyword:`nonfix`
-symbol, is always considered to be a variable (cf. `Parameters in
-Equations`_), even if that symbol is defined as a global function elsewhere.
-So ``foo`` isn't a literal name in the above :keyword:`case` expression, it's
-a variable! (As a matter of fact, this is rather useful, since otherwise a
-rule like ``f g = g+1`` would suddenly change meaning if you happen to add a
-definition like ``g x = x-1`` somewhere else in your program, which certainly
-isn't desirable.)
+symbol, is always considered to be a variable (cf. `Variables in Equations`_),
+even if that symbol is defined as a global function elsewhere.  So ``foo``
+isn't a literal name in the above :keyword:`case` expression, it's a variable!
+(As a matter of fact, this is rather useful, since otherwise a rule like ``f g
+= g+1`` would suddenly change meaning if you happen to add a definition like
+``g x = x-1`` somewhere else in your program, which certainly isn't
+desirable.)
 
 A possible workaround is to "escape" the function symbol using an empty
 namespace qualifier::
@@ -6524,85 +6650,6 @@ function, as well as :func:`quote` and the operators :func:`&&/special`,
 forms in direct (saturated) calls. They can still be used if you pass them
 around as function values or in partial applications, but in this case they
 lose all their special call-by-name argument processing.
-
-The Quote
----------
-
-Like in Lisp, the :func:`quote` special form can be used to construct literal
-expressions which can then be manipulated before actually evaluating them
-using the built-in :func:`eval` function. However, there are some notable
-differences to the Lisp version of :func:`quote`:
-
-* Local variables (i.e., variables bound by the left-hand side of an equation,
-  a lambda expression or a :keyword:`case` or :keyword:`when` construct) can
-  never be quoted, so the corresponding value gets substituted even into
-  quoted expressions. Thus, e.g., ``'(2*42+2^n) when n = 12 end`` evaluates to
-  ``2*42+2^12`` rather than ``2*42+2^n``.
-
-* Only simple expressions can be quoted in Pure. Special constructs embedded
-  in a quoted expression, such as conditionals and local bindings, are
-  evaluated as usual. For instance, ``'(2*42+(2^n when n = 2*6 end))``
-  evaluates to ``2*42+4096.0`` rather than quoting the embedded
-  :keyword:`when` expression.
-
-While it's possible to define a Lisp-like ``quasiquote`` in Pure (see the
-`Recursive Macros`_ section for a simplified version, a full implementation
-can be found in the Pure library sources), it's usually not needed. As
-discussed above, substitution of local variables is performed even in quoted
-expressions, so that it is quite easy to fill in variable parts in a quoted
-"template" expression. For instance::
-
-  > (\x -> '(2*x+1)) 99;
-  2*99+1
-  > foo x = '(2*x+1);
-  > foo 99; foo $ '(7/y);
-  2*99+1
-  2*(7/y)+1
-
-In fact, it is possible to perform arbitrary computations right in the middle
-of a quoted expression, using one of the special
-:keyword:`if`-:keyword:`then`-:keyword:`else`, :keyword:`case`,
-:keyword:`when` and :keyword:`with` expressions, since these are never quoted
-either. Example::
-
-  > '(x+1 when x = '(2*3) end);
-  2*3+1
-
-Another useful feature of Lisp's ``quasiquote`` is the capability to splice
-arguments into a function application. It is possible to achieve pretty much
-the same in Pure with the following variation of the :func:`$` operator which
-"curries" its second (tuple) operand::
-
-  infixr 0 $@ ;
-  f $@ ()     = f;
-  f $@ (x,xs) = f x $@ xs;
-  f $@ x      = f x;
-
-Now you can write, e.g.::
-
-  > '(foo 1 2) $@ '(2/3,3/4);
-  foo 1 2 (2/3) (3/4)
-
-One shortcoming of Pure's :func:`quote` is that there is no way to quote
-special constructs such as lambdas. Macro expansion *is* inhibited in quoted
-expressions, however, so it is possible to work around this limitation by
-defining a custom special form to be used as a symbolic representation for,
-say, a lambda expression, which reduces to a real lambda when evaluated. To
-these ends, the :func:`eval` function can be invoked with a string argument as
-follows::
-
-  def lambda x y = eval $ "\\ "+str ('x)+" -> "+str ('y);
-
-Example::
-
-  > let l = 'lambda x (x+1); l;
-  lambda x (x+1)
-  > let f = eval l; f; f 9;
-  #<closure 0x7fdc3ca45be8>
-  10
-
-Other special constructs, such as :keyword:`case`, :keyword:`when` and
-:keyword:`with` can be handled in a similar fashion.
 
 Laziness
 --------
