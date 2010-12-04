@@ -51,8 +51,8 @@ help:
 	  update-html "to copy only the html docs to the staging area"
 
 # The rst sources we want to use. This is pretty much the only definition that
-# needs to be updated (along with the toctree in the master document
-# puredoc.txt) when the set of documentation changes.
+# needs to be updated (along with the toctree in the master document index.txt)
+# when the set of documentation changes.
 
 rst_sources = pure/pure.txt pure/purelib.txt faust2pd/faust2pd.txt gnumeric-pure/gnumeric-pure.txt pd-pure/pd-pure.txt pure-audio/pure-audio.txt pure-csv/pure-csv.txt pure-doc/pure-doc.txt pure-fastcgi/pure-fastcgi.txt pure-faust/pure-faust.txt pure-ffi/pure-ffi.txt pure-g2/pure-g2.txt pure-gen/pure-gen.txt pure-gl/pure-gl.txt pure-glpk/pure-glpk.txt pure-gplot/pure-gplot.txt pure-gsl/pure-gsl.txt pure-gtk/pure-gtk.txt pure-liblo/pure-liblo.txt pure-midi/pure-midi.txt pure-octave/pure-octave.txt pure-odbc/pure-odbc.txt pure-rational/pure-rational.txt pure-readline/pure-readline.txt pure-sockets/pure-sockets.txt pure-sql3/pure-sql3.txt pure-tk/pure-tk.txt pure-xml/pure-xml.txt
 
@@ -60,7 +60,7 @@ rst_sources = pure/pure.txt pure/purelib.txt faust2pd/faust2pd.txt gnumeric-pure
 # are to be found in the appropriate subdirs (html, latex) of the $(BUILDDIR)
 # directory.
 
-htmlfiles = genindex.html pure-modindex.html puredoc.html $(patsubst %.txt,%.html,$(notdir $(rst_sources))) search.html searchindex.js
+htmlfiles = index.html genindex.html pure-modindex.html $(patsubst %.txt,%.html,$(notdir $(rst_sources))) search.html searchindex.js
 pdffiles = puredoc.pdf
 
 # You can set these variables from the command line.
@@ -95,17 +95,17 @@ alldocs:
 	@rm -rf $(dir $(rst_sources))
 	@$(MAKE) --no-print-directory sources
 	@(manifest=`ls */*.txt 2>/dev/null || true`; test -n "$$manifest" && cp $$manifest .; rm -rf $(dir $(rst_sources)); true)
-	@$(MAKE) --no-print-directory $(BUILDDIR)/html/puredoc.html $(BUILDDIR)/latex/puredoc.pdf
+	@$(MAKE) --no-print-directory $(BUILDDIR)/html/index.html $(BUILDDIR)/latex/puredoc.pdf
 
 sources: conf.py $(rst_sources)
 
 conf.py: conf.py.in Makefile
 	sed -e 's/@version@/$(version)/g' < $< > $@
 
-$(BUILDDIR)/html/puredoc.html: conf.py puredoc.txt $(notdir $(rst_sources))
+$(BUILDDIR)/html/index.html: conf.py index.txt $(notdir $(rst_sources))
 	@$(MAKE) --no-print-directory html
 
-$(BUILDDIR)/latex/puredoc.pdf: conf.py puredoc.txt $(notdir $(rst_sources))
+$(BUILDDIR)/latex/puredoc.pdf: conf.py index.txt $(notdir $(rst_sources))
 	@$(MAKE) --no-print-directory latexpdf
 
 # Same as above, but only update the html docs. This is used internally for
@@ -115,7 +115,7 @@ allhtml:
 	@rm -rf $(dir $(rst_sources))
 	@$(MAKE) --no-print-directory sources
 	@(manifest=`ls */*.txt 2>/dev/null || true`; test -n "$$manifest" && cp $$manifest .; rm -rf $(dir $(rst_sources)); true)
-	@$(MAKE) --no-print-directory $(BUILDDIR)/html/puredoc.html
+	@$(MAKE) --no-print-directory $(BUILDDIR)/html/index.html
 
 # Same as above, but don't run sphinx-builder yet, leave that to the user.
 # This can be run without having any of the docutils/Sphinx tools installed,

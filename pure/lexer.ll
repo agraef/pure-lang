@@ -1645,7 +1645,7 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
     static FILE *fp = NULL;
     const char *s = cmdline+4, *p, *q;
     while (isspace(*s)) ++s;
-    string docname = s, default_doc = interp.libdir+"docs/puredoc.html";
+    string docname = s, default_doc = interp.libdir+"docs/index.html";
     const char *browser = getenv("PURE_HELP");
     // Check that the documentation is installed.
     if (!fp) {
