@@ -235,6 +235,13 @@ json:
 htmlhelp:
 	$(SPHINXBUILD) -b htmlhelp $(HTMLOPTS) $(ALLSPHINXOPTS) $(BUILDDIR)/htmlhelp
 
+# Same as above, but includes Windows-specific documentation. This should be
+# used to build the htmlhelp documentation distributed with the Pure msi
+# package.
+
+winhelp:
+	$(SPHINXBUILD) -b htmlhelp -t winhelp $(HTMLOPTS) $(ALLSPHINXOPTS) $(BUILDDIR)/htmlhelp
+
 qthelp:
 	$(SPHINXBUILD) -b qthelp $(ALLSPHINXOPTS) $(BUILDDIR)/qthelp
 

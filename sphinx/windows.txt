@@ -1,0 +1,94 @@
+=======================
+Running Pure on Windows
+=======================
+
+This document provides some information pertaining to the Windows version of
+Pure, available from the Pure website in the form of an MSI package. Please
+note that the Windows version has a custom directory layout which is more in
+line with standard Windows applications, and will by default be installed in
+the standard ``Program Files`` directory on your system.
+
+* The Pure interpreter requires the ``PURELIB`` environment variable to point
+  to the directory containing the prelude and other library modules, available
+  in the ``lib`` subdirectory of the Pure program directory. Also, the
+  ``PATH`` environment variable should contain both the Pure program directory
+  and the ``lib`` subdirectory, so that you can run the interpreter and
+  compiled programs from the command line. Both environment variables are set
+  automatically during installation. To make this work, you have to install
+  the package with administrator rights.
+
+* The package includes a shortcut to run the Pure interpreter in a command
+  window, as well as a shortcut for the online documentation that you're
+  looking at. After installation you can find these in the ``Pure`` submenu of
+  the Program menu.
+
+* Pure scripts can be edited in any text editor. Syntax highlighting and
+  programming modes are provided for Emacs_, Vim_ and various other popular
+  text editors. After installation you can find these in the ``etc``
+  subdirectory of the program directory.
+
+* The package also includes the :program:`PurePad` application, a GUI frontend
+  to the Pure interpreter which lets you edit and run Pure scripts on Windows.
+
+* The interpreter has a few interactive commands (``ls``, ``pwd``, etc.) which
+  require Unix-like utilities. To make these work, we recommend installing the
+  CoreUtils package from the GnuWin32_ project, and setting your ``PATH``
+  accordingly.
+
+.. _Emacs: http://www.gnu.org/software/emacs/
+.. _Vim: http://www.vim.org/
+.. _GnuWin32: http://gnuwin32.sf.net/
+
+Running the Pure batch compiler on Windows
+==========================================
+
+You can use the Pure interpreter to create native executables by running it
+with the :option:`-c` option. To make this work on Windows, you need to
+install the **LLVM toolchain for mingw32/x86**, available from the LLVM
+`download page`_. Only the LLVM binaries package is required. For your
+convenience, here is the corresponding download for the LLVM 2.5 release:
+`LLVM Binaries for Mingw32/x86`_.
+
+.. _download page: http://llvm.org/releases
+.. _LLVM Binaries for Mingw32/x86: http://llvm.org/releases/2.5/llvm-2.5-x86-mingw32.tar.bz2
+
+The installer assumes that you unpack this tarball in the root directory of
+your ``C:`` drive, so that the tools end up in ``C:\llvm-2.5``, and sets up
+``PATH`` accordingly. If you put them elsewhere or if you're using the
+toolchain from a newer LLVM version then you'll have to change ``PATH``
+accordingly.
+
+Finally, the Pure program directory needs to be added to the gcc
+``LIBRARY_PATH`` environment variable, so that some Windows-specific addon
+libraries are found when linking compiled programs. This should be done
+automatically during installation as well. However, because of differences in
+filename conventions the result might not always be what you want, so you
+should check the value of ``LIBRARY_PATH`` after installation and edit it as
+needed.
+
+Running pure-gen on Windows
+===========================
+
+This release also includes the :program:`pure-gen` utility, which can be used
+to create Pure interfaces to C libraries from the corresponding C headers.
+
+To make this work, you also need to have :program:`gcc` installed;
+:program:`pure-gen` uses this as its C preprocessor. gcc 4.3 or later is
+required. We recommend using the latest gcc version (`gcc 4.4`_, at the time
+of this writing) from the `mingw project`_. Instructions for installing mingw
+gcc 4.4 can be found here__. There's an installer program available at the
+mingw website which helps you to set up a working mingw installation on your
+system. Jiri Spitz' instructions_ for setting up mingw for Pure may also be
+helpful.
+
+.. _gcc 4.4: http://downloads.sourceforge.net/mingw/gcc-full-4.4.0-mingw32-bin-2.tar.lzma
+.. _mingw project: http://www.mingw.org/
+__ http://downloads.sourceforge.net/mingw/gcc-4.4.0-mingw32-notes.txt
+.. _instructions: http://wiki.pure-lang.googlecode.com/hg/INSTALL-MinGW.txt
+
+:program:`pure-gen` assumes that a suitable gcc version is on your ``PATH``.
+If this is not the case then you can also set the ``PURECPP`` environment
+variable to point to the executables of a suitable gcc installation so that
+:program:`pure-gen` finds the correct gcc program. (For instance, if you have
+installed gcc-4.4 under ``C:\gcc-4.4`` then you should set ``PURECPP`` to
+``C:\gcc-4.4\bin``.)
