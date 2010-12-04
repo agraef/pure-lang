@@ -1,7 +1,7 @@
 
 # Package name and version number:
 dist = pure-gen-$(version)
-version = 0.9
+version = 0.10
 
 # Try to guess the installation prefix (this needs GNU make):
 prefix = $(patsubst %/bin/pure,%,$(shell which pure 2>/dev/null))
@@ -35,7 +35,7 @@ EXE = .exe
 endif
 
 DISTFILES = COPYING ChangeLog Makefile config.guess README README.dump-ast \
-dump-ast.hs pure-gen.pure pure-gen.1 run-tests examples/*.templ
+dump-ast.hs pure-gen.pure pure-gen.1 pure-gen.txt run-tests examples/*.templ
 
 all: pure-gen dump-ast
 
