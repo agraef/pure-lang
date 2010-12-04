@@ -1652,7 +1652,7 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
       fp = fopen(default_doc.c_str(), "r");
       if (!fp) {
 	static bool init = false;
-	cerr << "help: couldn't find online documenation\n";
+	cerr << "help: couldn't find online documentation\n";
 	if (!init) {
 	  cerr << "\n\
 Most likely this just means that you haven't installed the documentation\n\
