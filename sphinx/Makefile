@@ -56,11 +56,15 @@ help:
 
 rst_sources = pure/pure.txt pure/purelib.txt faust2pd/faust2pd.txt gnumeric-pure/gnumeric-pure.txt pd-pure/pd-pure.txt pure-audio/pure-audio.txt pure-csv/pure-csv.txt pure-doc/pure-doc.txt pure-fastcgi/pure-fastcgi.txt pure-faust/pure-faust.txt pure-ffi/pure-ffi.txt pure-g2/pure-g2.txt pure-gen/pure-gen.txt pure-gl/pure-gl.txt pure-glpk/pure-glpk.txt pure-gplot/pure-gplot.txt pure-gsl/pure-gsl.txt pure-gtk/pure-gtk.txt pure-liblo/pure-liblo.txt pure-midi/pure-midi.txt pure-octave/pure-octave.txt pure-odbc/pure-odbc.txt pure-rational/pure-rational.txt pure-readline/pure-readline.txt pure-sockets/pure-sockets.txt pure-sql3/pure-sql3.txt pure-tk/pure-tk.txt pure-xml/pure-xml.txt
 
+# Extra (static) rst sources.
+
+rst_extra = index.txt purepad.txt windows.txt
+
 # Default target files. These are the ones we package. After generation, they
 # are to be found in the appropriate subdirs (html, latex) of the $(BUILDDIR)
 # directory.
 
-htmlfiles = index.html genindex.html pure-modindex.html $(patsubst %.txt,%.html,$(notdir $(rst_sources))) search.html searchindex.js
+htmlfiles = genindex.html pure-modindex.html $(patsubst %.txt,%.html,$(rst_extra) $(notdir $(rst_sources))) search.html searchindex.js
 pdffiles = puredoc.pdf
 
 # You can set these variables from the command line.
@@ -102,10 +106,10 @@ sources: conf.py $(rst_sources)
 conf.py: conf.py.in Makefile
 	sed -e 's/@version@/$(version)/g' < $< > $@
 
-$(BUILDDIR)/html/index.html: conf.py index.txt $(notdir $(rst_sources))
+$(BUILDDIR)/html/index.html: conf.py $(rst_extra) $(notdir $(rst_sources))
 	@$(MAKE) --no-print-directory html
 
-$(BUILDDIR)/latex/puredoc.pdf: conf.py index.txt $(notdir $(rst_sources))
+$(BUILDDIR)/latex/puredoc.pdf: conf.py $(rst_extra) $(notdir $(rst_sources))
 	@$(MAKE) --no-print-directory latexpdf
 
 # Same as above, but only update the html docs. This is used internally for
