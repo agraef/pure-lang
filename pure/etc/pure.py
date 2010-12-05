@@ -6,7 +6,7 @@
 # For the time being, you'll have to install this manually. Add the Python
 # code below to pygments/lexers/functional.py in the Pygment sources and rerun
 # pygments/lexers/_mapping.py to have this lexer included in Pygment. Then
-# reinstall Pygment as usual.
+# reinstall Pygments as usual.
 
 class PureLexer(RegexLexer):
     """
