@@ -1372,14 +1372,8 @@ public:
 	  // These don't have any fixities.
 	  break;
       }
-      // Search for commands and options.
+      // Search for commands.
       string mykey = key+" (command)";
-      it = m.find(mykey);
-      if (it != m.end()) {
-	target = it->second;
-	return true;
-      }
-      mykey = key+" command line option";
       it = m.find(mykey);
       if (it != m.end()) {
 	target = it->second;
@@ -1472,6 +1466,27 @@ void Index::scan()
 	// reread it in the next iteration
 	if (c != EOF) ungetc(c, fp);
 	if (key.empty()) continue;
+	if (key[0] == '-') {
+	  size_t p = key.find_first_not_of('-');
+	  if (p != string::npos && p<=2 && isalpha(key[p])) {
+	    // this looks like a command line option, strip arguments and
+	    // create an index entry for it if not already present
+	    string mykey = key;
+	    p = key.find_first_of(" [", p);
+	    if (p != string::npos) mykey = key.substr(0, p);
+	    if (m.find(mykey) == m.end()) m[mykey] = target;
+	    if (level>1 && !last_key.empty()) {
+	      // this is a subentry, try to extract the program name from it
+	      // and add another index entry under the program name
+	      p = last_key.find("command line option");
+	      if (p != string::npos && p>0 && last_key[p-1] == ' ' &&
+		  last_key.substr(p) == "command line option") {
+		mykey = last_key.substr(0, p)+mykey;
+		if (m.find(mykey) == m.end()) m[mykey] = target;
+	      }
+	    }
+	  }
+	}
 	if (key[0] == '[' && key[key.size()-1] == ']' &&
 	    key.find_first_not_of("0123456789", 1) >= key.size()-1) {
 	  // secondary search term, prepend the previous key
