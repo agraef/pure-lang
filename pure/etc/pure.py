@@ -4,8 +4,8 @@
 # other Pygments-enabled software such as Sphinx.
 
 # For the time being, you'll have to install this manually. Add the Python
-# code below to pygments/lexers/functional.py in the Pygment sources and rerun
-# pygments/lexers/_mapping.py to have this lexer included in Pygment. Then
+# code below to pygments/lexers/functional.py in the Pygments sources and rerun
+# pygments/lexers/_mapping.py to have this lexer included in Pygments. Then
 # reinstall Pygments as usual.
 
 class PureLexer(RegexLexer):
