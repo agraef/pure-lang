@@ -11,8 +11,9 @@ pure-gen is a C interface generator for the Pure language. It takes a C header
 file as input and generates a corresponding Pure module with the constant
 definitions and extern declarations needed to use the C module from
 Pure. pure-gen can also generate FFI interfaces rather than externs (using the
-pure-ffi module), and it can optionally create a C wrapper module which allows
-you to create interfaces to pretty much any code which can be called via C.
+:doc:`pure-ffi` module), and it can optionally create a C wrapper module which
+allows you to create interfaces to pretty much any code which can be called
+via C.
 
 .. role:: dfn(strong)
 .. default-role:: dfn
@@ -47,109 +48,158 @@ Options
 General Options
 ---------------
 
-``-h``, ``--help``
-    Print a brief help message and exit.
+.. program:: pure-gen
 
-``-V``, ``--version``
-    Print version number and exit.
+.. option:: -h
+            --help
 
-``-e``, ``--echo``
-    Echo preprocessor lines. Prints all processed ``#define``\ s, useful for
-    debugging purposes.
+   Print a brief help message and exit.
 
-``-v``, ``--verbose``
-    Show parameters and progress information. Gives useful information about
-    the conversion process.
+.. option:: -V
+            --version
 
-``-w[level]``, ``--warnings[=level]``
-    Display warnings, ``level`` = 0 (disable most warnings), 1 (default, shows
-    important warnings only) or 2 (lots of additional warnings useful for
-    debugging purposes).
+   Print version number and exit.
+
+.. option:: -e
+            --echo
+
+   Echo preprocessor lines. Prints all processed ``#define``\ s, useful for
+   debugging purposes.
+
+.. option:: -v
+            --verbose
+
+   Show parameters and progress information. Gives useful information about
+   the conversion process.
+
+.. option:: -w[level]
+            --warnings[=level]
+
+   Display warnings, ``level`` = 0 (disable most warnings), 1 (default, shows
+   important warnings only) or 2 (lots of additional warnings useful for
+   debugging purposes).
 
 Preprocessor Options
 --------------------
 
-``-I path``, ``--include path``
-    Add include path. Passed to the C preprocessor.
+.. option:: -I path
+            --include path
 
-``-D name[=value]``, ``--define name[=value]``
-    Define symbol. Passed to the C preprocessor.
+   Add include path. Passed to the C preprocessor.
 
-``-U name``, ``--undefine name``
-    Undefine symbol. Passed to the C preprocessor.
+.. option:: -D name[=value]
+            --define name[=value]
 
-``-C option``, ``--cpp option``
-    Pass through other preprocessor options and arguments.
+   Define symbol. Passed to the C preprocessor.
+
+.. option:: -U name
+            --undefine name
+
+   Undefine symbol. Passed to the C preprocessor.
+
+.. option:: -C option
+            --cpp option
+
+   Pass through other preprocessor options and arguments.
 
 Generator Options
 -----------------
 
-``-f iface``, ``--interface iface``
-    Interface type (``extern``, ``c``, ``ffi`` or ``c-ffi``).  Default is
-    ``extern``. The ``extern`` and ``c`` types generate Pure ``extern``
-    declarations, which is what you want in most cases.  ``ffi`` and ``c-ffi``
-    employ Pure's libffi interface instead. The ``c`` and ``c-ffi`` types
-    cause an additional C wrapper module to be created (see `Generating C
-    Code`_). These can also be combined with the ``-auto`` suffix which
-    creates C wrappers only when needed to get C struct arguments and returns
-    working, see `Dealing with C Structs`_ for details.
+.. option:: -f iface
+            --interface iface
 
-``-l lib``, ``--lib-name lib``
-    Add dynamic library module to be imported in the Pure output file. Default
-    is ``-l c-file`` (the filename specified with ``-c``, see below, without
-    filename extension) if one of the ``-fc`` options was specified, none
-    otherwise.
+   Interface type (``extern``, ``c``, ``ffi`` or ``c-ffi``).  Default is
+   ``extern``. The ``extern`` and ``c`` types generate Pure ``extern``
+   declarations, which is what you want in most cases.  ``ffi`` and ``c-ffi``
+   employ Pure's libffi interface instead. The ``c`` and ``c-ffi`` types
+   cause an additional C wrapper module to be created (see `Generating C
+   Code`_). These can also be combined with the ``-auto`` suffix which
+   creates C wrappers only when needed to get C struct arguments and returns
+   working, see `Dealing with C Structs`_ for details.
 
-``-m name``, ``--namespace name``
-    Module namespace in which symbols should be declared.
+.. option:: -l lib
+            --lib-name lib
 
-``-p prefix``, ``--prefix prefix``
-    Module name prefix to be removed from C symbols.
+   Add dynamic library module to be imported in the Pure output file. Default
+   is ``-l c-file`` (the filename specified with :option:`-c`, see below,
+   without filename extension) if one of the ``-fc`` options was specified,
+   none otherwise.
 
-``-P prefix``, ``--wrap prefix``
-    Prefix to be prepended to C wrapper symbols (``-fc`` and friends). Default
-    is ``Pure_``.
+.. option:: -m name
+            --namespace name
 
-``-a``, ``--all``
-    Include "hidden" symbols in the output. Built-in preprocessor symbols
-    and symbols starting with an underscore are excluded unless this option is
-    specified.
+   Module namespace in which symbols should be declared.
 
-``-s pattern``, ``--select pattern``
-    Selection of C symbols to be included in the output. ``pattern`` takes
-    the form ``[glob-patterns::][regex-pattern]``, designating a comma
-    separated list of glob patterns matching the source filenames, and an
-    extended regular expression matching the symbols to be processed. See
-    glob(7) and regex(7). The default ``pattern`` is empty which
-    matches all symbols in all source modules.
+.. option:: -p prefix
+            --prefix prefix
 
-``-x pattern``, ``--exclude pattern``
-    Like ``-s``, but *excludes* all matching C symbols from the selection.
+   Module name prefix to be removed from C symbols.
 
-``-t file``, ``--template file``
-    Specify a C template file to be used with C wrapper generation
-    (``-fc``). See `Generating C Code`_ for details.
+.. option:: -P prefix
+            --wrap prefix
 
-``-T file``, ``--alt-template file``
-  Specify an alternate C template file to be used with C wrapper generation
-  (``-fc``). See `Generating C Code`_ for details.
+   Prefix to be prepended to C wrapper symbols (``-fc`` and friends). Default
+   is ``Pure_``.
+
+.. option:: -a
+            --all
+
+   Include "hidden" symbols in the output. Built-in preprocessor symbols
+   and symbols starting with an underscore are excluded unless this option is
+   specified.
+
+.. option:: -s pattern
+            --select pattern
+
+   Selection of C symbols to be included in the output. ``pattern`` takes
+   the form ``[glob-patterns::][regex-pattern]``, designating a comma
+   separated list of glob patterns matching the source filenames, and an
+   extended regular expression matching the symbols to be processed. See
+   glob(7) and regex(7). The default ``pattern`` is empty which
+   matches all symbols in all source modules.
+
+.. option:: -x pattern
+            --exclude pattern
+
+   Like :option:`-s`, but *excludes* all matching C symbols from the
+   selection.
+
+.. option:: -t file
+            --template file
+
+   Specify a C template file to be used with C wrapper generation
+   (``-fc``). See `Generating C Code`_ for details.
+
+.. option:: -T file
+            --alt-template file
+
+   Specify an alternate C template file to be used with C wrapper generation
+   (``-fc``). See `Generating C Code`_ for details.
 
 Output Options
 --------------
 
-``-n``, ``--dry-run``
-    Only parse without generating any output.
+.. option:: -n
+            --dry-run
 
-``-N``, ``--noclobber``
-    Append output to existing files.
+   Only parse without generating any output.
 
-``-o file``, ``--output file``
-    Pure output (.pure) filename. Default is ``input-file`` with new
-    extension .pure.
+.. option:: -N
+            --noclobber
 
-``-c file``, ``--c-output file``
-    C wrapper (.c) filename (``-fc``). Default is ``input-file`` with new
-    extension .c.
+   Append output to existing files.
+
+.. option:: -o file
+            --output file
+
+   Pure output (.pure) filename. Default is ``input-file`` with new
+   extension .pure.
+
+.. option:: -c file
+            --c-output file
+
+   C wrapper (.c) filename (``-fc``). Default is ``input-file`` with new
+   extension .c.
 
 Description
 ===========
@@ -168,11 +218,11 @@ parse more than one header in a single run, you can just create a dummy header
 with all the necessary ``#include``\ s in it and pass that to pure-gen
 instead.
 
-When invoked with the ``-n`` option, pure-gen performs a dry run in which it
-only parses the input without actually generating any output files. This is
-useful for checking the input (possibly in combination with the ``-e``, ``-v``
-and/or ``-w`` options) before generating output. A particularly useful example
-is
+When invoked with the :option:`-n` option, pure-gen performs a dry run in
+which it only parses the input without actually generating any output
+files. This is useful for checking the input (possibly in combination with the
+:option:`-e`, :option:`-v` and/or :option:`-w` options) before generating
+output. A particularly useful example is
 
 .. code-block:: sh
 
@@ -182,20 +232,21 @@ is
 
 which prints on standard output all headers which are included in the source.
 This helps to decide which headers you want to be included in the output, so
-that you can set up a corresponding filter patterns (``-s`` and ``-x``
-options, see below).
+that you can set up a corresponding filter patterns (:option:`-s` and
+:option:`-x` options, see below).
 
-The ``-I``, ``-D`` and ``-U`` options are simply passed to the C preprocessor,
-as well as any other option or argument escaped with the ``-C`` flag. This is
-handy if you need to define additional preprocessor symbols, add directories
-to the include search path, etc., see cpp(1) for details.
+The :option:`-I`, :option:`-D` and :option:`-U` options are simply passed to
+the C preprocessor, as well as any other option or argument escaped with the
+:option:`-C` flag. This is handy if you need to define additional preprocessor
+symbols, add directories to the include search path, etc., see cpp(1) for
+details.
 
 There are some other options which affect the generated output. In particular,
 ``-f c`` generates a C wrapper module along with the Pure module (see
 `Generating C Code`_ below), and ``-f ffi`` generates a wrapper using Pure's
 ffi module. Moreover, ``-l libfoo`` generates a ``using "lib:libfoo"``
 declaration in the Pure source, for modules which require a shared library to
-be loaded. Any number of ``-l`` options can be specified.
+be loaded. Any number of :option:`-l` options can be specified.
 
 Other options for more advanced uses are explained in the following sections.
 
@@ -207,13 +258,13 @@ includes. If the header file includes system headers, by default you will get
 those declarations as well. This is often undesirable. As a remedy, pure-gen
 normally excludes built-in ``#define``\ s of the C preprocessor, as well as
 identifiers with a leading underscore (which are often found in system
-headers) from processing. You can use the ``-a`` option to disable this, so
-that all these symbols are included as well.
+headers) from processing. You can use the :option:`-a` option to disable this,
+so that all these symbols are included as well.
 
-In addition, the ``-s`` and ``-x`` options enable you to filter C symbols
-using the source filename and the symbol as search criteria. For instance, to
-just generate code for a single header foo.h and none of the other headers
-included in foo.h, you can invoke pure-gen as follows::
+In addition, the :option:`-s` and :option:`-x` options enable you to filter C
+symbols using the source filename and the symbol as search criteria. For
+instance, to just generate code for a single header foo.h and none of the
+other headers included in foo.h, you can invoke pure-gen as follows::
 
   pure-gen -s foo.h:: foo.h
 
@@ -222,7 +273,7 @@ Note that even in this case all included headers will be parsed so that
 output will only contain definitions and declarations from the given header
 file.
 
-In general, the ``-s`` option takes an argument of the form
+In general, the :option:`-s` option takes an argument of the form
 ``glob-patterns::regex-pattern`` denoting a comma-separated list of glob
 patterns to be matched against the source filename in which the symbol
 resides, and an extended regex to be matched against the symbol itself. The
@@ -238,16 +289,16 @@ Instead of ``::`` you can also use a single semicolon ``;`` to separate glob
 and regex pattern. This is mainly for Windows compatibility, where the msys
 shell sometimes eats the colons or changes them to ``;``.
 
-The ``-x`` option works exactly the same, but *excludes* all matching symbols
-from the selection. Thus, e.g., the option ``-x ^bar_`` causes all symbols
-with the prefix ``bar_`` to *not* be included in the output module.
+The :option:`-x` option works exactly the same, but *excludes* all matching
+symbols from the selection. Thus, e.g., the option ``-x ^bar_`` causes all
+symbols with the prefix ``bar_`` to *not* be included in the output module.
 
 Processing of glob patterns is performed using the customary rules for
 filename matching, see glob(7) for details. Note that some include files may
 be specified using a full pathname. This is the case, in particular, for
 system includes such as ``#include <stdio.h>``, which are resolved by the C
 preprocessor employing a search of the system include directories (as well as
-any directories named with the ``-I`` option).
+any directories named with the :option:`-I` option).
 
 Since the ``*`` and ``?`` wildcards never match the pathname separator ``/``,
 you have to specify the path in the glob patterns in such cases. Thus, e.g.,
@@ -260,16 +311,16 @@ local directory then specifying a relative pathname is ok.
 Name Mangling
 =============
 
-The ``-s`` option is often used in conjuction with the ``-p`` option,
-which lets you specify a "module name prefix" which should be stripped off
-from C symbols. Case is insignificant and a trailing underscore will be
-removed as well, so ``-p foo`` turns ``fooBar`` into ``Bar`` and
-``FOO_BAR`` into ``BAR``. Moreover, the ``-m`` option allows you to
-specify the name of a Pure namespace in which the resulting constants and
-functions are to be declared. So, for instance, ``-s "^(foo|FOO)" -p foo
--m foo`` will select all symbols starting with the ``foo`` or
-``FOO`` prefix, stripping the prefix from the selected symbols and finally
-adding a ``foo::`` namespace qualifier to them instead.
+The :option:`-s` option is often used in conjuction with the :option:`-p`
+option, which lets you specify a "module name prefix" which should be stripped
+off from C symbols. Case is insignificant and a trailing underscore will be
+removed as well, so ``-p foo`` turns ``fooBar`` into ``Bar`` and ``FOO_BAR``
+into ``BAR``. Moreover, the :option:`-m` option allows you to specify the name
+of a Pure namespace in which the resulting constants and functions are to be
+declared. So, for instance, ``-s "^(foo|FOO)" -p foo -m foo`` will select all
+symbols starting with the ``foo`` or ``FOO`` prefix, stripping the prefix from
+the selected symbols and finally adding a ``foo::`` namespace qualifier to
+them instead.
 
 Generating C Code
 =================
@@ -310,7 +361,8 @@ corresponding Pure module::
 
 This creates foo.pure and foo.c, with an import clause for ``"lib:foo"`` at
 the beginning of the Pure module. (You can also change the name of the Pure
-and C output files using the ``-o`` and ``-c`` options, respectively.)
+and C output files using the :option:`-o` and :option:`-c` options,
+respectively.)
 
 The generated wrapper is just an ordinary C file which should be compiled to a
 shared object (dll on Windows) as usual. E.g., using gcc on Linux::
@@ -362,9 +414,9 @@ the following placeholders:
 
 A default template is provided if you don't specify one (which looks pretty
 much like the template above, minus the comments). A custom template is
-specified with the ``-t`` option. (There's also a ``-T`` option to specify an
-"alternate" template for dealing with routines returning struct values, see
-`Dealing with C Structs`_.)
+specified with the :option:`-t` option. (There's also a :option:`-T` option to
+specify an "alternate" template for dealing with routines returning struct
+values, see `Dealing with C Structs`_.)
 
 For instance, suppose that we place the sample template above into a file
 foo.templ and invoke pure-gen on the foo.h header file as follows::
@@ -391,7 +443,7 @@ Then in foo.c you'd get C output code like the following:
   }
 
 As indicated, the wrapper function names are usually stropped with the
-``Pure_`` prefix. You can change this with the ``-P`` option.
+``Pure_`` prefix. You can change this with the :option:`-P` option.
 
 This also works great to create boilerplate code for new modules. For this
 purpose the following template will do the trick:
@@ -476,34 +528,34 @@ Which is declared in the Pure interface as::
 
 (Note that the generated code in this case comes from an alternate template.
 It's possible to configure the alternate template just like the normal one,
-using the ``-T`` option instead of ``-t``. See the `Generating C Code`_
-section above for details about code templates.)
+using the :option:`-T` option instead of :option:`-t`. See the `Generating C
+Code`_ section above for details about code templates.)
 
-In a Pure script you can now call foo and bar as::
+In a Pure script you can now call ``foo`` and ``bar`` as::
 
   > foo (bar 0.0 1.0);
 
 Note, however, that the pointer returned by ``bar`` points to static storage
 which will be overwritten each time you invoke the ``bar`` function. Thus in
-the following example *both* u and v will point to the same ``point`` struct,
-namely that defined by the latter call to ``bar``::
+the following example *both* ``u`` and ``v`` will point to the same ``point``
+struct, namely that defined by the latter call to ``bar``::
 
   > let u = bar 1.0 0.0; let v = bar 0.0 1.0;
 
 Which most likely is *not* what you want. To avoid this, you'll have to take
 dynamic copies of returned structs. It's possible to do this manually by
-fiddling around with malloc and memcpy, but the most convenient way is to
-employ the struct functions provided by Pure's ffi module::
+fiddling around with ``malloc`` and ``memcpy``, but the most convenient way is
+to employ the struct functions provided by Pure's ffi module::
 
   > using ffi;
   > let point_t = struct_t (double_t, double_t);
   > let u = copy_struct point_t (bar 1.0 0.0);
   > let v = copy_struct point_t (bar 0.0 1.0);
 
-Now u and v point to different, malloc'd structs which even take care of
-freeing themselves when they are no longer needed. Moreover, the ffi module
-also allows you to access the members of the structs in a direct
-fashion. Please refer to the pure-ffi documentation for further details.
+Now ``u`` and ``v`` point to different, malloc'd structs which even take care
+of freeing themselves when they are no longer needed. Moreover, the ffi module
+also allows you to access the members of the structs in a direct fashion.
+Please refer to the :doc:`pure-ffi` documentation for further details.
 
 Notes
 =====
@@ -545,8 +597,9 @@ runs of pure-gen for different combinations of header files, symbol selections
 and/or namespace/prefix settings. In such a situation it is usually possible
 to just concatenate the various output files produced by pure-gen to
 consolidate them into a single wrapper module. To make this easier, pure-gen
-provides the ``-N`` a.k.a. ``--noclobber`` option which appends the output to
-existing files instead of overwriting them. See the example below.
+provides the :option:`-N` a.k.a. :option:`--noclobber` option which appends
+the output to existing files instead of overwriting them. See the example
+below.
 
 Example
 =======
@@ -569,12 +622,12 @@ The C module can then be compiled with:
 
   gcc $DEFS -shared -o mygsl.so mygsl.c
 
-Note that the GSL_DISABLE_DEPRECATED symbol must be defined here to avoid some
-botches with constants being defined in incompatible ways in different GSL
-headers. Also, some GSL versions have broken headers lacking some system
+Note that the ``GSL_DISABLE_DEPRECATED`` symbol must be defined here to avoid
+some botches with constants being defined in incompatible ways in different
+GSL headers. Also, some GSL versions have broken headers lacking some system
 includes which causes hiccups in pure-gen's C parser. Fixing those errors or
 working around them through some appropriate cpp options should be a piece of
-cake, though. ;-)
+cake, though.
 
 License
 =======
