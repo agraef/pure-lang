@@ -2,13 +2,13 @@
 INSTALLING PURE (AND LLVM)
 ========== ==== ==== =====
 
-These instructions (mostly by courtesy of Eddie Rucker, thanks Eddie!) explain
-how to compile and install LLVM (which is the compiler backend required by
-Pure) and the Pure interpreter itself. The instructions are somewhat biased
-towards Linux and other Unix-like systems; the SYSTEM NOTES section at the end
-of this file details the tweaks necessary to make Pure compile and run on
-various other platforms. More information about installing LLVM and the
-required LLVM source packages can be found at http://llvm.org.
+These instructions explain how to compile and install LLVM (which is the
+compiler backend required by Pure) and the Pure interpreter itself. The
+instructions are somewhat biased towards Linux and other Unix-like systems;
+the SYSTEM NOTES section at the end of this file details the tweaks necessary
+to make Pure compile and run on various other platforms. More information
+about installing LLVM and the required LLVM source packages can be found at
+http://llvm.org.
 
 Pure is known to work on Linux, FreeBSD, NetBSD, Mac OSX and MS Windows, and
 should compile (with the usual amount of tweaking) on all recent UNIX/POSIX-
@@ -107,7 +107,12 @@ denotes corresponding development packages):
 
 - GNU make, GNU C/C++ and the corresponding libraries;
 
-- the GNU multiprecision library (libgmp, -dev);
+- the GNU multiprecision library (libgmp, -dev) or some compatible replacement
+  (see comments below);
+
+- GNU readline (libreadline, -dev) or some compatible replacement (only needed
+  if you want command line editing support in the interpreter; see comments
+  below).
 
 In addition, the following will be required to compile the development version
 (see the INSTALLING FROM DEVELOPMENT SOURCES section below):
@@ -122,12 +127,6 @@ The following may be required to build some LLVM versions:
 
 - GNU ltdl library (libltdl, -dev).
 
-E.g., at the time of this writing the required packages for Ubuntu are:
-autoconf, make, g++, g++ 4.0 multilib, flex, bison, libgmp3c2, libgmp3-dev,
-libltdl3, libldtl3-dev, mercurial. (To get command line editing in the
-interactive interpreter, you also might wish to install the readline5-dev
-package; see the comments on readline support below.)
-
 All dependencies are available as free software. Here are some links if you
 need or want to install the dependencies from source:
 
@@ -141,16 +140,21 @@ need or want to install the dependencies from source:
 
 - Bison: http://www.gnu.org/software/bison
 
-- GMP: http://www.gnu.org/software/gmp
-
 - GNU ltdl (part of the libtool software): http://www.gnu.org/software/libtool
 
 - Mercurial: http://mercurial.selenic.com (There's also a very nice Windows
   frontend, TortoiseHg, see http://tortoisehg.bitbucket.org.)
 
-NOTE: The GNU multiprecision library or some compatible replacement is
-required for Pure's bigint support. You can use MPIR (http://www.mpir.org)
-instead of GMP by specifying --with-mpir when configuring Pure. However, note
+The GNU multiprecision library or some compatible replacement is required for
+Pure's bigint support. Instead of GMP it's also possible to use MPIR. You can
+find these here:
+
+- GMP: http://www.gnu.org/software/gmp
+
+- MPIR: http://www.mpir.org
+
+If you have both GMP and MPIR installed, you can specify --with-mpir when
+configuring Pure to indicate that Pure should be linked against MPIR. Note
 that using this option might cause issues with some Pure modules which
 explicitly link against GMP. If you run into any such problems then you should
 build MPIR with the --enable-gmpcompat configure option so that it becomes a
@@ -208,9 +212,14 @@ for your system, or compile LLVM yourself.
 STEP 3. Configure, build and install LLVM as follows:
 
 $ cd llvm-2.8
-$ ./configure --enable-shared --enable-optimized --disable-assertions --disable-expensive-checks --enable-targets=host-only
+$ ./configure --enable-shared --enable-optimized --enable-targets=host-only
 $ make
 $ sudo make install
+
+LLVM 2.7 and earlier may also require the flags --disable-assertions
+--disable-expensive-checks to disable some features which make LLVM slow
+and/or buggy on some systems. With LLVM 2.8 and later these options aren't
+needed any more.
 
 Note that the --enable-shared option builds and installs LLVM as a shared
 library, which is often preferable if you're running different LLVM-based
@@ -395,10 +404,8 @@ STEP 7. The Pure interpreter should be ready to go now.
 Run Pure interactively as:
 
 $ pure
-Pure 1.0 (x86_64-unknown-linux-gnu) Copyright (c) 2008-2010 by Albert Graef
-This program is free software, and you are welcome to redistribute it under
-certain conditions. There is ABSOLUTELY NO WARRANTY. (Type 'help copying'
-for more information.)
+Pure 0.46 (x86_64-unknown-linux-gnu) Copyright (c) 2008-2010 by Albert Graef
+(Type 'help' for help, 'help copying' for license information.)
 Loaded prelude from /usr/local/lib/pure/prelude.pure.
 
 Check that it works:
@@ -621,8 +628,7 @@ constructs which might actually be bugs. However, for some older gcc versions
 it spits out lots of bogus warnings, so it is not enabled by default.
 
 In addition, there is an option to build a "monolithic" interpreter which is
-linked statically against the LLVM libraries, instead of producing a separate
-runtime library:
+linked statically instead of producing a separate runtime library:
 
 $ ./configure --enable-release --disable-shared
 
@@ -630,8 +636,8 @@ We strongly discourage from using this option, since it drastically increases
 the size of the executable and thereby the memory footprint of the interpreter
 if several interpreter processes are running simultaneously. It also makes it
 impossible to use batch compilation and addon modules which require the
-runtime library. We only provide this as a workaround for systems on which
-LLVM refuses to be linked into shared libraries.
+runtime library. We only provide this as a workaround for older LLVM versions
+which cannot be linked into shared libraries on some systems.
 
 In general, the build options can be combined freely with the variables
 described in the previous section, but note that --enable-release and
@@ -667,10 +673,6 @@ The Makefile supports the usual 'clean' and 'distclean' targets, and
 logs and C++ source files generated from Flex and Bison grammars. (Only use
 the latter if you know what you are doing, since it will remove files which
 require special tools to be regenerated.)
-
-There also are a number of targets like 'html' and 'pdf' which generate the
-documentation in a variety of formats. These require the pure-doc program and
-the docutils tools; see the Makefile for details.
 
 Maintainers can roll distribution tarballs with 'make dist' and 'make
 distcheck' (the latter is like 'make dist', but also does a test build and
@@ -727,12 +729,6 @@ requires that you configure LLVM with --enable-pic so that the static LLVM
 libraries can be linked into the runtime library. With LLVM 2.6 and later,
 this option isn't needed anymore.
 
-If you still use LLVM 2.3 on x86-64, there is a patch by Cyrille Berger which
-you need to apply in the llvm-2.3 source directory to make that version link
-properly with the Pure runtime library. The patch is available at:
-http://wiki.pure-lang.googlecode.com/hg/X86JITInfo.cpp.pic.2.3.patch. After
-applying the patch, configure LLVM with --enable-pic and build it as usual.
-
 POWERPC
 -------
 
@@ -768,15 +764,11 @@ MAC OSX
 --- ---
 
 Pure should build fine on recent OSX versions, and a port by Ryan Schmidt
-exists in the MacPorts collection, see http://www.macports.org/.
-
-* PowerPC: Pure works fine when built with --disable-fastcc, see the POWERPC
-  section above.
-
-* Intel: The 32 bit version works fine. Unfortunately, the 64 bit version
-  (Intel Core 2) causes problems, at least with some LLVM versions, apparently
-  because of LLVM bugs in code generation. If you're running into this, for
-  the time being you'll have to stick to the 32 bit version.
+exists in the MacPorts collection, see http://www.macports.org/. If you
+install straight from the source, make sure that you use a recent LLVM version
+(LLVM 2.7 or later should work fine on all flavours of Intel Macs). On
+PowerPC, you might have to build Pure with --disable-fastcc, see the POWERPC
+section above.
 
 Also note that with at least some versions of the Apple gcc compiler, with all
 warnings turned on you may get the (bogus) warning "control reaches end of
@@ -789,20 +781,14 @@ once Apple upgrades its SDK to a newer gcc version.
 ----
 
 Recent NetBSD and FreeBSD versions have been tested and should work fine.
-FreeBSD requires Pure 0.33 or later, if you have an earlier Pure version you
-need to add -lpthread to the linker options by modifying the LIBS variable,
-see the COMPILER AND LINKER OPTIONS section for details.
+FreeBSD requires Pure 0.33 or later. Also make sure that you install a recent
+port of LLVM which has the --enable-optimized flag enabled.
 
-Note that, at the time of this writing, the LLVM port in the FreeBSD ports
-collection is built with all assertions and checks enabled, so it's strongly
-recommended that you compile LLVM yourself (in particular, make sure that LLVM
-is built with --disable-expensive-checks).
-
-Also note that building Pure requires GNU make, thus you will have to use
-'gmake' instead of 'make'. In addition to gmake, you'll need recent versions
-of the following packages: perl5, flex, bison, gmp, and readline (or
-editline). Depending on your system, you might also have to set up some
-compiler and linker paths. E.g., the following does the trick on NetBSD:
+Building Pure requires GNU make, thus you will have to use 'gmake' instead of
+'make'. In addition to gmake, you'll need recent versions of the following
+packages: perl5, flex, bison, gmp, and readline (or editline). Depending on
+your system, you might also have to set up some compiler and linker paths.
+E.g., the following does the trick on NetBSD:
 
 export C_INCLUDE_PATH=/usr/local/include:/usr/pkg/include
 export LIBRARY_PATH=/usr/local/lib:/usr/pkg/lib
@@ -826,12 +812,12 @@ well as "PurePad", an alternative GUI frontend for editing and running Pure
 scripts on Windows.
 
 After installing the MSI, you might also want to go to the LLVM website and
-grab the LLVM toolchain for mingw32/x86. As of Pure 0.34, it is sufficient to
-install the "LLVM binaries" package on your system to make the Pure batch
-compiler work. Just unzip these into some convenient location on your
-harddrive and set up PATH so that it points to the llvm-x.y directory.
+grab the LLVM toolchain for mingw32/x86. It is sufficient to install the "LLVM
+binaries" package on your system to make the Pure batch compiler work. Just
+unzip these into some convenient location on your harddrive and set up PATH so
+that it points to the llvm-x.y directory.
 
 
-October 2010
+December 2010
 Albert Graef <Dr.Graef at t-online.de>
 Eddie Rucker <erucker at bmc.edu>
