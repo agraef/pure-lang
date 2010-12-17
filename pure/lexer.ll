@@ -1682,7 +1682,8 @@ file for instructions on how to do this.\n";
     if (!*s)
       // default is to load the top page
       docname = "file:"+default_doc;
-    else if ((p = strchr(s, ':')) && p>s && (!(q = strchr(s, '#')) || q>p)) {
+    else if ((p = strchr(s, ':')) && p>s && p[1] != ':' &&
+	     (!(q = strchr(s, '#')) || q>p)) {
       // proper URL, take as is
       ;
     } else if ((p = strchr(s, '#')) && p>s) {
