@@ -27,6 +27,8 @@ datadir     = @datadir@
 mandir      = @mandir@
 man1dir     = $(mandir)/man1
 
+pkgconfigdir = $(libdir)/pkgconfig
+
 # Staging directory for 'make install'.
 
 DESTDIR=
@@ -160,7 +162,7 @@ Makefile.in acinclude.m4 aclocal.m4 configure.ac configure config.h.in \
 config/config.guess config/config.sub config/install-sh \
 $(SOURCE) $(EXTRA_SOURCE) w3centities.c strptime.c pure.cc pure_main.c \
 pure.1 pure.txt install-docs.sh run-tests.in run-test.in \
-etc/pure-mode.el.in etc/pure.* etc/gpure.lang \
+pure.pc.in etc/pure-mode.el.in etc/pure.* etc/gpure.lang \
 examples/COPYING examples/Makefile.in examples/*.pure examples/*.purerc \
 examples/*.c examples/*.f90 examples/libor/COPYING examples/libor/*.pure \
 examples/bitcode/Makefile examples/bitcode/*.c examples/bitcode/*.f90 \
@@ -172,7 +174,7 @@ install-docs strip dist distcheck cleanlogs logs check config
 
 # compilation
 
-all: pure$(EXE) pure_main.o etc/pure-mode.el
+all: pure$(EXE) pure_main.o pure.pc etc/pure-mode.el
 
 ifeq ($(sharedlib), yes)
 pure$(EXE): pure.o $(libpure)
@@ -210,6 +212,13 @@ $(srcdir)/parser.cc: parser.yy
 	$(BISON) -v -o $(srcdir)/parser.cc $<
 
 parser.hh location.hh position.hh stack.hh: parser.cc
+
+# create the pkg-config file
+
+pure.pc: Makefile pure.pc.in
+	rm -f pure.pc pure.pc.tmp
+	sed -e 's,@version\@,$(version),g' -e 's,@prefix\@,$(prefix),g' -e 's,@exec_prefix\@,$(exec_prefix),g' -e 's,@bindir\@,$(bindir),g' -e 's,@libdir\@,$(libdir),g' -e 's,@includedir\@,$(includedir),g' -e 's,@libpure\@,$(libpure_name),g' -e 's,@extralibs\@,$(LLVM_EXE_LIBS) $(LLVM_LDFLAGS) $(LIBS),g' -e 's,@shared\@,$(shared),g' -e 's,@DLL\@,$(DLL),g' -e 's,@PIC\@,$(PIC),g' $(srcdir)/pure.pc.in > pure.pc.tmp
+	mv pure.pc.tmp pure.pc
 
 # create pure-mode.el from pure-mode.el.in
 
@@ -266,11 +275,13 @@ ifeq ($(versioned), yes)
 pure_includedir = $(includedir)/pure-$(version)
 pure_libdir = $(libdir)/pure-$(version)
 pure_exe = pure-$(version)$(EXE)
+pure_pc = pure-$(version).pc
 pure_1 = pure-$(version).1
 else
 pure_includedir = $(includedir)/pure
 pure_libdir = $(libdir)/pure
 pure_exe = pure$(EXE)
+pure_pc = pure.pc
 pure_1 = pure.1
 endif
 
@@ -278,7 +289,7 @@ install: pure$(EXE) etc/pure-mode.el pure.1
 ifeq ($(versioned), yes)
 	rm -rf $(addprefix $(DESTDIR), $(includedir)/pure $(libdir)/pure)
 endif
-	for x in $(addprefix $(DESTDIR), $(bindir) $(pure_includedir) $(pure_libdir) $(man1dir)); do $(INSTALL) -d $$x; done
+	for x in $(addprefix $(DESTDIR), $(bindir) $(pkgconfigdir) $(pure_includedir) $(pure_libdir) $(man1dir)); do $(INSTALL) -d $$x; done
 ifeq ($(sharedlib), yes)
 	$(INSTALL) $(libpure) $(DESTDIR)$(libdir)/$(libpure)
 ifneq ($(libpure), $(libpure_soname))
@@ -289,21 +300,23 @@ ifneq ($(libpure), $(libpure_lnkname))
 endif
 endif
 	$(INSTALL) pure$(EXE) $(DESTDIR)$(bindir)/$(pure_exe)
+	$(INSTALL) pure.pc $(DESTDIR)$(pkgconfigdir)/$(pure_pc)
 	$(INSTALL) -m 644 $(srcdir)/runtime.h $(DESTDIR)$(pure_includedir)
 	$(INSTALL) -m 644 $(srcdir)/pure_main.c pure_main.o $(DESTDIR)$(pure_libdir)
 	for x in $(srcdir)/lib/*.pure; do $(INSTALL) -m 644 $$x $(DESTDIR)$(pure_libdir); done
 	$(INSTALL) -m 644 $(srcdir)/pure.1 $(DESTDIR)$(man1dir)/$(pure_1)
 ifeq ($(versioned), yes)
 	ln -sf $(bindir)/$(pure_exe) $(DESTDIR)$(bindir)/pure$(EXE)
+	ln -sf $(pkgconfigdir)/$(pure_pc) $(DESTDIR)$(pkgconfigdir)/pure.pc
 	ln -sf $(pure_includedir) $(DESTDIR)$(includedir)/pure
 	ln -sf $(pure_libdir) $(DESTDIR)$(libdir)/pure
 	ln -sf $(man1dir)/$(pure_1) $(DESTDIR)$(man1dir)/pure.1
 endif
 
 uninstall:
-	rm -rf $(addprefix $(DESTDIR), $(bindir)/pure$(EXE) $(libdir)/$(libpure_lnkname) $(libdir)/$(libpure_soname) $(libdir)/$(libpure) $(includedir)/pure $(libdir)/pure $(man1dir)/pure.1)
+	rm -rf $(addprefix $(DESTDIR), $(bindir)/pure$(EXE) $(pkgconfigdir)/pure.pc $(libdir)/$(libpure_lnkname) $(libdir)/$(libpure_soname) $(libdir)/$(libpure) $(includedir)/pure $(libdir)/pure $(man1dir)/pure.1)
 ifeq ($(versioned), yes)
-	rm -rf $(addprefix $(DESTDIR), $(bindir)/$(pure_exe) $(pure_includedir) $(pure_libdir) $(man1dir)/$(pure_1))
+	rm -rf $(addprefix $(DESTDIR), $(bindir)/$(pure_exe) $(pkgconfigdir)/$(pure_pc) $(pure_includedir) $(pure_libdir) $(man1dir)/$(pure_1))
 endif
 
 # install the online documentation (requires wget)
