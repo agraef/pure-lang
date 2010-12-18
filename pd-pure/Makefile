@@ -22,14 +22,6 @@ ifeq ($(strip $(prefix)),)
 prefix = /usr/local
 endif
 
-# Try to guess the Pure installation prefix (this is needed to install the
-# documentation):
-pureprefix = $(patsubst %/bin/pure,%,$(shell which pure 2>/dev/null))
-ifeq ($(strip $(pureprefix)),)
-# Fall back to /usr/local.
-pureprefix = /usr/local
-endif
-
 # Try to guess the Pure minor version number, and set up the EAGER option
 # accordingly:
 pureminor = $(shell pure --version 2>/dev/null | sed -n -e 's/^Pure 0\.\([0-9]*\).*/\1/' -e '/^[0-9]*$$/p' 2>/dev/null)
@@ -44,10 +36,6 @@ pdlibdir = $(libdir)/pd
 
 # Install dir for the external and accompanying stuff.
 pdextradir = $(pdlibdir)/extra/pure
-
-# Install dir for the documentation.
-purelibdir = $(pureprefix)/lib
-puredatadir = $(purelibdir)/pure
 
 # Try to guess the host system type.
 host = $(shell ./config.guess)
@@ -112,7 +100,6 @@ clean:
 install:
 	test -d "$(DESTDIR)$(pdextradir)" || mkdir -p "$(DESTDIR)$(pdextradir)"
 	cp COPYING README Makefile pure.c pure$(DLL) examples/*.pure examples/*.pd examples/*.el "$(DESTDIR)$(pdextradir)"
-	test -d "$(DESTDIR)$(puredatadir)" || mkdir -p "$(DESTDIR)$(puredatadir)"
 
 uninstall:
 	rm -rf "$(DESTDIR)$(pdextradir)"
