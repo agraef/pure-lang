@@ -19,13 +19,15 @@ DIFF="diff"
 DLLEXT=".so"
 LD_LIB_PATH="LD_LIBRARY_PATH"
 rdynamic="-rdynamic"
+shared="-shared"
 case "$host" in
     *-*-mingw*)       DLLEXT=".dll"; DIFF="diff --strip-trailing-cr";;
-    *-*-darwin*)      rdynamic=""; DLLEXT=".dylib";
+    *-*-darwin*)      rdynamic=""; shared="-dynamiclib"; DLLEXT=".dylib";
                       LD_LIB_PATH="DYLD_LIBRARY_PATH";
                       ;;
     hppa*-hp-hpux*)   rdynamic=""; DLLEXT=".sl";;
 esac
+AC_SUBST(shared)
 AC_SUBST(DIFF)
 AC_SUBST(DLLEXT)
 AC_SUBST(LD_LIB_PATH)
@@ -286,7 +288,7 @@ CPPFLAGS=$save_CPPFLAGS
 AC_LANG_POP([C++])
 
 dnl Output files.
-AC_CONFIG_FILES([Makefile examples/Makefile])
+AC_CONFIG_FILES([Makefile examples/Makefile pure.pc])
 AC_CONFIG_FILES([run-test], [chmod +x run-test])
 AC_CONFIG_FILES([run-tests], [chmod +x run-tests])
 AC_OUTPUT

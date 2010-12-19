@@ -4,38 +4,32 @@
 
 prefix=@prefix@
 exec_prefix=@exec_prefix@
-bindir=@bindir@
 libdir=@libdir@
 includedir=@includedir@
 
-# The libname of the runtime library. Usually this is just 'pure'.
-
-libpure=@libpure@
-
 # Extra libraries required for static linking. These flags pull in any shared
-# libraries that libpure itself was linked against. They will be added to the
-# output if pkg-config is invoked with --static --libs. (Usually you shouldn't
-# have to worry about this, since at present the runtime can't be linked as a
-# separate static library anyway.)
+# libraries that libpure was linked against. They will be added if pkg-config
+# is invoked with --static --libs. (Usually you shouldn't have to worry about
+# this, since at present the runtime can't be linked as a separate static
+# library anyway.)
 
-extralibs=@extralibs@
+extralibs=@LLVM_EXE_LIBS@ @LLVM_LDFLAGS@ @LIBS@
 
 # Shared library extension and platform-specific extra compilation and linker
 # flags required for building shared modules. These are useful for figuring
-# out which extension and options are required to build Pure modules on the
-# host platform. (These variables aren't actually used below, but are provided
-# for convenience so that they can be queried in module Makefiles using
-# pkg-config's --variable option.)
+# out how to build Pure modules on the host platform. (These variables aren't
+# actually used below, but are provided for convenience so that they can be
+# queried in module Makefiles using pkg-config's --variable option.)
 
-DLL=@DLL@
+DLL=@DLLEXT@
 shared=@shared@
 PIC=@PIC@
 extraflags=${shared} ${PIC}
 
 Name: Pure
 Description: Pure runtime library
-Version: @version@
+Version: @PACKAGE_VERSION@
 URL: http://pure-lang.googlecode.com
-Libs: -L${libdir} -l${libpure}
+Libs: -L${libdir} -lpure
 Libs.private: ${extralibs}
 Cflags: -I${includedir}

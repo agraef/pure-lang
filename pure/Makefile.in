@@ -121,8 +121,8 @@ endif
 # Generic defaults for gcc/elf-based systems.
 
 PIC = @PIC@
+shared = @shared@
 
-shared = -shared
 soname = -Wl,-soname,$(libpure_soname)
 LD_LIB_PATH = @LD_LIB_PATH@
 
@@ -143,7 +143,6 @@ ifneq "$(findstring -darwin,$(host))" ""
 # in a different way.
 libpure_soname = lib$(libpure_name).$(major)$(DLL)
 libpure = lib$(libpure_name).$(major).$(minor)$(DLL)
-shared = -dynamiclib
 soname = -install_name $(libdir)/$(libpure_soname) -compatibility_version $(major) -current_version $(major).$(minor)
 endif
 
@@ -174,7 +173,7 @@ install-docs strip dist distcheck cleanlogs logs check config
 
 # compilation
 
-all: pure$(EXE) pure_main.o pure.pc etc/pure-mode.el
+all: pure$(EXE) pure_main.o etc/pure-mode.el
 
 ifeq ($(sharedlib), yes)
 pure$(EXE): pure.o $(libpure)
@@ -212,13 +211,6 @@ $(srcdir)/parser.cc: parser.yy
 	$(BISON) -v -o $(srcdir)/parser.cc $<
 
 parser.hh location.hh position.hh stack.hh: parser.cc
-
-# create the pkg-config file
-
-pure.pc: Makefile pure.pc.in
-	rm -f pure.pc pure.pc.tmp
-	sed -e 's,@version\@,$(version),g' -e 's,@prefix\@,$(prefix),g' -e 's,@exec_prefix\@,$(exec_prefix),g' -e 's,@bindir\@,$(bindir),g' -e 's,@libdir\@,$(libdir),g' -e 's,@includedir\@,$(includedir),g' -e 's,@libpure\@,$(libpure_name),g' -e 's,@extralibs\@,$(LLVM_EXE_LIBS) $(LLVM_LDFLAGS) $(LIBS),g' -e 's,@shared\@,$(shared),g' -e 's,@DLL\@,$(DLL),g' -e 's,@PIC\@,$(PIC),g' $(srcdir)/pure.pc.in > pure.pc.tmp
-	mv pure.pc.tmp pure.pc
 
 # create pure-mode.el from pure-mode.el.in
 
