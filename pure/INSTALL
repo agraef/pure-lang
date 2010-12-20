@@ -313,12 +313,12 @@ To find out about other build options, you can invoke configure as
 './configure --help'.
 
 The 'sudo make install' command installs the pure program, the runtime.h
-header file, the runtime library libpure.so and the library scripts in the
-appropriate subdirectories of /usr/local; the installation prefix can be
-changed with the --prefix configure option, see OTHER BUILD AND INSTALLATION
-OPTIONS for details. (The runtime.h header file is not needed for normal
-operation, but can be used to write C/C++ extensions modules, if you need to
-access and manipulate Pure expressions from C/C++.)
+header file, the runtime library libpure.so, a Pure pkg-config file (pure.pc)
+and the library scripts in the appropriate subdirectories of /usr/local; the
+installation prefix can be changed with the --prefix configure option, see
+OTHER BUILD AND INSTALLATION OPTIONS for details. (The runtime.h header file
+is not needed for normal operation, but can be used to write C/C++ extensions
+modules, if you need to access and manipulate Pure expressions from C/C++.)
 
 On some systems you have to tell the dynamic linker to update its cache so
 that it finds the Pure runtime library. E.g., on Linux this is done as
@@ -496,21 +496,13 @@ Use './configure --help' to print a summary of the provided options.
 INSTALLATION PATH
 ------------ ----
 
-By default, the pure program, the runtime.h header file, the runtime library
-and the library scripts are installed in /usr/local/bin,
-/usr/local/include/pure, /usr/local/lib and /usr/local/lib/pure,
-respectively. This can be changed by specifying the desired installation
-prefix with the --prefix option, e.g.:
+By default, the pure program, the runtime.h header file, the runtime library,
+the pure.pc file and the library scripts are installed in /usr/local/bin,
+/usr/local/include/pure, /usr/local/lib, /usr/local/lib/pkg-config and
+/usr/local/lib/pure, respectively. This can be changed by specifying the
+desired installation prefix with the --prefix option, e.g.:
 
 $ ./configure --enable-release --prefix=/usr
-
-Note that if you install Pure into a non-standard location, you may have to
-set LD_LIBRARY_PATH or a similar variable so that the dynamic linker finds the
-Pure runtime library, libpure.so. Also, when compiling and linking addon
-modules you might have to set C_INCLUDE_PATH and LIBRARY_PATH (or similar) so
-that the header and library of the runtime library is found. On some systems
-(notably, *BSD) this is even necessary with the default prefix, because
-/usr/local is not in the default search paths.
 
 In addition, the DESTDIR variable enables package maintainers to install Pure
 into a special "staging" directory, so that installed files can be packaged
@@ -521,6 +513,24 @@ current directory:
 
 $ make install DESTDIR=tmp-root
 
+Note that if you install Pure into a non-standard location, you may have to
+set LD_LIBRARY_PATH or a similar variable so that the dynamic linker finds the
+Pure runtime library, libpure.so. Also, when compiling and linking addon
+modules you might have to set C_INCLUDE_PATH and LIBRARY_PATH (or similar) so
+that the header and library of the runtime library is found. (This will become
+unnecessary once all addon modules have been converted to use pkg-config, see
+below, but this isn't the case right now.) On some systems (notably, *BSD)
+this is even necessary with the default prefix, because /usr/local is not in
+the default search paths.
+
+As of Pure 0.47, Pure also installs a pkg-config file which may be queried by
+module Makefiles to determine how to build a module and link it against the
+Pure runtime library; see PKG-CONFIG SUPPORT below. This file will usually be
+installed into $(prefix)/lib/pkg-config. Again, if you use a non-standard
+installation prefix, you will have to tell pkg-config about the location of
+the file by adjusting the PKG_CONFIG_PATH environment variable accordingly,
+see pkg-config(1) for details.
+
 VERSIONED INSTALLATIONS
 --------- -------------
 
@@ -530,11 +540,11 @@ have to specify --enable-versioned when running configure:
 
 $ ./configure --enable-release --enable-versioned
 
-When this option is enabled, bin/pure, include/pure, lib/pure and
-man/man1/pure.1 are actually symbolic links to the current version
-(bin/pure-x.y, include/pure-x.y etc., where x.y is the version number). If you
-install a new version of the interpreter, the old version remains available as
-pure-x.y.
+When this option is enabled, bin/pure, include/pure, lib/pure,
+lib/pkg-config/pure.pc and man/man1/pure.1 are actually symbolic links to the
+current version (bin/pure-x.y, include/pure-x.y etc., where x.y is the version
+number). If you install a new version of the interpreter, the old version
+remains available as pure-x.y.
 
 Note that versioned and unversioned installations don't mix very well, it's
 either one or the other. If you already have an unversioned install of Pure,
@@ -681,6 +691,30 @@ installation to verify that your tarball contains all needed bits and pieces).
 Last but not least, if you modify configure.ac for some reason then you can
 regenerate the configure script and config.h.in with 'make config'. This needs
 autoconf, of course. (The distribution was prepared using autoconf 2.63.)
+
+PKG-CONFIG SUPPORT
+---------- -------
+
+Pure 0.47 and later install a pkg-config file (pure.pc) which lets addon
+modules query the installed Pure for the information needed to build and
+install a module. Besides the usual information provided by pkg-config, such
+as --cflags and --libs (which are set up so that the Pure runtime header and
+library will be found), pure.pc also defines a few additional variables which
+can be queried with pkg-config's --variable option:
+
+- DLL: shared library extension for the host platform
+- PIC: PIC flag if required on the host platform
+- shared: flag used to create shared libraries on the host platform
+- extraflags: same as $shared $PIC
+
+Together with the libdir variable, this provides you with the information
+needed to build and install most Pure modules without much ado.
+
+If you want to use this information, you need to have pkg-config installed,
+see http://pkg-config.freedesktop.org. This program should be readily
+available on most Unix-like platforms, and a Windows version is available as
+well. An example illustrating the use of pkg-config can be found in the
+examples/hellomod directory in the sources.
 
 
 SYSTEM NOTES
