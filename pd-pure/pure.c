@@ -99,16 +99,87 @@ extern double pd_time(void)
 #define garray_getfloatwords(x, size, vec) garray_getfloatarray(x, size, (t_float**)vec)
 #endif
 
-/* GSL-compatible double matrix. */
-typedef struct 
+/* GSL-compatible double matrix. Pilfered from gsl_structs.h and runtime.cc in
+   the core package. */
+
+typedef struct _gsl_block
+{
+  size_t size;
+  double *data;
+} gsl_block;
+
+typedef struct _gsl_matrix
 {
   size_t size1;
   size_t size2;
   size_t tda;
-  double* data;
-  void* block;
+  double *data;
+  gsl_block *block;
   int owner;
 } gsl_matrix;
+
+static gsl_matrix*
+gsl_matrix_alloc(const size_t n1, const size_t n2)
+{
+  gsl_block* block;
+  gsl_matrix* m;
+  if (n1 == 0 || n2 == 0)
+    return 0;
+  m = (gsl_matrix*)malloc(sizeof(gsl_matrix));
+  if (m == 0)
+    return 0;
+  block = (gsl_block*)malloc(sizeof(gsl_block));
+  if (block == 0) {
+    free(m);
+    return 0;
+  }
+  block->size = n1*n2;
+  block->data = (double*)malloc(block->size*sizeof(double));
+  if (block->data == 0) {
+    free(m);
+    free(block);
+    return 0;
+  }
+  m->data = block->data;
+  m->size1 = n1;
+  m->size2 = n2;
+  m->tda = n2;
+  m->block = block;
+  m->owner = 1;
+  return m;
+}
+
+static gsl_matrix*
+gsl_matrix_calloc(const size_t n1, const size_t n2)
+{
+  gsl_matrix* m = gsl_matrix_alloc(n1, n2);
+  if (m == 0) return 0;
+  memset(m->data, 0, m->block->size*sizeof(double));
+  return m;
+}
+
+static void gsl_matrix_free(gsl_matrix *m)
+{
+  if (m->owner) {
+    if (m->block) free(m->block->data);
+    free(m->block);
+  }
+  free(m);
+}
+
+static inline gsl_matrix*
+create_double_matrix(size_t nrows, size_t ncols)
+{
+  if (nrows == 0 || ncols == 0 ) {
+    size_t nrows1 = (nrows>0)?nrows:1;
+    size_t ncols1 = (ncols>0)?ncols:1;
+    gsl_matrix *m = gsl_matrix_calloc(nrows1, ncols1);
+    if (!m) return 0;
+    m->size1 = nrows; m->size2 = ncols;
+    return m;
+  } else
+    return gsl_matrix_alloc(nrows, ncols);
+}
 
 extern int pd_getbuffersize(const char *name)
 {
@@ -200,13 +271,22 @@ typedef struct _pure {
      to write past the end of x_obj on Windows. */
   int fence;			/* dummy field (not used) */
 #endif
+  struct _pure *next, *prev;	/* double-linked list of all Pure objects */
+  /* control inlets and outlets */
   int n_in, n_out;		/* number of extra inlets and outlets */
   struct _px **in;		/* extra inlet proxies, see t_px below */
   t_outlet **out;		/* outlets */
+  /* signal inlets and outlets */
+  int n_dspin, n_dspout;	/* number of signal inlets and outlets */
+  t_sample **dspin, **dspout;	/* signal data */
+  gsl_matrix *sig;		/* GSL matrix holding the input signal */
+  t_float sr;			/* The samplerate. */
+  /* Pure interface */
   pure_expr *foo;		/* the object function */
   char *args;			/* creation arguments */
   char *tmp;			/* temporary storage */
-  struct _pure *next, *prev;	/* double-linked list of all Pure objects */
+  pure_expr *sigx;		/* Pure expression holding the input signal */
+  /* asynchronous messaging */
   t_clock *clock;		/* wakeup for asynchronous processing */
   pure_expr *msg;		/* pending asynchronous message */
 } t_pure;
@@ -273,11 +353,39 @@ static t_class *lookup(t_symbol *sym)
 
 /* Helper functions to convert between Pd atoms and Pure expressions. */
 
+static bool is_dsp_fun(t_symbol *sym)
+{
+  int l = strlen(sym->s_name);
+  return l>0 && sym->s_name[l-1] == '~';
+}
+
+static const char *fun_name_s(const char *name)
+{
+  int l = strlen(name);
+  if (l>0 && name[l-1] == '~') {
+    static char buf[1024];
+    if (l >= 1020) {
+      strncpy(buf, name, 1023);
+      buf[1023] = 0;
+    } else {
+      strncpy(buf, name, l-1);
+      strcpy(buf+l-1, "_dsp");
+    }
+    return buf;
+  } else
+    return name;
+}
+
+static inline const char *fun_name(t_symbol *sym)
+{
+  return fun_name_s(sym->s_name);
+}
+
 static char *get_expr(t_symbol *sym, int argc, t_atom *argv)
 {
   t_binbuf *b;
   char *exp_string, *s, *t;
-  int exp_strlen, i, l = strcmp(sym->s_name, "pure")?strlen(sym->s_name)+1:0;
+  int exp_strlen, i, l = strcmp(sym->s_name, "pure")?strlen(fun_name(sym))+1:0;
 
   b = binbuf_new();
   binbuf_add(b, argc, argv);
@@ -287,7 +395,7 @@ static char *get_expr(t_symbol *sym, int argc, t_atom *argv)
   if (!(s = malloc(l+exp_strlen+1)))
     return 0;
   if (l > 0) {
-    strcpy(s, sym->s_name); s[l-1] = ' ';
+    strcpy(s, fun_name(sym)); s[l-1] = ' ';
   }
   for (t = s+l, i = 0; i < exp_strlen; i++)
     if (exp_string[i] != '\\')
@@ -644,6 +752,107 @@ static void px_any(t_px *px, t_symbol *s, int argc, t_atom *argv)
   receive_message(px->x, s, px->ix, argc, argv);
 }
 
+/* Audio processing methods. */
+
+static t_int *pure_perform(t_int *w)
+{
+  t_pure *x = (t_pure*)(w[1]);
+  pure_expr *y = 0, *z = 0, **xv, **yv;
+  int n = (int)(w[2]);
+  if (x->foo && x->sigx) {
+    gsl_matrix *sig;
+    /* get the input data */
+    size_t i, j, m = x->n_dspin, tda = x->sig->tda;
+    for (i = 0; i < m; i++)
+      for (j = 0; j < n; j++)
+	x->sig->data[i*tda+j] = (double)x->dspin[i][j];
+    /* Invoke the object function. This should return a double matrix with
+       numbers of rows and columns corresponding (at least) to the number of
+       signal outlets and the block size, respectively. Optionally, it may
+       also return other (control) messages to be routed to the control
+       outlet. */
+    y = pure_new(pure_app(x->foo, x->sigx));
+    if (pure_is_tuplev(y, &m, &xv) && m == 2 &&
+	pure_is_double_matrix(xv[0], (void**)&sig)) {
+      z = xv[1];
+      free(xv);
+    } else if (!pure_is_double_matrix(y, (void**)&sig)) {
+      z = y;
+      sig = 0;
+    }
+    if (sig) {
+      /* dsp output */
+      m = x->n_dspout; tda = sig->tda;
+      if (sig->size1 >= m && sig->size2 >= n) {
+	/* get the output data */
+	for (i = 0; i < m; i++)
+	  for (j = 0; j < n; j++)
+	    x->dspout[i][j] = (t_sample)sig->data[i*tda+j];
+      }
+    }
+    if (z) {
+      /* process control results and route them through the appropriate
+	 outlets */
+      int ix;
+      double t;
+      pure_expr *msg;
+      size_t n;
+      if (pure_is_listv(z, &n, &xv)) {
+	for (i = 0; i < n; i++) {
+	  if (pure_is_tuplev(xv[i], &m, &yv) && m == 2 &&
+	      pure_is_int(yv[0], &ix)) {
+	    send_message(x, ix, yv[1]);
+	    free(yv);
+	  } else if (is_delay(xv[i], &t, &msg))
+	    delay_message(x, t, msg);
+	  else
+	    send_message(x, 0, xv[i]);
+	}
+	free(xv);
+      } else if (pure_is_tuplev(z, &m, &yv) && m == 2 &&
+		 pure_is_int(yv[0], &ix))
+	send_message(x, ix, yv[1]);
+      else if (is_delay(z, &t, &msg))
+	delay_message(x, t, msg);
+      else
+	send_message(x, 0, z);
+    }
+  }
+ err:
+  if (y) pure_free(y);
+  return (w+3);
+}
+
+static void pure_dsp(t_pure *x, t_signal **sp)
+{
+  int i, n = sp[0]->s_n;
+  t_float sr = sp[0]->s_sr;
+  if (x->sr != sr)
+    /* The sample rate at which this dsp object is supposed to run. NOTE:
+       Currently this value isn't used anywhere, maybe we'd like to pass this
+       to the object function in some way? */
+    x->sr = sr;
+  if (x->n_dspin == 0 && x->n_dspout == 0) return;
+  dsp_add(pure_perform, 2, x, n);
+  for (i = 0; i < x->n_dspin; i++)
+    x->dspin[i] = sp[i+1]->s_vec;
+  for (i = 0; i < x->n_dspout; i++)
+    x->dspout[i] = sp[x->n_dspin+i+1]->s_vec;
+  /* If we haven't created it yet or the block size has changed, prepare a GSL
+     matrix and the corresponding Pure expression to be passed to the object
+     function. The matrix has one row for each signal inlet and the row size
+     (number of columns) is the block size n. (This is true even if the number
+     of signal inlets is zero in which case the matrix will be empty.) */
+  if (x->sig == NULL || x->sig->size2 != n) {
+    if (x->sigx) pure_free(x->sigx);
+    x->sig = create_double_matrix(x->n_dspin, n);
+    if (x->sig)
+      x->sigx = pure_new(pure_double_matrix(x->sig));
+    else
+      x->sigx = NULL;
+  }
+}
+
 /* Manage the object list. */
 
 static void xappend(t_pure *x)
@@ -672,6 +881,7 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
   int i;
   t_pure *x;
   t_class *c = lookup(s);
+  bool is_dsp = is_dsp_fun(s);
 
   if (!c) return 0; /* this shouldn't happen unless we're out of memory */
   x = (t_pure*)pd_new(c);
@@ -683,6 +893,14 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
   x->out = 0;
   x->args = get_expr(s, argc, argv);
   x->tmp = 0;
+  /* Default setup for a dsp object is 1 control in/out + 1 audio in/out. */
+  if (is_dsp)
+    x->n_dspin = x->n_dspout = 1;
+  else
+    x->n_dspin = x->n_dspout = 0;
+  x->dspin = x->dspout = 0;
+  x->sig = 0;
+  x->sigx = 0;
   if (!x->args) {
     pd_error(x, "pd-pure: memory allocation failed");
     return (void *)x;
@@ -696,6 +914,7 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
     pure_expr *f = parse_expr(x, x->args);
     x->foo = f;
     if (f) {
+      int k = !is_dsp;
       size_t n;
       pure_expr **xv = 0;
       pure_new(f);
@@ -703,16 +922,27 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
       if (pure_is_tuplev(f, &n, &xv) && n == 3 &&
 	  pure_is_int(xv[0], &n_in) && pure_is_int(xv[1], &n_out)) {
 	x->foo = pure_new(xv[2]); pure_free(f);
-	if (n_in < 1) {
-	  pd_error(x, "pd-pure: bad number %d of inlets, must be >= 1", n_in);
-	  n_in = 1;
+	if (n_in < k) {
+	  pd_error(x, "pd-pure: bad number %d of inlets, must be >= %d",
+		   n_in, k);
+	  n_in = k;
 	}
 	if (n_out < 0) {
-	  pd_error(x, "pd-pure: bad number %d of outlets, must be >= 0", n_out);
+	  pd_error(x, "pd-pure: bad number %d of outlets, must be >= 0",
+		   n_out);
 	  n_out = 0;
 	}
-	x->n_in = n_in-1;
-	x->n_out = n_out;
+	if (is_dsp) {
+	  x->n_dspin = n_in;
+	  x->n_dspout = n_out;
+	  x->n_in = 0;
+	  x->n_out = 1;
+	} else {
+	  x->n_dspin = 0;
+	  x->n_dspout = 0;
+	  x->n_in = n_in-1;
+	  x->n_out = n_out;
+	}
       }
       if (xv) free(xv);
     } else {
@@ -722,7 +952,7 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
     }
   }
   if (x->foo != 0) {
-    /* allocate memory for inlets and outlets */
+    /* allocate memory for control inlets and outlets */
     if (x->n_in > 0)
       x->in = malloc(x->n_in*sizeof(t_px*));
     if (x->n_out > 0)
@@ -732,18 +962,34 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
       pd_error(x, "pd-pure: memory allocation failed");
     if (!x->in) x->n_in = 0;
     if (!x->out) x->n_out = 0;
-    /* initialize the proxies for the extra inlets */
+    /* initialize the proxies for the extra control inlets */
     for (i = 0; i < x->n_in; i++) {
       x->in[i] = (t_px*)pd_new(px_class);
       x->in[i]->x = x;
       x->in[i]->ix = i+1;
       inlet_new(&x->x_obj, &x->in[i]->obj.ob_pd, 0, 0);
     }
-    /* initialize the outlets */
+    /* initialize the control outlets */
     for (i = 0; i < x->n_out; i++)
       x->out[i] = outlet_new(&x->x_obj, 0);
+    /* allocate memory for signal inlets and outlets */
+    if (x->n_dspin > 0)
+      x->dspin = malloc(x->n_dspin*sizeof(t_sample*));
+    if (x->n_dspout > 0)
+      x->dspout = malloc(x->n_dspout*sizeof(t_sample*));
+    if (x->n_dspin > 0 && x->dspin == 0 ||
+	x->n_dspout > 0 && x->dspout == 0)
+      pd_error(x, "pd-pure: memory allocation failed");
+    if (!x->dspin) x->n_dspin = 0;
+    if (!x->dspout) x->n_dspout = 0;
+    /* initialize signal inlets and outlets */
+    for (i = 0; i < x->n_dspin; i++)
+      inlet_new(&x->x_obj, &x->x_obj.ob_pd, &s_signal, &s_signal);
+    for (i = 0; i < x->n_dspout; i++)
+      outlet_new(&x->x_obj, &s_signal);
   } else {
     x->n_in = x->n_out = 0;
+    x->n_dspin = x->n_dspout = 0;
   }
   return (void *)x;
 }
@@ -760,6 +1006,9 @@ static void pure_fini(t_pure *x)
     pd_free((t_pd*)x->in[i]);
   if (x->in) free(x->in);
   if (x->out) free(x->out);
+  if (x->dspin) free(x->dspin);
+  if (x->dspout) free(x->dspout);
+  if (x->sigx) pure_free(x->sigx);
   xunlink(x);
 }
 
@@ -768,7 +1017,9 @@ static void pure_fini(t_pure *x)
 static void pure_refini(t_pure *x)
 {
   pure_free(x->foo);
+  pure_free(x->sigx);
   if (x->foo) x->foo = 0;
+  if (x->sigx) x->sigx = 0;
   if (x->msg) {
     x->tmp = str(x->msg);
     pure_free(x->msg);
@@ -805,11 +1056,17 @@ static void pure_reinit(t_pure *x)
 
 static void class_setup(char *name, char *dir)
 {
+  size_t l = strlen(name);
+  bool is_dsp = l>0 && name[l-1]=='~';
   t_symbol *class_s = gensym(name);
   t_class *class =
     class_new(class_s, (t_newmethod)pure_init, (t_method)pure_fini,
 	      sizeof(t_pure), CLASS_DEFAULT, A_GIMME, A_NULL);
+  if (is_dsp)
+    class_addmethod(class, (t_method)pure_dsp, gensym((char*)"dsp"), A_NULL);
   class_addanything(class, pure_any);
+  if (is_dsp)
+    class_addmethod(class, nullfn, &s_signal, A_NULL);
   class_sethelpsymbol(class, gensym("../../extra/pure/pure-help"));
   add_class(class_s, class, dir);
 }
@@ -835,7 +1092,7 @@ static int pure_loader(t_canvas *canvas, char *name)
     pure_evalcmd(cmdbuf);
 #ifdef EAGER
     /* Force eager compilation. */
-    pure_interp_compile(interp, pure_sym(name));
+    pure_interp_compile(interp, pure_sym(fun_name_s(name)));
 #endif
     /* Create the object class. */
     class_setup(name, dirbuf);
@@ -861,7 +1118,7 @@ static void reload(t_classes *c)
 #endif
       pure_evalcmd(cmdbuf);
 #ifdef EAGER
-      pure_interp_compile(interp, pure_sym(c->sym->s_name));
+      pure_interp_compile(interp, pure_sym(fun_name(c->sym)));
 #endif
       class_set_extern_dir(&s_);
     }
