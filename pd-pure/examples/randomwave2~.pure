@@ -1,0 +1,40 @@
+
+/* This is similar to randomwave1~.pure, but uses a simple Faust dsp to
+   generate the random signal. Also, a control variable is provided to change
+   the gain (volume) of the signal. */
+
+%{ -*- dsp:randomwave -*-
+gain = nentry("gain", 0.3, 0, 1, 0.01);
+random = +(12345) ~ *(1103515245);
+process = random / 2147483647.0 * gain;
+%}
+
+// These are provided by the Pd runtime.
+extern float sys_getsr(), int sys_getblksize();
+// Provide some reasonable default values in case the above are missing.
+sys_getsr = 48000; sys_getblksize = 64;
+
+using faustui;
+
+randomwave2_dsp = k,l,randomwave with
+  randomwave in::matrix = randomwave::compute dsp n in out $$ out;
+  // A floating point value at the control inlet sets the gain value and
+  // outputs the same value at the control outlet.
+  randomwave x::double = put_control gain x $$ x;
+end when
+  // Get the sample rate and block size at which Pd is running. We need to
+  // know these beforehand so that we can initialize various stuff before the
+  // dsp loop is actually running.
+  SR = int sys_getsr; n = sys_getblksize;
+  // Initialize the dsp. The sample rate is passed here in order to initialize
+  // the corresponding Faust parameter. (This isn't really necessary in this
+  // specific example, but recommended anyway since in general Faust dsps may
+  // depend on the proper setting of this value.)
+  dsp = randomwave::newinit SR;
+  // Get the number of inputs and outputs and the control variables.
+  k,l,ui = randomwave::info dsp;
+  ui = control_map $ controls ui;
+  gain = ui!"gain";
+  // Create a buffer large enough to hold the output from the dsp.
+  out = dmatrix (l,n);
+end;
