@@ -71,7 +71,7 @@ well. You can find all packages on the Download page at
 http://pure-lang.googlecode.com. For instance, at the time of this writing,
 the available packages are:
 
-* http://pure-lang.googlecode.com/files/pure-0.45.msi
+* http://pure-lang.googlecode.com/files/pure-0.46.msi
 
 * http://pure-lang.googlecode.com/files/pd-mingw-0.42-5.msi
 
@@ -93,16 +93,22 @@ you'll have to use the mingw-compiled Pd version we provide, or roll your own.
 Usage
 =====
 
-See the pure-help.pd patch for a few examples. Basically, to implement a Pd
-object named ``foo``, you have to supply a Pure script named foo.pure which
-defines a function ``foo`` and anything else that it might need. Put that
-script in the same directory as the Pd patch in which you want to use the
-``foo`` object (or anywhere on Pd's search path). The ``foo`` function gets
-evaluated at object creation time, receiving any additional parameters the
-object is created with. The resulting Pure expression (which can also just be
-``foo`` itself) becomes the object executed at runtime, by passing Pd messages
-from the inlets as parameters, and routing the function results to the outlets
-of the object.
+See the pure-help.pd patch for a few examples. As of version 0.12, pd-pure
+supports the creation of both `control objects` which are used to process
+control messages, and `dsp` a.k.a. `audio objects` which can also process
+blocks of sample data. We first discuss how to write control objects in Pure;
+the necessary adjustments for implementing audio objects are described in
+subsection `Audio Objects`_ at the end of this section.
+
+Basically, to implement a Pd control object named ``foo``, you have to supply
+a Pure script named foo.pure which defines a function ``foo`` and anything
+else that it might need. Put that script in the same directory as the Pd patch
+in which you want to use the ``foo`` object (or anywhere on Pd's search
+path). The ``foo`` function gets evaluated at object creation time, receiving
+any additional parameters the object is created with. The resulting Pure
+expression (which can also just be ``foo`` itself) becomes the object executed
+at runtime, by passing Pd messages from the inlets as parameters, and routing
+the function results to the outlets of the object.
 
 Pd messages are translated to corresponding Pure expressions and vice versa in
 a straightforward fashion. Special support is provided for converting between
@@ -152,11 +158,11 @@ supply the needed creation argument x.
 The [pure] Object
 -----------------
 
-For simple kinds of objects like these, the Pure loader also provides the
-generic ``[pure]`` object as a quick means to create Pure objects without
-actually preparing a script file. The creation parameter of ``[pure]`` is the
-object function. This can be a predefined Pure function, or you can define it
-on the fly in a ``with`` clause.
+For simple kinds of objects like the above, the Pure loader also provides the
+generic ``[pure]`` object as a quick means to create Pure control objects
+without actually preparing a script file. The creation parameter of ``[pure]``
+is the object function. This can be a predefined Pure function, or you can
+define it on the fly in a ``with`` clause.
 
 For instance, ``[pure succ]`` uses the predefined Pure function ``succ`` which
 adds 1 to its input, while the object ``[pure add 5 with add x y = x+y end]``
@@ -169,14 +175,15 @@ cst [1..10]]`` yields the constant list containing the numbers 1..10.
 Configuring Inlets and Outlets
 ------------------------------
 
-To create an object with multiple inlets and outlets, the object creation
-function must return the desired numbers of inlets and outlets, along with a
-second function to be applied at runtime, as a tuple ``n,m,foo``. The input
-arguments to the runtime function as well as the corresponding function
-results are then encoded as pairs ``k,val`` where ``k`` denotes the inlet or
-outlet index. (Note that the ``k`` index is provided only if there actually is
-more than one inlet. Also, the outlet index is assumed to be zero if none is
-specified, so that it can be omitted if there's only one outlet.)
+To create an object with multiple inlets and outlets for control messages, the
+object creation function must return the desired numbers of inlets and
+outlets, along with a second function to be applied at runtime, as a tuple
+``n,m,foo``. The input arguments to the runtime function as well as the
+corresponding function results are then encoded as pairs ``k,val`` where ``k``
+denotes the inlet or outlet index. (Note that the ``k`` index is provided only
+if there actually is more than one inlet. Also, the outlet index is assumed to
+be zero if none is specified, so that it can be omitted if there's only one
+outlet.)
 
 For instance, the following object, invoked as ``[cross]`` in the Pd patch,
 has two inlets and two outlets and routes messages from the left inlet to the
@@ -239,6 +246,230 @@ message::
     next _ _    = () otherwise;
   end;
 
+Audio Objects
+-------------
+
+If the name of a Pure object (i.e., the basename of the corresponding Pure
+script) ends with the ``~`` character, pure-pd assumes that it denotes an
+audio object whose primary purpose is to process sample data. The basic setup
+is similar to the case of control objects, with the following differences:
+
+* The object function for an audio object ``xyz~`` is named ``xyz_dsp``
+  (rather than ``xyz``). The function is defined in the ``xyz~.pure`` script
+  file, which must be located in the same directory as the Pd patch or
+  anywhere on Pd's search path.
+
+* To keep things simple, a Pure audio object is always equipped with exactly
+  one control inlet and one control outlet, which are the leftmost inlet and
+  outlet of the object. These can be used to process control messages in the
+  usual fashion, in addition to the audio processing performed by the object.
+
+* Any additional inlets and outlets of the object are signal inlets and
+  outlets. By default, one signal inlet and one signal outlet will be
+  provided. Configuring a custom number of signal inlets and outlets works in
+  an analogous fashion to control objects. In this case the object creation
+  function must return a triple ``n,m,foo`` where ``n`` and ``m`` are the
+  desired number of signal inlets and outlets, and ``foo`` is the actual
+  processing function to be invoked at runtime.
+
+Whenever Pd has audio processing enabled, the object function is invoked with
+one block of sample data for each iteration of Pd's audio loop. The sample
+data is encoded as a double matrix which has one row for each signal inlet of
+the object; row 0 holds the sample data for the first inlet, row 1 the sample
+data for the second inlet, etc. The row size corresponds to Pd's `block size`
+which indicates how many samples per signal connection is processed in one go
+for each iteration of the audio loop. (Usually the default block size is 64,
+but this can be changed with Pd's ``-blocksize`` option and also on a
+per-window basis using the ``block~`` object, see the Pd documentation for
+details.) Note that the input matrix may be empty if the object has zero
+signal inlets, in which case the row size of the matrix (as reported by the
+:pure:func:`dim` function) still indicates the block size.
+
+The object function should then return another double matrix with the
+resulting sample data for the signal outlets of the object, which normally has
+one row per outlet and the same row size as the input matrix. (Extra rows and
+columns in the output matrix will be silently ignored.)
+
+For instance, the following object (in randomwave1~.pure) creates a random
+wave (i.e., white noise).  It takes no inputs and produces one output signal::
+
+  extern double genrand_real1() = random1;
+  randomwave1_dsp = 0,1,randomwave with
+    randomwave in::matrix = {random | i=1..n} when _,n = dim in end;
+    random = random1*2-1;
+  end;
+
+Control messages for the control outlet of the object may be added by
+returning a pair ``sig,msg`` where ``sig`` is the output signal matrix and
+``msg`` is a single control message or list of such messages (using the same
+format as with control objects). The signal matrix can also be omitted if no
+signal output is needed, and the object function may also return ``()`` if
+neither signal nor control output is required. (This may be the case, e.g.,
+for dsps which just analyze the incoming signal data.)
+
+Audio objects can also process control messages and generate corresponding
+responses on the leftmost inlet/outlet pair as usual. This is commonly used to
+set and retrieve various control parameters used or generated by the audio
+processing part of the object.
+
+For instance, here is a complete stereo amplifier stage with bass, treble,
+gain and balance controls and a dB meter. The dsp part is implemented in
+Faust_. The Pure program just does the necessary interfacing to Pd, which
+includes processing of incoming control messages for setting the control
+parameters of the Faust dsp, and the generation of output control messages to
+send the dB meter values (also computed in the Faust dsp) to Pd. (To run this
+example, you need the "faust2" branch of the Faust compiler so that the dsp
+can be inlined into the Pure program. Note that the entire section inside the
+``%{ %}`` braces is Faust code.)
+
+.. _Faust: http://faudiostream.sf.net/
+
+::
+
+  %{ -*- dsp:amp -*-
+
+  import("math.lib");
+  import("music.lib");
+
+  /* Fixed bass and treble frequencies. You might want to tune these for your
+     setup. */
+
+  bass_freq       = 300;
+  treble_freq     = 1200;
+
+  /* Bass and treble gain controls in dB. The range of +/-20 corresponds to a
+     boost/cut factor of 10. */
+
+  bass_gain       = nentry("bass", 0, -20, 20, 0.1);
+  treble_gain     = nentry("treble", 0, -20, 20, 0.1);
+
+  /* Gain and balance controls. */
+
+  gain            = db2linear(nentry("gain", 0, -96, 96, 0.1));
+  bal             = hslider("balance", 0, -1, 1, 0.001);
+
+  /* Balance a stereo signal by attenuating the left channel if balance is on
+     the right and vice versa. I found that a linear control works best here. */
+
+  balance         = *(1-max(0,bal)), *(1-max(0,0-bal));
+
+  /* Generic biquad filter. */
+
+  filter(b0,b1,b2,a0,a1,a2)       = f : (+ ~ g)
+  with {
+          f(x)    = (b0/a0)*x+(b1/a0)*x'+(b2/a0)*x'';
+          g(y)    = 0-(a1/a0)*y-(a2/a0)*y';
+  };
+
+  /* Low and high shelf filters, straight from Robert Bristow-Johnson's "Audio
+     EQ Cookbook", see http://www.musicdsp.org/files/Audio-EQ-Cookbook.txt. f0
+     is the shelf midpoint frequency, g the desired gain in dB. S is the shelf
+     slope parameter, we always set that to 1 here. */
+
+  low_shelf(f0,g)         = filter(b0,b1,b2,a0,a1,a2)
+  with {
+          S  = 1;
+          A  = pow(10,g/40);
+          w0 = 2*PI*f0/SR;
+          alpha = sin(w0)/2 * sqrt( (A + 1/A)*(1/S - 1) + 2 );
+
+          b0 =    A*( (A+1) - (A-1)*cos(w0) + 2*sqrt(A)*alpha );
+          b1 =  2*A*( (A-1) - (A+1)*cos(w0)                   );
+          b2 =    A*( (A+1) - (A-1)*cos(w0) - 2*sqrt(A)*alpha );
+          a0 =        (A+1) + (A-1)*cos(w0) + 2*sqrt(A)*alpha;
+          a1 =   -2*( (A-1) + (A+1)*cos(w0)                   );
+          a2 =        (A+1) + (A-1)*cos(w0) - 2*sqrt(A)*alpha;
+  };
+
+  high_shelf(f0,g)        = filter(b0,b1,b2,a0,a1,a2)
+  with {
+          S  = 1;
+          A  = pow(10,g/40);
+          w0 = 2*PI*f0/SR;
+          alpha = sin(w0)/2 * sqrt( (A + 1/A)*(1/S - 1) + 2 );
+
+          b0 =    A*( (A+1) + (A-1)*cos(w0) + 2*sqrt(A)*alpha );
+          b1 = -2*A*( (A-1) + (A+1)*cos(w0)                   );
+          b2 =    A*( (A+1) + (A-1)*cos(w0) - 2*sqrt(A)*alpha );
+          a0 =        (A+1) - (A-1)*cos(w0) + 2*sqrt(A)*alpha;
+          a1 =    2*( (A-1) - (A+1)*cos(w0)                   );
+          a2 =        (A+1) - (A-1)*cos(w0) - 2*sqrt(A)*alpha;
+  };
+
+  /* The tone control. We simply run a low and a high shelf in series here. */
+
+  tone            = low_shelf(bass_freq,bass_gain)
+                  : high_shelf(treble_freq,treble_gain);
+
+  /* Envelop follower. This is basically a 1 pole LP with configurable attack/
+     release time. The result is converted to dB. You have to set the desired
+     attack/release time in seconds using the t parameter below. */
+
+  t               = 0.1;                  // attack/release time in seconds
+  g               = exp(-1/(SR*t));       // corresponding gain factor
+
+  env             = abs : *(1-g) : + ~ *(g) : linear2db;
+
+  /* Use this if you want the RMS instead. Note that this doesn't really
+     calculate an RMS value (you'd need an FIR for that), but in practice our
+     simple 1 pole IIR filter works just as well. */
+
+  rms             = sqr : *(1-g) : + ~ *(g) : sqrt : linear2db;
+  sqr(x)          = x*x;
+
+  /* The dB meters for left and right channel. These are passive controls. */
+
+  left_meter(x)   = attach(x, env(x) : hbargraph("left", -96, 10));
+  right_meter(x)  = attach(x, env(x) : hbargraph("right", -96, 10));
+
+  /* The main program of the Faust dsp. */
+
+  process         = hgroup("0-amp", hgroup("1-tone", tone, tone) :
+                                    hgroup("2-gain", (_*gain, _*gain)))
+                  : vgroup("3-balance", balance)
+                  : vgroup("4-meter", (left_meter, right_meter));
+  %}
+
+  // These are provided by the Pd runtime.
+  extern float sys_getsr(), int sys_getblksize();
+  // Provide some reasonable default values in case the above are missing.
+  sys_getsr = 48000; sys_getblksize = 64;
+
+  // Get Pd's default sample rate and block size.
+  const SR = int sys_getsr;
+  const n = sys_getblksize;
+
+  using faustui;
+
+  amp_dsp = k,l,amp with
+    // The dsp part. This also outputs the left and right dbmeter values for
+    // each processed block of samples on the control outlet, using messages of
+    // the form left <value> and right <value>, respectively.
+    amp in::matrix = amp::compute dsp n in out $$
+      out,[left (get_control left_meter),right (get_control right_meter)];
+    // Respond to control messages of the form <control> <value>. <control> may
+    // be any of the input controls supported by the Faust program (bass,
+    // treble, gain, etc.).
+    amp (c@_ x::double) = put_control (ui!str c) x $$ x;
+  end when
+    // Initialize the dsp.
+    dsp = amp::newinit SR;
+    // Get the number of inputs and outputs and the control variables.
+    k,l,ui = amp::info dsp;
+    ui = control_map $ controls ui;
+    [left_meter,right_meter] = list $ ui!!["left","right"];
+    // Create a buffer large enough to hold the output from the dsp.
+    out = {0.0 | i = 1..l; j = 1..n};
+  end;
+
+Note that it is possible to load the above Faust program directly in Pd, using
+the facilities described in :doc:`faust2pd`. This is also more efficient since
+it avoids the overhead of the extra Pure layer. However, invoking Faust dsps
+via Pure also offers some benefits. In particular, it enables you to add more
+sophisticated control processing, interface to other 3rd party software for
+additional pre- and postprocessing of the signal data, or do livecoding of
+Faust programs using the facilities described in `Livecoding Support`_ below.
+
 Advanced Features
 =================
 
@@ -248,7 +479,7 @@ Asynchronous Messages
 pd-pure provides a simple asynchronous messaging facility which allows a Pure
 object to schedule a message to be delivered to itself later. This is useful
 for implementing all kinds of delays and, more generally, any kind of object
-which, once triggered, does its own sequencing of output messages.
+which, once triggered, does its own sequencing of control messages.
 
 To these ends, the object function may return a special message of the form
 ``pd_delay t msg`` (either by itself or as an element of a result list) to
@@ -291,7 +522,7 @@ parameter, but it will be ignored in this case.) We can use this to equip our
 More elaborate functionality can be built on top of the basic timer facility.
 The following example shows how to maintain a timed message queue in a Pure
 list, in order to implement a simple delay line similar to Pd's builtin
-``pipe`` object. Here we also employ the ``pd_time`` function, which is
+``pipe`` object. Here we also employ the :c:func:`pd_time` function, which is
 provided by the Pure loader so that Pure scripts can access the current
 logical Pd time in milliseconds (see `Programming Interface`_ below). This is
 convenient if we need to deal with absolute time values, which we use in this
@@ -313,94 +544,92 @@ delivered::
 Reading and Writing Audio Data
 ------------------------------
 
-At present, pd-pure doesn't support audio objects. However, it is possible to
-transfer audio data between Pd and Pure by means of the ``pd_getbuffer`` and
-``pd_setbuffer`` routines. In Pure land, the audio data is represented as a
-vector of floating point values. Please see `Programming Interface`_ below for
-a closer description of the provided routines.
+Besides the support for audio objects, it is also possible to transfer audio
+data directly between Pure and Pd by means of the :c:func:`pd_getbuffer` and
+:c:func:`pd_setbuffer` routines. The audio data is represented as a vector of
+floating point values on the Pure side. Please see `Programming Interface`_
+below for a closer description of the provided routines.
 
 For instance, here is a ``randomwave`` object which fills a Pd array (whose
 name is given as the creation argument) with random values in response to a
 ``bang`` message::
 
-  extern int pure_random() = random;
-  randf = random/0x7fffffff;
+  extern double genrand_real1() = random1;
 
   extern int pd_getbuffersize(char *name);
-  extern void pd_setbuffer(char *name, expr* x);
+  extern void pd_setbuffer(char *name, expr *x);
 
   nonfix bang;
 
   randomwave name = 1,0,process with
-    process bang  = pd_setbuffer name {randf | i = 1..nsamples};
+    process bang  = pd_setbuffer name {random | i = 1..nsamples};
     nsamples      = pd_getbuffersize name;
+    random	  = random1*2-1;
   end;
 
 Programming Interface
 =====================
 
-The Pure loader also provides a number of interface routines which can be
-called by Pure scripts running in the Pd environment.
+The Pure loader provides a number of interface routines which can be called by
+Pure scripts running in the Pd environment.
 
-``extern char *pd_version_s();``
+.. c:function:: extern char *pd_version_s()
 
-  Returns the Pd version number as a string. Note that this routine will only
-  be available when a script is running inside Pd, so you can quickly check if
-  that's the case as follows::
+   Returns the Pd version number as a string. Note that this routine will only
+   be available when a script is running inside Pd, so you can quickly check
+   if that's the case as follows::
 
-    let ok = stringp $ eval "extern char *pd_version_s(); pd_version_s;";
+     let ok = stringp $ eval "extern char *pd_version_s(); pd_version_s;";
 
-  The ``ok`` variable will then be true iff the script is running inside Pd.
+   The ``ok`` variable will then be true iff the script is running inside Pd.
 
-``extern char *pd_libdir_s();``
+.. c:function:: extern char *pd_libdir_s()
 
-  Returns the Pd library dir (as determined at compile time). This is useful
-  if your Pure scripts need to access files in that directory.
+   Returns the Pd library dir (as determined at compile time). This is useful
+   if your Pure scripts need to access files in that directory.
 
-``extern char *pd_path_sl();``
+.. c:function:: extern char *pd_path_sl()
 
-  Returns the Pd path (set in the File/Path dialog or via the ``-path``
-  command line option) as a list of directory names. This is useful if your
-  Pure scripts need to locate files on the Pd search path.
+   Returns the Pd path (set in the File/Path dialog or via the ``-path``
+   command line option) as a list of directory names. This is useful if your
+   Pure scripts need to locate files on the Pd search path.
 
-``extern void pd_post(char *s);``
+.. c:function:: extern void pd_post(char *s)
 
-  Posts a message in the Pd main window. A trailing newline is added
-  automatically. This provides an alternative interface to Pd's ``post()``
-  function which cannot be used in Pure because it is a ``printf``-style
-  routine expecting a variable number of arguments.
+   Posts a message in the Pd main window. A trailing newline is added
+   automatically. This provides an alternative interface to Pd's ``post()``
+   function which cannot be used in Pure because it is a ``printf``-style
+   routine expecting a variable number of arguments.
 
-``extern double pd_time();``
+.. c:function:: extern double pd_time()
 
-  Retrieves the current Pd time as a double value in milliseconds, which is
-  useful, in particular, when used in conjunction with the asynchronous
-  message facility described under `Asynchronous Messages`_.
+   Retrieves the current Pd time as a double value in milliseconds, which is
+   useful, in particular, when used in conjunction with the asynchronous
+   message facility described under `Asynchronous Messages`_.
 
-``extern expr* pd_getbuffer(char *name);``
+.. c:function:: extern expr *pd_getbuffer(char *name)
+                extern void pd_setbuffer(char *name, expr *x)
+                extern int pd_getbuffersize(char *name)
+                extern void pd_setbuffersize(char *name, uint32_t sz)
 
-``extern void pd_setbuffer(char *name, expr* x);``
+   Routines to access the Pd array (sample buffer) with the given name. These
+   functions can be used to transfer audio data between Pd and Pure scripts;
+   see `Reading and Writing Audio Data`_ above for an example.
 
-``extern int pd_getbuffersize(char *name);``
+   :c:func:`pd_getbuffersize` and :c:func:`pd_setbuffersize` gets or sets the
+   size of the given buffer, respectively.
 
-``extern void pd_setbuffersize(char *name, uint32_t sz);``
+   :c:func:`pd_getbuffer` reads the contents of the buffer and returns it as a
+   Pure vector (or fails if the array with the given name doesn't exist).
 
-  Routines to access the Pd array (sample buffer) with the given name. These
-  functions can be used to transfer audio data between Pd and Pure scripts;
-  see `Reading and Writing Audio Data`_ above for an example.
-
-  ``pd_getbuffersize`` and ``pd_setbuffersize`` gets or sets the size of the
-  given buffer, respectively.
-
-  ``pd_getbuffer`` reads the contents of the buffer and returns it as a Pure
-  vector (or fails if the array with the given name doesn't exist).
-
-  ``pd_setbuffer`` sets the contents of the buffer from the given Pure vector
-  ``x``. If the size of the vector exceeds the size of the buffer, the former
-  is truncated. Conversely, if the size of the buffer exceeds the size of the
-  Pure vector, the trailing samples are unaffected. **NOTE:** The second
-  argument of ``pd_setbuffer`` can also be a pair ``(i,x)`` denoting an offset
-  ``i`` into the array at which the sample data is to be written, so that this
-  routine allows you to overwrite any part of the array.
+   :c:func:`pd_setbuffer` sets the contents of the buffer from the given Pure
+   vector ``x``. If the size of the vector exceeds the size of the buffer, the
+   former is truncated. Conversely, if the size of the buffer exceeds the size
+   of the Pure vector, the trailing samples are unaffected. **Note:** The
+   second argument of :c:func:`pd_setbuffer` can also be a pair ``(i,x)``
+   denoting an offset ``i`` into the array at which the sample data is to be
+   written, so that this routine allows you to overwrite any part of the
+   array.
 
 Interactive Facilities
 ======================
@@ -438,13 +667,13 @@ Remote Control
 
 The distribution also includes an abstraction pure-remote.pd which you can
 include in your patch to enable live coding, as well as remote control of the
-patch through the pdsend program. Sending a ``bang`` causes a reload of all
-scripts, which can also be triggered directly by clicking the bang control of
-the abstraction. The bang control also provides visual feedback indicating
-whether the compilation is still in progress. Messages are also routed through
-the embedded ``pure-runtime`` object using the single inlet and the two
-outlets of the abstraction, so that ``pure-remote`` can also be controlled
-from within the patch itself.
+patch through the :program:`pdsend` program. Sending a ``bang`` causes a
+reload of all scripts, which can also be triggered directly by clicking the
+bang control of the abstraction. The bang control also provides visual
+feedback indicating whether the compilation is still in progress. Messages are
+also routed through the embedded ``pure-runtime`` object using the single
+inlet and the two outlets of the abstraction, so that ``pure-remote`` can also
+be controlled from within the patch itself.
 
 For added convenience, the ``pure-runtime`` and ``pure-remote`` objects also
 accept any other message of the form ``receiver message`` and will route the
@@ -459,7 +688,7 @@ program (pure-remote.el) which contains some convenient keybindings for the
 necessary pdsend invocations, so that you can operate the pure-remote patch
 with simple keystrokes directly from the text editor. Please see the
 pure-remote.el file for more details. Currently pure-remote.el implements the
-following "standard" keybindings:
+following keybindings:
 
 ===========  =======  =====================================================
 ``C-C C-X``  Reload   Sends a bang message, causing scripts to be reloaded.
