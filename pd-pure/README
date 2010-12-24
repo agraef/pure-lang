@@ -7,11 +7,10 @@ Version @version@, |today|
 
 Albert Graef <Dr.Graef@t-online.de>
 
-This plugin lets you write external Pd_ control objects in Pure. Pure_ is a
-functional programming language based on the term rewriting calculus.
+This is a Pd_ loader plugin for the Pure programming language which lets you
+write external Pd objects in Pure.
 
 .. _Pd: http://puredata.info/
-.. _Pure: http://pure-lang.googlecode.com/
 
 Please note that the present version of the module is still somewhat
 experimental, but it seems to work fairly well at least with Pure versions
@@ -22,11 +21,6 @@ once the scripts have been compiled, they are executed very efficiently.
 
 .. contents::
 .. sectnum::
-
-.. Note: If you're wondering about the funny formatting, this README
-   simultaneously serves to generate the documentation for this module
-   in a variety of formats, using the docutils text formatting system
-   (http://docutils.sourceforge.net/).
 
 Copying
 =======
@@ -153,7 +147,7 @@ the Pure function at object creation time. For instance::
   add x y = x+y;
 
 This object can then be invoked, e.g., as ``[add 5]`` in the Pd patch to
-supply the needed creation argument x.
+supply the needed creation argument ``x``.
 
 The [pure] Object
 -----------------
@@ -197,11 +191,11 @@ are emitted in the order in which they are written. E.g., the following
 ``[fan]`` object implements an "n-fan" which routes its input to ``n`` outlets
 simultaneously::
 
-  fan n = 1,n,fan n with fan n x = reverse [k,x | k = 0..n-1] end;
+  fan n = 1,n,fan with fan x = reverse [k,x | k = 0..n-1] end;
 
-(Note that, because of the use of the ``reverse``, the ``n`` outlets are
-served in right-to-left order here. This is not strictly necessary, but
-matches the Pd convention.)
+(Note that, because of the use of ``reverse``, the ``n`` outlets are served in
+right-to-left order here. This is not strictly necessary, but matches the Pd
+convention.)
 
 Another example is the following ``[dup]`` object with a single inlet and
 outlet, which just sends out each received message twice::
@@ -246,6 +240,15 @@ message::
     next _ _    = () otherwise;
   end;
 
+Note that you can also avoid passing around the ``r`` parameter of the
+``next`` function by making it a local variable of ``counter``::
+
+  nonfix bang;
+  counter = next with
+    next bang = put r (get r+1);
+    next _    = () otherwise;
+  end with r = ref 0 end;
+
 Audio Objects
 -------------
 
@@ -265,10 +268,10 @@ is similar to the case of control objects, with the following differences:
   usual fashion, in addition to the audio processing performed by the object.
 
 * Any additional inlets and outlets of the object are signal inlets and
-  outlets. By default, one signal inlet and one signal outlet will be
-  provided. Configuring a custom number of signal inlets and outlets works as
-  with control objects. In this case the object creation function must return
-  a triple ``n,m,foo`` where ``n`` and ``m`` are the desired number of signal
+  outlets. By default, one signal inlet/outlet pair will be provided.
+  Configuring a custom number of signal inlets and outlets works as with
+  control objects. In this case the object creation function must return a
+  triple ``n,m,foo`` where ``n`` and ``m`` are the desired number of signal
   inlets and outlets, respectively, and ``foo`` is the actual processing
   function to be invoked at runtime.
 
@@ -292,8 +295,34 @@ size as the input matrix. (A lack or surplus of samples in the output matrix
 is handled gracefully, however.  Missing samples are filled with zeros, while
 extra samples are silently ignored.)
 
-For instance, the following object (in randomwave1~.pure) creates a random
-wave (i.e., white noise). It takes no inputs and produces one output signal::
+For instance, here's a simple object with the default single signal
+inlet/outlet pair (in addition to the leftmost control inlet/outlet pair,
+which isn't used in this example). This object just multiplies its input signal
+by 2::
+
+  mul2_dsp x::matrix = map (*2) x;
+
+This code would then be placed into a script file named ``mul2~.dsp``.
+
+As with control objects, there's a shortcut to create simple objects like
+these without preparing a script file, using the built-in ``[pure~]`` object.
+Thus the dsp function in the previous example could also be implemented using
+an object of the form ``[pure~ map (*2)]`` (which uses just the same function,
+albeit in curried form).
+
+Creation parameters can also be used in the same way as with control objects::
+
+  mul_dsp f::double x::matrix = map (*f) x;
+
+Next, let's try a custom number of signal inlets and outlets. The following
+object has two signal inlets and one signal outlet. It multiplies the two
+input signals, producing an amplitude (or ring) modulation effect::
+
+  ampmod_dsp x::matrix = 2,1,zipwith (*) (row x 0) (row x 1);
+
+Here's another example which takes no inputs and produces one output signal, a
+random wave (i.e., white noise). Note the use of the :pure:func:`dim` function
+to determine the number of samples to be generated for each block. ::
 
   extern double genrand_real1() = random1;
   randomwave1_dsp = 0,1,randomwave with
@@ -310,10 +339,10 @@ neither signal nor control output is required. (This may be the case, e.g.,
 for dsps which just analyze the incoming signal data and store the results
 somewhere for later retrieval.)
 
-Audio objects can also process control messages and generate corresponding
-responses on the leftmost inlet/outlet pair as usual. This is commonly used to
-set and retrieve various control parameters used or generated by the audio
-processing part of the object.
+Audio objects can also process control messages and generate responses on the
+leftmost inlet/outlet pair as usual. This is commonly used to set and retrieve
+various control parameters used or generated by the audio processing part of
+the object.
 
 For instance, here is an audio object which plays back a soundfile using the
 :mod:`sndfile` module (cf. :doc:`pure-audio`). The object function reads the
