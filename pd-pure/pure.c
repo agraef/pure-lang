@@ -385,7 +385,9 @@ static char *get_expr(t_symbol *sym, int argc, t_atom *argv)
 {
   t_binbuf *b;
   char *exp_string, *s, *t;
-  int exp_strlen, i, l = strcmp(sym->s_name, "pure")?strlen(fun_name(sym))+1:0;
+  int exp_strlen, i, l =
+    (strcmp(sym->s_name, "pure") && strcmp(sym->s_name, "pure~"))?
+    strlen(fun_name(sym))+1:0;
 
   b = binbuf_new();
   binbuf_add(b, argc, argv);
@@ -1128,7 +1130,8 @@ static void reload(t_classes *c)
      which the classes were originally created. */
   if (c) {
     reload(c->next);
-    if (strcmp(c->sym->s_name, "pure")) {
+    if (strcmp(c->sym->s_name, "pure") &&
+	strcmp(c->sym->s_name, "pure~")) {
       class_set_extern_dir(gensym(c->dir));
       sprintf(cmdbuf, "using \"%s/%s.pure\";\n", c->dir, c->sym->s_name);
 #ifdef VERBOSE
@@ -1216,9 +1219,10 @@ extern void pure_setup(void)
 			      A_GIMME, A_NULL);
     class_addanything(runtime_class, runtime_any);
     class_sethelpsymbol(runtime_class, gensym("pure-help"));
-    /* Create a class for 'pure' objects which allows you to access any
-       predefined Pure function without loading a script. */
+    /* Create classes for 'pure' and 'pure~' objects which allows you to
+       access any predefined Pure function without loading a script. */
     class_setup("pure", "");
+    class_setup("pure~", "");
     /* Look up a few symbols that we need. */
     void_sym = pure_sym("()");
     delay_sym = pure_sym("pd_delay");
