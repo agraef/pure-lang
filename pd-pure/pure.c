@@ -754,6 +754,19 @@ static void px_any(t_px *px, t_symbol *s, int argc, t_atom *argv)
 
 /* Audio processing methods. */
 
+static inline void zero_samples(int k, int n, t_sample **out)
+{
+  int i, j;
+  for (i = 0; i < k; i++)
+#ifdef __STDC_IEC_559__
+    /* IEC 559 a.k.a. IEEE 754 floats can be initialized faster like this */
+    memset(out[i], 0, n*sizeof(t_sample));
+#else
+    for (j = 0; j < n; j++)
+      out[i][j] = 0.0f;
+#endif
+}
+
 static t_int *pure_perform(t_int *w)
 {
   t_pure *x = (t_pure*)(w[1]);
@@ -767,10 +780,9 @@ static t_int *pure_perform(t_int *w)
       for (j = 0; j < n; j++)
 	x->sig->data[i*tda+j] = (double)x->dspin[i][j];
     /* Invoke the object function. This should return a double matrix with
-       numbers of rows and columns corresponding (at least) to the number of
-       signal outlets and the block size, respectively. Optionally, it may
-       also return other (control) messages to be routed to the control
-       outlet. */
+       numbers of rows and columns corresponding to the number of signal
+       outlets and the block size, respectively. Optionally, it may also
+       return other (control) messages to be routed to the control outlet. */
     y = pure_new(pure_app(x->foo, x->sigx));
     if (pure_is_tuplev(y, &m, &xv) && m == 2 &&
 	pure_is_double_matrix(xv[0], (void**)&sig)) {
@@ -780,15 +792,21 @@ static t_int *pure_perform(t_int *w)
       z = y;
       sig = 0;
     }
+    /* dsp output */
     if (sig) {
-      /* dsp output */
       m = x->n_dspout; tda = sig->tda;
-      if (sig->size1 >= m && sig->size2 >= n) {
-	/* get the output data */
-	for (i = 0; i < m; i++)
-	  for (j = 0; j < n; j++)
-	    x->dspout[i][j] = (t_sample)sig->data[i*tda+j];
+      /* handle the case that we're short on samples */
+      if (sig->size1 < m || sig->size2 < n) {
+	zero_samples(m, n, x->dspout);
+	if (sig->size1 < m) m = sig->size1;
+	if (sig->size2 < n) n = sig->size2;
       }
+      /* get the output data */
+      for (i = 0; i < m; i++)
+	for (j = 0; j < n; j++)
+	  x->dspout[i][j] = (t_sample)sig->data[i*tda+j];
+    } else {
+      zero_samples(x->n_dspout, n, x->dspout);
     }
     if (z) {
       /* process control results and route them through the appropriate
