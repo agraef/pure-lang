@@ -266,34 +266,34 @@ is similar to the case of control objects, with the following differences:
 
 * Any additional inlets and outlets of the object are signal inlets and
   outlets. By default, one signal inlet and one signal outlet will be
-  provided. Configuring a custom number of signal inlets and outlets works in
-  an analogous fashion to control objects. In this case the object creation
-  function must return a triple ``n,m,foo`` where ``n`` and ``m`` are the
-  desired number of signal inlets and outlets, and ``foo`` is the actual
-  processing function to be invoked at runtime.
+  provided. Configuring a custom number of signal inlets and outlets works as
+  with control objects. In this case the object creation function must return
+  a triple ``n,m,foo`` where ``n`` and ``m`` are the desired number of signal
+  inlets and outlets, respectively, and ``foo`` is the actual processing
+  function to be invoked at runtime.
 
 Whenever Pd has audio processing enabled, the object function is invoked with
 one block of sample data for each iteration of Pd's audio loop. The sample
 data is encoded as a double matrix which has one row for each signal inlet of
-the object; row 0 holds the sample data for the first inlet, row 1 the sample
-data for the second inlet, etc. The row size corresponds to Pd's `block size`
-which indicates how many samples per signal connection is processed in one go
-for each iteration of the audio loop. (Usually the default block size is 64,
-but this can be changed with Pd's ``-blocksize`` option and also on a
-per-window basis using the ``block~`` object, see the Pd documentation for
-details.) Note that the input matrix may be empty if the object has zero
-signal inlets, in which case the row size of the matrix (as reported by the
-:pure:func:`dim` function) still indicates the block size.
+the object; row 0 holds the sample data for the first signal inlet, row 1 the
+sample data for the second signal inlet, etc. The row size corresponds to Pd's
+`block size` which indicates how many samples per signal connection is
+processed in one go for each iteration of the audio loop. (Usually the default
+block size is 64, but this can be changed with Pd's ``-blocksize`` option and
+also on a per-window basis using the ``block~`` object, see the Pd
+documentation for details.) Note that the input matrix will have zero rows if
+the object has zero signal inlets, in which case the row size of the matrix
+(as reported by the :pure:func:`dim` function) still indicates the block size.
 
-The object function should then return another double matrix with the
-resulting sample data for the signal outlets of the object, which normally has
-one row per outlet and the same row size as the input matrix. (A lack or
-surplus of samples in the output matrix is handled gracefully, however.
-Missing samples are filled with zeros, while extra samples are simply
-ignored.)
+When invoked with a signal matrix as argument, the object function should
+return another double matrix with the resulting sample data for the signal
+outlets of the object, which normally has one row per outlet and the same row
+size as the input matrix. (A lack or surplus of samples in the output matrix
+is handled gracefully, however.  Missing samples are filled with zeros, while
+extra samples are silently ignored.)
 
 For instance, the following object (in randomwave1~.pure) creates a random
-wave (i.e., white noise).  It takes no inputs and produces one output signal::
+wave (i.e., white noise). It takes no inputs and produces one output signal::
 
   extern double genrand_real1() = random1;
   randomwave1_dsp = 0,1,randomwave with
