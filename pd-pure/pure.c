@@ -1099,9 +1099,11 @@ static void class_setup(char *name, char *dir)
   if (is_dsp)
     class_addmethod(class, (t_method)pure_dsp, gensym((char*)"dsp"), A_NULL);
   class_addanything(class, pure_any);
-  if (is_dsp)
+  if (is_dsp) {
     class_addmethod(class, nullfn, &s_signal, A_NULL);
-  class_sethelpsymbol(class, gensym("../../extra/pure/pure-help"));
+    class_sethelpsymbol(class, gensym("../../extra/pure/pure~-help"));
+  } else
+    class_sethelpsymbol(class, gensym("../../extra/pure/pure-help"));
   add_class(class_s, class, dir);
 }
 
