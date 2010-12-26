@@ -292,7 +292,7 @@ When invoked with a signal matrix as argument, the object function should
 return another double matrix with the resulting sample data for the signal
 outlets of the object, which normally has one row per outlet and the same row
 size as the input matrix. (A lack or surplus of samples in the output matrix
-is handled gracefully, however.  Missing samples are filled with zeros, while
+is handled gracefully, however. Missing samples are filled with zeros, while
 extra samples are silently ignored.)
 
 For instance, here's a simple object with the default single signal
@@ -302,23 +302,29 @@ by 2::
 
   mul2_dsp x::matrix = map (*2) x;
 
-This code would then be placed into a script file named ``mul2~.dsp``.
+This code would then be placed into a script file named ``mul2~.dsp`` and
+invoked in Pd as an object of the from ``[mul2~]``.
 
 As with control objects, there's a shortcut to create simple objects like
 these without preparing a script file, using the built-in ``[pure~]`` object.
 Thus the dsp function in the previous example could also be implemented using
-an object of the form ``[pure~ map (*2)]`` (which uses just the same function,
+an object of the form ``[pure~ map (*2)]`` (which uses the same function,
 albeit in curried form).
 
-Creation parameters can also be used in the same way as with control objects::
+Creation parameters can also be used in the same way as with control objects.
+The following object is to be invoked in Pd as ``[mul~ f]`` where ``f`` is the
+desired gain factor. ::
 
   mul_dsp f::double x::matrix = map (*f) x;
 
 Next, let's try a custom number of signal inlets and outlets. The following
-object has two signal inlets and one signal outlet. It multiplies the two
-input signals, producing an amplitude (or ring) modulation effect::
+object has two signal inlets and one signal outlet. Like Pd's built-in
+``[*~]`` object, it multiplies the two input signals, producing an amplitude
+(or ring) modulation effect::
 
-  ampmod_dsp x::matrix = 2,1,zipwith (*) (row x 0) (row x 1);
+  sigmul_dsp = 2,1,sigmul with
+    sigmul x::matrix = zipwith (*) (row x 0) (row x 1);
+  end;
 
 Here's another example which takes no inputs and produces one output signal, a
 random wave (i.e., white noise). Note the use of the :pure:func:`dim` function
@@ -347,12 +353,12 @@ the object.
 For instance, here is an audio object which plays back a soundfile using the
 :mod:`sndfile` module (cf. :doc:`pure-audio`). The object function reads the
 entire file (whose name is passed as a creation argument) at creation time and
-returns one block of samples from the file for each invocation of the runtime
-function ``playsf``. It also responds to floating point values in the range
-from 0 to 1 by adjusting the playback pointer accordingly, and a ``bang``
-message is output on the control outlet when the end of the file is reached.
-
-::
+turns over processing to the ``playsf`` runtime function. The runtime function
+returns one block of samples from the file (along with the current position of
+the playback pointer) for each invocation with an (empty) input matrix. In
+addition, a ``bang`` message is output when the end of the file is reached.
+The object also responds to floating point values in the range from 0 to 1 on
+the control inlet by adjusting the playback pointer accordingly. ::
 
   using sndfile;
 
