@@ -281,6 +281,7 @@ typedef struct _pure {
   t_sample **dspin, **dspout;	/* signal data */
   gsl_matrix *sig;		/* GSL matrix holding the input signal */
   t_float sr;			/* The samplerate. */
+  int n;			/* The current block size. */
   /* Pure interface */
   pure_expr *foo;		/* the object function */
   char *args;			/* creation arguments */
@@ -852,6 +853,7 @@ static void pure_dsp(t_pure *x, t_signal **sp)
        Currently this value isn't used anywhere, maybe we'd like to pass this
        to the object function in some way? */
     x->sr = sr;
+  if (x->n != n) x->n = n;
   if (x->n_dspin == 0 && x->n_dspout == 0) return;
   dsp_add(pure_perform, 2, x, n);
   for (i = 0; i < x->n_dspin; i++)
@@ -868,8 +870,10 @@ static void pure_dsp(t_pure *x, t_signal **sp)
     x->sig = create_double_matrix(x->n_dspin, n);
     if (x->sig)
       x->sigx = pure_new(pure_double_matrix(x->sig));
-    else
+    else {
       x->sigx = NULL;
+      x->n = 0;
+    }
   }
 }
 
@@ -921,6 +925,7 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
   x->dspin = x->dspout = 0;
   x->sig = 0;
   x->sigx = 0;
+  x->n = 0;
   if (!x->args) {
     pd_error(x, "pd-pure: memory allocation failed");
     return (void *)x;
@@ -1036,10 +1041,15 @@ static void pure_fini(t_pure *x)
 
 static void pure_refini(t_pure *x)
 {
-  pure_free(x->foo);
-  pure_free(x->sigx);
-  if (x->foo) x->foo = 0;
-  if (x->sigx) x->sigx = 0;
+  if (x->foo) {
+    pure_free(x->foo);
+    x->foo = 0;
+  }
+  if (x->sigx) {
+    pure_free(x->sigx);
+    x->sigx = 0;
+    x->sig = 0;
+  }
   if (x->msg) {
     x->tmp = str(x->msg);
     pure_free(x->msg);
@@ -1069,6 +1079,10 @@ static void pure_reinit(t_pure *x)
   if (x->tmp) {
     x->msg = parse_expr(x, x->tmp);
     free(x->tmp); x->tmp = 0;
+  }
+  if (x->n > 0) {
+    x->sig = create_double_matrix(x->n_dspin, x->n);
+    x->sigx = pure_new(pure_double_matrix(x->sig));
   }
 }
 
