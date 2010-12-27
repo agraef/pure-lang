@@ -345,7 +345,7 @@ static void add_class(t_symbol *sym, t_class *class, char *dir)
 static t_class *lookup(t_symbol *sym)
 {
   t_classes *act = pure_classes;
-  while (act && act->sym != sym) act = act->next;
+  while (act && (act->sym != sym || !act->class)) act = act->next;
   if (act)
     return act->class;
   else
@@ -1151,6 +1151,7 @@ static int pure_load(t_canvas *canvas, char *name)
     printf("pd-pure: compiling %s.pure\n", name);
 #endif
     pure_evalcmd(cmdbuf);
+    add_class(gensym(name), 0, dirbuf);
     class_set_extern_dir(&s_);
     return 1;
   } else
@@ -1174,7 +1175,8 @@ static void reload(t_classes *c)
 #endif
       pure_evalcmd(cmdbuf);
 #ifdef EAGER
-      pure_interp_compile(interp, pure_sym(fun_name(c->sym)));
+      if (c->class)
+	pure_interp_compile(interp, pure_sym(fun_name(c->sym)));
 #endif
       class_set_extern_dir(&s_);
     }
