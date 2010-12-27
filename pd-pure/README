@@ -89,13 +89,20 @@ Pure loader is always available when you run Pd.) Once the Pure loader has
 been installed, you should see a message in the Pd main window indicating that
 the external has been loaded.
 
-Simple "one-off" objects can be created with the ``[pure]`` class which takes
-the function to be evaluated as its argument. For instance::
+As of version 0.12, pd-pure supports the definition of both `control` and
+`audio objects` in Pure. The latter are also known as "tilde objects" in Pd
+parlance; pd-pure follows the Pd convention in that audio objects have a
+trailing tilde in their name. Audio objects are used primarily for processing
+audio signals, whereas control objects are employed for asynchronous message
+processing.
+
+Simple "one-off" control objects can be created with the ``[pure]`` class
+which takes the function to be evaluated as its argument. For instance::
 
   [pure (+5)]
 
-This control object takes numbers as inputs on its single inlet, adds 5 to
-them and outputs the result on its single outlet.
+This object takes numbers as inputs on its single inlet, adds 5 to them and
+outputs the result on its single outlet.
 
 Similarly, audio objects can be created with ``[pure~]``. For instance, the
 following object processes incoming vectors of samples, multiplying each
@@ -105,50 +112,67 @@ sample with 2::
 
 Note that in this case the object has actually two inlet/outlet pairs. The
 leftmost inlet/outlet pair is reserved for the processing of control messages
-(not used in this example), while the rightmost inlet/outlet pair is for the
-actual signal input and output.
+(not used in this example), while the actual signal input and output can be
+found on the right.
+
+(Pure objects can also be configured to adjust the number of inlets and
+outlets. This will be described later.)
 
 The argument of ``[pure]`` and ``[pure~]`` can be any Pure expression
-(including local functions and variables, conditionals, etc.), so that
-arbitrarily elaborate processing can be done by Pure objects. But usually it
-is more convenient to store the Pure function implementing a given object in a
-corresponding Pure script. For instance, we might put the following ``add``
-function into a script named add.pure::
+(including local functions and variables, conditionals, etc.). We also refer
+to these as `anonymous` Pure objects. If an object is quite complicated or
+used several times in a patch, it is more convenient to implement it as a
+`named` object instead. To these ends, the object function is stored in a
+corresponding Pure script named after the object. For instance, we might put
+the following ``add`` function into a script named add.pure::
 
   add x y = x+y;
 
-Now you can use the following object in your Pd patch::
+Now we can use the following object in a Pd patch::
 
   [add 5]
 
-The Pure loader recognizes ``add`` as an instance of the object implemented by
-the add.pure file and loads the script into the Pure interpreter. The creation
-parameter ``5`` is passed as the first argument ``x`` of the ``add`` function,
-the ``y`` argument comes from the object's inlet. The function perfomed by
-this object is thus the same as with the ``[pure (+5)]`` object above.
+The Pure loader then recognizes ``add`` as an instance of the object
+implemented by the add.pure file and loads the script into the Pure
+interpreter. The creation parameter ``5`` is passed as the first argument
+``x`` of the ``add`` function in this example, while the ``y`` argument comes
+from the object's inlet. The function performed by this object is thus the
+same as with ``[pure (+5)]`` above.
 
-See the pure-help.pd and pure~-help.pd patches for more examples. In the
-following section, `Control Objects`_, we first discuss in detail how control
-objects are defined and used. The necessary adjustments for implementing audio
-objects are described in section `Audio Objects`_. Some advanced uses of
-pd-pure are described in sections `Advanced Features`_ and `Interactive
-Facilities`_. The pd-pure module also provides some external functions for
-interfacing to Pd from Pure, which are described in the `Programming
-Interface`_ section.
+More examples can be found in the pure-help.pd and pure~-help.pd patches.
+These can also be accessed in Pd by right-clicking on any Pure object and
+selecting the ``Help`` option.
+
+In the following section, we first discuss in detail how `control objects`_
+are defined and used. After that, the necessary adjustments for implementing
+`audio objects`_ are explained. Some advanced uses of pd-pure are described
+under `Advanced Features`_ and `Interactive Facilities`_. Finally, the
+`Programming Interface`_ section summarizes the external functions available
+to Pure programs for interfacing to Pd.
 
 Control Objects
 ===============
 
 Basically, to implement a Pd control object named ``foo``, all you have to do
 is supply a Pure script named foo.pure which defines a function ``foo`` (and
-anything else that you might need to define the function). You should put that
-script in the same directory as the Pd patch in which you want to use the
-``foo`` object, or anywhere on Pd's search path. The ``foo`` function gets
-evaluated at object creation time, receiving any additional parameters the
-object is created with. The resulting Pure expression (which can also just be
-``foo`` itself) becomes the object executed at runtime, by passing Pd messages
-from the inlets as parameters, and routing the function results to the outlets
-of the object.
+anything else that you might need to define the function). This function is
+also called the `object function`. You can put the script containing the
+object function in the same directory as the Pd patch in which you want to use
+the ``foo`` object, or anywhere on Pd's search path. (The latter is useful if
+the object is to be used in several patches located in different
+subdirectories.)
+
+The ``foo`` function gets evaluated at object creation time, receiving any
+additional parameters the object is created with. The resulting Pure
+expression should be another function which is executed at runtime, passing Pd
+messages from the inlets as parameters, and routing the function results to
+the outlets of the object. This two-stage definition process is useful because
+it allows special processing (such as initialization of required data
+structures) to be done at object creation time. However, the result of
+evaluating ``foo`` can also just be ``foo`` itself if no such special
+processing is needed. If we need to distinguish these two stages, we also call
+the two functions the `creation` and the `runtime` function of the object,
+respectively.
 
 Pd messages are translated to corresponding Pure expressions and vice versa in
 a straightforward fashion. Special support is provided for converting between
@@ -402,12 +426,12 @@ the object.
 For instance, here is an audio object which plays back a soundfile using the
 :mod:`sndfile` module (cf. :doc:`pure-audio`). The object function reads the
 entire file (whose name is passed as a creation argument) at creation time and
-turns over processing to the ``playsf`` runtime function. The runtime function
-returns one block of samples from the file (along with the current position of
-the playback pointer) for each invocation with an (empty) input matrix. In
-addition, a ``bang`` message is output when the end of the file is reached.
-The object also responds to floating point values in the range from 0 to 1 on
-the control inlet by adjusting the playback pointer accordingly. ::
+turns over processing to the ``playsf`` function which returns one block of
+samples from the file (along with the current position of the playback
+pointer) for each invocation with an (empty) input matrix. In addition, a
+``bang`` message is output when the end of the file is reached. The object
+also responds to floating point values in the range from 0 to 1 on the control
+inlet by adjusting the playback pointer accordingly. ::
 
   using sndfile;
 
@@ -615,7 +639,7 @@ Pure interpreter.
 ``[pure-runtime]`` optionally takes the name of scripts to be loaded at object
 creation time as arguments. The script names should be specified without the
 ``.pure`` suffix; it will be added automatically. This facility can be used to
-load any additional scripts needed for "anonymous" objects defined with
+load any additional scripts needed for anonymous objects defined with
 ``[pure]`` and ``[pure~]``. The scripts will be searched for in the directory
 of the patch containing the ``[pure-runtime]`` object and on the Pd path.
 
@@ -732,13 +756,13 @@ Livecoding Support
 
 Livecoding means that you can quickly reload your Pure scripts after changes
 while the Pd patch keeps running. The Pure loader provides some experimental
-support for this by means of the special ``pure-runtime`` object. Right now,
+support for this by means of the special ``[pure-runtime]`` object. Right now,
 this isn't really as "live" as we'd like it to be, because of the considerable
 delays caused by scripts being recompiled on the fly when they are loaded.
 However, there's hope that this facility becomes more useful as Pure's
 LLVM-based JIT compiler and computers become faster.
 
-Sending a ``bang`` to the ``pure-runtime`` object tells the plugin to reload
+Sending a ``bang`` to the ``[pure-runtime]`` object tells the plugin to reload
 all loaded scripts and update the Pure objects in your patch accordingly. The
 object also provides two outlets to deal with the inevitable latencies caused
 by the compilation process. The right outlet is banged when the compilation
@@ -746,7 +770,7 @@ starts and the left outlet gets a bang when the compilation is finished, so
 that a patch using this facility can respond to these events in the
 appropriate way (e.g., disabling output during compilation).
 
-Note that there can be any number of ``pure-runtime`` objects in a patch,
+Note that there can be any number of ``[pure-runtime]`` objects in a patch,
 which will all refer to the same instance of the Pure interpreter.
 
 Also please note that the number of inlets and outlets of Pure objects never
@@ -764,13 +788,13 @@ patch through the :program:`pdsend` program. Sending a ``bang`` causes a
 reload of all scripts, which can also be triggered directly by clicking the
 bang control of the abstraction. The bang control also provides visual
 feedback indicating whether the compilation is still in progress. Messages are
-also routed through the embedded ``pure-runtime`` object using the single
+also routed through the embedded ``[pure-runtime]`` object using the single
 inlet and the two outlets of the abstraction, so that ``pure-remote`` can also
 be controlled from within the patch itself.
 
-For added convenience, the ``pure-runtime`` and ``pure-remote`` objects also
-accept any other message of the form ``receiver message`` and will route the
-given message to the given receiver. This is intended to provide remote
+For added convenience, the ``[pure-runtime]`` and ``[pure-remote]`` objects
+also accept any other message of the form ``receiver message`` and will route
+the given message to the given receiver. This is intended to provide remote
 control of various parameters in patches. For instance, by having pdsend send
 a ``play 0`` or ``play 1`` message, one might implement a single playback
 control, provided that your patch includes an appropriate receiver (often a
