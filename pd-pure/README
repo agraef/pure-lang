@@ -50,11 +50,6 @@ The Makefile also tries to guess the host system type and Pure version, and
 set up some platform-specific things accordingly. If this doesn't work for
 your system then you'll have to edit the Makefile accordingly.
 
-After installation, you still have to tell Pd to load the Pure external at
-startup, either with the ``-lib`` option (``pd -lib pure``), or by specifying
-``pure`` in the File/Startup options. (This setting can be saved so that the
-Pure loader is always available when you run Pd.)
-
 pd-pure on Windows
 ------------------
 
@@ -87,22 +82,73 @@ you'll have to use the mingw-compiled Pd version we provide, or roll your own.
 Usage
 =====
 
-See the pure-help.pd patch for a few examples. As of version 0.12, pd-pure
-supports the creation of both `control objects` which are used to process
-control messages, and `dsp` a.k.a. `audio objects` which can also process
-blocks of sample data. We first discuss how to write control objects in Pure;
-the necessary adjustments for implementing audio objects are described in
-subsection `Audio Objects`_ at the end of this section.
+After installation, you still have to tell Pd to load the Pure external at
+startup, either with the ``-lib`` option (``pd -lib pure``), or by specifying
+``pure`` in the File/Startup options. (This setting can be saved so that the
+Pure loader is always available when you run Pd.) Once the Pure loader has
+been installed, you should see a message in the Pd main window indicating that
+the external has been loaded.
 
-Basically, to implement a Pd control object named ``foo``, you have to supply
-a Pure script named foo.pure which defines a function ``foo`` and anything
-else that it might need. Put that script in the same directory as the Pd patch
-in which you want to use the ``foo`` object (or anywhere on Pd's search
-path). The ``foo`` function gets evaluated at object creation time, receiving
-any additional parameters the object is created with. The resulting Pure
-expression (which can also just be ``foo`` itself) becomes the object executed
-at runtime, by passing Pd messages from the inlets as parameters, and routing
-the function results to the outlets of the object.
+Simple "one-off" objects can be created with the ``[pure]`` class which takes
+the function to be evaluated as its argument. For instance::
+
+  [pure (+5)]
+
+This control object takes numbers as inputs on its single inlet, adds 5 to
+them and outputs the result on its single outlet.
+
+Similarly, audio objects can be created with ``[pure~]``. For instance, the
+following object processes incoming vectors of samples, multiplying each
+sample with 2::
+
+  [pure~ map (*2)]
+
+Note that in this case the object has actually two inlet/outlet pairs. The
+leftmost inlet/outlet pair is reserved for the processing of control messages
+(not used in this example), while the rightmost inlet/outlet pair is for the
+actual signal input and output.
+
+The argument of ``[pure]`` and ``[pure~]`` can be any Pure expression
+(including local functions and variables, conditionals, etc.), so that
+arbitrarily elaborate processing can be done by Pure objects. But usually it
+is more convenient to store the Pure function implementing a given object in a
+corresponding Pure script. For instance, we might put the following ``add``
+function into a script named add.pure::
+
+  add x y = x+y;
+
+Now you can use the following object in your Pd patch::
+
+  [add 5]
+
+The Pure loader recognizes ``add`` as an instance of the object implemented by
+the add.pure file and loads the script into the Pure interpreter. The creation
+parameter ``5`` is passed as the first argument ``x`` of the ``add`` function,
+the ``y`` argument comes from the object's inlet. The function perfomed by
+this object is thus the same as with the ``[pure (+5)]`` object above.
+
+See the pure-help.pd and pure~-help.pd patches for more examples. In the
+following section, `Control Objects`_, we first discuss in detail how control
+objects are defined and used. The necessary adjustments for implementing audio
+objects are described in section `Audio Objects`_. Some advanced uses of
+pd-pure are described in sections `Advanced Features`_ and `Interactive
+Facilities`_. The pd-pure module also provides some external functions for
+interfacing to Pd from Pure, which are described in the `Programming
+Interface`_ section.
+
+Control Objects
+===============
+
+Basically, to implement a Pd control object named ``foo``, all you have to do
+is supply a Pure script named foo.pure which defines a function ``foo`` (and
+anything else that you might need to define the function). You should put that
+script in the same directory as the Pd patch in which you want to use the
+``foo`` object, or anywhere on Pd's search path. The ``foo`` function gets
+evaluated at object creation time, receiving any additional parameters the
+object is created with. The resulting Pure expression (which can also just be
+``foo`` itself) becomes the object executed at runtime, by passing Pd messages
+from the inlets as parameters, and routing the function results to the outlets
+of the object.
 
 Pd messages are translated to corresponding Pure expressions and vice versa in
 a straightforward fashion. Special support is provided for converting between
@@ -152,11 +198,13 @@ supply the needed creation argument ``x``.
 The [pure] Object
 -----------------
 
-For simple kinds of objects like the above, the Pure loader also provides the
+For simple kinds of objects like the above, the Pure loader provides the
 generic ``[pure]`` object as a quick means to create Pure control objects
 without actually preparing a script file. The creation parameter of ``[pure]``
 is the object function. This can be a predefined Pure function, or you can
-define it on the fly in a ``with`` clause.
+define it on the fly in a ``with`` clause. (It is also possible to explicitly
+load additional script files needed to implement objects defined using
+``[pure]``; see `Controlling the Runtime`_ for details.)
 
 For instance, ``[pure succ]`` uses the predefined Pure function ``succ`` which
 adds 1 to its input, while the object ``[pure add 5 with add x y = x+y end]``
@@ -240,17 +288,18 @@ message::
     next _ _    = () otherwise;
   end;
 
-Note that you can also avoid passing around the ``r`` parameter of the
-``next`` function by making it a local variable of ``counter``::
+Note that the state is kept as an additional first parameter to the local
+function ``next`` here. Alternatively, you can also make the state a local
+variable of ``counter``::
 
   nonfix bang;
   counter = next with
     next bang = put r (get r+1);
     next _    = () otherwise;
-  end with r = ref 0 end;
+  end when r = ref 0 end;
 
 Audio Objects
--------------
+=============
 
 If the name of a Pure object (i.e., the basename of the corresponding Pure
 script) ends with the ``~`` character, pd-pure assumes that it denotes an
@@ -303,7 +352,7 @@ by 2::
   mul2_dsp x::matrix = map (*2) x;
 
 This code would then be placed into a script file named ``mul2~.dsp`` and
-invoked in Pd as an object of the from ``[mul2~]``.
+invoked in Pd as an object of the form ``[mul2~]``.
 
 As with control objects, there's a shortcut to create simple objects like
 these without preparing a script file, using the built-in ``[pure~]`` object.
@@ -556,6 +605,31 @@ Faust programs using the facilities described in `Livecoding Support`_ below.
 Advanced Features
 =================
 
+Controlling the Runtime
+-----------------------
+
+Besides ``[pure]`` and ``[pure~]``, pd-pure also provides a predefined
+``[pure-runtime]`` object which provides some means to control the embedded
+Pure interpreter.
+
+``[pure-runtime]`` optionally takes the name of scripts to be loaded at object
+creation time as arguments. The script names should be specified without the
+``.pure`` suffix; it will be added automatically. This facility can be used to
+load any additional scripts needed for "anonymous" objects defined with
+``[pure]`` and ``[pure~]``. The scripts will be searched for in the directory
+of the patch containing the ``[pure-runtime]`` object and on the Pd path.
+
+.. note:: You'll have to make sure that the ``[pure-runtime]`` object is
+   inserted into the patch before any anonymous objects which depend on the
+   loaded scripts. Also note that it isn't necessary to explicitly load the
+   scripts which implement named Pure objects; this will be handled
+   automatically by the Pure loader.
+
+The ``[pure-runtime]`` object also accepts control messages which can be used
+to dynamically reload all loaded scripts, and to implement "remote control" of
+a patch using the :program:`pdsend` program. This is described in the
+`Interactive Facilities`_ section.
+
 Asynchronous Messages
 ---------------------
 
@@ -650,70 +724,6 @@ name is given as the creation argument) with random values in response to a
     random	  = random1*2-1;
   end;
 
-Programming Interface
-=====================
-
-The Pure loader provides a number of interface routines which can be called by
-Pure scripts running in the Pd environment.
-
-.. c:function:: extern char *pd_version_s()
-
-   Returns the Pd version number as a string. Note that this routine will only
-   be available when a script is running inside Pd, so you can quickly check
-   if that's the case as follows::
-
-     let ok = stringp $ eval "extern char *pd_version_s(); pd_version_s;";
-
-   The ``ok`` variable will then be true iff the script is running inside Pd.
-
-.. c:function:: extern char *pd_libdir_s()
-
-   Returns the Pd library dir (as determined at compile time). This is useful
-   if your Pure scripts need to access files in that directory.
-
-.. c:function:: extern char *pd_path_sl()
-
-   Returns the Pd path (set in the File/Path dialog or via the ``-path``
-   command line option) as a list of directory names. This is useful if your
-   Pure scripts need to locate files on the Pd search path.
-
-.. c:function:: extern void pd_post(char *s)
-
-   Posts a message in the Pd main window. A trailing newline is added
-   automatically. This provides an alternative interface to Pd's ``post()``
-   function which cannot be used in Pure because it is a ``printf``-style
-   routine expecting a variable number of arguments.
-
-.. c:function:: extern double pd_time()
-
-   Retrieves the current Pd time as a double value in milliseconds, which is
-   useful, in particular, when used in conjunction with the asynchronous
-   message facility described under `Asynchronous Messages`_.
-
-.. c:function:: extern expr *pd_getbuffer(char *name)
-                extern void pd_setbuffer(char *name, expr *x)
-                extern int pd_getbuffersize(char *name)
-                extern void pd_setbuffersize(char *name, uint32_t sz)
-
-   Routines to access the Pd array (sample buffer) with the given name. These
-   functions can be used to transfer audio data between Pd and Pure scripts;
-   see `Reading and Writing Audio Data`_ above for an example.
-
-   :c:func:`pd_getbuffersize` and :c:func:`pd_setbuffersize` gets or sets the
-   size of the given buffer, respectively.
-
-   :c:func:`pd_getbuffer` reads the contents of the buffer and returns it as a
-   Pure vector (or fails if the array with the given name doesn't exist).
-
-   :c:func:`pd_setbuffer` sets the contents of the buffer from the given Pure
-   vector ``x``. If the size of the vector exceeds the size of the buffer, the
-   former is truncated. Conversely, if the size of the buffer exceeds the size
-   of the Pure vector, the trailing samples are unaffected. **Note:** The
-   second argument of :c:func:`pd_setbuffer` can also be a pair ``(i,x)``
-   denoting an offset ``i`` into the array at which the sample data is to be
-   written, so that this routine allows you to overwrite any part of the
-   array.
-
 Interactive Facilities
 ======================
 
@@ -789,4 +799,66 @@ analogous fashion. Combining pure-remote.el with the Emacs Pure programming
 mode gives you a nice interactive environment for developing pd-pure
 applications.
 
-.. Enjoy. :)
+Programming Interface
+=====================
+
+The Pure loader provides a number of interface routines which can be called by
+Pure scripts running in the Pd environment.
+
+.. c:function:: extern char *pd_version_s()
+
+   Returns the Pd version number as a string. Note that this routine will only
+   be available when a script is running inside Pd, so you can quickly check
+   if that's the case as follows::
+
+     let ok = stringp $ eval "extern char *pd_version_s(); pd_version_s;";
+
+   The ``ok`` variable will then be true iff the script is running inside Pd.
+
+.. c:function:: extern char *pd_libdir_s()
+
+   Returns the Pd library dir (as determined at compile time). This is useful
+   if your Pure scripts need to access files in that directory.
+
+.. c:function:: extern char *pd_path_sl()
+
+   Returns the Pd path (set in the File/Path dialog or via the ``-path``
+   command line option) as a list of directory names. This is useful if your
+   Pure scripts need to locate files on the Pd search path.
+
+.. c:function:: extern void pd_post(char *s)
+
+   Posts a message in the Pd main window. A trailing newline is added
+   automatically. This provides an alternative interface to Pd's ``post()``
+   function which cannot be used in Pure because it is a ``printf``-style
+   routine expecting a variable number of arguments.
+
+.. c:function:: extern double pd_time()
+
+   Retrieves the current Pd time as a double value in milliseconds, which is
+   useful, in particular, when used in conjunction with the asynchronous
+   message facility described under `Asynchronous Messages`_.
+
+.. c:function:: extern expr *pd_getbuffer(char *name)
+                extern void pd_setbuffer(char *name, expr *x)
+                extern int pd_getbuffersize(char *name)
+                extern void pd_setbuffersize(char *name, uint32_t sz)
+
+   Routines to access the Pd array (sample buffer) with the given name. These
+   functions can be used to transfer audio data between Pd and Pure scripts;
+   see `Reading and Writing Audio Data`_ above for an example.
+
+   :c:func:`pd_getbuffersize` and :c:func:`pd_setbuffersize` gets or sets the
+   size of the given buffer, respectively.
+
+   :c:func:`pd_getbuffer` reads the contents of the buffer and returns it as a
+   Pure vector (or fails if the array with the given name doesn't exist).
+
+   :c:func:`pd_setbuffer` sets the contents of the buffer from the given Pure
+   vector ``x``. If the size of the vector exceeds the size of the buffer, the
+   former is truncated. Conversely, if the size of the buffer exceeds the size
+   of the Pure vector, the trailing samples are unaffected. **Note:** The
+   second argument of :c:func:`pd_setbuffer` can also be a pair ``(i,x)``
+   denoting an offset ``i`` into the array at which the sample data is to be
+   written, so that this routine allows you to overwrite any part of the
+   array.
