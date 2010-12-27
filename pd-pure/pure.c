@@ -1138,6 +1138,25 @@ static int pure_loader(t_canvas *canvas, char *name)
     return 0;
 }
 
+static int pure_load(t_canvas *canvas, char *name)
+{
+  char *ptr;
+  int fd = canvas_open(canvas, name, ".pure", dirbuf, &ptr, MAXPDSTRING, 1);
+  if (fd >= 0) {
+    close(fd);
+    class_set_extern_dir(gensym(dirbuf));
+    /* Load the Pure script. */
+    sprintf(cmdbuf, "using \"%s/%s.pure\";\n", dirbuf, name);
+#ifdef VERBOSE
+    printf("pd-pure: compiling %s.pure\n", name);
+#endif
+    pure_evalcmd(cmdbuf);
+    class_set_extern_dir(&s_);
+    return 1;
+  } else
+    return 0;
+}
+
 /* Reload all loaded Pure scripts in a new interpreter instance. */
 
 static void reload(t_classes *c)
@@ -1188,8 +1207,16 @@ static void pure_restart(void)
 static void *runtime_init(t_symbol *s, int argc, t_atom *argv)
 {
   t_runtime *x = (t_runtime*)pd_new(runtime_class);
+  t_canvas *canvas = canvas_getcurrent();
+  int i;
   x->out1 = outlet_new(&x->obj, 0);
   x->out2 = outlet_new(&x->obj, 0);
+  for (i = 0; i < argc; i++)
+    if (argv[i].a_type != A_SYMBOL)
+      pd_error(x, "pure-runtime: bad argument #%d, expected filename", i+1);
+    else if (!pure_load(canvas, argv[i].a_w.w_symbol->s_name))
+      pd_error(x, "pure-runtime: error loading script '%s.pure'",
+	       argv[i].a_w.w_symbol->s_name);
   return (void *)x;
 }
 
