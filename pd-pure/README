@@ -632,16 +632,24 @@ Advanced Features
 Controlling the Runtime
 -----------------------
 
-Besides ``[pure]`` and ``[pure~]``, pd-pure also provides a predefined
-``[pure-runtime]`` object which provides some means to control the embedded
-Pure interpreter.
+pd-pure provides a predefined ``[pure-runtime]`` object which makes it
+possible to control the embedded Pure interpreter in some ways. There can be
+any number of ``[pure-runtime]`` objects in a patch, which all refer to the
+same instance of the Pure interpreter.
 
-``[pure-runtime]`` optionally takes the name of scripts to be loaded at object
-creation time as arguments. The script names should be specified without the
-``.pure`` suffix; it will be added automatically. This facility can be used to
-load any additional scripts needed for anonymous objects defined with
-``[pure]`` and ``[pure~]``. The scripts will be searched for in the directory
-of the patch containing the ``[pure-runtime]`` object and on the Pd path.
+The first use of ``[pure-runtime]`` is to load additional Pure scripts. To
+these ends, ``[pure-runtime]`` can be invoked with the names of scripts to be
+loaded at object creation time as arguments. The script names should be
+specified without the ``.pure`` suffix; it will be added automatically. The
+scripts will be searched for in the directory of the patch containing the
+``[pure-runtime]`` object and on the Pd path. For instance, to load the
+scripts ``foo.pure`` and ``bar.pure``, you can add the following object to
+your patch::
+
+  [pure-runtime foo bar]
+
+This facility can be used, e.g., to load any additional scripts needed for
+anonymous objects defined with ``[pure]`` and ``[pure~]``.
 
 .. note:: You'll have to make sure that the ``[pure-runtime]`` object is
    inserted into the patch before any anonymous objects which depend on the
@@ -725,11 +733,18 @@ delivered::
 Reading and Writing Audio Data
 ------------------------------
 
-Besides the support for audio objects, it is also possible to transfer audio
-data directly between Pure and Pd by means of the :c:func:`pd_getbuffer` and
-:c:func:`pd_setbuffer` routines. The audio data is represented as a vector of
-floating point values on the Pure side. Please see `Programming Interface`_
-below for a closer description of the provided routines.
+Besides the realtime processing of audio data, Pd also provides a means to
+store sample data in `arrays` which can be displayed in a patch and modified
+interactively, see the section on numeric arrays in the Pd documentation for
+details. Arrays can be used, e.g., as running waveform displays, as wavetables
+which are played back in the audio loop, or as waveshaping functions used to
+implement distortion effects.
+
+Each array has a name (Pd symbol) under which it can be accessed from Pure
+code. pd-pure makes it possible to transfer audio data directly between Pd
+arrays and Pure double vectors by means of the :c:func:`pd_getbuffer` and
+:c:func:`pd_setbuffer` routines. Please see `Programming Interface`_ below for
+a closer description of the provided routines.
 
 For instance, here is a ``randomwave`` object which fills a Pd array (whose
 name is given as the creation argument) with random values in response to a
@@ -754,13 +769,19 @@ Interactive Facilities
 Livecoding Support
 ------------------
 
-Livecoding means that you can quickly reload your Pure scripts after changes
-while the Pd patch keeps running. The Pure loader provides some experimental
-support for this by means of the special ``[pure-runtime]`` object. Right now,
-this isn't really as "live" as we'd like it to be, because of the considerable
-delays caused by scripts being recompiled on the fly when they are loaded.
-However, there's hope that this facility becomes more useful as Pure's
-LLVM-based JIT compiler and computers become faster.
+Livecoding means changing Pure objects on the fly while a patch is running. A
+simple, but limited way to do this is to just edit the boxes containing Pure
+objects interactively, as you can do with any kind of Pd object. In this case,
+the changes take effect immediately after you finish editing a box.
+
+However, for more elaborate changes, you may have to edit the underlying Pure
+scripts and notify the Pure interpreter so that it reloads the scripts. The
+Pure loader provides some experimental support for this by means of the
+special ``[pure-runtime]`` object. Right now, this isn't really as "live" as
+we'd like it to be, because of the considerable delays caused by scripts being
+recompiled on the fly when they are loaded. However, there's hope that this
+facility becomes more useful as Pure's LLVM-based JIT compiler and computers
+become faster.
 
 Sending a ``bang`` to the ``[pure-runtime]`` object tells the plugin to reload
 all loaded scripts and update the Pure objects in your patch accordingly. The
@@ -770,14 +791,14 @@ starts and the left outlet gets a bang when the compilation is finished, so
 that a patch using this facility can respond to these events in the
 appropriate way (e.g., disabling output during compilation).
 
-Note that there can be any number of ``[pure-runtime]`` objects in a patch,
-which will all refer to the same instance of the Pure interpreter.
-
-Also please note that the number of inlets and outlets of Pure objects never
-changes after reloading scripts. (Pd does not support this through its API
-right now.) Thus by editing and reloading the Pure scripts you can change the
-functionality of existing Pure objects in a running patch, but not their
-interfaces.
+.. note:: The number of inlets and outlets of Pure objects never changes after
+   reloading scripts. (Pd does not support this through its API right now.)
+   Thus by editing and reloading the Pure scripts you can change the
+   functionality of existing Pure objects in a running patch, but not their
+   interfaces. (It is possible to make changes to inlets and outlets take
+   effect by manually editing the affected objects afterwards. But this will
+   be cumbersome when you have to edit a lot of objects, so it might be easier
+   to just reload patches in such cases.)
 
 Remote Control
 --------------
@@ -796,7 +817,7 @@ For added convenience, the ``[pure-runtime]`` and ``[pure-remote]`` objects
 also accept any other message of the form ``receiver message`` and will route
 the given message to the given receiver. This is intended to provide remote
 control of various parameters in patches. For instance, by having pdsend send
-a ``play 0`` or ``play 1`` message, one might implement a single playback
+a ``play 0`` or ``play 1`` message, one might implement a simple playback
 control, provided that your patch includes an appropriate receiver (often a
 GUI object). See the pure-help.pd patch for an example.
 
