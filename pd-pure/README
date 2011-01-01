@@ -580,10 +580,8 @@ code.)
 
   /* The main program of the Faust dsp. */
 
-  process         = hgroup("0-amp", hgroup("1-tone", tone, tone) :
-                                    hgroup("2-gain", (_*gain, _*gain)))
-                  : vgroup("3-balance", balance)
-                  : vgroup("4-meter", (left_meter, right_meter));
+  process         = (tone, tone) : (_*gain, _*gain) : balance
+                  : (left_meter, right_meter);
   %}
 
   // These are provided by the Pd runtime.
