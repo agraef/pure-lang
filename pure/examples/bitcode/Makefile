@@ -77,4 +77,4 @@ clean:
 
 # compile Faust source to LLVM assembler
 %.ll: %.dsp
-	-$(FAUST) $< 2> $@
+	-$(FAUST) $< > $@
