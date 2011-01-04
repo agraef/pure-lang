@@ -847,7 +847,10 @@ matches fnpat pat (name, _, fname) = valid_name fname name &&
 fnmatches pats name flags = true if null pats;
 			  = any (\pat->fnmatch pat name flags) pats;
 
-// make regex just always return 1 in case of an error
+// some regex functions (BSD, notably) give an error for empty patterns, so
+// we handle this case by always returning 1 (indicating success) instead
+regchk "" _ = 1;
+// other errors give a warning (once), but then we also make regex return 1
 regchk pat (regerr _ _) = 1 when
   warn_once 0 (sprintf "error in regular expression '%s'" pat);
 end;
