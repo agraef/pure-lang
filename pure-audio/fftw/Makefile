@@ -32,7 +32,7 @@ CFLAGS = -g -O2
 
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
-.PHONY: all clean realclean generate
+.PHONY: all clean realclean
 
 all: fftw$(DLL)
 

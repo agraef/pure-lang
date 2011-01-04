@@ -93,8 +93,8 @@ generate:
 	$(MAKE) -C samplerate generate
 	$(MAKE) -C sndfile generate
 
-portaudio.pure: $(includedir)/portaudio.h
-	pure-gen -m Pa -p Pa -s '$(includedir)/portaudio.h::' $< -laudio -o $@
+portaudio.pure:
+	pure-gen -m Pa -p Pa -s '$(includedir)/portaudio.h::' $(includedir)/portaudio.h -laudio -o $@
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"

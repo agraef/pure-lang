@@ -51,7 +51,7 @@ generate:
 	rm -f samplerate.pure
 	make samplerate.pure
 
-samplerate.pure: $(includedir)/samplerate.h srcprocess.h src.pure
-	pure-gen -s '$(includedir)/samplerate.h::' $< -lsrcprocess -o $@
+samplerate.pure: srcprocess.h src.pure
+	pure-gen -s '$(includedir)/samplerate.h::' $(includedir)/samplerate.h -lsrcprocess -o $@
 	pure-gen -N -s srcprocess.h:: srcprocess.h -o $@
 	cat src.pure >> $@
