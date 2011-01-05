@@ -89,12 +89,25 @@ includedir = /usr/include
 
 generate:
 	rm -f portaudio.pure
-	make portaudio.pure
+	$(MAKE) portaudio.pure
 	$(MAKE) -C samplerate generate
 	$(MAKE) -C sndfile generate
 
 portaudio.pure:
 	pure-gen -m Pa -p Pa -s '$(includedir)/portaudio.h::' $(includedir)/portaudio.h -laudio -o $@
+
+# Type 'make diffs' to generate the wrappers for this platform and compare
+# them against the distributed sources.
+
+diffs:
+	@$(MAKE) dist > /dev/null
+	@rm -rf xxx yyy
+	@tar xfz $(dist).tar.gz && mv $(dist) xxx
+	@tar xfz $(dist).tar.gz && mv $(dist) yyy
+	@rm -f $(dist).tar.gz
+	@cd yyy && $(MAKE) generate > /dev/null
+	@diff -ru xxx yyy || true
+	@rm -rf xxx yyy
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
