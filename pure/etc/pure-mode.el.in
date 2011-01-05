@@ -530,8 +530,8 @@ This works pretty much like the interpreter's help command. Uses
 emacs-w3m if it is available. The command searches for help files
 in the current directory, the `pure-docs-dir', and all
 directories specified in `pure-includes'. The given TOPIC may
-specify a help file and/or section/index entry, see topic
-pure#online-help for details."
+specify a search term or a help file and section/index entry, see
+topic pure#online-help for details."
 ;;  (interactive "sPure help topic: ")
   (interactive
    (let ((default (puresym-at-point)))
@@ -544,16 +544,33 @@ pure#online-help for details."
 	   ((null args) (cons "index" ""))
 	   ((null (cdr args))
 	    (if (zerop (length (car args))) (cons "index" "")
-;; Keyword search. XXXFIXME: As of Pure 0.46, this is broken. To duplicate the
-;; functionality of the interpreter's 'help' command, we should now perform a
-;; search of the global index in genindex.html here, and fall back to a link
-;; target in pure.html if this fails. This isn't implemented yet, so currently
-;; this will still send the user to purelib.html#key as it used to be before.
-	      (cons "purelib" (car args))))
+;; Keyword search. This looks up the given search term in the global index
+;; using the interpreter's help_matches command. (If no interpreter is
+;; running, a new one is started.) If the search term isn't found, we fall
+;; back to a link target in pure.html. This mimics the behaviour of the
+;; interpreter's help command.
+	      (if (not (comint-check-proc "*pure-eval*"))
+		  (save-current-buffer
+		    (message "starting interpreter...")
+		    (run-pure)
+		    ; hide the *pure-eval* window
+		    (delete-window)
+		    ; give the interpreter some time to start
+		    (sleep-for 2)))
+	      (pure-send-list-and-digest
+	       (list (concat "help_matches " (car args) "\n")) t)
+	      (if (null pure-output-list)
+		  (cons "pure" (car args))
+		(let* ((target (split-string (car pure-output-list) "#")))
+		  (if (null (cdr target)) target
+		    (cons (car target)
+			  (mapconcat 'identity (cdr target) "#")))))))
 	   (t
 	    (cons (if (zerop (length (car args))) "pure" (car args))
 	     (mapconcat 'identity (cdr args) "#")))))
-	 (file (concat (car base) ".html"))
+	 (file (car base))
+	 (file (if (null (file-name-extension file)) (concat file ".html")
+		 file))
 	 (anchor (if (zerop (length (cdr base))) "" (concat "#" (cdr base))))
 	 (helpfile
 	  (locate-library file t (append (list "." pure-docs-dir)
@@ -624,7 +641,8 @@ manipulating the command history, etc. See `pure-eval-mode'.
 		    comint-input-ring-size pure-histsize)
 	      (comint-read-input-ring t))))
       ;; invoke the interpreter
-      (setenv "PURE_MORE" nil) ; disable paging in the interpreter
+      (setenv "PURE_MORE" nil)
+      (setenv "PURE_LESS" nil) ; disable paging in the interpreter
       (comint-exec pure-eval-buffer "pure-eval" pure-prog-name nil
 		   (append (list "-q" "-i") pure-prog-opts args))
       ;; set up process parameters

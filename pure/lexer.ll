@@ -132,7 +132,7 @@ int    [0-9][0-9A-Za-z]*
 exp    ([Ee][+-]?{int})
 float  {int}{exp}|{int}\.{exp}|({int})?\.{int}{exp}?
 str    ([^\"\\\n]|\\(.|\n))*
-cmd    (!|help|ls|pwd|break|trace|bt|del|cd|show|dump|clear|save|run|override|underride|stats|mem|quit|completion_matches)
+cmd    (!|help|ls|pwd|break|trace|bt|del|cd|show|dump|clear|save|run|override|underride|stats|mem|quit|completion_matches|help_matches)
 blank  [ \t\f\v\r]
 
 %x escape comment xcode xcode_comment xdecl xdecl_comment xusing xusing_comment xsyms xsyms_comment xtag rescan xsyms_rescan
@@ -1515,6 +1515,7 @@ void Index::scan()
 
 static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const char *cmd, const char *cmdline)
 {
+  static Index *idx = NULL;
   if (interp.restricted) {
     cerr << cmd << ": operation not implemented\n";
   } else if (strcmp(cmd, "!") == 0) {
@@ -1656,7 +1657,6 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
       }
     }
   } else if (strcmp(cmd, "help") == 0)  {
-    static Index *idx = NULL;
     static FILE *fp = NULL;
     const char *s = cmdline+4, *p, *q;
     while (isspace(*s)) ++s;
@@ -2713,5 +2713,13 @@ that memory usage is to be printed along with the cpu time.\n";
     const char *s = cmdline+18;
     while (isspace(*s)) ++s;
     list_completions(interp.output?*interp.output:cout, s);
+  } else if (strcmp(cmd, "help_matches") == 0) {
+    const char *s = cmdline+12;
+    while (isspace(*s)) ++s;
+    string target;
+    if (!idx) idx = new Index(interp.libdir+"docs/genindex.html");
+    if (idx->lookup(s, target))
+      (interp.output?*interp.output:cout)
+	<< interp.libdir+"docs/"+target << endl;
   }
 }
