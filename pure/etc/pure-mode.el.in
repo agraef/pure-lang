@@ -43,9 +43,10 @@
 ;;	     (define-key pure-eval-mode-map [up] 'comint-previous-input)
 ;;	     (define-key pure-eval-mode-map [down] 'comint-next-input)))
 
-;; Finally, you might wish to add some global key bindings, e.g.:
+;; Finally, you might wish to add some convenient global key bindings, e.g.:
 
 ;; (global-set-key "\C-c\M-p" 'run-pure)
+;; (global-set-key "\C-x\M-p" 'pure-scratchpad)
 ;; (global-set-key "\C-h\M-p" 'pure-help)
 
 ;; Note that in Pure and Pure-Eval mode the online help facility is already
@@ -167,6 +168,7 @@
 	["Find Main Script"		pure-find-script pure-last-script]
 	["Goto Input Line"		pure-goto-input-line
 					(get-process "pure-eval")]
+	["Scratchpad"			pure-scratchpad t]
 	["Send Current Line"		pure-send-line t]
 	["Send Region"			pure-send-region t]
 	"-"
@@ -411,6 +413,7 @@ Non-nil means always go to the next Pure code line after sending."
 	["Find Main Script"		pure-find-script pure-last-script]
 	["Goto Input Line"		pure-goto-input-line
 					(get-process "pure-eval")]
+	["Scratchpad"			pure-scratchpad t]
 	"-"
 	["Current Message"		pure-current-msg
 					(get-buffer "*pure-eval*")]
@@ -605,6 +608,18 @@ topic pure#online-help for details."
       (w3m-browse-url (concat "file:" helpfile anchor)))
      ;; otherwise use Emacs' generic browse-url facility
      (t (browse-url (concat "file:" helpfile anchor))))))
+
+;; create the Pure scratchpad
+
+(defun pure-scratchpad ()
+  "Create the *pure-scratch* buffer if necessary and put it in
+Pure mode."
+  (interactive)
+  (let* ((pure-scratch-active (not (null (get-buffer "*pure-scratch*"))))
+	 (pure-scratch-buffer (get-buffer-create "*pure-scratch*")))
+    (set-buffer pure-scratch-buffer)
+    (if (not pure-scratch-active) (pure-mode))
+    (pop-to-buffer pure-scratch-buffer)))
 
 ;; run a Pure script in a Pure Eval buffer
 
