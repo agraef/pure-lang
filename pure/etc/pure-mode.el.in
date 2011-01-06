@@ -132,7 +132,10 @@
        (define-key pure-mode-map "\C-c\C-e" 'pure-last-msg)
        (define-key pure-mode-map "\C-c\C-a" 'pure-first-msg)
        (define-key pure-mode-map "\C-c\C-f" 'pure-find-script)
-       (define-key pure-mode-map "\C-c\C-v" 'pure-goto-input-line)))
+       (define-key pure-mode-map "\C-c\C-v" 'pure-goto-input-line)
+       (define-key pure-mode-map "\C-c\C-l" 'pure-send-line)
+       (define-key pure-mode-map "\C-c\C-r" 'pure-send-region)
+    ))
 
 (defsubst pure-region-is-active-p ()
   ;; Return t when the region is active.  The determination of region
@@ -164,6 +167,8 @@
 	["Find Main Script"		pure-find-script pure-last-script]
 	["Goto Input Line"		pure-goto-input-line
 					(get-process "pure-eval")]
+	["Send Current Line"		pure-send-line t]
+	["Send Region"			pure-send-region t]
 	"-"
 	["Current Message"		pure-current-msg
 					(get-buffer "*pure-eval*")]
@@ -180,13 +185,19 @@
 (define-derived-mode pure-mode fundamental-mode "Pure"
   "Major mode for editing Pure scripts.
 
-Provides the `pure-run-script' (\\[pure-run-script]) command to run the
-interpreter on the script in the current buffer. It will be verified that the
-buffer has a file associated with it, and you will be prompted to save edited
-buffers when invoking this command. Special commands to quickly locate the
-main script and the input line of the Pure eval buffer, and to visit the
-source lines shown in error messages are provided as well (see
-`pure-eval-mode'). These operations can also be selected from the Pure menu
+Provides the `pure-run-script' (\\[pure-run-script]) command to
+run the interpreter on the script in the current buffer. It will
+be verified that the buffer has a file associated with it, and
+you will be prompted to save edited buffers when invoking this
+command. You can also feed lines or regions of Pure code into a
+running interpreter with the `pure-send-line' (\\[pure-send-line]) and
+`pure-send-region' (\\[pure-send-region]) commands. (This starts a new
+interpreter instance without a script if necessary.)
+
+Special commands are provided to quickly locate the main script
+and the input line of the Pure eval buffer, and to visit the
+source lines shown in error messages (see `pure-eval-mode').
+These operations can also be selected from the Pure menu
 (accessible from the menu bar), which also provides commands for
 reading the online help and customizing the Pure mode setup.
 
@@ -306,6 +317,22 @@ For instance, add `turn-on-font-lock' to enable syntax highlighting."
   "*Hook for customising Pure eval mode.
 For instance, add `turn-on-font-lock' to enable syntax highlighting."
   :type 'hook
+  :group 'pure)
+
+(defcustom pure-send-show-buffer t
+  "Non-nil means display the *pure-eval* buffer after sending to it."
+  :type 'boolean
+  :group 'pure)
+
+(defcustom pure-send-line-auto-forward t
+  "Control auto-forward after sending to the Pure interpreter.
+Non-nil means always go to the next Pure code line after sending."
+  :type 'boolean
+  :group 'pure)
+
+(defcustom pure-send-echo-input t
+  "Non-nil means echo input sent to the Pure interpreter."
+  :type 'boolean
   :group 'pure)
 
 ;; the following are used internally
@@ -549,14 +576,7 @@ topic pure#online-help for details."
 ;; running, a new one is started.) If the search term isn't found, we fall
 ;; back to a link target in pure.html. This mimics the behaviour of the
 ;; interpreter's help command.
-	      (if (not (comint-check-proc "*pure-eval*"))
-		  (save-current-buffer
-		    (message "starting interpreter...")
-		    (run-pure)
-		    ; hide the *pure-eval* window
-		    (delete-window)
-		    ; give the interpreter some time to start
-		    (sleep-for 2)))
+	      (start-pure t)
 	      (pure-send-list-and-digest
 	       (list (concat "help_matches " (car args) "\n")) t)
 	      (if (null pure-output-list)
@@ -644,7 +664,8 @@ manipulating the command history, etc. See `pure-eval-mode'.
       (setenv "PURE_MORE" nil)
       (setenv "PURE_LESS" nil) ; disable paging in the interpreter
       (comint-exec pure-eval-buffer "pure-eval" pure-prog-name nil
-		   (append (list "-q" "-i") pure-prog-opts args))
+		   (append (list "-q" "-i" "--noediting")
+			   pure-prog-opts args))
       ;; set up process parameters
       (setq pure-output-list nil
 	    pure-output-string nil
@@ -658,6 +679,22 @@ manipulating the command history, etc. See `pure-eval-mode'.
       ;; switch to and go to the end of the eval buffer
       (pop-to-buffer "*pure-eval*")
       (goto-char (point-max))))
+  )
+
+(defun start-pure (&optional arg)
+  "Start a new interpreter instance in buffer *pure-eval*, unless
+an interpreter is already running. Hides the buffer window if ARG
+is given. See `run-pure' for details."
+  (interactive "P")
+  (if (not (comint-check-proc "*pure-eval*"))
+      (save-current-buffer
+	(message "starting interpreter...")
+	(run-pure)
+	(if arg
+	    ;; hide the *pure-eval* window
+	    (delete-window))
+	;; give the interpreter some time to start
+	(sleep-for 2)))
   )
 
 (defun pure-run-script ()
@@ -890,6 +927,91 @@ window."
   (if (get-buffer "*pure-eval*")
       (progn (pop-to-buffer "*pure-eval*") (goto-char (point-max)))
     (error "No script is running")))
+
+;; Some nice stuff pilfered from Octave mode.
+
+;; Commands to move to next/previous code line in a Pure buffer. These aren't
+;; bound by default, but pure-next-code-line is used to feed a code line into
+;; the Pure interpreter in pure-send-line below.
+
+(defun pure-next-code-line (&optional arg)
+  "Move ARG lines of Pure code forward (backward if ARG is negative).
+Skips past all empty and comment lines.  Default for ARG is 1.
+
+On success, return 0.  Otherwise, go as far as possible and return -1."
+  (interactive "p")
+  (or arg (setq arg 1))
+  (beginning-of-line)
+  (let ((n 0)
+	(inc (if (> arg 0) 1 -1)))
+    (while (and (/= arg 0) (= n 0))
+      (setq n (forward-line inc))
+      (while (and (= n 0)
+		  (looking-at "\\s-*\\($\\|//\\)"))
+	(setq n (forward-line inc)))
+      (setq arg (- arg inc)))
+    n))
+
+(defun pure-previous-code-line (&optional arg)
+  "Move ARG lines of Pure code backward (forward if ARG is negative).
+Skips past all empty and comment lines.  Default for ARG is 1.
+
+On success, return 0.  Otherwise, go as far as possible and return -1."
+  (interactive "p")
+  (or arg (setq arg 1))
+  (pure-next-code-line (- arg)))
+
+;; Communication with the Pure interpreter. These feed a region or the current
+;; line in a Pure buffer into the interpreter. A new interpreter is started if
+;; none is currently running.
+
+(defun pure-send-region (beg end)
+  "Send current region to the Pure interpreter."
+  (interactive "r")
+  (start-pure t)
+  (let* ((pure-eval-buffer (get-buffer "*pure-eval*"))
+	 (proc (get-buffer-process pure-eval-buffer))
+	 (string (buffer-substring-no-properties beg end))
+	 line)
+    (save-excursion
+      (set-buffer pure-eval-buffer)
+      (setq pure-output-list nil)
+      (while (not (string-equal string ""))
+	(if (string-match "\n" string)
+	    (setq line (substring string 0 (match-beginning 0))
+		  string (substring string (match-end 0)))
+	  (setq line string string ""))
+	(setq pure-receive-in-progress t)
+	(pure-send-list-and-digest (list (concat line "\n")))
+	(while pure-receive-in-progress
+	  (accept-process-output proc))
+	(insert-before-markers
+	 (mapconcat 'identity
+		    (append
+		     (if pure-send-echo-input (list line) (list ""))
+		     pure-output-list
+		     (list pure-output-string))
+		    "\n"))))
+    (if pure-send-show-buffer
+	(display-buffer pure-eval-buffer))))
+
+(defun pure-send-line (&optional arg)
+  "Send current Pure code line to the Pure interpreter.
+With positive prefix ARG, send that many lines.
+If `pure-send-line-auto-forward' is non-nil, go to the next unsent
+code line."
+  (interactive "P")
+  (or arg (setq arg 1))
+  (if (> arg 0)
+      (let (beg end)
+	(beginning-of-line)
+	(setq beg (point))
+	(pure-next-code-line (- arg 1))
+	(end-of-line)
+	(setq end (point))
+	(if pure-send-line-auto-forward
+	    (pure-next-code-line 1))
+	(pure-send-region beg end))))
 
 ;; completion
 
