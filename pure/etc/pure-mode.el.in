@@ -136,6 +136,8 @@
        (define-key pure-mode-map "\C-c\C-v" 'pure-goto-input-line)
        (define-key pure-mode-map "\C-c\C-l" 'pure-send-line)
        (define-key pure-mode-map "\C-c\C-r" 'pure-send-region)
+       (define-key pure-mode-map "\C-c\M-h" 'pure-show)
+       (define-key pure-mode-map "\C-c\M-c" 'pure-clear)
     ))
 
 (defsubst pure-region-is-active-p ()
@@ -169,8 +171,11 @@
 	["Goto Input Line"		pure-goto-input-line
 					(get-process "pure-eval")]
 	["Scratchpad"			pure-scratchpad t]
+	"-"
 	["Send Current Line"		pure-send-line t]
 	["Send Region"			pure-send-region t]
+	["Show Symbol..."		pure-show t]
+	["Clear Symbol..."		pure-clear t]
 	"-"
 	["Current Message"		pure-current-msg
 					(get-buffer "*pure-eval*")]
@@ -1027,6 +1032,68 @@ code line."
 	(if pure-send-line-auto-forward
 	    (pure-next-code-line 1))
 	(pure-send-region beg end))))
+
+(defun pure-show (symbol &optional arg)
+  "Show the definition of SYMBOL in the Pure interpreter. If ARG
+is not nil, insert the output into the current buffer instead."
+  (interactive
+   (list
+    (let ((default (puresym-at-point)))
+      (read-string "Show symbol: " default))
+    current-prefix-arg))
+  (start-pure t)
+  (let* ((pure-eval-buffer (get-buffer "*pure-eval*"))
+	 (proc (get-buffer-process pure-eval-buffer))
+	 line)
+    (save-excursion
+      (set-buffer pure-eval-buffer)
+      (setq pure-output-list nil)
+      (setq pure-receive-in-progress t)
+      (setq line (concat "show " symbol))
+      (pure-send-list-and-digest (list (concat line "\n")))
+      (while pure-receive-in-progress
+	(accept-process-output proc))
+      (if (not arg)
+	  (insert-before-markers
+	   (mapconcat 'identity
+		      (append
+		       (if pure-send-echo-input (list line) (list ""))
+		       pure-output-list
+		       (list pure-output-string))
+		      "\n"))))
+    (cond
+     (arg
+      (insert (mapconcat 'identity pure-output-list "\n") "\n"))
+     (pure-send-show-buffer
+      (display-buffer pure-eval-buffer)))))
+
+(defun pure-clear (symbol)
+  "Clear the definition of SYMBOL in the Pure interpreter."
+  (interactive
+   (list
+    (let ((default (puresym-at-point)))
+      (read-string "Clear symbol: " default))))
+  (start-pure t)
+  (let* ((pure-eval-buffer (get-buffer "*pure-eval*"))
+	 (proc (get-buffer-process pure-eval-buffer))
+	 line)
+    (save-excursion
+      (set-buffer pure-eval-buffer)
+      (setq pure-output-list nil)
+      (setq pure-receive-in-progress t)
+      (setq line (concat "clear " symbol))
+      (pure-send-list-and-digest (list (concat line "\n")))
+      (while pure-receive-in-progress
+	(accept-process-output proc))
+      (insert-before-markers
+       (mapconcat 'identity
+		  (append
+		   (if pure-send-echo-input (list line) (list ""))
+		   pure-output-list
+		   (list pure-output-string))
+		  "\n")))
+    (if pure-send-show-buffer
+	(display-buffer pure-eval-buffer))))
 
 ;; completion
 
