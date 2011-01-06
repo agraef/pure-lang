@@ -1033,15 +1033,33 @@ code line."
 	    (pure-next-code-line 1))
 	(pure-send-region beg end))))
 
+(defun pure-symbol-complete (symbol)
+  (pure-send-list-and-digest
+   (list (concat "completion_matches " symbol "\n")) t)
+  ;; Sort the list
+  (setq pure-output-list
+	(sort pure-output-list 'string-lessp))
+  ;; Remove duplicates
+  (let* ((x pure-output-list)
+	 (y (cdr x)))
+    (while y
+      (if (string-equal (car x) (car y))
+	  (setcdr x (setq y (cdr y)))
+	(setq x y
+	      y (cdr y)))))
+  (mapcar 'list pure-output-list))
+
 (defun pure-show (symbol &optional arg)
   "Show the definition of SYMBOL in the Pure interpreter. If ARG
 is not nil, insert the output into the current buffer instead."
   (interactive
    (list
     (let ((default (puresym-at-point)))
-      (read-string "Show symbol: " default))
+      (start-pure t)
+      (completing-read "Show symbol: "
+		       (dynamic-completion-table pure-symbol-complete)
+		       nil nil default))
     current-prefix-arg))
-  (start-pure t)
   (let* ((pure-eval-buffer (get-buffer "*pure-eval*"))
 	 (proc (get-buffer-process pure-eval-buffer))
 	 line)
@@ -1072,7 +1090,10 @@ is not nil, insert the output into the current buffer instead."
   (interactive
    (list
     (let ((default (puresym-at-point)))
-      (read-string "Clear symbol: " default))))
+      (start-pure t)
+      (completing-read "Clear symbol: "
+		       (dynamic-completion-table pure-symbol-complete)
+		       nil nil default))))
   (start-pure t)
   (let* ((pure-eval-buffer (get-buffer "*pure-eval*"))
 	 (proc (get-buffer-process pure-eval-buffer))
