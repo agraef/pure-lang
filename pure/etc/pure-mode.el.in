@@ -137,6 +137,7 @@
        (setq pure-mode-map (make-sparse-keymap))
        (define-key pure-mode-map "\C-c\C-h" 'pure-help)
        (define-key pure-mode-map "\C-c\M-p" 'pure-run)
+       (define-key pure-mode-map "\C-c\M-r" 'pure-rerun)
        (define-key pure-mode-map "\C-c\M-q" 'pure-quit)
        (define-key pure-mode-map "\C-x\M-p" 'pure-scratchpad)
        (define-key pure-mode-map "\C-c\C-c" 'pure-run-script)
@@ -186,6 +187,8 @@
 	 :style toggle :selected (and (boundp 'pure-debug-mode)
 				      pure-debug-mode)]
 	["Start Interpreter"		pure-run t]
+	["Restart Interpreter"		pure-rerun
+					(get-process "pure-eval")]
 	["Stop Interpreter"		pure-quit
 					(get-process "pure-eval")]
 	["Scratchpad"			pure-scratchpad t]
@@ -375,7 +378,6 @@ Non-nil means always go to the next Pure code line after sending."
 (defvar pure-receive-in-progress nil)
 (defvar pure-last-dir nil)
 (defvar pure-last-script nil)
-(defvar pure-last-path nil)
 
 (defvar pure-eval-font-lock-keywords
   (list
@@ -419,6 +421,7 @@ Non-nil means always go to the next Pure code line after sending."
        (setq pure-eval-mode-map (copy-keymap comint-mode-map))
        (define-key pure-eval-mode-map "\C-c\C-h" 'pure-help)
        (define-key pure-eval-mode-map "\C-c\M-p" 'pure-run)
+       (define-key pure-eval-mode-map "\C-c\M-r" 'pure-rerun)
        (define-key pure-eval-mode-map "\C-c\M-q" 'pure-quit)
        (define-key pure-eval-mode-map "\C-c\C-d" 'pure-toggle-debug-mode)
        (define-key pure-eval-mode-map "\C-x\M-p" 'pure-scratchpad)
@@ -449,6 +452,8 @@ Non-nil means always go to the next Pure code line after sending."
 	 :style toggle :selected (and (boundp 'pure-debug-mode)
 				      pure-debug-mode)]
 	["Start Interpreter"		pure-run t]
+	["Restart Interpreter"		pure-rerun
+					(get-process "pure-eval")]
 	["Stop Interpreter"		pure-quit
 					(get-process "pure-eval")]
 	["Scratchpad"			pure-scratchpad t]
@@ -698,9 +703,12 @@ Pure mode."
   "Pure interpreter debugging mode (-g).")
 
 (defun pure-toggle-debug-mode ()
-  "Toggle debugging mode (-g)."
+  "Toggle debugging mode (-g). Also restarts the interpreter if
+it is currently running."
   (interactive)
-  (setq pure-debug-mode (not pure-debug-mode)))
+  (setq pure-debug-mode (not pure-debug-mode))
+  (if (get-process "pure-eval")
+      (pure-rerun)))
 
 ;;;###autoload
 (defalias 'run-pure 'pure-run)
@@ -765,8 +773,7 @@ manipulating the command history, etc. See `pure-eval-mode'.
 	    pure-output-string nil
 	    pure-receive-in-progress nil
 	    pure-last-script nil
-	    pure-last-dir dir
-	    pure-last-path nil)
+	    pure-last-dir dir)
       (set-process-sentinel (get-process "pure-eval") 'pure-eval-sentinel)
       (if (not pure-query-before-kill)
 	  (process-kill-without-query (get-process "pure-eval")))
@@ -819,6 +826,19 @@ is non-nil. See `run-pure' for details."
     (save-some-buffers)
     (pure-run script-file)
     (setq pure-last-script script-file)))
+
+(defun pure-rerun ()
+  "If the interpreter is currently running, rerun it with the
+same script (if any). Otherwise, start a new interpreter
+instance. See `run-pure' for details."
+  (interactive)
+  (save-some-buffers)
+  (let ((script-file pure-last-script))
+    (if (not script-file)
+	(pure-run)
+      (pure-goto-input-line)
+      (pure-run script-file)
+      (setq pure-last-script script-file))))
 
 ;; run the interpreter to create a TAGS file
 
