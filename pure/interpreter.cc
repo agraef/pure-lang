@@ -44,9 +44,25 @@
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Linker.h>
 
+
+#undef PACKAGE_BUGREPORT
+#undef PACKAGE_NAME
+#undef PACKAGE_STRING
+#undef PACKAGE_TARNAME
+#undef PACKAGE_VERSION
+#include <llvm/Support/system_error.h>
+#undef PACKAGE_BUGREPORT
+#undef PACKAGE_NAME
+#undef PACKAGE_STRING
+#undef PACKAGE_TARNAME
+#undef PACKAGE_VERSION
+
+
 #include "config.h"
 
 #include "gsl_structs.h"
+
+
 
 uint8_t interpreter::g_verbose = 0;
 bool interpreter::g_interactive = false;
@@ -1565,6 +1581,7 @@ static void dsp_errmsg(string name, string* msg)
     *msg = name+": Error linking dsp file";
 }
 
+
 bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
 			       const char *modnm)
 {
@@ -1598,7 +1615,9 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
     // Check whether there's anything to do.
     if (declared && !modified) return true;
   }
-  MemoryBuffer *buf = MemoryBuffer::getFile(name, msg);
+  OwningPtr<MemoryBuffer> *xxx = new OwningPtr<MemoryBuffer>;
+  *msg = MemoryBuffer::getFile(name, *xxx).message();
+  MemoryBuffer *buf = xxx->take();
   if (!buf) {
     dsp_errmsg(name, msg);
     return false;
@@ -1875,7 +1894,9 @@ bool interpreter::LoadBitcode(bool priv, const char *name, string *msg)
     // Check whether there's anything to do.
     if (declared) return true;
   }
-  MemoryBuffer *buf = MemoryBuffer::getFile(name, msg);
+  OwningPtr<MemoryBuffer> *xxx = new OwningPtr<MemoryBuffer>;
+  *msg = MemoryBuffer::getFile(name, *xxx).message();
+  MemoryBuffer *buf = xxx->take();
   if (!buf) {
     bc_errmsg(name, msg);
     return false;
