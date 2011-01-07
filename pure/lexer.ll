@@ -1457,7 +1457,13 @@ void Index::scan()
 	      key += '<';
 	    else if (entity == "gt")
 	      key += '>';
-	    else
+	    else if (!entity.empty() && entity[0] == '#') {
+	      int c = atoi(entity.substr(1).c_str());
+	      if (c > 0)
+		key += c;
+	      else
+		key += "&"+entity+";";
+	    } else
 	      key += "&"+entity+";";
 	  } else
 	    key += c;
