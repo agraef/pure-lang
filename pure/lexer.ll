@@ -132,7 +132,7 @@ int    [0-9][0-9A-Za-z]*
 exp    ([Ee][+-]?{int})
 float  {int}{exp}|{int}\.{exp}|({int})?\.{int}{exp}?
 str    ([^\"\\\n]|\\(.|\n))*
-cmd    (!|help|ls|pwd|break|trace|bt|del|cd|show|dump|clear|save|run|override|underride|stats|mem|quit|completion_matches|help_matches)
+cmd    (!|help|ls|pwd|break|trace|bt|del|cd|show|dump|clear|save|run|override|underride|stats|mem|quit|completion_matches|help_matches|help_index)
 blank  [ \t\f\v\r]
 
 %x escape comment xcode xcode_comment xdecl xdecl_comment xusing xusing_comment xsyms xsyms_comment xtag rescan xsyms_rescan
@@ -1327,10 +1327,10 @@ static string decl_str(interpreter &interp, const symbol& sym)
 }
 
 class Index {
-  map<string,string> m;
   FILE *fp;
   void scan();
 public:
+  map<string,string> m;
   Index() : fp(0) {}
   Index(const string& fname) : fp(fopen(fname.c_str(), "r"))
   { if (fp) { scan(); fclose(fp); } }
@@ -2715,6 +2715,18 @@ that memory usage is to be printed along with the cpu time.\n";
     list_completions(interp.output?*interp.output:cout, s);
   } else if (strcmp(cmd, "help_matches") == 0) {
     const char *s = cmdline+12;
+    while (isspace(*s)) ++s;
+    size_t l = strlen(s);
+    std::ostream& out = interp.output?*interp.output:cout;
+    if (!idx) idx = new Index(interp.libdir+"docs/genindex.html");
+    for (map<string,string>::const_iterator it = idx->m.begin(),
+	   end = idx->m.end(); it != end; ++it) {
+      const string& key = it->first;
+      if (strncmp(s, key.c_str(), l) == 0)
+	out << key << endl;
+    }
+  } else if (strcmp(cmd, "help_index") == 0) {
+    const char *s = cmdline+10;
     while (isspace(*s)) ++s;
     string target;
     if (!idx) idx = new Index(interp.libdir+"docs/genindex.html");

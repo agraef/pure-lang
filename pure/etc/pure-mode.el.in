@@ -559,6 +559,22 @@ Entry to this mode runs the hooks on `comint-mode-hook' and
 (put 'puresym 'beginning-op (lambda () (skip-syntax-backward "w_")))
 (defun puresym-at-point () (thing-at-point 'puresym))
 
+(defun pure-help-complete (symbol)
+  (pure-send-list-and-digest
+   (list (concat "help_matches " symbol "\n")) t)
+  ;; Sort the list
+  (setq pure-output-list
+	(sort pure-output-list 'string-lessp))
+  ;; Remove duplicates
+  (let* ((x pure-output-list)
+	 (y (cdr x)))
+    (while y
+      (if (string-equal (car x) (car y))
+	  (setcdr x (setq y (cdr y)))
+	(setq x y
+	      y (cdr y)))))
+  (mapcar 'list pure-output-list))
+
 (defun pure-help (&optional topic)
   "Read online help in html format.
 This works pretty much like the interpreter's help command. Uses
@@ -566,11 +582,15 @@ emacs-w3m if it is available. The command searches for help files
 in the current directory, the `pure-docs-dir', and all
 directories specified in `pure-includes'. The given TOPIC may
 specify a search term or a help file and section/index entry, see
-topic pure#online-help for details."
+topic pure#online-help for details. When run interactively, tab
+completion is provided for search terms in the index."
 ;;  (interactive "sPure help topic: ")
   (interactive
    (let ((default (puresym-at-point)))
-     (list (read-string "Pure help topic: " default))))
+     (start-pure t)
+     (list (completing-read "Pure help topic: "
+		       (dynamic-completion-table pure-help-complete)
+		       nil nil default))))
   (let* ((args (split-string (if topic topic "") "#"))
 	 (args (if (or (null args) (not (zerop (length (car args))))) args
 		 (list topic)))
@@ -580,13 +600,11 @@ topic pure#online-help for details."
 	   ((null (cdr args))
 	    (if (zerop (length (car args))) (cons "index" "")
 ;; Keyword search. This looks up the given search term in the global index
-;; using the interpreter's help_matches command. (If no interpreter is
-;; running, a new one is started.) If the search term isn't found, we fall
-;; back to a link target in pure.html. This mimics the behaviour of the
-;; interpreter's help command.
-	      (start-pure t)
+;; using the interpreter's help_index command.  If the search term isn't
+;; found, we fall back to a link target in pure.html. This mimics the
+;; behaviour of the interpreter's help command.
 	      (pure-send-list-and-digest
-	       (list (concat "help_matches " (car args) "\n")) t)
+	       (list (concat "help_index " (car args) "\n")) t)
 	      (if (null pure-output-list)
 		  (cons "pure" (car args))
 		(let* ((target (split-string (car pure-output-list) "#")))
