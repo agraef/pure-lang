@@ -11,15 +11,11 @@
 (defvar pure-prog "@bindir@/pure")
 (defvar pure-libdir "@libdir@/pure")
 
-;; Then copy this file to your site-lisp directory. The easiest way to make
-;; Pure mode available in emacs is to add the following to your emacs startup
-;; file:
+;; Then copy this file to your site-lisp directory. In addition, to make Pure
+;; mode available and enable it for *.pure and *.purerc files, you'll have to
+;; add the following to your emacs startup file:
 
 ;; (require 'pure-mode)
-
-;; To enable Pure mode for *.pure and *.purerc files, add the following to
-;; your emacs startup file:
-
 ;; (setq auto-mode-alist
 ;;       (cons '("\\.pure\\(rc\\)?$" . pure-mode) auto-mode-alist))
 
@@ -43,16 +39,32 @@
 ;;	     (define-key pure-eval-mode-map [up] 'comint-previous-input)
 ;;	     (define-key pure-eval-mode-map [down] 'comint-next-input)))
 
-;; Finally, you might wish to add some convenient global key bindings, e.g.:
+;; Finally, you might wish to add some global key bindings, such as:
 
 ;; (global-set-key "\C-c\M-p" 'run-pure)
 ;; (global-set-key "\C-x\M-p" 'pure-scratchpad)
 ;; (global-set-key "\C-h\M-p" 'pure-help)
 
-;; Note that in Pure and Pure-Eval mode the online help facility is already
-;; bound to C-c C-h, and also available from the Pure menu. Please use this
-;; instead of the Pure interpreter's 'help' command, which will try to run w3m
-;; which won't work in an Emacs comint buffer.
+;; Note that in Pure and Pure-Eval mode these commands are already bound and
+;; also available from the Pure menu, but the global bindings above may be
+;; convenient to provide access to Pure mode from other buffers, e.g., if
+;; Emacs is invoked without a Pure script file.
+
+;; The run-pure command invokes the Pure interpreter without a script in a
+;; comint buffer named *pure-eval*. Another method to invoke the interpreter
+;; is to open a script file and use the command pure-run-script (C-c C-c in
+;; Pure mode).
+
+;; The pure-scratchpad command opens a scratch buffer named *pure-scratch* and
+;; puts it in Pure mode. This buffer can be used like any other Pure mode
+;; buffer but isn't associated with a file (similar to the Emacs Lisp buffer
+;; *scratch*).
+
+;; The pure-help command (C-c C-h in Pure and Pure eval mode) lets you read
+;; the online manual inside emacs if emacs-w3m is installed (see below). This
+;; should be used instead of the Pure interpreter's 'help' command, which will
+;; try to run the command line version of w3m which won't work in an Emacs
+;; comint buffer.
 
 ;; The online help facility uses emacs-w3m to display help files in html
 ;; format, if it is installed and loaded. To these ends, add the following to
@@ -124,9 +136,11 @@
 (cond ((not pure-mode-map)
        (setq pure-mode-map (make-sparse-keymap))
        (define-key pure-mode-map "\C-c\C-h" 'pure-help)
-       (define-key pure-mode-map "\e "      'pure-complete-symbol)
+       (define-key pure-mode-map "\C-c\M-p" 'pure-run)
+       (define-key pure-mode-map "\C-c\M-q" 'pure-quit)
+       (define-key pure-mode-map "\C-x\M-p" 'pure-scratchpad)
        (define-key pure-mode-map "\C-c\C-c" 'pure-run-script)
-       (define-key pure-mode-map "\C-c\C-d" 'pure-debug-script)
+       (define-key pure-mode-map "\C-c\C-d" 'pure-toggle-debug-mode)
        (define-key pure-mode-map "\C-c\M-t" 'pure-make-tags)
        (define-key pure-mode-map "\C-c\C-u" 'pure-current-msg)
        (define-key pure-mode-map "\C-c\C-n" 'pure-next-msg)
@@ -139,6 +153,7 @@
        (define-key pure-mode-map "\C-c\C-r" 'pure-send-region)
        (define-key pure-mode-map "\C-c\M-h" 'pure-show)
        (define-key pure-mode-map "\C-c\M-c" 'pure-clear)
+       (define-key pure-mode-map "\e "      'pure-complete-symbol)
     ))
 
 (defsubst pure-region-is-active-p ()
@@ -163,14 +178,15 @@
 	["Comment Out Region"		comment-region (pure-region-is-active-p)]
 	["Uncomment Region"		uncomment-region (pure-region-is-active-p)]
 	["Fill Comment Paragraph"	fill-paragraph t]
-	["Complete Symbol"		pure-complete-symbol t]
 	"-"
 	["Make Tags"			pure-make-tags t]
 	"-"
 	["Run Script"			pure-run-script t]
-	["Debug Script"			pure-debug-script t]
-	["Find Main Script"		pure-find-script pure-last-script]
-	["Goto Input Line"		pure-goto-input-line
+	["Debugging Mode"		pure-toggle-debug-mode
+	 :style toggle :selected (and (boundp 'pure-debug-mode)
+				      pure-debug-mode)]
+	["Start Interpreter"		pure-run t]
+	["Stop Interpreter"		pure-quit
 					(get-process "pure-eval")]
 	["Scratchpad"			pure-scratchpad t]
 	"-"
@@ -178,6 +194,10 @@
 	["Send Region"			pure-send-region t]
 	["Show Symbol..."		pure-show t]
 	["Clear Symbol..."		pure-clear t]
+	"-"
+	["Find Main Script"		pure-find-script pure-last-script]
+	["Goto Input Line"		pure-goto-input-line
+					(get-process "pure-eval")]
 	"-"
 	["Current Message"		pure-current-msg
 					(get-buffer "*pure-eval*")]
@@ -188,9 +208,12 @@
 	["Previous Message"		pure-prev-msg
 					(get-buffer "*pure-eval*")]
 	["Last Message"			pure-last-msg
-					(get-buffer "*pure-eval*")])
+					(get-buffer "*pure-eval*")]
+	"-"
+	["Complete Symbol"		pure-complete-symbol t])
   "Menu for Pure mode.")
   
+;;;###autoload
 (define-derived-mode pure-mode fundamental-mode "Pure"
   "Major mode for editing Pure scripts.
 
@@ -395,6 +418,10 @@ Non-nil means always go to the next Pure code line after sending."
 (cond ((not pure-eval-mode-map)
        (setq pure-eval-mode-map (copy-keymap comint-mode-map))
        (define-key pure-eval-mode-map "\C-c\C-h" 'pure-help)
+       (define-key pure-eval-mode-map "\C-c\M-p" 'pure-run)
+       (define-key pure-eval-mode-map "\C-c\M-q" 'pure-quit)
+       (define-key pure-eval-mode-map "\C-c\C-d" 'pure-toggle-debug-mode)
+       (define-key pure-eval-mode-map "\C-x\M-p" 'pure-scratchpad)
        (define-key pure-eval-mode-map "\t" 'comint-dynamic-complete)
        (define-key pure-eval-mode-map "\C-a" 'comint-bol)
        (define-key pure-eval-mode-map [home] 'comint-bol)
@@ -418,10 +445,17 @@ Non-nil means always go to the next Pure code line after sending."
 	["Describe Pure-Eval Mode"	describe-mode t]
 	["Customize"			(customize-group 'pure) t]
 	"-"
+	["Debugging Mode"		pure-toggle-debug-mode
+	 :style toggle :selected (and (boundp 'pure-debug-mode)
+				      pure-debug-mode)]
+	["Start Interpreter"		pure-run t]
+	["Stop Interpreter"		pure-quit
+					(get-process "pure-eval")]
+	["Scratchpad"			pure-scratchpad t]
+	"-"
 	["Find Main Script"		pure-find-script pure-last-script]
 	["Goto Input Line"		pure-goto-input-line
 					(get-process "pure-eval")]
-	["Scratchpad"			pure-scratchpad t]
 	"-"
 	["Current Message"		pure-current-msg
 					(get-buffer "*pure-eval*")]
@@ -578,6 +612,7 @@ Entry to this mode runs the hooks on `comint-mode-hook' and
 	      y (cdr y)))))
   (mapcar 'list pure-output-list))
 
+;;;###autoload
 (defun pure-help (&optional topic)
   "Read online help in html format.
 This works pretty much like the interpreter's help command. Uses
@@ -590,7 +625,7 @@ completion is provided for search terms in the index."
 ;;  (interactive "sPure help topic: ")
   (interactive
    (let ((default (puresym-at-point)))
-     (start-pure t)
+     (pure-start t)
      (list (completing-read "Pure help topic: "
 		       (dynamic-completion-table pure-help-complete)
 		       nil nil default))))
@@ -637,6 +672,7 @@ completion is provided for search terms in the index."
 
 ;; create the Pure scratchpad
 
+;;;###autoload
 (defun pure-scratchpad ()
   "Create the *pure-scratch* buffer if necessary and put it in
 Pure mode."
@@ -656,9 +692,25 @@ Pure mode."
       (if (string-match "[ \t]" x) (concat "\"" x "\"") x))
   (defun pure-quote-arg (x) x))
 
-(defun run-pure (&rest args)
+;; global flag to enable debugging mode (-g)
+
+(defvar pure-debug-mode nil
+  "Pure interpreter debugging mode (-g).")
+
+(defun pure-toggle-debug-mode ()
+  "Toggle debugging mode (-g)."
+  (interactive)
+  (setq pure-debug-mode (not pure-debug-mode)))
+
+;;;###autoload
+(defalias 'run-pure 'pure-run)
+
+(defun pure-run (&rest args)
 
   "Run the interpreter with given arguments, in buffer *pure-eval*.
+
+Debugging mode of the interpreter (-g) is enabled depending on
+the current value of the `pure-debug-mode' variable.
 
 The interpreter is invoked in the directory of the current buffer (current
 default directory if no file is associated with the current buffer).
@@ -706,6 +758,7 @@ manipulating the command history, etc. See `pure-eval-mode'.
       (setenv "PURE_LESS" nil) ; disable paging in the interpreter
       (comint-exec pure-eval-buffer "pure-eval" pure-prog-name nil
 		   (append (list "-q" "-i" "--noediting")
+			   (if pure-debug-mode (list "-g") nil)
 			   pure-prog-opts args))
       ;; set up process parameters
       (setq pure-output-list nil
@@ -722,21 +775,38 @@ manipulating the command history, etc. See `pure-eval-mode'.
       (goto-char (point-max))))
   )
 
-(defun start-pure (&optional arg)
+(defun pure-start (&optional arg)
   "Start a new interpreter instance in buffer *pure-eval*, unless
 an interpreter is already running. Hides the buffer window if ARG
-is given. See `run-pure' for details."
+is non-nil. See `run-pure' for details."
   (interactive "P")
   (if (not (comint-check-proc "*pure-eval*"))
       (save-current-buffer
 	(message "starting interpreter...")
-	(run-pure)
+	(pure-run)
 	(if arg
 	    ;; hide the *pure-eval* window
 	    (delete-window))
 	;; give the interpreter some time to start
 	(sleep-for 2)))
   )
+
+(defun pure-quit ()
+  "Exit the Pure interpreter and kill its buffer."
+  (interactive)
+  (let* ((pure-eval-buffer (get-buffer "*pure-eval*"))
+	 (pure-eval-process (and pure-eval-buffer
+				 (get-buffer-process pure-eval-buffer)))
+	 (pure-eval-window (and pure-eval-buffer
+				 (get-buffer-window pure-eval-buffer))))
+    (if pure-eval-process
+	(progn
+	  (process-send-eof pure-eval-process)
+	  (accept-process-output pure-eval-process)))
+    (if pure-eval-window
+	(delete-window pure-eval-window))
+    (if pure-eval-buffer
+	(kill-buffer pure-eval-buffer))))
 
 (defun pure-run-script ()
   "Run the interpreter with the script in the current buffer, in buffer
@@ -747,19 +817,7 @@ is given. See `run-pure' for details."
 	     (file-name-nondirectory (buffer-file-name))
 	   (error "Buffer is not associated with any file"))))
     (save-some-buffers)
-    (run-pure script-file)
-    (setq pure-last-script script-file)))
-
-(defun pure-debug-script ()
-  "Run the interpreter with the script in the current buffer, like
-`pure-run-script', but with debugging enabled."
-  (interactive)
-  (let ((script-file
-	 (if (buffer-file-name)
-	     (file-name-nondirectory (buffer-file-name))
-	   (error "Buffer is not associated with any file"))))
-    (save-some-buffers)
-    (run-pure "-g" script-file)
+    (pure-run script-file)
     (setq pure-last-script script-file)))
 
 ;; run the interpreter to create a TAGS file
@@ -1005,7 +1063,7 @@ window."
 preceding point."
   ;; This code taken from lisp-complete-symbol
   (interactive)
-  (start-pure t)
+  (pure-start t)
   (let* ((end (point))
 	 (beg (save-excursion
 		;; skip back one word/identifier or operator (punctuation)
@@ -1090,7 +1148,7 @@ On success, return 0.  Otherwise, go as far as possible and return -1."
 (defun pure-send-region (beg end)
   "Send current region to the Pure interpreter."
   (interactive "r")
-  (start-pure t)
+  (pure-start t)
   (let* ((pure-eval-buffer (get-buffer "*pure-eval*"))
 	 (proc (get-buffer-process pure-eval-buffer))
 	 (string (buffer-substring-no-properties beg end))
@@ -1157,7 +1215,7 @@ is not nil, insert the output into the current buffer instead."
   (interactive
    (list
     (let ((default (puresym-at-point)))
-      (start-pure t)
+      (pure-start t)
       (completing-read "Show symbol: "
 		       (dynamic-completion-table pure-symbol-complete)
 		       nil nil default))
@@ -1192,11 +1250,10 @@ is not nil, insert the output into the current buffer instead."
   (interactive
    (list
     (let ((default (puresym-at-point)))
-      (start-pure t)
+      (pure-start t)
       (completing-read "Clear symbol: "
 		       (dynamic-completion-table pure-symbol-complete)
 		       nil nil default))))
-  (start-pure t)
   (let* ((pure-eval-buffer (get-buffer "*pure-eval*"))
 	 (proc (get-buffer-process pure-eval-buffer))
 	 line)
