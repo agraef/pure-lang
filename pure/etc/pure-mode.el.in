@@ -124,6 +124,7 @@
 (cond ((not pure-mode-map)
        (setq pure-mode-map (make-sparse-keymap))
        (define-key pure-mode-map "\C-c\C-h" 'pure-help)
+       (define-key pure-mode-map "\e "      'pure-complete-symbol)
        (define-key pure-mode-map "\C-c\C-c" 'pure-run-script)
        (define-key pure-mode-map "\C-c\C-d" 'pure-debug-script)
        (define-key pure-mode-map "\C-c\M-t" 'pure-make-tags)
@@ -162,6 +163,7 @@
 	["Comment Out Region"		comment-region (pure-region-is-active-p)]
 	["Uncomment Region"		uncomment-region (pure-region-is-active-p)]
 	["Fill Comment Paragraph"	fill-paragraph t]
+	["Complete Symbol"		pure-complete-symbol t]
 	"-"
 	["Make Tags"			pure-make-tags t]
 	"-"
@@ -204,6 +206,7 @@ interpreter instance without a script if necessary.)
 Special commands are provided to quickly locate the main script
 and the input line of the Pure eval buffer, and to visit the
 source lines shown in error messages (see `pure-eval-mode').
+\\[pure-complete-symbol] performs completion of (documented) Pure symbols.
 These operations can also be selected from the Pure menu
 (accessible from the menu bar), which also provides commands for
 reading the online help and customizing the Pure mode setup.
@@ -966,7 +969,88 @@ window."
       (progn (pop-to-buffer "*pure-eval*") (goto-char (point-max)))
     (error "No script is running")))
 
-;; Some nice stuff pilfered from Octave mode.
+;; Some nice stuff borrowed from Octave mode.
+
+;; Symbol completion for Pure buffers. This differs from the completion
+;; function pure-complete used in comint mode in that symbols are looked up in
+;; the documentation, so it works the same no matter which scripts are
+;; currently loaded in the interpreter. OTOH, this means that only documented
+;; symbols will be recognized.
+
+(defun pure-index-filter (symbol)
+  (let ((res (replace-regexp-in-string "^\\([^ ]+\\) .*$" "\\1" symbol)))
+    (replace-regexp-in-string "^\\(.+\\)\\[[0-9]+\\]$" "\\1" res)))
+
+(defun pure-index-complete (symbol)
+  (pure-send-list-and-digest
+   (list (concat "help_matches " symbol "\n")) t)
+  ;; Remove all trailing garbage that doesn't belong to the symbols.
+  (setq pure-output-list
+	(mapcar 'pure-index-filter pure-output-list))
+  ;; Sort the list
+  (setq pure-output-list
+	(sort pure-output-list 'string-lessp))
+  ;; Remove duplicates
+  (let* ((x pure-output-list)
+	 (y (cdr x)))
+    (while y
+      (if (string-equal (car x) (car y))
+	  (setcdr x (setq y (cdr y)))
+	(setq x y
+	      y (cdr y)))))
+  (mapcar 'list pure-output-list))
+
+(defun pure-complete-symbol ()
+  "Perform completion for documented Pure symbols on the token
+preceding point."
+  ;; This code taken from lisp-complete-symbol
+  (interactive)
+  (start-pure t)
+  (let* ((end (point))
+	 (beg (save-excursion
+		;; skip back one word/identifier or operator (punctuation)
+		(skip-syntax-backward "w_")
+		(and (eq (point) end)
+		     (skip-syntax-backward "."))
+		;; skip leading :: in absolute qualid
+		(and (looking-at "::")
+		     (goto-char (match-end 0)))
+		(point)))
+	 (string (buffer-substring-no-properties beg end))
+	 (completion-alist (dynamic-completion-table pure-index-complete))
+	 (completion (try-completion string completion-alist)))
+    (cond ((eq completion t))		; ???
+	  ((null completion)
+	   (message "Can't find completion for \"%s\"" string)
+	   (ding))
+	  ((not (string= string completion))
+           (delete-region beg end)
+           (insert completion))
+	  (t
+	   (let ((list (all-completions string completion-alist))
+		 (conf (current-window-configuration)))
+	     ;; Taken from comint.el
+	     (message "Making completion list...")
+	     (with-output-to-temp-buffer "*Completions*"
+	       (display-completion-list list string))
+	     (message "Hit space to flush")
+	     (let (key first)
+	       (if (save-excursion
+		     (set-buffer (get-buffer "*Completions*"))
+		     (setq key (read-key-sequence nil)
+			   first (aref key 0))
+		     (and (consp first) (consp (event-start first))
+			  (eq (window-buffer (posn-window (event-start
+							   first)))
+			      (get-buffer "*Completions*"))
+			  (eq (key-binding key) 'mouse-choose-completion)))
+		   (progn
+		     (mouse-choose-completion first)
+		     (set-window-configuration conf))
+		 (if (eq first ?\ )
+		     (set-window-configuration conf)
+		   (setq unread-command-events
+			 (listify-key-sequence key))))))))))
 
 ;; Commands to move to next/previous code line in a Pure buffer. These aren't
 ;; bound by default, but pure-next-code-line is used to feed a code line into
@@ -1137,7 +1221,8 @@ is not nil, insert the output into the current buffer instead."
 ;; completion
 
 (defun pure-complete ()
-  "Perform completion on the token preceding point."
+  "Perform completion for defined Pure symbols on the token
+preceding point."
   (interactive)
   (if (pure-at-command-prompt-p)
       (let* ((end (point))
