@@ -142,7 +142,7 @@
        (define-key pure-mode-map "\C-x\M-p" 'pure-scratchpad)
        (define-key pure-mode-map "\C-c\C-c" 'pure-run-script)
        (define-key pure-mode-map "\C-c\C-d" 'pure-toggle-debug-mode)
-       (define-key pure-mode-map "\C-c\M-t" 'pure-make-tags)
+       (define-key pure-mode-map "\C-ct"    'pure-make-tags)
        (define-key pure-mode-map "\C-c\C-u" 'pure-current-msg)
        (define-key pure-mode-map "\C-c\C-n" 'pure-next-msg)
        (define-key pure-mode-map "\C-c\C-p" 'pure-prev-msg)
@@ -154,7 +154,9 @@
        (define-key pure-mode-map "\C-c\C-r" 'pure-send-region)
        (define-key pure-mode-map "\C-c\M-h" 'pure-show)
        (define-key pure-mode-map "\C-c\M-c" 'pure-clear)
-       (define-key pure-mode-map "\e "      'pure-complete-symbol)
+       (define-key pure-mode-map "\C-c\M-b" 'pure-break)
+       (define-key pure-mode-map "\C-c\M-t" 'pure-trace)
+       (define-key pure-mode-map "\e\t"     'pure-complete-symbol)
     ))
 
 (defsubst pure-region-is-active-p ()
@@ -183,9 +185,6 @@
 	["Make Tags"			pure-make-tags t]
 	"-"
 	["Run Script"			pure-run-script t]
-	["Debugging Mode"		pure-toggle-debug-mode
-	 :style toggle :selected (and (boundp 'pure-debug-mode)
-				      pure-debug-mode)]
 	["Start Interpreter"		pure-run t]
 	["Restart Interpreter"		pure-rerun
 					(get-process "pure-eval")]
@@ -198,20 +197,28 @@
 	["Show Symbol..."		pure-show t]
 	["Clear Symbol..."		pure-clear t]
 	"-"
+	(list "Debugger"
+	      ["Debugging Mode"		pure-toggle-debug-mode
+	       :style toggle :selected (and (boundp 'pure-debug-mode)
+					    pure-debug-mode)]
+	      ["Breakpoint..."		pure-break pure-debug-mode]
+	      ["Tracepoint..."		pure-trace pure-debug-mode])
+	"-"
 	["Find Main Script"		pure-find-script pure-last-script]
 	["Goto Input Line"		pure-goto-input-line
 					(get-process "pure-eval")]
 	"-"
-	["Current Message"		pure-current-msg
+	(list "Locate"
+	      ["Current Message"	pure-current-msg
 					(get-buffer "*pure-eval*")]
-	["First Message"		pure-first-msg
+	      ["First Message"		pure-first-msg
 					(get-buffer "*pure-eval*")]
-	["Next Message"			pure-next-msg
+	      ["Next Message"		pure-next-msg
 					(get-buffer "*pure-eval*")]
-	["Previous Message"		pure-prev-msg
+	      ["Previous Message"	pure-prev-msg
 					(get-buffer "*pure-eval*")]
-	["Last Message"			pure-last-msg
-					(get-buffer "*pure-eval*")]
+	      ["Last Message"		pure-last-msg
+					(get-buffer "*pure-eval*")])
 	"-"
 	["Complete Symbol"		pure-complete-symbol t])
   "Menu for Pure mode.")
@@ -448,9 +455,6 @@ Non-nil means always go to the next Pure code line after sending."
 	["Describe Pure-Eval Mode"	describe-mode t]
 	["Customize"			(customize-group 'pure) t]
 	"-"
-	["Debugging Mode"		pure-toggle-debug-mode
-	 :style toggle :selected (and (boundp 'pure-debug-mode)
-				      pure-debug-mode)]
 	["Start Interpreter"		pure-run t]
 	["Restart Interpreter"		pure-rerun
 					(get-process "pure-eval")]
@@ -462,16 +466,17 @@ Non-nil means always go to the next Pure code line after sending."
 	["Goto Input Line"		pure-goto-input-line
 					(get-process "pure-eval")]
 	"-"
-	["Current Message"		pure-current-msg
+	(list "Locate"
+	      ["Current Message"	pure-current-msg
 					(get-buffer "*pure-eval*")]
-	["First Message"		pure-first-msg
+	      ["First Message"		pure-first-msg
 					(get-buffer "*pure-eval*")]
-	["Next Message"			pure-next-msg
+	      ["Next Message"		pure-next-msg
 					(get-buffer "*pure-eval*")]
-	["Previous Message"		pure-prev-msg
+	      ["Previous Message"	pure-prev-msg
 					(get-buffer "*pure-eval*")]
-	["Last Message"			pure-last-msg
-					(get-buffer "*pure-eval*")]
+	      ["Last Message"		pure-last-msg
+					(get-buffer "*pure-eval*")])
 	"-"
 	["Complete Symbol"		comint-dynamic-complete
 					(pure-at-command-prompt-p)])
@@ -1181,10 +1186,7 @@ On success, return 0.  Otherwise, go as far as possible and return -1."
 	    (setq line (substring string 0 (match-beginning 0))
 		  string (substring string (match-end 0)))
 	  (setq line string string ""))
-	(setq pure-receive-in-progress t)
-	(pure-send-list-and-digest (list (concat line "\n")))
-	(while pure-receive-in-progress
-	  (accept-process-output proc))
+	(pure-send-list-and-digest (list (concat line "\n")) t)
 	(insert-before-markers
 	 (mapconcat 'identity
 		    (append
@@ -1230,8 +1232,9 @@ code line."
   (mapcar 'list pure-output-list))
 
 (defun pure-show (symbol &optional arg)
-  "Show the definition of SYMBOL in the Pure interpreter. If ARG
-is not nil, insert the output into the current buffer instead."
+  "Show the definition of SYMBOL in the Pure interpreter. If
+prefix ARG is not nil, insert the output into the current buffer
+instead."
   (interactive
    (list
     (let ((default (puresym-at-point)))
@@ -1246,19 +1249,17 @@ is not nil, insert the output into the current buffer instead."
     (save-excursion
       (set-buffer pure-eval-buffer)
       (setq pure-output-list nil)
-      (setq pure-receive-in-progress t)
       (setq line (concat "show " symbol))
-      (pure-send-list-and-digest (list (concat line "\n")))
-      (while pure-receive-in-progress
-	(accept-process-output proc))
-      (if (not arg)
-	  (insert-before-markers
-	   (mapconcat 'identity
-		      (append
-		       (if pure-send-echo-input (list line) (list ""))
-		       pure-output-list
-		       (list pure-output-string))
-		      "\n"))))
+      (if arg
+	  (pure-send-list-and-digest (list (concat line "\n")))
+	(pure-send-list-and-digest (list (concat line "\n")) t)
+	(insert-before-markers
+	 (mapconcat 'identity
+		    (append
+		     (if pure-send-echo-input (list line) (list ""))
+		     pure-output-list
+		     (list pure-output-string))
+		    "\n"))))
     (cond
      (arg
       (insert (mapconcat 'identity pure-output-list "\n") "\n"))
@@ -1280,11 +1281,8 @@ is not nil, insert the output into the current buffer instead."
     (save-excursion
       (set-buffer pure-eval-buffer)
       (setq pure-output-list nil)
-      (setq pure-receive-in-progress t)
       (setq line (concat "clear " symbol))
-      (pure-send-list-and-digest (list (concat line "\n")))
-      (while pure-receive-in-progress
-	(accept-process-output proc))
+      (pure-send-list-and-digest (list (concat line "\n")) t)
       (insert-before-markers
        (mapconcat 'identity
 		  (append
@@ -1294,6 +1292,76 @@ is not nil, insert the output into the current buffer instead."
 		  "\n")))
     (if pure-send-show-buffer
 	(display-buffer pure-eval-buffer))))
+
+(defun pure-break (symbol &optional arg)
+  "If prefix ARG is nil, set a breakpoint on SYMBOL in the Pure
+interpreter, or show all current breakpoints if SYMBOL is empty.
+If prefix ARG is not nil, remove an existing breakpoint instead."
+  (interactive
+   (list
+    (let ((default (puresym-at-point)))
+      (pure-start t)
+      (completing-read
+       (format "%s breakpoint: "
+	       (if current-prefix-arg "Delete" "Set"))
+       (dynamic-completion-table pure-symbol-complete)
+       nil nil default))
+    current-prefix-arg))
+  (when (string-match "[ \t]*$" symbol)
+    (setq symbol (replace-match "" nil nil symbol)))
+  (unless (and arg (zerop (length symbol)))
+    (let* ((pure-eval-buffer (get-buffer "*pure-eval*"))
+	   (proc (get-buffer-process pure-eval-buffer))
+	   line)
+      (save-excursion
+	(set-buffer pure-eval-buffer)
+	(setq pure-output-list nil)
+	(setq line (format "%s %s" (if arg "del" "break") symbol))
+	(pure-send-list-and-digest (list (concat line "\n")) t)
+	(insert-before-markers
+	 (mapconcat 'identity
+		    (append
+		     (if pure-send-echo-input (list line) (list ""))
+		     pure-output-list
+		     (list pure-output-string))
+		    "\n")))
+      (if pure-send-show-buffer
+	  (display-buffer pure-eval-buffer)))))
+
+(defun pure-trace (symbol &optional arg)
+  "If prefix ARG is nil, set a tracepoint on SYMBOL in the Pure
+interpreter, or show all current tracepoints if SYMBOL is empty.
+If prefix ARG is not nil, remove an existing tracepoint instead."
+  (interactive
+   (list
+    (let ((default (puresym-at-point)))
+      (pure-start t)
+      (completing-read
+       (format "%s tracepoint: "
+	       (if current-prefix-arg "Delete" "Set"))
+       (dynamic-completion-table pure-symbol-complete)
+       nil nil default))
+    current-prefix-arg))
+  (when (string-match "[ \t]*$" symbol)
+    (setq symbol (replace-match "" nil nil symbol)))
+  (unless (and arg (zerop (length symbol)))
+    (let* ((pure-eval-buffer (get-buffer "*pure-eval*"))
+	   (proc (get-buffer-process pure-eval-buffer))
+	   line)
+      (save-excursion
+	(set-buffer pure-eval-buffer)
+	(setq pure-output-list nil)
+	(setq line (format "%s %s" (if arg "del" "trace") symbol))
+	(pure-send-list-and-digest (list (concat line "\n")) t)
+	(insert-before-markers
+	 (mapconcat 'identity
+		    (append
+		     (if pure-send-echo-input (list line) (list ""))
+		     pure-output-list
+		     (list pure-output-string))
+		    "\n")))
+      (if pure-send-show-buffer
+	  (display-buffer pure-eval-buffer)))))
 
 ;; completion
 
@@ -1313,7 +1381,7 @@ preceding point."
 		     (goto-char (match-end 0)))
 		(buffer-substring-no-properties (point) end))))
 	(pure-send-list-and-digest
-	 (list (concat "completion_matches " command "\n")) t)
+	 (list (concat "completion_matches " command "\n")))
 	;; Sort the list
 	(setq pure-output-list
 	      (sort pure-output-list 'string-lessp))
@@ -1341,7 +1409,7 @@ preceding point."
       (setq pure-receive-in-progress nil))
   (setq pure-output-string string))
 
-(defun pure-send-list-and-digest (list &optional skip)
+(defun pure-send-list-and-digest (list &optional nowait)
   (let* ((pure-eval-buffer (get-buffer "*pure-eval*"))
 	 (proc (get-buffer-process pure-eval-buffer))
 	 (filter (process-filter proc))
@@ -1352,13 +1420,13 @@ preceding point."
 	(while (setq string (car list))
 	  (setq pure-output-string nil
 		pure-receive-in-progress t)
-	  (if skip
-	      (process-send-string proc string)
-	    (comint-send-string proc string))
-	  (while pure-receive-in-progress
-	    (accept-process-output proc))
+	  (comint-send-string proc string)
+	  (unless nowait
+	    (while pure-receive-in-progress
+	      (accept-process-output proc)))
 	  (setq list (cdr list)))
-      (set-process-filter proc filter))))
+      (set-process-filter proc filter)
+      (setq pure-receive-in-progress nil))))
 
 ;; perform cleanup when the interpreter process is killed
 
