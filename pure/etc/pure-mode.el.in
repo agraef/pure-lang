@@ -155,6 +155,7 @@
        (define-key pure-mode-map "\C-x\M-v" 'pure-goto-input-line)
        (define-key pure-mode-map "\C-c\C-c" 'pure-send-line)
        (define-key pure-mode-map "\C-c\C-r" 'pure-send-region)
+       (define-key pure-mode-map "\C-c:"    'pure-eval)
        (define-key pure-mode-map "\C-c\M-h" 'pure-show)
        (define-key pure-mode-map "\C-c\M-c" 'pure-clear)
        (define-key pure-mode-map "\C-c\M-b" 'pure-break)
@@ -199,6 +200,7 @@
 	["Send Current Line"		pure-send-line t]
 	["Send Region"			pure-send-region
 					(pure-region-is-active-p)]
+	["Evaluate Expression..."	pure-eval t]
 	["Show Symbol..."		pure-show t]
 	["Clear Symbol..."		pure-clear t]
 	"-"
@@ -447,6 +449,7 @@ Non-nil means always go to the next Pure code line after sending."
        (define-key pure-eval-mode-map "\C-x\M-p" 'pure-scratchpad)
        (define-key pure-eval-mode-map "\C-c\M-b" 'pure-break)
        (define-key pure-eval-mode-map "\C-c\M-t" 'pure-trace)
+       (define-key pure-eval-mode-map "\C-c:"    'pure-eval)
        (define-key pure-eval-mode-map "\t" 'comint-dynamic-complete)
        (define-key pure-eval-mode-map "\C-a" 'comint-bol)
        (define-key pure-eval-mode-map [home] 'comint-bol)
@@ -1237,6 +1240,27 @@ code line."
 	    (pure-next-code-line 1))
 	(pure-send-region beg end))))
 
+(defun pure-eval (expr &optional arg)
+  "Evaluate a Pure expression EXPR. Result is printed in the echo
+area if prefix ARG is nil, otherwise it is inserted at point into
+the current buffer."
+  (interactive
+   (list (read-string "Pure Eval: ") current-prefix-arg))
+  (pure-start t)
+  (let* ((pure-eval-buffer (get-buffer "*pure-eval*"))
+	 (proc (get-buffer-process pure-eval-buffer))
+	 ;; The ";;" here is intentional. Since this is only permitted at the
+	 ;; toplevel, it guarantees that we bail out with a syntax error if
+	 ;; the expression is incomplete or the interpreter happens to be in
+	 ;; the middle of an expression parse.
+	 (line (concat expr ";;")))
+    (save-excursion
+      (set-buffer pure-eval-buffer)
+      (setq pure-output-list nil)
+      (pure-send-list-and-digest (list (concat line "\n")))))
+  (let ((res (mapconcat 'identity pure-output-list "\n")))
+    (if arg (insert res) (message res))))
+
 (defun pure-symbol-complete (symbol)
   (pure-send-list-and-digest
    (list (concat "completion_matches " symbol "\n")))
@@ -1273,13 +1297,14 @@ instead."
       (setq pure-output-list nil)
       (setq line (concat "show " symbol))
       (pure-send-list-and-digest (list (concat line "\n")))
-      (insert-before-markers
-       (mapconcat 'identity
-		  (append
-		   (if pure-send-echo-input (list line) (list ""))
-		   pure-output-list
-		   (list pure-output-string))
-		  "\n")))
+      (unless arg
+	(insert-before-markers
+	 (mapconcat 'identity
+		    (append
+		     (if pure-send-echo-input (list line) (list ""))
+		     pure-output-list
+		     (list pure-output-string))
+		    "\n"))))
     (cond
      (arg
       (insert (mapconcat 'identity pure-output-list "\n") "\n"))
