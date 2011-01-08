@@ -342,6 +342,13 @@ interpreter process when starting a new one."
   :type 'boolean
   :group 'pure)
 
+(defcustom pure-process-timeout 3
+  "*Time interval in seconds after which `pure-send-region' and other
+operations which read and digest output from the interpreter time out.
+Can be set to nil to disable the timeout, but this isn't recommended."
+  :type 'integer
+  :group 'pure)
+
 (defcustom pure-prompt-regexp "^> \\|^[A-Za-z_0-9-]*> \\|^: "
   "*Regexp to match prompts in the Pure interpreter. If you customize the
 interpreter's default prompt, you will have to change this value accordingly."
@@ -1443,7 +1450,12 @@ preceding point."
 		pure-receive-in-progress t)
 	  (comint-send-string proc string)
 	  (while pure-receive-in-progress
-	    (accept-process-output proc))
+	    ;; Make sure to use a reasonable timeout here, otherwise an
+	    ;; unresponsive interpreter can easily lock up emacs.
+	    (unless (or (accept-process-output proc pure-process-timeout)
+			(y-or-n-p
+			 "Pure interpreter seems unresponsive, continue? "))
+	      (error "Aborted")))
 	  (setq list (cdr list)))
       (set-process-filter proc filter)
       (setq pure-receive-in-progress nil))))
