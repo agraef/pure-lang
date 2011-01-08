@@ -197,16 +197,16 @@
 	["Show Symbol..."		pure-show t]
 	["Clear Symbol..."		pure-clear t]
 	"-"
+	["Find Main Script"		pure-find-script pure-last-script]
+	["Goto Input Line"		pure-goto-input-line
+					(get-process "pure-eval")]
+	"-"
 	(list "Debugger"
 	      ["Debugging Mode"		pure-toggle-debug-mode
 	       :style toggle :selected (and (boundp 'pure-debug-mode)
 					    pure-debug-mode)]
 	      ["Breakpoint..."		pure-break pure-debug-mode]
 	      ["Tracepoint..."		pure-trace pure-debug-mode])
-	"-"
-	["Find Main Script"		pure-find-script pure-last-script]
-	["Goto Input Line"		pure-goto-input-line
-					(get-process "pure-eval")]
 	"-"
 	(list "Locate"
 	      ["Current Message"	pure-current-msg
@@ -432,6 +432,8 @@ Non-nil means always go to the next Pure code line after sending."
        (define-key pure-eval-mode-map "\C-c\M-q" 'pure-quit)
        (define-key pure-eval-mode-map "\C-c\C-d" 'pure-toggle-debug-mode)
        (define-key pure-eval-mode-map "\C-x\M-p" 'pure-scratchpad)
+       (define-key pure-eval-mode-map "\C-c\M-b" 'pure-break)
+       (define-key pure-eval-mode-map "\C-c\M-t" 'pure-trace)
        (define-key pure-eval-mode-map "\t" 'comint-dynamic-complete)
        (define-key pure-eval-mode-map "\C-a" 'comint-bol)
        (define-key pure-eval-mode-map [home] 'comint-bol)
@@ -465,6 +467,13 @@ Non-nil means always go to the next Pure code line after sending."
 	["Find Main Script"		pure-find-script pure-last-script]
 	["Goto Input Line"		pure-goto-input-line
 					(get-process "pure-eval")]
+	"-"
+	(list "Debugger"
+	      ["Debugging Mode"		pure-toggle-debug-mode
+	       :style toggle :selected (and (boundp 'pure-debug-mode)
+					    pure-debug-mode)]
+	      ["Breakpoint..."		pure-break pure-debug-mode]
+	      ["Tracepoint..."		pure-trace pure-debug-mode])
 	"-"
 	(list "Locate"
 	      ["Current Message"	pure-current-msg
