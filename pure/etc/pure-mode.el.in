@@ -43,28 +43,31 @@
 
 ;; (global-set-key "\C-c\M-p" 'run-pure)
 ;; (global-set-key "\C-x\M-p" 'pure-scratchpad)
-;; (global-set-key "\C-h\M-p" 'pure-help)
 
-;; Note that in Pure and Pure-Eval mode these commands are already bound and
-;; also available from the Pure menu, but the global bindings above may be
-;; convenient to provide access to Pure mode from other buffers, e.g., if
-;; Emacs is invoked without a Pure script file.
+;; Note that Pure and Pure-Eval mode provide these bindings anyway and the
+;; commands are also available from the Pure menu, but the global bindings
+;; above may be convenient to enter Pure or Pure eval mode from other buffers.
+;; This is useful, in particular, if Emacs is invoked without a Pure script.
 
 ;; The run-pure command invokes the Pure interpreter without a script in a
 ;; comint buffer named *pure-eval*. Another method to invoke the interpreter
-;; is to open a script file and use the command pure-run-script (C-c C-c in
+;; is to open a script file and use the command pure-run-script (C-c C-k in
 ;; Pure mode).
 
 ;; The pure-scratchpad command opens a scratch buffer named *pure-scratch* and
 ;; puts it in Pure mode. This buffer can be used like any other Pure mode
 ;; buffer but isn't associated with a file (similar to the Emacs Lisp buffer
-;; *scratch*).
+;; *scratch*). Thus you can't "run" the *pure-scratch* buffer with C-c C-k
+;; (unless you save it to a file first), but you can use it to feed Pure code
+;; into a running interpreter instance with the pure-send-line (C-c C-c) and
+;; pure-send-region (C-c C-r) commands.
 
-;; The pure-help command (C-c C-h in Pure and Pure eval mode) lets you read
-;; the online manual inside emacs if emacs-w3m is installed (see below). This
-;; should be used instead of the Pure interpreter's 'help' command, which will
-;; try to run the command line version of w3m which won't work in an Emacs
-;; comint buffer.
+;; Another useful command to always remember is the pure-help command (C-c h
+;; in Pure and Pure eval mode) which lets you read the online manual inside
+;; emacs if emacs-w3m is installed (see below). Always use this command
+;; instead of the Pure interpreter's 'help' command. (The latter will try to
+;; run the command line version of w3m which doesn't work all that well in an
+;; Emacs buffer.)
 
 ;; The online help facility uses emacs-w3m to display help files in html
 ;; format, if it is installed and loaded. To these ends, add the following to
@@ -135,22 +138,22 @@
 (defvar pure-mode-map nil)
 (cond ((not pure-mode-map)
        (setq pure-mode-map (make-sparse-keymap))
-       (define-key pure-mode-map "\C-c\C-h" 'pure-help)
+       (define-key pure-mode-map "\C-ch"    'pure-help)
        (define-key pure-mode-map "\C-c\M-p" 'pure-run)
        (define-key pure-mode-map "\C-c\M-r" 'pure-rerun)
        (define-key pure-mode-map "\C-c\M-q" 'pure-quit)
        (define-key pure-mode-map "\C-x\M-p" 'pure-scratchpad)
-       (define-key pure-mode-map "\C-c\C-c" 'pure-run-script)
-       (define-key pure-mode-map "\C-c\C-d" 'pure-toggle-debug-mode)
+       (define-key pure-mode-map "\C-c\C-k" 'pure-run-script)
+       (define-key pure-mode-map "\C-c\M-d" 'pure-toggle-debug-mode)
        (define-key pure-mode-map "\C-ct"    'pure-make-tags)
        (define-key pure-mode-map "\C-c\C-u" 'pure-current-msg)
        (define-key pure-mode-map "\C-c\C-n" 'pure-next-msg)
        (define-key pure-mode-map "\C-c\C-p" 'pure-prev-msg)
        (define-key pure-mode-map "\C-c\C-e" 'pure-last-msg)
        (define-key pure-mode-map "\C-c\C-a" 'pure-first-msg)
-       (define-key pure-mode-map "\C-c\C-f" 'pure-find-script)
-       (define-key pure-mode-map "\C-c\C-v" 'pure-goto-input-line)
-       (define-key pure-mode-map "\C-c\C-l" 'pure-send-line)
+       (define-key pure-mode-map "\C-x\M-f" 'pure-find-script)
+       (define-key pure-mode-map "\C-x\M-v" 'pure-goto-input-line)
+       (define-key pure-mode-map "\C-c\C-c" 'pure-send-line)
        (define-key pure-mode-map "\C-c\C-r" 'pure-send-region)
        (define-key pure-mode-map "\C-c\M-h" 'pure-show)
        (define-key pure-mode-map "\C-c\M-c" 'pure-clear)
@@ -178,28 +181,31 @@
 	["Describe Pure Mode"		describe-mode t]
 	["Customize"			(customize-group 'pure) t]
 	"-"
-	["Comment Out Region"		comment-region (pure-region-is-active-p)]
-	["Uncomment Region"		uncomment-region (pure-region-is-active-p)]
+	["Comment Out Region"		comment-region
+					(pure-region-is-active-p)]
+	["Uncomment Region"		uncomment-region
+					(pure-region-is-active-p)]
 	["Fill Comment Paragraph"	fill-paragraph t]
 	"-"
 	["Make Tags"			pure-make-tags t]
 	"-"
-	["Run Script"			pure-run-script t]
 	["Start Interpreter"		pure-run t]
 	["Restart Interpreter"		pure-rerun
 					(get-process "pure-eval")]
-	["Stop Interpreter"		pure-quit
+	["Quit Interpreter"		pure-quit
 					(get-process "pure-eval")]
-	["Scratchpad"			pure-scratchpad t]
 	"-"
+	["Run Script"			pure-run-script t]
 	["Send Current Line"		pure-send-line t]
-	["Send Region"			pure-send-region t]
+	["Send Region"			pure-send-region
+					(pure-region-is-active-p)]
 	["Show Symbol..."		pure-show t]
 	["Clear Symbol..."		pure-clear t]
 	"-"
 	["Find Main Script"		pure-find-script pure-last-script]
 	["Goto Input Line"		pure-goto-input-line
 					(get-process "pure-eval")]
+	["Pure Scratchpad"		pure-scratchpad t]
 	"-"
 	(list "Debugger"
 	      ["Debugging Mode"		pure-toggle-debug-mode
@@ -426,11 +432,11 @@ Non-nil means always go to the next Pure code line after sending."
 (defvar pure-eval-mode-map nil)
 (cond ((not pure-eval-mode-map)
        (setq pure-eval-mode-map (copy-keymap comint-mode-map))
-       (define-key pure-eval-mode-map "\C-c\C-h" 'pure-help)
+       (define-key pure-eval-mode-map "\C-ch"    'pure-help)
        (define-key pure-eval-mode-map "\C-c\M-p" 'pure-run)
        (define-key pure-eval-mode-map "\C-c\M-r" 'pure-rerun)
        (define-key pure-eval-mode-map "\C-c\M-q" 'pure-quit)
-       (define-key pure-eval-mode-map "\C-c\C-d" 'pure-toggle-debug-mode)
+       (define-key pure-eval-mode-map "\C-c\M-d" 'pure-toggle-debug-mode)
        (define-key pure-eval-mode-map "\C-x\M-p" 'pure-scratchpad)
        (define-key pure-eval-mode-map "\C-c\M-b" 'pure-break)
        (define-key pure-eval-mode-map "\C-c\M-t" 'pure-trace)
@@ -448,8 +454,8 @@ Non-nil means always go to the next Pure code line after sending."
        (define-key pure-eval-mode-map "\C-c\C-p" 'pure-prev-msg)
        (define-key pure-eval-mode-map "\C-c\C-e" 'pure-last-msg)
        (define-key pure-eval-mode-map "\C-c\C-a" 'pure-first-msg)
-       (define-key pure-eval-mode-map "\C-c\C-f" 'pure-find-script)
-       (define-key pure-eval-mode-map "\C-c\C-v" 'pure-goto-input-line)))
+       (define-key pure-eval-mode-map "\C-x\M-f" 'pure-find-script)
+       (define-key pure-eval-mode-map "\C-x\M-v" 'pure-goto-input-line)))
 
 (defvar pure-eval-mode-menu
   (list "Pure"
@@ -460,13 +466,13 @@ Non-nil means always go to the next Pure code line after sending."
 	["Start Interpreter"		pure-run t]
 	["Restart Interpreter"		pure-rerun
 					(get-process "pure-eval")]
-	["Stop Interpreter"		pure-quit
+	["Quit Interpreter"		pure-quit
 					(get-process "pure-eval")]
-	["Scratchpad"			pure-scratchpad t]
 	"-"
 	["Find Main Script"		pure-find-script pure-last-script]
 	["Goto Input Line"		pure-goto-input-line
 					(get-process "pure-eval")]
+	["Pure Scratchpad"		pure-scratchpad t]
 	"-"
 	(list "Debugger"
 	      ["Debugging Mode"		pure-toggle-debug-mode
@@ -1309,6 +1315,10 @@ If prefix ARG is not nil, remove an existing breakpoint instead."
   (interactive
    (list
     (let ((default (puresym-at-point)))
+      (unless pure-debug-mode
+	(error
+	 (substitute-command-keys
+	  "Debugging is disabled, use \\[pure-toggle-debug-mode] to enable")))
       (pure-start t)
       (completing-read
        (format "%s breakpoint: "
@@ -1344,6 +1354,10 @@ If prefix ARG is not nil, remove an existing tracepoint instead."
   (interactive
    (list
     (let ((default (puresym-at-point)))
+      (unless pure-debug-mode
+	(error
+	 (substitute-command-keys
+	  "Debugging is disabled, use \\[pure-toggle-debug-mode] to enable")))
       (pure-start t)
       (completing-read
        (format "%s tracepoint: "
