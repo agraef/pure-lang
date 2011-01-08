@@ -1634,32 +1634,54 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
   } else if (strcmp(cmd, "del") == 0)  {
     const char *s = cmdline+3;
     argl args(s, "del");
-    if (!args.ok)
-      ;
-    else if (args.c == 0) {
-      if (!interp.breakpoints.empty() || !interp.tracepoints.empty()) {
-	if (yes_or_no("This will clear all breakpoints. Continue (y/n)?")) {
-	  interp.breakpoints.clear();
-	  interp.tracepoints.clear();
-	}
-      } else
-	cerr << "del: no breakpoints\n";
-    } else {
-      for (list<string>::iterator it = args.l.begin();
-	   it != args.l.end(); ++it) {
-	const char *s = it->c_str();
-	int32_t f = pure_getsym(s);
-	if (f > 0) {
-	  env::const_iterator jt = interp.globenv.find(f);
-	  if (interp.breakpoints.find(f) != interp.breakpoints.end()) {
-	    interp.breakpoints.erase(f);
-	    interp.tracepoints.erase(f);
-	  } else if (interp.tracepoints.find(f) != interp.tracepoints.end())
-	    interp.tracepoints.erase(f);
-	  else
-	    cerr << "del: unknown breakpoint '" << s << "'\n";
+    if (args.ok) {
+      bool bflag = false, tflag = false;
+      const char *ty = "break";
+      char msg[100];
+      if (args.c >= 1) {
+	bflag = args.l.front() == "-b";
+	tflag = args.l.front() == "-t";
+	if (bflag || tflag) {
+	  args.c--;
+	  args.l.pop_front();
+	  if (tflag) ty = "trace";
 	} else
-	  cerr << "del: unknown function symbol '" << s << "'\n";
+	  bflag = tflag = true;
+      } else
+	bflag = tflag = true;
+      if (args.c == 0) {
+	if ((bflag && !interp.breakpoints.empty()) ||
+	    (tflag && !interp.tracepoints.empty())) {
+	  sprintf(msg, "This will clear all %spoints. Continue (y/n)?", ty);
+	  if (yes_or_no(msg)) {
+	    if (bflag) interp.breakpoints.clear();
+	    if (tflag) interp.tracepoints.clear();
+	  }
+	} else {
+	  sprintf(msg, "del: no %spoints\n", ty);
+	  cerr << msg;
+	}
+      } else {
+	for (list<string>::iterator it = args.l.begin();
+	     it != args.l.end(); ++it) {
+	  const char *s = it->c_str();
+	  int32_t f = pure_getsym(s);
+	  if (f > 0) {
+	    env::const_iterator jt = interp.globenv.find(f);
+	    if (bflag &&
+		interp.breakpoints.find(f) != interp.breakpoints.end()) {
+	      interp.breakpoints.erase(f);
+	      if (tflag) interp.tracepoints.erase(f);
+	    } else if (tflag &&
+		       interp.tracepoints.find(f) != interp.tracepoints.end())
+	      interp.tracepoints.erase(f);
+	    else {
+	      sprintf(msg, "del: unknown %spoint '", ty);
+	      cerr << msg << s << "'\n";
+	    }
+	  } else
+	    cerr << "del: unknown function symbol '" << s << "'\n";
+	}
       }
     }
   } else if (strcmp(cmd, "help") == 0)  {
