@@ -1201,7 +1201,7 @@ On success, return 0.  Otherwise, go as far as possible and return -1."
 	    (setq line (substring string 0 (match-beginning 0))
 		  string (substring string (match-end 0)))
 	  (setq line string string ""))
-	(pure-send-list-and-digest (list (concat line "\n")) t)
+	(pure-send-list-and-digest (list (concat line "\n")))
 	(insert-before-markers
 	 (mapconcat 'identity
 		    (append
@@ -1265,16 +1265,14 @@ instead."
       (set-buffer pure-eval-buffer)
       (setq pure-output-list nil)
       (setq line (concat "show " symbol))
-      (if arg
-	  (pure-send-list-and-digest (list (concat line "\n")))
-	(pure-send-list-and-digest (list (concat line "\n")) t)
-	(insert-before-markers
-	 (mapconcat 'identity
-		    (append
-		     (if pure-send-echo-input (list line) (list ""))
-		     pure-output-list
-		     (list pure-output-string))
-		    "\n"))))
+      (pure-send-list-and-digest (list (concat line "\n")))
+      (insert-before-markers
+       (mapconcat 'identity
+		  (append
+		   (if pure-send-echo-input (list line) (list ""))
+		   pure-output-list
+		   (list pure-output-string))
+		  "\n")))
     (cond
      (arg
       (insert (mapconcat 'identity pure-output-list "\n") "\n"))
@@ -1297,7 +1295,7 @@ instead."
       (set-buffer pure-eval-buffer)
       (setq pure-output-list nil)
       (setq line (concat "clear " symbol))
-      (pure-send-list-and-digest (list (concat line "\n")) t)
+      (pure-send-list-and-digest (list (concat line "\n")))
       (insert-before-markers
        (mapconcat 'identity
 		  (append
@@ -1336,7 +1334,7 @@ If prefix ARG is not nil, remove an existing breakpoint instead."
 	(set-buffer pure-eval-buffer)
 	(setq pure-output-list nil)
 	(setq line (format "%s %s" (if arg "del -b" "break") symbol))
-	(pure-send-list-and-digest (list (concat line "\n")) t)
+	(pure-send-list-and-digest (list (concat line "\n")))
 	(insert-before-markers
 	 (mapconcat 'identity
 		    (append
@@ -1375,7 +1373,7 @@ If prefix ARG is not nil, remove an existing tracepoint instead."
 	(set-buffer pure-eval-buffer)
 	(setq pure-output-list nil)
 	(setq line (format "%s %s" (if arg "del -t" "trace") symbol))
-	(pure-send-list-and-digest (list (concat line "\n")) t)
+	(pure-send-list-and-digest (list (concat line "\n")))
 	(insert-before-markers
 	 (mapconcat 'identity
 		    (append
@@ -1432,7 +1430,7 @@ preceding point."
       (setq pure-receive-in-progress nil))
   (setq pure-output-string string))
 
-(defun pure-send-list-and-digest (list &optional nowait)
+(defun pure-send-list-and-digest (list)
   (let* ((pure-eval-buffer (get-buffer "*pure-eval*"))
 	 (proc (get-buffer-process pure-eval-buffer))
 	 (filter (process-filter proc))
@@ -1444,9 +1442,8 @@ preceding point."
 	  (setq pure-output-string nil
 		pure-receive-in-progress t)
 	  (comint-send-string proc string)
-	  (unless nowait
-	    (while pure-receive-in-progress
-	      (accept-process-output proc)))
+	  (while pure-receive-in-progress
+	    (accept-process-output proc))
 	  (setq list (cdr list)))
       (set-process-filter proc filter)
       (setq pure-receive-in-progress nil))))
