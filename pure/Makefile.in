@@ -169,8 +169,9 @@ examples/bitcode/*.dsp examples/bitcode/*.pure \
 examples/hellomod/Makefile examples/hellomod/*.c examples/hellomod/*.pure \
 lib/*.pure test/*.pure test/*.log test/*.blob
 
-.PHONY: all html dvi ps pdf clean realclean depend install uninstall \
-install-docs strip dist distcheck cleanlogs logs check config
+.PHONY: all elc clean realclean depend install uninstall install-docs \
+install-el install-elc uninstall-el uninstall-elc \
+strip dist distcheck cleanlogs logs check config
 
 # compilation
 
@@ -221,6 +222,19 @@ etc/pure-mode.el: Makefile etc/pure-mode.el.in
 	sed -e 's,@bindir\@,$(bindir),g' -e 's,@libdir\@,$(libdir),g' $(srcdir)/etc/pure-mode.el.in > etc/pure-mode.el.tmp
 	mv etc/pure-mode.el.tmp etc/pure-mode.el
 
+# create pure-mode.elc from pure-mode.el (this requires emacs)
+
+ELC = emacs -q --no-site-file -batch -eval "(add-to-list 'load-path \".\")" -f batch-byte-compile
+
+etc/pure-mode.elc: etc/pure-mode.el
+	cd etc && $(ELC) pure-mode.el
+
+# The above target will normally be invoked only when installing the elc file.
+# You can also use the following target to generate the elc file without
+# installing it.
+
+elc: etc/pure-mode.elc
+
 # generate the library documentation (this requires pure-doc)
 
 # make sure to get these into the right order
@@ -235,7 +249,7 @@ purelib.txt: $(libfiles)
 # cleaning
 
 clean:
-	rm -f *~ *.bak pure$(EXE) $(OBJECT) pure.o pure_main.o $(libpure_lnkname) $(libpure_soname) $(libpure) parser.output
+	rm -f *~ *.bak pure$(EXE) $(OBJECT) pure.o pure_main.o $(libpure_lnkname) $(libpure_soname) $(libpure) parser.output etc/pure-mode.elc
 
 distclean: clean
 	rm -f Makefile config.h config.log config.status etc/pure-mode.el $(dist).tar.gz
@@ -278,7 +292,7 @@ pure_pc = pure.pc
 pure_1 = pure.1
 endif
 
-install: pure$(EXE) etc/pure-mode.el pure.1
+install: pure$(EXE) pure.1
 ifeq ($(versioned), yes)
 	rm -rf $(addprefix $(DESTDIR), $(includedir)/pure $(libdir)/pure)
 endif
@@ -320,6 +334,32 @@ docs = http://pure-lang.googlecode.com/files/pure-docs-$(version).tar.gz
 
 install-docs:
 	@MAKE=$(MAKE) ./install-docs.sh "$(docs)"
+
+# install pure-mode.el and pure-mode.elc
+
+# make tries to guess the emacs installation prefix; if it guesses wrong, you
+# can specify emacs_prefix manually, or just set elispdir directly.
+
+emacs_prefix = $(patsubst %/bin/emacs,%,$(shell which emacs 2>/dev/null))
+ifeq ($(strip $(emacs_prefix)),)
+# Fall back to $(prefix).
+emacs_prefix = $(prefix)
+endif
+elispdir = $(emacs_prefix)/share/emacs/site-lisp
+
+install-el: etc/pure-mode.el
+	$(INSTALL) -d $(DESTDIR)$(elispdir)
+	$(INSTALL) -m 644 $< $(DESTDIR)$(elispdir)
+
+install-elc: etc/pure-mode.elc
+	$(INSTALL) -d $(DESTDIR)$(elispdir)
+	$(INSTALL) -m 644 $< $(DESTDIR)$(elispdir)
+
+uninstall-el:
+	rm -rf $(DESTDIR)$(elispdir)/pure-mode.el
+
+uninstall-elc:
+	rm -rf $(DESTDIR)$(elispdir)/pure-mode.elc
 
 # roll a distribution tarball
 

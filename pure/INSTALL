@@ -422,10 +422,63 @@ beginning of a line, i.e., Ctrl-D on Unix):
 
 > quit
 
-You can also run the interpreter from GNU Emacs (after running 'make', check
-the etc subdirectory in the sources for pure-mode.el), and for Windows there
-is a nice GUI application named "PurePad" which makes it easy to edit and run
-your Pure scripts.
+You can also run the interpreter from GNU Emacs (see below), and for Windows
+there is a nice GUI application named "PurePad" which makes it easy to edit
+and run your Pure scripts.
+
+STEP 8. Install pure-mode.el.
+
+This step is optional, but if you're friends with Emacs then you should
+definitely try "Pure mode" which gives you a full-blown IDE to edit and run
+Pure programs in Emacs. After running 'make', the required elisp file
+pure-mode.el can be found in the etc subdirectory.
+
+The Makefile contains a few targets to byte-compile the file using Emacs and
+install it in your Emacs site-lisp directory.
+
+To byte-compile the file without installing it:
+
+$ make elc
+
+This creates a file pure-mode.elc in the etc directory. (The Emacs byte
+compiler may issue some warnings when compiling the file, but the generated
+file should normally work fine anyway. However, if you get an error message
+during compilation then this is a bug which should be reported to the author.)
+
+To install the pure-mode.el and pure-mode.elc files:
+
+$ sudo make install-el
+$ sudo make install-elc
+
+(Installing the bytecode file isn't required for using Pure mode, but
+recommended since Emacs executes bytecode faster than Lisp source.)
+
+Note: The Makefile tries to guess the Emacs installation prefix. If it gets
+this wrong, you can also set the make variable 'elispdir' to point to your
+site-lisp directory. (In fact, you can specify any directory on Emacs'
+loadpath for 'elispdir'.)
+
+You can also remove the installed files later with 'sudo make uninstall-el'
+and 'sudo make uninstall-elc'.
+
+Once Pure mode is installed, you also need to add some stuff to your .emacs
+file to load the mode at startup. A minimal setup looks like this:
+
+(require 'pure-mode)
+(setq auto-mode-alist
+      (cons '("\\.pure\\(rc\\)?$" . pure-mode) auto-mode-alist))
+(add-hook 'pure-mode-hook 'turn-on-font-lock)
+(add-hook 'pure-eval-mode-hook 'turn-on-font-lock)
+
+This loads Pure mode, associates the .pure and .purerc filename extensions
+with it, and enables syntax highlighting.
+
+Other useful options are described at the beginning of the pure-mode.el
+file. In particular, we recommend installing emacs-w3m and enabling it as
+follows in your .emacs file, so that you can read the online documentation in
+Emacs:
+
+(require 'w3m-load)
 
 
 INSTALLING FROM DEVELOPMENT SOURCES
