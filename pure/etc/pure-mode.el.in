@@ -338,6 +338,13 @@ See the Pure manual for a list of available options."
   :type 'integer
   :group 'pure)
 
+(defcustom pure-stacksize 0
+  "*Stack size available to Pure programs in kilobytes. If
+nonzero, this determines the value of the PURE_STACK environment
+variable."
+  :type 'integer
+  :group 'pure)
+
 (defcustom pure-query-before-kill nil
   "*Indicates that the user should be prompted before zapping an existing
 interpreter process when starting a new one."
@@ -791,9 +798,14 @@ manipulating the command history, etc. See `pure-eval-mode'.
 	      (setq comint-input-ring-file-name pure-histfile
 		    comint-input-ring-size pure-histsize)
 	      (comint-read-input-ring t))))
-      ;; invoke the interpreter
+      ;; disable paging in the interpreter
       (setenv "PURE_MORE" nil)
-      (setenv "PURE_LESS" nil) ; disable paging in the interpreter
+      (setenv "PURE_LESS" nil)
+      ;; set PURE_STACK
+      (setenv "PURE_STACK"
+	      (if (zerop pure-stacksize) nil
+		(format "%d" pure-stacksize)))
+      ;; invoke the interpreter
       (comint-exec pure-eval-buffer "pure-eval" pure-prog-name nil
 		   (append (list "-q" "-i" "--noediting")
 			   (if pure-debug-mode (list "-g") nil)
