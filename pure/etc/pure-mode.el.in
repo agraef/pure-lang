@@ -138,6 +138,9 @@
 (defvar pure-mode-map nil)
 (cond ((not pure-mode-map)
        (setq pure-mode-map (make-sparse-keymap))
+       (define-key pure-mode-map ";"        'pure-electric-semi)
+       (define-key pure-mode-map "="        'pure-electric-equal)
+       (define-key pure-mode-map "\t"       'pure-electric-tab)
        (define-key pure-mode-map "\C-ch"    'pure-help)
        (define-key pure-mode-map "\C-c\M-p" 'pure-run)
        (define-key pure-mode-map "\C-c\M-r" 'pure-rerun)
@@ -186,6 +189,8 @@
 					(pure-region-is-active-p)]
 	["Uncomment Region"		uncomment-region
 					(pure-region-is-active-p)]
+	["Indent Current Line"		pure-electric-tab t]
+	["Indent Line or Region"	pure-indent-line-or-region t]
 	["Fill Comment Paragraph"	fill-paragraph t]
 	"-"
 	["Make Tags"			pure-make-tags t]
@@ -235,22 +240,53 @@
 (define-derived-mode pure-mode fundamental-mode "Pure"
   "Major mode for editing Pure scripts.
 
-Provides the `pure-run-script' (\\[pure-run-script]) command to
-run the interpreter on the script in the current buffer. It will
-be verified that the buffer has a file associated with it, and
-you will be prompted to save edited buffers when invoking this
-command. You can also feed lines or regions of Pure code into a
-running interpreter with the `pure-send-line' (\\[pure-send-line]) and
-`pure-send-region' (\\[pure-send-region]) commands. (This starts a new
-interpreter instance without a script if necessary.)
+\\[pure-electric-tab] indents Pure code. Other electric characters such as
+`;' and `=' also do automatic indentation.
+
+\\[fill-paragraph] fills paragraphs in comments (and strings). You can also use
+this command with a prefix argument to justify the text between
+margins.
+
+\\[pure-complete-symbol] completes the symbol at point, looking up known Pure
+symbols in the online documentation index.
+
+Some important variables controlling indentation/edit style:
+
+`pure-indent-level': Indentation of Pure code with respect to
+    containing block. Default: 2.
+
+`pure-extra-indent': Extra indentation for Pure code blocks at
+    the beginning of a line. Default: 0.
+
+`pure-tab-always-indent': Non-nil means \\[pure-electric-tab] should always
+    reindent the current line, regardless of where in the line
+    point is when the \\[pure-electric-tab] command is used. Default: t.
+
+`pure-align-equals': Non-nil means that entering `=' at the end
+    of a line automatically aligns the right-hand side with a
+    previous equation. (Otherwise only initial `=' will be
+    aligned.) Default: t.
+
+The Pure interpreter can be started in a buffer (see
+`pure-eval-mode') using \\[run-pure]).
+
+Pure mode also provides the `pure-run-script' (\\[pure-run-script])
+command to run the interpreter on the script in the current
+buffer. It will be verified that the buffer has a file associated
+with it, and you will be prompted to save edited buffers when
+invoking this command.
+
+You can also feed lines or regions of Pure code into a running
+interpreter with the `pure-send-line' (\\[pure-send-line]) and
+`pure-send-region' (\\[pure-send-region]) commands. (This starts
+a new interpreter instance without a script if necessary.)
 
 Special commands are provided to quickly locate the main script
 and the input line of the Pure eval buffer, and to visit the
-source lines shown in error messages (see `pure-eval-mode').
-\\[pure-complete-symbol] performs completion of (documented) Pure symbols.
-These operations can also be selected from the Pure menu
-(accessible from the menu bar), which also provides commands for
-reading the online help and customizing the Pure mode setup.
+source lines shown in error messages. These operations can also
+be selected from the Pure menu (accessible from the menu bar),
+which also provides commands for reading the online help and
+customizing the Pure mode setup.
 
 Command list:
 
@@ -289,6 +325,12 @@ non-nil."
 	comment-end ""
 	comment-start-skip "/\\*+ *\\|// *\\|^#! *"
 	comment-multi-line nil)
+  (make-local-variable 'indent-line-function)
+  (setq indent-line-function 'pure-indent-line)
+  (if (boundp 'fill-paragraph-function)
+      (progn
+	(make-local-variable 'fill-paragraph-function)
+	(setq fill-paragraph-function 'pure-fill-paragraph)))
   (make-local-variable 'font-lock-defaults)
   (setq font-lock-defaults
 	'(pure-font-lock-keywords nil nil ((?_ . "w"))))
@@ -376,6 +418,47 @@ expression 2 the file name and expression 3 the corresponding line number."
   "*Hook for customising Pure mode.
 For instance, add `turn-on-font-lock' to enable syntax highlighting."
   :type 'hook
+  :group 'pure)
+
+(defcustom pure-tab-always-indent t
+  "*Non-nil means TAB in Pure mode should always reindent the current line.
+If this is nil, TAB inserts a tab if it is at the end of the line
+and follows non-whitespace text."
+  :type 'boolean
+  :group 'pure)
+
+(defcustom pure-indent-level 2
+  "*Indentation of Pure code with respect to containing block."
+  :type 'integer
+  :group 'pure)
+
+(defcustom pure-extra-indent 0
+  "*Extra indentation for Pure code blocks at the beginning of a line."
+  :type 'integer
+  :group 'pure)
+
+(defcustom pure-align-equals t
+  "*Non-nil means that entering `=' at the end of a line
+automatically aligns the right-hand side with a previous
+equation."
+  :type 'boolean
+  :group 'pure)
+
+(defcustom pure-hanging-comment-ender-p t
+  "*Controls what \\[fill-paragraph] does to Pure block comment enders.
+When set to nil, Pure block comment enders are left on their own line.
+When set to t, block comment enders will be placed at the end of the
+previous line (i.e. they `hang' on that line)."
+  :type 'boolean
+  :group 'pure)
+
+(defcustom pure-hanging-comment-starter-p t
+  "*Controls what \\[fill-paragraph] does to Pure block comment starters.
+When set to nil, Pure block comment starters are left on their own line.
+When set to t, text that follows a block comment starter will be
+placed on the same line as the block comment starter (i.e. the text
+`hangs' on that line)."
+  :type 'boolean
   :group 'pure)
 
 (defcustom pure-eval-mode-hook nil
@@ -755,7 +838,12 @@ it is currently running."
   "Run the interpreter with given arguments, in buffer *pure-eval*.
 
 Debugging mode of the interpreter (-g) is enabled depending on
-the current value of the `pure-debug-mode' variable.
+the current value of the `pure-debug-mode' variable. There are a
+number of other customizable variables which can be used to
+control how the interpreter is invoked. In particular,
+`pure-stacksize' sets the stack size available to Pure programs
+in kilobytes. (If nonzero, this determines the value of the
+PURE_STACK environment variable.)
 
 The interpreter is invoked in the directory of the current buffer (current
 default directory if no file is associated with the current buffer).
@@ -764,9 +852,7 @@ If buffer exists and process is running, kill it and start a new one.
 
 Program used comes from variable `pure-prog-name'. The buffer is put in Pure
 eval mode, giving commands for visiting source files, sending input,
-manipulating the command history, etc. See `pure-eval-mode'.
-
-\(Type \\[describe-mode] in the Pure eval buffer for a list of commands.)"
+manipulating the command history, etc. See `pure-eval-mode'."
 
   (interactive)
   (let* ((dir (if buffer-file-name
@@ -1518,5 +1604,690 @@ preceding point."
 	       (pure-eval-buffer
 		(set-buffer pure-eval-buffer)
 		(comint-write-input-ring))))))
+
+;; indentation (experimental)
+
+;; Based on Emacs' Pascal mode by Espen Skoglund <esk@gnu.org>, adjusted for
+;; Pure's block constructs which can also occur inside expressions.
+
+(defconst pure-beg-block-re   "\\<\\(case\\|when\\|with\\)\\>")
+(defconst pure-end-block-re   "\\<end\\>")
+(defconst pure-declaration-re "\\<\\(const\\|extern\\|infix[lr]?\\|let\\|namespace\\|\\(non\\|out\\|post\\|pre\\)fix\\|private\\|public\\|using\\)\\>")
+(defconst pure-ifelse-re      "\\<\\(if\\|else\\)\\>")
+(defconst pure-noindent-re    "\\<\\(end\\|else\\)\\>")
+
+(defconst pure-indent-alist
+  '((block . (+ ind pure-indent-level))
+    (declaration . (+ ind pure-indent-level))
+    (comment . (pure-indent-comment))
+    (contexp . ind) (unknown . ind)
+    (string . 0) (toplevel . 0)))
+
+(defun pure-indent-line ()
+  "Indent current line as a Pure code."
+  (let* ((indent-str (pure-calculate-indent))
+	 (type (car indent-str))
+	 (ind (car (cdr indent-str))))
+    (delete-horizontal-space)
+    (cond (; Some things should not be indented
+	   (and (eq type 'declaration) (looking-at pure-declaration-re))
+	   ())
+	  (; Other things should have no extra indent
+	   (looking-at pure-noindent-re)
+	   (indent-to ind))
+	  (; But most lines are treated this way
+	   (indent-to (eval (cdr (assoc type pure-indent-alist))))
+	   ))))
+
+(defun pure-calculate-indent ()
+  "Calculate the indent of the current Pure line.
+Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
+  (save-excursion
+    (let* ((parse-sexp-ignore-comments t)
+	   (oldpos (point))
+	   (state (save-excursion (parse-partial-sexp (point-min) (point))))
+	   (level (car state)) (nest 0) (par 0)
+	   (extra-indent (if (save-excursion
+			       (skip-chars-forward " \t")
+			       (looking-at pure-beg-block-re))
+			     pure-extra-indent
+			   0))
+	   (complete (looking-at "[ \t]*end\\>"))
+	   (elsed (looking-at "[ \t]*else\\>"))
+	   (equald (and (zerop level) (looking-at "[ \t]*=")))
+	   (type (catch 'nesting
+		   ;; Check if inside a string, comment or parenthesis
+		   (cond ((nth 3 state) (throw 'nesting 'string))
+			 ((nth 4 state) (throw 'nesting 'comment))
+			 ((> level 0)
+			  (save-excursion
+			    (goto-char (scan-lists (point) -1 level))
+			    (setq par (1+ (current-column))))))
+		   ;; Loop until correct indent is found
+		   (while t
+		     ;; The backward-sexp may fail if we reach the beginning
+		     ;; of an enclosing sexp, assume toplevel in this case.
+		     (when (condition-case nil
+			       (progn (backward-sexp 1) nil)
+			     (scan-error t))
+		       (throw 'nesting 'toplevel))
+		     ;; The case of a lone '=' at the beginning of the line
+		     ;; needs special treatment. Here we're looking for an
+		     ;; equation in the same block that the equals sign can be
+		     ;; aligned with.
+		     (when (and equald
+				(= nest 0)
+				(save-excursion
+				  (skip-chars-backward " \t")
+				  (and
+				   (bolp)
+				   (re-search-forward
+				    "[ \t]\\(=\\)\\([ \t]\\|[ \t]*$\\)"
+				    (point-at-eol) t))))
+		       (goto-char (match-beginning 1))
+		       (setq par (current-column))
+		       (throw 'nesting 'toplevel))
+		     (cond (;--Nest block outwards
+			    (looking-at pure-beg-block-re)
+			    (if (> nest 0)
+				(setq nest (1- nest))
+			      (throw 'nesting 'block)))
+			   (;--Nest block inwards
+			    (looking-at pure-end-block-re)
+			    (when (and (looking-at "end\\s ")
+				       elsed (not complete))
+			      (throw 'nesting 'block))
+			    (setq complete t
+				  nest (1+ nest)))
+			   (;--Declaration part
+			    (looking-at pure-declaration-re)
+			    (unless (save-excursion
+				      (search-forward ";" oldpos t))
+			      (throw 'nesting 'declaration)))
+			   (;--If-then-else
+			    (and (not complete)
+				 (looking-at pure-ifelse-re))
+			    (throw 'nesting 'block))
+			   (;--Beginning of program
+			    (bobp)
+			    (throw 'nesting 'toplevel))
+			   (;--Found complete statement
+			    (save-excursion (forward-sexp 1)
+					    (= (following-char) ?\;))
+			    (setq complete t))
+			   )))))
+
+      ;; Return type of block and indent level.
+      (if (eq type 'toplevel)
+	  (list 'contexp (+ extra-indent par))
+	(list type (+ extra-indent (pure-indent-level)))))))
+
+(defun pure-calculate-equal-indent ()
+  "Similar to `pure-calculate-indent', but this function
+specifically determines the alignment of equations (`=' symbol).
+The return value is just the alignment column, or zero if none."
+  (save-excursion
+    (let* ((parse-sexp-ignore-comments t)
+	   (oldpos (point))
+	   (state (save-excursion (parse-partial-sexp (point-min) (point))))
+	   (level (car state)) (nest 0) (pos 0)
+	   (complete (looking-at "[ \t]*end\\>"))
+	   (elsed (looking-at "[ \t]*else\\>"))
+	   (type (catch 'nesting
+		   ;; Check if inside a string, comment or parenthesis
+		   (cond ((nth 3 state) (throw 'nesting 'string))
+			 ((nth 4 state) (throw 'nesting 'comment))
+			 ((> level 0) (throw 'nesting 'toplevel)))
+		   ;; Loop until correct indent is found
+		   (while t
+		     (backward-sexp 1)
+		     (when (and (= nest 0)
+				(save-excursion
+				  (skip-chars-backward " \t")
+				  (and
+				   (bolp)
+				   (re-search-forward
+				    "[ \t]\\(=\\)\\([ \t]\\|[ \t]*$\\)"
+				    (point-at-eol) t))))
+		       (goto-char (match-beginning 1))
+		       (setq pos (current-column))
+		       (throw 'nesting 'toplevel))
+		     (cond (;--Nest block outwards
+			    (looking-at pure-beg-block-re)
+			    (if (> nest 0)
+				(setq nest (1- nest))
+			      (throw 'nesting 'block)))
+			   (;--Nest block inwards
+			    (looking-at pure-end-block-re)
+			    (when (and (looking-at "end\\s ")
+				       elsed (not complete))
+			      (throw 'nesting 'block))
+			    (setq complete t
+				  nest (1+ nest)))
+			   (;--Declaration part
+			    (looking-at pure-declaration-re)
+			    (unless (save-excursion
+				      (search-forward ";" oldpos t))
+			      (throw 'nesting 'declaration)))
+			   (;--If-then-else
+			    (and (not complete)
+				 (looking-at pure-ifelse-re))
+			    (throw 'nesting 'block))
+			   (;--Beginning of program
+			    (bobp)
+			    (throw 'nesting 'toplevel))
+			   (;--Found complete statement
+			    (save-excursion (forward-sexp 1)
+					    (= (following-char) ?\;))
+			    (setq complete t))
+			   )))))
+
+      (if (eq type 'toplevel) pos 0))))
+
+;; (defun pure-indent-level ()
+;;   "Return the indent-level of the current line."
+;;   (save-excursion
+;;     (beginning-of-line)
+;;     (skip-chars-forward " \t")
+;;     (current-column)))
+
+(defun pure-indent-level ()
+  "Return the indent-level of the current line."
+  (let ((pos (and (looking-at pure-beg-block-re) (point))))
+    (save-excursion
+      (beginning-of-line)
+      (skip-chars-forward " \t")
+      (if pos
+	  ;; Special "hanging" indent for blocks at the end of an equation.
+	  (cond
+	   ((looking-at "=[ \t]")
+	    (forward-char)
+	    (skip-chars-forward " \t"))
+	   ((save-excursion
+	      (and (re-search-forward "[ \t]\\(=\\)\\([ \t]\\|[ \t]*$\\)"
+				      (point-at-eol) t)
+		   (> pos (match-end 1))))
+	    (goto-char (match-end 1))
+	    (skip-chars-forward " \t"))))
+      (current-column))))
+
+(defun pure-indent-comment ()
+  "Return indent for current comment."
+  (save-excursion
+    (re-search-backward "/\\*" nil t)
+    (+ (current-column) 3)))
+
+(defun pure-indent-region (start end)
+  ;; Indent every line whose first char is between START and END inclusive.
+  (let (p)
+    (save-excursion
+      (goto-char start)
+      (setq p (copy-marker end))
+      (while (and (bolp)
+		  (not (eobp))
+		  (< (point) p))
+	(pure-indent-line)
+	(forward-line 1)))))
+
+(defun pure-indent-line-or-region ()
+  "When the region is active, indent it.  Otherwise indent the current line."
+  (interactive)
+  (if (pure-region-is-active-p)
+      (pure-indent-region (region-beginning) (region-end))
+    (pure-indent-line)))
+
+;; Electric characters doing auto-indentation and/or alignment.
+
+(defun pure-electric-semi ()
+  "Insert a `;' character and reindent the line."
+  (interactive)
+  (insert last-command-char)
+  (save-excursion
+    (beginning-of-line)
+    (pure-indent-line)))
+
+(defsubst pure-within-string ()
+  (save-excursion
+    (nth 3 (parse-partial-sexp (point-min) (point)))))
+
+(defun pure-electric-equal ()
+  "Insert a `=' character and reindent the line if at the
+beginning of the line. Otherwise, if point is at the end of the
+line and `pure-align-equals' is t, align the `=' symbol to the
+current `=' indentation column, as given by
+`pure-calculate-equal-indent'."
+  (interactive)
+  (cond ((save-excursion
+	   (skip-chars-backward " \t")
+	   (bolp))
+	 (insert last-command-char)
+	 (beginning-of-line)
+	 (pure-indent-line))
+	((and pure-align-equals
+	      (not (pure-within-string))
+	      (save-excursion
+		(skip-chars-forward " \t")
+		(eolp)))
+	 (if (eq (char-before) ?=)
+	     ;; We actually have a `==' operator here, so remove any previous
+	     ;; alignment.
+	     (progn
+	       (save-excursion
+		 (backward-char)
+		 (delete-horizontal-space)
+		 (insert " "))
+	       (insert last-command-char))
+	   (save-excursion
+	     (beginning-of-line)
+	     (pure-indent-line))
+	   (let ((col (current-column))
+		 (icol (pure-calculate-equal-indent)))
+	     (if (> icol col)
+		 (move-to-column icol t))
+	     (insert last-command-char))))
+	(t (insert last-command-char))))
+
+(defun pure-electric-tab ()
+  "Function called when TAB is pressed in Pure mode."
+  (interactive)
+  ;; Do nothing if within a string.
+  (if (pure-within-string)
+      (insert "\t")
+    ;; If pure-tab-always-indent, indent the beginning of the line.
+    (if pure-tab-always-indent
+	(save-excursion
+	  (beginning-of-line)
+	  (pure-indent-line))
+      (if (save-excursion
+	    (skip-chars-backward " \t")
+	    (bolp))
+	  (pure-indent-line)
+	(insert "\t")))
+    (skip-chars-forward " \t")))
+
+;; Filling. This is the paragraph-fill from q-mode which in turn was based on
+;; (XEmacs) cc-mode.
+
+(defconst pure-comment-start-regexp "\\(/[/*]\\|^#!\\)")
+
+(defmacro pure-safe (&rest body)
+  ;; safely execute BODY, return nil if an error occurred
+  `(condition-case nil
+       (progn ,@body)
+       (error nil)))
+
+(defmacro pure-forward-sexp (&optional arg)
+  ;; like forward-sexp except
+  ;;   1. this is much stripped down from the XEmacs version
+  ;;   2. this cannot be used as a command, so we're insulated from
+  ;;      XEmacs' losing efforts to make forward-sexp more user
+  ;;      friendly
+  ;;   3. Preserves the semantics most of CC Mode is based on
+  (or arg (setq arg 1))
+  `(goto-char (or (scan-sexps (point) ,arg)
+		  ,(if (numberp arg)
+		       (if (> arg 0) `(point-max) `(point-min))
+		     `(if (> ,arg 0) (point-max) (point-min))))))
+
+(defmacro pure-backward-sexp (&optional arg)
+  ;; See pure-forward-sexp and reverse directions
+  (or arg (setq arg 1))
+  `(pure-forward-sexp ,(if (numberp arg) (- arg) `(- ,arg))))
+
+(defun pure-literal-limits (&optional lim near)
+  ;; Returns a cons of the beginning and end positions of the comment
+  ;; or string surrounding point (including both delimiters), or nil
+  ;; if point isn't in one.  If LIM is non-nil, it's used as the
+  ;; "safe" position to start parsing from.  If NEAR is non-nil, then
+  ;; the limits of any literal next to point is returned.  "Next to"
+  ;; means there's only [ \t] between point and the literal.  The
+  ;; search for such a literal is done first in forward direction.
+  ;;
+  ;; This is the Emacs 19 version.
+  (save-excursion
+    (let* ((pos (point))
+	   (lim (or lim (point-min)))
+	   (state (parse-partial-sexp lim (point))))
+      (cond ((nth 3 state)
+	     ;; String.  Search backward for the start.
+	     (while (nth 3 state)
+	       (search-backward (make-string 1 (nth 3 state)))
+	       (setq state (parse-partial-sexp lim (point))))
+	     (cons (point) (or (pure-safe (pure-forward-sexp 1) (point))
+			       (point-max))))
+	    ((nth 7 state)
+	     ;; Line comment.  Search from bol for the comment starter.
+	     (beginning-of-line)
+	     (setq state (parse-partial-sexp lim (point))
+		   lim (point))
+	     (while (not (nth 7 state))
+	       (search-forward "//")	; Should never fail.
+	       (setq state (parse-partial-sexp
+			    lim (point) nil nil state)
+		     lim (point)))
+	     (backward-char 2)
+	     (cons (point) (progn (forward-comment 1) (point))))
+	    ((nth 4 state)
+	     ;; Block comment.  Search backward for the comment starter.
+	     (while (nth 4 state)
+	       (search-backward "/*")	; Should never fail.
+	       (setq state (parse-partial-sexp lim (point))))
+	     (cons (point) (progn (forward-comment 1) (point))))
+	    ((pure-safe (nth 4 (parse-partial-sexp ; Can't use prev state due
+			     lim (1+ (point))))) ; to bug in Emacs 19.34.
+	     ;; We're standing in a comment starter.
+	     (backward-char 2)
+	     (cons (point) (progn (forward-comment 1) (point))))
+	    (near
+	     (goto-char pos)
+	     ;; Search forward for a literal.
+	     (skip-chars-forward " \t")
+	     (cond
+	      ((eq (char-syntax (or (char-after) ?\ )) ?\") ; String.
+	       (cons (point) (or (pure-safe (pure-forward-sexp 1) (point))
+				 (point-max))))
+	      ((looking-at pure-comment-start-regexp) ; Line or block comment.
+	       (cons (point) (progn (forward-comment 1) (point))))
+	      (t
+	       ;; Search backward.
+	       (skip-chars-backward " \t")
+	       (let ((end (point)) beg)
+		 (cond
+		  ((eq (char-syntax (or (char-before) ?\ )) ?\") ; String.
+		   (setq beg (pure-safe (pure-backward-sexp 1) (point))))
+		  ((and (pure-safe (forward-char -2) t)
+			(looking-at "*/"))
+		   ;; Block comment.  Due to the nature of line
+		   ;; comments, they will always be covered by the
+		   ;; normal case above.
+		   (goto-char end)
+		   (forward-comment -1)
+		   ;; If LIM is bogus, beg will be bogus.
+		   (setq beg (point))))
+		 (if beg (cons beg end))))))
+	    ))))
+
+(defun pure-fill-paragraph (&optional arg)
+  "Like \\[fill-paragraph] but handles Pure (i.e., C/C++) style
+comments. If any of the current line is a comment or within a comment,
+fill the comment or the paragraph of it that point is in,
+preserving the comment indentation or line-starting decorations.
+
+If point is inside multiline string literal, fill it.  This currently
+does not respect escaped newlines, except for the special case when it
+is the very first thing in the string.  The intended use for this rule
+is in situations like the following:
+
+description = \"\\
+A very long description of something that you want to fill to make
+nicely formatted output.\"\;
+
+If point is in any other situation, i.e. in normal code, do nothing.
+
+Optional prefix ARG means justify paragraph as well."
+  (interactive "*P")
+  (let* ((point-save (point-marker))
+	 limits
+	 comment-start-place
+	 (first-line
+	  ;; Check for obvious entry to comment.
+	  (save-excursion
+	    (beginning-of-line)
+	    (skip-chars-forward " \t")
+	    (and (looking-at comment-start-skip)
+		 (setq comment-start-place (point)))))
+	 (re1 "\\|\\([ \t]*/\\*[ \t]*\\|[ \t]*\\*/[ \t]*\\|[ \t/*]*\\)"))
+    (if (save-excursion
+	  (beginning-of-line)
+	  (looking-at "#!\\|.*//"))
+	(let ((fill-prefix fill-prefix)
+	       ;; Lines containing just a comment start or just an end
+	       ;; should not be filled into paragraphs they are next
+	       ;; to.
+	      (paragraph-start (concat paragraph-start re1 "$"))
+	      (paragraph-separate (concat paragraph-separate re1 "$")))
+	  (save-excursion
+	    (beginning-of-line)
+	    ;; Move up to first line of this comment.
+	    (while (and (not (bobp))
+ 			(looking-at "[ \t]*//[ \t]*[^ \t\n]"))
+	      (forward-line -1))
+ 	    (if (not (looking-at ".*//[ \t]*[^ \t\n]"))
+		(forward-line 1))
+	    ;; Find the comment start in this line.
+	    (re-search-forward "[ \t]*//[ \t]*")
+	    ;; Set the fill-prefix to be what all lines except the first
+	    ;; should start with.  But do not alter a user set fill-prefix.
+	    (if (null fill-prefix)
+		(setq fill-prefix (buffer-substring (match-beginning 0)
+						    (match-end 0))))
+	    (save-restriction
+	      ;; Narrow down to just the lines of this comment.
+	      (narrow-to-region (point-at-bol)
+				(save-excursion
+				  (forward-line 1)
+				  (while
+				      (looking-at (regexp-quote fill-prefix))
+				    (forward-line 1))
+				  (point)))
+	      (or (pure-safe
+		   ;; fill-paragraph sometimes fails to detect when we
+		   ;; are between paragraphs.
+		   (beginning-of-line)
+		   (search-forward fill-prefix (point-at-eol))
+		   (looking-at paragraph-separate))
+		  ;; Avoids recursion
+		  (let (fill-paragraph-function)
+		    (fill-paragraph arg))))))
+      ;; else C style comments
+      (if (or first-line
+	      ;; t if we enter a comment between start of function and
+	      ;; this line.
+	      (save-excursion
+		(setq limits (pure-literal-limits))
+		(and (consp limits)
+		     (save-excursion
+		       (goto-char (car limits))
+		       (looking-at pure-comment-start-regexp))))
+	      ;; t if this line contains a comment starter.
+	      (setq first-line
+		    (save-excursion
+		      (beginning-of-line)
+		      (prog1
+			  (re-search-forward comment-start-skip
+					     (save-excursion (end-of-line)
+							     (point))
+					     t)
+			(setq comment-start-place (point)))))
+	      ;; t if we're in the whitespace after a comment ender
+	      ;; which ends its line.
+	      (and (not limits)
+		   (when (and (looking-at "[ \t]*$")
+			      (save-excursion
+				(beginning-of-line)
+				(looking-at ".*\\*/[ \t]*$")))
+		     (save-excursion
+		       (forward-comment -1)
+		       (setq comment-start-place (point)))
+		     t)))
+	  ;; Inside a comment: fill one comment paragraph.
+	  (let ((fill-prefix
+		 (or
+		  ;; Keep user set fill prefix if any.
+		  fill-prefix
+		  ;; The prefix for each line of this paragraph
+		  ;; is the appropriate part of the start of this line,
+		  ;; up to the column at which text should be indented.
+		  (save-excursion
+		    (beginning-of-line)
+		    (if (looking-at ".*/\\*.*\\*/")
+			(progn (re-search-forward comment-start-skip)
+			       (make-string (current-column) ?\ ))
+		      (if first-line
+			  (forward-line 1)
+			(if (and (looking-at "[ \t]*\\*/")
+				 (not (save-excursion
+					(forward-line -1)
+					(looking-at ".*/\\*"))))
+			    (forward-line -1)))
+
+		      (let ((line-width (progn (end-of-line)
+					       (current-column))))
+			(beginning-of-line)
+			(prog1
+			    (buffer-substring
+			     (point)
+
+			     ;; How shall we decide where the end of the
+			     ;; fill-prefix is?
+			     (progn
+			       (skip-chars-forward " \t*" (point-at-eol))
+			       ;; kludge alert, watch out for */, in
+			       ;; which case fill-prefix should *not*
+			       ;; be "*"!
+			       (if (and (eq (char-after) ?/)
+					(eq (char-before) ?*))
+				   (forward-char -1))
+			       (point)))
+
+			  ;; If the comment is only one line followed
+			  ;; by a blank line, calling move-to-column
+			  ;; above may have added some spaces and tabs
+			  ;; to the end of the line; the fill-paragraph
+			  ;; function will then delete it and the
+			  ;; newline following it, so we'll lose a
+			  ;; blank line when we shouldn't.  So delete
+			  ;; anything move-to-column added to the end
+			  ;; of the line.  We record the line width
+			  ;; instead of the position of the old line
+			  ;; end because move-to-column might break a
+			  ;; tab into spaces, and the new characters
+			  ;; introduced there shouldn't be deleted.
+
+			  ;; If you can see a better way to do this,
+			  ;; please make the change.  This seems very
+			  ;; messy to me.
+			  (delete-region (progn (move-to-column line-width)
+						(point))
+					 (progn (end-of-line) (point)))))))))
+
+		;; Lines containing just a comment start or just an end
+		;; should not be filled into paragraphs they are next
+		;; to.
+		(paragraph-start (concat paragraph-start re1 "$"))
+		(paragraph-separate (concat paragraph-separate re1 "$"))
+		(chars-to-delete 0)
+		)
+	    (save-restriction
+	      ;; Don't fill the comment together with the code
+	      ;; following it.  So temporarily exclude everything
+	      ;; before the comment start, and everything after the
+	      ;; line where the comment ends.  If comment-start-place
+	      ;; is non-nil, the comment starter is there.  Otherwise,
+	      ;; point is inside the comment.
+	      (narrow-to-region (save-excursion
+				  (if comment-start-place
+				      (goto-char comment-start-place)
+				    (search-backward "/*"))
+				  (if (and (not pure-hanging-comment-starter-p)
+					   (looking-at
+					    (concat pure-comment-start-regexp
+						    "[ \t]*$")))
+				      (forward-line 1))
+				  ;; Protect text before the comment
+				  ;; start by excluding it.  Add
+				  ;; spaces to bring back proper
+				  ;; indentation of that point.
+				  (let ((column (current-column)))
+				    (prog1 (point)
+				      (setq chars-to-delete column)
+				      (insert-char ?\  column))))
+				(save-excursion
+				  (if comment-start-place
+				      (goto-char (+ comment-start-place 2)))
+				  (search-forward "*/" nil 'move)
+				  (if (and (not pure-hanging-comment-ender-p)
+					   (save-excursion
+					     (beginning-of-line)
+					     (looking-at "[ \t]*\\*/")))
+				      (beginning-of-line)
+				    (forward-line 1))
+				  (point)))
+	      (or (pure-safe
+		   ;; fill-paragraph sometimes fails to detect when we
+		   ;; are between paragraphs.
+		   (beginning-of-line)
+		   (search-forward fill-prefix (point-at-eol))
+		   (looking-at paragraph-separate))
+		  ;; Avoids recursion
+		  (let (fill-paragraph-function)
+		    (fill-paragraph arg)))
+	      (save-excursion
+		;; Delete the chars we inserted to avoid clobbering
+		;; the stuff before the comment start.
+		(goto-char (point-min))
+		(if (> chars-to-delete 0)
+		    (delete-region (point) (+ (point) chars-to-delete)))
+		;; Find the comment ender (should be on last line of
+		;; buffer, given the narrowing) and don't leave it on
+		;; its own line, unless that's the style that's desired.
+		(goto-char (point-max))
+		(forward-line -1)
+		(search-forward "*/" nil 'move)
+		(beginning-of-line)
+		(if (and pure-hanging-comment-ender-p
+			 (looking-at "[ \t]*\\*/"))
+		    ;(delete-indentation)))))
+		    (let ((fill-column (+ fill-column 9999)))
+		      (forward-line -1)
+		      (fill-region-as-paragraph (point) (point-max))
+		      ;; If fill-prefix ended with a `*', it may be
+		      ;; taken away from the comment ender.  We got to
+		      ;; check this and put it back if that is the
+		      ;; case.
+		      (goto-char (- (point-max) 2))
+		      (if (not (= (char-before) ?*))
+			  (insert ?*))
+		      )))))
+	;; Else maybe a string.  Fill it if it's a multiline string.
+	;; FIXME: This currently doesn't handle escaped newlines.
+	;; Doing that correctly is a bit tricky.
+	(if (and limits
+		 (eq (char-syntax (char-after (car limits))) ?\")
+		 (save-excursion
+		   (goto-char (car limits))
+		   (end-of-line)
+		   (< (point) (cdr limits))))
+	    (let (fill-paragraph-function)
+	      (save-restriction
+		(narrow-to-region (save-excursion
+				    (goto-char (1+ (car limits)))
+				    (if (looking-at "\\\\$")
+					;; Some DWIM: Leave the start
+					;; line if it's nothing but an
+					;; escaped newline.
+					(1+ (match-end 0))
+				      (point)))
+				  (save-excursion
+				    (goto-char (1- (cdr limits)))
+				    ;; Inserting a newline and
+				    ;; removing it again after
+				    ;; fill-paragraph makes it more
+				    ;; predictable.
+				    (insert ?\n)
+				    (point)))
+		;; Do not compensate for the narrowed column.  This
+		;; way the literal will always be filled at the same
+		;; column internally.
+		(fill-paragraph arg)
+		(goto-char (1- (point-max)))
+		(delete-char 1)))
+	  )))
+    (goto-char (marker-position point-save))
+    (set-marker point-save nil)
+    ;; Always return t.  This has the effect that if filling isn't
+    ;; done above, it isn't done at all, and it's therefore
+    ;; effectively disabled in normal code.
+    t))
 
 (provide 'pure-mode)
