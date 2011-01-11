@@ -304,12 +304,12 @@ static bool encode_event(MidiFileTrack_t track, pure_expr *x)
     case 0xff:
       {
 	// meta
-	int number = mat->data[0];
+	int number = mat->data[1];
 	/* We ignore the end-of-track marker here since it gets added
 	   automatically by MidiFile_save(). */
 	if (number == 0x2f) break;
 	unsigned char *data = (unsigned char*)matrix_to_byte_array(NULL, x);
-	if (!MidiFileTrack_createMetaEvent(track, tick, number, n-1, data+1)) {
+	if (!MidiFileTrack_createMetaEvent(track, tick, number, n-2, data+2)) {
 	  free(data);
 	  return false;
 	}
