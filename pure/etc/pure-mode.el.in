@@ -1614,7 +1614,7 @@ preceding point."
 (defconst pure-end-block-re   "\\<end\\>")
 (defconst pure-declaration-re "\\<\\(const\\|extern\\|infix[lr]?\\|let\\|namespace\\|\\(non\\|out\\|post\\|pre\\)fix\\|private\\|public\\|using\\)\\>")
 (defconst pure-ifelse-re      "\\<\\(if\\|else\\)\\>")
-(defconst pure-noindent-re    "\\<\\(end\\|else\\)\\>")
+(defconst pure-noindent-re    "\\<\\(end\\|then\\|else\\)\\>")
 
 (defconst pure-indent-alist
   '((block . (+ ind pure-indent-level))
@@ -1639,6 +1639,33 @@ preceding point."
 	   (indent-to (eval (cdr (assoc type pure-indent-alist))))
 	   ))))
 
+(defsubst pure-within-string ()
+  "Check whether point is within a Pure string."
+  (save-excursion
+    (nth 3 (parse-partial-sexp (point-min) (point)))))
+
+(defsubst pure-within-literal ()
+  "Check whether point is within a Pure literal (string, comment
+or sexp)."
+  (let ((state
+	 (save-excursion
+	   (parse-partial-sexp (point-min) (point)))))
+    (or (> (car state) 0) (nth 3 state) (nth 4 state))))
+
+(defun pure-alignment-column (&optional lim)
+  "Look for an alignment column (`=') in the vicinity of
+point. LIM, if given, limits the search to the region between
+point and LIM."
+  (unless lim
+    (setq lim (point-at-eol)))
+  (save-excursion
+   (when (re-search-forward
+	  "[ \t]\\(=\\)\\([ \t]\\|[ \t]*$\\)"
+	  (min lim (point-at-eol)) t)
+     (goto-char (match-beginning 1))
+     (and (not (pure-within-literal))
+	  (current-column)))))
+
 (defun pure-calculate-indent ()
   "Calculate the indent of the current Pure line.
 Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
@@ -1646,15 +1673,13 @@ Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
     (let* ((parse-sexp-ignore-comments t)
 	   (oldpos (point))
 	   (state (save-excursion (parse-partial-sexp (point-min) (point))))
-	   (level (car state)) (nest 0) (par 0)
-	   (extra-indent (if (save-excursion
-			       (skip-chars-forward " \t")
-			       (looking-at pure-beg-block-re))
-			     pure-extra-indent
-			   0))
+	   (level (car state)) (nest 0) (pos 0)
 	   (complete (looking-at "[ \t]*end\\>"))
-	   (elsed (looking-at "[ \t]*else\\>"))
-	   (equald (and (zerop level) (looking-at "[ \t]*=")))
+	   (at-block-beg (looking-at
+			  (concat "[ \t]*\\(" pure-beg-block-re "\\)")))
+	   (at-else (looking-at "[ \t]*else\\>"))
+	   (at-equal (and (zerop level) (looking-at "[ \t]*=")))
+	   (extra-indent (if at-block-beg pure-extra-indent 0))
 	   (type (catch 'nesting
 		   ;; Check if inside a string, comment or parenthesis
 		   (cond ((nth 3 state) (throw 'nesting 'string))
@@ -1662,7 +1687,7 @@ Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
 			 ((> level 0)
 			  (save-excursion
 			    (goto-char (scan-lists (point) -1 level))
-			    (setq par (1+ (current-column))))))
+			    (setq pos (1+ (current-column))))))
 		   ;; Loop until correct indent is found
 		   (while t
 		     ;; The backward-sexp may fail if we reach the beginning
@@ -1671,22 +1696,17 @@ Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
 			       (progn (backward-sexp 1) nil)
 			     (scan-error t))
 		       (throw 'nesting 'toplevel))
-		     ;; The case of a lone '=' at the beginning of the line
-		     ;; needs special treatment. Here we're looking for an
-		     ;; equation in the same block that the equals sign can be
-		     ;; aligned with.
-		     (when (and equald
-				(= nest 0)
-				(save-excursion
-				  (skip-chars-backward " \t")
-				  (and
-				   (bolp)
-				   (re-search-forward
-				    "[ \t]\\(=\\)\\([ \t]\\|[ \t]*$\\)"
-				    (point-at-eol) t))))
-		       (goto-char (match-beginning 1))
-		       (setq par (current-column))
-		       (throw 'nesting 'toplevel))
+		     ;; Check for alignment (`=') with a preceding rule. This
+		     ;; is taken into account if point was either at a lone
+		     ;; '=' or in the middle of an incomplete definition.
+		     (let ((col (and (or at-equal
+					 (and (not complete)
+					      (not at-block-beg)))
+				     (= nest 0)
+				     (pure-alignment-column oldpos))))
+		       (when col
+			 (setq pos (if at-equal col (+ col 2)))
+			 (throw 'nesting 'toplevel)))
 		     (cond (;--Nest block outwards
 			    (looking-at pure-beg-block-re)
 			    (if (> nest 0)
@@ -1695,7 +1715,7 @@ Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
 			   (;--Nest block inwards
 			    (looking-at pure-end-block-re)
 			    (when (and (looking-at "end\\s ")
-				       elsed (not complete))
+				       at-else (not complete))
 			      (throw 'nesting 'block))
 			    (setq complete t
 				  nest (1+ nest)))
@@ -1718,11 +1738,24 @@ Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
 			   )))))
 
       ;; Return type of block and indent level.
-      (if (eq type 'toplevel)
-	  (list 'contexp (+ extra-indent par))
-	(list type (+ extra-indent (pure-indent-level)))))))
+      (cond ((eq type 'toplevel)
+	     (list 'contexp (+ extra-indent pos)))
+	    ;; Indentation inside if-then-else gets special treatment: block
+	    ;; starters never get an extra indent, and other elements are
+	    ;; always indented to the column of the if/else keyword, not the
+	    ;; indentation of the line containing the if-then-else.
+	    ((looking-at pure-ifelse-re)
+	     (if at-block-beg
+		 (list
+		  type
+		  (+ extra-indent
+		     ;; compensate for extra if-then-else indent
+		     (- (pure-indent-level) pure-indent-level)))
+	       (list type (current-column))))
+	    (t
+	     (list type (+ extra-indent (pure-indent-level))))))))
 
-(defun pure-calculate-equal-indent ()
+(defun pure-calculate-alignment ()
   "Similar to `pure-calculate-indent', but this function
 specifically determines the alignment of equations (`=' symbol).
 The return value is just the alignment column, or zero if none."
@@ -1732,7 +1765,7 @@ The return value is just the alignment column, or zero if none."
 	   (state (save-excursion (parse-partial-sexp (point-min) (point))))
 	   (level (car state)) (nest 0) (pos 0)
 	   (complete (looking-at "[ \t]*end\\>"))
-	   (elsed (looking-at "[ \t]*else\\>"))
+	   (at-else (looking-at "[ \t]*else\\>"))
 	   (type (catch 'nesting
 		   ;; Check if inside a string, comment or parenthesis
 		   (cond ((nth 3 state) (throw 'nesting 'string))
@@ -1741,17 +1774,11 @@ The return value is just the alignment column, or zero if none."
 		   ;; Loop until correct indent is found
 		   (while t
 		     (backward-sexp 1)
-		     (when (and (= nest 0)
-				(save-excursion
-				  (skip-chars-backward " \t")
-				  (and
-				   (bolp)
-				   (re-search-forward
-				    "[ \t]\\(=\\)\\([ \t]\\|[ \t]*$\\)"
-				    (point-at-eol) t))))
-		       (goto-char (match-beginning 1))
-		       (setq pos (current-column))
-		       (throw 'nesting 'toplevel))
+		     (let ((col (and (= nest 0)
+				     (pure-alignment-column oldpos))))
+		       (when col
+			 (setq pos col)
+			 (throw 'nesting 'toplevel)))
 		     (cond (;--Nest block outwards
 			    (looking-at pure-beg-block-re)
 			    (if (> nest 0)
@@ -1760,7 +1787,7 @@ The return value is just the alignment column, or zero if none."
 			   (;--Nest block inwards
 			    (looking-at pure-end-block-re)
 			    (when (and (looking-at "end\\s ")
-				       elsed (not complete))
+				       at-else (not complete))
 			      (throw 'nesting 'block))
 			    (setq complete t
 				  nest (1+ nest)))
@@ -1846,25 +1873,22 @@ The return value is just the alignment column, or zero if none."
     (beginning-of-line)
     (pure-indent-line)))
 
-(defsubst pure-within-string ()
-  (save-excursion
-    (nth 3 (parse-partial-sexp (point-min) (point)))))
-
 (defun pure-electric-equal ()
   "Insert a `=' character and reindent the line if at the
 beginning of the line. Otherwise, if point is at the end of the
 line and `pure-align-equals' is t, align the `=' symbol to the
 current `=' indentation column, as given by
-`pure-calculate-equal-indent'."
+`pure-calculate-alignment'."
   (interactive)
   (cond ((save-excursion
 	   (skip-chars-backward " \t")
 	   (bolp))
 	 (insert last-command-char)
-	 (beginning-of-line)
-	 (pure-indent-line))
+	 (save-excursion
+	   (beginning-of-line)
+	   (pure-indent-line)))
 	((and pure-align-equals
-	      (not (pure-within-string))
+	      (not (pure-within-literal))
 	      (save-excursion
 		(skip-chars-forward " \t")
 		(eolp)))
@@ -1881,7 +1905,7 @@ current `=' indentation column, as given by
 	     (beginning-of-line)
 	     (pure-indent-line))
 	   (let ((col (current-column))
-		 (icol (pure-calculate-equal-indent)))
+		 (icol (pure-calculate-alignment)))
 	     (if (> icol col)
 		 (move-to-column icol t))
 	     (insert last-command-char))))
