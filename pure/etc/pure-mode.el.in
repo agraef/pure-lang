@@ -1691,8 +1691,9 @@ Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
 			   (;--Found complete statement
 			    (save-excursion (forward-sexp 1)
 					    (= (following-char) ?\;))
-			    (setq complete t))
-			   )))))
+			    (setq complete t)))
+		     (if (bobp) (throw 'nesting 'toplevel))
+		     ))))
 
       ;; Return type of block and indent level.
       (cond ((eq type 'toplevel)
@@ -1763,8 +1764,9 @@ The return value is just the alignment column, or zero if none."
 			   (;--Found complete statement
 			    (save-excursion (forward-sexp 1)
 					    (= (following-char) ?\;))
-			    (setq complete t))
-			   )))))
+			    (setq complete t)))
+		     (if (bobp) (throw 'nesting 'toplevel))
+		     ))))
 
       (if (eq type 'toplevel) pos 0))))
 
