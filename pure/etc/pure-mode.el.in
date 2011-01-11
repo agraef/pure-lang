@@ -167,17 +167,8 @@
     ))
 
 (defsubst pure-region-is-active-p ()
-  ;; Return t when the region is active.  The determination of region
-  ;; activeness is different in both Emacs and XEmacs.
-  (cond
-   ;; XEmacs
-   ((and (fboundp 'region-active-p)
-	 zmacs-regions)
-    (region-active-p))
-   ;; Emacs
-   ((boundp 'mark-active) mark-active)
-   ;; fallback; shouldn't get here
-   (t (mark t))))
+  ;; Return t when the region is active.
+  (and (boundp 'mark-active) mark-active))
 
 (defvar pure-mode-menu
   (list "Pure"
@@ -546,9 +537,7 @@ Non-nil means always go to the next Pure code line after sending."
 ;;       (define-key pure-eval-mode-map [up] 'comint-previous-input)
 ;;       (define-key pure-eval-mode-map [down] 'comint-next-input)
        (define-key pure-eval-mode-map [return] 'pure-current-msg-or-send)
-       (if (string-match "XEmacs\\|Lucid" emacs-version)
-	   (define-key pure-eval-mode-map [button2] 'pure-mouse-msg)
-	 (define-key pure-eval-mode-map [mouse-2] 'pure-mouse-msg))
+       (define-key pure-eval-mode-map [mouse-2] 'pure-mouse-msg)
        (define-key pure-eval-mode-map "\C-c\C-u" 'pure-current-msg)
        (define-key pure-eval-mode-map "\C-c\C-n" 'pure-next-msg)
        (define-key pure-eval-mode-map "\C-c\C-p" 'pure-prev-msg)
@@ -608,8 +597,7 @@ window. Otherwise it runs the `comint-send-input' command, which usually
 submits a command line to the interpreter, or copies it to the command prompt
 when point is not at the current command line.
 
-Error messages are indicated with a special font, and in XEmacs they will also
-be highlighted when the mouse passes over them. Moreover, pressing the middle
+Error messages are indicated with a special font. Pressing the middle
 mouse button (button2) over such a message visits the corresponding source
 line in another window (`pure-mouse-msg' command).
 
@@ -689,27 +677,12 @@ Entry to this mode runs the hooks on `comint-mode-hook' and
 	comint-input-ring-size pure-histsize
 	comint-dynamic-complete-functions
 	'(pure-complete comint-dynamic-complete-filename))
-  ;; mouse-sensitive messages (requires XEmacs)
-  (cond
-   ((string-match "XEmacs\\|Lucid" emacs-version)
-    (require 'mode-motion)
-    (setq mode-motion-hook 'pure-motion-hook)))
   (comint-read-input-ring t)
   (require 'easymenu)  
   (easy-menu-define pure-eval-mode-menu-map pure-eval-mode-map
 		    "Menu keymap for Pure-Eval mode." pure-eval-mode-menu)
   (easy-menu-add pure-eval-mode-menu-map pure-eval-mode-map)
   (run-hooks 'pure-eval-mode-hook))
-
-(if (string-match "XEmacs" emacs-version)
-(defun pure-motion-hook (event)
-  (mode-motion-highlight-internal
-    event
-    #'beginning-of-line
-    #'(lambda () 
-	(if (looking-at pure-msg-regexp)
-	    (end-of-line))))
-))
 
 ;; online help
 
@@ -809,13 +782,6 @@ Pure mode."
     (pop-to-buffer pure-scratch-buffer)))
 
 ;; run a Pure script in a Pure Eval buffer
-
-;; make sure win32 XEmacs quotes arguments containing whitespace
-
-(if (string-match "XEmacs.*-win32" (emacs-version))
-    (defun pure-quote-arg (x)
-      (if (string-match "[ \t]" x) (concat "\"" x "\"") x))
-  (defun pure-quote-arg (x) x))
 
 ;; global flag to enable debugging mode (-g)
 
@@ -1140,14 +1106,6 @@ window."
 	(select-window actwindow)
 	(error "No more messages")))))
 
-(if (string-match "XEmacs" emacs-version)
-(defun pure-mouse-msg (event)
-  "Show the source line referenced by an error message under the mouse."
-  (interactive "e")
-  (mouse-set-point event)
-  (if (save-excursion (forward-line 0) (looking-at pure-msg-regexp))
-      (progn (forward-line 0) (pure-current-msg))
-    (mouse-yank event)))
 (defun pure-mouse-msg (event)
   "Show the source line referenced by an error message under the mouse."
   (interactive "e")
@@ -1155,7 +1113,6 @@ window."
   (if (save-excursion (forward-line 0) (looking-at pure-msg-regexp))
       (progn (forward-line 0) (pure-current-msg))
     (mouse-yank-at-click event 0)))
-)
 
 ;; visit main script and the eval buffer
 
