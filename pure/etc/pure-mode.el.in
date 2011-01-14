@@ -46,7 +46,7 @@
 
 ;; Note that Pure and Pure-Eval mode provide these bindings anyway and the
 ;; commands are also available from the Pure menu, but the global bindings
-;; above may be convenient to enter Pure or Pure eval mode from other buffers.
+;; above may be convenient to enter Pure or Pure-Eval mode from other buffers.
 ;; This is useful, in particular, if Emacs is invoked without a Pure script.
 
 ;; The run-pure command invokes the Pure interpreter without a script in a
@@ -63,7 +63,7 @@
 ;; pure-send-region (C-c C-r) commands.
 
 ;; Another useful command to always remember is the pure-help command (C-c h
-;; in Pure and Pure eval mode) which lets you read the online manual inside
+;; in Pure and Pure-Eval mode) which lets you read the online manual inside
 ;; emacs if emacs-w3m is installed (see below). Always use this command
 ;; instead of the Pure interpreter's 'help' command. (The latter will try to
 ;; run the command line version of w3m which doesn't work all that well in an
@@ -112,6 +112,167 @@
        )))
   )
 
+;; customizable variables
+
+(defgroup pure nil "Major mode for editing and running Pure scripts."
+  :group 'languages)
+
+;; indentation and editing style
+
+(defcustom pure-tab-always-indent t
+  "*Non-nil means TAB in Pure mode should always reindent the current line.
+If this is nil, TAB inserts a tab if it is at the end of the line
+and follows non-whitespace text."
+  :type 'boolean
+  :group 'pure)
+
+(defcustom pure-electric-keys t
+  "*Non-nil means that keys like `=', `;', `(', `)' etc. do
+automatic indentation and alignment. Note that if this is nil then
+`pure-align-equals' doesn't have any effect either."
+  :type 'boolean
+  :group 'pure)
+
+(defcustom pure-indent-equals t
+  "*Non-nil means that `=' at the beginning of a line is indented
+so that it aligns with a previous equation at the same block level,
+and the right-hand sides of equations are indented relative to `='.
+This is also known as \"hanging indent\". Setting this value to nil
+does normal block indentation of equations instead."
+  :type 'boolean
+  :group 'pure)
+
+(defcustom pure-align-equals t
+  "*Non-nil means that typing `=' at the end of a line aligns it
+with a previous equation at the same block level. Note: This
+setting is independent of `pure-indent-equals'."
+  :type 'boolean
+  :group 'pure)
+
+(defcustom pure-block-indent 2
+  "*Indentation of Pure code with respect to containing block."
+  :type 'integer
+  :group 'pure)
+
+(defcustom pure-extra-indent 0
+  "*Extra block indentation at the beginning of a line."
+  :type 'integer
+  :group 'pure)
+
+(defcustom pure-hanging-comment-starter-p t
+  "*Controls what \\[fill-paragraph] does to Pure block comment starters.
+When set to nil, Pure block comment starters are left on their own line.
+When set to t, text that follows a block comment starter will be
+placed on the same line as the block comment starter (i.e. the text
+`hangs' on that line)."
+  :type 'boolean
+  :group 'pure)
+
+(defcustom pure-hanging-comment-ender-p t
+  "*Controls what \\[fill-paragraph] does to Pure block comment enders.
+When set to nil, Pure block comment enders are left on their own line.
+When set to t, block comment enders will be placed at the end of the
+previous line (i.e. they `hang' on that line)."
+  :type 'boolean
+  :group 'pure)
+
+;; mode hooks
+
+(defcustom pure-mode-hook nil
+  "*Hook for customising Pure mode.
+For instance, add `turn-on-font-lock' to enable syntax highlighting."
+  :type 'hook
+  :group 'pure)
+
+(defcustom pure-eval-mode-hook nil
+  "*Hook for customising Pure-Eval mode.
+For instance, add `turn-on-font-lock' to enable syntax highlighting."
+  :type 'hook
+  :group 'pure)
+
+;; running the Pure interpreter
+
+(defcustom pure-prog-name pure-prog
+  "*Name of the interpreter executable."
+  :type 'string
+  :group 'pure)
+
+(defcustom pure-prog-opts nil
+  "*List of extra command line options the interpreter is invoked with.
+See the Pure manual for a list of available options."
+  :type '(repeat string)
+  :group 'pure)
+
+(defcustom pure-library-dir pure-libdir
+  "*Location of the Pure library directory."
+  :type 'string
+  :group 'pure)
+
+(defcustom pure-docs-dir (concat pure-libdir "/docs")
+  "*Location of the Pure documentation directory."
+  :type 'string
+  :group 'pure)
+
+(defcustom pure-histfile "~/.emacs-pure-history"
+  "*Name of the command history file."
+  :type 'string
+  :group 'pure)
+
+(defcustom pure-histsize 500
+  "*Size of the command history."
+  :type 'integer
+  :group 'pure)
+
+(defcustom pure-stacksize 0
+  "*Stack size available to Pure programs in kilobytes. If
+nonzero, this determines the value of the PURE_STACK environment
+variable."
+  :type 'integer
+  :group 'pure)
+
+(defcustom pure-query-before-kill nil
+  "*Indicates that the user should be prompted before zapping an existing
+interpreter process when starting a new one."
+  :type 'boolean
+  :group 'pure)
+
+(defcustom pure-process-timeout 3
+  "*Time interval in seconds after which `pure-send-region' and other
+operations which read and digest output from the interpreter time out.
+Can be set to nil to disable the timeout, but this isn't recommended."
+  :type 'integer
+  :group 'pure)
+
+(defcustom pure-prompt-regexp "^> \\|^[A-Za-z_0-9-]*> \\|^: "
+  "*Regexp to match prompts in the Pure interpreter. If you customize the
+interpreter's default prompt, you will have to change this value accordingly."
+  :type 'regexp
+  :group 'pure)
+
+(defcustom pure-msg-regexp
+  "^\\(\\([^:,\n]+\\), line \\([0-9]+\\)\\): "
+"*Regexp to match error and warning messages with source line references in
+the Pure-Eval buffer. Expression 1 denotes the whole source line info,
+expression 2 the file name and expression 3 the corresponding line number."
+  :type 'regexp
+  :group 'pure)
+
+(defcustom pure-send-show-buffer t
+  "Non-nil means display the *pure-eval* buffer after sending to it."
+  :type 'boolean
+  :group 'pure)
+
+(defcustom pure-send-line-auto-forward t
+  "Control auto-forward after sending to the Pure interpreter.
+Non-nil means always go to the next Pure code line after sending."
+  :type 'boolean
+  :group 'pure)
+
+(defcustom pure-send-echo-input t
+  "Non-nil means echo input sent to the Pure interpreter."
+  :type 'boolean
+  :group 'pure)
+
 ;; List of additional directories to search for imported scripts.
 
 (defvar pure-includes
@@ -120,6 +281,39 @@
 	(setq pure-includes (parse-colon-path path))
       nil))
   "List of additional directories to search for imported scripts.")
+
+;; the following are used internally
+
+(defvar pure-output-list nil)
+(defvar pure-output-string nil)
+(defvar pure-receive-in-progress nil)
+(defvar pure-last-dir nil)
+(defvar pure-last-script nil)
+(defvar pure-debug-mode nil)
+(defvar pure-submode-indicators nil)
+(defvar pure-eval-submode-indicators nil)
+
+;; menu-related utilities
+
+(defsubst pure-region-is-active-p ()
+  ;; Return t when the region is active.
+  (and (boundp 'mark-active) mark-active))
+
+(defmacro pure-menu-toggle (item cmd var)
+  `[,item ,cmd :style toggle :selected ,var])
+
+;; handle toggles
+
+(defun pure-calculate-state (arg prevstate)
+  ;; Calculate the new state of PREVSTATE, t or nil, based on arg. If
+  ;; arg is nil or zero, toggle the state. If arg is negative, turn
+  ;; the state off, and if arg is positive, turn the state on
+  (if (or (not arg)
+	  (zerop (setq arg (prefix-numeric-value arg))))
+      (not prevstate)
+    (> arg 0)))
+
+;; Pure mode
 
 (defvar pure-font-lock-keywords
   (list
@@ -138,7 +332,13 @@
 (defvar pure-mode-map nil)
 (cond ((not pure-mode-map)
        (setq pure-mode-map (make-sparse-keymap))
-       (define-key pure-mode-map ";"        'pure-electric-semi)
+       (define-key pure-mode-map "("        'pure-electric-char)
+       (define-key pure-mode-map ")"        'pure-electric-char)
+       (define-key pure-mode-map "["        'pure-electric-char)
+       (define-key pure-mode-map "]"        'pure-electric-char)
+       (define-key pure-mode-map "{"        'pure-electric-char)
+       (define-key pure-mode-map "}"        'pure-electric-char)
+       (define-key pure-mode-map ";"        'pure-electric-char)
        (define-key pure-mode-map "="        'pure-electric-equal)
        (define-key pure-mode-map "\t"       'pure-electric-tab)
        (define-key pure-mode-map "\C-ch"    'pure-help)
@@ -163,12 +363,12 @@
        (define-key pure-mode-map "\C-c\M-c" 'pure-clear)
        (define-key pure-mode-map "\C-c\M-b" 'pure-break)
        (define-key pure-mode-map "\C-c\M-t" 'pure-trace)
+       (define-key pure-mode-map "\C-c\M-i" 'pure-toggle-indent-mode)
+       (define-key pure-mode-map "\C-c\M-a" 'pure-toggle-align-mode)
+       (define-key pure-mode-map "\C-c\M-e" 'pure-toggle-electric-mode)
+       (define-key pure-mode-map "\e\C-q"   'pure-indent-line-or-region)
        (define-key pure-mode-map "\e\t"     'pure-complete-symbol)
     ))
-
-(defsubst pure-region-is-active-p ()
-  ;; Return t when the region is active.
-  (and (boundp 'mark-active) mark-active))
 
 (defvar pure-mode-menu
   (list "Pure"
@@ -180,9 +380,16 @@
 					(pure-region-is-active-p)]
 	["Uncomment Region"		uncomment-region
 					(pure-region-is-active-p)]
+	["Fill Comment Paragraph"	fill-paragraph t]
 	["Indent Current Line"		pure-electric-tab t]
 	["Indent Line or Region"	pure-indent-line-or-region t]
-	["Fill Comment Paragraph"	fill-paragraph t]
+	(list "Indentation Modes"
+	      (pure-menu-toggle "Indent Equals" pure-toggle-indent-mode
+				pure-indent-equals)
+	      (pure-menu-toggle "Align Equals" pure-toggle-align-mode
+				pure-align-equals)
+	      (pure-menu-toggle "Electric Keys" pure-toggle-electric-mode
+				pure-electric-keys))
 	"-"
 	["Make Tags"			pure-make-tags t]
 	"-"
@@ -206,9 +413,9 @@
 	["Pure Scratchpad"		pure-scratchpad t]
 	"-"
 	(list "Debugger"
-	      ["Debugging Mode"		pure-toggle-debug-mode
-	       :style toggle :selected (and (boundp 'pure-debug-mode)
-					    pure-debug-mode)]
+	      (pure-menu-toggle "Debugging Mode" pure-toggle-debug-mode
+				pure-debug-mode)
+	      "-"
 	      ["Breakpoint..."		pure-break pure-debug-mode]
 	      ["Tracepoint..."		pure-trace pure-debug-mode])
 	"-"
@@ -226,6 +433,20 @@
 	"-"
 	["Complete Symbol"		pure-complete-symbol t])
   "Menu for Pure mode.")
+
+;; Submode indicators in the pure-mode modeline. "i", "a" and "e" indicate the
+;; current (buffer-local) state of pure-indent-equals, pure-align-equals and
+;; pure-electric-keys, respectively.
+
+(defun pure-update-modeline ()
+  (let ((fmt (format " %s%s%s"
+		     (if pure-align-equals "a" "")
+		     (if pure-electric-keys "e" "")
+		     (if pure-indent-equals "i" ""))))
+    (setq pure-submode-indicators
+	  (if (> (length fmt) 1)
+ 	      fmt))
+    (force-mode-line-update)))
   
 ;;;###autoload
 (define-derived-mode pure-mode fundamental-mode "Pure"
@@ -243,7 +464,7 @@ symbols in the online documentation index.
 
 Some important variables controlling indentation/edit style:
 
-`pure-indent-level': Indentation of Pure code with respect to
+`pure-block-indent': Indentation of Pure code with respect to
     containing block. Default: 2.
 
 `pure-extra-indent': Extra indentation for Pure code blocks at
@@ -253,19 +474,36 @@ Some important variables controlling indentation/edit style:
     reindent the current line, regardless of where in the line
     point is when the \\[pure-electric-tab] command is used. Default: t.
 
-`pure-align-equals': Non-nil means that entering `=' at the end
-    of a line automatically aligns the right-hand side with a
-    previous equation. (Otherwise only initial `=' will be
-    aligned.) Default: t.
+`pure-electric-keys': Non-nil means that keys like `=', `;', `(',
+    `)' etc. do automatic indentation and alignment. Note that if
+    this is nil then `pure-align-equals' doesn't have any effect
+    either. Default: t.
 
-The Pure interpreter can be started in a buffer (see
+`pure-indent-equals': Non-nil means that the right-hand sides of
+    equations are indented so that they are aligned at `=' symbols.
+    Otherwise normal block indentation of equations is done instead.
+    Default: t.
+
+`pure-align-equals': Non-nil means that `=' at the end of a line
+    is aligned with a previous equation at the same block level.
+    Note: This setting is independent of `pure-indent-equals'.
+    Default: t.
+
+There are key bindings for quickly changing the indentation
+modes on a per-buffer basis (see the command list below), and the
+current status of the `pure-electric-keys', `pure-indent-equals'
+and `pure-align-equals' flags are displayed in the mode line
+\(`aei' indicators).
+
+Pure mode also provides tight integration with the Pure
+interpreter. The interpreter can be started in a buffer (see
 `pure-eval-mode') using \\[run-pure]).
 
-Pure mode also provides the `pure-run-script' (\\[pure-run-script])
-command to run the interpreter on the script in the current
-buffer. It will be verified that the buffer has a file associated
-with it, and you will be prompted to save edited buffers when
-invoking this command.
+The `pure-run-script' (\\[pure-run-script]) command lets you run
+the interpreter on the script in the current buffer. It will be
+verified that the buffer has a file associated with it, and you
+will be prompted to save edited buffers when invoking this
+command.
 
 You can also feed lines or regions of Pure code into a running
 interpreter with the `pure-send-line' (\\[pure-send-line]) and
@@ -273,7 +511,7 @@ interpreter with the `pure-send-line' (\\[pure-send-line]) and
 a new interpreter instance without a script if necessary.)
 
 Special commands are provided to quickly locate the main script
-and the input line of the Pure eval buffer, and to visit the
+and the input line of the Pure-Eval buffer, and to visit the
 source lines shown in error messages. These operations can also
 be selected from the Pure menu (accessible from the menu bar),
 which also provides commands for reading the online help and
@@ -329,158 +567,22 @@ non-nil."
   (easy-menu-define pure-mode-menu-map pure-mode-map
 		    "Menu keymap for Pure mode." pure-mode-menu)
   (easy-menu-add pure-mode-menu-map pure-mode-map)
-  )
+  ;; make these local so that they can be changed on a per-buffer basis
+  (make-local-variable 'pure-indent-equals)
+  (make-local-variable 'pure-align-equals)
+  (make-local-variable 'pure-electric-keys)
+  ;; submode indicators
+  (make-local-variable 'pure-submode-indicators)
+  ;; Put submode indicators onto minor-mode-alist, but only once.
+  (or (assq 'pure-submode-indicators minor-mode-alist)
+      (setq minor-mode-alist
+ 	    (cons '(pure-submode-indicators pure-submode-indicators)
+ 		  minor-mode-alist)))
+  (pure-update-modeline))
 
 ;; comint support
 
 (require 'comint)
-
-;; customizable variables
-
-(defgroup pure nil "Major mode for editing and running Pure scripts."
-  :group 'languages)
-
-(defcustom pure-prog-name pure-prog
-  "*Name of the interpreter executable."
-  :type 'string
-  :group 'pure)
-
-(defcustom pure-prog-opts nil
-  "*List of extra command line options the interpreter is invoked with.
-See the Pure manual for a list of available options."
-  :type '(repeat string)
-  :group 'pure)
-
-(defcustom pure-library-dir pure-libdir
-  "*Location of the Pure library directory."
-  :type 'string
-  :group 'pure)
-
-(defcustom pure-docs-dir (concat pure-libdir "/docs")
-  "*Location of the Pure documentation directory."
-  :type 'string
-  :group 'pure)
-
-(defcustom pure-histfile "~/.pure_history"
-  "*Name of the command history file."
-  :type 'string
-  :group 'pure)
-
-(defcustom pure-histsize 500
-  "*Size of the command history."
-  :type 'integer
-  :group 'pure)
-
-(defcustom pure-stacksize 0
-  "*Stack size available to Pure programs in kilobytes. If
-nonzero, this determines the value of the PURE_STACK environment
-variable."
-  :type 'integer
-  :group 'pure)
-
-(defcustom pure-query-before-kill nil
-  "*Indicates that the user should be prompted before zapping an existing
-interpreter process when starting a new one."
-  :type 'boolean
-  :group 'pure)
-
-(defcustom pure-process-timeout 3
-  "*Time interval in seconds after which `pure-send-region' and other
-operations which read and digest output from the interpreter time out.
-Can be set to nil to disable the timeout, but this isn't recommended."
-  :type 'integer
-  :group 'pure)
-
-(defcustom pure-prompt-regexp "^> \\|^[A-Za-z_0-9-]*> \\|^: "
-  "*Regexp to match prompts in the Pure interpreter. If you customize the
-interpreter's default prompt, you will have to change this value accordingly."
-  :type 'regexp
-  :group 'pure)
-
-(defcustom pure-msg-regexp
-  "^\\(\\([^:,\n]+\\), line \\([0-9]+\\)\\): "
-"*Regexp to match error and warning messages with source line references in
-the Pure eval buffer. Expression 1 denotes the whole source line info,
-expression 2 the file name and expression 3 the corresponding line number."
-  :type 'regexp
-  :group 'pure)
-
-(defcustom pure-mode-hook nil
-  "*Hook for customising Pure mode.
-For instance, add `turn-on-font-lock' to enable syntax highlighting."
-  :type 'hook
-  :group 'pure)
-
-(defcustom pure-tab-always-indent t
-  "*Non-nil means TAB in Pure mode should always reindent the current line.
-If this is nil, TAB inserts a tab if it is at the end of the line
-and follows non-whitespace text."
-  :type 'boolean
-  :group 'pure)
-
-(defcustom pure-indent-level 2
-  "*Indentation of Pure code with respect to containing block."
-  :type 'integer
-  :group 'pure)
-
-(defcustom pure-extra-indent 0
-  "*Extra indentation for Pure code blocks at the beginning of a line."
-  :type 'integer
-  :group 'pure)
-
-(defcustom pure-align-equals t
-  "*Non-nil means that entering `=' at the end of a line
-automatically aligns the right-hand side with a previous
-equation."
-  :type 'boolean
-  :group 'pure)
-
-(defcustom pure-hanging-comment-ender-p t
-  "*Controls what \\[fill-paragraph] does to Pure block comment enders.
-When set to nil, Pure block comment enders are left on their own line.
-When set to t, block comment enders will be placed at the end of the
-previous line (i.e. they `hang' on that line)."
-  :type 'boolean
-  :group 'pure)
-
-(defcustom pure-hanging-comment-starter-p t
-  "*Controls what \\[fill-paragraph] does to Pure block comment starters.
-When set to nil, Pure block comment starters are left on their own line.
-When set to t, text that follows a block comment starter will be
-placed on the same line as the block comment starter (i.e. the text
-`hangs' on that line)."
-  :type 'boolean
-  :group 'pure)
-
-(defcustom pure-eval-mode-hook nil
-  "*Hook for customising Pure eval mode.
-For instance, add `turn-on-font-lock' to enable syntax highlighting."
-  :type 'hook
-  :group 'pure)
-
-(defcustom pure-send-show-buffer t
-  "Non-nil means display the *pure-eval* buffer after sending to it."
-  :type 'boolean
-  :group 'pure)
-
-(defcustom pure-send-line-auto-forward t
-  "Control auto-forward after sending to the Pure interpreter.
-Non-nil means always go to the next Pure code line after sending."
-  :type 'boolean
-  :group 'pure)
-
-(defcustom pure-send-echo-input t
-  "Non-nil means echo input sent to the Pure interpreter."
-  :type 'boolean
-  :group 'pure)
-
-;; the following are used internally
-
-(defvar pure-output-list nil)
-(defvar pure-output-string nil)
-(defvar pure-receive-in-progress nil)
-(defvar pure-last-dir nil)
-(defvar pure-last-script nil)
 
 (defvar pure-eval-font-lock-keywords
   (list
@@ -564,9 +666,8 @@ Non-nil means always go to the next Pure code line after sending."
 	["Pure Scratchpad"		pure-scratchpad t]
 	"-"
 	(list "Debugger"
-	      ["Debugging Mode"		pure-toggle-debug-mode
-	       :style toggle :selected (and (boundp 'pure-debug-mode)
-					    pure-debug-mode)]
+	      (pure-menu-toggle "Debugging Mode" pure-toggle-debug-mode
+				pure-debug-mode)
 	      ["Breakpoint..."		pure-break pure-debug-mode]
 	      ["Tracepoint..."		pure-trace pure-debug-mode])
 	"-"
@@ -585,6 +686,16 @@ Non-nil means always go to the next Pure code line after sending."
 	["Complete Symbol"		comint-dynamic-complete
 					(pure-at-command-prompt-p)])
   "Menu for Pure-Eval mode.")
+
+;; Debug submode indicator in the pure-eval-mode modeline.
+
+(defun pure-eval-update-modeline ()
+  (let ((fmt (format " %s"
+		     (if pure-debug-mode "debug" ""))))
+    (setq pure-eval-submode-indicators
+	  (if (> (length fmt) 1)
+ 	      fmt))
+    (force-mode-line-update)))
 
 (defun pure-eval-mode ()
 
@@ -607,7 +718,7 @@ You can also use the `pure-first-msg' (\\[pure-first-msg]), `pure-next-msg'
 buffer. The `pure-find-script' (\\[pure-find-script]) command lets you visit
 the script that is currently running, and `pure-goto-input-line'
 (\\[pure-goto-input-line]) quickly takes you to the prompt at the current
-input line in the Pure eval buffer. (These commands are also provided in Pure
+input line in the Pure-Eval buffer. (These commands are also provided in Pure
 mode. If you like, you can bind them globally, so that you can invoke them
 from other kinds of buffers as well.)
 
@@ -682,7 +793,48 @@ Entry to this mode runs the hooks on `comint-mode-hook' and
   (easy-menu-define pure-eval-mode-menu-map pure-eval-mode-map
 		    "Menu keymap for Pure-Eval mode." pure-eval-mode-menu)
   (easy-menu-add pure-eval-mode-menu-map pure-eval-mode-map)
+  ;; submode indicators
+  (make-local-variable 'pure-eval-submode-indicators)
+  ;; Put submode indicators onto minor-mode-alist, but only once.
+  (or (assq 'pure-eval-submode-indicators minor-mode-alist)
+      (setq minor-mode-alist
+ 	    (cons '(pure-eval-submode-indicators pure-eval-submode-indicators)
+ 		  minor-mode-alist)))
+  (pure-eval-update-modeline)
   (run-hooks 'pure-eval-mode-hook))
+
+;; completion
+
+(defun pure-complete ()
+  "Perform completion for defined Pure symbols on the token
+preceding point."
+  (interactive)
+  (if (pure-at-command-prompt-p)
+      (let* ((end (point))
+	     (command
+	      (save-excursion
+		;; skip back one word/identifier or operator (punctuation)
+		(skip-syntax-backward "w_")
+		(and (eq (point) end)
+		     (skip-syntax-backward "."))
+		(and (looking-at pure-prompt-regexp)
+		     (goto-char (match-end 0)))
+		(buffer-substring-no-properties (point) end))))
+	(pure-send-list-and-digest
+	 (list (concat "completion_matches " command "\n")))
+	;; Sort the list
+	(setq pure-output-list
+	      (sort pure-output-list 'string-lessp))
+	;; Remove duplicates
+	(let* ((x pure-output-list)
+	       (y (cdr x)))
+	  (while y
+	    (if (string-equal (car x) (car y))
+		(setcdr x (setq y (cdr y)))
+	      (setq x y
+		    y (cdr y)))))
+	;; And let comint handle the rest
+	(comint-dynamic-simple-complete command pure-output-list))))
 
 ;; online help
 
@@ -783,19 +935,6 @@ Pure mode."
 
 ;; run a Pure script in a Pure Eval buffer
 
-;; global flag to enable debugging mode (-g)
-
-(defvar pure-debug-mode nil
-  "Pure interpreter debugging mode (-g).")
-
-(defun pure-toggle-debug-mode ()
-  "Toggle debugging mode (-g). Also restarts the interpreter if
-it is currently running."
-  (interactive)
-  (setq pure-debug-mode (not pure-debug-mode))
-  (if (get-process "pure-eval")
-      (pure-rerun)))
-
 ;;;###autoload
 (defalias 'run-pure 'pure-run)
 
@@ -804,21 +943,26 @@ it is currently running."
   "Run the interpreter with given arguments, in buffer *pure-eval*.
 
 Debugging mode of the interpreter (-g) is enabled depending on
-the current value of the `pure-debug-mode' variable. There are a
-number of other customizable variables which can be used to
-control how the interpreter is invoked. In particular,
+the current value of the `pure-debug-mode' variable. The current
+status of this variable is also indicated in the mode
+line (`debug' mode indicator).
+
+There are a number of other customizable variables which can be
+used to control how the interpreter is invoked. In particular,
 `pure-stacksize' sets the stack size available to Pure programs
 in kilobytes. (If nonzero, this determines the value of the
 PURE_STACK environment variable.)
 
-The interpreter is invoked in the directory of the current buffer (current
-default directory if no file is associated with the current buffer).
-If buffer exists but process is not running, make new process.
-If buffer exists and process is running, kill it and start a new one.
+The interpreter is invoked in the directory of the current
+buffer (current default directory if no file is associated with
+the current buffer).  If buffer exists but process is not
+running, make new process.  If buffer exists and process is
+running, kill it and start a new one.
 
-Program used comes from variable `pure-prog-name'. The buffer is put in Pure
-eval mode, giving commands for visiting source files, sending input,
-manipulating the command history, etc. See `pure-eval-mode'."
+Program used comes from variable `pure-prog-name'. The buffer is
+put in Pure-Eval mode, giving commands for visiting source files,
+sending input, manipulating the command history, etc. See
+`pure-eval-mode'."
 
   (interactive)
   (let* ((dir (if buffer-file-name
@@ -873,7 +1017,8 @@ manipulating the command history, etc. See `pure-eval-mode'."
 	  (process-kill-without-query (get-process "pure-eval")))
       ;; switch to and go to the end of the eval buffer
       (pop-to-buffer "*pure-eval*")
-      (goto-char (point-max))))
+      (goto-char (point-max))
+      (pure-eval-update-modeline)))
   )
 
 (defun pure-start (&optional arg)
@@ -934,6 +1079,26 @@ instance. See `run-pure' for details."
       (pure-run script-file)
       (setq pure-last-script script-file))))
 
+;; debugging mode
+
+(defun pure-toggle-debug-mode (&optional arg)
+  "Toggle debugging mode (-g).
+Optional numeric ARG, if supplied, turns on debugging when
+positive, turns it off when negative, and just toggles it when
+zero or left out.
+
+If the value of the flag is changed and the interpreter is
+currently running then it is restarted automatically."
+  (interactive "P")
+  (let ((oldstate pure-debug-mode))
+    (when (and
+	   (not
+	    (eq oldstate
+		(setq pure-debug-mode
+		      (pure-calculate-state arg pure-debug-mode))))
+	   (get-process "pure-eval"))
+      (pure-rerun))))
+
 ;; run the interpreter to create a TAGS file
 
 (defun pure-make-tags ()
@@ -961,7 +1126,7 @@ TAGS file."
 
 (defun pure-current-msg ()
   "Show the source line referenced by an error message on the current line
-in the Pure eval buffer."
+in the Pure-Eval buffer."
   (interactive)
   (let ((actwindow (selected-window)))
     (if (get-buffer "*pure-eval*")
@@ -985,7 +1150,7 @@ in the Pure eval buffer."
 (defun pure-current-msg-or-send ()
   "Depending on whether point is at an error message, either execute a
 `pure-current-msg' or a `comint-send-input' command. This must be invoked
-from the Pure eval buffer."
+from the Pure-Eval buffer."
   (interactive)
   (if (save-excursion (forward-line 0) (looking-at pure-msg-regexp))
       (pure-current-msg)
@@ -1117,7 +1282,7 @@ window."
 ;; visit main script and the eval buffer
 
 (defun pure-find-script ()
-  "Visit the script currently running in the Pure eval buffer."
+  "Visit the script currently running in the Pure-Eval buffer."
   (interactive)
   (if (and pure-last-dir pure-last-script)
       (if (not (string-equal (concat pure-last-dir pure-last-script)
@@ -1126,7 +1291,7 @@ window."
     (error "No script is running")))
 
 (defun pure-goto-input-line ()
-  "Move to the prompt in the Pure eval buffer."
+  "Move to the prompt in the Pure-Eval buffer."
   (interactive)
   (if (get-buffer "*pure-eval*")
       (progn (pop-to-buffer "*pure-eval*") (goto-char (point-max)))
@@ -1471,39 +1636,6 @@ If prefix ARG is not nil, remove an existing tracepoint instead."
       (if pure-send-show-buffer
 	  (display-buffer pure-eval-buffer)))))
 
-;; completion
-
-(defun pure-complete ()
-  "Perform completion for defined Pure symbols on the token
-preceding point."
-  (interactive)
-  (if (pure-at-command-prompt-p)
-      (let* ((end (point))
-	     (command
-	      (save-excursion
-		;; skip back one word/identifier or operator (punctuation)
-		(skip-syntax-backward "w_")
-		(and (eq (point) end)
-		     (skip-syntax-backward "."))
-		(and (looking-at pure-prompt-regexp)
-		     (goto-char (match-end 0)))
-		(buffer-substring-no-properties (point) end))))
-	(pure-send-list-and-digest
-	 (list (concat "completion_matches " command "\n")))
-	;; Sort the list
-	(setq pure-output-list
-	      (sort pure-output-list 'string-lessp))
-	;; Remove duplicates
-	(let* ((x pure-output-list)
-	       (y (cdr x)))
-	  (while y
-	    (if (string-equal (car x) (car y))
-		(setcdr x (setq y (cdr y)))
-	      (setq x y
-		    y (cdr y)))))
-	;; And let comint handle the rest
-	(comint-dynamic-simple-complete command pure-output-list))))
-
 ;; send commands to the Pure interpreter and digest their results
 
 (defun pure-output-digest (proc string)
@@ -1574,8 +1706,8 @@ preceding point."
 (defconst pure-noindent-re    "\\<\\(end\\|then\\|else\\)\\>")
 
 (defconst pure-indent-alist
-  '((block . (+ ind pure-indent-level))
-    (declaration . (+ ind pure-indent-level))
+  '((block . (+ ind pure-block-indent))
+    (declaration . (+ ind pure-block-indent))
     (comment . (pure-indent-comment))
     (contexp . ind) (unknown . ind)
     (string . 0) (toplevel . 0)))
@@ -1609,33 +1741,47 @@ or sexp)."
 	   (parse-partial-sexp (point-min) (point)))))
     (or (> (car state) 0) (nth 3 state) (nth 4 state))))
 
-(defun pure-alignment-column (&optional lim)
+(defun pure-alignment-column (&optional lim &optional flag)
   "Look for an alignment column (`=') in the vicinity of
 point. LIM, if given, limits the search to the region between
-point and LIM."
+point and LIM. Return a list of two elements: (EQUALS-COL
+INDENT-COL)."
   (unless lim
     (setq lim (point-at-eol)))
   (save-excursion
-   (when (re-search-forward
-	  "[ \t]\\(=\\)\\([ \t]\\|[ \t]*$\\)"
-	  (min lim (point-at-eol)) t)
+   (when (re-search-forward "[ \t]\\(=\\)\\([ \t]\\|[ \t]*$\\)" lim t)
      (goto-char (match-beginning 1))
      (and (not (pure-within-literal))
-	  (current-column)))))
+	  (if flag
+	      ;; do only basic block indent
+	      (let ((col (pure-basic-indent-level)))
+		(list col (+ col pure-block-indent)))
+	    ;; return the proper alignment column
+	    (let* ((col1 (current-column))
+		   (col2 (progn
+			   (goto-char (match-end 1))
+			   (skip-chars-forward " \t")
+			   (max (current-column) (+ col1 2)))))
+	      (list col1 col2)))))))
+
+(defsubst pure-safe-backward-sexp ()
+  (condition-case nil
+      (progn (backward-sexp 1) nil)
+    (scan-error t)))
 
 (defun pure-calculate-indent ()
   "Calculate the indent of the current Pure line.
 Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
   (save-excursion
     (let* ((parse-sexp-ignore-comments t)
-	   (oldpos (point))
+	   (oldpos (point)) (lim oldpos)
 	   (state (save-excursion (parse-partial-sexp (point-min) (point))))
 	   (level (car state)) (nest 0) (pos 0)
-	   (complete (looking-at "[ \t]*end\\>"))
+	   (complete nil)
 	   (at-block-beg (looking-at
 			  (concat "[ \t]*\\(" pure-beg-block-re "\\)")))
 	   (at-else (looking-at "[ \t]*else\\>"))
-	   (at-equal (and (zerop level) (looking-at "[ \t]*=")))
+	   (at-equal (and (zerop level) (looking-at "[ \t]*=\\([ \t]\\|$\\)")))
 	   (extra-indent (if at-block-beg pure-extra-indent 0))
 	   (type (catch 'nesting
 		   ;; Check if inside a string, comment or parenthesis
@@ -1649,33 +1795,33 @@ Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
 		   (while t
 		     ;; The backward-sexp may fail if we reach the beginning
 		     ;; of an enclosing sexp, assume toplevel in this case.
-		     (when (condition-case nil
-			       (progn (backward-sexp 1) nil)
-			     (scan-error t))
+		     (when (pure-safe-backward-sexp)
 		       (throw 'nesting 'toplevel))
 		     ;; Check for alignment (`=') with a preceding rule. This
 		     ;; is taken into account if point was either at a lone
 		     ;; '=' or in the middle of an incomplete definition.
-		     (let ((col (and (or at-equal
-					 (and (not complete)
-					      (not at-block-beg)))
-				     (= nest 0)
-				     (pure-alignment-column oldpos))))
+		     (let* ((flag (not pure-indent-equals))
+			    (col (and (or at-equal
+					  (and (not complete)
+					       (not at-block-beg)))
+				      (= nest 0)
+				      (pure-alignment-column lim flag))))
 		       (when col
-			 (setq pos (if at-equal col (+ col 2)))
+			 (setq pos (if (and at-equal complete) (car col)
+				     (car (cdr col))))
 			 (throw 'nesting 'toplevel)))
 		     (cond (;--Nest block outwards
 			    (looking-at pure-beg-block-re)
 			    (if (> nest 0)
-				(setq nest (1- nest))
+				(if (zerop (setq nest (1- nest)))
+				    (setq lim (point)))
 			      (throw 'nesting 'block)))
 			   (;--Nest block inwards
 			    (looking-at pure-end-block-re)
-			    (when (and (looking-at "end\\s ")
-				       at-else (not complete))
-			      (throw 'nesting 'block))
-			    (setq complete t
-				  nest (1+ nest)))
+;; 			    (when (and (looking-at "end\\s ")
+;; 				       at-else (not complete))
+;; 			      (throw 'nesting 'block))
+			    (setq nest (1+ nest)))
 			   (;--Declaration part
 			    (looking-at pure-declaration-re)
 			    (unless (save-excursion
@@ -1688,9 +1834,9 @@ Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
 			   (;--Beginning of program
 			    (bobp)
 			    (throw 'nesting 'toplevel))
-			   (;--Found complete statement
+			   (;--Found complete definition
 			    (save-excursion (forward-sexp 1)
-					    (= (following-char) ?\;))
+					    (looking-at "[ \t]*;"))
 			    (setq complete t)))
 		     (if (bobp) (throw 'nesting 'toplevel))
 		     ))))
@@ -1703,12 +1849,17 @@ Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
 	    ;; always indented to the column of the if/else keyword, not the
 	    ;; indentation of the line containing the if-then-else.
 	    ((looking-at pure-ifelse-re)
+	     ;; look for else-if
+	     (if (save-excursion
+		   (pure-safe-backward-sexp)
+		   (looking-at "else if"))
+	       (backward-sexp 1))
 	     (if at-block-beg
 		 (list
 		  type
 		  (+ extra-indent
 		     ;; compensate for extra if-then-else indent
-		     (- (pure-indent-level) pure-indent-level)))
+		     (- (pure-indent-level) pure-block-indent)))
 	       (list type (current-column))))
 	    (t
 	     (list type (+ extra-indent (pure-indent-level))))))))
@@ -1719,7 +1870,7 @@ specifically determines the alignment of equations (`=' symbol).
 The return value is just the alignment column, or zero if none."
   (save-excursion
     (let* ((parse-sexp-ignore-comments t)
-	   (oldpos (point))
+	   (oldpos (point)) (lim oldpos)
 	   (state (save-excursion (parse-partial-sexp (point-min) (point))))
 	   (level (car state)) (nest 0) (pos 0)
 	   (complete (looking-at "[ \t]*end\\>"))
@@ -1733,14 +1884,15 @@ The return value is just the alignment column, or zero if none."
 		   (while t
 		     (backward-sexp 1)
 		     (let ((col (and (= nest 0)
-				     (pure-alignment-column oldpos))))
+				     (pure-alignment-column lim))))
 		       (when col
-			 (setq pos col)
+			 (setq pos (car col))
 			 (throw 'nesting 'toplevel)))
 		     (cond (;--Nest block outwards
 			    (looking-at pure-beg-block-re)
 			    (if (> nest 0)
-				(setq nest (1- nest))
+				(if (zerop (setq nest (1- nest)))
+				    (setq lim (point)))
 			      (throw 'nesting 'block)))
 			   (;--Nest block inwards
 			    (looking-at pure-end-block-re)
@@ -1761,7 +1913,7 @@ The return value is just the alignment column, or zero if none."
 			   (;--Beginning of program
 			    (bobp)
 			    (throw 'nesting 'toplevel))
-			   (;--Found complete statement
+			   (;--Found complete definition
 			    (save-excursion (forward-sexp 1)
 					    (= (following-char) ?\;))
 			    (setq complete t)))
@@ -1770,19 +1922,26 @@ The return value is just the alignment column, or zero if none."
 
       (if (eq type 'toplevel) pos 0))))
 
-;; (defun pure-indent-level ()
-;;   "Return the indent-level of the current line."
-;;   (save-excursion
-;;     (beginning-of-line)
-;;     (skip-chars-forward " \t")
-;;     (current-column)))
+(defun pure-basic-indent-level ()
+  "Return the basic indent level of the current line."
+  (save-excursion
+    (beginning-of-line)
+    (skip-chars-forward " \t")
+    (current-column)))
 
 (defun pure-indent-level ()
-  "Return the indent-level of the current line."
-  (let ((pos (and (looking-at pure-beg-block-re) (point))))
+  "Return the indent level of the current line."
+  (let* ((state (save-excursion (parse-partial-sexp (point-min) (point))))
+	 (level (car state))
+	 (pos (and pure-indent-equals
+		   (zerop level)
+		   (looking-at pure-beg-block-re)
+		   (point))))
     (save-excursion
-      (beginning-of-line)
-      (skip-chars-forward " \t")
+      (if (> level 0)
+	  (goto-char (1+ (scan-lists (point) -1 level)))
+	(beginning-of-line)
+	(skip-chars-forward " \t"))
       (if pos
 	  ;; Special "hanging" indent for blocks at the end of an equation.
 	  (cond
@@ -1803,34 +1962,16 @@ The return value is just the alignment column, or zero if none."
     (re-search-backward "/\\*" nil t)
     (+ (current-column) 3)))
 
-(defun pure-indent-region (start end)
-  ;; Indent every line whose first char is between START and END inclusive.
-  (let (p)
-    (save-excursion
-      (goto-char start)
-      (setq p (copy-marker end))
-      (while (and (bolp)
-		  (not (eobp))
-		  (< (point) p))
-	(pure-indent-line)
-	(forward-line 1)))))
-
-(defun pure-indent-line-or-region ()
-  "When the region is active, indent it.  Otherwise indent the current line."
-  (interactive)
-  (if (pure-region-is-active-p)
-      (pure-indent-region (region-beginning) (region-end))
-    (pure-indent-line)))
-
 ;; Electric characters doing auto-indentation and/or alignment.
 
-(defun pure-electric-semi ()
-  "Insert a `;' character and reindent the line."
+(defun pure-electric-char ()
+  "Insert a character and automatically reindent the line."
   (interactive)
   (insert last-command-char)
-  (save-excursion
-    (beginning-of-line)
-    (pure-indent-line)))
+  (if pure-electric-keys
+      (save-excursion
+	(beginning-of-line)
+	(pure-indent-line))))
 
 (defun pure-electric-equal ()
   "Insert a `=' character and reindent the line if at the
@@ -1839,35 +1980,41 @@ line and `pure-align-equals' is t, align the `=' symbol to the
 current `=' indentation column, as given by
 `pure-calculate-alignment'."
   (interactive)
-  (cond ((save-excursion
+  (cond ((not pure-electric-keys)
+	 (insert last-command-char))
+	((save-excursion
 	   (skip-chars-backward " \t")
 	   (bolp))
 	 (insert last-command-char)
 	 (save-excursion
 	   (beginning-of-line)
 	   (pure-indent-line)))
+	((eq (char-before) ?=)
+	 ;; We actually have a `==' operator here, so undo any previous
+	 ;; alignment or indentation.
+	 (progn
+	   (save-excursion
+	     (backward-char)
+	     (delete-horizontal-space)
+	     (insert " "))
+	   (insert last-command-char))
+	 (save-excursion
+	   (beginning-of-line)
+	   (if (looking-at "[ \t]*==")
+	       (pure-indent-line))))
 	((and pure-align-equals
 	      (not (pure-within-literal))
 	      (save-excursion
 		(skip-chars-forward " \t")
 		(eolp)))
-	 (if (eq (char-before) ?=)
-	     ;; We actually have a `==' operator here, so remove any previous
-	     ;; alignment.
-	     (progn
-	       (save-excursion
-		 (backward-char)
-		 (delete-horizontal-space)
-		 (insert " "))
-	       (insert last-command-char))
-	   (save-excursion
-	     (beginning-of-line)
-	     (pure-indent-line))
-	   (let ((col (current-column))
-		 (icol (pure-calculate-alignment)))
-	     (if (> icol col)
-		 (move-to-column icol t))
-	     (insert last-command-char))))
+	 (save-excursion
+	   (beginning-of-line)
+	   (pure-indent-line))
+	 (let ((col (current-column))
+	       (icol (pure-calculate-alignment)))
+	   (if (> icol col)
+	       (move-to-column icol t))
+	   (insert last-command-char)))
 	(t (insert last-command-char))))
 
 (defun pure-electric-tab ()
@@ -1887,6 +2034,55 @@ current `=' indentation column, as given by
 	  (pure-indent-line)
 	(insert "\t")))
     (skip-chars-forward " \t")))
+
+(defun pure-indent-region (start end)
+  ;; Indent every line whose first char is between START and END inclusive.
+  (let (p)
+    (save-excursion
+      (goto-char start)
+      (setq p (copy-marker end))
+      (while (and (bolp)
+		  (not (eobp))
+		  (< (point) p))
+	(pure-indent-line)
+	(forward-line 1)))))
+
+(defun pure-indent-line-or-region ()
+  "When the region is active, indent it.  Otherwise indent the current line."
+  (interactive)
+  (if (pure-region-is-active-p)
+      (pure-indent-region (region-beginning) (region-end))
+    (pure-indent-line)))
+
+;; Some convenience functions to quickly change between different indentation
+;; and editing styles. These are set on a per-buffer basis.
+
+(defun pure-toggle-indent-mode (&optional arg)
+  "Toggle the `pure-indent-equals' flag.
+Optional numeric ARG, if supplied, turns on this flag when
+positive, turns it off when negative, and just toggles it when
+zero or left out."
+  (interactive "P")
+  (setq pure-indent-equals (pure-calculate-state arg pure-indent-equals))
+  (pure-update-modeline))
+
+(defun pure-toggle-align-mode (&optional arg)
+  "Toggle the `pure-align-equals' flag.
+Optional numeric ARG, if supplied, turns on this flag when
+positive, turns it off when negative, and just toggles it when
+zero or left out."
+  (interactive "P")
+  (setq pure-align-equals (pure-calculate-state arg pure-align-equals))
+  (pure-update-modeline))
+
+(defun pure-toggle-electric-mode (&optional arg)
+  "Toggle the `pure-electric-keys' flag.
+Optional numeric ARG, if supplied, turns on this flag when
+positive, turns it off when negative, and just toggles it when
+zero or left out."
+  (interactive "P")
+  (setq pure-electric-keys (pure-calculate-state arg pure-electric-keys))
+  (pure-update-modeline))
 
 ;; Filling. This is the paragraph-fill from q-mode which in turn was based on
 ;; (XEmacs) cc-mode.
