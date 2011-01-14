@@ -120,32 +120,36 @@
 ;; indentation and editing style
 
 (defcustom pure-tab-always-indent t
-  "*Non-nil means TAB in Pure mode should always reindent the current line.
-If this is nil, TAB inserts a tab if it is at the end of the line
-and follows non-whitespace text."
+  "*Handling of TAB commands in `pure-mode'.
+Non-nil means TAB in `pure-mode' should always reindent the
+current line.  If this is nil, TAB inserts a tab if it is at the
+end of the line and follows non-whitespace text."
   :type 'boolean
   :group 'pure)
 
 (defcustom pure-electric-keys t
-  "*Non-nil means that keys like `=', `;', `(', `)' etc. do
-automatic indentation and alignment. Note that if this is nil then
+  "*Enable or disable electric keys in `pure-mode'.
+Non-nil means that keys like `=', `;', `(', `)' etc. do automatic
+indentation and alignment. Note that if this is nil then
 `pure-align-equals' doesn't have any effect either."
   :type 'boolean
   :group 'pure)
 
 (defcustom pure-indent-equals t
-  "*Non-nil means that `=' at the beginning of a line is indented
-so that it aligns with a previous equation at the same block level,
-and the right-hand sides of equations are indented relative to `='.
-This is also known as \"hanging indent\". Setting this value to nil
-does normal block indentation of equations instead."
+  "*Enable or disable indentation of right-hand sides of equations.
+Non-nil means that `=' at the beginning of a line is indented so
+that it aligns with a previous equation at the same block level,
+and the right-hand sides of equations are indented relative to
+`='. This is also known as \"hanging indent\". Setting this
+value to nil does normal block indentation of equations instead."
   :type 'boolean
   :group 'pure)
 
 (defcustom pure-align-equals t
-  "*Non-nil means that typing `=' at the end of a line aligns it
-with a previous equation at the same block level. Note: This
-setting is independent of `pure-indent-equals'."
+  "*Enable or disable alignment of `=' in equations.
+Non-nil means that typing `=' at the end of a line aligns it with
+a previous equation at the same block level. Note: This setting
+is independent of `pure-indent-equals'."
   :type 'boolean
   :group 'pure)
 
@@ -160,7 +164,7 @@ setting is independent of `pure-indent-equals'."
   :group 'pure)
 
 (defcustom pure-hanging-comment-starter-p t
-  "*Controls what \\[fill-paragraph] does to Pure block comment starters.
+  "*Handling of Pure block comment starters with \\[fill-paragraph].
 When set to nil, Pure block comment starters are left on their own line.
 When set to t, text that follows a block comment starter will be
 placed on the same line as the block comment starter (i.e. the text
@@ -169,7 +173,7 @@ placed on the same line as the block comment starter (i.e. the text
   :group 'pure)
 
 (defcustom pure-hanging-comment-ender-p t
-  "*Controls what \\[fill-paragraph] does to Pure block comment enders.
+  "*Handling of Pure block comment enders with \\[fill-paragraph].
 When set to nil, Pure block comment enders are left on their own line.
 When set to t, block comment enders will be placed at the end of the
 previous line (i.e. they `hang' on that line)."
@@ -179,13 +183,13 @@ previous line (i.e. they `hang' on that line)."
 ;; mode hooks
 
 (defcustom pure-mode-hook nil
-  "*Hook for customising Pure mode.
+  "*Hook for customising `pure-mode'.
 For instance, add `turn-on-font-lock' to enable syntax highlighting."
   :type 'hook
   :group 'pure)
 
 (defcustom pure-eval-mode-hook nil
-  "*Hook for customising Pure-Eval mode.
+  "*Hook for customising `pure-eval-mode'.
 For instance, add `turn-on-font-lock' to enable syntax highlighting."
   :type 'hook
   :group 'pure)
@@ -224,52 +228,60 @@ See the Pure manual for a list of available options."
   :group 'pure)
 
 (defcustom pure-stacksize 0
-  "*Stack size available to Pure programs in kilobytes. If
-nonzero, this determines the value of the PURE_STACK environment
-variable."
+  "*Stack size available to Pure programs in kilobytes.
+If nonzero, this determines the value of the PURE_STACK
+environment variable."
   :type 'integer
   :group 'pure)
 
 (defcustom pure-query-before-kill nil
-  "*Indicates that the user should be prompted before zapping an existing
-interpreter process when starting a new one."
+  "*Enable or disable confirmation before killing an interpreter process.
+If non-nil, this indicates that the user should be prompted
+before zapping an existing interpreter process when starting a
+new one."
   :type 'boolean
   :group 'pure)
 
 (defcustom pure-process-timeout 3
-  "*Time interval in seconds after which `pure-send-region' and other
-operations which read and digest output from the interpreter time out.
-Can be set to nil to disable the timeout, but this isn't recommended."
+  "*Timeout for responses from the interpreter.
+This denotes the time interval in seconds after which
+`pure-send-region' and other operations which read and digest
+output from the interpreter time out. Can be set to nil to
+disable the timeout, but this isn't recommended."
   :type 'integer
   :group 'pure)
 
 (defcustom pure-prompt-regexp "^> \\|^[A-Za-z_0-9-]*> \\|^: "
-  "*Regexp to match prompts in the Pure interpreter. If you customize the
-interpreter's default prompt, you will have to change this value accordingly."
+  "*Regexp to match prompts in the Pure interpreter.
+If you customize the interpreter's default prompt, you will have
+to change this value accordingly."
   :type 'regexp
   :group 'pure)
 
 (defcustom pure-msg-regexp
   "^\\(\\([^:,\n]+\\), line \\([0-9]+\\)\\): "
-"*Regexp to match error and warning messages with source line references in
-the Pure-Eval buffer. Expression 1 denotes the whole source line info,
-expression 2 the file name and expression 3 the corresponding line number."
+"*Regexp to match error and warning messages in the pure-eval buffer.
+Expression 1 denotes the whole source line info, expression 2 the
+file name and expression 3 the corresponding line number."
   :type 'regexp
   :group 'pure)
 
 (defcustom pure-send-show-buffer t
-  "Non-nil means display the *pure-eval* buffer after sending to it."
+  "Enable or disable automatic pure-eval buffer display.
+Non-nil means display the pure-eval buffer after sending to it."
   :type 'boolean
   :group 'pure)
 
 (defcustom pure-send-line-auto-forward t
-  "Control auto-forward after sending to the Pure interpreter.
+  "Enable or disable auto-forward after sending to the Pure interpreter.
 Non-nil means always go to the next Pure code line after sending."
   :type 'boolean
   :group 'pure)
 
 (defcustom pure-send-echo-input t
-  "Non-nil means echo input sent to the Pure interpreter."
+  "Enable or disable echoing of input sent to the Pure interpreter.
+Non-nil means that input sent to the Pure interpreter is echoed
+at the command prompt."
   :type 'boolean
   :group 'pure)
 
@@ -432,7 +444,7 @@ Non-nil means always go to the next Pure code line after sending."
 					(get-buffer "*pure-eval*")])
 	"-"
 	["Complete Symbol"		pure-complete-symbol t])
-  "Menu for Pure mode.")
+  "Menu for `pure-mode'.")
 
 ;; Submode indicators in the pure-mode modeline. "i", "a" and "e" indicate the
 ;; current (buffer-local) state of pure-indent-equals, pure-align-equals and
@@ -511,7 +523,7 @@ interpreter with the `pure-send-line' (\\[pure-send-line]) and
 a new interpreter instance without a script if necessary.)
 
 Special commands are provided to quickly locate the main script
-and the input line of the Pure-Eval buffer, and to visit the
+and the input line of the pure-eval buffer, and to visit the
 source lines shown in error messages. These operations can also
 be selected from the Pure menu (accessible from the menu bar),
 which also provides commands for reading the online help and
@@ -565,7 +577,7 @@ non-nil."
 	'(pure-font-lock-keywords nil nil ((?_ . "w"))))
   (require 'easymenu)  
   (easy-menu-define pure-mode-menu-map pure-mode-map
-		    "Menu keymap for Pure mode." pure-mode-menu)
+		    "Menu keymap for `pure-mode'." pure-mode-menu)
   (easy-menu-add pure-mode-menu-map pure-mode-map)
   ;; make these local so that they can be changed on a per-buffer basis
   (make-local-variable 'pure-indent-equals)
@@ -597,7 +609,7 @@ non-nil."
 	    "using"
 	    "\\)\\>")
     0 'font-lock-keyword-face))
-  "Rules for fontifying in Pure-Eval mode.")
+  "Rules for fontifying in `pure-eval-mode'.")
 
 ;; some helper functions for pure-eval-mode: check that we're on the command
 ;; resp. debugger prompt
@@ -685,7 +697,7 @@ non-nil."
 	"-"
 	["Complete Symbol"		comint-dynamic-complete
 					(pure-at-command-prompt-p)])
-  "Menu for Pure-Eval mode.")
+  "Menu for `pure-eval-mode'.")
 
 ;; Debug submode indicator in the pure-eval-mode modeline.
 
@@ -699,31 +711,48 @@ non-nil."
 
 (defun pure-eval-mode ()
 
-  "Major mode for interacting with the Pure interpreter, based on comint-mode.
+  "Major mode for interacting with the Pure interpreter.
 
-Provides the `pure-current-msg-or-send' (\\[pure-current-msg-or-send])
-command, which, when point is at an error message describing a source
-reference, visits the given line in the corresponding source file in another
-window. Otherwise it runs the `comint-send-input' command, which usually
-submits a command line to the interpreter, or copies it to the command prompt
-when point is not at the current command line.
+This is a major mode based on `comint-mode' which lets you run
+the Pure interpreter in an emacs buffer. It also provides tight
+integration with `pure-mode' so that you can run Pure scripts or
+feed script lines into the interpreter.
 
-Error messages are indicated with a special font. Pressing the middle
-mouse button (button2) over such a message visits the corresponding source
-line in another window (`pure-mouse-msg' command).
+The `pure-current-msg-or-send' command, which is usually bound to
+the return key, uses `comint-send-input' to submit a command line
+to the interpreter (or to copy it to the command prompt when
+point is not at the current command line). If point is at an
+error message describing a source reference, the command visits
+the given line in the corresponding source file in another window
+instead.
 
-You can also use the `pure-first-msg' (\\[pure-first-msg]), `pure-next-msg'
-(\\[pure-next-msg]), `pure-prev-msg' (\\[pure-prev-msg]) and `pure-last-msg'
-(\\[pure-last-msg]) commands to scan through error messages found in the
-buffer. The `pure-find-script' (\\[pure-find-script]) command lets you visit
-the script that is currently running, and `pure-goto-input-line'
-(\\[pure-goto-input-line]) quickly takes you to the prompt at the current
-input line in the Pure-Eval buffer. (These commands are also provided in Pure
-mode. If you like, you can bind them globally, so that you can invoke them
-from other kinds of buffers as well.)
+Error messages are indicated with a special font. Pressing the
+middle mouse button (button2) over such a message visits the
+corresponding source line in another window (`pure-mouse-msg'
+command).
 
-Besides this, you can use the usual comint commands, see the description of
-`comint-mode' for details. Some important commands are listed below:
+The following commands can be used to scan through error messages
+found in the buffer:
+
+`pure-first-msg' (\\[pure-first-msg])
+`pure-next-msg' (\\[pure-next-msg])
+`pure-prev-msg' (\\[pure-prev-msg])
+`pure-last-msg' (\\[pure-last-msg])
+
+The following commands let you visit the script that is currently
+running and quickly go to the prompt at the current input line in
+the pure-eval buffer:
+
+`pure-find-script' (\\[pure-find-script])
+`pure-goto-input-line' (\\[pure-goto-input-line])
+
+\(The above commands are also provided in `pure-mode'. If you like,
+you can bind them globally, so that you can invoke them from
+other kinds of buffers as well.)
+
+Besides this, you can use the usual comint commands, see the
+description of `comint-mode' for details. Some important commands
+are listed below:
 
 \\[comint-previous-input] and \\[comint-next-input] cycle through the command history.
 \\[comint-previous-matching-input] and \\[comint-next-matching-input] search the command history.
@@ -732,15 +761,18 @@ Besides this, you can use the usual comint commands, see the description of
 \\[comint-dynamic-list-input-ring] lists the command history.
 \\[comint-dynamic-complete] performs symbol and filename completion.
 
-Note that in difference to standard comint mode, the C-a/home keys are rebound
-to `comint-bol', to mimic the behaviour of the default binding of these keys
-in the interpreter.
+Note that in difference to standard comint mode, the C-a/Home
+keys are rebound to `comint-bol', to mimic the behaviour of the
+default binding of these keys in the interpreter.
 
-Most of these operations can also be selected from the Comint and Pure mode
-menus accessible from the menu bar. The interpreter's prompt and lines
-containing error messages are described by the variables `pure-prompt-regexp'
-and `pure-msg-regexp'. The history file and size is given by the
-`pure-histfile' and `pure-histsize' variables.
+Most of these operations can also be selected from the Comint and
+Pure menus accessible from the menu bar. The interpreter's prompt
+and lines containing error messages are described by the
+variables `pure-prompt-regexp' and `pure-msg-regexp'. (Note that
+if you have set the PURE_PS environment variable then you'll have
+to modify `pure-prompt-regexp' accordingly.) The history file and
+size is given by the `pure-histfile' and `pure-histsize'
+variables.
 
 A complete command list is given below:
 
@@ -791,7 +823,7 @@ Entry to this mode runs the hooks on `comint-mode-hook' and
   (comint-read-input-ring t)
   (require 'easymenu)  
   (easy-menu-define pure-eval-mode-menu-map pure-eval-mode-map
-		    "Menu keymap for Pure-Eval mode." pure-eval-mode-menu)
+		    "Menu keymap for `pure-eval-mode'." pure-eval-mode-menu)
   (easy-menu-add pure-eval-mode-menu-map pure-eval-mode-map)
   ;; submode indicators
   (make-local-variable 'pure-eval-submode-indicators)
@@ -925,7 +957,7 @@ completion is provided for search terms in the index."
 ;;;###autoload
 (defun pure-scratchpad ()
   "Create the *pure-scratch* buffer if necessary and put it in
-Pure mode."
+`pure-mode'."
   (interactive)
   (let* ((pure-scratch-active (not (null (get-buffer "*pure-scratch*"))))
 	 (pure-scratch-buffer (get-buffer-create "*pure-scratch*")))
@@ -960,9 +992,8 @@ running, make new process.  If buffer exists and process is
 running, kill it and start a new one.
 
 Program used comes from variable `pure-prog-name'. The buffer is
-put in Pure-Eval mode, giving commands for visiting source files,
-sending input, manipulating the command history, etc. See
-`pure-eval-mode'."
+put in `pure-eval-mode', giving commands for visiting source files,
+sending input, manipulating the command history, etc."
 
   (interactive)
   (let* ((dir (if buffer-file-name
@@ -1126,7 +1157,7 @@ TAGS file."
 
 (defun pure-current-msg ()
   "Show the source line referenced by an error message on the current line
-in the Pure-Eval buffer."
+in the pure-eval buffer."
   (interactive)
   (let ((actwindow (selected-window)))
     (if (get-buffer "*pure-eval*")
@@ -1150,7 +1181,7 @@ in the Pure-Eval buffer."
 (defun pure-current-msg-or-send ()
   "Depending on whether point is at an error message, either execute a
 `pure-current-msg' or a `comint-send-input' command. This must be invoked
-from the Pure-Eval buffer."
+from the pure-eval buffer."
   (interactive)
   (if (save-excursion (forward-line 0) (looking-at pure-msg-regexp))
       (pure-current-msg)
@@ -1282,7 +1313,7 @@ window."
 ;; visit main script and the eval buffer
 
 (defun pure-find-script ()
-  "Visit the script currently running in the Pure-Eval buffer."
+  "Visit the script currently running in the pure-eval buffer."
   (interactive)
   (if (and pure-last-dir pure-last-script)
       (if (not (string-equal (concat pure-last-dir pure-last-script)
@@ -1291,7 +1322,7 @@ window."
     (error "No script is running")))
 
 (defun pure-goto-input-line ()
-  "Move to the prompt in the Pure-Eval buffer."
+  "Move to the prompt in the pure-eval buffer."
   (interactive)
   (if (get-buffer "*pure-eval*")
       (progn (pop-to-buffer "*pure-eval*") (goto-char (point-max)))
@@ -1683,7 +1714,7 @@ If prefix ARG is not nil, remove an existing tracepoint instead."
     (setq pure-last-dir nil
 	  pure-last-script nil)
     (goto-char (point-max))
-    (insert "\n*** Process Pure-Eval finished ***\n")))
+    (insert "\n*** Process pure-eval finished ***\n")))
 
 ;; make sure that the history is written when exiting emacs
 (add-hook 'kill-emacs-hook
@@ -2018,7 +2049,7 @@ current `=' indentation column, as given by
 	(t (insert last-command-char))))
 
 (defun pure-electric-tab ()
-  "Function called when TAB is pressed in Pure mode."
+  "Function called when TAB is pressed in `pure-mode'."
   (interactive)
   ;; Do nothing if within a string.
   (if (pure-within-string)
