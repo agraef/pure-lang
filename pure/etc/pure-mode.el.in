@@ -329,7 +329,7 @@ at the command prompt."
 
 (defvar pure-font-lock-keywords
   (list
-   (list "^#!.*" 0 'font-lock-comment-face t)
+;;   (list "^#!.*" 0 'font-lock-comment-face t)
    (list "\\<\\(bigint\\|bool\\|char\\|float\\|double\\|expr\\|short\\|int\\(8\\|16\\|32\\|64\\)?\\|long\\|string\\|pointer\\|void\\|[dci]?matrix\\)\\>" 1 'font-lock-type-face)
    (list "\\<\\(catch\\|throw\\)\\>" 0 'font-lock-builtin-face)
    (list
@@ -340,6 +340,10 @@ at the command prompt."
 	    "\\)\\>")
     0 'font-lock-keyword-face))
   "Rules for fontifying Pure scripts.")
+
+;; #! (shebang) and %{ ... %} code sections
+(defvar pure-font-lock-syntactic-keywords
+  '(("^\\(#!\\)" 1 "<b" t) ("\\(%\\){" 1 "|" t) ("%\\(}\\)" 1 "|" t)))
 
 (defvar pure-mode-map nil)
 (cond ((not pure-mode-map)
@@ -393,7 +397,6 @@ at the command prompt."
 	["Uncomment Region"		uncomment-region
 					(pure-region-is-active-p)]
 	["Fill Comment Paragraph"	fill-paragraph t]
-	["Indent Current Line"		pure-electric-tab t]
 	["Indent Line or Region"	pure-indent-line-or-region t]
 	(list "Indentation Modes"
 	      (pure-menu-toggle "Indent Equals" pure-toggle-indent-mode
@@ -564,7 +567,7 @@ non-nil."
   (setq comment-column 48
 	comment-start "// "
 	comment-end ""
-	comment-start-skip "/\\*+ *\\|// *\\|^#! *"
+	comment-start-skip "/\\*+ *\\|%{ *\\|// *\\|^#! *"
 	comment-multi-line nil)
   (make-local-variable 'indent-line-function)
   (setq indent-line-function 'pure-indent-line)
@@ -574,7 +577,10 @@ non-nil."
 	(setq fill-paragraph-function 'pure-fill-paragraph)))
   (make-local-variable 'font-lock-defaults)
   (setq font-lock-defaults
-	'(pure-font-lock-keywords nil nil ((?_ . "w"))))
+	'(pure-font-lock-keywords
+	  nil nil ((?_ . "w")) nil
+	  (font-lock-syntactic-keywords . pure-font-lock-syntactic-keywords)
+	  ))
   (require 'easymenu)  
   (easy-menu-define pure-mode-menu-map pure-mode-map
 		    "Menu keymap for `pure-mode'." pure-mode-menu)
@@ -1739,24 +1745,29 @@ If prefix ARG is not nil, remove an existing tracepoint instead."
 (defconst pure-indent-alist
   '((block . (+ ind pure-block-indent))
     (declaration . (+ ind pure-block-indent))
-    (comment . (pure-indent-comment))
-    (contexp . ind) (unknown . ind)
+;;     (comment . (pure-indent-comment))
+    (contexp . ind)
     (string . 0) (toplevel . 0)))
 
 (defun pure-indent-line ()
   "Indent current line as a Pure code."
   (let* ((indent-str (pure-calculate-indent))
 	 (type (car indent-str))
-	 (ind (car (cdr indent-str))))
+	 (ind (car (cdr indent-str)))
+	 (indent-fun (assoc type pure-indent-alist)))
     (delete-horizontal-space)
-    (cond (; Some things should not be indented
+    (cond (; Anything unkown gets relative indent
+	   (not indent-fun)
+	   (indent-relative))
+	  (; Some things should not be indented
 	   (and (eq type 'declaration) (looking-at pure-declaration-re))
 	   ())
 	  (; Other things should have no extra indent
-	   (looking-at pure-noindent-re)
+	   (and (or (eq type 'toplevel) (eq type 'block))
+		(looking-at pure-noindent-re))
 	   (indent-to ind))
 	  (; But most lines are treated this way
-	   (indent-to (eval (cdr (assoc type pure-indent-alist))))
+	   (indent-to (eval (cdr indent-fun)))
 	   ))))
 
 (defsubst pure-within-string ()
@@ -1821,7 +1832,12 @@ Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
 			 ((> level 0)
 			  (save-excursion
 			    (goto-char (scan-lists (point) -1 level))
-			    (setq pos (1+ (current-column))))))
+			    (if (save-excursion
+				  (goto-char (1- (point)))
+				  (looking-at "%{"))
+				;; kludge: this is actually a code section
+				(throw 'nesting 'comment)
+			      (setq pos (1+ (current-column)))))))
 		   ;; Loop until correct indent is found
 		   (while t
 		     ;; The backward-sexp may fail if we reach the beginning
@@ -1873,13 +1889,15 @@ Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
 		     ))))
 
       ;; Return type of block and indent level.
-      (cond ((eq type 'toplevel)
+      (cond (;; Toplevel, indent comes from pos.
+	     (eq type 'toplevel)
 	     (list 'contexp (+ extra-indent pos)))
-	    ;; Indentation inside if-then-else gets special treatment: block
-	    ;; starters never get an extra indent, and other elements are
-	    ;; always indented to the column of the if/else keyword, not the
-	    ;; indentation of the line containing the if-then-else.
-	    ((looking-at pure-ifelse-re)
+	    (;; Indentation inside if-then-else gets special treatment: block
+	     ;; starters never get an extra indent, and other elements are
+	     ;; always indented to the column of the if/else keyword, not the
+	     ;; indentation of the line containing the if-then-else.
+	     (and (or (eq type 'toplevel) (eq type 'block))
+		  (looking-at pure-ifelse-re))
 	     ;; look for else-if
 	     (if (save-excursion
 		   (pure-safe-backward-sexp)
@@ -1892,7 +1910,8 @@ Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
 		     ;; compensate for extra if-then-else indent
 		     (- (pure-indent-level) pure-block-indent)))
 	       (list type (current-column))))
-	    (t
+	    (;; Anything else gets indent from pure-indent-level.
+	     t
 	     (list type (+ extra-indent (pure-indent-level))))))))
 
 (defun pure-calculate-alignment ()
@@ -1969,28 +1988,28 @@ The return value is just the alignment column, or zero if none."
 		   (looking-at pure-beg-block-re)
 		   (point))))
     (save-excursion
-      (if (> level 0)
-	  (goto-char (1+ (scan-lists (point) -1 level)))
-	(beginning-of-line)
-	(skip-chars-forward " \t"))
-      (if pos
-	  ;; Special "hanging" indent for blocks at the end of an equation.
-	  (cond
-	   ((looking-at "=[ \t]")
-	    (forward-char)
-	    (skip-chars-forward " \t"))
-	   ((save-excursion
-	      (and (re-search-forward "[ \t]\\(=\\)\\([ \t]\\|[ \t]*$\\)"
-				      (point-at-eol) t)
-		   (> pos (match-end 1))))
-	    (goto-char (match-end 1))
-	    (skip-chars-forward " \t"))))
+      (cond ((> level 0)
+	     (goto-char (1+ (scan-lists (point) -1 level)))
+	     (beginning-of-line)
+	     (skip-chars-forward " \t"))
+	    (pos
+	     ;; Special "hanging" indent for blocks at the end of an equation.
+	     (cond
+	      ((looking-at "=[ \t]")
+	       (forward-char)
+	       (skip-chars-forward " \t"))
+	      ((save-excursion
+		 (and (re-search-forward "[ \t]\\(=\\)\\([ \t]\\|[ \t]*$\\)"
+					 (point-at-eol) t)
+		      (> pos (match-end 1))))
+	       (goto-char (match-end 1))
+	       (skip-chars-forward " \t")))))
       (current-column))))
 
 (defun pure-indent-comment ()
   "Return indent for current comment."
   (save-excursion
-    (re-search-backward "/\\*" nil t)
+    (re-search-backward "/\\*\\|%{" nil t)
     (+ (current-column) 3)))
 
 ;; Electric characters doing auto-indentation and/or alignment.
@@ -2118,7 +2137,7 @@ zero or left out."
 ;; Filling. This is the paragraph-fill from q-mode which in turn was based on
 ;; (XEmacs) cc-mode.
 
-(defconst pure-comment-start-regexp "\\(/[/*]\\|^#!\\)")
+(defconst pure-comment-start-regexp "\\(/[/*]\\|%{\\|^#!\\)")
 
 (defmacro pure-safe (&rest body)
   ;; safely execute BODY, return nil if an error occurred
