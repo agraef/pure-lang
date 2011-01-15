@@ -1989,10 +1989,10 @@ The return value is just the alignment column, or zero if none."
 		   (point))))
     (save-excursion
       (cond ((> level 0)
-	     (goto-char (1+ (scan-lists (point) -1 level)))
-	     (beginning-of-line)
-	     (skip-chars-forward " \t"))
+	     (goto-char (1+ (scan-lists (point) -1 level))))
 	    (pos
+	     (beginning-of-line)
+	     (skip-chars-forward " \t")
 	     ;; Special "hanging" indent for blocks at the end of an equation.
 	     (cond
 	      ((looking-at "=[ \t]")
@@ -2003,7 +2003,10 @@ The return value is just the alignment column, or zero if none."
 					 (point-at-eol) t)
 		      (> pos (match-end 1))))
 	       (goto-char (match-end 1))
-	       (skip-chars-forward " \t")))))
+	       (skip-chars-forward " \t"))))
+	    (t
+	     (beginning-of-line)
+	     (skip-chars-forward " \t")))
       (current-column))))
 
 (defun pure-indent-comment ()
