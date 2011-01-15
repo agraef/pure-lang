@@ -4577,7 +4577,7 @@ Inline Code
 -----------
 
 Instead of manually compiling source files to bitcode modules, you can also
-just place the source code into a Pure script, enclosing it in ``%{ ... %}``.
+just place the source code into a Pure script, enclosing it in ``%< ... %>``.
 (Optionally, the opening brace may also be preceded with a :keyword:`public`
 or :keyword:`private` scope specifier, which is used in the same way as the
 scope specifier following the :keyword:`using` keyword when importing bitcode
@@ -4586,7 +4586,7 @@ files.)
 For instance, here is a little script showing inline code for the ``mygcd``
 function from the previous subsection::
 
-  %{
+  %<
   int mygcd(int x, int y)
   {
     if (y == 0)
@@ -4594,7 +4594,7 @@ function from the previous subsection::
     else
       return mygcd(y, x%y);
   }
-  %}
+  %>
 
   mygcd 75 105;
 
@@ -4621,7 +4621,7 @@ placing an appropriate tag into the inline code section, immediately after the
 opening brace. (The tag is removed before the code is submitted to
 compilation.) For instance::
 
-  %{ -*- Fortran90 -*-
+  %< -*- Fortran90 -*-
   function fact(n) result(p)
     integer n, p
     p = 1
@@ -4629,7 +4629,7 @@ compilation.) For instance::
        p = p*i
     end do
   end function fact
-  %}
+  %>
 
   fact n::int = fact_ {n};
   map fact (1..10);
