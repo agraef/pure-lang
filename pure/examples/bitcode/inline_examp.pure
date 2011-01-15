@@ -4,7 +4,7 @@
 /* The default language for inline code is C. This requires that you have an
    LLVM C compiler installed (llvm-gcc or clang will do). */
 
-%{
+%<
 int mygcd(int x, int y)
 {
   if (y == 0)
@@ -12,7 +12,7 @@ int mygcd(int x, int y)
   else
     return mygcd(y, x%y);
 }
-%}
+%>
 
 map (mygcd 25) (30..35);
 
@@ -22,7 +22,7 @@ map (mygcd 25) (30..35);
    using functions with C binding (extern "C"). The following example shows
    how to work with STL maps from Pure. */
 
-%{ -*- C++ -*-
+%< -*- C++ -*-
 
 #include <pure/runtime.h>
 #include <string>
@@ -81,7 +81,7 @@ extern "C" void map_destroy(exprmap *m)
   delete m;
 }
 
-%}
+%>
 
 public bar; // constructor symbol used below
 
@@ -104,7 +104,7 @@ map (map_get m) (map_keys m); // => [bar 4711L,[1,2,3,4,5]]
 
 /* Fortran (requires llvm-gfortran). */
 
-%{ -*- Fortran90 -*-
+%< -*- Fortran90 -*-
 function fact(n) result(p)
   integer n, p
   p = 1
@@ -112,7 +112,7 @@ function fact(n) result(p)
      p = p*i
   end do
 end function fact
-%}
+%>
 
 /* Note that Fortran function names have a trailing underscore, and parameters
    are always passed by reference. (llvm-gfortran-4.2 doesn't seem to support
@@ -126,7 +126,7 @@ map fact (1..10);
 /* Another Fortran example, using matrices (Gaussian elimination). This is
    basically the same as in examples/fortran.f90. */
 
-%{ -*- Fortran90 -*-
+%< -*- Fortran90 -*-
 ! Matrix example (Gaussian elimination). This brings the given mxn matrix A
 ! into (column) echelon form. The algorithm uses partial pivoting. The
 ! permutation of the columns is returned in the index array.
@@ -168,7 +168,7 @@ subroutine gauss(m, n, A, index)
      end do
   end do
 end subroutine gauss
-%}
+%>
 
 /* Pure matrices are passed as void* parameters here (meaning that the raw data
    pointer will be passed), enabling the Fortran routine to modify the matrix

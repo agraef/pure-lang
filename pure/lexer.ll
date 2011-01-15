@@ -221,7 +221,7 @@ blank  [ \t\f\v\r]
 <comment>"*"+"/"        yylloc->step(); BEGIN(INITIAL);
 <comment><<EOF>>	interp.error(*yylloc, "open comment at end of file"); BEGIN(INITIAL);
 
-"%{"       { interp.begin_code(); BEGIN(xcode); }
+"%<"       { interp.begin_code(); BEGIN(xcode); }
 
 <xcode>"//".*	interp.add_code(yytext);
 <xcode>"/*"	interp.add_code(yytext); BEGIN(xcode_comment);
@@ -234,7 +234,7 @@ blank  [ \t\f\v\r]
 }
 <xcode>[\n]+	interp.add_code(yytext); yylloc->lines(yyleng);
 <xcode>.	interp.add_code(yytext);
-<xcode>"%}"	interp.end_code(); BEGIN(INITIAL); return token::CODE;
+<xcode>"%>"	interp.end_code(); BEGIN(INITIAL); return token::CODE;
 <xcode><<EOF>>	interp.error(*yylloc, "open code section at end of file"); interp.end_code(); BEGIN(INITIAL); return token::CODE;
 
 <xcode_comment>[^*\n]*		interp.add_code(yytext); yylloc->step();

@@ -180,6 +180,18 @@ previous line (i.e. they `hang' on that line)."
   :type 'boolean
   :group 'pure)
 
+;; special fontification for %<...%> code sections
+
+(defcustom pure-code-section-face 'default
+  "*Face with which to fontify inline code sections.
+Normally this is set to `default' to avoid fontification of
+inline code, but you can change this to any face you prefer. Note
+that in order for the new face to take effect in existing
+buffers, you'll have to refontify them using
+\\[font-lock-fontify-buffer]."
+  :type 'face
+  :group 'pure)
+
 ;; mode hooks
 
 (defcustom pure-mode-hook nil
@@ -341,9 +353,18 @@ at the command prompt."
     0 'font-lock-keyword-face))
   "Rules for fontifying Pure scripts.")
 
-;; #! (shebang) and %{ ... %} code sections
+;; #! (shebang) and %< ... %> code sections are treated as comments
 (defvar pure-font-lock-syntactic-keywords
-  '(("^\\(#!\\)" 1 "<b" t) ("\\(%\\){" 1 "|" t) ("%\\(}\\)" 1 "|" t)))
+  '(("^\\(#!\\)" 1 "<b" t) ("\\(%\\)<" 1 "!" t) ("%\\(>\\)" 1 "!" t)))
+
+(defun pure-syntactic-face-function (state)
+  (cond
+   ((nth 3 state) font-lock-string-face)		; as normal
+   ;; Look for code sections.
+   ((or (eq 'syntax-table (nth 7 state))
+	(eq (char-after (nth 8 state)) ?\%))
+    pure-code-section-face)
+   (t font-lock-comment-face)))
 
 (defvar pure-mode-map nil)
 (cond ((not pure-mode-map)
@@ -567,7 +588,7 @@ non-nil."
   (setq comment-column 48
 	comment-start "// "
 	comment-end ""
-	comment-start-skip "/\\*+ *\\|%{ *\\|// *\\|^#! *"
+	comment-start-skip "/\\*+ *\\|%< *\\|// *\\|^#! *"
 	comment-multi-line nil)
   (make-local-variable 'indent-line-function)
   (setq indent-line-function 'pure-indent-line)
@@ -580,6 +601,8 @@ non-nil."
 	'(pure-font-lock-keywords
 	  nil nil ((?_ . "w")) nil
 	  (font-lock-syntactic-keywords . pure-font-lock-syntactic-keywords)
+	  (font-lock-syntactic-face-function . pure-syntactic-face-function)
+	  (parse-sexp-lookup-properties . t)
 	  ))
   (require 'easymenu)  
   (easy-menu-define pure-mode-menu-map pure-mode-map
@@ -1832,12 +1855,7 @@ Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
 			 ((> level 0)
 			  (save-excursion
 			    (goto-char (scan-lists (point) -1 level))
-			    (if (save-excursion
-				  (goto-char (1- (point)))
-				  (looking-at "%{"))
-				;; kludge: this is actually a code section
-				(throw 'nesting 'comment)
-			      (setq pos (1+ (current-column)))))))
+			    (setq pos (1+ (current-column))))))
 		   ;; Loop until correct indent is found
 		   (while t
 		     ;; The backward-sexp may fail if we reach the beginning
@@ -2012,7 +2030,7 @@ The return value is just the alignment column, or zero if none."
 (defun pure-indent-comment ()
   "Return indent for current comment."
   (save-excursion
-    (re-search-backward "/\\*\\|%{" nil t)
+    (re-search-backward "/\\*\\|%<" nil t)
     (+ (current-column) 3)))
 
 ;; Electric characters doing auto-indentation and/or alignment.
@@ -2144,7 +2162,7 @@ zero or left out."
 ;; Filling. This is the paragraph-fill from q-mode which in turn was based on
 ;; (XEmacs) cc-mode.
 
-(defconst pure-comment-start-regexp "\\(/[/*]\\|%{\\|^#!\\)")
+(defconst pure-comment-start-regexp "\\(/[/*]\\|%<\\|^#!\\)")
 
 (defmacro pure-safe (&rest body)
   ;; safely execute BODY, return nil if an error occurred
