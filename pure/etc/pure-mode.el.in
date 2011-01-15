@@ -2040,19 +2040,23 @@ current `=' indentation column, as given by
 	   (beginning-of-line)
 	   (pure-indent-line)))
 	((eq (char-before) ?=)
-	 ;; We actually have a `==' operator here, so undo any previous
-	 ;; alignment or indentation.
+	 ;; We may have a `==' operator here, so undo any previous alignment
+	 ;; or indentation.
 	 (progn
 	   (save-excursion
 	     (backward-char)
-	     (delete-horizontal-space)
-	     (insert " "))
+	     (when (or (eq (char-before) ?\s) (eq (char-before) ?\t))
+	       (delete-horizontal-space)
+	       (insert " ")))
 	   (insert last-command-char))
 	 (save-excursion
 	   (beginning-of-line)
 	   (if (looking-at "[ \t]*==")
 	       (pure-indent-line))))
 	((and pure-align-equals
+	      ;; require bol or whitespace, so that we don't tear apart
+	      ;; operators with a trailing `=', such as `~='
+	      (or (bolp) (eq (char-before) ?\s) (eq (char-before) ?\t))
 	      (not (pure-within-literal))
 	      (save-excursion
 		(skip-chars-forward " \t")
