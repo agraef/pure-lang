@@ -44,7 +44,7 @@ class PureLexer(RegexLexer):
             (r'^#!.*?\n', Comment.Preproc),
 
             # Inline foreign language code. Avoid highlighting these.
-            (r'%{(.|\n)*?%}', Text),
+            (r'%<(.|\n)*?%>', Text),
 
             # Interactive prompts and error messages.
             (r'^> ?$', Generic.Prompt), # lone prompt at end of snippet
