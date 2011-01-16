@@ -33,8 +33,8 @@ the commands given below.
 
 Prerequisites: gcc, GNU make, flex/bison (development sources only), libltdl,
 libgmp (including header files for development), wget (for downloading and
-installing the online documentation). These should all be available as binary
-packages on most systems.
+installing the online documentation), GNU emacs (if you want to use Emacs Pure
+mode). These should all be available as binary packages on most systems.
 
 Installing LLVM and clang (the latter is optional but recommended):
 
@@ -114,6 +114,8 @@ denotes corresponding development packages):
   if you want command line editing support in the interpreter; see comments
   below).
 
+- GNU emacs (if you want to use Pure mode).
+
 In addition, the following will be required to compile the development version
 (see the INSTALLING FROM DEVELOPMENT SOURCES section below):
 
@@ -139,6 +141,8 @@ need or want to install the dependencies from source:
 - Flex: http://flex.sourceforge.net
 
 - Bison: http://www.gnu.org/software/bison
+
+- GNU Emacs: http://www.gnu.org/software/emacs
 
 - GNU ltdl (part of the libtool software): http://www.gnu.org/software/libtool
 
@@ -320,6 +324,12 @@ OTHER BUILD AND INSTALLATION OPTIONS for details. (The runtime.h header file
 is not needed for normal operation, but can be used to write C/C++ extensions
 modules, if you need to access and manipulate Pure expressions from C/C++.)
 
+In addition, if the presence of GNU Emacs was detected at configure time, then
+pure-mode.el and pure-mode.elc will be installed in the Emacs site-lisp
+directory. (make tries to guess the proper location of the site-lisp
+directory, but if it guesses wrong or if you want to install in some custom
+location then you can also set the elispdir make variable accordingly.)
+
 On some systems you have to tell the dynamic linker to update its cache so
 that it finds the Pure runtime library. E.g., on Linux this is done as
 follows:
@@ -426,42 +436,20 @@ You can also run the interpreter from GNU Emacs (see below), and for Windows
 there is a nice GUI application named "PurePad" which makes it easy to edit
 and run your Pure scripts.
 
-STEP 8. Install pure-mode.el.
+STEP 8. Enable Pure mode in Emacs.
 
 This step is optional, but if you're friends with Emacs then you should
-definitely try "Pure mode" which gives you a full-blown IDE to edit and run
-Pure programs in Emacs. After running 'make', the required elisp file
-pure-mode.el can be found in the etc subdirectory.
+definitely try Pure mode which gives you a full-blown IDE to edit and run Pure
+programs in Emacs. If Emacs was detected by configure then after running
+'make' and 'sudo make install' the required elisp files should already be
+installed in the Emacs site-lisp directory.
 
-The Makefile contains a few targets to byte-compile the file using Emacs and
-install it in your Emacs site-lisp directory.
-
-To byte-compile the file without installing it:
-
-$ make elc
-
-This creates a file pure-mode.elc in the etc directory. (The Emacs byte
-compiler may issue some warnings when compiling the file, but the generated
-file should normally work fine anyway. However, if you get an error message
-during compilation then this is a bug which should be reported to the author.)
-
-To install the pure-mode.el and pure-mode.elc files:
-
-$ sudo make install-el
-$ sudo make install-elc
-
-(Installing the bytecode file isn't required for using Pure mode, but
-recommended since Emacs executes bytecode faster than Lisp source.)
-
-Note: The Makefile tries to guess the Emacs installation prefix. If it gets
-this wrong, you can also set the make variable 'elispdir' to point to your
+Note: make tries to guess the Emacs installation prefix. If it gets this
+wrong, you can also set the make variable 'elispdir' to point to your
 site-lisp directory. (In fact, you can specify any directory on Emacs'
 loadpath for 'elispdir'.)
 
-You can also remove the installed files later with 'sudo make uninstall-el'
-and 'sudo make uninstall-elc'.
-
-Once Pure mode is installed, you also need to add some stuff to your .emacs
+Before you can use Pure mode, you still have to add some stuff to your .emacs
 file to load the mode at startup. A minimal setup looks like this:
 
 (require 'pure-mode)
@@ -479,6 +467,14 @@ follows in your .emacs file, so that you can read the online documentation in
 Emacs:
 
 (require 'w3m-load)
+
+Once Emacs has been configured to load Pure mode, you can just run it with a
+Pure file to check that it works, e.g.:
+
+$ emacs examples/hello.pure
+
+Use C-h m to read the online help about Pure mode to get acquainted with it.
+The Pure documentation can be read with C-c h.
 
 
 INSTALLING FROM DEVELOPMENT SOURCES
