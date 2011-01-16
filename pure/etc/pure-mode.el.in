@@ -521,6 +521,10 @@ of Pure code (if the region is currently active, otherwise it
 indents the current line). Other electric characters such as `;'
 and `=' also perform automatic indentation, see below.
 
+\\[pure-electric-tab] takes into account the surrounding context. When inside
+a comment, it uses relative indentation (see `indent-relative').
+When inside a string, it just inserts a literal tab character.
+
 \\[fill-paragraph] fills paragraphs in comments and strings. You can also use
 this command with a prefix argument to justify the text between
 margins. (Please note that at present this command doesn't deal
@@ -547,7 +551,7 @@ Some important variables controlling indentation/edit style:
 `pure-indent-equals': Non-nil means that the right-hand sides of
     equations are indented so that they are aligned at `='
     symbols (``hanging indent''). Otherwise normal block
-    indentation of equations is done instead.  Default: t.
+    indentation of equations is done instead. Default: t.
 
 `pure-align-equals': Non-nil means that `=' at the end of a line
     is aligned with a previous equation at the same block level.
@@ -564,36 +568,44 @@ Running the Pure Interpreter
 ----------------------------
 
 Pure mode also provides tight integration with the Pure
-interpreter. The interpreter can be started in a buffer (see
-`pure-eval-mode') using \\[run-pure].
-
-The `pure-run-script' (\\[pure-run-script]) command lets you run
-the interpreter on the script in the current buffer. It will be
+interpreter. First, the interpreter can be started in a
+buffer (see `pure-eval-mode') using \\[run-pure]. Second, the
+`pure-run-script' (\\[pure-run-script]) command lets you run the
+interpreter on the script in the current buffer. It will be
 verified that the buffer has a file associated with it, and you
 will be prompted to save edited buffers when invoking this
 command.
 
-You can also feed lines or regions of Pure code into a running
-interpreter with the `pure-send-line' (\\[pure-send-line]) and
-`pure-send-region' (\\[pure-send-region]) commands. (This starts
-a new interpreter instance without a script if necessary.)
+Third, you can also feed lines or regions of Pure code into a
+running interpreter with the `pure-send-line' (\\[pure-send-line])
+and `pure-send-region' (\\[pure-send-region]) commands. (This starts a new
+interpreter instance without a script if necessary.)
 
 When working with these commands, it is often convenient to have
 a scratchpad for entering Pure definitions and expressions; this
-is provided by the `pure-scratchpad' (\\[pure-scratchpad]) command
-which creates a *pure-scratch* buffer very much like the standard
+is provided by the `pure-scratchpad' (\\[pure-scratchpad]) command which
+creates a *pure-scratch* buffer very much like the standard
 *scratch* buffer but operated in Pure mode.
 
-The `pure-eval' (\\[pure-eval]) command evaluates a Pure
-expression read from the minibuffer and prints its result in the
-echo area, or, if invoked with a prefix arg, inserts the result
-into the current buffer. There are also commands to show and
-clear symbols in the Pure interpreter, and to set debugger
-breakpoints and tracepoints.
+The `pure-eval' (\\[pure-eval]) command evaluates a Pure expression
+read from the minibuffer and prints its result in the echo area,
+or, if invoked with a prefix arg, inserts the result into the
+current buffer.
+
+`pure-show' (\\[pure-show]) shows the definition of a Pure symbol in the
+Pure interpreter, using the `show' command of the interpreter.
+Similarly, `pure-clear' (\\[pure-clear]) clears the definition of a Pure
+symbol using the interpreter's `clear' command.
+
+`pure-break' (\\[pure-break]) and `pure-trace' (\\[pure-trace]) set or delete
+debugger breakpoints and tracepoints. (You may first have to
+enable debugging mode with `pure-toggle-debug-mode' (\\[pure-toggle-debug-mode])
+when using these.)
 
 Other special commands are provided to quickly locate the main
 script and the input line of the pure-eval buffer, and to visit
-the source lines shown in error messages.
+the source lines shown in error messages. These are the same as
+in `pure-eval-mode' (which see).
 
 Customization
 -------------
