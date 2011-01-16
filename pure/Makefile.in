@@ -46,6 +46,7 @@ CXX = @CXX@
 INSTALL = @INSTALL@
 FLEX = @FLEX@
 BISON = @BISON@
+EMACS = @EMACS@
 
 # Linker flags and required libraries. These are determined automatically by
 # configure, but if necessary you can also change these on the command line.
@@ -66,6 +67,25 @@ RL_LIBS  = @RL_LIBS@
 CPPFLAGS = @CPPFLAGS@
 CFLAGS   = @CFLAGS@
 CXXFLAGS = @CXXFLAGS@
+
+# See whether emacs is installed and try to guess its installation prefix. If
+# this guesses wrong, you can specify the absolute path to emacs manually by
+# setting the EMACS variable accordingly. In either case, if EMACS is set then
+# pure-mode.el will be byte-compiled and installed automatically. You can also
+# set the elispdir variable if you need to specify a custom location for the
+# elsip files.
+
+emacs_prefix = $(patsubst %/bin/emacs,%,$(EMACS))
+ifeq ($(strip $(emacs_prefix)),)
+# Fall back to $(prefix).
+emacs_prefix = $(prefix)
+endif
+elispdir = $(emacs_prefix)/share/emacs/site-lisp
+ifeq ($(strip $(EMACS)),)
+EMACS = emacs
+else
+elcfiles = etc/pure-mode.elc
+endif
 
 # Location of the Pure library directory. Depends on whether we're doing a
 # versioned install. This enables you to install different versions of the
@@ -175,7 +195,7 @@ strip dist distcheck cleanlogs logs check config
 
 # compilation
 
-all: pure$(EXE) pure_main.o etc/pure-mode.el
+all: pure$(EXE) pure_main.o etc/pure-mode.el $(elcfiles)
 
 ifeq ($(sharedlib), yes)
 pure$(EXE): pure.o $(libpure)
@@ -224,14 +244,10 @@ etc/pure-mode.el: Makefile etc/pure-mode.el.in
 
 # create pure-mode.elc from pure-mode.el (this requires emacs)
 
-ELC = emacs -q --no-site-file -batch -eval "(add-to-list 'load-path \".\")" -f batch-byte-compile
+ELC = $(EMACS) -q --no-site-file -batch -eval "(add-to-list 'load-path \".\")" -eval "(setq byte-compile-warnings '(callargs free-vars noruntime redefine))" -f batch-byte-compile
 
 etc/pure-mode.elc: etc/pure-mode.el
 	cd etc && $(ELC) pure-mode.el
-
-# The above target will normally be invoked only when installing the elc file.
-# You can also use the following target to generate the elc file without
-# installing it.
 
 elc: etc/pure-mode.elc
 
@@ -312,6 +328,10 @@ endif
 	$(INSTALL) -m 644 $(srcdir)/pure_main.c pure_main.o $(DESTDIR)$(pure_libdir)
 	for x in $(srcdir)/lib/*.pure; do $(INSTALL) -m 644 $$x $(DESTDIR)$(pure_libdir); done
 	$(INSTALL) -m 644 $(srcdir)/pure.1 $(DESTDIR)$(man1dir)/$(pure_1)
+ifneq ($(elcfiles),)
+	$(INSTALL) -d $(DESTDIR)$(elispdir)
+	$(INSTALL) -m 644 etc/pure-mode.el etc/pure-mode.elc $(DESTDIR)$(elispdir)
+endif
 ifeq ($(versioned), yes)
 	ln -sf $(bindir)/$(pure_exe) $(DESTDIR)$(bindir)/pure$(EXE)
 	ln -sf $(pkgconfigdir)/$(pure_pc) $(DESTDIR)$(pkgconfigdir)/pure.pc
@@ -321,7 +341,7 @@ ifeq ($(versioned), yes)
 endif
 
 uninstall:
-	rm -rf $(addprefix $(DESTDIR), $(bindir)/pure$(EXE) $(pkgconfigdir)/pure.pc $(libdir)/$(libpure_lnkname) $(libdir)/$(libpure_soname) $(libdir)/$(libpure) $(includedir)/pure $(libdir)/pure $(man1dir)/pure.1)
+	rm -rf $(addprefix $(DESTDIR), $(bindir)/pure$(EXE) $(pkgconfigdir)/pure.pc $(libdir)/$(libpure_lnkname) $(libdir)/$(libpure_soname) $(libdir)/$(libpure) $(includedir)/pure $(libdir)/pure $(man1dir)/pure.1 $(elispdir)/pure-mode.el $(elispdir)/pure-mode.elc)
 ifeq ($(versioned), yes)
 	rm -rf $(addprefix $(DESTDIR), $(bindir)/$(pure_exe) $(pkgconfigdir)/$(pure_pc) $(pure_includedir) $(pure_libdir) $(man1dir)/$(pure_1))
 endif
@@ -337,15 +357,11 @@ install-docs:
 
 # install pure-mode.el and pure-mode.elc
 
-# make tries to guess the emacs installation prefix; if it guesses wrong, you
-# can specify emacs_prefix manually, or just set elispdir directly.
-
-emacs_prefix = $(patsubst %/bin/emacs,%,$(shell which emacs 2>/dev/null))
-ifeq ($(strip $(emacs_prefix)),)
-# Fall back to $(prefix).
-emacs_prefix = $(prefix)
-endif
-elispdir = $(emacs_prefix)/share/emacs/site-lisp
+# This will normally be done automatically with 'make install' if emacs is
+# detected on your system. However, these targets also allow you to do this
+# manually, e.g., if emacs is installed in an unusual location, or if you want
+# to install the files in a custom location (in the latter case you will also
+# want to set elispdir accordingly).
 
 install-el: etc/pure-mode.el
 	$(INSTALL) -d $(DESTDIR)$(elispdir)
