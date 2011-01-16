@@ -2,7 +2,7 @@
 /* The Pure main program. This is currently rather simplistic. See the README
    file and the man page for details. */
 
-/* Copyright (c) 2008-2010 by Albert Graef <Dr.Graef@t-online.de>.
+/* Copyright (c) 2008-2011 by Albert Graef <Dr.Graef@t-online.de>.
 
    The Pure main program is free software: you can redistribute it and/or
    modify it under the terms of the GNU General Public License as published by
@@ -75,7 +75,7 @@ using namespace std;
 #define PURELIB "/usr/local/lib/pure-" PACKAGE_VERSION
 #endif
 
-#define COPYRIGHT "Copyright (c) 2008-2010 by Albert Graef"
+#define COPYRIGHT "Copyright (c) 2008-2011 by Albert Graef"
 #define USAGE \
 "Usage:            pure [options ...] [script ...] [-- args ...]\n\
                   pure [options ...] -x script [args ...]\n\
