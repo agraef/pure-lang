@@ -394,6 +394,7 @@ at the command prompt."
        (define-key pure-mode-map "\C-x\M-f" 'pure-find-script)
        (define-key pure-mode-map "\C-x\M-v" 'pure-goto-input-line)
        (define-key pure-mode-map "\C-c\C-c" 'pure-send-line)
+       (define-key pure-mode-map "\C-c\C-f" 'pure-send-defun)
        (define-key pure-mode-map "\C-c\C-r" 'pure-send-region)
        (define-key pure-mode-map "\C-c:"    'pure-eval)
        (define-key pure-mode-map "\C-c\M-h" 'pure-show)
@@ -403,6 +404,11 @@ at the command prompt."
        (define-key pure-mode-map "\C-c\M-i" 'pure-toggle-indent-mode)
        (define-key pure-mode-map "\C-c\M-a" 'pure-toggle-align-mode)
        (define-key pure-mode-map "\C-c\M-e" 'pure-toggle-electric-mode)
+       (define-key pure-mode-map [C-S-left]  'pure-backward-defun)
+       (define-key pure-mode-map [C-S-right] 'pure-forward-defun)
+       (define-key pure-mode-map [C-S-up]   'pure-up-defun)
+       (define-key pure-mode-map [C-S-down] 'pure-down-defun)
+       (define-key pure-mode-map "\M-\C-h"  'pure-mark-defun)
        (define-key pure-mode-map "\e\C-q"   'pure-indent-line-or-region)
        (define-key pure-mode-map "\e\t"     'pure-complete-symbol)
     ))
@@ -417,6 +423,7 @@ at the command prompt."
 					(pure-region-is-active-p)]
 	["Uncomment Region"		uncomment-region
 					(pure-region-is-active-p)]
+	["Mark Definition"		pure-mark-defun t]
 	["Fill Comment Paragraph"	fill-paragraph t]
 	["Indent Line or Region"	pure-indent-line-or-region t]
 	(list "Indentation Modes"
@@ -435,18 +442,15 @@ at the command prompt."
 	["Quit Interpreter"		pure-quit
 					(get-process "pure-eval")]
 	"-"
-	["Run Script"			pure-run-script t]
-	["Send Current Line"		pure-send-line t]
-	["Send Region"			pure-send-region
+	(list "Execute"
+	      ["Run Script"		pure-run-script t]
+	      ["Send Current Line"	pure-send-line t]
+	      ["Send Current Definition" pure-send-defun t]
+	      ["Send Region"		pure-send-region
 					(pure-region-is-active-p)]
-	["Evaluate Expression..."	pure-eval t]
-	["Show Symbol..."		pure-show t]
-	["Clear Symbol..."		pure-clear t]
-	"-"
-	["Find Main Script"		pure-find-script pure-last-script]
-	["Goto Input Line"		pure-goto-input-line
-					(get-process "pure-eval")]
-	["Pure Scratchpad"		pure-scratchpad t]
+	      ["Evaluate Expression..."	pure-eval t]
+	      ["Show Symbol..."		pure-show t]
+	      ["Clear Symbol..."	pure-clear t])
 	"-"
 	(list "Debugger"
 	      (pure-menu-toggle "Debugging Mode" pure-toggle-debug-mode
@@ -454,6 +458,11 @@ at the command prompt."
 	      "-"
 	      ["Breakpoint..."		pure-break pure-debug-mode]
 	      ["Tracepoint..."		pure-trace pure-debug-mode])
+	"-"
+	["Find Main Script"		pure-find-script pure-last-script]
+	["Goto Input Line"		pure-goto-input-line
+					(get-process "pure-eval")]
+	["Pure Scratchpad"		pure-scratchpad t]
 	"-"
 	(list "Locate"
 	      ["Current Message"	pure-current-msg
@@ -564,6 +573,57 @@ current status of the `pure-electric-keys', `pure-indent-equals'
 and `pure-align-equals' flags is displayed in the mode line
 \(`aei' indicators).
 
+Other Editing Commands
+----------------------
+
+Emacs provides some movement and editing commands which deal with
+balanced parentheses, see info node `(emacs)Parentheses' for
+details. These are also quite handy when editing expressions in
+Pure mode.
+
+In addition, Pure mode has some special commands which operate on
+Pure definitions and declarations as a whole.  Note that because
+of Pure's somewhat terse syntax these commands rely on sensible
+source formatting. In particular, they won't be able to locate
+definitions which are buried inside a line, so you should try to
+avoid lines containing several definitions.
+
+The following commands traverse the tree of blocks and
+definitions in a Pure script in a fashion similar to Emacs' paren
+movement commands.
+
+`pure-backward-defun' (\\[pure-backward-defun]) moves backward to the beginning
+of the current definition, skipping over definitions in lower
+levels. If already at the beginning of the definition, moves to
+the previous definition at the same block level.
+
+`pure-forward-defun' (\\[pure-forward-defun]) moves forward to the
+next definition at the same block level, skipping over
+definitions in lower levels like `pure-backward-defun'.
+
+`pure-up-defun' (\\[pure-up-defun]) moves backward to the beginning
+of the enclosing block, skipping over all definitions in the
+current or lower block levels. If already at toplevel, moves to
+the beginning of the current or previous definition (like
+`pure-backward-defun').
+
+`pure-down-defun' (\\[pure-down-defun]) moves forward to the
+next definition at the same or a lower block level. (This command
+never skips any definitions, so it can be used to visit all
+definitions in a script.)
+
+These commands always stop when reaching the beginning or end of
+the current block, respectively.  However, you can then repeat
+the command to move on to outer block levels. Also, a repeat
+count can be specified as a prefix arg.
+
+There's also a command to mark a Pure definition, which is handy
+if you want to operate on an entire definition.
+
+`pure-mark-defun' (\\[pure-mark-defun]) marks the current definition around
+point. It puts the mark at the end of the definition and point at
+its beginning.
+
 Running the Pure Interpreter
 ----------------------------
 
@@ -576,9 +636,10 @@ verified that the buffer has a file associated with it, and you
 will be prompted to save edited buffers when invoking this
 command.
 
-Third, you can also feed lines or regions of Pure code into a
-running interpreter with the `pure-send-line' (\\[pure-send-line])
-and `pure-send-region' (\\[pure-send-region]) commands. (This starts a new
+Third, you can also feed lines, definitions or arbitrary regions
+of Pure code into a running interpreter with the
+`pure-send-line' (\\[pure-send-line]), `pure-send-defun' (\\[pure-send-defun]) and
+`pure-send-region' (\\[pure-send-region]) commands. (This starts a new
 interpreter instance without a script if necessary.)
 
 When working with these commands, it is often convenient to have
@@ -764,16 +825,16 @@ Commands
 	["Quit Interpreter"		pure-quit
 					(get-process "pure-eval")]
 	"-"
-	["Find Main Script"		pure-find-script pure-last-script]
-	["Goto Input Line"		pure-goto-input-line
-					(get-process "pure-eval")]
-	["Pure Scratchpad"		pure-scratchpad t]
-	"-"
 	(list "Debugger"
 	      (pure-menu-toggle "Debugging Mode" pure-toggle-debug-mode
 				pure-debug-mode)
 	      ["Breakpoint..."		pure-break pure-debug-mode]
 	      ["Tracepoint..."		pure-trace pure-debug-mode])
+	"-"
+	["Find Main Script"		pure-find-script pure-last-script]
+	["Goto Input Line"		pure-goto-input-line
+					(get-process "pure-eval")]
+	["Pure Scratchpad"		pure-scratchpad t]
 	"-"
 	(list "Locate"
 	      ["Current Message"	pure-current-msg
@@ -1588,6 +1649,11 @@ code line."
 	    (pure-next-code-line 1))
 	(pure-send-region beg end))))
 
+(defun pure-send-defun ()
+  "Send the current Pure definition to the Pure interpreter."
+  (interactive)
+  (and (pure-mark-defun) (pure-send-region (point) (mark))))
+
 (defun pure-eval (expr &optional arg)
   "Evaluate a Pure expression EXPR. Result is printed in the echo
 area if prefix ARG is nil, otherwise it is inserted at point into
@@ -1827,11 +1893,13 @@ If prefix ARG is not nil, remove an existing tracepoint instead."
 ;; Based on Emacs' Pascal mode by Espen Skoglund <esk@gnu.org>, adjusted for
 ;; Pure's block constructs which can also occur inside expressions.
 
-(defconst pure-beg-block-re   "\\<\\(case\\|when\\|with\\)\\>")
-(defconst pure-end-block-re   "\\<end\\>")
-(defconst pure-declaration-re "\\<\\(const\\|extern\\|infix[lr]?\\|let\\|namespace\\|\\(non\\|out\\|post\\|pre\\)fix\\|private\\|public\\|using\\)\\>")
-(defconst pure-ifelse-re      "\\<\\(if\\|else\\)\\>")
-(defconst pure-noindent-re    "\\<\\(end\\|then\\|else\\)\\>")
+(defconst pure-beg-block-re     "\\<\\(case\\|when\\|with\\)\\>")
+(defconst pure-beg-block-re2    "\\<\\(of\\|when\\|with\\)\\>")
+(defconst pure-end-block-re     "\\<end\\>")
+(defconst pure-declaration-re   "\\<\\(const\\|extern\\|infix[lr]?\\|let\\|namespace\\|\\(non\\|out\\|post\\|pre\\)fix\\|private\\|public\\|using\\)\\>")
+(defconst pure-ifelse-re        "\\<\\(if\\|else\\)\\>")
+(defconst pure-noindent-re      "\\<\\(end\\|then\\|else\\)\\>")
+(defconst pure-comment-start-re "\\(/[/*]\\|%<\\|^#!\\)")
 
 (defconst pure-indent-alist
   '((block . (+ ind pure-block-indent))
@@ -2216,10 +2284,353 @@ zero or left out."
   (setq pure-electric-keys (pure-calculate-state arg pure-electric-keys))
   (pure-update-modeline))
 
+;; Movement by defuns. This is still experimental. It's somewhat difficult to
+;; recognize the beginning of a definition in Pure since ordinary equations
+;; don't start with a keyword, so we have to resort to a heuristic approach
+;; here. At present, we recognize a defun only when it starts at the
+;; beginning of a line and it is either a declaration or macro definition, or
+;; it has a `;' or a block start keyword before it.
+
+(defun pure-at-empty-or-comment-line ()
+  ;; Check whether we're at an empty or comment line.
+  (save-excursion
+    (beginning-of-line)
+    (or (let* ((parse-sexp-ignore-comments t)
+	       (state
+		(save-excursion (parse-partial-sexp (point-min) (point)))))
+	  (nth 4 state))
+	(looking-at
+	 (concat "[ \t]*\\($\\|" pure-comment-start-re "\\)")))))
+
+(defun pure-check-defun ()
+  (save-excursion
+    (skip-chars-backward " \t")
+    (when (and (bolp) (not (pure-at-empty-or-comment-line)))
+      (or (looking-at
+	   (concat "[ \t]*\\(" pure-declaration-re "\\|\\<def\\>\\)"))
+	  (let ((parse-sexp-ignore-comments t))
+	    (backward-sexp 1)
+	    (or (bobp)
+		(looking-at pure-beg-block-re2)
+		(progn
+		  (forward-sexp 1)
+		  (looking-at "[ \t]*;"))))))))
+
+(defun pure-at-defun ()
+  (and
+   ;; Make sure that we're not inside a comment, string or parenthesized
+   ;; expression.
+   (let* ((parse-sexp-ignore-comments t)
+	  (state
+	   (save-excursion (parse-partial-sexp (point-min) (point)))))
+     (not (or (> (car state) 0) (nth 3 state) (nth 4 state))))
+   (pure-check-defun)))
+
+(defun pure-find-head ()
+  (let ((pos (point)))
+    (while (not (pure-check-defun))
+      (backward-sexp 1))
+    (skip-chars-forward " \t\n")
+    (if (> (point) pos) (goto-char pos) (point))))
+
+(defun pure-find-eqn-head (&optional lim)
+  (unless lim
+    (setq lim (point-at-eol)))
+  (let ((pos
+	 (save-excursion
+	   (when (re-search-forward "[ \t]\\(=\\)\\([ \t]\\|[ \t]*$\\)" lim t)
+	     (goto-char (match-beginning 1))
+	     (if (not (pure-within-literal))
+		 (pure-find-head))))))
+    (if pos
+	(goto-char pos))))
+
+(defsubst pure-looking-past (regex)
+  (save-excursion (backward-sexp) (looking-at regex)))
+
+(defun pure-backward-defun (&optional arg)
+  "Move backward to the beginning of a Pure definition.
+If point is already at the beginning of a definition, move
+backward to the previous sibling at the same block level, if
+any. Otherwise move up one block level. Prefix arg may be used to
+specify a repeat count."
+  (interactive "p")
+  (unless (integerp arg) (setq arg 1))
+  (cond
+   ((zerop arg) (point))
+   ((< arg 0) (pure-forward-defun (- arg)))
+   ((> arg 1)
+    (while (> arg 0)
+      (pure-backward-defun 1)
+      (setq arg (1- arg))))
+   (t
+    (let* ((parse-sexp-ignore-comments t)
+	   (oldpos (point)) (lim oldpos)
+	   (state (save-excursion (parse-partial-sexp (point-min) (point))))
+	   (level (car state)) (nest 0)
+	   (type (catch 'nesting
+		   ;; Check if inside a string, comment or parenthesis
+		   (cond ((or (nth 3 state) (nth 4 state))
+			  (goto-char (nth 8 state))
+			  (throw 'nesting 'string-or-comment))
+			 ((> level 0)
+			  (goto-char (nth 1 state))
+			  (throw 'nesting 'toplevel)))
+		   (if (and (not (pure-at-defun))
+			    (pure-looking-past pure-beg-block-re2))
+		       (backward-sexp 1))
+		   ;; Loop until beginning of previous defun is found
+		   (while t
+		     (backward-sexp 1)
+		     (if (and (= nest 0)
+			      (pure-find-eqn-head lim))
+			 (throw 'nesting 'toplevel))
+		     (cond (;--Nest block outwards
+			    (looking-at pure-beg-block-re2)
+			    (if (> nest 0)
+				(if (zerop (setq nest (1- nest)))
+				    (setq lim (point)))
+			      (forward-sexp 1)
+			      (throw 'nesting 'block)))
+			   (;--Nest block inwards
+			    (looking-at pure-end-block-re)
+			    (setq nest (1+ nest)))
+			   (;--Declaration part
+			    (looking-at pure-declaration-re)
+			    (if (zerop nest)
+				(throw 'nesting 'declaration)))
+			   (;--Beginning of program
+			    (bobp)
+			    (throw 'nesting 'toplevel))
+			   (;--Beginning of expression
+			    (pure-check-defun)
+			    (if (zerop nest)
+				(throw 'nesting 'toplevel))))
+		     ))))
+
+      (if (and (not (eq type 'declaration))
+	       (not (eq type 'block))
+	       (or (> level 0)
+		   (not (eq type 'toplevel))
+		   (looking-at "=\\([ \t]\\|$\\)")))
+	  (pure-backward-defun)
+	(point))))))
+
+(defun pure-forward-defun (&optional arg)
+  "Move forward to the beginning of a Pure definition.
+If point is already at the beginning of a definition, move
+forward to the next sibling at the same block level, if
+any. Otherwise move up one block level past the current
+definition. Prefix arg may be used to specify a repeat count."
+  (interactive "p")
+  (unless (integerp arg) (setq arg 1))
+  (cond
+   ((zerop arg) (point))
+   ((< arg 0) (pure-backward-defun (- arg)))
+   ((> arg 1)
+    (while (> arg 0)
+      (pure-forward-defun 1)
+      (setq arg (1- arg))))
+   (t
+    (let* ((parse-sexp-ignore-comments t)
+	   (state (save-excursion (parse-partial-sexp (point-min) (point))))
+	   (level (car state)) (nest 0)
+	   (type (catch 'nesting
+		   ;; Check if inside a string, comment or parenthesis
+		   (cond ((or (nth 3 state) (nth 4 state))
+			  (goto-char (nth 8 state))
+			  (throw 'nesting 'string-or-comment))
+			 ((> level 0)
+			  (goto-char (nth 1 state))
+			  (throw 'nesting 'toplevel)))
+		   (if (or (pure-at-defun)
+			   (looking-at pure-end-block-re))
+		       (forward-sexp 1))
+		   ;; Loop until beginning of next defun is found
+		   (while t
+		     (forward-sexp 1)
+		     (if (eobp) (throw 'nesting 'toplevel))
+		     (cond (;--Nest block outwards
+			    (pure-looking-past pure-end-block-re)
+			    (if (> nest 0)
+				(setq nest (1- nest))
+			      (backward-sexp 1)
+			      (throw 'nesting 'block)))
+			   (;--Nest block inwards
+			    (pure-looking-past pure-beg-block-re)
+			    (setq nest (1+ nest)))
+			   (;--Declaration part
+			    (pure-looking-past pure-declaration-re)
+			    (when (zerop nest)
+			      (backward-sexp 1)
+			      (throw 'nesting 'declaration)))
+			   (;--End of program
+			    (eobp)
+			    (throw 'nesting 'toplevel))
+			   (;--Beginning of expression
+			    (save-excursion (backward-sexp 1)
+					    (pure-check-defun))
+			    (when (zerop nest)
+			      (backward-sexp 1)
+			      (throw 'nesting 'toplevel))))
+		     ))))
+
+      (if (eobp)
+	  (point)
+	(if (and (not (eq type 'declaration))
+		 (not (eq type 'block))
+		 (or (> level 0)
+		     (not (eq type 'toplevel))
+		     (looking-at "=\\([ \t]\\|$\\)")))
+	    (pure-forward-defun)
+	  (point)))))))
+
+(defun pure-up-defun (&optional arg)
+  "Move backward to the beginning of the current block.
+If point is already at the beginning of a block, move backward to
+the parent block, if any. Otherwise (point is at toplevel) move
+to the previous toplevel definition, like `pure-backward-defun'.
+Prefix arg may be used to specify a repeat count."
+  (interactive "p")
+  (unless (integerp arg) (setq arg 1))
+  (cond
+   ((zerop arg) (point))
+   ((< arg 0) (pure-down-defun (- arg)))
+   ((> arg 1)
+    (while (> arg 0)
+      (pure-up-defun 1)
+      (setq arg (1- arg))))
+   (t
+    (let* ((parse-sexp-ignore-comments t)
+	   (oldpos (point))
+	   (state (save-excursion (parse-partial-sexp (point-min) (point))))
+	   (level (car state)) (nest 0)
+	   (type (catch 'nesting
+		   ;; Check if inside a string, comment or parenthesis
+		   (cond ((or (nth 3 state) (nth 4 state))
+			  (goto-char (nth 8 state))
+			  (throw 'nesting 'string-or-comment))
+			 ((> level 0)
+			  (goto-char (nth 1 state))
+			  (throw 'nesting 'toplevel)))
+		   (if (and (not (pure-at-defun))
+			    (pure-looking-past pure-beg-block-re2))
+		       (backward-sexp 1))
+		   ;; Loop until beginning of previous block is found
+		   (while t
+		     (backward-sexp 1)
+		     (cond (;--Nest block outwards
+			    (looking-at pure-beg-block-re2)
+			    (if (> nest 0)
+				(setq nest (1- nest))
+			      (forward-sexp 1)
+			      (throw 'nesting 'block)))
+			   (;--Nest block inwards
+			    (looking-at pure-end-block-re)
+			    (setq nest (1+ nest)))
+			   (;--Beginning of program
+			    (bobp)
+			    (throw 'nesting 'toplevel)))
+		     ))))
+
+      (cond ((bobp)
+	     (goto-char oldpos)
+	     (pure-backward-defun))
+	    ((eq type 'block)
+	     (point))
+	    (t (pure-up-defun)))))))
+
+(defun pure-down-defun (&optional arg)
+  "Move forward to the beginning of a Pure definition.
+If point is already at the beginning of a definition, move
+forward to the next definition at the current or a lower block
+level, if any. Otherwise move up one block level past the current
+definition, like `pure-forward-defun'. Prefix arg may be used to
+specify a repeat count."
+  (interactive "p")
+  (unless (integerp arg) (setq arg 1))
+  (cond
+   ((zerop arg) (point))
+   ((< arg 0) (pure-up-defun (- arg)))
+   ((> arg 1)
+    (while (> arg 0)
+      (pure-down-defun 1)
+      (setq arg (1- arg))))
+   (t
+    (let* ((parse-sexp-ignore-comments t)
+	   (state (save-excursion (parse-partial-sexp (point-min) (point))))
+	   (level (car state)) (nest 0)
+	   (type (catch 'nesting
+		   ;; Check if inside a string, comment or parenthesis
+		   (cond ((or (nth 3 state) (nth 4 state))
+			  (goto-char (nth 8 state))
+			  (throw 'nesting 'string-or-comment))
+			 ((> level 0)
+			  (goto-char (nth 1 state))
+			  (throw 'nesting 'toplevel)))
+		   (if (or (pure-at-defun)
+			   (looking-at pure-end-block-re))
+		       (forward-sexp 1))
+		   ;; Loop until beginning of next defun is found
+		   (while t
+		     (forward-sexp 1)
+		     (if (eobp) (throw 'nesting 'toplevel))
+		     (cond (;--Nest block outwards
+			    (pure-looking-past pure-end-block-re)
+			    (if (> nest 0)
+				(setq nest (1- nest))
+			      (backward-sexp 1)
+			      (throw 'nesting 'block)))
+			   (;--Nest block inwards
+			    (pure-looking-past pure-beg-block-re)
+			    (setq nest (1+ nest)))
+			   (;--Declaration part
+			    (pure-looking-past pure-declaration-re)
+			    (when (>= nest 0)
+			      (backward-sexp 1)
+			      (throw 'nesting 'declaration)))
+			   (;--End of program
+			    (eobp)
+			    (throw 'nesting 'toplevel))
+			   (;--Beginning of expression
+			    (save-excursion (backward-sexp 1)
+					    (pure-check-defun))
+			    (when (>= nest 0)
+			      (backward-sexp 1)
+			      (throw 'nesting 'toplevel))))
+		     ))))
+
+      (if (eobp)
+	  (point)
+	(if (and (not (eq type 'declaration))
+		 (not (eq type 'block))
+		 (or (> level 0)
+		     (not (eq type 'toplevel))
+		     (looking-at "=\\([ \t]\\|$\\)")))
+	    (pure-down-defun)
+	  (point)))))))
+
+(defun pure-mark-defun ()
+  "Mark the current Pure definition at or around point.
+Put mark at the end of the definition and point at the
+beginning. Return point if successful, nil otherwise."
+  (interactive)
+  (unless (pure-at-empty-or-comment-line)
+    (or (pure-at-defun) (pure-backward-defun))
+    (pure-forward-defun)
+    ;; skip over any trailing whitespace and comments
+    (let ((parse-sexp-ignore-comments t)) (backward-sexp 1))
+    (let ((parse-sexp-ignore-comments nil)) (forward-sexp 1))
+    (skip-chars-backward " \t\n")
+    ;; skip over any trailing garbage if we can
+    (or (and (looking-at "[ \t]*;?\\(//.*\\|[ \t]*\\)?$") (forward-line 1))
+	(and (looking-at "[ \t]*;") (skip-chars-forward " \t;")))
+    (set-mark (point))
+    (pure-backward-defun)
+    (point)))
+
 ;; Filling. This is the paragraph-fill from q-mode which in turn was based on
 ;; (XEmacs) cc-mode.
-
-(defconst pure-comment-start-regexp "\\(/[/*]\\|%<\\|^#!\\)")
 
 (defmacro pure-safe (&rest body)
   ;; safely execute BODY, return nil if an error occurred
@@ -2297,7 +2708,7 @@ zero or left out."
 	      ((eq (char-syntax (or (char-after) ?\ )) ?\") ; String.
 	       (cons (point) (or (pure-safe (pure-forward-sexp 1) (point))
 				 (point-max))))
-	      ((looking-at pure-comment-start-regexp) ; Line or block comment.
+	      ((looking-at pure-comment-start-re) ; Line or block comment.
 	       (cons (point) (progn (forward-comment 1) (point))))
 	      (t
 	       ;; Search backward.
@@ -2399,7 +2810,7 @@ Optional prefix ARG means justify paragraph as well."
 		(and (consp limits)
 		     (save-excursion
 		       (goto-char (car limits))
-		       (looking-at pure-comment-start-regexp))))
+		       (looking-at pure-comment-start-re))))
 	      ;; t if this line contains a comment starter.
 	      (setq first-line
 		    (save-excursion
@@ -2502,7 +2913,7 @@ Optional prefix ARG means justify paragraph as well."
 				    (search-backward "/*"))
 				  (if (and (not pure-hanging-comment-starter-p)
 					   (looking-at
-					    (concat pure-comment-start-regexp
+					    (concat pure-comment-start-re
 						    "[ \t]*$")))
 				      (forward-line 1))
 				  ;; Protect text before the comment
