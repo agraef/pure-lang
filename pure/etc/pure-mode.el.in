@@ -1950,11 +1950,11 @@ Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
 			    (setq nest (1+ nest)))
 			   (;--Declaration part
 			    (looking-at pure-declaration-re)
-			    (unless (save-excursion
-				      (search-forward ";" oldpos t))
+			    (unless complete
 			      (throw 'nesting 'declaration)))
 			   (;--If-then-else
-			    (and (not complete)
+			    (and (zerop nest)
+				 (not complete)
 				 (looking-at pure-ifelse-re))
 			    (throw 'nesting 'block))
 			   (;--Beginning of program
@@ -2026,11 +2026,11 @@ The return value is just the alignment column, or zero if none."
 			    (setq nest (1+ nest)))
 			   (;--Declaration part
 			    (looking-at pure-declaration-re)
-			    (unless (save-excursion
-				      (search-forward ";" oldpos t))
+			    (unless complete
 			      (throw 'nesting 'declaration)))
 			   (;--If-then-else
-			    (and (not complete)
+			    (and (zerop nest)
+				 (not complete)
 				 (looking-at pure-ifelse-re))
 			    (throw 'nesting 'block))
 			   (;--Beginning of program
