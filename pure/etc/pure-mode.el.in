@@ -1914,6 +1914,26 @@ If prefix ARG is not nil, remove an existing tracepoint instead."
   (or arg (setq arg 1))
   `(pure-forward-sexp ,(if (numberp arg) (- arg) `(- ,arg))))
 
+(defun pure-backward-sexp-bol ()
+  ;; special version of backward-sexp which always stops at bol
+  (let ((oldpos (point))
+	(bol (save-excursion (beginning-of-line)
+			     (skip-chars-forward " \t")
+			     (point)))
+	(newpos (or (scan-sexps (point) -1) (point-min))))
+    (goto-char (if (< bol oldpos) (max bol newpos) newpos))))
+
+(defun pure-backward-sexp-bol2 ()
+  (pure-backward-sexp-bol)
+  (let ((oldpos (point))
+	(bol (save-excursion (beginning-of-line)
+			     (skip-chars-forward " \t")
+			     (point)))
+	(newpos (or (scan-sexps (point) -1) (point-min))))
+    (if (and (< bol oldpos) (< newpos bol))
+	(goto-char bol)
+      (point))))
+
 ;; indentation (experimental)
 
 ;; Based on Emacs' Pascal mode by Espen Skoglund <esk@gnu.org>, adjusted for
@@ -2350,7 +2370,7 @@ zero or left out."
 (defun pure-find-head ()
   (let ((pos (point)))
     (while (not (pure-check-defun))
-      (pure-backward-sexp 1))
+      (pure-backward-sexp-bol))
     (skip-chars-forward " \t\n")
     (if (> (point) pos) (goto-char pos) (point))))
 
@@ -2399,7 +2419,7 @@ specify a repeat count."
 		       (pure-backward-sexp 1))
 		   ;; Loop until beginning of previous defun is found
 		   (while t
-		     (pure-backward-sexp 1)
+		     (pure-backward-sexp-bol)
 		     (if (and (= nest 0)
 			      (pure-find-eqn-head lim))
 			 (throw 'nesting 'toplevel))
@@ -2486,10 +2506,10 @@ definition. Prefix arg may be used to specify a repeat count."
 			    (eobp)
 			    (throw 'nesting 'toplevel))
 			   (;--Beginning of expression
-			    (save-excursion (pure-backward-sexp 1)
+			    (save-excursion (pure-backward-sexp-bol2)
 					    (pure-check-defun))
 			    (when (zerop nest)
-			      (pure-backward-sexp 1)
+			      (pure-backward-sexp-bol2)
 			      (throw 'nesting 'toplevel))))
 		     ))))
 
@@ -2611,10 +2631,10 @@ specify a repeat count."
 			    (eobp)
 			    (throw 'nesting 'toplevel))
 			   (;--Beginning of expression
-			    (save-excursion (pure-backward-sexp 1)
+			    (save-excursion (pure-backward-sexp-bol2)
 					    (pure-check-defun))
 			    (when (>= nest 0)
-			      (pure-backward-sexp 1)
+			      (pure-backward-sexp-bol2)
 			      (throw 'nesting 'toplevel))))
 		     ))))
 
