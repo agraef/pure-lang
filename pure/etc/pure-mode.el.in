@@ -1888,6 +1888,27 @@ If prefix ARG is not nil, remove an existing tracepoint instead."
 		(set-buffer pure-eval-buffer)
 		(comint-write-input-ring))))))
 
+;; some helpers used in the indentation and filling code below
+
+(defmacro pure-safe (&rest body)
+  ;; safely execute BODY, return nil if an error occurred
+  `(condition-case nil
+       (progn ,@body)
+       (error nil)))
+
+(defmacro pure-forward-sexp (&optional arg)
+  ;; stripped-down version of forward-sexp
+  (or arg (setq arg 1))
+  `(goto-char (or (scan-sexps (point) ,arg)
+		  ,(if (numberp arg)
+		       (if (> arg 0) `(point-max) `(point-min))
+		     `(if (> ,arg 0) (point-max) (point-min))))))
+
+(defmacro pure-backward-sexp (&optional arg)
+  ;; stripped-down version of backward-sexp
+  (or arg (setq arg 1))
+  `(pure-forward-sexp ,(if (numberp arg) (- arg) `(- ,arg))))
+
 ;; indentation (experimental)
 
 ;; Based on Emacs' Pascal mode by Espen Skoglund <esk@gnu.org>, adjusted for
@@ -1965,11 +1986,6 @@ INDENT-COL)."
 			   (max (current-column) (+ col1 2)))))
 	      (list col1 col2)))))))
 
-(defsubst pure-safe-backward-sexp ()
-  (condition-case nil
-      (progn (backward-sexp 1) nil)
-    (scan-error t)))
-
 (defun pure-calculate-indent ()
   "Calculate the indent of the current Pure line.
 Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
@@ -1994,7 +2010,7 @@ Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
 		   (while t
 		     ;; The backward-sexp may fail if we reach the beginning
 		     ;; of an enclosing sexp, assume toplevel in this case.
-		     (when (pure-safe-backward-sexp)
+		     (unless (pure-safe (pure-backward-sexp))
 		       (throw 'nesting 'toplevel))
 		     ;; Check for alignment (`=') with a preceding rule. This
 		     ;; is taken into account if point was either at a lone
@@ -2048,9 +2064,7 @@ Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
 	     (and (or (eq type 'toplevel) (eq type 'block))
 		  (looking-at pure-ifelse-re))
 	     ;; look for else-if
-	     (if (save-excursion
-		   (pure-safe-backward-sexp)
-		   (looking-at "else if"))
+	     (if (looking-back "else\\s *" (point-at-bol))
 	       (backward-sexp 1))
 	     (if at-block-beg
 		 (list
@@ -2345,9 +2359,6 @@ zero or left out."
     (if pos
 	(goto-char pos))))
 
-(defsubst pure-looking-past (regex)
-  (save-excursion (backward-sexp) (looking-at regex)))
-
 (defun pure-backward-defun (&optional arg)
   "Move backward to the beginning of a Pure definition.
 If point is already at the beginning of a definition, move
@@ -2377,7 +2388,7 @@ specify a repeat count."
 			  (goto-char (nth 1 state))
 			  (throw 'nesting 'toplevel)))
 		   (if (and (not (pure-at-defun))
-			    (pure-looking-past pure-beg-block-re2))
+			    (looking-back pure-beg-block-re2 (point-at-bol)))
 		       (backward-sexp 1))
 		   ;; Loop until beginning of previous defun is found
 		   (while t
@@ -2451,16 +2462,16 @@ definition. Prefix arg may be used to specify a repeat count."
 		     (forward-sexp 1)
 		     (if (eobp) (throw 'nesting 'toplevel))
 		     (cond (;--Nest block outwards
-			    (pure-looking-past pure-end-block-re)
+			    (looking-back pure-end-block-re (point-at-bol))
 			    (if (> nest 0)
 				(setq nest (1- nest))
 			      (backward-sexp 1)
 			      (throw 'nesting 'block)))
 			   (;--Nest block inwards
-			    (pure-looking-past pure-beg-block-re)
+			    (looking-back pure-beg-block-re (point-at-bol))
 			    (setq nest (1+ nest)))
 			   (;--Declaration part
-			    (pure-looking-past pure-declaration-re)
+			    (looking-back pure-declaration-re (point-at-bol))
 			    (when (zerop nest)
 			      (backward-sexp 1)
 			      (throw 'nesting 'declaration)))
@@ -2514,7 +2525,7 @@ Prefix arg may be used to specify a repeat count."
 			  (goto-char (nth 1 state))
 			  (throw 'nesting 'toplevel)))
 		   (if (and (not (pure-at-defun))
-			    (pure-looking-past pure-beg-block-re2))
+			    (looking-back pure-beg-block-re2 (point-at-bol)))
 		       (backward-sexp 1))
 		   ;; Loop until beginning of previous block is found
 		   (while t
@@ -2576,16 +2587,16 @@ specify a repeat count."
 		     (forward-sexp 1)
 		     (if (eobp) (throw 'nesting 'toplevel))
 		     (cond (;--Nest block outwards
-			    (pure-looking-past pure-end-block-re)
+			    (looking-back pure-end-block-re (point-at-bol))
 			    (if (> nest 0)
 				(setq nest (1- nest))
 			      (backward-sexp 1)
 			      (throw 'nesting 'block)))
 			   (;--Nest block inwards
-			    (pure-looking-past pure-beg-block-re)
+			    (looking-back pure-beg-block-re (point-at-bol))
 			    (setq nest (1+ nest)))
 			   (;--Declaration part
-			    (pure-looking-past pure-declaration-re)
+			    (looking-back pure-declaration-re (point-at-bol))
 			    (when (>= nest 0)
 			      (backward-sexp 1)
 			      (throw 'nesting 'declaration)))
@@ -2631,30 +2642,6 @@ beginning. Return point if successful, nil otherwise."
 
 ;; Filling. This is the paragraph-fill from q-mode which in turn was based on
 ;; (XEmacs) cc-mode.
-
-(defmacro pure-safe (&rest body)
-  ;; safely execute BODY, return nil if an error occurred
-  `(condition-case nil
-       (progn ,@body)
-       (error nil)))
-
-(defmacro pure-forward-sexp (&optional arg)
-  ;; like forward-sexp except
-  ;;   1. this is much stripped down from the XEmacs version
-  ;;   2. this cannot be used as a command, so we're insulated from
-  ;;      XEmacs' losing efforts to make forward-sexp more user
-  ;;      friendly
-  ;;   3. Preserves the semantics most of CC Mode is based on
-  (or arg (setq arg 1))
-  `(goto-char (or (scan-sexps (point) ,arg)
-		  ,(if (numberp arg)
-		       (if (> arg 0) `(point-max) `(point-min))
-		     `(if (> ,arg 0) (point-max) (point-min))))))
-
-(defmacro pure-backward-sexp (&optional arg)
-  ;; See pure-forward-sexp and reverse directions
-  (or arg (setq arg 1))
-  `(pure-forward-sexp ,(if (numberp arg) (- arg) `(- ,arg))))
 
 (defun pure-literal-limits (&optional lim near)
   ;; Returns a cons of the beginning and end positions of the comment
