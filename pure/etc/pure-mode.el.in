@@ -581,16 +581,21 @@ balanced parentheses, see info node `(emacs)Parentheses' for
 details. These are also quite handy when editing expressions in
 Pure mode.
 
-In addition, Pure mode has some special commands which operate on
-Pure definitions and declarations as a whole.  Note that because
-of Pure's somewhat terse syntax these commands rely on sensible
-source formatting. In particular, they won't be able to locate
-definitions which are buried inside a line, so you should try to
-avoid lines containing several definitions.
+Like other programming language modes, Pure mode also offers some
+special commands which operate on ``defuns'', i.e., toplevel
+items in Pure (declarations, toplevel expressions, and series of
+equations for the same lhs).
+
+Note that because of Pure's somewhat terse syntax these commands
+rely on sensible source formatting. In particular, they won't be
+able to locate definitions which are buried inside a line, so you
+should try to avoid lines containing several definitions.
 
 The following commands traverse the tree of blocks and
 definitions in a Pure script in a fashion similar to Emacs' paren
-movement commands.
+movement commands. They provide a quick way to navigate the block
+hierarchy of a Pure program. Each of these commands also accepts
+a repeat count as a prefix arg.
 
 `pure-backward-defun' (\\[pure-backward-defun]) moves backward to the beginning
 of the current definition, skipping over definitions in lower
@@ -614,8 +619,7 @@ definitions in a script.)
 
 These commands always stop when reaching the beginning or end of
 the current block, respectively.  However, you can then repeat
-the command to move on to outer block levels. Also, a repeat
-count can be specified as a prefix arg.
+the command to move on to outer block levels.
 
 There's also a command to mark a Pure definition, which is handy
 if you want to operate on an entire definition.
@@ -653,15 +657,16 @@ read from the minibuffer and prints its result in the echo area,
 or, if invoked with a prefix arg, inserts the result into the
 current buffer.
 
-`pure-show' (\\[pure-show]) shows the definition of a Pure symbol in the
-Pure interpreter, using the `show' command of the interpreter.
-Similarly, `pure-clear' (\\[pure-clear]) clears the definition of a Pure
-symbol using the interpreter's `clear' command.
+`pure-clear' (\\[pure-clear]) clears the definition of a Pure symbol using
+the interpreter's `clear' command. Similarly, `pure-show' (\\[pure-show])
+shows the definition of a Pure symbol, using the `show' command
+of the interpreter. This command can also be invoked with a
+prefix arg to insert the output of `show' into the current buffer.
 
-`pure-break' (\\[pure-break]) and `pure-trace' (\\[pure-trace]) set or delete
-debugger breakpoints and tracepoints. (You may first have to
-enable debugging mode with `pure-toggle-debug-mode' (\\[pure-toggle-debug-mode])
-when using these.)
+`pure-break' (\\[pure-break]) and `pure-trace' (\\[pure-trace]) set (or, if
+invoked with a prefix arg, delete) debugger breakpoints and
+tracepoints. (You may first have to enable debugging mode with
+`pure-toggle-debug-mode' (\\[pure-toggle-debug-mode]) when using these.)
 
 Other special commands are provided to quickly locate the main
 script and the input line of the pure-eval buffer, and to visit
@@ -2047,7 +2052,7 @@ Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
 			    (bobp)
 			    (throw 'nesting 'toplevel))
 			   (;--Found complete definition
-			    (save-excursion (forward-sexp 1)
+			    (save-excursion (pure-forward-sexp 1)
 					    (looking-at "[ \t]*;"))
 			    (setq complete t)))
 		     (if (bobp) (throw 'nesting 'toplevel))
@@ -2065,7 +2070,7 @@ Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
 		  (looking-at pure-ifelse-re))
 	     ;; look for else-if
 	     (if (looking-back "else\\s *" (point-at-bol))
-	       (backward-sexp 1))
+	       (pure-backward-sexp 1))
 	     (if at-block-beg
 		 (list
 		  type
@@ -2093,7 +2098,7 @@ The return value is just the alignment column, or zero if none."
 			 ((> level 0) (throw 'nesting 'toplevel)))
 		   ;; Loop until correct indent is found
 		   (while t
-		     (backward-sexp 1)
+		     (pure-backward-sexp 1)
 		     (let ((col (and (= nest 0)
 				     (pure-alignment-column lim))))
 		       (when col
@@ -2121,7 +2126,7 @@ The return value is just the alignment column, or zero if none."
 			    (bobp)
 			    (throw 'nesting 'toplevel))
 			   (;--Found complete definition
-			    (save-excursion (forward-sexp 1)
+			    (save-excursion (pure-forward-sexp 1)
 					    (looking-at "[ \t]*;"))
 			    (setq complete t)))
 		     (if (bobp) (throw 'nesting 'toplevel))
@@ -2298,12 +2303,14 @@ zero or left out."
   (setq pure-electric-keys (pure-calculate-state arg pure-electric-keys))
   (pure-update-modeline))
 
-;; Movement by defuns. This is still experimental. It's somewhat difficult to
-;; recognize the beginning of a definition in Pure since ordinary equations
-;; don't start with a keyword, so we have to resort to a heuristic approach
-;; here. At present, we recognize a defun only when it starts at the
-;; beginning of a line and it is either a declaration or macro definition, or
-;; it has a `;' or a block start keyword before it.
+;; movement by defuns
+
+;; This is still a bit experimental. It's somewhat difficult to recognize the
+;; beginning of a definition reliably in Pure since ordinary equations and
+;; singleton expressions don't start with a keyword, so we have to resort to a
+;; heuristic approach here. At present, we recognize a defun only when it
+;; starts at the beginning of a line and it is either a declaration or macro
+;; definition, or it has a `;' or a block start keyword before it.
 
 (defun pure-at-empty-or-comment-line ()
   ;; Check whether we're at an empty or comment line.
@@ -2323,11 +2330,11 @@ zero or left out."
       (or (looking-at
 	   (concat "[ \t]*\\(" pure-declaration-re "\\|\\<def\\>\\)"))
 	  (let ((parse-sexp-ignore-comments t))
-	    (backward-sexp 1)
+	    (pure-backward-sexp 1)
 	    (or (bobp)
 		(looking-at pure-beg-block-re2)
 		(progn
-		  (forward-sexp 1)
+		  (pure-forward-sexp 1)
 		  (looking-at "[ \t]*;"))))))))
 
 (defun pure-at-defun ()
@@ -2343,7 +2350,7 @@ zero or left out."
 (defun pure-find-head ()
   (let ((pos (point)))
     (while (not (pure-check-defun))
-      (backward-sexp 1))
+      (pure-backward-sexp 1))
     (skip-chars-forward " \t\n")
     (if (> (point) pos) (goto-char pos) (point))))
 
@@ -2389,10 +2396,10 @@ specify a repeat count."
 			  (throw 'nesting 'toplevel)))
 		   (if (and (not (pure-at-defun))
 			    (looking-back pure-beg-block-re2 (point-at-bol)))
-		       (backward-sexp 1))
+		       (pure-backward-sexp 1))
 		   ;; Loop until beginning of previous defun is found
 		   (while t
-		     (backward-sexp 1)
+		     (pure-backward-sexp 1)
 		     (if (and (= nest 0)
 			      (pure-find-eqn-head lim))
 			 (throw 'nesting 'toplevel))
@@ -2401,7 +2408,7 @@ specify a repeat count."
 			    (if (> nest 0)
 				(if (zerop (setq nest (1- nest)))
 				    (setq lim (point)))
-			      (forward-sexp 1)
+			      (pure-forward-sexp 1)
 			      (throw 'nesting 'block)))
 			   (;--Nest block inwards
 			    (looking-at pure-end-block-re)
@@ -2456,16 +2463,16 @@ definition. Prefix arg may be used to specify a repeat count."
 			  (throw 'nesting 'toplevel)))
 		   (if (or (pure-at-defun)
 			   (looking-at pure-end-block-re))
-		       (forward-sexp 1))
+		       (pure-forward-sexp 1))
 		   ;; Loop until beginning of next defun is found
 		   (while t
-		     (forward-sexp 1)
+		     (pure-forward-sexp 1)
 		     (if (eobp) (throw 'nesting 'toplevel))
 		     (cond (;--Nest block outwards
 			    (looking-back pure-end-block-re (point-at-bol))
 			    (if (> nest 0)
 				(setq nest (1- nest))
-			      (backward-sexp 1)
+			      (pure-backward-sexp 1)
 			      (throw 'nesting 'block)))
 			   (;--Nest block inwards
 			    (looking-back pure-beg-block-re (point-at-bol))
@@ -2473,16 +2480,16 @@ definition. Prefix arg may be used to specify a repeat count."
 			   (;--Declaration part
 			    (looking-back pure-declaration-re (point-at-bol))
 			    (when (zerop nest)
-			      (backward-sexp 1)
+			      (pure-backward-sexp 1)
 			      (throw 'nesting 'declaration)))
 			   (;--End of program
 			    (eobp)
 			    (throw 'nesting 'toplevel))
 			   (;--Beginning of expression
-			    (save-excursion (backward-sexp 1)
+			    (save-excursion (pure-backward-sexp 1)
 					    (pure-check-defun))
 			    (when (zerop nest)
-			      (backward-sexp 1)
+			      (pure-backward-sexp 1)
 			      (throw 'nesting 'toplevel))))
 		     ))))
 
@@ -2526,15 +2533,15 @@ Prefix arg may be used to specify a repeat count."
 			  (throw 'nesting 'toplevel)))
 		   (if (and (not (pure-at-defun))
 			    (looking-back pure-beg-block-re2 (point-at-bol)))
-		       (backward-sexp 1))
+		       (pure-backward-sexp 1))
 		   ;; Loop until beginning of previous block is found
 		   (while t
-		     (backward-sexp 1)
+		     (pure-backward-sexp 1)
 		     (cond (;--Nest block outwards
 			    (looking-at pure-beg-block-re2)
 			    (if (> nest 0)
 				(setq nest (1- nest))
-			      (forward-sexp 1)
+			      (pure-forward-sexp 1)
 			      (throw 'nesting 'block)))
 			   (;--Nest block inwards
 			    (looking-at pure-end-block-re)
@@ -2581,16 +2588,16 @@ specify a repeat count."
 			  (throw 'nesting 'toplevel)))
 		   (if (or (pure-at-defun)
 			   (looking-at pure-end-block-re))
-		       (forward-sexp 1))
+		       (pure-forward-sexp 1))
 		   ;; Loop until beginning of next defun is found
 		   (while t
-		     (forward-sexp 1)
+		     (pure-forward-sexp 1)
 		     (if (eobp) (throw 'nesting 'toplevel))
 		     (cond (;--Nest block outwards
 			    (looking-back pure-end-block-re (point-at-bol))
 			    (if (> nest 0)
 				(setq nest (1- nest))
-			      (backward-sexp 1)
+			      (pure-backward-sexp 1)
 			      (throw 'nesting 'block)))
 			   (;--Nest block inwards
 			    (looking-back pure-beg-block-re (point-at-bol))
@@ -2598,16 +2605,16 @@ specify a repeat count."
 			   (;--Declaration part
 			    (looking-back pure-declaration-re (point-at-bol))
 			    (when (>= nest 0)
-			      (backward-sexp 1)
+			      (pure-backward-sexp 1)
 			      (throw 'nesting 'declaration)))
 			   (;--End of program
 			    (eobp)
 			    (throw 'nesting 'toplevel))
 			   (;--Beginning of expression
-			    (save-excursion (backward-sexp 1)
+			    (save-excursion (pure-backward-sexp 1)
 					    (pure-check-defun))
 			    (when (>= nest 0)
-			      (backward-sexp 1)
+			      (pure-backward-sexp 1)
 			      (throw 'nesting 'toplevel))))
 		     ))))
 
@@ -2630,8 +2637,8 @@ beginning. Return point if successful, nil otherwise."
     (or (pure-at-defun) (pure-backward-defun))
     (pure-forward-defun)
     ;; skip over any trailing whitespace and comments
-    (let ((parse-sexp-ignore-comments t)) (backward-sexp 1))
-    (let ((parse-sexp-ignore-comments nil)) (forward-sexp 1))
+    (let ((parse-sexp-ignore-comments t)) (pure-backward-sexp 1))
+    (let ((parse-sexp-ignore-comments nil)) (pure-forward-sexp 1))
     (skip-chars-backward " \t\n")
     ;; skip over any trailing garbage if we can
     (or (and (looking-at "[ \t]*;?\\(//.*\\|[ \t]*\\)?$") (forward-line 1))
