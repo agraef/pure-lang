@@ -1903,6 +1903,18 @@ If prefix ARG is not nil, remove an existing tracepoint instead."
        (progn ,@body)
        (error nil)))
 
+(defsubst pure-within-string ()
+  ;; Check whether point is within a Pure string.
+  (save-excursion
+    (nth 3 (parse-partial-sexp (point-min) (point)))))
+
+(defsubst pure-within-literal ()
+  ;; Check whether point is within a Pure literal (string, comment or sexp).
+  (let ((state
+	 (save-excursion
+	   (parse-partial-sexp (point-min) (point)))))
+    (or (> (car state) 0) (nth 3 state) (nth 4 state))))
+
 (defmacro pure-forward-sexp (&optional arg)
   ;; stripped-down version of forward-sexp
   (or arg (setq arg 1))
@@ -1921,18 +1933,20 @@ If prefix ARG is not nil, remove an existing tracepoint instead."
   (let ((oldpos (point))
 	(bol (save-excursion (beginning-of-line)
 			     (skip-chars-forward " \t")
-			     (point)))
+			     (and (not (pure-within-literal))
+				  (point))))
 	(newpos (or (scan-sexps (point) -1) (point-min))))
-    (goto-char (if (< bol oldpos) (max bol newpos) newpos))))
+    (goto-char (if (and bol (< bol oldpos)) (max bol newpos) newpos))))
 
 (defun pure-backward-sexp-bol2 ()
   (pure-backward-sexp-bol)
   (let ((oldpos (point))
 	(bol (save-excursion (beginning-of-line)
 			     (skip-chars-forward " \t")
-			     (point)))
+			     (and (not (pure-within-literal))
+				  (point))))
 	(newpos (or (scan-sexps (point) -1) (point-min))))
-    (if (and (< bol oldpos) (< newpos bol))
+    (if (and bol (< bol oldpos) (< newpos bol))
 	(goto-char bol)
       (point))))
 
@@ -1976,19 +1990,6 @@ If prefix ARG is not nil, remove an existing tracepoint instead."
 	  (; But most lines are treated this way
 	   (indent-to (eval (cdr indent-fun)))
 	   ))))
-
-(defsubst pure-within-string ()
-  "Check whether point is within a Pure string."
-  (save-excursion
-    (nth 3 (parse-partial-sexp (point-min) (point)))))
-
-(defsubst pure-within-literal ()
-  "Check whether point is within a Pure literal (string, comment
-or sexp)."
-  (let ((state
-	 (save-excursion
-	   (parse-partial-sexp (point-min) (point)))))
-    (or (> (car state) 0) (nth 3 state) (nth 4 state))))
 
 (defun pure-alignment-column (&optional lim &optional flag)
   "Look for an alignment column (`=') in the vicinity of
@@ -2063,6 +2064,11 @@ Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
 			    (setq nest (1+ nest)))
 			   (;--Declaration part
 			    (looking-at pure-declaration-re)
+			    (if (and
+				 (looking-at "\\<namespace\\>")
+				 (looking-back "\\<using\\>\\s *"
+					       (point-at-bol)))
+				(pure-backward-sexp 1))
 			    (unless complete
 			      (throw 'nesting 'declaration)))
 			   (;--If-then-else
@@ -2091,7 +2097,7 @@ Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
 	     (and (or (eq type 'toplevel) (eq type 'block))
 		  (looking-at pure-ifelse-re))
 	     ;; look for else-if
-	     (if (looking-back "else\\s *" (point-at-bol))
+	     (if (looking-back "\\<else\\>\\s *" (point-at-bol))
 	       (pure-backward-sexp 1))
 	     (if at-block-beg
 		 (list
@@ -2137,6 +2143,11 @@ The return value is just the alignment column, or zero if none."
 			    (setq nest (1+ nest)))
 			   (;--Declaration part
 			    (looking-at pure-declaration-re)
+			    (if (and
+				 (looking-at "\\<namespace\\>")
+				 (looking-back "\\<using\\>\\s *"
+					       (point-at-bol)))
+				(pure-backward-sexp 1))
 			    (unless complete
 			      (throw 'nesting 'declaration)))
 			   (;--If-then-else
@@ -2437,6 +2448,11 @@ specify a repeat count."
 			    (setq nest (1+ nest)))
 			   (;--Declaration part
 			    (looking-at pure-declaration-re)
+			    (if (and
+				 (looking-at "\\<namespace\\>")
+				 (looking-back "\\<using\\>\\s *"
+					       (point-at-bol)))
+				(pure-backward-sexp 1))
 			    (if (zerop nest)
 				(throw 'nesting 'declaration)))
 			   (;--Beginning of program
@@ -2484,6 +2500,7 @@ definition. Prefix arg may be used to specify a repeat count."
 			  (goto-char (nth 1 state))
 			  (throw 'nesting 'toplevel)))
 		   (if (or (pure-at-defun)
+			   (looking-at pure-declaration-re)
 			   (looking-at pure-end-block-re))
 		       (pure-forward-sexp 1))
 		   ;; Loop until beginning of next defun is found
@@ -2501,7 +2518,11 @@ definition. Prefix arg may be used to specify a repeat count."
 			    (setq nest (1+ nest)))
 			   (;--Declaration part
 			    (looking-back pure-declaration-re (point-at-bol))
-			    (when (zerop nest)
+			    (when (and (zerop nest)
+				       (not
+					(looking-back
+					 "\\<using\\>\\s *\\<namespace\\>\\s *"
+					 (point-at-bol))))
 			      (pure-backward-sexp 1)
 			      (throw 'nesting 'declaration)))
 			   (;--End of program
@@ -2609,6 +2630,7 @@ specify a repeat count."
 			  (goto-char (nth 1 state))
 			  (throw 'nesting 'toplevel)))
 		   (if (or (pure-at-defun)
+			   (looking-at pure-declaration-re)
 			   (looking-at pure-end-block-re))
 		       (pure-forward-sexp 1))
 		   ;; Loop until beginning of next defun is found
@@ -2626,7 +2648,11 @@ specify a repeat count."
 			    (setq nest (1+ nest)))
 			   (;--Declaration part
 			    (looking-back pure-declaration-re (point-at-bol))
-			    (when (>= nest 0)
+			    (when (and (zerop nest)
+				       (not
+					(looking-back
+					 "\\<using\\>\\s *\\<namespace\\>\\s *"
+					 (point-at-bol))))
 			      (pure-backward-sexp 1)
 			      (throw 'nesting 'declaration)))
 			   (;--End of program
