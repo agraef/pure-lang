@@ -271,8 +271,11 @@ text:
 man:
 	$(SPHINXBUILD) -b man $(ALLSPHINXOPTS) $(BUILDDIR)/man
 
+# Fix those darn double dashes again.
+
 texinfo:
 	$(SPHINXBUILD) -b texinfo $(ALLSPHINXOPTS) $(BUILDDIR)/texinfo
+	@(cd $(BUILDDIR)/texinfo && (for x in *.texi; do sed -e 's/command line option --/command line option ---/g' -e 's/{option} --/{option} ---/g' -e 's/\(@pxref{[^-]*\)--/\1---/g' < $$x > $$x.fixed && rm -f $$x && mv $$x.fixed $$x; done))
 
 changes:
 	$(SPHINXBUILD) -b changes $(ALLSPHINXOPTS) $(BUILDDIR)/changes
