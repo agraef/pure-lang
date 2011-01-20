@@ -1144,6 +1144,12 @@ completion is provided for search terms in the index."
 
 ;; create the Pure scratchpad
 
+(defvar pure-scratchpad-msg
+"// This buffer is a scratchpad for Pure code and other notes you don't want to
+// save. It can also be used to evaluate Pure code (see \\[describe-mode] for help).
+
+")
+
 ;;;###autoload
 (defun pure-scratchpad ()
   "Create the *pure-scratch* buffer if necessary and put it in
@@ -1152,7 +1158,9 @@ completion is provided for search terms in the index."
   (let* ((pure-scratch-active (not (null (get-buffer "*pure-scratch*"))))
 	 (pure-scratch-buffer (get-buffer-create "*pure-scratch*")))
     (set-buffer pure-scratch-buffer)
-    (if (not pure-scratch-active) (pure-mode))
+    (unless pure-scratch-active
+      (pure-mode)
+      (insert (substitute-command-keys pure-scratchpad-msg)))
     (pop-to-buffer pure-scratch-buffer)))
 
 ;; run a Pure script in a Pure Eval buffer
