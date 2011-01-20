@@ -404,14 +404,14 @@ at the command prompt."
        (define-key pure-mode-map "\C-c\M-i" 'pure-toggle-indent-mode)
        (define-key pure-mode-map "\C-c\M-a" 'pure-toggle-align-mode)
        (define-key pure-mode-map "\C-c\M-e" 'pure-toggle-electric-mode)
-       (define-key pure-mode-map "\M-p"     'pure-backward-defun)
-       (define-key pure-mode-map "\M-n"     'pure-forward-defun)
-       (define-key pure-mode-map "\M-P"     'pure-up-defun)
-       (define-key pure-mode-map "\M-N"     'pure-down-defun)
-       (define-key pure-mode-map [C-S-left]  'pure-backward-defun)
-       (define-key pure-mode-map [C-S-right] 'pure-forward-defun)
-       (define-key pure-mode-map [C-S-up]   'pure-up-defun)
-       (define-key pure-mode-map [C-S-down] 'pure-down-defun)
+       (define-key pure-mode-map [C-S-left] 'pure-prev-defun)
+       (define-key pure-mode-map [C-S-right] 'pure-next-defun)
+       (define-key pure-mode-map [C-S-up]   'pure-backward-defun)
+       (define-key pure-mode-map [C-S-down] 'pure-forward-defun)
+       (define-key pure-mode-map "\M-p"     'pure-prev-defun)
+       (define-key pure-mode-map "\M-n"     'pure-next-defun)
+       (define-key pure-mode-map "\M-P"     'pure-backward-defun)
+       (define-key pure-mode-map "\M-N"     'pure-forward-defun)
        (define-key pure-mode-map "\M-\C-h"  'pure-mark-defun)
        (define-key pure-mode-map "\e\C-q"   'pure-indent-line-or-region)
        (define-key pure-mode-map "\e\t"     'pure-complete-symbol)
@@ -427,7 +427,12 @@ at the command prompt."
 					(pure-region-is-active-p)]
 	["Uncomment Region"		uncomment-region
 					(pure-region-is-active-p)]
-	["Mark Definition"		pure-mark-defun t]
+	(list "Definitions"
+	      ["Previous Definition"	pure-prev-defun t]
+	      ["Next Definition"	pure-next-defun t]
+	      ["Previous Sibling"	pure-backward-defun t]
+	      ["Next Sibling"		pure-forward-defun t]
+	      ["Mark Definition"	pure-mark-defun t])
 	["Fill Comment Paragraph"	fill-paragraph t]
 	["Indent Line or Region"	pure-indent-line-or-region t]
 	(list "Indentation Modes"
@@ -591,34 +596,46 @@ items in Pure (declarations, toplevel expressions, and series of
 equations for the same lhs).
 
 The following commands traverse the tree of blocks and
-definitions in a Pure script in a fashion similar to Emacs' paren
-movement commands. They provide a quick way to navigate the block
-hierarchy of a Pure program. Each of these commands also accepts
-a repeat count as a prefix arg.
+definitions in a Pure script. They provide a quick way to
+navigate the block hierarchy of a Pure program. Each of these
+commands also accepts a repeat count as a prefix arg.
+
+`pure-prev-defun' (\\[pure-prev-defun]) moves backward to the beginning
+of the current definition. If already at the beginning of the
+definition, moves to the previous definition at the same or a
+lower block level.
+
+`pure-next-defun' (\\[pure-next-defun]) moves forward to the next definition
+at the same or a lower block level.
 
 `pure-backward-defun' (\\[pure-backward-defun]) moves backward to the beginning
 of the current definition, skipping over definitions in lower
 levels. If already at the beginning of the definition, moves to
 the previous definition at the same block level.
 
-`pure-forward-defun' (\\[pure-forward-defun]) moves forward to the
-next definition at the same block level, skipping over
-definitions in lower levels like `pure-backward-defun'.
+`pure-forward-defun' (\\[pure-forward-defun]) moves forward to the next definition
+at the same block level, skipping over definitions in lower
+levels.
 
-`pure-up-defun' (\\[pure-up-defun]) moves backward to the beginning
-of the enclosing block, skipping over all definitions in the
-current or lower block levels. If already at toplevel, moves to
-the beginning of the current or previous definition (like
-`pure-backward-defun').
+The following alternative bindings using shifted cursor keys are
+available for these commands (these only work when using a GUI
+version of emacs):
 
-`pure-down-defun' (\\[pure-down-defun]) moves forward to the
-next definition at the same or a lower block level. (This command
-never skips any definitions, so it can be used to visit all
-definitions in a script.)
+`pure-prev-defun', `pure-next-defun': C-S-<left>, C-S-<right>
+`pure-backward-defun', `pure-forward-defun': C-S-<up>, C-S-<down>
 
-These commands always stop when reaching the beginning or end of
-the current block, respectively.  However, you can then repeat
-the command to move on to outer block levels.
+Note that `pure-prev-defun' and `pure-next-defun' can be used to
+visit all definitions in a script, traversing the block structure
+in preorder or postorder, respectively. In contrast,
+`pure-backward-defun' and `pure-forward-defun' skip over any
+local blocks of definitions contained in the current block
+\(pretty much like `backward-sexp' and `forward-sexp' do for
+balanced parentheses), so they can be used to move in larger
+increments.
+
+Also note that these commands always stop when reaching the
+beginning or end of the current block, respectively.  However,
+you can then repeat the command to move on to outer block levels.
 
 There's also a command to mark a Pure definition, which is handy
 if you want to operate on an entire definition.
@@ -2407,12 +2424,156 @@ zero or left out."
     (if pos
 	(goto-char pos))))
 
+(defun pure-prev-defun (&optional arg)
+  "Move backward to the beginning of a Pure definition.
+If point is already at the beginning of a definition, move
+backward to the previous definition at the current or a lower
+block level, if any. Otherwise move up one block level past the
+current definition. Prefix arg may be used to specify a repeat
+count."
+  (interactive "p")
+  (unless (integerp arg) (setq arg 1))
+  (cond
+   ((zerop arg) (point))
+   ((< arg 0) (pure-next-defun (- arg)))
+   ((> arg 1)
+    (while (> arg 0)
+      (pure-prev-defun 1)
+      (setq arg (1- arg))))
+   (t
+    (let* ((parse-sexp-ignore-comments t)
+	   (state (save-excursion (parse-partial-sexp (point-min) (point))))
+	   (level (car state)) (nest 0)
+	   (type (catch 'nesting
+		   ;; Check if inside a string, comment or parenthesis
+		   (cond ((or (nth 3 state) (nth 4 state))
+			  (goto-char (nth 8 state))
+			  (throw 'nesting 'string-or-comment))
+			 ((> level 0)
+			  (goto-char (nth 1 state))
+			  (throw 'nesting 'toplevel)))
+		   (if (and (not (pure-at-defun))
+			    (looking-back pure-beg-block-re2 (point-at-bol)))
+		       (pure-backward-sexp 1))
+		   ;; Loop until beginning of next defun is found
+		   (while t
+		     (pure-backward-sexp-bol)
+		     (if (bobp) (throw 'nesting 'toplevel))
+		     (cond (;--Nest block outwards
+			    (looking-at pure-beg-block-re2)
+			    (if (> nest 0)
+				(setq nest (1- nest))
+			      (pure-forward-sexp 1)
+			      (throw 'nesting 'block)))
+			   (;--Nest block inwards
+			    (looking-at pure-end-block-re)
+			    (setq nest (1+ nest)))
+			   (;--Declaration part
+			    (looking-at pure-declaration-re)
+			    (if (and
+				 (looking-at "\\<namespace\\>")
+				 (looking-back "\\<using\\>\\s *"
+					       (point-at-bol)))
+				(pure-backward-sexp 1))
+			    (throw 'nesting 'declaration))
+			   (;--Beginning of program
+			    (bobp)
+			    (throw 'nesting 'toplevel))
+			   (;--Beginning of expression
+			    (pure-check-defun)
+			    (throw 'nesting 'toplevel)))
+		     ))))
+
+      (if (bobp)
+	  (point)
+	(if (and (not (eq type 'declaration))
+		 (not (eq type 'block))
+		 (or (> level 0)
+		     (not (eq type 'toplevel))
+		     (looking-at "=\\([ \t]\\|$\\)")))
+	    (pure-prev-defun)
+	  (point)))))))
+
+(defun pure-next-defun (&optional arg)
+  "Move forward to the beginning of a Pure definition.
+If point is already at the beginning of a definition, move
+forward to the next definition at the current or a lower block
+level, if any. Otherwise move up one block level past the current
+definition. Prefix arg may be used to specify a repeat count."
+  (interactive "p")
+  (unless (integerp arg) (setq arg 1))
+  (cond
+   ((zerop arg) (point))
+   ((< arg 0) (pure-prev-defun (- arg)))
+   ((> arg 1)
+    (while (> arg 0)
+      (pure-next-defun 1)
+      (setq arg (1- arg))))
+   (t
+    (let* ((parse-sexp-ignore-comments t)
+	   (state (save-excursion (parse-partial-sexp (point-min) (point))))
+	   (level (car state)) (nest 0)
+	   (type (catch 'nesting
+		   ;; Check if inside a string, comment or parenthesis
+		   (cond ((or (nth 3 state) (nth 4 state))
+			  (goto-char (nth 8 state))
+			  (throw 'nesting 'string-or-comment))
+			 ((> level 0)
+			  (goto-char (nth 1 state))
+			  (throw 'nesting 'toplevel)))
+		   (if (or (pure-at-defun)
+			   (looking-at pure-declaration-re)
+			   (looking-at pure-end-block-re))
+		       (pure-forward-sexp 1))
+		   ;; Loop until beginning of next defun is found
+		   (while t
+		     (pure-forward-sexp 1)
+		     (if (eobp) (throw 'nesting 'toplevel))
+		     (cond (;--Nest block outwards
+			    (looking-back pure-end-block-re (point-at-bol))
+			    (if (> nest 0)
+				(setq nest (1- nest))
+			      (pure-backward-sexp 1)
+			      (throw 'nesting 'block)))
+			   (;--Nest block inwards
+			    (looking-back pure-beg-block-re (point-at-bol))
+			    (setq nest (1+ nest)))
+			   (;--Declaration part
+			    (looking-back pure-declaration-re (point-at-bol))
+			    (when (and (zerop nest)
+				       (not
+					(looking-back
+					 "\\<using\\>\\s *\\<namespace\\>\\s *"
+					 (point-at-bol))))
+			      (pure-backward-sexp 1)
+			      (throw 'nesting 'declaration)))
+			   (;--End of program
+			    (eobp)
+			    (throw 'nesting 'toplevel))
+			   (;--Beginning of expression
+			    (save-excursion (pure-backward-sexp-bol2)
+					    (pure-check-defun))
+			    (when (>= nest 0)
+			      (pure-backward-sexp-bol2)
+			      (throw 'nesting 'toplevel))))
+		     ))))
+
+      (if (eobp)
+	  (point)
+	(if (and (not (eq type 'declaration))
+		 (not (eq type 'block))
+		 (or (> level 0)
+		     (not (eq type 'toplevel))
+		     (looking-at "=\\([ \t]\\|$\\)")))
+	    (pure-next-defun)
+	  (point)))))))
+
 (defun pure-backward-defun (&optional arg)
   "Move backward to the beginning of a Pure definition.
 If point is already at the beginning of a definition, move
 backward to the previous sibling at the same block level, if
-any. Otherwise move up one block level. Prefix arg may be used to
-specify a repeat count."
+any. Otherwise move up one block level, like `pure-prev-defun'.
+Prefix arg may be used to specify a repeat count."
   (interactive "p")
   (unless (integerp arg) (setq arg 1))
   (cond
@@ -2485,7 +2646,8 @@ specify a repeat count."
 If point is already at the beginning of a definition, move
 forward to the next sibling at the same block level, if
 any. Otherwise move up one block level past the current
-definition. Prefix arg may be used to specify a repeat count."
+definition, like `pure-next-defun'. Prefix arg may be used to
+specify a repeat count."
   (interactive "p")
   (unless (integerp arg) (setq arg 1))
   (cond
@@ -2552,136 +2714,6 @@ definition. Prefix arg may be used to specify a repeat count."
 		     (not (eq type 'toplevel))
 		     (looking-at "=\\([ \t]\\|$\\)")))
 	    (pure-forward-defun)
-	  (point)))))))
-
-(defun pure-up-defun (&optional arg)
-  "Move backward to the beginning of the current block.
-If point is already at the beginning of a block, move backward to
-the parent block, if any. Otherwise (point is at toplevel) move
-to the previous toplevel definition, like `pure-backward-defun'.
-Prefix arg may be used to specify a repeat count."
-  (interactive "p")
-  (unless (integerp arg) (setq arg 1))
-  (cond
-   ((zerop arg) (point))
-   ((< arg 0) (pure-down-defun (- arg)))
-   ((> arg 1)
-    (while (> arg 0)
-      (pure-up-defun 1)
-      (setq arg (1- arg))))
-   (t
-    (let* ((parse-sexp-ignore-comments t)
-	   (oldpos (point))
-	   (state (save-excursion (parse-partial-sexp (point-min) (point))))
-	   (level (car state)) (nest 0)
-	   (type (catch 'nesting
-		   ;; Check if inside a string, comment or parenthesis
-		   (cond ((or (nth 3 state) (nth 4 state))
-			  (goto-char (nth 8 state))
-			  (throw 'nesting 'string-or-comment))
-			 ((> level 0)
-			  (goto-char (nth 1 state))
-			  (throw 'nesting 'toplevel)))
-		   (if (and (not (pure-at-defun))
-			    (looking-back pure-beg-block-re2 (point-at-bol)))
-		       (pure-backward-sexp 1))
-		   ;; Loop until beginning of previous block is found
-		   (while t
-		     (pure-backward-sexp 1)
-		     (cond (;--Nest block outwards
-			    (looking-at pure-beg-block-re2)
-			    (if (> nest 0)
-				(setq nest (1- nest))
-			      (pure-forward-sexp 1)
-			      (throw 'nesting 'block)))
-			   (;--Nest block inwards
-			    (looking-at pure-end-block-re)
-			    (setq nest (1+ nest)))
-			   (;--Beginning of program
-			    (bobp)
-			    (throw 'nesting 'toplevel)))
-		     ))))
-
-      (cond ((bobp)
-	     (goto-char oldpos)
-	     (pure-backward-defun))
-	    ((eq type 'block)
-	     (point))
-	    (t (pure-up-defun)))))))
-
-(defun pure-down-defun (&optional arg)
-  "Move forward to the beginning of a Pure definition.
-If point is already at the beginning of a definition, move
-forward to the next definition at the current or a lower block
-level, if any. Otherwise move up one block level past the current
-definition, like `pure-forward-defun'. Prefix arg may be used to
-specify a repeat count."
-  (interactive "p")
-  (unless (integerp arg) (setq arg 1))
-  (cond
-   ((zerop arg) (point))
-   ((< arg 0) (pure-up-defun (- arg)))
-   ((> arg 1)
-    (while (> arg 0)
-      (pure-down-defun 1)
-      (setq arg (1- arg))))
-   (t
-    (let* ((parse-sexp-ignore-comments t)
-	   (state (save-excursion (parse-partial-sexp (point-min) (point))))
-	   (level (car state)) (nest 0)
-	   (type (catch 'nesting
-		   ;; Check if inside a string, comment or parenthesis
-		   (cond ((or (nth 3 state) (nth 4 state))
-			  (goto-char (nth 8 state))
-			  (throw 'nesting 'string-or-comment))
-			 ((> level 0)
-			  (goto-char (nth 1 state))
-			  (throw 'nesting 'toplevel)))
-		   (if (or (pure-at-defun)
-			   (looking-at pure-declaration-re)
-			   (looking-at pure-end-block-re))
-		       (pure-forward-sexp 1))
-		   ;; Loop until beginning of next defun is found
-		   (while t
-		     (pure-forward-sexp 1)
-		     (if (eobp) (throw 'nesting 'toplevel))
-		     (cond (;--Nest block outwards
-			    (looking-back pure-end-block-re (point-at-bol))
-			    (if (> nest 0)
-				(setq nest (1- nest))
-			      (pure-backward-sexp 1)
-			      (throw 'nesting 'block)))
-			   (;--Nest block inwards
-			    (looking-back pure-beg-block-re (point-at-bol))
-			    (setq nest (1+ nest)))
-			   (;--Declaration part
-			    (looking-back pure-declaration-re (point-at-bol))
-			    (when (and (zerop nest)
-				       (not
-					(looking-back
-					 "\\<using\\>\\s *\\<namespace\\>\\s *"
-					 (point-at-bol))))
-			      (pure-backward-sexp 1)
-			      (throw 'nesting 'declaration)))
-			   (;--End of program
-			    (eobp)
-			    (throw 'nesting 'toplevel))
-			   (;--Beginning of expression
-			    (save-excursion (pure-backward-sexp-bol2)
-					    (pure-check-defun))
-			    (when (>= nest 0)
-			      (pure-backward-sexp-bol2)
-			      (throw 'nesting 'toplevel))))
-		     ))))
-
-      (if (eobp)
-	  (point)
-	(if (and (not (eq type 'declaration))
-		 (not (eq type 'block))
-		 (or (> level 0)
-		     (not (eq type 'toplevel))
-		     (looking-at "=\\([ \t]\\|$\\)")))
-	    (pure-down-defun)
 	  (point)))))))
 
 (defun pure-mark-defun ()
