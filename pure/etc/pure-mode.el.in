@@ -592,12 +592,15 @@ Pure mode.
 
 Like other programming language modes, Pure mode also offers some
 special commands which operate on ``defuns'', i.e., toplevel
-items in Pure (definitions, declarations and expressions).
+items in Pure: definitions, declarations and expressions. (In the
+following, we call these just ``definitions''.)
 
 The following commands traverse the tree of blocks and
 definitions in a Pure script. They provide a quick way to
 navigate the block hierarchy of a Pure program. Each of these
-commands also accepts a repeat count as a prefix arg.
+commands also accepts a repeat count as a prefix arg. (Please
+note that the alternative shifted cursor key bindings are only
+available if you're running a GUI version of emacs.)
 
 `pure-prev-defun' (\\[pure-prev-defun], <C-S-left>) moves backward to the
 beginning of the previous definition at the same or a lower block
@@ -615,21 +618,25 @@ skipping over definitions in lower levels.
 beginning of the next definition at the same block level,
 skipping over definitions in lower levels.
 
-\(Please note that the alternative shifted cursor key bindings
-are only available if you're running a GUI version of emacs.)
-
-`pure-prev-defun' and `pure-next-defun' can be used to visit all
-definitions in a script, traversing the block structure in
-preorder or postorder, respectively. In contrast,
+Note that `pure-prev-defun' and `pure-next-defun' can be used to
+visit all definitions in a script, traversing the block structure
+in preorder or postorder, respectively. In contrast,
 `pure-backward-defun' and `pure-forward-defun' skip over any
 local blocks of definitions contained in the current block
 \(pretty much like `backward-sexp' and `forward-sexp' do for
 balanced parentheses), so they can be used to move in larger
 increments.
 
-Also note that these commands always stop when reaching the
-beginning or end of the current block, respectively.  However,
-you can then repeat the command to move on to outer block levels.
+These commands always stop when reaching the beginning or end of
+the current block, respectively.  However, you can then repeat
+the command to move on to outer block levels.
+
+*Note:* Only the first definition on each line (or behind the
+beginning of each block) will be located by these commands, so it
+is generally a good idea to start each definition on a line of
+its own. Also, try to avoid definitions looking like line
+noise (punctuation only), as these cannot be recognized in the
+current implementation.
 
 There's also a command to mark a Pure definition, which is handy
 if you want to operate on an entire definition.
@@ -637,17 +644,6 @@ if you want to operate on an entire definition.
 `pure-mark-defun' (\\[pure-mark-defun]) marks the current definition around
 point. It puts the mark at the end of the definition and point at
 its beginning.
-
-*Note:* Because of Pure's terse syntax, all commands dealing with
-syntactic structure (this also includes the indentation commands)
-have to rely on sensible source formatting to figure out where a
-definition begins. They may get confused by badly formatted
-\(albeit syntactically correct) input. To prevent this, try
-following these guidelines (which are good practice anyway):
-
-* Start each definition on a line of its own.
-
-* Avoid line noise (definitions consisting of punctuation only).
 
 Running the Pure Interpreter
 ----------------------------
