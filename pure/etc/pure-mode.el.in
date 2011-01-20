@@ -2385,17 +2385,18 @@ zero or left out."
 
 (defun pure-check-defun ()
   (save-excursion
-    (skip-chars-backward " \t")
-    (when (and (bolp) (not (pure-at-empty-or-comment-line)))
-      (or (looking-at
-	   (concat "[ \t]*\\(" pure-declaration-re "\\|\\<def\\>\\)"))
-	  (let ((parse-sexp-ignore-comments t))
-	    (pure-backward-sexp 1)
-	    (or (bobp)
-		(looking-at pure-beg-block-re2)
-		(progn
-		  (pure-forward-sexp 1)
-		  (looking-at "[ \t]*;"))))))))
+    (let ((chk (< (skip-chars-backward " \t") 0)))
+      (when (or (and (bolp) (not (pure-at-empty-or-comment-line)))
+		(and chk (looking-back pure-beg-block-re2 (point-at-bol))))
+	(or (looking-at
+	     (concat "[ \t]*\\(" pure-declaration-re "\\|\\<def\\>\\)"))
+	    (let ((parse-sexp-ignore-comments t))
+	      (pure-backward-sexp 1)
+	      (or (bobp)
+		  (looking-at pure-beg-block-re2)
+		  (progn
+		    (pure-forward-sexp 1)
+		    (looking-at "[ \t]*;")))))))))
 
 (defun pure-at-defun ()
   (and
