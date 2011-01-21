@@ -1940,6 +1940,7 @@ bool interpreter::LoadBitcode(bool priv, const char *name, string *msg)
     // The function type.
     const FunctionType *ft = f->getFunctionType();
     const Type* rest = ft->getReturnType();
+    const bool varargs = ft->isVarArg();
     size_t n = ft->getNumParams();
     vector<const Type*> argt(n);
     for (size_t i = 0; i < n; i++) argt[i] = ft->getParamType(i);
@@ -1968,11 +1969,11 @@ bool interpreter::LoadBitcode(bool priv, const char *name, string *msg)
     if (ok) {
       // Manufacture an extern declaration for the function so that it can be
       // called in Pure land.
-      declare_extern(priv, fname, restype, argtypes, false, 0, asname, false);
+      declare_extern(priv, fname, restype, argtypes, varargs, 0, asname, false);
 #if 0 // debugging
       symbol *sym = symtab.sym(asname);
       if (!sym) continue;
-      ExternInfo info(sym->f, fname, rest, argt, f);
+      ExternInfo info(sym->f, fname, rest, argt, f, varargs);
       cerr << "\n" << info << ";\n";
       verifyFunction(*f);
       if (FPM) FPM->run(*f);
@@ -1983,7 +1984,7 @@ bool interpreter::LoadBitcode(bool priv, const char *name, string *msg)
       // warning in such cases.
       symbol *sym = symtab.sym(asname);
       if (!sym) continue;
-      ExternInfo info(sym->f, fname, rest, argt, f);
+      ExternInfo info(sym->f, fname, rest, argt, f, varargs);
       ostringstream msg;
       msg << strip_filename(name) << ": warning: extern function '" << fname
 	  << "' with bad prototype: " << info;
