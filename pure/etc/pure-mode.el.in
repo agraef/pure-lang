@@ -1088,9 +1088,12 @@ completion is provided for search terms in the index."
   (interactive
    (let ((default (puresym-at-point)))
      (pure-start t)
-     (list (completing-read "Pure help topic: "
-		       (dynamic-completion-table 'pure-help-complete)
-		       nil nil default))))
+     (list (completing-read
+	    (format "Pure help topic%s"
+		    (if (null default) ": "
+		      (format " (default %s): " default)))
+	    (dynamic-completion-table 'pure-help-complete)
+	    nil nil nil nil default))))
   (let* ((args (split-string (if topic topic "") "#"))
 	 (args (if (or (null args) (not (zerop (length (car args))))) args
 		 (list topic)))
@@ -1735,9 +1738,12 @@ instead."
    (list
     (let ((default (puresym-at-point)))
       (pure-start t)
-      (completing-read "Show symbol: "
-		       (dynamic-completion-table 'pure-symbol-complete)
-		       nil nil default))
+      (completing-read
+       (format "Show symbol%s"
+	       (if (null default) ": "
+		 (format " (default %s): " default)))
+       (dynamic-completion-table 'pure-symbol-complete)
+       nil nil nil nil default))
     current-prefix-arg))
   (let* ((pure-eval-buffer (get-buffer "*pure-eval*"))
 	 (proc (get-buffer-process pure-eval-buffer))
@@ -1767,9 +1773,12 @@ instead."
    (list
     (let ((default (puresym-at-point)))
       (pure-start t)
-      (completing-read "Clear symbol: "
-		       (dynamic-completion-table 'pure-symbol-complete)
-		       nil nil default))))
+      (completing-read
+       (format "Clear symbol%s"
+	       (if (null default) ": "
+		 (format " (default %s): " default)))
+       (dynamic-completion-table 'pure-symbol-complete)
+       nil nil nil nil default))))
   (let* ((pure-eval-buffer (get-buffer "*pure-eval*"))
 	 (proc (get-buffer-process pure-eval-buffer))
 	 line)
@@ -1801,10 +1810,12 @@ If prefix ARG is not nil, remove an existing breakpoint instead."
 	  "Debugging is disabled, use \\[pure-toggle-debug-mode] to enable")))
       (pure-start t)
       (completing-read
-       (format "%s breakpoint: "
-	       (if current-prefix-arg "Delete" "Set"))
+       (format "%s breakpoint%s"
+	       (if current-prefix-arg "Delete" "Set")
+	       (if (null default) ": "
+		 (format " (default %s): " default)))
        (dynamic-completion-table 'pure-symbol-complete)
-       nil nil default))
+       nil nil nil nil default))
     current-prefix-arg))
   (when (string-match "[ \t]*$" symbol)
     (setq symbol (replace-match "" nil nil symbol)))
@@ -1840,10 +1851,12 @@ If prefix ARG is not nil, remove an existing tracepoint instead."
 	  "Debugging is disabled, use \\[pure-toggle-debug-mode] to enable")))
       (pure-start t)
       (completing-read
-       (format "%s tracepoint: "
-	       (if current-prefix-arg "Delete" "Set"))
+       (format "%s tracepoint%s"
+	       (if current-prefix-arg "Delete" "Set")
+	       (if (null default) ": "
+		 (format " (default %s): " default)))
        (dynamic-completion-table 'pure-symbol-complete)
-       nil nil default))
+       nil nil nil nil default))
     current-prefix-arg))
   (when (string-match "[ \t]*$" symbol)
     (setq symbol (replace-match "" nil nil symbol)))
