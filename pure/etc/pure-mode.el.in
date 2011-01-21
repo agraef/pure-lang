@@ -443,7 +443,7 @@ at the command prompt."
 	      (pure-menu-toggle "Electric Keys" pure-toggle-electric-mode
 				pure-electric-keys))
 	"-"
-	["Make Tags"			pure-make-tags t]
+	["Make Tags..."			pure-make-tags t]
 	"-"
 	["Start Interpreter"		pure-run t]
 	["Restart Interpreter"		pure-rerun
@@ -1320,16 +1320,22 @@ currently running then it is restarted automatically."
 
 ;; run the interpreter to create a TAGS file
 
-(defun pure-make-tags ()
-  "Run the interpreter on the script in the current buffer to create a
-TAGS file."
-  (interactive)
-  (let ((script-file
-	 (if (buffer-file-name)
-	     (file-name-nondirectory (buffer-file-name))
-	   (error "Buffer is not associated with any file"))))
+(defun pure-make-tags (&optional script-files)
+  "Run the interpreter on the given SCRIPT-FILES (the script in
+the current buffer by default) to create a TAGS file."
+  (interactive
+   (let ((default (if (buffer-file-name)
+		      (file-name-nondirectory (buffer-file-name)))))
+     (list (read-string
+	    (format "Make tags from files%s"
+		    (if (null default) ": "
+		      (format " (default %s): " default)))
+	    nil nil default))))
+  (when script-files
     (save-some-buffers)
-    (call-process pure-prog-name nil 0 nil "--etags" script-file)))
+    ;; call-process-shell-command is needed here to expand glob patterns
+    (apply 'call-process-shell-command pure-prog-name nil 0 nil "--etags"
+	   (split-string-and-unquote script-files))))
 
 ;; find a script in the current directory or on the Pure library path
 
