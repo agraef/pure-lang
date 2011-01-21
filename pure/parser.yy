@@ -99,6 +99,7 @@ class interpreter;
   rule_info *rinfo;
   pat_rule_info *prinfo;
   list<string> *slval;
+  pair< bool, list<string> > *sloval;
   list<int32_t> *ilval;
   pair< string, list<int32_t> > *smval;
   list< pair< string, list<int32_t> > > *smlval;
@@ -152,6 +153,7 @@ static void mangle_fname(string& name);
 %token		ERRTOK  "invalid character"
 %token		BADTOK  "bad token"
 %token		MAPSTO	"->"
+%token		ELLIPSIS "..."
 %token		ESCAPE
 %token		CODE	"code section"
 %token <sval>	ID	"identifier"
@@ -163,7 +165,8 @@ static void mangle_fname(string& name);
 %token <dval>	DBL	"floating point number"
 %token <ival>	TAG	"type tag"
 %type  <sval>	name fname optalias ctype
-%type  <slval>	ids fnames ctypes opt_ctypes
+%type  <slval>	ids fnames
+%type  <sloval>	ctypes opt_ctypes
 %type  <ilval>  xsyms
 %type  <smval>	name_xsyms
 %type  <smlval>	name_xsyms_list
@@ -395,22 +398,27 @@ prototypes
 
 prototype
 : ctype ID '(' opt_ctypes ')' optalias
-{ action(interp.declare_extern(extern_priv, *$2, *$1, *$4, false, 0, *$6), {});
+{ action(interp.declare_extern(extern_priv, *$2, *$1, $4->second, $4->first,
+			       0, *$6), {});
   if (interp.tags) interp.add_tags(*$2, *$6);
   delete $1; delete $2; delete $4; delete $6; }
 ;
 
 opt_ctypes
 : /* empty */
-{ $$ = new list<string>; }
+{ $$ = new pair < bool, list<string> >; $$->first = false; }
+| ELLIPSIS
+{ $$ = new pair < bool, list<string> >; $$->first = true; }
 | ctypes
+| ctypes ',' ELLIPSIS
+{ $$ = $1; $$->first = true; }
 ;
 
 ctypes
 : ctype optname
-{ $$ = new list<string>; $$->push_back(*$1); delete $1; }
+{ $$ = new pair < bool, list<string> >; $$->second.push_back(*$1); delete $1; }
 | ctypes ',' ctype optname
-{ $$ = $1; $$->push_back(*$3); delete $3; }
+{ $$ = $1; $$->second.push_back(*$3); delete $3; }
 ;
 
 ctype

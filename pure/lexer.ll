@@ -278,6 +278,7 @@ blank  [ \t\f\v\r]
 <xdecl>namespace  return token::NAMESPACE;
 <xdecl>{id}	  { xdecl_parse_id: check(*yylloc, yytext, true); yylval->sval = new string(yytext); return token::ID; }
 <xdecl>[()*,=]	  return yy::parser::token_type(yytext[0]);
+<xdecl>"..."	  return token::ELLIPSIS;
 <xdecl>"//".*	  yylloc->step();
 <xdecl>"/*"	  BEGIN(xdecl_comment);
 <xdecl>;	  BEGIN(INITIAL); return yy::parser::token_type(yytext[0]);

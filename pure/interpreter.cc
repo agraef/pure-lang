@@ -6823,6 +6823,7 @@ ostream &operator<< (ostream& os, const ExternInfo& info)
     if (i > 0) os << ", ";
     os << interp.type_name(info.argtypes[i]);
   }
+  if (info.varargs) os << ((n>0)?", ...":"...");
   os << ")";
   if (info.tag > 0) {
     const symbol& sym = interp.symtab.sym(info.tag);
@@ -7938,10 +7939,9 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     always_used.insert(f);
     return f;
   }
-  // External C function visible in the Pure program. No varargs are allowed
-  // here for now. Also, int32_t gets promoted to int64_t if the default int
-  // type of the target platform has 64 bit.
-  assert(!varargs);
+  // External C function visible in the Pure program. Note that int32_t gets
+  // promoted to int64_t if the default int type of the target platform has
+  // 64 bit.
   if (type == int32_type() && sizeof(int) > 4)
     type = int64_type();
   for (size_t i = 0; i < n; i++, atype++)
@@ -7986,7 +7986,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     warning("warning: external '"+asname+"' shadows previous undefined use of this symbol");
   // Create the function type and check for an existing declaration of the
   // external.
-  FunctionType *ft = FunctionType::get(type, argt, false);
+  FunctionType *ft = FunctionType::get(type, argt, varargs);
   Function *g = module->getFunction(name);
   const FunctionType *gt = g?g->getFunctionType():0;
   // Check whether we already have an external declaration for this symbol.
@@ -8012,10 +8012,12 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       // generate a new wrapper), as long as the function is accessed under a
       // new alias. This gives the programmer some leeway (and some rope to
       // hang himself), e.g., to fix up declarations which the bitcode loader
-      // didn't get right.
+      // didn't get right. Also, as of Pure 0.47, we allow arbitrary extra
+      // parameters if the function was previously declared as varargs.
+      size_t m = gt->getNumParams();
       bool ok = compatible_types(gt->getReturnType(), type) &&
-	gt->getNumParams()==n && gt->isVarArg()==varargs;
-      for (size_t i = 0; ok && i < n; i++) {
+	(m==n || (gt->isVarArg()>varargs && m<=n)) && gt->isVarArg()>=varargs;
+      for (size_t i = 0; ok && i < m; i++) {
 	ok = compatible_types(gt->getParamType(i), argt[i]);
       }
       if (!ok) {
@@ -8027,7 +8029,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	vector<const Type*> argt(n);
 	for (size_t i = 0; i < n; i++)
 	  argt[i] = gt->getParamType(i);
-	ExternInfo info(0, name, gt->getReturnType(), argt, g);
+	ExternInfo info(0, name, gt->getReturnType(), argt, g, gt->isVarArg());
 	ostringstream msg;
 	msg << "declaration of extern function '" << name
 	    << "' does not match previous declaration: " << info;
@@ -8105,8 +8107,10 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   }
   // unbox arguments
   bool temps = false, vtemps = false;
+  size_t m = gt->getNumParams();
   for (size_t i = 0; i < n; i++) {
     Value *x = args[i];
+    const Type *type = (i<m)?gt->getParamType(i):argt[i];
     // check for thunks which must be forced
     if (argt[i] != ExprPtrTy) {
       // do a quick check on the tag value
@@ -8317,7 +8321,6 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       phi->addIncoming(sv, strbb);
       phi->addIncoming(matrixv, matrixbb);
       unboxed[i] = phi; temps = true; vtemps = true;
-      const Type *type = gt->getParamType(i);
       if (type != CharPtrTy)
 	unboxed[i] = b.CreateBitCast(unboxed[i], type);
     } else if (argt[i] == PointerType::get(int16_type(), 0) ||
@@ -8327,12 +8330,11 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	       argt[i] == PointerType::get(float_type(), 0)) {
       /* These get special treatment, because we also allow numeric matrices
 	 to be passed as an integer or floating point vector here. */
-      const Type *type = gt->getParamType(i);
-      bool is_short = type == PointerType::get(int16_type(), 0);
-      bool is_int = type == PointerType::get(int32_type(), 0);
-      bool is_int64 = type == PointerType::get(int64_type(), 0);
-      bool is_float = type == PointerType::get(float_type(), 0);
-      bool is_double = type == PointerType::get(double_type(), 0);
+      bool is_short = argt[i] == PointerType::get(int16_type(), 0);
+      bool is_int = argt[i] == PointerType::get(int32_type(), 0);
+      bool is_int64 = argt[i] == PointerType::get(int64_type(), 0);
+      bool is_float = argt[i] == PointerType::get(float_type(), 0);
+      bool is_double = argt[i] == PointerType::get(double_type(), 0);
       BasicBlock *ptrbb = basic_block("ptr");
       BasicBlock *matrixbb = basic_block("matrix");
       BasicBlock *okbb = basic_block("ok");
@@ -8346,6 +8348,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	is_float ? module->getFunction("pure_get_matrix_data_float") :
 	is_double ? module->getFunction("pure_get_matrix_data_double") :
 	0;
+      assert(get_fun);
       sw->addCase(SInt(EXPR::PTR), ptrbb);
       if (is_short || is_int || is_int64)
 	sw->addCase(SInt(EXPR::IMATRIX), matrixbb);
@@ -8383,7 +8386,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       PHINode *phi = b.CreatePHI(VoidPtrTy);
       phi->addIncoming(ptrv, ptrbb);
       phi->addIncoming(matrixv, matrixbb);
-      unboxed[i] = b.CreateBitCast(phi, gt->getParamType(i)); vtemps = true;
+      unboxed[i] = b.CreateBitCast(phi, type); vtemps = true;
     } else if (argt[i] == PointerType::get(VoidPtrTy, 0) ||
 	       argt[i] == PointerType::get(CharPtrTy, 0)) {
       /* Conversion of symbolic vectors to void** and char**. */
@@ -8441,7 +8444,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       phi->addIncoming(ptrv, ptrbb);
       if (is_char) phi->addIncoming(matrixv, matrixbb);
       phi->addIncoming(smatrixv, smatrixbb);
-      unboxed[i] = b.CreateBitCast(phi, gt->getParamType(i)); vtemps = true;
+      unboxed[i] = b.CreateBitCast(phi, type); vtemps = true;
     } else if (argt[i] ==
 	       PointerType::get(PointerType::get(int16_type(), 0), 0) ||
 	       argt[i] ==
@@ -8454,16 +8457,15 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	       PointerType::get(PointerType::get(float_type(), 0), 0)) {
       /* Conversion of matrices to vectors of pointers pointing to the rows of
 	 the matrix. These allow a matrix to be modified in-place. */
-      const Type *type = gt->getParamType(i);
-      bool is_short = type ==
+      bool is_short = argt[i] ==
 	PointerType::get(PointerType::get(int16_type(), 0), 0);
-      bool is_int = type ==
+      bool is_int = argt[i] ==
 	PointerType::get(PointerType::get(int32_type(), 0), 0);
-      bool is_int64 = type ==
+      bool is_int64 = argt[i] ==
 	PointerType::get(PointerType::get(int64_type(), 0), 0);
-      bool is_float = type ==
+      bool is_float = argt[i] ==
 	PointerType::get(PointerType::get(float_type(), 0), 0);
-      bool is_double = type ==
+      bool is_double = argt[i] ==
 	PointerType::get(PointerType::get(double_type(), 0), 0);
       BasicBlock *ptrbb = basic_block("ptr");
       BasicBlock *matrixbb = basic_block("matrix");
@@ -8478,6 +8480,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	is_float ? module->getFunction("pure_get_matrix_vector_float") :
 	is_double ? module->getFunction("pure_get_matrix_vector_double") :
 	0;
+      assert(get_fun);
       sw->addCase(SInt(EXPR::PTR), ptrbb);
       if (is_short || is_int || is_int64)
 	sw->addCase(SInt(EXPR::IMATRIX), matrixbb);
@@ -8515,7 +8518,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       PHINode *phi = b.CreatePHI(VoidPtrTy);
       phi->addIncoming(ptrv, ptrbb);
       phi->addIncoming(matrixv, matrixbb);
-      unboxed[i] = b.CreateBitCast(phi, gt->getParamType(i)); vtemps = true;
+      unboxed[i] = b.CreateBitCast(phi, type); vtemps = true;
     } else if (argt[i] == GSLMatrixPtrTy ||
 	       argt[i] == GSLDoubleMatrixPtrTy ||
 	       argt[i] == GSLComplexMatrixPtrTy ||
@@ -8537,20 +8540,18 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
       Value *matv = b.CreateCall(module->getFunction("pure_get_matrix"), x);
-      unboxed[i] = b.CreateBitCast(matv, gt->getParamType(i));
+      unboxed[i] = b.CreateBitCast(matv, type);
     } else if (argt[i] == ExprPtrTy) {
       // passed through
       unboxed[i] = x;
       // Cast the pointer to the proper target type if necessary. This is only
       // necessary in the bitcode interface, since the Pure interpreter uses
       // its own internal representation of the expression data type.
-      const Type *type = gt->getParamType(i);
       if (type != ExprPtrTy)
 	unboxed[i] = b.CreateBitCast(unboxed[i], type);
     } else if (i == 0 && is_pointer_type(argt[i]) && is_faust_fun) {
       /* The first argument in a Faust call, if it is a pointer, is always the
 	 dsp. Check the pointer against the module tag. */
-      const Type *type = gt->getParamType(i);
       BasicBlock *ptrbb = basic_block("ptr");
       BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
@@ -8635,7 +8636,6 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       phi->addIncoming(matrixv, matrixbb);
       unboxed[i] = phi;
       // Cast the pointer to the proper target type if necessary.
-      const Type *type = gt->getParamType(i);
       if (type != VoidPtrTy)
 	unboxed[i] = b.CreateBitCast(unboxed[i], type);
     } else if (is_pointer_type(argt[i])) {
@@ -8667,7 +8667,6 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       Value *ptrv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "ptrval");
       unboxed[i] = ptrv;
       // Cast the pointer to the proper target type if necessary.
-      const Type *type = gt->getParamType(i);
       if (type != VoidPtrTy)
 	unboxed[i] = b.CreateBitCast(unboxed[i], type);
     } else
@@ -8893,7 +8892,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 #endif
     f->print(out);
   }
-  externals[sym.f] = ExternInfo(sym.f, name, type, argt, f);
+  externals[sym.f] = ExternInfo(sym.f, name, type, argt, f, varargs);
   return f;
 }
 
