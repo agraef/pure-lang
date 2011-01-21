@@ -1962,7 +1962,14 @@ If prefix ARG is not nil, remove an existing tracepoint instead."
     (nth 3 (parse-partial-sexp (point-min) (point)))))
 
 (defsubst pure-within-literal ()
-  ;; Check whether point is within a Pure literal (string, comment or sexp).
+  ;; Check whether point is within a Pure literal (string or comment).
+  (let ((state
+	 (save-excursion
+	   (parse-partial-sexp (point-min) (point)))))
+    (or (> (car state) 0) (nth 3 state) (nth 4 state))))
+
+(defsubst pure-within-literal-or-sexp ()
+  ;; Check whether point is within a Pure literal or sexp.
   (let ((state
 	 (save-excursion
 	   (parse-partial-sexp (point-min) (point)))))
@@ -1986,7 +1993,7 @@ If prefix ARG is not nil, remove an existing tracepoint instead."
   (let ((oldpos (point))
 	(bol (save-excursion (beginning-of-line)
 			     (skip-chars-forward " \t")
-			     (and (not (pure-within-literal))
+			     (and (not (pure-within-literal-or-sexp))
 				  (point))))
 	(newpos (or (scan-sexps (point) -1) (point-min))))
     (goto-char (if (and bol (< bol oldpos)) (max bol newpos) newpos))))
@@ -1996,7 +2003,7 @@ If prefix ARG is not nil, remove an existing tracepoint instead."
   (let ((oldpos (point))
 	(bol (save-excursion (beginning-of-line)
 			     (skip-chars-forward " \t")
-			     (and (not (pure-within-literal))
+			     (and (not (pure-within-literal-or-sexp))
 				  (point))))
 	(newpos (or (scan-sexps (point) -1) (point-min))))
     (if (and bol (< bol oldpos) (< newpos bol))
@@ -2054,7 +2061,7 @@ INDENT-COL)."
   (save-excursion
    (when (re-search-forward "[ \t]\\(=\\)\\([ \t]\\|[ \t]*$\\)" lim t)
      (goto-char (match-beginning 1))
-     (and (not (pure-within-literal))
+     (and (not (pure-within-literal-or-sexp))
 	  (if flag
 	      ;; do only basic block indent
 	      (let ((col (pure-basic-indent-level)))
@@ -2269,7 +2276,7 @@ The return value is just the alignment column, or zero if none."
   "Insert a character and automatically reindent the line."
   (interactive)
   (insert last-command-char)
-  (if pure-electric-keys
+  (if (and pure-electric-keys (not (pure-within-literal)))
       (save-excursion
 	(beginning-of-line)
 	(pure-indent-line))))
@@ -2281,7 +2288,7 @@ line and `pure-align-equals' is t, align the `=' symbol to the
 current `=' indentation column, as given by
 `pure-calculate-alignment'."
   (interactive)
-  (cond ((not pure-electric-keys)
+  (cond ((or (not pure-electric-keys) (pure-within-literal))
 	 (insert last-command-char))
 	((save-excursion
 	   (skip-chars-backward " \t")
@@ -2308,7 +2315,7 @@ current `=' indentation column, as given by
 	      ;; require bol or whitespace, so that we don't tear apart
 	      ;; operators with a trailing `=', such as `~='
 	      (or (bolp) (eq (char-before) ?\s) (eq (char-before) ?\t))
-	      (not (pure-within-literal))
+	      (not (pure-within-literal-or-sexp))
 	      (save-excursion
 		(skip-chars-forward " \t")
 		(eolp)))
@@ -2448,7 +2455,7 @@ zero or left out."
 	 (save-excursion
 	   (when (re-search-forward "[ \t]\\(=\\)\\([ \t]\\|[ \t]*$\\)" lim t)
 	     (goto-char (match-beginning 1))
-	     (if (not (pure-within-literal))
+	     (if (not (pure-within-literal-or-sexp))
 		 (pure-find-head))))))
     (if pos
 	(goto-char pos))))
