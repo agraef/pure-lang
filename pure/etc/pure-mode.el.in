@@ -1085,6 +1085,20 @@ preceding point."
 	      y (cdr y)))))
   (mapcar 'list pure-output-list))
 
+;; This is from Emacs 22.3. (Emacs 23.1 and later have
+;; completion-table-dynamic.)
+(defmacro pure-dynamic-completion-table (fun)
+  (declare (debug (lambda-expr)))
+  (let ((win (make-symbol "window"))
+        (string (make-symbol "string"))
+        (predicate (make-symbol "predicate"))
+        (mode (make-symbol "mode")))
+    `(lambda (,string ,predicate ,mode)
+       (with-current-buffer (let ((,win (minibuffer-selected-window)))
+                              (if (window-live-p ,win) (window-buffer ,win)
+                                (current-buffer)))
+         (complete-with-action ,mode (,fun ,string) ,string ,predicate)))))
+
 ;;;###autoload
 (defun pure-help (&optional topic)
   "Read online help in html format.
@@ -1103,7 +1117,7 @@ completion is provided for search terms in the index."
 	    (format "Pure help topic%s"
 		    (if (null default) ": "
 		      (format " (default %s): " default)))
-	    (dynamic-completion-table 'pure-help-complete)
+	    (pure-dynamic-completion-table pure-help-complete)
 	    nil nil nil nil default))))
   (let* ((args (split-string (if topic topic "") "#"))
 	 (args (if (or (null args) (not (zerop (length (car args))))) args
@@ -1584,7 +1598,7 @@ preceding point."
 		     (goto-char (match-end 0)))
 		(point)))
 	 (string (buffer-substring-no-properties beg end))
-	 (completion-alist (dynamic-completion-table 'pure-index-complete))
+	 (completion-alist (pure-dynamic-completion-table pure-index-complete))
 	 (completion (try-completion string completion-alist)))
     (cond ((eq completion t))		; ???
 	  ((null completion)
@@ -1753,7 +1767,7 @@ instead."
        (format "Show symbol%s"
 	       (if (null default) ": "
 		 (format " (default %s): " default)))
-       (dynamic-completion-table 'pure-symbol-complete)
+       (pure-dynamic-completion-table pure-symbol-complete)
        nil nil nil nil default))
     current-prefix-arg))
   (let* ((pure-eval-buffer (get-buffer "*pure-eval*"))
@@ -1788,7 +1802,7 @@ instead."
        (format "Clear symbol%s"
 	       (if (null default) ": "
 		 (format " (default %s): " default)))
-       (dynamic-completion-table 'pure-symbol-complete)
+       (pure-dynamic-completion-table pure-symbol-complete)
        nil nil nil nil default))))
   (let* ((pure-eval-buffer (get-buffer "*pure-eval*"))
 	 (proc (get-buffer-process pure-eval-buffer))
@@ -1825,7 +1839,7 @@ If prefix ARG is not nil, remove an existing breakpoint instead."
 	       (if current-prefix-arg "Delete" "Set")
 	       (if (null default) ": "
 		 (format " (default %s): " default)))
-       (dynamic-completion-table 'pure-symbol-complete)
+       (pure-dynamic-completion-table pure-symbol-complete)
        nil nil nil nil default))
     current-prefix-arg))
   (when (string-match "[ \t]*$" symbol)
@@ -1866,7 +1880,7 @@ If prefix ARG is not nil, remove an existing tracepoint instead."
 	       (if current-prefix-arg "Delete" "Set")
 	       (if (null default) ": "
 		 (format " (default %s): " default)))
-       (dynamic-completion-table 'pure-symbol-complete)
+       (pure-dynamic-completion-table pure-symbol-complete)
        nil nil nil nil default))
     current-prefix-arg))
   (when (string-match "[ \t]*$" symbol)
