@@ -1067,7 +1067,11 @@ preceding point."
 ;; constituents including a possible namespace prefix.
 (put 'puresym 'end-op (lambda () (skip-syntax-forward "w_")))
 (put 'puresym 'beginning-op (lambda () (skip-syntax-backward "w_")))
-(defun puresym-at-point () (thing-at-point 'puresym))
+
+(defun puresym-at-point ()
+  (let ((sym (thing-at-point 'puresym)))
+    (if (and (stringp sym) (> (length sym) 0))
+	sym)))
 
 (defun pure-help-complete (symbol)
   (pure-send-list-and-digest
