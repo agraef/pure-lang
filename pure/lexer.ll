@@ -1419,7 +1419,7 @@ void Index::scan()
 	if ((c = fgetc(fp)) != EOF && c != '<') {
 	  // this looks like an index entry which isn't a search key itself,
 	  // but to be prepended to the following subentries
-	  string key; key += c;
+	  string key; if (!isspace(c)) key += c;
 	  while ((c = fgetc(fp)) != EOF && c != '<') {
 	    if (c == '&') {
 	      // scan an entity name
@@ -1433,9 +1433,15 @@ void Index::scan()
 		key += '>';
 	      else
 		key += "&"+entity+";";
-	    } else
+	    } else if (!key.empty() || !isspace(c))
 	      key += c;
 	  }
+	  // trim trailing whitespace
+	  size_t p = key.find_last_not_of(" \t\n\r\f\v");
+	  if (p == string::npos)
+	    key.clear();
+	  else
+	    key.erase(p+1);
 	  last_key = key;
 	}
 	if (c != EOF) ungetc(c, fp);
@@ -1447,8 +1453,14 @@ void Index::scan()
 	assert(!target.empty() && target[target.size()-1]=='"');
 	target.erase(target.size()-1);
 	// scan the key
-	while ((c = fgetc(fp)) != EOF && c != '<') {
-	  if (c == '&') {
+	while ((c = fgetc(fp)) != EOF) {
+	  if (c == '<') {
+	    // scan a (sub)tag
+	    string subtag;
+	    while ((c = fgetc(fp)) != EOF && c != '>') subtag += c;
+	    // ignore anything but </a>
+	    if (subtag == "/a") break;
+	  } else if (c == '&') {
 	    // scan an entity name
 	    string entity;
 	    while ((c = fgetc(fp)) != EOF && c != ';') entity += c;
@@ -1466,12 +1478,15 @@ void Index::scan()
 		key += "&"+entity+";";
 	    } else
 	      key += "&"+entity+";";
-	  } else
+	  } else if (!key.empty() || !isspace(c))
 	    key += c;
 	}
-	// push back the start of the next tag (presumably </a>), so that we
-	// reread it in the next iteration
-	if (c != EOF) ungetc(c, fp);
+	// trim trailing whitespace
+	size_t p = key.find_last_not_of(" \t\n\r\f\v");
+	if (p == string::npos)
+	  key.clear();
+	else
+	  key.erase(p+1);
 	if (key.empty()) continue;
 	if (key[0] == '-') {
 	  size_t p = key.find_first_not_of('-');
