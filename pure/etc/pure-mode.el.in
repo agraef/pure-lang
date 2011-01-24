@@ -342,20 +342,23 @@ at the command prompt."
 (defvar pure-font-lock-keywords
   (list
 ;;   (list "^#!.*" 0 'font-lock-comment-face t)
-   (list "\\<\\(bigint\\|bool\\|char\\|float\\|double\\|expr\\|short\\|int\\(8\\|16\\|32\\|64\\)?\\|long\\|string\\|pointer\\|void\\|[dci]?matrix\\)\\>" 1 'font-lock-type-face)
-   (list "\\<\\(catch\\|throw\\)\\>" 0 'font-lock-builtin-face)
+   (list "\\_<\\(bigint\\|bool\\|char\\|float\\|double\\|expr\\|short\\|int\\(8\\|16\\|32\\|64\\)?\\|long\\|string\\|pointer\\|void\\|[dci]?matrix\\)\\_>" 1 'font-lock-type-face)
+   (list "\\_<\\(catch\\|throw\\)\\_>" 0 'font-lock-builtin-face)
    (list
-    (concat "\\<\\("
+    (concat "\\_<\\("
 	    "case\\|const\\|def\\|e\\(lse\\|nd\\|xtern\\)\\|i\\(f\\|nfix[lr]?\\)\\|"
 	    "let\\|n\\(amespace\\|onfix\\)\\|o\\(f\\|therwise\\|utfix\\)\\|p\\(r\\(efix\\|ivate\\)\\|ostfix\\|ublic\\)\\|"
 	    "then\\|using\\|w\\(hen\\|ith\\)"
-	    "\\)\\>")
+	    "\\)\\_>")
     0 'font-lock-keyword-face))
   "Rules for fontifying Pure scripts.")
 
-;; #! (shebang) and %< ... %> code sections are treated as comments
 (defvar pure-font-lock-syntactic-keywords
-  '(("^\\(#!\\)" 1 "<b" t) ("\\(%\\)<" 1 "!" t) ("%\\(>\\)" 1 "!" t)))
+  '(;; #! (shebang) and %< ... %> code sections are treated as comments
+    ("^\\(#!\\)" 1 "<b" t) ("\\(%\\)<" 1 "!" t) ("%\\(>\\)" 1 "!" t)
+    ;; backslash in \( (lambda syntax) is treated as normal punctuation, to
+    ;; prevent confusion in the sexp parser
+    ("\\([\\]\\)(" 1 "." t)))
 
 (defun pure-syntactic-face-function (state)
   (cond
@@ -715,7 +718,7 @@ Commands
 
 \\{pure-mode-map}"
   (set-syntax-table (make-syntax-table))
-  (modify-syntax-entry ?_  "_")
+  (modify-syntax-entry ?\_  "_")
   (modify-syntax-entry ?\:  "_")
   (modify-syntax-entry ?\.  ".")
   (modify-syntax-entry ?\+  ".")
@@ -725,7 +728,7 @@ Commands
   (modify-syntax-entry ?\>  ".")
   (modify-syntax-entry ?\$  ".")
   (modify-syntax-entry ?\|  ".")
-  (modify-syntax-entry ?\\  ".")
+;  (modify-syntax-entry ?\\  ".")
   ;; comment syntax a la C++ mode
   (cond
    ((string-match "XEmacs\\|Lucid" emacs-version)
@@ -786,14 +789,14 @@ Commands
   (list
 ;    (list pure-prompt-regexp 0 'font-lock-preprocessor-face t)
    (list pure-msg-regexp 0 'font-lock-warning-face t)
-   (list "\\<\\(bigint\\|bool\\|char\\|float\\|double\\|expr\\|short\\|int\\(8\\|16\\|32\\|64\\)?\\|long\\|string\\|pointer\\|void\\|[dci]?matrix\\)\\>" 1 'font-lock-type-face)
-;   (list "\\<\\(catch\\|throw\\)\\>" 0 'font-lock-builtin-face)
+   (list "\\_<\\(bigint\\|bool\\|char\\|float\\|double\\|expr\\|short\\|int\\(8\\|16\\|32\\|64\\)?\\|long\\|string\\|pointer\\|void\\|[dci]?matrix\\)\\_>" 1 'font-lock-type-face)
+;   (list "\\_<\\(catch\\|throw\\)\\_>" 0 'font-lock-builtin-face)
    (list
-    (concat "\\<\\("
+    (concat "\\_<\\("
 	    "const\\|def\\|extern\\|infix[lr]?\\|"
 	    "let\\|n\\(amespace\\|onfix\\)\\|outfix\\|p\\(r\\(efix\\|ivate\\)\\|ostfix\\|ublic\\)\\|"
 	    "using"
-	    "\\)\\>")
+	    "\\)\\_>")
     0 'font-lock-keyword-face))
   "Rules for fontifying in `pure-eval-mode'.")
 
@@ -974,7 +977,7 @@ Commands
   (kill-all-local-variables)
   (comint-mode)
   (set-syntax-table (make-syntax-table))
-  (modify-syntax-entry ?_  "_")
+  (modify-syntax-entry ?\_  "_")
   (modify-syntax-entry ?\:  "_")
   (modify-syntax-entry ?\.  ".")
   (modify-syntax-entry ?\+  ".")
@@ -986,7 +989,7 @@ Commands
   (modify-syntax-entry ?\$  ".")
   (modify-syntax-entry ?\/  ". 12")
   (modify-syntax-entry ?\*  ".")
-  (modify-syntax-entry ?\\  ".")
+;  (modify-syntax-entry ?\\  ".")
   (modify-syntax-entry ?\n  ">")
   (modify-syntax-entry ?\^m ">")
   (setq major-mode 'pure-eval-mode)
@@ -2033,12 +2036,12 @@ If prefix ARG is not nil, remove an existing tracepoint instead."
 ;; Based on Emacs' Pascal mode by Espen Skoglund <esk@gnu.org>, adjusted for
 ;; Pure's block constructs which can also occur inside expressions.
 
-(defconst pure-beg-block-re     "\\<\\(case\\|when\\|with\\)\\>")
-(defconst pure-beg-block-re2    "\\<\\(of\\|when\\|with\\)\\>")
-(defconst pure-end-block-re     "\\<end\\>")
-(defconst pure-declaration-re   "\\<\\(const\\|extern\\|infix[lr]?\\|let\\|namespace\\|\\(non\\|out\\|post\\|pre\\)fix\\|private\\|public\\|using\\)\\>")
-(defconst pure-ifelse-re        "\\<\\(if\\|else\\)\\>")
-(defconst pure-noindent-re      "\\<\\(end\\|then\\|else\\)\\>")
+(defconst pure-beg-block-re     "\\_<\\(case\\|when\\|with\\)\\_>")
+(defconst pure-beg-block-re2    "\\_<\\(of\\|when\\|with\\)\\_>")
+(defconst pure-end-block-re     "\\_<end\\_>")
+(defconst pure-declaration-re   "\\_<\\(const\\|extern\\|infix[lr]?\\|let\\|namespace\\|\\(non\\|out\\|post\\|pre\\)fix\\|private\\|public\\|using\\)\\_>")
+(defconst pure-ifelse-re        "\\_<\\(if\\|else\\)\\_>")
+(defconst pure-noindent-re      "\\_<\\(end\\|then\\|else\\)\\_>")
 (defconst pure-comment-start-re "\\(/[/*]\\|%<\\|^#!\\)")
 
 (defconst pure-indent-alist
@@ -2110,7 +2113,7 @@ Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
 			 ((nth 4 state) (throw 'nesting 'comment))
 			 ((> level 0)
 			  (save-excursion
-			    (goto-char (scan-lists (point) -1 level))
+			    (goto-char (nth 1 state))
 			    (setq pos (1+ (current-column))))))
 		   ;; Loop until correct indent is found
 		   (while t
@@ -2143,8 +2146,8 @@ Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
 			   (;--Declaration part
 			    (looking-at pure-declaration-re)
 			    (if (and
-				 (looking-at "\\<namespace\\>")
-				 (looking-back "\\<using\\>\\s *"
+				 (looking-at "\\_<namespace\\_>")
+				 (looking-back "\\_<using\\_>\\s *"
 					       (point-at-bol)))
 				(pure-backward-sexp 1))
 			    (unless complete
@@ -2175,7 +2178,7 @@ Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
 	     (and (or (eq type 'toplevel) (eq type 'block))
 		  (looking-at pure-ifelse-re))
 	     ;; look for else-if
-	     (if (looking-back "\\<else\\>\\s *" (point-at-bol))
+	     (if (looking-back "\\_<else\\_>\\s *" (point-at-bol))
 	       (pure-backward-sexp 1))
 	     (if at-block-beg
 		 (list
@@ -2222,8 +2225,8 @@ The return value is just the alignment column, or zero if none."
 			   (;--Declaration part
 			    (looking-at pure-declaration-re)
 			    (if (and
-				 (looking-at "\\<namespace\\>")
-				 (looking-back "\\<using\\>\\s *"
+				 (looking-at "\\_<namespace\\_>")
+				 (looking-back "\\_<using\\_>\\s *"
 					       (point-at-bol)))
 				(pure-backward-sexp 1))
 			    (unless complete
@@ -2262,7 +2265,7 @@ The return value is just the alignment column, or zero if none."
 		   (point))))
     (save-excursion
       (cond ((> level 0)
-	     (goto-char (1+ (scan-lists (point) -1 level))))
+	     (goto-char (1+ (nth 1 state))))
 	    (pos
 	     (beginning-of-line)
 	     (skip-chars-forward " \t")
@@ -2440,7 +2443,7 @@ zero or left out."
       (when (or (and (bolp) (not (pure-at-empty-or-comment-line)))
 		(and chk (looking-back pure-beg-block-re2 (point-at-bol))))
 	(or (looking-at
-	     (concat "[ \t]*\\(" pure-declaration-re "\\|\\<def\\>\\)"))
+	     (concat "[ \t]*\\(" pure-declaration-re "\\|\\_<def\\_>\\)"))
 	    (let ((parse-sexp-ignore-comments t))
 	      (pure-backward-sexp 1)
 	      (or (bobp)
@@ -2525,8 +2528,8 @@ count."
 			   (;--Declaration part
 			    (looking-at pure-declaration-re)
 			    (if (and
-				 (looking-at "\\<namespace\\>")
-				 (looking-back "\\<using\\>\\s *"
+				 (looking-at "\\_<namespace\\_>")
+				 (looking-back "\\_<using\\_>\\s *"
 					       (point-at-bol)))
 				(pure-backward-sexp 1))
 			    (throw 'nesting 'declaration))
@@ -2597,7 +2600,7 @@ definition. Prefix arg may be used to specify a repeat count."
 			    (when (and (zerop nest)
 				       (not
 					(looking-back
-					 "\\<using\\>\\s *\\<namespace\\>\\s *"
+					 "\\_<using\\_>\\s *\\_<namespace\\_>\\s *"
 					 (point-at-bol))))
 			      (pure-backward-sexp 1)
 			      (throw 'nesting 'declaration)))
@@ -2672,8 +2675,8 @@ Prefix arg may be used to specify a repeat count."
 			   (;--Declaration part
 			    (looking-at pure-declaration-re)
 			    (if (and
-				 (looking-at "\\<namespace\\>")
-				 (looking-back "\\<using\\>\\s *"
+				 (looking-at "\\_<namespace\\_>")
+				 (looking-back "\\_<using\\_>\\s *"
 					       (point-at-bol)))
 				(pure-backward-sexp 1))
 			    (if (zerop nest)
@@ -2745,7 +2748,7 @@ specify a repeat count."
 			    (when (and (zerop nest)
 				       (not
 					(looking-back
-					 "\\<using\\>\\s *\\<namespace\\>\\s *"
+					 "\\_<using\\_>\\s *\\_<namespace\\_>\\s *"
 					 (point-at-bol))))
 			      (pure-backward-sexp 1)
 			      (throw 'nesting 'declaration)))
