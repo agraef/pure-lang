@@ -99,7 +99,7 @@ nonfix dmatrix_t cmatrix_t imatrix_t;
 
 // to_ffi_type does a preliminary conversion from Language.C types (types
 // specified in the C spec) to ffi types (real types on the machine.)
-// short, long, signed and unsigned can also be used as modifiers, 
+// short, long, signed and unsigned can also be used as modifiers,
 // in which case the _t suffix is dropped.
 
 to_ffi_type x fname =
@@ -242,7 +242,7 @@ complete_ffi_type (basic_type x)  = complete_ffi_type x;
 
 
 // ffi only knows "pointer_t" but pure's extern decls can take typed pointers
-//complete_ffi_type (ptr_type _)    = pointer_t; 
+//complete_ffi_type (ptr_type _)    = pointer_t;
 complete_ffi_type (const_type t) = const_type (complete_ffi_type t);
 complete_ffi_type (ptr_type t) = ptr_type (complete_ffi_type t);
 
@@ -253,13 +253,13 @@ complete_ffi_type (struct_or_union "gsl_matrix") = dmatrix_t;
 complete_ffi_type (struct_or_union "gsl_matrix_complex") = cmatrix_t;
 complete_ffi_type (struct_or_union "gsl_matrix_int") = imatrix_t;
 complete_ffi_type t@(struct_or_union n) = t if n~="<anonymous>";
-complete_ffi_type (structure n f) = 
+complete_ffi_type (structure n f) =
   structure n (zip ns (map complete_ffi_type fs))
   when (ns,fs) = unzip f end;
 
 complete_ffi_type x =
   case x of
-  //this is kind of a mess, due to all the different ways one might 
+  //this is kind of a mess, due to all the different ways one might
   //specify an int: int, long int, long, singed long, signed long int...
   unsupported_t   = unsupported_t;
   pointer_t   = pointer_t;
@@ -269,45 +269,45 @@ complete_ffi_type x =
   slong_t  = slong_t;
   sint_t   = sint_t;
   uint_t   = uint_t;
-  long double_t        = longdouble_t; 
-  (long (sint_t))      = slong_t; 
-  (long (slong_t))     = sint64_t; 
-  (long (long sint_t)) = sint64_t; 
+  long double_t        = longdouble_t;
+  (long (sint_t))      = slong_t;
+  (long (slong_t))     = sint64_t;
+  (long (long sint_t)) = sint64_t;
   float_t  = float_t;
   double_t = double_t;
-  signed schar_t    = schar_t;  
-  signed sshort_t   = sshort_t; 
-  signed sint_t     = sint_t;   
+  signed schar_t    = schar_t;
+  signed sshort_t   = sshort_t;
+  signed sint_t     = sint_t;
   signed slong_t    = slong_t;
-  signed (short (sint_t))     = sshort_t; 
-  signed (long (sint_t))      = slong_t; 
-  signed (long (slong_t))     = sint64_t; 
-  signed (long (long sint_t)) = sint64_t; 
-  short (signed (sint_t))     = sshort_t; 
-  long (signed (sint_t))      = slong_t; 
-  long (signed (slong_t))     = sint64_t; 
-  long (signed (long sint_t)) = sint64_t; 
-  unsigned schar_t  = uchar_t;  
-  unsigned sshort_t = ushort_t; 
-  unsigned sint_t   = uint_t; 
-  unsigned slong_t  = ulong_t; 
-  unsigned (short (sint_t))     = ushort_t; 
-  unsigned (long (sint_t))      = ulong_t; 
-  unsigned (long (slong_t))     = uint64_t; 
-  unsigned (long (long sint_t)) = uint64_t; 
-  short (unsigned (sint_t))     = ushort_t; 
-  long (unsigned (sint_t))      = ulong_t; 
-  long (unsigned (slong_t))     = uint64_t; 
-  long (unsigned (long sint_t)) = uint64_t; 
+  signed (short (sint_t))     = sshort_t;
+  signed (long (sint_t))      = slong_t;
+  signed (long (slong_t))     = sint64_t;
+  signed (long (long sint_t)) = sint64_t;
+  short (signed (sint_t))     = sshort_t;
+  long (signed (sint_t))      = slong_t;
+  long (signed (slong_t))     = sint64_t;
+  long (signed (long sint_t)) = sint64_t;
+  unsigned schar_t  = uchar_t;
+  unsigned sshort_t = ushort_t;
+  unsigned sint_t   = uint_t;
+  unsigned slong_t  = ulong_t;
+  unsigned (short (sint_t))     = ushort_t;
+  unsigned (long (sint_t))      = ulong_t;
+  unsigned (long (slong_t))     = uint64_t;
+  unsigned (long (long sint_t)) = uint64_t;
+  short (unsigned (sint_t))     = ushort_t;
+  long (unsigned (sint_t))      = ulong_t;
+  long (unsigned (slong_t))     = uint64_t;
+  long (unsigned (long sint_t)) = uint64_t;
 
   enum_type _ v _ = if any negative v then sint_t else uint_t
   with negative (constant _ x) = x<0; negative _ = false end;
-  
+
   _ = warn_once 1 ("unsupported type "+str x) $$ unsupported_t;
 
   end;
-   
-  
+
+
 // exception value signifying an unknown or unrecognized C type
 nonfix unknown_decl_type;
 
@@ -330,7 +330,7 @@ type_spec ( (CTypeSpec CUnsigType) : more ) fname = unsigned $ type_spec more fn
 type_spec ( (CTypeSpec CSignedType) :  []  ) _ = sint_t;
 type_spec ( (CTypeSpec CSignedType) : more ) fname = signed $ type_spec more fname;
 
-type_spec ( (CTypeSpec t) : _ ) fname = to_ffi_type t fname; 
+type_spec ( (CTypeSpec t) : _ ) fname = to_ffi_type t fname;
  //I don't really know what else could be in the list here
 
 type_spec ( _ : more ) fname = type_spec more fname;
@@ -339,7 +339,7 @@ type_spec [] _ = throw unknown_decl_type;
 
 
 // decl_type : Grab a simplified type representation from a declaration.
-// Result is a list of the following terms: 
+// Result is a list of the following terms:
 //    basic_type t: t is a c primitive type or a typedef
 //    ptr_type t: t is again one of basic_type, ptr_type or func_type
 //    func_type ret args va: ret is again one basic_type, ptr_type or
@@ -347,9 +347,9 @@ type_spec [] _ = throw unknown_decl_type;
 //      true if the function is variadic (... syntax).
 // If the type cannot be described in the above terms, an exception
 // "unknown_decl_type" is thrown.
-// 
+//
 // The returned list contains one type for each object declared in this
-// declaration, e.g. "int *x, y;" yields 
+// declaration, e.g. "int *x, y;" yields
 // [ ptr_type(basic_type sint_t), basic_type sint_t ]
 
 // Move the const qualifier out of the typespec, some code depends on this.
@@ -365,14 +365,14 @@ decl_types1 d@(CDecl decl_specs init_declr_list ) fname =
   catch (\_->warning 2 $ sprintf "Unknown declaration type: %s" (str d) $$ [])
   (decl_types2 d fname);
 
-decl_types2 d@(CDecl decl_specs init_declr_list) fname = 
-  case init_declr_list of 
+decl_types2 d@(CDecl decl_specs init_declr_list) fname =
+  case init_declr_list of
     (Just (CDeclr _ derivs _ arg_attrs), Nothing, Nothing) : more =
         apply_derivs (type_spec decl_specs fname) derivs : decl_types2 (CDecl decl_specs more) fname;
     [] = [];
     _ = [];
   end
-  with 
+  with
     //basic_type : get the type of a declaration, ignoring storage and access
     //modifiers (except const)
     apply_derivs t [] = basic_type t;
@@ -382,9 +382,9 @@ decl_types2 d@(CDecl decl_specs init_declr_list) fname =
     = const_type (ptr_type $ apply_derivs t derivs)
         if any ((===) CConstQual) m;
     = ptr_type $ apply_derivs t derivs;
-    apply_derivs t ( (CFunDeclr args _) : derivs ) = 
-      case args of 
-        Right (arg_decls,va) = 
+    apply_derivs t ( (CFunDeclr args _) : derivs ) =
+      case args of
+        Right (arg_decls,va) =
 	  func_type (apply_derivs t derivs)
 	  (catmap (flip decl_types1 fname) arg_decls) va;
         Left _      = //old-style K&R declaration.
@@ -401,8 +401,8 @@ decl_types2 d@(CDecl decl_specs init_declr_list) fname =
 
 decl_idents (CFDefExt _) = [];
 decl_idents (CDeclExt d _) = decl_idents d;
-decl_idents d@(CDecl _ init_declr_list) = 
-  case init_declr_list of 
+decl_idents d@(CDecl _ init_declr_list) =
+  case init_declr_list of
     (Just (CDeclr (Just ident) _ _ _), _, _) : more =
         ident : decl_idents (CDecl decl_specs more);
     _ = [];
@@ -420,7 +420,7 @@ is_typedef [] = 0;
 typedefs (CFDefExt _) = [];
 typedefs (CDeclExt d fname) = typedefs1 d fname;
 typedefs1 d@(CDecl decl_specs _) fname =
-  if is_typedef decl_specs 
+  if is_typedef decl_specs
   then zip (decl_idents d) (decl_types1 d fname)
   else [];
 
@@ -450,15 +450,15 @@ func_decl1 d@(CDecl decl_specs _) fname
     is_func_decl _ = false otherwise;
   end;
 
-//resolve a typedef : d is a dictionary 
+//resolve a typedef : d is a dictionary
 resolve_typedef d t fname = lookup t
   with
     lookup (basic_type (CTypeDef n)) =
       catch ( \_ -> warning 2 $ "could not resolve typedef: "+n+
-                                ", defaulting to void*" $$ pointer_t  ) 
+                                ", defaulting to void*" $$ pointer_t  )
             ( patch_typedef n $ lookup (d!n) );
 
-    lookup (basic_type (CSUType _ (CStructUnion _ (Just name) _ _))) = 
+    lookup (basic_type (CSUType _ (CStructUnion _ (Just name) _ _))) =
       basic_type (struct_or_union $ "struct "+name);
     lookup t@(struct_or_union _ _) = t;
     lookup (basic_type (CEnumType (CEnum (Just tag) (Just enum_defs) _))) =
@@ -479,11 +479,11 @@ resolve_typedef d t fname = lookup t
       basic_type (struct_or_union n);
     patch_typedef n t = t otherwise;
   end;
-    
-resolve_decl_typedefs tydefs decls = 
+
+resolve_decl_typedefs tydefs decls =
   map (\(n,t,fname) -> (n , resolve_typedef tydefs t fname, fname) ) decls;
 
-resolve_struct_typedefs tydefs (structure name fields) = 
+resolve_struct_typedefs tydefs (structure name fields) =
   structure name $ resolve_decl_typedefs tydefs fields;
 
 
@@ -504,54 +504,54 @@ resolve_struct_typedefs tydefs (structure name fields) =
 
 decl_struct (CFDefExt _) = [];
 decl_struct (CDeclExt d fname) = decl_struct1 d fname;
-decl_struct1 d@(CDecl ( (CStorageSpec CTypedef ) : 
-                        (CTypeSpec (CSUType strct)) : _ ) 
+decl_struct1 d@(CDecl ( (CStorageSpec CTypedef ) :
+                        (CTypeSpec (CSUType strct)) : _ )
 		init_declr_list) fname
     =
   case strct of
     //struct name
     CStructUnion _ (Just _) (Just fields) _  | //struct has a tag
-    CStructUnion _ Nothing (Just fields)  _  = //struct is anonymous. 
-      [ structure name $ 
+    CStructUnion _ Nothing (Just fields)  _  = //struct is anonymous.
+      [ structure name $
         zip (catmap decl_idents fields) (catmap (flip decl_types1 fname) fields) ];
     _ = [];
   end
-  when 
+  when
     name = head $ decl_idents d;
   end;
 
 decl_struct1 d@(CDecl ( (CTypeSpec (CSUType strct)) : _ ) [] ) fname =
   case strct of
-    CStructUnion _ (Just name) (Just fields) _  = 
-      [ structure name $ 
+    CStructUnion _ (Just name) (Just fields) _  =
+      [ structure name $
         zip (catmap decl_idents fields) (catmap (flip decl_types1 fname) fields) ];
     _ = [];
   end;
 
 decl_struct1 d _ = [];
-  
 
 
-  
+
+
 // Scrape enum constants. Takes a list of top-level declarations (CDeclExt)
 // and produces a dictionary of name=>value pairs. This has to be run over the
-// whole list because some constants will be defined in terms of others. 
-decl_enums = 
+// whole list because some constants will be defined in terms of others.
+decl_enums =
   foldl get_enum emptydict;
 
 get_enum dict (CFDefExt _) = dict;
 
 get_enum dict (CDeclExt d _) = get_enum dict d;
 
-get_enum dict d@(CDecl ( (CStorageSpec CTypedef ) : 
-                         (CTypeSpec (CEnumType enum)) : _ ) 
-                       init_declr_list) 
+get_enum dict d@(CDecl ( (CStorageSpec CTypedef ) :
+                         (CTypeSpec (CEnumType enum)) : _ )
+                       init_declr_list)
     =
   case enum of
     CEnum _ (Just vals) _ = calc_enum_values dict () vals;
     _ = dict; // nothing to see here, move along
   end ;
-  
+
 get_enum dict d@(CDecl ( (CTypeSpec (CEnumType enum)) : _ ) []) =
   case enum of
     CEnum _ (Just vals) _ = calc_enum_values dict () vals;
@@ -561,24 +561,24 @@ get_enum dict d@(CDecl ( (CTypeSpec (CEnumType enum)) : _ ) []) =
 get_enum dict _ = dict;
 
 
-calc_enum_values dict prev ((name,Just e):more) = 
+calc_enum_values dict prev ((name,Just e):more) =
   case eval_expr dict e of
     val::int = calc_enum_values (insert dict (name => val)) val more;
-    x = warning 0 $ "Couldn't evaluate enum expression for "+name+" : "+str e 
+    x = warning 0 $ "Couldn't evaluate enum expression for "+name+" : "+str e
           $$ calc_enum_values dict prev more;
   end;
 
-calc_enum_values dict () ((name,Nothing):more) = 
+calc_enum_values dict () ((name,Nothing):more) =
    calc_enum_values (insert dict (name=>0)) 0 more;
 
-calc_enum_values dict prev ((name,Nothing):more) = 
+calc_enum_values dict prev ((name,Nothing):more) =
     calc_enum_values (insert dict (name=>(prev+1))) (prev+1) more;
- 
+
 calc_enum_values dict _ [] = dict;
 
-eval_expr d (CVar n) = 
-  catch 
-  (\e  -> 
+eval_expr d (CVar n) =
+  catch
+  (\e  ->
    // If we can't resolve this enum then it's probably a #defined symbol which
    // will hopefully be resolved in resolve_indirects later.
    warning 2$"Couldn't lookup name "+n+" in enum definition."$$n
@@ -610,7 +610,7 @@ eval_expr d (CBinary COrOp  e1 e2) = (eval_expr d e1) or  (eval_expr d e2);
 eval_expr d (CBinary CLndOp e1 e2) = (eval_expr d e1~=0)&&(eval_expr d e2~=0);
 eval_expr d (CBinary CLorOp e1 e2) = (eval_expr d e1~=0)||(eval_expr d e2~=0);
 eval_expr d (CBinary CXorOp e1 e2) = xor (eval_expr d e1) (eval_expr d e2)
-  with 
+  with
   xor a b = (a and not b) or (not a and b); // why exclude poor xor?
   end;
 eval_expr d x = warning 0$"Unknown expression type "+str x+" in enum definition. Defaulting to 0." $$ 0;
@@ -626,7 +626,7 @@ with
   process _ = ();
 end;
 
-// Grab all #define'd constants. lns is a list of strings, the 
+// Grab all #define'd constants. lns is a list of strings, the
 // lines of the file. Thus, this can't deal with #defines that span
 // multiple lines.
 scrape_defines lns = reverse defs
@@ -634,8 +634,8 @@ when defs,_ = foldl scrape_define ([],"") lns end
 with
   scrape_define (out,fname) ln =
     case split_cpp_line ln of
-      [cpp_define name val] = echo 2 $ sprintf "#define %s %s" (name,val) $$ 
-        catch 
+      [cpp_define name val] = echo 2 $ sprintf "#define %s %s" (name,val) $$
+        catch
           (\_ -> (warning 2 $ sprintf "Can't parse %s" ln) $$ (out,fname))
           ( check_constant name val fname : out, fname );
       [cpp_line lno fname] = echo 2 $ sprintf "# %d \"%s\"" (lno,fname) $$
@@ -668,23 +668,23 @@ check_string name val::string fname
 // indirections.
 nonfix unknown_const;
 resolve_indirects constants =
-  filter ((~==) unknown_const) $ map (lookup dict) constants 
+  filter ((~==) unknown_const) $ map (lookup dict) constants
   when
     dict = foldl build emptydict constants;
   end
   with
-  build d i@(indirect n _ _) = 
-    /*puts ("adding ["+n+"] to dict") $$*/ 
+  build d i@(indirect n _ _) =
+    /*puts ("adding ["+n+"] to dict") $$*/
     insert d (n=>i) ;
-  build d c@(constant n _ _) = 
-    /*puts ("adding ["+n+"] to dict") $$*/ 
+  build d c@(constant n _ _) =
+    /*puts ("adding ["+n+"] to dict") $$*/
     insert d (n=>c) ;
   lookup _ c@(constant _ _ _) = c;
   lookup d (indirect n c src) = if n==c then unknown_const // #define x x
     else catch
-      (\_ -> 
+      (\_ ->
           warning 2 $ "Target of indirected constant not found: \""+
-                      n+"\" => \""+c+"\"" $$ 
+                      n+"\" => \""+c+"\"" $$
           unknown_const )
       ( case d!c of
         (constant _ v _) = constant n v src;
@@ -701,10 +701,10 @@ nmspacepfx nmspace = if null nmspace then "" else nmspace+"::";
 // Output a constant declaration.
 // If after stripping the prefix the constant name starts with a number, then
 // add a leading underscore.
-const_decl pfx nmspace (constant name val _) = 
+const_decl pfx nmspace (constant name val _) =
   case strip_prefix pfx name of
     name =
-      if regex "^[0-9]" REG_NOSUB name 0 
+      if regex "^[0-9]" REG_NOSUB name 0
         then "const "+nmspacepfx nmspace+"_"+name+" = "+str val+";\n"
         else "const "+nmspacepfx nmspace+name+" = "+str val+";\n"
       ;
@@ -821,12 +821,12 @@ when
 
   ret_str = c_rettype ret;
 
-  formal_params = 
-    if args === [void_t] then "" else 
+  formal_params =
+    if args === [void_t] then "" else
     join ", " $ zipwith (\x y -> c_type x+" arg"+str y) args (0..inf);
 
-  arg_names = 
-    if args === [void_t] then "" else 
+  arg_names =
+    if args === [void_t] then "" else
     join ", " $
     zipwith (\k t -> (if is_struct t then "*" else "") + "arg" + str k)
     (0..#args-1) args;
@@ -873,13 +873,13 @@ valid_name fname name = true if all_opt;
 
 
 //get all lines in a file
-fgetlines f = reverse $ get [] 
-  with 
-  get a = 
-    case fgets f of 
-    s::string = get (s:a); 
-    _ = a; 
-    end 
+fgetlines f = reverse $ get []
+  with
+  get a =
+    case fgets f of
+    s::string = get (s:a);
+    _ = a;
+    end
   end;
 
 // convert string to uppercase
@@ -1169,7 +1169,7 @@ let enumdefs = decl_enums declarations;
 
 
 echo 1 "Building typedef dictionary";
-let tydefs = 
+let tydefs =
       foldl (\d (n,t) -> insert d (n=>t)) emptydict $
         catmap typedefs declarations;
 // we also need to keep track of enums declared outside a proper typedef
@@ -1177,7 +1177,7 @@ let enumtydefs = catmap enumtypedefs declarations;
 
 
 echo 1 "Gathering constant definitions";
-let defines = 
+let defines =
   nub $ resolve_indirects $ scrape_defines lines +
         catmap enum_vals (vals tydefs+enumtydefs);
 
