@@ -182,7 +182,7 @@ case t of
   const_type t = pure_type t;
   ptr_type (const_type t) = pure_type (ptr_type t);
   ptr_type longdouble_t = "void/*long double*/*";
-  ptr_type (func_type _ _) = "void*";
+  ptr_type (func_type _ _ _) = "void*";
   ptr_type (struct_or_union n) = n+"*" if index n " " < 0;
 	     = sprintf "void/*%s*/*" n otherwise;
   ptr_type t = pure_type t + "*";
@@ -212,7 +212,7 @@ case t of
   slong_t    = "long";
   const_type t = c_basetype t+" const";
   ptr_type longdouble_t = "long double*";
-  ptr_type (func_type _ _) = "void*";
+  ptr_type (func_type _ _ _) = "void*";
   ptr_type t = c_basetype t + "*";
   struct_or_union n = n;
   expr_t = "pure_expr";
@@ -246,8 +246,8 @@ complete_ffi_type (basic_type x)  = complete_ffi_type x;
 complete_ffi_type (const_type t) = const_type (complete_ffi_type t);
 complete_ffi_type (ptr_type t) = ptr_type (complete_ffi_type t);
 
-complete_ffi_type (func_type r a) = func_type (complete_ffi_type r)
-				    (map complete_ffi_type a);
+complete_ffi_type (func_type r a v) = func_type (complete_ffi_type r)
+				      (map complete_ffi_type a) v;
 complete_ffi_type (struct_or_union "pure_expr") = expr_t;
 complete_ffi_type (struct_or_union "gsl_matrix") = dmatrix_t;
 complete_ffi_type (struct_or_union "gsl_matrix_complex") = cmatrix_t;
@@ -340,10 +340,11 @@ type_spec [] _ = throw unknown_decl_type;
 
 // decl_type : Grab a simplified type representation from a declaration.
 // Result is a list of the following terms: 
-//    basic_type t      : t is a c primitive type or a typedef
-//    ptr_type t        : t is again one of basic_type, ptr_type or func_type
-//    func_type ret args: ret is again one basic_type, ptr_type or func_type, 
-//                        and args is a list of such terms.
+//    basic_type t: t is a c primitive type or a typedef
+//    ptr_type t: t is again one of basic_type, ptr_type or func_type
+//    func_type ret args va: ret is again one basic_type, ptr_type or
+//      func_type, args is a list of such terms, and va is a flag which is
+//      true if the function is variadic (... syntax).
 // If the type cannot be described in the above terms, an exception
 // "unknown_decl_type" is thrown.
 // 
@@ -383,8 +384,9 @@ decl_types2 d@(CDecl decl_specs init_declr_list) fname =
     = ptr_type $ apply_derivs t derivs;
     apply_derivs t ( (CFunDeclr args _) : derivs ) = 
       case args of 
-        Right (arg_decls,_) = 
-          func_type (apply_derivs t derivs) (catmap (flip decl_types1 fname) arg_decls);
+        Right (arg_decls,va) = 
+	  func_type (apply_derivs t derivs)
+	  (catmap (flip decl_types1 fname) arg_decls) va;
         Left _      = //old-style K&R declaration.
           throw unknown_decl_type;
       end;
@@ -444,7 +446,7 @@ func_decl1 d@(CDecl decl_specs _) fname
 = [decl,fname | decl = zip (decl_idents d) (decl_types1 d fname);
                 is_func_decl decl]
   with
-    is_func_decl (_,func_type ret args) = true;
+    is_func_decl (_,func_type ret args va) = true;
     is_func_decl _ = false otherwise;
   end;
 
@@ -466,7 +468,8 @@ resolve_typedef d t fname = lookup t
     lookup t@(basic_type _) = t;
     lookup (const_type t) = const_type (lookup t);
     lookup (ptr_type t) = ptr_type (lookup t);
-    lookup (func_type ret args) = func_type (lookup ret) (map lookup args);
+    lookup (func_type ret args va) =
+      func_type (lookup ret) (map lookup args) va;
     lookup x = warning 0 ("resolve_typedef error: "+str x) $$ void_t;
 
     // Patch up typedefs for anonymous structs, so that we use the typedef
@@ -714,7 +717,7 @@ is_struct _ = false;
 needs_wrapper t = t === longdouble_t || is_struct t;
 
 //output a function declaration for the native pure extern interface
-pure_extern_decl pfx::string nmspace::string (name, func_type ret args, _)
+pure_extern_decl pfx::string nmspace::string (name, func_type ret args va, _)
 = warning 0 $ sprintf "%s: unsupported argument type" name $$ ()
     if any ((===) unsupported_t) (ret:args);
 = warning 0 $
@@ -723,29 +726,31 @@ pure_extern_decl pfx::string nmspace::string (name, func_type ret args, _)
 = warning 0 $
   sprintf "%s: long double argument or return type, try -fc-auto" name $$ ()
     if any ((===) longdouble_t) (ret:args);
-= "extern "+pure_type ret+" "+name+"("+arg_str args+")"+
+= "extern "+pure_type ret+" "+name+"("+arg_str args va+")"+
   (if alias == name then "" else " = "+alias)+";"
 when alias = strip_prefix pfx name end
 with
-  arg_str [void_t] = "";
-  arg_str args = join ", " $ map pure_type args;
+  arg_str [void_t] va = if va then "..." else "";
+  arg_str args va = (join ", " $ map pure_type args) +
+    (if va then if null args then "..." else ", ..." else "");
 end;
 
 //output a function declaration for the native pure extern interface,
 //prepending the prefix "Pure_" (or the prefix specified with -P) to the
 //function name
-Pure_extern_decl pfx::string nmspace::string (name, func_type ret args, _)
+Pure_extern_decl pfx::string nmspace::string (name, func_type ret args va, _)
 = warning 0 $ sprintf "%s: unsupported argument type" name $$ ()
     if any ((===) unsupported_t) (ret:args);
-= "extern "+pure_type ret+" "+wrap_prefix+name+"("+arg_str args+")"+
+= "extern "+pure_type ret+" "+wrap_prefix+name+"("+arg_str args va+")"+
   (if alias == wrap_prefix+name then "" else " = "+alias)+";"
 when alias = strip_prefix pfx name end
 with
-  arg_str [void_t] = "";
-  arg_str args = join ", " $ map pure_type args;
+  arg_str [void_t] va = if va then "..." else "";
+  arg_str args va = (join ", " $ map pure_type args) +
+    (if va then if null args then "..." else ", ..." else "");
 end;
 
-Pure_extern_decl_auto pfx nmspace x@(name, func_type ret args, _)
+Pure_extern_decl_auto pfx nmspace x@(name, func_type ret args va, _)
 = Pure_extern_decl pfx nmspace x if any needs_wrapper (ret:args);
 = pure_extern_decl pfx nmspace x otherwise;
 
@@ -759,7 +764,7 @@ ffi_type t@(struct_or_union n) = pointer_t;
 ffi_type t = t otherwise;
 
 //output a function declaration for the ffi interface
-ffi_extern_decl pfx::string nmspace::string (name, func_type ret args, _)
+ffi_extern_decl pfx::string nmspace::string (name, func_type ret args va, _)
 = warning 0 $ sprintf "%s: unsupported argument type" name $$ ()
     if any ((===) unsupported_t) (ret:args);
 = warning 0 $
@@ -778,7 +783,7 @@ end;
 //output a function declaration for the ffi interface,
 //prepending the prefix "Pure_" (or the prefix specified with -P) to the
 //function name
-Pure_ffi_extern_decl pfx::string nmspace::string (name, func_type ret args, _)
+Pure_ffi_extern_decl pfx::string nmspace::string (name, func_type ret args va, _)
 = warning 0 $ sprintf "%s: unsupported argument type" name $$ ()
     if any ((===) unsupported_t) (ret:args);
 = "let "+nmspacepfx nmspace+strip_prefix pfx name+" = fcall \""+
@@ -789,7 +794,7 @@ with
   arg_str args = join ", " $ map (str.ffi_type) args;
 end;
 
-Pure_ffi_extern_decl_auto pfx nmspace x@(name, func_type ret args, _)
+Pure_ffi_extern_decl_auto pfx nmspace x@(name, func_type ret args va, _)
 = Pure_ffi_extern_decl pfx nmspace x if any needs_wrapper (ret:args);
 = ffi_extern_decl pfx nmspace x otherwise;
 
@@ -808,10 +813,12 @@ with
   end;
 end;
 
-c_impl (name, func_type ret args, _)
+c_impl (name, func_type ret args va, _)
 = () if any ((===) unsupported_t) (ret:args);
 = code
 when
+  va && warning 1 (sprintf "%s: varargs not supported in C wrappers" name);
+
   ret_str = c_rettype ret;
 
   formal_params = 
@@ -828,7 +835,7 @@ when
          (str in_name) ret_str (wrap_prefix+name) formal_params name arg_names;
 end;
 
-c_impl_auto x@(name, func_type ret args, _)
+c_impl_auto x@(name, func_type ret args va, _)
 = c_impl x if any needs_wrapper (ret:args);
 = () otherwise;
 
