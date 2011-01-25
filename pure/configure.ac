@@ -288,7 +288,7 @@ if test "$pure_cv_new_builder" = yes; then
   AC_DEFINE(NEW_BUILDER, 1, [Define when building with new-style LLVM IRBuilder template class.])
 fi
 fi
-AC_CHECK_HEADERS([llvm/Support/raw_ostream.h llvm/Support/raw_os_ostream.h llvm/ModuleProvider.h])
+AC_CHECK_HEADERS([llvm/Support/DynamicLibrary.h llvm/Support/raw_ostream.h llvm/Support/raw_os_ostream.h llvm/ModuleProvider.h])
 AC_CHECK_DECLS([llvm::PerformTailCallOpt, llvm::GuaranteedTailCallOpt], [], [], [[#include <llvm/Target/TargetOptions.h>]])
 CPPFLAGS=$save_CPPFLAGS
 AC_LANG_POP([C++])

@@ -12789,7 +12789,11 @@ pure_expr *pure_regskip(pure_regex_t *reg)
   return reg?reg->skip_info():0;
 }
 
+#ifdef HAVE_LLVM_SUPPORT_DYNAMICLIBRARY_H
+#include <llvm/Support/DynamicLibrary.h>
+#else
 #include <llvm/System/DynamicLibrary.h>
+#endif
 
 extern "C"
 pure_expr *pure_addr(const char *s)

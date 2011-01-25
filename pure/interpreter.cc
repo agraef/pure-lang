@@ -32,11 +32,7 @@
 #include <llvm/CallingConv.h>
 #include <llvm/PassManager.h>
 #include <llvm/Support/CallSite.h>
-#include <llvm/System/DynamicLibrary.h>
 #include <llvm/Transforms/Utils/BasicBlockUtils.h>
-#ifdef HAVE_LLVM_SUPPORT_RAW_OSTREAM_H
-#include <llvm/Support/raw_ostream.h>
-#endif
 
 #include <llvm/ExecutionEngine/JIT.h>
 #include <llvm/Target/TargetData.h>
@@ -45,6 +41,15 @@
 #include <llvm/Linker.h>
 
 #include "config.h"
+
+#ifdef HAVE_LLVM_SUPPORT_DYNAMICLIBRARY_H
+#include <llvm/Support/DynamicLibrary.h>
+#else
+#include <llvm/System/DynamicLibrary.h>
+#endif
+#ifdef HAVE_LLVM_SUPPORT_RAW_OSTREAM_H
+#include <llvm/Support/raw_ostream.h>
+#endif
 
 #include "gsl_structs.h"
 
@@ -1565,6 +1570,40 @@ static void dsp_errmsg(string name, string* msg)
     *msg = name+": Error linking dsp file";
 }
 
+// LLVM provides methods to do this, but they're not portable across LLVM
+// versions, so we do our own.
+static llvm::MemoryBuffer *get_membuf(const char *name, string *msg)
+{
+  using namespace llvm;
+  FILE *fp = fopen(name, "rb");
+  if (!fp) {
+    if (msg) *msg = strerror(errno);
+    return 0;
+  }
+  struct stat st;
+  if (fstat(fileno(fp), &st)) {
+    if (msg) *msg = strerror(errno);
+    fclose(fp);
+    return 0;
+  }
+  size_t size = st.st_size;
+  MemoryBuffer *buf = MemoryBuffer::getNewMemBuffer(size, name);
+  if (!buf) {
+    if (msg) *msg = "Not enough memory";
+    fclose(fp);
+    return 0;
+  }
+  if (fread(const_cast<char*>(buf->getBufferStart()), size, 1, fp) < size &&
+      ferror(fp)) {
+    if (msg) *msg = strerror(errno);
+    fclose(fp);
+    delete buf;
+    return 0;
+  }
+  fclose(fp);
+  return buf;
+}
+
 bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
 			       const char *modnm)
 {
@@ -1598,7 +1637,7 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
     // Check whether there's anything to do.
     if (declared && !modified) return true;
   }
-  MemoryBuffer *buf = MemoryBuffer::getFile(name, msg);
+  MemoryBuffer *buf = get_membuf(name, msg);
   if (!buf) {
     dsp_errmsg(name, msg);
     return false;
@@ -1875,7 +1914,7 @@ bool interpreter::LoadBitcode(bool priv, const char *name, string *msg)
     // Check whether there's anything to do.
     if (declared) return true;
   }
-  MemoryBuffer *buf = MemoryBuffer::getFile(name, msg);
+  MemoryBuffer *buf = get_membuf(name, msg);
   if (!buf) {
     bc_errmsg(name, msg);
     return false;
