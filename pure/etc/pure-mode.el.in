@@ -24,12 +24,16 @@
 ;; (add-hook 'pure-mode-hook 'turn-on-font-lock)
 ;; (add-hook 'pure-eval-mode-hook 'turn-on-font-lock)
 
-;; Well, that's the way it works with XEmacs and newer GNU Emacs versions. For
-;; older versions of GNU Emacs you might have to try something like:
+;; Pure mode has support for code folding using the hideshow minor mode. To
+;; enable this, load hideshow before Pure mode in your .emacs:
 
-;; (global-font-lock-mode t)
-;; (add-hook 'pure-mode-hook (lambda () (font-lock-mode 1)))
-;; (add-hook 'pure-eval-mode-hook (lambda () (font-lock-mode 1)))
+;; (require 'hideshow)
+
+;; You can then invoke hideshow manually using M-x hs-minor-mode. To have
+;; hs-minor-mode enabled in all your Pure mode buffers, add the following to
+;; your .emacs:
+
+;; (add-hook 'pure-mode-hook 'hs-minor-mode)
 
 ;; Using the Pure-Eval hook you can also rebind the cursor up and down keys to
 ;; the history cycling commands:
@@ -70,8 +74,8 @@
 ;; Emacs buffer.)
 
 ;; The online help facility uses emacs-w3m to display help files in html
-;; format, if it is installed and loaded. To these ends, add the following to
-;; your .emacs:
+;; format, if it is installed and loaded. To these ends, put the following
+;; line into your .emacs (make sure that this comes before Pure mode):
 
 ;; (require 'w3m-load)
 
@@ -658,6 +662,24 @@ if you want to operate on an entire definition.
 `pure-mark-defun' (\\[pure-mark-defun]) marks the current definition around
 point. It puts the mark at the end of the definition and point at
 its beginning.
+
+Folding
+-------
+
+Pure mode has support for code folding using the hideshow minor
+mode, which usually comes with Emacs. To enable this, load
+hideshow before Pure mode in your .emacs:
+
+  (require 'hideshow)
+
+This makes sure that Pure's block and comment syntax are known to
+hideshow. You can then invoke hideshow manually using
+\\[hs-minor-mode]. To have hideshow enabled in all your Pure mode
+buffers, add the following to your .emacs:
+
+  (add-hook 'pure-mode-hook 'hs-minor-mode)
+
+See `hs-minor-mode' for details on how to use this mode.
 
 Running the Pure Interpreter
 ----------------------------
@@ -2772,6 +2794,59 @@ specify a repeat count."
 		     (looking-at "=\\([ \t]\\|$\\)")))
 	    (pure-forward-defun)
 	  (point)))))))
+
+;; Code-folding support, using hideshow (experimental).
+
+(defconst pure-hs-beg-block-re "\\_<\\(case\\|when\\|with\\)\\_>")
+(defconst pure-hs-end-block-re "\\_<end\\_>")
+
+(defun pure-hs-forward-sexp (&optional arg)
+  "Move forward to the end of the current block. Point must be
+positioned at the beginning of the block, otherwise do a
+`forward-sexp'. This is useful as a replacement for forward-sexp
+in hs-minor-mode."
+  (interactive "p")
+  (unless (integerp arg) (setq arg 1))
+  (cond
+   ((<= arg 0) (point)) ;; we don't support negative repeat counts for now
+   ((> arg 1)
+    (while (> arg 0)
+      (pure-hs-forward-block 1)
+      (setq arg (1- arg))))
+   ((looking-at pure-hs-beg-block-re)
+    (let* ((parse-sexp-ignore-comments t)
+	   (state (save-excursion (parse-partial-sexp (point-min) (point))))
+	   (level (car state)) (nest 0)
+	   (type (catch 'nesting
+		   ;; Check if inside a string, comment or parenthesis
+		   (cond ((or (nth 3 state) (nth 4 state))
+			  (throw 'nesting 'string-or-comment))
+			 ((> level 0)
+			  (throw 'nesting 'toplevel)))
+		   ;; Loop until end of block is found
+		   (while t
+		     (pure-forward-sexp 1)
+		     (if (eobp) (throw 'nesting 'toplevel))
+		     (cond (;--Nest block outwards
+			    (looking-back pure-hs-end-block-re (point-at-bol))
+			    (setq nest (1- nest))
+			    (if (= nest 0)
+				(throw 'nesting 'block)))
+			   (;--Nest block inwards
+			    (looking-back pure-hs-beg-block-re (point-at-bol))
+			    (setq nest (1+ nest))))
+		     ))))
+      (point)))
+   (t (forward-sexp 1))))
+
+;; If hideshow mode is already loaded, set up some convenient defaults for
+;; Pure mode.
+(if (featurep 'hideshow)
+    (setq hs-special-modes-alist
+	  (cons
+	   (list 'pure-mode pure-hs-beg-block-re pure-hs-end-block-re
+		 "/[*/]\\|%<" 'pure-hs-forward-sexp nil)
+	   hs-special-modes-alist)))
 
 (defun pure-mark-defun ()
   "Mark the current Pure definition at or around point.
