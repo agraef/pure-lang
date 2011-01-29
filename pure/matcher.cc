@@ -253,9 +253,12 @@ state *matcher::make_state(state *st, uint32_t r, expr x, uint32_t& skip)
     next = make_state(next, r, x.xval2(), skip);
     return next;
   }
-  case EXPR::VAR:
-    st->tr.push_back(trans(EXPR::VAR, x.ttag()));
+  case EXPR::VAR: {
+    int8_t ttag = 0;
+    if (x.ttag()<0) ttag = (int8_t)x.ttag();
+    st->tr.push_back(trans(EXPR::VAR, ttag));
     return st->tr.begin()->st;
+  }
   case EXPR::INT:
     st->tr.push_back(trans(EXPR::INT, x.ival()));
     return st->tr.begin()->st;

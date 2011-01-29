@@ -237,7 +237,7 @@ ostream& operator << (ostream& os, const rulel& rl)
   return printrl(os, rl);
 }
 
-static inline ostream& print_ttag(ostream& os, int8_t ttag, bool pad = false)
+static inline ostream& print_ttag(ostream& os, int32_t ttag, bool pad = false)
 {
   if (pad) switch (ttag) {
   case EXPR::INT:
@@ -253,7 +253,11 @@ static inline ostream& print_ttag(ostream& os, int8_t ttag, bool pad = false)
   case EXPR::MATRIX:
     return os << " :: matrix";
   default:
-    return os;
+    if (ttag > 0) {
+      const symbol& sym = interpreter::g_interp->symtab.sym(ttag);
+      return os << " :: " << sym.s;
+    } else
+      return os;
   } else switch (ttag) {
   case EXPR::INT:
     return os << "::int";
@@ -268,7 +272,11 @@ static inline ostream& print_ttag(ostream& os, int8_t ttag, bool pad = false)
   case EXPR::MATRIX:
     return os << "::matrix";
   default:
-    return os;
+    if (ttag > 0) {
+      const symbol& sym = interpreter::g_interp->symtab.sym(ttag);
+      return os << "::" << sym.s;
+    } else
+      return os;
   }
 }
 

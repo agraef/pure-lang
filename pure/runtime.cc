@@ -2298,7 +2298,6 @@ static uint32_t pure_push_argv(uint32_t n, uint32_t m, pure_expr **args);
 static pure_expr *myfuncall(void *f, uint32_t n, pure_expr **argv)
 {
   pure_expr *ret;
-  pure_push_argv(n, 0, argv);
   funcall(ret, f, n, argv)
   return ret;
 }
@@ -2315,6 +2314,7 @@ pure_expr *pure_funcall(void *f, uint32_t n, ...)
     argv[i] = x;
   };
   va_end(ap);
+  pure_push_argv(n, 0, argv);
   return myfuncall(f, n, argv);
 }
 
@@ -2330,6 +2330,7 @@ pure_expr *pure_funcallx(void *f, pure_expr **_e, uint32_t n, ...)
     argv[i] = x;
   };
   va_end(ap);
+  pure_push_argv(n, 0, argv);
   pure_try_call(myfuncall(f, n, argv));
 }
 
@@ -4007,6 +4008,45 @@ int32_t pure_cmp_string(pure_expr *x, const char *s)
 {
   assert(x && x->tag == EXPR::STR);
   return strcmp(x->data.s, s);
+}
+
+extern "C"
+bool pure_typecheck(int32_t tag, pure_expr *x)
+{
+  interpreter& interp = *interpreter::g_interp;
+  // Check that the predicate actually exists.
+  map<int32_t,Env>::iterator g = interp.globaltypes.find(tag);
+  if (g == interp.globaltypes.end()) return false;
+  // Get the function pointer.
+  void *fp = g->second.__fp;
+  if (!fp) {
+    llvm::Function *f = g->second.f, *h = g->second.h;
+    assert(h);
+    if (f != h) interp.JIT->getPointerToFunction(f);
+    g->second.__fp = fp = interp.JIT->getPointerToFunction(h);
+  }
+  // Call the predicate.
+  pure_expr *y = pure_funcall(fp, 1, x);
+  if (y) {
+    int32_t iv;
+    bool res = pure_is_int(y, &iv) && iv!=0;
+    pure_freenew(y);
+    return res;
+  } else
+    return false;
+}
+
+extern "C"
+bool pure_safe_typecheck(int32_t tag, pure_expr *x)
+{
+  if (x->refc == 0) {
+    // Protect x from being garbage-collected.
+    pure_new(x);
+    bool res = pure_typecheck(tag, x);
+    pure_unref(x);
+    return res;
+  } else
+    return pure_typecheck(tag, x);
 }
 
 list<char*> temps; // XXXFIXME: This should be TLD.
@@ -6577,8 +6617,9 @@ void pure_debug_rule(void *_e, void *_r)
   if (r) {
     // build the lhs variable table
     d.vars.clear();
+    vguardl guards; // ignored
     veqnl eqns; // ignored
-    interp.bind(d.vars, eqns, r->lhs, e->b);
+    interp.bind(d.vars, guards, eqns, r->lhs, e->b);
   }
   bool stp = stop(interp, e);
   if (!stp && !traced(interp, e)) return;

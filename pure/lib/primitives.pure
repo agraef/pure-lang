@@ -1523,11 +1523,11 @@ extern int pure_make_tag() = make_ptrtag; // IMPURE!
    maybe modify it by "casting" it to a new target type. The following
    high-level operations provide these capabilities.
 
-   .. function:: pointer_tag type
+   .. function:: pointer_tag ty
       		 pointer_tag x
 
-      Returns the pointer tag for the given ``type``, denoted as a string, or
-      the given pointer value ``x``. In the former case, the type should be
+      Returns the pointer tag for the given type ``ty``, denoted as a string,
+      or the given pointer value ``x``. In the former case, the type should be
       specified in the C-like syntax used in :keyword:`extern` declarations; a
       new tag will be created using :func:`make_ptrtag` if needed. In the
       latter case, :func:`pointer_tag` simply acts as a frontend for
@@ -1543,7 +1543,7 @@ extern int pure_make_tag() = make_ptrtag; // IMPURE!
       hasn't been created yet.
 
    .. function:: pointer_cast tag x
-      		 pointer_cast type x
+      		 pointer_cast ty x
 
       Casts ``x`` (which must be a pointer value) to the given pointer type,
       which may be specified either as a tag or a string denoting the type
@@ -1594,7 +1594,7 @@ extern int pure_make_tag() = make_ptrtag; // IMPURE!
 */
 
 namespace __C;
-extern int pure_pointer_tag(char *type);
+extern int pure_pointer_tag(char *ty);
 namespace;
 extern char *pure_pointer_type(int tag) = pointer_type;
 extern expr *pure_pointer_cast(int tag, expr *x) = pointer_cast;
@@ -1602,7 +1602,7 @@ extern expr *pure_pointer_cast(int tag, expr *x) = pointer_cast;
 pointer_tag x::string = __C::pure_pointer_tag x;
 pointer_tag x::pointer = get_ptrtag x;
 pointer_type x::pointer = pointer_type (get_ptrtag x);
-pointer_cast type::string x::pointer = pointer_cast (pointer_tag type) x;
+pointer_cast ty::string x::pointer = pointer_cast (pointer_tag ty) x;
 
 /* Some common pointer types. For efficiency, we cache these here so that they
    can be used throughout the library. */

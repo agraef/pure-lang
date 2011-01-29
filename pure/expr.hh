@@ -146,7 +146,12 @@ class expr;
 typedef list<expr> exprl;
 typedef list<exprl> exprll;
 
-/* Nonlinearities (equalities between local variables. */
+/* Custom type guards on local variables. */
+
+struct vguard;
+typedef list<vguard> vguardl;
+
+/* Nonlinearities (equalities between local variables). */
 
 struct veqn;
 typedef list<veqn> veqnl;
@@ -256,7 +261,7 @@ struct EXPR {
   uint16_t flags;
 
   // extra built-in type tag used in code generation:
-  int8_t ttag;
+  int32_t ttag;
 
   // "as" patterns:
   int32_t astag;
@@ -271,7 +276,7 @@ struct EXPR {
     refc(0), tag(_tag), m(0), flags(0), ttag(0), astag(0), aspath(0)
   { data.p = 0; }
   EXPR(int32_t _tag, int32_t _vtag, uint8_t _idx,
-       int8_t _ttag = 0, const path& _p = path()) :
+       int32_t _ttag = 0, const path& _p = path()) :
     refc(0), tag(_tag), m(0), flags(0), ttag(_ttag), astag(0), aspath(0)
   { assert(_tag == VAR || _tag == FVAR);
     data.v.vtag = _vtag; data.v.idx = _idx;
@@ -365,7 +370,7 @@ public:
   expr(int32_t tag) :
     p(new EXPR(tag)) { p->incref(); }
   expr(int32_t tag, int32_t vtag, uint8_t idx,
-       int8_t ttag = 0, const path& _p = path()) :
+       int32_t ttag = 0, const path& _p = path()) :
     p(new EXPR(tag, vtag, idx, ttag, _p)) { p->incref(); }
   expr(int32_t tag, int32_t i) :
     p(new EXPR(tag, i)) { p->incref(); }
@@ -397,7 +402,8 @@ public:
     p(new EXPR(&*fun, &*arg1, &*arg2, &*arg3)) { p->incref(); }
 
   // static methods to generate special types of expressions
-  static expr lambda(exprl *xs, expr y, veqnl eqns = veqnl());
+  static expr lambda(exprl *xs, expr y,
+		     vguardl guards = vguardl(), veqnl eqns = veqnl());
   static expr cond(expr x, expr y, expr z);
   static expr cond1(expr x, expr y);
   static expr cases(expr x, rulel *rules);
@@ -416,7 +422,7 @@ public:
   // access functions
   uint32_t refc()  const { return p->refc; }
   int32_t  tag()   const { return p->tag; }
-  int8_t   ttag()  const { return p->ttag; }
+  int32_t  ttag()  const { return p->ttag; }
   int32_t  vtag()  const { assert(p->tag == EXPR::VAR || p->tag == EXPR::FVAR);
                            return p->data.v.vtag; }
   int32_t  ftag()  const { return (p->tag == EXPR::FVAR)?p->data.v.vtag:
@@ -470,7 +476,7 @@ public:
   path   &aspath() const { assert(p->aspath); return *p->aspath; }
 
   void set_tag(int32_t tag) { p->tag = tag; }
-  void set_ttag(int8_t tag) { p->ttag = tag; }
+  void set_ttag(int32_t tag) { p->ttag = tag; }
   void set_astag(int32_t tag) { p->astag = tag; }
   void set_aspath(const path& _p)
   { if (p->aspath) delete p->aspath; p->aspath = new path(_p); }
@@ -499,7 +505,7 @@ public:
     } else
       return false;
   }
-  bool is_var(int32_t& v, uint8_t& idx, int8_t& ttag, path& _p) const
+  bool is_var(int32_t& v, uint8_t& idx, int32_t& ttag, path& _p) const
   { if (p->tag == EXPR::VAR) {
       v = p->data.v.vtag;
       idx = p->data.v.idx;
@@ -612,6 +618,15 @@ public:
   bool is_tuplel(exprl &xs) const;
 };
 
+/* Type guards. */
+
+struct vguard {
+  int32_t tag, ttag;
+  path p;
+  vguard(int32_t _tag, int32_t _ttag, path _p)
+    : tag(_tag), ttag(_ttag), p(_p) { }
+};
+
 /* Variable equations (non-linearities). */
 
 struct veqn {
@@ -625,12 +640,14 @@ struct veqn {
 
 struct rule {
   expr lhs, rhs, qual;
+  vguardl guards;
   veqnl eqns;
   uint32_t temp;
   rule(expr l, expr r, expr q = expr(), uint32_t t = 0)
     : lhs(l), rhs(r), qual(q), temp(t) { }
-  rule(expr l, expr r, const veqnl& eqs, expr q = expr(), uint32_t t = 0)
-    : lhs(l), rhs(r), qual(q), eqns(eqs), temp(t) { }
+  rule(expr l, expr r, const vguardl& grs, const veqnl& eqs,
+       expr q = expr(), uint32_t t = 0)
+    : lhs(l), rhs(r), qual(q), guards(grs), eqns(eqs), temp(t) { }
 };
 
 /* Environment entries. */
@@ -641,7 +658,7 @@ struct env_info {
   union {
     // local variable binding (lvar):
     struct {
-      int8_t ttag;
+      int32_t ttag;
       path *p;
     };
     // constant definition (cvar):
@@ -662,7 +679,7 @@ struct env_info {
     };
   };
   env_info() : t(none) { }
-  env_info(int8_t _ttag, path _p, uint32_t _temp = 0)
+  env_info(int32_t _ttag, path _p, uint32_t _temp = 0)
     : t(lvar), temp(_temp), ttag(_ttag), p(new path(_p)) { }
   env_info(expr x, uint32_t _temp = 0)
     : t(cvar), temp(_temp), cval(new expr), cval_var(0), cval_v(0)

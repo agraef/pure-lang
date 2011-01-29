@@ -667,6 +667,13 @@ pure_expr *pure_strtuplevq(size_t size, char *chars, uint32_t *offs);
 int32_t pure_cmp_bigint(pure_expr *x, int32_t size, const limb_t *limbs);
 int32_t pure_cmp_string(pure_expr *x, const char *s);
 
+/* Check against a user-defined type tag. This is used by the pattern matching
+   code. pure_safe_typecheck is the same as pure_typecheck, but never collects
+   its argument; this is used in global pattern bindings (let, const). */
+
+bool pure_typecheck(int32_t tag, pure_expr *x);
+bool pure_safe_typecheck(int32_t tag, pure_expr *x);
+
 /* Get the string value of a string expression in the system encoding. Each
    call returns a new string, pure_free_cstrings() frees the temporary
    storage. This is only to be used internally, to unbox string arguments in

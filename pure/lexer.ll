@@ -265,6 +265,7 @@ blank  [ \t\f\v\r]
 <xdecl>const      return token::CONST;
 <xdecl>def        return token::DEF;
 <xdecl>let        return token::LET;
+<xdecl>type       return token::TYPE;
 <xdecl>case	  return token::CASE;
 <xdecl>of	  return token::OF;
 <xdecl>end	  return token::END;
@@ -316,6 +317,7 @@ blank  [ \t\f\v\r]
 <xusing>const      BEGIN(INITIAL); return token::CONST;
 <xusing>def        BEGIN(INITIAL); return token::DEF;
 <xusing>let        BEGIN(INITIAL); return token::LET;
+<xusing>type       BEGIN(INITIAL); return token::TYPE;
 <xusing>case	   BEGIN(INITIAL); return token::CASE;
 <xusing>of	   BEGIN(INITIAL); return token::OF;
 <xusing>end	   BEGIN(INITIAL); return token::END;
@@ -544,6 +546,7 @@ public     return token::PUBLIC;
 const      return token::CONST;
 def        return token::DEF;
 let        return token::LET;
+type       return token::TYPE;
 case	   return token::CASE;
 of	   return token::OF;
 end	   return token::END;
@@ -936,7 +939,8 @@ static const char *commands[] = {
   "break", "bt", "cd", "clear", "const", "def", "del", "dump", "extern", "help",
   "infix", "infixl", "infixr", "let", "ls", "mem", "namespace", "nonfix",
   "outfix", "override", "postfix", "prefix", "private", "public", "pwd",
-  "quit", "run", "save", "show", "stats", "trace", "underride", "using", 0
+  "quit", "run", "save", "show", "stats", "trace", "type", "underride",
+  "using", 0
 };
 
 static bool inline checksym(int32_t f, const set<int32_t>& syms)
@@ -1249,12 +1253,12 @@ typedef map<int32_t,ExternInfo> extmap;
 
 struct env_sym {
   const symbol* sym;
-  env::const_iterator it, jt;
+  env::const_iterator it, jt, kt;
   extmap::const_iterator xt;
   env_sym(const symbol& _sym, env::const_iterator _it,
-	  env::const_iterator _jt,
+	  env::const_iterator _jt, env::const_iterator _kt,
 	  extmap::const_iterator _xt)
-    : sym(&_sym), it(_it), jt(_jt), xt(_xt) { }
+    : sym(&_sym), it(_it), jt(_jt), kt(_kt), xt(_xt) { }
 };
 
 static bool env_compare(env_sym s, env_sym t)
@@ -1869,7 +1873,7 @@ file for instructions on how to do this.\n";
     bool tflag = false; uint32_t tlevel = 0; int pflag = -1;
     bool aflag = false, dflag = false, eflag = false;
     bool cflag = false, fflag = false, mflag = false, vflag = false;
-    bool gflag = false, lflag = false, sflag = false;
+    bool yflag = false, gflag = false, lflag = false, sflag = false;
     const char *s = cmdline+4;
     argl args(s, "show");
     list<string>::iterator arg;
@@ -1877,7 +1881,7 @@ file for instructions on how to do this.\n";
     // process option arguments
     for (arg = args.l.begin(); arg != args.l.end(); arg++) {
       const char *s = arg->c_str();
-      if (s[0] != '-' || !s[1] || !strchr("acdefghlmpstv", s[1])) break;
+      if (s[0] != '-' || !s[1] || !strchr("acdefghlmpstvy", s[1])) break;
       while (*++s) {
 	switch (*s) {
 	case 'a': aflag = true; break;
@@ -1897,6 +1901,7 @@ file for instructions on how to do this.\n";
 	  break;
 	case 's': sflag = true; break;
 	case 'v': vflag = true; break;
+	case 'y': yflag = true; break;
 	case 't':
 	  if (isdigit(s[1])) {
 	    tlevel = strtoul(s+1, 0, 10);
@@ -1930,7 +1935,8 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
     (the current level by default) or above. Level 1 denotes all temporary\n\
     definitions, level 0 *all* definitions. If this option is omitted,\n\
     it defaults to -t0 if any symbols are specified, -t1 otherwise.\n\
--v  Print information about defined variables.\n";
+-v  Print information about defined variables.\n\
+-y  Print information about defined types.\n";
 	  goto out;
 	default:
 	  cerr << "show: invalid option character '" << *s << "'\n";
@@ -1942,23 +1948,24 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
     if (eflag) interpreter::g_verbose |= verbosity::envs;
     if (aflag) interpreter::g_verbose |= verbosity::code;
     if (dflag) interpreter::g_verbose |= verbosity::dump;
-    if (!cflag && !fflag && !mflag && !vflag)
-      cflag = fflag = mflag = vflag = true;
+    if (!cflag && !fflag && !mflag && !vflag && !yflag)
+      cflag = fflag = mflag = vflag = yflag = true;
     if (lflag) sflag = true;
     if (!tflag && args.l.empty()) tlevel = 1;
     {
-      size_t maxsize = 0, nfuns = 0, nmacs = 0, nvars = 0, ncsts = 0,
-	nrules = 0, mrules = 0;
+      size_t maxsize = 0, nfuns = 0, nmacs = 0, ntypes = 0,
+	nvars = 0, ncsts = 0, nrules = 0, mrules = 0, trules = 0;
       list<env_sym> l;
       for (int32_t f = 1; f <= interp.symtab.nsyms(); f++) {
 	const symbol& sym = interp.symtab.sym(f);
 	bool matches = false;
 	// skip private/public symbols depending on pflag
 	if (pflag >= 0 && (pflag > 0) != sym.priv) continue;
-	// look up symbols in the global environment as well as the macro and
-	// external tables
+	// look up symbols in the global environment as well as the macro,
+	// type and external tables
 	env::const_iterator it = interp.globenv.find(f),
-	  jt = interp.macenv.find(f);
+	  jt = interp.macenv.find(f),
+	  kt = interp.typeenv.find(f);
 	extmap::const_iterator xt = interp.externals.find(f);
 	// check for symbols in the global environment
 	if (it != interp.globenv.end()) {
@@ -1978,6 +1985,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 		  break;
 		}
 	    }
+	    if (!matches) it = interp.globenv.end();
 	  }
 	}
 	if (!matches && fflag && tlevel == 0) {
@@ -1987,20 +1995,39 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	    sym.fix == nonfix || (sym.fix == outfix && sym.g) ||
 	    sym.prec < PREC_MAX;
 	}
-	if (!matches && mflag && jt != interp.macenv.end()) {
+	if (mflag && jt != interp.macenv.end()) {
 	  // also list symbols defined as macros
 	  const env_info& e = jt->second;
-	  matches = e.temp >= tlevel;
-	  if (!matches && !sflag) {
+	  bool _matches = e.temp >= tlevel;
+	  if (!_matches && !sflag) {
 	    // if not in summary mode, also list temporary rules for a
 	    // non-temporary symbol
 	    rulel::const_iterator r;
 	    for (r = e.rules->begin(); r != e.rules->end(); r++)
 	      if (r->temp >= tlevel) {
-		matches = true;
+		_matches = true;
 		break;
 	      }
 	  }
+	  if (!_matches) jt = interp.macenv.end();
+	  matches = matches || _matches;
+	}
+	if (yflag && kt != interp.typeenv.end()) {
+	  // also list symbols defined as types
+	  const env_info& e = kt->second;
+	  bool _matches = e.temp >= tlevel;
+	  if (!_matches && !sflag) {
+	    // if not in summary mode, also list temporary rules for a
+	    // non-temporary symbol
+	    rulel::const_iterator r;
+	    for (r = e.rules->begin(); r != e.rules->end(); r++)
+	      if (r->temp >= tlevel) {
+		_matches = true;
+		break;
+	      }
+	  }
+	  if (!_matches) kt = interp.typeenv.end();
+	  matches = matches || _matches;
 	}
 	if (!matches) continue;
 	if (!args.l.empty()) {
@@ -2014,7 +2041,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	  }
 	}
 	if (!matches) continue;
-	l.push_back(env_sym(sym, it, jt, xt));
+	l.push_back(env_sym(sym, it, jt, kt, xt));
 	if (sym.s.size() > maxsize) maxsize = sym.s.size();
       }
       l.sort(env_compare);
@@ -2027,9 +2054,38 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	const symbol& sym = *it->sym;
 	int32_t ftag = sym.f;
 	map<int32_t,Env>::iterator fenv = interp.globalfuns.find(ftag);
-	const env::const_iterator jt = it->it, kt = it->jt;
+	const env::const_iterator _it = it->it, _jt = it->jt, _kt = it->kt;
 	const extmap::const_iterator xt = it->xt;
-	if (jt == interp.globenv.end() && kt == interp.macenv.end() &&
+	if (yflag && _kt != interp.typeenv.end()) {
+	  const rulel& rules = *_kt->second.rules;
+	  const matcher *m = _kt->second.m;
+	  if (sflag) {
+	    ++ntypes; trules += rules.size();
+	    sout << sym.s << string(maxsize-sym.s.size(), ' ') << "  typ";
+	    if (lflag) {
+	      sout << "  " << rules << ";";
+	      if (aflag && m) sout << '\n' << *m;
+	    } else {
+	      sout << " " << rules.size() << " rules";
+	    }
+	    sout << '\n';
+	  } else {
+	    size_t n = 0;
+	    for (rulel::const_iterator it = rules.begin();
+		 it != rules.end(); ++it) {
+	      if (it->temp >= tlevel) {
+		sout << "type " << *it << ";\n";
+		++n;
+	      }
+	    }
+	    if (n > 0) {
+	      if (aflag && m) sout << *m << '\n';
+	      trules += n;
+	      ++ntypes;
+	    }
+	  }
+	}
+	if (_it == interp.globenv.end() && _jt == interp.macenv.end() &&
 	    xt != interp.externals.end()) {
 	  const ExternInfo& info = xt->second;
 	  sout << decl_str(interp, sym);
@@ -2048,31 +2104,31 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	  } else
 	    sout << '\n';
 	  ++nfuns;
-	} else if (jt != interp.globenv.end() &&
-		   jt->second.t == env_info::fvar) {
+	} else if (_it != interp.globenv.end() &&
+		   _it->second.t == env_info::fvar) {
 	  sout << decl_str(interp, sym);
 	  nvars++;
 	  if (sflag) {
 	    sout << sym.s << string(maxsize-sym.s.size(), ' ')
 		 << "  var";
 	    if (lflag) sout << "  " << sym.s << " = "
-			    << *(pure_expr**)jt->second.val << ";";
+			    << *(pure_expr**)_it->second.val << ";";
 	    sout << '\n';
 	  } else
-	    sout << "let " << sym.s << " = " << *(pure_expr**)jt->second.val
+	    sout << "let " << sym.s << " = " << *(pure_expr**)_it->second.val
 		 << ";\n";
-	} else if (jt != interp.globenv.end() &&
-		   jt->second.t == env_info::cvar) {
+	} else if (_it != interp.globenv.end() &&
+		   _it->second.t == env_info::cvar) {
 	  sout << decl_str(interp, sym);
 	  ncsts++;
 	  if (sflag) {
 	    sout << sym.s << string(maxsize-sym.s.size(), ' ')
 		 << "  cst";
 	    if (lflag) sout << "  " << sym.s << " = "
-			    << *jt->second.cval << ";";
+			    << *_it->second.cval << ";";
 	    sout << '\n';
 	  } else
-	    sout << "const " << sym.s << " = " << *jt->second.cval
+	    sout << "const " << sym.s << " = " << *_it->second.cval
 		 << ";\n";
 	} else {
 	  sout << decl_str(interp, sym);
@@ -2093,10 +2149,10 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	    } else
 	      sout << '\n';
 	  }
-	  if (mflag && kt != interp.macenv.end()) {
-	    uint32_t argc = kt->second.argc;
-	    const rulel& rules = *kt->second.rules;
-	    const matcher *m = kt->second.m;
+	  if (mflag && _jt != interp.macenv.end()) {
+	    uint32_t argc = _jt->second.argc;
+	    const rulel& rules = *_jt->second.rules;
+	    const matcher *m = _jt->second.m;
 	    if (sflag) {
 	      ++nmacs; mrules += rules.size();
 	      sout << sym.s << string(maxsize-sym.s.size(), ' ') << "  mac";
@@ -2123,10 +2179,10 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	      }
 	    }
 	  }
-	  if (fflag && jt != interp.globenv.end()) {
-	    uint32_t argc = jt->second.argc;
-	    const rulel& rules = *jt->second.rules;
-	    const matcher *m = jt->second.m;
+	  if (fflag && _it != interp.globenv.end()) {
+	    uint32_t argc = _it->second.argc;
+	    const rulel& rules = *_it->second.rules;
+	    const matcher *m = _it->second.m;
 	    if (sflag) {
 	      ++nfuns; nrules += rules.size();
 	      sout << sym.s << string(maxsize-sym.s.size(), ' ') << "  fun";
@@ -2169,6 +2225,8 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	  summary << nmacs << " macros (" << mrules << " rules), ";
 	if (fflag)
 	  summary << nfuns << " functions (" << nrules << " rules), ";
+	if (yflag)
+	  summary << ntypes << " types (" << trules << " rules), ";
 	string s = summary.str();
 	if (!s.empty())
 	  sout << s.substr(0, s.size()-2) << '\n';
@@ -2191,7 +2249,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
   } else if (strcmp(cmd, "dump") == 0)  {
     bool tflag = false; uint32_t tlevel = 0; int pflag = -1;
     bool cflag = false, fflag = false, mflag = false, vflag = false;
-    bool gflag = false, nflag = false;
+    bool yflag = false, gflag = false, nflag = false;
     string fname = ".pure";
     const char *s = cmdline+4;
     argl args(s, "dump");
@@ -2201,7 +2259,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
     for (arg = args.l.begin(); arg != args.l.end(); arg++) {
       if (nflag) { fname = *arg; nflag = false; continue; }
       const char *s = arg->c_str();
-      if (s[0] != '-' || !s[1] || !strchr("cfghmnptv", s[1])) break;
+      if (s[0] != '-' || !s[1] || !strchr("cfghmnptvy", s[1])) break;
       while (*++s) {
 	switch (*s) {
 	case 'c': cflag = true; break;
@@ -2217,6 +2275,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	    pflag = 1;
 	  break;
 	case 'v': vflag = true; break;
+	case 'y': yflag = true; break;
 	case 't':
 	  if (isdigit(s[1])) {
 	    tlevel = strtoul(s+1, 0, 10);
@@ -2243,7 +2302,8 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
     (the current level by default) or above. Level 1 denotes all temporary\n\
     definitions, level 0 *all* definitions. If this option is omitted,\n\
     it defaults to -t0 if any symbols are specified, -t1 otherwise.\n\
--v  Dump defined variables.\n";
+-v  Dump defined variables.\n\
+-y  Dump defined types.\n";
 	  goto out2;
 	default:
 	  cerr << "dump: invalid option character '" << *s << "'\n";
@@ -2252,8 +2312,8 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
       }
     }
     args.l.erase(args.l.begin(), arg);
-    if (!cflag && !fflag && !mflag && !vflag)
-      cflag = fflag = mflag = vflag = true;
+    if (!cflag && !fflag && !mflag && !vflag && !yflag)
+      cflag = fflag = mflag = vflag = yflag = true;
     if (!tflag && args.l.empty()) tlevel = 1;
     {
       list<env_sym> l;
@@ -2262,10 +2322,11 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	bool matches = false;
 	// skip private/public symbols depending on pflag
 	if (pflag >= 0 && (pflag > 0) != sym.priv) continue;
-	// look up symbols in the global environment as well as the macro and
-	// external tables
+	// look up symbols in the global environment as well as the macro,
+	// type and external tables
 	env::const_iterator it = interp.globenv.find(f),
-	  jt = interp.macenv.find(f);
+	  jt = interp.macenv.find(f),
+	  kt = interp.typeenv.find(f);
 	extmap::const_iterator xt = interp.externals.find(f);
 	// check for symbols in the global environment
 	if (it != interp.globenv.end()) {
@@ -2284,6 +2345,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 		  break;
 		}
 	    }
+	    if (!matches) it = interp.globenv.end();
 	  }
 	}
 	if (!matches && fflag && tlevel == 0) {
@@ -2293,19 +2355,37 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	    sym.fix == nonfix || (sym.fix == outfix && sym.g) ||
 	    sym.prec < PREC_MAX;
 	}
-	if (!matches && mflag && jt != interp.macenv.end()) {
+	if (mflag && jt != interp.macenv.end()) {
 	  // also list symbols defined as macros
 	  const env_info& e = jt->second;
-	  matches = e.temp >= tlevel;
-	  if (!matches) {
+	  bool _matches = e.temp >= tlevel;
+	  if (!_matches) {
 	    // also list temporary rules for a non-temporary symbol
 	    rulel::const_iterator r;
 	    for (r = e.rules->begin(); r != e.rules->end(); r++)
 	      if (r->temp >= tlevel) {
-		matches = true;
+		_matches = true;
 		break;
 	      }
 	  }
+	  if (!_matches) jt = interp.macenv.end();
+	  matches = matches || _matches;
+	}
+	if (yflag && kt != interp.typeenv.end()) {
+	  // also list symbols defined as types
+	  const env_info& e = kt->second;
+	  bool _matches = e.temp >= tlevel;
+	  if (!_matches) {
+	    // also list temporary rules for a non-temporary symbol
+	    rulel::const_iterator r;
+	    for (r = e.rules->begin(); r != e.rules->end(); r++)
+	      if (r->temp >= tlevel) {
+		_matches = true;
+		break;
+	      }
+	  }
+	  if (!_matches) kt = interp.typeenv.end();
+	  matches = matches || _matches;
 	}
 	if (!matches) continue;
 	if (!args.l.empty()) {
@@ -2319,7 +2399,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	  }
 	}
 	if (!matches) continue;
-	l.push_back(env_sym(sym, it, jt, xt));
+	l.push_back(env_sym(sym, it, jt, kt, xt));
       }
       l.sort(env_compare);
       if (l.empty()) {
@@ -2335,33 +2415,42 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	const symbol& sym = *it->sym;
 	int32_t ftag = sym.f;
 	map<int32_t,Env>::iterator fenv = interp.globalfuns.find(ftag);
-	const env::const_iterator jt = it->it, kt = it->jt;
-	const extmap::const_iterator xt = it->xt;
-	if (jt == interp.globenv.end() && kt == interp.macenv.end() &&
-	    xt != interp.externals.end()) {
+	const env::const_iterator _it = it->it, _jt = it->jt, _kt = it->kt;
+	const extmap::const_iterator _xt = it->xt;
+	if (yflag && _kt != interp.typeenv.end()) {
+	  const rulel& rules = *_kt->second.rules;
+	  for (rulel::const_iterator it = rules.begin();
+	       it != rules.end(); ++it) {
+	    if (it->temp >= tlevel) {
+	      fout << "type " << *it << ";\n";
+	    }
+	  }
+	}
+	if (_it == interp.globenv.end() && _jt == interp.macenv.end() &&
+	    _xt != interp.externals.end()) {
 	  fout << decl_str(interp, sym);
-	  const ExternInfo& info = xt->second;
+	  const ExternInfo& info = _xt->second;
 	  if (sym.priv) fout << "private ";
 	  fout << info << ";\n";
-	} else if (jt != interp.globenv.end() &&
-		   jt->second.t == env_info::fvar) {
+	} else if (_it != interp.globenv.end() &&
+		   _it->second.t == env_info::fvar) {
 	  fout << decl_str(interp, sym);
-	  fout << "let " << sym.s << " = " << *(pure_expr**)jt->second.val
+	  fout << "let " << sym.s << " = " << *(pure_expr**)_it->second.val
 	       << ";\n";
-	} else if (jt != interp.globenv.end() &&
-		   jt->second.t == env_info::cvar) {
+	} else if (_it != interp.globenv.end() &&
+		   _it->second.t == env_info::cvar) {
 	  fout << decl_str(interp, sym);
-	  fout << "const " << sym.s << " = " << *jt->second.cval
+	  fout << "const " << sym.s << " = " << *_it->second.cval
 	       << ";\n";
 	} else {
 	  fout << decl_str(interp, sym);
-	  if (fflag && xt != interp.externals.end()) {
-	    const ExternInfo& info = xt->second;
+	  if (fflag && _xt != interp.externals.end()) {
+	    const ExternInfo& info = _xt->second;
 	    if (sym.priv) fout << "private ";
 	    fout << info << ";\n";
 	  }
-	  if (mflag && kt != interp.macenv.end()) {
-	    const rulel& rules = *kt->second.rules;
+	  if (mflag && _jt != interp.macenv.end()) {
+	    const rulel& rules = *_jt->second.rules;
 	    for (rulel::const_iterator it = rules.begin();
 		 it != rules.end(); ++it) {
 	      if (it->temp >= tlevel) {
@@ -2369,8 +2458,8 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	      }
 	    }
 	  }
-	  if (fflag && jt != interp.globenv.end()) {
-	    const rulel& rules = *jt->second.rules;
+	  if (fflag && _it != interp.globenv.end()) {
+	    const rulel& rules = *_it->second.rules;
 	    for (rulel::const_iterator it = rules.begin();
 		 it != rules.end(); ++it) {
 	      if (it->temp >= tlevel) {
@@ -2386,7 +2475,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
   } else if (strcmp(cmd, "clear") == 0)  {
     bool tflag = false; uint32_t tlevel = 0; int pflag = -1;
     bool cflag = false, fflag = false, mflag = false, vflag = false;
-    bool gflag = false;
+    bool yflag = false, gflag = false;
     const char *s = cmdline+5;
     argl args(s, "clear");
     list<string>::iterator arg;
@@ -2405,7 +2494,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
     // process option arguments
     for (arg = args.l.begin(); arg != args.l.end(); arg++) {
       const char *s = arg->c_str();
-      if (s[0] != '-' || !s[1] || !strchr("cfghmptv", s[1])) break;
+      if (s[0] != '-' || !s[1] || !strchr("cfghmptvy", s[1])) break;
       while (*++s) {
 	switch (*s) {
 	case 'c': cflag = true; break;
@@ -2420,6 +2509,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	    pflag = 1;
 	  break;
 	case 'v': vflag = true; break;
+	case 'y': yflag = true; break;
 	case 't':
 	  if (isdigit(s[1])) {
 	    tlevel = strtoul(s+1, 0, 10);
@@ -2446,7 +2536,8 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
     definitions, level 0 *all* definitions. If this option is omitted,\n\
     it defaults to -t0 if any symbols are specified, -t1 otherwise.\n\
     NOTE: Just 'clear' without any arguments implies -t instead.\n\
--v  Clear defined variables.\n";
+-v  Clear defined variables.\n\
+-y  Clear defined types.\n";
 	  goto out3;
 	default:
 	  cerr << "clear: invalid option character '" << *s << "'\n";
@@ -2455,8 +2546,8 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
       }
     }
     args.l.erase(args.l.begin(), arg);
-    if (!cflag && !fflag && !mflag && !vflag)
-      cflag = fflag = mflag = vflag = true;
+    if (!cflag && !fflag && !mflag && !vflag && !yflag)
+      cflag = fflag = mflag = vflag = yflag = true;
     if (!tflag && args.l.empty()) tlevel = 1;
     if (args.l.empty() && cflag && fflag && mflag && vflag && pflag == -1) {
       uint32_t old = interp.temp;
@@ -2497,10 +2588,11 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
 	bool matches = false;
 	// skip private/public symbols depending on pflag
 	if (pflag >= 0 && (pflag > 0) != sym.priv) continue;
-	// look up symbols in the global environment as well as the macro and
-	// external tables
+	// look up symbols in the global environment as well as the macro,
+	// type and external tables
 	env::const_iterator it = interp.globenv.find(f),
-	  jt = interp.macenv.find(f);
+	  jt = interp.macenv.find(f),
+	  kt = interp.typeenv.find(f);
 	extmap::const_iterator xt = interp.externals.find(f);
 	// check for symbols in the global environment
 	if (it != interp.globenv.end()) {
@@ -2539,6 +2631,20 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
 	      }
 	  }
 	}
+	if (!matches && yflag && kt != interp.typeenv.end()) {
+	  // also list symbols defined as types
+	  const env_info& e = kt->second;
+	  matches = e.temp >= tlevel;
+	  if (!matches) {
+	    // also list temporary rules for a non-temporary symbol
+	    rulel::const_iterator r;
+	    for (r = e.rules->begin(); r != e.rules->end(); r++)
+	      if (r->temp >= tlevel) {
+		matches = true;
+		break;
+	      }
+	  }
+	}
 	if (!matches) continue;
 	if (!args.l.empty()) {
 	  // see whether we actually want the defined symbol to be listed
@@ -2551,7 +2657,7 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
 	  }
 	}
 	if (!matches) continue;
-	l.push_back(env_sym(sym, it, jt, xt));
+	l.push_back(env_sym(sym, it, jt, kt, xt));
       }
       if (l.empty()) goto out3;
       for (list<env_sym>::const_iterator it = l.begin();
@@ -2559,25 +2665,33 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
 	const symbol& sym = *it->sym;
 	int32_t ftag = sym.f;
 	map<int32_t,Env>::iterator fenv = interp.globalfuns.find(ftag);
-	const env::const_iterator jt = it->it, kt = it->jt;
-	if (jt != interp.globenv.end() &&
-	    (jt->second.t == env_info::fvar||jt->second.t == env_info::cvar)) {
+	const env::const_iterator _it = it->it, _jt = it->jt, _kt = it->kt;
+	if (_it != interp.globenv.end() &&
+	    (_it->second.t == env_info::fvar||
+	     _it->second.t == env_info::cvar)) {
 	  interp.clear(sym.f);
 	} else {
-	  if (mflag && kt != interp.macenv.end()) {
-	    const env_info& e = kt->second;
+	  if (mflag && _jt != interp.macenv.end()) {
+	    const env_info& e = _jt->second;
 	    if (e.temp >= tlevel)
 	      interp.clear_mac(sym.f);
 	    else
 	      interp.clear_mac_rules(sym.f, tlevel);
 	  }
-	  if (fflag && jt != interp.globenv.end()) {
-	    const env_info& e = jt->second;
+	  if (fflag && _it != interp.globenv.end()) {
+	    const env_info& e = _it->second;
 	    if (e.temp >= tlevel)
 	      interp.clear(sym.f);
 	    else
 	      interp.clear_rules(sym.f, tlevel);
 	  }
+	}
+	if (yflag && _kt != interp.typeenv.end()) {
+	  const env_info& e = _kt->second;
+	  if (e.temp >= tlevel)
+	    interp.clear_type(sym.f);
+	  else
+	    interp.clear_type_rules(sym.f, tlevel);
 	}
       }
     }

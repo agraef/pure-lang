@@ -223,6 +223,8 @@ public:
   uint32_t n, m;
   // f = the (internal) LLVM function, h = the C-callable stub (if needed)
   llvm::Function *f, *h;
+  // the actual function pointer (type predicates only)
+  void *__fp;
   // function arguments (f.n x expr*)
   vector<llvm::Value*> args;
   // environment pointer (expr**)
@@ -509,7 +511,9 @@ public:
   exprl last;        // last processed lhs collection
   env globenv;       // global function and variable environment
   env macenv;        // global macro environment
+  env typeenv;       // global type environment
   funset dirty;      // "dirty" function entries which need a recompile
+  funset dirty_types;// "dirty" type entries which need a recompile
   pure_mem *mem;     // runtime expression memory
   pure_expr *exps;   // head of the free list (available expression nodes)
   pure_expr *tmps;   // temporaries list (to be collected after exceptions)
@@ -609,10 +613,13 @@ public:
   void clear(int32_t tag = 0);
   /* Purge the given macro symbol. */
   void clear_mac(int32_t tag);
-  /* Purge the rules of the given function or macro symbol at or above the
-     given level. */
+  /* Purge the given type symbol. */
+  void clear_type(int32_t tag);
+  /* Purge the rules of the given function, macro or type symbol at or above
+     the given level. */
   void clear_rules(int32_t tag, uint32_t level);
   void clear_mac_rules(int32_t tag, uint32_t level);
+  void clear_type_rules(int32_t tag, uint32_t level);
 
   /* Process pending compilations of function definitions. This is also done
      automatically when eval() or defn()/const_defn() is invoked. */
@@ -670,6 +677,7 @@ public:
   env *build_env(expr x);
   void build_env(env& vars, expr x);
   void mark_dirty(int32_t f);
+  void mark_dirty_type(int32_t f);
   void compile(expr x);
   void using_namespaces(list< pair< string, list<int32_t> > > *items = 0);
   void declare(bool priv, prec_t prec, fix_t fix, list<string> *ids);
@@ -678,16 +686,20 @@ public:
   void exec(expr *x);
   void parse(expr *x);
   void clearsym(int32_t f);
+  void cleartypesym(int32_t f);
   rulel *default_lhs(exprl &l, rulel *rl);
   void add_rules(rulel &rl, rulel *r, bool b);
   void add_rules(env &e, rulel *r, bool headless = false, bool toplevel = false);
   void add_rule(rulel &rl, rule &r, bool b);
   void add_rule(env &e, rule &r, bool toplevel = false);
+  void add_type_rules(env &e, rulel *r);
+  void add_type_rule(env &e, rule &r);
   void add_simple_rule(rulel &rl, rule *r);
   void add_macro_rule(rule *r);
   void promote_ttags(expr f, expr x, expr u);
   void promote_ttags(expr f, expr x, expr u, expr v);
-  expr bind(env& vars, veqnl& eqns, expr x, bool b = true, path p = path());
+  expr bind(env& vars, vguardl& guards, veqnl& eqns,
+	    expr x, bool b = true, path p = path());
   void funsubstw(set<int32_t>& warned, expr x, int32_t f, int32_t g,
 		 bool b = false);
   void funsubst(expr x, int32_t f, int32_t g, bool b = false)
@@ -704,6 +716,8 @@ public:
   expr varsubst(expr x, uint8_t offs, uint8_t idx = 0);
   expr macred(expr x, expr y, uint8_t idx = 0);
   expr macval(expr x);
+  bool checkguards(expr x, const vguardl& guards);
+  bool checkeqns(expr x, const veqnl& eqns);
   void closure(rule& r, bool b = true);
   expr uminop(expr op, expr x);
   expr *mklsect(expr *x, expr *y);
@@ -878,7 +892,7 @@ public:
 				   const llvm::Type *block_ty);
   set<llvm::Function*> always_used;
   map<int32_t,GlobalVar> globalvars;
-  map<int32_t,Env> globalfuns;
+  map<int32_t,Env> globalfuns, globaltypes;
   pure_aframe *astk;
   pure_expr **__sstk;
   pure_expr **&sstk;
@@ -938,7 +952,8 @@ private:
   pure_expr *const_matrix_value(expr x, bool quote = false);
   pure_expr *const_app_value(expr x);
   pure_expr *doeval(expr x, pure_expr*& e, bool keep = false);
-  pure_expr *dodefn(env vars, veqnl eqns, expr lhs, expr rhs, pure_expr*& e,
+  pure_expr *dodefn(env vars, vguardl guards, veqnl eqns,
+		    expr lhs, expr rhs, pure_expr*& e,
 		    bool keep = false);
   llvm::Value *codegen(expr x, bool quote = false);
   void toplevel_codegen(expr x, const rule *rp);
