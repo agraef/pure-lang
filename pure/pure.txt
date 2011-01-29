@@ -2530,16 +2530,21 @@ the symbol with a quote (see `The Quote`_)::
   > {'u=>u};
   {u=>99}
 
-However, even the quote doesn't save you from local variable substitution, so
-you'll just have to rename the local variable in such cases::
+However, even the quote doesn't save you from local variable substitution::
 
   > {'u=>u} when u = 99 end;
   {99=>99}
+
+In such cases you'll either have to rename the local variable, or use the
+prelude function :func:`val` to quote the symbol::
+
   > {'u=>v} when v = 99 end;
   {u=>99}
+  > {val "u"=>u} when u = 99 end;
+  {u=>99}
 
-It's also possible to use strings as keys instead, which may actually be more
-convenient in some cases::
+It's also possible to directly use strings as keys instead, which may actually
+be more convenient in some cases::
 
   > let r = {"x"=>5, "y"=>12};
   > keys r; vals r;
@@ -2669,20 +2674,12 @@ quasiquote in Pure if you want it, however. See the `Recursive Macros`_
 section for a simplified version; a full implementation can be found in the
 Pure library sources.)
 
-Another useful feature of Lisp's quasiquote is the capability to splice
-arguments into a function application. It is possible to achieve pretty much
-the same in Pure with the following variation of the :func:`$` operator which
-"curries" its second (tuple) operand::
+As already mentioned, if you do need to quote a symbol which is already being
+used as a local variable in the current context, you can do this by supplying
+the symbol as a string to the prelude function :func:`val`::
 
-  infixr 0 $@ ;
-  f $@ ()     = f;
-  f $@ (x,xs) = f x $@ xs;
-  f $@ x      = f x;
-
-Now you can write, e.g.::
-
-  > '(foo 1 2) $@ '(2/3,3/4);
-  foo 1 2 (2/3) (3/4)
+  > val "x"+x when x = 99 end;
+  x+99
 
 Second, it is in fact possible to perform arbitrary computations right in the
 middle of a quoted expression. This is because :func:`quote` only ever quotes
@@ -2714,6 +2711,21 @@ Example::
 
 Other special constructs, such as :keyword:`case`, :keyword:`when` and
 :keyword:`with` can be handled in a similar fashion.
+
+Another useful feature of Lisp's quasiquote is the capability to splice
+arguments into a function application. It is possible to achieve pretty much
+the same in Pure with the following variation of the :func:`$` operator which
+"curries" its second (tuple) operand::
+
+  infixr 0 $@ ;
+  f $@ ()     = f;
+  f $@ (x,xs) = f x $@ xs;
+  f $@ x      = f x;
+
+Now you can write, e.g.::
+
+  > '(foo 1 2) $@ '(2/3,3/4);
+  foo 1 2 (2/3) (3/4)
 
 Declarations
 ============
