@@ -4017,13 +4017,45 @@ bool pure_typecheck(int32_t tag, pure_expr *x)
   // Check that the predicate actually exists.
   map<int32_t,Env>::iterator g = interp.globaltypes.find(tag);
   if (g == interp.globaltypes.end()) return false;
-  // Get the function pointer.
+  assert(g->second.n <= 1 && g->second.m == 0);
+  // Get the function pointer and number of arguments.
   void *fp = g->second.__fp;
+  int argc = g->second.n;
   if (!fp) {
     llvm::Function *f = g->second.f, *h = g->second.h;
     assert(h);
     if (f != h) interp.JIT->getPointerToFunction(f);
     g->second.__fp = fp = interp.JIT->getPointerToFunction(h);
+  }
+  // An argument count of zero indicates an alias, pointing either to another
+  // type predicate or a normal function (presumably a unary predicate).
+  while (argc == 0) {
+    // Resolve an alias. Note that this may loop if you define the predicate
+    // in a circular way, so don't do this.
+    pure_expr *y = pure_funcall(fp, 0);
+    tag = y->tag;
+    if (tag > 0 &&
+	(g = interp.globaltypes.find(tag)) != interp.globaltypes.end()) {
+      // Alias pointing to yet another defined type predicate. Wash, rinse,
+      // repeat.
+      assert(g->second.n <= 1 && g->second.m == 0);
+      fp = g->second.__fp;
+      argc = g->second.n;
+      if (!fp) {
+	llvm::Function *f = g->second.f, *h = g->second.h;
+	assert(h);
+	if (f != h) interp.JIT->getPointerToFunction(f);
+	g->second.__fp = fp = interp.JIT->getPointerToFunction(h);
+      }
+    } else {
+      // Alias is an ordinary predicate. Apply it to the argument expression
+      // and return the resulting truth value.
+      y = pure_apply2(y, x);
+      int32_t iv;
+      bool res = pure_is_int(y, &iv) && iv!=0;
+      pure_freenew(y);
+      return res;
+    }
   }
   // Call the predicate.
   pure_expr *y = pure_funcall(fp, 1, x);
@@ -4047,6 +4079,31 @@ bool pure_safe_typecheck(int32_t tag, pure_expr *x)
     return res;
   } else
     return pure_typecheck(tag, x);
+}
+
+extern "C"
+pure_expr *typep(pure_expr *ty, pure_expr *x)
+{
+  if (ty->tag > 0) {
+    interpreter& interp = *interpreter::g_interp;
+    bool res = false;
+    if (ty->tag == interp.symtab.int_sym().f)
+      res = x->tag==EXPR::INT;
+    else if (ty->tag == interp.symtab.bigint_sym().f)
+      res = x->tag==EXPR::BIGINT;
+    else if (ty->tag == interp.symtab.double_sym().f)
+      res = x->tag==EXPR::DBL;
+    else if (ty->tag == interp.symtab.string_sym().f)
+      res = x->tag==EXPR::STR;
+    else if (ty->tag == interp.symtab.pointer_sym().f)
+      res = x->tag==EXPR::PTR;
+    else if (ty->tag == interp.symtab.matrix_sym().f)
+      res = x->tag>=EXPR::MATRIX && x->tag<=EXPR::IMATRIX;
+    else
+      res = pure_typecheck(ty->tag, x);
+    return pure_int(res);
+  } else
+    return 0;
 }
 
 list<char*> temps; // XXXFIXME: This should be TLD.

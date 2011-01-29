@@ -69,6 +69,12 @@ symtable::symtable()
     __complex_rect_sym(0),
     __complex_polar_sym(0),
     __rational_xdiv_sym(0),
+    __int_sym(0),
+    __bigint_sym(0),
+    __double_sym(0),
+    __string_sym(0),
+    __pointer_sym(0),
+    __matrix_sym(0),
     current_namespace(new string),
     search_namespaces(new map< string, set<int32_t> >),
     __show__sym(0)
@@ -132,6 +138,12 @@ void symtable::init_builtins()
   complex_rect_sym();
   complex_polar_sym();
   rational_xdiv_sym();
+  int_sym();
+  bigint_sym();
+  double_sym();
+  string_sym();
+  pointer_sym();
+  matrix_sym();
 }
 
 /* These are used internally to dump the entire symbol table from a string,

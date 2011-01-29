@@ -4089,15 +4089,13 @@ void interpreter::add_type_rule(env &e, rule &r)
   int32_t f = fx.tag();
   if (f <= 0)
     throw err("error in type definition (missing head symbol)");
-  else if (argc != 1)
-    throw err("error in type definition (must be unary predicate)");
+  else if (argc > 1)
+    throw err("error in type definition (too many arguments)");
   fx.flags() |= EXPR::GLOBAL;
   env::iterator it = e.find(f);
   const symbol& sym = symtab.sym(f);
   if (it != e.end()) {
     if (it->second.argc != argc) {
-      // This can't actually happen right now, but we leave it in here for
-      // future extensions (parameterized types).
       ostringstream msg;
       msg << "type predicate '" << sym.s
 	  << "' was previously defined with " << it->second.argc << " args";

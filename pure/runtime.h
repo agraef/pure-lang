@@ -1266,6 +1266,11 @@ uint32_t hash(pure_expr *x);
 
 bool same(pure_expr *x, pure_expr *y);
 
+/* Generic type-checking predicate. This works with built-in as well as with
+   user-defined types. */
+
+pure_expr* typep(pure_expr *ty, pure_expr *x);
+
 /* Check whether an object is a named function (closure), an anonymous
    function (lambda or thunk), or a global variable, respectively. */
 

@@ -116,6 +116,12 @@ class symtable {
   symbol* __complex_rect_sym;
   symbol* __complex_polar_sym;
   symbol* __rational_xdiv_sym;
+  symbol* __int_sym;
+  symbol* __bigint_sym;
+  symbol* __double_sym;
+  symbol* __string_sym;
+  symbol* __pointer_sym;
+  symbol* __matrix_sym;
 public:
   symtable();
   ~symtable();
@@ -232,6 +238,18 @@ public:
   symbol& complex_rect_sym();
   symbol& complex_polar_sym();
   symbol& rational_xdiv_sym();
+  symbol& int_sym()
+  { return *sym_p("int", __int_sym); }
+  symbol& bigint_sym()
+  { return *sym_p("bigint", __bigint_sym); }
+  symbol& double_sym()
+  { return *sym_p("double", __double_sym); }
+  symbol& string_sym()
+  { return *sym_p("string", __string_sym); }
+  symbol& pointer_sym()
+  { return *sym_p("pointer", __pointer_sym); }
+  symbol& matrix_sym()
+  { return *sym_p("matrix", __matrix_sym); }
 };
 
 #endif // ! SYMTABLE_HH
