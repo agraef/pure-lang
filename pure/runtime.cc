@@ -4010,10 +4010,32 @@ int32_t pure_cmp_string(pure_expr *x, const char *s)
   return strcmp(x->data.s, s);
 }
 
+static inline int builtin_typecheck(interpreter& interp,
+				    int32_t tag, pure_expr *x)
+{
+  if (tag == interp.symtab.int_sym().f)
+    return x->tag==EXPR::INT;
+  else if (tag == interp.symtab.bigint_sym().f)
+    return x->tag==EXPR::BIGINT;
+  else if (tag == interp.symtab.double_sym().f)
+    return x->tag==EXPR::DBL;
+  else if (tag == interp.symtab.string_sym().f)
+    return x->tag==EXPR::STR;
+  else if (tag == interp.symtab.pointer_sym().f)
+    return x->tag==EXPR::PTR;
+  else if (tag == interp.symtab.matrix_sym().f)
+    return x->tag>=EXPR::MATRIX && x->tag<=EXPR::IMATRIX;
+  else
+    return -1;
+}
+
 extern "C"
 bool pure_typecheck(int32_t tag, pure_expr *x)
 {
   interpreter& interp = *interpreter::g_interp;
+  // Check for built-in types.
+  int res = builtin_typecheck(interp, tag, x);
+  if (res>=0) return res;
   // Check that the predicate actually exists.
   map<int32_t,Env>::iterator g = interp.globaltypes.find(tag);
   if (g == interp.globaltypes.end()) return false;
@@ -4034,20 +4056,26 @@ bool pure_typecheck(int32_t tag, pure_expr *x)
     // in a circular way, so don't do this.
     pure_expr *y = pure_funcall(fp, 0);
     tag = y->tag;
-    if (tag > 0 &&
-	(g = interp.globaltypes.find(tag)) != interp.globaltypes.end()) {
-      // Alias pointing to yet another defined type predicate. Wash, rinse,
-      // repeat.
-      assert(g->second.n <= 1 && g->second.m == 0);
-      fp = g->second.__fp;
-      argc = g->second.n;
-      if (!fp) {
-	llvm::Function *f = g->second.f, *h = g->second.h;
-	assert(h);
-	if (f != h) interp.JIT->getPointerToFunction(f);
-	g->second.__fp = fp = interp.JIT->getPointerToFunction(h);
-      }
+    if (tag > 0) {
+      if ((res = builtin_typecheck(interp, tag, x)) >= 0)
+	return res;
+      else if ((g = interp.globaltypes.find(tag)) !=
+	       interp.globaltypes.end()) {
+	// Alias pointing to yet another defined type predicate. Wash, rinse,
+	// repeat.
+	assert(g->second.n <= 1 && g->second.m == 0);
+	fp = g->second.__fp;
+	argc = g->second.n;
+	if (!fp) {
+	  llvm::Function *f = g->second.f, *h = g->second.h;
+	  assert(h);
+	  if (f != h) interp.JIT->getPointerToFunction(f);
+	  g->second.__fp = fp = interp.JIT->getPointerToFunction(h);
+	}
+      } else
+	goto eval;
     } else {
+    eval:
       // Alias is an ordinary predicate. Apply it to the argument expression
       // and return the resulting truth value.
       y = pure_apply2(y, x);
@@ -4085,22 +4113,7 @@ extern "C"
 pure_expr *typep(pure_expr *ty, pure_expr *x)
 {
   if (ty->tag > 0) {
-    interpreter& interp = *interpreter::g_interp;
-    bool res = false;
-    if (ty->tag == interp.symtab.int_sym().f)
-      res = x->tag==EXPR::INT;
-    else if (ty->tag == interp.symtab.bigint_sym().f)
-      res = x->tag==EXPR::BIGINT;
-    else if (ty->tag == interp.symtab.double_sym().f)
-      res = x->tag==EXPR::DBL;
-    else if (ty->tag == interp.symtab.string_sym().f)
-      res = x->tag==EXPR::STR;
-    else if (ty->tag == interp.symtab.pointer_sym().f)
-      res = x->tag==EXPR::PTR;
-    else if (ty->tag == interp.symtab.matrix_sym().f)
-      res = x->tag>=EXPR::MATRIX && x->tag<=EXPR::IMATRIX;
-    else
-      res = pure_typecheck(ty->tag, x);
+    bool res = pure_typecheck(ty->tag, x);
     return pure_int(res);
   } else
     return 0;
