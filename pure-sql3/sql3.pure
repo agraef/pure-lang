@@ -256,8 +256,8 @@ end;
 
 /* Private sqlite3_column family wrappers */
 
-col_err x type = sql3_err 
-  (sprintf "Fetched expression %s is not of type %s." (str x, type));
+col_err x ty = sql3_err 
+  (sprintf "Fetched expression %s is not of type %s." (str x, ty));
 
 col_chars sp col = string_dup (sqlite3_column_text sp col);
 
@@ -279,8 +279,8 @@ core_col_fns = record [
 
 /* Private sqlite3_bind family wrappers  */
 
-bind_err x type = sql3_err 
-  (sprintf "bind error: %s does not have type %s" (str x,type));
+bind_err x ty = sql3_err 
+  (sprintf "bind error: %s does not have type %s" (str x,ty));
 
 bind_blob sp col expr = case expr of
   (size::int, p::pointer) = sql3util_bind_blob sp col expr;

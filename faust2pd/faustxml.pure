@@ -269,8 +269,8 @@ parse_type s::string = eval $ "faustxml::"+s;
 
 parse_control (node (xml::element "widget" _ attrs) params)
 = case attrs!!["type","id"]+params!!["label"] of
-    [type,id,label] =
-      make_control (atoi id) type (str_val label) params;
+    [ty,id,label] =
+      make_control (atoi id) ty (str_val label) params;
     _ = throw "invalid XML data" otherwise;
   end when
     attrs = dict attrs; params = dict $ map param params with
@@ -281,31 +281,31 @@ parse_control (node (xml::element "widget" _ attrs) params)
   end;
 parse_control _ = throw "invalid XML data" otherwise;
 
-make_control id type label params
-= id => parse_type type label if any ((==)type) ["button","checkbox"];
+make_control id ty label params
+= id => parse_type ty label if any ((==)ty) ["button","checkbox"];
 = case params!!["init","min","max","step"] of
     res@[init,min,max,step] =
-      id => parse_type type (label,tuple (map atof res));
+      id => parse_type ty (label,tuple (map atof res));
     _ = throw "invalid XML data" otherwise;
-  end if any ((==)type) ["vslider","hslider","nentry"];
+  end if any ((==)ty) ["vslider","hslider","nentry"];
 = case params!!["min","max"] of
     res@[min,max] =
-      id => parse_type type (label,tuple (map atof res));
+      id => parse_type ty (label,tuple (map atof res));
     _ = throw "invalid XML data" otherwise;
-  end if any ((==)type) ["vbargraph","hbargraph"];
+  end if any ((==)ty) ["vbargraph","hbargraph"];
 make_control _ _ _ _ = throw "invalid XML data" otherwise;
 
 parse_group cdict (node (xml::element "group" _ attrs) params)
 = case attrs!!["type"] of
-    [type] = make_group cdict type params;
+    [ty] = make_group cdict ty params;
     _ = throw "invalid XML data" otherwise;
   end when attrs = dict attrs end;
 parse_group cdict (node (xml::element "widgetref" _ ["id"=>id::string]) [])
 = case cdict!![atoi id] of [c] = c; _ = throw "invalid XML data"; end;
 parse_group _ _ = throw "invalid XML data" otherwise;
 
-make_group cdict type (node (xml::element "label" _ _) label:params)
-= case parse_type type (str_val label,map (parse_group cdict) params) of
+make_group cdict ty (node (xml::element "label" _ _) label:params)
+= case parse_type ty (str_val label,map (parse_group cdict) params) of
     c = c if stringp label && controlp c;
     _ = throw "invalid XML data" otherwise;
   end when label = parse_node label end;

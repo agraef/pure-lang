@@ -22,16 +22,16 @@ extern void ffi_free_closure(ffi_closure *clos, void *code);
 extern void *ffi_closure_addr(ffi_closure *clos);
 extern ffi_type **ffi_typevect(expr *types);
 extern ffi_type *ffi_new_struct_t(ffi_type **elements);
-extern void ffi_free_struct_t(ffi_type *type);
-extern void *ffi_new_struct(ffi_type *type, expr *data);
-extern void *ffi_copy_struct(ffi_type *type, void *data);
-extern void ffi_free_struct(ffi_type *type, void *data);
+extern void ffi_free_struct_t(ffi_type *ty);
+extern void *ffi_new_struct(ffi_type *ty, expr *data);
+extern void *ffi_copy_struct(ffi_type *ty, void *data);
+extern void ffi_free_struct(ffi_type *ty, void *data);
 extern expr *ffi_struct_type(expr *x);
 extern expr *ffi_struct_members(expr *x);
 extern expr *ffi_struct_pointers(expr *x);
 extern expr *ffi_struct_member(expr *x, int i);
 extern expr *ffi_struct_pointer(expr *x, int i);
-extern expr *ffi_struct_offsetof(ffi_type *type, int i);
+extern expr *ffi_struct_offsetof(ffi_type *ty, int i);
 extern expr *ffi_put_struct_member(expr *x, int i, expr *y);
 
 /* Define the ABIs and the type numbers known to this libffi implementation.
@@ -98,22 +98,22 @@ let size_t = if SIZEOF_SIZE_T > 4 then uint64_t else uint32_t;
 /* Create a struct type. This takes a tuple with the member types and returns
    a corresponding type descriptor. */
 
-struct_t elements = sentry ffi_free_struct_t type if ~null type
-when type = ffi_new_struct_t (ffi_typevect elements) end;
+struct_t elements = sentry ffi_free_struct_t ty if ~null ty
+when ty = ffi_new_struct_t (ffi_typevect elements) end;
 
 /* Retrieve information about a type. This returns a tuple (size, align, type,
    ...) with information about the size, alignment and type number. Struct
    types are indicated by the type number FFI_TYPE_STRUCT. In this case the
    remaining elements are the descriptors of the element types. */
 
-extern expr *ffi_type_info(ffi_type *type) = type_info;
+extern expr *ffi_type_info(ffi_type *ty) = type_info;
 
 /* Convenience function to get the size of a struct. The function accepts
    either a struct type or a struct instance. */
 
 public typeof structp;
 sizeof x::pointer = sizeof (typeof x) if structp x;
-sizeof type::pointer = size when size,_ = type_info type end;
+sizeof ty::pointer = size when size,_ = type_info ty end;
 
 /* Interface functions to create Pure functions from C functions and vice
    versa. These take the desired ABI (FFI_DEFAULT_ABI etc.), return type
@@ -147,13 +147,13 @@ end;
 
 /* Create a C struct from its type descriptor and a tuple of its members. */
 
-struct type::pointer data = sentry (ffi_free_struct type) p if ~null p
-when p = ffi_new_struct type data end;
+struct ty::pointer data = sentry (ffi_free_struct ty) p if ~null p
+when p = ffi_new_struct ty data end;
 
 /* Create a copy of a C struct given by a pointer. */
 
-copy_struct type::pointer data::pointer = sentry (ffi_free_struct type) p
-if ~null p when p = ffi_copy_struct type data end;
+copy_struct ty::pointer data::pointer = sentry (ffi_free_struct ty) p
+if ~null p when p = ffi_copy_struct ty data end;
 
 /* Check for struct objects, and get the type descriptor, the member data (as
    a tuple of Pure values) and the member pointers (a tuple of pointer values)
