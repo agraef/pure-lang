@@ -22,7 +22,7 @@ The interface uses native Pure data types - lists and tuples - so that you
 need not perform any data conversions to/from GLPK internal data structures.
 
 To make this module work, you must have a GLPK installation on your system,
-the version 4.38 is required.
+the version 4.42 or higher is required.
 
 .. contents::
 .. sectnum::
@@ -3060,7 +3060,7 @@ Get basis factorization parameters
 
   complete list of options in a form of tuples (option_name, value):
 
-  :glp\:\:type: basis factorization type:
+  :glp\:\:fact_type: basis factorization type:
 
                 :glp\:\:bf_ft: LU + Forrest–Tomlin update
                 :glp\:\:bf_bg: LU + Schur complement + Bartels–Golub update
@@ -3114,9 +3114,10 @@ Get basis factorization parameters
 **Example**::
 
   > glp::get_bfcp lp;
-  [(glp::type,glp::bf_ft),(glp::lu_size,0),(glp::piv_tol,0.1),(glp::piv_lim,4),
-  (glp::suhl,glp::on),(glp::eps_tol,1e-15),(glp::max_gro,10000000000.0),
-  (glp::nfs_max,50),(glp::upd_tol,1e-06),(glp::nrs_max,50),(glp::rs_size,0)]
+  [(glp::fact_type,glp::bf_ft),(glp::lu_size,0),(glp::piv_tol,0.1),
+  (glp::piv_lim,4),(glp::suhl,glp::on),(glp::eps_tol,1e-15),
+  (glp::max_gro,10000000000.0),(glp::nfs_max,50),(glp::upd_tol,1e-06),
+  (glp::nrs_max,50),(glp::rs_size,0)]
 
 Change basis factorization parameters
 -------------------------------------
@@ -3129,7 +3130,7 @@ Change basis factorization parameters
   :lp: pointer to the LP problem object
   :options: list of options in a form of tuples (option_name, value):
 
-  :glp\:\:type: (default: glp::bf_ft) - basis factorization type:
+  :glp\:\:fact_type: (default: glp::bf_ft) - basis factorization type:
 
                 :glp\:\:bf_ft: LU + Forrest–Tomlin update
                 :glp\:\:bf_bg: LU + Schur complement + Bartels–Golub update
@@ -3196,7 +3197,7 @@ Change basis factorization parameters
 
 **Example**::
 
-  > glp_set_bfcp lp [(glp::type, glp::bf_ft), (glp::piv_tol, 0.15)];
+  > glp_set_bfcp lp [(glp::fact_type, glp::bf_ft), (glp::piv_tol, 0.15)];
   ()
 
 Retrieve the basis header information
@@ -4053,7 +4054,7 @@ Add constraint to the cut pool
 ------------------------------
 **Synopsis**::
 
-  glp::ios_add_row tree (name, klass, flags, row, type, rhs)
+  glp::ios_add_row tree (name, klass, flags, row, rowtype, rhs)
 
 **Parameters**:
 
@@ -4064,7 +4065,7 @@ Add constraint to the cut pool
           to distinguish between cutting plane constraints of different classes.
   :flags: currently is not used and must be zero
   :row: list of pairs (colindex, coefficient)
-  :type: one of the following:
+  :rowtype: one of the following:
 
     :glp\:\:lo: ∑(aj.xj) ≥ RHS constraint
     :glp\:\:up: ∑(aj.xj) ≤ RHS constraint

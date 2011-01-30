@@ -224,7 +224,7 @@ public nonfix
 /* basis factorization control parameters */
 public nonfix
 //  msg_lev	// (reserved)
-  type		// factorization type
+  fact_type	// factorization type
   lu_size	// luf.sv_size
   piv_tol	// luf.piv_tol
   piv_lim	// luf.piv_lim
@@ -578,17 +578,17 @@ let mip_options =
 private bf_options;
 let bf_options =
   hdict [
-    (type     => (symbolicp basfact)),      // factorization type
-    (lu_size  => intp),                     // init. size of Sparse Vector Area
-    (piv_tol  => numberp),                  // treshold pivoting tolerance
-    (piv_lim  => intp),                     // # of pivot candidates
-    (suhl     => (symbolicp onoff)),        // use heuristics by Uwe Suhl
-    (eps_tol  => numberp),                  // epsilon tolerance
-    (max_gro  => numberp),                  // max growth of factor elements
-    (nfs_max  => intp),                     // max # of additional factors
-    (upd_tol  => numberp),                  // update tolerance
-    (nrs_max  => intp),                     // max # of additional rows or cols
-    (rs_size  => intp)                      // init. size of SVA for Schur meth
+    (fact_type => (symbolicp basfact)),     // factorization type
+    (lu_size   => intp),                    // init. size of Sparse Vector Area
+    (piv_tol   => numberp),                 // treshold pivoting tolerance
+    (piv_lim   => intp),                    // # of pivot candidates
+    (suhl      => (symbolicp onoff)),       // use heuristics by Uwe Suhl
+    (eps_tol   => numberp),                 // epsilon tolerance
+    (max_gro   => numberp),                 // max growth of factor elements
+    (nfs_max   => intp),                    // max # of additional factors
+    (upd_tol   => numberp),                 // update tolerance
+    (nrs_max   => intp),                    // max # of additional rows or cols
+    (rs_size   => intp)                     // init. size of SVA for Schur meth
   ];
 
 private ipt_options;
@@ -651,7 +651,7 @@ glp::set_col_bnds lp (colind::int, coltype, lb, ub) =
   glpk_set_col_bnds lp colind (s2v!(vartype, coltype)) (double lb) (double ub)
   if numberp lb && numberp ub;
 
-// Set (change) objective coeﬃcient or constant term
+// Set (change) objective coefficient or constant term
 private extern expr *glpk_set_obj_coef(expr *lp, int colind, double coef);
 glp::set_obj_coef lp (colind::int, coef) =
   glpk_set_obj_coef lp colind (double coef)
@@ -1279,11 +1279,11 @@ public extern expr *glpk_ios_pool_size(expr *tree) =
 
 // Add constraint to the cut pool
 private extern pure_expr *glpk_ios_add_row(expr *tree, char *name, int klass,
-                                           int flags, expr *row, int type,
+                                           int flags, expr *row, int rowtype,
                                            double rhs);
-glp::ios_add_row tree (name::string, klass, flags, row, type, rhs::double) =
+glp::ios_add_row tree (name::string, klass, flags, row, rowtype, rhs::double) =
   glpk_ios_add_row tree name klass 0 row
-                   (s2v!(vartype, type)) rhs;
+                   (s2v!(vartype, rowtype)) rhs;
 
 // Remove constraint from the cut pool
 public extern expr *glpk_ios_del_row(expr *tree, int irow) =

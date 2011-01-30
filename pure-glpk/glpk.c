@@ -2443,7 +2443,7 @@ pure_expr *glpk_get_bfcp(pure_expr *ptr)
   }
   glp_get_bfcp(glpobj->lp, parm);
   i = 0;
-  list[i++] = pure_tuplel(2, pure_symbol(pure_sym("glp::type")),
+  list[i++] = pure_tuplel(2, pure_symbol(pure_sym("glp::fact_type")),
                           pure_int((int32_t)parm->type));
   list[i++] = pure_tuplel(2, pure_symbol(pure_sym("glp::lu_size")),
                           pure_int((int32_t)parm->lu_size));
@@ -2508,7 +2508,7 @@ pure_expr *glpk_set_bfcp(pure_expr *ptr, pure_expr *parms)
     }
     snd = tpl[1];
     free(tpl);
-    if (fst == pure_getsym("glp::type")) {
+    if (fst == pure_getsym("glp::fact_type")) {
       if (pure_is_int(snd, &intparm)) parm->type = intparm;
       else list[cnterr++] = list[i];
     }
