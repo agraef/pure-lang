@@ -1574,20 +1574,22 @@ Toplevel
 --------
 
 At the toplevel, a Pure program basically consists of rewriting rules (which
-are used to define functions and macros), constant and variable definitions,
-and expressions to be evaluated:
+are used to define functions, macros and types), constant and variable
+definitions, and expressions to be evaluated:
 
 .. productionlist::
    script : `item`*
    item : "let" `simple_rule` ";"
      	: | "const" `simple_rule` ";"
      	: | "def" `simple_rule` ";"
+     	: | "type" `type_rule` ";"
      	: | `rule` ";"
      	: | `expr` ";"
 
-(The syntax of the :token:`rule` and :token:`simple_rule` elements is
-discussed in the `Rule Syntax`_ section below. Also, a few additional toplevel
-elements are provided in the declaration syntax, see Declarations_.)
+(The syntax of the :token:`rule`, :token:`type_rule` and :token:`simple_rule`
+elements is discussed in the `Rule Syntax`_ section below. Also, a few
+additional toplevel elements are provided in the declaration syntax, see
+Declarations_.)
 
 .. describe:: lhs = rhs;
 
@@ -1721,14 +1723,15 @@ Rule Syntax
 
 Basically, the same rule syntax is used in all kinds of global and local
 definitions. However, some constructs (specifically, :keyword:`when`,
-:keyword:`let`, :keyword:`const` and :keyword:`def`) use a restricted rule
-syntax where no guards or multiple left-hand and right-hand sides are
-permitted. The syntax of these elements is captured by the following grammar
-rules:
+:keyword:`let`, :keyword:`const`, :keyword:`type` and :keyword:`def`) use a
+variation of the basic rule syntax which does away with guards and/or multiple
+left-hand or right-hand sides. The syntax of these elements is captured by the
+following grammar rules:
 
 .. productionlist::
    rule : `pattern` ("|" `pattern`)* "=" `expr` [`guard`]
    	: (";" "=" `expr` [`guard`])*
+   type_rule : `pattern` ("|" `pattern`)* [ "=" `expr` [`guard`] ]
    simple_rule : `pattern` = `expr` | `expr`
    pattern : `simple_expr`
    guard : "if" `simple_expr`
@@ -1827,13 +1830,12 @@ permitted in right-hand side expressions:
   right-hand side of an equation.
 
 * A left-hand side variable (including the anonymous variable) may be followed
-  by a `type tag` of the form ``::`` *name*, where *name* is either one
-  of the built-in type symbols ``int``, ``bigint``, ``double``, ``string``,
-  ``matrix``, ``pointer``, or an existing identifier denoting a custom
-  constructor symbol for a user-defined data type. The variable can then match
-  only values of the designated type. Thus, for instance, '``x::int``'
-  only matches machine integers. See the `Type Tags`_ section below for
-  details.
+  by a `type tag` of the form ``::`` *name*, where *name* is either one of the
+  built-in type symbols ``int``, ``bigint``, ``double``, ``string``,
+  ``matrix``, ``pointer``, or an identifier denoting a user-defined data
+  type. The variable can then match only values of the designated type. Thus,
+  for instance, '``x::int``' only matches machine integers. See the `Type
+  Tags`_ section below for details.
 
 To these ends, the expression syntax is augmented with the following grammar
 rule (but note that this form of expression is in fact only allowed on the
@@ -1873,57 +1875,106 @@ it clear that the construct denotes a type tag.
 Type Tags
 ---------
 
-Type tags are really nothing but a special form of "as" patterns which
-restrict variables to given data "domains". Like Lisp, Pure is essentially a
-typeless language and doesn't really have a notion of "data types"; all data
-belongs to the same universe of terms. Thus the only way to restrict the type
-of values which can be matched by a variable is to provide an "as" pattern
-which matches objects of the desired domain and nothing else. However, in the
-special case of the built-in types (machine and big integers, double values,
-strings, matrices and pointers) there is no way to spell out all
-"constructors", as there are infinitely many (or none, as in the case of
-``matrix`` and ``pointer`` which are constructed and inspected using special
-primitives, but are otherwise "opaque" at the Pure level). As a remedy, an
-appropriate type tag makes it possible to match these values.
+Like Lisp, Pure is essentially a typeless language and doesn't really have a
+built-in notion of "data types"; all data belongs to the same universe of
+terms. However, for convenience it is possible to describe data domains by
+means of (unary) type *predicates* which may denote arbitrary sets of
+terms. The names of these type predicates can then be used as `type tags` on
+variables, so that they can only be matched by values of the given type.
 
-In order to generalize this to user-defined domains of data, Pure adopts the
-convention that any other tagged variable ``x::bar`` is just a shorthand for
-the "as" pattern ``x@(bar _)``. Thus a custom data type can be represented by
-designating a special constructor symbol (``bar`` in the above example) which
-takes the actual data as its single argument. This works the same no matter
-what the internal structure of the data is (which in many cases you wouldn't
-want to depend on anyway, for the sake of data abstraction).
+.. note:: It is important to note there that Pure's notion of types has
+   nothing to do with static typing. Type tags are only used at runtime to
+   restrict the kind of data that can be matched by a rule, and maybe by the
+   compiler to generate better code. But they will never cause the compiler to
+   spit out "type errors". This wouldn't make any sense in Pure anyway, as
+   failure to match any of the rules given in the definition of a function
+   simply means that a function application is in normal form.
 
-Note that this is merely a convention, but it works reasonably well and makes
-up for the fact that Pure doesn't support data types at the language level.
-For instance, we might represent points in the plane using a constructor
-symbol ``Point`` which gets applied to pairs of coordinates. We equip this
-data type with an operation ``point`` to construct a point from its
-coordinates, and two operations ``xcoord`` and ``ycoord`` to retrieve the
+Some basic types are built into the language. The corresponding tags enable
+you to match the built-in types of terms for which there is no way to spell
+out all "constructors", as there are infinitely many (or none, as in the case
+of ``matrix`` and ``pointer`` which are constructed and inspected using
+special primitives, but are otherwise "opaque" at the Pure level).
+Specifically, the following data types are built-in (in fact, the pattern
+matcher has special knowledge about these so that they can be matched very
+efficiently):
+
+.. type:: int /type
+
+   The type of machine integers.
+
+.. type:: bigint /type
+
+   The type of arbitrary precision integers (GMP bigints).
+
+.. type:: double /type
+
+   The type of double precision floating point numbers.
+
+.. type:: string /type
+
+   The type of character strings.
+
+.. type:: matrix /type
+
+   The type of all numeric and symbolic matrix values.
+
+.. type:: pointer /type
+
+   The type of C pointer values.
+
+To define your own data types, you employ a special kind of rule syntax, which
+is explained in `Type Rules`_ below. For instance, we might represent points
+in the plane using a constructor symbol ``Point`` which gets applied to pairs
+of coordinates. We can then define the ``point`` data type as follows::
+
+  type point (Point x::number y::number);
+
+This introduces the type symbol ``point`` and specifies that this type
+consists of terms of the form ``Point x y`` where ``x`` and ``y`` may be any
+kinds of numbers (the :type:`number` type is defined in the prelude). We can
+now equip this data type with an operation ``point`` to construct a point from
+its coordinates, and two operations ``xcoord`` and ``ycoord`` to retrieve the
 coordinates::
 
-  point x y = Point (x,y);
+  point x::number y::number = Point (x,y);
   xcoord (Point (x,y)) = x;
   ycoord (Point (x,y)) = y;
 
-Now we might define a function ``translate`` which shifts the coordinates of a
-point by a given amount in the x and y directions as follows::
+Next we might define a function ``translate`` which shifts the coordinates of
+a point by a given amount in the x and y directions as follows::
 
-  translate (x,y) p::Point = point (xcoord p+x) (ycoord p+y);
+  translate (x::number,y::number) p::point = point (xcoord p+x) (ycoord p+y);
 
-Note the use of ``Point`` as a type tag on the ``p`` variable. By these means,
+Note the use of ``point`` as a type tag on the ``p`` variable. By these means,
 we can ensure that the argument is actually an instance of the point data
-type, without knowing anything about the internal representation. We can use
-these definitions as follows::
+type. The ``translate`` function can be invoked as follows::
 
-  > let p::Point = point 3 3;
+  > let p::point = point 3 3;
   > p; translate (1,2) p;
   Point (3,3)
   Point (4,5)
 
-Some data types in Pure's standard library (specifically, the container data
-types) are actually represented in this fashion, see the :doc:`purelib` for
-details.
+The important point here is that ``translate`` can be defined without knowing
+or assuming *anything* about the internal representation of the ``point`` data
+type. In fact, the ``Point`` constructor might well be hidden by making it a
+private member of some namespace (cf. Namespaces_), so that all accesses to
+the data structure would have to be done through the provided operations. Such
+a data type is also known as an `abstract data type` (ADT). The kind of
+"information hiding" provided by abstract data types is very important in the
+design of larger software systems. In particular, it makes it possible to
+revise the internal representation or even provide alternative implementations
+of a data type, and have auxiliary functions (like our ``translate`` function)
+still work on the modified data structure.
+
+Pure's standard library provides a few predefined data types, some of them
+concrete (like the derived number types), some of them abstract (like the
+container data types), and some which are just aliases for frequently used
+type predicates (such as the matrix subtypes). These are all described in the
+:doc:`purelib`.
+
+More examples and a detailed explanation of Pure's type tag concept can be
+found in the `Type Rules`_ section below.
 
 General Rules
 -------------
@@ -2011,6 +2062,233 @@ if the discriminant ``d = p^2/4-q`` is nonnegative::
 
 Note that the above definition leaves the case of a negative discriminant
 undefined.
+
+.. _type:
+
+Type Rules
+----------
+
+The definition of a type (cf. `Type Tags`_ above) consists of one or more type
+rules which basically have the same format as the `general rules`_, but with
+the keyword :keyword:`type` in front of each rule. Also, each left-hand side
+must have either zero or one argument patterns, and multiple right-hand sides
+aren't permitted (multiple left-hand sides work the same as in the general
+rule format, though).
+
+The identifier in the head of the left-hand side of a type rule is the name of
+the type which can then be used as a type tag in other equations. This is just
+a normal, possibly qualified identifier subject to the same namespace
+mechanisms as other symbols; see Namespaces_ for details. However, as the type
+symbol only gets used as a type tag, it can never collide with function and
+variable symbols and hence the same symbol can be used both as a type and a
+function or variable name.
+
+A collection of type rules specifies a predicate, i.e. a unary, truth-valued
+function which denotes a set of terms. The type consists precisely of those
+terms for which the type predicate yields :func:`true`. For instance, the
+following type defines the type ``triple`` as the set of all tuples with
+exactly three elements::
+
+  type triple (x,y,z) = ~tuplep z;
+
+Note that the type check consists of two parts here: The left-hand side
+pattern ``(x,y,z)`` restricts the set to all tuples with at least three
+elements. The right-hand side ``~tuplep z`` then verifies that the last
+component ``z`` is not a tuple itself, and thus the entire tuple consists of
+exactly three elements.
+
+Another important point here is that the definition of the ``triple``
+predicate is *partial*, as the given rule only applies to tuples with at least
+three elements. A value will only match the ``triple`` type tag if the
+predicate explicitly returns :func:`true`; otherwise the match will fail, no
+matter what the result is (and even if the predicates just fails, i.e.,
+returns an unevaluated normal form). Thus there is no need to make the
+predicate work on all terms (and in fact there are good reasons to *not* do
+so, see below).
+
+In general, you should try to make your type definitions as specific as
+possible. This makes it possible to extend the predicate later, just like Pure
+allows you to extend the definition of a function to new types of arguments.
+For instance, if you later decide that lists with three elements should be
+considered as triples, too, then you may add the following type rule::
+
+  type triple [x,y,z] = true;
+
+This makes it possible to define a type in a piecemeal fashion. Each
+subsequent rule enlarges the term set of the type.
+
+Conversely, consider a definition like::
+
+  type pair x = tuplep x && #x==2;
+
+In this case the type rule applies to all values ``x`` and thus the type
+definition is complete; there is no way to extend it later.
+
+Whether to prefer the former or latter kind of definition depends on the
+situation. If you want to keep a type extensible, so that you can later make
+existing definitions of operations on the type work with new data
+representations, then you should use the former approach, otherwise the
+latter.
+
+As an example for an extensible type definition, consider the following type
+``nat`` which denotes the type of positive (machine) integers::
+
+  type nat x::int = x>0;
+
+This definition is complete for the case of machine integers, but allows the
+type to be extended for other base types, and we'll do that in a moment. But
+first let's define the factorial on ``nat`` values as follows::
+
+  fact n::nat = if n==1 then 1 else n * fact (n-1);
+
+Because of the type tag on the left-hand side, this function works on positive
+machine integers, but nothing else::
+
+  > map fact (0..10);
+  [fact 0,1,2,6,24,120,720,5040,40320,362880,3628800]
+  > fact 10L;
+  fact 10L
+
+But if we later decide that positive bigints should be consider as members of
+``nat`` as well, we can simply add another rule for the ``nat`` type::
+
+  type nat x::bigint = x>0;
+
+Et voila, our ``fact`` routine now magically works with bigints, too::
+
+  > map fact (0L..10L);
+  [fact 0L,1,2L,6L,24L,120L,720L,5040L,40320L,362880L,3628800L]
+
+Note that we did all this without ever touching our original definition of
+``fact``. This works because the ``bigint`` data type already provides all
+the operations which we expect to use with the ``nat`` type. Pulling off this
+trick with other, more exotic kinds of data requires more preparation, since
+we'll first have to provide the required operations (in this case, at least
+comparisons with and subtraction of 1, as well as multiplication). For
+instance, and just for the fun of it, let's implement our own variation of the
+``nat`` type using Peano arithmetic::
+
+  type nat (s x) = true;
+
+  // addition
+  x + 0   = x;
+  x + 1   = s x;
+  x + s y = s (x+y);
+
+  // multiplication
+  x * 0   = 0;
+  x * 1   = x;
+  x * s y = x + x*y;
+
+  // subtract 1
+  s x - 1 = x;
+
+  // comparison with 0 and 1
+  s x == 0 = false;
+  s x == 1 = x == 0;
+
+This implements just the bare bones, but that should be enough to make
+``fact`` work. Let's give it a try::
+
+  > fact (s (s (s 0)));
+  s (s (s (s (s (s 0)))))
+
+So, counting the ``s``\ 's, the factorial of 3 is 6. Works! It goes without
+saying, though, that this implementation of ``nat`` is rather inefficient;
+you'll get mountains of ``s``\ 's for larger values of ``n``.
+
+As you can see, a type definition may in general consist of many type rules
+which may be scattered out over different parts of a program. This works
+exactly in the same way as with ordinary functions, which can also be defined
+in a piecemeal fashion in Pure.
+
+There's an additional convenience provided for type rules, namely that the
+right-hand side may be omitted if it's just :func:`true`. For instance, the
+rule ::
+
+  type nat (s x) = true;
+
+from above can also be written simply as::
+
+  type nat (s x);
+
+This kind of notation is particularly convenient for "algebraic types" which
+are usually given by a collection of constructors with different arities. For
+instance, a binary tree data type might be defined as follows (here we employ
+the ``|`` symbol to separate the different left-hand sides so that we can give
+all the constructor patterns in one go)::
+
+  type bintree (tip value) | bintree (bin left right);
+
+Moreover, a type rule can also take the form of a function definition without
+arguments.  In this case, the corresponding right-hand side may either be
+another type symbol, or any kind of closure denoting a (curried) type
+predicate. In this case the defined type is simply an `alias` for the type
+denoted on the right-hand side. This is often done, e.g., for numeric types,
+to document that they actually stand for special kinds of quantities::
+
+  type speed = double;
+  type size = int;
+
+Note that the definition of a type alias is always complete; there's no way to
+extend the corresponding type later. However, it's also possible to just
+specify the type name, without giving the right-hand side::
+
+  type thing;
+
+This doesn't have any effect other than just declaring the type symbol, so
+that it can be used as a type tag in subsequent definitions. You then still
+have to give a proper definition of the type later (either as an explicit
+predicate or an alias).
+
+Type aliases can also be used to quickly turn an existing predicate into a
+"convenience" type which can be used as a tag on the left-hand side of
+equations. For instance::
+
+  type closure = closurep;
+
+(The standard library also defines a number of these, e.g., for the different
+matrix types ``imatrix``, ``dmatrix`` etc.)
+
+Conversely, you can turn any type tag into an ordinary predicate which can be
+used on the right-hand side of other definitions. To these ends, the prelude
+provides the :func:`typep` predicate which takes a type symbol and the value
+to be checked as arguments. For instance::
+
+  type odd x::int = x mod 2;
+  type even x::int = ~odd x;
+
+  odd x = typep odd x;
+  even x = typep even x;
+
+With those definitions you get::
+
+  > map odd (0..10);
+  [0,1,0,1,0,1,0,1,0,1,0]
+  > map even (0..10);
+  [1,0,1,0,1,0,1,0,1,0,1]
+
+(There's one caveat here. As the type symbol passed to :func:`typep` gets
+evaluated in normal code you have to be careful if the symbol is also defined
+as a parameterless function or a variable; in such a case you'll have to quote
+the symbol, as described in section `The Quote`_.)
+
+Finally, note that Pure places no a priori restrictions on the rules defining
+a data type (other than that they must either define a unary predicate or an
+alias for an existing data type). Thus any type of relation between two data
+types is possible; they might be unrelated (disjoint) term sets, one may be a
+subset of another, or they might be related in some other way (some terms may
+be members of both types, while others aren't). Thus the relationships between
+types and their adherence to certain "interfaces" are the responsibility of
+the programmer; as far as Pure is concerned, types are just subsets of the
+universe of terms.
+
+Also note that since the right-hand side of a type definition may in general
+be any predicate, it is the responsibility of the programmer that the
+definition of a type is actually computable. In fact, you should strive for
+the best possible efficiency in type predicates. A type definition which has
+worse than O(1) complexity may well be a serious performance hog depending on
+the way in which it is used.
 
 Simple Rules
 ------------
