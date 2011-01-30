@@ -1,0 +1,156 @@
+type List = listp;
+type Tuple = tuplep;
+foo x/*0:1*/::List = 1:x/*0:1*/;
+foo x/*0:1*/::Tuple = 1,x/*0:1*/;
+foo x/*0:1*/::int = x/*0:1*/+1;
+type {
+  rule #0: List = listp
+  state 0: #0
+}
+type {
+  rule #0: Tuple = tuplep
+  state 0: #0
+}
+{
+  rule #0: foo x::List = 1:x
+  rule #1: foo x::Tuple = 1,x
+  rule #2: foo x::int = x+1
+  state 0: #0 #1 #2
+	<var> state 1
+	<var>::int state 2
+  state 1: #0 #1
+  state 2: #0 #1 #2
+}
+map foo [1:3,1..3,(1,2,3),99,foo];
+[foo (1:3),[1,1,2,3],(1,1,2,3),100,foo foo]
+def gnu x/*0:1*/::List = 1:x/*0:1*/;
+[1];
+[1]
+[1,1,2];
+[1,1,2]
+gnu 99;
+gnu 99
+let x = [1,2,3];
+x;
+[1,2,3]
+{
+  rule #0: x::List = #[1,2,3]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let x = #[1,2,3];
+<stdin>, line 20: failed match while evaluating 'let x = #[1,2,3]'
+{
+  rule #0: x::List = 1..3
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let x = 1..3;
+x;
+[1,2,3]
+{
+  rule #0: x::List = #(1..3)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let x = #(1..3);
+<stdin>, line 22: failed match while evaluating 'let x = #(1..3)'
+const _:y = 1..3;
+[2,3];
+[2,3]
+const z = 99;
+<stdin>, line 24: failed match while evaluating 'const z = 99'
+type Null () = 1;
+type Null [] = 1;
+type {
+  rule #0: Null () = 1
+  rule #1: Null [] = 1
+  state 0: #0 #1
+	[] state 1
+	() state 2
+  state 1: #1
+  state 2: #0
+}
+map (typep Null) [[],1..3,(),(1,2,3),99,foo];
+[1,0,1,0,0,0]
+type my::Null [] = 1;
+type {
+  rule #0: my::Null [] = 1
+  state 0: #0
+	[] state 1
+  state 1: #0
+}
+map (typep my::Null) [[],1..3,(),(1,2,3),99,foo];
+[1,0,0,0,0,0]
+type nat n/*0:1*/::int = n/*0:1*/>0;
+type odd n/*0:1*/::nat = n/*0:1*/ mod 2;
+type even n/*0:1*/::nat = ~typep odd n/*0:1*/;
+type evenc = (~).typep odd;
+type {
+  rule #0: nat n::int = n>0
+  state 0: #0
+	<var>::int state 1
+  state 1: #0
+}
+type {
+  rule #0: odd n::nat = n mod 2
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+type {
+  rule #0: even n::nat = ~typep odd n
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+type {
+  rule #0: evenc = (~).typep odd
+  state 0: #0
+}
+map (typep odd) (0..10);
+[0,1,0,1,0,1,0,1,0,1,0]
+map (typep even) (0..10);
+[0,0,1,0,1,0,1,0,1,0,1]
+map (typep evenc) (0..10);
+[1,0,1,0,1,0,1,0,1,0,1]
+fact n/*0:1*/::nat = if n/*0:1*/==1 then 1L else n/*0:1*/*fact (n/*0:1*/-1);
+{
+  rule #0: fact n::nat = if n==1 then 1L else n*fact (n-1)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+map fact (-1..10);
+[fact (-1),fact 0,1L,2L,6L,24L,120L,720L,5040L,40320L,362880L,3628800L]
+map fact [10,10L];
+[3628800L,fact 10L]
+type nat n/*0:1*/::bigint = n/*0:1*/>0;
+type {
+  rule #0: nat n::int = n>0
+  rule #1: nat n::bigint = n>0
+  state 0: #0 #1
+	<var>::int state 1
+	<var>::bigint state 2
+  state 1: #0
+  state 2: #1
+}
+map fact [10,10L];
+[3628800L,3628800L]
+type foo = int;
+type bar = intp;
+type {
+  rule #0: foo = int
+  state 0: #0
+}
+type {
+  rule #0: bar = intp
+  state 0: #0
+}
+map (typep foo) [[],1..3,(),(1,2,3),99,foo];
+[0,0,0,0,1,0]
+map (typep bar) [[],1..3,(),(1,2,3),99,foo];
+[0,0,0,0,1,0]

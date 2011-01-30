@@ -1,0 +1,62 @@
+// New type tags (Pure 0.47+).
+
+// Some basic type tags, aliased to existing predicates.
+type List = listp;
+type Tuple = tuplep;
+
+// Mixed use of user-defined and builtin type tags.
+foo x::List = 1:x;
+foo x::Tuple = 1,x;
+foo x::int = x+1;
+
+map foo [1:3,1..3,(1,2,3),99,foo];
+
+// Using user-defined type tags in macros.
+def gnu x::List = 1:x;
+gnu []; gnu [1,2]; gnu 99;
+
+// Using user-defined type tags in variable and constant definitions.
+let x::List = [1,2,3]; x;
+let x::List = #[1,2,3]; // fails
+let x::List = 1..3; x;
+let x::List = #(1..3); // fails
+const _:y::List = 1..3; y;
+const z::List = 99; // fails
+
+// Type tags using patterns.
+type Null () | Null [] = true;
+
+map (typep Null) [[],1..3,(),(1,2,3),99,foo];
+
+// Type tags live in namespaces.
+namespace my with
+  type Null [] = true;
+end;
+map (typep my::Null) [[],1..3,(),(1,2,3),99,foo];
+
+// Mixed patterns and predicates.
+type nat  n::int = n > 0;
+type odd  n::nat = n mod 2;
+type even n::nat = ~typep odd n;
+// Type tag defined using a closure.
+type evenc = (~).typep odd;
+
+map (typep odd) (0..10);
+map (typep even) (0..10);
+map (typep evenc) (0..10);
+
+fact n::nat = if n==1 then 1L else n * fact (n-1);
+
+map fact (-1..10);
+map fact [10,10L];
+
+// Extending an existing tag.
+type nat n::bigint = n > 0;
+map fact [10,10L];
+
+// Type tag aliased to builtin type or predicate.
+type foo = int;
+type bar = intp;
+
+map (typep foo) [[],1..3,(),(1,2,3),99,foo];
+map (typep bar) [[],1..3,(),(1,2,3),99,foo];
