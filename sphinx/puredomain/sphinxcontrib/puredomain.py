@@ -200,6 +200,8 @@ class PureObject(ObjectDescription):
             return _('%s (%smacro)') % (fname,fixity)
         elif self.objtype == 'constructor':
             return _('%s (%sconstructor)') % (fname,fixity)
+        elif self.objtype == 'type':
+            return _('%s (type)') % fname
         elif self.objtype == 'variable':
             return _('%s (variable)') % name
         elif self.objtype == 'constant':
@@ -428,6 +430,7 @@ class PureDomain(Domain):
         'extern':      ObjType(l_('extern'),      'ext', 'obj'),
         'macro':       ObjType(l_('macro'),       'macro', 'obj'),
         'constructor': ObjType(l_('constructor'), 'cons', 'obj'),
+        'type':        ObjType(l_('type'),        'type', 'obj'),
         'var':         ObjType(l_('variable'),    'var', 'obj'),
         'const':       ObjType(l_('constant'),    'const', 'obj'),
         'module':      ObjType(l_('module'),      'mod', 'obj'),
@@ -438,6 +441,7 @@ class PureDomain(Domain):
         'extern':        PureObject,
         'macro':         PureObject,
         'constructor':   PureObject,
+        'type':          PureObject,
         'variable':      PureObject,
         'constant':      PureObject,
         'namespace':     PureNamespace,
@@ -449,6 +453,7 @@ class PureDomain(Domain):
         'ext' :   PureXRefRole(),
         'macro':  PureXRefRole(),
         'cons':   PureXRefRole(),
+        'type':   PureXRefRole(),
         'var':    PureXRefRole(),
         'const':  PureXRefRole(),
         'mod':    PureXRefRole(),
