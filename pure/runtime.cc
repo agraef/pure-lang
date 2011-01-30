@@ -4010,6 +4010,13 @@ int32_t pure_cmp_string(pure_expr *x, const char *s)
   return strcmp(x->data.s, s);
 }
 
+extern "C"
+void pure_add_rtty(int32_t tag, int argc, void *fp)
+{
+  interpreter& interp = *interpreter::g_interp;
+  interp.rtty[tag] = rtty_info(argc, fp);
+}
+
 static inline int builtin_typecheck(interpreter& interp,
 				    int32_t tag, pure_expr *x)
 {
@@ -4036,19 +4043,13 @@ bool pure_typecheck(int32_t tag, pure_expr *x)
   // Check for built-in types.
   int res = builtin_typecheck(interp, tag, x);
   if (res>=0) return res;
+  if (tag<0) return false;
   // Check that the predicate actually exists.
-  map<int32_t,Env>::iterator g = interp.globaltypes.find(tag);
-  if (g == interp.globaltypes.end()) return false;
-  assert(g->second.n <= 1 && g->second.m == 0);
+  map<int32_t,rtty_info>::iterator info = interp.rtty.find(tag);
+  if (info == interp.rtty.end()) return false;
   // Get the function pointer and number of arguments.
-  void *fp = g->second.__fp;
-  int argc = g->second.n;
-  if (!fp) {
-    llvm::Function *f = g->second.f, *h = g->second.h;
-    assert(h);
-    if (f != h) interp.JIT->getPointerToFunction(f);
-    g->second.__fp = fp = interp.JIT->getPointerToFunction(h);
-  }
+  void *fp = info->second.fp;
+  int argc = info->second.argc;
   // An argument count of zero indicates an alias, pointing either to another
   // type predicate or a normal function (presumably a unary predicate).
   while (argc == 0) {
@@ -4059,19 +4060,11 @@ bool pure_typecheck(int32_t tag, pure_expr *x)
     if (tag > 0) {
       if ((res = builtin_typecheck(interp, tag, x)) >= 0)
 	return res;
-      else if ((g = interp.globaltypes.find(tag)) !=
-	       interp.globaltypes.end()) {
+      else if ((info = interp.rtty.find(tag)) != interp.rtty.end()) {
 	// Alias pointing to yet another defined type predicate. Wash, rinse,
 	// repeat.
-	assert(g->second.n <= 1 && g->second.m == 0);
-	fp = g->second.__fp;
-	argc = g->second.n;
-	if (!fp) {
-	  llvm::Function *f = g->second.f, *h = g->second.h;
-	  assert(h);
-	  if (f != h) interp.JIT->getPointerToFunction(f);
-	  g->second.__fp = fp = interp.JIT->getPointerToFunction(h);
-	}
+	fp = info->second.fp;
+	argc = info->second.argc;
       } else
 	goto eval;
     } else {

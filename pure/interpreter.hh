@@ -223,8 +223,6 @@ public:
   uint32_t n, m;
   // f = the (internal) LLVM function, h = the C-callable stub (if needed)
   llvm::Function *f, *h;
-  // the actual function pointer (type predicates only)
-  void *__fp;
   // function arguments (f.n x expr*)
   vector<llvm::Value*> args;
   // environment pointer (expr**)
@@ -417,6 +415,13 @@ typedef set<int32_t> funset;
 typedef pair<expr,expr> comp_clause;
 typedef list<comp_clause> comp_clause_list;
 
+struct rtty_info {
+  int argc;
+  void *fp;
+  rtty_info() : argc(0), fp(0) {}
+  rtty_info(uint8_t _argc, void *_fp) : argc(_argc), fp(_fp) {}
+};
+
 struct nsinfo {
   // scoped namespaces data
   bool priv; // private/public flag (currently this isn't used by the parser)
@@ -502,6 +507,7 @@ public:
   bcmap loaded_bcs;  // the set of all loaded bitcode modules (bc:...)
   bcmap loaded_dsps; // the set of all loaded Faust modules (dsp:...)
   map<int,bcmap::iterator> dsp_mods; // reverse mapping of Faust modules
+  map<int32_t,rtty_info> rtty; // runtime type tag information
   list<int> required; // required symbols (--required pragma)
   set<int> eager;    // eager compilation symbols (--eager pragma)
   ostream *output;   // redirected output stream for interactive commands

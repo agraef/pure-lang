@@ -675,6 +675,8 @@ void interpreter::init()
 		 "pure_check_tag",  "bool",   2, "int", "expr*");
   declare_extern((void*)pure_add_rtti,
 		 "pure_add_rtti",   "void",   2, "char*", "int");
+  declare_extern((void*)pure_add_rtty,
+		 "pure_add_rtty",   "void",   3, "int", "int", "void*");
 
   declare_extern((void*)faust_float_ui,
 		 "faust_float_ui",  "void*",  0);
@@ -3184,6 +3186,47 @@ void interpreter::compile()
     // recompiled, do it now
     set<int> to_be_jited;
     list<pure_expr*> to_be_freed;
+    // Do the type predicates first, as the functions may need them.
+    for (funset::const_iterator f = dirty_types.begin();
+	 f != dirty_types.end(); f++) {
+      env::iterator e = typeenv.find(*f);
+      if (e != typeenv.end()) {
+	int32_t ftag = e->first;
+	env_info& info = e->second;
+	info.m = new matcher(*info.rules, info.argc+1);
+	if (verbose&verbosity::code) std::cout << "type " << *info.m << '\n';
+	// regenerate LLVM code (prolog)
+	Env& f = globaltypes[ftag] = Env(ftag, info, false, false);
+#if DEBUG>1
+	print_map(std::cerr, &f);
+#endif
+	push("compile", &f);
+	globaltypes[ftag].f = fun_prolog("$$type."+symtab.sym(ftag).s);
+	pop(&f);
+      }
+    }
+    for (funset::const_iterator f = dirty_types.begin();
+	 f != dirty_types.end(); f++) {
+      env::iterator e = typeenv.find(*f);
+      if (e != typeenv.end()) {
+	int32_t ftag = e->first;
+	env_info& info = e->second;
+	// regenerate LLVM code (body)
+	Env& f = globaltypes[ftag];
+	push("compile", &f);
+	fun_body(info.m);
+	pop(&f);
+	// Always run the JIT on these right away and set up the runtime type
+	// information. These functions are called indirectly through the
+	// runtime, and we don't know when or where that will be.
+	if (f.f != f.h) JIT->getPointerToFunction(f.f);
+	void *fp = JIT->getPointerToFunction(f.h);
+	pure_add_rtty(ftag, f.n, fp);
+#if DEBUG>1
+	std::cerr << "JIT " << f.f->getNameStr() << " -> " << fp << '\n';
+#endif
+      }
+    }
     for (funset::const_iterator f = dirty.begin(); f != dirty.end(); f++) {
       env::iterator e = globenv.find(*f);
       if (e != globenv.end()) {
@@ -3218,7 +3261,7 @@ void interpreter::compile()
 	void *fp = 0;
 #else
 	// run the JIT now (always use the C-callable stub here)
-	if (f.f != f.h) interp.JIT->getPointerToFunction(f.f);
+	if (f.f != f.h) JIT->getPointerToFunction(f.f);
 	void *fp = JIT->getPointerToFunction(f.h);
 #if DEBUG>1
 	std::cerr << "JIT " << f.f->getNameStr() << " -> " << fp << '\n';
@@ -3244,50 +3287,6 @@ void interpreter::compile()
 		  << JIT->getPointerToGlobal(v.v) << ") -> "
 		  << (void*)fv << '\n';
 #endif
-      }
-    }
-    // Same as above for type predicates.
-    for (funset::const_iterator f = dirty_types.begin();
-	 f != dirty_types.end(); f++) {
-      env::iterator e = typeenv.find(*f);
-      if (e != typeenv.end()) {
-	int32_t ftag = e->first;
-	env_info& info = e->second;
-	info.m = new matcher(*info.rules, info.argc+1);
-	if (verbose&verbosity::code) std::cout << "type " << *info.m << '\n';
-	// regenerate LLVM code (prolog)
-	Env& f = globaltypes[ftag] = Env(ftag, info, false, false);
-#if DEBUG>1
-	print_map(std::cerr, &f);
-#endif
-	push("compile", &f);
-	globaltypes[ftag].f = fun_prolog("$$type."+symtab.sym(ftag).s);
-	pop(&f);
-      }
-    }
-    for (funset::const_iterator f = dirty_types.begin();
-	 f != dirty_types.end(); f++) {
-      env::iterator e = typeenv.find(*f);
-      if (e != typeenv.end()) {
-	int32_t ftag = e->first;
-	env_info& info = e->second;
-	// regenerate LLVM code (body)
-	Env& f = globaltypes[ftag];
-	push("compile", &f);
-	fun_body(info.m);
-	pop(&f);
-#if DEFER_GLOBALS
-	// defer JIT until the function is called somewhere
-	void *fp = 0;
-#else
-	// run the JIT now (always use the C-callable stub here)
-	if (f.f != f.h) interp.JIT->getPointerToFunction(f.f);
-	void *fp = JIT->getPointerToFunction(f.h);
-#if DEBUG>1
-	std::cerr << "JIT " << f.f->getNameStr() << " -> " << fp << '\n';
-#endif
-#endif
-	f.__fp = fp;
       }
     }
     if (!to_be_jited.empty())
@@ -6745,6 +6744,12 @@ int interpreter::compiler(string out, list<string> libnames)
     }
     if (f) used.insert(f);
   }
+  // Always keep the type predicates.
+  for (map<int32_t,Env>::iterator it = globaltypes.begin(),
+	 end = globaltypes.end(); it != end; ++it) {
+    Function *f = it->second.h;
+    if (f) used.insert(f);
+  }
   map<GlobalVariable*,Function*> varmap;
   if (strip) check_used(used, varmap);
   // Remove unused globals.
@@ -6921,6 +6926,19 @@ int interpreter::compiler(string out, list<string> libnames)
   args.push_back(b.CreateBitCast(sstkvar, VoidPtrTy));
   args.push_back(b.CreateBitCast(fptrvar, VoidPtrTy));
   b.CreateCall(initfun, args.begin(), args.end());
+  // Initialize runtime type tag information.
+  Function *pure_rttyfun = module->getFunction("pure_add_rtty");
+  for (map<int32_t,Env>::iterator it = globaltypes.begin(),
+	 end = globaltypes.end(); it != end; ++it) {
+    int32_t tag = it->first;
+    Function *f = it->second.h;
+    int argc = it->second.n;
+    vector<Value*> argv(3);
+    argv[0] = SInt(tag);
+    argv[1] = SInt(argc);
+    argv[2] = ConstantExpr::getPointerCast(f, VoidPtrTy);
+    b.CreateCall(pure_rttyfun, argv.begin(), argv.end());
+  }
   // Make Pure pointer RTTI available if present.
   Function *pure_rttifun = module->getFunction("pure_add_rtti");
   for (map<string,int>::const_iterator it = pointer_tags.begin(),
@@ -6976,6 +6994,7 @@ int interpreter::compiler(string out, list<string> libnames)
     }
   }
   b.CreateRet(0);
+  verifyFunction(*main);
   // Emit output code (either LLVM assembler or bitcode).
   if (bc_target) {
     WriteBitcodeToFile(module, code);

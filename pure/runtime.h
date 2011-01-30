@@ -861,9 +861,10 @@ void pure_debug_rule(void *e, void *r);
 void pure_debug_redn(void *e, void *r, pure_expr *x);
 
 /* Pure runtime type information (RTTI). This maintains the necessary
-   information about pointer type names and tags and makes these available to
-   Pure programs. */
+   information about type tags and pointer type names and tags and makes these
+   available to Pure programs. */
 
+void pure_add_rtty(int32_t tag, int argc, void *fp);
 void pure_add_rtti(const char *name, int tag);
 
 /* Internal Faust interface (Pure 0.45 and later). These provide the necessary
