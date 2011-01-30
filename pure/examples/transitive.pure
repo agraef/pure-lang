@@ -2,11 +2,6 @@
 // by Vili Aapro, 2009
 // This file is in the public domain.
 
-// Accessors
-
-key   (k => _)		= k;
-value (_ => x)		= x;
-
 // This could be in the prelude
 
 sum			= foldl (+) 0;
@@ -30,7 +25,7 @@ vec ps + vec qs		= vec $ add ps qs with
   add [] qs		= qs;
   add (p:ps) (q:qs)	= p : add ps (q:qs) if key p < key q;
 			= q : add (p:ps) qs if key p > key q;
-			= (key p => value p + value q) : rs with
+			= (key p => val p + val q) : rs with
 			    rs = add ps qs& if thunkp ps or thunkp qs;
 			       = add ps qs  otherwise;
 			  end                       if key p == key q;
@@ -43,7 +38,7 @@ end;
   mul [] _		= 0;
   mul (p:ps) (q:qs)	= mul ps (q:qs) if key p < key q;
 			= mul (p:ps) qs if key p > key q;
-			= value p * value q + mul ps qs
+			= val p * val q + mul ps qs
 			                if key p == key q;
 end;
 
