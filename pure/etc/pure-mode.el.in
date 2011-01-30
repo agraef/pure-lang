@@ -1322,7 +1322,9 @@ is non-nil. See `run-pure' for details."
 	 (pure-eval-window (and pure-eval-buffer
 				 (get-buffer-window pure-eval-buffer))))
     (if pure-eval-process
-	(progn
+	(save-excursion
+	  (set-buffer pure-eval-buffer)
+	  (comint-write-input-ring)
 	  (process-send-eof pure-eval-process)
 	  (accept-process-output pure-eval-process)))
     (if pure-eval-window
@@ -1962,6 +1964,8 @@ If prefix ARG is not nil, remove an existing tracepoint instead."
 	    ;; Make sure to use a reasonable timeout here, otherwise an
 	    ;; unresponsive interpreter can easily lock up emacs.
 	    (unless (or (accept-process-output proc pure-process-timeout)
+			(if (get-buffer-process pure-eval-buffer) nil
+			  (error "Pure interpreter has exited"))
 			(y-or-n-p
 			 "Pure interpreter seems unresponsive, continue? "))
 	      (error "Aborted")))
