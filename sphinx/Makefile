@@ -48,7 +48,8 @@ help:
 	@printf "\nMaintainers only (this requires a checkout of the 'docs' repository):\n\n"
 	@printf "  %-12s%s\n" \
 	  update     "to copy the generated docs to a staging area for online viewing" \
-	  update-html "to copy only the html docs to the staging area"
+	  update-html "to copy only the html docs to the staging area" \
+	  update-info "to copy only the info docs to the staging area"
 
 # The rst sources we want to use. This is pretty much the only definition that
 # needs to be updated (along with the toctree in the master document index.txt)
@@ -84,7 +85,7 @@ PAPEROPT_letter = -D latex_paper_size=letter
 ALLSPHINXOPTS   = -d $(BUILDDIR)/doctrees $(PAPEROPT_$(PAPER)) $(SPHINXOPTS) .
 FIXDOC          = $(AWK) -f fixdoc
 
-.PHONY: all docs rst alldocs allhtml dist install uninstall update update-html sources help clean cleanrst realclean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest
+.PHONY: all docs rst alldocs allhtml allinfo dist install uninstall update update-html sources help clean cleanrst realclean html dirhtml singlehtml pickle json htmlhelp qthelp devhelp epub latex latexpdf text man changes linkcheck doctest
 
 # Try to grab as many rst sources as we can, then go ahead and build the html
 # and pdf targets if necessary. This requires an installation of docutils,
@@ -120,6 +121,15 @@ allhtml:
 	@$(MAKE) --no-print-directory sources
 	@(manifest=`ls */*.txt 2>/dev/null || true`; test -n "$$manifest" && cp $$manifest .; rm -rf $(dir $(rst_sources)); true)
 	@$(MAKE) --no-print-directory $(BUILDDIR)/html/index.html
+
+# Same as above, but update the texinfo (and info) docs. This is used
+# internally for the 'update-info' target.
+
+allinfo:
+	@rm -rf $(dir $(rst_sources))
+	@$(MAKE) --no-print-directory sources
+	@(manifest=`ls */*.txt 2>/dev/null || true`; test -n "$$manifest" && cp $$manifest .; rm -rf $(dir $(rst_sources)); true)
+	@$(MAKE) texinfo && (cd $(BUILDDIR)/texinfo && $(MAKE) info)
 
 # Same as above, but don't run sphinx-builder yet, leave that to the user.
 # This can be run without having any of the docutils/Sphinx tools installed,
@@ -183,6 +193,12 @@ update: alldocs $(docsdir)/Makefile
 update-html: allhtml $(docsdir)/Makefile
 	rm -rf $(addprefix $(docsdir)/, _images _sources _static $(htmlfiles))
 	cp -r $(addprefix $(BUILDDIR)/html/, _images _sources _static $(htmlfiles)) $(docsdir)
+
+# Same as above, but update the info and texinfo docs.
+
+update-info: allinfo $(docsdir)/Makefile
+	rm -rf $(docsdir)/texinfo
+	cp -r $(BUILDDIR)/texinfo $(docsdir)
 
 # Dist target.
 
