@@ -2055,6 +2055,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	const symbol& sym = *it->sym;
 	int32_t ftag = sym.f;
 	map<int32_t,Env>::iterator fenv = interp.globalfuns.find(ftag);
+	map<int32_t,Env>::iterator tenv = interp.globaltypes.find(ftag);
 	const env::const_iterator _it = it->it, _jt = it->jt, _kt = it->kt;
 	const extmap::const_iterator xt = it->xt;
 	if (yflag && _kt != interp.typeenv.end() &&
@@ -2067,6 +2068,8 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	    if (lflag) {
 	      sout << "  " << rules << ";";
 	      if (aflag && m) sout << '\n' << *m;
+	      if (dflag && tenv != interp.globaltypes.end() && tenv->second.f)
+		tenv->second.print(sout);
 	    } else {
 	      sout << " " << rules.size() << " rules";
 	    }
@@ -2086,6 +2089,8 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	    }
 	    if (n > 0) {
 	      if (aflag && m) sout << *m << '\n';
+	      if (dflag && tenv != interp.globaltypes.end() && tenv->second.f)
+		tenv->second.print(sout);
 	      trules += n;
 	      ++ntypes;
 	    }

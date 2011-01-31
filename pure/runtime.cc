@@ -4056,21 +4056,29 @@ bool pure_typecheck(int32_t tag, pure_expr *x)
     // Resolve an alias. Note that this may loop if you define the predicate
     // in a circular way, so don't do this.
     pure_expr *y = pure_funcall(fp, 0);
+    if (!y) return false;
+    if (tag == y->tag) {
+      // We're just looping here because the alias failed. Bail out.
+      pure_freenew(y);
+      return false;
+    }
     tag = y->tag;
     if (tag > 0) {
-      if ((res = builtin_typecheck(interp, tag, x)) >= 0)
+      if ((res = builtin_typecheck(interp, tag, x)) >= 0) {
+	pure_freenew(y);
 	return res;
-      else if ((info = interp.rtty.find(tag)) != interp.rtty.end()) {
+      } else if ((info = interp.rtty.find(tag)) != interp.rtty.end()) {
 	// Alias pointing to yet another defined type predicate. Wash, rinse,
 	// repeat.
+	pure_freenew(y);
 	fp = info->second.fp;
 	argc = info->second.argc;
       } else
 	goto eval;
     } else {
     eval:
-      // Alias is an ordinary predicate. Apply it to the argument expression
-      // and return the resulting truth value.
+      // Alias presumably is an ordinary predicate. Apply it to the argument
+      // expression and return the resulting truth value.
       y = pure_apply2(y, x);
       int32_t iv;
       bool res = pure_is_int(y, &iv) && iv!=0;
