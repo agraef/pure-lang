@@ -2012,7 +2012,8 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	  if (!_matches) jt = interp.macenv.end();
 	  matches = matches || _matches;
 	}
-	if (yflag && kt != interp.typeenv.end()) {
+	if (yflag && kt != interp.typeenv.end() &&
+	    kt->second.t != env_info::none) {
 	  // also list symbols defined as types
 	  const env_info& e = kt->second;
 	  bool _matches = e.temp >= tlevel;
@@ -2056,7 +2057,8 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	map<int32_t,Env>::iterator fenv = interp.globalfuns.find(ftag);
 	const env::const_iterator _it = it->it, _jt = it->jt, _kt = it->kt;
 	const extmap::const_iterator xt = it->xt;
-	if (yflag && _kt != interp.typeenv.end()) {
+	if (yflag && _kt != interp.typeenv.end() &&
+	    _kt->second.t != env_info::none) {
 	  const rulel& rules = *_kt->second.rules;
 	  const matcher *m = _kt->second.m;
 	  if (sflag) {
@@ -2371,7 +2373,8 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	  if (!_matches) jt = interp.macenv.end();
 	  matches = matches || _matches;
 	}
-	if (yflag && kt != interp.typeenv.end()) {
+	if (yflag && kt != interp.typeenv.end() &&
+	    kt->second.t != env_info::none) {
 	  // also list symbols defined as types
 	  const env_info& e = kt->second;
 	  bool _matches = e.temp >= tlevel;
@@ -2417,7 +2420,8 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	map<int32_t,Env>::iterator fenv = interp.globalfuns.find(ftag);
 	const env::const_iterator _it = it->it, _jt = it->jt, _kt = it->kt;
 	const extmap::const_iterator _xt = it->xt;
-	if (yflag && _kt != interp.typeenv.end()) {
+	if (yflag && _kt != interp.typeenv.end() &&
+	    _kt->second.t != env_info::none) {
 	  const rulel& rules = *_kt->second.rules;
 	  for (rulel::const_iterator it = rules.begin();
 	       it != rules.end(); ++it) {
@@ -2631,7 +2635,8 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
 	      }
 	  }
 	}
-	if (!matches && yflag && kt != interp.typeenv.end()) {
+	if (!matches && yflag && kt != interp.typeenv.end() &&
+	    kt->second.t != env_info::none) {
 	  // also list symbols defined as types
 	  const env_info& e = kt->second;
 	  matches = e.temp >= tlevel;

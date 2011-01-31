@@ -3843,6 +3843,10 @@ void interpreter::clear(int32_t f)
       env::iterator jt = it; ++it;
       int32_t f = jt->first;
       env_info& info = jt->second;
+      if (info.t == env_info::none) {
+	typeenv.erase(jt);
+	continue;
+      }
       if (info.temp >= temp) {
 	cleartypesym(f);
 	typeenv.erase(jt);
@@ -3883,7 +3887,7 @@ void interpreter::clear_type(int32_t f)
   assert(f > 0);
   env::iterator it = typeenv.find(f);
   if (it != typeenv.end()) {
-    cleartypesym(f);
+    if (it->second.t != env_info::none) cleartypesym(f);
     typeenv.erase(it);
   }
 }
