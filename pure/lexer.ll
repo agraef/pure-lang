@@ -2076,7 +2076,11 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	    for (rulel::const_iterator it = rules.begin();
 		 it != rules.end(); ++it) {
 	      if (it->temp >= tlevel) {
-		sout << "type " << *it << ";\n";
+		int32_t i;
+		if (it->lhs.is_app() && it->rhs.is_int(i) && i==1)
+		  sout << "type " << it->lhs << ";\n";
+		else
+		  sout << "type " << *it << ";\n";
 		++n;
 	      }
 	    }
@@ -2426,7 +2430,11 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	  for (rulel::const_iterator it = rules.begin();
 	       it != rules.end(); ++it) {
 	    if (it->temp >= tlevel) {
-	      fout << "type " << *it << ";\n";
+	      int32_t i;
+	      if (it->lhs.is_app() && it->rhs.is_int(i) && i==1)
+		fout << "type " << it->lhs << ";\n";
+	      else
+		fout << "type " << *it << ";\n";
 	    }
 	  }
 	}

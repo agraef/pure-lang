@@ -767,7 +767,7 @@ type_rule
 : lhs
 { $$ = new rulel;
   for (exprl::iterator l = $1->begin(), end = $1->end(); l != end; l++) {
-    if (l->tag()> 0) {
+    if (l->is_fun()) {
       // Just declare the symbol so that the compiler knows about it.
       if ((interp.verbose&verbosity::defs) != 0)
 	cout << "type " << *l << ";\n";

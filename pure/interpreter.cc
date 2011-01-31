@@ -4116,7 +4116,13 @@ void interpreter::add_type_rule(env &e, rule &r)
     info.rules->insert(p, r);
   } else
     info.rules->push_back(r);
-  if ((verbose&verbosity::defs) != 0) cout << "type " << r << ";\n";
+  if ((verbose&verbosity::defs) != 0) {
+    int32_t i;
+    if (r.lhs.is_app() && r.rhs.is_int(i) && i==1)
+      cout << "type " << r.lhs << ";\n";
+    else
+      cout << "type " << r << ";\n";
+  }
   mark_dirty_type(f);
 }
 
