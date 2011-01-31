@@ -1882,13 +1882,13 @@ means of (unary) type *predicates* which may denote arbitrary sets of
 terms. The names of these type predicates can then be used as `type tags` on
 variables, so that they can only be matched by values of the given type.
 
-.. note:: It is important to note there that Pure's notion of types has
-   nothing to do with static typing. Type tags are only used at runtime to
-   restrict the kind of data that can be matched by a rule, and maybe by the
-   compiler to generate better code. But they will never cause the compiler to
-   spit out "type errors". This wouldn't make any sense in Pure anyway, as
-   failure to match any of the rules given in the definition of a function
-   simply means that a function application is in normal form.
+.. note:: It is important to note here that Pure's notion of types has nothing
+   to do with static typing. Type tags are only used at runtime to restrict
+   the kind of data that can be matched by a rule, and maybe by the compiler
+   to generate better code. But they will never cause the compiler to spit out
+   "type errors". This wouldn't make any sense in Pure anyway, as failure to
+   match any of the rules given in the definition of a function simply means
+   that a function application is in normal form.
 
 Some basic types are built into the language. The corresponding tags enable
 you to match the built-in types of terms for which there is no way to spell
@@ -3540,8 +3540,8 @@ print name from another namespace is already visible in the current scope. To
 distinguish "defining" from "referring" uses of a global symbol, Pure uses the
 following (purely syntactic) notions:
 
-* A `defining occurrence` of a global *function* or *macro symbol* is any
-  occurrence of the symbol as the *head symbol* on the left-hand side of a
+* A `defining occurrence` of a global *function*, *macro* or *type symbol* is
+  any occurrence of the symbol as the *head symbol* on the left-hand side of a
   rewriting rule.
 
 * A `defining occurrence` of a global *variable* or *constant symbol* is any
@@ -6533,13 +6533,20 @@ Types`_ section for details.
 
 Pure 0.47 added support for declaring variadic externs, so functions like
 ``printf`` can now be called without much ado; see `Variadic C Functions`_ for
-details.
+details. Also, the syntax used to denote `inline code`_ sections was changed
+from ``%{...%}`` to ``%<...%>``. This resolves an ambiguity in the syntax
+(note that ``%{`` is legal Pure syntax; it could denote a ``%`` operator
+followed by a matrix value), and also makes it easier to properly support this
+construct in Emacs Pure mode.
 
-Pure 0.47 also changed the syntax used to denote `inline code`_ sections from
-``%{...%}`` to ``%<...%>``. This resolves an ambiguity in the syntax (note
-that ``%{`` is legal Pure syntax; it could denote a ``%`` operator followed by
-a matrix value), and also makes it easier to properly support this construct
-in Emacs Pure mode.
+Pure 0.47 also introduced a new, more flexible type tag feature, which defines
+type tags as unary predicates, using normal rewriting rules just as with
+ordinary functions. To these ends, a new keyword :keyword:`type` was added.
+Please see section `Type Rules`_ for details. (In contrast, the old-tyle type
+tags were just a syntactic shortcut for "as" patterns involving unary
+constructor symbols. For the time being, these are still supported, but
+considered deprecated. The :option:`-w` option can be used to get warnings
+about these so that you can fix up your scripts accordingly.)
 
 Error Recovery
 --------------
