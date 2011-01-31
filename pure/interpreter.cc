@@ -3130,7 +3130,7 @@ void interpreter::mark_dirty(int32_t f)
 void interpreter::mark_dirty_type(int32_t f)
 {
   env::iterator e = typeenv.find(f);
-  if (e != typeenv.end()) {
+  if (e != typeenv.end() && e->second.t != env_info::none) {
     // mark this closure for recompilation
     env_info& info = e->second;
     if (info.m) {
@@ -3190,7 +3190,7 @@ void interpreter::compile()
     for (funset::const_iterator f = dirty_types.begin();
 	 f != dirty_types.end(); f++) {
       env::iterator e = typeenv.find(*f);
-      if (e != typeenv.end()) {
+      if (e != typeenv.end() && e->second.t != env_info::none) {
 	int32_t ftag = e->first;
 	env_info& info = e->second;
 	info.m = new matcher(*info.rules, info.argc+1);
@@ -3208,7 +3208,7 @@ void interpreter::compile()
     for (funset::const_iterator f = dirty_types.begin();
 	 f != dirty_types.end(); f++) {
       env::iterator e = typeenv.find(*f);
-      if (e != typeenv.end()) {
+      if (e != typeenv.end() && e->second.t != env_info::none) {
 	int32_t ftag = e->first;
 	env_info& info = e->second;
 	// regenerate LLVM code (body)
@@ -3937,7 +3937,7 @@ void interpreter::clear_type_rules(int32_t f, uint32_t level)
 {
   assert(f > 0);
   env::iterator it = typeenv.find(f);
-  if (it != typeenv.end()) {
+  if (it != typeenv.end() && it->second.t != env_info::none) {
     env_info& e = it->second;
     rulel& r = *e.rules;
     bool d = false;
@@ -4093,7 +4093,7 @@ void interpreter::add_type_rule(env &e, rule &r)
   fx.flags() |= EXPR::GLOBAL;
   env::iterator it = e.find(f);
   const symbol& sym = symtab.sym(f);
-  if (it != e.end()) {
+  if (it != e.end() && it->second.t != env_info::none) {
     if (it->second.argc != argc) {
       ostringstream msg;
       msg << "type predicate '" << sym.s

@@ -764,7 +764,20 @@ simple_rulel
    (continuation) rules. */
 
 type_rule
-: lhs '=' rhs
+: lhs
+{ $$ = new rulel;
+  for (exprl::iterator l = $1->begin(), end = $1->end(); l != end; l++) {
+    if (l->tag()> 0) {
+      // Just declare the symbol so that the compiler knows about it.
+      if ((interp.verbose&verbosity::defs) != 0)
+	cout << "type " << *l << ";\n";
+      interp.typeenv[l->tag()];
+    } else
+      // assume rhs = true
+      $$->push_back(rule(*l, expr(EXPR::INT, 1)));
+  }
+  delete $1; }
+| lhs '=' rhs
 { $$ = new rulel;
   for (exprl::iterator l = $1->begin(), end = $1->end(); l != end; l++)
     $$->push_back(rule(*l, $3->rhs(), $3->qual()));
