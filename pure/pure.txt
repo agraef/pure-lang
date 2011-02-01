@@ -1882,13 +1882,14 @@ means of (unary) type *predicates* which may denote arbitrary sets of
 terms. The names of these type predicates can then be used as `type tags` on
 variables, so that they can only be matched by values of the given type.
 
-.. note:: It is important to note here that Pure's notion of types has nothing
-   to do with static typing. Type tags are only used at runtime to restrict
-   the kind of data that can be matched by a rule, and maybe by the compiler
-   to generate better code. But they will never cause the compiler to spit out
-   "type errors". This wouldn't make any sense in Pure anyway, as failure to
-   match any of the rules given in the definition of a function simply means
-   that a function application is in normal form.
+.. note:: We have to emphasize here that Pure's notion of types has nothing to
+   do with static typing. Type tags are merely used at runtime to restrict the
+   kind of data that can be matched by a rule, and maybe by the compiler to
+   generate better code in some cases. But they will never cause the compiler
+   to impose a static typing discipline and spit out corresponding "type
+   errors". This wouldn't make any sense in Pure anyway, as failure to match
+   any of the rules given in the definition of a function simply means that a
+   function application is in normal form.
 
 Some basic types are built into the language. The corresponding tags enable
 you to match the built-in types of terms for which there is no way to spell
@@ -1937,9 +1938,9 @@ now equip this data type with an operation ``point`` to construct a point from
 its coordinates, and two operations ``xcoord`` and ``ycoord`` to retrieve the
 coordinates::
 
-  point x::number y::number = Point (x,y);
-  xcoord (Point (x,y)) = x;
-  ycoord (Point (x,y)) = y;
+  point x::number y::number = Point x y;
+  xcoord (Point x y) = x;
+  ycoord (Point x y) = y;
 
 Next we might define a function ``translate`` which shifts the coordinates of
 a point by a given amount in the x and y directions as follows::
@@ -1952,8 +1953,8 @@ type. The ``translate`` function can be invoked as follows::
 
   > let p::point = point 3 3;
   > p; translate (1,2) p;
-  Point (3,3)
-  Point (4,5)
+  Point 3 3
+  Point 4 5
 
 The important point here is that ``translate`` can be defined without knowing
 or assuming *anything* about the internal representation of the ``point`` data
@@ -1966,6 +1967,14 @@ design of larger software systems. In particular, it makes it possible to
 revise the internal representation or even provide alternative implementations
 of a data type, and have auxiliary functions (like our ``translate`` function)
 still work on the modified data structure.
+
+.. note:: As we've already seen, Pure has some powerful capabilities which
+   enable you to write functions to inspect and manipulate terms in a
+   completely generic fashion. Thus the internal structure of term data is
+   never truly opaque in Pure and it is always possible to break the
+   "abstraction barrier" provided by an ADT. But if the user of an ADT plays
+   such dirty tricks to wreak havoc on the internal representation of an ADT,
+   he gets what he deserves.
 
 Pure's standard library provides a few predefined data types, some of them
 concrete (like the derived number types), some of them abstract (like the
@@ -2080,7 +2089,7 @@ the type which can then be used as a type tag in other equations. This is just
 a normal, possibly qualified identifier subject to the same namespace
 mechanisms as other symbols; see Namespaces_ for details. However, as the type
 symbol only gets used as a type tag, it can never collide with function and
-variable symbols and hence the same symbol can be used both as a type and a
+variable symbols and hence the same symbol can be used both as a type and as a
 function or variable name.
 
 A collection of type rules specifies a predicate, i.e. a unary, truth-valued
@@ -2160,11 +2169,11 @@ Et voila, our ``fact`` routine now magically works with bigints, too::
   [fact 0L,1,2L,6L,24L,120L,720L,5040L,40320L,362880L,3628800L]
 
 Note that we did all this without ever touching our original definition of
-``fact``. This works because the ``bigint`` data type already provides all
-the operations which we expect to use with the ``nat`` type. Pulling off this
+``fact``. This works because the ``bigint`` data type already provides all the
+operations which we expect to use with the ``nat`` type. Pulling off this
 trick with other, more exotic kinds of data requires more preparation, since
-we'll first have to provide the required operations (in this case, at least
-comparisons with and subtraction of 1, as well as multiplication). For
+we'll first have to provide the required operations. In this case, we need at
+least multiplication, as well as comparisons with 1 and subtraction by 1. For
 instance, and just for the fun of it, let's implement our own variation of the
 ``nat`` type using Peano arithmetic::
 
@@ -2194,7 +2203,7 @@ This implements just the bare bones, but that should be enough to make
   s (s (s (s (s (s 0)))))
 
 So, counting the ``s``\ 's, the factorial of 3 is 6. Works! It goes without
-saying, though, that this implementation of ``nat`` is rather inefficient;
+saying, though, that this implementation of ``nat`` is rather impractical;
 you'll get mountains of ``s``\ 's for larger values of ``n``.
 
 As you can see, a type definition may in general consist of many type rules
@@ -2280,15 +2289,62 @@ types is possible; they might be unrelated (disjoint) term sets, one may be a
 subset of another, or they might be related in some other way (some terms may
 be members of both types, while others aren't). Thus the relationships between
 types and their adherence to certain "interfaces" are the responsibility of
-the programmer; as far as Pure is concerned, types are just subsets of the
+the programmer. As far as Pure is concerned, types are just subsets of the
 universe of terms.
 
 Also note that since the right-hand side of a type definition may in general
-be any predicate, it is the responsibility of the programmer that the
-definition of a type is actually computable. In fact, you should strive for
-the best possible efficiency in type predicates. A type definition which has
-worse than O(1) complexity may well be a serious performance hog depending on
-the way in which it is used.
+be any predicate, it is up to the programmer to ensure that the definition of
+a type is actually computable. In fact, you should strive for the best
+possible efficiency in type predicates. A type definition which has worse than
+O(1) complexity may well be a serious performance hog depending on the way in
+which it is used. For instance, consider the definition of the
+:type:`list/type` type from the prelude::
+
+  type list [] | list (x:xs::list);
+
+This type is defined recursively, so that it only matches "proper" lists which
+have list values in all their tails (and are thus terminated by the empty
+list). However, this also implies that a check for this type will take O(n)
+time, where n is the size of the list. This will have dire consequences if you
+do this check repeatedly while traversing a list, as in the following ``sum``
+function::
+
+  sum xs::list = if null xs then 0 else head xs+sum (tail xs);
+
+As this function repeatedly checks its entire argument, the total time it
+takes to compute the sum of a list this way becomes O(n^2). (To see how slow
+this function is, just try invoking it on successively larger lists ``1..n``,
+e.g., for ``n = 1000, 2000, 3000, ...``.)
+
+One way to work around this is to write a "wrapper" function which simply
+checks the type of its argument in advance and then invokes a "worker"
+function to do the actual computation::
+
+  sum xs::list = sum xs with
+    sum xs = if null xs then 0 else head xs+sum (tail xs);
+  end;
+
+However, this is a bit cumbersome. A better way is to just do the type
+checking in a piecemeal fashion, as the list is being traversed. To these
+ends, the prelude also provides a :type:`listn` ("list node") type which is
+defined as follows::
+
+  type listn [] | listn (x:xs);
+
+Note that the recursion is missing here and thus this type can always be
+checked in O(1) time, performing just a single pattern match, which is
+efficient. Hence, if we replace :type:`list/type` with :type:`listn` in our
+original definition then ``sum`` will now run in O(n) time, which is fine.
+
+The "wrapper/worker function" approach might still be useful in other
+circumstances. Also, if you define your own data types, you're free to choose
+any suitable representation, so you might just wrap up all data objects with a
+special constructor symbol, which makes checking the type simple and
+efficient. This is also the approach taken in the ``point`` example in `Type
+Tags`_ above, as well as by the container data types in the standard
+library. But note that this works best with abstract data types, since in this
+case you may safely assume that a user of your data structure doesn't "fiddle"
+with your internal representation.
 
 Simple Rules
 ------------
