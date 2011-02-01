@@ -377,7 +377,7 @@ end;
    will be thrown. I.e., exec sp::pointer args checks to see if sp's
    database connection is still good. */
 
-close_db db::DB ptr::pointer = db if null ptr;
+close_db db@(DB _) ptr::pointer = db if null ptr;
 
 close_db (DB (rf_is_open,_)) dbp::pointer  = 
   if get rf_is_open then close_it else 0
@@ -408,7 +408,7 @@ end;
    provided rf_valid is 1, and sets rf_valid in STMT to 0. It is meant
    to be used with sentry to guard a sqlite3_stmt* */
 
-finalize_stmt stmt::STMT sp::pointer = stmt if null sp;
+finalize_stmt stmt@(STMT _) sp::pointer = stmt if null sp;
 finalize_stmt (STMT (rf_valid,_,_,dbp)) sp::pointer = ec
 when
   is_open dbp || sql3_err "finalize: STMT attached to a closed db_ptr.";
