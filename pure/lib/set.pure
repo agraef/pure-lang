@@ -468,3 +468,29 @@ m1 + m2@(HSet _) = case m1 of
 		   end if xsetp m2;
 m1@(Bag _) + m2@(Set _) = m1 + bag m2;
 m1@(Set _) + m2@(Bag _) = bag m1 + m2;
+
+m1@(HBag _) - m2 = m1 - hbag m2 if xsetp m2;
+m1 - m2@(HBag _) = hbag m1 - m2 if xsetp m1;
+m1@(HSet _) - m2 = case m2 of
+		     _@(Bag _) = hbag m1 - hbag m2;
+		     _@(Set _) = m1 - hset m2;
+		   end if xsetp m2;
+m1 - m2@(HSet _) = case m1 of
+		     _@(Bag _) = hbag m1 - hbag m2;
+		     _@(Set _) = hset m1 - m2;
+		   end if xsetp m2;
+m1@(Bag _) - m2@(Set _) = m1 - bag m2;
+m1@(Set _) - m2@(Bag _) = bag m1 - m2;
+
+m1@(HBag _) * m2 = m1 * hbag m2 if xsetp m2;
+m1 * m2@(HBag _) = hbag m1 * m2 if xsetp m1;
+m1@(HSet _) * m2 = case m2 of
+		     _@(Bag _) = hbag m1 * hbag m2;
+		     _@(Set _) = m1 * hset m2;
+		   end if xsetp m2;
+m1 * m2@(HSet _) = case m1 of
+		     _@(Bag _) = hbag m1 * hbag m2;
+		     _@(Set _) = hset m1 * m2;
+		   end if xsetp m2;
+m1@(Bag _) * m2@(Set _) = m1 * bag m2;
+m1@(Set _) * m2@(Bag _) = bag m1 * m2;
