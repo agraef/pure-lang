@@ -4010,7 +4010,7 @@ void interpreter::add_rule(env &e, rule &r, bool toplevel)
   closure(r, false);
   if (toplevel) {
     // substitute macros and constants:
-    checkfuns(&r); if (nerrs > 0) return;
+    checkfuns(true, &r); if (nerrs > 0) return;
     expr u = expr(r.lhs),
       v = expr(csubst(macsubst(r.rhs))),
       w = expr(csubst(macsubst(r.qual)));
@@ -4081,7 +4081,7 @@ void interpreter::add_type_rule(env &e, rule &r)
   assert(!r.lhs.is_null());
   closure(r, false);
   // substitute macros and constants:
-  checkfuns(&r); if (nerrs > 0) return;
+  checkfuns(false, &r); if (nerrs > 0) return;
   expr u = expr(r.lhs),
     v = expr(csubst(macsubst(r.rhs))),
     w = expr(csubst(macsubst(r.qual)));
@@ -4136,7 +4136,7 @@ void interpreter::add_simple_rule(rulel &rl, rule *r)
 void interpreter::add_macro_rule(rule *r)
 {
   assert(!r->lhs.is_null() && r->qual.is_null() && !r->rhs.is_guarded());
-  last.clear(); closure(*r, false); checkfuns(r);
+  last.clear(); closure(*r, false); checkfuns(true, r);
   if (nerrs > 0) {
     delete r; return;
   }
@@ -4392,13 +4392,29 @@ static string qualifier(const symbol& sym, string& id)
   return qual;
 }
 
-void interpreter::funsubstw(set<int32_t>& warned,
+static void check_typetag(interpreter& interp, yy::location* loc,
+			  int32_t tag)
+{
+  // we only check that the type symbol is declared here
+  env::iterator e = interp.typeenv.find(tag);
+  if (e == interp.typeenv.end()) {
+    interp.warning(*loc, "warning: implicit declaration of type tag '"+
+		   interp.symtab.sym(tag).s+"'");
+    interp.typeenv[tag];
+  }
+}
+
+void interpreter::funsubstw(set<int32_t>& warned, bool ty_check,
 			    expr x, int32_t f, int32_t g, bool b)
 {
   if (x.is_null()) return;
   switch (x.tag()) {
   // constants:
   case EXPR::VAR:
+    // check for type tags
+    if (ty_check && compat && x.ttag() > 0)
+      check_typetag(*this, loc, x.ttag());
+    break;
   case EXPR::FVAR:
   case EXPR::INT:
   case EXPR::BIGINT:
@@ -4413,50 +4429,50 @@ void interpreter::funsubstw(set<int32_t>& warned,
 	 xs != end; xs++) {
       for (exprl::iterator ys = xs->begin(), end = xs->end();
 	   ys != end; ys++) {
-	funsubstw(warned, *ys, f, g);
+	funsubstw(warned, ty_check, *ys, f, g);
       }
     }
     break;
   // application:
   case EXPR::APP:
-    funsubstw(warned, x.xval1(), f, g, b);
-    funsubstw(warned, x.xval2(), f, g);
+    funsubstw(warned, ty_check, x.xval1(), f, g, b);
+    funsubstw(warned, ty_check, x.xval2(), f, g);
     break;
   // conditionals:
   case EXPR::COND:
-    funsubstw(warned, x.xval1(), f, g);
-    funsubstw(warned, x.xval2(), f, g);
-    funsubstw(warned, x.xval3(), f, g);
+    funsubstw(warned, ty_check, x.xval1(), f, g);
+    funsubstw(warned, ty_check, x.xval2(), f, g);
+    funsubstw(warned, ty_check, x.xval3(), f, g);
     break;
   case EXPR::COND1:
-    funsubstw(warned, x.xval1(), f, g);
-    funsubstw(warned, x.xval2(), f, g);
+    funsubstw(warned, ty_check, x.xval1(), f, g);
+    funsubstw(warned, ty_check, x.xval2(), f, g);
     break;
   // nested closures:
   case EXPR::LAMBDA:
     for (exprl::iterator xs = x.largs()->begin(), end = x.largs()->end();
 	   xs != end; xs++) {
-      funsubstw(warned, *xs, f, g);
+      funsubstw(warned, ty_check, *xs, f, g);
     }
-    funsubstw(warned, x.lrule().lhs, f, g);
-    funsubstw(warned, x.lrule().rhs, f, g);
+    funsubstw(warned, ty_check, x.lrule().lhs, f, g);
+    funsubstw(warned, ty_check, x.lrule().rhs, f, g);
     break;
   case EXPR::CASE:
-    funsubstw(warned, x.xval(), f, g);
+    funsubstw(warned, ty_check, x.xval(), f, g);
     for (rulel::const_iterator it = x.rules()->begin();
 	 it != x.rules()->end(); ++it) {
-      funsubstw(warned, it->lhs, f, g);
-      funsubstw(warned, it->rhs, f, g);
-      funsubstw(warned, it->qual, f, g);
+      funsubstw(warned, ty_check, it->lhs, f, g);
+      funsubstw(warned, ty_check, it->rhs, f, g);
+      funsubstw(warned, ty_check, it->qual, f, g);
     }
     break;
   case EXPR::WHEN:
-    funsubstw(warned, x.xval(), f, g);
+    funsubstw(warned, ty_check, x.xval(), f, g);
     for (rulel::const_iterator it = x.rules()->begin();
 	 it != x.rules()->end(); ++it) {
-      funsubstw(warned, it->lhs, f, g);
-      funsubstw(warned, it->rhs, f, g);
-      funsubstw(warned, it->qual, f, g);
+      funsubstw(warned, ty_check, it->lhs, f, g);
+      funsubstw(warned, ty_check, it->rhs, f, g);
+      funsubstw(warned, ty_check, it->qual, f, g);
     }
     break;
   case EXPR::WITH: {
@@ -4474,12 +4490,12 @@ void interpreter::funsubstw(set<int32_t>& warned,
       const env_info& info = it->second;
       const rulel *r = info.rules;
       for (rulel::const_iterator jt = r->begin(); jt != r->end(); ++jt) {
-	funsubstw(warned, jt->lhs, f, g, true);
-	funsubstw(warned, jt->rhs, f, g);
-	funsubstw(warned, jt->qual, f, g);
+	funsubstw(warned, ty_check, jt->lhs, f, g, true);
+	funsubstw(warned, ty_check, jt->rhs, f, g);
+	funsubstw(warned, ty_check, jt->qual, f, g);
       }
     }
-    funsubstw(warned, x.xval(), f, g);
+    funsubstw(warned, ty_check, x.xval(), f, g);
     for (map<int32_t,bool>::const_iterator it = locals.begin(),
 	   end = locals.end(); it != end; ++it) {
       int32_t h = it->first;
@@ -4547,7 +4563,7 @@ static string symtype(const symbol& sym)
   return "";
 }
 
-void interpreter::checkfuns(rule *r)
+void interpreter::checkfuns(bool ty_check, rule *r)
 {
   int32_t f = 0, g = 0;
   expr x = r->lhs, y, z;
@@ -4594,14 +4610,14 @@ void interpreter::checkfuns(rule *r)
   }
   // Promote the head symbol to the current namespace if necessary, and fix up
   // all other unresolved symbols along the way.
-  funsubst(r->lhs, f, g);
-  funsubst(r->rhs, f, g);
-  funsubst(r->qual, f, g);
+  funsubst(ty_check, r->lhs, f, g);
+  funsubst(false, r->rhs, f, g);
+  funsubst(false, r->qual, f, g);
 }
 
 void interpreter::checkfuns(expr x)
 {
-  funsubst(x, 0, 0);
+  funsubst(false, x, 0, 0);
 }
 
 void interpreter::checkvars(expr x, bool b)
@@ -4678,6 +4694,9 @@ void interpreter::checkvars(expr x, bool b)
 	sym.unresolved = false;
     }
   }
+  // check for type tags
+  if (compat && x.ttag() > 0)
+    check_typetag(*this, loc, x.ttag());
 }
 
 expr interpreter::subst(const env& vars, expr x, uint8_t idx)

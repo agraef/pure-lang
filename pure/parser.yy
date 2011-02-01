@@ -761,7 +761,8 @@ simple_rulel
 
 /* Same for type rules (this is only used at the toplevel). These have the
    same form as normal rules in function definitions, minus the headless
-   (continuation) rules. */
+   (continuation) rules. Also, the rhs may be omitted in which case it
+   defaults to 'true'. */
 
 type_rule
 : lhs

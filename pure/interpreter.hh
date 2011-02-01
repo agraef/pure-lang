@@ -706,11 +706,11 @@ public:
   void promote_ttags(expr f, expr x, expr u, expr v);
   expr bind(env& vars, vguardl& guards, veqnl& eqns,
 	    expr x, bool b = true, path p = path());
-  void funsubstw(set<int32_t>& warned, expr x, int32_t f, int32_t g,
-		 bool b = false);
-  void funsubst(expr x, int32_t f, int32_t g, bool b = false)
-  { set<int32_t> warned; funsubstw(warned, x, f, g, b); }
-  void checkfuns(rule *r);
+  void funsubstw(set<int32_t>& warned, bool ty_check,
+		 expr x, int32_t f, int32_t g, bool b = false);
+  void funsubst(bool ty_check, expr x, int32_t f, int32_t g, bool b = false)
+  { set<int32_t> warned; funsubstw(warned, ty_check, x, f, g, b); }
+  void checkfuns(bool ty_check, rule *r);
   void checkfuns(expr x);
   void checkvars(expr x, bool b = true);
   expr subst(const env& vars, expr x, uint8_t idx = 0);

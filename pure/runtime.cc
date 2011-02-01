@@ -4036,17 +4036,6 @@ static inline int builtin_typecheck(interpreter& interp,
     return -1;
 }
 
-static void warn_typetag(interpreter& interp, int32_t tag)
-{
-  static set<int32_t> *warned = 0;
-  if (!warned) warned = new set<int32_t>;
-  if (warned->find(tag) == warned->end()) {
-    interp.warning("warning: unknown type tag '"+interp.symtab.sym(tag).s+"'");
-    // prevent cascades of warnings for the same symbol
-    warned->insert(tag);
-  }
-}
-
 extern "C"
 bool pure_typecheck(int32_t tag, pure_expr *x)
 {
@@ -4057,11 +4046,7 @@ bool pure_typecheck(int32_t tag, pure_expr *x)
   if (tag<0) return false;
   // Check that the predicate actually exists.
   map<int32_t,rtty_info>::iterator info = interp.rtty.find(tag);
-  if (info == interp.rtty.end()) {
-    // Give some warning at runtime if the predicate wasn't defined.
-    if (interp.compat) warn_typetag(interp, tag);
-    return false;
-  }
+  if (info == interp.rtty.end()) return false;
   // Get the function pointer and number of arguments.
   void *fp = info->second.fp;
   int argc = info->second.argc;
