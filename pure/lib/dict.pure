@@ -28,24 +28,37 @@
    whether you need ordered or hashed dictionaries and whether multiple values
    for the same key should be allowed or not.
 
-   * ``Dict`` is an ordered dictionary. This assumes an ordered key type,
-     i.e., the predicate :func:`<` must be defined on the keys.
+   .. type:: dict /type
 
-   * ``HDict`` a hashed dictionary which works with any (mixture of) key types
-     but stores members in an apparently random order.
+      An ordered dictionary. This assumes an ordered key type, i.e., the
+      predicate :func:`<` must be defined on the keys.
 
-   * ``MDict`` is an ordered dictionary, like ``Dict``, which allows multiple
-     values to be associated with the same key.
+   .. type:: hdict /type
 
-   * ``HMDict`` is a multi-valued dictionary, like ``MDict``, but uses hashed
-     keys like ``HDict``.
+      A hashed dictionary which works with any (mixture of) key types but
+      stores members in an apparently random order.
 
-   ``MDict`` and ``HMDict`` are also colloquially referred to as (ordered or
-   hashed) *multidicts*. This implementation guarantees that different members
-   for the same key are always kept in the order in which they were inserted,
-   and this is also the order in which they will be retrieved by the
-   :func:`members/dict`, :func:`keys/dict`, :func:`vals/dict` and indexing
-   operations.
+   .. type:: mdict /type
+
+      An ordered dictionary, like :type:`dict/type`, which allows multiple
+      values to be associated with the same key.
+
+   .. type:: hmdict /type
+
+      A multi-valued dictionary, like :type:`mdict/type`, but uses hashed keys
+      like :type:`hdict/type`.
+
+   .. type:: xdict /type
+
+      This is just an abstract supertype for matching any kind of dictionary
+      provided by this module.
+
+   :type:`mdict/type` and :type:`hmdict/type` are also colloquially referred
+   to as (ordered or hashed) *multidicts*. This implementation guarantees that
+   different members for the same key are always kept in the order in which
+   they were inserted, and this is also the order in which they will be
+   retrieved by the :func:`members/dict`, :func:`keys/dict`, :func:`vals/dict`
+   and indexing operations.
 
    The usual comparison predicates (:func:`==`, :func:`~=`, :func:`<=`,
    :func:`<` etc.) are defined on all dictionary types, where two dictionaries
@@ -81,31 +94,6 @@
    to your program::
 
      using dict;
-
-   Data Structure
-   ~~~~~~~~~~~~~~
-
-   Dictionaries are represented as balanced tree structures of the form ``D
-   T`` where ``D`` may be any of ``Dict``, ``HDict``, ``MDict`` and
-   ``HMDict``. These constructors may be used as type tags to restrict
-   variables in pattern matching.
-
-   In any case, the internal data structure ``T`` is an AVL tree built with
-   the following constructors (from the avltrees module):
-
-   .. constructor:: avl::nil
-
-      the empty tree.
-
-   .. constructor:: avl::bin (key=>value) balance left right
-
-      a nonempty tree with given ``key`` and ``value`` in the root node, where
-      ``left`` and ``right`` are the left and right subtree, and ``balance``
-      is either 1, 0 or -1, denoting ``|left|-|right|`` = 1, 0, or -1,
-      respectively.
-
-   (This is for informational purposes only. The tree constructors are
-   private, and client modules must not rely on the internal representation.)
 
    Operations
    ~~~~~~~~~~
@@ -250,7 +238,7 @@
    A normal (ordered) dictionary::
 
      > using dict;
-     > let d::Dict = dict ["foo"=>77,"bar"=>99.1];
+     > let d::dict = dict ["foo"=>77,"bar"=>99.1];
      > keys d; vals d; members d;
      ["bar","foo"]
      [99.1,77]
@@ -275,7 +263,7 @@
    A hashed dictionary can be used with any key values, which are stored in a
    seemingly random order::
 
-     > let h::HDict = hdict [foo=>77,42=>99.1];
+     > let h::hdict = hdict [foo=>77,42=>99.1];
      > keys h; vals h; members h;
      [42,foo]
      [99.1,77]
@@ -291,7 +279,7 @@
    may be empty if the key is not in the dictionary (rather than throwing an
    :cons:`out_of_bounds` exception)::
 
-     > let d::MDict = mdict ["foo"=>77,"bar"=>99.1,"foo"=>99];
+     > let d::mdict = mdict ["foo"=>77,"bar"=>99.1,"foo"=>99];
      > d!"foo"; d!"baz";
      [77,99]
      []
@@ -308,7 +296,7 @@
 
    Hashed multidicts provide both key hashing and multiple values per key::
 
-     > let h::HMDict = hmdict [foo=>77,42=>99.1,42=>77];
+     > let h::hmdict = hmdict [foo=>77,42=>99.1,42=>77];
      > keys h; vals h; members h;
      [42,42,foo]
      [99.1,77,77]
@@ -349,21 +337,18 @@
 
 using avltrees;
 
+// These should be considered private.
+public Dict HDict MDict HMDict;
+
+type dict  (Dict _) | hdict (HDict _) | mdict (MDict _) | hmdict (HMDict _);
+type xdict (Dict _) | xdict (HDict _) | xdict (MDict _) | xdict  (HMDict _);
+
 // type checks
-dictp _::Dict	= 1;
-dictp _		= 0;
-
-hdictp _::HDict	= 1;
-hdictp _	= 0;
-
-mdictp _::MDict	= 1;
-mdictp _	= 0;
-
-hmdictp _::HMDict = 1;
-hmdictp _	= 0;
-
-// check for any kind of dict
-xdictp x = case x of _::HMDict | _::HDict | _::MDict | _::Dict = 1; _ = 0 end;
+dictp   x = typep dict   x;
+hdictp  x = typep hdict  x;
+mdictp  x = typep mdict  x;
+hmdictp x = typep hmdict x;
+xdictp  x = typep xdict  x;
 
 // create an empty dict
 emptydict	= Dict   avl::emptytree;
@@ -373,11 +358,12 @@ emptyhmdict	= HMDict avl::emptytree;
 
 // conversions between the different dictionary types
 public members;
-dict   d::Dict  | hdict  d::HDict | mdict  d::MDict  | hmdict d::HMDict = d;
-dict   d::MDict | dict   d::HDict | dict   d::HMDict = dict   (members d);
-hdict  d::Dict  | hdict  d::MDict | hdict  d::HMDict = hdict  (members d);
-mdict  d::Dict  | mdict  d::HDict | mdict  d::HMDict = mdict  (members d);
-hmdict d::Dict  | hmdict d::MDict | hmdict d::HDict  = hmdict (members d);
+dict d@(Dict _) | hdict d@(HDict _) | mdict d@(MDict _) |
+  hmdict d@(HMDict _) = d;
+dict   d::xdict = dict   (members d);
+hdict  d::xdict = hdict  (members d);
+mdict  d::xdict = mdict  (members d);
+hmdict d::xdict = hmdict (members d);
 
 // create a dict from a list
 dict   xys	= foldl insert emptydict   xys if listp xys;
@@ -451,8 +437,7 @@ vals (MDict  d) = avl::mvals d;
 vals (HDict  d) = avl::hvals d;
 vals (HMDict d) = avl::hvals d;
 
-list d::Dict  | list d::MDict |
-list d::HDict | list d::HMDict = members d;
+list d::xdict = members d;
 
 // get the first and last member
 first (Dict   d) = avl::first  d;
@@ -481,169 +466,169 @@ rmlast  (HMDict d) = HMDict (avl::hrmlast  d);
 (HMDict d)!k = avl::mhgetk d k;
 
 // comparisons
-d1::Dict   == d2::Dict   = members d1 == members d2;
-d1::MDict  == d2::MDict  |
-d1::HDict  == d2::HDict  |
-d1::HMDict == d2::HMDict = d1 <= d2 && d2 <= d1;
+d1@(Dict _)   == d2@(Dict _)   = members d1 == members d2;
+d1@(MDict _)  == d2@(MDict _)  |
+d1@(HDict _)  == d2@(HDict _)  |
+d1@(HMDict _) == d2@(HMDict _) = d1 <= d2 && d2 <= d1;
 
-d1::Dict   ~= d2::Dict   = members d1 ~= members d2;
-d1::MDict  ~= d2::MDict  |
-d1::HDict  ~= d2::HDict  |
-d1::HMDict ~= d2::HMDict = ~(d1 == d2);
+d1@(Dict _)   ~= d2@(Dict _)   = members d1 ~= members d2;
+d1@(MDict _)  ~= d2@(MDict _)  |
+d1@(HDict _)  ~= d2@(HDict _)  |
+d1@(HMDict _) ~= d2@(HMDict _) = ~(d1 == d2);
 
-d1::Dict   <= d2::Dict   = all (member d2) ks1 && map (d2!) ks1 == vals d1
-	      		   when ks1 = keys d1 end;
-d1::MDict  <= d2::MDict  |
-d1::HDict  <= d2::HDict  |
-d1::HMDict <= d2::HMDict = null (d1 - d2);
+d1@(Dict _)   <= d2@(Dict _)   =
+  all (member d2) ks1 && map (d2!) ks1 == vals d1 when ks1 = keys d1 end;
+d1@(MDict _)  <= d2@(MDict _)  |
+d1@(HDict _)  <= d2@(HDict _)  |
+d1@(HMDict _) <= d2@(HMDict _) = null (d1 - d2);
 
-d1::Dict   >= d2::Dict   = all (member d1) ks2 && map (d1!) ks2 == vals d2
-	      		   when ks2 = keys d2 end;
-d1::MDict  >= d2::MDict  |
-d1::HDict  >= d2::HDict  |
-d1::HMDict >= d2::HMDict = null (d2 - d1);
+d1@(Dict _)   >= d2@(Dict _)   =
+  all (member d1) ks2 && map (d1!) ks2 == vals d2 when ks2 = keys d2 end;
+d1@(MDict _)  >= d2@(MDict _)  |
+d1@(HDict _)  >= d2@(HDict _)  |
+d1@(HMDict _) >= d2@(HMDict _) = null (d2 - d1);
 
-d1::Dict   <  d2::Dict   |
-d1::MDict  <  d2::MDict  |
-d1::HDict  <  d2::HDict  |
-d1::HMDict <  d2::HMDict = d1 <= d2 && ~(d1 >= d2);
+d1@(Dict _)   <  d2@(Dict _)   |
+d1@(MDict _)  <  d2@(MDict _)  |
+d1@(HDict _)  <  d2@(HDict _)  |
+d1@(HMDict _) <  d2@(HMDict _) = d1 <= d2 && ~(d1 >= d2);
 
-d1::Dict   >  d2::Dict   |
-d1::MDict  >  d2::MDict  |
-d1::HDict  >  d2::HDict  |
-d1::HMDict >  d2::HMDict = d1 >= d2 && ~(d1 <= d2);
+d1@(Dict _)   >  d2@(Dict _)   |
+d1@(MDict _)  >  d2@(MDict _)  |
+d1@(HDict _)  >  d2@(HDict _)  |
+d1@(HMDict _) >  d2@(HMDict _) = d1 >= d2 && ~(d1 <= d2);
 
 // union, difference, intersection
-d1::Dict   +  d2::Dict   |
-d1::MDict  +  d2::MDict  |
-d1::HDict  +  d2::HDict  |
-d1::HMDict +  d2::HMDict = foldl insert d1 (members d2);
+d1@(Dict _)   +  d2@(Dict _)   |
+d1@(MDict _)  +  d2@(MDict _)  |
+d1@(HDict _)  +  d2@(HDict _)  |
+d1@(HMDict _) +  d2@(HMDict _) = foldl insert d1 (members d2);
 
-d1::Dict   -  d2::Dict   |
-d1::MDict  -  d2::MDict  |
-d1::HDict  -  d2::HDict  |
-d1::HMDict -  d2::HMDict = foldl delete_val d1 (members d2);
+d1@(Dict _)   -  d2@(Dict _)   |
+d1@(MDict _)  -  d2@(MDict _)  |
+d1@(HDict _)  -  d2@(HDict _)  |
+d1@(HMDict _) -  d2@(HMDict _) = foldl delete_val d1 (members d2);
 
-d1::Dict   *  d2::Dict   |
-d1::MDict  *  d2::MDict  |
-d1::HDict  *  d2::HDict  |
-d1::HMDict *  d2::HMDict = d1 - (d1 - d2);
+d1@(Dict _)   *  d2@(Dict _)   |
+d1@(MDict _)  *  d2@(MDict _)  |
+d1@(HDict _)  *  d2@(HDict _)  |
+d1@(HMDict _) *  d2@(HMDict _) = d1 - (d1 - d2);
 
 // automatic coercion rules
 
-m1::HMDict == m2 = m1 == hmdict m2 if xdictp m2;
-m1 == m2::HMDict = hmdict m1 == m2 if xdictp m1;
-m1::HDict == m2 = case m2 of
-	       	   _::MDict = hmdict m1 == hmdict m2;
-		   _::Dict  = m1 == hdict m2;
-		 end if xdictp m2;
-m1 == m2::HDict = case m1 of
-	       	   _::MDict = hmdict m1 == hmdict m2;
-		   _::Dict  = hdict m1 == m2;
-		 end if xdictp m2;
-m1::MDict == m2::Dict = m1 == mdict m2;
-m1::Dict == m2::MDict = mdict m1 == m2;
+m1@(HMDict _) == m2 = m1 == hmdict m2 if xdictp m2;
+m1 == m2@(HMDict _) = hmdict m1 == m2 if xdictp m1;
+m1@(HDict _) == m2  = case m2 of
+			_@(MDict _) = hmdict m1 == hmdict m2;
+			_@(Dict _)  = m1 == hdict m2;
+		      end if xdictp m2;
+m1 == m2@(HDict _)  = case m1 of
+			_@(MDict _) = hmdict m1 == hmdict m2;
+			_@(Dict _)  = hdict m1 == m2;
+		      end if xdictp m2;
+m1@(MDict _) == m2@(Dict _) = m1 == mdict m2;
+m1@(Dict _) == m2@(MDict _) = mdict m1 == m2;
 
-m1::HMDict ~= m2 = m1 ~= hmdict m2 if xdictp m2;
-m1 ~= m2::HMDict = hmdict m1 ~= m2 if xdictp m1;
-m1::HDict ~= m2 = case m2 of
-	       	   _::MDict = hmdict m1 ~= hmdict m2;
-		   _::Dict  = m1 ~= hdict m2;
-		 end if xdictp m2;
-m1 ~= m2::HDict = case m1 of
-	       	   _::MDict = hmdict m1 ~= hmdict m2;
-		   _::Dict  = hdict m1 ~= m2;
-		 end if xdictp m2;
-m1::MDict ~= m2::Dict = m1 ~= mdict m2;
-m1::Dict ~= m2::MDict = mdict m1 ~= m2;
+m1@(HMDict _) ~= m2 = m1 ~= hmdict m2 if xdictp m2;
+m1 ~= m2@(HMDict _) = hmdict m1 ~= m2 if xdictp m1;
+m1@(HDict _) ~= m2  = case m2 of
+			_@(MDict _) = hmdict m1 ~= hmdict m2;
+			_@(Dict _)  = m1 ~= hdict m2;
+		      end if xdictp m2;
+m1 ~= m2@(HDict _)  = case m1 of
+			_@(MDict _) = hmdict m1 ~= hmdict m2;
+			_@(Dict _)  = hdict m1 ~= m2;
+		      end if xdictp m2;
+m1@(MDict _) ~= m2@(Dict _) = m1 ~= mdict m2;
+m1@(Dict _) ~= m2@(MDict _) = mdict m1 ~= m2;
 
-m1::HMDict <= m2 = m1 <= hmdict m2 if xdictp m2;
-m1 <= m2::HMDict = hmdict m1 <= m2 if xdictp m1;
-m1::HDict <= m2 = case m2 of
-	       	   _::MDict = hmdict m1 <= hmdict m2;
-		   _::Dict  = m1 <= hdict m2;
-		 end if xdictp m2;
-m1 <= m2::HDict = case m1 of
-	       	   _::MDict = hmdict m1 <= hmdict m2;
-		   _::Dict  = hdict m1 <= m2;
-		 end if xdictp m2;
-m1::MDict <= m2::Dict = m1 <= mdict m2;
-m1::Dict <= m2::MDict = mdict m1 <= m2;
+m1@(HMDict _) <= m2 = m1 <= hmdict m2 if xdictp m2;
+m1 <= m2@(HMDict _) = hmdict m1 <= m2 if xdictp m1;
+m1@(HDict _) <= m2 = case m2 of
+		       _@(MDict _) = hmdict m1 <= hmdict m2;
+		       _@(Dict _)  = m1 <= hdict m2;
+		     end if xdictp m2;
+m1 <= m2@(HDict _) = case m1 of
+		       _@(MDict _) = hmdict m1 <= hmdict m2;
+		       _@(Dict _)  = hdict m1 <= m2;
+		     end if xdictp m2;
+m1@(MDict _) <= m2@(Dict _) = m1 <= mdict m2;
+m1@(Dict _) <= m2@(MDict _) = mdict m1 <= m2;
 
-m1::HMDict >= m2 = m1 >= hmdict m2 if xdictp m2;
-m1 >= m2::HMDict = hmdict m1 >= m2 if xdictp m1;
-m1::HDict >= m2 = case m2 of
-	       	   _::MDict = hmdict m1 >= hmdict m2;
-		   _::Dict  = m1 >= hdict m2;
-		 end if xdictp m2;
-m1 >= m2::HDict = case m1 of
-	       	   _::MDict = hmdict m1 >= hmdict m2;
-		   _::Dict  = hdict m1 >= m2;
-		 end if xdictp m2;
-m1::MDict >= m2::Dict = m1 >= mdict m2;
-m1::Dict >= m2::MDict = mdict m1 >= m2;
+m1@(HMDict _) >= m2 = m1 >= hmdict m2 if xdictp m2;
+m1 >= m2@(HMDict _) = hmdict m1 >= m2 if xdictp m1;
+m1@(HDict _) >= m2 = case m2 of
+		       _@(MDict _) = hmdict m1 >= hmdict m2;
+		       _@(Dict _)  = m1 >= hdict m2;
+		     end if xdictp m2;
+m1 >= m2@(HDict _) = case m1 of
+		       _@(MDict _) = hmdict m1 >= hmdict m2;
+		       _@(Dict _)  = hdict m1 >= m2;
+		     end if xdictp m2;
+m1@(MDict _) >= m2@(Dict _) = m1 >= mdict m2;
+m1@(Dict _) >= m2@(MDict _) = mdict m1 >= m2;
 
-m1::HMDict < m2 = m1 < hmdict m2 if xdictp m2;
-m1 < m2::HMDict = hmdict m1 < m2 if xdictp m1;
-m1::HDict < m2 = case m2 of
-	       	   _::MDict = hmdict m1 < hmdict m2;
-		   _::Dict  = m1 < hdict m2;
-		 end if xdictp m2;
-m1 < m2::HDict = case m1 of
-	       	   _::MDict = hmdict m1 < hmdict m2;
-		   _::Dict  = hdict m1 < m2;
-		 end if xdictp m2;
-m1::MDict < m2::Dict = m1 < mdict m2;
-m1::Dict < m2::MDict = mdict m1 < m2;
+m1@(HMDict _) < m2 = m1 < hmdict m2 if xdictp m2;
+m1 < m2@(HMDict _) = hmdict m1 < m2 if xdictp m1;
+m1@(HDict _) < m2 = case m2 of
+		      _@(MDict _) = hmdict m1 < hmdict m2;
+		      _@(Dict _)  = m1 < hdict m2;
+		    end if xdictp m2;
+m1 < m2@(HDict _) = case m1 of
+		      _@(MDict _) = hmdict m1 < hmdict m2;
+		      _@(Dict _)  = hdict m1 < m2;
+		    end if xdictp m2;
+m1@(MDict _) < m2@(Dict _) = m1 < mdict m2;
+m1@(Dict _) < m2@(MDict _) = mdict m1 < m2;
 
-m1::HMDict > m2 = m1 > hmdict m2 if xdictp m2;
-m1 > m2::HMDict = hmdict m1 > m2 if xdictp m1;
-m1::HDict > m2 = case m2 of
-	       	   _::MDict = hmdict m1 > hmdict m2;
-		   _::Dict  = m1 > hdict m2;
-		 end if xdictp m2;
-m1 > m2::HDict = case m1 of
-	       	   _::MDict = hmdict m1 > hmdict m2;
-		   _::Dict  = hdict m1 > m2;
-		 end if xdictp m2;
-m1::MDict > m2::Dict = m1 > mdict m2;
-m1::Dict > m2::MDict = mdict m1 > m2;
+m1@(HMDict _) > m2 = m1 > hmdict m2 if xdictp m2;
+m1 > m2@(HMDict _) = hmdict m1 > m2 if xdictp m1;
+m1@(HDict _) > m2 = case m2 of
+		      _@(MDict _) = hmdict m1 > hmdict m2;
+		      _@(Dict _)  = m1 > hdict m2;
+		    end if xdictp m2;
+m1 > m2@(HDict _) = case m1 of
+		      _@(MDict _) = hmdict m1 > hmdict m2;
+		      _@(Dict _)  = hdict m1 > m2;
+		    end if xdictp m2;
+m1@(MDict _) > m2@(Dict _) = m1 > mdict m2;
+m1@(Dict _) > m2@(MDict _) = mdict m1 > m2;
 
-m1::HMDict + m2 = m1 + hmdict m2 if xdictp m2;
-m1 + m2::HMDict = hmdict m1 + m2 if xdictp m1;
-m1::HDict + m2 = case m2 of
-	       	   _::MDict = hmdict m1 + hmdict m2;
-		   _::Dict  = m1 + hdict m2;
-		 end if xdictp m2;
-m1 + m2::HDict = case m1 of
-	       	   _::MDict = hmdict m1 + hmdict m2;
-		   _::Dict  = hdict m1 + m2;
-		 end if xdictp m2;
-m1::MDict + m2::Dict = m1 + mdict m2;
-m1::Dict + m2::MDict = mdict m1 + m2;
+m1@(HMDict _) + m2 = m1 + hmdict m2 if xdictp m2;
+m1 + m2@(HMDict _) = hmdict m1 + m2 if xdictp m1;
+m1@(HDict _) + m2 = case m2 of
+		      _@(MDict _) = hmdict m1 + hmdict m2;
+		      _@(Dict _)  = m1 + hdict m2;
+		    end if xdictp m2;
+m1 + m2@(HDict _) = case m1 of
+		      _@(MDict _) = hmdict m1 + hmdict m2;
+		      _@(Dict _)  = hdict m1 + m2;
+		    end if xdictp m2;
+m1@(MDict _) + m2@(Dict _) = m1 + mdict m2;
+m1@(Dict _) + m2@(MDict _) = mdict m1 + m2;
 
-m1::HMDict - m2 = m1 - hmdict m2 if xdictp m2;
-m1 - m2::HMDict = hmdict m1 - m2 if xdictp m1;
-m1::HDict - m2 = case m2 of
-	       	   _::MDict = hmdict m1 - hmdict m2;
-		   _::Dict  = m1 - hdict m2;
-		 end if xdictp m2;
-m1 - m2::HDict = case m1 of
-	       	   _::MDict = hmdict m1 - hmdict m2;
-		   _::Dict  = hdict m1 - m2;
-		 end if xdictp m2;
-m1::MDict - m2::Dict = m1 - mdict m2;
-m1::Dict - m2::MDict = mdict m1 - m2;
+m1@(HMDict _) - m2 = m1 - hmdict m2 if xdictp m2;
+m1 - m2@(HMDict _) = hmdict m1 - m2 if xdictp m1;
+m1@(HDict _) - m2 = case m2 of
+		      _@(MDict _) = hmdict m1 - hmdict m2;
+		      _@(Dict _)  = m1 - hdict m2;
+		    end if xdictp m2;
+m1 - m2@(HDict _) = case m1 of
+		      _@(MDict _) = hmdict m1 - hmdict m2;
+		      _@(Dict _)  = hdict m1 - m2;
+		    end if xdictp m2;
+m1@(MDict _) - m2@(Dict _) = m1 - mdict m2;
+m1@(Dict _) - m2@(MDict _) = mdict m1 - m2;
 
-m1::HMDict * m2 = m1 * hmdict m2 if xdictp m2;
-m1 * m2::HMDict = hmdict m1 * m2 if xdictp m1;
-m1::HDict * m2 = case m2 of
-	       	   _::MDict = hmdict m1 * hmdict m2;
-		   _::Dict  = m1 * hdict m2;
-		 end if xdictp m2;
-m1 * m2::HDict = case m1 of
-	       	   _::MDict = hmdict m1 * hmdict m2;
-		   _::Dict  = hdict m1 * m2;
-		 end if xdictp m2;
-m1::MDict * m2::Dict = m1 * mdict m2;
-m1::Dict * m2::MDict = mdict m1 * m2;
+m1@(HMDict _) * m2 = m1 * hmdict m2 if xdictp m2;
+m1 * m2@(HMDict _) = hmdict m1 * m2 if xdictp m1;
+m1@(HDict _) * m2 = case m2 of
+		      _@(MDict _) = hmdict m1 * hmdict m2;
+		      _@(Dict _)  = m1 * hdict m2;
+		    end if xdictp m2;
+m1 * m2@(HDict _) = case m1 of
+		      _@(MDict _) = hmdict m1 * hmdict m2;
+		      _@(Dict _)  = hdict m1 * m2;
+		    end if xdictp m2;
+m1@(MDict _) * m2@(Dict _) = m1 * mdict m2;
+m1@(Dict _) * m2@(MDict _) = mdict m1 * m2;
