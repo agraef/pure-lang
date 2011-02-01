@@ -5901,9 +5901,10 @@ expr *interpreter::mksym_expr(string *s, int32_t tag)
   } else if (sym.f <= 0 || sym.prec < PREC_MAX ||
 	     sym.fix == nonfix || sym.fix == outfix) {
     throw err("error in expression (misplaced type tag)");
-#if 1
+#if 0
   } else if (tag > 0 && (it = typeenv.find(tag)) == typeenv.end()) {
-    // This is deprecated as of Pure 0.47, to be removed soon.
+    // This was deprecated during the development Pure 0.47, they are removed
+    // now so that we can properly handle recursive type definitions.
     static set<int32_t> *warned = 0;
     if (!warned) warned = new set<int32_t>;
     if (compat && warned->find(tag) == warned->end()) {
