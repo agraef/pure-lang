@@ -573,9 +573,10 @@ Usage`_ section) to list definitions along with additional debugging
 information.
 
 The :option:`-w` option enables some additional warnings which are useful to
-check your scripts for possible errors. Right now it will report implicit
-declarations of function symbols which might indicate missing or mistyped
-symbols that need to be fixed, see `Symbol Lookup and Creation`_ for details.
+check your scripts for possible errors. In particular, it will report implicit
+declarations of function and type symbols, which might indicate undefined or
+mistyped symbols that need to be fixed, see `Symbol Lookup and Creation`_ for
+details.
 
 Code Generation Options
 -----------------------
@@ -6635,11 +6636,16 @@ construct in Emacs Pure mode.
 
 Pure 0.47 also introduced a new, more flexible type tag feature, which defines
 type tags as unary predicates, using normal rewriting rules just as with
-ordinary functions. To these ends, a new keyword :keyword:`type` was added.
-Please see section `Type Rules`_ for details. (In contrast, the old-tyle type
-tags were just a syntactic shortcut for "as" patterns involving unary
-constructor symbols. These aren't supported any more, so you'll have to fix up
-your scripts accordingly.)
+ordinary functions; cf. section `Type Rules`_ for details. To these ends, a
+new keyword :keyword:`type` was added (if you used this as an ordinary
+identifier, you will have to rename these). Note that the old-tyle type tags
+were just a syntactic shortcut for "as" patterns involving unary constructor
+symbols. These aren't supported any more, so you'll have to fix up your old
+scripts accordingly. To assist with this, the Pure interpreter can be run with
+the :option:`-w` option in order to identify occurrences of undefined
+(presumably old-style) type tags. You should either change these to the
+corresponding "as" pattern (i.e., ``x::foo`` to ``x@(foo _)``), or just add a
+proper type definition for the tag (like ``type foo (foo _);``).
 
 Error Recovery
 --------------
