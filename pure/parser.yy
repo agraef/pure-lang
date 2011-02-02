@@ -770,6 +770,14 @@ type_rule
   for (exprl::iterator l = $1->begin(), end = $1->end(); l != end; l++) {
     if (l->is_fun()) {
       // Just declare the symbol so that the compiler knows about it.
+      bool s_compat = interp.compat;
+      // Kludge: We temporarily disable -w here, to avoid a possible "implicit
+      // declaration" warning for the type symbol.
+      interp.compat = false;
+      // This will promote the symbol to the proper namespace if it hasn't
+      // been declared yet.
+      interp.checkfuns(*l);
+      interp.compat = s_compat;
       if ((interp.verbose&verbosity::defs) != 0)
 	cout << "type " << *l << ";\n";
       interp.typeenv[l->tag()];

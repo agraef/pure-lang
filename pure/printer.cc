@@ -274,7 +274,11 @@ static inline ostream& print_ttag(ostream& os, int32_t ttag, bool pad = false)
   default:
     if (ttag > 0) {
       const symbol& sym = interpreter::g_interp->symtab.sym(ttag);
-      return os << "::" << sym.s;
+      if (sym.s.find("::") != string::npos)
+	// padding needed
+	return os << " :: " << sym.s;
+      else
+	return os << "::" << sym.s;
     } else
       return os;
   }
@@ -629,7 +633,8 @@ ostream& operator << (ostream& os, const env& e)
     case env_info::none:
       break;
     case env_info::lvar: {
-      bool pad = interpreter::g_interp->namespaces.find(sym.s) !=
+      bool pad = sym.s.find("::") != string::npos ||
+	interpreter::g_interp->namespaces.find(sym.s) !=
 	interpreter::g_interp->namespaces.end();
       os << sym.s;
       print_ttag(os, info.ttag, pad);
