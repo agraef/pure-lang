@@ -2089,8 +2089,8 @@ if the discriminant ``d = p^2/4-q`` is nonnegative::
 Note that the above definition leaves the case of a negative discriminant
 undefined.
 
-.. _Type Rules:
 .. _type:
+.. _Type Rules:
 
 Type Rules
 ----------
@@ -2252,6 +2252,12 @@ all the constructor patterns in one go)::
 
   type bintree (tip value) | bintree (bin left right);
 
+You can also use this notation to quickly make one type a "subtype" of
+another, or to create a type which is the union of several existing types. The
+following example can be found in the standard library::
+
+  type integer x::int | integer x::bigint;
+
 Moreover, a type rule can also take the form of a function definition without
 arguments.  In this case, the corresponding right-hand side may either be
 another type symbol, or any kind of closure denoting a (curried) type
@@ -2326,13 +2332,32 @@ their adherence to certain "interfaces" are the responsibility of the
 programmer. As far as Pure is concerned, types are just subsets of the
 universe of terms.
 
-Also note that since the right-hand side of a type definition may in general
-be any predicate, it is up to the programmer to ensure that the definition of
-a type is actually computable. In fact, you should strive for the best
-possible efficiency in type predicates. A type definition which has worse than
-O(1) complexity may well be a serious performance hog depending on the way in
-which it is used. For instance, consider the definition of the
-:type:`list/type` type from the prelude::
+For instance, consider the types ``nat`` and ``odd`` from above. Both are
+subtypes of the ``int`` type (assuming our original definition of ``nat`` as
+the positive ``int`` values), but neither is a subtype of the other. It's
+sometimes useful to define the "intersection type" of two such types, which
+can be done in a straightforward way using the logical conjunction of the two
+type predicates::
+
+  type odd_nat x = typep nat x && typep odd x;
+
+The ``integer`` union type of ``int`` and ``bigint`` from above could be
+defined in a similar fashion using logical disjunction (this employs the
+existing :func:`intp` and :func:`bigintp` predicates from the prelude)::
+
+  type integer x = intp x || bigintp x;
+
+(This isn't the actual definition of the :type:`integer/type` type in the
+standard library, however, which uses our first definition from above in order
+to make the definition extensible.)
+
+Note that since the right-hand side of a type definition may in general be any
+predicate, it is up to the programmer to ensure that the definition of a type
+is actually computable. In fact, you should strive for the best possible
+efficiency in type predicates. A type definition which has worse than O(1)
+complexity may well be a serious performance hog depending on the way in which
+it is used. For instance, consider the definition of the :type:`list/type`
+type from the prelude::
 
   type list [] | list (x:xs::list);
 
@@ -2359,7 +2384,7 @@ function to do the actual computation::
   end;
 
 This "wrapper-worker" design is quite common and useful in many situations,
-but it is a bit cumbersome in this specific case. A better way is to just do
+but it is a bit cumbersome in this specific case. An easier way is to just do
 the type checking in a piecemeal fashion, as the list is being traversed. To
 these ends, the prelude also provides a :type:`listn/type` ("list node") type
 which is defined as follows::
@@ -2369,16 +2394,37 @@ which is defined as follows::
 Note that the recursion is missing here and thus this type can always be
 checked in O(1) time, performing just a single pattern match, which is
 efficient. Hence, if we replace :type:`list/type` with :type:`listn/type` in
-our original definition then ``sum`` will now run in O(n) time, which is fine.
+our original definition then ``sum`` will now run in O(n) time.
 
-If you define your own data types, you're free to choose any suitable
-representation, so you might just wrap up all data objects with a special
-constructor symbol, which makes checking the type simple and efficient. This
-is also the approach taken in the ``point`` example in `Type Tags`_ above, as
-well as by the container data types in the standard library. But note that
-this works best with abstract data types, since in this case you may safely
-assume that a user of your data structure doesn't "fiddle" with your internal
-representation.
+Checking the type in a piecemeal fashion is simpler, but also has its
+drawbacks. For instance, consider::
+
+  > sum xs::listn = if null xs then 0 else head xs+sum (tail xs);
+  > sum (1:2:3);
+  1+(2+sum 3)
+
+In contrast, our wrapper-worker definition of ``sum`` from above returns a
+"proper" normal form instead::
+
+  > clear sum
+  > sum xs::list = sum xs with
+  >  sum xs = if null xs then 0 else head xs+sum (tail xs);
+  > end;
+  > sum (1:2:3);
+  sum (1:2:3)
+
+Thus the wrapper-worker approach also has its merits, and whether to use one
+or the other depends on the situation. Similar techniques and tradeoffs also
+apply to other recursive types such as trees, of course.
+
+Yet another approach is possible if you define your own (abstract) data types.
+In this case you're free to choose any suitable representation, so you might
+just wrap up all data objects with a special constructor symbol, which makes
+checking the type simple and efficient. This is also the approach taken in the
+``point`` example in `Type Tags`_ above, as well as by the container data
+types in the standard library. But note that this works best with abstract
+data types, since in this case you may safely assume that a user of your data
+structure doesn't "fiddle" with your internal representation.
 
 Finally, note that in general it may be hard or even impossible to predict
 exactly when the code of a type definition will be executed at runtime. Thus,
@@ -4373,6 +4419,22 @@ E.g., let's compute a solution for a standard 8x8 board::
 
   > queens 8;
   [(1,1),(2,5),(3,8),(4,6),(5,3),(6,7),(7,2),(8,4)]
+
+Finally, note that since the right-hand side of a type definition (cf. `Type
+Rules`_) is just ordinary Pure code, it may be susceptible to exceptions, too.
+Such exceptions are reported or caught just like any other. In particular, if
+you want to make a type definition just fail silently in case of an exception,
+you'll have to wrap it up in a suitable :func:`catch` clause::
+
+  > foo x = throw foo; // dummy predicate which always throws an exception
+  > type bar x = foo x;
+  > type baz x = catch (cst false) (foo x);
+  > test_bar x::bar = x;
+  > test_baz x::baz = x;
+  > test_bar ();
+  <stdin>, line 6: unhandled exception 'foo' while evaluating 'test_bar ()'
+  > test_baz ();
+  test_baz ()
 
 C Interface
 ===========
