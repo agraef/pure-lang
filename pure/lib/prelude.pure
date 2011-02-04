@@ -72,6 +72,9 @@
    option), all operations discussed in this section are normally available in
    Pure programs without requiring any explicit import declarations.
 
+   Constants and Operators
+   -----------------------
+
    The prelude also declares a signature of commonly used constant and
    operator symbols. This includes the truth values ``true`` and ``false``.
 
@@ -154,13 +157,131 @@ postfix 3000   & ;                 // thunk
 
 const false, true = 0, 1;
 
-/* Pull in the primitives (arithmetic etc.) and the standard string functions.
-   Note that the math and system modules are *not* included here, so you have
-   to do that yourself if your program requires any of those operations. */
+/* Pull in the primitives (arithmetic etc.) and the standard string, matrix
+   and record functions. Note that the math and system modules are *not*
+   included here, so you have to do that yourself if your program requires any
+   of those operations. */
 
 using primitives, matrices, records, strings;
 
 /* ..
+
+   Prelude Types
+   -------------
+
+   Some additional type symbols are provided which can be used as type tags on
+   the left-hand side of equations, see :ref:`Type Tags` in the Pure Manual.
+
+   .. type:: number /type
+             complex /type
+             real /type
+             rational /type
+             integer /type
+
+      Additional number types.
+
+   These types are defined in a purely syntactic way, by checking the
+   builtin-type or the constructor symbol of a number. Some semantic number
+   types can be found in the :mod:`math` module, see `Semantic Number
+   Predicates and Types`_.
+
+   :type:`integer/type` is the union of Pure's built-in integer types, i.e.,
+   it comprises all :type:`int/type` and :type:`bigint/type`
+   values. :type:`rational/type` and :type:`complex/type` are the rational and
+   complex types, while :type:`real/type` is the union of the
+   :type:`double/type` and :type:`rational/type` types (i.e., anything that
+   can represent a real number and be used for the real and imaginary parts of
+   a :type:`complex/type` number). Finally, :type:`number/type` is the union
+   of all numeric types, i.e., this type can be used to match any kind of
+   number.
+
+   Note that the operations of the :type:`rational/type` and
+   :type:`complex/type` types are actually defined in the :mod:`math` module
+   which isn't part of the prelude, so you have to import this module in order
+   to do computations with these types of values. However, the type tags and
+   constructors for these types are defined in the prelude so that these kinds
+   of values can be parsed and recognized without having the :mod:`math`
+   module loaded.
+
+   The prelude also provides a subtype of the built-in :type:`string/type`
+   type which represents single-character strings:
+
+   .. type:: char /type
+
+      A single character string. This matches any string value of length 1.
+
+   `Lists and tuples`_ can be matched with the following types:
+
+   .. type:: list /type
+             listn /type
+
+      The list and list node types. Note that the latter comprises both the
+      empty list ``[]`` and all list nodes of the form ``x:xs`` (no matter
+      whether the tail ``xs`` is a proper list value or not), whereas the
+      former only matches proper list values of the form ``x1:...:xn:[]``.
+      Thus the :type:`listn/type` type can be checked in O(1) time, while the
+      :type:`list/type` type is defined recursively and requires O(n) time
+      (where n is the size of the list) to be checked. This should be
+      considered when deciding whether to use one or the other in a given
+      situation; see :ref:`Type Rules` for further explanation.
+
+   .. type:: tuple /type
+
+      The type of all tuples, comprises the empty tuple ``()`` and all tuples
+      ``(x,xs)`` with at least two members.
+
+   There are some other, more specialized types representing various kinds of
+   applications, function objects and other named entities. These are useful,
+   in particular, for the definition of higher-order functions and for
+   performing symbolic manipulations on unevaluated symbolic terms.
+
+   .. type:: appl /type
+
+      This type represents all unevaluated function or constructor
+      applications of the form ``x y``. This comprises constructor terms and
+      quoted or partial function applications.
+
+   .. type:: function /type
+
+      This type represents any term which may be called as a function. This
+      may be a closure (global or local function, or a lambda function) which
+      takes at least one argument, or a partial application of a closure to
+      some arguments which is still "unsaturated", i.e., expects some further
+      arguments to be "ready to go".
+
+   .. type:: fun /type
+
+      A named function object (global or local function, but not a partial
+      application).
+
+   .. type:: lambda /type
+
+      An anonymous (lambda) function.
+
+   .. type:: closure /type
+
+      Any kind of function object (named function or lambda). This is the
+      union of the :type:`fun/type` and :type:`lambda/type` types.
+
+   .. type:: thunk /type
+
+      This is a special kind of unevaluated parameterless function object used
+      in lazy evaluation. See :ref:`Lazy Evaluation and Streams` in the Pure
+      Manual.
+
+   .. type:: var /type
+
+      A free variable. This can be any kind of unevaluated global symbol which
+      isn't bound to a function.
+
+   .. type:: atom /type
+
+      A free variable or a named function, i.e., an unevaluated symbol. This
+      is the union of the :type:`fun/type` and :type:`var/type` types.
+
+   Corresponding type predicates are provided for all of the above, see
+   Predicates_. Some further types and predicates for matrices can be found
+   under `Matrix Inspection and Manipulation`_.
 
    Basic Combinators
    -----------------
