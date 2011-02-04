@@ -341,6 +341,12 @@ using namespace __C;
       Convenience functions to check for atoms (named function or variable)
       and closures (named function or lambda).
 
+   .. function:: functionp x
+
+      Convenience function to check for "callable" functions. This includes
+      any kind of closure with a nonzero argument count as well as partial
+      (unsaturated) applications of these.
+
    Inspection
    ~~~~~~~~~~
 
@@ -815,6 +821,14 @@ listnp _	= 0 otherwise;
 tuplep ()	= 1;
 tuplep (x,xs)	= 1;
 tuplep _	= 0 otherwise;
+
+/* Convenience function to check for any "callable"; this also includes
+   unsaturated (partial) applications of closures. */
+
+functionp x = nargs x>0 with
+  nargs (x@_ _) = nargs x-1;
+  nargs x = ::nargs x otherwise;
+end;
 
 /* Compute a 32 bit hash code of a Pure expression. */
 
