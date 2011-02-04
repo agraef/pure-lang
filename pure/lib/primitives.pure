@@ -21,6 +21,8 @@
 
 using namespace __C;
 
+// The types are documented in prelude.pure.
+
 /* ..
 
    Primitives
@@ -257,7 +259,9 @@ using namespace __C;
    ~~~~~~~~~~
 
    A syntactic equality test is provided, as well as various type checking
-   predicates.
+   predicates. Note that type definitions are provided for most of the type
+   checking predicates which don't denote built-in types; see `Prelude Types`_
+   for details.
 
    .. function:: same x y
                  infix === x y
@@ -274,9 +278,9 @@ using namespace __C;
 
       Generic type checking predicate. This checks whether ``x`` is of type
       ``ty``, where ``ty`` is a symbol denoting any of the built-in types
-      (``int``, ``bigint`` etc.) or any type defined in a :keyword:`type`
-      definition. (Note that you may have to quote ``ty`` if it happens to be
-      defined as a variable or parameterless function.)
+      (:type:`int/type`, :type:`bigint/type` etc.) or any type defined in a
+      :keyword:`type` definition. (Note that you may have to quote ``ty`` if
+      it happens to be defined as a variable or parameterless function.)
 
    .. function:: intp x
                  bigintp x
@@ -297,7 +301,9 @@ using namespace __C;
                  rationalp x
                  integerp x
 
-      Additional number predicates.
+      Additional number predicates. Note some further "semantic" number
+      predicates are defined in the :mod:`math` module, see `Semantic Number
+      Predicates and Types`_.
 
    .. function:: exactp x
                  inexactp x
@@ -742,21 +748,28 @@ stringp x	= case x of _::string  = 1; _ = 0 end;
 pointerp x	= case x of _::pointer = 1; _ = 0 end;
 matrixp x	= case x of _::matrix  = 1; _ = 0 end;
 
-/* Additional single character predicate. Note that this implementation is in
-   general *much* faster than the naive solution 'stringp x && #x==1', because
-   it's guaranteed to run in constant time. */
+/* Additional single character type and predicate. Note that this
+   implementation is in general *much* faster than the naive solution
+   'stringp x && #x==1', because it's guaranteed to run in constant time. */
 
 public ord; // this comes from strings.pure
-charp x		= case x of _::string  = intp (ord x); _ = 0 end;
+type char x::string = intp (ord x);
 
-/* Additional number predicates. */
+charp x		= typep ('char) x;
 
-integerp x	= case x of _::int | _::bigint = 1; _ = 0 end;
-rationalp x	= case x of x%y = integerp x && integerp y; _ = 0 end;
-realp x		= case x of _::int | _::bigint | _::double = 1;
-		            x%y = realp x && realp y; _ = 0 end;
-complexp x	= case x of x+:y | x<:y = realp x && realp y; _ = 0 end;
-numberp x	= realp x || complexp x;
+/* Additional number types and predicates. */
+
+type integer _::int | integer _::bigint;
+type rational (x::integer%y::integer);
+type real x::integer | real x::double | real (x::real%y::real);
+type complex (x::real+:y::real) | complex (x::real<:y::real);
+type number x::real | number x::complex;
+
+integerp x	= typep ('integer) x;
+rationalp x	= typep ('rational) x;
+realp x		= typep ('real) x;
+complexp x	= typep ('complex) x;
+numberp x	= typep ('number) x;
 
 /* Check whether a number is exact (i.e., doesn't contain any double
    components. */
@@ -780,11 +793,21 @@ inexactp x      = case x of
 extern bool funp(expr*), bool lambdap(expr*), bool thunkp(expr*);
 extern bool varp(expr*);
 
-/* Convenience functions to check for atoms (named function or variable) and
-   closures (named function or lambda). */
+/* Convenience types for the above. */
+
+type fun = funp;
+type lambda = lambdap;
+type thunk = thunkp;
+type var = varp;
+
+/* Convenience functions and types to check for atoms (named function or
+   variable) and closures (named function or lambda). */
 
 atomp x = varp x || funp x;
 closurep x = funp x || lambdap x;
+
+type atom = atomp;
+type closure = closurep;
 
 /* Get the argument count of a function object, i.e., the number of arguments
    it expects. Returns 0 for thunks and saturated applications, -1 for
@@ -804,31 +827,28 @@ extern int nargs(expr *x);
 extern int arity(expr *x);
 extern int fixity(expr *x);
 
-/* Predicates to check for function applications, proper lists, list nodes and
-   proper tuples. */
-
-applp (_ _)	= 1;
-applp _		= 0 otherwise;
-
-listp []	= 1;
-listp (x:xs)	= listp xs;
-listp _		= 0 otherwise;
-
-listnp []	= 1;
-listnp (x:xs)	= 1;
-listnp _	= 0 otherwise;
-
-tuplep ()	= 1;
-tuplep (x,xs)	= 1;
-tuplep _	= 0 otherwise;
-
-/* Convenience function to check for any "callable"; this also includes
-   unsaturated (partial) applications of closures. */
+/* Convenience function and type to check for any "callable"; this also
+   includes unsaturated (partial) applications of closures. */
 
 functionp x = nargs x>0 with
   nargs (x@_ _) = nargs x-1;
   nargs x = ::nargs x otherwise;
 end;
+
+type function = functionp;
+
+/* Types and predicates to check for function applications, proper lists, list
+   nodes and proper tuples. */
+
+type appl (_ _);
+type list []  | list (_:_::list);
+type listn [] | listn (_:_);
+type tuple () | tuple (_,_);
+
+applp x		= typep ('appl) x;
+listp x		= typep ('list) x;
+listnp x	= typep ('listn) x;
+tuplep x	= typep ('tuple) x;
 
 /* Compute a 32 bit hash code of a Pure expression. */
 

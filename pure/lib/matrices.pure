@@ -229,14 +229,24 @@ public all any cat cst do list map reverse uncurry uncurry3;
    Matrix Inspection and Manipulation
    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+   .. type:: dmatrix
+             cmatrix
+             imatrix
+             smatrix
+             nmatrix
+
+      Convenience types for the different subtypes of matrices (double,
+      complex, int, symbolic and numeric, i.e., non-symbolic). These can be
+      used as type tags on the left-hand side of equations to match specific
+      types of matrices.
+
    .. function:: dmatrixp x
                  cmatrixp x
                  imatrixp x
                  smatrixp x
                  nmatrixp x
 
-      Check for different kinds of matrices (double, complex, int, symbolic
-      and numeric, i.e., non-symbolic).
+      Corresponding predicates to check for different kinds of matrices.
 
    .. function:: vectorp x
                  rowvectorp x
@@ -256,6 +266,14 @@ imatrixp x	= case x of _::matrix = matrix_type x==3; _ = 0 end;
 
 nmatrixp x	= case x of _::matrix = matrix_type x>=1; _ = 0 end;
 smatrixp x	= case x of _::matrix = matrix_type x==0; _ = 0 end;
+
+/* Convenience types for the above. */
+
+type dmatrix 	= dmatrixp;
+type imatrix 	= imatrixp;
+type cmatrix 	= cmatrixp;
+type nmatrix 	= nmatrixp;
+type smatrix 	= smatrixp;
 
 /* Pure represents row and column vectors as matrices with 1 row or column,
    respectively. The following predicates allow you to check for these special

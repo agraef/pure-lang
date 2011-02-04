@@ -790,8 +790,8 @@ x1 >= x2%y2	= x1*y2 >= x2 if realp x2;
 
 /* ..
 
-   Semantic Number Predicates
-   --------------------------
+   Semantic Number Predicates and Types
+   ------------------------------------
 
    In difference to the syntactic predicates in Primitives_, these check
    whether the given value can be represented as an object of the given target
@@ -826,3 +826,21 @@ realvalp x	= compvalp x && im x==0;
 ratvalp x	= realvalp x && re (x-x)~==nan;
 bigintvalp x	= ratvalp x && den (re x)==1;
 intvalp x	= bigintvalp x && int (re x)==x;
+
+/* ..
+
+   .. type:: compval
+             realval
+	     ratval
+	     bigintval
+	     intval
+
+      Convenience types for the above predicates. These can be used as type
+      tags on the left-hand side of an equation to match numeric values for
+      which the corresponding predicate yields :const:`true`. */
+
+type compval 	= compvalp;
+type realval 	= realvalp;
+type ratval 	= ratvalp;
+type bigintval 	= bigintvalp;
+type intval 	= intvalp;
