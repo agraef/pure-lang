@@ -11097,12 +11097,14 @@ Value *interpreter::codegen(expr x, bool quote)
     rulel::iterator begin = x.rules()->begin(), end = x.rules()->end();
     if (x.xval().tag() == EXPR::VAR &&
 	x.rules()->back().lhs.tag() == EXPR::VAR &&
+	x.rules()->back().lhs.ttag() == 0 &&
 	x.rules()->back().guards.empty() &&
 	sameexpr(x.xval(), x.rules()->back().lhs)) {
       /* Handle a "tail binding" of the form 'x when ...; x = y end' where x
-	 is a local variable. In such a case we can always eliminate x by
-	 transforming the expression to 'y when ... end'. If the 'when' clause
-	 consists of a single binding, we can eliminate it altogether. */
+	 is an (untagged) local variable. In such a case we can always
+	 eliminate x by transforming the expression to 'y when ... end'. If
+	 the 'when' clause consists of a single binding, we can eliminate it
+	 altogether. */
       t = x.rules()->back().rhs; --end;
       if (end == begin) return codegen(t);
     }
