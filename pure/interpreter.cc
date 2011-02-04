@@ -4277,10 +4277,10 @@ expr interpreter::bind(env& vars, vguardl& guards, veqnl& eqns,
 	  eqns.push_back(veqn(sym.f, *info.p, p));
 	} else
 	  vars[sym.f] = env_info(x.ttag(), p);
-	if (x.ttag() > 0)
-	  // record a type guard
-	  guards.push_back(vguard(sym.f, x.ttag(), p));
       }
+      if (x.ttag() > 0)
+	// record a type guard
+	guards.push_back(vguard(sym.f, x.ttag(), p));
       y = expr(EXPR::VAR, sym.f, 0, x.ttag(), p);
     }
     break;
