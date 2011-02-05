@@ -1255,12 +1255,20 @@ Operator and constant symbols: ``+``, ``==``, ``not``
        arguments using call-by-value, just like the other arithmetic
        operations.
 
-Lists: ``[x,y,z]``, ``x:xs``, ``x..y``, ``x:y..z``
+Lists: ``[x,y,z]``, ``x:xs``
     Pure's basic list syntax is the same as in Haskell, thus ``[]`` is the
     empty list and ``x:xs`` denotes a list with head element ``x`` and tail
     list ``xs``. The infix constructor symbol '\ :cons:`:`\ ' is declared in
     the prelude. The usual syntactic sugar for list values in brackets is
-    provided, thus ``[x,y,z]`` is exactly the same as ``x:y:z:[]``.
+    provided, thus ``[x,y,z]`` is exactly the same as ``x:y:z:[]``. (This kind
+    of list value is also called a "proper" list. Pure also permits "improper"
+    list values such as ``1:2:3`` with a non-list value in the tail. These
+    aren't of much use as ordinary list values, but are frequently used in
+    patterns or symbolic expressions such as ``x:xs`` where the tail usually
+    is a variable. Also, lists can be "lazy" in which case the tail is a
+    special kind of deferred value known as a "thunk", see `Lazy Evaluation
+    and Streams`_; technically, such lazy list values are improper lists,
+    too.)
 
     There's also a way to denote arithmetic sequences such as ``1..5``, which
     denotes the list ``[1,2,3,4,5]``. Haskell users should note the missing
@@ -1274,7 +1282,7 @@ Lists: ``[x,y,z]``, ``x:xs``, ``x..y``, ``x:y..z``
     e.g., ``0.0:0.1..0.29`` actually yields ``[0.0,0.1,0.2,0.3]``, as does
     ``0.0:0.1..0.31``.
 
-Tuples: ``x,y,z``
+Tuples: ``(x,y,z)``
     Pure's tuples are a bit unusual: They are constructed by just "pairing"
     things using the '\ :cons:`,`\ ' operator, for which the empty tuple
     :cons:`()` acts as a neutral element (i.e., ``(),x`` is just ``x``, as is
@@ -1284,18 +1292,15 @@ Tuples: ``x,y,z``
     (tuples of tuples); if you need such constructs then you should use lists
     instead.
 
-    .. note:: Syntactically, tuples aren't really primary expressions, but we
-       still include them here because they are closely related to lists which
-       are also defined in the prelude. Also, tuples are often used as a
-       simpler replacement for lists, in particular in function arguments and
-       return values, when no elaborate hierarchical structure is needed.
-
-       Also note that parentheses are generally only used to group expressions
-       and are *not* part of the tuple syntax in Pure, although they will be
-       needed to include a tuple in a list or matrix. E.g.,
-       ``[(1,2),3,(4,5)]`` is a three element list consisting of the tuple
-       ``1,2``, the integer ``3``, and another tuple ``4,5``. Likewise,
-       ``[(1,2,3)]`` is a list with a single element, the tuple ``1,2,3``.
+    Syntactically, tuples aren't really primary expressions, but we still
+    include them here because they are often used as a simpler replacement for
+    lists, in particular in function arguments and return values, when no
+    elaborate hierarchical structure is needed. Also note that parentheses are
+    generally only used to group expressions and are *not* part of the tuple
+    syntax in Pure, although they will be needed to include a tuple in a list
+    or matrix. E.g., ``[(1,2),3,(4,5)]`` is a three element list consisting of
+    the tuple ``1,2``, the integer ``3``, and another tuple ``4,5``. Likewise,
+    ``[(1,2,3)]`` is a list with a single element, the tuple ``1,2,3``.
 
 Matrices: ``{1.0,2.0,3.0}``, ``{1,2;3,4}``, ``{1L,y+1;foo,bar}``
     Pure also offers matrices, a kind of two-dimensional arrays, as a built-in
@@ -3075,8 +3080,8 @@ The quote also inhibits evaluation inside matrix values, including the
 
 Lisp programmers will be well familiar with this operation which enables some
 powerful metaprogramming techniques. However, there are some notable
-differences to Lisp's quote. First, :func:`quote` only inhibits the evaluation
-of global variables, *local* variables are substituted as usual::
+differences to Lisp's quote. In particular, :func:`quote` only inhibits the
+evaluation of global variables, *local* variables are substituted as usual::
 
   > (\x -> '(2*x+1)) 99;
   2*99+1
@@ -3089,43 +3094,59 @@ of global variables, *local* variables are substituted as usual::
   > '(2*42+2^n) when n = 12 end;
   2*42+2^12
 
-This may come as a surprise (or even annoyance) to real Lisp weenies, but it
-does have its advantages. In particular, it makes it easy to fill in the
-variable parts in a quoted "template" expression, without any need for an
-arguably complex tool like Lisp's "quasiquote". (It is quite easy to define
-quasiquote in Pure if you want it, however. See the `Recursive Macros`_
-section for a simplified version; a full implementation can be found in the
-Pure library sources.)
+Local parameterless functions are treated in the same fashion::
 
-As already mentioned, if you do need to quote a symbol which is already being
-used as a local variable in the current context, you can do this by supplying
-the symbol as a string to the prelude function :func:`val`::
+  > '(2*42+2^n) with n = 12 end;
+  2*42+2^12
+
+Note that, in contrast, for global functions (and variables) we have::
+
+  > n = 12;
+  > '(2*42+2^n);
+  2*42+2^n
+
+This discrepancy may come as a surprise (or even annoyance) to real Lisp
+weenies, but it does have its advantages. In particular, it makes it easy to
+fill in the variable parts in a quoted "template" expression, without any need
+for an arguably complex tool like Lisp's "quasiquote".
+
+If you do need to quote a symbol which is already being used as a local
+variable or function in the current context, you can do this by supplying the
+symbol as a string to the prelude function :func:`val`::
 
   > val "x"+x when x = 99 end;
   x+99
 
-Second, it is in fact possible to perform arbitrary computations right in the
-middle of a quoted expression. This is because :func:`quote` only ever quotes
-`simple expressions`_, embedded `special expressions`_ (conditionals, lambda
-and the :keyword:`case`, :keyword:`when` and :keyword:`with` constructs) are
-evaluated as usual. Example::
+Also note that while local functions are always substituted in a quoted
+expression, *applications* involving local functions can still be quoted::
+
+  > 'foo 99 with foo x = 2*x+1 end;
+  foo 99
+  > eval ans;
+  199
+
+A limitation of Pure's :func:`quote` is that in the current implementation it
+isn't possible to quote embedded `special expressions`_ (conditionals, lambda
+and the :keyword:`case`, :keyword:`when` and :keyword:`with` constructs);
+these are always evaluated as usual. Example::
 
   > '(x+1 when x = '(2*3) end);
   2*3+1
   > '(2*42+(2^n when n = 2*6 end));
   2*42+4096.0
 
-The downside of this is that there is no way to quote special expressions.
-Macro expansion *is* inhibited in quoted expressions, however, so it is
-possible to work around this limitation by defining a custom special form (see
-Macros_) to be used as a symbolic representation for, say, a lambda
-expression, which reduces to a real lambda when evaluated. To these ends, the
-:func:`eval` function can be invoked with a string argument as follows::
+We're not sure whether this is actually a bug or a feature, so you should
+expect this to change in the future, and relying on this behaviour is not
+recommended. (It is always possible to achieve the same effect by substituting
+a local variable, as shown above.)
 
-  def lambda x y = eval $ "\\ "+str ('x)+" -> "+str ('y);
+For the time being, it is possible to work around this limitation by defining
+a custom special form (see Macros_) to be used as a symbolic representation
+for, say, a lambda expression, which reduces to a real lambda when evaluated.
+This works because macro expansion *is* inhibited in quoted expressions. For
+instance::
 
-Example::
-
+  > def lambda x y = eval $ "\\ "+str ('x)+" -> "+str ('y);
   > let l = 'lambda x (x+1); l;
   lambda x (x+1)
   > let f = eval l; f; f 9;
@@ -3133,12 +3154,20 @@ Example::
   10
 
 Other special constructs, such as :keyword:`case`, :keyword:`when` and
-:keyword:`with` can be handled in a similar fashion.
+:keyword:`with` can be treated in a similar fashion. (In the future, the
+compiler may handle this automatically, without having to go through any kind
+of string representation.)
 
-Another useful feature of Lisp's quasiquote is the capability to splice
-arguments into a function application. It is possible to achieve pretty much
-the same in Pure with the following variation of the :func:`$` operator which
-"curries" its second (tuple) operand::
+Finally, as we mentioned Lisp's quasiquote, note that it is quite easy to
+define this in Pure if you want it. See the `Recursive Macros`_ section for a
+simplified version; a full implementation (actually two of them) can be found
+in the Pure library sources. However, using the above facilities, the need to
+whip out the almighty quasiquote shouldn't arise very often.
+
+A useful feature of Lisp's quasiquote is the capability to splice arguments
+into a function application. It is possible to achieve pretty much the same in
+Pure with the following variation of the :func:`$` operator which "curries"
+its second (tuple) operand::
 
   infixr 0 $@ ;
   f $@ ()     = f;
