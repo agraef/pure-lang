@@ -345,7 +345,7 @@ at the command prompt."
 
 (defvar pure-font-lock-keywords
   (list
-   (list "^#!.*" 0 'font-lock-comment-face t)
+;;   (list "^#!.*" 0 'font-lock-comment-face t)
    (list "\\_<\\(bigint\\|bool\\|char\\|float\\|double\\|expr\\|short\\|int\\(8\\|16\\|32\\|64\\)?\\|long\\|string\\|pointer\\|void\\|[dci]?matrix\\)\\_>" 1 'font-lock-type-face)
    (list "\\_<\\(catch\\|throw\\)\\_>" 0 'font-lock-builtin-face)
    (list
@@ -358,7 +358,8 @@ at the command prompt."
   "Rules for fontifying Pure scripts.")
 
 (defvar pure-font-lock-syntactic-keywords
-  '(;; %< ... %> code sections are treated as comments
+  '(;; #! (shebang) and %< ... %> code sections are treated as comments
+    ("^\\(#!\\)" 1 "<") ("^#!.*\\([\n]\\)" 1 ">")
     ("\\(%\\)<" 1 "!" t) ("%\\(>\\)" 1 "!" t)
     ;; backslash in \( (lambda syntax) is treated as normal punctuation, to
     ;; prevent confusion in the sexp parser
