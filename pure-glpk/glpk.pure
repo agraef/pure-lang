@@ -659,20 +659,18 @@ glp::set_obj_coef lp (colind::int, coef) =
 
 // Load or replace matrix row
 private extern expr *glpk_set_mat_row(expr *lp, int rowind, expr *row);
-glp::set_mat_row lp (rowind::int, row) =
-  glpk_set_mat_row lp rowind row
-  if listp row;
+glp::set_mat_row lp (rowind::int, row::rlist) =
+  glpk_set_mat_row lp rowind row;
 
 // Load or replace matrix column
 private extern expr *glpk_set_mat_col(expr *lp, int colind, expr *column);
-glp::set_mat_col lp (colind::int, column) =
-  glpk_set_mat_col lp colind column
-  if listp column;
+glp::set_mat_col lp (colind::int, column::rlist) =
+  glpk_set_mat_col lp colind column;
 
 // Load or replace the whole problem matrix
 private extern expr *glpk_load_matrix(expr *lp, expr *data);
-glp::load_matrix lp mat =
-  glpk_load_matrix lp mat if listp mat;
+glp::load_matrix lp mat::rlist =
+  glpk_load_matrix lp mat;
 
 // Check for duplicate elements in sparse matrix
 public extern expr *glpk_check_dup(int numrows, int numcols,
@@ -685,15 +683,13 @@ public extern expr *glpk_sort_matrix(expr *lp) =
 
 // Delete rows from the matrix
 private extern expr *glpk_del_rows(expr *lp, expr *data);
-glp::del_rows lp rows =
-  glpk_del_rows lp rows
-  if listp rows;
+glp::del_rows lp rows::rlist =
+  glpk_del_rows lp rows;
 
 // Delete columns from the matrix
 private extern expr *glpk_del_cols(expr *lp, expr *data);
-glp::del_cols lp columns =
-  glpk_del_cols lp columns
-  if listp columns;
+glp::del_cols lp columns::rlist =
+  glpk_del_cols lp columns;
 
 // Copy the whole content of an GLPK problem object to another one
 private extern expr *glpk_copy_prob(expr *dest, expr *src, int names);
@@ -1115,7 +1111,7 @@ public extern expr *glpk_bf_updated(expr *lp) =
 // Get basis factorization parameters
 private extern expr *glpk_get_bfcp(expr *lp);
 glp::get_bfcp lp =
-  if listp result then vals2opts bf_options result else result
+  if rlistp result then vals2opts bf_options result else result
   when
     result = glpk_get_bfcp lp
   end;

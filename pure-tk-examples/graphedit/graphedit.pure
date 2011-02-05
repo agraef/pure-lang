@@ -137,8 +137,8 @@ parse_graph data = catch (cst ()) ((V,E) when
   stringp header && stringp data && substr header 0 (#magic) == magic ||
   throw ();
   V,E = val data;
-  listp V && all check_node V &&
-  listp E && all (check_edge (set [v|v=>_=V])) E || throw ();
+  rlistp V && all check_node V &&
+  rlistp E && all (check_edge (set [v|v=>_=V])) E || throw ();
 end) with
   check_node (v=>(x,y,s,a)) = check_node (v=>(x,y)) && stringp s && stringp a;
   check_node (v=>(x,y)) = intp v && doublep x && doublep y;
@@ -647,8 +647,8 @@ select_path_cb = case input_dg "Enter path to select:" of
   s  = case val s of
          () | [] = ();
 	 x::int = do_select [x];
-	 x = do_select x if listp x && all intp x;
-	 x = do_select (list x) if listp x && all intp x when x = list x end;
+	 x = do_select x if rlistp x && all intp x;
+	 x = do_select (list x) if rlistp x && all intp x when x = list x end;
 	 _ = error_dg "Error in Select Path operation:\nInvalid node list, must be a list or tuple of node numbers";
        end;
 end with
@@ -671,8 +671,8 @@ select_subgraph_cb = case input_dg "Enter subgraph to select:" of
   s  = case val s of
          () | [] = ();
 	 x::int = do_select [x];
-	 x = do_select x if listp x && all intp x;
-	 x = do_select (list x) if listp x && all intp x when x = list x end;
+	 x = do_select x if rlistp x && all intp x;
+	 x = do_select (list x) if rlistp x && all intp x when x = list x end;
 	 _ = error_dg "Error in Select Subgraph operation:\nInvalid node list, must be a list or tuple of node numbers";
        end;
 end with

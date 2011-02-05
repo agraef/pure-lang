@@ -506,18 +506,17 @@ sql_loop db::pointer xs x
     end;
   = sql_loop db (x:xs) (sql_fetch db) if sql_check x
     with
-      sql_check x	= listp x && ~null x;
+      sql_check x	= rlistp x && ~null x;
     end;
   = x otherwise;
 
-odbc::sql db::pointer query::string args =
+odbc::sql db::pointer query::string args::rlist =
   sql_close db $$ res
 when
   res = sql_loop db [] (sql_exec db query args);
-end
-if listp args;
+end;
 
-odbc::msql db::pointer query::string args =
+odbc::msql db::pointer query::string args::rlist =
   sql_close db $$ res
 when
   res = msql_loop db [] (sql_loop db [] (sql_exec db query args));
@@ -532,34 +531,33 @@ with
   msql_done _			= 0;
   
   msql_check x::int		= 1;
-  msql_check x			= listp x;
-end
-if listp args;
+  msql_check x			= rlistp x;
+end;
 
 /* Lazy SQL queries (experimental). These work like odbc::sql and odbc::msql
    above, but return lazy lists (streams) instead. */
 
-odbc::lsql db::pointer query::string args =
+odbc::lsql db::pointer query::string args::rlist =
   lsql db $ sql_exec db query args
 with
   lsql db x =
-    if listnp x && ~null x then
+    if listp x && ~null x then
       (x : takewhile ok [sql_fetch db | i = 0..inf]&
        with ok (sql_fetch _) = sql_close db $$ 0; ok _ = 1 end)
     else x;
-end if listp args;
+end;
 
-odbc::lmsql db::pointer query::string args =
+odbc::lmsql db::pointer query::string args::rlist =
   lmsql db $ lsql db $ sql_exec db query args
 with
   lmsql db x =
-    if intp x || listnp x then
+    if intp x || listp x then
       (x : takewhile ok [lsql db (sql_more db) | i = 0..inf]&
        with ok (sql_more _) = sql_close db $$ 0; ok _ = 1 end)
     else x;
   lsql db x =
-    if listnp x && ~null x then
+    if listp x && ~null x then
       (x : takewhile ok [sql_fetch db | i = 0..inf]&
        with ok (sql_fetch _) = 0; ok _ = 1 end)
     else x;
-end if listp args;
+end;
