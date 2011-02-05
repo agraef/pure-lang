@@ -2231,8 +2231,7 @@ you'll get mountains of ``s``\ 's for larger values of ``n``.
 
 As you can see, a type definition may in general consist of many type rules
 which may be scattered out over different parts of a program. This works
-exactly in the same way as with ordinary functions, which can also be defined
-in a piecemeal fashion in Pure.
+in exactly the same way as with ordinary functions.
 
 There's an additional convenience provided for type rules, namely that the
 right-hand side may be omitted if it's just :func:`true`. For instance, the
@@ -2281,12 +2280,10 @@ predicate or an alias).
 
 Type aliases can also be used to quickly turn an existing predicate into a
 "convenience" type which can be used as a tag on the left-hand side of
-equations. For instance::
+equations. The prelude defines a number of these, see :ref:`Prelude Types`.
+For instance::
 
   type closure = closurep;
-
-(The standard library also defines a number of these, e.g., for the different
-matrix types ``imatrix``, ``dmatrix`` etc.)
 
 Conversely, you can turn any type tag into an ordinary predicate which can be
 used on the right-hand side of other definitions. To these ends, the prelude
@@ -2339,27 +2336,28 @@ sometimes useful to define the "intersection type" of two such types, which
 can be done in a straightforward way using the logical conjunction of the two
 type predicates::
 
-  type odd_nat x = typep nat x && typep odd x;
+  type nat x::int = x>0;
+  type odd x::int = x mod 2;
+  type odd_nat x  = typep nat x && typep odd x;
 
-The ``integer`` union type of ``int`` and ``bigint`` from above could be
-defined in a similar fashion using logical disjunction (this employs the
-existing :func:`intp` and :func:`bigintp` predicates from the prelude)::
+Similarly, a variation of the ``integer`` union type from above could be
+defined using logical disjunction (this employs the :func:`intp` and
+:func:`bigintp` predicates from the prelude)::
 
-  type integer x = intp x || bigintp x;
+  type myinteger x = intp x || bigintp x;
 
-(This isn't the actual definition of the :type:`integer/type` type in the
-standard library, however, which uses our first definition from above in order
-to make the definition extensible.)
+(Note that this isn't quite the same as the previous definition, which uses
+explicit patterns in order to make the definition extensible.)
 
-Note that since the right-hand side of a type definition may in general be any
+Since the right-hand side of a type definition may in general be any
 predicate, it is up to the programmer to ensure that the definition of a type
 is actually computable. In fact, you should strive for the best possible
 efficiency in type predicates. A type definition which has worse than O(1)
 complexity may well be a serious performance hog depending on the way in which
-it is used. For instance, consider the definition of the :type:`list/type`
+it is used. For instance, consider the definition of the :type:`rlist/type`
 type from the prelude::
 
-  type list [] | list (x:xs::list);
+  type rlist [] | rlist (x:xs::rlist);
 
 This type is defined recursively, so that it only matches "proper" lists which
 have list values in all their tails (and are thus terminated by the empty
@@ -2368,46 +2366,44 @@ time, where n is the size of the list. This will have dire consequences if you
 do this check repeatedly while traversing a list, as in the following ``sum``
 function::
 
-  sum xs::list = if null xs then 0 else head xs+sum (tail xs);
+  sum xs::rlist = if null xs then 0 else head xs+sum (tail xs);
 
 As this function repeatedly checks its entire argument, the total time it
-takes to compute the sum of a list this way becomes O(n^2). (To see how slow
-this function is, just try invoking it on successively larger lists ``1..n``,
-e.g., for ``n = 1000, 2000, 3000, ...``.)
+takes to compute the sum of a list this way becomes O(n^2). To see how slow
+this function is, just try it on successively larger lists ``1..1000``,
+``1..2000``, etc. One way to work around this is to write a "wrapper" function
+which simply checks the type of its argument in advance and then invokes a
+"worker" function to do the actual computation::
 
-One way to work around this is to write a "wrapper" function which simply
-checks the type of its argument in advance and then invokes a "worker"
-function to do the actual computation::
-
-  sum xs::list = sum xs with
+  sum xs::rlist = sum xs with
     sum xs = if null xs then 0 else head xs+sum (tail xs);
   end;
 
 This "wrapper-worker" design is quite common and useful in many situations,
 but it is a bit cumbersome in this specific case. An easier way is to just do
 the type checking in a piecemeal fashion, as the list is being traversed. To
-these ends, the prelude also provides a :type:`listn/type` ("list node") type
-which is defined as follows::
+these ends, the prelude also provides a basic :type:`list/type` type which is
+defined as follows::
 
-  type listn [] | listn (x:xs);
+  type list [] | list (x:xs);
 
 Note that the recursion is missing here and thus this type can always be
 checked in O(1) time, performing just a single pattern match, which is
-efficient. Hence, if we replace :type:`list/type` with :type:`listn/type` in
-our original definition then ``sum`` will now run in O(n) time.
+efficient (in fact, this is also the reason that the prelude provides this
+type as the default list type). Hence, if we replace :type:`rlist/type` with
+:type:`list/type` in our original definition then ``sum`` will now run in O(n)
+time, as desired. However, this approach also has its drawbacks. For instance,
+consider::
 
-Checking the type in a piecemeal fashion is simpler, but also has its
-drawbacks. For instance, consider::
-
-  > sum xs::listn = if null xs then 0 else head xs+sum (tail xs);
+  > sum xs::list = if null xs then 0 else head xs+sum (tail xs);
   > sum (1:2:3);
   1+(2+sum 3)
 
 In contrast, our wrapper-worker definition of ``sum`` from above returns a
-"proper" normal form instead::
+somewhat prettier normal form instead::
 
   > clear sum
-  > sum xs::list = sum xs with
+  > sum xs::rlist = sum xs with
   >  sum xs = if null xs then 0 else head xs+sum (tail xs);
   > end;
   > sum (1:2:3);
@@ -2415,7 +2411,7 @@ In contrast, our wrapper-worker definition of ``sum`` from above returns a
 
 Thus the wrapper-worker approach also has its merits, and whether to use one
 or the other depends on the situation. Similar techniques and tradeoffs also
-apply to other recursive types such as trees, of course.
+apply to other recursive types such as trees.
 
 Yet another approach is possible if you define your own (abstract) data types.
 In this case you're free to choose any suitable representation, so you might
@@ -2423,8 +2419,8 @@ just wrap up all data objects with a special constructor symbol, which makes
 checking the type simple and efficient. This is also the approach taken in the
 ``point`` example in `Type Tags`_ above, as well as by the container data
 types in the standard library. But note that this works best with abstract
-data types, since in this case you may safely assume that a user of your data
-structure doesn't "fiddle" with your internal representation.
+data types, since in this case applications aren't supposed to "fiddle" with
+the internal representation.
 
 Finally, note that in general it may be hard or even impossible to predict
 exactly when the code of a type definition will be executed at runtime. Thus,
