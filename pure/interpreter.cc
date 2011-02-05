@@ -5791,7 +5791,7 @@ bool interpreter::checkguards(expr x, const vguardl& guards)
 {
   for (vguardl::const_iterator it = guards.begin(); it != guards.end(); ++it) {
     expr u = subterm(x, it->p);
-    // try to convert macro argument to a runtime expression on the fly
+    // try to convert macro argument to a (quoted) runtime expression on the fly
     pure_expr *e = 0, *y = const_value_invoke(u, e, true);
     if (!y) {
       // not convertible, assume false
@@ -9290,7 +9290,7 @@ pure_expr *interpreter::const_value_invoke(expr x, pure_expr*& e, bool quote)
     sstk_sz = sz;
     return 0;
   } else {
-    pure_expr *res = const_value(x);
+    pure_expr *res = const_value(x, quote);
     // normal return
     pop_aframe();
     return res;
