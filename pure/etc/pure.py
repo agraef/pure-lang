@@ -29,7 +29,8 @@ class PureLexer(RegexLexer):
     primitives = ['bigint', 'bool', 'char', 'short', 'int', 'long',
                   'float', 'double', 'expr', 'string', 'pointer', 'void',
                   'int8', 'int16', 'int32', 'int64',
-                  'matrix', 'dmatrix', 'cmatrix', 'imatrix']
+                  'matrix', 'dmatrix', 'cmatrix', 'imatrix',
+                  'smatrix', 'nmatrix']
 
     commands = ['break', 'bt', 'cd', 'clear', 'del', 'dump', 'help', 'ls',
                 'mem', 'override', 'pwd', 'quit', 'run', 'save', 'show',
