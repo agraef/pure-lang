@@ -325,7 +325,7 @@ end
 when
   n = #xs; p = calloc (n+1) SIZEOF_POINTER;
   xs = if smatrixp xs then list xs else xs;
-end if (listp xs || smatrixp xs) && all stringp xs;
+end if (rlistp xs || smatrixp xs) && all stringp xs;
 
 byte_cstring_pointer xs	= if null p then throw malloc_error
 			  else make_pointer (map byte_cstring xs)
@@ -340,7 +340,7 @@ end
 when
   n = #xs; p = calloc (n+1) SIZEOF_POINTER;
   xs = if smatrixp xs then list xs else xs;
-end if (listp xs || smatrixp xs) && all stringp xs;
+end if (rlistp xs || smatrixp xs) && all stringp xs;
 
 /* .. function:: string_list n p
                  cstring_list n p
@@ -405,7 +405,7 @@ with
 	when q = get_pointer (p+i*SIZEOF_POINTER) end;
 end if ~null p && (intp n || infp n);
 
-string_vector n p::pointer = vector xs if listnp xs when
+string_vector n p::pointer = vector xs if listp xs when
   xs = string_list n p;
 end;
 
@@ -415,7 +415,7 @@ with
 	when q = get_pointer (p+i*SIZEOF_POINTER) end;
 end if ~null p && (intp n || infp n);
 
-cstring_vector n p::pointer = vector xs if listnp xs when
+cstring_vector n p::pointer = vector xs if listp xs when
   xs = cstring_list n p;
 end;
 

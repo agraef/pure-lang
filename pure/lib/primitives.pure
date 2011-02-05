@@ -322,16 +322,16 @@ using namespace __C;
 
    .. function:: applp x
                  listp x
-                 listnp x
+                 rlistp x
                  tuplep x
 
-      Predicates to check for function applications, proper lists, list nodes
-      and proper tuples. Note that :func:`listnp` only checks for a toplevel
-      list constructor, whereas :func:`listp` also recursively checks the
-      tails of the list; the latter may need time proportional to the list
-      size. The :func:`applp` and :func:`tuplep` predicates look for an
-      application or tuple constructor at the toplevel only, which can always
-      be done in constant time.
+      Predicates to check for function applications, lists, proper lists and
+      tuples. Note that :func:`listp` only checks for a toplevel list
+      constructor, whereas :func:`rlistp` also recursively checks the tails of
+      the list; the latter may need time proportional to the list size. The
+      :func:`applp` and :func:`tuplep` predicates look for an application or
+      tuple constructor at the toplevel only, which can always be done in
+      constant time.
 
    .. function:: funp x
                  lambdap x
@@ -837,17 +837,17 @@ end;
 
 type function = functionp;
 
-/* Types and predicates to check for function applications, proper lists, list
-   nodes and proper tuples. */
+/* Types and predicates to check for function applications, lists, proper
+   lists and tuples. */
 
 type appl (_ _);
-type list []  | list (_:_::list);
-type listn [] | listn (_:_);
+type list []  | list (_:_);
+type rlist [] | rlist (_:_::rlist);
 type tuple () | tuple (_,_);
 
 applp x		= typep ('appl) x;
 listp x		= typep ('list) x;
-listnp x	= typep ('listn) x;
+rlistp x	= typep ('rlist) x;
 tuplep x	= typep ('tuple) x;
 
 /* Compute a 32 bit hash code of a Pure expression. */

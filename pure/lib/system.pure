@@ -479,25 +479,19 @@ extern int execv(char *prog, char **argv);
 extern int execvp(char *prog, char **argv);
 extern int execve(char *prog, char **argv, char **envp);
 
-execv prog::string argv =
-  execv prog (smatrix argv) if listp argv;
-execvp prog::string argv =
-  execvp prog (smatrix argv) if listp argv;
-execve prog::string argv envp =
-  execve prog (smatrix argv) (smatrix envp)
-  if listp argv && listp envp;
+execv prog::string argv::rlist = execv prog (smatrix argv);
+execvp prog::string argv::rlist = execvp prog (smatrix argv);
+execve prog::string argv::rlist envp::rlist =
+  execve prog (smatrix argv) (smatrix envp);
 
 extern int spawnv(int mode, char *prog, char **argv);
 extern int spawnvp(int mode, char *prog, char **argv);
 extern int spawnve(int mode, char *prog, char **argv, char **envp);
 
-spawnv mode::int prog::string argv =
-  spawnv mode prog (smatrix argv) if listp argv;
-spawnvp mode::int prog::string argv =
-  spawnvp mode prog (smatrix argv) if listp argv;
-spawnve mode::int prog::string argv envp =
-  spawnve mode prog (smatrix argv) (smatrix envp)
-  if listp argv && listp envp;
+spawnv mode::int prog::string argv::rlist = spawnv mode prog (smatrix argv);
+spawnvp mode::int prog::string argv::rlist = spawnvp mode prog (smatrix argv);
+spawnve mode::int prog::string argv::rlist envp::rlist =
+  spawnve mode prog (smatrix argv) (smatrix envp);
 
 /* ..
 

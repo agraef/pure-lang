@@ -366,16 +366,16 @@ mdict  d::xdict = mdict  (members d);
 hmdict d::xdict = hmdict (members d);
 
 // create a dict from a list
-dict   xys	= foldl insert emptydict   xys if listp xys;
-hdict  xys	= foldl insert emptyhdict  xys if listp xys;
-mdict  xys	= foldl insert emptymdict  xys if listp xys;
-hmdict xys	= foldl insert emptyhmdict xys if listp xys;
+dict   xys::rlist = foldl insert emptydict   xys;
+hdict  xys::rlist = foldl insert emptyhdict  xys;
+mdict  xys::rlist = foldl insert emptymdict  xys;
+hmdict xys::rlist = foldl insert emptyhmdict xys;
 
 // create a dict from a list of keys and a constant value
-mkdict   y xs	= dict   (zipwith (=>) xs (repeatn (#xs) y)) if listp xs;
-mkhdict  y xs	= hdict  (zipwith (=>) xs (repeatn (#xs) y)) if listp xs;
-mkmdict  y xs	= mdict  (zipwith (=>) xs (repeatn (#xs) y)) if listp xs;
-mkhmdict y xs	= hmdict (zipwith (=>) xs (repeatn (#xs) y)) if listp xs;
+mkdict   y xs::rlist = dict   (zipwith (=>) xs (repeatn (#xs) y));
+mkhdict  y xs::rlist = hdict  (zipwith (=>) xs (repeatn (#xs) y));
+mkmdict  y xs::rlist = mdict  (zipwith (=>) xs (repeatn (#xs) y));
+mkhmdict y xs::rlist = hmdict (zipwith (=>) xs (repeatn (#xs) y));
 
 // insert a member
 insert (Dict   d) el@(x=>y) = Dict   (avl::insertk   d el);

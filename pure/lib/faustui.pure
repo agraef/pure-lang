@@ -74,7 +74,7 @@ control_args (_ label::string) = ();
    all the control values of a Faust DSP. The grouping controls themselves are
    omitted. */
 
-controls (_ (_,ctls)) = catmap controls ctls if listp ctls;
+controls (_ (_,ctls::rlist)) = catmap controls ctls;
 controls x = [x] otherwise;
 
 /* The following function works like the controls function above, but also
@@ -86,8 +86,7 @@ controls x = [x] otherwise;
 pcontrols x = controls "" x with
   controls path x =
     case x of
-      _ (label::string,ctls) = catmap (controls (join path label)) ctls
-      			         if listp ctls;
+      _ (label::string,ctls::rlist) = catmap (controls (join path label)) ctls;
       f@_ ptr (label::string,args) = [f ptr (join path label,args)];
       f@_ ptr label::string = [f ptr (join path label)];
       _ = [x]; // bad control description

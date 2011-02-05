@@ -150,8 +150,8 @@ null (x/*0:101*/:xs/*0:11*/) = 0;
 (x/*0:0101*/:xs/*0:011*/)!0 = x/*0:0101*/;
 (x/*0:0101*/:xs/*0:011*/)!n/*0:1*/::int = xs/*0:011*/!(n/*0:1*/-1) if n/*0:1*/>0;
 (x/*0:0101*/:xs/*0:011*/)!n/*0:1*/::int = throw out_of_bounds;
-xs/*0:01*/!!ns/*0:1*/ = ys/*0:*/ if ok/*1*/ ys/*0:*/ when ys/*0:*/ = case ns/*0:1*/ of ns@(n/*0:01*/::int:_/*0:1*/) = list (take (count/*1*/ ns/*0:*/) (drop n/*0:01*/ xs/*1:01*/)) if listnp xs/*1:01*/&&cont/*1*/ ns/*0:*/; _/*0:*/ = catmap (nth/*1*/ xs/*1:01*/) ns/*1:1*/ {
-  rule #0: ns@(n::int:_) = list (take (count ns) (drop n xs)) if listnp xs&&cont ns
+xs/*0:01*/!!ns/*0:1*/ = ys/*0:*/ if ok/*1*/ ys/*0:*/ when ys/*0:*/ = case ns/*0:1*/ of ns@(n/*0:01*/::int:_/*0:1*/) = list (take (count/*1*/ ns/*0:*/) (drop n/*0:01*/ xs/*1:01*/)) if listp xs/*1:01*/&&cont/*1*/ ns/*0:*/; _/*0:*/ = catmap (nth/*1*/ xs/*1:01*/) ns/*1:1*/ {
+  rule #0: ns@(n::int:_) = list (take (count ns) (drop n xs)) if listp xs&&cont ns
   rule #1: _ = catmap (nth xs) ns
   state 0: #0 #1
 	<var> state 1
@@ -181,7 +181,7 @@ xs/*0:01*/!!ns/*0:1*/ = ys/*0:*/ if ok/*1*/ ys/*0:*/ when ys/*0:*/ = case ns/*0:
 	<var> state 13
   state 13: #0 #1
 } end {
-  rule #0: ys = case ns of ns@(n::int:_) = list (take (count ns) (drop n xs)) if listnp xs&&cont ns; _ = catmap (nth xs) ns end
+  rule #0: ys = case ns of ns@(n::int:_) = list (take (count ns) (drop n xs)) if listp xs&&cont ns; _ = catmap (nth xs) ns end
   state 0: #0
 	<var> state 1
   state 1: #0
@@ -534,7 +534,7 @@ n1/*0:0101*/:n2/*0:011*/..m/*0:1*/ = if m/*2:1*/===s/*0:01*/ then iterate (flip 
 	<var> state 1
   state 1: #0
 } end;
-n/*0:01*/..m/*0:1*/ = if m/*0:1*/===inf then iterate (flip (+) 1) n/*0:01*/ else if m/*0:1*/===-inf then [] else iterwhile ((>=) m/*0:1*/) (flip (+) 1) n/*0:01*/ if ~listnp n/*0:01*/&&~infp n/*0:01*/;
+n/*0:01*/..m/*0:1*/ = if m/*0:1*/===inf then iterate (flip (+) 1) n/*0:01*/ else if m/*0:1*/===-inf then [] else iterwhile ((>=) m/*0:1*/) (flip (+) 1) n/*0:01*/ if ~listp n/*0:01*/&&~infp n/*0:01*/;
 all p/*0:01*/ [] = 1;
 all p/*0:01*/ (x/*0:101*/:xs/*0:11*/) = p/*0:01*/ x/*0:101*/&&all p/*0:01*/ xs/*0:11*/;
 any p/*0:01*/ [] = 0;
@@ -1656,7 +1656,7 @@ cyclen n/*0:01*/::int (x/*0:101*/:xs/*0:11*/) = accum/*0*/ [] n/*2:01*/ with acc
   state 0: #0
 	<var> state 1
   state 1: #0
-} end if listp xs/*0:11*/;
+} end if rlistp xs/*0:11*/;
 zip [] _/*0:1*/ = [];
 zip _/*0:01*/ [] = [];
 zip xs@(_/*0:0101*/:_/*0:011*/) ys@(_/*0:101*/:_/*0:11*/) = tick/*0*/ [] xs/*0:01*/ ys/*0:1*/ with tick us/*0:001*/ (x/*0:0101*/:xs/*0:011*/) (y/*0:101*/:ys/*0:11*/) = tack/*1*/ ((x/*0:0101*/,y/*0:101*/):us/*0:001*/) (zip xs/*1:011*/ ys/*1:11*/&) if thunkp xs/*0:011*/||thunkp ys/*0:11*/; tick us/*0:001*/ (x/*0:0101*/:xs/*0:011*/) (y/*0:101*/:ys/*0:11*/) = tick/*1*/ ((x/*0:0101*/,y/*0:101*/):us/*0:001*/) xs/*0:011*/ ys/*0:11*/; tick us/*0:001*/ [] _/*0:1*/ = tack/*1*/ us/*0:001*/ []; tick us/*0:001*/ _/*0:01*/ [] = tack/*1*/ us/*0:001*/ []; tick us/*0:001*/ xs/*0:01*/ ys/*0:1*/ = tack/*1*/ us/*0:001*/ (zip xs/*0:01*/ ys/*0:1*/) {

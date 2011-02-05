@@ -164,7 +164,7 @@ const false, true = 0, 1;
 
 using primitives, matrices, records, strings;
 
-/* ..
+/* .. _Prelude Types:
 
    Prelude Types
    -------------
@@ -213,22 +213,25 @@ using primitives, matrices, records, strings;
    `Lists and tuples`_ can be matched with the following types:
 
    .. type:: list /type
-             listn /type
+             rlist /type
 
-      The list and list node types. Note that the latter comprises both the
-      empty list ``[]`` and all list nodes of the form ``x:xs`` (no matter
-      whether the tail ``xs`` is a proper list value or not), whereas the
-      former only matches proper list values of the form ``x1:...:xn:[]``.
-      Thus the :type:`listn/type` type can be checked in O(1) time, while the
-      :type:`list/type` type is defined recursively and requires O(n) time
-      (where n is the size of the list) to be checked. This should be
-      considered when deciding whether to use one or the other in a given
-      situation; see :ref:`Type Rules` for further explanation.
+      The list and "proper" (or "recursive") list types. Note that the former
+      comprises both the empty list ``[]`` and all list nodes of the form
+      ``x:xs`` (no matter whether the tail ``xs`` is a proper list value or
+      not), whereas the latter only matches proper list values of the form
+      ``x1:...:xn:[]``. Thus the :type:`list/type` type can be checked in O(1)
+      time, while the :type:`rlist/type` type is defined recursively and
+      requires linear time (with respect to the size of the list) to be
+      checked. This should be considered when deciding whether to use one or
+      the other in a given situation; see :ref:`Type Rules` for further
+      explanation.
 
    .. type:: tuple /type
 
       The type of all tuples, comprises the empty tuple ``()`` and all tuples
-      ``(x,xs)`` with at least two members.
+      ``(x,xs)`` with at least two members. This is analogous to the
+      :type:`list/type` type above, but no "proper" tuple type is needed here
+      since any tuple of this form is always a proper tuple.
 
    There are some other, more specialized types representing various kinds of
    applications, function objects and other named entities. These are useful,
@@ -463,40 +466,70 @@ def void (listmap f x) = do f x;
 
       List and tuple constructors. These are right-associative in Pure.
 
-      Lists are the usual right-recursive aggregates, pretty much the same as
-      in Lisp or Prolog except that they use a Haskell-like syntax. In
-      difference to Haskell, list concatenation is denoted '\ :func:`+/list`\ '
-      (see below), and lists may contain an arbitrary mixture of arguments,
-      i.e., they are fully polymorphic::
+   Lists are the usual right-recursive aggregates of the form ``x:xs``, where
+   ``x`` denotes the `head` and ``xs`` the `tail` of the list, pretty much the
+   same as in Lisp or Prolog except that they use a Haskell-like syntax. In
+   contrast to Haskell, list concatenation is denoted '\ :func:`+/list`\ '
+   (see below), and lists may contain an arbitrary mixture of arguments, i.e.,
+   they are fully polymorphic::
 
-        > 1:2:3:[];
-     	[1,2,3]
-     	> [1,2,3]+[u,v,w]+[3.14];
-     	[1,2,3,u,v,w,3.14]
+     > 1:2:3:[];
+     [1,2,3]
+     > [1,2,3]+[u,v,w]+[3.14];
+     [1,2,3,u,v,w,3.14]
 
-      Lists are `eager` in Pure by default, but they can also be made `lazy`,
-      see section :ref:`Lazy Evaluation and Streams` in the Pure Manual.
+   Lists are `eager` in Pure by default, but they can also be made `lazy` (in
+   the latter case they are also called `streams`). This is accomplished by
+   turning the tail of a list into a "thunk" (a.k.a. "future") which defers
+   evaluation until the list tail is actually needed, see section :ref:`Lazy
+   Evaluation and Streams` in the Pure Manual. For instance, an infinite
+   arithmetic sequence (see below) will always produce a list with a thunked
+   tail::
 
-      Tuples work in a similar fashion, but with the special twist that the
-      pairing constructor '\ :cons:`,`\ ' is associative (it always produces
-      right-recursive pairs) and '\ :cons:`()`\ ' acts as a neutral element on
-      these constructs, so that '\ :cons:`,`\ ' and '\ :cons:`()`\ ' define a
-      complete monoid structure. Note that this means that '\ :cons:`,`\ ' is
-      actually a "constructor with equations" since it obeys the laws
-      ``(x,y),z == x,(y,z)`` and ``(),x == x,() == x``. Also note that there
-      isn't a separate operation for concatenating tuples, since the pairing
-      operator already does this::
+     > 1:3..inf;
+     1:#<thunk 0x7f696cd2dbd8>
 
-        > (1,2,3),(10,9,8);
-     	1,2,3,10,9,8
-     	> (),(a,b,c);
-     	a,b,c
-     	> (a,b,c),();
-     	a,b,c
+   Pure also distinguishes `proper` and `improper` lists. The former are
+   always terminated by an empty list in the final tail and can thus be
+   written using the conventional ``[x1,x2,...,xn]`` syntax::
 
-      This also implies that tuples are always flat in Pure and can't be
-      nested; if you need this, you should use lists instead. Also, tuples
-      are always eager in Pure.
+     > 1:2:3:[];
+     [1,2,3]
+
+   In contrast, improper lists are terminated with a non-list value and
+   can only be represented using the '\ :func:`:`\ ' operator::
+
+     > 1:2:3;
+     1:2:3
+
+   These aren't of much use as ordinary list values, but are frequently
+   encountered as patterns on the left-hand side of an equation, where the
+   final tail is usually a variable. Also note that technically, a lazy list
+   is also an improper list (although it may expand to a proper list value as
+   it is traversed).
+
+   Tuples work in a similar fashion, but with the special twist that the
+   pairing constructor '\ :cons:`,`\ ' is associative (it always produces
+   right-recursive pairs) and '\ :cons:`()`\ ' acts as a neutral element on
+   these constructs, so that '\ :cons:`,`\ ' and '\ :cons:`()`\ ' define a
+   complete monoid structure. Note that this means that '\ :cons:`,`\ ' is
+   actually a "constructor with equations" since it obeys the laws
+   ``(x,y),z == x,(y,z)`` and ``(),x == x,() == x``. Also note that there
+   isn't a separate operation for concatenating tuples, since the pairing
+   operator already does this::
+
+     > (1,2,3),(10,9,8);
+     1,2,3,10,9,8
+     > (),(a,b,c);
+     a,b,c
+     > (a,b,c),();
+     a,b,c
+
+   This also implies that tuples are always flat in Pure and can't be
+   nested; if you need this, you should use lists instead. Also, tuples
+   are always eager in Pure.
+
+   Some important basic operations on lists and tuples are listed below.
 
    .. index:: list; concatenation
 
@@ -516,17 +549,21 @@ def void (listmap f x) = do f x;
         [] + ys = ys;
 	(x:xs) + ys = x : xs+ys;
 
-      Since Pure is dynamically typed and places no limits on ad-hoc
-      polymorphism, this may sometimes produce surprising (but correct)
-      results like::
+      To make this work, both operands should be proper lists, otherwise you
+      may get somewhat surprising (but correct) improper list results like the
+      following::
 
         > [1,2,3]+99;
 	1:2:3:99
-	> ans+33;
-	1:2:3:132
+	> (1:2:3)+33;
+	1:2:36
 
-      (Note that the latter result is due to the fact that '\ :func:`+`\ '
-      also denotes the addition of numbers.)
+      This happens because Pure is dynamically typed and places no limits on
+      ad hoc polymorphism. Note that the latter result is due to the fact
+      that '\ :func:`+`\ ' also denotes the addition of numbers, and the
+      improper tail of the first operand is a number in this case, as is the
+      second operand. Otherwise you might have got an unreduced instance of
+      the '\ :func:`+`\ ' operator instead.
 
    .. index:: list; equality
    .. index:: tuple; equality
@@ -683,7 +720,8 @@ def void (listmap f x) = do f x;
         > (-1:-3..-inf)!!(0..9);
      	[-1,-3,-5,-7,-9,-11,-13,-15,-17,-19]
 
-   Conversely, it is also possible to convert a list to a stream.
+   Conversely, it is also possible to convert an (eager) list to a lazy one (a
+   stream).
 
    .. function:: stream x
 
@@ -841,7 +879,7 @@ end;
 xs!!ns		= ys if ok ys when
 		    ys = case ns of
 		           ns@(n::int:_) = list $ take (count ns) (drop n xs)
-		                             if listnp xs && cont ns;
+		                             if listp xs && cont ns;
 		           _ = catmap (nth xs) ns;
 		         end;
 		  end with
@@ -933,7 +971,7 @@ n1:n2..m	= if m===s then iterate (+k) n1
 n..m		= if m===inf then iterate (+1) n
 		  else if m===-inf then []
 		  else iterwhile ((>=) m) (+1) n
-		  if ~listnp n && ~infp n;
+		  if ~listp n && ~infp n;
 
 /* ..
 
@@ -1405,7 +1443,7 @@ cyclen n::int (x:xs)	= [] if n<=0;
 			= accum [] n with
 			    accum ys n::int = cat ys+take n xs if n<=m;
 			                    = accum (xs:ys) (n-m) otherwise;
-			  end when xs = x:xs; m::int = #xs end if listp xs;
+			  end when xs = x:xs; m::int = #xs end if rlistp xs;
 
 /* ..
 

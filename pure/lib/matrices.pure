@@ -423,8 +423,8 @@ list2 x::matrix		= [[x!(i,j)|j=0..m-1]|i=0..n-1]
 			    when n::int,m::int = dim x end;
 
 matrix []		= {};
-matrix xs@(_:_)		= throw (bad_list_value xs) if ~listp xs;
-			= rowcatmap colcat xs if all listp xs;
+matrix xs@(_:_)		= throw (bad_list_value xs) if ~rlistp xs;
+			= rowcatmap colcat xs if all rlistp xs;
 			= rowcat xs if any matrixp xs;
 			= colcat xs otherwise;
 
@@ -477,7 +477,7 @@ colvector ()		= redim (0,1) {};
 colvector xs@(_,_)	= colvector (list xs);
 
 rowvector []		= redim (1,0) {};
-rowvector xs		= case cmatrix xs of
+rowvector xs::rlist	= case cmatrix xs of
   	  		    x::matrix = x;
   			    _ = case dmatrix xs of
     			      x::matrix = x;
@@ -486,7 +486,7 @@ rowvector xs		= case cmatrix xs of
       				_ = smatrix xs;
     			      end;
   			    end;
-			  end if listp xs;
+			  end;
 
 colvector xs		= redim (#x,1) x if matrixp x
 	  		  when x = rowvector xs end;

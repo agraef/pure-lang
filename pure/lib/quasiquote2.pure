@@ -55,12 +55,12 @@ def quasiquote (`x)		= quasiquote (quasiquote x);
 def quasiquote (unquote x)	= x;
 def quasiquote (,$x)		= x;
 def quasiquote (splice x)	= case x of
-				    x = foldl1 ($) x if listp x;
+				    x = foldl1 ($) x if rlistp x;
 				      = throw (bad_list_value x);
 				  end;
 def quasiquote (,@x)		= quasiquote (splice x);
 def quasiquote (f@_ (splice x))	= case x of
-				    x = foldl ($) (quasiquote f) x if listp x;
+				    x = foldl ($) (quasiquote f) x if rlistp x;
 				      = throw (bad_list_value x);
 				  end;
 def quasiquote (f@_ (,@x))	= quasiquote (f (splice x));
