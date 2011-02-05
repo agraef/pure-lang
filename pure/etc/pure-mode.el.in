@@ -361,9 +361,9 @@ at the command prompt."
   '(;; #! (shebang) and %< ... %> code sections are treated as comments
     ("^\\(#!\\)" 1 "<") ("^#!.*\\([\n]\\)" 1 ">")
     ("\\(%\\)<" 1 "!" t) ("%\\(>\\)" 1 "!" t)
-    ;; backslash in \( (lambda syntax) is treated as normal punctuation, to
-    ;; prevent confusion in the sexp parser
-    ("\\([\\]\\)(" 1 "." t)))
+    ;; backslash followed by paren (lambda syntax) is treated as normal
+    ;; punctuation, to prevent confusion in the sexp parser
+    ("\\([\\]\\)[([{]" 1 "." t)))
 
 (defun pure-syntactic-face-function (state)
   (cond
