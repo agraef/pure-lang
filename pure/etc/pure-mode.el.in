@@ -2509,6 +2509,8 @@ zero or left out."
     (if pos
 	(goto-char pos))))
 
+;; FIXME: These don't recognize blocks inside sexps right now.
+
 (defun pure-prev-defun (&optional arg)
   "Move backward to the beginning of a Pure definition.
 If point is already at the beginning of a definition, move
@@ -2801,7 +2803,27 @@ specify a repeat count."
 	    (pure-forward-defun)
 	  (point)))))))
 
+(defun pure-mark-defun ()
+  "Mark the current Pure definition at or around point.
+Put mark at the end of the definition and point at the
+beginning. Return point if successful, nil otherwise."
+  (interactive)
+  (unless (pure-at-empty-or-comment-line)
+    (or (pure-at-defun) (pure-backward-defun))
+    (pure-forward-defun)
+    ;; skip over any trailing whitespace and comments
+    (let ((parse-sexp-ignore-comments t)) (pure-backward-sexp 1))
+    (let ((parse-sexp-ignore-comments nil)) (pure-forward-sexp 1))
+    (skip-chars-backward " \t\n")
+    ;; skip over any trailing garbage if we can
+    (or (and (looking-at "[ \t]*;?\\(//.*\\|[ \t]*\\)?$") (forward-line 1))
+	(and (looking-at "[ \t]*;") (skip-chars-forward " \t;")))
+    (set-mark (point))
+    (pure-backward-defun)
+    (point)))
+
 ;; Code-folding support, using hideshow (experimental).
+;; FIXME: This doesn't recognize blocks inside sexps right now.
 
 (defconst pure-hs-beg-block-re "\\_<\\(case\\|when\\|with\\)\\_>")
 (defconst pure-hs-end-block-re "\\_<end\\_>")
@@ -2853,25 +2875,6 @@ in hs-minor-mode."
 	   (list 'pure-mode pure-hs-beg-block-re pure-hs-end-block-re
 		 "/[*/]\\|%<" 'pure-hs-forward-sexp nil)
 	   hs-special-modes-alist)))
-
-(defun pure-mark-defun ()
-  "Mark the current Pure definition at or around point.
-Put mark at the end of the definition and point at the
-beginning. Return point if successful, nil otherwise."
-  (interactive)
-  (unless (pure-at-empty-or-comment-line)
-    (or (pure-at-defun) (pure-backward-defun))
-    (pure-forward-defun)
-    ;; skip over any trailing whitespace and comments
-    (let ((parse-sexp-ignore-comments t)) (pure-backward-sexp 1))
-    (let ((parse-sexp-ignore-comments nil)) (pure-forward-sexp 1))
-    (skip-chars-backward " \t\n")
-    ;; skip over any trailing garbage if we can
-    (or (and (looking-at "[ \t]*;?\\(//.*\\|[ \t]*\\)?$") (forward-line 1))
-	(and (looking-at "[ \t]*;") (skip-chars-forward " \t;")))
-    (set-mark (point))
-    (pure-backward-defun)
-    (point)))
 
 ;; Filling. This is the paragraph-fill from q-mode which in turn was based on
 ;; (XEmacs) cc-mode.
