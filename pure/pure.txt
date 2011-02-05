@@ -2317,7 +2317,14 @@ the ``odd`` and ``even`` predicates in terms of :func:`typep`::
   even = typep ('even);
 
 Note that the quotes on ``odd`` and ``even`` are really needed here to prevent
-the predicate definitions from looping.
+the predicate definitions from looping. If you need this a lot then you might
+define a little helper macro (cf. Macros_) which quotes the type symbol in an
+automatic fashion::
+
+  def typep ty::symbol = typep ('ty);
+
+(However, this gets in the way if you want to check for computed type symbols,
+that's why this macro isn't defined in the prelude.)
 
 Pure places no a priori restrictions on the rules defining a data type (other
 than that they must either define a unary predicate or an alias for an
