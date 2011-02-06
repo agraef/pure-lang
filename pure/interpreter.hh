@@ -704,7 +704,7 @@ public:
   void add_macro_rule(rule *r);
   void promote_ttags(expr f, expr x, expr u);
   void promote_ttags(expr f, expr x, expr u, expr v);
-  expr bind(env& vars, vguardl& guards, veqnl& eqns,
+  expr bind(env& vars, vinfo& vi,
 	    expr x, bool b = true, path p = path());
   void funsubstw(set<int32_t>& warned, bool ty_check,
 		 expr x, int32_t f, int32_t g, bool b = false);
@@ -958,7 +958,7 @@ private:
   pure_expr *const_matrix_value(expr x, bool quote = false);
   pure_expr *const_app_value(expr x);
   pure_expr *doeval(expr x, pure_expr*& e, bool keep = false);
-  pure_expr *dodefn(env vars, vguardl guards, veqnl eqns,
+  pure_expr *dodefn(env vars, const vinfo& vi,
 		    expr lhs, expr rhs, pure_expr*& e,
 		    bool keep = false);
   llvm::Value *codegen(expr x, bool quote = false);

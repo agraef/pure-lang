@@ -135,7 +135,7 @@ void expr::debug(const string &msg)
   if (p) cout << msg << ": " << *this << endl;
 }
 
-expr expr::lambda(exprl *args, expr body, vguardl guards, veqnl eqns)
+expr expr::lambda(exprl *args, expr body, vinfo vi)
 {
   assert(!args->empty());
   // create a fake lhs
@@ -143,7 +143,7 @@ expr expr::lambda(exprl *args, expr body, vguardl guards, veqnl eqns)
   for (exprl::const_iterator it = args->begin(), end = args->end();
        it != end; ++it)
     lhs = expr(lhs, *it);
-  return expr(EXPR::LAMBDA, args, new rule(lhs, body, guards, eqns));
+  return expr(EXPR::LAMBDA, args, new rule(lhs, body, vi));
 }
 
 expr expr::cond(expr x, expr y, expr z)

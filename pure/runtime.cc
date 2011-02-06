@@ -6694,9 +6694,8 @@ void pure_debug_rule(void *_e, void *_r)
   if (r) {
     // build the lhs variable table
     d.vars.clear();
-    vguardl guards; // ignored
-    veqnl eqns; // ignored
-    interp.bind(d.vars, guards, eqns, r->lhs, e->b);
+    vinfo vi; // ignored
+    interp.bind(d.vars, vi, r->lhs, e->b);
   }
   bool stp = stop(interp, e);
   if (!stp && !traced(interp, e)) return;

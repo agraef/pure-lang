@@ -146,15 +146,32 @@ class expr;
 typedef list<expr> exprl;
 typedef list<exprl> exprll;
 
-/* Custom type guards on local variables. */
+/* Auxiliary information on local variables in a rule. */
 
-struct vguard;
+// type guards
+struct vguard {
+  int32_t tag, ttag;
+  path p;
+  vguard(int32_t _tag, int32_t _ttag, path _p)
+    : tag(_tag), ttag(_ttag), p(_p) { }
+};
 typedef list<vguard> vguardl;
 
-/* Nonlinearities (equalities between local variables). */
-
-struct veqn;
+// variable equations (nonlinearities)
+struct veqn {
+  int32_t tag;
+  path p, q;
+  veqn(int32_t _tag, path _p, path _q)
+    : tag(_tag), p(_p), q(_q) { }
+};
 typedef list<veqn> veqnl;
+
+struct vinfo {
+  vguardl guards;
+  veqnl eqns;
+  vinfo() { }
+  vinfo(const vguardl& g, const veqnl& e) :guards(g), eqns(e) { }
+};
 
 /* Rule lists are used to encode collections of equations and other rule sets
    in 'case' expressions and the like. See the definition of the rule struct
@@ -402,8 +419,7 @@ public:
     p(new EXPR(&*fun, &*arg1, &*arg2, &*arg3)) { p->incref(); }
 
   // static methods to generate special types of expressions
-  static expr lambda(exprl *xs, expr y,
-		     vguardl guards = vguardl(), veqnl eqns = veqnl());
+  static expr lambda(exprl *xs, expr y, vinfo vi = vinfo());
   static expr cond(expr x, expr y, expr z);
   static expr cond1(expr x, expr y);
   static expr cases(expr x, rulel *rules);
@@ -618,36 +634,16 @@ public:
   bool is_tuplel(exprl &xs) const;
 };
 
-/* Type guards. */
-
-struct vguard {
-  int32_t tag, ttag;
-  path p;
-  vguard(int32_t _tag, int32_t _ttag, path _p)
-    : tag(_tag), ttag(_ttag), p(_p) { }
-};
-
-/* Variable equations (non-linearities). */
-
-struct veqn {
-  int32_t tag;
-  path p, q;
-  veqn(int32_t _tag, path _p, path _q)
-    : tag(_tag), p(_p), q(_q) { }
-};
-
 /* Rules of the form: lhs -> rhs [if qual]. */
 
 struct rule {
   expr lhs, rhs, qual;
-  vguardl guards;
-  veqnl eqns;
+  vinfo vi;
   uint32_t temp;
   rule(expr l, expr r, expr q = expr(), uint32_t t = 0)
     : lhs(l), rhs(r), qual(q), temp(t) { }
-  rule(expr l, expr r, const vguardl& grs, const veqnl& eqs,
-       expr q = expr(), uint32_t t = 0)
-    : lhs(l), rhs(r), qual(q), guards(grs), eqns(eqs), temp(t) { }
+  rule(expr l, expr r, const vinfo& _vi, expr q = expr(), uint32_t t = 0)
+    : lhs(l), rhs(r), qual(q), vi(_vi), temp(t) { }
 };
 
 /* Environment entries. */
