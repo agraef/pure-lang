@@ -671,6 +671,9 @@ ostream& operator << (ostream& os, const trans& tr)
   switch (tr.tag) {
   case EXPR::APP:
     return os << "\t<app> state " << tr.st->s << '\n';
+  case EXPR::MATRIX:
+    return os << "\t<" << tr.n << "x" << tr.m << " matrix> state "
+	      << tr.st->s << '\n';
   case EXPR::VAR:
     os << "\t<var>";
     print_ttag(os, tr.ttag);

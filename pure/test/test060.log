@@ -1,0 +1,227 @@
+def foo {x/*0:100*/,y/*0:1010*/::int} = x/*0:100*/+y/*0:1010*/;
+3;
+3
+foo {1,2.0};
+foo {1,2.0}
+foo {1,2;3,4};
+foo {1,2;3,4}
+foo 99;
+foo 99
+def foo x/*0:1*/::matrix = x/*0:1*/;
+3;
+3
+{1,2.0};
+{1,2.0}
+{1,2;3,4};
+{1,2;3,4}
+foo 99;
+foo 99
+bar {x/*0:100*/,y/*0:1010*/::int} = x/*0:100*/+y/*0:1010*/;
+{
+  rule #0: bar {x,y::int} = x+y
+  state 0: #0
+	<1x2 matrix> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+	<var>::int state 3
+  state 3: #0
+}
+bar {1,2};
+3
+bar {1,2.0};
+bar {1,2.0}
+bar {1,2;3,4};
+bar {1,2;3,4}
+bar 99;
+bar 99
+bar x/*0:1*/::matrix = x/*0:1*/;
+{
+  rule #0: bar {x,y::int} = x+y
+  rule #1: bar x::matrix = x
+  state 0: #0 #1
+	<var>::matrix state 1
+	<1x2 matrix> state 2
+  state 1: #1
+  state 2: #0 #1
+	<var> state 3
+  state 3: #0 #1
+	<var> state 4
+	<var>::int state 5
+  state 4: #1
+  state 5: #0 #1
+}
+bar {1,2};
+3
+bar {1,2.0};
+{1,2.0}
+bar {1,2;3,4};
+{1,2;3,4}
+bar 99;
+bar 99
+(\{x/*0:100*/,y/*0:1010*/::int} -> x/*0:100*/+y/*0:1010*/ {
+  rule #0: _ {x,y::int} = x+y
+  state 0: #0
+	<1x2 matrix> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+	<var>::int state 3
+  state 3: #0
+}) {1,2};
+3
+(\{x/*0:100*/,y/*0:1010*/::int} -> x/*0:100*/+y/*0:1010*/ {
+  rule #0: _ {x,y::int} = x+y
+  state 0: #0
+	<1x2 matrix> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+	<var>::int state 3
+  state 3: #0
+}) {1,2.0};
+<stdin>, line 17: unhandled exception 'failed_match' while evaluating '(\{x/*0:100*/,y/*0:1010*/::int} -> x/*0:100*/+y/*0:1010*/) {1,2.0}'
+(\{x/*0:100*/,y/*0:1010*/::int} -> x/*0:100*/+y/*0:1010*/ {
+  rule #0: _ {x,y::int} = x+y
+  state 0: #0
+	<1x2 matrix> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+	<var>::int state 3
+  state 3: #0
+}) {1,2;3,4};
+<stdin>, line 18: unhandled exception 'failed_match' while evaluating '(\{x/*0:100*/,y/*0:1010*/::int} -> x/*0:100*/+y/*0:1010*/) {1,2;3,4}'
+(\{x/*0:100*/,y/*0:1010*/::int} -> x/*0:100*/+y/*0:1010*/ {
+  rule #0: _ {x,y::int} = x+y
+  state 0: #0
+	<1x2 matrix> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+	<var>::int state 3
+  state 3: #0
+}) 99;
+<stdin>, line 19: unhandled exception 'failed_match' while evaluating '(\{x/*0:100*/,y/*0:1010*/::int} -> x/*0:100*/+y/*0:1010*/) 99'
+x/*0:00*/+y/*0:010*/ when {x/*0:00*/,y/*0:010*/::int} = {1,2} {
+  rule #0: {x,y::int} = {1,2}
+  state 0: #0
+	<1x2 matrix> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+	<var>::int state 3
+  state 3: #0
+} end;
+3
+x/*0:00*/+y/*0:010*/ when {x/*0:00*/,y/*0:010*/::int} = {1,2.0} {
+  rule #0: {x,y::int} = {1,2.0}
+  state 0: #0
+	<1x2 matrix> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+	<var>::int state 3
+  state 3: #0
+} end;
+<stdin>, line 23: unhandled exception 'failed_match' while evaluating 'x/*0:00*/+y/*0:010*/ when {x/*0:00*/,y/*0:010*/::int} = {1,2.0} end'
+x/*0:00*/+y/*0:010*/ when {x/*0:00*/,y/*0:010*/::int} = {1,2;3,4} {
+  rule #0: {x,y::int} = {1,2;3,4}
+  state 0: #0
+	<1x2 matrix> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+	<var>::int state 3
+  state 3: #0
+} end;
+<stdin>, line 24: unhandled exception 'failed_match' while evaluating 'x/*0:00*/+y/*0:010*/ when {x/*0:00*/,y/*0:010*/::int} = {1,2;3,4} end'
+x/*0:00*/+y/*0:010*/ when {x/*0:00*/,y/*0:010*/::int} = 99 {
+  rule #0: {x,y::int} = 99
+  state 0: #0
+	<1x2 matrix> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+	<var>::int state 3
+  state 3: #0
+} end;
+<stdin>, line 25: unhandled exception 'failed_match' while evaluating 'x/*0:00*/+y/*0:010*/ when {x/*0:00*/,y/*0:010*/::int} = 99 end'
+bar2 {x/*0:100*/,y/*0:1010*/} = x/*0:100*/*y/*0:1010*/;
+bar2 {x/*0:100*/,y/*0:1010*/;z/*0:1100*/,t/*0:11010*/} = x/*0:100*/*y/*0:1010*/,z/*0:1100*/*t/*0:11010*/;
+bar2 x/*0:1*/::matrix = x/*0:1*/;
+{
+  rule #0: bar2 {x,y} = x*y
+  rule #1: bar2 {x,y;z,t} = x*y,z*t
+  rule #2: bar2 x::matrix = x
+  state 0: #0 #1 #2
+	<var>::matrix state 1
+	<1x2 matrix> state 2
+	<2x2 matrix> state 5
+  state 1: #2
+  state 2: #0 #2
+	<var> state 3
+  state 3: #0 #2
+	<var> state 4
+  state 4: #0 #2
+  state 5: #1 #2
+	<var> state 6
+  state 6: #1 #2
+	<var> state 7
+  state 7: #1 #2
+	<var> state 8
+  state 8: #1 #2
+	<var> state 9
+  state 9: #1 #2
+}
+bar2 {1,2};
+2
+bar2 {1,2;3,4};
+2,12
+bar2 {1,2,3,4};
+{1,2,3,4}
+bar2 {1,2;3,4;5,6};
+{1,2;3,4;5,6}
+bar2 99;
+bar2 99
+bar3 {{x/*0:10000*/,y/*0:100010*/},z/*0:1010*/} = x/*0:10000*/*y/*0:100010*/,z/*0:1010*/;
+bar3 {x/*0:100*/::matrix,z/*0:1010*/} = x/*0:100*/,z/*0:1010*/;
+bar3 x/*0:1*/::matrix = x/*0:1*/;
+{
+  rule #0: bar3 {{x,y},z} = x*y,z
+  rule #1: bar3 {x::matrix,z} = x,z
+  rule #2: bar3 x::matrix = x
+  state 0: #0 #1 #2
+	<var>::matrix state 1
+	<1x2 matrix> state 2
+  state 1: #2
+  state 2: #0 #1 #2
+	<var> state 3
+	<var>::matrix state 5
+	<1x2 matrix> state 7
+  state 3: #2
+	<var> state 4
+  state 4: #2
+  state 5: #1 #2
+	<var> state 6
+  state 6: #1 #2
+  state 7: #0 #1 #2
+	<var> state 8
+  state 8: #0 #1 #2
+	<var> state 9
+  state 9: #0 #1 #2
+	<var> state 10
+  state 10: #0 #1 #2
+}
+bar3 ('{{1,2},3});
+2,3
+bar3 ('{{1,2,3},3});
+{1,2,3},3
+bar3 {{1,2},3};
+{1,2,3}
+bar3 {{1,2,3},3};
+{1,2,3,3}
+bar3 {};
+{}
+bar3 99;
+bar3 99

@@ -95,20 +95,24 @@ inline prec_t prec(prec_t nprec)
 
 /* Subexpression paths are used in pattern matching. These are actually
    implemented as bitsets where 0 = left, 1 = right subtree of an
-   application. Maximum size of a path is given by the constant MAXDEPTH
-   below. */
+   application. Paths to matrix subpatterns are indicated by a second bitset
+   which is used as a mask. Maximum size of a path is given by the constant
+   MAXDEPTH below. */
 
 #define MAXDEPTH 64
 
 class path {
   size_t size;
   bitset<MAXDEPTH> v;
+  bitset<MAXDEPTH> m;
 public:
-  path() : size(0), v(0) { }
-  path(size_t sz) : size(sz), v(0) { assert(size<=MAXDEPTH); }
-  path(const path& p) : size(p.size), v(p.v) { }
-  path(const path& p, bool n) : size(p.size+1), v(p.v)
-  { assert(size<=MAXDEPTH); v[size-1] = n; }
+  path() : size(0), v(0), m(0) { }
+  path(size_t sz) : size(sz), v(0), m(0) { assert(size<=MAXDEPTH); }
+  path(const path& p) : size(p.size), v(p.v), m(p.m) { }
+  path(const path& p, bool n) : size(p.size+1), v(p.v), m(p.m)
+  { assert(size<=MAXDEPTH); v[size-1] = n; m[size-1] = false; }
+  path& operator+= (bool n)
+  { assert(size<MAXDEPTH); v[size] = n; m[size++] = false; return *this; }
   bool operator== (const path& rhs) const
   { return size == rhs.size && v == rhs.v; }
   bool operator!= (const path& rhs) const
@@ -125,8 +129,12 @@ public:
   }
   bool operator[] (size_t i) const
   { assert(i<MAXDEPTH); return v[i]; }
+  bool msk(size_t i) const
+  { assert(i<MAXDEPTH); return m[i]; }
   void set(size_t i, bool n)
   { assert(i<MAXDEPTH); v[i] = n; }
+  void setmsk(size_t i, bool n)
+  { assert(i<MAXDEPTH); m[i] = n; }
   bool last()  const { assert(size>0); return v[size-1]; }
   size_t len() const { return size; }
 };

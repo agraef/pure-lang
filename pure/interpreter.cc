@@ -468,6 +468,11 @@ void interpreter::init()
   declare_extern((void*)pure_int_matrix,
 		 "pure_int_matrix", "expr*",      1, "void*");
 
+  declare_extern((void*)matrix_check,
+		 "matrix_check",    "bool",   3, "expr*", "int", "int");
+  declare_extern((void*)matrix_elem_at2,
+		 "matrix_elem_at2", "expr*",  3, "expr*", "int", "int");
+
   declare_extern((void*)matrix_from_int_array_nodup,
 		 "matrix_from_int_array_nodup", "expr*", 3, "int", "int",
 		 "void*");
@@ -2825,20 +2830,98 @@ expr interpreter::pure_expr_to_expr(pure_expr *x, bool check)
   }
 }
 
+static uint32_t argidx(const path &p, size_t &i)
+{
+  size_t i0 = i;
+  while (i < p.len() && p[i]) ++i;
+  assert(i < p.len() && !p[i]);
+  return (i++)-i0;
+}
+
 static expr subterm(expr x, const path& p)
 {
-  for (size_t i = 0, n = p.len(); i < n; i++) {
-    assert(x.tag() == EXPR::APP);
-    x = p[i]?x.xval2():x.xval1();
+  for (size_t i = 0, n = p.len(); i < n; ) {
+    if (p.msk(i)) {
+      // matrix path
+      assert(x.tag() == EXPR::MATRIX);
+      exprll *xs = x.xvals();
+      uint32_t r = argidx(p, i), c = argidx(p, i);
+      exprll::iterator it = xs->begin();
+      while (r > 0) {
+	assert(it != xs->end());
+	++it; --r;
+      }
+      exprl::iterator jt = it->begin();
+      while (c > 0) {
+	assert(jt != it->end());
+	++jt; --c;
+      }
+      x = *jt;
+    } else {
+      assert(x.tag() == EXPR::APP);
+      x = p[i++]?x.xval2():x.xval1();
+    }
   }
   return x;
 }
 
+static inline pure_expr *make_complex2(symbol& rect, double a, double b)
+{
+  return pure_appl(pure_symbol(rect.f), 2, pure_double(a), pure_double(b));
+}
+
+static inline pure_expr *make_complex(double a, double b)
+{
+  interpreter& interp = *interpreter::g_interp;
+  symbol &rect = interp.symtab.complex_rect_sym();
+  return make_complex2(rect, a, b);
+}
+
 static pure_expr *pure_subterm(pure_expr *x, const path& p)
 {
-  for (size_t i = 0, n = p.len(); i < n; i++) {
-    assert(x->tag == EXPR::APP);
-    x = x->data.x[p[i]?1:0];
+  pure_expr *tmp = 0;
+  for (size_t i = 0, n = p.len(); i < n; ) {
+    if (p.msk(i)) {
+      // matrix path
+      uint32_t r = argidx(p, i), c = argidx(p, i);
+      switch (x->tag) {
+      case EXPR::MATRIX: {
+	gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
+	assert(r < m->size1 && c < m->size2);
+	x = m->data[r * m->tda + c];
+	break;
+      }
+      case EXPR::DMATRIX: {
+	gsl_matrix *m = (gsl_matrix*)x->data.mat.p;
+	assert(r < m->size1 && c < m->size2);
+	x = pure_double(m->data[r * m->tda + c]);
+	break;
+      }
+      case EXPR::IMATRIX: {
+	gsl_matrix_int *m = (gsl_matrix_int*)x->data.mat.p;
+	assert(r < m->size1 && c < m->size2);
+	x = pure_int(m->data[r * m->tda + c]);
+	break;
+      }
+      case EXPR::CMATRIX: {
+	gsl_matrix_complex *m = (gsl_matrix_complex*)x->data.mat.p;
+	assert(r < m->size1 && c < m->size2);
+	size_t k = 2*(r * m->tda + c);
+	x = make_complex(m->data[k], m->data[k+1]);
+	if (i < p.len()) tmp = x;
+	break;
+      }
+      default:
+	assert(0);
+	break;
+      }
+    } else {
+      assert(x->tag == EXPR::APP);
+      x = x->data.x[p[i++]?1:0];
+    }
+  }
+  if (tmp) {
+    pure_new(x); pure_freenew(tmp); pure_unref(x);
   }
   return x;
 }
@@ -2911,13 +2994,18 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
     for (vguardl::const_iterator it = vi.guards.begin();
 	 it != vi.guards.end(); ++it) {
       pure_expr *x = pure_subterm(res, it->p);
-      if (!pure_safe_typecheck(it->ttag, x)) goto nomatch;
+      bool rc = pure_safe_typecheck(it->ttag, x);
+      if (x != res) pure_freenew(x);
+      if (!rc) goto nomatch;
     }
     // verify non-linearities
     for (veqnl::const_iterator it = vi.eqns.begin();
 	 it != vi.eqns.end(); ++it) {
       pure_expr *x = pure_subterm(res, it->p), *y = pure_subterm(res, it->q);
-      if (!same(x, y)) goto nomatch;
+      bool rc = same(x, y);
+      pure_new(x); pure_new(y);
+      pure_free(x); pure_free(y);
+      if (!rc) goto nomatch;
     }
     // bind variables accordingly
     for (env::const_iterator it = vars.begin(); it != vars.end(); ++it) {
@@ -4200,7 +4288,20 @@ static bool check_occurrences(const veqnl& eqns, int32_t vtag, const path& p)
   return false;
 }
 
-expr interpreter::bind(env& vars, vinfo& vi, expr x, bool b, path p)
+/* Bind variable symbols in a pattern. NOTE: The a flag indicates whether
+   we're operating inside an application or a toplevel context; this is always
+   true except for the immediate subterms of a matrix pattern. (You should
+   never have to set this flag explicitly outside of the bind() routine
+   itself.) The b flag indicates a pattern binding, in which case an ordinary
+   symbol always denotes a variable, unless we're at the head symbol of an
+   application (in which case the a flag must be true). The b flag
+   automagically becomes true in the arguments of an application (if it isn't
+   already set by the caller anyway). The b flag is also consulted to
+   determine whether an "as" variable is permitted at the current position
+   inside the term (which is the case unless we're on the spine of an
+   outermost application). */
+
+expr interpreter::bind(env& vars, vinfo& vi, expr x, bool b, path p, bool a)
 {
   assert(!x.is_null());
   expr y;
@@ -4232,13 +4333,42 @@ expr interpreter::bind(env& vars, vinfo& vi, expr x, bool b, path p)
     y = expr(u, v);
     break;
   }
+  // matrix (Pure 0.47+):
+  case EXPR::MATRIX: {
+    exprll *xs = x.xvals();
+    size_t n = xs->size(), m = xs->empty()?0:xs->front().size();
+    /* We require a rectangular matrix here. */
+    for (exprll::const_iterator it = xs->begin(), end = xs->end();
+	 it != end; ++it) {
+      if (it->size() != m)
+	throw err("error in pattern (non-rectangular matrix)");
+    }
+    /* Subterm paths inside a matrix are encoded as two groups of bit patterns
+       of the form 1...10, where the number of 1's indicates the row or column
+       index. First comes the row, then the column index. Hence we need room
+       for at least n+m+2 additional bits. */
+    if (p.len()+n+m+1 >= MAXDEPTH)
+      throw err("error in pattern (nesting too deep)");
+    exprll *ys = new exprll;
+    path pi(p); size_t l = p.len();
+    for (exprll::const_iterator it = xs->begin();;) {
+      ys->push_back(exprl());
+      exprl& zs = ys->back();
+      path pj(pi, 0); pj.setmsk(l, 1); // mark this as a matrix path
+      for (exprl::const_iterator jt = it->begin();;) {
+	expr u = bind(vars, vi, *jt, 1, path(pj, 0), 0);
+	zs.push_back(u);
+	if (++jt != it->end()) pj += 1; else break;
+      }
+      if (++it != xs->end()) pi += 1; else break;
+    }
+    y = expr(EXPR::MATRIX, ys);
+    break;
+  }
   // these must not occur on the lhs:
   case EXPR::PTR:
   case EXPR::WRAP:
     throw err("pointer or closure not permitted in pattern");
-    break;
-  case EXPR::MATRIX:
-    throw err("matrix expression not permitted in pattern");
     break;
   case EXPR::LAMBDA:
     throw err("lambda expression not permitted in pattern");
@@ -4261,7 +4391,7 @@ expr interpreter::bind(env& vars, vinfo& vi, expr x, bool b, path p)
     if ((!qual && (x.flags()&EXPR::QUAL)) ||
 	(sym.f != symtab.anon_sym &&
 	 (sym.prec < PREC_MAX || sym.fix == nonfix || sym.fix == outfix ||
-	  (p.len() == 0 && !b) || (p.len() > 0 && p.last() == 0)))) {
+	  (p.len() == 0 && !b) || (p.len() > 0 && p.last() == 0 && a)))) {
       // constant or constructor
       if (x.ttag() != 0)
 	throw err("error in pattern (misplaced type tag)");
@@ -4632,12 +4762,21 @@ void interpreter::checkvars(expr x, bool b)
   // these must not occur on the lhs:
   case EXPR::PTR:
   case EXPR::WRAP:
-  case EXPR::MATRIX:
   case EXPR::LAMBDA:
   case EXPR::COND:
   case EXPR::CASE:
   case EXPR::WHEN:
   case EXPR::WITH:
+    break;
+  // matrix (Pure 0.47+):
+  case EXPR::MATRIX:
+    for (exprll::iterator xs = x.xvals()->begin(), end = x.xvals()->end();
+	 xs != end; xs++) {
+      for (exprl::iterator ys = xs->begin(), end = xs->end();
+	   ys != end; ys++) {
+	checkvars(*ys, true);
+      }
+    }
     break;
   // application:
   case EXPR::APP:
@@ -5233,9 +5372,6 @@ expr interpreter::lcsubst(expr x)
   case EXPR::WRAP:
     throw err("pointer or closure not permitted in pattern");
     break;
-  case EXPR::MATRIX:
-    throw err("matrix expression not permitted in pattern");
-    break;
   case EXPR::LAMBDA:
     throw err("lambda expression not permitted in pattern");
     break;
@@ -5251,6 +5387,22 @@ expr interpreter::lcsubst(expr x)
   case EXPR::WITH:
     throw err("with expression not permitted in pattern");
     break;
+  // matrix (Pure 0.47+):
+  case EXPR::MATRIX: {
+    exprll *us = new exprll;
+    for (exprll::iterator xs = x.xvals()->begin(), end = x.xvals()->end();
+	 xs != end; xs++) {
+      us->push_back(exprl());
+      exprl& vs = us->back();
+      for (exprl::iterator ys = xs->begin(), end = xs->end();
+	   ys != end; ys++) {
+	vs.push_back(lcsubst(*ys));
+      }
+    }
+    expr w = expr(EXPR::MATRIX, us);
+    w.set_astag(x.astag());
+    return w;
+  }
   // application:
   case EXPR::APP: {
     expr u = lcsubst(x.xval1()),
@@ -6358,6 +6510,16 @@ const char *interpreter::mklabel(const char *name, uint32_t i, uint32_t j)
 {
   char lab[128];
   sprintf(lab, "%s%u.%u", name, i, j);
+  char *s = strdup(lab);
+  cache.push_back(s);
+  return s;
+}
+
+const char *interpreter::mklabel(const char *name,
+				 uint32_t i, uint32_t j, uint32_t k)
+{
+  char lab[128];
+  sprintf(lab, "%s%u.%u.%u", name, i, j, k);
   char *s = strdup(lab);
   cache.push_back(s);
   return s;
@@ -9558,14 +9720,19 @@ pure_expr *interpreter::dodefn(env vars, const vinfo& vi,
 	for (vguardl::const_iterator it = vi.guards.begin();
 	     it != vi.guards.end(); ++it) {
 	  pure_expr *x = pure_subterm(res, it->p);
-	  if (!pure_safe_typecheck(it->ttag, x)) goto nomatch;
+	  bool rc = pure_safe_typecheck(it->ttag, x);
+	  if (x != res) pure_freenew(x);
+	  if (!rc) goto nomatch;
 	}
 	// verify non-linearities
 	for (veqnl::const_iterator it = vi.eqns.begin();
 	     it != vi.eqns.end(); ++it) {
 	  pure_expr *x = pure_subterm(res, it->p),
 	    *y = pure_subterm(res, it->q);
-	  if (!same(x, y)) goto nomatch;
+	  bool rc = same(x, y);
+	  pure_new(x); pure_new(y);
+	  pure_free(x); pure_free(y);
+	  if (!rc) goto nomatch;
 	}
 	// Bind the variables.
 	for (env::const_iterator it = vars.begin(); it != vars.end(); ++it) {
@@ -9588,8 +9755,9 @@ pure_expr *interpreter::dodefn(env vars, const vinfo& vi,
 		 NullExprPtr, mkvarsym(sym.s));
 	    JIT->addGlobalMapping(v.v, &v.x);
 	  }
+	  pure_new(x);
 	  if (v.x) pure_free(v.x);
-	  v.x = pure_new(x);
+	  v.x = x;
 	}
       } else {
 	// Failed match, bail out.
@@ -11430,7 +11598,10 @@ static uint32_t argno(uint32_t n, path &p)
   }
   assert(i < m && p[i] == 1);
   path q(m-++i);
-  for (size_t j = 0; i < m; i++, j++) q.set(j, p[i]);
+  for (size_t j = 0; i < m; i++, j++) {
+    q.set(j, p[i]);
+    q.setmsk(j, p.msk(i));
+  }
   p = q;
   return k;
 }
@@ -11439,9 +11610,27 @@ Value *interpreter::vref(Value *x, path p)
 {
   // walk an expression value x to find the subterm at p
   Env &e = act_env();
+  Builder& b = e.builder;
   size_t n = p.len();
-  for (size_t i = 0; i < n; i++)
-    x = e.CreateLoadGEP(x, Zero, SubFldIndex(p[i]), mklabel("x", i, p[i]+1));
+  Value *tmp = 0;
+  for (size_t i = 0; i < n; ) {
+    if (p.msk(i)) {
+      // matrix path
+      uint32_t r = argidx(p, i), c = argidx(p, i);
+      Function *f = module->getFunction("matrix_elem_at2");
+      x = b.CreateCall3(f, x, UInt(r), UInt(c));
+      if (i < n) tmp = x;
+    } else {
+      x = e.CreateLoadGEP(x, Zero, SubFldIndex(p[i]), mklabel("x", i, p[i]+1));
+      i++;
+    }
+  }
+  if (tmp) {
+    // collect temporaries
+    b.CreateCall(module->getFunction("pure_new"), x);
+    b.CreateCall(module->getFunction("pure_freenew"), tmp);
+    b.CreateCall(module->getFunction("pure_unref"), x);
+  }
   return x;
 }
 
@@ -11449,6 +11638,7 @@ Value *interpreter::vref(int32_t tag, path p)
 {
   // local arg reference
   Env &e = act_env();
+  Builder& b = e.builder;
   uint32_t k = 0;
   if (e.b)
     // pattern binding
@@ -11457,8 +11647,25 @@ Value *interpreter::vref(int32_t tag, path p)
     k = argno(e.n, p);
   Value *v = e.args[k];
   size_t n = p.len();
-  for (size_t i = 0; i < n; i++)
-    v = e.CreateLoadGEP(v, Zero, SubFldIndex(p[i]), mklabel("x", i, p[i]+1));
+  Value *tmp = 0;
+  for (size_t i = 0; i < n; ) {
+    if (p.msk(i)) {
+      // matrix path
+      uint32_t r = argidx(p, i), c = argidx(p, i);
+      Function *f = module->getFunction("matrix_elem_at2");
+      v = b.CreateCall3(f, v, UInt(r), UInt(c));
+      if (i < n) tmp = v;
+    } else {
+      v = e.CreateLoadGEP(v, Zero, SubFldIndex(p[i]), mklabel("x", i, p[i]+1));
+      i++;
+    }
+  }
+  if (tmp) {
+    // collect temporaries
+    b.CreateCall(module->getFunction("pure_new"), v);
+    b.CreateCall(module->getFunction("pure_freenew"), tmp);
+    b.CreateCall(module->getFunction("pure_unref"), v);
+  }
   return v;
 }
 
@@ -12164,7 +12371,7 @@ void interpreter::simple_match(Value *x, state*& s,
 			       BasicBlock *matchedbb, BasicBlock *failedbb)
 {
   assert(x->getType() == ExprPtrTy && s->tr.size() == 1);
-  const trans& t = *s->tr.begin();
+  const trans& t = s->tr.front();
   Env& f = act_env();
   assert(f.f!=0);
 #if DEBUG>1
@@ -12254,9 +12461,60 @@ void interpreter::simple_match(Value *x, state*& s,
     s = t.st;
     break;
   }
+  case EXPR::MATRIX: {
+    // first do a quick check on the tag so that we may avoid an expensive
+    // call if the tags don't match
+    BasicBlock *okbb = basic_block("ok");
+    if (!tagv) tagv = f.CreateLoadGEP(x, Zero, Zero, "tag");
+    SwitchInst *sw = f.builder.CreateSwitch(tagv, failedbb, 4);
+    sw->addCase(SInt(EXPR::MATRIX), okbb);
+    sw->addCase(SInt(EXPR::DMATRIX), okbb);
+    sw->addCase(SInt(EXPR::CMATRIX), okbb);
+    sw->addCase(SInt(EXPR::IMATRIX), okbb);
+    // next check that the dimensions match
+    f.f->getBasicBlockList().push_back(okbb);
+    f.builder.SetInsertPoint(okbb);
+    okbb = basic_block("check");
+    Value *ok = f.builder.CreateCall3(module->getFunction("matrix_check"),
+				      x, UInt(t.n), UInt(t.m));
+    f.builder.CreateCondBr(ok, okbb, failedbb);
+    // finally match the elements
+    s = t.st;
+    for (uint32_t i = 0; i < t.n; i++)
+      for (uint32_t j = 0; j < t.m; j++) {
+	/* We only match the element if there's actually anything to match
+	   (not just an unqualified var), otherwise we just skip to the next
+	   transition. */
+	assert(s->tr.size() == 1);
+	const trans& t = s->tr.front();
+	if (t.tag == EXPR::VAR && t.ttag == 0) {
+	  s = t.st; continue;
+	}
+	f.f->getBasicBlockList().push_back(okbb);
+	f.builder.SetInsertPoint(okbb);
+	okbb = basic_block("check");
+	Value *y = f.builder.CreateCall3
+	  (module->getFunction("matrix_elem_at2"), x, UInt(i), UInt(j));
+	BasicBlock *elem_okbb = basic_block("elem_ok");
+	BasicBlock *elem_nokbb = basic_block("elem_failed");
+	simple_match(y, s, elem_okbb, elem_nokbb);
+	// collect temporaries
+	f.f->getBasicBlockList().push_back(elem_okbb);
+	f.builder.SetInsertPoint(elem_okbb);
+	f.builder.CreateCall(module->getFunction("pure_freenew"), y);
+	f.builder.CreateBr(okbb);
+	f.f->getBasicBlockList().push_back(elem_nokbb);
+	f.builder.SetInsertPoint(elem_nokbb);
+	f.builder.CreateCall(module->getFunction("pure_freenew"), y);
+	f.builder.CreateBr(failedbb);
+      }
+    f.f->getBasicBlockList().push_back(okbb);
+    f.builder.SetInsertPoint(okbb);
+    f.builder.CreateBr(matchedbb);
+    break;
+  }
   case EXPR::PTR:
   case EXPR::WRAP:
-  case EXPR::MATRIX:
     //assert(0 && "not implemented");
     // We silently fail on these.
     f.builder.CreateBr(failedbb);
@@ -12394,9 +12652,9 @@ void interpreter::complex_match(matcher *pm, BasicBlock *failedbb)
     state *s = t->st;						\
     list<Value*> ys = xs; ys.pop_front();			\
     if (ys.empty())						\
-      try_rules(pm, s, failedbb, reduced);			\
+      try_rules(pm, s, failedbb, reduced, tmps);		\
     else							\
-      complex_match(pm, ys, s, failedbb, reduced);		\
+      complex_match(pm, ys, s, failedbb, reduced, tmps);	\
   } while (0)
 
 // same as above, but handles the case of an application where we recurse into
@@ -12409,7 +12667,26 @@ void interpreter::complex_match(matcher *pm, BasicBlock *failedbb)
     Value *x1 = f.CreateLoadGEP(x, Zero, ValFldIndex, "x1");	\
     Value *x2 = f.CreateLoadGEP(x, Zero, ValFld2Index, "x2");	\
     ys.push_front(x2); ys.push_front(x1);			\
-    complex_match(pm, ys, s, failedbb, reduced);		\
+    complex_match(pm, ys, s, failedbb, reduced, tmps);		\
+  } while (0)
+
+// same as above, but handles the case of a matrix where we recurse into
+// (potentially many) subterms
+
+#define next_statem(t)						\
+  do {								\
+    state *s = t->st;						\
+    list<Value*> ys = xs, zs; ys.pop_front();			\
+    list<Value*> tmps1 = tmps;					\
+    for (uint32_t i = 0; i < t->n; i++)				\
+      for (uint32_t j = 0; j < t->m; j++) {			\
+        Value *y = f.builder.CreateCall3			\
+	  (module->getFunction("matrix_elem_at2"), x, UInt(i), UInt(j)); \
+	zs.push_back(y);					\
+	tmps1.push_front(y);					\
+      }								\
+    ys.splice(ys.begin(), zs);					\
+    complex_match(pm, ys, s, failedbb, reduced, tmps1);		\
   } while (0)
 
 /* This is the core of the decision tree construction algorithm. It emits code
@@ -12436,7 +12713,8 @@ struct trans_list_info {
 typedef map<int32_t,trans_list_info> trans_map;
 
 void interpreter::complex_match(matcher *pm, const list<Value*>& xs, state *s,
-				BasicBlock *failedbb, set<rulem>& reduced)
+				BasicBlock *failedbb, set<rulem>& reduced,
+				const list<Value*>& tmps)
 {
   Env& f = act_env();
   assert(!xs.empty());
@@ -12493,7 +12771,8 @@ void interpreter::complex_match(matcher *pm, const list<Value*>& xs, state *s,
        transitions for the same builtin type under the same target label, then
        do a second pass on the actual constants for each type. To these ends,
        instead of a simple list of branches we actually have to maintain a map
-       where each entry points to a list of transitions. */
+       where each entry points to a list of transitions. Matrix patterns are
+       handled in the same fashion. */
     trans_map tmap;
     transl::iterator t;
     for (t = t0; t != s->tr.end(); t++) {
@@ -12506,6 +12785,20 @@ void interpreter::complex_match(matcher *pm, const list<Value*>& xs, state *s,
 	tmap[t->tag].bb = bb;
 	tmap[t->tag].t = &*t;
 	sw->addCase(SInt(t->tag), bb);
+      } else if (t->tag == EXPR::MATRIX) {
+	// transition on a matrix, add it to the corresponding list
+	tmap[t->tag].tlist.push_back(trans_info(&*t, bb));
+	if (!tmap[t->tag].bb) {
+	  // no outer label has been generated yet, do it now and add the
+	  // target to the outer switch
+	  tmap[t->tag].bb =
+	    basic_block(mklabel("begin.state", s->s, t->n, t->m));
+	  sw->addCase(SInt(EXPR::MATRIX), tmap[t->tag].bb);
+	  // this can denote any type of matrix, add the other possible cases
+	  sw->addCase(SInt(EXPR::DMATRIX), tmap[t->tag].bb);
+	  sw->addCase(SInt(EXPR::CMATRIX), tmap[t->tag].bb);
+	  sw->addCase(SInt(EXPR::IMATRIX), tmap[t->tag].bb);
+	}
       } else {
 	// transition on a constant, add it to the corresponding list
 	tmap[t->tag].tlist.push_back(trans_info(&*t, bb));
@@ -12533,6 +12826,27 @@ void interpreter::complex_match(matcher *pm, const list<Value*>& xs, state *s,
 	  f.builder.SetInsertPoint(statebb);
 	} else
 	  next_state(info.t);
+      } else if (tag == EXPR::MATRIX) {
+	// outer label for a list of matrices of a given dimension; iterate
+	// over all alternatives to resolve these in turn
+	assert(info.bb && !info.tlist.empty());
+	for (list<trans_info>::iterator l = info.tlist.begin();
+	     l != info.tlist.end(); l++) {
+	  list<trans_info>::iterator k = l; k++;
+	  BasicBlock *okbb = l->bb;
+	  BasicBlock *trynextbb =
+	    basic_block(mklabel("next.state", s->s, l->t->n, l->t->m));
+	  Value *ok = f.builder.CreateCall3(module->getFunction("matrix_check"),
+					    x, UInt(l->t->n), UInt(l->t->m));
+	  f.builder.CreateCondBr(ok, okbb, trynextbb);
+	  f.f->getBasicBlockList().push_back(okbb);
+	  f.builder.SetInsertPoint(okbb);
+	  next_statem(l->t);
+	  f.f->getBasicBlockList().push_back(trynextbb);
+	  f.builder.SetInsertPoint(trynextbb);
+	  if (k == info.tlist.end())
+	    f.builder.CreateBr(retrybb);
+	}
       } else {
 	// outer label for a list of constants of a given type; iterate over
 	// all alternatives to resolve these in turn
@@ -12639,8 +12953,12 @@ void interpreter::complex_match(matcher *pm, const list<Value*>& xs, state *s,
   f.builder.SetInsertPoint(defaultbb);
   if (t0->tag == EXPR::VAR && t0->ttag == 0)
     next_state(t0);
-  else // nothing matched in this state, bail out
+  else {
+    // nothing matched in this state, collect temporaries and bail out
+    for (list<Value*>::const_iterator it = tmps.begin(); it != tmps.end(); ++it)
+      f.builder.CreateCall(module->getFunction("pure_freenew"), *it);
     f.builder.CreateBr(failedbb);
+  }
 }
 
 /* Finally, the part of the algorithm which emits code for the rule list in a
@@ -12649,10 +12967,12 @@ void interpreter::complex_match(matcher *pm, const list<Value*>& xs, state *s,
    returning true. */
 
 void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
-			    set<rulem>& reduced)
+			    set<rulem>& reduced, const list<Value*>& tmps)
 {
   Env& f = act_env();
   assert(s->tr.empty()); // we're in a final state here
+  for (list<Value*>::const_iterator it = tmps.begin(); it != tmps.end(); ++it)
+    f.builder.CreateCall(module->getFunction("pure_freenew"), *it);
   const rulev& rules = pm->r;
   assert(f.fmap.root.size() == 1 || f.fmap.root.size() == rules.size());
   const ruleml& rl = s->r;

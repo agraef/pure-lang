@@ -9529,6 +9529,31 @@ int32_t matrix_type(pure_expr *x)
 }
 
 extern "C"
+bool matrix_check(pure_expr *x, uint32_t k, uint32_t l)
+{
+  switch (x->tag) {
+  case EXPR::MATRIX: {
+    gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
+    return k == m->size1 && l == m->size2;
+  }
+  case EXPR::DMATRIX: {
+    gsl_matrix *m = (gsl_matrix*)x->data.mat.p;
+    return k == m->size1 && l == m->size2;
+  }
+  case EXPR::CMATRIX: {
+    gsl_matrix_complex *m = (gsl_matrix_complex*)x->data.mat.p;
+    return k == m->size1 && l == m->size2;
+  }
+  case EXPR::IMATRIX: {
+    gsl_matrix_int *m = (gsl_matrix_int*)x->data.mat.p;
+    return k == m->size1 && l == m->size2;
+  }
+  default:
+    return false;
+  }
+}
+
+extern "C"
 pure_expr *matrix_elem_at(pure_expr *x, int32_t _i)
 {
   switch (x->tag) {

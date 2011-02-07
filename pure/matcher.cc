@@ -50,6 +50,12 @@ trans::trans(int32_t _tag, const char *_s)
   assert(_tag == EXPR::STR);
 }
 
+trans::trans(int32_t _tag, size_t _n, size_t _m)
+  : tag(_tag), n(_n), m(_m), st(new state), ttag(_tag)
+{
+  assert(_tag == EXPR::MATRIX);
+}
+
 trans::trans(const trans& tr)
   : tag(tr.tag), st(new state(*tr.st)), ttag(tr.ttag)
 {
@@ -65,6 +71,9 @@ trans::trans(const trans& tr)
     break;
   case EXPR::STR:
     s = tr.s;
+    break;
+  case EXPR::MATRIX:
+    n = tr.n; m = tr.m;
     break;
   default:
     break;
@@ -88,6 +97,9 @@ trans& trans::operator = (const trans& tr)
   case EXPR::STR:
     s = tr.s;
     break;
+  case EXPR::MATRIX:
+    n = tr.n; m = tr.m;
+    break;
   default:
     break;
   }
@@ -105,6 +117,15 @@ trans::~trans()
 // This is needed to get access to the GlobalVar struct.
 #include "interpreter.hh"
 
+static inline int tagcmp(int32_t tag1, int32_t tag2)
+{
+  int s1 = tag1<=0?-1:1, s2 = tag2<=0?-1:1;
+  if (s1 != s2)
+    return s1 - s2;
+  else
+    return s1*tag1 - s1*tag2;
+}
+
 state *matcher::match(state *st, expr x)
 {
   if (x.tag() == EXPR::WRAP) {
@@ -119,13 +140,36 @@ state *matcher::match(state *st, expr x)
     if (t->tag == x.tag()) {
       switch (x.tag()) {
       case EXPR::INT:
-	return (x.ival() == t->i)?t->st:0;
+	if (x.ival() == t->i) return t->st;
+	break;
       case EXPR::BIGINT:
-	return (mpz_cmp(x.zval(), t->z) == 0)?t->st:0;
+	if (mpz_cmp(x.zval(), t->z) == 0) return t->st;
+	break;
       case EXPR::DBL:
-	return (x.dval() == t->d)?t->st:0;
+	if (x.dval() == t->d) return t->st;
+	break;
       case EXPR::STR:
-	return (strcmp(x.sval(), t->s) == 0)?t->st:0;
+	if (strcmp(x.sval(), t->s) == 0) return t->st;
+	break;
+      case EXPR::MATRIX: {
+	exprll *xs = x.xvals();
+	if (xs->size() != t->n) break;
+	bool ok = true;
+	for (exprll::const_iterator it = xs->begin(), end = xs->end();
+	     it != end && ok; ++it) {
+	  ok = it->size() == t->m;
+	}
+	if (!ok) break;
+	state *next = t->st;
+	for (exprll::iterator it = xs->begin(), end = xs->end();
+	     it != end && next; it++) {
+	  for (exprl::iterator jt = it->begin(), end = it->end();
+	       jt != end && next; jt++) {
+	    next = match(next, *jt);
+	  }
+	}
+	return next;
+      }
       case EXPR::APP: {
 	state *next = match(t->st, x.xval1());
 	return next?match(next, x.xval2()):0;
@@ -133,8 +177,7 @@ state *matcher::match(state *st, expr x)
       default:
 	return t->st;
       }
-    } else if ((x.tag() == EXPR::APP)
-	       ? (t->tag < EXPR::APP) : (t->tag > x.tag()))
+    } else if (tagcmp(t->tag, x.tag()) > 0)
       break;
   // no literal match, check for a matching qualified variable transition
   if (x.tag() < EXPR::APP)
@@ -160,21 +203,71 @@ state *matcher::match(state *st, const exprl& x)
   return st;
 }
 
+#include "gsl_structs.h"
+
 state *matcher::match(state *st, pure_expr *x)
 {
   // look for a matching transition
   transl::const_iterator t;
   for (t = st->tr.begin(); t != st->tr.end(); t++)
-    if (t->tag == x->tag) {
+    if (t->tag == x->tag ||
+	(t->tag == EXPR::MATRIX &&
+	 x->tag >= EXPR::DMATRIX && x->tag <= EXPR::IMATRIX)) {
       switch (x->tag) {
       case EXPR::INT:
-	return (x->data.i == t->i)?t->st:0;
+	if (x->data.i == t->i) return t->st;
+	break;
       case EXPR::BIGINT:
-	return (mpz_cmp(x->data.z, t->z) == 0)?t->st:0;
+	if (mpz_cmp(x->data.z, t->z) == 0) return t->st;
+	break;
       case EXPR::DBL:
-	return (x->data.d == t->d)?t->st:0;
+	if (x->data.d == t->d) return t->st;
+	break;
       case EXPR::STR:
-	return (strcmp(x->data.s, t->s) == 0)?t->st:0;
+	if (strcmp(x->data.s, t->s) == 0) return t->st;
+	break;
+      case EXPR::MATRIX: {
+	gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
+	const size_t k = m->size1, l = m->size2, tda = m->tda;
+	if (k != t->n || l != t->m) break;
+	state *next = t->st;
+	for (size_t i = 0; i<k && next; i++)
+	  for (size_t j = 0; j<l && next; j++)
+	    next = match(next, m->data[i*tda+j]);
+	return next;
+      }
+      case EXPR::DMATRIX: {
+	gsl_matrix *m = (gsl_matrix*)x->data.mat.p;
+	const size_t k = m->size1, l = m->size2, tda = m->tda;
+	if (k != t->n || l != t->m) break;
+	state *next = t->st;
+	for (size_t i = 0; i<k && next; i++)
+	  for (size_t j = 0; j<l && next; j++)
+	    next = match(next, m->data[i*tda+j]);
+	return next;
+      }
+      case EXPR::IMATRIX: {
+	gsl_matrix_int *m = (gsl_matrix_int*)x->data.mat.p;
+	const size_t k = m->size1, l = m->size2, tda = m->tda;
+	if (k != t->n || l != t->m) break;
+	state *next = t->st;
+	for (size_t i = 0; i<k && next; i++)
+	  for (size_t j = 0; j<l && next; j++)
+	    next = match(next, m->data[i*tda+j]);
+	return next;
+      }
+      case EXPR::CMATRIX: {
+	gsl_matrix_complex *m = (gsl_matrix_complex*)x->data.mat.p;
+	const size_t k = m->size1, l = m->size2, tda = m->tda;
+	if (k != t->n || l != t->m) break;
+	state *next = t->st;
+	for (size_t i = 0; i<k && next; i++)
+	  for (size_t j = 0; j<l && next; j++) {
+	    size_t n = 2*(i*tda+j);
+	    next = match(next, m->data[n], m->data[n+1]);
+	  }
+	return next;
+      }
       case EXPR::APP: {
 	state *next = match(t->st, x->data.x[0]);
 	return next?match(next, x->data.x[1]):0;
@@ -182,18 +275,77 @@ state *matcher::match(state *st, pure_expr *x)
       default:
 	return t->st;
       }
-    } else if ((x->tag == EXPR::APP)
-	       ? (t->tag < EXPR::APP) : (t->tag > x->tag))
+    } else if (tagcmp(t->tag, x->tag) > 0)
       break;
   // no literal match, check for a matching qualified variable transition
   if (x->tag < EXPR::APP)
     for (t = st->tr.begin(); t != st->tr.end() && t->tag == EXPR::VAR; t++)
       if (t->ttag == 0)
 	continue;
-      else if (t->ttag == x->tag)
+      else if (t->ttag == x->tag ||
+	       (t->ttag == EXPR::MATRIX &&
+		x->tag >= EXPR::DMATRIX && x->tag <= EXPR::IMATRIX))
 	return t->st;
       else if (t->ttag < x->tag)
 	break;
+  // still no match, use default transition if present
+  if ((t = st->tr.begin()) != st->tr.end() &&
+      t->tag == EXPR::VAR && t->ttag == 0)
+    return t->st;
+  return 0;
+}
+
+state *matcher::match(state *st, double x)
+{
+  transl::const_iterator t;
+  for (t = st->tr.begin(); t != st->tr.end(); t++)
+    if (t->tag == EXPR::DBL && x == t->d)
+      return t->st;
+    else if (t->tag < EXPR::DBL || t->tag > 0)
+      break;
+  // no literal match, check for a matching qualified variable transition
+  for (t = st->tr.begin(); t != st->tr.end() && t->tag == EXPR::VAR; t++)
+    if (t->ttag == 0)
+      continue;
+    else if (t->ttag == EXPR::DBL)
+      return t->st;
+    else if (t->ttag < EXPR::DBL)
+      break;
+  // still no match, use default transition if present
+  if ((t = st->tr.begin()) != st->tr.end() &&
+      t->tag == EXPR::VAR && t->ttag == 0)
+    return t->st;
+  return 0;
+}
+
+static inline expr make_complex(double a, double b)
+{
+  interpreter& interp = *interpreter::g_interp;
+  symbol &rect = interp.symtab.complex_rect_sym();
+  return expr(rect.x, expr(EXPR::DBL, a), expr(EXPR::DBL, b));
+}
+
+state *matcher::match(state *st, double x, double y)
+{
+  return match(st, make_complex(x, y));
+}
+
+state *matcher::match(state *st, int x)
+{
+  transl::const_iterator t;
+  for (t = st->tr.begin(); t != st->tr.end(); t++)
+    if (t->tag == EXPR::INT && x == t->i)
+      return t->st;
+    else if (t->tag < EXPR::INT || t->tag > 0)
+      break;
+  // no literal match, check for a matching qualified variable transition
+  for (t = st->tr.begin(); t != st->tr.end() && t->tag == EXPR::VAR; t++)
+    if (t->ttag == 0)
+      continue;
+    else if (t->ttag == EXPR::INT)
+      return t->st;
+    else if (t->ttag < EXPR::INT)
+      break;
   // still no match, use default transition if present
   if ((t = st->tr.begin()) != st->tr.end() &&
       t->tag == EXPR::VAR && t->ttag == 0)
@@ -259,6 +411,26 @@ state *matcher::make_state(state *st, uint32_t r, expr x, uint32_t& skip)
     st->tr.push_back(trans(EXPR::VAR, ttag));
     return st->tr.begin()->st;
   }
+  case EXPR::MATRIX: {
+    exprll *xs = x.xvals();
+    size_t n = xs->size(), m = xs->empty()?0:xs->front().size();
+    /* We require a rectangular matrix here, but this isn't checked, the front
+       end should guarantee this. */
+#if 0
+    for (exprll::const_iterator it = xs->first(), end = xs->end();
+	 it != end; ++it) { assert(it->size() == m); }
+#endif
+    st->tr.push_back(trans(EXPR::MATRIX, n, m));
+    state *next = st->tr.begin()->st;
+    for (exprll::iterator it = xs->begin(), end = xs->end();
+	 it != end; it++) {
+      for (exprl::iterator jt = it->begin(), end = it->end();
+	   jt != end; jt++) {
+	next = make_state(next, r, *jt, skip);
+      }
+    }
+    return next;
+  }
   case EXPR::INT:
     st->tr.push_back(trans(EXPR::INT, x.ival()));
     return st->tr.begin()->st;
@@ -316,6 +488,9 @@ void matcher::merge_trans(transl& tr1, transl& tr2)
   } else switch (tr2.begin()->tag) {
   case EXPR::APP:
     merge_ftrans(tr1, EXPR::APP, tr2.begin()->st);
+    break;
+  case EXPR::MATRIX:
+    merge_mtrans(tr1, tr2.begin()->n, tr2.begin()->m, tr2.begin()->st);
     break;
   case EXPR::VAR:
     merge_vtrans(tr1, tr2.begin()->ttag, tr2.begin()->st);
@@ -375,6 +550,41 @@ void matcher::merge_ftrans(transl& tr, int32_t tag, state *st)
   tr.insert(t, t1);
 }
 
+void matcher::merge_mtrans(transl& tr, size_t n, size_t m, state *st)
+{
+  transl::iterator t;
+  // look for a matching transition
+  for (t = tr.begin(); t != tr.end(); t++) {
+    if (t->tag == EXPR::MATRIX && t->n == n && t->m == m) {
+      merge_state(t->st, st);
+      return;
+    } else if (t->tag < EXPR::MATRIX || t->tag > 0)
+      break;
+  }
+  // none found, create a new one
+  trans t1 = trans(EXPR::MATRIX, n, m);
+  // see whether we got a matching var transition in this state
+  transl::iterator t0 = tr.begin();
+  while (t0 != tr.end() && t0->tag == EXPR::VAR && t0->ttag != EXPR::MATRIX)
+    t0++;
+  if (t0 == tr.end() || t0->tag != EXPR::VAR)
+    // no matching var transition found, use an untyped one if available
+    t0 = tr.begin();
+  if (t0 != tr.end() && t0->tag == EXPR::VAR &&
+      (t0->ttag == EXPR::MATRIX || t0->ttag == 0)) {
+    /* Make the new state a copy of the old one for the var transition and
+       then merge in the new transition. (Note that we cannot go the other way
+       round since we generally assume that the subautomaton to be merged is a
+       trie. This is guaranteed for st, but not for t0->st anymore.) */
+    delete t1.st;
+    t1.st = make_vstate(n*m, t0->st);
+    merge_state(t1.st, st);
+  } else
+    // no var transition either, just insert a new transition
+    *t1.st = *st;
+  tr.insert(t, t1);
+}
+
 void matcher::merge_vtrans(transl& tr, int8_t ttag, state *st)
 {
   transl::iterator t, t0 = tr.begin();
@@ -409,6 +619,14 @@ void matcher::merge_vtrans(transl& tr, int8_t ttag, state *st)
       // binary symbol
       if (ttag == 0) {
 	state *st1 = make_vstate(2, st);
+	merge_state(t->st, st1);
+	delete st1;
+      }
+      break;
+    case EXPR::MATRIX:
+      // matrix
+      if (ttag == 0 || ttag == EXPR::MATRIX) {
+	state *st1 = make_vstate(t->n*t->m, st);
 	merge_state(t->st, st1);
 	delete st1;
       }

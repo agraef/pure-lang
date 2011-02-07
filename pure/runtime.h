@@ -1106,8 +1106,10 @@ int32_t matrix_type(pure_expr *x);
 /* Matrix elements can be retrieved either by a single index (using row-major
    order), or by row and column index. All indices are zero-based. Indices
    aren't range-checked, if this is needed you have to do it beforehand,
-   checking against matrix_size or matrix_dim above. */
+   checking against matrix_size or matrix_dim above. In addition, matrix_check
+   can be used to verify the dimensions of a matrix. */
 
+bool matrix_check(pure_expr *x, uint32_t n, uint32_t m);
 pure_expr *matrix_elem_at(pure_expr *x, int32_t i);
 pure_expr *matrix_elem_at2(pure_expr *x, int32_t i, int32_t j);
 

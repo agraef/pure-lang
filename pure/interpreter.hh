@@ -705,7 +705,7 @@ public:
   void promote_ttags(expr f, expr x, expr u);
   void promote_ttags(expr f, expr x, expr u, expr v);
   expr bind(env& vars, vinfo& vi,
-	    expr x, bool b = true, path p = path());
+	    expr x, bool b = true, path p = path(), bool a = true);
   void funsubstw(set<int32_t>& warned, bool ty_check,
 		 expr x, int32_t f, int32_t g, bool b = false);
   void funsubst(bool ty_check, expr x, int32_t f, int32_t g, bool b = false)
@@ -1032,9 +1032,17 @@ private:
 		    llvm::BasicBlock *matchedbb, llvm::BasicBlock *failedbb);
   void complex_match(matcher *pm, llvm::BasicBlock *failedbb);
   void complex_match(matcher *pm, const list<llvm::Value*>& xs, state *s,
-		     llvm::BasicBlock *failedbb, set<rulem>& reduced);
+		     llvm::BasicBlock *failedbb, set<rulem>& reduced,
+		     const list<llvm::Value*>& tmps);
+  void complex_match(matcher *pm, const list<llvm::Value*>& xs, state *s,
+		     llvm::BasicBlock *failedbb, set<rulem>& reduced)
+  { list<llvm::Value*> tmps;
+    complex_match(pm, xs, s, failedbb, reduced, tmps); }
   void try_rules(matcher *pm, state *s, llvm::BasicBlock *failedbb,
-		 set<rulem>& reduced);
+		 set<rulem>& reduced, const list<llvm::Value*>& tmps);
+  void try_rules(matcher *pm, state *s, llvm::BasicBlock *failedbb,
+		 set<rulem>& reduced)
+  { list<llvm::Value*> tmps; try_rules(pm, s, failedbb, reduced, tmps); }
   void unwind_iffalse(llvm::Value *v);
   void unwind_iftrue(llvm::Value *v);
   llvm::Value *check_tag(llvm::Value *v, int32_t tag);
@@ -1043,6 +1051,7 @@ private:
   list<char*> cache;
   const char *mklabel(const char *name, uint32_t i);
   const char *mklabel(const char *name, uint32_t i, uint32_t j);
+  const char *mklabel(const char *name, uint32_t i, uint32_t j, uint32_t k);
   const char *mkvarlabel(int32_t tag);
   void clear_cache();
   string make_qualid(const string& id);

@@ -1,0 +1,46 @@
+// Matrix patterns (Pure 0.47+).
+
+// Macro.
+def foo {x,y::int} = x+y;
+foo {1,2}; foo {1,2.0}; foo {1,2;3,4}; foo 99;
+def foo x::matrix = x;
+foo {1,2}; foo {1,2.0}; foo {1,2;3,4}; foo 99;
+
+// Ordinary function.
+bar {x,y::int} = x+y;
+bar {1,2}; bar {1,2.0}; bar {1,2;3,4}; bar 99;
+bar x::matrix = x;
+bar {1,2}; bar {1,2.0}; bar {1,2;3,4}; bar 99;
+
+// Lambda.
+(\{x,y::int} -> x+y) {1,2};
+(\{x,y::int} -> x+y) {1,2.0};
+(\{x,y::int} -> x+y) {1,2;3,4};
+(\{x,y::int} -> x+y) 99;
+
+// When clause.
+x+y when {x,y::int} = {1,2} end;
+x+y when {x,y::int} = {1,2.0} end;
+x+y when {x,y::int} = {1,2;3,4} end;
+x+y when {x,y::int} = 99 end;
+
+// Multiple rows.
+bar2 {x,y} = x*y;
+bar2 {x,y;z,t} = x*y,z*t;
+bar2 x::matrix = x;
+bar2 {1,2};
+bar2 {1,2;3,4};
+bar2 {1,2,3,4};
+bar2 {1,2;3,4;5,6};
+bar2 99;
+
+// Nested symbolic matrices.
+bar3 {{x,y},z} = x*y,z;
+bar3 {x::matrix,z} = x,z;
+bar3 x::matrix = x;
+bar3 $ '{{1,2},3};
+bar3 $ '{{1,2,3},3};
+bar3 {{1,2},3};
+bar3 {{1,2,3},3};
+bar3 {};
+bar3 99;

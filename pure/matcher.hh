@@ -41,6 +41,9 @@ struct trans {
     mpz_t       z;	// EXPR::BIGINT
     double      d;	// EXPR::DBL
     const char *s;	// EXPR::STR
+    struct {
+      size_t    n, m;	// EXPR::MATRIX
+    };
   };
   state *st;	// successor state
   int8_t ttag;	// type tag
@@ -50,11 +53,13 @@ struct trans {
   trans(int32_t _tag, const mpz_t& _z);
   trans(int32_t _tag, double _d);
   trans(int32_t _tag, const char *_s);
+  trans(int32_t _tag, size_t _n, size_t _m);
   trans(const trans& tr);
   trans& operator = (const trans& tr);
   ~trans();
 
-  size_t arity() const { return (tag == EXPR::APP)?2:0; }
+  size_t arity() const
+  { return (tag == EXPR::APP)?2:(tag == EXPR::MATRIX)?n*m:0; }
   int polarity() const { return (tag <= 0)?-1:1; }
 
   bool operator == (const trans& tr) const
@@ -69,6 +74,8 @@ struct trans {
 	return d == tr.d;
       case EXPR::STR:
 	return strcmp(s, tr.s) == 0;
+      case EXPR::MATRIX:
+	return n == tr.n && m == tr.m;
       default:
 	return true;
       }
@@ -94,6 +101,8 @@ struct trans {
 	return d < tr.d;
       case EXPR::STR:
 	return strcmp(s, tr.s) < 0;
+      case EXPR::MATRIX:
+	return n < tr.n || (n == tr.n && m < tr.m);
       default:
 	return false;
       }
@@ -185,6 +194,9 @@ struct matcher {
   state *match(pure_expr *x)
   { assert(start!=0); return match(start, x); }
   state *match(state *st, pure_expr *x);
+  state *match(state *st, double x);
+  state *match(state *st, double x, double y);
+  state *match(state *st, int x);
 
 private: // these are used internally by the TA construction algorithm
 
@@ -207,6 +219,7 @@ private: // these are used internally by the TA construction algorithm
   void merge_rules(ruleml& r1, ruleml& r2);
   void merge_trans(transl& tr1, transl& tr2);
   void merge_ftrans(transl& tr, int32_t tag, state *st);
+  void merge_mtrans(transl& tr, size_t n, size_t m, state *st);
   void merge_vtrans(transl& tr, state *st) { merge_vtrans(tr, 0, st); }
   void merge_vtrans(transl& tr, int8_t ttag, state *st);
   void merge_ctrans_int(transl& tr, int32_t x, state *st);
