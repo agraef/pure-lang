@@ -99,7 +99,7 @@ inline prec_t prec(prec_t nprec)
    which is used as a mask. Maximum size of a path is given by the constant
    MAXDEPTH below. */
 
-#define MAXDEPTH 64
+#define MAXDEPTH 128
 
 class path {
   size_t size;
