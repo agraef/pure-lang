@@ -1323,6 +1323,13 @@ Matrices: ``{1.0,2.0,3.0}``, ``{1,2;3,4}``, ``{1L,y+1;foo,bar}``
     "column-major" format (however, internally all matrices are stored in C's
     row-major format).
 
+    Note that this behaviour of the ``{...}`` construct only applies when
+    *constructing* matrix values. If this construct is used as a pattern on
+    the left-hand side of equations, nested matrices are interpreted
+    literally, and variables in matrix patterns can only match single
+    elements, not rows or columns. Thus the pattern ``{x,y}`` will only match
+    a 1x2 matrix and bind ``x`` and ``y`` to the two elements.
+
     Pure supports both numeric and symbolic matrices. The former are
     homogeneous arrays of double, complex double or (machine) int matrices,
     while the latter can contain any mixture of Pure expressions. Pure will
@@ -1338,15 +1345,6 @@ Matrices: ``{1.0,2.0,3.0}``, ``{1,2;3,4}``, ``{1L,y+1;foo,bar}``
 
     More information about matrices and corresponding examples can be found in
     the Examples_ section below.
-
-    .. note:: While the ``[...]`` and ``{...}`` constructs look superficially
-       similar, they work in very different ways. The former is just syntactic
-       sugar for a corresponding constructor term and can thus be used as a
-       pattern on the left-hand side of an equation, cf. Patterns_. In
-       contrast, the latter is special syntax for a built-in operation which
-       creates objects of a special matrix type. Thus matrix expressions can
-       *not* be used as patterns (instead, matrix values can be matched as a
-       whole using the special ``matrix`` type tag).
 
 Comprehensions: ``[x,y | x=1..n; y=1..m; x<y]``, ``{f x | x=1..n}``
     Pure provides both list and matrix comprehensions as a convenient means to
@@ -1758,12 +1756,15 @@ Patterns
 
 The left-hand side of a rule is a special kind of simple expression, called a
 `pattern`. Patterns consist of function and operator applications as well as
-any of the "atomic" expression types (symbols, numbers, strings and list
-values). *Not* permitted are any of the special expression types (lambda,
+any of the primary expression types (symbols, numbers, strings, matrices and
+list values). *Not* permitted are any of the special expression types (lambda,
 :keyword:`case`, :keyword:`when`, :keyword:`with`, conditional expressions, as
-well as list and matrix comprehensions). For technical reasons, the current
-implementation also forbids matrix values in patterns, but it is possible to
-match a matrix value as a whole using the ``matrix`` type tag, see below.
+well as list and matrix comprehensions). Also note that the pattern matching
+capabilities for matrices are somewhat limited, as a matrix pattern can only
+match a matrix with exactly the same dimensions as the pattern. To match a
+matrix of arbitrary dimensions, you'll have to use the built-in
+:type:`matrix/type` type (or a user-defined type derived from that), cf. `Type
+Tags`_.
 
 As already mentioned, the '``_``' symbol is special in patterns; it denotes
 the `anonymous variable` which matches an arbitrary value (independently for
@@ -1903,7 +1904,7 @@ normal form.)
 Some basic types are built into the language. The corresponding tags enable
 you to match the built-in types of terms for which there is no way to spell
 out all "constructors", as there are infinitely many (or none, as in the case
-of ``matrix`` and ``pointer`` which are constructed and inspected using
+of :type:`pointer/type` values which are constructed and inspected using
 special primitives, but are otherwise "opaque" at the Pure level).
 Specifically, the following data types are built-in (in fact, the pattern
 matcher has special knowledge about these so that they can be matched very
@@ -5650,12 +5651,16 @@ option character if present, as in ``-t0``.
 -v
     Select defined variables.
 
+-y
+    Select defined types.
+
 In addition, the ``-h`` option prints a short help message describing all
 available options of the command at hand.
 
-If none of the ``-c``, ``-f``, ``-m`` and ``-v`` options are specified, then
-all kinds of symbols (constants, functions, macros and variables) are
-selected, otherwise only the specified categories will be considered.
+If none of the ``-c``, ``-f``, ``-m``, ``-v`` and ``-y`` options are
+specified, then all kinds of symbols (constants, functions, macros, variables
+and types) are selected, otherwise only the specified categories will be
+considered.
 
 A reasonable default is used if the ``-t`` option is omitted. By default, if
 no symbols are specified, only temporary definitions are considered, which
@@ -6728,6 +6733,13 @@ from ``%{...%}`` to ``%<...%>``. This resolves an ambiguity in the syntax
 (note that ``%{`` is legal Pure syntax; it could denote a ``%`` operator
 followed by a matrix value), and also makes it easier to properly support this
 construct in Emacs Pure mode.
+
+Simple kinds of matrix patterns like ``{x,y}``, ``{x::int,y}``, ``{x,y;z,t}``,
+``{{x,y},z}`` are also supported beginning with Pure 0.47. This facility is
+somewhat limited, however, as variables in matrix patterns match only single
+elements (not rows or columns), and thus the subject term to be matched must
+have exactly the same shape as the pattern; non-rectangular patterns like
+``{x,y;z}`` will produce an error message.
 
 Pure 0.47 also introduced a new, more flexible type tag feature, which defines
 type tags as unary predicates, using normal rewriting rules just as with
