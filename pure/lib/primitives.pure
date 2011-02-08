@@ -851,9 +851,10 @@ tuplep x	= typep ('tuple) x;
 /* Recursive a.k.a. proper lists. We go to some lengths here to make this
    tail-recursive and as fast as possible. */
 
-type rlist xs@[] | rlist xs@(_:_) = check xs with
+type rlist xs@[] | rlist xs@(_:_) = true if check xs with
   check [] = true;
   check (_:xs) = check xs;
+  check _ = false;
 end;
 
 rlistp x	= typep ('rlist) x;
