@@ -825,7 +825,7 @@ Moreover, there are some keywords which cannot be used as identifiers::
   case       const   def      else    end        extern  if
   infix      infixl  infixr   let     namespace  nonfix  of
   otherwise  outfix  postfix  prefix  private    public  then
-  using      when    with
+  type       using   when     with
 
 Pure fully supports the `Unicode` character set or, more precisely, UTF-8.
 This is an ASCII extension capable of representing all Unicode characters,
@@ -1116,13 +1116,6 @@ Pure's expression syntax can be summarized in the following grammar rules:
                : | `prim_expr`
    rules : `rule` (";" `rule`)* [";"]
    simple_rules : `simple_rule` (";" `simple_rule`)* [";"]
-
-.. Split the productionlist here to avoid bad page breaks in the pdf edition.
-
-(Note that the :token:`rule` and :token:`simple_rule` elements are part of the
-definition syntax, which is explained in the `Rule Syntax`_ section.)
-
-.. productionlist::
    prim_expr : `qualified_symbol`
              : | `number`
              : | `string`
@@ -1140,6 +1133,9 @@ definition syntax, which is explained in the `Rule Syntax`_ section.)
    op : `qualified_symbol`
    left_op : `qualified_symbol`
    right_op : `qualified_symbol`
+
+(Note that the :token:`rule` and :token:`simple_rule` elements are part of the
+definition syntax, which is explained in the `Rule Syntax`_ section.)
 
 Typical examples of the different expression types are summarized in the
 following table. Note that lambdas bind most weakly, followed by the special
@@ -1292,15 +1288,15 @@ Tuples: ``(x,y,z)``
     (tuples of tuples); if you need such constructs then you should use lists
     instead.
 
-    Syntactically, tuples aren't really primary expressions, but we still
-    include them here because they are often used as a simpler replacement for
-    lists, in particular in function arguments and return values, when no
-    elaborate hierarchical structure is needed. Also note that parentheses are
-    generally only used to group expressions and are *not* part of the tuple
-    syntax in Pure, although they will be needed to include a tuple in a list
-    or matrix. E.g., ``[(1,2),3,(4,5)]`` is a three element list consisting of
-    the tuple ``1,2``, the integer ``3``, and another tuple ``4,5``. Likewise,
-    ``[(1,2,3)]`` is a list with a single element, the tuple ``1,2,3``.
+    Note that the parentheses are in fact *not* part of the tuple syntax in
+    Pure (they're just used to group expressions). However, they will be
+    needed to include a tuple in a list or matrix. (E.g., ``[(1,2),3,(4,5)]``
+    is a three element list consisting of the tuple ``1,2``, the integer
+    ``3``, and another tuple ``4,5``.) Hence, tuples aren't really primary
+    expressions at all, but we still include them here because they are often
+    used as a simpler replacement for lists, in particular in function
+    arguments and return values, when no elaborate hierarchical structure is
+    needed.
 
 Matrices: ``{1.0,2.0,3.0}``, ``{1,2;3,4}``, ``{1L,y+1;foo,bar}``
     Pure also offers matrices, a kind of two-dimensional arrays, as a built-in
@@ -2170,6 +2166,39 @@ if the discriminant ``d = p^2/4-q`` is nonnegative::
 Note that the above definition leaves the case of a negative discriminant
 undefined.
 
+Simple Rules
+------------
+
+As already mentioned, :keyword:`when`, :keyword:`let` and :keyword:`const` use
+a simplified kind of rule syntax which just consists of a left-hand and a
+right-hand side separated by the equals sign. In this case the meaning of the
+rule is to bind the variables in the left-hand side of the rule to the
+corresponding subterms of the value of the right-hand side. This is also
+called a `pattern binding`.
+
+Guards or multiple left-hand or right-hand sides are not permitted in these
+rules. However, it is possible to omit the left-hand side if it is just the
+anonymous variable '``_``' by itself, indicating that you don't care about the
+result. The right-hand side is still evaluated, if only for its side-effects,
+which is handy, e.g., for adding debugging statements to your code. For
+instance, here is a variation of the quadratic equation solver which also
+prints the discriminant after it has been computed::
+
+  > using math, system;
+  > solve p q = -p/2+sqrt d,-p/2-sqrt d if d>=0
+  > when d = p^2/4-q; printf "The discriminant is: %g\n" d; end;
+  > solve 4 2;
+  The discriminant is: 2
+  -0.585786437626905,-3.41421356237309
+  > solve 2 4;
+  The discriminant is: -3
+  solve 2 4
+
+Note that simple rules of the same form ``lhs = rhs`` are also used in macro
+definitions (:keyword:`def`), to be discussed in the `Macros`_ section. In
+this case, however, the rule denotes a real rewriting rule, not a pattern
+binding, hence the left-hand side is mandatory in these rules.
+
 .. _type:
 .. _Type Rules:
 
@@ -2442,19 +2471,20 @@ predicate, it is up to the programmer to ensure that the definition of a type
 is actually computable. In fact, you should strive for the best possible
 efficiency in type predicates. A type definition which has worse than O(1)
 complexity may well be a serious performance hog depending on the way in which
-it is used. For instance, consider the definition of the :type:`rlist/type`
-type from the prelude::
+it is used. For instance, consider the following definition of a proper list
+type (the prelude contains a similar definition, see the :type:`rlist/type`
+type)::
 
-  type rlist [] | rlist (x:xs::rlist);
+  type prlist [] | prlist (x:xs::prlist);
 
-This type is defined recursively, so that it only matches "proper" lists which
+This type is defined recursively, so that it only matches proper lists which
 have list values in all their tails (and are thus terminated by the empty
 list). However, this also implies that a check for this type will take O(n)
 time, where n is the size of the list. This will have dire consequences if you
 do this check repeatedly while traversing a list, as in the following ``sum``
 function::
 
-  sum xs::rlist = if null xs then 0 else head xs+sum (tail xs);
+  sum xs::prlist = if null xs then 0 else head xs+sum (tail xs);
 
 As this function repeatedly checks its entire argument, the total time it
 takes to compute the sum of a list this way becomes O(n^2). To see how slow
@@ -2463,14 +2493,14 @@ this function is, just try it on successively larger lists ``1..1000``,
 which simply checks the type of its argument in advance and then invokes a
 "worker" function to do the actual computation::
 
-  sum xs::rlist = sum xs with
+  sum xs::prlist = sum xs with
     sum xs = if null xs then 0 else head xs+sum (tail xs);
   end;
 
 This "wrapper-worker" design is quite common and useful in many situations,
 but it is a bit cumbersome in this specific case. An easier way is to just do
 the type checking in a piecemeal fashion, as the list is being traversed. To
-these ends, the prelude also provides a basic :type:`list/type` type which is
+these ends, the prelude provides a basic :type:`list/type` type which is
 defined as follows::
 
   type list [] | list (x:xs);
@@ -2478,10 +2508,10 @@ defined as follows::
 Note that the recursion is missing here and thus this type can always be
 checked in O(1) time, performing just a single pattern match, which is
 efficient (in fact, this is also the reason that the prelude provides this
-type as the default list type). Hence, if we replace :type:`rlist/type` with
-:type:`list/type` in our original definition then ``sum`` will now run in O(n)
-time, as desired. However, this approach also has its drawbacks. For instance,
-consider::
+type as the default list type). Hence, if we replace ``prlist`` with the
+:type:`list/type` type in our original definition then ``sum`` will now run in
+O(n) time, as desired. However, this approach also has its drawbacks. For
+instance, consider::
 
   > sum xs::list = if null xs then 0 else head xs+sum (tail xs);
   > sum (1:2:3);
@@ -2491,7 +2521,7 @@ In contrast, our wrapper-worker definition of ``sum`` from above returns a
 somewhat prettier normal form instead::
 
   > clear sum
-  > sum xs::rlist = sum xs with
+  > sum xs::prlist = sum xs with
   >  sum xs = if null xs then 0 else head xs+sum (tail xs);
   > end;
   > sum (1:2:3);
@@ -2515,39 +2545,6 @@ exactly when the code of a type definition will be executed at runtime. Thus,
 as a general rule, a type definition should not rely on side effects such as
 doing I/O (except maybe for debugging purposes), modifying references or
 external data structures via C pointers, etc.
-
-Simple Rules
-------------
-
-As already mentioned, :keyword:`when`, :keyword:`let` and :keyword:`const` use
-a simplified kind of rule syntax which just consists of a left-hand and a
-right-hand side separated by the equals sign. In this case the meaning of the
-rule is to bind the variables in the left-hand side of the rule to the
-corresponding subterms of the value of the right-hand side. This is also
-called a `pattern binding`.
-
-Guards or multiple left-hand or right-hand sides are not permitted in these
-rules. However, it is possible to omit the left-hand side if it is just the
-anonymous variable '``_``' by itself, indicating that you don't care about the
-result. The right-hand side is still evaluated, if only for its side-effects,
-which is handy, e.g., for adding debugging statements to your code. For
-instance, here is a variation of the quadratic equation solver which also
-prints the discriminant after it has been computed::
-
-  > using math, system;
-  > solve p q = -p/2+sqrt d,-p/2-sqrt d if d>=0
-  > when d = p^2/4-q; printf "The discriminant is: %g\n" d; end;
-  > solve 4 2;
-  The discriminant is: 2
-  -0.585786437626905,-3.41421356237309
-  > solve 2 4;
-  The discriminant is: -3
-  solve 2 4
-
-Note that simple rules of the same form ``lhs = rhs`` are also used in macro
-definitions (:keyword:`def`), to be discussed in the `Macros`_ section. In
-this case, however, the rule denotes a real rewriting rule, not a pattern
-binding, hence the left-hand side is mandatory in these rules.
 
 Examples
 ========
