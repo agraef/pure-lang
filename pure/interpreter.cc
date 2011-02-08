@@ -12110,7 +12110,8 @@ Function *interpreter::fun_prolog(string name)
 	symtab.sym(f.tag).prec < PREC_MAX || symtab.sym(f.tag).fix == outfix)
       scope = Function::InternalLinkage;
 #if USE_FASTCC
-    if (use_fastcc && !is_init(name) && !is_type(name)) cc = CallingConv::Fast;
+    if (use_fastcc && (f.local || (!is_init(name) && !is_type(name))))
+      cc = CallingConv::Fast;
 #endif
     string pure_name = name;
     /* Mangle operator names. */
