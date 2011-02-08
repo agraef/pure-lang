@@ -2361,15 +2361,22 @@ all the constructor patterns in one go)::
 
   type bintree (tip value) | bintree (bin left right);
 
-You can also use this notation to quickly make one type a "subtype" of
+This method is also useful if you define your own abstract data types. In this
+case you're free to choose any suitable representation, so you might just wrap
+up all data objects of the type with a special constructor symbol, which makes
+checking the type simple and efficient. This is also the approach taken in the
+``point`` example in `Type Tags`_ above, as well as by the container data
+types in the standard library.
+
+The same notation can also be used to quickly make one type a "subtype" of
 another, or to create a type which is the union of several existing types. The
 following example can be found in the standard library::
 
   type integer x::int | integer x::bigint;
 
-Moreover, a type rule can also take the form of a function definition without
-arguments.  In this case, the corresponding right-hand side may either be
-another type symbol, or any kind of closure denoting a (curried) type
+Last but not least, a type rule can also take the form of a function definition
+without arguments.  In this case, the corresponding right-hand side may either
+be another type symbol, or any kind of closure denoting a (curried) type
 predicate. In this case the defined type is simply an `alias` for the type
 denoted on the right-hand side. This is often done, e.g., for numeric types,
 to document that they actually stand for special kinds of quantities::
@@ -2471,74 +2478,8 @@ predicate, it is up to the programmer to ensure that the definition of a type
 is actually computable. In fact, you should strive for the best possible
 efficiency in type predicates. A type definition which has worse than O(1)
 complexity may well be a serious performance hog depending on the way in which
-it is used. For instance, consider the following definition of a proper list
-type (the prelude contains a similar definition, see the :type:`rlist/type`
-type)::
-
-  type prlist [] | prlist (x:xs::prlist);
-
-This type is defined recursively, so that it only matches proper lists which
-have list values in all their tails (and are thus terminated by the empty
-list). However, this also implies that a check for this type will take O(n)
-time, where n is the size of the list. This will have dire consequences if you
-do this check repeatedly while traversing a list, as in the following ``sum``
-function::
-
-  sum xs::prlist = if null xs then 0 else head xs+sum (tail xs);
-
-As this function repeatedly checks its entire argument, the total time it
-takes to compute the sum of a list this way becomes O(n^2). To see how slow
-this function is, just try it on successively larger lists ``1..1000``,
-``1..2000``, etc. One way to work around this is to write a "wrapper" function
-which simply checks the type of its argument in advance and then invokes a
-"worker" function to do the actual computation::
-
-  sum xs::prlist = sum xs with
-    sum xs = if null xs then 0 else head xs+sum (tail xs);
-  end;
-
-This "wrapper-worker" design is quite common and useful in many situations,
-but it is a bit cumbersome in this specific case. An easier way is to just do
-the type checking in a piecemeal fashion, as the list is being traversed. To
-these ends, the prelude provides a basic :type:`list/type` type which is
-defined as follows::
-
-  type list [] | list (x:xs);
-
-Note that the recursion is missing here and thus this type can always be
-checked in O(1) time, performing just a single pattern match, which is
-efficient (in fact, this is also the reason that the prelude provides this
-type as the default list type). Hence, if we replace ``prlist`` with the
-:type:`list/type` type in our original definition then ``sum`` will now run in
-O(n) time, as desired. However, this approach also has its drawbacks. For
-instance, consider::
-
-  > sum xs::list = if null xs then 0 else head xs+sum (tail xs);
-  > sum (1:2:3);
-  1+(2+sum 3)
-
-In contrast, our wrapper-worker definition of ``sum`` from above returns a
-somewhat prettier normal form instead::
-
-  > clear sum
-  > sum xs::prlist = sum xs with
-  >  sum xs = if null xs then 0 else head xs+sum (tail xs);
-  > end;
-  > sum (1:2:3);
-  sum (1:2:3)
-
-Thus the wrapper-worker approach also has its merits, and whether to use one
-or the other depends on the situation. Similar techniques and tradeoffs also
-apply to other recursive types such as trees.
-
-Yet another approach is possible if you define your own (abstract) data types.
-In this case you're free to choose any suitable representation, so you might
-just wrap up all data objects with a special constructor symbol, which makes
-checking the type simple and efficient. This is also the approach taken in the
-``point`` example in `Type Tags`_ above, as well as by the container data
-types in the standard library. But note that this works best with abstract
-data types, since in this case applications aren't supposed to "fiddle" with
-the internal representation.
+it is used, see `Recursive Types`_ in the `Caveats and Notes`_ section for
+more information about this.
 
 Finally, note that in general it may be hard or even impossible to predict
 exactly when the code of a type definition will be executed at runtime. Thus,
@@ -7080,6 +7021,96 @@ nonfix symbol. However, this makes the ``foo`` symbol "precious", i.e., after
 such a declaration it cannot be used as a local variable anymore. It's usually
 a good idea to avoid that kind of thing, at least for generic symbols, so the
 above solution is preferred in this case.
+
+Recursive Types
+---------------
+
+Using the facilities described in `Type Rules`_, type tags can easily be
+defined in a recursive fashion. For instance, the following list type is
+defined recursively, so that it only matches proper lists which have list
+values in all their tails (and are thus terminated by the empty list). ::
+
+  type prlist [] | prlist (x:xs::prlist);
+
+This is a perfectly legal type definition, but note that the current
+implementation doesn't do any tail call optimization for such type predicates.
+(Technically, type tags are just additional guards on an equation which are
+executed recursively before evaluating the right-hand side of an equation.)
+Therefore you'll run into stack overflows when trying to apply this definition
+to big list values::
+
+  > typep prlist (1..300000);
+  <stdin>, line 2: unhandled exception 'stack_fault' while evaluating
+  'typep prlist (1..300000)'
+
+It is possible to work around this by implementing the actual type check as an
+ordinary predicate, since those *will* be optimized to run in constant stack
+space if they are tail-recursive (cf. `Stack Size and Tail Recursion`_). For
+instance, here is how the proper list type :type:`rlist/type` is actually
+implemented in the prelude::
+
+  type rlist xs@[] | rlist xs@(_:_) = true if check xs with
+    check [] = true;
+    check (_:xs) = check xs;
+    check _ = false;
+  end;
+
+This definition works just fine with big list values::
+
+  > typep rlist (1..300000);
+  1
+
+However, there's yet another important issue with recursive type definitions,
+namely the *time* it takes to check the definition. In the above example,
+checking :type:`rlist/type` takes O(n) time, where n is the size of the
+list. This will have dire consequences if you do this check repeatedly while
+traversing a list, as in the following ``sum`` function::
+
+  sum xs::rlist = if null xs then 0 else head xs+sum (tail xs);
+
+As this function repeatedly checks its entire argument, the total time it
+takes to compute the sum of a list this way becomes O(n^2). To see how slow
+this function is, just try it on successively larger lists ``1..1000``,
+``1..2000``, etc. One way to work around this is to write a "wrapper" function
+which simply checks the type of its argument in advance and then invokes a
+"worker" function to do the actual computation::
+
+  sum xs::rlist = sum xs with
+    sum xs = if null xs then 0 else head xs+sum (tail xs);
+  end;
+
+This "wrapper-worker" design is quite common and useful in many situations,
+but it is a bit cumbersome in this specific case. An easier way is to just do
+the type checking in a piecemeal fashion, as the list is being traversed. To
+these ends, the prelude also provides a basic :type:`list/type` type which is
+defined as follows::
+
+  type list [] | list (x:xs);
+
+Note that the recursion is missing here and thus this type can always be
+checked in O(1) time, performing just a single pattern match, which is
+efficient. Hence, if we replace :type:`rlist/type` with the :type:`list/type`
+type in our original definition then ``sum`` will now run in O(n) time, as
+desired. On the other hand, this approach also has its drawbacks. For
+instance, consider::
+
+  > sum xs::list = if null xs then 0 else head xs+sum (tail xs);
+  > sum (1:2:3);
+  1+(2+sum 3)
+
+In contrast, our wrapper-worker definition of ``sum`` from above returns a
+somewhat prettier normal form instead::
+
+  > clear sum
+  > sum xs::rlist = sum xs with
+  >  sum xs = if null xs then 0 else head xs+sum (tail xs);
+  > end;
+  > sum (1:2:3);
+  sum (1:2:3)
+
+Thus the wrapper-worker approach also has its merits, and whether to use one
+or the other depends on the situation. Similar techniques and tradeoffs also
+apply to other recursive types such as trees.
 
 With and when
 -------------
