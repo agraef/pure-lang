@@ -837,18 +837,26 @@ end;
 
 type function = functionp;
 
-/* Types and predicates to check for function applications, lists, proper
-   lists and tuples. */
+/* Types and predicates to check for function applications, lists and
+   tuples. */
 
 type appl (_ _);
 type list []  | list (_:_);
-type rlist [] | rlist (_:_::rlist);
 type tuple () | tuple (_,_);
 
 applp x		= typep ('appl) x;
 listp x		= typep ('list) x;
-rlistp x	= typep ('rlist) x;
 tuplep x	= typep ('tuple) x;
+
+/* Recursive a.k.a. proper lists. We go to some lengths here to make this
+   tail-recursive and as fast as possible. */
+
+type rlist xs@[] | rlist xs@(_:_) = check xs with
+  check [] = true;
+  check (_:xs) = check xs;
+end;
+
+rlistp x	= typep ('rlist) x;
 
 /* Compute a 32 bit hash code of a Pure expression. */
 
