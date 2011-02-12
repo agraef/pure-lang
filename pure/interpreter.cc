@@ -6120,6 +6120,18 @@ static int32_t get2args(expr x, expr& y, expr& z)
   return x.tag();
 }
 
+static int32_t get3args(expr x, expr& y, expr& z, expr& t)
+{
+  expr a, b;
+  if (!x.is_app(a, b)) return 0;
+  x = a; t = b;
+  if (!x.is_app(a, b)) return 0;
+  x = a; z = b;
+  if (!x.is_app(a, b)) return 0;
+  x = a; y = b;
+  return x.tag();
+}
+
 static inline int32_t sym_ttag(int32_t f)
 {
   interpreter& interp = *interpreter::g_interp;
@@ -6248,7 +6260,7 @@ bool interpreter::parse_env(exprl& xs, env& e)
 
 expr *interpreter::macspecial(expr x)
 {
-  expr u, v;
+  expr u, v, w;
   int32_t f = get2args(x, u, v);
   if (f == symtab.lambda_sym().f) {
     exprl xs;
@@ -6296,6 +6308,8 @@ expr *interpreter::macspecial(expr x)
       }
     } else
       delete e;
+  } else if (get3args(x, u, v, w) == symtab.ifelse_sym().f) {
+    return new expr(expr::cond(u, v, w));
   }
   return 0;
 }
