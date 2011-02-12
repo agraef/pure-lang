@@ -1,3 +1,18 @@
+2011-02-12  Albert Graef  <Dr.Graef@t-online.de>
+
+	* interpreter.cc: Add experimental support for quoted specials. A
+	term such as '(\x->x+1) will now yield a special term such as
+	__lambda__ [x] (x+1) (which is actually a quoted application of a
+	built-in macro such as __lambda__) which can be passed around and
+	manipulated freely at both compile and run time. When evaluated,
+	the macro reconstructs the corresponding special. This works with
+	all kinds of special expressions (i.e., conditionals, lambdas,
+	'case', 'when' and 'with' expressions). Moreoever, these specials
+	can be also be used as patterns on the left-hand side of a rule to
+	match the corresponding quoted special, and the quoting of
+	specials is implicit in macro arguments. See test061.pure for some
+	examples.
+
 2011-02-07  Albert Graef  <Dr.Graef@t-online.de>
 
 	* matcher.cc, interpreter.cc, et al: Implement matrix
