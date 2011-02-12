@@ -719,14 +719,15 @@ public:
   expr csubst(expr x, bool quote = false);
   expr lcsubst(expr x);
   expr rsubst(expr x, bool quote = false);
-  expr qsubst(expr x, bool b = false);
+  expr vsubst(expr x, int offs, uint8_t idx = 0);
+  expr vsubst(expr x);
   expr macsubst(expr x, bool quote = false);
   expr varsubst(expr x, uint8_t offs, uint8_t idx = 0);
   expr macred(expr x, expr y, uint8_t idx = 0);
   expr macval(expr x);
   expr *macspecial(expr x);
   exprl get_args(expr x);
-  expr unsubst(expr x);
+  expr tagsubst(expr x);
   bool parse_rulel(exprl& xs, rulel& r);
   bool parse_simple_rulel(exprl& xs, rulel& r);
   bool parse_env(exprl& xs, env& e);
@@ -766,6 +767,7 @@ public:
   expr quoted_when(expr x, rulel *rules);
   expr quoted_with(expr x, env *defs);
   expr quoted_rules(rulel *rules);
+  expr quoted_simple_rules(rulel *rules);
   expr quoted_env(env *defs);
   expr quoted_tag(expr x, int32_t astag, int32_t ttag = 0);
 

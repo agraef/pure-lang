@@ -5456,27 +5456,27 @@ expr interpreter::rsubst(expr x, bool quote)
   // substitute runtime representations for specials:
   case EXPR::COND:
     if (quote)
-      return quoted_ifelse(x.xval1(), x.xval2(), x.xval3());
+      return rsubst(quoted_ifelse(x.xval1(), x.xval2(), x.xval3()), quote);
     else
       return x;
   case EXPR::LAMBDA:
     if (quote)
-      return quoted_lambda(x.largs(), x.lrule().rhs);
+      return rsubst(quoted_lambda(x.largs(), x.lrule().rhs), quote);
     else
       return x;
   case EXPR::CASE:
     if (quote)
-      return quoted_case(x.xval(), x.rules());
+      return rsubst(quoted_case(x.xval(), x.rules()), quote);
     else
       return x;
   case EXPR::WHEN:
     if (quote)
-      return quoted_when(x.xval(), x.rules());
+      return rsubst(quoted_when(x.xval(), x.rules()), quote);
     else
       return x;
   case EXPR::WITH:
     if (quote)
-      return quoted_with(x.xval(), x.fenv());
+      return rsubst(quoted_with(x.xval(), x.fenv()), quote);
     else
       return x;
   // matrix (Pure 0.47+):
@@ -5505,18 +5505,156 @@ expr interpreter::rsubst(expr x, bool quote)
   }
 }
 
-/* Variation of lcsubst which does the necessary substitutions inside quoted
-   specials. */
+/* Do the necessary variable substitutions inside quoted specials. */
 
-expr interpreter::qsubst(expr x, bool b)
+expr interpreter::vsubst(expr x, int offs, uint8_t idx)
 {
   if (x.is_null()) return x;
   switch (x.tag()) {
-  // back-substitute to normal symbols
+  case EXPR::VAR:
+  case EXPR::FVAR:
+    if (x.vidx() < idx)
+      /* reference to local environment inside the substituted value; skip */
+      return x;
+    if (offs == 0 && x.tag() == EXPR::FVAR && x.vidx() == idx)
+      /* reference to function symbol in quoted 'with', quote */
+      return expr(x.vtag());
+    if (x.vidx() < idx+offs)
+      /* reference to other symbol in quoted special, quote */
+      return expr(x.vtag());
+    /* reference to local environment outside the substituted value; shift the
+       deBruijn indices accordingly */
+    if (offs == 0)
+      return x;
+    else if (x.tag() == EXPR::VAR)
+      return expr(EXPR::VAR, x.vtag(), x.vidx()-offs, x.ttag(), x.vpath());
+    else
+      return expr(EXPR::FVAR, x.vtag(), x.vidx()-offs);
+  // constants:
+  case EXPR::INT:
+  case EXPR::BIGINT:
+  case EXPR::DBL:
+  case EXPR::STR:
+  case EXPR::PTR:
+  case EXPR::WRAP:
+    return x;
+  // matrix:
+  case EXPR::MATRIX: {
+    exprll *us = new exprll;
+    for (exprll::iterator xs = x.xvals()->begin(), end = x.xvals()->end();
+	 xs != end; xs++) {
+      us->push_back(exprl());
+      exprl& vs = us->back();
+      for (exprl::iterator ys = xs->begin(), end = xs->end();
+	   ys != end; ys++) {
+	vs.push_back(vsubst(*ys, offs, idx));
+      }
+    }
+    return expr(EXPR::MATRIX, us);
+  }
+  // application:
+  case EXPR::APP: {
+    if (x.xval1().tag() == symtab.amp_sym().f) {
+      if (++idx == 0)
+	throw err("error in expression (too many nested closures)");
+      expr v = vsubst(x.xval2(), offs, idx);
+      return expr(symtab.amp_sym().x, v);
+    } else if (x.xval1().tag() == EXPR::APP &&
+	       x.xval1().xval1().tag() == symtab.catch_sym().f) {
+      expr u = vsubst(x.xval1().xval2(), offs, idx);
+      if (++idx == 0)
+	throw err("error in expression (too many nested closures)");
+      expr v = vsubst(x.xval2(), offs, idx);
+      return expr(symtab.catch_sym().x, u, v);
+    } else {
+      expr u = vsubst(x.xval1(), offs, idx),
+	v = vsubst(x.xval2(), offs, idx);
+      return expr(u, v);
+    }
+  }
+  // conditionals:
+  case EXPR::COND: {
+    expr u = vsubst(x.xval1(), offs, idx),
+      v = vsubst(x.xval2(), offs, idx),
+      w = vsubst(x.xval3(), offs, idx);
+    return expr::cond(u, v, w);
+  }
+  case EXPR::COND1: {
+    expr u = vsubst(x.xval1(), offs, idx),
+      v = vsubst(x.xval2(), offs, idx);
+    return expr::cond1(u, v);
+  }
+  // nested closures:
+  case EXPR::LAMBDA: {
+    if (++idx == 0)
+      throw err("error in expression (too many nested closures)");
+    exprl *u = x.largs(); expr v = vsubst(x.lrule().rhs, offs, idx);
+    return expr::lambda(new exprl(*u), v, x.lrule().vi);
+  }
+  case EXPR::CASE: {
+    expr u = vsubst(x.xval(), offs, idx);
+    if (++idx == 0)
+      throw err("error in expression (too many nested closures)");
+    const rulel *r = x.rules();
+    rulel *s = new rulel;
+    for (rulel::const_iterator it = r->begin(); it != r->end(); ++it) {
+      expr u = it->lhs,	v = vsubst(it->rhs, offs, idx),
+	w = vsubst(it->qual, offs, idx);
+      s->push_back(rule(u, v, it->vi, w));
+    }
+    return expr::cases(u, s);
+  }
+  case EXPR::WHEN: {
+    const rulel *r = x.rules();
+    rulel *s = new rulel;
+    for (rulel::const_iterator it = r->begin(); it != r->end(); ++it) {
+      expr u = it->lhs, v = vsubst(it->rhs, offs, idx);
+      s->push_back(rule(u, v, it->vi));
+      if (++idx == 0)
+	throw err("error in expression (too many nested closures)");
+    }
+    expr u = vsubst(x.xval(), offs, idx);
+    return expr::when(u, s);
+  }
+  case EXPR::WITH: {
+    expr u = vsubst(x.xval(), offs, idx);
+    if (++idx == 0)
+      throw err("error in expression (too many nested closures)");
+    const env *e = x.fenv();
+    env *f = new env;
+    for (env::const_iterator it = e->begin(); it != e->end(); ++it) {
+      int32_t g = it->first;
+      const env_info& info = it->second;
+      const rulel *r = info.rules;
+      rulel s;
+      for (rulel::const_iterator jt = r->begin(); jt != r->end(); ++jt) {
+	expr u = jt->lhs, v = vsubst(jt->rhs, offs, idx),
+	  w = vsubst(jt->qual, offs, idx);
+	s.push_back(rule(u, v, jt->vi, w));
+      }
+      (*f)[g] = env_info(info.argc, s, info.temp);
+    }
+    return expr::with(u, f);
+  }
+  default:
+    assert(x.tag() > 0);
+    return x;
+  }
+}
+
+/* This is a simplified version of the above for the lhs in an equation. In
+   this case we simply quote all symbols, but we also have to take care of
+   specials as well as type tags and as patterns in the lhs, which have to be
+   expanded to their runtime representations. */
+
+expr interpreter::vsubst(expr x)
+{
+  if (x.is_null()) return x;
+  switch (x.tag()) {
   case EXPR::VAR:
   case EXPR::FVAR: {
     expr u = expr(x.vtag());
-    return b?quoted_tag(u, x.astag(), x.ttag()):u;
+    return quoted_tag(u, x.astag(), x.ttag());
   }
   // constants:
   case EXPR::INT:
@@ -5525,7 +5663,7 @@ expr interpreter::qsubst(expr x, bool b)
   case EXPR::STR:
   case EXPR::PTR:
   case EXPR::WRAP:
-    if (b && x.astag()) {
+    if (x.astag()) {
       int32_t tag = x.astag();
       x.set_astag(0);
       return quoted_tag(x, tag);
@@ -5534,23 +5672,23 @@ expr interpreter::qsubst(expr x, bool b)
   // substitute runtime representations for specials:
   case EXPR::COND: {
     expr u = quoted_ifelse(x.xval1(), x.xval2(), x.xval3());
-    return b?quoted_tag(u, x.astag()):u;
+    return quoted_tag(u, x.astag());
   }
   case EXPR::LAMBDA: {
     expr u = quoted_lambda(x.largs(), x.lrule().rhs);
-    return b?quoted_tag(u, x.astag()):u;
+    return quoted_tag(u, x.astag());
   }
   case EXPR::CASE: {
     expr u = quoted_case(x.xval(), x.rules());
-    return b?quoted_tag(u, x.astag()):u;
+    return quoted_tag(u, x.astag());
   }
   case EXPR::WHEN: {
     expr u = quoted_when(x.xval(), x.rules());
-    return b?quoted_tag(u, x.astag()):u;
+    return quoted_tag(u, x.astag());
   }
   case EXPR::WITH: {
     expr u = quoted_with(x.xval(), x.fenv());
-    return b?quoted_tag(u, x.astag()):u;
+    return quoted_tag(u, x.astag());
   }
   // matrix (Pure 0.47+):
   case EXPR::MATRIX: {
@@ -5561,17 +5699,17 @@ expr interpreter::qsubst(expr x, bool b)
       exprl& vs = us->back();
       for (exprl::iterator ys = xs->begin(), end = xs->end();
 	   ys != end; ys++) {
-	vs.push_back(qsubst(*ys, b));
+	vs.push_back(vsubst(*ys));
       }
     }
     expr w = expr(EXPR::MATRIX, us);
-    return b?quoted_tag(w, x.astag()):w;
+    return quoted_tag(w, x.astag());
   }
   // application:
   case EXPR::APP: {
-    expr u = qsubst(x.xval1(), b), v = qsubst(x.xval2(), b);
+    expr u = vsubst(x.xval1()), v = vsubst(x.xval2());
     expr w = expr(u, v);
-    return b?quoted_tag(w, x.astag()):w;
+    return quoted_tag(w, x.astag());
   }
   default:
     assert(x.tag() > 0);
@@ -5622,12 +5760,21 @@ expr interpreter::macsubst(expr x, bool quote)
     return expr(EXPR::MATRIX, us);
   }
   // application:
-  case EXPR::APP: {
-    expr u = macsubst(x.xval1(), quote),
-      v = macsubst(x.xval2(), quote || is_quote(u.tag()));
-    expr w = expr(u, v);
-    return quote?w:macval(w);
-  }
+  case EXPR::APP:
+    if (quote) {
+      expr u = macsubst(x.xval1(), quote),
+	v = macsubst(x.xval2(), quote);
+      return expr(u, v);
+    } else if (is_quote(x.xval1().tag())) {
+      expr u = x.xval1(),
+	v = macsubst(x.xval2(), true);
+      return expr(u, v);
+    } else {
+      expr u = macsubst(x.xval1()),
+	v = macsubst(x.xval2());
+      expr w = expr(u, v);
+      return macval(w);
+    }
   // conditionals:
   case EXPR::COND: {
     expr u = macsubst(x.xval1()),
@@ -5972,7 +6119,7 @@ exprl interpreter::get_args(expr x)
 {
   expr y, z;
   exprl xs;
-  while (x.is_app(y, z)) xs.push_front(z), x = y;
+  while (x.is_app(y, z)) xs.push_front(rsubst(z, true)), x = y;
   return xs;
 }
 
@@ -6153,7 +6300,7 @@ static inline int32_t sym_ttag(int32_t f)
   }
 }
 
-expr interpreter::unsubst(expr x)
+expr interpreter::tagsubst(expr x)
 {
   if (x.is_null()) return x;
   switch (x.tag()) {
@@ -6161,11 +6308,12 @@ expr interpreter::unsubst(expr x)
   case EXPR::BIGINT:
   case EXPR::DBL:
   case EXPR::STR:
-  case EXPR::VAR:
-  case EXPR::FVAR:
   case EXPR::PTR:
   case EXPR::WRAP:
     return x;
+  case EXPR::VAR:
+  case EXPR::FVAR:
+    return expr(x.vtag());
   // matrix (Pure 0.47+):
   case EXPR::MATRIX: {
     exprll *us = new exprll;
@@ -6175,7 +6323,7 @@ expr interpreter::unsubst(expr x)
       exprl& vs = us->back();
       for (exprl::iterator ys = xs->begin(), end = xs->end();
 	   ys != end; ys++) {
-	vs.push_back(unsubst(*ys));
+	vs.push_back(tagsubst(*ys));
       }
     }
     return expr(EXPR::MATRIX, us);
@@ -6190,12 +6338,12 @@ expr interpreter::unsubst(expr x)
       w.set_ttag(sym_ttag(v.tag()));
       return w;
     } else if (f == symtab.astag_sym().f && u.tag() >= 0) {
-      expr w = unsubst(v);
+      expr w = tagsubst(v);
       // XXXTODO: We might want to do some plausibility checks here.
       w.set_astag(u.tag());
       return w;
     } else {
-      expr u = unsubst(x.xval1()), v = unsubst(x.xval2());
+      expr u = tagsubst(x.xval1()), v = tagsubst(x.xval2());
       return expr(u, v);
     }
   }
@@ -6212,10 +6360,10 @@ bool interpreter::parse_rulel(exprl& xs, rulel& rl)
     if (get2args(*x, u, v) == symtab.eqn_sym().f) {
       expr w, c;
       if (get2args(v, w, c) == symtab.if_sym().f) {
-	rule r(unsubst(u), w, c);
+	rule r(tagsubst(u), varsubst(w, 1), varsubst(c, 1));
 	add_rule(rl, r, true);
       } else {
-	rule r(unsubst(u), v);
+	rule r(tagsubst(u), varsubst(v, 1));
 	add_rule(rl, r, true);
       }
     } else
@@ -6226,13 +6374,14 @@ bool interpreter::parse_rulel(exprl& xs, rulel& rl)
 
 bool interpreter::parse_simple_rulel(exprl& xs, rulel& rl)
 {
-  for (exprl::iterator x = xs.begin(), end = xs.end(); x!=end; x++) {
+  int offs = 0;
+  for (exprl::iterator x = xs.begin(), end = xs.end(); x!=end; x++, offs++) {
     expr u, v;
     if (get2args(*x, u, v) == symtab.eqn_sym().f) {
-      rule r(unsubst(u), v);
+      rule r(tagsubst(u), (offs==0)?v:varsubst(v, offs));
       rl.push_back(r);
     } else {
-      rule r(expr(symtab.anon_sym), *x);
+      rule r(expr(symtab.anon_sym), (offs==0)?*x:varsubst(*x, offs));
       rl.push_back(r);
     }
   }
@@ -6246,10 +6395,10 @@ bool interpreter::parse_env(exprl& xs, env& e)
     if (get2args(*x, u, v) == symtab.eqn_sym().f) {
       expr w, c;
       if (get2args(v, w, c) == symtab.if_sym().f) {
-	rule r(unsubst(u), w, c);
+	rule r(tagsubst(u), varsubst(w, 1), varsubst(c, 1));
 	add_rule(e, r);
       } else {
-	rule r(unsubst(u), v);
+	rule r(tagsubst(u), varsubst(v, 1));
 	add_rule(e, r);
       }
     } else
@@ -6267,9 +6416,9 @@ expr *interpreter::macspecial(expr x)
     if (u.is_list(xs)) {
       exprl *ys = new exprl;
       for (exprl::iterator it = xs.begin(), end = xs.end(); it!=end; ++it)
-	ys->push_back(unsubst(*it));
+	ys->push_back(tagsubst(*it));
       try {
-	expr *y = mklambda_expr(ys, new expr(v));
+	expr *y = mklambda_expr(ys, new expr(varsubst(v, 1)));
 	return y;
       } catch (err &e) {
 	// fail
@@ -6290,7 +6439,7 @@ expr *interpreter::macspecial(expr x)
     rulel *r = new rulel; exprl xs;
     if (v.is_list(xs) && parse_simple_rulel(xs, *r)) {
       try {
-	expr *y = mkwhen_expr(new expr(u), r);
+	expr *y = mkwhen_expr(new expr(varsubst(u, r->size())), r);
 	return y;
       } catch (err &e) {
 	// fail
@@ -6834,35 +6983,38 @@ expr *interpreter::mkmatcomp_expr(expr *x, comp_clause_list *cs)
 
 expr interpreter::quoted_ifelse(expr x, expr y, expr z)
 {
-  return expr(symtab.ifelse_sym().x, qsubst(x), qsubst(y), qsubst(z));
+  return expr(symtab.ifelse_sym().x, x, y, z);
 }
 
 expr interpreter::quoted_if(expr x, expr y)
 {
-  return expr(symtab.if_sym().x, qsubst(x), qsubst(y));
+  return expr(symtab.if_sym().x, x, y);
 }
 
 expr interpreter::quoted_lambda(exprl *args, expr rhs)
 {
   exprl xs;
   for (exprl::iterator it = args->begin(), end = args->end(); it != end; ++it)
-    xs.push_back(qsubst(*it, true));
-  return expr(symtab.lambda_sym().x, expr::list(xs), qsubst(rhs));
+    xs.push_back(vsubst(*it));
+  return expr(symtab.lambda_sym().x, expr::list(xs), vsubst(rhs, 1));
 }
 
 expr interpreter::quoted_case(expr x, rulel *rules)
 {
-  return expr(symtab.case_sym().x, qsubst(x), quoted_rules(rules));
+  return expr(symtab.case_sym().x, x, quoted_rules(rules));
 }
 
 expr interpreter::quoted_when(expr x, rulel *rules)
 {
-  return expr(symtab.when_sym().x, qsubst(x), quoted_rules(rules));
+  assert(!rules->empty());
+  return expr(symtab.when_sym().x, vsubst(x, rules->size()),
+	      quoted_simple_rules(rules));
 }
 
 expr interpreter::quoted_with(expr x, env *defs)
 {
-  return expr(symtab.with_sym().x, qsubst(x), quoted_env(defs));
+  assert(!defs->empty());
+  return expr(symtab.with_sym().x, vsubst(x, 0), quoted_env(defs));
 }
 
 expr interpreter::quoted_rules(rulel *rules)
@@ -6870,12 +7022,25 @@ expr interpreter::quoted_rules(rulel *rules)
   exprl xs;
   for (rulel::iterator it = rules->begin(), end = rules->end(); it!=end; ++it)
     if (it->qual.is_null())
-      xs.push_back(expr(symtab.eqn_sym().x, qsubst(it->lhs, true),
-			qsubst(it->rhs)));
+      xs.push_back(expr(symtab.eqn_sym().x, vsubst(it->lhs),
+			vsubst(it->rhs, 1)));
     else
-      xs.push_back(expr(symtab.eqn_sym().x, qsubst(it->lhs, true),
-			expr(symtab.if_sym().x, qsubst(it->rhs),
-			     qsubst(it->qual))));
+      xs.push_back(expr(symtab.eqn_sym().x, vsubst(it->lhs),
+			expr(symtab.if_sym().x, vsubst(it->rhs, 1),
+			     vsubst(it->qual, 1))));
+  return expr::list(xs);
+}
+
+expr interpreter::quoted_simple_rules(rulel *rules)
+{
+  exprl xs;
+  int offs = 0;
+  for (rulel::iterator it = rules->begin(), end = rules->end(); it!=end;
+       ++it, ++offs) {
+    assert(it->qual.is_null());
+    xs.push_back(expr(symtab.eqn_sym().x, vsubst(it->lhs),
+		      (offs==0)?it->rhs:vsubst(it->rhs, offs)));
+  }
   return expr::list(xs);
 }
 
@@ -6888,12 +7053,12 @@ expr interpreter::quoted_env(env *defs)
     for (rulel::iterator jt = info.rules->begin(), end = info.rules->end();
 	 jt!=end; ++jt)
       if (jt->qual.is_null())
-	xs.push_back(expr(symtab.eqn_sym().x, qsubst(jt->lhs, true),
-			  qsubst(jt->rhs)));
+	xs.push_back(expr(symtab.eqn_sym().x, vsubst(jt->lhs),
+			  vsubst(jt->rhs, 1)));
       else
-	xs.push_back(expr(symtab.eqn_sym().x, qsubst(jt->lhs, true),
-			  expr(symtab.if_sym().x, qsubst(jt->rhs),
-			       qsubst(jt->qual))));
+	xs.push_back(expr(symtab.eqn_sym().x, vsubst(jt->lhs),
+			  expr(symtab.if_sym().x, vsubst(jt->rhs, 1),
+			       vsubst(jt->qual, 1))));
   }
   return expr::list(xs);
 }
