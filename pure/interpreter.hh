@@ -718,10 +718,18 @@ public:
   expr bsubst(expr x);
   expr csubst(expr x, bool quote = false);
   expr lcsubst(expr x);
+  expr rsubst(expr x, bool quote = false);
+  expr qsubst(expr x, bool b = false);
   expr macsubst(expr x, bool quote = false);
   expr varsubst(expr x, uint8_t offs, uint8_t idx = 0);
   expr macred(expr x, expr y, uint8_t idx = 0);
   expr macval(expr x);
+  expr *macspecial(expr x);
+  exprl get_args(expr x);
+  expr unsubst(expr x);
+  bool parse_rulel(exprl& xs, rulel& r);
+  bool parse_simple_rulel(exprl& xs, rulel& r);
+  bool parse_env(exprl& xs, env& e);
   bool checkguards(expr x, const vguardl& guards);
   bool checkeqns(expr x, const veqnl& eqns);
   void closure(rule& r, bool b = true);
@@ -751,6 +759,15 @@ public:
   expr *mkmatcomp_expr(expr *x, comp_clause_list *cs);
   expr mkmatcomp_expr(expr x, size_t n, comp_clause_list::iterator cs,
 		      comp_clause_list::iterator end);
+  expr quoted_ifelse(expr x, expr y, expr z);
+  expr quoted_if(expr x, expr y);
+  expr quoted_lambda(exprl *args, expr rhs);
+  expr quoted_case(expr x, rulel *rules);
+  expr quoted_when(expr x, rulel *rules);
+  expr quoted_with(expr x, env *defs);
+  expr quoted_rules(rulel *rules);
+  expr quoted_env(env *defs);
+  expr quoted_tag(expr x, int32_t astag, int32_t ttag = 0);
 
   // LLVM code generation and execution.
 

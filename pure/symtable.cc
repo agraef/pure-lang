@@ -75,6 +75,15 @@ symtable::symtable()
     __string_sym(0),
     __pointer_sym(0),
     __matrix_sym(0),
+    __if_sym(0),
+    __ifelse_sym(0),
+    __lambda_sym(0),
+    __case_sym(0),
+    __when_sym(0),
+    __with_sym(0),
+    __eqn_sym(0),
+    __ttag_sym(0),
+    __astag_sym(0),
     current_namespace(new string),
     search_namespaces(new map< string, set<int32_t> >),
     __show__sym(0)
@@ -144,6 +153,15 @@ void symtable::init_builtins()
   string_sym();
   pointer_sym();
   matrix_sym();
+  if_sym();
+  ifelse_sym();
+  lambda_sym();
+  case_sym();
+  when_sym();
+  with_sym();
+  eqn_sym();
+  ttag_sym();
+  astag_sym();
 }
 
 /* These are used internally to dump the entire symbol table from a string,
@@ -658,4 +676,58 @@ symbol& symtable::rational_xdiv_sym()
     return *__rational_xdiv_sym;
   else
     return *sym_p("%", __rational_xdiv_sym, 2300, infixl);
+}
+
+symbol& symtable::ttag_sym()
+{
+  lookup_p("__ttag__", __ttag_sym);
+  if (__ttag_sym)
+    return *__ttag_sym;
+  else
+    return *sym_p("__ttag__", __ttag_sym, 10000, infixl);
+}
+
+symbol& symtable::astag_sym()
+{
+  lookup_p("__as__", __astag_sym);
+  if (__astag_sym)
+    return *__astag_sym;
+  else
+    return *sym_p("__as__", __astag_sym, 10000, infixl);
+}
+
+symbol& symtable::eqn_sym()
+{
+  lookup_p("__eq__", __eqn_sym);
+  if (__eqn_sym)
+    return *__eqn_sym;
+  else
+    return *sym_p("__eq__", __eqn_sym, 0, infixl);
+}
+
+symbol& symtable::if_sym()
+{
+  lookup_p("__if__", __if_sym);
+  if (__if_sym)
+    return *__if_sym;
+  else
+    return *sym_p("__if__", __if_sym, 0, infixl);
+}
+
+symbol& symtable::when_sym()
+{
+  lookup_p("__when__", __when_sym);
+  if (__when_sym)
+    return *__when_sym;
+  else
+    return *sym_p("__when__", __when_sym, 0, infixl);
+}
+
+symbol& symtable::with_sym()
+{
+  lookup_p("__with__", __with_sym);
+  if (__with_sym)
+    return *__with_sym;
+  else
+    return *sym_p("__with__", __with_sym, 0, infixl);
 }

@@ -122,6 +122,15 @@ class symtable {
   symbol* __string_sym;
   symbol* __pointer_sym;
   symbol* __matrix_sym;
+  symbol* __if_sym;
+  symbol* __ifelse_sym;
+  symbol* __lambda_sym;
+  symbol* __case_sym;
+  symbol* __when_sym;
+  symbol* __with_sym;
+  symbol* __eqn_sym;
+  symbol* __ttag_sym;
+  symbol* __astag_sym;
 public:
   symtable();
   ~symtable();
@@ -250,6 +259,18 @@ public:
   { return *sym_p("pointer", __pointer_sym); }
   symbol& matrix_sym()
   { return *sym_p("matrix", __matrix_sym); }
+  symbol& if_sym();
+  symbol& ifelse_sym()
+  { return *sym_p("__ifelse__", __ifelse_sym); }
+  symbol& lambda_sym()
+  { return *sym_p("__lambda__", __lambda_sym); }
+  symbol& case_sym()
+  { return *sym_p("__case__", __case_sym); }
+  symbol& when_sym();
+  symbol& with_sym();
+  symbol& eqn_sym();
+  symbol& ttag_sym();
+  symbol& astag_sym();
 };
 
 #endif // ! SYMTABLE_HH

@@ -76,7 +76,8 @@ static inline const string sym_padding(int32_t f)
 {
   assert(f > 0);
   const symbol& sym = interpreter::g_interp->symtab.sym(f);
-  if (ispunct(sym.s[0]) || f == interpreter::g_interp->symtab.neg_sym().f)
+  if ((ispunct(sym.s[0]) && sym.s[0] != '_') ||
+      f == interpreter::g_interp->symtab.neg_sym().f)
     return "";
   else
     return " ";

@@ -2556,7 +2556,7 @@ pure_expr *interpreter::eval(expr& x, pure_expr*& e, bool keep)
   save_globals(g);
   compile();
   // promote type tags and substitute macros and constants:
-  env vars; expr u = csubst(macsubst(subst(vars, x)));
+  env vars; expr u = csubst(macsubst(subst(vars, rsubst(x))));
   compile(u);
   x = u;
   pure_expr *res = doeval(u, e, keep);
@@ -2584,7 +2584,7 @@ pure_expr *interpreter::defn(expr pat, expr& x, pure_expr*& e)
   env vars; vinfo vi;
   // promote type tags and substitute macros and constants:
   qual = true;
-  expr rhs = csubst(macsubst(subst(vars, x)));
+  expr rhs = csubst(macsubst(subst(vars, rsubst(x))));
   expr lhs = bind(vars, vi, lcsubst(pat));
   build_env(vars, lhs);
   qual = false;
@@ -2951,7 +2951,7 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
   env vars; vinfo vi;
   // promote type tags and substitute macros and constants:
   qual = true;
-  expr rhs = csubst(macsubst(subst(vars, x)));
+  expr rhs = csubst(macsubst(subst(vars, rsubst(x))));
   expr lhs = bind(vars, vi, lcsubst(pat));
   build_env(vars, lhs);
   qual = false;
@@ -4274,8 +4274,8 @@ void interpreter::closure(rule& r, bool b)
 {
   env vars; vinfo vi;
   expr u = expr(bind(vars, vi, lcsubst(r.lhs), b)),
-    v = expr(subst(vars, r.rhs)),
-    w = expr(subst(vars, r.qual));
+    v = expr(subst(vars, rsubst(r.rhs))),
+    w = expr(subst(vars, rsubst(r.qual)));
   r = rule(u, v, vi, w);
 }
 
@@ -4370,20 +4370,13 @@ expr interpreter::bind(env& vars, vinfo& vi, expr x, bool b, path p, bool a)
   case EXPR::WRAP:
     throw err("pointer or closure not permitted in pattern");
     break;
+  // these are already substituted away by lcsubst:
   case EXPR::LAMBDA:
-    throw err("lambda expression not permitted in pattern");
-    break;
   case EXPR::COND:
-    throw err("conditional expression not permitted in pattern");
-    break;
   case EXPR::CASE:
-    throw err("case expression not permitted in pattern");
-    break;
   case EXPR::WHEN:
-    throw err("when expression not permitted in pattern");
-    break;
   case EXPR::WITH:
-    throw err("with expression not permitted in pattern");
+    assert(0 && "this can't happen");
     break;
   default:
     assert(x.tag() > 0);
@@ -5353,40 +5346,53 @@ expr interpreter::csubst(expr x, bool quote)
 }
 
 /* This is a trimmed-down version of csubst() for performing replacements of
-   nonfix const symbols in patterns. */
+   nonfix const symbols in patterns. It also takes care of substituting
+   runtime representations for specials (lambda, conditionals, 'case', 'when',
+   'with'). */
 
 expr interpreter::lcsubst(expr x)
 {
   if (x.is_null()) return x;
   switch (x.tag()) {
   // constants:
-  case EXPR::VAR:
-  case EXPR::FVAR:
   case EXPR::INT:
   case EXPR::BIGINT:
   case EXPR::DBL:
   case EXPR::STR:
+  case EXPR::VAR:
+  case EXPR::FVAR:
     return x;
   // these must not occur on the lhs:
   case EXPR::PTR:
   case EXPR::WRAP:
     throw err("pointer or closure not permitted in pattern");
     break;
-  case EXPR::LAMBDA:
-    throw err("lambda expression not permitted in pattern");
-    break;
-  case EXPR::COND:
-    throw err("conditional expression not permitted in pattern");
-    break;
-  case EXPR::CASE:
-    throw err("case expression not permitted in pattern");
-    break;
-  case EXPR::WHEN:
-    throw err("when expression not permitted in pattern");
-    break;
-  case EXPR::WITH:
-    throw err("with expression not permitted in pattern");
-    break;
+  // substitute runtime representations for specials:
+  case EXPR::COND: {
+    expr u = quoted_ifelse(x.xval1(), x.xval2(), x.xval3());
+    u.set_astag(x.astag());
+    return u;
+  }
+  case EXPR::LAMBDA: {
+    expr u = quoted_lambda(x.largs(), x.lrule().rhs);
+    u.set_astag(x.astag());
+    return u;
+  }
+  case EXPR::CASE: {
+    expr u = quoted_case(x.xval(), x.rules());
+    u.set_astag(x.astag());
+    return u;
+  }
+  case EXPR::WHEN: {
+    expr u = quoted_when(x.xval(), x.rules());
+    u.set_astag(x.astag());
+    return u;
+  }
+  case EXPR::WITH: {
+    expr u = quoted_with(x.xval(), x.fenv());
+    u.set_astag(x.astag());
+    return u;
+  }
   // matrix (Pure 0.47+):
   case EXPR::MATRIX: {
     exprll *us = new exprll;
@@ -5431,19 +5437,158 @@ expr interpreter::lcsubst(expr x)
   }
 }
 
+/* Variation of lcsubst which only substitutes quoted specials in the rhs. */
+
+expr interpreter::rsubst(expr x, bool quote)
+{
+  if (x.is_null()) return x;
+  switch (x.tag()) {
+  // constants:
+  case EXPR::INT:
+  case EXPR::BIGINT:
+  case EXPR::DBL:
+  case EXPR::STR:
+  case EXPR::VAR:
+  case EXPR::FVAR:
+  case EXPR::PTR:
+  case EXPR::WRAP:
+    return x;
+  // substitute runtime representations for specials:
+  case EXPR::COND:
+    if (quote)
+      return quoted_ifelse(x.xval1(), x.xval2(), x.xval3());
+    else
+      return x;
+  case EXPR::LAMBDA:
+    if (quote)
+      return quoted_lambda(x.largs(), x.lrule().rhs);
+    else
+      return x;
+  case EXPR::CASE:
+    if (quote)
+      return quoted_case(x.xval(), x.rules());
+    else
+      return x;
+  case EXPR::WHEN:
+    if (quote)
+      return quoted_when(x.xval(), x.rules());
+    else
+      return x;
+  case EXPR::WITH:
+    if (quote)
+      return quoted_with(x.xval(), x.fenv());
+    else
+      return x;
+  // matrix (Pure 0.47+):
+  case EXPR::MATRIX: {
+    exprll *us = new exprll;
+    for (exprll::iterator xs = x.xvals()->begin(), end = x.xvals()->end();
+	 xs != end; xs++) {
+      us->push_back(exprl());
+      exprl& vs = us->back();
+      for (exprl::iterator ys = xs->begin(), end = xs->end();
+	   ys != end; ys++) {
+	vs.push_back(rsubst(*ys, quote));
+      }
+    }
+    return expr(EXPR::MATRIX, us);
+  }
+  // application:
+  case EXPR::APP: {
+    bool quote1 = quote || is_quote(x.xval1().tag());
+    expr u = rsubst(x.xval1(), quote), v = rsubst(x.xval2(), quote1);
+    return expr(u, v);
+  }
+  default:
+    assert(x.tag() > 0);
+    return x;
+  }
+}
+
+/* Variation of lcsubst which does the necessary substitutions inside quoted
+   specials. */
+
+expr interpreter::qsubst(expr x, bool b)
+{
+  if (x.is_null()) return x;
+  switch (x.tag()) {
+  // back-substitute to normal symbols
+  case EXPR::VAR:
+  case EXPR::FVAR: {
+    expr u = expr(x.vtag());
+    return b?quoted_tag(u, x.astag(), x.ttag()):u;
+  }
+  // constants:
+  case EXPR::INT:
+  case EXPR::BIGINT:
+  case EXPR::DBL:
+  case EXPR::STR:
+  case EXPR::PTR:
+  case EXPR::WRAP:
+    if (b && x.astag()) {
+      int32_t tag = x.astag();
+      x.set_astag(0);
+      return quoted_tag(x, tag);
+    } else
+      return x;
+  // substitute runtime representations for specials:
+  case EXPR::COND: {
+    expr u = quoted_ifelse(x.xval1(), x.xval2(), x.xval3());
+    return b?quoted_tag(u, x.astag()):u;
+  }
+  case EXPR::LAMBDA: {
+    expr u = quoted_lambda(x.largs(), x.lrule().rhs);
+    return b?quoted_tag(u, x.astag()):u;
+  }
+  case EXPR::CASE: {
+    expr u = quoted_case(x.xval(), x.rules());
+    return b?quoted_tag(u, x.astag()):u;
+  }
+  case EXPR::WHEN: {
+    expr u = quoted_when(x.xval(), x.rules());
+    return b?quoted_tag(u, x.astag()):u;
+  }
+  case EXPR::WITH: {
+    expr u = quoted_with(x.xval(), x.fenv());
+    return b?quoted_tag(u, x.astag()):u;
+  }
+  // matrix (Pure 0.47+):
+  case EXPR::MATRIX: {
+    exprll *us = new exprll;
+    for (exprll::iterator xs = x.xvals()->begin(), end = x.xvals()->end();
+	 xs != end; xs++) {
+      us->push_back(exprl());
+      exprl& vs = us->back();
+      for (exprl::iterator ys = xs->begin(), end = xs->end();
+	   ys != end; ys++) {
+	vs.push_back(qsubst(*ys, b));
+      }
+    }
+    expr w = expr(EXPR::MATRIX, us);
+    return b?quoted_tag(w, x.astag()):w;
+  }
+  // application:
+  case EXPR::APP: {
+    expr u = qsubst(x.xval1(), b), v = qsubst(x.xval2(), b);
+    expr w = expr(u, v);
+    return b?quoted_tag(w, x.astag()):w;
+  }
+  default:
+    assert(x.tag() > 0);
+    return x;
+  }
+}
+
 /* Perform simple macro substitutions on a compile time expression. Does
    applicative-order (depth-first) evaluation using the defined macro
    substitution rules (which are simple, unconditional term rewriting
-   rules). Everything else but macro applications is considered constant
+   rules). Everything else but macro applications is considered a literal
    here. When we match a macro call, we perform the corresponding reduction
    and evaluate the result recursively.
 
    Note that in contrast to compiled rewriting rules this is essentially a
    little term rewriting interpreter here, so it's kind of slow compared to
-   compiled code, but for macro substitution it should be good enough. (We
-   can't use compiled code here, since the runtime expression data structure
-   cannot represent special kinds of expressions like anonymous closures, with
-   and when clauses, etc.) */
+   compiled code, but for macro substitution it should be good enough. */
 
 expr interpreter::macsubst(expr x, bool quote)
 {
@@ -5823,7 +5968,7 @@ expr interpreter::macred(expr x, expr y, uint8_t idx)
 
 /* Evaluate a macro call. */
 
-static exprl get_args(expr x)
+exprl interpreter::get_args(expr x)
 {
   expr y, z;
   exprl xs;
@@ -5965,12 +6110,211 @@ bool interpreter::checkeqns(expr x, const veqnl& eqns)
   return true;
 }
 
+static int32_t get2args(expr x, expr& y, expr& z)
+{
+  expr a, b;
+  if (!x.is_app(a, b)) return 0;
+  x = a; z = b;
+  if (!x.is_app(a, b)) return 0;
+  x = a; y = b;
+  return x.tag();
+}
+
+static inline int32_t sym_ttag(int32_t f)
+{
+  interpreter& interp = *interpreter::g_interp;
+  if (f == interp.symtab.int_sym().f)
+    return EXPR::INT;
+  else if (f == interp.symtab.bigint_sym().f)
+    return EXPR::BIGINT;
+  else if (f == interp.symtab.double_sym().f)
+    return EXPR::DBL;
+  else if (f == interp.symtab.string_sym().f)
+    return EXPR::STR;
+  else if (f == interp.symtab.pointer_sym().f)
+    return EXPR::PTR;
+  else if (f == interp.symtab.matrix_sym().f)
+    return EXPR::MATRIX;
+  else {
+    assert(f > 0);
+    return f;
+  }
+}
+
+expr interpreter::unsubst(expr x)
+{
+  if (x.is_null()) return x;
+  switch (x.tag()) {
+  case EXPR::INT:
+  case EXPR::BIGINT:
+  case EXPR::DBL:
+  case EXPR::STR:
+  case EXPR::VAR:
+  case EXPR::FVAR:
+  case EXPR::PTR:
+  case EXPR::WRAP:
+    return x;
+  // matrix (Pure 0.47+):
+  case EXPR::MATRIX: {
+    exprll *us = new exprll;
+    for (exprll::iterator xs = x.xvals()->begin(), end = x.xvals()->end();
+	 xs != end; xs++) {
+      us->push_back(exprl());
+      exprl& vs = us->back();
+      for (exprl::iterator ys = xs->begin(), end = xs->end();
+	   ys != end; ys++) {
+	vs.push_back(unsubst(*ys));
+      }
+    }
+    return expr(EXPR::MATRIX, us);
+  }
+  // application:
+  case EXPR::APP: {
+    expr u, v;
+    int32_t f = get2args(x, u, v);
+    if (f == symtab.ttag_sym().f && u.tag() > 0 && v.tag() >= 0) {
+      expr w = u;
+      // XXXTODO: We might want to do some plausibility checks here.
+      w.set_ttag(sym_ttag(v.tag()));
+      return w;
+    } else if (f == symtab.astag_sym().f && u.tag() >= 0) {
+      expr w = unsubst(v);
+      // XXXTODO: We might want to do some plausibility checks here.
+      w.set_astag(u.tag());
+      return w;
+    } else {
+      expr u = unsubst(x.xval1()), v = unsubst(x.xval2());
+      return expr(u, v);
+    }
+  }
+  default:
+    assert(x.tag() > 0);
+    return x;
+  }
+}
+
+bool interpreter::parse_rulel(exprl& xs, rulel& rl)
+{
+  for (exprl::iterator x = xs.begin(), end = xs.end(); x!=end; x++) {
+    expr u, v;
+    if (get2args(*x, u, v) == symtab.eqn_sym().f) {
+      expr w, c;
+      if (get2args(v, w, c) == symtab.if_sym().f) {
+	rule r(unsubst(u), w, c);
+	add_rule(rl, r, true);
+      } else {
+	rule r(unsubst(u), v);
+	add_rule(rl, r, true);
+      }
+    } else
+      return false;
+  }
+  return true;
+}
+
+bool interpreter::parse_simple_rulel(exprl& xs, rulel& rl)
+{
+  for (exprl::iterator x = xs.begin(), end = xs.end(); x!=end; x++) {
+    expr u, v;
+    if (get2args(*x, u, v) == symtab.eqn_sym().f) {
+      rule r(unsubst(u), v);
+      rl.push_back(r);
+    } else {
+      rule r(expr(symtab.anon_sym), *x);
+      rl.push_back(r);
+    }
+  }
+  return true;
+}
+
+bool interpreter::parse_env(exprl& xs, env& e)
+{
+  for (exprl::iterator x = xs.begin(), end = xs.end(); x!=end; x++) {
+    expr u, v;
+    if (get2args(*x, u, v) == symtab.eqn_sym().f) {
+      expr w, c;
+      if (get2args(v, w, c) == symtab.if_sym().f) {
+	rule r(unsubst(u), w, c);
+	add_rule(e, r);
+      } else {
+	rule r(unsubst(u), v);
+	add_rule(e, r);
+      }
+    } else
+      return false;
+  }
+  return true;
+}
+
+expr *interpreter::macspecial(expr x)
+{
+  expr u, v;
+  int32_t f = get2args(x, u, v);
+  if (f == symtab.lambda_sym().f) {
+    exprl xs;
+    if (u.is_list(xs)) {
+      exprl *ys = new exprl;
+      for (exprl::iterator it = xs.begin(), end = xs.end(); it!=end; ++it)
+	ys->push_back(unsubst(*it));
+      try {
+	expr *y = mklambda_expr(ys, new expr(v));
+	return y;
+      } catch (err &e) {
+	// fail
+      }
+    }
+  } else if (f == symtab.case_sym().f) {
+    rulel *r = new rulel; exprl xs;
+    if (v.is_list(xs) && parse_rulel(xs, *r)) {
+      try {
+	expr *y = mkcase_expr(new expr(u), r);
+	return y;
+      } catch (err &e) {
+	// fail
+      }
+    } else
+      delete r;
+  } else if (f == symtab.when_sym().f) {
+    rulel *r = new rulel; exprl xs;
+    if (v.is_list(xs) && parse_simple_rulel(xs, *r)) {
+      try {
+	expr *y = mkwhen_expr(new expr(u), r);
+	return y;
+      } catch (err &e) {
+	// fail
+      }
+    } else
+      delete r;
+  } else if (f == symtab.with_sym().f) {
+    env *e = new env; exprl xs;
+    if (v.is_list(xs) && parse_env(xs, *e)) {
+      try {
+	expr *y = mkwith_expr(new expr(u), e);
+	return y;
+      } catch (err &e) {
+	// fail
+      }
+    } else
+      delete e;
+  }
+  return 0;
+}
+
 expr interpreter::macval(expr x)
 {
   char test;
   if (x.is_null()) return x;
   if (stackmax > 0 && stackdir*(&test - baseptr) >= stackmax)
     throw err("recursion too deep in macro expansion");
+  // Evaluate built-in macros for the specials.
+  expr *z = macspecial(x);
+  if (z) {
+    expr y = *z; delete z;
+#if DEBUG>1
+    std::cerr << "builtin expansion: " << x << " -> " << y << '\n';
+#endif
+    return y;
+  }
   int32_t f; uint32_t argc = count_args(x, f);
   if (f <= 0) return x;
   env::iterator it = macenv.find(f);
@@ -5985,10 +6329,15 @@ expr interpreter::macval(expr x)
   state *st = info.m->match(args);
   if (st) {
     assert(!st->r.empty());
+    // We have to rebuild the macro call here, as specials in the arguments
+    // may have been expanded to their quoted representations.
+    expr x1 = expr(f);
+    for (exprl::iterator it = args.begin(), end = args.end(); it!=end; ++it)
+      x1 = expr(x1, *it);
     for (ruleml::iterator rp = st->r.begin(); rp != st->r.end(); ++rp) {
       rule& r = info.m->r[*rp];
-      if (checkguards(x, r.vi.guards) && checkeqns(x, r.vi.eqns)) {
-	expr y = macred(x, r.rhs);
+      if (checkguards(x1, r.vi.guards) && checkeqns(x1, r.vi.eqns)) {
+	expr y = macred(x1, r.rhs);
 #if DEBUG>1
 	std::cerr << "macro expansion: " << x << " -> " << y << '\n';
 #endif
@@ -6467,6 +6816,104 @@ expr *interpreter::mkmatcomp_expr(expr *x, comp_clause_list *cs)
   expr y = mkmatcomp_expr(*x, n, cs->begin(), cs->end());
   delete x; delete cs;
   return new expr(y);
+}
+
+expr interpreter::quoted_ifelse(expr x, expr y, expr z)
+{
+  return expr(symtab.ifelse_sym().x, x, y, z);
+}
+
+expr interpreter::quoted_if(expr x, expr y)
+{
+  return expr(symtab.if_sym().x, x, y);
+}
+
+expr interpreter::quoted_lambda(exprl *args, expr rhs)
+{
+  exprl xs;
+  for (exprl::iterator it = args->begin(), end = args->end(); it != end; ++it)
+    xs.push_back(qsubst(*it, true));
+  return expr(symtab.lambda_sym().x, expr::list(xs), qsubst(rhs));
+}
+
+expr interpreter::quoted_case(expr x, rulel *rules)
+{
+  return expr(symtab.case_sym().x, qsubst(x), quoted_rules(rules));
+}
+
+expr interpreter::quoted_when(expr x, rulel *rules)
+{
+  return expr(symtab.when_sym().x, qsubst(x), quoted_rules(rules));
+}
+
+expr interpreter::quoted_with(expr x, env *defs)
+{
+  return expr(symtab.with_sym().x, qsubst(x), quoted_env(defs));
+}
+
+expr interpreter::quoted_rules(rulel *rules)
+{
+  exprl xs;
+  for (rulel::iterator it = rules->begin(), end = rules->end(); it!=end; ++it)
+    if (it->qual.is_null())
+      xs.push_back(expr(symtab.eqn_sym().x, qsubst(it->lhs, true),
+			qsubst(it->rhs)));
+    else
+      xs.push_back(expr(symtab.eqn_sym().x, qsubst(it->lhs, true),
+			expr(symtab.if_sym().x, qsubst(it->rhs),
+			     qsubst(it->qual))));
+  return expr::list(xs);
+}
+
+expr interpreter::quoted_env(env *defs)
+{
+  exprl xs;
+  for (env::iterator it = defs->begin(), end = defs->end(); it!=end; ++it) {
+    env_info& info = it->second;
+    assert(info.t == env_info::fun && it->first>0);
+    for (rulel::iterator jt = info.rules->begin(), end = info.rules->end();
+	 jt!=end; ++jt)
+      if (jt->qual.is_null())
+	xs.push_back(expr(symtab.eqn_sym().x, qsubst(jt->lhs, true),
+			  qsubst(jt->rhs)));
+      else
+	xs.push_back(expr(symtab.eqn_sym().x, qsubst(jt->lhs, true),
+			  expr(symtab.if_sym().x, qsubst(jt->rhs),
+			       qsubst(jt->qual))));
+  }
+  return expr::list(xs);
+}
+
+static inline int32_t ttag_sym(int32_t ttag)
+{
+  interpreter& interp = *interpreter::g_interp;
+  switch (ttag) {
+  case EXPR::INT:
+    return interp.symtab.int_sym().f;
+  case EXPR::BIGINT:
+    return interp.symtab.bigint_sym().f;
+  case EXPR::DBL:
+    return interp.symtab.double_sym().f;
+  case EXPR::STR:
+    return interp.symtab.string_sym().f;
+  case EXPR::PTR:
+    return interp.symtab.pointer_sym().f;
+  case EXPR::MATRIX:
+    return interp.symtab.matrix_sym().f;
+  default:
+    assert(ttag != 0);
+    return ttag;
+  }
+}
+
+expr interpreter::quoted_tag(expr x, int32_t astag, int32_t ttag)
+{
+  if (ttag != 0)
+    return expr(symtab.ttag_sym().x, x, symtab.sym(ttag_sym(ttag)).x);
+  else if (astag != 0)
+    return expr(symtab.astag_sym().x, symtab.sym(astag).x, x);
+  else
+    return x;
 }
 
 // Code generation.
@@ -9525,6 +9972,12 @@ pure_expr *interpreter::const_value(expr x, bool quote)
       } else
 	return const_app_value(x);
     }
+  case EXPR::COND:
+  case EXPR::LAMBDA:
+  case EXPR::CASE:
+  case EXPR::WHEN:
+  case EXPR::WITH:
+    return 0;
   default: {
     if (x.tag() > 0) {
       if (quote)
@@ -11234,6 +11687,7 @@ Value *interpreter::codegen(expr x, bool quote)
     return cond(x.xval1(), x.xval2(), x.xval3());
   case EXPR::COND1:
     return cond(x.xval1(), x.xval2(), expr());
+  // XXXFIXME: the handling of quoted specials is obsolete here
   // anonymous closure:
   case EXPR::LAMBDA: {
     Env& act = act_env();
@@ -11246,8 +11700,8 @@ Value *interpreter::codegen(expr x, bool quote)
   }
   // other nested environments:
   case EXPR::CASE: {
-    // case expression: treated like an anonymous closure (see the lambda case
-    // above) which gets applied to the subject term to be matched
+    // case expression: treated like an anonymous closure (see the lambda
+    // case above) which gets applied to the subject term to be matched
     Env& act = act_env();
     assert(act.fmap.act().find(-x.hash()) != act.fmap.act().end());
     Env& e = *act.fmap.act()[-x.hash()];
