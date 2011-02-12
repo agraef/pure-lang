@@ -6834,12 +6834,12 @@ expr *interpreter::mkmatcomp_expr(expr *x, comp_clause_list *cs)
 
 expr interpreter::quoted_ifelse(expr x, expr y, expr z)
 {
-  return expr(symtab.ifelse_sym().x, x, y, z);
+  return expr(symtab.ifelse_sym().x, qsubst(x), qsubst(y), qsubst(z));
 }
 
 expr interpreter::quoted_if(expr x, expr y)
 {
-  return expr(symtab.if_sym().x, x, y);
+  return expr(symtab.if_sym().x, qsubst(x), qsubst(y));
 }
 
 expr interpreter::quoted_lambda(exprl *args, expr rhs)
