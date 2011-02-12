@@ -5,18 +5,34 @@
 foo = '(\x->x+1);
 foo;
 
-bar (\x y -> z) = '(\y x -> z);
-bar $ '(\a b -> a-b);
+let x = '(case 99 of x::int = x+1 if x>0 end);
+x; eval x;
+let x = '(x+1 when x::int = 99 end);
+x; eval x;
+let x = '(f 99 with f x::int = x+1 end);
+x; eval x;
 
+// Manipulate a special with a function.
+
+// swap arguments
+bar (\x y -> z) = ('(\y x -> z));
+let x = bar ('(\a b -> a-b));
+x; eval x 2 3;
+
+// name an argument
 baz x = '(\x->x+1);
-baz y;
+let x = baz y;
+x; eval x 99;
 
-def f (\x y -> z) = '(\y x -> z);
-f (\a b -> a-b);
+/* Manipulate a special with a macro. These are the same as the bar and baz
+   functions above, but implemented as macros. Note that the quoting of
+   specials is implicit in macro arguments. */
 
-let h = '(case 99 of x::int = x+1 if x>0 end);
-h; eval h;
-let h = '(x+1 when x::int = 99 end);
-h; eval h;
-let h = '(f 99 with f x::int = x+1 end);
-h; eval h;
+def __eval__ ('x) = x;
+def bar (\x y -> z) = __eval__ ('(\y x -> z));
+def baz x = __eval__ ('(\x->x+1));
+
+f = bar (\a b -> a-b); // same as f = \b a -> a-b;
+f 2 3;
+
+g = baz y; // same as g = \y -> y+1;

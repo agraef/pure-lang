@@ -7,6 +7,21 @@ foo = '__lambda__ [x] (x+1);
 }
 foo;
 __lambda__ [x] (x+1)
+let x = '__case__ 99 [x __ttag__ int __eq__ (x+1 __if__ x>0)];
+x;
+__case__ 99 [x __ttag__ int __eq__ (x+1 __if__ x>0)]
+eval x;
+100
+let x = '(x+1 __when__ [x __ttag__ int __eq__ 99]);
+x;
+x+1 __when__ [x __ttag__ int __eq__ 99]
+eval x;
+100
+let x = '(f 99 __with__ [f (x __ttag__ int) __eq__ x+1]);
+x;
+f 99 __with__ [f (x __ttag__ int) __eq__ x+1]
+eval x;
+100
 bar (__lambda__ [x/*0:10101*/,y/*0:101101*/] z/*0:11*/) = '__lambda__ [y/*0:101101*/,x/*0:10101*/] z/*0:11*/;
 {
   rule #0: bar (__lambda__ [x,y] z) = '__lambda__ [y,x] z
@@ -38,8 +53,17 @@ bar (__lambda__ [x/*0:10101*/,y/*0:101101*/] z/*0:11*/) = '__lambda__ [y/*0:1011
 	<var> state 13
   state 13: #0
 }
-bar ('__lambda__ [a,b] (a-b));
+{
+  rule #0: x = bar ('__lambda__ [a,b] (a-b))
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let x = bar ('__lambda__ [a,b] (a-b));
+x;
 __lambda__ [b,a] (a-b)
+eval x 2 3;
+1
 baz x/*0:1*/ = '__lambda__ [x/*0:1*/] (x/*0:1*/+1);
 {
   rule #0: baz x = '__lambda__ [x] (x+1)
@@ -47,23 +71,37 @@ baz x/*0:1*/ = '__lambda__ [x/*0:1*/] (x/*0:1*/+1);
 	<var> state 1
   state 1: #0
 }
-baz y;
+{
+  rule #0: x = baz y
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let x = baz y;
+x;
 __lambda__ [y] (y+1)
-def f (__lambda__ [x/*0:10101*/,y/*0:101101*/] z/*0:11*/) = '__lambda__ [y/*0:101101*/,x/*0:10101*/] z/*0:11*/;
-'__lambda__ [b,a] (a-b);
-__lambda__ [b,a] (a-b)
-let h = '__case__ 99 [x __ttag__ int __eq__ (x+1 __if__ x>0)];
-h;
-__case__ 99 [x __ttag__ int __eq__ (x+1 __if__ x>0)]
-eval h;
+eval x 99;
 100
-let h = '(x+1 __when__ [x __ttag__ int __eq__ 99]);
-h;
-x+1 __when__ [x __ttag__ int __eq__ 99]
-eval h;
-100
-let h = '(f 99 __with__ [f (x __ttag__ int) __eq__ x+1]);
-h;
-f 99 __with__ [f (x __ttag__ int) __eq__ x+1]
-eval h;
-100
+def __eval__ ('x/*0:11*/) = x/*0:11*/;
+def bar (__lambda__ [x/*0:10101*/,y/*0:101101*/] z/*0:11*/) = __eval__ ('__lambda__ [y/*0:101101*/,x/*0:10101*/] z/*0:11*/);
+def baz x/*0:1*/ = __eval__ ('__lambda__ [x/*0:1*/] (x/*0:1*/+1));
+f = \b/*0:01*/ a/*0:1*/ -> a/*0:1*/-b/*0:01*/ {
+  rule #0: _ b a = a-b
+  state 0: #0
+	<var> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+};
+{
+  rule #0: f = \b a -> a-b
+  state 0: #0
+}
+f 2 3;
+1
+g = \y/*0:1*/ -> y/*0:1*/+1 {
+  rule #0: _ y = y+1
+  state 0: #0
+	<var> state 1
+  state 1: #0
+};
