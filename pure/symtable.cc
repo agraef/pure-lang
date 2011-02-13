@@ -84,6 +84,7 @@ symtable::symtable()
     __eqn_sym(0),
     __ttag_sym(0),
     __astag_sym(0),
+    __eval_sym(0),
     current_namespace(new string),
     search_namespaces(new map< string, set<int32_t> >),
     __show__sym(0)
@@ -162,6 +163,7 @@ void symtable::init_builtins()
   eqn_sym();
   ttag_sym();
   astag_sym();
+  eval_sym();
 }
 
 /* These are used internally to dump the entire symbol table from a string,

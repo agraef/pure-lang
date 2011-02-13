@@ -131,6 +131,7 @@ class symtable {
   symbol* __eqn_sym;
   symbol* __ttag_sym;
   symbol* __astag_sym;
+  symbol* __eval_sym;
 public:
   symtable();
   ~symtable();
@@ -271,6 +272,8 @@ public:
   symbol& eqn_sym();
   symbol& ttag_sym();
   symbol& astag_sym();
+  symbol& eval_sym()
+  { return *sym_p("__eval__", __eval_sym); }
 };
 
 #endif // ! SYMTABLE_HH

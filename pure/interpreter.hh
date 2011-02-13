@@ -725,6 +725,7 @@ public:
   expr varsubst(expr x, uint8_t offs, uint8_t idx = 0);
   expr macred(expr x, expr y, uint8_t idx = 0);
   expr macval(expr x);
+  expr maceval(expr x);
   expr *macspecial(expr x);
   exprl get_args(expr x);
   expr tagsubst(expr x);

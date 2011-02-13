@@ -6410,6 +6410,8 @@ bool interpreter::parse_env(exprl& xs, env& e)
 expr *interpreter::macspecial(expr x)
 {
   expr u, v, w;
+  if (x.is_app(u, v) && u.tag() == symtab.eval_sym().f)
+    return new expr(maceval(v));
   int32_t f = get2args(x, u, v);
   if (f == symtab.lambda_sym().f) {
     exprl xs;
@@ -6509,6 +6511,38 @@ expr interpreter::macval(expr x)
     }
   }
   return x;
+}
+
+expr interpreter::maceval(expr x)
+{
+  if (x.is_null()) return x;
+  switch (x.tag()) {
+  // matrix (Pure 0.47+):
+  case EXPR::MATRIX: {
+    exprll *us = new exprll;
+    for (exprll::iterator xs = x.xvals()->begin(), end = x.xvals()->end();
+	 xs != end; xs++) {
+      us->push_back(exprl());
+      exprl& vs = us->back();
+      for (exprl::iterator ys = xs->begin(), end = xs->end();
+	   ys != end; ys++) {
+	vs.push_back(maceval(*ys));
+      }
+    }
+    return expr(EXPR::MATRIX, us);
+  }
+  // application:
+  case EXPR::APP: {
+    if (is_quote(x.xval1().tag()))
+      return macsubst(x.xval2());
+    else {
+      expr u = maceval(x.xval1()), v = maceval(x.xval2());
+      return expr(u, v);
+    }
+  }
+  default:
+    return x;
+  }
 }
 
 expr interpreter::uminop(expr op, expr x)
