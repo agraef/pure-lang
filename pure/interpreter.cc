@@ -4559,7 +4559,13 @@ void interpreter::funsubstw(set<int32_t>& warned, bool ty_check,
   // application:
   case EXPR::APP:
     funsubstw(warned, ty_check, x.xval1(), f, g, b);
-    funsubstw(warned, ty_check, x.xval2(), f, g);
+    if (is_quote(x.xval1().tag())) {
+      // suppress warnings in quoted subexpression
+      bool s_compat = compat; compat = false;
+      funsubstw(warned, ty_check, x.xval2(), f, g);
+      compat = s_compat;
+    } else
+      funsubstw(warned, ty_check, x.xval2(), f, g);
     break;
   // conditionals:
   case EXPR::COND:
