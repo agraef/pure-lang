@@ -8049,7 +8049,7 @@ pure_expr *__str__(pure_expr *x)
       os << *y;
       const char *s = os.str().c_str();
       delete y;
-      return pure_string_dup(s);
+      return pure_cstring_dup(s);
     } catch (err &e) {
       return 0;
     }
