@@ -1034,6 +1034,11 @@ pure_expr *string_ord(const char *c);
 char *str(const pure_expr *x);
 pure_expr *eval(pure_expr *x);
 
+/* A special version of str() which pretty-prints quoted specials like
+   '(x->x+1) only. This can be used with __show__. */
+
+pure_expr *__str__(pure_expr *x);
+
 /* evalcmd() is like eval(), but executes interactive commands and returns
    their output as a string. Only the regular output of a few commands can be
    captured right now, most notably 'show' and 'completion_matches'; otherwise

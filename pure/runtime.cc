@@ -8038,6 +8038,26 @@ char *str(const pure_expr *x)
 }
 
 extern "C"
+pure_expr *__str__(pure_expr *x)
+{
+  assert(x);
+  interpreter& interp = *interpreter::g_interp;
+  expr *y = interp.macsval(x);
+  if (y) {
+    ostringstream os;
+    try {
+      os << *y;
+      const char *s = os.str().c_str();
+      delete y;
+      return pure_string_dup(s);
+    } catch (err &e) {
+      return 0;
+    }
+  } else
+    return 0;
+}
+
+extern "C"
 pure_expr *eval(pure_expr *x)
 {
   assert(x);
