@@ -8037,6 +8037,8 @@ char *str(const pure_expr *x)
   }
 }
 
+extern bool __print_pretty__;
+
 extern "C"
 pure_expr *__str__(pure_expr *x)
 {
@@ -8046,7 +8048,11 @@ pure_expr *__str__(pure_expr *x)
   if (y) {
     ostringstream os;
     try {
+      // horrible kludge to pretty-print embedded quoted specials
+      bool pp = __print_pretty__;
+      __print_pretty__ = true;
       os << *y;
+      __print_pretty__ = pp;
       const char *s = os.str().c_str();
       delete y;
       return pure_cstring_dup(s);

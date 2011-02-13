@@ -98,6 +98,8 @@ static prec_t sym_nprec(int32_t f)
 
 static prec_t pure_expr_nprec(const pure_expr *x);
 
+bool __print_pretty__ = false;
+
 static prec_t expr_nprec(expr x, bool aspat = true)
 {
   if (x.is_null() || (aspat && x.astag()>0)) return NPREC_MAX;
@@ -133,6 +135,12 @@ static prec_t expr_nprec(expr x, bool aspat = true)
   case EXPR::APP: {
     expr u, v, w;
     prec_t p;
+    expr *y;
+    if (__print_pretty__ && (y = interpreter::g_interp->macsval(x))) {
+      p = expr_nprec(*y, aspat);
+      delete y;
+      return p;
+    }
     if (x.is_list())
       return NPREC_MAX;
     else if (x.is_app(u, v))
@@ -290,6 +298,15 @@ static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
   char buf[64];
   if (x.is_null()) return os << "#<NULL>";
   //os << "{" << x.refc() << "}";
+  expr *y;
+  if (__print_pretty__ && (y = interpreter::g_interp->macsval(x))) {
+    /* Support pretty-printing of quoted specials, which is used, e.g., in the
+       __str__ routine from the runtime. FIXME: This doesn't work properly
+       with lhs patterns right now. */
+    printx(os, *y, pat, aspat);
+    delete y;
+    return os;
+  }
   // handle "as" patterns
   if (aspat && x.astag()>0) {
     const symbol& sym = interpreter::g_interp->symtab.sym(x.astag());
