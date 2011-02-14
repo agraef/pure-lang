@@ -262,3 +262,28 @@ h x/*0:01*/ y/*0:1*/ = x/*0:01*/+y/*0:1*/;
 }
 h 2 3;
 5
+get_typedef list;
+[(list []-->1),(list (_:_)-->1)]
+type mylist [];
+type mylist (_/*0:101*/:_/*0:11*/);
+type {
+  rule #0: mylist [] = 1
+  rule #1: mylist (_:_) = 1
+  state 0: #0 #1
+	<app> state 1
+	[] state 6
+  state 1: #1
+	<app> state 2
+  state 2: #1
+	: state 3
+  state 3: #1
+	<var> state 4
+  state 4: #1
+	<var> state 5
+  state 5: #1
+  state 6: #0
+}
+add_typedef ('[mylist [],mylist (_:_)]);
+()
+map (typep mylist) [99,[],1..3,1:3];
+[0,1,1,1]

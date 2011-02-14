@@ -1065,18 +1065,21 @@ const char *lasterr();
 
 pure_expr *lastres();
 
-/* Get the list of rewriting rules defining a function or macro. This uses the
-   quoted runtime representation of rules and specials described in the Pure
-   manual. */
+/* Get the list of rewriting rules defining a function, type or macro. This
+   uses the quoted runtime representation of rules and specials described in
+   the Pure manual. */
 
 pure_expr *get_fundef(pure_expr *f);
+pure_expr *get_typedef(pure_expr *f);
 pure_expr *get_macdef(pure_expr *f);
 
-/* Add rewriting rules for a function or macro, using the same runtime
-   representation as returned by get_fundef() and get_macdef() as input. Like
-   eval(), this may return NULL and leave an error message in lasterr(). */
+/* Add rewriting rules for a function, type or macro, using the same runtime
+   representation as returned by get_fundef(), get_typedef() and get_macdef()
+   as input. Like eval(), this may return NULL and leave an error message in
+   lasterr(). */
 
 pure_expr *add_fundef(pure_expr *x);
+pure_expr *add_typedef(pure_expr *x);
 pure_expr *add_macdef(pure_expr *x);
 
 /* Expression serialization. These operations can be used to safely transfer

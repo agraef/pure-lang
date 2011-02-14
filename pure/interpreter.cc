@@ -7360,6 +7360,34 @@ pure_expr *interpreter::fun_rules(int32_t f)
   return y;
 }
 
+pure_expr *interpreter::type_rules(int32_t f)
+{
+  env::iterator jt = typeenv.find(f);
+  list<pure_expr*> xs;
+  if (jt != typeenv.end() && jt->second.t == env_info::fun) {
+    env_info& info = jt->second;
+    for (rulel::iterator it = info.rules->begin(), end = info.rules->end();
+	 it!=end; ++it)
+      if (it->qual.is_null())
+	xs.push_back(const_value
+		     (expr(symtab.eqn_sym().x, vsubst(it->lhs),
+			   rsubst(vsubst(it->rhs, 1), true)), true));
+      else
+	xs.push_back(const_value
+		     (expr(symtab.eqn_sym().x, vsubst(it->lhs),
+			   expr(symtab.if_sym().x,
+				rsubst(vsubst(it->rhs, 1), true),
+				rsubst(vsubst(it->qual, 1), true))), true));
+  }
+  size_t n = xs.size();
+  pure_expr **xv = new pure_expr*[n];
+  list<pure_expr*>::iterator x = xs.begin(), end = xs.end();
+  for (size_t i = 0; x != end; ++x) xv[i++] = *x;
+  pure_expr *y = pure_listv(n, xv);
+  delete[] xv;
+  return y;
+}
+
 pure_expr *interpreter::mac_rules(int32_t f)
 {
   env::iterator jt = macenv.find(f);
@@ -7406,6 +7434,40 @@ bool interpreter::add_fun_rules(pure_expr *y)
       }
     } else
       return false;
+  }
+  return true;
+}
+
+bool interpreter::add_type_rules(pure_expr *y)
+{
+  expr x = pure_expr_to_expr(y);
+  exprl xs;
+  if (!x.is_list(xs)) return false;
+  for (exprl::iterator x = xs.begin(), end = xs.end(); x!=end; x++) {
+    expr u, v;
+    if (get2args(*x, u, v) == symtab.eqn_sym().f) {
+      expr w, c;
+      try {
+	if (get2args(v, w, c) == symtab.if_sym().f) {
+	  rule r(tagsubst(u), w, c);
+	  add_type_rule(typeenv, r, false);
+	} else {
+	  rule r(tagsubst(u), v);
+	  add_type_rule(typeenv, r, false);
+	}
+      } catch (err &e) {
+	errmsg = e.what() + "\n";
+	return false;
+      }
+    } else {
+      try {
+	rule r(tagsubst(*x), expr(EXPR::INT, 1));
+	add_type_rule(typeenv, r, false);
+      } catch (err &e) {
+	errmsg = e.what() + "\n";
+	return false;
+      }
+    }
   }
   return true;
 }

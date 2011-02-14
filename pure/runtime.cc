@@ -8403,6 +8403,16 @@ pure_expr *get_fundef(pure_expr *f)
 }
 
 extern "C"
+pure_expr *get_typedef(pure_expr *f)
+{
+  if (f->tag > 0) {
+    interpreter& interp = *interpreter::g_interp;
+    return interp.type_rules(f->tag);
+  } else
+    return 0;
+}
+
+extern "C"
 pure_expr *get_macdef(pure_expr *f)
 {
   if (f->tag > 0) {
@@ -8418,6 +8428,17 @@ pure_expr *add_fundef(pure_expr *x)
   if (pure_is_listv(x, 0, 0)) {
     interpreter& interp = *interpreter::g_interp;
     bool res = interp.add_fun_rules(x);
+    return res?pure_tuplel(0):0;
+  } else
+    return 0;
+}
+
+extern "C"
+pure_expr *add_typedef(pure_expr *x)
+{
+  if (pure_is_listv(x, 0, 0)) {
+    interpreter& interp = *interpreter::g_interp;
+    bool res = interp.add_type_rules(x);
     return res?pure_tuplel(0):0;
   } else
     return 0;
