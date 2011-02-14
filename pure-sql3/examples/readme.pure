@@ -14,11 +14,15 @@ using sql3; using namespace sql3;
 
 let dbp = open "readme.db";
 
+typep db_ptr dbp;
+
 exec dbp "create table if not exists RM (name text, age integer)";
 
 exec dbp "delete from RM";
 
 let sp1 = prep dbp "ci" "insert into RM values (?,?)";
+
+typep stmt_ptr sp1;
 
 exec sp1 ("Sam",20);
 

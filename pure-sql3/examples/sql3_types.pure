@@ -2,6 +2,8 @@
 
 using sql3;
 
+private x_expr;
+
 putrows rows = puts "------" $$ do (puts . str) rows;
 x2b x = int (#b), b when b::pointer = blob x end;
 blob2expr (n::int,b::pointer) = val b;
@@ -32,9 +34,9 @@ when
   puts "begin bind_select_types";
 
   //Insert some data
-  printf "dbg::%s: %s\n" ("bind_select_types1","" );
   stm1 = sql3::prep db "bcdiklx" "insert into TC values(?,?,?,?,?,?,?)";
-  printf "dbg::%s: %s\n" ("bind_select_types2","" );
+  typep sql3::stmt_ptr stm1 || puts "sql3::stmt_ptr typep error";
+
   two40 = pow 2 40;
   sql3::exec stm1 [x2b "Blob A","Manny", 120.0, 1, 100, 12L, x_expr];
   sql3::exec stm1 [x2b "Blob B","Moe",  150.0, 2, 200L, 13L, [1,2,3]];
@@ -62,6 +64,7 @@ end;
 main = ()
 when
   db = sql3::open "abc.db";
+  typep sql3::db_ptr db || puts "sql3::db_ptr typep error";
   sql3::begin db;
   setup db;
   bind_select_types db;
