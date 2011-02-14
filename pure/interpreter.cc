@@ -4093,17 +4093,27 @@ void interpreter::add_rule(rulel &rl, rule &r, bool b)
   rl.push_back(r);
 }
 
-void interpreter::add_rule(env &e, rule &r, bool toplevel)
+void interpreter::add_rule(env &e, rule &r, bool toplevel, bool check)
 {
   assert(!r.lhs.is_null());
-  closure(r, false);
-  if (toplevel) {
-    // substitute macros and constants:
-    checkfuns(true, &r); if (nerrs > 0) return;
-    expr u = expr(r.lhs),
-      v = expr(csubst(macsubst(r.rhs))),
-      w = expr(csubst(macsubst(r.qual)));
-    r = rule(u, v, r.vi, w);
+  if (check || !toplevel) {
+    closure(r, false);
+    if (toplevel) {
+      // substitute macros and constants:
+      checkfuns(true, &r); if (nerrs > 0) return;
+      expr u = expr(r.lhs),
+	v = expr(csubst(macsubst(r.rhs))),
+	w = expr(csubst(macsubst(r.qual)));
+      r = rule(u, v, r.vi, w);
+      compile(r.rhs);
+      compile(r.qual);
+    }
+  } else {
+    env vars; vinfo vi;
+    expr u = expr(bind(vars, vi, lcsubst(r.lhs), false)),
+      v = expr(csubst(subst(vars, macsubst(rsubst(r.rhs))))),
+      w = expr(csubst(subst(vars, macsubst(rsubst(r.qual)))));
+    r = rule(u, v, vi, w);
     compile(r.rhs);
     compile(r.qual);
   }
@@ -4165,18 +4175,28 @@ void interpreter::add_type_rules(env &e, rulel *r)
   delete r;
 }
 
-void interpreter::add_type_rule(env &e, rule &r)
+void interpreter::add_type_rule(env &e, rule &r, bool check)
 {
   assert(!r.lhs.is_null());
-  closure(r, false);
-  // substitute macros and constants:
-  checkfuns(false, &r); if (nerrs > 0) return;
-  expr u = expr(r.lhs),
-    v = expr(csubst(macsubst(r.rhs))),
-    w = expr(csubst(macsubst(r.qual)));
-  r = rule(u, v, r.vi, w);
-  compile(r.rhs);
-  compile(r.qual);
+  if (check) {
+    closure(r, false);
+    // substitute macros and constants:
+    checkfuns(false, &r); if (nerrs > 0) return;
+    expr u = expr(r.lhs),
+      v = expr(csubst(macsubst(r.rhs))),
+      w = expr(csubst(macsubst(r.qual)));
+    r = rule(u, v, r.vi, w);
+    compile(r.rhs);
+    compile(r.qual);
+  } else {
+    env vars; vinfo vi;
+    expr u = expr(bind(vars, vi, lcsubst(r.lhs), false)),
+      v = expr(csubst(subst(vars, macsubst(rsubst(r.rhs))))),
+      w = expr(csubst(subst(vars, macsubst(rsubst(r.qual)))));
+    r = rule(u, v, vi, w);
+    compile(r.rhs);
+    compile(r.qual);
+  }
   expr fx; uint32_t argc = count_args(r.lhs, fx);
   int32_t f = fx.tag();
   if (f <= 0)
@@ -4222,12 +4242,15 @@ void interpreter::add_simple_rule(rulel &rl, rule *r)
   delete r;
 }
 
-void interpreter::add_macro_rule(rule *r)
+void interpreter::add_macro_rule(rule *r, bool check)
 {
   assert(!r->lhs.is_null() && r->qual.is_null() && !r->rhs.is_guarded());
-  last.clear(); closure(*r, false); checkfuns(true, r);
-  if (nerrs > 0) {
-    delete r; return;
+  last.clear(); closure(*r, false);
+  if (check) {
+    checkfuns(true, r);
+    if (nerrs > 0) {
+      delete r; return;
+    }
   }
   if (tags) add_tags(r);
   expr fx; uint32_t argc = count_args(r->lhs, fx);
@@ -7358,6 +7381,54 @@ pure_expr *interpreter::mac_rules(int32_t f)
   pure_expr *y = pure_listv(n, xv);
   delete[] xv;
   return y;
+}
+
+bool interpreter::add_fun_rules(pure_expr *y)
+{
+  expr x = pure_expr_to_expr(y);
+  exprl xs;
+  if (!x.is_list(xs)) return false;
+  for (exprl::iterator x = xs.begin(), end = xs.end(); x!=end; x++) {
+    expr u, v;
+    if (get2args(*x, u, v) == symtab.eqn_sym().f) {
+      expr w, c;
+      try {
+	if (get2args(v, w, c) == symtab.if_sym().f) {
+	  rule r(tagsubst(u), w, c);
+	  add_rule(globenv, r, true, false);
+	} else {
+	  rule r(tagsubst(u), v);
+	  add_rule(globenv, r, true, false);
+	}
+      } catch (err &e) {
+	errmsg = e.what() + "\n";
+	return false;
+      }
+    } else
+      return false;
+  }
+  return true;
+}
+
+bool interpreter::add_mac_rules(pure_expr *y)
+{
+  expr x = pure_expr_to_expr(y);
+  exprl xs;
+  if (!x.is_list(xs)) return false;
+  for (exprl::iterator x = xs.begin(), end = xs.end(); x!=end; x++) {
+    expr u, v;
+    if (get2args(*x, u, v) == symtab.eqn_sym().f) {
+      try {
+	rule *r = new rule(tagsubst(u), macsubst(rsubst(v)));
+	add_macro_rule(r, false);
+      } catch (err &e) {
+	errmsg = e.what() + "\n";
+	return false;
+      }
+    } else
+      return false;
+  }
+  return true;
 }
 
 // Code generation.

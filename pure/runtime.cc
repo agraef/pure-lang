@@ -8412,6 +8412,28 @@ pure_expr *get_macdef(pure_expr *f)
     return 0;
 }
 
+extern "C"
+pure_expr *add_fundef(pure_expr *x)
+{
+  if (pure_is_listv(x, 0, 0)) {
+    interpreter& interp = *interpreter::g_interp;
+    bool res = interp.add_fun_rules(x);
+    return res?pure_tuplel(0):0;
+  } else
+    return 0;
+}
+
+extern "C"
+pure_expr *add_macdef(pure_expr *x)
+{
+  if (pure_is_listv(x, 0, 0)) {
+    interpreter& interp = *interpreter::g_interp;
+    bool res = interp.add_mac_rules(x);
+    return res?pure_tuplel(0):0;
+  } else
+    return 0;
+}
+
 /* Helper functions to swap byte for on-the-fly endianness conversion. */
 
 static char *swap_endian(char* s, const int nbytes)

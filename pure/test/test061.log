@@ -169,3 +169,96 @@ foldr __with__ [(foldr f a (x __type__ matrix)-->__C::matrix_foldr f a x),(foldr
 let x = eval (foldr __with__ get_fundef foldr);
 x (*) 1 (1..10);
 3628800
+fold f/*0:001*/ a/*0:01*/ [] = a/*0:01*/;
+fold f/*0:001*/ a/*0:01*/ xs@(_/*0:101*/:_/*0:11*/) = tick/*0*/ [] xs/*0:1*/ with tick zs/*0:01*/ (x/*0:101*/:xs/*0:11*/) = tack/*1*/ (x/*0:101*/:zs/*0:01*/) (fold f/*2:001*/ a/*2:01*/ xs/*1:11*/&) if thunkp xs/*0:11*/; tick zs/*0:01*/ (x/*0:101*/:xs/*0:11*/) = tick/*1*/ (x/*0:101*/:zs/*0:01*/) xs/*0:11*/; tick zs/*0:01*/ [] = tack/*1*/ zs/*0:01*/ a/*1:01*/; tick zs/*0:01*/ xs/*0:1*/ = tack/*1*/ zs/*0:01*/ (fold f/*1:001*/ a/*1:01*/ xs/*0:1*/) {
+  rule #0: tick zs (x:xs) = tack (x:zs) (fold f a xs&) if thunkp xs
+  rule #1: tick zs (x:xs) = tick (x:zs) xs
+  rule #2: tick zs [] = tack zs a
+  rule #3: tick zs xs = tack zs (fold f a xs)
+  state 0: #0 #1 #2 #3
+	<var> state 1
+  state 1: #0 #1 #2 #3
+	<var> state 2
+	<app> state 3
+	[] state 13
+  state 2: #3
+  state 3: #0 #1 #3
+	<var> state 4
+	<app> state 6
+  state 4: #3
+	<var> state 5
+  state 5: #3
+  state 6: #0 #1 #3
+	<var> state 7
+	: state 10
+  state 7: #3
+	<var> state 8
+  state 8: #3
+	<var> state 9
+  state 9: #3
+  state 10: #0 #1 #3
+	<var> state 11
+  state 11: #0 #1 #3
+	<var> state 12
+  state 12: #0 #1 #3
+  state 13: #2 #3
+}; tack (x/*0:0101*/:xs/*0:011*/) y/*0:1*/ = tack/*1*/ xs/*0:011*/ (f/*1:001*/ x/*0:0101*/ y/*0:1*/); tack [] y/*0:1*/ = y/*0:1*/ {
+  rule #0: tack (x:xs) y = tack xs (f x y)
+  rule #1: tack [] y = y
+  state 0: #0 #1
+	<app> state 1
+	[] state 7
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+	<var> state 6
+  state 6: #0
+  state 7: #1
+	<var> state 8
+  state 8: #1
+} end;
+{
+  rule #0: fold f a [] = a
+  rule #1: fold f a xs@(_:_) = tick [] xs with tick zs (x:xs) = tack (x:zs) (fold f a xs&) if thunkp xs; tick zs (x:xs) = tick (x:zs) xs; tick zs [] = tack zs a; tick zs xs = tack zs (fold f a xs); tack (x:xs) y = tack xs (f x y); tack [] y = y end
+  state 0: #0 #1
+	<var> state 1
+  state 1: #0 #1
+	<var> state 2
+  state 2: #0 #1
+	<app> state 3
+	[] state 8
+  state 3: #1
+	<app> state 4
+  state 4: #1
+	: state 5
+  state 5: #1
+	<var> state 6
+  state 6: #1
+	<var> state 7
+  state 7: #1
+  state 8: #0
+}
+add_fundef ('[(fold f a []-->a),(fold f a (xs __as__ (_:_))-->tick [] xs __with__ [(tick zs (x:xs)-->tack (x:zs) (fold f a xs&) __if__ thunkp xs),(tick zs (x:xs)-->tick (x:zs) xs),(tick zs []-->tack zs a),(tick zs xs-->tack zs (fold f a xs)),(tack (x:xs) y-->tack xs (f x y)),(tack [] y-->y)])]);
+()
+fold (*) 1 (1..10);
+3628800
+def app f/*0:01*/ x/*0:1*/ = f/*0:01*/ x/*0:1*/;
+add_macdef ('[app f x-->f x]);
+()
+h x/*0:01*/ y/*0:1*/ = x/*0:01*/+y/*0:1*/;
+{
+  rule #0: h x y = x+y
+  state 0: #0
+	<var> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+}
+h 2 3;
+5

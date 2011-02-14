@@ -1072,6 +1072,13 @@ pure_expr *lastres();
 pure_expr *get_fundef(pure_expr *f);
 pure_expr *get_macdef(pure_expr *f);
 
+/* Add rewriting rules for a function or macro, using the same runtime
+   representation as returned by get_fundef() and get_macdef() as input. Like
+   eval(), this may return NULL and leave an error message in lasterr(). */
+
+pure_expr *add_fundef(pure_expr *x);
+pure_expr *add_macdef(pure_expr *x);
+
 /* Expression serialization. These operations can be used to safely transfer
    expression data to/from persistent storage and between different processes
    in a compact format. blob() stores the expression contents as a binary

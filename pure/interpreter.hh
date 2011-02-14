@@ -697,11 +697,13 @@ public:
   void add_rules(rulel &rl, rulel *r, bool b);
   void add_rules(env &e, rulel *r, bool headless = false, bool toplevel = false);
   void add_rule(rulel &rl, rule &r, bool b);
-  void add_rule(env &e, rule &r, bool toplevel = false);
+  void add_rule(env &e, rule &r, bool toplevel, bool check);
+  void add_rule(env &e, rule &r, bool toplevel = false)
+  { add_rule(e, r, toplevel, true); }
   void add_type_rules(env &e, rulel *r);
-  void add_type_rule(env &e, rule &r);
+  void add_type_rule(env &e, rule &r, bool check = true);
   void add_simple_rule(rulel &rl, rule *r);
-  void add_macro_rule(rule *r);
+  void add_macro_rule(rule *r, bool check = true);
   void promote_ttags(expr f, expr x, expr u);
   void promote_ttags(expr f, expr x, expr u, expr v);
   expr bind(env& vars, vinfo& vi,
@@ -776,6 +778,8 @@ public:
   expr quoted_tag(expr x, int32_t astag, int32_t ttag = 0);
   pure_expr *fun_rules(int32_t f);
   pure_expr *mac_rules(int32_t f);
+  bool add_fun_rules(pure_expr *x);
+  bool add_mac_rules(pure_expr *x);
 
   // LLVM code generation and execution.
 

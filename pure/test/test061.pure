@@ -56,3 +56,20 @@ map x (0..10);
 foldr __with__ get_fundef foldr;
 let x = eval (foldr __with__ get_fundef foldr);
 x (*) 1 (1..10);
+
+// add_fundef and add_macdef.
+
+add_fundef $
+'[(fold f a [] --> a),
+  (fold f a (xs __as__ (_:_)) --> tick [] xs __with__
+   [(tick zs (x:xs) --> tack (x:zs) (fold f a xs&) __if__ thunkp xs),
+    (tick zs (x:xs) --> tick (x:zs) xs),
+    (tick zs [] --> tack zs a),
+    (tick zs xs --> tack zs (fold f a xs)),
+    (tack (x:xs) y --> tack xs (f x y)),
+    (tack [] y --> y)])];
+fold (*) 1 (1..10);
+
+add_macdef $ '[app f x --> f x];
+h x y = app (+) x y;
+h 2 3;
