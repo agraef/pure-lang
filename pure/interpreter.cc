@@ -7281,6 +7281,57 @@ expr interpreter::quoted_tag(expr x, int32_t astag, int32_t ttag)
     return x;
 }
 
+pure_expr *interpreter::fun_rules(int32_t f)
+{
+  env::iterator jt = globenv.find(f);
+  list<pure_expr*> xs;
+  if (jt != globenv.end() && jt->second.t == env_info::fun) {
+    env_info& info = jt->second;
+    for (rulel::iterator it = info.rules->begin(), end = info.rules->end();
+	 it!=end; ++it)
+      if (it->qual.is_null())
+	xs.push_back(const_value
+		     (expr(symtab.eqn_sym().x, vsubst(it->lhs),
+			   rsubst(vsubst(it->rhs, 1), true)), true));
+      else
+	xs.push_back(const_value
+		     (expr(symtab.eqn_sym().x, vsubst(it->lhs),
+			   expr(symtab.if_sym().x,
+				rsubst(vsubst(it->rhs, 1), true),
+				rsubst(vsubst(it->qual, 1), true))), true));
+  }
+  size_t n = xs.size();
+  pure_expr **xv = new pure_expr*[n];
+  list<pure_expr*>::iterator x = xs.begin(), end = xs.end();
+  for (size_t i = 0; x != end; ++x) xv[i++] = *x;
+  pure_expr *y = pure_listv(n, xv);
+  delete[] xv;
+  return y;
+}
+
+pure_expr *interpreter::mac_rules(int32_t f)
+{
+  env::iterator jt = macenv.find(f);
+  list<pure_expr*> xs;
+  if (jt != macenv.end() && jt->second.t == env_info::fun) {
+    env_info& info = jt->second;
+    for (rulel::iterator it = info.rules->begin(), end = info.rules->end();
+	 it!=end; ++it) {
+      assert(it->qual.is_null());
+      xs.push_back(const_value
+		   (expr(symtab.eqn_sym().x, vsubst(it->lhs),
+			 rsubst(vsubst(it->rhs, 1), true)), true));
+    }
+  }
+  size_t n = xs.size();
+  pure_expr **xv = new pure_expr*[n];
+  list<pure_expr*>::iterator x = xs.begin(), end = xs.end();
+  for (size_t i = 0; x != end; ++x) xv[i++] = *x;
+  pure_expr *y = pure_listv(n, xv);
+  delete[] xv;
+  return y;
+}
+
 // Code generation.
 
 #define Dbl(d)		ConstantFP::get(interpreter::double_type(), d)

@@ -1020,6 +1020,10 @@ int32_t string_index(const char* s, const char *t);
 pure_expr *string_chr(uint32_t n);
 pure_expr *string_ord(const char *c);
 
+/* Reflection operations. Note that most of these are restricted or completely
+   dysfunctional in batch-compiled scripts, please check the Pure manual for
+   details. */
+
 /* Convert a Pure expression to a string and vice versa. The result of str()
    is a malloc'ed string in the system encoding which must be freed by the
    caller. Note that eval() can be invoked on either a string or any other
@@ -1060,6 +1064,13 @@ const char *lasterr();
    printed by the interpreter (NULL if none). */
 
 pure_expr *lastres();
+
+/* Get the list of rewriting rules defining a function or macro. This uses the
+   quoted runtime representation of rules and specials described in the Pure
+   manual. */
+
+pure_expr *get_fundef(pure_expr *f);
+pure_expr *get_macdef(pure_expr *f);
 
 /* Expression serialization. These operations can be used to safely transfer
    expression data to/from persistent storage and between different processes

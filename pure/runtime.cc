@@ -8392,6 +8392,26 @@ pure_expr *lastres()
   return interp.lastres;
 }
 
+extern "C"
+pure_expr *get_fundef(pure_expr *f)
+{
+  if (f->tag > 0) {
+    interpreter& interp = *interpreter::g_interp;
+    return interp.fun_rules(f->tag);
+  } else
+    return 0;
+}
+
+extern "C"
+pure_expr *get_macdef(pure_expr *f)
+{
+  if (f->tag > 0) {
+    interpreter& interp = *interpreter::g_interp;
+    return interp.mac_rules(f->tag);
+  } else
+    return 0;
+}
+
 /* Helper functions to swap byte for on-the-fly endianness conversion. */
 
 static char *swap_endian(char* s, const int nbytes)
