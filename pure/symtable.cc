@@ -686,7 +686,7 @@ symbol& symtable::ttag_sym()
   if (__ttag_sym)
     return *__ttag_sym;
   else
-    return *sym_p("__ttag__", __ttag_sym, 10000, infixl);
+    return *sym_p("__type__", __ttag_sym, 10000, infixl);
 }
 
 symbol& symtable::astag_sym()
@@ -700,11 +700,11 @@ symbol& symtable::astag_sym()
 
 symbol& symtable::eqn_sym()
 {
-  lookup_p("__eq__", __eqn_sym);
+  lookup_p("-->", __eqn_sym);
   if (__eqn_sym)
     return *__eqn_sym;
   else
-    return *sym_p("__eq__", __eqn_sym, 0, infixl);
+    return *sym_p("-->", __eqn_sym, 0, infix);
 }
 
 symbol& symtable::if_sym()
