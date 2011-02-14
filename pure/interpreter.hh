@@ -721,6 +721,7 @@ public:
   expr csubst(expr x, bool quote = false);
   expr lcsubst(expr x);
   expr rsubst(expr x, bool quote = false);
+  expr ifsubst(expr x);
   expr vsubst(expr x, int offs, uint8_t idx = 0);
   expr vsubst(expr x);
   expr macsubst(expr x, bool quote = false);

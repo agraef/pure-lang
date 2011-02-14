@@ -287,3 +287,86 @@ add_typedef ('[mylist [],mylist (_:_)]);
 ()
 map (typep mylist) [99,[],1..3,1:3];
 [0,1,1,1]
+get_typedef rlist;
+[(rlist (xs __as__ [])-->1 __if__ check xs __with__ [(check []-->1),(check (_:xs)-->check xs),(check _-->0)]),(rlist (xs __as__ (_:_))-->1 __if__ check xs __with__ [(check []-->1),(check (_:xs)-->check xs),(check _-->0)])]
+type myrlist xs@[] = 1 if check/*0*/ xs/*0:1*/ with check [] = 1; check (_/*0:101*/:xs/*0:11*/) = check/*1*/ xs/*0:11*/; check _/*0:1*/ = 0 {
+  rule #0: check [] = 1
+  rule #1: check (_:xs) = check xs
+  rule #2: check _ = 0
+  state 0: #0 #1 #2
+	<var> state 1
+	<app> state 2
+	[] state 12
+  state 1: #2
+  state 2: #1 #2
+	<var> state 3
+	<app> state 5
+  state 3: #2
+	<var> state 4
+  state 4: #2
+  state 5: #1 #2
+	<var> state 6
+	: state 9
+  state 6: #2
+	<var> state 7
+  state 7: #2
+	<var> state 8
+  state 8: #2
+  state 9: #1 #2
+	<var> state 10
+  state 10: #1 #2
+	<var> state 11
+  state 11: #1 #2
+  state 12: #0 #2
+} end;
+type myrlist xs@(_/*0:101*/:_/*0:11*/) = 1 if check/*0*/ xs/*0:1*/ with check [] = 1; check (_/*0:101*/:xs/*0:11*/) = check/*1*/ xs/*0:11*/; check _/*0:1*/ = 0 {
+  rule #0: check [] = 1
+  rule #1: check (_:xs) = check xs
+  rule #2: check _ = 0
+  state 0: #0 #1 #2
+	<var> state 1
+	<app> state 2
+	[] state 12
+  state 1: #2
+  state 2: #1 #2
+	<var> state 3
+	<app> state 5
+  state 3: #2
+	<var> state 4
+  state 4: #2
+  state 5: #1 #2
+	<var> state 6
+	: state 9
+  state 6: #2
+	<var> state 7
+  state 7: #2
+	<var> state 8
+  state 8: #2
+  state 9: #1 #2
+	<var> state 10
+  state 10: #1 #2
+	<var> state 11
+  state 11: #1 #2
+  state 12: #0 #2
+} end;
+type {
+  rule #0: myrlist xs@[] = 1 if check xs with check [] = 1; check (_:xs) = check xs; check _ = 0 end
+  rule #1: myrlist xs@(_:_) = 1 if check xs with check [] = 1; check (_:xs) = check xs; check _ = 0 end
+  state 0: #0 #1
+	<app> state 1
+	[] state 6
+  state 1: #1
+	<app> state 2
+  state 2: #1
+	: state 3
+  state 3: #1
+	<var> state 4
+  state 4: #1
+	<var> state 5
+  state 5: #1
+  state 6: #0
+}
+add_typedef ('[(myrlist (xs __as__ [])-->1 __if__ check xs __with__ [(check []-->1),(check (_:xs)-->check xs),(check _-->0)]),(myrlist (xs __as__ (_:_))-->1 __if__ check xs __with__ [(check []-->1),(check (_:xs)-->check xs),(check _-->0)])]);
+()
+map (typep myrlist) [99,[],1..3,1:3];
+[0,1,1,0]

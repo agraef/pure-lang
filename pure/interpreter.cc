@@ -5488,6 +5488,11 @@ expr interpreter::rsubst(expr x, bool quote)
       return rsubst(quoted_ifelse(x.xval1(), x.xval2(), x.xval3()), quote);
     else
       return x;
+  case EXPR::COND1:
+    if (quote)
+      return rsubst(quoted_if(x.xval2(), x.xval1()), quote);
+    else
+      return x;
   case EXPR::LAMBDA:
     if (quote)
       return rsubst(quoted_lambda(x.largs(), x.lrule().rhs), quote);
@@ -5530,6 +5535,48 @@ expr interpreter::rsubst(expr x, bool quote)
   }
   default:
     assert(x.tag() > 0);
+    return x;
+  }
+}
+
+/* Substitute embedded quoted 'if's in the rhs. */
+
+static int32_t get2args(expr x, expr& y, expr& z)
+{
+  expr a, b;
+  if (!x.is_app(a, b)) return 0;
+  x = a; z = b;
+  if (!x.is_app(a, b)) return 0;
+  x = a; y = b;
+  return x.tag();
+}
+
+static int32_t get3args(expr x, expr& y, expr& z, expr& t)
+{
+  expr a, b;
+  if (!x.is_app(a, b)) return 0;
+  x = a; t = b;
+  if (!x.is_app(a, b)) return 0;
+  x = a; z = b;
+  if (!x.is_app(a, b)) return 0;
+  x = a; y = b;
+  return x.tag();
+}
+
+expr interpreter::ifsubst(expr x)
+{
+  if (x.is_null()) return x;
+  switch (x.tag()) {
+  case EXPR::APP: {
+    expr u, v;
+    int32_t f = get2args(x, u, v);
+    if (f == symtab.if_sym().f) {
+      expr w = expr::cond1(v, u);
+      return w;
+    } else
+      return x;
+  }
+  default:
     return x;
   }
 }
@@ -5770,7 +5817,7 @@ expr interpreter::vsubst(expr x)
   }
   default:
     assert(x.tag() > 0);
-    return x;
+    return quoted_tag(x, x.astag());
   }
 }
 
@@ -6314,28 +6361,6 @@ bool interpreter::checkeqns(expr x, const veqnl& eqns)
   return true;
 }
 
-static int32_t get2args(expr x, expr& y, expr& z)
-{
-  expr a, b;
-  if (!x.is_app(a, b)) return 0;
-  x = a; z = b;
-  if (!x.is_app(a, b)) return 0;
-  x = a; y = b;
-  return x.tag();
-}
-
-static int32_t get3args(expr x, expr& y, expr& z, expr& t)
-{
-  expr a, b;
-  if (!x.is_app(a, b)) return 0;
-  x = a; t = b;
-  if (!x.is_app(a, b)) return 0;
-  x = a; z = b;
-  if (!x.is_app(a, b)) return 0;
-  x = a; y = b;
-  return x.tag();
-}
-
 static inline int32_t sym_ttag(int32_t f)
 {
   interpreter& interp = *interpreter::g_interp;
@@ -6498,7 +6523,7 @@ expr *interpreter::macspecial(expr x)
     rulel *r = new rulel; exprl xs;
     if (v.is_list(xs) && parse_simple_rulel(xs, *r)) {
       try {
-	expr *y = mkwhen_expr(new expr(varsubst(u, r->size())), r);
+	expr *y = mkwhen_expr(new expr(varsubst(ifsubst(u), r->size())), r);
 	return y;
       } catch (err &e) {
 	// fail
@@ -6509,7 +6534,7 @@ expr *interpreter::macspecial(expr x)
     env *e = new env; exprl xs;
     if (v.is_list(xs) && parse_env(xs, *e)) {
       try {
-	expr *y = mkwith_expr(new expr(u), e);
+	expr *y = mkwith_expr(new expr(ifsubst(u)), e);
 	return y;
       } catch (err &e) {
 	// fail
