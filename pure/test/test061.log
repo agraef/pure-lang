@@ -104,3 +104,68 @@ g = \y/*0:1*/ -> y/*0:1*/+1 {
 	<var> state 1
   state 1: #0
 };
+{
+  rule #0: g = \y -> y+1
+  state 0: #0
+}
+f/*0*/ with f x/*0:1*/ = y/*0:*/ when y/*0:*/ = x/*0:1*/+1 {
+  rule #0: y = x+1
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end {
+  rule #0: f x = y when y = x+1 end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+f
+f/*0*/ with f x/*0:1*/ = y/*0*/ with y = x/*1:1*/+1 {
+  rule #0: y = x+1
+  state 0: #0
+} end {
+  rule #0: f x = y with y = x+1 end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+f
+get_macdef (*);
+[]
+get_macdef ($);
+[f$x-->f x]
+get_fundef bla;
+[]
+get_fundef ($);
+[f$x-->f x]
+fact n/*0:1*/ = n/*0:1*/*fact (n/*0:1*/-1) if n/*0:1*/>0;
+fact n/*0:1*/ = 1;
+{
+  rule #0: fact n = n*fact (n-1) if n>0
+  rule #1: fact n = 1
+  state 0: #0 #1
+	<var> state 1
+  state 1: #0 #1
+}
+fact __with__ get_fundef fact;
+fact __with__ [(fact n-->n*fact (n-1) __if__ n>0),(fact n-->1)]
+{
+  rule #0: x = eval (fact __with__ get_fundef fact)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let x = eval (fact __with__ get_fundef fact);
+map x (0..10);
+[1,1,2,6,24,120,720,5040,40320,362880,3628800]
+foldr __with__ get_fundef foldr;
+foldr __with__ [(foldr f a (x __type__ matrix)-->__C::matrix_foldr f a x),(foldr f a (s __type__ string)-->foldr f a (chars s)),(foldr f a []-->a),(foldr f a (xs __as__ (_:_))-->tick [] xs __with__ [(tick zs (x:xs)-->tack (x:zs) (foldr f a xs&) __if__ thunkp xs),(tick zs (x:xs)-->tick (x:zs) xs),(tick zs []-->tack zs a),(tick zs xs-->tack zs (foldr f a xs)),(tack (x:xs) y-->tack xs (f x y)),(tack [] y-->y)])]
+{
+  rule #0: x = eval (foldr __with__ get_fundef foldr)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let x = eval (foldr __with__ get_fundef foldr);
+x (*) 1 (1..10);
+3628800

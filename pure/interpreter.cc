@@ -5664,15 +5664,43 @@ expr interpreter::vsubst(expr x)
   }
   // constants:
   case EXPR::INT:
+    if (x.astag()) {
+      expr u = expr(EXPR::INT, x.ival());
+      return quoted_tag(u, x.astag());
+    } else
+      return x;
   case EXPR::BIGINT:
+    if (x.astag()) {
+      // The expr constructor globbers its mpz_t argument, so take a copy.
+      mpz_t z;
+      mpz_init_set(z, x.zval());
+      expr u = expr(EXPR::BIGINT, z);
+      return quoted_tag(u, x.astag());
+    } else
+      return x;
   case EXPR::DBL:
+    if (x.astag()) {
+      expr u = expr(EXPR::DBL, x.dval());
+      return quoted_tag(u, x.astag());
+    } else
+      return x;
   case EXPR::STR:
+    if (x.astag()) {
+      expr u = expr(EXPR::STR, strdup(x.sval()));
+      return quoted_tag(u, x.astag());
+    } else
+      return x;
   case EXPR::PTR:
+    if (x.astag()) {
+      expr u = expr(EXPR::PTR, x.pval());
+      return quoted_tag(u, x.astag());
+    } else
+      return x;
   case EXPR::WRAP:
     if (x.astag()) {
-      int32_t tag = x.astag();
-      x.set_astag(0);
-      return quoted_tag(x, tag);
+      GlobalVar *v = (GlobalVar*)x.pval();
+      expr u = wrap_expr(v->x);
+      return quoted_tag(u, x.astag());
     } else
       return x;
   // substitute runtime representations for specials:
@@ -6401,10 +6429,10 @@ bool interpreter::parse_env(exprl& xs, env& e)
     if (get2args(*x, u, v) == symtab.eqn_sym().f) {
       expr w, c;
       if (get2args(v, w, c) == symtab.if_sym().f) {
-	rule r(tagsubst(u), varsubst(w, 1), varsubst(c, 1));
+	rule r(tagsubst(u), w, c);
 	add_rule(e, r);
       } else {
-	rule r(tagsubst(u), varsubst(v, 1));
+	rule r(tagsubst(u), v);
 	add_rule(e, r);
       }
     } else

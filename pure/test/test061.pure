@@ -35,3 +35,24 @@ f = bar (\a b -> a-b); // same as f = \b a -> a-b;
 f 2 3;
 
 g = baz y; // same as g = \y -> y+1;
+
+// Direct invocation of special macros.
+
+f __with__ [f x --> y __when__ [y --> x+1]];
+f __with__ [f x --> y __with__ [y --> x+1]];
+
+// get_fundef and get_macdef.
+
+get_macdef (*); get_macdef ($);
+get_fundef bla; get_fundef ($);
+
+fact n = n*fact (n-1) if n>0;
+       = 1 otherwise;
+
+fact __with__ get_fundef fact;
+let x = eval (fact __with__ get_fundef fact);
+map x (0..10);
+
+foldr __with__ get_fundef foldr;
+let x = eval (foldr __with__ get_fundef foldr);
+x (*) 1 (1..10);
