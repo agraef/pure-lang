@@ -711,6 +711,20 @@ extern expr *add_fundef(expr *x);
 extern expr *add_typedef(expr *x);
 extern expr *add_macdef(expr *x);
 
+/* List defined symbols using evalcmd "show". */
+
+globsym pat::string level::int = catmap descr info when
+  info = init $ init $ split "\n" $ evalcmd $ "show -gst"+str level+" "+pat;
+end with
+  descr s::string = case filter (~="") $ split " " s of
+    sym:class:_ =
+      if any (==sym) ["extern", "infix", "infixl", "infixr",
+		      "prefix", "postfix", "outfix", "nonfix"] then []
+      else [sym=>class];
+    _ = [] otherwise;
+  end;
+end;
+
 /* Expression serialization. */
 
 extern expr* blob(expr*);
