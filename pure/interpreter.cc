@@ -71,7 +71,8 @@ static void* resolve_external(const std::string& name)
      case that's better than aborting the program (which is what the JIT will
      do when we return NULL here). */
   cout.flush();
-  cerr << "error trying to resolve external: " << name << '\n';
+  cerr << "error trying to resolve external: "
+       << (name.compare(0, 2, "$$") == 0?"<<anonymous>>":name) << '\n';
   return (void*)pure_unresolved;
 }
 
