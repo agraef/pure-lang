@@ -5567,12 +5567,42 @@ expr interpreter::ifsubst(expr x)
 {
   if (x.is_null()) return x;
   switch (x.tag()) {
+  case EXPR::WHEN: {
+    expr u = ifsubst(x.xval());
+    if (u != x.xval())
+      return expr::when(u, new rulel(*x.rules()));
+    else
+      return x;
+  }
+  case EXPR::WITH: {
+    expr u = ifsubst(x.xval());
+    if (u != x.xval())
+      return expr::with(u, new env(*x.fenv()));
+    else
+      return x;
+  }
   case EXPR::APP: {
-    expr u, v;
+    expr u, v; exprl xs;
     int32_t f = get2args(x, u, v);
     if (f == symtab.if_sym().f) {
       expr w = expr::cond1(v, u);
       return w;
+    } else if (f == symtab.when_sym().f && v.is_list(xs)) {
+      expr w = ifsubst(u);
+      if (w != u)
+	return expr(symtab.when_sym().x, w, v);
+      else
+	return x;
+    } else if (f == symtab.with_sym().f && v.is_list(xs)) {
+      for (exprl::iterator y = xs.begin(), end = xs.end(); y!=end; y++) {
+	expr u, v;
+	if (get2args(*y, u, v) != symtab.eqn_sym().f) return x;
+      }
+      expr w = ifsubst(u);
+      if (w != u)
+	return expr(symtab.with_sym().x, w, v);
+      else
+	return x;
     } else
       return x;
   }
@@ -6445,7 +6475,7 @@ bool interpreter::parse_rulel(exprl& xs, rulel& rl)
 	rule r(tagsubst(u), varsubst(w, 1), varsubst(c, 1));
 	add_rule(rl, r, true);
       } else {
-	rule r(tagsubst(u), varsubst(v, 1));
+	rule r(tagsubst(u), varsubst(ifsubst(v), 1));
 	add_rule(rl, r, true);
       }
     } else
@@ -6480,7 +6510,7 @@ bool interpreter::parse_env(exprl& xs, env& e)
 	rule r(tagsubst(u), w, c);
 	add_rule(e, r);
       } else {
-	rule r(tagsubst(u), v);
+	rule r(tagsubst(u), ifsubst(v));
 	add_rule(e, r);
       }
     } else
@@ -6523,7 +6553,7 @@ expr *interpreter::macspecial(expr x)
     rulel *r = new rulel; exprl xs;
     if (v.is_list(xs) && parse_simple_rulel(xs, *r)) {
       try {
-	expr *y = mkwhen_expr(new expr(varsubst(ifsubst(u), r->size())), r);
+	expr *y = mkwhen_expr(new expr(varsubst(u, r->size())), r);
 	return y;
       } catch (err &e) {
 	// fail
@@ -6534,7 +6564,7 @@ expr *interpreter::macspecial(expr x)
     env *e = new env; exprl xs;
     if (v.is_list(xs) && parse_env(xs, *e)) {
       try {
-	expr *y = mkwith_expr(new expr(ifsubst(u)), e);
+	expr *y = mkwith_expr(new expr(u), e);
 	return y;
       } catch (err &e) {
 	// fail
@@ -7450,7 +7480,7 @@ bool interpreter::add_fun_rules(pure_expr *y)
 	  rule r(tagsubst(u), w, c);
 	  add_rule(globenv, r, true, false);
 	} else {
-	  rule r(tagsubst(u), v);
+	  rule r(tagsubst(u), ifsubst(v));
 	  add_rule(globenv, r, true, false);
 	}
       } catch (err &e) {
@@ -7477,7 +7507,7 @@ bool interpreter::add_type_rules(pure_expr *y)
 	  rule r(tagsubst(u), w, c);
 	  add_type_rule(typeenv, r, false);
 	} else {
-	  rule r(tagsubst(u), v);
+	  rule r(tagsubst(u), ifsubst(v));
 	  add_type_rule(typeenv, r, false);
 	}
       } catch (err &e) {
