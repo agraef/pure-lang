@@ -5833,8 +5833,6 @@ void pure_trap(int32_t action, int32_t sig)
 
 // Debugging routines.
 static string pname(interpreter& interp, Env *e);
-static bool stop(interpreter& interp, Env *e);
-static bool traced(interpreter& interp, Env *e);
 static string printx(pure_expr *x, size_t n = 30);
 
 extern "C"
@@ -5907,7 +5905,7 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x)
       interp.sstk_sz = sz;
       if (interp.debugging) {
 	DebugInfo& d = interp.debug_info.back();
-	if (stop(interp, d.e) || traced(interp, d.e)) {
+	if (interp.stopped(d.e) || interp.traced(d.e)) {
 	  /* We're running in debugging mode. Print a little debugging
 	     message so that the user knows what's going on. */
 	  cout << "++ [" << d.n << "] " << pname(interp, d.e)
@@ -6524,32 +6522,6 @@ static expr localvars(interpreter& interp, DebugInfo& d, pure_expr *x)
   }
 }
 
-static bool stop(interpreter& interp, Env *e)
-{
-  if (!interp.interactive)
-    return false;
-  if (e->tag>0 && !interp.debug_skip) {
-    if (!interp.tmp_breakpoints.empty()) {
-      if (interp.tmp_breakpoints.find(e->tag) !=
-	  interp.tmp_breakpoints.end()) {
-	interp.tmp_breakpoints.clear();
-	return true;
-      }
-    } else if (interp.breakpoints.find(e->tag) != interp.breakpoints.end())
-      return true;
-  }
-  if (interp.stoplevel < 0 ||
-      interp.debug_info.size() <= (uint32_t)interp.stoplevel)
-    return true;
-  return false;
-}
-
-static bool traced(interpreter& interp, Env *e)
-{
-  return interp.interactive && e->tag>0 &&
-    interp.tracepoints.find(e->tag) != interp.tracepoints.end();
-}
-
 static string psym(const string& s, bool local = false)
 {
   if (local) {
@@ -6697,8 +6669,8 @@ void pure_debug_rule(void *_e, void *_r)
     vinfo vi; // ignored
     interp.bind(d.vars, vi, r->lhs, e->b);
   }
-  bool stp = stop(interp, e);
-  if (!stp && !traced(interp, e)) return;
+  bool stp = interp.stopped(e);
+  if (!stp && !interp.traced(e)) return;
   if (r) {
     cout << "** [" << d.n << "] "
 	 << pname(interp, e) << ": " << *r << ";\n";
@@ -6983,7 +6955,7 @@ void pure_debug_redn(void *_e, void *_r, pure_expr *x)
   interpreter& interp = *interpreter::g_interp;
   if (!interp.interactive) return;
   assert(!interp.debug_info.empty());
-  if (x && (stop(interp, e) || traced(interp, e))) {
+  if (x && (interp.stopped(e) || interp.traced(e))) {
     DebugInfo& d = interp.debug_info.back();
     assert(d.e == e);
     if (r) {

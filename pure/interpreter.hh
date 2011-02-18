@@ -960,6 +960,32 @@ public:
   llvm::Value *debug_redn(const rule *r, llvm::Value *v = 0);
   void debug_init();
   void backtrace(ostream& out);
+  bool stopped(int32_t tag)
+  {
+    if (!interactive)
+      return false;
+    if (tag>0 && !debug_skip) {
+      if (!tmp_breakpoints.empty()) {
+	if (tmp_breakpoints.find(tag) !=
+	    tmp_breakpoints.end()) {
+	  tmp_breakpoints.clear();
+	  return true;
+	}
+      } else if (breakpoints.find(tag) != breakpoints.end())
+	return true;
+    }
+    if (stoplevel < 0 ||
+	debug_info.size() <= (uint32_t)stoplevel)
+      return true;
+    return false;
+  }
+  bool traced(int32_t tag)
+  {
+    return interactive && tag>0 &&
+      tracepoints.find(tag) != tracepoints.end();
+  }
+  bool stopped(Env *e) { return stopped(e->tag); }
+  bool traced(Env *e) { return traced(e->tag); }
   // Faust interface.
   bool LoadFaustDSP(bool priv, const char *name, string *msg,
 		    const char *modnm = 0);
