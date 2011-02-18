@@ -4243,18 +4243,23 @@ void interpreter::add_simple_rule(rulel &rl, rule *r)
   delete r;
 }
 
-void interpreter::add_macro_rule(rule *r, bool check)
+void interpreter::add_macro_rules(rulel *r)
 {
-  assert(!r->lhs.is_null() && r->qual.is_null() && !r->rhs.is_guarded());
-  last.clear(); closure(*r, false);
-  if (check) {
-    checkfuns(true, r);
-    if (nerrs > 0) {
-      delete r; return;
-    }
-  }
+  for (rulel::iterator ri = r->begin(), end = r->end(); ri != end; ri++)
+    add_macro_rule(*ri);
   if (tags) add_tags(r);
-  expr fx; uint32_t argc = count_args(r->lhs, fx);
+  delete r;
+}
+
+void interpreter::add_macro_rule(rule& r, bool check)
+{
+  assert(!r.lhs.is_null() && r.qual.is_null() && !r.rhs.is_guarded());
+  last.clear(); closure(r, false);
+  if (check) {
+    checkfuns(true, &r);
+    if (nerrs > 0) return;
+  }
+  expr fx; uint32_t argc = count_args(r.lhs, fx);
   int32_t f = fx.tag();
   if (f <= 0)
     throw err("error in macro definition (missing head symbol)");
@@ -4278,20 +4283,19 @@ void interpreter::add_macro_rule(rule *r, bool check)
   if (info.t == env_info::none)
     info = env_info(argc, rulel(), temp);
   assert(info.argc == argc);
-  r->temp = temp;
+  r.temp = temp;
   if (override) {
     rulel::iterator p = info.rules->begin();
     for (; p != info.rules->end() && p->temp >= temp; p++) ;
-    info.rules->insert(p, *r);
+    info.rules->insert(p, r);
   } else
-    info.rules->push_back(*r);
-  if ((verbose&verbosity::defs) != 0) cout << "def " << *r << ";\n";
+    info.rules->push_back(r);
+  if ((verbose&verbosity::defs) != 0) cout << "def " << r << ";\n";
   if (info.m) {
     // this will be recomputed the next time the macro is needed
     delete info.m;
     info.m = 0;
   }
-  delete r;
 }
 
 void interpreter::closure(rule& r, bool b)
@@ -7547,7 +7551,7 @@ bool interpreter::add_mac_rules(pure_expr *y)
     expr u, v;
     if (get2args(*x, u, v) == symtab.eqn_sym().f) {
       try {
-	rule *r = new rule(tagsubst(u), macsubst(rsubst(v)));
+	rule r(tagsubst(u), macsubst(rsubst(v)));
 	add_macro_rule(r, false);
       } catch (err &e) {
 	errmsg = e.what() + "\n";

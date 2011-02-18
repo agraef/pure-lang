@@ -703,7 +703,8 @@ public:
   void add_type_rules(env &e, rulel *r);
   void add_type_rule(env &e, rule &r, bool check = true);
   void add_simple_rule(rulel &rl, rule *r);
-  void add_macro_rule(rule *r, bool check = true);
+  void add_macro_rules(rulel *r);
+  void add_macro_rule(rule& r, bool check = true);
   void promote_ttags(expr f, expr x, expr u);
   void promote_ttags(expr f, expr x, expr u, expr v);
   expr bind(env& vars, vinfo& vi,

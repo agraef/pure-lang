@@ -183,17 +183,17 @@ static void mangle_fname(string& name);
 %type  <rinfo>	rules rulel
 %type  <prinfo>	pat_rules pat_rulel
 %type  <rval>	simple_rule
-%type  <rlval>	rule type_rule simple_rules simple_rulel
+%type  <rlval>	rule type_rule macro_rule simple_rules simple_rulel
 
 %destructor { delete $$; } ID LO RO NA LT RT PR PO fixity expr simple prim
   comp_clauses comp_clause_list rows row_list row args lhs rhs qual_rhs
-  rules rulel rule type_rule pat_rules pat_rulel
+  rules rulel rule type_rule macro_rule pat_rules pat_rulel
   simple_rules simple_rulel simple_rule
   ids fnames fname name_xsyms_list name_xsyms xsyms name optalias opt_ctypes ctypes ctype
 %destructor { mpz_clear(*$$); free($$); } BIGINT CBIGINT
 %destructor { free($$); } STR
 %printer { debug_stream() << *$$; } ID name fname optalias ctype expr
-  prim args lhs rule type_rule simple_rules simple_rulel simple_rule
+  prim args lhs rule type_rule macro_rule simple_rules simple_rulel simple_rule
 %printer { debug_stream() << $$->r; } rhs qual_rhs
 %printer { debug_stream() << $$->e; } rules rulel
 %printer { debug_stream() << $$->rl; } pat_rules pat_rulel
@@ -259,8 +259,8 @@ item
 { interp.loc = &yyloc; action(interp.define($2), delete $2); }
 | CONST simple_rule
 { interp.loc = &yyloc; action(interp.define_const($2), delete $2); }
-| DEF simple_rule
-{ interp.loc = &yyloc; action(interp.add_macro_rule($2), delete $2); }
+| DEF macro_rule
+{ interp.loc = &yyloc; action(interp.add_macro_rules($2), delete $2); }
 | TYPE type_rule
 { interp.loc = &yyloc;
   action(interp.add_type_rules(interp.typeenv, $2), delete $2); }
@@ -790,6 +790,17 @@ type_rule
 { $$ = new rulel;
   for (exprl::iterator l = $1->begin(), end = $1->end(); l != end; l++)
     $$->push_back(rule(*l, $3->rhs(), $3->qual()));
+  delete $1; delete $3; }
+;
+
+/* Same for macro rules. These have the same form as normal rules in function
+   definitions, minus the guards and the headless (continuation) rules. */
+
+macro_rule
+: lhs '=' expr
+{ $$ = new rulel;
+  for (exprl::iterator l = $1->begin(), end = $1->end(); l != end; l++)
+    $$->push_back(rule(*l, *$3));
   delete $1; delete $3; }
 ;
 
