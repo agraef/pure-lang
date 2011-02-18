@@ -1583,15 +1583,15 @@ definitions, and expressions to be evaluated:
    script : `item`*
    item : "let" `simple_rule` ";"
      	: | "const" `simple_rule` ";"
-     	: | "def" `simple_rule` ";"
+     	: | "def" `macro_rule` ";"
      	: | "type" `type_rule` ";"
      	: | `rule` ";"
      	: | `expr` ";"
 
-(The syntax of the :token:`rule`, :token:`type_rule` and :token:`simple_rule`
-elements is discussed in the `Rule Syntax`_ section below. Also, a few
-additional toplevel elements are provided in the declaration syntax, see
-Declarations_.)
+(The syntax of the :token:`rule`, :token:`type_rule`, :token:`macro_rule` and
+:token:`simple_rule` elements is discussed in the `Rule Syntax`_ section
+below. Also, a few additional toplevel elements are provided in the
+declaration syntax, see Declarations_.)
 
 .. describe:: lhs = rhs;
 
@@ -1612,11 +1612,11 @@ Declarations_.)
 .. describe:: def lhs = rhs;
 
    A rule starting with the keyword :keyword:`def` defines a macro
-   function. No guards or multiple left-hand and right-hand sides are
-   permitted here. Macro rules are used to preprocess expressions on the
-   right-hand side of other definitions at compile time, and are typically
-   employed to implement user-defined special forms and simple kinds of
-   optimization rules. See the Macros_ section below for details and examples.
+   function. No guards or multiple right-hand sides are permitted here. Macro
+   rules are used to preprocess expressions on the right-hand side of other
+   definitions at compile time, and are typically employed to implement
+   user-defined special forms and simple kinds of optimization rules. See the
+   Macros_ section below for details and examples.
 
 .. describe:: let lhs = rhs;
 
@@ -1734,6 +1734,7 @@ following grammar rules:
    rule : `pattern` ("|" `pattern`)* "=" `expr` [`guard`]
    	: (";" "=" `expr` [`guard`])*
    type_rule : `pattern` ("|" `pattern`)* [ "=" `expr` [`guard`] ]
+   macro_rule : `pattern` ("|" `pattern`)* "=" `expr`
    simple_rule : `pattern` = `expr` | `expr`
    pattern : `simple_expr`
    guard : "if" `simple_expr`
@@ -4068,16 +4069,22 @@ expressions and are implemented by the same kind of rewriting rules that are
 also used to define ordinary functions in Pure. This makes them robust and
 easy to use for most common preprocessing purposes.
 
-Syntactically, a macro definition looks just like a variable or constant
-definition, using :keyword:`def` in lieu of :keyword:`let` or
-:keyword:`const`. (Thus only simple kinds of rules without any guards or
-multiple left-hand and right-hand sides are permitted.) But macro definitions
-are processed in a different way; they are substituted into the right-hand
-sides of function, constant and variable definitions. All macro substitution
-happens before constant substitutions and the actual compilation step. Macros
-can be defined in terms of other macros (also recursively), and are evaluated
-using call by value (i.e., macro calls in macro arguments are expanded before
-the macro gets applied to its parameters).
+Syntactically, a macro definition looks just like a function definition with
+the :keyword:`def` keyword in front of it. Only unconditional rewriting rules
+are permitted here, i.e., rules without guards and multiple right-hand sides.
+However, multiple left-hand sides can be employed as usual to abbreviate a
+collection of rules with the same left-hand side, as described in the `General
+Rules`_ section.
+
+The major difference between function and macro definitions is that the latter
+are processed at compile time rather than run time. To these ends, macro calls
+on the right-hand sides of function, constant and variable definitions are
+evaluated by reducing them to normal form using the available macro rules. The
+resulting expressions are then substituted for the macro calls. All macro
+substitution happens before constant substitutions and the actual compilation
+step. Macros can be defined in terms of other macros (also recursively), and
+are evaluated using call by value (i.e., macro calls in macro arguments are
+expanded before the macro gets applied to its parameters).
 
 .. _Optimization Rules:
 
@@ -4089,9 +4096,9 @@ function (defined in the prelude) at compile time::
 
   > def succ (x+y) = x+(y+1);
   > def succ x = x+1;
-  > foo x::int = succ (succ (succ x));
+  > foo x = succ (succ (succ x));
   > show foo
-  foo x::int = x+3;
+  foo x = x+3;
 
 Rules like these can be useful to help the compiler generate better code. Note
 that a macro may have the same name as an ordinary Pure function, which is
@@ -4147,8 +4154,7 @@ Here are two slightly more tricky rules from the prelude, which optimize the
 case of "throwaway" list comprehensions. This is useful if a list
 comprehension is evaluated solely for its side effects::
 
-  def void (catmap f x) = do f x;
-  def void (listmap f x) = do f x;
+  def void (catmap f x) | void (listmap f x) = do f x;
 
 Note that the :func:`void` function simply throws away its argument and
 returns :cons:`()` instead. The :func:`do` function applies a function to
