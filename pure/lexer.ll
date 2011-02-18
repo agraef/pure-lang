@@ -1614,16 +1614,32 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
   } else if (strcmp(cmd, "trace") == 0)  {
     const char *s = cmdline+5;
     argl args(s, "trace");
-    if (!args.ok)
-      ;
-    else if (!interp.debugging)
+    bool mflag = false;
+    if (!args.ok) goto trace_out;
+    // process option arguments
+    if (args.c >= 1) {
+      mflag = args.l.front() == "-m";
+      if (mflag) {
+	  args.c--;
+	  args.l.pop_front();
+      }
+    }
+    if (!mflag && !interp.debugging) {
       cerr << "trace: debugging not enabled (try run -g)\n";
-    else if (args.c == 0) {
+      goto trace_out;
+    }
+    if (args.c == 0) {
       ostringstream sout;
       list<string> syms;
-      for (set<int32_t>::iterator it = interp.tracepoints.begin();
-	   it != interp.tracepoints.end(); ++it)
-	syms.push_back(interp.symtab.sym(*it).s);
+      if (mflag) {
+	for (set<int32_t>::iterator it = interp.mac_tracepoints.begin();
+	     it != interp.mac_tracepoints.end(); ++it)
+	  syms.push_back(interp.symtab.sym(*it).s);
+      } else {
+	for (set<int32_t>::iterator it = interp.tracepoints.begin();
+	     it != interp.tracepoints.end(); ++it)
+	  syms.push_back(interp.symtab.sym(*it).s);
+      }
       syms.sort();
       for (list<string>::iterator it = syms.begin(); it != syms.end(); ++it)
 	sout << *it << '\n';
@@ -1631,6 +1647,29 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
 	(*interp.output) << sout.str();
       else
 	cout << sout.str();
+    } else if (mflag) {
+      for (list<string>::iterator it = args.l.begin();
+	   it != args.l.end(); ++it) {
+	const char *s = it->c_str();
+	int32_t f = pure_getsym(s);
+	if (f > 0) {
+	  env::const_iterator jt = interp.macenv.find(f);
+	  if ((jt != interp.macenv.end() && jt->second.t == env_info::fun) ||
+	      f == interp.symtab.ifelse_sym().f ||
+	      f == interp.symtab.lambda_sym().f ||
+	      f == interp.symtab.case_sym().f ||
+	      f == interp.symtab.when_sym().f ||
+	      f == interp.symtab.with_sym().f)
+	    if (interp.mac_tracepoints.find(f) == interp.mac_tracepoints.end())
+	      interp.mac_tracepoints.insert(f);
+	    else
+	      cerr << "trace: macro tracepoint '" << s << "' already set\n";
+	  else
+	    f = 0;
+	}
+	if (f == 0)
+	  cerr << "trace: unknown macro symbol '" << s << "'\n";
+      }
     } else {
       for (list<string>::iterator it = args.l.begin();
 	   it != args.l.end(); ++it) {
@@ -1651,31 +1690,36 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
 	  cerr << "trace: unknown function symbol '" << s << "'\n";
       }
     }
+  trace_out: ;
   } else if (strcmp(cmd, "del") == 0)  {
     const char *s = cmdline+3;
     argl args(s, "del");
     if (args.ok) {
-      bool bflag = false, tflag = false;
+      bool bflag = false, tflag = false, mflag = false;
       const char *ty = "break";
       char msg[100];
       if (args.c >= 1) {
 	bflag = args.l.front() == "-b";
 	tflag = args.l.front() == "-t";
-	if (bflag || tflag) {
+	mflag = args.l.front() == "-m";
+	if (bflag || tflag || mflag) {
 	  args.c--;
 	  args.l.pop_front();
 	  if (tflag) ty = "trace";
+	  if (mflag) ty = "macro trace";
 	} else
 	  bflag = tflag = true;
       } else
 	bflag = tflag = true;
       if (args.c == 0) {
 	if ((bflag && !interp.breakpoints.empty()) ||
-	    (tflag && !interp.tracepoints.empty())) {
+	    (tflag && !interp.tracepoints.empty()) ||
+	    (mflag && !interp.mac_tracepoints.empty())) {
 	  sprintf(msg, "This will clear all %spoints. Continue (y/n)?", ty);
 	  if (yes_or_no(msg)) {
 	    if (bflag) interp.breakpoints.clear();
 	    if (tflag) interp.tracepoints.clear();
+	    if (mflag) interp.mac_tracepoints.clear();
 	  }
 	} else {
 	  sprintf(msg, "del: no %spoints\n", ty);
@@ -1687,20 +1731,30 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
 	  const char *s = it->c_str();
 	  int32_t f = pure_getsym(s);
 	  if (f > 0) {
-	    env::const_iterator jt = interp.globenv.find(f);
-	    if (bflag &&
-		interp.breakpoints.find(f) != interp.breakpoints.end()) {
-	      interp.breakpoints.erase(f);
-	      if (tflag) interp.tracepoints.erase(f);
-	    } else if (tflag &&
-		       interp.tracepoints.find(f) != interp.tracepoints.end())
-	      interp.tracepoints.erase(f);
-	    else {
-	      sprintf(msg, "del: unknown %spoint '", ty);
-	      cerr << msg << s << "'\n";
+	    if (mflag) {
+	      if (interp.mac_tracepoints.find(f) !=
+		  interp.mac_tracepoints.end())
+		interp.mac_tracepoints.erase(f);
+	      else {
+		sprintf(msg, "del: unknown %spoint '", ty);
+		cerr << msg << s << "'\n";
+	      }
+	    } else {
+	      if (bflag &&
+		  interp.breakpoints.find(f) != interp.breakpoints.end()) {
+		interp.breakpoints.erase(f);
+		if (tflag) interp.tracepoints.erase(f);
+	      } else if (tflag &&
+			 interp.tracepoints.find(f) != interp.tracepoints.end())
+		interp.tracepoints.erase(f);
+	      else {
+		sprintf(msg, "del: unknown %spoint '", ty);
+		cerr << msg << s << "'\n";
+	      }
 	    }
 	  } else
-	    cerr << "del: unknown function symbol '" << s << "'\n";
+	    cerr << "del: unknown " << (mflag?"macro":"function")
+		 << " symbol '" << s << "'\n";
 	}
       }
     }

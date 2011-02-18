@@ -6578,23 +6578,33 @@ expr *interpreter::macspecial(expr x)
   return 0;
 }
 
+static string pname(interpreter& interp, int32_t tag)
+{
+  if (tag > 0) {
+    ostringstream sout;
+    sout << interp.symtab.sym(tag).x;
+    return sout.str();
+  } else
+    return "#<closure>";
+}
+
 expr interpreter::macval(expr x)
 {
   char test;
   if (x.is_null()) return x;
   if (stackmax > 0 && stackdir*(&test - baseptr) >= stackmax)
     throw err("recursion too deep in macro expansion");
+  int32_t f; uint32_t argc = count_args(x, f);
+  if (f <= 0) return x;
   // Evaluate built-in macros for the specials.
   expr *z = macspecial(x);
   if (z) {
     expr y = *z; delete z;
-#if DEBUG>1
-    std::cerr << "builtin expansion: " << x << " -> " << y << '\n';
-#endif
+    if (mac_tracepoints.find(f) != mac_tracepoints.end())
+      std::cout << "-- macro " << pname(*this, f) << ": "
+		<< x << " --> " << y << '\n';
     return y;
   }
-  int32_t f; uint32_t argc = count_args(x, f);
-  if (f <= 0) return x;
   env::iterator it = macenv.find(f);
   if (it == macenv.end()) return x;
   env_info &info = it->second;
@@ -6616,9 +6626,9 @@ expr interpreter::macval(expr x)
       rule& r = info.m->r[*rp];
       if (checkguards(x1, r.vi.guards) && checkeqns(x1, r.vi.eqns)) {
 	expr y = macred(x1, r.rhs);
-#if DEBUG>1
-	std::cerr << "macro expansion: " << x << " -> " << y << '\n';
-#endif
+	if (mac_tracepoints.find(f) != mac_tracepoints.end())
+	  std::cout << "-- macro " << pname(*this, f) << ": "
+		    << x << " --> " << y << '\n';
 	return macsubst(y);
       }
     }

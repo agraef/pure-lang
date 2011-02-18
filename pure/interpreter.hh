@@ -952,7 +952,7 @@ public:
 		  map<llvm::GlobalVariable*,llvm::Function*>& varmap);
   int compiler(string out, list<string> libnames);
   list<DebugInfo> debug_info;
-  set<int32_t> breakpoints, tmp_breakpoints, tracepoints;
+  set<int32_t> breakpoints, tmp_breakpoints, tracepoints, mac_tracepoints;
   int32_t stoplevel;
   bool debug_skip;
   string bt;
@@ -983,6 +983,11 @@ public:
   {
     return interactive && tag>0 &&
       tracepoints.find(tag) != tracepoints.end();
+  }
+  bool mac_traced(int32_t tag)
+  {
+    return interactive && tag>0 &&
+      mac_tracepoints.find(tag) != mac_tracepoints.end();
   }
   bool stopped(Env *e) { return stopped(e->tag); }
   bool traced(Env *e) { return traced(e->tag); }
