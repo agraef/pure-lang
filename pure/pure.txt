@@ -4100,9 +4100,30 @@ previous example. (Just like ordinary functions, the number of parameters in
 each rule for a given macro must be the same, but a macro may have a different
 number of arguments than the corresponding function.)
 
-A somewhat more practical example is the following rule from the prelude,
-which eliminates saturated instances of the right-associative function
-application operator::
+When running interactively, you can follow the reduction steps the compiler
+performs during macro evaluation. To these ends, you have to set "tracepoints"
+on the relevant macros, using the ``trace`` command with the ``-m`` option
+(see `Interactive Commands`_). Note that since macro expansion is performed at
+compile time, you'll have to do this *before* entering the definitions in
+which the macro is used. However, in many cases you can also just enter the
+right-hand side of the equation at the interpreter prompt to see how it gets
+expanded. For instance::
+
+  > trace -m succ
+  > succ (succ (succ x));
+  -- macro succ: succ x --> x+1
+  -- macro succ: succ (x+1) --> x+(1+1)
+  -- macro succ: succ (x+(1+1)) --> x+(1+1+1)
+  x+3
+
+(Note that the contraction of the subterm ``1+1+1`` to the integer constant
+``3`` is actually done by the compiler after macro expansion has been
+performed. This is also called "constant folding", see `Constant Definitions`_
+in the `Caveats and Notes`_ section for details.)
+
+A somewhat more practical example is the following optimization rule from the
+prelude, which eliminates saturated instances of the right-associative
+function application operator::
 
   def f $ x = f x;
 
@@ -4113,6 +4134,14 @@ function applications automatically. Example::
   > foo x = bar $ bar $ 2*x;
   > show foo
   foo x = bar (bar (2*x));
+
+Again, let's see exactly what's going on there::
+
+  > trace -m $
+  > bar $ bar $ 2*x;
+  -- macro ($): bar$2*x --> bar (2*x)
+  -- macro ($): bar$bar (2*x) --> bar (bar (2*x))
+  bar (bar (2*x))
 
 Here are two slightly more tricky rules from the prelude, which optimize the
 case of "throwaway" list comprehensions. This is useful if a list
@@ -5409,15 +5438,19 @@ currently supported operations:
    commands can be found in `Specifying Symbol Selections`_ below.
 
 .. index:: del (command)
-.. describe:: del [-b|-t] [symbol ...]
+.. describe:: del [-b|-m|-t] [symbol ...]
 
    Deletes breakpoints and tracepoints on the given function or operator
    symbols. If the ``-b`` option is specified then only breakpoints are
-   deleted; similarly, ``del -t`` only deletes tracepoints. Otherwise both
-   breakpoints and tracepoints are deleted. All symbols must be specified in
-   fully qualified form, see the remarks below. If invoked without non-option
-   arguments, ``del`` clears *all* currently defined breakpoints and/or
-   tracepoints (after confirmation). See Debugging_ below for details.
+   deleted; similarly, ``del -t`` only deletes tracepoints. If none of these
+   are specified then both breakpoints and tracepoints are deleted. All
+   symbols must be specified in fully qualified form, see the remarks
+   below. If invoked without non-option arguments, ``del`` clears *all*
+   currently defined breakpoints and/or tracepoints (after confirmation); see
+   Debugging_ below for details.
+
+   The ``-m`` option works similarly to ``-t``, but deletes macro rather than
+   function tracepoints, see the description of the ``trace`` command below.
 
 .. index:: dump (command)
 .. describe:: dump [-n filename] [option ...] [symbol ...]
@@ -5541,12 +5574,17 @@ currently supported operations:
    the memory usage statistics.
 
 .. index:: trace (command)
-.. describe:: trace [symbol ...]
+.. describe:: trace [-m] [symbol ...]
 
-   Sets tracepoints on the given function or operator symbols. This works like
-   the ``break`` command (see above) but only prints rule invocations and
-   reductions without actually interrupting the evaluation. See Debugging_
-   below for details.
+   Sets tracepoints on the given function or operator symbols. Without the
+   ``-m`` option, this works like the ``break`` command (see above) but only
+   prints rule invocations and reductions without actually interrupting the
+   evaluation; see Debugging_ below for details.
+
+   The ``-m`` option allows you to trace macro (rather than function)
+   calls. If this option is specified, the compiler prints reductions by the
+   given macro symbol, which is useful when debugging macros; see the Macros_
+   section for details and an example.
 
 .. index:: underride (command)
 .. describe:: underride
@@ -7196,9 +7234,11 @@ programmer to decide.
 As the value of a constant is known at compile time, the compiler can apply
 various optimizations to uses of such values. In particular, the Pure compiler
 inlines constant scalars (numbers, strings and pointers) by literally
-substituting their values into the output code, and it also precomputes simple
-constant expressions involving only (machine) integer and double
-values. Example::
+substituting their values into the output code. It also precomputes simple
+constant expressions involving only (machine) integer and double values. (The
+latter is called `constant folding` and can also be disabled, see the
+description of the :option:`--fold` and :option:`--nofold` pragmas for
+details.) Example::
 
   > extern double atan(double);
   > const pi = 4*atan 1.0;
