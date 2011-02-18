@@ -1826,16 +1826,21 @@ in such cases), but is a crucial feature of term rewriting languages, as it
 opens the door to symbolic evaluation techniques, see `Definitions and
 Symbolic Evaluation`_.
 
-Patterns may consist of function and operator applications as well as any of
-the primary expression types (symbols, numbers, strings, matrices and list
-values). *Not* permitted are any of the special expression types: lambda,
-:keyword:`case`, :keyword:`when`, :keyword:`with`, conditional expressions, as
-well as list and matrix comprehensions. Also note that the pattern matching
-capabilities for matrices are somewhat limited, as a matrix pattern can only
-match a matrix with exactly the same dimensions as the pattern. To match a
-matrix of arbitrary dimensions, you'll have to use the built-in
-:type:`matrix/type` type (or a user-defined type derived from that), see
-`Matrix Computations`_ for some examples.
+Pretty much any kind of legal Pure expression can be used as a pattern; the
+only exceptions are list and matrix comprehensions. (These are in fact
+syntactic sugar for ordinary expressions, cf. `Primary Expressions`_; in
+patterns, you will have to represent them in their "unsugared" form.)
+Syntactically, patterns are `simple expressions`_, thus `special expressions`_
+need to be parenthesized if they occur in a pattern. (Special expressions in a
+pattern are automatically translated to their quoted representations, see `The
+Quote`_. These are typically used in macro definitions, see the Macros_
+section for details.)
+
+Also note that the pattern matching capabilities for matrices are somewhat
+limited, as a matrix pattern can only match a matrix with exactly the same
+dimensions as the pattern. To match a matrix of arbitrary dimensions, you'll
+have to use the built-in :type:`matrix/type` type (or a user-defined type
+derived from that), see `Matrix Computations`_ for some examples.
 
 The '``_``' symbol is special in patterns; it denotes the `anonymous variable`
 which matches an arbitrary value (independently for all occurrences) without
@@ -3109,14 +3114,6 @@ function to obtain its value. For instance::
   > eval x;
   4180.0
 
-The quote also inhibits evaluation inside matrix values, including the
-"splicing" of embedded submatrices::
-
-  > '{1,2+3,2*3};
-  {1,2+3,2*3}
-  > '{1,{2,3},4};
-  {1,{2,3},4}
-
 Lisp programmers will be well familiar with this operation which enables some
 powerful metaprogramming techniques. However, there are some notable
 differences to Lisp's quote. In particular, :func:`quote` only inhibits the
@@ -3138,16 +3135,20 @@ Local parameterless functions are treated in the same fashion::
   > '(2*42+2^n) with n = 12 end;
   2*42+2^12
 
-Note that, in contrast, for global functions (and variables) we have::
+Note that, in contrast, for global variables (and functions) we have::
 
-  > n = 12;
+  > let n = 12;
   > '(2*42+2^n);
   2*42+2^n
 
 This discrepancy may come as a surprise (or even annoyance) to real Lisp
-weenies, but it does have its advantages. In particular, it makes it easy to
-fill in the variable parts in a quoted "template" expression, without any need
-for an arguably complex tool like Lisp's "quasiquote".
+weenies, but it does have its advantages. As illustrated in the examples
+above, local variable substitution makes it easy to fill in the variable parts
+in a quoted "template" expression, without any need for an arguably complex
+tool like Lisp's "quasiquote". (But note that it is quite easy to define the
+quasiquote in Pure if you want it. See the `Recursive Macros`_ section for a
+simplified version; a full implementation can be found in the Pure library
+sources.)
 
 If you do need to quote a symbol which is already being used as a local
 variable or function in the current context, you can do this by supplying the
@@ -3164,44 +3165,45 @@ expression, *applications* involving local functions can still be quoted::
   > eval ans;
   199
 
-A limitation of Pure's :func:`quote` is that in the current implementation it
-isn't possible to quote embedded `special expressions`_ (conditionals, lambda
-and the :keyword:`case`, :keyword:`when` and :keyword:`with` constructs);
-these are always evaluated as usual. Example::
+The quote also inhibits evaluation inside matrix expressions, including the
+"splicing" of embedded submatrices::
+
+  > '{1,2+3,2*3};
+  {1,2+3,2*3}
+  > '{1,{2,3},4};
+  {1,{2,3},4}
+
+`Special expressions`_ (conditionals, lambda and the :keyword:`case`,
+:keyword:`when` and :keyword:`with` constructs) can be quoted as well. But
+since these constructs cannot be directly represented at runtime, the quote
+actually produces some ordinary "placeholder" terms for these::
 
   > '(x+1 when x = '(2*3) end);
+  x+1 __when__ [x-->'(2*3)]
+  > eval ans;
   2*3+1
-  > '(2*42+(2^n when n = 2*6 end));
-  2*42+4096.0
+  > '(2*42+(f 6 with f n = 2^(2*n) end));
+  2*42+(f 6 __with__ [f n-->2^(2*n)])
+  > eval ans;
+  4180.0
 
-We're not sure whether this is actually a bug or a feature, so this might
-change in the future, and relying on this behaviour is not recommended. (It is
-always possible to achieve the same effect by substituting local variables,
-as shown above.)
+Note that these placeholders are in fact special built-in macros which
+reconstruct the special expression when evaluated. Moreover, special
+expressions are implicitly quoted when they occur on the left-hand side of an
+equation or as an argument of a macro call. This is often used to implement
+macros which manipulate these constructs as literals. For instance, the
+following macro swaps the arguments in a lambda::
 
-For the time being, it is possible to work around this limitation by defining
-a custom special form (see Macros_) to be used as a symbolic representation
-for, say, a lambda expression, which reduces to a real lambda when evaluated.
-This works because macro expansion *is* inhibited in quoted expressions. For
-instance::
+  > def bar (\x y -> z) = __eval__ ('(\y x -> z));
+  > show bar
+  def bar (__lambda__ [x,y] z) = __eval__ ('__lambda__ [y,x] z);
+  > foo = bar (\a b -> a-b);
+  > show foo
+  foo = \b a -> a-b;
+  > foo 2 3;
+  1
 
-  > def lambda x y = eval $ "\\ "+str ('x)+" -> "+str ('y);
-  > let l = 'lambda x (x+1); l;
-  lambda x (x+1)
-  > let f = eval l; f; f 9;
-  #<closure 0x7fdc3ca45be8>
-  10
-
-Other special constructs, such as :keyword:`case`, :keyword:`when` and
-:keyword:`with` can be treated in a similar fashion. (In the future, the
-compiler may handle this automatically, without having to go through any kind
-of string representation.)
-
-Finally, as we mentioned Lisp's quasiquote, note that it is quite easy to
-define this in Pure if you want it. See the `Recursive Macros`_ section for a
-simplified version; a full implementation (actually two of them) can be found
-in the Pure library sources. However, using the above facilities, the need to
-whip out the almighty quasiquote shouldn't arise very often.
+The Macros_ section explains in detail how this meta programming works.
 
 A useful feature of Lisp's quasiquote is the capability to splice arguments
 into a function application. It is possible to achieve pretty much the same in
@@ -4057,45 +4059,39 @@ Macros
 
 Macros are a special type of functions to be executed as a kind of
 "preprocessing stage" at compile time. In Pure these are typically used to
-define custom special forms and to perform inlining of function calls and
-other simple kinds of source-level optimizations.
+define custom special forms and to perform inlining of function calls and all
+kinds of source-level optimizations.
 
 Whereas the macro facilities of most programming languages simply provide a
 kind of textual substitution mechanism, Pure macros operate on symbolic
 expressions and are implemented by the same kind of rewriting rules that are
-also used to define ordinary functions in Pure. In contrast to these, macro
-rules start out with the keyword :keyword:`def`, and only simple kinds of
-rules without any guards or multiple left-hand and right-hand sides are
-permitted.
+also used to define ordinary functions in Pure. This makes them robust and
+easy to use for most common preprocessing purposes.
 
 Syntactically, a macro definition looks just like a variable or constant
 definition, using :keyword:`def` in lieu of :keyword:`let` or
-:keyword:`const`, but they are processed in a different way. Macros are
-substituted into the right-hand sides of function, constant and variable
-definitions. All macro substitution happens before constant substitutions and
-the actual compilation step. Macros can be defined in terms of other macros
-(also recursively), and are evaluated using call by value (i.e., macro calls
-in macro arguments are expanded before the macro gets applied to its
-parameters).
-
-Pure macros also have their limitations. Specifically, the left-hand side of a
-macro rule must be a simple expression, just like in ordinary function
-definitions. This restricts the kinds of expressions which can be rewritten by
-a macro. But Pure macros are certainly powerful enough for most common
-preprocessing purposes, while still being robust and easy to use.
+:keyword:`const`. (Thus only simple kinds of rules without any guards or
+multiple left-hand and right-hand sides are permitted.) But macro definitions
+are processed in a different way; they are substituted into the right-hand
+sides of function, constant and variable definitions. All macro substitution
+happens before constant substitutions and the actual compilation step. Macros
+can be defined in terms of other macros (also recursively), and are evaluated
+using call by value (i.e., macro calls in macro arguments are expanded before
+the macro gets applied to its parameters).
 
 .. _Optimization Rules:
 
 Optimization Rules
 ------------------
 
-Here is a simple example, showing a rule which expands saturated calls of the
-:func:`succ` function (defined in the prelude) at compile time::
+Here is a simple example which expands saturated calls of the :func:`succ`
+function (defined in the prelude) at compile time::
 
+  > def succ (x+y) = x+(y+1);
   > def succ x = x+1;
-  > foo x::int = succ (succ x);
+  > foo x::int = succ (succ (succ x));
   > show foo
-  foo x::int = x+1+1;
+  foo x::int = x+3;
 
 Rules like these can be useful to help the compiler generate better code. Note
 that a macro may have the same name as an ordinary Pure function, which is
@@ -4238,7 +4234,7 @@ Examples::
   2*42+4096.0
   > `foo 1 2 (,@'[2/3,3/4]) (5/6);
   foo 1 2 (2/3) (3/4) (5/6)
-  > `foo 1 2 (,@'args) (5/6) when args = '[2/3,3/4] end;
+  > `foo 1 2 (,@args) (5/6) when args = '[2/3,3/4] end;
   foo 1 2 (2/3) (3/4) (5/6)
 
 We mention in passing here that, technically, Pure macros are just as powerful
@@ -4278,66 +4274,10 @@ function definition, since by virtue of Pure's basic eager evaluation strategy
 the ``x`` parameter would have been evaluated already before it is passed to
 ``timex``, making ``timex`` always return a zero time value. Try it!
 
-Here's yet another example, which is handy if you need to trace function
-calls. (Note that the interpreter also has its own built-in debugging
-facility, see Debugging_. However, the following macro allows you to trace
-functions using your own custom output format, and may thus be useful in
-situations where the built-in debugger is not appropriate.)
+Reflection
+----------
 
-::
-
-  using system;
-  def trace f x y = printf "** exit %s: %s -> %s\n" (str f,str x,str y) $$ y
-  when y = printf "** call %s: %s\n: " (str f,str x) $$ gets $$ y end;
-
-This macro is invoked with the function to be traced, the arguments (or
-whatever you want to be printed as additional debugging information) and the
-actual function call as parameters. (This is a rather simplistic version,
-which just prints a prompt on function entry and the final reduction after the
-call. You can easily make this as elaborate as you like. E.g., you might want
-to keep track of recursive levels and profiling information, add various
-interactive commands to selectively enable and disable tracing during the
-evaluation, etc.)
-
-We can still make this a bit more convenient by introducing the following
-ordinary function definition::
-
-  trace f x = trace f x (f x);
-
-This lets us patch up a call to trace a given function, as shown below,
-without having to change the definition of the function at all. This trick
-only works with global functions; for local functions you'll have to add an
-explicit call of the ``trace`` macro to the local definition yourself. Also
-note that the definition above only works with functions taking a single
-parameter; see the trace.pure example in the distribution for the full version
-which can deal with any number of arguments.
-
-::
-
-  // Uncomment this line to trace calls to the 'fact' function.
-  def fact n = trace fact n;
-  // Sample function to be traced.
-  fact n = if n>0 then n*fact(n-1) else 1;
-
-Here's a trace of the ``fact`` function obtained in this fashion (hit carriage
-return after each '``:``' prompt to proceed with the computation)::
-
-  > fact 2;
-  ** call fact: 2
-  : 
-  ** call fact: 1
-  : 
-  ** call fact: 0
-  : 
-  ** exit fact: 0 -> 1
-  ** exit fact: 1 -> 1
-  ** exit fact: 2 -> 2
-  2
-
-Note that by just removing the macro definition for ``fact`` above, you can
-make the function run untraced as usual again. This scheme is quite flexible,
-the only real drawback is that you have to explicitly add some code for each
-function you want to trace.
+XXXTODO
 
 Macro Hygiene
 -------------
@@ -5968,7 +5908,7 @@ you specify the target level to be cleared with the -t option. For instance::
 Finally, it is worth noting here that the facilities described above are also
 available to Pure programs, as the ``save`` and ``clear`` commands can also be
 executed under program control using the :func:`evalcmd` primitive; see
-Reflection_ in the `Caveats and Notes`_ section for details.
+Reflection_ in the Macros_ section for details.
 
 Debugging
 ---------
@@ -6274,9 +6214,9 @@ limitations:
   can't use :func:`eval` to define new global variables and functions. In
   other words, anything which changes the executing program is "verboten".
   Moreover, the introspective capabilities provided by :func:`evalcmd`
-  (discussed under Reflection_ in the `Caveats and Notes`_ section) won't work
-  either because the interactive commands are all disabled. If you need any of
-  these capabilities, you have to run your program with the interpreter.
+  (discussed under Reflection_ in the Macros_ section) won't work either
+  because the interactive commands are all disabled. If you need any of these
+  capabilities, you have to run your program with the interpreter.
 
 * Constant and macro definitions, being compile time features, aren't
   available in the compiled program. If you need to use these with
@@ -7427,61 +7367,6 @@ should be aware of:
   is being traversed, leading to rather nasty memory leaks. Please see the
   ``all_primes`` function in `Lazy Evaluation and Streams`_ for an example.
 
-Reflection
-----------
-
-Pure versions since 0.12 offer some basic reflection capabilities via the
-:func:`evalcmd` primitive. This function provides access to interactive
-commands like ``clear``, ``save`` and ``show``, which enable you to inspect
-and modify the running program. The only "canonical" way to represent an
-entire Pure program in Pure itself is the program text, hence :func:`evalcmd`
-only provides a textual interface at this time. But of course custom
-higher-level representations can be built on top of that, similar to those
-discussed in section `The Quote`_.
-
-Here's an example showing what can be done using the ``show`` command and a
-little bit of trivial text processing. The following ``sym_info`` function
-retrieves information about a given collection of global symbols in a way
-which can be processed in a Pure program. The ``cat`` argument can be any
-combination of the letters "c", "v", "f" and "m" denoting the categories of
-constants, variables, functions and macros, respectively. (You can also just
-leave this empty if you don't care about the type of symbol.) The ``pat``
-argument is a shell-like glob pattern for the name of symbols which should be
-listed (just "*" matches all symbols). The result is a list of tuples ``(name,
-value, cat, descr)`` with the name of the symbol and its value, as well as the
-category and description of the symbol, as provided by ``show -s``.
-
-::
-
-  using system;
-  sym_info cat::string pat::string
-  = [name,eval ("("+name+")"),descr | name,descr = info]
-  when
-    // Get the info about matching symbols from the 'show' command.
-    info = evalcmd $ sprintf "show -sg%s %s" (cat,pat);
-    // Split into lines.
-    info = if null info then [""] else split "\n" $ init info;
-    // Get rid of the last line with the summary information.
-    info = init info;
-    // Retrieve the information that we need.
-    info = [x | x@(s,_) = map fields info;
-    // Get rid of extra lines containing extern and fixity declarations.
-            s ~= "extern" && s ~= "nonfix" && s ~= "outfix" &&
-            s ~= "prefix" && s ~= "postfix" && ~fnmatch "infix*" s 0];
-  end with
-    // Regex call to split the summary information about one symbol, as
-    // returned by 'show -s', into the name and description parts.
-    fields s::string = tuple $
-            [info!2 | info = tail $ regs $ reg_info $
-             regex "([^ ]+)[ ]+([a-z]*)[ ]*(.*)" REG_EXTENDED s 0];
-  end;
-
-E.g., this call retrieves information about all defined macros::
-
-  > sym_info "m" "*";
-  [("$",($),"mac","2 args, 1 rules"),(".",(.),"mac","3 args, 1 rules"),
-  ("void",void,"mac","1 args, 6 rules")]
-
 Hygienic Macros
 ---------------
 
@@ -7499,12 +7384,17 @@ prints a (compile time) expression. For instance, consider::
 This *looks* as if ``y`` got captured, but in fact it's not, it's just the
 ``show`` command which displays the definition in an incorrect way. You can
 add the ``-e`` option to ``show`` which prints the deBruijn indices of locally
-bound symbols, then you see that the actual bindings are all right anyway
-(note that the number before the colon is the actual deBruijn index, the
-sequence of bits behind it is the subterm path)::
+bound symbols, then you see that the actual bindings are all right anyway::
 
   > show -e foo
   foo y/*0:1*/ = y/*1:1*/+y/*0:*/ when y/*0:*/ = y/*0:1*/+1 end;
+
+Note that the number before the colon is the actual deBruijn index, the
+sequence of bits behind it is the subterm path. Thus the first instance of
+``y`` in ``y+y`` (which has a deBruijn index of 1, indicating "one environment
+up") actually refers to the ``y`` in the left-hand side ``foo y``, while the
+second instance refers to the local binding ``y = y+1`` in the :keyword:`when`
+clause.
 
 Alas, this means that if you use ``dump`` to write such a definition to a text
 file and read it back with ``run`` later, then you'll get the wrong
