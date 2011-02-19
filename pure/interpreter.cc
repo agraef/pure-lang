@@ -1779,7 +1779,16 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
     // the number of inputs and outputs and the UI description, in the same
     // format as the faust_info function in the pure-faust module.
     {
-      vector<const Type*> argt(1, VoidPtrTy);
+      // This is the Faust function to initialize the UI data structure.
+      Function *buildUserInterface = module->getFunction
+	("$$faust$"+modname+"$buildUserInterface");
+      // Type of the above; the first argument gives the dsp type, the second
+      // one the UI type.
+      const FunctionType *ht = buildUserInterface->getFunctionType();
+      const Type *dsp_type = ht->getParamType(0);
+      const Type *ui_type = ht->getParamType(1);
+      // Create the call interface of our convenience function.
+      vector<const Type*> argt(1, dsp_type);
       FunctionType *ft = FunctionType::get(ExprPtrTy, argt, false);
       Function *f = Function::Create(ft, Function::ExternalLinkage,
 				     "$$faust$"+modname+"$info", module);
@@ -1807,14 +1816,11 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
 	(is_double?"faust_double_ui":"faust_float_ui");
       args.clear();
       Value *v = b.CreateCall(uifun, args.begin(), args.end());
-      // Call the Faust function to initialize the UI data structure.
-      Function *buildUserInterface = module->getFunction
-	("$$faust$"+modname+"$buildUserInterface");
-      // We need to cast the void* arguments to the proper pointer types
-      // expected by the buildUserInterface routine.
-      const FunctionType *ht = buildUserInterface->getFunctionType();
-      args.push_back(b.CreateBitCast(a, ht->getParamType(0)));
-      args.push_back(b.CreateBitCast(v, ht->getParamType(1)));
+      // Call the Faust function to initialize the UI data structure. Note
+      // that we need to cast the second void* argument to the proper pointer
+      // type expected by the buildUserInterface routine.
+      args.push_back(a);
+      args.push_back(b.CreateBitCast(v, ui_type));
       b.CreateCall(buildUserInterface, args.begin(), args.end());
       // Construct the info tuple.
       Function *infofun = module->getFunction("faust_make_info");
@@ -7697,6 +7703,16 @@ static inline bool is_faust(const string& name)
   return name.compare(0, 8, "$$faust$") == 0;
 }
 
+static inline string faust_basename(const string& name)
+{
+  if (is_faust(name)) {
+    size_t pos = name.rfind('$');
+    assert(pos != string::npos);
+    return name.substr(pos+1);
+  } else
+    return name;
+}
+
 static inline bool is_faust_var(const string& name)
 {
   return name.compare(0, 9, "$$$faust$") == 0;
@@ -8412,7 +8428,8 @@ void interpreter::defn(int32_t tag, pure_expr *x)
 ostream &operator<< (ostream& os, const ExternInfo& info)
 {
   interpreter& interp = *interpreter::g_interp;
-  os << "extern " << interp.type_name(info.type) << " " << info.name << "(";
+  string name = faust_basename(info.name);
+  os << "extern " << interp.type_name(info.type) << " " << name << "(";
   size_t n = info.argtypes.size();
   for (size_t i = 0; i < n; i++) {
     if (i > 0) os << ", ";
