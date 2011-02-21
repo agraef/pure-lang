@@ -4385,11 +4385,11 @@ expr interpreter::bind(env& vars, vinfo& vi, expr x, bool b, path p, bool a)
       throw err("error in pattern (nesting too deep)");
     exprll *ys = new exprll;
     path pi(p); size_t l = p.len();
-    for (exprll::const_iterator it = xs->begin();;) {
+    for (exprll::const_iterator it = xs->begin(); n>0;) {
       ys->push_back(exprl());
       exprl& zs = ys->back();
       path pj(pi, 0); pj.setmsk(l, 1); // mark this as a matrix path
-      for (exprl::const_iterator jt = it->begin();;) {
+      for (exprl::const_iterator jt = it->begin(); m>0;) {
 	expr u = bind(vars, vi, *jt, 1, path(pj, 0), 0);
 	zs.push_back(u);
 	if (++jt != it->end()) pj += 1; else break;
