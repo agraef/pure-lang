@@ -4091,8 +4091,47 @@ expanded before the macro gets applied to its parameters).
 Optimization Rules
 ------------------
 
-Here is a simple example which expands saturated calls of the :func:`succ`
-function (defined in the prelude) at compile time::
+Let's begin with a simple example of an optimization rule from the prelude,
+which eliminates saturated instances of the right-associative function
+application operator (you can find this near the beginning of prelude.pure)::
+
+  def f $ x = f x;
+
+Like in Haskell, '\ :func:`$`\ ' in fact just denotes function application,
+but it is a low-priority operator which is handy to write cascading function
+calls. With the above macro rule, these will be "inlined" as ordinary function
+applications automatically. Example::
+
+  > foo x = bar $ bar $ 2*x;
+  > show foo
+  foo x = bar (bar (2*x));
+
+Note that a macro may have the same name as an ordinary Pure function, which
+is essential if you want to inline calls to an existing function. (Just like
+ordinary functions, the number of parameters in each rule for a given macro
+must be the same, but a macro may have a different number of arguments than
+the corresponding function.)
+
+When running interactively, you can follow the reduction steps the compiler
+performs during macro evaluation. To these ends, you have to set "tracepoints"
+on the relevant macros, using the ``trace`` command with the ``-m`` option;
+see `Interactive Commands`_. (This works even if the interpreter is run in
+non-debugging mode.) Note that since macro expansion is performed at compile
+time, you'll have to do this *before* entering the definitions in which the
+macro is used. However, in many cases you can also just enter the right-hand
+side of the equation at the interpreter prompt to see how it gets
+expanded. For instance::
+
+  > trace -m $
+  > bar $ bar $ 2*x;
+  -- macro ($): bar$2*x --> bar (2*x)
+  -- macro ($): bar$bar (2*x) --> bar (bar (2*x))
+  bar (bar (2*x))
+
+Now let's see how we can add our own optimization rules. Suppose we'd like to
+expand saturated calls of the :func:`succ` function. This function is defined
+in the prelude; it just adds 1 to its single argument. We can inline such
+calls as follows::
 
   > def succ (x+y) = x+(y+1);
   > def succ x = x+1;
@@ -4100,21 +4139,7 @@ function (defined in the prelude) at compile time::
   > show foo
   foo x = x+3;
 
-Rules like these can be useful to help the compiler generate better code. Note
-that a macro may have the same name as an ordinary Pure function, which is
-essential if you want to optimize calls to an existing function, as in the
-previous example. (Just like ordinary functions, the number of parameters in
-each rule for a given macro must be the same, but a macro may have a different
-number of arguments than the corresponding function.)
-
-When running interactively, you can follow the reduction steps the compiler
-performs during macro evaluation. To these ends, you have to set "tracepoints"
-on the relevant macros, using the ``trace`` command with the ``-m`` option
-(see `Interactive Commands`_). Note that since macro expansion is performed at
-compile time, you'll have to do this *before* entering the definitions in
-which the macro is used. However, in many cases you can also just enter the
-right-hand side of the equation at the interpreter prompt to see how it gets
-expanded. For instance::
+Again, let's see exactly what's going on there::
 
   > trace -m succ
   > succ (succ (succ x));
@@ -4123,110 +4148,27 @@ expanded. For instance::
   -- macro succ: succ (x+(1+1)) --> x+(1+1+1)
   x+3
 
-(Note that the contraction of the subterm ``1+1+1`` to the integer constant
+Note that the contraction of the subterm ``1+1+1`` to the integer constant
 ``3`` is actually done by the compiler after macro expansion has been
 performed. This is also called "constant folding", see `Constant Definitions`_
-in the `Caveats and Notes`_ section for details.)
+in the `Caveats and Notes`_ section for details. It is also the reason that we
+added the first rule for ``succ``. This rule may seem superflous at first
+sight, but actually it is needed to massage the sum into a form which enables
+constant folding.
 
-A somewhat more practical example is the following optimization rule from the
-prelude, which eliminates saturated instances of the right-associative
-function application operator::
-
-  def f $ x = f x;
-
-Like in Haskell, this low-priority operator is handy to write cascading
-function calls. With the above macro rule, these will be "inlined" as ordinary
-function applications automatically. Example::
-
-  > foo x = bar $ bar $ 2*x;
-  > show foo
-  foo x = bar (bar (2*x));
-
-Again, let's see exactly what's going on there::
-
-  > trace -m $
-  > bar $ bar $ 2*x;
-  -- macro ($): bar$2*x --> bar (2*x)
-  -- macro ($): bar$bar (2*x) --> bar (bar (2*x))
-  bar (bar (2*x))
-
-Here are two slightly more tricky rules from the prelude, which optimize the
-case of "throwaway" list comprehensions. This is useful if a list
-comprehension is evaluated solely for its side effects::
-
-  def void (catmap f x) | void (listmap f x) = do f x;
-
-Note that the :func:`void` function simply throws away its argument and
-returns :cons:`()` instead. The :func:`do` function applies a function to
-every member of a list (like :func:`map`), but throws away all intermediate
-results and just returns :cons:`()`, which is much more efficient if you don't
-need those results anyway. These are both defined in the prelude.
-
-Before we delve into this example, a few remarks are in order about the way
-list comprehensions are implemented in Pure. As already mentioned, list
-comprehensions are just syntactic sugar; the compiler immediately transforms
-them to an equivalent expression involving only lambdas and a few other list
-operations. Note that list comprehensions are essentially equivalent to piles
-of nested lambdas, filters and maps, but for various reasons they are actually
-implemented using two special helper operations, :func:`catmap` and
-:func:`listmap`.
-
-The :func:`catmap` operation combines :func:`map` and :func:`cat`; this is
-needed, in particular, to accumulate the results of nested generators, such as
-``[i,j | i = 1..n; j = 1..m]``. The same operation is also used to implement
-filter clauses, you can see this below in the examples. However, for
-efficiency simple generators like ``[2*i | i = 1..n]`` are translated to a
-:func:`listmap` instead (which is basically just :func:`map`, but works with
-different aggregate types, so that list comprehensions can draw values from
-aggregates other than lists, such as matrices).
-
-Now let's see how the rules above transform a list comprehension if we
-"voidify" it::
-
-  > using system;
-  > f = [printf "%g\n" (2^x+1) | x=1..5; x mod 2];
-  > g = void [printf "%g\n" (2^x+1) | x=1..5; x mod 2];
-  > show f g
-  f = catmap (\x -> if x mod 2 then [printf "%g\n" (2^x+1)] else []) (1..5);
-  g = do (\x -> if x mod 2 then [printf "%g\n" (2^x+1)] else []) (1..5);
-
-Ok, so the :func:`catmap` got replaced with a :func:`do` which is just what we
-need to make this code go essentially as fast as a ``for`` loop in
-conventional programming languages (up to constant factors, of course). Here's
-how it looks like when we run the ``g`` function::
-
-  > g;
-  3
-  9
-  33
-  ()
-
-It's not all roses, however, since the above macro rules will only get rid of
-the outermost :func:`catmap` if the list comprehension binds multiple
-variables::
-
-  > u = void [puts $ str (x,y) | x=1..2; y=1..3];
-  > show u
-  u = do (\x -> listmap (\y -> puts (str (x,y))) (1..3)) (1..2);
-
-If you're bothered by this, you'll have to apply :func:`void` recursively,
-creating a nested list comprehension which expands to a nested :func:`do`::
-
-  > v = void [void [puts $ str (x,y) | y=1..3] | x=1..2];
-  > show v
-  v = do (\x -> do (\y -> puts (str (x,y))) (1..3)) (1..2);
-
-(It would be nice to have this handled automatically, but the left-hand side
-of a macro definition must be a simple expression, and thus it's not possible
-to write a macro which descends recursively into the lambda argument of
-:func:`catmap`.)
+Rules like these can help the compiler generate better code. Of course, the
+above examples are still rather elementary. Pure macros can do much more
+elaborate optimizations, but for this we first need to discuss how to write
+recursive macros, as well as macros which take apart special terms like
+lambdas. After that we'll return to the subject of optimization rules in
+`Advanced Optimization`_ below.
 
 Recursive Macros
 ----------------
 
-Macros can also be recursive, in which case they usually consist of multiple
-rules and make use of pattern-matching like ordinary function definitions. As
-a simple example, let's implement a Pure version of Lisp's quasiquote which
+Macros can be recursive, in which case they usually consist of multiple rules
+and make use of pattern-matching like ordinary function definitions. As a
+simple example, let's implement a Pure version of Lisp's quasiquote which
 allows you to create a quoted expression from a "template" while substituting
 variable parts of the template. (For the sake of brevity, our definition is
 somewhat simplified and does not cover some corner cases. See the Pure
@@ -4273,12 +4215,12 @@ Examples::
   foo 1 2 (2/3) (3/4) (5/6)
 
 We mention in passing here that, technically, Pure macros are just as powerful
-as (unconditional) term rewriting systems and thus they are
-Turing-complete. This implies that a badly written macro may well send the
-Pure compiler into an infinite recursion, which results in a stack overflow at
-compile time. See `Stack Size and Tail Recursion`_ in the `Caveats and Notes`_
-section for information on how to deal with these by setting the
-:envvar:`PURE_STACK` environment variable.
+as (unconditional) term rewriting systems and thus they are Turing-complete.
+This implies that a badly written macro may well send the Pure compiler into
+an infinite recursion, which results in a stack overflow at compile time. See
+`Stack Size and Tail Recursion`_ in the `Caveats and Notes`_ section for
+information on how to deal with these by setting the :envvar:`PURE_STACK`
+environment variable.
 
 User-Defined Special Forms
 --------------------------
@@ -4308,11 +4250,6 @@ Note that the above definition of ``timex`` wouldn't work as an ordinary
 function definition, since by virtue of Pure's basic eager evaluation strategy
 the ``x`` parameter would have been evaluated already before it is passed to
 ``timex``, making ``timex`` always return a zero time value. Try it!
-
-Reflection
-----------
-
-XXXTODO
 
 Macro Hygiene
 -------------
@@ -4370,6 +4307,339 @@ with C macros:
 
 Here ``F(y)`` expands to ``{ int y = y+1; return y+y; }`` which is usually
 *not* what you want.
+
+Built-in Macros
+---------------
+
+As already mentioned in `The Quote`_, `special expressions`_ such as
+conditionals and lambdas cannot be directly represented as runtime data in
+Pure. But they can be *quoted* in which case they are replaced by
+corresponding "placeholder terms". These placeholder terms are in fact
+implemented as built-in macros which, when evaluated, construct the
+corresponding specials.
+
+.. macro:: __ifelse__ x y z
+
+   This macro expands to the conditional expression ``if x then y else z``
+   during macro evaluation.
+
+.. macro:: __lambda__ [x1,...,xn] y
+
+   Expands to the lambda expression ``\x1 ... xn -> y``.
+
+.. macro:: __case__ x [(x1 --> y1),...,(xn --> yn)]
+
+   Expands to the :keyword:`case` expression ``case x of x1 = y1; ...; xn = yn
+   end``. Note that the :cons:`-->` symbol is used to separate the left-hand
+   side and the right-hand side of each rule (see below).
+
+.. macro:: infix __when__ x [(x1 --> y1),...,(xn --> yn)]
+
+   Expands to the :keyword:`when` expression ``x when x1 = y1; ...; xn = yn
+   end``. Here the left-hand side of a rule may be omitted if it is just the
+   anonymous variable; i.e., ``x __when__ [foo y]`` is the same as ``x
+   __when__ [_ --> foo y]``.
+
+.. macro:: infix __with__ x [(x1 --> y1),...,(xn --> yn)]
+
+   Expands to the :keyword:`with` expression ``x with x1 = y1; ...; xn = yn
+   end``.
+
+Note that the following low-priority infix operators are used to denote
+equations in the :macro:`__case__`, :macro:`__when__` and :macro:`__with__`
+macros:
+
+.. constructor:: infix --> x y
+
+   Denotes an equation ``x = y``.
+
+.. constructor:: infix __if__ x y
+
+   Attaches a guard to the right-hand side of an equation. That is, ``x --> y
+   __if__ z`` denotes the conditional equation ``x = y if z``. This symbol is
+   only recognized in :macro:`__case__` and :macro:`__with__` calls.
+
+In addition, patterns on the left-hand side of equations or in lambda
+arguments may be decorated with the following constructor terms to indicate
+"as" patterns and type tags (these are infix operators with a very high
+priority):
+
+.. constructor:: infix __as__ x y
+
+   Denotes an "as" pattern ``x @ y``.
+
+.. constructor:: infix __type__ x y
+
+   Denotes a type tag ``x :: y``.
+
+Note that all these symbols are in fact just constructors which are only
+interpreted in the context of the built-in macros listed above; they aren't
+macros themselves.
+
+It's good to remember the above when you're doing macro programming. However,
+to see the placeholder term of a special, you can also just type a quoted
+expression in the interpreter::
+
+  > '(\x->x+1);
+  __lambda__ [x] (x+1)
+  > '(f with f x = y when y = x+1 end end);
+  f __with__ [f x-->y __when__ [y-->x+1]]
+
+Here's how type tags and "as" patterns in quoted specials look like::
+
+  > '(\x::int->x+1);
+  __lambda__ [x __type__ int] (x+1)
+  > '(dup (1..3) with dup xs@(x:_) = x:xs end);
+  dup (1..3) __with__ [dup (xs __as__ (x:_))-->x:xs]
+
+Note that the placeholder terms for the specials are quoted here, and hence
+they are not evaluated (quoting inhibits macro expansion, just like it
+prevents the evaluation of ordinary function calls). Evaluating the
+placeholder terms executes the corresponding specials::
+
+  > '(dup (1..3) with dup xs@(x:_) = x:xs end);
+  dup (1..3) __with__ [dup (xs __as__ (x:_))-->x:xs]
+  > eval ans;
+  [1,1,2,3]
+
+Of course, you can also just enter the macros directly (without quoting) to
+have them evaluated::
+
+  > dup (1..3) __with__ [dup (xs __as__ (x:_))-->x:xs];
+  [1,1,2,3]
+  > __lambda__ [x __type__ int] (x+1);
+  #<closure 0x7f1934158dc8>
+  > ans 99;
+  100
+
+As the placeholder terms are just ordinary Pure expressions, they can be
+manipulated by functions just like any other term. For instance, here's how
+you can define a function which takes a quoted lambda and swaps its two
+arguments::
+
+  > swap (__lambda__ [x,y] z) = '(__lambda__ [y,x] z);
+  > swap ('(\a b->a-b));
+  __lambda__ [b,a] (a-b)
+  > eval ans 2 3; // same as (\b a->a-b) 2 3
+  1
+
+For convenience, a literal special expression can also be used on the
+left-hand side of an equation, in which case it actually denotes its quoted
+representation. So the ``swap`` function can also be defined like this (note
+that we first scratch the previous definition of ``swap`` with the ``clear``
+command, see `Interactive Commands`_)::
+
+  > clear swap
+  > swap (\x y -> z) = '(\y x -> z);
+  > swap ('(\a b->a-b));
+  __lambda__ [b,a] (a-b)
+
+This is usually easier to write and improves readability. However, there are
+cases in which you want to work with the built-in macros in a direct
+fashion. In particular, this becomes necessary when writing more generic rules
+which deal, e.g., with lambdas involving a variable number of arguments, or if
+you need real (i.e., unquoted) type tags or "as" patterns in a placeholder
+pattern. We'll see examples of these later.
+
+Quoted specials can be manipulated with macros just as well as with functions.
+In fact, this is quite common and thus the macro evaluator has some special
+support to make this more convenient. First, special expressions in macro
+arguments are implicitly quoted. To illustrate this, let's redefine ``swap``
+as a macro::
+
+  > clear swap
+  > def swap (\x y -> z) = '(\y x -> z);
+  > swap (\a b->a-b);
+  __lambda__ [b,a] (a-b)
+
+Note that the quote on the lambda argument of ``swap`` can now be omitted.
+However, the result is still a quoted lambda. It's tempting to just omit the
+quote on the right-hand side of the macro definition as well, in order to get
+a real lambda instead::
+
+  > clear swap
+  > def swap (\x y -> z) = \y x -> z;
+  > swap (\a b->a-b);
+  #<closure 0x7f1934156f00>
+  > ans 2 3;
+  a-b
+
+We got a closure all right, but apparently it's not the right one. Let's use
+``trace -m`` to figure out what went wrong::
+
+  > trace -m swap
+  > swap (\a b->a-b);
+  -- macro swap: swap (\a b -> a-b) --> \y x -> a-b
+  #<closure 0x7f1934157248>
+
+Ok, so the result is the lambda ``\y x -> a-b``, not ``\b a -> a-b`` as we
+expected. This happens because we used a literal (unquoted) lambda on the
+right-hand side, which does its own variable binding; consequently, the
+variables ``x`` and ``y`` are bound by the lambda in this context, not by the
+left-hand side of the macro rule.
+
+So just putting an unquoted lambda on the right-hand side doesn't do the
+job. One way to deal with the situation is to just employ the ``__lambda__``
+macro in a direct way, as we've seen before::
+
+  > clear swap
+  > def swap (__lambda__ [x,y] z) = __lambda__ [y,x] z;
+  > swap (\a b->a-b);
+  -- macro swap: swap (\a b -> a-b) --> __lambda__ [b,a] (a-b)
+  #<closure 0x7f1934156f00>
+  > ans 2 3;
+  1
+
+This works, but sometimes it's more convenient to first construct a quoted
+term involving the necessary specials and then have it evaluated during macro
+evaluation. Pure provides yet another built-in macro for this purpose:
+
+.. macro:: __eval__ x
+
+   Evaluate ``x`` at macro expansion time. This works by stripping one level
+   of (outermost) quotes from ``x`` and performing macro expansion on the
+   resulting unquoted subexpressions.
+
+Using :macro:`__eval__`, we can implement the ``swap`` macro as follows::
+
+  > clear swap
+  > def swap (\x y -> z) = __eval__ ('(\y x -> z));
+  > trace -m __eval__
+  > swap (\a b->a-b);
+  -- macro swap: swap (\a b -> a-b) --> __eval__ ('__lambda__ [b,a] (a-b))
+  -- macro __eval__: __eval__ ('__lambda__ [b,a] (a-b)) --> \b a -> a-b
+  #<closure 0x7f7e1f867dc8>
+  > ans 2 3;
+  1
+
+Lisp programmers should note the difference: Lisp macros usually yield a
+quoted expression which is evaluated implicitly during macro expansion. This
+is never done automatically in Pure, since many Pure macros work perfectly
+well without it. Instead, quotes in a macro expansion are treated as literals,
+and you'll have to explicitly call ``__eval__`` to remove them during macro
+evaluation.
+
+Finally, note that placeholder terms for specials are just simple expressions;
+they don't do any variable binding by themselves. Thus the rules of `macro
+hygiene`_ don't apply to them, which makes it possible to manipulate lambdas
+and local definitions in any desired way. On the other hand, this means that
+it is the programmer's responsibility to avoid accidental name capture when
+using these facilities.
+
+Advanced Optimization
+---------------------
+
+We are now in a position to have a look at some of the trickier optimization
+macros defined in the prelude. The following macros can be found near the end
+of the prelude.pure module; they are used to optimize the case of "throwaway"
+list comprehensions. This is useful if a comprehension is evaluated solely for
+its side effects. (In fact, there are some more rules like these in the
+prelude to handle the case of matrix comprehensions. However, as these are
+analogous, for the sake of simplicity we only discuss the case of list
+comprehensions here.) ::
+
+  def void (catmap f x) | void (listmap f x) = __do__ f x;
+
+  // Handle the case of an outermost filter clause.
+  def void (__ifelse__ y z []) = __ifelse__ y (void z) ();
+
+  // Recurse into embedded generator clauses.
+  def __do__ (__lambda__ [x] y@(listmap _ _)) |
+      __do__ (__lambda__ [x] y@(catmap _ _)) =
+      __do__ (__lambda__ [x] (void y));
+
+  // Recurse into embedded filter clauses.
+  def __do__ (__lambda__ [x] (__ifelse__ y z [])) =
+      __do__ (__lambda__ [x] (__ifelse__ y (void z) ()));
+
+  // Eliminate extra calls to 'void' in generator clauses.
+  def __do__ (__lambda__ [x] (void y)) = __do__ (__lambda__ [x] y);
+
+  // Eliminate extra calls to 'void' in filter clauses.
+  def __do__ (__lambda__ [x] (__ifelse__ y (void z) ())) =
+      __do__ (__lambda__ [x] (__ifelse__ y z ()));
+
+  // Any remaining instances reduce to a plain 'do' (this must come last).
+  def __do__ f = do f;
+
+First, note that the :func:`void` function simply throws away its argument and
+returns :cons:`()` instead. The :func:`do` function applies a function to
+every member of a list (like :func:`map`), but throws away all intermediate
+results and just returns :cons:`()`, which is much more efficient if you don't
+need those results anyway. These are both defined in the prelude. The
+``__do__`` macro eventually reduces to just a plain ``do`` call, but applies
+some optimizations along the way. (While the above rules for ``__do__`` are
+always valid optimizations for ``do``, the prelude uses a separate macro here
+instead of globbering ``do`` itself, so that these optimizations do not
+interfere with calls to ``do`` in ordinary user code.)
+
+Before we further delve into this example, a few remarks are in order about
+the way list comprehensions are implemented in Pure. As already mentioned,
+list comprehensions are just syntactic sugar; the compiler immediately
+transforms them to an equivalent expression involving only lambdas and a few
+other list operations. The latter are essentially equivalent to piles of
+nested filters and maps, but for various reasons they are actually implemented
+using two special helper operations, :func:`catmap` and :func:`listmap`.
+
+The :func:`catmap` operation combines :func:`map` and :func:`cat`; this is
+needed, in particular, to accumulate the results of nested generators, such as
+``[i,j | i = 1..n; j = 1..m]``. The same operation is also used to implement
+filter clauses, you can see this below in the examples. However, for
+efficiency simple generators like ``[2*i | i = 1..n]`` are translated to a
+:func:`listmap` instead (which is basically just :func:`map`, but works with
+different aggregate types, so that list comprehensions can draw values from
+aggregates other than lists, such as matrices).
+
+Now let's see how the rules above transform a list comprehension if we "void"
+it::
+
+  > using system;
+  > f = [printf "%g\n" (2^x+1) | x=1..5; x mod 2];
+  > g = void [printf "%g\n" (2^x+1) | x=1..5; x mod 2];
+  > show f g
+  f = catmap (\x -> if x mod 2 then [printf "%g\n" (2^x+1)] else []) (1..5);
+  g = do (\x -> if x mod 2 then printf "%g\n" (2^x+1) else ()) (1..5);
+
+As you can see, the :func:`catmap` got replaced with a :func:`do`. In
+addition, the list brackets inside the :func:`do` expression got eliminated.
+This is actually done by another optimization rule for :func:`void` which can
+be found somewhere else in the prelude::
+
+  def void [x] = void x;
+
+These optimizations are just what's needed to make this code go essentially as
+fast as a ``for`` loop in conventional programming languages (up to constant
+factors, of course). Here's how it looks like when we run the ``g`` function::
+
+  > g;
+  3
+  9
+  33
+  ()
+
+It's also instructive to have a look at how the above macro rules work in
+concert to rewrite a "voided" comprehension. To these ends, you can rerun the
+right-hand side of ``g`` with some tracing enabled, as follows (we omit the
+tracing output here for brevity)::
+
+  > trace -m void __do__
+  > void [printf "%g\n" (2^x+1) | x=1..5; x mod 2];
+
+The above optimization rules also take care of nested list comprehensions,
+since they recurse into the lambda bodies of generator and filter clauses. For
+instance::
+
+  > h = void [puts $ str (x,y) | x=1..2; y=1..3];
+  > show h
+  h = do (\x -> do (\y -> puts (str (x,y))) (1..3)) (1..2);
+
+Again, you should run this with macro tracing enabled to see exactly how the
+``__do__`` macro recurses into the outer lambda body.
+
+Reflection
+----------
+
+XXXTODO
 
 .. _Exception Handling:
 
