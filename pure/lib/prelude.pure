@@ -438,11 +438,11 @@ fix f = f (fix f&);
 def f $ x	= f x;
 def (f . g) x	= f (g x);
 
-/* The following rules are always valid and optimize the case of "throwaway"
-   list comprehensions (useful if a list comprehension is evaluated solely for
-   its side effects). */
+/* Simplify calls to 'void'. These are also useful in conjunction with the
+   optimization rules for "throwaway" list comprehensions (see below). */
 
-def void (catmap f x) | void (listmap f x) = do f x;
+def void () | void [] | void {} = ();
+def void [x] | void {x} = void x;
 
 /* ..
 
@@ -1591,3 +1591,46 @@ with
   check (foldr _ _ us)	= throw (bad_list_value us);
   check us		= throw (bad_tuple_value us);
 end;
+
+/* Optimize the case of "throwaway" list and matrix comprehensions (useful if
+   a comprehension is evaluated solely for its side effects). */
+
+private __do__;
+
+def void (catmap f x) | void (listmap f x) = __do__ f x;
+def void (rowcatmap f x) | void (colcatmap f x) = __do__ f x;
+def void (rowmap f x) | void (colmap f x) = __do__ f x;
+
+// Handle the case of an outermost filter clause.
+def void (__ifelse__ y z []) | void (__ifelse__ y z {}) =
+    __ifelse__ y (void z) ();
+
+/* The '__do__' macro eventually reduces to just a plain 'do' call, but
+   applies some optimizations along the way. While the following rules are
+   always valid, we use a separate macro here instead of globbering 'do'
+   itself, so that these optimizations do not interfere with calls to 'do' in
+   ordinary user code. */
+
+// Recurse into embedded generator clauses.
+def __do__ (__lambda__ [x] y@(listmap _ _)) |
+    __do__ (__lambda__ [x] y@(rowmap _ _)) |
+    __do__ (__lambda__ [x] y@(colmap _ _)) |
+    __do__ (__lambda__ [x] y@(catmap _ _)) |
+    __do__ (__lambda__ [x] y@(rowcatmap _ _)) |
+    __do__ (__lambda__ [x] y@(colcatmap _ _)) =
+    __do__ (__lambda__ [x] (void y));
+
+// Recurse into embedded filter clauses.
+def __do__ (__lambda__ [x] (__ifelse__ y z [])) |
+    __do__ (__lambda__ [x] (__ifelse__ y z {})) =
+    __do__ (__lambda__ [x] (__ifelse__ y (void z) ()));
+
+// Eliminate extra calls to 'void' in generator clauses.
+def __do__ (__lambda__ [x] (void y)) = __do__ (__lambda__ [x] y);
+
+// Eliminate extra calls to 'void' in filter clauses.
+def __do__ (__lambda__ [x] (__ifelse__ y (void z) ())) =
+    __do__ (__lambda__ [x] (__ifelse__ y z ()));
+
+// Any remaining instances reduce to a plain 'do' (this must come last).
+def __do__ f = do f;
