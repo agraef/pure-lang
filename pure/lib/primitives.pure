@@ -396,6 +396,41 @@ using namespace __C;
        > f 99 when _=>f = ans!1 end;
        100
 
+   The following functions allow you to inspect or modify the function, type,
+   macro, constant and variable definitions of the running program. This uses
+   a special meta representation for rewriting rules and definitions. Please
+   see the :ref:`Macros` section in the Pure manual for details.
+
+   .. function:: get_fundef sym
+                 get_typedef sym
+                 get_macdef sym
+
+      If the given symbol is defined as a function, type or macro, return the
+      corresponding list of rewriting rules. Otherwise return the empty list.
+
+   .. function:: get_vardef sym
+                 get_constdef sym
+
+      If the given symbol is defined as a variable or constant, return the
+      corresponding definition as a term of the form ``sym --> value``.
+      These functions just fail otherwise.
+
+   The following functions may fail in case of error, in which case
+   :func:`lasterr` is set accordingly (see `Eval and Friends`_ below).
+
+   .. function:: add_fundef rules
+                 add_typedef rules
+                 add_macdef rules
+
+      Add the given rewriting rules (given in the same format as returned by
+      the :func:`get_fundef`, :func:`get_typedef` and :func:`get_macdef`
+      functions above) to the running program.
+
+   .. function:: add_vardef (sym --> value)
+                 add_constdef (sym --> value)
+
+      Define the given symbol as a variable or constant.
+
    The prelude also provides some functions to retrieve various attributes of
    a function symbol which determine how the operation is applied to its
    operands or arguments. These functions all take a single argument, the
@@ -479,13 +514,19 @@ using namespace __C;
       Yields the print representation of an expression in Pure syntax, as a
       string.
 
+   .. function:: __str__ x
+
+      Pretty-prints special expressions. This only applies to quoted specials,
+      see the :ref:`Macros` section in the Pure manual for details.
+
    .. function:: val /string s
 
       Parses a single simple expression, specified as a string in Pure syntax,
       and returns the result as is, without evaluating it. Note that this is
       much more limited than the :func:`eval` operation below, as the
       expression must not contain any of the special constructs (conditional
-      expressions, :keyword:`when`, :keyword:`with`, etc.).
+      expressions, :keyword:`when`, :keyword:`with`, etc.), unless they are
+      quoted.
 
    .. function:: eval x
 
@@ -508,27 +549,12 @@ using namespace __C;
 
    .. function:: lasterr
 
-      Reports errors in :func:`eval` and :func:`evalcmd`. This string value
-      will be nonempty iff a compilation or execution error was encountered
-      during the most recent invokation of :func:`eval` and :func:`evalcmd`.
-      In that case each reported error message is terminated with a newline
+      Reports errors in :func:`eval` and :func:`evalcmd` (as well as in
+      :func:`add_fundef` et al, described in the previous subsection). This
+      string value will be nonempty iff a compilation or execution error was
+      encountered during the most recent invokation of these functions. In
+      that case each reported error message is terminated with a newline
       character.
-
-   .. function:: reduce x
-
-      Reevaluates an expression in a local environment. This dynamically
-      rebinds function symbols in the given expression to whatever local
-      definitions are in effect at the point of the :func:`reduce` call. Note
-      that :func:`reduce` is actually implemented as a macro which expands to
-      the :func:`reduce_with` primitive (see below), using the
-      :func:`__locals__` builtin to enumerate the bindings which are in effect
-      at the call site.
-
-   .. function:: reduce_with env x
-
-      Like :func:`reduce` above, but takes a list of replacements (given as
-      hash pairs ``u=>v``) as the first argument. The :func:`reduce` macro
-      expands to ``reduce_with __locals__``.
 
    Examples::
 
@@ -542,19 +568,68 @@ using namespace __C;
      0.333333333333333
      > evalcmd "show evalcmd";
      "extern expr* evalcmd(expr*);\n"
-
      > eval "1/3)";
      eval "1/3)"
      > lasterr;
      "<stdin>, line 1: syntax error, unexpected ')', expecting '=' or '|'\n"
+
+   :func:`evalcmd` is commonly used to invoke the ``show`` and ``clear``
+   commands for metaprogramming purposes. The library provides the following
+   two convenience functions to make this easy:
+
+   .. function:: globsym pat level
+
+      This uses :func:`evalcmd` with the ``show`` command to list all defined
+      symbols matching the given glob pattern. A definition level may be
+      specified to restrict the context in which the symbol is defined; a
+      level of 0 indicates that all symbols are eligible (see the description
+      of the ``show`` command in the Pure manual for details). The result is
+      the list of all matching (quoted) symbols.
+
+   .. function:: clearsym sym level
+
+      This uses :func:`evalcmd` with the ``clear`` command to delete the
+      definition of the given symbol at the given definition level. No glob
+      patterns are permitted here.  The ``sym`` argument may denote either a
+      string or a literal (quoted) symbol.
+
+   Example::
+
+     > let x,y = 77,99;
+     > globsym "[a-z]" 0;
+     [x,y]
+     > do (flip clearsym 0) ans;
+     ()
+     > globsym "[a-z]" 0;
+     []
+     > x,y;
+     x,y
+
+   The following functions are useful for doing symbolic expression
+   simplification.
+
+   .. function:: reduce x
+
+      Reevaluates an expression in a local environment. This dynamically
+      rebinds function symbols in the given expression to whatever local
+      function definitions are in effect at the point of the :func:`reduce`
+      call. Note that :func:`reduce` is actually implemented as a macro which
+      expands to the :func:`reduce_with` primitive (see below), using the
+      :func:`__locals__` builtin to enumerate the bindings which are in effect
+      at the call site.
+
+   .. function:: reduce_with env x
+
+      Like :func:`reduce` above, but takes a list of replacements (given as
+      hash pairs ``u=>v``) as the first argument. The :func:`reduce` macro
+      expands to ``reduce_with __locals__``.
 
    The :func:`reduce` macro provides a restricted form of dynamic binding
    which is useful to implement local rewriting rules. It is invoked without
    parameters and expands to the curried call ``reduce_with __locals__`` of
    the :func:`reduce_with` primitive, which takes one additional argument, the
    expression to be rewritten. The following example shows how to expand or
-   factorize an expression using local rules for the corresponding laws of
-   distributivity::
+   factorize an expression using local rules for the laws of distributivity::
 
      expand = reduce with
        (a+b)*c = a*c+b*c;
