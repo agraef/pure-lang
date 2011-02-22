@@ -807,8 +807,8 @@ interpreter::interpreter(int32_t nsyms, char *syms,
 interpreter::~interpreter()
 {
   // get rid of global environments and the LLVM data
-  globenv.clear(); macenv.clear();
-  globalfuns.clear(); globalvars.clear();
+  globenv.clear(); typeenv.clear(); macenv.clear();
+  globalfuns.clear(); globaltypes.clear(); globalvars.clear();
   // free the shadow stack
   free(sstk);
   // free the activation stack
