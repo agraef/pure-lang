@@ -1073,6 +1073,13 @@ pure_expr *get_fundef(pure_expr *f);
 pure_expr *get_typedef(pure_expr *f);
 pure_expr *get_macdef(pure_expr *f);
 
+/* Get definitions of variables and constants. In this case the result takes
+   the form 'var --> val' if the symbol is defined; otherwise NULL is
+   returned. */
+
+pure_expr *get_vardef(pure_expr *f);
+pure_expr *get_constdef(pure_expr *f);
+
 /* Add rewriting rules for a function, type or macro, using the same runtime
    representation as returned by get_fundef(), get_typedef() and get_macdef()
    as input. Like eval(), this may return NULL and leave an error message in
@@ -1081,6 +1088,16 @@ pure_expr *get_macdef(pure_expr *f);
 pure_expr *add_fundef(pure_expr *x);
 pure_expr *add_typedef(pure_expr *x);
 pure_expr *add_macdef(pure_expr *x);
+
+/* Set a variable or constant. Here the argument must be a single rule in the
+   format 'var --> val'. These work pretty much like pure_let() and pure_def()
+   in the public API, but take their input in rule form and report errors in
+   lasterr() like add_fundef() et al above. Note that the left-hand side
+   *must* be a symbol here, no pattern matching is performed by these
+   routines. */
+
+pure_expr *add_vardef(pure_expr *x);
+pure_expr *add_constdef(pure_expr *x);
 
 /* Expression serialization. These operations can be used to safely transfer
    expression data to/from persistent storage and between different processes

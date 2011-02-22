@@ -8395,6 +8395,34 @@ pure_expr *get_macdef(pure_expr *f)
 }
 
 extern "C"
+pure_expr *get_vardef(pure_expr *f)
+{
+  if (f->tag > 0) {
+    interpreter& interp = *interpreter::g_interp;
+    env::const_iterator it = interp.globenv.find(f->tag);
+    if (it != interp.globenv.end() && it->second.t == env_info::fvar)
+      return pure_appl(pure_symbol(interp.symtab.eqn_sym().f), 2, f, eval(f));
+    else
+      return 0;
+  } else
+    return 0;
+}
+
+extern "C"
+pure_expr *get_constdef(pure_expr *f)
+{
+  if (f->tag > 0) {
+    interpreter& interp = *interpreter::g_interp;
+    env::const_iterator it = interp.globenv.find(f->tag);
+    if (it != interp.globenv.end() && it->second.t == env_info::cvar)
+      return pure_appl(pure_symbol(interp.symtab.eqn_sym().f), 2, f, eval(f));
+    else
+      return 0;
+  } else
+    return 0;
+}
+
+extern "C"
 pure_expr *add_fundef(pure_expr *x)
 {
   if (pure_is_listv(x, 0, 0)) {
@@ -8422,6 +8450,38 @@ pure_expr *add_macdef(pure_expr *x)
   if (pure_is_listv(x, 0, 0)) {
     interpreter& interp = *interpreter::g_interp;
     bool res = interp.add_mac_rules(x);
+    return res?pure_tuplel(0):0;
+  } else
+    return 0;
+}
+
+extern "C"
+pure_expr *add_vardef(pure_expr *x)
+{
+  pure_expr *f, **xv;
+  size_t n;
+  interpreter& interp = *interpreter::g_interp;
+  if (pure_is_appv(x, &f, &n, 0) && n == 2 &&
+      f->tag == interp.symtab.eqn_sym().f) {
+    bool res = pure_is_appv(x, &f, &n, &xv) && xv[0]->tag > 0 &&
+      interp.add_var(xv[0]->tag, xv[1]);
+    free(xv);
+    return res?pure_tuplel(0):0;
+  } else
+    return 0;
+}
+
+extern "C"
+pure_expr *add_constdef(pure_expr *x)
+{
+  pure_expr *f, **xv;
+  size_t n;
+  interpreter& interp = *interpreter::g_interp;
+  if (pure_is_appv(x, &f, &n, 0) && n == 2 &&
+      f->tag == interp.symtab.eqn_sym().f) {
+    bool res = pure_is_appv(x, &f, &n, &xv) && xv[0]->tag > 0 &&
+      interp.add_const(xv[0]->tag, xv[1]);
+    free(xv);
     return res?pure_tuplel(0):0;
   } else
     return 0;

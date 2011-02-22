@@ -7576,6 +7576,32 @@ bool interpreter::add_mac_rules(pure_expr *y)
   return true;
 }
 
+bool interpreter::add_var(int32_t sym, pure_expr *x)
+{
+  if (sym <= 0 || !x) return false;
+  try {
+    interpreter& interp = *interpreter::g_interp;
+    interp.defn(sym, x);
+    return true;
+  } catch (err &e) {
+    errmsg = e.what() + "\n";
+    return false;
+  }
+}
+
+bool interpreter::add_const(int32_t sym, pure_expr *x)
+{
+  if (sym <= 0 || !x) return false;
+  try {
+    interpreter& interp = *interpreter::g_interp;
+    interp.const_defn(sym, x);
+    return true;
+  } catch (err &e) {
+    errmsg = e.what() + "\n";
+    return false;
+  }
+}
+
 // Code generation.
 
 #define Dbl(d)		ConstantFP::get(interpreter::double_type(), d)
