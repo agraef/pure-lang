@@ -3739,7 +3739,7 @@ void interpreter::parse(expr *x)
 {
   last.clear(); checkfuns(*x);
   if (result) pure_free(result); result = 0;
-  pure_expr *res = const_value(*x, true);
+  pure_expr *res = const_value(rsubst(*x), true);
   if (!res) throw err("syntax error");
   result = pure_new(res);
   delete x;
