@@ -336,22 +336,27 @@ using namespace __C;
    .. function:: funp x
                  lambdap x
                  thunkp x
-                 varp x
-
-      Predicates to check for various kinds of function objects (named,
-      anonymous or thunk), and free variable symbols.
-
-   .. function:: symbolp x
                  closurep x
 
-      Convenience functions to check for symbols (named function or variable)
-      and closures (named function or lambda).
+      Predicates to check for various kinds of function objects (named,
+      anonymous or thunk). :func:`closurep` checks for any kind of "normal"
+      closure (i.e., named functions and lambdas, but not thunks).
 
    .. function:: functionp x
 
       Convenience function to check for "callable" functions. This includes
       any kind of closure with a nonzero argument count as well as partial
       (unsaturated) applications of these.
+
+   .. function:: symbolp x
+                 varp x
+
+      Predicates to check for any kind of symbol (this also includes operator
+      and nonfix symbols) and for free variable symbols, respectively. Note
+      that varp returns true for any symbol which is not an operator or nonfix
+      symbol (i.e., for any symbol that could in principle be bound to a
+      value, either globally or locally). This holds even if the symbol is
+      currently bound to a function, macro or constant.
 
    Inspection
    ~~~~~~~~~~
@@ -813,27 +818,25 @@ inexactp x      = case x of
 		    _ = doublep x;
 		  end if numberp x;
 
-/* Predicates to check for various kinds of function objects (named, anonymous
-   or thunk) and global variable symbols. */
+/* Predicates to check for various kinds of function objects. */
 
 extern bool funp(expr*), bool lambdap(expr*), bool thunkp(expr*);
-extern bool varp(expr*);
+closurep x = funp x || lambdap x;
 
 /* Convenience types for the above. */
 
 type fun = funp;
 type lambda = lambdap;
 type thunk = thunkp;
-type var = varp;
+type closure = closurep;
 
-/* Convenience functions and types to check for symbols (named function or
-   variable) and closures (named function or lambda). */
+/* Predicates and convenience types to check for various kinds of symbols. */
 
-symbolp x = varp x || funp x;
-closurep x = funp x || lambdap x;
+extern bool symbolp(expr*);
+extern bool varp(expr*);
 
 type symbol = symbolp;
-type closure = closurep;
+type var = varp;
 
 /* Get the argument count of a function object, i.e., the number of arguments
    it expects. Returns 0 for thunks and saturated applications, -1 for

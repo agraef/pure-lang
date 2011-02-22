@@ -11853,9 +11853,15 @@ bool thunkp(const pure_expr *x)
 }
 
 extern "C"
+bool symbolp(const pure_expr *x)
+{
+  return x->tag > 0;
+}
+
+extern "C"
 bool varp(const pure_expr *x)
 {
-  if (x->tag <= 0 || x->data.clos) return false;
+  if (x->tag <= 0) return false;
   // Check that the symbol is a variable.
   interpreter& interp = *interpreter::g_interp;
   symbol& sym = interp.symtab.sym(x->tag);

@@ -444,7 +444,7 @@ null s::string		= string_null s;
 s::string!n::int	= string_char_at s n if n>=0 && n<#s;
 			= throw out_of_bounds otherwise;
 s::string+t::string	= string_concat s t;
-chars s::string		= string_chars s if varp (:);
+chars s::string		= string_chars s if ~funp (:);
 /* For the sake of efficiency, string_chars takes some shortcuts when creating
    the output list. This is ok as long as (:) doesn't have any constructor
    equations, but in the (unlikely) case that there are, we need to force
@@ -510,7 +510,7 @@ namespace __C;
 extern expr* string_split(void* delim, void* s);
 namespace;
 split delim::string s::string
-			= string_split delim s if varp (:);
+			= string_split delim s if ~funp (:);
 /* Handle the case that (:) has constructor equations, cf. chars above. */
 			= list (string_split delim s);
 

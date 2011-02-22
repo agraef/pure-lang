@@ -1317,12 +1317,20 @@ bool same(pure_expr *x, pure_expr *y);
 
 pure_expr* typep(pure_expr *ty, pure_expr *x);
 
-/* Check whether an object is a named function (closure), an anonymous
-   function (lambda or thunk), or a global variable, respectively. */
+/* Check for different kinds of closures: named functions, anonymous
+   functions (lambdas) and thunks. */
 
 bool funp(const pure_expr *x);
 bool lambdap(const pure_expr *x);
 bool thunkp(const pure_expr *x);
+
+/* Check for any symbol (this also includes operator and nonfix symbols) and
+   free variable symbols. Note that varp always returns false for operator and
+   nonfix symbols, but returns true for *any* symbol that could in principle
+   be bound to a value, either globally or locally, which holds even if the
+   symbol is currently bound to a function, macro or constant. */
+
+bool symbolp(const pure_expr *x);
 bool varp(const pure_expr *x);
 
 /* Get the argument count of a closure (named, anonymous or thunk), i.e., the
