@@ -5302,7 +5302,14 @@ expr interpreter::csubst(expr x, bool quote)
     expr u = csubst(x.xval1()),
       v = csubst(x.xval2()),
       w = csubst(x.xval3());
-    return expr::cond(u, v, w);
+    if (folding && u.tag() == EXPR::INT)
+      // Eliminate conditionals if we know the value at compile time.
+      if (u.ival())
+	return v;
+      else
+	return w;
+    else
+      return expr::cond(u, v, w);
   }
   case EXPR::COND1: {
     expr u = csubst(x.xval1()),
