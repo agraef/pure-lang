@@ -4875,7 +4875,7 @@ expr interpreter::subst(const env& vars, expr x, uint8_t idx)
 {
   if (x.is_null()) return x;
   if (x.astag() > 0)
-    throw err("error in expression (misplaced \"as\" pattern or type tag)");
+    throw err("error in expression (misplaced \"as\" pattern)");
   switch (x.tag()) {
   // constants:
   case EXPR::VAR:
@@ -4990,13 +4990,13 @@ expr interpreter::subst(const env& vars, expr x, uint8_t idx)
   }
   default:
     assert(x.tag() > 0);
+    if (x.ttag() != 0)
+      throw err("error in expression (misplaced type tag)");
     const symbol& sym = symtab.sym(x.tag());
     env::const_iterator it = vars.find(sym.f);
     if (sym.prec < PREC_MAX || sym.fix == nonfix || sym.fix == outfix ||
 	it == vars.end() || (!qual && (x.flags()&EXPR::QUAL))) {
       // not a bound variable
-      if (x.ttag() != 0)
-	throw err("error in expression (misplaced type tag)");
       return x;
     }
     const env_info& info = it->second;
@@ -5489,6 +5489,8 @@ expr interpreter::lcsubst(expr x)
 expr interpreter::rsubst(expr x, bool quote)
 {
   if (x.is_null()) return x;
+  if (x.astag() > 0)
+    throw err("error in expression (misplaced \"as\" pattern)");
   switch (x.tag()) {
   // constants:
   case EXPR::INT:
