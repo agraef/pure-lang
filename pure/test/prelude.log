@@ -2548,3 +2548,118 @@ def __do__ (__lambda__ [x/*0:10101*/] (__ifelse__ y/*0:11001*/ z/*0:1101*/ {})) 
 def __do__ (__lambda__ [x/*0:10101*/] (void y/*0:111*/)) = __do__ (__lambda__ [x/*0:10101*/] y/*0:111*/);
 def __do__ (__lambda__ [x/*0:10101*/] (__ifelse__ y/*0:11001*/ (void z/*0:11011*/) ())) = __do__ (__lambda__ [x/*0:10101*/] (__ifelse__ y/*0:11001*/ z/*0:11011*/ ()));
 def __do__ f/*0:1*/ = do f/*0:1*/;
+globsym pat/*0:01*/::string level/*0:1*/::int = uniq/*3*/ (catmap descr/*3*/ info/*0:*/) when res/*0:*/ = evalcmd ("show -gst"+str level/*0:1*/+" "+pat/*0:01*/); stringp res/*0:*/||throw evalcmd; info/*0:*/ = init (init (split "\n" res/*1:*/)) {
+  rule #0: info = init (init (split "\n" res))
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: _ = stringp res||throw evalcmd
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: res = evalcmd ("show -gst"+str level+" "+pat)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end with uniq (x/*0:101*/:y/*0:1101*/:_/*0:111*/) = if x/*0:101*/===y/*0:1101*/ then uniq/*1*/ xs/*0:11*/ else x/*0:101*/:uniq/*1*/ xs/*0:11*/; uniq xs/*0:1*/ = xs/*0:1*/ {
+  rule #0: uniq (x:y:_) = if x===y then uniq xs else x:uniq xs
+  rule #1: uniq xs = xs
+  state 0: #0 #1
+	<var> state 1
+	<app> state 2
+  state 1: #1
+  state 2: #0 #1
+	<var> state 3
+	<app> state 5
+  state 3: #1
+	<var> state 4
+  state 4: #1
+  state 5: #0 #1
+	<var> state 6
+	: state 9
+  state 6: #1
+	<var> state 7
+  state 7: #1
+	<var> state 8
+  state 8: #1
+  state 9: #0 #1
+	<var> state 10
+  state 10: #0 #1
+	<var> state 11
+	<app> state 12
+  state 11: #1
+  state 12: #0 #1
+	<var> state 13
+	<app> state 15
+  state 13: #1
+	<var> state 14
+  state 14: #1
+  state 15: #0 #1
+	<var> state 16
+	: state 19
+  state 16: #1
+	<var> state 17
+  state 17: #1
+	<var> state 18
+  state 18: #1
+  state 19: #0 #1
+	<var> state 20
+  state 20: #0 #1
+	<var> state 21
+  state 21: #0 #1
+}; descr s/*0:1*/::string = case filter (flip (~=) "") (split " " s/*0:1*/) of sym/*0:01*/:_/*0:1*/ = if any (flip (==) sym/*0:01*/) ["extern","infix","infixl","infixr","prefix","postfix","outfix","nonfix"] then [] else [val ("("+sym/*0:01*/+")")]; _/*0:*/ = [] {
+  rule #0: sym:_ = if any (flip (==) sym) ["extern","infix","infixl","infixr","prefix","postfix","outfix","nonfix"] then [] else [val ("("+sym+")")]
+  rule #1: _ = []
+  state 0: #0 #1
+	<var> state 1
+	<app> state 2
+  state 1: #1
+  state 2: #0 #1
+	<var> state 3
+	<app> state 5
+  state 3: #1
+	<var> state 4
+  state 4: #1
+  state 5: #0 #1
+	<var> state 6
+	: state 9
+  state 6: #1
+	<var> state 7
+  state 7: #1
+	<var> state 8
+  state 8: #1
+  state 9: #0 #1
+	<var> state 10
+  state 10: #0 #1
+	<var> state 11
+  state 11: #0 #1
+} end {
+  rule #0: descr s::string = case filter (flip (~=) "") (split " " s) of sym:_ = if any (flip (==) sym) ["extern","infix","infixl","infixr","prefix","postfix","outfix","nonfix"] then [] else [val ("("+sym+")")]; _ = [] end
+  state 0: #0
+	<var>::string state 1
+  state 1: #0
+} end;
+clearsym sym/*0:01*/::string level/*0:1*/::int = () when res/*0:*/ = evalcmd ("clear -t"+str level/*0:1*/+" "+sym/*0:01*/); stringp res/*0:*/||throw evalcmd {
+  rule #0: _ = stringp res||throw evalcmd
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: res = evalcmd ("clear -t"+str level+" "+sym)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+clearsym sym/*0:01*/::symbol level/*0:1*/::int = clearsym sym/*0:*/ level/*2:1*/ when sym/*0:*/ = str sym/*0:01*/; sym/*0:*/ = if sym/*0:*/!0=="(" then substr sym/*0:*/ 2 (#sym/*0:*/-2) else sym/*0:*/ {
+  rule #0: sym = if sym!0=="(" then substr sym 2 (#sym-2) else sym
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: sym = str sym
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
