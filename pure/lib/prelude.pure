@@ -1634,3 +1634,24 @@ def __do__ (__lambda__ [x] (__ifelse__ y (void z) ())) =
 
 // Any remaining instances reduce to a plain 'do' (this must come last).
 def __do__ f = do f;
+
+/* Stuff below actually belongs into primitives.pure, but we define it here so
+   that various needed library operations are already defined at this point. */
+
+/* List defined symbols using evalcmd "show". */
+
+globsym pat::string level::int = uniq $ catmap descr info when
+  res = evalcmd $ "show -gst"+str level+" "+pat;
+  stringp res || throw evalcmd;
+  info = init $ init $ split "\n" res;
+end with
+  descr s::string = case filter (~="") $ split " " s of
+    sym:_ =
+      if any (==sym) ["extern", "infix", "infixl", "infixr",
+		      "prefix", "postfix", "outfix", "nonfix"] then []
+      else [val ("("+sym+")")];
+    _ = [] otherwise;
+  end;
+  uniq (x:xs@(y:_)) = if x===y then uniq xs else x:uniq xs;
+  uniq xs = xs otherwise;
+end;
