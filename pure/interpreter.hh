@@ -649,9 +649,8 @@ public:
     }
   }
 
-  /* Convert a runtime to a compile time expression. If 'check' is true then
-     attempts to convert non-const values (non-NULL pointers and closures)
-     throw an error message. */
+  /* Convert a runtime to a compile time expression. (The 'check' flag is for
+     internal purposes and shouldn't be set by client applications.) */
   expr pure_expr_to_expr(pure_expr *x, bool check = false);
 
   /* Errors and warnings. These are for various types of messages from the
