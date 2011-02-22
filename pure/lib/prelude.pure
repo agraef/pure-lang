@@ -1655,3 +1655,15 @@ end with
   uniq (x:xs@(y:_)) = if x===y then uniq xs else x:uniq xs;
   uniq xs = xs otherwise;
 end;
+
+/* Clear defined symbols using evalcmd "show". */
+
+clearsym sym::string level::int = () when
+  res = evalcmd $ "clear -t"+str level+" "+sym;
+  stringp res || throw evalcmd;
+end;
+
+// We also allow allow the symbol to be specified directly.
+clearsym sym::symbol level::int = clearsym sym level when
+  sym = str sym; sym = if sym!0=="(" then substr sym 2 (#sym-2) else sym;
+end;
