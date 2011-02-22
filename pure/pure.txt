@@ -7524,16 +7524,30 @@ details.) Example::
   > show foo
   foo x = 6.28318530717959*x;
 
-In addition, the LLVM backend eliminates dead code automatically, so you can
-employ a constant to configure your code for different environments, without
-any runtime penalties::
+Constant folding also works with conditional expressions. E.g., consider::
 
   const win = index sysinfo "mingw32" >= 0;
+  check boy = if win then bad boy else good boy;
+
+On a Linux system, this gives::
+
+  > show check
+  check boy = good boy;
+
+By these means, you can employ a constant to configure your code for different
+environments, without any runtime penalties. Note that this only works with
+conditional expressions, not with guarded equations. However, in the latter
+case the LLVM backend still eliminates dead code automatically, so the
+``check`` function from above could also be defined as follows::
+
   check boy = bad boy if win;
             = good boy otherwise;
 
 In this case the code for one of the branches of ``check`` will be completely
-eliminated, depending on the outcome of the configuration check.
+eliminated, depending on the outcome of the configuration check. (The
+interpreter will still print both equations if you type ``show check``, but
+only one of the branches will actually be present in the assembler code of the
+function; you can verify this with ``show -d check``.)
 
 For efficiency, constant aggregates (lists, tuples, matrices and other kinds
 of non-scalar terms) receive special treatment. Here, the constant is computed
@@ -7551,9 +7565,9 @@ involve functions with side effects::
 
 Note that this only works with :keyword:`const` values which are completely
 determined at compile time. If a constant contains run time objects such as
-pointers and (local) functions, this is impossible, and the batch compiler
-will instead create code to recompute the value of the constant at run time.
-For instance, consider::
+(non-null) pointers and (local) functions, this is impossible, and the batch
+compiler will instead create code to recompute the value of the constant at
+run time.  For instance, consider::
 
   using system;
   const p = malloc 100;
