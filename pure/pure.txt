@@ -4308,8 +4308,8 @@ with C macros:
 Here ``F(y)`` expands to ``{ int y = y+1; return y+y; }`` which is usually
 *not* what you want.
 
-Built-in Macros
----------------
+Built-in Macros and Special Expressions
+---------------------------------------
 
 As already mentioned in `The Quote`_, `special expressions`_ such as
 conditionals and lambdas cannot be directly represented as runtime data in
@@ -4412,10 +4412,21 @@ have them evaluated::
   > ans 99;
   100
 
-As the placeholder terms are just ordinary Pure expressions, they can be
-manipulated by functions just like any other term. For instance, here's how
-you can define a function which takes a quoted lambda and swaps its two
-arguments::
+The :func:`__str__` function can be used to pretty-print quoted specials::
+
+  > __str__ ('(__lambda__ [x __type__ int] (x+1)));
+  "\\x::int -> x+1"
+  > __str__ ('(dup (1..3) __with__ [dup (xs __as__ (x:_))-->x:xs]));
+  "dup (1..3) with dup xs@(x:_) = x:xs end"
+
+This is useful to see which expression a quoted special will expand to. It can
+also be used in conjunction with :func:`__show__` (see `The __show__
+Function`_) if you always want to have quoted specials printed that way by the
+interpreter.
+
+As quoted specials are just ordinary Pure expressions, they can be manipulated
+by functions just like any other term. For instance, here's how you can define
+a function which takes a quoted lambda and swaps its two arguments::
 
   > swap (__lambda__ [x,y] z) = '(__lambda__ [y,x] z);
   > swap ('(\a b->a-b));
@@ -4424,10 +4435,10 @@ arguments::
   1
 
 For convenience, a literal special expression can also be used on the
-left-hand side of an equation, in which case it actually denotes its quoted
-representation. So the ``swap`` function can also be defined like this (note
-that we first scratch the previous definition of ``swap`` with the ``clear``
-command, see `Interactive Commands`_)::
+left-hand side of an equation, in which case it actually denotes the
+corresponding placeholder term. So the ``swap`` function can also be defined
+like this (note that we first scratch the previous definition of ``swap`` with
+the ``clear`` command, see `Interactive Commands`_)::
 
   > clear swap
   > swap (\x y -> z) = '(\y x -> z);
@@ -4435,10 +4446,10 @@ command, see `Interactive Commands`_)::
   __lambda__ [b,a] (a-b)
 
 This is usually easier to write and improves readability. However, there are
-cases in which you want to work with the built-in macros in a direct
-fashion. In particular, this becomes necessary when writing more generic rules
-which deal, e.g., with lambdas involving a variable number of arguments, or if
-you need real (i.e., unquoted) type tags or "as" patterns in a placeholder
+cases in which you want to work with the built-in macros in a direct fashion.
+In particular, this becomes necessary when writing more generic rules which
+deal, e.g., with lambdas involving a variable number of arguments, or if you
+need real (i.e., unquoted) type tags or "as" patterns in a placeholder
 pattern. We'll see examples of these later.
 
 Quoted specials can be manipulated with macros just as well as with functions.
