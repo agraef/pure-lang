@@ -1,0 +1,76 @@
+
+/* An alternative implementation of Lisp's quasiquote. 2009-05-26 AG. */
+
+/* NOTE: This is still considered experimental and is not part of the official
+   Pure library (yet). But it's installed in the Pure library directory for
+   those who need it. */
+
+/* Copyright (c) 2008-2011 by Albert Graef <Dr.Graef@t-online.de>.
+
+   This file is part of the Pure standard library.
+
+   The Pure standard library is free software: you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public License as
+   published by the Free Software Foundation, either version 3 of the License,
+   or (at your option) any later version.
+
+   Pure is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+   FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
+   more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>. */
+
+/* This is pretty much a drop-in replacement for quasiquote.pure. It uses a
+   somewhat more involved implementation which handles nested quasiquotes in a
+   more Scheme-like way. */
+
+public quasiquote unquote splice;
+
+prefix (') ` ,$ ,@ ;
+def (`) = quasiquote; def (,$) = unquote; def (,@) = splice;
+
+/* Quasiquote itself is implemented as a macro which simply expands to a call
+   of the qq function below. Thus the evaluation of the quasiquote is actually
+   done at runtime. */
+
+namespace __std__;
+
+private qq;
+
+def ::quasiquote x = qq (quote x);
+
+/* qq x descends into x, substituting embedded instances of unquote and splice
+   at "level 0" (i.e., belonging to the outermost quasiquote) only. */
+
+qq x = qqn 0 x with
+/* Note that we have to deal with both the normalized and the literal forms of
+   embedded instances of quasiquote, unquote and splice here, as these forms
+   may occur unevaluated inside quoted subterms. */
+qqn n (`x)		|
+qqn n (qq ('x))		|
+qqn n (qq (quote x))	= quote (quasiquote y) when y = qqn (n+1) x end;
+qqn 0 (,$x)		|
+qqn 0 (unquote x)	= eval x;
+qqn 0 (,@x)		|
+qqn 0 (splice x)	= case eval x of
+			    x = foldl1 ($) x if rlistp x;
+			      = throw (bad_list_value x);
+			  end;
+qqn 0 (f@_ (,@x))	|
+qqn 0 (f@_ (splice x))	= case eval x of
+			    x = foldl ($) (qqn 0 f) x if rlistp x;
+			      = throw (bad_list_value x);
+			  end;
+// XXXFIXME: We might want to check that n doesn't become negative here.
+qqn n (,$x)		|
+qqn n (unquote x)	= unquote (qqn (n-1) x);
+qqn n (,@x)		|
+qqn n (splice x)	= splice (qqn (n-1) x);
+qqn n (f@_ (,@x))	|
+qqn n (f@_ (splice x))	= qqn n f (splice (qqn (n-1) x));
+qqn n (f@_ x)		= qqn n f (qqn n x);
+qqn n x::matrix		= map (qqn n) x;
+qqn n x			= x;
+end;

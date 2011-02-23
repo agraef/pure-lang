@@ -5,7 +5,7 @@
    Pure library (yet). But it's installed in the Pure library directory for
    those who need it. */
 
-/* Copyright (c) 2008-2010 by Albert Graef <Dr.Graef@t-online.de>.
+/* Copyright (c) 2009-2011 by Albert Graef <Dr.Graef@t-online.de>.
 
    This file is part of the Pure standard library.
 
@@ -24,29 +24,35 @@
 
 /* Our implementation tries to stay as close to the spirit of the original
    quasiquote (see, e.g., Guy L. Steele, Common Lisp the Language, 2nd
-   Edition) as reasonably possible in Pure. Nested quasiquotes work as
-   expected, but note that our implementation only strips away the outermost
-   quasiquote level, in the same way as Scheme's quasiquote. (In contrast,
-   Common Lisp implementations of quasiquote usually expand the entire
-   expression in one go. See quasiquote2.pure for a macro implementation of
-   quasiquote which does about the same in Pure.)
-
-   Also note that, due to the differences in representing function
-   applications, splicing works somewhat differently from the Lisp version:
+   Edition) as reasonably possible in Pure. Note that, due to the differences
+   in representing function applications, splicing works somewhat differently
+   from the Lisp version:
 
    - `,@[a,b,c]		=> a b c
-
    - `(,@[a,b,c]) x y	=> a b c x y
-
    - `x (,@[a,b,c]) y	=> x a b c y
 
    Thus, in our implementation splicing essentially "curries" the argument
-   list, and this will work in any context. (Also, the current implementation
-   does *not* support splicing into other Pure aggregate structures such as
-   lists, tuples and matrices, as these data structures already provide their
-   own means to do this.) Finally note that, like in Lisp, the argument of
-   'splice' must always evaluate to a proper list, otherwise 'quasiquote'
-   raises an exception. */
+   list, and this will work in any context.
+
+   This version implements the quasiquote as a macro, which has the advantage
+   that quasiquoted expressions are (mostly) expanded at compile time.
+   However, this also means that nested quasiquotes are expanded in one go;
+   see quasiquote1.pure for a more Scheme-like version which only strips away
+   the outermost quasiquote level. E.g., the macro implementation produces:
+
+   > `(a (`(b (,$(1+2)) (,$(foo (,$(1+3)) d)) e)) f);
+   a (quote b (1+2) (foo 4 d) (quote e)) f
+
+   Conversely, the implementation in quasiquote1.pure yields:
+
+   > `(a ('`(b (,$(1+2)) (,$(foo (,$(1+3)) d)) e)) f);
+   a (quasiquote (b (unquote (1+2)) (unquote (foo 4 d)) e)) f
+
+   Whether to prefer one or the other is a matter of taste; note that both
+   forms yield the same result 'a (b 3 (foo 4 d) e) f' when evaluated. */
+
+public quasiquote unquote splice;
 
 /* Some syntactic sugar for Lisp weenies. Note that we cannot have ',' for
    unquoting, we use ',$' instead. Also note that '`', ',$' and ',@' are just
@@ -54,51 +60,32 @@
    accordingly. Thus, e.g., the Lisp expression `(f ,@(a b c)) would be
    written as `f (,@[a,b,c]) in Pure. */
 
-public quasiquote unquote splice;
-
 prefix (') ` ,$ ,@ ;
 def (`) = quasiquote; def (,$) = unquote; def (,@) = splice;
 
-/* Quasiquote itself is implemented as a macro which simply expands to a call
-   of the qq function below. Thus the evaluation of the quasiquote is actually
-   done at runtime. */
-
-namespace quasiquote;
-
-private qq;
-
-def ::quasiquote x = qq (quote x);
-
-/* qq x descends into x, substituting embedded instances of unquote and splice
-   at "level 0" (i.e., belonging to the outermost quasiquote) only. */
-
-qq x = qqn 0 x with
 /* Note that we have to deal with both the normalized and the literal forms of
    embedded instances of quasiquote, unquote and splice here, as these forms
    may occur unevaluated inside quoted subterms. */
-qqn n (`x)		|
-qqn n (qq ('x))		|
-qqn n (qq (quote x))	= quote (quasiquote y) when y = qqn (n+1) x end;
-qqn 0 (,$x)		|
-qqn 0 (unquote x)	= eval x;
-qqn 0 (,@x)		|
-qqn 0 (splice x)	= case eval x of
-			    x = foldl1 ($) x if rlistp x;
-			      = throw (bad_list_value x);
-			  end;
-qqn 0 (f@_ (,@x))	|
-qqn 0 (f@_ (splice x))	= case eval x of
-			    x = foldl ($) (qqn 0 f) x if rlistp x;
-			      = throw (bad_list_value x);
-			  end;
-// XXXFIXME: We might want to check that n doesn't become negative here.
-qqn n (,$x)		|
-qqn n (unquote x)	= unquote (qqn (n-1) x);
-qqn n (,@x)		|
-qqn n (splice x)	= splice (qqn (n-1) x);
-qqn n (f@_ (,@x))	|
-qqn n (f@_ (splice x))	= qqn n f (splice (qqn (n-1) x));
-qqn n (f@_ x)		= qqn n f (qqn n x);
-qqn n x::matrix		= map (qqn n) x;
-qqn n x			= x;
-end;
+
+def quasiquote (quasiquote x)	= quasiquote (quasiquote x);
+def quasiquote (`x)		= quasiquote (quasiquote x);
+def quasiquote (unquote x)	= x;
+def quasiquote (,$x)		= x;
+def quasiquote (splice x)	= case x of
+				    x = foldl1 ($) x if rlistp x;
+				      = throw (bad_list_value x);
+				  end;
+def quasiquote (,@x)		= quasiquote (splice x);
+def quasiquote (f@_ (splice x))	= case x of
+				    x = foldl ($) (quasiquote f) x if rlistp x;
+				      = throw (bad_list_value x);
+				  end;
+def quasiquote (f@_ (,@x))	= quasiquote (f (splice x));
+def quasiquote (f@_ x)		= quasiquote f (quasiquote x);
+def quasiquote x::matrix	= map qq (quote x) with
+				    qq (unquote x) = eval x;
+				    qq (f@_ x)     = qq f (qq x);
+				    qq x::matrix   = map qq x;
+				    qq x           = x;
+				  end;
+def quasiquote x		= quote x;
