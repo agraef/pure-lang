@@ -4648,7 +4648,117 @@ comprehension.
 Reflection
 ----------
 
-XXXTODO
+The meta representation of specials discussed in `Built-in Macros and Special
+Expressions`_ is also useful to obtain information about the running program
+and even modify it. Pure's runtime provides some built-in operations to
+implement these reflection capabilities, which are comparable in scope to what
+the Lisp programming language offers.
+
+Specifically, the :func:`get_fundef` function allows you to retrieve the
+definition of a global Pure function. Given the symbol denoting the function,
+:func:`get_fundef` returns the list of rewriting rules implementing the
+functions, using the same ``lhs --> rhs`` format used by the
+:macro:`__case__`, :macro:`__when__` and :macro:`__with__` macros discussed
+above. For instance::
+
+  > fact n = 1 if n<=1;
+  >        = n*fact (n-1) otherwise;
+  > get_fundef fact;
+  [(fact n-->1 __if__ n<=1),(fact n-->n*fact (n-1))]
+
+Defining a new function or extending an existing function definition can be
+done just as easily, using the :func:`add_fundef` function::
+
+  > add_fundef $ '[(fib n-->1 __if__ n<=1),(fib n-->fib (n-2)+fib (n-1))];
+  ()
+  > show fib
+  fib n = 1 if n<=1;
+  fib n = fib (n-2)+fib (n-1);
+  > map fib (0..10);
+  [1,1,2,3,5,8,13,21,34,55,89]
+
+Note that, to be on the safe side, we quoted the rule list passed to
+:func:`add_fundef` to prevent premature evaluation of symbols used in the
+rules. This is necessary because :func:`add_fundef` is an ordinary function,
+not a macro. (Of course, you could easily define a macro which would take care
+of this, if you like. We leave this as an exercise to the reader.)
+
+Also note that :func:`add_fundef` doesn't override existing function
+definitions. It simply keeps on adding rules to the current program, just as
+if you typed the equations at the command prompt of the interpreter. However,
+the :func:`clearsym` function allows you to get rid of an existing definition
+if needed::
+
+  > clearsym fib 0;
+  ()
+  > show fib
+  > fib 9;
+  fib 9
+
+There's also a companion function, :func:`globsym`, which enables you to get
+a list of defined symbols which match a given glob pattern::
+
+  > globsym "fact" 0;
+  [fact]
+  > globsym "*" 0;
+  [(!),(!!),(#),($),($$),...]
+  > #globsym "*" 0;
+  304
+
+Note that :func:`globsym` also returns symbols defined as types, macros,
+variables or constants. But we can easily check for a given type of symbol by
+using the appropriate function to retrieve the rules defining the symbol, and
+filter out symbols with an empty rule list::
+
+  > #[sym | sym = globsym "*" 0; ~null (get_fundef sym)];
+  253
+
+Pure also provides the operations :func:`get_typedef`, :func:`get_macdef`,
+:func:`get_vardef` and :func:`get_constdef`, which are completely analogous to
+:func:`get_fundef`, but return the definitions of types, macros, (global)
+variables and constants. Note that in the latter two cases the rule list takes
+the form ``[var-->val]`` if the symbol is defined, ``[]`` if it isn't.
+
+For instance, let's check the definition of the :func:`$` macro
+(cf. `Optimization Rules`_) and the :type:`list/type` type (cf. `Recursive
+Types`_)::
+
+  > get_macdef ($);
+  [f$x-->f x]
+  > get_typedef list;
+  [(list []-->1),(list (_:_)-->1)]
+
+Or let's lists all global variables along with their values::
+
+  > catmap get_vardef (globsym "*" 0);
+  [(argc-->0),(argv-->[]),(compiling-->0),
+  (sysinfo-->"x86_64-unknown-linux-gnu"),(version-->"0.47")]
+
+The counterparts of :func:`add_fundef` are provided as well. Not very
+surprisingly, they are named :func:`add_typedef`, :func:`add_macdef`,
+:func:`add_vardef` and :func:`add_constdef`. For instance::
+
+  > add_vardef ['x-->3*33];
+  ()
+  > show x
+  let x = 99;
+
+The above facilities should cover most metaprogramming needs. For even more
+exotic requirements, you can also use the :func:`eval` and :func:`evalcmd`
+primitives to execute arbitrary Pure code in text form; please see the
+:doc:`purelib` for details.
+
+Finally, a word of caution: The use of :func:`add_fundef` et al to modify a
+running program breaks referential transparency and hence these functions
+should be used with care. Moreover, at present the JIT compiler doesn't
+support truly self-modifying code (i.e., functions modifying themselves while
+they're executing); this results in undefined behaviour. (However, in most
+cases it should be easy to work around this limitation by just doing a tail
+call to a helper function which handles the mutations.)
+
+Also, note that none of the inspection and mutation capabilities provided by
+these operations will work in batch-compiled programs, please check the `Batch
+Compilation`_ section for details.
 
 .. _Exception Handling:
 
