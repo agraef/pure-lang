@@ -1067,34 +1067,34 @@ pure_expr *lastres();
 
 /* Get the list of rewriting rules defining a function, type or macro. This
    uses the quoted runtime representation of rules and specials described in
-   the Pure manual. */
+   the Pure manual. The empty list is returned if no corresponding definition
+   is found. */
 
 pure_expr *get_fundef(pure_expr *f);
 pure_expr *get_typedef(pure_expr *f);
 pure_expr *get_macdef(pure_expr *f);
 
-/* Get definitions of variables and constants. In this case the result takes
-   the form 'var --> val' if the symbol is defined; otherwise NULL is
+/* Get definitions of variables and constants. The result takes the form
+   [var-->val] if the symbol is defined, otherwise the empty list is
    returned. */
 
 pure_expr *get_vardef(pure_expr *f);
 pure_expr *get_constdef(pure_expr *f);
 
 /* Add rewriting rules for a function, type or macro, using the same runtime
-   representation as returned by get_fundef(), get_typedef() and get_macdef()
-   as input. Like eval(), this may return NULL and leave an error message in
+   representation as returned by get_fundef(), get_typedef() and get_macdef().
+   Like eval(), these routines may return NULL and leave an error message in
    lasterr(). */
 
 pure_expr *add_fundef(pure_expr *x);
 pure_expr *add_typedef(pure_expr *x);
 pure_expr *add_macdef(pure_expr *x);
 
-/* Set a variable or constant. Here the argument must be a single rule in the
-   format 'var --> val'. These work pretty much like pure_let() and pure_def()
-   in the public API, but take their input in rule form and report errors in
-   lasterr() like add_fundef() et al above. Note that the left-hand side
-   *must* be a symbol here, no pattern matching is performed by these
-   routines. */
+/* Set global variables or constants. The argument is a list of rules in the
+   format var-->val; the left-hand side of each rule *must* be a symbol (no
+   pattern matching is performed by these routines). These work pretty much
+   like pure_let() and pure_def() in the public API, but take their input in
+   rule form and report errors in lasterr() like add_fundef() et al above. */
 
 pure_expr *add_vardef(pure_expr *x);
 pure_expr *add_constdef(pure_expr *x);

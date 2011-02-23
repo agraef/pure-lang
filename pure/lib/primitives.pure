@@ -399,7 +399,10 @@ using namespace __C;
    The following functions allow you to inspect or modify the function, type,
    macro, constant and variable definitions of the running program. This uses
    a special meta representation for rewriting rules and definitions. Please
-   see the :ref:`Macros` section in the Pure manual for details.
+   see the :ref:`Macros` section in the Pure manual for details. Also note
+   that these operations are subject to some limitations, please check the
+   remarks concerning :func:`eval` and :func:`evalcmd` in the following
+   subsection for details.
 
    .. function:: get_fundef sym
                  get_typedef sym
@@ -412,8 +415,8 @@ using namespace __C;
                  get_constdef sym
 
       If the given symbol is defined as a variable or constant, return the
-      corresponding definition as a term of the form ``sym --> value``.
-      These functions just fail otherwise.
+      corresponding definition as a singleton list of the form
+      ``[sym --> value]``. Otherwise return the empty list.
 
    The following functions may fail in case of error, in which case
    :func:`lasterr` is set accordingly (see `Eval and Friends`_ below).
@@ -426,10 +429,12 @@ using namespace __C;
       the :func:`get_fundef`, :func:`get_typedef` and :func:`get_macdef`
       functions above) to the running program.
 
-   .. function:: add_vardef (sym --> value)
-                 add_constdef (sym --> value)
+   .. function:: add_vardef rules
+                 add_constdef rules
 
-      Define the given symbol as a variable or constant.
+      Define variables and constants. Each rule must take the form
+      ``sym --> value`` with a symbol on the left-hand side (no pattern
+      matching is performed by these functions).
 
    The prelude also provides some functions to retrieve various attributes of
    a function symbol which determine how the operation is applied to its
@@ -514,11 +519,6 @@ using namespace __C;
       Yields the print representation of an expression in Pure syntax, as a
       string.
 
-   .. function:: __str__ x
-
-      Pretty-prints special expressions. This only applies to quoted specials,
-      see the :ref:`Macros` section in the Pure manual for details.
-
    .. function:: val /string s
 
       Parses a single simple expression, specified as a string in Pure syntax,
@@ -556,6 +556,19 @@ using namespace __C;
       that case each reported error message is terminated with a newline
       character.
 
+   Please note that the use of :func:`eval` and :func:`evalcmd` (as well as
+   :func:`add_fundef`, :func:`add_typedef` etc. from the preceding subsection)
+   to modify a running program breaks referential transparency and hence these
+   functions should be used with care. Since Pure is always compiled to native
+   code, these operations are also subject to some limitations. Specifically,
+   none of the inspection and mutation capabilities provided by these
+   operations will work (or at least they will be severely restricted) in
+   batch-compiled programs, please check the :ref:`Batch Compilation` section
+   in the Pure manual for details. Moreover, using these operations to modify
+   or delete a function which is currently being executed results in undefined
+   behaviour. Usually, this will cause your program to segfault, so don't do
+   that.
+
    Examples::
 
      > str (1/3);
@@ -573,9 +586,24 @@ using namespace __C;
      > lasterr;
      "<stdin>, line 1: syntax error, unexpected ')', expecting '=' or '|'\n"
 
-   :func:`evalcmd` is commonly used to invoke the ``show`` and ``clear``
-   commands for metaprogramming purposes. The library provides the following
-   two convenience functions to make this easy:
+   In addition to :func:`str`, the prelude also provides the following
+   function for pretty-printing the internal representation used to denote
+   quoted specials. This is commonly used in conjunction with the
+   :func:`__show__` function, please see the :ref:`Macros` section in the Pure
+   manual for details.
+
+   .. function:: __str__ x
+
+      Pretty-prints special expressions.
+
+   Example::
+
+     > __str__ ('__lambda__ [x __type__ int] (x+1));
+     "\\x::int -> x+1"
+
+   The :func:`evalcmd` function is commonly used to invoke the ``show`` and
+   ``clear`` commands for metaprogramming purposes. The prelude provides the
+   following two convenience functions to make this easy:
 
    .. function:: globsym pat level
 
@@ -590,15 +618,17 @@ using namespace __C;
 
       This uses :func:`evalcmd` with the ``clear`` command to delete the
       definition of the given symbol at the given definition level. No glob
-      patterns are permitted here.  The ``sym`` argument may denote either a
+      patterns are permitted here.  The ``sym`` argument may either be a
       string or a literal (quoted) symbol.
 
    Example::
 
      > let x,y = 77,99;
-     > globsym "[a-z]" 0;
+     > let syms = globsym "[a-z]" 0; syms;
      [x,y]
-     > do (flip clearsym 0) ans;
+     > map eval syms;
+     [77,99]
+     > do (flip clearsym 0) syms;
      ()
      > globsym "[a-z]" 0;
      []

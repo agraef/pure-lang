@@ -8401,9 +8401,10 @@ pure_expr *get_vardef(pure_expr *f)
     interpreter& interp = *interpreter::g_interp;
     env::const_iterator it = interp.globenv.find(f->tag);
     if (it != interp.globenv.end() && it->second.t == env_info::fvar)
-      return pure_appl(pure_symbol(interp.symtab.eqn_sym().f), 2, f, eval(f));
+      return pure_listl
+	(1, pure_appl(pure_symbol(interp.symtab.eqn_sym().f), 2, f, eval(f)));
     else
-      return 0;
+      return pure_listl(0);
   } else
     return 0;
 }
@@ -8415,9 +8416,10 @@ pure_expr *get_constdef(pure_expr *f)
     interpreter& interp = *interpreter::g_interp;
     env::const_iterator it = interp.globenv.find(f->tag);
     if (it != interp.globenv.end() && it->second.t == env_info::cvar)
-      return pure_appl(pure_symbol(interp.symtab.eqn_sym().f), 2, f, eval(f));
+      return pure_listl
+	(1, pure_appl(pure_symbol(interp.symtab.eqn_sym().f), 2, f, eval(f)));
     else
-      return 0;
+      return pure_listl(0);
   } else
     return 0;
 }
@@ -8458,13 +8460,23 @@ pure_expr *add_macdef(pure_expr *x)
 extern "C"
 pure_expr *add_vardef(pure_expr *x)
 {
-  pure_expr *f, **xv;
+  pure_expr **xv;
   size_t n;
   interpreter& interp = *interpreter::g_interp;
-  if (pure_is_appv(x, &f, &n, 0) && n == 2 &&
-      f->tag == interp.symtab.eqn_sym().f) {
-    bool res = pure_is_appv(x, &f, &n, &xv) && xv[0]->tag > 0 &&
-      interp.add_var(xv[0]->tag, xv[1]);
+  interp.errmsg.clear();
+  if (pure_is_listv(x, &n, &xv)) {
+    bool res = true;
+    for (size_t i = 0; i < n; i++) {
+      pure_expr *f, **yv;
+      size_t m;
+      if (pure_is_appv(xv[i], &f, &m, 0) && m == 2 &&
+	  f->tag == interp.symtab.eqn_sym().f) {
+	res = pure_is_appv(xv[i], &f, &m, &yv) && yv[0]->tag > 0 &&
+	  interp.add_var(yv[0]->tag, yv[1]);
+	free(yv);
+	if (!res) break;
+      }
+    }
     free(xv);
     return res?pure_tuplel(0):0;
   } else
@@ -8474,13 +8486,23 @@ pure_expr *add_vardef(pure_expr *x)
 extern "C"
 pure_expr *add_constdef(pure_expr *x)
 {
-  pure_expr *f, **xv;
+  pure_expr **xv;
   size_t n;
   interpreter& interp = *interpreter::g_interp;
-  if (pure_is_appv(x, &f, &n, 0) && n == 2 &&
-      f->tag == interp.symtab.eqn_sym().f) {
-    bool res = pure_is_appv(x, &f, &n, &xv) && xv[0]->tag > 0 &&
-      interp.add_const(xv[0]->tag, xv[1]);
+  interp.errmsg.clear();
+  if (pure_is_listv(x, &n, &xv)) {
+    bool res = true;
+    for (size_t i = 0; i < n; i++) {
+      pure_expr *f, **yv;
+      size_t m;
+      if (pure_is_appv(xv[i], &f, &m, 0) && m == 2 &&
+	  f->tag == interp.symtab.eqn_sym().f) {
+	res = pure_is_appv(xv[i], &f, &m, &yv) && yv[0]->tag > 0 &&
+	  interp.add_const(yv[0]->tag, yv[1]);
+	free(yv);
+	if (!res) break;
+      }
+    }
     free(xv);
     return res?pure_tuplel(0):0;
   } else

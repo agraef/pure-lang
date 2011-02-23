@@ -7500,12 +7500,14 @@ bool interpreter::add_fun_rules(pure_expr *y)
 {
   expr x = pure_expr_to_expr(y);
   exprl xs;
+  errmsg.clear();
   if (!x.is_list(xs)) return false;
   for (exprl::iterator x = xs.begin(), end = xs.end(); x!=end; x++) {
     expr u, v;
     if (get2args(*x, u, v) == symtab.eqn_sym().f) {
       expr w, c;
       try {
+	if (restricted) throw err("operation not implemented");
 	if (get2args(v, w, c) == symtab.if_sym().f) {
 	  rule r(tagsubst(u), w, c);
 	  add_rule(globenv, r, true, false);
@@ -7527,12 +7529,14 @@ bool interpreter::add_type_rules(pure_expr *y)
 {
   expr x = pure_expr_to_expr(y);
   exprl xs;
+  errmsg.clear();
   if (!x.is_list(xs)) return false;
   for (exprl::iterator x = xs.begin(), end = xs.end(); x!=end; x++) {
     expr u, v;
     if (get2args(*x, u, v) == symtab.eqn_sym().f) {
       expr w, c;
       try {
+	if (restricted) throw err("operation not implemented");
 	if (get2args(v, w, c) == symtab.if_sym().f) {
 	  rule r(tagsubst(u), w, c);
 	  add_type_rule(typeenv, r, false);
@@ -7546,6 +7550,7 @@ bool interpreter::add_type_rules(pure_expr *y)
       }
     } else {
       try {
+	if (restricted) throw err("operation not implemented");
 	rule r(tagsubst(*x), expr(EXPR::INT, 1));
 	add_type_rule(typeenv, r, false);
       } catch (err &e) {
@@ -7561,11 +7566,13 @@ bool interpreter::add_mac_rules(pure_expr *y)
 {
   expr x = pure_expr_to_expr(y);
   exprl xs;
+  errmsg.clear();
   if (!x.is_list(xs)) return false;
   for (exprl::iterator x = xs.begin(), end = xs.end(); x!=end; x++) {
     expr u, v;
     if (get2args(*x, u, v) == symtab.eqn_sym().f) {
       try {
+	if (restricted) throw err("operation not implemented");
 	rule r(tagsubst(u), macsubst(rsubst(v)));
 	add_macro_rule(r, false);
       } catch (err &e) {
@@ -7580,10 +7587,11 @@ bool interpreter::add_mac_rules(pure_expr *y)
 
 bool interpreter::add_var(int32_t sym, pure_expr *x)
 {
+  errmsg.clear();
   if (sym <= 0 || !x) return false;
   try {
-    interpreter& interp = *interpreter::g_interp;
-    interp.defn(sym, x);
+    if (restricted) throw err("operation not implemented");
+    defn(sym, x);
     return true;
   } catch (err &e) {
     errmsg = e.what() + "\n";
@@ -7593,10 +7601,11 @@ bool interpreter::add_var(int32_t sym, pure_expr *x)
 
 bool interpreter::add_const(int32_t sym, pure_expr *x)
 {
+  errmsg.clear();
   if (sym <= 0 || !x) return false;
   try {
-    interpreter& interp = *interpreter::g_interp;
-    interp.const_defn(sym, x);
+    if (restricted) throw err("operation not implemented");
+    const_defn(sym, x);
     return true;
   } catch (err &e) {
     errmsg = e.what() + "\n";
