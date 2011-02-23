@@ -16126,7 +16126,7 @@ void PureFaustUI::run() {}
 /* C callbacks for the UI construction methods. These are called in the
    Faust-generated LLVM code (buildUserInterface routine). Note that for some
    of these there are two variations, depending on whether floating point
-   paramaters are passed as double (faust -double) or not. */
+   parameters are passed as double (faust -double) or not. */
 
 extern "C" {
 
