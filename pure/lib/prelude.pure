@@ -1592,10 +1592,14 @@ with
   check us		= throw (bad_tuple_value us);
 end;
 
+/* Add below any extra stuff which doesn't belong elsewhere, or needs to be
+   defined after all the basic prelude operations have been loaded. */
+
 /* Optimize the case of "throwaway" list and matrix comprehensions (useful if
    a comprehension is evaluated solely for its side effects). */
 
-private __do__;
+namespace __std__ with public __do__; end;
+using namespace __std__;
 
 def void (catmap f x) | void (listmap f x) = __do__ f x;
 def void (rowcatmap f x) | void (colcatmap f x) = __do__ f x;
@@ -1634,9 +1638,6 @@ def __do__ (__lambda__ [x] (__ifelse__ y (void z) ())) =
 
 // Any remaining instances reduce to a plain 'do' (this must come last).
 def __do__ f = do f;
-
-/* Stuff below actually belongs into primitives.pure, but we define it here so
-   that various needed library operations are already defined at this point. */
 
 /* List defined symbols using evalcmd "show". */
 

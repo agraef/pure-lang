@@ -99,12 +99,14 @@ const NOARG, REQARG, OPTARG = 0,1,2;
    term which doesn't throw an exception. This is handy if we have to match a
    number of different expressions against corresponding patterns. Maybe this
    should go into the prelude. */
-namespace getopt;
-private try;
+namespace __std__ with
 def try [x] = x;
 def try (x:xs) = catch (\_->try xs) x;
+end;
 
-::getopt opts args
+using namespace __std__;
+
+getopt opts args
 		= opt opts ([],[]) args
 
 with
