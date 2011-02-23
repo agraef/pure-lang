@@ -377,18 +377,18 @@ add_typedef ('[(myrlist (xs __as__ [])-->1 __if__ check xs __with__ [(check []--
 ()
 map (typep myrlist) [99,[],1..3,1:3];
 [0,1,1,0]
-add_vardef ('v-->99);
+add_vardef ['v-->99];
 ()
 get_vardef ('v);
-v-->99
-add_constdef ('v-->99);
-add_constdef (v-->99)
+[v-->99]
+add_constdef ['v-->99];
+add_constdef [v-->99]
 lasterr;
 "symbol 'v' is already defined as a variable\n"
-add_constdef ('u-->77);
+add_constdef ['u-->77];
 ()
 get_constdef ('u);
-u-->77
+[u-->77]
 type eqn (x/*0:101*/-->y/*0:11*/);
 type {
   rule #0: eqn (x-->y) = 1
@@ -405,7 +405,7 @@ type {
   state 5: #0
 }
 let syms = '[syms,argc,argv,true,false,inf,nan];
-filter (typep eqn) (map get_vardef syms);
+filter (typep eqn) (catmap get_vardef syms);
 [(syms-->[syms,argc,argv,true,false,inf,nan]),(argc-->0),(argv-->[])]
-filter (typep eqn) (map get_constdef syms);
+filter (typep eqn) (catmap get_constdef syms);
 [(true-->1),(false-->0),(inf-->inf),(nan-->nan)]
