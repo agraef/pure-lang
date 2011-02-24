@@ -682,7 +682,7 @@ symbol& symtable::rational_xdiv_sym()
 
 symbol& symtable::ttag_sym()
 {
-  lookup_p("__ttag__", __ttag_sym);
+  lookup_p("__type__", __ttag_sym);
   if (__ttag_sym)
     return *__ttag_sym;
   else
