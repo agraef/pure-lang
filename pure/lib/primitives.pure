@@ -436,6 +436,25 @@ using namespace __C;
       ``sym --> value`` with a symbol on the left-hand side (no pattern
       matching is performed by these functions).
 
+   The following functions may be used to delete individual rewriting rules or
+   variable and constant symbols.
+
+   .. function:: del_fundef rule
+                 del_typedef rule
+                 del_macdef rule
+
+      Delete the given rewriting rule (given in the same format as returned by
+      the :func:`get_fundef`, :func:`get_typedef` and :func:`get_macdef`
+      functions) from the running program. Returns ``()`` if successful, fails
+      otherwise.
+
+   .. function:: del_vardef sym
+                 del_constdef sym
+
+      Delete variables and constants, given by their (quoted) symbols. Returns
+      ``()`` if successful, or fails if the symbol isn't defined (or defined
+      as a different kind of symbol).
+
    The prelude also provides some functions to retrieve various attributes of
    a function symbol which determine how the operation is applied to its
    operands or arguments. These functions all take a single argument, the
@@ -821,6 +840,12 @@ extern expr *add_typedef(expr *x);
 extern expr *add_macdef(expr *x);
 extern expr *add_vardef(expr *x);
 extern expr *add_constdef(expr *x);
+
+extern expr *del_fundef(expr *x);
+extern expr *del_typedef(expr *x);
+extern expr *del_macdef(expr *x);
+extern expr *del_vardef(expr *x);
+extern expr *del_constdef(expr *x);
 
 /* Expression serialization. */
 

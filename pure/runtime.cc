@@ -8509,6 +8509,46 @@ pure_expr *add_constdef(pure_expr *x)
     return 0;
 }
 
+extern "C"
+pure_expr *del_fundef(pure_expr *x)
+{
+  interpreter& interp = *interpreter::g_interp;
+  bool res = interp.del_fun_rule(x);
+  return res?pure_tuplel(0):0;
+}
+
+extern "C"
+pure_expr *del_typedef(pure_expr *x)
+{
+  interpreter& interp = *interpreter::g_interp;
+  bool res = interp.del_type_rule(x);
+  return res?pure_tuplel(0):0;
+}
+
+extern "C"
+pure_expr *del_macdef(pure_expr *x)
+{
+  interpreter& interp = *interpreter::g_interp;
+  bool res = interp.del_mac_rule(x);
+  return res?pure_tuplel(0):0;
+}
+
+extern "C"
+pure_expr *del_vardef(pure_expr *x)
+{
+  interpreter& interp = *interpreter::g_interp;
+  bool res = x->tag>0 && interp.del_var(x->tag);
+  return res?pure_tuplel(0):0;
+}
+
+extern "C"
+pure_expr *del_constdef(pure_expr *x)
+{
+  interpreter& interp = *interpreter::g_interp;
+  bool res = x->tag>0 && interp.del_const(x->tag);
+  return res?pure_tuplel(0):0;
+}
+
 /* Helper functions to swap byte for on-the-fly endianness conversion. */
 
 static char *swap_endian(char* s, const int nbytes)

@@ -7613,6 +7613,146 @@ bool interpreter::add_const(int32_t sym, pure_expr *x)
   }
 }
 
+bool interpreter::del_fun_rule(pure_expr *x)
+{
+  pure_expr *g;
+  size_t n;
+  if (pure_is_appv(x, &g, &n, 0) && n == 2 && g->tag == symtab.eqn_sym().f) {
+    pure_expr **xv;
+    (void)pure_is_appv(x, &g, &n, &xv);
+    g = xv[0];
+    while (g->tag == EXPR::APP) g = g->data.x[0];
+    if (g->tag <= 0) return false;
+  } else
+    return false;
+  int32_t f = g->tag;
+  env::iterator jt = globenv.find(f);
+  if (jt != globenv.end() && jt->second.t == env_info::fun) {
+    env_info& info = jt->second;
+    rulel& r = *info.rules;
+    for (rulel::iterator it = r.begin(), end = r.end(); it!=end; ++it) {
+      pure_expr *y = it->qual.is_null()
+	? const_value(expr(symtab.eqn_sym().x, vsubst(it->lhs),
+			   rsubst(vsubst(it->rhs, 1), true)), true)
+	: const_value(expr(symtab.eqn_sym().x, vsubst(it->lhs),
+			   expr(symtab.if_sym().x,
+				rsubst(vsubst(it->rhs, 1), true),
+				rsubst(vsubst(it->qual, 1), true))), true);
+      bool eq = same(x, y);
+      pure_freenew(y);
+      if (eq) {
+	if (r.size() == 1)
+	  clear(f);
+	else {
+	  r.erase(it);
+	  assert(!r.empty());
+	  mark_dirty(f);
+	}
+	return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool interpreter::del_type_rule(pure_expr *x)
+{
+  pure_expr *g;
+  size_t n;
+  if (pure_is_appv(x, &g, &n, 0) && n == 2 && g->tag == symtab.eqn_sym().f) {
+    pure_expr **xv;
+    (void)pure_is_appv(x, &g, &n, &xv);
+    g = xv[0];
+    while (g->tag == EXPR::APP) g = g->data.x[0];
+    if (g->tag <= 0) return false;
+  } else
+    return false;
+  int32_t f = g->tag;
+  env::iterator jt = typeenv.find(f);
+  if (jt != typeenv.end() && jt->second.t == env_info::fun) {
+    env_info& info = jt->second;
+    rulel& r = *info.rules;
+    for (rulel::iterator it = r.begin(), end = r.end(); it!=end; ++it) {
+      pure_expr *y = it->qual.is_null()
+	? const_value(expr(symtab.eqn_sym().x, vsubst(it->lhs),
+			   rsubst(vsubst(it->rhs, 1), true)), true)
+	: const_value(expr(symtab.eqn_sym().x, vsubst(it->lhs),
+			   expr(symtab.if_sym().x,
+				rsubst(vsubst(it->rhs, 1), true),
+				rsubst(vsubst(it->qual, 1), true))), true);
+      bool eq = same(x, y);
+      pure_freenew(y);
+      if (eq) {
+	if (r.size() == 1)
+	  clear_type(f);
+	else {
+	  r.erase(it);
+	  assert(!r.empty());
+	  mark_dirty_type(f);
+	}
+	return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool interpreter::del_mac_rule(pure_expr *x)
+{
+  pure_expr *g;
+  size_t n;
+  if (pure_is_appv(x, &g, &n, 0) && n == 2 && g->tag == symtab.eqn_sym().f) {
+    pure_expr **xv;
+    (void)pure_is_appv(x, &g, &n, &xv);
+    g = xv[0];
+    while (g->tag == EXPR::APP) g = g->data.x[0];
+    if (g->tag <= 0) return false;
+  } else
+    return false;
+  int32_t f = g->tag;
+  env::iterator jt = macenv.find(f);
+  if (jt != macenv.end() && jt->second.t == env_info::fun) {
+    env_info& info = jt->second;
+    rulel& r = *info.rules;
+    for (rulel::iterator it = r.begin(), end = r.end(); it!=end; ++it) {
+      assert(it->qual.is_null());
+      pure_expr *y = 
+	const_value(expr(symtab.eqn_sym().x, vsubst(it->lhs),
+			 rsubst(vsubst(it->rhs, 1), true)), true);
+      bool eq = same(x, y);
+      pure_freenew(y);
+      if (eq) {
+	if (r.size() == 1)
+	  clear_mac(f);
+	else {
+	  r.erase(it);
+	  assert(!r.empty());
+	}
+	return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool interpreter::del_var(int32_t sym)
+{
+  if (sym <= 0 || globenv.find(sym) == globenv.end() ||
+      globenv[sym].t != env_info::fvar)
+    return false;
+  clear(sym);
+  return true;
+}
+
+bool interpreter::del_const(int32_t sym)
+{
+  if (sym <= 0 || globenv.find(sym) == globenv.end() ||
+      globenv[sym].t != env_info::cvar)
+    return false;
+  clear(sym);
+  return true;
+}
+
 // Code generation.
 
 #define Dbl(d)		ConstantFP::get(interpreter::double_type(), d)

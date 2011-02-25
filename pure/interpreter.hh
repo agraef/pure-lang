@@ -785,6 +785,11 @@ public:
   bool add_mac_rules(pure_expr *x);
   bool add_var(int32_t sym, pure_expr *x);
   bool add_const(int32_t sym, pure_expr *x);
+  bool del_fun_rule(pure_expr *x);
+  bool del_type_rule(pure_expr *x);
+  bool del_mac_rule(pure_expr *x);
+  bool del_var(int32_t sym);
+  bool del_const(int32_t sym);
 
   // LLVM code generation and execution.
 

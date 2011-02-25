@@ -77,7 +77,15 @@ add_macdef $ '[app f x --> f x];
 h x y = app (+) x y;
 h 2 3;
 
-// get_typedef and add_typedef
+// del_fundef and del_macdef
+
+del_fundef $ '(fold f a [] --> a);
+del_macdef $ '(app f x --> f x);
+
+get_fundef fold;
+get_macdef app;
+
+// get_typedef, add_typedef and del_typedef
 
 get_typedef list;
 add_typedef $ '[mylist [],mylist (_:_)];
@@ -91,16 +99,20 @@ add_typedef $
    [(check []-->1),(check (_:xs)-->check xs),(check _-->0)])];
 map (typep myrlist) [99,[],1..3,1:3];
 
-// get_vardef and add_vardef
+do del_typedef $ '[(mylist []-->1),(mylist (_:_)-->1)];
+get_typedef mylist;
+
+// get_vardef, get_constdef et al
 
 add_vardef ['v-->99];
 get_vardef ('v);
 
-// get_constdef and add_constdef
-
-add_constdef ['v-->99]; lasterr; // error
-add_constdef ['u-->77];
-get_constdef ('u);
+add_constdef ['v-->77]; lasterr; // error
+del_vardef ('v);
+add_constdef ['v-->77]; // ok
+get_constdef ('v);
+del_constdef ('v);
+get_constdef ('v);
 
 type eqn (x-->y);
 let syms = '[syms,argc,argv,true,false,inf,nan];

@@ -269,6 +269,32 @@ h x/*0:01*/ y/*0:1*/ = x/*0:01*/+y/*0:1*/;
 }
 h 2 3;
 5
+{
+  rule #0: fold f a xs@(_:_) = tick [] xs with tick zs (x:xs) = tack (x:zs) (fold f a xs&) if thunkp xs; tick zs (x:xs) = tick (x:zs) xs; tick zs [] = tack zs a; tick zs xs = tack zs (fold f a xs); tack (x:xs) y = tack xs (f x y); tack [] y = y end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+	<app> state 3
+  state 3: #0
+	<app> state 4
+  state 4: #0
+	: state 5
+  state 5: #0
+	<var> state 6
+  state 6: #0
+	<var> state 7
+  state 7: #0
+}
+del_fundef ('(fold f a []-->a));
+()
+del_macdef ('(app f x-->f x));
+()
+get_fundef fold;
+[fold f a (xs __as__ (_:_))-->tick [] xs __with__ [(tick zs (x:xs)-->tack (x:zs) (fold f a xs&) __if__ thunkp xs),(tick zs (x:xs)-->tick (x:zs) xs),(tick zs []-->tack zs a),(tick zs xs-->tack zs (fold f a xs)),(tack (x:xs) y-->tack xs (f x y)),(tack [] y-->y)]]
+get_macdef app;
+[]
 get_typedef list;
 [(list []-->1),(list (_:_)-->1)]
 type mylist [];
@@ -377,18 +403,42 @@ add_typedef ('[(myrlist (xs __as__ [])-->1 __if__ check xs __with__ [(check []--
 ()
 map (typep myrlist) [99,[],1..3,1:3];
 [0,1,1,0]
+type {
+  rule #0: mylist (_:_) = 1
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+}
+do del_typedef ('[(mylist []-->1),(mylist (_:_)-->1)]);
+()
+get_typedef mylist;
+[]
 add_vardef ['v-->99];
 ()
 get_vardef ('v);
 [v-->99]
-add_constdef ['v-->99];
-add_constdef [v-->99]
+add_constdef ['v-->77];
+add_constdef [v-->77]
 lasterr;
 "symbol 'v' is already defined as a variable\n"
-add_constdef ['u-->77];
+del_vardef ('v);
 ()
-get_constdef ('u);
-[u-->77]
+add_constdef ['v-->77];
+()
+get_constdef ('v);
+[v-->77]
+del_constdef ('v);
+()
+get_constdef ('v);
+[]
 type eqn (x/*0:101*/-->y/*0:11*/);
 type {
   rule #0: eqn (x-->y) = 1

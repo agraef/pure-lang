@@ -1099,6 +1099,22 @@ pure_expr *add_macdef(pure_expr *x);
 pure_expr *add_vardef(pure_expr *x);
 pure_expr *add_constdef(pure_expr *x);
 
+/* Delete rewriting rules for a function, type or macro. The argument is the
+   rule to be deleted, which is specified using the same runtime
+   representation as returned by get_fundef(), get_typedef() and
+   get_macdef(). The result is () if a matching rule was found (and deleted),
+   NULL otherwise. */
+
+pure_expr *del_fundef(pure_expr *x);
+pure_expr *del_typedef(pure_expr *x);
+pure_expr *del_macdef(pure_expr *x);
+
+/* Delete global variables or constants. Here the argument is just the
+   variable or constant symbol to be deleted. */
+
+pure_expr *del_vardef(pure_expr *x);
+pure_expr *del_constdef(pure_expr *x);
+
 /* Expression serialization. These operations can be used to safely transfer
    expression data to/from persistent storage and between different processes
    in a compact format. blob() stores the expression contents as a binary
