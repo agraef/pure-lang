@@ -1,5 +1,21 @@
 2011-02-25  Albert Graef  <Dr.Graef@t-online.de>
 
+	* lexer.ll: Add as simple facility which allows the user to define
+	his own interactive commands. The commands are implemented by
+	public functions in the special __cmd__ namespace which are
+	invoked with one string argument (the rest of the command line,
+	with leading and trailing whitespace trimmed off). If the command
+	function returns a string, it is printed on stdout, followed by a
+	newline. If the command throws a string, the string is interpreted
+	as an error message which is printed in the usual 'cmd: message'
+	format. Otherwise, nothing is printed.
+
+	A user-defined command may override a built-in command with the
+	same name; in this case it is possible to escape the built-in
+	command by prefixing it with '^'. This is useful, in particular,
+	if a customized command invokes the corresponding builtin via
+	evalcmd.
+
 	* interpreter.cc, runtime.cc, lib/primitives.pure: Add operations
 	to delete rewriting rules, variables and constants (del_fundef et
 	al).

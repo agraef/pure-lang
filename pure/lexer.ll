@@ -46,7 +46,8 @@
 
 using namespace std;
 
-static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const char *cmd, const char *cmdline);
+static bool checkcmd(interpreter &interp, const char *s);
+static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const char *cmd, const char *cmdline, bool esc);
 static string pstring(const char *s);
 static string format_namespace(const string& name);
 static bool find_namespace(interpreter& interp, const string& name);
@@ -132,7 +133,7 @@ int    [0-9][0-9A-Za-z]*
 exp    ([Ee][+-]?{int})
 float  {int}{exp}|{int}\.{exp}|({int})?\.{int}{exp}?
 str    ([^\"\\\n]|\\(.|\n))*
-cmd    (!|help|ls|pwd|break|trace|bt|del|cd|show|dump|clear|save|run|override|underride|stats|mem|quit|completion_matches|help_matches|help_index)
+cmd    (!|"^"?{id})
 blank  [ \t\f\v\r]
 
 %x escape comment xcode xcode_comment xdecl xdecl_comment xusing xusing_comment xsyms xsyms_comment xtag rescan xsyms_rescan
@@ -243,15 +244,6 @@ blank  [ \t\f\v\r]
 <xcode_comment>"*"+"/"		interp.add_code(yytext); yylloc->step(); BEGIN(xcode);
 <xcode_comment><<EOF>>		interp.error(*yylloc, "open comment at end of file"); BEGIN(xcode);
 
-<xdecl>^{cmd} {
-  if (interp.interactive || interp.output)
-    goto parse_cmd;
-  else if (yytext[0] == '!')
-    goto xdecl_bad_char;
-  else
-    goto xdecl_parse_id;
-}
-
 <xdecl>extern     return token::EXTERN;
 <xdecl>infix      yylval->fix = infix; return token::FIX;
 <xdecl>infixl     yylval->fix = infixl; return token::FIX;
@@ -277,6 +269,16 @@ blank  [ \t\f\v\r]
 <xdecl>with	  return token::WITH;
 <xdecl>using      return token::USING;
 <xdecl>namespace  return token::NAMESPACE;
+
+<xdecl>^{cmd} {
+  if ((interp.interactive || interp.output) && checkcmd(interp, yytext))
+    goto parse_cmd;
+  else if (yytext[0] == '!' || yytext[0] == '^')
+    goto xdecl_bad_char;
+  else
+    goto xdecl_parse_id;
+}
+
 <xdecl>{id}	  { xdecl_parse_id: check(*yylloc, yytext, true); yylval->sval = new string(yytext); return token::ID; }
 <xdecl>[()*,=]	  return yy::parser::token_type(yytext[0]);
 <xdecl>"..."	  return token::ELLIPSIS;
@@ -296,15 +298,6 @@ blank  [ \t\f\v\r]
 <xdecl_comment>[\n]+          yylloc->lines(yyleng); yylloc->step();
 <xdecl_comment>"*"+"/"        yylloc->step(); BEGIN(xdecl);
 <xdecl_comment><<EOF>>        interp.error(*yylloc, "open comment at end of file"); BEGIN(xdecl);
-
-<xusing>^{cmd} {
-  if (interp.interactive || interp.output)
-    goto parse_cmd;
-  else if (yytext[0] == '!')
-    goto xusing_bad_char;
-  else
-    goto xusing_parse_id;
-}
 
 <xusing>extern     BEGIN(INITIAL); return token::EXTERN;
 <xusing>infix      BEGIN(INITIAL); yylval->fix = infix; return token::FIX;
@@ -331,6 +324,16 @@ blank  [ \t\f\v\r]
 <xusing>namespace  return token::NAMESPACE;
 <xusing>private    return token::PRIVATE;
 <xusing>public     return token::PUBLIC;
+
+<xusing>^{cmd} {
+  if ((interp.interactive || interp.output) && checkcmd(interp, yytext))
+    goto parse_cmd;
+  else if (yytext[0] == '!' || yytext[0] == '^')
+    goto xusing_bad_char;
+  else
+    goto xusing_parse_id;
+}
+
 <xusing>{qual}?{id}  { xusing_parse_id: yylval->sval = new string(yytext); return token::ID; }
 <xusing>"("        BEGIN(xsyms); return yy::parser::token_type(yytext[0]);
 <xusing>,	   return yy::parser::token_type(yytext[0]);
@@ -360,9 +363,9 @@ blank  [ \t\f\v\r]
 }
 
 <xsyms>^{cmd} {
-  if (interp.interactive || interp.output)
+  if ((interp.interactive || interp.output) && checkcmd(interp, yytext))
     goto parse_cmd;
-  else if (yytext[0] == '!')
+  else if (yytext[0] == '!' || yytext[0] == '^')
     goto xsyms_parse_op;
   else
     goto xsyms_parse_id;
@@ -433,32 +436,6 @@ blank  [ \t\f\v\r]
 <xsyms_comment>[\n]+          yylloc->lines(yyleng); yylloc->step();
 <xsyms_comment>"*"+"/"        yylloc->step(); BEGIN(xsyms);
 <xsyms_comment><<EOF>>        interp.error(*yylloc, "open comment at end of file"); BEGIN(xsyms);
-
-^{cmd} {
- parse_cmd:
-  /* These are treated as commands in interactive mode, and as ordinary
-     (operator or identifier) symbols otherwise. */
-  if (interp.interactive || interp.output) {
-    /* Read the rest of the command line. */
-    string cmd = yytext, cmdline = yytext;
-    register int c;
-    int count = 0;
-    while ((c = yyinput()) != EOF && c != 0 && c != '\n') {
-      cmdline.append(1, c);
-      count++;
-    }
-    if (c == '\n')
-      yylloc->lines(1);
-    else
-      yylloc->columns(count);
-    docmd(interp, yylloc, cmd.c_str(), cmdline.c_str());
-  } else if (yytext[0] == '!')
-    goto parse_op;
-  else {
-    check(*yylloc, yytext, false);
-    goto parse_id;
-  }
-}
 
 {int}L     {
   string msg;
@@ -558,6 +535,34 @@ when	   return token::WHEN;
 with	   return token::WITH;
 using      BEGIN(xusing); return token::USING;
 namespace  BEGIN(xusing); return token::NAMESPACE;
+
+^{cmd} {
+ parse_cmd:
+  /* These are treated as commands in interactive mode, and as ordinary
+     (operator or identifier) symbols otherwise. */
+  if ((interp.interactive || interp.output) && checkcmd(interp, yytext)) {
+    /* Read the rest of the command line. */
+    bool esc = yytext[0] == '^';
+    string cmd = yytext+esc, cmdline = yytext+esc;
+    register int c;
+    int count = 0;
+    while ((c = yyinput()) != EOF && c != 0 && c != '\n') {
+      cmdline.append(1, c);
+      count++;
+    }
+    if (c == '\n')
+      yylloc->lines(1);
+    else
+      yylloc->columns(count);
+    docmd(interp, yylloc, cmd.c_str(), cmdline.c_str(), esc);
+  } else if (yytext[0] == '!' || yytext[0] == '^')
+    goto parse_op;
+  else {
+    check(*yylloc, yytext, false);
+    goto parse_id;
+  }
+}
+
 <xtag>::{id} BEGIN(INITIAL); goto parse_tag;
 {qual}{id} {
   string qualid = yytext;
@@ -1193,6 +1198,34 @@ static string xsym(const string& ns, const string& s)
 
 /* Interactive command processing. */
 
+static const char *builtin_commands[] = {
+  "!", "break", "bt", "cd", "clear", "completion_matches", "del", "dump",
+  "help", "help_index", "help_matches", "ls", "mem", "override", "pwd",
+  "quit", "run", "save", "show", "stats", "trace", "underride"
+};
+
+static int mycmp(const void *a, const void *b)
+{
+  return strcmp(*(char* const*)a, *(char* const*)b);
+}
+
+static bool checkusercmd(interpreter &interp, const char *s)
+{
+  symbol* sym = interp.symtab.lookup(string("::__cmd__::")+s);
+  return sym &&
+    ((interp.globenv.find(sym->f) != interp.globenv.end()
+      && interp.globenv[sym->f].t == env_info::fun) ||
+     interp.externals.find(sym->f) != interp.externals.end());
+}
+
+static bool checkcmd(interpreter &interp, const char *s)
+{
+  size_t nel = sizeof(builtin_commands)/sizeof(builtin_commands[0]);
+  if (s[0]=='^') s++;
+  return bsearch(&s, builtin_commands, nel, sizeof(builtin_commands[0]), mycmp)
+    || checkusercmd(interp, s);
+}
+
 struct argl {
   bool ok;
   size_t c;
@@ -1539,7 +1572,7 @@ void Index::scan()
   }
 }
 
-static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const char *cmd, const char *cmdline)
+static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const char *cmd, const char *cmdline, bool esc)
 {
   static Index *idx = NULL;
   if (interp.restricted) {
@@ -1548,6 +1581,29 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
     const char *s = cmdline+1;
     while (isspace(*s)) ++s;
     if (system(s) == -1) perror("system");
+  } else if (!esc && checkusercmd(interp, cmd)) {
+    // user-defined commands override builtins
+    symbol* sym = interp.symtab.lookup(string("::__cmd__::")+cmd);
+    assert(sym);
+    // get arguments
+    string args = cmdline+strlen(cmd);
+    // trim leading and trailing whitespace
+    size_t pos = args.find_first_not_of(" \t");
+    if (pos != string::npos) args.erase(0, pos);
+    pos = args.find_last_not_of(" \t");
+    if (pos != string::npos) args.erase(pos+1);
+    pure_expr *e, *x =
+      pure_appx(pure_symbol(sym->f), pure_cstring_dup(args.c_str()), &e);
+    char *s;
+    if (x && pure_is_cstring_dup(x, &s)) {
+      cout << s << endl;
+      free(s);
+    } else if (e && pure_is_cstring_dup(e, &s)) {
+      cerr << cmd << ": " << s << endl;
+      free(s);
+    }
+    if (x) pure_freenew(x);
+    if (e) pure_freenew(e);
   } else if (strcmp(cmd, "bt") == 0)  {
     const char *s = cmdline+2;
     argl args(s, "bt");
