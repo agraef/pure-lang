@@ -1598,10 +1598,16 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
       pure_appx(pure_symbol(sym->f), pure_cstring_dup(args.c_str()), &e);
     char *s;
     if (x && pure_is_cstring_dup(x, &s)) {
-      cout << s << endl;
+      if (*s) {
+	cout << s;
+	if (s[strlen(s)-1] != '\n') cout << endl;
+      }
       free(s);
     } else if (e && pure_is_cstring_dup(e, &s)) {
-      cerr << cmd << ": " << s << endl;
+      if (*s) {
+	cerr << cmd << ": " << s;
+	if (s[strlen(s)-1] != '\n') cerr << endl;
+      }
       free(s);
     }
     if (x) pure_freenew(x);
