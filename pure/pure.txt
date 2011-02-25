@@ -4670,9 +4670,16 @@ of this, if you like. We leave this as an exercise to the reader.)
 
 Also note that :func:`add_fundef` doesn't override existing function
 definitions. It simply keeps on adding rules to the current program, just as
-if you typed the equations at the command prompt of the interpreter. However,
-the :func:`clearsym` function allows you to get rid of an existing definition
-if needed::
+if you typed the equations at the command prompt of the interpreter. It is
+possible to delete individual equations with :func:`del_fundef`::
+
+  > del_fundef $ '(fib n-->fib (n-2)+fib (n-1));
+  ()
+  > show fib
+  fib n = 1 if n<=1;
+
+Moreover, the :func:`clearsym` function allows you to completely get rid of an
+existing function::
 
   > clearsym fib 0;
   ()
@@ -4719,31 +4726,31 @@ Or let's lists all global variables along with their values::
   [(argc-->0),(argv-->[]),(compiling-->0),
   (sysinfo-->"x86_64-unknown-linux-gnu"),(version-->"0.47")]
 
-The counterparts of :func:`add_fundef` are provided as well. Not very
-surprisingly, they are named :func:`add_typedef`, :func:`add_macdef`,
-:func:`add_vardef` and :func:`add_constdef`. For instance::
+The counterparts of :func:`add_fundef` and :func:`del_fundef` are provided as
+well. Not very surprisingly, they are named :func:`add_typedef`,
+:func:`del_typedef`, etc. For instance::
 
   > add_vardef ['x-->3*33];
   ()
   > show x
   let x = 99;
+  > del_vardef ('x);
+  ()
+  > show x
 
 The above facilities should cover most metaprogramming needs. For even more
 exotic requirements, you can also use the :func:`eval` and :func:`evalcmd`
 primitives to execute arbitrary Pure code in text form; please see the
 :doc:`purelib` for details.
 
-Finally, a word of caution: The use of :func:`add_fundef` et al to modify a
-running program breaks referential transparency and hence these functions
-should be used with care. Moreover, at present the JIT compiler doesn't
-support truly self-modifying code (i.e., functions modifying themselves while
-they're executing); this results in undefined behaviour. (However, in most
-cases it should be easy to work around this limitation by just doing a tail
-call to a helper function which handles the mutations.)
-
-Also, note that none of the inspection and mutation capabilities provided by
-these operations will work in batch-compiled programs, please check the `Batch
-Compilation`_ section for details.
+Finally, a word of caution: The use of :func:`add_fundef`, :func:`del_fundef`
+and similar operations to modify a running program breaks referential
+transparency and hence these functions should be used with care. Moreover, at
+present the JIT compiler doesn't support truly self-modifying code (i.e.,
+functions modifying themselves while they're executing); this results in
+undefined behaviour. Also, note that none of the inspection and mutation
+capabilities provided by these operations will work in batch-compiled
+programs, please check the `Batch Compilation`_ section for details.
 
 .. _Exception Handling:
 
