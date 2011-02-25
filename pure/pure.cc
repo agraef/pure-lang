@@ -126,7 +126,7 @@ typedef map<string, symbol> symbol_map;
 static bool checkusercmd(interpreter &interp, const char *s)
 {
   symbol* sym = interp.symtab.lookup(string("::__cmd__::")+s);
-  return sym &&
+  return sym && !sym->priv &&
     ((interp.globenv.find(sym->f) != interp.globenv.end()
       && interp.globenv[sym->f].t == env_info::fun) ||
      interp.externals.find(sym->f) != interp.externals.end());
