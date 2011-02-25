@@ -47,6 +47,7 @@
 using namespace std;
 
 static bool checkcmd(interpreter &interp, const char *s);
+static bool checkusercmd(interpreter &interp, const char *s);
 static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const char *cmd, const char *cmdline, bool esc);
 static string pstring(const char *s);
 static string format_namespace(const string& name);
@@ -1009,14 +1010,15 @@ command_generator(const char *text, int state)
       if (strncmp(s.c_str(), text, len) == 0)
 	return strdup(s.c_str());
       else {
-	/* Look for a symbol in the current namespace and the search
-	   namespaces. */
+	/* Look for a symbol in the current namespace, the __cmd__ namespace
+	   and the search namespaces. */
 	size_t p = s.rfind(text);
 	if (p != string::npos &&
 	    (p == 0 || (p > 1 && s.compare(p-2, 2, "::") == 0))) {
 	  string prefix = s.substr(0, p?p-2:p),
 	    name = s.substr(p, string::npos);
-	  bool found = prefix==*interp.symtab.current_namespace;
+	  bool found = prefix==*interp.symtab.current_namespace ||
+	    (prefix=="__cmd__" && checkusercmd(interp, name.c_str()));
 	  for (map< string, set<int32_t> >::iterator
 		 it = interp.symtab.search_namespaces->begin(),
 		 end = interp.symtab.search_namespaces->end();
