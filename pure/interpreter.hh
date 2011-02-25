@@ -699,11 +699,14 @@ public:
   void add_rule(env &e, rule &r, bool toplevel, bool check);
   void add_rule(env &e, rule &r, bool toplevel = false)
   { add_rule(e, r, toplevel, true); }
+  void add_rule_at(env &e, rule &r, int32_t g, rulel::iterator& p);
   void add_type_rules(env &e, rulel *r);
   void add_type_rule(env &e, rule &r, bool check = true);
+  void add_type_rule_at(env &e, rule &r, int32_t g, rulel::iterator& p);
   void add_simple_rule(rulel &rl, rule *r);
   void add_macro_rules(rulel *r);
   void add_macro_rule(rule& r, bool check = true);
+  void add_macro_rule_at(rule& r, int32_t g, rulel::iterator& p);
   void promote_ttags(expr f, expr x, expr u);
   void promote_ttags(expr f, expr x, expr u, expr v);
   expr bind(env& vars, vinfo& vi,
@@ -783,6 +786,9 @@ public:
   bool add_fun_rules(pure_expr *x);
   bool add_type_rules(pure_expr *x);
   bool add_mac_rules(pure_expr *x);
+  bool add_fun_rules_at(pure_expr *y, pure_expr *x);
+  bool add_type_rules_at(pure_expr *y, pure_expr *x);
+  bool add_mac_rules_at(pure_expr *y, pure_expr *x);
   bool add_var(int32_t sym, pure_expr *x);
   bool add_const(int32_t sym, pure_expr *x);
   bool del_fun_rule(pure_expr *x);

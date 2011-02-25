@@ -118,3 +118,35 @@ type eqn (x-->y);
 let syms = '[syms,argc,argv,true,false,inf,nan];
 filter (typep eqn) $ catmap get_vardef syms;
 filter (typep eqn) $ catmap get_constdef syms;
+
+// globsym, clearsym
+
+globsym "*" 1;
+do (flip clearsym 1) (globsym "*" 1);
+globsym "*" 1;
+
+// add_fundef_at et al
+
+add_fundef ('[foo 0-->0]);
+add_fundef_at ('(foo 0-->0)) ('[foo 1-->1]);
+add_fundef ('[foo 99-->99]);
+add_fundef_at ('(foo 0-->0)) ('[foo 2-->2]);
+add_fundef_at ('(foo 0-->0)) ('[(foo 4-->4),(foo 3-->3)]);
+add_fundef_at ('(foo 0-->0)) ('[bar 2-->2]); lasterr; // error
+get_fundef ('foo);
+
+add_typedef ('[foo 0-->0]);
+add_typedef_at ('(foo 0-->0)) ('[foo 1-->1]);
+add_typedef ('[foo 99-->99]);
+add_typedef_at ('(foo 0-->0)) ('[foo 2-->2]);
+add_typedef_at ('(foo 0-->0)) ('[(foo 4-->4),(foo 3-->3)]);
+add_typedef_at ('(foo 0-->0)) ('[bar 2-->2]); lasterr; // error
+get_typedef ('foo);
+
+add_macdef ('[foo 0-->0]);
+add_macdef_at ('(foo 0-->0)) ('[foo 1-->1]);
+add_macdef ('[foo 99-->99]);
+add_macdef_at ('(foo 0-->0)) ('[foo 2-->2]);
+add_macdef_at ('(foo 0-->0)) ('[(foo 4-->4),(foo 3-->3)]);
+add_macdef_at ('(foo 0-->0)) ('[bar 2-->2]); lasterr; // error
+get_macdef ('foo);

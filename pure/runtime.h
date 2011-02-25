@@ -1090,6 +1090,14 @@ pure_expr *add_fundef(pure_expr *x);
 pure_expr *add_typedef(pure_expr *x);
 pure_expr *add_macdef(pure_expr *x);
 
+/* Same as above, but add the given rules x before a given rule y. In this
+   case, all rules must be for the same head symbol which matches the head
+   symbol of the rule y. */
+
+pure_expr *add_fundef_at(pure_expr *y, pure_expr *x);
+pure_expr *add_typedef_at(pure_expr *y, pure_expr *x);
+pure_expr *add_macdef_at(pure_expr *y, pure_expr *x);
+
 /* Set global variables or constants. The argument is a list of rules in the
    format var-->val; the left-hand side of each rule *must* be a symbol (no
    pattern matching is performed by these routines). These work pretty much

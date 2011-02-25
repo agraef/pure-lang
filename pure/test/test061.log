@@ -459,3 +459,201 @@ filter (typep eqn) (catmap get_vardef syms);
 [(syms-->[syms,argc,argv,true,false,inf,nan]),(argc-->0),(argv-->[])]
 filter (typep eqn) (catmap get_constdef syms);
 [(true-->1),(false-->0),(inf-->inf),(nan-->nan)]
+globsym "*" 1;
+[bar,baz,eqn,f,fact,fold,foo,g,h,myrlist,syms,x]
+do (flip clearsym 1) (globsym "*" 1);
+()
+globsym "*" 1;
+[]
+foo 0 = 0;
+{
+  rule #0: foo 0 = 0
+  state 0: #0
+	0::int state 1
+  state 1: #0
+}
+add_fundef ('[foo 0-->0]);
+()
+foo 1 = 1;
+{
+  rule #0: foo 1 = 1
+  rule #1: foo 0 = 0
+  state 0: #0 #1
+	1::int state 1
+	0::int state 2
+  state 1: #0
+  state 2: #1
+}
+add_fundef_at ('(foo 0-->0)) ('[foo 1-->1]);
+()
+foo 99 = 99;
+{
+  rule #0: foo 1 = 1
+  rule #1: foo 0 = 0
+  rule #2: foo 99 = 99
+  state 0: #0 #1 #2
+	1::int state 1
+	0::int state 2
+	99::int state 3
+  state 1: #0
+  state 2: #1
+  state 3: #2
+}
+add_fundef ('[foo 99-->99]);
+()
+foo 2 = 2;
+{
+  rule #0: foo 1 = 1
+  rule #1: foo 2 = 2
+  rule #2: foo 0 = 0
+  rule #3: foo 99 = 99
+  state 0: #0 #1 #2 #3
+	1::int state 1
+	2::int state 2
+	0::int state 3
+	99::int state 4
+  state 1: #0
+  state 2: #1
+  state 3: #2
+  state 4: #3
+}
+add_fundef_at ('(foo 0-->0)) ('[foo 2-->2]);
+()
+foo 4 = 4;
+foo 3 = 3;
+{
+  rule #0: foo 1 = 1
+  rule #1: foo 2 = 2
+  rule #2: foo 4 = 4
+  rule #3: foo 3 = 3
+  rule #4: foo 0 = 0
+  rule #5: foo 99 = 99
+  state 0: #0 #1 #2 #3 #4 #5
+	1::int state 1
+	2::int state 2
+	4::int state 3
+	3::int state 4
+	0::int state 5
+	99::int state 6
+  state 1: #0
+  state 2: #1
+  state 3: #2
+  state 4: #3
+  state 5: #4
+  state 6: #5
+}
+add_fundef_at ('(foo 0-->0)) ('[(foo 4-->4),(foo 3-->3)]);
+()
+add_fundef_at ('(foo 0-->0)) ('[bar 2-->2]);
+add_fundef_at (foo 0-->0) [bar 2-->2]
+lasterr;
+"error in function definition (wrong head symbol)\n"
+get_fundef ('foo);
+[(foo 1-->1),(foo 2-->2),(foo 4-->4),(foo 3-->3),(foo 0-->0),(foo 99-->99)]
+type foo 0 = 0;
+type {
+  rule #0: foo 0 = 0
+  state 0: #0
+	0::int state 1
+  state 1: #0
+}
+add_typedef ('[foo 0-->0]);
+()
+type foo 1;
+type {
+  rule #0: foo 1 = 1
+  rule #1: foo 0 = 0
+  state 0: #0 #1
+	1::int state 1
+	0::int state 2
+  state 1: #0
+  state 2: #1
+}
+add_typedef_at ('(foo 0-->0)) ('[foo 1-->1]);
+()
+type foo 99 = 99;
+type {
+  rule #0: foo 1 = 1
+  rule #1: foo 0 = 0
+  rule #2: foo 99 = 99
+  state 0: #0 #1 #2
+	1::int state 1
+	0::int state 2
+	99::int state 3
+  state 1: #0
+  state 2: #1
+  state 3: #2
+}
+add_typedef ('[foo 99-->99]);
+()
+type foo 2 = 2;
+type {
+  rule #0: foo 1 = 1
+  rule #1: foo 2 = 2
+  rule #2: foo 0 = 0
+  rule #3: foo 99 = 99
+  state 0: #0 #1 #2 #3
+	1::int state 1
+	2::int state 2
+	0::int state 3
+	99::int state 4
+  state 1: #0
+  state 2: #1
+  state 3: #2
+  state 4: #3
+}
+add_typedef_at ('(foo 0-->0)) ('[foo 2-->2]);
+()
+type foo 4 = 4;
+type foo 3 = 3;
+type {
+  rule #0: foo 1 = 1
+  rule #1: foo 2 = 2
+  rule #2: foo 4 = 4
+  rule #3: foo 3 = 3
+  rule #4: foo 0 = 0
+  rule #5: foo 99 = 99
+  state 0: #0 #1 #2 #3 #4 #5
+	1::int state 1
+	2::int state 2
+	4::int state 3
+	3::int state 4
+	0::int state 5
+	99::int state 6
+  state 1: #0
+  state 2: #1
+  state 3: #2
+  state 4: #3
+  state 5: #4
+  state 6: #5
+}
+add_typedef_at ('(foo 0-->0)) ('[(foo 4-->4),(foo 3-->3)]);
+()
+add_typedef_at ('(foo 0-->0)) ('[bar 2-->2]);
+add_typedef_at (foo 0-->0) [bar 2-->2]
+lasterr;
+"error in type definition (wrong head symbol)\n"
+get_typedef ('foo);
+[(foo 1-->1),(foo 2-->2),(foo 4-->4),(foo 3-->3),(foo 0-->0),(foo 99-->99)]
+def foo 0 = 0;
+add_macdef ('[foo 0-->0]);
+()
+def foo 1 = 1;
+add_macdef_at ('(foo 0-->0)) ('[foo 1-->1]);
+()
+def foo 99 = 99;
+add_macdef ('[foo 99-->99]);
+()
+def foo 2 = 2;
+add_macdef_at ('(foo 0-->0)) ('[foo 2-->2]);
+()
+def foo 4 = 4;
+def foo 3 = 3;
+add_macdef_at ('(foo 0-->0)) ('[(foo 4-->4),(foo 3-->3)]);
+()
+add_macdef_at ('(foo 0-->0)) ('[bar 2-->2]);
+add_macdef_at (foo 0-->0) [bar 2-->2]
+lasterr;
+"error in macro definition (wrong head symbol)\n"
+get_macdef ('foo);
+[(foo 1-->1),(foo 2-->2),(foo 4-->4),(foo 3-->3),(foo 0-->0),(foo 99-->99)]

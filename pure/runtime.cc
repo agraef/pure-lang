@@ -8458,6 +8458,39 @@ pure_expr *add_macdef(pure_expr *x)
 }
 
 extern "C"
+pure_expr *add_fundef_at(pure_expr *y, pure_expr *x)
+{
+  if (pure_is_listv(x, 0, 0)) {
+    interpreter& interp = *interpreter::g_interp;
+    bool res = interp.add_fun_rules_at(y, x);
+    return res?pure_tuplel(0):0;
+  } else
+    return 0;
+}
+
+extern "C"
+pure_expr *add_typedef_at(pure_expr *y, pure_expr *x)
+{
+  if (pure_is_listv(x, 0, 0)) {
+    interpreter& interp = *interpreter::g_interp;
+    bool res = interp.add_type_rules_at(y, x);
+    return res?pure_tuplel(0):0;
+  } else
+    return 0;
+}
+
+extern "C"
+pure_expr *add_macdef_at(pure_expr *y, pure_expr *x)
+{
+  if (pure_is_listv(x, 0, 0)) {
+    interpreter& interp = *interpreter::g_interp;
+    bool res = interp.add_mac_rules_at(y, x);
+    return res?pure_tuplel(0):0;
+  } else
+    return 0;
+}
+
+extern "C"
 pure_expr *add_vardef(pure_expr *x)
 {
   pure_expr **xv;

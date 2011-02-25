@@ -4174,6 +4174,47 @@ void interpreter::add_rule(env &e, rule &r, bool toplevel, bool check)
   if (toplevel) mark_dirty(f);
 }
 
+void interpreter::add_rule_at(env &e, rule &r, int32_t g,
+			      rulel::iterator& p)
+{
+  assert(!r.lhs.is_null());
+  env vars; vinfo vi;
+  expr u = expr(bind(vars, vi, lcsubst(r.lhs), false)),
+    v = expr(csubst(subst(vars, macsubst(rsubst(r.rhs))))),
+    w = expr(csubst(subst(vars, macsubst(rsubst(r.qual)))));
+  r = rule(u, v, vi, w);
+  compile(r.rhs);
+  compile(r.qual);
+  expr fx; uint32_t argc = count_args(r.lhs, fx);
+  int32_t f = fx.tag();
+  if (f <= 0)
+    throw err("error in function definition (missing head symbol)");
+  else if (f != g)
+    throw err("error in function definition (wrong head symbol)");
+  fx.flags() |= EXPR::GLOBAL;
+  env::iterator it = e.find(f);
+  const symbol& sym = symtab.sym(f);
+  if (it == e.end())
+    throw err("error in function definition (no existing rule)");
+  if (it->second.t == env_info::cvar)
+    throw err("symbol '"+sym.s+"' is already defined as a constant");
+  else if (it->second.t == env_info::fvar)
+    throw err("symbol '"+sym.s+"' is already defined as a variable");
+  else if (it->second.argc != argc) {
+    ostringstream msg;
+    msg << "function '" << sym.s
+	<< "' was previously defined with " << it->second.argc << " args";
+    throw err(msg.str());
+  }
+  env_info &info = e[f];
+  assert(info.t == env_info::fun);
+  assert(info.argc == argc);
+  r.temp = temp;
+  p = info.rules->insert(p, r); p++;
+  if ((verbose&verbosity::defs) != 0) cout << r << ";\n";
+  mark_dirty(f);
+}
+
 void interpreter::add_type_rules(env &e, rulel *r)
 {
   for (rulel::iterator ri = r->begin(), end = r->end(); ri != end; ri++)
@@ -4242,6 +4283,51 @@ void interpreter::add_type_rule(env &e, rule &r, bool check)
   mark_dirty_type(f);
 }
 
+void interpreter::add_type_rule_at(env &e, rule &r, int32_t g,
+				   rulel::iterator& p)
+{
+  assert(!r.lhs.is_null());
+  env vars; vinfo vi;
+  expr u = expr(bind(vars, vi, lcsubst(r.lhs), false)),
+    v = expr(csubst(subst(vars, macsubst(rsubst(r.rhs))))),
+    w = expr(csubst(subst(vars, macsubst(rsubst(r.qual)))));
+  r = rule(u, v, vi, w);
+  compile(r.rhs);
+  compile(r.qual);
+  expr fx; uint32_t argc = count_args(r.lhs, fx);
+  int32_t f = fx.tag();
+  if (f <= 0)
+    throw err("error in type definition (missing head symbol)");
+  else if (f != g)
+    throw err("error in type definition (wrong head symbol)");
+  else if (argc > 1)
+    throw err("error in type definition (too many arguments)");
+  fx.flags() |= EXPR::GLOBAL;
+  env::iterator it = e.find(f);
+  const symbol& sym = symtab.sym(f);
+  if (it == e.end() || it->second.t == env_info::none)
+    throw err("error in type definition (no existing rule)");
+  if (it->second.argc != argc) {
+    ostringstream msg;
+    msg << "type predicate '" << sym.s
+	<< "' was previously defined with " << it->second.argc << " args";
+    throw err(msg.str());
+  }
+  env_info &info = e[f];
+  assert(info.t == env_info::fun);
+  assert(info.argc == argc);
+  r.temp = temp;
+  p = info.rules->insert(p, r); p++;
+  if ((verbose&verbosity::defs) != 0) {
+    int32_t i;
+    if (r.lhs.is_app() && r.rhs.is_int(i) && i==1)
+      cout << "type " << r.lhs << ";\n";
+    else
+      cout << "type " << r << ";\n";
+  }
+  mark_dirty_type(f);
+}
+
 void interpreter::add_simple_rule(rulel &rl, rule *r)
 {
   assert(!r->lhs.is_null());
@@ -4277,7 +4363,8 @@ void interpreter::add_macro_rule(rule& r, bool check)
       throw err("symbol '"+sym.s+"' is already defined as a constant");
     else if (jt->second.t == env_info::fvar)
       throw err("symbol '"+sym.s+"' is already defined as a variable");
-  } else if (it != macenv.end()) {
+  }
+  if (it != macenv.end()) {
     if (it->second.argc != argc) {
       ostringstream msg;
       msg << "macro '" << sym.s
@@ -4296,6 +4383,46 @@ void interpreter::add_macro_rule(rule& r, bool check)
     info.rules->insert(p, r);
   } else
     info.rules->push_back(r);
+  if ((verbose&verbosity::defs) != 0) cout << "def " << r << ";\n";
+  if (info.m) {
+    // this will be recomputed the next time the macro is needed
+    delete info.m;
+    info.m = 0;
+  }
+}
+
+void interpreter::add_macro_rule_at(rule& r, int32_t g, rulel::iterator& p)
+{
+  assert(!r.lhs.is_null() && r.qual.is_null() && !r.rhs.is_guarded());
+  last.clear(); closure(r, false);
+  expr fx; uint32_t argc = count_args(r.lhs, fx);
+  int32_t f = fx.tag();
+  if (f <= 0)
+    throw err("error in macro definition (missing head symbol)");
+  else if (f != g)
+    throw err("error in macro definition (wrong head symbol)");
+  fx.flags() |= EXPR::GLOBAL;
+  env::iterator it = macenv.find(f), jt = globenv.find(f);
+  const symbol& sym = symtab.sym(f);
+  if (jt != globenv.end()) {
+    if (jt->second.t == env_info::cvar)
+      throw err("symbol '"+sym.s+"' is already defined as a constant");
+    else if (jt->second.t == env_info::fvar)
+      throw err("symbol '"+sym.s+"' is already defined as a variable");
+  }
+  if (it == macenv.end())
+    throw err("error in macro definition (no existing rule)");
+  if (it->second.argc != argc) {
+    ostringstream msg;
+    msg << "macro '" << sym.s
+	<< "' was previously defined with " << it->second.argc << " args";
+    throw err(msg.str());
+  }
+  env_info &info = macenv[f];
+  assert(info.t == env_info::fun);
+  assert(info.argc == argc);
+  r.temp = temp;
+  p = info.rules->insert(p, r); p++;
   if ((verbose&verbosity::defs) != 0) cout << "def " << r << ";\n";
   if (info.m) {
     // this will be recomputed the next time the macro is needed
@@ -7575,6 +7702,199 @@ bool interpreter::add_mac_rules(pure_expr *y)
 	if (restricted) throw err("operation not implemented");
 	rule r(tagsubst(u), macsubst(rsubst(v)));
 	add_macro_rule(r, false);
+      } catch (err &e) {
+	errmsg = e.what() + "\n";
+	return false;
+      }
+    } else
+      return false;
+  }
+  return true;
+}
+
+bool interpreter::add_fun_rules_at(pure_expr *u, pure_expr *y)
+{
+  // find the rule to insert at
+  rulel::iterator p;
+  pure_expr *gx;
+  size_t n;
+  if (pure_is_appv(u, &gx, &n, 0) && n == 2 && gx->tag == symtab.eqn_sym().f) {
+    pure_expr **xv;
+    (void)pure_is_appv(u, &gx, &n, &xv);
+    gx = xv[0];
+    while (gx->tag == EXPR::APP) gx = gx->data.x[0];
+    if (gx->tag <= 0) return false;
+  } else
+    return false;
+  int32_t g = gx->tag;
+  env::iterator jt = globenv.find(g);
+  if (jt != globenv.end() && jt->second.t == env_info::fun) {
+    env_info& info = jt->second;
+    rulel& r = *info.rules;
+    p = r.end();
+    for (rulel::iterator it = r.begin(), end = r.end(); it!=end; ++it) {
+      pure_expr *v = it->qual.is_null()
+	? const_value(expr(symtab.eqn_sym().x, vsubst(it->lhs),
+			   rsubst(vsubst(it->rhs, 1), true)), true)
+	: const_value(expr(symtab.eqn_sym().x, vsubst(it->lhs),
+			   expr(symtab.if_sym().x,
+				rsubst(vsubst(it->rhs, 1), true),
+				rsubst(vsubst(it->qual, 1), true))), true);
+      bool eq = same(u, v);
+      pure_freenew(v);
+      if (eq) {
+	p = it;
+	break;
+      }
+    }
+    if (p == r.end()) return false;
+  } else
+    return false;
+  // found the rule, insert other rules
+  assert(p != r.end());
+  expr x = pure_expr_to_expr(y);
+  exprl xs;
+  errmsg.clear();
+  if (!x.is_list(xs)) return false;
+  for (exprl::iterator x = xs.begin(), end = xs.end(); x!=end; x++) {
+    expr u, v;
+    if (get2args(*x, u, v) == symtab.eqn_sym().f) {
+      expr w, c;
+      try {
+	if (restricted) throw err("operation not implemented");
+	if (get2args(v, w, c) == symtab.if_sym().f) {
+	  rule r(tagsubst(u), w, c);
+	  add_rule_at(globenv, r, g, p);
+	} else {
+	  rule r(tagsubst(u), ifsubst(v));
+	  add_rule_at(globenv, r, g, p);
+	}
+      } catch (err &e) {
+	errmsg = e.what() + "\n";
+	return false;
+      }
+    } else
+      return false;
+  }
+  return true;
+}
+
+bool interpreter::add_type_rules_at(pure_expr *u, pure_expr *y)
+{
+  // find the rule to insert at
+  rulel::iterator p;
+  pure_expr *gx;
+  size_t n;
+  if (pure_is_appv(u, &gx, &n, 0) && n == 2 && gx->tag == symtab.eqn_sym().f) {
+    pure_expr **xv;
+    (void)pure_is_appv(u, &gx, &n, &xv);
+    gx = xv[0];
+    while (gx->tag == EXPR::APP) gx = gx->data.x[0];
+    if (gx->tag <= 0) return false;
+  } else
+    return false;
+  int32_t g = gx->tag;
+  env::iterator jt = typeenv.find(g);
+  if (jt != typeenv.end() && jt->second.t == env_info::fun) {
+    env_info& info = jt->second;
+    rulel& r = *info.rules;
+    p = r.end();
+    for (rulel::iterator it = r.begin(), end = r.end(); it!=end; ++it) {
+      pure_expr *v = it->qual.is_null()
+	? const_value(expr(symtab.eqn_sym().x, vsubst(it->lhs),
+			   rsubst(vsubst(it->rhs, 1), true)), true)
+	: const_value(expr(symtab.eqn_sym().x, vsubst(it->lhs),
+			   expr(symtab.if_sym().x,
+				rsubst(vsubst(it->rhs, 1), true),
+				rsubst(vsubst(it->qual, 1), true))), true);
+      bool eq = same(u, v);
+      pure_freenew(v);
+      if (eq) {
+	p = it;
+	break;
+      }
+    }
+    if (p == r.end()) return false;
+  } else
+    return false;
+  // found the rule, insert other rules
+  assert(p != r.end());
+  expr x = pure_expr_to_expr(y);
+  exprl xs;
+  errmsg.clear();
+  if (!x.is_list(xs)) return false;
+  for (exprl::iterator x = xs.begin(), end = xs.end(); x!=end; x++) {
+    expr u, v;
+    if (get2args(*x, u, v) == symtab.eqn_sym().f) {
+      expr w, c;
+      try {
+	if (restricted) throw err("operation not implemented");
+	if (get2args(v, w, c) == symtab.if_sym().f) {
+	  rule r(tagsubst(u), w, c);
+	  add_type_rule_at(typeenv, r, g, p);
+	} else {
+	  rule r(tagsubst(u), ifsubst(v));
+	  add_type_rule_at(typeenv, r, g, p);
+	}
+      } catch (err &e) {
+	errmsg = e.what() + "\n";
+	return false;
+      }
+    } else
+      return false;
+  }
+  return true;
+}
+
+bool interpreter::add_mac_rules_at(pure_expr *u, pure_expr *y)
+{
+  // find the rule to insert at
+  rulel::iterator p;
+  pure_expr *gx;
+  size_t n;
+  if (pure_is_appv(u, &gx, &n, 0) && n == 2 && gx->tag == symtab.eqn_sym().f) {
+    pure_expr **xv;
+    (void)pure_is_appv(u, &gx, &n, &xv);
+    gx = xv[0];
+    while (gx->tag == EXPR::APP) gx = gx->data.x[0];
+    if (gx->tag <= 0) return false;
+  } else
+    return false;
+  int32_t g = gx->tag;
+  env::iterator jt = macenv.find(g);
+  if (jt != macenv.end() && jt->second.t == env_info::fun) {
+    env_info& info = jt->second;
+    rulel& r = *info.rules;
+    p = r.end();
+    for (rulel::iterator it = r.begin(), end = r.end(); it!=end; ++it) {
+      assert(it->qual.is_null());
+      pure_expr *v = 
+	const_value(expr(symtab.eqn_sym().x, vsubst(it->lhs),
+			 rsubst(vsubst(it->rhs, 1), true)), true);
+      bool eq = same(u, v);
+      pure_freenew(v);
+      if (eq) {
+	p = it;
+	break;
+      }
+    }
+    if (p == r.end()) return false;
+  } else
+    return false;
+  // found the rule, insert other rules
+  assert(p != r.end());
+  expr x = pure_expr_to_expr(y);
+  exprl xs;
+  errmsg.clear();
+  if (!x.is_list(xs)) return false;
+  for (exprl::iterator x = xs.begin(), end = xs.end(); x!=end; x++) {
+    expr u, v;
+    if (get2args(*x, u, v) == symtab.eqn_sym().f) {
+      expr w, c;
+      try {
+	if (restricted) throw err("operation not implemented");
+	rule r(tagsubst(u), macsubst(rsubst(v)));
+	add_macro_rule_at(r, g, p);
       } catch (err &e) {
 	errmsg = e.what() + "\n";
 	return false;
