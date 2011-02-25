@@ -7552,16 +7552,17 @@ pure_expr *interpreter::fun_rules(int32_t f)
     env_info& info = jt->second;
     for (rulel::iterator it = info.rules->begin(), end = info.rules->end();
 	 it!=end; ++it)
-      if (it->qual.is_null())
-	xs.push_back(const_value
-		     (expr(symtab.eqn_sym().x, vsubst(it->lhs),
-			   rsubst(vsubst(it->rhs, 1), true)), true));
-      else
-	xs.push_back(const_value
-		     (expr(symtab.eqn_sym().x, vsubst(it->lhs),
-			   expr(symtab.if_sym().x,
-				rsubst(vsubst(it->rhs, 1), true),
-				rsubst(vsubst(it->qual, 1), true))), true));
+      if (it->qual.is_null()) {
+	expr x = expr(symtab.eqn_sym().x, vsubst(it->lhs),
+		      rsubst(vsubst(it->rhs, 1), true));
+	xs.push_back(const_value(x, true));
+      } else {
+	expr x = expr(symtab.eqn_sym().x, vsubst(it->lhs),
+		      expr(symtab.if_sym().x,
+			   rsubst(vsubst(it->rhs, 1), true),
+			   rsubst(vsubst(it->qual, 1), true)));
+	xs.push_back(const_value(x, true));
+      }
   }
   size_t n = xs.size();
   pure_expr **xv = new pure_expr*[n];
@@ -7580,16 +7581,17 @@ pure_expr *interpreter::type_rules(int32_t f)
     env_info& info = jt->second;
     for (rulel::iterator it = info.rules->begin(), end = info.rules->end();
 	 it!=end; ++it)
-      if (it->qual.is_null())
-	xs.push_back(const_value
-		     (expr(symtab.eqn_sym().x, vsubst(it->lhs),
-			   rsubst(vsubst(it->rhs, 1), true)), true));
-      else
-	xs.push_back(const_value
-		     (expr(symtab.eqn_sym().x, vsubst(it->lhs),
-			   expr(symtab.if_sym().x,
-				rsubst(vsubst(it->rhs, 1), true),
-				rsubst(vsubst(it->qual, 1), true))), true));
+      if (it->qual.is_null()) {
+	expr x = expr(symtab.eqn_sym().x, vsubst(it->lhs),
+		      rsubst(vsubst(it->rhs, 1), true));
+	xs.push_back(const_value(x, true));
+      } else {
+	expr x = expr(symtab.eqn_sym().x, vsubst(it->lhs),
+		      expr(symtab.if_sym().x,
+			   rsubst(vsubst(it->rhs, 1), true),
+			   rsubst(vsubst(it->qual, 1), true)));
+	xs.push_back(const_value(x, true));
+      }
   }
   size_t n = xs.size();
   pure_expr **xv = new pure_expr*[n];
@@ -7609,9 +7611,9 @@ pure_expr *interpreter::mac_rules(int32_t f)
     for (rulel::iterator it = info.rules->begin(), end = info.rules->end();
 	 it!=end; ++it) {
       assert(it->qual.is_null());
-      xs.push_back(const_value
-		   (expr(symtab.eqn_sym().x, vsubst(it->lhs),
-			 rsubst(vsubst(it->rhs, 1), true)), true));
+      expr x = expr(symtab.eqn_sym().x, vsubst(it->lhs),
+		    rsubst(vsubst(it->rhs, 1), true));
+      xs.push_back(const_value(x, true));
     }
   }
   size_t n = xs.size();
@@ -7733,13 +7735,14 @@ bool interpreter::add_fun_rules_at(pure_expr *u, pure_expr *y)
     rulel& r = *info.rules;
     p = r.end();
     for (rulel::iterator it = r.begin(), end = r.end(); it!=end; ++it) {
-      pure_expr *v = it->qual.is_null()
-	? const_value(expr(symtab.eqn_sym().x, vsubst(it->lhs),
-			   rsubst(vsubst(it->rhs, 1), true)), true)
-	: const_value(expr(symtab.eqn_sym().x, vsubst(it->lhs),
-			   expr(symtab.if_sym().x,
-				rsubst(vsubst(it->rhs, 1), true),
-				rsubst(vsubst(it->qual, 1), true))), true);
+      expr x = it->qual.is_null()
+	? expr(symtab.eqn_sym().x, vsubst(it->lhs),
+	       rsubst(vsubst(it->rhs, 1), true))
+	: expr(symtab.eqn_sym().x, vsubst(it->lhs),
+	       expr(symtab.if_sym().x,
+		    rsubst(vsubst(it->rhs, 1), true),
+		    rsubst(vsubst(it->qual, 1), true)));
+      pure_expr *v = const_value(x, true);
       bool eq = same(u, v);
       pure_freenew(v);
       if (eq) {
@@ -7799,13 +7802,14 @@ bool interpreter::add_type_rules_at(pure_expr *u, pure_expr *y)
     rulel& r = *info.rules;
     p = r.end();
     for (rulel::iterator it = r.begin(), end = r.end(); it!=end; ++it) {
-      pure_expr *v = it->qual.is_null()
-	? const_value(expr(symtab.eqn_sym().x, vsubst(it->lhs),
-			   rsubst(vsubst(it->rhs, 1), true)), true)
-	: const_value(expr(symtab.eqn_sym().x, vsubst(it->lhs),
-			   expr(symtab.if_sym().x,
-				rsubst(vsubst(it->rhs, 1), true),
-				rsubst(vsubst(it->qual, 1), true))), true);
+      expr x = it->qual.is_null()
+	? expr(symtab.eqn_sym().x, vsubst(it->lhs),
+			   rsubst(vsubst(it->rhs, 1), true))
+	: expr(symtab.eqn_sym().x, vsubst(it->lhs),
+	       expr(symtab.if_sym().x,
+		    rsubst(vsubst(it->rhs, 1), true),
+		    rsubst(vsubst(it->qual, 1), true)));
+      pure_expr *v = const_value(x, true);
       bool eq = same(u, v);
       pure_freenew(v);
       if (eq) {
@@ -7866,9 +7870,9 @@ bool interpreter::add_mac_rules_at(pure_expr *u, pure_expr *y)
     p = r.end();
     for (rulel::iterator it = r.begin(), end = r.end(); it!=end; ++it) {
       assert(it->qual.is_null());
-      pure_expr *v = 
-	const_value(expr(symtab.eqn_sym().x, vsubst(it->lhs),
-			 rsubst(vsubst(it->rhs, 1), true)), true);
+      expr x = expr(symtab.eqn_sym().x, vsubst(it->lhs),
+		    rsubst(vsubst(it->rhs, 1), true));
+      pure_expr *v = const_value(x, true);
       bool eq = same(u, v);
       pure_freenew(v);
       if (eq) {
@@ -7948,13 +7952,14 @@ bool interpreter::del_fun_rule(pure_expr *x)
     env_info& info = jt->second;
     rulel& r = *info.rules;
     for (rulel::iterator it = r.begin(), end = r.end(); it!=end; ++it) {
-      pure_expr *y = it->qual.is_null()
-	? const_value(expr(symtab.eqn_sym().x, vsubst(it->lhs),
-			   rsubst(vsubst(it->rhs, 1), true)), true)
-	: const_value(expr(symtab.eqn_sym().x, vsubst(it->lhs),
-			   expr(symtab.if_sym().x,
-				rsubst(vsubst(it->rhs, 1), true),
-				rsubst(vsubst(it->qual, 1), true))), true);
+      expr u = it->qual.is_null()
+	? expr(symtab.eqn_sym().x, vsubst(it->lhs),
+	       rsubst(vsubst(it->rhs, 1), true))
+	: expr(symtab.eqn_sym().x, vsubst(it->lhs),
+	       expr(symtab.if_sym().x,
+		    rsubst(vsubst(it->rhs, 1), true),
+		    rsubst(vsubst(it->qual, 1), true)));
+      pure_expr *y = const_value(u, true);
       bool eq = same(x, y);
       pure_freenew(y);
       if (eq) {
@@ -7990,13 +7995,14 @@ bool interpreter::del_type_rule(pure_expr *x)
     env_info& info = jt->second;
     rulel& r = *info.rules;
     for (rulel::iterator it = r.begin(), end = r.end(); it!=end; ++it) {
-      pure_expr *y = it->qual.is_null()
-	? const_value(expr(symtab.eqn_sym().x, vsubst(it->lhs),
-			   rsubst(vsubst(it->rhs, 1), true)), true)
-	: const_value(expr(symtab.eqn_sym().x, vsubst(it->lhs),
-			   expr(symtab.if_sym().x,
-				rsubst(vsubst(it->rhs, 1), true),
-				rsubst(vsubst(it->qual, 1), true))), true);
+      expr u = it->qual.is_null()
+	? expr(symtab.eqn_sym().x, vsubst(it->lhs),
+	       rsubst(vsubst(it->rhs, 1), true))
+	: expr(symtab.eqn_sym().x, vsubst(it->lhs),
+	       expr(symtab.if_sym().x,
+		    rsubst(vsubst(it->rhs, 1), true),
+		    rsubst(vsubst(it->qual, 1), true)));
+      pure_expr *y = const_value(u, true);
       bool eq = same(x, y);
       pure_freenew(y);
       if (eq) {
@@ -8033,9 +8039,9 @@ bool interpreter::del_mac_rule(pure_expr *x)
     rulel& r = *info.rules;
     for (rulel::iterator it = r.begin(), end = r.end(); it!=end; ++it) {
       assert(it->qual.is_null());
-      pure_expr *y = 
-	const_value(expr(symtab.eqn_sym().x, vsubst(it->lhs),
-			 rsubst(vsubst(it->rhs, 1), true)), true);
+      expr u = expr(symtab.eqn_sym().x, vsubst(it->lhs),
+		    rsubst(vsubst(it->rhs, 1), true));
+      pure_expr *y = const_value(u, true);
       bool eq = same(x, y);
       pure_freenew(y);
       if (eq) {
