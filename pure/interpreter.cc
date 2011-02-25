@@ -7751,7 +7751,6 @@ bool interpreter::add_fun_rules_at(pure_expr *u, pure_expr *y)
   } else
     return false;
   // found the rule, insert other rules
-  assert(p != r.end());
   expr x = pure_expr_to_expr(y);
   exprl xs;
   errmsg.clear();
@@ -7818,7 +7817,6 @@ bool interpreter::add_type_rules_at(pure_expr *u, pure_expr *y)
   } else
     return false;
   // found the rule, insert other rules
-  assert(p != r.end());
   expr x = pure_expr_to_expr(y);
   exprl xs;
   errmsg.clear();
@@ -7882,7 +7880,6 @@ bool interpreter::add_mac_rules_at(pure_expr *u, pure_expr *y)
   } else
     return false;
   // found the rule, insert other rules
-  assert(p != r.end());
   expr x = pure_expr_to_expr(y);
   exprl xs;
   errmsg.clear();
