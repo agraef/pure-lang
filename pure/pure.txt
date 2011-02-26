@@ -350,8 +350,8 @@ the command line. Processing of options and source files ends when either the
 :option:`--` or the :option:`-x` option is encountered. The :option:`-x`
 option must be followed by the name of a script to be executed, which becomes
 the "main script" of the application. In either case, any remaining parameters
-are passed to the executing script by means of the global ``argc`` and
-``argv`` variables, denoting the number of arguments and the list of the
+are passed to the executing script by means of the global :var:`argc` and
+:var:`argv` variables, denoting the number of arguments and the list of the
 actual parameter strings, respectively. In the case of :option:`-x` this also
 includes the script name as ``argv!0``. The :option:`-x` option is useful, in
 particular, to turn Pure scripts into executable programs by including a
@@ -362,13 +362,26 @@ trick only works with Unix shells, though.)
 
   #!/usr/local/bin/pure -x
 
-On startup, the interpreter also defines the :var:`version` variable, which is
-set to the version string of the Pure interpreter, and the :var:`sysinfo`
-variable, which provides a string identifying the host system. These are
-useful if parts of your script depend on the particular version of the
-interpreter and the system it runs on. (Moreover, Pure 0.21 and later also
-define the variable :var:`compiling` which indicates whether the program is
-executed in a batch compilation, see `Compiling Scripts`_ below.)
+The following variables are always predefined by the interpreter:
+
+.. variable:: argc
+   	      argv
+
+   The number of extra command line arguments and the arguments themselves as
+   a list of strings; see above. These are useful if a script is usually run
+   non-interactively and takes its input from the command line.
+
+.. variable:: compiling
+
+   A flag indicating whether the program is executed in a batch compilation
+   (:option:`-c` option), see `Compiling Scripts`_ below.
+
+.. variable:: version
+   	      sysinfo
+
+   The version string of the Pure interpreter and a string identifying the
+   host system. These are useful if parts of your script depend on the
+   particular version of the interpreter and the system it runs on.
 
 If available, the prelude script prelude.pure is loaded by the interpreter
 prior to any other definitions, unless the :option:`-n` or
@@ -4615,7 +4628,7 @@ concert to rewrite a "voided" comprehension. To these ends, you can rerun the
 right-hand side of ``g`` with some tracing enabled, as follows (we omit the
 tracing output here for brevity)::
 
-  > trace -m void __do__
+  > trace -m void __std__::__do__
   > void [printf "%g\n" (2^x+1) | x=1..5; x mod 2];
 
 The above optimization rules also take care of nested list comprehensions,
@@ -6790,10 +6803,11 @@ whitespace, so that it's not mistaken for an invocation of the built-in ``ls``
 command.)
 
 To do more interesting things, you should take a look at the reflection
-capabilities discussed in the Macros_ section. This provides you with some
-powerful tools to implement very useful commands. For instance, let's define a
-variation of the built-in ``clear`` command which allows us to delete a
-specific rule rather than an entire function definition::
+capabilities discussed in the Macros_ section, which open up endless
+possibilities for commands to inspect and manipulate the running program in an
+interactive fashion. For instance, let's define a variation of the built-in
+``clear`` command which allows us to delete a specific rule rather than an
+entire function definition::
 
   namespace __cmd__;
 
@@ -6803,7 +6817,7 @@ specific rule rather than an entire function definition::
   end;
 
 Note that we employ a little trick here to have :func:`val` do all the hard
-work of parsing the rule specified as argument to the command, so that we
+work of parsing the rule specified as argument to the command, in order to
 translate the Pure rule syntax to the special meta representation used by
 :func:`del_fundef`. The following example shows our ``clr`` command in
 action::
@@ -6818,10 +6832,6 @@ action::
   > show fact
   fact n = n*fact (n-1);
 
-In a similar fashion, you can implement commands which do any kind of
-interactive manipulation of the source program not provided by the built-in
-commands.
-
 Here's another useful command ``apropos`` which quickly summarizes the
 information available on a given symbol (as reported by the ``show`` and
 ``help_index`` commands)::
@@ -6829,7 +6839,7 @@ information available on a given symbol (as reported by the ``show`` and
   namespace __cmd__;
 
   apropos s = case catmap descr $ split "\n" $ evalcmd $ "show -s "+s of
-    [] = throw "undefined symbol";
+    [] = throw $ "undefined symbol '"+s+"'";
     info = s+" is a "+join " and a " info+". \
   Type 'show "+s+"' for more information."+
   (if null (evalcmd $ "help_index "+s) then "" else
@@ -6846,16 +6856,17 @@ information available on a given symbol (as reported by the ``show`` and
 
 This command can be used as follows::
 
-  > apropos argc
-  argc is a variable. Type 'show argc' for more information.
   > apropos foldl
   foldl is a function. Type 'show foldl' for more information.
   Documentation for this symbol is available. Type 'help foldl'.
   > apropos $
   $ is a macro and a function. Type 'show $' for more information.
   Documentation for this symbol is available. Type 'help $'.
-  > apropos junk
-  apropos: undefined symbol
+  > let x = 11;
+  > apropos x
+  x is a variable. Type 'show x' for more information.
+  > apropos y
+  apropos: undefined symbol 'y'
 
 More examples can be found in the sample.purerc file distributed with the Pure
 interpreter.
@@ -6930,7 +6941,7 @@ limitations:
   functions from the output code, so that only functions which are actually
   called somewhere in the static program text are available to :func:`eval`.
   (The :option:`-u` option and the :option:`--required` pragma can be used to
-  avoid this, see `Code Size and Unstripped Executables`_ below.)
+  avoid this, see `Options Affecting Code Size`_ below.)
 
 * Code which gets executed to compute constant values at compile time will
   generally *not* be executed in the compiled executable, so your program
@@ -6939,8 +6950,8 @@ limitations:
   constant value contains run time data such as pointers and local functions
   which requires an initialization at run time, then the batch compiler will
   generate code for that. (The same happens if the :option:`--noconst` option
-  is used to force computation of constant values at run time, see `Code Size
-  and Unstripped Executables`_.)
+  is used to force computation of constant values at run time, see `Options
+  Affecting Code Size`_.)
 
 What all this boils down to is that anything which requires the compile time
 or interactive facilities of the interpreter, is unavailable. These
@@ -7023,16 +7034,10 @@ function into a compile time constant, which can be done as follows::
 command line.)
 
 Moreover, in such a case we usually want to skip the execution of the main
-function at compile time. The Pure runtime provides the following special
-system variable to detect whether this condition holds:
-
-.. variable:: compiling
-
-   This variable holds a truth value indicating whether the program is
-   actually running under the auspices of the batch compiler, so that it can
-   adjust accordingly.
-
-In our example, the evaluation of ``main`` becomes::
+function at compile time. To these ends, the predefined :var:`compiling`
+variable holds a truth value indicating whether the program is actually
+running under the auspices of the batch compiler, so that it can adjust
+accordingly. In our example, the evaluation of ``main`` becomes::
 
   if compiling then () else main n;
 
@@ -7073,17 +7078,17 @@ You'll rarely need an elaborate setup like this, most of the time something
 like our simple first example will do the trick. But, as you've seen, Pure can
 easily do it.
 
-Code Size and Unstripped Executables
-------------------------------------
+Options Affecting Code Size
+---------------------------
 
 By default, the batch compiler strips unused functions from the output code,
 to keep the code size small. You can disable this with the :option:`-u`
 option, in which case the output code includes *all* functions defined in the
-compiled program or imported through a :keyword:`using` clause, even if they
-don't seem to be used anywhere. This considerably increases compilation times
-and makes the compiled executable much larger. For instance, on a 64 bit Linux
-systems with ELF binaries the executable of our hello.pure example is about
-thrice as large:
+compiled program, the prelude and any other module imported with a
+:keyword:`using` clause, even if they don't seem to be used anywhere. This
+considerably increases compilation times and makes the compiled executable
+much larger. For instance, on a 64 bit Linux systems with ELF binaries the
+executable of our hello.pure example is about thrice as large:
 
 .. code-block:: none
 
@@ -7107,9 +7112,9 @@ is then being called using :func:`eval` at runtime, it will evaluate to a
 plain constructor symbol.
 
 If this is a problem then you can either use the :option:`-u` option to
-produce an unstripped executable, or you can force functions to be included in
-the stripped executable with the :option:`--required` pragma (cf. `Code
-Generation Options`_). For instance::
+produce an unstripped executable, or you can force specific functions to be
+included in the stripped executable with the :option:`--required` pragma
+(cf. `Code Generation Options`_). For instance::
 
   #! --required foo
   foo x = bar (x-1);
@@ -7117,8 +7122,8 @@ Generation Options`_). For instance::
 
 There is another code generation option which may have a substantial effect on
 code size, namely the :option:`--noconst` option. Normally, constant values
-defined in a :func:`const` definition are precomputed at compile time and then
-stored in the generated executable; this reduces startup times but may
+defined in a :keyword:`const` definition are precomputed at compile time and
+then stored in the generated executable; this reduces startup times but may
 increase the code size considerably if your program contains big constant
 values such as lists. If you prefer smaller executables then you can use the
 :option:`--noconst` option to force the value of the constant to be recomputed
@@ -7319,12 +7324,13 @@ rewriting without sacrificing practicality. It's possible and in fact quite
 easy to write purely functional programs in Pure, and you're encouraged to do
 so whenever this is possible or at least reasonable. On the other hand, Pure
 doesn't get in your way if you want to call external operations with side
-effects; it does allow you to call any C function after all.
+effects; after all, it does allow you to call any C function at any point in a
+Pure program.
 
-The short (and true) answer is that I simply liked the name, and there wasn't
-any programming language named "Pure" yet (quite a feat nowadays), so there's
-one now. If you insist on a (recursive) backronym, just take "PURE" to stand
-for the "Pure Universal Rewriting Engine".
+The short answer is that I simply liked the name, and there wasn't any
+programming language named "Pure" yet (quite a feat nowadays), so there's one
+now. If you insist on a (recursive) backronym, just take "Pure" to stand for
+the "Pure universal rewriting engine".
 
 Backward Compatibility
 ----------------------
@@ -7392,10 +7398,10 @@ result yourself.
 
 Also, as of Pure 0.41 the batch compiler produces stripped executables by
 default. To create unstripped executables you now have to use the :option:`-u`
-option, see `Code Size and Unstripped Executables`_ for details. The
-:option:`-s` option to produce stripped executables is still provided for
-backward compatibility, but it won't have any effect unless you use it to
-override a previous :option:`-u` option.
+option, see `Options Affecting Code Size`_ for details. The :option:`-s`
+option to produce stripped executables is still provided for backward
+compatibility, but it won't have any effect unless you use it to override a
+previous :option:`-u` option.
 
 Pure 0.43 changed the rules for looking up symbols in user-defined namespaces.
 Unqualified symbols are now created in the current (rather than the global)
@@ -7415,40 +7421,44 @@ the matrix data can now be modified in-place and type checking is more strict
 ``argv``-style vector arguments (``char**`` and ``void**``). Please see the `C
 Types`_ section for details.
 
-Pure 0.47 added support for declaring variadic externs, so functions like
-``printf`` can now be called without much ado; see `Variadic C Functions`_ for
-details. Also, the syntax used to denote `inline code`_ sections was changed
-from ``%{...%}`` to ``%<...%>``. This resolves an ambiguity in the syntax
-(note that ``%{`` is legal Pure syntax; it could denote a ``%`` operator
-followed by a matrix value), and also makes it easier to properly support this
-construct in Emacs Pure mode.
+Pure 0.47 added a bunch of new features which have been on the wishlist for
+the forthcoming 1.0 release:
 
-Simple kinds of matrix patterns like ``{x,y}``, ``{x::int,y}``, ``{x,y;z,t}``,
-``{{x,y},z}`` are also supported beginning with Pure 0.47. This facility is
-somewhat limited, however, as variables in matrix patterns match only single
-elements (not rows or columns), and thus the subject term to be matched must
-have exactly the same shape as the pattern; non-rectangular patterns like
-``{x,y;z}`` will produce an error message.
+* You can now define your own interactive commands by placing suitable
+  function definitions in the special ``__cmd__`` namespace; see `User-Defined
+  Commands`_ for details.
 
-Pure 0.47 also introduced a new, more flexible type tag feature, which defines
-type tags as unary predicates, using normal rewriting rules just as with
-ordinary functions; cf. section `Type Rules`_ for details. To these ends, a
-new keyword :keyword:`type` was added (if you used this as an ordinary
-identifier, you will have to rename these). Note that the old-style type tags
-were just a syntactic shortcut for "as" patterns involving unary constructor
-symbols. These aren't supported any more, so you'll have to fix up your old
-scripts accordingly. To assist with this, the Pure interpreter can be run with
-the :option:`-w` option in order to identify occurrences of undefined
-(presumably old-style) type tags. You should either change these to the
-corresponding "as" pattern (i.e., ``x::foo`` to ``x@(foo _)``), or just add a
-proper type definition for the tag (like ``type foo (foo _);``).
+* The syntax used to denote `inline code`_ sections was changed from
+  ``%{...%}`` to ``%<...%>``. This resolves an ambiguity in the syntax (note
+  that ``%{`` is legal Pure syntax; it could denote a ``%`` operator followed
+  by a matrix value), and also makes it easier to properly support this
+  construct in Emacs Pure mode.
 
-Last but not least, Pure 0.47 also changed the meaning of quoted specials such
-as lambdas and local definitions. Previously these would be evaluated even in
-the middle of a quoted expression. Now they will produce a special meta
-representation in terms of built-in macros, in order to support the advanced
-metaprogramming capabilities discussed in `Built-in Macros and Special
-Expressions`_ and `Reflection`_.
+* It is now possible to declare variadic externs, so that functions like
+  ``printf`` can be called without much ado; see `Variadic C Functions`_.
+
+* Support for simple kinds of matrix patterns_ like ``{x,y}``, ``{x::int,y}``,
+  ``{x,y;z,t}``, ``{{x,y},z}`` was added.
+
+* The meaning of quoted specials such as lambdas and local definitions was
+  changed. Previously these would be evaluated even in the middle of a quoted
+  expression. Now they will produce a special meta representation in terms of
+  built-in macros, in order to support the advanced metaprogramming
+  capabilities discussed in `Built-in Macros and Special Expressions`_ and
+  `Reflection`_.
+
+* Last but not least, Pure 0.47 sports a new, more flexible type tag feature
+  which defines type tags as unary predicates implemented using normal
+  rewriting rules; cf. section `Type Rules`_ for details. To these ends, a new
+  keyword :keyword:`type` was added (if you used this as an ordinary
+  identifier, you will have to rename these). Note that the old-style type
+  tags, which were just a syntactic shortcut for "as" patterns involving unary
+  constructor symbols, aren't supported any more, so you'll have to fix up
+  your old scripts accordingly. To assist with this, the Pure interpreter can
+  be run with the :option:`-w` option in order to identify occurrences of
+  undefined (presumably old-style) type tags. You should either change these
+  to the corresponding "as" pattern (i.e., ``x::foo`` to ``x@(foo _)``), or
+  just add a proper type definition for the tag (like ``type foo (foo _);``).
 
 Error Recovery
 --------------
@@ -7614,7 +7624,8 @@ space if they are tail-recursive (cf. `Stack Size and Tail Recursion`_). For
 instance, here is how the proper list type :type:`rlist/type` is actually
 implemented in the prelude::
 
-  type rlist xs@[] | rlist xs@(_:_) = true if check xs with
+  type rlist [];
+  type rlist (_:xs) = true if check xs with
     check [] = true;
     check (_:xs) = check xs;
     check _ = false;
@@ -7880,7 +7891,6 @@ determined at compile time. If a constant contains run time objects such as
 compiler will instead create code to recompute the value of the constant at
 run time.  For instance, consider::
 
-  using system;
   const p = malloc 100;
   foo p;
 
@@ -7891,8 +7901,8 @@ initialization, so the compiler generates the appropriate run time
 initialization code in this case. For all practical purposes, this turns the
 constant into a read-only variable. (There's also a code generation option to
 force this behaviour even for "normal" constants for which it's not strictly
-necessary, in order to create smaller executables; see `Code Size and
-Unstripped Executables`_ for details.)
+necessary, in order to create smaller executables; see `Options Affecting Code
+Size`_ for details.)
 
 External C Functions
 --------------------
@@ -7978,8 +7988,8 @@ such as Haskell. However, there are some notable differences:
   explicitly using futures. See the definition of the :func:`unzip` function
   in the prelude for an example showing how to do this.
 
-Here are some common pitfalls with lazy data structures in Pure that you
-should be aware of:
+There are two other pitfalls with lazy data structures that you should be
+aware of:
 
 * Laziness and side effects don't go well together, as most of the time you
   can't be sure when a given thunk will be executed. So as a general guideline
@@ -8129,12 +8139,27 @@ Author
 Albert Gräf <Dr.Graef@t-online.de>, Dept. of Computer Music, Johannes
 Gutenberg University of Mainz, Germany.
 
-The author gratefully acknowledges the contributions by Scott E. Dillard,
-Rooslan S. Khayrov, Eddie Rucker, Libor Spacek, Jiri Spitz and Sergei
-Winitzki, as well as Toni Graffy, Michel Salim and Ryan Schmidt who maintain
-the SUSE Linux, Fedora Core and OSX packages, respectively. Thanks are also
-due to Vili Aapro, Alvaro Castro Castilla, John Cowan, Chris Double, Tim
-Haynes, Roman Neuhauser, Wm Leler, John Lunney and Max Wolf.
+Acknowledgements
+================
+
+Pure wouldn't be what it is without its users and other people interested in
+the language. In particular, I'd like to thank Scott E. Dillard, Rooslan
+S. Khayrov, Eddie Rucker, Libor Spacek, Jiri Spitz, Peter Summerland and
+Sergei Winitzki for their significant contributions of code, patches and
+documentation. Thanks are also due to Toni Graffy, Michel Salim and Ryan
+Schmidt who maintain the SUSE Linux, Fedora Core and OSX packages, as well as
+to Vili Aapro, Jason E. Aten, Alvaro Castro Castilla, John Cowan, Chris
+Double, Tim Haynes, Roman Neuhauser, Wm Leler, John Lunney and Max Wolf for
+suggesting improvements and mercilessly decrying shortcomings, misfeatures and
+outright bugs. If it wasn't for all these people and others who contribute to
+the lively discussions on the mailing list, this project probably wouldn't
+have got anywhere.
+
+Last but not least, a big thank you goes to Chris Lattner and the entire LLVM
+team. LLVM_ really changed the game for us compiler writers, as we can now
+stop worrying about all the nitty-gritty details of code generation and
+concentrate on the design and implementation of the programming language at
+hand.
 
 Copying
 =======
