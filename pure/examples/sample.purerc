@@ -5,6 +5,14 @@
    put it into your home (or project) directory. See the Pure Manual for
    details. */
 
+/* Since this is just an ordinary Pure script, interactive commands cannot be
+   run directly, but it's still possible to invoke them through 'evalcmd'.
+   You can also run shell commands with Pure's shell escape "! command". */
+
+//evalcmd "stats -m";
+//evalcmd "! fortune -s";
+//evalcmd "! echo \"Ready. Type 'help' for help.\"";
+
 // Maybe you want to load some additional non-prelude modules here.
 //using quasiquote;
 
@@ -20,22 +28,37 @@ public __show__;
 
 namespace __cmd__;
 
-/* Commands can be ordinary Pure functions or externs. Here we employ 'puts'
-   from the C library, which is exposed under the name 'echo'. This is useful
-   in startup files if you want to print some messages. */
+/* These are just some (rather useless) examples for illustrative purposes,
+   which you may want to remove if you use this file as a template for your
+   own .purerc. */
 
+// An echo command.
 extern int puts(char*) = echo;
-
-/* It's possible to override builtins with user-defined commands. You can
-   still call the original builtin by escaping it with a leading '^'. E.g.,
-   the following always adds the -l option to the ls command. */
-
+// Always invoke 'ls' with '-l'.
 ls args = evalcmd $ "^ls -l "+args;
 
-/* Private functions are not exposed as commands, so you can use these as
-   helper functions which are invisible outside the __cmd__ namespace. The
-   following functions are used below to manipulate the definition of the
-   __show__ function. */
+/* An 'apropos' command. This is actually rather useful; it prints a quick
+   summary of the information available on a given symbol, as reported by the
+   'show' and 'help_index' commands. */
+
+apropos s = case catmap descr $ split "\n" $ evalcmd $ "show -s "+s of
+  [] = throw "undefined symbol";
+  info = s+" is a "+join " and a " info+". \
+Type 'show "+s+"' for more information."+
+(if null (evalcmd $ "help_index "+s) then "" else
+"\nDocumentation for this symbol is available. Type 'help "+s+"'.");
+end with
+  descr info = case [x | x = split " " info; ~null x] of
+    t:c:_ = [symtypes!c] if s==t when
+      symtypes = {"fun"=>"function","mac"=>"macro","var"=>"variable",
+		  "cst"=>"constant"};
+    end;
+    _ = [];
+  end;
+end;
+
+/* Some private helper functions which are used below to manipulate the
+   definition of the __show__ function. */
 
 private find_rule del_rule repl_rule;
 
@@ -84,10 +107,7 @@ format fmt::string x::double = cstring buf when
 end;
 
 /* Parse a precision argument. This is used in the number formatting commands
-   below. If the prec argument is empty, the given numeric default is assumed.
-   Unless an error is detected, the result is always a string (the precision
-   value formatted as a decimal number), which is ready to be used in format
-   strings. */
+   below. */
 
 private precstr;
 
@@ -101,9 +121,8 @@ end;
 
 /* Some convenient commands to switch number formats on the fly. These emulate
    the corresponding commands of the Q interpreter, by manipulating the
-   definition of the __show__ function.
-
-   The syntax for these commands is as follows:
+   definition of the __show__ function. The syntax for these commands is as
+   follows:
 
    dec, hex, oct: Switch between decimal, hexadecimal and octal notations of
    integers; 'dec' is the default of the interpreter. (These work with both
@@ -136,11 +155,3 @@ std prec = del_rule $ '(__show__ (x __type__ double))
 when fmt = "%0."+precstr 15 prec+"g" end;
 
 namespace;
-
-/* Since this is just an ordinary Pure script, interactive commands cannot be
-   run directly, but it's still possible to invoke them through 'evalcmd'.
-   You can also run shell commands with Pure's shell escape "! command". */
-
-//evalcmd "stats -m";
-//evalcmd "! fortune -s";
-evalcmd "echo Ready. Type 'help' for help.";
