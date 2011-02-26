@@ -42,7 +42,7 @@ ls args = evalcmd $ "^ls -l "+args;
    'show' and 'help_index' commands. */
 
 apropos s = case catmap descr $ split "\n" $ evalcmd $ "show -s "+s of
-  [] = throw "undefined symbol";
+  [] = throw $ "undefined symbol '"+s+"'";
   info = s+" is a "+join " and a " info+". \
 Type 'show "+s+"' for more information."+
 (if null (evalcmd $ "help_index "+s) then "" else
