@@ -5675,7 +5675,7 @@ declaration or the interactive ``run`` command (see the description of the
 start typing away, entering your own definitions and expressions to be
 evaluated.
 
-The input language is just the same as for source scripts, and hence
+The input language is mostly the same as for source scripts, and hence
 individual definitions and expressions must be terminated with a semicolon
 before they are processed. For instance, here is a simple interaction which
 defines the factorial and then uses that definition in some evaluations. Input
@@ -5689,7 +5689,7 @@ lines begin with '> ', which is the interpreter's default command prompt::
   [1,2,6,24,120,720,5040,40320,362880,3628800]
 
 As indicated, in interactive mode the normal forms of toplevel expressions are
-printed after each expression is entered. We also call this the
+printed after each expression is entered. This is also commonly known as the
 `read-eval-print loop`. Normal form expressions are usually printed in the
 same form as you'd enter them. However, there are a few special kinds of
 objects like anonymous closures, thunks ("lazy" values to be evaluated when
@@ -5699,19 +5699,39 @@ by default. It is also possible to override the print representation of any
 kind of expression by means of the :func:`__show__` function, see
 `Pretty-Printing`_ below for details.
 
+Besides Pure definitions and expressions, the interpreter also understands a
+number of special interactive commands for performing basic maintenance tasks,
+such as loading source scripts, exiting and restarting the interpreter,
+changing the working directory, escaping to the shell, getting help and
+displaying definitions. In contrast to the normal input language, the command
+language is line-oriented; it consists of special command words to be typed at
+the beginning of an input line, which may be followed by some parameters as
+required by the command. The command language is intended solely for
+interactive purposes and thus doesn't offer any programming facilities of its
+own. However, it can be extended with user-defined commands implemented as
+ordinary Pure functions; this is described in the `User-Defined Commands`_
+section below.
+
+.. note:: The interactive commands are only recognized at the very beginning
+   of the command line. As most of the commands look just like ordinary
+   identifiers, you may run into situations where the beginning of an
+   expression or definition to be typed at the prompt can be mistaken for a
+   command word. In such cases it will be necessary to "escape" the input by
+   inserting one or more spaces at the beginning of the line, so that the
+   interpreter reads the line as normal Pure code.
+
 Online Help
 -----------
 
 Online help is available in the interpreter with the interactive ``help``
-command, see `Interactive Commands`_ below. You need to have a html browser
-installed for that. By default, the ``help`` command uses :program:`w3m`, but
-you can change this by setting either the :envvar:`PURE_HELP` or the
-:envvar:`BROWSER` environment variable accordingly.
+command, which gives you access to all the available documentation in html
+format; this includes the present manual, the :doc:`purelib`, as well as all
+manuals of the addon modules available from the Pure website.
 
-As of Pure 0.46, the interpreter provides a much improved ``help`` command
-which gives you access to all the available documentation in html format,
-which includes this manual, the :doc:`purelib`, as well as all manuals of the
-addon modules available from the Pure website.
+You need to have a html browser installed to make this work. By default, the
+``help`` command uses :program:`w3m`, but you can change this by setting
+either the :envvar:`PURE_HELP` or the :envvar:`BROWSER` environment variable
+accordingly.
 
 When invoked without arguments, the ``help`` command displays an overview of
 the available documentation, from which you can follow the links to the
@@ -5777,9 +5797,9 @@ your browser program can handle these. For instance::
 Interactive Commands
 --------------------
 
-When running interactively, the interpreter accepts a number of special
-commands useful for interactive purposes. Here is a quick rundown of the
-currently supported operations:
+The following built-in commands are always understood by the interpreter. (In
+addition, you can define your own commands for frequently-used operations; see
+`User-Defined Commands`_ below.)
 
 .. index:: ! (command)
 .. describe:: ! command
@@ -5980,15 +6000,18 @@ currently supported operations:
    where new equations are added "below" previous rules of an existing
    function. See `Definition Levels`_ below for details.
 
-Note that these special commands are only recognized at the beginning of the
-interactive command line (they are not reserved keywords of the Pure
-language). Thus it's possible to "escape" identifiers looking like commands by
-entering a space at the beginning of the line.
+Note that symbols (identifiers, operators etc.) must always be specified in
+fully qualified form. No form of namespace lookup is performed by commands
+like ``break``, ``clear``, ``show`` etc. Thus the specified symbols always
+work the same no matter what ``namespace`` and ``using namespace``
+declarations are currently in effect.
 
-Also note that symbols (identifiers, operators etc.) must always be specified
-in fully qualified form. No form of namespace lookup is performed by these
-commands, so they always work the same no matter what ``namespace`` and
-``using namespace`` declarations are currently in effect.
+Besides the commands listed above, the interpreter also provides some special
+commands for the benefit of other programs such as :program:`emacs` driving
+the interpreter; currently these are ``completion_matches``, ``help_matches``
+and ``help_index``. These aren't supposed to be invoked directly by the user,
+although they may sometimes be useful to implement custom functionality, see
+`User-Defined Commands`_.
 
 Specifying Symbol Selections
 ----------------------------
@@ -6307,10 +6330,11 @@ you specify the target level to be cleared with the -t option. For instance::
   > show
   > 
 
-Finally, it is worth noting here that the facilities described above are also
-available to Pure programs, as the ``save`` and ``clear`` commands can also be
-executed under program control using the :func:`evalcmd` primitive; see the
-:doc:`purelib` for details.
+The facilities described above are also available to Pure programs, as the
+``save`` and ``clear`` commands can also be executed under program control
+using the :func:`evalcmd` primitive. Conversely, the library provides its own
+functions for inspecting and manipulating the source program, which may also
+be useful in custom command definitions; see the :doc:`purelib` for details.
 
 Debugging
 ---------
@@ -6679,29 +6703,187 @@ Note that if you have a set of definitions for the :func:`__show__` function
 which should always be loaded at startup, you can put them into the
 interpreter's interactive startup files, see `Interactive Startup`_ below.
 
+User-Defined Commands
+---------------------
+
+It is possible to extend the interpreter with your own interactive
+commands. To these ends, all you have to do is provide some corresponding
+public function definitions in the special ``__cmd__`` namespace
+(cf. Namespaces_). These definitions are typically placed in one of the
+interpreter's startup files (see `Interactive Startup`_ below) so that they
+are always available when running the interpreter interactively.
+
+A command function is invoked with one string argument which contains the rest
+of the command line (with leading and trailing whitespace stripped off). It
+may return a string result which is printed on standard output (appending a
+newline if needed). Thus a simple command which just prints its arguments as
+is can be implemented as follows::
+
+  > namespace __cmd__;
+  > echo s = s;
+  > echo Hello, world!
+  Hello, world!
+
+You can split arguments and do any required processing of the arguments with
+the usual string processing functions. For instance, let's change our ``echo``
+command so that it prints each whitespace-delimited token on a line of its
+own::
+
+  > clear __cmd__::echo
+  > echo s = join "\n" args when
+  >   args = [a | a = split " " s; ~null a];
+  > end;
+  > echo Hello, world!
+  Hello,
+  world!
+
+A command function may in fact return any kind of value. However, only string
+results are printed by the interpreter, other results are silently ignored.
+Thus we might implement the ``echo`` command in a direct fashion, using the C
+``puts`` function::
+
+  > clear __cmd__::echo
+  > private extern int puts(char*);
+  > echo s = puts s;
+  > echo Hello, world!
+  Hello, world!
+
+Note that we declared ``puts`` as a private symbol here. In general, the
+interpreter only exposes public functions in the ``__cmd__`` namespace as
+commands, private symbols are hidden. On the other hand, we might also just
+expose the external function ``puts`` itself under the (public) alias
+``echo``, so here's yet another possible implementation of the ``echo``
+command::
+
+  > clear __cmd__::echo
+  > extern int puts(char*) = echo;
+  warning: external 'echo' shadows previous undefined use of this symbol
+  > echo Hello, world!
+  Hello, world!
+
+Instead of returning a result, a command function may also throw an
+exception. If the exception value is a string, it will be printed as an error
+message on standard error, using the same format as the built-in commands::
+
+  > error s = throw s;
+  > error Hello, world!
+  error: Hello, world!
+
+You can also override a built-in command in order to provide custom
+functionality. In this case, the original builtin can still be executed by
+escaping the command name with a leading '\ ``^``\ '. The same syntax works
+with the :func:`evalcmd` function, so that a custom command can be defined in
+terms of the builtin that it replaces. E.g., if we always want to invoke the
+``ls`` command with the ``-l`` option, we can redefine the ``ls`` command as
+follows::
+
+  > ls examples/*.c
+  examples/poor.c  examples/sort.c
+  >   ls s = evalcmd $ "^ls -l "+s;
+  > ls examples/*.c
+  -rw-r--r-- 1 ag users 1883 2011-01-07 16:35 examples/poor.c
+  -rw-r--r-- 1 ag users 3885 2011-01-07 16:35 examples/sort.c
+
+(Note that since we entered the definition of the ``ls`` function
+interactively, we need to escape the second input line above with leading
+whitespace, so that it's not mistaken for an invocation of the built-in ``ls``
+command.)
+
+To do more interesting things, you should take a look at the reflection
+capabilities discussed in the Macros_ section. This provides you with some
+powerful tools to implement very useful commands. For instance, let's define a
+variation of the built-in ``clear`` command which allows us to delete a
+specific rule rather than an entire function definition::
+
+  namespace __cmd__;
+
+  clr s = case val $ "'(0 with "+s+" end)" of
+    '(0 __with__ [r]) = del_fundef r;
+    _ = throw "bad rule syntax";
+  end;
+
+Note that we employ a little trick here to have :func:`val` do all the hard
+work of parsing the rule specified as argument to the command, so that we
+translate the Pure rule syntax to the special meta representation used by
+:func:`del_fundef`. The following example shows our ``clr`` command in
+action::
+
+  > namespace;
+  > fact n = 1 if n<=0;
+  >        = n*fact (n-1) otherwise;
+  > show fact
+  fact n = 1 if n<=0;
+  fact n = n*fact (n-1);
+  > clr fact n = 1 if n<=0;
+  > show fact
+  fact n = n*fact (n-1);
+
+In a similar fashion, you can implement commands which do any kind of
+interactive manipulation of the source program not provided by the built-in
+commands.
+
+Here's another useful command ``apropos`` which quickly summarizes the
+information available on a given symbol (as reported by the ``show`` and
+``help_index`` commands)::
+
+  namespace __cmd__;
+
+  apropos s = case catmap descr $ split "\n" $ evalcmd $ "show -s "+s of
+    [] = throw "undefined symbol";
+    info = s+" is a "+join " and a " info+". \
+  Type 'show "+s+"' for more information."+
+  (if null (evalcmd $ "help_index "+s) then "" else
+  "\nDocumentation for this symbol is available. Type 'help "+s+"'.");
+  end with
+    descr info = case [x | x = split " " info; ~null x] of
+      t:c:_ = [symtypes!c] if s==t when
+        symtypes = {"fun"=>"function","mac"=>"macro","var"=>"variable",
+                    "cst"=>"constant"};
+      end;
+      _ = [];
+    end;
+  end;
+
+This command can be used as follows::
+
+  > apropos argc
+  argc is a variable. Type 'show argc' for more information.
+  > apropos foldl
+  foldl is a function. Type 'show foldl' for more information.
+  Documentation for this symbol is available. Type 'help foldl'.
+  > apropos $
+  $ is a macro and a function. Type 'show $' for more information.
+  Documentation for this symbol is available. Type 'help $'.
+  > apropos junk
+  apropos: undefined symbol
+
+More examples can be found in the sample.purerc file distributed with the Pure
+interpreter.
+
 Interactive Startup
 -------------------
 
-In interactive mode, the interpreter also runs some additional scripts at
-startup, after loading the prelude and the scripts specified on the command
-line. This lets you tailor the interactive environment to your liking.
+In interactive mode, the interpreter runs some additional scripts at startup,
+after loading the prelude and the scripts specified on the command line. This
+lets you tailor the interactive environment to your liking.
 
 The interpreter first looks for a .purerc file in the user's home directory
 (as given by the :envvar:`HOME` environment variable) and then for a .purerc
 file in the current working directory. These are just ordinary Pure scripts
-which may contain any additional definitions that you need. The .purerc file
-in the home directory is for global definitions which should always be
-available when running interactively, while the .purerc file in the current
-directory can be used for project-specific definitions.
+which may contain any additional definitions (including command definitions,
+as described in the previous section) that you need. The .purerc file in the
+home directory is for global definitions which should always be available when
+running interactively, while the .purerc file in the current directory can be
+used for project-specific definitions.
 
 Finally, you can also have a .pure initialization file in the current
 directory, which is usually created with the ``dump`` command (see
 above). This file is loaded after the .purerc files if it is present.
 
 The interpreter processes all these files in the same way as with the ``run``
-command (see above). When invoking the interpreter, you can specify the
-:option:`--norc` option on the command line if you wish to skip these
-initializations.
+command (see `Interactive Commands`_ above). When invoking the interpreter,
+you can specify the :option:`--norc` option on the command line if you wish to
+skip these initializations.
 
 .. _Batch Compilation:
 
