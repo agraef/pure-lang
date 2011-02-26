@@ -2199,9 +2199,11 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 		 it != rules.end(); ++it) {
 	      if (it->temp >= tlevel) {
 		int32_t i;
-		if (it->lhs.is_app() && it->rhs.is_int(i) && i==1)
-		  sout << "type " << it->lhs << ";\n";
-		else
+		if (it->lhs.is_app() && it->rhs.is_int(i) && i==1) {
+		  sout << "type ";
+		  printx(sout, it->lhs, true);
+		  sout << ";\n";
+		} else
 		  sout << "type " << *it << ";\n";
 		++n;
 	      }
@@ -2555,9 +2557,11 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	       it != rules.end(); ++it) {
 	    if (it->temp >= tlevel) {
 	      int32_t i;
-	      if (it->lhs.is_app() && it->rhs.is_int(i) && i==1)
-		fout << "type " << it->lhs << ";\n";
-	      else
+	      if (it->lhs.is_app() && it->rhs.is_int(i) && i==1) {
+		fout << "type ";
+		printx(fout, it->lhs, true);
+		fout << ";\n";
+	      } else
 		fout << "type " << *it << ";\n";
 	    }
 	  }

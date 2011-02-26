@@ -26,6 +26,8 @@
 
 /* Pretty-printing of expressions and related structures. */
 
+ostream& printx(ostream& os, const expr& x, bool pat, bool aspat = true);
+
 ostream& operator << (ostream& os, const expr& x);
 ostream& operator << (ostream& os, const exprl& xl);
 ostream& operator << (ostream& os, const rule& r);

@@ -187,9 +187,6 @@ struct pattern {
     : x(_x), pat(_pat) { }
 };
 
-static ostream& printx(ostream& os, const expr& x, bool pat,
-		       bool aspat = true);
-
 ostream& operator << (ostream& os, const pattern& p)
 {
   return printx(os, p.x, p.pat);
@@ -293,7 +290,7 @@ static inline ostream& print_ttag(ostream& os, int32_t ttag, bool pad = false)
   }
 }
 
-static ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
+ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
 {
   char buf[64];
   if (x.is_null()) return os << "#<NULL>";
