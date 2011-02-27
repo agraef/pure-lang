@@ -6713,8 +6713,15 @@ void pure_debug_rule(void *_e, void *_r)
       // comment line
       ;
     else if (cmd=="!") {
-      // shell escape
-      if (system(arg.c_str()) == -1) perror("system");
+      // command escape
+      char *res = pure_evalcmd(arg.c_str());
+      if (res) {
+	cout << res;
+	free(res);
+      } else if (!interp.errmsg.empty()) {
+	cerr << interp.errmsg;
+	interp.errmsg.clear();
+      }
     } else if (cmd=="?" || cmd.size()>1 ||
 	       (!cmd.empty() && !isalpha(cmd[0]) && cmd[0] != '.')) {
       // eval
@@ -6733,7 +6740,7 @@ void pure_debug_rule(void *_e, void *_r)
 	DebugInfo& d = *kt;
 	// make sure we don't invoke the debugger recursively
 	interp.interactive = false;
-	interp.restricted = true;
+	//interp.restricted = true;
 	string s = "'("+arg+");";
 	pure_expr *x = interp.runstr(s), *e;
 	if (x) {
@@ -6763,7 +6770,7 @@ void pure_debug_rule(void *_e, void *_r)
 	  interp.errmsg.clear();
 	}
 	interp.interactive = true;
-	interp.restricted = false;
+	//interp.restricted = false;
       }
     } else if (cmdline == "" || cmd == "s") {
       // single step
@@ -6935,7 +6942,7 @@ t, b    move to the top or bottom of the rule stack\n\
 u, d    move up or down one level in the rule stack\n\
 x       exit the interpreter (after confirmation)\n\
 .       reprint current rule\n\
-! cmd   shell escape\n\
+! cmd   execute interpreter command\n\
 ? expr  evaluate expression\n\
 <cr>    single step (same as 's')\n\
 <eof>   step through program, run unattended (same as 'a')\n";
@@ -6945,6 +6952,12 @@ x       exit the interpreter (after confirmation)\n\
       break;
     }
   }
+  if (!interp.dirty.empty() || !interp.dirty_types.empty())
+    /* It seems that the user changed the program while in the debugger.
+       Recompile and proceed with fingers crossed. XXXFIXME: If the user
+       modified a function which is currently executing, this will most likely
+       cause the program to segfault. Oh well. */
+    interp.compile();
 }
 
 extern "C"
