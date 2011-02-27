@@ -4876,6 +4876,92 @@ you'll have to wrap it up in a suitable :func:`catch` clause::
   > test_baz ();
   test_baz ()
 
+Standard Library
+================
+
+Pure comes with a collection of Pure library modules, which includes the
+standard prelude (loaded automatically at startup time) and some other modules
+which can be loaded explicitly with a :keyword:`using` clause. The prelude
+offers the necessary functions to work with the built-in types (including
+arithmetic and logical operations) and to do most kind of list processing you
+can find in ML- and Haskell-like languages. It also provides a collection of
+basic string and matrix operations. Please refer to the :doc:`purelib` for
+details on the provided operations. Here is a very brief summary of some of
+the prelude operations which, besides the usual arithmetic and logical
+operators, are probably used most frequently:
+
+.. describe:: x+y
+
+   The arithmetic ``+`` operation is also used to denote list and string
+   concatenation in Pure.
+
+.. describe:: x:y
+
+   This is the list-consing operation. ``x`` becomes the head of the list,
+   ``y`` its tail. As '\ :cons:`:`\ ' is a constructor symbol, you can use it
+   in patterns on the left hand side of rewriting rules.
+
+.. describe:: x..y
+
+   Constructs arithmetic sequences. ``x:y..z`` can be used to denote
+   sequences with arbitrary stepsize ``y-x``. Infinite sequences can be
+   constructed using an infinite bound (i.e., ``inf`` or ``-inf``). E.g.,
+   ``1:3..inf`` denotes the stream of all odd integers starting at 1.
+
+.. describe:: x,y
+
+   This is the pair constructor, used to create tuples of arbitrary sizes.
+   Tuples provide an alternative way to represent aggregate values in Pure.
+   In contrast to lists, tuples are always "flat", so that ``(x,y),z`` and
+   ``x,(y,z)`` denote the same triple ``x,y,z``. (This is explained in more
+   detail in the `Primary Expressions`_ section.)
+
+.. describe:: #x
+
+   The size (number of elements) of the list, tuple, matrix or string
+   ``x``. In addition, ``dim x`` yields the dimensions (number of rows and
+   columns) of a matrix.
+
+.. describe:: x!y
+
+   This is Pure's indexing operation, which applies to lists, tuples,
+   matrices and strings. Note that all indices in Pure are zero-based, thus
+   ``x!0`` and ``x!(#x-1)`` are the first and last element of ``x``. In the
+   case of matrices, the subscript may also be a pair of row and column
+   indices, such as ``x!(1,2)``.
+
+.. describe:: x!!ys
+
+   This is the "slicing" operation, which returns the list, tuple, matrix or
+   string of all ``x!y`` while ``y`` runs through the (list or matrix)
+   ``ys``. Thus, e.g., ``x!!(i..j)`` returns all the elements between ``i``
+   and ``j`` (inclusive). Indices which fall outside the valid index range
+   are quietly discarded. The index range ``ys`` may contain any number of
+   indices (also duplicates), in any order. Thus ``x!![0|i=1..n]`` returns the
+   first element of ``x`` ``n`` times, and, if ``ys`` is a permutation of the
+   range ``0..#x-1``, then ``x!!ys`` yields the corresponding permutation of
+   the elements of ``x``. In the case of matrices the index range may also
+   contain two-dimensional subscripts, or the index range itself may be
+   specified as a pair of row/column index lists such as ``x!!(i..j,k..l)``.
+
+The prelude also offers support operations for the implementation of list and
+matrix comprehensions, as well as the customary list operations like
+:func:`head`, :func:`tail`, :func:`drop`, :func:`take`, :func:`filter`,
+:func:`map`, :func:`foldl`, :func:`foldr`, :func:`scanl`, :func:`scanr`,
+:func:`zip`, :func:`unzip`, etc., which make list programming so much fun in
+modern FPLs. In Pure, these also work on strings as well as matrices,
+although, for reasons of efficiency, these data structures are internally
+represented as arrays.
+
+Besides the prelude, Pure's standard library also comprises a growing number
+of additional library modules which we can only mention in passing here. In
+particular, the :mod:`math` module provides additional mathematical functions
+as well as Pure's complex and rational number data types. Common container
+data structures like sets and dictionaries are implemented in the :mod:`set`
+and :mod:`dict` modules, among others. Moreover, the system interface can be
+found in the :mod:`system` module. In particular, this module also provides
+operations to do basic C-style I/O, including :func:`printf` and :func:`scanf`.
+
 C Interface
 ===========
 
@@ -5922,92 +6008,6 @@ don't even need to exit the Pure interpreter to do this.
 More Faust-related examples can be found in the Pure distribution. Also, have
 a look at :doc:`pd-pure` to see how these facilities can be used in Pd modules
 written in Pure.
-
-Standard Library
-================
-
-Pure comes with a collection of Pure library modules, which includes the
-standard prelude (loaded automatically at startup time) and some other modules
-which can be loaded explicitly with a :keyword:`using` clause. The prelude
-offers the necessary functions to work with the built-in types (including
-arithmetic and logical operations) and to do most kind of list processing you
-can find in ML- and Haskell-like languages. It also provides a collection of
-basic string and matrix operations. Please refer to the :doc:`purelib` for
-details on the provided operations. Here is a very brief summary of some of
-the prelude operations which, besides the usual arithmetic and logical
-operators, are probably used most frequently:
-
-.. describe:: x+y
-
-   The arithmetic ``+`` operation is also used to denote list and string
-   concatenation in Pure.
-
-.. describe:: x:y
-
-   This is the list-consing operation. ``x`` becomes the head of the list,
-   ``y`` its tail. As '\ :cons:`:`\ ' is a constructor symbol, you can use it
-   in patterns on the left hand side of rewriting rules.
-
-.. describe:: x..y
-
-   Constructs arithmetic sequences. ``x:y..z`` can be used to denote
-   sequences with arbitrary stepsize ``y-x``. Infinite sequences can be
-   constructed using an infinite bound (i.e., ``inf`` or ``-inf``). E.g.,
-   ``1:3..inf`` denotes the stream of all odd integers starting at 1.
-
-.. describe:: x,y
-
-   This is the pair constructor, used to create tuples of arbitrary sizes.
-   Tuples provide an alternative way to represent aggregate values in Pure.
-   In contrast to lists, tuples are always "flat", so that ``(x,y),z`` and
-   ``x,(y,z)`` denote the same triple ``x,y,z``. (This is explained in more
-   detail in the `Primary Expressions`_ section.)
-
-.. describe:: #x
-
-   The size (number of elements) of the list, tuple, matrix or string
-   ``x``. In addition, ``dim x`` yields the dimensions (number of rows and
-   columns) of a matrix.
-
-.. describe:: x!y
-
-   This is Pure's indexing operation, which applies to lists, tuples,
-   matrices and strings. Note that all indices in Pure are zero-based, thus
-   ``x!0`` and ``x!(#x-1)`` are the first and last element of ``x``. In the
-   case of matrices, the subscript may also be a pair of row and column
-   indices, such as ``x!(1,2)``.
-
-.. describe:: x!!ys
-
-   This is the "slicing" operation, which returns the list, tuple, matrix or
-   string of all ``x!y`` while ``y`` runs through the (list or matrix)
-   ``ys``. Thus, e.g., ``x!!(i..j)`` returns all the elements between ``i``
-   and ``j`` (inclusive). Indices which fall outside the valid index range
-   are quietly discarded. The index range ``ys`` may contain any number of
-   indices (also duplicates), in any order. Thus ``x!![0|i=1..n]`` returns the
-   first element of ``x`` ``n`` times, and, if ``ys`` is a permutation of the
-   range ``0..#x-1``, then ``x!!ys`` yields the corresponding permutation of
-   the elements of ``x``. In the case of matrices the index range may also
-   contain two-dimensional subscripts, or the index range itself may be
-   specified as a pair of row/column index lists such as ``x!!(i..j,k..l)``.
-
-The prelude also offers support operations for the implementation of list and
-matrix comprehensions, as well as the customary list operations like
-:func:`head`, :func:`tail`, :func:`drop`, :func:`take`, :func:`filter`,
-:func:`map`, :func:`foldl`, :func:`foldr`, :func:`scanl`, :func:`scanr`,
-:func:`zip`, :func:`unzip`, etc., which make list programming so much fun in
-modern FPLs. In Pure, these also work on strings as well as matrices,
-although, for reasons of efficiency, these data structures are internally
-represented as arrays.
-
-Besides the prelude, Pure's standard library also comprises a growing number
-of additional library modules which we can only mention in passing here. In
-particular, the :mod:`math` module provides additional mathematical functions
-as well as Pure's complex and rational number data types. Common container
-data structures like sets and dictionaries are implemented in the :mod:`set`
-and :mod:`dict` modules, among others. Moreover, the system interface can be
-found in the :mod:`system` module. In particular, this module also provides
-operations to do basic C-style I/O, including :func:`printf` and :func:`scanf`.
 
 Interactive Usage
 =================
