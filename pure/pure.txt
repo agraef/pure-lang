@@ -5474,8 +5474,7 @@ the Pure sources. In particular, the interface also works with Fortran (using
 llvm-gfortran), and there is special support for interfacing to Grame's
 functional DSP programming language Faust_ (the latter uses a special variant
 of the bitcode loader, which is selected with the ``dsp`` tag in the
-:keyword:`using` clause). Please refer to the corresponding examples in the
-distribution for further details.
+:keyword:`using` clause). Further details about these can be found below.
 
 Please note that at this time the LLVM bitcode interface is still somewhat
 experimental, and there are some known limitations:
@@ -5536,7 +5535,7 @@ instead (see `Importing LLVM Bitcode`_), or at least batch-compile your script
 to an executable (see `Batch Compilation`_).
 
 Currently, C, C++, Fortran and Faust are supported as foreign source
-languages, with llvm-gcc, llvm-g++, llvm-gfortran and faust2 as the
+languages, with llvm-gcc, llvm-g++, llvm-gfortran and faust as the
 corresponding compilers. Alternatively, the LLVM clang and clang++ compilers
 can be used for C/C++ compilation (this will actually be default if the Pure
 interpreter itself was compiled with clang). Examples for all of these can be
@@ -5568,9 +5567,9 @@ may also have to specify the appropriate language standard, such as
 ``fortran90`` which is used in the example above. The language tag can also be
 followed by a module name, using the format ``-*- lang:name -*-``. This is
 optional for all languages except Faust (where the module name specifies the
-namespace for the interface routines of the Faust module). So, e.g., a Faust
-DSP named ``test`` would be specified with a ``dsp:test`` tag. Case is
-*significant* in the module name.
+namespace for the interface routines of the Faust module; see `Interfacing to
+Faust`_ below). So, e.g., a Faust DSP named ``test`` would be specified with a
+``dsp:test`` tag. Case is *significant* in the module name.
 
 The Pure interpreter has some built-in knowledge on how to invoke the LLVM
 compilers to produce a working bitcode file ready to be loaded by the
@@ -5589,6 +5588,340 @@ invoke it with the ``-O3`` optimization option, you would set
 can have the interpreter echo the compilation commands which are actually
 executed, by running Pure with the ``-v0100`` option, see `Verbosity and
 Debugging Options`_.)
+
+Some further details on the bitcode support for specific target languages can
+be found in the subsections below.
+
+Interfacing to C++
+------------------
+
+Interfacing to C++ code requires additional preparations because of the name
+mangling performed by C++ compilers. Usually, you won't be able to call C++
+functions and methods directly, so you'll have to expose the required
+functionality using functions with C binding (``extern "C"``). For instance,
+the following example shows how to work with STL maps from Pure. ::
+
+  %< -*- C++ -*-
+
+  #include <pure/runtime.h>
+  #include <string>
+  #include <map>
+
+  // An STL map mapping strings to Pure expressions.
+
+  using namespace std;
+  typedef map<string,pure_expr*> exprmap;
+
+  // Since we can't directly deal with C++ classes in Pure, provide some C
+  // functions to create, destroy and manipulate these objects.
+
+  extern "C" exprmap *map_create()
+  {
+    return new exprmap;
+  }
+
+  extern "C" void map_add(exprmap *m, const char *key, pure_expr *x)
+  {
+    exprmap::iterator it = m->find(string(key));
+    if (it != m->end()) pure_free(it->second);
+    (*m)[key] = pure_new(x);
+  }
+
+  extern "C" void map_del(exprmap *m, const char *key)
+  {
+    exprmap::iterator it = m->find(key);
+    if (it != m->end()) {
+      pure_free(it->second);
+      m->erase(it);
+    }
+  }
+
+  extern "C" pure_expr *map_get(exprmap *m, const char *key)
+  {
+    exprmap::iterator it = m->find(key);
+    return (it != m->end())?it->second:0;
+  }
+
+  extern "C" pure_expr *map_keys(exprmap *m)
+  {
+    size_t i = 0, n = m->size();
+    pure_expr **xs = new pure_expr*[n];
+    for (exprmap::iterator it = m->begin(); it != m->end(); ++it)
+      xs[i++] = pure_string_dup(it->first.c_str());
+    pure_expr *x = pure_listv(n, xs);
+    delete[] xs;
+    return x;
+  }
+
+  extern "C" void map_destroy(exprmap *m)
+  {
+    for (exprmap::iterator it = m->begin(); it != m->end(); ++it)
+      pure_free(it->second);
+    delete m;
+  }
+
+  %>
+
+  // Create the STL map and add a sentry so that it garbage-collects itself.
+  let m = sentry map_destroy map_create;
+
+  // Populate the map with some arbitrary Pure data.
+  do (\(x=>y) -> map_add m x y) ["foo"=>99, "bar"=>bar 4711L, "baz"=>1..5];
+
+  // Query the map.
+  map_keys m; // => ["bar","baz","foo"]
+  map (map_get m) (map_keys m); // => [bar 4711L,[1,2,3,4,5],99]
+
+  // Delete an element.
+  map_del m "foo";
+  map_keys m; // => ["bar","baz"]
+  map (map_get m) (map_keys m); // => [bar 4711L,[1,2,3,4,5]]
+
+Interfacing to Faust
+--------------------
+
+Faust_ is a functional dsp (a.k.a. digital signal processing) programming
+language developed at Grame, which is tailored to the task of generating and
+transforming streams of numeric data at the sample level. It is typically used
+to program sound synthesis and audio effect units, but can in fact be employed
+to process any kind of numeric vector and matrix data. The Faust compiler is
+capable to generate very efficient code for such tasks which is comparable in
+efficiency with carefully handcrafted C routines. Pure's Faust interface lets
+you use these capabilities in order to process sample data stored in Pure
+matrices.
+
+Pure's LLVM bitcode loader has some special knowledge about Faust built into
+it, which makes interfacing to Faust programs simple and efficient. At
+present, you'll need a special LLVM-capable version of Faust to make this
+work, which is available under the "faust2" branch in Faust's git repository.
+Some information on how to get this up and running can be found on the `LLVM
+backend for Faust`_ website.
+
+.. _LLVM backend for Faust: http://www.grame.fr/~letz/faust_llvm.html
+
+The ``-lang llvm`` option instructs the Faust compiler to output LLVM
+bitcode. Also, you want to add the ``-double`` option to make the compiled
+Faust module use double precision floating point values for samples and
+control values. So you'd compile an existing Faust module in the source file
+example.dsp as follows:
+
+.. code-block:: console
+
+   faust -double -lang llvm example.dsp -o example.bc
+
+The ``-double`` option isn't strictly necessary, but it makes interfacing
+between Pure and Faust easier and more efficient, since Pure uses ``double``
+as its native floating point format. Alternatively, you can also just inline
+Faust code in a Pure script, as described in the `Inline Code`_ section, in
+which case the compilation step is handled by the Pure compiler and the
+``-double`` option is added automatically.
+
+After loading or inlining the Faust module, the Pure compiler makes the
+interface routines of the Faust module available in its own namespace. Thus,
+e.g., the interface routines for the example.dsp module will end up in the
+``example`` namespace.
+
+Pure's Faust interface offers another useful feature not provided by the
+general bitcode interface, namely the ability to reload Faust modules on the
+fly. If you repeat the import clause for a Faust module, the compiler checks
+whether the module was modified and, if so, replaces the old module with the
+new one. Retyping an inline Faust code section has the same effect. This is
+intended as a convenience for interactive usage, so that you can test
+different versions of a Faust module without having to restart the Pure
+interpreter.
+
+For instance, consider the following little Faust program, which takes a
+stereo audio signal as input, mixes the two channels and multiplies the
+resulting mono signal with a gain value given by a corresponding Faust control
+variable::
+
+  gain = nentry("gain", 0.3, 0, 10, 0.01);
+  process = + : *(gain);
+
+The interface routines of this Faust module look as follows on the Pure side::
+
+  > show -g example::*
+  extern void buildUserInterface(struct_dsp_llvm*, struct_UIGlue*) = example::buildUserInterface;
+  extern void classInit(int) = example::classInit;
+  extern void compute(struct_dsp_llvm*, int, double**, double**) = example::compute;
+  extern void delete(struct_dsp_llvm*) = example::delete;
+  extern void destroy(struct_dsp_llvm*) = example::destroy;
+  extern int getNumInputs(struct_dsp_llvm*) = example::getNumInputs;
+  extern int getNumOutputs(struct_dsp_llvm*) = example::getNumOutputs;
+  extern expr* info(struct_dsp_llvm*) = example::info;
+  extern void init(struct_dsp_llvm*, int) = example::init;
+  extern void instanceInit(struct_dsp_llvm*, int) = example::instanceInit;
+  extern struct_dsp_llvm* new() = example::new;
+  extern struct_dsp_llvm* newinit(int) = example::newinit;
+
+The most important interface routines are ``new``, ``init`` and ``delete``
+(used to create, initialize and destroy an instance of the dsp) and
+``compute`` (used to apply the dsp to a given block of samples). Two useful
+convenience functions are added by the Pure compiler: ``newinit`` (which
+combines ``new`` and ``init``) and ``info``, which yields pertinent
+information about the dsp as a Pure tuple containing the number of input and
+output channels and the Faust control descriptions. The latter are provided in
+a symbolic format ready to be used in Pure; more about that below. Also note
+that there's usually no need to explicitly invoke the ``delete`` routine in
+Pure programs; the Pure compiler makes sure that this routine is added
+automatically as a finalizer (see :func:`sentry`) to all dsp pointers created
+through the ``new`` and ``newinit`` routines so that dsp instances are
+destroyed automatically when the corresponding Pure objects are
+garbage-collected.
+
+Another point worth mentioning here is that despite the generic
+``struct_dsp_llvm`` pointer type used by the interface routines, the Pure
+compiler generates code that ensures that the Faust dsp instances are fully
+typechecked at runtime. Thus it is only possible to pass a dsp struct pointer
+to the interface routines of the Faust module it was created with.
+
+Let's have a brief look at how we can actually run a Faust module in Pure to
+process some audio samples.
+
+**Step 1: Load the Faust dsp.** This assumes that the Faust source has already
+been compiled to a bitcode file, as shown above. You can then load the module
+in Pure as follows::
+
+  > using "dsp:example";
+
+Note that the .bc bitcode extension is supplied automatically. Also note the
+special ``dsp`` tag; this tells the compiler that this is a Faust-generated
+module, so that it does some Faust-specific processing while linking the
+module.
+
+Alternatively, you can also just inline the code of the Faust module. For the
+example above, the inline code section looks as follows::
+
+  %< -*- dsp:example -*-
+  gain = nentry("gain", 0.3, 0, 10, 0.01);
+  process = + : *(gain);
+  %>
+
+You can either add this code to a Pure script, or just type it directly in
+the Pure interpreter.
+
+Finally, you may want to verify that the module has been properly loaded by
+typing ``show -g example::*``. The output should look like in the listing
+above.
+
+**Step 2: Create and initialize a dsp instance.** After importing the Faust
+module you can now create an instance of the Faust signal processor using the
+``newinit`` routine, and assign it to a Pure variable as follows::
+
+  > let dsp = example::newinit 44100;
+
+Note that the constant 44100 denotes the desired sample rate in Hz. This can
+be an arbitrary integer value, which is available in the Faust program by
+means of the ``SR`` variable. It's completely up to the dsp whether it
+actually uses this value in some way (our example doesn't, but we need to
+specify a value anyway).
+
+The dsp is now fully initialized and we can use it to compute some samples.
+But before we can do this, we'll need to know how many channels of audio data
+the dsp consumes and produces, and which control variables it provides. This
+information can be extracted with the ``info`` function, and be assigned to
+some Pure variables as follows::
+
+  > let k,l,ui = example::info dsp;
+
+**Step 3: Prepare input and output buffers.** Pure's Faust interface allows
+you to pass Pure double matrices as sample buffers, which makes this step
+quite convenient. For given numbers k and l of input and output channels,
+respectively, we'll need a k x n matrix for the input and a l x n matrix for
+the output, where n is the desired block size (the number of samples to be
+processed per channel in one go). Note that the matrices have one row per
+input or output channel. Here's how we can create some suitable input and
+output matrices using a Pure matrix comprehension and the ``dmatrix`` function
+available in the standard library::
+
+  > let n = 10; // the block size
+  > let in  = {i*10.0+j | i = 1..k; j = 1..n};
+  > let out = dmatrix (l,n);
+
+In our example, k=2 and l=1, thus we obtain the following matrices::
+
+  > in;
+  {11.0,12.0,13.0,14.0,15.0,16.0,17.0,18.0,19.0,20.0;
+  21.0,22.0,23.0,24.0,25.0,26.0,27.0,28.0,29.0,30.0}
+  > out;
+  {0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0}
+
+**Step 4: Apply the dsp to compute some samples.** With the ``in`` and ``out``
+matrices as given above, we can now apply the dsp by invoking its ``compute``
+routine::
+
+  > example::compute dsp n in out;
+
+This takes the input samples specified in the ``in`` matrix and stores the
+resulting output in the ``out`` matrix. The output matrix now looks as
+follows::
+
+  > out;
+  {9.6,10.2,10.8,11.4,12.0,12.6,13.2,13.8,14.4,15.0}
+
+Note that the ``compute`` routine also modifies the internal state of the dsp
+instance so that a subsequent call will continue with the output stream where
+the previous call left off. (This isn't relevant in this specific example, but
+in general a Faust dsp may contain delays and similar constructions which need
+a memory of past samples to be maintained between different invocations of
+``compute``.) Thus we can now just keep on calling ``compute`` (possibly with
+different ``in`` buffers) to compute as much of the output signal as we need.
+
+**Step 5: Inspecting and modifying control variables.** Recall that our sample
+dsp also has a Faust control variable ``gain`` which lets us change the
+amplification of the output signal. We've already assigned the corresponding
+information to the ``ui`` variable, let's have a look at it now::
+
+  > ui;
+  vgroup ("example",[nentry #<pointer 0xd81820> ("gain",0.3,0.0,10.0,0.01)])
+
+In general, this data structure takes the form of a tree which corresponds to
+the hierarchical layout of the control groups and values in the Faust program.
+In this case, we just have one toplevel group containing a single ``gain``
+parameter, which is represented as a Pure term containing the relevant
+information about the type, name, initial value, range and stepsize of the
+control, along with a double pointer which can be used to inspect and modify
+the control value. While it's possible to access this information in a direct
+fashion, there's also a faustui.pure module in the standard library which
+makes this easier. First we extract the mapping of control variable names to
+the corresponding double pointers as follows::
+
+  > using faustui;
+  > let ui = control_map $ controls ui; ui;
+  {"gain"=>#<pointer 0xd81820>}
+
+The result is a record value indexed by control names, thus the pointer which
+belongs to our ``gain`` control can now be obtained with ``ui!"gain"``. The
+faustui.pure module also provides convenience functions to inspect a control
+and change its value::
+
+  > let gain = ui!"gain";
+  > get_control gain;
+  0.3
+  > put_control gain 1.0;
+  ()
+  > get_control gain;
+  1.0
+
+Finally, let's rerun ``compute`` to get another block of samples from the same
+input data, using the new ``gain`` value::
+
+  > example::compute dsp n in out;
+  > out;
+  {32.0,34.0,36.0,38.0,40.0,42.0,44.0,46.0,48.0,50.0}
+
+As you can see, all these steps are rather straightforward. Of course, in a
+real program we would probably run ``compute`` in a loop which reads some
+samples from an audio device or sound file, applies the dsp, and writes back
+the resulting samples to another audio device or file. This can all be done
+quite easily using the appropriate addon modules available on the Pure
+website. Also note that you can play with different versions of a Faust
+module, by editing the Faust source accordingly and returning to step 1. You
+don't even need to exit the Pure interpreter to do this.
+
+More Faust-related examples can be found in the Pure distribution. Also, have
+a look at :doc:`pd-pure` to see how these facilities can be used in Pd modules
+written in Pure.
 
 Standard Library
 ================
