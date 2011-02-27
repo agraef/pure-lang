@@ -6789,7 +6789,7 @@ debugger prompt to print the following list:
   u, d    move up or down one level in the rule stack
   x       exit the interpreter (after confirmation)
   .       reprint current rule
-  ! cmd   shell escape
+  ! cmd   execute interpreter command
   ? expr  evaluate expression
   <cr>    single step (same as 's')
   <eof>   step through program, run unattended (same as 'a')
@@ -6818,6 +6818,13 @@ The debugger can be exited or suspended in the following ways:
 
 * You can also type ``x`` to exit from the debugger *and* the interpreter
   immediately (after confirmation).
+
+In addition, you can use the ``!`` command to run any interpreter command
+while in the debugger. This is particularly useful to invoke the ``break`` and
+``del`` commands to change breakpoints, or you can use ``!!`` to escape a
+shell command. (However, you shouldn't try to modify the program while you're
+debugging it. This may work in some cases, but will have nasty consequences if
+you happen to change a function which is currently being executed.)
 
 At the debugger prompt, you can use the ``u`` ("up"), ``d`` ("down"), ``t``
 ("top") and ``b`` ("bottom") commands to move around on the current call
@@ -6925,10 +6932,8 @@ The current sets of breakpoints and tracepoints can be changed with the
 ``break``, ``trace`` and ``del`` commands, as shown above, and just ``break``
 or ``trace`` without any arguments lists the currently defined breakpoints or
 tracepoints, respectively. Please see `Interactive Commands`_ above for
-details. Also note that these are really interpreter commands, so to enter
-them you first have to exit the debugger (using the ``a`` or ``r`` command) if
-an evaluation is currently in progress. (However, it's possible to set a
-temporary breakpoint in the debugger with the ``c`` command, see above.)
+details. Also note that these are really interpreter commands, so to invoke
+them in the debugger you have to escape them with the ``!`` command.
 
 Last Result
 -----------
