@@ -6364,13 +6364,25 @@ static size_t argno(size_t n, path &p)
   }
   assert(i < m && p[i] == 1);
   path q(m-++i);
-  for (size_t j = 0; i < m; i++, j++) q.set(j, p[i]);
+  for (size_t j = 0; i < m; i++, j++) {
+    q.set(j, p[i]);
+    q.setmsk(j, p.msk(i));
+  }
   p = q;
   return k;
 }
 
+static uint32_t argidx(const path &p, size_t &i)
+{
+  size_t i0 = i;
+  while (i < p.len() && p[i]) ++i;
+  assert(i < p.len() && !p[i]);
+  return (i++)-i0;
+}
+
 static pure_expr *subterm(size_t n, pure_expr **xs, path p, bool b)
 {
+  pure_expr *tmp = 0;
   size_t k = 0;
   if (b)
     // pattern binding
@@ -6378,9 +6390,48 @@ static pure_expr *subterm(size_t n, pure_expr **xs, path p, bool b)
   else
     k = argno(n, p);
   pure_expr *x = xs[k];
-  for (size_t i = 0, m = p.len(); i < m; i++) {
-    assert(x->tag == EXPR::APP);
-    x = x->data.x[p[i]?1:0];
+  for (size_t i = 0, m = p.len(); i < m; ) {
+    if (p.msk(i)) {
+      // matrix path
+      uint32_t r = argidx(p, i), c = argidx(p, i);
+      switch (x->tag) {
+      case EXPR::MATRIX: {
+	gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
+	assert(r < m->size1 && c < m->size2);
+	x = m->data[r * m->tda + c];
+	break;
+      }
+      case EXPR::DMATRIX: {
+	gsl_matrix *m = (gsl_matrix*)x->data.mat.p;
+	assert(r < m->size1 && c < m->size2);
+	x = pure_double(m->data[r * m->tda + c]);
+	break;
+      }
+      case EXPR::IMATRIX: {
+	gsl_matrix_int *m = (gsl_matrix_int*)x->data.mat.p;
+	assert(r < m->size1 && c < m->size2);
+	x = pure_int(m->data[r * m->tda + c]);
+	break;
+      }
+      case EXPR::CMATRIX: {
+	gsl_matrix_complex *m = (gsl_matrix_complex*)x->data.mat.p;
+	assert(r < m->size1 && c < m->size2);
+	size_t k = 2*(r * m->tda + c);
+	x = make_complex(m->data[k], m->data[k+1]);
+	if (i < p.len()) tmp = x;
+	break;
+      }
+      default:
+	assert(0);
+	break;
+      }
+    } else {
+      assert(x->tag == EXPR::APP);
+      x = x->data.x[p[i++]?1:0];
+    }
+  }
+  if (tmp) {
+    pure_new(x); pure_freenew(tmp); pure_unref(x);
   }
   return x;
 }
@@ -6462,6 +6513,12 @@ static void print_vars(ostream& out, interpreter& interp, DebugInfo& d)
     out << id << " = " << printx(x);
   }
   if (count > 0) out << endl;
+  // get rid of temporaries
+  for (map<string,pure_expr*>::iterator it = vals.begin(); it != vals.end();
+       ++it) {
+    pure_expr *x = it->second;
+    if (x->refc == 0) pure_freenew(x);
+  }
 }
 
 static expr localvars(interpreter& interp, DebugInfo& d, pure_expr *x)
@@ -6502,6 +6559,12 @@ static expr localvars(interpreter& interp, DebugInfo& d, pure_expr *x)
     int32_t v = it->first;
     pure_expr *x = it->second;
     r->push_back(rule(expr(v), interp.pure_expr_to_expr(x)));
+  }
+  // get rid of temporaries
+  for (map<int32_t,pure_expr*>::iterator it = vals.begin(); it != vals.end();
+       ++it) {
+    pure_expr *x = it->second;
+    if (x->refc == 0) pure_freenew(x);
   }
   if (r->empty()) {
     // no locals, return y as it is
