@@ -74,9 +74,7 @@ extern pure_expr *pd_path_sl(void)
 #endif
 }
 
-/* Alternate interface to Pd's post() routine. The Pd routine can't be used
-   directly in Pure since it's a printf-style varargs routine. Our version
-   here just provides the capability to post a message string. */
+/* Post a message in Pd's main window. */
 
 extern void pd_post(const char *s)
 {
@@ -1101,9 +1099,9 @@ static void class_setup(char *name, char *dir)
   class_addanything(class, pure_any);
   if (is_dsp) {
     class_addmethod(class, nullfn, &s_signal, A_NULL);
-    class_sethelpsymbol(class, gensym("../../extra/pure/pure~-help"));
+    class_sethelpsymbol(class, gensym(LIBDIR "/extra/pure/pure~-help.pd"));
   } else
-    class_sethelpsymbol(class, gensym("../../extra/pure/pure-help"));
+    class_sethelpsymbol(class, gensym(LIBDIR "/extra/pure/pure-help.pd"));
   add_class(class_s, class, dir);
 }
 
