@@ -31,6 +31,11 @@
   (interactive)
   (pd-send-message "bang"))
 
+(defun pd-send-reload ()
+  "Send a 'reload' message to Pd."
+  (interactive)
+  (pd-send-message "reload"))
+
 (defun pd-send-start ()
   "Send a 'play 1' message to Pd."
   (interactive)
@@ -51,6 +56,7 @@
 
 (pd-send-start-process)
 (global-set-key "\C-c\C-x" 'pd-send-bang)
+(global-set-key "\C-c\M-x" 'pd-send-reload)
 (global-set-key "\C-c\C-m" 'pd-send-message)
 (global-set-key "\C-c\C-s" 'pd-send-start)
 (global-set-key "\C-c\C-t" 'pd-send-stop)

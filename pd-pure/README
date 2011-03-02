@@ -160,7 +160,11 @@ also called the `object function`. You can put the script containing the
 object function in the same directory as the Pd patch in which you want to use
 the ``foo`` object, or anywhere on Pd's search path. (The latter is useful if
 the object is to be used in several patches located in different
-subdirectories.)
+subdirectories.) The script will be executed once, at the time the first
+object with the given name is created, and will be executed in the directory
+where it is located. Thus, if the script needs to import other Pure scripts or
+load some data files, you can put these into the same directory so that the
+object script can find them.
 
 The ``foo`` function gets evaluated at object creation time, receiving any
 additional parameters the object is created with. The resulting Pure
@@ -651,9 +655,9 @@ anonymous objects defined with ``[pure]`` and ``[pure~]``.
 
 .. note:: You'll have to make sure that the ``[pure-runtime]`` object is
    inserted into the patch before any anonymous objects which depend on the
-   loaded scripts. Also note that it isn't necessary to explicitly load the
-   scripts which implement named Pure objects; this will be handled
-   automatically by the Pure loader.
+   loaded scripts. Also note that you shouldn't explicitly load the scripts
+   which implement named Pure objects; this will be handled automatically by
+   the Pure loader.
 
 The ``[pure-runtime]`` object also accepts control messages which can be used
 to dynamically reload all loaded scripts, and to implement "remote control" of
@@ -770,64 +774,71 @@ Livecoding Support
 Livecoding means changing Pure objects on the fly while a patch is running. A
 simple, but limited way to do this is to just edit the boxes containing Pure
 objects interactively, as you can do with any kind of Pd object. In this case,
-the changes take effect immediately after you finish editing a box.
-
-However, for more elaborate changes, you may have to edit the underlying Pure
-scripts and notify the Pure interpreter so that it reloads the scripts. The
-Pure loader provides some experimental support for this by means of the
-special ``[pure-runtime]`` object. Right now, this isn't really as "live" as
-we'd like it to be, because of the considerable delays caused by scripts being
-recompiled on the fly when they are loaded. However, there's hope that this
-facility becomes more useful as Pure's LLVM-based JIT compiler and computers
-become faster.
+the changes take effect immediately after you finish editing a box. However,
+for more elaborate changes, you may have to edit the underlying Pure scripts
+and notify the Pure interpreter so that it reloads the scripts. The Pure
+loader provides the special ``[pure-runtime]`` object to do this.
 
 Sending a ``bang`` to the ``[pure-runtime]`` object tells the plugin to reload
-all loaded scripts and update the Pure objects in your patch accordingly. The
+all object scripts and update the Pure objects in your patch accordingly. The
 object also provides two outlets to deal with the inevitable latencies caused
 by the compilation process. The right outlet is banged when the compilation
 starts and the left outlet gets a bang when the compilation is finished, so
 that a patch using this facility can respond to these events in the
 appropriate way (e.g., disabling output during compilation).
 
-.. note:: The number of inlets and outlets of Pure objects never changes after
-   reloading scripts. (Pd does not support this through its API right now.)
-   Thus by editing and reloading the Pure scripts you can change the
-   functionality of existing Pure objects in a running patch, but not their
-   interfaces. (It is possible to make changes to inlets and outlets take
-   effect by manually editing the affected objects afterwards. But this will
-   be cumbersome when you have to edit a lot of objects, so it might be easier
-   to just reload patches in such cases.)
+The ``reload`` message works similarly, but while the ``bang`` message only
+reloads the object scripts, ``reload`` restarts the Pure interpreter from
+scratch and reloads everything, including the prelude and imported modules.
+This will usually take much longer, but is only necessary if you edited
+imported library modules so that you really need to reload everything.
+
+Please note that, in either case, the number of inlets and outlets of Pure
+objects never changes after reloading scripts. (Pd does not support this
+through its API right now.)  Thus by editing and reloading the Pure scripts
+you can change the functionality of existing Pure objects in a running patch,
+but not their interfaces. (It is possible to make changes to inlets and
+outlets take effect by manually editing the affected objects afterwards. But
+this will be cumbersome when you have to edit a lot of objects, so it might be
+easier to just restart Pd and reload the patches in such cases.)
+
+Also note that, in order to keep the compilation times small, it is a good
+idea to put all code which you don't plan to edit "live" into library modules
+which are imported in the object scripts. By these means, the size of the
+object scripts themselves can be kept small which means faster compilation.
 
 Remote Control
 --------------
 
 The distribution also includes an abstraction pure-remote.pd which you can
 include in your patch to enable live coding, as well as remote control of the
-patch through the :program:`pdsend` program. Sending a ``bang`` causes a
-reload of all scripts, which can also be triggered directly by clicking the
-bang control of the abstraction. The bang control also provides visual
-feedback indicating whether the compilation is still in progress. Messages are
-also routed through the embedded ``[pure-runtime]`` object using the single
-inlet and the two outlets of the abstraction, so that ``pure-remote`` can also
-be controlled from within the patch itself.
+patch through the :program:`pdsend` program. Sending a ``bang`` (or
+``reload``) causes a reload of the object scripts, as described above. This
+can also be triggered directly by clicking the bang control of the
+abstraction. The bang control also provides visual feedback indicating whether
+the compilation is still in progress. Messages are routed through the embedded
+``[pure-runtime]`` object using the single inlet and the two outlets of the
+abstraction, so that ``pure-remote`` can also be controlled from within the
+patch itself.
 
 For added convenience, the ``[pure-runtime]`` and ``[pure-remote]`` objects
 also accept any other message of the form ``receiver message`` and will route
 the given message to the given receiver. This is intended to provide remote
-control of various parameters in patches. For instance, by having pdsend send
-a ``play 0`` or ``play 1`` message, one might implement a simple playback
-control, provided that your patch includes an appropriate receiver (often a
-GUI object). See the pure-help.pd patch for an example.
+control of various parameters in patches. For instance, by having
+:program:`pdsend` send a ``play 0`` or ``play 1`` message, one might implement
+a simple playback control, provided that your patch includes an appropriate
+receiver (often a GUI object). See the pure-help.pd patch for an example.
 
 To make these features available in Emacs, there's an accompanying elisp
 program (pure-remote.el) which contains some convenient keybindings for the
-necessary pdsend invocations, so that you can operate the pure-remote patch
-with simple keystrokes directly from the text editor. Please see the
-pure-remote.el file for more details. Currently pure-remote.el implements the
-following keybindings:
+necessary :program:`pdsend` invocations, so that you can operate the
+pure-remote patch with simple keystrokes directly from the text editor. Please
+see the pure-remote.el file for more details. Currently pure-remote.el
+implements the following keybindings:
 
 ===========  =======  ======================================================
-``C-C C-X``  Reload   Sends a bang message, causing scripts to be reloaded.
+``C-C C-X``  Reload   Sends a ``bang`` message to quickly reload scripts.
+``C-C M-X``  Reload   Sends a ``reload`` message to restart the interpreter.
 ``C-C C-M``  Message  Prompts for a message and sends it to pure-remote.
 ``C-C C-S``  Play     Sends a ``play 1`` message.
 ``C-C C-T``  Stop     Sends a ``play 0`` message.

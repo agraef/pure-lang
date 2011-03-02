@@ -6,6 +6,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <unistd.h>
+#include <limits.h>
 
 #include <pure/runtime.h>
 #include <m_pd.h>
@@ -16,6 +18,10 @@
 
 #ifndef LIBDIR
 #define LIBDIR "/usr/local/lib/pd"
+#endif
+
+#ifndef PATH_MAX
+#define PATH_MAX 1024
 #endif
 
 /* Ticks per millisecond of the internal clock. FIXME: Currently this is a
@@ -346,6 +352,17 @@ static t_class *lookup(t_symbol *sym)
   while (act && (act->sym != sym || !act->class)) act = act->next;
   if (act)
     return act->class;
+  else
+    return 0;
+}
+
+static t_classes *lookup_script(t_symbol *sym, const char *dir)
+{
+  t_classes *act = pure_classes;
+  while (act && (act->sym != sym || strcmp(act->dir, dir)))
+    act = act->next;
+  if (act)
+    return act;
   else
     return 0;
 }
@@ -1022,6 +1039,8 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
 static void pure_fini(t_pure *x)
 {
   int i;
+  clock_unset(x->clock);
+  if (x->msg) pure_free(x->msg);
   free(x->args);
   if (x->foo) pure_free(x->foo);
   x->foo = 0;
@@ -1076,6 +1095,7 @@ static void pure_reinit(t_pure *x)
   }
   if (x->tmp) {
     x->msg = parse_expr(x, x->tmp);
+    if (x->msg) pure_new(x->msg);
     free(x->tmp); x->tmp = 0;
   }
   if (x->n > 0) {
@@ -1116,14 +1136,25 @@ static int pure_loader(t_canvas *canvas, char *name)
   char *ptr;
   int fd = canvas_open(canvas, name, ".pure", dirbuf, &ptr, MAXPDSTRING, 1);
   if (fd >= 0) {
+    t_symbol *sym = gensym(name);
     close(fd);
     class_set_extern_dir(gensym(dirbuf));
-    /* Load the Pure script. */
-    sprintf(cmdbuf, "using \"%s/%s.pure\";\n", dirbuf, name);
+    /* Skip the loading step if the script is already loaded. */
+    if (!lookup_script(sym, dirbuf)) {
+      /* Save the current working directory. */
+      char buf[PATH_MAX], *cwd = getcwd(buf, PATH_MAX);
+      /* Load the Pure script. Note that the script gets invoked using 'run'
+	 rather than 'using', so that the definitions become temporaries which
+	 can be removed and reloaded later (cf. pure_reload). */
+      chdir(dirbuf);
+      sprintf(cmdbuf, "run \"%s.pure\"", name);
 #ifdef VERBOSE
-    printf("pd-pure: compiling %s.pure\n", name);
+      printf("pd-pure: compiling %s.pure\n", name);
 #endif
-    pure_evalcmd(cmdbuf);
+      pure_evalcmd(cmdbuf);
+      /* Restore the working directory. */
+      if (cwd) chdir(cwd);
+    }
 #ifdef EAGER
     /* Force eager compilation. */
     pure_interp_compile(interp, pure_sym(fun_name_s(name)));
@@ -1131,7 +1162,7 @@ static int pure_loader(t_canvas *canvas, char *name)
     /* Create the object class. */
     class_setup(name, dirbuf);
     class_set_extern_dir(&s_);
-    return lookup(gensym(name)) != 0;
+    return lookup(sym) != 0;
   } else
     return 0;
 }
@@ -1141,22 +1172,31 @@ static int pure_load(t_canvas *canvas, char *name)
   char *ptr;
   int fd = canvas_open(canvas, name, ".pure", dirbuf, &ptr, MAXPDSTRING, 1);
   if (fd >= 0) {
+    t_symbol *sym = gensym(name);
     close(fd);
-    class_set_extern_dir(gensym(dirbuf));
-    /* Load the Pure script. */
-    sprintf(cmdbuf, "using \"%s/%s.pure\";\n", dirbuf, name);
+    /* Skip if script is already loaded. */
+    if (!lookup_script(sym, dirbuf)) {
+      /* Save the current working directory. */
+      char buf[PATH_MAX], *cwd = getcwd(buf, PATH_MAX);
+      class_set_extern_dir(gensym(dirbuf));
+      /* Load the Pure script. */
+      chdir(dirbuf);
+      sprintf(cmdbuf, "run \"%s.pure\"", name);
 #ifdef VERBOSE
-    printf("pd-pure: compiling %s.pure\n", name);
+      printf("pd-pure: compiling %s.pure\n", name);
 #endif
-    pure_evalcmd(cmdbuf);
-    add_class(gensym(name), 0, dirbuf);
-    class_set_extern_dir(&s_);
+      pure_evalcmd(cmdbuf);
+      /* Restore the working directory. */
+      if (cwd) chdir(cwd);
+      add_class(sym, 0, dirbuf);
+      class_set_extern_dir(&s_);
+    }
     return 1;
   } else
     return 0;
 }
 
-/* Reload all loaded Pure scripts in a new interpreter instance. */
+/* Reload all loaded Pure scripts. */
 
 static void reload(t_classes *c)
 {
@@ -1167,7 +1207,8 @@ static void reload(t_classes *c)
     if (strcmp(c->sym->s_name, "pure") &&
 	strcmp(c->sym->s_name, "pure~")) {
       class_set_extern_dir(gensym(c->dir));
-      sprintf(cmdbuf, "using \"%s/%s.pure\";\n", c->dir, c->sym->s_name);
+      chdir(c->dir);
+      sprintf(cmdbuf, "run \"%s.pure\"", c->sym->s_name);
 #ifdef VERBOSE
       printf("pd-pure: compiling %s.pure\n", c->sym->s_name);
 #endif
@@ -1193,9 +1234,40 @@ static void pure_restart(void)
   interp = pure_create_interp(0, 0);
   pure_switch_interp(interp);
 #ifdef VERBOSE
+  printf("pd-pure: restarting, please wait...\n");
+#endif
+  {
+    /* Save the current working directory. */
+    char buf[PATH_MAX], *cwd = getcwd(buf, PATH_MAX);
+    reload(pure_classes);
+    /* Restore the working directory. */
+    if (cwd) chdir(cwd);
+  }
+  for (x = xhead; x; x = x->next)
+    pure_reinit(x);
+  void_sym = pure_sym("()");
+  delay_sym = pure_sym("pd_delay");
+}
+
+/* Same as above, but only reload the scripts after clearing temporaries,
+   reusing the existing interpreter instance. */
+
+static void pure_reload(void)
+{
+  t_pure *x;
+  for (x = xhead; x; x = x->next)
+    pure_refini(x);
+  pure_evalcmd("clear");
+#ifdef VERBOSE
   printf("pd-pure: reloading, please wait...\n");
 #endif
-  reload(pure_classes);
+  {
+    /* Save the current working directory. */
+    char buf[PATH_MAX], *cwd = getcwd(buf, PATH_MAX);
+    reload(pure_classes);
+    /* Restore the working directory. */
+    if (cwd) chdir(cwd);
+  }
   for (x = xhead; x; x = x->next)
     pure_reinit(x);
   void_sym = pure_sym("()");
@@ -1220,9 +1292,15 @@ static void *runtime_init(t_symbol *s, int argc, t_atom *argv)
   return (void *)x;
 }
 
+static t_symbol *s_reload = 0;
+
 static void runtime_any(t_runtime *x, t_symbol *s, int argc, t_atom *argv)
 {
   if (s == &s_bang && argc == 0) {
+    outlet_bang(x->out2);
+    pure_reload();
+    outlet_bang(x->out1);
+  } else if (s == s_reload && argc == 0) {
     outlet_bang(x->out2);
     pure_restart();
     outlet_bang(x->out1);
@@ -1261,12 +1339,14 @@ extern void pure_setup(void)
 			      sizeof(t_runtime), CLASS_DEFAULT,
 			      A_GIMME, A_NULL);
     class_addanything(runtime_class, runtime_any);
-    class_sethelpsymbol(runtime_class, gensym("pure-help"));
+    class_sethelpsymbol(runtime_class,
+			gensym(LIBDIR "/extra/pure/pure-help.pd"));
     /* Create classes for 'pure' and 'pure~' objects which allows you to
        access any predefined Pure function without loading a script. */
     class_setup("pure", "");
     class_setup("pure~", "");
     /* Look up a few symbols that we need. */
+    s_reload = gensym("reload");
     void_sym = pure_sym("()");
     delay_sym = pure_sym("pd_delay");
   } else
