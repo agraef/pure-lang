@@ -3769,6 +3769,8 @@ pure_interp *pure_create_interp(int argc, char *argv[])
       }
     }
   interp.symtab.init_builtins();
+  interp.temp = 1;
+  interp.modno = interp.modctr++;
   if (s_interp) interpreter::g_interp = s_interp;
   return (pure_interp*)_interp;
 }
