@@ -7278,7 +7278,7 @@ expr *interpreter::mkcase_expr(expr *x, rulel *r)
   if (r->empty()) {
     u = x; delete r;
   } else {
-    u = new expr(expr::cases(*x, r));
+    u = new expr(expr::cases(rsubst(*x), r));
     delete x;
   }
   return u;
@@ -7290,7 +7290,7 @@ expr *interpreter::mkwhen_expr(expr *x, rulel *r)
     delete r;
     return x;
   }
-  expr u = *x;
+  expr u = rsubst(*x);
   delete x;
   // x when l1 = r1; ...; lk = rk end  ===
   // case r1 of l1 = ... case rk of lk = x end ... end
@@ -7303,7 +7303,7 @@ expr *interpreter::mkwhen_expr(expr *x, rulel *r)
   for (rulel::reverse_iterator it = r->rbegin();
        it != r->rend(); ++it, ++idx) {
     env vars; vinfo vi;
-    expr v = bind(vars, vi, lcsubst(it->lhs)), w = it->rhs;
+    expr v = bind(vars, vi, lcsubst(it->lhs)), w = rsubst(it->rhs);
     u = subst(vars, u, idx);
     uint8_t jdx = 0;
     for (rulel::iterator jt = s->begin(); jt != s->end(); ++jdx, ++jt) {
@@ -7322,7 +7322,7 @@ expr *interpreter::mkwith_expr(expr *x, env *e)
     delete e;
     return x;
   } else {
-    expr v = fsubst(*e, *x);
+    expr v = fsubst(*e, rsubst(*x));
     delete x;
     for (env::iterator it = e->begin(); it != e->end(); ++it) {
       env_info& info = it->second;
