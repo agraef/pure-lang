@@ -146,9 +146,7 @@ selecting the ``Help`` option.
 In the following section, we first discuss in detail how `control objects`_
 are defined and used. After that, the necessary adjustments for implementing
 `audio objects`_ are explained. Some advanced uses of pd-pure are described
-under `Advanced Features`_ and `Interactive Facilities`_. Finally, the
-`Programming Interface`_ section summarizes the external functions available
-to Pure programs for interfacing to Pd.
+under `Advanced Features`_.
 
 Control Objects
 ===============
@@ -625,44 +623,16 @@ the facilities described in :doc:`faust2pd`. This is also more efficient since
 it avoids the overhead of the extra Pure layer. However, invoking Faust dsps
 via Pure also offers some benefits. In particular, it enables you to add more
 sophisticated control processing, interface to other 3rd party software for
-additional pre- and postprocessing of the signal data, or do livecoding of
-Faust programs using the facilities described in `Livecoding Support`_ below.
+additional pre- and postprocessing of the signal data, or do live editing of
+Faust programs using the facilities described in Livecoding_ below.
 
 Advanced Features
 =================
 
-Controlling the Runtime
------------------------
-
-pd-pure provides a predefined ``[pure-runtime]`` object which makes it
-possible to control the embedded Pure interpreter in some ways. There can be
-any number of ``[pure-runtime]`` objects in a patch, which all refer to the
-same instance of the Pure interpreter.
-
-The first use of ``[pure-runtime]`` is to load additional Pure scripts. To
-these ends, ``[pure-runtime]`` can be invoked with the names of scripts to be
-loaded at object creation time as arguments. The script names should be
-specified without the ``.pure`` suffix; it will be added automatically. The
-scripts will be searched for in the directory of the patch containing the
-``[pure-runtime]`` object and on the Pd path. For instance, to load the
-scripts ``foo.pure`` and ``bar.pure``, you can add the following object to
-your patch::
-
-  [pure-runtime foo bar]
-
-This facility can be used, e.g., to load any additional scripts needed for
-anonymous objects defined with ``[pure]`` and ``[pure~]``.
-
-.. note:: You'll have to make sure that the ``[pure-runtime]`` object is
-   inserted into the patch before any anonymous objects which depend on the
-   loaded scripts. Also note that you shouldn't explicitly load the scripts
-   which implement named Pure objects; this will be handled automatically by
-   the Pure loader.
-
-The ``[pure-runtime]`` object also accepts control messages which can be used
-to dynamically reload all loaded scripts, and to implement "remote control" of
-a patch using the :program:`pdsend` program. This is described in the
-`Interactive Facilities`_ section.
+This section discusses some advanced features of the Pd Pure loader. It
+explains the use of timer callbacks and wave arrays, and the livecoding and
+interactive control facilities. We also give an overview of the API provided
+for pd-pure programmers.
 
 Asynchronous Messages
 ---------------------
@@ -765,11 +735,41 @@ name is given as the creation argument) with random values in response to a
     random	  = random1*2-1;
   end;
 
-Interactive Facilities
-======================
+Controlling the Runtime
+-----------------------
 
-Livecoding Support
-------------------
+pd-pure provides a predefined ``[pure-runtime]`` object which makes it
+possible to control the embedded Pure interpreter in some ways. There can be
+any number of ``[pure-runtime]`` objects in a patch, which all refer to the
+same instance of the Pure interpreter.
+
+The first use of ``[pure-runtime]`` is to load additional Pure scripts. To
+these ends, ``[pure-runtime]`` can be invoked with the names of scripts to be
+loaded at object creation time as arguments. The script names should be
+specified without the ``.pure`` suffix; it will be added automatically. The
+scripts will be searched for in the directory of the patch containing the
+``[pure-runtime]`` object and on the Pd path. For instance, to load the
+scripts ``foo.pure`` and ``bar.pure``, you can add the following object to
+your patch::
+
+  [pure-runtime foo bar]
+
+This facility can be used, e.g., to load any additional scripts needed for
+anonymous objects defined with ``[pure]`` and ``[pure~]``.
+
+.. note:: You'll have to make sure that the ``[pure-runtime]`` object is
+   inserted into the patch before any anonymous objects which depend on the
+   loaded scripts. Also note that you shouldn't explicitly load the scripts
+   which implement named Pure objects; this will be handled automatically by
+   the Pure loader.
+
+The ``[pure-runtime]`` object also accepts control messages which can be used
+to dynamically reload all loaded scripts, and to implement "remote control" of
+a patch using the :program:`pdsend` program. This is described in the
+following subsection.
+
+Livecoding
+----------
 
 Livecoding means changing Pure objects on the fly while a patch is running. A
 simple, but limited way to do this is to just edit the boxes containing Pure
@@ -791,21 +791,58 @@ The ``reload`` message works similarly, but while the ``bang`` message only
 reloads the object scripts, ``reload`` restarts the Pure interpreter from
 scratch and reloads everything, including the prelude and imported modules.
 This will usually take much longer, but is only necessary if you edited
-imported library modules so that you really need to reload everything.
+imported library modules which won't be reloaded with the ``bang`` message.
 
-Please note that, in either case, the number of inlets and outlets of Pure
-objects never changes after reloading scripts. (Pd does not support this
-through its API right now.)  Thus by editing and reloading the Pure scripts
-you can change the functionality of existing Pure objects in a running patch,
-but not their interfaces. (It is possible to make changes to inlets and
-outlets take effect by manually editing the affected objects afterwards. But
-this will be cumbersome when you have to edit a lot of objects, so it might be
-easier to just restart Pd and reload the patches in such cases.)
+While this facility is very useful for interactive development, it does have
+some limitations:
 
-Also note that, in order to keep the compilation times small, it is a good
-idea to put all code which you don't plan to edit "live" into library modules
-which are imported in the object scripts. By these means, the size of the
-object scripts themselves can be kept small which means faster compilation.
+* At present, the number of inlets and outlets of Pure objects never changes
+  after reloading scripts. Pd does not support this through its API right now.
+  Thus by editing and reloading the Pure scripts you can change the
+  functionality of existing Pure objects in a running patch, but not their
+  interfaces. (It is possible to make changes to inlets and outlets take
+  effect by manually editing the affected objects afterwards. But this will be
+  cumbersome when you have to edit a lot of objects, so it might be easier to
+  just restart Pd and reload the patches in such cases.)
+
+* Reloading scripts may need some time depending on how much Pure code has to
+  be recompiled and how fast your cpu is. With the ``bang`` message the delays
+  will usually be small, but still noticable. In order to keep the compilation
+  times to a minimum, it is a good idea to put all code which you don't plan
+  to edit "live" into library modules which are imported in the object
+  scripts. By these means, the number of definitions in the object scripts
+  themselves can be kept small, resulting in faster compilation.
+
+Also note that the reloading of object scripts amounts to a "cold restart" of
+the Pure objects in your patches. If a Pure object keeps some `local state`_,
+it will be lost. As a remedy, the loader implements a simple protocol which
+allows Pure objects to record their internal state before a script gets
+reloaded, and restore it afterwards. To these ends, a Pure object may respond
+to the following two messages:
+
+* Before reloading, each Pure object will receive the ``pd_save`` message.  In
+  response, the object should return a Pure expression encoding its internal
+  state in a way which can be serialized (see the description of the
+  :pure:func:`blob` function in the :doc:`purelib` for details). Usually, it
+  is sufficient to just pack up all state data in a tuple, list or some other
+  aggregate and return that as the response to the ``pd_save`` message.
+
+* After reloading, each Pure object will receive a ``pd_restore state``
+  message, where ``state`` is the previously recorded state, as returned by
+  the object in response to the ``pd_save`` message. It should then restore
+  its internal state from the saved data. (The return value of this message
+  invocation is ignored.)
+
+For instance, here's the counter example from `Local State`_ again, with the
+necessary additions to support the ``pd_save``/``pd_restore`` protocol::
+
+  nonfix bang pd_save;
+  counter = next (ref 0) with
+    next r bang = put r (get r+1);
+    next r pd_save = get r;
+    next r (pd_restore n) = put r n;
+    next _ _ = () otherwise;
+  end;
 
 Remote Control
 --------------
@@ -829,32 +866,35 @@ control of various parameters in patches. For instance, by having
 a simple playback control, provided that your patch includes an appropriate
 receiver (often a GUI object). See the pure-help.pd patch for an example.
 
-To make these features available in Emacs, there's an accompanying elisp
-program (pure-remote.el) which contains some convenient keybindings for the
-necessary :program:`pdsend` invocations, so that you can operate the
+To make these features available in :program:`emacs`, there's an accompanying
+elisp program (pure-remote.el) which contains some convenient keybindings for
+the necessary :program:`pdsend` invocations, so that you can operate the
 pure-remote patch with simple keystrokes directly from the text editor. Please
 see the pure-remote.el file for more details. Currently pure-remote.el
 implements the following keybindings:
 
-===========  =======  ======================================================
-``C-C C-X``  Reload   Sends a ``bang`` message to quickly reload scripts.
-``C-C M-X``  Reload   Sends a ``reload`` message to restart the interpreter.
-``C-C C-M``  Message  Prompts for a message and sends it to pure-remote.
-``C-C C-S``  Play     Sends a ``play 1`` message.
-``C-C C-T``  Stop     Sends a ``play 0`` message.
-``C-C C-G``  Restart  Sends a ``play 0`` message followed by ``play 1``.
-``C-C C-I``  Dsp On   Sends a ``pd dsp 1``, which enables audio processing.
-``C-C C-O``  Dsp Off  Sends a ``pd dsp 0``, which disables audio processing.
-===========  =======  ======================================================
+===========  ============   ==================================================
+``C-C C-X``  Quick Reload   Sends a ``bang`` message to reload object scripts.
+``C-C M-X``  Full Reload    Sends a ``reload`` message to reload everything.
+``C-C C-M``  Message  	    Prompts for a message and sends it to pure-remote.
+``C-C C-S``  Play     	    Sends a ``play 1`` message.
+``C-C C-T``  Stop     	    Sends a ``play 0`` message.
+``C-C C-G``  Restart  	    Sends a ``play 0`` message followed by ``play 1``.
+``C-C C-I``  Dsp On   	    Sends a ``pd dsp 1`` (enable audio processing).
+``C-C C-O``  Dsp Off  	    Sends a ``pd dsp 0`` (disable audio processing).
+===========  ============   ==================================================
 
 Of course you can easily add more like these, just have a look at how the
 keybindings are implemented in pure-remote.el and create your own in an
-analogous fashion. Combining pure-remote.el with the Emacs Pure programming
-mode gives you a nice interactive environment for developing pd-pure
+analogous fashion. To enable these bindings, you have to load pure-remote.el
+in your emacs startup file (usually .emacs in your home directory), or just
+include the definitions from pure-remote.el in that file. If you combine this
+with the Pure programming mode for :program:`emacs` included in the Pure
+distribution, you get a nice interactive environment for developing pd-pure
 applications.
 
 Programming Interface
-=====================
+---------------------
 
 The Pure loader provides a number of interface routines which can be called by
 Pure scripts running in the Pd environment.
