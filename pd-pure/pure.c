@@ -291,6 +291,7 @@ typedef struct _pure {
   pure_expr *foo;		/* the object function */
   char *args;			/* creation arguments */
   void *tmp, *tmpst;		/* temporary storage */
+  bool save;			/* enables the pd_save/pd_restore feature */
   pure_expr *sigx;		/* Pure expression holding the input signal */
   /* asynchronous messaging */
   t_clock *clock;		/* wakeup for asynchronous processing */
@@ -958,7 +959,7 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
   x->in = 0;
   x->out = 0;
   x->args = get_expr(s, argc, argv);
-  x->tmp = x->tmpst = 0;
+  x->tmp = x->tmpst = 0; x->save = false;
   /* Default setup for a dsp object is 1 control in/out + 1 audio in/out. */
   if (is_dsp)
     x->n_dspin = x->n_dspout = 1;
@@ -1012,6 +1013,12 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
 	}
       }
       if (xv) free(xv);
+      {
+	pure_expr *y = pure_get_sentry(x->foo);
+	int32_t sym;
+	x->save = y && pure_is_symbol(y, &sym) && sym==save_sym;
+	if (x->save) pure_clear_sentry(y);
+      }
     } else {
       const char *err = lasterr();
       pd_error(x, "pd-pure: error in '%s' creation function", s->s_name);
@@ -1086,13 +1093,15 @@ static void pure_fini(t_pure *x)
 static void pure_refini(t_pure *x)
 {
   if (x->foo) {
-    /* Record object state, if available. */
-    pure_expr *st = pure_app(x->foo, pure_quoted_symbol(save_sym)), *g, *y;
-    int32_t sym;
-    if (!pure_is_app(st, &g, &y) || g != x->foo ||
-	!pure_is_symbol(y, &sym) || sym != save_sym)
-      x->tmpst = make_blob(st);
-    pure_freenew(st);
+    if (x->save) {
+      /* Record object state, if available. */
+      pure_expr *st = pure_app(x->foo, pure_quoted_symbol(save_sym)), *g, *y;
+      int32_t sym;
+      if (!pure_is_app(st, &g, &y) || g != x->foo ||
+	  !pure_is_symbol(y, &sym) || sym != save_sym)
+	x->tmpst = make_blob(st);
+      pure_freenew(st);
+    }
     pure_free(x->foo);
     x->foo = 0;
   }
@@ -1126,6 +1135,12 @@ static void pure_reinit(t_pure *x)
 	   creation time, can't change them here. */
       }
       if (xv) free(xv);
+      {
+	pure_expr *y = pure_get_sentry(x->foo);
+	int32_t sym;
+	x->save = y && pure_is_symbol(y, &sym) && sym==save_sym;
+	if (x->save) pure_clear_sentry(y);
+      }
     }
   }
   if (x->tmp) {
@@ -1289,12 +1304,12 @@ static void pure_restart(void)
     /* Restore the working directory. */
     if (cwd) chdir(cwd);
   }
-  for (x = xhead; x; x = x->next)
-    pure_reinit(x);
   void_sym = pure_sym("()");
   delay_sym = pure_sym("pd_delay");
   save_sym = pure_sym("pd_save");
   restore_sym = pure_sym("pd_restore");
+  for (x = xhead; x; x = x->next)
+    pure_reinit(x);
 }
 
 /* Same as above, but only reload the scripts after clearing temporaries,
@@ -1316,12 +1331,12 @@ static void pure_reload(void)
     /* Restore the working directory. */
     if (cwd) chdir(cwd);
   }
-  for (x = xhead; x; x = x->next)
-    pure_reinit(x);
   void_sym = pure_sym("()");
   delay_sym = pure_sym("pd_delay");
   save_sym = pure_sym("pd_save");
   restore_sym = pure_sym("pd_restore");
+  for (x = xhead; x; x = x->next)
+    pure_reinit(x);
 }
 
 /* Methods of the runtime class. */
