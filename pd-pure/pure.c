@@ -265,6 +265,7 @@ extern void pd_setbuffer(const char *name, pure_expr *x)
 
 static pure_interp *interp = 0;
 static int void_sym = 0, delay_sym = 0;
+static int save_sym = 0, restore_sym = 0;
 
 /* The Pure object class. */
 
@@ -289,7 +290,7 @@ typedef struct _pure {
   /* Pure interface */
   pure_expr *foo;		/* the object function */
   char *args;			/* creation arguments */
-  void *tmp;			/* temporary storage */
+  void *tmp, *tmpst;		/* temporary storage */
   pure_expr *sigx;		/* Pure expression holding the input signal */
   /* asynchronous messaging */
   t_clock *clock;		/* wakeup for asynchronous processing */
@@ -957,7 +958,7 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
   x->in = 0;
   x->out = 0;
   x->args = get_expr(s, argc, argv);
-  x->tmp = 0;
+  x->tmp = x->tmpst = 0;
   /* Default setup for a dsp object is 1 control in/out + 1 audio in/out. */
   if (is_dsp)
     x->n_dspin = x->n_dspout = 1;
@@ -1085,6 +1086,13 @@ static void pure_fini(t_pure *x)
 static void pure_refini(t_pure *x)
 {
   if (x->foo) {
+    /* Record object state, if available. */
+    pure_expr *st = pure_app(x->foo, pure_quoted_symbol(save_sym)), *g, *y;
+    int32_t sym;
+    if (!pure_is_app(st, &g, &y) || g != x->foo ||
+	!pure_is_symbol(y, &sym) || sym != save_sym)
+      x->tmpst = make_blob(st);
+    pure_freenew(st);
     pure_free(x->foo);
     x->foo = 0;
   }
@@ -1094,6 +1102,7 @@ static void pure_refini(t_pure *x)
     x->sig = 0;
   }
   if (x->msg) {
+    /* Save pending timer callback. */
     x->tmp = make_blob(x->msg);
     pure_free(x->msg);
     x->msg = 0;
@@ -1120,9 +1129,20 @@ static void pure_reinit(t_pure *x)
     }
   }
   if (x->tmp) {
+    /* Restore pending timer callback. */
     x->msg = parse_blob(x->tmp);
     if (x->msg) pure_new(x->msg);
     free(x->tmp); x->tmp = 0;
+  }
+  if (x->tmpst) {
+    /* Restore previously recorded state. */
+    pure_expr *st;
+    if (x->foo && (st = parse_blob(x->tmpst))) {
+      pure_expr *y =
+	pure_app(x->foo, pure_app(pure_quoted_symbol(restore_sym), st));
+      if (y) pure_freenew(y);
+    }
+    free(x->tmpst); x->tmpst = 0;
   }
   if (x->n > 0) {
     x->sig = create_double_matrix(x->n_dspin, x->n);
@@ -1273,6 +1293,8 @@ static void pure_restart(void)
     pure_reinit(x);
   void_sym = pure_sym("()");
   delay_sym = pure_sym("pd_delay");
+  save_sym = pure_sym("pd_save");
+  restore_sym = pure_sym("pd_restore");
 }
 
 /* Same as above, but only reload the scripts after clearing temporaries,
@@ -1298,6 +1320,8 @@ static void pure_reload(void)
     pure_reinit(x);
   void_sym = pure_sym("()");
   delay_sym = pure_sym("pd_delay");
+  save_sym = pure_sym("pd_save");
+  restore_sym = pure_sym("pd_restore");
 }
 
 /* Methods of the runtime class. */
@@ -1375,6 +1399,8 @@ extern void pure_setup(void)
     s_reload = gensym("reload");
     void_sym = pure_sym("()");
     delay_sym = pure_sym("pd_delay");
+    save_sym = pure_sym("pd_save");
+    restore_sym = pure_sym("pd_restore");
   } else
     error("pd-pure: error initializing interpreter; loader not registered");
 }
