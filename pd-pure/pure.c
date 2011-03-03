@@ -289,7 +289,7 @@ typedef struct _pure {
   /* Pure interface */
   pure_expr *foo;		/* the object function */
   char *args;			/* creation arguments */
-  char *tmp;			/* temporary storage */
+  void *tmp;			/* temporary storage */
   pure_expr *sigx;		/* Pure expression holding the input signal */
   /* asynchronous messaging */
   t_clock *clock;		/* wakeup for asynchronous processing */
@@ -364,6 +364,32 @@ static t_classes *lookup_script(t_symbol *sym, const char *dir)
   if (act)
     return act;
   else
+    return 0;
+}
+
+/* Helper functions to serialize Pure expressions for temporary storage. */
+
+static void *make_blob(pure_expr *x)
+{
+  void *p = 0;
+  pure_expr *b = blob(x);
+  if (b) {
+    if (pure_is_pointer(b, &p)) pure_clear_sentry(b);
+    pure_freenew(b);
+  }
+  return p;
+}
+
+static pure_expr *parse_blob(void *p)
+{
+  if (p) {
+    pure_expr *b = pure_pointer(p), *x = 0;
+    if (b) {
+      x = val(b);
+      pure_freenew(b);
+    }
+    return x;
+  } else
     return 0;
 }
 
@@ -1068,7 +1094,7 @@ static void pure_refini(t_pure *x)
     x->sig = 0;
   }
   if (x->msg) {
-    x->tmp = str(x->msg);
+    x->tmp = make_blob(x->msg);
     pure_free(x->msg);
     x->msg = 0;
   }
@@ -1094,7 +1120,7 @@ static void pure_reinit(t_pure *x)
     }
   }
   if (x->tmp) {
-    x->msg = parse_expr(x, x->tmp);
+    x->msg = parse_blob(x->tmp);
     if (x->msg) pure_new(x->msg);
     free(x->tmp); x->tmp = 0;
   }
