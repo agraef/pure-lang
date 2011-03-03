@@ -820,24 +820,28 @@ allows Pure objects to record their internal state before a script gets
 reloaded, and restore it afterwards. To these ends, a Pure object may respond
 to the following two messages:
 
-* Before reloading, each Pure object will receive the ``pd_save`` message.  In
+* Before reloading, the Pure object will receive the ``pd_save`` message. In
   response, the object should return a Pure expression encoding its internal
   state in a way which can be serialized (see the description of the
   :pure:func:`blob` function in the :doc:`purelib` for details). Usually, it
   is sufficient to just pack up all state data in a tuple, list or some other
   aggregate and return that as the response to the ``pd_save`` message.
 
-* After reloading, each Pure object will receive a ``pd_restore state``
+* After reloading, the Pure object will receive a ``pd_restore state``
   message, where ``state`` is the previously recorded state, as returned by
   the object in response to the ``pd_save`` message. It should then restore
   its internal state from the saved data. (The return value of this message
   invocation is ignored.)
 
-For instance, here's the counter example from `Local State`_ again, with the
-necessary additions to support the ``pd_save``/``pd_restore`` protocol::
+In order to participate in the ``pd_save``/``pd_restore`` protocol, an object
+must subscribe to it. This is done by setting ``pd_save`` as a sentry on the
+object function (see the description of the :pure:func:`sentry` function in
+the :doc:`purelib` for details). For instance, here's the counter example from
+`Local State`_ again, with the necessary additions to support the
+``pd_save``/``pd_restore`` protocol::
 
   nonfix bang pd_save;
-  counter = next (ref 0) with
+  counter = sentry pd_save $ next (ref 0) with
     next r bang = put r (get r+1);
     next r pd_save = get r;
     next r (pd_restore n) = put r n;
