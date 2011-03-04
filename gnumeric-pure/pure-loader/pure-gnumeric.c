@@ -862,18 +862,22 @@ pure_expr *pure_datasource(pure_expr *x)
       /* child */
       FILE *pure_async_file = fopen(pure_async_filename, "ab");
       /* evaluate expression, and write results to the pipe */
-      pure_expr *u = pure_force(pure_new(x)), *y, *z;
+      pure_expr *force = pure_new(pure_symbol(pure_sym("::force")));
+      pure_expr *e, *u = pure_appx(force, pure_new(x), &e), *y, *z;
 #if 0
       fprintf(stderr, "[%d] child: %p-%p-%u\n", getpid(),
 	      key.node, key.dep, key.id);
 #endif
-      while (is_cons(u, &y, &z)) {
-	out(pure_async_file, &key, pure_force(y));
-	pure_new(pure_force(z));
+      while (u && is_cons(u, &y, &z)) {
+	y = pure_appx(force, y, &e);
+	out(pure_async_file, &key, y);
+	z = pure_appx(force, z, &e);
+	if (!z) exit(0); // exception
+	pure_new(z);
 	pure_free(u);
 	u = z;
       }
-      if (!is_nil(u))
+      if (u && !is_nil(u))
 	out(pure_async_file, &key, u);
       exit(0);
     } else if (pid > 0) {
