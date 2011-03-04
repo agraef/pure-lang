@@ -38,6 +38,29 @@ __lambda__ [x] (x+(2+x))
   state 0: #0
 } end;
 __lambda__ [x] (x+(2+x))
+f/*0*/ with f x/*0:1*/ = a/*0*/ x/*0:1*/ with a x/*0:1*/ = b/*1*/ x/*0:1*/ {
+  rule #0: a x = b x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}; b x/*0:1*/ = a/*1*/ x/*0:1*/ {
+  rule #0: b x = a x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end {
+  rule #0: f x = a x with a x = b x; b x = a x end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+f
+'(a __with__ [(a x-->b x),(b x-->a x)]);
+a __with__ [(a x-->b x),(b x-->a x)]
+'(a __with__ [(a x-->b x),(b x-->f x)]);
+a __with__ [(a x-->b x),(b x-->f x)]
+'(f 99 __with__ [(f x-->y __when__ [y-->g x]),(g x-->x+1)]);
+f 99 __with__ [(f x-->y __when__ [y-->g x]),(g x-->x+1)]
 let x = '__case__ 99 [x __type__ int-->x+1 __if__ x>0];
 x;
 __case__ 99 [x __type__ int-->x+1 __if__ x>0]
