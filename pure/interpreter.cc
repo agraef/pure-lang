@@ -1860,6 +1860,8 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
     string fname = "$$faust$"+modname+"$"+*it;
     Function *f = module->getFunction(fname);
     assert(f);
+    verifyFunction(*f);
+    if (FPM) FPM->run(*f);
     // The name under which the function is accessible in Pure.
     string asname = modname+"::"+*it;
     // The function type.
@@ -1895,8 +1897,6 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
     if (!sym) continue;
     ExternInfo info(sym->f, fname, rest, argt, f);
     cerr << "\n" << info << ";\n";
-    verifyFunction(*f);
-    if (FPM) FPM->run(*f);
     f->dump();
 #endif
   }
@@ -1993,6 +1993,8 @@ bool interpreter::LoadBitcode(bool priv, const char *name, string *msg)
     string fname = *it;
     Function *f = module->getFunction(fname);
     assert(f);
+    verifyFunction(*f);
+    if (FPM) FPM->run(*f);
     // The name under which the function is accessible in Pure.
     string asname = fname;
     // The function type.
@@ -2033,8 +2035,6 @@ bool interpreter::LoadBitcode(bool priv, const char *name, string *msg)
       if (!sym) continue;
       ExternInfo info(sym->f, fname, rest, argt, f, varargs);
       cerr << "\n" << info << ";\n";
-      verifyFunction(*f);
-      if (FPM) FPM->run(*f);
       f->dump();
 #endif
     } else {
