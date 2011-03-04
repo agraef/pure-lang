@@ -725,10 +725,11 @@ public:
   expr lcsubst(expr x);
   expr rsubst(expr x, bool quote = false);
   expr ifsubst(expr x);
-  expr vsubst(expr x, int offs, uint8_t idx = 0);
+  expr vsubst(expr x, int offs, int offs1, uint8_t idx = 0);
+  expr vsubst(expr x, int offs) { return vsubst(x, offs, offs, 0); }
   expr vsubst(expr x);
   expr macsubst(expr x, bool quote = false);
-  expr varsubst(expr x, uint8_t offs, uint8_t idx = 0);
+  expr varsubst(expr x, uint8_t offs, uint8_t idx = 0, uint8_t idx1 = 0);
   expr macred(expr x, expr y, uint8_t idx = 0);
   expr macval(expr x);
   expr maceval(expr x);
