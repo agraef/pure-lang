@@ -61,6 +61,14 @@ a __with__ [(a x-->b x),(b x-->a x)]
 a __with__ [(a x-->b x),(b x-->f x)]
 '(f 99 __with__ [(f x-->y __when__ [y-->g x]),(g x-->x+1)]);
 f 99 __with__ [(f x-->y __when__ [y-->g x]),(g x-->x+1)]
+eval ('(foo __with__ [foo x-->() __with__ [(bar x-->baz u __when__ [u-->x]),(baz x-->())]]));
+foo
+eval ('(foo __with__ [foo x-->() __with__ [(bar x-->baz x __when__ [_-->()]),(baz x-->())] __when__ [_-->()]]));
+foo
+'(foo __with__ [foo (x:xs) n-->foo xs (n-1) __if__ n>0]);
+foo __with__ [foo (x:xs) n-->foo xs (n-1) __if__ n>0]
+'(foo __with__ [foo (x __as__ [])-->[]]);
+foo __with__ [foo (x __as__ [])-->[]]
 let x = '__case__ 99 [x __type__ int-->x+1 __if__ x>0];
 x;
 __case__ 99 [x __type__ int-->x+1 __if__ x>0]

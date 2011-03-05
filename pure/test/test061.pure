@@ -18,6 +18,12 @@ f __with__ [f x-->a x __with__ [(a x-->b x),(b x-->a x)]];
 '(a with a x = b x; b x = f x end);
 '(f 99 with g x = x+1; f x = y when y = g x end end);
 
+// Fixed in rev. eedc4f57f4.
+eval ('(foo __with__ [foo x --> () __with__ [(bar x --> baz u __when__ [u-->x]), (baz x--> ())]]));
+eval ('(foo __with__ [foo x --> () __with__ [(bar x --> baz x __when__ [_ --> ()]), (baz x --> ())] __when__ [_ --> ()]]));
+'(foo with foo (x:xs) n = foo xs (n-1) if n>0; end);
+'(foo with foo x@[] = [] end);
+
 let x = '(case 99 of x::int = x+1 if x>0 end);
 x; eval x;
 let x = '(x+1 when x::int = 99 end);
