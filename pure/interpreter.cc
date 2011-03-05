@@ -7510,7 +7510,7 @@ expr interpreter::quoted_env(env *defs)
 			  vsubst(jt->rhs, 1, 2)));
       else
 	xs.push_back(expr(symtab.eqn_sym().x, vsubst(jt->lhs),
-			  expr(symtab.if_sym().x, vsubst(jt->rhs, 1),
+			  expr(symtab.if_sym().x, vsubst(jt->rhs, 1, 2),
 			       vsubst(jt->qual, 1, 2))));
   }
   return expr::list(xs);
