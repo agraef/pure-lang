@@ -2548,6 +2548,12 @@ def __std__::__do__ (__lambda__ [x/*0:10101*/] (__ifelse__ y/*0:11001*/ z/*0:110
 def __std__::__do__ (__lambda__ [x/*0:10101*/] (void y/*0:111*/)) = __std__::__do__ (__lambda__ [x/*0:10101*/] y/*0:111*/);
 def __std__::__do__ (__lambda__ [x/*0:10101*/] (__ifelse__ y/*0:11001*/ (void z/*0:11011*/) ())) = __std__::__do__ (__lambda__ [x/*0:10101*/] (__ifelse__ y/*0:11001*/ z/*0:11011*/ ()));
 def __std__::__do__ f/*0:1*/ = do f/*0:1*/;
+__C::pure_quoted_symbol s/*0:1*/::string = __C::pure_quoted_symbol id/*0:*/ if id/*0:*/>0 when id/*0:*/::int = __C::pure_getsym s/*0:1*/ {
+  rule #0: id::int = __C::pure_getsym s
+  state 0: #0
+	<var>::int state 1
+  state 1: #0
+} end;
 globsym pat/*0:01*/::string level/*0:1*/::int = uniq/*3*/ (catmap descr/*3*/ info/*0:*/) when res/*0:*/ = evalcmd ("show -gst"+str level/*0:1*/+" "+pat/*0:01*/); stringp res/*0:*/||throw evalcmd; info/*0:*/ = init (init (split "\n" res/*1:*/)) {
   rule #0: info = init (init (split "\n" res))
   state 0: #0
@@ -2609,8 +2615,13 @@ globsym pat/*0:01*/::string level/*0:1*/::int = uniq/*3*/ (catmap descr/*3*/ inf
   state 20: #0 #1
 	<var> state 21
   state 21: #0 #1
-}; descr s/*0:1*/::string = case filter (flip (~=) "") (split " " s/*0:1*/) of sym/*0:01*/:_/*0:1*/ = if any (flip (==) sym/*0:01*/) ["extern","infix","infixl","infixr","prefix","postfix","outfix","nonfix"] then [] else [val ("("+sym/*0:01*/+")")]; _/*0:*/ = [] {
-  rule #0: sym:_ = if any (flip (==) sym) ["extern","infix","infixl","infixr","prefix","postfix","outfix","nonfix"] then [] else [val ("("+sym+")")]
+}; descr s/*0:1*/::string = case filter (flip (~=) "") (split " " s/*0:1*/) of sym/*0:01*/:_/*0:1*/ = if any (flip (==) sym/*0:01*/) ["extern","private","infix","infixl","infixr","prefix","postfix","outfix","nonfix"] then [] else catmap (\x/*0:1*/ -> if symbolp x/*0:1*/ then [x/*0:1*/] else [] {
+  rule #0: _ x = if symbolp x then [x] else []
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) [__C::pure_quoted_symbol sym/*0:01*/]; _/*0:*/ = [] {
+  rule #0: sym:_ = if any (flip (==) sym) ["extern","private","infix","infixl","infixr","prefix","postfix","outfix","nonfix"] then [] else catmap (\x -> if symbolp x then [x] else []) [__C::pure_quoted_symbol sym]
   rule #1: _ = []
   state 0: #0 #1
 	<var> state 1
@@ -2636,7 +2647,7 @@ globsym pat/*0:01*/::string level/*0:1*/::int = uniq/*3*/ (catmap descr/*3*/ inf
 	<var> state 11
   state 11: #0 #1
 } end {
-  rule #0: descr s::string = case filter (flip (~=) "") (split " " s) of sym:_ = if any (flip (==) sym) ["extern","infix","infixl","infixr","prefix","postfix","outfix","nonfix"] then [] else [val ("("+sym+")")]; _ = [] end
+  rule #0: descr s::string = case filter (flip (~=) "") (split " " s) of sym:_ = if any (flip (==) sym) ["extern","private","infix","infixl","infixr","prefix","postfix","outfix","nonfix"] then [] else catmap (\x -> if symbolp x then [x] else []) [__C::pure_quoted_symbol sym]; _ = [] end
   state 0: #0
 	<var>::string state 1
   state 1: #0

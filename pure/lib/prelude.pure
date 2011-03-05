@@ -1646,6 +1646,15 @@ def __do__ f = do f;
 
 /* List defined symbols using evalcmd "show". */
 
+namespace __C;
+// These are provided by the runtime.
+extern int pure_getsym(char*);
+extern expr *pure_quoted_symbol(int);
+pure_quoted_symbol s::string = pure_quoted_symbol id if id>0 when
+  id::int = pure_getsym s;
+end;
+namespace;
+
 globsym pat::string level::int = uniq $ catmap descr info when
   res = evalcmd $ "show -gst"+str level+" "+pat;
   stringp res || throw evalcmd;
@@ -1653,9 +1662,9 @@ globsym pat::string level::int = uniq $ catmap descr info when
 end with
   descr s::string = case filter (~="") $ split " " s of
     sym:_ =
-      if any (==sym) ["extern", "infix", "infixl", "infixr",
+      if any (==sym) ["extern", "private", "infix", "infixl", "infixr",
 		      "prefix", "postfix", "outfix", "nonfix"] then []
-      else [val ("("+sym+")")];
+      else [x | x = [__C::pure_quoted_symbol sym]; symbolp x];
     _ = [] otherwise;
   end;
   uniq (x:xs@(y:_)) = if x===y then uniq xs else x:uniq xs;
