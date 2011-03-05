@@ -144,16 +144,16 @@ static prec_t expr_nprec(expr x, bool aspat = true)
     if (x.is_list())
       return NPREC_MAX;
     else if (x.is_app(u, v))
-      if (u.tag() > 0 &&
-	  interpreter::g_interp->symtab.sym(u.tag()).fix == outfix)
+      if (u.ftag() > 0 &&
+	  interpreter::g_interp->symtab.sym(u.ftag()).fix == outfix)
 	// unary outfix
 	return NPREC_MAX;
-      else if (u.tag() > 0 &&
-	       (p = sym_nprec(u.tag())) < NPREC_MAX && prec(p) >= 3)
+      else if (u.ftag() > 0 &&
+	       (p = sym_nprec(u.ftag())) < NPREC_MAX && prec(p) >= 3)
 	// unary (prefix, postfix)
 	return p;
-      else if (u.is_app(v, w) && v.tag() > 0 &&
-	       (p = sym_nprec(v.tag())) < NPREC_MAX && prec(p) < 3)
+      else if (u.is_app(v, w) && v.ftag() > 0 &&
+	       (p = sym_nprec(v.ftag())) < NPREC_MAX && prec(p) < 3)
 	// binary (infix, infixl, infixr)
 	return p;
       else
@@ -464,10 +464,10 @@ ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
       }
       return os;
     } else if (x.is_app(u, v)) {
-      if (u.tag() > 0 &&
-	  interpreter::g_interp->symtab.sym(u.tag()).fix == outfix) {
+      if (u.ftag() > 0 &&
+	  interpreter::g_interp->symtab.sym(u.ftag()).fix == outfix) {
 	// unary outfix
-	int32_t f = u.tag(), g = interpreter::g_interp->symtab.sym(f).g;
+	int32_t f = u.ftag(), g = interpreter::g_interp->symtab.sym(f).g;
 	string blank1 = sym_padding(f), blank2 = sym_padding(g);
 	return os << pname(f) << blank1 << pattern(v, pat)
 		  << blank2 << pname(g);
