@@ -5992,9 +5992,14 @@ expr interpreter::vsubst(expr x)
     expr w = expr(u, v);
     return quoted_tag(w, x.astag());
   }
-  default:
+  default: {
     assert(x.tag() > 0);
-    return quoted_tag(x, x.astag());
+    if (x.astag()) {
+      expr u = expr(x.tag());
+      return quoted_tag(u, x.astag());
+    } else
+      return x;
+  }
   }
 }
 
