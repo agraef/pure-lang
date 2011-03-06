@@ -2835,11 +2835,13 @@ expr interpreter::pure_expr_to_expr(pure_expr *x, bool check)
 	 batch-compiling. */
       return wrap_expr(x, check);
     else {
-      expr y = expr(x->tag);
       assert(x->tag > 0);
+      expr y = expr(x->tag);
+#if 0
       symbol& sym = symtab.sym(x->tag);
       if (sym.s.find("::") != string::npos)
 	y.flags() |= EXPR::QUAL;
+#endif
       return y;
     }
   }
