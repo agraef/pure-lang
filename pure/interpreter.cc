@@ -6624,7 +6624,6 @@ expr interpreter::tagsubst(expr x)
     }
   }
   default:
-    assert(x.tag() > 0);
     return x;
   }
 }
