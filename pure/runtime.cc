@@ -8093,12 +8093,16 @@ extern "C"
 pure_expr *__str__(pure_expr *x)
 {
   assert(x);
-  interpreter& interp = *interpreter::g_interp;
-  expr y = interp.macsval(x);
-  ostringstream os;
-  os << y;
-  string s = os.str();
-  return pure_cstring_dup(s.c_str());
+  try {
+    interpreter& interp = *interpreter::g_interp;
+    expr y = interp.macsval(x);
+    ostringstream os;
+    os << y;
+    string s = os.str();
+    return pure_cstring_dup(s.c_str());
+  } catch (err &e) {
+    return 0;
+  }
 }
 
 extern "C"

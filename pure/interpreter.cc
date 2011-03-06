@@ -2834,8 +2834,14 @@ expr interpreter::pure_expr_to_expr(pure_expr *x, bool check)
 	 in a global variable. We also do this for global closures when
 	 batch-compiling. */
       return wrap_expr(x, check);
-    else
-      return expr(x->tag);
+    else {
+      expr y = expr(x->tag);
+      assert(x->tag > 0);
+      symbol& sym = symtab.sym(x->tag);
+      if (sym.s.find("::") != string::npos)
+	y.flags() |= EXPR::QUAL;
+      return y;
+    }
   }
 }
 
