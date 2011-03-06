@@ -1,0 +1,32 @@
+
+/* Do a comprehensive test of quoted specials using rules from the standard
+   library. This covers all public function definitions from the modules
+   listed below. For each rule, we construct a local function definition, test
+   that it can be quoted correctly and that the quoted definition translates
+   back to the proper macro call. If the final bootstrap test prints any diffs
+   then there's something wrong in the special/macro machinery which must be
+   fixed. */
+
+using system, getopt, math, array, heap, dict, set;
+
+publicp x::symbol = symbolp (val (str x));
+
+// Construct the basic rule set.
+let syms = [sym | sym = globsym "*" 0; publicp sym && ~null (get_fundef sym)];
+let R = [sym __with__ get_fundef sym | sym = syms];
+
+// Sort out definitions which won't pretty-print or evaluate properly because
+// they involve qualified symbols or runtime data.
+let R2 = [x | x = R; stringp s &&
+	  (eval (sprintf "'(%s)" (__str__ x)) $$ null lasterr)
+	  when s = __str__ x end];
+// Do one extra iteration to get rid of representation discrepancies (mostly
+// double literals).
+let R2 = [eval (sprintf "'(%s)" (__str__ x)) | x = R2];
+let R3 = [eval (sprintf "'(%s)" (__str__ x)) | x = R2];
+
+// This should always yield true.
+R2===R3;
+
+// If not, the "diffs" are printed here.
+do (printf ">>> %s\n<<< %s\n") [str x,str y | x,y = zip R2 R3; x~==y];

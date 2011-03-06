@@ -1,0 +1,788 @@
+publicp x/*0:1*/::symbol = symbolp (val (str x/*0:1*/));
+{
+  rule #0: publicp x::symbol = symbolp (val (str x))
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+{
+  rule #0: syms = catmap (\sym -> if publicp sym&&~null (get_fundef sym) then [sym] else []) (globsym "*" 0)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let syms = catmap (\sym/*0:1*/ -> if publicp sym/*0:1*/&&~null (get_fundef sym/*0:1*/) then [sym/*0:1*/] else [] {
+  rule #0: _ sym = if publicp sym&&~null (get_fundef sym) then [sym] else []
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) (globsym "*" 0);
+{
+  rule #0: R = listmap (\sym -> sym __with__ get_fundef sym) syms
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let R = listmap (\sym/*0:1*/ -> sym/*0:1*/ __with__ get_fundef sym/*0:1*/ {
+  rule #0: _ sym = sym __with__ get_fundef sym
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) syms;
+{
+  rule #0: R2 = catmap (\x -> if (stringp s&&(eval (sprintf "'(%s)" (__str__ x))$$null lasterr) when s = __str__ x end) then [x] else []) R
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+'((!!) __with__ [(x!!ns ::matrix-->x!!list ns),(x!!(ns ::matrix,ms)-->x!!(list ns,ms) __if__ ~tuplep ms),(x!!(ns,ms ::matrix)-->x!!(ns,list ms)),(x!!(ns ::int,ms)-->x!!([ns],ms) __if__ ~tuplep ms),(x!!(ns,ms ::int)-->x!!(ns,[ms])),(x ::matrix!!(ns,ms)-->__case__ (ns,ms) [(ns __as__ (n:_),ms __as__ (m:_)-->submat x (n,m) (#ns,#ms) __if__ cont ns&&cont ms),(_-->colcatmap (mth (rowcatmap (nth x) ns)) ms)] __with__ [(cont [n ::int]-->1),(cont (n ::int:ns __as__ (m ::int:_))-->cont ns __if__ m==n+1),(cont _-->0),(mth x m-->catch (cst {}) (col x m)),(nth x n-->catch (cst {}) (row x n))]),(x ::matrix!!ns-->__ifelse__ (all intp ns&&packed x) (rowvector x!!([0],ns)) (colcatmap (nth x) ns) __with__ [nth x n-->catch (cst {}) {x!n}]),(s ::string!!ns-->__case__ ns [(ns __as__ (n:_)-->substr s n (count ns) __if__ cont ns),(_-->string (chars s!!ns))] __with__ [(cont [n ::int]-->1),(cont (n ::int:ns __as__ (m ::int:_))-->cont ns __if__ m==n+1),(cont _-->0),(count ns-->#dropwhile (__lambda__ [n,::int] (n<0)) ns)]),(xs __as__ ()!!ns-->tuple (list xs!!ns)),(xs __as__ (_,_)!!ns-->tuple (list xs!!ns)),(xs!!ns-->ys __if__ ok ys __when__ [ys-->__case__ ns [(ns __as__ (n ::int:_)-->list (take (count ns) (drop n xs)) __if__ listp xs&&cont ns),(_-->catmap (nth xs) ns)]] __with__ [(cont (n ::int:ns)-->~thunkp ns&&__case__ ns [([]-->1),(m ::int:_-->cont ns __if__ m==n+1),(_-->0)]),(nth xs n-->catch (cst []) [xs!n]),(count ns-->#dropwhile (__lambda__ [n,::int] (n<0)) ns),(ok (catmap (nth _) _)-->0),(ok _-->1)]),(x __as__ Array _!!(is,js)-->listmap (__lambda__ [i] (cat (listmap (__lambda__ [j] (catch (cst []) [x!i!j])) js))) is)]);
+'(($) __with__ [f$x-->f x]);
+'(($$) __with__ [x$$y-->y]);
+'((%) __with__ [(x ::bigint%0L-->x div 0L),(x ::bigint%y ::bigint-->(-x)%(-y) __if__ y<0),(x ::bigint%y ::bigint-->x div d%(y div d) __if__ d>1 __when__ [d-->gcd x y]),(x ::int%y ::bigint-->bigint x%y),(x ::bigint%y ::int-->x%bigint y),(x ::int%y ::int-->bigint x%bigint y),(x1%y1%(x2%y2)-->x1*y2%(y1*x2)),(x1%y1%x2 ::int-->x1%(y1*x2)),(x1%y1%x2 ::bigint-->x1%(y1*x2)),(x1 ::int%(x2%y2)-->x1*y2%x2),(x1 ::bigint%(x2%y2)-->x1*y2%x2),(z1 __as__ (_+:_)%z2 __as__ (_<:_)-->z1/z2),(z1 __as__ (_<:_)%z2 __as__ (_+:_)-->z1/z2),((x1+:y1)%(x2+:y2)-->(x1*x2+y1*y2)%d+:(y1*x2-x1*y2)%d __when__ [d-->x2*x2+y2*y2]),((r1<:t1)%(r2<:t2)-->r1%r2<:t1-t2),((x1+:y1)%x2-->x1*x2%d+:y1*x2%d __when__ [d-->x2*x2] __if__ realp x2),(x1%(x2+:y2)-->x1*x2%d+:(-x1*y2)%d __when__ [d-->x2*x2+y2*y2] __if__ realp x1),((r1<:t1)%x2-->r1%x2<:t1 __if__ realp x2),(x1%(r2<:t2)-->x1%r2<:-t2 __if__ realp x1),(x ::double%y-->x/y __if__ numberp y),(x%y ::double-->x/y __if__ numberp x)]);
+'((&) __with__ [x&-->x]);
+'((&&) __with__ [x ::int&&y-->x&&y]);
+'((') __with__ ['x-->x]);
+'((*) __with__ [(x ::int*y ::int-->x*y),(x ::double*y ::double-->x*y),(x ::int*y ::double-->x*y),(x ::double*y ::int-->x*y),(x ::bigint*y ::bigint-->__C::bigint_mul x y),(x ::int*y ::bigint-->bigint x*y),(x ::bigint*y ::int-->x*bigint y),(x ::bigint*y ::double-->double x*y),(x ::double*y ::bigint-->x*double y),((x1+:y1)*(x2+:y2)-->x1*x2-y1*y2+:x1*y2+y1*x2),((r1<:t1)*(r2<:t2)-->r1*r2<:t1+t2),(z1 __as__ (x1+:y1)*z2 __as__ (r2<:t2)-->z1*rect z2),(z1 __as__ (r1<:t1)*z2 __as__ (x2+:y2)-->rect z1*z2),(z1 __as__ (x1+:y1)*x2-->z1*rect x2 __if__ realp x2),(x1*z2 __as__ (x2+:y2)-->rect x1*z2 __if__ realp x1),((r1<:t1)*x2-->r1*x2<:t1 __if__ realp x2),(x1*(r2<:t2)-->x1*r2<:t2 __if__ realp x1),(x1%y1*(x2%y2)-->x1*x2%(y1*y2)),(x1%y1*x2 ::int-->x1*x2%y1),(x1%y1*x2 ::bigint-->x1*x2%y1),(x1 ::int*(x2%y2)-->x1*x2%y2),(x1 ::bigint*(x2%y2)-->x1*x2%y2),(x1%y1*x2-->x1/y1*x2 __if__ numberp x2),(x1*(x2%y2)-->x1*(x2/y2) __if__ numberp x1),(d1 __as__ Dict _*d2 __as__ Dict _-->d1-(d1-d2)),(d1 __as__ MDict _*d2 __as__ MDict _-->d1-(d1-d2)),(d1 __as__ HDict _*d2 __as__ HDict _-->d1-(d1-d2)),(d1 __as__ HMDict _*d2 __as__ HMDict _-->d1-(d1-d2)),(m1 __as__ HMDict _*m2-->m1*hmdict m2 __if__ xdictp m2),(m1*m2 __as__ HMDict _-->hmdict m1*m2 __if__ xdictp m1),(m1 __as__ HDict _*m2-->__case__ m2 [(MDict _-->hmdict m1*hmdict m2),(Dict _-->m1*hdict m2)] __if__ xdictp m2),(m1*m2 __as__ HDict _-->__case__ m1 [(MDict _-->hmdict m1*hmdict m2),(Dict _-->hdict m1*m2)] __if__ xdictp m2),(m1 __as__ MDict _*m2 __as__ Dict _-->m1*mdict m2),(m1 __as__ Dict _*m2 __as__ MDict _-->mdict m1*m2),(m1 __as__ Set _*m2 __as__ Set _-->m1-(m1-m2)),(m1 __as__ Bag _*m2 __as__ Bag _-->m1-(m1-m2)),(m1 __as__ HSet _*m2 __as__ HSet _-->m1-(m1-m2)),(m1 __as__ HBag _*m2 __as__ HBag _-->m1-(m1-m2)),(m1 __as__ HBag _*m2-->m1*hbag m2 __if__ xsetp m2),(m1*m2 __as__ HBag _-->hbag m1*m2 __if__ xsetp m1),(m1 __as__ HSet _*m2-->__case__ m2 [(Bag _-->hbag m1*hbag m2),(Set _-->m1*hset m2)] __if__ xsetp m2),(m1*m2 __as__ HSet _-->__case__ m1 [(Bag _-->hbag m1*hbag m2),(Set _-->hset m1*m2)] __if__ xsetp m2),(m1 __as__ Bag _*m2 __as__ Set _-->m1*bag m2),(m1 __as__ Set _*m2 __as__ Bag _-->bag m1*m2)]);
+'((+) __with__ [(x ::int+y ::int-->x+y),(x ::double+y ::double-->x+y),(x ::int+y ::double-->x+y),(x ::double+y ::int-->x+y),(x ::bigint+y ::bigint-->__C::bigint_add x y),(x ::int+y ::bigint-->bigint x+y),(x ::bigint+y ::int-->x+bigint y),(x ::bigint+y ::double-->double x+y),(x ::double+y ::bigint-->x+double y),(x ::pointer+y ::int-->pointer (bigint x+y)),(x ::pointer+y ::bigint-->pointer (bigint x+y)),(c ::string+n ::int-->chr (ord c+n) __if__ #c==1),(s ::string+t ::string-->__C::string_concat s t),(s ::string+[]-->chars s),(s ::string+xs __as__ (_:_)-->chars s+xs),([]+s ::string+[]-->chars s),(xs __as__ (_:_)+s ::string-->xs+chars s),([]+ys-->ys),(xs __as__ (_:_)+ys-->tick [] xs ys __with__ [(tick zs (x:xs) ys-->tack (x:zs) ((xs+ys)&) __if__ thunkp xs),(tick zs (x:xs) ys-->tick (x:zs) xs ys),(tick zs [] ys-->tack zs ys),(tick zs xs ys-->tack zs (xs+ys)),(tack (x:xs) ys-->tack xs (x:ys)),(tack [] ys-->ys)]),((x1+:y1)+(x2+:y2)-->x1+x2+:y1+y2),(z1 __as__ (r1<:t1)+z2 __as__ (r2<:t2)-->polar (rect z1+rect z2)),(z1 __as__ (x1+:y1)+z2 __as__ (r2<:t2)-->z1+rect z2),(z1 __as__ (r1<:t1)+z2 __as__ (x2+:y2)-->rect z1+z2),((x1+:y1)+x2-->x1+x2+:y1 __if__ realp x2),(x1+(x2+:y2)-->x1+x2+:y2 __if__ realp x1),(z1 __as__ (r1<:t1)+x2-->z1+polar x2 __if__ realp x2),(x1+z2 __as__ (r2<:t2)-->polar x1+z2 __if__ realp x1),(x1%y1+x2%y2-->(x1*y2+x2*y1)%(y1*y2)),(x1%y1+x2 ::int-->(x1+x2*y1)%y1),(x1%y1+x2 ::bigint-->(x1+x2*y1)%y1),(x1 ::int+x2%y2-->(x1*y2+x2)%y2),(x1 ::bigint+x2%y2-->(x1*y2+x2)%y2),(x1%y1+x2-->x1/y1+x2 __if__ numberp x2),(x1+x2%y2-->x1+x2/y2 __if__ numberp x1),(d1 __as__ Dict _+d2 __as__ Dict _-->foldl insert d1 (members d2)),(d1 __as__ MDict _+d2 __as__ MDict _-->foldl insert d1 (members d2)),(d1 __as__ HDict _+d2 __as__ HDict _-->foldl insert d1 (members d2)),(d1 __as__ HMDict _+d2 __as__ HMDict _-->foldl insert d1 (members d2)),(m1 __as__ HMDict _+m2-->m1+hmdict m2 __if__ xdictp m2),(m1+m2 __as__ HMDict _-->hmdict m1+m2 __if__ xdictp m1),(m1 __as__ HDict _+m2-->__case__ m2 [(MDict _-->hmdict m1+hmdict m2),(Dict _-->m1+hdict m2)] __if__ xdictp m2),(m1+m2 __as__ HDict _-->__case__ m1 [(MDict _-->hmdict m1+hmdict m2),(Dict _-->hdict m1+m2)] __if__ xdictp m2),(m1 __as__ MDict _+m2 __as__ Dict _-->m1+mdict m2),(m1 __as__ Dict _+m2 __as__ MDict _-->mdict m1+m2),(m1 __as__ Set _+m2 __as__ Set _-->foldl insert m1 (members m2)),(m1 __as__ Bag _+m2 __as__ Bag _-->foldl insert m1 (members m2)),(m1 __as__ HSet _+m2 __as__ HSet _-->foldl insert m1 (members m2)),(m1 __as__ HBag _+m2 __as__ HBag _-->foldl insert m1 (members m2)),(m1 __as__ HBag _+m2-->m1+hbag m2 __if__ xsetp m2),(m1+m2 __as__ HBag _-->hbag m1+m2 __if__ xsetp m1),(m1 __as__ HSet _+m2-->__case__ m2 [(Bag _-->hbag m1+hbag m2),(Set _-->m1+hset m2)] __if__ xsetp m2),(m1+m2 __as__ HSet _-->__case__ m1 [(Bag _-->hbag m1+hbag m2),(Set _-->hset m1+m2)] __if__ xsetp m2),(m1 __as__ Bag _+m2 __as__ Set _-->m1+bag m2),(m1 __as__ Set _+m2 __as__ Bag _-->bag m1+m2)]);
+'((,) __with__ [(x,()-->x),((),y-->y),((x,y),z-->x,y,z)]);
+'((-) __with__ [(x ::int-y ::int-->x-y),(x ::double-y ::double-->x-y),(x ::int-y ::double-->x-y),(x ::double-y ::int-->x-y),(x ::bigint-y ::bigint-->__C::bigint_sub x y),(x ::int-y ::bigint-->bigint x-y),(x ::bigint-y ::int-->x-bigint y),(x ::bigint-y ::double-->double x-y),(x ::double-y ::bigint-->x-double y),(x ::pointer-y ::pointer-->bigint x-bigint y),(x ::pointer-y ::int-->pointer (bigint x-y)),(x ::pointer-y ::bigint-->pointer (bigint x-y)),(c ::string-n ::int-->chr (ord c-n) __if__ #c==1&&ord c>=n),(c ::string-d ::string-->ord c-ord d __if__ #c==1&&#d==1),((x1+:y1)-(x2+:y2)-->x1-x2+:y1-y2),(z1 __as__ (r1<:t1)-z2 __as__ (r2<:t2)-->polar (rect z1-rect z2)),(z1 __as__ (x1+:y1)-z2 __as__ (r2<:t2)-->z1-rect z2),(z1 __as__ (r1<:t1)-z2 __as__ (x2+:y2)-->rect z1-z2),((x1+:y1)-x2-->x1-x2+:y1 __if__ realp x2),(x1-(x2+:y2)-->x1-x2+:-y2 __if__ realp x1),(z1 __as__ (r1<:t1)-x2-->z1-polar x2 __if__ realp x2),(x1-z2 __as__ (r2<:t2)-->polar x1-z2 __if__ realp x1),(x1%y1-x2%y2-->(x1*y2-x2*y1)%(y1*y2)),(x1%y1-x2 ::int-->(x1-x2*y1)%y1),(x1%y1-x2 ::bigint-->(x1-x2*y1)%y1),(x1 ::int-x2%y2-->(x1*y2-x2)%y2),(x1 ::bigint-x2%y2-->(x1*y2-x2)%y2),(x1%y1-x2-->x1/y1-x2 __if__ numberp x2),(x1-x2%y2-->x1-x2/y2 __if__ numberp x1),(d1 __as__ Dict _-d2 __as__ Dict _-->foldl delete_val d1 (members d2)),(d1 __as__ MDict _-d2 __as__ MDict _-->foldl delete_val d1 (members d2)),(d1 __as__ HDict _-d2 __as__ HDict _-->foldl delete_val d1 (members d2)),(d1 __as__ HMDict _-d2 __as__ HMDict _-->foldl delete_val d1 (members d2)),(m1 __as__ HMDict _-m2-->m1-hmdict m2 __if__ xdictp m2),(m1-m2 __as__ HMDict _-->hmdict m1-m2 __if__ xdictp m1),(m1 __as__ HDict _-m2-->__case__ m2 [(MDict _-->hmdict m1-hmdict m2),(Dict _-->m1-hdict m2)] __if__ xdictp m2),(m1-m2 __as__ HDict _-->__case__ m1 [(MDict _-->hmdict m1-hmdict m2),(Dict _-->hdict m1-m2)] __if__ xdictp m2),(m1 __as__ MDict _-m2 __as__ Dict _-->m1-mdict m2),(m1 __as__ Dict _-m2 __as__ MDict _-->mdict m1-m2),(m1 __as__ Set _-m2 __as__ Set _-->foldl delete m1 (members m2)),(m1 __as__ Bag _-m2 __as__ Bag _-->foldl delete m1 (members m2)),(m1 __as__ HSet _-m2 __as__ HSet _-->foldl delete m1 (members m2)),(m1 __as__ HBag _-m2 __as__ HBag _-->foldl delete m1 (members m2)),(m1 __as__ HBag _-m2-->m1-hbag m2 __if__ xsetp m2),(m1-m2 __as__ HBag _-->hbag m1-m2 __if__ xsetp m1),(m1 __as__ HSet _-m2-->__case__ m2 [(Bag _-->hbag m1-hbag m2),(Set _-->m1-hset m2)] __if__ xsetp m2),(m1-m2 __as__ HSet _-->__case__ m1 [(Bag _-->hbag m1-hbag m2),(Set _-->hset m1-m2)] __if__ xsetp m2),(m1 __as__ Bag _-m2 __as__ Set _-->m1-bag m2),(m1 __as__ Set _-m2 __as__ Bag _-->bag m1-m2)]);
+'((.) __with__ [(f.g) x-->f (g x)]);
+'((..) __with__ [(n ::int..m ::int-->__C::pure_int_seq n m 1),(n1 ::int:n2 ::int..m ::int-->__C::pure_int_seq n1 m (n2-n1) __if__ n1~=n2),(n ::double..m ::double-->__C::pure_double_seq n m 1.0 __if__ ~infp n&&~infp m),(n ::int..m ::double-->__C::pure_double_seq (double n) m 1.0 __if__ ~infp m),(n ::double..m ::int-->__C::pure_double_seq n (double m) 1.0 __if__ ~infp n),(n1 ::double:n2 ::double..m ::double-->__C::pure_double_seq n1 m (n2-n1) __if__ ~infp n1&&~infp m&&n1~=n2),(n1 ::int:n2 ::double..m ::double-->__C::pure_double_seq (double n1) m (n2-n1) __if__ ~infp m&&n1~=n2),(n1 ::double:n2 ::int..m ::double-->__C::pure_double_seq n1 m (n2-n1) __if__ ~infp n1&&~infp m&&n1~=n2),(n1 ::double:n2 ::double..m ::int-->__C::pure_double_seq n1 (double m) (n2-n1) __if__ ~infp n1&&n1~=n2),(n1 ::int:n2 ::int..m ::double-->__C::pure_double_seq (double n1) m (double (n2-n1)) __if__ ~infp m&&n1~=n2),(n1 ::int:n2 ::double..m ::int-->__C::pure_double_seq (double n1) (double m) (n2-n1) __if__ n1~=n2),(n1 ::double:n2 ::int..m ::int-->__C::pure_double_seq n1 (double m) (n2-n1) __if__ ~infp n1&&n1~=n2),(a ::string..b ::string-->map chr (ord a..ord b) __if__ charp a&&charp b),(a ::string:b ::string..c ::string-->map chr (ord a:ord b..ord c) __if__ charp a&&charp b&&charp c),(n1:n2..m-->__ifelse__ (m===s) (iterate (flip (+) k) n1) (__ifelse__ (m===-s) [] (iterwhile (p m) (flip (+) k) n1)) __when__ [s,p-->__ifelse__ (k>0) (inf,(>=)) (-inf,(<=))] __if__ realp k&&k~=0&&~infp n1&&~infp n2 __when__ [k-->n2-n1]),(n..m-->__ifelse__ (m===inf) (iterate (flip (+) 1) n) (__ifelse__ (m===-inf) [] (iterwhile ((>=) m) (flip (+) 1) n)) __if__ ~listp n&&~infp n)]);
+'((<) __with__ [(x ::int<y ::int-->x<y),(x ::double<y ::double-->x<y),(x ::int<y ::double-->x<y),(x ::double<y ::int-->x<y),(x ::bigint<y ::bigint-->__C::bigint_cmp x y<0),(x ::int<y ::bigint-->bigint x<y),(x ::bigint<y ::int-->x<bigint y),(x ::bigint<y ::double-->double x<y),(x ::double<y ::bigint-->x<double y),(x ::pointer<y ::pointer-->bigint x<bigint y),(x ::string<y ::string-->__C::strcmp x y<0),(x1%y1<x2%y2-->x1*y2<x2*y1),(x1%y1<x2-->x1<x2*y1 __if__ realp x2),(x1<x2%y2-->x1*y2<x2 __if__ realp x2),(d1 __as__ Dict _<d2 __as__ Dict _-->d1<=d2&&~d1>=d2),(d1 __as__ MDict _<d2 __as__ MDict _-->d1<=d2&&~d1>=d2),(d1 __as__ HDict _<d2 __as__ HDict _-->d1<=d2&&~d1>=d2),(d1 __as__ HMDict _<d2 __as__ HMDict _-->d1<=d2&&~d1>=d2),(m1 __as__ HMDict _<m2-->m1<hmdict m2 __if__ xdictp m2),(m1<m2 __as__ HMDict _-->hmdict m1<m2 __if__ xdictp m1),(m1 __as__ HDict _<m2-->__case__ m2 [(MDict _-->hmdict m1<hmdict m2),(Dict _-->m1<hdict m2)] __if__ xdictp m2),(m1<m2 __as__ HDict _-->__case__ m1 [(MDict _-->hmdict m1<hmdict m2),(Dict _-->hdict m1<m2)] __if__ xdictp m2),(m1 __as__ MDict _<m2 __as__ Dict _-->m1<mdict m2),(m1 __as__ Dict _<m2 __as__ MDict _-->mdict m1<m2),(m1 __as__ Set _<m2 __as__ Set _-->m1<=m2&&~m1>=m2),(m1 __as__ Bag _<m2 __as__ Bag _-->m1<=m2&&~m1>=m2),(m1 __as__ HSet _<m2 __as__ HSet _-->m1<=m2&&~m1>=m2),(m1 __as__ HBag _<m2 __as__ HBag _-->m1<=m2&&~m1>=m2),(m1 __as__ HBag _<m2-->m1<hbag m2 __if__ xsetp m2),(m1<m2 __as__ HBag _-->hbag m1<m2 __if__ xsetp m1),(m1 __as__ HSet _<m2-->__case__ m2 [(Bag _-->hbag m1<hbag m2),(Set _-->m1<hset m2)] __if__ xsetp m2),(m1<m2 __as__ HSet _-->__case__ m1 [(Bag _-->hbag m1<hbag m2),(Set _-->hset m1<m2)] __if__ xsetp m2),(m1 __as__ Bag _<m2 __as__ Set _-->m1<bag m2),(m1 __as__ Set _<m2 __as__ Bag _-->bag m1<m2)]);
+'((<:) __with__ [(r ::int<:t-->-r<:t+3.14159265358979 __if__ r<0),(r ::bigint<:t-->-r<:t+3.14159265358979 __if__ r<0),(r ::double<:t-->-r<:t+3.14159265358979 __if__ r<0),(r<:t ::int-->r<:atan2 (sin t) (cos t) __if__ t<-3.14159265358979||t>3.14159265358979),(r<:t ::bigint-->r<:atan2 (sin t) (cos t) __if__ t<-3.14159265358979||t>3.14159265358979),(r<:t ::double-->r<:atan2 (sin t) (cos t) __if__ t<-3.14159265358979||t>3.14159265358979),(r<:t ::int-->r<:3.14159265358979 __if__ t==-3.14159265358979),(r<:t ::bigint-->r<:3.14159265358979 __if__ t==-3.14159265358979),(r<:t ::double-->r<:3.14159265358979 __if__ t==-3.14159265358979),(r __as__ (_%_)<:t-->-r<:t+3.14159265358979 __if__ r<0),(r<:t __as__ (_%_)-->r<:atan2 (sin t) (cos t) __if__ t<-3.14159265358979||t>3.14159265358979),(r<:t __as__ (_%_)-->r<:3.14159265358979 __if__ t==-3.14159265358979)]);
+'((<<) __with__ [(x ::int<<y ::int-->x<<y),(x ::bigint<<y ::int-->__C::bigint_shl x y __if__ y>=0),(x ::bigint<<y ::int-->__C::bigint_shr x (-y))]);
+'((<=) __with__ [(x ::int<=y ::int-->x<=y),(x ::double<=y ::double-->x<=y),(x ::int<=y ::double-->x<=y),(x ::double<=y ::int-->x<=y),(x ::bigint<=y ::bigint-->__C::bigint_cmp x y<=0),(x ::int<=y ::bigint-->bigint x<=y),(x ::bigint<=y ::int-->x<=bigint y),(x ::bigint<=y ::double-->double x<=y),(x ::double<=y ::bigint-->x<=double y),(x ::pointer<=y ::pointer-->bigint x<=bigint y),(x ::string<=y ::string-->__C::strcmp x y<=0),(x1%y1<=x2%y2-->x1*y2<=x2*y1),(x1%y1<=x2-->x1<=x2*y1 __if__ realp x2),(x1<=x2%y2-->x1*y2<=x2 __if__ realp x2),(d1 __as__ Dict _<=d2 __as__ Dict _-->all (member d2) ks1&&map ((!) d2) ks1==vals d1 __when__ [ks1-->keys d1]),(d1 __as__ MDict _<=d2 __as__ MDict _-->null (d1-d2)),(d1 __as__ HDict _<=d2 __as__ HDict _-->null (d1-d2)),(d1 __as__ HMDict _<=d2 __as__ HMDict _-->null (d1-d2)),(m1 __as__ HMDict _<=m2-->m1<=hmdict m2 __if__ xdictp m2),(m1<=m2 __as__ HMDict _-->hmdict m1<=m2 __if__ xdictp m1),(m1 __as__ HDict _<=m2-->__case__ m2 [(MDict _-->hmdict m1<=hmdict m2),(Dict _-->m1<=hdict m2)] __if__ xdictp m2),(m1<=m2 __as__ HDict _-->__case__ m1 [(MDict _-->hmdict m1<=hmdict m2),(Dict _-->hdict m1<=m2)] __if__ xdictp m2),(m1 __as__ MDict _<=m2 __as__ Dict _-->m1<=mdict m2),(m1 __as__ Dict _<=m2 __as__ MDict _-->mdict m1<=m2),(m1 __as__ Set _<=m2 __as__ Set _-->all (member m2) (members m1)),(m1 __as__ HSet _<=m2 __as__ HSet _-->all (member m2) (members m1)),(m1 __as__ Bag _<=m2 __as__ Bag _-->null (m1-m2)),(m1 __as__ HBag _<=m2 __as__ HBag _-->null (m1-m2)),(m1 __as__ HBag _<=m2-->m1<=hbag m2 __if__ xsetp m2),(m1<=m2 __as__ HBag _-->hbag m1<=m2 __if__ xsetp m1),(m1 __as__ HSet _<=m2-->__case__ m2 [(Bag _-->hbag m1<=hbag m2),(Set _-->m1<=hset m2)] __if__ xsetp m2),(m1<=m2 __as__ HSet _-->__case__ m1 [(Bag _-->hbag m1<=hbag m2),(Set _-->hset m1<=m2)] __if__ xsetp m2),(m1 __as__ Bag _<=m2 __as__ Set _-->m1<=bag m2),(m1 __as__ Set _<=m2 __as__ Bag _-->bag m1<=m2)]);
+'((===) __with__ [x===y-->same x y]);
+'((>) __with__ [(x ::int>y ::int-->x>y),(x ::double>y ::double-->x>y),(x ::int>y ::double-->x>y),(x ::double>y ::int-->x>y),(x ::bigint>y ::bigint-->__C::bigint_cmp x y>0),(x ::int>y ::bigint-->bigint x>y),(x ::bigint>y ::int-->x>bigint y),(x ::bigint>y ::double-->double x>y),(x ::double>y ::bigint-->x>double y),(x ::pointer>y ::pointer-->bigint x>bigint y),(x ::string>y ::string-->__C::strcmp x y>0),(x1%y1>x2%y2-->x1*y2>x2*y1),(x1%y1>x2-->x1>x2*y1 __if__ realp x2),(x1>x2%y2-->x1*y2>x2 __if__ realp x2),(d1 __as__ Dict _>d2 __as__ Dict _-->d1>=d2&&~d1<=d2),(d1 __as__ MDict _>d2 __as__ MDict _-->d1>=d2&&~d1<=d2),(d1 __as__ HDict _>d2 __as__ HDict _-->d1>=d2&&~d1<=d2),(d1 __as__ HMDict _>d2 __as__ HMDict _-->d1>=d2&&~d1<=d2),(m1 __as__ HMDict _>m2-->m1>hmdict m2 __if__ xdictp m2),(m1>m2 __as__ HMDict _-->hmdict m1>m2 __if__ xdictp m1),(m1 __as__ HDict _>m2-->__case__ m2 [(MDict _-->hmdict m1>hmdict m2),(Dict _-->m1>hdict m2)] __if__ xdictp m2),(m1>m2 __as__ HDict _-->__case__ m1 [(MDict _-->hmdict m1>hmdict m2),(Dict _-->hdict m1>m2)] __if__ xdictp m2),(m1 __as__ MDict _>m2 __as__ Dict _-->m1>mdict m2),(m1 __as__ Dict _>m2 __as__ MDict _-->mdict m1>m2),(m1 __as__ Set _>m2 __as__ Set _-->m1>=m2&&~m1<=m2),(m1 __as__ Bag _>m2 __as__ Bag _-->m1>=m2&&~m1<=m2),(m1 __as__ HSet _>m2 __as__ HSet _-->m1>=m2&&~m1<=m2),(m1 __as__ HBag _>m2 __as__ HBag _-->m1>=m2&&~m1<=m2),(m1 __as__ HBag _>m2-->m1>hbag m2 __if__ xsetp m2),(m1>m2 __as__ HBag _-->hbag m1>m2 __if__ xsetp m1),(m1 __as__ HSet _>m2-->__case__ m2 [(Bag _-->hbag m1>hbag m2),(Set _-->m1>hset m2)] __if__ xsetp m2),(m1>m2 __as__ HSet _-->__case__ m1 [(Bag _-->hbag m1>hbag m2),(Set _-->hset m1>m2)] __if__ xsetp m2),(m1 __as__ Bag _>m2 __as__ Set _-->m1>bag m2),(m1 __as__ Set _>m2 __as__ Bag _-->bag m1>m2)]);
+'((>=) __with__ [(x ::int>=y ::int-->x>=y),(x ::double>=y ::double-->x>=y),(x ::int>=y ::double-->x>=y),(x ::double>=y ::int-->x>=y),(x ::bigint>=y ::bigint-->__C::bigint_cmp x y>=0),(x ::int>=y ::bigint-->bigint x>=y),(x ::bigint>=y ::int-->x>=bigint y),(x ::bigint>=y ::double-->double x>=y),(x ::double>=y ::bigint-->x>=double y),(x ::pointer>=y ::pointer-->bigint x>=bigint y),(x ::string>=y ::string-->__C::strcmp x y>=0),(x1%y1>=x2%y2-->x1*y2>=x2*y1),(x1%y1>=x2-->x1>=x2*y1 __if__ realp x2),(x1>=x2%y2-->x1*y2>=x2 __if__ realp x2),(d1 __as__ Dict _>=d2 __as__ Dict _-->all (member d1) ks2&&map ((!) d1) ks2==vals d2 __when__ [ks2-->keys d2]),(d1 __as__ MDict _>=d2 __as__ MDict _-->null (d2-d1)),(d1 __as__ HDict _>=d2 __as__ HDict _-->null (d2-d1)),(d1 __as__ HMDict _>=d2 __as__ HMDict _-->null (d2-d1)),(m1 __as__ HMDict _>=m2-->m1>=hmdict m2 __if__ xdictp m2),(m1>=m2 __as__ HMDict _-->hmdict m1>=m2 __if__ xdictp m1),(m1 __as__ HDict _>=m2-->__case__ m2 [(MDict _-->hmdict m1>=hmdict m2),(Dict _-->m1>=hdict m2)] __if__ xdictp m2),(m1>=m2 __as__ HDict _-->__case__ m1 [(MDict _-->hmdict m1>=hmdict m2),(Dict _-->hdict m1>=m2)] __if__ xdictp m2),(m1 __as__ MDict _>=m2 __as__ Dict _-->m1>=mdict m2),(m1 __as__ Dict _>=m2 __as__ MDict _-->mdict m1>=m2),(m1 __as__ Set _>=m2 __as__ Set _-->all (member m1) (members m2)),(m1 __as__ HSet _>=m2 __as__ HSet _-->all (member m1) (members m2)),(m1 __as__ Bag _>=m2 __as__ Bag _-->null (m2-m1)),(m1 __as__ HBag _>=m2 __as__ HBag _-->null (m2-m1)),(m1 __as__ HBag _>=m2-->m1>=hbag m2 __if__ xsetp m2),(m1>=m2 __as__ HBag _-->hbag m1>=m2 __if__ xsetp m1),(m1 __as__ HSet _>=m2-->__case__ m2 [(Bag _-->hbag m1>=hbag m2),(Set _-->m1>=hset m2)] __if__ xsetp m2),(m1>=m2 __as__ HSet _-->__case__ m1 [(Bag _-->hbag m1>=hbag m2),(Set _-->hset m1>=m2)] __if__ xsetp m2),(m1 __as__ Bag _>=m2 __as__ Set _-->m1>=bag m2),(m1 __as__ Set _>=m2 __as__ Bag _-->bag m1>=m2)]);
+'((>>) __with__ [(x ::int>>y ::int-->x>>y),(x ::bigint>>y ::int-->__C::bigint_shr x y __if__ y>=0),(x ::bigint>>y ::int-->__C::bigint_shl x (-y))]);
+'((^) __with__ [(1.0^y ::double-->1.0),((-1.0)^y ::double-->1.0 __if__ infp y),(x ::double^y ::double-->__C::pow x y),(x ::int^y ::int-->double x^double y),(x ::bigint^y ::bigint-->double x^double y),(x ::int^y ::bigint-->double x^double y),(x ::bigint^y ::int-->double x^double y),(x ::double^y ::int-->x^double y),(x ::double^y ::bigint-->x^double y),(x ::int^y ::double-->double x^y),(x ::bigint^y ::double-->double x^y),(z1 __as__ (_+:_)^x2-->exp (ln z1*x2) __if__ numberp x2),(z1 __as__ (_<:_)^x2-->exp (ln z1*x2) __if__ numberp x2),(x1^z2 __as__ (_+:_)-->exp (ln (rect x1)*z2) __if__ realp x1),(x1^z2 __as__ (_<:_)-->exp (ln (polar x1)*z2) __if__ realp x1),((x1%y1)^(x2%y2)-->(x1/y1)^(x2/y2)),((x1%y1)^x2-->(x1/y1)^x2 __if__ numberp x2),(x1^(x2%y2)-->x1^(x2/y2) __if__ numberp x1)]);
+'((and) __with__ [(x ::int and y ::int-->x and y),(x ::bigint and y ::bigint-->__C::bigint_and x y),(x ::int and y ::bigint-->bigint x and y),(x ::bigint and y ::int-->x and bigint y)]);
+'(applp __with__ [applp x-->typep ('appl) x]);
+'(array __with__ [array xs ::rlist-->foldl append emptyarray xs]);
+'(array2 __with__ [array2 xs-->array (map array xs)]);
+'(arrayp __with__ [arrayp x-->typep array x]);
+'(bagp __with__ [bagp x-->typep bag x]);
+'(bigintp __with__ [bigintp x-->__case__ x [(_ ::bigint-->1),(_-->0)]]);
+'(bigintvalp __with__ [bigintvalp x-->ratvalp x&&den (re x)==1]);
+'(blobp __with__ [blobp _-->0]);
+'(byte_cstring __with__ [byte_cstring s ::string-->ptrtag 1$__C::pure_byte_cstring s]);
+'(byte_cstring_pointer __with__ [byte_cstring_pointer xs-->__ifelse__ (null p) (throw malloc_error) (make_pointer (map byte_cstring xs)) __with__ [(make_pointer xs-->ptrtag 3$sentry free_pointer p __when__ [_-->dowith (__lambda__ [i,x] (put_pointer (p+i*8) x)) (0..n-1) xs]),(free_pointer p-->free p __when__ [_-->do (__lambda__ [i] (free (get_pointer (p+i*8)))) (0..n-1)])] __when__ [(n-->#xs),(p-->calloc (n+1) 8),(xs-->__ifelse__ (smatrixp xs) (list xs) xs)] __if__ (rlistp xs||smatrixp xs)&&all stringp xs]);
+'(byte_pointer __with__ [byte_pointer p ::pointer x ::matrix-->__C::matrix_to_byte_array p x __if__ nmatrixp x]);
+'(byte_string __with__ [byte_string s ::string-->ptrtag 1$__C::pure_byte_string s]);
+'(byte_string_pointer __with__ [byte_string_pointer xs-->__ifelse__ (null p) (throw malloc_error) (make_pointer (map byte_string xs)) __with__ [(make_pointer xs-->ptrtag 3$sentry free_pointer p __when__ [_-->dowith (__lambda__ [i,x] (put_pointer (p+i*8) x)) (0..n-1) xs]),(free_pointer p-->free p __when__ [_-->do (__lambda__ [i] (free (get_pointer (p+i*8)))) (0..n-1)])] __when__ [(n-->#xs),(p-->calloc (n+1) 8),(xs-->__ifelse__ (smatrixp xs) (list xs) xs)] __if__ (rlistp xs||smatrixp xs)&&all stringp xs]);
+'(cat __with__ [(cat []-->[]),(cat (xs __as__ (_:_))-->foldr (tick []) [] xs __with__ [(foldr f a []-->a),(foldr f a (xs __as__ (_:_))-->tick [] xs __with__ [(tick zs (x:xs)-->tack (x:zs) (foldr f a xs&) __if__ thunkp xs),(tick zs (x:xs)-->tick (x:zs) xs),(tick zs []-->tack zs a),(tick zs xs-->tack zs (foldr f a xs)),(tack (x:xs) y-->tack xs (f x y)),(tack [] y-->y)]),(foldr (tick _) [] x-->cat x),(tick zs (x:xs) ys-->tack (x:zs) (tick [] xs ys&) __if__ thunkp xs),(tick zs (x:xs) ys-->tick (x:zs) xs ys),(tick zs [] ys-->tack zs ys),(tick zs xs ys-->tack zs (xs+ys)),(tack (x:xs) ys-->tack xs (x:ys)),(tack [] ys-->ys)])]);
+'(charp __with__ [charp x-->typep ('char) x]);
+'(chars __with__ [(chars s ::string-->__C::string_chars s __if__ ~funp (:)),(chars s ::string-->list (__C::string_chars s))]);
+'(chr __with__ [chr n ::int-->c __if__ stringp c __when__ [c-->__C::string_chr n]]);
+'(clearsym __with__ [(clearsym sym ::string level ::int-->() __when__ [(res-->evalcmd ("clear -t"+str level+" "+sym)),(_-->stringp res||throw evalcmd)]),(clearsym sym ::symbol level ::int-->clearsym sym level __when__ [(sym-->str sym),(sym-->__ifelse__ (sym!0=="(") (substr sym 2 (#sym-2)) sym)])]);
+'(closurep __with__ [closurep x-->funp x||lambdap x]);
+'(cmatrixp __with__ [cmatrixp x-->__case__ x [(_ ::matrix-->matrix_type x==2),(_-->0)]]);
+'(col __with__ [col x ::matrix j ::int-->__ifelse__ (j>=0&&j<m) (__C::matrix_slice x 0 j (n-1) j) (throw out_of_bounds) __when__ [n ::int,m ::int-->dim x]]);
+'(colrev __with__ [colrev x ::matrix-->colcat (reverse (cols x))]);
+'(cols __with__ [cols x ::matrix-->map (col x) (0..m-1) __when__ [_,m ::int-->dim x]]);
+'(colvectorp __with__ [colvectorp x-->matrixp x&&dim x!1==1]);
+'(complex_float_pointer __with__ [complex_float_pointer p ::pointer x ::matrix-->__C::matrix_to_complex_float_array p x __if__ nmatrixp x]);
+'(complex_pointer __with__ [complex_pointer p ::pointer x ::matrix-->__C::matrix_to_complex_array p x __if__ nmatrixp x]);
+'(complexp __with__ [complexp x-->typep ('complex) x]);
+'(compvalp __with__ [compvalp x-->numberp x]);
+'(cooked __with__ [cooked p ::pointer-->sentry free p]);
+'(cst __with__ [cst x y-->x]);
+'(cstring __with__ [cstring s ::pointer-->__C::pure_cstring s]);
+'(cstring_dup __with__ [cstring_dup s ::pointer-->__C::pure_cstring_dup s]);
+'(cstring_list __with__ [cstring_list n p ::pointer-->list$takewhile stringp (listmap (__lambda__ [i] (p!i)) (0..n-1)) __with__ [p!i-->__ifelse__ (null q) q (cstring_dup q) __when__ [q-->get_pointer (p+i*8)]] __if__ ~null p&&(intp n||infp n)]);
+'(cstring_vector __with__ [cstring_vector n p ::pointer-->vector xs __if__ listp xs __when__ [xs-->cstring_list n p]]);
+'(curry __with__ [curry f x y-->f (x,y)]);
+'(curry3 __with__ [curry3 f x y z-->f (x,y,z)]);
+'(delete_all __with__ [(delete_all (Dict d) x-->Dict (avl::deletek d x)),(delete_all (HDict d) x-->HDict (avl::hdeletek d x)),(delete_all (MDict d) x-->MDict (avl::mdeleteka d x)),(delete_all (HMDict d) x-->HMDict (avl::mhdeleteka d x)),(delete_all (Set m) y-->Set (avl::delete m y)),(delete_all (Bag m) y-->Bag (avl::mdeletea m y)),(delete_all (HSet m) y-->HSet (avl::hdelete m y)),(delete_all (HBag m) y-->HBag (avl::mhdeletea m y))]);
+'(delete_val __with__ [(delete_val (Dict d) (el __as__ (x=>y))-->Dict (avl::deletekv d el)),(delete_val (HDict d) (el __as__ (x=>y))-->HDict (avl::hdeletekv d el)),(delete_val (MDict d) (el __as__ (x=>y))-->MDict (avl::mdeletekv d el)),(delete_val (HMDict d) (el __as__ (x=>y))-->HMDict (avl::mhdeletekv d el))]);
+'(dictp __with__ [dictp x-->typep dict x]);
+'(dim __with__ [dim x ::matrix-->__C::matrix_dim x]);
+'((div) __with__ [(x ::int div y ::int-->x div y),(x ::bigint div y ::bigint-->__C::bigint_div x y),(x ::int div y ::bigint-->bigint x div y),(x ::bigint div y ::int-->x div bigint y)]);
+'(dmatrixp __with__ [dmatrixp x-->__case__ x [(_ ::matrix-->matrix_type x==1),(_-->0)]]);
+'(double_pointer __with__ [double_pointer p ::pointer x ::matrix-->__C::matrix_to_double_array p x __if__ nmatrixp x]);
+'(doublep __with__ [doublep x-->__case__ x [(_ ::double-->1),(_-->0)]]);
+'(emptybag __with__ [emptybag-->Bag avl::emptytree]);
+'(emptydict __with__ [emptydict-->Dict avl::emptytree]);
+'(emptyhbag __with__ [emptyhbag-->HBag avl::emptytree]);
+'(emptyhdict __with__ [emptyhdict-->HDict avl::emptytree]);
+'(emptyhmdict __with__ [emptyhmdict-->HMDict avl::emptytree]);
+'(emptyhset __with__ [emptyhset-->HSet avl::emptytree]);
+'(emptymdict __with__ [emptymdict-->MDict avl::emptytree]);
+'(emptyset __with__ [emptyset-->Set avl::emptytree]);
+'(exactp __with__ [exactp x-->__case__ x [(x+:y-->~doublep x&&~doublep y),(x<:y-->~doublep x&&~doublep y),(x%y-->~doublep x&&~doublep y),(_-->~doublep x)] __if__ numberp x]);
+'(execv __with__ [execv prog ::string argv ::rlist-->execv prog (smatrix argv)]);
+'(execve __with__ [execve prog ::string argv ::rlist envp ::rlist-->execve prog (smatrix argv) (smatrix envp)]);
+'(execvp __with__ [execvp prog ::string argv ::rlist-->execvp prog (smatrix argv)]);
+'(fclose __with__ [fclose fp ::pointer-->clear_sentry fp$$__C::fclose fp __if__ get_sentry fp===__C::fclose]);
+'(fdopen __with__ [fdopen fd ::int mode ::string-->sentry __C::fclose fp __if__ ~null fp __when__ [fp-->__C::fdopen fd mode]]);
+'(fix __with__ [fix f-->f (fix f&)]);
+'(flip __with__ [flip f x y-->f y x]);
+'(float_pointer __with__ [float_pointer p ::pointer x ::matrix-->__C::matrix_to_float_array p x __if__ nmatrixp x]);
+'(fnmatch __with__ [fnmatch pat ::string s ::string flags ::int-->__C::fnmatch pat s flags==0]);
+'(fopen __with__ [fopen name ::string mode ::string-->sentry __C::fclose fp __if__ ~null fp __when__ [fp-->__C::fopen name mode]]);
+'(fprintf __with__ [fprintf fp ::pointer format ::string args-->count __when__ [(args-->__ifelse__ (tuplep args) (list args) [args]),(count,_-->catch error_handler (foldl (do_fprintf fp) (0,args) (__std__::printf_split_format format)))] __with__ [(error_handler (printf_error res ::int)-->res,[]),(error_handler x-->throw x),(do_fprintf fp (count,arg:args) (__std__::printf_format_spec t s)-->count,args __when__ [(res-->__case__ (t,arg) [("c",x ::int-->__C::pure_fprintf_int fp s x),("c",x ::bigint-->__C::pure_fprintf_int fp s x),("d",x ::int-->__C::pure_fprintf_int fp s x),("d",x ::bigint-->__C::pure_fprintf_int fp s x),("g",x ::double-->__C::pure_fprintf_double fp s x),("s",x ::string-->__C::pure_fprintf_string fp s x),("p",x ::string-->__C::pure_fprintf_pointer fp s x),("p",x ::pointer-->__C::pure_fprintf_pointer fp s x),(_-->throw (printf_value_error s arg))]),(count-->__ifelse__ (res>=0) (count+res) (throw (printf_error res)))]),(do_fprintf fp (count,args) (__std__::printf_format_str s)-->count,args __when__ [(res-->__C::pure_fprintf fp s),(count-->__ifelse__ (res>=0) (count+res) (throw (printf_error res)))]),(do_fprintf fp (count,[]) (__std__::printf_format_spec t s)-->throw (printf_value_error s ())),(do_fprintf fp (count,_) _-->throw (this_cant_happen count))]]);
+'(fscanf __with__ [fscanf fp ::pointer format ::string-->tuple (reverse ret) __when__ [_,ret-->catch error_handler (foldl (do_fscanf fp) (0,[]) (__std__::scanf_split_format format))] __with__ [(error_handler (scanf_error ret)-->throw (scanf_error (tuple (reverse ret)))),(error_handler x-->throw x),(check_buf buf-->throw malloc_error __if__ null buf),(check_buf buf-->buf),(do_fscanf fp (nread,ret) (__std__::scanf_format_spec t s)-->nread+res,ret __when__ [(size,s-->__ifelse__ (t=="s") (guestimate s) (16,s)),(buf-->check_buf (calloc size 1)),(res-->__case__ t [("n"-->__C::pure_fscanf_int fp s buf),("d"-->__C::pure_fscanf_int fp s buf),("g"-->__C::pure_fscanf_double fp s buf),("s"-->__C::pure_fscanf_string fp s buf),("p"-->__C::pure_fscanf_pointer fp s buf),(_-->throw (this_cant_happen ret))]),(res-->__ifelse__ (res>=0) res (free buf$$throw (scanf_error ret))),(val-->__case__ t [("n"-->nread+get_int buf),("d"-->get_int buf),("g"-->get_double buf),("s"-->cstring buf),("p"-->get_pointer buf),(_-->throw (this_cant_happen ret))]),(_-->__ifelse__ (t=="s") () (free buf)),(ret-->val:ret)]),(do_fscanf fp (nread,ret) (__std__::scanf_format_str s)-->nread+res,ret __when__ [(res-->__C::pure_fscanf fp s),(ret-->__ifelse__ (res>=0) ret (throw (scanf_error ret)))]),(do_fscanf _ (_,ret) _-->throw (this_cant_happen ret)),(guestimate "%c"-->2,"%c"),(guestimate format-->n,format __when__ [(1,0,_,1,s-->regex "^%([0-9]*)" 1 format 0),(n,format-->__ifelse__ (null s) (1025,"%1024"+tail format) (eval s+1,format))])]]);
+'(functionp __with__ [functionp x-->nargs x>0 __with__ [(nargs ((x __as__ _) _)-->nargs x-1),(nargs x-->nargs x)]]);
+'(gcd __with__ [(gcd x ::bigint y ::bigint-->__C::bigint_gcd x y),(gcd x ::int y ::bigint-->__C::bigint_gcd (bigint x) y),(gcd x ::bigint y ::int-->__C::bigint_gcd x (bigint y)),(gcd x ::int y ::int-->int (__C::bigint_gcd (bigint x) (bigint y)))]);
+'(get __with__ [get r ::pointer-->__C::pointer_get_expr r __if__ refp r]);
+'(get_byte __with__ [get_byte x ::pointer-->__C::pointer_get_byte x]);
+'(get_double __with__ [get_double x ::pointer-->__C::pointer_get_double x]);
+'(get_float __with__ [get_float x ::pointer-->__C::pointer_get_float x]);
+'(get_int __with__ [get_int x ::pointer-->__C::pointer_get_int x]);
+'(get_int64 __with__ [get_int64 x ::pointer-->__C::pointer_get_int64 x]);
+'(get_long __with__ [get_long x ::pointer-->__C::pointer_get_long x]);
+'(get_pointer __with__ [get_pointer x ::pointer-->__C::pointer_get_pointer x]);
+'(get_short __with__ [get_short x ::pointer-->__C::pointer_get_short x]);
+'(get_string __with__ [get_string x ::pointer-->__C::pointer_get_string x]);
+'(gets __with__ [gets-->__ifelse__ (null s) s (__ifelse__ (last s=="\n") (init s) s) __when__ [s-->fgets stdin]]);
+'(glob __with__ [glob pat ::string flags ::int-->result __when__ [(globptr-->calloc 1 72),(result-->__C::glob pat flags (pointer 0) globptr),(result-->__ifelse__ (result==0) (__C::globlist globptr) result),(_-->__C::globfree globptr),(_-->free globptr)]]);
+'(globsym __with__ [globsym pat ::string level ::int-->uniq (catmap descr info) __when__ [(res-->evalcmd ("show -gst"+str level+" "+pat)),(_-->stringp res||throw evalcmd),(info-->init (init (split "\n" res)))] __with__ [(uniq (x:xs __as__ (y:_))-->__ifelse__ (x===y) (uniq xs) (x:uniq xs)),(uniq xs-->xs),(descr s ::string-->__case__ (filter (flip (~=) "") (split " " s)) [(sym:_-->__ifelse__ (any (flip (==) sym) ["extern","private","infix","infixl","infixr","prefix","postfix","outfix","nonfix"]) [] (catmap (__lambda__ [x] (__ifelse__ (symbolp x) [x] [])) [__C::pure_quoted_symbol sym])),(_-->[])])]]);
+'(hbagp __with__ [hbagp x-->typep hbag x]);
+'(hdictp __with__ [hdictp x-->typep hdict x]);
+'(heap __with__ [heap xs ::rlist-->foldl insert emptyheap xs]);
+'(heapp __with__ [heapp x-->typep heap x]);
+'(hmdictp __with__ [hmdictp x-->typep hmdict x]);
+'(hsetp __with__ [hsetp x-->typep hset x]);
+'(id __with__ [id x-->x]);
+'(imatrixp __with__ [imatrixp x-->__case__ x [(_ ::matrix-->matrix_type x==3),(_-->0)]]);
+'(inexactp __with__ [inexactp x-->__case__ x [(x+:y-->doublep x||doublep y),(x<:y-->doublep x||doublep y),(x%y-->doublep x||doublep y),(_-->doublep x)] __if__ numberp x]);
+'(infp __with__ [infp x-->__case__ x [(x ::double-->x==inf||x==-inf),(_-->0)]]);
+'(int_pointer __with__ [int_pointer p ::pointer x ::matrix-->__C::matrix_to_int_array p x __if__ nmatrixp x]);
+'(integerp __with__ [integerp x-->typep ('integer) x]);
+'(intp __with__ [intp x-->__case__ x [(_ ::int-->1),(_-->0)]]);
+'(intvalp __with__ [intvalp x-->bigintvalp x&&int (re x)==x]);
+'(iterate __with__ [iterate f x-->x:iterate f (f x)&]);
+'(iteraten __with__ [(iteraten n ::int f x-->[] __if__ n<=0),(iteraten n ::int f x-->accum [] n f x __with__ [(accum xs n ::int f x-->reverse (x:xs) __if__ n==1),(accum xs n ::int f x-->accum (x:xs) (n-1) f (f x))])]);
+'(iterwhile __with__ [iterwhile p f x-->accum [] p f x __with__ [(accum xs p f x-->accum (x:xs) p f (f x) __if__ p x),(accum xs p f x-->reverse xs)]]);
+'(join __with__ [join delim ::string xs-->s __if__ stringp s __when__ [s-->__C::string_join delim xs]]);
+'(key __with__ [key (x=>v)-->x]);
+'(lcm __with__ [(lcm x ::bigint y ::bigint-->__C::bigint_lcm x y),(lcm x ::int y ::bigint-->__C::bigint_lcm (bigint x) y),(lcm x ::bigint y ::int-->__C::bigint_lcm x (bigint y)),(lcm x ::int y ::int-->int (__C::bigint_lcm (bigint x) (bigint y)))]);
+'(listp __with__ [listp x-->typep ('list) x]);
+'(matrixp __with__ [matrixp x-->__case__ x [(_ ::matrix-->1),(_-->0)]]);
+'(max __with__ [max x y-->__ifelse__ (x>=y) x y]);
+'(mdictp __with__ [mdictp x-->typep mdict x]);
+'(members2 __with__ [members2 (x __as__ Array _)-->map members (members x)]);
+'(min __with__ [min x y-->__ifelse__ (x<=y) x y]);
+'(mkarray2 __with__ [mkarray2 x (n ::int,m ::int)-->mkarray (mkarray x m) n]);
+'(mkdict __with__ [mkdict y xs ::rlist-->dict (zipwith (=>) xs (repeatn (#xs) y))]);
+'(mkhdict __with__ [mkhdict y xs ::rlist-->hdict (zipwith (=>) xs (repeatn (#xs) y))]);
+'(mkhmdict __with__ [mkhmdict y xs ::rlist-->hmdict (zipwith (=>) xs (repeatn (#xs) y))]);
+'(mkmdict __with__ [mkmdict y xs ::rlist-->mdict (zipwith (=>) xs (repeatn (#xs) y))]);
+'((mod) __with__ [(x ::int mod y ::int-->x mod y),(x ::bigint mod y ::bigint-->__C::bigint_mod x y),(x ::int mod y ::bigint-->bigint x mod y),(x ::bigint mod y ::int-->x mod bigint y)]);
+'(nanosleep __with__ [(nanosleep t ::int-->nanosleep (double t)),(nanosleep t ::bigint-->nanosleep (double t))]);
+'(nanp __with__ [nanp x-->__case__ x [(x ::double-->~x==x),(_-->0)]]);
+'(neg __with__ [(-x ::int-->-x),(-x ::double-->-x),(-x ::bigint-->__C::bigint_neg x),(-(x+:y)-->-x+:-y),(-(r<:t)-->r<:t+3.14159265358979),(-x%y-->(-x)%y)]);
+'(nmatrixp __with__ [nmatrixp x-->__case__ x [(_ ::matrix-->matrix_type x>=1),(_-->0)]]);
+'((not) __with__ [(not x ::int-->not x),(not x ::bigint-->__C::bigint_not x)]);
+'(numberp __with__ [numberp x-->typep ('number) x]);
+'((or) __with__ [(x ::int or y ::int-->x or y),(x ::bigint or y ::bigint-->__C::bigint_or x y),(x ::int or y ::bigint-->bigint x or y),(x ::bigint or y ::int-->x or bigint y)]);
+'(ord __with__ [ord s ::string-->n __if__ intp n __when__ [n-->__C::string_ord s]]);
+'(pack __with__ [pack x ::matrix-->colcat [x,{}]]);
+'(packed __with__ [packed x ::matrix-->stride x==dim x!1]);
+'(pclose __with__ [pclose fp ::pointer-->clear_sentry fp$$__C::pclose fp __if__ get_sentry fp===__C::pclose]);
+'(pointer __with__ [(pointer x ::pointer-->x),(pointer x ::int-->__C::pure_pointerval x),(pointer x ::bigint-->__C::pure_pointerval x),(pointer x ::double-->__C::pure_pointerval x),(pointer x ::string-->__C::pure_pointerval x),(pointer x ::matrix-->__C::pure_pointerval x)]);
+'(pointer_cast __with__ [pointer_cast ty ::string x ::pointer-->pointer_cast (pointer_tag ty) x]);
+'(pointer_tag __with__ [(pointer_tag x ::string-->__C::pure_pointer_tag x),(pointer_tag x ::pointer-->get_ptrtag x)]);
+'(pointer_type __with__ [pointer_type x ::pointer-->pointer_type (get_ptrtag x)]);
+'(pointerp __with__ [pointerp x-->__case__ x [(_ ::pointer-->1),(_-->0)]]);
+'(popen __with__ [popen name ::string mode ::string-->sentry __C::pclose fp __if__ ~null fp __when__ [fp-->__C::popen name mode]]);
+'(pred __with__ [pred x-->x-1]);
+'(printf __with__ [printf format ::string args-->fprintf stdout format args]);
+'(publicp __with__ [publicp x ::symbol-->symbolp (val (str x))]);
+'(put __with__ [put r ::pointer x-->__C::pure_free (__C::pointer_get_expr r)$$__C::pointer_put_expr r (__C::pure_new x)$$x __if__ refp r]);
+'(put_byte __with__ [put_byte x ::pointer y ::int-->__C::pointer_put_byte x y]);
+'(put_double __with__ [put_double x ::pointer y ::double-->__C::pointer_put_double x y]);
+'(put_float __with__ [put_float x ::pointer y ::double-->__C::pointer_put_float x y]);
+'(put_int __with__ [put_int x ::pointer y ::int-->__C::pointer_put_int x y]);
+'(put_int64 __with__ [(put_int64 x ::pointer y ::int-->__C::pointer_put_int64 x y),(put_int64 x ::pointer y ::bigint-->__C::pointer_put_int64 x y)]);
+'(put_long __with__ [(put_long x ::pointer y ::int-->__C::pointer_put_long x y),(put_long x ::pointer y ::bigint-->__C::pointer_put_long x y)]);
+'(put_pointer __with__ [(put_pointer x ::pointer y ::string-->__C::pointer_put_pointer x y),(put_pointer x ::pointer y ::pointer-->__C::pointer_put_pointer x y)]);
+'(put_short __with__ [put_short x ::pointer y ::int-->__C::pointer_put_short x y]);
+'(put_string __with__ [put_string x ::pointer y ::string-->__C::pointer_put_string x y]);
+'(quote __with__ [quote x-->x]);
+'(rationalp __with__ [rationalp x-->typep ('rational) x]);
+'(ratvalp __with__ [ratvalp x-->realvalp x&&re (x-x)~==nan]);
+'(realp __with__ [realp x-->typep ('real) x]);
+'(realvalp __with__ [realvalp x-->compvalp x&&im x==0]);
+'(record __with__ [(record x-->__C::record_pack x __if__ recordp x),(record x-->record x __if__ recordp x __when__ [x-->matrix x])]);
+'(recordp __with__ [recordp x-->__C::record_check x]);
+'(ref __with__ [ref x-->__C::pointer_put_expr r (__C::pure_new x)$$sentry unref r __when__ [r ::pointer-->__C::pure_expr_pointer]]);
+'(refp __with__ [refp r-->__case__ r [(_ ::pointer-->get_sentry r===unref),(_-->0)]]);
+'(reg_info __with__ [(reg_info (_ ::int,info)-->info),(reg_info _-->())]);
+'(regex __with__ [regex pat ::string cflags ::int s ::string eflags ::int-->__ifelse__ (__C::regstatus re) (regerr (__C::regstatus re) (__C::regerror re)) (__ifelse__ (__C::regexec re s eflags) 0 (1,__C::regmatch re)) __when__ [re-->sentry __C::regfree (__C::regcomp pat cflags)]]);
+'(regexg __with__ [regexg f pat ::string cflags ::int s ::string eflags ::int-->__ifelse__ (__C::regstatus re) (regerr (__C::regstatus re) (__C::regerror re)) (iterwhile check next first) __with__ [(check _-->__C::regstatus re==0),(next _-->__ifelse__ (__C::regnext re 0) () (f (__C::regmatch re))),(first-->__ifelse__ (__C::regexec re s eflags) () (f (__C::regmatch re)))] __when__ [re-->sentry __C::regfree (__C::regcomp pat cflags)] __if__ ~cflags and 8]);
+'(regexgg __with__ [regexgg f pat ::string cflags ::int s ::string eflags ::int-->__ifelse__ (__C::regstatus re) (regerr (__C::regstatus re) (__C::regerror re)) (iterwhile check next first) __with__ [(check _-->__C::regstatus re==0),(next _-->__ifelse__ (__C::regnext re 1) () (f (__C::regmatch re))),(first-->__ifelse__ (__C::regexec re s eflags) () (f (__C::regmatch re)))] __when__ [re-->sentry __C::regfree (__C::regcomp pat cflags)] __if__ ~cflags and 8]);
+'(regexggs __with__ [regexggs f pat ::string cflags ::int s ::string eflags ::int-->__ifelse__ (__C::regstatus re) (regerr (__C::regstatus re) (__C::regerror re)) (takewhile check (iterate next first)) __with__ [(check _-->__C::regstatus re==0),(next _-->__ifelse__ (__C::regnext re 1) () (f (__C::regmatch re))),(first-->__ifelse__ (__C::regexec re s eflags) () (f (__C::regmatch re)))] __when__ [re-->sentry __C::regfree (__C::regcomp pat cflags)] __if__ ~cflags and 8]);
+'(regexgs __with__ [regexgs f pat ::string cflags ::int s ::string eflags ::int-->__ifelse__ (__C::regstatus re) (regerr (__C::regstatus re) (__C::regerror re)) (takewhile check (iterate next first)) __with__ [(check _-->__C::regstatus re==0),(next _-->__ifelse__ (__C::regnext re 0) () (f (__C::regmatch re))),(first-->__ifelse__ (__C::regexec re s eflags) () (f (__C::regmatch re)))] __when__ [re-->sentry __C::regfree (__C::regcomp pat cflags)] __if__ ~cflags and 8]);
+'(regs __with__ [regs info-->myregs 0 info __with__ [(myregs n (p,s,infos)-->(n,p,s):myregs (n+1) infos __if__ p>=0),(myregs n (p,s,infos)-->myregs (n+1) infos),(myregs n (p,s)-->[(n,p,s)] __if__ p>=0),(myregs n (p,s)-->[])]]);
+'(regsplit __with__ [regsplit pat ::string cflags ::int s ::string eflags ::int-->__ifelse__ (__C::regstatus re) (regerr (__C::regstatus re) (__C::regerror re)) (__ifelse__ (null s) [] (iterwhile check next first+[__C::regskip re])) __with__ [(check _-->__C::regstatus re==0),(next _-->__ifelse__ (__C::regnext re 0) () (__C::regskip re)),(first-->__ifelse__ (__C::regexec re s eflags) () (__C::regskip re))] __when__ [re-->sentry __C::regfree (__C::regcomp pat cflags)] __if__ ~cflags and 8]);
+'(regsplits __with__ [regsplits pat ::string cflags ::int s ::string eflags ::int-->__ifelse__ (__C::regstatus re) (regerr (__C::regstatus re) (__C::regerror re)) (__ifelse__ (null s) [] (takewhile check (iterate next first)+[__C::regskip re]&)) __with__ [([]+ys-->ys),((x:xs)+ys-->x:(xs+ys)&),(check _-->__C::regstatus re==0),(next _-->__ifelse__ (__C::regnext re 0) () (__C::regskip re)),(first-->__ifelse__ (__C::regexec re s eflags) () (__C::regskip re))] __when__ [re-->sentry __C::regfree (__C::regcomp pat cflags)] __if__ ~cflags and 8]);
+'(repeat __with__ [repeat x-->x:repeat x&]);
+'(repeatn __with__ [repeatn n ::int x-->accum [] n x __with__ [(accum xs n ::int x-->xs __if__ n<=0),(accum xs n ::int x-->accum (x:xs) (n-1) x)]]);
+'(rlistp __with__ [rlistp x-->typep ('rlist) x]);
+'(row __with__ [row x ::matrix i ::int-->__ifelse__ (i>=0&&i<n) (__C::matrix_slice x i 0 i (m-1)) (throw out_of_bounds) __when__ [n ::int,m ::int-->dim x]]);
+'(rowrev __with__ [rowrev x ::matrix-->rowcat (reverse (rows x))]);
+'(rows __with__ [rows x ::matrix-->map (row x) (0..n-1) __when__ [n ::int,_-->dim x]]);
+'(rowvectorp __with__ [rowvectorp x-->matrixp x&&dim x!0==1]);
+'(scanf __with__ [scanf format ::string-->fscanf stdin format]);
+'(setp __with__ [setp x-->typep set x]);
+'(short_pointer __with__ [short_pointer p ::pointer x ::matrix-->__C::matrix_to_short_array p x __if__ nmatrixp x]);
+'(smatrix __with__ [smatrix x-->y __if__ matrixp y __when__ [y-->__C::matrix_symbolic x]]);
+'(smatrixp __with__ [smatrixp x-->__case__ x [(_ ::matrix-->matrix_type x==0),(_-->0)]]);
+'(sort __with__ [sort p x ::matrix-->__case__ (sort p (smatrix x)) [(y ::matrix-->imatrix y __if__ imatrixp x),(y ::matrix-->dmatrix y __if__ dmatrixp x),(y ::matrix-->cmatrix y __if__ cmatrixp x),(y-->y)]]);
+'(spawnv __with__ [spawnv mode ::int prog ::string argv ::rlist-->spawnv mode prog (smatrix argv)]);
+'(spawnve __with__ [spawnve mode ::int prog ::string argv ::rlist envp ::rlist-->spawnve mode prog (smatrix argv) (smatrix envp)]);
+'(spawnvp __with__ [spawnvp mode ::int prog ::string argv ::rlist-->spawnvp mode prog (smatrix argv)]);
+'(split __with__ [(split delim ::string s ::string-->__C::string_split delim s __if__ ~funp (:)),(split delim ::string s ::string-->list (__C::string_split delim s))]);
+'(sprintf __with__ [sprintf format ::string args-->s __when__ [(args-->__ifelse__ (tuplep args) (list args) [args]),(u,_-->catch error_handler (foldl do_sprintf ([],args) (__std__::printf_split_format format))),(s-->__ifelse__ (pointerp u) u (strcat (reverse u)))] __with__ [(error_handler (printf_error res ::int)-->pointer 0,[]),(error_handler x-->throw x),(do_sprintf (u,arg:args) (__std__::printf_format_spec t s)-->u,args __when__ [(size-->__case__ (t,arg) [("s",x ::string-->#s+#x),(_-->64)]),(size-->size+1024),(buf-->check_buf (malloc size)),(res-->__case__ (t,arg) [("c",x ::int-->__C::pure_snprintf_int buf size s x),("c",x ::bigint-->__C::pure_snprintf_int buf size s x),("d",x ::int-->__C::pure_snprintf_int buf size s x),("d",x ::bigint-->__C::pure_snprintf_int buf size s x),("g",x ::double-->__C::pure_snprintf_double buf size s x),("s",x ::string-->__C::pure_snprintf_string buf size s x),("p",x ::string-->__C::pure_snprintf_pointer buf size s x),("p",x ::pointer-->__C::pure_snprintf_pointer buf size s x),(_-->free buf$$throw (printf_value_error s arg))]),(u-->__ifelse__ (res>=0) (cstring buf:u) (free buf$$throw (printf_error res)))]),(do_sprintf (u,args) (__std__::printf_format_str s)-->u,args __when__ [(size-->#s+1000),(buf-->check_buf (malloc size)),(res-->__C::pure_snprintf buf size s),(u-->__ifelse__ (res>=0) (cstring buf:u) (free buf$$throw (printf_error res)))]),(do_sprintf (u,[]) (__std__::printf_format_spec t s)-->throw (printf_value_error s ())),(do_sprintf (u,_) _-->throw (this_cant_happen (strcat (reverse u)))),(check_buf buf-->throw malloc_error __if__ null buf),(check_buf buf-->buf)]]);
+'(srandom __with__ [srandom x ::matrix-->srandom_array x (#x) __if__ imatrixp x&&dim x!0==1]);
+'(sscanf __with__ [sscanf s ::string format ::string-->tuple (reverse ret) __when__ [_,_,ret-->catch error_handler (foldl do_sscanf (s,0,[]) (__std__::scanf_split_format format))] __with__ [(error_handler (scanf_error ret)-->throw (scanf_error (tuple (reverse ret)))),(error_handler x-->throw x),(check_buf buf-->throw malloc_error __if__ null buf),(check_buf buf-->buf),(guestimate "%c"-->2,"%c"),(guestimate format-->n,format __when__ [(1,0,_,1,s-->regex "^%([0-9]*)" 1 format 0),(n,format-->__ifelse__ (null s) (1025,"%1024"+tail format) (eval s+1,format))]),(do_sscanf (u,nread,ret) (__std__::scanf_format_spec t s)-->u,nread+res,ret __when__ [(size,s-->__ifelse__ (t=="s") (guestimate s) (16,s)),(buf-->check_buf (calloc size 1)),(res-->__case__ t [("n"-->__C::pure_sscanf_int u s buf),("d"-->__C::pure_sscanf_int u s buf),("g"-->__C::pure_sscanf_double u s buf),("s"-->__C::pure_sscanf_string u s buf),("p"-->__C::pure_sscanf_pointer u s buf),(_-->throw (this_cant_happen ret))]),(res-->__ifelse__ (res>=0) res (free buf$$throw (scanf_error ret))),(val-->__case__ t [("n"-->nread+get_int buf),("d"-->get_int buf),("g"-->get_double buf),("s"-->cstring buf),("p"-->get_pointer buf),(_-->throw (this_cant_happen ret))]),(_-->__ifelse__ (t=="s") () (free buf)),(ret-->val:ret),(u-->drop res u)]),(do_sscanf (u,nread,ret) (__std__::scanf_format_str s)-->u,nread+res,ret __when__ [(res-->__C::pure_sscanf u s),(ret-->__ifelse__ (res>=0) ret (throw (scanf_error ret))),(u-->drop res u)]),(do_sscanf (_,_,ret) _-->throw (this_cant_happen ret))]]);
+'(strcat __with__ [strcat xs-->s __if__ stringp s __when__ [s-->__C::string_concat_list xs]]);
+'(stride __with__ [stride x ::matrix-->__C::matrix_stride x]);
+'(string_dup __with__ [string_dup s ::pointer-->__C::pure_string_dup s]);
+'(string_list __with__ [string_list n p ::pointer-->list$takewhile stringp (listmap (__lambda__ [i] (p!i)) (0..n-1)) __with__ [p!i-->__ifelse__ (null q) q (string_dup q) __when__ [q-->get_pointer (p+i*8)]] __if__ ~null p&&(intp n||infp n)]);
+'(string_vector __with__ [string_vector n p ::pointer-->vector xs __if__ listp xs __when__ [xs-->string_list n p]]);
+'(stringp __with__ [stringp x-->__case__ x [(_ ::string-->1),(_-->0)]]);
+'(submat __with__ [submat x ::matrix (i ::int,j ::int) (n ::int,m ::int)-->__C::matrix_slice x i j (i+n-1) (j+m-1)]);
+'(substr __with__ [substr s ::string pos ::int size ::int-->__C::string_substr s (max 0 pos) (max 0 size) __with__ [max x y-->__ifelse__ (x>=y) x y]]);
+'(succ __with__ [succ x-->x+1]);
+'(transpose __with__ [transpose x ::matrix-->__C::matrix_transpose x]);
+'(tuplep __with__ [tuplep x-->typep ('tuple) x]);
+'(ubyte __with__ [ubyte x ::int-->__ifelse__ (x>=0) x (x+256)]);
+'(uint __with__ [uint x ::int-->__ifelse__ (x>=0) (bigint x) (x+4294967296L)]);
+'(uint64 __with__ [(uint64 x ::int-->__ifelse__ (x>=0) (bigint x) (x+18446744073709551616L)),(uint64 x ::bigint-->__ifelse__ (x>=0) (bigint x) (x+18446744073709551616L))]);
+'(ulong __with__ [ulong-->uint64]);
+'(uncurry __with__ [uncurry f (x,y)-->f x y]);
+'(uncurry3 __with__ [uncurry3 f (x,y,z)-->f x y z]);
+'(unref __with__ [unref r ::pointer-->__C::pure_free (__C::pointer_get_expr r)$$clear_sentry r __if__ refp r]);
+'(update2 __with__ [update2 (x __as__ Array a) (i ::int,j ::int) y-->update x i (update (x!i) j y)]);
+'(ushort __with__ [ushort x ::int-->__ifelse__ (x>=0) x (x+65536)]);
+'(val __with__ [val (x=>v)-->v]);
+'(vector __with__ [vector xs-->x __if__ matrixp x __when__ [x-->rowvector xs]]);
+'(vectorp __with__ [vectorp x-->matrixp x&&(n==1||m==1 __when__ [n ::int,m ::int-->dim x])]);
+'(vectorseq __with__ [vectorseq n m s-->x __if__ matrixp x __when__ [x-->rowvectorseq n m s]]);
+'(void __with__ [void _-->()]);
+'(xdictp __with__ [xdictp x-->typep xdict x]);
+'(xsetp __with__ [xsetp x-->typep xset x]);
+'((||) __with__ [x ::int||y-->x||y]);
+'((~) __with__ [~x ::int-->~x]);
+'((~==) __with__ [x~==y-->~same x y]);
+let R2 = catmap (\x/*0:1*/ -> if (stringp s/*0:*/&&(eval (sprintf "'(%s)" (__str__ x/*1:1*/))$$null lasterr) when s/*0:*/ = __str__ x/*0:1*/ {
+  rule #0: s = __str__ x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end) then [x/*0:1*/] else [] {
+  rule #0: _ x = if (stringp s&&(eval (sprintf "'(%s)" (__str__ x))$$null lasterr) when s = __str__ x end) then [x] else []
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) R;
+{
+  rule #0: R2 = listmap (\x -> eval (sprintf "'(%s)" (__str__ x))) R2
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+'((!!) __with__ [(x!!ns ::matrix-->x!!list ns),(x!!(ns ::matrix,ms)-->x!!(list ns,ms) __if__ ~tuplep ms),(x!!(ns,ms ::matrix)-->x!!(ns,list ms)),(x!!(ns ::int,ms)-->x!!([ns],ms) __if__ ~tuplep ms),(x!!(ns,ms ::int)-->x!!(ns,[ms])),(x ::matrix!!(ns,ms)-->__case__ (ns,ms) [(ns __as__ (n:_),ms __as__ (m:_)-->submat x (n,m) (#ns,#ms) __if__ cont ns&&cont ms),(_-->colcatmap (mth (rowcatmap (nth x) ns)) ms)] __with__ [(cont [n ::int]-->1),(cont (n ::int:ns __as__ (m ::int:_))-->cont ns __if__ m==n+1),(cont _-->0),(mth x m-->catch (cst {}) (col x m)),(nth x n-->catch (cst {}) (row x n))]),(x ::matrix!!ns-->__ifelse__ (all intp ns&&packed x) (rowvector x!!([0],ns)) (colcatmap (nth x) ns) __with__ [nth x n-->catch (cst {}) {x!n}]),(s ::string!!ns-->__case__ ns [(ns __as__ (n:_)-->substr s n (count ns) __if__ cont ns),(_-->string (chars s!!ns))] __with__ [(cont [n ::int]-->1),(cont (n ::int:ns __as__ (m ::int:_))-->cont ns __if__ m==n+1),(cont _-->0),(count ns-->#dropwhile (__lambda__ [n,::int] (n<0)) ns)]),(xs __as__ ()!!ns-->tuple (list xs!!ns)),(xs __as__ (_,_)!!ns-->tuple (list xs!!ns)),(xs!!ns-->ys __if__ ok ys __when__ [ys-->__case__ ns [(ns __as__ (n ::int:_)-->list (take (count ns) (drop n xs)) __if__ listp xs&&cont ns),(_-->catmap (nth xs) ns)]] __with__ [(cont (n ::int:ns)-->~thunkp ns&&__case__ ns [([]-->1),(m ::int:_-->cont ns __if__ m==n+1),(_-->0)]),(nth xs n-->catch (cst []) [xs!n]),(count ns-->#dropwhile (__lambda__ [n,::int] (n<0)) ns),(ok (catmap (nth _) _)-->0),(ok _-->1)]),(x __as__ Array _!!(is,js)-->listmap (__lambda__ [i] (cat (listmap (__lambda__ [j] (catch (cst []) [x!i!j])) js))) is)]);
+'(($) __with__ [f$x-->f x]);
+'(($$) __with__ [x$$y-->y]);
+'((%) __with__ [(x ::bigint%0L-->x div 0L),(x ::bigint%y ::bigint-->(-x)%(-y) __if__ y<0),(x ::bigint%y ::bigint-->x div d%(y div d) __if__ d>1 __when__ [d-->gcd x y]),(x ::int%y ::bigint-->bigint x%y),(x ::bigint%y ::int-->x%bigint y),(x ::int%y ::int-->bigint x%bigint y),(x1%y1%(x2%y2)-->x1*y2%(y1*x2)),(x1%y1%x2 ::int-->x1%(y1*x2)),(x1%y1%x2 ::bigint-->x1%(y1*x2)),(x1 ::int%(x2%y2)-->x1*y2%x2),(x1 ::bigint%(x2%y2)-->x1*y2%x2),(z1 __as__ (_+:_)%z2 __as__ (_<:_)-->z1/z2),(z1 __as__ (_<:_)%z2 __as__ (_+:_)-->z1/z2),((x1+:y1)%(x2+:y2)-->(x1*x2+y1*y2)%d+:(y1*x2-x1*y2)%d __when__ [d-->x2*x2+y2*y2]),((r1<:t1)%(r2<:t2)-->r1%r2<:t1-t2),((x1+:y1)%x2-->x1*x2%d+:y1*x2%d __when__ [d-->x2*x2] __if__ realp x2),(x1%(x2+:y2)-->x1*x2%d+:(-x1*y2)%d __when__ [d-->x2*x2+y2*y2] __if__ realp x1),((r1<:t1)%x2-->r1%x2<:t1 __if__ realp x2),(x1%(r2<:t2)-->x1%r2<:-t2 __if__ realp x1),(x ::double%y-->x/y __if__ numberp y),(x%y ::double-->x/y __if__ numberp x)]);
+'((&) __with__ [x&-->x]);
+'((&&) __with__ [x ::int&&y-->x&&y]);
+'((') __with__ ['x-->x]);
+'((*) __with__ [(x ::int*y ::int-->x*y),(x ::double*y ::double-->x*y),(x ::int*y ::double-->x*y),(x ::double*y ::int-->x*y),(x ::bigint*y ::bigint-->__C::bigint_mul x y),(x ::int*y ::bigint-->bigint x*y),(x ::bigint*y ::int-->x*bigint y),(x ::bigint*y ::double-->double x*y),(x ::double*y ::bigint-->x*double y),((x1+:y1)*(x2+:y2)-->x1*x2-y1*y2+:x1*y2+y1*x2),((r1<:t1)*(r2<:t2)-->r1*r2<:t1+t2),(z1 __as__ (x1+:y1)*z2 __as__ (r2<:t2)-->z1*rect z2),(z1 __as__ (r1<:t1)*z2 __as__ (x2+:y2)-->rect z1*z2),(z1 __as__ (x1+:y1)*x2-->z1*rect x2 __if__ realp x2),(x1*z2 __as__ (x2+:y2)-->rect x1*z2 __if__ realp x1),((r1<:t1)*x2-->r1*x2<:t1 __if__ realp x2),(x1*(r2<:t2)-->x1*r2<:t2 __if__ realp x1),(x1%y1*(x2%y2)-->x1*x2%(y1*y2)),(x1%y1*x2 ::int-->x1*x2%y1),(x1%y1*x2 ::bigint-->x1*x2%y1),(x1 ::int*(x2%y2)-->x1*x2%y2),(x1 ::bigint*(x2%y2)-->x1*x2%y2),(x1%y1*x2-->x1/y1*x2 __if__ numberp x2),(x1*(x2%y2)-->x1*(x2/y2) __if__ numberp x1),(d1 __as__ Dict _*d2 __as__ Dict _-->d1-(d1-d2)),(d1 __as__ MDict _*d2 __as__ MDict _-->d1-(d1-d2)),(d1 __as__ HDict _*d2 __as__ HDict _-->d1-(d1-d2)),(d1 __as__ HMDict _*d2 __as__ HMDict _-->d1-(d1-d2)),(m1 __as__ HMDict _*m2-->m1*hmdict m2 __if__ xdictp m2),(m1*m2 __as__ HMDict _-->hmdict m1*m2 __if__ xdictp m1),(m1 __as__ HDict _*m2-->__case__ m2 [(MDict _-->hmdict m1*hmdict m2),(Dict _-->m1*hdict m2)] __if__ xdictp m2),(m1*m2 __as__ HDict _-->__case__ m1 [(MDict _-->hmdict m1*hmdict m2),(Dict _-->hdict m1*m2)] __if__ xdictp m2),(m1 __as__ MDict _*m2 __as__ Dict _-->m1*mdict m2),(m1 __as__ Dict _*m2 __as__ MDict _-->mdict m1*m2),(m1 __as__ Set _*m2 __as__ Set _-->m1-(m1-m2)),(m1 __as__ Bag _*m2 __as__ Bag _-->m1-(m1-m2)),(m1 __as__ HSet _*m2 __as__ HSet _-->m1-(m1-m2)),(m1 __as__ HBag _*m2 __as__ HBag _-->m1-(m1-m2)),(m1 __as__ HBag _*m2-->m1*hbag m2 __if__ xsetp m2),(m1*m2 __as__ HBag _-->hbag m1*m2 __if__ xsetp m1),(m1 __as__ HSet _*m2-->__case__ m2 [(Bag _-->hbag m1*hbag m2),(Set _-->m1*hset m2)] __if__ xsetp m2),(m1*m2 __as__ HSet _-->__case__ m1 [(Bag _-->hbag m1*hbag m2),(Set _-->hset m1*m2)] __if__ xsetp m2),(m1 __as__ Bag _*m2 __as__ Set _-->m1*bag m2),(m1 __as__ Set _*m2 __as__ Bag _-->bag m1*m2)]);
+'((+) __with__ [(x ::int+y ::int-->x+y),(x ::double+y ::double-->x+y),(x ::int+y ::double-->x+y),(x ::double+y ::int-->x+y),(x ::bigint+y ::bigint-->__C::bigint_add x y),(x ::int+y ::bigint-->bigint x+y),(x ::bigint+y ::int-->x+bigint y),(x ::bigint+y ::double-->double x+y),(x ::double+y ::bigint-->x+double y),(x ::pointer+y ::int-->pointer (bigint x+y)),(x ::pointer+y ::bigint-->pointer (bigint x+y)),(c ::string+n ::int-->chr (ord c+n) __if__ #c==1),(s ::string+t ::string-->__C::string_concat s t),(s ::string+[]-->chars s),(s ::string+xs __as__ (_:_)-->chars s+xs),([]+s ::string+[]-->chars s),(xs __as__ (_:_)+s ::string-->xs+chars s),([]+ys-->ys),(xs __as__ (_:_)+ys-->tick [] xs ys __with__ [(tick zs (x:xs) ys-->tack (x:zs) ((xs+ys)&) __if__ thunkp xs),(tick zs (x:xs) ys-->tick (x:zs) xs ys),(tick zs [] ys-->tack zs ys),(tick zs xs ys-->tack zs (xs+ys)),(tack (x:xs) ys-->tack xs (x:ys)),(tack [] ys-->ys)]),((x1+:y1)+(x2+:y2)-->x1+x2+:y1+y2),(z1 __as__ (r1<:t1)+z2 __as__ (r2<:t2)-->polar (rect z1+rect z2)),(z1 __as__ (x1+:y1)+z2 __as__ (r2<:t2)-->z1+rect z2),(z1 __as__ (r1<:t1)+z2 __as__ (x2+:y2)-->rect z1+z2),((x1+:y1)+x2-->x1+x2+:y1 __if__ realp x2),(x1+(x2+:y2)-->x1+x2+:y2 __if__ realp x1),(z1 __as__ (r1<:t1)+x2-->z1+polar x2 __if__ realp x2),(x1+z2 __as__ (r2<:t2)-->polar x1+z2 __if__ realp x1),(x1%y1+x2%y2-->(x1*y2+x2*y1)%(y1*y2)),(x1%y1+x2 ::int-->(x1+x2*y1)%y1),(x1%y1+x2 ::bigint-->(x1+x2*y1)%y1),(x1 ::int+x2%y2-->(x1*y2+x2)%y2),(x1 ::bigint+x2%y2-->(x1*y2+x2)%y2),(x1%y1+x2-->x1/y1+x2 __if__ numberp x2),(x1+x2%y2-->x1+x2/y2 __if__ numberp x1),(d1 __as__ Dict _+d2 __as__ Dict _-->foldl insert d1 (members d2)),(d1 __as__ MDict _+d2 __as__ MDict _-->foldl insert d1 (members d2)),(d1 __as__ HDict _+d2 __as__ HDict _-->foldl insert d1 (members d2)),(d1 __as__ HMDict _+d2 __as__ HMDict _-->foldl insert d1 (members d2)),(m1 __as__ HMDict _+m2-->m1+hmdict m2 __if__ xdictp m2),(m1+m2 __as__ HMDict _-->hmdict m1+m2 __if__ xdictp m1),(m1 __as__ HDict _+m2-->__case__ m2 [(MDict _-->hmdict m1+hmdict m2),(Dict _-->m1+hdict m2)] __if__ xdictp m2),(m1+m2 __as__ HDict _-->__case__ m1 [(MDict _-->hmdict m1+hmdict m2),(Dict _-->hdict m1+m2)] __if__ xdictp m2),(m1 __as__ MDict _+m2 __as__ Dict _-->m1+mdict m2),(m1 __as__ Dict _+m2 __as__ MDict _-->mdict m1+m2),(m1 __as__ Set _+m2 __as__ Set _-->foldl insert m1 (members m2)),(m1 __as__ Bag _+m2 __as__ Bag _-->foldl insert m1 (members m2)),(m1 __as__ HSet _+m2 __as__ HSet _-->foldl insert m1 (members m2)),(m1 __as__ HBag _+m2 __as__ HBag _-->foldl insert m1 (members m2)),(m1 __as__ HBag _+m2-->m1+hbag m2 __if__ xsetp m2),(m1+m2 __as__ HBag _-->hbag m1+m2 __if__ xsetp m1),(m1 __as__ HSet _+m2-->__case__ m2 [(Bag _-->hbag m1+hbag m2),(Set _-->m1+hset m2)] __if__ xsetp m2),(m1+m2 __as__ HSet _-->__case__ m1 [(Bag _-->hbag m1+hbag m2),(Set _-->hset m1+m2)] __if__ xsetp m2),(m1 __as__ Bag _+m2 __as__ Set _-->m1+bag m2),(m1 __as__ Set _+m2 __as__ Bag _-->bag m1+m2)]);
+'((,) __with__ [(x,()-->x),((),y-->y),((x,y),z-->x,y,z)]);
+'((-) __with__ [(x ::int-y ::int-->x-y),(x ::double-y ::double-->x-y),(x ::int-y ::double-->x-y),(x ::double-y ::int-->x-y),(x ::bigint-y ::bigint-->__C::bigint_sub x y),(x ::int-y ::bigint-->bigint x-y),(x ::bigint-y ::int-->x-bigint y),(x ::bigint-y ::double-->double x-y),(x ::double-y ::bigint-->x-double y),(x ::pointer-y ::pointer-->bigint x-bigint y),(x ::pointer-y ::int-->pointer (bigint x-y)),(x ::pointer-y ::bigint-->pointer (bigint x-y)),(c ::string-n ::int-->chr (ord c-n) __if__ #c==1&&ord c>=n),(c ::string-d ::string-->ord c-ord d __if__ #c==1&&#d==1),((x1+:y1)-(x2+:y2)-->x1-x2+:y1-y2),(z1 __as__ (r1<:t1)-z2 __as__ (r2<:t2)-->polar (rect z1-rect z2)),(z1 __as__ (x1+:y1)-z2 __as__ (r2<:t2)-->z1-rect z2),(z1 __as__ (r1<:t1)-z2 __as__ (x2+:y2)-->rect z1-z2),((x1+:y1)-x2-->x1-x2+:y1 __if__ realp x2),(x1-(x2+:y2)-->x1-x2+:-y2 __if__ realp x1),(z1 __as__ (r1<:t1)-x2-->z1-polar x2 __if__ realp x2),(x1-z2 __as__ (r2<:t2)-->polar x1-z2 __if__ realp x1),(x1%y1-x2%y2-->(x1*y2-x2*y1)%(y1*y2)),(x1%y1-x2 ::int-->(x1-x2*y1)%y1),(x1%y1-x2 ::bigint-->(x1-x2*y1)%y1),(x1 ::int-x2%y2-->(x1*y2-x2)%y2),(x1 ::bigint-x2%y2-->(x1*y2-x2)%y2),(x1%y1-x2-->x1/y1-x2 __if__ numberp x2),(x1-x2%y2-->x1-x2/y2 __if__ numberp x1),(d1 __as__ Dict _-d2 __as__ Dict _-->foldl delete_val d1 (members d2)),(d1 __as__ MDict _-d2 __as__ MDict _-->foldl delete_val d1 (members d2)),(d1 __as__ HDict _-d2 __as__ HDict _-->foldl delete_val d1 (members d2)),(d1 __as__ HMDict _-d2 __as__ HMDict _-->foldl delete_val d1 (members d2)),(m1 __as__ HMDict _-m2-->m1-hmdict m2 __if__ xdictp m2),(m1-m2 __as__ HMDict _-->hmdict m1-m2 __if__ xdictp m1),(m1 __as__ HDict _-m2-->__case__ m2 [(MDict _-->hmdict m1-hmdict m2),(Dict _-->m1-hdict m2)] __if__ xdictp m2),(m1-m2 __as__ HDict _-->__case__ m1 [(MDict _-->hmdict m1-hmdict m2),(Dict _-->hdict m1-m2)] __if__ xdictp m2),(m1 __as__ MDict _-m2 __as__ Dict _-->m1-mdict m2),(m1 __as__ Dict _-m2 __as__ MDict _-->mdict m1-m2),(m1 __as__ Set _-m2 __as__ Set _-->foldl delete m1 (members m2)),(m1 __as__ Bag _-m2 __as__ Bag _-->foldl delete m1 (members m2)),(m1 __as__ HSet _-m2 __as__ HSet _-->foldl delete m1 (members m2)),(m1 __as__ HBag _-m2 __as__ HBag _-->foldl delete m1 (members m2)),(m1 __as__ HBag _-m2-->m1-hbag m2 __if__ xsetp m2),(m1-m2 __as__ HBag _-->hbag m1-m2 __if__ xsetp m1),(m1 __as__ HSet _-m2-->__case__ m2 [(Bag _-->hbag m1-hbag m2),(Set _-->m1-hset m2)] __if__ xsetp m2),(m1-m2 __as__ HSet _-->__case__ m1 [(Bag _-->hbag m1-hbag m2),(Set _-->hset m1-m2)] __if__ xsetp m2),(m1 __as__ Bag _-m2 __as__ Set _-->m1-bag m2),(m1 __as__ Set _-m2 __as__ Bag _-->bag m1-m2)]);
+'((.) __with__ [(f.g) x-->f (g x)]);
+'((..) __with__ [(n ::int..m ::int-->__C::pure_int_seq n m 1),(n1 ::int:n2 ::int..m ::int-->__C::pure_int_seq n1 m (n2-n1) __if__ n1~=n2),(n ::double..m ::double-->__C::pure_double_seq n m 1.0 __if__ ~infp n&&~infp m),(n ::int..m ::double-->__C::pure_double_seq (double n) m 1.0 __if__ ~infp m),(n ::double..m ::int-->__C::pure_double_seq n (double m) 1.0 __if__ ~infp n),(n1 ::double:n2 ::double..m ::double-->__C::pure_double_seq n1 m (n2-n1) __if__ ~infp n1&&~infp m&&n1~=n2),(n1 ::int:n2 ::double..m ::double-->__C::pure_double_seq (double n1) m (n2-n1) __if__ ~infp m&&n1~=n2),(n1 ::double:n2 ::int..m ::double-->__C::pure_double_seq n1 m (n2-n1) __if__ ~infp n1&&~infp m&&n1~=n2),(n1 ::double:n2 ::double..m ::int-->__C::pure_double_seq n1 (double m) (n2-n1) __if__ ~infp n1&&n1~=n2),(n1 ::int:n2 ::int..m ::double-->__C::pure_double_seq (double n1) m (double (n2-n1)) __if__ ~infp m&&n1~=n2),(n1 ::int:n2 ::double..m ::int-->__C::pure_double_seq (double n1) (double m) (n2-n1) __if__ n1~=n2),(n1 ::double:n2 ::int..m ::int-->__C::pure_double_seq n1 (double m) (n2-n1) __if__ ~infp n1&&n1~=n2),(a ::string..b ::string-->map chr (ord a..ord b) __if__ charp a&&charp b),(a ::string:b ::string..c ::string-->map chr (ord a:ord b..ord c) __if__ charp a&&charp b&&charp c),(n1:n2..m-->__ifelse__ (m===s) (iterate (flip (+) k) n1) (__ifelse__ (m===-s) [] (iterwhile (p m) (flip (+) k) n1)) __when__ [s,p-->__ifelse__ (k>0) (inf,(>=)) (-inf,(<=))] __if__ realp k&&k~=0&&~infp n1&&~infp n2 __when__ [k-->n2-n1]),(n..m-->__ifelse__ (m===inf) (iterate (flip (+) 1) n) (__ifelse__ (m===-inf) [] (iterwhile ((>=) m) (flip (+) 1) n)) __if__ ~listp n&&~infp n)]);
+'((<) __with__ [(x ::int<y ::int-->x<y),(x ::double<y ::double-->x<y),(x ::int<y ::double-->x<y),(x ::double<y ::int-->x<y),(x ::bigint<y ::bigint-->__C::bigint_cmp x y<0),(x ::int<y ::bigint-->bigint x<y),(x ::bigint<y ::int-->x<bigint y),(x ::bigint<y ::double-->double x<y),(x ::double<y ::bigint-->x<double y),(x ::pointer<y ::pointer-->bigint x<bigint y),(x ::string<y ::string-->__C::strcmp x y<0),(x1%y1<x2%y2-->x1*y2<x2*y1),(x1%y1<x2-->x1<x2*y1 __if__ realp x2),(x1<x2%y2-->x1*y2<x2 __if__ realp x2),(d1 __as__ Dict _<d2 __as__ Dict _-->d1<=d2&&~d1>=d2),(d1 __as__ MDict _<d2 __as__ MDict _-->d1<=d2&&~d1>=d2),(d1 __as__ HDict _<d2 __as__ HDict _-->d1<=d2&&~d1>=d2),(d1 __as__ HMDict _<d2 __as__ HMDict _-->d1<=d2&&~d1>=d2),(m1 __as__ HMDict _<m2-->m1<hmdict m2 __if__ xdictp m2),(m1<m2 __as__ HMDict _-->hmdict m1<m2 __if__ xdictp m1),(m1 __as__ HDict _<m2-->__case__ m2 [(MDict _-->hmdict m1<hmdict m2),(Dict _-->m1<hdict m2)] __if__ xdictp m2),(m1<m2 __as__ HDict _-->__case__ m1 [(MDict _-->hmdict m1<hmdict m2),(Dict _-->hdict m1<m2)] __if__ xdictp m2),(m1 __as__ MDict _<m2 __as__ Dict _-->m1<mdict m2),(m1 __as__ Dict _<m2 __as__ MDict _-->mdict m1<m2),(m1 __as__ Set _<m2 __as__ Set _-->m1<=m2&&~m1>=m2),(m1 __as__ Bag _<m2 __as__ Bag _-->m1<=m2&&~m1>=m2),(m1 __as__ HSet _<m2 __as__ HSet _-->m1<=m2&&~m1>=m2),(m1 __as__ HBag _<m2 __as__ HBag _-->m1<=m2&&~m1>=m2),(m1 __as__ HBag _<m2-->m1<hbag m2 __if__ xsetp m2),(m1<m2 __as__ HBag _-->hbag m1<m2 __if__ xsetp m1),(m1 __as__ HSet _<m2-->__case__ m2 [(Bag _-->hbag m1<hbag m2),(Set _-->m1<hset m2)] __if__ xsetp m2),(m1<m2 __as__ HSet _-->__case__ m1 [(Bag _-->hbag m1<hbag m2),(Set _-->hset m1<m2)] __if__ xsetp m2),(m1 __as__ Bag _<m2 __as__ Set _-->m1<bag m2),(m1 __as__ Set _<m2 __as__ Bag _-->bag m1<m2)]);
+'((<:) __with__ [(r ::int<:t-->-r<:t+3.14159265358979 __if__ r<0),(r ::bigint<:t-->-r<:t+3.14159265358979 __if__ r<0),(r ::double<:t-->-r<:t+3.14159265358979 __if__ r<0),(r<:t ::int-->r<:atan2 (sin t) (cos t) __if__ t<-3.14159265358979||t>3.14159265358979),(r<:t ::bigint-->r<:atan2 (sin t) (cos t) __if__ t<-3.14159265358979||t>3.14159265358979),(r<:t ::double-->r<:atan2 (sin t) (cos t) __if__ t<-3.14159265358979||t>3.14159265358979),(r<:t ::int-->r<:3.14159265358979 __if__ t==-3.14159265358979),(r<:t ::bigint-->r<:3.14159265358979 __if__ t==-3.14159265358979),(r<:t ::double-->r<:3.14159265358979 __if__ t==-3.14159265358979),(r __as__ (_%_)<:t-->-r<:t+3.14159265358979 __if__ r<0),(r<:t __as__ (_%_)-->r<:atan2 (sin t) (cos t) __if__ t<-3.14159265358979||t>3.14159265358979),(r<:t __as__ (_%_)-->r<:3.14159265358979 __if__ t==-3.14159265358979)]);
+'((<<) __with__ [(x ::int<<y ::int-->x<<y),(x ::bigint<<y ::int-->__C::bigint_shl x y __if__ y>=0),(x ::bigint<<y ::int-->__C::bigint_shr x (-y))]);
+'((<=) __with__ [(x ::int<=y ::int-->x<=y),(x ::double<=y ::double-->x<=y),(x ::int<=y ::double-->x<=y),(x ::double<=y ::int-->x<=y),(x ::bigint<=y ::bigint-->__C::bigint_cmp x y<=0),(x ::int<=y ::bigint-->bigint x<=y),(x ::bigint<=y ::int-->x<=bigint y),(x ::bigint<=y ::double-->double x<=y),(x ::double<=y ::bigint-->x<=double y),(x ::pointer<=y ::pointer-->bigint x<=bigint y),(x ::string<=y ::string-->__C::strcmp x y<=0),(x1%y1<=x2%y2-->x1*y2<=x2*y1),(x1%y1<=x2-->x1<=x2*y1 __if__ realp x2),(x1<=x2%y2-->x1*y2<=x2 __if__ realp x2),(d1 __as__ Dict _<=d2 __as__ Dict _-->all (member d2) ks1&&map ((!) d2) ks1==vals d1 __when__ [ks1-->keys d1]),(d1 __as__ MDict _<=d2 __as__ MDict _-->null (d1-d2)),(d1 __as__ HDict _<=d2 __as__ HDict _-->null (d1-d2)),(d1 __as__ HMDict _<=d2 __as__ HMDict _-->null (d1-d2)),(m1 __as__ HMDict _<=m2-->m1<=hmdict m2 __if__ xdictp m2),(m1<=m2 __as__ HMDict _-->hmdict m1<=m2 __if__ xdictp m1),(m1 __as__ HDict _<=m2-->__case__ m2 [(MDict _-->hmdict m1<=hmdict m2),(Dict _-->m1<=hdict m2)] __if__ xdictp m2),(m1<=m2 __as__ HDict _-->__case__ m1 [(MDict _-->hmdict m1<=hmdict m2),(Dict _-->hdict m1<=m2)] __if__ xdictp m2),(m1 __as__ MDict _<=m2 __as__ Dict _-->m1<=mdict m2),(m1 __as__ Dict _<=m2 __as__ MDict _-->mdict m1<=m2),(m1 __as__ Set _<=m2 __as__ Set _-->all (member m2) (members m1)),(m1 __as__ HSet _<=m2 __as__ HSet _-->all (member m2) (members m1)),(m1 __as__ Bag _<=m2 __as__ Bag _-->null (m1-m2)),(m1 __as__ HBag _<=m2 __as__ HBag _-->null (m1-m2)),(m1 __as__ HBag _<=m2-->m1<=hbag m2 __if__ xsetp m2),(m1<=m2 __as__ HBag _-->hbag m1<=m2 __if__ xsetp m1),(m1 __as__ HSet _<=m2-->__case__ m2 [(Bag _-->hbag m1<=hbag m2),(Set _-->m1<=hset m2)] __if__ xsetp m2),(m1<=m2 __as__ HSet _-->__case__ m1 [(Bag _-->hbag m1<=hbag m2),(Set _-->hset m1<=m2)] __if__ xsetp m2),(m1 __as__ Bag _<=m2 __as__ Set _-->m1<=bag m2),(m1 __as__ Set _<=m2 __as__ Bag _-->bag m1<=m2)]);
+'((===) __with__ [x===y-->same x y]);
+'((>) __with__ [(x ::int>y ::int-->x>y),(x ::double>y ::double-->x>y),(x ::int>y ::double-->x>y),(x ::double>y ::int-->x>y),(x ::bigint>y ::bigint-->__C::bigint_cmp x y>0),(x ::int>y ::bigint-->bigint x>y),(x ::bigint>y ::int-->x>bigint y),(x ::bigint>y ::double-->double x>y),(x ::double>y ::bigint-->x>double y),(x ::pointer>y ::pointer-->bigint x>bigint y),(x ::string>y ::string-->__C::strcmp x y>0),(x1%y1>x2%y2-->x1*y2>x2*y1),(x1%y1>x2-->x1>x2*y1 __if__ realp x2),(x1>x2%y2-->x1*y2>x2 __if__ realp x2),(d1 __as__ Dict _>d2 __as__ Dict _-->d1>=d2&&~d1<=d2),(d1 __as__ MDict _>d2 __as__ MDict _-->d1>=d2&&~d1<=d2),(d1 __as__ HDict _>d2 __as__ HDict _-->d1>=d2&&~d1<=d2),(d1 __as__ HMDict _>d2 __as__ HMDict _-->d1>=d2&&~d1<=d2),(m1 __as__ HMDict _>m2-->m1>hmdict m2 __if__ xdictp m2),(m1>m2 __as__ HMDict _-->hmdict m1>m2 __if__ xdictp m1),(m1 __as__ HDict _>m2-->__case__ m2 [(MDict _-->hmdict m1>hmdict m2),(Dict _-->m1>hdict m2)] __if__ xdictp m2),(m1>m2 __as__ HDict _-->__case__ m1 [(MDict _-->hmdict m1>hmdict m2),(Dict _-->hdict m1>m2)] __if__ xdictp m2),(m1 __as__ MDict _>m2 __as__ Dict _-->m1>mdict m2),(m1 __as__ Dict _>m2 __as__ MDict _-->mdict m1>m2),(m1 __as__ Set _>m2 __as__ Set _-->m1>=m2&&~m1<=m2),(m1 __as__ Bag _>m2 __as__ Bag _-->m1>=m2&&~m1<=m2),(m1 __as__ HSet _>m2 __as__ HSet _-->m1>=m2&&~m1<=m2),(m1 __as__ HBag _>m2 __as__ HBag _-->m1>=m2&&~m1<=m2),(m1 __as__ HBag _>m2-->m1>hbag m2 __if__ xsetp m2),(m1>m2 __as__ HBag _-->hbag m1>m2 __if__ xsetp m1),(m1 __as__ HSet _>m2-->__case__ m2 [(Bag _-->hbag m1>hbag m2),(Set _-->m1>hset m2)] __if__ xsetp m2),(m1>m2 __as__ HSet _-->__case__ m1 [(Bag _-->hbag m1>hbag m2),(Set _-->hset m1>m2)] __if__ xsetp m2),(m1 __as__ Bag _>m2 __as__ Set _-->m1>bag m2),(m1 __as__ Set _>m2 __as__ Bag _-->bag m1>m2)]);
+'((>=) __with__ [(x ::int>=y ::int-->x>=y),(x ::double>=y ::double-->x>=y),(x ::int>=y ::double-->x>=y),(x ::double>=y ::int-->x>=y),(x ::bigint>=y ::bigint-->__C::bigint_cmp x y>=0),(x ::int>=y ::bigint-->bigint x>=y),(x ::bigint>=y ::int-->x>=bigint y),(x ::bigint>=y ::double-->double x>=y),(x ::double>=y ::bigint-->x>=double y),(x ::pointer>=y ::pointer-->bigint x>=bigint y),(x ::string>=y ::string-->__C::strcmp x y>=0),(x1%y1>=x2%y2-->x1*y2>=x2*y1),(x1%y1>=x2-->x1>=x2*y1 __if__ realp x2),(x1>=x2%y2-->x1*y2>=x2 __if__ realp x2),(d1 __as__ Dict _>=d2 __as__ Dict _-->all (member d1) ks2&&map ((!) d1) ks2==vals d2 __when__ [ks2-->keys d2]),(d1 __as__ MDict _>=d2 __as__ MDict _-->null (d2-d1)),(d1 __as__ HDict _>=d2 __as__ HDict _-->null (d2-d1)),(d1 __as__ HMDict _>=d2 __as__ HMDict _-->null (d2-d1)),(m1 __as__ HMDict _>=m2-->m1>=hmdict m2 __if__ xdictp m2),(m1>=m2 __as__ HMDict _-->hmdict m1>=m2 __if__ xdictp m1),(m1 __as__ HDict _>=m2-->__case__ m2 [(MDict _-->hmdict m1>=hmdict m2),(Dict _-->m1>=hdict m2)] __if__ xdictp m2),(m1>=m2 __as__ HDict _-->__case__ m1 [(MDict _-->hmdict m1>=hmdict m2),(Dict _-->hdict m1>=m2)] __if__ xdictp m2),(m1 __as__ MDict _>=m2 __as__ Dict _-->m1>=mdict m2),(m1 __as__ Dict _>=m2 __as__ MDict _-->mdict m1>=m2),(m1 __as__ Set _>=m2 __as__ Set _-->all (member m1) (members m2)),(m1 __as__ HSet _>=m2 __as__ HSet _-->all (member m1) (members m2)),(m1 __as__ Bag _>=m2 __as__ Bag _-->null (m2-m1)),(m1 __as__ HBag _>=m2 __as__ HBag _-->null (m2-m1)),(m1 __as__ HBag _>=m2-->m1>=hbag m2 __if__ xsetp m2),(m1>=m2 __as__ HBag _-->hbag m1>=m2 __if__ xsetp m1),(m1 __as__ HSet _>=m2-->__case__ m2 [(Bag _-->hbag m1>=hbag m2),(Set _-->m1>=hset m2)] __if__ xsetp m2),(m1>=m2 __as__ HSet _-->__case__ m1 [(Bag _-->hbag m1>=hbag m2),(Set _-->hset m1>=m2)] __if__ xsetp m2),(m1 __as__ Bag _>=m2 __as__ Set _-->m1>=bag m2),(m1 __as__ Set _>=m2 __as__ Bag _-->bag m1>=m2)]);
+'((>>) __with__ [(x ::int>>y ::int-->x>>y),(x ::bigint>>y ::int-->__C::bigint_shr x y __if__ y>=0),(x ::bigint>>y ::int-->__C::bigint_shl x (-y))]);
+'((^) __with__ [(1.0^y ::double-->1.0),((-1.0)^y ::double-->1.0 __if__ infp y),(x ::double^y ::double-->__C::pow x y),(x ::int^y ::int-->double x^double y),(x ::bigint^y ::bigint-->double x^double y),(x ::int^y ::bigint-->double x^double y),(x ::bigint^y ::int-->double x^double y),(x ::double^y ::int-->x^double y),(x ::double^y ::bigint-->x^double y),(x ::int^y ::double-->double x^y),(x ::bigint^y ::double-->double x^y),(z1 __as__ (_+:_)^x2-->exp (ln z1*x2) __if__ numberp x2),(z1 __as__ (_<:_)^x2-->exp (ln z1*x2) __if__ numberp x2),(x1^z2 __as__ (_+:_)-->exp (ln (rect x1)*z2) __if__ realp x1),(x1^z2 __as__ (_<:_)-->exp (ln (polar x1)*z2) __if__ realp x1),((x1%y1)^(x2%y2)-->(x1/y1)^(x2/y2)),((x1%y1)^x2-->(x1/y1)^x2 __if__ numberp x2),(x1^(x2%y2)-->x1^(x2/y2) __if__ numberp x1)]);
+'((and) __with__ [(x ::int and y ::int-->x and y),(x ::bigint and y ::bigint-->__C::bigint_and x y),(x ::int and y ::bigint-->bigint x and y),(x ::bigint and y ::int-->x and bigint y)]);
+'(applp __with__ [applp x-->typep ('appl) x]);
+'(array __with__ [array xs ::rlist-->foldl append emptyarray xs]);
+'(array2 __with__ [array2 xs-->array (map array xs)]);
+'(arrayp __with__ [arrayp x-->typep array x]);
+'(bagp __with__ [bagp x-->typep bag x]);
+'(bigintp __with__ [bigintp x-->__case__ x [(_ ::bigint-->1),(_-->0)]]);
+'(bigintvalp __with__ [bigintvalp x-->ratvalp x&&den (re x)==1]);
+'(blobp __with__ [blobp _-->0]);
+'(byte_cstring __with__ [byte_cstring s ::string-->ptrtag 1$__C::pure_byte_cstring s]);
+'(byte_cstring_pointer __with__ [byte_cstring_pointer xs-->__ifelse__ (null p) (throw malloc_error) (make_pointer (map byte_cstring xs)) __with__ [(make_pointer xs-->ptrtag 3$sentry free_pointer p __when__ [_-->dowith (__lambda__ [i,x] (put_pointer (p+i*8) x)) (0..n-1) xs]),(free_pointer p-->free p __when__ [_-->do (__lambda__ [i] (free (get_pointer (p+i*8)))) (0..n-1)])] __when__ [(n-->#xs),(p-->calloc (n+1) 8),(xs-->__ifelse__ (smatrixp xs) (list xs) xs)] __if__ (rlistp xs||smatrixp xs)&&all stringp xs]);
+'(byte_pointer __with__ [byte_pointer p ::pointer x ::matrix-->__C::matrix_to_byte_array p x __if__ nmatrixp x]);
+'(byte_string __with__ [byte_string s ::string-->ptrtag 1$__C::pure_byte_string s]);
+'(byte_string_pointer __with__ [byte_string_pointer xs-->__ifelse__ (null p) (throw malloc_error) (make_pointer (map byte_string xs)) __with__ [(make_pointer xs-->ptrtag 3$sentry free_pointer p __when__ [_-->dowith (__lambda__ [i,x] (put_pointer (p+i*8) x)) (0..n-1) xs]),(free_pointer p-->free p __when__ [_-->do (__lambda__ [i] (free (get_pointer (p+i*8)))) (0..n-1)])] __when__ [(n-->#xs),(p-->calloc (n+1) 8),(xs-->__ifelse__ (smatrixp xs) (list xs) xs)] __if__ (rlistp xs||smatrixp xs)&&all stringp xs]);
+'(cat __with__ [(cat []-->[]),(cat (xs __as__ (_:_))-->foldr (tick []) [] xs __with__ [(foldr f a []-->a),(foldr f a (xs __as__ (_:_))-->tick [] xs __with__ [(tick zs (x:xs)-->tack (x:zs) (foldr f a xs&) __if__ thunkp xs),(tick zs (x:xs)-->tick (x:zs) xs),(tick zs []-->tack zs a),(tick zs xs-->tack zs (foldr f a xs)),(tack (x:xs) y-->tack xs (f x y)),(tack [] y-->y)]),(foldr (tick _) [] x-->cat x),(tick zs (x:xs) ys-->tack (x:zs) (tick [] xs ys&) __if__ thunkp xs),(tick zs (x:xs) ys-->tick (x:zs) xs ys),(tick zs [] ys-->tack zs ys),(tick zs xs ys-->tack zs (xs+ys)),(tack (x:xs) ys-->tack xs (x:ys)),(tack [] ys-->ys)])]);
+'(charp __with__ [charp x-->typep ('char) x]);
+'(chars __with__ [(chars s ::string-->__C::string_chars s __if__ ~funp (:)),(chars s ::string-->list (__C::string_chars s))]);
+'(chr __with__ [chr n ::int-->c __if__ stringp c __when__ [c-->__C::string_chr n]]);
+'(clearsym __with__ [(clearsym sym ::string level ::int-->() __when__ [(res-->evalcmd ("clear -t"+str level+" "+sym)),(_-->stringp res||throw evalcmd)]),(clearsym sym ::symbol level ::int-->clearsym sym level __when__ [(sym-->str sym),(sym-->__ifelse__ (sym!0=="(") (substr sym 2 (#sym-2)) sym)])]);
+'(closurep __with__ [closurep x-->funp x||lambdap x]);
+'(cmatrixp __with__ [cmatrixp x-->__case__ x [(_ ::matrix-->matrix_type x==2),(_-->0)]]);
+'(col __with__ [col x ::matrix j ::int-->__ifelse__ (j>=0&&j<m) (__C::matrix_slice x 0 j (n-1) j) (throw out_of_bounds) __when__ [n ::int,m ::int-->dim x]]);
+'(colrev __with__ [colrev x ::matrix-->colcat (reverse (cols x))]);
+'(cols __with__ [cols x ::matrix-->map (col x) (0..m-1) __when__ [_,m ::int-->dim x]]);
+'(colvectorp __with__ [colvectorp x-->matrixp x&&dim x!1==1]);
+'(complex_float_pointer __with__ [complex_float_pointer p ::pointer x ::matrix-->__C::matrix_to_complex_float_array p x __if__ nmatrixp x]);
+'(complex_pointer __with__ [complex_pointer p ::pointer x ::matrix-->__C::matrix_to_complex_array p x __if__ nmatrixp x]);
+'(complexp __with__ [complexp x-->typep ('complex) x]);
+'(compvalp __with__ [compvalp x-->numberp x]);
+'(cooked __with__ [cooked p ::pointer-->sentry free p]);
+'(cst __with__ [cst x y-->x]);
+'(cstring __with__ [cstring s ::pointer-->__C::pure_cstring s]);
+'(cstring_dup __with__ [cstring_dup s ::pointer-->__C::pure_cstring_dup s]);
+'(cstring_list __with__ [cstring_list n p ::pointer-->list$takewhile stringp (listmap (__lambda__ [i] (p!i)) (0..n-1)) __with__ [p!i-->__ifelse__ (null q) q (cstring_dup q) __when__ [q-->get_pointer (p+i*8)]] __if__ ~null p&&(intp n||infp n)]);
+'(cstring_vector __with__ [cstring_vector n p ::pointer-->vector xs __if__ listp xs __when__ [xs-->cstring_list n p]]);
+'(curry __with__ [curry f x y-->f (x,y)]);
+'(curry3 __with__ [curry3 f x y z-->f (x,y,z)]);
+'(delete_all __with__ [(delete_all (Dict d) x-->Dict (avl::deletek d x)),(delete_all (HDict d) x-->HDict (avl::hdeletek d x)),(delete_all (MDict d) x-->MDict (avl::mdeleteka d x)),(delete_all (HMDict d) x-->HMDict (avl::mhdeleteka d x)),(delete_all (Set m) y-->Set (avl::delete m y)),(delete_all (Bag m) y-->Bag (avl::mdeletea m y)),(delete_all (HSet m) y-->HSet (avl::hdelete m y)),(delete_all (HBag m) y-->HBag (avl::mhdeletea m y))]);
+'(delete_val __with__ [(delete_val (Dict d) (el __as__ (x=>y))-->Dict (avl::deletekv d el)),(delete_val (HDict d) (el __as__ (x=>y))-->HDict (avl::hdeletekv d el)),(delete_val (MDict d) (el __as__ (x=>y))-->MDict (avl::mdeletekv d el)),(delete_val (HMDict d) (el __as__ (x=>y))-->HMDict (avl::mhdeletekv d el))]);
+'(dictp __with__ [dictp x-->typep dict x]);
+'(dim __with__ [dim x ::matrix-->__C::matrix_dim x]);
+'((div) __with__ [(x ::int div y ::int-->x div y),(x ::bigint div y ::bigint-->__C::bigint_div x y),(x ::int div y ::bigint-->bigint x div y),(x ::bigint div y ::int-->x div bigint y)]);
+'(dmatrixp __with__ [dmatrixp x-->__case__ x [(_ ::matrix-->matrix_type x==1),(_-->0)]]);
+'(double_pointer __with__ [double_pointer p ::pointer x ::matrix-->__C::matrix_to_double_array p x __if__ nmatrixp x]);
+'(doublep __with__ [doublep x-->__case__ x [(_ ::double-->1),(_-->0)]]);
+'(emptybag __with__ [emptybag-->Bag avl::emptytree]);
+'(emptydict __with__ [emptydict-->Dict avl::emptytree]);
+'(emptyhbag __with__ [emptyhbag-->HBag avl::emptytree]);
+'(emptyhdict __with__ [emptyhdict-->HDict avl::emptytree]);
+'(emptyhmdict __with__ [emptyhmdict-->HMDict avl::emptytree]);
+'(emptyhset __with__ [emptyhset-->HSet avl::emptytree]);
+'(emptymdict __with__ [emptymdict-->MDict avl::emptytree]);
+'(emptyset __with__ [emptyset-->Set avl::emptytree]);
+'(exactp __with__ [exactp x-->__case__ x [(x+:y-->~doublep x&&~doublep y),(x<:y-->~doublep x&&~doublep y),(x%y-->~doublep x&&~doublep y),(_-->~doublep x)] __if__ numberp x]);
+'(execv __with__ [execv prog ::string argv ::rlist-->execv prog (smatrix argv)]);
+'(execve __with__ [execve prog ::string argv ::rlist envp ::rlist-->execve prog (smatrix argv) (smatrix envp)]);
+'(execvp __with__ [execvp prog ::string argv ::rlist-->execvp prog (smatrix argv)]);
+'(fclose __with__ [fclose fp ::pointer-->clear_sentry fp$$__C::fclose fp __if__ get_sentry fp===__C::fclose]);
+'(fdopen __with__ [fdopen fd ::int mode ::string-->sentry __C::fclose fp __if__ ~null fp __when__ [fp-->__C::fdopen fd mode]]);
+'(fix __with__ [fix f-->f (fix f&)]);
+'(flip __with__ [flip f x y-->f y x]);
+'(float_pointer __with__ [float_pointer p ::pointer x ::matrix-->__C::matrix_to_float_array p x __if__ nmatrixp x]);
+'(fnmatch __with__ [fnmatch pat ::string s ::string flags ::int-->__C::fnmatch pat s flags==0]);
+'(fopen __with__ [fopen name ::string mode ::string-->sentry __C::fclose fp __if__ ~null fp __when__ [fp-->__C::fopen name mode]]);
+'(fprintf __with__ [fprintf fp ::pointer format ::string args-->count __when__ [(args-->__ifelse__ (tuplep args) (list args) [args]),(count,_-->catch error_handler (foldl (do_fprintf fp) (0,args) (__std__::printf_split_format format)))] __with__ [(error_handler (printf_error res ::int)-->res,[]),(error_handler x-->throw x),(do_fprintf fp (count,arg:args) (__std__::printf_format_spec t s)-->count,args __when__ [(res-->__case__ (t,arg) [("c",x ::int-->__C::pure_fprintf_int fp s x),("c",x ::bigint-->__C::pure_fprintf_int fp s x),("d",x ::int-->__C::pure_fprintf_int fp s x),("d",x ::bigint-->__C::pure_fprintf_int fp s x),("g",x ::double-->__C::pure_fprintf_double fp s x),("s",x ::string-->__C::pure_fprintf_string fp s x),("p",x ::string-->__C::pure_fprintf_pointer fp s x),("p",x ::pointer-->__C::pure_fprintf_pointer fp s x),(_-->throw (printf_value_error s arg))]),(count-->__ifelse__ (res>=0) (count+res) (throw (printf_error res)))]),(do_fprintf fp (count,args) (__std__::printf_format_str s)-->count,args __when__ [(res-->__C::pure_fprintf fp s),(count-->__ifelse__ (res>=0) (count+res) (throw (printf_error res)))]),(do_fprintf fp (count,[]) (__std__::printf_format_spec t s)-->throw (printf_value_error s ())),(do_fprintf fp (count,_) _-->throw (this_cant_happen count))]]);
+'(fscanf __with__ [fscanf fp ::pointer format ::string-->tuple (reverse ret) __when__ [_,ret-->catch error_handler (foldl (do_fscanf fp) (0,[]) (__std__::scanf_split_format format))] __with__ [(error_handler (scanf_error ret)-->throw (scanf_error (tuple (reverse ret)))),(error_handler x-->throw x),(check_buf buf-->throw malloc_error __if__ null buf),(check_buf buf-->buf),(do_fscanf fp (nread,ret) (__std__::scanf_format_spec t s)-->nread+res,ret __when__ [(size,s-->__ifelse__ (t=="s") (guestimate s) (16,s)),(buf-->check_buf (calloc size 1)),(res-->__case__ t [("n"-->__C::pure_fscanf_int fp s buf),("d"-->__C::pure_fscanf_int fp s buf),("g"-->__C::pure_fscanf_double fp s buf),("s"-->__C::pure_fscanf_string fp s buf),("p"-->__C::pure_fscanf_pointer fp s buf),(_-->throw (this_cant_happen ret))]),(res-->__ifelse__ (res>=0) res (free buf$$throw (scanf_error ret))),(val-->__case__ t [("n"-->nread+get_int buf),("d"-->get_int buf),("g"-->get_double buf),("s"-->cstring buf),("p"-->get_pointer buf),(_-->throw (this_cant_happen ret))]),(_-->__ifelse__ (t=="s") () (free buf)),(ret-->val:ret)]),(do_fscanf fp (nread,ret) (__std__::scanf_format_str s)-->nread+res,ret __when__ [(res-->__C::pure_fscanf fp s),(ret-->__ifelse__ (res>=0) ret (throw (scanf_error ret)))]),(do_fscanf _ (_,ret) _-->throw (this_cant_happen ret)),(guestimate "%c"-->2,"%c"),(guestimate format-->n,format __when__ [(1,0,_,1,s-->regex "^%([0-9]*)" 1 format 0),(n,format-->__ifelse__ (null s) (1025,"%1024"+tail format) (eval s+1,format))])]]);
+'(functionp __with__ [functionp x-->nargs x>0 __with__ [(nargs ((x __as__ _) _)-->nargs x-1),(nargs x-->nargs x)]]);
+'(gcd __with__ [(gcd x ::bigint y ::bigint-->__C::bigint_gcd x y),(gcd x ::int y ::bigint-->__C::bigint_gcd (bigint x) y),(gcd x ::bigint y ::int-->__C::bigint_gcd x (bigint y)),(gcd x ::int y ::int-->int (__C::bigint_gcd (bigint x) (bigint y)))]);
+'(get __with__ [get r ::pointer-->__C::pointer_get_expr r __if__ refp r]);
+'(get_byte __with__ [get_byte x ::pointer-->__C::pointer_get_byte x]);
+'(get_double __with__ [get_double x ::pointer-->__C::pointer_get_double x]);
+'(get_float __with__ [get_float x ::pointer-->__C::pointer_get_float x]);
+'(get_int __with__ [get_int x ::pointer-->__C::pointer_get_int x]);
+'(get_int64 __with__ [get_int64 x ::pointer-->__C::pointer_get_int64 x]);
+'(get_long __with__ [get_long x ::pointer-->__C::pointer_get_long x]);
+'(get_pointer __with__ [get_pointer x ::pointer-->__C::pointer_get_pointer x]);
+'(get_short __with__ [get_short x ::pointer-->__C::pointer_get_short x]);
+'(get_string __with__ [get_string x ::pointer-->__C::pointer_get_string x]);
+'(gets __with__ [gets-->__ifelse__ (null s) s (__ifelse__ (last s=="\n") (init s) s) __when__ [s-->fgets stdin]]);
+'(glob __with__ [glob pat ::string flags ::int-->result __when__ [(globptr-->calloc 1 72),(result-->__C::glob pat flags (pointer 0) globptr),(result-->__ifelse__ (result==0) (__C::globlist globptr) result),(_-->__C::globfree globptr),(_-->free globptr)]]);
+'(globsym __with__ [globsym pat ::string level ::int-->uniq (catmap descr info) __when__ [(res-->evalcmd ("show -gst"+str level+" "+pat)),(_-->stringp res||throw evalcmd),(info-->init (init (split "\n" res)))] __with__ [(uniq (x:xs __as__ (y:_))-->__ifelse__ (x===y) (uniq xs) (x:uniq xs)),(uniq xs-->xs),(descr s ::string-->__case__ (filter (flip (~=) "") (split " " s)) [(sym:_-->__ifelse__ (any (flip (==) sym) ["extern","private","infix","infixl","infixr","prefix","postfix","outfix","nonfix"]) [] (catmap (__lambda__ [x] (__ifelse__ (symbolp x) [x] [])) [__C::pure_quoted_symbol sym])),(_-->[])])]]);
+'(hbagp __with__ [hbagp x-->typep hbag x]);
+'(hdictp __with__ [hdictp x-->typep hdict x]);
+'(heap __with__ [heap xs ::rlist-->foldl insert emptyheap xs]);
+'(heapp __with__ [heapp x-->typep heap x]);
+'(hmdictp __with__ [hmdictp x-->typep hmdict x]);
+'(hsetp __with__ [hsetp x-->typep hset x]);
+'(id __with__ [id x-->x]);
+'(imatrixp __with__ [imatrixp x-->__case__ x [(_ ::matrix-->matrix_type x==3),(_-->0)]]);
+'(inexactp __with__ [inexactp x-->__case__ x [(x+:y-->doublep x||doublep y),(x<:y-->doublep x||doublep y),(x%y-->doublep x||doublep y),(_-->doublep x)] __if__ numberp x]);
+'(infp __with__ [infp x-->__case__ x [(x ::double-->x==inf||x==-inf),(_-->0)]]);
+'(int_pointer __with__ [int_pointer p ::pointer x ::matrix-->__C::matrix_to_int_array p x __if__ nmatrixp x]);
+'(integerp __with__ [integerp x-->typep ('integer) x]);
+'(intp __with__ [intp x-->__case__ x [(_ ::int-->1),(_-->0)]]);
+'(intvalp __with__ [intvalp x-->bigintvalp x&&int (re x)==x]);
+'(iterate __with__ [iterate f x-->x:iterate f (f x)&]);
+'(iteraten __with__ [(iteraten n ::int f x-->[] __if__ n<=0),(iteraten n ::int f x-->accum [] n f x __with__ [(accum xs n ::int f x-->reverse (x:xs) __if__ n==1),(accum xs n ::int f x-->accum (x:xs) (n-1) f (f x))])]);
+'(iterwhile __with__ [iterwhile p f x-->accum [] p f x __with__ [(accum xs p f x-->accum (x:xs) p f (f x) __if__ p x),(accum xs p f x-->reverse xs)]]);
+'(join __with__ [join delim ::string xs-->s __if__ stringp s __when__ [s-->__C::string_join delim xs]]);
+'(key __with__ [key (x=>v)-->x]);
+'(lcm __with__ [(lcm x ::bigint y ::bigint-->__C::bigint_lcm x y),(lcm x ::int y ::bigint-->__C::bigint_lcm (bigint x) y),(lcm x ::bigint y ::int-->__C::bigint_lcm x (bigint y)),(lcm x ::int y ::int-->int (__C::bigint_lcm (bigint x) (bigint y)))]);
+'(listp __with__ [listp x-->typep ('list) x]);
+'(matrixp __with__ [matrixp x-->__case__ x [(_ ::matrix-->1),(_-->0)]]);
+'(max __with__ [max x y-->__ifelse__ (x>=y) x y]);
+'(mdictp __with__ [mdictp x-->typep mdict x]);
+'(members2 __with__ [members2 (x __as__ Array _)-->map members (members x)]);
+'(min __with__ [min x y-->__ifelse__ (x<=y) x y]);
+'(mkarray2 __with__ [mkarray2 x (n ::int,m ::int)-->mkarray (mkarray x m) n]);
+'(mkdict __with__ [mkdict y xs ::rlist-->dict (zipwith (=>) xs (repeatn (#xs) y))]);
+'(mkhdict __with__ [mkhdict y xs ::rlist-->hdict (zipwith (=>) xs (repeatn (#xs) y))]);
+'(mkhmdict __with__ [mkhmdict y xs ::rlist-->hmdict (zipwith (=>) xs (repeatn (#xs) y))]);
+'(mkmdict __with__ [mkmdict y xs ::rlist-->mdict (zipwith (=>) xs (repeatn (#xs) y))]);
+'((mod) __with__ [(x ::int mod y ::int-->x mod y),(x ::bigint mod y ::bigint-->__C::bigint_mod x y),(x ::int mod y ::bigint-->bigint x mod y),(x ::bigint mod y ::int-->x mod bigint y)]);
+'(nanosleep __with__ [(nanosleep t ::int-->nanosleep (double t)),(nanosleep t ::bigint-->nanosleep (double t))]);
+'(nanp __with__ [nanp x-->__case__ x [(x ::double-->~x==x),(_-->0)]]);
+'(neg __with__ [(-x ::int-->-x),(-x ::double-->-x),(-x ::bigint-->__C::bigint_neg x),(-(x+:y)-->-x+:-y),(-(r<:t)-->r<:t+3.14159265358979),(-x%y-->(-x)%y)]);
+'(nmatrixp __with__ [nmatrixp x-->__case__ x [(_ ::matrix-->matrix_type x>=1),(_-->0)]]);
+'((not) __with__ [(not x ::int-->not x),(not x ::bigint-->__C::bigint_not x)]);
+'(numberp __with__ [numberp x-->typep ('number) x]);
+'((or) __with__ [(x ::int or y ::int-->x or y),(x ::bigint or y ::bigint-->__C::bigint_or x y),(x ::int or y ::bigint-->bigint x or y),(x ::bigint or y ::int-->x or bigint y)]);
+'(ord __with__ [ord s ::string-->n __if__ intp n __when__ [n-->__C::string_ord s]]);
+'(pack __with__ [pack x ::matrix-->colcat [x,{}]]);
+'(packed __with__ [packed x ::matrix-->stride x==dim x!1]);
+'(pclose __with__ [pclose fp ::pointer-->clear_sentry fp$$__C::pclose fp __if__ get_sentry fp===__C::pclose]);
+'(pointer __with__ [(pointer x ::pointer-->x),(pointer x ::int-->__C::pure_pointerval x),(pointer x ::bigint-->__C::pure_pointerval x),(pointer x ::double-->__C::pure_pointerval x),(pointer x ::string-->__C::pure_pointerval x),(pointer x ::matrix-->__C::pure_pointerval x)]);
+'(pointer_cast __with__ [pointer_cast ty ::string x ::pointer-->pointer_cast (pointer_tag ty) x]);
+'(pointer_tag __with__ [(pointer_tag x ::string-->__C::pure_pointer_tag x),(pointer_tag x ::pointer-->get_ptrtag x)]);
+'(pointer_type __with__ [pointer_type x ::pointer-->pointer_type (get_ptrtag x)]);
+'(pointerp __with__ [pointerp x-->__case__ x [(_ ::pointer-->1),(_-->0)]]);
+'(popen __with__ [popen name ::string mode ::string-->sentry __C::pclose fp __if__ ~null fp __when__ [fp-->__C::popen name mode]]);
+'(pred __with__ [pred x-->x-1]);
+'(printf __with__ [printf format ::string args-->fprintf stdout format args]);
+'(publicp __with__ [publicp x ::symbol-->symbolp (val (str x))]);
+'(put __with__ [put r ::pointer x-->__C::pure_free (__C::pointer_get_expr r)$$__C::pointer_put_expr r (__C::pure_new x)$$x __if__ refp r]);
+'(put_byte __with__ [put_byte x ::pointer y ::int-->__C::pointer_put_byte x y]);
+'(put_double __with__ [put_double x ::pointer y ::double-->__C::pointer_put_double x y]);
+'(put_float __with__ [put_float x ::pointer y ::double-->__C::pointer_put_float x y]);
+'(put_int __with__ [put_int x ::pointer y ::int-->__C::pointer_put_int x y]);
+'(put_int64 __with__ [(put_int64 x ::pointer y ::int-->__C::pointer_put_int64 x y),(put_int64 x ::pointer y ::bigint-->__C::pointer_put_int64 x y)]);
+'(put_long __with__ [(put_long x ::pointer y ::int-->__C::pointer_put_long x y),(put_long x ::pointer y ::bigint-->__C::pointer_put_long x y)]);
+'(put_pointer __with__ [(put_pointer x ::pointer y ::string-->__C::pointer_put_pointer x y),(put_pointer x ::pointer y ::pointer-->__C::pointer_put_pointer x y)]);
+'(put_short __with__ [put_short x ::pointer y ::int-->__C::pointer_put_short x y]);
+'(put_string __with__ [put_string x ::pointer y ::string-->__C::pointer_put_string x y]);
+'(quote __with__ [quote x-->x]);
+'(rationalp __with__ [rationalp x-->typep ('rational) x]);
+'(ratvalp __with__ [ratvalp x-->realvalp x&&re (x-x)~==nan]);
+'(realp __with__ [realp x-->typep ('real) x]);
+'(realvalp __with__ [realvalp x-->compvalp x&&im x==0]);
+'(record __with__ [(record x-->__C::record_pack x __if__ recordp x),(record x-->record x __if__ recordp x __when__ [x-->matrix x])]);
+'(recordp __with__ [recordp x-->__C::record_check x]);
+'(ref __with__ [ref x-->__C::pointer_put_expr r (__C::pure_new x)$$sentry unref r __when__ [r ::pointer-->__C::pure_expr_pointer]]);
+'(refp __with__ [refp r-->__case__ r [(_ ::pointer-->get_sentry r===unref),(_-->0)]]);
+'(reg_info __with__ [(reg_info (_ ::int,info)-->info),(reg_info _-->())]);
+'(regex __with__ [regex pat ::string cflags ::int s ::string eflags ::int-->__ifelse__ (__C::regstatus re) (regerr (__C::regstatus re) (__C::regerror re)) (__ifelse__ (__C::regexec re s eflags) 0 (1,__C::regmatch re)) __when__ [re-->sentry __C::regfree (__C::regcomp pat cflags)]]);
+'(regexg __with__ [regexg f pat ::string cflags ::int s ::string eflags ::int-->__ifelse__ (__C::regstatus re) (regerr (__C::regstatus re) (__C::regerror re)) (iterwhile check next first) __with__ [(check _-->__C::regstatus re==0),(next _-->__ifelse__ (__C::regnext re 0) () (f (__C::regmatch re))),(first-->__ifelse__ (__C::regexec re s eflags) () (f (__C::regmatch re)))] __when__ [re-->sentry __C::regfree (__C::regcomp pat cflags)] __if__ ~cflags and 8]);
+'(regexgg __with__ [regexgg f pat ::string cflags ::int s ::string eflags ::int-->__ifelse__ (__C::regstatus re) (regerr (__C::regstatus re) (__C::regerror re)) (iterwhile check next first) __with__ [(check _-->__C::regstatus re==0),(next _-->__ifelse__ (__C::regnext re 1) () (f (__C::regmatch re))),(first-->__ifelse__ (__C::regexec re s eflags) () (f (__C::regmatch re)))] __when__ [re-->sentry __C::regfree (__C::regcomp pat cflags)] __if__ ~cflags and 8]);
+'(regexggs __with__ [regexggs f pat ::string cflags ::int s ::string eflags ::int-->__ifelse__ (__C::regstatus re) (regerr (__C::regstatus re) (__C::regerror re)) (takewhile check (iterate next first)) __with__ [(check _-->__C::regstatus re==0),(next _-->__ifelse__ (__C::regnext re 1) () (f (__C::regmatch re))),(first-->__ifelse__ (__C::regexec re s eflags) () (f (__C::regmatch re)))] __when__ [re-->sentry __C::regfree (__C::regcomp pat cflags)] __if__ ~cflags and 8]);
+'(regexgs __with__ [regexgs f pat ::string cflags ::int s ::string eflags ::int-->__ifelse__ (__C::regstatus re) (regerr (__C::regstatus re) (__C::regerror re)) (takewhile check (iterate next first)) __with__ [(check _-->__C::regstatus re==0),(next _-->__ifelse__ (__C::regnext re 0) () (f (__C::regmatch re))),(first-->__ifelse__ (__C::regexec re s eflags) () (f (__C::regmatch re)))] __when__ [re-->sentry __C::regfree (__C::regcomp pat cflags)] __if__ ~cflags and 8]);
+'(regs __with__ [regs info-->myregs 0 info __with__ [(myregs n (p,s,infos)-->(n,p,s):myregs (n+1) infos __if__ p>=0),(myregs n (p,s,infos)-->myregs (n+1) infos),(myregs n (p,s)-->[(n,p,s)] __if__ p>=0),(myregs n (p,s)-->[])]]);
+'(regsplit __with__ [regsplit pat ::string cflags ::int s ::string eflags ::int-->__ifelse__ (__C::regstatus re) (regerr (__C::regstatus re) (__C::regerror re)) (__ifelse__ (null s) [] (iterwhile check next first+[__C::regskip re])) __with__ [(check _-->__C::regstatus re==0),(next _-->__ifelse__ (__C::regnext re 0) () (__C::regskip re)),(first-->__ifelse__ (__C::regexec re s eflags) () (__C::regskip re))] __when__ [re-->sentry __C::regfree (__C::regcomp pat cflags)] __if__ ~cflags and 8]);
+'(regsplits __with__ [regsplits pat ::string cflags ::int s ::string eflags ::int-->__ifelse__ (__C::regstatus re) (regerr (__C::regstatus re) (__C::regerror re)) (__ifelse__ (null s) [] (takewhile check (iterate next first)+[__C::regskip re]&)) __with__ [([]+ys-->ys),((x:xs)+ys-->x:(xs+ys)&),(check _-->__C::regstatus re==0),(next _-->__ifelse__ (__C::regnext re 0) () (__C::regskip re)),(first-->__ifelse__ (__C::regexec re s eflags) () (__C::regskip re))] __when__ [re-->sentry __C::regfree (__C::regcomp pat cflags)] __if__ ~cflags and 8]);
+'(repeat __with__ [repeat x-->x:repeat x&]);
+'(repeatn __with__ [repeatn n ::int x-->accum [] n x __with__ [(accum xs n ::int x-->xs __if__ n<=0),(accum xs n ::int x-->accum (x:xs) (n-1) x)]]);
+'(rlistp __with__ [rlistp x-->typep ('rlist) x]);
+'(row __with__ [row x ::matrix i ::int-->__ifelse__ (i>=0&&i<n) (__C::matrix_slice x i 0 i (m-1)) (throw out_of_bounds) __when__ [n ::int,m ::int-->dim x]]);
+'(rowrev __with__ [rowrev x ::matrix-->rowcat (reverse (rows x))]);
+'(rows __with__ [rows x ::matrix-->map (row x) (0..n-1) __when__ [n ::int,_-->dim x]]);
+'(rowvectorp __with__ [rowvectorp x-->matrixp x&&dim x!0==1]);
+'(scanf __with__ [scanf format ::string-->fscanf stdin format]);
+'(setp __with__ [setp x-->typep set x]);
+'(short_pointer __with__ [short_pointer p ::pointer x ::matrix-->__C::matrix_to_short_array p x __if__ nmatrixp x]);
+'(smatrix __with__ [smatrix x-->y __if__ matrixp y __when__ [y-->__C::matrix_symbolic x]]);
+'(smatrixp __with__ [smatrixp x-->__case__ x [(_ ::matrix-->matrix_type x==0),(_-->0)]]);
+'(sort __with__ [sort p x ::matrix-->__case__ (sort p (smatrix x)) [(y ::matrix-->imatrix y __if__ imatrixp x),(y ::matrix-->dmatrix y __if__ dmatrixp x),(y ::matrix-->cmatrix y __if__ cmatrixp x),(y-->y)]]);
+'(spawnv __with__ [spawnv mode ::int prog ::string argv ::rlist-->spawnv mode prog (smatrix argv)]);
+'(spawnve __with__ [spawnve mode ::int prog ::string argv ::rlist envp ::rlist-->spawnve mode prog (smatrix argv) (smatrix envp)]);
+'(spawnvp __with__ [spawnvp mode ::int prog ::string argv ::rlist-->spawnvp mode prog (smatrix argv)]);
+'(split __with__ [(split delim ::string s ::string-->__C::string_split delim s __if__ ~funp (:)),(split delim ::string s ::string-->list (__C::string_split delim s))]);
+'(sprintf __with__ [sprintf format ::string args-->s __when__ [(args-->__ifelse__ (tuplep args) (list args) [args]),(u,_-->catch error_handler (foldl do_sprintf ([],args) (__std__::printf_split_format format))),(s-->__ifelse__ (pointerp u) u (strcat (reverse u)))] __with__ [(error_handler (printf_error res ::int)-->pointer 0,[]),(error_handler x-->throw x),(do_sprintf (u,arg:args) (__std__::printf_format_spec t s)-->u,args __when__ [(size-->__case__ (t,arg) [("s",x ::string-->#s+#x),(_-->64)]),(size-->size+1024),(buf-->check_buf (malloc size)),(res-->__case__ (t,arg) [("c",x ::int-->__C::pure_snprintf_int buf size s x),("c",x ::bigint-->__C::pure_snprintf_int buf size s x),("d",x ::int-->__C::pure_snprintf_int buf size s x),("d",x ::bigint-->__C::pure_snprintf_int buf size s x),("g",x ::double-->__C::pure_snprintf_double buf size s x),("s",x ::string-->__C::pure_snprintf_string buf size s x),("p",x ::string-->__C::pure_snprintf_pointer buf size s x),("p",x ::pointer-->__C::pure_snprintf_pointer buf size s x),(_-->free buf$$throw (printf_value_error s arg))]),(u-->__ifelse__ (res>=0) (cstring buf:u) (free buf$$throw (printf_error res)))]),(do_sprintf (u,args) (__std__::printf_format_str s)-->u,args __when__ [(size-->#s+1000),(buf-->check_buf (malloc size)),(res-->__C::pure_snprintf buf size s),(u-->__ifelse__ (res>=0) (cstring buf:u) (free buf$$throw (printf_error res)))]),(do_sprintf (u,[]) (__std__::printf_format_spec t s)-->throw (printf_value_error s ())),(do_sprintf (u,_) _-->throw (this_cant_happen (strcat (reverse u)))),(check_buf buf-->throw malloc_error __if__ null buf),(check_buf buf-->buf)]]);
+'(srandom __with__ [srandom x ::matrix-->srandom_array x (#x) __if__ imatrixp x&&dim x!0==1]);
+'(sscanf __with__ [sscanf s ::string format ::string-->tuple (reverse ret) __when__ [_,_,ret-->catch error_handler (foldl do_sscanf (s,0,[]) (__std__::scanf_split_format format))] __with__ [(error_handler (scanf_error ret)-->throw (scanf_error (tuple (reverse ret)))),(error_handler x-->throw x),(check_buf buf-->throw malloc_error __if__ null buf),(check_buf buf-->buf),(guestimate "%c"-->2,"%c"),(guestimate format-->n,format __when__ [(1,0,_,1,s-->regex "^%([0-9]*)" 1 format 0),(n,format-->__ifelse__ (null s) (1025,"%1024"+tail format) (eval s+1,format))]),(do_sscanf (u,nread,ret) (__std__::scanf_format_spec t s)-->u,nread+res,ret __when__ [(size,s-->__ifelse__ (t=="s") (guestimate s) (16,s)),(buf-->check_buf (calloc size 1)),(res-->__case__ t [("n"-->__C::pure_sscanf_int u s buf),("d"-->__C::pure_sscanf_int u s buf),("g"-->__C::pure_sscanf_double u s buf),("s"-->__C::pure_sscanf_string u s buf),("p"-->__C::pure_sscanf_pointer u s buf),(_-->throw (this_cant_happen ret))]),(res-->__ifelse__ (res>=0) res (free buf$$throw (scanf_error ret))),(val-->__case__ t [("n"-->nread+get_int buf),("d"-->get_int buf),("g"-->get_double buf),("s"-->cstring buf),("p"-->get_pointer buf),(_-->throw (this_cant_happen ret))]),(_-->__ifelse__ (t=="s") () (free buf)),(ret-->val:ret),(u-->drop res u)]),(do_sscanf (u,nread,ret) (__std__::scanf_format_str s)-->u,nread+res,ret __when__ [(res-->__C::pure_sscanf u s),(ret-->__ifelse__ (res>=0) ret (throw (scanf_error ret))),(u-->drop res u)]),(do_sscanf (_,_,ret) _-->throw (this_cant_happen ret))]]);
+'(strcat __with__ [strcat xs-->s __if__ stringp s __when__ [s-->__C::string_concat_list xs]]);
+'(stride __with__ [stride x ::matrix-->__C::matrix_stride x]);
+'(string_dup __with__ [string_dup s ::pointer-->__C::pure_string_dup s]);
+'(string_list __with__ [string_list n p ::pointer-->list$takewhile stringp (listmap (__lambda__ [i] (p!i)) (0..n-1)) __with__ [p!i-->__ifelse__ (null q) q (string_dup q) __when__ [q-->get_pointer (p+i*8)]] __if__ ~null p&&(intp n||infp n)]);
+'(string_vector __with__ [string_vector n p ::pointer-->vector xs __if__ listp xs __when__ [xs-->string_list n p]]);
+'(stringp __with__ [stringp x-->__case__ x [(_ ::string-->1),(_-->0)]]);
+'(submat __with__ [submat x ::matrix (i ::int,j ::int) (n ::int,m ::int)-->__C::matrix_slice x i j (i+n-1) (j+m-1)]);
+'(substr __with__ [substr s ::string pos ::int size ::int-->__C::string_substr s (max 0 pos) (max 0 size) __with__ [max x y-->__ifelse__ (x>=y) x y]]);
+'(succ __with__ [succ x-->x+1]);
+'(transpose __with__ [transpose x ::matrix-->__C::matrix_transpose x]);
+'(tuplep __with__ [tuplep x-->typep ('tuple) x]);
+'(ubyte __with__ [ubyte x ::int-->__ifelse__ (x>=0) x (x+256)]);
+'(uint __with__ [uint x ::int-->__ifelse__ (x>=0) (bigint x) (x+4294967296L)]);
+'(uint64 __with__ [(uint64 x ::int-->__ifelse__ (x>=0) (bigint x) (x+18446744073709551616L)),(uint64 x ::bigint-->__ifelse__ (x>=0) (bigint x) (x+18446744073709551616L))]);
+'(ulong __with__ [ulong-->uint64]);
+'(uncurry __with__ [uncurry f (x,y)-->f x y]);
+'(uncurry3 __with__ [uncurry3 f (x,y,z)-->f x y z]);
+'(unref __with__ [unref r ::pointer-->__C::pure_free (__C::pointer_get_expr r)$$clear_sentry r __if__ refp r]);
+'(update2 __with__ [update2 (x __as__ Array a) (i ::int,j ::int) y-->update x i (update (x!i) j y)]);
+'(ushort __with__ [ushort x ::int-->__ifelse__ (x>=0) x (x+65536)]);
+'(val __with__ [val (x=>v)-->v]);
+'(vector __with__ [vector xs-->x __if__ matrixp x __when__ [x-->rowvector xs]]);
+'(vectorp __with__ [vectorp x-->matrixp x&&(n==1||m==1 __when__ [n ::int,m ::int-->dim x])]);
+'(vectorseq __with__ [vectorseq n m s-->x __if__ matrixp x __when__ [x-->rowvectorseq n m s]]);
+'(void __with__ [void _-->()]);
+'(xdictp __with__ [xdictp x-->typep xdict x]);
+'(xsetp __with__ [xsetp x-->typep xset x]);
+'((||) __with__ [x ::int||y-->x||y]);
+'((~) __with__ [~x ::int-->~x]);
+'((~==) __with__ [x~==y-->~same x y]);
+let R2 = listmap (\x/*0:1*/ -> eval (sprintf "'(%s)" (__str__ x/*0:1*/)) {
+  rule #0: _ x = eval (sprintf "'(%s)" (__str__ x))
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) R2;
+{
+  rule #0: R3 = listmap (\x -> eval (sprintf "'(%s)" (__str__ x))) R2
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+'((!!) __with__ [(x!!ns matrix-->x!!list ns),(x!!(ns matrix,ms)-->x!!(list ns,ms) __if__ ~tuplep ms),(x!!(ns,ms matrix)-->x!!(ns,list ms)),(x!!(ns int,ms)-->x!!([ns],ms) __if__ ~tuplep ms),(x!!(ns,ms int)-->x!!(ns,[ms])),(x matrix!!(ns,ms)-->__case__ (ns,ms) [(ns __as__ (n:_),ms __as__ (m:_)-->submat x (n,m) (#ns,#ms) __if__ cont ns&&cont ms),(_-->colcatmap (mth (rowcatmap (nth x) ns)) ms)] __with__ [(cont [n int]-->1),(cont (n int:ns __as__ (m int:_))-->cont ns __if__ m==n+1),(cont _-->0),(mth x m-->catch (cst {}) (col x m)),(nth x n-->catch (cst {}) (row x n))]),(x matrix!!ns-->__ifelse__ (all intp ns&&packed x) (rowvector x!!([0],ns)) (colcatmap (nth x) ns) __with__ [nth x n-->catch (cst {}) {x!n}]),(s string!!ns-->__case__ ns [(ns __as__ (n:_)-->substr s n (count ns) __if__ cont ns),(_-->string (chars s!!ns))] __with__ [(cont [n int]-->1),(cont (n int:ns __as__ (m int:_))-->cont ns __if__ m==n+1),(cont _-->0),(count ns-->#dropwhile (__lambda__ [n,int] (n<0)) ns)]),(xs __as__ ()!!ns-->tuple (list xs!!ns)),(xs __as__ (_,_)!!ns-->tuple (list xs!!ns)),(xs!!ns-->ys __if__ ok ys __when__ [ys-->__case__ ns [(ns __as__ (n int:_)-->list (take (count ns) (drop n xs)) __if__ listp xs&&cont ns),(_-->catmap (nth xs) ns)]] __with__ [(cont (n int:ns)-->~thunkp ns&&__case__ ns [([]-->1),(m int:_-->cont ns __if__ m==n+1),(_-->0)]),(nth xs n-->catch (cst []) [xs!n]),(count ns-->#dropwhile (__lambda__ [n,int] (n<0)) ns),(ok (catmap (nth _) _)-->0),(ok _-->1)]),(x __as__ Array _!!(is,js)-->listmap (__lambda__ [i] (cat (listmap (__lambda__ [j] (catch (cst []) [x!i!j])) js))) is)]);
+'(($) __with__ [f$x-->f x]);
+'(($$) __with__ [x$$y-->y]);
+'((%) __with__ [(x bigint%0L-->x div 0L),(x bigint%y bigint-->(-x)%(-y) __if__ y<0),(x bigint%y bigint-->x div d%(y div d) __if__ d>1 __when__ [d-->gcd x y]),(x int%y bigint-->bigint x%y),(x bigint%y int-->x%bigint y),(x int%y int-->bigint x%bigint y),(x1%y1%(x2%y2)-->x1*y2%(y1*x2)),(x1%y1%x2 int-->x1%(y1*x2)),(x1%y1%x2 bigint-->x1%(y1*x2)),(x1 int%(x2%y2)-->x1*y2%x2),(x1 bigint%(x2%y2)-->x1*y2%x2),(z1 __as__ (_+:_)%z2 __as__ (_<:_)-->z1/z2),(z1 __as__ (_<:_)%z2 __as__ (_+:_)-->z1/z2),((x1+:y1)%(x2+:y2)-->(x1*x2+y1*y2)%d+:(y1*x2-x1*y2)%d __when__ [d-->x2*x2+y2*y2]),((r1<:t1)%(r2<:t2)-->r1%r2<:t1-t2),((x1+:y1)%x2-->x1*x2%d+:y1*x2%d __when__ [d-->x2*x2] __if__ realp x2),(x1%(x2+:y2)-->x1*x2%d+:(-x1*y2)%d __when__ [d-->x2*x2+y2*y2] __if__ realp x1),((r1<:t1)%x2-->r1%x2<:t1 __if__ realp x2),(x1%(r2<:t2)-->x1%r2<:-t2 __if__ realp x1),(x double%y-->x/y __if__ numberp y),(x%y double-->x/y __if__ numberp x)]);
+'((&) __with__ [x&-->x]);
+'((&&) __with__ [x int&&y-->x&&y]);
+'((') __with__ ['x-->x]);
+'((*) __with__ [(x int*y int-->x*y),(x double*y double-->x*y),(x int*y double-->x*y),(x double*y int-->x*y),(x bigint*y bigint-->__C::bigint_mul x y),(x int*y bigint-->bigint x*y),(x bigint*y int-->x*bigint y),(x bigint*y double-->double x*y),(x double*y bigint-->x*double y),((x1+:y1)*(x2+:y2)-->x1*x2-y1*y2+:x1*y2+y1*x2),((r1<:t1)*(r2<:t2)-->r1*r2<:t1+t2),(z1 __as__ (x1+:y1)*z2 __as__ (r2<:t2)-->z1*rect z2),(z1 __as__ (r1<:t1)*z2 __as__ (x2+:y2)-->rect z1*z2),(z1 __as__ (x1+:y1)*x2-->z1*rect x2 __if__ realp x2),(x1*z2 __as__ (x2+:y2)-->rect x1*z2 __if__ realp x1),((r1<:t1)*x2-->r1*x2<:t1 __if__ realp x2),(x1*(r2<:t2)-->x1*r2<:t2 __if__ realp x1),(x1%y1*(x2%y2)-->x1*x2%(y1*y2)),(x1%y1*x2 int-->x1*x2%y1),(x1%y1*x2 bigint-->x1*x2%y1),(x1 int*(x2%y2)-->x1*x2%y2),(x1 bigint*(x2%y2)-->x1*x2%y2),(x1%y1*x2-->x1/y1*x2 __if__ numberp x2),(x1*(x2%y2)-->x1*(x2/y2) __if__ numberp x1),(d1 __as__ Dict _*d2 __as__ Dict _-->d1-(d1-d2)),(d1 __as__ MDict _*d2 __as__ MDict _-->d1-(d1-d2)),(d1 __as__ HDict _*d2 __as__ HDict _-->d1-(d1-d2)),(d1 __as__ HMDict _*d2 __as__ HMDict _-->d1-(d1-d2)),(m1 __as__ HMDict _*m2-->m1*hmdict m2 __if__ xdictp m2),(m1*m2 __as__ HMDict _-->hmdict m1*m2 __if__ xdictp m1),(m1 __as__ HDict _*m2-->__case__ m2 [(MDict _-->hmdict m1*hmdict m2),(Dict _-->m1*hdict m2)] __if__ xdictp m2),(m1*m2 __as__ HDict _-->__case__ m1 [(MDict _-->hmdict m1*hmdict m2),(Dict _-->hdict m1*m2)] __if__ xdictp m2),(m1 __as__ MDict _*m2 __as__ Dict _-->m1*mdict m2),(m1 __as__ Dict _*m2 __as__ MDict _-->mdict m1*m2),(m1 __as__ Set _*m2 __as__ Set _-->m1-(m1-m2)),(m1 __as__ Bag _*m2 __as__ Bag _-->m1-(m1-m2)),(m1 __as__ HSet _*m2 __as__ HSet _-->m1-(m1-m2)),(m1 __as__ HBag _*m2 __as__ HBag _-->m1-(m1-m2)),(m1 __as__ HBag _*m2-->m1*hbag m2 __if__ xsetp m2),(m1*m2 __as__ HBag _-->hbag m1*m2 __if__ xsetp m1),(m1 __as__ HSet _*m2-->__case__ m2 [(Bag _-->hbag m1*hbag m2),(Set _-->m1*hset m2)] __if__ xsetp m2),(m1*m2 __as__ HSet _-->__case__ m1 [(Bag _-->hbag m1*hbag m2),(Set _-->hset m1*m2)] __if__ xsetp m2),(m1 __as__ Bag _*m2 __as__ Set _-->m1*bag m2),(m1 __as__ Set _*m2 __as__ Bag _-->bag m1*m2)]);
+'((+) __with__ [(x int+y int-->x+y),(x double+y double-->x+y),(x int+y double-->x+y),(x double+y int-->x+y),(x bigint+y bigint-->__C::bigint_add x y),(x int+y bigint-->bigint x+y),(x bigint+y int-->x+bigint y),(x bigint+y double-->double x+y),(x double+y bigint-->x+double y),(x pointer+y int-->pointer (bigint x+y)),(x pointer+y bigint-->pointer (bigint x+y)),(c string+n int-->chr (ord c+n) __if__ #c==1),(s string+t string-->__C::string_concat s t),(s string+[]-->chars s),(s string+xs __as__ (_:_)-->chars s+xs),([]+s string+[]-->chars s),(xs __as__ (_:_)+s string-->xs+chars s),([]+ys-->ys),(xs __as__ (_:_)+ys-->tick [] xs ys __with__ [(tick zs (x:xs) ys-->tack (x:zs) ((xs+ys)&) __if__ thunkp xs),(tick zs (x:xs) ys-->tick (x:zs) xs ys),(tick zs [] ys-->tack zs ys),(tick zs xs ys-->tack zs (xs+ys)),(tack (x:xs) ys-->tack xs (x:ys)),(tack [] ys-->ys)]),((x1+:y1)+(x2+:y2)-->x1+x2+:y1+y2),(z1 __as__ (r1<:t1)+z2 __as__ (r2<:t2)-->polar (rect z1+rect z2)),(z1 __as__ (x1+:y1)+z2 __as__ (r2<:t2)-->z1+rect z2),(z1 __as__ (r1<:t1)+z2 __as__ (x2+:y2)-->rect z1+z2),((x1+:y1)+x2-->x1+x2+:y1 __if__ realp x2),(x1+(x2+:y2)-->x1+x2+:y2 __if__ realp x1),(z1 __as__ (r1<:t1)+x2-->z1+polar x2 __if__ realp x2),(x1+z2 __as__ (r2<:t2)-->polar x1+z2 __if__ realp x1),(x1%y1+x2%y2-->(x1*y2+x2*y1)%(y1*y2)),(x1%y1+x2 int-->(x1+x2*y1)%y1),(x1%y1+x2 bigint-->(x1+x2*y1)%y1),(x1 int+x2%y2-->(x1*y2+x2)%y2),(x1 bigint+x2%y2-->(x1*y2+x2)%y2),(x1%y1+x2-->x1/y1+x2 __if__ numberp x2),(x1+x2%y2-->x1+x2/y2 __if__ numberp x1),(d1 __as__ Dict _+d2 __as__ Dict _-->foldl insert d1 (members d2)),(d1 __as__ MDict _+d2 __as__ MDict _-->foldl insert d1 (members d2)),(d1 __as__ HDict _+d2 __as__ HDict _-->foldl insert d1 (members d2)),(d1 __as__ HMDict _+d2 __as__ HMDict _-->foldl insert d1 (members d2)),(m1 __as__ HMDict _+m2-->m1+hmdict m2 __if__ xdictp m2),(m1+m2 __as__ HMDict _-->hmdict m1+m2 __if__ xdictp m1),(m1 __as__ HDict _+m2-->__case__ m2 [(MDict _-->hmdict m1+hmdict m2),(Dict _-->m1+hdict m2)] __if__ xdictp m2),(m1+m2 __as__ HDict _-->__case__ m1 [(MDict _-->hmdict m1+hmdict m2),(Dict _-->hdict m1+m2)] __if__ xdictp m2),(m1 __as__ MDict _+m2 __as__ Dict _-->m1+mdict m2),(m1 __as__ Dict _+m2 __as__ MDict _-->mdict m1+m2),(m1 __as__ Set _+m2 __as__ Set _-->foldl insert m1 (members m2)),(m1 __as__ Bag _+m2 __as__ Bag _-->foldl insert m1 (members m2)),(m1 __as__ HSet _+m2 __as__ HSet _-->foldl insert m1 (members m2)),(m1 __as__ HBag _+m2 __as__ HBag _-->foldl insert m1 (members m2)),(m1 __as__ HBag _+m2-->m1+hbag m2 __if__ xsetp m2),(m1+m2 __as__ HBag _-->hbag m1+m2 __if__ xsetp m1),(m1 __as__ HSet _+m2-->__case__ m2 [(Bag _-->hbag m1+hbag m2),(Set _-->m1+hset m2)] __if__ xsetp m2),(m1+m2 __as__ HSet _-->__case__ m1 [(Bag _-->hbag m1+hbag m2),(Set _-->hset m1+m2)] __if__ xsetp m2),(m1 __as__ Bag _+m2 __as__ Set _-->m1+bag m2),(m1 __as__ Set _+m2 __as__ Bag _-->bag m1+m2)]);
+'((,) __with__ [(x,()-->x),((),y-->y),((x,y),z-->x,y,z)]);
+'((-) __with__ [(x int-y int-->x-y),(x double-y double-->x-y),(x int-y double-->x-y),(x double-y int-->x-y),(x bigint-y bigint-->__C::bigint_sub x y),(x int-y bigint-->bigint x-y),(x bigint-y int-->x-bigint y),(x bigint-y double-->double x-y),(x double-y bigint-->x-double y),(x pointer-y pointer-->bigint x-bigint y),(x pointer-y int-->pointer (bigint x-y)),(x pointer-y bigint-->pointer (bigint x-y)),(c string-n int-->chr (ord c-n) __if__ #c==1&&ord c>=n),(c string-d string-->ord c-ord d __if__ #c==1&&#d==1),((x1+:y1)-(x2+:y2)-->x1-x2+:y1-y2),(z1 __as__ (r1<:t1)-z2 __as__ (r2<:t2)-->polar (rect z1-rect z2)),(z1 __as__ (x1+:y1)-z2 __as__ (r2<:t2)-->z1-rect z2),(z1 __as__ (r1<:t1)-z2 __as__ (x2+:y2)-->rect z1-z2),((x1+:y1)-x2-->x1-x2+:y1 __if__ realp x2),(x1-(x2+:y2)-->x1-x2+:-y2 __if__ realp x1),(z1 __as__ (r1<:t1)-x2-->z1-polar x2 __if__ realp x2),(x1-z2 __as__ (r2<:t2)-->polar x1-z2 __if__ realp x1),(x1%y1-x2%y2-->(x1*y2-x2*y1)%(y1*y2)),(x1%y1-x2 int-->(x1-x2*y1)%y1),(x1%y1-x2 bigint-->(x1-x2*y1)%y1),(x1 int-x2%y2-->(x1*y2-x2)%y2),(x1 bigint-x2%y2-->(x1*y2-x2)%y2),(x1%y1-x2-->x1/y1-x2 __if__ numberp x2),(x1-x2%y2-->x1-x2/y2 __if__ numberp x1),(d1 __as__ Dict _-d2 __as__ Dict _-->foldl delete_val d1 (members d2)),(d1 __as__ MDict _-d2 __as__ MDict _-->foldl delete_val d1 (members d2)),(d1 __as__ HDict _-d2 __as__ HDict _-->foldl delete_val d1 (members d2)),(d1 __as__ HMDict _-d2 __as__ HMDict _-->foldl delete_val d1 (members d2)),(m1 __as__ HMDict _-m2-->m1-hmdict m2 __if__ xdictp m2),(m1-m2 __as__ HMDict _-->hmdict m1-m2 __if__ xdictp m1),(m1 __as__ HDict _-m2-->__case__ m2 [(MDict _-->hmdict m1-hmdict m2),(Dict _-->m1-hdict m2)] __if__ xdictp m2),(m1-m2 __as__ HDict _-->__case__ m1 [(MDict _-->hmdict m1-hmdict m2),(Dict _-->hdict m1-m2)] __if__ xdictp m2),(m1 __as__ MDict _-m2 __as__ Dict _-->m1-mdict m2),(m1 __as__ Dict _-m2 __as__ MDict _-->mdict m1-m2),(m1 __as__ Set _-m2 __as__ Set _-->foldl delete m1 (members m2)),(m1 __as__ Bag _-m2 __as__ Bag _-->foldl delete m1 (members m2)),(m1 __as__ HSet _-m2 __as__ HSet _-->foldl delete m1 (members m2)),(m1 __as__ HBag _-m2 __as__ HBag _-->foldl delete m1 (members m2)),(m1 __as__ HBag _-m2-->m1-hbag m2 __if__ xsetp m2),(m1-m2 __as__ HBag _-->hbag m1-m2 __if__ xsetp m1),(m1 __as__ HSet _-m2-->__case__ m2 [(Bag _-->hbag m1-hbag m2),(Set _-->m1-hset m2)] __if__ xsetp m2),(m1-m2 __as__ HSet _-->__case__ m1 [(Bag _-->hbag m1-hbag m2),(Set _-->hset m1-m2)] __if__ xsetp m2),(m1 __as__ Bag _-m2 __as__ Set _-->m1-bag m2),(m1 __as__ Set _-m2 __as__ Bag _-->bag m1-m2)]);
+'((.) __with__ [(f.g) x-->f (g x)]);
+'((..) __with__ [(n int..m int-->__C::pure_int_seq n m 1),(n1 int:n2 int..m int-->__C::pure_int_seq n1 m (n2-n1) __if__ n1~=n2),(n double..m double-->__C::pure_double_seq n m 1.0 __if__ ~infp n&&~infp m),(n int..m double-->__C::pure_double_seq (double n) m 1.0 __if__ ~infp m),(n double..m int-->__C::pure_double_seq n (double m) 1.0 __if__ ~infp n),(n1 double:n2 double..m double-->__C::pure_double_seq n1 m (n2-n1) __if__ ~infp n1&&~infp m&&n1~=n2),(n1 int:n2 double..m double-->__C::pure_double_seq (double n1) m (n2-n1) __if__ ~infp m&&n1~=n2),(n1 double:n2 int..m double-->__C::pure_double_seq n1 m (n2-n1) __if__ ~infp n1&&~infp m&&n1~=n2),(n1 double:n2 double..m int-->__C::pure_double_seq n1 (double m) (n2-n1) __if__ ~infp n1&&n1~=n2),(n1 int:n2 int..m double-->__C::pure_double_seq (double n1) m (double (n2-n1)) __if__ ~infp m&&n1~=n2),(n1 int:n2 double..m int-->__C::pure_double_seq (double n1) (double m) (n2-n1) __if__ n1~=n2),(n1 double:n2 int..m int-->__C::pure_double_seq n1 (double m) (n2-n1) __if__ ~infp n1&&n1~=n2),(a string..b string-->map chr (ord a..ord b) __if__ charp a&&charp b),(a string:b string..c string-->map chr (ord a:ord b..ord c) __if__ charp a&&charp b&&charp c),(n1:n2..m-->__ifelse__ (m===s) (iterate (flip (+) k) n1) (__ifelse__ (m===-s) [] (iterwhile (p m) (flip (+) k) n1)) __when__ [s,p-->__ifelse__ (k>0) (inf,(>=)) (-inf,(<=))] __if__ realp k&&k~=0&&~infp n1&&~infp n2 __when__ [k-->n2-n1]),(n..m-->__ifelse__ (m===inf) (iterate (flip (+) 1) n) (__ifelse__ (m===-inf) [] (iterwhile ((>=) m) (flip (+) 1) n)) __if__ ~listp n&&~infp n)]);
+'((<) __with__ [(x int<y int-->x<y),(x double<y double-->x<y),(x int<y double-->x<y),(x double<y int-->x<y),(x bigint<y bigint-->__C::bigint_cmp x y<0),(x int<y bigint-->bigint x<y),(x bigint<y int-->x<bigint y),(x bigint<y double-->double x<y),(x double<y bigint-->x<double y),(x pointer<y pointer-->bigint x<bigint y),(x string<y string-->__C::strcmp x y<0),(x1%y1<x2%y2-->x1*y2<x2*y1),(x1%y1<x2-->x1<x2*y1 __if__ realp x2),(x1<x2%y2-->x1*y2<x2 __if__ realp x2),(d1 __as__ Dict _<d2 __as__ Dict _-->d1<=d2&&~d1>=d2),(d1 __as__ MDict _<d2 __as__ MDict _-->d1<=d2&&~d1>=d2),(d1 __as__ HDict _<d2 __as__ HDict _-->d1<=d2&&~d1>=d2),(d1 __as__ HMDict _<d2 __as__ HMDict _-->d1<=d2&&~d1>=d2),(m1 __as__ HMDict _<m2-->m1<hmdict m2 __if__ xdictp m2),(m1<m2 __as__ HMDict _-->hmdict m1<m2 __if__ xdictp m1),(m1 __as__ HDict _<m2-->__case__ m2 [(MDict _-->hmdict m1<hmdict m2),(Dict _-->m1<hdict m2)] __if__ xdictp m2),(m1<m2 __as__ HDict _-->__case__ m1 [(MDict _-->hmdict m1<hmdict m2),(Dict _-->hdict m1<m2)] __if__ xdictp m2),(m1 __as__ MDict _<m2 __as__ Dict _-->m1<mdict m2),(m1 __as__ Dict _<m2 __as__ MDict _-->mdict m1<m2),(m1 __as__ Set _<m2 __as__ Set _-->m1<=m2&&~m1>=m2),(m1 __as__ Bag _<m2 __as__ Bag _-->m1<=m2&&~m1>=m2),(m1 __as__ HSet _<m2 __as__ HSet _-->m1<=m2&&~m1>=m2),(m1 __as__ HBag _<m2 __as__ HBag _-->m1<=m2&&~m1>=m2),(m1 __as__ HBag _<m2-->m1<hbag m2 __if__ xsetp m2),(m1<m2 __as__ HBag _-->hbag m1<m2 __if__ xsetp m1),(m1 __as__ HSet _<m2-->__case__ m2 [(Bag _-->hbag m1<hbag m2),(Set _-->m1<hset m2)] __if__ xsetp m2),(m1<m2 __as__ HSet _-->__case__ m1 [(Bag _-->hbag m1<hbag m2),(Set _-->hset m1<m2)] __if__ xsetp m2),(m1 __as__ Bag _<m2 __as__ Set _-->m1<bag m2),(m1 __as__ Set _<m2 __as__ Bag _-->bag m1<m2)]);
+'((<:) __with__ [(r int<:t-->-r<:t+3.14159265358979 __if__ r<0),(r bigint<:t-->-r<:t+3.14159265358979 __if__ r<0),(r double<:t-->-r<:t+3.14159265358979 __if__ r<0),(r<:t int-->r<:atan2 (sin t) (cos t) __if__ t<-3.14159265358979||t>3.14159265358979),(r<:t bigint-->r<:atan2 (sin t) (cos t) __if__ t<-3.14159265358979||t>3.14159265358979),(r<:t double-->r<:atan2 (sin t) (cos t) __if__ t<-3.14159265358979||t>3.14159265358979),(r<:t int-->r<:3.14159265358979 __if__ t==-3.14159265358979),(r<:t bigint-->r<:3.14159265358979 __if__ t==-3.14159265358979),(r<:t double-->r<:3.14159265358979 __if__ t==-3.14159265358979),(r __as__ (_%_)<:t-->-r<:t+3.14159265358979 __if__ r<0),(r<:t __as__ (_%_)-->r<:atan2 (sin t) (cos t) __if__ t<-3.14159265358979||t>3.14159265358979),(r<:t __as__ (_%_)-->r<:3.14159265358979 __if__ t==-3.14159265358979)]);
+'((<<) __with__ [(x int<<y int-->x<<y),(x bigint<<y int-->__C::bigint_shl x y __if__ y>=0),(x bigint<<y int-->__C::bigint_shr x (-y))]);
+'((<=) __with__ [(x int<=y int-->x<=y),(x double<=y double-->x<=y),(x int<=y double-->x<=y),(x double<=y int-->x<=y),(x bigint<=y bigint-->__C::bigint_cmp x y<=0),(x int<=y bigint-->bigint x<=y),(x bigint<=y int-->x<=bigint y),(x bigint<=y double-->double x<=y),(x double<=y bigint-->x<=double y),(x pointer<=y pointer-->bigint x<=bigint y),(x string<=y string-->__C::strcmp x y<=0),(x1%y1<=x2%y2-->x1*y2<=x2*y1),(x1%y1<=x2-->x1<=x2*y1 __if__ realp x2),(x1<=x2%y2-->x1*y2<=x2 __if__ realp x2),(d1 __as__ Dict _<=d2 __as__ Dict _-->all (member d2) ks1&&map ((!) d2) ks1==vals d1 __when__ [ks1-->keys d1]),(d1 __as__ MDict _<=d2 __as__ MDict _-->null (d1-d2)),(d1 __as__ HDict _<=d2 __as__ HDict _-->null (d1-d2)),(d1 __as__ HMDict _<=d2 __as__ HMDict _-->null (d1-d2)),(m1 __as__ HMDict _<=m2-->m1<=hmdict m2 __if__ xdictp m2),(m1<=m2 __as__ HMDict _-->hmdict m1<=m2 __if__ xdictp m1),(m1 __as__ HDict _<=m2-->__case__ m2 [(MDict _-->hmdict m1<=hmdict m2),(Dict _-->m1<=hdict m2)] __if__ xdictp m2),(m1<=m2 __as__ HDict _-->__case__ m1 [(MDict _-->hmdict m1<=hmdict m2),(Dict _-->hdict m1<=m2)] __if__ xdictp m2),(m1 __as__ MDict _<=m2 __as__ Dict _-->m1<=mdict m2),(m1 __as__ Dict _<=m2 __as__ MDict _-->mdict m1<=m2),(m1 __as__ Set _<=m2 __as__ Set _-->all (member m2) (members m1)),(m1 __as__ HSet _<=m2 __as__ HSet _-->all (member m2) (members m1)),(m1 __as__ Bag _<=m2 __as__ Bag _-->null (m1-m2)),(m1 __as__ HBag _<=m2 __as__ HBag _-->null (m1-m2)),(m1 __as__ HBag _<=m2-->m1<=hbag m2 __if__ xsetp m2),(m1<=m2 __as__ HBag _-->hbag m1<=m2 __if__ xsetp m1),(m1 __as__ HSet _<=m2-->__case__ m2 [(Bag _-->hbag m1<=hbag m2),(Set _-->m1<=hset m2)] __if__ xsetp m2),(m1<=m2 __as__ HSet _-->__case__ m1 [(Bag _-->hbag m1<=hbag m2),(Set _-->hset m1<=m2)] __if__ xsetp m2),(m1 __as__ Bag _<=m2 __as__ Set _-->m1<=bag m2),(m1 __as__ Set _<=m2 __as__ Bag _-->bag m1<=m2)]);
+'((===) __with__ [x===y-->same x y]);
+'((>) __with__ [(x int>y int-->x>y),(x double>y double-->x>y),(x int>y double-->x>y),(x double>y int-->x>y),(x bigint>y bigint-->__C::bigint_cmp x y>0),(x int>y bigint-->bigint x>y),(x bigint>y int-->x>bigint y),(x bigint>y double-->double x>y),(x double>y bigint-->x>double y),(x pointer>y pointer-->bigint x>bigint y),(x string>y string-->__C::strcmp x y>0),(x1%y1>x2%y2-->x1*y2>x2*y1),(x1%y1>x2-->x1>x2*y1 __if__ realp x2),(x1>x2%y2-->x1*y2>x2 __if__ realp x2),(d1 __as__ Dict _>d2 __as__ Dict _-->d1>=d2&&~d1<=d2),(d1 __as__ MDict _>d2 __as__ MDict _-->d1>=d2&&~d1<=d2),(d1 __as__ HDict _>d2 __as__ HDict _-->d1>=d2&&~d1<=d2),(d1 __as__ HMDict _>d2 __as__ HMDict _-->d1>=d2&&~d1<=d2),(m1 __as__ HMDict _>m2-->m1>hmdict m2 __if__ xdictp m2),(m1>m2 __as__ HMDict _-->hmdict m1>m2 __if__ xdictp m1),(m1 __as__ HDict _>m2-->__case__ m2 [(MDict _-->hmdict m1>hmdict m2),(Dict _-->m1>hdict m2)] __if__ xdictp m2),(m1>m2 __as__ HDict _-->__case__ m1 [(MDict _-->hmdict m1>hmdict m2),(Dict _-->hdict m1>m2)] __if__ xdictp m2),(m1 __as__ MDict _>m2 __as__ Dict _-->m1>mdict m2),(m1 __as__ Dict _>m2 __as__ MDict _-->mdict m1>m2),(m1 __as__ Set _>m2 __as__ Set _-->m1>=m2&&~m1<=m2),(m1 __as__ Bag _>m2 __as__ Bag _-->m1>=m2&&~m1<=m2),(m1 __as__ HSet _>m2 __as__ HSet _-->m1>=m2&&~m1<=m2),(m1 __as__ HBag _>m2 __as__ HBag _-->m1>=m2&&~m1<=m2),(m1 __as__ HBag _>m2-->m1>hbag m2 __if__ xsetp m2),(m1>m2 __as__ HBag _-->hbag m1>m2 __if__ xsetp m1),(m1 __as__ HSet _>m2-->__case__ m2 [(Bag _-->hbag m1>hbag m2),(Set _-->m1>hset m2)] __if__ xsetp m2),(m1>m2 __as__ HSet _-->__case__ m1 [(Bag _-->hbag m1>hbag m2),(Set _-->hset m1>m2)] __if__ xsetp m2),(m1 __as__ Bag _>m2 __as__ Set _-->m1>bag m2),(m1 __as__ Set _>m2 __as__ Bag _-->bag m1>m2)]);
+'((>=) __with__ [(x int>=y int-->x>=y),(x double>=y double-->x>=y),(x int>=y double-->x>=y),(x double>=y int-->x>=y),(x bigint>=y bigint-->__C::bigint_cmp x y>=0),(x int>=y bigint-->bigint x>=y),(x bigint>=y int-->x>=bigint y),(x bigint>=y double-->double x>=y),(x double>=y bigint-->x>=double y),(x pointer>=y pointer-->bigint x>=bigint y),(x string>=y string-->__C::strcmp x y>=0),(x1%y1>=x2%y2-->x1*y2>=x2*y1),(x1%y1>=x2-->x1>=x2*y1 __if__ realp x2),(x1>=x2%y2-->x1*y2>=x2 __if__ realp x2),(d1 __as__ Dict _>=d2 __as__ Dict _-->all (member d1) ks2&&map ((!) d1) ks2==vals d2 __when__ [ks2-->keys d2]),(d1 __as__ MDict _>=d2 __as__ MDict _-->null (d2-d1)),(d1 __as__ HDict _>=d2 __as__ HDict _-->null (d2-d1)),(d1 __as__ HMDict _>=d2 __as__ HMDict _-->null (d2-d1)),(m1 __as__ HMDict _>=m2-->m1>=hmdict m2 __if__ xdictp m2),(m1>=m2 __as__ HMDict _-->hmdict m1>=m2 __if__ xdictp m1),(m1 __as__ HDict _>=m2-->__case__ m2 [(MDict _-->hmdict m1>=hmdict m2),(Dict _-->m1>=hdict m2)] __if__ xdictp m2),(m1>=m2 __as__ HDict _-->__case__ m1 [(MDict _-->hmdict m1>=hmdict m2),(Dict _-->hdict m1>=m2)] __if__ xdictp m2),(m1 __as__ MDict _>=m2 __as__ Dict _-->m1>=mdict m2),(m1 __as__ Dict _>=m2 __as__ MDict _-->mdict m1>=m2),(m1 __as__ Set _>=m2 __as__ Set _-->all (member m1) (members m2)),(m1 __as__ HSet _>=m2 __as__ HSet _-->all (member m1) (members m2)),(m1 __as__ Bag _>=m2 __as__ Bag _-->null (m2-m1)),(m1 __as__ HBag _>=m2 __as__ HBag _-->null (m2-m1)),(m1 __as__ HBag _>=m2-->m1>=hbag m2 __if__ xsetp m2),(m1>=m2 __as__ HBag _-->hbag m1>=m2 __if__ xsetp m1),(m1 __as__ HSet _>=m2-->__case__ m2 [(Bag _-->hbag m1>=hbag m2),(Set _-->m1>=hset m2)] __if__ xsetp m2),(m1>=m2 __as__ HSet _-->__case__ m1 [(Bag _-->hbag m1>=hbag m2),(Set _-->hset m1>=m2)] __if__ xsetp m2),(m1 __as__ Bag _>=m2 __as__ Set _-->m1>=bag m2),(m1 __as__ Set _>=m2 __as__ Bag _-->bag m1>=m2)]);
+'((>>) __with__ [(x int>>y int-->x>>y),(x bigint>>y int-->__C::bigint_shr x y __if__ y>=0),(x bigint>>y int-->__C::bigint_shl x (-y))]);
+'((^) __with__ [(1.0^y double-->1.0),((-1.0)^y double-->1.0 __if__ infp y),(x double^y double-->__C::pow x y),(x int^y int-->double x^double y),(x bigint^y bigint-->double x^double y),(x int^y bigint-->double x^double y),(x bigint^y int-->double x^double y),(x double^y int-->x^double y),(x double^y bigint-->x^double y),(x int^y double-->double x^y),(x bigint^y double-->double x^y),(z1 __as__ (_+:_)^x2-->exp (ln z1*x2) __if__ numberp x2),(z1 __as__ (_<:_)^x2-->exp (ln z1*x2) __if__ numberp x2),(x1^z2 __as__ (_+:_)-->exp (ln (rect x1)*z2) __if__ realp x1),(x1^z2 __as__ (_<:_)-->exp (ln (polar x1)*z2) __if__ realp x1),((x1%y1)^(x2%y2)-->(x1/y1)^(x2/y2)),((x1%y1)^x2-->(x1/y1)^x2 __if__ numberp x2),(x1^(x2%y2)-->x1^(x2/y2) __if__ numberp x1)]);
+'((and) __with__ [(x int and y int-->x and y),(x bigint and y bigint-->__C::bigint_and x y),(x int and y bigint-->bigint x and y),(x bigint and y int-->x and bigint y)]);
+'(applp __with__ [applp x-->typep ('appl) x]);
+'(array __with__ [array xs rlist-->foldl append emptyarray xs]);
+'(array2 __with__ [array2 xs-->array (map array xs)]);
+'(arrayp __with__ [arrayp x-->typep array x]);
+'(bagp __with__ [bagp x-->typep bag x]);
+'(bigintp __with__ [bigintp x-->__case__ x [(_ bigint-->1),(_-->0)]]);
+'(bigintvalp __with__ [bigintvalp x-->ratvalp x&&den (re x)==1]);
+'(blobp __with__ [blobp _-->0]);
+'(byte_cstring __with__ [byte_cstring s string-->ptrtag 1$__C::pure_byte_cstring s]);
+'(byte_cstring_pointer __with__ [byte_cstring_pointer xs-->__ifelse__ (null p) (throw malloc_error) (make_pointer (map byte_cstring xs)) __with__ [(make_pointer xs-->ptrtag 3$sentry free_pointer p __when__ [_-->dowith (__lambda__ [i,x] (put_pointer (p+i*8) x)) (0..n-1) xs]),(free_pointer p-->free p __when__ [_-->do (__lambda__ [i] (free (get_pointer (p+i*8)))) (0..n-1)])] __when__ [(n-->#xs),(p-->calloc (n+1) 8),(xs-->__ifelse__ (smatrixp xs) (list xs) xs)] __if__ (rlistp xs||smatrixp xs)&&all stringp xs]);
+'(byte_pointer __with__ [byte_pointer p pointer x matrix-->__C::matrix_to_byte_array p x __if__ nmatrixp x]);
+'(byte_string __with__ [byte_string s string-->ptrtag 1$__C::pure_byte_string s]);
+'(byte_string_pointer __with__ [byte_string_pointer xs-->__ifelse__ (null p) (throw malloc_error) (make_pointer (map byte_string xs)) __with__ [(make_pointer xs-->ptrtag 3$sentry free_pointer p __when__ [_-->dowith (__lambda__ [i,x] (put_pointer (p+i*8) x)) (0..n-1) xs]),(free_pointer p-->free p __when__ [_-->do (__lambda__ [i] (free (get_pointer (p+i*8)))) (0..n-1)])] __when__ [(n-->#xs),(p-->calloc (n+1) 8),(xs-->__ifelse__ (smatrixp xs) (list xs) xs)] __if__ (rlistp xs||smatrixp xs)&&all stringp xs]);
+'(cat __with__ [(cat []-->[]),(cat (xs __as__ (_:_))-->foldr (tick []) [] xs __with__ [(foldr f a []-->a),(foldr f a (xs __as__ (_:_))-->tick [] xs __with__ [(tick zs (x:xs)-->tack (x:zs) (foldr f a xs&) __if__ thunkp xs),(tick zs (x:xs)-->tick (x:zs) xs),(tick zs []-->tack zs a),(tick zs xs-->tack zs (foldr f a xs)),(tack (x:xs) y-->tack xs (f x y)),(tack [] y-->y)]),(foldr (tick _) [] x-->cat x),(tick zs (x:xs) ys-->tack (x:zs) (tick [] xs ys&) __if__ thunkp xs),(tick zs (x:xs) ys-->tick (x:zs) xs ys),(tick zs [] ys-->tack zs ys),(tick zs xs ys-->tack zs (xs+ys)),(tack (x:xs) ys-->tack xs (x:ys)),(tack [] ys-->ys)])]);
+'(charp __with__ [charp x-->typep ('char) x]);
+'(chars __with__ [(chars s string-->__C::string_chars s __if__ ~funp (:)),(chars s string-->list (__C::string_chars s))]);
+'(chr __with__ [chr n int-->c __if__ stringp c __when__ [c-->__C::string_chr n]]);
+'(clearsym __with__ [(clearsym sym string level int-->() __when__ [(res-->evalcmd ("clear -t"+str level+" "+sym)),(_-->stringp res||throw evalcmd)]),(clearsym sym symbol level int-->clearsym sym level __when__ [(sym-->str sym),(sym-->__ifelse__ (sym!0=="(") (substr sym 2 (#sym-2)) sym)])]);
+'(closurep __with__ [closurep x-->funp x||lambdap x]);
+'(cmatrixp __with__ [cmatrixp x-->__case__ x [(_ matrix-->matrix_type x==2),(_-->0)]]);
+'(col __with__ [col x matrix j int-->__ifelse__ (j>=0&&j<m) (__C::matrix_slice x 0 j (n-1) j) (throw out_of_bounds) __when__ [n int,m int-->dim x]]);
+'(colrev __with__ [colrev x matrix-->colcat (reverse (cols x))]);
+'(cols __with__ [cols x matrix-->map (col x) (0..m-1) __when__ [_,m int-->dim x]]);
+'(colvectorp __with__ [colvectorp x-->matrixp x&&dim x!1==1]);
+'(complex_float_pointer __with__ [complex_float_pointer p pointer x matrix-->__C::matrix_to_complex_float_array p x __if__ nmatrixp x]);
+'(complex_pointer __with__ [complex_pointer p pointer x matrix-->__C::matrix_to_complex_array p x __if__ nmatrixp x]);
+'(complexp __with__ [complexp x-->typep ('complex) x]);
+'(compvalp __with__ [compvalp x-->numberp x]);
+'(cooked __with__ [cooked p pointer-->sentry free p]);
+'(cst __with__ [cst x y-->x]);
+'(cstring __with__ [cstring s pointer-->__C::pure_cstring s]);
+'(cstring_dup __with__ [cstring_dup s pointer-->__C::pure_cstring_dup s]);
+'(cstring_list __with__ [cstring_list n p pointer-->list$takewhile stringp (listmap (__lambda__ [i] (p!i)) (0..n-1)) __with__ [p!i-->__ifelse__ (null q) q (cstring_dup q) __when__ [q-->get_pointer (p+i*8)]] __if__ ~null p&&(intp n||infp n)]);
+'(cstring_vector __with__ [cstring_vector n p pointer-->vector xs __if__ listp xs __when__ [xs-->cstring_list n p]]);
+'(curry __with__ [curry f x y-->f (x,y)]);
+'(curry3 __with__ [curry3 f x y z-->f (x,y,z)]);
+'(delete_all __with__ [(delete_all (Dict d) x-->Dict (avl::deletek d x)),(delete_all (HDict d) x-->HDict (avl::hdeletek d x)),(delete_all (MDict d) x-->MDict (avl::mdeleteka d x)),(delete_all (HMDict d) x-->HMDict (avl::mhdeleteka d x)),(delete_all (Set m) y-->Set (avl::delete m y)),(delete_all (Bag m) y-->Bag (avl::mdeletea m y)),(delete_all (HSet m) y-->HSet (avl::hdelete m y)),(delete_all (HBag m) y-->HBag (avl::mhdeletea m y))]);
+'(delete_val __with__ [(delete_val (Dict d) (el __as__ (x=>y))-->Dict (avl::deletekv d el)),(delete_val (HDict d) (el __as__ (x=>y))-->HDict (avl::hdeletekv d el)),(delete_val (MDict d) (el __as__ (x=>y))-->MDict (avl::mdeletekv d el)),(delete_val (HMDict d) (el __as__ (x=>y))-->HMDict (avl::mhdeletekv d el))]);
+'(dictp __with__ [dictp x-->typep dict x]);
+'(dim __with__ [dim x matrix-->__C::matrix_dim x]);
+'((div) __with__ [(x int div y int-->x div y),(x bigint div y bigint-->__C::bigint_div x y),(x int div y bigint-->bigint x div y),(x bigint div y int-->x div bigint y)]);
+'(dmatrixp __with__ [dmatrixp x-->__case__ x [(_ matrix-->matrix_type x==1),(_-->0)]]);
+'(double_pointer __with__ [double_pointer p pointer x matrix-->__C::matrix_to_double_array p x __if__ nmatrixp x]);
+'(doublep __with__ [doublep x-->__case__ x [(_ double-->1),(_-->0)]]);
+'(emptybag __with__ [emptybag-->Bag avl::emptytree]);
+'(emptydict __with__ [emptydict-->Dict avl::emptytree]);
+'(emptyhbag __with__ [emptyhbag-->HBag avl::emptytree]);
+'(emptyhdict __with__ [emptyhdict-->HDict avl::emptytree]);
+'(emptyhmdict __with__ [emptyhmdict-->HMDict avl::emptytree]);
+'(emptyhset __with__ [emptyhset-->HSet avl::emptytree]);
+'(emptymdict __with__ [emptymdict-->MDict avl::emptytree]);
+'(emptyset __with__ [emptyset-->Set avl::emptytree]);
+'(exactp __with__ [exactp x-->__case__ x [(x+:y-->~doublep x&&~doublep y),(x<:y-->~doublep x&&~doublep y),(x%y-->~doublep x&&~doublep y),(_-->~doublep x)] __if__ numberp x]);
+'(execv __with__ [execv prog string argv rlist-->execv prog (smatrix argv)]);
+'(execve __with__ [execve prog string argv rlist envp rlist-->execve prog (smatrix argv) (smatrix envp)]);
+'(execvp __with__ [execvp prog string argv rlist-->execvp prog (smatrix argv)]);
+'(fclose __with__ [fclose fp pointer-->clear_sentry fp$$__C::fclose fp __if__ get_sentry fp===__C::fclose]);
+'(fdopen __with__ [fdopen fd int mode string-->sentry __C::fclose fp __if__ ~null fp __when__ [fp-->__C::fdopen fd mode]]);
+'(fix __with__ [fix f-->f (fix f&)]);
+'(flip __with__ [flip f x y-->f y x]);
+'(float_pointer __with__ [float_pointer p pointer x matrix-->__C::matrix_to_float_array p x __if__ nmatrixp x]);
+'(fnmatch __with__ [fnmatch pat string s string flags int-->__C::fnmatch pat s flags==0]);
+'(fopen __with__ [fopen name string mode string-->sentry __C::fclose fp __if__ ~null fp __when__ [fp-->__C::fopen name mode]]);
+'(fprintf __with__ [fprintf fp pointer format string args-->count __when__ [(args-->__ifelse__ (tuplep args) (list args) [args]),(count,_-->catch error_handler (foldl (do_fprintf fp) (0,args) (__std__::printf_split_format format)))] __with__ [(error_handler (printf_error res int)-->res,[]),(error_handler x-->throw x),(do_fprintf fp (count,arg:args) (__std__::printf_format_spec t s)-->count,args __when__ [(res-->__case__ (t,arg) [("c",x int-->__C::pure_fprintf_int fp s x),("c",x bigint-->__C::pure_fprintf_int fp s x),("d",x int-->__C::pure_fprintf_int fp s x),("d",x bigint-->__C::pure_fprintf_int fp s x),("g",x double-->__C::pure_fprintf_double fp s x),("s",x string-->__C::pure_fprintf_string fp s x),("p",x string-->__C::pure_fprintf_pointer fp s x),("p",x pointer-->__C::pure_fprintf_pointer fp s x),(_-->throw (printf_value_error s arg))]),(count-->__ifelse__ (res>=0) (count+res) (throw (printf_error res)))]),(do_fprintf fp (count,args) (__std__::printf_format_str s)-->count,args __when__ [(res-->__C::pure_fprintf fp s),(count-->__ifelse__ (res>=0) (count+res) (throw (printf_error res)))]),(do_fprintf fp (count,[]) (__std__::printf_format_spec t s)-->throw (printf_value_error s ())),(do_fprintf fp (count,_) _-->throw (this_cant_happen count))]]);
+'(fscanf __with__ [fscanf fp pointer format string-->tuple (reverse ret) __when__ [_,ret-->catch error_handler (foldl (do_fscanf fp) (0,[]) (__std__::scanf_split_format format))] __with__ [(error_handler (scanf_error ret)-->throw (scanf_error (tuple (reverse ret)))),(error_handler x-->throw x),(check_buf buf-->throw malloc_error __if__ null buf),(check_buf buf-->buf),(do_fscanf fp (nread,ret) (__std__::scanf_format_spec t s)-->nread+res,ret __when__ [(size,s-->__ifelse__ (t=="s") (guestimate s) (16,s)),(buf-->check_buf (calloc size 1)),(res-->__case__ t [("n"-->__C::pure_fscanf_int fp s buf),("d"-->__C::pure_fscanf_int fp s buf),("g"-->__C::pure_fscanf_double fp s buf),("s"-->__C::pure_fscanf_string fp s buf),("p"-->__C::pure_fscanf_pointer fp s buf),(_-->throw (this_cant_happen ret))]),(res-->__ifelse__ (res>=0) res (free buf$$throw (scanf_error ret))),(val-->__case__ t [("n"-->nread+get_int buf),("d"-->get_int buf),("g"-->get_double buf),("s"-->cstring buf),("p"-->get_pointer buf),(_-->throw (this_cant_happen ret))]),(_-->__ifelse__ (t=="s") () (free buf)),(ret-->val:ret)]),(do_fscanf fp (nread,ret) (__std__::scanf_format_str s)-->nread+res,ret __when__ [(res-->__C::pure_fscanf fp s),(ret-->__ifelse__ (res>=0) ret (throw (scanf_error ret)))]),(do_fscanf _ (_,ret) _-->throw (this_cant_happen ret)),(guestimate "%c"-->2,"%c"),(guestimate format-->n,format __when__ [(1,0,_,1,s-->regex "^%([0-9]*)" 1 format 0),(n,format-->__ifelse__ (null s) (1025,"%1024"+tail format) (eval s+1,format))])]]);
+'(functionp __with__ [functionp x-->nargs x>0 __with__ [(nargs ((x __as__ _) _)-->nargs x-1),(nargs x-->nargs x)]]);
+'(gcd __with__ [(gcd x bigint y bigint-->__C::bigint_gcd x y),(gcd x int y bigint-->__C::bigint_gcd (bigint x) y),(gcd x bigint y int-->__C::bigint_gcd x (bigint y)),(gcd x int y int-->int (__C::bigint_gcd (bigint x) (bigint y)))]);
+'(get __with__ [get r pointer-->__C::pointer_get_expr r __if__ refp r]);
+'(get_byte __with__ [get_byte x pointer-->__C::pointer_get_byte x]);
+'(get_double __with__ [get_double x pointer-->__C::pointer_get_double x]);
+'(get_float __with__ [get_float x pointer-->__C::pointer_get_float x]);
+'(get_int __with__ [get_int x pointer-->__C::pointer_get_int x]);
+'(get_int64 __with__ [get_int64 x pointer-->__C::pointer_get_int64 x]);
+'(get_long __with__ [get_long x pointer-->__C::pointer_get_long x]);
+'(get_pointer __with__ [get_pointer x pointer-->__C::pointer_get_pointer x]);
+'(get_short __with__ [get_short x pointer-->__C::pointer_get_short x]);
+'(get_string __with__ [get_string x pointer-->__C::pointer_get_string x]);
+'(gets __with__ [gets-->__ifelse__ (null s) s (__ifelse__ (last s=="\n") (init s) s) __when__ [s-->fgets stdin]]);
+'(glob __with__ [glob pat string flags int-->result __when__ [(globptr-->calloc 1 72),(result-->__C::glob pat flags (pointer 0) globptr),(result-->__ifelse__ (result==0) (__C::globlist globptr) result),(_-->__C::globfree globptr),(_-->free globptr)]]);
+'(globsym __with__ [globsym pat string level int-->uniq (catmap descr info) __when__ [(res-->evalcmd ("show -gst"+str level+" "+pat)),(_-->stringp res||throw evalcmd),(info-->init (init (split "\n" res)))] __with__ [(uniq (x:xs __as__ (y:_))-->__ifelse__ (x===y) (uniq xs) (x:uniq xs)),(uniq xs-->xs),(descr s string-->__case__ (filter (flip (~=) "") (split " " s)) [(sym:_-->__ifelse__ (any (flip (==) sym) ["extern","private","infix","infixl","infixr","prefix","postfix","outfix","nonfix"]) [] (catmap (__lambda__ [x] (__ifelse__ (symbolp x) [x] [])) [__C::pure_quoted_symbol sym])),(_-->[])])]]);
+'(hbagp __with__ [hbagp x-->typep hbag x]);
+'(hdictp __with__ [hdictp x-->typep hdict x]);
+'(heap __with__ [heap xs rlist-->foldl insert emptyheap xs]);
+'(heapp __with__ [heapp x-->typep heap x]);
+'(hmdictp __with__ [hmdictp x-->typep hmdict x]);
+'(hsetp __with__ [hsetp x-->typep hset x]);
+'(id __with__ [id x-->x]);
+'(imatrixp __with__ [imatrixp x-->__case__ x [(_ matrix-->matrix_type x==3),(_-->0)]]);
+'(inexactp __with__ [inexactp x-->__case__ x [(x+:y-->doublep x||doublep y),(x<:y-->doublep x||doublep y),(x%y-->doublep x||doublep y),(_-->doublep x)] __if__ numberp x]);
+'(infp __with__ [infp x-->__case__ x [(x double-->x==inf||x==-inf),(_-->0)]]);
+'(int_pointer __with__ [int_pointer p pointer x matrix-->__C::matrix_to_int_array p x __if__ nmatrixp x]);
+'(integerp __with__ [integerp x-->typep ('integer) x]);
+'(intp __with__ [intp x-->__case__ x [(_ int-->1),(_-->0)]]);
+'(intvalp __with__ [intvalp x-->bigintvalp x&&int (re x)==x]);
+'(iterate __with__ [iterate f x-->x:iterate f (f x)&]);
+'(iteraten __with__ [(iteraten n int f x-->[] __if__ n<=0),(iteraten n int f x-->accum [] n f x __with__ [(accum xs n int f x-->reverse (x:xs) __if__ n==1),(accum xs n int f x-->accum (x:xs) (n-1) f (f x))])]);
+'(iterwhile __with__ [iterwhile p f x-->accum [] p f x __with__ [(accum xs p f x-->accum (x:xs) p f (f x) __if__ p x),(accum xs p f x-->reverse xs)]]);
+'(join __with__ [join delim string xs-->s __if__ stringp s __when__ [s-->__C::string_join delim xs]]);
+'(key __with__ [key (x=>v)-->x]);
+'(lcm __with__ [(lcm x bigint y bigint-->__C::bigint_lcm x y),(lcm x int y bigint-->__C::bigint_lcm (bigint x) y),(lcm x bigint y int-->__C::bigint_lcm x (bigint y)),(lcm x int y int-->int (__C::bigint_lcm (bigint x) (bigint y)))]);
+'(listp __with__ [listp x-->typep ('list) x]);
+'(matrixp __with__ [matrixp x-->__case__ x [(_ matrix-->1),(_-->0)]]);
+'(max __with__ [max x y-->__ifelse__ (x>=y) x y]);
+'(mdictp __with__ [mdictp x-->typep mdict x]);
+'(members2 __with__ [members2 (x __as__ Array _)-->map members (members x)]);
+'(min __with__ [min x y-->__ifelse__ (x<=y) x y]);
+'(mkarray2 __with__ [mkarray2 x (n int,m int)-->mkarray (mkarray x m) n]);
+'(mkdict __with__ [mkdict y xs rlist-->dict (zipwith (=>) xs (repeatn (#xs) y))]);
+'(mkhdict __with__ [mkhdict y xs rlist-->hdict (zipwith (=>) xs (repeatn (#xs) y))]);
+'(mkhmdict __with__ [mkhmdict y xs rlist-->hmdict (zipwith (=>) xs (repeatn (#xs) y))]);
+'(mkmdict __with__ [mkmdict y xs rlist-->mdict (zipwith (=>) xs (repeatn (#xs) y))]);
+'((mod) __with__ [(x int mod y int-->x mod y),(x bigint mod y bigint-->__C::bigint_mod x y),(x int mod y bigint-->bigint x mod y),(x bigint mod y int-->x mod bigint y)]);
+'(nanosleep __with__ [(nanosleep t int-->nanosleep (double t)),(nanosleep t bigint-->nanosleep (double t))]);
+'(nanp __with__ [nanp x-->__case__ x [(x double-->~x==x),(_-->0)]]);
+'(neg __with__ [(-x int-->-x),(-x double-->-x),(-x bigint-->__C::bigint_neg x),(-(x+:y)-->-x+:-y),(-(r<:t)-->r<:t+3.14159265358979),(-x%y-->(-x)%y)]);
+'(nmatrixp __with__ [nmatrixp x-->__case__ x [(_ matrix-->matrix_type x>=1),(_-->0)]]);
+'((not) __with__ [(not x int-->not x),(not x bigint-->__C::bigint_not x)]);
+'(numberp __with__ [numberp x-->typep ('number) x]);
+'((or) __with__ [(x int or y int-->x or y),(x bigint or y bigint-->__C::bigint_or x y),(x int or y bigint-->bigint x or y),(x bigint or y int-->x or bigint y)]);
+'(ord __with__ [ord s string-->n __if__ intp n __when__ [n-->__C::string_ord s]]);
+'(pack __with__ [pack x matrix-->colcat [x,{}]]);
+'(packed __with__ [packed x matrix-->stride x==dim x!1]);
+'(pclose __with__ [pclose fp pointer-->clear_sentry fp$$__C::pclose fp __if__ get_sentry fp===__C::pclose]);
+'(pointer __with__ [(pointer x pointer-->x),(pointer x int-->__C::pure_pointerval x),(pointer x bigint-->__C::pure_pointerval x),(pointer x double-->__C::pure_pointerval x),(pointer x string-->__C::pure_pointerval x),(pointer x matrix-->__C::pure_pointerval x)]);
+'(pointer_cast __with__ [pointer_cast ty string x pointer-->pointer_cast (pointer_tag ty) x]);
+'(pointer_tag __with__ [(pointer_tag x string-->__C::pure_pointer_tag x),(pointer_tag x pointer-->get_ptrtag x)]);
+'(pointer_type __with__ [pointer_type x pointer-->pointer_type (get_ptrtag x)]);
+'(pointerp __with__ [pointerp x-->__case__ x [(_ pointer-->1),(_-->0)]]);
+'(popen __with__ [popen name string mode string-->sentry __C::pclose fp __if__ ~null fp __when__ [fp-->__C::popen name mode]]);
+'(pred __with__ [pred x-->x-1]);
+'(printf __with__ [printf format string args-->fprintf stdout format args]);
+'(publicp __with__ [publicp x symbol-->symbolp (val (str x))]);
+'(put __with__ [put r pointer x-->__C::pure_free (__C::pointer_get_expr r)$$__C::pointer_put_expr r (__C::pure_new x)$$x __if__ refp r]);
+'(put_byte __with__ [put_byte x pointer y int-->__C::pointer_put_byte x y]);
+'(put_double __with__ [put_double x pointer y double-->__C::pointer_put_double x y]);
+'(put_float __with__ [put_float x pointer y double-->__C::pointer_put_float x y]);
+'(put_int __with__ [put_int x pointer y int-->__C::pointer_put_int x y]);
+'(put_int64 __with__ [(put_int64 x pointer y int-->__C::pointer_put_int64 x y),(put_int64 x pointer y bigint-->__C::pointer_put_int64 x y)]);
+'(put_long __with__ [(put_long x pointer y int-->__C::pointer_put_long x y),(put_long x pointer y bigint-->__C::pointer_put_long x y)]);
+'(put_pointer __with__ [(put_pointer x pointer y string-->__C::pointer_put_pointer x y),(put_pointer x pointer y pointer-->__C::pointer_put_pointer x y)]);
+'(put_short __with__ [put_short x pointer y int-->__C::pointer_put_short x y]);
+'(put_string __with__ [put_string x pointer y string-->__C::pointer_put_string x y]);
+'(quote __with__ [quote x-->x]);
+'(rationalp __with__ [rationalp x-->typep ('rational) x]);
+'(ratvalp __with__ [ratvalp x-->realvalp x&&re (x-x)~==nan]);
+'(realp __with__ [realp x-->typep ('real) x]);
+'(realvalp __with__ [realvalp x-->compvalp x&&im x==0]);
+'(record __with__ [(record x-->__C::record_pack x __if__ recordp x),(record x-->record x __if__ recordp x __when__ [x-->matrix x])]);
+'(recordp __with__ [recordp x-->__C::record_check x]);
+'(ref __with__ [ref x-->__C::pointer_put_expr r (__C::pure_new x)$$sentry unref r __when__ [r pointer-->__C::pure_expr_pointer]]);
+'(refp __with__ [refp r-->__case__ r [(_ pointer-->get_sentry r===unref),(_-->0)]]);
+'(reg_info __with__ [(reg_info (_ int,info)-->info),(reg_info _-->())]);
+'(regex __with__ [regex pat string cflags int s string eflags int-->__ifelse__ (__C::regstatus re) (regerr (__C::regstatus re) (__C::regerror re)) (__ifelse__ (__C::regexec re s eflags) 0 (1,__C::regmatch re)) __when__ [re-->sentry __C::regfree (__C::regcomp pat cflags)]]);
+'(regexg __with__ [regexg f pat string cflags int s string eflags int-->__ifelse__ (__C::regstatus re) (regerr (__C::regstatus re) (__C::regerror re)) (iterwhile check next first) __with__ [(check _-->__C::regstatus re==0),(next _-->__ifelse__ (__C::regnext re 0) () (f (__C::regmatch re))),(first-->__ifelse__ (__C::regexec re s eflags) () (f (__C::regmatch re)))] __when__ [re-->sentry __C::regfree (__C::regcomp pat cflags)] __if__ ~cflags and 8]);
+'(regexgg __with__ [regexgg f pat string cflags int s string eflags int-->__ifelse__ (__C::regstatus re) (regerr (__C::regstatus re) (__C::regerror re)) (iterwhile check next first) __with__ [(check _-->__C::regstatus re==0),(next _-->__ifelse__ (__C::regnext re 1) () (f (__C::regmatch re))),(first-->__ifelse__ (__C::regexec re s eflags) () (f (__C::regmatch re)))] __when__ [re-->sentry __C::regfree (__C::regcomp pat cflags)] __if__ ~cflags and 8]);
+'(regexggs __with__ [regexggs f pat string cflags int s string eflags int-->__ifelse__ (__C::regstatus re) (regerr (__C::regstatus re) (__C::regerror re)) (takewhile check (iterate next first)) __with__ [(check _-->__C::regstatus re==0),(next _-->__ifelse__ (__C::regnext re 1) () (f (__C::regmatch re))),(first-->__ifelse__ (__C::regexec re s eflags) () (f (__C::regmatch re)))] __when__ [re-->sentry __C::regfree (__C::regcomp pat cflags)] __if__ ~cflags and 8]);
+'(regexgs __with__ [regexgs f pat string cflags int s string eflags int-->__ifelse__ (__C::regstatus re) (regerr (__C::regstatus re) (__C::regerror re)) (takewhile check (iterate next first)) __with__ [(check _-->__C::regstatus re==0),(next _-->__ifelse__ (__C::regnext re 0) () (f (__C::regmatch re))),(first-->__ifelse__ (__C::regexec re s eflags) () (f (__C::regmatch re)))] __when__ [re-->sentry __C::regfree (__C::regcomp pat cflags)] __if__ ~cflags and 8]);
+'(regs __with__ [regs info-->myregs 0 info __with__ [(myregs n (p,s,infos)-->(n,p,s):myregs (n+1) infos __if__ p>=0),(myregs n (p,s,infos)-->myregs (n+1) infos),(myregs n (p,s)-->[(n,p,s)] __if__ p>=0),(myregs n (p,s)-->[])]]);
+'(regsplit __with__ [regsplit pat string cflags int s string eflags int-->__ifelse__ (__C::regstatus re) (regerr (__C::regstatus re) (__C::regerror re)) (__ifelse__ (null s) [] (iterwhile check next first+[__C::regskip re])) __with__ [(check _-->__C::regstatus re==0),(next _-->__ifelse__ (__C::regnext re 0) () (__C::regskip re)),(first-->__ifelse__ (__C::regexec re s eflags) () (__C::regskip re))] __when__ [re-->sentry __C::regfree (__C::regcomp pat cflags)] __if__ ~cflags and 8]);
+'(regsplits __with__ [regsplits pat string cflags int s string eflags int-->__ifelse__ (__C::regstatus re) (regerr (__C::regstatus re) (__C::regerror re)) (__ifelse__ (null s) [] (takewhile check (iterate next first)+[__C::regskip re]&)) __with__ [([]+ys-->ys),((x:xs)+ys-->x:(xs+ys)&),(check _-->__C::regstatus re==0),(next _-->__ifelse__ (__C::regnext re 0) () (__C::regskip re)),(first-->__ifelse__ (__C::regexec re s eflags) () (__C::regskip re))] __when__ [re-->sentry __C::regfree (__C::regcomp pat cflags)] __if__ ~cflags and 8]);
+'(repeat __with__ [repeat x-->x:repeat x&]);
+'(repeatn __with__ [repeatn n int x-->accum [] n x __with__ [(accum xs n int x-->xs __if__ n<=0),(accum xs n int x-->accum (x:xs) (n-1) x)]]);
+'(rlistp __with__ [rlistp x-->typep ('rlist) x]);
+'(row __with__ [row x matrix i int-->__ifelse__ (i>=0&&i<n) (__C::matrix_slice x i 0 i (m-1)) (throw out_of_bounds) __when__ [n int,m int-->dim x]]);
+'(rowrev __with__ [rowrev x matrix-->rowcat (reverse (rows x))]);
+'(rows __with__ [rows x matrix-->map (row x) (0..n-1) __when__ [n int,_-->dim x]]);
+'(rowvectorp __with__ [rowvectorp x-->matrixp x&&dim x!0==1]);
+'(scanf __with__ [scanf format string-->fscanf stdin format]);
+'(setp __with__ [setp x-->typep set x]);
+'(short_pointer __with__ [short_pointer p pointer x matrix-->__C::matrix_to_short_array p x __if__ nmatrixp x]);
+'(smatrix __with__ [smatrix x-->y __if__ matrixp y __when__ [y-->__C::matrix_symbolic x]]);
+'(smatrixp __with__ [smatrixp x-->__case__ x [(_ matrix-->matrix_type x==0),(_-->0)]]);
+'(sort __with__ [sort p x matrix-->__case__ (sort p (smatrix x)) [(y matrix-->imatrix y __if__ imatrixp x),(y matrix-->dmatrix y __if__ dmatrixp x),(y matrix-->cmatrix y __if__ cmatrixp x),(y-->y)]]);
+'(spawnv __with__ [spawnv mode int prog string argv rlist-->spawnv mode prog (smatrix argv)]);
+'(spawnve __with__ [spawnve mode int prog string argv rlist envp rlist-->spawnve mode prog (smatrix argv) (smatrix envp)]);
+'(spawnvp __with__ [spawnvp mode int prog string argv rlist-->spawnvp mode prog (smatrix argv)]);
+'(split __with__ [(split delim string s string-->__C::string_split delim s __if__ ~funp (:)),(split delim string s string-->list (__C::string_split delim s))]);
+'(sprintf __with__ [sprintf format string args-->s __when__ [(args-->__ifelse__ (tuplep args) (list args) [args]),(u,_-->catch error_handler (foldl do_sprintf ([],args) (__std__::printf_split_format format))),(s-->__ifelse__ (pointerp u) u (strcat (reverse u)))] __with__ [(error_handler (printf_error res int)-->pointer 0,[]),(error_handler x-->throw x),(do_sprintf (u,arg:args) (__std__::printf_format_spec t s)-->u,args __when__ [(size-->__case__ (t,arg) [("s",x string-->#s+#x),(_-->64)]),(size-->size+1024),(buf-->check_buf (malloc size)),(res-->__case__ (t,arg) [("c",x int-->__C::pure_snprintf_int buf size s x),("c",x bigint-->__C::pure_snprintf_int buf size s x),("d",x int-->__C::pure_snprintf_int buf size s x),("d",x bigint-->__C::pure_snprintf_int buf size s x),("g",x double-->__C::pure_snprintf_double buf size s x),("s",x string-->__C::pure_snprintf_string buf size s x),("p",x string-->__C::pure_snprintf_pointer buf size s x),("p",x pointer-->__C::pure_snprintf_pointer buf size s x),(_-->free buf$$throw (printf_value_error s arg))]),(u-->__ifelse__ (res>=0) (cstring buf:u) (free buf$$throw (printf_error res)))]),(do_sprintf (u,args) (__std__::printf_format_str s)-->u,args __when__ [(size-->#s+1000),(buf-->check_buf (malloc size)),(res-->__C::pure_snprintf buf size s),(u-->__ifelse__ (res>=0) (cstring buf:u) (free buf$$throw (printf_error res)))]),(do_sprintf (u,[]) (__std__::printf_format_spec t s)-->throw (printf_value_error s ())),(do_sprintf (u,_) _-->throw (this_cant_happen (strcat (reverse u)))),(check_buf buf-->throw malloc_error __if__ null buf),(check_buf buf-->buf)]]);
+'(srandom __with__ [srandom x matrix-->srandom_array x (#x) __if__ imatrixp x&&dim x!0==1]);
+'(sscanf __with__ [sscanf s string format string-->tuple (reverse ret) __when__ [_,_,ret-->catch error_handler (foldl do_sscanf (s,0,[]) (__std__::scanf_split_format format))] __with__ [(error_handler (scanf_error ret)-->throw (scanf_error (tuple (reverse ret)))),(error_handler x-->throw x),(check_buf buf-->throw malloc_error __if__ null buf),(check_buf buf-->buf),(guestimate "%c"-->2,"%c"),(guestimate format-->n,format __when__ [(1,0,_,1,s-->regex "^%([0-9]*)" 1 format 0),(n,format-->__ifelse__ (null s) (1025,"%1024"+tail format) (eval s+1,format))]),(do_sscanf (u,nread,ret) (__std__::scanf_format_spec t s)-->u,nread+res,ret __when__ [(size,s-->__ifelse__ (t=="s") (guestimate s) (16,s)),(buf-->check_buf (calloc size 1)),(res-->__case__ t [("n"-->__C::pure_sscanf_int u s buf),("d"-->__C::pure_sscanf_int u s buf),("g"-->__C::pure_sscanf_double u s buf),("s"-->__C::pure_sscanf_string u s buf),("p"-->__C::pure_sscanf_pointer u s buf),(_-->throw (this_cant_happen ret))]),(res-->__ifelse__ (res>=0) res (free buf$$throw (scanf_error ret))),(val-->__case__ t [("n"-->nread+get_int buf),("d"-->get_int buf),("g"-->get_double buf),("s"-->cstring buf),("p"-->get_pointer buf),(_-->throw (this_cant_happen ret))]),(_-->__ifelse__ (t=="s") () (free buf)),(ret-->val:ret),(u-->drop res u)]),(do_sscanf (u,nread,ret) (__std__::scanf_format_str s)-->u,nread+res,ret __when__ [(res-->__C::pure_sscanf u s),(ret-->__ifelse__ (res>=0) ret (throw (scanf_error ret))),(u-->drop res u)]),(do_sscanf (_,_,ret) _-->throw (this_cant_happen ret))]]);
+'(strcat __with__ [strcat xs-->s __if__ stringp s __when__ [s-->__C::string_concat_list xs]]);
+'(stride __with__ [stride x matrix-->__C::matrix_stride x]);
+'(string_dup __with__ [string_dup s pointer-->__C::pure_string_dup s]);
+'(string_list __with__ [string_list n p pointer-->list$takewhile stringp (listmap (__lambda__ [i] (p!i)) (0..n-1)) __with__ [p!i-->__ifelse__ (null q) q (string_dup q) __when__ [q-->get_pointer (p+i*8)]] __if__ ~null p&&(intp n||infp n)]);
+'(string_vector __with__ [string_vector n p pointer-->vector xs __if__ listp xs __when__ [xs-->string_list n p]]);
+'(stringp __with__ [stringp x-->__case__ x [(_ string-->1),(_-->0)]]);
+'(submat __with__ [submat x matrix (i int,j int) (n int,m int)-->__C::matrix_slice x i j (i+n-1) (j+m-1)]);
+'(substr __with__ [substr s string pos int size int-->__C::string_substr s (max 0 pos) (max 0 size) __with__ [max x y-->__ifelse__ (x>=y) x y]]);
+'(succ __with__ [succ x-->x+1]);
+'(transpose __with__ [transpose x matrix-->__C::matrix_transpose x]);
+'(tuplep __with__ [tuplep x-->typep ('tuple) x]);
+'(ubyte __with__ [ubyte x int-->__ifelse__ (x>=0) x (x+256)]);
+'(uint __with__ [uint x int-->__ifelse__ (x>=0) (bigint x) (x+4294967296L)]);
+'(uint64 __with__ [(uint64 x int-->__ifelse__ (x>=0) (bigint x) (x+18446744073709551616L)),(uint64 x bigint-->__ifelse__ (x>=0) (bigint x) (x+18446744073709551616L))]);
+'(ulong __with__ [ulong-->uint64]);
+'(uncurry __with__ [uncurry f (x,y)-->f x y]);
+'(uncurry3 __with__ [uncurry3 f (x,y,z)-->f x y z]);
+'(unref __with__ [unref r pointer-->__C::pure_free (__C::pointer_get_expr r)$$clear_sentry r __if__ refp r]);
+'(update2 __with__ [update2 (x __as__ Array a) (i int,j int) y-->update x i (update (x!i) j y)]);
+'(ushort __with__ [ushort x int-->__ifelse__ (x>=0) x (x+65536)]);
+'(val __with__ [val (x=>v)-->v]);
+'(vector __with__ [vector xs-->x __if__ matrixp x __when__ [x-->rowvector xs]]);
+'(vectorp __with__ [vectorp x-->matrixp x&&(n==1||m==1 __when__ [n int,m int-->dim x])]);
+'(vectorseq __with__ [vectorseq n m s-->x __if__ matrixp x __when__ [x-->rowvectorseq n m s]]);
+'(void __with__ [void _-->()]);
+'(xdictp __with__ [xdictp x-->typep xdict x]);
+'(xsetp __with__ [xsetp x-->typep xset x]);
+'((||) __with__ [x int||y-->x||y]);
+'((~) __with__ [~x int-->~x]);
+'((~==) __with__ [x~==y-->~same x y]);
+let R3 = listmap (\x/*0:1*/ -> eval (sprintf "'(%s)" (__str__ x/*0:1*/)) {
+  rule #0: _ x = eval (sprintf "'(%s)" (__str__ x))
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) R2;
+R2===R3;
+1
+do (printf ">>> %s\n<<< %s\n") (catmap (\(x/*0:101*/,y/*0:11*/) -> if x/*0:101*/~==y/*0:11*/ then [(str x/*0:101*/,str y/*0:11*/)] else [] {
+  rule #0: _ (x,y) = if x~==y then [(str x,str y)] else []
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+}) (zip R2 R3));
+()
