@@ -6600,12 +6600,12 @@ expr interpreter::tagsubst(expr x)
   case EXPR::APP: {
     expr u, v;
     int32_t f = get2args(x, u, v);
-    if (f == symtab.ttag_sym().f && u.tag() > 0 && v.tag() >= 0) {
+    if (f == symtab.ttag_sym().f && u.tag() > 0 && v.tag() > 0) {
       expr w = u;
       // XXXTODO: We might want to do some plausibility checks here.
       w.set_ttag(sym_ttag(v.tag()));
       return w;
-    } else if (f == symtab.astag_sym().f && u.tag() >= 0) {
+    } else if (f == symtab.astag_sym().f && u.tag() > 0) {
       expr w = tagsubst(v);
       // XXXTODO: We might want to do some plausibility checks here.
       w.set_astag(u.tag());
