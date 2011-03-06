@@ -356,11 +356,12 @@ bool expr::is_list2p(exprl &xs, expr& tl) const
 
 bool expr::is_tuplep(exprl &xs) const
 {
-  if (is_pair()) {
+  if (astag() <= 0 && is_pair()) {
     expr x = *this, y, z;
-    while (x.astag() <= 0 && x.is_pair(y, z)) {
+    while (x.is_pair(y, z)) {
       xs.push_back(y);
       x = z;
+      if (x.astag() > 0) return false;
     }
     xs.push_back(x);
     return true;
