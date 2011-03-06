@@ -8094,23 +8094,11 @@ pure_expr *__str__(pure_expr *x)
 {
   assert(x);
   interpreter& interp = *interpreter::g_interp;
-  expr *y = interp.macsval(x);
-  if (y) {
-    ostringstream os;
-    try {
-      // horrible kludge to pretty-print embedded quoted specials
-      bool pp = __print_pretty__;
-      __print_pretty__ = true;
-      os << *y;
-      __print_pretty__ = pp;
-      const char *s = os.str().c_str();
-      delete y;
-      return pure_cstring_dup(s);
-    } catch (err &e) {
-      return 0;
-    }
-  } else
-    return 0;
+  expr y = interp.macsval(x);
+  ostringstream os;
+  os << y;
+  string s = os.str();
+  return pure_cstring_dup(s.c_str());
 }
 
 extern "C"

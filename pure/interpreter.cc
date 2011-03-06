@@ -705,7 +705,8 @@ interpreter::interpreter(int _argc, char **_argv)
     stats(false), stats_mem(false), temp(0),  ps("> "), libdir(""),
     histfile("/.pure_history"), modname("pure"),
     last_tag(0), nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
-    result(0), lastres(0), mem(0), exps(0), tmps(0), freectr(0), module(0),
+    result(0), lastres(0), mem(0), exps(0), tmps(0), freectr(0),
+    specials_only(false), module(0),
     JIT(0), FPM(0), astk(0), sstk(__sstk), stoplevel(0), debug_skip(false),
     fptr(__fptr), tags(0), line(0), column(0), tags_init(false),
     declare_op(false)
@@ -730,7 +731,8 @@ interpreter::interpreter(int32_t nsyms, char *syms,
        time will become the smallest negative number in the 32 bit range. */
     last_tag(0x7fffffff),
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
-    result(0), lastres(0), mem(0), exps(0), tmps(0), freectr(0), module(0),
+    result(0), lastres(0), mem(0), exps(0), tmps(0), freectr(0),
+    specials_only(false), module(0),
     JIT(0), FPM(0), astk(0), sstk(*_sstk), stoplevel(0), debug_skip(false),
     fptr(*(Env**)_fptr), tags(0), line(0), column(0), tags_init(false),
     declare_op(false)
@@ -6678,7 +6680,7 @@ bool interpreter::parse_env(exprl& xs, env& e)
 expr *interpreter::macspecial(expr x)
 {
   expr u, v, w;
-  if (x.is_app(u, v) && u.tag() == symtab.eval_sym().f)
+  if (!specials_only && x.is_app(u, v) && u.tag() == symtab.eval_sym().f)
     return new expr(maceval(v));
   int32_t f = get2args(x, u, v);
   if (f == symtab.lambda_sym().f) {
@@ -6760,6 +6762,7 @@ expr interpreter::macval(expr x)
 		<< x << " --> " << y << '\n';
     return y;
   }
+  if (specials_only) return x;
   env::iterator it = macenv.find(f);
   if (it == macenv.end()) return x;
   env_info &info = it->second;
@@ -6823,150 +6826,13 @@ expr interpreter::maceval(expr x)
   }
 }
 
-expr *interpreter::macsval(expr x)
+expr interpreter::macsval(pure_expr *x)
 {
-  expr u, v;
-  if (!x.is_app(u, v) || u.tag() == symtab.eval_sym().f) return 0;
-  expr *y = macspecial(x);
-  if (y && x.astag())
-    y->set_astag(x.astag());
-  return y;
-}
-
-expr *interpreter::macsval(pure_expr *x)
-{
-  uint32_t n = 0;
-  pure_expr *y = x;
-  while (y->tag == EXPR::APP) { y = y->data.x[0]; n++; }
-  int32_t f = y->tag;
-  if ((n == 2 && (f == symtab.lambda_sym().f ||
-		  f == symtab.case_sym().f ||
-		  f == symtab.when_sym().f ||
-		  f == symtab.with_sym().f)) ||
-      (n == 3 && f == symtab.ifelse_sym().f)) {
-    try {
-      return macsval(macexpr(x));
-    } catch (err& e) {
-      return 0;
-    }
-  } else
-    return 0;
-}
-
-expr interpreter::macexpr(pure_expr *x)
-{
-  char test;
-  if (stackmax > 0 && stackdir*(&test - baseptr) >= stackmax)
-    throw err("stack overflow");
-  switch (x->tag) {
-  case EXPR::APP: {
-    size_t size;
-    pure_expr **elems, *tl;
-    if (is_list2(*this, x, size, elems, tl)) {
-      /* Optimize the list case, so that we don't run out of stack space. */
-      expr x = macexpr(tl);
-      while (size > 0)
-	x = expr::cons(macexpr(elems[--size]), x);
-      free(elems);
-      return x;
-    } else if (is_tuple(*this, x, size, elems)) {
-      /* Optimize the tuple case. */
-      expr x = macexpr(elems[--size]);
-      while (size > 0) {
-	expr y = macexpr(elems[--size]);
-	x = expr::pair(y, x);
-      }
-      free(elems);
-      return x;
-    } else
-      return expr(macexpr(x->data.x[0]),
-		  macexpr(x->data.x[1]));
-  }
-  case EXPR::INT:
-    return expr(EXPR::INT, x->data.i);
-  case EXPR::BIGINT: {
-    // The expr constructor globbers its mpz_t argument, so take a copy.
-    mpz_t z;
-    mpz_init_set(z, x->data.z);
-    return expr(EXPR::BIGINT, z);
-  }
-  case EXPR::DBL:
-    return expr(EXPR::DBL, x->data.d);
-  case EXPR::STR:
-    return expr(EXPR::STR, strdup(x->data.s));
-  case EXPR::PTR:
-    return expr(EXPR::PTR, x->data.p);
-  case EXPR::MATRIX: {
-    if (x->data.mat.p) {
-      gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
-      exprll *xs = new exprll;
-      for (size_t i = 0; i < m->size1; i++) {
-	xs->push_back(exprl());
-	exprl& ys = xs->back();
-	for (size_t j = 0; j < m->size2; j++) {
-	  ys.push_back(macexpr(m->data[i * m->tda + j]));
-	}
-      }
-      return expr(EXPR::MATRIX, xs);
-    } else
-      return expr(EXPR::MATRIX, new exprll);
-  }
-  case EXPR::DMATRIX: {
-    if (x->data.mat.p) {
-      gsl_matrix *m = (gsl_matrix*)x->data.mat.p;
-      exprll *xs = new exprll;
-      for (size_t i = 0; i < m->size1; i++) {
-	xs->push_back(exprl());
-	exprl& ys = xs->back();
-	for (size_t j = 0; j < m->size2; j++) {
-	  ys.push_back(expr(EXPR::DBL, m->data[i * m->tda + j]));
-	}
-      }
-      return expr(EXPR::MATRIX, xs);
-    } else
-      return expr(EXPR::MATRIX, new exprll);
-  }
-  case EXPR::IMATRIX: {
-    if (x->data.mat.p) {
-      gsl_matrix_int *m = (gsl_matrix_int*)x->data.mat.p;
-      exprll *xs = new exprll;
-      for (size_t i = 0; i < m->size1; i++) {
-	xs->push_back(exprl());
-	exprl& ys = xs->back();
-	for (size_t j = 0; j < m->size2; j++) {
-	  ys.push_back(expr(EXPR::INT, m->data[i * m->tda + j]));
-	}
-      }
-      return expr(EXPR::MATRIX, xs);
-    } else
-      return expr(EXPR::MATRIX, new exprll);
-  }
-  case EXPR::CMATRIX: {
-    if (x->data.mat.p) {
-      gsl_matrix_complex *m = (gsl_matrix_complex*)x->data.mat.p;
-      exprll *xs = new exprll;
-      symbol &rect = symtab.complex_rect_sym();
-      expr f = rect.x;
-      for (size_t i = 0; i < m->size1; i++) {
-	xs->push_back(exprl());
-	exprl& ys = xs->back();
-	for (size_t j = 0; j < m->size2; j++) {
-	  expr u = expr(EXPR::DBL, m->data[2*(i * m->tda + j)]);
-	  expr v = expr(EXPR::DBL, m->data[2*(i * m->tda + j) + 1]);
-	  ys.push_back(expr(f, u, v));
-	}
-      }
-      return expr(EXPR::MATRIX, xs);
-    } else
-      return expr(EXPR::MATRIX, new exprll);
-  }
-  default:
-    assert(x->tag >= 0);
-    if (x->tag == 0)
-      throw err("bad value");
-    else
-      return expr(x->tag);
-  }
+  specials_only = true;
+  expr u = pure_expr_to_expr(x);
+  expr v = macsubst(u);
+  specials_only = false;
+  return v;
 }
 
 expr interpreter::uminop(expr op, expr x)

@@ -734,9 +734,8 @@ public:
   expr macred(expr x, expr y, uint8_t idx = 0);
   expr macval(expr x);
   expr maceval(expr x);
-  expr *macsval(expr x);
-  expr *macsval(pure_expr *x);
-  expr macexpr(pure_expr *x);
+  expr macsval(pure_expr *x);
+  bool specials_only;
   expr *macspecial(expr x);
   exprl get_args(expr x);
   expr tagsubst(expr x);
