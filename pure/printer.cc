@@ -424,7 +424,7 @@ ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
     expr u, v, w, y, tl;
     exprl xs;
     prec_t p;
-    if (x.is_list2(xs, tl)) {
+    if (x.is_list2p(xs, tl)) {
       size_t n = xs.size();
       if (tl.is_nil()) {
 	// proper list value
@@ -450,7 +450,7 @@ ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
 	  os << paren(p, *it, pat) << ":";
 	return os << paren(p-1, tl, pat);
       }
-    } else if (x.is_tuple(xs)) {
+    } else if (x.is_tuplep(xs)) {
       // tuple elements at a precedence not larger than ',' have to be
       // parenthesized
       p = sym_nprec(interpreter::g_interp->symtab.pair_sym().f) + 1;

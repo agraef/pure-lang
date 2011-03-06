@@ -338,6 +338,36 @@ bool expr::is_tuplel(exprl &xs) const
   return true;
 }
 
+bool expr::is_list2p(exprl &xs, expr& tl) const
+{
+  /* Implemented iteratively, to avoid stack overflows. */
+  expr x = *this, y, z;
+  while (x.astag() <= 0 && x.is_cons(y, z)) {
+    xs.push_back(y);
+    x = z;
+  }
+  if (xs.empty())
+    return false;
+  else {
+    tl = x;
+    return true;
+  }
+}
+
+bool expr::is_tuplep(exprl &xs) const
+{
+  if (is_pair()) {
+    expr x = *this, y, z;
+    while (x.astag() <= 0 && x.is_pair(y, z)) {
+      xs.push_back(y);
+      x = z;
+    }
+    xs.push_back(x);
+    return true;
+  } else
+    return false;
+}
+
 env_info::env_info(const env_info& e) : t(e.t), temp(e.temp) {
   switch (t) {
   case none:

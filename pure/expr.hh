@@ -640,6 +640,10 @@ public:
   bool is_tuple(exprl &xs) const;
   // Special check for tuples used in list construction.
   bool is_tuplel(exprl &xs) const;
+  // Special checks for tuples and lists without "as" patterns on the spine,
+  // needed by the printer.
+  bool is_tuplep(exprl &xs) const;
+  bool is_list2p(exprl &xs, expr& tl) const;
 };
 
 /* Rules of the form: lhs -> rhs [if qual]. */
