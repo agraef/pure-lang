@@ -2314,7 +2314,12 @@ pure_expr *pure_funcall(void *f, uint32_t n, ...)
     argv[i] = x;
   };
   va_end(ap);
-  pure_push_argv(n, 0, argv);
+  if (n>0 || !interpreter::g_interp->debugging) {
+    if (n == 1)
+      pure_push_arg(argv[0]);
+    else
+      pure_push_argv(n, 0, argv);
+  }
   return myfuncall(f, n, argv);
 }
 
@@ -2330,7 +2335,12 @@ pure_expr *pure_funcallx(void *f, pure_expr **_e, uint32_t n, ...)
     argv[i] = x;
   };
   va_end(ap);
-  pure_push_argv(n, 0, argv);
+  if (n>0 || !interpreter::g_interp->debugging) {
+    if (n == 1)
+      pure_push_arg(argv[0]);
+    else
+      pure_push_argv(n, 0, argv);
+  }
   pure_try_call(myfuncall(f, n, argv));
 }
 
@@ -6694,6 +6704,9 @@ static void pure_debug_backtrace(ostream& out)
       ExternInfo &info = interp.externals[d.e->tag];
       out << stacklab(interp, it) << " [" << d.n << "] "
 	  << pname(interp, d.e) << ": " << info << ";\n";
+    } else {
+      out << stacklab(interp, it) << " [" << d.n << "] "
+	  << pname(interp, d.e) << ":\n";
     }
     print_vars(out, interp, d);
   }
@@ -6744,6 +6757,9 @@ void pure_debug_rule(void *_e, void *_r)
     ExternInfo &info = interp.externals[e->tag];
     cout << "** [" << d.n << "] "
 	 << pname(interp, e) << ": " << info << ";\n";
+  } else {
+    cout << "** [" << d.n << "] "
+	 << pname(interp, e) << ":\n";
   }
   get_vars(interp, interp.debug_info.rbegin());
   print_vars(cout, interp, d);
@@ -6895,6 +6911,9 @@ void pure_debug_rule(void *_e, void *_r)
 	ExternInfo &info = interp.externals[d.e->tag];
 	cout << stacklab(interp, kt, kt) << " [" << d.n << "] "
 	     << pname(interp, d.e) << ": " << info << ";\n";
+      } else {
+	cout << stacklab(interp, kt, kt) << " [" << d.n << "] "
+	     << pname(interp, d.e) << ":\n";
       }
       get_vars(interp, kt);
       print_vars(cout, interp, d);
@@ -6926,6 +6945,9 @@ void pure_debug_rule(void *_e, void *_r)
 	  ExternInfo &info = interp.externals[d.e->tag];
 	  cout << stacklab(interp, it, kt) << " [" << d.n << "] "
 	       << pname(interp, d.e) << ": " << info << ";\n";
+	} else {
+	  cout << stacklab(interp, it, kt) << " [" << d.n << "] "
+	       << pname(interp, d.e) << ":\n";
 	}
 	print_vars(cout, interp, d);
 	if (it == interp.debug_info.rbegin())
@@ -6981,6 +7003,9 @@ void pure_debug_rule(void *_e, void *_r)
 	  ExternInfo &info = interp.externals[d.e->tag];
 	  cout << stacklab(interp, kt, kt) << " [" << d.n << "] "
 	       << pname(interp, d.e) << ": " << info << ";\n";
+	} else {
+	  cout << stacklab(interp, kt, kt) << " [" << d.n << "] "
+	       << pname(interp, d.e) << ":\n";
 	}
 	get_vars(interp, kt);
 	print_vars(cout, interp, d);
