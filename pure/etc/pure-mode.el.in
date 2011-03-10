@@ -2014,7 +2014,7 @@ If prefix ARG is not nil, remove an existing tracepoint instead."
   (let ((state
 	 (save-excursion
 	   (parse-partial-sexp (point-min) (point)))))
-    (or (> (car state) 0) (nth 3 state) (nth 4 state))))
+    (or (nth 3 state) (nth 4 state))))
 
 (defsubst pure-within-literal-or-sexp ()
   ;; Check whether point is within a Pure literal or sexp.
@@ -2109,7 +2109,7 @@ INDENT-COL)."
   (save-excursion
    (when (re-search-forward "[ \t]\\(=\\)\\([ \t]\\|[ \t]*$\\)" lim t)
      (goto-char (match-beginning 1))
-     (and (not (pure-within-literal-or-sexp))
+     (and (not (pure-within-literal))
 	  (if flag
 	      ;; do only basic block indent
 	      (let ((col (pure-basic-indent-level)))
@@ -2286,30 +2286,30 @@ The return value is just the alignment column, or zero if none."
   "Return the indent level of the current line."
   (let* ((state (save-excursion (parse-partial-sexp (point-min) (point))))
 	 (level (car state))
-	 (pos (and pure-indent-equals
-		   (zerop level)
-		   (looking-at pure-beg-block-re)
-		   (point))))
+	 (at-block-beg (looking-at pure-beg-block-re))
+	 (lim (point))
+	 (pos (save-excursion
+		(beginning-of-line)
+		(skip-chars-forward " \t")
+		(point)))
+	 (pos (cond
+	       ((zerop level) pos)
+	       (at-block-beg (max pos (1+ (nth 1 state))))
+	       (t pos))))
     (save-excursion
-      (cond ((> level 0)
-	     (goto-char (1+ (nth 1 state))))
-	    (pos
-	     (beginning-of-line)
-	     (skip-chars-forward " \t")
-	     ;; Special "hanging" indent for blocks at the end of an equation.
-	     (cond
-	      ((looking-at "=[ \t]")
-	       (forward-char)
-	       (skip-chars-forward " \t"))
-	      ((save-excursion
-		 (and (re-search-forward "[ \t]\\(=\\)\\([ \t]\\|[ \t]*$\\)"
-					 (point-at-eol) t)
-		      (> pos (match-end 1))))
-	       (goto-char (match-end 1))
-	       (skip-chars-forward " \t"))))
-	    (t
-	     (beginning-of-line)
-	     (skip-chars-forward " \t")))
+      (goto-char pos)
+      (if (and pure-indent-equals at-block-beg)
+	  ;; Special "hanging" indent for blocks at the end of an equation.
+	  (cond
+	   ((looking-at "=[ \t]")
+	    (forward-char)
+	    (skip-chars-forward " \t"))
+	   ((save-excursion
+	      (and (re-search-forward "[ \t]\\(=\\)\\([ \t]\\|[ \t]*$\\)"
+				      (point-at-eol) t)
+		   (> lim (match-end 1))))
+	    (goto-char (match-end 1))
+	    (skip-chars-forward " \t"))))
       (current-column))))
 
 (defun pure-indent-comment ()
