@@ -2148,6 +2148,11 @@ Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
 		     ;; of an enclosing sexp, assume toplevel in this case.
 		     (unless (pure-safe (pure-backward-sexp))
 		       (throw 'nesting 'toplevel))
+		     ;; Check for a trailing semicolon which completes a
+		     ;; definition.
+		     (if (save-excursion (pure-forward-sexp 1)
+					 (looking-at "[ \t]*;"))
+			 (setq complete t))
 		     ;; Check for alignment (`=') with a preceding rule. This
 		     ;; is taken into account if point was either at a lone
 		     ;; '=' or in the middle of an incomplete definition.
@@ -2186,11 +2191,7 @@ Return a list of two elements: (INDENT-TYPE INDENT-LEVEL)."
 			    (throw 'nesting 'block))
 			   (;--Beginning of program
 			    (bobp)
-			    (throw 'nesting 'toplevel))
-			   (;--Found complete definition
-			    (save-excursion (pure-forward-sexp 1)
-					    (looking-at "[ \t]*;"))
-			    (setq complete t)))
+			    (throw 'nesting 'toplevel)))
 		     (if (bobp) (throw 'nesting 'toplevel))
 		     ))))
 
@@ -2235,6 +2236,9 @@ The return value is just the alignment column, or zero if none."
 		   ;; Loop until correct indent is found
 		   (while t
 		     (pure-backward-sexp 1)
+		     (if (save-excursion (pure-forward-sexp 1)
+					 (looking-at "[ \t]*;"))
+			 (setq complete t))
 		     (let ((col (and (= nest 0)
 				     (pure-alignment-column lim))))
 		       (when col
@@ -2265,11 +2269,7 @@ The return value is just the alignment column, or zero if none."
 			    (throw 'nesting 'block))
 			   (;--Beginning of program
 			    (bobp)
-			    (throw 'nesting 'toplevel))
-			   (;--Found complete definition
-			    (save-excursion (pure-forward-sexp 1)
-					    (looking-at "[ \t]*;"))
-			    (setq complete t)))
+			    (throw 'nesting 'toplevel)))
 		     (if (bobp) (throw 'nesting 'toplevel))
 		     ))))
 
