@@ -65,11 +65,15 @@ clean:
 
 # install and uninstall targets.
 
+# NOTE: clang 2.9rc1 seems to create bitcode files which are only readable by
+# the user (bug?), we use chmod to fix that on the fly.
+
 pkgdir = $(DESTDIR)$(libdir)/pure
 
 install: $(instfiles)
 	test -d "$(pkgdir)" || mkdir -p "$(pkgdir)"
 	cp $(instfiles) "$(pkgdir)"
+	for x in $(bitcode); do chmod a+r "$(pkgdir)/$$x"; done
 
 uninstall:
 	for x in $(instfiles); do rm -f "$(pkgdir)/$$x"; done

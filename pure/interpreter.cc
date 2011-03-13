@@ -1959,16 +1959,27 @@ bool interpreter::LoadBitcode(bool priv, const char *name, string *msg)
     triple = HOST;
   // We only give diagnostics on first load, to prevent a cascade of error
   // messages.
-  if (!loaded &&
-      (!M->getDataLayout().empty() && M->getDataLayout() != layout)
 #if 0
-      || (!M->getTargetTriple().empty() && M->getTargetTriple() != triple)
-#endif
-      ) {
+  if (!loaded && !M->getTargetTriple().empty() &&
+      M->getTargetTriple() != triple) {
     if (msg)
       *msg = "Mismatch in target architecture '"+M->getTargetTriple()+"'";
     bc_errmsg(name, msg);
     return false;
+  }
+#endif
+  if (!loaded && !M->getDataLayout().empty() && M->getDataLayout() != layout) {
+    // Clang 2.9 has some minor mismatches with the JIT data layout (bug?),
+    // which are irrelevant for our purposes, so for the time being we just
+    // check endianness and pointer sizes here.
+    const TargetData &jit_dl = *JIT->getTargetData(), mod_dl = TargetData(M);
+    if (jit_dl.isLittleEndian() != mod_dl.isLittleEndian() ||
+	jit_dl.getPointerSize() != mod_dl.getPointerSize()) {
+      if (msg)
+	*msg = "Mismatch in data layout '"+M->getDataLayout()+"'";
+      bc_errmsg(name, msg);
+      return false;
+    }
   }
   M->setDataLayout(layout); M->setTargetTriple(triple);
   // Build a list of the external functions of the module so that we can wrap
