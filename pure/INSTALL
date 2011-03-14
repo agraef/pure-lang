@@ -28,7 +28,7 @@ QUICK SUMMARY
 ===== =======
 
 Here is the executive summary for the impatient. This assumes that you're
-using LLVM 2.8 and Pure 0.47, please substitute your actual version numbers in
+using LLVM 2.9 and Pure 0.47, please substitute your actual version numbers in
 the commands given below.
 
 Prerequisites: gcc, GNU make, flex/bison (development sources only), libltdl,
@@ -38,9 +38,9 @@ mode). These should all be available as binary packages on most systems.
 
 Installing LLVM and clang (the latter is optional but recommended):
 
-$ tar xfvz llvm-2.8.tgz
-$ tar xfvz clang-2.8.tgz && mv clang-2.8 llvm-2.8/tools/clang
-$ cd llvm-2.8
+$ tar xfvz llvm-2.9.tgz
+$ tar xfvz clang-2.9.tgz && mv clang-2.9 llvm-2.9/tools/clang
+$ cd llvm-2.9
 $ ./configure --enable-shared --enable-optimized --enable-targets=host-only
 $ make && sudo make install
 
@@ -84,7 +84,7 @@ Uninstalling:
 
 $ cd pure-0.47
 $ sudo make uninstall
-$ cd ../llvm-2.8
+$ cd ../llvm-2.9
 $ sudo make uninstall
 
 Please see below for much more detailed installation instructions.
@@ -183,8 +183,8 @@ STEP 2. Get and unpack the latest LLVM sources at:
 http://llvm.org/releases/download.html
 
 You only need the llvm-2.x tarball which contains the LLVM library as well as
-most of the LLVM toolchain. LLVM 2.8 is the latest stable release at the time
-of this writing. LLVM versions 2.5 thru 2.8 have all been tested and are known
+most of the LLVM toolchain. LLVM 2.9 is the latest stable release at the time
+of this writing. LLVM versions 2.5 thru 2.9 have all been tested and are known
 to work with Pure. LLVM 2.3 and 2.4 might still work, too, but you'll probably
 have to fiddle with the sources. We really recommend using LLVM 2.5 or later,
 however, because there have been substantial improvements in the LLVM JIT in
@@ -215,7 +215,7 @@ for your system, or compile LLVM yourself.
 
 STEP 3. Configure, build and install LLVM as follows:
 
-$ cd llvm-2.8
+$ cd llvm-2.9
 $ ./configure --enable-shared --enable-optimized --enable-targets=host-only
 $ make
 $ sudo make install
@@ -266,7 +266,7 @@ clang along with LLVM yet, you can now just drop the contents of the clang-2.x
 tarball into the llvm-2.x/tools directory, renaming the resulting clang-2.x
 directory to just 'clang'. Then build and install clang as follows:
 
-$ cd llvm-2.8/tools/clang
+$ cd llvm-2.9/tools/clang
 $ make
 $ sudo make install
 
@@ -275,18 +275,16 @@ llvm-gcc:
 You may also want to install llvm-gcc (also available from the LLVM website),
 either as an alternative or in addition to clang. The advantage of llvm-gcc
 over clang is that it has additional language frontends (Ada and Fortran) and
-that it works on all platforms supported by LLVM. (At the time of this
-writing, clang isn't supported on Windows yet, so you will have to stick to
-llvm-gcc there.)
+that it works on all platforms supported by LLVM.
 
 Installing llvm-gcc from source actually isn't all that difficult, if a bit
 time-consuming. Assuming that you have unpacked both the LLVM and the llvm-gcc
 sources in the same directory, you can build and install llvm-gcc as follows:
 
-$ cd llvm-gcc4.2-2.8.source
+$ cd llvm-gcc4.2-2.9.source
 $ mkdir obj
 $ cd obj
-$ ../configure --program-prefix=llvm- --enable-llvm=$PWD/../../llvm-2.8 --enable-languages=c,c++
+$ ../configure --program-prefix=llvm- --enable-llvm=$PWD/../../llvm-2.9 --enable-languages=c,c++
 $ make
 $ sudo make install
 
@@ -294,6 +292,11 @@ $ sudo make install
 build the Fortran compiler, and, likewise, 'ada' for the Ada compiler.)
 
 Be patient, this takes a while.
+
+If you don't mind living on the bleeding edge, then you also might want to
+give "DragonEgg" (http://dragonegg.llvm.org/), the new LLVM backend for gcc
+>=4.5, a try. However, please note that at the time of this writing this
+hasn't been tested with Pure yet.
 
 STEP 4. Get and unpack the Pure sources at: http://pure-lang.googlecode.com
 
