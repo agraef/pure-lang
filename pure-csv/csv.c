@@ -127,6 +127,7 @@ static void dialect_free(dialect_t *d)
   free(d->delimiter);
   free(d->terminator);
   free(d);
+  d = NULL;
 }
 
 /* Sniff file for line terminator */
@@ -379,15 +380,16 @@ csv_t *csv_open(char *fname,
   dialect_t *d;
   if ((d = dialect_new(fname, rw, dialect)) == NULL)
     return NULL;
-  if (t = (csv_t *)malloc(sizeof(csv_t))) {
+  if ((t = (csv_t *)malloc(sizeof(csv_t)))) {
     t->line = 1;
     t->buffer = NULL;
     t->record = NULL;
     t->header = NULL;
+    t->dialect = NULL;
     if (t->buffer = buffer_new()) {
       t->rw = *rw; // get first char since rw is one of "r", "w", "a".
-      if (t->fp = fopen(fname, rw)) {
-	if (t->record = record_new()) {
+      if ((t->fp = fopen(fname, rw))) {
+	if ((t->record = record_new())) {
 	  t->dialect = d;
 	  if ((opts & HEADER) && rw[0] == 'r') {
 	    unsigned int temp_flags = d->flags;
