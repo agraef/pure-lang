@@ -1,7 +1,7 @@
 
 # Package name and version number:
 dist = pure-csv-$(version)
-version = 1.4
+version = 1.5
 
 # Try to guess the installation prefix (this needs GNU make):
 prefix = $(patsubst %/bin/pure,%,$(shell which pure 2>/dev/null))

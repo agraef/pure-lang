@@ -12,7 +12,7 @@
 
 /*
 
-Copyright (c) 2008, 2009, 2010, Robert E. Rucker
+Copyright (c) 2008, 2009, 2010, 2011 Robert E. Rucker
 
 All rights reserved.
 
@@ -94,7 +94,7 @@ typedef struct {
   size_t delimiter_n;
   char *terminator;
   size_t terminator_n;
-  unsigned int flags;
+  int flags;
 } dialect_t;
 
 typedef struct {
@@ -127,7 +127,6 @@ static void dialect_free(dialect_t *d)
   free(d->delimiter);
   free(d->terminator);
   free(d);
-  d = NULL;
 }
 
 /* Sniff file for line terminator */
@@ -184,7 +183,7 @@ static char *sniff_quoted(char *fname, char *rw, char *quote)
 static dialect_t *dialect_new(char *fname, char *rw, pure_expr *rec)
 {
   dialect_t *d;
-  if (d = (dialect_t *)malloc(sizeof(dialect_t))) {
+  if ((d = (dialect_t *)malloc(sizeof(dialect_t)))) {
     d->quote = d->escape = d->delimiter = d->terminator = NULL;
     
     pure_is_cstring_dup(record_elem_at(rec, KEY("csv::quote")),
@@ -214,10 +213,10 @@ static dialect_t *dialect_new(char *fname, char *rw, pure_expr *rec)
 static record_t *record_new(void)
 {
   record_t *r;
-  if (r = (record_t *)malloc(sizeof(record_t))) {
+  if ((r = (record_t *)malloc(sizeof(record_t)))) {
     r->len = 0;
     r->growto = RECSIZE;
-    if (r->x = (pure_expr **)malloc(r->growto*sizeof(pure_expr *)))
+    if ((r->x = (pure_expr **)malloc(r->growto*sizeof(pure_expr *))))
       return r;
     free(r);
   }
@@ -242,7 +241,7 @@ static record_t *record_add(record_t *r, pure_expr *x)
   if (r->len == r->growto) {
     r->growto <<= 1;
     pure_expr **t;
-    if (t = (pure_expr **)realloc(r->x, r->growto*sizeof(pure_expr *)))
+    if ((t = (pure_expr **)realloc(r->x, r->growto*sizeof(pure_expr *))))
       r->x = t;
     else {
       record_free(r);
@@ -257,10 +256,10 @@ static record_t *record_add(record_t *r, pure_expr *x)
 static buffer_t *buffer_new(void)
 {
   buffer_t *t;
-  if (t = (buffer_t *)malloc(sizeof(buffer_t))) {
+  if ((t = (buffer_t *)malloc(sizeof(buffer_t)))) {
     t->len = 0;
     t->growto = BUFFSIZE;
-    if (t->c = (char *)malloc(t->growto*sizeof(char)))
+    if ((t->c = (char *)malloc(t->growto*sizeof(char))))
       return t;
     free(t);
   }
@@ -284,7 +283,7 @@ static buffer_t *buffer_add(buffer_t *b, char *s, int count)
     while (b->len + count >= b->growto)
       b->growto <<= 1;
     char *t;
-    if (t = (char *)realloc(b->c, b->growto*sizeof(char)))
+    if ((t = (char *)realloc(b->c, b->growto*sizeof(char))))
       b->c = t;
     else {
       buffer_free(b);
@@ -337,7 +336,7 @@ static int buffer_fill(csv_t *csv, long *offset)
     char *t;
     n = b->growto;
     b->growto <<= 1;
-    if (t = (char *)realloc(b->c, b->growto)) {
+    if ((t = (char *)realloc(b->c, b->growto))) {
       b->c = t;
       s = b->c + n;
     } else
@@ -385,8 +384,7 @@ csv_t *csv_open(char *fname,
     t->buffer = NULL;
     t->record = NULL;
     t->header = NULL;
-    t->dialect = NULL;
-    if (t->buffer = buffer_new()) {
+    if ((t->buffer = buffer_new())) {
       t->rw = *rw; // get first char since rw is one of "r", "w", "a".
       if ((t->fp = fopen(fname, rw))) {
 	if ((t->record = record_new())) {
@@ -603,7 +601,7 @@ static int read_quoted(csv_t *csv)
   int res;
   record_clear(csv->record);
   buffer_clear(csv->buffer);
-  if (res = buffer_fill(csv, &offset))
+  if ((res = buffer_fill(csv, &offset)))
     return res;
   s = csv->buffer->c;
   while (*s) {
