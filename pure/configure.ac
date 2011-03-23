@@ -86,7 +86,7 @@ AC_ARG_ENABLE(debug2,
 AC_ARG_ENABLE(release,
   [  --enable-release        enable the release build],
   [case "${enableval}" in
-    yes)  CPPFLAGS="$CPPFLAGS -DNDEBUG -DDEBUG=0"; CXXFLAGS="-O3";
+    yes)  CPPFLAGS="$CPPFLAGS -DNDEBUG -DDEBUG=0"; CXXFLAGS="-O3 -march=K8";
           CFLAGS="-O3" ;;
   esac])
 sharedlib=yes
