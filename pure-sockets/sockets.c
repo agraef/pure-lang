@@ -6,6 +6,7 @@
 #include <sys/socket.h>
 #ifndef _WIN32
 #include <sys/un.h>
+#include <arpa/inet.h>
 #endif
 #include <netdb.h>
 
