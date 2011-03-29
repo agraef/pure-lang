@@ -440,10 +440,12 @@ The .ll and .bc formats are supported natively by the Pure interpreter, no
 external tools are required to generate these. If the target is an .s, .o or
 executable file, the Pure interpreter creates a temporary bitcode file on
 which it invokes the LLVM tools :program:`opt` and :program:`llc` to create a
-native assembler file, and then uses :program:`gcc` to assemble and link the
-resulting program (if requested). You can also specify additional libraries to
-be linked into the executable with the :option:`-l` option. If the output
-filename is omitted, it defaults to a.out (a.exe on Windows).
+native assembler file, and then uses the C/C++ compiler (normally
+:program:`gcc`, but you can change this with the :envvar:`CC` and
+:envvar:`CXX` environment variables) to assemble and link the resulting
+program (if requested). You can also specify additional libraries to be linked
+into the executable with the :option:`-l` option. If the output filename is
+omitted, it defaults to a.out (a.exe on Windows).
 
 The :option:`-c` option provides a convenient way to quickly turn a Pure
 script into a standalone executable which can be invoked directly from the
@@ -727,6 +729,13 @@ Environment
 
 Various aspects of the interpreter can be configured through the following
 shell environment variables:
+
+.. envvar:: CC
+   	    CXX
+
+   C and C++ compiler used by the Pure batch compiler (``pure -c``) to compile
+   and link native executables. Defaults to :program:`gcc` and :program:`g++`,
+   respectively.
 
 .. envvar:: BROWSER
 
