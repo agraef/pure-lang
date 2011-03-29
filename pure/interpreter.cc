@@ -8796,7 +8796,7 @@ int interpreter::compiler(string out, list<string> libnames)
 	  status = system(cmd.c_str());
 	  unlink(obj.c_str());
 	} else if (vflag)
-	  std::cerr << "Link with: g++ " << linkopts << '\n';
+	  std::cerr << "Link with: " << cxx << " " << linkopts << '\n';
       }
     }
     if (WIFEXITED(status)) status = WEXITSTATUS(status);
