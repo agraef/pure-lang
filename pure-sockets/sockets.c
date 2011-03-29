@@ -3,12 +3,15 @@
 #include <stdlib.h>
 #include <unistd.h>
 #include <string.h>
-#include <sys/socket.h>
 #ifndef _WIN32
+#include <sys/socket.h>
 #include <sys/un.h>
 #include <netinet/in.h>
-#endif
 #include <netdb.h>
+#else
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#endif
 
 #include <pure/runtime.h>
 
@@ -26,6 +29,23 @@
 #endif
 #ifndef IPPROTO_IP
 #define IPPROTO_IP 0
+#endif
+
+#ifdef _WIN32
+// Unix domain sockets aren't available on Windows.
+#undef AF_UNIX
+// POSIX-compatible replacements for Windows-specific stuff.
+#define SHUT_RD SD_RECEIVE
+#define SHUT_WR SD_SEND
+#define SHUT_RDWR SD_BOTH
+#endif
+
+#ifdef _WIN32
+int socketpair(int domain, int ty, int protocol, int *sv)
+{
+  // Not available on Windows.
+  return -1;
+}
 #endif
 
 #define sockaddr_error pure_sym("::sockaddr_error")
@@ -249,6 +269,12 @@ int closesocket(int fd)
 
 void __socket_defs(void)
 {
+#ifdef _WIN32
+  // This needs to be called on Windows so that the socket functions work.
+  WORD wVersionRequested = MAKEWORD(2, 2);
+  WSADATA wsaData;
+  WSAStartup(wVersionRequested, &wsaData);
+#endif
   // Address families.
   define(AF_UNSPEC);
 #ifdef AF_LOCAL
@@ -283,14 +309,23 @@ void __socket_defs(void)
   define(SOCK_CLOEXEC);
 #endif
   // shutdown flags.
+#ifdef _WIN32
+  define(SD_RECEIVE);
+  define(SD_SEND);
+  define(SD_BOTH);
+#endif
   define(SHUT_RD);
   define(SHUT_WR);
   define(SHUT_RDWR);
   // send/recv flags.
+#ifdef MSG_EOR
   define(MSG_EOR);
+#endif
   define(MSG_OOB);
   define(MSG_PEEK);
+#ifdef MSG_WAITALL
   define(MSG_WAITALL);
+#endif
 #ifdef MSG_DONTWAIT
   // Useful on Linux to enable non-blocking operation.
   define(MSG_DONTWAIT);
