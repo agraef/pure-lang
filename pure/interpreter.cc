@@ -9021,7 +9021,7 @@ void Env::clear()
 	  dead = true;
 	else {
 	  GlobalVar& v = it->second;
-	  dead = v.x->refc <= 1;
+	  dead = !v.x || v.x->refc <= 1;
 	}
       }
       if (dead) {
@@ -11051,7 +11051,7 @@ pure_expr *interpreter::const_value(expr x, bool quote)
 	    externals.find(x.tag()) != externals.end())
 	  return 0;
 	map<int32_t,GlobalVar>::iterator v = globalvars.find(x.tag());
-	if (v != globalvars.end()) {
+	if (v != globalvars.end() && v->second.x) {
 	  // bound variable
 	  pure_expr *y = v->second.x;
 	  // check if we got a closure subject to evaluation
@@ -11119,7 +11119,7 @@ pure_expr *interpreter::const_app_value(expr x)
     if (externals.find(x.tag()) != externals.end())
       return 0;
     map<int32_t,GlobalVar>::iterator v = globalvars.find(x.tag());
-    if (v != globalvars.end()) {
+    if (v != globalvars.end() && v->second.x) {
       // bound variable
       pure_expr *y = v->second.x;
       // walk down the spine, if any
