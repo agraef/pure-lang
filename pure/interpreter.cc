@@ -4470,6 +4470,48 @@ static bool check_occurrences(const veqnl& eqns, int32_t vtag, const path& p)
   return false;
 }
 
+static inline int32_t ttag_sym(int32_t ttag)
+{
+  interpreter& interp = *interpreter::g_interp;
+  switch (ttag) {
+  case EXPR::INT:
+    return interp.symtab.int_sym().f;
+  case EXPR::BIGINT:
+    return interp.symtab.bigint_sym().f;
+  case EXPR::DBL:
+    return interp.symtab.double_sym().f;
+  case EXPR::STR:
+    return interp.symtab.string_sym().f;
+  case EXPR::PTR:
+    return interp.symtab.pointer_sym().f;
+  case EXPR::MATRIX:
+    return interp.symtab.matrix_sym().f;
+  default:
+    assert(ttag != 0);
+    return ttag;
+  }
+}
+
+string interpreter::ttag_msg(int32_t tag)
+{
+  if (tag <= 0) {
+    // built-in type tag
+    tag = ttag_sym(tag);
+    if (tag > 0)
+      return "type tag '"+symtab.sym(tag).s+"'";
+    else // this shouldn't happen
+      return "type tag <unknown>";
+  }
+#if 0
+  // check for a user-defined type tag
+  env::iterator e = typeenv.find(tag);
+  if (e == typeenv.end())
+    // this doesn't appear to be a valid type tag
+    return "type tag '"+symtab.sym(tag).s+"', or bad qualified symbol";
+#endif
+  return "type tag '"+symtab.sym(tag).s+"'";
+}
+
 /* Bind variable symbols in a pattern. NOTE: The a flag indicates whether
    we're operating inside an application or a toplevel context; this is always
    true except for the immediate subterms of a matrix pattern. (You should
@@ -4569,7 +4611,7 @@ expr interpreter::bind(env& vars, vinfo& vi, expr x, bool b, path p, bool a)
 	  (p.len() == 0 && !b) || (p.len() > 0 && p.last() == 0 && a)))) {
       // constant or constructor
       if (x.ttag() != 0)
-	throw err("error in pattern (misplaced type tag)");
+	throw err("error in pattern (misplaced "+ttag_msg(x.ttag())+")");
       y = x;
     } else {
       env::iterator it = vars.find(sym.f);
@@ -4577,7 +4619,7 @@ expr interpreter::bind(env& vars, vinfo& vi, expr x, bool b, path p, bool a)
 	if (it != vars.end()) {
 	  env_info& info = it->second;
 	  if (x.ttag() && x.ttag() != info.ttag)
-	    throw err("error in pattern (invalid type tag)");
+	    throw err("error in pattern (invalid "+ttag_msg(x.ttag())+")");
 	  // non-linearity, record an equality
 	  vi.eqns.push_back(veqn(sym.f, *info.p, p));
 	} else
@@ -4606,7 +4648,7 @@ expr interpreter::bind(env& vars, vinfo& vi, expr x, bool b, path p, bool a)
       if (it != vars.end()) {
 	env_info& info = it->second;
 	if (info.ttag)
-	  throw err("error in pattern (invalid type tag)");
+	  throw err("error in pattern (invalid "+ttag_msg(info.ttag)+")");
 	// Check whether the variable occurs in a subterm, this is an error.
 	if (p <= *info.p || check_occurrences(vi.eqns, sym.f, p))
 	  throw err("error in pattern (recursive variable '"+sym.s+"')");
@@ -5139,7 +5181,7 @@ expr interpreter::subst(const env& vars, expr x, uint8_t idx)
   default:
     assert(x.tag() > 0);
     if (x.ttag() != 0)
-      throw err("error in expression (misplaced type tag)");
+      throw err("error in expression (misplaced "+ttag_msg(x.ttag())+")");
     const symbol& sym = symtab.sym(x.tag());
     env::const_iterator it = vars.find(sym.f);
     if (sym.prec < PREC_MAX || sym.fix == nonfix || sym.fix == outfix ||
@@ -6925,7 +6967,7 @@ expr *interpreter::mksym_expr(string *s, int32_t tag)
     }
   } else if (sym.f <= 0 || sym.prec < PREC_MAX ||
 	     sym.fix == nonfix || sym.fix == outfix) {
-    throw err("error in expression (misplaced type tag)");
+    throw err("error in expression (misplaced "+ttag_msg(tag)+")");
 #if 0
   } else if (tag > 0 && (it = typeenv.find(tag)) == typeenv.end()) {
     // This was deprecated during the development Pure 0.47, they are removed
@@ -7403,28 +7445,6 @@ expr interpreter::quoted_env(env *defs)
 			       vsubst(jt->qual, 1, 2))));
   }
   return expr::list(xs);
-}
-
-static inline int32_t ttag_sym(int32_t ttag)
-{
-  interpreter& interp = *interpreter::g_interp;
-  switch (ttag) {
-  case EXPR::INT:
-    return interp.symtab.int_sym().f;
-  case EXPR::BIGINT:
-    return interp.symtab.bigint_sym().f;
-  case EXPR::DBL:
-    return interp.symtab.double_sym().f;
-  case EXPR::STR:
-    return interp.symtab.string_sym().f;
-  case EXPR::PTR:
-    return interp.symtab.pointer_sym().f;
-  case EXPR::MATRIX:
-    return interp.symtab.matrix_sym().f;
-  default:
-    assert(ttag != 0);
-    return ttag;
-  }
 }
 
 expr interpreter::quoted_tag(expr x, int32_t astag, int32_t ttag)
