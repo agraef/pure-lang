@@ -2,6 +2,9 @@
 #include "sfinfo.h"
 #include <stdlib.h>
 
+/* Force linkage of libsndfile. */
+static int (*__force_sndfile)() = sf_error;
+
 #define SIZEOF_SF_INFO sizeof(SF_INFO)
 #define SIZEOF_SF_FORMAT_INFO sizeof(SF_FORMAT_INFO)
 

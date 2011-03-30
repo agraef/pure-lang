@@ -47,11 +47,13 @@ ifneq "$(findstring x86_64-,$(host))" ""
 PIC = -fPIC
 endif
 
-# Default CFLAGS are -g -O2, CPPFLAGS, LDFLAGS and LIBS are empty by default.
-# These can be set from the command line as usual. Use CFLAGS, CPPFLAGS and
-# LDFLAGS for compiler (-O etc.), preprocessor (-I etc.) and linker (-L etc.) 
-# options, respectively. LIBS is to be used for additional libraries to be
-# linked (-l etc.).
+# Default CFLAGS are -g -O2, CPPFLAGS is empty by default. These can be set
+# from the command line as usual. Use CFLAGS and CPPFLAGS for compiler (-O
+# etc.) and preprocessor (-I etc.) options, respectively. NOTE: LDFLAGS and
+# LIBS aren't supported here, as the necessary linker options and libraries to
+# be linked are determined automatically using pkg-config. If you really need
+# to change these, you'll have to edit the compilation commands for each
+# supported module below.
 
 CFLAGS = -g -O2
 
@@ -75,7 +77,7 @@ examples = examples/hello examples/uiexample examples/life
 
 # No need to edit below this line, usually.
 
-FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
+FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC)
 
 DISTFILES = COPYING COPYING.LESSER Makefile README config.guess \
 examples/*.pure examples/*.glade $(modules) $(c-modules)
@@ -138,6 +140,15 @@ distcheck: dist
 # NOTE: The paths need to be valid at generation time only. The generated C
 # source uses relative paths which should work on most systems which have GTK+
 # installed.
+
+# NOTE: Most wrapper modules are just empty shells which link in the required
+# GTK libraries for each module. (Hence you should never try to add the
+# --as-needed linker option supported by some GNU ld versions; the modules
+# will then stop working.) This trick seems to work on most systems, at least
+# when using GNU ld. But if you get lots of undefined extern symbol errors
+# when loading the modules then you might have to modify the .pure module
+# sources so that they pull in the required GTK libraries with the appropriate
+# 'using' clauses instead.
 
 includedir = /usr/include
 
