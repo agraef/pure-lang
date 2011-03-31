@@ -61,6 +61,14 @@ fi
 if test -z "$EMACS"; then
   AC_MSG_WARN([Cannot find emacs, won't be able to byte-compile pure-mode.el.])
 fi
+dnl Install elisp files?
+elcfiles="etc/pure-mode.elc"
+AC_ARG_WITH(elisp,
+  [  --with-elisp            install elisp files (default if emacs is available)],
+  [case "${withval}" in
+     no)  elcfiles="" ;;
+   esac])
+AC_SUBST(elcfiles)
 dnl Determine compiler characteristics.
 AC_C_BIGENDIAN
 AC_CHECK_SIZEOF(void *)
