@@ -55,9 +55,7 @@ else
   fi
 fi
 AC_ARG_VAR(FLEX, [how to invoke flex (version 2.5.31 or later required)])
-if test -z "$EMACS"; then
-  AC_PATH_PROG(EMACS,emacs)
-fi
+AC_PATH_PROG(EMACS,emacs)
 if test -z "$EMACS"; then
   AC_MSG_WARN([Cannot find emacs, won't be able to byte-compile pure-mode.el.])
 fi
