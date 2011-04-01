@@ -158,6 +158,11 @@ struct VarInfo {
 #define Builder llvm::IRBuilder
 #endif
 
+#ifdef NEW_PHI
+/* LLVM 3.0 (svn) needs an additional parameter to create phi nodes. */
+#define LLVM30
+#endif
+
 typedef list<Env*> EnvStack;
 typedef map<int32_t,Env*> EnvMap;
 typedef pair<int32_t,uint8_t> xmap_key;
@@ -920,6 +925,14 @@ public:
   { return llvm::BasicBlock::Create(llvm::getGlobalContext(), name, f); }
 #else
   { return llvm::BasicBlock::Create(name, f); }
+#endif
+
+  llvm::PHINode *phi_node(Builder &b, const llvm::Type *ty,
+			  unsigned n, const llvm::Twine &name = "")
+#ifdef LLVM30
+  { return b.CreatePHI(ty, n, name); }
+#else
+  { return b.CreatePHI(ty); }
 #endif
 
   type_map pointer_types;

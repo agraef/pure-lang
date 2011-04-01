@@ -10199,7 +10199,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       b.CreateBr(okbb);
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
-      PHINode *phi = b.CreatePHI(int32_type());
+      PHINode *phi = phi_node(b, int32_type(), 2);
       phi->addIncoming(intv, intbb);
       phi->addIncoming(mpzv, mpzbb);
       unboxed[i] = b.CreateTrunc(phi, int8_type());
@@ -10225,7 +10225,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       b.CreateBr(okbb);
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
-      PHINode *phi = b.CreatePHI(int32_type());
+      PHINode *phi = phi_node(b, int32_type(), 2);
       phi->addIncoming(intv, intbb);
       phi->addIncoming(mpzv, mpzbb);
       unboxed[i] = b.CreateTrunc(phi, int16_type());
@@ -10251,7 +10251,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       b.CreateBr(okbb);
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
-      PHINode *phi = b.CreatePHI(int32_type());
+      PHINode *phi = phi_node(b, int32_type(), 2);
       phi->addIncoming(intv, intbb);
       phi->addIncoming(mpzv, mpzbb);
       unboxed[i] = phi;
@@ -10278,7 +10278,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       b.CreateBr(okbb);
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
-      PHINode *phi = b.CreatePHI(int64_type());
+      PHINode *phi = phi_node(b, int64_type(), 2);
       phi->addIncoming(intv, intbb);
       phi->addIncoming(mpzv, mpzbb);
       unboxed[i] = phi;
@@ -10353,7 +10353,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       b.CreateBr(okbb);
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
-      PHINode *phi = b.CreatePHI(CharPtrTy);
+      PHINode *phi = phi_node(b, CharPtrTy, 3);
       phi->addIncoming(ptrv, ptrbb);
       phi->addIncoming(sv, strbb);
       phi->addIncoming(matrixv, matrixbb);
@@ -10420,7 +10420,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       b.CreateBr(okbb);
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
-      PHINode *phi = b.CreatePHI(VoidPtrTy);
+      PHINode *phi = phi_node(b, VoidPtrTy, 2);
       phi->addIncoming(ptrv, ptrbb);
       phi->addIncoming(matrixv, matrixbb);
       unboxed[i] = b.CreateBitCast(phi, type); vtemps = true;
@@ -10477,7 +10477,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       b.CreateBr(okbb);
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
-      PHINode *phi = b.CreatePHI(VoidPtrTy);
+      PHINode *phi = phi_node(b, VoidPtrTy, 3);
       phi->addIncoming(ptrv, ptrbb);
       if (is_char) phi->addIncoming(matrixv, matrixbb);
       phi->addIncoming(smatrixv, smatrixbb);
@@ -10552,7 +10552,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       b.CreateBr(okbb);
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
-      PHINode *phi = b.CreatePHI(VoidPtrTy);
+      PHINode *phi = phi_node(b, VoidPtrTy, 2);
       phi->addIncoming(ptrv, ptrbb);
       phi->addIncoming(matrixv, matrixbb);
       unboxed[i] = b.CreateBitCast(phi, type); vtemps = true;
@@ -10609,7 +10609,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       b.CreateCondBr(chk, okbb, failedbb);
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
-      PHINode *phi = b.CreatePHI(VoidPtrTy);
+      PHINode *phi = phi_node(b, VoidPtrTy, 1);
       phi->addIncoming(ptrv, ptrbb);
       unboxed[i] = phi;
       // Cast the pointer to the proper target type if necessary.
@@ -10667,7 +10667,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       b.CreateBr(okbb);
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
-      PHINode *phi = b.CreatePHI(VoidPtrTy);
+      PHINode *phi = phi_node(b, VoidPtrTy, 3);
       phi->addIncoming(ptrv, ptrbb);
       phi->addIncoming(mpzv, mpzbb);
       phi->addIncoming(matrixv, matrixbb);
@@ -11739,7 +11739,7 @@ Value *interpreter::builtin_codegen(expr x)
       iffalsebb = b.GetInsertBlock();
       e.f->getBasicBlockList().push_back(endbb);
       b.SetInsertPoint(endbb);
-      PHINode *phi = b.CreatePHI(int32_type(), "fi");
+      PHINode *phi = phi_node(b, int32_type(), 2, "fi");
       phi->addIncoming(u, iftruebb);
       phi->addIncoming(v, iffalsebb);
       return phi;
@@ -11767,7 +11767,7 @@ Value *interpreter::builtin_codegen(expr x)
       iftruebb = b.GetInsertBlock();
       e.f->getBasicBlockList().push_back(endbb);
       b.SetInsertPoint(endbb);
-      PHINode *phi = b.CreatePHI(int32_type(), "fi");
+      PHINode *phi = phi_node(b, int32_type(), 2, "fi");
       phi->addIncoming(u, iffalsebb);
       phi->addIncoming(v, iftruebb);
       return phi;
@@ -11802,7 +11802,7 @@ Value *interpreter::builtin_codegen(expr x)
       b.CreateBr(endbb);
       act_env().f->getBasicBlockList().push_back(endbb);
       b.SetInsertPoint(endbb);
-      PHINode *phi = b.CreatePHI(int32_type());
+      PHINode *phi = phi_node(b, int32_type(), 2);
       phi->addIncoming(ok, okbb);
       phi->addIncoming(Zero, zerobb);
       return phi;
@@ -11992,7 +11992,7 @@ Value *interpreter::logical_funcall(int32_t tag, uint32_t n, expr x)
   failedbb = b.GetInsertBlock();
   e.f->getBasicBlockList().push_back(endbb);
   b.SetInsertPoint(endbb);
-  PHINode *phi = b.CreatePHI(ExprPtrTy, "fi");
+  PHINode *phi = phi_node(b, ExprPtrTy, 3, "fi");
   phi->addIncoming(okval, okbb);
   phi->addIncoming(nokval, nokbb);
   phi->addIncoming(failedval, failedbb);
@@ -13052,7 +13052,7 @@ Value *interpreter::cond(expr x, expr y, expr z)
   // emit the 'end' block and the phi node
   f.f->getBasicBlockList().push_back(endbb);
   f.builder.SetInsertPoint(endbb);
-  PHINode *phi = f.builder.CreatePHI(ExprPtrTy, "fi");
+  PHINode *phi = phi_node(f.builder, ExprPtrTy, 2, "fi");
   phi->addIncoming(thenv, thenbb);
   phi->addIncoming(elsev, elsebb);
   return phi;
