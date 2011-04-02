@@ -810,16 +810,13 @@ are available as separate add-on packages from the Pure website. A (very)
 brief overview of some of the modules distributed with the Pure interpreter
 can be found in the `Standard Library`_ section.
 
-Here's a first example which demonstrates how to define a simple recursive
-function in Pure, entered interactively in the interpreter (note that the '> '
-symbol at the beginning of each input line is the interpreter's default
-command prompt)::
-
-  > // my first Pure example
-  > fact 0 = 1;
-  > fact n::int = n*fact (n-1) if n>0;
-  > let x = fact 10; x;
-  3628800
+In this section we first give a brief overview of the most important elements
+of the Pure language. After starting out with a discussion of the lexical
+syntax, we proceed by explaining definitions and expressions, which are the
+major ingredients of Pure programs. After studying this section you should be
+able to write simple Pure programs. Subsequent sections then describe the
+concepts and notions introduced here in much greater detail and also cover the
+more advanced language elements which we only gloss over here.
 
 Lexical Matters
 ---------------
@@ -954,12 +951,45 @@ __ http://www.w3.org/TR/xml-entity-names/
 Definitions and Expression Evaluation
 -------------------------------------
 
+The real meat of a Pure program is in its definitions. In Pure these generally
+take the form of equations which tell the interpreter how expressions are to
+be evaluated. For instance, the following two equations together define a
+function ``fact`` which computes, for each given integer ``n``, the factorial
+of ``n``::
+
+  fact 0 = 1;
+  fact n::int = n*fact (n-1) if n>0;
+
+Note that the first equation covers the case that ``n`` is zero, in which case
+the result is ``1``. The second equation handles the case of a positive
+integer. Note the ``n::int`` on the left-hand side of the equation which
+stipulates that the given value ``n`` must be a (machine) integer, and the
+``n>0`` in the condition part of the equation which ensures that ``n`` is
+positive. If these conditions hold, the equation becomes applicable and we
+recursively compute ``fact (n-1)`` and multply by ``n`` to obtain the result.
+The ``fact`` function thus computes the product of all positive integers up to
+``n``, which is indeed just how the factorial is defined in mathematics.
+
+To give this definition a try, you can just enter it at the command prompt of
+the interpreter as follows::
+
+  > fact 0 = 1;
+  > fact n::int = n*fact (n-1) if n>0;
+  > let x = fact 10; x;
+  3628800
+
+Note that the last command we typed computes the factorial of 10 and assigns
+it to the global variable ``x``. At the end of the line we also typed the
+variable ``x`` again to have its value printed by the interpreter.
+
 On the surface, Pure is quite similar to other modern functional languages
 like Haskell_ and ML_. But under the hood it is a much more dynamic language,
 more akin to Lisp. In particular, Pure is dynamically typed, so functions can
-be fully polymorphic and you can add to the definition of an existing function
-at any time. For instance, we can extend our first example above to make the
-``fact`` function work with floating point numbers, too::
+process arguments of as many different types as you like (using FP parlance,
+we say that functions are "polymorphic"). In fact, you can add to the
+definition of an existing function at any time. For instance, we can extend
+our example above to make the ``fact`` function work with floating point
+numbers, too::
 
   > fact 0.0 = 1.0;
   > fact n::double = n*fact (n-1) if n>0;
@@ -968,36 +998,47 @@ at any time. For instance, we can extend our first example above to make the
   > fact 10;
   3628800
 
-Note the ``n::double`` construct on the left-hand side of the second
-equation, which means that the equation is only to be applied for (double
-precision) floating point values ``n``. This construct is also called a "type
-tag" in Pure parlance, which is actually a simple form of pattern matching
-(see below). Similarly, our previous definition at the beginning of this
-section employed the ``int`` tag to indicate that the ``n`` parameter is an
-integer value. The ``int`` and ``double`` types are built into the Pure
-language, but it is also possible to introduce your own type tags for
-user-defined data structures. This will be explained in more detail under
-`Type Tags`_ in the `Rule Syntax`_ section below.
+Note the ``n::double`` construct on the left-hand side of the second equation,
+which means that the equation is only to be applied for (double precision)
+floating point values ``n``. This construct is also called a "type tag" in
+Pure parlance, which is actually a simple form of pattern matching (see
+below). Similarly, our previous definition above employed the ``int`` tag to
+indicate that the ``n`` parameter is an integer value. The ``int`` and
+``double`` types are built into the Pure language.
 
 Expressions are generally evaluated from left to right, innermost expressions
-first, i.e., using call by value semantics. Pure also has a few built-in
-special forms (most notably, conditional expressions, the short-circuit
-logical connectives :func:`&&/special` and :func:`||/special`, the sequencing
-operator :func:`$$`, the lazy evaluation operator :func:`&`, and the
-:func:`quote`) which take some or all of their arguments unevaluated, using
-call by name.
+first, i.e., using "call by value" semantics. E.g., in the above definition of
+the factorial this means that in the second equation first ``n-1`` (being the
+argument of ``fact``) is evaluated, then ``fact (n-1)`` (which is an argument
+to the ``*`` operator), and finally ``fact (n-1)`` is multiplied by ``n`` to
+give the value of ``fact n``.
+
+We mention in passing here that Pure also has a few built-in special forms
+(most notably, conditional expressions, the short-circuit logical connectives
+:func:`&&/special` and :func:`||/special`, the sequencing operator :func:`$$`,
+the lazy evaluation operator :func:`&`, and the :func:`quote`) which take some
+or all of their arguments unevaluated, using "call by name". We'll discuss
+these later.
 
 Like in Haskell and ML, functions are often defined by pattern matching, i.e.,
-the left-hand side of a definition is compared to the target expression,
-binding the variables in the pattern to their actual values accordingly::
+the left-hand side of a definition is matched against the target expression,
+binding the variables in the pattern to their actual values accordingly. This
+is frequently used in definitions involving aggregate arguments such as lists.
+For instance, we might compute the product of the elements of a list as
+follows::
 
-  > foo (bar x) = x-1;
-  > foo (bar 99);
-  98
+  > prod [] = 1;
+  > prod (x:xs) = x*prod xs;
+  > prod (1..10);
+  3628800
 
-Due to its term rewriting semantics, Pure goes beyond most other functional
-languages in that it can do symbolic evaluations just as well as "normal"
-computations::
+Note that ``1..10`` denotes the list of all positive integers up to 10 here.
+This operation is provided in Pure's prelude, i.e., it is part of the standard
+library.
+
+Due to its term rewriting semantics, Pure actually goes beyond most other
+functional languages in that it can do symbolic evaluations just as well as
+"normal" computations::
 
   > square x = x*x;
   > square 4;
@@ -1022,64 +1063,18 @@ algebraic rules like associativity and distributivity in a direct fashion::
   > square (a+b);
   a*a+a*b+b*a+b*b
 
-Here's another basic symbolic algebra example, which lets you compute the
-disjunctive normal form of logical expressions::
-
-  // eliminate double negations:
-  ~~a           = a;
-
-  // de Morgan's laws:
-  ~(a || b)     = ~a && ~b;
-  ~(a && b)     = ~a || ~b;
-
-  // distributivity:
-  a && (b || c) = a && b || a && c;
-  (a || b) && c = a && c || b && c;
-
-  // associativity:
-  (a && b) && c = a && (b && c);
-  (a || b) || c = a || (b || c);
-
-Example::
-
-  > a || ~(b || (c && ~d));
-  a||~b&&~c||~b&&d
-
 Note that the above isn't possible in languages like Haskell and ML which
 always enforce the so-called "constructor discipline", which stipulates that
 only pure constructor symbols (without any defining equations) may occur as a
 subterm on the left-hand side of a definition. Thus equational definitions
-like the above are forbidden in these languages. It's possible to work around
-this, but only at the cost of an extra layer of interpretation, which treats
-the expressions to be evaluated as data manipulated by an evaluation function.
-
-In Pure this extra layer is not necessary, you can just add equations like the
-above to your Pure program. In addition, you can also reduce an expression in
-a local context of algebraic equations specified in a :keyword:`with` clause.
-This can be done with the :macro:`reduce` macro defined in the prelude::
-
-  expand = reduce with
-    (a+b)*c = a*c+b*c;
-    a*(b+c) = a*b+a*c;
-  end;
-
-  factor = reduce with
-    a*c+b*c = (a+b)*c;
-    a*b+a*c = a*(b+c);
-  end;
-
-Example::
-
-  > expand ((a+b)*2);
-  a*2+b*2
-  > factor (a*2+b*2);
-  (a+b)*2
+like the above are forbidden in these languages. In Pure they are just normal
+business.
 
 Variables in Equations
-----------------------
+~~~~~~~~~~~~~~~~~~~~~~
 
-Taking a look at the above examples, you might have been wondering how the
-Pure interpreter figures out what the parameters (a.k.a. "variables") in an
+Taking another look at the examples above, you might be wondering how the Pure
+interpreter figures out what the parameters (a.k.a. "variables") in an
 equation are. This is quite obvious in rules involving just variables and
 special operator symbols, such as ``(x+y)*z = x*z+y*z``. However, what about
 an equation like ``foo (foo bar) = bar``? Since most of the time we don't
