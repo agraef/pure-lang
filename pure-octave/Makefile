@@ -43,7 +43,9 @@ embed.cc embed.h gsl_structs.h octave.pure examples/*.pure
 all: octave_embed$(DLL)
 
 octave_embed$(DLL): embed.cc embed.h
+	rm -f $@
 	mkoctfile -v -o $@ $< -lpure $(RLD_FLAG)
+	if test -f $@.oct; then mv $@.oct $@; fi
 
 clean:
 	rm -f embed.o octave_embed$(DLL) *~ core octave-core
