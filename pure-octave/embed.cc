@@ -23,7 +23,9 @@
 #include "octave.h"
 #include "symtab.h"
 #include "parse.h"
+#if 0
 #include "unwind-prot.h"
+#endif
 #include "toplev.h"
 #include "error.h" 
 #include "quit.h"
@@ -65,7 +67,13 @@ void octave_fini(void)
 
 static void recover(void)
 {
+#if 0
+  // This isn't supported in the latest Octave versions. We simply leave this
+  // disabled for now, which means that you'll have to use 'unwind_protect'
+  // explicitly in your Octave code in order to handle Octave exceptions.
+  // XXXFIXME: This might leak memory in some cases??
   unwind_protect::run_all ();
+#endif
   can_interrupt = true;
   octave_interrupt_immediately = 0;
   octave_interrupt_state = 0;
@@ -85,7 +93,9 @@ int octave_eval(const char *cmd)
 #if defined (USE_EXCEPTIONS_FOR_INTERRUPTS)
       panic_impossible ();
 #else
+#if 0
       unwind_protect::run_all ();
+#endif
       raw_mode (0);
       std::cout << "\n";
       octave_restore_signal_mask ();
@@ -190,6 +200,7 @@ gsl_matrix_calloc(const size_t n1, const size_t n2)
   return m;
 }
 
+#if 0
 static void gsl_matrix_free(gsl_matrix *m)
 {
   if (m->owner) {
@@ -198,6 +209,7 @@ static void gsl_matrix_free(gsl_matrix *m)
   }
   free(m);
 }
+#endif
 
 static gsl_matrix_complex* 
 gsl_matrix_complex_alloc(const size_t n1, const size_t n2)
@@ -239,6 +251,7 @@ gsl_matrix_complex_calloc(const size_t n1, const size_t n2)
   return m;
 }
 
+#if 0
 static void gsl_matrix_complex_free(gsl_matrix_complex *m)
 {
   if (m->owner) {
@@ -247,6 +260,7 @@ static void gsl_matrix_complex_free(gsl_matrix_complex *m)
   }
   free(m);
 }
+#endif
 
 static gsl_matrix_int* 
 gsl_matrix_int_alloc(const size_t n1, const size_t n2)
@@ -288,6 +302,7 @@ gsl_matrix_int_calloc(const size_t n1, const size_t n2)
   return m;
 }
 
+#if 0
 static void gsl_matrix_int_free(gsl_matrix_int *m)
 {
   if (m->owner) {
@@ -296,6 +311,7 @@ static void gsl_matrix_int_free(gsl_matrix_int *m)
   }
   free(m);
 }
+#endif
 
 /* GSL doesn't really support empty matrices, so we fake them by allocating 1
    dummy row or column if the corresponding dimension is actually zero. */
@@ -656,7 +672,7 @@ static octave_value *pure_to_octave(pure_expr *x)
   } else if (pure_is_cstring_dup(x, &s)) {
     charMatrix m(s);
     free(s);
-    return new octave_value(m, true);
+    return new octave_value(m);
   } else if (pure_is_symbolic_matrix(x, &p)) {
     gsl_matrix_symbolic *mat = (gsl_matrix_symbolic*)p;
     size_t k = mat->size1, l = mat->size2;
@@ -668,7 +684,7 @@ static octave_value *pure_to_octave(pure_expr *x)
       } else
 	return 0;
     charMatrix m(v);
-    return new octave_value(m, true);
+    return new octave_value(m);
   } else if (is_octave_pointer(x, &v)) {
     return new octave_value(*v);
   } else
@@ -768,7 +784,7 @@ pure_expr *octave_call(pure_expr *fun, int nargout, pure_expr *args)
       ret = feval(s, args, nargout);
     if (s) free(s);
     n = ret.length();
-    if (n > nargout) n = nargout;
+    if (n > (size_t)nargout) n = nargout;
     xs = (pure_expr**)alloca(n*sizeof(pure_expr*));
     for (size_t i = 0; i < n; i++) {
       xs[i] = octave_to_pure(ret(i));
@@ -839,7 +855,7 @@ DEFUN_DLD(pure_call, args, nargout, PURE_HELP)
 	  size_t n;
 	  pure_expr **xs;
 	  pure_is_tuplev(ret, &n, &xs); // this never fails
-	  if (nargout > 0 && n != nargout) {
+	  if (nargout > 0 && n != (size_t)nargout) {
 	    error("pure: wrong number of return values in call to function '%s' \n(expected %d, got %d)", name.c_str(), nargout, (int)n);
 	  } else {
 	    for (size_t i = 0; i < n; i++) {
