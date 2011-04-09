@@ -2173,8 +2173,16 @@ void interpreter::inline_code(bool priv, string &code)
   }
   // Create a temporary file holding the code.
   size_t n = code.size();
-  string src = (!modname.empty())?modname:
-    source.empty()?string("stdin"):source;
+  string src = modname;
+  if (src.empty()) {
+    if (source.empty()) {
+      static unsigned count = 0;
+      char buf[100];
+      sprintf(buf, "stdin%u", count++);
+      src = buf;
+    } else
+      src = source;
+  }
   string tmpl = src+".XXXXXX";
   char *fnm = (char*)malloc(tmpl.size()+1);
   strcpy(fnm, tmpl.c_str());
