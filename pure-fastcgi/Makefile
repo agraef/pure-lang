@@ -4,7 +4,7 @@ dist = pure-fastcgi-$(version)
 version = 0.3
 
 # Try to guess the installation prefix (this needs GNU make):
-prefix = $(patsubst %/bin/pure,%,$(shell which pure 2>/dev/null))
+prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
 ifeq ($(strip $(prefix)),)
 # Fall back to /usr/local.
 prefix = /usr/local
@@ -19,6 +19,7 @@ host = $(shell ./config.guess)
 
 # Platform-specific defaults, edit this as needed.
 #PIC = -fPIC # uncomment for x86-64 compilation
+EXE = .exe
 DLL = .so
 shared = -shared
 # Some systems have the headers in /usr/include/fastcgi. Adjust as needed.

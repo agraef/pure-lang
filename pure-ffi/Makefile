@@ -4,7 +4,7 @@ dist = pure-ffi-$(version)
 version = 0.12
 
 # Try to guess the installation prefix (this needs GNU make):
-prefix = $(patsubst %/bin/pure,%,$(shell which pure 2>/dev/null))
+prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
 ifeq ($(strip $(prefix)),)
 # Fall back to /usr/local.
 prefix = /usr/local
@@ -26,6 +26,7 @@ shared = -shared
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows
 DLL = .dll
+EXE = .exe
 # This is needed to link with GMP.
 LDFLAGS = -Wl,--enable-auto-import
 endif

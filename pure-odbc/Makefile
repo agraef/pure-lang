@@ -4,7 +4,7 @@ dist = pure-odbc-$(version)
 version = 0.7
 
 # Try to guess the installation prefix (this needs GNU make):
-prefix = $(patsubst %/bin/pure,%,$(shell which pure 2>/dev/null))
+prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
 ifeq ($(strip $(prefix)),)
 # Fall back to /usr/local.
 prefix = /usr/local
@@ -26,6 +26,7 @@ ODBCLIB = -lodbc
 # Take care of some common systems.
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows
+EXE = .exe
 DLL = .dll
 ODBCLIB = -lodbc32
 # This is needed to link with GMP.

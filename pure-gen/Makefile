@@ -4,7 +4,7 @@ dist = pure-gen-$(version)
 version = 0.11
 
 # Try to guess the installation prefix (this needs GNU make):
-prefix = $(patsubst %/bin/pure,%,$(shell which pure 2>/dev/null))
+prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
 ifeq ($(strip $(prefix)),)
 # Fall back to /usr/local.
 prefix = /usr/local

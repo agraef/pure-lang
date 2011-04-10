@@ -4,7 +4,7 @@ dist = pure-csv-$(version)
 version = 1.5
 
 # Try to guess the installation prefix (this needs GNU make):
-prefix = $(patsubst %/bin/pure,%,$(shell which pure 2>/dev/null))
+prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
 ifeq ($(strip $(prefix)),)
 # Fall back to /usr/local.
 prefix = /usr/local
@@ -26,6 +26,7 @@ shared = -shared
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows
 DLL = .dll
+EXE = .exe
 endif
 ifneq "$(findstring -darwin,$(host))" ""
 # OSX (untested)

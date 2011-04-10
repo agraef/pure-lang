@@ -6,7 +6,7 @@ dist = pure-gl-$(version)
 version = 0.8
 
 # Try to guess the installation prefix:
-prefix = $(patsubst %/bin/pure,%,$(shell which pure 2>/dev/null))
+prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
 ifeq ($(strip $(prefix)),)
 # Fall back to /usr/local.
 prefix = /usr/local
@@ -28,6 +28,7 @@ LinkGL = -lGL -lglut -ldl
 # Take care of some common systems.
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows
+EXE = .exe
 DLL = .dll
 LinkGL = -lopengl32 -lglu32
 endif

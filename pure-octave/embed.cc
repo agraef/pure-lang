@@ -34,6 +34,10 @@
 #include "sysdep.h"
 #include "str-vec.h"
 
+#ifdef _WIN32
+#include <malloc.h>
+#endif
+
 #include "embed.h"
 
 /* Basic Octave interface. This is a heavily hacked version of octave_embed by

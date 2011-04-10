@@ -6,7 +6,7 @@ dist = pure-octave-$(version)
 version = 0.2
 
 # Try to guess the installation prefix (this needs GNU make):
-prefix = $(patsubst %/bin/pure,%,$(shell which pure 2>/dev/null))
+prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
 ifeq ($(strip $(prefix)),)
 # Fall back to /usr/local.
 prefix = /usr/local
@@ -26,6 +26,7 @@ DLL = .so
 # Take care of some common systems.
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows (untested)
+EXE = .exe
 DLL = .dll
 endif
 ifneq "$(findstring -darwin,$(host))" ""
