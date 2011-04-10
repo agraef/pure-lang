@@ -16,6 +16,24 @@
    You should have received a copy of the GNU Lesser General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
+/* AIX requires this to be the first thing in the file.  */
+#ifndef __GNUC__
+# if HAVE_ALLOCA_H
+#  include <alloca.h>
+# else
+#  ifdef _AIX
+#pragma alloca
+#  else
+#   ifndef alloca /* predefined by HP cc +Olibcalls */
+char *alloca ();
+#   endif
+#  endif
+# endif
+#endif
+#ifdef __MINGW32__
+#include <malloc.h>
+#endif
+
 #include "interpreter.hh"
 #include "util.hh"
 #include <sstream>
@@ -2175,13 +2193,11 @@ void interpreter::inline_code(bool priv, string &code)
   size_t n = code.size();
   string src = modname;
   if (src.empty()) {
-    if (source.empty()) {
-      static unsigned count = 0;
-      char buf[100];
-      sprintf(buf, "stdin%u", count++);
-      src = buf;
-    } else
-      src = source;
+    src = source.empty()?"stdin":source;
+    static unsigned count = 0;
+    char *buf = (char*)alloca(source.size()+10);
+    sprintf(buf, "%s%u", src.c_str(), count++);
+    src = buf;
   }
   string tmpl = src+".XXXXXX";
   char *fnm = (char*)malloc(tmpl.size()+1);
