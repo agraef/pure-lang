@@ -31,7 +31,7 @@ ifneq "$(findstring -mingw,$(host))" ""
 # Windows
 EXE = .exe
 DLL = .dll
-atk_missing = -x '^(atk_value_get_minimum_increment|atk_streamable_content_get_uri|atk_relation_remove_target|atk_hyperlink_impl_get_hyperlink|atk_hyperlink_impl_get_type|atk_get_version)$$'
+atk_missing = -x '^(atk_value_get_minimum_increment|atk_streamable_content_get_uri|atk_relation_remove_target|atk_hyperlink_impl_get_hyperlink|atk_hyperlink_impl_get_type|atk_get_version|atk_(plug|socket).*)$$'
 dlldir = $(patsubst %/include,%/bin,$(includedir))
 PURE_COPTS += -L$(dlldir)
 # additional magic needed to locate gtk stuff on Windows
@@ -196,7 +196,11 @@ glib.pure glib.c:
 	pure-gen $(PGFLAGS) $(GTK_INCLUDES) -s '$(glibdir)/glib/*.h;' -x '^(G_GNUC_[A-Z_]*|atexit|glib_dummy_decl|g_thread_init(_with_errorcheck_mutexes)?)$$' -p g -m glib -fc-auto $(glibdir)/glib.h $(GLIB_DLLS)
 	pure-gen $(PGFLAGS) -N $(GTK_INCLUDES) -s '$(glibdir)/gobject/*.h;' -x '^(g_value_c_init|g_value_types_init|g_enum_types_init|g_param_type_init|g_boxed_type_init|g_object_type_init|g_param_spec_types_init|g_value_transforms_init|g_signal_init)$$' -p g -m glib -o glib.pure -c glib.c -fc-auto $(glibdir)/glib-object.h
 ifeq ($(HAVE_GIO),yes)
+ifdef windows
+	pure-gen $(PGFLAGS) -N $(GTK_INCLUDES) -s '$(glibdir)/gio/*.h;' -x '^(g_io_module_(un)?load|g_io_module_query|g_dbus.*)$$' -p g -m glib -o glib.pure -c glib.c -fc-auto $(glibdir)/gio/gio.h
+else
 	pure-gen $(PGFLAGS) -N $(GTK_INCLUDES) -s '$(glibdir)/gio/*.h;' -x '^(g_io_module_(un)?load|g_io_module_query)$$' -p g -m glib -o glib.pure -c glib.c -fc-auto $(glibdir)/gio/gio.h
+endif
 endif
 	pure-gen $(PGFLAGS) -N $(GTK_INCLUDES) -s '$(glibdir)/gmodule.h;' -p g -m glib -o glib.pure -c glib.c -fc-auto $(glibdir)/gmodule.h
 	sed -e 's|#include \"$(glibdir)/\(\([A-Za-z-]\+/\)\?[A-Za-z-]\+\.h\)\"|#include <\1>|g' < glib.c > glib.c.new && rm glib.c && mv glib.c.new glib.c
