@@ -6,7 +6,7 @@ dist = pure-gtk-$(version)
 version = 0.9
 
 # Try to guess the installation prefix:
-prefix = $(patsubst %/bin/pure,%,$(shell which pure 2>/dev/null))
+prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
 ifeq ($(strip $(prefix)),)
 # Fall back to /usr/local.
 prefix = /usr/local
@@ -29,6 +29,7 @@ PURE_COPTS=-I.. -L..
 # Take care of some common systems.
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows
+EXE = .exe
 DLL = .dll
 atk_missing = -x '^(atk_value_get_minimum_increment|atk_streamable_content_get_uri|atk_relation_remove_target|atk_hyperlink_impl_get_hyperlink|atk_hyperlink_impl_get_type|atk_get_version)$$'
 dlldir = $(patsubst %/include,%/bin,$(includedir))
