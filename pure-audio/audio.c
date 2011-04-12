@@ -765,7 +765,7 @@ int read_audio_stream_double(MyStream *v, PaStream *as, double *buf, long size)
   if (!has_input(v)) return -1;
   if (size < 0) return -1;
   if (size == 0) return 0;
-  if (v->out_format != paFloat32)
+  if (v->in_format != paFloat32)
     return -1;
   else {
     /* Read into a temporary buffer. */
