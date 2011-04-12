@@ -1,5 +1,5 @@
 
-GTK_LIBS = $(shell pkg-config --libs gtk+-2.0)
+GTK_LIBS = $(shell pkg-config --libs-only-L --libs-only-l gtk+-2.0)
 
 all: pong
 
