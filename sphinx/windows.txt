@@ -19,18 +19,16 @@ the standard ``Program Files`` directory on your system.
 
 * The package includes a shortcut to run the Pure interpreter in a command
   window, as well as a shortcut for the online documentation that you're
-  looking at. After installation you can find these in the ``Pure`` submenu of
-  the Program menu.
+  looking at. It also includes the :program:`PurePad` application, a GUI
+  frontend to the Pure interpreter which lets you edit and run Pure scripts on
+  Windows, see :doc:`purepad`. After installation you can find these items in
+  the ``Pure`` submenu of the Program menu.
 
 * Pure scripts can be edited in any text editor. Syntax highlighting and
   programming modes are provided for Emacs_, Vim_ and various other popular
   text editors. After installation you can find these in the ``etc``
-  subdirectory of the program directory.
-
-* The package also includes the :program:`PurePad` application, a GUI frontend
-  to the Pure interpreter which lets you edit and run Pure scripts on Windows.
-  A link to this application can be found in the ``Pure`` submenu of the
-  Program menu.
+  subdirectory of the program directory. Please check the files in this
+  directory for installation instructions.
 
 * The interpreter has a few interactive commands (``ls``, ``pwd``, etc.) which
   require Unix-like utilities. To make these work, we recommend installing the
@@ -60,19 +58,33 @@ third-party programming tools:
   Using mingw 4.4 or later is recommended. There's an installer available at
   the mingw website, see http://www.mingw.org/wiki/Getting_Started for
   details. You'll want to install both the C/C++ compilers and the MSYS
-  environment.
+  environment. You'll also have to modify the ``PATH`` environment variable so
+  that it points to the directory containing the mingw binaries, usually
+  ``c:\mingw\bin``.
 
 * The batch compiler also requires the LLVM toolchain for mingw32/x86,
   available from the `LLVM download page`_. In addition, in order to use the
-  C/C++ code inlining feature of the Pure interpreter, you'll also need the
-  corresponding llvm-gcc C/C++ compiler. For your convenience, we have
-  provided a corresponding MSI package named pure-llvm which can be downloaded
-  here:
+  C/C++ code inlining feature of the Pure interpreter, you'll need an
+  LLVM-enabled C/C++ compiler, either llvm-gcc_ or clang_. LLVM 2.9 or later
+  is required. For your convenience, here are the direct download links for
+  the LLVM 2.9 release:
 
-    http://pure-lang.googlecode.com/files/pure-llvm-2.9.msi
+  |  http://llvm.org/releases/2.9/llvm-2.9-mingw32-i386.tar.bz2
+  |  http://llvm.org/releases/2.9/clang-2.9-mingw32-i386.tar.bz2
+  |  http://llvm.org/releases/2.9/llvm-gcc4.2-2.9-x86-mingw32.tar.bz2
+
+  Again, you'll have to modify the ``PATH`` environment variable so that it
+  points to the directory containing the LLVM and compiler binaries
+  (``c:\llvm\bin``, etc.). Also note that if you want to use clang rather than
+  llvm-gcc for compiling inline C/C++ code in Pure, you'll have to set the
+  ``PURE_CC`` and ``PURE_CXX`` environment variables to ``clang`` and
+  ``clang++``, respectively; please check the "Inline Code" section in
+  :doc:`pure` for details.
 
 .. _mingw: http://www.mingw.org/
 .. _LLVM download page: http://llvm.org/releases
+.. _llvm-gcc: http://llvm.org/docs/CommandGuide/html/llvmgcc.html
+.. _clang: http://clang.llvm.org/
 
 Finally, the Pure program directory needs to be added to the gcc
 ``LIBRARY_PATH`` environment variable, so that some Windows-specific addon
