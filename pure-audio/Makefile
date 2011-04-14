@@ -28,7 +28,7 @@ ifneq "$(findstring -mingw,$(host))" ""
 # Windows
 EXE = .exe
 DLL = .dll
-realtime = 
+#realtime = 
 windows = true
 endif
 ifneq "$(findstring -darwin,$(host))" ""
