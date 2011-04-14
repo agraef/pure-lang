@@ -25,9 +25,10 @@ realtime = realtime
 
 # Take care of some common systems.
 ifneq "$(findstring -mingw,$(host))" ""
-# Windows (untested)
+# Windows
 DLL = .dll
 realtime = 
+windows = true
 endif
 ifneq "$(findstring -darwin,$(host))" ""
 # OSX (untested)
@@ -94,7 +95,15 @@ generate:
 	$(MAKE) -C sndfile generate
 
 portaudio.pure:
-	pure-gen -m Pa -p Pa -s '$(includedir)/portaudio.h::' $(includedir)/portaudio.h -laudio -o $@
+ifdef windows
+	echo 'using "lib:libportaudio-2.dll";' > $@
+	pure-gen -N -m Pa -p Pa -s '$(includedir)/portaudio.h;' $(includedir)/portaudio.h -laudio -o $@
+	mv $@ $@.tmp
+	tr -d '\r' < $@.tmp > $@
+	rm -f $@.tmp
+else
+	pure-gen -m Pa -p Pa -s '$(includedir)/portaudio.h;' $(includedir)/portaudio.h -laudio -o $@
+endif
 
 # Type 'make diffs' to generate the wrappers for this platform and compare
 # them against the distributed sources.

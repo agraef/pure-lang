@@ -11,6 +11,7 @@ shared = -shared
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows (untested)
 DLL = .dll
+windows = true
 endif
 ifneq "$(findstring -darwin,$(host))" ""
 # OSX (untested)
@@ -52,6 +53,11 @@ generate:
 	make samplerate.pure
 
 samplerate.pure: srcprocess.h src.pure
-	pure-gen -s '$(includedir)/samplerate.h::' $(includedir)/samplerate.h -lsrcprocess -o $@
-	pure-gen -N -s srcprocess.h:: srcprocess.h -o $@
+	pure-gen -s '$(includedir)/samplerate.h;' $(includedir)/samplerate.h -lsrcprocess -o $@
+	pure-gen -N -s 'srcprocess.h;' srcprocess.h -o $@
 	cat src.pure >> $@
+ifdef windows
+	mv $@ $@.tmp
+	tr -d '\r' < $@.tmp > $@
+	rm -f $@.tmp
+endif

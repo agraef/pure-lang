@@ -11,6 +11,7 @@ shared = -shared
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows (untested)
 DLL = .dll
+windows = true
 endif
 ifneq "$(findstring -darwin,$(host))" ""
 # OSX (untested)
@@ -55,6 +56,11 @@ generate:
 # wrappers for those. (sf_open_virtual is not supported in the Pure wrapper.)
 
 sndfile.pure: sfinfo.h sf.pure
-	pure-gen -s '$(includedir)/sndfile.h::' -x '(sf_open|sf_close)'  $(includedir)/sndfile.h -lsfinfo -o $@
-	pure-gen -N -s sfinfo.h:: sfinfo.h -o $@
+	pure-gen -s '$(includedir)/sndfile.h;' -x '(sf_open|sf_close)'  $(includedir)/sndfile.h -lsfinfo -o $@
+	pure-gen -N -s 'sfinfo.h;' sfinfo.h -o $@
 	cat sf.pure >> $@
+ifdef windows
+	mv $@ $@.tmp
+	tr -d '\r' < $@.tmp > $@
+	rm -f $@.tmp
+endif
