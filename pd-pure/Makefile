@@ -16,7 +16,7 @@ version = 0.13
 # passing 'EAGER='.
 
 # Try to guess the Pd installation prefix (this needs GNU make):
-prefix = $(patsubst %/bin/pd,%,$(shell which pd 2>/dev/null))
+prefix = $(patsubst %/bin/pd$(EXE),%,$(shell which pd 2>/dev/null))
 ifeq ($(strip $(prefix)),)
 # Fall back to /usr/local.
 prefix = /usr/local
@@ -47,12 +47,11 @@ shared = -shared
 
 # Take care of some common systems.
 ifneq "$(findstring -mingw,$(host))" ""
-# Windows (this assumes that a working Pd installation lives in $(PDDIR))
-PDDIR=/c/progra~1/pd
+# Windows
+EXE = .exe
 DLL = .dll
 LIBS = -lpd
-LDFLAGS = -Wl,--enable-auto-import -L$(PDDIR)/lib
-CPPFLAGS = -I$(PDDIR)/include
+LDFLAGS = -Wl,--enable-auto-import
 endif
 ifneq "$(findstring -linux,$(host))" ""
 # Linux

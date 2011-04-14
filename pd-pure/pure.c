@@ -61,7 +61,7 @@ extern const char *pd_libdir_s(void)
 
 extern pure_expr *pd_path_sl(void)
 {
-#if 1
+#ifndef WIN32
   /* You might have to disable this for some Windows builds of pd.dll which
      for some reason lack sys_searchpath. */
   size_t n;
