@@ -18,7 +18,20 @@
    You should have received a copy of the GNU Lesser General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
-using "bc:sockets";
+using "lib:sockets";
+
+extern void __socket_defs();
+extern sockaddr* local_sockaddr(char*);
+extern sockaddr* make_sockaddr(int, char*, char*);
+extern sockaddr** make_sockaddrs(int, char*, char*);
+extern sockaddr* new_sockaddr();
+extern int sockaddr_family(sockaddr*);
+extern char* sockaddr_hostname(sockaddr*);
+extern char* sockaddr_ip(sockaddr*);
+extern int sockaddr_len(sockaddr*);
+extern char* sockaddr_path(sockaddr*);
+extern int sockaddr_port(sockaddr*);
+extern char* sockaddr_service(sockaddr*);
 
 // Define some manifest constants.
 __socket_defs;
@@ -37,9 +50,9 @@ extern int closesocket(int fd);
 extern int listen(int sockfd, int backlog);
 namespace __C;
 // We provide convenience wrappers around these below.
-extern int accept(int sockfd, struct_sockaddr *addr, int *addrlen);
-extern int bind(int sockfd, struct_sockaddr *addr, int addrlen);
-extern int connect(int sockfd, struct_sockaddr *addr, int addrlen);
+extern int accept(int sockfd, sockaddr *addr, int *addrlen);
+extern int bind(int sockfd, sockaddr *addr, int addrlen);
+extern int connect(int sockfd, sockaddr *addr, int addrlen);
 namespace;
 
 accept fd::int addr::pointer = __C::accept fd addr {sockaddr_len addr};
@@ -55,9 +68,9 @@ extern size_t send(int fd, void *buf, size_t len, int flags);
 namespace __C;
 // We provide convenience wrappers around these below.
 extern size_t recvfrom(int fd, void *buf, size_t len, int flags,
-       	               struct_sockaddr *addr, int *addrlen);
+       	               sockaddr *addr, int *addrlen);
 extern size_t sendto(int fd, void *buf, size_t len, int flags,
-       	             struct_sockaddr *addr, int addrlen);
+       	             sockaddr *addr, int addrlen);
 namespace;
 
 recvfrom fd::int buf::pointer len::int flags::int addr::pointer |
@@ -72,8 +85,8 @@ sendto fd::int buf::pointer len::bigint flags::int addr::pointer
 
 namespace __C;
 // We provide convenience wrappers around these below.
-extern int getsockname(int fd, struct_sockaddr *addr, int *addrlen);
-extern int getpeername(int fd, struct_sockaddr *addr, int *addrlen);
+extern int getsockname(int fd, sockaddr *addr, int *addrlen);
+extern int getpeername(int fd, sockaddr *addr, int *addrlen);
 namespace;
 
 getsockname fd::int addr::pointer
@@ -167,7 +180,7 @@ end when
   addrs = list $ takewhile (\p->~null p)
   	  [get_pointer (res+i*SIZEOF_POINTER) | i = 0..inf];
   free res;
-  sockaddr_t = pointer_tag "struct_sockaddr*";
+  sockaddr_t = pointer_tag "sockaddr*";
 end if ~null res when
   res = make_sockaddrs family host port;
 end;

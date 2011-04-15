@@ -3,18 +3,36 @@
 pkgname = pure-sockets
 version = 0.2
 
-# Try to guess the host system type and do platform-specific setup.
+# Try to guess the host system type.
 host = $(shell ./config.guess)
-ifneq "$(findstring -mingw,$(host))" ""
-# Windows
-EXE = .exe
-endif
 
 # Try to guess the installation prefix (this needs GNU make):
 prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
 ifeq ($(strip $(prefix)),)
 # Fall back to /usr/local.
 prefix = /usr/local
+endif
+
+# Platform-specific defaults, edit this as needed.
+#PIC = -fPIC # uncomment for x86-64 compilation
+DLL = .so
+shared = -shared
+
+# Take care of some common systems.
+ifneq "$(findstring -mingw,$(host))" ""
+# Windows
+DLL = .dll
+EXE = .exe
+LIBS = -lws2_32
+endif
+ifneq "$(findstring -darwin,$(host))" ""
+# OSX (untested)
+DLL = .dylib
+shared = -dynamiclib
+endif
+ifneq "$(findstring x86_64-,$(host))" ""
+# 64 bit, needs -fPIC flag
+PIC = -fPIC
 endif
 
 # Installation goes into $(libdir)/pure, you can also set this directly
@@ -26,61 +44,45 @@ extradirs = examples
 extradist = examples/*.pure
 
 # Distribution files for dist and distcheck targets below.
-distfiles = COPYING COPYING.LESSER Makefile README $(source) \
-$(extradist)
+distfiles = COPYING COPYING.LESSER Makefile README config.guess $(source) $(extradist)
 
 # Installation files for install and uninstall targets.
-instfiles = $(pure_source) $(bitcode)
+instfiles = $(pure_source) $(objects)
 
-# The stuff below is pretty generic. It will build bitcode modules for all C
-# and C++ sources in this directory, and the documentation in html format from
-# the README.
+# The stuff below is pretty generic.
 
-#CC = llvm-gcc
-CC = clang
-#CXX = llvm-g++
-CXX = clang++
+CC = gcc
+CXX = g++
 
-# NOTE: The combination -g -O2 doesn't seem to work with clang 2.8.
-# llvm-gcc -g -O2 seems to be fine, though.
-
-#CFLAGS = -g -O2
-#CXXFLAGS = -g -O2
-CFLAGS = -O2
-CXXFLAGS = -O2
-
-BCFLAGS = -emit-llvm
+CFLAGS = -g -O2
+CXXFLAGS = -g -O2
 
 pure_source := $(wildcard *.pure)
 c_source    := $(wildcard *.c)
 cc_source   := $(wildcard *.cc)
-bitcode     := $(c_source:.c=.bc) $(cc_source:.cc=.bc)
+objects     := $(c_source:.c=$(DLL)) $(cc_source:.cc=$(DLL))
 source      := $(c_source) $(cc_source) $(pure_source)
 
-all: $(bitcode)
+all: $(objects)
 
 clean:
-	rm -f $(bitcode)
+	rm -f $(objects)
 
-# compile C source to LLVM bitcode
-%.bc: %.c
-	-$(CC) $(CFLAGS) $(BCFLAGS) -c $< -o $@
+# compile C source to shared library
+%$(DLL): %.c
+	-$(CC) $(shared) $(CFLAGS) $(PIC) $< -o $@ $(LD_FLAGS) -lpure $(LIBS)
 
-# compile C++ source to LLVM bitcode
-%.bc: %.cc
-	-$(CXX) $(CXXFLAGS) $(BCFLAGS) -c $< -o $@
+# compile C++ source to shared library
+%$(DLL): %.cc
+	-$(CXX) $(shared) $(CXXFLAGS) $(PIC) $< -o $@ $(LD_FLAGS) -lpure $(LIBS)
 
 # install and uninstall targets.
-
-# NOTE: clang 2.9rc1 seems to create bitcode files which are only readable by
-# the user (bug?), we use chmod to fix that on the fly.
 
 pkgdir = $(DESTDIR)$(libdir)/pure
 
 install: $(instfiles)
 	test -d "$(pkgdir)" || mkdir -p "$(pkgdir)"
 	cp $(instfiles) "$(pkgdir)"
-	for x in $(bitcode); do chmod a+r "$(pkgdir)/$$x"; done
 
 uninstall:
 	for x in $(instfiles); do rm -f "$(pkgdir)/$$x"; done
