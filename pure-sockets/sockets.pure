@@ -38,21 +38,21 @@ __socket_defs;
 
 /* Socket functions from the C library. */
 
-extern int socket(int domain, int ty, int protocol);
-extern int socketpair(int domain, int ty, int protocol, int *sv);
-extern int shutdown(int fd, int how);
+extern int pure_socket(int domain, int ty, int protocol) = socket;
+extern int pure_socketpair(int domain, int ty, int protocol, int *sv) = socketpair;
+extern int pure_shutdown(int fd, int how) = shutdown;
 // Windows uses this to close a socket. On POSIX systems this is just the same
 // as close().
-extern int closesocket(int fd);
+extern int pure_closesocket(int fd) = closesocket;
 
 // Establish connections.
 
-extern int listen(int sockfd, int backlog);
+extern int pure_listen(int sockfd, int backlog) = listen;
 namespace __C;
 // We provide convenience wrappers around these below.
-extern int accept(int sockfd, sockaddr *addr, int *addrlen);
-extern int bind(int sockfd, sockaddr *addr, int addrlen);
-extern int connect(int sockfd, sockaddr *addr, int addrlen);
+extern int pure_accept(int sockfd, sockaddr *addr, int *addrlen) = accept;
+extern int pure_bind(int sockfd, sockaddr *addr, int addrlen) = bind;
+extern int pure_connect(int sockfd, sockaddr *addr, int addrlen) = connect;
 namespace;
 
 accept fd::int addr::pointer = __C::accept fd addr {sockaddr_len addr};
@@ -63,14 +63,14 @@ connect fd::int addr::pointer = __C::connect fd addr (sockaddr_len addr);
 // descriptor and use the standard file I/O operations from the system module
 // instead.
 
-extern size_t recv(int fd, void *buf, size_t len, int flags);
-extern size_t send(int fd, void *buf, size_t len, int flags);
+extern size_t pure_recv(int fd, void *buf, size_t len, int flags) = recv;
+extern size_t pure_send(int fd, void *buf, size_t len, int flags) = pure;
 namespace __C;
 // We provide convenience wrappers around these below.
-extern size_t recvfrom(int fd, void *buf, size_t len, int flags,
-       	               sockaddr *addr, int *addrlen);
-extern size_t sendto(int fd, void *buf, size_t len, int flags,
-       	             sockaddr *addr, int addrlen);
+extern size_t pure_recvfrom(int fd, void *buf, size_t len, int flags,
+			    sockaddr *addr, int *addrlen) = recvfrom;
+extern size_t pure_sendto(int fd, void *buf, size_t len, int flags,
+			  sockaddr *addr, int addrlen) = sendto;
 namespace;
 
 recvfrom fd::int buf::pointer len::int flags::int addr::pointer |
@@ -85,8 +85,8 @@ sendto fd::int buf::pointer len::bigint flags::int addr::pointer
 
 namespace __C;
 // We provide convenience wrappers around these below.
-extern int getsockname(int fd, sockaddr *addr, int *addrlen);
-extern int getpeername(int fd, sockaddr *addr, int *addrlen);
+extern int pure_getsockname(int fd, sockaddr *addr, int *addrlen) = getsockname;
+extern int pure_getpeername(int fd, sockaddr *addr, int *addrlen) = getpeername;
 namespace;
 
 getsockname fd::int addr::pointer
@@ -95,8 +95,8 @@ getsockname fd::int addr::pointer
 getpeername fd::int addr::pointer
   = __C::getpeername fd addr {sockaddr_len addr};
 
-extern int getsockopt(int fd, int level, int name, void *val, int *len);
-extern int setsockopt(int fd, int level, int name, void *val, int len);
+extern int pure_getsockopt(int fd, int level, int name, void *val, int *len)  = getsockopt;
+extern int pure_setsockopt(int fd, int level, int name, void *val, int len) = setsockopt;
 
 /* Construction of socket addresses for bind et al. */
 

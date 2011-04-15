@@ -264,12 +264,55 @@ socklen_t sockaddr_len(struct sockaddr *addr)
     return 0;
 }
 
-#ifndef _WIN32
-int closesocket(int fd)
+/* We provide thin wrappers for the socket functions from the system
+   library, as on Windows these use the stdcall calling convention and
+   thus can't be called directly by Pure programs. */
+
+int pure_socket(int domain, int ty, int protocol)
+{ return socket(domain, ty, protocol); }
+int pure_socketpair(int domain, int ty, int protocol, int *sv)
+{ return socketpair(domain, ty, protocol, sv); }
+int pure_shutdown(int fd, int how)
+{ return shutdown(fd, how); }
+
+/* Windows uses this to close a socket. On POSIX systems this is just the same
+   as close(). */
+
+int pure_closesocket(int fd)
 {
+#ifdef _WIN32
+  return closesocket(fd);
+#else
   return close(fd);
-}
 #endif
+}
+
+int pure_listen(int sockfd, int backlog)
+{ return listen(sockfd, backlog); }
+int pure_accept(int sockfd, struct sockaddr *addr, int *addrlen)
+{ return accept(sockfd, addr, addrlen); }
+int pure_bind(int sockfd, struct sockaddr *addr, int addrlen)
+{ return bind(sockfd, addr, addrlen); }
+int pure_connect(int sockfd, struct sockaddr *addr, int addrlen)
+{ return connect(sockfd, addr, addrlen); }
+size_t pure_recv(int fd, void *buf, size_t len, int flags)
+{ return recv(fd, buf, len, flags); }
+size_t pure_send(int fd, void *buf, size_t len, int flags)
+{ return send(fd, buf, len, flags); }
+size_t pure_recvfrom(int fd, void *buf, size_t len, int flags,
+		     struct sockaddr *addr, int *addrlen)
+{ return recvfrom(fd, buf, len, flags, addr, addrlen); }
+size_t pure_sendto(int fd, void *buf, size_t len, int flags,
+		   struct sockaddr *addr, int addrlen)
+{ return sendto(fd, buf, len, flags, addr, addrlen); }
+int pure_getsockname(int fd, struct sockaddr *addr, int *addrlen)
+{ return getsockname(fd, addr, addrlen); }
+int pure_getpeername(int fd, struct sockaddr *addr, int *addrlen)
+{ return getpeername(fd, addr, addrlen); }
+int pure_getsockopt(int fd, int level, int name, void *val, int *len)
+{ return getsockopt(fd, level, name, val, len); }
+int pure_setsockopt(int fd, int level, int name, void *val, int len)
+{ return setsockopt(fd, level, name, val, len); }
 
 #define define(sym) pure_def(pure_sym(#sym), pure_int(sym))
 
