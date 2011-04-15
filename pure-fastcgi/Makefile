@@ -19,7 +19,6 @@ host = $(shell ./config.guess)
 
 # Platform-specific defaults, edit this as needed.
 #PIC = -fPIC # uncomment for x86-64 compilation
-EXE = .exe
 DLL = .so
 shared = -shared
 # Some systems have the headers in /usr/include/fastcgi. Adjust as needed.
@@ -28,6 +27,7 @@ INCLUDES = -I/usr/include/fastcgi
 # Take care of some common systems.
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows
+EXE = .exe
 DLL = .dll
 endif
 ifneq "$(findstring -darwin,$(host))" ""
