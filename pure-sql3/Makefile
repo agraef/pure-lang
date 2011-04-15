@@ -4,7 +4,7 @@ dist = pure-sql3-$(version)
 version = 0.3
 
 # Try to guess the installation prefix (this needs GNU make):
-prefix = $(patsubst %/bin/pure,%,$(shell which pure 2>/dev/null))
+prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
 ifeq ($(strip $(prefix)),)
 # Fall back to /usr/local.
 prefix = /usr/local
@@ -27,6 +27,7 @@ INCLUDES = -I/usr/include/sqlite3
 # Take care of some common systems.
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows
+EXE = .exe
 DLL = .dll
 endif
 ifneq "$(findstring -darwin,$(host))" ""
