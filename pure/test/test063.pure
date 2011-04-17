@@ -1,0 +1,51 @@
+
+// tests for the __func__ builtin
+
+using system;
+
+// basic tests
+
+foo = printf "here: %s\n" (str __func__) $$ __func__;
+foo;
+
+bar = printf "here: %s\n" (str x) $$ x when x = __func__ end;
+bar;
+
+// nested inside case environment
+baz = case 99 of _ = printf "here: %s\n" (str __func__) $$ __func__ end;
+baz;
+
+// at global level (fails)
+__func__;
+case 0 of 0 = __func__ end;
+
+// you can give a default rule for __func__ if you want
+__func__ = throw "__func__ at global level";
+__func__;
+case 0 of 0 = __func__ end;
+
+// various cases of nested environments with captured variable
+
+g x = f () with f () = case x of 0 = __func__; _ = x end end;
+g 0;
+
+h x = f x with f x = case x of 0 = __func__; _ = x end end;
+h 0;
+
+// nested inside 'case' and 'when'
+g2 x = f () with f () = z when
+  y = x; z = case y of 0 = __func__; _ = x end
+end end;
+g2 0;
+let x = g2 0;
+x ()===x; // these ought to be the same closure f
+
+// cases involving lambdas
+
+k x = (\_->x,__func__) 77;
+let x = k 99!1; // gives the lambda as result
+x 66!1===x; // these ought to be the same
+
+m x = (\_->x,(case x of 0 = __func__; _ = x end)) 77;
+let x = m 0!1;
+x 66!1===x;

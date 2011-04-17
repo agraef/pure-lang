@@ -70,6 +70,7 @@ class symtable {
 		prec_t prec, fix_t fix, bool priv = false);
   // these are cached here to speed up predefined symbol lookups
   symbol* __locals_sym;
+  symbol* __func_sym;
   symbol* __nil_sym;
   symbol* __cons_sym;
   symbol* __void_sym;
@@ -187,6 +188,8 @@ public:
   int32_t anon_sym, __show__sym; // Cached here to improve performance.
   symbol& locals_sym()
   { return *sym_p("__locals__", __locals_sym); }
+  symbol& func_sym()
+  { return *sym_p("__func__", __func_sym); }
   symbol& nil_sym();
   symbol& cons_sym();
   symbol& void_sym();

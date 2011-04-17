@@ -1,0 +1,192 @@
+foo = printf "here: %s\n" (str __func__)$$__func__;
+{
+  rule #0: foo = printf "here: %s\n" (str __func__)$$__func__
+  state 0: #0
+}
+here: foo
+foo;
+foo
+bar = printf "here: %s\n" (str x/*0:*/)$$x/*0:*/ when x/*0:*/ = __func__ {
+  rule #0: x = __func__
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+{
+  rule #0: bar = printf "here: %s\n" (str x)$$x when x = __func__ end
+  state 0: #0
+}
+here: bar
+bar;
+bar
+baz = case 99 of _/*0:*/ = printf "here: %s\n" (str __func__)$$__func__ {
+  rule #0: _ = printf "here: %s\n" (str __func__)$$__func__
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+{
+  rule #0: baz = case 99 of _ = printf "here: %s\n" (str __func__)$$__func__ end
+  state 0: #0
+}
+here: baz
+baz;
+baz
+__func__;
+__func__
+case 0 of 0 = __func__ {
+  rule #0: 0 = __func__
+  state 0: #0
+	0::int state 1
+  state 1: #0
+} end;
+__func__
+__func__ = throw "__func__ at global level";
+{
+  rule #0: __func__ = throw "__func__ at global level"
+  state 0: #0
+}
+__func__;
+<stdin>, line 24: unhandled exception '"__func__ at global level"' while evaluating '__func__'
+case 0 of 0 = __func__ {
+  rule #0: 0 = __func__
+  state 0: #0
+	0::int state 1
+  state 1: #0
+} end;
+<stdin>, line 25: unhandled exception '"__func__ at global level"' while evaluating 'case 0 of 0 = __func__ end'
+g x/*0:1*/ = f/*0*/ () with f () = case x/*1:1*/ of 0 = __func__; _/*0:*/ = x/*2:1*/ {
+  rule #0: 0 = __func__
+  rule #1: _ = x
+  state 0: #0 #1
+	<var> state 1
+	0::int state 2
+  state 1: #1
+  state 2: #0 #1
+} end {
+  rule #0: f () = case x of 0 = __func__; _ = x end
+  state 0: #0
+	() state 1
+  state 1: #0
+} end;
+{
+  rule #0: g x = f () with f () = case x of 0 = __func__; _ = x end end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+g 0;
+f
+h x/*0:1*/ = f/*0*/ x/*0:1*/ with f x/*0:1*/ = case x/*0:1*/ of 0 = __func__; _/*0:*/ = x/*1:1*/ {
+  rule #0: 0 = __func__
+  rule #1: _ = x
+  state 0: #0 #1
+	<var> state 1
+	0::int state 2
+  state 1: #1
+  state 2: #0 #1
+} end {
+  rule #0: f x = case x of 0 = __func__; _ = x end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+{
+  rule #0: h x = f x with f x = case x of 0 = __func__; _ = x end end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+h 0;
+f
+g2 x/*0:1*/ = f/*0*/ () with f () = z/*0:*/ when y/*0:*/ = x/*1:1*/; z/*0:*/ = case y/*0:*/ of 0 = __func__; _/*0:*/ = x/*3:1*/ {
+  rule #0: 0 = __func__
+  rule #1: _ = x
+  state 0: #0 #1
+	<var> state 1
+	0::int state 2
+  state 1: #1
+  state 2: #0 #1
+} end {
+  rule #0: z = case y of 0 = __func__; _ = x end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: y = x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end {
+  rule #0: f () = z when y = x; z = case y of 0 = __func__; _ = x end end
+  state 0: #0
+	() state 1
+  state 1: #0
+} end;
+{
+  rule #0: g2 x = f () with f () = z when y = x; z = case y of 0 = __func__; _ = x end end end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+g2 0;
+f
+{
+  rule #0: x = g2 0
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let x = g2 0;
+x ()===x;
+1
+k x/*0:1*/ = (\_/*0:1*/ -> x/*1:1*/,__func__ {
+  rule #0: _ _ = x,__func__
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) 77;
+{
+  rule #0: k x = (\_ -> x,__func__) 77
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+{
+  rule #0: x = k 99!1
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let x = k 99!1;
+x 66!1===x;
+1
+m x/*0:1*/ = (\_/*0:1*/ -> x/*1:1*/,(case x/*1:1*/ of 0 = __func__; _/*0:*/ = x/*2:1*/ {
+  rule #0: 0 = __func__
+  rule #1: _ = x
+  state 0: #0 #1
+	<var> state 1
+	0::int state 2
+  state 1: #1
+  state 2: #0 #1
+} end) {
+  rule #0: _ _ = x,(case x of 0 = __func__; _ = x end)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) 77;
+{
+  rule #0: m x = (\_ -> x,(case x of 0 = __func__; _ = x end)) 77
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+{
+  rule #0: x = m 0!1
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let x = m 0!1;
+x 66!1===x;
+1

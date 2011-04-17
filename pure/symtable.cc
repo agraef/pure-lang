@@ -23,6 +23,7 @@
 symtable::symtable()
   : fno(0), rtab(1024),
     __locals_sym(0),
+    __func_sym(0),
     __nil_sym(0),
     __cons_sym(0),
     __void_sym(0),
@@ -103,6 +104,7 @@ symtable::~symtable()
 void symtable::init_builtins()
 {
   locals_sym();
+  func_sym();
   nil_sym();
   cons_sym();
   void_sym();

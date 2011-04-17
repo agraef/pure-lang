@@ -1039,6 +1039,7 @@ private:
   void push(const char *msg, Env *e);
   void pop(Env *e);
   Env *find_stacked(int32_t tag);
+  int32_t find_hash(Env *e);
   Env& act_env() { assert(!envstk.empty()); return *envstk.front(); }
   Builder& act_builder() { return act_env().builder; }
   bool is_quote(int32_t f)
@@ -1074,7 +1075,7 @@ private:
   llvm::Value *applc(llvm::Value *x, llvm::Value *y);
   llvm::Value *cond(expr x, expr y, expr z);
   void toplevel_cond(expr x, expr y, expr z, const rule *rp);
-  llvm::Value *fbox(Env& f);
+  llvm::Value *fbox(Env& f, bool defer = false);
   llvm::Value *cbox(int32_t tag);
   llvm::Value *ibox(llvm::Value *i);
   llvm::Value *ibox(int32_t i);
@@ -1087,7 +1088,7 @@ private:
   llvm::Value *vref(int32_t tag, path p);
   llvm::Value *vref(int32_t tag, uint32_t offs);
   llvm::Value *vref(int32_t tag, uint8_t idx, path p);
-  llvm::Value *fref(int32_t tag, uint8_t idx);
+  llvm::Value *fref(int32_t tag, uint8_t idx, bool defer = false);
   llvm::Value *fcall(Env& f, vector<llvm::Value*>& args,
 		     vector<llvm::Value*>& env);
   llvm::Value *fcall(Env& f, vector<llvm::Value*>& env)

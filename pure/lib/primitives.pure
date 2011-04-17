@@ -380,6 +380,33 @@ using namespace __C;
         > ans/2;
         0.166666666666667
 
+   .. function:: __func__
+
+      Returns the (lexically) innermost function at the point of the call.
+      This can be either a global function, a local (named) function
+      introduced in a :keyword:`with` clause or an anonymous function (a
+      lambda). Fails (returning just the literal symbol :func:`__func__` by
+      default) if there is no such function (i.e., if the call is at the
+      toplevel). Note that in contrast to the C99 variable of the same name,
+      this really returns the function value itself in Pure; the :func:`str`
+      function can be used if you need the print name of the function.
+      Examples::
+
+        > foo x = if x>0 then x else throw __func__;
+	> foo (-99);
+	<stdin>, line 2: unhandled exception 'foo' while evaluating 'foo (-99)'
+	> (\x->x+": "+str __func__) "test";
+	"test: #<closure 0x7f4a2411db30>"
+
+      If you want, you can add a default rule for :func:`__func__` which
+      specifies the behaviour when :func:`__func__` gets called at the global
+      level. E.g.::
+
+        > __func__ = throw "__func__ called at global level";
+	> __func__;
+	<stdin>, line 5: unhandled exception '"__func__ called at global level"' while
+	evaluating '__func__'
+
    .. function:: __locals__
 
       Return a list with the local function bindings (:keyword:`with` clauses)
@@ -836,7 +863,7 @@ extern char* str(expr*);
 extern expr* __str__(expr*);
 
 extern expr *reduce(expr *locals, expr *x) = reduce_with;
-public __locals__; // builtin
+public __locals__ __func__; // builtins
 def reduce = reduce_with __locals__;
 
 extern expr *get_fundef(expr *f);

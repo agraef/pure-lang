@@ -9424,8 +9424,33 @@ void Env::build_map(expr x)
     fmap.pop();
     break;
   }
-  default:
+  default: {
+    interpreter& interp = *interpreter::g_interp;
+    if (x.tag() == interp.symtab.func_sym().f) {
+      // __func__ builtin. This is treated like a corresponding FVAR.
+      // We're looking for a named closure or a lambda.
+      if (tag>0 || (n>0 && !descr)) break;
+      // Look for a suitable stacked environment.
+      EnvStack::iterator ei = envstk.begin();
+      uint8_t idx = 1;
+      while (ei != envstk.end()) {
+	Env *e = *ei;
+	if (e->tag>0 || (e->n>0 && !e->descr)) break;
+	ei++; idx++;
+      }
+      if (ei != envstk.end() && (*ei)->local) {
+	// this is the target environment, propagate locals to the call site
+	Env *fenv = *ei;
+	idx++;
+	if (fenv->prop.find(this) == fenv->prop.end()) {
+	  fenv->prop[this] = idx;
+	  props.insert(fenv);
+	} else
+	  assert(fenv->prop[this] == idx);
+      }
+    }
     break;
+  }
   }
 }
 
@@ -9627,6 +9652,24 @@ Env *interpreter::find_stacked(int32_t tag)
     return *e;
   } else
     return 0;
+}
+
+int32_t interpreter::find_hash(Env *e)
+{
+  // find the hash for a lambda environment on the stack
+  EnvStack::iterator ei = envstk.begin();
+  while (ei != envstk.end() && *ei != e) ++ei;
+  if (ei == envstk.end()) return 0; // error, environment not on stack
+  ei++;
+  if (ei == envstk.end()) return 0; // error, no parent environment
+  Env *p = *ei;
+  EnvMap::const_iterator mi;
+  for (mi = p->fmap.act().begin(); mi != p->fmap.act().end(); mi++) {
+    int32_t tag = mi->first;
+    const Env *f = mi->second;
+    if (e == f) return tag;
+  }
+  return 0; // not found
 }
 
 const Type *interpreter::make_pointer_type(const string& name)
@@ -12904,6 +12947,37 @@ Value *interpreter::codegen(expr x, bool quote)
       return act_builder().CreateCall
 	(module->getFunction("pure_locals"), argv.begin(), argv.end());
     }
+    // check for a call to the '__func__' builtin
+    if (x.tag() == symtab.func_sym().f) {
+      /* Find the innermost named closure or lambda. Note that the latter is
+	 characterized by having a nonzero argument count and a null descr
+	 field. */
+      EnvStack::iterator ei = envstk.begin();
+      uint8_t idx = 0;
+      while (ei != envstk.end()) {
+	Env *e = *ei;
+	if (e->tag>0 || (e->n>0 && !e->descr))
+	  break;
+	idx++;
+	ei++;
+      }
+      if (ei != envstk.end()) {
+	// this is the target function
+	Env *fenv = *ei;
+	if (fenv->local) {
+	  // Local function, construct the appropriate closure.
+	  int32_t tag = fenv->tag;
+	  if (tag <= 0)
+	    // We have to find the tag for a lambda environment on the stack.
+	    tag = find_hash(fenv);
+	  assert(tag);
+	  return fref(tag, idx+1, true);
+	} else
+	  // Global function, simply return the fbox.
+	  return fbox(*fenv, true);
+      }
+      // We've fallen from the stack, so we're not inside a function. Fail.
+    }
     // check for a parameterless global (or external) function call
     Value *u; Env *e;
     if ((u = external_funcall(x.tag(), 0, x)))
@@ -12943,7 +13017,7 @@ Value *interpreter::codegen(expr x, bool quote)
 // it can be passed as extra parameters when the function actually gets
 // invoked.
 
-Value *interpreter::fbox(Env& f)
+Value *interpreter::fbox(Env& f, bool defer)
 {
   assert(f.f);
   // build extra parameters for the captured environment
@@ -12955,7 +13029,7 @@ Value *interpreter::fbox(Env& f)
     x[i] = vref(info->vtag, info->idx-1, info->p);
   // Check for a parameterless anonymous closure (presumably catch body),
   // these calls *must* be deferred.
-  if (f.n == 0 && (!f.local || f.tag > 0))
+  if (f.n == 0 && !defer && (!f.local || f.tag > 0))
     // parameterless function, emit a direct call
     return fcall(f, x);
   else {
@@ -13260,14 +13334,14 @@ Value *interpreter::vref(int32_t tag, uint8_t idx, path p)
   }
 }
 
-Value *interpreter::fref(int32_t tag, uint8_t idx)
+Value *interpreter::fref(int32_t tag, uint8_t idx, bool defer)
 {
   // local function reference; box the function as a value on the fly
   assert(!envstk.empty());
   if (idx == 0) {
     // function in current environment ('with'-bound)
     Env& f = *act_env().fmap.act()[tag];
-    return fbox(f);
+    return fbox(f, defer);
   }
   // If we come here, the function is defined in an outer environment. Locate
   // the function, the de Bruijn index idx tells us where on the current
@@ -13286,7 +13360,7 @@ Value *interpreter::fref(int32_t tag, uint8_t idx)
   list<VarInfo>::iterator info;
   for (i = 0, info = f.xtab.begin(); info != f.xtab.end(); i++, info++)
     x[i] = vref(info->vtag, info->idx+idx-1, info->p);
-  if (f.n == 0)
+  if (f.n == 0 && !defer)
     // parameterless function, emit a direct call
     return fcall(f, x);
   else {
