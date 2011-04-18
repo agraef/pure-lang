@@ -1,7 +1,7 @@
 
 # Package name and version number:
 dist = pure-sql3-$(version)
-version = 0.3
+version = 0.4
 
 # Try to guess the installation prefix (this needs GNU make):
 prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))

@@ -52,17 +52,11 @@ and executes a query.
 
   > let dbp = open "readme.db";
 
-  > typep db_ptr dbp;
-  1
-
   > exec dbp "create table if not exists RM (name text, age integer)";
 
   > exec dbp "delete from RM";
 
   > let sp1 = prep dbp "ci" "insert into RM values (?,?)";
-
-  > typep stmt_ptr sp1;
-  1
 
   > exec sp1 ("Sam",20);
 
@@ -171,15 +165,15 @@ Data Structure
 ==============
 
 From a client's perspective, the most important of SQLite's data structures
-are the database connection object named "sqlite3" and the prepared statement
-object named sqlite3_stmt. These are opaque data structures that are made
-available to users of SQLite's C interface via pointers, sqlite3* and
-sqlite3_stmt*. At appropriate times, Sql3 creates pointers whose pointer types
-are "sqlite3" or "sqlite3_stmt*", and these pointers can be used (with care)
-to call native C functions exposed by SQLite's C interface.
+are the database connection object "sqlite3" and the prepared statement object
+"sqlite3_stmt". These are opaque data structures that are made available to
+users of SQLite's C interface via pointers, sqlite3* and sqlite3_stmt*. At
+appropriate times, Sql3 creates "cooked" versions of these pointers that can
+be used (with care) to call native C functions exposed by SQLite's C
+interface.
 
-Sql3 introduces two new data types, "db_ptr" and "stmt_ptr" which are merely
-"cooked" pointers of type sqlite3* and sqlite3_stmt*, respectively. These two
+Sql3 introduces two new data types, "db_ptr" and "stmt_ptr" which refer to the
+cooked versions of sqlite3* and sqlite3_stmt*, respectively. These two
 new data types are defined using :func: `type`, and therefore can be used as
 type tags in rule patterns or as the first parameter passed to in the typep
 function. It follows that all db_ptrs are sqlite3* pointers and all stmt_ptrs
@@ -193,7 +187,7 @@ example::
   1, "sqlite3_stmt*"
 
 The converse, of course, is not true, as SQLite knows nothing about Sql3, and
-dbps and stmt_ptrs carry a lot of information in addtion to the underlying
+db_ptrs and stmt_ptrs carry other information in addtion to the underlying
 pointers provided to them by SQLite.
 
 Core Database Operations
@@ -317,9 +311,12 @@ execute a statement associated with the closed database connection. ::
   > catch error (exec dbp2_sp);
   error (sql3::db_error 0 "Attempt to exec on a closed db_ptr.")
 
-If a db_ptr goes out of scope, Sql3 will automatically call
-``sqlite3_close`` to close the referenced database connection, but
-only if the connection has not already been closed by :func:`close`. 
+If a db_ptr goes out of scope, Sql3 will automatically call ``sqlite3_close``
+to close the referenced database connection, but only if the connection has
+not already been closed by :func:`close`. Thus, for example, it is not
+necessary to use a catch statement to ensure that Sqlite3 resources are
+properly finalized when a db_ptr is passed into code that could throw an
+exception.
 
 When debugging, this activity can be observed by editing sql3.pure,
 changing "const SHOW_OPEN_CLOSE = 0;" to "const SHOW_OPEN_CLOSE = 1;"
@@ -336,8 +333,8 @@ fault.
 Prepared Statements
 -------------------
 
-In SQLite, prepared statement objects are used to execute SQL
-statements using the following SQLite C interface functions.
+The native SQLite C interface provides five core functions needed to execute a
+SQL statement.
 
 * sqlite3_prepare_v2
 * sqlite3_bind
