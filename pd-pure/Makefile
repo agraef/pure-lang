@@ -30,6 +30,10 @@ EAGER = $(shell (test -z "$(pureminor)" || test "$(pureminor)" -ge 34) && echo '
 # Installation goes into $(libdir)/pd, you can also set this directly
 # instead of $(prefix).
 libdir = $(prefix)/lib
+includedir = $(prefix)/include
+
+# Pd include path.
+pdincludedir = $(includedir)/pd
 
 # Pd library path.
 pdlibdir = $(libdir)/pd
@@ -81,6 +85,8 @@ endif
 ifneq "$(VERBOSE)" ""
 override CPPFLAGS += $(VERBOSE)
 endif
+
+override CPPFLAGS += -I$(pdincludedir)
 
 DISTFILES = COPYING Makefile README config.guess pure.c \
 examples/*.pure examples/*.pd examples/*.el
