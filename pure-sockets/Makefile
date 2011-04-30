@@ -1,7 +1,7 @@
 
 # Package name and version number:
 pkgname = pure-sockets
-version = 0.3
+version = 0.4
 
 # Try to guess the host system type.
 host = $(shell ./config.guess)
