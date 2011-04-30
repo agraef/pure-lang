@@ -70,11 +70,11 @@ clean:
 
 # compile C source to shared library
 %$(DLL): %.c
-	-$(CC) $(shared) $(CFLAGS) $(PIC) $< -o $@ $(LD_FLAGS) -lpure $(LIBS)
+	$(CC) $(shared) $(CPPFLAGS) $(CFLAGS) $(PIC) $< -o $@ $(LDFLAGS) -lpure $(LIBS)
 
 # compile C++ source to shared library
 %$(DLL): %.cc
-	-$(CXX) $(shared) $(CXXFLAGS) $(PIC) $< -o $@ $(LD_FLAGS) -lpure $(LIBS)
+	$(CXX) $(shared) $(CPPFLAGS) $(CXXFLAGS) $(PIC) $< -o $@ $(LDFLAGS) -lpure $(LIBS)
 
 # install and uninstall targets.
 
