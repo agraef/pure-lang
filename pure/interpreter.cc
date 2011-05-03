@@ -1731,7 +1731,10 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
 	  g->eraseFromParent();
 	}
       }
-    }
+    } else if (f.hasExternalLinkage() && !f.isDeclaration())
+      // Make sure that all other functions have internal linkage, to prevent
+      // name collisions.
+      f.setLinkage(Function::InternalLinkage);
   }
   // Link the mangled module into the Pure module. This only needs to be done
   // if the module was modified.
