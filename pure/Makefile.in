@@ -352,8 +352,12 @@ endif
 # alternative url or a local file:
 docs = http://pure-lang.googlecode.com/files/pure-docs-$(version).tar.gz
 
+# old version to try if the current version has not been released yet
+oldvers = $(shell echo $(version) | awk -F. '{ printf("%d.%d\n", $$1,$$2-1); }')
+olddocs = http://pure-lang.googlecode.com/files/pure-docs-$(oldvers).tar.gz
+
 install-docs:
-	@MAKE=$(MAKE) ./install-docs.sh "$(docs)"
+	@MAKE=$(MAKE) ./install-docs.sh "$(docs)" || MAKE=$(MAKE) ./install-docs.sh "$(olddocs)"
 
 # install pure-mode.el and pure-mode.elc
 
