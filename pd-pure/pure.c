@@ -477,17 +477,49 @@ static inline pure_expr *parse_symbol(t_pure *x, const char *s)
   return pure_cstring_dup(s);
 }
 
+
+static void pure_errmsgs(t_pure *x)
+{
+  const char *err = lasterr();
+  if (err && *err) {
+    char *msg = strdup(err);
+    char *s = strtok(msg, "\n");
+    while (s) {
+      pd_error(x, "%s", s);
+      s = strtok(NULL, "\n");
+    }
+    free(s);
+    clear_lasterr();
+  }
+}
+
+/* Create an application, with error checking. */
+
+static pure_expr *pure_appxx(t_pure *x, pure_expr *y, pure_expr *z)
+{
+  pure_expr *e = 0, *u = pure_appx(y, z, &e);
+  if (!u) {
+    pure_errmsgs(x);
+    if (e) {
+      char *s = str(e);
+      if (s) {
+	pd_error(x, "pd-pure: unhandled exception '%s'", s);
+	free(s);
+      }
+      pure_freenew(e);
+    }
+  }
+  return u;
+}
+
 static inline pure_expr *parse_expr(t_pure *x, const char *s)
 {
   pure_expr *y = pure_eval(s);
-  if (y == 0)
-#if CHECK_SYNTAX
-    /* complain about bad Pure syntax */
-    pd_error(x, "pd-pure: invalid expression '%s'", s);
-#else
-    /* cast to a Pure string */
+  if (y == 0) {
+    pure_errmsgs(x);
+    /* cast to a Pure string, to prevent a cascade of error messages */
     y = pure_cstring_dup(s);
-#endif
+  }
   return y;
 }
 
@@ -716,9 +748,10 @@ static void receive_message(t_pure *x, t_symbol *s, int k,
 	atom_string(argv+i, buf, MAXPDSTRING);
 	z = pure_cstring_dup(buf);
       }
-      if (z)
-	y = pure_app(y, z);
-      else {
+      if (z) {
+	y = pure_appxx(x, y, z);
+	if (!y) return;
+      } else {
 	pure_freenew(y);
 	return;
       }
@@ -728,7 +761,9 @@ static void receive_message(t_pure *x, t_symbol *s, int k,
   if (x->n_in > 0)
     y = pure_tuplel(2, pure_int(k), y);
   /* apply the object function */
-  y = pure_new(pure_app(f, y));
+  y = pure_appxx(x, f, y);
+  if (!y) goto err;
+  pure_new(y);
   /* process the results and route them through the appropriate outlets */
   if (pure_is_listv(y, &n, &xv)) {
     for (i = 0; i < n; i++) {
@@ -746,9 +781,10 @@ static void receive_message(t_pure *x, t_symbol *s, int k,
     delay_message(x, t, msg);
   else
     send_message(x, 0, y);
+ err:
   if (xv) free(xv);
   if (yv) free(yv);
-  pure_free(y);
+  if (y) pure_free(y);
 }
 
 /* Timer callback. This works similar to receive_message above, but is called
@@ -766,7 +802,9 @@ static void timeout(t_pure *x)
   /* check whether we have something to evaluate */
   if (!f || !y) return;
   /* apply the object function */
-  y = pure_new(pure_app(f, y));
+  y = pure_appxx(x, f, y);
+  if (!y) return;
+  pure_new(y);
   pure_free(x->msg); x->msg = 0;
   /* process the results and route them through the appropriate outlets */
   if (pure_is_listv(y, &n, &xv)) {
@@ -837,12 +875,13 @@ static t_int *pure_perform(t_int *w)
        numbers of rows and columns corresponding to the number of signal
        outlets and the block size, respectively. Optionally, it may also
        return other (control) messages to be routed to the control outlet. */
-    y = pure_new(pure_app(x->foo, x->sigx));
-    if (pure_is_tuplev(y, &m, &xv) && m == 2 &&
+    y = pure_appxx(x, x->foo, x->sigx);
+    if (y) pure_new(y);
+    if (y && pure_is_tuplev(y, &m, &xv) && m == 2 &&
 	pure_is_double_matrix(xv[0], (void**)&sig)) {
       z = xv[1];
       free(xv);
-    } else if (!pure_is_double_matrix(y, (void**)&sig)) {
+    } else if (!y || !pure_is_double_matrix(y, (void**)&sig)) {
       z = y;
       sig = 0;
     }
@@ -1028,9 +1067,8 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
 	if (x->save) pure_clear_sentry(y);
       }
     } else {
-      const char *err = lasterr();
       pd_error(x, "pd-pure: error in '%s' creation function", s->s_name);
-      if (err && *err) pd_error(x, "pd-pure: %s", err);
+      pure_errmsgs(x);
     }
   }
   if (x->foo != 0) {
@@ -1103,12 +1141,15 @@ static void pure_refini(t_pure *x)
   if (x->foo) {
     if (x->save) {
       /* Record object state, if available. */
-      pure_expr *st = pure_app(x->foo, pure_quoted_symbol(save_sym)), *g, *y;
+      pure_expr *st = pure_appxx(x, x->foo, pure_quoted_symbol(save_sym));
+      pure_expr *g, *y;
       int32_t sym;
-      if (!pure_is_app(st, &g, &y) || g != x->foo ||
-	  !pure_is_symbol(y, &sym) || sym != save_sym)
-	x->tmpst = make_blob(st);
-      pure_freenew(st);
+      if (st) {
+	if (!pure_is_app(st, &g, &y) || g != x->foo ||
+	    !pure_is_symbol(y, &sym) || sym != save_sym)
+	  x->tmpst = make_blob(st);
+	pure_freenew(st);
+      }
     }
     pure_free(x->foo);
     x->foo = 0;
@@ -1162,7 +1203,7 @@ static void pure_reinit(t_pure *x)
     pure_expr *st;
     if (x->foo && (st = parse_blob(x->tmpst))) {
       pure_expr *y =
-	pure_app(x->foo, pure_app(pure_quoted_symbol(restore_sym), st));
+	pure_appxx(x, x->foo, pure_app(pure_quoted_symbol(restore_sym), st));
       if (y) pure_freenew(y);
     }
     free(x->tmpst); x->tmpst = 0;
