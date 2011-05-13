@@ -3,6 +3,8 @@
 docs=$1
 tmpdir=pure-docs
 
+test -z "$MAKE" && MAKE=make
+
 if test -z "$docs"; then
    echo "Usage: install-docs url-or-filename"
    exit 1
@@ -13,6 +15,7 @@ trap "rm -rf $tmpdir" EXIT
 
 case $docs in
   http:* | https:* | ftp:*)
+    echo "Downloading $docs"
     if ! wget -nv $docs -O $tmpdir/docs.tar.gz; then
       echo "$0: Error downloading $docs" > /dev/stderr
       exit 1
