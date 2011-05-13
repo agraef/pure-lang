@@ -3511,6 +3511,25 @@ char *pure_evalcmd(const char *s)
     return strdup(sout.str().c_str());
 }
 
+extern "C"
+void pure_start_logging()
+{
+  if (interpreter::g_interp) {
+    interpreter& interp = *interpreter::g_interp;
+    interp.errmsg.clear();
+    interp.logging = true;
+  }
+}
+
+extern "C"
+void pure_stop_logging()
+{
+  if (interpreter::g_interp) {
+    interpreter& interp = *interpreter::g_interp;
+    interp.logging = false;
+  }
+}
+
 #ifndef HOST
 #define HOST "unknown"
 #endif
@@ -3812,25 +3831,6 @@ void pure_interp_compile(pure_interp *interp, int32_t fno)
   assert(interp);
   interpreter *_interp = (interpreter*)interp;
   _interp->jit_now(fno);
-}
-
-extern "C"
-void pure_start_logging()
-{
-  if (interpreter::g_interp) {
-    interpreter& interp = *interpreter::g_interp;
-    interp.errmsg.clear();
-    interp.logging = true;
-  }
-}
-
-extern "C"
-void pure_stop_logging()
-{
-  if (interpreter::g_interp) {
-    interpreter& interp = *interpreter::g_interp;
-    interp.logging = false;
-  }
 }
 
 /* END OF PUBLIC API. *******************************************************/

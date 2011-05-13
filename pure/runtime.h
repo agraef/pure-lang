@@ -528,6 +528,14 @@ char *pure_evalcmd(const char *s);
 
 pure_expr *pure_evalx(pure_expr *x, pure_expr** e);
 
+/* Logging of error messages and warnings from the compiler. This works
+   independently from pure_eval() et al, so it can also be used to record
+   messages while compiling Pure source loaded from script files. The messages
+   can then be retrieved with lasterr() from the library API as usual. */
+
+void pure_start_logging();
+void pure_stop_logging();
+
 /* The following routines provide standalone C/C++ applications with fully
    initialized interpreter instances which can be used together with the
    operations listed above. This is only needed for modules which are not to
@@ -588,11 +596,6 @@ pure_interp *pure_current_interp();
    last resort. */
 
 void pure_interp_compile(pure_interp *interp, int32_t fno);
-
-/* Logging of warnings and error messages. (Retrieve with lasterr().) */
-
-void pure_start_logging();
-void pure_stop_logging();
 
 /* END OF PUBLIC API. *******************************************************/
 
