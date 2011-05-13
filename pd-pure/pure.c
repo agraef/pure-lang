@@ -1212,6 +1212,7 @@ static void pure_printmsgs(char *res)
       s = strtok(NULL, "\n");
     }
     free(s);
+    clear_lasterr();
   }
 }
 
