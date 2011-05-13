@@ -1064,9 +1064,11 @@ pure_expr *evalcmd(pure_expr *x);
 pure_expr *reduce(pure_expr *locals, pure_expr *x);
 
 /* After an invokation of eval() or evalcmd(), this returns error messages
-   from the interpreter (an empty string if none). */
+   from the interpreter (an empty string if none). Use clear_lasterr() to
+   clear the messages. */
 
 const char *lasterr();
+void clear_lasterr();
 
 /* In interactive mode, this returns the most recent toplevel expression
    printed by the interpreter (NULL if none). */

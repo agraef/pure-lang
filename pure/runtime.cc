@@ -8472,6 +8472,13 @@ const char *lasterr()
 }
 
 extern "C"
+void clear_lasterr()
+{
+  interpreter& interp = *interpreter::g_interp;
+  interp.errmsg.clear();
+}
+
+extern "C"
 pure_expr *lastres()
 {
   interpreter& interp = *interpreter::g_interp;
