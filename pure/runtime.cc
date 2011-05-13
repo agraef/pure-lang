@@ -3814,6 +3814,25 @@ void pure_interp_compile(pure_interp *interp, int32_t fno)
   _interp->jit_now(fno);
 }
 
+extern "C"
+void pure_start_logging()
+{
+  if (interpreter::g_interp) {
+    interpreter& interp = *interpreter::g_interp;
+    interp.errmsg.clear();
+    interp.logging = true;
+  }
+}
+
+extern "C"
+void pure_stop_logging()
+{
+  if (interpreter::g_interp) {
+    interpreter& interp = *interpreter::g_interp;
+    interp.logging = false;
+  }
+}
+
 /* END OF PUBLIC API. *******************************************************/
 
 extern "C"

@@ -722,7 +722,8 @@ interpreter::interpreter(int _argc, char **_argv)
     pic(false), strip(true), restricted(false), ttymode(false), override(false),
     stats(false), stats_mem(false), temp(0),  ps("> "), libdir(""),
     histfile("/.pure_history"), modname("pure"),
-    last_tag(0), nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
+    last_tag(0), logging(false),
+    nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
     result(0), lastres(0), mem(0), exps(0), tmps(0), freectr(0),
     specials_only(false), module(0),
     JIT(0), FPM(0), astk(0), sstk(__sstk), stoplevel(0), debug_skip(false),
@@ -747,7 +748,7 @@ interpreter::interpreter(int32_t nsyms, char *syms,
        generated at compile time won't conflict with those generated at run
        time. If we start out with 0x7fffffff, the first tag generated at run
        time will become the smallest negative number in the 32 bit range. */
-    last_tag(0x7fffffff),
+    last_tag(0x7fffffff), logging(false),
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
     result(0), lastres(0), mem(0), exps(0), tmps(0), freectr(0),
     specials_only(false), module(0),
@@ -931,7 +932,7 @@ interpreter::error(const yy::location& l, const string& m)
   if (m.find("bad token") != string::npos)
     m1 = "bad anonymous function or pointer value";
   nerrs++;
-  if (source_s) {
+  if (logging || source_s) {
     ostringstream msg;
     msg << *l.begin.filename << ", line " << l.begin.line
 	<< ": " << m1 << '\n';
@@ -958,7 +959,7 @@ void
 interpreter::error(const string& m)
 {
   nerrs++;
-  if (source_s) {
+  if (logging || source_s) {
     ostringstream msg;
     msg << m << '\n';
     errmsg += msg.str();
@@ -971,7 +972,12 @@ interpreter::error(const string& m)
 void
 interpreter::warning(const yy::location& l, const string& m)
 {
-  if (!source_s) {
+  if (logging) {
+    ostringstream msg;
+    msg << *l.begin.filename << ", line " << l.begin.line
+	<< ": " << m << '\n';
+    errmsg += msg.str();
+  } else if (!source_s) {
     cout.flush();
     cerr << *l.begin.filename << ", line " << l.begin.line
 	 << ": " << m << '\n';
@@ -981,7 +987,11 @@ interpreter::warning(const yy::location& l, const string& m)
 void
 interpreter::warning(const string& m)
 {
-  if (!source_s) {
+  if (logging) {
+    ostringstream msg;
+    msg << m << '\n';
+    errmsg += msg.str();
+  } else if (!source_s) {
     cout.flush();
     cerr << m << '\n';
   }

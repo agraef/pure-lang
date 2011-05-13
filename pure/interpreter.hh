@@ -500,6 +500,7 @@ public:
   // Interpreter state. For internal use only.
   int32_t last_tag;  // pointer tags
   bool qual;	     // whether qualified vars are permitted in binding
+  bool logging;	     // logging of error messages and warnings
   int nerrs;	     // current error count
   string errmsg;     // last reported error (runstr)
   int32_t modno;     // current module key

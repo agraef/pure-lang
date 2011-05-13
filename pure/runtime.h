@@ -589,6 +589,11 @@ pure_interp *pure_current_interp();
 
 void pure_interp_compile(pure_interp *interp, int32_t fno);
 
+/* Logging of warnings and error messages. (Retrieve with lasterr().) */
+
+void pure_start_logging();
+void pure_stop_logging();
+
 /* END OF PUBLIC API. *******************************************************/
 
 /* Stuff below this line is for internal use by the Pure interpreter. Don't
