@@ -30,6 +30,14 @@
 
 #define TICKS 14112.0
 
+/* Define this to have error messages and warnings from the Pure compiler
+   printed in the Pd main window instead of stdout. This requires Pure >=
+   0.48. */
+
+#ifndef LOG_MSGS
+#define LOG_MSGS 1
+#endif
+
 /* These aren't in the official API, but have been around at least since Pd
    0.39, so are hopefully stable. */
 
@@ -1192,6 +1200,28 @@ void class_set_extern_dir(t_symbol *s);
 
 static char dirbuf[MAXPDSTRING], cmdbuf[1000];
 
+#if LOG_MSGS
+
+static void pure_printmsgs(char *res)
+{
+  if (res || lasterr()) {
+    char *msg = res?res:strdup(lasterr());
+    char *s = strtok(msg, "\n");
+    while (s) {
+      error("%s", s);
+      s = strtok(NULL, "\n");
+    }
+    free(s);
+  }
+}
+
+#else
+
+#define pure_start_logging()
+#define pure_printmsgs(res)
+
+#endif
+
 static int pure_loader(t_canvas *canvas, char *name)
 {
   char *ptr;
@@ -1212,7 +1242,10 @@ static int pure_loader(t_canvas *canvas, char *name)
 #ifdef VERBOSE
       printf("pd-pure: compiling %s.pure\n", name);
 #endif
-      pure_evalcmd(cmdbuf);
+      pure_start_logging();
+      char *res = pure_evalcmd(cmdbuf);
+      pure_stop_logging();
+      pure_printmsgs(res);
       /* Restore the working directory. */
       if (cwd) chdir(cwd);
     }
@@ -1246,7 +1279,10 @@ static int pure_load(t_canvas *canvas, char *name)
 #ifdef VERBOSE
       printf("pd-pure: compiling %s.pure\n", name);
 #endif
-      pure_evalcmd(cmdbuf);
+      pure_start_logging();
+      char *res = pure_evalcmd(cmdbuf);
+      pure_stop_logging();
+      pure_printmsgs(res);
       /* Restore the working directory. */
       if (cwd) chdir(cwd);
       add_class(sym, 0, dirbuf);
@@ -1273,7 +1309,10 @@ static void reload(t_classes *c)
 #ifdef VERBOSE
       printf("pd-pure: compiling %s.pure\n", c->sym->s_name);
 #endif
-      pure_evalcmd(cmdbuf);
+      pure_start_logging();
+      char *res = pure_evalcmd(cmdbuf);
+      pure_stop_logging();
+      pure_printmsgs(res);
 #ifdef EAGER
       if (c->class)
 	pure_interp_compile(interp, pure_sym(fun_name(c->sym)));
