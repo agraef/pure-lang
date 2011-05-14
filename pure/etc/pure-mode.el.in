@@ -301,6 +301,15 @@ at the command prompt."
   :type 'boolean
   :group 'pure)
 
+;; pd-pure support
+
+(defcustom pure-pd-pure-support nil
+  "pd-pure support in `pure-mode'.
+Non-nil adds some keybindings as well as an additional menu for
+remote operation of Pd patches, as described in the pd-pure manual."
+  :type 'boolean
+  :group 'pure)
+
 ;; List of additional directories to search for imported scripts.
 
 (defvar pure-includes
@@ -423,77 +432,100 @@ at the command prompt."
        (define-key pure-mode-map "\M-\C-h"  'pure-mark-defun)
        (define-key pure-mode-map "\e\C-q"   'pure-indent-line-or-region)
        (define-key pure-mode-map "\e\t"     'pure-complete-symbol)
+       (when pure-pd-pure-support
+	 (define-key pure-mode-map "\C-c\C-m" 'pd-pure-send-message)
+	 (define-key pure-mode-map "\C-c\C-x" 'pd-pure-send-bang)
+	 (define-key pure-mode-map "\C-c\M-x" 'pd-pure-send-reload)
+	 (define-key pure-mode-map "\C-c\C-s" 'pd-pure-send-start)
+	 (define-key pure-mode-map "\C-c\C-t" 'pd-pure-send-stop)
+	 (define-key pure-mode-map "\C-c\C-g" 'pd-pure-send-restart)
+	 (define-key pure-mode-map [(control ?\/)] 'pd-pure-send-dsp-on)
+	 (define-key pure-mode-map [(control ?\.)] 'pd-pure-send-dsp-off))
     ))
 
 (defvar pure-mode-menu
-  (list "Pure"
-	["Pure Help..."			pure-help t]
-	["Describe Pure Mode"		describe-mode t]
-	["Customize"			(customize-group 'pure) t]
-	"-"
-	["Comment Out Region"		comment-region
+  (append
+   (list "Pure"
+	 ["Pure Help..."		pure-help t]
+	 ["Describe Pure Mode"		describe-mode t]
+	 ["Customize"			(customize-group 'pure) t]
+	 "-"
+	 ["Comment Out Region"		comment-region
 					(pure-region-is-active-p)]
-	["Uncomment Region"		uncomment-region
+	 ["Uncomment Region"		uncomment-region
 					(pure-region-is-active-p)]
-	(list "Definitions"
-	      ["Previous Definition"	pure-prev-defun t]
-	      ["Next Definition"	pure-next-defun t]
-	      ["Previous Sibling"	pure-backward-defun t]
-	      ["Next Sibling"		pure-forward-defun t]
-	      ["Mark Definition"	pure-mark-defun t])
-	["Fill Comment Paragraph"	fill-paragraph t]
-	["Indent Line or Region"	pure-indent-line-or-region t]
-	(list "Indentation Modes"
-	      (pure-menu-toggle "Indent Equals" pure-toggle-indent-mode
-				pure-indent-equals)
-	      (pure-menu-toggle "Align Equals" pure-toggle-align-mode
-				pure-align-equals)
-	      (pure-menu-toggle "Electric Keys" pure-toggle-electric-mode
-				pure-electric-keys))
-	"-"
-	["Make Tags..."			pure-make-tags t]
-	"-"
-	["Start Interpreter"		pure-run t]
-	["Restart Interpreter"		pure-rerun
+	 (list "Definitions"
+	       ["Previous Definition"	pure-prev-defun t]
+	       ["Next Definition"	pure-next-defun t]
+	       ["Previous Sibling"	pure-backward-defun t]
+	       ["Next Sibling"		pure-forward-defun t]
+	       ["Mark Definition"	pure-mark-defun t])
+	 ["Fill Comment Paragraph"	fill-paragraph t]
+	 ["Indent Line or Region"	pure-indent-line-or-region t]
+	 (list "Indentation Modes"
+	       (pure-menu-toggle "Indent Equals" pure-toggle-indent-mode
+				 pure-indent-equals)
+	       (pure-menu-toggle "Align Equals" pure-toggle-align-mode
+				 pure-align-equals)
+	       (pure-menu-toggle "Electric Keys" pure-toggle-electric-mode
+				 pure-electric-keys))
+	 "-"
+	 ["Make Tags..."		pure-make-tags t]
+	 "-"
+	 ["Start Interpreter"		pure-run t]
+	 ["Restart Interpreter"		pure-rerun
 					(get-process "pure-eval")]
-	["Quit Interpreter"		pure-quit
-					(get-process "pure-eval")]
-	"-"
-	(list "Execute"
-	      ["Run Script"		pure-run-script t]
-	      ["Send Current Line"	pure-send-line t]
-	      ["Send Current Definition" pure-send-defun t]
-	      ["Send Region"		pure-send-region
+	 ["Quit Interpreter"		pure-quit
+					(get-process "pure-eval")])
+   (when pure-pd-pure-support
+     (list (list "Pd"
+		 ["Reload"		pd-pure-send-bang t]
+		 ["Rerun"		pd-pure-send-reload t]
+		 "-"
+		 ["Start"		pd-pure-send-start t]
+		 ["Stop"		pd-pure-send-stop t]
+		 ["Restart"		pd-pure-send-restart t]
+		 "-"
+		 ["Dsp on"		pd-pure-send-dsp-on t]
+		 ["Dsp off"		pd-pure-send-dsp-off t]
+		 "-"
+		 ["Send message..."	pd-pure-send-message t])))
+   (list "-"
+	 (list "Execute"
+	       ["Run Script"		pure-run-script t]
+	       ["Send Current Line"	pure-send-line t]
+	       ["Send Current Definition" pure-send-defun t]
+	       ["Send Region"		pure-send-region
 					(pure-region-is-active-p)]
-	      ["Evaluate Expression..."	pure-eval t]
-	      ["Show Symbol..."		pure-show t]
-	      ["Clear Symbol..."	pure-clear t])
-	"-"
-	(list "Debugger"
-	      (pure-menu-toggle "Debugging Mode" pure-toggle-debug-mode
-				pure-debug-mode)
-	      "-"
-	      ["Breakpoint..."		pure-break pure-debug-mode]
-	      ["Tracepoint..."		pure-trace pure-debug-mode])
-	"-"
-	["Find Main Script"		pure-find-script pure-last-script]
-	["Goto Input Line"		pure-goto-input-line
+	       ["Evaluate Expression..." pure-eval t]
+	       ["Show Symbol..."	pure-show t]
+	       ["Clear Symbol..."	pure-clear t])
+	 "-"
+	 (list "Debugger"
+	       (pure-menu-toggle "Debugging Mode" pure-toggle-debug-mode
+				 pure-debug-mode)
+	       "-"
+	       ["Breakpoint..."		pure-break pure-debug-mode]
+	       ["Tracepoint..."		pure-trace pure-debug-mode])
+	 "-"
+	 ["Find Main Script"		pure-find-script pure-last-script]
+	 ["Goto Input Line"		pure-goto-input-line
 					(get-process "pure-eval")]
-	["Pure Scratchpad"		pure-scratchpad t]
-	"-"
-	(list "Locate"
-	      ["Current Message"	pure-current-msg
+	 ["Pure Scratchpad"		pure-scratchpad t]
+	 "-"
+	 (list "Locate"
+	       ["Current Message"	pure-current-msg
 					(get-buffer "*pure-eval*")]
-	      ["First Message"		pure-first-msg
+	       ["First Message"		pure-first-msg
 					(get-buffer "*pure-eval*")]
-	      ["Next Message"		pure-next-msg
+	       ["Next Message"		pure-next-msg
 					(get-buffer "*pure-eval*")]
-	      ["Previous Message"	pure-prev-msg
+	       ["Previous Message"	pure-prev-msg
 					(get-buffer "*pure-eval*")]
-	      ["Last Message"		pure-last-msg
+	       ["Last Message"		pure-last-msg
 					(get-buffer "*pure-eval*")])
-	"-"
-	["Complete Symbol"		pure-complete-symbol t])
+	 "-"
+	 ["Complete Symbol"		pure-complete-symbol t]))
   "Menu for `pure-mode'.")
 
 ;; Submode indicators in the pure-mode modeline. "i", "a" and "e" indicate the
@@ -803,6 +835,61 @@ Commands
  	    (cons '(pure-submode-indicators pure-submode-indicators)
  		  minor-mode-alist)))
   (pure-update-modeline))
+
+;; pd-pure support
+
+(defun pd-pure-send-start-process ()
+  "Starts a pdsend process to communicate with Pd via UDP port 4711."
+  (interactive)
+  (start-process "pdsend" nil "pdsend" "4711" "localhost" "udp")
+  (process-kill-without-query (get-process "pdsend")))
+
+(defun pd-pure-send-stop-process ()
+  "Stops a previously started pdsend process."
+  (interactive)
+  (delete-process "pdsend"))
+
+(defun pd-pure-send-message (message)
+  "Send a given message to Pd. Start the pdsend process if needed."
+  (interactive "sMessage: ")
+  (unless (get-process "pdsend") (pd-pure-send-start-process))
+  (process-send-string "pdsend" (concat message "\n")))
+
+(defun pd-pure-send-dsp-on ()
+  "Send a 'dsp 1' message to Pd."
+  (interactive)
+  (pd-pure-send-message "pd dsp 1"))
+
+(defun pd-pure-send-dsp-off ()
+  "Send a 'dsp 0' message to Pd."
+  (interactive)
+  (pd-pure-send-message "pd dsp 0"))
+
+(defun pd-pure-send-bang ()
+  "Send a 'bang' message to Pd."
+  (interactive)
+  (pd-pure-send-message "bang"))
+
+(defun pd-pure-send-reload ()
+  "Send a 'reload' message to Pd."
+  (interactive)
+  (pd-pure-send-message "reload"))
+
+(defun pd-pure-send-start ()
+  "Send a 'play 1' message to Pd."
+  (interactive)
+  (pd-pure-send-message "play 1"))
+
+(defun pd-pure-send-stop ()
+  "Send a 'play 0' message to Pd."
+  (interactive)
+  (pd-pure-send-message "play 0"))
+
+(defun pd-pure-send-restart ()
+  "Send 'play 0, play 1' messages to Pd."
+  (interactive)
+  (pd-pure-send-message "play 0")
+  (pd-pure-send-message "play 1"))
 
 ;; comint support
 
