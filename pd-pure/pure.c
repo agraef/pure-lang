@@ -569,6 +569,82 @@ static inline void create_atom(t_atom *a, pure_expr *x)
   }
 }
 
+/* Send a message encoded as a Pure term to the given receiver. */
+
+extern void pd_send(const char *receiver, pure_expr *y)
+{
+  char *sval = 0;
+  double dval;
+  int sym;
+  pure_expr *f, **args;
+  size_t argc;
+  t_atom *argv = 0;
+  int i;
+  t_symbol *s = gensym(receiver);
+  /* Check that the given receiver exists. */
+  if (!s->s_thing) return;
+  /* Translate Pure lists to corresponding Pd list messages. */
+  if (pure_is_listv(y, &argc, &args)) {
+    if (argc > 0) {
+      argv = malloc(argc*sizeof(t_atom));
+      if (!argv) goto errexit;
+      for (i = 0; i < argc; i++)
+	create_atom(&argv[i], args[i]);
+    }
+    pd_list(s->s_thing, &s_list, argc, argv);
+    goto errexit;
+  }
+  /* get arguments */
+  pure_is_appv(y, &f, &argc, &args);
+  /* pd message generation */
+  if (pure_is_cstring_dup(f, &sval)) {
+    if (argc == 0)
+      /* single symbol value */
+      pd_symbol(s->s_thing, gensym(sval));
+    else {
+      t_symbol *t = gensym(sval);
+      if (argc > 0) {
+	argv = malloc(argc*sizeof(t_atom));
+	if (!argv) goto errexit;
+      }
+      for (i = 0; i < argc; i++)
+	create_atom(&argv[i], args[i]);
+      pd_typedmess(s->s_thing, t, argc, argv);
+    }
+  } else if (is_double(f, &dval)) {
+    if (argc == 0)
+      /* single double value */
+      pd_float(s->s_thing, dval);
+    else {
+      /* create a list message with the double value in front */
+      argv = malloc((argc+1)*sizeof(t_atom));
+      if (!argv) goto errexit;
+      create_atom(&argv[0], f);
+      for (i = 0; i < argc; i++)
+	create_atom(&argv[i+1], args[i]);
+      pd_list(s->s_thing, &s_list, argc+1, argv);
+    }
+  } else if (pure_is_symbol(f, &sym) && sym > 0 && sym != void_sym) {
+    /* manufacture a message with the given symbol as selector */
+    const char *pname;
+    if ((pname = pure_sym_pname(sym))) {
+      /* FIXME: This should be converted to the system encoding. */
+      t_symbol *t = gensym((char*)pname);
+      if (argc > 0) {
+	argv = malloc(argc*sizeof(t_atom));
+	if (!argv) goto errexit;
+      }
+      for (i = 0; i < argc; i++)
+	create_atom(&argv[i], args[i]);
+      pd_typedmess(s->s_thing, t, argc, argv);
+    }
+  }
+ errexit:
+  if (sval) free(sval);
+  if (args) free(args);
+  if (argv) free(argv);
+}
+
 /* Process an output message and route it through the given outlet. */
 
 static inline bool check_outlet(t_pure *x, int k)
@@ -649,7 +725,7 @@ static void send_message(t_pure *x, int k, pure_expr *y)
     const char *pname;
     if (!check_outlet(x, k)) goto errexit;
     if ((pname = pure_sym_pname(sym))) {
-       /* FIXME: This should be converted to the system encoding. */
+      /* FIXME: This should be converted to the system encoding. */
       t_symbol *t = gensym((char*)pname);
       if (argc > 0) {
 	argv = malloc(argc*sizeof(t_atom));
