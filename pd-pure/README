@@ -956,3 +956,33 @@ Pure scripts running in the Pd environment.
    denoting an offset ``i`` into the array at which the sample data is to be
    written, so that this routine allows you to overwrite any part of the
    array.
+
+.. c:function:: extern void pd_send(char *receiver, expr *x)
+
+   Sends a message, specified as a Pure term ``x``, to the given receiver.
+   This is a no-op if the receiver doesn't exist. You can use this operation
+   to send messages to the Pd runtime, for instance::
+
+     pd_send "pd" (dsp 1); // turn on audio processing
+
+   This function also enables you to perform dynamic patching, by sending the
+   appropriate messages to patches (``"pd-patch"`` receiver, where ``patch``
+   is the name of the target patch). Useful messages to patches are listed in
+   the `Tips and Tricks`_ section on the Pd community website, and some
+   examples can be found here__. For instance, the following Pure object, when
+   banged, inserts a few objects into a subpatch named ``test`` and connects
+   them to each other::
+
+     extern void pd_send(char*, expr*);
+
+     pd_send_test _ = () when
+       pd_send "pd-test" (obj 10 0 "osc~" 220);
+       pd_send "pd-test" (obj 10 30 "*~" 0.1);
+       pd_send "pd-test" (obj 10 60 "dac~");
+       pd_send "pd-test" (connect 0 0 1 0);
+       pd_send "pd-test" (connect 1 0 2 0);
+       pd_send "pd-test" (connect 1 0 2 1);
+     end;
+
+   .. _Tips and Tricks: http://puredata.info/docs/tutorials/TipsAndTricks#patch-messages
+   __ http://pure-data.svn.sourceforge.net/svnroot/pure-data/trunk/doc/additional/pd-msg/
