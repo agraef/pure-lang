@@ -289,6 +289,10 @@ typedef struct _pure {
   int n_in, n_out;		/* number of extra inlets and outlets */
   struct _px **in;		/* extra inlet proxies, see t_px below */
   t_outlet **out;		/* outlets */
+  /* receivers */
+  int n_recv;			/* number of receiver proxies */
+  struct _px **recvin;		/* receiver proxies */
+  t_symbol **recvsym;		/* receiver symbols */
   /* signal inlets and outlets */
   int n_dspin, n_dspout;	/* number of signal inlets and outlets */
   t_sample **dspin, **dspout;	/* signal data */
@@ -328,6 +332,10 @@ typedef struct _runtime {
 #endif
   t_outlet *out1, *out2;
 } t_runtime;
+
+/* Current object during creation and method call (pd_receive). */
+
+static t_pure *actx = 0;
 
 /* Head and tail of the list of Pure objects. */
 
@@ -497,7 +505,9 @@ static void pure_errmsgs(t_pure *x)
 
 static pure_expr *pure_appxx(t_pure *x, pure_expr *y, pure_expr *z)
 {
+  actx = x;
   pure_expr *e = 0, *u = pure_appx(y, z, &e);
+  actx = 0;
   if (!u) {
     pure_errmsgs(x);
     if (e) {
@@ -514,7 +524,9 @@ static pure_expr *pure_appxx(t_pure *x, pure_expr *y, pure_expr *z)
 
 static inline pure_expr *parse_expr(t_pure *x, const char *s)
 {
+  actx = x;
   pure_expr *y = pure_eval(s);
+  actx = 0;
   if (y == 0) {
     pure_errmsgs(x);
     /* cast to a Pure string, to prevent a cascade of error messages */
@@ -643,6 +655,29 @@ extern void pd_send(const char *receiver, pure_expr *y)
   if (sval) free(sval);
   if (args) free(args);
   if (argv) free(argv);
+}
+
+/* Bind a receiver to the current object. Incoming messages are received on
+   the first inlet. NOTE: This must be called during object initialization or
+   a method call, otherwise actx will be undefined. */
+
+static void bind_receiver(t_pure *x, t_symbol *s);
+static void unbind_receiver(t_pure *x, t_symbol *s);
+
+extern void pd_receive(const char *sym)
+{
+  if (!actx) return;
+  t_symbol *s = gensym(sym);
+  bind_receiver(actx, s);
+}
+
+/* Unbind a previously bound receiver. */
+
+extern void pd_unreceive(const char *sym)
+{
+  if (!actx) return;
+  t_symbol *s = gensym(sym);
+  unbind_receiver(actx, s);
 }
 
 /* Process an output message and route it through the given outlet. */
@@ -833,9 +868,18 @@ static void receive_message(t_pure *x, t_symbol *s, int k,
       }
     }
   }
+  if (k < 0) {
+    /* A negative index indicates that this message actually came from a
+       receiver proxy. In this case the message is delivered to the leftmost
+       inlet as an application of the receiver symbol to the message
+       itself. */
+    int i = -k-1;
+    if (i < x->n_recv)
+      y = pure_app(parse_symbol(x, x->recvsym[i]->s_name), y);
+  }
   /* add the inlet index if needed */
   if (x->n_in > 0)
-    y = pure_tuplel(2, pure_int(k), y);
+    y = pure_tuplel(2, pure_int(k>=0?k:0), y);
   /* apply the object function */
   y = pure_appxx(x, f, y);
   if (!y) goto err;
@@ -918,6 +962,54 @@ static void pure_any(t_pure *x, t_symbol *s, int argc, t_atom *argv)
 static void px_any(t_px *px, t_symbol *s, int argc, t_atom *argv)
 {
   receive_message(px->x, s, px->ix, argc, argv);
+}
+
+/* Configuring receivers. FIXME: We should really use a doubly linked list
+   representation here, to make adding and removing receivers an O(1)
+   operation. */
+
+static void bind_receiver(t_pure *x, t_symbol *s)
+{
+  int i;
+  for (i = 0; i < x->n_recv; i++)
+    if (x->recvsym[i] == s)
+      /* already registered */
+      return;
+  /* look for an empty slot */
+  for (i = 0; i < x->n_recv; i++)
+    if (x->recvsym[i] == 0)
+      break;
+  if (i >= x->n_recv) {
+    /* no empty slot, make room for a new receiver */
+    t_px **in = realloc(x->recvin, (x->n_recv+1)*sizeof(t_px*));
+    t_symbol **sym = realloc(x->recvsym, (x->n_recv+1)*sizeof(t_symbol*));
+    if (in) x->recvin = in;
+    if (sym) x->recvsym = sym;
+    if (!in || !sym) return; /* couldn't allocate memory, fail */
+    i = x->n_recv++;
+  }
+  /* create a proxy and bind it to the symbol */
+  x->recvin[i] = (t_px*)pd_new(px_class);
+  x->recvin[i]->x = x;
+  /* negative inlet index points to the corresponding receiver */
+  x->recvin[i]->ix = -i-1;
+  pd_bind(&x->recvin[i]->obj.ob_pd, s);
+  x->recvsym[i] = s;
+}
+
+static void unbind_receiver(t_pure *x, t_symbol *s)
+{
+  int i;
+  for (i = 0; i < x->n_recv; i++)
+    if (x->recvsym[i] == s)
+      break;
+  if (i < x->n_recv) {
+    pd_unbind(&x->recvin[i]->obj.ob_pd, x->recvsym[i]);
+    pd_free((t_pd*)x->recvin[i]);
+    /* mark this slot as empty so that it can be reused later */
+    x->recvin[i] = 0;
+    x->recvsym[i] = 0;
+  }
 }
 
 /* Audio processing methods. */
@@ -1081,6 +1173,9 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
   x->n_in = 0; x->n_out = 1;
   x->in = 0;
   x->out = 0;
+  x->n_recv = 0;
+  x->recvin = 0;
+  x->recvsym = 0;
   x->args = get_expr(s, argc, argv);
   x->tmp = x->tmpst = 0; x->save = false;
   /* Default setup for a dsp object is 1 control in/out + 1 audio in/out. */
@@ -1202,8 +1297,15 @@ static void pure_fini(t_pure *x)
   x->foo = 0;
   for (i = 0; i < x->n_in; i++)
     pd_free((t_pd*)x->in[i]);
+  for (i = 0; i < x->n_recv; i++)
+    if (x->recvsym[i]) {
+      pd_unbind(&x->recvin[i]->obj.ob_pd, x->recvsym[i]);
+      pd_free((t_pd*)x->recvin[i]);
+    }
   if (x->in) free(x->in);
   if (x->out) free(x->out);
+  if (x->recvin) free(x->recvin);
+  if (x->recvsym) free(x->recvsym);
   if (x->dspin) free(x->dspin);
   if (x->dspout) free(x->dspout);
   if (x->sigx) pure_free(x->sigx);
@@ -1214,6 +1316,18 @@ static void pure_fini(t_pure *x)
 
 static void pure_refini(t_pure *x)
 {
+  /* Get rid of receivers. */
+  int i;
+  for (i = 0; i < x->n_recv; i++)
+    if (x->recvsym[i]) {
+      pd_unbind(&x->recvin[i]->obj.ob_pd, x->recvsym[i]);
+      pd_free((t_pd*)x->recvin[i]);
+    }
+  if (x->recvin) free(x->recvin);
+  if (x->recvsym) free(x->recvsym);
+  x->n_recv = 0;
+  x->recvin = 0;
+  x->recvsym = 0;
   if (x->foo) {
     if (x->save) {
       /* Record object state, if available. */
