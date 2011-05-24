@@ -193,6 +193,92 @@ create_double_matrix(size_t nrows, size_t ncols)
     return gsl_matrix_alloc(nrows, ncols);
 }
 
+/* Stubs of other GSL matrix types. */
+
+typedef struct _gsl_matrix_int
+{
+  size_t size1;
+  size_t size2;
+  size_t tda;
+  int *data;
+} gsl_matrix_int;
+
+typedef struct _gsl_matrix_symbolic
+{
+  size_t size1;
+  size_t size2;
+  size_t tda;
+  pure_expr **data;
+} gsl_matrix_symbolic;
+
+/* This works analogously to pure_is_listv in the Pure runtime. but extracts
+   elements from a matrix (of int, double or symbolic type) instead. Note that
+   this will create temporary expressions when converting from int or double
+   matrices, so free_matrix_vect below should be called on the result vector
+   afterwards to collect these. */
+
+static bool pure_is_matrixv(pure_expr *x, size_t *size, pure_expr ***elems)
+{
+  gsl_matrix_symbolic *smat;
+  if (pure_is_symbolic_matrix(x, (void**)&smat)) {
+    size_t i, j, l = 0, n = smat->size1, m = smat->size2, k = n*m;
+    if (k == 0) {
+      /* empty matrix */
+      *size = 0; elems = 0;
+      return true;
+    }
+    *size = k;
+    *elems = malloc(k*sizeof(pure_expr*));
+    if (!elems) return false;
+    for (i = 0; i < n; i++)
+      for (j = 0; j < m; j++)
+	(*elems)[l++] = smat->data[i*smat->tda+j];
+    return true;
+  }
+  gsl_matrix *dmat;
+  if (pure_is_double_matrix(x, (void**)&dmat)) {
+    size_t i, j, l = 0, n = dmat->size1, m = dmat->size2, k = n*m;
+    if (k == 0) {
+      /* empty matrix */
+      *size = 0; elems = 0;
+      return true;
+    }
+    *size = k;
+    *elems = malloc(k*sizeof(pure_expr*));
+    if (!elems) return false;
+    for (i = 0; i < n; i++)
+      for (j = 0; j < m; j++)
+	(*elems)[l++] = pure_double(dmat->data[i*dmat->tda+j]);
+    return true;
+  }
+  gsl_matrix_int *imat;
+  if (pure_is_int_matrix(x, (void**)&imat)) {
+    size_t i, j, l = 0, n = imat->size1, m = imat->size2, k = n*m;
+    if (k == 0) {
+      /* empty matrix */
+      *size = 0; elems = 0;
+      return true;
+    }
+    *size = k;
+    *elems = malloc(k*sizeof(pure_expr*));
+    if (!elems) return false;
+    for (i = 0; i < n; i++)
+      for (j = 0; j < m; j++)
+	(*elems)[l++] = pure_int(imat->data[i*imat->tda+j]);
+    return true;
+  }
+  return false;
+}
+
+static void free_matrix_vect(size_t size, pure_expr **xv)
+{
+  size_t i;
+  for (i = 0; i < size; i++)
+    pure_freenew(xv[i]);
+}
+
+/* Interface functions to deal with audio buffers. */
+
 extern int pd_getbuffersize(const char *name)
 {
   t_symbol *sym = gensym((char*)name);
@@ -885,7 +971,7 @@ static void receive_message(t_pure *x, t_symbol *s, int k,
   if (!y) goto err;
   pure_new(y);
   /* process the results and route them through the appropriate outlets */
-  if (pure_is_listv(y, &n, &xv)) {
+  if (pure_is_matrixv(y, &n, &xv)) {
     for (i = 0; i < n; i++) {
       if (yv) free(yv); yv = 0;
       if (pure_is_tuplev(xv[i], &m, &yv) && m == 2 && pure_is_int(yv[0], &ix))
@@ -895,6 +981,7 @@ static void receive_message(t_pure *x, t_symbol *s, int k,
       else
 	send_message(x, 0, xv[i]);
     }
+    free_matrix_vect(n, xv);
   } else if (pure_is_tuplev(y, &m, &yv) && m == 2 && pure_is_int(yv[0], &ix))
     send_message(x, ix, yv[1]);
   else if (is_delay(y, &t, &msg))
@@ -927,7 +1014,7 @@ static void timeout(t_pure *x)
   pure_new(y);
   pure_free(x->msg); x->msg = 0;
   /* process the results and route them through the appropriate outlets */
-  if (pure_is_listv(y, &n, &xv)) {
+  if (pure_is_matrixv(y, &n, &xv)) {
     for (i = 0; i < n; i++) {
       if (yv) free(yv); yv = 0;
       if (pure_is_tuplev(xv[i], &m, &yv) && m == 2 && pure_is_int(yv[0], &ix))
@@ -937,6 +1024,7 @@ static void timeout(t_pure *x)
       else
 	send_message(x, 0, xv[i]);
     }
+    free_matrix_vect(n, xv);
   } else if (pure_is_tuplev(y, &m, &yv) && m == 2 && pure_is_int(yv[0], &ix))
     send_message(x, ix, yv[1]);
   else if (is_delay(y, &t, &msg))
@@ -1076,7 +1164,7 @@ static t_int *pure_perform(t_int *w)
       double t;
       pure_expr *msg;
       size_t n;
-      if (pure_is_listv(z, &n, &xv)) {
+      if (pure_is_matrixv(z, &n, &xv)) {
 	for (i = 0; i < n; i++) {
 	  if (pure_is_tuplev(xv[i], &m, &yv) && m == 2 &&
 	      pure_is_int(yv[0], &ix)) {
@@ -1087,6 +1175,7 @@ static t_int *pure_perform(t_int *w)
 	  else
 	    send_message(x, 0, xv[i]);
 	}
+	free_matrix_vect(n, xv);
 	free(xv);
       } else if (pure_is_tuplev(z, &m, &yv) && m == 2 &&
 		 pure_is_int(yv[0], &ix))
