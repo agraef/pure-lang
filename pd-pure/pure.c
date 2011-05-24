@@ -1102,6 +1102,19 @@ static void unbind_receiver(t_pure *x, t_symbol *s)
 
 /* Audio processing methods. */
 
+static inline bool is_double_matrix(pure_expr *x, gsl_matrix **y)
+{
+  gsl_matrix_symbolic *z;
+  if (pure_is_double_matrix(x, (void**)y))
+    return true;
+  else if (pure_is_symbolic_matrix(x, (void**)&z) &&
+	   (z->size1 == 0 || z->size2==0)) {
+    *y = 0;
+    return true;
+  } else
+    return false;
+}
+
 static inline void zero_samples(int k, int n, t_sample **out)
 {
   int i, j;
@@ -1134,10 +1147,10 @@ static t_int *pure_perform(t_int *w)
     y = pure_appxx(x, x->foo, x->sigx);
     if (y) pure_new(y);
     if (y && pure_is_tuplev(y, &m, &xv) && m == 2 &&
-	pure_is_double_matrix(xv[0], (void**)&sig)) {
+	is_double_matrix(xv[0], &sig)) {
       z = xv[1];
       free(xv);
-    } else if (!y || !pure_is_double_matrix(y, (void**)&sig)) {
+    } else if (!y || !is_double_matrix(y, &sig)) {
       z = y;
       sig = 0;
     }
