@@ -260,12 +260,12 @@ right outlet and vice versa::
   cross = 2,2,cross with cross (k,x) = (1-k,x) end;
 
 You can also emit multiple messages, possibly to different outlets, in one
-go. These must be encoded as lists of values or ``index,value`` pairs, which
-are emitted in the order in which they are written. E.g., the following
-``[fan]`` object implements an "n-fan" which routes its input to ``n`` outlets
-simultaneously::
+go. These must be encoded as Pure vectors (or matrices) of values or
+``index,value`` pairs, which are emitted in the order in which they are
+written. E.g., the following ``[fan]`` object implements an "n-fan" which
+routes its input to ``n`` outlets simultaneously::
 
-  fan n = 1,n,fan with fan x = reverse [k,x | k = 0..n-1] end;
+  fan n = 1,n,fan with fan x = reverse {k,x | k = 0..n-1} end;
 
 (Note that, because of the use of ``reverse``, the ``n`` outlets are served in
 right-to-left order here. This is not strictly necessary, but matches the Pd
@@ -274,22 +274,24 @@ convention.)
 Another example is the following ``[dup]`` object with a single inlet and
 outlet, which just sends out each received message twice::
 
-  dup x = [x,x];
+  dup x = {x,x};
 
-Note that if you want to output a *real* list value to an outlet, you'll
-either have to specify the outlet index explicitly, or enclose the list in an
-extra pair of brackets, since otherwise the list elements will be sent as
-separate messages instead (like in the ``dup`` example). Thus, to output the
-list ``[x,x]`` literally, rather than sending ``x`` twice, use the following
-code::
+Note that this is different from the following, which outputs a list value to
+the outlet instead::
 
-  dup2 x = [[x,x]]; // or: 0,[x,x]
+  dup2 x = [x,x];
+
+(Also, please note that this behaviour is new in pd-pure 0.14. Previously, a
+list return value by itself would output multiple values instead. However,
+this made it very awkward to deal with Pd list values in pd-pure, and so as
+of pd-pure 0.14 Pure matrices must now be used to output multiple values.)
 
 An object can also just "swallow" messages and generate no output at all. To
-these ends, make the object return either an empty list ``[]`` or the empty
-tuple ``()``. For instance, the following object ``[echo]`` implements a sink
-which just prints received messages on standard output, which is useful for
-debugging purposes::
+these ends, make the object return either an empty vector ``{}`` or the empty
+tuple ``()``. (Note that, in contrast, returning the empty list ``[]`` does
+send a value back to Pd, namely an empty list value.) For instance, the
+following object ``[echo]`` implements a sink which just prints received
+messages on standard output, which is useful for debugging purposes::
 
   using system;
   echo x = () when puts (str x) end;
@@ -413,12 +415,14 @@ to determine the number of samples to be generated for each block. ::
 
 Control messages for the control outlet of the object may be added by
 returning a pair ``sig,msg`` where ``sig`` is the output signal matrix and
-``msg`` is a single control message or list of such messages (using the same
+``msg`` is a single control message or vector of such messages (using the same
 format as with control objects). The signal matrix can also be omitted if no
-signal output is needed, and the object function may also return ``()`` if
-neither signal nor control output is required. (This may be the case, e.g.,
-for dsps which just analyze the incoming signal data and store the results
-somewhere for later retrieval.)
+signal output is needed (unless the control data takes the form of a double
+matrix, which would be interpreted as signal data; in such a case you'd have
+to specify an empty signal matrix instead). The object function may also
+return ``()`` if neither signal nor control output is required. (This may be
+the case, e.g., for dsps which just analyze the incoming signal data and store
+the results somewhere for later retrieval.)
 
 Audio objects can also process control messages and generate responses on the
 leftmost inlet/outlet pair as usual. This is commonly used to set and retrieve
@@ -602,7 +606,7 @@ code.)
     // each processed block of samples on the control outlet, using messages of
     // the form left <value> and right <value>, respectively.
     amp in::matrix = amp::compute dsp n in out $$
-      out,[left (get_control left_meter),right (get_control right_meter)];
+      out,{left (get_control left_meter),right (get_control right_meter)};
     // Respond to control messages of the form <control> <value>. <control> may
     // be any of the input controls supported by the Faust program (bass,
     // treble, gain, etc.).
@@ -613,9 +617,9 @@ code.)
     // Get the number of inputs and outputs and the control variables.
     k,l,ui = amp::info dsp;
     ui = control_map $ controls ui;
-    [left_meter,right_meter] = list $ ui!!["left","right"];
+    {left_meter,right_meter} = ui!!["left","right"];
     // Create a buffer large enough to hold the output from the dsp.
-    out = {0.0 | i = 1..l; j = 1..n};
+    out = dmatrix (l,n);
   end;
 
 Note that it is possible to load the above Faust program directly in Pd, using
@@ -630,9 +634,9 @@ Advanced Features
 =================
 
 This section discusses some advanced features of the Pd Pure loader. It
-explains the use of timer callbacks and wave arrays, and the livecoding and
-interactive control facilities. We also give an overview of the API provided
-for pd-pure programmers.
+explains the use of timer callbacks, wireless connections and wave arrays, and
+the livecoding and interactive control facilities. We also give an overview of
+the API provided for pd-pure programmers.
 
 Asynchronous Messages
 ---------------------
@@ -693,7 +697,7 @@ delivered::
   extern double pd_time();
   mypipe t = process (ref []) with
     process q () = case dequeue q of
-                     x,(t,_):_ = [x,pd_delay (t-pd_time) ()];
+                     x,(t,_):_ = {x,pd_delay (t-pd_time) ()};
                      x,_ = x;
                    end;
     process q x  = enqueue q x $$ pd_delay t () if null (get q);
@@ -701,6 +705,68 @@ delivered::
     enqueue q x  = put q $ get q+[(pd_time+t,x)];
     dequeue q    = x,put q xs when (_,x):xs = get q end;
   end;
+
+Wireless Messaging
+------------------
+
+As of version 0.14, pd-pure offers some facilities for sending and receiving
+messages directly, without any wired connections to the inlets and outlets of
+an object (similar to what the Pd ``[send]`` and ``[receive]`` objects
+provide). See the description for the :c:func:`pd_send` and
+:c:func:`pd_receive` routines in the `Programming Interface`_ section.
+
+For instance, here's how you can use the ``pd_send`` function to send messages
+to the Pd runtime::
+
+  pd_send "pd" (dsp 1); // turn on audio processing
+
+This function also enables you to perform dynamic patching, by sending the
+appropriate messages to patches (i.e., ``"pd-patch"`` receivers, where
+``patch`` is the name of the target patch). Useful messages to patches are
+listed in the `Tips and Tricks`_ section on the Pd community website, and some
+examples can be found here__. For instance, the following Pure object, when
+banged, inserts a few objects into a subpatch named ``test`` and connects them
+to each other::
+
+  extern void pd_send(char*, expr*);
+
+  pd_send_test _ = () when
+    pd_send "pd-test" (obj 10 0 "osc~" 220);
+    pd_send "pd-test" (obj 10 30 "*~" 0.1);
+    pd_send "pd-test" (obj 10 60 "dac~");
+    pd_send "pd-test" (connect 0 0 1 0);
+    pd_send "pd-test" (connect 1 0 2 0);
+    pd_send "pd-test" (connect 1 0 2 1);
+  end;
+
+.. _Tips and Tricks: http://puredata.info/docs/tutorials/TipsAndTricks#patch-messages
+__ http://pure-data.svn.sourceforge.net/svnroot/pure-data/trunk/doc/additional/pd-msg/
+
+An object can also receive messages from any named source by means of the
+``pd_receive`` function. This function must be called either at object
+creation time or when one of the dsp or control processing methods of the
+object is invoked. For instance, the following object calls ``pd_receive`` at
+creation time in order to receive messages sent to the ``left`` and ``right``
+receivers, and outputs them on its left or right outlet, respectively::
+
+  extern void pd_receive(char*);
+
+  pd_receive_test = 1,2,process with
+    process (left x) = 0,x;
+    process (right x) = 1,x;
+  end when
+    do pd_receive ["left","right"];
+  end;
+
+Please note that ``pd_receive`` itself doesn't return any message, it merely
+registers a receiver symbol so that messages sent to that symbol may be
+received later. The received messages are always delivered to the leftmost
+inlet when Pd does its control processing. Moreover, the symbol identifying
+the source of the message is applied to the message itself, so that the
+receiver can figure out where the message came from and adjust accordingly.
+This operation is useful, in particular, to provide communication channels
+between Pd GUI elements and Pure objects. Wireless connections are often
+preferred in such cases, to reduce display clutter.
 
 Reading and Writing Audio Data
 ------------------------------
@@ -898,7 +964,9 @@ Programming Interface
 ---------------------
 
 The Pure loader provides a number of interface routines which can be called by
-Pure scripts running in the Pd environment.
+Pure scripts running in the Pd environment. Note that in order to access these
+functions, you'll have to add the corresponding ``extern`` declarations to
+your scripts.
 
 .. c:function:: extern char *pd_version_s()
 
@@ -933,6 +1001,26 @@ Pure scripts running in the Pd environment.
    useful, in particular, when used in conjunction with the asynchronous
    message facility described under `Asynchronous Messages`_.
 
+.. c:function:: extern void pd_send(char *sym, expr *x)
+
+   Sends a message, specified as a Pure term ``x``, to the receiver given by
+   the symbol ``sym`` (specified as a string). This is a no-op if the receiver
+   doesn't exist.
+
+.. c:function:: extern void pd_receive(char *sym)
+
+   Prepares an object so that it can receive messages sent to the given symbol
+   ``sym``. This function must be called during object creation or method
+   calls. It can be called for different symbols, as many times as needed. The
+   messages are always delivered to the leftmost inlet, and the given symbol
+   is applied to the original message, so that the receiver can figure out
+   where the message came from.
+
+.. c:function:: extern void pd_unreceive(char *sym)
+
+   Switches off receiving messages for the given symbol ``sym``. Use this
+   to undo the effects of a previous ``pd_receive`` call.
+
 .. c:function:: extern expr *pd_getbuffer(char *name)
                 extern void pd_setbuffer(char *name, expr *x)
                 extern int pd_getbuffersize(char *name)
@@ -956,33 +1044,3 @@ Pure scripts running in the Pd environment.
    denoting an offset ``i`` into the array at which the sample data is to be
    written, so that this routine allows you to overwrite any part of the
    array.
-
-.. c:function:: extern void pd_send(char *receiver, expr *x)
-
-   Sends a message, specified as a Pure term ``x``, to the given receiver.
-   This is a no-op if the receiver doesn't exist. You can use this operation
-   to send messages to the Pd runtime, for instance::
-
-     pd_send "pd" (dsp 1); // turn on audio processing
-
-   This function also enables you to perform dynamic patching, by sending the
-   appropriate messages to patches (``"pd-patch"`` receiver, where ``patch``
-   is the name of the target patch). Useful messages to patches are listed in
-   the `Tips and Tricks`_ section on the Pd community website, and some
-   examples can be found here__. For instance, the following Pure object, when
-   banged, inserts a few objects into a subpatch named ``test`` and connects
-   them to each other::
-
-     extern void pd_send(char*, expr*);
-
-     pd_send_test _ = () when
-       pd_send "pd-test" (obj 10 0 "osc~" 220);
-       pd_send "pd-test" (obj 10 30 "*~" 0.1);
-       pd_send "pd-test" (obj 10 60 "dac~");
-       pd_send "pd-test" (connect 0 0 1 0);
-       pd_send "pd-test" (connect 1 0 2 0);
-       pd_send "pd-test" (connect 1 0 2 1);
-     end;
-
-   .. _Tips and Tricks: http://puredata.info/docs/tutorials/TipsAndTricks#patch-messages
-   __ http://pure-data.svn.sourceforge.net/svnroot/pure-data/trunk/doc/additional/pd-msg/
