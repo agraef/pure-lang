@@ -370,6 +370,7 @@ typedef struct _pure {
      to write past the end of x_obj on Windows. */
   int fence;			/* dummy field (not used) */
 #endif
+  t_canvas *canvas;		/* canvas this object belongs to */
   struct _pure *next, *prev;	/* double-linked list of all Pure objects */
   /* control inlets and outlets */
   int n_in, n_out;		/* number of extra inlets and outlets */
@@ -764,6 +765,19 @@ extern void pd_unreceive(const char *sym)
   if (!actx) return;
   t_symbol *s = gensym(sym);
   unbind_receiver(actx, s);
+}
+
+/* Return the directory of the patch the current object (as given by actx)
+   belongs to. Note that this needs to be called at object creation or method
+   invocation time, so that actx is defined. */
+
+extern pure_expr *pd_getdir(void)
+{
+  if (actx && actx->canvas) {
+    t_symbol *s = canvas_getdir(actx->canvas);
+    return pure_cstring_dup(s->s_name);
+  } else
+    return 0;
 }
 
 /* Process an output message and route it through the given outlet. */
@@ -1264,6 +1278,7 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
 {
   int i;
   t_pure *x;
+  t_canvas *canvas = canvas_getcurrent();
   t_class *c = lookup(s);
   bool is_dsp = is_dsp_fun(s);
 
@@ -1271,6 +1286,7 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
   x = (t_pure*)pd_new(c);
   xappend(x);
 
+  x->canvas = canvas;
   x->foo = 0;
   x->n_in = 0; x->n_out = 1;
   x->in = 0;
