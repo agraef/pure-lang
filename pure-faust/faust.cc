@@ -1,5 +1,5 @@
 
-/* Copyright (c) 2009 by Albert Graef <Dr.Graef@t-online.de>.
+/* Copyright (c) 2009-2011 by Albert Graef <Dr.Graef@t-online.de>.
 
    pure-faust is free software: you can redistribute it and/or modify it under
    the terms of the GNU Lesser General Public License as published by the Free

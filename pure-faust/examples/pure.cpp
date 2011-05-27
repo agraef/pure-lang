@@ -3,7 +3,7 @@
    http://pure-lang.googlecode.com for a Pure module which can load these
    extensions. */
 
-/* Copyright (c) 2009 Albert Graef
+/* Copyright (c) 2009-2011 Albert Graef
 
    Copying and distribution of this file, with or without modification,
    are permitted in any medium without royalty provided the copyright
