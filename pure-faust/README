@@ -1,7 +1,7 @@
 
-==============================================
-pure-faust: Run Faust programs in Pure scripts
-==============================================
+==========
+pure-faust
+==========
 
 .. default-domain:: pure
 .. module:: faust
@@ -15,23 +15,27 @@ Pure_. Faust_ (an acronym for Functional AUdio STreams) is a functional
 programming language for real-time sound processing and synthesis developed at
 Grame_ and distributed as GPL'ed software.
 
-.. note:: This module is now largely obsolete as there's much better direct
-   support for Faust interoperability in the Pure core (as of Pure 0.45),
-   including the ability to inline Faust code in Pure programs. This requires
-   faust2 (the latest Faust incarnation from Faust's git repository), however,
-   so this package is still provided for those who are stuck with older faust
-   versions.
+.. note:: As of Pure 0.45, there's also built-in support for Faust
+   interoperability in the Pure core, including the ability to inline Faust
+   code in Pure programs. Both interfaces provide pretty much the same basic
+   capabilities and should work equally well for most applications, and
+   there's a compatibility module in the Pure library which provides the
+   pure-faust API on top of the built-in interface. However, the built-in
+   interface requires Faust2_ which is still under development and also has
+   some bugs, so for the time being this module is provided for backward
+   compatibility with the mainline Faust version.
 
 .. _Faust: http://faust.grame.fr/
+.. _Faust2: http://www.grame.fr/~letz/faust_llvm.html
 .. _Grame: http://www.grame.fr/
 .. _Pure: http://pure-lang.googlecode.com/
 
 Copying
 =======
 
-Unless explicitly stated otherwise, this software is Copyright (c) 2009 by
-Albert Graef. Please also see the source for the copyright and license notes
-pertaining to individual source files.
+Unless explicitly stated otherwise, this software is Copyright (c) 2009-2011
+by Albert Graef. Please also see the source for the copyright and license
+notes pertaining to individual source files.
 
 pure-faust is free software: you can redistribute it and/or modify it under
 the terms of the GNU Lesser General Public License as published by the Free
@@ -54,14 +58,14 @@ http://pure-lang.googlecode.com/files/pure-faust-@version@.tar.gz.
 
 Binary packages can be found at http://pure-lang.googlecode.com/. To install
 from source, run the usual ``make && sudo make install``. This requires Pure,
-of course. The Makefile tries to guess the installation prefix under which
-Pure is installed. If it guesses wrong, you can tell it the right prefix with
-``make prefix=/some/path``. Or you can specify the exact path of the
-``lib/pure`` directory with ``make libdir=/some/path``; by default the
-Makefile assumes ``$(prefix)/lib/pure``. The Makefile also tries to guess the
-host system type and set up some platform-specific things accordingly. If this
-doesn't work for your system then you'll have to edit the Makefile
-accordingly.
+of course (the present version will work with Pure 0.48 and later). The
+Makefile tries to guess the installation prefix under which Pure is
+installed. If it guesses wrong, you can tell it the right prefix with ``make
+prefix=/some/path``. Or you can specify the exact path of the ``lib/pure``
+directory with ``make libdir=/some/path``; by default the Makefile assumes
+``$(prefix)/lib/pure``. The Makefile also tries to guess the host system type
+and set up some platform-specific things accordingly. If this doesn't work for
+your system then you'll have to edit the Makefile accordingly.
 
 The Faust compiler is not required to compile this module, but of course
 you'll need it to build the examples in the ``examples`` subdirectory and to
@@ -171,9 +175,11 @@ more details on this). The second parameter is a tuple which indicates the
 arguments the control was created with in the Faust program. The first
 parameter is a C ``double*`` which points to the current value of the control
 variable. You can inspect and change this value with the ``get_double`` and
-``put_double`` routines available in the Pure prelude. (Note that changes of
-control variables only take effect between different invokations of
-``faust_compute``.) Example::
+``put_double`` routines available in the Pure prelude. (Note that, for
+compatibility with the internal Faust interface which supports both single and
+double precision controls, you can also use the ``get_control`` and
+``put_control`` functions instead.) Changes of control variables only take
+effect between different invokations of ``faust_compute``. Example::
 
   > let gain = control_ref (controls ui!0);
   > get_double gain;
