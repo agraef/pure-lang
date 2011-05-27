@@ -5843,6 +5843,7 @@ The interface routines of this Faust module look as follows on the Pure side::
   extern void instanceInit(struct_dsp_llvm*, int) = example::instanceInit;
   extern struct_dsp_llvm* new() = example::new;
   extern struct_dsp_llvm* newinit(int) = example::newinit;
+  extern int samplingFreq(struct_dsp_llvm*) = example::samplingFreq;
 
 The most important interface routines are ``new``, ``init`` and ``delete``
 (used to create, initialize and destroy an instance of the dsp) and
@@ -5851,13 +5852,19 @@ convenience functions are added by the Pure compiler: ``newinit`` (which
 combines ``new`` and ``init``) and ``info``, which yields pertinent
 information about the dsp as a Pure tuple containing the number of input and
 output channels and the Faust control descriptions. The latter are provided in
-a symbolic format ready to be used in Pure; more about that below. Also note
-that there's usually no need to explicitly invoke the ``delete`` routine in
-Pure programs; the Pure compiler makes sure that this routine is added
+a symbolic format ready to be used in Pure; more about that below. Finally,
+the Pure compiler also adds the ``samplingFreq`` function which can be used to
+query a dsp for its sampling rate (which is set with the ``init`` and
+``newinit`` functions).
+
+Note that there's usually no need to explicitly invoke the ``delete`` routine
+in Pure programs; the Pure compiler makes sure that this routine is added
 automatically as a finalizer (see :func:`sentry`) to all dsp pointers created
 through the ``new`` and ``newinit`` routines so that dsp instances are
 destroyed automatically when the corresponding Pure objects are
-garbage-collected.
+garbage-collected. (If you prefer to do the finalization manually then you
+must also remove the sentry from the dsp object, so that it doesn't get
+deleted twice.)
 
 Another point worth mentioning here is that despite the generic
 ``struct_dsp_llvm`` pointer type used by the interface routines, the Pure
@@ -6012,6 +6019,15 @@ don't even need to exit the Pure interpreter to do this.
 More Faust-related examples can be found in the Pure distribution. Also, have
 a look at :doc:`pd-pure` to see how these facilities can be used in Pd modules
 written in Pure.
+
+Finally, note that there's also an alternative interface to Faust which is
+available as a separate package and works with either Faust2 or the stable
+Faust version. Please check the :doc:`pure-faust` package for details. This
+package also provides the :mod:`faust2` compatibility module which implements
+the pure-faust API on top of Pure's built-in Faust interface, so that you can
+also use the operations of this module instead. (The pure-faust API can in
+fact be more convenient to use in some cases, especially if you want to load a
+lot of different Faust modules dynamically at runtime.)
 
 Interactive Usage
 =================
