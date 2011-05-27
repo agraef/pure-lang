@@ -1757,6 +1757,7 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
   // Add some convenience functions.
   list<string> myfuns;
   myfuns.push_back("newinit");
+  myfuns.push_back("samplingFreq");
   myfuns.push_back("info");
   if (modified) {
     if (loaded) {
@@ -1806,6 +1807,27 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
       // Return the result.
       f->getBasicBlockList().push_back(skipbb);
       b.SetInsertPoint(skipbb);
+      b.CreateRet(v);
+    }
+    // The samplingFreq function takes a dsp as parameter and returns its
+    // sample rate.
+    GlobalVariable *sr = module->getNamedGlobal("fSamplingFreq");
+    if (sr) {
+      Function *newfun = module->getFunction("$$faust$"+modname+"$new");
+      const Type *dsp_ty = newfun->getReturnType();
+      vector<const Type*> argt(1, dsp_ty);
+      FunctionType *ft = FunctionType::get(int32_type(), argt, false);
+      Function *f = Function::Create(ft, Function::ExternalLinkage,
+				     "$$faust$"+modname+"$samplingFreq",
+				     module);
+      BasicBlock *bb = basic_block("entry", f);
+#ifdef LLVM26
+      Builder b(getGlobalContext());
+#else
+      Builder b;
+#endif
+      b.SetInsertPoint(bb);
+      Value *v = b.CreateLoad(sr);
       b.CreateRet(v);
     }
     // The info function takes a dsp as parameter and returns a triple with
