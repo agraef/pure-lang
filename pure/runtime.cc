@@ -1171,13 +1171,15 @@ pure_expr *pure_symbol(int32_t tag)
       size_t n = info.argtypes.size();
       void *f = interp.JIT->getPointerToFunction(info.f);
       if (f) {
-	if (n == 0)
+	if (n == 0) {
 	  // Parameterless external, do a direct call.
+	  if (!interp.debugging) pure_push_args(0, 0);
 	  return ((pure_expr *(*)(void))f) ();
-	else
+	} else {
 	  // External with parameters. Build an fbox for the external, return
 	  // this as the value of the symbol.
 	  return pure_clos(false, tag, 0, n, f, 0, 0);
+	}
       }
       // If we come here, the external wrapper failed to compile for some
       // reason, just proceed as if it was an ordinary Pure function.
