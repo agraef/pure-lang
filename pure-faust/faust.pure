@@ -18,29 +18,12 @@
 
 using "lib:faust";
 
-/* Constructors for control descriptions. Such descriptions are returned by
-   the faust_info function (see below).
+/* Declarations and convenience functions for control descriptions. As of
+   version 0.45 and later, Pure has a built-in internal Faust interface which
+   uses the same format of control descriptions as pure-faust, so the
+   following will work with both pure-faust and the internal interface. */
 
-   There are various basic control elements, each associated with a control
-   variable 'ref' and a parameter tuple 'args'. The latter are the arguments
-   of the control element as given in the Faust program. Thus, e.g., 'button
-   ref "Push me!"' would denote a button with label "Push me!", and 'hslider
-   ref ("gain",1.0,0.0,10.0,0.1) a horizontal slider with label "gain" and the
-   given initial, min, max and step size values. The control variable itself
-   is implemented as a C double pointer 'ref'. Changing the double value
-   pointed to by 'ref' using 'put_double' (before invoking the faust_compute
-   function) assigns a new value to the corresponding control element in the
-   Faust DSP. Passive control elements such as 'vbargraph' have their value
-   updated during invocation of the faust_compute function.
-
-   There are also three constructors for denoting groups of controls,
-   'vgroup', 'hgroup' and 'tgroup'. These take a single 'args' argument, which
-   is a pair (label,elems) consisting of the label of the group, as given in
-   the Faust program, and the list of all control elements in that group. The
-   toplevel control element is always a group (a 'vgroup' by default). */
-
-public button checkbox vslider hslider nentry vbargraph hbargraph
-  vgroup hgroup tgroup;
+using faustui;
 
 /* Initialize and finalize a Faust DSP object. */
 
@@ -71,50 +54,3 @@ extern expr *faust_compute(faust_t *fd, expr *in, expr *out);
 /* Retrieve the DSP info. */
 
 extern expr *faust_info(faust_t *fd);
-
-/* Convenience functions to retrieve the components of a control description.
-   The control_type, control_ref and control_label functions return the type
-   (i.e., constructor), reference (a C float* pointer) and label of a control,
-   respectively. control_args yields the remaining control parameters. */
-
-control_type (f@_ ptr args) |
-control_type (f@_ args) = f;
-
-control_ref (_ ptr args) = ptr;
-
-control_label (_ ptr (label,args)) |
-control_label (_ (label,args)) |
-control_label (_ ptr label::string) |
-control_label (_ label::string) = label;
-
-control_args (_ ptr (label,args)) |
-control_args (_ (label,args)) = args;
-control_args (_ ptr label::string) |
-control_args (_ label::string) = ();
-
-/* The following function returns a flat representation of a control group as
-   a list of basic control descriptions, which provides a quick way to access
-   all the control values of a Faust DSP. The grouping controls themselves are
-   omitted. */
-
-controls (_ (_,ctls::rlist)) = catmap controls ctls;
-controls x = [x] otherwise;
-
-/* The following function works like the controls function above, but also
-   replaces the label of each basic control with a fully qualified path
-   consisting of all control labels leading up to the given control. Thus,
-   e.g., the label of a slider "gain" inside a group "voice#0" inside the
-   main "faust" group will be denoted by the label "faust/voice#0/gain". */
-
-pcontrols x = controls "" x with
-  controls path x =
-    case x of
-      _ (label::string,ctls::rlist) = catmap (controls (join path label)) ctls;
-      f@_ ptr (label::string,args) = [f ptr (join path label,args)];
-      f@_ ptr label::string = [f ptr (join path label)];
-      _ = [x]; // bad control description
-    end;
-  join "" s::string |
-  join s::string "" = s;
-  join s::string t::string = s+"/"+t otherwise;
-end;

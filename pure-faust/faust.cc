@@ -22,6 +22,18 @@
 
 #include <pure/runtime.h>
 
+#if PURE_POINTER_TAG
+/* Convenience macros to handle tagged pointers (new in Pure 0.45). */
+#define __pointer(ty, p) pure_tag(ty, pure_pointer(p))
+#define __check_tag(ty, x) pure_check_tag(ty, x)
+#define __tag(ty) pure_pointer_tag(#ty)
+#else
+/* For compatibility with older Pure versions. */
+#define __pointer(ty, p) pure_pointer(p)
+#define __check_tag(ty, x) 1
+#define __tag(ty) 0
+#endif
+
 /* The Faust UI and dsp classes. */
 
 class UI
@@ -547,10 +559,11 @@ pure_expr *faust_info(faust_t *fd)
       clear();
       return NULL;
     }
+    int ty = __tag(double*);
     switch (ui->elems[i].type) {
     case UI_BUTTON:
       xv[n++] = pure_appl(pure_symbol(pure_sym("button")), 2,
-			  pure_pointer(ui->elems[i].zone),
+			  __pointer(ty, ui->elems[i].zone),
 			  pure_cstring_dup(ui->elems[i].label));
       break;
     case UI_TOGGLE_BUTTON:
@@ -558,12 +571,12 @@ pure_expr *faust_info(faust_t *fd)
 	 checkbox for now. */
     case UI_CHECK_BUTTON:
       xv[n++] = pure_appl(pure_symbol(pure_sym("checkbox")), 2,
-			  pure_pointer(ui->elems[i].zone),
+			  __pointer(ty, ui->elems[i].zone),
 			  pure_cstring_dup(ui->elems[i].label));
       break;
     case UI_V_SLIDER:
       xv[n++] = pure_appl(pure_symbol(pure_sym("vslider")), 2,
-			  pure_pointer(ui->elems[i].zone),
+			  __pointer(ty, ui->elems[i].zone),
 			  pure_tuplel(5, pure_cstring_dup(ui->elems[i].label),
 				      pure_double(ui->elems[i].init),
 				      pure_double(ui->elems[i].min),
@@ -572,7 +585,7 @@ pure_expr *faust_info(faust_t *fd)
       break;
     case UI_H_SLIDER:
       xv[n++] = pure_appl(pure_symbol(pure_sym("hslider")), 2,
-			  pure_pointer(ui->elems[i].zone),
+			  __pointer(ty, ui->elems[i].zone),
 			  pure_tuplel(5, pure_cstring_dup(ui->elems[i].label),
 				      pure_double(ui->elems[i].init),
 				      pure_double(ui->elems[i].min),
@@ -581,7 +594,7 @@ pure_expr *faust_info(faust_t *fd)
       break;
     case UI_NUM_ENTRY:
       xv[n++] = pure_appl(pure_symbol(pure_sym("nentry")), 2,
-			    pure_pointer(ui->elems[i].zone),
+			  __pointer(ty, ui->elems[i].zone),
 			  pure_tuplel(5, pure_cstring_dup(ui->elems[i].label),
 				      pure_double(ui->elems[i].init),
 				      pure_double(ui->elems[i].min),
@@ -590,14 +603,14 @@ pure_expr *faust_info(faust_t *fd)
       break;
     case UI_V_BARGRAPH:
       xv[n++] = pure_appl(pure_symbol(pure_sym("vbargraph")), 2,
-			  pure_pointer(ui->elems[i].zone),
+			  __pointer(ty, ui->elems[i].zone),
 			  pure_tuplel(3, pure_cstring_dup(ui->elems[i].label),
 				      pure_double(ui->elems[i].min),
 				      pure_double(ui->elems[i].max)));
       break;
     case UI_H_BARGRAPH:
       xv[n++] = pure_appl(pure_symbol(pure_sym("hbargraph")), 2,
-			  pure_pointer(ui->elems[i].zone),
+			  __pointer(ty, ui->elems[i].zone),
 			  pure_tuplel(3, pure_cstring_dup(ui->elems[i].label),
 				      pure_double(ui->elems[i].min),
 				      pure_double(ui->elems[i].max)));
