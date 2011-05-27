@@ -121,6 +121,18 @@ put_control x::pointer = put_float x if get_ptrtag x == __C::floatp_t;
      true iff double samples and control values are used; false indicates
      single precision.
 
+   - dsp_fun gives access to the visible interface functions of a Faust dsp.
+     The given name may be any of the supported operations, such as "new",
+     "init", "compute", etc. The first argument must either be the name of a
+     dsp class (a string) or a dsp object (as returned with 'new' or
+     'newinit'). The result is usually a closure. E.g., dsp_fun "organ"
+     "newinit" returns organ::newinit (if it exists), while dsp_fun dsp
+     "compute" returns the compute function for the class of the given dsp
+     object. The only exception from this rule is the 'new' function which
+     takes no arguments and thus is evaluated immediately. E.g., dsp_fun
+     "organ" "new" doesn't return organ::new itself, but its value, i.e., a
+     new dsp instance of the "organ" class.
+
    - dsp_modules builds a list of all Faust modules currently loaded. It
      returns a list of hash pairs name=>dbl, where name is the module name and
      dbl the sample format. This information is useful if you need to create
@@ -131,4 +143,5 @@ put_control x::pointer = put_float x if get_ptrtag x == __C::floatp_t;
 
 extern expr *faust_name(expr *dsp) = dsp_name;
 extern expr *faust_dbl(expr *dsp) = dsp_doublep;
+extern expr *faust_method(expr *dsp, char *name) = dsp_fun;
 extern expr *faust_mods() = dsp_modules;

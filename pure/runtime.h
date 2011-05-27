@@ -893,13 +893,18 @@ void faust_add_rtti(const char *name, int tag, bool dbl);
 /* Faust RTTI. Currently this comprises the module name of a dsp (faust_name,
    a string) and its sample format (faust_dbl, a flag which is true iff double
    samples and control values are used; false indicates single precision).
-   Also, faust_mods builds a list of all Faust modules currently loaded; each
-   element is a hash pair name=>dbl of the module name and the sample format.
-   (These actually belong to the library API, but we put them here to keep the
-   Faust-related stuff together.) */
+   Moreover, faust_method gives access to the interface functions of a dsp,
+   specified either by its name (a string) or an existing dsp object. (This
+   will return a closure in all cases except for the 'new' method which takes
+   no arguments and thus will be evaluated immediately.) Finally, faust_mods
+   builds a list of all Faust modules currently loaded; each element is a hash
+   pair name=>dbl of the module name and the sample format. (These actually
+   belong to the library API, but we put them here to keep the Faust-related
+   stuff together.) */
 
 pure_expr *faust_name(pure_expr *dsp);
 pure_expr *faust_dbl(pure_expr *dsp);
+pure_expr *faust_method(pure_expr *dsp, const char *method);
 pure_expr *faust_mods();
 
 /* LIBRARY API. *************************************************************/

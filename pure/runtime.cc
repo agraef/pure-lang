@@ -16787,6 +16787,27 @@ pure_expr *faust_dbl(pure_expr *dsp)
   return pure_int(info.dbl);
 }
 
+pure_expr *faust_method(pure_expr *dsp, const char *method)
+{
+  if (!method || !*method) return 0;
+  string name;
+  const char *s;
+  interpreter& interp = *interpreter::g_interp;
+  if (pure_is_string(dsp, &s)) {
+    name = s;
+  } else {
+    int tag = pure_get_tag(dsp);
+    if (!tag) return 0;
+    map<int,bcmap::iterator>::const_iterator it = interp.dsp_mods.find(tag);
+    if (it == interp.dsp_mods.end()) return 0;
+    name = it->second->first;
+  }
+  string asname = name+"::"+method;
+  const symbol* sym = interp.symtab.lookup(asname);
+  if (!sym || sym->f <= 0) return 0;
+  return pure_symbol(sym->f);
+}
+
 /* Build a list of all Faust modules currently loaded. */
 
 pure_expr *faust_mods()
