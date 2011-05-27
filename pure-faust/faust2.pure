@@ -1,0 +1,76 @@
+
+/* faust2.pure: Emulate the pure-faust API on top of the built-in Faust
+   interface. */
+
+/* This is a drop-in replacement for faust.pure. See faust.pure for details on
+   the provided operations. Note that you can only import either faust.pure or
+   faust2.pure, trying to use both in the same program will *not* work. */
+
+/* Copyright (c) 2009-2011 by Albert Graef <Dr.Graef@t-online.de>.
+
+   This file is part of the Pure standard library.
+
+   The Pure standard library is free software: you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public License as
+   published by the Free Software Foundation, either version 3 of the License,
+   or (at your option) any later version.
+
+   Pure is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+   FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
+   more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>. */
+
+using faustui;
+
+/* There are some limitations in the current implementation. In particular,
+   note that faust_init requires 'eval' to load the dsp from an LLVM bitcode
+   module which will not work in batch-compiled scripts, unless it's executed
+   at compile time. Thus, if you need to create dsps dynamically in a
+   batch-compiled script, you'll either have to "preload" the dsps at compile
+   time (employing an ordinary 'using' clause) or use faust.pure instead.
+
+   Also note that at present faust2 places the sample rate in a static
+   variable for each Faust module, which is shared by all instances of the
+   same Faust class. This is at odds with faust1 where this value can be set
+   separately for each instance. */
+
+faust_init name::string rate::int = dsp if pointerp dsp when
+  // Try to load the dsp if necessary, ignore any errors.
+  eval $ "using \"dsp:"+name+"\";";
+  basename = last (split "/" name);
+  newinit = dsp_fun basename "newinit";
+  dsp = newinit rate;
+end;
+
+faust_clone dsp::pointer = dsp if pointerp dsp when
+  newinit = dsp_fun dsp "newinit";
+  rate = dsp_fun dsp "samplingFreq";
+  dsp = newinit (rate dsp);
+end;
+
+faust_exit dsp::pointer = delete (clear_sentry dsp) if closurep delete when
+  delete = dsp_fun dsp "delete";
+end;
+
+faust_reinit dsp::pointer rate::int = reinit dsp rate if closurep reinit when
+  reinit = dsp_fun dsp "instanceInit";
+end;
+
+faust_info dsp::pointer = info dsp if closurep delete when
+  info = dsp_fun dsp "info";
+end;
+
+faust_compute dsp::pointer in::matrix out::matrix =
+  if n>0 then compute dsp n in out else out
+  if closurep compute && dmatrixp in && dmatrixp out when
+    compute = dsp_fun dsp "compute";
+    // We allow null matrices to be passed for both input and output, adjust
+    // the sizes and type of matrix as needed.
+    k,n = dim in; l,m = dim out;
+    n = if n==0 then m else if m==0 then n else min n m;
+    in = if ~dmatrixp in && null in then dmatrix (k,n) else in;
+    out = if ~dmatrixp out && null out then dmatrix (l,n) else out;
+  end;

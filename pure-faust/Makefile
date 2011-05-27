@@ -46,7 +46,7 @@ endif
 CXXFLAGS = -g -O2
 
 DISTFILES = COPYING COPYING.LESSER Makefile README \
-config.guess faust.pure faust.cc \
+config.guess faust.cc faust.pure faust2.pure \
 examples/Makefile examples/pure.cpp examples/*.pure examples/*.dsp
 
 all: faust$(DLL)
@@ -62,10 +62,10 @@ clean:
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
-	cp faust.pure faust$(DLL) "$(DESTDIR)$(libdir)/pure"
+	cp faust$(DLL) faust.pure faust2.pure "$(DESTDIR)$(libdir)/pure"
 
 uninstall:
-	rm -f "$(DESTDIR)$(libdir)/pure"/faust.pure "$(DESTDIR)$(libdir)/pure"/faust$(DLL)
+	rm -f "$(DESTDIR)$(libdir)/pure"/faust$(DLL) "$(DESTDIR)$(libdir)/pure"/faust.pure "$(DESTDIR)$(libdir)/pure"/faust2.pure
 
 dist:
 	rm -rf $(dist)
