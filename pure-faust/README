@@ -17,13 +17,13 @@ Grame_ and distributed as GPL'ed software.
 
 .. note:: As of Pure 0.45, there's also built-in support for Faust
    interoperability in the Pure core, including the ability to inline Faust
-   code in Pure programs. Both interfaces provide pretty much the same basic
-   capabilities and should work equally well for most applications, and
-   there's a compatibility module in the Pure library which provides the
-   pure-faust API on top of the built-in interface. However, the built-in
-   interface requires Faust2_ which is still under development and also has
-   some bugs, so for the time being this module is provided for backward
-   compatibility with the mainline Faust version.
+   code in Pure programs. The built-in Faust interface requires Faust2_ which
+   is still under development and available as a separate package in the Faust
+   git repository. Both interfaces provide pretty much the same basic
+   capabilities and should work equally well for most applications. In fact,
+   as of version 0.5 pure-faust comes with a compatibility module which
+   provides the pure-faust API on top of the built-in Faust interface, see the
+   description of the :mod:`faust2` module below for details..
 
 .. _Faust: http://faust.grame.fr/
 .. _Faust2: http://www.grame.fr/~letz/faust_llvm.html
@@ -196,6 +196,24 @@ Ok, I hope that this is enough to get you started. Further examples can be
 found in the examples subdirectory. Please send bug reports, patches, comments
 and suggestions to: Dr.Graef@t-online.de.
 
+Faust2 Compatibility
+====================
+
+.. module:: faust2
+
+As of version 0.5, pure-faust includes a Faust2 compatibility module which
+lets you use the pure-faust API on top of Pure's new Faust bitcode interface,
+using the same operations as described under Usage_ above. This module is
+invoked with the following import clause::
+
+  using faust2;
+
+Note that only one of the ``faust`` and ``faust2`` modules may be imported
+into a program; trying to use both modules in the same program will *not*
+work. Also note that the ``faust2`` module requires Faust2_ and a fairly
+recent Pure version to work, whereas the ``faust`` module works with both
+Faust2 and the mainline Faust version and doesn't rely on the Faust bitcode
+loader (only the ``pure.cpp`` architecture is needed).
 
 Acknowledgements
 ================
