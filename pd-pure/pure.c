@@ -49,6 +49,10 @@ typedef struct _namelist
 
 extern t_namelist *sys_searchpath;
 
+/* Current object during creation and method call (pd_receive). */
+
+static struct _pure *actx = 0;
+
 /* Return the hosting Pd version as a string in the format "major.minor". */
 
 extern const char *pd_version_s(void)
@@ -86,6 +90,22 @@ extern pure_expr *pd_path_sl(void)
 #else
   return pure_listv(0, 0);
 #endif
+}
+
+/* Return the directory of the patch the current object (as given by actx)
+   belongs to. Note that this needs to be called at object creation or method
+   invocation time, so that actx is defined. */
+
+static t_canvas *pure_canvas(struct _pure *x);
+
+extern pure_expr *pd_getdir(void)
+{
+  t_canvas *canvas;
+  if (actx && (canvas = pure_canvas(actx))) {
+    t_symbol *s = canvas_getdir(canvas);
+    return pure_cstring_dup(s->s_name);
+  } else
+    return 0;
 }
 
 /* Post a message in Pd's main window. */
@@ -397,6 +417,11 @@ typedef struct _pure {
   pure_expr *msg;		/* pending asynchronous message */
 } t_pure;
 
+static t_canvas *pure_canvas(t_pure *x)
+{
+  return x->canvas;
+}
+
 /* Proxy objects for extra inlets (pilfered from flext by Thomas Grill). */
 
 typedef struct _px {
@@ -419,10 +444,6 @@ typedef struct _runtime {
 #endif
   t_outlet *out1, *out2;
 } t_runtime;
-
-/* Current object during creation and method call (pd_receive). */
-
-static t_pure *actx = 0;
 
 /* Head and tail of the list of Pure objects. */
 
@@ -765,19 +786,6 @@ extern void pd_unreceive(const char *sym)
   if (!actx) return;
   t_symbol *s = gensym(sym);
   unbind_receiver(actx, s);
-}
-
-/* Return the directory of the patch the current object (as given by actx)
-   belongs to. Note that this needs to be called at object creation or method
-   invocation time, so that actx is defined. */
-
-extern pure_expr *pd_getdir(void)
-{
-  if (actx && actx->canvas) {
-    t_symbol *s = canvas_getdir(actx->canvas);
-    return pure_cstring_dup(s->s_name);
-  } else
-    return 0;
 }
 
 /* Process an output message and route it through the given outlet. */
