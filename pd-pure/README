@@ -978,16 +978,16 @@ your scripts.
 
    The ``ok`` variable will then be true iff the script is running inside Pd.
 
-.. c:function:: extern char *pd_libdir_s()
+.. c:function:: extern char *pd_path()
+
+   Returns the Pd path (set in Pd's ``Path`` dialog or via the ``-path``
+   command line option) as a list of directory names. This is useful if your
+   Pure scripts need to locate files on the Pd search path.
+
+.. c:function:: extern char *pd_libdir()
 
    Returns the Pd library dir (as determined at compile time). This is useful
    if your Pure scripts need to access files in that directory.
-
-.. c:function:: extern char *pd_path_sl()
-
-   Returns the Pd path (set in the File/Path dialog or via the ``-path``
-   command line option) as a list of directory names. This is useful if your
-   Pure scripts need to locate files on the Pd search path.
 
 .. c:function:: extern expr *pd_getdir()
 
@@ -1004,6 +1004,15 @@ your scripts.
    Posts a message in the Pd main window. A trailing newline is added
    automatically. This is a convenience function which is equivalent to
    calling Pd's ``post()`` (which is a varargs function) as ``post "%s" s``.
+
+.. c:function:: extern void pd_error_s(char *s)
+
+   Like :c:func:`pd_post`, but prints an error message instead. If this
+   routine is invoked from an object (i.e., during object creation or a method
+   call) then Pd's ``pd_error()`` function is called, which allows the object
+   to be tracked down with Pd's ``Find Last Error`` menu command. Otherwise
+   (i.e., if the function is called at load time) Pd's ``error()`` function is
+   called which just outputs the message.
 
 .. c:function:: extern double pd_time()
 
