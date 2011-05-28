@@ -115,6 +115,14 @@ extern void pd_post(const char *s)
   post("%s", s);
 }
 
+extern void pd_error_s(const char *s)
+{
+  if (actx)
+    pd_error(actx, "%s", s);
+  else
+    error("%s", s);
+}
+
 /* Provide access to the current logical Pd time in milliseconds. */
 
 extern double pd_time(void)
