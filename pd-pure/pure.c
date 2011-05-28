@@ -64,14 +64,14 @@ extern const char *pd_version_s(void)
 
 /* Return the Pd library directory. */
 
-extern const char *pd_libdir_s(void)
+extern const char *pd_libdir(void)
 {
   return LIBDIR;
 }
 
 /* Return the Pd search path, as a list of directory names. */
 
-extern pure_expr *pd_path_sl(void)
+extern pure_expr *pd_path(void)
 {
 #ifndef WIN32
   /* You might have to disable this for some Windows builds of pd.dll which
