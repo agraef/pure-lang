@@ -1695,6 +1695,8 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
     dsp_errmsg(name, msg);
     return false;
   }
+  // Check whether getSampleRate is available.
+  bool have_getSampleRate = M->getFunction("getSampleRate_llvm") != 0;
   // Figure out whether our dsp uses float or double values.
   Function *compute = M->getFunction("compute_llvm");
   const Type *type = compute->getFunctionType()->getParamType(2);
@@ -1808,28 +1810,6 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
       b.SetInsertPoint(skipbb);
       b.CreateRet(v);
     }
-    // The samplingFreq function takes a dsp as parameter and returns its
-    // sample rate.
-    GlobalVariable *sr = module->getNamedGlobal("fSamplingFreq");
-    if (sr) {
-      myfuns.push_back("samplingFreq");
-      Function *newfun = module->getFunction("$$faust$"+modname+"$new");
-      const Type *dsp_ty = newfun->getReturnType();
-      vector<const Type*> argt(1, dsp_ty);
-      FunctionType *ft = FunctionType::get(int32_type(), argt, false);
-      Function *f = Function::Create(ft, Function::ExternalLinkage,
-				     "$$faust$"+modname+"$samplingFreq",
-				     module);
-      BasicBlock *bb = basic_block("entry", f);
-#ifdef LLVM26
-      Builder b(getGlobalContext());
-#else
-      Builder b;
-#endif
-      b.SetInsertPoint(bb);
-      Value *v = b.CreateLoad(sr);
-      b.CreateRet(v);
-    }
     // The info function takes a dsp as parameter and returns a triple with
     // the number of inputs and outputs and the UI description, in the same
     // format as the faust_info function in the pure-faust module.
@@ -1891,6 +1871,31 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
       b.CreateCall(freefun, args.begin(), args.end());
       // Return the result.
       b.CreateRet(u);
+    }
+    // getSampleRate is already implemented in the latest faust2 versions.
+    // On older faust2 versions we emulate it if possible.
+    GlobalVariable *sr = have_getSampleRate?0:
+      module->getNamedGlobal("fSamplingFreq");
+    if (sr) {
+      // The getSampleRate function takes a dsp as parameter and returns its
+      // sample rate.
+      myfuns.push_back("getSampleRate");
+      Function *newfun = module->getFunction("$$faust$"+modname+"$new");
+      const Type *dsp_ty = newfun->getReturnType();
+      vector<const Type*> argt(1, dsp_ty);
+      FunctionType *ft = FunctionType::get(int32_type(), argt, false);
+      Function *f = Function::Create(ft, Function::ExternalLinkage,
+				     "$$faust$"+modname+"$getSampleRate",
+				     module);
+      BasicBlock *bb = basic_block("entry", f);
+#ifdef LLVM26
+      Builder b(getGlobalContext());
+#else
+      Builder b;
+#endif
+      b.SetInsertPoint(bb);
+      Value *v = b.CreateLoad(sr);
+      b.CreateRet(v);
     }
   }
   funs.insert(funs.end(), myfuns.begin(), myfuns.end());

@@ -30,12 +30,7 @@ using faustui;
    module which will not work in batch-compiled scripts, unless it's executed
    at compile time. Thus, if you need to create dsps dynamically in a
    batch-compiled script, you'll either have to "preload" the dsps at compile
-   time (employing an ordinary 'using' clause) or use faust.pure instead.
-
-   Also note that at present faust2 places the sample rate in a static
-   variable for each Faust module, which is shared by all instances of the
-   same Faust class. This is at odds with faust1 where this value can be set
-   separately for each instance. */
+   time (employing an ordinary 'using' clause) or use faust.pure instead. */
 
 faust_init name::string rate::int = dsp if pointerp dsp when
   // Try to load the dsp if necessary, ignore any errors.
@@ -47,7 +42,7 @@ end;
 
 faust_clone dsp::pointer = dsp if pointerp dsp when
   newinit = dsp_fun dsp "newinit";
-  rate = dsp_fun dsp "samplingFreq";
+  rate = dsp_fun dsp "getSampleRate";
   dsp = newinit (rate dsp);
 end;
 
