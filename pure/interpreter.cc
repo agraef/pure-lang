@@ -1757,7 +1757,6 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
   // Add some convenience functions.
   list<string> myfuns;
   myfuns.push_back("newinit");
-  myfuns.push_back("samplingFreq");
   myfuns.push_back("info");
   if (modified) {
     if (loaded) {
@@ -1813,6 +1812,7 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
     // sample rate.
     GlobalVariable *sr = module->getNamedGlobal("fSamplingFreq");
     if (sr) {
+      myfuns.push_back("samplingFreq");
       Function *newfun = module->getFunction("$$faust$"+modname+"$new");
       const Type *dsp_ty = newfun->getReturnType();
       vector<const Type*> argt(1, dsp_ty);
