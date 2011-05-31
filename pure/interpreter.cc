@@ -1698,12 +1698,12 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
   // Determine the Faust module classname suffix (this used to be 'llvm', but
   // is now 'mydsp' by default and can be set with the -cn option).
   string classname = "_llvm";
+  string buildui = "buildUserInterface";
+  size_t len = buildui.length();
   for (Module::iterator it = M->begin(), end = M->end();
        it != end; ) {
     Function &f = *(it++);
     string name = f.getName();
-    string buildui = "buildUserInterface";
-    size_t len = buildui.length();
     if (name.compare(0, len, buildui) == 0) {
       classname = name.substr(len);
       break;
