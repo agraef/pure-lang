@@ -1695,10 +1695,24 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
     dsp_errmsg(name, msg);
     return false;
   }
+  // Determine the Faust module classname suffix (this used to be 'llvm', but
+  // is now 'mydsp' by default and can be set with the -cn option).
+  string classname = "_llvm";
+  for (Module::iterator it = M->begin(), end = M->end();
+       it != end; ) {
+    Function &f = *(it++);
+    string name = f.getName();
+    string buildui = "buildUserInterface";
+    size_t len = buildui.length();
+    if (name.compare(0, len, buildui) == 0) {
+      classname = name.substr(len);
+      break;
+    }
+  }
   // Check whether getSampleRate is available.
-  bool have_getSampleRate = M->getFunction("getSampleRate_llvm") != 0;
+  bool have_getSampleRate = M->getFunction("getSampleRate"+classname) != 0;
   // Figure out whether our dsp uses float or double values.
-  Function *compute = M->getFunction("compute_llvm");
+  Function *compute = M->getFunction("compute"+classname);
   const Type *type = compute->getFunctionType()->getParamType(2);
   bool is_double = type ==
     PointerType::get(PointerType::get(double_type(), 0), 0);
@@ -1729,9 +1743,9 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
        it != end; ) {
     Function &f = *(it++);
     string name = f.getName();
-    // Faust interface routines are stropped with the '_llvm' suffix.
-    size_t p = name.find("_llvm");
-    if (p != string::npos) {
+    // Faust interface routines are stropped with the classname suffix.
+    size_t p = name.rfind(classname);
+    if (p != string::npos && p+classname.length() == name.length()) {
       string fname = name.substr(0, p);
       f.setName("$$faust$"+modname+"$"+fname);
       funs.push_back(fname);
