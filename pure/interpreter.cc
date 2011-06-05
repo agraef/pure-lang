@@ -6818,6 +6818,11 @@ bool interpreter::parse_env(exprl& xs, env& e)
 expr *interpreter::macspecial(expr x)
 {
   expr u, v, w;
+  if (!specials_only && x.tag() == symtab.namespace_sym().f) {
+    const char *s = symtab.current_namespace?
+      symtab.current_namespace->c_str():"";
+    return new expr(EXPR::STR, strdup(s));
+  }
   if (!specials_only && x.is_app(u, v) && u.tag() == symtab.eval_sym().f)
     return new expr(maceval(v));
   int32_t f = get2args(x, u, v);

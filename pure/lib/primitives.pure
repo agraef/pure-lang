@@ -407,6 +407,20 @@ using namespace __C;
 	<stdin>, line 5: unhandled exception '"__func__ called at global level"' while
 	evaluating '__func__'
 
+   .. function:: __namespace__
+
+      Returns the current namespace at the point of the call. This is
+      implemented as a macro which expands to a string. The empty string is
+      returned in the default namespace. Example::
+
+        > namespace foo;
+	> foo = __namespace__;
+	> namespace;
+	> show foo::foo
+	foo::foo = "foo";
+	> foo::foo;
+	"foo"
+
    .. function:: __locals__
 
       Return a list with the local function bindings (:keyword:`with` clauses)
@@ -863,7 +877,7 @@ extern char* str(expr*);
 extern expr* __str__(expr*);
 
 extern expr *reduce(expr *locals, expr *x) = reduce_with;
-public __locals__ __func__; // builtins
+public __locals__ __func__ __namespace__; // builtins
 def reduce = reduce_with __locals__;
 
 extern expr *get_fundef(expr *f);
