@@ -426,16 +426,42 @@ using namespace __C;
       Return a list with the local function bindings (:keyword:`with` clauses)
       visible at this point in the program. This is actually implemented as a
       built-in. The return value is a list of hash pairs ``x=>f`` where ``x``
-      is the (quoted) symbol denoting the function and ``f`` is the function
-      itself (or its value, if ``f`` is a parameterless function). The
-      :func:`__locals__` function is useful for debugging purposes, as well as
-      to implement dynamic environments. It is also used internally to
-      implement the :func:`reduce` macro, see `Eval and Friends`_. Example::
+      is the global symbol denoting the function (the symbol is always quoted)
+      and ``f`` is the function value itself. Example::
 
-       > __locals__ with foo x = x+1; x = a+b end;
-       [x=>a+b,foo=>foo]
-       > f 99 when _=>f = ans!1 end;
-       100
+        > __locals__ with foo x = x+1; x = a+b end;
+        [x=>a+b,foo=>foo]
+	> f 99 when _=>f = ans!1 end;
+	100
+
+      The :func:`__locals__` function is useful for debugging purposes, as
+      well as to implement dynamic environments. It is also used internally to
+      implement the :func:`reduce` macro, see `Eval and Friends`_.
+
+      Note that :func:`__locals__` always evaluates parameterless functions
+      and returns the resulting value instead of a closure (as can be seen in
+      the binding ``x=>a+b`` in the example above). Normally this is what you
+      want, but it can be a problem with parameterless functions involving
+      side effects. In such a case, if you want to evaluate the function at a
+      later time, you'll either have to use a thunk or massage the local
+      function so that it takes a dummy argument such as ``()``.
+
+      Also note that :func:`__locals__` will use as keys in the resulting list
+      whatever global symbols are in scope at the point of the call. By
+      default, i.e., if no global symbol with the same print name as the local
+      is visible at the point of the call, a symbol in the default namespace
+      is used, as we've seen above. Otherwise the result may be also be a
+      qualified symbol if such a symbol has already been declared or defined
+      at the point of the call. For instance::
+
+        > namespace foo;
+	> public foo;
+	> __locals__ with foo x = x+1 end;
+	[foo::foo=>foo]
+
+      This behaviour may be a bit surprising at first sight, but is consistent
+      with the way the interpreter performs its symbol lookup, see
+      :ref:`Symbol Lookup and Creation` for details.
 
    The following functions allow you to inspect or modify the function, type,
    macro, constant and variable definitions of the running program. This uses
