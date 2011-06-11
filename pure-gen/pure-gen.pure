@@ -183,8 +183,14 @@ case t of
   ptr_type (const_type t) = pure_type (ptr_type t);
   ptr_type longdouble_t = "void/*long double*/*";
   ptr_type (func_type _ _ _) = "void*";
-  ptr_type (struct_or_union n) = n+"*" if index n " " < 0;
-	     = sprintf "void/*%s*/*" n otherwise;
+  ptr_type (struct_or_union n) =
+    /* NOTE: We map 'struct id' to just 'id' here. This seems more useful than
+       just generating a void* pointer, now that Pure cross-checks C pointer
+       types. */
+    case split " " n of
+      [n] | ["struct",n] = n+"*" if n~="<anonymous>";
+      _ = sprintf "void/*%s*/*" n otherwise;
+    end;
   ptr_type t = pure_type t + "*";
   // struct values get mapped to pointers in the C wrapper
   t@(struct_or_union n) = pure_type (ptr_type t);
