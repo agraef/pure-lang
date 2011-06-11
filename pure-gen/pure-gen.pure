@@ -460,6 +460,8 @@ resolve_typedef d t fname = lookup t
 
     lookup (basic_type (CSUType _ (CStructUnion _ (Just name) _ _))) =
       basic_type (struct_or_union $ "struct "+name);
+    lookup (basic_type (CSUType _ (CStructUnion _ Nothing _ _))) =
+      basic_type (struct_or_union "<anonymous>");
     lookup t@(struct_or_union _ _) = t;
     lookup (basic_type (CEnumType (CEnum (Just tag) (Just enum_defs) _))) =
       basic_type (enum_type tag (scan_enums enum_defs) fname);
