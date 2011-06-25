@@ -10,7 +10,7 @@ src_process_data(SRC_STATE *state,
 {
   int ret;
   SRC_DATA data;
-  memset(&data, sizeof(SRC_DATA), 0);
+  memset(&data, 0, sizeof(SRC_DATA));
   data.data_in = in; data.data_out = out;
   data.input_frames = in_size; data.output_frames = out_size;
   data.end_of_input = wrap;
@@ -29,7 +29,7 @@ src_simple_data(int conv_type, int channels,
 {
   int ret;
   SRC_DATA data;
-  memset(&data, sizeof(SRC_DATA), 0);
+  memset(&data, 0, sizeof(SRC_DATA));
   data.data_in = in; data.data_out = out;
   data.input_frames = in_size; data.output_frames = out_size;
   data.end_of_input = true;
