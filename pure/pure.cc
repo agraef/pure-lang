@@ -593,7 +593,7 @@ main(int argc, char *argv[])
 	string s = string(*args).substr(2);
 	if (s.empty()) continue;
 	char *end;
-	(void)strtoul(s.c_str(), &end, 0);
+	if (strtoul(s.c_str(), &end, 0)) ;
 	if (*end) {
 	  interp.error(prog + ": invalid option " + *args);
 	  return 1;

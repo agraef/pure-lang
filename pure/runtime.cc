@@ -3718,7 +3718,7 @@ pure_interp *pure_create_interp(int argc, char *argv[])
 	string s = string(*args).substr(2);
 	if (s.empty()) continue;
 	char *end;
-	(void)strtoul(s.c_str(), &end, 0);
+	if (strtoul(s.c_str(), &end, 0)) ;
 	if (*end) {
 	  cerr << "pure_create_interp: invalid option " << *args << endl;
 	  delete _interp;
@@ -12712,13 +12712,16 @@ pure_expr *pure_fstat(FILE *fp)
 #endif
 }
 
+// Get rid of "format not a string literal" warnings.
+#pragma GCC diagnostic ignored "-Wformat-security"
+
 extern "C"
 int pure_fprintf(FILE *fp, const char *format)
 {
   /* Note that 'format' *must* be passed as the format string here in order to
      expand embedded '%%' literals. Some recent gcc versions will complain
-     about this ("format not a string literal and no format arguments"), these
-     warnings can be ignored. */
+     about this ("format not a string literal and no format arguments"), the
+     pragma above should get rid of this. */
   return fprintf(fp, format);
 }
 

@@ -1603,7 +1603,7 @@ static int pure_loader(t_canvas *canvas, char *name)
       /* Load the Pure script. Note that the script gets invoked using 'run'
 	 rather than 'using', so that the definitions become temporaries which
 	 can be removed and reloaded later (cf. pure_reload). */
-      chdir(dirbuf);
+      if (chdir(dirbuf)) ;
       sprintf(cmdbuf, "run \"%s.pure\"", name);
 #ifdef VERBOSE
       printf("pd-pure: compiling %s.pure\n", name);
@@ -1613,7 +1613,7 @@ static int pure_loader(t_canvas *canvas, char *name)
       pure_stop_logging();
       pure_printmsgs(res);
       /* Restore the working directory. */
-      if (cwd) chdir(cwd);
+      cwd && chdir(cwd);
     }
 #ifdef EAGER
     /* Force eager compilation. */
@@ -1640,7 +1640,7 @@ static int pure_load(t_canvas *canvas, char *name)
       char buf[PATH_MAX], *cwd = getcwd(buf, PATH_MAX);
       class_set_extern_dir(gensym(dirbuf));
       /* Load the Pure script. */
-      chdir(dirbuf);
+      if (chdir(dirbuf)) ;
       sprintf(cmdbuf, "run \"%s.pure\"", name);
 #ifdef VERBOSE
       printf("pd-pure: compiling %s.pure\n", name);
@@ -1650,7 +1650,7 @@ static int pure_load(t_canvas *canvas, char *name)
       pure_stop_logging();
       pure_printmsgs(res);
       /* Restore the working directory. */
-      if (cwd) chdir(cwd);
+      cwd && chdir(cwd);
       add_class(sym, 0, dirbuf);
       class_set_extern_dir(&s_);
     }
@@ -1670,7 +1670,7 @@ static void reload(t_classes *c)
     if (strcmp(c->sym->s_name, "pure") &&
 	strcmp(c->sym->s_name, "pure~")) {
       class_set_extern_dir(gensym(c->dir));
-      chdir(c->dir);
+      if (chdir(c->dir)) ;
       sprintf(cmdbuf, "run \"%s.pure\"", c->sym->s_name);
 #ifdef VERBOSE
       printf("pd-pure: compiling %s.pure\n", c->sym->s_name);
@@ -1707,7 +1707,7 @@ static void pure_restart(void)
     char buf[PATH_MAX], *cwd = getcwd(buf, PATH_MAX);
     reload(pure_classes);
     /* Restore the working directory. */
-    if (cwd) chdir(cwd);
+    cwd && chdir(cwd);
   }
   void_sym = pure_sym("()");
   delay_sym = pure_sym("pd_delay");
@@ -1734,7 +1734,7 @@ static void pure_reload(void)
     char buf[PATH_MAX], *cwd = getcwd(buf, PATH_MAX);
     reload(pure_classes);
     /* Restore the working directory. */
-    if (cwd) chdir(cwd);
+    cwd && chdir(cwd);
   }
   void_sym = pure_sym("()");
   delay_sym = pure_sym("pd_delay");
