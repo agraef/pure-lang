@@ -59,8 +59,10 @@ gnocl.pure examples/Makefile examples/*.pure examples/*.tcl examples/*.glade
 
 all: tk$(DLL)
 
+# Some installations have the Tcl/Tk header files in subdirs of /usr/include.
+
 tk$(DLL): tk.c
-	$(CC) $(shared) -o $@ -Wall $< $(FLAGS) -ltcl$(tclvers) -ltk$(tclvers) -lpure $(LIBS)
+	$(CC) $(shared) -o $@ -Wall -I/usr/include/tcl$(tclvers) -I/usr/include/tk$(tclvers) $< $(FLAGS) -ltcl$(tclvers) -ltk$(tclvers) -lpure $(LIBS)
 
 clean:
 	rm -f *$(DLL) *~ *.a *.o
