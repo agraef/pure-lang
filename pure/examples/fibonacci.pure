@@ -20,7 +20,7 @@ Example usage:
 0.22s
 */
 
-/* fib: computes two successive members a=F(n),b=F(n+1) of the
+/* fib: computes two successive members F(n),F(n+1) of the
    Fibonacci sequence (0,1,1,2,3,..), using the equivalences:
    F(n+2)=F(n)+F(n+1), F(n-1)=F(n+1)-F(n),
    F(2n)=F(n+1)^2-F(n-1)^2, F(2n+1)=F(n)^2+F(n+1)^2 */
@@ -32,58 +32,57 @@ fib n::int = if n and 1
 	     else b2-((\x::bigint -> x*x)(b-a)),a2+b2
 	     when a,b = fib (n>>1); a2 = a*a; b2 = b*b end;
 
-/* fibonacci: computes nth member of the Fibonacci sequence extended
-   to include negative ns */
+/* fibonacci: computes nth member of the Fibonacci sequence, using fib above.
+   Extended to negative arguments */
 
 fibonacci 0 = 0L;
-fibonacci n::int 
-	    = if (n and 1) then fib (pred (-n)) ! 1 
-	      else (-(fib (pred (-n)) ! 1)) if n<0; 
-	    = fib (pred n) ! 1;
+fibonacci n::int  = if (n and 1) then fib (pred (-n)) ! 1 
+		    else (-(fib (pred (-n)) ! 1)) if n<0; 
+		  = fib (pred n) ! 1;
 
-/* luc: two successive terms of the Lucas sequence (2,1,3,4,..) */
+/* luc: compact code for two successive terms of the Lucas sequence
+   (2,1,3,4,..) */
 
 luc 0 = 2L,1L;
-luc n::int = if (1 and n) then a*b+pm1,b*b+pm2 else a*a-pm2,a*b+pm1
+luc n::int = if (1 and n) then a*b+sig,b*b-(sig<<1) else a*a+(sig<<1),a*b+sig
      when 
+       sig = pred (2 and n); // 1,-1 when n is odd,even multiple of 2
        a,b = luc (n>>1); 
-       pm1,pm2 = if (2 and n) then 1,-2 else -1,2; 
-     end; 
+     end;
 
-/* fastluc: faster than luc above, computes only squares and divides n
-   by 4 at each step. Uses L(2n)=L(n)^2-2*(-1)^n to compute L(4n) and
-   L(4n+4) and from those finds the intermediate values L(4n+1),
-   L(4n+2), L(4n+3), as required by the bit pattern of n */
+/* fluc: faster than luc above, computes only bigint squares and
+   divides n by 4 at each step. */
 
-fastluc 0 = 2L,1L;
-fastluc n::int = 
+fluc 0 = 2L,1L;
+fluc n::int = 
        case n and 3 of
-	 0 = a4, ((b4-(a4<<1)) div 3);
-	 1 = ((b4-(a4<<1)) div 3), ((b4+a4) div 3);
-	 2 = ((b4+a4) div 3), (((b4<<1)-a4) div 3);
-	 3 = (((b4<<1)-a4) div 3), b4;
+	 0 = a4,ab2-a4 when a4 = a2*a2-2; end;
+	 1 = ab2-a4,ab2 when a4 = a2*a2-2; end;
+	 2 = ab2, b4-ab2 when b4 = b2*b2-2; end;
+	 3 = b4-ab2, b4 when b4 = b2*b2-2; end;
        end when
-	 pm2 = if (4 and n) then 2 else -2;
-	 a,b = fastluc (n>>2); 
-	 a2 = a*a+pm2; b2 = b*b-pm2; 
-	 a4 = a2*a2-2; b4 = b2*b2-2;
+	 sig = if (4 and n) then 2 else -2; // 2,-2 when n is odd,even multiple of 2
+	 a,b = fluc (n>>2);    // L(n/4),L(n/4+1)
+	 a2 = a*a+sig; // L(n/2)
+	 b2 = b*b-sig; // L(n/2+2)
+	 ab2 = ((\x -> x*x)(b2-a2))+2; // a4 = L(n), ab2 = L(n+2), b4 = L(n+4)
        end;
 
-// lucas: computes nth member of Lucas sequence, extended to negative ns. 
+// lucas: computes nth member of Lucas sequence using fluc, extended to negative ns. 
 
 lucas 0 = 2L;
 lucas n::int 
-	= if (n and 1) then (-(fastluc (pred (-n)) ! 1)) 
-	  else fastluc (pred (-n)) ! 1 if n<0;
-	= fastluc (pred n) ! 1;
+	= if (n and 1) then (-(fluc (pred (-n)) ! 1)) 
+	  else fluc (pred (-n)) ! 1 if n<0;
+	= fluc (pred n) ! 1;
  
 /* fastfib: the fastest way to compute F(n), using
    F(n)=(4L(n-4)+7L(n-3))/5, where L(n-4) and L(n-3) are two
-   successive Lucas numbers computed by fastluc above.  This algorithm
+   successive Lucas numbers computed by fluc above.  This algorithm
    is faster than fibonacci */
 
 fastfib 0 = 0L; fastfib 1 = 1L; fastfib 2 = 1L; fastfib 3 = 2L;
 fastfib n::int  
 	= if (n and 1) then fastfib (-n) else (-(fastfib (-n))) if n<0; 
-	= ((a<<2)+7*b) div 5 when a,b = fastluc (n-4) end;
+	= ((a<<2)+7*b) div 5 when a,b = fluc (n-4) end;
 
