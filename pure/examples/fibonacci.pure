@@ -11,19 +11,24 @@ Fast Fibonacci and Lucas Algorithms
 :Date: March 2011
 	
 Example usage:
-> stats on
 > map fibonacci (-10..10);
 [-55L,34L,-21L,13L,-8L,5L,-3L,2L,-1L,1L,0L,1L,1L,2L,3L,5L,8L,13L,21L,34L,55L]
-2.3s
 > map fastfib (-10..10);
 [-55L,34L,-21L,13L,-8L,5L,-3L,2L,-1L,1L,0L,1L,1L,2L,3L,5L,8L,13L,21L,34L,55L]
-0.22s
+> map lucas (-10..10);
+[123L,-76L,47L,-29L,18L,-11L,7L,-4L,3L,-1L,2L,1L,3L,4L,7L,11L,18L,29L,47L,76L,123L]
+>stats on
+>(fib 987654321) $$ 0;
+68.11s
+>(fastfib 987654321) $$ 0;
+45.69s
 */
 
 /* fib: computes two successive members F(n),F(n+1) of the
    Fibonacci sequence (0,1,1,2,3,..), using the equivalences:
    F(n+2)=F(n)+F(n+1), F(n-1)=F(n+1)-F(n),
-   F(2n)=F(n+1)^2-F(n-1)^2, F(2n+1)=F(n)^2+F(n+1)^2 */
+   F(2n)=F(n+1)^2-F(n-1)^2, F(2n+1)=F(n)^2+F(n+1)^2
+   computes three bigint squares for each bit of n  */
 
 fib 0 = 0L,1L; 
 fib 1 = 1L,1L;
@@ -40,49 +45,31 @@ fibonacci n::int  = if (n and 1) then fib (pred (-n)) ! 1
 		    else (-(fib (pred (-n)) ! 1)) if n<0; 
 		  = fib (pred n) ! 1;
 
-/* luc: compact code for two successive terms of the Lucas sequence
-   (2,1,3,4,..) */
+/* luc: L(n),L(n+1) terms of the Lucas sequence (2,1,3,4,..)
+   computes just two bigint squares for each bit of n */
 
-luc 0 = 2L,1L;
-luc n::int = if (1 and n) then a*b+sig,b*b-(sig<<1) else a*a+(sig<<1),a*b+sig
+luc 0 = 2L,1L; luc 1 = 1L,3L;
+luc n::int = if (1 and n) then b2-a2,b2 else a2,b2-a2 // n is odd,even
      when 
-       sig = pred (2 and n); // 1,-1 when n is odd,even multiple of 2
-       a,b = luc (n>>1); 
+       sig = if (2 and n) then 2 else -2; //  n is odd,even multiple of 2
+       a,b = luc (n>>1); a2 = a*a+sig; b2 = b*b-sig // L(2n)=L(n)^2 -+2
      end;
 
-/* fluc: faster than luc above, computes only bigint squares and
-   divides n by 4 at each step. */
-
-fluc 0 = 2L,1L;
-fluc n::int = 
-       case n and 3 of
-	 0 = a4,ab2-a4 when a4 = a2*a2-2; end;
-	 1 = ab2-a4,ab2 when a4 = a2*a2-2; end;
-	 2 = ab2, b4-ab2 when b4 = b2*b2-2; end;
-	 3 = b4-ab2, b4 when b4 = b2*b2-2; end;
-       end when
-	 sig = if (4 and n) then 2 else -2; // 2,-2 when n is odd,even multiple of 2
-	 a,b = fluc (n>>2);    // L(n/4),L(n/4+1)
-	 a2 = a*a+sig; // L(n/2)
-	 b2 = b*b-sig; // L(n/2+2)
-	 ab2 = ((\x -> x*x)(b2-a2))+2; // a4 = L(n), ab2 = L(n+2), b4 = L(n+4)
-       end;
-
-// lucas: computes nth member of Lucas sequence using fluc, extended to negative ns. 
+// lucas: computes nth member of Lucas sequence using luc, extended to negative ns. 
 
 lucas 0 = 2L;
 lucas n::int 
-	= if (n and 1) then (-(fluc (pred (-n)) ! 1)) 
-	  else fluc (pred (-n)) ! 1 if n<0;
-	= fluc (pred n) ! 1;
+	= if (n and 1) then (-(luc (pred (-n)) ! 1)) 
+	  else luc (pred (-n)) ! 1 if n<0;
+	= luc (pred n) ! 1;
  
-/* fastfib: the fastest way to compute F(n), using
-   F(n)=(4L(n-4)+7L(n-3))/5, where L(n-4) and L(n-3) are two
-   successive Lucas numbers computed by fluc above.  This algorithm
-   is faster than fibonacci */
+/* fastfib: using F(2n) = L(n)*(2L(n-1)+L(n))/5 and 
+   F(2n+1) = (L(n)^2+L(n+1)^2)/5 
+   n.b. we call luc as it is faster than fib. */
 
-fastfib 0 = 0L; fastfib 1 = 1L; fastfib 2 = 1L; fastfib 3 = 2L;
+fastfib 0 = 0L; fastfib 1 = 1L;
 fastfib n::int  
-	= if (n and 1) then fastfib (-n) else (-(fastfib (-n))) if n<0; 
-	= ((a<<2)+7*b) div 5 when a,b = fluc (n-4) end;
+	= if (n and 1) then fastfib (-n) else (-(fastfib (-n))) if n<0;
+	= if (n and 1) then (a*a+b*b) div 5 
+	  else ( a*((z<<1)+a) div 5 when z = b-a end ) when a,b = luc (n>>1) end;
 
