@@ -21,7 +21,7 @@ Example usage:
 >(fib 987654321) $$ 0;
 68.11s
 >(fastfib 987654321) $$ 0;
-45.69s
+45.42s
 */
 
 /* fib: computes two successive members F(n),F(n+1) of the
@@ -46,7 +46,9 @@ fibonacci n::int  = if (n and 1) then fib (pred (-n)) ! 1
 		  = fib (pred n) ! 1;
 
 /* luc: L(n),L(n+1) terms of the Lucas sequence (2,1,3,4,..)
-   computes just two bigint squares for each bit of n */
+   computes just two bigint squares for each bit of n 
+   L(n+1) is obtained from: L(n+2)-L(n), as bigint squares are
+   faster than comparable general products and the pure code is cleaner as well */
 
 luc 0 = 2L,1L; luc 1 = 1L,3L;
 luc n::int = if (1 and n) then b2-a2,b2 else a2,b2-a2 // n is odd,even
