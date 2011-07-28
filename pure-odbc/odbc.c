@@ -569,7 +569,8 @@ pure_expr *odbc_typeinfo(pure_expr *dbx, int id)
     SWORD  type, nullable, case_sen, searchable, unsign, money, auto_inc;
     SWORD  min_scale, max_scale;
     UDWORD prec;
-    SDWORD len[20], ret;
+    SQLLEN len[20];
+    SDWORD ret;
     SWORD  sql_type, subcode, intv_prec;
     UDWORD prec_radix;
 
@@ -672,7 +673,8 @@ pure_expr *odbc_tables(pure_expr *dbx)
     int i, n = 0, m = NMAX;
 
     UCHAR  name[SL], type[SL];
-    SDWORD len[6], ret;
+    SQLLEN len[6];
+    SDWORD ret;
 
     if (!xs) return pure_err_internal("insufficient memory");
     sql_close(db);
@@ -739,7 +741,8 @@ pure_expr *odbc_columns(pure_expr *dbx, const char *tab)
     int i, n = 0, m = NMAX;
 
     UCHAR  name[SL], type[SL], nullable[SL], deflt[SL];
-    SDWORD len[19], ret;
+    SQLLEN len[19];
+    SDWORD ret;
 
     if (!xs) return pure_err_internal("insufficient memory");
     if (!tab) {
@@ -815,7 +818,8 @@ pure_expr *odbc_primary_keys(pure_expr *dbx, const char *tab)
     int i, n = 0, m = NMAX;
 
     UCHAR  name[SL];
-    SDWORD len[5], ret;
+    SQLLEN len[5];
+    SDWORD ret;
 
     if (!xs) return pure_err_internal("insufficient memory");
     if (!tab) {
@@ -883,7 +887,8 @@ pure_expr *odbc_foreign_keys(pure_expr *dbx, const char *tab)
     int i, n = 0, m = NMAX;
 
     UCHAR  name[SL], pktabname[SL], pkname[SL];
-    SDWORD len[9], ret;
+    SQLLEN len[9];
+    SDWORD ret;
 
     if (!xs) return pure_err_internal("insufficient memory");
     if (!tab) {
@@ -1013,7 +1018,7 @@ pure_expr *odbc_sql_exec(pure_expr *dbx, const char *query, pure_expr *args)
 	ret != SQL_SUCCESS_WITH_INFO)
       goto err;
     if (cols == 0) {
-      SQLINTEGER rows;
+      SQLLEN rows;
       if ((ret = SQLRowCount(db->hstmt, &rows)) == SQL_SUCCESS ||
 	  ret == SQL_SUCCESS_WITH_INFO)
 	res = pure_int((long)rows);
@@ -1294,7 +1299,7 @@ pure_expr *odbc_sql_more(pure_expr *dbx)
 	ret != SQL_SUCCESS_WITH_INFO)
       goto err;
     if (cols == 0) {
-      SQLINTEGER rows;
+      SQLLEN rows;
       if ((ret = SQLRowCount(db->hstmt, &rows)) == SQL_SUCCESS ||
 	  ret == SQL_SUCCESS_WITH_INFO)
 	res = pure_int((long)rows);
