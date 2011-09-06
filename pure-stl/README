@@ -54,6 +54,10 @@ guaranteed to have the same behavior as the corresponding functions in the
 STL. In particular, the Pure-Stlvec versions sometimes check for indexing
 errors and range_overflow errors where their STL counterparts might not.
 
+Installation
+============
+
+
 Access to Members and Ranges
 ============================
 
@@ -232,6 +236,14 @@ For readability, and to correspondence with the STL documentation, the words
 "first", "middle", and "last", or varients such as "first1" are often used
 instead of f,m,l.
 
+Error Handling
+==============
+
+Warn re circular refs. Can be a problem with mutable structures.
+
+Discuss error handling. Types of errors and error messages. Includes
+propagation of errors thrown by Pure call-back functions.
+
 STL Vector as Container
 =======================
 
@@ -369,7 +381,7 @@ stl::svend).
    return the ``i``\th member of ``sv``.
 
 .. function:: first sv
-   		 last sv
+              last sv
 
    first and last member of ``sv``
 
@@ -730,7 +742,7 @@ See parameter naming conventions at ..
 
 .. function rotate (msv,first,middle,last)
 
-   Rotates the elemenst of msv[first,middle,last] so that middle becomes
+   Rotates the elements of msv[first,middle,last] so that middle becomes
    the first element of msv[first,last].
 
 .. function:: rotate_copy (msv,first,middle,last) (msv,first)
@@ -1042,4 +1054,56 @@ Examples
 --------
 
 See ut_sv_numeric.pure
+
+Trace Mode
+==========
+
+If the pure-stl dlls are built using 'make trace' (as opposed to 'make' or
+'make dlls'), the pure-stl tracing functions will be enabled. These functions
+can be used to trace the creation and deletion of stlvecs as well as the
+changes in ref counts that occur as Pure objects are moved and copied. In
+addition to being useful for maintaining the pure-stl modules, these functions
+can be used to observe STL C++ copy semantics.
+
+.. function:: set_sv_trace on_off::int
+
+   Enables or disables tracing the creation and deletion of stlvecs.
+
+.. function:: sv_trace_enabled
+
+   Returns 1 if stlvec tracing is enabled, else 0;
+
+.. function:: set_px_trace on_off::int
+
+   Enables or disables tracing the 'copying' of Pure expressions.
+
+.. function:: px_trace_enabled
+
+   Returns 1 if Pure expression tracing is enabled, else 0;
+
+Here are some examples:
+
+    > stl::set_sv_trace 1;
+    ()
+
+    > let sv1 = stlvec (0..3);
+    TRACE SV:    new sv*: 0x94e3958
+
+    > let sv1 = 0;
+    TRACE SV: delete sv*: 0x94e3958
+
+    > stl::set_px_trace 1;
+    ()
+    > let (x,y,z) = 1,2,3;
+    > let sv1 = stlvec [x,y,z];
+    [px_new(1) --> 3]
+    [px_new(2) --> 3]
+    [px_new(3) --> 3]
+    > stl::refc x;
+    2
+    > stl::refc (sv1!0);
+    2
+
+
+
 
