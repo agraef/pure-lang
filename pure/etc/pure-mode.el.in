@@ -2901,12 +2901,41 @@ specify a repeat count."
 	    (pure-forward-defun)
 	  (point)))))))
 
+(defun pure-mark-section ()
+  (let* ((state
+	  (save-excursion
+	    (parse-partial-sexp (point-min) (point))))
+	 (state
+	  ;; check to see whether we might be looking at an inline code section
+	  (if (nth 4 state)
+	      state
+	    (if (and (not (nth 3 state)) (looking-at "[ \t]*%<"))
+		(save-excursion
+		  ;; skip over the start marker
+		  (skip-chars-forward " \t") (forward-char 2)
+		  ;; reparse from here
+		  (parse-partial-sexp (point-min) (point)))
+	      ;; not an inline section, give up
+	      state)))
+	 ;; determine the start position of the comment or section, if any
+	 (start (if (nth 4 state) (nth 8 state))))
+    (when (and start
+	       (save-excursion
+		 (goto-char start)
+		 (looking-at "%<")))
+      (goto-char start)
+      (forward-comment 1)
+      (set-mark (point))
+      (goto-char start)
+      (point))))
+
 (defun pure-mark-defun ()
   "Mark the current Pure definition at or around point.
 Put mark at the end of the definition and point at the
 beginning. Return point if successful, nil otherwise."
   (interactive)
-  (unless (pure-at-empty-or-comment-line)
+  (if (pure-at-empty-or-comment-line)
+      (pure-mark-section)
     (or (pure-at-defun) (pure-backward-defun))
     (pure-forward-defun)
     ;; skip over any trailing whitespace and comments
