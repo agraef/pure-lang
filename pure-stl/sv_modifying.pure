@@ -1,0 +1,100 @@
+/* sv_modifying.pure -- Pure interface for C++ STL modifying algorithms
+    
+   Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>
+
+   DRAFT FOR DISCUSSION PURPOSES ONLY.
+
+*/
+
+using system;
+using stl;
+using stlvec;
+using "lib:sv_modifying";
+
+namespace stl;
+
+private extern int  sva_copy(expr* it1, expr* it2);
+private extern int  sva_copy_backward(expr* it1, expr* it2);
+private extern int  sva_swap_ranges(expr* it1, expr* it2);
+private extern int  sva_transform(expr* it1, expr* it2, expr* unary_op);
+private extern int  sva_transform_2(expr* it1, expr* it2, expr* it3,
+                                    expr* bin_op);
+private extern void sva_replace_if(expr* it, expr* pred, expr* val);
+private extern int  sva_replace_copy_if(expr* it1, expr* it2, expr* pred,
+                                        expr* val);
+private extern void sva_fill(expr* it, expr* val);
+private extern void sva_fill_n(expr* it, int n, expr* val);
+private extern void sva_generate(expr* it1, expr* gen);
+private extern void sva_generate_n(expr*, int n, expr* gen);
+private extern int  sva_remove_if(expr* it1, expr* pred);
+private extern int  sva_remove_copy_if(expr* it1, expr* it2, expr* pred);
+private extern int  sva_unique(expr* it1, expr* bin_pred);
+private extern int  sva_unique_copy(expr* it1, expr* it2, expr* bin_pred);
+private extern void sva_reverse(expr* it1);
+private extern int  sva_reverse_copy(expr* it1, expr* it2);
+private extern void sva_rotate(expr* it);
+private extern void sva_rotate_copy(expr* it1, expr* it2);
+private extern void sva_random_shuffle(expr* it);  
+private extern int  sva_partition(expr* it, expr* pred);
+private extern int  sva_stable_partition(expr* it, expr* pred);
+
+copy src::svit trg::mutable_svit = sva_copy src trg;
+
+copy_backward src::svit trg::mutable_svit = 
+  sva_copy_backward src trg;
+
+swap_ranges it1::mutable_svit it2::mutable_svit = 
+  sva_swap_ranges it1 it2;
+
+transform src::svit trg::mutable_svit f = sva_transform src trg f;
+
+transform_2 src1::svit src2::svit trg::mutable_svit f = 
+  sva_transform_2 src1 src2 trg f;
+
+replace_if it::mutable_svit pred val = sva_replace_if it pred val;
+
+replace it::mutable_svit x y = sva_replace_if it (x==) y;
+
+replace_copy_if src::svit trg::mutable_svit pred val =
+  sva_replace_copy_if src trg pred val; 
+
+replace_copy src::svit trg::mutable_svit x y =
+  replace_copy_if src trg (x==) y;
+
+fill it::mutable_svit x = sva_fill it x;
+
+fill_n it::mutable_svit n::int x = sva_fill_n it n x;
+
+generate it::mutable_svit gen = sva_generate it gen;
+
+generate_n it::mutable_svit n::int gen = sva_generate_n it n gen;
+
+remove_if it::mutable_svit pred = sva_remove_if it pred;
+
+remove it::mutable_svit x = sva_remove_if it (x==);
+
+remove_copy_if src::svit trg::mutable_svit pred =
+  sva_remove_copy_if src trg pred; 
+
+remove_copy src::svit trg::mutable_svit x =
+  remove_copy_if src trg (x==);
+
+unique it::mutable_svit pred = sva_unique it pred;
+
+unique_copy src::svit trg::mutable_svit pred = sva_unique_copy src trg pred; 
+
+reverse it::mutable_svit = sva_reverse it;
+
+reverse_copy src::svit trg::mutable_svit = sva_reverse_copy src trg; 
+
+rotate it::mutable_svit = sva_rotate it;
+
+rotate_copy it::svit trg::mutable_svit = sva_rotate_copy it trg;
+
+random_shuffle it::mutable_svit = sva_random_shuffle it;
+
+partition it::mutable_svit pred = sva_partition it pred;
+
+stable_partition it::mutable_svit pred = sva_stable_partition it pred;
+
+

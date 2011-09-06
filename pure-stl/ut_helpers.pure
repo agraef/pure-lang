@@ -1,0 +1,50 @@
+/* ut_helpers.pure -- Utilites for stl module unit tests
+    
+   Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>
+
+   DRAFT FOR DISCUSSION PURPOSES ONLY.
+
+*/
+
+using system;
+using stlvec;
+
+using namespace stl;
+
+let verbose = ref false;
+
+putstr x = puts (if stringp x then x else str x);
+
+show_suite_start name = printf "\n--- TEST SUITE %s ---\n" name;
+
+show_start name = printf "--- test %s ---\n" name;
+
+show_result name passed = () when
+  if passed then
+    if get verbose then printf "--- test %s  OK ---\n\n" name else ()
+  else
+    printf "--- test %s FAILED ---\n\n" name;
+end;
+
+show_suite_result name passed = () when
+  if passed then
+    if get verbose then printf "--- TEST %s  OK ---\n\n" name else ()
+  else
+    printf "--- TEST SUITE %s FAILED ---\n\n" name;
+end;
+
+show_time s clks = printf "--- %s: %.3f\n" (s, clks / CLOCKS_PER_SEC);
+
+list_refcs sv::svit = listmap (\x->stl::refc x -1) sv;
+
+check_refcs sv::svit x::int = list_refcs sv == repeatn (#sv) x;
+check_refcs sv::svit (x:xs) = list_refcs sv == (x:xs);
+
+show_refcs sv::svit = putstr $ list_refcs sv;
+
+show_vec = putstr . members;
+
+all_ok xs = ok when
+  ok = all (==true) xs;
+  if ~ok then putstr xs else ();
+end;

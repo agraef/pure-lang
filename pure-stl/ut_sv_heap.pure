@@ -1,0 +1,51 @@
+/* ut_sv_heap.pure -- Unit tests for sv_heap.pure
+    
+   Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>
+
+   DRAFT FOR DISCUSSION PURPOSES ONLY.
+
+*/
+
+using system;
+using stlvec;
+using sv_heap;
+using ut_helpers;
+
+using namespace stl;
+
+nonfix exception;
+
+test_heap = ok when
+  show_start "heap";
+  sv1 = stlvec (0..9);
+  put err_p false; 
+  catch eh $   make_heap sv1 crash;
+  ok0 = get err_p;
+
+  sv1 = stlvec (0..9);
+  make_heap sv1 (>);
+  ok1 = all (>=sv1!0) $ members (sv1,1,#sv1); 
+  pop_heap sv1 (>);
+  ok2 = all (>=sv1!0) $ members (sv1,1,#sv1-1); 
+  pop_heap (sv1,0,#sv1-1) (>);
+  ok3 = all (>=sv1!0) $ members (sv1,1,#sv1-2); 
+  push_heap (sv1,0,#sv1-1) (>);
+  ok4 = all (>=sv1!0) $ members (sv1,1,#sv1-1); 
+  sort_heap (sv1,0,#sv1-1) (>);
+  ok5 = members sv1 == (9:8..0); 
+  ok6 = check_refcs sv1 1;
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5,ok6];
+  show_result "heap" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_sv_heap = ok when
+  show_suite_start "SV_HEAP";
+  ok = 1;
+  ok = test_heap && ok;
+  show_suite_result "SV_HEAP" ok;
+end;

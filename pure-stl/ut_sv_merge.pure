@@ -1,0 +1,202 @@
+/* ut_sv_merge.pure -- Unit tests for sv_merge.pure
+    
+   Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>
+
+   DRAFT FOR DISCUSSION PURPOSES ONLY.
+
+*/
+
+using system;
+using stlvec;
+using sv_merge;
+using ut_helpers;
+
+using namespace stl;
+
+nonfix exception;
+
+test_merge = ok when
+  show_start "merge";
+  sv1 = stlvec (0..5);
+  sv2 = stlvec (4..9);
+  sv3 = emptystlvec;
+  put err_p false; 
+  catch eh $ merge sv1 sv2 (sv3,svback) crash;
+  ok0 = get err_p;
+  pei = merge sv1 sv2 (sv3,svback) (<);
+  ok1 = pei == svend && members sv3 == [0,1,2,3,4,4,5,5,6,7,8,9];
+  sz = #sv3;
+  sv3 = mkstlvec "x" (sz+2);
+  pei = merge sv1 sv2 (sv3,1) (<);
+  ok2 = pei == sz+1 && members sv3 == ["x",0,1,2,3,4,4,5,5,6,7,8,9,"x"];
+  ok3 = check_refcs sv1 2;         // all elements also in sv3
+  ok4 = check_refcs sv2 2;         // all elements also in sv3
+  ok5 = check_refcs sv3 [2,1,1,1,1,1,1,1,1,1,1,1,1,2]; // the x's
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5];
+  show_result "merge" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_inplace_merge = ok when
+  show_start "inplace_merge";
+  sv1 = stlvec ((4..9) + (0..5));
+  sv2 = stlvec sv1;
+  put err_p false; 
+  catch eh $   inplace_merge (sv1,0,6,svend) crash;
+  ok0 = get err_p;
+  inplace_merge (sv1,0,6,svend) (<);
+  ok1 = members sv1 == [0,1,2,3,4,4,5,5,6,7,8,9];
+  inplace_merge (sv2,2,6,#sv2-2) (<);
+  ok2 = members sv2 == [4,5,0,1,2,3,6,7,8,9,4,5];
+  ok3 = check_refcs sv1 2; 
+  ok4 = check_refcs sv2 1; 
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4];
+  show_result "inplace_merge" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_includes = ok when
+  show_start "includes";
+  sv1 = stlvec (0..9);
+  sv2 = stlvec (0..5);
+  put err_p false; 
+  catch eh $ includes sv1 sv2 crash;
+  ok0 = get err_p;
+  ok1 = includes sv1 sv2 (<);
+  ok2 = includes (sv1,1,6) (sv2,2,5) (<);
+  ok3 = ~includes (sv1,1,6) sv2 (<);
+  ok4 = check_refcs sv1 1;
+  ok5 = check_refcs sv2 1;
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5];
+  show_result "includes" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_set_union = ok when
+  show_start "set_union";
+  sv1 = stlvec (0..5);
+  sv2 = stlvec (4..9);
+  sv3 = emptystlvec;
+  put err_p false; 
+  catch eh $ set_union sv1 sv2 (sv3,svback) crash;
+  ok0 = get err_p;
+  pei = set_union sv1 sv2 (sv3,svback) (<);
+  ok1 = pei == svend && members sv3 == (0..9);
+  sz = #sv3;
+  sv3 = mkstlvec "x" (sz+2);
+  pei = set_union sv1 sv2 (sv3,1) (<);
+  ok2 = pei == sz+1 && members sv3 == ["x",0,1,2,3,4,5,6,7,8,9,"x"];
+  ok3 = check_refcs sv1 2;
+  ok4 = check_refcs sv2 [1,1,2,2,2,2];
+  ok5 = check_refcs sv3 [2,1,1,1,1,1,1,1,1,1,1,2];
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5];
+  show_result "set_union" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_set_intersection = ok when
+  show_start "set_intersection";
+  sv1 = stlvec (0..5);
+  sv2 = stlvec (4..9);
+  sv3 = emptystlvec;    
+  put err_p false; 
+  catch eh $ set_intersection sv1 sv2 (sv3,svback) crash;
+  ok0 = get err_p;
+  pei = set_intersection sv1 sv2 (sv3,svback) (<);
+  ok1 = pei == svend && members sv3 == [4,5];
+  sz = #sv3;
+  sv3 = mkstlvec "x" (sz+2);
+  pei = set_intersection sv1 sv2 (sv3,1) (<);
+  ok2 = pei == sz+1 && members sv3 == ["x",4,5,"x"];
+  ok3 = check_refcs sv1 [1,1,1,1,2,2]; // 4,5 are in sv3 also
+  ok4 = check_refcs sv2 1;
+  ok5 = check_refcs sv3 [2,1,1,2];     // the x's
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5];
+  show_result "set_intersection" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_set_difference = ok when
+  show_start "set_difference";
+  sv1 = stlvec (0..5);
+  sv2 = stlvec (4..9);
+  sv3 = emptystlvec;    
+  put err_p false; 
+  catch eh $ set_difference sv1 sv2 (sv3,svback) crash;
+  ok0 = get err_p;
+  pei = set_difference sv1 sv2 (sv3,svback) (<);
+  ok1 = pei == svend && members sv3 == (0..3);
+  sz = #sv3;
+  sv3 = mkstlvec "x" (sz+2);
+  pei = set_difference sv1 sv2 (sv3,1) (<);
+  ok2 = pei == sz+1 && members sv3 == ["x",0,1,2,3,"x"];
+  ok3 = check_refcs sv1 [2,2,2,2,1,1];    // (0..3) also in sv3
+  ok4 = check_refcs sv2 1;
+  ok5 = check_refcs sv3 [2,1,1,1,1,2];    // the x's
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5];
+  show_result "set_difference" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_set_symmetric_difference = ok when
+  show_start "set_symmetric_difference";
+  sv1 = stlvec (0..5);
+  sv2 = stlvec (4..9);
+  sv3 = emptystlvec;   
+  put err_p false; 
+  catch eh $ set_symmetric_difference sv1 sv2 (sv3,svback) crash;
+  ok0 = get err_p;
+  pei = set_symmetric_difference sv1 sv2 (sv3,svback) (<);
+  ok1 = pei == svend && members sv3 == [0,1,2,3,6,7,8,9];
+  sz = #sv3;
+  sv3 = mkstlvec "x" (sz+2);
+  pei = set_symmetric_difference sv1 sv2 (sv3,1) (<);
+  ok2 = pei == sz+1 && members sv3 == ["x",0,1,2,3,6,7,8,9,"x"];
+  ok3 = check_refcs sv1 [2,2,2,2,1,1];         // (0..3) also in sv3
+  ok4 = check_refcs sv2 [1,1,2,2,2,2];         // (6..9) also in sv3
+  ok5 = check_refcs sv3 [2,1,1,1,1,1,1,1,1,2]; // the x's
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5];
+  show_result "set_symmetric_difference" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_sv_merge = ok when
+  show_suite_start "SV_MERGE";
+  ok = 1;
+  ok = test_merge && ok;
+  ok = test_inplace_merge && ok;
+  ok = test_includes && ok;
+  ok = test_set_union && ok;
+  ok = test_set_intersection && ok;
+  ok = test_set_difference && ok;
+  ok = test_set_symmetric_difference && ok;
+  show_suite_result "SV_MERGE" ok;
+end;

@@ -1,0 +1,48 @@
+/* sv_sort.pure -- Pure interface for C++ STL sort algorithms
+    
+   Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>
+
+   DRAFT FOR DISCUSSION PURPOSES ONLY.
+
+*/
+
+using system;
+using stlvec;
+using "lib:sv_sort";
+
+namespace stl;
+
+/*** C++ Support *********************************************************/
+
+private extern void sva_sort(expr* it, expr* comp);
+private extern void sva_stable_sort(expr* it, expr* comp);
+private extern void sva_partial_sort(expr* it, expr* comp);
+private extern void sva_partial_sort_copy(expr* it1, expr* it2, expr* comp);
+private extern void sva_nth_element(expr* it, expr* comp);
+
+private extern int  sva_lower_bound(expr* it, expr* val, expr* comp);
+private extern int  sva_upper_bound(expr* it, expr* val, expr* comp);
+private extern expr*  sva_equal_range(expr* it, expr* val, expr* comp);
+private extern bool sva_binary_search(expr* it, expr* val, expr* comp);
+
+/*** Pure Interface *****************************************************/
+
+sort it::mutable_svit comp = sva_sort it comp;
+
+stable_sort it::mutable_svit comp = sva_stable_sort it comp;
+
+partial_sort it::mutable_svit comp = sva_partial_sort it comp;
+
+partial_sort_copy src::svit trg::mutable_svit comp = 
+  sva_partial_sort_copy src trg comp 
+  if (typep mutable_svit src) || (get_sv src ~= get_sv trg);
+
+nth_element it::mutable_svit comp = sva_nth_element it comp;
+
+lower_bound it::svit x comp = sva_lower_bound it x comp;
+
+upper_bound it::svit x comp = sva_upper_bound it x comp;
+
+equal_range it::svit x comp = sva_equal_range it x comp;
+
+binary_search it::svit x comp = sva_binary_search it x comp;

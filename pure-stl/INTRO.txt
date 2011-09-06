@@ -1,0 +1,241 @@
+
+INSTALL
+-------
+
+copy pure-stlvec_08-13_2011.tar.gz to stl
+
+cd to stl
+
+tar -xvzf pure-stlvec_08-13_2011.tar.gz
+
+mkdir dll
+
+mkdir debug_dll
+
+cd pure-stlvec
+
+make
+
+make tests //this takes a minute or so
+
+./x_sv_all //the others are just for size comparison
+
+
+USAGE
+-----
+
+See README
+
+FILES
+-----
+
+INTRO
+Makefile
+README
+
+// STL base (in case we add stlmap or stlhmap)
+stl.cpp
+stl.hpp
+stl.pure
+
+// STL vector<pure_expr*>
+stlvec.cpp
+stlvec.hpp
+stlvec.pure
+
+// STL algorithms applied to vector<pure_expr*>
+sv_algorithm.hpp
+sv_heap.cpp
+sv_heap.pure
+sv_merge.cpp
+sv_merge.pure
+sv_minmax.cpp
+sv_minmax.pure
+sv_modifying.cpp
+sv_modifying.pure
+sv_nonmodifying.cpp
+sv_nonmodifying.pure
+sv_numeric.cpp
+sv_numeric.pure
+sv_sort.cpp
+sv_sort.pure
+
+// Unit tests
+ut_helpers.pure
+ut_stlvec.pure
+ut_sv_all.pure
+ut_sv_heap.pure
+ut_sv_merge.pure
+ut_sv_minmax.pure
+ut_sv_modifying.pure
+ut_sv_nonmodifying.pure
+ut_sv_numeric.pure
+ut_sv_sort.pure
+
+// Files to be compiled by make tests
+ut_x_stlvec.pure
+ut_x_sv_all.pure
+ut_x_sv_emptystlvec.pure
+ut_x_sv_putstr.pure
+ut_x_sv_stlvec.pure
+
+// Files to play with ref counting and performance
+ut_x_stlvec_refc.pure
+ut_x_stlvec_time.pure
+
+
+UNIT TESTS
+----------
+
+pure -w -q
+
+> run ut_sv_modifying.pure 
+
+> test_partition; // test stl::partition
+--- begin test partition ---
+--- end   test partition  ---
+
+1
+
+> test_sv_modifying ; // runs all the tests
+
+
+REF COUNTING CHECKS
+-------------------
+
+It is possible to trace the creation and deletion of the underlying STL
+vectors, as well as call to pure_new and friends if C++ files can be compiled
+with STL_DEBUG defined.
+
+// The following functions can always be called from Pure, but they are
+// essentially NO-OPs unless STL_DEBUG was defined when they were compiled.
+
+extern void stl_set_px_trace(bool enable) = set_px_trace;
+extern void stl_set_sv_trace(bool enable) = set_sv_trace;
+extern bool stl_px_trace_enabled() = px_trace_enabled;
+extern bool stl_sv_trace_enabled() = sv_trace_enabled;
+
+// This function always works:
+
+extern int stl_refc(expr*) = refc;
+
+/*** setup and run in stl debug mode ******************************/
+
+make debug
+
+pure -q -w
+
+> using stlvec;
+
+/*** trace stlvec create and delete *******************************/
+
+> stl::set_sv_trace 1;
+()
+
+> let sv1 = stlvec (0..3);
+TRACE SV:    new sv*: 0x94e3958
+
+> let sv1 = 0;
+TRACE SV: delete sv*: 0x94e3958
+
+> stl::set_sv_trace 0;
+()
+
+/*** trace ref counting of vector elements  **********************/
+
+> stl::set_px_trace 1;
+()
+> let x = "x";
+> let (x,y,z) = "x","y","z";
+> let (a,b,c) = "a","b","c";
+
+> let sv1 = stlvec [a,b,c,x,y,z]; // refc is 2 on the way in to the
+[px_new("a") --> 3]               // stlvec constructor (a points to "a",
+[px_new("b") --> 3]               // as does the temp list passed in)
+[px_new("c") --> 3]               // as the list is built, ref counts
+[px_new("x") --> 3]               // go up to 3
+[px_new("y") --> 3]
+[px_new("z") --> 3]
+
+> stl::refc a;
+2
+> update sv1 0 b;                 // sv1 now has 2 refs to "b" and 0 to "a"
+[px_new("b") --> 5]               // FIX - not tracing all unwinding frees??
+[px_free("a") --> 1]
+STLVEC #<pointer 0x939d880>
+
+> members sv1;
+["b","b","c","x","y","z"]
+
+> stl::refc a;             // refc for "a" is 1
+1
+> stl::refc b;             // refc for "b" is 3, two in sv1, one outside (b)
+3
+> stl::refc c;             // refc for "c" is 2, one in sv1, one outside (c)
+2
+
+> using sv_modifying;
+
+> stl::random_shuffle sv1;
+[px_new("b") --> 4]
+[px_new("b") --> 5]
+[px_free("b") --> 4]
+[px_free("b") --> 3]
+[px_new("c") --> 3]
+[px_new("b") --> 4]
+[px_free("c") --> 2]
+[px_new("c") --> 3]
+[px_free("b") --> 3]
+[px_free("c") --> 2]
+[px_new("x") --> 3]
+[px_new("c") --> 3]
+[px_free("x") --> 2]
+[px_new("x") --> 3]
+[px_free("c") --> 2]
+[px_free("x") --> 2]
+[px_new("y") --> 3]
+[px_new("b") --> 4]
+[px_free("y") --> 2]
+[px_new("y") --> 3]
+[px_free("b") --> 3]
+[px_free("y") --> 2]
+[px_new("z") --> 3]
+[px_new("z") --> 4]
+[px_free("z") --> 3]
+[px_free("z") --> 2]
+()
+> stl::set_px_trace 0;
+()
+
+> listmap stl::refc sv1;
+[2,2,3,2,3,2]                 // e.g., "y" is referenced by sv1 and by y
+
+> members sv1;
+["y","x","b","c","b","z"]
+
+> listmap stl::refc sv1;
+[3,3,5,3,5,3]                 // oops - we have ans chiming in
+
+> stl::set_px_trace 1;
+()
+> erase sv1;
+[px_free("y") --> 1]
+[px_free("x") --> 1]
+[px_free("b") --> 2]          // b appeared twice in sv1
+[px_free("c") --> 1]
+[px_free("b") --> 1]          // second kill for b
+[px_free("z") --> 1]
+STLVEC #<pointer 0x939d880>
+> stl::refc a;                // back to the correct residual when the 
+1                             // stlvec is gone
+> stl::refc b;
+1
+>
+
+
+
+
+
+
+
+

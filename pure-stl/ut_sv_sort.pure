@@ -1,0 +1,212 @@
+/* ut_sv_sort.pure -- Unit tests for sv_sort.pure
+    
+   Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>
+
+   DRAFT FOR DISCUSSION PURPOSES ONLY.
+
+*/
+
+using system;
+using stlvec;
+using sv_sort;
+using ut_helpers;
+
+using namespace stl;
+
+nonfix exception;
+
+test_sort = ok when
+  show_start "sort";
+  l1 = "a".."e";
+  sv1 = stlvec l1;
+  sv2 = stlvec l1;
+  put err_p false; 
+  catch eh $   sort sv2 crash;
+  ok0 = get err_p;
+  sort sv2 (>);
+  ok1 = members sv2 == ::reverse l1;
+  ok2 = members sv1 == l1;
+  sort sv2 (<);
+  ok3 = members sv2 == l1;
+  sort (sv2,0,2) (>);
+  ok4 = members sv2 == ["b","a","c","d","e"];
+  ok5 = check_refcs sv1 2;
+  ok6 = check_refcs sv2 1;
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5,ok6];
+  show_result "sort" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_stable_sort = ok when
+  show_start "stable_sort";
+  l1 = "a".."e";
+  sv1 = stlvec l1;
+  sv2 = stlvec l1;
+  put err_p false; 
+  catch eh $   stable_sort sv2 crash;
+  ok0 = get err_p;
+  stable_sort sv2 (>);
+  ok1 = members sv2 == ::reverse l1;
+  ok2 = members sv1 == l1;
+  stable_sort sv2 (<);
+  ok3 = members sv2 == l1;
+  stable_sort (sv2,0,2) (>);
+  ok4 = members sv2 == ["b","a","c","d","e"];
+  ok5 = check_refcs sv1 2;
+  ok6 = check_refcs sv2 1;
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5,ok6];
+  show_result "stable_sort" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_partial_sort = ok when
+  show_start "partial_sort";
+  l1 = "a".."k";
+  sv1 = stlvec l1;
+  put err_p false; 
+  catch eh $   partial_sort (sv1,0,3,svend) crash;
+  ok0 = get err_p;
+  partial_sort (sv1,0,3,svend) (>);
+  ok1 = members (sv1,0,3) == take 3 (::reverse l1);
+  sv2 = stlvec l1;
+  partial_sort (sv2,1,4,#sv2-1) (>);
+  ok2 = members (sv2,1,4) == take 3 (drop 1 (::reverse l1));
+  ok3 = check_refcs sv1 2;
+  ok4 = check_refcs sv2 1;
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4];
+  show_result "partial_sort" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_partial_sort_copy = ok when
+  show_start "partial_sort_copy";
+  l1 = "a".."m";
+  sv1 = stlvec l1;
+  sv2 = mkstlvec "2" 4;
+  sv3 = mkstlvec "3" 4;
+  sv4 = mkstlvec "4" (#sv1);
+  put err_p false; 
+  catch eh $   partial_sort_copy sv1 sv2 crash;
+  ok0 = get err_p;
+  partial_sort_copy sv1 sv2 (>);
+  ok1 = members sv2 == take 4 (::reverse l1);
+  partial_sort_copy (sv1,2,#sv1-2) sv3 (>);
+  ok2 = members sv3 == take (#sv3) (drop 2 (::reverse l1));
+  partial_sort_copy (sv1,2,#sv1-2) sv4 (>);
+  ok3 = take (#sv1-4) (members sv4) == take (#sv1-4) (drop 2 (::reverse l1));
+  erase (sv4, #sv4-4, svend);
+  ok4 = check_refcs sv1 [1,1,2,2,2,2,2,3,3,4,4,2,2];
+  ok5 = check_refcs sv2 [1,1,3,3];
+  ok6 = check_refcs sv3 2;
+  ok7 = check_refcs sv4 1;
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5,ok6,ok7];
+  show_result "partial_sort_copy" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_nth_element = ok when
+  show_start "nth_element";
+  sv1 = stlvec [1,0,4,8,6,3,2,5,7];
+  put err_p false; 
+  catch eh $ nth_element (sv1,0,3,svend) crash;
+  ok0 = get err_p;
+  nth_element (sv1,0,3,svend) (<);
+  // show_vec sv1; e.g., [1,0,2,3,5,4,6,8,7]
+  lsv1 = members sv1;
+  ok1 = lsv1!3 == 3 && all (<3) (take 3 lsv1) && all (>3) (drop 4 lsv1);
+  ok2 = check_refcs sv1 1;
+  ok = all_ok [ok0,ok1,ok2];
+  show_result "nth_element" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_bounds = ok when
+  show_start "bounds";
+  sv1 = stlvec [1,3,5,5,5,7,9];
+  put err_p false; 
+  catch eh $ lower_bound sv1 0 crash;
+  ok0 = get err_p;
+  x = lower_bound sv1 0 (<);
+  y = lower_bound sv1 5 (<);
+  z = lower_bound sv1 100 (<);
+  ok1 =  (x,y,z) == (0,2,svend);
+  x = upper_bound sv1 0 (<);
+  y = upper_bound sv1 5 (<);
+  z = upper_bound sv1 100 (<);
+  ok2 =  (x,y,z) == (0,5,svend);
+  x,y = equal_range sv1 0 (<);
+  ok3 = (x,y) == (0,0);
+  x,y = equal_range sv1 5 (<);
+  ok4 = (x,y) == (2,5);
+  x,y = equal_range sv1 9 (<);
+  ok5 = (x,y) == (6,svend);
+  x,y = equal_range sv1 100 (<);
+  ok6 = (x,y) == (svend,svend);
+  ok7 = check_refcs sv1 1;
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5,ok6,ok7];
+  show_result "bounds" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_binary_search = ok when
+  show_start "binary_search";
+  sv1 = stlvec (1..10);
+  put err_p false; 
+  catch eh $ binary_search sv1 0 crash;
+  ok0 = get err_p;
+  x = binary_search sv1 0 (<);
+  y = binary_search sv1 5 (<);
+  z = binary_search sv1 100 (<);
+  ok1 =  (x,y,z) == (false, true, false);
+  sv1 = stlvec ("c".."k");
+  x = binary_search sv1 "a" (<);
+  y = binary_search sv1 "c" (<);
+  z = binary_search sv1 "l" (<);
+  ok2 =  (x,y,z) == (false, true, false);
+  ok3 = check_refcs sv1 1;
+  ok = all_ok [ok0,ok1,ok2,ok3];
+  show_result "binary_search" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_sv_sort = ok when
+  show_suite_start "SV_SORT";
+  ok = 1;
+  ok = test_sort && ok;
+  ok = test_stable_sort && ok;
+  ok = test_partial_sort && ok;
+  ok = test_partial_sort_copy && ok;
+  ok = test_nth_element && ok;
+  ok = test_bounds && ok;
+  ok = test_binary_search && ok;
+  show_suite_result "SV_SORT" ok;
+end;
+

@@ -1,0 +1,153 @@
+/* ut_sv_minmax.pure -- Unit tests for sv_minmax.pure
+    
+   Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>
+
+   DRAFT FOR DISCUSSION PURPOSES ONLY.
+
+*/
+
+using system;
+using stlvec;
+using sv_minmax;
+using ut_helpers;
+
+using namespace stl;
+
+nonfix exception;
+
+test_min_element = ok when
+  show_start "min_element";
+  sv1 = stlvec ("a".."f");
+  put err_p false; 
+  catch eh $ min_element sv1 crash;
+  ok0 = get err_p;
+  sv1 = emptystlvec;
+  p = min_element sv1 (<);
+  ok1 = p == svend;
+  append sv1 "x";
+  p = min_element sv1 (<);
+  ok2 = p == svbeg;
+  sv1 = stlvec [3,1,1,5];
+  p = min_element sv1 (<);
+  ok3 = p == 1;
+  ok4 = check_refcs sv1 1;
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4];
+  show_result "min_element" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_max_element = ok when
+  show_start "max_element";
+  sv1 = stlvec ("a".."f");
+  put err_p false; 
+  catch eh $ max_element sv1 crash;
+  ok0 = get err_p;
+  sv1 = emptystlvec;
+  p = max_element sv1 (<);
+  ok1 = p == svend;
+  append sv1 "x";
+  p = max_element sv1 (<);
+  ok2 = p == svbeg;
+  sv1 = stlvec [3,7,7,5];
+  p = max_element sv1 (<);
+  ok3 = p == 1;
+  ok4 = check_refcs sv1 1;
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4];
+  show_result "max_element" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_lexicographical_compare = ok when
+  show_start "lexicographical_compare";
+  sv1 = stlvec ("a".."f");
+  sv2 = stlvec ("a".."f");
+  put err_p false; 
+  catch eh $ lexicographical_compare sv1 sv2 crash;
+  ok0 = get err_p;
+  sv1 = emptystlvec;
+  ok1 = lexicographical_compare sv1 sv2 (<);
+  ok1 = ~lexicographical_compare sv2 sv1 (<) && ok1;
+  sv1 = stlvec ("a".."e");
+  ok2 = lexicographical_compare sv1 sv2 (<);
+  ok2 = ~lexicographical_compare sv2 sv1 (<) && ok2;
+  ok3 = ~lexicographical_compare (sv1,1,3) (sv2,1,3) (<);
+  ok4 = check_refcs sv1 1;
+  ok5 = check_refcs sv2 1;
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5];
+  show_result "lexicographical_compare" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_next_permutation = ok when
+  show_start "next_permutation";
+  sv1 = stlvec ("a" .. "c");
+  put err_p false; 
+  catch eh $ next_permutation sv1 crash;
+  ok0 = get err_p;
+  b = next_permutation sv1 (<);
+  ok1 = b && members sv1 == ["a","c","b"];
+  b = next_permutation sv1 (<);
+  b = next_permutation sv1 (<);
+  b = next_permutation sv1 (<);
+  b = next_permutation sv1 (<);
+  ok2 = b && members sv1 == ["c","b","a"];
+  b = next_permutation sv1 (<);
+  ok3 = ~b &&  members sv1 == ["a","b","c"];
+  ok4 = check_refcs sv1 1;
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4];
+  show_result "next_permutation" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_prev_permutation = ok when
+  show_start "prev_permutation";
+  sv1 = stlvec ("a" .. "c");
+  put err_p false; 
+  catch eh $ prev_permutation sv1 crash;
+  ok0 = get err_p;
+  b = prev_permutation sv1 (<);
+  ok1 = ~b && members sv1 == ["c","b","a"];
+  b = prev_permutation sv1 (<);
+  b = prev_permutation sv1 (<);
+  b = prev_permutation sv1 (<);
+  b = prev_permutation sv1 (<);
+  ok2 = b && members sv1 == ["a","c","b"];
+  b = prev_permutation sv1 (<);
+  ok3 = b &&  members sv1 == ["a","b","c"];
+  ok4 = check_refcs sv1 1;
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4];
+  show_result "prev_permutation" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_sv_minmax = ok when
+  show_suite_start "SV_MINMAX";
+  ok = 1;
+  ok = test_min_element && ok;
+  ok = test_max_element && ok;
+  ok = test_lexicographical_compare && ok;
+  ok = test_next_permutation && ok;
+  ok = test_prev_permutation && ok;
+  show_suite_result "SV_MINMAX" ok;
+end;
+

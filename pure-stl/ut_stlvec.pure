@@ -1,0 +1,327 @@
+/* ut_stlvec.pure -- Unit tests for stlvec.pure
+    
+   Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>
+
+   DRAFT FOR DISCUSSION PURPOSES ONLY.
+
+*/
+
+
+using system;
+using stlvec;
+using ut_helpers;
+
+using namespace stl;
+
+nonfix exception;
+
+test_create = ok when
+  show_start "create";
+  sv1 = emptystlvec;
+  ok1 = null sv1 && #sv1 == 0;
+  reserve sv1 100;
+  ok2 = null sv1 && #sv1 == 0 && capacity sv1 == 100;
+  sv1 = stlvec ("a".."f");
+  sv  = stlconst (stlvec sv1);
+  sv1 = stlvec (sv,svbeg,5);
+  ok2 = members sv1 == ("a".."e");
+  sv1 = stlvec (sv,1,svend);
+  ok3 = members sv1 == ("b".."f");
+  sv1 = stlvec (sv,1,5);
+  ok4 = members sv1 == ("b".."e");
+  sv2 = stlvec sv;
+  ok5 = members sv2 == members sv;
+  ok6 = members (sv2,svbeg,svend) == ("a".."f");
+  ok7 = members (sv2,1,5) == ("b".."e");
+  ok8 = check_refcs sv [2,3,3,3,3,2];
+  ok9 = check_refcs sv1 [2,2,2,2];
+  ok10 = check_refcs sv2 [1,1,1,1,1,1];
+  ok = all_ok [ok1,ok2,ok3,ok4,ok5,ok6,ok7,ok8,ok9,ok10];
+  show_result "create" ok;
+end;
+
+test_members = ok when
+  show_start "members";
+  sv1 = emptystlvec;
+  ok1 = members sv1 == [];
+  sv1 = stlvec ("a".."f");
+  ok2 = members sv1 == ("a".."f");
+  ok3 = members (sv1,1,svend) == ("b".."f");
+  ok4 = members (sv1,1,#sv1-1) == ("b".."e");
+  ok5 = check_refcs sv1 1;
+  ok = all_ok [ok1,ok2,ok3,ok4,ok5];
+  show_result "members" ok;
+end;
+
+test_basic_ops = ok when
+  show_start "basic_ops";
+  sv1 = emptystlvec;
+  ok1 = null sv1 && #sv1 == 0;
+  append sv1 "a";
+  append sv1 "b";
+  append sv1 "c";
+  ok2 = ~null sv1 && #sv1 == 3;
+  ok3 = sv1!0 == "a" && sv1!1 == "b" && sv1!2 == "c"; 
+  ok4 = first sv1 == "a" && last sv1 == "c";
+  rmfirst sv1;
+  rmlast sv1;
+  ok5 = #sv1 == 1 && sv1!0 == "b";
+  sv1 = mkstlvec "x" 4;
+  update sv1 1 "y";
+  ok6 = #sv1 == 4 && sv1!3 == "x" && sv1!1 == "y"; 
+  ok7 = check_refcs sv1 [3,1,3,3];
+  ok = all_ok [ok1,ok2,ok3,ok4,ok5,ok6,ok7];
+  show_result "basic_ops" ok;
+end;
+
+test_erase = ok when
+  show_start "erase";
+  sv1 = stlconst $ stlvec ("a".."f");
+  sv2 = stlvec sv1;
+  erase (sv2,svbeg,2);
+  ok1 = members sv2 == ("c".."f");
+  sv2 = stlvec sv1;
+  erase (sv2,1,3);
+  ok2 = members sv2 == ["a","d","e","f"];
+  sv2 = stlvec sv1;
+  erase (sv2,2,svend);
+  ok3 = members sv2 == ["a","b"];
+  erase sv1;
+  ok4 = members sv1 == ("a".."f");
+  ok5 = check_refcs sv1 [2,2,1,1,1,1];
+  ok6 = check_refcs sv2 [1,1];
+  ok = all_ok [ok1,ok2,ok3,ok4,ok5,ok6];
+  show_result "erase" ok;
+end;
+ 
+test_insert = ok when
+  show_start "insert";
+  sv1 = stlvec ["a"];
+  sv2 = stlconst $ stlvec ("b".."d");
+  insert (sv1, 0) ["x"];
+  ok1 = members sv1 == ["x","a"];
+  insert (sv1, stl::svend) sv2;
+  ok2 = members sv1 == ["x","a","b","c","d"];
+  insert (sv1, 1) ["y", "z"];
+  ok3 = members sv1 == ["x","y","z","a","b","c","d"];
+  sv1 = stlvec ["a","b"];
+  insert (sv1,svend) (sv2,1,3);
+  ok4 = members sv1 == ["a","b","c","d"];
+  insert (sv2,1) ["z"];
+  ok5 = members sv2 == ("b".."d");
+  ok6 = check_refcs sv1 [1,1,2,2];
+  ok7 = check_refcs sv2 1;
+  ok = all_ok [ok1,ok2,ok3,ok4,ok5,ok6,ok7];
+  show_result "insert" ok;
+end;
+
+test_all_equal = ok when
+  show_start "all_equal";
+  sv1 = stlvec (0..5);
+  sv2 = stlvec (0..5);
+  sv3 = emptystlvec;
+  put err_p false; 
+  catch eh $ all_equal crash sv1 sv2;
+  ok0 = get err_p;
+  ok1 = all_equal (==) sv1 sv2;
+  ok2 = all_equal (==) sv1 sv1;
+  ok3 = all_equal (==) (sv1,1,svend) (sv2,1,svend);
+  rmlast sv2;
+  rmfirst sv2;
+  ok4 = all_equal (==) (sv1,1,#sv1-1) sv2;
+  ok5 = all_equal (==) sv2 (sv1,1,#sv1-1);
+  ok6 = ~all_equal (==) sv1 sv2;
+  ok7 = ~all_equal (==) sv2 sv1;
+  ok8 = check_refcs sv1 1;
+  ok9 = check_refcs sv2 1;
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5,ok6,ok7,ok8,ok9];
+  show_result "all_equal" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_listmap = ok when
+  show_start "listmap";
+  sv1 = stlvec (0..5);
+  put err_p false; 
+  catch eh $ listmap crash sv1;
+  ok0 = get err_p;
+  ok1 = listmap (+1) sv1 == (1..6);
+  ok2 = listmap (+1) (sv1,1,svend) == (2..6);
+  ok3 = listmap (+1) (sv1,1,#sv1-1) == (2..5);
+  ok4 = listmap (+1) emptystlvec == [];
+  ok5 = check_refcs sv1 1;
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5];
+  show_result "listmap" ok;
+end with 
+  eh x = put err_p true; 
+  crash x = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_listcatmap = ok when
+  show_start "listcatmap";
+  sv1 = stlvec ("a".."e");
+  put err_p false; 
+  catch eh $ listcatmap crash sv1;
+  ok0 = get err_p;
+  ok1 = listcatmap hyphen sv1 == ["a-a","b-b","c-c","d-d","e-e"];
+  ok2 = listcatmap hyphen (sv1,1,svend) == ["b-b","c-c","d-d","e-e"];
+  ok3 = listcatmap hyphen (sv1,1,#sv1-1) == ["b-b","c-c","d-d"];
+  ok4 = listcatmap hyphen emptystlvec == [];
+  ok5 = check_refcs sv1 1;
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5];
+  show_result "listcatmap" ok;
+end with 
+  eh x = put err_p true; 
+  crash x = throw exception;
+  hyphen x = [x+"-"+x];
+end when 
+  err_p = ref false; 
+end; 
+
+test_do = ok when
+  show_start "do";
+  put err_p false; 
+  catch eh $ do crash sv;
+  ok0 = get err_p;
+  do append_sv1 sv;
+  do append_sv1 (sv,svbeg,3);
+  do append_sv1 (sv,3,svend);
+  ok1 = members sv1 == ["a","b","c","d","e","a","b","c","d","e"];
+  ok2 = check_refcs sv 3;
+  ok3 = check_refcs sv1 2;
+  ok = all_ok [ok0,ok1,ok2,ok3];
+  show_result "do" ok;
+end with 
+  eh x = put err_p true; 
+  crash x = throw exception;
+  append_sv1 x = append sv1 x;
+end when 
+  err_p = ref false; 
+  sv = stlvec ("a".."e");
+  sv1 = emptystlvec;
+end; 
+
+test_foldl = ok when
+  show_start "foldl";
+  sv1 = stlvec ("a".."f");
+  put err_p false; 
+  catch eh $ foldl crash "_" sv1;
+  ok0 = get err_p;
+  ok1 = foldl (+) "_" sv1 == "_abcdef";
+  ok2 = foldl (+) "_" (sv1,1,3) == "_bc";
+  ok3 = foldl (+) "_" (sv1,1,svend) == "_bcdef";
+  ok4 = check_refcs sv1 1;
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4];
+  show_result "foldl" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception;
+end when 
+  err_p = ref false; 
+end; 
+
+test_foldl1 = ok when
+  show_start "foldl1";
+  sv1 = stlvec ("a".."f");
+  put err_p false; 
+  catch eh $ foldl1 crash sv1;
+  ok0 = get err_p;
+  ok1 = foldl1 join sv1 == "a_b_c_d_e_f";
+  ok2 = foldl1 join (sv1,1,3) == "b_c";
+  ok3 = foldl1 join (sv1,1,svend) == "b_c_d_e_f";
+  ok4 = check_refcs sv1 1;
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4];
+  show_result "foldl1" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception;
+  join x y = x + "_" + y;
+end when 
+  err_p = ref false; 
+end; 
+
+test_foldr = ok when
+  show_start "foldr";
+  sv1 = stlvec ("a".."f");
+  put err_p false; 
+  catch eh $ foldr crash "_" sv1;
+  ok0 = get err_p;
+  ok1 = foldr (+) "_" sv1 == "abcdef_";
+  ok2 = foldr (+) "_" (sv1,1,3) == "bc_";
+  ok3 = foldr (+) "_" (sv1,1,svend) == "bcdef_";
+  ok4 = check_refcs sv1 1;
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4];
+  show_result "foldr" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception;
+end when 
+  err_p = ref false; 
+end;
+
+test_foldr1 = ok when
+  show_start "foldr1";
+  sv1 = stlvec ("a".."f");
+  put err_p false; 
+  catch eh $ foldr1 crash sv1;
+  ok0 = get err_p;
+  ok1 = foldr1 join sv1 == "a_b_c_d_e_f";
+  ok2 = foldr1 join (sv1,1,3) == "b_c";
+  ok3 = foldr1 join (sv1,1,svend) == "b_c_d_e_f";
+  ok4 = check_refcs sv1 1;
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4];
+  show_result "foldr1" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception;
+  join x y = x + "_" + y;
+end when 
+  err_p = ref false; 
+end; 
+
+test_listfilter = ok when
+  show_start "listfilter";
+  sv1 = stlvec ("a".."f");
+  put err_p false; 
+  catch eh $ listfilter crash sv1;
+  ok0 = get err_p;
+  ok1 = listfilter (>"b") sv1 == ("c".."f");
+  ok2 = listfilter (>"d") (sv1,1,svend) == ["e","f"];
+  ok3 = listfilter (>"b") (sv1,1,#sv1-1) ==  ["c","d","e"];
+  ok4 = listfilter (>"b") emptystlvec == []; 
+  ok5 = check_refcs sv1 1;
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5];
+  show_result "listfilter" ok;
+end with 
+  eh x = put err_p true; 
+  crash x = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_stlvec = ok when
+  show_suite_start "STLVEC";
+  ok = 1;
+  ok = test_create && ok;
+  ok = test_members && ok;
+  ok = test_basic_ops && ok;
+  ok = test_erase && ok;
+  ok = test_insert && ok;
+  ok = test_all_equal && ok;
+  ok = test_listmap && ok;
+  ok = test_listcatmap && ok;
+  ok = test_do && ok;
+  ok = test_foldl && ok;
+  ok = test_foldl1 && ok;
+  ok = test_foldr && ok;
+  ok = test_foldr1 && ok;
+  ok = test_listfilter && ok;
+  show_suite_result "STLVEC" ok;
+end;
+

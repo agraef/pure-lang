@@ -1,0 +1,162 @@
+/* stlvec.pure: Pure interface to C++ STL Vectors */
+    
+
+/* Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>
+
+   DRAFT FOR DISCUSSION PURPOSES ONLY. */
+ 
+using system;
+using stl;
+using "lib:stlvec";
+
+// stlvec constuctors
+nonfix STLVEC;
+nonfix CONST_STLVEC;
+STLVEC = 'STLVEC;
+CONST_STLVEC = 'CONST_STLVEC;
+
+// stlvec types
+type stlvec (STLVEC _);
+type stlvec (CONST_STLVEC _);
+type mutable_stlvec (STLVEC _);
+
+// stlvec iterator tuples
+type svit (STLVEC _);
+type svit (STLVEC _, _);
+type svit (CONST_STLVEC _);
+type svit (CONST_STLVEC _, _);
+type mutable_svit (STLVEC _);
+type mutable_svit (STLVEC _, _);
+
+namespace stl;
+
+/*** C++ support *****************************************************/
+
+private extern void* sv_make_a();
+private extern void* sv_make_b(expr* xs);
+private extern void* sv_make_c(expr* xs, int n);
+private extern void* sv_dup(expr* it);
+private extern void  sv_delete(void* vec);
+
+private extern void  sv_reserve(void* vec, int n);
+private extern int   sv_size(void* vec);
+private extern bool  sv_empty(void* vec);
+private extern int   sv_capacity(void* vec);
+
+private extern expr* sv_get(void* vec, int pos);
+private extern void  sv_put(void* vec, int pos, expr* val);
+private extern expr* sv_front(void* vec);
+private extern expr* sv_back(void* vec);
+
+private extern void  sv_push_back(void* vec, expr* val);
+private extern void  sv_pop_back(void* vec);
+private extern void  sv_splice(void* vec, int b, expr* xs_it);
+private extern void  sv_erase(expr* it);
+private extern void  sv_clear(void* vec);
+
+private extern bool  sv_equal(expr* fun, expr* it, expr* it);
+private extern expr* sv_listmap(expr* fun, expr* it);
+private extern expr* sv_listcatmap(expr* fun, expr* it);
+private extern expr* sv_foldl(expr* fun, expr* val, expr* it);
+private extern expr* sv_foldl1(expr* fun, expr* it);
+private extern expr* sv_foldr(expr* fun, expr* val, expr* it);
+private extern expr* sv_foldr1(expr* fun, expr* it);
+
+/*** Constants used to specify "iterator tuples" *************************/
+
+const svbeg  =  0;
+const svend  = -1; 
+const svback = -2;  // back_insert_iterator
+const svrev  = -3;  // request reversal of iterators
+
+/*** Private functions on stlvec *****************************************/
+
+private get_sv bad_selfwrite;
+
+get_sv (STLVEC v) = v;
+get_sv (CONST_STLVEC v) = v;
+
+bad_selfwrite src::svit trg::svit = 
+  (~typep mutable_stlvec src) && (get_sv src == get_sv trg);
+
+/*** Public functions on stlvec *****************************************/
+
+::stlconst (STLVEC v) = (CONST_STLVEC v);
+::stlconst (CONST_STLVEC v) = (CONST_STLVEC v);
+
+::emptystlvec = STLVEC (sentry sv_delete (sv_make_a));
+
+::stlvec sv::svit = STLVEC (sentry sv_delete (sv_dup sv));
+::stlvec xs = STLVEC (sentry sv_delete (sv_make_b xs));
+
+::mkstlvec x n::int = STLVEC (sentry sv_delete (sv_make_c x n));
+
+::reserve (STLVEC v) i::int = sv_reserve v i;
+
+::capacity (STLVEC v) |
+::capacity (CONST_STLVEC v) = sv_capacity v;
+
+::null (STLVEC v) |
+::null (CONST_STLVEC v) = sv_empty v;
+
+(::!) (STLVEC v) p::int |
+(::!) (CONST_STLVEC v) p::int = sv_get v p;
+
+(::#) (STLVEC v) |
+(::#) (CONST_STLVEC v) = sv_size v;
+
+firstx__ (STLVEC v) |
+firstx__ (CONST_STLVEC v) = sv_front v;
+namespace; 
+first sv::stlvec = stl::firstx__ sv; // ::first did not work
+namespace stl;
+
+::last (STLVEC v) |
+::last (CONST_STLVEC v) = sv_back v;
+
+::append sv@(STLVEC v) x = sv_push_back v x $$ sv;
+
+::rmfirst sv@(STLVEC v) = sv_erase (STLVEC v, 0, 1) $$ sv;
+
+::rmlast sv@(STLVEC v) = sv_pop_back v $$ sv;
+
+::update sv@(STLVEC v) p::int x = sv_put v p x $$ sv;
+
+::erase it@(STLVEC v, f::int, l::int) = sv_erase it $$ STLVEC v;
+
+::erase (STLVEC v, p::int) = erase (STLVEC v, p, p+1);
+
+::erase sv@(STLVEC v) = sv_clear v $$ sv;
+
+::insert (STLVEC v, p::int) it::svit = sv_splice v p it $$ STLVEC v;
+::insert (STLVEC v, p::int) xs::list = sv_splice v p xs $$ STLVEC v;
+
+::all_equal comp it1::svit it2::svit = sv_equal comp it1 it2;
+
+(::==) sv1::stlvec sv2::svit = sv_equal (==) sv1 sv2;
+
+(::~=) sv1::stlvec sv2::svit = ~sv_equal (==) sv1 sv2;
+
+::listmap f it::svit = sv_listmap f it;
+
+::listcatmap f it::svit = sv_listcatmap f it;
+
+::foldl f x it::svit = sv_foldl f x it;
+
+::foldl1 f it::svit = sv_foldl1 f it;
+
+::foldr f x it::svit = sv_foldr f x it;
+
+::foldr1 f it::svit = sv_foldr1 f it;
+
+::members it::svit = sv_foldr (\x xs->x:xs) [] it;
+
+::do f it::svit = sv_foldl (\_ x->f x) () it $$ ();
+
+::listfilter p it::svit = sv_foldr f [] it with
+  f x xs = case p x of
+    1 = x:xs;
+    0 = xs;
+    y = throw failed_cond;
+  end;
+end;

@@ -1,0 +1,137 @@
+/* ut_sv_numeric.pure -- Unit tests for sv_numeric.pure
+    
+   Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>
+
+   DRAFT FOR DISCUSSION PURPOSES ONLY.
+
+*/
+
+using system;
+using stlvec;
+using sv_numeric;
+using ut_helpers;
+
+using namespace stl;
+
+test_accumulate = ok when
+  show_start "accumulate";  
+  n1 = 1;
+  n2 = 2;
+  n3 = 3;
+  n4 = 4;
+  n5 = 5;
+  n6 = 6;
+  ac = "c";
+  ad = "d";
+
+  // accumulate over integers
+  sv1 = stlvec [n1,n2,n3,n4,n5,n6]; 
+  ok1 = 21 == accumulate sv1 0 (+);
+  
+  // force a failed match in the middle of accumulating
+  sv2 = stlvec [n1,n2,ac,ad];
+  catch eh $ accumulate sv2 0 (\x::int y::int->x+y);
+  ok2 = get err_p;
+
+  // check refcs
+  ok3 = check_refcs sv1 [2,2,1,1,1,1];
+  ok4 = check_refcs sv2 1;
+  ok = all_ok [ok1,ok2,ok3,ok4];
+  show_result "accumulate" ok;
+end with
+  eh x = put err_p true;
+end when
+  err_p = ref false;
+end;
+
+test_inner_product = ok when
+  show_start "inner_product";  
+  n1 = 1;
+  n2 = 2;
+  n3 = 3;
+  n4 = 4;
+  n5 = 5;
+  n6 = 6;
+  ac = "c";
+  ad = "d";
+
+  // inner_product over integers
+  sv1 = stlvec [n1,n2,n3,n4,n5,n6]; 
+  ok1 = 55 == inner_product (sv1,svbeg,5) (sv1,svbeg) 0 (+) (*);
+
+  // force a range overflow
+  put err_p false;
+  catch eh $ inner_product sv1 (sv1,3) 0 (+) (*);
+  ok2 = get err_p;
+  
+  // force a failed match
+  put err_p false;
+  sv2 = stlvec [n1,n2,ac,ad];
+  catch eh $ inner_product sv1 (sv2,svbeg) 0 (+) (\x::int y::int->x*y);
+  ok3 = get err_p;
+
+  // check refcs
+  ok4 = check_refcs sv1 [2,2,1,1,1,1];
+  ok5 = check_refcs sv2 1;
+  ok = all_ok [ok1,ok2,ok3,ok4,ok5];
+  show_result "inner_product" ok;
+end with
+  eh x = put err_p true;
+end when
+  err_p = ref false;
+end;
+
+test_partial_sum = ok when
+  show_start "partial_sum";  
+  n1 = 10;
+  n2 = 20;
+  n3 = 30;
+  n4 = 40;
+  n5 = 50;
+  n6 = 60;
+  ac = "c";
+  ad = "d";
+
+  // partial_sum over integers to svback
+  sv1 = stlvec [n1,n2,n3,n4,n5,n6]; 
+  sv2 = emptystlvec;
+  pei = partial_sum sv1 (sv2,svback) (+);
+  ok1 = pei == svend && members sv2 == [10,30,60,100,150,210];
+
+  // partial_sum over integers to fixed target
+  pei = partial_sum (sv1,svbeg,4) (sv2,svbeg) (+);
+  ok2 = pei == 4 && members (sv2,svbeg,pei) == [10,30,60,100];
+
+  // force a range overflow
+  put err_p false;
+  catch eh $ partial_sum sv1 (sv2,2) (+);
+  ok3 = get err_p;
+
+  // force a failed match
+  put err_p false;
+  sv2 = stlvec [n1,n2,n3,ac,ad];
+  sv3 = emptystlvec;
+  catch eh $ partial_sum sv2 (sv3,svback) (\x::int y::int->x+y);
+  ok4 = get err_p;
+
+  // check refs
+  ok5 = check_refcs sv1 [3,2,2,1,1,1];
+  ok6 = check_refcs sv2 [2,1,1,1,1];
+  ok7 = check_refcs sv3 [1,1,1];
+  ok = all_ok [ok1,ok2,ok3,ok4,ok5,ok6,ok7];
+  show_result "partial_sum" ok;
+end with
+  eh x = put err_p true;
+end when
+  err_p = ref false;
+end;
+
+test_sv_numeric = ok when
+  show_suite_start "SV_NUMERIC";
+  ok = 1;
+  ok = test_accumulate && ok;
+  ok = test_inner_product && ok;
+  ok = test_partial_sum && ok;
+  show_suite_result "SV_NUMERIC" ok;
+end;
+
