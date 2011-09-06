@@ -2110,6 +2110,15 @@ If prefix ARG is not nil, remove an existing tracepoint instead."
 	   (parse-partial-sexp (point-min) (point)))))
     (or (> (car state) 0) (nth 3 state) (nth 4 state))))
 
+(defsubst pure-within-literal-or-list ()
+  ;; Check whether point is within a Pure literal or Pure list (bracket sexp).
+  (let ((state
+	 (save-excursion
+	   (parse-partial-sexp (point-min) (point)))))
+    (or (and (> (car state) 0)
+	     (equal ?\[ (char-after (nth 1 state))))
+	(nth 3 state) (nth 4 state))))
+
 (defmacro pure-forward-sexp (&optional arg)
   ;; stripped-down version of forward-sexp
   (or arg (setq arg 1))
@@ -2196,7 +2205,9 @@ INDENT-COL)."
   (save-excursion
    (when (re-search-forward "[ \t]\\(=\\)\\([ \t]\\|[ \t]*$\\)" lim t)
      (goto-char (match-beginning 1))
-     (and (not (pure-within-literal))
+     ;; Note that we generally exclude a '=' directly inside a list here, to
+     ;; avoid improper alignments relative to a '=' in a list comprehension.
+     (and (not (pure-within-literal-or-list))
 	  (if flag
 	      ;; do only basic block indent
 	      (let ((col (pure-basic-indent-level)))
