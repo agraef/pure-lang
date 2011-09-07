@@ -107,7 +107,9 @@ test:
 ### Remove dlls
 
 clean:	
-	@ rm -f "$(DEBUG_DLL_DIR)/*" "$(PROD_DLL_DIR)/*"
+	@ test -d $(DEBUG_DLL_DIR) || mkdir $(DEBUG_DLL_DIR)
+	@ test -d $(PROD_DLL_DIR) || mkdir $(PROD_DLL_DIR)
+	@ rm -f $(DEBUG_DLL_DIR)/* $(PROD_DLL_DIR)/*
 	@ rm -f *.so
 
 ### Install and uninstall
