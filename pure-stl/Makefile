@@ -101,7 +101,7 @@ $(DLL_DIR)/stlalgorithm$(DLL): $(ALGO_HPPS) $(ALGO_CPPS)
 ### Compile unit tests
 
 test:
-	pure -x ut_all.pure
+	pure -x ut/ut_all.pure
 
 
 ### Remove dlls

@@ -154,6 +154,7 @@ void index_error();
 void range_overflow();
 void range_overlap();
 void bad_argument();
+void failed_cond();
 
 bool is_stl_begin(px*);
 bool is_stl_end(px*);

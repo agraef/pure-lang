@@ -129,11 +129,9 @@ void px_unref(px* x)
 px_handle& px_handle::operator=(const px_handle& rhs)
 {
   if (&rhs!=this){
-    //cerr << "pxh assign: " << *this << " = " << rhs << endl; 
     px_new(rhs.pxp_);
     px_free(pxp_);
     pxp_ = rhs.pxp_;
-    //cerr << "pxh assigned: " << *this << " = " << rhs << endl; 
   }
   return *this;
 }
@@ -183,6 +181,7 @@ bool pxh_pred1::operator()(const pxh& arg)
   if (!pxres) bad_function();
   int ok = pure_is_int(pxres, &ret);
   px_freenew(pxres);
+  if (!ok) failed_cond();
   return ok && ret;
 }
 
@@ -195,6 +194,7 @@ bool pxh_pred2::operator()(const pxh& left, const pxh& right)
   if (!pxres) bad_function();
   int ok = pure_is_int(pxres, &ret);
   px_freenew(pxres);
+  if (!ok) failed_cond();
   return ok && ret;
 }
 
@@ -239,6 +239,11 @@ void range_overlap()
   pure_throw(pure_symbol(pure_sym("range_overlap")));
 }
 
+void failed_cond()
+{
+  pure_throw(pure_symbol(pure_sym("failed_cond")));
+}
+
 static const int stl_begin_xxx = 0;
 static const int stl_end_xxx = 1;
 
@@ -263,7 +268,6 @@ bool is_stl_end(px* x){
   bool ret = pure_is_pointer(x, &ptr);
   if (ret)
     ret = ptr == (void*)&stl_end_xxx;
-  //cerr << "is_stl_end: " << ret << endl;
   return ret;
 }
 
