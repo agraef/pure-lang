@@ -49,15 +49,13 @@ FLAGS = $(if $(DBG_SUPPORT),$(DBG_FLAGS),$(PROD_FLAGS))
 DLL_DIR = $(if $(DBG_SUPPORT),$(DEBUG_DLL_DIR),$(PROD_DLL_DIR))
 
 MODULES = stlcontainer stlalgorithm
-CONTAINER_BASENAMES = stl stlvec
+CONTAINER_BASENAMES = stlbase stlvec
 ALGO_BASENAMES = sv_modifying sv_nonmodifying sv_sort \
 	         sv_merge sv_heap sv_minmax sv_numeric
 
-
-
 CONTAINER_HPPS = $(addsuffix .hpp, $(CONTAINER_BASENAMES))
 CONTAINER_CPPS = $(addsuffix .cpp, $(CONTAINER_BASENAMES))
-ALGO_HPPS = stl.hpp stlvec.hpp sv_algorithm.hpp
+ALGO_HPPS = stlbase.hpp stlvec.hpp sv_algorithm.hpp
 ALGO_CPPS = $(addsuffix .cpp, $(ALGO_BASENAMES))
 
 DLLS = $(addsuffix $(DLL), $(MODULES))

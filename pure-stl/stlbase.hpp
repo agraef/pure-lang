@@ -1,4 +1,4 @@
-/* stl.hpp -- Support for stl containers of pure_expr*
+/* stlbase.hpp -- Support for stl containers of pure_expr*
     
    Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>
 
