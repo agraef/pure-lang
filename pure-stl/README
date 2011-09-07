@@ -27,9 +27,11 @@ Library's vector for the Pure_ programming language.
 Introduction
 ============
 
-The C++ Standard Template Library ("STL") is a library of generic containers
+The C++ Standard Template Library ("STL_") is a library of generic containers
 (data structures designed for storing other objects) and generic algorithms
-that operate on the them. (http://www.cplusplus.com/reference/stl/)
+that operate on the them. 
+
+.. _STL http://www.cplusplus.com/reference/stl/
 
 One of the most useful of the containers is STL vector, which holds a
 sequence of objects that can be accessed in constant time according to their
@@ -38,25 +40,67 @@ position in the sequence.
 Pure-Stlvec is a collection of modules that provide an interface to STL
 vectors (specialized to hold Pure expressions) and most of the STL algorithms
 that apply to them. On the Pure side, the STL vectors are referred to as
-"stlvecs".  The stlvec module provides basic functions, such as those that
-create stlvecs and access their members. The other modules, sv_modifying,
-sv_nonmodifying, sv_sort, sv_merge, sv_heap, sv_minmax and sv_numeric provide
-access to the STL algorithms. This grouping of the STL algorithms follows that
-found at http://www.cplusplus.com/reference/algorithm/. This web page contains
-a table that summarizes of all of the algorithms in one place.
+"stlvecs". The stlvec.pure module provides basic functions, such as those that
+create stlvecs and access their members. The other modules, sv_modifying.pure,
+sv_nonmodifying.pure, sv_sort.pure, sv_merge.pure, sv_heap.pure,
+sv_minmax.pure and sv_numeric.pure provide access to the STL algorithms. This
+grouping of the STL algorithms follows that found at
+http://www.cplusplus.com/reference/algorithm/. This web page contains a table
+that summarizes of all of the algorithms in one place. An "umbrella" module,
+stl.pure, loads stlvec.pure and all of the STL algorithm interface modules.
 
-For the sake of brevity and understandability, the descriptions provided here
-are simplified and incomplete. users are encouraged to refer to the STL
-documentation for their STL implemenation. A good book on STL is STL Tutorial
-and Reference Guide, Second Edition, by David R. Musser, Gillmer J. Derge and
-Atul Saini. That said, it must be noted that the Pure-Stlvec functions are not
-guaranteed to have the same behavior as the corresponding functions in the
-STL. In particular, the Pure-Stlvec versions sometimes check for indexing
-errors and range_overflow errors where their STL counterparts might not.
+Simple Example
+--------------
+
+
+Documentation
+-------------
+
+The documentation of the functions provided by the stlvec.pure module are
+reasonably complete.  In contrast, the descriptions of functions provided in
+the STL algorithm modules are purposely simplified (and may not, therefore, be
+technically accurate). This reflects that fact that the functions provided by
+Stlvec have an obvious correspondence to the functions provided by the STL,
+and the STL is extremely well documented. Furthermore, using the Pure
+interpreter, it is very easy to simply play around with with any of the Stlvec
+functions if there are doubts, especially with respect to "corner cases."
+Often this leads to a deeper understanding compared to reading a precise
+technical description.
+
+A good book on STL is STL Tutorial and Reference Guide, Second Edition, by
+David R. Musser, Gillmer J. Derge and Atul Saini. The web pages cited above
+also provide excellent documentation.
+
+It should be noted that the Pure-Stlvec functions are not guaranteed to have
+the same behavior as the corresponding functions in the STL. In particular,
+the Pure-Stlvec versions generally check for indexing errors and range_overflow
+errors where their STL counterparts might not.
+
+Copying
+=======
+
+| Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>.
+| Copyright (c) 2011 by Albert Graef <Dr.Graef@t-online.de>.
+
+All rights reserved.
+
+Stlvec is free software: you can redistribute it and/or modify it
+under the terms of the New BSD License, often referred to as the 3
+clause BSD license.  Stlvec is distributed in the hope that it will be
+useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+Please see the COPYING file for the actual license applicable to Stlvec.
 
 Installation
 ============
 
+Get the latest source from
+http://pure-lang.googlecode.com/files/pure-stlvec-@version@.tar.gz.
+ 
+To install Stlvec, unzip the source, cd to the pure-stlvec directory, run
+``make``, and then run ``sudo make install`` (on Linux). After that, you can
+run ``make test`` to see if the installation worked.
 
 Access to Members and Ranges
 ============================
@@ -239,10 +283,30 @@ instead of f,m,l.
 Error Handling
 ==============
 
-Warn re circular refs. Can be a problem with mutable structures.
+The functions provided by Stlvec throw exceptions when they encounter errors.
 
-Discuss error handling. Types of errors and error messages. Includes
-propagation of errors thrown by Pure call-back functions.
+bad_argument   - Usually reflects a malformed iterator tuple
+bad_function   - Call to a Pure callback function failed 
+failed_cond    - Pure callback predicate failed
+out_of_bounds  - Index out of bounds 
+range_overflow - Target range is not large enough to hold the copied
+                 result.
+range_overlap -  Input range and output range overlap in a bad way
+
+In addition, any exception thrown by a Pure callback function will be passed
+through by the Stlvec function that was using the callback function.
+
+Examples
+--------
+
+sva_copy for range_overlap and range_overflow.
+
+Circular References
+-------------------
+
+Warn re circular refs. They are not detected. Can be a problem with mutable
+structures. Should never be a problem if plain old immutable Pure objects are
+inserted in a stlvec.
 
 STL Vector as Container
 =======================
@@ -1005,20 +1069,39 @@ All of the functions in this module require the caller to supply an ordering
 functions, comp (as for the Pure library sort function). The functions (<) and
 (>) are commonly passed as comp.
 
-.. function:: min_element
+.. function:: min_element (sv,first,last) comp
 
-.. function:: max_element
+   Returns the position of the minimal element of sv[first,last) under the
+   ordering defined by comp.
 
-.. function:: lexicographical_compare
+.. function:: max_element (sv,first,last) comp
 
-.. function:: next_permutation
+   Returns the position of the maximal element of sv[first,last) under the
+   ordering defined by comp.
 
-.. function:: prev_permutation
+.. function:: lexicographical_compare (sv1,first1,last1) (sv2,first2,last2) comp
+
+   Compare sv1[first1,last1) and sv2[first2,last2) element by element according
+   to the ordering defined by comp. Return true if the first sequence is less
+   than the second.
+
+.. function:: next_permutation (msv,first,last) comp
+
+   Rearranges msv[first,last) to produce the next permutation, in the ordering
+   imposed by comp. The first permutation has the elements of msv[first,last)
+   in ascending order and the last has the elements in descending order. If
+   msv[first,last) is not the last permutation, change msv[first,last) to the
+   next permutation and return true. Otherwise, change it to the first
+   permutation and return true.
+
+.. function:: prev_permutation (msv,first,last) comp
+
+   This is nex_permutation in reverse.
 
 Examples
 --------
 
-See ut_sv_heap.pure
+See ut_sv_minmax.pure
 
 
 STL Numeric Algorithms
@@ -1043,6 +1126,8 @@ Operations
 See parameter naming conventions at ..
 
 .. function:: accumulate
+
+   
 
 .. function:: inner_product
 
