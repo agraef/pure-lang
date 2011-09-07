@@ -48,8 +48,17 @@ DBG_SUPPORT = $(if $(findstring debug,$(MAKECMDGOALS)),ON)
 FLAGS = $(if $(DBG_SUPPORT),$(DBG_FLAGS),$(PROD_FLAGS))
 DLL_DIR = $(if $(DBG_SUPPORT),$(DEBUG_DLL_DIR),$(PROD_DLL_DIR))
 
-MODULES = stl stlvec sv_modifying sv_nonmodifying sv_sort \
-          sv_merge sv_heap sv_minmax sv_numeric
+MODULES = stlcontainer stlalgorithm
+CONTAINER_BASENAMES = stl stlvec
+ALGO_BASENAMES = sv_modifying sv_nonmodifying sv_sort \
+	         sv_merge sv_heap sv_minmax sv_numeric
+
+
+
+CONTAINER_HPPS = $(addsuffix .hpp, $(CONTAINER_BASENAMES))
+CONTAINER_CPPS = $(addsuffix .cpp, $(CONTAINER_BASENAMES))
+ALGO_HPPS = stl.hpp stlvec.hpp sv_algorithm.hpp
+ALGO_CPPS = $(addsuffix .cpp, $(ALGO_BASENAMES))
 
 DLLS = $(addsuffix $(DLL), $(MODULES))
 DLL_TRGS = $(addprefix $(DLL_DIR)/, $(DLLS))
@@ -61,13 +70,17 @@ dll debug: $(DLLS)
 $(DLLS): $(DLL_TRGS)
 	cp $(DLL_DIR)/*$(DLL) .
 
-$(DLL_DIR)/%$(DLL): *.hpp %.cpp
+$(DLL_DIR)/stlcontainer$(DLL): $(CONTAINER_HPPS) $(CONTAINER_CPPS)
 	@ test -d $(DLL_DIR) || mkdir $(DLL_DIR)
-	$(CXX) $(shared) $(FLAGS) $(PIC) $(basename $(@F)).cpp -o $@
+	$(CXX) $(shared) $(FLAGS) $(PIC) $(CONTAINER_CPPS) -o $@
+
+$(DLL_DIR)/stlalgorithm$(DLL): $(ALGO_HPPS) $(ALGO_CPPS)
+	@ test -d $(DLL_DIR) || mkdir $(DLL_DIR)
+	$(CXX) $(shared) $(FLAGS) $(PIC) $(ALGO_CPPS) -o $@
 
 ### Compile unit tests
 
-tests:	x_sv_all
+test:	x_sv_all
 
 x_sv_%:	ut_x_sv_%.pure stl*.pure sv_*.pure $(DLLS)
 	pure -c ut_$@.pure -o $@
