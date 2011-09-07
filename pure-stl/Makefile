@@ -13,6 +13,23 @@
 #	make -n debug
 #	make -n
 
+
+# Package name and version number:
+dist = pure-sql3-$(version)
+version = 0.4
+
+# Try to guess the installation prefix (this needs GNU make):
+prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
+ifeq ($(strip $(prefix)),)
+# Fall back to /usr/local.
+prefix = /usr/local
+endif
+
+# Installation goes into $(libdir)/pure, you can also set this directly
+# instead of $(prefix).
+libdir = $(prefix)/lib
+
+
 # Try to guess the host system type.
 host = $(shell ./config.guess)
 
@@ -36,7 +53,12 @@ ifneq "$(findstring x86_64-,$(host))" ""
 PIC = -fPIC
 endif
 
-### Macros
+### Parameter Macros
+
+DLL_BASENAMES = stlcontainer stlalgorithm
+CONTAINER_BASENAMES = stlbase stlvec
+ALGO_BASENAMES = sv_modifying sv_nonmodifying sv_sort \
+	         sv_merge sv_heap sv_minmax sv_numeric
 
 DEBUG_DLL_DIR = ./debug_dll
 PROD_DLL_DIR = ./dll
@@ -44,22 +66,22 @@ PROD_DLL_DIR = ./dll
 DBG_FLAGS = -DSTL_DEBUG
 PROD_FLAGS = 
 
+### Derived Macros
+
 DBG_SUPPORT = $(if $(findstring debug,$(MAKECMDGOALS)),ON)
 FLAGS = $(if $(DBG_SUPPORT),$(DBG_FLAGS),$(PROD_FLAGS))
 DLL_DIR = $(if $(DBG_SUPPORT),$(DEBUG_DLL_DIR),$(PROD_DLL_DIR))
 
-MODULES = stlcontainer stlalgorithm
-CONTAINER_BASENAMES = stlbase stlvec
-ALGO_BASENAMES = sv_modifying sv_nonmodifying sv_sort \
-	         sv_merge sv_heap sv_minmax sv_numeric
-
+PURE_BASENAMES = stl $(CONTAINER_BASENAMES) $(ALGO_BASENAMES)
 CONTAINER_HPPS = $(addsuffix .hpp, $(CONTAINER_BASENAMES))
 CONTAINER_CPPS = $(addsuffix .cpp, $(CONTAINER_BASENAMES))
 ALGO_HPPS = stlbase.hpp stlvec.hpp sv_algorithm.hpp
 ALGO_CPPS = $(addsuffix .cpp, $(ALGO_BASENAMES))
 
-DLLS = $(addsuffix $(DLL), $(MODULES))
+DLLS = $(addsuffix $(DLL), $(DLL_BASENAMES))
 DLL_TRGS = $(addprefix $(DLL_DIR)/, $(DLLS))
+DIST_MODULES = $(addsuffix .pure, $(PURE_BASENAMES)) $(DLLS)
+INSTALLED_MODULES = $(addprefix $(libdir)/pure/, $(DIST_MODULES))
 
 ### Make dlls
 
@@ -78,16 +100,24 @@ $(DLL_DIR)/stlalgorithm$(DLL): $(ALGO_HPPS) $(ALGO_CPPS)
 
 ### Compile unit tests
 
-test:	x_sv_all
+test:
+	pure -x ut_all.pure
 
-x_sv_%:	ut_x_sv_%.pure stl*.pure sv_*.pure $(DLLS)
-	pure -c ut_$@.pure -o $@
 
-### Remove executables and dlls
+### Remove dlls
 
 clean:	
-	@ rm -f $(DEBUG_DLL_DIR)/* $(PROD_DLL_DIR)/*
-	@ rm -f x_sv_*
+	@ rm -f "$(DEBUG_DLL_DIR)/*" "$(PROD_DLL_DIR)/*"
+	@ rm -f *.so
 
-.PHONY:	dll debug tests clean
+### Install and uninstall
+
+install: dll
+	@ test -d "$(libdir)/pure" || mkdir -p "$(libdir)/pure"
+	@ cp $(DIST_MODULES) "$(libdir)/pure"
+
+uninstall:
+	rm -f $(INSTALLED_MODULES)
+
+.PHONY:	dll debug test clean install uninstall
 
