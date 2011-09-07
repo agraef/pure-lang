@@ -222,7 +222,7 @@ x
   an arbitrary Pure expression
 
 xs
-  a list of arbitrary Pure expression
+  a list of arbitrary Pure expressions
 
 i,j
   whole numbers used to designate indexes into a stlvec
@@ -276,7 +276,7 @@ gen_fun
   one for each call (gen_fun 0). E.g., see test_generate in
   ut_sv_modifying.pure.
 
-For readability, and to correspondence with the STL documentation, the words
+For readability, and to correspond with the STL documentation, the words
 "first", "middle", and "last", or varients such as "first1" are often used
 instead of f,m,l.
 
@@ -1125,15 +1125,32 @@ Operations
 
 See parameter naming conventions at ..
 
-.. function:: accumulate
+.. function:: accumulate (sv,first,last) x bin_fun
 
-   
+   This is the STL's answer to foldl. 
 
-.. function:: inner_product
+.. function:: inner_product (sv1,first1,last1) (sv2,first2,last2) x bin_fun1 bin_fun2
 
-.. function:: partial_sum
+   Initialize ret with x. Traverse pairs of elements of sv1[first1,last1) and
+   sv2[first2,last2), denoted by (e1, e2), replacing ret with "bin_fun1 ret
+   (bin_fun2 e1 e2)". The number pairs traversed is equal to the size of
+   sv1[first1,last1).  
 
-.. function:: adjacent_difference
+.. function:: partial_sum (sv,first,last) (msv, p) bin_fun
+
+   Accumulate bin_fun f over the elements of sv1[first1,last1), as with
+   foldl1, and replace the elements msv[p,p+N), where N is last - first, with
+   the intermediate results. If p is stl::svback, then insert the intermediate
+   results at the end of msv. Returns q where M is q - N and msv[M,q) is the
+   intermediate sequence.
+
+.. function:: adjacent_difference (sv,first,last) (msv, p) bin_fun
+
+   Produces a sequence of new elements by applying bin_fun to adjacent
+   elements of sv[first,last). Places the new elements in mvs[p,p+N), where N
+   is last - first, with the intermediate results. If p is stl::svback, then
+   insert the new results at the end of msv. Returns q where M is q - N and
+   msv[M,q) is the new sequence.
 
 Examples
 --------

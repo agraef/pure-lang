@@ -40,7 +40,6 @@ px*  sva_inner_product(px* tpl1,
   sv_iters itrs1(tpl1);
   sv_iters itrs2(tpl2);
   try {
-
     if (!itrs1.is_valid || itrs1.num_iters != 2) bad_argument();
     if (!itrs2.is_valid || itrs2.num_iters != 1) bad_argument();
     if (itrs1.size() > itrs2.size()) range_overflow();
