@@ -72,7 +72,7 @@ DBG_SUPPORT = $(if $(findstring debug,$(MAKECMDGOALS)),ON)
 FLAGS = $(if $(DBG_SUPPORT),$(DBG_FLAGS),$(PROD_FLAGS))
 DLL_DIR = $(if $(DBG_SUPPORT),$(DEBUG_DLL_DIR),$(PROD_DLL_DIR))
 
-PURE_BASENAMES = stl $(CONTAINER_BASENAMES) $(ALGO_BASENAMES)
+PURE_BASENAMES = stlvec_algorithms $(CONTAINER_BASENAMES) $(ALGO_BASENAMES)
 CONTAINER_HPPS = $(addsuffix .hpp, $(CONTAINER_BASENAMES))
 CONTAINER_CPPS = $(addsuffix .cpp, $(CONTAINER_BASENAMES))
 ALGO_HPPS = stlbase.hpp stlvec.hpp sv_algorithm.hpp
