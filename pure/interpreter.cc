@@ -5823,6 +5823,8 @@ expr interpreter::rsubst(expr x, bool quote)
   }
   default:
     assert(x.tag() > 0);
+    if (x.ttag() != 0)
+      throw err("error in pattern (misplaced "+ttag_msg(x.ttag())+")");
     return x;
   }
 }
