@@ -50,10 +50,14 @@ pure-gen: pure-gen.pure
 
 # NOTE: This requires ghc (http://www.haskell.org/ghc/) and language-c
 # (http://hackage.haskell.org/cgi-bin/hackage-scripts/package/language-c),
-# version 0.3.1 or later.
+# version 0.4.2 or later.
+
+# FIXME: As of Language.C 0.4.2, -XTypeSynonymInstances is needed to make the
+# dump-ast source compile. We should figure out which source changes are
+# needed to do without this kludge.
 
 dump-ast: dump-ast.hs
-	ghc --make $< -o $@
+	ghc -XTypeSynonymInstances --make $< -o $@
 
 # Minimal test suite:
 

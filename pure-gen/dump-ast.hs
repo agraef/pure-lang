@@ -13,7 +13,7 @@ import Language.C
 import Language.C.System.GCC
 import Language.C.Syntax.AST
 import Language.C.Data.Ident
-import System
+import System.Environment
 
 main = 
   getArgs >>= parseFile >>= return.dump >>= putStrLn
@@ -147,10 +147,13 @@ instance Dump CExtDecl where
   dump (CFDefExt cFunDef)  = parens $ "CFDefExt "++ dump cFunDef
   -- The version of CAsmExt in the repository has an additional second
   -- argument. Uncomment this if needed.
-  --dump (CAsmExt cStrLit _) = parens $ "CAsmExt " ++ dump cStrLit
-  dump (CAsmExt cStrLit) = parens $ "CAsmExt " ++ dump cStrLit
+  dump (CAsmExt cStrLit _) = parens $ "CAsmExt " ++ dump cStrLit
+  --dump (CAsmExt cStrLit) = parens $ "CAsmExt " ++ dump cStrLit
 
-cDeclFile (CDecl _ _ nodeInfo) = "\"" ++ fileOfNode nodeInfo ++ "\""
+cDeclFile (CDecl _ _ nodeInfo) =
+  case fileOfNode nodeInfo of
+    Nothing -> ""
+    Just filePath -> "\"" ++ filePath ++ "\""
 
 -- | C function definition (C99 6.9.1, K&R A10.1)
 --
