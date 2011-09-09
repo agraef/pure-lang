@@ -226,7 +226,7 @@ void index_error()
 
 void bad_argument()
 {
-  pure_throw(pure_symbol(pure_sym("bad_iterator_tuple")));
+  pure_throw(pure_symbol(pure_sym("bad_argument")));
 }
 
 void range_overflow()

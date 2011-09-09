@@ -16,15 +16,17 @@ using namespace std;
 
 /*** sv_iters functions *********************************************/
 
+// treats svback as invalid
 static bool set_iter(sv* vec, int ndx, svi& iter)
 {
+  size_t vec_sz = vec->size();
   if (ndx == svbeg)
     iter = vec->begin();
   else if (ndx == svend)
     iter = vec->end();
   else {
-    if (ndx < 0) return false; // e.g., svback not valid
-    if (ndx >= vec->size())
+    if (ndx < 0 || ndx > vec_sz) return false;
+    if (ndx == vec_sz)
       iter = vec->end();
     else
       iter = vec->begin() + ndx;
@@ -48,20 +50,20 @@ static sv* get_sv_from_app(px* app){
 // Individual functions will decide to recognize, ignore, or throw error
 sv_iters::sv_iters(px* svi_tuple)
 {
-  size_t sz;
+  size_t tpl_sz;
   px** elems;
   int bfr;
   
   is_valid = true;
-  pure_is_tuplev(svi_tuple, &sz, &elems);
+  pure_is_tuplev(svi_tuple, &tpl_sz, &elems);
   vec = get_sv_from_app(elems[0]);
   if (!vec) {
     is_valid = false;
     goto done;
   }
-  num_iters = sz-1;
+  num_iters = tpl_sz-1;
   is_reversed = false;
-  if (sz > 1 && pure_is_int(elems[sz-1], &bfr) && bfr == svrev){
+  if (tpl_sz > 1 && pure_is_int(elems[tpl_sz-1], &bfr) && bfr == svrev){
     is_reversed = true;
     num_iters--;
   }
@@ -76,10 +78,16 @@ sv_iters::sv_iters(px* svi_tuple)
   }
   else {
     for (int i = 0; i<num_iters; i++) {
-      if ( !pure_is_int(elems[i+1], &bfr) || 
-           !set_iter(vec, bfr, iters[i]) ) {
+      if ( !pure_is_int(elems[i+1], &bfr) ) {
         is_valid = false;
         goto done;
+      }
+      if (!set_iter(vec, bfr, iters[i]) ) {
+        is_valid = false;
+        if (bfr == svback)
+            goto done;
+        free(elems);
+        index_error();
       }
     }
     for (int i = 1;  i<num_iters; i++) {
