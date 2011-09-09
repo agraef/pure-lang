@@ -303,7 +303,9 @@ void sv_splice(sv* vec, int p, px* xs_or_tpl)
   svi beg1;
   size_t sz = 0;
   px** elems = NULL;
-  if ( !set_iter(vec, p, beg1) ) index_error();
+  if (p==svback) p = svend;
+  if ( !set_iter(vec, p, beg1) )
+    index_error();
   if (pure_is_listv(xs_or_tpl, &sz, &elems)) {
     vec->insert(beg1, elems, elems+sz );
     free(elems);    
