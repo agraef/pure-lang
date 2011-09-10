@@ -43,7 +43,7 @@ by the Pure Library for its containers. As is the case for their Pure Library
 counterparts, these operations are in the global namespace.
 
 The modules sv_modifying, sv_nonmodifying, sv_sort, sv_merge, sv_heap,
-sv_minmax and sv_numeric provide functions that wrap the STL algorthms
+sv_minmax and sv_numeric provide functions that wrap the STL algorithms
 (specialized to work STL vectors of pointers to Pure expressions). This
 grouping of the STL algorithms follows that found at
 http://www.cplusplus.com/reference/algorithm/. This web page contains a table
@@ -67,7 +67,7 @@ Installation
 Get the latest source from
 http://pure-lang.googlecode.com/files/pure-stlvec-@version@.tar.gz.
  
-To install Stlvec, extract the source, cd to the pure-stl directory, run
+To install pure-stlvec, extract the source, cd to the pure-stl directory, run
 ``make``, and then run ``sudo make install`` (on Linux). After that, you can
 run ``make test`` to see if the installation worked. ``make`` tries to guess
 your Pure installation directory and platform-specific setup. If it gets this
@@ -167,7 +167,7 @@ STL Iterators and Value Semantics
 
 In C++ the STL user accesses container elements by means of "iterators", which
 can be thought of as pointers to the containers elements. Iterators are used
-to access specific elements and pairs of interators are used to access
+to access specific elements and pairs of iterators are used to access
 "ranges" of elements. By convention, the range includes the members in the
 slots pointed to by the first iterator and all succeeding slots up to but not
 including the slot pointed to by the second iterator. As mentioned, in the
@@ -195,13 +195,13 @@ mutable and nonmutable stlvecs, and by storing smart pointers to objects
 Iterator Tuples
 ---------------
 
-As memtioned in the previous section, in C++, ranges are specified by a pair
+As mentioned in the previous section, in C++, ranges are specified by a pair
 of STL iterators.
 
 In pure-stlvec ranges of elements in a stlvec are specified by "iterator
 tuples" rather than, say, actual pointers to STL iterators. Iterator tuples
-consist of the name of a stlvec followed by one of more ints (including the
-predifined ints stl::svbeg, stl::svend, stl::svback).
+consist of the name of a stlvec followed by one of more ints that indicate
+positions (starting from zero) of the stlvec's elements.
 
 To illustrate how iterator tuples are used consider the STL stable_sort
 function, which sorts objects in the range [first, last) in the order imposed
@@ -245,8 +245,25 @@ pure-stlvec algorithm function is almost always the last parameter. This
 is the opposite of what is required for similar Pure functions, but is
 consistent with the STL calling conventions.
 
-Back Inserter Iterators
------------------------
+Predefined Iterator Tuple Indexes
+---------------------------------
+
+The following integer constants are defined in the stl namespace for use
+in iterator tuples.
+
+.. constant:: svbeg = 0
+              svend = -1 
+              svback = -2
+
+``svend`` corresponds to STL's past-end iterator for STL vectors. It makes it
+possible to specify ranges that include the last element of an stlvec. I.e.,
+the iterator tuple (sv,stl::svbeg,stl::svend) would specify sv[0,n), where n
+is the number of elements in sv. In order to understand the purpose of
+``svback``, it is necessary to understand a bit about STL's "back insert
+iterators."
+
+Back Insert Iterators
+---------------------
 
 Many of the STL algorithms insert members into a target range designated by an
 iterator that points to the first member of the target range. Consistent with
@@ -265,7 +282,7 @@ stlvec. E.g.,::
 This is great for C++ programmers, but for Pure programmers it is almost
 always preferable to append the copied items to the end of a new empty target
 stlvec, rather than overwriting all or part or part of it. This can be
-accomplished using the past-end-symbol, stl::svback. E.g.,::
+accomplished using stl::svback. E.g.,::
 
    > let v3 = emptystlvec;
 
@@ -283,14 +300,14 @@ The documentation of the functions provided by the stlvec module are
 reasonably complete.  In contrast, the descriptions of functions provided in
 the STL algorithm modules are purposely simplified (and may not, therefore, be
 technically accurate). This reflects that fact that the functions provided by
-pure-stlvec have an obvious correspondence to the functions provided by the STL,
-and the STL is extremely well documented. Furthermore, using the Pure
-interpreter, it is very easy to simply play around with with any of the Stlvec
-functions if there are doubts, especially with respect to "corner cases."
-Often this leads to a deeper understanding compared to reading a precise
-technical description.
+pure-stlvec have an obvious correspondence to the functions provided by the
+STL, and the STL is extremely well documented. Furthermore, using the Pure
+interpreter, it is very easy to simply play around with with any of the
+pure-stlvec functions if there are doubts, especially with respect to "corner
+cases."  Often this leads to a deeper understanding compared to reading a
+precise technical description.
 
-A good book on STL is STL Tutorial and Reference Guide, Second Edition, by
+A good book on the STL is STL Tutorial and Reference Guide, Second Edition, by
 David R. Musser, Gillmer J. Derge and Atul Saini. The web pages cited above
 also provide excellent documentation.
 
@@ -315,18 +332,19 @@ x
 xs
   a list of arbitrary Pure expressions
 
+count, sz, n
+  whole numbers to indicate a number of elements, size of a vector, etc
+
 i,j
   whole numbers used to designate indexes into a stlvec
 
 f,m,l
-  whole numbers (or other interator constant such as stl::svend)
-  designating the "first", "middle" or "last" iterators in a
-  stlvec iterator tuple
+  whole numbers (or stl::beg or stl::svend) designating the "first", "middle"
+  or "last" iterators in a stlvec iterator tuple
 
 p
-  a whole number (or other interator constant such as
-  stl::svend or stl::svback) used in a two element
-  iterator tuple (e.g., (sv,p))
+  a whole number (or other iterator constant such as stl::svend or
+  stl::svback) used in a two element iterator tuple (e.g., (sv,p))
 
 (sv,p)
   an iterator tuple that will be mapped to an iterator that points
@@ -341,9 +359,9 @@ p
   an iterator tuple that will be mapped to the iterators that
   are designated by (sv,f), (sv,m) and (sv,l)
 
-sv[f,l)
-  the range of members beginning with that at (sv,f)  up
-  to but inot including that at (con,l)
+sv[f,l) 
+  the range of members beginning with that at (sv,f) up to but not
+  including that at (con,l)
 
 comp
   a function that accepts two objects and returns true if the
@@ -357,10 +375,10 @@ bin_pred
   a function that accepts two objects and returns true or false
 
 unary_fun
-  a function that accepts one objects ane returns another
+  a function that accepts one objects and returns another
 
 bin_fun
-  a function that accepts two objects ane returns another
+  a function that accepts two objects and returns another
 
 gen_fun
   a function of one parameter that produces a sequence of objects,
@@ -368,7 +386,7 @@ gen_fun
   ut_sv_modifying.pure.
 
 For readability, and to correspond with the STL documentation, the words
-"first", "middle", and "last", or varients such as "first1" are often used
+"first", "middle", and "last", or variants such as "first1" are often used
 instead of f,m,l.
 
 Error Handling
@@ -411,9 +429,9 @@ Exception Symbols
     target stlvec when the target and source ranges overlap in a way that is
     not allowed.
 
-In addition, any exception thrown by a Pure callback function, say cbf, will
-be caught and be rethrown by the function that was called with cbf as a
-parameter.
+In addition, any exception thrown by a Pure callback function passed to a
+pure-stlvec function will be caught and be rethrown by the pure-stlvec
+function.
 
 Examples
 --------
@@ -451,8 +469,8 @@ Examples
     > listmap (\x->throw DOA) sv1; // callback function throws exception
     <stdin>, line 34: unhandled exception 'DOA' ...
 
-The stlvec Module
-=================
+Basic Operations
+================
 
 The stlvec module provides basic functions for accessing and modifying
 stlvecs. They are all in the global namespace.
@@ -488,13 +506,13 @@ Three type tags are provided:
 
 .. type:: mutable_stlvec /type
 
-   The type for a mutable stlvec. The stlvec must be contructed with
+   The type for a mutable stlvec. The stlvec must have been constructed with
    STLVEC.
 
 .. type:: const_stlvec /type
 
-   The type for an immutable stlvec. The stlvec must be contructed with
-   CONST_STLVEC.
+   The type for an immutable stlvec. The stlvec must have been constructed
+   with CONST_STLVEC.
 
 .. type:: stlvec /type
 
@@ -507,23 +525,33 @@ mutable::
    > update v2 0 100;
    update (CONST_STLVEC #<pointer 0x9f07690>) 0 100
 
-Support for Copy-On-Write Semmantics
+Support for Copy-On-Write Semantics
 ------------------------------------
 
 The functions that create new stlvecs (emptystlvec, stlvec, and mkstlvec)
 return a mutable stlvec. The new stlvecs can be converted to immutable stlvecs
 (usually after they have been modified) by the ``stlconst`` function. This
-function converts a mutable stlvec to an immutable stlvec, without changing
+function converts a mutable stlvec to an immutable stlvec without changing
 the underlying STL vector.
 
 Using a copy-on-write strategy it is possible to use stlvec's in a manner that
 is consistent with functional programming.  Typically, a function that
 "updates" a stlvec passed to it as an argument will copy the input stlvec to a
 new locally scoped mutable stlvec, modify the new stlvec and use stlconst to
-make the new stlvec immutable which is then returned. It should be noted that
-many of the STL algorithms produce a sequence elements that can be placed
+make the new stlvec immutable before it is returned. It should be noted that
+several of the STL algorithms have "copy" versions which place their results
 directly into a new stlvec, which can eliminate the need to copy the input
-stlvec.
+stlvec. E.g.::
+
+    > let sv1 = stlvec ("a".."e");
+
+    > let sv2 = emptystlvec;
+
+    > stl::reverse_copy sv1 (sv2,stl::svback) $$ members sv2;
+    ["e","d","c","b","a"]
+
+Without reverse_copy, one have to create sv2, copy sv1 into it and then
+reverse sv2.
 
 Operations
 ----------
@@ -540,30 +568,29 @@ stl::svend).
 
 .. function:: stlvec (sv,first,last)
 
-   create a new stlvec whose members include sv's members from first up
-   to but not including last. If first and last are omitted, default values
-   of 0 and #sv (number of members contained by sv) are assumed.
+   create a new stlvec consisting of the elements in ``sv``[``first``,``last``)
 
 .. function:: stlvec xs
 
-   create a new stlvec from a list of values.
+   create a new stlvec from a list of values
 
-.. function:: mkstlvec x n::int
+.. function:: mkstlvec x count
+
+   create a new stlvec consisting of ``count`` ``x``'s.
 
 .. function:: stlconst sv
 
    create an immutable stlvec that shares the same underlying STL vector
-   with sv.
+   with sv
 
  .. function:: prefix #  sv
 
     return the size of ``sv``
 
- .. function:: reserve msv i::int
+ .. function:: reserve msv count
 
-   reserve slots in the underlying STL vector in preparation for the
-   addition of new members. This is not required before adding new
-   members.
+   modify the underlying STL vector have at least ``count`` slots, usually to
+   speed up addition of new members
 
 .. function:: capacity sv
 
@@ -573,18 +600,18 @@ stl::svend).
 
    test whether ``sv`` is empty
 
-.. function infix ! sv i
+.. function:: infix ! sv i
 
-   return the ``i``\th member of ``sv``.
+   return the ``i``\th member of ``sv``
 
 .. function:: first sv
               last sv
 
-   first and last member of ``sv``
+   ``first`` and ``last`` member of ``sv``
 
-.. function::members (sv, first, last)
+.. function:: members (sv, first, last)
 
-   return a list of values stored in ``sv``[first,last)
+   return a list of values stored in ``sv``[``first``,``last``)
 
 .. function:: update msv i x
 
@@ -597,36 +624,38 @@ stl::svend).
 .. function:: insert (msv,p) xs
               insert (msv,p) (sv,first,last)
 
-   insert members of the list ``xs`` or the range ``sv``[``first``,
-   ``last``) into ``msv``, all preceeding the pth member of msv. Members
-   are shifted to make room for the inserted members.
+   insert members of the list ``xs`` or the range ``sv``[``first``, ``last``)
+   into ``msv``, all preceding the pth member of ``msv``. Members are shifted
+   to make room for the inserted members
 
 .. function:: rmfirst msv
               rmlast msv
 
-   remove first and last member from ``msv``
+   remove ``first`` and ``last`` member from ``msv``
 
 .. function:: erase (msv,first,last)
-              erase (msv,p)
+              erase (``msv``,``p``)
               erase msv
 
-   remove msv[first,last), msv[p,p+1) or all of msv fromm msv.
+   remove ``msv``[``first``,``last``), ``msv``[``p``,``p``+1) or all of
+   ``msv`` from``msv``.
 
-.. function:: clear msv i
+.. function:: clear msv
 
-   remove all of ``msv's`` members
+   remove all of ``msv``'s`` members
 
 .. function:: all_equal comp (sv1, first1, last1) (sv2, first2, last2)
 
-   returns true if comp x y == true for all corresponding members of
-   sv1[first1, last1) and sv1[first1, last1).
+   returns true if ``comp`` returns true for all corresponding members of
+   ``sv1``[``first1``, ``last1``) and ``sv1``[``first1``, ``last1``)
 
 .. function:: infix == sv1 sv2
-              infix ~= sv1 sv2
+              infix ~= ``sv1`` sv2
 
-   (x ``==`` y) is the same as equal (==) x y. (x ``~=`` y is simply ~(equal
-   (==) x y). Note that this is not defined for iterator tuples. (The rule
-   would never be executed because == is defined on tuples in the Prelude).
+   (``x`` ``==`` y) is the same as equal (==) ``x`` y. (``x`` ``~=`` y is
+   simply ~(equal (==) ``x`` y). Note that this is not defined for iterator
+   tuples. (The rule would never be executed because == is defined on tuples
+   in the Prelude).
 
 Convenience Functions
 ---------------------
@@ -634,31 +663,37 @@ Convenience Functions
 The stlvec module provides convenience functions that apply map, catmap,
 foldl, etc, to directly access Pure expressions stored in a stlvec.
 
-.. function::listmap unary_fun (sv, first, last)
+.. function:: listmap unary_fun (sv, first, last)
 
-   one pass equivalent of map unary_fun $ members (sv, first, last)
+   one pass equivalent of map ``unary_fun`` $ members (``sv``, ``first``,
+   ``last``)
 
-.. function::listcatmap unary_fun (sv, first, last)
+.. function:: listcatmap unary_fun (sv, first, last)
 
-   one pass equivalent of catmap unary_fun $ members (sv, first, last)
+   one pass equivalent of catmap ``unary_fun`` $ members (``sv``, ``first``,
+   ``last``)
 
-.. function::do unary_fun (sv, first, last)
+.. function:: do unary_fun (sv, first, last)
 
-   one pass equivalent of do unary_fun $ members (sv, first, last)
+   one pass equivalent of do ``unary_fun`` $ members (``sv``, ``first``,
+   ``last``)
 
-.. function::foldl bin_fun x (sv, first, last)
+.. function:: foldl bin_fun x (sv, first, last)
 
-   one pass equivalent of foldx bin_fun x $ members (sv, first, last)
+   one pass equivalent of foldx ``bin_fun`` ``x`` $ members (``sv``,
+   ``first``, ``last``)
 
-.. function::foldl1 bin_fun (sv, first, last)
+.. function:: foldl1 bin_fun (sv, first, last)
 
-   one pass equivalent of foldx bin_fun $ members (sv, first, last)
+   one pass equivalent of foldx ``bin_fun`` $ members (``sv``, ``first``,
+   ``last``)
 
-.. function::listfilter unary_pred (sv, first, last)
+.. function:: listfilter unary_pred (sv, first, last)
 
-   one pass equivalent of filter unary_pred $ members (sv, first, last)
+   one pass equivalent of filter ``unary_pred`` $ members (``sv``, ``first``,
+   ``last``)
 
-Please note that "stlvec to stlvec" functions are provided by the Pure STL
+Please note that "stlvec to stlvec" functions are provided by the pure-stl
 algorithm modules. Thus, for example, the stlvec module does not provide a
 function that maps one stlvec onto a new stlvec. That functionality, and
 more, is provided by stl::transform, which can be found in the sv_modifying
@@ -669,8 +704,8 @@ Examples
 
 See ut_stvec in the ut subfolder.
 
-The sv_nonmodifying Module
-==========================
+STL Nonmodifying Algorithms
+===========================
 
 The sv_nonmodifying.pure module provides an interface to the STL's
 non-modifying sequence operations.
@@ -690,86 +725,88 @@ Operations
 
 .. function:: for_each (sv, first, last) unary_fun
 
-   Applies unary_fun to each of the elements in sv[first,last).
+   applies ``unary_fun`` to each of the elements in ``sv``[``first``,``last``)
 
 .. function:: find (sv, first, last) x
 
-   Returns the position of the first element in sv[first,last) for which
-   (==x) is true (or svend if not found).
+   returns the position of the ``first`` element in ``sv``[``first``,``last``)
+   for which (==``x``) is true (or svend if not found)
 
 .. function:: find_if (sv, first, last) unary_pred
 
-   Returns the position of the first element in sv[first,last) for which
-   unary_pred is true (or svend if not found).
+   returns the position of the ``first`` element in ``sv``[``first``,``last``)
+   for which ``unary_pred`` is true (or svend if not found)
 
 .. function:: find_first_of (sv1, first1, last1) (sv2, first2, last2) bin_pred
 
-   Returns the position of the first element, x, in sv1[first1,last1) for
-   which there exists y in sv2[first2,last2) and (bin_pred x y) is true (or
-   svend if no such x exist).
+   Returns the position of the ``first`` element, ``x``, in
+   ``sv1``[``first1``,``last1``) for which there exists y in
+   ``sv2``[``first2``,last2) and (``bin_pred`` ``x`` y) is true (or svend if
+   no such ``x`` exists).
 
 .. function:: adjacent_find (sv, first, last) bin_pred
 
-   Search sv[first,last) for the first occurrence of two consecutive elements
-   (x,y) for which (bin_pred x y) is true. Returns the position of x, if
-   found, or svend if not found).
+   search ``sv``[``first``,``last``) for the ``first`` occurrence of two
+   consecutive elements (``x``,y) for which (``bin_pred`` ``x`` y) is
+   true. Returns the position of ``x``, if found, or svend if not found)
 
 .. function:: count (sv, first, last) x
 
-   Returns the number of elements in the range sv[first,last) for which (x==)
-   is true.
+   returns the number of elements in the range ``sv``[``first``,``last``) for
+   which (``x``==) is true
 
 .. function:: count_if (sv, first, last) unary_pred
 
-   Returns the number of elements in the range sv[first,last) for which
-   unary_pred is true.
+   returns the number of elements in the range ``sv``[``first``,``last``) for
+   which ``unary_pred`` is true
 
 .. function:: mismatch (sv1, first1, last1) (sv2, first2) bin_pred
 
-   Applies (bin_pred x y) sequentially, where x is from sv1[first1,last1) and
-   y is from the range beginning at first2 until it finds the first pair x1,
-   y1 such that (bin_pred x_i y_j) is false or reaches the end of the
-   sequences (if any). If it finds a mismatch, it returns (i,j) where i and j
-   are the positions of x_i and y_i. Otherwise, the function returns a (svend,
-   first2 + last1 -first1) or (svend, svend).
+   applies ``bin_pred`` pairwise to the elements of
+   ``sv1``[``first1``,``last1``) and (``sv2``,``first2``,first2 + ``n``), with
+   ``n`` equal to ``last1``-``first1`` until it finds ``i`` and ``j`` such
+   that ``bin_pred`` (``sv1``!``i``) (``sv2``!``j``) is false and returns
+   (``i``,``j``). If ``bin_pred`` is true for all of the pairs of elements,
+   ``i`` will be svend and ``j`` will be ``first2`` + ``n`` (or svend)
 
 .. function:: equal (sv1, first1, last1) (sv2, first2) bin_pred
 
-   Uses bin_pred to compare the elements in the sv[first1,last1) with those in
-   the range beginning at (sv2,first2), and returns true if the elements in
-   both ranges are considered equal.
+   applies ``bin_pred`` pairwise to the elements of
+   ``sv1``[``first1``,``last1``) and (``sv2``,``first2``,first2 + ``n``), with
+   ``n`` equal to ``last1``-``first1``, and returns true if ``bin_pred`` is
+   true for each pair
 
 .. function:: search (sv1, first1, last1) (sv2, first2) bin_pred
 
-   Using bin_pred to determine equality of the elements, searches
-   sv1[first1,last1) for the first occurrence of the sequence defined by
-   sv2[first2,last2), and returns the position in sv1 of its first element (or
-   svend if not found).
+   using ``bin_pred`` to determine equality of the elements, searches
+   ``sv1``[``first1``,``last1``) for the ``first`` occurrence of the sequence
+   defined by ``sv2``[``first2``,last2), and returns the position in ``sv1``
+   of its ``first`` element (or svend if not found)
 
 .. function:: search_n (sv, first, last) count x bin_pred
 
-   Using bin_pred to determine equality of the elements, searches
-   sv[first,last) for a succession of count elements equal x. If the
-   succession of count elements is found, returns the position of the first
-   of its elements. Otherwise, returns svend.
+   using ``bin_pred`` to determine equality of the elements, searches
+   ``sv``[``first``,``last``) for a sequence of ``count`` elements that equal
+   ``x``. If such a sequence is found, it returns the position of the
+   ``first`` of its elements, otherwise it returns svend
 
 .. function:: find_end (sv1, first1, last1) (sv2, first2, last2) bin_pred
 
-   Searches sv1[first1,last1) for the last occurrence of sv2[first2,last2),
-   using bin_pred to determine equality of elements. Returns the position of
-   first element in sv1 of the occurrence (or svend if not found).
+   using ``bin_pred`` to determine equality of the elements, searches
+   ``sv1``[``first1``,``last1``) for the ``last`` occurrence of
+   ``sv2``[``first2``,last2). Returns the position of ``first`` element in
+   ``sv1`` of the occurrence (or svend if not found).
 
 Examples
 --------
 
 See ut_sv_nonmodifying.pure
 
-
 STL Modifying Algorithms
 ========================
 
-The sv_modifying.pure module provides an interface to the STL's modifying
-sequence operations.
+The sv_modifying module provides an interface to the STL's modifying
+algorithms.
 
 Imports
 -------
@@ -784,139 +821,142 @@ All of the functions are in the stl namespace.
 Operations
 ----------
 
-.. function::copy (sv, first, last) (msv, p)
+.. function:: copy (sv, first1, last1) (msv, first2)
 
-   Copies the elements in sv[first,last) into a range whose first element is
-   (mvs,p). Note that p can be svback. An overflow exception is thrown if the
-   target range cannot accomodate the copy.
+   copies the elements in ``sv``[``first1``,``last1``) into a range whose
+   ``first`` element is (``msv``,``first2``)
 
-.. function::copy_backward (sv,first,last) (msv,p)
+.. function:: copy_backward (sv,first1,last1) (msv,last2)
 
-   Copies the elements in sv[first,last), moving backward from (last-1), into
-   a mvs[first2,p) where n is the number of elements in sv[first,last) and
-   first2 = p - n.  Note that p cannot be svback. An overflow exception is
-   thrown if the target range cannot accomodate the copy.
+   copies the elements in ``sv``[``first1``,``last1``), moving backward from
+   (``last1``), into the range ``msv``[``first2``,last2) where ``first2`` is
+   last2 minus the number of elements in ``sv``[``first1``,``last1``)
 
 .. function:: swap_ranges (sv,first,last) (msv, p)
 
-   Exchanges the elements in sv[first, last) with those at mvs[p, p+n)
-   where n is last - first.
+   exchanges the elements in ``sv``[``first``, ``last``) with those in
+   ``msv``[``p``, ``p``+``n``) where ``n`` is ``last`` - first
 
-.. function transform (sv,first,last) (msv, p) unary_fun
+.. function:: transform (sv,first,last) (msv, p) unary_fun
 
-   Applies unary_fun to the elements of sv[first,last) and places the
-   resulting sequence in mvs[p, p+n) where n is last - first.  If sv is
-   mutable, msv can be the same as sv. Returns (mvs,p+n);
+   applies ``unary_fun`` to the elements of ``sv``[``first``,``last``) and
+   places the resulting sequence in ``msv``[``p``, ``p``+``n``) where ``n`` is
+   ``last`` - ``first``. If ``sv`` is mutable, ``msv`` and ``sv`` can be the
+   same stlvec. Returns (``msv``,``p``+``n``)
 
-.. function transform_2 (sv1,first1,last1) (sv2,first2) (msv, p) bin_fun
+.. function:: transform_2 (sv1,first1,last1) (sv2,first2) (msv, p) bin_fun
 
-   Applies bin_fun to the elements of sv1[first1,last1) sv2[first2,n) and and
-   places the resulting sequence in mvs[p, p+n) where n is last1 -
-   first1. Returns (mvs,p+n).
+   applies ``bin_fun`` to corresponding pairs of elements of
+   ``sv1``[``first1``,``last1``) ``sv2``[``first2``,``n``) and and places the
+   resulting sequence in ``msv``[``p``, ``p``+``n``) where n is ``last1`` -
+   ``first1``. Returns (``msv``,``p``+``n``).
 
-.. function replace (msv,first,last) x y
+.. function:: replace (msv,first,last) x y
 
-   Same as replace_if (msv,first,last) (x==) y;
+   same as :func:`replace_if` (``msv``,``first``,``last``) (``x``==) y
 
 .. function:: replace_if (msv,first,last) unary_pred x
 
-   Replace all elements of msv[first,last) that satistfy unary_pred with x.
+   replace the elements of ``msv``[``first``,``last``) that satistfy
+   ``unary_pred`` with x
 
 .. function:: replace_copy (sv,first,last) (msv,p) x y
 
-   Same as replace (msv,first,last) x y except that the modified sequence is
-   placed in msv[p,p+last-first). Note that p can be svback.
+   same as :func:`replace` (``msv``,``first``,``last``) ``x`` y except that
+   the modified sequence is placed in ``msv``[``p``,``p``+``last``-``first``)
 
 .. function:: replace_copy_if (sv,first,last) (msv,p) unary_pred x
 
-   Same as replace_if except that the modified sequence is placed in
-   msv[p,p+last-first). Note that p can be svback.
+   same as :func:`replace_if` except that the modified sequence is placed in
+   ``msv``[``p``,``p``+``last``-``first``)
 
-.. function fill (msv,first,last) x
+.. function:: fill (msv,first,last) x
 
-   Replace all elements in msv[first,last) with x.
+   replace all elements in ``msv``[``first``,``last``) with x
 
 .. function:: fill_n (msv,first) n x
 
-   Replace all elements in msv[first,first+n) with x.
+   replace the elements of ``msv``[``first``,first+``n``) with x
 
-.. function generate (msv,first,last) gen_fun
+.. function:: generate (msv,first,last) gen_fun
 
-   Replace all elements in msv[first,last) with the sequence generated
-   by successive calls to gen_fun.
+   replace the elements in ``msv``[``first``,``last``) with the sequence
+   generated by successive calls to ``gen_fun``.
 
 .. function:: generate_n (msv,first) n gen_fun
 
-   Replace all elements in msv[first,first+n) with the sequence generated by
-   successive calls to gen_fen
+   replace all elements in ``msv``[``first``,first+``n``) with the sequence
+   generated by successive calls to gen_fen
 
-.. function remove (msv,first,last) x
+.. function:: remove (msv,first,last) x
 
-   Same as remove_if (msv,first,last) (==x).
+   same as :func:`remove_if` (``msv``,``first``,``last``) (==``x``).
 
 .. function:: remove_if (msv,first,last) unary_pred
 
-   Remove elements in msv[first,last) that do not satisfy unary_pred. If n
-   elements satisfy unary_pred, they are moved to msv[first,first+n),
-   preserving their relative order. The content of msv[first+n,svend) is
-   undefined. Returns first+n. (If first+n is past the end, svend is
-   subsituted for firs+n).
+   remove elements in ``msv``[``first``,``last``) that do not satisfy
+   ``unary_pred``. If n elements satisfy ``unary_pred``, they are moved to
+   ``msv``[``first``,first+``n``), preserving their relative order. The
+   content of ``msv``[``first``+``n``,svend) is undefined. Returns
+   ``first``+``n``, or svend if ``first``+``n`` is greater than the number of
+   elements in msv
 
 .. function:: remove_copy (sv,first,last) (msv,first) x
 
-   Same as remove except that the purged sequence is copied to (msv,first) and
-   sv[first,last) is not changed.
+   same as :func:`remove` except that the purged sequence is copied to
+   (``msv``,``first``) and ``sv``[``first``,``last``) is not changed
 
 .. function:: remove_copy_if (sv,first,last) (msv,first) unary_pred
 
-    Same as remove_if except that the purged sequence is copied to (msv,first)
-    and sv[first,last) is not changed.
+    Same as :func:`remove_if` except that the purged sequence is copied to
+    (``msv``,``first``) and ``sv``[``first``,``last``) is not changed
 
-.. function unique (msv,first,last) bin_pred
+.. function:: unique (msv,first,last) bin_pred
 
-   Eliminates consecutive duplicates from sv[first,last), using bin_pred to
-   test for equality. The purged sequence is moved to sv[first,first+n)
-   preserving their relative order where n is the size of the purged
-   sequence. Returns first+n. (If first+n is past the end, svend is
-   subsituted for firs+n).
+   eliminates consecutive duplicates from ``sv``[``first``,``last``), using
+   ``bin_pred`` to test for equality. The purged sequence is moved to
+   ``sv``[``first``,first+``n``) preserving their relative order, where ``n``
+   is the size of the purged sequence. Returns ``first``+``n`` or svend if
+   ``first``+``n`` is greater than the number of elements in msv
 
 .. function:: unique_copy (sv,first,last) (msv,first) bin_pred
 
-   Same as unique except that the purged sequence is copied to (msv,first) and
-   sv[first,last) is not changed.
+   Same as :func:`unique` except that the purged sequence is copied to
+   (``msv``,``first``) and ``sv``[``first``,``last``) is not changed.
 
-.. function reverse (msv,first,last)
+.. function:: reverse (msv,first,last)
 
-   Reverses the order of the elements in sv[first,last).
+   Reverses the order of the elements in ``sv``[``first``,``last``).
 
 .. function:: reverse_copy (sv,first,last) (msv,first)
 
-   Same as reverse except that the reversed sequence is copied to (msv,first)
-   and sv[first,last) is not changed.
+   same as :func:`reverse` except that the reversed sequence is copied to
+   (``msv``,``first``) and ``sv``[``first``,``last``) is not changed.
 
-.. function rotate (msv,first,middle,last)
+.. function:: rotate (msv,first,middle,last)
 
-   Rotates the elements of msv[first,middle,last] so that middle becomes
-   the first element of msv[first,last].
+   rotates the elements of ``msv``[``first``,``middle``,``last``] so that
+   ``middle`` becomes the ``first`` element of ``msv``[``first``,``last``].
 
 .. function:: rotate_copy (msv,first,middle,last) (msv,first)
 
-   Same as reverse except that the rotated sequence is copied to (msv,first)
-   and sv[first,last) is not changed.
+   same as rotate except that the rotated sequence is copied to
+   (``msv``,``first``) and ``sv``[``first``,``last``) is not changed.
 
 .. function:: random_shuffle (msv,first,last)
 
-   Randomly reorders the elements in msv[first,last).
+   randomly reorders the elements in ``msv``[``first``,``last``).
 
-.. function partition (msv,first,last) unary_pred
+.. function:: partition (msv,first,last) unary_pred
 
-   Places all of the elements in msv[first,last) that satisfy unary_pred
-   before those that don't. Returns middle, where msv [first,middle) contains
-   all of the elements that satisfy unary_pre, and msv [middle, last).
+   places the elements in ``msv``[``first``,``last``) that satisfy unary_pred
+   before those that don't. Returns ``middle``, where ``msv``
+   [``first``,``middle``) contains all of the elements that satisfy unary_pre,
+   and ``msv`` [``middle``, ``last``) contains those that do not
 
 .. function:: stable_partition (msv,first,last) unary_pred
 
-   Same as partition except that the relative positions of the elements in
+   same as partition except that the relative positions of the elements in
    each group are preserved.
 
 Examples
@@ -946,73 +986,78 @@ Operations
 
 All of the functions in this module require the caller to supply an ordering
 functions, comp (as for the Pure library sort function). The functions (<) and
-(>) are commonly passed as comp.
+(>) are commonly passed as ``comp``.
 
 .. function:: sort (msv, first, last) comp
 
-   Sorts msv[first, last).
+   sorts ``msv``[``first``, ``last``)
 
 .. function:: stable_sort (msv, first, last) comp
 
-   Sorts msv[first, last), preservint the relative order of equal members.
+   sorts ``msv``[``first``, ``last``), preservint the relative order of equal
+   members
 
 .. function:: partial_sort (msv, first, middle, last) comp
 
-   Fills msv[first, middle) with the elements that would appear there if
-   msv[first,last) were sorted.
+   fills ``msv``[``first``, ``middle``) with the elements of
+   ``msv``[``first``,``last``) that would appear there if
+   ``msv``[``first``,``last``) were sorted using ``comp`` and fills
+   ``msv``[``middle``,``last``) with the remaining elements in unspecified
+   order
 
 .. function:: partial_sort_copy (sv, first1, last1) (msv, first2, last2) comp
 
-   Let n be the number of elements in sv[first1, last1) and r be the number of
-   elements in msv[first2, last2). If r < n, partial_sort_copy fills
-   msv[first2, last2) with the first r elements of what sv[first1, last1)
-   would be if it had been sorted. If r >= n, it fills msv[first2, first2+n)
-   with the elements of sv[first1, last1) in sorted order. The first stlvec,
-   sv, is not modified. An overflow exception is thrown if the target range
-   cannot accomodate the sorted elements.
+   let n be the number of elements in ``sv``[``first1``, ``last1``) and r
+   be the number of elements in ``msv``[``first2``, last2). If r < n,
+   :func:`partial_sort_copy` fills ``msv``[``first2``, last2) with the
+   ``first`` r elements of what ``sv``[``first1``, ``last1``) would be if it
+   had been sorted. If r >= n, it fills ``msv``[``first2``,
+   ``first2``+n) with the elements of ``sv``[``first1``, ``last1``) in
+   sorted order. ``sv``[``first1``,``last1``) is unchanged.
 
 .. function:: nth_element (msv, first, middle, last) comp
 
-   Rearranges the elements of msv[first, last) as follows. Let n be middle -
-   first, an x nth smallest element of msv[first, last). Sfter the function is
-   called, sv!middle will be x. All of the elements of msv[first, middle) will
-   be less than x and all of the elements of msv[middle+1, last) will be
-   greater than x.
+   rearranges the elements of ``msv``[``first``, ``last``) as follows. Let n
+   be ``middle`` - ``first``, an ``x`` nth smallest element of
+   ``msv``[``first``, ``last``). Sfter the function is called,
+   ``sv``!``middle`` will be ``x``. All of the elements of ``msv``[``first``,
+   ``middle``) will be less than ``x`` and all of the elements of
+   ``msv``[``middle``+1, ``last``) will be greater than ``x``.
 
 The next four functions assume that sv[first, last) is ordered by comp.
 
 .. function:: lower_bound (sv, first, last) x comp
 
-   Returns an integer p that such that (sv,p) is the first position into
-   which x can be inserted into sv[first, last) while maintaining the sorted
-   ordering.
+   returns an integer p that such that (``sv``,p) is the ``first`` position
+   into which ``x`` can be inserted into ``sv``[``first``, ``last``) while
+   maintaining the sorted ordering.
 
 .. function:: upper_bound (sv, first, last) x comp
 
-   Returns an integer p that such that (sv,p) is the last position into
-   which x can be inserted into sv[first, last) while maintaining the sorted
-   ordering.
+   returns an integer p that such that (``sv``,p) is the ``last`` position
+   into which ``x`` can be inserted into ``sv``[``first``, ``last``) while
+   maintaining the sorted ordering.
 
 .. function:: equal_range (sv, first, last) x comp
 
-   Returns a tuple, (lower, upper) where lower and upperf would have
+   returns a tuple, (lower, upper) where lower and upper would have
    been returned by separate calls to lower_bound and upper_bound.
 
 .. function:: binary_search (sv, first, last) x comp
 
-   Returns true if x is an element of sv[first, last).
+   returns true if ``x`` is an element of ``sv``[``first``, ``last``)
 
 Examples
 --------
 
-See ut_sv_sort.pure
+See ut_sv_sort.pure in the pure-stl/ut directory.
 
 
 STL Merge Algorithms
 ====================
 
-The sv_merge.pure module provides an interface to the STL's merge
-algorithms. These algorithms operate on sorted ranges.
+The sv_merge module provides an interface to the STL's merge algorithms. These
+algorithms operate on sorted ranges.
 
 Imports
 -------
@@ -1028,53 +1073,56 @@ Operations
 ----------
 
 All of the functions in this module require the caller to supply an ordering
-functions, comp (as for the Pure library sort function). They only work
-properly on input ranges that have been previously sorted using comp.
+functions, ``comp`` (as for the Pure library sort function). They only work
+properly on input ranges that have been previously sorted using ``comp``.
 
 See parameter naming conventions at ..
 
-.. function merge (sv1,first1,last1) (sv2,first2,last2) (msv,p) comp
+.. function:: merge (sv1,first1,last1) (sv2,first2,last2) (msv,p) comp
 
-   Merges the two sorted ranges into the range msv[p,p+n) where n is
-   the total length of the merged sequence.
+   merges the two sorted ranges into the range ``msv``[``p``,``p``+n) where n is
+   the total length of the merged sequence
 
 .. function::inplace_merge (msv,first, middle, last) comp
 
-   Merges msv[first,middle) and msv[middle,last) into msv[first,last).
+   merges ``msv``[``first``,``middle``) and ``msv``[``middle``,``last``) into
+   ``msv``[``first``,``last``)
 
 .. function::includes (sv1,first1,last1) (sv2,first2,last2) comp
 
-   Returns true if every element of sv2[first2,last2) is an element
-   of sv1[first1,last1).
+   returns true if every element of ``sv2``[``first2``,last2) is an element
+   of ``sv1``[``first1``,``last1``)
 
 .. function::set_union (sv1,first1,last1) (sv2,first2,last2) (msv,p) comp
 
-   Places the sorted union of sv1[first1,last1) and sv2[first2,last2) into
-   msv[p,p+n) where n is the number of elements in the sorted union. Returns
-   the past-the-end position of the sorted union.
+   places the sorted union of ``sv1``[``first1``,``last1``) and
+   ``sv2``[``first2``,last2) into ``msv``[``p``,``p``+n) where n is the number
+   of elements in the sorted union, and returns the past-the-end position of
+   the sorted union
 
 .. function::set_intersection (sv1,first1,last1) (sv2,first2,last2)
-    (msv,p) comp
+    (``msv``,``p``) comp
 
-   Places the sorted intersection of sv1[first1,last1) and sv2[first2,last2)
-   into msv[p,p+n) where n is the number of elements in the sorted
-   intersection.  Returns the past-the-end position of the sorted
-   intersection.
+   places the sorted intersection of ``sv1``[``first1``,``last1``) and ``sv2``[``first2``,last2)
+   into ``msv``[``p``,``p``+n) where n is the number of elements in the sorted
+   intersection, and returns the past-the-end position of the sorted
+   intersection
 
 .. function::set_difference (sv1,first1,last1) (sv2,first2,last2)
-    (msv,p) comp
+    (``msv``,``p``) comp
 
-   Places the sorted difference of sv1[first1,last1) and sv2[first2,last2)
-   into msv[p,p+n) where n is the number of elements in the sorted difference.
-   Returns the past-the-end position of the sorted difference.
+   places the sorted difference of ``sv1``[``first1``,``last1``) and
+   ``sv2``[``first2``,last2) into ``msv``[``p``,``p``+n) where n is the number
+   of elements in the sorted difference, and returns the past-the-end position
+   of the sorted difference.
 
 .. function::set_symmetric_difference (sv1,first1,last1)
-   (sv2,first2,last2) (msv,p) comp
+   (``sv2``,``first2``,last2) (``msv``,``p``) comp
 
-   Places the sorted symmetric_difference of sv1[first1,last1) and
-   sv2[first2,last2) into msv[p,p+n) where n is the number of elements in the
-   sorted symmetric_difference.  Returns the past-the-end position of the
-   sorted symmetric_difference.
+   places the sorted symmetric_difference of ``sv1``[``first1``,``last1``) and
+   ``sv2``[``first2``,last2) into ``msv``[``p``,``p``+n) where n is the number
+   of elements in the sorted symmetric_difference, and returns the
+   past-the-end position of the sorted symmetric_difference.
 
 Examples
 --------
@@ -1101,29 +1149,29 @@ Operations
 ----------
 
 All of the functions in this module require the caller to supply an ordering
-functions, comp (as for the Pure library sort function). The functions (<) and
-(>) are commonly passed as comp.
+functions, ``comp`` (as for the Pure library sort function). The functions (<)
+and (>) are commonly passed as comp.
 
 .. function:: make_heap (msv,first,last) comp
 
-   Move elements of msv[first,last) so that they are a heap. After this
-   msv!first will be the largest element in msv[first,last), and push_heap
-   and pop_heap will work properly.
+   rearranges the elements of ``msv``[``first``,``last``) so that they are a
+   heap, ``i``.e., after this ``msv``!``first`` will be the largest element in
+   ``msv``[``first``,``last``), and push_heap and pop_heap will work properly
 
 .. function:: push_heap (msv,first,last) comp
 
-   Assumes msv[first,last-1) is a heap. Permutes elements in msv[first,last)
-   so it will be a heap.
+    makes ``msv``[``first``,``last``) a heap (assuming that
+    ``msv``[``first``,``last``-1) was a heap)
 
 .. function:: pop_heap (msv,first,last) comp
 
-   Assumes msv[first,last) is a heap. Swaps msv!first with msv!(last-1).
-   Permutes elements in msv[first,last-1) so it will be a heap.
+   swaps ``msv``!``first`` with ``msv``!(``last``-1), and makes
+   ``msv``[``first``,``last``-1) a heap (assuming that
+   ``msv``[``first``,``last``) was a heap)
 
 .. function:: sort_heap (msv,first,last) comp
 
-   Assumes that msv[first,last) is a heap. Sorts the elements in
-   msv[first,last).
+   sorts the elements in ``msv``[``first``,``last``)
 
 Examples
 --------
@@ -1133,7 +1181,7 @@ See ut_sv_heap.pure
 Min/Max STL Algorithms
 ======================
 
-The sv_minmax.pure module provides an interface to a few addional STL
+The sv_minmax.pure module provides an interface to a few additional STL
 algorithms.
 
 Imports
@@ -1150,37 +1198,41 @@ Operations
 ----------
 
 All of the functions in this module require the caller to supply an ordering
-functions, comp (as for the Pure library sort function). The functions (<) and
-(>) are commonly passed as comp.
+functions, comp (as for the Pure library sort function). The functions (<)
+and (>) are commonly passed as comp.
 
 .. function:: min_element (sv,first,last) comp
 
-   Returns the position of the minimal element of sv[first,last) under the
-   ordering defined by comp.
+   returns the position of the minimal element of ``sv``[``first``,``last``)
+   under the ordering defined by comp
 
 .. function:: max_element (sv,first,last) comp
 
-   Returns the position of the maximal element of sv[first,last) under the
-   ordering defined by comp.
+   returns the position of the maximal element of ``sv``[``first``,``last``)
+   under the ordering defined by comp
 
 .. function:: lexicographical_compare (sv1,first1,last1) (sv2,first2,last2) comp
 
-   Compare sv1[first1,last1) and sv2[first2,last2) element by element according
-   to the ordering defined by comp. Return true if the first sequence is less
-   than the second.
+   compares ``sv1``[``first1``,``last1``) and ``sv2``[``first2``,last2) element
+   by element according to the ordering defined by ``comp``, and returns true if
+   the ``first`` sequence is less than the second
+
+Algorithms are provided for stepping through all the permutations the elements
+of a stlvec. For these purposes, the first permutation has the elements of
+msv[first,last) in ascending order and the last has the elements in descending
+order.
 
 .. function:: next_permutation (msv,first,last) comp
 
-   Rearranges msv[first,last) to produce the next permutation, in the ordering
-   imposed by comp. The first permutation has the elements of msv[first,last)
-   in ascending order and the last has the elements in descending order. If
-   msv[first,last) is not the last permutation, change msv[first,last) to the
-   next permutation and return true. Otherwise, change it to the first
-   permutation and return true.
+   rearranges ``msv``[``first``,``last``) to produce the next permutation, in
+   the ordering imposed by ``comp``. If ``msv``[``first``,``last``) is not the
+   ``last`` permutation, change ``msv``[``first``,``last``) to the next
+   permutation and return true. Otherwise, change it to the ``first``
+   permutation and return true
 
 .. function:: prev_permutation (msv,first,last) comp
 
-   This is nex_permutation in reverse.
+   next_permutation in reverse
 
 Examples
 --------
@@ -1209,30 +1261,30 @@ Operations
 
 .. function:: accumulate (sv,first,last) x bin_fun
 
-   This is the STL's answer to foldl. 
+   accumulate ``bin_fun`` over ``x`` and the members of
+   ``sv``[``first``,``last``)
 
 .. function:: inner_product (sv1,first1,last1) (sv2,first2,last2) x bin_fun1 bin_fun2
 
-   Initialize ret with x. Traverse pairs of elements of sv1[first1,last1) and
-   sv2[first2,last2), denoted by (e1, e2), replacing ret with "bin_fun1 ret
-   (bin_fun2 e1 e2)". The number pairs traversed is equal to the size of
-   sv1[first1,last1).  
+   initialize ret with ``x``. Traverse pairs of elements of
+   ``sv1``[``first1``,``last1``) and ``sv2``[``first2``,last2), denoted by
+   (e1, e2), replacing ret with (bin_fun1 ret $ bin_fun2 e1 e2). The number
+   pairs traversed is equal to the size of ``sv1``[``first1``,``last1``)
 
 .. function:: partial_sum (sv,first,last) (msv, p) bin_fun
 
-   Accumulate bin_fun f over the elements of sv1[first1,last1), as with
-   foldl1, and replace the elements msv[p,p+N), where N is last - first, with
-   the intermediate results. If p is stl::svback, then insert the intermediate
-   results at the end of msv. Returns q where M is q - N and msv[M,q) is the
-   intermediate sequence.
+   accumulates ``bin_fun`` ``f`` over the elements of
+   ``sv1``[``first1``,``last1``), as with foldl1, places itermediate results
+   in ``msv``[``p``,``p``+N), where N is ``last`` - ``first``, and returns q
+   where M is q - N and ``msv``[M,q) is the intermediate sequence
 
 .. function:: adjacent_difference (sv,first,last) (msv, p) bin_fun
 
-   Produces a sequence of new elements by applying bin_fun to adjacent
-   elements of sv[first,last). Places the new elements in mvs[p,p+N), where N
-   is last - first, with the intermediate results. If p is stl::svback, then
-   insert the new results at the end of msv. Returns q where M is q - N and
-   msv[M,q) is the new sequence.
+   produces a sequence of new elements by applying ``bin_fun`` to adjacent
+   elements of ``sv``[``first``,``last``), places the new elements in
+   ``msv``[``p``,``p``+N), where N is ``last`` - ``first``, with the
+   intermediate results, and returns q where M is q - N and ``msv``[M,q) is
+   the new sequence
 
 Examples
 --------
@@ -1243,28 +1295,33 @@ Trace Mode
 ==========
 
 If the pure-stl dlls are built using 'make debug' (as opposed to 'make' or
-'make dlls'), the pure-stl tracing functions will be enabled. These functions
-can be used to trace the creation and deletion of stlvecs as well as the
-changes in ref counts that occur as Pure objects are moved and copied. In
-addition to being useful for maintaining the pure-stl modules, these functions
-can be used to observe STL C++ copy semantics.
+'make dlls'), the pure-stl tracing functions will be enabled. These functions,
+all of which are defined in the stl namespace, can be used to trace the
+creation and deletion of stlvecs as well as the changes in ref counts that
+occur as Pure objects are moved and copied. In addition to being useful for
+maintaining the pure-stl modules, these functions can be used to observe the
+STL copy semantics.
 
 .. function:: set_sv_trace on_off::int
 
-   Enables or disables tracing the creation and deletion of stlvecs.
+   enables or disables tracing the creation and deletion of stlvecs
 
 .. function:: sv_trace_enabled
 
-   Returns 1 if stlvec tracing is enabled, else 0;
+   returns 1 if stlvec tracing is enabled, else 0
 
 .. function:: set_px_trace on_off::int
 
-   Enables or disables tracing the 'copying' of Pure expressions.
+   enables or disables tracing 'copying' of Pure expressions
 
 .. function:: px_trace_enabled
 
-   Returns 1 if Pure expression tracing is enabled, else 0;
+   returns 1 if Pure expression tracing is enabled, else 0
 
+In addition, the following function, also in the stl namespace, is available
+whether or not debug is passed to make.
 
+.. function::refc x
 
-
+   returns the ``x``'s reference ``count`` (maintained by the Pure runtime for
+   garbage collection purposes)
