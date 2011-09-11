@@ -1,8 +1,3 @@
-.. README - readme file for pure-stlvec
-
-   Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>
-
-   DRAFT FOR DISCUSSION PURPOSES ONLY.
 
 ===========
 pure-stlvec
@@ -16,41 +11,14 @@ Version @version@, |today|
 | Peter Summerland <p.summerland@gmail.com>
 | Albert Graef <Dr.Graef@t-online.de>
 
-Pure's interface to The C++ Standard Template Library's vector<expr*>
+Pure's interface to C++ vectors, specialized to hold pointers to arbitrary
+Pure expressions, and the C++ Standare Template Library algorithms that act on
+them.
 
 .. _Pure: http://pure-lang.googlecode.com
 
 .. contents::
 .. sectnum::
-
-Introduction
-============
-
-The C++ Standard Template Library ("STL_") is a library of generic containers
-(data structures designed for storing other objects) and a rich set of generic
-algorithms that operate on them.
-
-.. _STL http://www.cplusplus.com/reference/stl/
-
-One of the most useful of the containers is STL's vector, a mutable container
-that holds a sequence of objects that can be accessed in constant time
-according to their position in the sequence. The stlvec module provides a Pure
-container, "stlvec", that is essentially a pointer to a STL vector that has
-been specialized to hold "smart pointers" to arbitrary Pure expressions. A set
-of basic operations is provided for creating, accessing and modifying
-stlvecs. These operations are similar in name and function to those provided
-by the Pure Library for its containers. As is the case for their Pure Library
-counterparts, these operations are in the global namespace.
-
-The modules sv_modifying, sv_nonmodifying, sv_sort, sv_merge, sv_heap,
-sv_minmax and sv_numeric provide functions that wrap the STL algorithms
-(specialized to work STL vectors of pointers to Pure expressions). This
-grouping of the STL algorithms follows that found at
-http://www.cplusplus.com/reference/algorithm/. This web page contains a table
-that summarizes of all of the algorithms in one place. An "umbrella" module,
-stlvec_algorithms, pulls in all of the STL algorithm interface modules in one
-go. The algorithm wrapper functions reside in the stl namespace and have the
-same names as their counterparts in the STL.
 
 Copying
 =======
@@ -58,8 +26,14 @@ Copying
 | Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>.
 | Copyright (c) 2011 by Albert Graef <Dr.Graef@t-online.de>.
 
-All rights reserved. pure-stlvec is distributed under a BSD-style license, see
-the COPYING file for details.
+All rights reserved. 
+
+pure-stlvec is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+A PARTICULAR PURPOSE. 
+
+pure-stlvec is distributed under a BSD-style license, see the COPYING file
+for details.
 
 Installation
 ============
@@ -75,8 +49,39 @@ wrong, you can set some variables manually. In particular, ``make install
 prefix=/usr`` sets the installation prefix. Please see the Makefile for
 details.
 
+Overview
+========
+
+The C++ Standard Template Library ("STL") is a library of generic containers
+(data structures designed for storing other objects) and a rich set of generic
+algorithms that operate on them. pure-stlvec provides an interface to one of
+its most useful container, "vector", adopted to hold pointers to Pure
+expressions.
+
+Modules Provided by pure-stlvec
+-------------------------------
+
+pure-stlvec's stlvec module provides a mutable container, "stlvec", that holds a
+sequence of objects that can be accessed in constant time according to their
+position in the sequence. The usual operations, similar in name and function
+to those provided by the Pure Library for its containers, are provided for
+creating, accessing and modifying stlvecs. As is the case for their Pure
+Library counterparts, these operations are in the global namespace.
+
+In addition to stlvec, pure-stlvec provides a group of modules, sv_modifying,
+sv_nonmodifying, sv_sort, sv_merge, sv_heap, sv_minmax and sv_numeric, that
+are straight wrappers the STL algorithms (specialized to work with STL vectors
+of pointers to Pure expressions). This grouping of the STL algorithms follows
+that found at http://www.cplusplus.com/reference/algorithm/. This web page
+contains a table that summarizes of all of the algorithms in one place. 
+
+pure-stl vec provides an "umbrella" module, stlvec_algorithms, pulls in all of
+the STL algorithm interface modules in one go. The STL algorithm wrapper
+functions reside in the stl namespace and have the same names as their
+counterparts in the STL.
+
 Simple Examples
-===============
+---------------
 
 Here are some examples that use the basic operations provided by the
 stlvec module.
@@ -144,9 +149,6 @@ Here are some examples that use STL algorithms.
 
 Many more examples can be found in the pure-stl/ut directory.
 
-Interface Conventions
-=====================
-
 Members and Sequences of Members
 --------------------------------
 
@@ -165,15 +167,14 @@ denotes the sequence consisting of "d" followed by "e".
 STL Iterators and Value Semantics
 ---------------------------------
 
-In C++ the STL user accesses container elements by means of "iterators", which
-can be thought of as pointers to the containers elements. Iterators are used
-to access specific elements and pairs of iterators are used to access
-"ranges" of elements. By convention, the range includes the members in the
-slots pointed to by the first iterator and all succeeding slots up to but not
-including the slot pointed to by the second iterator. As mentioned, in the
-pure-stlvec documentation this sequence is designated by [iter1, iter2). Each
-container has a past-the-end iterator that can be used to specifiy ranges that
-include the its last member.
+In C++ programmers accesses a STL container's elements by means of
+"iterators", which can be thought of as pointers to the containers elements. A
+single iterators can be used to access a specific element, and a pairs of
+iterators can be used to access a "range" of elements. By convention, such a
+range includes the members in the slots pointed to by the first iterator and
+all succeeding slots up to but not including the slot pointed to by the second
+iterator. Each container has a past-the-end iterator that can be used to
+specifiy ranges that include the its last member.
 
 In the case of vectors there is an obvious correspondence between an iterator
 that points to an element and the element's position (starting at zero) in the
@@ -184,7 +185,9 @@ documentation. Thus, if sv is a stlvec, and j is an int, "update sv j x" uses
 the STL to replace the element pointed to by the iterator for position j of
 sv's underlying STL vector. If, in addition, k is an int, stl::sort (sv,j,k)
 (<) uses the STL to sort the elements in the range designated by the "jth" and
-"kth" iterators for sv's underlying STL vector.
+"kth" iterators for sv's underlying STL vector. This range, written as
+sv[j,k), is the subsequence of sv that begins with the element at position j
+and ends with the element at positon (k-1).
 
 Another cornerstone of the STL is its "value semantics", i.e., all of the STL
 containers are mutable and if a container is copied, all of its elements are
@@ -241,7 +244,7 @@ callback function:
   stable_sort msv (<);
 
 Note also that the comparator (e.g., (<)), or other function being passed to a
-pure-stlvec algorithm function is almost always the last parameter. This
+pure-stlvec algorithm wrapper is almost always the last parameter. This
 is the opposite of what is required for similar Pure functions, but is
 consistent with the STL calling conventions.
 
@@ -293,11 +296,11 @@ In short, when a pure-stlvec function detects the past-end-symbol in a target
 iterator tuple, it constructs a STL "back inserter iterator" and passes it on
 to the STL function.
 
-Documentation Detail
---------------------
+Documentation
+-------------
 
 The documentation of the functions provided by the stlvec module are
-reasonably complete.  In contrast, the descriptions of functions provided in
+reasonably complete.  In contrast, the descriptions of functions provided by
 the STL algorithm modules are purposely simplified (and may not, therefore, be
 technically accurate). This reflects that fact that the functions provided by
 pure-stlvec have an obvious correspondence to the functions provided by the
@@ -308,8 +311,8 @@ cases."  Often this leads to a deeper understanding compared to reading a
 precise technical description.
 
 A good book on the STL is STL Tutorial and Reference Guide, Second Edition, by
-David R. Musser, Gillmer J. Derge and Atul Saini. The web pages cited above
-also provide excellent documentation.
+David R. Musser, Gillmer J. Derge and Atul Saini. A summmary of all of the STL
+algorithms can be found at http://www.cplusplus.com/reference/stl/.
 
 Parameter Names
 ---------------
@@ -383,7 +386,7 @@ bin_fun
 gen_fun
   a function of one parameter that produces a sequence of objects,
   one for each call (gen_fun 0). E.g., see test_generate in
-  ut_sv_modifying.pure.
+  ut_sv_modifying.pure
 
 For readability, and to correspond with the STL documentation, the words
 "first", "middle", and "last", or variants such as "first1" are often used
@@ -469,10 +472,10 @@ Examples
     > listmap (\x->throw DOA) sv1; // callback function throws exception
     <stdin>, line 34: unhandled exception 'DOA' ...
 
-Basic Operations
-================
+Basic Operations on stlvecs
+===========================
 
-The stlvec module provides basic functions for accessing and modifying
+The stlvec module provides functions for creating, accessing and modifying
 stlvecs. They are all in the global namespace.
 
 Imports
@@ -483,8 +486,8 @@ to your program::
 
   using stlvec;
 
-Constructors and Types
-----------------------
+Data Structure
+--------------
 
 Currently, stlvecs are of the form (STLVEC x) or (CONST_STLVEC x), where x is
 a pointer to the underlying STL vector. E.g.,::
@@ -526,7 +529,7 @@ mutable::
    update (CONST_STLVEC #<pointer 0x9f07690>) 0 100
 
 Support for Copy-On-Write Semantics
-------------------------------------
+-----------------------------------
 
 The functions that create new stlvecs (emptystlvec, stlvec, and mkstlvec)
 return a mutable stlvec. The new stlvecs can be converted to immutable stlvecs
@@ -534,7 +537,7 @@ return a mutable stlvec. The new stlvecs can be converted to immutable stlvecs
 function converts a mutable stlvec to an immutable stlvec without changing
 the underlying STL vector.
 
-Using a copy-on-write strategy it is possible to use stlvec's in a manner that
+Using a copy-on-write strategy it is possible to use stlvecs in a manner that
 is consistent with functional programming.  Typically, a function that
 "updates" a stlvec passed to it as an argument will copy the input stlvec to a
 new locally scoped mutable stlvec, modify the new stlvec and use stlconst to
@@ -550,14 +553,13 @@ stlvec. E.g.::
     > stl::reverse_copy sv1 (sv2,stl::svback) $$ members sv2;
     ["e","d","c","b","a"]
 
-Without reverse_copy, one have to create sv2, copy sv1 into it and then
-reverse sv2.
+Without reverse_copy, one have to copy sv1 into sv2 and then reverse sv2.
 
 Operations
 ----------
 
 When reading the function descriptions that follow, please bear in mind
-that whenever a function is passed an iterator tuple of the from (sv,first,
+that whenever a function is passed an iterator tuple of the form (sv,first,
 last), first and last can be dropped, leaving (sv), or simply sv. The
 function will treat the "unary" iterator tuple (sv) as (sv, stl::svbeg,
 stl::svend).
@@ -739,14 +741,14 @@ Operations
 
 .. function:: find_first_of (sv1, first1, last1) (sv2, first2, last2) bin_pred
 
-   Returns the position of the ``first`` element, ``x``, in
+   Returns the position of the first element, ``x``, in
    ``sv1``[``first1``,``last1``) for which there exists y in
    ``sv2``[``first2``,last2) and (``bin_pred`` ``x`` y) is true (or svend if
    no such ``x`` exists).
 
 .. function:: adjacent_find (sv, first, last) bin_pred
 
-   search ``sv``[``first``,``last``) for the ``first`` occurrence of two
+   search ``sv``[``first``,``last``) for the first occurrence of two
    consecutive elements (``x``,y) for which (``bin_pred`` ``x`` y) is
    true. Returns the position of ``x``, if found, or svend if not found)
 
@@ -779,22 +781,22 @@ Operations
 .. function:: search (sv1, first1, last1) (sv2, first2) bin_pred
 
    using ``bin_pred`` to determine equality of the elements, searches
-   ``sv1``[``first1``,``last1``) for the ``first`` occurrence of the sequence
+   ``sv1``[``first1``,``last1``) for the first occurrence of the sequence
    defined by ``sv2``[``first2``,last2), and returns the position in ``sv1``
-   of its ``first`` element (or svend if not found)
+   of its first element (or svend if not found)
 
 .. function:: search_n (sv, first, last) count x bin_pred
 
    using ``bin_pred`` to determine equality of the elements, searches
    ``sv``[``first``,``last``) for a sequence of ``count`` elements that equal
    ``x``. If such a sequence is found, it returns the position of the
-   ``first`` of its elements, otherwise it returns svend
+   first of its elements, otherwise it returns svend
 
 .. function:: find_end (sv1, first1, last1) (sv2, first2, last2) bin_pred
 
    using ``bin_pred`` to determine equality of the elements, searches
-   ``sv1``[``first1``,``last1``) for the ``last`` occurrence of
-   ``sv2``[``first2``,last2). Returns the position of ``first`` element in
+   ``sv1``[``first1``,``last1``) for the last occurrence of
+   ``sv2``[``first2``,last2). Returns the position of the first element in
    ``sv1`` of the occurrence (or svend if not found).
 
 Examples
@@ -824,7 +826,7 @@ Operations
 .. function:: copy (sv, first1, last1) (msv, first2)
 
    copies the elements in ``sv``[``first1``,``last1``) into a range whose
-   ``first`` element is (``msv``,``first2``)
+   first element is (``msv``,``first2``)
 
 .. function:: copy_backward (sv,first1,last1) (msv,last2)
 
@@ -936,7 +938,7 @@ Operations
 .. function:: rotate (msv,first,middle,last)
 
    rotates the elements of ``msv``[``first``,``middle``,``last``] so that
-   ``middle`` becomes the ``first`` element of ``msv``[``first``,``last``].
+   ``middle`` becomes the first element of ``msv``[``first``,``last``].
 
 .. function:: rotate_copy (msv,first,middle,last) (msv,first)
 
@@ -1010,7 +1012,7 @@ functions, comp (as for the Pure library sort function). The functions (<) and
    let n be the number of elements in ``sv``[``first1``, ``last1``) and r
    be the number of elements in ``msv``[``first2``, last2). If r < n,
    :func:`partial_sort_copy` fills ``msv``[``first2``, last2) with the
-   ``first`` r elements of what ``sv``[``first1``, ``last1``) would be if it
+   first r elements of what ``sv``[``first1``, ``last1``) would be if it
    had been sorted. If r >= n, it fills ``msv``[``first2``,
    ``first2``+n) with the elements of ``sv``[``first1``, ``last1``) in
    sorted order. ``sv``[``first1``,``last1``) is unchanged.
@@ -1028,13 +1030,13 @@ The next four functions assume that sv[first, last) is ordered by comp.
 
 .. function:: lower_bound (sv, first, last) x comp
 
-   returns an integer p that such that (``sv``,p) is the ``first`` position
+   returns an integer p that such that (``sv``,p) is the first position
    into which ``x`` can be inserted into ``sv``[``first``, ``last``) while
    maintaining the sorted ordering.
 
 .. function:: upper_bound (sv, first, last) x comp
 
-   returns an integer p that such that (``sv``,p) is the ``last`` position
+   returns an integer p that such that (``sv``,p) is the last position
    into which ``x`` can be inserted into ``sv``[``first``, ``last``) while
    maintaining the sorted ordering.
 
@@ -1215,7 +1217,7 @@ and (>) are commonly passed as comp.
 
    compares ``sv1``[``first1``,``last1``) and ``sv2``[``first2``,last2) element
    by element according to the ordering defined by ``comp``, and returns true if
-   the ``first`` sequence is less than the second
+   the first sequence is less than the second
 
 Algorithms are provided for stepping through all the permutations the elements
 of a stlvec. For these purposes, the first permutation has the elements of
@@ -1227,7 +1229,7 @@ order.
    rearranges ``msv``[``first``,``last``) to produce the next permutation, in
    the ordering imposed by ``comp``. If ``msv``[``first``,``last``) is not the
    ``last`` permutation, change ``msv``[``first``,``last``) to the next
-   permutation and return true. Otherwise, change it to the ``first``
+   permutation and return true. Otherwise, change it to the first
    permutation and return true
 
 .. function:: prev_permutation (msv,first,last) comp
