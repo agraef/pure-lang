@@ -1,0 +1,42 @@
+
+// Regression test for reduce/reduce_with (same as examples/rules.pure).
+
+/* Symbolic evaluation example with local rule sets. */
+
+expand = reduce with
+  (a+b)*c = a*c+b*c;
+  a*(b+c) = a*b+a*c;
+end;
+
+factor = reduce with
+  a*c+b*c = (a+b)*c;
+  a*b+a*c = a*(b+c);
+end;
+
+/* Example: */
+
+expand ((a+b)*2); // yields a*2+b*2
+factor (a*2+b*2); // yields (a+b)*2
+
+/* 'reduce' adjusts to quoted arguments; in that case it will prevent
+   evaluation of the substituted globals in the result: */
+
+expand ((a+1)*2);    // yields a*2+2
+expand $ '((a+1)*2); // yields a*2+1*2
+
+/* 'reduce' can also be used in a way similar to Mathematica's 'ReplaceAll'
+   function: */
+
+let X = [x,x^2,x^3];
+reduce X with x = u+v end; // yields [u+v,(u+v)^2,(u+v)^3]
+
+let Y = 1+x^2+x^4;
+reduce Y with x^p = f p end; // yields 1+f 2+f 4
+
+/* 'reduce' is implemented as a macro which expands to the 'reduce_with'
+   primitive. The latter can also be used directly, specifying the desired
+   replacements as a list of hash pairs. Thus the following are equivalent to
+   the above: */
+
+reduce_with [x => u+v] X;
+reduce_with [(^) => ((^) with x^p = f p end)] Y;

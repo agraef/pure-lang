@@ -1,0 +1,159 @@
+expand = reduce_with [(*)=>(*/*0*/)] with (a/*0:0101*/+b/*0:011*/)*c/*0:1*/ = a/*0:0101*/*/*1*/c/*0:1*/+b/*0:011*/*/*1*/c/*0:1*/; a/*0:01*/*(b/*0:101*/+c/*0:11*/) = a/*0:01*/*/*1*/b/*0:101*/+a/*0:01*/*/*1*/c/*0:11*/ {
+  rule #0: (a+b)*c = a*c+b*c
+  rule #1: a*(b+c) = a*b+a*c
+  state 0: #0 #1
+	<var> state 1
+	<app> state 7
+  state 1: #1
+	<app> state 2
+  state 2: #1
+	<app> state 3
+  state 3: #1
+	+ state 4
+  state 4: #1
+	<var> state 5
+  state 5: #1
+	<var> state 6
+  state 6: #1
+  state 7: #0 #1
+	<var> state 8
+	<app> state 15
+  state 8: #1
+	<var> state 9
+  state 9: #1
+	<app> state 10
+  state 10: #1
+	<app> state 11
+  state 11: #1
+	+ state 12
+  state 12: #1
+	<var> state 13
+  state 13: #1
+	<var> state 14
+  state 14: #1
+  state 15: #0 #1
+	<var> state 16
+	+ state 24
+  state 16: #1
+	<var> state 17
+  state 17: #1
+	<var> state 18
+  state 18: #1
+	<app> state 19
+  state 19: #1
+	<app> state 20
+  state 20: #1
+	+ state 21
+  state 21: #1
+	<var> state 22
+  state 22: #1
+	<var> state 23
+  state 23: #1
+  state 24: #0 #1
+	<var> state 25
+  state 25: #0 #1
+	<var> state 26
+  state 26: #0 #1
+	<var> state 27
+	<app> state 28
+  state 27: #0
+  state 28: #0 #1
+	<var> state 29
+	<app> state 31
+  state 29: #0
+	<var> state 30
+  state 30: #0
+  state 31: #0 #1
+	<var> state 32
+	+ state 35
+  state 32: #0
+	<var> state 33
+  state 33: #0
+	<var> state 34
+  state 34: #0
+  state 35: #0 #1
+	<var> state 36
+  state 36: #0 #1
+	<var> state 37
+  state 37: #0 #1
+} end;
+factor = reduce_with [(+)=>(+/*0*/)] with a/*0:0101*/*c/*0:011*/+b/*0:101*/*c/*0:11*/ = (a/*0:0101*/+/*1*/b/*0:101*/)*c/*0:011*/; a/*0:0101*/*b/*0:011*/+a/*0:101*/*c/*0:11*/ = a/*0:0101*/*(b/*0:011*/+/*1*/c/*0:11*/) {
+  rule #0: a*c+b*c = (a+b)*c
+  rule #1: a*b+a*c = a*(b+c)
+  state 0: #0 #1
+	<app> state 1
+  state 1: #0 #1
+	<app> state 2
+  state 2: #0 #1
+	* state 3
+  state 3: #0 #1
+	<var> state 4
+  state 4: #0 #1
+	<var> state 5
+  state 5: #0 #1
+	<app> state 6
+  state 6: #0 #1
+	<app> state 7
+  state 7: #0 #1
+	* state 8
+  state 8: #0 #1
+	<var> state 9
+  state 9: #0 #1
+	<var> state 10
+  state 10: #0 #1
+} end;
+{
+  rule #0: expand = reduce_with [(*)=>(*)] with (a+b)*c = a*c+b*c; a*(b+c) = a*b+a*c end
+  state 0: #0
+}
+{
+  rule #0: factor = reduce_with [(+)=>(+)] with a*c+b*c = (a+b)*c; a*b+a*c = a*(b+c) end
+  state 0: #0
+}
+expand ((a+b)*2);
+a*2+b*2
+factor (a*2+b*2);
+(a+b)*2
+expand ((a+1)*2);
+a*2+2
+expand ('((a+1)*2));
+a*2+1*2
+{
+  rule #0: X = [x,x^2,x^3]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let X = [x,x^2,x^3];
+reduce_with [x=>x/*0*/] X with x = u+v {
+  rule #0: x = u+v
+  state 0: #0
+} end;
+[u+v,(u+v)^2,(u+v)^3]
+{
+  rule #0: Y = 1+x^2+x^4
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let Y = 1+x^2+x^4;
+reduce_with [(^)=>(^/*0*/)] Y with x/*0:01*/^p/*0:1*/ = f p/*0:1*/ {
+  rule #0: x^p = f p
+  state 0: #0
+	<var> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+} end;
+1+f 2+f 4
+reduce_with [x=>u+v] X;
+[u+v,(u+v)^2,(u+v)^3]
+reduce_with [(^)=>((^/*0*/) with x/*0:01*/^p/*0:1*/ = f p/*0:1*/ {
+  rule #0: x^p = f p
+  state 0: #0
+	<var> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+} end)] Y;
+1+f 2+f 4
