@@ -6157,7 +6157,7 @@ expr interpreter::vsubst(expr x)
    little term rewriting interpreter here, so it's kind of slow compared to
    compiled code, but for macro substitution it should be good enough. */
 
-expr interpreter::macsubst(expr x, bool quote)
+expr interpreter::macsubst(expr x, envstack& estk, uint8_t idx, bool quote)
 {
   char test;
   if (x.is_null()) return x;
@@ -6183,7 +6183,7 @@ expr interpreter::macsubst(expr x, bool quote)
       exprl& vs = us->back();
       for (exprl::iterator ys = xs->begin(), end = xs->end();
 	   ys != end; ys++) {
-	vs.push_back(macsubst(*ys, quote));
+	vs.push_back(macsubst(*ys, estk, idx, quote));
       }
     }
     return expr(EXPR::MATRIX, us);
@@ -6191,43 +6191,59 @@ expr interpreter::macsubst(expr x, bool quote)
   // application:
   case EXPR::APP:
     if (quote) {
-      expr u = macsubst(x.xval1(), quote),
-	v = macsubst(x.xval2(), quote);
+      expr u = macsubst(x.xval1(), estk, idx, quote),
+	v = macsubst(x.xval2(), estk, idx, quote);
       return expr(u, v);
     } else if (is_quote(x.xval1().tag())) {
       expr u = x.xval1(),
-	v = macsubst(x.xval2(), true);
+	v = macsubst(x.xval2(), estk, idx, true);
       return expr(u, v);
+    } else if (x.xval1().tag() == symtab.amp_sym().f) {
+      if (++idx == 0)
+	throw err("error in expression (too many nested closures)");
+      expr v = macsubst(x.xval2(), estk, idx);
+      return expr(symtab.amp_sym().x, v);
+    } else if (x.xval1().tag() == EXPR::APP &&
+	       x.xval1().xval1().tag() == symtab.catch_sym().f) {
+      expr u = macsubst(x.xval1().xval2(), estk, idx);
+      if (++idx == 0)
+	throw err("error in expression (too many nested closures)");
+      expr v = macsubst(x.xval2(), estk, idx);
+      return expr(symtab.catch_sym().x, u, v);
     } else {
-      expr u = macsubst(x.xval1()),
-	v = macsubst(x.xval2());
+      expr u = macsubst(x.xval1(), estk, idx),
+	v = macsubst(x.xval2(), estk, idx);
       expr w = expr(u, v);
-      return macval(w);
+      return macval(w, estk, idx);
     }
   // conditionals:
   case EXPR::COND: {
-    expr u = macsubst(x.xval1()),
-      v = macsubst(x.xval2()),
-      w = macsubst(x.xval3());
+    expr u = macsubst(x.xval1(), estk, idx),
+      v = macsubst(x.xval2(), estk, idx),
+      w = macsubst(x.xval3(), estk, idx);
     return expr::cond(u, v, w);
   }
   case EXPR::COND1: {
-    expr u = macsubst(x.xval1()),
-      v = macsubst(x.xval2());
+    expr u = macsubst(x.xval1(), estk, idx),
+      v = macsubst(x.xval2(), estk, idx);
     return expr::cond1(u, v);
   }
   // nested closures:
   case EXPR::LAMBDA: {
-    exprl *u = x.largs(); expr v = macsubst(x.lrule().rhs);
+    if (++idx == 0)
+      throw err("error in expression (too many nested closures)");
+    exprl *u = x.largs(); expr v = macsubst(x.lrule().rhs, estk, idx);
     return expr::lambda(new exprl(*u), v, x.lrule().vi);
   }
   case EXPR::CASE: {
-    expr u = macsubst(x.xval());
+    expr u = macsubst(x.xval(), estk, idx);
+    if (++idx == 0)
+      throw err("error in expression (too many nested closures)");
     const rulel *r = x.rules();
     rulel *s = new rulel;
     for (rulel::const_iterator it = r->begin(); it != r->end(); ++it) {
-      expr u = it->lhs,	v = macsubst(it->rhs),
-	w = macsubst(it->qual);
+      expr u = it->lhs,	v = macsubst(it->rhs, estk, idx),
+	w = macsubst(it->qual, estk, idx);
       s->push_back(rule(u, v, it->vi, w));
     }
     return expr::cases(u, s);
@@ -6236,33 +6252,39 @@ expr interpreter::macsubst(expr x, bool quote)
     const rulel *r = x.rules();
     rulel *s = new rulel;
     for (rulel::const_iterator it = r->begin(); it != r->end(); ++it) {
-      expr u = it->lhs, v = macsubst(it->rhs);
+      expr u = it->lhs, v = macsubst(it->rhs, estk, idx);
       s->push_back(rule(u, v, it->vi));
+      if (++idx == 0)
+	throw err("error in expression (too many nested closures)");
     }
-    expr u = macsubst(x.xval());
+    expr u = macsubst(x.xval(), estk, idx);
     return expr::when(u, s);
   }
   case EXPR::WITH: {
-    expr u = macsubst(x.xval());
     const env *e = x.fenv();
+    estk.push_front(enventry(e, idx));
+    expr u = macsubst(x.xval(), estk, idx);
     env *f = new env;
+    if (++idx == 0)
+      throw err("error in expression (too many nested closures)");
     for (env::const_iterator it = e->begin(); it != e->end(); ++it) {
       int32_t g = it->first;
       const env_info& info = it->second;
       const rulel *r = info.rules;
       rulel s;
       for (rulel::const_iterator jt = r->begin(); jt != r->end(); ++jt) {
-	expr u = jt->lhs, v = macsubst(jt->rhs),
-	  w = macsubst(jt->qual);
+	expr u = jt->lhs, v = macsubst(jt->rhs, estk, idx),
+	  w = macsubst(jt->qual, estk, idx);
 	s.push_back(rule(u, v, jt->vi, w));
       }
       (*f)[g] = env_info(info.argc, s, info.temp);
     }
+    estk.pop_front();
     return expr::with(u, f);
   }
   default:
     assert(x.tag() > 0);
-    return quote?x:macval(x);
+    return quote?x:macval(x, estk, idx);
   }
 }
 
@@ -6817,7 +6839,7 @@ bool interpreter::parse_env(exprl& xs, env& e)
   return true;
 }
 
-expr *interpreter::macspecial(expr x)
+expr *interpreter::macspecial(expr x, envstack& estk, uint8_t idx)
 {
   expr u, v, w;
   if (!specials_only && x.tag() == symtab.namespace_sym().f) {
@@ -6825,8 +6847,28 @@ expr *interpreter::macspecial(expr x)
       symtab.current_namespace->c_str():"";
     return new expr(EXPR::STR, strdup(s));
   }
+  if (!specials_only && x.tag() == symtab.locals_sym().f) {
+    // substitute calls to the '__locals__' builtin
+    set<int32_t> done;
+    exprl xs;
+    for (envstack::iterator it = estk.begin(), end = estk.end();
+	 it != end; ++it) {
+      uint8_t jdx = it->idx;
+      for (env::const_iterator jt = it->e->begin(); jt != it->e->end(); ++jt) {
+	int32_t g = jt->first;
+	if (done.find(g) == done.end()) {
+	  expr y = expr(EXPR::FVAR, g, idx-jdx);
+	  expr x = expr(interpreter::g_interp->symtab.mapsto_sym().x,
+			expr(g), y);
+	  xs.push_back(x);
+	  done.insert(g);
+	}
+      }
+    }
+    return new expr(expr::list(xs));
+  }
   if (!specials_only && x.is_app(u, v) && u.tag() == symtab.eval_sym().f)
-    return new expr(maceval(v));
+    return new expr(maceval(v, estk, idx));
   int32_t f = get2args(x, u, v);
   if (f == symtab.lambda_sym().f) {
     exprl xs;
@@ -6890,7 +6932,7 @@ static string pname(interpreter& interp, int32_t tag)
     return "#<closure>";
 }
 
-expr interpreter::macval(expr x)
+expr interpreter::macval(expr x, envstack& estk, uint8_t idx)
 {
   char test;
   if (x.is_null()) return x;
@@ -6899,7 +6941,7 @@ expr interpreter::macval(expr x)
   int32_t f; uint32_t argc = count_args(x, f);
   if (f <= 0) return x;
   // Evaluate built-in macros for the specials.
-  expr *z = macspecial(x);
+  expr *z = macspecial(x, estk, idx);
   if (z) {
     expr y = *z; delete z;
     if (mac_tracepoints.find(f) != mac_tracepoints.end())
@@ -6932,14 +6974,14 @@ expr interpreter::macval(expr x)
 	if (mac_tracepoints.find(f) != mac_tracepoints.end())
 	  std::cout << "-- macro " << pname(*this, f) << ": "
 		    << x << " --> " << y << '\n';
-	return macsubst(y);
+	return macsubst(y, estk, idx);
       }
     }
   }
   return x;
 }
 
-expr interpreter::maceval(expr x)
+expr interpreter::maceval(expr x, envstack& estk, uint8_t idx)
 {
   if (x.is_null()) return x;
   switch (x.tag()) {
@@ -6952,7 +6994,7 @@ expr interpreter::maceval(expr x)
       exprl& vs = us->back();
       for (exprl::iterator ys = xs->begin(), end = xs->end();
 	   ys != end; ys++) {
-	vs.push_back(maceval(*ys));
+	vs.push_back(maceval(*ys, estk, idx));
       }
     }
     return expr(EXPR::MATRIX, us);
@@ -6960,9 +7002,21 @@ expr interpreter::maceval(expr x)
   // application:
   case EXPR::APP: {
     if (is_quote(x.xval1().tag()))
-      return macsubst(x.xval2());
-    else {
-      expr u = maceval(x.xval1()), v = maceval(x.xval2());
+      return macsubst(x.xval2(), estk, idx);
+    else if (x.xval1().tag() == symtab.amp_sym().f) {
+      if (++idx == 0)
+	throw err("error in expression (too many nested closures)");
+      expr v = maceval(x.xval2(), estk, idx);
+      return expr(symtab.amp_sym().x, v);
+    } else if (x.xval1().tag() == EXPR::APP &&
+	       x.xval1().xval1().tag() == symtab.catch_sym().f) {
+      expr u = maceval(x.xval1().xval2(), estk, idx);
+      if (++idx == 0)
+	throw err("error in expression (too many nested closures)");
+      expr v = maceval(x.xval2(), estk, idx);
+      return expr(symtab.catch_sym().x, u, v);
+    } else {
+      expr u = maceval(x.xval1(), estk, idx), v = maceval(x.xval2(), estk, idx);
       return expr(u, v);
     }
   }
@@ -11200,7 +11254,7 @@ pure_expr *interpreter::const_value(expr x, bool quote)
       if (quote)
 	return pure_const(x.tag());
       else {
-	if (x.tag() == symtab.locals_sym().f ||
+	if (//x.tag() == symtab.locals_sym().f ||
 	    externals.find(x.tag()) != externals.end())
 	  return 0;
 	map<int32_t,GlobalVar>::iterator v = globalvars.find(x.tag());
@@ -12986,7 +13040,9 @@ Value *interpreter::codegen(expr x, bool quote)
     if (quote)
       return act_builder().CreateCall
 	(module->getFunction("pure_const"), SInt(x.tag()));
+#if 0
     // check for a call to the '__locals__' builtin
+    // NOTE: This is now handled at macro substitution time.
     if (x.tag() == symtab.locals_sym().f) {
       // enumerate all local functions visible in the current environment
       vector<Value*> argv;
@@ -13008,6 +13064,7 @@ Value *interpreter::codegen(expr x, bool quote)
       return act_builder().CreateCall
 	(module->getFunction("pure_locals"), argv.begin(), argv.end());
     }
+#endif
     // check for a call to the '__func__' builtin
     if (x.tag() == symtab.func_sym().f) {
       /* Find the innermost named closure or lambda. Note that the latter is

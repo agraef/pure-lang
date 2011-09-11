@@ -1,0 +1,26 @@
+
+// regression test for lambda lifting with __locals__
+
+def obj = (\x -> vt!x) when
+  // Having an extra environment triggers a segfault in Pure <= 0.47 because
+  // of improper lambda lifting.
+  99;
+  vt = record __locals__;
+end;
+
+namespace point with
+public getx gety move;
+point (x,y) = obj with
+  getx () = get xv;
+  gety () = get yv;
+  move (x,y) = put xv x, put yv y;
+end when
+  xv,yv = ref x,ref y;
+end;
+end;
+
+using namespace point;
+let p = point (1,2);
+let x, y = p getx(), p gety(); x,y;
+p move (2*x,2*y);
+p getx(), p gety();

@@ -1,0 +1,95 @@
+def obj = \x/*0:1*/ -> vt/*1:*/!x/*0:1*/ when 99; vt/*0:*/ = record __locals__ end;
+point::point (x/*0:101*/,y/*0:11*/) = \x/*0:1*/ -> vt/*1:*/!x/*0:1*/ {
+  rule #0: _ x = vt!x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} when 99; vt/*0:*/ = record [point::getx=>getx/*1*/,point::gety=>gety/*1*/,point::move=>move/*1*/] {
+  rule #0: vt = record [point::getx=>getx,point::gety=>gety,point::move=>move]
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: _ = 99
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end with getx () = get xv/*1:01*/ {
+  rule #0: getx () = get xv
+  state 0: #0
+	() state 1
+  state 1: #0
+}; gety () = get yv/*1:1*/ {
+  rule #0: gety () = get yv
+  state 0: #0
+	() state 1
+  state 1: #0
+}; move (x/*0:101*/,y/*0:11*/) = put xv/*1:01*/ x/*0:101*/,put yv/*1:1*/ y/*0:11*/ {
+  rule #0: move (x,y) = put xv x,put yv y
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+} end when xv/*0:01*/,yv/*0:1*/ = ref x/*0:101*/,ref y/*0:11*/ {
+  rule #0: xv,yv = ref x,ref y
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+} end;
+{
+  rule #0: point::point (x,y) = \x -> vt!x when 99; vt = record [point::getx=>getx,point::gety=>gety,point::move=>move] end with getx () = get xv; gety () = get yv; move (x,y) = put xv x,put yv y end when xv,yv = ref x,ref y end
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+}
+{
+  rule #0: p = point::point (1,2)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let p = point::point (1,2);
+{
+  rule #0: x,y = p point::getx (),p point::gety ()
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+}
+let x,y = p point::getx (),p point::gety ();
+x,y;
+1,2
+p point::move (2*x,2*y);
+2,4
+p point::getx (),p point::gety ();
+2,4

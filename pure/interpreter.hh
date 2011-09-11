@@ -452,6 +452,13 @@ typedef map<string,bcdata_t> bcmap;
 
 typedef map<string,const llvm::Type*> type_map;
 
+struct enventry {
+  const env* e;
+  uint8_t idx;
+  enventry(const env* _e, uint8_t _idx) : e(_e), idx(_idx) {}
+};
+typedef list<enventry> envstack;
+
 class interpreter
 {
 public:
@@ -735,15 +742,17 @@ public:
   expr vsubst(expr x, int offs, int offs1, uint8_t idx = 0);
   expr vsubst(expr x, int offs) { return vsubst(x, offs, offs, 0); }
   expr vsubst(expr x);
-  expr macsubst(expr x, bool quote = false);
+  expr macsubst(expr x, bool quote = false)
+  { envstack estk; return macsubst(x, estk, 0, quote); }
+  expr macsubst(expr x, envstack& estk, uint8_t idx, bool quote = false);
   expr varsubst(expr x, uint8_t offs, uint8_t offs1, uint8_t idx = 0);
   expr varsubst(expr x, int offs) { return varsubst(x, offs, 0, 0); }
   expr macred(expr x, expr y, uint8_t idx = 0);
-  expr macval(expr x);
-  expr maceval(expr x);
+  expr macval(expr x, envstack& estk, uint8_t idx);
+  expr maceval(expr x, envstack& estk, uint8_t idx);
   expr macsval(pure_expr *x);
   bool specials_only;
-  expr *macspecial(expr x);
+  expr *macspecial(expr x, envstack& estk, uint8_t idx);
   exprl get_args(expr x);
   expr tagsubst(expr x);
   bool parse_rulel(exprl& xs, rulel& r);
