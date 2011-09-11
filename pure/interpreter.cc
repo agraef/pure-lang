@@ -441,8 +441,6 @@ void interpreter::init()
   declare_extern((void*)pure_clos,
 		 "pure_clos",       "expr*", -7, "bool", "int", "int", "int",
 		                                 "void*", "void*", "int");
-  declare_extern((void*)pure_locals,
-		 "pure_locals",     "expr*", -1, "int");
 
   declare_extern((void*)pure_call,
 		 "pure_call",       "expr*",  1, "expr*");
@@ -13040,31 +13038,6 @@ Value *interpreter::codegen(expr x, bool quote)
     if (quote)
       return act_builder().CreateCall
 	(module->getFunction("pure_const"), SInt(x.tag()));
-#if 0
-    // check for a call to the '__locals__' builtin
-    // NOTE: This is now handled at macro substitution time.
-    if (x.tag() == symtab.locals_sym().f) {
-      // enumerate all local functions visible in the current environment
-      vector<Value*> argv;
-      set<int32_t> done;
-      size_t n = 0;
-      argv.push_back(Zero);
-      for (Env *e = &act_env(); e && e->f; e = e->parent) {
-	EnvMap& m = e->fmap.act();
-	for (EnvMap::iterator it = m.begin(), end = m.end(); it != end; ++it) {
-	  int32_t fno = it->first;
-	  if (fno <= 0 || done.find(fno) != done.end()) continue;
-	  Env& f = *it->second;
-	  argv.push_back(SInt(fno));
-	  argv.push_back(fbox(f));
-	  done.insert(fno); n++;
-	}
-      }
-      argv[0] = UInt(n);
-      return act_builder().CreateCall
-	(module->getFunction("pure_locals"), argv.begin(), argv.end());
-    }
-#endif
     // check for a call to the '__func__' builtin
     if (x.tag() == symtab.func_sym().f) {
       /* Find the innermost named closure or lambda. Note that the latter is

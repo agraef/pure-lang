@@ -3952,24 +3952,6 @@ pure_expr *pure_clos(bool local, int32_t tag, uint32_t key, uint32_t n,
 }
 
 extern "C"
-pure_expr *pure_locals(uint32_t n, /* n x int32_t,pure_expr* */ ...)
-{
-  interpreter& interp = *interpreter::g_interp;
-  pure_expr *h = pure_symbol(interp.symtab.mapsto_sym().f);
-  pure_expr **xs = (pure_expr**)alloca(n*sizeof(pure_expr*));
-  va_list ap;
-  va_start(ap, n);
-  for (size_t i = 0; i < n; i++) {
-    int32_t fno = va_arg(ap, int32_t);
-    pure_expr *f = va_arg(ap, pure_expr*);
-    assert(fno>0 && f);
-    xs[i] = mk_cons(h, pure_const(fno), f);
-  }
-  va_end(ap);
-  return pure_listv(n, xs);
-}
-
-extern "C"
 pure_expr *pure_int64(int64_t l)
 {
   int sgn = (l>0)?1:(l<0)?-1:0;
@@ -8422,9 +8404,9 @@ static pure_expr *rsubst(map<uint32_t,pure_expr*> &env,
       /* Resubstitute a global for a local closure from the environment. */
       pure_expr *y = it->second;
       if (force[x->data.clos->key])
-	return pure_symbol(y->tag);
-      else
 	return y;
+      else
+	return pure_const(y->tag);
     } else
       return x;
   }

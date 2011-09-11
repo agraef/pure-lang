@@ -617,10 +617,6 @@ pure_expr *pure_const(int32_t tag);
 pure_expr *pure_clos(bool local, int32_t tag, uint32_t key, uint32_t n,
 		     void *f, void *e, uint32_t m, /* m x pure_expr* */ ...);
 
-/* Enumerate local functions visible at a given point in the program. */
-
-pure_expr *pure_locals(uint32_t n, /* n x int32_t,pure_expr* */ ...);
-
 /* Construct a literal application. */
 
 pure_expr *pure_applc(pure_expr *x, pure_expr *y);
