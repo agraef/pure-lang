@@ -16,11 +16,15 @@
 
 ### Usage:
 #
-# make dll   - updates production versions of stl dlls and copys them to .
-# make debug - does the same for Pure debug support versions
-# make tests - compile some Pure unit test files
-# make clean - rm all dlls and executables - leave only source code
-# make       - same as make dll
+# make dll       - updates production versions of stl dlls and copys them to .
+# make debug     - does the same for Pure debug support versions
+# make           - same as make dll
+# make install   - copy dlls and Pure files to $(libdir)/pure/
+# make test      - run unit test scripts
+# make clean     - rm all dlls and executables - leave only source code
+# make uninstall - rm dlls and Pure files from $(libdir)/pure/
+# make dist      - make a release tarball
+# make distcheck - check the release tarball
 
 ### Example dry run:
 #
@@ -31,8 +35,8 @@
 
 
 # Package name and version number:
-dist = pure-sql3-$(version)
-version = 0.4
+dist = pure-stl-$(version)
+version = 0.1
 
 # Try to guess the installation prefix (this needs GNU make):
 prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
@@ -76,7 +80,6 @@ DLL_BASENAMES = stlcontainer stlalgorithm
 CONTAINER_BASENAMES = stlbase stlvec
 ALGO_BASENAMES = sv_modifying sv_nonmodifying sv_sort \
 	         sv_merge sv_heap sv_minmax sv_numeric
-
 DEBUG_DLL_DIR = ./debug_dll
 PROD_DLL_DIR = ./dll
 # CXX = clang++
@@ -97,8 +100,11 @@ ALGO_CPPS = $(addsuffix .cpp, $(ALGO_BASENAMES))
 
 DLLS = $(addsuffix $(DLL), $(DLL_BASENAMES))
 DLL_TRGS = $(addprefix $(DLL_DIR)/, $(DLLS))
-DIST_MODULES = $(addsuffix .pure, $(PURE_BASENAMES)) $(DLLS)
-INSTALLED_MODULES = $(addprefix $(DESTDIR)$(libdir)/pure/, $(DIST_MODULES))
+
+PUREFILES = $(addsuffix .pure, $(PURE_BASENAMES))
+LIBFILES = $(PUREFILES) $(DLLS)
+INSTALLEDFILES = $(addprefix $(DESTDIR)$(libdir)/pure/, $(LIBFILES))
+DISTFILES = Makefile COPYING README config.guess *.pure *.hpp *.cpp ut/*
 
 ### Make dlls
 
@@ -133,10 +139,25 @@ clean:
 
 install: dll
 	@ test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
-	@ cp $(DIST_MODULES) "$(DESTDIR)$(libdir)/pure"
+	@ cp $(LIBFILES) "$(DESTDIR)$(libdir)/pure"
 
 uninstall:
-	rm -f $(INSTALLED_MODULES)
+	rm -f $(INSTALLEDFILES)
 
-.PHONY:	dll debug test clean install uninstall
+### Make distribution tarball
+
+dist:
+	rm -rf $(dist)
+	mkdir $(dist) && mkdir $(dist)/ut
+	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
+	rm -f $(dist).tar.gz
+	tar cfzh $(dist).tar.gz $(dist)
+	rm -rf $(dist)
+
+distcheck: dist
+	tar xfz $(dist).tar.gz
+	cd $(dist) && make && make install DESTDIR=./BUILD
+	rm -rf $(dist)
+
+.PHONY:	dll debug test clean install uninstall dist distcheck
 
