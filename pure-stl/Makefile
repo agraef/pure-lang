@@ -58,6 +58,7 @@ shared = -shared
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows (untested)
 DLL = .dll
+EXE = .exe
 endif
 ifneq "$(findstring -darwin,$(host))" ""
 # OSX (untested)
@@ -97,7 +98,7 @@ ALGO_CPPS = $(addsuffix .cpp, $(ALGO_BASENAMES))
 DLLS = $(addsuffix $(DLL), $(DLL_BASENAMES))
 DLL_TRGS = $(addprefix $(DLL_DIR)/, $(DLLS))
 DIST_MODULES = $(addsuffix .pure, $(PURE_BASENAMES)) $(DLLS)
-INSTALLED_MODULES = $(addprefix $(libdir)/pure/, $(DIST_MODULES))
+INSTALLED_MODULES = $(addprefix $(DESTDIR)$(libdir)/pure/, $(DIST_MODULES))
 
 ### Make dlls
 
@@ -117,7 +118,7 @@ $(DLL_DIR)/stlalgorithm$(DLL): $(ALGO_HPPS) $(ALGO_CPPS)
 ### Compile unit tests
 
 test:
-	pure -x ut/ut_all.pure
+	pure -I. -x ut/ut_all.pure
 
 
 ### Remove dlls
@@ -131,8 +132,8 @@ clean:
 ### Install and uninstall
 
 install: dll
-	@ test -d "$(libdir)/pure" || mkdir -p "$(libdir)/pure"
-	@ cp $(DIST_MODULES) "$(libdir)/pure"
+	@ test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
+	@ cp $(DIST_MODULES) "$(DESTDIR)$(libdir)/pure"
 
 uninstall:
 	rm -f $(INSTALLED_MODULES)
