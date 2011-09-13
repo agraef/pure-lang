@@ -11,7 +11,7 @@ Version @version@, |today|
 | Peter Summerland <p.summerland@gmail.com>
 
 Pure's interface to C++ vectors, specialized to hold pointers to arbitrary
-Pure expressions, and the C++ Standare Template Library algorithms that act on
+Pure expressions, and the C++ Standard Template Library algorithms that act on
 them.
 
 .. _Pure: http://pure-lang.googlecode.com
@@ -39,13 +39,14 @@ Installation
 Get the latest source from
 http://pure-lang.googlecode.com/files/pure-stlvec-@version@.tar.gz.
  
-To install pure-stlvec, extract the source, cd to the pure-stl directory, run
-``make``, and then run ``sudo make install`` (on Linux). After that, you can
-run ``make test`` to see if the installation worked. ``make`` tries to guess
-your Pure installation directory and platform-specific setup. If it gets this
-wrong, you can set some variables manually. In particular, ``make install
-prefix=/usr`` sets the installation prefix. Please see the Makefile for
-details.
+To install pure-stlvec (on Linux), extract the source, cd to the pure-stl
+directory, and run ``make``. After this you can (and should) also run ``make
+test`` to run a few unit tests to make sure that pure-stl works properly on
+your system. If ``make test`` works, run ``sudo make install`` to install
+pure-stlvec on your system.  ``make`` tries to guess your Pure installation
+directory and platform-specific setup. If it gets this wrong, you can set some
+variables manually. In particular, ``make install prefix=/usr`` sets the
+installation prefix. Please see the Makefile for details.
 
 Overview
 ========
@@ -53,29 +54,31 @@ Overview
 The C++ Standard Template Library ("STL") is a library of generic containers
 (data structures designed for storing other objects) and a rich set of generic
 algorithms that operate on them. pure-stlvec provides an interface to one of
-its most useful container, "vector", adopted to hold pointers to Pure
-expressions.
+its most useful containers, "vector", adopted to hold pointers to Pure
+expressions. The interface provides Pure programmers with a mutable container
+"stlvec", that, like the STL's vector, holds a sequence of objects that can be
+accessed in constant time according to their position in the sequence.
 
-Modules Provided by pure-stlvec
--------------------------------
+Modules
+-------
 
-pure-stlvec's stlvec module provides a mutable container, "stlvec", that holds a
-sequence of objects that can be accessed in constant time according to their
-position in the sequence. The usual operations, similar in name and function
-to those provided by the Pure Library for its containers, are provided for
-creating, accessing and modifying stlvecs. As is the case for their Pure
-Library counterparts, these operations are in the global namespace.
+The usual operations for creating, accessing and modifying stlvecs are
+provided by the stlvec module. The operations are similar in name and
+function to those provided by the Pure Library for other containers. As is the
+case for their Pure Library counterparts, these operations are in the global
+namespace.
 
-In addition to stlvec, pure-stlvec provides a group of modules, sv_modifying,
-sv_nonmodifying, sv_sort, sv_merge, sv_heap, sv_minmax and sv_numeric, that
-are straight wrappers the STL algorithms (specialized to work with STL vectors
-of pointers to Pure expressions). This grouping of the STL algorithms follows
-that found at http://www.cplusplus.com/reference/algorithm/. This web page
-contains a table that summarizes of all of the algorithms in one place. 
+In addition to the stlvec module, pure-stlvec provides a group of modules,
+sv_modifying, sv_nonmodifying, sv_sort, sv_merge, sv_heap, sv_minmax and
+sv_numeric, that are straight wrappers the STL algorithms (specialized to work
+with STL vectors of pointers to Pure expressions). This grouping of the STL
+algorithms follows that found at
+http://www.cplusplus.com/reference/algorithm/. This web page contains a table
+that summarizes of all of the algorithms in one place.
 
-pure-stl vec provides an "umbrella" module, stlvec_algorithms, pulls in all of
-the STL algorithm interface modules in one go. The STL algorithm wrapper
-functions reside in the stl namespace and have the same names as their
+pure-stlvec provides an "umbrella" module, stlvec_algorithms, that pulls in
+all of the STL algorithm interface modules in one go. The STL algorithm
+wrapper functions reside in the stl namespace and have the same names as their
 counterparts in the STL.
 
 Simple Examples
@@ -159,8 +162,8 @@ position i up to but not including j is denoted by sv[i,j). There is a
 the last member contained by a stlvec.
 
 For example, if sv contains the sequence "a", "b", "c" "d" and "e", sv!0 is
-"a", sv[1,3) is the sequence consisting of "b" followed by "c" and v[3,svend)
-denotes the sequence consisting of "d" followed by "e".
+"a", sv[1,3) is the sequence consisting of "b" followed by "c" and
+v[3,stl::svend) denotes the sequence consisting of "d" followed by "e".
 
 STL Iterators and Value Semantics
 ---------------------------------
@@ -187,16 +190,16 @@ sv's underlying STL vector. If, in addition, k is an int, stl::sort (sv,j,k)
 sv[j,k), is the subsequence of sv that begins with the element at position j
 and ends with the element at positon (k-1).
 
-Another cornerstone of the STL is its "value semantics", i.e., all of the STL
-containers are mutable and if a container is copied, all of its elements are
-copied. pure-stlvec deals with the STL's value semantics by introducing
-mutable and nonmutable stlvecs, and by storing smart pointers to objects
-(which have cheap copies) rather than the actual objects.
+Besides iterators, another cornerstone of the STL is its "value semantics",
+i.e., all of the STL containers are mutable and if a container is copied, all
+of its elements are copied. pure-stlvec deals with the STL's value semantics
+by introducing mutable and nonmutable stlvecs, and by storing smart pointers
+to objects (which have cheap copies) rather than the actual objects.
 
 Iterator Tuples
 ---------------
 
-As mentioned in the previous section, in C++, ranges are specified by a pair
+As mentioned in the previous section, in C++ ranges are specified by a pair
 of STL iterators.
 
 In pure-stlvec ranges of elements in a stlvec are specified by "iterator
@@ -204,12 +207,11 @@ tuples" rather than, say, actual pointers to STL iterators. Iterator tuples
 consist of the name of a stlvec followed by one of more ints that indicate
 positions (starting from zero) of the stlvec's elements.
 
-To illustrate how iterator tuples are used consider the STL stable_sort
+To illustrate how iterator tuples are used, consider the STL stable_sort
 function, which sorts objects in the range [first, last) in the order imposed
 by comp. Its C++ signature looks like this:
 
-  void stable_sort ( RandomAccessIterator first, RandomAccessIterator last,
-                     Compare comp )
+  void stable_sort ( RandomAccessIterator first, RandomAccessIterator last, Compare comp )
 
 The corresponding pure-stlvec function, from the sv_sort module, looks like
 this:
@@ -217,10 +219,10 @@ this:
    stable_sort (msv, first, last) comp
 
 where msv is a mutable stlvec, and first and last are integers. The first
-thing that the pure-stlvec stable_sort does is create a pair of C++ iterators
-that point to the first and last positions in msv's underlying STL vector.
-Next it wraps the Pure comp function in a C++ function object that, along
-with the two iterators can be passed to the C++ stable_sort function.
+thing that the Pure stable_sort does is create a pair of C++ iterators that
+point to the first and last positions in msv's underlying STL vector.  Next it
+wraps the Pure comp function in a C++ function object that, along with the two
+iterators can be passed to the C++ stable_sort function.
 
 For convenience, (sv,stl::svbeg, stl::svend) can be written simply as
 sv. Thus, if first were stl::svbeg (or 0), and last were stl::svend (or #msv,
@@ -230,14 +232,15 @@ the number of elements in msv), the last Pure call could be written:
 
 It should be noted that often the STL library provides a default version of
 functions, which like stable_sort, use a comparator or other callback function
-provided by the caller. For stable_sort the default version assumes that the
-"<" operator can be used on the elements held by the container in question:
+provided by the caller. E.g., the C++ stable_sort has a default version that
+assumes the "<" operator can be used on the elements held by the container in
+question:
 
    void stable_sort ( RandomAccessIterator first, RandomAccessIterator last)
 
-The pure-stlvec modules rarely, if ever, supply a default version. A typical
-example is pure-stlvec's stable_sort which must be called with a comparator
-callback function:
+The corresponding functions provided by the pure-stlvec modules rarely, if
+ever, supply a default version. A typical example is sv_sort's stable_sort
+which must be called with a comparator callback function:
 
   stable_sort msv (<);
 
@@ -290,7 +293,10 @@ accomplished using stl::svback. E.g.,::
    > stl::copy v1 (v3,stl::svback) $$ members v3;
    [0,1,2]
 
-In short, when a pure-stlvec function detects the past-end-symbol in a target
+   > stl::copy v2 (v3,stl::svback) $$ members v3;
+   [0,1,2,"a","b","c","d","e","f","g"]
+
+In short, when a pure-stlvec function detects "stl::svback" in a target
 iterator tuple, it constructs a STL "back inserter iterator" and passes it on
 to the STL function.
 
@@ -472,8 +478,8 @@ Examples
     > listmap (\x->throw DOA) sv1; // callback function throws exception
     <stdin>, line 34: unhandled exception 'DOA' ...
 
-Basic Operations on stlvecs
-===========================
+Basic Operations
+================
 
 The stlvec module provides functions for creating, accessing and modifying
 stlvecs. They are all in the global namespace.
@@ -654,10 +660,11 @@ stl::svend).
 .. function:: infix == sv1 sv2
               infix ~= sv1 sv2
 
-   (x == y) is the same as equal (==) x y. (x ~= y is
-   simply ~(equal (==) x y). Note that this is not defined for iterator
-   tuples. (The rule would never be executed because == is defined on tuples
-   in the Prelude).
+   (x == y) is the same as equal (==) x y. (x ~= y is simply ~(equal (==) x
+   y)
+
+Note that ``==`` and ``~==`` are not defined for iterator tuples (the rules
+would never be executed because == is defined on tuples in the Prelude)
 
 Convenience Functions
 ---------------------
@@ -851,7 +858,7 @@ Operations
    applies bin_fun to corresponding pairs of elements of
    sv1[first1,last1) sv2[first2,n) and and places the
    resulting sequence in msv[p, p+n) where n is last1 -
-   first1. Returns (msv,p+n).
+   first1. Returns (msv,p+n)
 
 .. function:: replace (msv,first,last) x y
 
@@ -883,7 +890,7 @@ Operations
 .. function:: generate (msv,first,last) gen_fun
 
    replace the elements in msv[first,last) with the sequence
-   generated by successive calls to gen_fun.
+   generated by successive calls to gen_fun
 
 .. function:: generate_n (msv,first) n gen_fun
 
@@ -924,7 +931,7 @@ Operations
 .. function:: unique_copy (sv,first,last) (msv,first) bin_pred
 
    Same as :func:`unique` except that the purged sequence is copied to
-   (msv,first) and sv[first,last) is not changed.
+   (msv,first) and sv[first,last) is not changed
 
 .. function:: reverse (msv,first,last)
 
@@ -959,7 +966,7 @@ Operations
 .. function:: stable_partition (msv,first,last) unary_pred
 
    same as partition except that the relative positions of the elements in
-   each group are preserved.
+   each group are preserved
 
 Examples
 --------
@@ -1015,7 +1022,7 @@ functions, comp (as for the Pure library sort function). The functions (<) and
    first r elements of what sv[first1, last1) would be if it
    had been sorted. If r >= n, it fills msv[first2,
    first2+n) with the elements of sv[first1, last1) in
-   sorted order. sv[first1,last1) is unchanged.
+   sorted order. sv[first1,last1) is unchanged
 
 .. function:: nth_element (msv, first, middle, last) comp
 
@@ -1024,7 +1031,7 @@ functions, comp (as for the Pure library sort function). The functions (<) and
    msv[first, last). Sfter the function is called,
    sv!middle will be x. All of the elements of msv[first,
    middle) will be less than x and all of the elements of
-   msv[middle+1, last) will be greater than x.
+   msv[middle+1, last) will be greater than x
 
 The next four functions assume that sv[first, last) is ordered by comp.
 
@@ -1032,13 +1039,13 @@ The next four functions assume that sv[first, last) is ordered by comp.
 
    returns an integer p that such that (sv,p) is the first position
    into which x can be inserted into sv[first, last) while
-   maintaining the sorted ordering.
+   maintaining the sorted ordering
 
 .. function:: upper_bound (sv, first, last) x comp
 
    returns an integer p that such that (sv,p) is the last position
    into which x can be inserted into sv[first, last) while
-   maintaining the sorted ordering.
+   maintaining the sorted ordering
 
 .. function:: equal_range (sv, first, last) x comp
 
@@ -1124,7 +1131,7 @@ See parameter naming conventions at ..
    places the sorted symmetric_difference of sv1[first1,last1) and
    sv2[first2,last2) into msv[p,p+n) where n is the number
    of elements in the sorted symmetric_difference, and returns the
-   past-the-end position of the sorted symmetric_difference.
+   past-the-end position of the sorted symmetric_difference
 
 Examples
 --------

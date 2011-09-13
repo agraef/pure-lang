@@ -49,12 +49,11 @@ endif
 # instead of $(prefix).
 libdir = $(prefix)/lib
 
-
 # Try to guess the host system type.
 host = $(shell ./config.guess)
 
 # Platform-specific defaults, edit this as needed.
-#PIC = -fPIC # uncomment for x86-64 compilation
+PIC = -fPIC # can comment out to optimize x86-32 compilation
 DLL = .so
 shared = -shared
 
@@ -156,7 +155,7 @@ dist:
 
 distcheck: dist
 	tar xfz $(dist).tar.gz
-	cd $(dist) && make && make install DESTDIR=./BUILD
+	cd $(dist) && make && make test && make install DESTDIR=./BUILD
 	rm -rf $(dist)
 
 .PHONY:	dll debug test clean install uninstall dist distcheck
