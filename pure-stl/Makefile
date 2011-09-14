@@ -53,7 +53,7 @@ libdir = $(prefix)/lib
 host = $(shell ./config.guess)
 
 # Platform-specific defaults, edit this as needed.
-PIC = -fPIC # can comment out to optimize x86-32 compilation
+#PIC = -fPIC # needed for x86-64 compilation
 DLL = .so
 shared = -shared
 
