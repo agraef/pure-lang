@@ -172,19 +172,19 @@ end when
   err_p = ref false; 
 end; 
 
-test_listcatmap = ok when
-  show_start "listcatmap";
+test_catmap = ok when
+  show_start "catmap";
   sv1 = stlvec ("a".."e");
   put err_p false; 
-  catch eh $ listcatmap crash sv1;
+  catch eh $ catmap crash sv1;
   ok0 = get err_p;
-  ok1 = listcatmap hyphen sv1 == ["a-a","b-b","c-c","d-d","e-e"];
-  ok2 = listcatmap hyphen (sv1,1,svend) == ["b-b","c-c","d-d","e-e"];
-  ok3 = listcatmap hyphen (sv1,1,#sv1-1) == ["b-b","c-c","d-d"];
-  ok4 = listcatmap hyphen emptystlvec == [];
+  ok1 = catmap hyphen sv1 == ["a-a","b-b","c-c","d-d","e-e"];
+  ok2 = catmap hyphen (sv1,1,svend) == ["b-b","c-c","d-d","e-e"];
+  ok3 = catmap hyphen (sv1,1,#sv1-1) == ["b-b","c-c","d-d"];
+  ok4 = catmap hyphen emptystlvec == [];
   ok5 = check_refcs sv1 1;
   ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5];
-  show_result "listcatmap" ok;
+  show_result "catmap" ok;
 end with 
   eh x = put err_p true; 
   crash x = throw exception;
@@ -294,19 +294,19 @@ end when
   err_p = ref false; 
 end; 
 
-test_listfilter = ok when
-  show_start "listfilter";
+test_filter = ok when
+  show_start "filter";
   sv1 = stlvec ("a".."f");
   put err_p false; 
-  catch eh $ listfilter crash sv1;
+  catch eh $ filter crash sv1;
   ok0 = get err_p;
-  ok1 = listfilter (>"b") sv1 == ("c".."f");
-  ok2 = listfilter (>"d") (sv1,1,svend) == ["e","f"];
-  ok3 = listfilter (>"b") (sv1,1,#sv1-1) ==  ["c","d","e"];
-  ok4 = listfilter (>"b") emptystlvec == []; 
+  ok1 = filter (>"b") sv1 == ("c".."f");
+  ok2 = filter (>"d") (sv1,1,svend) == ["e","f"];
+  ok3 = filter (>"b") (sv1,1,#sv1-1) ==  ["c","d","e"];
+  ok4 = filter (>"b") emptystlvec == []; 
   ok5 = check_refcs sv1 1;
   ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5];
-  show_result "listfilter" ok;
+  show_result "filter" ok;
 end with 
   eh x = put err_p true; 
   crash x = throw exception; 
@@ -324,13 +324,13 @@ test_stlvec = ok when
   ok = test_insert && ok;
   ok = test_all_equal && ok;
   ok = test_listmap && ok;
-  ok = test_listcatmap && ok;
+  ok = test_catmap && ok;
   ok = test_do && ok;
   ok = test_foldl && ok;
   ok = test_foldl1 && ok;
   ok = test_foldr && ok;
   ok = test_foldr1 && ok;
-  ok = test_listfilter && ok;
+  ok = test_filter && ok;
   show_suite_result "STLVEC" ok;
 end;
 

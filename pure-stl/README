@@ -92,7 +92,7 @@ stlvec module. ::
     > let sv1 = stlvec (0..4); members sv1;
     [0,1,2,3,4]
 
-    > insert (sv1,stl::svback) (5..7); members sv1;
+    > insert (sv1,stl::svend) (5..7); members sv1;
     STLVEC #<pointer 0xaf4d2c0>
     [0,1,2,3,4,5,6,7]
 
@@ -111,11 +111,21 @@ stlvec module. ::
     STLVEC #<pointer 0xaf4d2c0>
     [0,1,2,3,4,5,6,7]
 
-     > listmap (+10) sv1;
+     > map (+10) sv1;
     [10,11,12,13,14,15,16,17]
+
+    > map (+10) (sv1,2,5);
+    [12,13,14]
 
     > foldl (+) 0 sv1;
     28
+
+    > [x+10 | x = sv1; x mod 2];
+    [11,13,15,17]
+
+    > {x+10 | x = (sv1,2,6); x mod 2};
+    {13,15}
+
 
 Here are some examples that use STL algorithms. ::
 
@@ -676,12 +686,16 @@ Convenience Functions
 The stlvec module provides convenience functions that apply map, catmap,
 foldl, etc, to directly access Pure expressions stored in a stlvec.
 
-.. function:: listmap unary_fun (sv, first, last)
+.. function:: map unary_fun (sv, first, last)
 
    one pass equivalent of map unary_fun $ members (sv, first,
    last)
 
-.. function:: listcatmap unary_fun (sv, first, last)
+.. function:: listmap unary_fun (sv, first, last)
+
+   same as map, used in list comprehensions
+
+.. function:: catmap unary_fun (sv, first, last)
 
    one pass equivalent of catmap unary_fun $ members (sv, first,
    last)
@@ -701,10 +715,25 @@ foldl, etc, to directly access Pure expressions stored in a stlvec.
    one pass equivalent of foldx bin_fun $ members (sv, first,
    last)
 
-.. function:: listfilter unary_pred (sv, first, last)
+.. function:: filter unary_pred (sv, first, last)
 
    one pass equivalent of filter unary_pred $ members (sv, first,
    last)
+
+The following four functions map (or catmap) stlvecs onto row and col
+matrixes, primarily for use in matrix comprehensions.
+
+.. function:: rowmap unary_fun (sv, first, last)
+
+.. function:: rowcatmap unary_fun (sv, first, last)
+
+.. function:: colmap unary_fun (sv, first, last)
+
+.. function:: colcatmap unary_fun (sv, first, last)
+
+   
+
+
 
 Please note that "stlvec to stlvec" functions are provided by the pure-stl
 algorithm modules. Thus, for example, the stlvec module does not provide a

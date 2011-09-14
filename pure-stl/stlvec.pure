@@ -144,9 +144,11 @@ namespace stl;
 
 (::~=) sv1::stlvec sv2::svit = ~sv_equal (==) sv1 sv2;
 
-::listmap f it::svit = sv_listmap f it;
+::map f it::svit = sv_listmap f it;
 
-::listcatmap f it::svit = sv_listcatmap f it;
+::listmap f it::svit = sv_listmap f it;  // for list comprehensions
+
+::catmap f it::svit = sv_listcatmap f it;
 
 ::foldl f x it::svit = sv_foldl f x it;
 
@@ -160,10 +162,18 @@ namespace stl;
 
 ::do f it::svit = sv_foldl (\_ x->f x) () it $$ ();
 
-::listfilter p it::svit = sv_foldr f [] it with
+::filter p it::svit = sv_foldr f [] it with
   f x xs = case p x of
     1 = x:xs;
     0 = xs;
     y = throw failed_cond;
   end;
 end;
+
+::rowmap f it::svit = rowcat (sv_listmap f it);
+
+::rowcatmap f it::svit = rowcat (sv_listmap f it);
+
+::colmap f it::svit = colcat (sv_listmap f it);
+
+::colcatmap f it::svit = colcat (sv_listmap f it);
