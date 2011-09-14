@@ -107,6 +107,8 @@ DISTFILES = Makefile COPYING README config.guess *.pure *.hpp *.cpp ut/*
 
 ### Make dlls
 
+all: dll
+
 dll debug: $(DLLS)
 
 $(DLLS): $(DLL_TRGS)
