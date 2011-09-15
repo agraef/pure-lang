@@ -35,7 +35,7 @@
 
 
 # Package name and version number:
-dist = pure-stl-$(version)
+dist = pure-stlvec-$(version)
 version = 0.1
 
 # Try to guess the installation prefix (this needs GNU make):
