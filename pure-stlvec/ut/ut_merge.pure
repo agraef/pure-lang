@@ -1,4 +1,4 @@
-/* ut_sv_merge.pure -- Unit tests for sv_merge.pure
+/* ut_merge.pure -- Unit tests for stlvec/merge.pure
     
 Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>.
 
@@ -24,8 +24,8 @@ using namespace stl;
 
 nonfix exception;
 
-test_merge = ok when
-  show_start "merge";
+test_stl_merge = ok when
+  show_start "stl_merge";
   sv1 = stlvec (0..5);
   sv2 = stlvec (4..9);
   sv3 = emptystlvec;
@@ -42,7 +42,7 @@ test_merge = ok when
   ok4 = check_refcs sv2 2;         // all elements also in sv3
   ok5 = check_refcs sv3 [2,1,1,1,1,1,1,1,1,1,1,1,1,2]; // the x's
   ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5];
-  show_result "merge" ok;
+  show_result "stl_merge" ok;
 end with 
   eh x = put err_p true; 
   crash x y = throw exception; 
@@ -197,10 +197,10 @@ end when
   err_p = ref false; 
 end; 
 
-test_sv_merge = ok when
+test_merge = ok when
   show_suite_start "SV_MERGE";
   ok = 1;
-  ok = test_merge && ok;
+  ok = test_stl_merge && ok;
   ok = test_inplace_merge && ok;
   ok = test_includes && ok;
   ok = test_set_union && ok;

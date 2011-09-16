@@ -1,4 +1,4 @@
-/* ut_sv_heap.pure -- Unit tests for sv_heap.pure
+/* ut_heap.pure -- Unit tests for stlvec/heap.pure
     
 Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>.
 
@@ -24,8 +24,8 @@ using namespace stl;
 
 nonfix exception;
 
-test_heap = ok when
-  show_start "heap";
+test_stl_heap = ok when
+  show_start "stl_heap";
   sv1 = stlvec (0..9);
   put err_p false; 
   catch eh $   make_heap sv1 crash;
@@ -44,7 +44,7 @@ test_heap = ok when
   ok5 = members sv1 == (9:8..0); 
   ok6 = check_refcs sv1 1;
   ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5,ok6];
-  show_result "heap" ok;
+  show_result "stl_heap" ok;
 end with 
   eh x = put err_p true; 
   crash x y = throw exception; 
@@ -52,9 +52,9 @@ end when
   err_p = ref false; 
 end; 
 
-test_sv_heap = ok when
+test_heap = ok when
   show_suite_start "SV_HEAP";
   ok = 1;
-  ok = test_heap && ok;
+  ok = test_stl_heap && ok;
   show_suite_result "SV_HEAP" ok;
 end;
