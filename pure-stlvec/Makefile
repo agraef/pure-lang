@@ -91,7 +91,7 @@ DBG_SUPPORT = $(if $(findstring debug,$(MAKECMDGOALS)),ON)
 FLAGS = $(if $(DBG_SUPPORT),$(DBG_FLAGS),$(PROD_FLAGS))
 DLL_DIR = $(if $(DBG_SUPPORT),$(DEBUG_DLL_DIR),$(PROD_DLL_DIR))
 
-PURE_BASENAMES = stlvec_algorithms $(CONTAINER_BASENAMES) $(ALGO_BASENAMES)
+PURE_BASENAMES = $(CONTAINER_BASENAMES)
 CONTAINER_HPPS = $(addsuffix .hpp, $(CONTAINER_BASENAMES))
 CONTAINER_CPPS = $(addsuffix .cpp, $(CONTAINER_BASENAMES))
 ALGO_HPPS = stlbase.hpp stlvec.hpp sv_algorithm.hpp
@@ -100,10 +100,10 @@ ALGO_CPPS = $(addsuffix .cpp, $(ALGO_BASENAMES))
 DLLS = $(addsuffix $(DLL), $(DLL_BASENAMES))
 DLL_TRGS = $(addprefix $(DLL_DIR)/, $(DLLS))
 
-PUREFILES = $(addsuffix .pure, $(PURE_BASENAMES))
+PUREFILES = $(addsuffix .pure, $(PURE_BASENAMES)) stlvec
 LIBFILES = $(PUREFILES) $(DLLS)
 INSTALLEDFILES = $(addprefix $(DESTDIR)$(libdir)/pure/, $(LIBFILES))
-DISTFILES = Makefile COPYING README config.guess *.pure *.hpp *.cpp ut/*
+DISTFILES = Makefile COPYING README config.guess *.pure stlvec/*.pure *.hpp *.cpp ut/*
 
 ### Make dlls
 
@@ -125,7 +125,7 @@ $(DLL_DIR)/stlalgorithm$(DLL): $(ALGO_HPPS) $(ALGO_CPPS)
 ### Compile unit tests
 
 test:
-	pure -I. -x ut/ut_all.pure
+	pure -I. -L. -x ut/ut_all.pure
 
 
 ### Remove dlls
@@ -140,16 +140,16 @@ clean:
 
 install: dll
 	@ test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
-	@ cp $(LIBFILES) "$(DESTDIR)$(libdir)/pure"
+	@ cp -r $(LIBFILES) "$(DESTDIR)$(libdir)/pure"
 
 uninstall:
-	rm -f $(INSTALLEDFILES)
+	rm -rf $(INSTALLEDFILES)
 
 ### Make distribution tarball
 
 dist:
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/ut
+	mkdir $(dist) && mkdir $(dist)/stlvec && mkdir $(dist)/ut
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
