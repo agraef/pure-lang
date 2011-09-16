@@ -70,14 +70,14 @@ case for their Pure Library counterparts, these operations are in the global
 namespace.
 
 In addition to the stlvec module, pure-stlvec provides a group of modules,
-sv_modifying, sv_nonmodifying, sv_sort, sv_merge, sv_heap, sv_minmax and
-sv_numeric, that are straight wrappers the STL algorithms (specialized to work
-with STL vectors of pointers to Pure expressions). This grouping of the STL
-algorithms follows that found at
+stlvec::modifying, stlvec::nonmodifying, stlvec::sort, stlvec::merge,
+stlvec::heap, stlvec::minmax and stlvec::numeric, that are straight wrappers
+the STL algorithms (specialized to work with STL vectors of pointers to Pure
+expressions). This grouping of the STL algorithms follows that found at
 http://www.cplusplus.com/reference/algorithm/. This web page contains a table
 that summarizes of all of the algorithms in one place.
 
-pure-stlvec provides an "umbrella" module, stlvec_algorithms, that pulls in
+pure-stlvec provides an "umbrella" module, stlvec::algorithms, that pulls in
 all of the STL algorithm interface modules in one go. The STL algorithm
 wrapper functions reside in the stl namespace and have the same names as their
 counterparts in the STL.
@@ -227,7 +227,7 @@ by comp. Its C++ signature looks like this:
 
   void stable_sort ( RandomAccessIterator first, RandomAccessIterator last, Compare comp )
 
-The corresponding pure-stlvec function, from the sv_sort module, looks like
+The corresponding pure-stlvec function, from the stlvec::sort module, looks like
 this:
 
    stable_sort (msv, first, last) comp
@@ -254,7 +254,7 @@ question:
    void stable_sort ( RandomAccessIterator first, RandomAccessIterator last)
 
 The corresponding functions provided by the pure-stlvec modules rarely, if
-ever, supply a default version. A typical example is sv_sort's stable_sort
+ever, supply a default version. A typical example is stlvec::sort's stable_sort
 which must be called with a comparator callback function:
 
   stable_sort msv (<);
@@ -291,7 +291,7 @@ iterator that points to the first member of the target range. Consistent with
 raw C usage, it is ok to copy over existing elements the target
 stlvec. E.g.,::
 
-   > using sv_modifying;
+   > using stlvec::modifying;
 
    > let v1 = stlvec (0..2);
 
@@ -404,10 +404,8 @@ unary_fun
 bin_fun
   a function that accepts two objects and returns another
 
-gen_fun
-  a function of one parameter that produces a sequence of objects,
-  one for each call (gen_fun 0). E.g., see test_generate in
-  ut_sv_modifying.pure
+gen_fun a function of one parameter that produces a sequence of objects, one
+  for each call (gen_fun 0). E.g., see test_generate in ut_modifying.pure
 
 For readability, and to correspond with the STL documentation, the words
 "first", "middle", and "last", or variants such as "first1" are often used
@@ -464,7 +462,7 @@ Examples
 
 ::
 
-    > using stlvec, sv_modifying;
+    > using stlvec, stlvec::modifying;
 
     > let sv1 = stlvec (0..4); members sv1;
     [0,1,2,3,4]
@@ -743,8 +741,8 @@ matrixes, primarily for use in matrix comprehensions.
 
 Please note that "stlvec to stlvec" functions are provided by the pure-stl
 algorithm modules. Thus, for example, the stlvec module does not provide a
-function that maps one stlvec onto a new stlvec. That functionality, and
-more, is provided by stl::transform, which can be found in the sv_modifying
+function that maps one stlvec onto a new stlvec. That functionality, and more,
+is provided by stl::transform, which can be found in the stlvec::modifying
 module.
 
 Examples
@@ -755,8 +753,8 @@ See ut_stvec in the pure-stlvec/ut directory.
 STL Nonmodifying Algorithms
 ===========================
 
-The sv_nonmodifying module provides an interface to the STL's non-modifying
-sequence operations.
+The stlvec::nonmodifying module provides an interface to the STL's
+non-modifying sequence operations.
 
 Imports
 -------
@@ -764,7 +762,7 @@ Imports
 To use the operations of this module, add the following import declaration
 to your program::
 
-  using sv_nonmodifying;
+  using stlvec::nonmodifying;
 
 All of the functions are in the stl namespace.
 
@@ -850,12 +848,12 @@ Operations
 Examples
 --------
 
-See ut_sv_nonmodifying.pure in the pure-stlvec/ut directory.
+See ut_nonmodifying.pure in the pure-stlvec/ut directory.
 
 STL Modifying Algorithms
 ========================
 
-The sv_modifying module provides an interface to the STL's modifying
+The stlvec::modifying module provides an interface to the STL's modifying
 algorithms.
 
 Imports
@@ -864,7 +862,7 @@ Imports
 To use the operations of this module, add the following import declaration
 to your program::
 
-  using sv_modifying;
+  using stlvec::modifying;
 
 All of the functions are in the stl namespace.
 
@@ -1011,13 +1009,13 @@ Operations
 Examples
 --------
 
-See ut_sv_modifying.pure in the pure-stlvec/ut directory.
+See ut_modifying.pure in the pure-stlvec/ut directory.
 
 
 STL Sort Algorithms
 ===================
 
-The sv_sort module provides an interface to the STL's sorting and binary
+The stlvec::sort module provides an interface to the STL's sorting and binary
 search algorithms.
 
 Imports
@@ -1026,7 +1024,7 @@ Imports
 To use the operations of this module, add the following import declaration
 to your program::
 
-  using sv_sort;
+  using stlvec::sort;
 
 All of the functions are in the stl namespace.
 
@@ -1093,14 +1091,14 @@ The next four functions assume that sv[first, last) is ordered by comp.
 Examples
 --------
 
-See ut_sv_sort.pure in the pure-stlvec/ut directory.
+See ut_sort.pure in the pure-stlvec/ut directory.
 
 
 STL Merge Algorithms
 ====================
 
-The sv_merge module provides an interface to the STL's merge algorithms. These
-algorithms operate on sorted ranges.
+The stlvec::merge module provides an interface to the STL's merge
+algorithms. These algorithms operate on sorted ranges.
 
 Imports
 -------
@@ -1108,7 +1106,7 @@ Imports
 To use the operations of this module, add the following import declaration
 to your program::
 
-  using sv_merge;
+  using stlvec::merge;
 
 All of the functions are in the stl namespace.
 
@@ -1168,12 +1166,12 @@ See parameter naming conventions at ..
 Examples
 --------
 
-See ut_sv_merge.pure in the pure-stlvec/ut directory.
+See ut_merge.pure in the pure-stlvec/ut directory.
 
 STL Heap Algorithms
 ===================
 
-The sv_heap module provides an interface to the STL's heap operations.
+The stlvec::heap module provides an interface to the STL's heap operations.
 
 Imports
 -------
@@ -1181,7 +1179,7 @@ Imports
 To use the operations of this module, add the following import declaration
 to your program::
 
-  using sv_heap;
+  using stlvec::heap;
 
 All of the functions are in the stl namespace.
 
@@ -1214,12 +1212,13 @@ and (>) are commonly passed as comp.
 Examples
 --------
 
-See ut_sv_heap.pure in the pure-stlvec/ut directory.
+See ut_heap.pure in the pure-stlvec/ut directory.
 
 Min/Max STL Algorithms
 ======================
 
-The sv_minmax module provides an interface to a few additional STL algorithms.
+The stlvec::minmax module provides an interface to a few additional STL
+algorithms.
 
 Imports
 -------
@@ -1227,7 +1226,7 @@ Imports
 To use the operations of this module, add the following import declaration
 to your program::
 
-  using sv_minmax;
+  using stlvec::minmax;
 
 All of the functions are in the stl namespace.
 
@@ -1274,13 +1273,14 @@ in descending order.
 Examples
 --------
 
-See ut_sv_minmax.pure in the pure-stlvec/ut directory.
+See ut_minmax.pure in the pure-stlvec/ut directory.
 
 
 STL Numeric Algorithms
 ======================
 
-The sv_numeric module provides an interface to the STL's numeric algorithms.
+The stlvec::numeric module provides an interface to the STL's numeric
+algorithms.
 
 Imports
 -------
@@ -1288,7 +1288,7 @@ Imports
 To use the operations of this module, add the following import declaration
 to your program::
 
-  using sv_numeric;
+  using stlvec::numeric;
 
 All of the functions are in the stl namespace.
 
@@ -1322,7 +1322,7 @@ Operations
 Examples
 --------
 
-See ut_sv_numeric.pure in the pure-stlvec/ut directory.
+See ut_numeric.pure in the pure-stlvec/ut directory.
 
 Trace Mode
 ==========
