@@ -297,7 +297,7 @@ stlvec. E.g.,::
 
    > let v2 = stlvec ("a".."g");
 
-   > stl::copy v1 (v3,2) $$ members v3;
+   > stl::copy v1 (v2,2) $$ members v2;
    ["a","b",0,1,2,"f","g"]
 
 This is great for C++ programmers, but for Pure programmers it is almost
@@ -305,13 +305,8 @@ always preferable to append the copied items to the end of a target stlvec,
 rather than overwriting all or part or part of it. This can be accomplished
 using stl::svback. E.g.,::
 
-   > let v3 = emptystlvec;
-
-   > stl::copy v1 (v3,stl::svback) $$ members v3;
-   [0,1,2]
-
-   > stl::copy v2 (v3,stl::svback) $$ members v3;
-   [0,1,2,"a","b","c","d","e","f","g"]
+   > stl::copy v1 (v2,stl::svback) $$ members v2;
+   ["a","b",0,1,2,"f","g",0,1,2]
 
 In short, when a pure-stlvec function detects "stl::svback" in a target
 iterator tuple, it constructs a STL "back inserter iterator" and passes it on
