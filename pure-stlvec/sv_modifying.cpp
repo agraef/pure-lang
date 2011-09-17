@@ -201,10 +201,18 @@ void sva_fill(px* tpl, px* val)
 
 void sva_fill_n(px* tpl, int n, px* val)
 {
-  sv_iters itrs(tpl);
-  if (!itrs.is_valid || itrs.num_iters != 1) bad_argument();
+  sv_iters trg(tpl);
+  sv_back_iter bak(tpl);
   try {
-    fill_n(itrs.beg(), n, val);
+    if ( (trg.is_valid && trg.num_iters == 1) ) {
+      if (n > trg.size()) range_overflow();
+      fill_n(trg.beg(), n, val);
+    }
+    else if (bak.is_valid) {
+      fill_n(back_inserter(*bak.vec), n, val);
+    }
+    else
+      bad_argument();
   } catch (px* e) {
     pure_throw(e);
   }
