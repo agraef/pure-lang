@@ -164,9 +164,6 @@ void range_overlap();
 void bad_argument();
 void failed_cond();
 
-bool is_stl_begin(px*);
-bool is_stl_end(px*);
-
 /*** Inteface ***********************************************************/
 
 /* stl_refc and friends - functions to return a pure_expr's refc and to
@@ -183,14 +180,5 @@ extern "C" {
   bool stl_sv_trace_enabled();
 }
 
-/* stl_begin and friends. These provide unique magic objects that
-   can be used as placedholders for a container's begin() and end()
-   iterators on the Pure. Not used by stlvec, because negative ints
-   are sufficient. */
-
-extern "C" {
-  px*  stl_begin();
-  px*  stl_end();
-}
 
 #endif // STL_H

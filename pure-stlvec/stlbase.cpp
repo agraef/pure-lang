@@ -209,7 +209,7 @@ bool pxh_pred2::operator()(const pxh& left, const pxh& right)
 pxh pxh_gen::operator()()
 {
   px* exception = 0;
-  px* ret =  pure_appxl(fun_, &exception, 1, stl_begin()); //any px* will do
+  px* ret =  pure_appxl(fun_, &exception, 1, pure_tuplel(0));
   if (exception) throw exception;
   if (!ret) bad_function();
   return pxh(ret);
@@ -250,32 +250,5 @@ void range_overlap()
 void failed_cond()
 {
   pure_throw(pure_symbol(pure_sym("failed_cond")));
-}
-
-static const int stl_begin_xxx = 0;
-static const int stl_end_xxx = 1;
-
-px* stl_begin(){
-  return pure_pointer((void*)&stl_begin_xxx);
-}
-
-px* stl_end(){
-  return pure_pointer((void*)&stl_end_xxx);
-}
-
-bool is_stl_begin(px* x){
-  void*  ptr;
-  bool ret = pure_is_pointer(x, &ptr);
-  if (ret)
-    ret = ptr == (void*)&stl_begin_xxx; 
-  return ret;
-}
-
-bool is_stl_end(px* x){
-  void*  ptr;
-  bool ret = pure_is_pointer(x, &ptr);
-  if (ret)
-    ret = ptr == (void*)&stl_end_xxx;
-  return ret;
 }
 
