@@ -1121,7 +1121,12 @@ Operations
 
 All of the functions in this module require the caller to supply an ordering
 functions, comp (as for the Pure library sort function). They only work
-properly on input ranges that have been previously sorted using comp.
+properly on input ranges that have been previously sorted using comp. The set
+operations generally do not check for range overflow because it is not
+generally possible to determine the length of the result of a set operation
+until after it is completed. In most cases you will get a nasty segmentation
+fault if the result is bigger than the target range. The best way to avoid
+this possibility it to use a back iterator to specifify the target range.
 
 See parameter naming conventions at ..
 

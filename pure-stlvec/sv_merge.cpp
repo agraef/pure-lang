@@ -77,7 +77,7 @@ bool sva_includes(px* tpl1, px* tpl2, px* cmp)
   }
 }
 
-int  sva_set_union(px* tpl1, px* tpl2, px* tpl3, px* cmp)
+int sva_set_union(px* tpl1, px* tpl2, px* tpl3, px* cmp)
 {
   int res = 0;
   pxh_pred2 fun(cmp);
