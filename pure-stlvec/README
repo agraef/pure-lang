@@ -524,7 +524,16 @@ This representation may change in the future, and must not be relied upon
 by client modules. In particular, one must never attempt to use the
 embedded pointer directly.
 
-Three type tags are provided:
+Functions that modify a stlvec will simply fail unless the stlvec is
+mutable::
+
+   > update v2 0 100;
+   update (CONST_STLVEC #<pointer 0x9f07690>) 0 100
+
+Types
+-----
+
+Three type tags are provided for stlvecs:
 
 .. type:: mutable_stlvec /type
 
@@ -541,11 +550,17 @@ Three type tags are provided:
    The type for a stlvec, mutable or immutable. The stvec can be constructed
    with STLVEC or CONST_STLVEC.
 
-Functions that modify a stlvec will simply fail unless the stlvec is
-mutable::
+In addition there are two type tags for stlvec iterator tuples:
 
-   > update v2 0 100;
-   update (CONST_STLVEC #<pointer 0x9f07690>) 0 100
+.. type:: svit /type
+
+   The type for an iterator tuple. The underlying stlvec can be mutable
+   or immutable.
+
+.. type:: mutable_svit /type
+
+   The type for an iterator tuple whose underlying stlvec is  mutable.
+ 
 
 Support for Copy-On-Write Semantics
 -----------------------------------
@@ -690,37 +705,44 @@ stl::svend).
 Note that ``==`` and ``~==`` are not defined for iterator tuples (the rules
 would never be executed because == is defined on tuples in the Prelude)
 
-Pretty Printing
----------------
+String Representation
+---------------------
 
-The stlvec module provides a rudimentary format function that "pretty prints"
-a stlvec.
+The stlvec module provides tostr, a function for producing string
+representations stlvec that can be helpful for debugging and other purposes.
 
-.. function:: format max_sz (sv,first,last)
+.. function:: tostr (max_sz,sep) (sv,first,last)
 
-   returns a string representation of the range sv[first,last) where max_sz
-   is the maximum number of elements to print. If max_sz is <= 0 it format
-   uses max_sz of 100. 
+   returns a string representation of the range sv[first,last) where max_sz is
+   the maximum number of elements to print. If max_sz <= 0 tostr uses max_sz
+   of 100. sep, an optional parameter with default value "," is inserted after
+   each element.
 
 Here are some examples::
 
    > let x = stlvec (1..10);
 
-   > format 0 x;
+   > tostr 0 x;
    "sv{1,2,3,4,5,6,7,8,9,10}"
 
-   > format 3 x;
+   > tostr 3 x;
    "sv{1,2,3,...}"
 
-   > format 0 (x,1,7);
+   > tostr 0 (x,1,7);
    "sv{ 2,3,4,5,6,7 }" 
 
-   > format 3 (x,2,7);
+   > tostr 3 (x,2,7);
    "sv{ 3,4,5,... }"
 
-The format function can be used with __show__. E.g.,::
+   > puts $ tostr (3,",\n   ") (x,0,4);
+   sv{1,
+      2,
+      3,
+      ... }
 
-   > __show__ it::svit = format 5 it;
+The tostr function can be used with __show__. E.g.,::
+
+   > __show__ it::svit = tostr 5 it;
 
    > x;
    sv{1,2,3,4,5,...}
@@ -1082,7 +1104,7 @@ Operations
 ----------
 
 All of the functions in this module require the caller to supply an ordering
-functions, comp (as for the Pure library sort function). The functions (<) and
+function, comp (as for the Pure library sort function). The functions (<) and
 (>) are commonly passed as comp.
 
 .. function:: sort (msv, first, last) comp

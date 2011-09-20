@@ -188,18 +188,25 @@ end;
 
 ::colcatmap f it::svit = colcat (sv_listmap f it);
 
-::format sz::int it::svit = res when
+::tostr sz::int it::svit = ::tostr (sz,",") it;
+::tostr (sz::int,sep::string) it::svit = res when 
   b,e,vsz = bounds it;
   sz = if sz <= 0 then 1000 else sz;
   rsz = e-b;
   elms = take sz (members it);
-  s = join "," (map str elms);
-  s = if #elms < rsz then s + ",..." else s;
+  ss = intersperse sep (map str elms);
+  s = strcat $ ss;
+  s = if #elms < rsz then s + sep + "..." else s;
   sfx = if e < vsz then " }" else "}";
   pfx = if typep mutable_svit it then "sv{" else "csv{";
   pfx = if b > 0 then pfx + " " else pfx; 
   res = pfx + s + sfx;
+end with
+  intersperse sep [] = [];
+  intersperse sep [x] = [x];
+  intersperse sep (x:xs) = x:sep:intersperse sep xs;
 end;
+
 
 
 
