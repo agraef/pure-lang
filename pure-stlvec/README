@@ -339,8 +339,8 @@ function descriptions represent specific types of Pure objects:
 sv
   stlvec (mutable or immutable)
 
-imsv
-  immutable stlvec
+csv
+  const (i.e., immutable) stlvec
 
 msv
   mutable stlvec
@@ -607,7 +607,16 @@ stl::svend).
 
 .. function:: prefix #  sv
 
-   return the size of sv
+   return the number or elements in sv
+
+.. function:: size (sv,first,last)
+
+   returns the number of elements in sv[first,last)
+
+.. function:: bounds (sv,first,last)
+
+   returns the pair (i,j) where i is first and j is last except that
+   stl::begin is converted to 0 and stl::svend is converted to #sv
 
 .. function:: reserve msv count
 
@@ -681,6 +690,45 @@ stl::svend).
 Note that ``==`` and ``~==`` are not defined for iterator tuples (the rules
 would never be executed because == is defined on tuples in the Prelude)
 
+Pretty Printing
+---------------
+
+The stlvec module provides a rudimentary format function that "pretty prints"
+a stlvec.
+
+.. function:: format max_sz (sv,first,last)
+
+   returns a string representation of the range sv[first,last) where max_sz
+   is the maximum number of elements to print. If max_sz is <= 0 it format
+   uses max_sz of 100. 
+
+Here are some examples::
+
+   > let x = stlvec (1..10);
+
+   > format 0 x;
+   "sv{1,2,3,4,5,6,7,8,9,10}"
+
+   > format 3 x;
+   "sv{1,2,3,...}"
+
+   > format 0 (x,1,7);
+   "sv{ 2,3,4,5,6,7 }" 
+
+   > format 3 (x,2,7);
+   "sv{ 3,4,5,... }"
+
+The format function can be used with __show__. E.g.,::
+
+   > __show__ it::svit = format 5 it;
+
+   > x;
+   sv{1,2,3,4,5,...}
+
+   > (stlconst x);
+   csv{1,2,3,4,5,...}
+
+
 Convenience Functions
 ---------------------
 
@@ -731,10 +779,6 @@ matrixes, primarily for use in matrix comprehensions.
 .. function:: colmap /stlvec unary_fun (sv, first, last)
 
 .. function:: colcatmap /stlvec unary_fun (sv, first, last)
-
-   
-
-
 
 Please note that "stlvec to stlvec" functions are provided by the pure-stl
 algorithm modules. Thus, for example, the stlvec module does not provide a

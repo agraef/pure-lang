@@ -26,6 +26,7 @@ CONST_STLVEC = 'CONST_STLVEC;
 type stlvec (STLVEC _);
 type stlvec (CONST_STLVEC _);
 type mutable_stlvec (STLVEC _);
+type const_stlvec (CONST_STLVEC _);
 
 // stlvec iterator tuples
 type svit (STLVEC _);
@@ -47,6 +48,8 @@ private extern void  sv_delete(void* vec);
 
 private extern void  sv_reserve(void* vec, int n);
 private extern int   sv_size(void* vec);
+private extern int   sv_iter_size(expr* it);
+private extern expr* sv_iter_bounds(expr* it);
 private extern bool  sv_empty(void* vec);
 private extern int   sv_capacity(void* vec);
 
@@ -111,6 +114,13 @@ bad_selfwrite src::svit trg::svit =
 
 (::#) (STLVEC v) |
 (::#) (CONST_STLVEC v) = sv_size v;
+
+sizex__ it::svit = sv_iter_size it;
+namespace;
+size it::svit = stl::sizex__ it; // ::size does not work
+namespace stl;
+
+::bounds it::svit = sv_iter_bounds it;
 
 firstx__ (STLVEC v) |
 firstx__ (CONST_STLVEC v) = sv_front v;
@@ -177,3 +187,19 @@ end;
 ::colmap f it::svit = colcat (sv_listmap f it);
 
 ::colcatmap f it::svit = colcat (sv_listmap f it);
+
+::format sz::int it::svit = res when
+  b,e,vsz = bounds it;
+  sz = if sz <= 0 then 1000 else sz;
+  rsz = e-b;
+  elms = take sz (members it);
+  s = join "," (map str elms);
+  s = if #elms < rsz then s + ",..." else s;
+  sfx = if e < vsz then " }" else "}";
+  pfx = if typep mutable_svit it then "sv{" else "csv{";
+  pfx = if b > 0 then pfx + " " else pfx; 
+  res = pfx + s + sfx;
+end;
+
+
+

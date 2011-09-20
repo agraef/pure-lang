@@ -74,6 +74,8 @@ extern "C" {
 
   void sv_reserve(sv* vec, int n);
   int  sv_size(sv* vec);
+  int  sv_iter_size(px* tpl);
+  px*  sv_iter_bounds(px* tpl);
   bool sv_empty(sv* vec);
   int  sv_capacity(sv* vec);
 
@@ -83,7 +85,7 @@ extern "C" {
   px*  sv_back(sv* vec);
 
   void sv_push_back(sv* vec, px* val);
-  void sv_splice(sv* vec, int b, px* xs_or_it);
+  void sv_splice(sv* vec, int b, px* xs_or_tpl);
   void sv_pop_back(sv* vec);
   void sv_erase(px* tpl);
   void sv_clear(sv* vec);
