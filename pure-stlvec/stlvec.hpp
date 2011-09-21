@@ -75,7 +75,6 @@ extern "C" {
   void sv_reserve(sv* vec, int n);
   int  sv_size(sv* vec);
   int  sv_iter_size(px* tpl);
-  px*  sv_iter_bounds(px* tpl);
   bool sv_empty(sv* vec);
   int  sv_capacity(sv* vec);
 

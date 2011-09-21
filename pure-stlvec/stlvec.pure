@@ -33,6 +33,8 @@ type svit (STLVEC _);
 type svit (STLVEC _, _);
 type svit (CONST_STLVEC _);
 type svit (CONST_STLVEC _, _);
+type const_svit (CONST_STLVEC _);
+type const_svit (CONST_STLVEC _, _);
 type mutable_svit (STLVEC _);
 type mutable_svit (STLVEC _, _);
 
@@ -49,7 +51,6 @@ private extern void  sv_delete(void* vec);
 private extern void  sv_reserve(void* vec, int n);
 private extern int   sv_size(void* vec);
 private extern int   sv_iter_size(expr* it);
-private extern expr* sv_iter_bounds(expr* it);
 private extern bool  sv_empty(void* vec);
 private extern int   sv_capacity(void* vec);
 
@@ -81,13 +82,21 @@ const svrev  = -3;  // request reversal of iterators
 
 /*** Private functions on stlvec *****************************************/
 
-private get_sv bad_selfwrite;
+private get_sv bad_selfwrite ensure_beg ensure_end;
 
 get_sv (STLVEC v) = v;
 get_sv (CONST_STLVEC v) = v;
 
 bad_selfwrite src::svit trg::svit = 
   (~typep mutable_stlvec src) && (get_sv src == get_sv trg);
+
+ensure_beg v b = if b >= 0 && b < sv_size v then b
+                 else throw out_of_bounds;
+
+ensure_end v e = if e == svend then sz 
+                 else if e < 0 || e > sz then throw out_of_bounds 
+                 else e when sz = sv_size v end;
+
 
 /*** Public functions on stlvec *****************************************/
 
@@ -120,7 +129,12 @@ namespace;
 size it::svit = stl::sizex__ it; // ::size does not work
 namespace stl;
 
-::bounds it::svit = sv_iter_bounds it;
+::bounds (csv@(CONST_STLVEC v),b::int,e::int) = csv, ensure_beg v b, ensure_end v e;
+::bounds (csv@(CONST_STLVEC v),b::int) = csv, p, p when p = ensure_beg v b end;
+::bounds csv@(CONST_STLVEC v) = csv, 0, sv_size v;
+::bounds (sv@(STLVEC v),b::int,e::int) = sv, ensure_beg v b, ensure_end v e;
+::bounds (sv@(STLVEC v),b::int) = sv, p, p when p = ensure_beg v b end;
+::bounds sv@(STLVEC v) = sv, 0, sv_size v;
 
 firstx__ (STLVEC v) |
 firstx__ (CONST_STLVEC v) = sv_front v;
@@ -190,14 +204,14 @@ end;
 
 ::tostr sz::int it::svit = ::tostr (sz,",") it;
 ::tostr (sz::int,sep::string) it::svit = res when 
-  b,e,vsz = bounds it;
+  sv,b,e = bounds it;
   sz = if sz <= 0 then 1000 else sz;
   rsz = e-b;
   elms = take sz (members it);
   ss = intersperse sep (map str elms);
   s = strcat $ ss;
   s = if #elms < rsz then s + sep + "..." else s;
-  sfx = if e < vsz then " }" else "}";
+  sfx = if e < #sv then " }" else "}";
   pfx = if typep mutable_svit it then "sv{" else "csv{";
   pfx = if b > 0 then pfx + " " else pfx; 
   res = pfx + s + sfx;

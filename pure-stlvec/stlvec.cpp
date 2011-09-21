@@ -263,16 +263,6 @@ int sv_iter_size(px* tpl)
   return itrs.size();
 }
 
-px* sv_iter_bounds(px* tpl) {
-  sv_iters itrs(tpl);
-  if (!itrs.is_valid || itrs.num_iters != 2) bad_argument();
-  sv* vec = itrs.vec;
-  int beg = itrs.beg() - vec->begin();
-  int end = itrs.end() - vec->begin();
-  int vsize = vec->size();
-  return pure_tuplel(3, pure_int(beg), pure_int(end), pure_int(vsize));
-}
-
 int sv_max_size(sv* vec)
 {
   return vec->max_size();
