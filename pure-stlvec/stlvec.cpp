@@ -197,14 +197,19 @@ sv* sv_make_a()
   return ret;
 }
 
-sv* sv_make_b(px* xs) //FIX to take rowvectors of px
+sv* sv_make_b(px* xs_or_vec)
 { 
-  px** elems;
+  px** elems = NULL;
   size_t sz;
   sv* ret = 0;
-  if ( pure_is_listv(xs, &sz, &elems) ) {
+  if ( pure_is_listv(xs_or_vec, &sz, &elems) ) {
     ret = new sv(elems, elems+sz);
     free(elems);
+  }
+  else if (matrix_type(xs_or_vec) == 0) {
+    int sz = matrix_size(xs_or_vec); 
+    pure_expr** data = (pure_expr**) pure_get_matrix_data(xs_or_vec);
+    ret = new sv(data, data+sz);
   }
   else
     bad_argument();
@@ -243,6 +248,22 @@ sv* sv_dup(px* tpl)
   if (stl_sv_trace_enabled())
     cerr << "TRACE SV:    new sv*: " << ret << endl;
 #endif
+  return ret;
+}
+
+static px* pxh_to_pxp(pxh h){return h.pxp();}
+
+px* sv_vector(px* tpl) 
+{
+  sv_iters itrs(tpl);
+  if (!itrs.is_valid || itrs.num_iters != 2) bad_argument();
+  size_t sz = itrs.size();
+  if (!sz)
+    return pure_matrix_columnsv(0,NULL);
+  px** bfr = (px**)malloc(sizeof(px*)*sz);
+  transform(itrs.beg(), itrs.end(), bfr, pxh_to_pxp);
+  px* ret = pure_matrix_columnsv(sz, bfr);
+  free(bfr);
   return ret;
 }
 
@@ -529,3 +550,4 @@ px* sv_foldr1(px* fun, px* tpl)
     pure_throw(e);
   }
 }
+

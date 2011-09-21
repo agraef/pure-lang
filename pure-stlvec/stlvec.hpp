@@ -69,9 +69,9 @@ extern "C" {
   sv*  sv_make_a();
   sv*  sv_make_b(px* xs);
   sv*  sv_make_c(px* xs, int n);
-  sv*  sv_dup(px* tpl);
   void sv_delete(sv* sv_p);
-
+  sv*  sv_dup(px* tpl);
+  px*  sv_vector(px* it);
   void sv_reserve(sv* vec, int n);
   int  sv_size(sv* vec);
   int  sv_iter_size(px* tpl);

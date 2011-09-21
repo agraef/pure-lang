@@ -28,10 +28,10 @@ test_create = ok when
   show_start "create";
   sv1 = emptystlvec;
   ok1 = null sv1 && #sv1 == 0;
-  reserve sv1 100;
-  ok2 = null sv1 && #sv1 == 0 && capacity sv1 == 100;
+  stlvec_reserve sv1 100;
+  ok2 = null sv1 && #sv1 == 0 && stlvec_capacity sv1 == 100;
   sv1 = stlvec ("a".."f");
-  sv  = stlconst (stlvec sv1);
+  sv  = stlvec_const (stlvec sv1);
   sv1 = stlvec (sv,svbeg,5);
   ok2 = members sv1 == ("a".."e");
   sv1 = stlvec (sv,1,svend);
@@ -83,30 +83,30 @@ test_basic_ops = ok when
   show_result "basic_ops" ok;
 end;
 
-test_erase = ok when
-  show_start "erase";
-  sv1 = stlconst $ stlvec ("a".."f");
+test_stlvec_erase = ok when
+  show_start "stlvec_erase";
+  sv1 = stlvec_const $ stlvec ("a".."f");
   sv2 = stlvec sv1;
-  erase (sv2,svbeg,2);
+  stlvec_erase (sv2,svbeg,2);
   ok1 = members sv2 == ("c".."f");
   sv2 = stlvec sv1;
-  erase (sv2,1,3);
+  stlvec_erase (sv2,1,3);
   ok2 = members sv2 == ["a","d","e","f"];
   sv2 = stlvec sv1;
-  erase (sv2,2,svend);
+  stlvec_erase (sv2,2,svend);
   ok3 = members sv2 == ["a","b"];
-  erase sv1;
+  stlvec_erase sv1;
   ok4 = members sv1 == ("a".."f");
   ok5 = check_refcs sv1 [2,2,1,1,1,1];
   ok6 = check_refcs sv2 [1,1];
   ok = all_ok [ok1,ok2,ok3,ok4,ok5,ok6];
-  show_result "erase" ok;
+  show_result "stlvec_erase" ok;
 end;
  
 test_insert = ok when
   show_start "insert";
   sv1 = stlvec ["a"];
-  sv2 = stlconst $ stlvec ("b".."d");
+  sv2 = stlvec_const $ stlvec ("b".."d");
   insert (sv1, 0) ["x"];
   ok1 = members sv1 == ["x","a"];
   insert (sv1, stl::svend) sv2;
@@ -124,27 +124,27 @@ test_insert = ok when
   show_result "insert" ok;
 end;
 
-test_all_equal = ok when
-  show_start "all_equal";
+test_stlvec_equal = ok when
+  show_start "stlvec_equal";
   sv1 = stlvec (0..5);
   sv2 = stlvec (0..5);
   sv3 = emptystlvec;
   put err_p false; 
-  catch eh $ all_equal crash sv1 sv2;
+  catch eh $ stlvec_equal crash sv1 sv2;
   ok0 = get err_p;
-  ok1 = all_equal (==) sv1 sv2;
-  ok2 = all_equal (==) sv1 sv1;
-  ok3 = all_equal (==) (sv1,1,svend) (sv2,1,svend);
+  ok1 = stlvec_equal (==) sv1 sv2;
+  ok2 = stlvec_equal (==) sv1 sv1;
+  ok3 = stlvec_equal (==) (sv1,1,svend) (sv2,1,svend);
   rmlast sv2;
   rmfirst sv2;
-  ok4 = all_equal (==) (sv1,1,#sv1-1) sv2;
-  ok5 = all_equal (==) sv2 (sv1,1,#sv1-1);
-  ok6 = ~all_equal (==) sv1 sv2;
-  ok7 = ~all_equal (==) sv2 sv1;
+  ok4 = stlvec_equal (==) (sv1,1,#sv1-1) sv2;
+  ok5 = stlvec_equal (==) sv2 (sv1,1,#sv1-1);
+  ok6 = ~stlvec_equal (==) sv1 sv2;
+  ok7 = ~stlvec_equal (==) sv2 sv1;
   ok8 = check_refcs sv1 1;
   ok9 = check_refcs sv2 1;
   ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5,ok6,ok7,ok8,ok9];
-  show_result "all_equal" ok;
+  show_result "stlvec_equal" ok;
 end with 
   eh x = put err_p true; 
   crash x y = throw exception; 
@@ -320,9 +320,9 @@ test_stlvec = ok when
   ok = test_create && ok;
   ok = test_members && ok;
   ok = test_basic_ops && ok;
-  ok = test_erase && ok;
+  ok = test_stlvec_erase && ok;
   ok = test_insert && ok;
-  ok = test_all_equal && ok;
+  ok = test_stlvec_equal && ok;
   ok = test_listmap && ok;
   ok = test_catmap && ok;
   ok = test_do && ok;
