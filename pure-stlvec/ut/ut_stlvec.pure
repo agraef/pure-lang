@@ -12,9 +12,7 @@ will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the COPYING file
 included with the pure-stlvec distribution package for details.
 
-
 */
-
 
 using system;
 using stlvec;
@@ -47,6 +45,40 @@ test_create = ok when
   ok10 = check_refcs sv2 [1,1,1,1,1,1];
   ok = all_ok [ok1,ok2,ok3,ok4,ok5,ok6,ok7,ok8,ok9,ok10];
   show_result "create" ok;
+end;
+
+test_stlvec_vector = ok when
+  show_start "stlvec_vector";
+  m1 = {"a","b","c","d","e"};
+  sv1 = stlvec m1;
+  ok1 = members sv1 == ["a","b","c","d","e"];
+  m2 = stlvec_vector sv1;
+  ok2 = m2 == m1;
+  m3 = stlvec_vector (sv1,1,4);
+  ok3 = m3 == {"b","c","d"};
+  stlvec_erase sv1;
+  m4 = stlvec_vector sv1;
+  ok4 = m4 == {};
+  ok5 = check_refcs sv1 1;
+  ok = all_ok [ok1,ok2,ok3,ok4,ok5];
+  show_result "stlvec_vector" ok;
+end;
+
+test_stlvec_bounds = ok when
+  show_start "stlvec_bounds";
+  sv1 = stlvec ("a".."e");
+  sv2,b,e = stlvec_bounds sv1;
+  ok1 = sv1 == sv2 && b == 0 && e == 5;
+  sv3,b,e = stlvec_bounds (sv2,1,4);
+  ok2 = sv3 == sv2 && b == 1 && e == 4;
+  sv4,b,e = stlvec_bounds (sv2,svbeg,svend);
+  ok3 = sv3 == sv2 && b == 0 && e == 5;
+  ok4 = check_refcs sv1 1;
+  ok5 = check_refcs sv2 1;
+  ok6 = check_refcs sv3 1;
+  ok6 = check_refcs sv4 1;
+  ok = all_ok [ok1,ok2,ok3,ok4,ok5,ok6];
+  show_result "stlvec_bounds" ok;
 end;
 
 test_members = ok when
@@ -318,6 +350,8 @@ test_stlvec = ok when
   show_suite_start "STLVEC";
   ok = 1;
   ok = test_create && ok;
+  ok = test_stlvec_vector && ok;
+  ok = test_stlvec_bounds && ok;
   ok = test_members && ok;
   ok = test_basic_ops && ok;
   ok = test_stlvec_erase && ok;
