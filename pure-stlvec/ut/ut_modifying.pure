@@ -12,7 +12,6 @@ will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the COPYING file
 included with the pure-stlvec distribution package for details.
 
-
 */
 
 using system;
@@ -35,7 +34,7 @@ test_copy = ok when
   last2 = copy (sv1,0,2) (sv2,3);
   ok1 = last2 == 5 && members sv2 == [0,"a","b","a","b","e","f",7] && ok1;
   // attempt copy into immutable vector
-  sv3 = stlvec_const $ stlvec (0..7);
+  sv3 = const_stlvec $ stlvec (0..7);
   copy sv1 (sv3,1);  // failed, did nothing to sv3;
   ok2 = members sv3 == (0..7);
   // poor man's rotate using copy overlap
@@ -69,7 +68,7 @@ test_copy_backward = ok when
   first2 = copy_backward (sv1,0,2) (sv2,5);
   ok1 = first2 == 3 && members sv2 == [0,"a","b","a","b","e","f",7] && ok1;
   // attempt copy_backward into immutable vector
-  sv3 = stlvec_const $ stlvec (0..7);
+  sv3 = const_stlvec $ stlvec (0..7);
   copy_backward sv1 (sv3,7);  // failed, did nothing to sv3;
   ok2 = members sv3 == (0..7);
   // poor man's rotate using copy_backward overlap
@@ -99,7 +98,7 @@ test_swap_ranges = ok when
   swap_ranges (sv1,5,svend) (sv2,5);
   ok3 = members sv1 == ["a","b","c","d","e",5];
   ok4 = members sv2 == [0,1,2,3,4,"f"];
-  sv3 = stlvec_const $ stlvec (10..15);
+  sv3 = const_stlvec $ stlvec (10..15);
   swap_ranges (sv3,0,1) (sv3,5);
   ok5 = members sv3 == (10..15);
   ok6 = check_refcs sv1 1;
@@ -125,7 +124,7 @@ test_transform = ok when
   sv3 = mkstlvec 0 6;
   pos = transform sv2 (sv3,0) (+10);
   ok2 = pos == svend && members sv3 == (10..15);
-  sv3 = stlvec_const sv3;
+  sv3 = const_stlvec sv3;
   transform sv2 (sv3,0) (+10);
   ok2 = members sv3 == (10..15) && ok2;
   // map sv2 to sv4 using back inserter
@@ -158,7 +157,7 @@ test_transform_2 = ok when
   ok1 = pos == svend && members sv1 == (0:2..10);
   pos = transform_2 (sv1,2,4) (sv1,2) (sv1,2) (-);
   ok1 = pos == 4 && members sv1 == [0,2,0,0,8,10] && ok1;
-  sv1 = stlvec_const sv1;
+  sv1 = const_stlvec sv1;
   transform_2 (sv1,2,4) (sv1,2) (sv1,2) (+); 
   ok1 = members sv1 == [0,2,0,0,8,10] && ok1;
   // zip sv1 and sv2 to sv3
@@ -167,10 +166,10 @@ test_transform_2 = ok when
   sv3 = mkstlvec 0 6;
   pos = transform_2 sv1 (sv2,0) (sv3,0) (+);
   ok2 = pos == svend && members sv3 == (0:2..10);
-  sv3 = stlvec_const sv3;
+  sv3 = const_stlvec sv3;
   transform_2 sv1 (sv2,0) (sv3,0) (+);
   ok2 = members sv3 == (0:2..10) && ok2;
-  sv3 = stlvec_const sv3;
+  sv3 = const_stlvec sv3;
   transform_2 sv1 (sv2,0) (sv3,0) (+);
   ok2 = members sv3 == (0:2..10) && ok2;
   // zip sv1 and sv2 to sv4 using back inserter
@@ -199,7 +198,7 @@ test_replace = ok when
   ok1 = members sv1 == ["x","b","x","x","c"];
   replace (sv1,0,2) "x" "a";
   ok2 = members sv1 == ["a","b","x","x","c"];
-  sv1 = stlvec_const $ sv1;
+  sv1 = const_stlvec $ sv1;
   replace sv1 "c" "x";
   ok3 = members sv1 == ["a","b","x","x","c"];
   ok4 = check_refcs sv1 [1,1,2,2,1];
@@ -217,7 +216,7 @@ test_replace_if = ok when
   ok1 = members sv1 == ["x","b","x","x","c"];
   replace_if (sv1,0,2) (>"b") "a";
   ok2 = members sv1 == ["a","b","x","x","c"];
-  sv1 = stlvec_const $ sv1;
+  sv1 = const_stlvec $ sv1;
   replace_if sv1 (<"d") "x";
   ok3 = members sv1 == ["a","b","x","x","c"];
   ok4 = check_refcs sv1 [1,1,2,2,1];
@@ -245,7 +244,7 @@ test_replace_copy = ok when
   ok1 = members sv2 == [x,b,x,x,c];
   replace_copy (sv1,0,2) (sv2,0) b y;
   ok2 = members sv2 == [a,y,x,x,c];
-  sv1 = stlvec_const $ sv1;
+  sv1 = const_stlvec $ sv1;
   replace_copy sv1 c x;
   ok3 = members sv2 == [a,y,x,x,c];
   sv3 = emptystlvec;
@@ -275,7 +274,7 @@ test_replace_copy_if = ok when
   ok1 = members sv2 == [x,b,x,x,c];
   replace_copy_if (sv1,0,2) (sv2,0) (==b) y;
   ok2 = members sv2 == [a,y,x,x,c];
-  sv1 = stlvec_const $ sv1;
+  sv1 = const_stlvec $ sv1;
   replace_copy_if sv1 c (a==) x;
   ok3 = members sv2 == [a,y,x,x,c];
   sv3 = emptystlvec;
@@ -299,7 +298,7 @@ test_fill = ok when
   ok0 = 1;
   fill (sv1,1,4) "x";
   ok1 = members sv1 == [0,"x","x","x",4];
-  sv1 = stlvec_const $ sv1;
+  sv1 = const_stlvec $ sv1;
   fill (sv1,1,4) "y";
   ok2 = members sv1 == [0,"x","x","x",4];
   ok3 = check_refcs sv1 [1,3,3,3,1];
@@ -313,7 +312,7 @@ test_fill_n = ok when
   ok0 = 1;
   fill_n (sv1,1) 3 "x";
   ok1 = members sv1 == [0,"x","x","x",4];
-  sv1 = stlvec_const $ sv1;
+  sv1 = const_stlvec $ sv1;
   fill_n (sv1,1) 3 "y";
   ok2 = members sv1 == [0,"x","x","x",4];
   ok3 = check_refcs sv1 [1,3,3,3,1];
@@ -330,9 +329,9 @@ test_generate = ok when
   ok0 = get err_p;
   generate sv1 gen1;
   generate (sv2,1,#sv2-1) gen2;
-  ok1 = stlvec_equal (==) sv1 (sv2,1,#sv2-1);
+  ok1 = equal (==) sv1 (sv2,1,#sv2-1);
   ok2 = members sv2 == ["x",1,2,3,4,5,6,7,8,"x"];
-  sv3 = stlvec_const $ sv1;
+  sv3 = const_stlvec $ sv1;
   generate (sv3,1,#sv1-1) gen1; //fails
   gen2; //sneaky little ref to 8 was messing up check_refcs
   ok3 = check_refcs sv1 1;
@@ -359,9 +358,9 @@ test_generate_n = ok when
   ok0 = get err_p;
   generate_n (sv1,0) 8 gen1;
   generate_n (sv2,1) 8 gen2;
-  ok1 = stlvec_equal (==) sv1 (sv2,1,#sv2-1);
+  ok1 = equal (==) sv1 (sv2,1,#sv2-1);
   ok2 = members sv2 == ["x",1,2,3,4,5,6,7,8,"x"];
-  sv3 = stlvec_const $ sv1;
+  sv3 = const_stlvec $ sv1;
   generate_n (sv3,1) 3 gen1; //fails
   gen2; //sneaky little ref to 8 was messing up check_refcs
   ok3 = check_refcs sv1 1;
@@ -387,7 +386,7 @@ test_remove = ok when
   ok1 = pei == 2 && members (sv1,0,2) == ["b","c"];
   pei = remove (sv1,0,2) "b";
   ok2 = pei == 1 && members (sv1,0,1) == ["c"];
-  sv1 = stlvec_const $ sv1;
+  sv1 = const_stlvec $ sv1;
   remove sv1 "c" ;
   ok3 = members (sv1,0,1) == ["c"];
   // elements of sv1 are implentation dependent - skip check_refc
@@ -405,7 +404,7 @@ test_remove_if = ok when
   ok1 = pei == 2 && members (sv1,0,2) == ["b","c"];
   pei = remove_if (sv1,0,2) (=="b");
   ok2 = pei == 1 && members (sv1,0,1) == ["c"];
-  sv1 = stlvec_const $ sv1;
+  sv1 = const_stlvec $ sv1;
   remove_if sv1 (=="c") ;
   ok3 = members (sv1,0,1) == ["c"];
   // elements of sv1 are implementation dependent - skip check_refc
@@ -434,7 +433,7 @@ test_remove_copy = ok when
   sv3 = emptystlvec;
   pei = remove_copy sv1 (sv3,svback) a;
   ok2 = pei == svend && members sv3 == [b,c];
-  sv3 = stlvec_const sv3;
+  sv3 = const_stlvec sv3;
   pei = remove_copy sv1 (sv3,svback) a;
   ok3 = members sv3 == [b,c];
   ok4 = check_refcs sv1 3;
@@ -462,7 +461,7 @@ test_remove_copy_if = ok when
   sv3 = emptystlvec;
   pei = remove_copy_if sv1 (sv3,svback) (a==);
   ok2 = pei == svend && members sv3 == [b,c];
-  sv3 = stlvec_const sv3;
+  sv3 = const_stlvec sv3;
   pei = remove_copy_if sv1 (sv3,svback) (==a);
   ok3 = members sv3 == [b,c];
   ok4 = check_refcs sv1 3;
@@ -488,7 +487,7 @@ test_unique = ok when
   sv1 = stlvec ["a","b","b","a","c","c"];
   pei = unique (sv1,2,svend) (==);
   ok2 = pei == 5 && members (sv1,0,pei) == ["a","b","b","a","c"];
-  sv1 = stlvec_const $ stlvec ["a","a","a"];
+  sv1 = const_stlvec $ stlvec ["a","a","a"];
   unique sv1 (==);
   ok3 = members sv1 == ["a","a","a"];
   // elements of sv1 are implentation dependent - skip check_refc
@@ -519,7 +518,7 @@ test_unique_copy = ok when
   sv3 = emptystlvec;
   pei = unique_copy sv1 (sv3,svback) (==);
   ok2 = pei == svend && members sv3 == [a,b,a,c];
-  sv3 = stlvec_const sv3;
+  sv3 = const_stlvec sv3;
   pei = unique_copy sv1 (sv3,svback) (==);
   ok3 = members sv3 == [a,b,a,c];
   ok4 = check_refcs sv1 [6,4,4,6,4,4];
@@ -543,7 +542,7 @@ test_reverse = ok when
   sv1 = stlvec (0..5);
   reverse (sv1,1,5);
   ok2 = members sv1 == [0,4,3,2,1,5];
-  sv1 = stlvec_const $ stlvec (0..5);
+  sv1 = const_stlvec $ stlvec (0..5);
   reverse sv1;
   ok3 = members sv1 == (0..5);
   ok4 = check_refcs sv1 1;
@@ -567,7 +566,7 @@ test_reverse_copy = ok when
   sv3 = emptystlvec;
   pei = reverse_copy sv1 (sv3,svback);
   ok2 = pei == svend && members sv3 == [e,d,c,b,a];
-  sv3 = stlvec_const sv3;
+  sv3 = const_stlvec sv3;
   pei = reverse_copy sv1 (sv3,svback);
   ok3 = members sv3 == [e,d,c,b,a];
   ok4 = check_refcs sv1 3;
@@ -588,7 +587,7 @@ test_rotate = ok when
   rotate (sv1,1,3,#sv1-1);
   //show_vec sv1;
   ok2 = members sv1 == [0,3,4,5,6,7,8,9,1,2,10];
-  sv1 = stlvec_const $ stlvec (0..10);
+  sv1 = const_stlvec $ stlvec (0..10);
   rotate sv1;
   ok3 = members sv1 == (0..10);
   ok4 = check_refcs sv1 1;
@@ -612,7 +611,7 @@ test_rotate_copy = ok when
   sv3 = emptystlvec;
   pei = rotate_copy (sv1,0,2,svend) (sv3,svback);
   ok2 = members sv3 == [c,d,e,a,b];
-  sv3 = stlvec_const sv3;
+  sv3 = const_stlvec sv3;
   rotate_copy (sv1,0,2,svend) (sv3,svback);
   ok3 = members sv3 == [c,d,e,a,b];
   ok4 = check_refcs sv1 3;
