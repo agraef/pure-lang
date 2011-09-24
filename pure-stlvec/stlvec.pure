@@ -101,24 +101,24 @@ ensure_end v e = if e == svend then sz
 
 /*** Public functions on stlvec *****************************************/
 
-const_stlvec (STLVEC v) = (CONST_STLVEC v);
-const_stlvec (CONST_STLVEC v) = (CONST_STLVEC v);
+::stlvec_const (STLVEC v) = (CONST_STLVEC v);
+::stlvec_const (CONST_STLVEC v) = (CONST_STLVEC v);
 
-emptystlvec = STLVEC (sentry sv_delete (sv_make_a));
+::emptystlvec = STLVEC (sentry sv_delete (sv_make_a));
 
-stlvec sv::svit = STLVEC (sentry sv_delete (sv_dup sv));
-stlvec v = STLVEC (sentry sv_delete (sv_make_b (smatrix v))) if vectorp v;
-stlvec xs::list = STLVEC (sentry sv_delete (sv_make_b xs));
+::stlvec sv::svit = STLVEC (sentry sv_delete (sv_dup sv));
+::stlvec v = STLVEC (sentry sv_delete (sv_make_b (smatrix v))) if vectorp v;
+::stlvec xs::list = STLVEC (sentry sv_delete (sv_make_b xs));
 
-mkstlvec x n::int = STLVEC (sentry sv_delete (sv_make_c x n));
+::mkstlvec x n::int = STLVEC (sentry sv_delete (sv_make_c x n));
 
-reserve (STLVEC v) i::int = sv_reserve v i;
+::stlvec_reserve (STLVEC v) i::int = sv_reserve v i;
 
-capacity (STLVEC v) |
-capacity (CONST_STLVEC v) = sv_capacity v;
+::stlvec_capacity (STLVEC v) |
+::stlvec_capacity (CONST_STLVEC v) = sv_capacity v;
 
-null (STLVEC v) |
-null (CONST_STLVEC v) = sv_empty v;
+::null (STLVEC v) |
+::null (CONST_STLVEC v) = sv_empty v;
 
 (::!) (STLVEC v) p::int |
 (::!) (CONST_STLVEC v) p::int = sv_get v p;
@@ -126,65 +126,72 @@ null (CONST_STLVEC v) = sv_empty v;
 (::#) (STLVEC v) |
 (::#) (CONST_STLVEC v) = sv_size v;
 
-bounds (csv@(CONST_STLVEC v),b::int,e::int) = 
+::stlvec_bounds (csv@(CONST_STLVEC v),b::int,e::int) = 
   csv, ensure_beg v b, ensure_end v e;
-bounds (csv@(CONST_STLVEC v),b::int) = 
+::stlvec_bounds (csv@(CONST_STLVEC v),b::int) = 
   csv, p, p when p = ensure_beg v b end;
-bounds csv@(CONST_STLVEC v) = 
+::stlvec_bounds csv@(CONST_STLVEC v) = 
   csv, 0, sv_size v;
-bounds (sv@(STLVEC v),b::int,e::int) =
+::stlvec_bounds (sv@(STLVEC v),b::int,e::int) =
   sv, ensure_beg v b, ensure_end v e;
-bounds (sv@(STLVEC v),b::int) = 
+::stlvec_bounds (sv@(STLVEC v),b::int) = 
   sv, p, p when p = ensure_beg v b end;
-bounds sv@(STLVEC v) = 
+::stlvec_bounds sv@(STLVEC v) = 
   sv, 0, sv_size v;
 
-first (STLVEC v) |
-first (CONST_STLVEC v) = sv_front v;
+firstx__ (STLVEC v) |
+firstx__ (CONST_STLVEC v) = sv_front v;
+namespace; 
+first sv::stlvec = stl::firstx__ sv; // ::first did not work
+namespace stl;
 
-last (STLVEC v) |
-last (CONST_STLVEC v) = sv_back v;
+::last (STLVEC v) |
+::last (CONST_STLVEC v) = sv_back v;
 
-append sv@(STLVEC v) x = sv_push_back v x $$ sv;
+::append sv@(STLVEC v) x = sv_push_back v x $$ sv;
 
-rmfirst sv@(STLVEC v) = sv_erase (STLVEC v, 0, 1) $$ sv;
+::rmfirst sv@(STLVEC v) = sv_erase (STLVEC v, 0, 1) $$ sv;
 
-rmlast sv@(STLVEC v) = sv_pop_back v $$ sv;
+::rmlast sv@(STLVEC v) = sv_pop_back v $$ sv;
 
-update sv@(STLVEC v) p::int x = sv_put v p x $$ sv;
+::update sv@(STLVEC v) p::int x = sv_put v p x $$ sv;
 
-erase it@(STLVEC v, f::int, l::int) = sv_erase it $$ STLVEC v;
+::stlvec_erase it@(STLVEC v, f::int, l::int) = sv_erase it $$ STLVEC v;
 
-erase (STLVEC v, p::int) = erase (STLVEC v, p, p+1);
+::stlvec_erase (STLVEC v, p::int) = ::stlvec_erase (STLVEC v, p, p+1);
 
-erase sv@(STLVEC v) = sv_clear v $$ sv;
+::stlvec_erase sv@(STLVEC v) = sv_clear v $$ sv;
 
-insert (STLVEC v, p::int) it::svit = sv_splice v p it $$ STLVEC v;
-insert (STLVEC v, p::int) xs::list = sv_splice v p xs $$ STLVEC v;
+::insert (STLVEC v, p::int) it::svit = sv_splice v p it $$ STLVEC v;
+::insert (STLVEC v, p::int) xs::list = sv_splice v p xs $$ STLVEC v;
 
-equal comp it1::svit it2::svit = sv_equal comp it1 it2;
+::stlvec_equal comp it1::svit it2::svit = sv_equal comp it1 it2;
 
-map f it::svit = sv_listmap f it;
+(::==) sv1::stlvec sv2::svit = sv_equal (==) sv1 sv2;
 
-listmap f it::svit = sv_listmap f it;
+(::~=) sv1::stlvec sv2::svit = ~sv_equal (==) sv1 sv2;
 
-catmap f it::svit = sv_listcatmap f it;
+::map f it::svit = sv_listmap f it;
 
-foldl f x it::svit = sv_foldl f x it;
+::listmap f it::svit = sv_listmap f it;  // for list comprehensions
 
-foldl1 f it::svit = sv_foldl1 f it;
+::catmap f it::svit = sv_listcatmap f it;
 
-foldr f x it::svit = sv_foldr f x it;
+::foldl f x it::svit = sv_foldl f x it;
 
-foldr1 f it::svit = sv_foldr1 f it;
+::foldl1 f it::svit = sv_foldl1 f it;
 
-members it::svit = sv_foldr (\x xs->x:xs) [] it;
+::foldr f x it::svit = sv_foldr f x it;
 
-//list sv::stlvec = members sv;
+::foldr1 f it::svit = sv_foldr1 f it;
 
-do f it::svit = sv_foldl (\_ x->f x) () it $$ ();
+::members it::svit = sv_foldr (\x xs->x:xs) [] it;
 
-filter p it::svit = sv_foldr f [] it with
+::list sv::stlvec = members sv;
+
+::do f it::svit = sv_foldl (\_ x->f x) () it $$ ();
+
+::filter p it::svit = sv_foldr f [] it with
   f x xs = case p x of
     1 = x:xs;
     0 = xs;
@@ -192,12 +199,12 @@ filter p it::svit = sv_foldr f [] it with
   end;
 end;
 
-rowmap f it::svit = rowcat (sv_listmap f it);
+::rowmap f it::svit = rowcat (sv_listmap f it);
 
-rowcatmap f it::svit = rowcat (sv_listmap f it);
+::rowcatmap f it::svit = rowcat (sv_listmap f it);
 
-colmap f it::svit = colcat (sv_listmap f it);
+::colmap f it::svit = colcat (sv_listmap f it);
 
-colcatmap f it::svit = colcat (sv_listmap f it);
+::colcatmap f it::svit = colcat (sv_listmap f it);
 
-vector it::svit = sv_vector it;
+::stlvec_vector it::svit = sv_vector it;
