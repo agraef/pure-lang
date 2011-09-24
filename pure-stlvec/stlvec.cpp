@@ -365,18 +365,28 @@ void sv_clear(sv* vec)
   vec->clear();
 }
 
-bool sv_equal(px* comp, px* tpl1, px* tpl2)
+bool sv_equal(px* fun, px* tpl1, px* tpl2)
 {
-  pxh_pred2 fun(comp);
   sv_iters itrs1(tpl1);
   sv_iters itrs2(tpl2);
   if (!itrs1.is_valid || itrs1.num_iters != 2) bad_argument();
   if (!itrs2.is_valid || itrs2.num_iters != 2) bad_argument();
-  try {
-    return equal(itrs1.beg(), itrs1.end(), itrs2.beg(), fun);
-  } catch (px* e) {
-    pure_throw(e);
+  svi beg1 = itrs1.beg();
+  svi end1 = itrs1.end();
+  svi beg2 = itrs2.beg();
+  svi end2 = itrs2.end();
+  size_t num_elms = end1 - beg1;
+  if (num_elms != end2 - beg2) return 0;
+  px* exception = 0;
+  for (int i = 0; i < num_elms; i++) {
+    px* res = pure_appxl(fun, &exception, 2,(beg1+i)->pxp(), (beg2+i)->pxp());
+    if (exception) pure_throw(exception);
+    int are_eq;
+    bool ok = pure_is_int(px_new(res), &are_eq);
+    px_free(res);
+    if (!ok || !are_eq) return 0;
   }
+  return 1;
 }
 
 px*  sv_listmap(px* fun, px* tpl)
