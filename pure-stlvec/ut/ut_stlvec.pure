@@ -346,6 +346,33 @@ end when
   err_p = ref false; 
 end; 
 
+test_comprehension = ok when
+  show_start "comprehension";
+  sv1 = stlvec (0..10);
+  res1 = [x | x = sv1];
+  ok1 = res1 == (0..10);
+  res2 = [x | x = sv1; x mod 2];
+  ok2 = res2 == (1:3..10);
+  res3 = {x | x = sv1; x mod 2};
+  ok3 = res3 == {1,3,5,7,9};
+  sv2 = stlvec (0..2);
+  sv3 = stlvec ("a".."b");
+  res4 = {x,y| x = sv2; y = sv3};
+  ok4 = res4 == {(0,"a"),(0,"b");(1,"a"),(1,"b");(2,"a"),(2,"b")};
+  ok5 = check_refcs sv1 1;
+  ok6 = check_refcs sv2 1;
+  ok7 = check_refcs sv3 1;
+  ok = all_ok [ok1,ok2,ok3,ok4,ok5,ok6,ok7];
+  show_result "comprehension" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception;
+  join x y = x + "_" + y;
+end when 
+  err_p = ref false; 
+end; 
+
+
 test_stlvec = ok when
   show_suite_start "STLVEC";
   ok = 1;
@@ -365,6 +392,7 @@ test_stlvec = ok when
   ok = test_foldr && ok;
   ok = test_foldr1 && ok;
   ok = test_filter && ok;
+  ok = test_comprehension && ok;
   show_suite_result "STLVEC" ok;
 end;
 
