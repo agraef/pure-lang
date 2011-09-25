@@ -254,7 +254,7 @@ the number of elements in msv), the last Pure call could be written:
 
    stable_sort msv comp
 
-It should be noted that often the STL library provides a default version of
+It should be noted that often the STL library provides a default version of its
 functions, which like stable_sort, use a comparator or other callback function
 provided by the caller. E.g., the C++ stable_sort has a default version that
 assumes the "<" operator can be used on the elements held by the container in
@@ -517,8 +517,9 @@ to your program::
 Data Structure
 --------------
 
-Currently, stlvecs are of the form (STLVEC x) or (CONST_STLVEC x), where x is
-a pointer to the underlying STL vector. E.g.::
+Currently, stlvecs are of the form (STLVEC x) or (CONST_STLVEC x), where
+STLVEC AND CONST_STLVEC are defined as nonfix symbols in the global namespace
+and x is a pointer to the underlying STL vector. E.g.::
 
    > let v1 = stlvec (0..3); v1;
    STLVEC #<pointer 0x915c8e0>
@@ -542,7 +543,7 @@ mutable::
 Types
 -----
 
-Three type tags are provided for stlvecs:
+pure-stlvec introduces six type tags, all of which are in the global namespace:
 
 .. type:: mutable_stlvec /type
 
@@ -559,11 +560,9 @@ Three type tags are provided for stlvecs:
    The type for a stlvec, mutable or immutable. The stvec can be constructed
    with STLVEC or CONST_STLVEC.
 
-In addition there are three type tags for stlvec iterator tuples:
-
 .. type:: mutable_svit /type
 
-   The type for an iterator tuple whose underlying stlvec is  mutable.
+   The type for an iterator tuple whose underlying stlvec is mutable.
 
  .. type:: const_svit /type
 
@@ -645,7 +644,7 @@ namespace with new function names.
 
 Note that # applied to an iterator tuple like (sv,b,e) will just return the
 number of elements in the tuple. Use stlvec_bounds if you need to know the
-number of elements in the range denoted by a tuple.
+number of elements in the range denoted by an iterator tuple.
 
 .. function:: stlvec_bounds (sv,first,last)
 
@@ -662,7 +661,8 @@ number of elements in the range denoted by a tuple.
 
 .. function:: stlvec_capacity sv
 
-   return the total amount of slots held by the underlying STL vector
+   return the number of slots (as opposed to the number of elements) held by
+   the underlying STL vector
 
 .. function:: null /stlvec sv
 
@@ -1171,7 +1171,7 @@ Operations
 ----------
 
 All of the functions in this module require the caller to supply an ordering
-functions, comp (as for the Pure library sort function). They only work
+function, comp (as for the Pure library sort function). They only work
 properly on input ranges that have been previously sorted using comp. The set
 operations generally do not check for range overflow because it is not
 generally possible to determine the length of the result of a set operation
@@ -1246,7 +1246,7 @@ Operations
 ----------
 
 All of the functions in this module require the caller to supply an ordering
-functions, comp (as for the Pure library sort function). The functions (<)
+function, comp (as for the Pure library sort function). The functions (<)
 and (>) are commonly passed as comp.
 
 .. function:: make_heap (msv,first,last) comp
@@ -1293,7 +1293,7 @@ Operations
 ----------
 
 All of the functions in this module require the caller to supply an ordering
-functions, comp (as for the Pure library sort function). The functions (<)
+function, comp (as for the Pure library sort function). The functions (<)
 and (>) are commonly passed as comp.
 
 .. function:: min_element (sv,first,last) comp
@@ -1392,7 +1392,7 @@ enabled. These functions, all of which are defined in the stl namespace, can
 be used to trace the creation and deletion of stlvecs as well as the changes
 in ref counts that occur as Pure objects are moved and copied. In addition to
 being useful for maintaining the pure-stlvec modules, these functions can be
-used to observe the STL copy semantics.
+used to observe STL copy semantics.
 
 .. function:: set_sv_trace on_off::int
 
