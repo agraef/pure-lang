@@ -12,7 +12,6 @@ will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the COPYING file
 included with the pure-stlvec distribution package for details.
 
-
 */
 
 using system;
@@ -114,7 +113,7 @@ test_partial_sort_copy = ok when
   ok2 = members sv3 == take (#sv3) (drop 2 (::reverse l1));
   partial_sort_copy (sv1,2,#sv1-2) sv4 (>);
   ok3 = take (#sv1-4) (members sv4) == take (#sv1-4) (drop 2 (::reverse l1));
-  stlvec_erase (sv4, #sv4-4, svend);
+  erase (sv4, #sv4-4, svend);
   ok4 = check_refcs sv1 [1,1,2,2,2,2,2,3,3,4,4,2,2];
   ok5 = check_refcs sv2 [1,1,3,3];
   ok6 = check_refcs sv3 2;
@@ -148,8 +147,8 @@ end when
   err_p = ref false; 
 end; 
 
-test_bounds = ok when
-  show_start "bounds";
+test_sva_bounds = ok when
+  show_start "sva_bounds";
   sv1 = stlvec [1,3,5,5,5,7,9];
   put err_p false; 
   catch eh $ lower_bound sv1 0 crash;
@@ -172,7 +171,7 @@ test_bounds = ok when
   ok6 = (x,y) == (svend,svend);
   ok7 = check_refcs sv1 1;
   ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5,ok6,ok7];
-  show_result "bounds" ok;
+  show_result "sva_bounds" ok;
 end with 
   eh x = put err_p true; 
   crash x y = throw exception; 
@@ -213,7 +212,7 @@ test_sort = ok when
   ok = test_partial_sort && ok;
   ok = test_partial_sort_copy && ok;
   ok = test_nth_element && ok;
-  ok = test_bounds && ok;
+  ok = test_sva_bounds && ok;
   ok = test_binary_search && ok;
   show_suite_result "SV_SORT" ok;
 end;

@@ -1,4 +1,4 @@
-/* ut_stlvec.pure -- Unit tests for stlvec.pure
+/* ut_stlvec_global.pure -- Unit tests for stlvec.pure in global namespace
     
 Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>.
 
@@ -18,27 +18,25 @@ using system;
 using stlvec;
 using ut_helpers;
 
-using namespace stl;
-
 nonfix exception;
 
-test_create = ok when
+test_global_create = ok when
   show_start "create";
   sv1 = emptystlvec;
   ok1 = null sv1 && #sv1 == 0;
-  reserve sv1 100;
-  ok2 = null sv1 && #sv1 == 0 && capacity sv1 == 100;
+  stl::reserve sv1 100;
+  ok2 = null sv1 && #sv1 == 0 && stl::capacity sv1 == 100;
   sv1 = stlvec ("a".."f");
   sv  = const_stlvec (stlvec sv1);
-  sv1 = stlvec (sv,svbeg,5);
+  sv1 = stlvec (sv,stl::svbeg,5);
   ok2 = members sv1 == ("a".."e");
-  sv1 = stlvec (sv,1,svend);
+  sv1 = stlvec (sv,1,stl::svend);
   ok3 = members sv1 == ("b".."f");
   sv1 = stlvec (sv,1,5);
   ok4 = members sv1 == ("b".."e");
   sv2 = stlvec sv;
   ok5 = members sv2 == members sv;
-  ok6 = members (sv2,svbeg,svend) == ("a".."f");
+  ok6 = members (sv2,stl::svbeg,stl::svend) == ("a".."f");
   ok7 = members (sv2,1,5) == ("b".."e");
   ok8 = check_refcs sv [2,3,3,3,3,2];
   ok9 = check_refcs sv1 [2,2,2,2];
@@ -47,31 +45,31 @@ test_create = ok when
   show_result "create" ok;
 end;
 
-test_vector = ok when
+test_global_vector = ok when
   show_start "vector";
   m1 = {"a","b","c","d","e"};
   sv1 = stlvec m1;
   ok1 = members sv1 == ["a","b","c","d","e"];
-  m2 = vector sv1;
+  m2 = stl::vector sv1;
   ok2 = m2 == m1;
-  m3 = vector (sv1,1,4);
+  m3 = stl::vector (sv1,1,4);
   ok3 = m3 == {"b","c","d"};
-  erase sv1;
-  m4 = vector sv1;
+  stl::erase sv1;
+  m4 = stl::vector sv1;
   ok4 = m4 == {};
   ok5 = check_refcs sv1 1;
   ok = all_ok [ok1,ok2,ok3,ok4,ok5];
   show_result "vector" ok;
 end;
 
-test_bounds = ok when
+test_global_bounds = ok when
   show_start "bounds";
   sv1 = stlvec ("a".."e");
-  sv2,b,e = bounds sv1;
+  sv2,b,e = stl::bounds sv1;
   ok1 = sv1 == sv2 && b == 0 && e == 5;
-  sv3,b,e = bounds (sv2,1,4);
+  sv3,b,e = stl::bounds (sv2,1,4);
   ok2 = sv3 == sv2 && b == 1 && e == 4;
-  sv4,b,e = bounds (sv2,svbeg,svend);
+  sv4,b,e = stl::bounds (sv2,stl::svbeg,stl::svend);
   ok3 = sv3 == sv2 && b == 0 && e == 5;
   ok4 = check_refcs sv1 1;
   ok5 = check_refcs sv2 1;
@@ -81,20 +79,20 @@ test_bounds = ok when
   show_result "bounds" ok;
 end;
 
-test_members = ok when
+test_global_members = ok when
   show_start "members";
   sv1 = emptystlvec;
   ok1 = members sv1 == [];
   sv1 = stlvec ("a".."f");
   ok2 = members sv1 == ("a".."f");
-  ok3 = members (sv1,1,svend) == ("b".."f");
+  ok3 = members (sv1,1,stl::svend) == ("b".."f");
   ok4 = members (sv1,1,#sv1-1) == ("b".."e");
   ok5 = check_refcs sv1 1;
   ok = all_ok [ok1,ok2,ok3,ok4,ok5];
   show_result "members" ok;
 end;
 
-test_basic_ops = ok when
+test_global_basic_ops = ok when
   show_start "basic_ops";
   sv1 = emptystlvec;
   ok1 = null sv1 && #sv1 == 0;
@@ -115,19 +113,19 @@ test_basic_ops = ok when
   show_result "basic_ops" ok;
 end;
 
-test_erase = ok when
+test_global_erase = ok when
   show_start "erase";
   sv1 =const_stlvec $ stlvec ("a".."f");
   sv2 = stlvec sv1;
-  erase (sv2,svbeg,2);
+  stl::erase (sv2,stl::svbeg,2);
   ok1 = members sv2 == ("c".."f");
   sv2 = stlvec sv1;
-  erase (sv2,1,3);
+  stl::erase (sv2,1,3);
   ok2 = members sv2 == ["a","d","e","f"];
   sv2 = stlvec sv1;
-  erase (sv2,2,svend);
+  stl::erase (sv2,2,stl::svend);
   ok3 = members sv2 == ["a","b"];
-  erase sv1;
+  stl::erase sv1;
   ok4 = members sv1 == ("a".."f");
   ok5 = check_refcs sv1 [2,2,1,1,1,1];
   ok6 = check_refcs sv2 [1,1];
@@ -135,7 +133,7 @@ test_erase = ok when
   show_result "erase" ok;
 end;
  
-test_insert = ok when
+test_global_insert = ok when
   show_start "insert";
   sv1 = stlvec ["a"];
   sv2 =const_stlvec $ stlvec ("b".."d");
@@ -146,7 +144,7 @@ test_insert = ok when
   insert (sv1, 1) ["y", "z"];
   ok3 = members sv1 == ["x","y","z","a","b","c","d"];
   sv1 = stlvec ["a","b"];
-  insert (sv1,svend) (sv2,1,3);
+  insert (sv1,stl::svend) (sv2,1,3);
   ok4 = members sv1 == ["a","b","c","d"];
   insert (sv2,1) ["z"];
   ok5 = members sv2 == ("b".."d");
@@ -156,27 +154,27 @@ test_insert = ok when
   show_result "insert" ok;
 end;
 
-test_allpairs = ok when
+test_global_allpairs = ok when
   show_start "allpairs";
   sv1 = stlvec (0..5);
   sv2 = stlvec (0..5);
   sv3 = emptystlvec;
   put err_p false; 
-  catch eh $ allpairs crash sv1 sv2;
+  catch eh $ stl::allpairs crash sv1 sv2;
   ok0 = get err_p;
-  ok1 = allpairs (==) sv1 sv2;
-  ok2 = allpairs (==) sv1 sv1;
-  ok3 = allpairs (==) (sv1,1,svend) (sv2,1,svend);
+  ok1 = stl::allpairs (==) sv1 sv2;
+  ok2 = stl::allpairs (==) sv1 sv1;
+  ok3 = stl::allpairs (==) (sv1,1,stl::svend) (sv2,1,stl::svend);
   rmlast sv2;
   rmfirst sv2;
-  ok4 = allpairs (==) (sv1,1,#sv1-1) sv2;
-  ok5 = allpairs (==) sv2 (sv1,1,#sv1-1);
-  ok6 = ~allpairs (==) sv1 sv2;
-  ok7 = ~allpairs (==) sv2 sv1;
+  ok4 = stl::allpairs (==) (sv1,1,#sv1-1) sv2;
+  ok5 = stl::allpairs (==) sv2 (sv1,1,#sv1-1);
+  ok6 = ~stl::allpairs (==) sv1 sv2;
+  ok7 = ~stl::allpairs (==) sv2 sv1;
   ok8 = check_refcs sv1 1;
   ok9 = check_refcs sv2 1;
   ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5,ok6,ok7,ok8,ok9];
-  show_result "allpairs" ok;
+  show_result "stl::allpairs" ok;
 end with 
   eh x = put err_p true; 
   crash x y = throw exception; 
@@ -184,14 +182,14 @@ end when
   err_p = ref false; 
 end; 
 
-test_listmap = ok when
+test_global_listmap = ok when
   show_start "listmap";
   sv1 = stlvec (0..5);
   put err_p false; 
   catch eh $ listmap crash sv1;
   ok0 = get err_p;
   ok1 = listmap (+1) sv1 == (1..6);
-  ok2 = listmap (+1) (sv1,1,svend) == (2..6);
+  ok2 = listmap (+1) (sv1,1,stl::svend) == (2..6);
   ok3 = listmap (+1) (sv1,1,#sv1-1) == (2..5);
   ok4 = listmap (+1) emptystlvec == [];
   ok5 = check_refcs sv1 1;
@@ -204,14 +202,14 @@ end when
   err_p = ref false; 
 end; 
 
-test_catmap = ok when
+test_global_catmap = ok when
   show_start "catmap";
   sv1 = stlvec ("a".."e");
   put err_p false; 
   catch eh $ catmap crash sv1;
   ok0 = get err_p;
   ok1 = catmap hyphen sv1 == ["a-a","b-b","c-c","d-d","e-e"];
-  ok2 = catmap hyphen (sv1,1,svend) == ["b-b","c-c","d-d","e-e"];
+  ok2 = catmap hyphen (sv1,1,stl::svend) == ["b-b","c-c","d-d","e-e"];
   ok3 = catmap hyphen (sv1,1,#sv1-1) == ["b-b","c-c","d-d"];
   ok4 = catmap hyphen emptystlvec == [];
   ok5 = check_refcs sv1 1;
@@ -225,14 +223,14 @@ end when
   err_p = ref false; 
 end; 
 
-test_do = ok when
+test_global_do = ok when
   show_start "do";
   put err_p false; 
   catch eh $ do crash sv;
   ok0 = get err_p;
   do append_sv1 sv;
-  do append_sv1 (sv,svbeg,3);
-  do append_sv1 (sv,3,svend);
+  do append_sv1 (sv,stl::svbeg,3);
+  do append_sv1 (sv,3,stl::svend);
   ok1 = members sv1 == ["a","b","c","d","e","a","b","c","d","e"];
   ok2 = check_refcs sv 3;
   ok3 = check_refcs sv1 2;
@@ -248,7 +246,7 @@ end when
   sv1 = emptystlvec;
 end; 
 
-test_foldl = ok when
+test_global_foldl = ok when
   show_start "foldl";
   sv1 = stlvec ("a".."f");
   put err_p false; 
@@ -256,7 +254,7 @@ test_foldl = ok when
   ok0 = get err_p;
   ok1 = foldl (+) "_" sv1 == "_abcdef";
   ok2 = foldl (+) "_" (sv1,1,3) == "_bc";
-  ok3 = foldl (+) "_" (sv1,1,svend) == "_bcdef";
+  ok3 = foldl (+) "_" (sv1,1,stl::svend) == "_bcdef";
   ok4 = check_refcs sv1 1;
   ok = all_ok [ok0,ok1,ok2,ok3,ok4];
   show_result "foldl" ok;
@@ -267,7 +265,7 @@ end when
   err_p = ref false; 
 end; 
 
-test_foldl1 = ok when
+test_global_foldl1 = ok when
   show_start "foldl1";
   sv1 = stlvec ("a".."f");
   put err_p false; 
@@ -275,7 +273,7 @@ test_foldl1 = ok when
   ok0 = get err_p;
   ok1 = foldl1 join sv1 == "a_b_c_d_e_f";
   ok2 = foldl1 join (sv1,1,3) == "b_c";
-  ok3 = foldl1 join (sv1,1,svend) == "b_c_d_e_f";
+  ok3 = foldl1 join (sv1,1,stl::svend) == "b_c_d_e_f";
   ok4 = check_refcs sv1 1;
   ok = all_ok [ok0,ok1,ok2,ok3,ok4];
   show_result "foldl1" ok;
@@ -287,7 +285,7 @@ end when
   err_p = ref false; 
 end; 
 
-test_foldr = ok when
+test_global_foldr = ok when
   show_start "foldr";
   sv1 = stlvec ("a".."f");
   put err_p false; 
@@ -295,7 +293,7 @@ test_foldr = ok when
   ok0 = get err_p;
   ok1 = foldr (+) "_" sv1 == "abcdef_";
   ok2 = foldr (+) "_" (sv1,1,3) == "bc_";
-  ok3 = foldr (+) "_" (sv1,1,svend) == "bcdef_";
+  ok3 = foldr (+) "_" (sv1,1,stl::svend) == "bcdef_";
   ok4 = check_refcs sv1 1;
   ok = all_ok [ok0,ok1,ok2,ok3,ok4];
   show_result "foldr" ok;
@@ -306,7 +304,7 @@ end when
   err_p = ref false; 
 end;
 
-test_foldr1 = ok when
+test_global_foldr1 = ok when
   show_start "foldr1";
   sv1 = stlvec ("a".."f");
   put err_p false; 
@@ -314,7 +312,7 @@ test_foldr1 = ok when
   ok0 = get err_p;
   ok1 = foldr1 join sv1 == "a_b_c_d_e_f";
   ok2 = foldr1 join (sv1,1,3) == "b_c";
-  ok3 = foldr1 join (sv1,1,svend) == "b_c_d_e_f";
+  ok3 = foldr1 join (sv1,1,stl::svend) == "b_c_d_e_f";
   ok4 = check_refcs sv1 1;
   ok = all_ok [ok0,ok1,ok2,ok3,ok4];
   show_result "foldr1" ok;
@@ -326,14 +324,14 @@ end when
   err_p = ref false; 
 end; 
 
-test_filter = ok when
+test_global_filter = ok when
   show_start "filter";
   sv1 = stlvec ("a".."f");
   put err_p false; 
   catch eh $ filter crash sv1;
   ok0 = get err_p;
   ok1 = filter (>"b") sv1 == ("c".."f");
-  ok2 = filter (>"d") (sv1,1,svend) == ["e","f"];
+  ok2 = filter (>"d") (sv1,1,stl::svend) == ["e","f"];
   ok3 = filter (>"b") (sv1,1,#sv1-1) ==  ["c","d","e"];
   ok4 = filter (>"b") emptystlvec == []; 
   ok5 = check_refcs sv1 1;
@@ -346,7 +344,7 @@ end when
   err_p = ref false; 
 end; 
 
-test_comprehension = ok when
+test_global_comprehension = ok when
   show_start "comprehension";
   sv1 = stlvec (0..10);
   res1 = [x | x = sv1];
@@ -372,27 +370,26 @@ end when
   err_p = ref false; 
 end; 
 
-
-test_stlvec = ok when
-  show_suite_start "STLVEC";
+test_global_stlvec = ok when
+  show_suite_start "GLOBAL_STLVEC";
   ok = 1;
-  ok = test_create && ok;
-  ok = test_vector && ok;
-  ok = test_bounds && ok;
-  ok = test_members && ok;
-  ok = test_basic_ops && ok;
-  ok = test_erase && ok;
-  ok = test_insert && ok;
-  ok = test_allpairs && ok;
-  ok = test_listmap && ok;
-  ok = test_catmap && ok;
-  ok = test_do && ok;
-  ok = test_foldl && ok;
-  ok = test_foldl1 && ok;
-  ok = test_foldr && ok;
-  ok = test_foldr1 && ok;
-  ok = test_filter && ok;
-  ok = test_comprehension && ok;
-  show_suite_result "STLVEC" ok;
+  ok = test_global_create && ok;
+  ok = test_global_vector && ok;
+  ok = test_global_bounds && ok;
+  ok = test_global_members && ok;
+  ok = test_global_basic_ops && ok;
+  ok = test_global_erase && ok;
+  ok = test_global_insert && ok;
+  ok = test_global_allpairs && ok;
+  ok = test_global_listmap && ok;
+  ok = test_global_catmap && ok;
+  ok = test_global_do && ok;
+  ok = test_global_foldl && ok;
+  ok = test_global_foldl1 && ok;
+  ok = test_global_foldr && ok;
+  ok = test_global_foldr1 && ok;
+  ok = test_global_filter && ok;
+  ok = test_global_comprehension && ok;
+  show_suite_result "GLOBAL_STLVEC" ok;
 end;
 

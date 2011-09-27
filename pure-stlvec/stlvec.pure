@@ -101,8 +101,8 @@ ensure_end v e = if e == svend then sz
 
 /*** Public functions on stlvec *****************************************/
 
-::stlvec_const (STLVEC v) = (CONST_STLVEC v);
-::stlvec_const (CONST_STLVEC v) = (CONST_STLVEC v);
+::const_stlvec (STLVEC v) = (CONST_STLVEC v);
+::const_stlvec (CONST_STLVEC v) = (CONST_STLVEC v);
 
 ::emptystlvec = STLVEC (sentry sv_delete (sv_make_a));
 
@@ -112,10 +112,10 @@ ensure_end v e = if e == svend then sz
 
 ::mkstlvec x n::int = STLVEC (sentry sv_delete (sv_make_c x n));
 
-::stlvec_reserve (STLVEC v) i::int = sv_reserve v i;
+reserve (STLVEC v) i::int = sv_reserve v i;
 
-::stlvec_capacity (STLVEC v) |
-::stlvec_capacity (CONST_STLVEC v) = sv_capacity v;
+capacity (STLVEC v) |
+capacity (CONST_STLVEC v) = sv_capacity v;
 
 ::null (STLVEC v) |
 ::null (CONST_STLVEC v) = sv_empty v;
@@ -126,17 +126,17 @@ ensure_end v e = if e == svend then sz
 (::#) (STLVEC v) |
 (::#) (CONST_STLVEC v) = sv_size v;
 
-::stlvec_bounds (csv@(CONST_STLVEC v),b::int,e::int) = 
+bounds (csv@(CONST_STLVEC v),b::int,e::int) = 
   csv, ensure_beg v b, ensure_end v e;
-::stlvec_bounds (csv@(CONST_STLVEC v),b::int) = 
+bounds (csv@(CONST_STLVEC v),b::int) = 
   csv, p, p when p = ensure_beg v b end;
-::stlvec_bounds csv@(CONST_STLVEC v) = 
+bounds csv@(CONST_STLVEC v) = 
   csv, 0, sv_size v;
-::stlvec_bounds (sv@(STLVEC v),b::int,e::int) =
+bounds (sv@(STLVEC v),b::int,e::int) =
   sv, ensure_beg v b, ensure_end v e;
-::stlvec_bounds (sv@(STLVEC v),b::int) = 
+bounds (sv@(STLVEC v),b::int) = 
   sv, p, p when p = ensure_beg v b end;
-::stlvec_bounds sv@(STLVEC v) = 
+bounds sv@(STLVEC v) = 
   sv, 0, sv_size v;
 
 firstx__ (STLVEC v) |
@@ -154,18 +154,23 @@ namespace stl;
 
 ::rmlast sv@(STLVEC v) = sv_pop_back v $$ sv;
 
+::update sv@(CONST_STLVEC v) p::int x = CONST_STLVEC v when
+     (STLVEC v1) = stlvec sv;
+     sv_put v1 p x;
+end;
+
 ::update sv@(STLVEC v) p::int x = sv_put v p x $$ sv;
 
-::stlvec_erase it@(STLVEC v, f::int, l::int) = sv_erase it $$ STLVEC v;
+erase it@(STLVEC v, f::int, l::int) = sv_erase it $$ STLVEC v;
 
-::stlvec_erase (STLVEC v, p::int) = ::stlvec_erase (STLVEC v, p, p+1);
+erase (STLVEC v, p::int) = erase (STLVEC v, p, p+1);
 
-::stlvec_erase sv@(STLVEC v) = sv_clear v $$ sv;
+erase sv@(STLVEC v) = sv_clear v $$ sv;
 
 ::insert (STLVEC v, p::int) it::svit = sv_splice v p it $$ STLVEC v;
 ::insert (STLVEC v, p::int) xs::list = sv_splice v p xs $$ STLVEC v;
 
-::stlvec_equal comp it1::svit it2::svit = sv_equal comp it1 it2;
+allpairs bin_fun it1::svit it2::svit = sv_equal bin_fun it1 it2;
 
 (::==) sv1::stlvec sv2::svit = sv_equal (==) sv1 sv2;
 
@@ -207,4 +212,5 @@ end;
 
 ::colcatmap f it::svit = colcat (sv_listmap f it);
 
-::stlvec_vector it::svit = sv_vector it;
+vector it::svit = sv_vector it;
+vector x = ::vector x;
