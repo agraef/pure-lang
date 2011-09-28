@@ -381,6 +381,10 @@ symbol& symtable::checksym(const char *s, bool priv)
     if (!exists)
       // symbol was generated on the fly, we need to keep track of these
       _sym->unresolved = true;
+    else if (_sym->unresolved)
+      // symbol was previously marked as unresolved, a qualified instance
+      // overrides this
+      _sym->unresolved = false;
     return *_sym;
   } else if (count > 1)
     throw err("symbol '"+string(s)+"' is ambiguous here");
