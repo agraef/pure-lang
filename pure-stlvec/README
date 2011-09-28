@@ -36,7 +36,10 @@ for details.
 Installation
 ============
 
-Get the latest source from
+pure-stlvec-@version requires at least Pure 0.48. The latest version of Pure
+is available at http://code.google.com/p/pure-lang/downloads/list.
+
+The latest version of the source code for pure-stlvec can be downloaded from
 http://pure-lang.googlecode.com/files/pure-stlvec-@version@.tar.gz.
  
 To install pure-stlvec (on Linux), extract the source code (e.g., tar -xzf
@@ -322,6 +325,29 @@ In short, when a pure-stlvec function detects "stl::svback" in a target
 iterator tuple, it constructs a STL "back inserter iterator" and passes it on
 to the corresponding wrapped STL function.
 
+Data Structure
+--------------
+
+Currently, stlvecs are of the form (STLVEC x) or (CONST_STLVEC x), where
+STLVEC AND CONST_STLVEC are defined as nonfix symbols in the global namespace
+and x is a pointer to the underlying STL vector. stlvec module defines
+corresponding type tags, stlvec and const_stlvec, so the programmer never
+needs to worry about the underlying representaton.
+
+This representation may change in the future, and must not be relied upon
+by client modules. In particular, one must never attempt to use the
+embedded pointer directly.
+
+As the names suggest, stlvecs are mutable and const_stlvecs are
+immutable. Functions that modify a stlvec will simply fail unless the stlvec
+is mutable. 
+
+   > let v = const_stlvec $ stlvec (0..3); v2;
+   CONST_STLVEC #<pointer 0x8c1dbf0>
+
+   > update v 0 100; // fails
+   update (CONST_STLVEC #<pointer 0x9f07690>) 0 100
+
 Types
 -----
 
@@ -331,18 +357,15 @@ pure-stlvec introduces six type tags, all of which are in the global namespace:
 
 .. type:: mutable_stlvec /type
 
-   The type for a mutable stlvec. The stlvec must have been constructed with
-   STLVEC.
+   The type for a mutable stlvec. 
 
 .. type:: const_stlvec /type
 
-   The type for an immutable stlvec. The stlvec must have been constructed
-   with CONST_STLVEC.
+   The type for an immutable stlvec.
 
 .. type:: stlvec /type
 
-   The type for a stlvec, mutable or immutable. The stvec can be constructed
-   with STLVEC or CONST_STLVEC.
+   The type for a stlvec, mutable or immutable.
 
 .. type:: mutable_svit /type
 
@@ -384,7 +407,8 @@ the input stlvec. E.g.::
     > stl::reverse_copy sv1 (sv2,stl::svback) $$ members sv2;
     ["e","d","c","b","a"]
 
-Without reverse_copy, one have to copy sv1 into sv2 and then reverse sv2.
+Without reverse_copy, one would have had to copy sv1 into sv2 and then reverse
+sv2.
 
 If desired, in Pure it is easy to write functions that have automatic
 copy-on-write semantics. E.g., ::
@@ -569,11 +593,20 @@ Examples
     > listmap (\x->throw DOA) sv1; // callback function throws exception
     <stdin>, line 34: unhandled exception 'DOA' ...
 
-Basic Operations
-================
+Operations Included in the stlvec Module
+========================================
 
 The stlvec module provides functions for creating, accessing and modifying
-stlvecs. They are all in the global namespace.
+stlvecs. In general, operations that have the same name as a corresponding
+function in the Pure standard library are in the global namespace. The
+remaining functions, which are usually specific to stlvecs, are in the stl
+namespace.
+
+Please note that "stlvec to stlvec" functions are provided by the pure-stl
+algorithm modules. Thus, for example, the stlvec module does not provide a
+function that maps one stlvec onto a new stlvec. That functionality, and more,
+is provided by stl::transform, which can be found in the stlvec::modifying
+module.
 
 Imports
 -------
@@ -582,33 +615,6 @@ To use the operations of this module, add the following import declaration
 to your program::
 
   using stlvec;
-
-Data Structure
---------------
-
-Currently, stlvecs are of the form (STLVEC x) or (CONST_STLVEC x), where
-STLVEC AND CONST_STLVEC are defined as nonfix symbols in the global namespace
-and x is a pointer to the underlying STL vector. E.g.::
-
-   > let v1 = stlvec (0..3); v1;
-   STLVEC #<pointer 0x915c8e0>
-
-   > members v1;
-   [0,1,2,3]
-
-   > let v2 = const_stlvec $ stlvec (0..3); v2;
-   CONST_STLVEC #<pointer 0x8c1dbf0>
-
-This representation may change in the future, and must not be relied upon
-by client modules. In particular, one must never attempt to use the
-embedded pointer directly.
-
-Functions that modify a stlvec will simply fail unless the stlvec is
-mutable::
-
-   > update v2 0 100;
-   update (CONST_STLVEC #<pointer 0x9f07690>) 0 100
-
 
 Operations in the Global Namespace
 ----------------------------------
@@ -640,8 +646,7 @@ treat the "unary" iterator tuple (sv) as (sv, stl::svbeg, stl::svend).
    be a stlvec, an iterator tuple(sv,first,last), a list or a vector (i.e., a
    matrix consisting of a single row or column). If source is a stlvec
    (mutable or const), the new const_stlvec shares source's underlying STL
-   vector. Beware of applying const_stlvec to a mutable_stlvec that is
-   accessible outside of local scope.
+   vector.
 
 .. function:: prefix # /stlvec sv
 
@@ -714,53 +719,8 @@ tuple. It is recommended that you use members instead.
 Note that ``==`` and ``~==`` are not defined for iterator tuples (the rules
 would never be executed because == is defined on tuples in the Prelude).
 
-Operations in the stl Namespace
--------------------------------
-
-.. namespace:: stl
-
-.. function:: vector (sv,first,last)
-
-   create a Pure vector that contains the members of sv[first,last)
-
-.. function:: erase (msv,first,last)
-              erase (msv,p)
-              erase msv
-
-   remove msv[first,last) from msv, remove msv!p from msv, or make msv
-   empty. Members are shifted to occupy vacated slots
-
-.. function:: allpairs bin_pred (sv1, first1, last1) (sv2, first2, last2)
-
-   returns true if bin_pred is true for all corresponding members of
-   sv1[first1, last1) and sv2[first2, last2)
-
-.. function:: bounds (sv,first,last)
-
-   throws out-of-bounds if first or last is out of bounds. returns the tuple
-   (sv,first,last) except that if first is stl::begin it will be replaced by 0
-   and if last is stl::svend it will be replaced by the number of elements in
-   sv.
-
-.. function:: reserve msv count
-
-   modify the underlying STL vector to have at least count slots, useful for
-   packing data into a fixed size vector and possibly to speed up the addition
-   of new members
-
-.. function:: capacity sv
-
-   return the number of slots (as opposed to the number of elements) held by
-   the underlying STL vector
-
-
-Convenience Functions
----------------------
-
 The stlvec module provides convenience functions that apply map, catmap,
 foldl, etc, to directly access Pure expressions stored in a stlvec.
-
-.. namespace:: ::
 
 .. function:: map /stlvec unary_fun (sv, first, last)
 
@@ -807,11 +767,45 @@ matrixes, primarily for use in matrix comprehensions.
 
 .. function:: colcatmap /stlvec unary_fun (sv, first, last)
 
-Please note that "stlvec to stlvec" functions are provided by the pure-stl
-algorithm modules. Thus, for example, the stlvec module does not provide a
-function that maps one stlvec onto a new stlvec. That functionality, and more,
-is provided by stl::transform, which can be found in the stlvec::modifying
-module.
+
+Operations in the stl Namespace
+-------------------------------
+
+.. namespace:: stl
+
+.. function:: vector (sv,first,last)
+
+   create a Pure vector that contains the members of sv[first,last)
+
+.. function:: erase (msv,first,last)
+              erase (msv,p)
+              erase msv
+
+   remove msv[first,last) from msv, remove msv!p from msv, or make msv
+   empty. Members are shifted to occupy vacated slots
+
+.. function:: allpairs bin_pred (sv1, first1, last1) (sv2, first2, last2)
+
+   returns true if bin_pred is true for all corresponding members of
+   sv1[first1, last1) and sv2[first2, last2)
+
+.. function:: bounds (sv,first,last)
+
+   throws out-of-bounds if first or last is out of bounds. returns the tuple
+   (sv,first,last) except that if first is stl::begin it will be replaced by 0
+   and if last is stl::svend it will be replaced by the number of elements in
+   sv.
+
+.. function:: reserve msv count
+
+   modify the underlying STL vector to have at least count slots, useful for
+   packing data into a fixed size vector and possibly to speed up the addition
+   of new members
+
+.. function:: capacity sv
+
+   return the number of slots (as opposed to the number of elements) held by
+   the underlying STL vector
 
 Examples
 --------
