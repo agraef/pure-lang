@@ -1,0 +1,17 @@
+
+/* The sieve of Erathosthenes, stlvec version. */
+
+using stlvec;
+
+// The sieve. Returns the number of primes up to n.
+sieve n = foldl sieve 0 (0..n-1)
+// Uncomment this to get the list of primes instead.
+//	  $$ filter ((~=)0) x
+with
+  sieve count i = count+1 when
+                    p = i+1; do (\j -> update x j 0) (i+p:i+2*p..n-1);
+                  end if x!i; // x!i is prime
+                = count otherwise;
+end when
+  x = stlvec (1..n); update x 0 0;
+end;

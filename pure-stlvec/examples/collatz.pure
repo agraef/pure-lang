@@ -1,0 +1,42 @@
+
+/* Compute the length of Collatz chains. See
+   http://en.wikipedia.org/wiki/Collatz_conjecture. */
+
+/* stlvec to cache intermediate results. The size of the vector (always a
+   machine int) determines how many values will be cached. */
+
+using system;
+using stlvec;
+
+extern int atoi(char*);
+
+const N = 1000000;
+let v = mkstlvec 0 (N+1);
+
+
+// Bound on int values so that we don't overflow int arithmetic.
+const nmax = ((1<<31)-2) div 3;
+
+/* Compute the maximum chain length for a given range of integers. */
+
+maxchain n m = foldl max 0 (map lenchain (n..m)) with
+  lenchain n = 1 + lenchain (collatz n) if n>N;
+    = 1 if n==1;
+    = k if k when k = v!int n end;
+    = k when k = 1 + lenchain (collatz n); update v (int n) k; end;
+  /* The Collatz iteration. This automatically switches to bigints to prevent
+     overflows. */
+  collatz n::int = n div 2 if n mod 2 == 0;
+    = 3 * n + 1 if n<=nmax;
+    = 3 * bigint n + 1;
+  collatz n = n div 2 if n mod 2 == 0;
+    = 3 * n + 1;
+end;
+
+// Example:
+// maxchain 1 1000000;
+
+main = if argc ~= 2 then puts "usage: collatz n"
+       else puts $ str (maxchain 1 (atoi (argv!1)));
+
+if compiling then () else main;
