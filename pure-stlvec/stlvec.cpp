@@ -365,7 +365,7 @@ void sv_clear(sv* vec)
   vec->clear();
 }
 
-bool sv_equal(px* comp, px* tpl1, px* tpl2)
+bool sv_allpairs(px* comp, px* tpl1, px* tpl2)
 {
   pxh_pred2 fun(comp);
   sv_iters itrs1(tpl1);

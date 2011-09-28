@@ -66,7 +66,7 @@ private extern void  sv_splice(void* vec, int b, expr* xs_it);
 private extern void  sv_erase(expr* it);
 private extern void  sv_clear(void* vec);
 
-private extern bool  sv_equal(expr* fun, expr* it, expr* it);
+private extern bool  sv_allpairs(expr* fun, expr* it, expr* it);
 private extern expr* sv_listmap(expr* fun, expr* it);
 private extern expr* sv_listcatmap(expr* fun, expr* it);
 private extern expr* sv_foldl(expr* fun, expr* val, expr* it);
@@ -103,6 +103,7 @@ ensure_end v e = if e == svend then sz
 
 ::const_stlvec (STLVEC v) = (CONST_STLVEC v);
 ::const_stlvec (CONST_STLVEC v) = (CONST_STLVEC v);
+::const_stlvec x = ::const_stlvec (::stlvec x);
 
 ::emptystlvec = STLVEC (sentry sv_delete (sv_make_a));
 
@@ -154,11 +155,6 @@ namespace stl;
 
 ::rmlast sv@(STLVEC v) = sv_pop_back v $$ sv;
 
-::update sv@(CONST_STLVEC v) p::int x = CONST_STLVEC v when
-     (STLVEC v1) = stlvec sv;
-     sv_put v1 p x;
-end;
-
 ::update sv@(STLVEC v) p::int x = sv_put v p x $$ sv;
 
 erase it@(STLVEC v, f::int, l::int) = sv_erase it $$ STLVEC v;
@@ -170,11 +166,11 @@ erase sv@(STLVEC v) = sv_clear v $$ sv;
 ::insert (STLVEC v, p::int) it::svit = sv_splice v p it $$ STLVEC v;
 ::insert (STLVEC v, p::int) xs::list = sv_splice v p xs $$ STLVEC v;
 
-allpairs bin_fun it1::svit it2::svit = sv_equal bin_fun it1 it2;
+allpairs bin_fun it1::svit it2::svit = sv_allpairs bin_fun it1 it2;
 
-(::==) sv1::stlvec sv2::svit = sv_equal (==) sv1 sv2;
+(::==) sv1::stlvec sv2::svit = sv_allpairs (==) sv1 sv2;
 
-(::~=) sv1::stlvec sv2::svit = ~sv_equal (==) sv1 sv2;
+(::~=) sv1::stlvec sv2::svit = ~sv_allpairs (==) sv1 sv2;
 
 ::map f it::svit = sv_listmap f it;
 

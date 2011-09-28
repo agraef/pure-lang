@@ -108,7 +108,7 @@ px*  sva_mismatch(px* tpl1, px* tpl2, px* comp)
 
 bool sva_equal(px* tpl1, px* tpl2, px* comp)
 {
-  return sv_equal(comp, tpl1, tpl2);
+  return sv_allpairs(comp, tpl1, tpl2);
 }
 
 int  sva_search(px* tpl1, px* tpl2, px* comp)

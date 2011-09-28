@@ -322,6 +322,74 @@ In short, when a pure-stlvec function detects "stl::svback" in a target
 iterator tuple, it constructs a STL "back inserter iterator" and passes it on
 to the corresponding wrapped STL function.
 
+Types
+-----
+
+pure-stlvec introduces six type tags, all of which are in the global namespace:
+
+.. type:: mutable_stlvec /type
+
+   The type for a mutable stlvec. The stlvec must have been constructed with
+   STLVEC.
+
+.. type:: const_stlvec /type
+
+   The type for an immutable stlvec. The stlvec must have been constructed
+   with CONST_STLVEC.
+
+.. type:: stlvec /type
+
+   The type for a stlvec, mutable or immutable. The stvec can be constructed
+   with STLVEC or CONST_STLVEC.
+
+.. type:: mutable_svit /type
+
+   The type for an iterator tuple whose underlying stlvec is mutable.
+
+.. type:: const_svit /type
+
+   The type for an iterator tuple whose underlying stlvec is immutable.
+ 
+.. type:: svit /type
+
+   The type for an iterator tuple. The underlying stlvec can be mutable
+   or immutable.
+
+Copy-On-Write Semantics
+-----------------------
+
+The pure-stlvec module functions do not implement automatic copy-on-write
+semantics. Functions that modify stlvec parameters will simply fail if they
+are passed a const_stlvec when they expect a mutable_stlvec.
+
+For those that prefer immutable data structures, stlvecs can be converted to
+const_stlvecs (usually after they have been created and modified within a
+function) by the ``const_stlvec`` function. This function converts a mutable
+stlvec to an immutable stlvec without changing the underlying STL vector. 
+
+Typically, a "pure" function that "updates" a stlvec passed to it as an
+argument will first copy the input stlvec to a new locally scoped (mutable)
+stlvec using the stlvec function. It will then modify the new stlvec and use
+const_stlvec to make the new stlvec immutable before it is returned. It should
+be noted that several of the STL algorithms have "copy" versions which place
+their results directly into a new stlvec, which can eliminate the need to copy
+the input stlvec. E.g.::
+
+    > let sv1 = stlvec ("a".."e");
+
+    > let sv2 = emptystlvec;
+
+    > stl::reverse_copy sv1 (sv2,stl::svback) $$ members sv2;
+    ["e","d","c","b","a"]
+
+Without reverse_copy, one have to copy sv1 into sv2 and then reverse sv2.
+
+If desired, in Pure it is easy to write functions that have automatic
+copy-on-write semantics. E.g., ::
+
+    > my_update csv::const_stlvec i x = my_update (stlvec csv) i x;
+    > my_update sv::stlvec i x = update sv i x;
+
 Documentation
 -------------
 
@@ -541,67 +609,6 @@ mutable::
    > update v2 0 100;
    update (CONST_STLVEC #<pointer 0x9f07690>) 0 100
 
-Types
------
-
-pure-stlvec introduces six type tags, all of which are in the global namespace:
-
-.. type:: mutable_stlvec /type
-
-   The type for a mutable stlvec. The stlvec must have been constructed with
-   STLVEC.
-
-.. type:: const_stlvec /type
-
-   The type for an immutable stlvec. The stlvec must have been constructed
-   with CONST_STLVEC.
-
-.. type:: stlvec /type
-
-   The type for a stlvec, mutable or immutable. The stvec can be constructed
-   with STLVEC or CONST_STLVEC.
-
-.. type:: mutable_svit /type
-
-   The type for an iterator tuple whose underlying stlvec is mutable.
-
-.. type:: const_svit /type
-
-   The type for an iterator tuple whose underlying stlvec is immutable.
- 
-.. type:: svit /type
-
-   The type for an iterator tuple. The underlying stlvec can be mutable
-   or immutable.
-
-
-Support for Copy-On-Write Semantics
------------------------------------
-
-The functions that create new stlvecs (emptystlvec, stlvec, and mkstlvec) all
-return mutable stlvecs. For those that prefer immutable data structures,
-stlvecs can be converted to immutable stlvecs (usually after they have been
-created and modified within a function) by the ``const_stlvec`` function. This
-function converts a mutable stlvec to an immutable stlvec without changing the
-underlying STL vector.
-
-Using a copy-on-write strategy it is possible to use stlvecs in a manner that
-is consistent with functional programming.  Typically, a function that
-"updates" a stlvec passed to it as an argument will copy the input stlvec to a
-new locally scoped mutable stlvec, modify the new stlvec and use const_stlvec
-to make the new stlvec immutable before it is returned. It should be noted
-that several of the STL algorithms have "copy" versions which place their
-results directly into a new stlvec, which can eliminate the need to copy the
-input stlvec. E.g.::
-
-    > let sv1 = stlvec ("a".."e");
-
-    > let sv2 = emptystlvec;
-
-    > stl::reverse_copy sv1 (sv2,stl::svback) $$ members sv2;
-    ["e","d","c","b","a"]
-
-Without reverse_copy, one have to copy sv1 into sv2 and then reverse sv2.
 
 Operations in the Global Namespace
 ----------------------------------
@@ -617,18 +624,24 @@ treat the "unary" iterator tuple (sv) as (sv, stl::svbeg, stl::svend).
 
 .. function:: stlvec source
 
-   create a new stlvec that contains the elements of source. source can be 
+   create a new stlvec that contains the elements of source; source can be 
    a stlvec, an iterator tuple(sv,first,last), a list or a vector (i.e.,
-   a matrix consisting of a single row or column)
+   a matrix consisting of a single row or column). The underlying STL vector
+   is always a new STL vector. I.e., if source is a stlvec the new stlvec does
+   not share source's underlying STL vector.
 
 .. function:: mkstlvec x count
 
    create a new stlvec consisting of count x's.
 
-.. function:: const_stlvec sv
+.. function:: const_stlvec source
 
-   create an immutable stlvec that shares the same underlying STL vector
-   with sv
+   create a new const_stlvec that contains the elements of source; source can
+   be a stlvec, an iterator tuple(sv,first,last), a list or a vector (i.e., a
+   matrix consisting of a single row or column). If source is a stlvec
+   (mutable or const), the new const_stlvec shares source's underlying STL
+   vector. Beware of applying const_stlvec to a mutable_stlvec that is
+   accessable outside of local scope.
 
 .. function:: prefix # /stlvec sv
 
@@ -747,7 +760,7 @@ Convenience Functions
 The stlvec module provides convenience functions that apply map, catmap,
 foldl, etc, to directly access Pure expressions stored in a stlvec.
 
-.. namespace:: ::
+.. namespace::
 
 .. function:: map /stlvec unary_fun (sv, first, last)
 

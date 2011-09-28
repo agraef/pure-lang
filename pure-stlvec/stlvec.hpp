@@ -88,7 +88,7 @@ extern "C" {
   void sv_pop_back(sv* vec);
   void sv_erase(px* tpl);
   void sv_clear(sv* vec);
-  bool sv_equal(px* fun, px* tpl1, px* tpl2);
+  bool sv_allpairs(px* fun, px* tpl1, px* tpl2);
 
   px*  sv_listmap(px* fun, px* tpl);
   px*  sv_listcatmap(px* fun, px* tpl);
