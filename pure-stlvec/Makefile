@@ -103,7 +103,7 @@ DLL_TRGS = $(addprefix $(DLL_DIR)/, $(DLLS))
 PUREFILES = $(addsuffix .pure, $(PURE_BASENAMES)) stlvec
 LIBFILES = $(PUREFILES) $(DLLS)
 INSTALLEDFILES = $(addprefix $(DESTDIR)$(libdir)/pure/, $(LIBFILES))
-DISTFILES = Makefile COPYING README config.guess *.pure stlvec/*.pure *.hpp *.cpp ut/*
+DISTFILES = Makefile COPYING README config.guess *.pure stlvec/*.pure *.hpp *.cpp ut/* examples/*.c examples/*.pure
 
 ### Make dlls
 
@@ -149,7 +149,7 @@ uninstall:
 
 dist:
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/stlvec && mkdir $(dist)/ut
+	mkdir $(dist) && mkdir $(dist)/examples && mkdir $(dist)/stlvec && mkdir $(dist)/ut
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
