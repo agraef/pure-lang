@@ -132,6 +132,7 @@ using system, stlvec, stlutil;
 
 namespace stl;
 
+extern int pure_sym(char* s);
 extern int atoi(char* s);
 
 def immutable = 0;
@@ -184,19 +185,10 @@ end;
 parse_field_specs nspace fields_spec = fdefs when
   fss = split "," (substr fields_spec 1 (#fields_spec-2));
   fdefs = map (parse_field_spec nspace settable) fss;
-//   do check_fnamespace fdefs;
-// end with
-//   check_fnamespace fdef = ok when
-//     ns = fnamespace fdef;
-//     ok = if ns ~= nspace then
-//            struct_err (sprintf "namespace conflict %s::%s" (ns, fname fdef))
-//          else ();
-//   end;
 end;
 
 eval_code print code = () when
   if print then puts (code + ";") else eval code;
-  //if ~print then puts ("|" + code + ";|") else ();
 end;
 
 mk_struct_constructors print ns name is_mutable fdefs = () when
@@ -238,8 +230,9 @@ end;
 mk_struct_accessors print ns name is_mutable fdefs = mk_a fdefs 0 with
   mk_a [] _ = ();
   mk_a (fdef:rest) ndx = mk_a rest (ndx+1) when
-    cd = ns_qual fdef + fname fdef + 
-      " (" + qname + sv_param + ") = sv!" + str ndx;
+    qfname = ns_qual fdef + fname fdef;
+    pure_sym(qfname);
+    cd = qfname + " (" + qname + sv_param + ") = sv!" + str ndx;
     eval_code print cd;
     if faccess fdef == readonly then ()
     else if is_mutable then
@@ -252,8 +245,11 @@ mk_struct_accessors print ns name is_mutable fdefs = mk_a fdefs 0 with
   mk_immutable_accessor fdef ndx = beg_set fdef +
     " (const_stlvec (update (stlvec sv) " +  (str ndx) + " x))";
   type_guard fd = if null t then t else ":: " + t when t = ftype fd end;
-  beg_set fdef = ns_qual fdef + "set_" + fname fdef + 
-    " (" +  qname + sv_param + ") x" + type_guard fdef + " = " + qname;
+  beg_set fdef = bs when
+    setname = ns_qual fdef + "set_" + fname fdef;
+    bs = setname + " (" +  qname + sv_param + ") x" + type_guard fdef + " = " + qname;
+    pure_sym(setname);
+  end;
   ns_qual fd = if null ns then ns else ns + "::";
 end when
   qname = if null ns then name else ns + "::" + name;
@@ -275,25 +271,4 @@ def defstruct name fields =
 
 def defstruct_code name fields = 
   mk_struct 1 (str ('name)) (str ('fields));
-
-
-// FIX set_name, set_age part fails if done in STL namespace
-// But entering eval of generated code at prompt works
-// ok with global namespace
-
-namespace ;
-
-stl::defstruct_code (thing/stl::immutable) //don't forget the () 
-{
-  idnum/stl::readonly,  //never changes
-  name.string,
-  age
-};
-
-stl::defstruct (thing/stl::immutable) //don't forget the () 
-{
-  idnum/stl::readonly,  //never changes
-  name.string,
-  age
-};
 
