@@ -1,8 +1,10 @@
-
+/* ut_stlstruct.pure */
 
 using system, stlstruct;
 
 namespace ;
+
+// worker ok
 
 stl::defstruct_code (worker/stl::immutable) //don't forget the () 
 {
@@ -11,7 +13,15 @@ stl::defstruct_code (worker/stl::immutable) //don't forget the ()
   unit.string
 };
 
+stl::defstruct (worker/stl::immutable) //don't forget the () 
+{
+  name.string,          
+  idnum/stl::readonly,        //never changes
+  unit.string
+};
+
 namespace fo;
+
 
 stl::defstruct_code fo::worker //fo:: required (::worker already defined)
 {
@@ -20,12 +30,33 @@ stl::defstruct_code fo::worker //fo:: required (::worker already defined)
   unit
 };
 
+// FIX -- generated code looks good. Even works if eval'd at prompt
+// but -- appears as if not evaluted when macro runs
+
+stl::defstruct fo::worker //fo:: required (::worker already defined)
+{
+  name.string,
+  idnum/stl::readonly,
+  unit
+};
+
+// executive ok
+
 stl::defstruct_code executive //fo:: not required 
 {
   name.string,
   idnum/stl::readonly,
   unit
 };
+
+stl::defstruct executive //fo:: not required 
+{
+  name.string,
+  idnum/stl::readonly,
+  unit
+};
+
+// robot ok
 
 stl::defstruct_code ::robot   //force robot into global namespace
 {
@@ -34,9 +65,11 @@ stl::defstruct_code ::robot   //force robot into global namespace
   unit
 };
 
+stl::defstruct ::robot   //force robot into global namespace
+{
+  idnum/stl::readonly,
+  name.string,
+  unit
+};
 
 
-
- 
-
-                  
