@@ -180,10 +180,10 @@ blank  [ \t\f\v\r]
     interp.warning(*yylloc, "warning: bad symbol '"+sym+
 		   "' in --required pragma");
 }
-^"#!"[ \t]*"--"[A-Za-z-]+[ \t]*("//".*)? {
+^"#!"[ \t]*"--"[A-Za-z0-9-]+[ \t]*("//".*)? {
   /* Pragmas. */
   char *s = strchr(yytext, '-')+2, *t = s;
-  while (isalpha(*t) || *t == '-') t++;
+  while (isalnum(*t) || *t == '-') t++;
   string opt0 = string(s, t-s);
   bool flag = opt0.substr(0,2) != "no";
   string opt = flag?opt0:opt0.substr(2);
@@ -199,6 +199,10 @@ blank  [ \t\f\v\r]
     interp.consts = flag;
   } else if (opt == "fold") {
     interp.folding = flag;
+  } else if (opt == "warn") {
+    interp.compat = flag;
+  } else if (opt == "warn2") {
+    interp.compat2 = flag;
   } else {
     interp.warning(*yylloc, "warning: unrecognized pragma '--"+opt0+"'");
   }
