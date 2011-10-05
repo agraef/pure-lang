@@ -450,8 +450,8 @@ pure_expr *pure_clear_sentry(pure_expr *x);
 #define PURE_POINTER_TAG 1
 
 pure_expr *pure_tag(int tag, pure_expr *x);
-int pure_get_tag(pure_expr *x);
-bool pure_check_tag(int tag, pure_expr *x);
+int pure_get_tag(const pure_expr *x);
+bool pure_check_tag(int tag, const pure_expr *x);
 int pure_make_tag();
 
 /* Highlevel pointer tag operations. These associate pointer tags with actual
@@ -469,6 +469,35 @@ int pure_make_tag();
 int pure_pointer_tag(const char *name);
 const char *pure_pointer_type(int tag);
 pure_expr *pure_pointer_cast(int tag, pure_expr *x);
+
+/* Custom pretty-printing of tagged pointers. This is supposed to be used from
+   C/C++ code to implement custom pretty-printing of opaque C/C++ data
+   structures, as a light-weight alternative to __show__ which only works with
+   tagged pointers.
+
+   pure_pointer_add_printer() registers a pretty-printer for a given tag. The
+   second argument is the pretty-printing function which must be declared as
+   const char *(print)(void*), and is supposed to return a static buffer
+   filled with the printable representation of the given pointer.
+
+   For instance, here's a sample pretty printer which reproduces Pure's
+   default unparsing of pointer values:
+
+   const char *printer(void *p) {
+     static char buf[100];
+     sprintf(buf, "#<pointer %p>", p);
+     return buf;
+   }
+
+   pure_pointer_printer() returns the pretty-printing function registered for
+   the given pointer tag, or NULL if none has been registered. This
+   information is stored with the interpreter instance, and used by the
+   interpreter's pretty-printing functions (unless overridden by custom
+   __show__ rules). */
+
+typedef const char *(*pure_printer_fun)(void*);
+void pure_pointer_add_printer(int tag, pure_printer_fun printer);
+pure_printer_fun pure_pointer_printer(int tag);
 
 /* Variable and constant definitions. These allow you to directly bind
    variable and constant symbols to pure_expr* values, as the 'let' and

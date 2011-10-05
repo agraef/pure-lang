@@ -966,8 +966,14 @@ ostream& operator << (ostream& os, const pure_expr *x)
     free(s);
     return os;
   }
-  case EXPR::PTR:
-    return os << "#<pointer " << x->data.p << ">";
+  case EXPR::PTR: {
+    int tag = pure_get_tag(x);
+    pure_printer_fun printer = pure_pointer_printer(tag);
+    if (printer)
+      return os << printer(x->data.p);
+    else
+      return os << "#<pointer " << x->data.p << ">";
+  }
   /* NOTE: For performance reasons, we don't do any custom representations for
      matrix elements. As a workaround, you can define __show__ on matrices as
      a whole. */

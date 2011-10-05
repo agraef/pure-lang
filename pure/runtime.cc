@@ -3249,7 +3249,7 @@ pure_expr *pure_tag(int tag, pure_expr *x)
 }
 
 extern "C"
-int pure_get_tag(pure_expr *x)
+int pure_get_tag(const pure_expr *x)
 {
   if (pure_is_pointer(x, 0)) {
 #if SIZEOF_VOID_P==8
@@ -3263,7 +3263,7 @@ int pure_get_tag(pure_expr *x)
 }
 
 extern "C"
-bool pure_check_tag(int tag, pure_expr *x)
+bool pure_check_tag(int tag, const pure_expr *x)
 {
   void *p;
   if (pure_is_pointer(x, &p)) {
@@ -3360,6 +3360,25 @@ pure_expr *pure_pointer_cast(int tag, pure_expr *x)
       return pure_tag(tag, pure_pointer(p));
   } else
     return 0;
+}
+
+extern "C"
+void pure_pointer_add_printer(int tag, pure_printer_fun printer)
+{
+  interpreter& interp = *interpreter::g_interp;
+  interp.pointer_type_printer[tag] = printer;
+}
+
+extern "C"
+pure_printer_fun pure_pointer_printer(int tag)
+{
+  interpreter& interp = *interpreter::g_interp;
+  map<int,pure_printer_fun>::iterator it =
+    interp.pointer_type_printer.find(tag);
+  if (it != interp.pointer_type_printer.end())
+    return it->second;
+  else
+    return NULL;
 }
 
 extern "C"
