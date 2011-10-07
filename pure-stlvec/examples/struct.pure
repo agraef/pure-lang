@@ -157,13 +157,14 @@ namespace as the name of the struct being defined.
 
 using system, "lib:stlcontainer";
 
-namespace struct;
+namespace stl;
 
 private extern void* sv_make_b(expr* xs_or_sm);
 private extern void* sv_make_c(expr* xs, int n);
 private extern void  sv_delete(void* vec);
 private extern void* sv_dup(expr* it);
 private extern expr* sv_vector(expr* it);
+private extern expr* sv_foldr(expr* fun, expr* val, expr* it);
 
 extern expr* sv_get(void* vec, int pos);
 extern void  sv_put(void* vec, int pos, expr* val);
@@ -179,6 +180,8 @@ def settable = 1;
 nonfix STRUCT;
 STRUCT = quote STRUCT;
 const struct_constr = "struct::STRUCT";
+
+type struct (STRUCT _ _ );
 
 nonfix struct_error;
 
@@ -311,17 +314,13 @@ mk_struct print name_spec field_specs = () when
   mk_struct_accessors print nspace name is_mutable fdefs;
 end;
 
-tostr (STRUCT x sv) = "struct "+(str x)+" "+(str $ sv_vector (STRUCT sv));
-
 def defstruct name fields = 
   struct::mk_struct 0 (str ('name)) (str ('fields));
 
 def defstruct_code name fields = 
   struct::mk_struct 1 (str ('name)) (str ('fields));
 
-vector x = ::vector x;
+::members (STRUCT _ sv) = sv_foldr (\x xs->x:xs) [] (STRUCT sv);
 
-::vector (STRUCT x sv) = sv_vector (STRUCT sv);
-
-::__show__ s@(STRUCT x sv) = tostr s;
+struct_name (STRUCT name _) = str name; 
 
