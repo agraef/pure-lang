@@ -9719,7 +9719,7 @@ pure_expr *val(pure_expr *x)
 {
   void *p;
   const char *s;
-  if (pure_is_pointer(x, &p)) {
+  if (pure_is_pointer(x, &p) && pure_check_tag(0, x)) {
     Blob b(p);
     if (b.verify()) {
       //b.print_symtab();
@@ -9738,7 +9738,7 @@ extern "C"
 bool blobp(pure_expr *x)
 {
   void *p;
-  if (pure_is_pointer(x, &p) && p) {
+  if (pure_is_pointer(x, &p) && p && pure_check_tag(0, x)) {
     hdrdata *h = (hdrdata*)p;
     if (h->tag == (int32_t)MAGIC)
       return h->n1 >= h->n2;
@@ -9754,7 +9754,7 @@ extern "C"
 pure_expr *blob_size(pure_expr *x)
 {
   void *p;
-  if (pure_is_pointer(x, &p) && p) {
+  if (pure_is_pointer(x, &p) && p && pure_check_tag(0, x)) {
     hdrdata *h = (hdrdata*)p;
     if (h->tag == (int32_t)MAGIC)
       return pure_uint64(h->n1);
@@ -9770,7 +9770,7 @@ extern "C"
 pure_expr *blob_crc(pure_expr *x)
 {
   void *p;
-  if (pure_is_pointer(x, &p) && p) {
+  if (pure_is_pointer(x, &p) && p && pure_check_tag(0, x)) {
     hdrdata *h = (hdrdata*)p;
     if (h->tag == (int32_t)MAGIC)
       return pure_int((int32_t)h->crc);
