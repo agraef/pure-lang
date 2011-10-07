@@ -179,7 +179,7 @@ def settable = 1;
 
 nonfix STRUCT;
 STRUCT = quote STRUCT;
-const struct_constr = "struct::STRUCT";
+const struct_constr = "stl::STRUCT";
 
 type struct (STRUCT _ _ );
 
@@ -200,24 +200,24 @@ struct_dup sv = sentry sv_delete (sv_dup (STRUCT sv));
 struct_put sv i x = sv_put sv i x $$ sv;
 
 // bootstrapped with ns = "zzz" then replace zzz:: with ""
-type field_def (struct::STRUCT field_def _);
-mk_field_def x = struct::STRUCT field_def (struct::struct_mk_sv x 4);
+type field_def (stl::STRUCT field_def _);
+mk_field_def x = stl::STRUCT field_def (stl::struct_mk_sv x 4);
 field_def v@{p0:: string,p1:: string,p2:: string,p3:: int} = 
-  struct::STRUCT field_def (struct::struct_sv v);
-field_def (struct::STRUCT field_def sv) = 
-  struct::STRUCT field_def (struct::struct_dup sv);
-fnamespace (struct::STRUCT field_def v) = struct::sv_get v 0;
-set_fnamespace (struct::STRUCT field_def sv) x:: string = 
-  struct::STRUCT field_def (struct::sv_put sv 0 x $$ sv);
-fname (struct::STRUCT field_def v) = struct::sv_get v 1;
-set_fname (struct::STRUCT field_def sv) x:: string = 
-  struct::STRUCT field_def (struct::sv_put sv 1 x $$ sv);
-ftype (struct::STRUCT field_def v) = struct::sv_get v 2;
-set_ftype (struct::STRUCT field_def sv) x:: string = 
-  struct::STRUCT field_def (struct::sv_put sv 2 x $$ sv);
-faccess (struct::STRUCT field_def v) = struct::sv_get v 3;
-set_faccess (struct::STRUCT field_def sv) x:: int = 
-  struct::STRUCT field_def (struct::sv_put sv 3 x $$ sv);
+  stl::STRUCT field_def (stl::struct_sv v);
+field_def (stl::STRUCT field_def sv) = 
+  stl::STRUCT field_def (stl::struct_dup sv);
+fnamespace (stl::STRUCT field_def v) = stl::sv_get v 0;
+set_fnamespace (stl::STRUCT field_def sv) x:: string = 
+  stl::STRUCT field_def (stl::sv_put sv 0 x $$ sv);
+fname (stl::STRUCT field_def v) = stl::sv_get v 1;
+set_fname (stl::STRUCT field_def sv) x:: string = 
+  stl::STRUCT field_def (stl::sv_put sv 1 x $$ sv);
+ftype (stl::STRUCT field_def v) = stl::sv_get v 2;
+set_ftype (stl::STRUCT field_def sv) x:: string = 
+  stl::STRUCT field_def (stl::sv_put sv 2 x $$ sv);
+faccess (stl::STRUCT field_def v) = stl::sv_get v 3;
+set_faccess (stl::STRUCT field_def sv) x:: int = 
+  stl::STRUCT field_def (stl::sv_put sv 3 x $$ sv);
 
 parse_field_spec default_namespace default_access spec = fdef when
   field_pat ="^[[:space:]]*([^ ./]+)(\\.[^ ./]+)?(/[[:digit:]])?$";
@@ -264,13 +264,13 @@ mk_struct_constructors print ns name fdefs = () when
   params = join "," $ zipwith mkparam ftypes (0..inf);
   eval_code print ("type " + qname + " (" + constr_name + " _)");
   cd = mk_qname ns ("mk_" + name) + " x = " +
-    constr_name + " (struct::struct_mk_sv x " + str (#ftypes) + ")";
+    constr_name + " (stl::struct_mk_sv x " + str (#ftypes) + ")";
   eval_code print cd;
   cd = qname + " v@{" + params + "} = " + constr_name + 
-    " (struct::struct_sv v)";
+    " (stl::struct_sv v)";
   eval_code print cd;
   cd = qname + " (" + constr_name + " sv) = " + constr_name + 
-    " (struct::struct_dup sv)";
+    " (stl::struct_dup sv)";
   eval_code print cd;
 end with
  mkparam ftype i = sprintf "p%d%s" (i,tguard) when
@@ -283,7 +283,7 @@ mk_struct_accessors print ns name is_mutable fdefs = mk_a fdefs 0 with
   mk_a (fdef:rest) ndx = mk_a rest (ndx+1) when
     qfname = mk_qname ns (fname fdef);
     pure_sym(qfname);
-    cd = qfname + " (" + constr_name + " v) = struct::sv_get v " + str ndx;
+    cd = qfname + " (" + constr_name + " v) = stl::sv_get v " + str ndx;
     eval_code print cd;
     (str (qfname, faccess fdef));
     if faccess fdef == readonly then ()
@@ -293,9 +293,9 @@ mk_struct_accessors print ns name is_mutable fdefs = mk_a fdefs 0 with
       eval_code print (mk_immutable_setter fdef ndx);
   end;
   mk_mutable_setter fdef ndx = setter_lhs fdef + " = " + constr_name + 
-    " (struct::sv_put sv " + str ndx + " x $$ sv)";
+    " (stl::sv_put sv " + str ndx + " x $$ sv)";
   mk_immutable_setter fdef ndx = setter_lhs fdef + " = " + constr_name + 
-    " (struct::struct_put (struct::struct_dup sv) " + str ndx + " x)";
+    " (stl::struct_put (stl::struct_dup sv) " + str ndx + " x)";
   type_guard fd = if null t then t else ":: " + t when t = ftype fd end;
   setter_lhs fdef = lhs when
     setter_name = mk_qname ns ("set_" + fname fdef);
@@ -315,10 +315,10 @@ mk_struct print name_spec field_specs = () when
 end;
 
 def defstruct name fields = 
-  struct::mk_struct 0 (str ('name)) (str ('fields));
+  stl::mk_struct 0 (str ('name)) (str ('fields));
 
 def defstruct_code name fields = 
-  struct::mk_struct 1 (str ('name)) (str ('fields));
+  stl::mk_struct 1 (str ('name)) (str ('fields));
 
 ::members (STRUCT _ sv) = sv_foldr (\x xs->x:xs) [] (STRUCT sv);
 

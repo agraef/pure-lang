@@ -15,7 +15,7 @@ included with the pure-stlvec distribution package for details.
 */
 
 
-using stlvec;
+using stlvec, stlstruct;
 
 namespace stl;
 
@@ -29,8 +29,8 @@ join_with sep strs = strcat (intersperse sep strs);
 
 /*** readable representation of a stlvec or range ************************/
 
-tostr sz::int it::svit = tostr (sz,",") it;
-tostr (sz::int,sep::string) it::svit = res when
+tostr sz::int it::svit = tostr (sz, ",") it;
+tostr (sz::int, sep::string) it::svit = res when
   sv,b,e = bounds it;
   sz = if sz <= 0 then 1000 else sz;
   rsz = e-b;
@@ -41,6 +41,20 @@ tostr (sz::int,sep::string) it::svit = res when
   pfx = if typep mutable_svit it then "sv{" else "csv{";
   pfx = if b > 0 then pfx + " " else pfx;
   res = pfx + s + sfx;
+end;
+
+/*** readable representation of a stl::struct ***************************/
+
+tostr sz::int s::struct = tostr (sz, ",") s;
+tostr (sz::int, sep::string) s::struct = res when
+  memstrs = join_with sep $ map memstr (members s);
+  res = "struct "+(stl::struct_name s)+" {"+memstrs+"\n  }";
+end with
+  memstr x = "\n  " + ms when
+    ms = if typep stlvec x then tostr (sz, sep) x 
+         else if typep stl::struct x then tostr (sz, sep) x
+         else str x;
+  end;
 end;
 
 /*** consider putting this in .purerc ***********************************/
