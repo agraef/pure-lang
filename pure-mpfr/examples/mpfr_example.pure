@@ -1,0 +1,45 @@
+
+// A few simple multiprecision math examples using the mpfr module.
+
+using mpfr;
+
+/* Set the desired mpfr precision (number of bits in the mantissa). You can
+   basically choose any value >=2 here. Note that the mpfr default is 53,
+   which corresponds to double precision. Here are some alternative standard
+   values that you might want to use. */
+
+mpfr_set_default_prec 64; // extended precision (long double on x86)
+//mpfr_set_default_prec 113; // quadruple precision
+
+/* You can also adjust the number of decimal digits of the mantissa in the
+   print representation like this. */
+
+//mpfr_set_print_prec 20;
+
+// pi with the current mpfr precision
+let Pi = 4*atan (mpfr 1);
+
+// mpfr is an instance of Pure's real type
+pi; Pi;
+mpfrp pi, realp pi;
+mpfrp Pi, realp Pi;
+
+/* Note that you can change the default precision at any time, but existing
+   mpfr numbers always keep the precision they were created with, which can be
+   queried with mpfr_get_prec. Moreover, it's possible to convert an existing
+   mpfr number to a *new* number with any given precision by invoking the
+   mpfr function with an additional precision argument, as shown below. */
+
+Pi; mpfr_get_prec Pi;
+let Pi1 = mpfr (Pi,53); Pi1; mpfr_get_prec Pi1;
+
+// mixed arithmetic works with any combination of real and mpfr numbers
+pi; Pi; abs (Pi-pi);
+let Pi2 = Pi^2;
+Pi2; sqrt Pi2; sqrt Pi2 == Pi;
+
+// complex mpfr numbers
+let z = mpfr 2^(1/i); z;
+let z = ln z/ln (mpfr 2); z;
+abs z, arg z;
+polar z;
