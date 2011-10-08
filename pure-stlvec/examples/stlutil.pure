@@ -26,6 +26,11 @@ intersperse sep (x:xs) = x:sep:intersperse sep xs;
 
 join_with sep strs = strcat (intersperse sep strs);
 
+index_if f xs = ndx xs 0 with
+  ndx [] _ = -1;
+  ndx (x:xs) n = if f x then n else ndx xs (n+1); 
+end;
+
 /*** readable representation of a stlvec or range ************************/
 
 tostr sz::int it::svit = tostr (sz, ",") it;
@@ -92,5 +97,48 @@ end;
 // line number of last line returned by fgets, -1 after fgets returning
 // eof_val or before any fgets. Must be called immediately after fgets
 (::#) ffp::ff_info = line_num ffp;
+
+
+/*** Parameter file parsing functions ***********************************/
+
+  strip_comments s = regsub (\_->"\n") "//[^\n]*\n" REG_EXTENDED s 0;
+
+
+// Return (ok, stlvec of parsed values) in the same order as the
+// (key,parse_fun) pairs contained in key_funs
+parse_parameter_file key_funs::list fp = err_count==0, sv when
+  ss = split ";" $ strip_comments (fget fp);
+  do parse_param ss;
+  err_count, _ = foldl check_for_missing_param (0,0) sv;
+end with 
+  parse_param s = () when
+    ris = reg_info $ regex "^\\s*(\\w*)\\s*=(.*)" REG_EXTENDED s 0; 
+    key_str, param = if null ris then "", "" else ris!3, val (ris!5);
+    ndx = index_if (\(k,_)->k==key_str) key_funs;
+    if ndx >= 0 then 
+      update sv ndx ((key_funs!ndx!kf_fun) param)
+    else ();
+  end;
+  check_for_missing_param (err_count, ndx) param = 
+    if sv!ndx === () then 
+      fprintf stderr "bad or missing parameter parameter: %s\n" 
+                     (key_funs!ndx!kf_key) $$
+      (err_count+1, ndx+1)
+    else (err_count, ndx+1);
+end when
+  sv = mkstlvec () (#key_funs);
+  kf_key = 0;
+  kf_fun = 1;
+end;
+
+// Parse and return a value of that satisfies p, else ()
+parse_parameter p x = if p x then x else ();
+
+// Parse and return a list of values that satisfy p, else ()
+parse_parameter_list p xs = if rlistp xs && all p xs then xs else ();
+
+// Parse and return a vector of values that satisfy p, else ()
+parse_parameter_vector p v = if vectorp v && all p v then v else ();
+
 
 

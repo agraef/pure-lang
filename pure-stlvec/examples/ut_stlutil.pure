@@ -1,0 +1,61 @@
+
+using system, stlutil;
+
+::__show__ s:: stl::struct = stl::tostr 5 s;
+
+::__show__  it::svit = stl::tostr 5 it;
+
+
+line_filter line::string = ~is_comment line && ~is_ws line with
+  is_comment line = regex "^[[:space:]]*#" REG_NOSUB line 0;
+  is_ws line = regex "^[[:space:]]*$" REG_NOSUB line 0;
+end;
+
+test_filter = () when
+  fp = fopen "junk.txt" "w";
+  fputs "# comment line\ntext 1\n  \t\ntext 3\n" fp;
+  fclose fp;
+  fp = fopen "junk.txt" "r";
+  ffp = filter line_filter fp;
+  ok1 = #ffp == -1;
+  ok2 = ~feof ffp;
+  ok3 = fgets ffp == "text 1\n";
+  ok4 = #ffp == 1;
+  ok5 = fgets ffp == "text 3\n";
+  ok6 = #ffp == 3;
+  ok7 = feof ffp;
+  ok8 = #ffp == -1;
+  puts $ str [ok1,ok2,ok3,ok4,ok5,ok6,ok7,ok8];
+  fclose fp;
+end;
+
+/*** test config file parsing ******************************************/
+
+type my_pair_type (s::string, i::int);
+
+string_ok s = stringp s && ~null s && #s < 100;
+
+flag_ok flags x = charp x && index flags x >= 0; 
+
+const name_parser_pairs =  
+[
+ ("int_param", stl::parse_parameter intp),
+ ("double_param", stl::parse_parameter doublep),
+ ("string_param", stl::parse_parameter string_ok),
+ ("flag_param", stl::parse_parameter (flag_ok "abc")),
+ ("string_list_param", stl::parse_parameter_list stringp),
+ ("tuple_vector_param", stl::parse_parameter_vector (typep my_pair_type))
+];
+
+const params = "sv{3,3.5,\"Hi\",\"a\",[\"ab\",\"cd\"],{(\"a\",1),(\"b\",2)}}";
+
+test_parse_parameter_file = () when 
+  fp = fopen "ut_stlutil_paramfile.txt" "r";  
+  ok1, res = stl::parse_parameter_file name_parser_pairs fp;
+  ok2 = if ok1 then (stl::tostr 7 res) == params else 0;
+  puts $ str ok1;
+  puts (str (stl::tostr 7 res));
+  puts $ str [ok1, ok2];
+  fclose fp;
+end;
+
