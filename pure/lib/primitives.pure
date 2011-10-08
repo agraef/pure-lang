@@ -2,7 +2,7 @@
 /* Pure primitives. These operations are implemented either directly by
    machine instructions or by C functions provided in the runtime. */
 
-/* Copyright (c) 2008-2010 by Albert Graef <Dr.Graef@t-online.de>.
+/* Copyright (c) 2008-2011 by Albert Graef <Dr.Graef@t-online.de>.
 
    This file is part of the Pure standard library.
 
@@ -33,8 +33,8 @@ using namespace __C;
    provided in the runtime. In particular, this module defines the basic
    arithmetic and logic operations on machine integers, bigints and floating
    point numbers, as well as various type checking predicates and conversions
-   between different types. Some low-level pointer operations are also
-   provided, as well as "sentries" (Pure's flavour of object finalizers) and
+   between different types. Some basic pointer operations are also provided,
+   as well as "sentries" (Pure's flavour of object finalizers) and
    "references" (mutable expression pointers).
 
    Special Constants
@@ -89,13 +89,11 @@ using namespace __C;
    Numbers`_.)
 
    The above operations are implemented for int, bigint and, where
-   appropriate, double and pointer operands. (Pointer arithmetic comprises
-   ``+`` and ``-`` and works in the usual way, i.e., ``p-q`` returns the byte
-   offset between two pointers ``p`` and ``q``, and ``p+n`` or ``p-n`` offsets
-   a pointer ``p`` by the given integer ``n`` denoting the amount of bytes.) 
-   The math module (see `Mathematical Functions`_) also provides
-   implementations of the arithmetic and comparison operators for rational,
-   complex and complex rational numbers.
+   appropriate, double operands. (Pointer arithmetic and comparisons are
+   provided in a separate module, see `Pointer Arithmetic`_.) The math module
+   (see `Mathematical Functions`_) also provides implementations of the
+   arithmetic and comparison operators for rational, complex and complex
+   rational numbers.
 
    Note that the logical operations are actually implemented as special forms
    in order to provide for short-circuit evaluation. This needs special
@@ -213,9 +211,16 @@ using namespace __C;
    .. function:: int x
                  bigint x
                  double x
-                 pointer x
 
-      Conversions between the different numeric and pointer types.
+      Conversions between the different numeric types.
+
+   .. function:: pointer x
+
+      Convert a string, int or bigint to a pointer value. Converting a string
+      returns a pointer to the underlying UTF8-encoded C string so that it can
+      be passed to the appropriate C functions. Converting an integer gives a
+      pointer with the given numeric address. This may be used to construct
+      special pointer values such as the null pointer (``pointer 0``).
 
    .. function:: ubyte x
                  ushort x
@@ -1082,7 +1087,7 @@ rlistp x	= typep ('rlist) x;
 
 extern int hash(expr*);
 
-/* Conversions between the different numeric and pointer types. */
+/* Conversions between the different numeric types. */
 
 namespace __C;
 extern expr* pure_intval(expr*), expr* pure_dblval(expr*),
@@ -1091,23 +1096,25 @@ namespace;
 
 int x::int		= x;
 int x::bigint		|
-int x::double		|
-int x::pointer		= pure_intval x;
+int x::double		= pure_intval x;
 
 bigint x::bigint	= x;
 bigint x::int		|
-bigint x::double	|
-bigint x::pointer	= pure_bigintval x;
+bigint x::double	= pure_bigintval x;
 
 double x::double	= x;
 double x::int		|
 double x::bigint	= pure_dblval x;
 
+/* Pointer conversions. */
+
 pointer x::pointer	= x;
 pointer x::int		|
 pointer x::bigint	|
-pointer x::double	|
 pointer x::string	= pure_pointerval x;
+
+const NULL = pointer 0; // the null pointer
+null x::pointer = x===NULL;
 
 /* Convert signed (8/16/32/64) bit integers to the corresponding unsigned
    quantities. */
@@ -1387,26 +1394,6 @@ x::double^y::bigint	= x^(double y);
 x::int^y::double	|
 x::bigint^y::double	= (double x)^y;
 
-/* Pointer arithmetic. We do this using bigints, so that the code is portable
-   to 64 bit systems. */
-
-const NULL = pointer 0; // the null pointer
-
-null x::pointer		= bigint x==0;
-
-x::pointer-y::pointer	= bigint x-bigint y;
-x::pointer+y::int	= pointer (bigint x+y);
-x::pointer+y::bigint	= pointer (bigint x+y);
-x::pointer-y::int	= pointer (bigint x-y);
-x::pointer-y::bigint	= pointer (bigint x-y);
-
-x::pointer<y::pointer	= bigint x <  bigint y;
-x::pointer>y::pointer	= bigint x >  bigint y;
-x::pointer<=y::pointer	= bigint x <= bigint y;
-x::pointer>=y::pointer	= bigint x >= bigint y;
-x::pointer==y::pointer	= bigint x == bigint y;
-x::pointer~=y::pointer	= bigint x ~= bigint y;
-
 /* IEEE floating point infinities and NaNs. Place these after the definitions
    of the built-in operators so that the double arithmetic works. */
 
@@ -1463,8 +1450,10 @@ extern expr* pure_sort(expr* p, expr *xs) = sort;
    Pointer Operations
    ~~~~~~~~~~~~~~~~~~
 
-   These are lowlevel operations dealing with pointer values. The usual
-   caveats apply, so *only* use these directly if you know what you're doing!
+   The prelude provides a few basic operations on pointers which make it easy
+   to interface to external C functions. For more advanced uses, the library
+   also includes the :mod:`pointers` module which can be imported explicitly
+   if needed, see `Pointer Arithmetic`_ below.
 
    .. function:: addr symbol
 
@@ -1483,14 +1472,23 @@ extern expr *pure_addr(char *s) = addr;
                  free ptr
 
       Interface to ``malloc``, ``free`` and friends. These let you allocate
-      dynamic buffers (represented as Pure pointer values) for various nasty
+      dynamic buffers (represented as Pure pointer values) for various
       purposes. */
 
 extern void* calloc(size_t nmembers, size_t size);
 extern void* malloc(size_t size), void* realloc(void* ptr, size_t size);
 extern void free(void* ptr);
 
-/* .. function:: get_byte ptr
+/* ..
+
+   The following functions perform direct memory accesses through pointers.
+   Their primary use is to interface to certain C library functions which take
+   or return data through pointers. It goes without saying that these
+   operations should be used with utmost care. No checking is done on the
+   pointer types, so it is the programmer's responsibility to ensure that the
+   pointers actually refer to the corresponding type of data.
+
+   .. function:: get_byte ptr
                  get_short ptr
                  get_int ptr
                  get_int64 ptr
@@ -1499,7 +1497,11 @@ extern void free(void* ptr);
                  get_double ptr
                  get_string ptr
                  get_pointer ptr
-                 put_byte ptr x
+
+      Return the integer, floating point, string or generic pointer value at
+      the memory location indicated by ``ptr``.
+
+   .. function:: put_byte ptr x
                  put_short ptr x
                  put_int ptr x
                  put_int64 ptr x
@@ -1509,8 +1511,8 @@ extern void free(void* ptr);
                  put_string ptr x
                  put_pointer ptr x
 
-      These operations perform direct memory accesses. Use with care ... or
-      else! */
+      Change the integer, floating point, string or generic pointer value at
+      the memory location indicated by ``ptr`` to the given value ``x``. */
 
 namespace __C;
 extern int pointer_get_byte(void *ptr);

@@ -1,7 +1,7 @@
 
 /* Basic string functions. */
 
-/* Copyright (c) 2008-2010 by Albert Graef <Dr.Graef@t-online.de>.
+/* Copyright (c) 2008-2011 by Albert Graef <Dr.Graef@t-online.de>.
 
    This file is part of the Pure standard library.
 
@@ -316,11 +316,12 @@ byte_string_pointer xs	= if null p then throw malloc_error
 			  else make_pointer (map byte_string xs)
 with
   make_pointer xs = ptrtag charpp_t $ sentry free_pointer p when
-    dowith (\i x -> put_pointer (p+i*SIZEOF_POINTER) x) (0..n-1) xs;
+    dowith (\i x -> put_pointer (shift_pointer p i) x) (0..n-1) xs;
   end;
   free_pointer p = free p when
-    do (\i -> free (get_pointer (p+i*SIZEOF_POINTER))) (0..n-1);
+    do (\i -> free (get_pointer (shift_pointer p i))) (0..n-1);
   end;
+  shift_pointer p i = pointer (pure_bigintval p+i*SIZEOF_POINTER);
 end
 when
   n = #xs; p = calloc (n+1) SIZEOF_POINTER;
@@ -331,11 +332,12 @@ byte_cstring_pointer xs	= if null p then throw malloc_error
 			  else make_pointer (map byte_cstring xs)
 with
   make_pointer xs = ptrtag charpp_t $ sentry free_pointer p when
-    dowith (\i x -> put_pointer (p+i*SIZEOF_POINTER) x) (0..n-1) xs;
+    dowith (\i x -> put_pointer (shift_pointer p i) x) (0..n-1) xs;
   end;
   free_pointer p = free p when
-    do (\i -> free (get_pointer (p+i*SIZEOF_POINTER))) (0..n-1);
+    do (\i -> free (get_pointer (shift_pointer p i))) (0..n-1);
   end;
+  shift_pointer p i = pointer (pure_bigintval p+i*SIZEOF_POINTER);
 end
 when
   n = #xs; p = calloc (n+1) SIZEOF_POINTER;
@@ -402,7 +404,8 @@ end if (rlistp xs || smatrixp xs) && all stringp xs;
 string_list n p::pointer = list $ takewhile stringp [p!i | i = 0..n-1]
 with
   p!i = if null q then q else string_dup q
-	when q = get_pointer (p+i*SIZEOF_POINTER) end;
+	when q = get_pointer (shift_pointer p i) end;
+  shift_pointer p i = pointer (pure_bigintval p+i*SIZEOF_POINTER);
 end if ~null p && (intp n || infp n);
 
 string_vector n p::pointer = vector xs if listp xs when
@@ -412,7 +415,8 @@ end;
 cstring_list n p::pointer = list $ takewhile stringp [p!i | i = 0..n-1]
 with
   p!i = if null q then q else cstring_dup q
-	when q = get_pointer (p+i*SIZEOF_POINTER) end;
+	when q = get_pointer (shift_pointer p i) end;
+  shift_pointer p i = pointer (pure_bigintval p+i*SIZEOF_POINTER);
 end if ~null p && (intp n || infp n);
 
 cstring_vector n p::pointer = vector xs if listp xs when

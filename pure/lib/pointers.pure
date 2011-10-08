@@ -1,0 +1,99 @@
+
+/* Lowlevel pointer operations. Use with care. */
+
+/* NOTE: This module isn't loaded by the standard prelude, so you'll have to
+   add the clause 'using pointers;' to your programs in which you want to use
+   this interface. */
+
+/* Copyright (c) 2008-2011 by Albert Graef <Dr.Graef@t-online.de>.
+
+   This file is part of the Pure standard library.
+
+   The Pure standard library is free software: you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public License as
+   published by the Free Software Foundation, either version 3 of the License,
+   or (at your option) any later version.
+
+   Pure is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+   FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
+   more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>. */
+
+/* .. module:: pointers
+
+   Pointer Arithmetic
+   ~~~~~~~~~~~~~~~~~~
+
+   The pointers.pure module provides the usual C-style pointer arithmetic and
+   comparisons of pointer values. This module normally is not included in the
+   prelude, so to use these operations, you have to add the following import
+   declaration to your program::
+
+     using pointers;
+
+   The module overloads the comparison and some of the arithmetic operators
+   (cf. Arithmetic_) so that they can be used to compare pointers and to
+   perform C-style pointer arithmetic. To these ends, some conversions between
+   pointers and numeric types are also provided.
+
+   .. function:: int /pointer p
+                 bigint /pointer p
+
+      Convert a pointer to an int or bigint, giving its numeric address value,
+      which usually denotes a byte offset relative to the beginning of the
+      memory of the executing process. This value can then be used in
+      arithmetic operations and converted back to a pointer using the
+      :func:`pointer` function from the prelude. (Note that to make this work
+      on 64 bit systems, you'll have to convert the pointer values to
+      bigints.)
+
+   .. function:: infix + /pointer p n
+      		 infix - /pointer p n
+      		 infix - /pointerdiff p q
+
+      Pointer arithmetic. ``p+n`` and ``p-n`` offsets a pointer ``p`` by the
+      given integer ``n`` denoting the amount of bytes. In addition, ``p-q``
+      returns the byte offset between two pointers ``p`` and ``q``. Note that,
+      in contrast to C pointer arithmetic which also takes into account the
+      base type of the pointer, the Pure operations always use byte offsets,
+      no matter what type of pointer (as given by the pointer tag) is passed
+      to these operations.
+
+   .. function:: infix == /pointer p q
+      		 infix ~= /pointer p q
+
+      Pointer equality and inequality. This is exactly the same as syntactic
+      equality on pointers.
+
+   .. function:: infix <= /pointer p q
+      		 infix >= /pointer p q
+		 infix > /pointer p q
+		 infix < /pointer p q
+
+      Pointer comparisons. One pointer ``p`` is considered to be "less" than
+      another pointer ``q`` if it represents a "lower" address in memory,
+      i.e., if the byte offset ``p-q`` is negative. */
+
+using namespace __C;
+
+int x::pointer		= pure_intval x;
+bigint x::pointer	= pure_bigintval x;
+
+/* Pointer arithmetic. We do this using bigints, so that the code is portable
+   to 64 bit systems. */
+
+x::pointer-y::pointer	= bigint x-bigint y;
+x::pointer+y::int	= pointer (bigint x+y);
+x::pointer+y::bigint	= pointer (bigint x+y);
+x::pointer-y::int	= pointer (bigint x-y);
+x::pointer-y::bigint	= pointer (bigint x-y);
+
+x::pointer<y::pointer	= bigint x <  bigint y;
+x::pointer>y::pointer	= bigint x >  bigint y;
+x::pointer<=y::pointer	= bigint x <= bigint y;
+x::pointer>=y::pointer	= bigint x >= bigint y;
+x::pointer==y::pointer	= bigint x == bigint y;
+x::pointer~=y::pointer	= bigint x ~= bigint y;
