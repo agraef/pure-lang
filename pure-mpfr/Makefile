@@ -37,7 +37,7 @@ uninstall:
 
 DISTFILES = Makefile $(modname).c $(modname).pure examples/*.pure
 
-dist = $(modname)-$(modversion)
+dist = pure-$(modname)-$(modversion)
 
 dist: $(DISTFILES)
 	rm -rf $(dist)
