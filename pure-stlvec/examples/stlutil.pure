@@ -14,7 +14,6 @@ included with the pure-stlvec distribution package for details.
 
 */
 
-
 using stlvec, stlstruct;
 
 namespace stl;
@@ -57,7 +56,41 @@ end with
   end;
 end;
 
-/*** consider putting this in .purerc ***********************************/
+/*** filtered_files ***************************************************/
 
-//::__show__  it::svit = tostr 5 it;
+#! --nowarn
+stl::defstruct ff_info
+{
+ file_pointer.pointer/readonly,
+ filter_fun/readonly,
+ eof_val/readonly,
+ bfr,
+ line_num.int
+};
+#! --warn
+
+::filter (p,eof_val) fp = ff_info {fp,p,eof_val,0,-1};
+::filter p fp = ::filter (p,-1) fp;
+
+::fgets ffp::ff_info = res when
+  fp = file_pointer ffp;
+  next = bfr ffp;
+  set_bfr ffp 0;
+  res = if stringp next && (filter_fun ffp) next then 
+          next 
+        else if feof fp then
+          set_line_num ffp (-1) $$
+          eof_val ffp
+        else 
+          set_bfr ffp (fgets fp) $$ 
+          set_line_num ffp (line_num ffp + 1) $$
+          fgets ffp;
+end; 
+
+::feof ffp::ff_info = ~stringp (bfr ffp) when set_bfr ffp (fgets ffp) end;
+
+// line number of last line returned by fgets, -1 after fgets returning
+// eof_val or before any fgets. Must be called immediately after fgets
+(::#) ffp::ff_info = line_num ffp;
+
 
