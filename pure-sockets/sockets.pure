@@ -178,7 +178,9 @@ sockaddrs (family::int,host::string,port::string)
   seqless (n1,_) (n2,_) = n1<n2;
 end when
   addrs = list $ takewhile (\p->~null p)
-  	  [get_pointer (res+i*SIZEOF_POINTER) | i = 0..inf];
+  	  [get_pointer (shift res i) | i = 0..inf] with
+	    shift p i = pointer (__C::pure_bigintval p+i*SIZEOF_POINTER);
+	  end;
   free res;
   sockaddr_t = pointer_tag "sockaddr*";
 end if ~null res when

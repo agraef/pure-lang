@@ -1,4 +1,4 @@
-/* /usr/local/include/lo/lo.h: */
+/* /usr/include/lo/lo.h: */
 using "lib:lo";
 
 namespace lo;
@@ -260,7 +260,9 @@ decode_arg _   p::pointer = p; // unknown
 
 decode_argv types::string p::pointer n::int = tuple $
   zipwith decode_arg (chars types)
-  [get_pointer (p+i*SIZEOF_POINTER) | i = 0..n-1];
+  [get_pointer (shift p i) | i = 0..n-1] with
+    shift p i = pointer (__C::pure_bigintval p+i*SIZEOF_POINTER);
+  end;
 
 /* This returns a triple host, port, protocol. */
 
