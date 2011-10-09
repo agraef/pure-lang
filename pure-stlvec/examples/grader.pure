@@ -1,0 +1,276 @@
+/* grader.pure - some utilities for working with stlvecs
+
+Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>.
+
+All rights reserved.
+
+This software is is part of pure-stlvec, an addon to the Pure Programming
+Language (http://code.google.com/p/pure-lang/).
+
+This software is distributed under a BSD-style license in the hope that it
+will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the COPYING file
+included with the pure-stlvec distribution package for details.
+
+*/
+
+/*** Imports and constants ************************************************/
+
+using system, stlvec, stlvec::algorithms,  stlstruct, stlutil;
+
+extern double atof(char*);
+extern double ceil(double x);
+ 
+const grade = 0;
+const points = 1;
+const count = 1;
+def ro = stl::readonly;
+
+/*** Data structures ******************************************************/
+
+type grade_pair (g::string, d::double);
+type key_fun (k::string, _); // fix
+
+#! --nowarn
+
+stl::defstruct student_info
+{
+ student_name.string/ro,
+ raw_scores.stlvec/ro,
+ combined_scores,                  // hws replaced by aggregate hw score
+ weighted_scores.stlvec,
+ total_score.double,
+ normal_score.double,           // from 0.0 to 100.0
+ curve_grade,
+ point_grade
+};
+
+stl::defstruct (score_info/stl::immutable)
+{
+ num_scores.int/ro,
+ normalizer.double/ro, 
+ hwstyle.string,
+ extra_homeworks.int/ro,
+ weights.stlvec/ro,
+ curve_grade_counts/ro,  // a list
+ point_grade_cutoffs.stlvec/ro
+};
+
+stl::defstruct state_info
+{
+ score_parameters,
+ student_infos.stlvec/ro,
+ data_ffp/ro,                         
+ num_errors.int
+};
+
+#! --warn
+
+/*** Helper functions ***************************************************/
+
+log_err S msg = () when
+  line_num = #(data_ffp S);
+  printf "log_err %s %s\n" (str line_num, str msg); 
+  if line_num > 0 then
+    fprintf "error: line %d, %s\n" (line_num, msg )
+  else
+    fprintf "error: %s\n" msg;
+  set_num_errors S (num_errors S + 1);
+end;
+
+si_filter line::string = ~is_comment line && ~is_ws line with
+  is_comment line = regex "^[[:space:]]*#" REG_NOSUB line 0;
+  is_ws line = regex "^[[:space:]]*$" REG_NOSUB line 0;
+end;
+
+flags_ok flags x = charp x && index flags x >= 0;  
+
+::__show__ s:: stl::struct = stl::tostr 5 s;
+
+::__show__  it::svit = stl::tostr 5 it;
+
+/*** Parse student data and make student_info **************************/
+
+const name_rest_pat = "\\s*\"([[:alpha:], ]+)\",\\s*([^\n]*)";
+
+parse_student_data S num_scores_needed line = ok, name, stlvec scores when
+  ris = list $ reg_info (regex name_rest_pat REG_EXTENDED line 0);
+  [ok, name, scores] = if null ris then [0, "", []] 
+                       else [1,ris!3,ris!5]; 
+  if ~ok then log_err S "badly formatted" line else ();
+  //printf "parse_student_data 1, %s\n" scores;
+  scores = if ok then parse_scores scores else [];
+end with
+  parse_scores s = scores when
+    scores = map val (split "," s);
+    scores = if #scores < num_scores_needed then 
+               log_err S "missing scores" $$ [] 
+             else if ~(all numberp scores) then
+               log_err S "at least one score is not a number" $$ []
+             else scores;
+    scores = map double scores;
+  end;
+end;
+
+// Make si_info
+mk_si weights hwstyle extra_hw normal name::string raw_scores = si when
+  num_tests = #weights - 1;
+  hws = stlvec (raw_scores,num_tests,stl::svend);
+  stl::nth_element (hws,0,extra_hw,stl::svend) (<);
+  stl::erase (hws,0,extra_hw);
+  num_hws = #hws;
+  total_hw = foldl (+) 0.0 hws;
+  hw_score = case hwstyle of
+    "a" = if num_hws > 0 then total_hw / num_hws else 0.0;
+    "m" = if num_hws > 0 then median hws else 0.0;
+    "t" = total_hw;
+  end;
+  c_scores = stlvec (raw_scores,0,num_tests);
+  append c_scores hw_score;
+  w_scores = emptystlvec;
+  stl::transform_2 weights (c_scores,0) (w_scores,stl::svback) (*);
+  score = stl::accumulate w_scores 0.0 (+);  
+  normalized_score = score * normal;
+  si = student_info {name, raw_scores, c_scores, w_scores, 
+                     score, normalized_score,"", ""};
+end with
+  median sv = m when 
+    mid = #sv div 2;
+    stl::nth_element (sv,0,mid,stl::svend) (<);
+    m = if #sv mod 2 then sv!mid else (sv!mid + sv!(mid-1)) / 2.0;
+  end;
+end;
+
+// For each line of student data, make a student_info including computed
+// total_score, and append the student_info to S's student_infos.
+
+read_student_infos S = () if feof (data_ffp S);
+read_student_infos S = read_student_infos S when
+  ps = score_parameters S;
+  line = fgets (data_ffp S);
+  ok, name, raw_scores = parse_student_data S (num_scores ps) line;
+  si = if ok then
+          mk_si (weights ps) (hwstyle ps) (extra_homeworks ps)
+         (normalizer ps) name raw_scores
+       else ();
+  if ok then append (student_infos S) si else ();
+end;
+
+
+/*** Make a new state_info ********************************************/
+
+const config_key_funs =
+[
+ ("homework_style", stl::parse_parameter (flags_ok "mat")),
+ ("extra_homeworks", stl::parse_parameter intp),
+ ("score_weights", stl::parse_parameter_list doublep),
+ ("curve_grade_counts", stl::parse_parameter_list (typep grade_pair)),
+ ("point_grade_cutoffs", stl::parse_parameter_list (typep grade_pair))
+];
+
+setup_state_info config_fp data_fp = ok, S when
+  ffp = filter si_filter data_fp;
+  S = state_info {(), emptystlvec, ffp, 0};
+  ok1, name, scores = if ~feof ffp then parse_student_data S 0 (fgets ffp) 
+                       else log_err S "missing perfect student" $$ 0,"",[];
+  ok2, config_sv = stl::parse_parameter_file config_key_funs config_fp;
+  ok = ok1 && ok2 && add_score_info (S:scores:(members config_sv));
+end with
+  add_score_info [S, scores, hwstyle, extra_hws, 
+                  weights, cg_counts, pg_cutoffs] = perfect > 0.0    
+  when
+    sws = stlvec weights;
+    si = if ~null scores then
+           mk_si sws hwstyle extra_hws 1.0 "perfect"  scores
+         else ();
+    perfect = if ~null scores then total_score si else 0.0;
+    factor = if perfect > 0.0 then 100.0 / perfect else 1.0; 
+    sci = score_info {#scores, factor, hwstyle, extra_hws, sws,
+                      cg_counts, stlvec pg_cutoffs};
+    set_score_parameters S sci;
+  end;
+end;
+
+/*** Assign grades based on curve or absolute point system ************/
+
+// sis is a vec of student infos - ordered by decreasing total_score
+// grade_cutoffs is cutoffs, highest first
+assign_point_grades sis::stlvec grade_cutoffs::stlvec = apg 0 0 with
+  apg gc_i s_i = () if gc_i < 0 || s_i < 0;
+  apg gc_i s_i = if below_grade_cutoff (grade_cutoffs!gc_i) (sis!s_i) 
+                 then apg (next_gc_i gc_i) s_i
+                 else apg_range gc_i s_i;
+  apg_range gc_i s_i = apg (next_gc_i gc_i) s_j when
+    gc = grade_cutoffs!gc_i;
+    s_j = stl::find_if (sis,s_i,stl::svend) (below_grade_cutoff gc);
+    do ((flip set_point_grade) (gc!grade)) (sis,s_i,s_j);
+   end;
+  below_grade_cutoff gc si = normal_score si < gc!points;
+  next_gc_i i = if j == #grade_cutoffs then stl::svend else j when j = i+1 end;
+end;
+
+// sis is a vec of student infos - ordered by decreasing total_score
+// grade_counts is number at each grade level, highest first 
+assign_curve_grades sis::stlvec grade_counts = () when
+  acg (adjust grade_counts)  0; 
+end with
+  acg [] _ = (); // error
+  acg _ i = () if i < 0;
+  acg (gc:gcs) i = acg gcs j when 
+    j = i + gc!count;
+    j = if j >= #sis then stl::svend else j;
+    do ((flip set_curve_grade) (gc!grade)) (sis,i,j);
+  end;
+  adjust curve_counts = members counts when
+    counts = stlvec $ 0.0:(map (!count) curve_counts);
+    stl::partial_sum counts (counts,0) (+);
+    students_factor = #sis / last counts;
+    stl::transform counts (counts,0) (int . ceil . (students_factor*));
+    stl::adjacent_difference counts (counts,0) (-);
+    grades = stlvec $ map (!grade) curve_counts;
+    stl::transform_2 grades (counts,0) (counts,0) (\ltr c-> (ltr,c));
+   end;
+end;
+
+assign_grades S = () when
+  sis = student_infos S;
+  sps = score_parameters S;
+  stl::sort sis (\s1 s2->(total_score s1) > (total_score s2));
+  assign_point_grades sis (point_grade_cutoffs sps);
+  assign_curve_grades sis (curve_grade_counts sps);
+end;
+
+/*** Reports ********************************************************/
+
+print_student max_name_length student = () when
+  score = total_score student;
+  name = (student_name student);
+  fill = strcat (repeat (max_name_length - #name) " ");
+  printf "%s %s %f" (name, fill, score);
+end;
+
+print_report S = do (puts . str) (student_infos S);
+
+/*** Main ************************************************************/
+
+main = () when
+  config = fopen "grader_config.txt" "r";
+  in = fopen "grader_data.txt" "r";
+  ok1 = pointerp config && ~null config;
+  ok2 = pointerp in && ~null in;
+  if ~ok1 then puts "Can't open source file" else ();
+  if ~ok2 then puts "Can't open configuration file" else ();
+  init_ok, S = if ok1 && ok2 then 
+                 setup_state_info config in 
+               else 0, ();
+  if init_ok then read_student_infos S else 0;
+  fclose config;
+  fclose in;
+  if init_ok && num_errors S == 0 then 
+    assign_grades S $$ 
+    print_report S 
+  else 
+     printf "aborted with %d data errors\n" (num_errors S);
+ end;
+
+

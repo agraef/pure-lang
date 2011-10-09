@@ -101,9 +101,6 @@ end;
 
 /*** Parameter file parsing functions ***********************************/
 
-  strip_comments s = regsub (\_->"\n") "//[^\n]*\n" REG_EXTENDED s 0;
-
-
 // Return (ok, stlvec of parsed values) in the same order as the
 // (key,parse_fun) pairs contained in key_funs
 parse_parameter_file key_funs::list fp = err_count==0, sv when
@@ -125,6 +122,7 @@ end with
                      (key_funs!ndx!kf_key) $$
       (err_count+1, ndx+1)
     else (err_count, ndx+1);
+  strip_comments s = regsub (\_->"\n") "//[^\n]*\n" REG_EXTENDED s 0;
 end when
   sv = mkstlvec () (#key_funs);
   kf_key = 0;
