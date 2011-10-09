@@ -99,6 +99,21 @@ static const char *mpfr_str(mpfr_ptr p)
   }
 }
 
+static int mpfr_prec(mpfr_ptr x)
+{
+  /* Calculate the (normalized) precedence of an mpfr value, so that the
+     pretty-printer can print it in a syntactically correct way. This is the
+     precedence of unary minus if the number is negative (including -inf), and
+     NPREC_MAX otherwise (atomic value). */
+  if (mpfr_sgn(x) < 0)
+    /* Unfortunately, we can't query the precedence of unary minus directly,
+       but it always has the same precedence level as binary minus and prefix
+       fixity. */
+    return (pure_sym_nprec(pure_sym("-"))/10)*10+OP_PREFIX;
+  else
+    return NPREC_MAX;
+}
+
 /* Initialize the mpfr* tag and return its value. This also sets up the
    pretty-printing and defines some manifest constants. */
 
@@ -107,7 +122,8 @@ int mpfr_tag(void)
   static int t = 0;
   if (!t) {
     t = pure_pointer_tag("mpfr*");
-    pure_pointer_add_printer(t, (pure_printer_fun)mpfr_str);
+    pure_pointer_add_printer(t, (pure_printer_fun)mpfr_str,
+			     (pure_printer_prec_fun)mpfr_prec);
     pure_def(pure_sym("MPFR_RNDN"), pure_int(MPFR_RNDN));
     pure_def(pure_sym("MPFR_RNDZ"), pure_int(MPFR_RNDZ));
     pure_def(pure_sym("MPFR_RNDU"), pure_int(MPFR_RNDU));
