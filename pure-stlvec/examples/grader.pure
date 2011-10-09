@@ -18,25 +18,26 @@ included with the pure-stlvec distribution package for details.
 
 using system, stlvec, stlvec::algorithms,  stlstruct, stlutil;
 
-extern double atof(char*);
+using namespace stl (svend svbeg svback readonly);
+
+//extern double atof(char*);
 extern double ceil(double x);
  
-const grade = 0;
-const points = 1;
-const count = 1;
-def ro = stl::readonly;
-
 /*** Data structures ******************************************************/
 
-type grade_pair (g::string, d::double);
-type key_fun (k::string, _); // fix
+// Tuple types for grade levels and their ! accessors
+type grade_count (g::string, d::double);  // e.g., ("B+",    3) 
+type grade_cutoff (g::string, d::double); // e.g., ("B+", 87.0)
+const gc_grade = 0;   
+const gc_points = 1;
+const gc_count = 1;
 
 #! --nowarn
 
 stl::defstruct student_info
 {
- student_name.string/ro,
- raw_scores.stlvec/ro,
+ student_name.string/readonly,
+ raw_scores.stlvec/readonly,
  combined_scores,                  // hws replaced by aggregate hw score
  weighted_scores.stlvec,
  total_score.double,
@@ -47,20 +48,20 @@ stl::defstruct student_info
 
 stl::defstruct (score_info/stl::immutable)
 {
- num_scores.int/ro,
- normalizer.double/ro, 
+ num_scores.int/readonly,
+ normalizer.double/readonly, 
  hwstyle.string,
- extra_homeworks.int/ro,
- weights.stlvec/ro,
- curve_grade_counts/ro,  // a list
- point_grade_cutoffs.stlvec/ro
+ extra_homeworks.int/readonly,
+ weights.stlvec/readonly,
+ curve_grade_counts.stlvec/readonly,
+ point_grade_cutoffs.stlvec/readonly
 };
 
 stl::defstruct state_info
 {
  score_parameters,
- student_infos.stlvec/ro,
- data_ffp/ro,                         
+ student_infos.stlvec/readonly,
+ data_ffp/readonly,                         
  num_errors.int
 };
 
@@ -115,8 +116,8 @@ end;
 // Make si_info
 mk_si weights hwstyle extra_hw normal name::string raw_scores = si when
   num_tests = #weights - 1;
-  hws = stlvec (raw_scores,num_tests,stl::svend);
-  stl::nth_element (hws,0,extra_hw,stl::svend) (<);
+  hws = stlvec (raw_scores,num_tests,svend);
+  stl::nth_element (hws,0,extra_hw,svend) (<);
   stl::erase (hws,0,extra_hw);
   num_hws = #hws;
   total_hw = foldl (+) 0.0 hws;
@@ -136,7 +137,7 @@ mk_si weights hwstyle extra_hw normal name::string raw_scores = si when
 end with
   median sv = m when 
     mid = #sv div 2;
-    stl::nth_element (sv,0,mid,stl::svend) (<);
+    stl::nth_element (sv,0,mid,svend) (<);
     m = if #sv mod 2 then sv!mid else (sv!mid + sv!(mid-1)) / 2.0;
   end;
 end;
@@ -164,8 +165,8 @@ const config_key_funs =
  ("homework_style", stl::parse_parameter (flags_ok "mat")),
  ("extra_homeworks", stl::parse_parameter intp),
  ("score_weights", stl::parse_parameter_list doublep),
- ("curve_grade_counts", stl::parse_parameter_list (typep grade_pair)),
- ("point_grade_cutoffs", stl::parse_parameter_list (typep grade_pair))
+ ("curve_grade_counts", stl::parse_parameter_list (typep grade_count)),
+ ("point_grade_cutoffs", stl::parse_parameter_list (typep grade_cutoff))
 ];
 
 setup_state_info config_fp data_fp = ok, S when
@@ -186,7 +187,7 @@ end with
     perfect = if ~null scores then total_score si else 0.0;
     factor = if perfect > 0.0 then 100.0 / perfect else 1.0; 
     sci = score_info {#scores, factor, hwstyle, extra_hws, sws,
-                      cg_counts, stlvec pg_cutoffs};
+                      stlvec cg_counts, stlvec pg_cutoffs};
     set_score_parameters S sci;
   end;
 end;
@@ -196,40 +197,45 @@ end;
 // sis is a vec of student infos - ordered by decreasing total_score
 // grade_cutoffs is cutoffs, highest first
 assign_point_grades sis::stlvec grade_cutoffs::stlvec = apg 0 0 with
-  apg gc_i s_i = () if gc_i < 0 || s_i < 0;
+  apg svend _ = ();
+  apg _ svend = ();
   apg gc_i s_i = if below_grade_cutoff (grade_cutoffs!gc_i) (sis!s_i) 
                  then apg (next_gc_i gc_i) s_i
                  else apg_range gc_i s_i;
   apg_range gc_i s_i = apg (next_gc_i gc_i) s_j when
     gc = grade_cutoffs!gc_i;
-    s_j = stl::find_if (sis,s_i,stl::svend) (below_grade_cutoff gc);
-    do ((flip set_point_grade) (gc!grade)) (sis,s_i,s_j);
-   end;
-  below_grade_cutoff gc si = normal_score si < gc!points;
-  next_gc_i i = if j == #grade_cutoffs then stl::svend else j when j = i+1 end;
+    s_j = stl::find_if (sis,s_i,svend) (below_grade_cutoff gc);
+    do ((flip set_point_grade) (gc!gc_grade)) (sis,s_i,s_j);
+  end;
+  below_grade_cutoff gc si = normal_score si < gc!gc_points;
+  next_gc_i i = if j == #grade_cutoffs then svend else j when j = i+1 end;
 end;
 
-// sis is a vec of student infos - ordered by decreasing total_score
+// sis is a stlvec of student infos - ordered by decreasing total_score
 // grade_counts is number at each grade level, highest first 
-assign_curve_grades sis::stlvec grade_counts = () when
-  acg (adjust grade_counts)  0; 
-end with
-  acg [] _ = (); // error
-  acg _ i = () if i < 0;
-  acg (gc:gcs) i = acg gcs j when 
-    j = i + gc!count;
-    j = if j >= #sis then stl::svend else j;
-    do ((flip set_curve_grade) (gc!grade)) (sis,i,j);
+assign_curve_grades grade_counts::stlvec sis::stlvec = 
+  if null grade_counts || null sis then () else acg 0 0 with
+    acg svend _ = (); // error
+    acg _ svend = ();
+    acg gc_i sis_b = acg next_gc_i sis_e when 
+      gc = grade_counts!gc_i;
+      sis_e = sis_b + gc!gc_count;
+      sis_e = if sis_e >= #sis then svend else sis_e;
+      do ((flip set_curve_grade) (gc!gc_grade)) (sis,sis_b,sis_e);
+      next_gc_i = if gc_i == #grade_counts - 1 then svend else gc_i + 1;
+    end;
   end;
-  adjust curve_counts = members counts when
-    counts = stlvec $ 0.0:(map (!count) curve_counts);
-    stl::partial_sum counts (counts,0) (+);
-    students_factor = #sis / last counts;
-    stl::transform counts (counts,0) (int . ceil . (students_factor*));
-    stl::adjacent_difference counts (counts,0) (-);
-    grades = stlvec $ map (!grade) curve_counts;
-    stl::transform_2 grades (counts,0) (counts,0) (\ltr c-> (ltr,c));
-   end;
+
+adjust_curve curve_counts::stlvec num_students = counts when
+  grades = emptystlvec;
+  stl::transform curve_counts (grades, svback) (!gc_grade);
+  counts = mkstlvec 0.0 1; 
+  stl::transform curve_counts (counts, svback) (!gc_count);
+  stl::partial_sum counts (counts,0) (+);
+  students_factor = num_students / last counts;
+  stl::transform counts (counts,0) (int . ceil . (students_factor*));
+  stl::adjacent_difference counts (counts,0) (-);
+  stl::transform_2 grades (counts,0) (counts,0) (\ltr c-> (ltr,c));
 end;
 
 assign_grades S = () when
@@ -237,7 +243,8 @@ assign_grades S = () when
   sps = score_parameters S;
   stl::sort sis (\s1 s2->(total_score s1) > (total_score s2));
   assign_point_grades sis (point_grade_cutoffs sps);
-  assign_curve_grades sis (curve_grade_counts sps);
+  adjusted_curve = adjust_curve (curve_grade_counts sps) (#sis);
+  assign_curve_grades adjusted_curve sis;
 end;
 
 /*** Reports ********************************************************/
