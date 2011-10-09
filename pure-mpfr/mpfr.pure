@@ -1,0 +1,251 @@
+
+/* mpfr.pure: multiprecision floating point numbers via GNU mpfr */
+
+/* NOTE: This module requires Pure 0.48 or later. */
+
+/* Copyright (c) 2011 by Albert Graef <Dr.Graef@t-online.de>.
+
+   This file is part of the Pure standard library.
+
+   The Pure standard library is free software: you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public License as
+   published by the Free Software Foundation, either version 3 of the License,
+   or (at your option) any later version.
+
+   Pure is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+   FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
+   more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>. */
+
+// Pull in the math module. We extend some of its definitions below.
+using math;
+
+/* This module makes the mpfr multiprecision floats available in Pure, so that
+   they work with the other types of Pure numbers in an almost seamless
+   fashion. The mpfr values, while they're really mpfr_t pointers in C land,
+   can be created with and freely passed as arguments to the mpfr functions.
+
+   The module defines mpfr values as an instance of Pure's real type. Memory
+   management of these values is automatic. You can create an mpfr value from
+   any other kind of Pure real value (int/bigint/double), or from a string in
+   decimal notation, using the mpfr function. Back conversions are provided
+   from mpfr to int, bigint, double and string (the latter by means of a
+   custom pretty-printer installed by this module, so that mpfr values are
+   printed in a format similar to printf's %e). Integration with Pure's
+   complex type is provided as well.
+
+   Please note that this module needs more testing and the API hasn't been
+   finalized yet, but it should be perfectly usable already. As usual, please
+   report any bugs on the Pure issue tracker, on the Pure mailing list, or
+   directly to the author(s), see http://pure-lang.googlecode.com/. */
+
+using "lib:mpfr";
+
+extern int    mpfr_tag();
+extern expr*  mpfr_from_double(double, int);
+extern expr*  mpfr_from_mpfr(mpfr*, int);
+extern expr*  mpfr_from_bigint(void*, int);
+extern expr*  mpfr_from_str(char*, int);
+extern double mpfr_to_double(mpfr*);
+extern int    mpfr_to_int(mpfr*);
+extern expr*  mpfr_to_bigint(mpfr*);
+
+extern expr*  neg_mpfr(mpfr*);
+extern expr*  add_mpfr(mpfr*, mpfr*);
+extern expr*  sub_mpfr(mpfr*, mpfr*);
+extern expr*  mul_mpfr(mpfr*, mpfr*);
+extern expr*  div_mpfr(mpfr*, mpfr*);
+extern expr*  pow_mpfr(mpfr*, mpfr*);
+
+extern int    mpfr_cmp(mpfr*, mpfr*);
+
+extern expr*  sqrt_mpfr(mpfr*);
+extern expr*  exp_mpfr(mpfr*);
+extern expr*  log_mpfr(mpfr*);
+extern expr*  log10_mpfr(mpfr*);
+
+extern expr*  sin_mpfr(mpfr*);
+extern expr*  cos_mpfr(mpfr*);
+extern expr*  tan_mpfr(mpfr*);
+extern expr*  asin_mpfr(mpfr*);
+extern expr*  acos_mpfr(mpfr*);
+extern expr*  atan_mpfr(mpfr*);
+extern expr*  atan2_mpfr(mpfr*, mpfr*);
+
+extern expr*  sinh_mpfr(mpfr*);
+extern expr*  cosh_mpfr(mpfr*);
+extern expr*  tanh_mpfr(mpfr*);
+extern expr*  asinh_mpfr(mpfr*);
+extern expr*  acosh_mpfr(mpfr*);
+extern expr*  atanh_mpfr(mpfr*);
+
+/* These are provided by the mpfr library to access the current default
+   precision and rounding mode, as well as the precision of an mpfr number
+   (see the mpfr documentation for details). Note that mpfr numbers always
+   keep the precision they were created with, which can be queried with
+   mpfr_get_prec. Also note that the default precedence must at least be 2 and
+   the default rounding mode must be one of the constants defined in mpfr.h,
+   otherwise you're going to get an assertion from the mpfr library. */
+
+extern int  mpfr_get_default_prec();
+extern void mpfr_set_default_prec(int prec);
+extern int  mpfr_get_default_rounding_mode();
+extern void mpfr_set_default_rounding_mode(int rnd);
+extern int  mpfr_get_prec(mpfr*);
+
+/* Two additional functions are provided by this module to access the current
+   print precision (number of decimal digits) used by the custom
+   pretty-printer. Default print precision is 0 which indicates full
+   precision; this guarantees that you can always recover the original mpfr
+   value from its string representation. */
+
+extern int  mpfr_get_print_prec();
+extern void mpfr_set_print_prec(int prec);
+
+// mpfr type in Pure land (mpfr_t in C land) and corresponding type predicate
+let mpfr_t = mpfr_tag;
+type mpfr x::pointer = check_ptrtag mpfr_t x;
+mpfrp x = pointerp x && check_ptrtag mpfr_t x;
+
+// make mpfr an instance of the real type
+type real x::mpfr;
+
+/* Conversions. */
+
+/* When converting to an mpfr value, you can either specify a pair (x,p) where
+   p denotes the desired precision (an int), or just the value x to be
+   converted, in which case the current default precision is used. Note that
+   converting an mpfr number to an mpfr number creates a *new* mpfr number
+   with the given (or current default) precision. */
+
+mpfr x::real | mpfr x::string = mpfr (x,mpfr_get_default_prec);
+
+mpfr (x::bigint,p::int) = mpfr_from_bigint x p;
+mpfr (x::double,p::int) = mpfr_from_double x p;
+mpfr (x::bigint % y::bigint,p::int) = mpfr (x,p) / mpfr (y,p);
+mpfr (x::real,p::int) = mpfr_from_double (double x) p;
+mpfr (x::mpfr,p::int) = mpfr_from_mpfr x p;
+mpfr (s::string,p::int) = x if typep mpfr x when x = mpfr_from_str s p end;
+
+double x::mpfr = mpfr_to_double x;
+int x::mpfr = mpfr_to_int x;
+bigint x::mpfr = mpfr_to_bigint x;
+
+/* Arithmetic. This includes mixed real/mpfr arithmetic. */
+
+-x::mpfr = neg_mpfr x;
+abs x::mpfr = if x>0 then x else -x;
+
+x::mpfr + y::mpfr = add_mpfr x y;
+x::real + y::mpfr = mpfr x + y;
+x::mpfr + y::real = x + mpfr y;
+
+x::mpfr - y::mpfr = sub_mpfr x y;
+x::real - y::mpfr = mpfr x - y;
+x::mpfr - y::real = x - mpfr y;
+
+x::mpfr * y::mpfr = mul_mpfr x y;
+x::real * y::mpfr = mpfr x * y;
+x::mpfr * y::real = x * mpfr y;
+
+x::mpfr / y::mpfr = div_mpfr x y;
+x::real / y::mpfr = mpfr x / y;
+x::mpfr / y::real = x / mpfr y;
+
+x::mpfr ^ y::mpfr = pow_mpfr x y;
+x::real ^ y::mpfr = mpfr x ^ y;
+x::mpfr ^ y::real = x ^ mpfr y;
+
+/* Comparisons. */
+
+x::mpfr == y::mpfr = mpfr_cmp x y == 0;
+x::real == y::mpfr = mpfr x == y;
+x::mpfr == y::real = x == mpfr y;
+
+x::mpfr ~= y::mpfr = mpfr_cmp x y ~= 0;
+x::real ~= y::mpfr = mpfr x ~= y;
+x::mpfr ~= y::real = x ~= mpfr y;
+
+x::mpfr <= y::mpfr = mpfr_cmp x y <= 0;
+x::real <= y::mpfr = mpfr x <= y;
+x::mpfr <= y::real = x <= mpfr y;
+
+x::mpfr >= y::mpfr = mpfr_cmp x y >= 0;
+x::real >= y::mpfr = mpfr x >= y;
+x::mpfr >= y::real = x >= mpfr y;
+
+x::mpfr < y::mpfr = mpfr_cmp x y < 0;
+x::real < y::mpfr = mpfr x < y;
+x::mpfr < y::real = x < mpfr y;
+
+x::mpfr > y::mpfr = mpfr_cmp x y > 0;
+x::real > y::mpfr = mpfr x > y;
+x::mpfr > y::real = x > mpfr y;
+
+/* Math functions. */
+
+sqrt_mpfr x::real = sqrt_mpfr (mpfr x);
+exp_mpfr x::real = exp_mpfr (mpfr x);
+log_mpfr x::real = log_mpfr (mpfr x);
+log10_mpfr x::real = log10_mpfr (mpfr x);
+
+sin_mpfr x::real = sin_mpfr (mpfr x);
+cos_mpfr x::real = cos_mpfr (mpfr x);
+tan_mpfr x::real = tan_mpfr (mpfr x);
+
+asin_mpfr x::real = asin_mpfr (mpfr x);
+acos_mpfr x::real = acos_mpfr (mpfr x);
+atan_mpfr x::real = atan_mpfr (mpfr x);
+
+atan2_mpfr y::mpfr x::real = atan2_mpfr y (mpfr x);
+atan2_mpfr y::real x::mpfr = atan2_mpfr (mpfr y) x;
+
+sinh_mpfr x::real = sinh_mpfr (mpfr x);
+cosh_mpfr x::real = cosh_mpfr (mpfr x);
+tanh_mpfr x::real = tanh_mpfr (mpfr x);
+
+asinh_mpfr x::real = asinh_mpfr (mpfr x);
+acosh_mpfr x::real = acosh_mpfr (mpfr x);
+atanh_mpfr x::real = atanh_mpfr (mpfr x);
+
+/* Overload some stuff from math.pure. */
+
+sqrt x::mpfr = sqrt_mpfr x;
+exp x::mpfr = exp_mpfr x;
+ln x::mpfr = log_mpfr x;
+log x::mpfr = log10_mpfr x;
+
+sin x::mpfr = sin_mpfr x;
+cos x::mpfr = cos_mpfr x;
+tan x::mpfr = tan_mpfr x;
+
+asin x::mpfr = asin_mpfr x;
+acos x::mpfr = acos_mpfr x;
+atan x::mpfr = atan_mpfr x;
+
+atan2 y::mpfr x::mpfr = atan2_mpfr y x;
+atan2 y::mpfr x::real = atan2_mpfr y (mpfr x);
+atan2 y::real x::mpfr = atan2_mpfr (mpfr y) x;
+
+sinh x::mpfr = sinh_mpfr x;
+cosh x::mpfr = cosh_mpfr x;
+tanh x::mpfr = tanh_mpfr x;
+
+asinh x::mpfr = asinh_mpfr x;
+acosh x::mpfr = acosh_mpfr x;
+atanh x::mpfr = atanh_mpfr x;
+
+/* Support for complex mpfr numbers. */
+
+complex x::mpfr = x +: mpfr 0.0;
+polar x::mpfr = x <: mpfr 0.0;
+rect x::mpfr = x +: mpfr 0.0;
+cis t::mpfr = rect (1<:t);
+
+arg x::mpfr = atan2 0 x;
+re x::mpfr = x;
+im x::mpfr = mpfr 0.0;
+conj x::mpfr = x;
