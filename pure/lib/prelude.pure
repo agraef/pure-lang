@@ -967,14 +967,14 @@ stream xs@(_,_)	= stream (list xs);
 
 public iterate iterwhile; // see below for these
 
-n1:n2..m	= if m===s then iterate (+k) n1
-		  else if m===-s then []
-		  else iterwhile (p m) (+k) n1
+n1:n2..m	= if nanp n1 || nanp m || double m===-s then []
+		  else if double m===s then iterate (+k) n1
+		  else iterwhile (p (m+0.5*k)) (+k) n1
 		  when s,p = if k>0 then inf,(>=) else -inf,(<=) end
 		  if realp k && k~=0 && ~infp n1 && ~infp n2
 		  when k = n2-n1 end;
-n..m		= if m===inf then iterate (+1) n
-		  else if m===-inf then []
+n..m		= if nanp n || nanp m || double m===-inf then []
+		  else if double m===inf then iterate (+1) n
 		  else iterwhile ((>=) m) (+1) n
 		  if ~listp n && ~infp n;
 

@@ -1399,10 +1399,22 @@ x::bigint^y::double	= (double x)^y;
 
 const inf = 1.0e307 * 1.0e307; const nan = inf-inf;
 
-/* Predicates to check for inf and nan values. */
+/* Generic predicates to check for inf and nan values. These should work for
+   any kind of real type, as long as it supports conversion to double. */
 
-infp x		= case x of x::double = x==inf || x==-inf; _ = 0 end;
-nanp x		= case x of x::double = ~(x==x); _ = 0 end;
+infp x = case x of
+  x::double = x==inf || x==-inf;
+  x::int | x::bigint = 0;
+  x::real = case double x of x::double = infp x; _ = 0 end;
+  _ = 0;
+end;
+
+nanp x = case x of
+  x::double = ~(x==x);
+  x::int | x::bigint = 0;
+  x::real = case double x of x::double = nanp x; _ = 0 end;
+  _ = 0;
+end;
 
 /* Some common special cases of finite arithmetic sequences are implemented
    here using the runtime for better performance. */

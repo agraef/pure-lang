@@ -518,7 +518,7 @@ stream (x/*0:101*/:xs/*0:11*/) = x/*0:101*/:xs/*0:11*/ if thunkp xs/*0:11*/;
 stream (x/*0:101*/:xs/*0:11*/) = x/*0:101*/:stream xs/*1:11*/&;
 stream () = [];
 stream xs@(_/*0:101*/,_/*0:11*/) = stream (list xs/*0:1*/);
-n1/*0:0101*/:n2/*0:011*/..m/*0:1*/ = if m/*2:1*/===s/*0:01*/ then iterate (flip (+) k/*1:*/) n1/*2:0101*/ else if m/*2:1*/===-s/*0:01*/ then [] else iterwhile (p/*0:1*/ m/*2:1*/) (flip (+) k/*1:*/) n1/*2:0101*/ when s/*0:01*/,p/*0:1*/ = if k/*0:*/>0 then inf,(>=) else -inf,(<=) {
+n1/*0:0101*/:n2/*0:011*/..m/*0:1*/ = if nanp n1/*2:0101*/||nanp m/*2:1*/||double m/*2:1*/===-s/*0:01*/ then [] else if double m/*2:1*/===s/*0:01*/ then iterate (flip (+) k/*1:*/) n1/*2:0101*/ else iterwhile (p/*0:1*/ (m/*2:1*/+0.5*k/*1:*/)) (flip (+) k/*1:*/) n1/*2:0101*/ when s/*0:01*/,p/*0:1*/ = if k/*0:*/>0 then inf,(>=) else -inf,(<=) {
   rule #0: s,p = if k>0 then inf,(>=) else -inf,(<=)
   state 0: #0
 	<app> state 1
@@ -537,7 +537,7 @@ n1/*0:0101*/:n2/*0:011*/..m/*0:1*/ = if m/*2:1*/===s/*0:01*/ then iterate (flip 
 	<var> state 1
   state 1: #0
 } end;
-n/*0:01*/..m/*0:1*/ = if m/*0:1*/===inf then iterate (flip (+) 1) n/*0:01*/ else if m/*0:1*/===-inf then [] else iterwhile ((>=) m/*0:1*/) (flip (+) 1) n/*0:01*/ if ~listp n/*0:01*/&&~infp n/*0:01*/;
+n/*0:01*/..m/*0:1*/ = if nanp n/*0:01*/||nanp m/*0:1*/||double m/*0:1*/===-inf then [] else if double m/*0:1*/===inf then iterate (flip (+) 1) n/*0:01*/ else iterwhile ((>=) m/*0:1*/) (flip (+) 1) n/*0:01*/ if ~listp n/*0:01*/&&~infp n/*0:01*/;
 all p/*0:01*/ [] = 1;
 all p/*0:01*/ (x/*0:101*/:xs/*0:11*/) = p/*0:01*/ x/*0:101*/&&all p/*0:01*/ xs/*0:11*/;
 any p/*0:01*/ [] = 0;
