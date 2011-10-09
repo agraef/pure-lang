@@ -131,7 +131,7 @@ typedef struct _pure_mem {
 int32_t pure_sym(const char *s);
 int32_t pure_getsym(const char *s);
 const char *pure_sym_pname(int32_t sym);
-int8_t pure_sym_nprec(int32_t sym);
+int32_t pure_sym_nprec(int32_t sym);
 
 /* Expression constructors. pure_symbol takes the integer code of a symbol and
    returns that symbol as a Pure value. If the symbol is a global variable

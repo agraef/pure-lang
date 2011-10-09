@@ -1119,7 +1119,7 @@ const char *pure_sym_pname(int32_t tag)
 }
 
 extern "C"
-int8_t pure_sym_nprec(int32_t tag)
+int32_t pure_sym_nprec(int32_t tag)
 {
   assert(tag>0);
   interpreter& interp = *interpreter::g_interp;
