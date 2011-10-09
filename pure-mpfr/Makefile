@@ -35,7 +35,8 @@ uninstall:
 
 # Roll a distribution tarball.
 
-DISTFILES = COPYING COPYING.LESSER Makefile $(modname).c $(modname).pure examples/*.pure
+DISTFILES = COPYING COPYING.LESSER README Makefile \
+$(modname).c $(modname).pure examples/*.pure
 
 dist = pure-$(modname)-$(version)
 
