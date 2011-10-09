@@ -274,7 +274,7 @@ pure_expr *exp_mpfr(mpfr_ptr x)
   return make_mpfr(y);
 }
 
-pure_expr *log_mpfr(mpfr_ptr x)
+pure_expr *ln_mpfr(mpfr_ptr x)
 {
   mpfr_ptr y = malloc(sizeof(mpfr_t));
   if (!y) return NULL;
@@ -283,7 +283,7 @@ pure_expr *log_mpfr(mpfr_ptr x)
   return make_mpfr(y);
 }
 
-pure_expr *log10_mpfr(mpfr_ptr x)
+pure_expr *log_mpfr(mpfr_ptr x)
 {
   mpfr_ptr y = malloc(sizeof(mpfr_t));
   if (!y) return NULL;
