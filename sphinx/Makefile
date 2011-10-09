@@ -55,7 +55,7 @@ help:
 # needs to be updated (along with the toctree in the master document index.txt)
 # when the set of documentation changes.
 
-rst_sources = pure/pure.txt pure/purelib.txt faust2pd/faust2pd.txt gnumeric-pure/gnumeric-pure.txt pd-pure/pd-pure.txt pure-audio/pure-audio.txt pure-csv/pure-csv.txt pure-doc/pure-doc.txt pure-fastcgi/pure-fastcgi.txt pure-faust/pure-faust.txt pure-ffi/pure-ffi.txt pure-g2/pure-g2.txt pure-gen/pure-gen.txt pure-gl/pure-gl.txt pure-glpk/pure-glpk.txt pure-gplot/pure-gplot.txt pure-gsl/pure-gsl.txt pure-gtk/pure-gtk.txt pure-liblo/pure-liblo.txt pure-midi/pure-midi.txt pure-octave/pure-octave.txt pure-odbc/pure-odbc.txt pure-rational/pure-rational.txt pure-readline/pure-readline.txt pure-sockets/pure-sockets.txt pure-sql3/pure-sql3.txt pure-stlvec/pure-stlvec.txt pure-tk/pure-tk.txt pure-xml/pure-xml.txt
+rst_sources = pure/pure.txt pure/purelib.txt faust2pd/faust2pd.txt gnumeric-pure/gnumeric-pure.txt pd-pure/pd-pure.txt pure-audio/pure-audio.txt pure-csv/pure-csv.txt pure-doc/pure-doc.txt pure-fastcgi/pure-fastcgi.txt pure-faust/pure-faust.txt pure-ffi/pure-ffi.txt pure-g2/pure-g2.txt pure-gen/pure-gen.txt pure-gl/pure-gl.txt pure-glpk/pure-glpk.txt pure-gplot/pure-gplot.txt pure-gsl/pure-gsl.txt pure-gtk/pure-gtk.txt pure-liblo/pure-liblo.txt pure-midi/pure-midi.txt pure-mpfr/pure-mpfr.txt pure-octave/pure-octave.txt pure-odbc/pure-odbc.txt pure-rational/pure-rational.txt pure-readline/pure-readline.txt pure-sockets/pure-sockets.txt pure-sql3/pure-sql3.txt pure-stlvec/pure-stlvec.txt pure-tk/pure-tk.txt pure-xml/pure-xml.txt
 
 # Extra (static) rst sources.
 
