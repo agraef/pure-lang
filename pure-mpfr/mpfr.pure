@@ -45,10 +45,10 @@ using math;
 using "lib:mpfr";
 
 extern int    mpfr_tag();
-extern expr*  mpfr_from_double(double, int);
-extern expr*  mpfr_from_mpfr(mpfr*, int);
-extern expr*  mpfr_from_bigint(void*, int);
-extern expr*  mpfr_from_str(char*, int);
+extern expr*  mpfr_from_double(double, int, int);
+extern expr*  mpfr_from_mpfr(mpfr*, int, int);
+extern expr*  mpfr_from_bigint(void*, int, int);
+extern expr*  mpfr_from_str(char*, int, int);
 extern double mpfr_to_double(mpfr*);
 extern int    mpfr_to_int(mpfr*);
 extern expr*  mpfr_to_bigint(mpfr*);
@@ -116,20 +116,27 @@ type real x::mpfr;
 
 /* Conversions. */
 
-/* When converting to an mpfr value, you can either specify a pair (x,p) where
-   p denotes the desired precision (an int), or just the value x to be
-   converted, in which case the current default precision is used. Note that
-   converting an mpfr number to an mpfr number creates a *new* mpfr number
-   with the given (or current default) precision. */
+/* When converting to an mpfr value, you can either specify a pair (x,p) or
+   triple (x,p,r) where p denotes the desired precision (an int) and r denotes
+   the desired rounding mode (one of the MPFR_RND constants), or just the
+   value x to be converted, in which case the current default precision and
+   rounding mode is used. Note that converting an mpfr number to an mpfr
+   number creates a *new* mpfr number with the given (or current default)
+   precision. */
 
-mpfr x::real | mpfr x::string = mpfr (x,mpfr_get_default_prec);
+mpfr x::real | mpfr x::string =
+  mpfr (x,mpfr_get_default_prec);
+mpfr (x::real,p::int) | mpfr (x::string,p::int) =
+  mpfr (x,p,mpfr_get_default_rounding_mode);
 
-mpfr (x::bigint,p::int) = mpfr_from_bigint x p;
-mpfr (x::double,p::int) = mpfr_from_double x p;
-mpfr (x::bigint % y::bigint,p::int) = mpfr (x,p) / mpfr (y,p);
-mpfr (x::real,p::int) = mpfr_from_double (double x) p;
-mpfr (x::mpfr,p::int) = mpfr_from_mpfr x p;
-mpfr (s::string,p::int) = x if typep mpfr x when x = mpfr_from_str s p end;
+mpfr (x::bigint,p::int,r::int) = mpfr_from_bigint x p r;
+mpfr (x::double,p::int,r::int) = mpfr_from_double x p r;
+mpfr (x::bigint % y::bigint,p::int,r::int) = mpfr (x,p,r) / mpfr (y,p,r);
+mpfr (x::real,p::int,r::int) = mpfr_from_double (double x) p r;
+mpfr (x::mpfr,p::int,r::int) = mpfr_from_mpfr x p r;
+mpfr (s::string,p::int,r::int) = x if typep mpfr x when
+  x = mpfr_from_str s p r;
+end;
 
 double x::mpfr = mpfr_to_double x;
 int x::mpfr = mpfr_to_int x;

@@ -133,44 +133,52 @@ static pure_expr *make_mpfr(mpfr_ptr p)
 
 /* Conversions. */
 
-pure_expr *mpfr_from_double(double x, int prec)
+pure_expr *mpfr_from_double(double x, int prec, int rnd)
 {
   mpfr_ptr p = malloc(sizeof(mpfr_t));
   if (!p) return NULL;
   if (prec < MPFR_PREC_MIN) prec = MPFR_PREC_MIN;
+  if (rnd < MPFR_RNDN || rnd > MPFR_RNDA)
+    rnd = mpfr_get_default_rounding_mode();
   mpfr_init2(p, prec);
-  mpfr_set_d(p, x, mpfr_get_default_rounding_mode());
+  mpfr_set_d(p, x, rnd);
   return make_mpfr(p);
 }
 
-pure_expr *mpfr_from_mpfr(mpfr_ptr x, int prec)
+pure_expr *mpfr_from_mpfr(mpfr_ptr x, int prec, int rnd)
 {
   mpfr_ptr p = malloc(sizeof(mpfr_t));
   if (!p) return NULL;
   if (prec < MPFR_PREC_MIN) prec = MPFR_PREC_MIN;
+  if (rnd < MPFR_RNDN || rnd > MPFR_RNDA)
+    rnd = mpfr_get_default_rounding_mode();
   mpfr_init2(p, prec);
-  mpfr_set(p, x, mpfr_get_default_rounding_mode());
+  mpfr_set(p, x, rnd);
   return make_mpfr(p);
 }
 
-pure_expr *mpfr_from_bigint(mpz_t x, int prec)
+pure_expr *mpfr_from_bigint(mpz_t x, int prec, int rnd)
 {
   mpfr_ptr p = malloc(sizeof(mpfr_t));
   if (!p) return NULL;
   if (prec < MPFR_PREC_MIN) prec = MPFR_PREC_MIN;
+  if (rnd < MPFR_RNDN || rnd > MPFR_RNDA)
+    rnd = mpfr_get_default_rounding_mode();
   mpfr_init2(p, prec);
-  mpfr_set_z(p, x, mpfr_get_default_rounding_mode());
+  mpfr_set_z(p, x, rnd);
   return make_mpfr(p);
 }
 
-pure_expr *mpfr_from_str(const char *s, int prec)
+pure_expr *mpfr_from_str(const char *s, int prec, int rnd)
 {
   mpfr_ptr p = malloc(sizeof(mpfr_t));
   int res;
   if (!p) return NULL;
   if (prec < MPFR_PREC_MIN) prec = MPFR_PREC_MIN;
+  if (rnd < MPFR_RNDN || rnd > MPFR_RNDA)
+    rnd = mpfr_get_default_rounding_mode();
   mpfr_init2(p, prec);
-  res = mpfr_set_str(p, s, 10, mpfr_get_default_rounding_mode());
+  res = mpfr_set_str(p, s, 10, rnd);
   if (res) {
     mpfr_clear(p);
     free(p);
