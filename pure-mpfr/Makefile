@@ -1,6 +1,6 @@
 
 modname = mpfr
-modversion = 0.1
+version = 0.1
 
 # platform-specific setup
 
@@ -37,7 +37,7 @@ uninstall:
 
 DISTFILES = COPYING COPYING.LESSER Makefile $(modname).c $(modname).pure examples/*.pure
 
-dist = pure-$(modname)-$(modversion)
+dist = pure-$(modname)-$(version)
 
 dist: $(DISTFILES)
 	rm -rf $(dist)
