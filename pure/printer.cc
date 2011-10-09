@@ -105,9 +105,13 @@ static prec_t expr_nprec(expr x, bool aspat = true)
   case EXPR::VAR:
   case EXPR::STR:
   case EXPR::PTR:
-  case EXPR::WRAP:
   case EXPR::MATRIX:
     return NPREC_MAX;
+  case EXPR::WRAP: {
+    assert(x.pval());
+    GlobalVar *v = (GlobalVar*)x.pval();
+    return pure_expr_nprec(v->x);
+  }
   case EXPR::FVAR:
     return sym_nprec(x.vtag());
   case EXPR::INT:
@@ -801,12 +805,19 @@ static prec_t pure_expr_nprec(const pure_expr *x)
   assert(x);
   switch (x->tag) {
   case EXPR::STR:
-  case EXPR::PTR:
   case EXPR::DMATRIX:
   case EXPR::CMATRIX:
   case EXPR::IMATRIX:
   case EXPR::MATRIX:
     return NPREC_MAX;
+  case EXPR::PTR: {
+    int tag = pure_get_tag(x);
+    pure_printer_prec_fun prec = pure_pointer_printer_prec(tag);
+    if (prec)
+      return (prec_t)prec(x->data.p);
+    else
+      return NPREC_MAX;
+  }
   case EXPR::INT:
     if (x->data.i < 0)
       // precedence of unary minus:

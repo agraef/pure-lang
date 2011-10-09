@@ -3363,20 +3363,34 @@ pure_expr *pure_pointer_cast(int tag, pure_expr *x)
 }
 
 extern "C"
-void pure_pointer_add_printer(int tag, pure_printer_fun printer)
+void pure_pointer_add_printer(int tag, pure_printer_fun printer,
+			      pure_printer_prec_fun prec)
 {
   interpreter& interp = *interpreter::g_interp;
-  interp.pointer_type_printer[tag] = printer;
+  interp.pointer_type_printer[tag].printer_cb = printer;
+  interp.pointer_type_printer[tag].prec_cb = prec;
 }
 
 extern "C"
 pure_printer_fun pure_pointer_printer(int tag)
 {
   interpreter& interp = *interpreter::g_interp;
-  map<int,pure_printer_fun>::iterator it =
+  map<int,pointer_type_printer_info>::iterator it =
     interp.pointer_type_printer.find(tag);
   if (it != interp.pointer_type_printer.end())
-    return it->second;
+    return it->second.printer_cb;
+  else
+    return NULL;
+}
+
+extern "C"
+pure_printer_prec_fun pure_pointer_printer_prec(int tag)
+{
+  interpreter& interp = *interpreter::g_interp;
+  map<int,pointer_type_printer_info>::iterator it =
+    interp.pointer_type_printer.find(tag);
+  if (it != interp.pointer_type_printer.end())
+    return it->second.prec_cb;
   else
     return NULL;
 }

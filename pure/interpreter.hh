@@ -459,6 +459,12 @@ struct enventry {
 };
 typedef list<enventry> envstack;
 
+struct pointer_type_printer_info {
+  const char *(*printer_cb)(void*);
+  int (*prec_cb)(void*);
+  pointer_type_printer_info() : printer_cb(0), prec_cb(0) {}
+};
+
 class interpreter
 {
 public:
@@ -949,7 +955,7 @@ public:
   map<const llvm::Type*,type_map::iterator> pointer_type_of;
   map<string,int> pointer_tags;
   map<int,map<string,int>::iterator> pointer_type_with_tag;
-  map<int,const char *(*)(void*)> pointer_type_printer;
+  map<int,pointer_type_printer_info> pointer_type_printer;
 
   const llvm::Type *make_pointer_type(const string& name);
   string pointer_type_name(const llvm::Type *type);

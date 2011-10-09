@@ -477,8 +477,13 @@ pure_expr *pure_pointer_cast(int tag, pure_expr *x);
 
    pure_pointer_add_printer() registers a pretty-printer for a given tag. The
    second argument is the pretty-printing function which must be declared as
-   const char *(print)(void*), and is supposed to return a static buffer
-   filled with the printable representation of the given pointer.
+   const char *printer(void*), and is supposed to return a static buffer
+   filled with the printable representation of the given pointer. The third
+   argument may be used to specify a second callback of the form int
+   printer(void*) which is used to calculate the (normalized) precedence of
+   the print representation, so that the expression is printed in a
+   syntactically correct way (you can leave this as NULL if this is not
+   needed).
 
    For instance, here's a sample pretty printer which reproduces Pure's
    default unparsing of pointer values:
@@ -490,14 +495,18 @@ pure_expr *pure_pointer_cast(int tag, pure_expr *x);
    }
 
    pure_pointer_printer() returns the pretty-printing function registered for
-   the given pointer tag, or NULL if none has been registered. This
-   information is stored with the interpreter instance, and used by the
-   interpreter's pretty-printing functions (unless overridden by custom
-   __show__ rules). */
+   the given pointer tag, or NULL if none has been registered. Likewise,
+   pure_pointer_printer() returns the callback doing the precedence
+   calculation (or NULL). This information is stored with the interpreter
+   instance, and used by the interpreter's pretty-printing functions (unless
+   overridden by custom __show__ rules). */
 
 typedef const char *(*pure_printer_fun)(void*);
-void pure_pointer_add_printer(int tag, pure_printer_fun printer);
+typedef int (*pure_printer_prec_fun)(void*);
+void pure_pointer_add_printer(int tag, pure_printer_fun printer,
+			      pure_printer_prec_fun prec);
 pure_printer_fun pure_pointer_printer(int tag);
+pure_printer_prec_fun pure_pointer_printer_prec(int tag);
 
 /* Variable and constant definitions. These allow you to directly bind
    variable and constant symbols to pure_expr* values, as the 'let' and
