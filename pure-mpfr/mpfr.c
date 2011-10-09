@@ -100,7 +100,7 @@ static const char *mpfr_str(mpfr_ptr p)
 }
 
 /* Initialize the mpfr* tag and return its value. This also sets up the
-   pretty-printing. */
+   pretty-printing and defines some manifest constants. */
 
 int mpfr_tag(void)
 {
@@ -108,6 +108,11 @@ int mpfr_tag(void)
   if (!t) {
     t = pure_pointer_tag("mpfr*");
     pure_pointer_add_printer(t, (pure_printer_fun)mpfr_str);
+    pure_def(pure_sym("MPFR_RNDN"), pure_int(MPFR_RNDN));
+    pure_def(pure_sym("MPFR_RNDZ"), pure_int(MPFR_RNDZ));
+    pure_def(pure_sym("MPFR_RNDU"), pure_int(MPFR_RNDU));
+    pure_def(pure_sym("MPFR_RNDD"), pure_int(MPFR_RNDD));
+    pure_def(pure_sym("MPFR_RNDA"), pure_int(MPFR_RNDA));
   }
   return t;
 }
