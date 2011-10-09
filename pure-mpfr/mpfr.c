@@ -211,6 +211,42 @@ pure_expr *mpfr_to_bigint(mpfr_ptr x)
     return NULL;
 }
 
+pure_expr *floor_mpfr(mpfr_ptr x)
+{
+  mpfr_ptr y = malloc(sizeof(mpfr_t));
+  if (!y) return NULL;
+  mpfr_init(y);
+  mpfr_floor(y, x);
+  return make_mpfr(y);
+}
+
+pure_expr *ceil_mpfr(mpfr_ptr x)
+{
+  mpfr_ptr y = malloc(sizeof(mpfr_t));
+  if (!y) return NULL;
+  mpfr_init(y);
+  mpfr_ceil(y, x);
+  return make_mpfr(y);
+}
+
+pure_expr *round_mpfr(mpfr_ptr x)
+{
+  mpfr_ptr y = malloc(sizeof(mpfr_t));
+  if (!y) return NULL;
+  mpfr_init(y);
+  mpfr_round(y, x);
+  return make_mpfr(y);
+}
+
+pure_expr *trunc_mpfr(mpfr_ptr x)
+{
+  mpfr_ptr y = malloc(sizeof(mpfr_t));
+  if (!y) return NULL;
+  mpfr_init(y);
+  mpfr_trunc(y, x);
+  return make_mpfr(y);
+}
+
 /* Arithmetic. */
 
 pure_expr *neg_mpfr(mpfr_ptr x)
