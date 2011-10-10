@@ -1,25 +1,9 @@
-// grading.config -- sample configuration file for grading.pure
-
-// The aggregate score for homework is as the median score, the average
-// score or total of all scores. The acceptable values are: "m" - median,
-// "t" - total, "a" - average
-homework_style = "m";
-
-// The extra_homeworks is the number of homeworks that are eliminated when
-// computing the aggregate homework score.
-extra_homeworks = 2;
+/* grading.config -- sample configuration file for grading.pure */
 
 
-// If N is the number of weights, then for each student the first N-1
-// scores are treated as individual scores and the remainng scores are
-// treated as homework. The homework scores are aggregated and treated as the
-// Nth score. Scores 1 through N are weighted according to the values in this
-// list.
-score_weights = [.4, .2, .4];     //[test1, . testn, homework];
+/* CURVE_GRADE_COUNTS determine the percentage of students that should recieve
+   the indicated grade.  */
 
-
-// For grading on a curve. Each (grade, number) pair is the the number of
-// students that would get the grade, assuming a class of 100 students.
 curve_grade_counts = 
   [("A+",  3.0), ("A",  3.0), ("A-", 4.0),   // 10% A
    ("B+",  6.0), ("B",  6.0), ("B-", 8.0),   // 20% B
@@ -28,11 +12,29 @@ curve_grade_counts =
    ("F",  10.0)  ];                          // 10% F
 
 
-// For raw point grading, each (grade,score) is the cutoff score for the
-// grade assuming the total possible score is 100.
+/* POINT_GRADE_CUTOFFS determine the percentage of a perfect raw score
+   required for specific grades.  */
+
 point_grade_cutoffs = 
   [("A+", 98.0), ("A", 93.0), ("A-",90.0),   // >= 90 A
    ("B+", 87.0), ("B", 83.0), ("B-",80.0),   // >= 80 B
    ("C+", 77.0), ("C", 73.0), ("C-",70.0),   // >= 70 C
    ("D+", 67.0), ("D", 63.0), ("D-",60.0),   // >= 60 D
-   ("F",0.0)  ];                             // <60% F
+   ("F",0.0)  ];                             //  < 60 F
+
+/* QUIZ_SCORING indicates how to determine the aggregate score for quizes. The
+   acceptable values are: "m" - median, "t" - total, "a" - average */
+
+quiz_scoring = "m";
+
+/* EXTRA_QUIZES is the number of quizes that are eliminated when computing
+   the aggregate quizes score.  */
+
+extra_quizes = 2;
+
+
+/* SCORE_WEIGHTS indicates how each test is weighted (after being normalized
+   to a 100.00 points for a perfect score). Quizes are aggregated and treated
+   as one test.  */
+
+score_weights = [.3, .5, .2];     //[test1, ... testn, quizes];

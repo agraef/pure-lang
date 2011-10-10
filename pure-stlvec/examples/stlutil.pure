@@ -122,7 +122,10 @@ end with
                      (key_funs!ndx!kf_key) $$
       (err_count+1, ndx+1)
     else (err_count, ndx+1);
-  strip_comments s = regsub (\_->"\n") "//[^\n]*\n" REG_EXTENDED s 0;
+  strip_comments s = s2 when
+    s1 = regsub (\_->"\n") "/\\*+[^*]*\\*/"  REG_EXTENDED s 0;
+    s2 = regsub (\_->"\n") "//[^\n]*\n" REG_EXTENDED s1 0;
+  end;
 end when
   sv = mkstlvec () (#key_funs);
   kf_key = 0;
