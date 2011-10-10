@@ -47,7 +47,7 @@ static int num_digits(int b, mpfr_prec_t p)
   if (default_num_digits)
     return default_num_digits;
   else
-    return 2 + (int)ceil(p*log(2)/log(b));
+    return 1 + (int)ceil(p*log(2)/log(b));
 }
 
 /* Pretty-printing support. */
@@ -61,38 +61,22 @@ static const char *mpfr_str(mpfr_ptr p)
   else {
     /* Estimated size of the string representation. Give a few extra bytes for
        sign, decimal point, exponent and null terminator. */
-    int m = num_digits(10, mpfr_get_prec(p))+30;
-    /* Allocate some buffers. */
+    size_t n = num_digits(10, mpfr_get_prec(p)), m = n+30;
     static char *buf = NULL;
-    char *mantbuf = malloc(m), *mant = mantbuf, *sign = "";
-    mpfr_exp_t exp;
+    char format[30];
     if (buf) free(buf);
-    buf = malloc(m);
-    if (buf && mantbuf && mpfr_get_str(mant, &exp, 10, default_num_digits,
-				       p, mpfr_get_default_rounding_mode())) {
-      size_t len = strlen(mant);
-      /* handle the sign */
-      if (mant[0] == '-') {
-	sign = "-"; mant++; len--;
-      }
-      /* remove trailing zeros from the mantissa */
-      while (len > 1 && mant[len-1] == '0') mant[--len] = 0;
-      /* mpfr_get_str normalizes the exponent so that the mantissa starts with
-	 an implicit decimal point. Shift the representation so that the first
-	 digit goes before the decimal point. */
-      if (len > 1 || mant[0] != '0') exp--;
-      if (exp)
-	sprintf(buf, "%s%c.%se%d", sign, mant[0], mant[1]?mant+1:"0", (int)exp);
-      else
-	sprintf(buf, "%s%c.%s", sign, mant[0], mant[1]?mant+1:"0");
-      free(mantbuf);
+    buf = malloc(m+2);
+    sprintf(format, "%%0.%luRg", (unsigned long)n);
+    if (buf && mpfr_snprintf(buf, m, format, p) >= 0) {
+      if (strchr("0123456789", buf[buf[0]=='-'?1:0]) &&
+	  !strchr(buf, '.') && !strchr(buf, 'e') && !strchr(buf, 'E'))
+	strcat(buf, ".0");
       return buf;
     } else {
-      /* We don't have enough memory or mpfr_get_str failed for some reason.
+      /* We don't have enough memory or mpfr_snprintf failed for some reason.
 	 Make some fallback representation which can be produced in static
 	 memory. */
       static char buf[100];
-      if (mantbuf) free(mantbuf);
       sprintf(buf, "#<mpfr %p>", p);
       return buf;
     }
