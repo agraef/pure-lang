@@ -12730,6 +12730,185 @@ pure_expr *pure_fstat(FILE *fp)
 // Get rid of "format not a string literal" warnings.
 #pragma GCC diagnostic ignored "-Wformat-security"
 
+/* Helper functions to parse printf/scanf format strings. These also support
+   the gmp and mpfr type modifiers Z and R. */
+
+extern "C"
+pure_expr *pure_printf_split(const char *format)
+{
+  size_t n = 0;
+  const char *s = format, *t;
+  char *buf;
+  pure_expr *x, **xv;
+  while (*s) {
+    if (*s == '%') {
+      t = s+1;
+      if (*t == '%') {
+	++t; goto literal;
+      }
+      while (strchr("+-#0 ", *t)) ++t;
+      while (isdigit(*t)) ++t;
+      if (*t == '.') {
+	++t;
+	while (isdigit(*t)) ++t;
+      }
+      if (*t == 'Z') {
+        ++t;
+      } else if (*t == 'R') {
+        if (strchr("UDYZN", *++t)) ++t;
+      }
+      if (strchr("cdiouxXeEfgGaAsp", *t)) {
+	++t; ++n;
+	s = t;
+      } else
+	return NULL; /* bad format specifier */
+    } else {
+      t = s+1;
+    literal:
+      while (*t && *t != '%') t++;
+      ++n;
+      s = t;
+    }
+  }
+  if (n == 0) return pure_listl(0);
+  xv = (pure_expr**)malloc(n*sizeof(pure_expr*));
+  n = 0; s = format;
+  while (*s) {
+    if (*s == '%') {
+      t = s+1;
+      if (*t == '%') {
+	++t; goto literal2;
+      }
+      while (strchr("+-#0 ", *t)) ++t;
+      while (isdigit(*t)) ++t;
+      if (*t == '.') {
+	++t;
+	while (isdigit(*t)) ++t;
+      }
+      if (*t == 'Z') {
+        ++t;
+      } else if (*t == 'R') {
+        if (strchr("UDYZN", *++t)) ++t;
+      }
+      if (strchr("cdiouxXeEfgGaAsp", *t)) {
+	++t;
+	buf = (char*)malloc(t-s+1);
+	strncpy(buf, s, t-s);
+	buf[t-s] = 0;
+	xv[n++] = pure_cstring(buf);
+	s = t;
+      } else
+	return NULL; /* bad format specifier */
+    } else {
+      t = s+1;
+    literal2:
+      while (*t && *t != '%') t++;
+      buf = (char*)malloc(t-s+1);
+      strncpy(buf, s, t-s);
+      buf[t-s] = 0;
+      xv[n++] = pure_cstring(buf);
+      s = t;
+    }
+  }
+  x = pure_listv(n, xv);
+  free(xv);
+  return x;
+}
+
+extern "C"
+pure_expr *pure_scanf_split(const char *format)
+{
+  size_t n = 0;
+  const char *s = format, *t;
+  char *buf;
+  pure_expr *x, **xv;
+  while (*s) {
+    if (*s == '%') {
+      t = s+1;
+      if (*t == '%') {
+	++t; goto literal;
+      }
+      if (*t == '*') ++t;
+      while (isdigit(*t)) ++t;
+      if (*t == 'Z') ++t;
+      if (strchr("cdiouxXneEfgasp", *t)) {
+	++t; ++n;
+	s = t;
+      } else if (*t == '[') {
+        ++t; ++n;
+	if (*t == '^') ++t;
+	if (*t == ']') ++t;
+	while (*t && *t != ']') ++t;
+	if (*t != ']') return NULL; /* bad format specifier */
+	s = ++t;
+      } else
+	return NULL; /* bad format specifier */
+    } else {
+      t = s+1;
+    literal:
+      while (*t && *t != '%') t++;
+      ++n;
+      s = t;
+    }
+  }
+  if (n == 0) return pure_listl(0);
+  xv = (pure_expr**)malloc(n*sizeof(pure_expr*));
+  n = 0; s = format;
+  while (*s) {
+    if (*s == '%') {
+      t = s+1;
+      if (*t == '%') {
+	++t; goto literal2;
+      }
+      if (*t == '*') ++t;
+      while (isdigit(*t)) ++t;
+      if (*t == 'Z') ++t;
+      if (strchr("cdiouxXneEfgasp", *t)) {
+	++t;
+	buf = (char*)malloc(t-s+1);
+	strncpy(buf, s, t-s);
+	buf[t-s] = 0;
+	xv[n++] = pure_cstring(buf);
+	s = t;
+      } else if (*t == '[') {
+        ++t;
+	if (*t == '^') ++t;
+	if (*t == ']') ++t;
+	while (*t && *t != ']') ++t;
+	if (*t != ']') return NULL; /* bad format specifier */
+	++t;
+	buf = (char*)malloc(t-s+1);
+	strncpy(buf, s, t-s);
+	buf[t-s] = 0;
+	xv[n++] = pure_cstring(buf);
+	s = t;
+      } else
+	return NULL; /* bad format specifier */
+    } else {
+      t = s+1;
+    literal2:
+      while (*t && *t != '%') t++;
+      buf = (char*)malloc(t-s+1);
+      strncpy(buf, s, t-s);
+      buf[t-s] = 0;
+      xv[n++] = pure_cstring(buf);
+      s = t;
+    }
+  }
+  x = pure_listv(n, xv);
+  free(xv);
+  return x;
+}
+
+extern "C"
+int pure_scanf_prec(const char *format)
+{
+  if (*format == '%') ++format; else return 0;
+  if (*format == '*') ++format;
+  if (isdigit(*format)) return atoi(format);
+  return 0;
+}
+
 extern "C"
 int pure_fprintf(FILE *fp, const char *format)
 {
@@ -12765,6 +12944,18 @@ int pure_fprintf_pointer(FILE *fp, const char *format, const void *x)
 }
 
 extern "C"
+int pure_fprintf_mpz(FILE *fp, const char *format, mpz_t x)
+{
+  return gmp_fprintf(fp, format, x);
+}
+
+extern "C"
+int pure_fprintf_mpfr(FILE *fp, const char *format, mpfr_ptr x)
+{
+  return mpfr_fprintf(fp, format, x);
+}
+
+extern "C"
 int pure_snprintf(char *buf, size_t size, const char *format)
 {
   return snprintf(buf, size, format);
@@ -12792,6 +12983,18 @@ extern "C"
 int pure_snprintf_pointer(char *buf, size_t size, const char *format, const void *x)
 {
   return snprintf(buf, size, format, x);
+}
+
+extern "C"
+int pure_snprintf_mpz(char *s, int n, const char *format, mpz_t x)
+{
+  return gmp_snprintf(s, n, format, x);
+}
+
+extern "C"
+int pure_snprintf_mpfr(char *s, int n, const char *format, mpfr_ptr x)
+{
+  return mpfr_snprintf(s, n, format, x);
 }
 
 #define myformat(format) scanf_format((char*)alloca(strlen(format)+3), format)
@@ -12845,6 +13048,14 @@ int pure_fscanf_pointer(FILE *fp, const char *format, const void **x)
 }
 
 extern "C"
+int pure_fscanf_mpz(FILE *fp, const char *format, mpz_t x)
+{
+  int count = -1;
+  if (gmp_fscanf(fp, myformat(format), x, &count) == EOF) count = -1;
+  return count;
+}
+
+extern "C"
 int pure_sscanf(const char *buf, const char *format)
 {
   int count = -1;
@@ -12882,6 +13093,14 @@ int pure_sscanf_pointer(const char *buf, const char *format, void **x)
 {
   int count = -1;
   sscanf(buf, myformat(format), x, &count);
+  return count;
+}
+
+extern "C"
+int pure_sscanf_mpz(const char *buf, const char *format, mpz_t x)
+{
+  int count = -1;
+  if (gmp_sscanf(buf, myformat(format), x, &count) == EOF) count = -1;
   return count;
 }
 

@@ -152,9 +152,12 @@ AC_CHECK_LIB(${pure_cv_gmp}, __gmpz_init, ,
 [AC_MSG_ERROR([Cannot find the GMP library, please install libgmp or libmpir.])])
 AC_CHECK_HEADERS(${pure_cv_gmp}.h, [],
 [AC_MSG_ERROR([Cannot find the GMP header file, please install libgmp or libmpir.])])
-if test "${pure_cv_gmp}" = "mpir"; then
-  AC_DEFINE(USE_MPIR, 1, [Define to use MPIR instead of GMP (experimental).])
-fi
+dnl How to link MPFR.
+PURE_LIBMPFR_PREFIX
+AC_CHECK_LIB(mpfr, mpfr_init, ,
+[AC_MSG_ERROR([Cannot find the MPFR library, please install libmpfr.])])
+AC_CHECK_HEADERS(mpfr.h, [],
+[AC_MSG_ERROR([Cannot find the MPFR header file, please install libmpfr.])])
 dnl Other checks for libraries.
 AC_CHECK_LIB(m, cos)
 dnl On some systems iconv is in a separate library, and may actually be named

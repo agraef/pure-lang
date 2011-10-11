@@ -69,6 +69,26 @@ AC_DEFUN([PURE_LIBGMP_PREFIX],
   fi
 ])
 
+AC_DEFUN([PURE_LIBMPFR_PREFIX],
+[
+  pure_cv_lib_mpfr_incdir=
+  pure_cv_lib_mpfr_ldpath=
+  AC_ARG_WITH([libmpfr-prefix],
+[  --with-libmpfr-prefix=DIR  search for libmpfr in DIR/include and DIR/lib], [
+    for dir in `echo "$withval" | tr : ' '`; do
+      if test -d $dir/include; then pure_cv_lib_mpfr_incdir="$dir/include"; fi
+      if test -d $dir/lib; then pure_cv_lib_mpfr_ldpath="$dir/lib"; fi
+    done
+   ])
+
+  if test -n "$pure_cv_lib_mpfr_incdir"; then
+    CPPFLAGS="$CPPFLAGS -I$pure_cv_lib_mpfr_incdir"
+  fi
+  if test -n "$pure_cv_lib_mpfr_ldpath"; then
+    LIBS="$LIBS -L$pure_cv_lib_mpfr_ldpath -lmpfr"
+  fi
+])
+
 dnl iconv check from Bruno Haible.
 
 AC_DEFUN([AM_ICONV],

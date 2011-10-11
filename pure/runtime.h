@@ -35,6 +35,7 @@
 #else
 #include <gmp.h>
 #endif
+#include <mpfr.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -1513,34 +1514,51 @@ pure_expr *pure_stat(const char *path);
 pure_expr *pure_lstat(const char *path);
 pure_expr *pure_fstat(FILE *fp);
 
-/* printf/scanf support. Since we don't support calling C vararg functions
-   from Pure right now, these little wrappers are provided to process at most
-   one value at a time. It is the responsibility of the caller that the
-   provided parameters match up with the format specifiers. */
+/* printf/scanf support. As it's not possible to construct C vararg lists in a
+   portable manner, we provide wrappers to process at most one value at a
+   time. This also includes support for mpz_t and mpfr_t conversions. It is
+   the responsibility of the caller that the provided parameters match up with
+   the format specifiers. */
+
+/* Helper functions to parse printf/scanf format strings. */
+
+pure_expr *pure_printf_split(const char *format);
+pure_expr *pure_scanf_split(const char *format);
+int pure_scanf_prec(const char *format);
+
+/* printf et al */
 
 int pure_fprintf(FILE *fp, const char *format);
 int pure_fprintf_int(FILE *fp, const char *format, int32_t x);
 int pure_fprintf_double(FILE *fp, const char *format, double x);
 int pure_fprintf_string(FILE *fp, const char *format, const char *x);
 int pure_fprintf_pointer(FILE *fp, const char *format, const void *x);
+int pure_fprintf_mpz(FILE *fp, const char *format, mpz_t x);
+int pure_fprintf_mpfr(FILE *fp, const char *format, mpfr_ptr x);
 
 int pure_snprintf(char *buf, size_t size, const char *format);
 int pure_snprintf_int(char *buf, size_t size, const char *format, int x);
 int pure_snprintf_double(char *buf, size_t size, const char *format, double x);
 int pure_snprintf_string(char *buf, size_t size, const char *format, const char *x);
 int pure_snprintf_pointer(char *buf, size_t size, const char *format, const void *x);
+int pure_snprintf_mpz(char *buf, int n, const char *format, mpz_t x);
+int pure_snprintf_mpfr(char *buf, int n, const char *format, mpfr_ptr x);
+
+/* scanf et al; note that mpfr doesn't support these */
 
 int pure_fscanf(FILE *fp, const char *format);
 int pure_fscanf_int(FILE *fp, const char *format, int32_t *x);
 int pure_fscanf_double(FILE *fp, const char *format, double *x);
 int pure_fscanf_string(FILE *fp, const char *format, const char *x);
 int pure_fscanf_pointer(FILE *fp, const char *format, const void **x);
+int pure_fscanf_mpz(FILE *fp, const char *format, mpz_t x);
 
 int pure_sscanf(const char *buf, const char *format);
 int pure_sscanf_int(const char *buf, const char *format, int32_t *x);
 int pure_sscanf_double(const char *buf, const char *format, double *x);
 int pure_sscanf_string(const char *buf, const char *format, char *x);
 int pure_sscanf_pointer(const char *buf, const char *format, void **x);
+int pure_sscanf_mpz(const char *buf, const char *format, mpz_t x);
 
 /* readdir(3) support. */
 
