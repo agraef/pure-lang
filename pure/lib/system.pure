@@ -729,8 +729,13 @@ end;
    C-style formatted I/O is provided through the following wrappers for the C
    ``printf`` and ``scanf`` functions. Our wrapper functions take or return a
    tuple of values, and check these against the format specifiers, so they
-   shouldn't segfault. However, only simple formats derived from ``%cdioux``,
-   ``%efg``, ``%s`` and ``%p`` are supported right now.
+   shouldn't segfault. All basic formats derived from ``%cdioux``, ``%efg``,
+   ``%s`` and ``%p`` are supported, albeit without the standard length
+   modifiers such as ``h`` and ``l``, which aren't of much use in Pure.
+   (However, in addition to standard C ``printf`` and ``scanf``, the Pure
+   versions also support the modifiers ``Z`` and ``R`` of the GMP and MPFR
+   libraries, which are used for converting multiprecision integer and
+   floating point values, see below.)
 
    .. function:: printf format args
                  fprintf fp format args
@@ -739,92 +744,77 @@ end;
       respectively. Normally, these functions return the result of the
       underlying C routines (number of characters written, or negative on
       error). However, in case of an abnormal condition in the wrapper
-      function (error in format string, argument mismatch), they will throw an
-      exception.
+      function, such as argument mismatch, they will throw an exception.  (In
+      particular, an :cons:`out_of_bounds` exception will be thrown if there
+      are not enough arguments for the given format string.)
 
    .. function:: sprintf format args
 
       Print a formatted string to a buffer and return the result as a string.
-      Unlike the C routine, this wrapper just returns the string result, or a
-      null pointer in case of an error; otherwise, the error handling is the
-      same as with :func:`printf` and :func:`fprintf`. The implementation
+      Note that, unlike the C routine, the Pure version just returns the
+      string result in the case of success; otherwise, the error handling is
+      the same as with :func:`printf` and :func:`fprintf`. The implementation
       actually uses the C routine ``snprintf`` for safety, and a suitable
       output buffer is provided automatically. */
 
-/* Since Pure cannot call C varargs functions directly, the runtime provides
-   us with some functions which only process a single argument at a time. */
+/* The runtime provides us with some functions which process a single argument
+   at a time. */
 
 using namespace __C, __std__;
 
 namespace __C;
+extern expr *pure_printf_split(char *format);
 extern int pure_fprintf(FILE *fp, char *format);
 extern int pure_fprintf_int(FILE *fp, char *format, int x);
 extern int pure_fprintf_double(FILE *fp, char *format, double x);
 extern int pure_fprintf_string(FILE *fp, char *format, char *x);
 extern int pure_fprintf_pointer(FILE *fp, char *format, void *x);
+extern int pure_fprintf_mpz(FILE*, char*, void*);
+extern int pure_fprintf_mpfr(FILE*, char*, mpfr*);
 namespace;
 
-public printf_error printf_value_error printf_format_error;
-public this_cant_happen;
-
-namespace __std__;
-public printf_split_format printf_format_spec printf_format_str;
-namespace;
-
+public printf_error printf_value_error;
 public fprintf;
 
 printf format::string args = fprintf stdout format args;
 
-fprintf fp::pointer format::string args = count when
+fprintf fp::pointer format::string args =
+  catch error $ do_printf 0 formats args if listp formats
+when
   args = if tuplep args then list args else [args];
-  count, _ = catch error_handler
-    (foldl (do_fprintf fp) (0,args) $ printf_split_format format);
+  formats = pure_printf_split format;
 end with
-  error_handler (printf_error res::int) = res, [];
-  error_handler x = throw x otherwise;
-  do_fprintf fp (count,arg:args) (printf_format_spec t s) = count, args
-  when
-    res = case t, arg of
-      "c", x::int | "c", x::bigint |
-      "d", x::int | "d", x::bigint = pure_fprintf_int fp s x;
-      "g", x::double = pure_fprintf_double fp s x;
-      "s", x::string = pure_fprintf_string fp s x;
-      "p", x::string | "p", x::pointer = pure_fprintf_pointer fp s x;
-      _ = throw (printf_value_error s arg);
-    end;
-    count = if res>=0 then count+res else throw (printf_error res);
-  end;
-  do_fprintf fp (count,args) (printf_format_str s) = count, args
-  when
-    res = pure_fprintf fp s;
-    count = if res>=0 then count+res else throw (printf_error res);
-  end;
-  do_fprintf fp (count,[]) (printf_format_spec t s) =
-    throw (printf_value_error s ());
-  do_fprintf fp (count,_) _ = throw (this_cant_happen count);
-end;
-
-public regex regexg reg regerr; // see below
-
-printf_split_format format = regexg analyze
-  "(%[-#0 ]?[0-9]*([.][0-9]*)?[cdiouxXeEfgGsp])|(%)|([^%]|%%)+"
-  REG_EXTENDED format 0
-with
-  analyze info =
-    if p>=0 then // format specifier
-      printf_format_spec (format_type (last u)) u
-    else if q>=0 then // error
-      throw (printf_format_error q)
-    else printf_format_str u // literal
-  when
-    _, u = reg 0 info; // matched portion of the format string
-    p, _ = reg 1 info; // p>=0 indicates valid format specifier
-    q, _ = reg 3 info; // q>=0 indicates unrecognized format specifier
-  end;
-  format_type x = 
-    if index "diouxX" x >= 0 then "d"
-    else if index "eEfgG" x >= 0 then "g"
+  error (printf_error res::int) = res;
+  error x = throw x otherwise;
+  literal s = head s ~= "%" || take 2 s == "%%";
+  format_type x format =
+    if index "diouxX" x >= 0 then
+      if index format "R" < 0 && index format "Z" >= 0 then "Z" else "d"
+    else if index "eEfgGaA" x >= 0 then
+      if index format "R" >= 0 then "R" else "g"
     else x;
+  do_printf count (format:formats) args =
+    do_printf count formats args when
+      res = pure_fprintf fp format;
+      count = if res>=0 then count+res else throw (printf_error res);
+    end if literal format;
+  do_printf count (format:formats) (arg:args) =
+    do_printf count formats args when
+      res = case format_type (last format) format, arg of
+	"c", x::int | "c", x::bigint |
+	"d", x::int | "d", x::bigint = pure_fprintf_int fp format x;
+	"g", x::double = pure_fprintf_double fp format x;
+	"s", x::string = pure_fprintf_string fp format x;
+	"p", x::string | "p", x::pointer =
+	  pure_fprintf_pointer fp format x;
+	"Z", x::bigint = pure_fprintf_mpz fp format x;
+	"R", x::mpfr = pure_fprintf_mpfr fp format x;
+	_ = throw (printf_value_error format arg);
+      end;
+      count = if res>=0 then count+res else throw (printf_error res);
+    end;
+  do_printf count [] _ = count;
+  do_printf count _ [] = throw out_of_bounds;
 end;
 
 namespace __C;
@@ -833,47 +823,62 @@ extern int pure_snprintf_int(void *buf, int, char *format, int x);
 extern int pure_snprintf_double(void *buf, int, char *format, double x);
 extern int pure_snprintf_string(void *buf, int, char *format, char *x);
 extern int pure_snprintf_pointer(void *buf, int, char *format, void *x);
+extern int pure_snprintf_mpz(void *buf, int, char *format, void *x);
+extern int pure_snprintf_mpfr(void *buf, int, char *format, mpfr *x);
+extern size_t __gmpz_sizeinbase(void*, int) = mpz_sizeinbase;
+extern int mpfr_get_prec(mpfr*);
+extern double log10(double);
 namespace;
 
-sprintf format::string args = s when
+sprintf format::string args =
+  catch error $ do_printf 0 [] formats args if listp formats
+when
   args = if tuplep args then list args else [args];
-  u, _ = catch error_handler
-    (foldl do_sprintf ([],args) $ printf_split_format format);
-  s = if pointerp u then u else strcat $ reverse u;
+  formats = pure_printf_split format;
 end with
-  error_handler (printf_error res::int) = pointer 0, [];
-  error_handler x = throw x otherwise;
-  do_sprintf (u,arg:args) (printf_format_spec t s) = u, args
-  when
-    size = case t, arg of
-      "s", x::string = #s+#x; // guestimate
-      _ = 64; // should be enough for number formats in any case
+  error (printf_error res::int) = res;
+  error x = throw x otherwise;
+  literal s = head s ~= "%" || take 2 s == "%%";
+  format_type x format =
+    if index "diouxX" x >= 0 then
+      if index format "R" < 0 && index format "Z" >= 0 then "Z" else "d"
+    else if index "eEfgGaA" x >= 0 then
+      if index format "R" >= 0 then "R" else "g"
+    else x;
+  do_printf count s (format:formats) args =
+    do_printf count (cstring buf:s) formats args when
+      size = #s+1000; buf = malloc size;
+      ~null buf || throw malloc_error;
+      res = pure_snprintf buf size format;
+      count = if res>=0 then count+res else free buf $ throw (printf_error res);
+    end if literal format;
+  do_printf count s (format:formats) (arg:args) =
+    do_printf count (cstring buf:s) formats args when
+      t = format_type (last format) format;
+      size = case t, arg of
+	"s", x::string = #s+#x; // guestimate
+	"Z", x::bigint = int (mpz_sizeinbase x 10);
+	"R", x::mpfr = 1+int (ceil (mpfr_get_prec x*log10 2));
+	_ = 64; // should be enough for other number formats in any case
+      end;
+      size = size+1024; // max padding
+      buf = malloc size;
+      ~null buf || throw malloc_error;
+      res = case t, arg of
+	"c", x::int | "c", x::bigint |
+	"d", x::int | "d", x::bigint = pure_snprintf_int buf size format x;
+	"g", x::double = pure_snprintf_double buf size format x;
+	"s", x::string = pure_snprintf_string buf size format x;
+	"p", x::string | "p", x::pointer =
+	  pure_snprintf_pointer buf size format x;
+	"Z", x::bigint = pure_snprintf_mpz buf size format x;
+	"R", x::mpfr = pure_snprintf_mpfr buf size format x;
+	_ = throw (printf_value_error format arg);
+      end;
+      count = if res>=0 then count+res else free buf $ throw (printf_error res);
     end;
-    size = size+1024; // max padding
-    buf = check_buf (malloc size);
-    res = case t, arg of
-      "c", x::int | "c", x::bigint |
-      "d", x::int | "d", x::bigint = pure_snprintf_int buf size s x;
-      "g", x::double = pure_snprintf_double buf size s x;
-      "s", x::string = pure_snprintf_string buf size s x;
-      "p", x::string | "p", x::pointer = pure_snprintf_pointer buf size s x;
-      _ = free buf $$ throw (printf_value_error s arg);
-    end;
-    u = if res>=0 then cstring buf : u
-        else free buf $$ throw (printf_error res);
-  end;
-  do_sprintf (u,args) (printf_format_str s) = u, args
-  when
-    size = #s+1000; buf = check_buf (malloc size);
-    res = pure_snprintf buf size s;
-    u = if res>=0 then cstring buf : u
-        else free buf $$ throw (printf_error res);
-  end;
-  do_sprintf (u,[]) (printf_format_spec t s) =
-    throw (printf_value_error s ());
-  do_sprintf (u,_) _ = throw (this_cant_happen $ strcat $ reverse u);
-  check_buf buf = throw malloc_error if null buf;
-                = buf otherwise;
+  do_printf count s [] _ = strcat (reverse s);
+  do_printf count s _ [] = throw out_of_bounds;
 end;
 
 /* .. function:: scanf format
@@ -885,112 +890,106 @@ end;
       the tuple of successfully converted values (which may be less than the
       number of requested input items), is thrown if end-of-file was met or
       another error occurred while still reading. The handling of other
-      abnormal conditions (e.g., error in format string) is analogous to
-      :func:`printf` et al. Also note that our implementation here doesn't
-      accept any of the length modifiers used by the C routines. Floating
-      point values will *always* be read in double precision, so you just
-      specify ``"e"``, ``"g"`` etc. for these. However, the "assignment
-      suppression" flag ``"*"`` *is* understood; the corresponding items will
-      not be returned. */
+      abnormal conditions is analogous to :func:`printf` et al. Also note that
+      this implementation doesn't accept any of the standard length modifiers;
+      in particular, floating point values will *always* be read in double
+      precision and you just specify ``e``, ``g`` etc. for these. The
+      "assignment suppression" flag ``*`` is understood, however; the
+      corresponding items will not be returned. */
 
 namespace __C;
+extern expr *pure_scanf_split(char *format);
+extern int pure_scanf_prec(char *format);
 extern int pure_fscanf(FILE *fp, char *format);
 extern int pure_fscanf_int(FILE *fp, char *format, void *x);
 extern int pure_fscanf_double(FILE *fp, char *format, void *x);
 extern int pure_fscanf_string(FILE *fp, char *format, void *x);
 extern int pure_fscanf_pointer(FILE *fp, char *format, void *x);
+extern int pure_fscanf_mpz(FILE *fp, char *format, void *x);
+extern void __gmpz_clear(void*, int) = mpz_clear;
+extern expr *pure_mpz(void*);
 namespace;
 
-public scanf_error scanf_format_error;
-
-namespace __std__;
-public scanf_split_format scanf_format_spec scanf_format_str;
-namespace;
+public scanf_error;
+// default max field length for a %s conversion which doesn't specify one
+let scanf_max_fld = 1024;
 
 public fscanf;
 
 scanf format::string = fscanf stdin format;
 
-fscanf fp::pointer format::string = tuple $ reverse ret when
-  _, ret = catch error_handler
-    (foldl (do_fscanf fp) (0,[]) $ scanf_split_format format);
+fscanf fp::pointer format::string =
+  catch error $ do_scanf 0 [] formats if listp formats
+when
+  formats = pure_scanf_split format;
 end with
-  error_handler (scanf_error ret) = throw (scanf_error (tuple $ reverse ret));
-  error_handler x = throw x otherwise;
-  do_fscanf fp (nread,ret) (scanf_format_spec t s) = nread+res, ret
-  when
-    // 16 bytes should be more than enough to hold any elementary type;
-    // for the string case, see guestimate below.
-    size, s = if t=="s" then guestimate s else 16, s;
-    // Make sure to zero the buffer here, since %c doesn't store a terminal
-    // null byte.
-    buf = check_buf (calloc size 1);
-    res = case t of
-      "n" = pure_fscanf_int fp s buf;
-      "d" = pure_fscanf_int fp s buf;
-      "g" = pure_fscanf_double fp s buf;
-      "s" = pure_fscanf_string fp s buf;
-      "p" = pure_fscanf_pointer fp s buf;
-      _ = throw (this_cant_happen ret);
-    end;
-    // Note: In difference to C scanf, the return value is the number of read
-    // characters here, with -1 denoting an error condition.
-    res = if res>=0 then res
-          else free buf $$ throw (scanf_error ret);
-    val = case t of
-      "n" = nread+get_int buf;
-      "d" = get_int buf;
-      "g" = get_double buf;
-      "s" = cstring buf;
-      "p" = get_pointer buf;
-      _ = throw (this_cant_happen ret);
-    end;
-    _ = if t=="s" then () else free buf;
-    ret = val:ret;
-  end;
-  do_fscanf fp (nread,ret) (scanf_format_str s) = nread+res, ret
-  when
-    res = pure_fscanf fp s;
-    ret = if res>=0 then ret else throw (scanf_error ret);
-  end;
-  do_fscanf _ (_,ret) _ = throw (this_cant_happen ret);
-  check_buf buf = throw malloc_error if null buf;
-                = buf otherwise;
-  // Compute a reasonable size for a string buffer; if necessary, modify the
-  // field width of the format accordingly.
-  guestimate "%c" = 2, "%c";
-  guestimate format = n, format
-  when
-    1,0,_,1,s = regex "^%([0-9]*)" REG_EXTENDED format 0;
-    // Leave one extra byte for the null terminator.
-    n, format = if null s then 1025, "%1024"+tail format else eval s+1, format;
-  end;
-end;
-
-scanf_split_format format = regexg analyze
-  "(%[*]?[0-9]*([cdiouxXneEfgsp]|\\[\\^?\\]?[^]]+\\]))|(%)|([^%]|%%)+"
-  REG_EXTENDED format 0
-with
-  analyze info =
-    if p>=0 && u!1~="*" then // format specifier
-      (scanf_format_spec t (kludge t u) when t = format_type (last u) end)
-    else if q>=0 then // error
-      throw (scanf_format_error q)
-    else scanf_format_str u // literal
-  when
-    _, u = reg 0 info; // matched portion of the format string
-    p, _ = reg 1 info; // p>=0 indicates valid format specifier
-    q, _ = reg 3 info; // q>=0 indicates unrecognized format specifier
-  end;
-  format_type x = 
+  error (scanf_error vals::list) = throw (scanf_error (tuple $ reverse vals));
+  error x = throw x otherwise;
+  literal s = head s ~= "%" || take 2 s == "%%" || take 2 s == "%*";
+  format_type x format =
     if x == "n" then "n"
-    else if index "diouxX" x >= 0 then "d"
-    else if index "eEfg" x >= 0 then "g"
+    else if index "diouxX" x >= 0 then
+      if index format "[" < 0 && index format "Z" >= 0 then "Z" else "d"
+    else if index "eEfga" x >= 0 then "g"
     else if x=="]" || x=="c" then "s"
     else x;
   // fix up the format specifier for double values (needs 'l' modifier)
-  kludge "g" u = init u + "l" + last u;
-  kludge _ u = u otherwise;
+  kludge "g" format = init format + "l" + last format;
+  kludge _ format = format otherwise;
+  // Compute a reasonable size for a string buffer; if necessary, modify the
+  // field width of the format accordingly.
+  guestimate "%c" = 2, "%c";
+  guestimate format = n, format when
+    p = pure_scanf_prec format;
+    // Leave one extra byte for the null terminator.
+    n, format = if p<=0 then scanf_max_fld+1, make_prec scanf_max_fld format
+		else p+1, format;
+  end;
+  make_prec p format = "%"+str p+tail format;
+  do_scanf count vals (format:formats) =
+    do_scanf count vals formats when
+      res = pure_fscanf fp format;
+      count = if res>=0 then count+res else throw (scanf_error vals);
+    end if literal format;
+  do_scanf count vals (format:formats) =
+    do_scanf count (val:vals) formats when
+      t = format_type (last format) format;
+      size, format = case t of
+	"s" = guestimate format;
+	"Z" = 32, format; // should be more than enough in any case
+	_ = 16, kludge t format; // enough to hold any elementary type
+      end;
+      // Make sure to zero the buffer here, since %c doesn't store a terminal
+      // null byte.
+      buf = calloc size 1;
+      ~null buf || throw malloc_error;
+      res = case t of
+	"n" = pure_fscanf_int fp format buf;
+	"d" = pure_fscanf_int fp format buf;
+	"g" = pure_fscanf_double fp format buf;
+	"s" = pure_fscanf_string fp format buf;
+	"p" = pure_fscanf_pointer fp format buf;
+	"Z" = pure_fscanf_mpz fp format buf;
+      end;
+      // Note: In difference to C scanf, the return value is the number of
+      // read characters here, with -1 denoting an error condition.
+      res>=0 || (free buf $$ throw (scanf_error vals));
+      val = case t of
+	"n" = count+get_int buf;
+	"d" = get_int buf;
+	"g" = get_double buf;
+	"s" = cstring buf;
+	"p" = get_pointer buf;
+	"Z" = pure_mpz buf;
+      end;
+      count = count+res;
+      case t of
+	"Z" = mpz_clear buf $$ free buf;
+	"s" = ();
+	_ = free buf;
+      end;
+    end;
+  do_scanf count vals [] = tuple (reverse vals);
 end;
 
 /* .. function:: sscanf s format
@@ -1007,7 +1006,29 @@ end;
      > sscanf "foo 5 22" "%s %d %g";
      "foo",5,22.0
 
-*/
+   Special argument formats are provided for :type:`bigint/type` and
+   :type:`mpfr/type` conversions::
+
+     > sscanf "a(5) = 1234" "a(%d) = %Zd";
+     5,1234L
+     > sprintf "a(%d) = %Zd" ans;
+     "a(5) = 1234"
+
+     > using mpfr;
+     > mpfr_set_default_prec 113;
+     ()
+     > printf "pi = %0.30Rg\n" (4*atan (mpfr 1));
+     pi = 3.14159265358979323846264338328
+     37
+
+   Please check the GMP and MPFR documentation for details on these
+   conversions.
+
+   ..note:: In contrast to bigints, :type:`mpfr/type` values (multiprecision
+   floats) aren't supported natively by the Pure language, but require the
+   special :mod:`mpfr` addon module. Also note that, at the time of this
+   writing, MPFR only supports formatted output, so multiprecision floats are
+   not supported by the ``scanf`` functions. */
 
 namespace __C;
 extern int pure_sscanf(char *buf, char *format);
@@ -1015,64 +1036,86 @@ extern int pure_sscanf_int(char *buf, char *format, void *x);
 extern int pure_sscanf_double(char *buf, char *format, void *x);
 extern int pure_sscanf_string(char *buf, char *format, void *x);
 extern int pure_sscanf_pointer(char *buf, char *format, void *x);
+extern int pure_sscanf_mpz(char *buf, char *format, void *x);
 namespace;
 
-sscanf s::string format::string = tuple $ reverse ret when
-  _, _, ret = catch error_handler
-    (foldl do_sscanf (s,0,[]) $ scanf_split_format format);
+sscanf s::string format::string =
+  catch error $ do_scanf 0 [] formats if listp formats
+when
+  formats = pure_scanf_split format;
 end with
-  error_handler (scanf_error ret) = throw (scanf_error (tuple $ reverse ret));
-  error_handler x = throw x otherwise;
-  do_sscanf (u,nread,ret) (scanf_format_spec t s) = u, nread+res, ret
-  when
-    // 16 bytes should be more than enough to hold any elementary type;
-    // for the string case, see guestimate below.
-    size, s = if t=="s" then guestimate s else 16, s;
-    // Make sure to zero the buffer here, since %c doesn't store a terminal
-    // null byte.
-    buf = check_buf (calloc size 1);
-    res = case t of
-      "n" = pure_sscanf_int u s buf;
-      "d" = pure_sscanf_int u s buf;
-      "g" = pure_sscanf_double u s buf;
-      "s" = pure_sscanf_string u s buf;
-      "p" = pure_sscanf_pointer u s buf;
-      _ = throw (this_cant_happen ret);
-    end;
-    // Note: In difference to C scanf, the return value is the number of read
-    // characters here, with -1 denoting an error condition.
-    res = if res>=0 then res
-          else free buf $$ throw (scanf_error ret);
-    val = case t of
-      "n" = nread+get_int buf;
-      "d" = get_int buf;
-      "g" = get_double buf;
-      "s" = cstring buf;
-      "p" = get_pointer buf;
-      _ = throw (this_cant_happen ret);
-    end;
-    _ = if t=="s" then () else free buf;
-    ret = val:ret;
-    u = drop res u;
-  end;
-  do_sscanf (u,nread,ret) (scanf_format_str s) = u, nread+res, ret
-  when
-    res = pure_sscanf u s;
-    ret = if res>=0 then ret else throw (scanf_error ret);
-    u = drop res u;
-  end;
-  do_sscanf (_,_,ret) _ = throw (this_cant_happen ret);
-  check_buf buf = throw malloc_error if null buf;
-                = buf otherwise;
+  error (scanf_error vals::list) = throw (scanf_error (tuple $ reverse vals));
+  error x = throw x otherwise;
+  literal s = head s ~= "%" || take 2 s == "%%" || take 2 s == "%*";
+  format_type x format =
+    if x == "n" then "n"
+    else if index "diouxX" x >= 0 then
+      if index format "[" < 0 && index format "Z" >= 0 then "Z" else "d"
+    else if index "eEfga" x >= 0 then "g"
+    else if x=="]" || x=="c" then "s"
+    else x;
+  // fix up the format specifier for double values (needs 'l' modifier)
+  kludge "g" format = init format + "l" + last format;
+  kludge _ format = format otherwise;
   // Compute a reasonable size for a string buffer; if necessary, modify the
   // field width of the format accordingly.
   guestimate "%c" = 2, "%c";
-  guestimate format = n, format
-  when
-    1,0,_,1,s = regex "^%([0-9]*)" REG_EXTENDED format 0;
+  guestimate format = n, format when
+    p = pure_scanf_prec format;
     // Leave one extra byte for the null terminator.
-    n, format = if null s then 1025, "%1024"+tail format else eval s+1, format;
+    n, format = if p<=0 then scanf_max_fld+1, make_prec scanf_max_fld format
+		else p+1, format;
   end;
+  make_prec p format = "%"+str p+tail format;
+  shift p i = pointer (pure_bigintval p+i);
+  do_scanf count vals (format:formats) =
+    do_scanf count vals formats when
+      sp = pointer_cast charp_t $ shift sbuf count;
+      res = pure_sscanf sp format;
+      count = if res>=0 then count+res else throw (scanf_error vals);
+    end if literal format;
+  do_scanf count vals (format:formats) =
+    do_scanf count (val:vals) formats when
+      t = format_type (last format) format;
+      size, format = case t of
+	"s" = guestimate format;
+	"Z" = 32, format; // should be more than enough in any case
+	_ = 16, kludge t format; // enough to hold any elementary type
+      end;
+      // Make sure to zero the buffer here, since %c doesn't store a terminal
+      // null byte.
+      buf = calloc size 1;
+      ~null buf || throw malloc_error;
+      sp = pointer_cast charp_t $ shift sbuf count;
+      res = case t of
+	"n" = pure_sscanf_int sp format buf;
+	"d" = pure_sscanf_int sp format buf;
+	"g" = pure_sscanf_double sp format buf;
+	"s" = pure_sscanf_string sp format buf;
+	"p" = pure_sscanf_pointer sp format buf;
+	"Z" = pure_sscanf_mpz sp format buf;
+      end;
+      // Note: In difference to C scanf, the return value is the number of
+      // read characters here, with -1 denoting an error condition.
+      res>=0 || (free buf $$ throw (scanf_error vals));
+      val = case t of
+	"n" = count+get_int buf;
+	"d" = get_int buf;
+	"g" = get_double buf;
+	"s" = cstring buf;
+	"p" = get_pointer buf;
+	"Z" = pure_mpz buf;
+      end;
+      count = count+res;
+      case t of
+	"Z" = mpz_clear buf $$ free buf;
+	"s" = ();
+	_ = free buf;
+      end;
+    end;
+  do_scanf count vals [] = tuple (reverse vals);
+end when
+  sbuf = sentry free $ byte_cstring s;
 end;
 
 using namespace;
@@ -1238,6 +1281,8 @@ extern expr* pure_regerror(void* reg) = regerror;
 extern expr* pure_regmatch(void* reg) = regmatch;
 extern expr* pure_regskip(void* reg) = regskip;
 namespace;
+
+public regerr;
 
 /* .. function:: regex pat cflags s eflags
 
