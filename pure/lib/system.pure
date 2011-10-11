@@ -727,15 +727,18 @@ end;
 /* ..
 
    C-style formatted I/O is provided through the following wrappers for the C
-   ``printf`` and ``scanf`` functions. Our wrapper functions take or return a
-   tuple of values, and check these against the format specifiers, so they
-   shouldn't segfault. All basic formats derived from ``%cdioux``, ``%efg``,
-   ``%s`` and ``%p`` are supported, albeit without the standard length
-   modifiers such as ``h`` and ``l``, which aren't of much use in Pure.
-   (However, in addition to standard C ``printf`` and ``scanf``, the Pure
-   versions also support the modifiers ``Z`` and ``R`` of the GMP and MPFR
-   libraries, which are used for converting multiprecision integer and
-   floating point values, see below.)
+   ``printf`` and ``scanf`` functions. These wrapper functions take or return
+   a tuple of values and are fully type-safe, so they should never segfault.
+   All basic formats derived from ``%cdioux``, ``%efg``, ``%s`` and ``%p`` are
+   supported, albeit without the standard length modifiers such as ``h`` and
+   ``l``, which aren't of much use in Pure. (However, in addition to C
+   ``printf`` and ``scanf``, the Pure versions also support the modifiers
+   ``Z`` and ``R`` of the GMP_ and MPFR_ libraries, which are used for
+   converting multiprecision integer and floating point values, as shown in
+   the examples below.)
+
+   .. _GMP: http://gmplib.org
+   .. _MPFR: http://www.mpfr.org
 
    .. function:: printf format args
                  fprintf fp format args
@@ -1006,8 +1009,8 @@ end;
      > sscanf "foo 5 22" "%s %d %g";
      "foo",5,22.0
 
-   Special argument formats are provided for :type:`bigint/type` and
-   :type:`mpfr/type` conversions::
+   As mentioned above, special argument formats are provided for bigints and
+   multiprecision floats::
 
      > sscanf "a(5) = 1234" "a(%d) = %Zd";
      5,1234L
@@ -1021,14 +1024,17 @@ end;
      pi = 3.14159265358979323846264338328
      37
 
-   Please check the GMP and MPFR documentation for details on these
-   conversions.
+   There are a number of other options for these conversions, please check the
+   GMP_ and MPFR_ documentation for details.
 
-   ..note:: In contrast to bigints, :type:`mpfr/type` values (multiprecision
-   floats) aren't supported natively by the Pure language, but require the
-   special :mod:`mpfr` addon module. Also note that, at the time of this
-   writing, MPFR only supports formatted output, so multiprecision floats are
-   not supported by the ``scanf`` functions. */
+   .. note:: In contrast to bigints, multiprecision floats aren't directly
+      supported by the Pure language. If you would like to use these numbers,
+      you'll have to install the :mod:`mpfr` addon module which is not
+      included in the standard library yet. Also note that, at the time of
+      this writing, MPFR_ only provides formatted output, so multiprecision
+      floats are not supported by the ``scanf`` functions. To work around this
+      limitation, it is possible to read the number as a string and then
+      convert it using the :func:`mpfr` function. */
 
 namespace __C;
 extern int pure_sscanf(char *buf, char *format);
