@@ -24,7 +24,7 @@ let R = [sym __with__ get_fundef sym | sym = syms];
 
 // Sort out definitions which won't pretty-print or evaluate properly because
 // they involve qualified symbols or runtime data.
-let R2 = [x | x = R; stringp s &&
+let R2 = [x | x = R; stringp s && index s "#<" < 0 &&
 	  (eval (sprintf "'(%s)" (__str__ x)) $$ null lasterr)
 	  when s = __str__ x end];
 // Do one extra iteration to get rid of representation discrepancies (mostly
