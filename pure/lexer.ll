@@ -442,6 +442,7 @@ blank  [ \t\f\v\r]
 <xsyms_comment>"*"+"/"        yylloc->step(); BEGIN(xsyms);
 <xsyms_comment><<EOF>>        interp.error(*yylloc, "open comment at end of file"); BEGIN(xsyms);
 
+[0-9]+{exp} goto float_const; // this case must be treated separately
 {int}L     {
   string msg;
   if (checkint(yytext, msg)) {
@@ -481,6 +482,7 @@ blank  [ \t\f\v\r]
   }
 }
 {float}    {
+ float_const:
   char *p = NULL;
   yylval->dval = my_strtod(yytext, &p);
   if (p && *p) {
