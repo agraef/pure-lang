@@ -103,7 +103,8 @@ DLL_TRGS = $(addprefix $(DLL_DIR)/, $(DLLS))
 PUREFILES = $(addsuffix .pure, $(PURE_BASENAMES)) stlvec
 LIBFILES = $(PUREFILES) $(DLLS)
 INSTALLEDFILES = $(addprefix $(DESTDIR)$(libdir)/pure/, $(LIBFILES))
-DISTFILES = Makefile COPYING README config.guess *.pure stlvec/*.pure *.hpp *.cpp ut/* examples/*.c examples/*.pure
+DISTFILES = Makefile COPYING README config.guess *.pure stlvec/*.pure \
+            *.hpp *.cpp ut/* examples/*.c examples/*.pure examples/*.txt
 
 ### Make dlls
 
@@ -139,7 +140,8 @@ clean:
 ### Install and uninstall
 
 install: dll
-	@ test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
+	@ test -d "$(DESTDIR)$(libdir)/pure" || \
+          mkdir -p "$(DESTDIR)$(libdir)/pure"
 	@ cp -r $(LIBFILES) "$(DESTDIR)$(libdir)/pure"
 
 uninstall:
