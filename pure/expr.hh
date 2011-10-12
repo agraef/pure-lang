@@ -319,7 +319,7 @@ struct EXPR {
     refc(0), tag(_tag), m(0), flags(0), ttag(_tag), astag(0), aspath(0)
   { assert(_tag == STR); data.s = _s; }
   explicit EXPR(int32_t _tag, void *_p) :
-    refc(0), tag(_tag), m(0), flags(0), ttag(_tag), astag(0), aspath(0)
+    refc(0), tag(_tag), m(0), flags(0), ttag(_tag>0?0:_tag), astag(0), aspath(0)
   { assert(_tag > 0 || _tag == PTR || _tag == WRAP); data.p = _p; }
   EXPR(int32_t _tag, EXPR *_arg1, EXPR *_arg2, EXPR *_arg3) :
     refc(0), tag(_tag), m(0), flags(0), ttag(0), astag(0), aspath(0)
@@ -405,6 +405,8 @@ public:
     p(new EXPR(tag, d)) { p->incref(); }
   explicit expr(int32_t tag, char *s) :
     p(new EXPR(tag, s)) { p->incref(); }
+  // Note: This constructor is also used for constant symbols with a cached
+  // pure_expr* value, cf. interpreter::csubst and printer.cc:printx.
   explicit expr(int32_t tag, void *_p) :
     p(new EXPR(tag, _p)) { p->incref(); }
   expr(int32_t tag, expr arg1, expr arg2) :
