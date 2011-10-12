@@ -1,12 +1,18 @@
+/* sieve.pure - compute the number of primes up to n two ways: using stlvec
+   alone and using stlvec::algorithms.
 
-/* The sieve of Erathosthenes, stlvec version. */
+    The stlvec version found 664579 primes up to 10,000,000, computed in 104
+    seconds. The stlvec::algorithm version found the same number of primes in
+    59 seconds. 
+*/
+
+
+/*** The sieve of Erathosthenes, stlvec version. *****************************/
 
 using stlvec;
 
-// The sieve. Returns the number of primes up to n.
-sieve n = foldl sieve 0 (0..n-1)
-// Uncomment this to get the list of primes instead.
-//	  $$ filter ((~=)0) x
+// The sieve. Returns the number of primes up to n, and a list thereof.
+sieve n = (foldl sieve 0 (0..n-1), filter ((~=)0) x)
 with
   sieve count i = count+1 when
                     p = i+1; do (\j -> update x j 0) (i+p:i+2*p..n-1);
@@ -15,3 +21,20 @@ with
 end when
   x = stlvec (1..n); update x 0 0;
 end;
+
+
+/*** The sieve of Erathosthenes, stlvec::alogrithms version ******************/
+
+using stlvec::algorithms;
+using namespace stl;
+
+// Returns number of primes, stlvec of primes up to n.
+seive_a n = sift 2 with
+  sift svend = #sv, sv when tail = remove sv 0; erase (sv,tail,svend); end;
+  sift p = sift q when zero_ms p (2*p); q = find_if (sv,p+1,svend) (~=0); end; 
+  zero_ms p m = if m<=n then update sv m 0 $$ zero_ms p (m+p) else ();   
+end when
+  sv = stlvec (0..n);
+  update sv 1 0;
+end;
+
