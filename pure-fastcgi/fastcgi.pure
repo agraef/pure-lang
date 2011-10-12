@@ -1,6 +1,13 @@
 
 /* fastcgi interface, cf. http://www.fastcgi.com/. */
 
+// declare these here, so that we don't have to pull in the system module
+public printf_error printf_value_error;
+namespace __C with
+extern expr *pure_printf_split(char *format);
+end;
+using namespace __C;
+
 // Force libfcgi to be loaded on Windows.
 init with init = eval "using \"lib:fcgi\"" if index sysinfo "mingw">=0 end;
 using "lib:fastcgi";
@@ -19,7 +26,10 @@ extern FILE *fastcgi_to_file(FCGI_FILE *fp) = to_file;
 /* stdio variables and routines which are overwritten by fastcgi. You must use
    these instead of the stdio routines supplied in the system module in order
    to obtain input from and supply output to the fastcgi server. NOTE: fastcgi
-   currently doesn't implement the scanf family, so it is missing here. */
+   currently doesn't implement the scanf family, so it is missing here. Also,
+   due to limitations of fastcgi, it isn't possible to use the special %Zd and
+   %Rg conversions supported by the Pure printf routines when output goes to
+   the server. (Streams opened via fastcgi::fopen should be fine, though.) */
 
 public stdin stdout stderr;
 // Initialize the stdin, stdout and stderr variables.
@@ -102,60 +112,49 @@ private extern int fastcgi_fprintf_int(FCGI_FILE *fp, char *format, int x);
 private extern int fastcgi_fprintf_double(FCGI_FILE *fp, char *format, double x);
 private extern int fastcgi_fprintf_string(FCGI_FILE *fp, char *format, char *x);
 private extern int fastcgi_fprintf_pointer(FCGI_FILE *fp, char *format, void *x);
+private extern int fastcgi_fprintf_pointer(FCGI_FILE *fp, char *format, void *x);
+private extern int fastcgi_fprintf_mpz(FCGI_FILE *fp, char *format, void *x);
+private extern int fastcgi_fprintf_mpfr(FCGI_FILE *fp, char *format, mpfr *x);
 
 public printf fprintf;
-private printf_split_format printf_format_spec printf_format_str;
 
 printf format::string args = fprintf stdout format args;
 
-using system; // needed for regex
-
-fprintf fp::pointer format::string args = count when
+fprintf fp::pointer format::string args =
+  catch error $ do_printf 0 formats args if listp formats
+when
   args = if tuplep args then list args else [args];
-  count, _ = catch error_handler
-    (foldl (do_fprintf fp) (0,args) $ printf_split_format format);
+  formats = pure_printf_split format;
 end with
-  error_handler (printf_error res::int) = res, [];
-  error_handler x = throw x otherwise;
-  do_fprintf fp (count,arg:args) (printf_format_spec t s) = count, args
-  when
-    res = case t, arg of
-      "c", x::int | "c", x::bigint |
-      "d", x::int | "d", x::bigint = fastcgi_fprintf_int fp s x;
-      "g", x::double = fastcgi_fprintf_double fp s x;
-      "s", x::string = fastcgi_fprintf_string fp s x;
-      "p", x::string | "p", x::pointer = fastcgi_fprintf_pointer fp s x;
-      _ = throw (printf_value_error s arg);
-    end;
-    count = if res>=0 then count+res else throw (printf_error res);
-  end;
-  do_fprintf fp (count,args) (printf_format_str s) = count, args
-  when
-    res = fastcgi_fprintf fp s;
-    count = if res>=0 then count+res else throw (printf_error res);
-  end;
-  do_fprintf fp (count,[]) (printf_format_spec t s) =
-    throw (printf_value_error s ());
-  do_fprintf fp (count,_) _ = throw (this_cant_happen count);
-end;
-
-printf_split_format format = regexg analyze
-  "(%[-#0 ]?[0-9]*([.][0-9]*)?[cdiouxXeEfgGsp])|(%)|([^%]|%%)+"
-  REG_EXTENDED format 0
-with
-  analyze info =
-    if p>=0 then // format specifier
-      printf_format_spec (format_type (last u)) u
-    else if q>=0 then // error
-      throw (printf_format_error q)
-    else printf_format_str u // literal
-  when
-    _, u = reg 0 info; // matched portion of the format string
-    p, _ = reg 1 info; // p>=0 indicates valid format specifier
-    q, _ = reg 3 info; // q>=0 indicates unrecognized format specifier
-  end;
-  format_type x = 
-    if index "diouxX" x >= 0 then "d"
-    else if index "eEfgG" x >= 0 then "g"
+  error (printf_error res::int) = res;
+  error x = throw x otherwise;
+  literal s = head s ~= "%" || take 2 s == "%%";
+  format_type x format =
+    if index "diouxX" x >= 0 then
+      if index format "R" < 0 && index format "Z" >= 0 then "Z" else "d"
+    else if index "eEfgGaA" x >= 0 then
+      if index format "R" >= 0 then "R" else "g"
     else x;
+  do_printf count (format:formats) args =
+    do_printf count formats args when
+      res = fastcgi_fprintf fp format;
+      count = if res>=0 then count+res else throw (printf_error res);
+    end if literal format;
+  do_printf count (format:formats) (arg:args) =
+    do_printf count formats args when
+      res = case format_type (last format) format, arg of
+	"c", x::int | "c", x::bigint |
+	"d", x::int | "d", x::bigint = fastcgi_fprintf_int fp format x;
+	"g", x::double = fastcgi_fprintf_double fp format x;
+	"s", x::string = fastcgi_fprintf_string fp format x;
+	"p", x::string | "p", x::pointer =
+	  fastcgi_fprintf_pointer fp format x;
+	"Z", x::bigint = fastcgi_fprintf_mpz fp format x;
+	"R", x::mpfr = fastcgi_fprintf_mpfr fp format x;
+	_ = throw (printf_value_error format arg);
+      end;
+      count = if res>=0 then count+res else throw (printf_error res);
+    end;
+  do_printf count [] _ = count;
+  do_printf count _ [] = throw out_of_bounds;
 end;

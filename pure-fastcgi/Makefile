@@ -51,12 +51,12 @@ CFLAGS = -g -O2
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
 DISTFILES = COPYING Makefile README config.guess \
-examples/*.pure fastcgi.c fastcgi.pure
+examples/*.pure fastcgi.c fastcgi_extra.c fastcgi.pure
 
 all: fastcgi$(DLL)
 
-fastcgi$(DLL): fastcgi.c
-	$(CC) $(shared) -o $@ $(INCLUDES) $< $(FLAGS) -lfcgi -lpure $(LIBS)
+fastcgi$(DLL): fastcgi.c fastcgi_extra.c
+	$(CC) $(shared) -o $@ $(INCLUDES) $^ $(FLAGS) -lfcgi -lpure -lgmp -lmpfr $(LIBS)
 
 clean:
 	rm -f *$(DLL) *~ *.a *.o
