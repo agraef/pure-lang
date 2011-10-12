@@ -10213,7 +10213,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   // accessible in the Pure program at all.
   symbol* _fsym = symtab.lookup(name);
   if (_fsym && globenv.find(_fsym->f) != globenv.end() &&
-      globenv[_fsym->f].t == env_info::fun &&
+      globenv[_fsym->f].t == env_info::fun && g && !g->isDeclaration() &&
       externals.find(_fsym->f) == externals.end())
     throw err("symbol '"+name+"' is already defined as a Pure function");
   if (it == externals.end() && g && dll_check) {
