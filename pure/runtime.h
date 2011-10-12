@@ -1462,6 +1462,7 @@ pure_expr *pure_addr(const char *s);
 /* Initialize a bunch of variables with useful system constants. */
 
 void pure_sys_vars(void);
+void pure_regex_vars(void);
 
 /* errno access. */
 

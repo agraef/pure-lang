@@ -13586,30 +13586,6 @@ void pure_sys_vars(void)
   cdf(interp, "GLOB_BRACE",	pure_int(GLOB_BRACE));
   cdf(interp, "GLOB_NOMAGIC",	pure_int(GLOB_NOMAGIC));
   cdf(interp, "GLOB_TILDE",	pure_int(GLOB_TILDE));
-  // regex stuff
-  // This one isn't actually needed more, we should get rid of it eventually.
-  cdf(interp, "SIZEOF_REGEX",	pure_int(sizeof(regex_t)));
-  cdf(interp, "REG_EXTENDED",	pure_int(REG_EXTENDED));
-  cdf(interp, "REG_ICASE",	pure_int(REG_ICASE));
-  cdf(interp, "REG_NOSUB",	pure_int(REG_NOSUB));
-  cdf(interp, "REG_NEWLINE",	pure_int(REG_NEWLINE));
-  cdf(interp, "REG_NOTBOL",	pure_int(REG_NOTBOL));
-  cdf(interp, "REG_NOTEOL",	pure_int(REG_NOTEOL));
-  // regcomp error codes
-  cdf(interp, "REG_BADBR",	pure_int(REG_BADBR));
-  cdf(interp, "REG_BADPAT",	pure_int(REG_BADPAT));
-  cdf(interp, "REG_BADRPT",	pure_int(REG_BADRPT));
-  cdf(interp, "REG_ECOLLATE",	pure_int(REG_ECOLLATE));
-  cdf(interp, "REG_ECTYPE",	pure_int(REG_ECTYPE));
-  cdf(interp, "REG_EESCAPE",	pure_int(REG_EESCAPE));
-  cdf(interp, "REG_ESUBREG",	pure_int(REG_ESUBREG));
-  cdf(interp, "REG_EBRACK",	pure_int(REG_EBRACK));
-  cdf(interp, "REG_EPAREN",	pure_int(REG_EPAREN));
-  cdf(interp, "REG_EBRACE",	pure_int(REG_EBRACE));
-  cdf(interp, "REG_ERANGE",	pure_int(REG_ERANGE));
-  cdf(interp, "REG_ESPACE",	pure_int(REG_ESPACE));
-  // regexec error codes
-  cdf(interp, "REG_NOMATCH",	pure_int(REG_NOMATCH));
   // signal actions
   cdf(interp, "SIG_TRAP",	pure_int(1));
   cdf(interp, "SIG_IGN",	pure_int(-1));
@@ -13888,6 +13864,36 @@ void pure_sys_vars(void)
 #ifdef P_DETACH
   cdf(interp, "P_DETACH",	pure_int(P_DETACH));
 #endif
+}
+
+extern "C"
+void pure_regex_vars(void)
+{
+  interpreter& interp = *interpreter::g_interp;
+  // regex stuff
+  // This one isn't actually needed more, we should get rid of it eventually.
+  cdf(interp, "SIZEOF_REGEX",	pure_int(sizeof(regex_t)));
+  cdf(interp, "REG_EXTENDED",	pure_int(REG_EXTENDED));
+  cdf(interp, "REG_ICASE",	pure_int(REG_ICASE));
+  cdf(interp, "REG_NOSUB",	pure_int(REG_NOSUB));
+  cdf(interp, "REG_NEWLINE",	pure_int(REG_NEWLINE));
+  cdf(interp, "REG_NOTBOL",	pure_int(REG_NOTBOL));
+  cdf(interp, "REG_NOTEOL",	pure_int(REG_NOTEOL));
+  // regcomp error codes
+  cdf(interp, "REG_BADBR",	pure_int(REG_BADBR));
+  cdf(interp, "REG_BADPAT",	pure_int(REG_BADPAT));
+  cdf(interp, "REG_BADRPT",	pure_int(REG_BADRPT));
+  cdf(interp, "REG_ECOLLATE",	pure_int(REG_ECOLLATE));
+  cdf(interp, "REG_ECTYPE",	pure_int(REG_ECTYPE));
+  cdf(interp, "REG_EESCAPE",	pure_int(REG_EESCAPE));
+  cdf(interp, "REG_ESUBREG",	pure_int(REG_ESUBREG));
+  cdf(interp, "REG_EBRACK",	pure_int(REG_EBRACK));
+  cdf(interp, "REG_EPAREN",	pure_int(REG_EPAREN));
+  cdf(interp, "REG_EBRACE",	pure_int(REG_EBRACE));
+  cdf(interp, "REG_ERANGE",	pure_int(REG_ERANGE));
+  cdf(interp, "REG_ESPACE",	pure_int(REG_ESPACE));
+  // regexec error codes
+  cdf(interp, "REG_NOMATCH",	pure_int(REG_NOMATCH));
 }
 
 /* Optimized matrix functions contributed by Scott E. Dillard. */
