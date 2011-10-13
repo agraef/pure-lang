@@ -681,9 +681,14 @@ Currently, the following code generation options are recognized:
    see the installation documentation for details.)
 
 Besides these, there are the following special pragmas affecting the code
-generation of some given function, which is specified in the pragma. These
+generation of some global function, which is specified in the pragma. These
 pragmas can only be used in source code, they cannot be controlled using
-command line options or environment variables.
+command line options or environment variables. Note that the given symbol
+``fun`` may in fact be an arbitrary symbol (not just an identifier), so that
+these pragmas can also be applied to special operator symbols (cf. `Lexical
+Matters`_). Also note that each of these pragmas also implicitly declares the
+symbol, so if a symbol needs any special attributes then it must be declared
+before any pragmas involving it (cf. `Symbol Declarations`_).
 
 .. option:: --eager fun
 
@@ -705,6 +710,42 @@ command line options or environment variables.
    :func:`eval`. Adding a :option:`--required` pragma for the function then
    makes sure that the function is always linked into the program. Please see
    the `Batch Compilation`_ section for an example.
+
+.. option:: --defined fun
+   	    --nodefined fun
+
+   These pragmas change the behaviour of functions defined in a Pure program.
+   Pure's default mode is to evaluate function applications in a symbolic
+   fashion using the equations (rewriting rules) supplied by the programmer,
+   cf. `Definitions and Expression Evaluation`_. This means that it is *not*
+   normally an error if there is no equation which applies to the given
+   function application to be evaluated; rather, the application simply
+   becomes a "normal form" which stands for itself. E.g., here's what you get
+   if you try to add an (undefined) symbol and a number::
+
+     > a+1;
+     a+1
+
+   The :option:`--defined` pragma allows you to declare a function symbol as a
+   "defined" function, so that it will raise a proper exception when no
+   equation is applicable::
+
+     > #! --defined +
+     > a+1;
+     <stdin>, line 3: unhandled exception 'failed_match' while evaluating 'a+1'
+
+   The :option:`--defined` status of a function can be changed at any time
+   (causing the function to be recompiled on the fly if necessary), and the
+   :option:`--nodefined` pragma restores the default behaviour of returning a
+   normal form upon failure::
+
+     > #! --nodefined +
+     > a+1;
+     a+1
+
+   More information and examples for common uses of the :option:`--defined`
+   pragma can be found under `Defined Functions`_ in the `Caveats and Notes`_
+   section.
 
 Last but not least, there are also the following pragmas for enabling and
 disabling compiler warnings on a per-rule basis, cf. `Verbosity and Debugging
@@ -1075,12 +1116,17 @@ algebraic rules like associativity and distributivity in a direct fashion::
   > square (a+b);
   a*a+a*b+b*a+b*b
 
-Note that the above isn't possible in languages like Haskell and ML which
-always enforce the so-called "constructor discipline", which stipulates that
-only pure constructor symbols (without any defining equations) may occur as a
-subterm on the left-hand side of a definition. Thus equational definitions
-like the above are forbidden in these languages. In Pure they are just normal
-business.
+The above isn't possible in languages like Haskell and ML which always enforce
+the so-called "constructor discipline", which stipulates that only pure
+constructor symbols (without any defining equations) may occur as a subterm on
+the left-hand side of a definition. Thus equational definitions like the above
+are forbidden in these languages. In Pure they are just normal business.
+
+Note that in some cases the symbolic evaluation mode sketched out above may
+also become a nuisance since it obscures possible programming errors.
+Therefore Pure provides a special :option:`--defined` pragma for declaring
+"defined" functions which may not become constructor symbols, see `Defined
+Functions`_ for details.
 
 Variables in Equations
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -7968,6 +8014,78 @@ nonfix symbol. However, this makes the ``foo`` symbol "precious", i.e., after
 such a declaration it cannot be used as a local variable anymore. It's usually
 a good idea to avoid that kind of thing, at least for generic symbols, so the
 above solution is preferred in this case.
+
+Defined Functions
+-----------------
+
+As explained in `Definitions and Expression Evaluation`_, Pure doesn't really
+distinguish "constructors" from "defined functions" and thus allows any
+function symbol to become part of a normal form expression yielded by an
+evaluation. This behaviour follows the usual semantics of (typeless) term
+rewriting and is actually quite useful if you also want to evaluate
+expressions symbolically.
+
+However, this becomes a nuisance if you really expect the given function to
+reduce to something else, and just accidentally supplied the wrong arguments
+to the function. Especially annoying in this respect are functions involving
+side effects::
+
+  > using system;
+  > puts 99;
+  puts 99
+
+Here we accidentally specified a number (rather than a string) as the argument
+of the :func:`puts` function. Now this kind of error can easily be spotted if
+the function is invoked interactively, but it may well go unnoticed if the
+call is part of a big program which is run unattended (in batch mode).
+
+As a remedy, Pure 0.48 introduces the :option:`--defined` pragma (cf. `Code
+Generation Options`_) which allows you to explicitly declare a function symbol
+as a "defined" function, so that it will raise a proper exception when none of
+the defining equations of the function are applicable::
+
+  > #! --defined puts
+  > puts 99;
+  <stdin>, line 4: unhandled exception 'failed_match' while evaluating 'puts 99'
+
+This is the same kind of :cons:`failed_match` exception that you'll get, e.g.,
+if the subject term fails to match all patterns in a :keyword:`case`
+construct, cf. `Exception Handling`_. However, note that the exception will
+only be generated if the symbol actually has any defining equations, so a
+"pure constructor" (i.e., a symbol without defining equations) will still
+return a normal form even if it is also declared :option:`--defined`::
+
+  > #! --defined foo
+  > foo bar;
+  foo bar
+
+Nevertheless, the :option:`--defined` pragma will be recorded and take effect
+as soon as you add an equation for the function::
+
+  > foo x::int = x+1;
+  > foo bar;
+  <stdin>, line 4: unhandled exception 'failed_match' while evaluating 'foo bar'
+
+There's also a :option:`--nodefined` pragma which reverts the function back to
+normal behaviour::
+
+  > #! --nodefined foo
+  > foo bar;
+  foo bar
+
+As indicated, the :option:`--defined` and :option:`--nodefined` pragmas can be
+invoked freely at any time and will take care that the affected function is
+recompiled automatically as needed.
+
+Please note that the :option:`--defined` pragma is still experimental. It
+severely interferes with Pure's symbolic evaluation capabilities, so the
+pragma isn't currently used in the standard library and we recommend that
+programmers shouldn't use it in a careless fashion either. However, while most
+error conditions stemming from unexpected normal forms can also be caught with
+diligent unit testing, the pragma can sometimes save you a lot of trouble,
+especially when testing programs which are to be executed mostly in batch
+mode. Future versions of the interpreter might also make good use of the
+pragma for static checks and optimization purposes.
 
 Recursive Types
 ---------------
