@@ -1,3 +1,27 @@
+2011-10-13  Albert Graef  <Dr.Graef@t-online.de>
+
+	* lexer.ll: Make the --eager, --required and --(no)defined pragmas
+	accept any kind of symbol (not just an identifier), so that they
+	can be applied to special operator symbols. No checking is done on
+	the syntax, and a following line comment (// ...) must be set off
+	from the symbol with whitespace. Note that any of these options
+	implicitly declare the symbol if necessary, so if the symbol is to
+	be declared using special properties such as fixity, that
+	declaration must come *before* any pragma involving the symbol.
+
+	* lexer.ll, interpreter.cc: Implemented --defined and --nodefined
+	pragmas, as discussed on the mailing list. These take a global
+	function symbol as parameter and mark or unmark it as a "defined"
+	symbol, respectively. If a symbol that is marked as "defined" is
+	defined as a function in the Pure program, then the compiler
+	generates special code which ensures that each application of the
+	function actually reduces to something else. Otherwise, instead of
+	returning a normal form, a 'failed_match' exception will be raised.
+	The --defined status of a function can be changed at any time,
+	causing the function to be recompiled on the fly. The --nodefined
+	pragma restores the default behaviour of returning a normal form
+	upon failure.
+
 2011-10-12  Albert Graef  <Dr.Graef@t-online.de>
 
 	* lexer.ll: Add a special case rule so that double constants like

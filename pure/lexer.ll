@@ -152,7 +152,7 @@ blank  [ \t\f\v\r]
 {blank}+   yylloc->step();
 [\n]+      yylloc->lines(yyleng); yylloc->step();
 
-^"#!"[ \t]*"--eager"[ \t]+{qual}?{id}[ \t]*("//".*)? {
+^"#!"[ \t]*"--eager"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
   /* --eager pragma. */
   char *s = strchr(yytext, '-')+strlen("--eager"), *t = s;
   while (isspace(*t)) t++;
@@ -166,7 +166,7 @@ blank  [ \t\f\v\r]
     interp.warning(*yylloc, "warning: bad symbol '"+sym+
 		   "' in --eager pragma");
 }
-^"#!"[ \t]*"--required"[ \t]+{qual}?{id}[ \t]*("//".*)? {
+^"#!"[ \t]*"--required"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
   /* --required pragma. */
   char *s = strchr(yytext, '-')+strlen("--required"), *t = s;
   while (isspace(*t)) t++;
@@ -180,8 +180,46 @@ blank  [ \t\f\v\r]
     interp.warning(*yylloc, "warning: bad symbol '"+sym+
 		   "' in --required pragma");
 }
+^"#!"[ \t]*"--defined"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
+  /* --defined pragma. */
+  char *s = strchr(yytext, '-')+strlen("--defined"), *t = s;
+  while (isspace(*t)) t++;
+  s = t;
+  while (*t && !isspace(*t)) t++;
+  string sym = string(s, t-s);
+  int32_t f = pure_sym(sym.c_str());
+  env::const_iterator it = interp.globenv.find(f);
+  if (f > 0 && (it == interp.globenv.end() || it->second.t == env_info::fun)) {
+    if (interp.defined.find(f) == interp.defined.end()) {
+      interp.defined.insert(f);
+      if (it != interp.globenv.end())
+	interp.mark_dirty(f);
+    }
+  } else
+    interp.warning(*yylloc, "warning: bad symbol '"+sym+
+		   "' in --defined pragma");
+}
+^"#!"[ \t]*"--nodefined"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
+  /* --nodefined pragma. */
+  char *s = strchr(yytext, '-')+strlen("--nodefined"), *t = s;
+  while (isspace(*t)) t++;
+  s = t;
+  while (*t && !isspace(*t)) t++;
+  string sym = string(s, t-s);
+  int32_t f = pure_sym(sym.c_str());
+  env::const_iterator it = interp.globenv.find(f);
+  if (f > 0 && (it == interp.globenv.end() || it->second.t == env_info::fun)) {
+    if (interp.defined.find(f) != interp.defined.end()) {
+      interp.defined.erase(f);
+      if (it != interp.globenv.end())
+	interp.mark_dirty(f);
+    }
+  } else
+    interp.warning(*yylloc, "warning: bad symbol '"+sym+
+		   "' in --nodefined pragma");
+}
 ^"#!"[ \t]*"--"[A-Za-z0-9-]+[ \t]*("//".*)? {
-  /* Pragmas. */
+  /* Other pragmas (code generation). */
   char *s = strchr(yytext, '-')+2, *t = s;
   while (isalnum(*t) || *t == '-') t++;
   string opt0 = string(s, t-s);
@@ -1340,7 +1378,8 @@ static const bool yes_or_no(const string& msg)
 #define PATHSEP ":"
 #endif
 
-static string decl_str(interpreter &interp, const symbol& sym)
+static string decl_str(interpreter &interp, const symbol& sym,
+		       bool defined = false)
 {
   ostringstream sout;
   if (sym.priv &&
@@ -1369,6 +1408,8 @@ static string decl_str(interpreter &interp, const symbol& sym)
     }
     sout << " " << (int)sym.prec << " " << sym.s << ";\n";
   }
+  if (defined)
+    sout << "#! --defined " << sym.s << "\n";
   return sout.str();
 }
 
@@ -2226,7 +2267,8 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	if (_it == interp.globenv.end() && _jt == interp.macenv.end() &&
 	    xt != interp.externals.end()) {
 	  const ExternInfo& info = xt->second;
-	  sout << decl_str(interp, sym);
+	  bool defined = interp.defined.find(sym.f) != interp.defined.end();
+	  sout << decl_str(interp, sym, defined);
 	  if (sym.priv) sout << "private ";
 	  sout << info << ";";
 	  if ((!sflag||lflag) && dflag) {
@@ -2269,7 +2311,8 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	    sout << "const " << sym.s << " = " << *_it->second.cval
 		 << ";\n";
 	} else {
-	  sout << decl_str(interp, sym);
+	  bool defined = interp.defined.find(sym.f) != interp.defined.end();
+	  sout << decl_str(interp, sym, defined);
 	  if (fflag && xt != interp.externals.end()) {
 	    const ExternInfo& info = xt->second;
 	    if (sym.priv) sout << "private ";
@@ -2574,7 +2617,8 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	}
 	if (_it == interp.globenv.end() && _jt == interp.macenv.end() &&
 	    _xt != interp.externals.end()) {
-	  fout << decl_str(interp, sym);
+	  bool defined = interp.defined.find(sym.f) != interp.defined.end();
+	  fout << decl_str(interp, sym, defined);
 	  const ExternInfo& info = _xt->second;
 	  if (sym.priv) fout << "private ";
 	  fout << info << ";\n";
@@ -2589,7 +2633,8 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	  fout << "const " << sym.s << " = " << *_it->second.cval
 	       << ";\n";
 	} else {
-	  fout << decl_str(interp, sym);
+	  bool defined = interp.defined.find(sym.f) != interp.defined.end();
+	  fout << decl_str(interp, sym, defined);
 	  if (fflag && _xt != interp.externals.end()) {
 	    const ExternInfo& info = _xt->second;
 	    if (sym.priv) fout << "private ";

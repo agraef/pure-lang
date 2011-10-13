@@ -3445,7 +3445,7 @@ void interpreter::compile()
 	// regenerate LLVM code (body)
 	Env& f = globalfuns[ftag];
 	push("compile", &f);
-	fun_body(info.m);
+	fun_body(info.m, defined.find(ftag) != defined.end());
 	pop(&f);
 	if (eager.find(ftag) != eager.end())
 	  to_be_jited.insert(ftag);

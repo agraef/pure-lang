@@ -529,6 +529,7 @@ public:
   map<int32_t,rtty_info> rtty; // runtime type tag information
   list<int> required; // required symbols (--required pragma)
   set<int> eager;    // eager compilation symbols (--eager pragma)
+  set<int> defined;  // defined symbols (--defined pragma)
   ostream *output;   // redirected output stream for interactive commands
   symtable symtab;   // the symbol table
   pure_expr *result; // last result computed by exec() or parse()
