@@ -1,0 +1,31 @@
+
+// Test dynamic behaviour of --defined/--nodefined pragmas and 'clear'.
+
+// Ordinary function.
+
+#! --defined foo
+foo x::int = x+1;
+foo 99; foo 99.0;
+evalcmd "clear foo";
+foo 99; foo 99.0;
+foo x::int = x+1;
+foo 99; foo 99.0;
+#! --nodefined foo
+foo 99; foo 99.0;
+
+// External with and without Pure equations.
+
+#! --defined puts
+extern int puts(char*);
+puts x::int = puts $ str x;
+puts 99; puts 99.0;
+evalcmd "clear puts";
+puts 99; puts 99.0;
+#! --nodefined puts
+puts 99; puts 99.0;
+puts x::int = puts $ str x;
+puts 99; puts 99.0;
+#! --defined puts
+evalcmd "clear puts";
+puts 99; puts 99.0;
+puts "foo";

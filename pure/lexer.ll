@@ -194,6 +194,9 @@ blank  [ \t\f\v\r]
       interp.defined.insert(f);
       if (it != interp.globenv.end())
 	interp.mark_dirty(f);
+      else
+	// this forces the cbox to be updated in case of an external
+	interp.clearsym(f);
     }
   } else
     interp.warning(*yylloc, "warning: bad symbol '"+sym+
@@ -213,6 +216,9 @@ blank  [ \t\f\v\r]
       interp.defined.erase(f);
       if (it != interp.globenv.end())
 	interp.mark_dirty(f);
+      else
+	// this forces the cbox to be updated in case of an external
+	interp.clearsym(f);
     }
   } else
     interp.warning(*yylloc, "warning: bad symbol '"+sym+

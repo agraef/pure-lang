@@ -3921,7 +3921,8 @@ void interpreter::clearsym(int32_t f)
   map<int32_t,GlobalVar>::iterator v = globalvars.find(f);
   if (v != globalvars.end()) {
     env::iterator it = globenv.find(f);
-    if (it->second.t == env_info::cvar && it->second.cval_var) {
+    if (it != globenv.end() &&
+	it->second.t == env_info::cvar && it->second.cval_var) {
       /* This is a constant value cached in a read-only variable. We need to
 	 keep that variable, so create a new one in its place. */
       globalvars.erase(v);
@@ -3934,9 +3935,14 @@ void interpreter::clearsym(int32_t f)
 	 ConstantPointerNull::get(ExprPtrTy), mkvarsym(sym.s));
       JIT->addGlobalMapping(v->second.v, &v->second.x);
     }
-    pure_expr *cv = pure_const(f);
+    /* Check whether this is actually an external which has the --defined
+       pragma. In this case the cbox is reset to NULL so that the wrapper
+       function knows that we want an exception rather than a normal form. */
+    bool defined_external = externals.find(f) != externals.end() &&
+      defined.find(f) != defined.end();
+    pure_expr *cv = defined_external? 0 : pure_new(pure_const(f));
     if (v->second.x) pure_free(v->second.x);
-    v->second.x = pure_new(cv);
+    v->second.x = cv;
   }
   map<int32_t,Env>::iterator g = globalfuns.find(f);
   if (g != globalfuns.end()) {
@@ -11071,8 +11077,10 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   // parameters. The cbox may be patched up later to become a Pure function.
   // In effect, this allows an external function to be augmented with Pure
   // equations, but note that the external C function will always be tried
-  // first.
-  pure_expr *cv = pure_const(sym.f);
+  // first. (Note that, as of Pure 0.48, the default value may also be NULL in
+  // the case of a --defined function without equations.)
+  pure_expr *cv = defined.find(sym.f) != defined.end() ? 0 :
+    pure_new(pure_const(sym.f));
   assert(JIT);
   GlobalVar& v = globalvars[sym.f];
   if (!v.v) {
@@ -11081,22 +11089,49 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
        mkvarlabel(sym.f));
     JIT->addGlobalMapping(v.v, &v.x);
   }
-  if (v.x) pure_free(v.x); v.x = pure_new(cv);
+  if (v.x) pure_free(v.x); v.x = cv;
   Value *defaultv = b.CreateLoad(v.v);
+  // We first check for NULL values.
+  BasicBlock *goodbb = basic_block("good"), *badbb = basic_block("bad");
+  b.CreateCondBr(b.CreateICmpNE(defaultv, NullExprPtr), goodbb, badbb);
+  f->getBasicBlockList().push_back(goodbb);
+  b.SetInsertPoint(goodbb);
+  // Everything's fine, invoke the default value to the arguments and return
+  // the result.
+  Value *defv = defaultv;
   vector<Value*> myargs(2);
   for (size_t i = 0; i < n; ++i) {
-    myargs[0] = b.CreateCall(module->getFunction("pure_new"), defaultv);
+    myargs[0] = b.CreateCall(module->getFunction("pure_new"), defv);
     myargs[1] = b.CreateCall(module->getFunction("pure_new"), args[i]);
-    defaultv = b.CreateCall(module->getFunction("pure_apply"),
+    defv = b.CreateCall(module->getFunction("pure_apply"),
 			    myargs.begin(), myargs.end());
   }
   if (n > 0 || !debugging) {
     vector<Value*> freeargs(3);
-    freeargs[0] = defaultv;
+    freeargs[0] = defv;
     freeargs[1] = UInt(n);
     freeargs[2] = Zero;
     b.CreateCall(module->getFunction("pure_pop_args"),
 		 freeargs.begin(), freeargs.end());
+  }
+  b.CreateRet(defv);
+  // NULL default value, raise a failed_match exception instead.
+  f->getBasicBlockList().push_back(badbb);
+  b.SetInsertPoint(badbb);
+  // Create a cbox for the failed_match symbol and invoke pure_throw (we can't
+  // use unwind() here since there's no environment on the stack).
+  {
+    int32_t tag = symtab.failed_match_sym().f;
+    pure_expr *cv = pure_const(tag);
+    GlobalVar& v = globalvars[tag];
+    if (!v.v) {
+      v.v = global_variable
+	(module, ExprPtrTy, false, GlobalVariable::InternalLinkage,
+	 NullExprPtr, mkvarlabel(tag));
+      JIT->addGlobalMapping(v.v, &v.x);
+    }
+    if (v.x) pure_free(v.x); v.x = pure_new(cv);
+    b.CreateCall(module->getFunction("pure_throw"), b.CreateLoad(v.v));
   }
   b.CreateRet(defaultv);
   verifyFunction(*f);
