@@ -1122,11 +1122,16 @@ constructor symbols (without any defining equations) may occur as a subterm on
 the left-hand side of a definition. Thus equational definitions like the above
 are forbidden in these languages. In Pure they are just normal business.
 
-Note that in some cases the symbolic evaluation mode sketched out above may
-also become a nuisance since it obscures possible programming errors.
-Therefore Pure provides a special :option:`--defined` pragma for declaring
-"defined" functions which may not become constructor symbols, see `Defined
-Functions`_ for details.
+This symbolic mode of evaluation is rather unusual outside of the realm of
+symbolic algebra system, but it provides the programmer with a very flexible
+model of computation and is one of Pure's most distinguishing features. In
+some cases, however, the unevaluated normal forms may also become a nuisance
+since they may obscure possible programming errors. Therefore Pure provides a
+special :option:`--defined` pragma (cf. `Code Generation Options`_) which
+forces a function to be treated as a defined function, so that it becomes more
+like functions in traditional untyped languages such as Lisp and Python which
+raise an exception under such conditions. This is described in more detail
+under `Defined Functions`_ in the `Caveats and Notes`_ section.
 
 Variables in Equations
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -8035,14 +8040,15 @@ side effects::
   puts 99
 
 Here we accidentally specified a number (rather than a string) as the argument
-of the :func:`puts` function. Now this kind of error can easily be spotted if
-the function is invoked interactively, but it may well go unnoticed if the
-call is part of a big program which is run unattended (in batch mode).
+of the :func:`puts` function. This kind of error can easily be spotted if the
+function is invoked interactively, but it may well go unnoticed if the call is
+buried deeply in a big program which runs unattended (in batch mode).
 
 As a remedy, Pure 0.48 introduces the :option:`--defined` pragma (cf. `Code
 Generation Options`_) which allows you to explicitly declare a function symbol
-as a "defined" function, so that it will raise a proper exception when none of
-the defining equations of the function are applicable::
+as a "defined" function, so that it will raise a proper exception when the
+defining equations (or, as it were, the external definition) of the function
+are not applicable to the subject expression::
 
   > #! --defined puts
   > puts 99;
@@ -8066,26 +8072,26 @@ as soon as you add an equation for the function::
   > foo bar;
   <stdin>, line 4: unhandled exception 'failed_match' while evaluating 'foo bar'
 
-There's also a :option:`--nodefined` pragma which reverts the function back to
-normal behaviour::
+There's also a :option:`--nodefined` pragma which reverts the function to the
+default behaviour of returning normal forms::
 
   > #! --nodefined foo
   > foo bar;
   foo bar
 
 As indicated, the :option:`--defined` and :option:`--nodefined` pragmas can be
-invoked freely at any time and will take care that the affected function is
-recompiled automatically as needed.
+invoked freely at any time, and the interpreter takes care that the affected
+function is recompiled automatically as needed.
 
-Please note that the :option:`--defined` pragma is still experimental. It
-severely interferes with Pure's symbolic evaluation capabilities, so the
-pragma isn't currently used in the standard library and we recommend that
+Please note that the :option:`--defined` pragma is still considered
+experimental. It interferes with Pure's symbolic evaluation capabilities, so
+the pragma isn't currently used in the standard library and we recommend that
 programmers shouldn't use it in a careless fashion either. However, while most
 error conditions stemming from unexpected normal forms can also be caught with
-diligent unit testing, the pragma can sometimes save you a lot of trouble,
-especially when testing programs which are to be executed mostly in batch
-mode. Future versions of the interpreter might also make good use of the
-pragma for static checks and optimization purposes.
+diligent unit testing, the pragma can sometimes save you some time and
+trouble, especially when testing programs which are to be executed mostly in
+batch mode. Future versions of the interpreter might also make good use of
+this pragma for static checks and optimization purposes.
 
 Recursive Types
 ---------------
