@@ -28,13 +28,14 @@ QUICK SUMMARY
 ===== =======
 
 Here is the executive summary for the impatient. This assumes that you're
-using LLVM 2.9 and Pure 0.47, please substitute your actual version numbers in
+using LLVM 2.9 and Pure 0.48, please substitute your actual version numbers in
 the commands given below.
 
 Prerequisites: gcc, GNU make, flex/bison (development sources only), libltdl,
-libgmp (including header files for development), wget (for downloading and
-installing the online documentation), GNU emacs (if you want to use Emacs Pure
-mode). These should all be available as binary packages on most systems.
+libgmp and libmpfr (including header files for development), wget (for
+downloading and installing the online documentation), GNU emacs (if you want
+to use Emacs Pure mode). These should all be available as binary packages on
+most systems.
 
 Installing LLVM and clang (the latter is optional but recommended):
 
@@ -52,8 +53,8 @@ that makes LLVM very slow and/or breaks it on some systems.)
 
 Installing Pure:
 
-$ tar xfvz pure-0.47.tar.gz
-$ cd pure-0.47
+$ tar xfvz pure-0.48.tar.gz
+$ cd pure-0.48
 $ ./configure --enable-release
 $ make && sudo make install
 
@@ -63,7 +64,7 @@ $ sudo make install-docs
 
 (This needs the wget program. You can also download the pure-docs tarball
 manually and then install it from a local file, e.g.: sudo make install-docs
-docs=pure-docs-0.47.tar.gz.)
+docs=pure-docs-0.48.tar.gz.)
 
 It is also recommended that you run the following in the Pure source directory
 after compilation to make sure that the Pure interpreter works correctly on
@@ -82,7 +83,7 @@ $ pure
 
 Uninstalling:
 
-$ cd pure-0.47
+$ cd pure-0.48
 $ sudo make uninstall
 $ cd ../llvm-2.9
 $ sudo make uninstall
@@ -109,6 +110,8 @@ denotes corresponding development packages):
 
 - the GNU multiprecision library (libgmp, -dev) or some compatible replacement
   (see comments below);
+
+- the GNU multiprecision floating point library (libmpfr, -dev);
 
 - GNU readline (libreadline, -dev) or some compatible replacement (only needed
   if you want command line editing support in the interpreter; see comments
@@ -164,6 +167,17 @@ explicitly link against GMP. If you run into any such problems then you should
 build MPIR with the --enable-gmpcompat configure option so that it becomes a
 drop-in replacement for GMP (in this case the --with-mpir option isn't needed
 when configuring Pure).
+
+In addition, Pure 0.48 and later also require the GNU multiprecision floating
+point library:
+
+- MPFR: http://www.mpfr.org
+
+(Pure doesn't really have built-in support for MPFR numbers, this is provided
+through a separate pure-mpfr addon module instead, please check the Pure
+website for details. However, there is now some support for printing both GMP
+and MPFR numbers in the printf and scanf functions in the system module, for
+which the MPFR library is needed.)
 
 To make interactive command line editing work in the interpreter, you'll also
 need GNU readline or some compatible replacement such as BSD editline/libedit:
@@ -421,7 +435,7 @@ STEP 7. The Pure interpreter should be ready to go now.
 Run Pure interactively as:
 
 $ pure
-Pure 0.47 (x86_64-unknown-linux-gnu) Copyright (c) 2008-2011 by Albert Graef
+Pure 0.48 (x86_64-unknown-linux-gnu) Copyright (c) 2008-2011 by Albert Graef
 (Type 'help' for help, 'help copying' for license information.)
 Loaded prelude from /usr/local/lib/pure/prelude.pure.
 
@@ -886,8 +900,8 @@ port of LLVM which has the --enable-optimized flag enabled.
 
 Building Pure requires GNU make, thus you will have to use 'gmake' instead of
 'make'. In addition to gmake, you'll need recent versions of the following
-packages: perl5, flex, bison, gmp, and readline (or editline). Depending on
-your system, you might also have to set up some compiler and linker paths.
+packages: perl5, flex, bison, gmp, mpfr and readline (or editline). Depending
+on your system, you might also have to set up some compiler and linker paths.
 E.g., the following does the trick on NetBSD:
 
 export C_INCLUDE_PATH=/usr/local/include:/usr/pkg/include
