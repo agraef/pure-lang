@@ -1,4 +1,38 @@
 
+** Pure 0.48 (in progress)
+
+At present, this version still requires LLVM <= 2.9, but we hope to make it
+work with LLVM 3.0 before the actual release.
+
+Please note that this release needs GNU MPFR (http://www.mpfr.org/) as an
+additional dependency. Also, there have been some changes in the internal
+runtime API which required a bump of the library version number, so you'll
+have to recompile the addon modules that you need.
+
+Here's a quick summary of the user-visible changes. As usual, please check the
+ChangeLog for details.
+
+- New --defined/--nodefined and --warn/--nowarn pragmas, please check the
+  documentation for details.
+
+- New __func__ and __namespace__ builtins which expand to the current function
+  and namespace at the call site. Also, __locals__ has been changed to a
+  built-in macro (rather than subsituting it away at code generation time) so
+  that proper lambda lifting is performed on the local function references.
+
+- Library: Regex functions and pointer arithmetic have been moved into
+  separate regex and pointer modules. This means that you'll have to add an
+  explicit import of these modules to use these facilities. Also, the system
+  module offers a new and improved printf/scanf implementation which supports
+  GMP and MPFR (%Zd, %Rg) conversions.
+
+- Emacs Pure mode: Changed the keybindings for the block traversal commands to
+  use the Meta prefix. (This used to be Ctrl+Shift, but this interferes with
+  the standard binding for the shifted word movement commands for selecting
+  ranges of text in cua mode.) Also, pure-mark-defun (C-M-h) and
+  pure-send-defun (C-c C-f) now allow you to mark or send an inline code
+  section (%< ... %>), if point is at or inside such a section.
+
 ** Pure 0.47 2011-03-29
 
 This release has been tested and is known to work with LLVM 2.9 (and continues
