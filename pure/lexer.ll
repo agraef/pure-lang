@@ -245,8 +245,10 @@ blank  [ \t\f\v\r]
     interp.folding = flag;
   } else if (opt == "warn") {
     interp.compat = flag;
+#if USE_BIGINT_PRAGMA
   } else if (opt == "bigint") {
     interp.bigints = flag;
+#endif
   } else if (opt == "warn2") {
     interp.compat2 = flag;
   } else {
