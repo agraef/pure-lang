@@ -716,7 +716,7 @@ interpreter::interpreter(int _argc, char **_argv)
     : argc(_argc), argv(_argv),
     verbose(0), compat(false), compat2(false), compiling(false),
     eager_jit(false), interactive(false), debugging(false),
-    checks(true), folding(true), consts(true), use_fastcc(true),
+    checks(true), folding(true), consts(true), bigints(false), use_fastcc(true),
     pic(false), strip(true), restricted(false), ttymode(false), override(false),
     stats(false), stats_mem(false), temp(0),  ps("> "), libdir(""),
     histfile("/.pure_history"), modname("pure"),
@@ -738,7 +738,7 @@ interpreter::interpreter(int32_t nsyms, char *syms,
   : argc(0), argv(0),
     verbose(0), compat(false), compat2(false), compiling(false),
     eager_jit(false), interactive(false), debugging(false),
-    checks(true), folding(true), consts(true), use_fastcc(true),
+    checks(true), folding(true), consts(true), bigints(false), use_fastcc(true),
     pic(false), strip(true), restricted(true), ttymode(false), override(false),
     stats(false), stats_mem(false), temp(0), ps("> "), libdir(""),
     histfile("/.pure_history"), modname("pure"),
@@ -2421,7 +2421,7 @@ pure_expr* interpreter::run(int priv, const string &_s,
   string *l_current_namespace = symtab.current_namespace;
   map< string, set<int32_t> > *l_search_namespaces = symtab.search_namespaces;
   bool l_checks = checks, l_folding = folding, l_consts = consts,
-    l_use_fastcc = use_fastcc;
+    l_bigints = bigints, l_use_fastcc = use_fastcc;
   // save global data
   uint8_t s_verbose = g_verbose;
   bool s_interactive = g_interactive;
@@ -2481,7 +2481,7 @@ pure_expr* interpreter::run(int priv, const string &_s,
     symtab.search_namespaces = l_search_namespaces;
     if (checks != l_checks || use_fastcc != l_use_fastcc) compile();
     checks = l_checks; folding = l_folding; consts = l_consts;
-    use_fastcc = l_use_fastcc;
+    bigints = l_bigints; use_fastcc = l_use_fastcc;
   }
   // return last computed result, if any
   return result;
@@ -2518,7 +2518,7 @@ pure_expr *interpreter::runstr(const string& s)
   string *l_current_namespace = symtab.current_namespace;
   map< string, set<int32_t> > *l_search_namespaces = symtab.search_namespaces;
   bool l_checks = checks, l_folding = folding, l_consts = consts,
-    l_use_fastcc = use_fastcc;
+    l_bigints = bigints, l_use_fastcc = use_fastcc;
   // save global data
   uint8_t s_verbose = g_verbose;
   bool s_interactive = g_interactive;
@@ -2564,7 +2564,7 @@ pure_expr *interpreter::runstr(const string& s)
   symtab.search_namespaces = l_search_namespaces;
   if (checks != l_checks || use_fastcc != l_use_fastcc) compile();
   checks = l_checks; folding = l_folding; consts = l_consts;
-  use_fastcc = l_use_fastcc;
+  bigints = l_bigints; use_fastcc = l_use_fastcc;
   // return last computed result, if any
   return result;
 }
@@ -2582,7 +2582,7 @@ pure_expr *interpreter::parsestr(const string& s)
   string *l_current_namespace = symtab.current_namespace;
   map< string, set<int32_t> > *l_search_namespaces = symtab.search_namespaces;
   bool l_checks = checks, l_folding = folding, l_consts = consts,
-    l_use_fastcc = use_fastcc;
+    l_bigints = bigints, l_use_fastcc = use_fastcc;
   // save global data
   uint8_t s_verbose = g_verbose;
   bool s_interactive = g_interactive;
@@ -2629,7 +2629,7 @@ pure_expr *interpreter::parsestr(const string& s)
   symtab.search_namespaces = l_search_namespaces;
   if (checks != l_checks || use_fastcc != l_use_fastcc) compile();
   checks = l_checks; folding = l_folding; consts = l_consts;
-  use_fastcc = l_use_fastcc;
+  bigints = l_bigints; use_fastcc = l_use_fastcc;
   // return last computed result, if any
   return result;
 }

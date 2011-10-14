@@ -316,6 +316,8 @@ item
 fixity
 : FIX INT		{ $$ = new sym_info(true, priv_def,$2,$1);
 			  interp.declare_op = true; }
+| FIX BIGINT		{ $$ = new sym_info(true, priv_def,mpz_get_si(*$2),$1);
+			  free($2); interp.declare_op = true; }
 | FIX '(' op ')'	{ symbol& sym = interp.symtab.sym($3);
 			  $$ = new sym_info(true, priv_def,sym.prec,$1);
 			  interp.declare_op = true; }
@@ -325,6 +327,8 @@ fixity
 			  interp.declare_op = true; }
 | scope FIX INT		{ $$ = new sym_info(true, $1,$3,$2);
 			  interp.declare_op = true; }
+| scope FIX BIGINT	{ $$ = new sym_info(true, $1,mpz_get_si(*$3),$2);
+			  free($3); interp.declare_op = true; }
 | scope FIX '(' op ')'	{ symbol& sym = interp.symtab.sym($4);
 			  $$ = new sym_info(true, $1,sym.prec,$2);
 			  interp.declare_op = true; }

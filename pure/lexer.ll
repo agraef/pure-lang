@@ -245,6 +245,8 @@ blank  [ \t\f\v\r]
     interp.folding = flag;
   } else if (opt == "warn") {
     interp.compat = flag;
+  } else if (opt == "bigint") {
+    interp.bigints = flag;
   } else if (opt == "warn2") {
     interp.compat2 = flag;
   } else {
@@ -510,14 +512,14 @@ blank  [ \t\f\v\r]
     mpz_t *z = (mpz_t*)malloc(sizeof(mpz_t));
     mpz_init(*z);
     mpz_set_str(*z, yytext, 0);
-    if (mpz_fits_sint_p(*z)) {
+    if (!interp.bigints && mpz_fits_sint_p(*z)) {
       int n = mpz_get_si(*z);
       mpz_clear(*z); free(z);
       yylval->ival = n;
       return token::INT;
     } else {
       yylval->zval = z;
-      return token::CBIGINT;
+      return interp.bigints?token::BIGINT:token::CBIGINT;
     }
   } else {
     yylval->ival = 0;
