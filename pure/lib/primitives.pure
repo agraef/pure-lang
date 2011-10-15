@@ -638,15 +638,16 @@ using namespace __C;
       expression, which is recompiled and then evaluated. Exceptions during
       evaluation are reported back to the caller.
 
-      Please note that the use of :func:`eval` and :func:`evalcmd` (as well as
-      :func:`add_fundef`, :func:`add_typedef` etc. from the preceding
-      subsection) to modify a running program breaks referential transparency
-      and hence these functions should be used with care. Also, none of the
-      inspection and mutation capabilities provided by these operations will
-      work in batch-compiled programs, please check the :ref:`Batch
-      Compilation` section in the Pure manual for details. Moreover, using
-      these operations to modify or delete a function which is currently being
-      executed results in undefined behaviour.
+      .. note:: The use of :func:`eval` and :func:`evalcmd` (as well as
+         :func:`add_fundef`, :func:`add_typedef` etc. from the preceding
+	 subsection) to modify a running program breaks referential
+	 transparency and hence these functions should be used with
+	 care. Also, none of the inspection and mutation capabilities provided
+	 by these operations will work in batch-compiled programs, please
+	 check the :ref:`Batch Compilation` section in the Pure manual for
+	 details. Moreover, using these operations to modify or delete a
+	 function which is currently being executed results in undefined
+	 behaviour.
 
    .. function:: evalcmd x
 
@@ -679,16 +680,18 @@ using namespace __C;
       that the error is in the source string, but may also be a proper
       filename of a module imported in the evaluated code), ``l1,c1`` denotes
       the beginning of the range with the errorneous construct (given as line
-      and column indices) and ``l2,c2`` its end. For convenience, both line
-      and column indices are zero-based, in order to facilitate extraction of
-      the text from the actual source string.
+      and column indices) and ``l2,c2`` its end (or rather the character
+      position following it). For convenience, both line and column indices
+      are zero-based, in order to facilitate extraction of the text from the
+      actual source string.
 
-      Please note that the indicated error positions are only approximate, and
-      may in many cases span an entire syntactic construct (such as a
-      subexpression or even an entire function definition) containing the
-      error. Also, the end of the range may sometimes point one token past the
-      actual end of the construct. (These limitations are due to technical
-      restrictions in the parser; don't expect them to go away anytime soon.)
+      .. note:: The indicated error positions are only approximate, and
+         may in many cases span an entire syntactic construct (such as a
+	 subexpression or even an entire function definition) containing the
+	 error. Also, the end of the range may sometimes point one token past
+	 the actual end of the construct. (These limitations are due to
+	 technical restrictions in the parser; don't expect them to go away
+	 anytime soon.)
 
    Examples::
 
