@@ -3496,7 +3496,7 @@ pure_expr *pure_eval(const char *s)
   size_t nlines = 1, lastpos = 0, pos;
   while ((pos = src.find('\n', lastpos)) != string::npos) {
     nlines++;
-    lastpos = pos;
+    lastpos = pos+1;
   }
   size_t lastlen = strlen(src.c_str()+lastpos);
   for (list<errinfo>::iterator it = interp.errpos.begin(),
@@ -8201,7 +8201,7 @@ pure_expr *eval(pure_expr *x)
     size_t nlines = 1, lastpos = 0, pos;
     while ((pos = src.find('\n', lastpos)) != string::npos) {
       nlines++;
-      lastpos = pos;
+      lastpos = pos+1;
     }
     size_t lastlen = strlen(src.c_str()+lastpos);
     for (list<errinfo>::iterator it = interp.errpos.begin(),

@@ -2623,7 +2623,7 @@ pure_expr *interpreter::parsestr(const string& s)
     // count lines in the source string and find the start of the last line
     while ((pos = s.find('\n', lastpos)) != string::npos) {
       nlines++;
-      lastpos = pos;
+      lastpos = pos+1;
     }
     size_t lastlen = strlen(s.c_str()+lastpos);
     for (list<errinfo>::iterator it = errpos.begin(), end = errpos.end();
