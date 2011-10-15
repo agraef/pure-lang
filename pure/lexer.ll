@@ -141,6 +141,8 @@ blank  [ \t\f\v\r]
 
 %{
 # define YY_USER_ACTION  yylloc->columns(yyleng);
+/* This should be called after yyless. */
+# define yylloc_update() yylloc->end = yylloc->begin; yylloc->columns(yyleng)
 %}
 
 %%
@@ -444,16 +446,17 @@ blank  [ \t\f\v\r]
 <xsyms>([[:punct:]]|{punct})+  {
  xsyms_parse_op:
   if (yytext[0] == '/' && yytext[1] == '*') {
-    yyless(2);
+    yyless(2); yylloc_update();
     goto xsyms_parse_comment; // comment starter
   }
   while (yyleng > 1 && yytext[yyleng-1] == ';') yyless(yyleng-1);
+  yylloc_update();
   symbol* sym = interp.symtab.lookup(xsym(interp.xsym_prefix, yytext));
   bool res = interp.symtab.count > 0;
   while (!sym && !res && yyleng > 1) {
     if (yyleng == 2 && yytext[0] == '-' && yytext[1] == '>')
       return token::MAPSTO;
-    yyless(yyleng-1);
+    yyless(yyleng-1); yylloc_update();
     sym = interp.symtab.lookup(xsym(interp.xsym_prefix, yytext));
     res = interp.symtab.count > 0;
   }
@@ -468,7 +471,7 @@ blank  [ \t\f\v\r]
     /* If we come here, we failed to recognize the input as a special symbol
        and have to rescan everything in a special mode which excludes this
        rule. This hack is necessary in order to avoid the use of REJECT. */
-    yyless(0);
+    yyless(0); yylloc_update();
     BEGIN(xsyms_rescan);
   }
 }
@@ -629,7 +632,7 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     // not a valid namespace prefix
     if (tag && find_namespace(interp, qual)) {
       // we can still parse this as an identifier with a type tag
-      yyless(k); qualid = yytext; BEGIN(xtag);
+      yyless(k); yylloc_update(); qualid = yytext; BEGIN(xtag);
       //check(*yylloc, yytext, false);
     } else {
       string msg = "unknown namespace '"+qual+"'";
@@ -722,12 +725,13 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
   if (yytext[k] == '/' && yytext[k+1] == '*') {
     /* This is actually a comment starter. Back out and complain about a bad
        qualified symbol */
-    yyless(k);
+    yyless(k); yylloc_update();
     string msg = "invalid qualified symbol '"+pstring(yytext)+"'";
     interp.error(*yylloc, msg);
     break;
   }
   while ((int)yyleng > (int)k+1 && yytext[yyleng-1] == ';') yyless(yyleng-1);
+  yylloc_update();
   if (interp.declare_op) {
     yylval->sval = new string(yytext);
     return token::ID;
@@ -736,7 +740,7 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
   while (!sym && (int)yyleng > (int)k+1) {
     if (yyleng == 2 && yytext[0] == '-' && yytext[1] == '>')
       return token::MAPSTO;
-    yyless(yyleng-1);
+    yyless(yyleng-1); yylloc_update();
     sym = interp.symtab.lookup(yytext);
   }
   if (sym) {
@@ -763,10 +767,11 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
 ([[:punct:]]|{punct})+  {
  parse_op:
   if (yytext[0] == '/' && yytext[1] == '*') {
-    yyless(2);
+    yyless(2); yylloc_update();
     goto parse_comment; // comment starter
   }
   while (yyleng > 1 && yytext[yyleng-1] == ';') yyless(yyleng-1);
+  yylloc_update();
   if (interp.declare_op) {
     yylval->sval = new string(yytext);
     return token::ID;
@@ -775,7 +780,7 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
   while (!sym && yyleng > 1) {
     if (yyleng == 2 && yytext[0] == '-' && yytext[1] == '>')
       return token::MAPSTO;
-    yyless(yyleng-1);
+    yyless(yyleng-1); yylloc_update();
     sym = interp.symtab.lookup(yytext);
   }
   if (sym) {
@@ -794,7 +799,7 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
   /* If we come here, we failed to recognize the input as a special symbol and
      have to rescan everything in a special mode which excludes this
      rule. This hack is necessary in order to avoid the use of REJECT. */
-  yyless(0);
+  yyless(0); yylloc_update();
   BEGIN(rescan);
 }
 <rescan>.|{punct}|{letter} |
