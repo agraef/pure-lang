@@ -935,6 +935,8 @@ interpreter::error(const yy::location& l, const string& m)
     msg << *l.begin.filename << ", line " << l.begin.line
 	<< ": " << m1 << '\n';
     errmsg += msg.str();
+    errpos.push_back(errinfo(*l.begin.filename, l.begin.line, l.begin.column,
+			     l.end.line, l.end.column, msg.str()));
   } else {
     /* KLUDGE: We might be called in circumstances (interpreter embedded in a
        C application) where the standard I/O streams cout and cerr aren't
@@ -961,6 +963,7 @@ interpreter::error(const string& m)
     ostringstream msg;
     msg << m << '\n';
     errmsg += msg.str();
+    errpos.push_back(msg.str());
   } else {
     cout.flush();
     cerr << m << '\n';
@@ -975,6 +978,8 @@ interpreter::warning(const yy::location& l, const string& m)
     msg << *l.begin.filename << ", line " << l.begin.line
 	<< ": " << m << '\n';
     errmsg += msg.str();
+    errpos.push_back(errinfo(*l.begin.filename, l.begin.line, l.begin.column,
+			     l.end.line, l.end.column, msg.str()));
   } else if (!source_s) {
     cout.flush();
     cerr << *l.begin.filename << ", line " << l.begin.line
@@ -989,6 +994,7 @@ interpreter::warning(const string& m)
     ostringstream msg;
     msg << m << '\n';
     errmsg += msg.str();
+    errpos.push_back(msg.str());
   } else if (!source_s) {
     cout.flush();
     cerr << m << '\n';
@@ -2446,7 +2452,7 @@ pure_expr* interpreter::run(int priv, const string &_s,
     symtab.current_namespace = new string;
     symtab.search_namespaces = new map< string, set<int32_t> >;
   }
-  errmsg.clear();
+  errmsg.clear(); errpos.clear();
   if (check && !interactive) temp = 0;
   bool ok = lex_begin(fname);
   if (ok) {
@@ -2534,7 +2540,7 @@ pure_expr *interpreter::runstr(const string& s)
   modno = modctr++;
   symtab.current_namespace = new string;
   symtab.search_namespaces = new map< string, set<int32_t> >;
-  errmsg.clear();
+  errmsg.clear(); errpos.clear();
   compiling = false;
   bool ok = lex_begin();
   if (ok) {
@@ -2599,7 +2605,7 @@ pure_expr *interpreter::parsestr(const string& s)
   modno = modctr++;
   symtab.current_namespace = new string;
   symtab.search_namespaces = new map< string, set<int32_t> >;
-  errmsg.clear();
+  errmsg.clear(); errpos.clear();
   compiling = false;
   bool ok = lex_begin("", true);
   if (ok) {
@@ -2609,6 +2615,26 @@ pure_expr *interpreter::parsestr(const string& s)
     parser.parse();
     // finalize
     lex_end();
+    // Fix up the error locations. The initial BEL character messes up the
+    // column positions in the first line. Also, for some mysterious reason
+    // the lexer may sometimes report a position past the length of the source
+    // string. We fix these glitches on the fly below.
+    size_t nlines = 1, lastpos = 0, pos;
+    // count lines in the source string and find the start of the last line
+    while ((pos = s.find('\n', lastpos)) != string::npos) {
+      nlines++;
+      lastpos = pos;
+    }
+    size_t lastlen = strlen(s.c_str()+lastpos);
+    for (list<errinfo>::iterator it = errpos.begin(), end = errpos.end();
+	 it != end; ++it) {
+      if (it->line1 == 1 && it->col1 > 0) it->col1--;
+      if (it->line2 == 1 && it->col2 > 0) it->col2--;
+      if (it->line1 == (int)nlines && it->col1 > (int)lastlen+1)
+	it->col1 = lastlen+1;
+      if (it->line2 == (int)nlines && it->col2 > (int)lastlen+1)
+	it->col2 = lastlen+1;
+    }
   }
   // restore global data
   g_verbose = s_verbose;
@@ -7685,7 +7711,7 @@ bool interpreter::add_fun_rules(pure_expr *y)
 {
   expr x = pure_expr_to_expr(y);
   exprl xs;
-  errmsg.clear();
+  errmsg.clear(); errpos.clear();
   if (!x.is_list(xs)) return false;
   for (exprl::iterator x = xs.begin(), end = xs.end(); x!=end; x++) {
     expr u, v;
@@ -7701,7 +7727,7 @@ bool interpreter::add_fun_rules(pure_expr *y)
 	  add_rule(globenv, r, true, false);
 	}
       } catch (err &e) {
-	errmsg = e.what() + "\n";
+	errmsg = e.what() + "\n"; errpos.clear(); errpos.push_back(errmsg);
 	return false;
       }
     } else
@@ -7714,7 +7740,7 @@ bool interpreter::add_type_rules(pure_expr *y)
 {
   expr x = pure_expr_to_expr(y);
   exprl xs;
-  errmsg.clear();
+  errmsg.clear(); errpos.clear();
   if (!x.is_list(xs)) return false;
   for (exprl::iterator x = xs.begin(), end = xs.end(); x!=end; x++) {
     expr u, v;
@@ -7730,7 +7756,7 @@ bool interpreter::add_type_rules(pure_expr *y)
 	  add_type_rule(typeenv, r, false);
 	}
       } catch (err &e) {
-	errmsg = e.what() + "\n";
+	errmsg = e.what() + "\n"; errpos.clear(); errpos.push_back(errmsg);
 	return false;
       }
     } else {
@@ -7739,7 +7765,7 @@ bool interpreter::add_type_rules(pure_expr *y)
 	rule r(tagsubst(*x), expr(EXPR::INT, 1));
 	add_type_rule(typeenv, r, false);
       } catch (err &e) {
-	errmsg = e.what() + "\n";
+	errmsg = e.what() + "\n"; errpos.clear(); errpos.push_back(errmsg);
 	return false;
       }
     }
@@ -7751,7 +7777,7 @@ bool interpreter::add_mac_rules(pure_expr *y)
 {
   expr x = pure_expr_to_expr(y);
   exprl xs;
-  errmsg.clear();
+  errmsg.clear(); errpos.clear();
   if (!x.is_list(xs)) return false;
   for (exprl::iterator x = xs.begin(), end = xs.end(); x!=end; x++) {
     expr u, v;
@@ -7761,7 +7787,7 @@ bool interpreter::add_mac_rules(pure_expr *y)
 	rule r(tagsubst(u), macsubst(rsubst(v)));
 	add_macro_rule(r, false);
       } catch (err &e) {
-	errmsg = e.what() + "\n";
+	errmsg = e.what() + "\n"; errpos.clear(); errpos.push_back(errmsg);
 	return false;
       }
     } else
@@ -7812,7 +7838,7 @@ bool interpreter::add_fun_rules_at(pure_expr *u, pure_expr *y)
   // found the rule, insert other rules
   expr x = pure_expr_to_expr(y);
   exprl xs;
-  errmsg.clear();
+  errmsg.clear(); errpos.clear();
   if (!x.is_list(xs)) return false;
   for (exprl::iterator x = xs.begin(), end = xs.end(); x!=end; x++) {
     expr u, v;
@@ -7828,7 +7854,7 @@ bool interpreter::add_fun_rules_at(pure_expr *u, pure_expr *y)
 	  add_rule_at(globenv, r, g, p);
 	}
       } catch (err &e) {
-	errmsg = e.what() + "\n";
+	errmsg = e.what() + "\n"; errpos.clear(); errpos.push_back(errmsg);
 	return false;
       }
     } else
@@ -7879,7 +7905,7 @@ bool interpreter::add_type_rules_at(pure_expr *u, pure_expr *y)
   // found the rule, insert other rules
   expr x = pure_expr_to_expr(y);
   exprl xs;
-  errmsg.clear();
+  errmsg.clear(); errpos.clear();
   if (!x.is_list(xs)) return false;
   for (exprl::iterator x = xs.begin(), end = xs.end(); x!=end; x++) {
     expr u, v;
@@ -7895,7 +7921,7 @@ bool interpreter::add_type_rules_at(pure_expr *u, pure_expr *y)
 	  add_type_rule_at(typeenv, r, g, p);
 	}
       } catch (err &e) {
-	errmsg = e.what() + "\n";
+	errmsg = e.what() + "\n"; errpos.clear(); errpos.push_back(errmsg);
 	return false;
       }
     } else
@@ -7942,7 +7968,7 @@ bool interpreter::add_mac_rules_at(pure_expr *u, pure_expr *y)
   // found the rule, insert other rules
   expr x = pure_expr_to_expr(y);
   exprl xs;
-  errmsg.clear();
+  errmsg.clear(); errpos.clear();
   if (!x.is_list(xs)) return false;
   for (exprl::iterator x = xs.begin(), end = xs.end(); x!=end; x++) {
     expr u, v;
@@ -7953,7 +7979,7 @@ bool interpreter::add_mac_rules_at(pure_expr *u, pure_expr *y)
 	rule r(tagsubst(u), macsubst(rsubst(v)));
 	add_macro_rule_at(r, g, p);
       } catch (err &e) {
-	errmsg = e.what() + "\n";
+	errmsg = e.what() + "\n"; errpos.clear(); errpos.push_back(errmsg);
 	return false;
       }
     } else
@@ -7964,28 +7990,28 @@ bool interpreter::add_mac_rules_at(pure_expr *u, pure_expr *y)
 
 bool interpreter::add_var(int32_t sym, pure_expr *x)
 {
-  errmsg.clear();
+  errmsg.clear(); errpos.clear();
   if (sym <= 0 || !x) return false;
   try {
     if (restricted) throw err("operation not implemented");
     defn(sym, x);
     return true;
   } catch (err &e) {
-    errmsg = e.what() + "\n";
+    errmsg = e.what() + "\n"; errpos.clear(); errpos.push_back(errmsg);
     return false;
   }
 }
 
 bool interpreter::add_const(int32_t sym, pure_expr *x)
 {
-  errmsg.clear();
+  errmsg.clear(); errpos.clear();
   if (sym <= 0 || !x) return false;
   try {
     if (restricted) throw err("operation not implemented");
     const_defn(sym, x);
     return true;
   } catch (err &e) {
-    errmsg = e.what() + "\n";
+    errmsg = e.what() + "\n"; errpos.clear(); errpos.push_back(errmsg);
     return false;
   }
 }

@@ -638,6 +638,16 @@ using namespace __C;
       expression, which is recompiled and then evaluated. Exceptions during
       evaluation are reported back to the caller.
 
+      Please note that the use of :func:`eval` and :func:`evalcmd` (as well as
+      :func:`add_fundef`, :func:`add_typedef` etc. from the preceding
+      subsection) to modify a running program breaks referential transparency
+      and hence these functions should be used with care. Also, none of the
+      inspection and mutation capabilities provided by these operations will
+      work in batch-compiled programs, please check the :ref:`Batch
+      Compilation` section in the Pure manual for details. Moreover, using
+      these operations to modify or delete a function which is currently being
+      executed results in undefined behaviour.
+
    .. function:: evalcmd x
 
       Like :func:`eval`, but allows execution of interactive commands and
@@ -650,22 +660,35 @@ using namespace __C;
 
    .. function:: lasterr
 
-      Reports errors in :func:`eval` and :func:`evalcmd` (as well as in
-      :func:`add_fundef` et al, described in the previous subsection). This
-      string value will be nonempty iff a compilation or execution error was
-      encountered during the most recent invokation of these functions. In
+      Reports errors in :func:`val`, :func:`eval` and :func:`evalcmd` (as well
+      as in :func:`add_fundef` et al, described in the previous subsection).
+      This string value will be nonempty iff a compilation or execution error
+      was encountered during the most recent invokation of these functions. In
       that case each reported error message is terminated with a newline
       character.
 
-   Please note that the use of :func:`eval` and :func:`evalcmd` (as well as
-   :func:`add_fundef`, :func:`add_typedef` etc. from the preceding subsection)
-   to modify a running program breaks referential transparency and hence these
-   functions should be used with care. Also, none of the inspection and
-   mutation capabilities provided by these operations will work in
-   batch-compiled programs, please check the :ref:`Batch Compilation` section
-   in the Pure manual for details. Moreover, using these operations to modify
-   or delete a function which is currently being executed results in undefined
-   behaviour.
+   .. function:: lasterrpos
+
+      Gives more detailed error information. This returns a list of the
+      individual error messages in :func:`lasterr`, along with the position of
+      each error (if available). Each list item is either just a string (the
+      error message, with any trailing newline stripped off) if no error
+      position is available, or a tuple of the form ``msg,file,l1,c1,l2,c2``
+      where ``msg`` is the error message, ``file`` the name of the file
+      containing the error (which will usually be ``"<stdin>"`` indicating
+      that the error is in the source string, but may also be a proper
+      filename of a module imported in the evaluated code), ``l1,c1`` denotes
+      the beginning of the range with the errorneous construct (given as line
+      and column indices) and ``l2,c2`` its end. For convenience, both line
+      and column indices are zero-based, in order to facilitate extraction of
+      the text from the actual source string.
+
+      Please note that the indicated error positions are only approximate, and
+      may in many cases span an entire syntactic construct (such as a
+      subexpression or even an entire function definition) containing the
+      error. Also, the end of the range may sometimes point one token past the
+      actual end of the construct. (These limitations are due to technical
+      restrictions in the parser; don't expect them to go away anytime soon.)
 
    Examples::
 
@@ -683,6 +706,9 @@ using namespace __C;
      eval "1/3)"
      > lasterr;
      "<stdin>, line 1: syntax error, unexpected ')', expecting '=' or '|'\n"
+     > lasterrpos;
+     [("<stdin>, line 1: syntax error, unexpected ')', expecting '=' or '|'",
+     "<stdin>",0,3,0,4)]
 
    In addition to :func:`str`, the prelude also provides the following
    function for pretty-printing the internal representation used to denote
@@ -903,6 +929,7 @@ extern expr* lastres() = ans;
 extern expr* eval(expr*); // IMPURE!
 extern expr* evalcmd(expr*); // IMPURE!
 extern char* lasterr();
+extern expr* lasterrpos();
 
 extern char* str(expr*);
 extern expr* __str__(expr*);

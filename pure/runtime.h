@@ -1110,6 +1110,12 @@ pure_expr *reduce(pure_expr *locals, pure_expr *x);
 const char *lasterr();
 void clear_lasterr();
 
+/* More detailed error information. This returns a list of individual error
+   messages, along with position information (filename, from_line, from_col,
+   to_line, to_col), if available. */
+
+pure_expr *lasterrpos();
+
 /* In interactive mode, this returns the most recent toplevel expression
    printed by the interpreter (NULL if none). */
 

@@ -3464,7 +3464,7 @@ pure_expr *pure_val(const char *s)
 {
   assert(s);
   interpreter& interp = *interpreter::g_interp;
-  interp.errmsg.clear();
+  interp.errmsg.clear(); interp.errpos.clear();
   pure_expr *res = interp.parsestr(string(s));
   interp.result = 0;
   if (res) {
@@ -3486,9 +3486,26 @@ pure_expr *pure_eval(const char *s)
 {
   assert(s);
   interpreter& interp = *interpreter::g_interp;
-  interp.errmsg.clear();
-  pure_expr *res = interp.runstr(string(s)+";");
+  interp.errmsg.clear(); interp.errpos.clear();
+  string src = s;
+  pure_expr *res = interp.runstr(src+";");
   interp.result = 0;
+  // The extra ';' we placed at the end of the string may cause column
+  // positions in the last line to extend past the end of the line, fix up
+  // the error locations accordingly.
+  size_t nlines = 1, lastpos = 0, pos;
+  while ((pos = src.find('\n', lastpos)) != string::npos) {
+    nlines++;
+    lastpos = pos;
+  }
+  size_t lastlen = strlen(src.c_str()+lastpos);
+  for (list<errinfo>::iterator it = interp.errpos.begin(),
+	 end = interp.errpos.end(); it != end; ++it) {
+    if (it->line1 == (int)nlines && it->col1 > (int)lastlen+1)
+      it->col1 = lastlen+1;
+    if (it->line2 == (int)nlines && it->col2 > (int)lastlen+1)
+      it->col2 = lastlen+1;
+  }
   if (res) {
     if (interp.errmsg.empty()) {
       pure_unref_internal(res);
@@ -3533,7 +3550,7 @@ char *pure_evalcmd(const char *s)
   interpreter& interp = *interpreter::g_interp;
   ostream *l_output = interp.output;
   ostringstream sout;
-  interp.errmsg.clear();
+  interp.errmsg.clear(); interp.errpos.clear();
   interp.output = &sout;
   pure_expr *res = interp.runstr(string(s));
   interp.result = 0;
@@ -3551,7 +3568,7 @@ void pure_start_logging()
 {
   if (interpreter::g_interp) {
     interpreter& interp = *interpreter::g_interp;
-    interp.errmsg.clear();
+    interp.errmsg.clear(); interp.errpos.clear();
     interp.logging = true;
   }
 }
@@ -6837,7 +6854,7 @@ void pure_debug_rule(void *_e, void *_r)
 	free(res);
       } else if (!interp.errmsg.empty()) {
 	cerr << interp.errmsg;
-	interp.errmsg.clear();
+	interp.errmsg.clear(); interp.errpos.clear();
       }
     } else if (cmd=="?" || cmd.size()>1 ||
 	       (!cmd.empty() && !isalpha(cmd[0]) && cmd[0] != '.')) {
@@ -6884,7 +6901,7 @@ void pure_debug_rule(void *_e, void *_r)
 	  p = msg.find(", unexpected ");
 	  if (p != string::npos) msg.erase(p);
 	  if (!msg.empty()) cerr << msg << endl;
-	  interp.errmsg.clear();
+	  interp.errmsg.clear(); interp.errpos.clear();
 	}
 	interp.interactive = true;
 	//interp.restricted = false;
@@ -8173,10 +8190,27 @@ pure_expr *eval(pure_expr *x)
   char *s;
   if (pure_is_cstring_dup(x, &s)) {
     interpreter& interp = *interpreter::g_interp;
-    interp.errmsg.clear();
-    pure_expr *res = interp.runstr(string(s)+";");
+    interp.errmsg.clear(); interp.errpos.clear();
+    string src = s;
+    pure_expr *res = interp.runstr(src+";");
     free(s);
     interp.result = 0;
+    // The extra ';' we placed at the end of the string may cause column
+    // positions in the last line to extend past the end of the line, fix up
+    // the error locations accordingly.
+    size_t nlines = 1, lastpos = 0, pos;
+    while ((pos = src.find('\n', lastpos)) != string::npos) {
+      nlines++;
+      lastpos = pos;
+    }
+    size_t lastlen = strlen(src.c_str()+lastpos);
+    for (list<errinfo>::iterator it = interp.errpos.begin(),
+	   end = interp.errpos.end(); it != end; ++it) {
+      if (it->line1 == (int)nlines && it->col1 > (int)lastlen+1)
+	it->col1 = lastlen+1;
+      if (it->line2 == (int)nlines && it->col2 > (int)lastlen+1)
+	it->col2 = lastlen+1;
+    }
     if (res) {
       if (interp.errmsg.empty()) {
 	pure_unref_internal(res);
@@ -8219,7 +8253,7 @@ pure_expr *evalcmd(pure_expr *x)
     interpreter& interp = *interpreter::g_interp;
     ostream *l_output = interp.output;
     ostringstream sout;
-    interp.errmsg.clear();
+    interp.errmsg.clear(); interp.errpos.clear();
     interp.output = &sout;
     pure_expr *res = interp.runstr(string(s));
     free(s);
@@ -8489,10 +8523,39 @@ const char *lasterr()
 }
 
 extern "C"
+pure_expr *lasterrpos()
+{
+  interpreter& interp = *interpreter::g_interp;
+  size_t n = interp.errpos.size();
+  if (n == 0) return pure_listl(0);
+  pure_expr **xv = (pure_expr**)malloc(n*sizeof(pure_expr*));
+  if (!xv) return 0;
+  n = 0;
+  for (list<errinfo>::const_iterator it = interp.errpos.begin(),
+	 end = interp.errpos.end(); it != end; ++it) {
+    // remove trailing newline in message, if any
+    char *s = strdup(it->msg.c_str());
+    assert(s);
+    size_t l = strlen(s);
+    if (l > 0 && s[l-1] == '\n') s[--l] = 0;
+    if (it->line1 > 0 && it->col1 > 0 && it->line2 > 0 && it->col2 > 0)
+      xv[n++] = pure_tuplel(6, pure_cstring(s),
+			    pure_cstring_dup(it->filename.c_str()),
+			    pure_int(it->line1-1), pure_int(it->col1-1),
+			    pure_int(it->line2-1), pure_int(it->col2-1));
+    else if (l > 0)
+      xv[n++] = pure_cstring(s);
+  }
+  pure_expr *x = pure_listv(n, xv);
+  free(xv);
+  return x;
+}
+
+extern "C"
 void clear_lasterr()
 {
   interpreter& interp = *interpreter::g_interp;
-  interp.errmsg.clear();
+  interp.errmsg.clear(); interp.errpos.clear();
 }
 
 extern "C"
@@ -8634,7 +8697,7 @@ pure_expr *add_vardef(pure_expr *x)
   pure_expr **xv;
   size_t n;
   interpreter& interp = *interpreter::g_interp;
-  interp.errmsg.clear();
+  interp.errmsg.clear(); interp.errpos.clear();
   if (pure_is_listv(x, &n, &xv)) {
     bool res = true;
     for (size_t i = 0; i < n; i++) {
@@ -8660,7 +8723,7 @@ pure_expr *add_constdef(pure_expr *x)
   pure_expr **xv;
   size_t n;
   interpreter& interp = *interpreter::g_interp;
-  interp.errmsg.clear();
+  interp.errmsg.clear(); interp.errpos.clear();
   if (pure_is_listv(x, &n, &xv)) {
     bool res = true;
     for (size_t i = 0; i < n; i++) {

@@ -465,6 +465,18 @@ struct pointer_type_printer_info {
   pointer_type_printer_info() : printer_cb(0), prec_cb(0) {}
 };
 
+struct errinfo {
+  int line1, col1, line2, col2;
+  string filename, msg;
+  errinfo() :
+    line1(0), col1(0), line2(0), col2(0) {}
+  errinfo(const string& _msg) :
+    line1(0), col1(0), line2(0), col2(0), msg(_msg) {}
+  errinfo(const string& _filename, int l1, int c1, int l2, int c2,
+	  const string& _msg) :
+    line1(l1), col1(c1), line2(l2), col2(c2), filename(_filename), msg(_msg) {}
+};
+
 class interpreter
 {
 public:
@@ -517,6 +529,7 @@ public:
   bool logging;	     // logging of error messages and warnings
   int nerrs;	     // current error count
   string errmsg;     // last reported error (runstr)
+  list<errinfo> errpos; // more detailed error information
   int32_t modno;     // current module key
   int32_t modctr;    // next available module key
   string source;     // the source being parsed
