@@ -36,6 +36,43 @@ foo 99;
 100
 foo 99.0;
 foo 99.0
+myputs x/*0:1*/ = case puts x/*0:1*/ of x/*0:*/::int = 0 if x/*0:*/>=0; _/*0:*/ = x/*1:1*/ {
+  rule #0: x::int = 0 if x>=0
+  rule #1: _ = x
+  state 0: #0 #1
+	<var> state 1
+	<var>::int state 2
+  state 1: #1
+  state 2: #0 #1
+} end;
+puts x/*0:1*/::int = puts (str x/*0:1*/);
+{
+  rule #0: puts x::int = puts (str x)
+  state 0: #0
+	<var>::int state 1
+  state 1: #0
+}
+{
+  rule #0: myputs x = case puts x of x::int = 0 if x>=0; _ = x end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+99
+myputs 99;
+0
+myputs 99.0;
+<stdin>, line 26: unhandled exception 'failed_match' while evaluating 'myputs 99.0'
+evalcmd "clear puts";
+""
+myputs 99;
+<stdin>, line 28: unhandled exception 'failed_match' while evaluating 'myputs 99'
+myputs 99.0;
+<stdin>, line 28: unhandled exception 'failed_match' while evaluating 'myputs 99.0'
+myputs 99;
+99
+myputs 99.0;
+99.0
 puts x/*0:1*/::int = puts (str x/*0:1*/);
 {
   rule #0: puts x::int = puts (str x)
@@ -44,32 +81,10 @@ puts x/*0:1*/::int = puts (str x/*0:1*/);
   state 1: #0
 }
 99
-puts 99;
-3
-puts 99.0;
-<stdin>, line 21: unhandled exception 'failed_match' while evaluating 'puts 99.0'
-evalcmd "clear puts";
-""
-puts 99;
-<stdin>, line 23: unhandled exception 'failed_match' while evaluating 'puts 99'
-puts 99.0;
-<stdin>, line 23: unhandled exception 'failed_match' while evaluating 'puts 99.0'
-puts 99;
-puts 99
-puts 99.0;
-puts 99.0
-puts x/*0:1*/::int = puts (str x/*0:1*/);
-{
-  rule #0: puts x::int = puts (str x)
-  state 0: #0
-	<var>::int state 1
-  state 1: #0
-}
-99
-puts 99;
-3
-puts 99.0;
-puts 99.0
+myputs 99;
+0
+myputs 99.0;
+99.0
 {
   rule #0: puts x::int = puts (str x)
   state 0: #0
@@ -78,10 +93,10 @@ puts 99.0
 }
 evalcmd "clear puts";
 ""
-puts 99;
-<stdin>, line 30: unhandled exception 'failed_match' while evaluating 'puts 99'
-puts 99.0;
-<stdin>, line 30: unhandled exception 'failed_match' while evaluating 'puts 99.0'
+myputs 99;
+<stdin>, line 35: unhandled exception 'failed_match' while evaluating 'myputs 99'
+myputs 99.0;
+<stdin>, line 35: unhandled exception 'failed_match' while evaluating 'myputs 99.0'
 foo
-puts "foo";
-4
+myputs "foo";
+0

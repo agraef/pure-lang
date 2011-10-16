@@ -15,17 +15,22 @@ foo 99; foo 99.0;
 
 // External with and without Pure equations.
 
-#! --defined puts
+// Wrap up puts calls for Windows compatibility, where puts is only guaranteed
+// to return a nonnegative value on success, so we just make it always return
+// 0 in these cases.
 extern int puts(char*);
+myputs x = case puts x of x::int = 0 if x>=0; _ = x otherwise end;
+
+#! --defined puts
 puts x::int = puts $ str x;
-puts 99; puts 99.0;
+myputs 99; myputs 99.0;
 evalcmd "clear puts";
-puts 99; puts 99.0;
+myputs 99; myputs 99.0;
 #! --nodefined puts
-puts 99; puts 99.0;
+myputs 99; myputs 99.0;
 puts x::int = puts $ str x;
-puts 99; puts 99.0;
+myputs 99; myputs 99.0;
 #! --defined puts
 evalcmd "clear puts";
-puts 99; puts 99.0;
-puts "foo";
+myputs 99; myputs 99.0;
+myputs "foo";
