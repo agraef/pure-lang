@@ -152,7 +152,7 @@ static unsigned short interpret_uint16(unsigned char *buffer)
 static unsigned short read_uint16(FILE *in)
 {
 	unsigned char buffer[2];
-	fread(buffer, 1, 2, in);
+	if (fread(buffer, 1, 2, in)) ;
 	return interpret_uint16(buffer);
 }
 
@@ -172,7 +172,7 @@ static uint32_t interpret_uint32(unsigned char *buffer)
 static uint32_t read_uint32(FILE *in)
 {
 	unsigned char buffer[4];
-	fread(buffer, 1, 4, in);
+	if (fread(buffer, 1, 4, in)) ;
 	return interpret_uint32(buffer);
 }
 
@@ -354,7 +354,7 @@ MidiFile_t MidiFile_load(char *filename)
 
 	if ((filename == NULL) || ((in = fopen(filename, "rb")) == NULL)) return NULL;
 
-	fread(chunk_id, 1, 4, in);
+	if (fread(chunk_id, 1, 4, in)) ;
 	chunk_size = read_uint32(in);
 	chunk_start = ftell(in);
 
@@ -362,7 +362,7 @@ MidiFile_t MidiFile_load(char *filename)
 
 	if (memcmp(chunk_id, "RIFF", 4) == 0)
 	{
-		fread(chunk_id, 1, 4, in); /* technically this one is a type id rather than a chunk id, but we'll reuse the buffer anyway */
+		if (fread(chunk_id, 1, 4, in)) ; /* technically this one is a type id rather than a chunk id, but we'll reuse the buffer anyway */
 
 		if (memcmp(chunk_id, "RMID", 4) != 0)
 		{
@@ -370,7 +370,7 @@ MidiFile_t MidiFile_load(char *filename)
 			return NULL;
 		}
 
-		fread(chunk_id, 1, 4, in);
+		if (fread(chunk_id, 1, 4, in)) ;
 		chunk_size = read_uint32(in);
 
 		if (memcmp(chunk_id, "data", 4) != 0)
@@ -379,7 +379,7 @@ MidiFile_t MidiFile_load(char *filename)
 			return NULL;
 		}
 
-		fread(chunk_id, 1, 4, in);
+		if (fread(chunk_id, 1, 4, in)) ;
 		chunk_size = read_uint32(in);
 		chunk_start = ftell(in);
 	}
@@ -392,7 +392,7 @@ MidiFile_t MidiFile_load(char *filename)
 
 	file_format = read_uint16(in);
 	number_of_tracks = read_uint16(in);
-	fread(division_type_and_resolution, 1, 2, in);
+	if (fread(division_type_and_resolution, 1, 2, in)) ;
 
 	switch ((signed char)(division_type_and_resolution[0]))
 	{
@@ -428,7 +428,7 @@ MidiFile_t MidiFile_load(char *filename)
 
 	while (number_of_tracks_read < number_of_tracks)
 	{
-		fread(chunk_id, 1, 4, in);
+		if (fread(chunk_id, 1, 4, in)) ;
 		chunk_size = read_uint32(in);
 		chunk_start = ftell(in);
 
@@ -523,7 +523,7 @@ MidiFile_t MidiFile_load(char *filename)
 								int data_length = read_variable_length_quantity(in) + 1;
 								unsigned char *data_buffer = malloc(data_length);
 								data_buffer[0] = status;
-								fread(data_buffer + 1, 1, data_length - 1, in);
+								if (fread(data_buffer + 1, 1, data_length - 1, in)) ;
 								MidiFileTrack_createSysexEvent(track, tick, data_length, data_buffer);
 								free(data_buffer);
 								break;
@@ -533,7 +533,7 @@ MidiFile_t MidiFile_load(char *filename)
 								int number = fgetc(in);
 								int data_length = read_variable_length_quantity(in);
 								unsigned char *data_buffer = malloc(data_length);
-								fread(data_buffer, 1, data_length, in);
+								if (fread(data_buffer, 1, data_length, in)) ;
 
 								if (number == 0x2F)
 								{
