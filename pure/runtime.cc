@@ -12973,6 +12973,24 @@ int pure_scanf_prec(const char *format)
 }
 
 extern "C"
+void pure_mpz_clear(mpz_t z)
+{
+  mpz_clear(z);
+}
+
+extern "C"
+size_t pure_mpz_sizeinbase(mpz_t z, int b)
+{
+  return mpz_sizeinbase(z, b);
+}
+
+extern "C"
+int pure_mpfr_get_prec(mpfr_ptr x)
+{
+  return pure_mpfr_get_prec(x);
+}
+
+extern "C"
 int pure_fprintf(FILE *fp, const char *format)
 {
   /* Note that 'format' *must* be passed as the format string here in order to

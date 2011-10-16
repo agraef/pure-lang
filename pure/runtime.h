@@ -1533,6 +1533,13 @@ pure_expr *pure_printf_split(const char *format);
 pure_expr *pure_scanf_split(const char *format);
 int pure_scanf_prec(const char *format);
 
+/* Wrappers needed by printf/scanf implementation (system.pure). These are
+   provided here to work around Windows incompatibilities. */
+
+void pure_mpz_clear(mpz_t z);
+size_t pure_mpz_sizeinbase(mpz_t z, int b);
+int pure_mpfr_get_prec(mpfr_ptr x);
+
 /* printf et al */
 
 int pure_fprintf(FILE *fp, const char *format);
