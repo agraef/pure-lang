@@ -1,7 +1,7 @@
 
 # Package name and version number:
 dist = faust2pd-$(version)
-version = 2.4
+version = 2.5
 
 # Default installation prefix:
 prefix = /usr/local
