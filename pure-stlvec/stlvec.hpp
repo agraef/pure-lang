@@ -66,9 +66,9 @@ int iter_pos(sv* vec, svi iter);
 /*** C interface for vector of PX Handles ***/
 
 extern "C" {
-  sv*  sv_make_a();
-  sv*  sv_make_b(px* xs);
-  sv*  sv_make_c(px* xs, int n);
+  sv*  sv_make_empty();
+  sv*  sv_make_from_xs(px* xs);
+  sv*  sv_make_n(px* xs, int n);
   void sv_delete(sv* sv_p);
   sv*  sv_dup(px* tpl);
   px*  sv_vector(px* it);

@@ -42,9 +42,9 @@ namespace stl;
 
 /*** C++ support *****************************************************/
 
-private extern void* sv_make_a();
-private extern void* sv_make_b(expr* xs_or_sm);
-private extern void* sv_make_c(expr* xs, int n);
+private extern void* sv_make_empty();
+private extern void* sv_make_from_xs(expr* xs_or_sm);
+private extern void* sv_make_n(expr* xs, int n);
 private extern void  sv_delete(void* vec);
 private extern void* sv_dup(expr* it);
 private extern expr* sv_vector(expr* it);
@@ -110,13 +110,13 @@ ensure_end v e = if e == svend then sz
 ::const_stlvec (CONST_STLVEC v) = (CONST_STLVEC v);
 ::const_stlvec x = ::const_stlvec (::stlvec x);
 
-::emptystlvec = STLVEC (sentry sv_delete (sv_make_a));
+::emptystlvec = STLVEC (sentry sv_delete (sv_make_empty));
 
 ::stlvec sv::svit = STLVEC (sentry sv_delete (sv_dup sv));
-::stlvec v = STLVEC (sentry sv_delete (sv_make_b (smatrix v))) if vectorp v;
-::stlvec xs::list = STLVEC (sentry sv_delete (sv_make_b xs));
+::stlvec v = STLVEC(sentry sv_delete(sv_make_from_xs (smatrix v))) if vectorp v;
+::stlvec xs::list = STLVEC (sentry sv_delete (sv_make_from_xs xs));
 
-::mkstlvec x n::int = STLVEC (sentry sv_delete (sv_make_c x n));
+::mkstlvec x n::int = STLVEC (sentry sv_delete (sv_make_n x n));
 
 reserve (STLVEC v) i::int = sv_reserve v i;
 
