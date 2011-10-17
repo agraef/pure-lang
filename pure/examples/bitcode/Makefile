@@ -3,11 +3,24 @@
 
 # Edit these as needed. CC is the C compiler (llvm-gcc by default), FC the
 # Fortran compiler (llvm-fortran), FAUST the Faust compiler, including any
-# options for bitcode generation that they may need.
+# options for LLVM bitcode generation that they may need.
+
+# NOTE: If you want to use the "dragonegg" plugin for gcc, make sure to set
+# the variable below to the actual pathname of the plugin on your system. Also
+# note that at present dragonegg can't be used with -c to generate LLVM
+# bitcode directly from source files. Therefore, when using dragonegg, this
+# Makefile selects a different sets of rules which create the bitcode from
+# intermediate LLVM assembler (.ll) files instead.
+
+# This should work out of the box if you installed dragonegg on ggc's plugin
+# path (gcc -print-file-name=plugin).
+dragonegg=dragonegg
 
 CC = llvm-gcc -emit-llvm
+#CC = gcc -fplugin=dragonegg -flto
 #CC = clang -emit-llvm
 FC = llvm-gfortran -emit-llvm
+#FC = gfortran -fplugin=dragonegg -flto
 FAUST = faust -double -lang llvm
 
 # Prerequisites:
@@ -55,25 +68,32 @@ clean:
 	-rm -f $(bitcode)
 	-rm -f $(assembler)
 
-# compile C source to LLVM bitcode
+# direct rules to generate LLVM bitcode (these don't work with dragonegg)
+
+ifeq (,$(findstring $(dragonegg),$(CC)))
 %.bc: %.c
 	-$(CC) -c $< -o $@
+endif
+
+ifeq (,$(findstring $(dragonegg),$(FC)))
+%.bc: %.f90
+	-$(FC) -c $< -o $@
+endif
+
+%.bc: %.dsp
+	-$(FAUST) $< -o $@
+
+# fallback rule to generate LLVM bitcode from assembler
+%.bc: %.ll
+	-llvm-as $< -o $@
 
 # compile C source to LLVM assembler
 %.ll: %.c
 	-$(CC) -S $< -o $@
 
-# compile Fortran source to LLVM bitcode
-%.bc: %.f90
-	-$(FC) -c $< -o $@
-
 # compile Fortran source to LLVM assembler
 %.ll: %.f90
 	-$(FC) -S $< -o $@
-
-# compile Faust source to LLVM bitcode
-%.bc: %.dsp
-	-$(FAUST) $< -o $@
 
 # compile Faust source to LLVM assembler
 %.ll: %.dsp
