@@ -284,20 +284,6 @@ AC_CACHE_CHECK([for new llvm::raw_fd_ostream interface (LLVM >= 2.7)], [pure_cv_
 if test "$pure_cv_new_ostream" = yes; then
   AC_DEFINE(NEW_OSTREAM, 1, [Define when building with new llvm::raw_fd_ostream interface (LLVM >= 2.7).])
 fi
-AC_CACHE_CHECK([for new CreatePHI interface (LLVM >= 3.0)], [pure_cv_new_phi30],
-  [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
-       #include <llvm/LLVMContext.h>
-       #include <llvm/Support/IRBuilder.h>
-      ], [
-        llvm::IRBuilder<> b(llvm::getGlobalContext());
-	llvm::Type *ty = 0;
-	llvm::PHINode *phi = b.CreatePHI(ty);
-      ])
-    ], [pure_cv_new_phi30=no], [pure_cv_new_phi30=yes])
-  ])
-if test "$pure_cv_new_phi30" = yes; then
-  AC_DEFINE(NEW_PHI, 1, [Define when building with new llvm::IRBuilder::CreatePHI interface (LLVM >= 3.0).])
-fi
 else
 AC_CACHE_CHECK([for new LLVM IRBuilder class (LLVM >= 2.4)], [pure_cv_new_builder],
   [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
@@ -313,8 +299,12 @@ fi
 fi
 AC_CHECK_HEADERS([llvm/Support/DynamicLibrary.h], [], [], [[#include <llvm/ADT/StringRef.h>]])
 AC_CHECK_HEADERS([llvm/Support/raw_ostream.h llvm/Support/raw_os_ostream.h llvm/ModuleProvider.h llvm/TypeSymbolTable.h llvm/Support/TargetSelect.h])
-AC_CHECK_DECLS([llvm::PerformTailCallOpt, llvm::GuaranteedTailCallOpt], [], [], [[#include <llvm/ADT/StringRef.h>
+if test "$pure_cv_new_builder26" = yes; then
+  AC_CHECK_DECLS([llvm::PerformTailCallOpt, llvm::GuaranteedTailCallOpt], [], [], [[#include <llvm/ADT/StringRef.h>
 #include <llvm/Target/TargetOptions.h>]])
+else
+  AC_CHECK_DECLS([llvm::PerformTailCallOpt, llvm::GuaranteedTailCallOpt], [], [], [[#include <llvm/Target/TargetOptions.h>]])
+fi
 CPPFLAGS=$save_CPPFLAGS
 AC_LANG_POP([C++])
 

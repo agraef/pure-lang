@@ -1068,7 +1068,7 @@ public:
 #endif
 
   llvm::PHINode *phi_node(Builder &b, llvm_const_Type *ty,
-			  unsigned n, const llvm::Twine &name = "")
+			  unsigned n, const char *name = "")
 #ifdef LLVM30
   { return b.CreatePHI(ty, n, name); }
 #else
