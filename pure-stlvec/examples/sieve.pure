@@ -18,7 +18,7 @@ end when
 end;
 
 
-/*** The sieve of Erathosthenes, stlvec::alogrithms versions *****************/
+/*** The sieve of Erathosthenes, stlvec::algorithms versions *****************/
 
 using stlvec::algorithms;
 using namespace stl;
@@ -62,34 +62,33 @@ test fun_abbrev n = () when
 end;
 
 main = if argc < 3 then 
-         puts "./a.out [a,b,c] n"
-       else if ~intp upper then
-         puts "bad number"
-       else 
-         test (argv!1) upper
-       when upper = val (argv!2) end;
+         puts "Usage: ./sieve [a-c] n"
+       else case val (argv!2) of
+	 upper::int = test (argv!1) upper;
+	 _ = puts "bad number";
+       end;
 
 if ~compiling && argc > 0 then main else ();
 
 /*** Times on an old Dell running Linux Mint ********************************
 
-$> pure -c sieve.pure
+$> pure -c sieve.pure -o sieve
 
-$> time ./a.out "a" 1000000
+$> time ./sieve "a" 1000000
 sieve_a found 78498 primes up to 1000000.
 
 real	0m7.066s
 user	0m6.712s
 sys	0m0.248s
 
-$> time ./a.out "b" 1000000
+$> time ./sieve "b" 1000000
 sieve_b found 78498 primes up to 1000000.
 
 real	0m5.762s
 user	0m5.536s
 sys	0m0.144s
 
-$> time ./a.out "c" 1000000
+$> time ./sieve "c" 1000000
 sieve_c found 78498 primes up to 1000000.
 
 real	0m6.316s
