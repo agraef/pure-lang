@@ -59,9 +59,11 @@ shared = -shared
 
 # Take care of some common systems.
 ifneq "$(findstring -mingw,$(host))" ""
-# Windows (untested)
+# Windows
 DLL = .dll
 EXE = .exe
+# WINDOWS ONLY: needed to link stlalgorithm.dll.
+CONTAINER_LIB = $(DLL_DIR)/stlcontainer$(DLL)
 endif
 ifneq "$(findstring -darwin,$(host))" ""
 # OSX (untested)
@@ -117,11 +119,11 @@ $(DLLS): $(DLL_TRGS)
 
 $(DLL_DIR)/stlcontainer$(DLL): $(CONTAINER_HPPS) $(CONTAINER_CPPS)
 	@ test -d $(DLL_DIR) || mkdir $(DLL_DIR)
-	$(CXX) $(shared) $(FLAGS) $(PIC) $(CONTAINER_CPPS) -o $@
+	$(CXX) $(shared) $(FLAGS) $(PIC) $(CONTAINER_CPPS) -o $@ -lpure
 
 $(DLL_DIR)/stlalgorithm$(DLL): $(ALGO_HPPS) $(ALGO_CPPS)
 	@ test -d $(DLL_DIR) || mkdir $(DLL_DIR)
-	$(CXX) $(shared) $(FLAGS) $(PIC) $(ALGO_CPPS) -o $@
+	$(CXX) $(shared) $(FLAGS) $(PIC) $(ALGO_CPPS) -o $@ $(CONTAINER_LIB) -lpure
 
 ### Compile unit tests
 
