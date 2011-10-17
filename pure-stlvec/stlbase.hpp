@@ -96,6 +96,7 @@ private:
 };
 typedef px_handle pxh;  // sizeof(pxh) == sizeof(px*) -- no virtual funs
 
+typedef std::pair<pxh,pxh> pxh_pair;
 
 /* pxh_fun and subclasses - function objects to lift px* functions to pxh
    functions. When you need to pass a Pure callback to an algorithm that acts
@@ -151,8 +152,6 @@ struct pxh_gen : public pxh_fun
 };
 
 
-
-
 /**** Helpers **********************************************************/
 
 std::ostream& operator<<(std::ostream& os, px* pe);
@@ -166,7 +165,14 @@ inline void range_overlap() {stl_throw_sym("range_overlap");}
 inline void bad_argument() {stl_throw_sym("bad_argument");}
 inline void failed_cond() {stl_throw_sym("failed_cond");}
 
-/*** Inteface ***********************************************************/
+int cons_tag();
+int null_list_tag();
+int rocket_tag();
+
+pxh_pair* rocket_to_pair(px* rp);
+px* pair_to_rocket(pxh_pair* pp);
+
+/*** Interface ***********************************************************/
 
 /* stl_refc and friends - functions to return a pure_expr's refc and to
    enable or disable pure_expr ref count tracing or the tracing of stlvec's

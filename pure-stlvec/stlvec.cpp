@@ -173,18 +173,6 @@ static inline int ndx_ok(sv* vec, int n)
   return n >= 0 && n < vec->size();
 }
 
-static int cons_tag()
-{
-  static int tag = pure_getsym(":");
-  return tag;
-}
-
-static int null_list_tag()
-{
-  static int tag = pure_getsym("[]");
-  return tag;
-}
-
 /*** Functions for sv vector<pxh> ***********************************/
 
 sv* sv_make_empty()

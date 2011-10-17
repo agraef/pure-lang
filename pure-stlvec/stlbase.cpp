@@ -227,3 +227,42 @@ void stl_throw_sym(const char *name)
   pure_throw(pure_symbol(pure_sym(name)));
 }
 
+int cons_tag()
+{
+  static int tag = pure_getsym(":");
+  return tag;
+}
+
+int null_list_tag()
+{
+  static int tag = pure_getsym("[]");
+  return tag;
+}
+
+int rocket_tag()
+{
+  static int tag = pure_getsym("=>");
+  return tag;
+}
+
+pxh_pair* rocket_to_pair(px* rp)
+{
+  pxh_pair* ret = 0;
+  px* app;
+  size_t argc;
+  px** args;
+  bool ok = pure_is_appv(rp, &app, &argc, &args) && argc == 2;
+  if (ok) {
+    ret = new pxh_pair(args[0], args[1]);
+  }
+  free(args);
+  return ret;
+}
+
+px* pair_to_rocket(pxh_pair* pp)
+{
+  px* rocket = pure_const(rocket_tag());
+  return pure_appl(rocket, 2, pp->first.pxp(), pp->second.pxp()); 
+} 
+
+
