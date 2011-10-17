@@ -68,6 +68,12 @@ static const char *mpfr_str(mpfr_ptr p)
     buf = malloc(m+2);
     sprintf(format, "%%0.%luRg", (unsigned long)n);
     if (buf && mpfr_snprintf(buf, m, format, p) >= 0) {
+      /* Quick and dirty hack for locales which use ',' for the decimal
+	 point. XXXFIXME: This only does the right thing for a few common
+	 languages, we should really adjust to the actual numeric settings of
+	 the system locale here. */
+      char *t = strchr(buf, ',');
+      while (t) { *t = '.'; t = strchr(t+1, ','); }
       if (strchr("0123456789", buf[buf[0]=='-'?1:0]) &&
 	  !strchr(buf, '.') && !strchr(buf, 'e') && !strchr(buf, 'E'))
 	strcat(buf, ".0");
