@@ -3768,7 +3768,7 @@ pure_interp *pure_create_interp(int argc, char *argv[])
 	string s = string(*args).substr(2);
 	if (s.empty()) continue;
 	char *end;
-	if (strtoul(s.c_str(), &end, 0)) ;
+	if (strtoul(s.c_str(), &end, 0)) {}
 	if (*end) {
 	  cerr << "pure_create_interp: invalid option " << *args << endl;
 	  delete _interp;
