@@ -21,7 +21,7 @@ CFLAGS = -g -O2
 all: $(modname)$(DLL)
 
 $(modname)$(DLL): $(modname).c
-	$(CC) $(shared) -o $@ $(MOD_CFLAGS) $^ $(MOD_LDFLAGS) $(LIBS) -lmpfr
+	$(CC) $(shared) -o $@ $(MOD_CFLAGS) $^ $(MOD_LDFLAGS) $(LIBS) -lmpfr -lgmp
 
 clean:
 	rm -f $(modname)$(DLL)

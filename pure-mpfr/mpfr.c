@@ -101,6 +101,17 @@ static int mpfr_prec(mpfr_ptr x)
 /* Initialize the mpfr* tag and return its value. This also sets up the
    pretty-printing and defines some manifest constants. */
 
+#ifndef GMP_RNDN
+/* compatibility with MPFR <= 2.4 */
+#define MPFR_RNDN GMP_RNDN
+#define MPFR_RNDZ GMP_RNDZ
+#define MPFR_RNDU GMP_RNDU
+#define MPFR_RNDD GMP_RNDD
+#define RND_MAX GMP_RNDD
+#else
+#define RND_MAX MPFR_RNDA
+#endif
+
 int mpfr_tag(void)
 {
   static int t = 0;
@@ -112,7 +123,9 @@ int mpfr_tag(void)
     pure_def(pure_sym("MPFR_RNDZ"), pure_int(MPFR_RNDZ));
     pure_def(pure_sym("MPFR_RNDU"), pure_int(MPFR_RNDU));
     pure_def(pure_sym("MPFR_RNDD"), pure_int(MPFR_RNDD));
+#ifdef GMP_RNDN
     pure_def(pure_sym("MPFR_RNDA"), pure_int(MPFR_RNDA));
+#endif
   }
   return t;
 }
@@ -138,7 +151,7 @@ pure_expr *mpfr_from_double(double x, int prec, int rnd)
   mpfr_ptr p = malloc(sizeof(mpfr_t));
   if (!p) return NULL;
   if (prec < MPFR_PREC_MIN) prec = MPFR_PREC_MIN;
-  if (rnd < MPFR_RNDN || rnd > MPFR_RNDA)
+  if (rnd < 0 || rnd > RND_MAX)
     rnd = mpfr_get_default_rounding_mode();
   mpfr_init2(p, prec);
   mpfr_set_d(p, x, rnd);
@@ -150,7 +163,7 @@ pure_expr *mpfr_from_mpfr(mpfr_ptr x, int prec, int rnd)
   mpfr_ptr p = malloc(sizeof(mpfr_t));
   if (!p) return NULL;
   if (prec < MPFR_PREC_MIN) prec = MPFR_PREC_MIN;
-  if (rnd < MPFR_RNDN || rnd > MPFR_RNDA)
+  if (rnd < 0 || rnd > RND_MAX)
     rnd = mpfr_get_default_rounding_mode();
   mpfr_init2(p, prec);
   mpfr_set(p, x, rnd);
@@ -162,7 +175,7 @@ pure_expr *mpfr_from_bigint(mpz_t x, int prec, int rnd)
   mpfr_ptr p = malloc(sizeof(mpfr_t));
   if (!p) return NULL;
   if (prec < MPFR_PREC_MIN) prec = MPFR_PREC_MIN;
-  if (rnd < MPFR_RNDN || rnd > MPFR_RNDA)
+  if (rnd < 0 || rnd > RND_MAX)
     rnd = mpfr_get_default_rounding_mode();
   mpfr_init2(p, prec);
   mpfr_set_z(p, x, rnd);
@@ -175,7 +188,7 @@ pure_expr *mpfr_from_str(const char *s, int prec, int rnd)
   int res;
   if (!p) return NULL;
   if (prec < MPFR_PREC_MIN) prec = MPFR_PREC_MIN;
-  if (rnd < MPFR_RNDN || rnd > MPFR_RNDA)
+  if (rnd < 0 || rnd > RND_MAX)
     rnd = mpfr_get_default_rounding_mode();
   mpfr_init2(p, prec);
   res = mpfr_set_str(p, s, 10, rnd);
