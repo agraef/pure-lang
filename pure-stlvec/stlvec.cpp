@@ -376,6 +376,7 @@ bool sv_allpairs(px* comp, px* tpl1, px* tpl2)
     return equal(itrs1.beg(), itrs1.end(), itrs2.beg(), fun);
   } catch (px* e) {
     pure_throw(e);
+    return 0;
   }
 }
 
@@ -478,6 +479,7 @@ px* sv_foldl(px* fun, px* val, px* tpl)
     return sv_foldl_itrs(fun, val, itrs.beg(), itrs.end());
   } catch (px* e) {
     pure_throw(e);
+    return 0;
   }
 }
 
@@ -492,6 +494,7 @@ px* sv_foldl1(px* fun, px* tpl)
     return sv_foldl_itrs(fun, valh.pxp(), itrs.beg()+1, itrs.end());  
   }catch (px* e) {
     pure_throw(e);
+    return 0;
   }
 }
 
@@ -523,6 +526,7 @@ px* sv_foldr(px* fun, px* val, px* tpl)
     return sv_foldr_itrs(fun, val, beg, end);
   }catch (px* e) {
     pure_throw(e);
+    return 0;
   }
 }
 
@@ -538,6 +542,7 @@ px* sv_foldr1(px* fun, px* tpl)
     return sv_foldr_itrs(fun, valh.pxp(), beg+1, end);
   }catch (px* e) {
     pure_throw(e);
+    return 0;
   }
 }
 

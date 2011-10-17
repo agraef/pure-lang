@@ -557,6 +557,8 @@ pure_expr *csv_write(csv_t *csv, pure_expr **xs, size_t len)
     return error(msg);
   case ERR_MEM: 
     return error("out of memory");
+  default:
+    return NULL;
   }
 }
 
@@ -741,5 +743,7 @@ pure_expr *csv_read(csv_t *csv)
     return error(msg);
   case ERR_MEM:
     return error("out of memory");
+  default:
+    return NULL;
   }
 }

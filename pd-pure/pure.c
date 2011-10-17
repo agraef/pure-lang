@@ -49,6 +49,9 @@ typedef struct _namelist
 
 extern t_namelist *sys_searchpath;
 
+typedef int (*loader_t)(t_canvas *canvas, char *classname);
+extern void sys_register_loader(loader_t loader);
+
 /* Current object during creation and method call (pd_receive). */
 
 static struct _pure *actx = 0;
@@ -1382,8 +1385,8 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
       x->in = malloc(x->n_in*sizeof(t_px*));
     if (x->n_out > 0)
       x->out = malloc(x->n_out*sizeof(t_outlet*));
-    if (x->n_in > 0 && x->in == 0 ||
-	x->n_out > 0 && x->out == 0)
+    if ((x->n_in > 0 && x->in == 0) ||
+	(x->n_out > 0 && x->out == 0))
       pd_error(x, "pd-pure: memory allocation failed");
     if (!x->in) x->n_in = 0;
     if (!x->out) x->n_out = 0;
@@ -1402,8 +1405,8 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
       x->dspin = malloc(x->n_dspin*sizeof(t_sample*));
     if (x->n_dspout > 0)
       x->dspout = malloc(x->n_dspout*sizeof(t_sample*));
-    if (x->n_dspin > 0 && x->dspin == 0 ||
-	x->n_dspout > 0 && x->dspout == 0)
+    if ((x->n_dspin > 0 && x->dspin == 0) ||
+	(x->n_dspout > 0 && x->dspout == 0))
       pd_error(x, "pd-pure: memory allocation failed");
     if (!x->dspin) x->n_dspin = 0;
     if (!x->dspout) x->n_dspout = 0;
@@ -1603,7 +1606,7 @@ static int pure_loader(t_canvas *canvas, char *name)
       /* Load the Pure script. Note that the script gets invoked using 'run'
 	 rather than 'using', so that the definitions become temporaries which
 	 can be removed and reloaded later (cf. pure_reload). */
-      if (chdir(dirbuf)) ;
+      if (chdir(dirbuf)) {}
       sprintf(cmdbuf, "run \"%s.pure\"", name);
 #ifdef VERBOSE
       printf("pd-pure: compiling %s.pure\n", name);
@@ -1640,7 +1643,7 @@ static int pure_load(t_canvas *canvas, char *name)
       char buf[PATH_MAX], *cwd = getcwd(buf, PATH_MAX);
       class_set_extern_dir(gensym(dirbuf));
       /* Load the Pure script. */
-      if (chdir(dirbuf)) ;
+      if (chdir(dirbuf)) {}
       sprintf(cmdbuf, "run \"%s.pure\"", name);
 #ifdef VERBOSE
       printf("pd-pure: compiling %s.pure\n", name);
@@ -1670,7 +1673,7 @@ static void reload(t_classes *c)
     if (strcmp(c->sym->s_name, "pure") &&
 	strcmp(c->sym->s_name, "pure~")) {
       class_set_extern_dir(gensym(c->dir));
-      if (chdir(c->dir)) ;
+      if (chdir(c->dir)) {}
       sprintf(cmdbuf, "run \"%s.pure\"", c->sym->s_name);
 #ifdef VERBOSE
       printf("pd-pure: compiling %s.pure\n", c->sym->s_name);

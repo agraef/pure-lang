@@ -344,6 +344,7 @@ pure_expr* wrap_gsl_poly_solve_quadratic(double a, double b, double c)
     case 0: return pure_listl(0);
     case 1: return pure_listl(1, pure_double(x0));
     case 2: return pure_listl(2, pure_double(x0), pure_double(x1));
+    default: return NULL;
   }
 }
 

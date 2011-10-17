@@ -8,6 +8,10 @@
 #include <string.h>
 #include "midifile.h"
 
+/* Silence clang warnings about undefined switch cases. We should maybe look
+   into these some time. */
+#pragma clang diagnostic ignored "-Wswitch-enum"
+
 /*
  * Data Types
  */
@@ -152,7 +156,7 @@ static unsigned short interpret_uint16(unsigned char *buffer)
 static unsigned short read_uint16(FILE *in)
 {
 	unsigned char buffer[2];
-	if (fread(buffer, 1, 2, in)) ;
+	if (fread(buffer, 1, 2, in)) {}
 	return interpret_uint16(buffer);
 }
 
@@ -172,7 +176,7 @@ static uint32_t interpret_uint32(unsigned char *buffer)
 static uint32_t read_uint32(FILE *in)
 {
 	unsigned char buffer[4];
-	if (fread(buffer, 1, 4, in)) ;
+	if (fread(buffer, 1, 4, in)) {}
 	return interpret_uint32(buffer);
 }
 
@@ -354,7 +358,7 @@ MidiFile_t MidiFile_load(char *filename)
 
 	if ((filename == NULL) || ((in = fopen(filename, "rb")) == NULL)) return NULL;
 
-	if (fread(chunk_id, 1, 4, in)) ;
+	if (fread(chunk_id, 1, 4, in)) {}
 	chunk_size = read_uint32(in);
 	chunk_start = ftell(in);
 
@@ -362,7 +366,7 @@ MidiFile_t MidiFile_load(char *filename)
 
 	if (memcmp(chunk_id, "RIFF", 4) == 0)
 	{
-		if (fread(chunk_id, 1, 4, in)) ; /* technically this one is a type id rather than a chunk id, but we'll reuse the buffer anyway */
+		if (fread(chunk_id, 1, 4, in)) {} /* technically this one is a type id rather than a chunk id, but we'll reuse the buffer anyway */
 
 		if (memcmp(chunk_id, "RMID", 4) != 0)
 		{
@@ -370,7 +374,7 @@ MidiFile_t MidiFile_load(char *filename)
 			return NULL;
 		}
 
-		if (fread(chunk_id, 1, 4, in)) ;
+		if (fread(chunk_id, 1, 4, in)) {}
 		chunk_size = read_uint32(in);
 
 		if (memcmp(chunk_id, "data", 4) != 0)
@@ -379,7 +383,7 @@ MidiFile_t MidiFile_load(char *filename)
 			return NULL;
 		}
 
-		if (fread(chunk_id, 1, 4, in)) ;
+		if (fread(chunk_id, 1, 4, in)) {}
 		chunk_size = read_uint32(in);
 		chunk_start = ftell(in);
 	}
@@ -392,7 +396,7 @@ MidiFile_t MidiFile_load(char *filename)
 
 	file_format = read_uint16(in);
 	number_of_tracks = read_uint16(in);
-	if (fread(division_type_and_resolution, 1, 2, in)) ;
+	if (fread(division_type_and_resolution, 1, 2, in)) {}
 
 	switch ((signed char)(division_type_and_resolution[0]))
 	{
@@ -428,7 +432,7 @@ MidiFile_t MidiFile_load(char *filename)
 
 	while (number_of_tracks_read < number_of_tracks)
 	{
-		if (fread(chunk_id, 1, 4, in)) ;
+		if (fread(chunk_id, 1, 4, in)) {}
 		chunk_size = read_uint32(in);
 		chunk_start = ftell(in);
 
@@ -523,7 +527,7 @@ MidiFile_t MidiFile_load(char *filename)
 								int data_length = read_variable_length_quantity(in) + 1;
 								unsigned char *data_buffer = malloc(data_length);
 								data_buffer[0] = status;
-								if (fread(data_buffer + 1, 1, data_length - 1, in)) ;
+								if (fread(data_buffer + 1, 1, data_length - 1, in)) {}
 								MidiFileTrack_createSysexEvent(track, tick, data_length, data_buffer);
 								free(data_buffer);
 								break;
@@ -533,7 +537,7 @@ MidiFile_t MidiFile_load(char *filename)
 								int number = fgetc(in);
 								int data_length = read_variable_length_quantity(in);
 								unsigned char *data_buffer = malloc(data_length);
-								if (fread(data_buffer, 1, data_length, in)) ;
+								if (fread(data_buffer, 1, data_length, in)) {}
 
 								if (number == 0x2F)
 								{
@@ -634,48 +638,48 @@ int MidiFile_save(MidiFile_t midi_file, const char* filename)
 			{
 				case MIDI_FILE_EVENT_TYPE_NOTE_OFF:
 				{
-					fputc(0x80 | MidiFileNoteOffEvent_getChannel(event) & 0x0F, out);
+					fputc(0x80 | (MidiFileNoteOffEvent_getChannel(event) & 0x0F), out);
 					fputc(MidiFileNoteOffEvent_getNote(event) & 0x7F, out);
 					fputc(MidiFileNoteOffEvent_getVelocity(event) & 0x7F, out);
 					break;
 				}
 				case MIDI_FILE_EVENT_TYPE_NOTE_ON:
 				{
-					fputc(0x90 | MidiFileNoteOnEvent_getChannel(event) & 0x0F, out);
+					fputc(0x90 | (MidiFileNoteOnEvent_getChannel(event) & 0x0F), out);
 					fputc(MidiFileNoteOnEvent_getNote(event) & 0x7F, out);
 					fputc(MidiFileNoteOnEvent_getVelocity(event) & 0x7F, out);
 					break;
 				}
 				case MIDI_FILE_EVENT_TYPE_KEY_PRESSURE:
 				{
-					fputc(0xA0 | MidiFileKeyPressureEvent_getChannel(event) & 0x0F, out);
+					fputc(0xA0 | (MidiFileKeyPressureEvent_getChannel(event) & 0x0F), out);
 					fputc(MidiFileKeyPressureEvent_getNote(event) & 0x7F, out);
 					fputc(MidiFileKeyPressureEvent_getAmount(event) & 0x7F, out);
 					break;
 				}
 				case MIDI_FILE_EVENT_TYPE_CONTROL_CHANGE:
 				{
-					fputc(0xB0 | MidiFileControlChangeEvent_getChannel(event) & 0x0F, out);
+					fputc(0xB0 | (MidiFileControlChangeEvent_getChannel(event) & 0x0F), out);
 					fputc(MidiFileControlChangeEvent_getNumber(event) & 0x7F, out);
 					fputc(MidiFileControlChangeEvent_getValue(event) & 0x7F, out);
 					break;
 				}
 				case MIDI_FILE_EVENT_TYPE_PROGRAM_CHANGE:
 				{
-					fputc(0xC0 | MidiFileProgramChangeEvent_getChannel(event) & 0x0F, out);
+					fputc(0xC0 | (MidiFileProgramChangeEvent_getChannel(event) & 0x0F), out);
 					fputc(MidiFileProgramChangeEvent_getNumber(event) & 0x7F, out);
 					break;
 				}
 				case MIDI_FILE_EVENT_TYPE_CHANNEL_PRESSURE:
 				{
-					fputc(0xD0 | MidiFileChannelPressureEvent_getChannel(event) & 0x0F, out);
+					fputc(0xD0 | (MidiFileChannelPressureEvent_getChannel(event) & 0x0F), out);
 					fputc(MidiFileChannelPressureEvent_getAmount(event) & 0x7F, out);
 					break;
 				}
 				case MIDI_FILE_EVENT_TYPE_PITCH_WHEEL:
 				{
 					int value = MidiFilePitchWheelEvent_getValue(event);
-					fputc(0xE0 | MidiFilePitchWheelEvent_getChannel(event) & 0x0F, out);
+					fputc(0xE0 | (MidiFilePitchWheelEvent_getChannel(event) & 0x0F), out);
 					// fixed reversed byte order -- ag
 					fputc(value & 0x7F, out);
 					fputc((value >> 7) & 0x7F, out);
@@ -1297,7 +1301,7 @@ MidiFileEvent_t MidiFileTrack_createSysexEvent(MidiFileTrack_t track, int32_t ti
 {
 	MidiFileEvent_t new_event;
 
-	if ((track == NULL) || (data_length < 1) || (data_buffer == NULL)) NULL;
+	if ((track == NULL) || (data_length < 1) || (data_buffer == NULL)) return NULL;
 
 	new_event = (MidiFileEvent_t)(malloc(sizeof(struct MidiFileEvent)));
 	new_event->track = track;

@@ -26,6 +26,7 @@
 #include <libxml/xmlmemory.h>
 #include <libxml/parser.h>
 #include <libxml/xpath.h>
+#include <libxml/xpathInternals.h>
 #include <libxslt/xslt.h>
 #include <libxslt/xsltInternals.h>
 #include <libxslt/transform.h>
@@ -543,7 +544,7 @@ static pure_expr *pure_enum(xmlEnumerationPtr ptr)
   size_t n = 0;
   xmlEnumerationPtr p;
   for (p = ptr; p; p = p->next) n++;
-  if (n >= 0) {
+  if (n > 0) {
     pure_expr **xs, *ret;
     xs = malloc(n*sizeof(pure_expr*));
     if (!xs) return NULL;
@@ -924,7 +925,8 @@ pure_expr *xml_select(pure_expr *doc_or_node, pure_expr *x)
     const char *prefix, *uri;
     for (i = 0; i < n; i++)
       if (parse_attr(ys[i], &prefix, &uri))
-	xmlXPathRegisterNs(context, prefix, uri);
+	xmlXPathRegisterNs(context, (const xmlChar*)prefix,
+			   (const xmlChar*)uri);
       else {
 	xmlXPathFreeContext(context);
 	free(ys);

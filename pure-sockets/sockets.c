@@ -290,7 +290,7 @@ int pure_closesocket(int fd)
 int pure_listen(int sockfd, int backlog)
 { return listen(sockfd, backlog); }
 int pure_accept(int sockfd, struct sockaddr *addr, int *addrlen)
-{ return accept(sockfd, addr, addrlen); }
+{ return accept(sockfd, addr, (socklen_t*)addrlen); }
 int pure_bind(int sockfd, struct sockaddr *addr, int addrlen)
 { return bind(sockfd, addr, addrlen); }
 int pure_connect(int sockfd, struct sockaddr *addr, int addrlen)
@@ -301,16 +301,16 @@ size_t pure_send(int fd, void *buf, size_t len, int flags)
 { return send(fd, buf, len, flags); }
 size_t pure_recvfrom(int fd, void *buf, size_t len, int flags,
 		     struct sockaddr *addr, int *addrlen)
-{ return recvfrom(fd, buf, len, flags, addr, addrlen); }
+{ return recvfrom(fd, buf, len, flags, addr, (socklen_t*)addrlen); }
 size_t pure_sendto(int fd, void *buf, size_t len, int flags,
 		   struct sockaddr *addr, int addrlen)
 { return sendto(fd, buf, len, flags, addr, addrlen); }
 int pure_getsockname(int fd, struct sockaddr *addr, int *addrlen)
-{ return getsockname(fd, addr, addrlen); }
+{ return getsockname(fd, addr, (socklen_t*)addrlen); }
 int pure_getpeername(int fd, struct sockaddr *addr, int *addrlen)
-{ return getpeername(fd, addr, addrlen); }
+{ return getpeername(fd, addr, (socklen_t*)addrlen); }
 int pure_getsockopt(int fd, int level, int name, void *val, int *len)
-{ return getsockopt(fd, level, name, val, len); }
+{ return getsockopt(fd, level, name, val, (socklen_t*)len); }
 int pure_setsockopt(int fd, int level, int name, void *val, int len)
 { return setsockopt(fd, level, name, val, len); }
 
