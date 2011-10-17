@@ -265,4 +265,23 @@ px* pair_to_rocket(pxh_pair* pp)
   return pure_appl(rocket, 2, pp->first.pxp(), pp->second.pxp()); 
 } 
 
+px* stl_begin()
+{
+  return pure_symbol(pure_sym("stl_begin_iterator"));
+}
+
+px* stl_end()
+{
+  return pure_symbol(pure_sym("stl_end_iterator"));
+}
+
+px* stl_insert()
+{
+  return pure_symbol(pure_sym("stl_insert_iterator"));
+}
+
+px* stl_back_insert()
+{
+  return pure_symbol(pure_sym("stl_back_insert_iterator"));
+}
 

@@ -172,6 +172,12 @@ int rocket_tag();
 pxh_pair* rocket_to_pair(px* rp);
 px* pair_to_rocket(pxh_pair* pp);
 
+px* stl_begin();
+px* stl_end();
+px* stl_insert();
+px* stl_back_insert();
+
+
 /*** Interface ***********************************************************/
 
 /* stl_refc and friends - functions to return a pure_expr's refc and to
