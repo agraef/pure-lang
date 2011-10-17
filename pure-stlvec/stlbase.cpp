@@ -222,33 +222,8 @@ int stl_refc(pure_expr *x){
 
 /**** Helpers **********************************************************/
 
-void bad_function()
+void stl_throw_sym(const char *name)
 {
-  pure_throw(pure_symbol(pure_sym("bad_function")));
-}
-
-void index_error()
-{
-  pure_throw(pure_symbol(pure_sym("out_of_bounds")));
-}
-
-void bad_argument()
-{
-  pure_throw(pure_symbol(pure_sym("bad_argument")));
-}
-
-void range_overflow()
-{
-  pure_throw(pure_symbol(pure_sym("range_overflow")));
-}
-
-void range_overlap()
-{
-  pure_throw(pure_symbol(pure_sym("range_overlap")));
-}
-
-void failed_cond()
-{
-  pure_throw(pure_symbol(pure_sym("failed_cond")));
+  pure_throw(pure_symbol(pure_sym(name)));
 }
 

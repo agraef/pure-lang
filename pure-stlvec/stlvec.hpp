@@ -82,6 +82,7 @@ extern "C" {
   void sv_put(sv* vec, int pos, px* val);
   px*  sv_front(sv* vec);
   px*  sv_back(sv* vec);
+  px*  sv_list(px* tpl);
 
   void sv_push_back(sv* vec, px* val);
   void sv_splice(sv* vec, int b, px* xs_or_tpl);

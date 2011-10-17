@@ -157,12 +157,14 @@ struct pxh_gen : public pxh_fun
 
 std::ostream& operator<<(std::ostream& os, px* pe);
 
-void bad_function();
-void index_error();
-void range_overflow();
-void range_overlap();
-void bad_argument();
-void failed_cond();
+void stl_throw_sym(const char *name);
+
+inline void bad_function() {stl_throw_sym("bad_function");}
+inline void index_error() {stl_throw_sym("out_of_bounds");}
+inline void range_overflow() {stl_throw_sym("range_overflow");}
+inline void range_overlap() {stl_throw_sym("range_overlap");}
+inline void bad_argument() {stl_throw_sym("bad_argument");}
+inline void failed_cond() {stl_throw_sym("failed_cond");}
 
 /*** Inteface ***********************************************************/
 

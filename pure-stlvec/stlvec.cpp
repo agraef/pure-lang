@@ -380,6 +380,31 @@ bool sv_allpairs(px* comp, px* tpl1, px* tpl2)
   }
 }
 
+px* sv_list(px* tpl)
+{
+  sv_iters itrs(tpl);
+  if (!itrs.is_valid || itrs.num_iters != 2) bad_argument();
+  sv& v = *(itrs.vec);
+  int b = itrs.beg() - v.begin(); 
+  int e = b + itrs.size(); 
+  px* cons = pure_const(cons_tag());
+  px* nl = pure_const(null_list_tag());
+  if (b>=e) return nl;
+  px* res = 0;
+  px* y = 0;
+  for (int i = b; i < e; i++){
+    px* fx =  v[i].pxp();
+    px* last = pure_app(pure_app(cons,fx),nl);
+    if (!res)
+      res = y = last;
+    else {
+      y->data.x[1] = px_new(last);
+      y = last;
+    }
+  }
+  return res;  
+}
+
 px*  sv_listmap(px* fun, px* tpl)
 {
   sv_iters itrs(tpl);
@@ -394,7 +419,7 @@ px*  sv_listmap(px* fun, px* tpl)
   px* res = 0;
   px* y = 0;
   for (int i = b; i < e; i++){
-    px* fx =  pure_appxl(fun, &exception, 1, v[i].pxp());
+    px* fx = pure_appxl(fun, &exception, 1, v[i].pxp());
     if (exception) {
       if (res) px_freenew(res);
       pure_throw(exception);

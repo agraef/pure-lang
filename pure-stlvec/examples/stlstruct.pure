@@ -159,8 +159,8 @@ using system, regex, "lib:stlcontainer";
 
 namespace stl;
 
-private extern void* sv_make_b(expr* xs_or_sm);
-private extern void* sv_make_c(expr* xs, int n);
+private extern void* sv_make_from_xs(expr* xs_or_sm);
+private extern void* sv_make_n(expr* xs, int n);
 private extern void  sv_delete(void* vec);
 private extern void* sv_dup(expr* it);
 private extern expr* sv_vector(expr* it);
@@ -191,9 +191,9 @@ private parse_field_spec parse_name_spec parse_field_specs eval_code
 
 struct_err msg = throw (struct_error msg);
 
-struct_mk_sv x n::int = sentry sv_delete (sv_make_c x n);
+struct_mk_sv x n::int = sentry sv_delete (sv_make_n x n);
 
-struct_sv v = sentry sv_delete (sv_make_b (smatrix v)) if vectorp v;
+struct_sv v = sentry sv_delete (sv_make_from_xs (smatrix v)) if vectorp v;
 
 struct_dup sv = sentry sv_delete (sv_dup (STRUCT sv));
 

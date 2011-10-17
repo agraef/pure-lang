@@ -59,6 +59,7 @@ extern expr* sv_get(void* vec, int pos);
 extern void  sv_put(void* vec, int pos, expr* val);
 private extern expr* sv_front(void* vec);
 private extern expr* sv_back(void* vec);
+private extern expr* sv_list(expr* it);
 
 private extern void  sv_push_back(void* vec, expr* val);
 private extern void  sv_pop_back(void* vec);
@@ -188,7 +189,9 @@ allpairs bin_fun it1::svit it2::svit = sv_allpairs bin_fun it1 it2;
 
 ::foldr1 f it::svit = sv_foldr1 f it;
 
-::members it::svit = sv_foldr (\x xs->x:xs) [] it;
+//::members it::svit = sv_foldr (\x xs->x:xs) [] it;
+
+::members it::svit = sv_list it;
 
 ::list sv::stlvec = members sv;
 

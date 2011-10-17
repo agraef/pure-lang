@@ -144,7 +144,7 @@ clean:
 install: dll
 	@ test -d "$(DESTDIR)$(libdir)/pure" || \
           mkdir -p "$(DESTDIR)$(libdir)/pure"
-	@ cp -r $(LIBFILES) "$(DESTDIR)$(libdir)/pure"
+	cp -r $(LIBFILES) "$(DESTDIR)$(libdir)/pure"
 
 uninstall:
 	rm -rf $(INSTALLEDFILES)
