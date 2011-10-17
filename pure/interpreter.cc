@@ -248,9 +248,8 @@ void interpreter::init()
   // as suggested in the LLVM documentation, but we need to keep char* and
   // void* apart.)
   {
-    std::vector<const Type*> elts;
-    Type *VoidTy = struct_type(elts);
-    module->addTypeName("void", VoidTy);
+    std::vector<llvm_const_Type*> elts;
+    Type *VoidTy = struct_type("void", elts);
     VoidPtrTy = PointerType::get(VoidTy, 0);
   }
 
@@ -263,10 +262,8 @@ void interpreter::init()
 
   // Complex numbers (complex double).
   {
-    std::vector<const Type*> elts;
+    std::vector<llvm_const_Type*> elts;
     elts.push_back(ArrayType::get(double_type(), 2));
-    //elts.push_back(double_type());
-    //elts.push_back(double_type());
     ComplexTy = struct_type(elts);
     ComplexPtrTy = PointerType::get(ComplexTy, 0);
   }
@@ -274,51 +271,47 @@ void interpreter::init()
   // GSL-compatible matrix types. These are used to marshall GSL matrices in
   // the C interface.
   {
-    std::vector<const Type*> elts;
+    std::vector<llvm_const_Type*> elts;
     elts.push_back(size_t_type());	// size1
     elts.push_back(size_t_type());	// size2
     elts.push_back(size_t_type());	// tda
     elts.push_back(VoidPtrTy);		// data
     elts.push_back(VoidPtrTy);		// block
     elts.push_back(int32_type());	// owner
-    GSLMatrixTy = struct_type(elts);
-    module->addTypeName("struct.__gsl__matrix", GSLMatrixTy);
+    GSLMatrixTy = struct_type("struct.__gsl__matrix", elts);
     GSLMatrixPtrTy = PointerType::get(GSLMatrixTy, 0);
   }
   {
-    std::vector<const Type*> elts;
+    std::vector<llvm_const_Type*> elts;
     elts.push_back(size_t_type());	// size1
     elts.push_back(size_t_type());	// size2
     elts.push_back(size_t_type());	// tda
     elts.push_back(DoublePtrTy);	// data
     elts.push_back(VoidPtrTy);		// block
     elts.push_back(int32_type());	// owner
-    GSLDoubleMatrixTy = struct_type(elts);
-    module->addTypeName("struct.__gsl__matrix_double", GSLDoubleMatrixTy);
+    GSLDoubleMatrixTy = struct_type("struct.__gsl__matrix_double", elts);
     GSLDoubleMatrixPtrTy = PointerType::get(GSLDoubleMatrixTy, 0);
   }
   {
-    std::vector<const Type*> elts;
+    std::vector<llvm_const_Type*> elts;
     elts.push_back(size_t_type());	// size1
     elts.push_back(size_t_type());	// size2
     elts.push_back(size_t_type());	// tda
     elts.push_back(ComplexPtrTy);	// data
     elts.push_back(VoidPtrTy);		// block
     elts.push_back(int32_type());	// owner
-    GSLComplexMatrixTy = struct_type(elts);
-    module->addTypeName("struct.__gsl__matrix_complex", GSLComplexMatrixTy);
+    GSLComplexMatrixTy = struct_type("struct.__gsl__matrix_complex", elts);
     GSLComplexMatrixPtrTy = PointerType::get(GSLComplexMatrixTy, 0);
   }
   {
-    std::vector<const Type*> elts;
+    std::vector<llvm_const_Type*> elts;
     elts.push_back(size_t_type());	// size1
     elts.push_back(size_t_type());	// size2
     elts.push_back(size_t_type());	// tda
     elts.push_back(IntPtrTy);		// data
     elts.push_back(VoidPtrTy);		// block
     elts.push_back(int32_type());	// owner
-    GSLIntMatrixTy = struct_type(elts);
-    module->addTypeName("struct.__gsl__matrix_int", GSLIntMatrixTy);
+    GSLIntMatrixTy = struct_type("struct.__gsl__matrix_int", elts);
     GSLIntMatrixPtrTy = PointerType::get(GSLIntMatrixTy, 0);
   }
 
@@ -352,8 +345,21 @@ void interpreter::init()
      to the other types (using a bitcast on a pointer) as needed. */
 
   {
+#ifdef LLVM30
+    // LLVM 3.0 named structs make recursive types quite straightforward.
+    ExprTy = llvm::StructType::create
+      (llvm::getGlobalContext(), "struct.__pure__expr");
+    std::vector<llvm_const_Type*> elts;
+    elts.push_back(int32_type());
+    elts.push_back(int32_type());
+    elts.push_back(PointerType::get(ExprTy, 0));
+    elts.push_back(PointerType::get(ExprTy, 0));
+    llvm::ArrayRef<llvm::Type*> myelts = elts;
+    ExprTy->setBody(myelts);
+#else
+    // Recursive struct, the old way.
     PATypeHolder StructTy = opaque_type();
-    std::vector<const Type*> elts;
+    std::vector<llvm_const_Type*> elts;
     elts.push_back(int32_type());
     elts.push_back(int32_type());
     elts.push_back(PointerType::get(StructTy, 0));
@@ -362,38 +368,35 @@ void interpreter::init()
     cast<OpaqueType>(StructTy.get())->refineAbstractTypeTo(ExprTy);
     ExprTy = cast<StructType>(StructTy.get());
     module->addTypeName("struct.__pure__expr", ExprTy);
+#endif
   }
   {
-    std::vector<const Type*> elts;
+    std::vector<llvm_const_Type*> elts;
     elts.push_back(int32_type());
     elts.push_back(int32_type());
     elts.push_back(int32_type());
-    IntExprTy = struct_type(elts);
-    module->addTypeName("struct.__pure__intexpr", IntExprTy);
+    IntExprTy = struct_type("struct.__pure__intexpr", elts);
   }
   {
-    std::vector<const Type*> elts;
+    std::vector<llvm_const_Type*> elts;
     elts.push_back(int32_type());
     elts.push_back(int32_type());
     elts.push_back(double_type());
-    DblExprTy = struct_type(elts);
-    module->addTypeName("struct.__pure__dblexpr", DblExprTy);
+    DblExprTy = struct_type("struct.__pure__dblexpr", elts);
   }
   {
-    std::vector<const Type*> elts;
+    std::vector<llvm_const_Type*> elts;
     elts.push_back(int32_type());
     elts.push_back(int32_type());
     elts.push_back(CharPtrTy);
-    StrExprTy = struct_type(elts);
-    module->addTypeName("struct.__pure__strexpr", StrExprTy);
+    StrExprTy = struct_type("struct.__pure__strexpr", elts);
   }
   {
-    std::vector<const Type*> elts;
+    std::vector<llvm_const_Type*> elts;
     elts.push_back(int32_type());
     elts.push_back(int32_type());
     elts.push_back(VoidPtrTy);
-    PtrExprTy = struct_type(elts);
-    module->addTypeName("struct.__pure__ptrexpr", PtrExprTy);
+    PtrExprTy = struct_type("struct.__pure__ptrexpr", elts);
   }
 
   // Corresponding pointer types.
@@ -771,8 +774,8 @@ interpreter::interpreter(int32_t nsyms, char *syms,
   while (1) {
     sin >> f >> s_name >> s_type >> n_args;
     if (sin.fail()) break;
-    const Type* rettype = named_type(s_type);
-    vector<const Type*> argtypes(n_args);
+    llvm_const_Type* rettype = named_type(s_type);
+    vector<llvm_const_Type*> argtypes(n_args);
     for (size_t i = 0; i < n_args; i++) {
       sin >> s_type;
       argtypes[i] = named_type(s_type);
@@ -813,8 +816,8 @@ interpreter::interpreter(int32_t nsyms, char *syms,
     if (v.x) pure_free(v.x); v.x = pure_new(x);
     if (externs[f]) {
       ExternInfo& info = externals[f];
-      vector<const Type*> argt(info.argtypes.size(), ExprPtrTy);
-      FunctionType *ft = FunctionType::get(ExprPtrTy, argt, false);
+      vector<llvm_const_Type*> argt(info.argtypes.size(), ExprPtrTy);
+      FunctionType *ft = func_type(ExprPtrTy, argt, false);
       Function *fp = Function::Create(ft, Function::InternalLinkage,
 				      "$$wrap."+info.name, module);
       sys::DynamicLibrary::AddSymbol("$$wrap."+info.name, externs[f]);
@@ -1717,7 +1720,7 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
   bool have_getSampleRate = M->getFunction("getSampleRate"+classname) != 0;
   // Figure out whether our dsp uses float or double values.
   Function *compute = M->getFunction("compute"+classname);
-  const Type *type = compute->getFunctionType()->getParamType(2);
+  llvm_const_Type *type = compute->getFunctionType()->getParamType(2);
   bool is_double = type ==
     PointerType::get(PointerType::get(double_type(), 0), 0);
   if (loaded && modified) {
@@ -1768,7 +1771,11 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
   }
   // Link the mangled module into the Pure module. This only needs to be done
   // if the module was modified.
-  if (modified && Linker::LinkModules(module, M, msg)) {
+  if (modified && Linker::LinkModules(module, M,
+#ifdef LLVM30
+				      Linker::DestroySource,
+#endif
+				      msg)) {
     delete M;
     dsp_errmsg(name, msg);
     return false;
@@ -1794,9 +1801,9 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
     {
       Function *newfun = module->getFunction("$$faust$"+modname+"$new");
       Function *initfun = module->getFunction("$$faust$"+modname+"$init");
-      const Type *dsp_ty = newfun->getReturnType();
-      vector<const Type*> argt(1, int32_type());
-      FunctionType *ft = FunctionType::get(dsp_ty, argt, false);
+      llvm_const_Type *dsp_ty = newfun->getReturnType();
+      vector<llvm_const_Type*> argt(1, int32_type());
+      FunctionType *ft = func_type(dsp_ty, argt, false);
       Function *f = Function::Create(ft, Function::ExternalLinkage,
 				     "$$faust$"+modname+"$newinit", module);
       BasicBlock *bb = basic_block("entry", f);
@@ -1808,7 +1815,7 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
       b.SetInsertPoint(bb);
       // Call new.
       vector<Value*> args;
-      Value *v = b.CreateCall(newfun, args.begin(), args.end());
+      Value *v = b.CreateCall(newfun, mkargs(args));
       // Check for null pointer results.
       BasicBlock *okbb = basic_block("ok"), *skipbb = basic_block("skip");
       b.CreateCondBr
@@ -1821,7 +1828,7 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
       args.push_back(v);
       Function::arg_iterator a = f->arg_begin();
       args.push_back(a);
-      b.CreateCall(initfun, args.begin(), args.end());
+      b.CreateCall(initfun, mkargs(args));
       b.CreateBr(skipbb);
       // Return the result.
       f->getBasicBlockList().push_back(skipbb);
@@ -1837,12 +1844,12 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
 	("$$faust$"+modname+"$buildUserInterface");
       // Type of the above; the first argument gives the dsp type, the second
       // one the UI type.
-      const FunctionType *ht = buildUserInterface->getFunctionType();
-      const Type *dsp_type = ht->getParamType(0);
-      const Type *ui_type = ht->getParamType(1);
+      llvm_const_FunctionType *ht = buildUserInterface->getFunctionType();
+      llvm_const_Type *dsp_type = ht->getParamType(0);
+      llvm_const_Type *ui_type = ht->getParamType(1);
       // Create the call interface of our convenience function.
-      vector<const Type*> argt(1, dsp_type);
-      FunctionType *ft = FunctionType::get(ExprPtrTy, argt, false);
+      vector<llvm_const_Type*> argt(1, dsp_type);
+      FunctionType *ft = func_type(ExprPtrTy, argt, false);
       Function *f = Function::Create(ft, Function::ExternalLinkage,
 				     "$$faust$"+modname+"$info", module);
       BasicBlock *bb = basic_block("entry", f);
@@ -1860,33 +1867,33 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
 	module->getFunction("$$faust$"+modname+"$getNumOutputs");
       vector<Value*> args;
       Function::arg_iterator a = f->arg_begin();
-      const FunctionType *gt = getNumInputs->getFunctionType();
+      llvm_const_FunctionType *gt = getNumInputs->getFunctionType();
       args.push_back(b.CreateBitCast(a, gt->getParamType(0)));
-      Value *n_in = b.CreateCall(getNumInputs, args.begin(), args.end());
-      Value *n_out = b.CreateCall(getNumOutputs, args.begin(), args.end());
+      Value *n_in = b.CreateCall(getNumInputs, mkargs(args));
+      Value *n_out = b.CreateCall(getNumOutputs, mkargs(args));
       // Call the runtime function to create the internal UI data structure.
       Function *uifun = module->getFunction
 	(is_double?"faust_double_ui":"faust_float_ui");
       args.clear();
-      Value *v = b.CreateCall(uifun, args.begin(), args.end());
+      Value *v = b.CreateCall(uifun, mkargs(args));
       // Call the Faust function to initialize the UI data structure. Note
       // that we need to cast the second void* argument to the proper pointer
       // type expected by the buildUserInterface routine.
       args.push_back(a);
       args.push_back(b.CreateBitCast(v, ui_type));
-      b.CreateCall(buildUserInterface, args.begin(), args.end());
+      b.CreateCall(buildUserInterface, mkargs(args));
       // Construct the info tuple.
       Function *infofun = module->getFunction("faust_make_info");
       args.clear();
       args.push_back(n_in);
       args.push_back(n_out);
       args.push_back(v);
-      Value *u = b.CreateCall(infofun, args.begin(), args.end());
+      Value *u = b.CreateCall(infofun, mkargs(args));
       // Get rid of the internal UI data structure.
       Function *freefun = module->getFunction("faust_free_ui");
       args.clear();
       args.push_back(v);
-      b.CreateCall(freefun, args.begin(), args.end());
+      b.CreateCall(freefun, mkargs(args));
       // Return the result.
       b.CreateRet(u);
     }
@@ -1899,9 +1906,9 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
       // sample rate.
       myfuns.push_back("getSampleRate");
       Function *newfun = module->getFunction("$$faust$"+modname+"$new");
-      const Type *dsp_ty = newfun->getReturnType();
-      vector<const Type*> argt(1, dsp_ty);
-      FunctionType *ft = FunctionType::get(int32_type(), argt, false);
+      llvm_const_Type *dsp_ty = newfun->getReturnType();
+      vector<llvm_const_Type*> argt(1, dsp_ty);
+      FunctionType *ft = func_type(int32_type(), argt, false);
       Function *f = Function::Create(ft, Function::ExternalLinkage,
 				     "$$faust$"+modname+"$getSampleRate",
 				     module);
@@ -1943,10 +1950,10 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
     // The name under which the function is accessible in Pure.
     string asname = modname+"::"+*it;
     // The function type.
-    const FunctionType *ft = f->getFunctionType();
-    const Type* rest = ft->getReturnType();
+    llvm_const_FunctionType *ft = f->getFunctionType();
+    llvm_const_Type* rest = ft->getReturnType();
     size_t n = ft->getNumParams();
-    vector<const Type*> argt(n);
+    vector<llvm_const_Type*> argt(n);
     for (size_t i = 0; i < n; i++) argt[i] = ft->getParamType(i);
     string restype = dsptype_name(rest);
     list<string> argtypes;
@@ -2070,7 +2077,11 @@ bool interpreter::LoadBitcode(bool priv, const char *name, string *msg)
   }
   // Link the bitcode module into the Pure module. This only needs to be done
   // if the module wasnd't loaded before.
-  if (!loaded && Linker::LinkModules(module, M, msg)) {
+  if (!loaded && Linker::LinkModules(module, M,
+#ifdef LLVM30
+				     Linker::DestroySource,
+#endif
+				     msg)) {
     delete M;
     bc_errmsg(name, msg);
     return false;
@@ -2087,11 +2098,11 @@ bool interpreter::LoadBitcode(bool priv, const char *name, string *msg)
     // The name under which the function is accessible in Pure.
     string asname = fname;
     // The function type.
-    const FunctionType *ft = f->getFunctionType();
-    const Type* rest = ft->getReturnType();
+    llvm_const_FunctionType *ft = f->getFunctionType();
+    llvm_const_Type* rest = ft->getReturnType();
     const bool varargs = ft->isVarArg();
     size_t n = ft->getNumParams();
-    vector<const Type*> argt(n);
+    vector<llvm_const_Type*> argt(n);
     for (size_t i = 0; i < n; i++) argt[i] = ft->getParamType(i);
     string restype = bctype_name(rest);
     list<string> argtypes;
@@ -3238,7 +3249,7 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
 	  args[1] = vref(arg, it->p);
 	  Value *check =
 	    f.builder.CreateCall(module->getFunction("pure_safe_typecheck"),
-				 args.begin(), args.end());
+				 mkargs(args));
 	  f.builder.CreateCondBr(check, checkedbb, failedbb);
 	  f.f->getBasicBlockList().push_back(checkedbb);
 	  f.builder.SetInsertPoint(checkedbb);
@@ -3253,7 +3264,7 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
 	  args[0] = vref(arg, it->p);
 	  args[1] = vref(arg, it->q);
 	  Value *check = f.builder.CreateCall(module->getFunction("same"),
-					      args.begin(), args.end());
+					      mkargs(args));
 	  f.builder.CreateCondBr(check, checkedbb, failedbb);
 	  f.f->getBasicBlockList().push_back(checkedbb);
 	  f.builder.SetInsertPoint(checkedbb);
@@ -8260,7 +8271,9 @@ using namespace llvm;
 #include <fstream>
 #include <sstream>
 #include <time.h>
+#ifdef HAVE_LLVM_TYPESYMBOLTABLE_H
 #include <llvm/TypeSymbolTable.h>
+#endif
 
 static inline bool is_c_sym(const string& name)
 {
@@ -8694,10 +8707,10 @@ int interpreter::compiler(string out, list<string> libnames)
   }
   fun_to_be_deleted.clear();
   // Finally build the main function with all the initialization code.
-  vector<const Type*> argt;
+  vector<llvm_const_Type*> argt;
   argt.push_back(int32_type());
   argt.push_back(VoidPtrTy);
-  FunctionType *ft = FunctionType::get(void_type(), argt, false);
+  FunctionType *ft = func_type(void_type(), argt, false);
   Function *main = Function::Create(ft, Function::ExternalLinkage,
 				    "__pure_main__", module);
   BasicBlock *bb = basic_block("entry", main);
@@ -8808,15 +8821,17 @@ int interpreter::compiler(string out, list<string> libnames)
   args.push_back(a++);
   args.push_back(a++);
   args.push_back(SInt(n));
-  args.push_back(b.CreateGEP(syms, idx, idx+2));
-  args.push_back(b.CreateBitCast(b.CreateGEP(vvars, idx, idx+2), VoidPtrTy));
-  args.push_back(b.CreateBitCast(b.CreateGEP(vvals, idx, idx+2), VoidPtrTy));
-  args.push_back(b.CreateGEP(varity, idx, idx+2));
-  args.push_back(b.CreateBitCast(b.CreateGEP(vexterns, idx, idx+2),
+  args.push_back(b.CreateGEP(syms, mkidxs(idx, idx+2)));
+  args.push_back(b.CreateBitCast(b.CreateGEP(vvars, mkidxs(idx, idx+2)),
+				 VoidPtrTy));
+  args.push_back(b.CreateBitCast(b.CreateGEP(vvals, mkidxs(idx, idx+2)),
+				 VoidPtrTy));
+  args.push_back(b.CreateGEP(varity, mkidxs(idx, idx+2)));
+  args.push_back(b.CreateBitCast(b.CreateGEP(vexterns, mkidxs(idx, idx+2)),
 				 VoidPtrTy));
   args.push_back(b.CreateBitCast(sstkvar, VoidPtrTy));
   args.push_back(b.CreateBitCast(fptrvar, VoidPtrTy));
-  b.CreateCall(initfun, args.begin(), args.end());
+  b.CreateCall(initfun, mkargs(args));
   // Initialize runtime type tag information.
   Function *pure_rttyfun = module->getFunction("pure_add_rtty");
   for (map<int32_t,Env>::iterator it = globaltypes.begin(),
@@ -8828,7 +8843,7 @@ int interpreter::compiler(string out, list<string> libnames)
     argv[0] = SInt(tag);
     argv[1] = SInt(argc);
     argv[2] = ConstantExpr::getPointerCast(f, VoidPtrTy);
-    b.CreateCall(pure_rttyfun, argv.begin(), argv.end());
+    b.CreateCall(pure_rttyfun, mkargs(argv));
   }
   // Make Pure pointer RTTI available if present.
   Function *pure_rttifun = module->getFunction("pure_add_rtti");
@@ -8843,10 +8858,10 @@ int interpreter::compiler(string out, list<string> libnames)
        "$$str");
     // "cast" the char array to a char*
     Value *idx[2] = { Zero, Zero };
-    Value *p = b.CreateGEP(v, idx, idx+2);
+    Value *p = b.CreateGEP(v, mkidxs(idx, idx+2));
     argv[0] = p;
     argv[1] = SInt(tag);
-    b.CreateCall(pure_rttifun, argv.begin(), argv.end());
+    b.CreateCall(pure_rttifun, mkargs(argv));
   }
   // Make Faust RTTI available if present.
   Function *faust_rttifun = module->getFunction("faust_add_rtti");
@@ -8861,11 +8876,11 @@ int interpreter::compiler(string out, list<string> libnames)
        "$$faust_str");
     // "cast" the char array to a char*
     Value *idx[2] = { Zero, Zero };
-    Value *p = b.CreateGEP(v, idx, idx+2);
+    Value *p = b.CreateGEP(v, mkidxs(idx, idx+2));
     argv[0] = p;
     argv[1] = SInt(info.tag);
     argv[2] = Bool(info.dbl);
-    b.CreateCall(faust_rttifun, argv.begin(), argv.end());
+    b.CreateCall(faust_rttifun, mkargs(argv));
   }
   // Execute the initialization code of the Pure program (global expressions
   // and variable definitions).
@@ -8878,7 +8893,7 @@ int interpreter::compiler(string out, list<string> libnames)
 	argv[0] = Zero;
 	argv[1] = Zero;
 	b.CreateCall(module->getFunction("pure_push_args"),
-		     argv.begin(), argv.end());
+		     mkargs(argv));
       }
       CallInst* v = b.CreateCall(f);
       b.CreateCall(freefun, v);
@@ -9281,7 +9296,7 @@ CallInst *Env::CreateCall(Function *f, const vector<Value*>& args)
     assert(0 && "bad function call");
   }
 #endif
-  CallInst* v = builder.CreateCall(f, args.begin(), args.end());
+  CallInst* v = builder.CreateCall(f, mkargs(args));
   v->setCallingConv(f->getCallingConv());
   return v;
 }
@@ -9356,7 +9371,7 @@ ReturnInst *Env::CreateRet(Value *v, const rule *rp)
       myargs.push_back(v);
     else
       myargs.push_back(ConstantPointerNull::get(interp.ExprPtrTy));
-    CallInst::Create(free1_fun, myargs.begin(), myargs.end(), "", pi);
+    CallInst::Create(free1_fun, mkargs(myargs), "", pi);
   } else if (n+m != 0 || !interp.debugging) {
     vector<Value*> myargs;
     if (pi == ret)
@@ -9365,7 +9380,7 @@ ReturnInst *Env::CreateRet(Value *v, const rule *rp)
       myargs.push_back(ConstantPointerNull::get(interp.ExprPtrTy));
     myargs.push_back(UInt(n));
     myargs.push_back(UInt(m));
-    CallInst::Create(free_fun, myargs.begin(), myargs.end(), "", pi);
+    CallInst::Create(free_fun, mkargs(myargs), "", pi);
   }
   return ret;
 }
@@ -9817,11 +9832,13 @@ int32_t interpreter::find_hash(Env *e)
   return 0; // not found
 }
 
-const Type *interpreter::make_pointer_type(const string& name)
+llvm_const_Type *interpreter::make_pointer_type(const string& name)
 {
   type_map::iterator it = pointer_types.find(name);
   if (it == pointer_types.end()) {
-    const Type *ty = opaque_type();
+    string namestr = (name.size()>0 && name[name.size()-1]=='*') ?
+      name.substr(0, name.size()-1) : name;
+    llvm_const_Type *ty = opaque_type(namestr.c_str());
     pointer_types[name] = PointerType::get(ty, 0);
     it = pointer_types.find(name);
     assert(it != pointer_types.end());
@@ -9845,18 +9862,18 @@ string mangle_type_name(string name)
   return name;
 }
 
-string interpreter::pointer_type_name(const Type *type)
+string interpreter::pointer_type_name(llvm_const_Type *type)
 {
   assert(is_pointer_type(type));
-  const Type *elem_type = type->getContainedType(0);
+  llvm_const_Type *elem_type = type->getContainedType(0);
   if (is_pointer_type(elem_type)) {
-    const Type *ty = elem_type->getContainedType(0);
-    map<const Type*,type_map::iterator>::const_iterator it =
+    llvm_const_Type *ty = elem_type->getContainedType(0);
+    map<llvm_const_Type*,type_map::iterator>::const_iterator it =
       pointer_type_of.find(ty);
     if (it != pointer_type_of.end())
       return it->second->first+"*";
   }
-  map<const Type*,type_map::iterator>::const_iterator it =
+  map<llvm_const_Type*,type_map::iterator>::const_iterator it =
     pointer_type_of.find(elem_type);
   if (it != pointer_type_of.end())
     return it->second->first;
@@ -9873,7 +9890,16 @@ string interpreter::pointer_type_name(const Type *type)
      either then just give up and assume "void". */
   string name = type_name(elem_type);
   if (name == "<unknown C type>") {
-    name = mangle_type_name(module->getTypeName(elem_type));
+#if LLVM30
+    name.clear();
+    if (elem_type->isStructTy()) {
+      StructType *ty = (StructType*)elem_type;
+      if (ty->hasName()) name = ty->getName();
+    }
+#else
+    name = module->getTypeName(elem_type);
+#endif
+    name = mangle_type_name(name);
     if (name.empty()) name = "void";
   }
   name.append(count, '*');
@@ -9894,7 +9920,7 @@ int interpreter::pointer_type_tag(const string& name)
   return it->second;
 }
 
-const Type *interpreter::named_type(string name)
+llvm_const_Type *interpreter::named_type(string name)
 {
   if (name == "void")
     return void_type();
@@ -9988,7 +10014,7 @@ const Type *interpreter::named_type(string name)
     throw err("unknown C type '"+name+"'");
 }
 
-const char *interpreter::type_name(const Type *type)
+const char *interpreter::type_name(llvm_const_Type *type)
 {
   if (type == void_type())
     return "void";
@@ -10064,11 +10090,11 @@ const char *interpreter::type_name(const Type *type)
     return "<unknown C type>";
 }
 
-const Type *interpreter::gslmatrix_type(const Type *elem_ty,
-					const Type *block_ty)
+llvm_const_Type *interpreter::gslmatrix_type(llvm_const_Type *elem_ty,
+					llvm_const_Type *block_ty)
 {
   if (!elem_ty || !block_ty) return 0;
-  std::vector<const Type*> elts;
+  std::vector<llvm_const_Type*> elts;
   elts.push_back(size_t_type());			// size1
   elts.push_back(size_t_type());			// size2
   elts.push_back(size_t_type());			// tda
@@ -10078,14 +10104,14 @@ const Type *interpreter::gslmatrix_type(const Type *elem_ty,
   return struct_type(elts);
 }
 
-const char *interpreter::bctype_name(const Type *type)
+const char *interpreter::bctype_name(llvm_const_Type *type)
 {
   /* This is basically like type_name above, but we need to give special
      treatment to some pointer types (Pure expressions, GSL matrices) which
      may have different representations when coming from an external bitcode
      file. */
   if (is_pointer_type(type)) {
-    const Type *elem_type = type->getContainedType(0);
+    llvm_const_Type *elem_type = type->getContainedType(0);
     /* XXXFIXME: These checks really need to be rewritten so that they're less
        compiler-specific. Currently they only work with recent llvm-gcc and
        clang versions. */
@@ -10116,7 +10142,7 @@ const char *interpreter::bctype_name(const Type *type)
   return type_name(type);
 }
 
-const char *interpreter::dsptype_name(const Type *type)
+const char *interpreter::dsptype_name(llvm_const_Type *type)
 {
   /* Special version of bctype_name for Faust modules. This doesn't have the
      Pure expression and GSL matrix types, but instead we map i8* to void*. */
@@ -10128,7 +10154,7 @@ const char *interpreter::dsptype_name(const Type *type)
     return type_name(type);
 }
 
-bool interpreter::compatible_types(const Type *type1, const Type *type2)
+bool interpreter::compatible_types(llvm_const_Type *type1, llvm_const_Type *type2)
 {
   if (type1 == type2)
     return true;
@@ -10161,8 +10187,8 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 {
   // translate type names to LLVM types
   size_t n = argtypes.size();
-  const Type* type = named_type(restype);
-  vector<const Type*> argt(n);
+  llvm_const_Type* type = named_type(restype);
+  vector<llvm_const_Type*> argt(n);
   list<string>::const_iterator atype = argtypes.begin();
   for (size_t i = 0; i < n; i++, atype++) {
     argt[i] = named_type(*atype);
@@ -10178,7 +10204,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       return f;
     }
     // The function declaration hasn't been assembled yet. Do it now.
-    FunctionType *ft = FunctionType::get(type, argt, varargs);
+    FunctionType *ft = func_type(type, argt, varargs);
     f = Function::Create(ft, Function::ExternalLinkage, name, module);
     // Enter a fixed association into the dynamic linker table. This ensures
     // that even if the runtime functions can't be resolved via dlopening
@@ -10235,9 +10261,9 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     warning("warning: external '"+asname+"' shadows previous undefined use of this symbol");
   // Create the function type and check for an existing declaration of the
   // external.
-  FunctionType *ft = FunctionType::get(type, argt, varargs);
+  FunctionType *ft = func_type(type, argt, varargs);
   Function *g = module->getFunction(name);
-  const FunctionType *gt = g?g->getFunctionType():0;
+  llvm_const_FunctionType *gt = g?g->getFunctionType():0;
   // Check whether we already have an external declaration for this symbol.
   map<int32_t,ExternInfo>::const_iterator it = externals.find(sym.f);
   // Handle the case that the C function was imported *after* the definition
@@ -10275,7 +10301,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	// supposedly is more informative and hopefully looks nicer to the
 	// Pure programmer. ;-)
 	size_t n = gt->getNumParams();
-	vector<const Type*> argt(n);
+	vector<llvm_const_Type*> argt(n);
 	for (size_t i = 0; i < n; i++)
 	  argt[i] = gt->getParamType(i);
 	ExternInfo info(0, name, gt->getReturnType(), argt, g, gt->isVarArg());
@@ -10324,8 +10350,8 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   // external name, so that the external name may be reused for a Pure
   // function (usually a wrapper function replacing the C external in Pure
   // programs).
-  vector<const Type*> argt2(n, ExprPtrTy);
-  FunctionType *ft2 = FunctionType::get(ExprPtrTy, argt2, false);
+  vector<llvm_const_Type*> argt2(n, ExprPtrTy);
+  FunctionType *ft2 = func_type(ExprPtrTy, argt2, false);
   Function *f = Function::Create(ft2, Function::InternalLinkage,
 				 "$$wrap."+asid, module);
   vector<Value*> args(n), unboxed(n);
@@ -10359,12 +10385,12 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   size_t m = gt->getNumParams();
   for (size_t i = 0; i < n; i++) {
     Value *x = args[i];
-    const Type *type = (i<m)?gt->getParamType(i):argt[i];
+    llvm_const_Type *type = (i<m)?gt->getParamType(i):argt[i];
     // check for thunks which must be forced
     if (argt[i] != ExprPtrTy) {
       // do a quick check on the tag value
       Value *idx[2] = { Zero, Zero };
-      Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
+      Value *tagv = b.CreateLoad(b.CreateGEP(x, mkidxs(idx, idx+2)), "tag");
       Value *checkv = b.CreateICmpEQ(tagv, Zero, "check");
       BasicBlock *forcebb = basic_block("force");
       BasicBlock *skipbb = basic_block("skip");
@@ -10379,14 +10405,14 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     if (argt[i] == int1_type()) {
       BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
-      Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
+      Value *tagv = b.CreateLoad(b.CreateGEP(x, mkidxs(idx, idx+2)), "tag");
       b.CreateCondBr
 	(b.CreateICmpEQ(tagv, SInt(EXPR::INT), "cmp"), okbb, failedbb);
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
       Value *pv = b.CreateBitCast(x, IntExprPtrTy, "intexpr");
       idx[1] = ValFldIndex;
-      Value *iv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "intval");
+      Value *iv = b.CreateLoad(b.CreateGEP(pv, mkidxs(idx, idx+2)), "intval");
       unboxed[i] = b.CreateICmpNE(iv, Zero);
     } else if (argt[i] == int8_type()) {
       /* We allow either ints or bigints to be passed for C integers. */
@@ -10394,7 +10420,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       BasicBlock *mpzbb = basic_block("mpz");
       BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
-      Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
+      Value *tagv = b.CreateLoad(b.CreateGEP(x, mkidxs(idx, idx+2)), "tag");
       SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 2);
       sw->addCase(SInt(EXPR::INT), intbb);
       sw->addCase(SInt(EXPR::BIGINT), mpzbb);
@@ -10402,7 +10428,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       b.SetInsertPoint(intbb);
       Value *pv = b.CreateBitCast(x, IntExprPtrTy, "intexpr");
       idx[1] = ValFldIndex;
-      Value *intv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "intval");
+      Value *intv = b.CreateLoad(b.CreateGEP(pv, mkidxs(idx, idx+2)), "intval");
       b.CreateBr(okbb);
       f->getBasicBlockList().push_back(mpzbb);
       b.SetInsertPoint(mpzbb);
@@ -10420,7 +10446,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       BasicBlock *mpzbb = basic_block("mpz");
       BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
-      Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
+      Value *tagv = b.CreateLoad(b.CreateGEP(x, mkidxs(idx, idx+2)), "tag");
       SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 2);
       sw->addCase(SInt(EXPR::INT), intbb);
       sw->addCase(SInt(EXPR::BIGINT), mpzbb);
@@ -10428,7 +10454,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       b.SetInsertPoint(intbb);
       Value *pv = b.CreateBitCast(x, IntExprPtrTy, "intexpr");
       idx[1] = ValFldIndex;
-      Value *intv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "intval");
+      Value *intv = b.CreateLoad(b.CreateGEP(pv, mkidxs(idx, idx+2)), "intval");
       b.CreateBr(okbb);
       f->getBasicBlockList().push_back(mpzbb);
       b.SetInsertPoint(mpzbb);
@@ -10446,7 +10472,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       BasicBlock *mpzbb = basic_block("mpz");
       BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
-      Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
+      Value *tagv = b.CreateLoad(b.CreateGEP(x, mkidxs(idx, idx+2)), "tag");
       SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 2);
       sw->addCase(SInt(EXPR::INT), intbb);
       sw->addCase(SInt(EXPR::BIGINT), mpzbb);
@@ -10454,7 +10480,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       b.SetInsertPoint(intbb);
       Value *pv = b.CreateBitCast(x, IntExprPtrTy, "intexpr");
       idx[1] = ValFldIndex;
-      Value *intv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "intval");
+      Value *intv = b.CreateLoad(b.CreateGEP(pv, mkidxs(idx, idx+2)), "intval");
       b.CreateBr(okbb);
       f->getBasicBlockList().push_back(mpzbb);
       b.SetInsertPoint(mpzbb);
@@ -10472,7 +10498,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       BasicBlock *mpzbb = basic_block("mpz");
       BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
-      Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
+      Value *tagv = b.CreateLoad(b.CreateGEP(x, mkidxs(idx, idx+2)), "tag");
       SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 2);
       sw->addCase(SInt(EXPR::INT), intbb);
       sw->addCase(SInt(EXPR::BIGINT), mpzbb);
@@ -10480,7 +10506,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       b.SetInsertPoint(intbb);
       Value *pv = b.CreateBitCast(x, IntExprPtrTy, "intexpr");
       idx[1] = ValFldIndex;
-      Value *intv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "intval");
+      Value *intv = b.CreateLoad(b.CreateGEP(pv, mkidxs(idx, idx+2)), "intval");
       intv = b.CreateSExt(intv, int64_type());
       b.CreateBr(okbb);
       f->getBasicBlockList().push_back(mpzbb);
@@ -10497,26 +10523,26 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     } else if (argt[i] == float_type()) {
       BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
-      Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
+      Value *tagv = b.CreateLoad(b.CreateGEP(x, mkidxs(idx, idx+2)), "tag");
       b.CreateCondBr
 	(b.CreateICmpEQ(tagv, SInt(EXPR::DBL), "cmp"), okbb, failedbb);
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
       Value *pv = b.CreateBitCast(x, DblExprPtrTy, "dblexpr");
       idx[1] = ValFldIndex;
-      Value *dv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "dblval");
+      Value *dv = b.CreateLoad(b.CreateGEP(pv, mkidxs(idx, idx+2)), "dblval");
       unboxed[i] = b.CreateFPTrunc(dv, float_type());
     } else if (argt[i] == double_type()) {
       BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
-      Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
+      Value *tagv = b.CreateLoad(b.CreateGEP(x, mkidxs(idx, idx+2)), "tag");
       b.CreateCondBr
 	(b.CreateICmpEQ(tagv, SInt(EXPR::DBL), "cmp"), okbb, failedbb);
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
       Value *pv = b.CreateBitCast(x, DblExprPtrTy, "dblexpr");
       idx[1] = ValFldIndex;
-      Value *dv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "dblval");
+      Value *dv = b.CreateLoad(b.CreateGEP(pv, mkidxs(idx, idx+2)), "dblval");
       unboxed[i] = dv;
     } else if (argt[i] == CharPtrTy) {
       /* String conversion. As of Pure 0.45, we also allow real char* pointers
@@ -10526,7 +10552,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       BasicBlock *matrixbb = basic_block("matrix");
       BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
-      Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
+      Value *tagv = b.CreateLoad(b.CreateGEP(x, mkidxs(idx, idx+2)), "tag");
       SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 3);
       sw->addCase(SInt(EXPR::PTR), ptrbb);
       sw->addCase(SInt(EXPR::STR), strbb);
@@ -10542,7 +10568,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	vector<Value*> args;
 	args.push_back(SInt(tag));
 	args.push_back(x);
-	Value *chk = b.CreateCall(g, args.begin(), args.end());
+	Value *chk = b.CreateCall(g, mkargs(args));
 	b.CreateCondBr(chk, checkedbb, failedbb);
 	f->getBasicBlockList().push_back(checkedbb);
 	b.SetInsertPoint(checkedbb);
@@ -10551,7 +10577,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       Value *pv = b.CreateBitCast(x, PtrExprPtrTy, "ptrexpr");
       idx[1] = ValFldIndex;
       Value *ptrv = b.CreateBitCast
-	(b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "ptrval"),
+	(b.CreateLoad(b.CreateGEP(pv, mkidxs(idx, idx+2)), "ptrval"),
 	 CharPtrTy);
       b.CreateBr(okbb);
       f->getBasicBlockList().push_back(strbb);
@@ -10588,7 +10614,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       BasicBlock *matrixbb = basic_block("matrix");
       BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
-      Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
+      Value *tagv = b.CreateLoad(b.CreateGEP(x, mkidxs(idx, idx+2)), "tag");
       SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 3);
       Function *get_fun =
 	is_short ? module->getFunction("pure_get_matrix_data_short") :
@@ -10616,7 +10642,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	vector<Value*> args;
 	args.push_back(SInt(tag));
 	args.push_back(x);
-	Value *chk = b.CreateCall(g, args.begin(), args.end());
+	Value *chk = b.CreateCall(g, mkargs(args));
 	b.CreateCondBr(chk, checkedbb, failedbb);
 	f->getBasicBlockList().push_back(checkedbb);
 	b.SetInsertPoint(checkedbb);
@@ -10624,7 +10650,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       }
       Value *pv = b.CreateBitCast(x, PtrExprPtrTy, "ptrexpr");
       idx[1] = ValFldIndex;
-      Value *ptrv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "ptrval");
+      Value *ptrv = b.CreateLoad(b.CreateGEP(pv, mkidxs(idx, idx+2)), "ptrval");
       b.CreateBr(okbb);
       f->getBasicBlockList().push_back(matrixbb);
       b.SetInsertPoint(matrixbb);
@@ -10645,7 +10671,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       BasicBlock *smatrixbb = basic_block("smatrix");
       BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
-      Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
+      Value *tagv = b.CreateLoad(b.CreateGEP(x, mkidxs(idx, idx+2)), "tag");
       SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 3);
       Function *sget_fun = module->getFunction
 	(is_char ? "pure_get_matrix_vector_char" :
@@ -10666,7 +10692,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	vector<Value*> args;
 	args.push_back(SInt(tag));
 	args.push_back(x);
-	Value *chk = b.CreateCall(g, args.begin(), args.end());
+	Value *chk = b.CreateCall(g, mkargs(args));
 	b.CreateCondBr(chk, checkedbb, failedbb);
 	f->getBasicBlockList().push_back(checkedbb);
 	b.SetInsertPoint(checkedbb);
@@ -10674,7 +10700,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       }
       Value *pv = b.CreateBitCast(x, PtrExprPtrTy, "ptrexpr");
       idx[1] = ValFldIndex;
-      Value *ptrv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "ptrval");
+      Value *ptrv = b.CreateLoad(b.CreateGEP(pv, mkidxs(idx, idx+2)), "ptrval");
       b.CreateBr(okbb);
       Value *matrixv = 0;
       if (is_char) {
@@ -10720,7 +10746,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       BasicBlock *matrixbb = basic_block("matrix");
       BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
-      Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
+      Value *tagv = b.CreateLoad(b.CreateGEP(x, mkidxs(idx, idx+2)), "tag");
       SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 3);
       Function *get_fun =
 	is_short ? module->getFunction("pure_get_matrix_vector_short") :
@@ -10748,7 +10774,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	vector<Value*> args;
 	args.push_back(SInt(tag));
 	args.push_back(x);
-	Value *chk = b.CreateCall(g, args.begin(), args.end());
+	Value *chk = b.CreateCall(g, mkargs(args));
 	b.CreateCondBr(chk, checkedbb, failedbb);
 	f->getBasicBlockList().push_back(checkedbb);
 	b.SetInsertPoint(checkedbb);
@@ -10756,7 +10782,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       }
       Value *pv = b.CreateBitCast(x, PtrExprPtrTy, "ptrexpr");
       idx[1] = ValFldIndex;
-      Value *ptrv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "ptrval");
+      Value *ptrv = b.CreateLoad(b.CreateGEP(pv, mkidxs(idx, idx+2)), "ptrval");
       b.CreateBr(okbb);
       f->getBasicBlockList().push_back(matrixbb);
       b.SetInsertPoint(matrixbb);
@@ -10774,7 +10800,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	       argt[i] == GSLIntMatrixPtrTy) {
       BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
-      Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
+      Value *tagv = b.CreateLoad(b.CreateGEP(x, mkidxs(idx, idx+2)), "tag");
       int32_t ttag = -99;
       if (argt[i] == GSLMatrixPtrTy)
 	ttag = EXPR::MATRIX;
@@ -10804,20 +10830,20 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       BasicBlock *ptrbb = basic_block("ptr");
       BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
-      Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
+      Value *tagv = b.CreateLoad(b.CreateGEP(x, mkidxs(idx, idx+2)), "tag");
       SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 1);
       sw->addCase(SInt(EXPR::PTR), ptrbb);
       f->getBasicBlockList().push_back(ptrbb);
       b.SetInsertPoint(ptrbb);
       Value *pv = b.CreateBitCast(x, PtrExprPtrTy, "ptrexpr");
       idx[1] = ValFldIndex;
-      Value *ptrv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "ptrval");
+      Value *ptrv = b.CreateLoad(b.CreateGEP(pv, mkidxs(idx, idx+2)), "ptrval");
       Function *g = module->getFunction("pure_check_tag");
       assert(g);
       vector<Value*> args;
       args.push_back(SInt(faust_tag));
       args.push_back(x);
-      Value *chk = b.CreateCall(g, args.begin(), args.end());
+      Value *chk = b.CreateCall(g, mkargs(args));
       b.CreateCondBr(chk, okbb, failedbb);
       f->getBasicBlockList().push_back(okbb);
       b.SetInsertPoint(okbb);
@@ -10834,7 +10860,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	vector<Value*> args;
 	args.push_back(NullExprPtr);
 	args.push_back(x);
-	b.CreateCall(f, args.begin(), args.end());
+	b.CreateCall(f, mkargs(args));
       }
     } else if (argt[i] == VoidPtrTy) {
       BasicBlock *ptrbb = basic_block("ptr");
@@ -10842,7 +10868,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       BasicBlock *matrixbb = basic_block("matrix");
       BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
-      Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
+      Value *tagv = b.CreateLoad(b.CreateGEP(x, mkidxs(idx, idx+2)), "tag");
       SwitchInst *sw = b.CreateSwitch(tagv, failedbb, 7);
       /* We also allow bigints, strings and matrices to be passed as a void*
 	 here. The first case lets you use GMP routines directly in Pure if
@@ -10864,7 +10890,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       // The following will work with both pointer and string expressions.
       Value *pv = b.CreateBitCast(x, PtrExprPtrTy, "ptrexpr");
       idx[1] = ValFldIndex;
-      Value *ptrv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "ptrval");
+      Value *ptrv = b.CreateLoad(b.CreateGEP(pv, mkidxs(idx, idx+2)), "ptrval");
       b.CreateBr(okbb);
       f->getBasicBlockList().push_back(mpzbb);
       b.SetInsertPoint(mpzbb);
@@ -10892,7 +10918,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	 may have to check its tag. */
       BasicBlock *okbb = basic_block("ok");
       Value *idx[2] = { Zero, Zero };
-      Value *tagv = b.CreateLoad(b.CreateGEP(x, idx, idx+2), "tag");
+      Value *tagv = b.CreateLoad(b.CreateGEP(x, mkidxs(idx, idx+2)), "tag");
       b.CreateCondBr
 	(b.CreateICmpEQ(tagv, SInt(EXPR::PTR), "cmp"), okbb, failedbb);
       f->getBasicBlockList().push_back(okbb);
@@ -10906,14 +10932,14 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	vector<Value*> args;
 	args.push_back(SInt(tag));
 	args.push_back(x);
-	Value *chk = b.CreateCall(g, args.begin(), args.end());
+	Value *chk = b.CreateCall(g, mkargs(args));
 	b.CreateCondBr(chk, checkedbb, failedbb);
 	f->getBasicBlockList().push_back(checkedbb);
 	b.SetInsertPoint(checkedbb);
       }
       Value *pv = b.CreateBitCast(x, PtrExprPtrTy, "ptrexpr");
       idx[1] = ValFldIndex;
-      Value *ptrv = b.CreateLoad(b.CreateGEP(pv, idx, idx+2), "ptrval");
+      Value *ptrv = b.CreateLoad(b.CreateGEP(pv, mkidxs(idx, idx+2)), "ptrval");
       unboxed[i] = ptrv;
       // Cast the pointer to the proper target type if necessary.
       if (type != VoidPtrTy)
@@ -10931,7 +10957,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     vector<Value*> args;
     args.push_back(constptr(e));
     args.push_back(constptr(0));
-    b.CreateCall(f, args.begin(), args.end());
+    b.CreateCall(f, mkargs(args));
   }
   // call the function
   Value* u = 0;
@@ -10948,9 +10974,9 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     assert(fp);
     *fp = JIT->getPointerToFunction(g);
     JIT->addGlobalMapping(v, fp);
-    u = b.CreateCall(b.CreateLoad(v), unboxed.begin(), unboxed.end());
+    u = b.CreateCall(b.CreateLoad(v), mkargs(unboxed));
   } else
-    u = b.CreateCall(g, unboxed.begin(), unboxed.end());
+    u = b.CreateCall(g, mkargs(unboxed));
   // box the result
   if (type == void_type())
     u = b.CreateCall(module->getFunction("pure_const"),
@@ -10987,7 +11013,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       vector<Value*> args;
       args.push_back(SInt(tag));
       args.push_back(u);
-      b.CreateCall(f, args.begin(), args.end());
+      b.CreateCall(f, mkargs(args));
     }
   } else if (type == GSLMatrixPtrTy)
     u = b.CreateCall(module->getFunction("pure_symbolic_matrix"),
@@ -11025,7 +11051,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
       vector<Value*> args;
       args.push_back(SInt(faust_tag));
       args.push_back(u);
-      b.CreateCall(f, args.begin(), args.end());
+      b.CreateCall(f, mkargs(args));
       // Now add the delete routine as a sentry on the dsp pointer, so that
       // dsp instances free themselves when garbage-collected. FIXME: This
       // assumes that the delete routine always comes before any dsp-creating
@@ -11041,7 +11067,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	  vector<Value*> args;
 	  args.push_back(b.CreateLoad(v.v));
 	  args.push_back(u);
-	  b.CreateCall(f, args.begin(), args.end());
+	  b.CreateCall(f, mkargs(args));
 	}
       }
     } else {
@@ -11053,7 +11079,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
 	vector<Value*> args;
 	args.push_back(SInt(tag));
 	args.push_back(u);
-	b.CreateCall(f, args.begin(), args.end());
+	b.CreateCall(f, mkargs(args));
       }
     }
   } else
@@ -11068,7 +11094,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     args.push_back(constptr(e));
     args.push_back(constptr(0));
     args.push_back(u);
-    b.CreateCall(f, args.begin(), args.end());
+    b.CreateCall(f, mkargs(args));
   }
   // free arguments (we do that here so that the arguments don't get freed
   // before we know that we don't need them anymore)
@@ -11078,7 +11104,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     freeargs[1] = UInt(n);
     freeargs[2] = Zero;
     b.CreateCall(module->getFunction("pure_pop_args"),
-		 freeargs.begin(), freeargs.end());
+		 mkargs(freeargs));
   }
   b.CreateRet(u);
   // The call failed. Provide a default value.
@@ -11091,7 +11117,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     args.push_back(constptr(e));
     args.push_back(constptr(0));
     args.push_back(NullExprPtr);
-    b.CreateCall(f, args.begin(), args.end());
+    b.CreateCall(f, mkargs(args));
   }
   b.CreateBr(failedbb);
   f->getBasicBlockList().push_back(failedbb);
@@ -11130,7 +11156,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     myargs[0] = b.CreateCall(module->getFunction("pure_new"), defv);
     myargs[1] = b.CreateCall(module->getFunction("pure_new"), args[i]);
     defv = b.CreateCall(module->getFunction("pure_apply"),
-			    myargs.begin(), myargs.end());
+			mkargs(myargs));
   }
   if (n > 0 || !debugging) {
     vector<Value*> freeargs(3);
@@ -11138,7 +11164,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
     freeargs[1] = UInt(n);
     freeargs[2] = Zero;
     b.CreateCall(module->getFunction("pure_pop_args"),
-		 freeargs.begin(), freeargs.end());
+		 mkargs(freeargs));
   }
   b.CreateRet(defv);
   // NULL default value, raise a failed_match exception instead.
@@ -11586,7 +11612,7 @@ pure_expr *interpreter::dodefn(env vars, const vinfo& vi,
       args[1] = vref(arg, it->p);
       Value *check =
 	f.builder.CreateCall(module->getFunction("pure_safe_typecheck"),
-			     args.begin(), args.end());
+			     mkargs(args));
       f.builder.CreateCondBr(check, checkedbb, failedbb);
       f.f->getBasicBlockList().push_back(checkedbb);
       f.builder.SetInsertPoint(checkedbb);
@@ -11601,7 +11627,7 @@ pure_expr *interpreter::dodefn(env vars, const vinfo& vi,
       args[0] = vref(arg, it->p);
       args[1] = vref(arg, it->q);
       Value *check = f.builder.CreateCall(module->getFunction("same"),
-					  args.begin(), args.end());
+					  mkargs(args));
       f.builder.CreateCondBr(check, checkedbb, failedbb);
       f.f->getBasicBlockList().push_back(checkedbb);
       f.builder.SetInsertPoint(checkedbb);
@@ -11754,7 +11780,7 @@ Value *interpreter::when_codegen(expr x, matcher *m,
 	args[1] = vref(it->tag, it->p);
 	Value *check =
 	  e.builder.CreateCall(module->getFunction("pure_typecheck"),
-			       args.begin(), args.end());
+			       mkargs(args));
 	e.builder.CreateCondBr(check, checkedbb, failedbb);
 	e.f->getBasicBlockList().push_back(checkedbb);
 	e.builder.SetInsertPoint(checkedbb);
@@ -11769,7 +11795,7 @@ Value *interpreter::when_codegen(expr x, matcher *m,
 	args[0] = vref(it->tag, it->p);
 	args[1] = vref(it->tag, it->q);
 	Value *check = e.builder.CreateCall(module->getFunction("same"),
-					    args.begin(), args.end());
+					    mkargs(args));
 	e.builder.CreateCondBr(check, checkedbb, failedbb);
 	e.f->getBasicBlockList().push_back(checkedbb);
 	e.builder.SetInsertPoint(checkedbb);
@@ -12575,7 +12601,7 @@ Value *interpreter::list_codegen(expr x, bool quote)
       Value *idx[1];
       idx[0] = UInt(i++);
       act_builder().CreateStore
-	(v, act_builder().CreateGEP(a, idx, idx+1));
+	(v, act_builder().CreateGEP(a, mkidxs(idx, idx+1)));
     }
     Value *u = 0;
     if (!x.is_pair() && tl.tag() != symtab.nil_sym().f)
@@ -13860,11 +13886,11 @@ Function *interpreter::fun_prolog(string name)
   Env& f = act_env();
   if (f.f==0) {
     // argument types
-    vector<const Type*> argt(f.n, ExprPtrTy);
+    vector<llvm_const_Type*> argt(f.n, ExprPtrTy);
     assert(f.m == 0 || f.local);
     if (f.m > 0) argt.insert(argt.begin(), int32_type());
     // function type
-    FunctionType *ft = FunctionType::get(ExprPtrTy, argt, false);
+    FunctionType *ft = func_type(ExprPtrTy, argt, false);
     /* Mangle local function names so that they're easier to identify; as a
        side-effect, this should also ensure that we always get the proper
        names for external functions. */
@@ -13951,7 +13977,7 @@ Function *interpreter::fun_prolog(string name)
 	 function, passing through all arguments including the environment. */
       BasicBlock *bb = basic_block("entry", f.h);
       f.builder.SetInsertPoint(bb);
-      CallInst* v = f.builder.CreateCall(f.f, myargs.begin(), myargs.end());
+      CallInst* v = f.builder.CreateCall(f.f, mkargs(myargs));
       v->setCallingConv(cc);
       if (cc == CallingConv::Fast) v->setTailCall();
       f.builder.CreateRet(v);
@@ -14383,7 +14409,7 @@ void interpreter::complex_match(matcher *pm, BasicBlock *failedbb)
 	args[1] = vref(it->tag, it->p);
 	Value *check =
 	  f.builder.CreateCall(module->getFunction("pure_typecheck"),
-			       args.begin(), args.end());
+			       mkargs(args));
 	f.builder.CreateCondBr(check, checkedbb, failedbb);
 	f.f->getBasicBlockList().push_back(checkedbb);
 	f.builder.SetInsertPoint(checkedbb);
@@ -14398,7 +14424,7 @@ void interpreter::complex_match(matcher *pm, BasicBlock *failedbb)
 	args[0] = vref(it->tag, it->p);
 	args[1] = vref(it->tag, it->q);
 	Value *check = f.builder.CreateCall(module->getFunction("same"),
-					    args.begin(), args.end());
+					    mkargs(args));
 	f.builder.CreateCondBr(check, checkedbb, failedbb);
 	f.f->getBasicBlockList().push_back(checkedbb);
 	f.builder.SetInsertPoint(checkedbb);
@@ -14799,7 +14825,7 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
 	args[1] = vref(it->tag, it->p);
 	Value *check =
 	  f.builder.CreateCall(module->getFunction("pure_typecheck"),
-			       args.begin(), args.end());
+			       mkargs(args));
 	f.builder.CreateCondBr(check, checkedbb, nextbb);
 	f.f->getBasicBlockList().push_back(checkedbb);
 	f.builder.SetInsertPoint(checkedbb);
@@ -14814,7 +14840,7 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
 	args[0] = vref(it->tag, it->p);
 	args[1] = vref(it->tag, it->q);
 	Value *check = f.builder.CreateCall(module->getFunction("same"),
-					    args.begin(), args.end());
+					    mkargs(args));
 	f.builder.CreateCondBr(check, checkedbb, nextbb);
 	f.f->getBasicBlockList().push_back(checkedbb);
 	f.builder.SetInsertPoint(checkedbb);
@@ -14904,7 +14930,12 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
    settings! */
 
 #if LLVM26
+#ifdef HAVE_LLVM_SUPPORT_TARGETSELECT_H
+// LLVM 3.0 or later
+#include <llvm/Support/TargetSelect.h>
+#else
 #include <llvm/Target/TargetSelect.h>
+#endif
 
 void interpreter::init_llvm_target()
 {

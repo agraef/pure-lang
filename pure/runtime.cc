@@ -3312,7 +3312,7 @@ int pure_pointer_tag(const char *s)
   }
   // If the type is valid Pure syntax, normalize it a bit.
   try {
-    const llvm::Type *ty = interp.named_type(name);
+    llvm_const_Type *ty = interp.named_type(name);
     assert(ty);
     name = interp.type_name(ty);
   } catch (err &e) {
