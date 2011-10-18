@@ -69,7 +69,7 @@ inline void px_unref(px* x){pure_unref(x);}
 class px_handle {
 public:
   // constructor
-  px_handle() : pxp_(0) {};
+  px_handle();
 
   // constructor and type conversion from px*
   px_handle(px* p) : pxp_(px_new(p)) {}

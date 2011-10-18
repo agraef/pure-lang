@@ -134,6 +134,8 @@ void px_unref(px* x)
 
 /**** Handles to hold pure_expr* ****************************************/
 
+px_handle::px_handle() : pxp_(px_new(pure_pointer(0))){}
+
 px_handle& px_handle::operator=(const px_handle& rhs)
 {
   if (&rhs!=this){
