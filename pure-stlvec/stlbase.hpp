@@ -94,9 +94,12 @@ public:
 private:
   px* pxp_;
 };
+
 typedef px_handle pxh;  // sizeof(pxh) == sizeof(px*) -- no virtual funs
 
 typedef std::pair<pxh,pxh> pxh_pair;
+
+typedef std::pair<const pxh,pxh> pxh_kvpair;
 
 /* pxh_fun and subclasses - function objects to lift px* functions to pxh
    functions. When you need to pass a Pure callback to an algorithm that acts
@@ -169,13 +172,9 @@ int cons_tag();
 int null_list_tag();
 int rocket_tag();
 
-pxh_pair* rocket_to_pair(px* rp);
-px* pair_to_rocket(pxh_pair* pp);
+bool rocket_to_pair(px* rp, px** lhs, px** rhs);
+px* pair_to_rocket(px* lhs, px* rhs);
 
-px* stl_begin();
-px* stl_end();
-px* stl_insert();
-px* stl_back_insert();
 
 
 /*** Interface ***********************************************************/
@@ -187,11 +186,17 @@ px* stl_back_insert();
  */
 
 extern "C" {
-  int stl_refc(px *x);
+  int  stl_refc(px *x);
   void stl_set_px_trace(bool enable);
   void stl_set_sv_trace(bool enable);
   bool stl_px_trace_enabled();
   bool stl_sv_trace_enabled();
+
+  px*  stl_begin();
+  px*  stl_end();
+  px*  stl_insert();
+  px*  stl_back_insert();
+
 }
 
 

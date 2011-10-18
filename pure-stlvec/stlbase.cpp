@@ -245,24 +245,24 @@ int rocket_tag()
   return tag;
 }
 
-pxh_pair* rocket_to_pair(px* rp)
+bool rocket_to_pair(px* rp, px** lhs, px** rhs)
 {
-  pxh_pair* ret = 0;
   px* app;
   size_t argc;
   px** args;
   bool ok = pure_is_appv(rp, &app, &argc, &args) && argc == 2;
   if (ok) {
-    ret = new pxh_pair(args[0], args[1]);
+    *lhs = args[0];
+    *rhs = args[1];
   }
   free(args);
-  return ret;
+  return ok;
 }
 
-px* pair_to_rocket(pxh_pair* pp)
+px* pair_to_rocket(px* lhs, px* rhs)
 {
   px* rocket = pure_const(rocket_tag());
-  return pure_appl(rocket, 2, pp->first.pxp(), pp->second.pxp()); 
+  return pure_appl(rocket, 2, lhs, rhs); 
 } 
 
 px* stl_begin()
