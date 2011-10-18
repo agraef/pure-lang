@@ -282,6 +282,16 @@ $ cd llvm-2.9/tools/clang
 $ make
 $ sudo make install
 
+To make Pure use clang instead of llvm-gcc as the default compiler for inlined
+C/C++ code, add something like these lines to your shell startup files
+(.bashrc or similar):
+
+export PURE_CC=clang
+export PURE_CXX=clang++
+
+(This isn't necessary if Pure itself was built with clang, because it will
+then be the default for C/C++ compilation.)
+
 llvm-gcc:
 
 You may also want to install llvm-gcc (also available from the LLVM website),
@@ -307,23 +317,36 @@ build the Fortran compiler, and, likewise, 'ada' for the Ada compiler.)
 
 Be patient, this takes a while.
 
+Note that enabling llvm-gcc for Pure's inline code feature isn't necessary,
+since it's still the default for C, C++ and Fortran compilation right now.
+
 dragonegg:
 
 If you're running LLVM 3.x, then instead of llvm-gcc you should use
 "DragonEgg" (http://dragonegg.llvm.org/), the new LLVM backend for gcc >=4.5.
 This is provided in the form of a plugin which, if you already have gcc 4.5 or
-later, readily plugs into your existing system compiler. So you can just
-continue using your system compiler with LLVM, instead of being stuck with a
-fairly old llvm-gcc version. (The big downside of DragonEgg is, however, that
-it doesn't work on Windows yet, but apparently that's about to change.)
+later, readily plugs into your existing system compiler.
 
-If you have a version of gcc which supports plugins, installing DragonEgg is a
-piece of cake. After unpacking the dragonegg source tarball or downloading the
-svn sources, you can just run 'make' there and copy the resulting dragonegg.so
-to your gcc plugin directory (as reported by 'gcc -print-file-name=plugin').
-You then invoke gcc as 'gcc -fplugin=dragonegg' to enable the LLVM backend.
-Please check the README file included in the package for further installation
-and usage instructions.
+If you already have a suitable gcc version, installing DragonEgg is a piece of
+cake. First, make sure that you have the mpc and gcc plugin development files
+installed (packages mpc-dev and gcc-plugin-dev on Ubuntu). Then, after
+unpacking the dragonegg source tarball or downloading the svn sources, install
+dragonegg as follows:
+
+$ make
+$ sudo cp dragonegg.so `gcc -print-file-name=plugin`
+
+Finally, add something like the following lines to your shell startup files,
+so that Pure uses gcc+dragonegg for all inlined C/C++/Fortran code:
+
+export PURE_CC="gcc -fplugin=dragonegg"
+export PURE_CXX="g++ -fplugin=dragonegg"
+export PURE_FC="gfortran -fplugin=dragonegg"
+
+(Please also check the README file included in the dragonegg package for
+further installation and usage instructions. Also, examples/bitcode/Makefile
+in the Pure distribution demonstrates how to use gcc+dragonegg as an external
+compiler to generate LLVM bitcode from the command line.)
 
 STEP 4. Get and unpack the Pure sources at: http://pure-lang.googlecode.com
 
