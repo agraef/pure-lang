@@ -2224,6 +2224,7 @@ void interpreter::inline_code(bool priv, string &code)
   // Get the language tag and configure accordingly.
   string modname, tag = lang_tag(code, modname), ext = "";
   const char *env, *drv, *args;
+  char *asmargs = 0;
   if (tag == "c") {
     env = "PURE_CC";
 #if __clang__
@@ -2294,14 +2295,42 @@ void interpreter::inline_code(bool priv, string &code)
     // Invoke the compiler.
     const char *pure_cc = getenv(env);
     if (!pure_cc) pure_cc = drv;
-    string fname = nm, bcname = string(fnm)+".bc",
+    // Quick and dirty hack to make inlining work with dragonegg, which can't
+    // generate bitcode files directly, so llvm-asm must be used. FIXME: This
+    // currently works only if the plugin is really named "dragonegg" and is
+    // named explicitly on the command line.
+    string ext = ".bc";
+    if (strstr(pure_cc, "-fplugin=dragonegg")) {
+      ext = ".ll";
+      asmargs = strdup(args);
+      const char *t = "-emit-llvm -c";
+      char *s = strstr(asmargs, t);
+      if (s) strncpy(s, "-flto      -S", strlen(t));
+      args = asmargs;
+    }
+    string fname = nm, bcname = string(fnm)+ext, bcname2 = string(fnm)+".bc",
       cmd = string(pure_cc)+args+fname+" -o "+bcname;
-    const char *bcnm = bcname.c_str();
+    const char *bcnm = bcname.c_str(), *bcnm2 = bcname2.c_str();
     bool vflag = (verbose&verbosity::compiler) != 0;
     if (vflag) std::cerr << cmd << '\n';
     int status = system(cmd.c_str());
     unlink(nm.c_str());
+    if (asmargs) free(asmargs);
     if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+      if (ext == ".ll") {
+	// Invoke llvm-as to translate intermediate assembler to real bitcode.
+	string cmd = "llvm-as "+bcname+" -o "+bcname2;
+	if (vflag) std::cerr << cmd << '\n';
+	status = system(cmd.c_str());
+	if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
+	  unlink(bcnm);
+	  bcnm = bcnm2;
+	} else {
+	  unlink(bcnm);
+	  unlink(bcname2.c_str());
+	  goto err;
+	}
+      }
       string msg;
       // Load the resulting bitcode.
       if (tag == "dsp") {

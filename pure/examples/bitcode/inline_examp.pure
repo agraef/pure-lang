@@ -2,7 +2,10 @@
 /* Some little inline code examples (Pure 0.45). */
 
 /* The default language for inline code is C. This requires that you have an
-   LLVM C compiler installed (llvm-gcc or clang will do). */
+   LLVM C compiler installed. Either clang, llvm-gcc or gcc with the dragonegg
+   plugin (gcc -fplugin=dragonegg) will do. By default, the interpreter uses
+   llvm-gcc; if you want clang or dragonegg instead, just set the PURE_CC
+   environment variable accordingly, see the Pure manual for details. */
 
 %<
 int mygcd(int x, int y)
@@ -20,7 +23,8 @@ map (mygcd 25) (30..35);
 
 /* C++ is supported as well, but this requires that you call into the C++ code
    using functions with C binding (extern "C"). The following example shows
-   how to work with STL maps from Pure. */
+   how to work with STL maps from Pure. (The same compilers are supported as
+   with C, but use the PURE_CXX environment variable instead.) */
 
 %< -*- C++ -*-
 
@@ -102,7 +106,8 @@ map (map_get m) (map_keys m); // => [bar 4711L,[1,2,3,4,5]]
 
 /****************************************************************************/
 
-/* Fortran (requires llvm-gfortran). */
+/* Fortran. This requires either llvm-gfortran (default) or gfortran
+   -fplugin=dragonegg (set with the PURE_FC environment variable). */
 
 %< -*- Fortran90 -*-
 function fact(n) result(p)
@@ -115,10 +120,10 @@ end function fact
 %>
 
 /* Note that Fortran function names have a trailing underscore, and parameters
-   are always passed by reference. (llvm-gfortran-4.2 doesn't seem to support
-   the 'value' attribute yet, YMMV.) This means that the function above is
-   actually to be called as 'fact_(int*)', you can verify this with 'show
-   fact_'. The following little wrapper function takes care of this. */
+   are always passed by reference. (That's true for llvm-gfortran; gfortran
+   supports the 'value' attribute on arguments, though.) Thus the function
+   above is actually to be called as 'fact_(int*)', you can verify this with
+   'show fact_'. The following little wrapper function takes care of this. */
 
 fact n::int = fact_ {n};
 map fact (1..10);

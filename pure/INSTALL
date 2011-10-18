@@ -196,15 +196,13 @@ also lets you disable readline and/or editline support using the
 STEP 2. Get and unpack the latest LLVM sources at:
 http://llvm.org/releases/download.html
 
-You only need the llvm-2.x tarball which contains the LLVM library as well as
-most of the LLVM toolchain. LLVM 2.9 is the latest stable release at the time
-of this writing. LLVM versions 2.5 thru 2.9 have all been tested and are known
-to work with Pure. LLVM 2.3 and 2.4 might still work, too, but you'll probably
-have to fiddle with the sources. We really recommend using LLVM 2.5 or later,
-however, because there have been substantial improvements in the LLVM JIT in
-recent releases. (Also note that there are some x86-64 specific quirks with
-LLVM 2.3, see the notes on 64 bit support in the SYSTEM NOTES section for
-details if you really have to use that LLVM version.)
+You only need the llvm-2.x or 3.x tarball which contains the LLVM library as
+well as most of the LLVM toolchain. LLVM 2.9 is the latest stable release at
+the time of this writing, but LLVM 3.0 will also be available soon. LLVM
+versions 2.5 thru 3.0 have all been tested and are known to work with Pure. We
+really recommend using LLVM 2.8 or later, however, because LLVM has improved
+considerably in recent releases. (Support for older versions may be dropped in
+the future.)
 
 The latest LLVM from svn might work as well, but we don't guarantee this.
 While we're committed to make Pure work with new LLVM versions as they become
@@ -215,11 +213,11 @@ incompatibilities when going with the svn version.
 At this point we also recommend getting an LLVM-capable C/C++ compiler. This
 is completely optional, but you'll need it to take advantage of the new
 bitcode loader in Pure 0.44 and later. The easiest way to go is to take the
-clang-2.x tarball which corresponds to your LLVM version, unpack its contents
-into the LLVM tools directory and rename the clang-2.x directory to just
-'clang'. The clang compiler will then be built and installed along with LLVM.
-You can also use llvm-gcc instead, or even both at the same time. Please see
-step 3a below for further details.
+clang-2.x or 3.x tarball which corresponds to your LLVM version, unpack its
+contents into the LLVM tools directory and rename the clang-x.y directory to
+just 'clang'. The clang compiler will then be built and installed along with
+LLVM. You can also use llvm-gcc or dragonegg instead, please see step 3a below
+for further details.
 
 NOTE: Some (older) Linux and *BSD distributions provide LLVM packages and
 ports which are compiled with wrong configure options and are thus broken. If
@@ -249,12 +247,12 @@ LLVM library installed, by configuring Pure with the --with-static-llvm flag.
 This may be useful if you plan to deploy the Pure runtime library on systems
 which don't have LLVM installed.)
 
-*IMPORTANT:* With LLVM 2.5 and earlier, on x86-64 systems you have to add
---enable-pic to the configure command, so that the static LLVM libraries can
-be linked into the Pure runtime library. (Do *not* add this option when
-compiling on a 32 bit system, it's broken there.) With LLVM 2.6 and later this
-option isn't needed anymore. See the comments on 32/64 bit support in the
-SYSTEM NOTES section below for details.
+*IMPORTANT:* With LLVM 2.5, on x86-64 systems you have to add --enable-pic to
+the configure command, so that the static LLVM libraries can be linked into
+the Pure runtime library. (Do *not* add this option when compiling on a 32 bit
+system, it's broken there.) With LLVM 2.6 and later this option isn't needed
+anymore. See the comments on 32/64 bit support in the SYSTEM NOTES section
+below for details.
 
 Also note that the configure flags are for an optimized (non-debug) build and
 disable all compilation targets but the one for your system. You might wish to
@@ -265,19 +263,19 @@ interpreter on some systems.
 STEP 3a (OPTIONAL). Build and install an LLVM-capable C/C++ compiler:
 
 As already mentioned above, we suggest that you also install a C/C++ compiler
-with an LLVM backend. Both clang and llvm-gcc are fully supported by Pure.
-Pure can be used without this, but then you'll miss out on the LLVM bitcode
-loader and C/C++ inlining facilities in Pure 0.44 and later. (However, you can
-always install clang and/or llvm-gcc at a later time to enable these
-features.)
+with an LLVM backend. Clang, llvm-gcc as well as the new dragonegg gcc plugin
+are all fully supported by Pure. Pure can be used without this, but then
+you'll miss out on the LLVM bitcode loader and C/C++ inlining facilities in
+Pure 0.44 and later. (However, you can always install clang, llvm-gcc and/or
+dragonegg at a later time to enable these features.)
 
 clang:
 
 With LLVM 2.8 and later, we recommend installing clang, the new LLVM-based
 C/C++ compiler (http://clang.llvm.org/), because it's much easier to build,
 runs faster and has better diagnostics than llvm-gcc. If you haven't built
-clang along with LLVM yet, you can now just drop the contents of the clang-2.x
-tarball into the llvm-2.x/tools directory, renaming the resulting clang-2.x
+clang along with LLVM yet, you can now just drop the contents of the clang-x.y
+tarball into the llvm-x.y/tools directory, renaming the resulting clang-x.y
 directory to just 'clang'. Then build and install clang as follows:
 
 $ cd llvm-2.9/tools/clang
@@ -287,9 +285,11 @@ $ sudo make install
 llvm-gcc:
 
 You may also want to install llvm-gcc (also available from the LLVM website),
-either as an alternative or in addition to clang. The advantage of llvm-gcc
-over clang is that it has additional language frontends (Ada and Fortran) and
-that it works on all platforms supported by LLVM.
+either as an alternative or in addition to clang. The main advantage of
+llvm-gcc over clang is that it has additional language frontends (Ada and
+Fortran). However, note that llvm-gcc is currently being phased out in favour
+of the new dragonegg plugin (see below), so it won't be available for the LLVM
+3.x series any more.
 
 Installing llvm-gcc from source actually isn't all that difficult, if a bit
 time-consuming. Assuming that you have unpacked both the LLVM and the llvm-gcc
@@ -307,10 +307,23 @@ build the Fortran compiler, and, likewise, 'ada' for the Ada compiler.)
 
 Be patient, this takes a while.
 
-If you don't mind living on the bleeding edge, then you also might want to
-give "DragonEgg" (http://dragonegg.llvm.org/), the new LLVM backend for gcc
->=4.5, a try. However, please note that at the time of this writing this
-hasn't been tested with Pure yet.
+dragonegg:
+
+If you're running LLVM 3.x, then instead of llvm-gcc you should use
+"DragonEgg" (http://dragonegg.llvm.org/), the new LLVM backend for gcc >=4.5.
+This is provided in the form of a plugin which, if you already have gcc 4.5 or
+later, readily plugs into your existing system compiler. So you can just
+continue using your system compiler with LLVM, instead of being stuck with a
+fairly old llvm-gcc version. (The big downside of DragonEgg is, however, that
+it doesn't work on Windows yet, but apparently that's about to change.)
+
+If you have a version of gcc which supports plugins, installing DragonEgg is a
+piece of cake. After unpacking the dragonegg source tarball or downloading the
+svn sources, you can just run 'make' there and copy the resulting dragonegg.so
+to your gcc plugin directory (as reported by 'gcc -print-file-name=plugin').
+You then invoke gcc as 'gcc -fplugin=dragonegg' to enable the LLVM backend.
+Please check the README file included in the package for further installation
+and usage instructions.
 
 STEP 4. Get and unpack the Pure sources at: http://pure-lang.googlecode.com
 
@@ -858,11 +871,6 @@ LINUX
 Linux is the primary development platform for this software, and the sources
 should build out of the box on all recent Linux distributions.
 
-Binary packages for all recent openSUSE versions are maintained by Toni Graffy
-as part of the Packman project, see: http://packman.links2linux.de. As a
-convenience, Packman also provides a "pure-complete" package which installs
-both the Pure interpreter and most addon modules in one go.
-
 Michel Salim has kindly provided packages for all recent Fedora releases, see
 http://koji.fedoraproject.org/koji/packageinfo?packageID=9272
 
@@ -871,8 +879,9 @@ available at http://bugs.gentoo.org/show_bug.cgi?id=231966. (This is rather
 outdated, however, so you're probably better off building Pure from the latest
 source.)
 
-We're still looking for people who can maintain Debian packages, please let us
-know if you want to help with that.
+We're still looking for people who can maintain packages for other Linux
+distributions (especially Debian/Ubuntu and openSUSE), please let us know if
+you want to help with that.
 
 MAC OSX
 --- ---
@@ -932,6 +941,6 @@ unzip these into some convenient location on your harddrive and set up PATH so
 that it points to the llvm-x.y directory.
 
 
-January 2011
+October 2011
 Albert Graef <Dr.Graef at t-online.de>
 Eddie Rucker <erucker at bmc.edu>
