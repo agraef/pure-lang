@@ -5599,7 +5599,7 @@ compute the greatest common divisor of two (machine) integers:
   }
 
 Let's say that this code is in the file ``mygcd.c``, then you'd compile it to
-a bitcode module using llvm-gcc as follows::
+a bitcode module using llvm-gcc_ as follows::
 
   llvm-gcc -emit-llvm -c mygcd.c -o mygcd.bc
 
@@ -5656,6 +5656,30 @@ experimental, and there are some known limitations:
 Inline Code
 -----------
 
+.. note:: The facility described below requires that you have an LLVM-capable
+   C/C++ compiler installed. The available options right now are clang_,
+   llvm-gcc_ and dragonegg_. Please check the Pure installation instructions
+   on how to get one of these (or all of them) up and running.  Note that
+   clang and llvm-gcc are standalone compilers, while dragonegg is supplied as
+   a gcc plugin which hooks into your existing system compiler (gcc 4.5 or
+   later is required for that). Any of these enable you to compile C/C++
+   source to LLVM assembler or bitcode. The clang compiler is recommended for
+   C/C++ development, as it offers faster compilation times and has much
+   better diagnostics than gcc. On the other hand, llvm-gcc and dragonegg have
+   the advantage that they also support alternative frontends so that you can
+   compile Fortran and Ada code as well.
+
+   At present, the default LLVM compiler used by the Pure interpreter is
+   llvm-gcc, unless you compiled Pure itself using clang, in which case clang
+   is used as the default for C/C++ compilation. You can easily change the
+   default with the corresponding environment variables, see below. In the
+   future dragonegg might be used as the new default instead, as soon as it is
+   widely supported. Note that llvm-gcc is currently being phased out in
+   favour of dragonegg, and will not be supported in the LLVM 3.x series any
+   more. Thus with LLVM 3.0 or later we recommend using dragonegg or clang
+   instead, although recent llvm-gcc versions should continue to work as well,
+   at least with LLVM 3.0.
+
 Instead of manually compiling source files to bitcode modules, you can also
 just place the source code into a Pure script, enclosing it in ``%< ... %>``.
 (Optionally, the opening brace may also be preceded with a :keyword:`public`
@@ -5691,15 +5715,10 @@ to an executable (see `Batch Compilation`_).
 
 Currently, C, C++, Fortran and Faust are supported as foreign source
 languages, with llvm-gcc, llvm-g++, llvm-gfortran and faust as the
-corresponding compilers. Alternatively, the LLVM clang and clang++ compilers
-can be used for C/C++ compilation (this will actually be default if the Pure
-interpreter itself was compiled with clang). Examples for all of these can be
-found in the Pure sources.
-
-C is the default language. The desired source language can be selected by
-placing an appropriate tag into the inline code section, immediately after the
-opening brace. (The tag is removed before the code is submitted to
-compilation.) For instance::
+corresponding (default) compilers. C is the default language. The desired
+source language can be selected by placing an appropriate tag into the inline
+code section, immediately after the opening brace. (The tag is removed before
+the code is submitted to compilation.) For instance::
 
   %< -*- Fortran90 -*-
   function fact(n) result(p)
@@ -5737,12 +5756,22 @@ debugging and optimization options that you may want to add. Likewise,
 :envvar:`PURE_CXX`, :envvar:`PURE_FC` and :envvar:`PURE_FAUST` are used for
 the C++, Fortran and Faust compilers, respectively.
 
-For instance, if you prefer to use clang as your C compiler, and you'd like to
-invoke it with the ``-O3`` optimization option, you would set
+For instance, if you prefer to use clang_ as your C compiler, and you'd like
+to invoke it with the ``-O3`` optimization option, you would set
 :envvar:`PURE_CC` to ``"clang -O3"``. (To verify the settings you made, you
 can have the interpreter echo the compilation commands which are actually
 executed, by running Pure with the ``-v0100`` option, see `Verbosity and
-Debugging Options`_.)
+Debugging Options`_. Also note that the options necessary to produce LLVM
+bitcode will be added automatically, so you don't have to specify these.)
+
+Beginning with Pure 0.48, the dragonegg_ gcc plugin is also fully supported.
+To make this work, you need to explicitly specify the name of the plugin in
+the compilation command, so that the Pure interpreter can add the proper set
+of options needed for bitcode compilation. For instance:
+
+.. code-block:: console
+
+   PURE_CC="gcc -fplugin=dragonegg -O3"
 
 Some further details on the bitcode support for specific target languages can
 be found in the subsections below.
@@ -8734,8 +8763,15 @@ Bertrand
 Clang
     The new C/C++/Objective C compiler designed specifically to work on top of
     LLVM, http://clang.llvm.org. Clang provides a comparatively light-weight
-    alternative to llvm-gcc which is faster and has better and more friendly
+    alternative to llvm-gcc_ which is faster and has better and more friendly
     diagnostics than gcc.
+
+.. _DragonEgg:
+
+DragonEgg
+    An LLVM backend for gcc 4.5 and later, http://dragonegg.llvm.org. In
+    contrast to llvm-gcc_, DragonEgg is implemented as a plugin which hooks
+    into your system compiler.
 
 .. _Faust:
 
@@ -8771,6 +8807,13 @@ Haskell
 
 LLVM
     The LLVM code generator framework, http://llvm.org.
+
+.. _llvm-gcc:
+
+LLVM-GCC
+    An LLVM-capable compiler based on gcc, see http://llvm.org. This is based
+    on a fairly old gcc version (4.2) and is currently being phased out in
+    favour of the DragonEgg_ plugin.
 
 .. _Miranda:
 
