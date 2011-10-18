@@ -2300,7 +2300,7 @@ void interpreter::inline_code(bool priv, string &code)
     // currently works only if the plugin is really named "dragonegg" and is
     // named explicitly on the command line.
     string ext = ".bc";
-    if (strstr(pure_cc, "-fplugin=dragonegg")) {
+    if (strstr(pure_cc, "dragonegg")) {
       ext = ".ll";
       asmargs = strdup(args);
       const char *t = "-emit-llvm -c";
