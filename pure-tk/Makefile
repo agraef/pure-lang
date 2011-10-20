@@ -56,6 +56,7 @@ FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
 DISTFILES = COPYING Makefile README config.guess tk.c tk.pure \
 gnocl.pure examples/Makefile examples/*.pure examples/*.tcl examples/*.glade
+SEDFILES = README
 
 all: tk$(DLL)
 
@@ -74,10 +75,14 @@ install:
 uninstall:
 	rm -f "$(DESTDIR)$(libdir)/pure/gnocl.pure" "$(DESTDIR)$(libdir)/pure/tk.pure" "$(DESTDIR)$(libdir)/pure/tk$(DLL)"
 
+date = $(shell date "+%B %-d, %Y")
+datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > $(2)
+
 dist:
 	rm -rf $(dist)
 	mkdir $(dist) && mkdir $(dist)/examples
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
+	for x in $(SEDFILES); do rm -f $(dist)/$$x; $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
 	rm -rf $(dist)

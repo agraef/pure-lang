@@ -24,6 +24,7 @@ EXE = .exe
 endif
 
 DISTFILES = COPYING Makefile rational.pure rat_interval.pure config.guess
+SEDFILES = README
 
 all:
 
@@ -36,10 +37,14 @@ install:
 uninstall:
 	rm -f "$(DESTDIR)$(libdir)/pure/rational.pure" "$(DESTDIR)$(libdir)/pure/rat_interval.pure"
 
+date = $(shell date "+%B %-d, %Y")
+datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > $(2)
+
 dist:
 	rm -rf $(dist)
 	mkdir $(dist)
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
+	for x in $(SEDFILES); do rm -f $(dist)/$$x; $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
 	rm -rf $(dist)

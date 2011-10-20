@@ -188,6 +188,8 @@ examples/bitcode/Makefile examples/bitcode/*.c examples/bitcode/*.f90 \
 examples/bitcode/*.dsp examples/bitcode/*.pure \
 examples/hellomod/Makefile examples/hellomod/*.c examples/hellomod/*.pure \
 lib/*.pure test/*.pure test/*.log test/*.blob
+# These need special editing (see dist target, datesubst below).
+SEDFILES = INSTALL
 
 .PHONY: all elc clean realclean depend install uninstall install-docs \
 install-el install-elc uninstall-el uninstall-elc \
@@ -386,12 +388,15 @@ uninstall-elc:
 
 # roll a distribution tarball
 
+date = $(shell date "+%B %-d, %Y")
+datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > $(2)
+
 distdirs = config etc examples examples/bitcode examples/hellomod examples/libor lib test
 dist: $(addprefix $(srcdir)/, $(filter-out test/%.log, $(DISTFILES)))
 	rm -rf $(dist)
 	mkdir $(dist)
 	for d in $(distdirs); do mkdir $(dist)/$$d || exit 1; done
-	(builddir=$$PWD; cd $(srcdir); for x in $(DISTFILES); do ln -sf $$PWD/$$x $$builddir/$(dist)/$$x; done)
+	(builddir=$$PWD; cd $(srcdir); for x in $(DISTFILES); do ln -sf $$PWD/$$x $$builddir/$(dist)/$$x; done; for x in $(SEDFILES); do rm -f $$builddir/$(dist)/$$x; $(call datesubst,$$PWD/$$x,$$builddir/$(dist)/$$x); done)
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
 	rm -rf $(dist)

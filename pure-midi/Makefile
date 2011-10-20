@@ -53,6 +53,7 @@ examples/*.pure examples/*.mid pmdev.h pmdev.c \
 midi.pure portmidi.pure portmidi.h porttime.h \
 midifile/Makefile midifile/midifile.c midifile/midifile.h \
 midifile/mf.c midifile/mf.h midifile/midifile.pure
+SEDFILES = README
 
 # Makefile to build the PortMidi wrapper and the midifile support library.
 
@@ -93,10 +94,14 @@ install:
 uninstall:
 	rm -f "$(DESTDIR)$(libdir)/pure/midi.pure" "$(DESTDIR)$(libdir)/pure/portmidi.pure" "$(DESTDIR)$(libdir)/pure/midifile.pure" "$(DESTDIR)$(libdir)/pure/pmlib$(DLL)" "$(DESTDIR)$(libdir)/pure/midifile$(DLL)"
 
+date = $(shell date "+%B %-d, %Y")
+datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > $(2)
+
 dist:
 	rm -rf $(dist)
 	mkdir $(dist) && mkdir $(dist)/examples && mkdir $(dist)/midifile
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
+	for x in $(SEDFILES); do rm -f $(dist)/$$x; $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
 	rm -rf $(dist)

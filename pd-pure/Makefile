@@ -90,6 +90,7 @@ override CPPFLAGS += -I$(pdincludedir)
 
 DISTFILES = COPYING Makefile README config.guess pure.c \
 examples/*.pure examples/*.pd examples/*.el
+SEDFILES = README
 
 all: pure$(DLL)
 
@@ -109,10 +110,14 @@ install:
 uninstall:
 	rm -rf "$(DESTDIR)$(pdextradir)"
 
+date = $(shell date "+%B %-d, %Y")
+datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > $(2)
+
 dist:
 	rm -rf $(dist)
 	mkdir $(dist) && mkdir $(dist)/examples
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
+	for x in $(SEDFILES); do rm -f $(dist)/$$x; $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
 	rm -rf $(dist)

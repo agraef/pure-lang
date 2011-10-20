@@ -59,6 +59,7 @@ samplerate/src.pure samplerate/samplerate.pure \
 sndfile/Makefile sndfile/sfinfo.c sndfile/sfinfo.h sndfile/sf.pure \
 sndfile/sndfile.pure \
 realtime/Makefile realtime/realtime.c realtime/realtime.pure
+SEDFILES = README
 
 subdirs = fftw samplerate sndfile $(realtime)
 
@@ -132,10 +133,14 @@ ifneq ($(strip $(realtime)),)
 	rm -f "$(DESTDIR)$(libdir)/pure/realtime.pure" "$(DESTDIR)$(libdir)/pure/realtime$(DLL)"
 endif
 
+date = $(shell date "+%B %-d, %Y")
+datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > $(2)
+
 dist:
 	rm -rf $(dist)
 	mkdir $(dist) && mkdir $(dist)/examples && mkdir $(dist)/fftw && mkdir $(dist)/samplerate && mkdir $(dist)/sndfile && mkdir $(dist)/realtime
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
+	for x in $(SEDFILES); do rm -f $(dist)/$$x; $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
 	rm -rf $(dist)

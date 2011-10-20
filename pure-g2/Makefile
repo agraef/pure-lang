@@ -22,6 +22,7 @@ includedir = $(g2prefix)/include
 includefile = $(includedir)/g2.h
 
 DISTFILES = COPYING Makefile README g2.pure g2_*.pure penguin.pure
+SEDFILES = README
 
 %: %.pure
 	pure -L$(g2libdir) -c $^ -o $@
@@ -55,10 +56,14 @@ install:
 uninstall:
 	rm -f "$(DESTDIR)$(libdir)/pure/g2.pure"
 
+date = $(shell date "+%B %-d, %Y")
+datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > $(2)
+
 dist:
 	rm -rf $(dist)
 	mkdir $(dist)
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
+	for x in $(SEDFILES); do rm -f $(dist)/$$x; $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
 	rm -rf $(dist)

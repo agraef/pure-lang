@@ -45,6 +45,7 @@ extradist = examples/*.pure
 
 # Distribution files for dist and distcheck targets below.
 distfiles = COPYING COPYING.LESSER Makefile README config.guess $(source) $(extradist)
+sedfiles = README
 
 # Installation files for install and uninstall targets.
 instfiles = $(pure_source) $(objects)
@@ -91,11 +92,15 @@ uninstall:
 
 dist = $(pkgname)-$(version)
 
+date = $(shell date "+%B %-d, %Y")
+datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > $(2)
+
 dist: $(html)
 	rm -rf $(dist)
 	mkdir $(dist)
 	for x in $(extradirs); do mkdir $(dist)/$$x; done
 	for x in $(distfiles); do ln -sf $$PWD/$$x $(dist)/$$x; done
+	for x in $(sedfiles); do rm -f $(dist)/$$x; $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
 	rm -rf $(dist)

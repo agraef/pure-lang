@@ -55,6 +55,7 @@ LO_LIBS = $(shell pkg-config --libs liblo)
 
 DISTFILES = COPYING COPYING.LESSER Makefile README config.guess \
 examples/*.pure lo.c lo.pure lo-add.c lo-add.pure osc.pure
+SEDFILES = README
 
 all: lo$(DLL)
 
@@ -71,10 +72,14 @@ install:
 uninstall:
 	rm -f "$(DESTDIR)$(libdir)/pure/lo.pure" "$(DESTDIR)$(libdir)/pure/lo$(DLL)" "$(DESTDIR)$(libdir)/pure/osc.pure"
 
+date = $(shell date "+%B %-d, %Y")
+datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > $(2)
+
 dist:
 	rm -rf $(dist)
 	mkdir $(dist) && mkdir $(dist)/examples
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
+	for x in $(SEDFILES); do rm -f $(dist)/$$x; $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
 	rm -rf $(dist)
