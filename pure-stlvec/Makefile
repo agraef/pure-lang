@@ -107,6 +107,7 @@ LIBFILES = $(PUREFILES) $(DLLS)
 INSTALLEDFILES = $(addprefix $(DESTDIR)$(libdir)/pure/, $(LIBFILES))
 DISTFILES = Makefile COPYING README config.guess *.pure stlvec/*.pure \
             *.hpp *.cpp ut/* examples/*.c examples/*.pure examples/*.txt
+SEDFILES = README
 
 ### Make dlls
 
@@ -151,10 +152,14 @@ uninstall:
 
 ### Make distribution tarball
 
+date = $(shell date "+%B %-d, %Y")
+datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > $(2)
+
 dist:
 	rm -rf $(dist)
 	mkdir $(dist) && mkdir $(dist)/examples && mkdir $(dist)/stlvec && mkdir $(dist)/ut
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
+	for x in $(SEDFILES); do rm -f $(dist)/$$x; $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
 	rm -rf $(dist)
