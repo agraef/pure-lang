@@ -3,7 +3,7 @@
 Installing Pure (and LLVM)
 ==========================
 
-October 2011
+Version @version@, |today|
 
 | Albert Graef <Dr.Graef at t-online.de>
 | Eddie Rucker <erucker at bmc.edu>
@@ -68,7 +68,19 @@ Installing Pure::
   $ ./configure --enable-release
   $ make && sudo make install
 
-Download and install the online documentation::
+Depending on your system you may have to run a utility to announce the shared
+LLVM and Pure libraries to the dynamic loader. E.g., on Linux::
+
+  $ sudo /sbin/ldconfig
+
+It is also recommended that you run the following to make sure that the Pure
+interpreter works correctly on your platform (see step 5 below for details)::
+
+  $ make check
+
+The following is optional, but if you want to read the online documentation in
+the interpreter or in Emacs Pure mode (see step 8 below), you'll have to
+download and install the documentation files::
 
   $ sudo make install-docs
 
@@ -76,17 +88,6 @@ This needs the ``wget`` program. You can also download the pure-docs tarball
 manually and then install it from a local file, e.g.::
 
   $ sudo make install-docs docs=pure-docs-0.48.tar.gz
-
-It is also recommended that you run the following in the Pure source directory
-after compilation to make sure that the Pure interpreter works correctly on
-your platform (see step 5 below for details)::
-
-  $ make check
-
-Finally, depending on your system you may have to run a utility to announce
-the shared LLVM and Pure libraries to the dynamic loader. E.g., on Linux::
-
-  $ sudo /sbin/ldconfig
 
 That's it, Pure should be ready to go now::
 
@@ -411,6 +412,11 @@ After the build is complete, you can (and should) also run a few tests to
 check that Pure is working correctly on your computer::
 
   $ make check
+
+(This can be done before actually installing Pure, but make sure that you
+first run ``ldconfig`` or similar if you installed LLVM as a shared library,
+otherwise ``make check`` may fail simply because the LLVM library isn't
+found.)
 
 If all is well, all tests should pass. If not, the test directory will contain
 some ``*.diff`` files containing further information about the failed tests.
