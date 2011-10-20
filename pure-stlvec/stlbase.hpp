@@ -124,28 +124,28 @@ struct pxh_fun1 : public pxh_fun,
                   public std::unary_function<const pxh&, pxh>
 {
   pxh_fun1(px* f) : pxh_fun(f){}
-  pxh operator()(const pxh&);
+  pxh operator()(const pxh&) const;
 };
 
 struct pxh_fun2 : public pxh_fun, 
                   public std::binary_function<const pxh&, const pxh&, pxh>
 {
   pxh_fun2(px* f) : pxh_fun(f){}
-  pxh operator()(const pxh&, const pxh&);
+  pxh operator()(const pxh&, const pxh&) const;
 };
 
 struct pxh_pred1 : public pxh_fun,
                    public std::unary_function<const pxh&, bool>
 {
   pxh_pred1(px* f) : pxh_fun(f){}
-  bool operator()(const pxh&);
+  bool operator()(const pxh&) const;
 };
 
 struct pxh_pred2 : public pxh_fun,
                    public std::binary_function<const pxh&, const pxh&, bool>
 {
   pxh_pred2(px* f) : pxh_fun(f){}
-  bool operator()(const pxh&, const pxh&);
+  bool operator()(const pxh&, const pxh&) const;
 };
 
 struct pxh_gen : public pxh_fun

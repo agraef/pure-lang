@@ -164,7 +164,7 @@ pxh_fun& pxh_fun::operator=(const pxh_fun& rhs)
   return *this;
 }
 
-pxh pxh_fun1::operator()(const pxh& arg)
+pxh pxh_fun1::operator()(const pxh& arg) const
 {
   px* exception = 0;
   px* ret =  pure_appxl(fun_, &exception, 1, arg.pxp());
@@ -173,7 +173,7 @@ pxh pxh_fun1::operator()(const pxh& arg)
   return pxh(ret);
 }
 
-pxh pxh_fun2::operator()(const pxh& arg1, const pxh& arg2)
+pxh pxh_fun2::operator()(const pxh& arg1, const pxh& arg2) const
 {
   px* exception = 0;
   px* ret =  pure_appxl(fun_, &exception, 2, arg1.pxp(), arg2.pxp());
@@ -182,7 +182,7 @@ pxh pxh_fun2::operator()(const pxh& arg1, const pxh& arg2)
   return pxh(ret);
 }
 
-bool pxh_pred1::operator()(const pxh& arg)
+bool pxh_pred1::operator()(const pxh& arg) const
 {
   px* exception = 0;
   int32_t ret;
@@ -195,7 +195,7 @@ bool pxh_pred1::operator()(const pxh& arg)
   return ok && ret;
 }
 
-bool pxh_pred2::operator()(const pxh& left, const pxh& right)
+bool pxh_pred2::operator()(const pxh& left, const pxh& right) const
 {
   int32_t ret;
   px* exception = 0;
