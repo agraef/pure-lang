@@ -316,7 +316,7 @@ if test ! -z "$vl_readline_libs"; then
     AC_SUBST(RL_LIBS)
     AC_DEFINE(HAVE_LIBREADLINE, 1,
               [Define if you have a readline compatible library.])
-    AC_CHECK_HEADERS(readline/readline.h editline/readline.h)
+    AC_CHECK_HEADERS(readline/readline.h editline/readline.h edit/readline.h)
     AC_CACHE_CHECK([whether readline supports history],
                    vl_cv_lib_readline_history, [
       vl_cv_lib_readline_history="no"
