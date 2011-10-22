@@ -138,7 +138,7 @@ int mpfr_tag(void)
 
 /* Create mpfr values with automatic memory management. */
 
-static void mpfr_free(mpfr_ptr p)
+void mpfr_free(mpfr_ptr p)
 {
   mpfr_clear(p);
   free(p);
