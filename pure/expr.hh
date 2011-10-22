@@ -45,7 +45,7 @@ using namespace std;
 
    These are reconciled into a single figure, "normalized precedence"
    nprec(prec, fix), which ranges from nprec(0, 0) (weakest infix operator on
-   level 0) to nprec(PREC_MAX, 4) (strongest postfix operator on the highest
+   level 0) to nprec(PREC_MAX-1, 4) (strongest postfix operator on the highest
    level).
 
    This scheme is extended to other syntactic constructions in expressions as
