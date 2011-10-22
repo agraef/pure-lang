@@ -208,6 +208,22 @@ bool pxh_pred2::operator()(const pxh& left, const pxh& right) const
   return ok && ret;
 }
 
+bool pxh_pair_pred2::operator()(const pxh_pair& left,
+                                const pxh_pair& right) const
+{
+  int32_t ret;
+  px* exception = 0;
+  px* pxres = pure_appxl(fun_, &exception, 4,
+                         left.first.pxp(), left.second.pxp(),
+                         right.first.pxp(), right.second.pxp());
+  if (exception) throw exception;
+  if (!pxres) bad_function();
+  int ok = pure_is_int(pxres, &ret);
+  px_freenew(pxres);
+  if (!ok) failed_cond();
+  return ok && ret;
+}
+
 pxh pxh_gen::operator()()
 {
   px* exception = 0;
@@ -261,7 +277,7 @@ bool rocket_to_pair(px* rp, px** lhs, px** rhs)
   return ok;
 }
 
-px* pair_to_rocket(px* lhs, px* rhs)
+px* pair_to_rocket(const px* lhs, const px* rhs)
 {
   px* rocket = pure_const(rocket_tag());
   return pure_appl(rocket, 2, lhs, rhs); 

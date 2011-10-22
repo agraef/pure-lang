@@ -154,6 +154,14 @@ struct pxh_gen : public pxh_fun
   pxh operator()();
 };
 
+struct pxh_pair_pred2 : 
+  public pxh_fun,
+  public std::binary_function<const pxh_pair&, const pxh_pair&, bool>
+{
+  pxh_pair_pred2(px* f) : pxh_fun(f){}
+  bool operator()(const pxh_pair&, const pxh_pair&) const;
+};
+
 
 /**** Helpers **********************************************************/
 
@@ -173,7 +181,7 @@ int null_list_tag();
 int rocket_tag();
 
 bool rocket_to_pair(px* rp, px** lhs, px** rhs);
-px* pair_to_rocket(px* lhs, px* rhs);
+px* pair_to_rocket(const px* lhs, const px* rhs);
 
 px* pxh_to_pxp(pxh h); // used by std::transform
 
