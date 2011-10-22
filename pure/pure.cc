@@ -54,10 +54,17 @@
 #ifdef HAVE_EDITLINE_READLINE_H
 #include <editline/readline.h>
 #else /*  HAVE_EDITLINE_READLINE_H */
+#ifdef HAVE_EDIT_READLINE_READLINE_H
+#include <edit/readline/readline.h>
+#ifdef HAVE_EDIT_READLINE_HISTORY_H
+#include <edit/readline/history.h>
+#endif /* HAVE_EDIT_READLINE_HISTORY_H */
+#else /*  HAVE_EDIT_READLINE_READLINE_H */
 #warning "readline/libedit available, but no suitable headers found."
 #warning "Consider installing the readline/libedit development package."
 #undef HAVE_LIBREADLINE
 #undef HAVE_READLINE_HISTORY
+#endif /* HAVE_EDIT_READLINE_READLINE_H */
 #endif /* HAVE_EDITLINE_READLINE_H */
 
 #endif /* HAVE_READLINE_READLINE_H */
