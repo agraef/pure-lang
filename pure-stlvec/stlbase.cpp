@@ -267,6 +267,8 @@ px* pair_to_rocket(px* lhs, px* rhs)
   return pure_appl(rocket, 2, lhs, rhs); 
 } 
 
+px* pxh_to_pxp(pxh h){return h.pxp();}
+
 px* stl_begin()
 {
   return pure_symbol(pure_sym("stl_begin_iterator"));

@@ -239,8 +239,6 @@ sv* sv_dup(px* tpl)
   return ret;
 }
 
-static px* pxh_to_pxp(pxh h){return h.pxp();}
-
 px* sv_vector(px* tpl) 
 {
   sv_iters itrs(tpl);

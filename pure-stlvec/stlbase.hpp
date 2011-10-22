@@ -175,6 +175,7 @@ int rocket_tag();
 bool rocket_to_pair(px* rp, px** lhs, px** rhs);
 px* pair_to_rocket(px* lhs, px* rhs);
 
+px* pxh_to_pxp(pxh h); // used by std::transform
 
 
 /*** Interface ***********************************************************/
