@@ -1,0 +1,91 @@
+
+/* hashmap.pure: mutable Pure dictionaries for arbitrary key and value types,
+   implemented as STL hashes */
+
+/* NOTE: This module requires Pure 0.48 or later. It also needs a recent
+   (c++0x) STL implementation. The module is still very experimental and the
+   API is subject to change, so beware. */
+
+/* Copyright (c) 2011 by Albert Graef <Dr.Graef@t-online.de>.
+
+   This file is part of the Pure standard library.
+
+   The Pure standard library is free software: you can redistribute it and/or
+   modify it under the terms of the GNU Lesser General Public License as
+   published by the Free Software Foundation, either version 3 of the License,
+   or (at your option) any later version.
+
+   Pure is distributed in the hope that it will be useful, but WITHOUT ANY
+   WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+   FOR A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for
+   more details.
+
+   You should have received a copy of the GNU Lesser General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>. */
+
+// Native interface.
+
+using "lib:hashmap";
+
+extern int hashmap_tag();
+extern expr* hashmap(expr*);
+extern hashmap* hashmap_copy(hashmap*);
+extern void hashmap_clear(hashmap*);
+extern void hashmap_free(hashmap*); // internal use only
+extern void hashmap_add(hashmap*, expr*, expr*);
+extern void hashmap_del(hashmap*, expr*);
+extern expr* hashmap_get(hashmap*, expr*);
+extern bool hashmap_member(hashmap*, expr*);
+extern bool hashmap_empty(hashmap*);
+extern int hashmap_size(hashmap*);
+extern expr* hashmap_list(hashmap*);
+extern expr* hashmap_keys(hashmap*);
+extern expr* hashmap_vals(hashmap*);
+
+// The hashmap type.
+
+let hashmap_t = hashmap_tag;
+type hashmap x::pointer = check_ptrtag hashmap_t x;
+hashmapp x = pointerp x && check_ptrtag hashmap_t x;
+
+// Hashmap constructor. If you change this, you'll have to change the
+// pretty-printing function in hashmap.cc accordingly.
+
+nonfix {$$};
+outfix {$ $};
+
+def {$$} = hashmap [];
+def {$ xs@(_,_) $} = hashmap (list xs);
+def {$ x $} = hashmap [x];
+
+// Minimal container API for hashmaps.
+
+# m::hashmap = hashmap_size m;
+m::hashmap ! x = if hashmap_member m x then hashmap_get m x
+		 else throw out_of_bounds;
+
+// FIXME: null doesn't work here because there's a generic definition for
+// pointers in the prelude. For the time being, use empty instead.
+empty m::hashmap = hashmap_empty m;
+member m::hashmap x = hashmap_member m x;
+update m::hashmap x y = hashmap_add m x y $$ m;
+insert m::hashmap (x=>y) = hashmap_add m x y $$ m;
+delete m::hashmap x = hashmap_del m x $$ m;
+
+list m::hashmap = hashmap_list m;
+keys m::hashmap = hashmap_keys m;
+vals m::hashmap = hashmap_vals m;
+
+// TODO: Semantic equality and comparisons of hashmaps.
+
+// Make hashmaps work in list comprehensions. TODO: We might want to implement
+// map and catmap on hashmaps in hashmap.cc for maximum performance.
+
+map f m::hashmap = map f (list m);
+catmap f m::hashmap = catmap f (list m);
+listmap f m::hashmap = map f (list m);
+listcatmap f m::hashmap = catmap f (list m);
+rowmap f m::hashmap = rowcat (map f m);
+rowcatmap f m::hashmap = rowcat (map f m);
+colmap f m::hashmap = colcat (map f m);
+colcatmap f m::hashmap = colcat (map f m);

@@ -1,0 +1,61 @@
+
+/* Some basic examples for the hashmap module. This is intended to be fed to
+   the interpreter in a piecemeal fashion (best done using "Send Current Line"
+   in Emacs). To see the results, you can also run the script from the command
+   line as follows: pure < hashmap_examp.pure */
+
+using hashmap;
+
+public foo bar baz; // free symbols used below
+
+/* Create a hashmap and populate it with some Pure data. Both keys and values
+   may be arbitrary Pure expressions. Note that in general the elements may be
+   stored in an apparently random order (not necessarily the order in which
+   they were inserted). */
+
+let m = hashmap [foo=>99, bar=>bar 4711L, baz=>1..5]; m;
+
+/* The notation {$ key=>val, ... $} is used for pretty-printing hashmaps, and
+   can also be used for hashmap literals in Pure code. */
+
+let m = {$ foo=>99, bar=>bar 4711L, baz=>1..5 $}; m;
+
+// Query the map.
+keys m; // => [foo,bar,baz]
+vals m; // => [99,bar 4711L,[1,2,3,4,5]]
+list m; // => [foo=>99,bar=>bar 4711L,baz=>[1,2,3,4,5]]
+
+// Membership test.
+member m foo, member m bar;
+
+// Delete an element. Note that hashmaps are mutable, so you need to take a
+// copy if you want to preserve the original value.
+let m1 = hashmap_copy m;
+delete m foo; m1;
+keys m; // => [bar,baz]
+vals m; // => [bar 4711L,[1,2,3,4,5]]
+list m; // => [bar=>bar 4711L,baz=>[1,2,3,4,5]]
+
+member m foo, member m bar;
+
+// Hashmaps can also be used in list and matrix comprehensions.
+[x,y | x=>y = m1];
+{x,y | x=>y = m1; listp y};
+
+/* Note that, as hashmaps are really pointers, syntactic equality holds if and
+   only if two hashmaps are exactly the same object. */
+
+m===m, m===m1, m === hashmap_copy m;
+
+/* The above can always be done in constant time but isn't very useful if you
+   want to verify that two hashmaps contain the same key=>value associations.
+   At present, there are no ready-made operations for that, but you can do it
+   like this. */
+
+x::hashmap == y::hashmap = x===y ||
+  (all (member y) xks && vals x === [y!k | k = xks] &&
+   all (member x) yks && vals y === [x!k | k = yks] when
+     xks = keys x; yks = keys y;
+   end);
+
+m==m, m==m1, m == hashmap_copy m;
