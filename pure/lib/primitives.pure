@@ -426,6 +426,24 @@ using namespace __C;
 	> foo::foo;
 	"foo"
 
+   .. macro:: __list__
+
+      This expands a (literal) tuple to a list, preserving embedded tuples in
+      the same way that list values are parsed in the Pure language,
+      cf. :ref:`Primary Expressions`. This is provided for the benefit of
+      custom aggregate notations (usually implemented as outfix operators)
+      which are supposed to be parsed like the built-in list and matrix
+      brackets. Example::
+
+        > outfix (: :);
+	> def (:x:) = __list__ x;
+	> (:(1,2),(3,4):);
+	[(1,2),(3,4)]
+
+      Note that this macro uses internal information from the parser not
+      available to Pure programs. Thus there's no way to actually define this
+      macro in Pure, which is why it is provided as a builtin instead.
+
    .. macro:: __locals__
 
       Built-in macro which expands to a list with the local function bindings
