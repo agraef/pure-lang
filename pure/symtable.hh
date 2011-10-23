@@ -72,6 +72,7 @@ class symtable {
   symbol* __namespace_sym;
   symbol* __locals_sym;
   symbol* __func_sym;
+  symbol* __list_sym;
   symbol* __nil_sym;
   symbol* __cons_sym;
   symbol* __void_sym;
@@ -193,6 +194,8 @@ public:
   { return *sym_p("__locals__", __locals_sym); }
   symbol& func_sym()
   { return *sym_p("__func__", __func_sym); }
+  symbol& list_sym()
+  { return *sym_p("__list__", __list_sym); }
   symbol& nil_sym();
   symbol& cons_sym();
   symbol& void_sym();

@@ -5255,8 +5255,11 @@ expr interpreter::subst(const env& vars, expr x, uint8_t idx)
       return expr(symtab.catch_sym().x, u, v);
     } else {
       expr u = subst(vars, x.xval1(), idx),
-	v = subst(vars, x.xval2(), idx);
-      return expr(u, v);
+	v = subst(vars, x.xval2(), idx),
+	w = expr(u, v);
+      // This flag is still needed during macro substitution.
+      w.flags() |= x.flags()&EXPR::PAREN;
+      return w;
     }
   // conditionals:
   case EXPR::COND: {
@@ -5889,7 +5892,10 @@ expr interpreter::rsubst(expr x, bool quote)
   case EXPR::APP: {
     bool quote1 = quote || is_quote(x.xval1().tag());
     expr u = rsubst(x.xval1(), quote), v = rsubst(x.xval2(), quote1);
-    return expr(u, v);
+    expr w = expr(u, v);
+    // This flag is still needed during macro substitution.
+    w.flags() |= x.flags()&EXPR::PAREN;
+    return w;
   }
   default:
     assert(x.tag() > 0);
@@ -6262,8 +6268,10 @@ expr interpreter::macsubst(expr x, envstack& estk, uint8_t idx, bool quote)
   case EXPR::APP:
     if (quote) {
       expr u = macsubst(x.xval1(), estk, idx, quote),
-	v = macsubst(x.xval2(), estk, idx, quote);
-      return expr(u, v);
+	v = macsubst(x.xval2(), estk, idx, quote),
+	w = expr(u, v);
+      w.flags() |= x.flags()&EXPR::PAREN;
+      return w;
     } else if (is_quote(x.xval1().tag())) {
       expr u = x.xval1(),
 	v = macsubst(x.xval2(), estk, idx, true);
@@ -6284,6 +6292,7 @@ expr interpreter::macsubst(expr x, envstack& estk, uint8_t idx, bool quote)
       expr u = macsubst(x.xval1(), estk, idx),
 	v = macsubst(x.xval2(), estk, idx);
       expr w = expr(u, v);
+      w.flags() |= x.flags()&EXPR::PAREN;
       return macval(w, estk, idx);
     }
   // conditionals:
@@ -6420,8 +6429,10 @@ expr interpreter::varsubst(expr x, uint8_t offs, uint8_t offs1, uint8_t idx)
       return expr(symtab.catch_sym().x, u, v);
     } else {
       expr u = varsubst(x.xval1(), offs, offs1, idx),
-	v = varsubst(x.xval2(), offs, offs1, idx);
-      return expr(u, v);
+	v = varsubst(x.xval2(), offs, offs1, idx),
+	w = expr(u, v);
+      w.flags() |= x.flags()&EXPR::PAREN;
+      return w;
     }
   }
   // conditionals:
@@ -6936,6 +6947,13 @@ expr *interpreter::macspecial(expr x, envstack& estk, uint8_t idx)
       }
     }
     return new expr(expr::list(xs));
+  }
+  if (!specials_only && x.is_app(u, v) && u.tag() == symtab.list_sym().f) {
+    exprl xs;
+    if (v.is_pair() && v.is_tuplel(xs))
+      return new expr(expr::list(xs));
+    else
+      return new expr(expr::cons(v, expr::nil()));
   }
   if (!specials_only && x.is_app(u, v) && u.tag() == symtab.eval_sym().f)
     return new expr(maceval(v, estk, idx));

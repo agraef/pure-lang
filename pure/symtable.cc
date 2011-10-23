@@ -25,6 +25,7 @@ symtable::symtable()
     __namespace_sym(0),
     __locals_sym(0),
     __func_sym(0),
+    __list_sym(0),
     __nil_sym(0),
     __cons_sym(0),
     __void_sym(0),
@@ -107,6 +108,7 @@ void symtable::init_builtins()
   namespace_sym();
   locals_sym();
   func_sym();
+  list_sym();
   nil_sym();
   cons_sym();
   void_sym();
