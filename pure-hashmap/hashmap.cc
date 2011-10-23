@@ -27,13 +27,13 @@ namespace std {
   };
 }
 
-typedef unordered_map<pure_expr*,pure_expr*> exprmap;
+typedef unordered_map<pure_expr*,pure_expr*> myhashmap;
 
 // Pretty-printing support.
 
 #include <sstream>
 
-static const char *hashmap_str(exprmap *m)
+static const char *hashmap_str(myhashmap *m)
 {
   ostringstream os;
   static char *buf = 0;
@@ -47,7 +47,7 @@ static const char *hashmap_str(exprmap *m)
   pure_free(g);
   if (buf) free(buf);
   os << "{$";
-  for (exprmap::iterator it = m->begin(); it != m->end(); ++it)
+  for (myhashmap::iterator it = m->begin(); it != m->end(); ++it)
     if (it->second) {
       pure_expr *x = pure_appl(f, 2, it->first, it->second);
       char *s = str(x);
@@ -97,23 +97,23 @@ extern "C" int hashmap_tag(void)
 
 // Basic interface functions.
 
-extern "C" void hashmap_free(exprmap *m)
+extern "C" void hashmap_free(myhashmap *m)
 {
-  for (exprmap::iterator it = m->begin(); it != m->end(); ++it) {
+  for (myhashmap::iterator it = m->begin(); it != m->end(); ++it) {
     pure_free(it->first);
     if (it->second) pure_free(it->second);
   }
   delete m;
 }
 
-static pure_expr *make_hashmap(exprmap *m)
+static pure_expr *make_hashmap(myhashmap *m)
 {
   return pure_sentry(pure_symbol(pure_sym("hashmap_free")),
                      pure_tag(hashmap_tag(), pure_pointer(m)));
 }
 
-extern "C" void hashmap_add(exprmap *m, pure_expr *key);
-extern "C" void hashmap_add2(exprmap *m, pure_expr *key, pure_expr *val);
+extern "C" void hashmap_add(myhashmap *m, pure_expr *key);
+extern "C" void hashmap_add2(myhashmap *m, pure_expr *key, pure_expr *val);
 
 extern "C" pure_expr *hashmap(pure_expr *xs)
 {
@@ -122,7 +122,7 @@ extern "C" pure_expr *hashmap(pure_expr *xs)
   if (!pure_is_listv(xs, &n, &xv)) return 0;
   int32_t fno = pure_getsym("=>"), gno;
   assert(fno > 0);
-  exprmap *m = new exprmap;
+  myhashmap *m = new myhashmap;
   for (size_t i = 0; i < n; i++) {
     pure_expr *f, *g, *key, *val;
     if (pure_is_app(xv[i], &f, &val) && pure_is_app(f, &g, &key) &&
@@ -135,9 +135,9 @@ extern "C" pure_expr *hashmap(pure_expr *xs)
   return make_hashmap(m);
 }
 
-extern "C" void hashmap_add(exprmap *m, pure_expr *key)
+extern "C" void hashmap_add(myhashmap *m, pure_expr *key)
 {
-  exprmap::iterator it = m->find(key);
+  myhashmap::iterator it = m->find(key);
   if (it != m->end()) {
     if (it->second) pure_free(it->second);
   } else
@@ -145,9 +145,9 @@ extern "C" void hashmap_add(exprmap *m, pure_expr *key)
   (*m)[key] = 0;
 }
 
-extern "C" void hashmap_add2(exprmap *m, pure_expr *key, pure_expr *val)
+extern "C" void hashmap_add2(myhashmap *m, pure_expr *key, pure_expr *val)
 {
-  exprmap::iterator it = m->find(key);
+  myhashmap::iterator it = m->find(key);
   if (it != m->end()) {
     if (it->second) pure_free(it->second);
   } else
@@ -155,9 +155,9 @@ extern "C" void hashmap_add2(exprmap *m, pure_expr *key, pure_expr *val)
   (*m)[key] = pure_new(val);
 }
 
-extern "C" void hashmap_del(exprmap *m, pure_expr *key)
+extern "C" void hashmap_del(myhashmap *m, pure_expr *key)
 {
-  exprmap::iterator it = m->find(key);
+  myhashmap::iterator it = m->find(key);
   if (it != m->end()) {
     pure_free(it->first);
     if (it->second) pure_free(it->second);
@@ -165,57 +165,57 @@ extern "C" void hashmap_del(exprmap *m, pure_expr *key)
   }
 }
 
-extern "C" pure_expr *hashmap_get(exprmap *m, pure_expr *key)
+extern "C" pure_expr *hashmap_get(myhashmap *m, pure_expr *key)
 {
-  exprmap::iterator it = m->find(key);
+  myhashmap::iterator it = m->find(key);
   return (it != m->end())?(it->second?it->second:it->first):0;
 }
 
-extern "C" bool hashmap_member(exprmap *m, pure_expr *key)
+extern "C" bool hashmap_member(myhashmap *m, pure_expr *key)
 {
-  exprmap::iterator it = m->find(key);
+  myhashmap::iterator it = m->find(key);
   return it != m->end();
 }
 
-extern "C" bool hashmap_empty(exprmap *m)
+extern "C" bool hashmap_empty(myhashmap *m)
 {
   return m->empty();
 }
 
-extern "C" int hashmap_size(exprmap *m)
+extern "C" int hashmap_size(myhashmap *m)
 {
   return m->size();
 }
 
-extern "C" pure_expr *hashmap_keys(exprmap *m)
+extern "C" pure_expr *hashmap_keys(myhashmap *m)
 {
   size_t i = 0, n = m->size();
   pure_expr **xs = new pure_expr*[n];
-  for (exprmap::iterator it = m->begin(); it != m->end(); ++it)
+  for (myhashmap::iterator it = m->begin(); it != m->end(); ++it)
     xs[i++] = it->first;
   pure_expr *x = pure_listv(n, xs);
   delete[] xs;
   return x;
 }
 
-extern "C" pure_expr *hashmap_vals(exprmap *m)
+extern "C" pure_expr *hashmap_vals(myhashmap *m)
 {
   size_t i = 0, n = m->size();
   pure_expr **xs = new pure_expr*[n];
-  for (exprmap::iterator it = m->begin(); it != m->end(); ++it)
+  for (myhashmap::iterator it = m->begin(); it != m->end(); ++it)
     xs[i++] = it->second?it->second:it->first;
   pure_expr *x = pure_listv(n, xs);
   delete[] xs;
   return x;
 }
 
-extern "C" pure_expr *hashmap_list(exprmap *m)
+extern "C" pure_expr *hashmap_list(myhashmap *m)
 {
   size_t i = 0, n = m->size();
   int32_t fno = pure_getsym("=>");
   assert(fno > 0);
   pure_expr **xs = new pure_expr*[n], *f = pure_new(pure_symbol(fno));
-  for (exprmap::iterator it = m->begin(); it != m->end(); ++it)
+  for (myhashmap::iterator it = m->begin(); it != m->end(); ++it)
     xs[i++] = it->second?pure_appl(f, 2, it->first, it->second):it->first;
   pure_expr *x = pure_listv(n, xs);
   delete[] xs;
@@ -223,18 +223,18 @@ extern "C" pure_expr *hashmap_list(exprmap *m)
   return x;
 }
 
-extern "C" exprmap *hashmap_copy(exprmap *m)
+extern "C" myhashmap *hashmap_copy(myhashmap *m)
 {
-  exprmap *m2 = new exprmap(*m);
-  for (exprmap::iterator it = m2->begin(); it != m2->end(); ++it) {
+  myhashmap *m2 = new myhashmap(*m);
+  for (myhashmap::iterator it = m2->begin(); it != m2->end(); ++it) {
     pure_new(it->first); if (it->second) pure_new(it->second);
   }
   return m2;
 }
 
-extern "C" void hashmap_clear(exprmap *m)
+extern "C" void hashmap_clear(myhashmap *m)
 {
-  for (exprmap::iterator it = m->begin(); it != m->end(); ++it) {
+  for (myhashmap::iterator it = m->begin(); it != m->end(); ++it) {
     pure_free(it->first);
     if (it->second) pure_free(it->second);
   }
