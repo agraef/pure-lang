@@ -78,11 +78,16 @@ let hashmap_t = hashmap_tag;
 type hashmap x::pointer = check_ptrtag hashmap_t x;
 hashmapp x = pointerp x && check_ptrtag hashmap_t x;
 
-// Hashmap constructor. If you change this, you'll have to change the
-// pretty-printing function in hashmap.cc accordingly.
+/* Hashmap constructors. This allows hashmap literals to be written in the
+   form {$ elem, ... $} analogous to list and matrix notation, which is also
+   used for pretty-printing these values. (Note that the empty hashmap {$$}
+   must be written exactly like this, with no spaces between the "brackets",
+   since it is actually implemented as a nonfix symbol. Also note that if you
+   change these operator symbols, then you'll have to adjust the
+   pretty-printing function in hashmap.cc accordingly.) */
 
-nonfix {$$};
-outfix {$ $};
+nonfix {$$};  // empty hashmap
+outfix {$ $}; // hashmap brackets
 
 // NOTE: This needs the new built-in __list__ macro from Pure 0.49 or
 // later. If you don't have this, you can substitute the list function for
