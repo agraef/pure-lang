@@ -1,10 +1,10 @@
 
-/* hashmap.pure: mutable Pure dictionaries for arbitrary key and value types,
-   implemented as STL hashes */
+/* hashmap.pure: mutable maps for arbitrary key and value types, implemented
+   as STL hashes */
 
 /* NOTE: This module requires Pure 0.48 or later. It also needs a recent
-   (c++0x) STL implementation. The module is still very experimental and the
-   API is subject to change, so beware. */
+   (C++0x) STL implementation. The module is still experimental and the API is
+   subject to change, so beware. */
 
 /* Copyright (c) 2011 by Albert Graef <Dr.Graef@t-online.de>.
 
@@ -23,7 +23,10 @@
    You should have received a copy of the GNU Lesser General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
-// Native interface.
+/* Native interface. You can freely use most of these in addition to the
+   "standard" container API provided below. NOTE: hashmap_free is reserved for
+   internal use as a sentry on hashmap objects. It should never be called
+   directly. */
 
 using "lib:hashmap";
 
@@ -42,7 +45,26 @@ extern expr* hashmap_list(hashmap*);
 extern expr* hashmap_keys(hashmap*);
 extern expr* hashmap_vals(hashmap*);
 
-// The hashmap type.
+/* The hashmap type. Hashmaps are simply pointers to STL hashed maps
+   (unordered_map) which hold key-value associations where both keys and
+   values may be arbitrary Pure expressions. Memory management is automatic.
+
+   NOTES:
+
+   - Keys in a hashmap may be stored in an apparently random order (not
+     necessarily the order in which they were inserted).
+
+   - Hashmaps are *mutable*. Inserting a key into a hashmap or deleting it
+     modifies the underlying STL data structure as a side effect of the
+     operation. If you need value semantics, you should use one of the dict or
+     set data structures from the standard library instead. (Another
+     possibility is to take a copy of a hashmap if you need to preserve the
+     original value, but note that this operation takes O(n) time.)
+
+   - Since hashmaps are pointers, two hashmaps are syntactically equal iff
+     they are exactly the same object (identical pointer values). This test
+     can be done in constant time. Use the semantic equality tests below if
+     you need to test whether two hashmaps contain the same elements. */
 
 let hashmap_t = hashmap_tag;
 type hashmap x::pointer = check_ptrtag hashmap_t x;
@@ -76,10 +98,23 @@ list m::hashmap = hashmap_list m;
 keys m::hashmap = hashmap_keys m;
 vals m::hashmap = hashmap_vals m;
 
-// TODO: Semantic equality and comparisons of hashmaps.
+/* Semantic equality and comparisons of hashmaps. These compare keys and
+   values for syntactic equality. Equality holds iff two hashmaps contain the
+   same key=>val pairs, irrespective of their ordering. Besides equality and
+   inequality we also provide submap comparisons. A hashmap x is considered a
+   submap of a hashmap y iff all key=>val pairs of x are also contained in y.
+   All comparisons should work in O(n log n) time. */
 
-// Make hashmaps work in list comprehensions. TODO: We might want to implement
-// map and catmap on hashmaps in hashmap.cc for maximum performance.
+x::hashmap == y::hashmap = x<=y && y<=x;
+x::hashmap ~= y::hashmap = ~(x==y);
+x::hashmap <= y::hashmap = x===y ||
+  (all (member y) xks && vals x === [y!k | k = xks] when xks = keys x end);
+x::hashmap >= y::hashmap = x===y ||
+  (all (member x) yks && vals y === [x!k | k = yks] when yks = keys y end);
+x::hashmap <  y::hashmap = x<=y && #x<#y;
+x::hashmap >  y::hashmap = x>=y && #x>#y;
+
+// Support for list and matrix comprehensions.
 
 map f m::hashmap = map f (list m);
 catmap f m::hashmap = catmap f (list m);
