@@ -15,8 +15,34 @@ public foo bar baz; // free symbols used below
 
 let m = hashmap [foo=>99, bar=>bar 4711L, baz=>1..5]; m;
 
-/* The notation {$ key=>val, ... $} is used for pretty-printing hashmaps, and
-   can also be used for hashmap literals in Pure code. */
+/* Note that hashmaps are printed using the format 'hashmap [key=>val,...]' by
+   default, which reconstructs the value when used as a literal in Pure code.
+   It is also possible to define a custom pretty-printing, using your own
+   preferred symbol in place of 'hashmap'. In particular, the symbol may also
+   be an outfix symbol so that hashmaps can be printed and entered in a
+   bracketed format analogous to list and matrix notation. The following code
+   shows how to make this work. To these ends, we introduce a nonfix symbol
+   {$$} denoting the empty hashmap (note that this must be written as is, with
+   no spaces between the "brackets"), and a corresponding pair of outfix
+   symbols {$ $} which will be used to denote non-empty hashes. */
+
+nonfix {$$};  // empty hashmap
+outfix {$ $}; // hashmap brackets
+
+// Define the above as macros which expand to proper hashmap values.
+// NOTE: This needs the new built-in __list__ macro from Pure 0.49 or
+// later. If you don't have this, you can substitute the list function for
+// __list__, but then sets with tuple elements won't be parsed correctly.
+
+def {$$} = hashmap [];
+def {$ xs@(_,_) $} = hashmap (__list__ xs);
+def {$ x $} = hashmap [x];
+
+/* Now we can use the notation {$ key=>val, ... $} to enter hashmap literals
+   in Pure code, and a call to the hashmap_symbol function also makes the
+   hashmap pretty-printer use this notation. */
+
+hashmap_symbol ({$ $});
 
 let m = {$ foo=>99, bar=>bar 4711L, baz=>1..5 $}; m;
 

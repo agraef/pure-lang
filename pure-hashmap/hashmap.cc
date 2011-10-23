@@ -29,9 +29,20 @@ namespace std {
 
 typedef unordered_map<pure_expr*,pure_expr*> myhashmap;
 
-// Pretty-printing support.
+// Runtime-configurable pretty-printing support.
 
 #include <sstream>
+
+// FIXME: This should actually be interpreter- and/or thread-local data.
+static int32_t lsym = 0, rsym = 0;
+
+extern "C" void hashmap_symbol(pure_expr *x)
+{
+  int32_t f;
+  if (pure_is_symbol(x, &f) && f>0) {
+    lsym = f; rsym = pure_sym_other(f);
+  }
+}
 
 static const char *hashmap_str(myhashmap *m)
 {
@@ -41,12 +52,22 @@ static const char *hashmap_str(myhashmap *m)
   int32_t fno = pure_getsym("=>"), gno = pure_getsym(",");
   assert(fno > 0 && gno > 0);
   pure_expr *f = pure_new(pure_symbol(fno));
-  pure_expr *g = pure_new(pure_symbol(gno));
-  int32_t nprec = fixity(g);
+  int32_t nprec = pure_sym_nprec(gno);
+  int32_t p = lsym>0?pure_sym_nprec(lsym):NPREC_MAX;
   bool init = true;
-  pure_free(g);
   if (buf) free(buf);
-  os << "{$";
+  if (rsym)
+    os << pure_sym_pname(lsym);
+  else if (lsym) {
+    if (p>=NPREC_MAX || p%10 == OP_PREFIX)
+      os << pure_sym_pname(lsym) << " [";
+    else if (p%10 == OP_POSTFIX)
+      os << "[";
+    else
+      // infix symbol; maybe we should try to do something prettier here
+      os << "(" << pure_sym_pname(lsym) << ") [";
+  } else
+    os << "hashmap [";
   for (myhashmap::iterator it = m->begin(); it != m->end(); ++it)
     if (it->second) {
       pure_expr *x = pure_appl(f, 2, it->first, it->second);
@@ -59,17 +80,18 @@ static const char *hashmap_str(myhashmap *m)
       os << s;
       free(s);
     } else {
-      pure_expr *x = it->first, *y;
+      pure_expr *x = it->first;
       int32_t nprec2 = NPREC_MAX;
       char *s = str(x);
       if (init)
 	init = false;
       else
 	os << ",";
-      if (pure_is_app(x, &g, &y))
+      pure_expr *g;
+      if (pure_is_app(x, &g, 0))
 	if (pure_is_symbol(g, &gno))
 	  nprec2 = fixity(g);
-	else if (pure_is_app(g, &g, &y))
+	else if (pure_is_app(g, &g, 0))
 	  nprec2 = fixity(g);
       if (nprec2 <= nprec)
 	os << "(" << s << ")";
@@ -77,10 +99,31 @@ static const char *hashmap_str(myhashmap *m)
 	os << s;
       free(s);
     }
-  os << "$}";
+  if (rsym)
+    os << pure_sym_pname(rsym);
+  else if (lsym && p < NPREC_MAX && p%10 == OP_POSTFIX)
+    os << "] " << pure_sym_pname(lsym);
+  else
+    os << "]";
   pure_free(f);
   buf = strdup(os.str().c_str());
   return buf;
+}
+
+#define NPREC_APP 167772155 // this comes from expr.hh
+
+static int hashmap_prec(myhashmap *m)
+{
+  if (rsym)
+    return NPREC_MAX;
+  else if (lsym) {
+    int32_t p = pure_sym_nprec(lsym);
+    if (p%10 == OP_PREFIX || p%10 == OP_POSTFIX)
+      return p;
+    else
+      return NPREC_APP;
+  } else
+    return NPREC_APP;
 }
 
 // Pointer type tag.
@@ -90,7 +133,8 @@ extern "C" int hashmap_tag(void)
   static int t = 0;
   if (!t) {
     t = pure_pointer_tag("hashmap*");
-    pure_pointer_add_printer(t, (pure_printer_fun)hashmap_str, 0);
+    pure_pointer_add_printer(t, (pure_printer_fun)hashmap_str,
+			     (pure_printer_prec_fun)hashmap_prec);
   }
   return t;
 }

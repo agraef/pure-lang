@@ -31,6 +31,7 @@
 using "lib:hashmap";
 
 extern int hashmap_tag();
+extern void hashmap_symbol(expr*);
 extern expr* hashmap(expr*);
 extern hashmap* hashmap_copy(hashmap*);
 extern void hashmap_clear(hashmap*);
@@ -66,36 +67,25 @@ extern expr* hashmap_vals(hashmap*);
      modifies the underlying STL data structure as a side effect of the
      operation. If you need value semantics, you should use one of the dict or
      set data structures from the standard library instead. (Another
-     possibility is to take a copy of a hashmap if you need to preserve the
-     original value, but note that this operation takes O(n) time.)
+     possibility is to take a copy of a hashmap using the hashmap_copy
+     operation if you need to preserve the original value, but note that this
+     operation takes O(n) time.)
 
    - Since hashmaps are pointers, two hashmaps are syntactically equal iff
      they are exactly the same object (identical pointer values). This test
      can be done in constant time. Use the semantic equality tests below if
-     you need to test whether two hashmaps contain the same elements. */
+     you need to test whether two hashmaps contain the same elements.
+
+   - Hashmaps are pretty-printed in the format 'hashmap [...]' by default,
+     which will reconstruct the expression when reentered as Pure code. With
+     the hashmap_symbol function it is also possible to define a custom
+     pretty-printing using a symbol of your choice (which should then be
+     defined as appropriate). See examples/hashmap_examp.pure for an
+     example. */
 
 let hashmap_t = hashmap_tag;
 type hashmap x::pointer = check_ptrtag hashmap_t x;
 hashmapp x = pointerp x && check_ptrtag hashmap_t x;
-
-/* Hashmap constructors. This allows hashmap literals to be written in the
-   form {$ elem, ... $} analogous to list and matrix notation, which is also
-   used for pretty-printing these values. (Note that the empty hashmap {$$}
-   must be written exactly like this, with no spaces between the "brackets",
-   since it is actually implemented as a nonfix symbol. Also note that if you
-   change these operator symbols, then you'll have to adjust the
-   pretty-printing function in hashmap.cc accordingly.) */
-
-nonfix {$$};  // empty hashmap
-outfix {$ $}; // hashmap brackets
-
-// NOTE: This needs the new built-in __list__ macro from Pure 0.49 or
-// later. If you don't have this, you can substitute the list function for
-// __list__, but then sets with tuple elements won't be parsed correctly.
-
-def {$$} = hashmap [];
-def {$ xs@(_,_) $} = hashmap (__list__ xs);
-def {$ x $} = hashmap [x];
 
 // Minimal container API for hashmaps.
 
