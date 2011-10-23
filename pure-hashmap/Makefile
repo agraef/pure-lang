@@ -18,6 +18,8 @@ CXXFLAGS = -g -O2 -std=c++0x
 
 # Basic rules to build the module, clean, install and uninstall.
 
+all: hashmap$(DLL)
+
 hashmap$(DLL): hashmap.cc
 	g++ $(shared) -o $@ $(MOD_CXXFLAGS) $< $(MOD_LDFLAGS) $(LIBS)
 
