@@ -196,9 +196,10 @@ extern "C" pure_expr *hashmap_list(exprmap *m)
 
 extern "C" exprmap *hashmap_copy(exprmap *m)
 {
-  exprmap *m2 = new exprmap;
-  for (exprmap::iterator it = m->begin(); it != m->end(); ++it)
-    (*m2)[pure_new(it->first)] = pure_new(it->second);
+  exprmap *m2 = new exprmap(*m);
+  for (exprmap::iterator it = m2->begin(); it != m2->end(); ++it) {
+    pure_new(it->first); pure_new(it->second);
+  }
   return m2;
 }
 
