@@ -1,6 +1,6 @@
 
 // This uses unordered_map, so a recent STL is required for now.
-// TODO: hash policy operations, multimap interface, sets and bags.
+// TODO: hash policy operations, multimap interface.
 
 #include <assert.h>
 #include <stdlib.h>
