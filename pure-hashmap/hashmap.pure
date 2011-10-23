@@ -1,6 +1,6 @@
 
-/* hashmap.pure: mutable maps for arbitrary key and value types, implemented
-   as STL hashes */
+/* hashmap.pure: mutable maps and sets for arbitrary key and value types,
+   implemented as STL hashes */
 
 /* NOTE: This module requires Pure 0.48 or later. It also needs a recent
    (C++0x) STL implementation. The module is still experimental and the API is
@@ -35,7 +35,8 @@ extern expr* hashmap(expr*);
 extern hashmap* hashmap_copy(hashmap*);
 extern void hashmap_clear(hashmap*);
 extern void hashmap_free(hashmap*); // internal use only
-extern void hashmap_add(hashmap*, expr*, expr*);
+extern void hashmap_add(hashmap*, expr*);
+extern void hashmap_add2(hashmap*, expr*, expr*);
 extern void hashmap_del(hashmap*, expr*);
 extern expr* hashmap_get(hashmap*, expr*);
 extern bool hashmap_member(hashmap*, expr*);
@@ -53,6 +54,13 @@ extern expr* hashmap_vals(hashmap*);
 
    - Keys in a hashmap may be stored in an apparently random order (not
      necessarily the order in which they were inserted).
+
+   - Values can be omitted, so that hashmaps can also be used as a hashed set
+     data structure. In this case, m!x will return the key x itself if it is
+     in the hashmap. Likewise, vals m will return the keys for members which
+     have no associated value. (The only downside of this approach is that you
+     can't have a hash pair x=>y as a member of a set, since it always denotes
+     a key-value association. Use ordinary pairs (x,y) instead.)
 
    - Hashmaps are *mutable*. Inserting a key into a hashmap or deleting it
      modifies the underlying STL data structure as a side effect of the
@@ -90,8 +98,9 @@ m::hashmap ! x = if hashmap_member m x then hashmap_get m x
 // pointers in the prelude. For the time being, use empty instead.
 empty m::hashmap = hashmap_empty m;
 member m::hashmap x = hashmap_member m x;
-update m::hashmap x y = hashmap_add m x y $$ m;
-insert m::hashmap (x=>y) = hashmap_add m x y $$ m;
+update m::hashmap x y = hashmap_add2 m x y $$ m;
+insert m::hashmap (x=>y) = hashmap_add2 m x y $$ m;
+insert m::hashmap x = hashmap_add m x $$ m;
 delete m::hashmap x = hashmap_del m x $$ m;
 
 list m::hashmap = hashmap_list m;

@@ -21,6 +21,7 @@ let m = hashmap [foo=>99, bar=>bar 4711L, baz=>1..5]; m;
 let m = {$ foo=>99, bar=>bar 4711L, baz=>1..5 $}; m;
 
 // Query the map.
+m!bar;  // => bar 4711L
 keys m; // => [foo,bar,baz]
 vals m; // => [99,bar 4711L,[1,2,3,4,5]]
 list m; // => [foo=>99,bar=>bar 4711L,baz=>[1,2,3,4,5]]
@@ -32,6 +33,7 @@ member m foo, member m bar;
 // copy if you want to preserve the original value.
 let m1 = hashmap_copy m;
 delete m foo; m1;
+m!foo;  // => out_of_bounds exception
 keys m; // => [bar,baz]
 vals m; // => [bar 4711L,[1,2,3,4,5]]
 list m; // => [bar=>bar 4711L,baz=>[1,2,3,4,5]]
@@ -52,3 +54,22 @@ m===m, m===m1, m === hashmap_copy m;
    This can be done using the comparison operations provided by the module. */
 
 m==m, m==m1, m == hashmap_copy m;
+
+/* Hashmaps can also serve as a hashed set data structure which contains only
+   keys but no values. In this case the value associated with a key defaults
+   to the key itself. */
+
+let m = {$ 99, bar 4711L, 1..5 $}; m;
+
+member m 99;
+m!99;
+delete m 99;
+member m 99;
+m!99;
+insert m 99;
+
+// You can also mix singleton elements with ordinary key-value associations.
+delete m (bar 4711L);
+insert m (bar=>bar 4711L);
+m!99;
+m!bar;
