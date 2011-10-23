@@ -1119,6 +1119,15 @@ const char *pure_sym_pname(int32_t tag)
 }
 
 extern "C"
+int32_t pure_sym_other(int32_t tag)
+{
+  assert(tag>0);
+  interpreter& interp = *interpreter::g_interp;
+  const symbol& sym = interp.symtab.sym(tag);
+  return (sym.fix == outfix)?sym.g:0;
+}
+
+extern "C"
 int32_t pure_sym_nprec(int32_t tag)
 {
   assert(tag>0);

@@ -112,10 +112,13 @@ typedef struct _pure_mem {
    it is created (as an ordinary function or variable symbol). pure_getsym is
    like pure_sym, but returns 0 if the symbol doesn't exist.
 
-   Given the (positive) symbol number, pure_sym_pname returns its print name
-   and pure_sym_nprec its "normalized" precedence. The latter is a small
-   integer value defined as nprec = 10*prec+fix, where prec is the precedence
-   level of the symbol and fix its fixity. */
+   Given the (positive) symbol number, pure_sym_pname returns its print name.
+   pure_sym_other checks whether the given symbol is an outfix symbol; if so,
+   it returns the number of the corresponding terminating bracket symbol,
+   otherwise it returns zero. pure_sym_nprec returns the "normalized"
+   precedence of a symbol. The latter is a small integer value defined as
+   nprec = 10*prec+fix, where prec is the precedence level of the symbol and
+   fix its fixity. */
 
 /* Fixity values. */
 #define OP_INFIX   0
@@ -132,6 +135,7 @@ typedef struct _pure_mem {
 int32_t pure_sym(const char *s);
 int32_t pure_getsym(const char *s);
 const char *pure_sym_pname(int32_t sym);
+int32_t pure_sym_other(int32_t sym);
 int32_t pure_sym_nprec(int32_t sym);
 
 /* Expression constructors. pure_symbol takes the integer code of a symbol and
