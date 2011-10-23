@@ -2,7 +2,7 @@
 /* hashmap.pure: mutable maps and sets for arbitrary key and value types,
    implemented as STL hashes */
 
-/* NOTE: This module requires Pure 0.48 or later. It also needs a recent
+/* NOTE: This module requires Pure 0.49 or later. It also needs a recent
    (C++0x) STL implementation. The module is still experimental and the API is
    subject to change, so beware. */
 
@@ -84,11 +84,12 @@ hashmapp x = pointerp x && check_ptrtag hashmap_t x;
 nonfix {$$};
 outfix {$ $};
 
-// FIXME: This doesn't work with sets involving tuples right now. Maybe we
-// need a built-in macro to properly parse such constructs?
+// NOTE: This needs the new built-in __list__ macro from Pure 0.49 or
+// later. If you don't have this, you can substitute the list function for
+// __list__, but then sets with tuple elements won't be parsed correctly.
 
 def {$$} = hashmap [];
-def {$ xs@(_,_) $} = hashmap (list xs);
+def {$ xs@(_,_) $} = hashmap (__list__ xs);
 def {$ x $} = hashmap [x];
 
 // Minimal container API for hashmaps.
