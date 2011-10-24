@@ -26,6 +26,9 @@ hashmap$(DLL): hashmap.cc
 check:
 	(cd examples && (pure -v -I.. -L.. < hashmap_examp.pure 2>&1 | diff hashmap_examp.log -) && echo "test passed" || (echo "test FAILED"; exit 1))
 
+log: hashmap.cc hashmap.pure examples/hashmap_examp.pure
+	(cd examples && (pure -v -I.. -L.. < hashmap_examp.pure > hashmap_examp.log 2>&1))
+
 clean:
 	rm -f *.o *$(DLL) *~
 
