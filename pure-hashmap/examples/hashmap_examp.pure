@@ -73,13 +73,29 @@ member m foo, member m bar;
 /* Note that, as hashmaps are really pointers, syntactic equality holds if and
    only if two hashmaps are exactly the same object. */
 
-m===m, m===m1, m === hashmap_copy m;
+m===m, m===m1, m === hashmap_copy m,
+m === {$ bar=>bar 4711L,baz=>[1,2,3,4,5] $}; // => 1,0,0,0
 
 /* The above can always be done in constant time but isn't very useful if you
    want to verify that two hashmaps contain the same key=>value associations.
-   This can be done using the comparison operations provided by the module. */
+   This can be done using the equality operation provided by the module. */
 
-m==m, m==m1, m == hashmap_copy m;
+m==m, m==m1, m == hashmap_copy m,
+m == {$ bar=>bar 4711L,baz=>[1,2,3,4,5] $}; // => 1,0,1,1
+
+/* Note that no submap comparisons are provided by the module. If you need
+   them, here's one way to define them in Pure instead. A hashmap x is
+   considered a submap of a hashmap y iff all key=>val pairs of x are also
+   contained in y. */
+
+x::hashmap <= y::hashmap = x===y ||
+  (all (member y) xks && vals x === [y!k | k = xks] when xks = keys x end);
+x::hashmap >= y::hashmap = x===y ||
+  (all (member x) yks && vals y === [x!k | k = yks] when yks = keys y end);
+x::hashmap <  y::hashmap = x<=y && #x<#y;
+x::hashmap >  y::hashmap = x>=y && #x>#y;
+
+m<=m1, m<m1, m>=m, m>m; // => 1,1,1,0
 
 /* Hashmaps can also serve as a hashed set data structure which contains only
    keys but no values. In this case the value associated with a key defaults
@@ -101,9 +117,9 @@ m!99;
 m!bar;
 
 /* Basic set-like operations like union, intersection etc. aren't provided by
-   the module, but you can easily implement them yourself as follows. Note
-   that we take a copy of the first operand here in order to preserve value
-   semantics. */
+   the module either, but you can easily implement them yourself as follows.
+   Note that we take a copy of the first operand here in order to preserve
+   value semantics. */
 
 x::hashmap + y::hashmap = foldl insert (hashmap_copy x) (list y);
 x::hashmap - y::hashmap = foldl delete (hashmap_copy x) (keys y);

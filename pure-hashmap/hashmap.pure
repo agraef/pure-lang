@@ -3,7 +3,7 @@
    implemented as STL hashes */
 
 /* NOTE: This module requires Pure 0.49 or later. It also needs a recent
-   (C++0x) STL implementation. The module is still experimental and the API is
+   (C++11) STL implementation. The module is still experimental and the API is
    subject to change, so beware. */
 
 /* Copyright (c) 2011 by Albert Graef <Dr.Graef@t-online.de>.
@@ -24,9 +24,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
 /* Native interface. You can freely use most of these in addition to the
-   "standard" container API provided below. NOTE: hashmap_free is reserved for
-   internal use as a sentry on hashmap objects. It should never be called
-   directly. */
+   "standard" container API provided below. But note that hashmap_free is
+   reserved for internal use as a sentry on hashmap objects and should never
+   be called directly. */
 
 using "lib:hashmap";
 
@@ -42,6 +42,7 @@ extern void hashmap_del(hashmap*, expr*);
 extern expr* hashmap_get(hashmap*, expr*);
 extern bool hashmap_member(hashmap*, expr*);
 extern bool hashmap_empty(hashmap*);
+extern bool hashmap_equal(hashmap*, hashmap*);
 extern int hashmap_size(hashmap*);
 extern expr* hashmap_list(hashmap*);
 extern expr* hashmap_tuple(hashmap*);
@@ -53,12 +54,10 @@ extern expr* hashmap_vals(hashmap*);
    (unordered_map) which hold key-value associations where both keys and
    values may be arbitrary Pure expressions. They can be created from lists,
    tuples and vectors using the hashmap function. Memory management is
-   automatic.
-
-   NOTES:
+   automatic. Please also note the following:
 
    - Keys in a hashmap may be stored in an apparently random order (not
-     necessarily the order in which they were inserted).
+     necessarily in the order in which they were inserted).
 
    - Values can be omitted, so that hashmaps can also be used as a hashed set
      data structure. In this case, m!x will return the key x itself if it is
@@ -97,8 +96,8 @@ hashmap x::nmatrix = hashmap (smatrix x);
 // Minimal container API for hashmaps.
 
 # m::hashmap = hashmap_size m;
-m::hashmap ! x = if hashmap_member m x then hashmap_get m x
-		 else throw out_of_bounds;
+m::hashmap ! x =
+  if hashmap_member m x then hashmap_get m x else throw out_of_bounds;
 
 // FIXME: null doesn't work here because there's a generic definition for
 // pointers in the prelude. For the time being, use empty instead.
@@ -116,22 +115,6 @@ list m::hashmap = hashmap_list m;
 tuple m::hashmap = hashmap_tuple m;
 vector m::hashmap = hashmap_vector m;
 
-/* Semantic equality and comparisons of hashmaps. These compare keys and
-   values for syntactic equality. Equality holds iff two hashmaps contain the
-   same key=>val pairs, irrespective of their ordering. Besides equality and
-   inequality we also provide submap comparisons. A hashmap x is considered a
-   submap of a hashmap y iff all key=>val pairs of x are also contained in y.
-   All comparisons should work in O(n log n) time. */
-
-x::hashmap == y::hashmap = x<=y && y<=x;
-x::hashmap ~= y::hashmap = ~(x==y);
-x::hashmap <= y::hashmap = x===y ||
-  (all (member y) xks && vals x === [y!k | k = xks] when xks = keys x end);
-x::hashmap >= y::hashmap = x===y ||
-  (all (member x) yks && vals y === [x!k | k = yks] when yks = keys y end);
-x::hashmap <  y::hashmap = x<=y && #x<#y;
-x::hashmap >  y::hashmap = x>=y && #x>#y;
-
 // Basic list-like operations and support for list and matrix comprehensions.
 
 do f m::hashmap = do f (list m);
@@ -143,3 +126,13 @@ rowmap f m::hashmap = rowcat (map f m);
 rowcatmap f m::hashmap = rowcat (map f m);
 colmap f m::hashmap = colcat (map f m);
 colcatmap f m::hashmap = colcat (map f m);
+
+/* Semantic equality of hashmaps. These compare both keys and values for
+   syntactic equality. Equality holds iff two hashmaps contain the same
+   key=>val pairs, irrespective of their ordering. For ordinary hashmaps, this
+   check should work in O(n log n) time. Note that no submap comparisons
+   (<, <=, etc.) are provided, as the STL doesn't have them either. But see
+   examples/hashmap_examp.pure for a possible Pure implementation of these. */
+
+x::hashmap == y::hashmap = hashmap_equal x y;
+x::hashmap ~= y::hashmap = ~hashmap_equal x y;

@@ -385,3 +385,64 @@ extern "C" void hashmap_clear(myhashmap *m)
   }
   m->clear();
 }
+
+// Equality. We do our own version here so that we can compare the associated
+// values using same() instead of ==. This might not be the most efficient
+// implementation, so suggestions for improvement are welcome.
+
+static bool myequal(pair<pure_expr*,pure_expr*> x,
+		    pair<pure_expr*,pure_expr*> y)
+{
+  // Should be enough to just compare the values here, as the keys are
+  // supposed to be equal anyway.
+  //assert(same(x.first, y.first));
+  return same(x.second, y.second);
+}
+
+#include <algorithm>
+#include <tuple>
+
+// My gcc 4.5 doesn't have this function in its C++ library, use the reference
+// implementation instead. You might wish to comment this out if your C++
+// library has this function.
+
+template<class ForwardIterator1, class ForwardIterator2, class BinaryPredicate>
+static bool is_permutation(ForwardIterator1 first, ForwardIterator1 last,
+			   ForwardIterator2 d_first, BinaryPredicate p)
+{
+  // skip common prefix
+  std::tie(first, d_first) = std::mismatch(first, last, d_first, p);
+  // iterate over the rest, counting how many times each element
+  // from [first, last) appears in [d_first, d_last)
+  if (first != last) {
+    ForwardIterator2 d_last = d_first;
+    std::advance(d_last, std::distance(first, last));
+    for (ForwardIterator1 i = first; i != last; ++i) {
+      if (i != std::find(first, i, *i)) continue; // already counted this *i
+      auto m = std::count(d_first, d_last, *i);
+      if (m==0 || std::count(i, last, *i) != m) {
+	return false;
+      }
+    }
+  }
+  return true;
+}
+
+extern "C" bool hashmap_equal(myhashmap *x, myhashmap *y)
+{
+  if (x->size() != y->size()) return false;
+  for (myhashmap::iterator it = x->begin(); it != x->end(); ++it) {
+    /* This is probably overkill here, as unordered_map is guaranteed to have
+       only one entry per key, so that the equal ranges should all have size 1.
+       But we do it that way for safety, and so that the same implementation
+       can be used in the multimap case. */
+    pair<myhashmap::iterator, myhashmap::iterator>
+      r1 = x->equal_range(it->first),
+      r2 = y->equal_range(it->first);
+    if (distance(r1.first, r1.second) != distance(r2.first, r2.second))
+      return false;
+    if (!is_permutation(r1.first, r1.second, r2.first, myequal))
+      return false;
+  }
+  return true;
+}
