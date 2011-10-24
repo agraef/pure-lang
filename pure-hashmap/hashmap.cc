@@ -31,82 +31,50 @@ typedef unordered_map<pure_expr*,pure_expr*> myhashmap;
 
 // Runtime-configurable pretty-printing support.
 
-#include <sstream>
-
 // FIXME: This should actually be interpreter- and/or thread-local data.
-static int32_t lsym = 0, rsym = 0;
+static int32_t hmsym = 0;
 
 extern "C" void hashmap_symbol(pure_expr *x)
 {
   int32_t f;
-  if (pure_is_symbol(x, &f) && f>0) {
-    lsym = f; rsym = pure_sym_other(f);
-  }
+  if (pure_is_symbol(x, &f) && f>0) hmsym = f;
 }
+
+extern "C" pure_expr *hashmap_list(myhashmap *m);
 
 static const char *hashmap_str(myhashmap *m)
 {
-  ostringstream os;
-  static char *buf = 0;
-  size_t i = 0, n = m->size();
-  int32_t fno = pure_getsym("=>"), gno = pure_getsym(",");
-  assert(fno > 0 && gno > 0);
-  pure_expr *f = pure_new(pure_symbol(fno));
-  int32_t nprec = pure_sym_nprec(gno);
-  int32_t p = lsym>0?pure_sym_nprec(lsym):NPREC_MAX;
-  bool init = true;
+  static char *buf = 0; // TLD
   if (buf) free(buf);
-  if (rsym)
-    os << pure_sym_pname(lsym);
-  else if (lsym) {
-    if (p>=NPREC_MAX || p%10 == OP_PREFIX)
-      os << pure_sym_pname(lsym) << " [";
-    else if (p%10 == OP_POSTFIX)
-      os << "[";
-    else
-      // infix symbol; maybe we should try to do something prettier here
-      os << "(" << pure_sym_pname(lsym) << ") [";
-  } else
-    os << "hashmap [";
-  for (myhashmap::iterator it = m->begin(); it != m->end(); ++it)
-    if (it->second) {
-      pure_expr *x = pure_appl(f, 2, it->first, it->second);
-      char *s = str(x);
-      pure_freenew(x);
-      if (init)
-	init = false;
-      else
-	os << ",";
-      os << s;
-      free(s);
-    } else {
-      pure_expr *x = it->first;
-      int32_t nprec2 = NPREC_MAX;
-      char *s = str(x);
-      if (init)
-	init = false;
-      else
-	os << ",";
-      pure_expr *g;
-      if (pure_is_app(x, &g, 0))
-	if (pure_is_symbol(g, &gno))
-	  nprec2 = fixity(g);
-	else if (pure_is_app(g, &g, 0))
-	  nprec2 = fixity(g);
-      if (nprec2 <= nprec)
-	os << "(" << s << ")";
-      else
-	os << s;
-      free(s);
+  /* Instead of building the string representation directly, it's much easier
+     to just construct the real term on the fly and have str() do all the hard
+     work for us. */
+  int32_t fsym = hmsym?hmsym:pure_sym("hashmap");
+  pure_expr *f = pure_const(fsym), *x = pure_applc(f, hashmap_list(m));
+  buf = str(x);
+  pure_freenew(x);
+  /* Note that in the case of an outfix symbol we now have something like LEFT
+     [...] RIGHT, but we actually want that to be just LEFT ... RIGHT. We fix
+     this here on the fly by removing the list brackets. */
+  if (hmsym && pure_sym_other(hmsym)) {
+    const char *s = pure_sym_pname(hmsym),
+      *t = pure_sym_pname(pure_sym_other(hmsym));
+    size_t k = strlen(s), l = strlen(t), m = strlen(buf);
+    // sanity check
+    if (strncmp(buf, s, k) || strncmp(buf+m-l, t, l)) {
+      free(buf); buf = 0;
+      return 0;
     }
-  if (rsym)
-    os << pure_sym_pname(rsym);
-  else if (lsym && p < NPREC_MAX && p%10 == OP_POSTFIX)
-    os << "] " << pure_sym_pname(lsym);
-  else
-    os << "]";
-  pure_free(f);
-  buf = strdup(os.str().c_str());
+    char *p = buf+k, *q = buf+m-l;
+    while (p < buf+m && *p == ' ') p++;
+    while (q > buf && *--q == ' ') ;
+    if (p >= q || *p != '[' || *q != ']') {
+      free(buf); buf = 0;
+      return 0;
+    }
+    memmove(q, q+1, buf+m-q);
+    memmove(p, p+1, buf+m-p);
+  }
   return buf;
 }
 
@@ -114,11 +82,9 @@ static const char *hashmap_str(myhashmap *m)
 
 static int hashmap_prec(myhashmap *m)
 {
-  if (rsym)
-    return NPREC_MAX;
-  else if (lsym) {
-    int32_t p = pure_sym_nprec(lsym);
-    if (p%10 == OP_PREFIX || p%10 == OP_POSTFIX)
+  if (hmsym) {
+    int32_t p = pure_sym_nprec(hmsym);
+    if (p%10 == OP_PREFIX || p%10 == OP_POSTFIX || pure_sym_other(hmsym))
       return p;
     else
       return NPREC_APP;
