@@ -114,6 +114,16 @@ hashmapp x = pointerp x && check_ptrtag hashmap_t x;
 // Make hashmap work with numeric vectors.
 hashmap x::nmatrix = hashmap (smatrix x);
 
+/* Semantic equality of hashmaps. These compare both keys and values for
+   syntactic equality. Equality holds iff two hashmaps contain the same
+   key=>val pairs, irrespective of their ordering. This check should always
+   work in O(n log n) time. Note that no submap comparisons (<, <=, etc.) are
+   provided, as the STL doesn't have them either, but see hashmap_examp.pure
+   for a possible Pure implementation of these. */
+
+x::hashmap == y::hashmap = hashmap_equal x y;
+x::hashmap ~= y::hashmap = ~hashmap_equal x y;
+
 // Minimal container API for hashmaps.
 
 /* Note that if the key x is in the map but doesn't have an associated value
@@ -151,6 +161,8 @@ tuple m::hashmap = hashmap_tuple m;
 vector m::hashmap = hashmap_vector m;
 
 // Basic list-like operations and support for list and matrix comprehensions.
+// NOTE: The most important of these should maybe implemented in C, to avoid
+// the construction of intermediate list values.
 
 do f m::hashmap = do f (list m);
 map f m::hashmap = map f (list m);
@@ -162,15 +174,18 @@ rowcatmap f m::hashmap = rowcat (map f m);
 colmap f m::hashmap = colcat (map f m);
 colcatmap f m::hashmap = colcat (map f m);
 
-/* Semantic equality of hashmaps. These compare both keys and values for
-   syntactic equality. Equality holds iff two hashmaps contain the same
-   key=>val pairs, irrespective of their ordering. For ordinary hashmaps, this
-   check should work in O(n log n) time. Note that no submap comparisons
-   (<, <=, etc.) are provided, as the STL doesn't have them either. But see
-   examples/hashmap_examp.pure for a possible Pure implementation of these. */
-
-x::hashmap == y::hashmap = hashmap_equal x y;
-x::hashmap ~= y::hashmap = ~hashmap_equal x y;
+all p m::hashmap = all p (list m);
+any p m::hashmap = any p (list m);
+filter p m::hashmap = filter p (list m);
+foldl f a m::hashmap = foldl f a (list m);
+foldl1 f m::hashmap = foldl1 f (list m) if ~empty m;
+foldr f a m::hashmap = foldr f a (list m);
+foldr1 f m::hashmap = foldr1 f (list m) if ~empty m;
+scanl f a m::hashmap = scanl f a (list m);
+scanl1 f m::hashmap = scanl1 f (list m) if ~empty m;
+scanr f a m::hashmap = scanr f a (list m);
+scanr1 f m::hashmap = scanr1 f (list m) if ~empty m;
+sort p m::hashmap = sort p (list m);
 
 /***************************************************************************/
 
@@ -183,6 +198,13 @@ type hashmmap x::pointer = check_ptrtag hashmmap_t x;
 hashmmapp x = pointerp x && check_ptrtag hashmmap_t x;
 
 hashmmap x::nmatrix = hashmmap (smatrix x);
+
+/* Note that in contrast to ordinary hashmaps, the complexity of the multimap
+   equality check depends on the frequencies of keys and may thus require
+   O(n^2) time in degenerate cases. */
+
+x::hashmmap == y::hashmmap = hashmmap_equal x y;
+x::hashmmap ~= y::hashmmap = ~hashmmap_equal x y;
 
 /* Note that m!x returns the list of *all* values associated with the key x
    here (which may be empty if the key is not in the map, rather than raising
@@ -223,5 +245,15 @@ rowcatmap f m::hashmmap = rowcat (map f m);
 colmap f m::hashmmap = colcat (map f m);
 colcatmap f m::hashmmap = colcat (map f m);
 
-x::hashmmap == y::hashmmap = hashmmap_equal x y;
-x::hashmmap ~= y::hashmmap = ~hashmmap_equal x y;
+all p m::hashmmap = all p (list m);
+any p m::hashmmap = any p (list m);
+filter p m::hashmmap = filter p (list m);
+foldl f a m::hashmmap = foldl f a (list m);
+foldl1 f m::hashmmap = foldl1 f (list m) if ~empty m;
+foldr f a m::hashmmap = foldr f a (list m);
+foldr1 f m::hashmmap = foldr1 f (list m) if ~empty m;
+scanl f a m::hashmmap = scanl f a (list m);
+scanl1 f m::hashmmap = scanl1 f (list m) if ~empty m;
+scanr f a m::hashmmap = scanr f a (list m);
+scanr1 f m::hashmmap = scanr1 f (list m) if ~empty m;
+sort p m::hashmmap = sort p (list m);
