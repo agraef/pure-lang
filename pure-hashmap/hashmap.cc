@@ -666,14 +666,11 @@ extern "C" pure_expr *hashmmap_get(myhashmmap *m, pure_expr *key)
 {
   pair<myhashmmap::iterator, myhashmmap::iterator> r = m->equal_range(key);
   size_t i = 0, n = distance(r.first, r.second);
-  int32_t fno = pure_getsym("=>");
-  assert(fno > 0);
-  pure_expr **xs = new pure_expr*[n], *f = pure_new(pure_symbol(fno));
+  pure_expr **xs = new pure_expr*[n];
   for (myhashmmap::iterator it = r.first; it != r.second; ++it)
-    xs[i++] = it->second?pure_appl(f, 2, it->first, it->second):it->first;
+    xs[i++] = it->second?it->second:it->first;
   pure_expr *x = pure_listv(n, xs);
   delete[] xs;
-  pure_free(f);
   return x;
 }
 
