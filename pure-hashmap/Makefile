@@ -28,7 +28,7 @@ check:
 
 log: examples/hashmap_examp.log
 
-examples/hashmap_examp.log: hashmap.cc hashmap.pure examples/hashmap_examp.pure
+examples/hashmap_examp.log: hashmap.cc hashmap.pure hashmap$(DLL) examples/hashmap_examp.pure
 	(cd examples && (pure -v -I.. -L.. < hashmap_examp.pure > hashmap_examp.log 2>&1))
 
 clean:
