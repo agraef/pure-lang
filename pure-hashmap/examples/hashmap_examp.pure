@@ -86,14 +86,14 @@ member m foo, member m bar;
    only if two hashmaps are exactly the same object. */
 
 m===m, m===m1, m === copy m,
-m === {$ bar=>bar 4711L,baz=>[1,2,3,4,5] $}; // => 1,0,0,0
+m === hashmap [bar=>bar 4711L,baz=>[1,2,3,4,5]]; // => 1,0,0,0
 
 /* The above can always be done in constant time but isn't very useful if you
    want to verify that two hashmaps contain the same key=>value associations.
    This can be done using the equality operation provided by the module. */
 
 m==m, m==m1, m == copy m,
-m == {$ bar=>bar 4711L,baz=>[1,2,3,4,5] $}; // => 1,0,1,1
+m == hashmap [bar=>bar 4711L,baz=>[1,2,3,4,5]]; // => 1,0,1,1
 
 /* Note that no submap comparisons are provided by the module. If you need
    them, here's one way to define them in Pure instead. A hashmap x is
@@ -113,7 +113,7 @@ m<=m1, m<m1, m>=m, m>m; // => 1,1,1,0
    keys but no values. In this case the value associated with a key defaults
    to the key itself. */
 
-let m = {$ 99, bar 4711L, 1..5 $}; m;
+let m = hashmap [99, bar 4711L, 1..5]; m;
 
 member m 99;
 m!99;
@@ -137,16 +137,16 @@ x::hashmap + y::hashmap = foldl insert (copy x) (list y);
 x::hashmap - y::hashmap = foldl delete (copy x) (keys y);
 x::hashmap * y::hashmap = x-(x-y);
 
-let m1 = {$5,1,3,11,3$};
+let m1 = hashmap [5,1,3,11,3];
 let m2 = hashmap (3..6);
 
 m1;m2;
-m1+m2; // => {$11,1,3,4,5,6$}
-m1-m2; // => {$11,1$}
-m1*m2; // => {$3,5$}
+m1+m2; // => hashmap [11,1,3,4,5,6]
+m1-m2; // => hashmap [11,1]
+m1*m2; // => hashmap [3,5]
 
 // These operations also work with general hashmaps, of course.
-{$foo=>99,baz=>1..5$} + {$bar=>bar 4711L$};
+hashmap [foo=>99,baz=>1..5] + hashmap [bar=>bar 4711L];
 
 /* Multimaps are supported, too. These differ from the ordinary hashmaps in
    that they may contain multiple key-value associations for each key. They
