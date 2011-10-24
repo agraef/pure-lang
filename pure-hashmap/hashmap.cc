@@ -1,6 +1,5 @@
 
 // This uses unordered_map, so a recent STL is required for now.
-// TODO: hash policy operations.
 
 #include <assert.h>
 #include <stdlib.h>
@@ -8,108 +7,11 @@
 #include <pure/runtime.h>
 #include <unordered_map>
 
-using namespace std;
-
 // Enable this for some additional (possibly costly) assertions in the code.
 //#define DEBUG 1
 
 // Enable this if your C++ library has the std::is_permutation function.
 //#define HAVE_STD_IS_PERMUTATION 1
-
-// Hashing and comparing Pure expressions. The required functionality is in
-// the Pure runtime (hash() and same() functions, see pure/runtime.h).
-
-namespace std {
-  template<>
-  struct hash<pure_expr*>
-  {
-    size_t operator()(pure_expr* x) const
-    { return ::hash(x); };
-  };
-  template<>
-  struct equal_to<pure_expr*> {
-    bool operator()(pure_expr* x, pure_expr* y) const
-    { return same(x, y); }
-  };
-}
-
-typedef unordered_map<pure_expr*,pure_expr*> myhashmap;
-
-// Runtime-configurable pretty-printing support.
-
-// TLD: This should actually be interpreter- and/or thread-local data.
-static int32_t hmsym = 0;
-
-extern "C" void hashmap_symbol(pure_expr *x)
-{
-  int32_t f;
-  if (pure_is_symbol(x, &f) && f>0) hmsym = f;
-}
-
-extern "C" pure_expr *hashmap_list(myhashmap *m);
-
-static const char *hashmap_str(myhashmap *m)
-{
-  static char *buf = 0; // TLD
-  if (buf) free(buf);
-  /* Instead of building the string representation directly, it's much easier
-     to just construct the real term on the fly and have str() do all the hard
-     work for us. */
-  int32_t fsym = hmsym?hmsym:pure_sym("hashmap");
-  pure_expr *f = pure_const(fsym), *x = pure_applc(f, hashmap_list(m));
-  buf = str(x);
-  pure_freenew(x);
-  /* Note that in the case of an outfix symbol we now have something like LEFT
-     [...] RIGHT, but we actually want that to be just LEFT ... RIGHT. We fix
-     this here on the fly by removing the list brackets. */
-  if (hmsym && pure_sym_other(hmsym)) {
-    const char *s = pure_sym_pname(hmsym),
-      *t = pure_sym_pname(pure_sym_other(hmsym));
-    size_t k = strlen(s), l = strlen(t), m = strlen(buf);
-    // sanity check
-    if (strncmp(buf, s, k) || strncmp(buf+m-l, t, l)) {
-      free(buf); buf = 0;
-      return 0;
-    }
-    char *p = buf+k, *q = buf+m-l;
-    while (p < buf+m && *p == ' ') p++;
-    while (q > buf && *--q == ' ') ;
-    if (p >= q || *p != '[' || *q != ']') {
-      free(buf); buf = 0;
-      return 0;
-    }
-    memmove(q, q+1, buf+m-q);
-    memmove(p, p+1, buf+m-p);
-  }
-  return buf;
-}
-
-#define NPREC_APP 167772155 // this comes from expr.hh
-
-static int hashmap_prec(myhashmap *m)
-{
-  if (hmsym) {
-    int32_t p = pure_sym_nprec(hmsym);
-    if (p%10 == OP_PREFIX || p%10 == OP_POSTFIX || pure_sym_other(hmsym))
-      return p;
-    else
-      return NPREC_APP;
-  } else
-    return NPREC_APP;
-}
-
-// Pointer type tag.
-
-extern "C" int hashmap_tag(void)
-{
-  static int t = 0;
-  if (!t) {
-    t = pure_pointer_tag("hashmap*");
-    pure_pointer_add_printer(t, (pure_printer_fun)hashmap_str,
-			     (pure_printer_prec_fun)hashmap_prec);
-  }
-  return t;
-}
 
 // This should really be in the runtime.
 
@@ -212,6 +114,103 @@ static bool pure_is_symbolic_vectorv(pure_expr *x, size_t *n, pure_expr ***xv)
     *xv = xs;
   }
   return true;
+}
+
+using namespace std;
+
+// Hashing and comparing Pure expressions. The required functionality is in
+// the Pure runtime (hash() and same() functions, see pure/runtime.h).
+
+namespace std {
+  template<>
+  struct hash<pure_expr*>
+  {
+    size_t operator()(pure_expr* x) const
+    { return ::hash(x); };
+  };
+  template<>
+  struct equal_to<pure_expr*> {
+    bool operator()(pure_expr* x, pure_expr* y) const
+    { return same(x, y); }
+  };
+}
+
+typedef unordered_map<pure_expr*,pure_expr*> myhashmap;
+
+// Runtime-configurable pretty-printing support.
+
+// TLD: This should actually be interpreter- and/or thread-local data.
+static int32_t hmsym = 0;
+
+extern "C" void hashmap_symbol(pure_expr *x)
+{
+  int32_t f;
+  if (pure_is_symbol(x, &f) && f>0) hmsym = f;
+}
+
+extern "C" pure_expr *hashmap_list(myhashmap *m);
+
+static const char *hashmap_str(myhashmap *m)
+{
+  static char *buf = 0; // TLD
+  if (buf) free(buf);
+  /* Instead of building the string representation directly, it's much easier
+     to just construct the real term on the fly and have str() do all the hard
+     work for us. */
+  int32_t fsym = hmsym?hmsym:pure_sym("hashmap");
+  pure_expr *f = pure_const(fsym), *x = pure_applc(f, hashmap_list(m));
+  buf = str(x);
+  pure_freenew(x);
+  /* Note that in the case of an outfix symbol we now have something like LEFT
+     [...] RIGHT, but we actually want that to be just LEFT ... RIGHT. We fix
+     this here on the fly by removing the list brackets. */
+  if (hmsym && pure_sym_other(hmsym)) {
+    const char *s = pure_sym_pname(hmsym),
+      *t = pure_sym_pname(pure_sym_other(hmsym));
+    size_t k = strlen(s), l = strlen(t), m = strlen(buf);
+    // sanity check
+    if (strncmp(buf, s, k) || strncmp(buf+m-l, t, l)) {
+      free(buf); buf = 0;
+      return 0;
+    }
+    char *p = buf+k, *q = buf+m-l;
+    while (p < buf+m && *p == ' ') p++;
+    while (q > buf && *--q == ' ') ;
+    if (p >= q || *p != '[' || *q != ']') {
+      free(buf); buf = 0;
+      return 0;
+    }
+    memmove(q, q+1, buf+m-q);
+    memmove(p, p+1, buf+m-p);
+  }
+  return buf;
+}
+
+#define NPREC_APP 167772155 // this comes from expr.hh
+
+static int hashmap_prec(myhashmap *m)
+{
+  if (hmsym) {
+    int32_t p = pure_sym_nprec(hmsym);
+    if (p%10 == OP_PREFIX || p%10 == OP_POSTFIX || pure_sym_other(hmsym))
+      return p;
+    else
+      return NPREC_APP;
+  } else
+    return NPREC_APP;
+}
+
+// Pointer type tag.
+
+extern "C" int hashmap_tag(void)
+{
+  static int t = 0;
+  if (!t) {
+    t = pure_pointer_tag("hashmap*");
+    pure_pointer_add_printer(t, (pure_printer_fun)hashmap_str,
+			     (pure_printer_prec_fun)hashmap_prec);
+  }
+  return t;
 }
 
 // Basic interface functions.
@@ -480,6 +479,41 @@ extern "C" bool hashmap_equal(myhashmap *x, myhashmap *y)
     it = r1.second;
   }
   return true;
+}
+
+extern "C" float hashmap_load_factor(myhashmap *m)
+{
+  return m->load_factor();
+}
+
+extern "C" float hashmap_max_load_factor(myhashmap *m)
+{
+  return m->max_load_factor();
+}
+
+extern "C" void hashmap_set_max_load_factor(myhashmap *m, float x)
+{
+  m->max_load_factor(x);
+}
+
+extern "C" void hashmap_rehash(myhashmap *m, unsigned count)
+{
+  m->rehash(count);
+}
+
+extern "C" void hashmap_reserve(myhashmap *m, unsigned count)
+{
+  m->reserve(count);
+}
+
+extern "C" unsigned hashmap_bucket_count(myhashmap *m)
+{
+  return m->bucket_count();
+}
+
+extern "C" unsigned hashmap_bucket_size(myhashmap *m, unsigned i)
+{
+  return m->bucket_size(i);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -773,4 +807,39 @@ extern "C" bool hashmmap_equal(myhashmmap *x, myhashmmap *y)
     it = r1.second;
   }
   return true;
+}
+
+extern "C" float hashmmap_load_factor(myhashmmap *m)
+{
+  return m->load_factor();
+}
+
+extern "C" float hashmmap_max_load_factor(myhashmmap *m)
+{
+  return m->max_load_factor();
+}
+
+extern "C" void hashmmap_set_max_load_factor(myhashmmap *m, float x)
+{
+  m->max_load_factor(x);
+}
+
+extern "C" void hashmmap_rehash(myhashmmap *m, unsigned count)
+{
+  m->rehash(count);
+}
+
+extern "C" void hashmmap_reserve(myhashmmap *m, unsigned count)
+{
+  m->reserve(count);
+}
+
+extern "C" unsigned hashmmap_bucket_count(myhashmmap *m)
+{
+  return m->bucket_count();
+}
+
+extern "C" unsigned hashmmap_bucket_size(myhashmmap *m, unsigned i)
+{
+  return m->bucket_size(i);
 }
