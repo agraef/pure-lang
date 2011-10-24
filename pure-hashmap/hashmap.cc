@@ -105,6 +105,109 @@ extern "C" int hashmap_tag(void)
   return t;
 }
 
+// This should really be in the runtime.
+
+typedef struct _gsl_block_symbolic
+{
+  size_t size;
+  pure_expr **data;
+} gsl_block_symbolic;
+
+typedef struct _gsl_matrix_symbolic
+{
+  size_t size1;
+  size_t size2;
+  size_t tda;
+  pure_expr **data;
+  gsl_block_symbolic *block;
+  int owner;
+} gsl_matrix_symbolic;
+
+static gsl_matrix_symbolic*
+gsl_matrix_symbolic_alloc(const size_t n1, const size_t n2)
+{
+  gsl_block_symbolic* block;
+  gsl_matrix_symbolic* m;
+  if (n1 == 0 || n2 == 0)
+    return 0;
+  m = (gsl_matrix_symbolic*)malloc(sizeof(gsl_matrix_symbolic));
+  if (m == 0)
+    return 0;
+  block = (gsl_block_symbolic*)malloc(sizeof(gsl_block_symbolic));
+  if (block == 0) {
+    free(m);
+    return 0;
+  }
+  block->size = n1*n2;
+  block->data = (pure_expr**)malloc(block->size*sizeof(pure_expr*)) ;
+  if (block->data == 0) {
+    free(m);
+    free(block);
+    return 0;
+  }
+  m->data = block->data;
+  m->size1 = n1;
+  m->size2 = n2;
+  m->tda = n2;
+  m->block = block;
+  m->owner = 1;
+  return m;
+}
+
+static gsl_matrix_symbolic*
+gsl_matrix_symbolic_calloc(const size_t n1, const size_t n2)
+{
+  gsl_matrix_symbolic* m = gsl_matrix_symbolic_alloc(n1, n2);
+  if (m == 0) return 0;
+  memset(m->data, 0, m->block->size*sizeof(pure_expr*));
+  return m;
+}
+
+static inline gsl_matrix_symbolic*
+create_symbolic_matrix(size_t nrows, size_t ncols)
+{
+  if (nrows == 0 || ncols == 0 ) {
+    size_t nrows1 = (nrows>0)?nrows:1;
+    size_t ncols1 = (ncols>0)?ncols:1;
+    gsl_matrix_symbolic *m = gsl_matrix_symbolic_calloc(nrows1, ncols1);
+    if (!m) return 0;
+    m->size1 = nrows; m->size2 = ncols;
+    return m;
+  } else
+    return gsl_matrix_symbolic_alloc(nrows, ncols);
+}
+
+static pure_expr *pure_symbolic_vectorv(size_t n, pure_expr **xv)
+{
+  gsl_matrix_symbolic *mat = create_symbolic_matrix(1, n);
+  if (!mat) return 0;
+  pure_expr **data = mat->data;
+  for (size_t i = 0; i < n; i++)
+    data[i] = xv[i];
+  return pure_symbolic_matrix(mat);
+}
+
+static bool pure_is_symbolic_vectorv(pure_expr *x, size_t *n, pure_expr ***xv)
+{
+  gsl_matrix_symbolic *mat;
+  if (!pure_is_symbolic_matrix(x, (void**)&mat) || !mat ||
+      (mat->size1 > 1 && mat->size2 > 1))
+    return false;
+  size_t sz = mat->size1*mat->size2, tda = mat->tda;
+  pure_expr **data = mat->data;
+  if (n) *n = sz;
+  if (xv) {
+    *xv = 0; if (sz == 0) return true;
+    pure_expr **xs = (pure_expr**)malloc(sz*sizeof(pure_expr**));
+    assert(xs);
+    for (size_t i = 0, k = 0; i < mat->size1; i++)
+      for (size_t j = 0; j < mat->size2; j++)
+	xs[k++] = data[i*tda+j];
+    *xv = xs;
+  }
+  return true;
+}
+
 // Basic interface functions.
 
 extern "C" void hashmap_free(myhashmap *m)
@@ -129,7 +232,11 @@ extern "C" pure_expr *hashmap(pure_expr *xs)
 {
   size_t n;
   pure_expr **xv;
-  if (!pure_is_listv(xs, &n, &xv)) return 0;
+  if (!pure_is_listv(xs, &n, &xv) &&
+      !pure_is_symbolic_vectorv(xs, &n, &xv) &&
+      !(pure_is_tuplev(xs, &n, 0) && n != 1 &&
+	pure_is_tuplev(xs, &n, &xv)))
+    return 0;
   int32_t fno = pure_getsym("=>"), gno;
   assert(fno > 0);
   myhashmap *m = new myhashmap;
@@ -228,6 +335,34 @@ extern "C" pure_expr *hashmap_list(myhashmap *m)
   for (myhashmap::iterator it = m->begin(); it != m->end(); ++it)
     xs[i++] = it->second?pure_appl(f, 2, it->first, it->second):it->first;
   pure_expr *x = pure_listv(n, xs);
+  delete[] xs;
+  pure_free(f);
+  return x;
+}
+
+extern "C" pure_expr *hashmap_tuple(myhashmap *m)
+{
+  size_t i = 0, n = m->size();
+  int32_t fno = pure_getsym("=>");
+  assert(fno > 0);
+  pure_expr **xs = new pure_expr*[n], *f = pure_new(pure_symbol(fno));
+  for (myhashmap::iterator it = m->begin(); it != m->end(); ++it)
+    xs[i++] = it->second?pure_appl(f, 2, it->first, it->second):it->first;
+  pure_expr *x = pure_tuplev(n, xs);
+  delete[] xs;
+  pure_free(f);
+  return x;
+}
+
+extern "C" pure_expr *hashmap_vector(myhashmap *m)
+{
+  size_t i = 0, n = m->size();
+  int32_t fno = pure_getsym("=>");
+  assert(fno > 0);
+  pure_expr **xs = new pure_expr*[n], *f = pure_new(pure_symbol(fno));
+  for (myhashmap::iterator it = m->begin(); it != m->end(); ++it)
+    xs[i++] = it->second?pure_appl(f, 2, it->first, it->second):it->first;
+  pure_expr *x = pure_symbolic_vectorv(n, xs);
   delete[] xs;
   pure_free(f);
   return x;

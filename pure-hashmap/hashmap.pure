@@ -44,12 +44,16 @@ extern bool hashmap_member(hashmap*, expr*);
 extern bool hashmap_empty(hashmap*);
 extern int hashmap_size(hashmap*);
 extern expr* hashmap_list(hashmap*);
+extern expr* hashmap_tuple(hashmap*);
+extern expr* hashmap_vector(hashmap*);
 extern expr* hashmap_keys(hashmap*);
 extern expr* hashmap_vals(hashmap*);
 
 /* The hashmap type. Hashmaps are simply pointers to STL hashed maps
    (unordered_map) which hold key-value associations where both keys and
-   values may be arbitrary Pure expressions. Memory management is automatic.
+   values may be arbitrary Pure expressions. They can be created from lists,
+   tuples and vectors using the hashmap function. Memory management is
+   automatic.
 
    NOTES:
 
@@ -87,6 +91,9 @@ let hashmap_t = hashmap_tag;
 type hashmap x::pointer = check_ptrtag hashmap_t x;
 hashmapp x = pointerp x && check_ptrtag hashmap_t x;
 
+// Make hashmap work with numeric vectors.
+hashmap x::nmatrix = hashmap (smatrix x);
+
 // Minimal container API for hashmaps.
 
 # m::hashmap = hashmap_size m;
@@ -102,9 +109,12 @@ insert m::hashmap (x=>y) = hashmap_add2 m x y $$ m;
 insert m::hashmap x = hashmap_add m x $$ m;
 delete m::hashmap x = hashmap_del m x $$ m;
 
-list m::hashmap = hashmap_list m;
 keys m::hashmap = hashmap_keys m;
 vals m::hashmap = hashmap_vals m;
+
+list m::hashmap = hashmap_list m;
+tuple m::hashmap = hashmap_tuple m;
+vector m::hashmap = hashmap_vector m;
 
 /* Semantic equality and comparisons of hashmaps. These compare keys and
    values for syntactic equality. Equality holds iff two hashmaps contain the
