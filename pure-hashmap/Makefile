@@ -14,7 +14,7 @@ installdir  = $(addprefix $(DESTDIR), $(libdir)/pure)
 MOD_CXXFLAGS  = $(PIC) $(shell pkg-config pure --cflags) $(CXXFLAGS) $(CPPFLAGS)
 MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS)
 
-CXXFLAGS = -g -O2 -std=c++0x
+CXXFLAGS = -g -O2 -std=c++0x -Wall
 
 # Basic rules to build the module, clean, install and uninstall.
 
