@@ -116,10 +116,11 @@ hashmap x::nmatrix = hashmap (smatrix x);
 
 /* Semantic equality of hashmaps. These compare both keys and values for
    syntactic equality. Equality holds iff two hashmaps contain the same
-   key=>val pairs, irrespective of their ordering. This check should always
-   work in O(n log n) time. Note that no submap comparisons (<, <=, etc.) are
-   provided, as the STL doesn't have them either, but see hashmap_examp.pure
-   for a possible Pure implementation of these. */
+   key=>val pairs, irrespective of their ordering. This check should work in
+   O(n log n) time, depending on the load of the underlying hash table. Note
+   that no submap comparisons (<, <=, etc.) are provided, as the STL doesn't
+   have them either, but see hashmap_examp.pure for a possible Pure
+   implementation of these. */
 
 x::hashmap == y::hashmap = hashmap_equal x y;
 x::hashmap ~= y::hashmap = ~hashmap_equal x y;
@@ -161,8 +162,8 @@ tuple m::hashmap = hashmap_tuple m;
 vector m::hashmap = hashmap_vector m;
 
 // Basic list-like operations and support for list and matrix comprehensions.
-// NOTE: The most important of these should maybe implemented in C, to avoid
-// the construction of intermediate list values.
+// NOTE: The most important of these should possibly be implemented in C, to
+// avoid the construction of intermediate list values.
 
 do f m::hashmap = do f (list m);
 map f m::hashmap = map f (list m);
