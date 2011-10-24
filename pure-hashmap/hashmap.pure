@@ -154,8 +154,9 @@ m::hashmap ! x =
 // pointers in the prelude. For the time being, use empty instead.
 empty m::hashmap = hashmap_empty m;
 
-/* Note that in addition to the usual container ops we also support membership
-   tests (member) and deletions (delete) of specific key=>val pairs. */
+/* Note that in addition to the usual container ops we also support copying
+   and clearing of maps (copy, clear), as well as membership tests and
+   deletions of specific key=>val pairs (member, delete). */
 
 member m::hashmap (x=>y) = hashmap_member2 m x y;
 member m::hashmap x = hashmap_member m x;
@@ -164,6 +165,8 @@ insert m::hashmap (x=>y) = hashmap_add2 m x y $$ m;
 insert m::hashmap x = hashmap_add m x $$ m;
 delete m::hashmap (x=>y) = hashmap_del2 m x y $$ m;
 delete m::hashmap x = hashmap_del m x $$ m;
+copy m::hashmap = hashmap_copy m;
+clear m::hashmap = hashmap_clear m;
 
 /* Note that vals m will return the keys for members which have no associated
    value. */
@@ -201,6 +204,21 @@ scanl1 f m::hashmap = scanl1 f (list m) if ~empty m;
 scanr f a m::hashmap = scanr f a (list m);
 scanr1 f m::hashmap = scanr1 f (list m) if ~empty m;
 sort p m::hashmap = sort p (list m);
+
+// Special bucket and hashing policy interface. These operations are useful to
+// obtain performance-related information about the underlying hash table. We
+// put these into the hashmap namespace in order to keep the global namespace
+// clean.
+
+namespace hashmap with
+load_factor m::hashmap = hashmap_load_factor m;
+max_load_factor m::hashmap = hashmap_max_load_factor m;
+set_max_load_factor m::hashmap x::double = hashmap_set_max_load_factor m x;
+rehash m::hashmap count::int = hashmap_rehash m count;
+reserve m::hashmap count::int = hashmap_reserve m count;
+bucket_count m::hashmap = hashmap_bucket_count m;
+bucket_size m::hashmap i::int = hashmap_bucket_size m i;
+end;
 
 /***************************************************************************/
 
@@ -242,6 +260,8 @@ insert m::hashmmap (x=>y) = hashmmap_add2 m x y $$ m;
 insert m::hashmmap x = hashmmap_add m x $$ m;
 delete m::hashmmap (x=>y) = hashmmap_del2 m x y $$ m;
 delete m::hashmmap x = hashmmap_del m x $$ m;
+copy m::hashmmap = hashmmap_copy m;
+clear m::hashmmap = hashmmap_clear m;
 
 keys m::hashmmap = hashmmap_keys m;
 vals m::hashmmap = hashmmap_vals m;
@@ -272,3 +292,13 @@ scanl1 f m::hashmmap = scanl1 f (list m) if ~empty m;
 scanr f a m::hashmmap = scanr f a (list m);
 scanr1 f m::hashmmap = scanr1 f (list m) if ~empty m;
 sort p m::hashmmap = sort p (list m);
+
+namespace hashmap with
+load_factor m::hashmmap = hashmmap_load_factor m;
+max_load_factor m::hashmmap = hashmmap_max_load_factor m;
+set_max_load_factor m::hashmmap x::double = hashmmap_set_max_load_factor m x;
+rehash m::hashmmap count::int = hashmmap_rehash m count;
+reserve m::hashmmap count::int = hashmmap_reserve m count;
+bucket_count m::hashmmap = hashmmap_bucket_count m;
+bucket_size m::hashmmap i::int = hashmmap_bucket_size m i;
+end;
