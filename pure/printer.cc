@@ -980,8 +980,9 @@ ostream& operator << (ostream& os, const pure_expr *x)
   case EXPR::PTR: {
     int tag = pure_get_tag(x);
     pure_printer_fun printer = pure_pointer_printer(tag);
-    if (printer)
-      return os << printer(x->data.p);
+    const char *s;
+    if (printer && (s = printer(x->data.p)))
+      return os << s;
     else
       return os << "#<pointer " << x->data.p << ">";
   }
