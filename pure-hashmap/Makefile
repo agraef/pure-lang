@@ -23,6 +23,9 @@ all: hashmap$(DLL)
 hashmap$(DLL): hashmap.cc
 	g++ $(shared) -o $@ $(MOD_CXXFLAGS) $< $(MOD_LDFLAGS) $(LIBS)
 
+check:
+	(cd examples && (pure -v -I.. -L.. < hashmap_examp.pure 2>&1 | diff hashmap_examp.log -) && echo "test passed" || (echo "test FAILED"; exit 1))
+
 clean:
 	rm -f *.o *$(DLL) *~
 
