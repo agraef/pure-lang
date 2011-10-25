@@ -1,0 +1,68 @@
+
+/* This is pretty much like the (Clojure) algorithm by Christophe Grand
+   that was recently mentioned on Mike Fogus' blog, see http://blog.fogus.me/
+   2011/10/18/programming-language-development-the-past-5-years/. */
+
+using hashmap;
+
+// for notational convenience
+set = hashmap;
+bag = hashmmap;
+
+// order coordinate pairs lexicographically
+(x1,y1) < (x2,y2) = x1<x2 || x1==x2 && y1<y2;
+
+// helper function to calculate the frequencies of elements in a list
+frequencies xs = [x=>#(s!x) | x = s] when s = bag xs end;
+
+// the algorithm
+
+neighbours (x,y) = [x+dx, y+dy | dx = -1..1; dy = -1..1; dx~=0 || dy~=0];
+
+step b = sort (<) $ set
+  [loc | loc=>n = frequencies $ catmap neighbours b;
+   n==3 || n==2 && alive loc] when alive = member (set b) end;
+
+/* The main procedure. Just 'life b' will go on forever, starting from an
+   initial configuration b. You can also specify the number of generations
+   that you want like this: life (b,1000). */
+
+using system;
+life (b,n) = do (puts.str) (take n $ iterate step b);
+life b = do (puts.str) (iterate step b);
+
+// some initial configurations to play with
+
+let blinker = [(1,0),(1,1),(1,2)];
+
+let two_gliders =
+  [(6,4),(6,5),(6,6),(5,6),(4,5),
+   (30,4),(31,4),(32,4),(32,5),(31,6)];
+
+let glider_gun =
+  [(11,16),(12,16),(11,17),(12,17),
+   (21,16),(21,17),(21,18),
+   (22,15),(22,19),
+   (23,14),(23,20),(24,14),(24,20),
+   (25,17),
+   (26,19),(26,15),
+   (27,16),(27,17),(27,18),(28,17),
+   (31,16),(32,16),(31,15),(32,15),(31,14),(32,14),
+   (33,17),(33,13),
+   (35,17),(35,13),(35,18),(35,12),
+   (45,15),(46,15),(45,14),(46,14)];
+
+// you may want to try one of these (press Ctrl+C when you get bored)
+
+// life blinker;
+// life two_gliders;
+// life glider_gun;
+
+/* You can also compile the script to an executable (pure -c life.pure -o life)
+   and invoke it as, e.g., ./life blinker, or ./life glider_gun 500. */
+
+compiling || argc<=1 || life args with
+  args = check $ tuple $ map eval $ tail argv;
+  check args@(b::list,n::int) | check args::list = args;
+  check _ = fputs "Usage: ./life board [#iterations]\n" stderr $$ exit 1;
+end;
