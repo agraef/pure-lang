@@ -31,8 +31,14 @@ log: examples/hashmap_examp.log
 examples/hashmap_examp.log: hashmap.cc hashmap.pure hashmap$(DLL) examples/hashmap_examp.pure
 	(cd examples && (pure -v -I.. -L.. < hashmap_examp.pure > hashmap_examp.log 2>&1))
 
+# compile the 'life' example
+examples: examples/life
+
+examples/life: examples/life.pure
+	pure -I. -L. -c $< -o $@
+
 clean:
-	rm -f *.o *$(DLL) *~
+	rm -f *.o *$(DLL) examples/life *~
 
 install: $(modname).pure $(modname)$(DLL)
 	test -d $(installdir) || mkdir -p $(installdir)
