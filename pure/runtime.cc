@@ -3372,21 +3372,40 @@ pure_expr *pure_pointer_cast(int tag, pure_expr *x)
 }
 
 extern "C"
+void pure_pointer_add_equal(int tag, pure_equal_fun eq)
+{
+  interpreter& interp = *interpreter::g_interp;
+  interp.pointer_type_info[tag].equal_cb = eq;
+}
+
+extern "C"
+pure_equal_fun pure_pointer_equal(int tag)
+{
+  interpreter& interp = *interpreter::g_interp;
+  map<int,pointer_type_extra_info>::iterator it =
+    interp.pointer_type_info.find(tag);
+  if (it != interp.pointer_type_info.end())
+    return it->second.equal_cb;
+  else
+    return NULL;
+}
+
+extern "C"
 void pure_pointer_add_printer(int tag, pure_printer_fun printer,
 			      pure_printer_prec_fun prec)
 {
   interpreter& interp = *interpreter::g_interp;
-  interp.pointer_type_printer[tag].printer_cb = printer;
-  interp.pointer_type_printer[tag].prec_cb = prec;
+  interp.pointer_type_info[tag].printer_cb = printer;
+  interp.pointer_type_info[tag].prec_cb = prec;
 }
 
 extern "C"
 pure_printer_fun pure_pointer_printer(int tag)
 {
   interpreter& interp = *interpreter::g_interp;
-  map<int,pointer_type_printer_info>::iterator it =
-    interp.pointer_type_printer.find(tag);
-  if (it != interp.pointer_type_printer.end())
+  map<int,pointer_type_extra_info>::iterator it =
+    interp.pointer_type_info.find(tag);
+  if (it != interp.pointer_type_info.end())
     return it->second.printer_cb;
   else
     return NULL;
@@ -3396,9 +3415,9 @@ extern "C"
 pure_printer_prec_fun pure_pointer_printer_prec(int tag)
 {
   interpreter& interp = *interpreter::g_interp;
-  map<int,pointer_type_printer_info>::iterator it =
-    interp.pointer_type_printer.find(tag);
-  if (it != interp.pointer_type_printer.end())
+  map<int,pointer_type_extra_info>::iterator it =
+    interp.pointer_type_info.find(tag);
+  if (it != interp.pointer_type_info.end())
     return it->second.prec_cb;
   else
     return NULL;
@@ -12079,8 +12098,14 @@ bool same(pure_expr *x, pure_expr *y)
       return x->data.d == y->data.d || (is_nan(x->data.d) && is_nan(y->data.d));
     case EXPR::STR:
       return strcmp(x->data.s, y->data.s) == 0;
-    case EXPR::PTR:
+    case EXPR::PTR: {
+      int tagx = pure_get_tag(x), tagy = pure_get_tag(y);
+      if (tagx == tagy && x->data.p && y->data.p) {
+	pure_equal_fun eq = pure_pointer_equal(tagx);
+	if (eq) return eq(x->data.p, y->data.p);
+      }
       return x->data.p == y->data.p;
+    }
     case EXPR::MATRIX: {
       gsl_matrix_symbolic *m1 = (gsl_matrix_symbolic*)x->data.mat.p;
       gsl_matrix_symbolic *m2 = (gsl_matrix_symbolic*)y->data.mat.p;

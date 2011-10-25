@@ -475,6 +475,16 @@ int pure_pointer_tag(const char *name);
 const char *pure_pointer_type(int tag);
 pure_expr *pure_pointer_cast(int tag, pure_expr *x);
 
+/* Custom syntactic equality checking of tagged pointers. If registered, this
+   function will be invoked by the same() function on two (non-NULL) pointers
+   with the given type tag, instead of just comparing the pointer values. Note
+   that if this callback is set, then the pointer type is also assumed to
+   implement its own custom 'null' predicate in Pure land. */
+
+typedef bool (*pure_equal_fun)(void*, void*);
+void pure_pointer_add_equal(int tag, pure_equal_fun equal);
+pure_equal_fun pure_pointer_equal(int tag);
+
 /* Custom pretty-printing of tagged pointers. This is supposed to be used from
    C/C++ code to implement custom pretty-printing of opaque C/C++ data
    structures, as a light-weight alternative to __show__ which only works with

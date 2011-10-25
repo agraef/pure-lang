@@ -1161,8 +1161,14 @@ pointer x::int		|
 pointer x::bigint	|
 pointer x::string	= pure_pointerval x;
 
+namespace __C;
+extern void *pure_pointer_equal(int);
+namespace;
+extern int pure_get_tag(expr*) = get_ptrtag;
+
 const NULL = pointer 0; // the null pointer
-null x::pointer = x===NULL;
+// As of Pure 0.49, this predicate may be overridden by tagged pointer types.
+null x::pointer = x===NULL if pure_pointer_equal (get_ptrtag x) === NULL;
 
 /* Convert signed (8/16/32/64) bit integers to the corresponding unsigned
    quantities. */
