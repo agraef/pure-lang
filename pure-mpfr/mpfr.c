@@ -104,6 +104,16 @@ static int mpfr_prec(mpfr_ptr x)
     return NPREC_MAX;
 }
 
+/* Syntactic equality (this requires Pure 0.49). */
+
+static bool mpfr_same(mpfr_ptr x, mpfr_ptr y)
+{
+  if (x == y)
+    return true;
+  else
+    return mpfr_equal_p(x, y);
+}
+
 /* Initialize the mpfr* tag and return its value. This also sets up the
    pretty-printing and defines some manifest constants. */
 
@@ -123,6 +133,7 @@ int mpfr_tag(void)
   static int t = 0;
   if (!t) {
     t = pure_pointer_tag("mpfr*");
+    pure_pointer_add_equal(t, (pure_equal_fun)mpfr_same);
     pure_pointer_add_printer(t, (pure_printer_fun)mpfr_str,
 			     (pure_printer_prec_fun)mpfr_prec);
     pure_def(pure_sym("MPFR_RNDN"), pure_int(MPFR_RNDN));
