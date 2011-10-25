@@ -23,20 +23,6 @@ all: hashmap$(DLL)
 hashmap$(DLL): hashmap.cc
 	g++ $(shared) -o $@ $(MOD_CXXFLAGS) $< $(MOD_LDFLAGS) $(LIBS)
 
-check:
-	(cd examples && (pure -v -I.. -L.. < hashmap_examp.pure 2>&1 | diff hashmap_examp.log -) && echo "test passed" || (echo "test FAILED"; exit 1))
-
-log: examples/hashmap_examp.log
-
-examples/hashmap_examp.log: hashmap.cc hashmap.pure hashmap$(DLL) examples/hashmap_examp.pure
-	(cd examples && (pure -v -I.. -L.. < hashmap_examp.pure > hashmap_examp.log 2>&1))
-
-# compile the 'life' example
-examples: examples/life
-
-examples/life: examples/life.pure
-	pure -I. -L. -c $< -o $@
-
 clean:
 	rm -f *.o *$(DLL) examples/life *~
 
@@ -46,6 +32,28 @@ install: $(modname).pure $(modname)$(DLL)
 
 uninstall:
 	rm -f $(installdir)/$(modname).pure $(installdir)/$(modname)$(DLL)
+
+# Examples and tests.
+
+testdir = examples
+tests = hashmap_examp.pure
+
+check:
+	./run-tests
+
+cleanlogs:
+	rm -f $(patsubst %.pure,$(testdir)/%.log,$(tests))
+
+logs: $(patsubst %.pure, $(testdir)/%.log, $(tests))
+
+%.log: %.pure hashmap.pure hashmap$(DLL)
+	pure -v -I. -L. < $< > $@ 2>&1
+
+# compile the 'life' example
+examples: examples/life
+
+examples/life: examples/life.pure
+	pure -I. -L. -c $< -o $@
 
 # Roll a distribution tarball.
 
