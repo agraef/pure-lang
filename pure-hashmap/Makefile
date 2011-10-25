@@ -58,7 +58,7 @@ examples/life: examples/life.pure
 # Roll a distribution tarball.
 
 DISTFILES = COPYING COPYING.LESSER Makefile $(modname).cc $(modname).pure \
-examples/*.pure
+config.guess run-tests examples/*.pure examples/*.log
 #SEDFILES = README
 
 dist = pure-$(modname)-$(version)
@@ -77,5 +77,5 @@ dist: $(DISTFILES)
 
 distcheck: dist
 	tar xfz $(dist).tar.gz
-	cd $(dist) && make && make install DESTDIR=./BUILD
+	cd $(dist) && make && make check && make install DESTDIR=./BUILD
 	rm -rf $(dist)
