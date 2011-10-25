@@ -111,10 +111,12 @@ extern int hashmmap_bucket_size(hashmmap *m, int i);
      operation if you need to preserve the original value, but note that this
      operation takes O(n) time.)
 
-   - Since hashmaps are pointers, two hashmaps are syntactically equal iff
-     they are exactly the same object (identical pointer values). This test
-     can be done in constant time. Use the semantic equality tests below if
-     you need to test whether two hashmaps contain the same elements.
+   - Two hashmaps are syntactically equal iff they contain the same elements
+     in exactly the same order. This test can be done in linear time, but is
+     not terribly useful in applications as the ordering of elements is not
+     well-defined. Use the semantic equality tests below if you need to test
+     whether two hashmaps contain the same elements, irrespective of element
+     order.
 
    - Hashmaps are pretty-printed in the format 'hashmap [...]' by default,
      which will reconstruct the expression when reentered as Pure code. With
@@ -150,14 +152,13 @@ x::hashmap ~= y::hashmap = ~hashmap_equal x y;
 m::hashmap ! x =
   if hashmap_member m x then hashmap_get m x else throw out_of_bounds;
 
-// FIXME: null doesn't work here because there's a generic definition for
-// pointers in the prelude. For the time being, use empty instead.
-empty m::hashmap = hashmap_empty m;
-
 /* Note that in addition to the usual container ops we also support copying
    and clearing of maps (copy, clear), as well as membership tests and
-   deletions of specific key=>val pairs (member, delete). */
+   deletions of specific key=>val pairs (member, delete). Also note that, in
+   order to be consistent with indexing, the vals function actually returns
+   the *keys* for members which have no associated value. */
 
+null m::hashmap = hashmap_empty m;
 member m::hashmap (x=>y) = hashmap_member2 m x y;
 member m::hashmap x = hashmap_member m x;
 update m::hashmap x y = hashmap_add2 m x y $$ m;
@@ -168,9 +169,6 @@ delete m::hashmap x = hashmap_del m x $$ m;
 copy m::hashmap = hashmap_copy m;
 clear m::hashmap = hashmap_clear m;
 
-/* Note that vals m will return the keys for members which have no associated
-   value. */
-
 keys m::hashmap = hashmap_keys m;
 vals m::hashmap = hashmap_vals m;
 
@@ -178,9 +176,9 @@ list m::hashmap = hashmap_list m;
 tuple m::hashmap = hashmap_tuple m;
 vector m::hashmap = hashmap_vector m;
 
-// Basic list-like operations and support for list and matrix comprehensions.
-// NOTE: The most important of these should possibly be implemented in C, to
-// avoid the construction of intermediate list values.
+/* Basic list-like operations and support for list and matrix comprehensions.
+   NOTE: The most important of these should possibly be implemented in C, to
+   avoid the construction of intermediate list values. */
 
 do f m::hashmap = do f (list m);
 map f m::hashmap = map f (list m);
@@ -196,19 +194,19 @@ all p m::hashmap = all p (list m);
 any p m::hashmap = any p (list m);
 filter p m::hashmap = filter p (list m);
 foldl f a m::hashmap = foldl f a (list m);
-foldl1 f m::hashmap = foldl1 f (list m) if ~empty m;
+foldl1 f m::hashmap = foldl1 f (list m) if ~null m;
 foldr f a m::hashmap = foldr f a (list m);
-foldr1 f m::hashmap = foldr1 f (list m) if ~empty m;
+foldr1 f m::hashmap = foldr1 f (list m) if ~null m;
 scanl f a m::hashmap = scanl f a (list m);
-scanl1 f m::hashmap = scanl1 f (list m) if ~empty m;
+scanl1 f m::hashmap = scanl1 f (list m) if ~null m;
 scanr f a m::hashmap = scanr f a (list m);
-scanr1 f m::hashmap = scanr1 f (list m) if ~empty m;
+scanr1 f m::hashmap = scanr1 f (list m) if ~null m;
 sort p m::hashmap = sort p (list m);
 
-// Special bucket and hashing policy interface. These operations are useful to
-// obtain performance-related information about the underlying hash table. We
-// put these into the hashmap namespace in order to keep the global namespace
-// clean.
+/* Special bucket and hash policy interface. These operations are useful to
+   obtain performance-related information about the underlying hash table.
+   These are in the hashmap namespace in order to keep the global namespace
+   clean. */
 
 namespace hashmap with
 load_factor m::hashmap = hashmap_load_factor m;
@@ -252,7 +250,7 @@ m::hashmmap ! x = hashmmap_get m x;
    that members with the same key (or key=>val) will be deleted in any
    particular order. */
 
-empty m::hashmmap = hashmmap_empty m;
+null m::hashmmap = hashmmap_empty m;
 member m::hashmmap (x=>y) = hashmmap_member2 m x y;
 member m::hashmmap x = hashmmap_member m x;
 update m::hashmmap x y = hashmmap_add2 m x y $$ m;
@@ -284,13 +282,13 @@ all p m::hashmmap = all p (list m);
 any p m::hashmmap = any p (list m);
 filter p m::hashmmap = filter p (list m);
 foldl f a m::hashmmap = foldl f a (list m);
-foldl1 f m::hashmmap = foldl1 f (list m) if ~empty m;
+foldl1 f m::hashmmap = foldl1 f (list m) if ~null m;
 foldr f a m::hashmmap = foldr f a (list m);
-foldr1 f m::hashmmap = foldr1 f (list m) if ~empty m;
+foldr1 f m::hashmmap = foldr1 f (list m) if ~null m;
 scanl f a m::hashmmap = scanl f a (list m);
-scanl1 f m::hashmmap = scanl1 f (list m) if ~empty m;
+scanl1 f m::hashmmap = scanl1 f (list m) if ~null m;
 scanr f a m::hashmmap = scanr f a (list m);
-scanr1 f m::hashmmap = scanr1 f (list m) if ~empty m;
+scanr1 f m::hashmmap = scanr1 f (list m) if ~null m;
 sort p m::hashmmap = sort p (list m);
 
 namespace hashmap with

@@ -29,7 +29,7 @@ hashmap [bar=>bar 4711L,baz=>[1,2,3,4,5]]
 m1;
 hashmap [foo=>99,bar=>bar 4711L,baz=>[1,2,3,4,5]]
 m!foo;
-<stdin>, line 74: unhandled exception 'out_of_bounds' while evaluating 'm!foo'
+<stdin>, line 78: unhandled exception 'out_of_bounds' while evaluating 'm!foo'
 keys m;
 [bar,baz]
 vals m;
@@ -42,9 +42,9 @@ listmap (\(x=>y) -> x,y) m1;
 [(foo,99),(bar,bar 4711L),(baz,[1,2,3,4,5])]
 colcatmap (\(x=>y) -> if listp y then {(x,y)} else {}) m1;
 {(baz,[1,2,3,4,5])}
-m===m,m===m1,m===copy m,m===hashmap [bar=>bar 4711L,baz=>[1,2,3,4,5]];
-1,0,0,0
-m==m,m==m1,m==copy m,m==hashmap [bar=>bar 4711L,baz=>[1,2,3,4,5]];
+m===m,m===m1,m===copy m,hashmap [97=>98,"a"=>"b"]===hashmap ["a"=>"b",97=>98];
+1,0,1,0
+m==m,m==m1,m==copy m,hashmap [97=>98,"a"=>"b"]==hashmap ["a"=>"b",97=>98];
 1,0,1,1
 x::hashmap<=y::hashmap = x===y||(all (member y) xks&&vals x===listmap (\k -> y!k) xks when xks = keys x end);
 x::hashmap>=y::hashmap = x===y||(all (member x) yks&&vals y===listmap (\k -> x!k) yks when yks = keys y end);
@@ -64,7 +64,7 @@ hashmap [[1,2,3,4,5],bar 4711L]
 member m 99;
 0
 m!99;
-<stdin>, line 122: unhandled exception 'out_of_bounds' while evaluating 'm!99'
+<stdin>, line 129: unhandled exception 'out_of_bounds' while evaluating 'm!99'
 insert m 99;
 hashmap [99,[1,2,3,4,5],bar 4711L]
 delete m (bar 4711L);

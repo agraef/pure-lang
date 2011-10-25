@@ -6,6 +6,7 @@
 #include <string.h>
 #include <pure/runtime.h>
 #include <unordered_map>
+#include <algorithm>
 
 // Enable this for some additional (possibly costly) assertions in the code.
 //#define DEBUG 1
@@ -200,6 +201,33 @@ static int hashmap_prec(myhashmap *m)
     return NPREC_APP;
 }
 
+// Syntactic equality. This hooks into same().
+
+static inline bool samechk(pure_expr *x, pure_expr *y)
+{
+  if (x == y)
+    return true;
+  else if (!x || !y)
+    return false;
+  else
+    return same(x, y);
+}
+
+static bool hashmap_same(myhashmap *x, myhashmap *y)
+{
+  if (x == y) return true;
+  if (x->size() != y->size()) return false;
+  for (myhashmap::iterator it = x->begin(), jt = y->begin(); it != x->end();
+       ++it, ++jt) {
+#ifdef DEBUG
+    assert(jt != y->end());
+#endif
+    if (!same(it->first, jt->first) || !samechk(it->second, jt->second))
+      return false;
+  }
+  return true;
+}
+
 // Pointer type tag.
 
 extern "C" int hashmap_tag(void)
@@ -207,6 +235,7 @@ extern "C" int hashmap_tag(void)
   static int t = 0;
   if (!t) {
     t = pure_pointer_tag("hashmap*");
+    pure_pointer_add_equal(t, (pure_equal_fun)hashmap_same);
     pure_pointer_add_printer(t, (pure_printer_fun)hashmap_str,
 			     (pure_printer_prec_fun)hashmap_prec);
   }
@@ -419,15 +448,9 @@ static bool myequal(pair<pure_expr*,pure_expr*> x,
   // supposed to be equal anyway.
   assert(same(x.first, y.first));
 #endif
-  if (x.second == y.second)
-    return true;
-  else if (!x.second || !y.second)
-    return false;
-  else
-    return same(x.second, y.second);
+  return samechk(x.second, y.second);
 }
 
-#include <algorithm>
 #include <tuple>
 
 #ifndef HAVE_STD_IS_PERMUTATION
@@ -577,11 +600,27 @@ static int hashmmap_prec(myhashmmap *m)
     return NPREC_APP;
 }
 
+static bool hashmmap_same(myhashmmap *x, myhashmmap *y)
+{
+  if (x == y) return true;
+  if (x->size() != y->size()) return false;
+  for (myhashmmap::iterator it = x->begin(), jt = y->begin(); it != x->end();
+       ++it, ++jt) {
+#ifdef DEBUG
+    assert(jt != y->end());
+#endif
+    if (!same(it->first, jt->first) || !samechk(it->second, jt->second))
+      return false;
+  }
+  return true;
+}
+
 extern "C" int hashmmap_tag(void)
 {
   static int t = 0;
   if (!t) {
     t = pure_pointer_tag("hashmmap*");
+    pure_pointer_add_equal(t, (pure_equal_fun)hashmmap_same);
     pure_pointer_add_printer(t, (pure_printer_fun)hashmmap_str,
 			     (pure_printer_prec_fun)hashmmap_prec);
   }
@@ -680,7 +719,7 @@ extern "C" bool hashmmap_member(myhashmmap *m, pure_expr *key)
   return it != m->end();
 }
 
-extern "C" bool hashmmap_member2(myhashmap *m, pure_expr *key, pure_expr *val)
+extern "C" bool hashmmap_member2(myhashmmap *m, pure_expr *key, pure_expr *val)
 {
   pair<myhashmmap::iterator, myhashmmap::iterator> r = m->equal_range(key);
   for (myhashmmap::iterator it = r.first; it != r.second; ++it)
