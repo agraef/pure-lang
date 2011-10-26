@@ -1,0 +1,113 @@
+/* log_eval.pure -- evaluate one line expressions and check results
+
+--- DRAFT - FOR DISCUSSON PURPOSES ONLY ---
+
+Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>.
+
+All rights reserved.
+
+This software is is part of pure-stldict, an addon to the Pure Programming
+Language (http://code.google.com/p/pure-lang/).
+
+This software is distributed under a BSD-style license in the hope that it
+will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the COPYING file
+included with the pure-stlvec distribution package for details.
+
+/*
+
+/* The check_eval function reads string that contains comments, Pure
+   statements and expected results. Typically the string is optained from a
+   file that has examples and tests. E.g.,
+
+      > check_val echo_comments (fget $ (fopen eg_file "r"));
+
+   The statements in the string s look like:
+
+   > let sv1 = stlvec $ members sd1; members sv1;
+   - ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
+
+   Statements are one on line, prefixed by "> ". Expected results are one
+   line, prefixed by "- ". Expected results are optional.
+
+   check_eval echos each statement to stdout and then evaluates it. If the
+   expected result is present, the actual result is checked against it, and an
+   error message is printed if they do not match. It there is a match, or if
+   the expected result was not specified, the result is printed to stdout,
+   preceeded by "- ". This makes it easy to generate expected results when
+   setting up an example/test file.
+
+   Comments are denoted as in C++, except they must start on a line where they
+   are only preceeded by whitespace. Depending on the first parameter to
+   check_val, comments are echoed or suppressed in the output.
+
+*/
+
+using system, stldict, stlvec, regex;
+const comment_rgx = "(^\\s*/\\*([^*]|(\\*+[^*/]))*\\*+/)|(^\\s*//[^\n]*\n)";
+
+parse_comment s = cs, s1 when
+  info = reg_info $ regex comment_rgx REG_EXTENDED s 0;
+  cs = if null info then "" else (info!1);
+  s1 = if null cs then s else substr s (#cs) 100000;
+end;
+
+strip_comments printp s = if null cs then s1 else strip_comments printp s1 when
+  cs, s1 = parse_comment s;
+  if ~null cs && printp then printf "%s" cs else ();
+end;
+
+all_ws line = regex "^\\s*$" (REG_EXTENDED+REG_NOSUB) line 0;
+
+const other_line = 0;
+const cmd_line = 1;   // > xxx
+const res_line = 2;   // - xxxx
+
+// type, line, rest
+parse_line s = tp, ln, rst when
+  info = reg_info $ regex "^([^\n]*)(\n)(.*)" REG_EXTENDED s 0;
+  ln, rst  = if null info then  "", "" else info!3, info!7;
+  tp, ln = if null ln then
+             other_line, ln
+           else if regex "^> " (REG_EXTENDED+REG_NOSUB) ln 0 then 
+             cmd_line, substr ln 2 10000 
+           else if regex "^- " (REG_EXTENDED+REG_NOSUB) ln 0 then 
+             res_line, substr ln 2 10000 
+           else
+             other_line, ln;
+end;
+
+log_eval echo_p::int script::string = eval_line script with
+  eval_line "" = get num_errs;
+  eval_line s = eval_line (doline s1) when
+    s1 = strip_comments echo_p s;
+  end;
+  echo cs = if echo_p then printf "%s" cs else ();
+  doline "" = "";
+  doline s = rest when
+    tp, line, rest = parse_line s;
+    if tp == other_line then puts line
+    else if tp == res_line then check_res line 
+    else if tp == cmd_line then do_cmd line else ();
+  end;
+  check_res res = () when
+    if (get last_res) ~= res then 
+      bump_ec $$
+      printf "--- expected: |%s|\n         got: |%s|\n"
+      (res, get last_res)
+    else ();
+    put last_res "";
+  end;
+  do_cmd cmd = () when
+    printf "> %s\n" cmd;
+    s = str (eval cmd);
+    printf "- %s\n" s;
+    put last_res s;
+  end;
+  bump_ec = put num_errs (get num_errs + 1);
+end when
+  last_res = ref "";
+  num_errs = ref 0;
+end;
+
+
