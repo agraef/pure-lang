@@ -46,8 +46,8 @@ private extern int   sd_member(void* dict, expr* key);
 private extern expr* sd_get(void* dict, expr* key);
 private extern expr* sd_first(expr* tpl);
 private extern expr* sd_last(expr* tpl);
-private extern void  sd_put(void* dict, expr* key, expr* val);
-private extern void  sd_put_with(void* dict, expr* key, expr* unaryfun);
+private extern void  sd_update(void* dict, expr* key, expr* val);
+private extern void  sd_update_with(void* dict, expr* key, expr* unaryfun);
 private extern void  sd_insert(void* dict, expr* kv);
 private extern void  sd_insert_elms_xs(void* dict, expr* src);
 private extern void  sd_insert_elms_stlvec(void* dict, expr* tpl);
@@ -155,9 +155,9 @@ get_default (STLDICT d) = sd_get_default d; // bool, default
 
 vector it::sdit = sd_make_vector it;
 
-::update sd@(STLDICT d) key x = sd_put d key x $$ sd;
+::update sd@(STLDICT d) key x = sd_update d key x $$ sd;
 
-::update_with f sd@(STLDICT d) key x = sd_put_with d key (f x) $$ sd;
+::update_with f sd@(STLDICT d) key x = sd_update_with d key (f x) $$ sd;
 
 (::!) (STLDICT d) key = sd_get d key;
 

@@ -26,6 +26,12 @@ using namespace std;
 
 /*** Helpers for stldict.cpp only ************************************/
 
+static px* null_value() 
+{
+  static px* nv = pure_pointer(0);
+  return nv;
+}
+
 static void set_kv(sdi i, px** k, px** v)
 {
   const pxh h_key = i->first;
@@ -54,7 +60,7 @@ static pxh_pair sd_rocket_to_pair(pxh rp)
   return pxh_pair(k,v);
 }
 
-static px* sd_pair_to_rocket(sdmap_kv kv)
+static px* sd_pair_to_rocket(const pxh_pair& kv)
 {
   return pair_to_rocket(kv.first.pxp(), kv.second.pxp());
 }
@@ -75,25 +81,49 @@ static int sd_get_size(sd* dict, sdi b, sdi e)
  return sz;
 }
 
-static bool insert_aux(sd* dict, px* kv)
+static void update_aux(sd* dict, px* k, px* v)
 {
   sdmap& mp = dict->mp;
+  mp[k] = v;
+  //pxh_pair kv_pair;  // mulitmap version
+  //mp.insert(pxh_pair(k,v));
+}
+
+static bool insert_aux(sd* dict, px* kv)
+{
   px *k, *v;
   bool ok = true;
   if (dict->keys_only) {
-    mp[kv] = pure_pointer(0);
-  } else {
-    if (rocket_to_pair(kv, &k, &v) )
-      mp[k] = v;
-    else if (dict->has_dflt)
-      mp[kv] = dict->get_default();
+    k = kv;
+    v = null_value();
+  } 
+  else {
+    if ( rocket_to_pair(kv, &k, &v) )
+      ;
+    else if (dict->has_dflt) {
+      k = kv;
+      v = dict->dflt.pxp();
+    }
     else {
-      mp[kv] = pure_pointer(0);
+      k = kv;
+      v = null_value();
       ok = false;
     }
   }
+  update_aux(dict, k, v);
   return ok;
 }
+
+/*** stldict constructor ********************************************/
+
+stldict::stldict(px* cmp, bool keyonly) : 
+  mp(pxh_pred2(cmp)), px_comp(cmp), dflt(null_value()),
+  has_dflt(0), keys_only(keyonly) {}
+
+stldict::stldict(px* cmp, bool ko, px* d) :
+    mp(pxh_pred2(cmp)), px_comp(cmp), dflt(d), 
+    has_dflt(1), keys_only(ko) {}
+
 
 /*** sd_iters functions *********************************************/
 
@@ -237,13 +267,20 @@ sv* sd_make_stlvec(px* tpl)
 
 void sd_set_default(sd* dict, px* val)
 {
-  dict->set_default(val);
+  dict->dflt = val;
+  dict->has_dflt = 1;
 }
 
 px* sd_get_default(sd* dict)
 {
-  int ok = dict->has_dflt ? 1 : 0;
-  px* val = dict->get_default();
+  int ok = 1;
+  px* val;
+  if (dict->has_dflt) 
+    val = dict->dflt.pxp();  
+  else {
+    val = null_value();
+    ok = 0;
+  }
   return pure_tuplel(2, pure_int(ok), val);
 }
 
@@ -291,33 +328,24 @@ px* sd_get(sd* dict, px* key)
 {
   px* ret = 0;
   sdmap &mp = dict->mp; 
-  if (dict->keys_only) {
-    sdi i = mp.find(key);
-    if (i == mp.end()) {
-      if (dict->has_dflt)
-        ret = dict->get_default();
-      else
-        index_error();
-    } else
-      ret = key;
+  sdi i = mp.find(key);
+  if (i != mp.end()) {
+    ret = dict->keys_only ? key : i->second.pxp();
   }
   else if (dict->has_dflt) {
-    pxh &h_val = mp[key];
-    px* val = h_val.pxp();
-    void* ptr = 0;
-    if (pure_is_pointer(val,&ptr) && !ptr) {
-      px* dval = dict->get_default(); 
-      h_val = pxh(dval);
-      ret = dval;
-    } else {
-      ret = val;
+    if (dict->keys_only) {
+      if (dict->has_dflt)
+        ret = dict->dflt.pxp();
+      else
+        index_error();
     }
-  }
+    else {
+      mp[key] = dict->dflt;
+      ret = dict->dflt.pxp();
+    }
+  } 
   else {
-    sdi i = mp.find(key);
-    if (i == mp.end()) 
-      index_error();
-    ret = i->second.pxp();
+        index_error();
   }
   return ret;
 }
@@ -362,33 +390,26 @@ sd* sd_setop(int op, px* tpl1, px* tpl2)
   }
 }
 
-void sd_put(sd* dict, px* key, px* val)
+void sd_update(sd* dict, px* key, px* val)
 {
-  sdmap &mp = dict->mp; 
-  if (dict->keys_only)
-    mp[key] = pure_pointer(0);
-  else
-    mp[key] = val;
+  if (dict->keys_only) val = null_value();
+  update_aux(dict, key, val);
 }
 
-void sd_put_with(sd* dict, px* key, px* unaryfun)
+void sd_update_with(sd* dict, px* key, px* unaryfun)
 {
-  px* ret = 0;
-  sdmap &mp = dict->mp; 
-  pxh &h_val = mp[key];
-  px* old_val = h_val.pxp();
-  void* ptr = 0;
-  if (pure_is_pointer(old_val,&ptr) && !ptr) {
-    if (dict->has_dflt)
-      old_val = dict->get_default(); 
-    else
-      failed_cond(); // no old_val
+  if (dict->keys_only) {
+    update_aux(dict, key, null_value());
+    return;
   }
+  if (!dict->has_dflt)
+    failed_cond();
+  px* old_val = sd_get(dict,key);
   px* exception = 0;
   px* new_val = pure_appxl(unaryfun, &exception, 1, old_val);
   if (exception) pure_throw(exception);
   if (!new_val) bad_function();
-  h_val = new_val;
+  update_aux(dict, key, new_val);
 }
 
 px* sd_first(px* tpl)
@@ -458,16 +479,10 @@ void sd_insert_elms_xs(sd* dict, px* src)
 
 void sd_insert_elms_stldict(sd* dict, px* tpl)
 {
-  sdmap& mp = dict->mp;
   sd_iters itrs(tpl);
   if (!itrs.is_valid) bad_argument();
-  for (sdi i = itrs.beg(); i!=itrs.end(); i++) {
-     px* k = i->first.pxp();
-    if (dict->keys_only)
-      mp[k] = pure_pointer(0);
-    else
-      mp[k] = i->second;
-  }
+  for (sdi i = itrs.beg(); i!=itrs.end(); i++)
+    update_aux(dict, i->first.pxp(),i->second.pxp());
 }
 
 void sd_insert_elms_stlvec(sd* dict, px* tpl)
@@ -490,7 +505,6 @@ void sd_clear(sd* dict)
 {
   dict->mp.clear();
 }
-
 
 /* multi map version
 

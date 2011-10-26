@@ -22,7 +22,7 @@ CFLAGS = -g -O2
 
 all: $(modname)$(DLL)
 
-$(modname)$(DLL): $(modname).cpp
+$(modname)$(DLL): $(modname).cpp $(modname).hpp
 	$(CXX) $(shared) -o $@ $(MOD_CXXFLAGS) $^ $(MOD_LDFLAGS) $(LIBS)
 
 clean:

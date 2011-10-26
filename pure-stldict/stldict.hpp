@@ -25,35 +25,21 @@ included with the pure-stlvec distribution package for details.
 #include "stlvec.hpp"
 
 /* sd, sdi and friends - A sd is a struct that has a map of pxh's and cache of
-   recently used key iterator pairs. It is the data structure pointed to by a
-   sd on the Pure side of the interface. A sdi is an iterator on an sd's
-   map.*/
-
-typedef std::pair<const pxh,pxh> sd_kvpair;
+   recently used iterators. It is the data structure pointed to by a sd on the
+   Pure side of the interface. A sdi is an iterator on an sd's map.*/
 
 typedef std::map<pxh,pxh,pxh_pred2> sdmap;
 typedef sdmap::iterator sdi;
-typedef sdmap::const_iterator const_sdi;
-typedef sdmap::reverse_iterator reverse_sdi;
-typedef sdmap::const_reverse_iterator const_reverse_sdi;
-
-typedef std::pair<const pxh, pxh> sdmap_kv;
-//typedef std::pair<px*,sdi> sd_key_iter;
 
 struct stldict {
-  stldict(px* cmp, bool ko) : 
-    mp(pxh_pred2(cmp)), px_comp(cmp), dflt(pure_pointer(0)),
-    has_dflt(0), keys_only(ko) {};
-  stldict(px* cmp, bool ko, px* d) :
-    mp(pxh_pred2(cmp)), px_comp(cmp), dflt(d), 
-    has_dflt(1), keys_only(ko) {};
-  void set_default(px* d) {dflt = pxh(d); has_dflt = 1;}
-  px* get_default() {return has_dflt ? dflt.pxp() : pure_pointer(0);}
+  stldict(px* cmp, bool keyonly); 
+  stldict(px* cmp, bool keyonly, px* d);
   sdmap mp;
   pxh px_comp;
   pxh dflt;
+  sdi recent_sdi;
   bool has_dflt;
-  bool keys_only; // set mode
+  bool keys_only;
 };
 
 typedef stldict sd; 
@@ -97,8 +83,8 @@ extern "C" {
   px*  sd_get(sd* dict, px* key);
   px*  sd_first(px* tpl);
   px*  sd_last(px* tpl);
-  void sd_put(sd* dict, px* key, px* val);
-  void sd_put_with(sd* dict, px* key, px* binfun);
+  void sd_update(sd* dict, px* key, px* val);
+  void sd_update_with(sd* dict, px* key, px* binfun);
   void sd_insert(sd* dict, px* kv);
   void sd_insert_elms_xs(sd* dict, px* src);
   void sd_insert_elms_stldict(sd* dict, px* tpl);
