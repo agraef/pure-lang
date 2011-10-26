@@ -45,7 +45,7 @@ CFLAGS = -g -O2
 all: $(modname)$(DLL)
 
 $(modname)$(DLL): $(modname).c
-	$(CC) $(shared) -o $@ $(MOD_CFLAGS) $^ $(MOD_LDFLAGS) $(LIBS)
+	$(CC) $(shared) -o $@ $(MOD_CFLAGS) $< $(MOD_LDFLAGS) $(LIBS)
 
 clean:
 	rm -f $(modname)$(DLL)
