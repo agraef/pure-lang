@@ -34,9 +34,20 @@ typedef sdmap::iterator sdi;
 struct stldict {
   stldict(px* cmp, bool keyonly); 
   stldict(px* cmp, bool keyonly, px* d);
+
+  sdi  find(px* key);
+  bool get_cached_sdi(px* k, sdi& i);
+  void cache_sdi(sdi& i);
+  void clear_cache();
+  void erase(sdi pos);
+  int erase(px* k);
+  void erase(sdi first, sdi last);
+  void clear();
+
   sdmap mp;
   pxh px_comp;
   pxh dflt;
+  bool has_recent_sdi;
   sdi recent_sdi;
   bool has_dflt;
   bool keys_only;
@@ -80,6 +91,8 @@ extern "C" {
   int  sd_size(px* tpl);
   px*  sd_bounds(px* tpl);
   int  sd_member(sd* dict, px* key);
+  px*  sd_prev(sd* dict, px* key);
+  px*  sd_next(sd* dict, px* key);
   px*  sd_get(sd* dict, px* key);
   px*  sd_first(px* tpl);
   px*  sd_last(px* tpl);

@@ -84,10 +84,18 @@ static int sd_get_size(sd* dict, sdi b, sdi e)
 static void update_aux(sd* dict, px* k, px* v)
 {
   sdmap& mp = dict->mp;
-  mp[k] = v;
-  //pxh_pair kv_pair;  // mulitmap version
-  //mp.insert(pxh_pair(k,v));
-}
+  sdi i;
+  //cerr << "update_aux k: " << k << ", v: " << v << endl;
+  if ( dict->get_cached_sdi(k, i) ) {
+    i->second = v;
+  }
+  else {
+    pair<sdi,bool> i_ok = mp.insert(pxh_pair(k,v));
+    if (!i_ok.second)
+      i_ok.first->second = v;
+    dict->cache_sdi(i_ok.first);
+  }
+} 
 
 static bool insert_aux(sd* dict, px* kv)
 {
@@ -114,16 +122,89 @@ static bool insert_aux(sd* dict, px* kv)
   return ok;
 }
 
-/*** stldict constructor ********************************************/
+/*** stldict members  ***********************************************/
 
 stldict::stldict(px* cmp, bool keyonly) : 
   mp(pxh_pred2(cmp)), px_comp(cmp), dflt(null_value()),
-  has_dflt(0), keys_only(keyonly) {}
+  has_dflt(0), has_recent_sdi(0), keys_only(keyonly), 
+  recent_sdi(mp.end()) {}
 
 stldict::stldict(px* cmp, bool ko, px* d) :
     mp(pxh_pred2(cmp)), px_comp(cmp), dflt(d), 
-    has_dflt(1), keys_only(ko) {}
+    has_dflt(1), has_recent_sdi(0), keys_only(ko),
+    recent_sdi(mp.end()) {}
 
+sdi stldict::find(px* key)
+{
+  sdi iter;
+  if (key == sdbeg())
+    iter = mp.begin();
+  else if (key == sdend())
+    iter = mp.end();
+  else
+    iter = mp.find(key);
+  return iter;  
+}
+
+bool stldict::get_cached_sdi(px* k, sdi& i)
+{
+  bool found = k != sdbeg() && k != sdend() &&
+    has_recent_sdi && same(recent_sdi->first.pxp(), k);
+  if (found) i = recent_sdi;
+  if (found) cerr << "get_cached_sdi, found k: " << k << endl;
+  return found;
+}
+
+void stldict::cache_sdi(sdi& i)
+{
+  if ( i != mp.end() ) {
+    has_recent_sdi = true;
+    recent_sdi = i;
+  }
+}
+
+void stldict::clear_cache()
+{
+  has_recent_sdi = 0;
+}
+
+void stldict::erase(sdi pos)
+{
+  if (has_recent_sdi && recent_sdi == pos)
+    has_recent_sdi = false;
+  mp.erase(pos);
+}
+
+int stldict::erase(px* k)
+{
+  int ret = 1;
+  if ( !mp.empty() ) {
+    sdi i;
+    if ( get_cached_sdi(k, i) )
+      erase(i);
+    else {
+      if (k == sdbeg())
+        erase(mp.begin());
+      else if (k != sdend())
+        mp.erase(k);
+      else
+        ret = 0;
+    }
+  }
+  return ret;
+}
+
+void stldict::erase(sdi first, sdi last)
+{
+  has_recent_sdi = false;
+  mp.erase(first, last);
+}
+
+void stldict::clear()
+{
+  has_recent_sdi = false;
+  mp.clear();
+}
 
 /*** sd_iters functions *********************************************/
 
@@ -135,16 +216,16 @@ static sdi get_iter(sdmap& mp , px* key, bool upper)
   else if (key == sdend())
     iter = mp.end();
   else {
-    pxh pxh_key(key);
+    //pxh pxh_key(key);
     if (upper) 
-      iter = mp.upper_bound(pxh_key);
-    else
-      iter = mp.lower_bound(pxh_key);
+      iter = mp.upper_bound(key);
+    else 
+      iter = mp.lower_bound(key);
   }
   return iter;  
 }
 
-static px* iter_to_key(sdmap & mp, sdi it)
+static px* iter_to_key(const sdmap& mp, const sdi& it)
 {
   if (it == mp.end()) return sdend();
   if (it == mp.begin()) return sdbeg();
@@ -318,30 +399,78 @@ px* sd_bounds(px* tpl)
   return pure_tuplel(2,lb,ub);
 }
 
-int  sd_member(sd* dict, px* key)
+int sd_member(sd* dict, px* key)
 {
-  sdi i = dict->mp.find(key);
-  return i == dict->mp.end() ? 0 : 1;
+  int ret = 0;
+  sdmap& mp = dict->mp;
+  sdi i;
+  if (!mp.empty()) {
+    if (dict->get_cached_sdi(key, i) ) {
+      ret = 1;
+    }
+    else {
+      i = dict->find(key);
+      if (i != mp.end()) {
+        dict->cache_sdi(i);
+        ret = 1;
+      }
+    }
+  }
+  return ret;
+}
+
+px* sd_prev(sd* dict, px* key)
+{
+  sdmap& mp = dict->mp;
+  if (mp.empty()) index_error();
+  sdi i = mp.end();
+  if ( !dict->get_cached_sdi(key,i) )
+    i = dict->find(key);
+  if ( i == mp.begin() || i==mp.end() && key != sdend())
+    index_error();
+  else
+    i--;
+  dict->cache_sdi(i);
+  return iter_to_key(mp, i);
+}
+
+px* sd_next(sd* dict, px* key)
+{
+  sdmap& mp = dict->mp;
+  sdi i = mp.end();
+  if (mp.empty()) index_error();
+  if ( !dict->get_cached_sdi(key,i) )
+    i = dict->find(key);
+  if ( i == mp.end() )
+    index_error();
+  else
+    i++;
+  dict->cache_sdi(i);
+  return iter_to_key(mp, i);
 }
 
 px* sd_get(sd* dict, px* key)
 {
-  px* ret = 0;
   sdmap &mp = dict->mp; 
-  sdi i = mp.find(key);
+  px* ret = 0;
+  sdi i;
+  if ( !dict->get_cached_sdi(key, i) ) 
+    i = mp.find(key);
   if (i != mp.end()) {
+    dict->cache_sdi(i);
     ret = dict->keys_only ? key : i->second.pxp();
   }
   else if (dict->has_dflt) {
+    px* dv = dict->dflt.pxp();
     if (dict->keys_only) {
       if (dict->has_dflt)
-        ret = dict->dflt.pxp();
+        ret = dv;
       else
         index_error();
     }
     else {
-      mp[key] = dict->dflt;
-      ret = dict->dflt.pxp();
+      update_aux(dict, key, dv);
+      ret = dv;
     }
   } 
   else {
@@ -503,7 +632,7 @@ void sd_erase(px* tpl)
 
 void sd_clear(sd* dict)
 {
-  dict->mp.clear();
+  dict->clear();
 }
 
 /* multi map version
