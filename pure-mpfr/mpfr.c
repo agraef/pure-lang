@@ -16,6 +16,7 @@
    You should have received a copy of the GNU Lesser General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
@@ -130,8 +131,12 @@ static bool mpfr_same(mpfr_ptr x, mpfr_ptr y)
 
 int mpfr_tag(void)
 {
-  static int t = 0;
-  if (!t) {
+  static pure_interp_key_t t_key = 0;
+  int *t_ptr, t;
+  if (!t_key) t_key = pure_interp_key(free);
+  if ((t_ptr = pure_interp_get(t_key)))
+    t = *t_ptr;
+  else {
     t = pure_pointer_tag("mpfr*");
     pure_pointer_add_equal(t, (pure_equal_fun)mpfr_same);
     pure_pointer_add_printer(t, (pure_printer_fun)mpfr_str,
@@ -143,6 +148,9 @@ int mpfr_tag(void)
 #ifdef GMP_RNDN
     pure_def(pure_sym("MPFR_RNDA"), pure_int(MPFR_RNDA));
 #endif
+    t_ptr = malloc(sizeof(int)); assert(t_ptr);
+    *t_ptr = t;
+    pure_interp_set(t_key, t_ptr);
   }
   return t;
 }
