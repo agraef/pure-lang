@@ -165,8 +165,16 @@ void mpfr_free(mpfr_ptr p)
 
 static pure_expr *make_mpfr(mpfr_ptr p)
 {
-  return pure_sentry(pure_symbol(pure_sym("::mpfr_free")),
-                     pure_tag(mpfr_tag(), pure_pointer(p)));
+  static pure_interp_key_t key = 0;
+  int32_t f, *fptr;
+  if (!key) key = pure_interp_key(free);
+  if (!(fptr = pure_interp_get(key))) {
+    fptr = malloc(sizeof(int32_t)); assert(fptr);
+    *fptr = pure_sym("::mpfr_free");
+    pure_interp_set(key, fptr);
+  }
+  f = *fptr;
+  return pure_sentry(pure_symbol(f), pure_tag(mpfr_tag(), pure_pointer(p)));
 }
 
 /* Conversions. */
