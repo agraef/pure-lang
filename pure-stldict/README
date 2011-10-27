@@ -1,19 +1,15 @@
 
 --- DRAFT - FOR DISCUSSON PURPOSES ONLY ---
 
-Hi Albert,
-
-Here's what I have so far. I think its enough for you to take a first look. 
 
 A. General
 
-1. The stldict module provides stldict and stlset. (I glanced at pure-hashmap
-   and stole your idea to use the map as a set by ignoring values).
+1. This is *NOT* ready for public consumption!
 
 2. Both stldict and stlset are mutable only. There are no immutable
    versions. O(log n) access, insert. Elements ordered.
 
-3. See stldict.pure for functions provided. Most are just what you might expect.
+3. See stldict.pure for functions provided. Most are just what one might expect.
 
 B. Features different from dict and pure-hmap.
 
@@ -25,7 +21,7 @@ B. Features different from dict and pure-hmap.
    same as with a vector, list or stlvec. But that is supposed to be all.
 
 3. stlsets and stldicts are constructed with a less than function (e.g., (<)
-   or (>), but other can be used).
+   or (>), but other ordering functions can be used).
 
 4. stlsets and stldicts can be given a default value (al la C++ T()).
 
@@ -33,8 +29,7 @@ B. Features different from dict and pure-hmap.
       of stldict sd. So will st!k if k is not an element of stlset st.
 
    b. If sd or st has a default value, this will be returned by sd!k or
-      st!k when k would otherwise be out of bounds. This avoids messy
-      catch clauses and stuff like (if member sd x then sd!x else ..).
+      st!k when k would otherwise be out of bounds.
 
 5. The function "update_with f sd k v" is pure-stldict's answer to the fact
    that in C++ map[k] is a reference into the map. The function acts like
@@ -47,17 +42,15 @@ B. Features different from dict and pure-hmap.
 
 7. Most of the functions act on ranges of members, denoted by (sd,k1,k2),
    similar to (sv,i,j) for stlvec. I.e., (sd,"0","z") would be all (k=v) where
-   k >= "0" and k < "z". All the range stuff is C++ behavior which can be
-   quite useful.
+   k >= "0" and k < "z".
+
+8. The last iterator used in selected operations is cached. So "member sd k"
+   followed by "sd!k" on requires only one lookup. This also allows efficient
+   traversal of the elements in sd using "next sd k" and "prev sd k".
 
 D. Examples/Testing
 
-1. I wrote a throw away script (that I will keep however), ut_log_eval.pure,
-   to read one line examples, print them, evaluate them, and print the result
-   in a format that is almost README ready. Results are matched against
-   expected results. I have used this for preliminary tests of all of the
-   functions. ut_log_eval.pure is used by ut_stldict.pure which is what
-   you run to evaluate test scripts.
+1. To run the example/test scripts:
 
      $> pure -q -w
      > run ut_stldict.pure 
@@ -70,29 +63,3 @@ D. Examples/Testing
    functions.
 
 4. More testing needs to be done.
-
-C. TODO:
-
-1. I have to figure out where to put this. In an "pure-stl" package, with
-   stlvec, in a separate "pure-stldict" package? What DLL's should I make. One
-   for stlvec, one for stldict or one for both? I really need your help on
-   this one. I am leaning toward pure-stldict. If we want pure-stl, we should
-   harmonize pure-hashmap, pure-stldict and pure-stlvec and include them all,
-   and that can wait for now. For one thing, I think that it is productive
-   ideawise to keep the two "branches" going for awhile.
-
-2. I have not done it yet, but I think the changes require to support mstldict
-   and mstlset should be really easy. It should be just a new source file that
-   is almost the same as stldict, except for a few name changes to get the
-   right templates to kick in.
-
-3. I have not had a chance to look into all the cool pretty print stuff you
-   have been up to recently. Will do ASAP. Will incorporate into stldict.
-
-4. Ditto for reading the pure-hmap code. 
-
-5. I have a feeling that it would not be that hard to combine pure-hmap and
-    stldict  into a single module if we want to some day.
-
-
-   
