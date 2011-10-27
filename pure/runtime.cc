@@ -3913,6 +3913,32 @@ void pure_interp_compile(pure_interp *interp, int32_t fno)
   _interp->jit_now(fno);
 }
 
+extern "C"
+pure_interp_key_t pure_interp_key(void (*destroy)(void*))
+{
+  static pure_interp_key_t act_key = 0;
+  ++act_key;
+  if (destroy) interpreter::locals_destroy_cb[act_key] = destroy;
+  return act_key;
+}
+
+extern "C"
+void pure_interp_set(pure_interp_key_t key, void *ptr)
+{
+  interpreter *interp = interpreter::g_interp;
+  assert(interp && key);
+  interp->locals[key] = ptr;
+}
+
+extern "C"
+void *pure_interp_get(pure_interp_key_t key)
+{
+  interpreter *interp = interpreter::g_interp;
+  assert(interp && key);
+  map<pure_interp_key_t,void*>::iterator it = interp->locals.find(key);
+  return (it != interp->locals.end())?it->second:NULL;
+}
+
 /* END OF PUBLIC API. *******************************************************/
 
 extern "C"

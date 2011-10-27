@@ -650,6 +650,21 @@ pure_interp *pure_current_interp();
 
 void pure_interp_compile(pure_interp *interp, int32_t fno);
 
+/* Interpreter-local storage (ILS). This works similar to pthread_create_key
+   and friends. pure_interp_key() obtains a new key (!=0) to interpreter-local
+   data (a void*). The key will initially be associated with NULL in all
+   interpreters. You can get the pointer value for the current interpreter
+   with pure_interp_get() and set its value with pure_interp_set(). Each key
+   may be associated with a destroy function which is executed automatically
+   on a corresponding interpreter-local pointer value if the interpreter goes
+   out of existence. (This is usually free() if the interpreter-local pointer
+   was obtained with malloc(); use NULL if this is not needed.) */
+
+typedef uint32_t pure_interp_key_t;
+pure_interp_key_t pure_interp_key(void (*destroy)(void*));
+void pure_interp_set(pure_interp_key_t key, void *ptr);
+void *pure_interp_get(pure_interp_key_t key);
+
 /* END OF PUBLIC API. *******************************************************/
 
 /* Stuff below this line is for internal use by the Pure interpreter. Don't

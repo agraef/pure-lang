@@ -81,6 +81,8 @@ int interpreter::brkflag = 0;
 int interpreter::brkmask = 0;
 bool interpreter::g_init = false;
 
+map<uint32_t, void (*)(void*)> interpreter::locals_destroy_cb;
+
 static void* resolve_external(const std::string& name)
 {
   /* If we come here, the dynamic loader has already tried everything to
@@ -828,6 +830,19 @@ interpreter::interpreter(int32_t nsyms, char *syms,
 
 interpreter::~interpreter()
 {
+  // get rid of interpreter-local storage
+  for (map<uint32_t,void*>::iterator it = locals.begin(), end = locals.end();
+       it != end; ++it) {
+    uint32_t key = it->first;
+    void *ptr = it->second;
+    if (!ptr) continue;
+    map<uint32_t, void (*)(void*)>::iterator
+      jt = interpreter::locals_destroy_cb.find(key);
+    if (jt != interpreter::locals_destroy_cb.end()) {
+      void (*destroy)(void*) = jt->second;
+      if (destroy) destroy(ptr);
+    }
+  }
   // get rid of global environments and the LLVM data
   globenv.clear(); typeenv.clear(); macenv.clear();
   globalfuns.clear(); globaltypes.clear(); globalvars.clear();

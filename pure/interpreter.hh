@@ -573,6 +573,7 @@ public:
   pure_expr *exps;   // head of the free list (available expression nodes)
   pure_expr *tmps;   // temporaries list (to be collected after exceptions)
   size_t freectr;    // size of the free list
+  map<uint32_t,void*> locals; // interpreter-local storage for applications
 
   /*************************************************************************
              Stuff below is to be used by application programs.
@@ -1301,6 +1302,9 @@ public:
   static char *baseptr;
   static int stackmax;
   static int stackdir;
+
+  // Destructors for thread-local storage.
+  static map<uint32_t, void (*)(void*)> locals_destroy_cb;
 
 private:
 
