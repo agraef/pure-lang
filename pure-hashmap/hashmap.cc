@@ -138,15 +138,41 @@ namespace std {
 
 typedef unordered_map<pure_expr*,pure_expr*> myhashmap;
 
+// A little helper class to keep track of interpreter-local data.
+
+template <class T>
+struct ILS {
+  pure_interp_key_t key;
+  T val;
+  /* This is safe to invoke at any time. */
+  ILS() : key(pure_interp_key(free)), val(T()) {}
+  ILS(T const& x) : key(pure_interp_key(free)), val(x) {}
+  /* This must only be invoked after an interpreter instance is available. It
+     will return a different reference to an object of type T (initialized to
+     the default value, if given) for each interpreter. */
+  T& operator()();
+};
+
+template <class T>
+T& ILS<T>::operator()()
+{
+  T *ptr = (T*)pure_interp_get(key);
+  if (!ptr) {
+    ptr = (T*)malloc(sizeof(int)); assert(ptr);
+    pure_interp_set(key, ptr);
+    *ptr = val;
+  }
+  return *ptr;
+}
+
 // Runtime-configurable pretty-printing support.
 
-// TLD: This should actually be interpreter- and/or thread-local data.
-static int32_t hmsym = 0;
+static ILS<int32_t> hmsym = 0;
 
 extern "C" void hashmap_symbol(pure_expr *x)
 {
   int32_t f;
-  if (pure_is_symbol(x, &f) && f>0) hmsym = f;
+  if (pure_is_symbol(x, &f) && f>0) hmsym() = f;
 }
 
 extern "C" pure_expr *hashmap_list(myhashmap *m);
@@ -158,16 +184,16 @@ static const char *hashmap_str(myhashmap *m)
   /* Instead of building the string representation directly, it's much easier
      to just construct the real term on the fly and have str() do all the hard
      work for us. */
-  int32_t fsym = hmsym?hmsym:pure_sym("hashmap");
+  int32_t fsym = hmsym()?hmsym():pure_sym("hashmap");
   pure_expr *f = pure_const(fsym), *x = pure_applc(f, hashmap_list(m));
   buf = str(x);
   pure_freenew(x);
   /* Note that in the case of an outfix symbol we now have something like LEFT
      [...] RIGHT, but we actually want that to be just LEFT ... RIGHT. We fix
      this here on the fly by removing the list brackets. */
-  if (hmsym && pure_sym_other(hmsym)) {
-    const char *s = pure_sym_pname(hmsym),
-      *t = pure_sym_pname(pure_sym_other(hmsym));
+  if (hmsym() && pure_sym_other(hmsym())) {
+    const char *s = pure_sym_pname(hmsym()),
+      *t = pure_sym_pname(pure_sym_other(hmsym()));
     size_t k = strlen(s), l = strlen(t), m = strlen(buf);
     // sanity check
     if (strncmp(buf, s, k) || strncmp(buf+m-l, t, l)) {
@@ -191,9 +217,9 @@ static const char *hashmap_str(myhashmap *m)
 
 static int hashmap_prec(myhashmap *m)
 {
-  if (hmsym) {
-    int32_t p = pure_sym_nprec(hmsym);
-    if (p%10 == OP_PREFIX || p%10 == OP_POSTFIX || pure_sym_other(hmsym))
+  if (hmsym()) {
+    int32_t p = pure_sym_nprec(hmsym());
+    if (p%10 == OP_PREFIX || p%10 == OP_POSTFIX || pure_sym_other(hmsym()))
       return p;
     else
       return NPREC_APP;
@@ -232,14 +258,14 @@ static bool hashmap_same(myhashmap *x, myhashmap *y)
 
 extern "C" int hashmap_tag(void)
 {
-  static int t = 0;
-  if (!t) {
-    t = pure_pointer_tag("hashmap*");
-    pure_pointer_add_equal(t, (pure_equal_fun)hashmap_same);
-    pure_pointer_add_printer(t, (pure_printer_fun)hashmap_str,
+  static ILS<int> t = 0;
+  if (!t()) {
+    t() = pure_pointer_tag("hashmap*");
+    pure_pointer_add_equal(t(), (pure_equal_fun)hashmap_same);
+    pure_pointer_add_printer(t(), (pure_printer_fun)hashmap_str,
 			     (pure_printer_prec_fun)hashmap_prec);
   }
-  return t;
+  return t();
 }
 
 // Basic interface functions.
@@ -548,13 +574,12 @@ extern "C" unsigned hashmap_bucket_size(myhashmap *m, unsigned i)
 
 typedef unordered_multimap<pure_expr*,pure_expr*> myhashmmap;
 
-// TLD: This should actually be interpreter- and/or thread-local data.
-static int32_t hmmsym = 0;
+static ILS<int32_t> hmmsym = 0;
 
 extern "C" void hashmmap_symbol(pure_expr *x)
 {
   int32_t f;
-  if (pure_is_symbol(x, &f) && f>0) hmmsym = f;
+  if (pure_is_symbol(x, &f) && f>0) hmmsym() = f;
 }
 
 extern "C" pure_expr *hashmmap_list(myhashmmap *m);
@@ -563,13 +588,13 @@ static const char *hashmmap_str(myhashmmap *m)
 {
   static char *buf = 0; // TLD
   if (buf) free(buf);
-  int32_t fsym = hmmsym?hmmsym:pure_sym("hashmmap");
+  int32_t fsym = hmmsym()?hmmsym():pure_sym("hashmmap");
   pure_expr *f = pure_const(fsym), *x = pure_applc(f, hashmmap_list(m));
   buf = str(x);
   pure_freenew(x);
-  if (hmmsym && pure_sym_other(hmmsym)) {
-    const char *s = pure_sym_pname(hmmsym),
-      *t = pure_sym_pname(pure_sym_other(hmmsym));
+  if (hmmsym() && pure_sym_other(hmmsym())) {
+    const char *s = pure_sym_pname(hmmsym()),
+      *t = pure_sym_pname(pure_sym_other(hmmsym()));
     size_t k = strlen(s), l = strlen(t), m = strlen(buf);
     if (strncmp(buf, s, k) || strncmp(buf+m-l, t, l)) {
       free(buf); buf = 0;
@@ -590,9 +615,9 @@ static const char *hashmmap_str(myhashmmap *m)
 
 static int hashmmap_prec(myhashmmap *m)
 {
-  if (hmmsym) {
-    int32_t p = pure_sym_nprec(hmmsym);
-    if (p%10 == OP_PREFIX || p%10 == OP_POSTFIX || pure_sym_other(hmmsym))
+  if (hmmsym()) {
+    int32_t p = pure_sym_nprec(hmmsym());
+    if (p%10 == OP_PREFIX || p%10 == OP_POSTFIX || pure_sym_other(hmmsym()))
       return p;
     else
       return NPREC_APP;
@@ -617,14 +642,14 @@ static bool hashmmap_same(myhashmmap *x, myhashmmap *y)
 
 extern "C" int hashmmap_tag(void)
 {
-  static int t = 0;
-  if (!t) {
-    t = pure_pointer_tag("hashmmap*");
-    pure_pointer_add_equal(t, (pure_equal_fun)hashmmap_same);
-    pure_pointer_add_printer(t, (pure_printer_fun)hashmmap_str,
+  static ILS<int> t = 0;
+  if (!t()) {
+    t() = pure_pointer_tag("hashmmap*");
+    pure_pointer_add_equal(t(), (pure_equal_fun)hashmmap_same);
+    pure_pointer_add_printer(t(), (pure_printer_fun)hashmmap_str,
 			     (pure_printer_prec_fun)hashmmap_prec);
   }
-  return t;
+  return t();
 }
 
 extern "C" void hashmmap_free(myhashmmap *m)
