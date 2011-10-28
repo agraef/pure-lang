@@ -1,5 +1,5 @@
 
-// This is completely analogous to pure-hashmap (which see).
+// This is completely analogous to hashmap.cc (which see).
 
 #include <assert.h>
 #include <stdlib.h>

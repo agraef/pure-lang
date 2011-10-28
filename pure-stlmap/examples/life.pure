@@ -3,13 +3,16 @@
    that was recently mentioned on Mike Fogus' blog, see http://blog.fogus.me/
    2011/10/18/programming-language-development-the-past-5-years/. */
 
-using hashmap;
+// NOTE: To make this work with hashmaps instead, simply substitute hashmap
+// and hashmmap for ordmap and ordmmap below.
+
+using ordmap;
 
 // for notational convenience
-set = hashmap;
-bag = hashmmap;
+set = ordmap;
+bag = ordmmap;
 
-// for cosmetic purposes, order coordinate pairs lexicographically
+// order coordinate pairs lexicographically
 (x1,y1) < (x2,y2) = x1<x2 || x1==x2 && y1<y2;
 
 // helper function to calculate the frequencies of elements in a list
@@ -19,7 +22,7 @@ frequencies xs = [x=>#(s!x) | x = s] when s = bag xs end;
 
 neighbours (x,y) = [x+dx, y+dy | dx = -1..1; dy = -1..1; dx~=0 || dy~=0];
 
-step b = sort (<) $ set
+step b = list $ set
   [loc | loc=>n = frequencies $ catmap neighbours b;
    n==3 || n==2 && alive loc] when alive = member (set b) end;
 

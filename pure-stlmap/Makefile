@@ -1,5 +1,5 @@
 
-modname = ordmap
+pkgname = pure-stlmap
 version = 0.0
 
 # platform-specific setup
@@ -16,37 +16,42 @@ MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS)
 
 CXXFLAGS = -g -O2 -std=c++0x -Wall
 
-# Basic rules to build the module, clean, install and uninstall.
+# Basic rules to build the modules, clean, install and uninstall.
 
-all: ordmap$(DLL)
+cppsource = hashmap.cc ordmap.cc
+puresource = $(patsubst %.cc, %.pure, $(cppsource))
+objects = $(patsubst %.cc, %$(DLL), $(cppsource))
 
-ordmap$(DLL): ordmap.cc
+all: $(objects)
+
+%$(DLL): %.cc
 	g++ $(shared) -o $@ $(MOD_CXXFLAGS) $< $(MOD_LDFLAGS) $(LIBS)
 
 clean:
 	rm -f *.o *$(DLL) examples/life *~
 
-install: $(modname).pure $(modname)$(DLL)
+install: $(puresource) $(objects)
 	test -d $(installdir) || mkdir -p $(installdir)
 	cp $^ $(installdir)
 
 uninstall:
-	rm -f $(installdir)/$(modname).pure $(installdir)/$(modname)$(DLL)
+	rm -f $(addprefix $(installdir)/, $(puresource) $(objects))
 
 # Examples and tests.
 
 testdir = examples
-tests = ordmap_examp.pure
+tests = $(patsubst %.pure, $(testdir)/%_examp.pure, $(puresource))
+logs = $(patsubst %.pure, %.log, $(tests))
 
 check:
 	./run-tests
 
 cleanlogs:
-	rm -f $(patsubst %.pure,$(testdir)/%.log,$(tests))
+	rm -f $(logs)
 
-logs: $(patsubst %.pure, $(testdir)/%.log, $(tests))
+logs: $(logs)
 
-%.log: %.pure ordmap.pure ordmap$(DLL)
+%.log: %.pure $(puresource) $(objects)
 	pure -v -I. -L. < $< > $@ 2>&1
 
 # compile the 'life' example
@@ -57,11 +62,11 @@ examples/life: examples/life.pure
 
 # Roll a distribution tarball.
 
-DISTFILES = COPYING COPYING.LESSER Makefile $(modname).cc $(modname).pure \
+DISTFILES = COPYING COPYING.LESSER Makefile $(cppsource) $(puresource) \
 config.guess run-tests examples/*.pure examples/*.log
 #SEDFILES = README
 
-dist = pure-$(modname)-$(version)
+dist = $(pkgname)-$(version)
 
 date = $(shell date "+%B %-d, %Y")
 datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > $(2)
