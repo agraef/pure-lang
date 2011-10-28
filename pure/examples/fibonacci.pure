@@ -11,6 +11,8 @@ Fast Fibonacci and Lucas Algorithms
 :Date: March 2011
 	
 Example usage:
+> map f (-10..10);
+[-55L,34L,-21L,13L,-8L,5L,-3L,2L,-1L,1L,0,1L,1L,2L,3L,5L,8L,13L,21L,34L,55L]
 > map fibonacci (-10..10);
 [-55L,34L,-21L,13L,-8L,5L,-3L,2L,-1L,1L,0L,1L,1L,2L,3L,5L,8L,13L,21L,34L,55L]
 > map fastfib (-10..10);
@@ -24,18 +26,23 @@ Example usage:
 45.42s
 */
 
+/* Naive Fibonacci, using just the basic definition, n can be negative */
+f 0 	  = 0;
+f n::int  = if n < 0 then (if n and 1 then fl 0L 1L (-n) else (-(fl 0L 1L (-n))))
+	    else fl 0L 1L n
+	    with 
+	      fl _::bigint b::bigint 1 = b; 
+	      fl a::bigint b::bigint ncount::int = fl b (a+b) (pred ncount)
+	    end;
+
 /* fib: computes two successive members F(n),F(n+1) of the
    Fibonacci sequence (0,1,1,2,3,..), using the equivalences:
-   F(n+2)=F(n)+F(n+1), F(n-1)=F(n+1)-F(n),
-   F(2n)=F(n+1)^2-F(n-1)^2, F(2n+1)=F(n)^2+F(n+1)^2
-   computes three bigint squares for each bit of n  */
+   F(n+1)=F(n+2)-F(n), F(2n)=(2F(n+1)-F(n))*F(n), F(2n+2)=(2F(n)+F(n+1))*F(n+1) */
 
 fib 0 = 0L,1L; 
 fib 1 = 1L,1L;
-fib n::int = if n and 1
-	     then a2+b2,((\x::bigint -> x*x)(a+b))-a2 
-	     else b2-((\x::bigint -> x*x)(b-a)),a2+b2
-	     when a,b = fib (n>>1); a2 = a*a; b2 = b*b end;
+fib n::int = if n and 1 then fn2-fn,fn2 else fn,fn2-fn
+when a,b = fib (n>>1); fn = ((b<<1)-a)*a; fn2 = ((a<<1)+b)*b end;
 
 /* fibonacci: computes nth member of the Fibonacci sequence, using fib above.
    Extended to negative arguments */
@@ -65,8 +72,7 @@ lucas n::int
 	  else luc (pred (-n)) ! 1 if n<0;
 	= luc (pred n) ! 1;
  
-/* fastfib: using F(2n) = L(n)*(2L(n-1)+L(n))/5 and 
-   F(2n+1) = (L(n)^2+L(n+1)^2)/5 
+/* fastfib: using F(2n+1) = (L(n)^2+L(n+1)^2)/5, F(2n) = L(n)*(2L(n-1)+L(n))/5
    n.b. we call luc as it is faster than fib. */
 
 fastfib 0 = 0L; fastfib 1 = 1L;
@@ -74,4 +80,3 @@ fastfib n::int
 	= if (n and 1) then fastfib (-n) else (-(fastfib (-n))) if n<0;
 	= if (n and 1) then (a*a+b*b) div 5 
 	  else ( a*((z<<1)+a) div 5 when z = b-a end ) when a,b = luc (n>>1) end;
-
