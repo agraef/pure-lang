@@ -116,6 +116,10 @@ extern "C" {
   px*  sd_foldl1(px* fun, px* tpl);
   px*  sd_foldr(px* fun, px* val, px* tpl);
   px*  sd_foldr1(px* fun, px* tpl);
+
+  void stl_set_sd_trace(bool enable);
+  bool stl_sd_trace_enabled();
+
 }
 
 inline px* sdbeg(){return stl_begin();}

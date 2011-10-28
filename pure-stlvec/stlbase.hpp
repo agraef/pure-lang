@@ -197,9 +197,7 @@ px* pxh_to_pxp(pxh h); // used by std::transform
 extern "C" {
   int  stl_refc(px *x);
   void stl_set_px_trace(bool enable);
-  void stl_set_sv_trace(bool enable);
   bool stl_px_trace_enabled();
-  bool stl_sv_trace_enabled();
 
   px*  stl_begin();
   px*  stl_end();

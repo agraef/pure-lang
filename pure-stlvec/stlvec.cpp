@@ -166,6 +166,18 @@ int iter_pos(sv* vec, svi iter)
 
 /*** Helpers for stlvec.cpp only ************************************/
 
+static bool sv_trace_enabled = false;
+
+void stl_set_sv_trace(bool enable) 
+{
+  sv_trace_enabled = enable;
+}
+
+bool stl_sv_trace_enabled()
+{
+  return sv_trace_enabled;
+}
+
 typedef sv::size_type svsize_t;
 
 static inline int ndx_ok(sv* vec, int n)

@@ -24,11 +24,30 @@ included with the pure-stldict distribution package for details.
 
 using namespace std;
 
+/*** Helpers for debugging only ************************************/
+
+static bool sd_trace_enabled = false;
+
+void stl_set_sd_trace(bool enable) 
+{
+  sd_trace_enabled = enable;
+}
+
+bool stl_sd_trace_enabled()
+{
+  return sd_trace_enabled;
+}
+
 /*** Helpers for stldict.cpp only ************************************/
 
 static px* null_value() 
 {
-  static px* nv = pure_pointer(0);
+  static px* nv = 0;
+  if (!nv) {
+    nv = pure_pointer(0);
+    pure_ref(nv);
+  }
+  //cerr << "null_value " << (void*)nv << " " << nv->refc << endl;
   return nv;
 }
 
@@ -85,7 +104,6 @@ static void update_aux(sd* dict, px* k, px* v)
 {
   sdmap& mp = dict->mp;
   sdi i;
-  //cerr << "update_aux k: " << k << ", v: " << v << endl;
   if ( dict->get_cached_sdi(k, i) ) {
     i->second = v;
   }
@@ -151,7 +169,10 @@ bool stldict::get_cached_sdi(px* k, sdi& i)
   bool found = k != sdbeg() && k != sdend() &&
     has_recent_sdi && same(recent_sdi->first.pxp(), k);
   if (found) i = recent_sdi;
-  //if (found) cerr << "get_cached_sdi, found k: " << k << endl;
+#ifdef STL_DEBUG
+  if (found && stl_sd_trace_enabled())
+    cerr <<"get_cached_sdi, found "<< k <<" with refc:"<< k->refc << endl;
+#endif
   return found;
 }
 
@@ -171,7 +192,7 @@ void stldict::clear_cache()
 void stldict::erase(sdi pos)
 {
   if (has_recent_sdi && recent_sdi == pos)
-    has_recent_sdi = false;
+    has_recent_sdi = 0;
   mp.erase(pos);
 }
 
@@ -565,6 +586,7 @@ void sd_rmfirst(px* tpl)
 {
   sd_iters itrs(tpl);
   if (!itrs.is_valid) bad_argument();
+  itrs.dict->clear_cache();
   sdmap& m = itrs.dict->mp;
   if ( itrs.beg() != itrs.end() )
     m.erase(itrs.beg());
@@ -576,6 +598,7 @@ void sd_rmlast(px* tpl)
 {
   sd_iters itrs(tpl);
   if (!itrs.is_valid) bad_argument();
+  itrs.dict->clear_cache();
   sdmap& m = itrs.dict->mp;
   if ( itrs.beg() != itrs.end() )
     m.erase(--itrs.end());
@@ -632,6 +655,7 @@ void sd_erase(px* tpl)
 
 void sd_clear(sd* dict)
 {
+  dict->clear_cache();
   dict->clear();
 }
 
@@ -679,16 +703,19 @@ void sd_remove_kv(sd* dict, px* kv)
 
 void sd_remove(sd* dict, px* k)
 {
+  dict->clear_cache();
   dict->mp.erase(k);
 }
 
 int sd_remove_all(sd* dict, px* k)
 {
+  dict->clear_cache();  
   return dict->mp.erase(k);
 }
 
 void sd_remove_kv(sd* dict, px* kv)
 {
+  dict->clear_cache();
   sdmap& mp = dict->mp;
   size_t sz = 0;
   px *k, *v;

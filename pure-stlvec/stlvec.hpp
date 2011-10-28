@@ -98,6 +98,9 @@ extern "C" {
   px*  sv_foldr(px* fun, px* val, px* tpl);
   px*  sv_foldr1(px* fun, px* tpl);
 
+  void stl_set_sv_trace(bool enable);
+  bool stl_sv_trace_enabled();
+
 }
 
 #endif // STLVEC_H

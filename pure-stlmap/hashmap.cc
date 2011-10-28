@@ -1,5 +1,5 @@
 
-// This uses unordered_map, so a recent STL is required for now.
+// This uses unordered_map, so a recent C++ library is required for now.
 
 #include <assert.h>
 #include <stdlib.h>

@@ -64,7 +64,7 @@ examples/life: examples/life.pure
 
 DISTFILES = COPYING COPYING.LESSER Makefile $(cppsource) $(puresource) \
 config.guess run-tests examples/*.pure examples/*.log
-#SEDFILES = README
+SEDFILES = README
 
 dist = $(pkgname)-$(version)
 
