@@ -401,6 +401,7 @@ typedef struct _pure {
      to write past the end of x_obj on Windows. */
   int fence;			/* dummy field (not used) */
 #endif
+  struct _classes *cls;		/* pointer into Pure class list */
   t_canvas *canvas;		/* canvas this object belongs to */
   struct _pure *next, *prev;	/* double-linked list of all Pure objects */
   /* control inlets and outlets */
@@ -483,12 +484,12 @@ static void add_class(t_symbol *sym, t_class *class, char *dir)
   pure_classes = new;
 }
 
-static t_class *lookup(t_symbol *sym)
+static t_classes *lookup(t_symbol *sym)
 {
   t_classes *act = pure_classes;
   while (act && (act->sym != sym || !act->class)) act = act->next;
   if (act)
-    return act->class;
+    return act;
   else
     return 0;
 }
@@ -1069,6 +1070,28 @@ static void timeout(t_pure *x)
   pure_free(y);
 }
 
+/* Menu callback. Thanks to Martin Peach for pointing out on pd-dev how this
+   works. */
+
+static void pure_menu_open(t_pure *x)
+{
+  t_classes *c = x->cls;
+  if (!c) return; /* this should never happen */
+  if (c->dir && *c->dir)
+#if PD_MAJOR_VERSION > 0 || PD_MINOR_VERSION >= 43
+    /* This needs a fairly recent Pd version (probably 0.43 or later). */
+    sys_vgui("::pd_menucommands::menu_openfile {%s/%s.pure}\n",
+	     c->dir, c->sym->s_name);
+#else
+    /* An older Pd version before the GUI rewrite. Maybe you're lucky and this
+       works for you. */
+    sys_vgui("menu_openfile {%s/%s.pure}\n", c->dir, c->sym->s_name);
+#endif
+  else
+    pd_error(x, "pd-pure: %s object doesn't have a script file",
+	     c->sym->s_name);
+}
+
 /* Handle a message to the leftmost inlet. */
 
 static void pure_any(t_pure *x, t_symbol *s, int argc, t_atom *argv)
@@ -1298,13 +1321,15 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
   int i;
   t_pure *x;
   t_canvas *canvas = canvas_getcurrent();
-  t_class *c = lookup(s);
+  t_classes *c = lookup(s);
   bool is_dsp = is_dsp_fun(s);
 
-  if (!c) return 0; /* this shouldn't happen unless we're out of memory */
-  x = (t_pure*)pd_new(c);
+  /* this shouldn't happen unless we're out of memory */
+  if (!c || !c->class) return 0;
+  x = (t_pure*)pd_new(c->class);
   xappend(x);
 
+  x->cls = c;
   x->canvas = canvas;
   x->foo = 0;
   x->n_in = 0; x->n_out = 1;
@@ -1559,6 +1584,8 @@ static void class_setup(char *name, char *dir)
     class_sethelpsymbol(class, gensym(LIBDIR "/extra/pure/pure~-help.pd"));
   } else
     class_sethelpsymbol(class, gensym(LIBDIR "/extra/pure/pure-help.pd"));
+  class_addmethod(class, (t_method)pure_menu_open,
+		  gensym((char*)"menu-open"), A_NULL);
   add_class(class_s, class, dir);
 }
 
