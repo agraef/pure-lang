@@ -158,7 +158,7 @@ T& ILS<T>::operator()()
 {
   T *ptr = (T*)pure_interp_get(key);
   if (!ptr) {
-    ptr = (T*)malloc(sizeof(int)); assert(ptr);
+    ptr = (T*)malloc(sizeof(T)); assert(ptr);
     pure_interp_set(key, ptr);
     *ptr = val;
   }
