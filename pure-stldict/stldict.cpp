@@ -362,14 +362,17 @@ sv* sd_make_stlvec(px* tpl)
   return ret;
 }
 
-void sd_set_default(sd* dict, px* val)
+px* sd_set_default(sd* dict, px* val)
 {
+  if (dict->keys_only) return 0; // fail
   dict->dflt = val;
   dict->has_dflt = 1;
+  return val;
 }
 
 px* sd_get_default(sd* dict)
 {
+  if (dict->keys_only) return 0; // fail
   int ok = 1;
   px* val;
   if (dict->has_dflt) 

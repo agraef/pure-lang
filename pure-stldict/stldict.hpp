@@ -85,7 +85,7 @@ extern "C" {
   void sd_delete(sd* dict);
   px*  sd_make_vector(px* tpl);
   sv*  sd_make_stlvec(px* tpl);
-  void sd_set_default(sd* dict, px* val);
+  px*  sd_set_default(sd* dict, px* val);
   px*  sd_get_default(sd* dict);
   int  sd_size(px* tpl);
   px*  sd_bounds(px* tpl);

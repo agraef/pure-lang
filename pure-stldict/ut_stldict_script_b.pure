@@ -67,8 +67,11 @@ update ss1 "a" 100; update ss1 "x" 200; members ss1;
 catch err (ss1!"y");
 //- 0
 
-stl::set_default ss1 not_a_member; stl::get_default ss1;
-//- 1,not_a_member
+stl::set_default ss1 not_a_member; (); // set_default fails for stlsets
+//- ()
+
+stl::get_default ss1; (); // get_default fails for stlsets
+//- ()
 
 ss1!"y";
 //- 0
@@ -170,7 +173,7 @@ last (ss1,stl::sdbeg,"x");
 
 last (ss1,"0",stl::sdend);
 //- "y"
-//-- -s
+
 //*** rmfirst, rmlast, erase, insert and delete ********************
 
 let ss1 = stlset (<) ["a","b","c","d","e","x","y"]; members ss1; 
