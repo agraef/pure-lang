@@ -42,13 +42,7 @@ bool stl_sd_trace_enabled()
 
 static px* null_value() 
 {
-  static px* nv = 0;
-  if (!nv) {
-    nv = pure_pointer(0);
-    pure_ref(nv);
-  }
-  //cerr << "null_value " << (void*)nv << " " << nv->refc << endl;
-  return nv;
+  return 0;
 }
 
 static void set_kv(sdi i, px** k, px** v)
@@ -121,7 +115,7 @@ static bool insert_aux(sd* dict, px* kv)
   bool ok = true;
   if (dict->keys_only) {
     k = kv;
-    v = null_value();
+    v = NULL;
   } 
   else {
     if ( rocket_to_pair(kv, &k, &v) )
@@ -132,7 +126,7 @@ static bool insert_aux(sd* dict, px* kv)
     }
     else {
       k = kv;
-      v = null_value();
+      v = NULL;
       ok = false;
     }
   }
@@ -143,7 +137,7 @@ static bool insert_aux(sd* dict, px* kv)
 /*** stldict members  ***********************************************/
 
 stldict::stldict(px* cmp, bool keyonly) : 
-  mp(pxh_pred2(cmp)), px_comp(cmp), dflt(null_value()),
+  mp(pxh_pred2(cmp)), px_comp(cmp), dflt(NULL),
   has_dflt(0), has_recent_sdi(0), keys_only(keyonly), 
   recent_sdi(mp.end()) {}
 
@@ -312,8 +306,7 @@ sd_iters::sd_iters(px* sdi_tuple)
 
 sd* sd_make_empty(px* comp, int keys_only)
 {
-  sd* ret  = new sd(comp, keys_only);
-  
+  sd* ret  = new sd(comp, keys_only); 
 #ifdef STL_DEBUG
   if (stl_sd_trace_enabled())
     cerr << "TRACE SD:    new sd*: " << ret << endl;
@@ -327,6 +320,13 @@ void sd_delete(sd* p){
     cerr << "TRACE SD: delete sd*: " << p << endl;
 #endif
   delete(p);
+}
+
+bool sd_is_set(px* tpl)
+{
+  sd_iters itrs(tpl);
+  if (!itrs.is_valid) bad_argument();
+  return itrs.dict->keys_only;
 }
 
 px* sd_make_vector(px* tpl) 
@@ -378,7 +378,7 @@ px* sd_get_default(sd* dict)
   if (dict->has_dflt) 
     val = dict->dflt.pxp();  
   else {
-    val = null_value();
+    val = NULL;
     ok = 0;
   }
   return pure_tuplel(2, pure_int(ok), val);
@@ -535,14 +535,14 @@ sd* sd_setop(int op, px* tpl1, px* tpl2)
 
 void sd_update(sd* dict, px* key, px* val)
 {
-  if (dict->keys_only) val = null_value();
+  if (dict->keys_only) val = NULL;
   update_aux(dict, key, val);
 }
 
 void sd_update_with(sd* dict, px* key, px* unaryfun)
 {
   if (dict->keys_only) {
-    update_aux(dict, key, null_value());
+    update_aux(dict, key, NULL);
     return;
   }
   if (!dict->has_dflt)
@@ -673,16 +673,47 @@ void sd_remove_kv(sd* dict, px* kv)
 
 bool sd_allpairs(px* comp, px* tpl1, px* tpl2)
 {
-  pxh_pair_pred2 fun(comp);
+  bool all_ok;
   sd_iters itrs1(tpl1);
   sd_iters itrs2(tpl2);
   if (!itrs1.is_valid) bad_argument();
   if (!itrs2.is_valid) bad_argument();
+
+  sd* dict1 = itrs1.dict;
+  sd* dict2 = itrs1.dict;
   try {
-    return equal(itrs1.beg(), itrs1.end(), itrs2.beg(), fun);
+    if (dict1->keys_only) {
+      if (!dict2->keys_only) bad_argument();
+      pxh_pred2 fun(comp);
+      sdi i1 = itrs1.beg();
+      sdi i2 = itrs2.beg();
+      sdi end1 = itrs1.end();
+      sdi end2  =itrs2.end();
+      all_ok = 1;
+      while(i1 != end1) {
+        if (i2 == end2  || !fun(i1->first, i2->first) ) {
+          all_ok = 0;
+          break;
+        }
+        i1++; i2 ++;
+      }
+      if (all_ok && i2 != end2) 
+        all_ok = 0;
+    }
+    else {
+      if (dict2->keys_only) bad_argument();
+      if ( sd_size(tpl1) != sd_size(tpl2) ) {
+        all_ok = 0;
+      }
+      else {
+        pxh_pair_pred2 fun(comp);
+        all_ok = equal(itrs1.beg(), itrs1.end(), itrs2.beg(), fun);
+      }
+    }
   } catch (px* e) {
     pure_throw(e);
   }
+  return all_ok;
 }
 
 px* apply_fun(px* fun, int what, sdi i, px** exception) {

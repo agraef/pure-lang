@@ -39,11 +39,11 @@ void px_freenew(px* x);
 void px_ref(px* x);
 void px_unref(px* x);
 #else 
-inline px* px_new(px* x){return pure_new(x);}
-inline void px_free(px* x){pure_free(x);}
-inline void px_freenew(px* x){pure_freenew(x);}
-inline void px_ref(px* x){pure_ref(x);}
-inline void px_unref(px* x){pure_unref(x);}
+inline px* px_new(px* x){return x ? pure_new(x) : x;}
+inline void px_free(px* x){if (x) pure_free(x);}
+inline void px_freenew(px* x){if (x) pure_freenew(x);}
+inline void px_ref(px* x){if (x) pure_ref(x);}
+inline void px_unref(px* x){if (x) pure_unref(x);}
 #endif
 
 /* px_handle (pxh) - wrapper around pure_expr* to automate pure_expr ref
@@ -81,7 +81,7 @@ public:
   px_handle& operator=(const px_handle& pxh);
 
   // destructor - not virtural
-  ~px_handle(){if (pxp_) px_free(pxp_);} // not base class (avoid vf table)
+  ~px_handle(){px_free(pxp_);} //not base class (avoid vf table)
 
   // return the underlying px*
   px* pxp() const {return pxp_;}
