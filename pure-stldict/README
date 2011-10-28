@@ -23,28 +23,33 @@ B. Features different from dict and pure-hmap.
 3. stlsets and stldicts are constructed with a less than function (e.g., (<)
    or (>), but other ordering functions can be used).
 
-4. stlsets and stldicts can be given a default value (al la C++ T()).
+4. For a stldict, sd, sd!k returns v if (k=>v) is in sd. If not, see 5. For
+   a stlset, ss, ss!k is the same as (member ss k).
+
+5. stldicts can be given a default value (al la C++ T()).
 
    a. Generally, sd!k will throw out_of_bounds if k not the key of an element
       of stldict sd. So will st!k if k is not an element of stlset st.
 
-   b. If sd or st has a default value, this will be returned by sd!k or
-      st!k when k would otherwise be out of bounds.
+   b. If sd!k would otherwise be out_of_bounds, and if sd has a default value
+      dv, (k=>dv) will be inserted into sd and dv will be returned.
 
-5. The function "update_with f sd k v" is pure-stldict's answer to the fact
+   c. stlsets do not have default values.
+
+6. The function "update_with f sd k v" is pure-stldict's answer to the fact
    that in C++ map[k] is a reference into the map. The function acts like
    update sd k $ f v (sd!k), except that it does it in one visit into the
    map. This is typically used when sd has a default value - say 0, an
    emptystlvec, or [].
 
-6. The set operations use the native STL algorithms, which take full advantage
+7. The set operations use the native STL algorithms, which take full advantage
    of the fact that stldicts and stlsets have ordered elements.
 
-7. Most of the functions act on ranges of members, denoted by (sd,k1,k2),
+8. Most of the functions act on ranges of members, denoted by (sd,k1,k2),
    similar to (sv,i,j) for stlvec. I.e., (sd,"0","z") would be all (k=v) where
    k >= "0" and k < "z".
 
-8. The last iterator used in selected operations is cached. So "member sd k"
+9. The last iterator used in selected operations is cached. So "member sd k"
    followed by "sd!k" on requires only one lookup. This also allows efficient
    traversal of the elements in sd using "next sd k" and "prev sd k".
 

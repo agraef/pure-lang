@@ -474,23 +474,18 @@ px* sd_get(sd* dict, px* key)
     i = mp.find(key);
   if (i != mp.end()) {
     dict->cache_sdi(i);
-    ret = dict->keys_only ? key : i->second.pxp();
+    ret = dict->keys_only ? pure_int(1) : i->second.pxp();
+  }
+  else if (dict->keys_only) {
+    ret =  pure_int(0);
   }
   else if (dict->has_dflt) {
     px* dv = dict->dflt.pxp();
-    if (dict->keys_only) {
-      if (dict->has_dflt)
-        ret = dv;
-      else
-        index_error();
-    }
-    else {
-      update_aux(dict, key, dv);
-      ret = dv;
-    }
+    update_aux(dict, key, dv);
+    ret = dv;
   } 
   else {
-        index_error();
+    index_error();
   }
   return ret;
 }

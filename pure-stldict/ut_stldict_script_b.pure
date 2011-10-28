@@ -56,22 +56,22 @@ let ss1 = stlset (<) ("a".."e"); members ss1;
 //- ["a","b","c","d","e"]
 
 ss1!"a";
-//- "a"
+//- 1
 
 ss1!"e";
-//- "e"
+//- 1
 
 update ss1 "a" 100; update ss1 "x" 200; members ss1;
 //- ["a","b","c","d","e","x"]
 
 catch err (ss1!"y");
-//- err out_of_bounds
+//- 0
 
 stl::set_default ss1 not_a_member; stl::get_default ss1;
 //- 1,not_a_member
 
 ss1!"y";
-//- not_a_member
+//- 0
 
 members ss1;
 //- ["a","b","c","d","e","x"]
@@ -170,7 +170,7 @@ last (ss1,stl::sdbeg,"x");
 
 last (ss1,"0",stl::sdend);
 //- "y"
-
+//-- -s
 //*** rmfirst, rmlast, erase, insert and delete ********************
 
 let ss1 = stlset (<) ["a","b","c","d","e","x","y"]; members ss1; 
@@ -224,17 +224,8 @@ stl::insert_elms ss1 $ ("j".."l"); members ss1;
 delete ss1 "l"; members ss1;
 //- ["a","b","c","e","g","h","j","k"]
 
-delete_val ss1 "k"; members ss1;
-//- ["a","b","c","e","g","h","j"]
-
-delete_val ss1 "j"; members ss1;
-//- ["a","b","c","e","g","h"]
-
-delete_all ss1 "h"; members ss1;
-//- ["a","b","c","e","g"]
-
-catch bad_element (insert ss1 ("e"=>5)); //can't compare string to rocket
-//- bad_element failed_cond
+catch id (insert ss1 ("e"=>5)); //can't compare string to rocket
+//- failed_cond
 
 //*** allpairs, ==, ~== ***********************************************
 
@@ -565,13 +556,13 @@ member ss1 "a";
 //- 1
 
 ss1!"a";
-//- "a"
+//- 1
 
 delete ss1 "b"; members ss1;
 //- ["a","c","d","e","f","g","h","i","j"]
 
 ss1!"a";
-//- "a"
+//- 1
 
 member ss1 "a";
 //- 1
