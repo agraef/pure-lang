@@ -38,11 +38,10 @@ struct stldict {
   sdi  find(px* key);
   bool get_cached_sdi(px* k, sdi& i);
   void cache_sdi(sdi& i);
-  void clear_cache();
+  void clear();
   void erase(sdi pos);
   int erase(px* k);
   void erase(sdi first, sdi last);
-  void clear();
 
   sdmap mp;
   pxh px_comp;

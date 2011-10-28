@@ -184,9 +184,10 @@ void stldict::cache_sdi(sdi& i)
   }
 }
 
-void stldict::clear_cache()
+void stldict::clear()
 {
   has_recent_sdi = 0;
+  mp.clear();
 }
 
 void stldict::erase(sdi pos)
@@ -206,8 +207,9 @@ int stldict::erase(px* k)
     else {
       if (k == sdbeg())
         erase(mp.begin());
-      else if (k != sdend())
+      else if (k != sdend()) {
         mp.erase(k);
+      }
       else
         ret = 0;
     }
@@ -221,12 +223,6 @@ void stldict::erase(sdi first, sdi last)
   mp.erase(first, last);
 }
 
-void stldict::clear()
-{
-  has_recent_sdi = false;
-  mp.clear();
-}
-
 /*** sd_iters functions *********************************************/
 
 static sdi get_iter(sdmap& mp , px* key, bool upper)
@@ -237,7 +233,6 @@ static sdi get_iter(sdmap& mp , px* key, bool upper)
   else if (key == sdend())
     iter = mp.end();
   else {
-    //pxh pxh_key(key);
     if (upper) 
       iter = mp.upper_bound(key);
     else 
@@ -586,10 +581,8 @@ void sd_rmfirst(px* tpl)
 {
   sd_iters itrs(tpl);
   if (!itrs.is_valid) bad_argument();
-  itrs.dict->clear_cache();
-  sdmap& m = itrs.dict->mp;
   if ( itrs.beg() != itrs.end() )
-    m.erase(itrs.beg());
+    itrs.dict->erase(itrs.beg());
   else
     index_error();
 }
@@ -598,10 +591,8 @@ void sd_rmlast(px* tpl)
 {
   sd_iters itrs(tpl);
   if (!itrs.is_valid) bad_argument();
-  itrs.dict->clear_cache();
-  sdmap& m = itrs.dict->mp;
   if ( itrs.beg() != itrs.end() )
-    m.erase(--itrs.end());
+    itrs.dict->erase(--itrs.end());
   else
     index_error();
 }
@@ -650,87 +641,34 @@ void sd_erase(px* tpl)
 {
   sd_iters itrs(tpl);
   if (!itrs.is_valid) bad_argument();
-  itrs.dict->mp.erase(itrs.beg(), itrs.end());
+  itrs.dict->erase(itrs.beg(), itrs.end());
 }
 
 void sd_clear(sd* dict)
 {
-  dict->clear_cache();
   dict->clear();
 }
 
-/* multi map version
-
 void sd_remove(sd* dict, px* k)
 {
-  sdmap& mp = dict->mp;
-  sdi i = mp.lower_bound(k);
-  if (i!=mp.end()) {
-    px* dk = i->first.pxp();
-    px* cmp = dict->px_comp.pxp();
-    if ( !is_less(cmp, dk, k) && !is_less(cmp, dk, k) )
-      mp.erase(i);
-  }
+  dict->erase(k);
 }
 
 int sd_remove_all(sd* dict, px* k)
 {
-  return dict->mp.erase(k);
+  return dict->erase(k);
 }
 
 void sd_remove_kv(sd* dict, px* kv)
 {
-  sdmap& mp = dict->mp;
-  size_t sz = 0;
-  px *k, *v;
-  if (dict->keys_only) {
-    sd_remove(sd, kv);
-  }
-  if (rocket_to_pair(kv, &k, &v) ) {
-    sdi b = mp.lower_bound(k);
-    sdi e = mp.upper_bound(k);
-    while(b++ != e) {
-      px* dv = b->second.pxp();
-      px* cmp = dict->px_comp.pxp();
-      if (!is_less(cmp, v, dv) && !is_less(cmp, dv, v) )
-        mp.erase(i);
-    }
-  } else 
-    bad_argument();
-}
-
-*/
-
-void sd_remove(sd* dict, px* k)
-{
-  dict->clear_cache();
-  dict->mp.erase(k);
-}
-
-int sd_remove_all(sd* dict, px* k)
-{
-  dict->clear_cache();  
-  return dict->mp.erase(k);
-}
-
-void sd_remove_kv(sd* dict, px* kv)
-{
-  dict->clear_cache();
   sdmap& mp = dict->mp;
   size_t sz = 0;
   px *k, *v;
   px* cmp = dict->px_comp.pxp();
-  if (dict->keys_only) {
-    sd_remove(dict, kv);
-  }
-  else if (rocket_to_pair(kv, &k, &v) ) {
-    sdi i = mp.lower_bound(k);
-    if (i != mp.end() ) {
-      px* dv = i->second.pxp();
-      if (!is_less(cmp, v, dv) && !is_less(cmp, dv, v) )
-        mp.erase(i);
-    }
-  } 
+  if (dict->keys_only)
+    dict->erase(kv);
+  else if (rocket_to_pair(kv, &k, &v) )
+    dict->erase(k);
   else 
     bad_argument();
 }

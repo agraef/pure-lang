@@ -237,10 +237,10 @@ delete_val sd1 ("k"=>11); members sd1;
 //- ["a"=>1,"b"=>2,"c"=>3,"e"=>5,"g"=>7,"h"=>8,"j"=>10]
 
 delete_val sd1 ("j"=>100); members sd1;
-//- ["a"=>1,"b"=>2,"c"=>3,"e"=>5,"g"=>7,"h"=>8,"j"=>10]
-
-delete_all sd1 "j"; members sd1;
 //- ["a"=>1,"b"=>2,"c"=>3,"e"=>5,"g"=>7,"h"=>8]
+
+delete_all sd1 "h"; members sd1;
+//- ["a"=>1,"b"=>2,"c"=>3,"e"=>5,"g"=>7]
 
 //*** allpairs, ==, ~== ***********************************************
 
@@ -542,6 +542,76 @@ members $ (sd1,"b","d") * (sd2, "c","e");
 members $ (sd1,"b","d") / (sd2, "c","e");
 //- ["b"=>2,"d"=>40]
 
+//** Cache sensitive sequences ****************************************
+
+let sd1 = stldict (<) $ zipwith (=>) ("a".."j") (1..10); members sd1;
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7,"h"=>8,"i"=>9,"j"=>10]
+
+stl::set_sd_trace 1;
+//- ()
+
+member sd1 "a";
+//- 1
+
+sd1!"a";
+//- 1
+
+delete sd1 "b"; members sd1;
+//- ["a"=>1,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7,"h"=>8,"i"=>9,"j"=>10]
+
+sd1!"a";
+//- 1
+
+member sd1 "a";
+//- 1
+
+delete sd1 "a"; members sd1;
+//- ["c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7,"h"=>8,"i"=>9,"j"=>10]
+
+member sd1 "a";
+//- 0
+
+sd1!"e";
+//- 5
+
+rmfirst sd1;
+//- ()
+
+sd1!"e";
+//- 5
+
+member sd1 "c";
+//- 0
+
+sd1!"e"
+//- 5
+
+rmlast sd1; members sd1;
+//- ["d"=>4,"e"=>5,"f"=>6,"g"=>7,"h"=>8,"i"=>9]
+
+sd1!"e";
+//- 5
+
+member sd1 "k";
+//- 0
+
+sd1!"e";
+//- 5
+
+erase (sd1, "h", stl::sdend); members sd1;
+//- ["d"=>4,"e"=>5,"f"=>6,"g"=>7]
+
+sd1!"e";
+//- 5
+
+member sd1 "i";
+//- 0
+
+member sd1 "e";
+//- 1
+
+stl::set_sd_trace 0;
+//- ()
 
 //*** Fancy updating - C++ default value style ********************* 
 

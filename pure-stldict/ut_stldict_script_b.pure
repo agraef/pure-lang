@@ -23,533 +23,604 @@ using system, stldict, stlvec;
 
 //*** Make stlset ******************************************************
 
-let sd1 = stlset (<) ("a".."e"); members sd1;
+let ss1 = stlset (<) ("a".."e"); members ss1;
 //- ["a","b","c","d","e"]
 
-let sv1 = stlvec $ members sd1; members sv1;
+let sv1 = stlvec $ members ss1; members sv1;
 //- ["a","b","c","d","e"]
 
-let v1 = stl::vector (sd1,"b","d"); v1;
+let v1 = stl::vector (ss1,"b","d"); v1;
 //- {"b","c"}
 
-let l1 = members (sd1,stl::sdbeg,"e"); l1;
+let l1 = members (ss1,stl::sdbeg,"e"); l1;
 //- ["a","b","c","d"]
 //-
-let sd2 = stlset (>) (sd1,"a","d"); members sd2;
+let ss2 = stlset (>) (ss1,"a","d"); members ss2;
 //- ["c","b","a"]
 
-let sd3 = stlset (<) (sv1,1,stl::svend); members sd3;
+let ss3 = stlset (<) (sv1,1,stl::svend); members ss3;
 //- ["b","c","d","e"]
 
-let sd4 = stlset (<) v1; members sd4;
+let ss4 = stlset (<) v1; members ss4;
 //- ["b","c"]
 
-let sd5 = stlset (<) l1; members sd5;
+let ss5 = stlset (<) l1; members ss5;
 //- ["a","b","c","d"]
 
-let sd7 = emptystlset (>); members sd7;
+let ss7 = emptystlset (>); members ss7;
 //- []
 
 //*** Simple Access and Update *************************************
 
-let sd1 = stlset (<) ("a".."e"); members sd1;
+let ss1 = stlset (<) ("a".."e"); members ss1;
 //- ["a","b","c","d","e"]
 
-sd1!"a";
+ss1!"a";
 //- "a"
 
-sd1!"e";
+ss1!"e";
 //- "e"
 
-update sd1 "a" 100; update sd1 "x" 200; members sd1;
+update ss1 "a" 100; update ss1 "x" 200; members ss1;
 //- ["a","b","c","d","e","x"]
 
-catch err (sd1!"y");
+catch err (ss1!"y");
 //- err out_of_bounds
 
-stl::set_default sd1 not_a_member; stl::get_default sd1;
+stl::set_default ss1 not_a_member; stl::get_default ss1;
 //- 1,not_a_member
 
-sd1!"y";
+ss1!"y";
 //- not_a_member
 
-members sd1;
+members ss1;
 //- ["a","b","c","d","e","x"]
 
-member sd1 "x", member sd1 "z";
+member ss1 "x", member ss1 "z";
 //- 1,0
 
 //*** Members, keys, vals, first, last ********************************
 
-let sd1 = stlset (<) ["a","b","c","d","e","x","y"]; members sd1;
+let ss1 = stlset (<) ["a","b","c","d","e","x","y"]; members ss1;
 //- ["a","b","c","d","e","x","y"]
 
-members (sd1,"b","e");
+members (ss1,"b","e");
 //- ["b","c","d"]
 
-members (sd1,"b","e1");
+members (ss1,"b","e1");
 //- ["b","c","d","e"]
 
-members (sd1,"0","x");
+members (ss1,"0","x");
 //- ["a","b","c","d","e"]
 
-members (sd1,stl::sdbeg,"x");
+members (ss1,stl::sdbeg,"x");
 //- ["a","b","c","d","e"]
 
-members (sd1,"0",stl::sdend);
+members (ss1,"0",stl::sdend);
 //- ["a","b","c","d","e","x","y"]
 
-keys sd1;
+keys ss1;
 //- ["a","b","c","d","e","x","y"]
 
-keys (sd1,"b","e");
+keys (ss1,"b","e");
 //- ["b","c","d"]
 
-keys (sd1,"b","e1");
+keys (ss1,"b","e1");
 //- ["b","c","d","e"]
 
-keys (sd1,"0","x");
+keys (ss1,"0","x");
 //- ["a","b","c","d","e"]
 
-keys (sd1,stl::sdbeg,"x");
+keys (ss1,stl::sdbeg,"x");
 //- ["a","b","c","d","e"]
 
-keys (sd1,"0",stl::sdend);
+keys (ss1,"0",stl::sdend);
 //- ["a","b","c","d","e","x","y"]
 
-vals sd1;
+vals ss1;
 //- ["a","b","c","d","e","x","y"]
 
-vals (sd1,"b","e");
+vals (ss1,"b","e");
 //- ["b","c","d"]
 
-vals (sd1,"b","e1");
+vals (ss1,"b","e1");
 //- ["b","c","d","e"]
 
-vals (sd1,"0","x");
+vals (ss1,"0","x");
 //- ["a","b","c","d","e"]
 
-vals (sd1,stl::sdbeg,"x");
+vals (ss1,stl::sdbeg,"x");
 //- ["a","b","c","d","e"]
 
-vals (sd1,"0",stl::sdend);
+vals (ss1,"0",stl::sdend);
 //- ["a","b","c","d","e","x","y"]
 
-first sd1;
+first ss1;
 //- "a"
 
-first (sd1,"b","e");
+first (ss1,"b","e");
 //- "b"
 
-first (sd1,"b","e1");
+first (ss1,"b","e1");
 //- "b"
 
-first (sd1,"0","x");
+first (ss1,"0","x");
 //- "a"
 
-first (sd1,stl::sdbeg,"x");
+first (ss1,stl::sdbeg,"x");
 //- "a"
 
-first (sd1,"0",stl::sdend);
+first (ss1,"0",stl::sdend);
 //- "a"
 
-last sd1;
+last ss1;
 //- "y"
 
-last (sd1,"b","e");
+last (ss1,"b","e");
 //- "d"
 
-last (sd1,"b","e1");
+last (ss1,"b","e1");
 //- "e"
 
-last (sd1,"0","x");
+last (ss1,"0","x");
 //- "e"
 
-last (sd1,stl::sdbeg,"x");
+last (ss1,stl::sdbeg,"x");
 //- "e"
 
-last (sd1,"0",stl::sdend);
+last (ss1,"0",stl::sdend);
 //- "y"
 
 //*** rmfirst, rmlast, erase, insert and delete ********************
 
-let sd1 = stlset (<) ["a","b","c","d","e","x","y"]; members sd1; 
+let ss1 = stlset (<) ["a","b","c","d","e","x","y"]; members ss1; 
 //- ["a","b","c","d","e","x","y"]
 
-let sd2 = stlset (<) ["a","b","c"]; members sd2;
+let ss2 = stlset (<) ["a","b","c"]; members ss2;
 //- ["a","b","c"]
 
-rmfirst sd1; rmlast sd1; members sd1;
+rmfirst ss1; rmlast ss1; members ss1;
 //- ["b","c","d","e","x"]
 
-rmfirst (sd1,"e","z"); members sd1;
+rmfirst (ss1,"e","z"); members ss1;
 //- ["b","c","d","x"]
 
-rmlast (sd1,"a","x"); members sd1;
+rmlast (ss1,"a","x"); members ss1;
 //- ["b","c","x"]
 
-erase (sd1,"c","e"); members sd1;
+erase (ss1,"c","e"); members ss1;
 //- ["b","x"]
 
-erase sd1; members sd1;
+erase ss1; members ss1;
 //- []
 
-stl::null sd1;
+stl::null ss1;
 //- 1
 
-insert sd1 "e"; members sd1;
+insert ss1 "e"; members ss1;
 //- ["e"]
 
-stl::null sd1;
+stl::null ss1;
 //- 0
 
-stl::insert_elms sd1 sd2; members sd1;
+stl::insert_elms ss1 ss2; members ss1;
 //- ["a","b","c","e"]
 
-stl::null (sd1,"b","c");
+stl::null (ss1,"b","c");
 //- 0
 
-stl::null (sd1,"b","b");
+stl::null (ss1,"b","b");
 //- 1
 
-let sd8 = stlset (<) ("f".."i"); members sd8;
+let ss8 = stlset (<) ("f".."i"); members ss8;
 //- ["f","g","h","i"]
 
-stl::insert_elms sd1 (sd8,"g","i"); members sd1;
+stl::insert_elms ss1 (ss8,"g","i"); members ss1;
 //- ["a","b","c","e","g","h"]
 
-stl::insert_elms sd1 $ ("j".."l"); members sd1;
+stl::insert_elms ss1 $ ("j".."l"); members ss1;
 //- ["a","b","c","e","g","h","j","k","l"]
 
-delete sd1 "l"; members sd1;
+delete ss1 "l"; members ss1;
 //- ["a","b","c","e","g","h","j","k"]
 
-delete_val sd1 "k"; members sd1;
+delete_val ss1 "k"; members ss1;
 //- ["a","b","c","e","g","h","j"]
 
-delete_val sd1 "j"; members sd1;
+delete_val ss1 "j"; members ss1;
 //- ["a","b","c","e","g","h"]
 
-delete_all sd1 "j"; members sd1;
-//- ["a","b","c","e","g","h"]
+delete_all ss1 "h"; members ss1;
+//- ["a","b","c","e","g"]
 
-catch bad_element (insert sd1 ("e"=>5)); //can't compare string to rocket
+catch bad_element (insert ss1 ("e"=>5)); //can't compare string to rocket
 //- bad_element failed_cond
 
 //*** allpairs, ==, ~== ***********************************************
 
-let sd1 = stlset (<) ["a","b","c"]; members sd1;
+let ss1 = stlset (<) ["a","b","c"]; members ss1;
 //- ["a","b","c"]
 
-let sd2 = stlset (<) ["a","b","c","d"]; members sd2;
+let ss2 = stlset (<) ["a","b","c","d"]; members ss2;
 //- ["a","b","c","d"]
 
-stl::allpairs (\k1 k2-> k1==k2) sd1 sd2;
+stl::allpairs (\k1 k2-> k1==k2) ss1 ss2;
 //- 0
 
-stl::allpairs (\k1 k2-> k1==k2) sd2 sd1;
+stl::allpairs (\k1 k2-> k1==k2) ss2 ss1;
 //- 0
 
-stl::allpairs (\k1 k2-> k1==k2) sd1 (sd2,"a","d");
+stl::allpairs (\k1 k2-> k1==k2) ss1 (ss2,"a","d");
 //- 1
 
-stl::allpairs (\k1 k2-> k1==k2) (sd2,"a","d") sd1;
+stl::allpairs (\k1 k2-> k1==k2) (ss2,"a","d") ss1;
 //- 1
 
-stl::allpairs (\k1 k2-> k1==k2) sd1 (sd2,"a","b");
+stl::allpairs (\k1 k2-> k1==k2) ss1 (ss2,"a","b");
 //- 0
 
-sd1 == sd2;
+ss1 == ss2;
 //- 0
 
-sd1 ~= sd2;
+ss1 ~= ss2;
 //- 1
 
-sd1 == (sd2,"a","a"); // oops -- tuple rule trumps;
+ss1 == (ss2,"a","a"); // oops -- tuple rule trumps;
 //- 0
 
 // ** bounds, size *******************************************************
 
-let sd1 = stlset (<) ["a","b","c","d"]; members sd1;
+let ss1 = stlset (<) ["a","b","c","d"]; members ss1;
 //- ["a","b","c","d"]
 
-let sd2, lb, up = stl::bounds sd1; (lb, up);
+let ss2, lb, up = stl::bounds ss1; (lb, up);
 //- stl_begin_iterator,stl_end_iterator
 
-let sd2, lb, up = stl::bounds (sd1,"a"); (lb, up);
+let ss2, lb, up = stl::bounds (ss1,"a"); (lb, up);
 //- stl_begin_iterator,"b"
 
-let sd2, lb, up = stl::bounds (sd1,"a1"); (lb, up);
+let ss2, lb, up = stl::bounds (ss1,"a1"); (lb, up);
 //- "b","b"
 
-let sd2, lb, up = stl::bounds (sd1,"a","x"); (lb, up);
+let ss2, lb, up = stl::bounds (ss1,"a","x"); (lb, up);
 //- stl_begin_iterator,stl_end_iterator
 
-let sd2, lb, up = stl::bounds (sd1,"0","x"); (lb, up);
+let ss2, lb, up = stl::bounds (ss1,"0","x"); (lb, up);
 //- stl_begin_iterator,stl_end_iterator
 
-let sd2, lb, up = stl::bounds (sd1,"x","a"); (lb, up);
+let ss2, lb, up = stl::bounds (ss1,"x","a"); (lb, up);
 //- stl_end_iterator,"b"
 
-let sd2, lb, up = stl::bounds (sd1,stl::sdbeg,"a"); (lb, up);
+let ss2, lb, up = stl::bounds (ss1,stl::sdbeg,"a"); (lb, up);
 //- stl_begin_iterator,"b"
 
-let sd2, lb, up = stl::bounds (sd1,stl::sdend,"x"); (lb, up);
+let ss2, lb, up = stl::bounds (ss1,stl::sdend,"x"); (lb, up);
 //- stl_end_iterator,stl_end_iterator
 
-stl::size sd1;
+stl::size ss1;
 //- 4
 
-stl::size (sd1,"b","d");
+stl::size (ss1,"b","d");
 //- 2
 
-stl::size (sd1,"c",stl::sdend);
+stl::size (ss1,"c",stl::sdend);
 //- 2
 
 //** map, map_keys, map_vals **************************************
 
-let sd1 = stlset (<) ["a","b","c","d"]; members sd1;
+let ss1 = stlset (<) ["a","b","c","d"]; members ss1;
 //- ["a","b","c","d"]
 
-map (\k->k+1) sd1;
+map (\k->k+1) ss1;
 //- ["b","c","d","e"]
 
-map_keys (+1) sd1;
+map_keys (+1) ss1;
 //- ["b","c","d","e"]
 
-map_vals (+1) sd1;
+map_vals (+1) ss1;
 //- ["b","c","d","e"]
 
-map (\k->k+1) (sd1,stl::sdbeg,stl::sdend);
+map (\k->k+1) (ss1,stl::sdbeg,stl::sdend);
 //- ["b","c","d","e"]
 
-map (\k->k+1) (sd1,stl::sdbeg,"x");
+map (\k->k+1) (ss1,stl::sdbeg,"x");
 //- ["b","c","d","e"]
 
-map (\k->k+1)  (sd1,stl::sdbeg,"d");
+map (\k->k+1)  (ss1,stl::sdbeg,"d");
 //- ["b","c","d"]
 
-map (\k->k+1) (sd1,stl::sdbeg,"a");
+map (\k->k+1) (ss1,stl::sdbeg,"a");
 //- []
 
-map (\k->k+1) (sd1,"0",stl::sdend);
+map (\k->k+1) (ss1,"0",stl::sdend);
 //- ["b","c","d","e"]
 
-map (\k->k+1) (sd1,"b","d");
+map (\k->k+1) (ss1,"b","d");
 //- ["c","d"]
 
-map (\k->k+1) (sd1,"x","a");
+map (\k->k+1) (ss1,"x","a");
 //- []
 
 //** listmap, catmap, catmap_keys, catmap_vals *************************
 
-let sd1 = stlset (<) ["a","b","c","d"]; members sd1;
+let ss1 = stlset (<) ["a","b","c","d"]; members ss1;
 //- ["a","b","c","d"]
 
-listmap (\k->k+1) sd1;
+listmap (\k->k+1) ss1;
 //- ["b","c","d","e"]
 
-catmap (\k->[k+1]) sd1;
+catmap (\k->[k+1]) ss1;
 //- ["b","c","d","e"]
 
-catmap (\k->[k+1]) (sd1,"a","b");
+catmap (\k->[k+1]) (ss1,"a","b");
 //- ["b"]
 
-catmap_keys (\x->[x,ord x]) sd1;
+catmap_keys (\x->[x,ord x]) ss1;
 //- ["a",97,"b",98,"c",99,"d",100]
 
-catmap_keys (\x->[x,ord x]) (sd1,"a","a");
+catmap_keys (\x->[x,ord x]) (ss1,"a","a");
 //- []
 
-catmap_vals (\x->[x,ord x]) sd1;
+catmap_vals (\x->[x,ord x]) ss1;
 //- ["a",97,"b",98,"c",99,"d",100]
 
-catmap_vals (\x->[x,ord x]) (sd1,"a","a");
+catmap_vals (\x->[x,ord x]) (ss1,"a","a");
 //- []
 
-[ k+1 | k = sd1];
+[ k+1 | k = ss1];
 //- ["b","c","d","e"]
 
-[ k | k = sd1; (ord k) mod 2];
+[ k | k = ss1; (ord k) mod 2];
 //- ["a","c"]
 
-{ k+1 | k = sd1};
+{ k+1 | k = ss1};
 //- {"b","c","d","e"}
 
-{ {k;ord k} | k = sd1; (ord k) mod 2};
+{ {k;ord k} | k = ss1; (ord k) mod 2};
 //- {"a","c";97,99}
 
 //** foldl, foldl1, foldr, foldr1 ***********************************
 
-let sd1 = stlset (<) ["a","b","c","d"]; members sd1;
+let ss1 = stlset (<) ["a","b","c","d"]; members ss1;
 //- ["a","b","c","d"]
 
-foldl (\acc k -> k:acc) [] sd1;
+foldl (\acc k -> k:acc) [] ss1;
 //- ["d","c","b","a"]
 
-foldl (\acc k -> k:acc) [] (sd1,"a","d");
+foldl (\acc k -> k:acc) [] (ss1,"a","d");
 //- ["c","b","a"]
 
-foldl (\acc k -> k:acc) [] (sd1,"b",stl::sdend);
+foldl (\acc k -> k:acc) [] (ss1,"b",stl::sdend);
 //- ["d","c","b"]
 
-foldl (\acc k -> k:acc) [] (sd1,"b","d");
+foldl (\acc k -> k:acc) [] (ss1,"b","d");
 //- ["c","b"]
 
-foldl (\acc k -> k:acc) [] (sd1,"b","b");
+foldl (\acc k -> k:acc) [] (ss1,"b","b");
 //- []
 
-foldl1 (\acc k -> k+acc) sd1;
+foldl1 (\acc k -> k+acc) ss1;
 //- "dcba"
 
-foldl1 (\acc k -> k+acc) (sd1,"a","d");
+foldl1 (\acc k -> k+acc) (ss1,"a","d");
 //- "cba"
 
-foldl1 (\acc k -> k+acc) (sd1,"b",stl::sdend);
+foldl1 (\acc k -> k+acc) (ss1,"b",stl::sdend);
 //- "dcb"
 
-foldl1 (\acc k -> k+acc) (sd1,"b","d");
+foldl1 (\acc k -> k+acc) (ss1,"b","d");
 //- "cb"
 
-foldl1 (\acc k -> k+acc) (sd1,"b","b"); (); // fails
+foldl1 (\acc k -> k+acc) (ss1,"b","b"); (); // fails
 //- ()
 
-foldr (\k acc -> k:acc) [] sd1;
+foldr (\k acc -> k:acc) [] ss1;
 //- ["a","b","c","d"]
 
-foldr (\k acc -> k:acc) [] (sd1,"a","d");
+foldr (\k acc -> k:acc) [] (ss1,"a","d");
 //- ["a","b","c"]
 
-foldr (\k acc -> k:acc) [] (sd1,"b",stl::sdend);
+foldr (\k acc -> k:acc) [] (ss1,"b",stl::sdend);
 //- ["b","c","d"]
 
-foldr (\k acc -> k:acc) [] (sd1,"b","d");
+foldr (\k acc -> k:acc) [] (ss1,"b","d");
 //- ["b","c"]
 
-foldr (\k acc -> k:acc) [] (sd1,"b","b");
+foldr (\k acc -> k:acc) [] (ss1,"b","b");
 //- []
 
-foldr1 (\k acc -> k+acc) sd1;
+foldr1 (\k acc -> k+acc) ss1;
 //- "abcd"
 
-foldr1 (\k acc -> k+acc) (sd1,"a","d");
+foldr1 (\k acc -> k+acc) (ss1,"a","d");
 //- "abc"
 
-foldr1 (\k acc -> k+acc) (sd1,"b",stl::sdend);
+foldr1 (\k acc -> k+acc) (ss1,"b",stl::sdend);
 //- "bcd"
 
-foldr1 (\k acc -> k+acc) (sd1,"b","d");
+foldr1 (\k acc -> k+acc) (ss1,"b","d");
 //- "bc"
 
-foldr1 (\k acc -> k+acc) (sd1,"b","b"); (); // fails
+foldr1 (\k acc -> k+acc) (ss1,"b","b"); (); // fails
 //- ()
 
 //*** do, filter *******************************************************
 
-let sd1 = stlset (<) ["a","b","c","d"]; members sd1;
+let ss1 = stlset (<) ["a","b","c","d"]; members ss1;
 //- ["a","b","c","d"]
 
-let sd2 = emptystlset (>); ();
+let ss2 = emptystlset (>); ();
 //- ()
 
-do (\k -> update sd2 k 0) sd1; members sd2;
+do (\k -> update ss2 k 0) ss1; members ss2;
 //- ["d","c","b","a"]
 
-erase sd2; do (\k -> update sd2 k 0) (sd1,"a","d"); members sd2;
+erase ss2; do (\k -> update ss2 k 0) (ss1,"a","d"); members ss2;
 //- ["c","b","a"]
 
-erase sd2; do (\k -> update sd2 k 0) (sd1,"b","x"); members sd2;
+erase ss2; do (\k -> update ss2 k 0) (ss1,"b","x"); members ss2;
 //- ["d","c","b"]
 
-erase sd2; do (\k -> update sd2 k 0) (sd1,"0","0"); members sd2;
+erase ss2; do (\k -> update ss2 k 0) (ss1,"0","0"); members ss2;
 //- []
 
-erase sd2; do (\k -> update sd2 k 0) (sd1,"x","x"); members sd2;
+erase ss2; do (\k -> update ss2 k 0) (ss1,"x","x"); members ss2;
 //- []
 
-erase sd2; do (\k -> update sd2 k 0) (sd1,"d","x"); members sd2;
+erase ss2; do (\k -> update ss2 k 0) (ss1,"d","x"); members ss2;
 //- ["d"]
 
-erase sd2; do (\k -> insert sd2 k) (sd1,"a","d"); members sd2;
+erase ss2; do (\k -> insert ss2 k) (ss1,"a","d"); members ss2;
 //- ["c","b","a"]
 
-erase sd2; do (\k -> insert sd2 k) (sd1,"b","x"); members sd2;
+erase ss2; do (\k -> insert ss2 k) (ss1,"b","x"); members ss2;
 //- ["d","c","b"]
 
-erase sd2; do (\k -> insert sd2 k) (sd1,"0","0"); members sd2;
+erase ss2; do (\k -> insert ss2 k) (ss1,"0","0"); members ss2;
 //- []
 
-erase sd2; do (\k -> insert sd2 k) (sd1,"x","x"); members sd2;
+erase ss2; do (\k -> insert ss2 k) (ss1,"x","x"); members ss2;
 //- []
 
-erase sd2; do (\k -> insert sd2 k) (sd1,"d","x"); members sd2;
+erase ss2; do (\k -> insert ss2 k) (ss1,"d","x"); members ss2;
 //- ["d"]
 
-filter (\k -> (ord k) mod 2) sd1;
+filter (\k -> (ord k) mod 2) ss1;
 //- ["a","c"]
 
-filter (\k -> (ord k) mod 2) (sd1,"a","c");
+filter (\k -> (ord k) mod 2) (ss1,"a","c");
 //- ["a"]
 
-filter (\k -> (ord k) mod 2) (sd1,"c",stl::sdend);
+filter (\k -> (ord k) mod 2) (ss1,"c",stl::sdend);
 //- ["c"]
 
-filter (\k -> (ord k) mod 2) (sd1,"d","d");
+filter (\k -> (ord k) mod 2) (ss1,"d","d");
 //- []
 
 //** Set operations ******************************************************
 
-let sd1 = stlset (<) ["a","b","c","d"]; members sd1;
+let ss1 = stlset (<) ["a","b","c","d"]; members ss1;
 //- ["a","b","c","d"]
 
-let sd2 = stlset (<) ["b","c","d","e"]; members sd1;
+let ss2 = stlset (<) ["b","c","d","e"]; members ss1;
 //- ["a","b","c","d"]
 
-members (sd1 + sd1);
+members (ss1 + ss1);
 //- ["a","b","c","d"]
 
-members (sd1 + sd2);
+members (ss1 + ss2);
 //- ["a","b","c","d","e"]
 
-members (sd2 + sd1);
+members (ss2 + ss1);
 //- ["a","b","c","d","e"]
 
-members (sd1 - sd1);
+members (ss1 - ss1);
 //- []
 
-members (sd1 - sd2);
+members (ss1 - ss2);
 //- ["a"]
 
-members (sd2 - sd1);
+members (ss2 - ss1);
 //- ["e"]
 
-members (sd1 * sd1);
+members (ss1 * ss1);
 //- ["a","b","c","d"]
 
-members (sd1 * sd2);
+members (ss1 * ss2);
 //- ["b","c","d"]
 
-members (sd2 * sd1);
+members (ss2 * ss1);
 //- ["b","c","d"]
 
-members (sd1 / sd1);
+members (ss1 / ss1);
 //- []
 
-members (sd1 / sd2);
+members (ss1 / ss2);
 //- ["a","e"]
 
-members (sd2 / sd1);
+members (ss2 / ss1);
 //- ["a","e"]
 
-members $ (sd1,"b","d") + (sd2, "c","e");
+members $ (ss1,"b","d") + (ss2, "c","e");
 //- ["b","c","d"]
 
-members $ (sd1,"b","d") - (sd2, "c","e");
+members $ (ss1,"b","d") - (ss2, "c","e");
 //- ["b"]
 
-members $ (sd1,"b","d") * (sd2, "c","e");
+members $ (ss1,"b","d") * (ss2, "c","e");
 //- ["c"]
 
-members $ (sd1,"b","d") / (sd2, "c","e");
+members $ (ss1,"b","d") / (ss2, "c","e");
 //- ["b","d"]
+
+//** Cache sensitive sequences ****************************************
+
+let ss1 = stlset (<) ("a".."j"); members ss1;
+//- ["a","b","c","d","e","f","g","h","i","j"]
+
+stl::set_sd_trace 1;
+//- ()
+
+member ss1 "a";
+//- 1
+
+ss1!"a";
+//- "a"
+
+delete ss1 "b"; members ss1;
+//- ["a","c","d","e","f","g","h","i","j"]
+
+ss1!"a";
+//- "a"
+
+member ss1 "a";
+//- 1
+
+delete ss1 "a"; members ss1;
+//- ["c","d","e","f","g","h","i","j"]
+
+member ss1 "a";
+//- 0
+
+member ss1 "e";
+//- 1
+
+rmfirst ss1;
+//- ()
+
+member ss1 "e";
+//- 1
+
+member ss1 "c";
+//- 0
+
+member ss1 "e"
+//- 1
+
+rmlast ss1; members ss1;
+//- ["d","e","f","g","h","i"]
+
+member ss1 "e";
+//- 1
+
+member ss1 "j";
+//- 0
+
+member ss1 "e";
+//- 1
+
+erase (ss1, "h", stl::sdend); members ss1;
+//- ["d","e","f","g"]
+
+member ss1 "e";
+//- 1
+
+member ss1 "i";
+//- 0
+
+member ss1 "e";
+//- 1
+
+stl::set_sd_trace 0;
+//- ()
 
