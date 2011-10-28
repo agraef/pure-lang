@@ -281,8 +281,10 @@ extern "C" void hashmap_free(myhashmap *m)
 
 static pure_expr *make_hashmap(myhashmap *m)
 {
-  return pure_sentry(pure_symbol(pure_sym("hashmap_free")),
-                     pure_tag(hashmap_tag(), pure_pointer(m)));
+  static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
+  if (!fno) fno = pure_sym("hashmap_free");
+  return pure_sentry(pure_symbol(fno),
+		     pure_tag(hashmap_tag(), pure_pointer(m)));
 }
 
 extern "C" void hashmap_add(myhashmap *m, pure_expr *key);
@@ -405,7 +407,8 @@ extern "C" pure_expr *hashmap_vals(myhashmap *m)
 extern "C" pure_expr *hashmap_list(myhashmap *m)
 {
   size_t i = 0, n = m->size();
-  int32_t fno = pure_getsym("=>");
+  static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
+  if (!fno) fno = pure_getsym("=>");
   assert(fno > 0);
   pure_expr **xs = new pure_expr*[n], *f = pure_new(pure_symbol(fno));
   for (myhashmap::iterator it = m->begin(); it != m->end(); ++it)
@@ -419,7 +422,8 @@ extern "C" pure_expr *hashmap_list(myhashmap *m)
 extern "C" pure_expr *hashmap_tuple(myhashmap *m)
 {
   size_t i = 0, n = m->size();
-  int32_t fno = pure_getsym("=>");
+  static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
+  if (!fno) fno = pure_getsym("=>");
   assert(fno > 0);
   pure_expr **xs = new pure_expr*[n], *f = pure_new(pure_symbol(fno));
   for (myhashmap::iterator it = m->begin(); it != m->end(); ++it)
@@ -433,7 +437,8 @@ extern "C" pure_expr *hashmap_tuple(myhashmap *m)
 extern "C" pure_expr *hashmap_vector(myhashmap *m)
 {
   size_t i = 0, n = m->size();
-  int32_t fno = pure_getsym("=>");
+  static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
+  if (!fno) fno = pure_getsym("=>");
   assert(fno > 0);
   pure_expr **xs = new pure_expr*[n], *f = pure_new(pure_symbol(fno));
   for (myhashmap::iterator it = m->begin(); it != m->end(); ++it)
@@ -663,8 +668,10 @@ extern "C" void hashmmap_free(myhashmmap *m)
 
 static pure_expr *make_hashmmap(myhashmmap *m)
 {
-  return pure_sentry(pure_symbol(pure_sym("hashmmap_free")),
-                     pure_tag(hashmmap_tag(), pure_pointer(m)));
+  static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
+  if (!fno) fno = pure_sym("hashmmap_free");
+  return pure_sentry(pure_symbol(fno),
+		     pure_tag(hashmmap_tag(), pure_pointer(m)));
 }
 
 extern "C" void hashmmap_add(myhashmmap *m, pure_expr *key);
@@ -788,7 +795,8 @@ extern "C" pure_expr *hashmmap_vals(myhashmmap *m)
 extern "C" pure_expr *hashmmap_list(myhashmmap *m)
 {
   size_t i = 0, n = m->size();
-  int32_t fno = pure_getsym("=>");
+  static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
+  if (!fno) fno = pure_getsym("=>");
   assert(fno > 0);
   pure_expr **xs = new pure_expr*[n], *f = pure_new(pure_symbol(fno));
   for (myhashmmap::iterator it = m->begin(); it != m->end(); ++it)
@@ -802,7 +810,8 @@ extern "C" pure_expr *hashmmap_list(myhashmmap *m)
 extern "C" pure_expr *hashmmap_tuple(myhashmmap *m)
 {
   size_t i = 0, n = m->size();
-  int32_t fno = pure_getsym("=>");
+  static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
+  if (!fno) fno = pure_getsym("=>");
   assert(fno > 0);
   pure_expr **xs = new pure_expr*[n], *f = pure_new(pure_symbol(fno));
   for (myhashmmap::iterator it = m->begin(); it != m->end(); ++it)
@@ -816,7 +825,8 @@ extern "C" pure_expr *hashmmap_tuple(myhashmmap *m)
 extern "C" pure_expr *hashmmap_vector(myhashmmap *m)
 {
   size_t i = 0, n = m->size();
-  int32_t fno = pure_getsym("=>");
+  static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
+  if (!fno) fno = pure_getsym("=>");
   assert(fno > 0);
   pure_expr **xs = new pure_expr*[n], *f = pure_new(pure_symbol(fno));
   for (myhashmmap::iterator it = m->begin(); it != m->end(); ++it)
