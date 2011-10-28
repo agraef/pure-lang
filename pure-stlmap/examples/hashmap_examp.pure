@@ -136,11 +136,15 @@ m!bar;
 /* Basic set-like operations like union, intersection etc. aren't provided by
    the module either, but you can easily implement them yourself as follows.
    Note that we take a copy of the first operand here in order to preserve
-   value semantics. */
+   value semantics. We also define a 'hashxmap' union type here, so that the
+   definitions below work with both 'hashmap' and 'hashmmap' (see below for
+   the latter). */
 
-x::hashmap + y::hashmap = foldl insert (copy x) (list y);
-x::hashmap - y::hashmap = foldl delete (copy x) (list y);
-x::hashmap * y::hashmap = x-(x-y);
+type hashxmap x::hashmap | hashxmap x::hashmmap;
+
+x::hashxmap + y::hashxmap = foldl insert (copy x) (list y);
+x::hashxmap - y::hashxmap = foldl delete (copy x) (list y);
+x::hashxmap * y::hashxmap = x-(x-y);
 
 let m1 = hashmap [5,1,3,11,3];
 let m2 = hashmap (3..6);
@@ -157,10 +161,6 @@ hashmap [foo=>99,baz=>1..5] + hashmap [bar=>bar 4711L];
    that they may contain multiple key-value associations for each key. They
    are implemented by the hashmmap type, which provides pretty much the same
    API as the hashmap type. */
-
-x::hashmmap + y::hashmmap = foldl insert (copy x) (list y);
-x::hashmmap - y::hashmmap = foldl delete (copy x) (list y);
-x::hashmmap * y::hashmmap = x-(x-y);
 
 let m1 = hashmmap [5,1,3,11,3];
 let m2 = hashmmap (3..6);
