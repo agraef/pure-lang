@@ -24,11 +24,26 @@ included with the pure-stldict distribution package for details.
 
 using namespace std;
 
+/*** Helpers for debugging only ************************************/
+
+static bool sd_trace_enabled = false;
+
+void stl_set_sd_trace(bool enable) 
+{
+  sd_trace_enabled = enable;
+}
+
+bool stl_sd_trace_enabled()
+{
+  return sd_trace_enabled;
+}
+
 /*** Helpers for stldict.cpp only ************************************/
 
 static px* null_value() 
 {
-  static px* nv = pure_pointer(0);
+  static px* nv = 0;
+  if (!nv) nv = pure_pointer(0);
   return nv;
 }
 
@@ -679,7 +694,9 @@ void sd_remove_kv(sd* dict, px* kv)
 
 void sd_remove(sd* dict, px* k)
 {
+  cerr << "sd_remove 1, k->refc: " << k->refc << endl;
   dict->mp.erase(k);
+  cerr << "sd_remove 2, " << k << ": ->refc: " << k->refc << endl;
 }
 
 int sd_remove_all(sd* dict, px* k)
