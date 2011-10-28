@@ -31,26 +31,14 @@ ostream& operator<<(ostream& os, px* x){
 
 static bool px_trace_enabled = false;
 
-static bool sv_trace_enabled = false;
-
 void stl_set_px_trace(bool enable)
 {
   px_trace_enabled = enable;
 }
 
-void stl_set_sv_trace(bool enable) 
-{
-  sv_trace_enabled = enable;
-}
-
 bool stl_px_trace_enabled()
 {
   return px_trace_enabled;
-}
-
-bool stl_sv_trace_enabled()
-{
-  return sv_trace_enabled;
 }
 
 #ifdef STL_DEBUG
