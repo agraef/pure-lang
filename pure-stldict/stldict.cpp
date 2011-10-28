@@ -29,6 +29,7 @@ using namespace std;
 static px* null_value() 
 {
   static px* nv = pure_pointer(0);
+  cerr << "null_value: " << (void*)nv << ", refc " << nv->refc << endl;
   return nv;
 }
 

@@ -1,0 +1,212 @@
+/* log_eval.pure -- evaluate one line expressions and check results
+
+--- DRAFT - FOR DISCUSSON PURPOSES ONLY ---
+
+Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>.
+
+All rights reserved.
+
+This software is is part of pure-stldict, an addon to the Pure Programming
+Language (http://code.google.com/p/pure-lang/).
+
+This software is distributed under a BSD-style license in the hope that it
+will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the COPYING file
+included with the pure-stlvec distribution package for details.
+
+/*
+
+/* The check_eval function reads string that contains comments, Pure
+   statements and expected results. Typically the string is optained from a
+   file that has examples and tests. E.g.,
+
+      > check_val (fget $ (fopen eg_file "r"));
+
+   Lines in the string s take one of five forms: comments, expected results,
+   all whitespace, option lines, and executables. 
+
+   Comments start with //[^-] or /*. The first type of comments extend to the
+   end of the line. The latter are extend to the next '*' '/' wherever it
+   appears, like C comments.
+
+   An expected result is a line that starts with '//-'.
+
+   An option line starts with '//--'.
+
+   All whitespace lines. Well.
+
+   Anything else is an executable line.
+   
+   log_eval echos each statement to stdout. If the line is an executalbe line
+   log_eval evaluates it. If the line is an expected result, it is matched
+   against the result produced by the last executable line, and an error
+   message is printed if they do not match. It there is a match, or if the
+   expected result was not specified, the result is printed to stdout,
+   preceeded by "//- ". This makes it easy to generate expected results when
+   setting up an example/test file. 
+
+   Comments are denoted as in C++, except they must start on a line where they
+   are only preceeded by whitespace. Depending on the options in force
+   comments are echoed or suppressed in the output.
+
+   If the line is an option line, log_eval changes its processing accordingly.
+   Planned options:
+
+      --comments (-c) arg is a comment_control_string
+      --stop     (-s) stop evaluating
+      --resume   (-r) resume evaluating
+
+   a comment_control_string consists of comma separated comment control 
+   designators: "+c" "-c" "+cc" "-cc". These determine whether or not
+   C style comments and C++ style comments are echoed.
+
+*/
+
+using system, stldict, stlvec, regex, getopt;
+
+/** Options - set in target file ***********************************/
+
+let echo_c = ref 1;
+let echo_cc = ref 1;
+let evaluate = ref 1;
+
+const optspec = [
+  ("--comments",   "-c", REQARG),  // string "c_on,c_off,cc_on,cc_off"
+  ("--stop",       "-s", NOARG),
+  ("--resume",     "-r", NOARG)
+];
+
+set_options ln = () when
+  args = regsplit "[ ]+" REG_EXTENDED ln 0; 
+  opts_hr, other_vals = catch bad_option $ getopt optspec args;
+  opts = record opts_hr;
+  //printf "set_options, opts: %s\n" (str opts);
+  cflags = if member opts "--comments" then opts!"--comments" else "";
+  cflags = split "," cflags; 
+  //printf "cflags: %s\n" (str cflags);
+  stop = if member opts "--stop" then 1 else 0;
+  resume = if member opts "--resume" then 1 else 0;
+  if stop then put evaluate 0 else ();
+  if resume then put evaluate 1 else ();
+  if index cflags "c_off"  >= 0 then put echo_c  0 else ();
+  if index cflags "c_on"   >= 0 then put echo_c  1 else ();
+  if index cflags "cc_off" >= 0 then put echo_cc 0 else ();
+  if index cflags "cc_on" >= 0 then put echo_cc 1 else ();
+end with
+  bad_option x = printf "// unrecognized option: %s" x;
+end;
+
+/** Comments recognized by check_eval ********************************/
+
+const c_comment_rgx = "(^\\s*/\\*([^*]|(\\*+[^*/]))*\\*+/)";
+const line_rgx = "^([^\n]*)(\n)(.*)";
+
+print_cc_comment s = if get echo_cc then printf "%s\n" s else (); 
+
+parse_c_comment s = cs, s1 when
+  info = reg_info $ regex c_comment_rgx REG_EXTENDED s 0;
+  cs = if null info then "" else (info!1);
+  s1 = if null cs then s else substr s (#cs) 100000;
+end;
+
+strip_c_comments s = if null cs then s2 else strip_c_comments s1 when
+  cs, s1 = parse_c_comment s;
+   if ~null cs && (get echo_c) then printf "%s" cs else ();
+  info = reg_info $ regex line_rgx REG_EXTENDED s1 0;
+  s2 =  if get echo_c then s1 else if null info then  "" else info!7;
+end;
+
+/** Parse lines *******************************************************/
+
+all_ws line = regex "^\\s*$" (REG_EXTENDED+REG_NOSUB) line 0;
+
+const other_line = 0;
+const cmd_line = 1;   // xxx
+const res_line = 2;   // //- xxxx
+const ws_line = 3;    // 
+const cc_comment_line = 4;
+const c_comment_line = 5;
+const option_line = 6;
+
+// type, line, rest
+parse_line s = tp, ln, rst when
+  info = reg_info $ regex line_rgx REG_EXTENDED s 0;
+  ln, rst  = if null info then  "", "" else info!3, info!7;
+  tp, ln = if null ln then
+             ws_line, ln
+           else if regex "^\\s*//--" (REG_EXTENDED+REG_NOSUB) ln 0 then 
+             option_line, substr ln 4 10000 
+           else if regex "^\\s*//- " (REG_EXTENDED+REG_NOSUB) ln 0 then 
+             res_line, substr ln 4 10000 
+           else if regex "^\\s*(//)" (REG_EXTENDED+REG_NOSUB) ln 0 then 
+             cc_comment_line, ln
+           else if regex "^\\s*(/\\*)" (REG_EXTENDED+REG_NOSUB) ln 0 then 
+             c_comment_line, s
+           else if regex "^\\s*$" (REG_EXTENDED+REG_NOSUB) ln 0 then 
+             ws_line, ln
+           else
+             cmd_line, ln;
+   tp, ln, rst = if tp == c_comment_line then
+                  parse_line (strip_c_comments s)
+                else tp, ln, rst;
+ end;
+
+/** Process file ******************************************************/
+
+check_eval script::string = doline script with
+  doline "" = get num_errs;
+  doline s = doline rest when
+    tp, line, rest = parse_line s;
+    if tp == option_line then set_options line
+    else if get evaluate then really_doline tp line else ();
+  end;
+  really_doline tp line = () when
+    if tp == ws_line then puts line
+    else if tp == cc_comment_line then print_cc_comment line 
+    else if tp == res_line then check_res line 
+    else if tp == cmd_line then do_cmd line else ();
+  end;
+  check_res res = () when
+    if (get last_res) ~= res then 
+      bump_ec $$
+      printf "--- expected: |%s|\n         got: |%s|\n"
+      (res, get last_res)
+    else ();
+    put last_res "";
+  end;
+  do_cmd cmd = () when
+    printf "%s\n" cmd;
+    s = str (eval cmd);
+    printf "//- %s\n";
+    put last_res s;
+  end;
+  bump_ec = put num_errs (get num_errs + 1);
+end when
+  last_res = ref "";
+  num_errs = ref 0;
+end;
+
+/** main *************************************************************/
+
+const usage = 
+"Usage: pure -x check_eval FILE\n"+
+"Evaluate single line Pure statements and check the results. File is a\n"+
+"Pure script where each statement occurs on one line. Expected results\n" +
+"are specified on the next line, prefixed by '//- '. Commments recognized\n"+
+"by check_eval must begin on a fresh line, preceded only by whitespace.\n" +
+"See source file for more details.";
+
+main args = () when
+  fp = if null args then puts usage $$ exit 1 else fopen (args!0) "r";
+  ec, _ = if ~pointerp fp || null fp then
+         puts "could not open file" $$ 0, 0
+       else
+         check_eval (fget fp), fclose fp;
+  if ec > 0 then printf "--- warning: encountered %d error(s) ---\n" ec else ();
+end;
+
+check filename = main [filename];
+
+check_default = main ["ut_check_eval_script.pure"];
+
+if argc > 1 then main (tail argv) else ();
