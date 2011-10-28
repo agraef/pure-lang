@@ -29,7 +29,6 @@ using namespace std;
 static px* null_value() 
 {
   static px* nv = pure_pointer(0);
-  cerr << "null_value: " << (void*)nv << ", refc " << nv->refc << endl;
   return nv;
 }
 
@@ -152,7 +151,7 @@ bool stldict::get_cached_sdi(px* k, sdi& i)
   bool found = k != sdbeg() && k != sdend() &&
     has_recent_sdi && same(recent_sdi->first.pxp(), k);
   if (found) i = recent_sdi;
-  if (found) cerr << "get_cached_sdi, found k: " << k << endl;
+  //if (found) cerr << "get_cached_sdi, found k: " << k << endl;
   return found;
 }
 
