@@ -1,0 +1,379 @@
+=================
+The Pure Tutorial
+=================
+
+.. role:: dfn(strong)
+.. default-role:: dfn
+.. default-domain:: pure
+
+.. |FDL| replace:: GNU Free Documentation License
+.. _FDL: http://www.gnu.org/copyleft/fdl.html
+
+.. Teach TeX how to hyphenate 'namespace' and 'whitespace'.
+
+.. raw:: latex
+
+   \hyphenation{name-space}
+   \hyphenation{name-spaces}
+   \hyphenation{white-space}
+
+Version @version@, |today|
+
+.. Note to coauthors: please add your name below.
+
+| Albert Gräf <Dr.Graef@t-online.de>
+
+Copyright (c) 2011. This document is available under the |FDL|_. **Note:**
+This document is work in progress. Please bear with us while we're slaving
+away on it (or, if you're an experienced programmer willing to help, you might
+write a section or two!).
+
+Introduction
+============
+
+This tutorial introduces the Pure programming language by way of examples,
+explaining the major elements and concepts of the language along the way. The
+goal is to help you to quickly gather a basic understanding of Pure and master
+the initial learning curve.
+
+This document does not pretend to be an introduction to programming in
+general, so it certainly helps if you already have an idea what programming is
+all about and some familiarity with at least one other programming language
+such as C, Python or Lisp. Also, we don't give an exhaustive account of the
+Pure language, although we aim to discuss the most important language elements
+in some detail. Therefore you should consult the other available
+documentation, in particular :doc:`pure`, if you want to learn more.
+
+So what is Pure, anyway? First, it is a `functional` language, like, say, Lisp
+and Haskell, but don't let this scare you. Functional programming languages
+have a reputation of being difficult to use, which isn't entirely undeserved
+in some cases, but the difficulties are often due to a lack of familiarity, as
+most programmers today still learn their craft using `imperative` languages
+such as Pascal, C and Java. It is no wonder that they are then at a loss when
+they first encounter a language which does (some, not all) things a bit
+differently. Fortunately, mainstream languages have been picking up powerful
+and convenient features from functional languages left and right, so that
+these features nowadays will be a lot more familiar to programmers than, say,
+20 years ago. In any case, we hope that after working though this tutorial you
+get the feeling that Pure lets you solve many typical programming tasks just
+as easily and elegantly as in other programming languages, and in many cases
+even much *more* easily and elegantly.
+
+Second, Pure uses `term rewriting` as its model of computation. What this
+basically means is that all your function definitions are essentially
+collections of equations which are used to evaluate expressions in a symbolic
+fashion. This is probably one of Pure's most unusual aspects, but it gives the
+language a lot of power and flexibility. It is also surprisingly easy to
+understand once you grasp that, on an abstract level, all computations
+performed by the interpreter are really nothing more but sequences of simple
+algebraic manipulations, only much faster than you could ever do them by hand.
+
+Third, Pure is a `typeless` (or, more precisely, a `dynamically typed`)
+language. Again, this was a conscious design decision motivated by the choice
+of computational model, but it also keeps the language simple and supports a
+freewheeling, interactive development style. Still, Pure programs are compiled
+to native code, so that they are executed with reasonable efficiency.  Pure
+can't really compete with compiled statically typed languages in terms of
+speed and type safety. (If you want Haskell or ML, you know where to find
+them.) But it's a small yet powerful language which makes programming fun and
+entertaining (in the author's opinion, anyway).
+
+Fourth, Pure provides a seamless interface to `external functions` written in
+C, C++ and Fortran, and thus is open to the imperative world out there and its
+wealth of useful software libraries. To these ends, despite its name, Pure
+decidedly is not a “purely” functional language. Performing I/O and doing all
+kinds of other side-effects is very easy in Pure. In fact, the ease with which
+you can integrate functions from external libraries, together with the
+interactive interpreter-like environment also turns Pure into a useful
+`scripting language` for many different purposes.
+
+This hopefully suffices as a little appetizer, so let's jump right in!
+
+**Typographical Conventions**
+
+Throughout the entire Pure documentation, Pure programs are set in typewriter
+font (adding a moderate amount of syntax highlighting for easier reading). For
+instance, here is a little Pure program which defines the factorial function::
+
+  fact n = if n>0 then n*fact (n-1) else 1;
+
+Such code fragments can be entered directly at the interpreter's prompt, but
+usually you will want to put them into a text file which can then be loaded in
+the interpreter, as described in the following section.
+
+Often we will also show sample interactions with the Pure interpreter in order
+to explain how the programs are to be used. For instance, an invocation of the
+above factorial function may look as follows::
+
+  > map fact (1..10);
+  [1,2,6,24,120,720,5040,40320,362880,3628800]
+
+In this example, you are supposed to type ``map fact (1..10);`` at the command
+prompt of the interpreter, after which the result
+``[1,2,6,24,120,720,5040,40320,362880,3628800]`` will be printed. In general,
+all text after the prompt ``>`` is meant to be typed exactly as written
+(including the terminating semicolon), while the other lines indicate results
+and other responses printed by the interpreter.
+
+In some cases we will show commands to be typed at your system's command
+shell, which are indicated as follows (here ``$`` is taken to denote the shell
+command prompt, which of course varies for different systems):
+
+.. code-block:: console
+
+   $ pure factorial.pure
+
+Getting Started
+===============
+
+Before diving into the language, let us start out with a very brief overview
+of the Pure environment, so that you get a basic understanding of how all the
+bits and pieces fit together. For the sake of brevity, we strictly keep to the
+basics which are unlikely to change much with future releases of the Pure
+environment. For more detailed and up-to-date information, please refer to the
+`Pure website`_, where you can find the required software and all available
+documentation, as well as a wiki with additional helpful information. (Since
+you're reading this tutorial, most likely you have already discovered this.)
+Another very useful resource is the `Pure mailing list`_ where you can discuss
+Pure with fellow Pure programmers and ask any questions that you might have.
+
+.. _Pure website: http://pure-lang.googlecode.com/
+.. _Pure mailing list: http://groups.google.com/group/pure-lang
+
+The Pure Interpreter
+--------------------
+
+The Pure language is implemented by an interactive program which lets you
+enter Pure programs and execute them. This program is called the Pure
+`interpreter`. If you have used any kind of dynamic programming language such
+as Lisp, Python or Ruby then you should already be familiar with this concept.
+
+.. note:: The term "interpreter" is a bit of a misnomer here, since the Pure
+   front-end actually never "interprets" any code, but rather compiles it to
+   native code which can be executed much more efficiently. The front-end does
+   this on the fly, whenever the code first needs to be executed; this is also
+   known as `JIT` ("just in time") compilation. All this happens
+   automatically, transparently to the user, so for all practical purposes the
+   system works as if it actually was an interpreter, and offers about the
+   same degree of dynamicity and interactivity.
+
+So the first thing that you'll have to do in order to use Pure is to install
+the interpreter. For most examples in this text a basic installation
+(consisting of just the "pure" package containing the interpreter and the
+standard library) should be all that's needed. If some piece of code in this
+text requires any additional software, we will tell you where to find it in
+due course.
+
+.. _GNU C++ compiler: http://gcc.gnu.org/
+.. _GNU make: http://www.gnu.org/s/make/
+.. _LLVM library: http://llvm.org/
+
+The details of installing the interpreter vary depending on which operating
+system you use. You should first check whether there's a binary package for
+your system, this will make things easier. Otherwise you'll have to build the
+interpreter from source code. The necessary steps to do that are rather
+straightforward once you have all the requisite tools and libraries installed.
+In particular, you'll need the `GNU C++ compiler`_ and `GNU make`_ to compile
+the program, as well as the `LLVM library`_ which provides the compiler
+back-end the Pure interpreter uses to translate your Pure programs to
+executable code. Having unpacked the source tarball containing the interpreter
+(usually ``pure-x.y.tar.gz``, where ``x.y`` denotes the version number),
+follow the instructions in :doc:`install` to build and install the interpreter
+from source. On Linux and other Unix-like systems, a command like the
+following should do the trick:
+
+.. code-block:: console
+
+   $ ./configure --enable-release && make && sudo make install
+
+(This and the next few commands should be run in the directory created when
+you unpacked the sources.)
+
+It's advisable to also run the following command, to ensure that the
+interpreter is working properly on your system:
+
+.. code-block:: console
+
+   $ make check
+
+On some systems, you'll also have to run a special command to make the Pure
+runtime library, which just got installed along with the interpreter, known to
+the system. E.g., on Linux you'd run the following command:
+
+.. code-block:: console
+
+   $ sudo ldconfig
+
+If all that went smoothly, you should now be able to invoke the interpreter
+from the command line just like any other program.
+
+.. note:: If things didn't go smoothly, you may first try to diagnose the
+   problem yourself. In particular, if the ``make check`` command quickly
+   exits with nothing but a bunch of ``FAIL`` messages, even though the
+   interpreter built fine, then most likely there's an installation problem
+   with the LLVM libraries (forgot to run ``ldconfig``?). Otherwise your best
+   bet is to try the `Pure mailing list`_ for help.
+
+So let's give it a go:
+
+.. code-block:: console
+
+   $ pure
+   Pure @version@ (x86_64-unknown-linux-gnu) Copyright (c) 2008-2011 by Albert Graef
+   (Type 'help' for help, 'help copying' for license information.)
+   Loaded prelude from /usr/local/lib/pure/prelude.pure.
+
+   > 
+
+As you can see, the interpreter greets you with a little sign-on message, so
+that you know that it's up and running and which version you have, and then
+leaves you at its command prompt. At this point you can start typing Pure
+code, such as definitions and expressions to be evaluated::
+
+  > fact n = if n>0 then n*fact (n-1) else 1;
+  > map fact (1..10);
+  [1,2,6,24,120,720,5040,40320,362880,3628800]
+
+Proceeding in this fashion, you can readily use the interpreter as a
+sophisticated kind of desktop calculator. Note, however, that even when
+entering Pure code interactively, you always have to terminate definitions and
+expressions with a semicolon, as shown above. In contrast to languages like
+Python, "whitespace" (that is, blanks, tabs and even newlines) are
+insignificant. That has the advantage that you can break complicated
+definitions and expressions into multiple lines without having to escape line
+ends. On the other hand, it means that the interpreter will just keep on
+sitting idle if you forget to enter the terminating semicolon. This may well
+happen quite a bit when you begin using Pure, but is nothing to worry about;
+just enter the semicolon on a line by itself to initiate the computation::
+
+  > 6*7 // oops, forgot the semicolon here
+  > ;
+  42
+
+.. _GNU readline: http://www.gnu.org/s/readline/
+
+The interpreter normally offers support for the `GNU readline`_ library, which
+lets you recall previously entered lines, edit them and resubmit the edited
+lines to the interpreter. This includes a history of past input lines which
+gets saved and reloaded whenever you exit and restart the interpreter. Please
+check the GNU readline documentation for more information.
+
+To exit from the interpreter when you're finished, simply type the ``quit``
+command (or the end-of-file character, ``Ctrl-D`` on Linux, Mac OSX and other
+Unix-like systems) at the beginning of the command line, immediately after the
+prompt. This will return you to the shell:
+
+.. code-block:: console
+
+   > quit
+   $ 
+
+Often you may prefer to enter Pure code in a text editor and save it in a text
+file, called a `script`, which can then be loaded in the interpreter. This can
+be done by specifying the name of the script file when invoking the
+interpreter:
+
+.. code-block:: console
+
+   $ pure -i factorial.pure
+
+(Here the ``-i`` option makes sure that we enter the interactive command loop
+after loading the script. Otherwise the interpreter would just run the script
+in batch mode and then exit immediately.)
+
+We mention in passing that it is also possible to edit and run scripts from
+the Emacs text editor, using Emacs Pure mode, and that there is syntax
+highlighting support for a number of other text editors. More information
+about alternative ways to invoke the Pure interpreter can be found on the
+`Using Pure`_ wiki page, and the interactive features of the interpreter are
+discussed at length in the corresponding section of :doc:`pure`. Also, the
+:doc:`install` document explains in detail what you need to do to set up Pure
+mode for use with Emacs.
+
+.. _Using Pure: http://code.google.com/p/pure-lang/wiki/UsingPure
+
+The Standard Library
+--------------------
+
+To equip the language with some useful programming facilities which will be
+used in almost every Pure program, an installation of the Pure interpreter
+always comes with a collection of Pure scripts which are collectively referred
+to as Pure's `standard library`. A subset of the standard library, called the
+`prelude`, is in fact loaded by default whenever you invoke the interpreter.
+The prelude defines most of the basic operations of the Pure language, such as
+arithmetic, logic, string and list processing. Without the prelude the
+interpreter won't be of much use for anything, so the first time you run the
+interpreter you should check that the prelude was properly loaded, which is
+indicated by a line like the following at the end of the sign-on message:
+
+.. code-block:: console
+
+   Loaded prelude from /usr/local/lib/pure/prelude.pure.
+
+If instead you see an error message which says that the prelude wasn't found,
+then there is some problem with your Pure installation which needs to be fixed
+before you can proceed. Maybe the library got installed in the wrong place or
+with the wrong access permissions, or the files are just missing. If you can't
+figure it out by yourself, consult a local computer wizard, contact the
+maintainer of the package that you used to install Pure, or ask for help on
+the `Pure mailing list`_.
+
+Besides the prelude, the standard library contains additional scripts or
+`modules` which can be loaded when they are needed, by means of a special kind
+of ``using`` declaration, also called an `import clause`. For instance, the
+standard library function :func:`sqrt`, which computes the square root of a
+number, is contained in the ``math.pure`` library script, which can be loaded
+as follows::
+
+  > using math;
+  > sqrt 2;
+  1.4142135623731
+
+Note that you only have to specify the basename of the script file here, the
+``.pure`` filename extension will be added automatically.
+
+There are a number of other useful modules in the standard library which we
+will introduce as we go along; for the gory details, you may refer to the
+:doc:`purelib`. In addition, there is a growing collection of so-called `addon
+modules`, which don't ship with the interpreter but can be installed
+separately. You can find an overview of these on the Addons_ wiki page. And if
+all that is not enough for your programming needs, Pure also allows you to
+interface to existing code in other programming languages, such as C and
+Fortran, quite easily. With the wealth of ready-made libraries available on
+modern computer systems, this is a real boon, and we will discuss the
+corresponding facilities of the Pure language later on in this tutorial.
+
+.. _Addons: http://code.google.com/p/pure-lang/wiki/Addons
+
+Hello, World
+------------
+
+Assuming that you managed to get the Pure interpreter up and running, you're
+now ready to write and execute your first Pure program a.k.a. script. It's
+customary to start out with a little program which just prints the text
+"Hello, world" on the terminal::
+
+  using system;
+  puts "Hello, world";
+
+(This should be familiar to C programmers. In fact, that's really the ``puts``
+function from the C library being used there.)
+
+Put the two lines above into a file named, say, ``hello.pure``. You can then
+run this program from the command line as follows:
+
+.. code-block:: console
+
+   $ pure hello.pure
+   Hello, world
+
+That's it. Congrats, you have just successfully executed your first Pure
+program!
+
+We remark that Pure is often used interactively, so you might just as well
+run the program directly inside the interpreter, like this::
+
+  > run hello.pure
+  Hello, world
+
+WIP, to be continued...
