@@ -19,7 +19,7 @@ using system, stldict, stlvec;
 
 */
 
-//-- --resume --verbose off //start up here
+//-- --resume --verbose on //start up here
 
 //*** Make stlset ******************************************************
 
@@ -32,7 +32,7 @@ let sv1 = stlvec $ members ss1; members sv1;
 let v1 = stl::vector (ss1,"b","d"); v1;
 //- {"b","c"}
 
-let l1 = members (ss1,stl::sdbeg,"e"); l1;
+let l1 = members (ss1,stl::stlbeg,"e"); l1;
 //- ["a","b","c","d"]
 
 let ss2 = emptystlset_with (>); members ss2;
@@ -55,10 +55,10 @@ let ss5 = stlset l1; members ss5;
 let ss1 = stlset ("a".."e"); members ss1;
 //- ["a","b","c","d","e"]
 
-ss1!stl::sdbeg;
+ss1!stl::stlbeg;
 //- 1
 
-ss1!stl::sdend;
+ss1!stl::stlend;
 //- 0
 
 ss1!"a";
@@ -93,7 +93,7 @@ member ss1 "x", member ss1 "z";
 let ss1 = stlset ["a","b","c","d","e"]; members ss1;
 //- ["a","b","c","d","e"]
 
-let kb, ke = stl::sdbeg, stl::sdend; kb, ke;
+let kb, ke = stl::stlbeg, stl::stlend; kb, ke;
 //- stl_begin_iterator,stl_end_iterator
 
 let k1 = next_key ss1 kb; k1;
@@ -146,10 +146,10 @@ members (ss1,"b","e1");
 members (ss1,"0","x");
 //- ["a","b","c","d","e"]
 
-members (ss1,stl::sdbeg,"x");
+members (ss1,stl::stlbeg,"x");
 //- ["a","b","c","d","e"]
 
-members (ss1,"0",stl::sdend);
+members (ss1,"0",stl::stlend);
 //- ["a","b","c","d","e","x","y"]
 
 keys ss1;
@@ -164,10 +164,10 @@ keys (ss1,"b","e1");
 keys (ss1,"0","x");
 //- ["a","b","c","d","e"]
 
-keys (ss1,stl::sdbeg,"x");
+keys (ss1,stl::stlbeg,"x");
 //- ["a","b","c","d","e"]
 
-keys (ss1,"0",stl::sdend);
+keys (ss1,"0",stl::stlend);
 //- ["a","b","c","d","e","x","y"]
 
 vals ss1;
@@ -182,10 +182,10 @@ vals (ss1,"b","e1");
 vals (ss1,"0","x");
 //- ["a","b","c","d","e"]
 
-vals (ss1,stl::sdbeg,"x");
+vals (ss1,stl::stlbeg,"x");
 //- ["a","b","c","d","e"]
 
-vals (ss1,"0",stl::sdend);
+vals (ss1,"0",stl::stlend);
 //- ["a","b","c","d","e","x","y"]
 
 first ss1;
@@ -200,10 +200,10 @@ first (ss1,"b","e1");
 first (ss1,"0","x");
 //- "a"
 
-first (ss1,stl::sdbeg,"x");
+first (ss1,stl::stlbeg,"x");
 //- "a"
 
-first (ss1,"0",stl::sdend);
+first (ss1,"0",stl::stlend);
 //- "a"
 
 last ss1;
@@ -218,10 +218,10 @@ last (ss1,"b","e1");
 last (ss1,"0","x");
 //- "e"
 
-last (ss1,stl::sdbeg,"x");
+last (ss1,stl::stlbeg,"x");
 //- "e"
 
-last (ss1,"0",stl::sdend);
+last (ss1,"0",stl::stlend);
 //- "y"
 
 //*** rmfirst, rmlast, erase, insert and delete ********************
@@ -335,10 +335,10 @@ let ss2, lb, up = stl::bounds (ss1,"0","x"); (lb, up);
 let ss2, lb, up = stl::bounds (ss1,"x","a"); (lb, up);
 //- stl_end_iterator,"b"
 
-let ss2, lb, up = stl::bounds (ss1,stl::sdbeg,"a"); (lb, up);
+let ss2, lb, up = stl::bounds (ss1,stl::stlbeg,"a"); (lb, up);
 //- stl_begin_iterator,"b"
 
-let ss2, lb, up = stl::bounds (ss1,stl::sdend,"x"); (lb, up);
+let ss2, lb, up = stl::bounds (ss1,stl::stlend,"x"); (lb, up);
 //- stl_end_iterator,stl_end_iterator
 
 stl::size ss1;
@@ -347,7 +347,7 @@ stl::size ss1;
 stl::size (ss1,"b","d");
 //- 2
 
-stl::size (ss1,"c",stl::sdend);
+stl::size (ss1,"c",stl::stlend);
 //- 2
 
 //** map, map_keys, map_vals **************************************
@@ -364,19 +364,19 @@ map_keys (+1) ss1;
 map_vals (+1) ss1;
 //- ["b","c","d","e"]
 
-map (\k->k+1) (ss1,stl::sdbeg,stl::sdend);
+map (\k->k+1) (ss1,stl::stlbeg,stl::stlend);
 //- ["b","c","d","e"]
 
-map (\k->k+1) (ss1,stl::sdbeg,"x");
+map (\k->k+1) (ss1,stl::stlbeg,"x");
 //- ["b","c","d","e"]
 
-map (\k->k+1)  (ss1,stl::sdbeg,"d");
+map (\k->k+1)  (ss1,stl::stlbeg,"d");
 //- ["b","c","d"]
 
-map (\k->k+1) (ss1,stl::sdbeg,"a");
+map (\k->k+1) (ss1,stl::stlbeg,"a");
 //- []
 
-map (\k->k+1) (ss1,"0",stl::sdend);
+map (\k->k+1) (ss1,"0",stl::stlend);
 //- ["b","c","d","e"]
 
 map (\k->k+1) (ss1,"b","d");
@@ -434,7 +434,7 @@ foldl (\acc k -> k:acc) [] ss1;
 foldl (\acc k -> k:acc) [] (ss1,"a","d");
 //- ["c","b","a"]
 
-foldl (\acc k -> k:acc) [] (ss1,"b",stl::sdend);
+foldl (\acc k -> k:acc) [] (ss1,"b",stl::stlend);
 //- ["d","c","b"]
 
 foldl (\acc k -> k:acc) [] (ss1,"b","d");
@@ -449,7 +449,7 @@ foldl1 (\acc k -> k+acc) ss1;
 foldl1 (\acc k -> k+acc) (ss1,"a","d");
 //- "cba"
 
-foldl1 (\acc k -> k+acc) (ss1,"b",stl::sdend);
+foldl1 (\acc k -> k+acc) (ss1,"b",stl::stlend);
 //- "dcb"
 
 foldl1 (\acc k -> k+acc) (ss1,"b","d");
@@ -464,7 +464,7 @@ foldr (\k acc -> k:acc) [] ss1;
 foldr (\k acc -> k:acc) [] (ss1,"a","d");
 //- ["a","b","c"]
 
-foldr (\k acc -> k:acc) [] (ss1,"b",stl::sdend);
+foldr (\k acc -> k:acc) [] (ss1,"b",stl::stlend);
 //- ["b","c","d"]
 
 foldr (\k acc -> k:acc) [] (ss1,"b","d");
@@ -479,7 +479,7 @@ foldr1 (\k acc -> k+acc) ss1;
 foldr1 (\k acc -> k+acc) (ss1,"a","d");
 //- "abc"
 
-foldr1 (\k acc -> k+acc) (ss1,"b",stl::sdend);
+foldr1 (\k acc -> k+acc) (ss1,"b",stl::stlend);
 //- "bcd"
 
 foldr1 (\k acc -> k+acc) (ss1,"b","d");
@@ -520,7 +520,7 @@ filter (\k -> (ord k) mod 2) ss1;
 filter (\k -> (ord k) mod 2) (ss1,"a","c");
 //- ["a"]
 
-filter (\k -> (ord k) mod 2) (ss1,"c",stl::sdend);
+filter (\k -> (ord k) mod 2) (ss1,"c",stl::stlend);
 //- ["c"]
 
 filter (\k -> (ord k) mod 2) (ss1,"d","d");
@@ -638,7 +638,7 @@ member ss1 "j";
 member ss1 "e";
 //- 1
 
-erase (ss1, "h", stl::sdend); members ss1;
+erase (ss1, "h", stl::stlend); members ss1;
 //- ["d","e","f","g"]
 
 member ss1 "e";

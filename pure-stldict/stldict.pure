@@ -69,21 +69,9 @@ private extern expr* sd_foldl(expr* fun, expr* val, expr* it);
 private extern expr* sd_foldl1(expr* fun, expr* it);
 private extern expr* sd_foldr(expr* fun, expr* val, expr* it);
 private extern expr* sd_foldr1(expr* fun, expr* it);
-private extern expr* stl_begin();
-private extern expr* stl_end();
-//private extern expr* stl_insert();
 
 extern void stl_set_sd_trace(bool enable) = set_sd_trace;
 extern bool stl_sd_trace_enabled() = sd_trace_enabled;
-
-
-/*** Constants used to specify "iterator tuples" **************************/
-
-const sdbeg = stl_begin;    // corresponds to C++ first element iterator
-const sdend = stl_end;      // corresponds to C++ past-end iterator
-
-nonfix sdbeg;       // to make sdbeg and sdend usable as beg and end markers
-nonfix sdend;       // in C++ style looping over a stldict's contents using 
 
 /*** Helpers **************************************************************/
 
@@ -186,8 +174,9 @@ vector it::sdit = sd_make_vector it;
 size it::sdit = sd_size it;
 
 null it::sdit = sd_size it == 0;
+empty it::sdit = sd_size it == 0;
 
-bounds (STLDICT d) = (STLDICT d), sdbeg, sdend;
+bounds (STLDICT d) = (STLDICT d), stlbeg, stlend;
 
 bounds it@(STLDICT d, _) = (STLDICT d), sd_bounds it;
 
@@ -218,10 +207,6 @@ bounds it@(STLDICT d, _) = (STLDICT d), sd_bounds it;
 ::erase sd@(STLDICT d) = sd_clear d $$ sd;
 
 ::delete sd@(STLDICT d) k = sd_remove d k $$ sd;
-
-//::delete_val sd@(STLDICT d) kv = sd_remove_kv d kv $$ sd;
-
-//::delete_all sd@(STLDICT d) k = sd_remove_all d k;
 
 ::insert sd@(STLDICT d) rk = sd_insert_elm d rk $$ sd;
 

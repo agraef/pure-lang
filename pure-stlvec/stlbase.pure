@@ -46,3 +46,29 @@ type const_svit (CONST_STLVEC _);
 type const_svit (CONST_STLVEC _, _);
 type mutable_svit (STLVEC _);
 type mutable_svit (STLVEC _, _);
+
+// begin and end iterator symbols
+
+namespace stl;
+
+/*** Constants used to specify "iterator tuples" *************************/
+
+// For use with stlvecs
+const svbeg  =  0;  // corresponds to C++ first element iterator
+const svend  = -1;  // corresponds to C++ past-end iterator
+const svback = -2;  // corresponds to C++ back_insert_iterator
+const svrev  = -3;  // request reversal of iterators
+
+nonfix svbeg;       // to make svbeg and svend usable as beg and end markers
+nonfix svend;       // in C++ style looping over a stlvec's contents using 
+nonfix svback;      // a recursion. i.e., make them literal constants like
+nonfix svrev;       // (), []
+
+// For use with other stl containers
+private extern expr* stl_begin();
+private extern expr* stl_end();
+const stlbeg = stl_begin;
+const stlend = stl_end;
+
+nonfix stlbeg;    // to make stlbeg and stlend usable as beg and end markers
+nonfix stlend;    // in C++ style looping over a stldict's contents using 
