@@ -1,4 +1,4 @@
-//-- --comment c_off --resume --verbose off
+//-- --comment c_off --resume --verbose on
 /* ut_stldict_script_a.pure -- examples for basic ops on stldict.
 
    This is a Pure script with a special format that makes it possible for the
@@ -21,6 +21,7 @@
 using system, stldict, stlvec;
 //- ()
 
+//-- --stop
 //*** Make stldict ******************************************************
 
 let sd1 = stldict (<) $ zipwith (=>) ("a".."e") (1..5); members sd1;
@@ -53,9 +54,20 @@ let sd6 = mkstldict (>) 0 ("a".."e"); members sd6;
 let sd7 = emptystldict (>); members sd7;
 //- []
 
+
+//-- --resume
+
+
 //*** Simple Access and Update *************************************
 
 let sd1 = stldict (<) ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]; members sd1;
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
+
+sd1!stl::sdbeg;
+//- 1
+
+catch id $ sd1!stl::sdend;
+//- out_of_bounds
 
 sd1!"a";
 //- 1
@@ -84,7 +96,51 @@ members sd1;
 member sd1 "x", member sd1 "z";
 //- 1,0
 
+//*** Bidirectional iterator functions *******************************
 
+let sd1 = stldict (<) ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]; members sd1;
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
+
+let kb, ke = stl::sdbeg, stl::sdend; kb, ke;
+//- stl_begin_iterator,stl_end_iterator
+
+let k1 = next_key sd1 kb; k1;
+//- "b"
+
+let k2 = next_key sd1 k1; k2;
+//- "c"
+
+let k1 = prev_key sd1 k2; k2;
+//- "c"
+
+let k0 = prev_key sd1 k1; k0;
+//- stl_begin_iterator
+
+catch id $ prev_key sd1 kb; 
+//- out_of_bounds
+
+catch id $ prev_key sd1 k0; 
+//- out_of_bounds
+
+let k4 = prev_key sd1 ke; k4;
+//- "e"
+
+let k3 = prev_key sd1 k4; k3;
+//- "d"
+
+let k4 = next_key sd1 k3; k4;
+//- "e"
+
+let k5 = next_key sd1 k4; k5;
+//- stl_end_iterator
+
+catch id $ next_key sd1 ke; 
+//- out_of_bounds
+
+catch id $ next_key sd1 k5; 
+//- out_of_bounds
+
+//-- --stop
 //*** Members, keys, vals, first, last ********************************
 
 let sd1 = stldict (<) ["a"=>100,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"x"=>200,"y"=>0];

@@ -19,7 +19,7 @@ using system, stldict, stlvec;
 
 */
 
-//-- --resume //start up here
+//-- resume //start up here
 
 //*** Make stlset ******************************************************
 
@@ -49,11 +49,16 @@ let ss5 = stlset (<) l1; members ss5;
 
 let ss7 = emptystlset (>); members ss7;
 //- []
+//-- --resume
 
 //*** Simple Access and Update *************************************
 
 let ss1 = stlset (<) ("a".."e"); members ss1;
 //- ["a","b","c","d","e"]
+
+ss1!stl::sdbeg;
+
+ss1!stl::sdend;
 
 ss1!"a";
 //- 1
@@ -82,6 +87,51 @@ members ss1;
 member ss1 "x", member ss1 "z";
 //- 1,0
 
+//*** Bidirectional iterator functions *******************************
+
+let ss1 = stlset (<) ["a","b","c","d","e"]; members ss1;
+//- ["a","b","c","d","e"]
+
+let kb, ke = stl::sdbeg, stl::sdend; kb, ke;
+//- stl_begin_iterator,stl_end_iterator
+
+let k1 = next_key ss1 kb; k1;
+//- "b"
+
+let k2 = next_key ss1 k1; k2;
+//- "c"
+
+let k1 = prev_key ss1 k2; k2;
+//- "c"
+
+let k0 = prev_key ss1 k1; k0;
+//- stl_begin_iterator
+
+catch id $ prev_key ss1 kb; 
+//- out_of_bounds
+
+catch id $ prev_key ss1 k0; 
+//- out_of_bounds
+
+let k4 = prev_key ss1 ke; k4;
+//- "e"
+
+let k3 = prev_key ss1 k4; k3;
+//- "d"
+
+let k4 = next_key ss1 k3; k4;
+//- "e"
+
+let k5 = next_key ss1 k4; k5;
+//- stl_end_iterator
+
+catch id $ next_key ss1 ke; 
+//- out_of_bounds
+
+catch id $ next_key ss1 k5; 
+//- out_of_bounds
+
+//-- --stop
 //*** Members, keys, vals, first, last ********************************
 
 let ss1 = stlset (<) ["a","b","c","d","e","x","y"]; members ss1;

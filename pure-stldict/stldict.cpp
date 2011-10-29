@@ -214,7 +214,9 @@ void stldict::erase(sdi first, sdi last)
 
 /*** sd_iters functions *********************************************/
 
-static sdi get_iter(sdmap& mp , px* key, bool upper)
+enum {gi_find, gi_lower, gi_upper};
+
+static sdi get_iter(sdmap& mp , px* key, int mode)
 {
   sdi iter;
   if (key == sdbeg())
@@ -222,10 +224,12 @@ static sdi get_iter(sdmap& mp , px* key, bool upper)
   else if (key == sdend())
     iter = mp.end();
   else {
-    if (upper) 
+    if (mode==gi_upper) 
       iter = mp.upper_bound(key);
-    else 
+    else if (mode=gi_lower)
       iter = mp.lower_bound(key);
+    else 
+      iter = mp.find(key);
   }
   return iter;  
 }
@@ -276,8 +280,8 @@ sd_iters::sd_iters(px* sdi_tuple)
     px* e = elems[2];
     px* comp = dict->px_comp.pxp();    
     free(elems);
-    begin_it = get_iter(mp, b, 0);
-    end_it = get_iter(mp,e,1);
+    begin_it = get_iter(mp, b, gi_lower);
+    end_it = get_iter(mp,e,gi_upper);
     if (begin_it == mp.end()) {
       end_it = begin_it;
       return;
@@ -401,12 +405,12 @@ px* sd_bounds(px* tpl)
     ub = sdend();
     break;
   case 2:
-    lb = iter_to_key( mp, get_iter(mp, elems[1], 0) );
-    ub = iter_to_key( mp, get_iter(mp, elems[1], 1) );
+    lb = iter_to_key( mp, get_iter(mp, elems[1], gi_lower) );
+    ub = iter_to_key( mp, get_iter(mp, elems[1], gi_upper) );
     break;
   case 3:
-    lb = iter_to_key( mp, get_iter(mp, elems[1], 0) ); 
-    ub = iter_to_key( mp, get_iter(mp, elems[2], 1) );     
+    lb = iter_to_key( mp, get_iter(mp, elems[1], gi_lower) ); 
+    ub = iter_to_key( mp, get_iter(mp, elems[2], gi_upper) );     
     break;
   }
   free(elems);
@@ -469,7 +473,7 @@ px* sd_get(sd* dict, px* key)
   px* ret = 0;
   sdi i;
   if ( !dict->get_cached_sdi(key, i) ) 
-    i = mp.find(key);
+    i = get_iter(mp, key, gi_find);  
   if (i != mp.end()) {
     dict->cache_sdi(i);
     ret = dict->keys_only ? pure_int(1) : i->second.pxp();
