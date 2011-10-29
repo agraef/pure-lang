@@ -96,8 +96,8 @@ extern "C" {
   px*  sd_get(sd* dict, px* key);
   px*  sd_first(px* tpl);
   px*  sd_last(px* tpl);
-  void sd_update(sd* dict, px* key, px* val);
-  void sd_update_with(sd* dict, px* key, px* binfun);
+  px*  sd_update(sd* dict, px* key, px* val);
+  px*  sd_update_with(sd* dict, px* key, px* binfun);
   void sd_insert_elm(sd* dict, px* kv);
   void sd_insert_elms_xs(sd* dict, px* src);
   void sd_insert_elms_stldict(sd* dict, px* tpl);

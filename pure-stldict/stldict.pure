@@ -49,8 +49,8 @@ private extern expr* sd_prev(void* dict, expr* key);
 private extern expr* sd_get(void* dict, expr* key);
 private extern expr* sd_first(expr* tpl);
 private extern expr* sd_last(expr* tpl);
-private extern void  sd_update(void* dict, expr* key, expr* val);
-private extern void  sd_update_with(void* dict, expr* key, expr* unaryfun);
+private extern expr* sd_update(void* dict, expr* key, expr* val);
+private extern expr* sd_update_with(void* dict, expr* key, expr* unaryfun);
 private extern void  sd_insert_elm(void* dict, expr* kv);
 private extern void  sd_insert_elms_xs(void* dict, expr* src);
 private extern void  sd_insert_elms_stlvec(void* dict, expr* tpl);
@@ -92,71 +92,11 @@ wrap_sv d = STLVEC (sentry sd_delete d);
 
 kv_equal k1 v1 k2 v2 = k1 == k2 && v1 == v2;
 
-/*** Public functions on stldict *****************************************/
-
-::emptystlset = wrap_sd $ sd_make_empty (<) 1;
-
-::emptystldict = wrap_sd $ sd_make_empty (<) 0;
-
-::emptystlset_with comp = wrap_sd $ sd_make_empty comp 1;
-
-::emptystldict_with comp = wrap_sd $ sd_make_empty comp 0;
-
-insert_elms sd@(STLDICT d) xs::list = sd_insert_elms_xs d xs $$ sd;
-
-insert_elms sd@(STLDICT d) xs::matrix = sd_insert_elms_xs d xs $$ sd;
-
-insert_elms sd@(STLDICT d) it::sdit = sd_insert_elms_stldict d it $$ sd;
-
-insert_elms sd@(STLDICT d) it::svit = sd_insert_elms_stlvec d it $$ sd;
-
-::stldict xs = sd when
-  sd = ::emptystldict;
-  insert_elms sd xs;
-end if listp xs || matrixp xs;
-
-::stldict it::svit = sd when
-  sd = ::emptystldict;
-  insert_elms sd it;
-end;
-
-::stldict it::sdit = sd when
-  sd = ::emptystldict;
-  insert_elms sd it;
-end;
-
-::mkstldict y ks::list = do add ks $$ sd with
-  add k = ::update sd k y;
-end when
-  sd = emptystldict;  
-end;
-
-::stlset xs = sd when
-  sd = ::emptystlset;
-  insert_elms sd xs;
-end if listp xs || matrixp xs;
-
-::stlset it::svit = sd when
-  sd = ::emptystlset;
-  insert_elms sd it;
-end;
-
-::stlset it::sdit = sd when
-  sd = ::emptystlset;
-  insert_elms sd it;
-end;
-
-set_default (STLDICT d) val = sd_set_default d val;
-
-get_default (STLDICT d) = sd_get_default d; // bool, default
+/*** Public functions for stldict and stlset ******************************/
 
 ::stlvec it::sdit = wrap_sv $ sd_make_stlvec it;
 
 vector it::sdit = sd_make_vector it;
-
-::update sd@(STLDICT d) key x = sd_update d key x $$ sd;
-
-::update_with f sd@(STLDICT d) key x = sd_update_with d key (f x) $$ sd;
 
 (::!) (STLDICT d) key = sd_get d key;
 
@@ -182,17 +122,9 @@ bounds it@(STLDICT d, _) = (STLDICT d), sd_bounds it;
 
 ::member (STLDICT d) key = sd_member d key;
 
-::next_key (STLDICT d) key = sd_next d key;
-
-::prev_key (STLDICT d) key = sd_prev d key;
-
 ::members it::sdit = sd_listmap 0 it sd_both; 
 
-::list sd::stldict = members sd;
-
-::keys it::sdit = sd_listmap 0 it sd_keys; 
-
-::vals it::sdit = sd_listmap 0 it sd_vals;
+// ::list sd::stldict = members sd;  // use members
 
 ::first it::sdit = sd_first it;
 
@@ -202,19 +134,25 @@ bounds it@(STLDICT d, _) = (STLDICT d), sd_bounds it;
 
 ::rmlast it::sdit = sd_rmlast it;
 
+::insert sd@(STLDICT d) rk = sd_insert_elm d rk $$ sd;
+
+insert_elms sd@(STLDICT d) xs::list = sd_insert_elms_xs d xs $$ sd;
+
+insert_elms sd@(STLDICT d) xs::matrix = sd_insert_elms_xs d xs $$ sd;
+
+insert_elms sd@(STLDICT d) it::sdit = sd_insert_elms_stldict d it $$ sd;
+
+insert_elms sd@(STLDICT d) it::svit = sd_insert_elms_stlvec d it $$ sd;
+
 ::erase it@(STLDICT d, f, e) = sd_erase it $$ STLDICT d;
 
 ::erase sd@(STLDICT d) = sd_clear d $$ sd;
 
 ::delete sd@(STLDICT d) k = sd_remove d k $$ sd;
 
-::insert sd@(STLDICT d) rk = sd_insert_elm d rk $$ sd;
-
-// for sets
 allpairs fun it1::sdit it2::sdit = sd_allpairs fun it1 it2 
   if sd_is_set it1 && sd_is_set it2 && functionp fun && nargs fun == 2 ;
 
-// for dicts
 allpairs fun it1::sdit it2::sdit = sd_allpairs fun it1 it2
   if ~sd_is_set it1 && ~sd_is_set it2 && functionp fun && nargs fun == 4;
 
@@ -229,10 +167,6 @@ allpairs fun it1::sdit it2::sdit = sd_allpairs fun it1 it2
 
 (::~=) sd1::stldict sd2::stldict = ~allpairs (==) sd1 sd2
   if sd_is_set sd1 && sd_is_set sd2;
-
-::map_keys f it::sdit = sd_listmap f it sd_keys;
-
-::map_vals f it::sdit = sd_listmap f it sd_vals;
 
 ::map f it::sdit = sd_listmap f it sd_both;
 
@@ -271,4 +205,78 @@ end;
 ::colmap f it::sdit = colcat (sd_listmap f it sd_both);
 
 ::colcatmap f it::sdit = colcat (sd_listmap f it sd_both);
+
+/*** Functions for stldict *******************************************/
+
+::emptystldict = wrap_sd $ sd_make_empty (<) 0;
+
+::emptystldict_with comp = wrap_sd $ sd_make_empty comp 0;
+
+::stldict xs = sd when
+  sd = ::emptystldict;
+  insert_elms sd xs;
+end if listp xs || matrixp xs;
+
+::stldict it::svit = sd when
+  sd = ::emptystldict;
+  insert_elms sd it;
+end;
+
+::stldict it::sdit = sd when
+  sd = ::emptystldict;
+  insert_elms sd it;
+end;
+
+::mkstldict y ks::list = do add ks $$ sd with
+  add k = ::update sd k y;
+end when
+  sd = emptystldict;  
+end;
+
+set_default sd@(STLDICT d) val = sd_set_default d val if ~sd_is_set sd;
+
+// bool, default
+get_default sd@(STLDICT d) = sd_get_default d if ~sd_is_set sd;
+
+::update sd@(STLDICT d) key x = sd_update d key x $$ sd if ~sd_is_set sd;
+
+::update_with f sd@(STLDICT d) key x = 
+  sd_update_with d key (f x) $$ sd if ~sd_is_set sd;
+
+::next_key sd@(STLDICT d) key = sd_next d key; // if ~sd_is_set s;
+
+::prev_key sd@(STLDICT d) key = sd_prev d key; // if ~sd_is_set sd;
+
+::keys it::sdit = sd_listmap 0 it sd_keys if ~sd_is_set it;
+
+::vals it::sdit = sd_listmap 0 it sd_vals if ~sd_is_set it;
+
+::map_keys f it::sdit = sd_listmap f it sd_keys if ~sd_is_set it;
+
+::map_vals f it::sdit = sd_listmap f it sd_vals if ~sd_is_set it;
+
+/*** Functions for stlset ************************************************/
+
+::emptystlset = wrap_sd $ sd_make_empty (<) 1;
+
+::emptystlset_with comp = wrap_sd $ sd_make_empty comp 1;
+
+::stlset xs = sd when
+  sd = ::emptystlset;
+  insert_elms sd xs;
+end if listp xs || matrixp xs;
+
+::stlset it::svit = sd when
+  sd = ::emptystlset;
+  insert_elms sd it;
+end;
+
+::stlset it::sdit = sd when
+  sd = ::emptystlset;
+  insert_elms sd it;
+end;
+
+::next_elm (STLDICT d) elm = sd_next d elm;
+
+::prev_elm (STLDICT d) elm = sd_prev d elm;
 

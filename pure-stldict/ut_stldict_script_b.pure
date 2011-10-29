@@ -50,7 +50,7 @@ let ss4 = stlset v1; members ss4;
 let ss5 = stlset l1; members ss5;
 //- ["a","b","c","d"]
 
-//*** Simple Access and Update *************************************
+//*** Simple Access and Insertion *************************************
 
 let ss1 = stlset ("a".."e"); members ss1;
 //- ["a","b","c","d","e"]
@@ -67,7 +67,7 @@ ss1!"a";
 ss1!"e";
 //- 1
 
-update ss1 "a" 100; update ss1 "x" 200; members ss1;
+insert ss1 "a"; insert ss1 "x"; members ss1;
 //- ["a","b","c","d","e","x"]
 
 catch err (ss1!"y");
@@ -96,43 +96,43 @@ let ss1 = stlset ["a","b","c","d","e"]; members ss1;
 let kb, ke = stl::stlbeg, stl::stlend; kb, ke;
 //- stl_begin_iterator,stl_end_iterator
 
-let k1 = next_key ss1 kb; k1;
+let k1 = next_elm ss1 kb; k1;
 //- "b"
 
-let k2 = next_key ss1 k1; k2;
+let k2 = next_elm ss1 k1; k2;
 //- "c"
 
-let k1 = prev_key ss1 k2; k2;
+let k1 = prev_elm ss1 k2; k2;
 //- "c"
 
-let k0 = prev_key ss1 k1; k0;
+let k0 = prev_elm ss1 k1; k0;
 //- stl_begin_iterator
 
-catch id $ prev_key ss1 kb; 
+catch id $ prev_elm ss1 kb; 
 //- out_of_bounds
 
-catch id $ prev_key ss1 k0; 
+catch id $ prev_elm ss1 k0; 
 //- out_of_bounds
 
-let k4 = prev_key ss1 ke; k4;
+let k4 = prev_elm ss1 ke; k4;
 //- "e"
 
-let k3 = prev_key ss1 k4; k3;
+let k3 = prev_elm ss1 k4; k3;
 //- "d"
 
-let k4 = next_key ss1 k3; k4;
+let k4 = next_elm ss1 k3; k4;
 //- "e"
 
-let k5 = next_key ss1 k4; k5;
+let k5 = next_elm ss1 k4; k5;
 //- stl_end_iterator
 
-catch id $ next_key ss1 ke; 
+catch id $ next_elm ss1 ke; 
 //- out_of_bounds
 
-catch id $ next_key ss1 k5; 
+catch id $ next_elm ss1 k5; 
 //- out_of_bounds
 
-//*** Members, keys, vals, first, last ********************************
+//*** Members, first, last *********************************************
 
 let ss1 = stlset ["a","b","c","d","e","x","y"]; members ss1;
 //- ["a","b","c","d","e","x","y"]
@@ -150,42 +150,6 @@ members (ss1,stl::stlbeg,"x");
 //- ["a","b","c","d","e"]
 
 members (ss1,"0",stl::stlend);
-//- ["a","b","c","d","e","x","y"]
-
-keys ss1;
-//- ["a","b","c","d","e","x","y"]
-
-keys (ss1,"b","e");
-//- ["b","c","d"]
-
-keys (ss1,"b","e1");
-//- ["b","c","d","e"]
-
-keys (ss1,"0","x");
-//- ["a","b","c","d","e"]
-
-keys (ss1,stl::stlbeg,"x");
-//- ["a","b","c","d","e"]
-
-keys (ss1,"0",stl::stlend);
-//- ["a","b","c","d","e","x","y"]
-
-vals ss1;
-//- ["a","b","c","d","e","x","y"]
-
-vals (ss1,"b","e");
-//- ["b","c","d"]
-
-vals (ss1,"b","e1");
-//- ["b","c","d","e"]
-
-vals (ss1,"0","x");
-//- ["a","b","c","d","e"]
-
-vals (ss1,stl::stlbeg,"x");
-//- ["a","b","c","d","e"]
-
-vals (ss1,"0",stl::stlend);
 //- ["a","b","c","d","e","x","y"]
 
 first ss1;
@@ -350,18 +314,12 @@ stl::size (ss1,"b","d");
 stl::size (ss1,"c",stl::stlend);
 //- 2
 
-//** map, map_keys, map_vals **************************************
+//** map ******************************************************************
 
 let ss1 = stlset ["a","b","c","d"]; members ss1;
 //- ["a","b","c","d"]
 
 map (\k->k+1) ss1;
-//- ["b","c","d","e"]
-
-map_keys (+1) ss1;
-//- ["b","c","d","e"]
-
-map_vals (+1) ss1;
 //- ["b","c","d","e"]
 
 map (\k->k+1) (ss1,stl::stlbeg,stl::stlend);

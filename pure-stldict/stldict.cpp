@@ -532,18 +532,16 @@ sd* sd_setop(int op, px* tpl1, px* tpl2)
   }
 }
 
-void sd_update(sd* dict, px* key, px* val)
+px* sd_update(sd* dict, px* key, px* val)
 {
-  if (dict->keys_only) val = NULL;
+  if (dict->keys_only) return 0; // fail for sets
   update_aux(dict, key, val);
+  return val;
 }
 
-void sd_update_with(sd* dict, px* key, px* unaryfun)
+px* sd_update_with(sd* dict, px* key, px* unaryfun)
 {
-  if (dict->keys_only) {
-    update_aux(dict, key, NULL);
-    return;
-  }
+  if (dict->keys_only) return 0; // fail for sets
   if (!dict->has_dflt)
     failed_cond();
   px* old_val = sd_get(dict,key);
@@ -552,6 +550,7 @@ void sd_update_with(sd* dict, px* key, px* unaryfun)
   if (exception) pure_throw(exception);
   if (!new_val) bad_function();
   update_aux(dict, key, new_val);
+  return new_val;
 }
 
 px* sd_first(px* tpl)
