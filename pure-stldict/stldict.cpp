@@ -40,11 +40,6 @@ bool stl_sd_trace_enabled()
 
 /*** Helpers for stldict.cpp only ************************************/
 
-static px* null_value() 
-{
-  return 0;
-}
-
 static void set_kv(sdi i, px** k, px** v)
 {
   const pxh h_key = i->first;

@@ -53,6 +53,7 @@ included with the pure-stlvec distribution package for details.
    Planned options:
 
       --comments (-c) arg is a comment_control_string
+      --verbose  (-v) off - means only errors
       --stop     (-s) stop evaluating
       --resume   (-r) resume evaluating
 
@@ -69,19 +70,22 @@ using system, stldict, stlvec, regex, getopt;
 let echo_c = ref 1;
 let echo_cc = ref 1;
 let evaluate = ref 1;
+let verbose = ref 1;
 
 const optspec = [
-  ("--comments",   "-c", REQARG),  // string "c_on,c_off,c++_on,c++_off"
-  ("--stop",       "-s", NOARG),
-  ("--resume",     "-r", NOARG)
+  ("--comments",    "-c", REQARG),  // string "c_on,c_off,c++_on,c++_off"
+  ("--stop",        "-s", NOARG),
+  ("--verbose",     "-v", REQARG),  // string "off,on"
+  ("--resume",      "-r", NOARG)
 ];
 
 set_options ln = () when
   args = regsplit "[ ]+" REG_EXTENDED ln 0; 
   opts_hr, other_vals = catch bad_option $ getopt optspec args;
-  opts = record opts_hr;
+  opts = record opts_hr; 
   cflags = if member opts "--comments" then opts!"--comments" else "";
   cflags = split "," cflags; 
+  vflags = if member opts "--verbose" then opts!"--verbose" else "";
   stop = if member opts "--stop" then 1 else 0;
   resume = if member opts "--resume" then 1 else 0;
   if stop then put evaluate 0 else ();
@@ -90,6 +94,8 @@ set_options ln = () when
   if index cflags "c_on"   >= 0 then put echo_c  1 else ();
   if index cflags "c++_off" >= 0 then put echo_cc 0 else ();
   if index cflags "c++_on" >= 0 then put echo_cc 1 else ();
+  if index vflags "off" >= 0 then put verbose 0 else ();
+  if index vflags "on" >= 0 then put verbose 1 else ();
 end with
   bad_option x = printf "// unrecognized option: %s" x;
 end;
@@ -99,7 +105,10 @@ end;
 const c_comment_rgx = "(^\\s*/\\*([^*]|(\\*+[^*/]))*\\*+/)";
 const line_rgx = "^([^\n]*)(\n)(.*)";
 
-print_cc_comment s = if get echo_cc then printf "%s\n" s else (); 
+printing_ws = get evaluate && get verbose;
+
+print_cc_comment s = if get echo_cc && printing_ws 
+                     then printf "%s\n" s else (); 
 
 parse_c_comment s = cs, s1 when
   info = reg_info $ regex c_comment_rgx REG_EXTENDED s 0;
@@ -109,7 +118,7 @@ end;
 
 strip_c_comments s = if null cs then s2 else strip_c_comments s1 when
   cs, s1 = parse_c_comment s;
-   if ~null cs && (get echo_c) && get evaluate then printf "%s" cs else ();
+  if ~null cs && (get echo_c) && printing_ws then printf "%s" cs else ();
   info = reg_info $ regex line_rgx REG_EXTENDED s1 0;
   s2 =  if get echo_c then s1 else if null info then  "" else info!7;
 end;
@@ -159,27 +168,38 @@ check_eval script::string = doline script with
     else if get evaluate then really_doline tp line else ();
   end;
   really_doline tp line = () when
-    if tp == ws_line then puts line
+    if tp ~= res_line && get verbose then print_cmd_res else ();
+    if tp == ws_line && printing_ws then puts line
     else if tp == cc_comment_line then print_cc_comment line 
     else if tp == res_line then check_res line 
     else if tp == cmd_line then do_cmd line else ();
   end;
-  check_res res = () when
-    if (get last_res) ~= res then 
+  check_res exp_res = () when
+    if (get last_res) ~= exp_res then 
       bump_ec $$
-      printf "--- expected: //- %s\n"
-      (res, get last_res)
-    else ();
-    put last_res "";
+      print_cmd_res $$
+      printf "--- expected: //- %s\n" exp_res
+    else if get verbose then
+      print_cmd_res
+    else 
+      put last_cmd "" $$
+      put last_res "";
   end;
   do_cmd cmd = () when
-    printf "%s\n" cmd;
+    //if get verbose then print_cmd_res else ();
+    put last_cmd cmd;
     s = str (eval cmd);
-    printf "//- %s\n" s;
     put last_res s;
   end;
-  bump_ec = put num_errs (get num_errs + 1);
+  print_cmd_res = () when
+    lc = get last_cmd;
+    lr = get last_res;
+    if ~null lc then printf "%s\n" lc $$ put last_cmd "" else ();
+    if ~null lr then printf "//- %s\n" lr $$ put last_res "" else ();
+  end;
+  bump_ec = put num_errs (get num_errs + 1);      
 end when
+  last_cmd = ref "";
   last_res = ref "";
   num_errs = ref 0;
 end;
