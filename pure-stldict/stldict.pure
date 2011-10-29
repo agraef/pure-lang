@@ -51,7 +51,7 @@ private extern expr* sd_first(expr* tpl);
 private extern expr* sd_last(expr* tpl);
 private extern void  sd_update(void* dict, expr* key, expr* val);
 private extern void  sd_update_with(void* dict, expr* key, expr* unaryfun);
-private extern void  sd_insert(void* dict, expr* kv);
+private extern void  sd_insert_elm(void* dict, expr* kv);
 private extern void  sd_insert_elms_xs(void* dict, expr* src);
 private extern void  sd_insert_elms_stlvec(void* dict, expr* tpl);
 private extern void  sd_insert_elms_stldict(void* dict, expr* tpl);
@@ -71,7 +71,7 @@ private extern expr* sd_foldr(expr* fun, expr* val, expr* it);
 private extern expr* sd_foldr1(expr* fun, expr* it);
 private extern expr* stl_begin();
 private extern expr* stl_end();
-private extern expr* stl_insert();
+//private extern expr* stl_insert();
 
 extern void stl_set_sd_trace(bool enable) = set_sd_trace;
 extern bool stl_sd_trace_enabled() = sd_trace_enabled;
@@ -79,8 +79,8 @@ extern bool stl_sd_trace_enabled() = sd_trace_enabled;
 
 /*** Constants used to specify "iterator tuples" **************************/
 
-const sdbeg  = stl_begin;    // corresponds to C++ first element iterator
-const sdend  = stl_end;      // corresponds to C++ past-end iterator
+const sdbeg = stl_begin;    // corresponds to C++ first element iterator
+const sdend = stl_end;      // corresponds to C++ past-end iterator
 
 nonfix sdbeg;       // to make sdbeg and sdend usable as beg and end markers
 nonfix sdend;       // in C++ style looping over a stldict's contents using 
@@ -106,9 +106,13 @@ kv_equal k1 v1 k2 v2 = k1 == k2 && v1 == v2;
 
 /*** Public functions on stldict *****************************************/
 
-::emptystlset comp = wrap_sd $ sd_make_empty comp 1;
+::emptystlset = wrap_sd $ sd_make_empty (<) 1;
 
-::emptystldict comp = wrap_sd $ sd_make_empty comp 0;
+::emptystldict = wrap_sd $ sd_make_empty (<) 0;
+
+::emptystlset_with comp = wrap_sd $ sd_make_empty comp 1;
+
+::emptystldict_with comp = wrap_sd $ sd_make_empty comp 0;
 
 insert_elms sd@(STLDICT d) xs::list = sd_insert_elms_xs d xs $$ sd;
 
@@ -118,39 +122,39 @@ insert_elms sd@(STLDICT d) it::sdit = sd_insert_elms_stldict d it $$ sd;
 
 insert_elms sd@(STLDICT d) it::svit = sd_insert_elms_stlvec d it $$ sd;
 
-::stldict comp xs = sd when
-  sd = ::emptystldict comp;
+::stldict xs = sd when
+  sd = ::emptystldict;
   insert_elms sd xs;
 end if listp xs || matrixp xs;
 
-::stldict comp it::svit = sd when
-  sd = ::emptystldict comp;
+::stldict it::svit = sd when
+  sd = ::emptystldict;
   insert_elms sd it;
 end;
 
-::stldict comp it::sdit = sd when
-  sd = ::emptystldict comp;
+::stldict it::sdit = sd when
+  sd = ::emptystldict;
   insert_elms sd it;
 end;
 
-::mkstldict comp y ks::list = do add ks $$ sd with
+::mkstldict y ks::list = do add ks $$ sd with
   add k = ::update sd k y;
 end when
-  sd = emptystldict comp;  
+  sd = emptystldict;  
 end;
 
-::stlset comp xs = sd when
-  sd = ::emptystlset comp;
+::stlset xs = sd when
+  sd = ::emptystlset;
   insert_elms sd xs;
 end if listp xs || matrixp xs;
 
-::stlset comp it::svit = sd when
-  sd = ::emptystlset comp;
+::stlset it::svit = sd when
+  sd = ::emptystlset;
   insert_elms sd it;
 end;
 
-::stlset comp it::sdit = sd when
-  sd = ::emptystlset comp;
+::stlset it::sdit = sd when
+  sd = ::emptystlset;
   insert_elms sd it;
 end;
 
@@ -219,7 +223,7 @@ bounds it@(STLDICT d, _) = (STLDICT d), sd_bounds it;
 
 //::delete_all sd@(STLDICT d) k = sd_remove_all d k;
 
-::insert sd@(STLDICT d) rk = sd_insert d rk $$ sd;
+::insert sd@(STLDICT d) rk = sd_insert_elm d rk $$ sd;
 
 // for sets
 allpairs fun it1::sdit it2::sdit = sd_allpairs fun it1 it2 

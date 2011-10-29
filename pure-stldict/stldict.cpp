@@ -125,7 +125,7 @@ static bool insert_aux(sd* dict, px* kv)
       ok = false;
     }
   }
-  update_aux(dict, k, v);
+  if (ok) update_aux(dict, k, v);
   return ok;
 }
 
@@ -594,7 +594,7 @@ void sd_rmlast(px* tpl)
     index_error();
 }
 
-void sd_insert(sd* dict, px* kv)
+void sd_insert_elm(sd* dict, px* kv)
 {
   if ( !insert_aux(dict, kv) ) bad_argument();
 }

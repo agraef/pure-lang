@@ -19,11 +19,11 @@ using system, stldict, stlvec;
 
 */
 
-//-- resume //start up here
+//-- --resume --verbose off //start up here
 
 //*** Make stlset ******************************************************
 
-let ss1 = stlset (<) ("a".."e"); members ss1;
+let ss1 = stlset ("a".."e"); members ss1;
 //- ["a","b","c","d","e"]
 
 let sv1 = stlvec $ members ss1; members sv1;
@@ -34,31 +34,32 @@ let v1 = stl::vector (ss1,"b","d"); v1;
 
 let l1 = members (ss1,stl::sdbeg,"e"); l1;
 //- ["a","b","c","d"]
-//-
-let ss2 = stlset (>) (ss1,"a","d"); members ss2;
+
+let ss2 = emptystlset_with (>); members ss2;
+//- []
+
+stl::insert_elms ss2 (ss1,"a","d"); members ss2;
 //- ["c","b","a"]
 
-let ss3 = stlset (<) (sv1,1,stl::svend); members ss3;
+let ss3 = stlset (sv1,1,stl::svend); members ss3;
 //- ["b","c","d","e"]
 
-let ss4 = stlset (<) v1; members ss4;
+let ss4 = stlset v1; members ss4;
 //- ["b","c"]
 
-let ss5 = stlset (<) l1; members ss5;
+let ss5 = stlset l1; members ss5;
 //- ["a","b","c","d"]
-
-let ss7 = emptystlset (>); members ss7;
-//- []
-//-- --resume
 
 //*** Simple Access and Update *************************************
 
-let ss1 = stlset (<) ("a".."e"); members ss1;
+let ss1 = stlset ("a".."e"); members ss1;
 //- ["a","b","c","d","e"]
 
 ss1!stl::sdbeg;
+//- 1
 
 ss1!stl::sdend;
+//- 0
 
 ss1!"a";
 //- 1
@@ -89,7 +90,7 @@ member ss1 "x", member ss1 "z";
 
 //*** Bidirectional iterator functions *******************************
 
-let ss1 = stlset (<) ["a","b","c","d","e"]; members ss1;
+let ss1 = stlset ["a","b","c","d","e"]; members ss1;
 //- ["a","b","c","d","e"]
 
 let kb, ke = stl::sdbeg, stl::sdend; kb, ke;
@@ -131,10 +132,9 @@ catch id $ next_key ss1 ke;
 catch id $ next_key ss1 k5; 
 //- out_of_bounds
 
-//-- --stop
 //*** Members, keys, vals, first, last ********************************
 
-let ss1 = stlset (<) ["a","b","c","d","e","x","y"]; members ss1;
+let ss1 = stlset ["a","b","c","d","e","x","y"]; members ss1;
 //- ["a","b","c","d","e","x","y"]
 
 members (ss1,"b","e");
@@ -226,10 +226,10 @@ last (ss1,"0",stl::sdend);
 
 //*** rmfirst, rmlast, erase, insert and delete ********************
 
-let ss1 = stlset (<) ["a","b","c","d","e","x","y"]; members ss1; 
+let ss1 = stlset ["a","b","c","d","e","x","y"]; members ss1; 
 //- ["a","b","c","d","e","x","y"]
 
-let ss2 = stlset (<) ["a","b","c"]; members ss2;
+let ss2 = stlset ["a","b","c"]; members ss2;
 //- ["a","b","c"]
 
 rmfirst ss1; rmlast ss1; members ss1;
@@ -265,7 +265,7 @@ stl::null (ss1,"b","c");
 stl::null (ss1,"b","b");
 //- 1
 
-let ss8 = stlset (<) ("f".."i"); members ss8;
+let ss8 = stlset ("f".."i"); members ss8;
 //- ["f","g","h","i"]
 
 stl::insert_elms ss1 (ss8,"g","i"); members ss1;
@@ -282,10 +282,10 @@ catch id (insert ss1 ("e"=>5)); //can't compare string to rocket
 
 //*** allpairs, ==, ~== ***********************************************
 
-let ss1 = stlset (<) ["a","b","c"]; members ss1;
+let ss1 = stlset ["a","b","c"]; members ss1;
 //- ["a","b","c"]
 
-let ss2 = stlset (<) ["a","b","c","d"]; members ss2;
+let ss2 = stlset ["a","b","c","d"]; members ss2;
 //- ["a","b","c","d"]
 
 stl::allpairs (\k1 k2-> k1==k2) ss1 ss2;
@@ -314,7 +314,7 @@ ss1 == (ss2,"a","a"); // oops -- tuple rule trumps;
 
 // ** bounds, size *******************************************************
 
-let ss1 = stlset (<) ["a","b","c","d"]; members ss1;
+let ss1 = stlset ["a","b","c","d"]; members ss1;
 //- ["a","b","c","d"]
 
 let ss2, lb, up = stl::bounds ss1; (lb, up);
@@ -352,7 +352,7 @@ stl::size (ss1,"c",stl::sdend);
 
 //** map, map_keys, map_vals **************************************
 
-let ss1 = stlset (<) ["a","b","c","d"]; members ss1;
+let ss1 = stlset ["a","b","c","d"]; members ss1;
 //- ["a","b","c","d"]
 
 map (\k->k+1) ss1;
@@ -387,7 +387,7 @@ map (\k->k+1) (ss1,"x","a");
 
 //** listmap, catmap, catmap_keys, catmap_vals *************************
 
-let ss1 = stlset (<) ["a","b","c","d"]; members ss1;
+let ss1 = stlset ["a","b","c","d"]; members ss1;
 //- ["a","b","c","d"]
 
 listmap (\k->k+1) ss1;
@@ -425,7 +425,7 @@ catmap_vals (\x->[x,ord x]) (ss1,"a","a");
 
 //** foldl, foldl1, foldr, foldr1 ***********************************
 
-let ss1 = stlset (<) ["a","b","c","d"]; members ss1;
+let ss1 = stlset ["a","b","c","d"]; members ss1;
 //- ["a","b","c","d"]
 
 foldl (\acc k -> k:acc) [] ss1;
@@ -490,43 +490,28 @@ foldr1 (\k acc -> k+acc) (ss1,"b","b"); (); // fails
 
 //*** do, filter *******************************************************
 
-let ss1 = stlset (<) ["a","b","c","d"]; members ss1;
+let ss1 = stlset ["a","b","c","d"]; members ss1;
 //- ["a","b","c","d"]
 
-let ss2 = emptystlset (>); ();
-//- ()
+let ss2 = emptystlset_with (>); members ss2;
+//- []
 
-do (\k -> update ss2 k 0) ss1; members ss2;
+do (insert ss2) ss1; members ss2;
 //- ["d","c","b","a"]
 
-erase ss2; do (\k -> update ss2 k 0) (ss1,"a","d"); members ss2;
+erase ss2; do (insert ss2) (ss1,"a","d"); members ss2;
 //- ["c","b","a"]
 
-erase ss2; do (\k -> update ss2 k 0) (ss1,"b","x"); members ss2;
+erase ss2; do (insert ss2) (ss1,"b","x"); members ss2;
 //- ["d","c","b"]
 
-erase ss2; do (\k -> update ss2 k 0) (ss1,"0","0"); members ss2;
+erase ss2; do (insert ss2) (ss1,"0","0"); members ss2;
 //- []
 
-erase ss2; do (\k -> update ss2 k 0) (ss1,"x","x"); members ss2;
+erase ss2; do (insert ss2) (ss1,"x","x"); members ss2;
 //- []
 
-erase ss2; do (\k -> update ss2 k 0) (ss1,"d","x"); members ss2;
-//- ["d"]
-
-erase ss2; do (\k -> insert ss2 k) (ss1,"a","d"); members ss2;
-//- ["c","b","a"]
-
-erase ss2; do (\k -> insert ss2 k) (ss1,"b","x"); members ss2;
-//- ["d","c","b"]
-
-erase ss2; do (\k -> insert ss2 k) (ss1,"0","0"); members ss2;
-//- []
-
-erase ss2; do (\k -> insert ss2 k) (ss1,"x","x"); members ss2;
-//- []
-
-erase ss2; do (\k -> insert ss2 k) (ss1,"d","x"); members ss2;
+erase ss2; do (insert ss2) (ss1,"d","x"); members ss2;
 //- ["d"]
 
 filter (\k -> (ord k) mod 2) ss1;
@@ -543,10 +528,10 @@ filter (\k -> (ord k) mod 2) (ss1,"d","d");
 
 //** Set operations ******************************************************
 
-let ss1 = stlset (<) ["a","b","c","d"]; members ss1;
+let ss1 = stlset ["a","b","c","d"]; members ss1;
 //- ["a","b","c","d"]
 
-let ss2 = stlset (<) ["b","c","d","e"]; members ss1;
+let ss2 = stlset ["b","c","d","e"]; members ss1;
 //- ["a","b","c","d"]
 
 members (ss1 + ss1);
@@ -599,7 +584,7 @@ members $ (ss1,"b","d") / (ss2, "c","e");
 
 //** Cache sensitive sequences ****************************************
 
-let ss1 = stlset (<) ("a".."j"); members ss1;
+let ss1 = stlset ("a".."j"); members ss1;
 //- ["a","b","c","d","e","f","g","h","i","j"]
 
 stl::set_sd_trace 1;

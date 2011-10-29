@@ -169,7 +169,7 @@ check_eval script::string = doline script with
   end;
   really_doline tp line = () when
     if tp ~= res_line && get verbose then print_cmd_res else ();
-    if tp == ws_line && printing_ws then puts line
+    if tp == ws_line then print_ws line
     else if tp == cc_comment_line then print_cc_comment line 
     else if tp == res_line then check_res line 
     else if tp == cmd_line then do_cmd line else ();
@@ -186,9 +186,9 @@ check_eval script::string = doline script with
       put last_res "";
   end;
   do_cmd cmd = () when
-    //if get verbose then print_cmd_res else ();
     put last_cmd cmd;
     s = str (eval cmd);
+    //printf "do_cmd, eval res: |%s|\n" s;
     put last_res s;
   end;
   print_cmd_res = () when
@@ -196,6 +196,10 @@ check_eval script::string = doline script with
     lr = get last_res;
     if ~null lc then printf "%s\n" lc $$ put last_cmd "" else ();
     if ~null lr then printf "//- %s\n" lr $$ put last_res "" else ();
+  end;
+  print_ws line = () when
+    print_cmd_res;
+    if printing_ws then puts line else ();
   end;
   bump_ec = put num_errs (get num_errs + 1);      
 end when
