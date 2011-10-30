@@ -505,6 +505,20 @@ px* sd_get(sd* dict, px* key)
   return ret;
 }
 
+bool sd_includes(px* tpl1, px* tpl2)
+{
+  sd_iters itrs1(tpl1);
+  sd_iters itrs2(tpl2);
+  if (!itrs1.is_valid || !itrs2.is_valid) bad_argument;
+  try {
+    return includes(itrs1.beg(), itrs1.end(), itrs2.beg(), itrs2.end(), 
+                    itrs1.dict->mp.value_comp());
+  }
+  catch (px* e) {
+    pure_throw(e);
+  }
+}
+
 sd* sd_setop(int op, px* tpl1, px* tpl2)
 {
   sd_iters itrs1(tpl1);

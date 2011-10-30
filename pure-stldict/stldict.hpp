@@ -82,6 +82,7 @@ enum {stl_sd_union = 1, stl_sd_difference,
 extern "C" {
   sd*  sd_make_empty(px* comp, int keys_only);
   bool sd_is_set(px* tpl);
+  bool sd_includes(px* tpl1, px* tpl2);
   sd*  sd_setop(int op, px* tpl1, px* tpl2);
   void sd_delete(sd* dict);
   px*  sd_make_vector(px* tpl);

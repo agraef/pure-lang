@@ -38,6 +38,7 @@ private extern void  sd_delete(void* dict);
 private extern bool  sd_is_set(expr* tpl);
 private extern expr* sd_set_default(void* dict, expr* val);
 private extern expr* sd_get_default(void* dict);
+private extern bool  sd_includes(expr* it1, expr* it2);
 private extern void* sd_setop(int op, expr* it1, expr* it2);
 private extern expr* sd_make_vector(expr* tpl);
 private extern void* sd_make_stlvec(expr* tpl);
@@ -288,8 +289,8 @@ end;
 (::/) it1::sdit it2::sdit = 
   wrap_sd $ sd_setop sd_symmetric_difference it1 it2 if both_sets it1 it2;
 
-(::<=) it1::sdit it2::sdit = size (it1 - it2) == 0 if both_sets it1 it2;
+(::<=) it1::sdit it2::sdit = sd_includes it2 it1 if both_sets it1 it2;
 
 (::<) it1::sdit it2::sdit = 
-  it1 <= it2 && size it1 < size it2 if both_sets it1 it2;
+  size it1 < size it2 && sd_includes it2 it1 if both_sets it1 it2;
 
