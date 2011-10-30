@@ -1,4 +1,5 @@
 //-- --comment c_off --resume --verbose on
+
 /* ut_stldict_script_a.pure -- examples for basic ops on stldict.
 
    This is a Pure script with a special format that makes it possible for the
@@ -15,9 +16,9 @@
    See check_eval.pure for more details.
 
 */
-//-- --comment c_on
 
 //*** Imports *********************************************************
+
 using system, stldict, stlvec;
 //- ()
 
@@ -38,7 +39,7 @@ let l1 = members (sd1,stl::stlbeg,"e"); l1;
 let sd2 = emptystldict_with (>); members sd2;
 //- []
 
-stl::insert_elms sd2 ["a"=>1,"b"=>2]; members sd2;
+insert_elms sd2 ["a"=>1,"b"=>2]; members sd2;
 //- ["b"=>2,"a"=>1]
 
 let sd3 = stldict (sv1,1,stl::svend); members sd3;
@@ -233,7 +234,46 @@ last (sd1,stl::stlbeg,"x");
 last (sd1,"0",stl::stlend);
 //- "y"=>0
 
-//*** rmfirst, rmlast, erase, insert and delete ********************
+//*** insert - STL_INSERT_SEMANTICS ************************************
+
+let sd1 = stldict ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]; members sd1;
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
+
+let sd2 = stldict {"k"=>11,"l"=>12,"m"=>13}; members sd2;
+//- ["k"=>11,"l"=>12,"m"=>13]
+
+// Do NOT update existing elements
+insert sd1 ("a"=>10); members sd1; 
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
+
+insert_elms sd1 ["a"=>10,"f"=>6]; members sd1; 
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6]
+
+insert_elms sd1 {"a"=>10,"g"=>7}; members sd1;
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7]
+
+insert_elms sd1 (sd2,"x","z"); members sd1;
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7]
+
+insert_elms sd1 (sd2,"0","2"); members sd1;
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7]
+
+insert_elms sd1 (sd2,"k","k"); members sd1;
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7]
+
+insert_elms sd1 (sd2,"k","l"); members sd1;
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7,"k"=>11]
+
+insert_elms sd1 (sd2,"k","m"); members sd1;
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7,"k"=>11,"l"=>12]
+
+insert_elms sd1 (sd2,"k",stl::stlend); members sd1;
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7,"k"=>11,"l"=>12,"m"=>13]
+
+catch id (insert sd1 ("e")); //can only insert rocket pairs
+//- bad_argument
+
+//*** rmfirst, rmlast, erase and delete ********************************
 
 let sd1 = stldict ["a"=>100,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"x"=>200,"y"=>0];
 //- ()
@@ -268,7 +308,7 @@ insert sd1 ("e"=>5); members sd1;
 stl::null sd1;
 //- 0
 
-stl::insert_elms sd1 sd2; members sd1;
+insert_elms sd1 sd2; members sd1;
 //- ["a"=>1,"b"=>2,"c"=>3,"e"=>5]
 
 stl::null (sd1,"b","c");
@@ -280,17 +320,15 @@ stl::null (sd1,"b","b");
 let sd8 = stldict $ zipwith (=>) ("f".."i") (6..9); members sd8;
 //- ["f"=>6,"g"=>7,"h"=>8,"i"=>9]
 
-stl::insert_elms sd1 (sd8,"g","i"); members sd1;
+insert_elms sd1 (sd8,"g","i"); members sd1;
 //- ["a"=>1,"b"=>2,"c"=>3,"e"=>5,"g"=>7,"h"=>8]
 
-stl::insert_elms sd1 $ zipwith (=>) ("j".."l") (10..12); members sd1;
+insert_elms sd1 $ zipwith (=>) ("j".."l") (10..12); members sd1;
 //- ["a"=>1,"b"=>2,"c"=>3,"e"=>5,"g"=>7,"h"=>8,"j"=>10,"k"=>11,"l"=>12]
 
 delete sd1 "l"; members sd1;
 //- ["a"=>1,"b"=>2,"c"=>3,"e"=>5,"g"=>7,"h"=>8,"j"=>10,"k"=>11]
 
-catch id (insert sd1 ("e")); //can only insert rocket pairs
-//- bad_argument
 
 //*** allpairs, ==, ~== ***********************************************
 

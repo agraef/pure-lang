@@ -24,6 +24,8 @@ included with the pure-stldict distribution package for details.
 
 using namespace std;
 
+#define STL_INSERT_SEMANTICS
+
 /*** Helpers for debugging only ************************************/
 
 static bool sd_trace_enabled = false;
@@ -104,7 +106,7 @@ static void update_aux(sd* dict, px* k, px* v)
       i_ok.first->second = v;
     dict->cache_sdi(i_ok.first);
   }
-} 
+}
 
 static bool insert_aux(sd* dict, px* kv)
 {
@@ -127,7 +129,16 @@ static bool insert_aux(sd* dict, px* kv)
       ok = false;
     }
   }
-  if (ok) update_aux(dict, k, v);
+  if (ok) {
+#ifdef STL_INSERT_SEMANTICS
+    // Do NOT override existing values
+    pair<sdi,bool> i_ok = dict->mp.insert(pxh_pair(k,v));
+    dict->cache_sdi(i_ok.first);
+#else
+    // Always use new values
+    update_aux(dict, k, v); 
+#endif
+  }
   return ok;
 }
 

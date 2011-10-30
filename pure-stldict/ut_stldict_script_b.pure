@@ -1,4 +1,4 @@
-//-- --stop //stop processing by check
+//-- --comment c_off --resume --verbose on
 
 /* ut_stldict_script_b.pure -- examples for basic ops on stlset.
 
@@ -17,7 +17,7 @@
 
 */
 
-//-- --resume --verbose on //start up here
+//*** Imports *********************************************************
 
 using system, stldict, stlvec;
 
@@ -38,7 +38,7 @@ let l1 = members (ss1,stl::stlbeg,"e"); l1;
 let ss2 = emptystlset_with (>); members ss2;
 //- []
 
-stl::insert_elms ss2 (ss1,"a","d"); members ss2;
+insert_elms ss2 (ss1,"a","d"); members ss2;
 //- ["c","b","a"]
 
 let ss3 = stlset (sv1,1,stl::svend); members ss3;
@@ -208,7 +208,45 @@ last (ss1,stl::stlbeg,"x");
 last (ss1,"0",stl::stlend);
 //- "y"
 
-//*** rmfirst, rmlast, erase, insert and delete ********************
+//*** insert ***********************************************************
+
+let ss1 = stlset ["a","b","c","d","e"]; members ss1; 
+//- ["a","b","c","d","e"]
+
+let ss2 = stlset ["k","l","m"]; members ss2;
+//- ["k","l","m"]
+
+insert ss1 "a"; members ss1; 
+//- ["a","b","c","d","e"]
+
+insert_elms ss1 ["a","f"]; members ss1; 
+//- ["a","b","c","d","e","f"]
+
+insert_elms ss1 {"a","g"}; members ss1;
+//- ["a","b","c","d","e","f","g"]
+
+insert_elms ss1 (ss2,"x","z"); members ss1;
+//- ["a","b","c","d","e","f","g"]
+
+insert_elms ss1 (ss2,"0","2"); members ss1;
+//- ["a","b","c","d","e","f","g"]
+
+insert_elms ss1 (ss2,"k","k"); members ss1;
+//- ["a","b","c","d","e","f","g"]
+
+insert_elms ss1 (ss2,"k","l"); members ss1;
+//- ["a","b","c","d","e","f","g","k"]
+
+insert_elms ss1 (ss2,"k","m"); members ss1;
+//- ["a","b","c","d","e","f","g","k","l"]
+
+insert_elms ss1 (ss2,"k",stl::stlend); members ss1;
+//- ["a","b","c","d","e","f","g","k","l","m"]
+
+catch id (insert ss1 ("e"=>5)); //can't compare string to rocket
+//- failed_cond
+
+//*** rmfirst, rmlast, erase and delete ********************************
 
 let ss1 = stlset ["a","b","c","d","e","x","y"]; members ss1; 
 //- ["a","b","c","d","e","x","y"]
@@ -240,7 +278,7 @@ insert ss1 "e"; members ss1;
 stl::null ss1;
 //- 0
 
-stl::insert_elms ss1 ss2; members ss1;
+insert_elms ss1 ss2; members ss1;
 //- ["a","b","c","e"]
 
 stl::null (ss1,"b","c");
@@ -252,17 +290,14 @@ stl::null (ss1,"b","b");
 let ss8 = stlset ("f".."i"); members ss8;
 //- ["f","g","h","i"]
 
-stl::insert_elms ss1 (ss8,"g","i"); members ss1;
+insert_elms ss1 (ss8,"g","i"); members ss1;
 //- ["a","b","c","e","g","h"]
 
-stl::insert_elms ss1 $ ("j".."l"); members ss1;
+insert_elms ss1 $ ("j".."l"); members ss1;
 //- ["a","b","c","e","g","h","j","k","l"]
 
 delete ss1 "l"; members ss1;
 //- ["a","b","c","e","g","h","j","k"]
-
-catch id (insert ss1 ("e"=>5)); //can't compare string to rocket
-//- failed_cond
 
 //*** allpairs, ==, ~== ***********************************************
 

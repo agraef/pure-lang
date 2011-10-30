@@ -11,7 +11,7 @@ A. General
 
 3. See stldict.pure for functions provided. Most are just what one might expect.
 
-B. Features different from dict and pure-hmap.
+B. Notable features
 
 1. stlsets only have single values (that can be seen). You can add (k=>v)
    as a member of a stlset. stldicts only have pairs of values (k=>v).
@@ -20,8 +20,8 @@ B. Features different from dict and pure-hmap.
    Of course a stlset can be used to make a stldict ans vis a versa, the
    same as with a vector, list or stlvec. But that is supposed to be all.
 
-3. stlsets and stldicts are constructed with a less than function (e.g., (<)
-   or (>), but other ordering functions can be used).
+3. By default, stlsets and stldicts are constructed (<) as the ordering
+   function. Other ordering functions can be used if desired.
 
 4. For a stldict, sd, sd!k returns v if (k=>v) is in sd. If not, see 5. For
    a stlset, ss, ss!k is the same as (member ss k).
@@ -45,13 +45,29 @@ B. Features different from dict and pure-hmap.
 7. The set operations use the native STL algorithms, which take full advantage
    of the fact that stldicts and stlsets have ordered elements.
 
-8. Most of the functions act on ranges of members, denoted by (sd,k1,k2),
+8. The insert and insert_elms functions follow STL semantics. This means, for
+   example, that if (k=>v1) is a member of stldict sd then insert sd (k=>v2)
+   will *not* change sd. sd!k will still be v1. Use update to change the
+   values of existing members. E.g., after (update sd k v2), sd!k will be v2.
+
+9. Most of the functions act on ranges of members, denoted by (sd,k1,k2),
    similar to (sv,i,j) for stlvec. I.e., (sd,"0","z") would be all (k=v) where
    k >= "0" and k < "z".
 
-9. The last iterator used in selected operations is cached. So "member sd k"
-   followed by "sd!k" on requires only one lookup. This also allows efficient
-   traversal of the elements in sd using "next sd k" and "prev sd k".
+D. Cached iterators
+
+1. The last C++ iterator used in selected operations is cached. Only one
+   iterator is cached at any one time. Operations that invalidate the cached
+   iterator cause the iterator to be removed from the cache.
+
+2. The following operations cause an iterator to be cached:
+
+3. The following operations cause an iterator to be deleted from the cache:
+
+4 In certain commonly occuring sequences caching can eliminate an O(lob N)
+  lookup. E.g., "member sd k" followed by "sd!k" or "update sd k v" only
+  requires only one lookup. Caching also allows efficient traversal of the
+  elements in sd using "next sd k" and "prev sd k".
 
 D. Examples/Testing
 
