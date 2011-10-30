@@ -15,11 +15,11 @@
 
    See check_eval.pure for more details.
 
-using system, stldict, stlvec;
-
 */
 
 //-- --resume --verbose on //start up here
+
+using system, stldict, stlvec;
 
 //*** Make stlset ******************************************************
 
@@ -49,6 +49,26 @@ let ss4 = stlset v1; members ss4;
 
 let ss5 = stlset l1; members ss5;
 //- ["a","b","c","d"]
+
+//*** stl::size, empty ***********************************************
+
+let ss1 = stlset ("a".."e"); members ss1;
+//- ["a","b","c","d","e"]
+
+#ss1;
+//- 5
+
+stl::size (ss1,"b","e");
+//- 3
+
+stl::size (ss1,stl::stlbeg,stl::stlend);
+//- 5
+
+stl::size (ss1,"b",stl::stlend);
+//- 4
+
+stl::size (ss1,"b","b");
+//- 0
 
 //*** Simple Access and Insertion *************************************
 
@@ -343,7 +363,7 @@ map (\k->k+1) (ss1,"b","d");
 map (\k->k+1) (ss1,"x","a");
 //- []
 
-//** listmap, catmap, catmap_keys, catmap_vals *************************
+//** listmap, catmap *************************************************
 
 let ss1 = stlset ["a","b","c","d"]; members ss1;
 //- ["a","b","c","d"]
@@ -356,18 +376,6 @@ catmap (\k->[k+1]) ss1;
 
 catmap (\k->[k+1]) (ss1,"a","b");
 //- ["b"]
-
-catmap_keys (\x->[x,ord x]) ss1;
-//- ["a",97,"b",98,"c",99,"d",100]
-
-catmap_keys (\x->[x,ord x]) (ss1,"a","a");
-//- []
-
-catmap_vals (\x->[x,ord x]) ss1;
-//- ["a",97,"b",98,"c",99,"d",100]
-
-catmap_vals (\x->[x,ord x]) (ss1,"a","a");
-//- []
 
 [ k+1 | k = ss1];
 //- ["b","c","d","e"]
@@ -489,8 +497,11 @@ filter (\k -> (ord k) mod 2) (ss1,"d","d");
 let ss1 = stlset ["a","b","c","d"]; members ss1;
 //- ["a","b","c","d"]
 
-let ss2 = stlset ["b","c","d","e"]; members ss1;
-//- ["a","b","c","d"]
+let ss2 = stlset ["b","c","d","e"]; members ss2;
+//- ["b","c","d","e"]
+
+let ss3 = stlset ["b","c","d"]; members ss3;
+//- ["b","c","d"]
 
 members (ss1 + ss1);
 //- ["a","b","c","d"]
@@ -527,6 +538,72 @@ members (ss1 / ss2);
 
 members (ss2 / ss1);
 //- ["a","e"]
+
+ss1 < ss1;
+//- 0
+
+ss1 < ss2;
+//- 0
+
+ss2 < ss1;
+//- 0
+
+ss3 < ss1;
+//- 1
+
+ss1 < ss3;
+//- 0
+
+ss3 < ss2;
+//- 1
+
+ss2 < ss3;
+//- 0
+
+ss1 <= ss1;
+//- 1
+
+ss1 <= ss2;
+//- 0
+
+ss2 <= ss1;
+//- 0
+
+ss3 <= ss1;
+//- 1
+
+ss1 <= ss3;
+//- 0
+
+ss3 <= ss2;
+//- 1
+
+ss2 <= ss3;
+//- 0
+
+(ss1,"b","d") < ss3;
+//- 1
+
+ss3 < (ss1,"b","d");
+//- 0
+
+(ss1,"b","d") <= ss3;
+//- 1
+
+ss3 <= (ss1,"b","d");
+//- 0
+
+(ss2,"b","e") <  ss3;
+//- 0
+
+ss3 < (ss2,"b","e");
+//- 0
+
+(ss2,"b","e") <= ss3;
+//- 1
+
+ss3 <= (ss2,"b","e");
+//- 1
 
 members $ (ss1,"b","d") + (ss2, "c","e");
 //- ["b","c","d"]

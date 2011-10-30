@@ -60,8 +60,8 @@ private extern void  sd_rmlast(expr* tpl);
 private extern void  sd_erase(expr* it);
 private extern void  sd_clear(void* dict);
 private extern void  sd_remove(void* dict, expr* x);
-private extern int   sd_remove_all(void* dict, expr* x);
-private extern void  sd_remove_kv(void* dict, expr* x);
+//private extern int   sd_remove_all(void* dict, expr* x);
+//private extern void  sd_remove_kv(void* dict, expr* x);
 private extern int   sd_allpairs(expr* fun, expr* it, expr* it);
 private extern expr* sd_listmap(expr* fun, expr* it, int what);
 private extern expr* sd_listcatmap(expr* fun, expr* it, int what);
@@ -92,6 +92,10 @@ wrap_sv d = STLVEC (sentry sd_delete d);
 
 kv_equal k1 v1 k2 v2 = k1 == k2 && v1 == v2;
 
+both_sets it1 it2 = sd_is_set it1 && sd_is_set it2;
+
+both_dicts it1 it2 = ~sd_is_set it1 && ~sd_is_set it2;
+
 /*** Public functions for stldict and stlset ******************************/
 
 ::stlvec it::sdit = wrap_sv $ sd_make_stlvec it;
@@ -100,20 +104,12 @@ vector it::sdit = sd_make_vector it;
 
 (::!) (STLDICT d) key = sd_get d key;
 
-(::+) it1::sdit it2::sdit = wrap_sd $ sd_setop sd_union  it1 it2;
-
-(::-) it1::sdit it2::sdit = wrap_sd $ sd_setop sd_difference it1 it2;
-
-(::*) it1::sdit it2::sdit = wrap_sd $ sd_setop sd_intersection it1 it2;
-
-(::/) it1::sdit it2::sdit = wrap_sd $ 
-  sd_setop sd_symmetric_difference it1 it2;
-
 (::#) sd::stldict = sd_size sd;
 
 size it::sdit = sd_size it;
 
 null it::sdit = sd_size it == 0;
+
 empty it::sdit = sd_size it == 0;
 
 bounds (STLDICT d) = (STLDICT d), stlbeg, stlend;
@@ -151,32 +147,28 @@ insert_elms sd@(STLDICT d) it::svit = sd_insert_elms_stlvec d it $$ sd;
 ::delete sd@(STLDICT d) k = sd_remove d k $$ sd;
 
 allpairs fun it1::sdit it2::sdit = sd_allpairs fun it1 it2 
-  if sd_is_set it1 && sd_is_set it2 && functionp fun && nargs fun == 2 ;
+  if both_sets it1 it2 && functionp fun && nargs fun == 2 ;
 
 allpairs fun it1::sdit it2::sdit = sd_allpairs fun it1 it2
   if ~sd_is_set it1 && ~sd_is_set it2 && functionp fun && nargs fun == 4;
 
-(::==) sd1::stldict sd2::stldict = allpairs kv_equal sd1 sd2 
-  if ~sd_is_set sd1 && ~sd_is_set sd2;
+(::==) sd1::stldict sd2::stldict = allpairs kv_equal sd1 sd2
+  if both_dicts sd1 sd2;
 
 (::~=) sd1::stldict sd2::stldict = ~allpairs kv_equal sd1 sd2
-  if ~sd_is_set sd1 && ~sd_is_set sd2;
+  if both_dicts sd1 sd2;
 
 (::==) sd1::stldict sd2::stldict = allpairs (==) sd1 sd2 
-  if sd_is_set sd1 && sd_is_set sd2;
+  if both_sets sd1 sd2;
 
 (::~=) sd1::stldict sd2::stldict = ~allpairs (==) sd1 sd2
-  if sd_is_set sd1 && sd_is_set sd2;
+  if both_sets sd1 sd2;
 
-::map f it::sdit = sd_listmap f it sd_both;
+::map f it::sdit = sd_listmap f it sd_both; // => sd_key for sets
 
 ::listmap f it::sdit = sd_listmap f it sd_both;
 
 ::catmap f it::sdit = sd_listcatmap f it sd_both;
-
-::catmap_keys f it::sdit = sd_listcatmap f it sd_keys;
-
-::catmap_vals f it::sdit = sd_listcatmap f it sd_vals;
 
 ::foldl f x it::sdit = sd_foldl f x it;
 
@@ -255,6 +247,10 @@ get_default sd@(STLDICT d) = sd_get_default d if ~sd_is_set sd;
 
 ::map_vals f it::sdit = sd_listmap f it sd_vals if ~sd_is_set it;
 
+::catmap_keys f it::sdit = sd_listcatmap f it sd_keys if ~sd_is_set it;;
+
+::catmap_vals f it::sdit = sd_listcatmap f it sd_vals if ~sd_is_set it;
+
 /*** Functions for stlset ************************************************/
 
 ::emptystlset = wrap_sd $ sd_make_empty (<) 1;
@@ -279,4 +275,23 @@ end;
 ::next_elm (STLDICT d) elm = sd_next d elm;
 
 ::prev_elm (STLDICT d) elm = sd_prev d elm;
+
+(::+) it1::sdit it2::sdit = 
+  wrap_sd $ sd_setop sd_union it1 it2 if both_sets it1 it2;
+
+(::-) it1::sdit it2::sdit = 
+  wrap_sd $ sd_setop sd_difference it1 it2 if both_sets it1 it2;
+
+(::*) it1::sdit it2::sdit = 
+  wrap_sd $ sd_setop sd_intersection it1 it2 if both_sets it1 it2;
+
+(::/) it1::sdit it2::sdit = 
+  wrap_sd $ sd_setop sd_symmetric_difference it1 it2 if both_sets it1 it2;
+
+(::<=) it1::sdit it2::sdit = size (it1 - it2) == 0 if both_sets it1 it2;
+
+(::<) it1::sdit it2::sdit = 
+  it1 <= it2 && size it1 < size it2 if both_sets it1 it2;
+
+
 

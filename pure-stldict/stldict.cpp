@@ -84,7 +84,9 @@ static int sd_get_size(sd* dict, sdi b, sdi e)
  sdmap& mp = dict->mp;
  if (b == mp.begin() && e == mp.end())
     sz = mp.size();
- else 
+ else if (b == e)
+   sz = 0;
+ else
    while(b++ != e) sz++;
  return sz;
 }
