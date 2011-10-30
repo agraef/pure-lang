@@ -12,7 +12,7 @@ Language (http://code.google.com/p/pure-lang/).
 This software is distributed under a BSD-style license in the hope that it
 will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the COPYING file
-included with the pure-stlvec distribution package for details.
+included with the pure-stldict distribution package for details.
 
 */
 
@@ -23,10 +23,6 @@ included with the pure-stlvec distribution package for details.
 #include <map>
 #include "stlbase.hpp"
 #include "stlvec.hpp"
-
-/* sd, sdi and friends - A sd is a struct that has a map of pxh's and cache of
-   recently used iterators. It is the data structure pointed to by a sd on the
-   Pure side of the interface. A sdi is an iterator on an sd's map.*/
 
 typedef std::map<pxh,pxh,pxh_pred2> sdmap;
 typedef sdmap::iterator sdi;

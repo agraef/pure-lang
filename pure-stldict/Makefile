@@ -1,5 +1,5 @@
 
-modname = stldict
+pkgname = pure-stldict
 version = 0.0
 
 # platform-specific setup
@@ -10,8 +10,8 @@ shared      = $(shell pkg-config pure --variable shared)
 
 libdir      = $(shell pkg-config pure --variable libdir)
 installdir  = $(addprefix $(DESTDIR), $(libdir)/pure)
+stlbase	    = ../pure-stlvec
 
-pure-stlvec = ../pure-stlvec
 
 MOD_CXXFLAGS = $(PIC) $(shell pkg-config pure --cflags) -I$(pure-stlvec) $(CFLAGS) $(CPPFLAGS)
 MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS)
@@ -20,15 +20,19 @@ CFLAGS = -g -O2
 
 # Basic rules to build the module, clean, install and uninstall.
 
-all: $(modname)$(DLL)
+cppsource = stldict.ccp stlmmap.ccp
+puresource = $(patsubst %.ccp, %.pure, $(cppsource))
+objects = $(patsubst %.ccp, %$(DLL), $(cppsource))
 
-$(modname)$(DLL): $(modname).cpp $(modname).hpp
-	$(CXX) $(shared) -o $@ $(MOD_CXXFLAGS) $(filter %.cpp,$^)  $(MOD_LDFLAGS) $(LIBS)
+all: $(objects)
+
+%$(DLL): %.cpp
+	g++ $(shared) -o $@ $(MOD_CXXFLAGS) $< $(MOD_LDFLAGS) $(LIBS) -I$(stlbase)
 
 clean:
-	rm -f $(modname)$(DLL)
+	rm -f *.o *.$(DLL)
 
-install: $(modname).pure $(modname)$(DLL)
+install: $(puresource) $(objects)
 	test -d $(installdir) || mkdir -p $(installdir)
 	cp $^ $(installdir)
 
