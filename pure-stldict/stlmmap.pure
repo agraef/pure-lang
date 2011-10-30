@@ -1,0 +1,296 @@
+/* stlmmap.pure: Pure interface to C++ STL multimap
+    
+--- DRAFT - FOR DISCUSSON PURPOSES ONLY ---
+
+Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>.
+
+All rights reserved.
+
+This software is is part of pure-stldict, an addon to the Pure Programming
+Language (http://code.google.com/p/pure-lang/).
+
+This software is distributed under a BSD-style license in the hope that it
+will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the COPYING file
+included with the pure-stldict distribution package for details.
+
+*/
+ 
+using stlbase;
+using "lib:stlmmap";
+
+// stlmmap constuctors
+nonfix STLMMAP;
+STLMMAP = 'STLMMAP;
+
+// stlmmap types
+type stlmset (STLMMAP _);
+type stlmmap (STLMMAP _);
+type smmit (STLMMAP _);
+type smmit (STLMMAP _, _);
+
+namespace stl;
+
+/*** C++ support *****************************************************/
+
+private extern void* smm_make_empty(expr* comp, int keys_only);
+private extern void  smm_delete(void* dict);
+private extern bool  smm_is_set(expr* tpl);
+private extern expr* smm_set_default(void* dict, expr* val);
+private extern expr* smm_get_default(void* dict);
+private extern bool  smm_includes(expr* it1, expr* it2);
+private extern void* smm_setop(int op, expr* it1, expr* it2);
+private extern expr* smm_make_vector(expr* tpl);
+private extern void* smm_make_stlvec(expr* tpl);
+private extern int   smm_size(expr* tpl);
+private extern expr* smm_bounds(expr* tpl);
+private extern int   smm_member(void* dict, expr* key);
+private extern expr* smm_next(void* dict, expr* key);
+private extern expr* smm_prev(void* dict, expr* key);
+private extern expr* smm_get(void* dict, expr* key);
+private extern expr* smm_first(expr* tpl);
+private extern expr* smm_last(expr* tpl);
+private extern expr* smm_update(void* dict, expr* key, expr* val);
+private extern expr* smm_update_with(void* dict, expr* key, expr* unaryfun);
+private extern void  smm_insert_elm(void* dict, expr* kv);
+private extern void  smm_insert_elms_xs(void* dict, expr* src);
+private extern void  smm_insert_elms_stlvec(void* dict, expr* tpl);
+private extern void  smm_insert_elms_stlmmap(void* dict, expr* tpl);
+private extern void  smm_rmfirst(expr* tpl);
+private extern void  smm_rmlast(expr* tpl);
+private extern void  smm_erase(expr* it);
+private extern void  smm_clear(void* dict);
+private extern void  smm_remove(void* dict, expr* x);
+//private extern int   smm_remove_all(void* dict, expr* x);
+//private extern void  smm_remove_kv(void* dict, expr* x);
+private extern int   smm_allpairs(expr* fun, expr* it, expr* it);
+private extern expr* smm_listmap(expr* fun, expr* it, int what);
+private extern expr* smm_listcatmap(expr* fun, expr* it, int what);
+private extern expr* smm_foldl(expr* fun, expr* val, expr* it);
+private extern expr* smm_foldl1(expr* fun, expr* it);
+private extern expr* smm_foldr(expr* fun, expr* val, expr* it);
+private extern expr* smm_foldr1(expr* fun, expr* it);
+
+extern void stl_set_smm_trace(bool enable) = set_smm_trace;
+extern bool stl_smm_trace_enabled() = smm_trace_enabled;
+
+/*** Helpers **************************************************************/
+
+private smm_keys smm_vals smm_both smm_union smm_difference
+  smm_intersection smm_symmetric_difference wrap_smm wrap_sv;
+
+const smm_keys = 1;
+const smm_vals = 2;
+const smm_both = 3;
+
+const smm_union = 1;
+const smm_difference = 2;
+const smm_intersection = 3;
+const smm_symmetric_difference = 4;
+
+wrap_smm d = STLMMAP (sentry smm_delete d);
+wrap_sv d = STLVEC (sentry smm_delete d);
+
+kv_equal k1 v1 k2 v2 = k1 == k2 && v1 == v2;
+
+both_sets it1 it2 = smm_is_set it1 && smm_is_set it2;
+
+both_dicts it1 it2 = ~smm_is_set it1 && ~smm_is_set it2;
+
+/*** Public functions for stlmmap and stlmset *************************/
+
+::stlvec it::smmit = wrap_sv $ smm_make_stlvec it;
+
+vector it::smmit = smm_make_vector it;
+
+(::!) (STLMMAP d) key = smm_get d key;
+
+(::#) smm::stlmmap = smm_size smm;
+
+size it::smmit = smm_size it;
+
+null it::smmit = smm_size it == 0;
+
+empty it::smmit = smm_size it == 0;
+
+bounds (STLMMAP d) = (STLMMAP d), stlbeg, stlend;
+
+bounds it@(STLMMAP d, _) = (STLMMAP d), smm_bounds it;
+
+::member (STLMMAP d) key = smm_member d key;
+
+::members it::smmit = smm_listmap 0 it smm_both; 
+
+// ::list smm::stlmmap = members smm;  // use members
+
+::first it::smmit = smm_first it;
+
+::last it::smmit = smm_last it;
+
+::rmfirst it::smmit = smm_rmfirst it;
+
+::rmlast it::smmit = smm_rmlast it;
+
+::insert smm@(STLMMAP d) rk = smm_insert_elm d rk $$ smm;
+
+::insert_elms smm@(STLMMAP d) xs::list = smm_insert_elms_xs d xs $$ smm;
+
+::insert_elms smm@(STLMMAP d) xs::matrix = smm_insert_elms_xs d xs $$ smm;
+
+::insert_elms smm@(STLMMAP d) it::smmit = smm_insert_elms_stlmmap d it $$ smm;
+
+::insert_elms smm@(STLMMAP d) it::svit = smm_insert_elms_stlvec d it $$ smm;
+
+::erase it@(STLMMAP d, f, e) = smm_erase it $$ STLMMAP d;
+
+::erase smm@(STLMMAP d) = smm_clear d $$ smm;
+
+::delete smm@(STLMMAP d) k = smm_remove d k $$ smm;
+
+allpairs fun it1::smmit it2::smmit = smm_allpairs fun it1 it2 
+  if both_sets it1 it2 && functionp fun && nargs fun == 2 ;
+
+allpairs fun it1::smmit it2::smmit = smm_allpairs fun it1 it2
+  if ~smm_is_set it1 && ~smm_is_set it2 && functionp fun && nargs fun == 4;
+
+(::==) smm1::stlmmap smm2::stlmmap = allpairs kv_equal smm1 smm2
+  if both_dicts smm1 smm2;
+
+(::~=) smm1::stlmmap smm2::stlmmap = ~allpairs kv_equal smm1 smm2
+  if both_dicts smm1 smm2;
+
+(::==) smm1::stlmmap smm2::stlmmap = allpairs (==) smm1 smm2 
+  if both_sets smm1 smm2;
+
+(::~=) smm1::stlmmap smm2::stlmmap = ~allpairs (==) smm1 smm2
+  if both_sets smm1 smm2;
+
+::map f it::smmit = smm_listmap f it smm_both; // => smm_key for sets
+
+::listmap f it::smmit = smm_listmap f it smm_both;
+
+::catmap f it::smmit = smm_listcatmap f it smm_both;
+
+::foldl f x it::smmit = smm_foldl f x it;
+
+::foldl1 f it::smmit = smm_foldl1 f it;
+
+::foldr f x it::smmit = smm_foldr f x it;
+
+::foldr1 f it::smmit = smm_foldr1 f it;
+
+::do f it::smmit = smm_foldl (\_ x->f x) () it $$ ();
+
+::filter p it::smmit = smm_foldr f [] it with
+  f x xs = res when
+    res = case p x of
+      1 = x:xs;
+      0 = xs;
+      y = throw failed_cond;
+    end;
+  end;
+end;
+
+::rowmap f it::smmit = rowcat (smm_listmap f it smm_both);
+
+::rowcatmap f it::smmit = rowcat (smm_listmap f it smm_both);
+
+::colmap f it::smmit = colcat (smm_listmap f it smm_both);
+
+::colcatmap f it::smmit = colcat (smm_listmap f it smm_both);
+
+/*** Functions for stlmmap *******************************************/
+
+::emptystlmmap = wrap_smm $ smm_make_empty (<) 0;
+
+::emptystlmmap_with comp = wrap_smm $ smm_make_empty comp 0;
+
+::stlmmap xs = smm when
+  smm = ::emptystlmmap;
+  insert_elms smm xs;
+end if listp xs || matrixp xs;
+
+::stlmmap it::svit = smm when
+  smm = ::emptystlmmap;
+  insert_elms smm it;
+end;
+
+::stlmmap it::smmit = smm when
+  smm = ::emptystlmmap;
+  insert_elms smm it;
+end;
+
+::mkstlmmap y ks::list = do add ks $$ smm with
+  add k = ::update smm k y;
+end when
+  smm = emptystlmmap;  
+end;
+
+set_default smm@(STLMMAP d) val = smm_set_default d val if ~smm_is_set smm;
+
+// bool, default
+get_default smm@(STLMMAP d) = smm_get_default d if ~smm_is_set smm;
+
+::update smm@(STLMMAP d) key x = smm_update d key x $$ smm if ~smm_is_set smm;
+
+::update_with f smm@(STLMMAP d) key x = 
+  smm_update_with d key (f x) $$ smm if ~smm_is_set smm;
+
+::next_key smm@(STLMMAP d) key = smm_next d key; // if ~smm_is_set s;
+
+::prev_key smm@(STLMMAP d) key = smm_prev d key; // if ~smm_is_set smm;
+
+::keys it::smmit = smm_listmap 0 it smm_keys if ~smm_is_set it;
+
+::vals it::smmit = smm_listmap 0 it smm_vals if ~smm_is_set it;
+
+::map_keys f it::smmit = smm_listmap f it smm_keys if ~smm_is_set it;
+
+::map_vals f it::smmit = smm_listmap f it smm_vals if ~smm_is_set it;
+
+::catmap_keys f it::smmit = smm_listcatmap f it smm_keys if ~smm_is_set it;;
+
+::catmap_vals f it::smmit = smm_listcatmap f it smm_vals if ~smm_is_set it;
+
+/*** Functions for stlmset ************************************************/
+
+::emptystlmset = wrap_smm $ smm_make_empty (<) 1;
+
+::emptystlmset_with comp = wrap_smm $ smm_make_empty comp 1;
+
+::stlmset xs = smm when
+  smm = ::emptystlmset;
+  insert_elms smm xs;
+end if listp xs || matrixp xs;
+
+::stlmset it::svit = smm when
+  smm = ::emptystlmset;
+  insert_elms smm it;
+end;
+
+::stlmset it::smmit = smm when
+  smm = ::emptystlmset;
+  insert_elms smm it;
+end;
+
+::next_elm (STLMMAP d) elm = smm_next d elm;
+
+::prev_elm (STLMMAP d) elm = smm_prev d elm;
+
+(::+) it1::smmit it2::smmit = 
+  wrap_smm $ smm_setop smm_union it1 it2 if both_sets it1 it2;
+
+(::-) it1::smmit it2::smmit = 
+  wrap_smm $ smm_setop smm_difference it1 it2 if both_sets it1 it2;
+
+(::*) it1::smmit it2::smmit = 
+  wrap_smm $ smm_setop smm_intersection it1 it2 if both_sets it1 it2;
+
+(::/) it1::smmit it2::smmit = 
+  wrap_smm $ smm_setop smm_symmetric_difference it1 it2 if both_sets it1 it2;
+
+(::<=) it1::smmit it2::smmit = smm_includes it2 it1 if both_sets it1 it2;
+
+(::<) it1::smmit it2::smmit = 
+  size it1 < size it2 && smm_includes it2 it1 if both_sets it1 it2;
+
