@@ -12,7 +12,7 @@ Language (http://code.google.com/p/pure-lang/).
 This software is distributed under a BSD-style license in the hope that it
 will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the COPYING file
-included with the pure-stlmmap distribution package for details.
+included with the pure-stldict distribution package for details.
 
 */
 
