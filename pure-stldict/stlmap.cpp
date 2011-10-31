@@ -676,9 +676,9 @@ void sm_clear(sm* smp)
   smp->clear();
 }
 
-void sm_remove(sm* smp, px* k)
+int sm_remove(sm* smp, px* k)
 {
-  smp->erase(k);
+  return smp->erase(k);
 }
 
 int sm_remove_all(sm* smp, px* k)

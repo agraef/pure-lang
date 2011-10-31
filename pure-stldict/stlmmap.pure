@@ -60,9 +60,7 @@ private extern void  smm_rmfirst(expr* tpl);
 private extern void  smm_rmlast(expr* tpl);
 private extern void  smm_erase(expr* it);
 private extern void  smm_clear(void* mmap);
-private extern void  smm_remove(void* mmap, expr* x);
-//private extern int   smm_remove_all(void* mmap, expr* x);
-//private extern void  smm_remove_kv(void* mmap, expr* x);
+private extern int   smm_remove(void* mmap, expr* x);
 private extern int   smm_allpairs(expr* fun, expr* it, expr* it);
 private extern expr* smm_listmap(expr* fun, expr* it, int what);
 private extern expr* smm_listcatmap(expr* fun, expr* it, int what);
@@ -145,7 +143,7 @@ bounds it@(STLMMAP mm, _) = (STLMMAP mm), smm_bounds it;
 
 ::erase smm@(STLMMAP mm) = smm_clear mm $$ smm;
 
-::delete smm@(STLMMAP mm) k = smm_remove mm k $$ smm;
+::delete (STLMMAP mm) k = smm_remove mm k;
 
 allpairs fun it1::smmit it2::smmit = smm_allpairs fun it1 it2 
   if both_sets it1 it2 && functionp fun && nargs fun == 2 ;

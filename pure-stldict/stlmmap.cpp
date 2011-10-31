@@ -659,9 +659,9 @@ void smm_clear(smm* smmp)
   smmp->clear();
 }
 
-void smm_remove(smm* smmp, px* k)
+int smm_remove(smm* smmp, px* k)
 {
-  smmp->erase(k);
+  return smmp->erase(k);
 }
 
 int smm_remove_all(smm* smmp, px* k)
