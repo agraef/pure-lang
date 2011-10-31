@@ -190,18 +190,15 @@ int stlmmap::erase(px* k)
   int ret = 1;
   if ( !mp.empty() ) {
     pmmi i;
-    if ( get_cached_pmmi(k, i) )
-      erase(i);
-    else {
-      if (k == smmbeg())
-        erase(mp.begin());
-      else if (k != smmend()) {
-        mp.erase(k);
-      }
-      else
-        ret = 0;
+    if (k == smmbeg())
+      erase(mp.begin());
+    else if (k != smmend()) {
+      mp.erase(k);
     }
+    else
+      ret = 0;
   }
+  has_recent_pmmi = false;
   return ret;
 }
 
@@ -632,9 +629,15 @@ void smm_insert_elms_xs(smm* smmp, px* src)
 void smm_insert_elms_stlmmap(smm* smmp, px* tpl)
 {
   smm_iters itrs(tpl);
-  if (!itrs.is_valid) bad_argument();
-  for (pmmi i = itrs.beg(); i!=itrs.end(); i++)
-    update_aux(smmp, i->first.pxp(),i->second.pxp());
+  if (itrs.beg() != itrs.end()) {
+    pmmi inserted = smmp->mp.begin();
+    if (!itrs.is_valid) bad_argument();
+    for (pmmi i = itrs.beg(); i!=itrs.end(); i++) {
+      pxh_pair kv(i->first.pxp(), i->second.pxp());
+      inserted = smmp->mp.insert(inserted, kv);
+    }
+    smmp->cache_pmmi(inserted);
+  }
 }
 
 void smm_insert_elms_stlvec(smm* smmp, px* tpl)
