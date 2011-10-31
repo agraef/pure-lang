@@ -1,5 +1,5 @@
 
-pkgname = pure-stlmap
+pkgname = pure-stldict
 version = 0.0
 
 # platform-specific setup
@@ -18,7 +18,7 @@ CXXFLAGS = -g -O2 -std=c++0x -Wall
 
 # Basic rules to build the modules, clean, install and uninstall.
 
-cppsource = hashmap.cc ordmap.cc
+cppsource = hashdict.cc orddict.cc
 puresource = $(patsubst %.cc, %.pure, $(cppsource))
 objects = $(patsubst %.cc, %$(DLL), $(cppsource))
 

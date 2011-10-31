@@ -1,23 +1,23 @@
 
-===========
-pure-stlmap
-===========
+============
+pure-stldict
+============
 
 .. default-domain:: pure
-.. module:: hashmap
-.. module:: ordmap
+.. module:: hashdict
+.. module:: orddict
 
 Version @version@, |today|
 
 Albert Graef <Dr.Graef@t-online.de>
 
-This package provides a light-weight, no frills interface to the C++ ``map``
-and ``unordered_map`` containers, see the `C++ standard library
-documentation`_ for details. (The C++ containers were originally based on the
-`Standard Template Library`_, so they are also sometimes referred to as "STL
-containers"; hence the name of this package.)
+This package provides a light-weight, no frills interface to the C++
+dictionary-like containers, ``map`` and ``unordered_map``, see the `C++
+standard library documentation`_ for details. (The C++ containers were
+originally based on the `Standard Template Library`_, so they are also
+sometimes referred to as "STL containers"; hence the name of this package.)
 
-The package includes the ``hashmap`` and ``ordmap`` modules which make these
+The package includes the ``hashdict`` and ``orddict`` modules which make these
 data structures available in Pure land and equip them with a (more or less)
 idiomatic Pure container interface.
 
@@ -29,12 +29,12 @@ Copying
 
 Copyright (c) 2011 by Albert Graef.
 
-pure-stlmap is free software: you can redistribute it and/or modify it under
+pure-stldict is free software: you can redistribute it and/or modify it under
 the terms of the GNU Lesser General Public License as published by the Free
 Software Foundation, either version 3 of the License, or (at your option) any
 later version.
 
-pure-stlmap is distributed in the hope that it will be useful, but WITHOUT ANY
+pure-stldict is distributed in the hope that it will be useful, but WITHOUT ANY
 WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
 A PARTICULAR PURPOSE.  See the GNU Lesser General Public License for more
 details.
@@ -46,7 +46,7 @@ Installation
 ============
 
 Get the latest source from
-http://pure-lang.googlecode.com/files/pure-stlmap-@version@.tar.gz.
+http://pure-lang.googlecode.com/files/pure-stldict-@version@.tar.gz.
 
 Run ``make`` to compile the modules and ``make install`` (as root) to install
 them in the Pure library directory. This requires GNU make, and of course you
@@ -61,7 +61,7 @@ check the Makefile for details.
    should work out of the box, while (recent) C++0x implementations may
    require some fiddling with the sources and/or the compilation options. Pre
    C++0x library versions surely require considerably more work, especially in
-   the hashmap module.
+   the hashdict module.
 
 Usage
 =====
@@ -69,22 +69,27 @@ Usage
 After installation, you can use the operations of this package by placing one
 or both of the following import declarations in your Pure programs::
 
-  using hashmap;
-  using ordmap;
+  using hashdict;
+  using orddict;
 
 In Pure land, the C++ ``map`` and ``unordered_map`` containers and their
 ``multimap`` variants are made available as a collection of four data
 structures:
 
-* ``hashmap``, ``hashmmap``: Hashed (unordered) map and multimap data
-  structures. These work with arbitrary key (and value) types, like the hashed
-  dictionary and set data structures in the standard library, and can be found
-  in the ``hashmap.pure`` module.
+* ``hashdict``, ``hashmdict``: Hashed (unordered) dictionary data structures.
+  These work with arbitrary key (and value) types, like the hashed dictionary
+  and set data structures in the standard library, and can be found in the
+  ``hashdict.pure`` module.
 
-* ``ordmap``, ``ordmmap``: Ordered map and multimap data structures. These
-  require the keys to be ordered by the standard ``<`` predicate, like the
-  ordered dictionary and set data structures in the standard library, and can
-  be found in the ``ordmap.pure`` module.
+* ``orddict``, ``ordmdict``: Ordered dictionary data structures. These require
+  the keys to be ordered by the standard ``<`` predicate, like the ordered
+  dictionary and set data structures in the standard library, and can be found
+  in the ``orddict.pure`` module.
+
+Note that ``hashdict`` and ``hashmdict`` differ in that the former has exactly
+one key-value association for each key in the dictionary, while the latter is
+a "multidict" which allows multiple values to be associated with a key. The
+same applies to the ``orddict`` and ``ordmdict`` types.
 
 All data structures offer most of the usual Pure container interface and can
 be used either as dictionaries (holding key => value pairs) or sets (holding
@@ -94,16 +99,15 @@ the C++ containers. Memory management of these objects is automatic, and
 customizable pretty-printing is provided as well.
 
 The most important difference to the dictionary and set types in the standard
-library is that the hashmap and ordmap containers are *mutable* data
+library is that the hashdict and orddict containers are *mutable* data
 structures; inserting and deleting members really modifies the underlying C++
 containers. (However, it is possible to take copies of the containers in
 situations where it's necessary to preserve value semantics.)
 
 Also note that not the full standard dictionary and set interface is provided;
-in particular, submap comparisons and set union/difference/intersection
-operations are missing right now (the C++ library doesn't have these either),
-but it's easy to define them yourself if needed (please see the included
-examples).
+in particular, subdict comparisons and set union/difference/intersection
+operations are missing right now, but it's easy to define them yourself if
+needed (please see the included examples).
 
 Documentation of the types and functions provided by the modules is still to
 be written, so for the time being please refer to the module sources and the
@@ -112,11 +116,11 @@ included examples instead.
 Examples
 ========
 
-Some basic examples showing hashmaps in action::
+Some basic examples showing hashdicts in action::
 
-  > using hashmap;
-  > let m = hashmap [foo=>99, bar=>bar 4711L, baz=>1..5]; m;
-  hashmap [foo=>99,bar=>bar 4711L,baz=>[1,2,3,4,5]]
+  > using hashdict;
+  > let m = hashdict [foo=>99, bar=>bar 4711L, baz=>1..5]; m;
+  hashdict [foo=>99,bar=>bar 4711L,baz=>[1,2,3,4,5]]
   > m!bar;
   bar 4711L
   > keys m;
@@ -130,16 +134,16 @@ Some basic examples showing hashmaps in action::
   > [x,y | x=>y = m];
   [(foo,99),(bar,bar 4711L),(baz,[1,2,3,4,5])]
 
-Hashed multimaps (``hashmmap``)::
+Hashed multidicts (``hashmdict``)::
 
-  > let m = hashmmap [foo=>99,baz=>1..5,baz=>bar 4711L]; m;
-  hashmmap [foo=>99,baz=>[1,2,3,4,5],baz=>bar 4711L]
+  > let m = hashmdict [foo=>99,baz=>1..5,baz=>bar 4711L]; m;
+  hashmdict [foo=>99,baz=>[1,2,3,4,5],baz=>bar 4711L]
   > m!baz;
   [[1,2,3,4,5],bar 4711L]
   > m!foo;
   [99]
 
-All map containers can be used as generators in list and matrix
+All dictionary containers can be used as generators in list and matrix
 comprehensions::
 
   > [x y | x=>y = m];
@@ -147,36 +151,37 @@ comprehensions::
   > {{x;y} | x=>y = m};
   {foo,baz,baz;99,[1,2,3,4,5],bar 4711L}
 
-This example illustrates how to employ ordered maps as a set data structure::
+This example illustrates how to employ ordered dictionaries as a set data
+structure::
 
-  > using ordmap;
-  > type ordxmap x::ordmap | ordxmap x::ordmmap;
-  > x::ordxmap + y::ordxmap = foldl insert (copy x) (list y);
-  > x::ordxmap - y::ordxmap = foldl delete (copy x) (list y);
-  > x::ordxmap * y::ordxmap = x-(x-y);
-  > let m1 = ordmap [5,1,3,11,3];
-  > let m2 = ordmap (3..6);
+  > using orddict;
+  > type ordxdict x::orddict | ordxdict x::ordmdict;
+  > x::ordxdict + y::ordxdict = foldl insert (copy x) (list y);
+  > x::ordxdict - y::ordxdict = foldl delete (copy x) (list y);
+  > x::ordxdict * y::ordxdict = x-(x-y);
+  > let m1 = orddict [5,1,3,11,3];
+  > let m2 = orddict (3..6);
   > m1;m2;
-  ordmap [1,3,5,11]
-  ordmap [3,4,5,6]
+  orddict [1,3,5,11]
+  orddict [3,4,5,6]
   > m1+m2;
-  ordmap [1,3,4,5,6,11]
+  orddict [1,3,4,5,6,11]
   > m1-m2;
-  ordmap [1,11]
+  orddict [1,11]
   > m1*m2;
-  ordmap [3,5]
+  orddict [3,5]
 
-Using ``ordmmap`` instead of ``ordmap``, we also get ordered multisets
+Using ``ordmdict`` instead of ``orddict``, we also get ordered multisets
 ("bags")::
 
-  > let m1 = ordmmap [5,1,3,11,3];
-  > let m2 = ordmmap (3..6);
+  > let m1 = ordmdict [5,1,3,11,3];
+  > let m2 = ordmdict (3..6);
   > m1;m2;
-  ordmmap [1,3,3,5,11]
-  ordmmap [3,4,5,6]
+  ordmdict [1,3,3,5,11]
+  ordmdict [3,4,5,6]
   > m1+m2;
-  ordmmap [1,3,3,3,4,5,5,6,11]
+  ordmdict [1,3,3,3,4,5,5,6,11]
   > m1-m2;
-  ordmmap [1,3,11]
+  ordmdict [1,3,11]
   > m1*m2;
-  ordmmap [3,5]
+  ordmdict [3,5]

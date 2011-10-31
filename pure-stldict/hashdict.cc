@@ -136,7 +136,7 @@ namespace std {
   };
 }
 
-typedef unordered_map<pure_expr*,pure_expr*> myhashmap;
+typedef unordered_map<pure_expr*,pure_expr*> myhashdict;
 
 // A little helper class to keep track of interpreter-local data.
 
@@ -169,23 +169,23 @@ T& ILS<T>::operator()()
 
 static ILS<int32_t> hmsym = 0;
 
-extern "C" void hashmap_symbol(pure_expr *x)
+extern "C" void hashdict_symbol(pure_expr *x)
 {
   int32_t f;
   if (pure_is_symbol(x, &f) && f>0) hmsym() = f;
 }
 
-extern "C" pure_expr *hashmap_list(myhashmap *m);
+extern "C" pure_expr *hashdict_list(myhashdict *m);
 
-static const char *hashmap_str(myhashmap *m)
+static const char *hashdict_str(myhashdict *m)
 {
   static char *buf = 0; // TLD
   if (buf) free(buf);
   /* Instead of building the string representation directly, it's much easier
      to just construct the real term on the fly and have str() do all the hard
      work for us. */
-  int32_t fsym = hmsym()?hmsym():pure_sym("hashmap");
-  pure_expr *f = pure_const(fsym), *x = pure_applc(f, hashmap_list(m));
+  int32_t fsym = hmsym()?hmsym():pure_sym("hashdict");
+  pure_expr *f = pure_const(fsym), *x = pure_applc(f, hashdict_list(m));
   buf = str(x);
   pure_freenew(x);
   /* Note that in the case of an outfix symbol we now have something like LEFT
@@ -215,7 +215,7 @@ static const char *hashmap_str(myhashmap *m)
 
 #define NPREC_APP 167772155 // this comes from expr.hh
 
-static int hashmap_prec(myhashmap *m)
+static int hashdict_prec(myhashdict *m)
 {
   if (hmsym()) {
     int32_t p = pure_sym_nprec(hmsym());
@@ -239,11 +239,11 @@ static inline bool samechk(pure_expr *x, pure_expr *y)
     return same(x, y);
 }
 
-static bool hashmap_same(myhashmap *x, myhashmap *y)
+static bool hashdict_same(myhashdict *x, myhashdict *y)
 {
   if (x == y) return true;
   if (x->size() != y->size()) return false;
-  for (myhashmap::iterator it = x->begin(), jt = y->begin(); it != x->end();
+  for (myhashdict::iterator it = x->begin(), jt = y->begin(); it != x->end();
        ++it, ++jt) {
 #ifdef DEBUG
     assert(jt != y->end());
@@ -256,41 +256,41 @@ static bool hashmap_same(myhashmap *x, myhashmap *y)
 
 // Pointer type tag.
 
-extern "C" int hashmap_tag(void)
+extern "C" int hashdict_tag(void)
 {
   static ILS<int> t = 0;
   if (!t()) {
-    t() = pure_pointer_tag("hashmap*");
-    pure_pointer_add_equal(t(), (pure_equal_fun)hashmap_same);
-    pure_pointer_add_printer(t(), (pure_printer_fun)hashmap_str,
-			     (pure_printer_prec_fun)hashmap_prec);
+    t() = pure_pointer_tag("hashdict*");
+    pure_pointer_add_equal(t(), (pure_equal_fun)hashdict_same);
+    pure_pointer_add_printer(t(), (pure_printer_fun)hashdict_str,
+			     (pure_printer_prec_fun)hashdict_prec);
   }
   return t();
 }
 
 // Basic interface functions.
 
-extern "C" void hashmap_free(myhashmap *m)
+extern "C" void hashdict_free(myhashdict *m)
 {
-  for (myhashmap::iterator it = m->begin(); it != m->end(); ++it) {
+  for (myhashdict::iterator it = m->begin(); it != m->end(); ++it) {
     pure_free(it->first);
     if (it->second) pure_free(it->second);
   }
   delete m;
 }
 
-static pure_expr *make_hashmap(myhashmap *m)
+static pure_expr *make_hashdict(myhashdict *m)
 {
   static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
-  if (!fno) fno = pure_sym("hashmap_free");
+  if (!fno) fno = pure_sym("hashdict_free");
   return pure_sentry(pure_symbol(fno),
-		     pure_tag(hashmap_tag(), pure_pointer(m)));
+		     pure_tag(hashdict_tag(), pure_pointer(m)));
 }
 
-extern "C" void hashmap_add(myhashmap *m, pure_expr *key);
-extern "C" void hashmap_add2(myhashmap *m, pure_expr *key, pure_expr *val);
+extern "C" void hashdict_add(myhashdict *m, pure_expr *key);
+extern "C" void hashdict_add2(myhashdict *m, pure_expr *key, pure_expr *val);
 
-extern "C" pure_expr *hashmap(pure_expr *xs)
+extern "C" pure_expr *hashdict(pure_expr *xs)
 {
   size_t n;
   pure_expr **xv;
@@ -301,22 +301,22 @@ extern "C" pure_expr *hashmap(pure_expr *xs)
     return 0;
   int32_t fno = pure_getsym("=>"), gno;
   assert(fno > 0);
-  myhashmap *m = new myhashmap;
+  myhashdict *m = new myhashdict;
   for (size_t i = 0; i < n; i++) {
     pure_expr *f, *g, *key, *val;
     if (pure_is_app(xv[i], &f, &val) && pure_is_app(f, &g, &key) &&
 	pure_is_symbol(g, &gno) && gno == fno)
-      hashmap_add2(m, key, val);
+      hashdict_add2(m, key, val);
     else
-      hashmap_add(m, xv[i]);
+      hashdict_add(m, xv[i]);
   }
   if (xv) free(xv);
-  return make_hashmap(m);
+  return make_hashdict(m);
 }
 
-extern "C" void hashmap_add(myhashmap *m, pure_expr *key)
+extern "C" void hashdict_add(myhashdict *m, pure_expr *key)
 {
-  myhashmap::iterator it = m->find(key);
+  myhashdict::iterator it = m->find(key);
   if (it != m->end()) {
     if (it->second) pure_free(it->second);
   } else
@@ -324,9 +324,9 @@ extern "C" void hashmap_add(myhashmap *m, pure_expr *key)
   (*m)[key] = 0;
 }
 
-extern "C" void hashmap_add2(myhashmap *m, pure_expr *key, pure_expr *val)
+extern "C" void hashdict_add2(myhashdict *m, pure_expr *key, pure_expr *val)
 {
-  myhashmap::iterator it = m->find(key);
+  myhashdict::iterator it = m->find(key);
   if (it != m->end()) {
     if (it->second) pure_free(it->second);
   } else
@@ -334,9 +334,9 @@ extern "C" void hashmap_add2(myhashmap *m, pure_expr *key, pure_expr *val)
   (*m)[key] = pure_new(val);
 }
 
-extern "C" void hashmap_del(myhashmap *m, pure_expr *key)
+extern "C" void hashdict_del(myhashdict *m, pure_expr *key)
 {
-  myhashmap::iterator it = m->find(key);
+  myhashdict::iterator it = m->find(key);
   if (it != m->end()) {
     pure_free(it->first);
     if (it->second) pure_free(it->second);
@@ -344,9 +344,9 @@ extern "C" void hashmap_del(myhashmap *m, pure_expr *key)
   }
 }
 
-extern "C" void hashmap_del2(myhashmap *m, pure_expr *key, pure_expr *val)
+extern "C" void hashdict_del2(myhashdict *m, pure_expr *key, pure_expr *val)
 {
-  myhashmap::iterator it = m->find(key);
+  myhashdict::iterator it = m->find(key);
   if (it != m->end() && it->second && same(it->second, val)) {
     pure_free(it->first);
     if (it->second) pure_free(it->second);
@@ -354,64 +354,64 @@ extern "C" void hashmap_del2(myhashmap *m, pure_expr *key, pure_expr *val)
   }
 }
 
-extern "C" pure_expr *hashmap_get(myhashmap *m, pure_expr *key)
+extern "C" pure_expr *hashdict_get(myhashdict *m, pure_expr *key)
 {
-  myhashmap::iterator it = m->find(key);
+  myhashdict::iterator it = m->find(key);
   return (it != m->end())?(it->second?it->second:it->first):0;
 }
 
-extern "C" bool hashmap_member(myhashmap *m, pure_expr *key)
+extern "C" bool hashdict_member(myhashdict *m, pure_expr *key)
 {
-  myhashmap::iterator it = m->find(key);
+  myhashdict::iterator it = m->find(key);
   return it != m->end();
 }
 
-extern "C" bool hashmap_member2(myhashmap *m, pure_expr *key, pure_expr *val)
+extern "C" bool hashdict_member2(myhashdict *m, pure_expr *key, pure_expr *val)
 {
-  myhashmap::iterator it = m->find(key);
+  myhashdict::iterator it = m->find(key);
   return it != m->end() && it->second && same(it->second, val);
 }
 
-extern "C" bool hashmap_empty(myhashmap *m)
+extern "C" bool hashdict_empty(myhashdict *m)
 {
   return m->empty();
 }
 
-extern "C" int hashmap_size(myhashmap *m)
+extern "C" int hashdict_size(myhashdict *m)
 {
   return m->size();
 }
 
-extern "C" pure_expr *hashmap_keys(myhashmap *m)
+extern "C" pure_expr *hashdict_keys(myhashdict *m)
 {
   size_t i = 0, n = m->size();
   pure_expr **xs = new pure_expr*[n];
-  for (myhashmap::iterator it = m->begin(); it != m->end(); ++it)
+  for (myhashdict::iterator it = m->begin(); it != m->end(); ++it)
     xs[i++] = it->first;
   pure_expr *x = pure_listv(n, xs);
   delete[] xs;
   return x;
 }
 
-extern "C" pure_expr *hashmap_vals(myhashmap *m)
+extern "C" pure_expr *hashdict_vals(myhashdict *m)
 {
   size_t i = 0, n = m->size();
   pure_expr **xs = new pure_expr*[n];
-  for (myhashmap::iterator it = m->begin(); it != m->end(); ++it)
+  for (myhashdict::iterator it = m->begin(); it != m->end(); ++it)
     xs[i++] = it->second?it->second:it->first;
   pure_expr *x = pure_listv(n, xs);
   delete[] xs;
   return x;
 }
 
-extern "C" pure_expr *hashmap_list(myhashmap *m)
+extern "C" pure_expr *hashdict_list(myhashdict *m)
 {
   size_t i = 0, n = m->size();
   static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
   if (!fno) fno = pure_getsym("=>");
   assert(fno > 0);
   pure_expr **xs = new pure_expr*[n], *f = pure_new(pure_symbol(fno));
-  for (myhashmap::iterator it = m->begin(); it != m->end(); ++it)
+  for (myhashdict::iterator it = m->begin(); it != m->end(); ++it)
     xs[i++] = it->second?pure_appl(f, 2, it->first, it->second):it->first;
   pure_expr *x = pure_listv(n, xs);
   delete[] xs;
@@ -419,14 +419,14 @@ extern "C" pure_expr *hashmap_list(myhashmap *m)
   return x;
 }
 
-extern "C" pure_expr *hashmap_tuple(myhashmap *m)
+extern "C" pure_expr *hashdict_tuple(myhashdict *m)
 {
   size_t i = 0, n = m->size();
   static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
   if (!fno) fno = pure_getsym("=>");
   assert(fno > 0);
   pure_expr **xs = new pure_expr*[n], *f = pure_new(pure_symbol(fno));
-  for (myhashmap::iterator it = m->begin(); it != m->end(); ++it)
+  for (myhashdict::iterator it = m->begin(); it != m->end(); ++it)
     xs[i++] = it->second?pure_appl(f, 2, it->first, it->second):it->first;
   pure_expr *x = pure_tuplev(n, xs);
   delete[] xs;
@@ -434,14 +434,14 @@ extern "C" pure_expr *hashmap_tuple(myhashmap *m)
   return x;
 }
 
-extern "C" pure_expr *hashmap_vector(myhashmap *m)
+extern "C" pure_expr *hashdict_vector(myhashdict *m)
 {
   size_t i = 0, n = m->size();
   static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
   if (!fno) fno = pure_getsym("=>");
   assert(fno > 0);
   pure_expr **xs = new pure_expr*[n], *f = pure_new(pure_symbol(fno));
-  for (myhashmap::iterator it = m->begin(); it != m->end(); ++it)
+  for (myhashdict::iterator it = m->begin(); it != m->end(); ++it)
     xs[i++] = it->second?pure_appl(f, 2, it->first, it->second):it->first;
   pure_expr *x = pure_symbolic_vectorv(n, xs);
   delete[] xs;
@@ -449,18 +449,18 @@ extern "C" pure_expr *hashmap_vector(myhashmap *m)
   return x;
 }
 
-extern "C" myhashmap *hashmap_copy(myhashmap *m)
+extern "C" myhashdict *hashdict_copy(myhashdict *m)
 {
-  myhashmap *m2 = new myhashmap(*m);
-  for (myhashmap::iterator it = m2->begin(); it != m2->end(); ++it) {
+  myhashdict *m2 = new myhashdict(*m);
+  for (myhashdict::iterator it = m2->begin(); it != m2->end(); ++it) {
     pure_new(it->first); if (it->second) pure_new(it->second);
   }
   return m2;
 }
 
-extern "C" void hashmap_clear(myhashmap *m)
+extern "C" void hashdict_clear(myhashdict *m)
 {
-  for (myhashmap::iterator it = m->begin(); it != m->end(); ++it) {
+  for (myhashdict::iterator it = m->begin(); it != m->end(); ++it) {
     pure_free(it->first);
     if (it->second) pure_free(it->second);
   }
@@ -511,16 +511,16 @@ static bool is_permutation(ForwardIterator1 first, ForwardIterator1 last,
 }
 #endif
 
-extern "C" bool hashmap_equal(myhashmap *x, myhashmap *y)
+extern "C" bool hashdict_equal(myhashdict *x, myhashdict *y)
 {
   if (x == y) return true;
   if (x->size() != y->size()) return false;
-  for (myhashmap::iterator it = x->begin(); it != x->end(); ) {
+  for (myhashdict::iterator it = x->begin(); it != x->end(); ) {
     /* This is probably overkill here, as unordered_map is guaranteed to have
        only one entry per key, so that the equal ranges should all have size 1.
        But we do it that way for safety, and so that the same implementation
-       can be used in the multimap case (see hashmmap_equal below). */
-    pair<myhashmap::iterator, myhashmap::iterator>
+       can be used in the multidict case (see hashmdict_equal below). */
+    pair<myhashdict::iterator, myhashdict::iterator>
       r1 = x->equal_range(it->first),
       r2 = y->equal_range(it->first);
     if (distance(r1.first, r1.second) != distance(r2.first, r2.second))
@@ -535,66 +535,66 @@ extern "C" bool hashmap_equal(myhashmap *x, myhashmap *y)
   return true;
 }
 
-extern "C" float hashmap_load_factor(myhashmap *m)
+extern "C" float hashdict_load_factor(myhashdict *m)
 {
   return m->load_factor();
 }
 
-extern "C" float hashmap_max_load_factor(myhashmap *m)
+extern "C" float hashdict_max_load_factor(myhashdict *m)
 {
   return m->max_load_factor();
 }
 
-extern "C" void hashmap_set_max_load_factor(myhashmap *m, float x)
+extern "C" void hashdict_set_max_load_factor(myhashdict *m, float x)
 {
   m->max_load_factor(x);
 }
 
-extern "C" void hashmap_rehash(myhashmap *m, unsigned count)
+extern "C" void hashdict_rehash(myhashdict *m, unsigned count)
 {
   m->rehash(count);
 }
 
-extern "C" void hashmap_reserve(myhashmap *m, unsigned count)
+extern "C" void hashdict_reserve(myhashdict *m, unsigned count)
 {
   m->reserve(count);
 }
 
-extern "C" unsigned hashmap_bucket_count(myhashmap *m)
+extern "C" unsigned hashdict_bucket_count(myhashdict *m)
 {
   return m->bucket_count();
 }
 
-extern "C" unsigned hashmap_bucket_size(myhashmap *m, unsigned i)
+extern "C" unsigned hashdict_bucket_size(myhashdict *m, unsigned i)
 {
   return m->bucket_size(i);
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-// hashed multimaps: This is basically the same as above, with some minor
-// adjustments for the multimap implementation.
+// hashed multidicts: This is basically the same as above, with some minor
+// adjustments for the multidict implementation.
 
 //////////////////////////////////////////////////////////////////////////////
 
-typedef unordered_multimap<pure_expr*,pure_expr*> myhashmmap;
+typedef unordered_multimap<pure_expr*,pure_expr*> myhashmdict;
 
 static ILS<int32_t> hmmsym = 0;
 
-extern "C" void hashmmap_symbol(pure_expr *x)
+extern "C" void hashmdict_symbol(pure_expr *x)
 {
   int32_t f;
   if (pure_is_symbol(x, &f) && f>0) hmmsym() = f;
 }
 
-extern "C" pure_expr *hashmmap_list(myhashmmap *m);
+extern "C" pure_expr *hashmdict_list(myhashmdict *m);
 
-static const char *hashmmap_str(myhashmmap *m)
+static const char *hashmdict_str(myhashmdict *m)
 {
   static char *buf = 0; // TLD
   if (buf) free(buf);
-  int32_t fsym = hmmsym()?hmmsym():pure_sym("hashmmap");
-  pure_expr *f = pure_const(fsym), *x = pure_applc(f, hashmmap_list(m));
+  int32_t fsym = hmmsym()?hmmsym():pure_sym("hashmdict");
+  pure_expr *f = pure_const(fsym), *x = pure_applc(f, hashmdict_list(m));
   buf = str(x);
   pure_freenew(x);
   if (hmmsym() && pure_sym_other(hmmsym())) {
@@ -618,7 +618,7 @@ static const char *hashmmap_str(myhashmmap *m)
   return buf;
 }
 
-static int hashmmap_prec(myhashmmap *m)
+static int hashmdict_prec(myhashmdict *m)
 {
   if (hmmsym()) {
     int32_t p = pure_sym_nprec(hmmsym());
@@ -630,11 +630,11 @@ static int hashmmap_prec(myhashmmap *m)
     return NPREC_APP;
 }
 
-static bool hashmmap_same(myhashmmap *x, myhashmmap *y)
+static bool hashmdict_same(myhashmdict *x, myhashmdict *y)
 {
   if (x == y) return true;
   if (x->size() != y->size()) return false;
-  for (myhashmmap::iterator it = x->begin(), jt = y->begin(); it != x->end();
+  for (myhashmdict::iterator it = x->begin(), jt = y->begin(); it != x->end();
        ++it, ++jt) {
 #ifdef DEBUG
     assert(jt != y->end());
@@ -645,39 +645,39 @@ static bool hashmmap_same(myhashmmap *x, myhashmmap *y)
   return true;
 }
 
-extern "C" int hashmmap_tag(void)
+extern "C" int hashmdict_tag(void)
 {
   static ILS<int> t = 0;
   if (!t()) {
-    t() = pure_pointer_tag("hashmmap*");
-    pure_pointer_add_equal(t(), (pure_equal_fun)hashmmap_same);
-    pure_pointer_add_printer(t(), (pure_printer_fun)hashmmap_str,
-			     (pure_printer_prec_fun)hashmmap_prec);
+    t() = pure_pointer_tag("hashmdict*");
+    pure_pointer_add_equal(t(), (pure_equal_fun)hashmdict_same);
+    pure_pointer_add_printer(t(), (pure_printer_fun)hashmdict_str,
+			     (pure_printer_prec_fun)hashmdict_prec);
   }
   return t();
 }
 
-extern "C" void hashmmap_free(myhashmmap *m)
+extern "C" void hashmdict_free(myhashmdict *m)
 {
-  for (myhashmmap::iterator it = m->begin(); it != m->end(); ++it) {
+  for (myhashmdict::iterator it = m->begin(); it != m->end(); ++it) {
     pure_free(it->first);
     if (it->second) pure_free(it->second);
   }
   delete m;
 }
 
-static pure_expr *make_hashmmap(myhashmmap *m)
+static pure_expr *make_hashmdict(myhashmdict *m)
 {
   static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
-  if (!fno) fno = pure_sym("hashmmap_free");
+  if (!fno) fno = pure_sym("hashmdict_free");
   return pure_sentry(pure_symbol(fno),
-		     pure_tag(hashmmap_tag(), pure_pointer(m)));
+		     pure_tag(hashmdict_tag(), pure_pointer(m)));
 }
 
-extern "C" void hashmmap_add(myhashmmap *m, pure_expr *key);
-extern "C" void hashmmap_add2(myhashmmap *m, pure_expr *key, pure_expr *val);
+extern "C" void hashmdict_add(myhashmdict *m, pure_expr *key);
+extern "C" void hashmdict_add2(myhashmdict *m, pure_expr *key, pure_expr *val);
 
-extern "C" pure_expr *hashmmap(pure_expr *xs)
+extern "C" pure_expr *hashmdict(pure_expr *xs)
 {
   size_t n;
   pure_expr **xv;
@@ -688,32 +688,32 @@ extern "C" pure_expr *hashmmap(pure_expr *xs)
     return 0;
   int32_t fno = pure_getsym("=>"), gno;
   assert(fno > 0);
-  myhashmmap *m = new myhashmmap;
+  myhashmdict *m = new myhashmdict;
   for (size_t i = 0; i < n; i++) {
     pure_expr *f, *g, *key, *val;
     if (pure_is_app(xv[i], &f, &val) && pure_is_app(f, &g, &key) &&
 	pure_is_symbol(g, &gno) && gno == fno)
-      hashmmap_add2(m, key, val);
+      hashmdict_add2(m, key, val);
     else
-      hashmmap_add(m, xv[i]);
+      hashmdict_add(m, xv[i]);
   }
   if (xv) free(xv);
-  return make_hashmmap(m);
+  return make_hashmdict(m);
 }
 
-extern "C" void hashmmap_add(myhashmmap *m, pure_expr *key)
+extern "C" void hashmdict_add(myhashmdict *m, pure_expr *key)
 {
   m->insert(make_pair(pure_new(key), (pure_expr*)0));
 }
 
-extern "C" void hashmmap_add2(myhashmmap *m, pure_expr *key, pure_expr *val)
+extern "C" void hashmdict_add2(myhashmdict *m, pure_expr *key, pure_expr *val)
 {
   m->insert(make_pair(pure_new(key), pure_new(val)));
 }
 
-extern "C" void hashmmap_del(myhashmmap *m, pure_expr *key)
+extern "C" void hashmdict_del(myhashmdict *m, pure_expr *key)
 {
-  myhashmmap::iterator it = m->find(key);
+  myhashmdict::iterator it = m->find(key);
   if (it != m->end()) {
     pure_free(it->first);
     if (it->second) pure_free(it->second);
@@ -721,10 +721,10 @@ extern "C" void hashmmap_del(myhashmmap *m, pure_expr *key)
   }
 }
 
-extern "C" void hashmmap_del2(myhashmmap *m, pure_expr *key, pure_expr *val)
+extern "C" void hashmdict_del2(myhashmdict *m, pure_expr *key, pure_expr *val)
 {
-  pair<myhashmmap::iterator, myhashmmap::iterator> r = m->equal_range(key);
-  for (myhashmmap::iterator it = r.first; it != r.second; ++it)
+  pair<myhashmdict::iterator, myhashmdict::iterator> r = m->equal_range(key);
+  for (myhashmdict::iterator it = r.first; it != r.second; ++it)
     if (it->second && same(it->second, val)) {
       pure_free(it->first);
       if (it->second) pure_free(it->second);
@@ -733,73 +733,73 @@ extern "C" void hashmmap_del2(myhashmmap *m, pure_expr *key, pure_expr *val)
     }
 }
 
-extern "C" pure_expr *hashmmap_get(myhashmmap *m, pure_expr *key)
+extern "C" pure_expr *hashmdict_get(myhashmdict *m, pure_expr *key)
 {
-  pair<myhashmmap::iterator, myhashmmap::iterator> r = m->equal_range(key);
+  pair<myhashmdict::iterator, myhashmdict::iterator> r = m->equal_range(key);
   size_t i = 0, n = distance(r.first, r.second);
   pure_expr **xs = new pure_expr*[n];
-  for (myhashmmap::iterator it = r.first; it != r.second; ++it)
+  for (myhashmdict::iterator it = r.first; it != r.second; ++it)
     xs[i++] = it->second?it->second:it->first;
   pure_expr *x = pure_listv(n, xs);
   delete[] xs;
   return x;
 }
 
-extern "C" bool hashmmap_member(myhashmmap *m, pure_expr *key)
+extern "C" bool hashmdict_member(myhashmdict *m, pure_expr *key)
 {
-  myhashmmap::iterator it = m->find(key);
+  myhashmdict::iterator it = m->find(key);
   return it != m->end();
 }
 
-extern "C" bool hashmmap_member2(myhashmmap *m, pure_expr *key, pure_expr *val)
+extern "C" bool hashmdict_member2(myhashmdict *m, pure_expr *key, pure_expr *val)
 {
-  pair<myhashmmap::iterator, myhashmmap::iterator> r = m->equal_range(key);
-  for (myhashmmap::iterator it = r.first; it != r.second; ++it)
+  pair<myhashmdict::iterator, myhashmdict::iterator> r = m->equal_range(key);
+  for (myhashmdict::iterator it = r.first; it != r.second; ++it)
     if (it->second && same(it->second, val))
       return true;
   return false;
 }
 
-extern "C" bool hashmmap_empty(myhashmmap *m)
+extern "C" bool hashmdict_empty(myhashmdict *m)
 {
   return m->empty();
 }
 
-extern "C" int hashmmap_size(myhashmmap *m)
+extern "C" int hashmdict_size(myhashmdict *m)
 {
   return m->size();
 }
 
-extern "C" pure_expr *hashmmap_keys(myhashmmap *m)
+extern "C" pure_expr *hashmdict_keys(myhashmdict *m)
 {
   size_t i = 0, n = m->size();
   pure_expr **xs = new pure_expr*[n];
-  for (myhashmmap::iterator it = m->begin(); it != m->end(); ++it)
+  for (myhashmdict::iterator it = m->begin(); it != m->end(); ++it)
     xs[i++] = it->first;
   pure_expr *x = pure_listv(n, xs);
   delete[] xs;
   return x;
 }
 
-extern "C" pure_expr *hashmmap_vals(myhashmmap *m)
+extern "C" pure_expr *hashmdict_vals(myhashmdict *m)
 {
   size_t i = 0, n = m->size();
   pure_expr **xs = new pure_expr*[n];
-  for (myhashmmap::iterator it = m->begin(); it != m->end(); ++it)
+  for (myhashmdict::iterator it = m->begin(); it != m->end(); ++it)
     xs[i++] = it->second?it->second:it->first;
   pure_expr *x = pure_listv(n, xs);
   delete[] xs;
   return x;
 }
 
-extern "C" pure_expr *hashmmap_list(myhashmmap *m)
+extern "C" pure_expr *hashmdict_list(myhashmdict *m)
 {
   size_t i = 0, n = m->size();
   static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
   if (!fno) fno = pure_getsym("=>");
   assert(fno > 0);
   pure_expr **xs = new pure_expr*[n], *f = pure_new(pure_symbol(fno));
-  for (myhashmmap::iterator it = m->begin(); it != m->end(); ++it)
+  for (myhashmdict::iterator it = m->begin(); it != m->end(); ++it)
     xs[i++] = it->second?pure_appl(f, 2, it->first, it->second):it->first;
   pure_expr *x = pure_listv(n, xs);
   delete[] xs;
@@ -807,14 +807,14 @@ extern "C" pure_expr *hashmmap_list(myhashmmap *m)
   return x;
 }
 
-extern "C" pure_expr *hashmmap_tuple(myhashmmap *m)
+extern "C" pure_expr *hashmdict_tuple(myhashmdict *m)
 {
   size_t i = 0, n = m->size();
   static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
   if (!fno) fno = pure_getsym("=>");
   assert(fno > 0);
   pure_expr **xs = new pure_expr*[n], *f = pure_new(pure_symbol(fno));
-  for (myhashmmap::iterator it = m->begin(); it != m->end(); ++it)
+  for (myhashmdict::iterator it = m->begin(); it != m->end(); ++it)
     xs[i++] = it->second?pure_appl(f, 2, it->first, it->second):it->first;
   pure_expr *x = pure_tuplev(n, xs);
   delete[] xs;
@@ -822,14 +822,14 @@ extern "C" pure_expr *hashmmap_tuple(myhashmmap *m)
   return x;
 }
 
-extern "C" pure_expr *hashmmap_vector(myhashmmap *m)
+extern "C" pure_expr *hashmdict_vector(myhashmdict *m)
 {
   size_t i = 0, n = m->size();
   static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
   if (!fno) fno = pure_getsym("=>");
   assert(fno > 0);
   pure_expr **xs = new pure_expr*[n], *f = pure_new(pure_symbol(fno));
-  for (myhashmmap::iterator it = m->begin(); it != m->end(); ++it)
+  for (myhashmdict::iterator it = m->begin(); it != m->end(); ++it)
     xs[i++] = it->second?pure_appl(f, 2, it->first, it->second):it->first;
   pure_expr *x = pure_symbolic_vectorv(n, xs);
   delete[] xs;
@@ -837,30 +837,30 @@ extern "C" pure_expr *hashmmap_vector(myhashmmap *m)
   return x;
 }
 
-extern "C" myhashmmap *hashmmap_copy(myhashmmap *m)
+extern "C" myhashmdict *hashmdict_copy(myhashmdict *m)
 {
-  myhashmmap *m2 = new myhashmmap(*m);
-  for (myhashmmap::iterator it = m2->begin(); it != m2->end(); ++it) {
+  myhashmdict *m2 = new myhashmdict(*m);
+  for (myhashmdict::iterator it = m2->begin(); it != m2->end(); ++it) {
     pure_new(it->first); if (it->second) pure_new(it->second);
   }
   return m2;
 }
 
-extern "C" void hashmmap_clear(myhashmmap *m)
+extern "C" void hashmdict_clear(myhashmdict *m)
 {
-  for (myhashmmap::iterator it = m->begin(); it != m->end(); ++it) {
+  for (myhashmdict::iterator it = m->begin(); it != m->end(); ++it) {
     pure_free(it->first);
     if (it->second) pure_free(it->second);
   }
   m->clear();
 }
 
-extern "C" bool hashmmap_equal(myhashmmap *x, myhashmmap *y)
+extern "C" bool hashmdict_equal(myhashmdict *x, myhashmdict *y)
 {
   if (x == y) return true;
   if (x->size() != y->size()) return false;
-  for (myhashmmap::iterator it = x->begin(); it != x->end(); ) {
-    pair<myhashmmap::iterator, myhashmmap::iterator>
+  for (myhashmdict::iterator it = x->begin(); it != x->end(); ) {
+    pair<myhashmdict::iterator, myhashmdict::iterator>
       r1 = x->equal_range(it->first),
       r2 = y->equal_range(it->first);
     if (distance(r1.first, r1.second) != distance(r2.first, r2.second))
@@ -880,37 +880,37 @@ extern "C" bool hashmmap_equal(myhashmmap *x, myhashmmap *y)
   return true;
 }
 
-extern "C" float hashmmap_load_factor(myhashmmap *m)
+extern "C" float hashmdict_load_factor(myhashmdict *m)
 {
   return m->load_factor();
 }
 
-extern "C" float hashmmap_max_load_factor(myhashmmap *m)
+extern "C" float hashmdict_max_load_factor(myhashmdict *m)
 {
   return m->max_load_factor();
 }
 
-extern "C" void hashmmap_set_max_load_factor(myhashmmap *m, float x)
+extern "C" void hashmdict_set_max_load_factor(myhashmdict *m, float x)
 {
   m->max_load_factor(x);
 }
 
-extern "C" void hashmmap_rehash(myhashmmap *m, unsigned count)
+extern "C" void hashmdict_rehash(myhashmdict *m, unsigned count)
 {
   m->rehash(count);
 }
 
-extern "C" void hashmmap_reserve(myhashmmap *m, unsigned count)
+extern "C" void hashmdict_reserve(myhashmdict *m, unsigned count)
 {
   m->reserve(count);
 }
 
-extern "C" unsigned hashmmap_bucket_count(myhashmmap *m)
+extern "C" unsigned hashmdict_bucket_count(myhashmdict *m)
 {
   return m->bucket_count();
 }
 
-extern "C" unsigned hashmmap_bucket_size(myhashmmap *m, unsigned i)
+extern "C" unsigned hashmdict_bucket_size(myhashmdict *m, unsigned i)
 {
   return m->bucket_size(i);
 }

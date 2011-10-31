@@ -1,6 +1,6 @@
 
-/* hashmap.pure: mutable maps and sets for arbitrary key and value types,
-   implemented as STL hashes */
+/* hashdict.pure: mutable dictionaries and sets for arbitrary key and value
+   types, implemented as STL hashes */
 
 /* NOTE: This module requires Pure 0.49 or later. It also needs a recent
    (C++11) STL implementation. The module is still experimental and the API is
@@ -24,279 +24,279 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
 /* Native interface. You can freely use most of these in addition to the
-   "standard" container API provided below. But note that hashmap_free and
-   hashmmap_free are reserved for internal use as a sentry on hashmap and
-   hashmmap objects and should never be called directly. */
+   "standard" container API provided below. But note that hashdict_free and
+   hashmdict_free are reserved for internal use as a sentry on hashdict and
+   hashmdict objects and should never be called directly. */
 
-using "lib:hashmap";
+using "lib:hashdict";
 
-extern int hashmap_tag();
-extern void hashmap_symbol(expr*);
-extern expr* hashmap(expr*);
-extern hashmap* hashmap_copy(hashmap*);
-extern void hashmap_clear(hashmap*);
-extern void hashmap_free(hashmap*); // internal use only
-extern void hashmap_add(hashmap*, expr*);
-extern void hashmap_add2(hashmap*, expr*, expr*);
-extern void hashmap_del(hashmap*, expr*);
-extern void hashmap_del2(hashmap*, expr*, expr*);
-extern expr* hashmap_get(hashmap*, expr*);
-extern bool hashmap_member(hashmap*, expr*);
-extern bool hashmap_member2(hashmap*, expr*, expr*);
-extern bool hashmap_empty(hashmap*);
-extern bool hashmap_equal(hashmap*, hashmap*);
-extern int hashmap_size(hashmap*);
-extern expr* hashmap_list(hashmap*);
-extern expr* hashmap_tuple(hashmap*);
-extern expr* hashmap_vector(hashmap*);
-extern expr* hashmap_keys(hashmap*);
-extern expr* hashmap_vals(hashmap*);
-extern float hashmap_load_factor(hashmap *m);
-extern float hashmap_max_load_factor(hashmap *m);
-extern void hashmap_set_max_load_factor(hashmap *m, float x);
-extern void hashmap_rehash(hashmap *m, int count);
-extern void hashmap_reserve(hashmap *m, int count);
-extern int hashmap_bucket_count(hashmap *m);
-extern int hashmap_bucket_size(hashmap *m, int i);
+extern int hashdict_tag();
+extern void hashdict_symbol(expr*);
+extern expr* hashdict(expr*);
+extern hashdict* hashdict_copy(hashdict*);
+extern void hashdict_clear(hashdict*);
+extern void hashdict_free(hashdict*); // internal use only
+extern void hashdict_add(hashdict*, expr*);
+extern void hashdict_add2(hashdict*, expr*, expr*);
+extern void hashdict_del(hashdict*, expr*);
+extern void hashdict_del2(hashdict*, expr*, expr*);
+extern expr* hashdict_get(hashdict*, expr*);
+extern bool hashdict_member(hashdict*, expr*);
+extern bool hashdict_member2(hashdict*, expr*, expr*);
+extern bool hashdict_empty(hashdict*);
+extern bool hashdict_equal(hashdict*, hashdict*);
+extern int hashdict_size(hashdict*);
+extern expr* hashdict_list(hashdict*);
+extern expr* hashdict_tuple(hashdict*);
+extern expr* hashdict_vector(hashdict*);
+extern expr* hashdict_keys(hashdict*);
+extern expr* hashdict_vals(hashdict*);
+extern float hashdict_load_factor(hashdict *m);
+extern float hashdict_max_load_factor(hashdict *m);
+extern void hashdict_set_max_load_factor(hashdict *m, float x);
+extern void hashdict_rehash(hashdict *m, int count);
+extern void hashdict_reserve(hashdict *m, int count);
+extern int hashdict_bucket_count(hashdict *m);
+extern int hashdict_bucket_size(hashdict *m, int i);
 
-extern int hashmmap_tag();
-extern void hashmmap_symbol(expr*);
-extern expr* hashmmap(expr*);
-extern hashmmap* hashmmap_copy(hashmmap*);
-extern void hashmmap_clear(hashmmap*);
-extern void hashmmap_free(hashmmap*); // internal use only
-extern void hashmmap_add(hashmmap*, expr*);
-extern void hashmmap_add2(hashmmap*, expr*, expr*);
-extern void hashmmap_del(hashmmap*, expr*);
-extern void hashmmap_del2(hashmmap*, expr*, expr*);
-extern expr* hashmmap_get(hashmmap*, expr*);
-extern bool hashmmap_member(hashmmap*, expr*);
-extern bool hashmmap_member2(hashmmap*, expr*, expr*);
-extern bool hashmmap_empty(hashmmap*);
-extern bool hashmmap_equal(hashmmap*, hashmmap*);
-extern int hashmmap_size(hashmmap*);
-extern expr* hashmmap_list(hashmmap*);
-extern expr* hashmmap_tuple(hashmmap*);
-extern expr* hashmmap_vector(hashmmap*);
-extern expr* hashmmap_keys(hashmmap*);
-extern expr* hashmmap_vals(hashmmap*);
-extern float hashmmap_load_factor(hashmmap *m);
-extern float hashmmap_max_load_factor(hashmmap *m);
-extern void hashmmap_set_max_load_factor(hashmmap *m, float x);
-extern void hashmmap_rehash(hashmmap *m, int count);
-extern void hashmmap_reserve(hashmmap *m, int count);
-extern int hashmmap_bucket_count(hashmmap *m);
-extern int hashmmap_bucket_size(hashmmap *m, int i);
+extern int hashmdict_tag();
+extern void hashmdict_symbol(expr*);
+extern expr* hashmdict(expr*);
+extern hashmdict* hashmdict_copy(hashmdict*);
+extern void hashmdict_clear(hashmdict*);
+extern void hashmdict_free(hashmdict*); // internal use only
+extern void hashmdict_add(hashmdict*, expr*);
+extern void hashmdict_add2(hashmdict*, expr*, expr*);
+extern void hashmdict_del(hashmdict*, expr*);
+extern void hashmdict_del2(hashmdict*, expr*, expr*);
+extern expr* hashmdict_get(hashmdict*, expr*);
+extern bool hashmdict_member(hashmdict*, expr*);
+extern bool hashmdict_member2(hashmdict*, expr*, expr*);
+extern bool hashmdict_empty(hashmdict*);
+extern bool hashmdict_equal(hashmdict*, hashmdict*);
+extern int hashmdict_size(hashmdict*);
+extern expr* hashmdict_list(hashmdict*);
+extern expr* hashmdict_tuple(hashmdict*);
+extern expr* hashmdict_vector(hashmdict*);
+extern expr* hashmdict_keys(hashmdict*);
+extern expr* hashmdict_vals(hashmdict*);
+extern float hashmdict_load_factor(hashmdict *m);
+extern float hashmdict_max_load_factor(hashmdict *m);
+extern void hashmdict_set_max_load_factor(hashmdict *m, float x);
+extern void hashmdict_rehash(hashmdict *m, int count);
+extern void hashmdict_reserve(hashmdict *m, int count);
+extern int hashmdict_bucket_count(hashmdict *m);
+extern int hashmdict_bucket_size(hashmdict *m, int i);
 
-/* The hashmap type. Hashmaps are simply pointers to STL unordered_map objects
-   which hold key-value associations where both keys and values may be
+/* The hashdict type. Hashdicts are simply pointers to STL unordered_map
+   objects which hold key-value associations where both keys and values may be
    arbitrary Pure expressions. They can be created from lists, tuples and
-   vectors using the hashmap function. Memory management is automatic. Please
+   vectors using the hashdict function. Memory management is automatic. Please
    also note the following:
 
-   - Keys in a hashmap may be stored in an apparently random order (not
+   - Keys in a hashdict may be stored in an apparently random order (not
      necessarily in the order in which they were inserted).
 
-   - Values can be omitted, so that hashmaps can be used as a hashed set data
+   - Values can be omitted, so that hashdicts can be used as a hashed set data
      structure. This obviates the need for a separate set data structure at
      the cost of some (small) increase in memory usage. Also note that you
      can't really have a hash pair x=>y as a member of a set, since it always
      denotes a key-value association. Use ordinary pairs (x,y) instead.
 
-   - Hashmaps are *mutable*. Inserting a key into a hashmap or deleting it
+   - Hashdicts are *mutable*. Inserting a key into a hashdict or deleting it
      modifies the underlying STL data structure as a side effect of the
      operation. If you need value semantics, you should use one of the dict or
      set data structures from the standard library instead. (Another
-     possibility is to take a copy of a hashmap using the hashmap_copy
+     possibility is to take a copy of a hashdict using the hashdict_copy
      operation if you need to preserve the original value, but note that this
      operation takes O(n) time.)
 
-   - Two hashmaps are syntactically equal iff they contain the same elements
+   - Two hashdicts are syntactically equal iff they contain the same elements
      in exactly the same order. This test can be done in linear time, but is
      not terribly useful in applications as the ordering of elements is not
      well-defined. Use the semantic equality tests below if you need to test
-     whether two hashmaps contain the same elements, irrespective of element
+     whether two hashdicts contain the same elements, irrespective of element
      order.
 
-   - Hashmaps are pretty-printed in the format 'hashmap [...]' by default,
+   - Hashdicts are pretty-printed in the format 'hashdict [...]' by default,
      which will reconstruct the expression when reentered as Pure code. With
-     the hashmap_symbol function it is also possible to define your own custom
-     pretty-printing; see examples/hashmap_examp.pure for an example. */
+     the hashdict_symbol function it is also possible to define your own custom
+     pretty-printing; see examples/hashdict_examp.pure for an example. */
 
-let hashmap_t = hashmap_tag;
-type hashmap x::pointer = check_ptrtag hashmap_t x;
-hashmapp x = pointerp x && check_ptrtag hashmap_t x;
+let hashdict_t = hashdict_tag;
+type hashdict x::pointer = check_ptrtag hashdict_t x;
+hashdictp x = pointerp x && check_ptrtag hashdict_t x;
 
-// Make hashmap work with numeric vectors.
-hashmap x::nmatrix = hashmap (smatrix x);
+// Make hashdict work with numeric vectors.
+hashdict x::nmatrix = hashdict (smatrix x);
 
-/* Semantic equality of hashmaps. These compare both keys and values for
-   syntactic equality. Equality holds iff two hashmaps contain the same
+/* Semantic equality of hashdicts. These compare both keys and values for
+   syntactic equality. Equality holds iff two hashdicts contain the same
    key=>val pairs, irrespective of their ordering. This check should work in
    O(n log n) time, depending on the load of the underlying hash table. Note
-   that no submap comparisons (<, <=, etc.) are provided, as the STL doesn't
-   have them either, but see hashmap_examp.pure for a possible Pure
+   that no subdict comparisons (<, <=, etc.) are provided, as the STL doesn't
+   have them either, but see hashdict_examp.pure for a possible Pure
    implementation of these. */
 
-x::hashmap == y::hashmap = hashmap_equal x y;
-x::hashmap ~= y::hashmap = ~hashmap_equal x y;
+x::hashdict == y::hashdict = hashdict_equal x y;
+x::hashdict ~= y::hashdict = ~hashdict_equal x y;
 
-// Minimal container API for hashmaps.
+// Minimal container API for hashdicts.
 
-/* Note that if the key x is in the map but doesn't have an associated value
+/* Note that if the key x is in the dict but doesn't have an associated value
    (as in a set data structure), then m!x will return just x itself as the
    associated value. In any case, m!x raises an out_of_bound exception if x is
-   not in the map. */
+   not in the dict. */
 
-# m::hashmap = hashmap_size m;
-m::hashmap ! x =
-  if hashmap_member m x then hashmap_get m x else throw out_of_bounds;
+# m::hashdict = hashdict_size m;
+m::hashdict ! x =
+  if hashdict_member m x then hashdict_get m x else throw out_of_bounds;
 
 /* Note that in addition to the usual container ops we also support copying
-   and clearing of maps (copy, clear), as well as membership tests and
+   and clearing of dicts (copy, clear), as well as membership tests and
    deletions of specific key=>val pairs (member, delete). Also note that, in
    order to be consistent with indexing, the vals function actually returns
    the *keys* for members which have no associated value. */
 
-null m::hashmap = hashmap_empty m;
-member m::hashmap (x=>y) = hashmap_member2 m x y;
-member m::hashmap x = hashmap_member m x;
-update m::hashmap x y = hashmap_add2 m x y $$ m;
-insert m::hashmap (x=>y) = hashmap_add2 m x y $$ m;
-insert m::hashmap x = hashmap_add m x $$ m;
-delete m::hashmap (x=>y) = hashmap_del2 m x y $$ m;
-delete m::hashmap x = hashmap_del m x $$ m;
-copy m::hashmap = hashmap_copy m;
-clear m::hashmap = hashmap_clear m;
+null m::hashdict = hashdict_empty m;
+member m::hashdict (x=>y) = hashdict_member2 m x y;
+member m::hashdict x = hashdict_member m x;
+update m::hashdict x y = hashdict_add2 m x y $$ m;
+insert m::hashdict (x=>y) = hashdict_add2 m x y $$ m;
+insert m::hashdict x = hashdict_add m x $$ m;
+delete m::hashdict (x=>y) = hashdict_del2 m x y $$ m;
+delete m::hashdict x = hashdict_del m x $$ m;
+copy m::hashdict = hashdict_copy m;
+clear m::hashdict = hashdict_clear m;
 
-keys m::hashmap = hashmap_keys m;
-vals m::hashmap = hashmap_vals m;
+keys m::hashdict = hashdict_keys m;
+vals m::hashdict = hashdict_vals m;
 
-list m::hashmap = hashmap_list m;
-tuple m::hashmap = hashmap_tuple m;
-vector m::hashmap = hashmap_vector m;
+list m::hashdict = hashdict_list m;
+tuple m::hashdict = hashdict_tuple m;
+vector m::hashdict = hashdict_vector m;
 
 /* Basic list-like operations and support for list and matrix comprehensions.
    NOTE: The most important of these should possibly be implemented in C, to
    avoid the construction of intermediate list values. */
 
-do f m::hashmap = do f (list m);
-map f m::hashmap = map f (list m);
-catmap f m::hashmap = catmap f (list m);
-listmap f m::hashmap = map f (list m);
-listcatmap f m::hashmap = catmap f (list m);
-rowmap f m::hashmap = rowcat (map f m);
-rowcatmap f m::hashmap = rowcat (map f m);
-colmap f m::hashmap = colcat (map f m);
-colcatmap f m::hashmap = colcat (map f m);
+do f m::hashdict = do f (list m);
+map f m::hashdict = map f (list m);
+catmap f m::hashdict = catmap f (list m);
+listmap f m::hashdict = map f (list m);
+listcatmap f m::hashdict = catmap f (list m);
+rowmap f m::hashdict = rowcat (map f m);
+rowcatmap f m::hashdict = rowcat (map f m);
+colmap f m::hashdict = colcat (map f m);
+colcatmap f m::hashdict = colcat (map f m);
 
-all p m::hashmap = all p (list m);
-any p m::hashmap = any p (list m);
-filter p m::hashmap = filter p (list m);
-foldl f a m::hashmap = foldl f a (list m);
-foldl1 f m::hashmap = foldl1 f (list m) if ~null m;
-foldr f a m::hashmap = foldr f a (list m);
-foldr1 f m::hashmap = foldr1 f (list m) if ~null m;
-scanl f a m::hashmap = scanl f a (list m);
-scanl1 f m::hashmap = scanl1 f (list m) if ~null m;
-scanr f a m::hashmap = scanr f a (list m);
-scanr1 f m::hashmap = scanr1 f (list m) if ~null m;
-sort p m::hashmap = sort p (list m);
+all p m::hashdict = all p (list m);
+any p m::hashdict = any p (list m);
+filter p m::hashdict = filter p (list m);
+foldl f a m::hashdict = foldl f a (list m);
+foldl1 f m::hashdict = foldl1 f (list m) if ~null m;
+foldr f a m::hashdict = foldr f a (list m);
+foldr1 f m::hashdict = foldr1 f (list m) if ~null m;
+scanl f a m::hashdict = scanl f a (list m);
+scanl1 f m::hashdict = scanl1 f (list m) if ~null m;
+scanr f a m::hashdict = scanr f a (list m);
+scanr1 f m::hashdict = scanr1 f (list m) if ~null m;
+sort p m::hashdict = sort p (list m);
 
 /* Special bucket and hash policy interface. These operations are useful to
    obtain performance-related information about the underlying hash table.
-   These are in the hashmap namespace in order to keep the global namespace
+   These are in the hashdict namespace in order to keep the global namespace
    clean. */
 
-namespace hashmap with
-load_factor m::hashmap = hashmap_load_factor m;
-max_load_factor m::hashmap = hashmap_max_load_factor m;
-set_max_load_factor m::hashmap x::double = hashmap_set_max_load_factor m x;
-rehash m::hashmap count::int = hashmap_rehash m count;
-reserve m::hashmap count::int = hashmap_reserve m count;
-bucket_count m::hashmap = hashmap_bucket_count m;
-bucket_size m::hashmap i::int = hashmap_bucket_size m i;
+namespace hashdict with
+load_factor m::hashdict = hashdict_load_factor m;
+max_load_factor m::hashdict = hashdict_max_load_factor m;
+set_max_load_factor m::hashdict x::double = hashdict_set_max_load_factor m x;
+rehash m::hashdict count::int = hashdict_rehash m count;
+reserve m::hashdict count::int = hashdict_reserve m count;
+bucket_count m::hashdict = hashdict_bucket_count m;
+bucket_size m::hashdict i::int = hashdict_bucket_size m i;
 end;
 
 /***************************************************************************/
 
-/* Hashed multimaps (STL unordered_multimap). These are represented using the
-   hashmmap type which works like a hashmap but allows multiple instances of
+/* Hashed multidicts (STL unordered_multimap). These are represented using the
+   hashmdict type which works like a hashdict but allows multiple instances of
    the same key in a container. */
 
-let hashmmap_t = hashmmap_tag;
-type hashmmap x::pointer = check_ptrtag hashmmap_t x;
-hashmmapp x = pointerp x && check_ptrtag hashmmap_t x;
+let hashmdict_t = hashmdict_tag;
+type hashmdict x::pointer = check_ptrtag hashmdict_t x;
+hashmdictp x = pointerp x && check_ptrtag hashmdict_t x;
 
-hashmmap x::nmatrix = hashmmap (smatrix x);
+hashmdict x::nmatrix = hashmdict (smatrix x);
 
-/* Note that in contrast to ordinary hashmaps, the complexity of the multimap
-   equality check depends on the frequencies of keys and may thus require
-   O(n^2) time in degenerate cases. */
+/* Note that in contrast to ordinary hashdicts, the complexity of the
+   multidict equality check depends on the frequencies of keys and may thus
+   require O(n^2) time in degenerate cases. */
 
-x::hashmmap == y::hashmmap = hashmmap_equal x y;
-x::hashmmap ~= y::hashmmap = ~hashmmap_equal x y;
+x::hashmdict == y::hashmdict = hashmdict_equal x y;
+x::hashmdict ~= y::hashmdict = ~hashmdict_equal x y;
 
 /* Note that m!x returns the list of *all* values associated with the key x
-   here (which may be empty if the key is not in the map, rather than raising
+   here (which may be empty if the key is not in the dict, rather than raising
    an out_of_bounds exception). */
 
-# m::hashmmap = hashmmap_size m;
-m::hashmmap ! x = hashmmap_get m x;
+# m::hashmdict = hashmdict_size m;
+m::hashmdict ! x = hashmdict_get m x;
 
 /* Note that update and insert will never override an existing member of the
-   map here, they will always insert a new member. Also, delete will delete an
+   dict here, they will always insert a new member. Also, delete will delete an
    arbitrary member with the given key (or key=>val); there are no guarantees
    that members with the same key (or key=>val) will be deleted in any
    particular order. */
 
-null m::hashmmap = hashmmap_empty m;
-member m::hashmmap (x=>y) = hashmmap_member2 m x y;
-member m::hashmmap x = hashmmap_member m x;
-update m::hashmmap x y = hashmmap_add2 m x y $$ m;
-insert m::hashmmap (x=>y) = hashmmap_add2 m x y $$ m;
-insert m::hashmmap x = hashmmap_add m x $$ m;
-delete m::hashmmap (x=>y) = hashmmap_del2 m x y $$ m;
-delete m::hashmmap x = hashmmap_del m x $$ m;
-copy m::hashmmap = hashmmap_copy m;
-clear m::hashmmap = hashmmap_clear m;
+null m::hashmdict = hashmdict_empty m;
+member m::hashmdict (x=>y) = hashmdict_member2 m x y;
+member m::hashmdict x = hashmdict_member m x;
+update m::hashmdict x y = hashmdict_add2 m x y $$ m;
+insert m::hashmdict (x=>y) = hashmdict_add2 m x y $$ m;
+insert m::hashmdict x = hashmdict_add m x $$ m;
+delete m::hashmdict (x=>y) = hashmdict_del2 m x y $$ m;
+delete m::hashmdict x = hashmdict_del m x $$ m;
+copy m::hashmdict = hashmdict_copy m;
+clear m::hashmdict = hashmdict_clear m;
 
-keys m::hashmmap = hashmmap_keys m;
-vals m::hashmmap = hashmmap_vals m;
+keys m::hashmdict = hashmdict_keys m;
+vals m::hashmdict = hashmdict_vals m;
 
-list m::hashmmap = hashmmap_list m;
-tuple m::hashmmap = hashmmap_tuple m;
-vector m::hashmmap = hashmmap_vector m;
+list m::hashmdict = hashmdict_list m;
+tuple m::hashmdict = hashmdict_tuple m;
+vector m::hashmdict = hashmdict_vector m;
 
-do f m::hashmmap = do f (list m);
-map f m::hashmmap = map f (list m);
-catmap f m::hashmmap = catmap f (list m);
-listmap f m::hashmmap = map f (list m);
-listcatmap f m::hashmmap = catmap f (list m);
-rowmap f m::hashmmap = rowcat (map f m);
-rowcatmap f m::hashmmap = rowcat (map f m);
-colmap f m::hashmmap = colcat (map f m);
-colcatmap f m::hashmmap = colcat (map f m);
+do f m::hashmdict = do f (list m);
+map f m::hashmdict = map f (list m);
+catmap f m::hashmdict = catmap f (list m);
+listmap f m::hashmdict = map f (list m);
+listcatmap f m::hashmdict = catmap f (list m);
+rowmap f m::hashmdict = rowcat (map f m);
+rowcatmap f m::hashmdict = rowcat (map f m);
+colmap f m::hashmdict = colcat (map f m);
+colcatmap f m::hashmdict = colcat (map f m);
 
-all p m::hashmmap = all p (list m);
-any p m::hashmmap = any p (list m);
-filter p m::hashmmap = filter p (list m);
-foldl f a m::hashmmap = foldl f a (list m);
-foldl1 f m::hashmmap = foldl1 f (list m) if ~null m;
-foldr f a m::hashmmap = foldr f a (list m);
-foldr1 f m::hashmmap = foldr1 f (list m) if ~null m;
-scanl f a m::hashmmap = scanl f a (list m);
-scanl1 f m::hashmmap = scanl1 f (list m) if ~null m;
-scanr f a m::hashmmap = scanr f a (list m);
-scanr1 f m::hashmmap = scanr1 f (list m) if ~null m;
-sort p m::hashmmap = sort p (list m);
+all p m::hashmdict = all p (list m);
+any p m::hashmdict = any p (list m);
+filter p m::hashmdict = filter p (list m);
+foldl f a m::hashmdict = foldl f a (list m);
+foldl1 f m::hashmdict = foldl1 f (list m) if ~null m;
+foldr f a m::hashmdict = foldr f a (list m);
+foldr1 f m::hashmdict = foldr1 f (list m) if ~null m;
+scanl f a m::hashmdict = scanl f a (list m);
+scanl1 f m::hashmdict = scanl1 f (list m) if ~null m;
+scanr f a m::hashmdict = scanr f a (list m);
+scanr1 f m::hashmdict = scanr1 f (list m) if ~null m;
+sort p m::hashmdict = sort p (list m);
 
-namespace hashmap with
-load_factor m::hashmmap = hashmmap_load_factor m;
-max_load_factor m::hashmmap = hashmmap_max_load_factor m;
-set_max_load_factor m::hashmmap x::double = hashmmap_set_max_load_factor m x;
-rehash m::hashmmap count::int = hashmmap_rehash m count;
-reserve m::hashmmap count::int = hashmmap_reserve m count;
-bucket_count m::hashmmap = hashmmap_bucket_count m;
-bucket_size m::hashmmap i::int = hashmmap_bucket_size m i;
+namespace hashdict with
+load_factor m::hashmdict = hashmdict_load_factor m;
+max_load_factor m::hashmdict = hashmdict_max_load_factor m;
+set_max_load_factor m::hashmdict x::double = hashmdict_set_max_load_factor m x;
+rehash m::hashmdict count::int = hashmdict_rehash m count;
+reserve m::hashmdict count::int = hashmdict_reserve m count;
+bucket_count m::hashmdict = hashmdict_bucket_count m;
+bucket_size m::hashmdict i::int = hashmdict_bucket_size m i;
 end;

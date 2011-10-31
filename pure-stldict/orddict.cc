@@ -1,5 +1,5 @@
 
-// This is completely analogous to hashmap.cc (which see).
+// This is completely analogous to hashdict.cc (which see).
 
 #include <assert.h>
 #include <stdlib.h>
@@ -120,7 +120,7 @@ static bool pure_is_symbolic_vectorv(pure_expr *x, size_t *n, pure_expr ***xv)
 using namespace std;
 
 // Comparing Pure expressions. This is done using Pure's standard '<'
-// predicate, so this needs to be defined on all key values used in an ordmap
+// predicate, so this needs to be defined on all key values used in an orddict
 // (if not, a failed_cond Pure exception will be thrown).
 
 static bool less_than(pure_expr *x, pure_expr *y)
@@ -151,7 +151,7 @@ namespace std {
   };
 }
 
-typedef map<pure_expr*,pure_expr*> myordmap;
+typedef map<pure_expr*,pure_expr*> myorddict;
 
 // A little helper class to keep track of interpreter-local data.
 
@@ -184,23 +184,23 @@ T& ILS<T>::operator()()
 
 static ILS<int32_t> omsym = 0;
 
-extern "C" void ordmap_symbol(pure_expr *x)
+extern "C" void orddict_symbol(pure_expr *x)
 {
   int32_t f;
   if (pure_is_symbol(x, &f) && f>0) omsym() = f;
 }
 
-extern "C" pure_expr *ordmap_list(myordmap *m);
+extern "C" pure_expr *orddict_list(myorddict *m);
 
-static const char *ordmap_str(myordmap *m)
+static const char *orddict_str(myorddict *m)
 {
   static char *buf = 0; // TLD
   if (buf) free(buf);
   /* Instead of building the string representation directly, it's much easier
      to just construct the real term on the fly and have str() do all the hard
      work for us. */
-  int32_t fsym = omsym()?omsym():pure_sym("ordmap");
-  pure_expr *f = pure_const(fsym), *x = pure_applc(f, ordmap_list(m));
+  int32_t fsym = omsym()?omsym():pure_sym("orddict");
+  pure_expr *f = pure_const(fsym), *x = pure_applc(f, orddict_list(m));
   buf = str(x);
   pure_freenew(x);
   /* Note that in the case of an outfix symbol we now have something like LEFT
@@ -230,7 +230,7 @@ static const char *ordmap_str(myordmap *m)
 
 #define NPREC_APP 167772155 // this comes from expr.hh
 
-static int ordmap_prec(myordmap *m)
+static int orddict_prec(myorddict *m)
 {
   if (omsym()) {
     int32_t p = pure_sym_nprec(omsym());
@@ -254,11 +254,11 @@ static inline bool samechk(pure_expr *x, pure_expr *y)
     return same(x, y);
 }
 
-static bool ordmap_same(myordmap *x, myordmap *y)
+static bool orddict_same(myorddict *x, myorddict *y)
 {
   if (x == y) return true;
   if (x->size() != y->size()) return false;
-  for (myordmap::iterator it = x->begin(), jt = y->begin(); it != x->end();
+  for (myorddict::iterator it = x->begin(), jt = y->begin(); it != x->end();
        ++it, ++jt) {
 #ifdef DEBUG
     assert(jt != y->end());
@@ -271,41 +271,41 @@ static bool ordmap_same(myordmap *x, myordmap *y)
 
 // Pointer type tag.
 
-extern "C" int ordmap_tag(void)
+extern "C" int orddict_tag(void)
 {
   static ILS<int> t = 0;
   if (!t()) {
-    t() = pure_pointer_tag("ordmap*");
-    pure_pointer_add_equal(t(), (pure_equal_fun)ordmap_same);
-    pure_pointer_add_printer(t(), (pure_printer_fun)ordmap_str,
-			     (pure_printer_prec_fun)ordmap_prec);
+    t() = pure_pointer_tag("orddict*");
+    pure_pointer_add_equal(t(), (pure_equal_fun)orddict_same);
+    pure_pointer_add_printer(t(), (pure_printer_fun)orddict_str,
+			     (pure_printer_prec_fun)orddict_prec);
   }
   return t();
 }
 
 // Basic interface functions.
 
-extern "C" void ordmap_free(myordmap *m)
+extern "C" void orddict_free(myorddict *m)
 {
-  for (myordmap::iterator it = m->begin(); it != m->end(); ++it) {
+  for (myorddict::iterator it = m->begin(); it != m->end(); ++it) {
     pure_free(it->first);
     if (it->second) pure_free(it->second);
   }
   delete m;
 }
 
-static pure_expr *make_ordmap(myordmap *m)
+static pure_expr *make_orddict(myorddict *m)
 {
   static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
-  if (!fno) fno = pure_sym("ordmap_free");
+  if (!fno) fno = pure_sym("orddict_free");
   return pure_sentry(pure_symbol(fno),
-		     pure_tag(ordmap_tag(), pure_pointer(m)));
+		     pure_tag(orddict_tag(), pure_pointer(m)));
 }
 
-extern "C" void ordmap_add(myordmap *m, pure_expr *key);
-extern "C" void ordmap_add2(myordmap *m, pure_expr *key, pure_expr *val);
+extern "C" void orddict_add(myorddict *m, pure_expr *key);
+extern "C" void orddict_add2(myorddict *m, pure_expr *key, pure_expr *val);
 
-extern "C" pure_expr *ordmap(pure_expr *xs)
+extern "C" pure_expr *orddict(pure_expr *xs)
 {
   size_t n;
   pure_expr **xv;
@@ -316,22 +316,22 @@ extern "C" pure_expr *ordmap(pure_expr *xs)
     return 0;
   int32_t fno = pure_getsym("=>"), gno;
   assert(fno > 0);
-  myordmap *m = new myordmap;
+  myorddict *m = new myorddict;
   for (size_t i = 0; i < n; i++) {
     pure_expr *f, *g, *key, *val;
     if (pure_is_app(xv[i], &f, &val) && pure_is_app(f, &g, &key) &&
 	pure_is_symbol(g, &gno) && gno == fno)
-      ordmap_add2(m, key, val);
+      orddict_add2(m, key, val);
     else
-      ordmap_add(m, xv[i]);
+      orddict_add(m, xv[i]);
   }
   if (xv) free(xv);
-  return make_ordmap(m);
+  return make_orddict(m);
 }
 
-extern "C" void ordmap_add(myordmap *m, pure_expr *key)
+extern "C" void orddict_add(myorddict *m, pure_expr *key)
 {
-  myordmap::iterator it = m->find(key);
+  myorddict::iterator it = m->find(key);
   if (it != m->end()) {
     if (it->second) pure_free(it->second);
   } else
@@ -339,9 +339,9 @@ extern "C" void ordmap_add(myordmap *m, pure_expr *key)
   (*m)[key] = 0;
 }
 
-extern "C" void ordmap_add2(myordmap *m, pure_expr *key, pure_expr *val)
+extern "C" void orddict_add2(myorddict *m, pure_expr *key, pure_expr *val)
 {
-  myordmap::iterator it = m->find(key);
+  myorddict::iterator it = m->find(key);
   if (it != m->end()) {
     if (it->second) pure_free(it->second);
   } else
@@ -349,9 +349,9 @@ extern "C" void ordmap_add2(myordmap *m, pure_expr *key, pure_expr *val)
   (*m)[key] = pure_new(val);
 }
 
-extern "C" void ordmap_del(myordmap *m, pure_expr *key)
+extern "C" void orddict_del(myorddict *m, pure_expr *key)
 {
-  myordmap::iterator it = m->find(key);
+  myorddict::iterator it = m->find(key);
   if (it != m->end()) {
     pure_free(it->first);
     if (it->second) pure_free(it->second);
@@ -359,9 +359,9 @@ extern "C" void ordmap_del(myordmap *m, pure_expr *key)
   }
 }
 
-extern "C" void ordmap_del2(myordmap *m, pure_expr *key, pure_expr *val)
+extern "C" void orddict_del2(myorddict *m, pure_expr *key, pure_expr *val)
 {
-  myordmap::iterator it = m->find(key);
+  myorddict::iterator it = m->find(key);
   if (it != m->end() && it->second && same(it->second, val)) {
     pure_free(it->first);
     if (it->second) pure_free(it->second);
@@ -369,64 +369,64 @@ extern "C" void ordmap_del2(myordmap *m, pure_expr *key, pure_expr *val)
   }
 }
 
-extern "C" pure_expr *ordmap_get(myordmap *m, pure_expr *key)
+extern "C" pure_expr *orddict_get(myorddict *m, pure_expr *key)
 {
-  myordmap::iterator it = m->find(key);
+  myorddict::iterator it = m->find(key);
   return (it != m->end())?(it->second?it->second:it->first):0;
 }
 
-extern "C" bool ordmap_member(myordmap *m, pure_expr *key)
+extern "C" bool orddict_member(myorddict *m, pure_expr *key)
 {
-  myordmap::iterator it = m->find(key);
+  myorddict::iterator it = m->find(key);
   return it != m->end();
 }
 
-extern "C" bool ordmap_member2(myordmap *m, pure_expr *key, pure_expr *val)
+extern "C" bool orddict_member2(myorddict *m, pure_expr *key, pure_expr *val)
 {
-  myordmap::iterator it = m->find(key);
+  myorddict::iterator it = m->find(key);
   return it != m->end() && it->second && same(it->second, val);
 }
 
-extern "C" bool ordmap_empty(myordmap *m)
+extern "C" bool orddict_empty(myorddict *m)
 {
   return m->empty();
 }
 
-extern "C" int ordmap_size(myordmap *m)
+extern "C" int orddict_size(myorddict *m)
 {
   return m->size();
 }
 
-extern "C" pure_expr *ordmap_keys(myordmap *m)
+extern "C" pure_expr *orddict_keys(myorddict *m)
 {
   size_t i = 0, n = m->size();
   pure_expr **xs = new pure_expr*[n];
-  for (myordmap::iterator it = m->begin(); it != m->end(); ++it)
+  for (myorddict::iterator it = m->begin(); it != m->end(); ++it)
     xs[i++] = it->first;
   pure_expr *x = pure_listv(n, xs);
   delete[] xs;
   return x;
 }
 
-extern "C" pure_expr *ordmap_vals(myordmap *m)
+extern "C" pure_expr *orddict_vals(myorddict *m)
 {
   size_t i = 0, n = m->size();
   pure_expr **xs = new pure_expr*[n];
-  for (myordmap::iterator it = m->begin(); it != m->end(); ++it)
+  for (myorddict::iterator it = m->begin(); it != m->end(); ++it)
     xs[i++] = it->second?it->second:it->first;
   pure_expr *x = pure_listv(n, xs);
   delete[] xs;
   return x;
 }
 
-extern "C" pure_expr *ordmap_list(myordmap *m)
+extern "C" pure_expr *orddict_list(myorddict *m)
 {
   size_t i = 0, n = m->size();
   static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
   if (!fno) fno = pure_getsym("=>");
   assert(fno > 0);
   pure_expr **xs = new pure_expr*[n], *f = pure_new(pure_symbol(fno));
-  for (myordmap::iterator it = m->begin(); it != m->end(); ++it)
+  for (myorddict::iterator it = m->begin(); it != m->end(); ++it)
     xs[i++] = it->second?pure_appl(f, 2, it->first, it->second):it->first;
   pure_expr *x = pure_listv(n, xs);
   delete[] xs;
@@ -434,14 +434,14 @@ extern "C" pure_expr *ordmap_list(myordmap *m)
   return x;
 }
 
-extern "C" pure_expr *ordmap_tuple(myordmap *m)
+extern "C" pure_expr *orddict_tuple(myorddict *m)
 {
   size_t i = 0, n = m->size();
   static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
   if (!fno) fno = pure_getsym("=>");
   assert(fno > 0);
   pure_expr **xs = new pure_expr*[n], *f = pure_new(pure_symbol(fno));
-  for (myordmap::iterator it = m->begin(); it != m->end(); ++it)
+  for (myorddict::iterator it = m->begin(); it != m->end(); ++it)
     xs[i++] = it->second?pure_appl(f, 2, it->first, it->second):it->first;
   pure_expr *x = pure_tuplev(n, xs);
   delete[] xs;
@@ -449,14 +449,14 @@ extern "C" pure_expr *ordmap_tuple(myordmap *m)
   return x;
 }
 
-extern "C" pure_expr *ordmap_vector(myordmap *m)
+extern "C" pure_expr *orddict_vector(myorddict *m)
 {
   size_t i = 0, n = m->size();
   static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
   if (!fno) fno = pure_getsym("=>");
   assert(fno > 0);
   pure_expr **xs = new pure_expr*[n], *f = pure_new(pure_symbol(fno));
-  for (myordmap::iterator it = m->begin(); it != m->end(); ++it)
+  for (myorddict::iterator it = m->begin(); it != m->end(); ++it)
     xs[i++] = it->second?pure_appl(f, 2, it->first, it->second):it->first;
   pure_expr *x = pure_symbolic_vectorv(n, xs);
   delete[] xs;
@@ -464,18 +464,18 @@ extern "C" pure_expr *ordmap_vector(myordmap *m)
   return x;
 }
 
-extern "C" myordmap *ordmap_copy(myordmap *m)
+extern "C" myorddict *orddict_copy(myorddict *m)
 {
-  myordmap *m2 = new myordmap(*m);
-  for (myordmap::iterator it = m2->begin(); it != m2->end(); ++it) {
+  myorddict *m2 = new myorddict(*m);
+  for (myorddict::iterator it = m2->begin(); it != m2->end(); ++it) {
     pure_new(it->first); if (it->second) pure_new(it->second);
   }
   return m2;
 }
 
-extern "C" void ordmap_clear(myordmap *m)
+extern "C" void orddict_clear(myorddict *m)
 {
-  for (myordmap::iterator it = m->begin(); it != m->end(); ++it) {
+  for (myorddict::iterator it = m->begin(); it != m->end(); ++it) {
     pure_free(it->first);
     if (it->second) pure_free(it->second);
   }
@@ -526,16 +526,16 @@ static bool is_permutation(ForwardIterator1 first, ForwardIterator1 last,
 }
 #endif
 
-extern "C" bool ordmap_equal(myordmap *x, myordmap *y)
+extern "C" bool orddict_equal(myorddict *x, myorddict *y)
 {
   if (x == y) return true;
   if (x->size() != y->size()) return false;
-  for (myordmap::iterator it = x->begin(); it != x->end(); ) {
+  for (myorddict::iterator it = x->begin(); it != x->end(); ) {
     /* This is probably overkill here, as map is guaranteed to have only one
        entry per key, so that the equal ranges should all have size 1. But we
        do it that way for safety, and so that the same implementation can be
-       used in the multimap case (see ordmmap_equal below). */
-    pair<myordmap::iterator, myordmap::iterator>
+       used in the multidict case (see ordmdict_equal below). */
+    pair<myorddict::iterator, myorddict::iterator>
       r1 = x->equal_range(it->first),
       r2 = y->equal_range(it->first);
     if (distance(r1.first, r1.second) != distance(r2.first, r2.second))
@@ -552,29 +552,29 @@ extern "C" bool ordmap_equal(myordmap *x, myordmap *y)
 
 //////////////////////////////////////////////////////////////////////////////
 
-// multimaps: This is basically the same as above, with some minor adjustments
-// for the multimap implementation.
+// multidicts: This is basically the same as above, with some minor
+// adjustments for the multidict implementation.
 
 //////////////////////////////////////////////////////////////////////////////
 
-typedef multimap<pure_expr*,pure_expr*> myordmmap;
+typedef multimap<pure_expr*,pure_expr*> myordmdict;
 
 static ILS<int32_t> ommsym = 0;
 
-extern "C" void ordmmap_symbol(pure_expr *x)
+extern "C" void ordmdict_symbol(pure_expr *x)
 {
   int32_t f;
   if (pure_is_symbol(x, &f) && f>0) ommsym() = f;
 }
 
-extern "C" pure_expr *ordmmap_list(myordmmap *m);
+extern "C" pure_expr *ordmdict_list(myordmdict *m);
 
-static const char *ordmmap_str(myordmmap *m)
+static const char *ordmdict_str(myordmdict *m)
 {
   static char *buf = 0; // TLD
   if (buf) free(buf);
-  int32_t fsym = ommsym()?ommsym():pure_sym("ordmmap");
-  pure_expr *f = pure_const(fsym), *x = pure_applc(f, ordmmap_list(m));
+  int32_t fsym = ommsym()?ommsym():pure_sym("ordmdict");
+  pure_expr *f = pure_const(fsym), *x = pure_applc(f, ordmdict_list(m));
   buf = str(x);
   pure_freenew(x);
   if (ommsym() && pure_sym_other(ommsym())) {
@@ -598,7 +598,7 @@ static const char *ordmmap_str(myordmmap *m)
   return buf;
 }
 
-static int ordmmap_prec(myordmmap *m)
+static int ordmdict_prec(myordmdict *m)
 {
   if (ommsym()) {
     int32_t p = pure_sym_nprec(ommsym());
@@ -610,11 +610,11 @@ static int ordmmap_prec(myordmmap *m)
     return NPREC_APP;
 }
 
-static bool ordmmap_same(myordmmap *x, myordmmap *y)
+static bool ordmdict_same(myordmdict *x, myordmdict *y)
 {
   if (x == y) return true;
   if (x->size() != y->size()) return false;
-  for (myordmmap::iterator it = x->begin(), jt = y->begin(); it != x->end();
+  for (myordmdict::iterator it = x->begin(), jt = y->begin(); it != x->end();
        ++it, ++jt) {
 #ifdef DEBUG
     assert(jt != y->end());
@@ -625,39 +625,39 @@ static bool ordmmap_same(myordmmap *x, myordmmap *y)
   return true;
 }
 
-extern "C" int ordmmap_tag(void)
+extern "C" int ordmdict_tag(void)
 {
   static ILS<int> t = 0;
   if (!t()) {
-    t() = pure_pointer_tag("ordmmap*");
-    pure_pointer_add_equal(t(), (pure_equal_fun)ordmmap_same);
-    pure_pointer_add_printer(t(), (pure_printer_fun)ordmmap_str,
-			     (pure_printer_prec_fun)ordmmap_prec);
+    t() = pure_pointer_tag("ordmdict*");
+    pure_pointer_add_equal(t(), (pure_equal_fun)ordmdict_same);
+    pure_pointer_add_printer(t(), (pure_printer_fun)ordmdict_str,
+			     (pure_printer_prec_fun)ordmdict_prec);
   }
   return t();
 }
 
-extern "C" void ordmmap_free(myordmmap *m)
+extern "C" void ordmdict_free(myordmdict *m)
 {
-  for (myordmmap::iterator it = m->begin(); it != m->end(); ++it) {
+  for (myordmdict::iterator it = m->begin(); it != m->end(); ++it) {
     pure_free(it->first);
     if (it->second) pure_free(it->second);
   }
   delete m;
 }
 
-static pure_expr *make_ordmmap(myordmmap *m)
+static pure_expr *make_ordmdict(myordmdict *m)
 {
   static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
-  if (!fno) fno = pure_sym("ordmmap_free");
+  if (!fno) fno = pure_sym("ordmdict_free");
   return pure_sentry(pure_symbol(fno),
-		     pure_tag(ordmmap_tag(), pure_pointer(m)));
+		     pure_tag(ordmdict_tag(), pure_pointer(m)));
 }
 
-extern "C" void ordmmap_add(myordmmap *m, pure_expr *key);
-extern "C" void ordmmap_add2(myordmmap *m, pure_expr *key, pure_expr *val);
+extern "C" void ordmdict_add(myordmdict *m, pure_expr *key);
+extern "C" void ordmdict_add2(myordmdict *m, pure_expr *key, pure_expr *val);
 
-extern "C" pure_expr *ordmmap(pure_expr *xs)
+extern "C" pure_expr *ordmdict(pure_expr *xs)
 {
   size_t n;
   pure_expr **xv;
@@ -668,32 +668,32 @@ extern "C" pure_expr *ordmmap(pure_expr *xs)
     return 0;
   int32_t fno = pure_getsym("=>"), gno;
   assert(fno > 0);
-  myordmmap *m = new myordmmap;
+  myordmdict *m = new myordmdict;
   for (size_t i = 0; i < n; i++) {
     pure_expr *f, *g, *key, *val;
     if (pure_is_app(xv[i], &f, &val) && pure_is_app(f, &g, &key) &&
 	pure_is_symbol(g, &gno) && gno == fno)
-      ordmmap_add2(m, key, val);
+      ordmdict_add2(m, key, val);
     else
-      ordmmap_add(m, xv[i]);
+      ordmdict_add(m, xv[i]);
   }
   if (xv) free(xv);
-  return make_ordmmap(m);
+  return make_ordmdict(m);
 }
 
-extern "C" void ordmmap_add(myordmmap *m, pure_expr *key)
+extern "C" void ordmdict_add(myordmdict *m, pure_expr *key)
 {
   m->insert(make_pair(pure_new(key), (pure_expr*)0));
 }
 
-extern "C" void ordmmap_add2(myordmmap *m, pure_expr *key, pure_expr *val)
+extern "C" void ordmdict_add2(myordmdict *m, pure_expr *key, pure_expr *val)
 {
   m->insert(make_pair(pure_new(key), pure_new(val)));
 }
 
-extern "C" void ordmmap_del(myordmmap *m, pure_expr *key)
+extern "C" void ordmdict_del(myordmdict *m, pure_expr *key)
 {
-  myordmmap::iterator it = m->find(key);
+  myordmdict::iterator it = m->find(key);
   if (it != m->end()) {
     pure_free(it->first);
     if (it->second) pure_free(it->second);
@@ -701,10 +701,10 @@ extern "C" void ordmmap_del(myordmmap *m, pure_expr *key)
   }
 }
 
-extern "C" void ordmmap_del2(myordmmap *m, pure_expr *key, pure_expr *val)
+extern "C" void ordmdict_del2(myordmdict *m, pure_expr *key, pure_expr *val)
 {
-  pair<myordmmap::iterator, myordmmap::iterator> r = m->equal_range(key);
-  for (myordmmap::iterator it = r.first; it != r.second; ++it)
+  pair<myordmdict::iterator, myordmdict::iterator> r = m->equal_range(key);
+  for (myordmdict::iterator it = r.first; it != r.second; ++it)
     if (it->second && same(it->second, val)) {
       pure_free(it->first);
       if (it->second) pure_free(it->second);
@@ -713,73 +713,73 @@ extern "C" void ordmmap_del2(myordmmap *m, pure_expr *key, pure_expr *val)
     }
 }
 
-extern "C" pure_expr *ordmmap_get(myordmmap *m, pure_expr *key)
+extern "C" pure_expr *ordmdict_get(myordmdict *m, pure_expr *key)
 {
-  pair<myordmmap::iterator, myordmmap::iterator> r = m->equal_range(key);
+  pair<myordmdict::iterator, myordmdict::iterator> r = m->equal_range(key);
   size_t i = 0, n = distance(r.first, r.second);
   pure_expr **xs = new pure_expr*[n];
-  for (myordmmap::iterator it = r.first; it != r.second; ++it)
+  for (myordmdict::iterator it = r.first; it != r.second; ++it)
     xs[i++] = it->second?it->second:it->first;
   pure_expr *x = pure_listv(n, xs);
   delete[] xs;
   return x;
 }
 
-extern "C" bool ordmmap_member(myordmmap *m, pure_expr *key)
+extern "C" bool ordmdict_member(myordmdict *m, pure_expr *key)
 {
-  myordmmap::iterator it = m->find(key);
+  myordmdict::iterator it = m->find(key);
   return it != m->end();
 }
 
-extern "C" bool ordmmap_member2(myordmmap *m, pure_expr *key, pure_expr *val)
+extern "C" bool ordmdict_member2(myordmdict *m, pure_expr *key, pure_expr *val)
 {
-  pair<myordmmap::iterator, myordmmap::iterator> r = m->equal_range(key);
-  for (myordmmap::iterator it = r.first; it != r.second; ++it)
+  pair<myordmdict::iterator, myordmdict::iterator> r = m->equal_range(key);
+  for (myordmdict::iterator it = r.first; it != r.second; ++it)
     if (it->second && same(it->second, val))
       return true;
   return false;
 }
 
-extern "C" bool ordmmap_empty(myordmmap *m)
+extern "C" bool ordmdict_empty(myordmdict *m)
 {
   return m->empty();
 }
 
-extern "C" int ordmmap_size(myordmmap *m)
+extern "C" int ordmdict_size(myordmdict *m)
 {
   return m->size();
 }
 
-extern "C" pure_expr *ordmmap_keys(myordmmap *m)
+extern "C" pure_expr *ordmdict_keys(myordmdict *m)
 {
   size_t i = 0, n = m->size();
   pure_expr **xs = new pure_expr*[n];
-  for (myordmmap::iterator it = m->begin(); it != m->end(); ++it)
+  for (myordmdict::iterator it = m->begin(); it != m->end(); ++it)
     xs[i++] = it->first;
   pure_expr *x = pure_listv(n, xs);
   delete[] xs;
   return x;
 }
 
-extern "C" pure_expr *ordmmap_vals(myordmmap *m)
+extern "C" pure_expr *ordmdict_vals(myordmdict *m)
 {
   size_t i = 0, n = m->size();
   pure_expr **xs = new pure_expr*[n];
-  for (myordmmap::iterator it = m->begin(); it != m->end(); ++it)
+  for (myordmdict::iterator it = m->begin(); it != m->end(); ++it)
     xs[i++] = it->second?it->second:it->first;
   pure_expr *x = pure_listv(n, xs);
   delete[] xs;
   return x;
 }
 
-extern "C" pure_expr *ordmmap_list(myordmmap *m)
+extern "C" pure_expr *ordmdict_list(myordmdict *m)
 {
   size_t i = 0, n = m->size();
   static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
   if (!fno) fno = pure_getsym("=>");
   assert(fno > 0);
   pure_expr **xs = new pure_expr*[n], *f = pure_new(pure_symbol(fno));
-  for (myordmmap::iterator it = m->begin(); it != m->end(); ++it)
+  for (myordmdict::iterator it = m->begin(); it != m->end(); ++it)
     xs[i++] = it->second?pure_appl(f, 2, it->first, it->second):it->first;
   pure_expr *x = pure_listv(n, xs);
   delete[] xs;
@@ -787,14 +787,14 @@ extern "C" pure_expr *ordmmap_list(myordmmap *m)
   return x;
 }
 
-extern "C" pure_expr *ordmmap_tuple(myordmmap *m)
+extern "C" pure_expr *ordmdict_tuple(myordmdict *m)
 {
   size_t i = 0, n = m->size();
   static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
   if (!fno) fno = pure_getsym("=>");
   assert(fno > 0);
   pure_expr **xs = new pure_expr*[n], *f = pure_new(pure_symbol(fno));
-  for (myordmmap::iterator it = m->begin(); it != m->end(); ++it)
+  for (myordmdict::iterator it = m->begin(); it != m->end(); ++it)
     xs[i++] = it->second?pure_appl(f, 2, it->first, it->second):it->first;
   pure_expr *x = pure_tuplev(n, xs);
   delete[] xs;
@@ -802,14 +802,14 @@ extern "C" pure_expr *ordmmap_tuple(myordmmap *m)
   return x;
 }
 
-extern "C" pure_expr *ordmmap_vector(myordmmap *m)
+extern "C" pure_expr *ordmdict_vector(myordmdict *m)
 {
   size_t i = 0, n = m->size();
   static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
   if (!fno) fno = pure_getsym("=>");
   assert(fno > 0);
   pure_expr **xs = new pure_expr*[n], *f = pure_new(pure_symbol(fno));
-  for (myordmmap::iterator it = m->begin(); it != m->end(); ++it)
+  for (myordmdict::iterator it = m->begin(); it != m->end(); ++it)
     xs[i++] = it->second?pure_appl(f, 2, it->first, it->second):it->first;
   pure_expr *x = pure_symbolic_vectorv(n, xs);
   delete[] xs;
@@ -817,30 +817,30 @@ extern "C" pure_expr *ordmmap_vector(myordmmap *m)
   return x;
 }
 
-extern "C" myordmmap *ordmmap_copy(myordmmap *m)
+extern "C" myordmdict *ordmdict_copy(myordmdict *m)
 {
-  myordmmap *m2 = new myordmmap(*m);
-  for (myordmmap::iterator it = m2->begin(); it != m2->end(); ++it) {
+  myordmdict *m2 = new myordmdict(*m);
+  for (myordmdict::iterator it = m2->begin(); it != m2->end(); ++it) {
     pure_new(it->first); if (it->second) pure_new(it->second);
   }
   return m2;
 }
 
-extern "C" void ordmmap_clear(myordmmap *m)
+extern "C" void ordmdict_clear(myordmdict *m)
 {
-  for (myordmmap::iterator it = m->begin(); it != m->end(); ++it) {
+  for (myordmdict::iterator it = m->begin(); it != m->end(); ++it) {
     pure_free(it->first);
     if (it->second) pure_free(it->second);
   }
   m->clear();
 }
 
-extern "C" bool ordmmap_equal(myordmmap *x, myordmmap *y)
+extern "C" bool ordmdict_equal(myordmdict *x, myordmdict *y)
 {
   if (x == y) return true;
   if (x->size() != y->size()) return false;
-  for (myordmmap::iterator it = x->begin(); it != x->end(); ) {
-    pair<myordmmap::iterator, myordmmap::iterator>
+  for (myordmdict::iterator it = x->begin(); it != x->end(); ) {
+    pair<myordmdict::iterator, myordmdict::iterator>
       r1 = x->equal_range(it->first),
       r2 = y->equal_range(it->first);
     if (distance(r1.first, r1.second) != distance(r2.first, r2.second))

@@ -1,6 +1,6 @@
 
-/* ordmap.pure: mutable maps and sets for ordered key and arbitrary value
-   types, implemented as STL (ordered) maps */
+/* orddict.pure: mutable dictionaries and sets for ordered key and arbitrary
+   value types, implemented as STL (ordered) maps */
 
 /* NOTE: This module requires Pure 0.49 or later. It also needs a recent STL
    implementation. The module is still experimental and the API is subject to
@@ -24,66 +24,66 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
 /* Native interface. You can freely use most of these in addition to the
-   "standard" container API provided below. But note that ordmap_free and
-   ordmmap_free are reserved for internal use as a sentry on ordmap and
-   ordmmap objects and should never be called directly. */
+   "standard" container API provided below. But note that orddict_free and
+   ordmdict_free are reserved for internal use as a sentry on orddict and
+   ordmdict objects and should never be called directly. */
 
-using "lib:ordmap";
+using "lib:orddict";
 
-extern int ordmap_tag();
-extern void ordmap_symbol(expr*);
-extern expr* ordmap(expr*);
-extern ordmap* ordmap_copy(ordmap*);
-extern void ordmap_clear(ordmap*);
-extern void ordmap_free(ordmap*); // internal use only
-extern void ordmap_add(ordmap*, expr*);
-extern void ordmap_add2(ordmap*, expr*, expr*);
-extern void ordmap_del(ordmap*, expr*);
-extern void ordmap_del2(ordmap*, expr*, expr*);
-extern expr* ordmap_get(ordmap*, expr*);
-extern bool ordmap_member(ordmap*, expr*);
-extern bool ordmap_member2(ordmap*, expr*, expr*);
-extern bool ordmap_empty(ordmap*);
-extern bool ordmap_equal(ordmap*, ordmap*);
-extern int ordmap_size(ordmap*);
-extern expr* ordmap_list(ordmap*);
-extern expr* ordmap_tuple(ordmap*);
-extern expr* ordmap_vector(ordmap*);
-extern expr* ordmap_keys(ordmap*);
-extern expr* ordmap_vals(ordmap*);
+extern int orddict_tag();
+extern void orddict_symbol(expr*);
+extern expr* orddict(expr*);
+extern orddict* orddict_copy(orddict*);
+extern void orddict_clear(orddict*);
+extern void orddict_free(orddict*); // internal use only
+extern void orddict_add(orddict*, expr*);
+extern void orddict_add2(orddict*, expr*, expr*);
+extern void orddict_del(orddict*, expr*);
+extern void orddict_del2(orddict*, expr*, expr*);
+extern expr* orddict_get(orddict*, expr*);
+extern bool orddict_member(orddict*, expr*);
+extern bool orddict_member2(orddict*, expr*, expr*);
+extern bool orddict_empty(orddict*);
+extern bool orddict_equal(orddict*, orddict*);
+extern int orddict_size(orddict*);
+extern expr* orddict_list(orddict*);
+extern expr* orddict_tuple(orddict*);
+extern expr* orddict_vector(orddict*);
+extern expr* orddict_keys(orddict*);
+extern expr* orddict_vals(orddict*);
 
-extern int ordmmap_tag();
-extern void ordmmap_symbol(expr*);
-extern expr* ordmmap(expr*);
-extern ordmmap* ordmmap_copy(ordmmap*);
-extern void ordmmap_clear(ordmmap*);
-extern void ordmmap_free(ordmmap*); // internal use only
-extern void ordmmap_add(ordmmap*, expr*);
-extern void ordmmap_add2(ordmmap*, expr*, expr*);
-extern void ordmmap_del(ordmmap*, expr*);
-extern void ordmmap_del2(ordmmap*, expr*, expr*);
-extern expr* ordmmap_get(ordmmap*, expr*);
-extern bool ordmmap_member(ordmmap*, expr*);
-extern bool ordmmap_member2(ordmmap*, expr*, expr*);
-extern bool ordmmap_empty(ordmmap*);
-extern bool ordmmap_equal(ordmmap*, ordmmap*);
-extern int ordmmap_size(ordmmap*);
-extern expr* ordmmap_list(ordmmap*);
-extern expr* ordmmap_tuple(ordmmap*);
-extern expr* ordmmap_vector(ordmmap*);
-extern expr* ordmmap_keys(ordmmap*);
-extern expr* ordmmap_vals(ordmmap*);
+extern int ordmdict_tag();
+extern void ordmdict_symbol(expr*);
+extern expr* ordmdict(expr*);
+extern ordmdict* ordmdict_copy(ordmdict*);
+extern void ordmdict_clear(ordmdict*);
+extern void ordmdict_free(ordmdict*); // internal use only
+extern void ordmdict_add(ordmdict*, expr*);
+extern void ordmdict_add2(ordmdict*, expr*, expr*);
+extern void ordmdict_del(ordmdict*, expr*);
+extern void ordmdict_del2(ordmdict*, expr*, expr*);
+extern expr* ordmdict_get(ordmdict*, expr*);
+extern bool ordmdict_member(ordmdict*, expr*);
+extern bool ordmdict_member2(ordmdict*, expr*, expr*);
+extern bool ordmdict_empty(ordmdict*);
+extern bool ordmdict_equal(ordmdict*, ordmdict*);
+extern int ordmdict_size(ordmdict*);
+extern expr* ordmdict_list(ordmdict*);
+extern expr* ordmdict_tuple(ordmdict*);
+extern expr* ordmdict_vector(ordmdict*);
+extern expr* ordmdict_keys(ordmdict*);
+extern expr* ordmdict_vals(ordmdict*);
 
-/* The ordmap type. Ordmaps are simply pointers to STL map objects which hold
+/* The orddict type. Orddicts are simply pointers to STL map objects which hold
    key-value associations where both keys and values may be arbitrary Pure
    expressions. The keys must be ordered using Pure's standard '<' predicate.
    (This may be a partial order; keys x,y comparing neither x<y nor y<x will
    be considered "equal" even though they may be syntactically different, such
-   as 0 and 0.0 in Pure.) Ordmaps can be created from lists, tuples and
-   vectors using the ordmap function. Memory management is automatic. Please
+   as 0 and 0.0 in Pure.) Orddicts can be created from lists, tuples and
+   vectors using the orddict function. Memory management is automatic. Please
    also note the following:
 
-   - Values can be omitted, so that ordmaps can be used as an ordered set data
+   - Values can be omitted, so that orddicts can be used as an ordered set data
      structure. This obviates the need for a separate set data structure at
      the cost of some (small) increase in memory usage. Also note that you
      can't really have a hash pair x=>y as a member of a set, since it always
@@ -91,176 +91,176 @@ extern expr* ordmmap_vals(ordmmap*);
      could use ordinary pairs (x,y) instead (but you'd first need to define
      '<' on them; Pure doesn't do this).
 
-   - Ordmaps are *mutable*. Inserting a key into an ordmap or deleting it
+   - Orddicts are *mutable*. Inserting a key into an orddict or deleting it
      modifies the underlying STL data structure as a side effect of the
      operation. If you need value semantics, you should use one of the dict or
      set data structures from the standard library instead. (Another
-     possibility is to take a copy of an ordmap using the ordmap_copy
+     possibility is to take a copy of an orddict using the orddict_copy
      operation if you need to preserve the original value, but note that this
      operation takes O(n) time.)
 
-   - Two ordmaps are syntactically equal iff they contain the same elements in
+   - Two orddicts are syntactically equal iff they contain the same elements in
      exactly the same order, using syntactic equality on both the keys and the
      associated values. This test can always be done in linear time. There's
      also a (somewhat more costly) semantic equality test which compares keys
      using '<' (so keys may compare equal which are syntactically different),
-     and can also cope with the multimap case (see below) where different
+     and can also cope with the multidict case (see below) where different
      entries for the "same" key may be listed in any order. Note that in
      either case the associated values are always tested for *syntactic*
      equality. That's because we don't assume anything about the types of
      values stored in the container (they need not be ordered, and in fact
      might not even have semantic equality '==' defined on them).
 
-   - Ordmaps are pretty-printed in the format 'ordmap [...]' by default,
+   - Orddicts are pretty-printed in the format 'orddict [...]' by default,
      which will reconstruct the expression when reentered as Pure code. With
-     the ordmap_symbol function it is also possible to define your own custom
-     pretty-printing; see examples/ordmap_examp.pure for an example. */
+     the orddict_symbol function it is also possible to define your own custom
+     pretty-printing; see examples/orddict_examp.pure for an example. */
 
-let ordmap_t = ordmap_tag;
-type ordmap x::pointer = check_ptrtag ordmap_t x;
-ordmapp x = pointerp x && check_ptrtag ordmap_t x;
+let orddict_t = orddict_tag;
+type orddict x::pointer = check_ptrtag orddict_t x;
+orddictp x = pointerp x && check_ptrtag orddict_t x;
 
-// Make ordmap work with numeric vectors.
-ordmap x::nmatrix = ordmap (smatrix x);
+// Make orddict work with numeric vectors.
+orddict x::nmatrix = orddict (smatrix x);
 
-/* Semantic equality of ordmaps. These compare keys using the '<' predicate
-   and values for syntactic equality. Equality holds iff two ordmaps contain
+/* Semantic equality of orddicts. These compare keys using the '<' predicate
+   and values for syntactic equality. Equality holds iff two orddicts contain
    the same key=>val pairs. This test always works in O(n log n) time. */
 
-x::ordmap == y::ordmap = ordmap_equal x y;
-x::ordmap ~= y::ordmap = ~ordmap_equal x y;
+x::orddict == y::orddict = orddict_equal x y;
+x::orddict ~= y::orddict = ~orddict_equal x y;
 
-// Minimal container API for ordmaps.
+// Minimal container API for orddicts.
 
-/* Note that if the key x is in the map but doesn't have an associated value
+/* Note that if the key x is in the dict but doesn't have an associated value
    (as in a set data structure), then m!x will return just x itself as the
    associated value. In any case, m!x raises an out_of_bound exception if x is
-   not in the map. */
+   not in the dict. */
 
-# m::ordmap = ordmap_size m;
-m::ordmap ! x =
-  if ordmap_member m x then ordmap_get m x else throw out_of_bounds;
+# m::orddict = orddict_size m;
+m::orddict ! x =
+  if orddict_member m x then orddict_get m x else throw out_of_bounds;
 
 /* Note that in addition to the usual container ops we also support copying
-   and clearing of maps (copy, clear), as well as membership tests and
+   and clearing of dicts (copy, clear), as well as membership tests and
    deletions of specific key=>val pairs (member, delete). Also note that, in
    order to be consistent with indexing, the vals function actually returns
    the *keys* for members which have no associated value. */
 
-null m::ordmap = ordmap_empty m;
-member m::ordmap (x=>y) = ordmap_member2 m x y;
-member m::ordmap x = ordmap_member m x;
-update m::ordmap x y = ordmap_add2 m x y $$ m;
-insert m::ordmap (x=>y) = ordmap_add2 m x y $$ m;
-insert m::ordmap x = ordmap_add m x $$ m;
-delete m::ordmap (x=>y) = ordmap_del2 m x y $$ m;
-delete m::ordmap x = ordmap_del m x $$ m;
-copy m::ordmap = ordmap_copy m;
-clear m::ordmap = ordmap_clear m;
+null m::orddict = orddict_empty m;
+member m::orddict (x=>y) = orddict_member2 m x y;
+member m::orddict x = orddict_member m x;
+update m::orddict x y = orddict_add2 m x y $$ m;
+insert m::orddict (x=>y) = orddict_add2 m x y $$ m;
+insert m::orddict x = orddict_add m x $$ m;
+delete m::orddict (x=>y) = orddict_del2 m x y $$ m;
+delete m::orddict x = orddict_del m x $$ m;
+copy m::orddict = orddict_copy m;
+clear m::orddict = orddict_clear m;
 
-keys m::ordmap = ordmap_keys m;
-vals m::ordmap = ordmap_vals m;
+keys m::orddict = orddict_keys m;
+vals m::orddict = orddict_vals m;
 
-list m::ordmap = ordmap_list m;
-tuple m::ordmap = ordmap_tuple m;
-vector m::ordmap = ordmap_vector m;
+list m::orddict = orddict_list m;
+tuple m::orddict = orddict_tuple m;
+vector m::orddict = orddict_vector m;
 
 /* Basic list-like operations and support for list and matrix comprehensions.
    NOTE: The most important of these should possibly be implemented in C, to
    avoid the construction of intermediate list values. */
 
-do f m::ordmap = do f (list m);
-map f m::ordmap = map f (list m);
-catmap f m::ordmap = catmap f (list m);
-listmap f m::ordmap = map f (list m);
-listcatmap f m::ordmap = catmap f (list m);
-rowmap f m::ordmap = rowcat (map f m);
-rowcatmap f m::ordmap = rowcat (map f m);
-colmap f m::ordmap = colcat (map f m);
-colcatmap f m::ordmap = colcat (map f m);
+do f m::orddict = do f (list m);
+map f m::orddict = map f (list m);
+catmap f m::orddict = catmap f (list m);
+listmap f m::orddict = map f (list m);
+listcatmap f m::orddict = catmap f (list m);
+rowmap f m::orddict = rowcat (map f m);
+rowcatmap f m::orddict = rowcat (map f m);
+colmap f m::orddict = colcat (map f m);
+colcatmap f m::orddict = colcat (map f m);
 
-all p m::ordmap = all p (list m);
-any p m::ordmap = any p (list m);
-filter p m::ordmap = filter p (list m);
-foldl f a m::ordmap = foldl f a (list m);
-foldl1 f m::ordmap = foldl1 f (list m) if ~null m;
-foldr f a m::ordmap = foldr f a (list m);
-foldr1 f m::ordmap = foldr1 f (list m) if ~null m;
-scanl f a m::ordmap = scanl f a (list m);
-scanl1 f m::ordmap = scanl1 f (list m) if ~null m;
-scanr f a m::ordmap = scanr f a (list m);
-scanr1 f m::ordmap = scanr1 f (list m) if ~null m;
-sort p m::ordmap = sort p (list m);
+all p m::orddict = all p (list m);
+any p m::orddict = any p (list m);
+filter p m::orddict = filter p (list m);
+foldl f a m::orddict = foldl f a (list m);
+foldl1 f m::orddict = foldl1 f (list m) if ~null m;
+foldr f a m::orddict = foldr f a (list m);
+foldr1 f m::orddict = foldr1 f (list m) if ~null m;
+scanl f a m::orddict = scanl f a (list m);
+scanl1 f m::orddict = scanl1 f (list m) if ~null m;
+scanr f a m::orddict = scanr f a (list m);
+scanr1 f m::orddict = scanr1 f (list m) if ~null m;
+sort p m::orddict = sort p (list m);
 
 /***************************************************************************/
 
-/* Multimaps (STL multimap). These are represented using the ordmmap type
-   which works like an ordmap but allows multiple instances of the same key in
+/* Multidicts (STL multimap). These are represented using the ordmdict type
+   which works like an orddict but allows multiple instances of the same key in
    a container. */
 
-let ordmmap_t = ordmmap_tag;
-type ordmmap x::pointer = check_ptrtag ordmmap_t x;
-ordmmapp x = pointerp x && check_ptrtag ordmmap_t x;
+let ordmdict_t = ordmdict_tag;
+type ordmdict x::pointer = check_ptrtag ordmdict_t x;
+ordmdictp x = pointerp x && check_ptrtag ordmdict_t x;
 
-ordmmap x::nmatrix = ordmmap (smatrix x);
+ordmdict x::nmatrix = ordmdict (smatrix x);
 
-/* Note that in contrast to ordinary ordmaps, the complexity of the multimap
+/* Note that in contrast to ordinary orddicts, the complexity of the multidict
    equality check depends on the frequencies of keys and may thus require
    O(n^2) time in degenerate cases. */
 
-x::ordmmap == y::ordmmap = ordmmap_equal x y;
-x::ordmmap ~= y::ordmmap = ~ordmmap_equal x y;
+x::ordmdict == y::ordmdict = ordmdict_equal x y;
+x::ordmdict ~= y::ordmdict = ~ordmdict_equal x y;
 
 /* Note that m!x returns the list of *all* values associated with the key x
-   here (which may be empty if the key is not in the map, rather than raising
+   here (which may be empty if the key is not in the dict, rather than raising
    an out_of_bounds exception). */
 
-# m::ordmmap = ordmmap_size m;
-m::ordmmap ! x = ordmmap_get m x;
+# m::ordmdict = ordmdict_size m;
+m::ordmdict ! x = ordmdict_get m x;
 
 /* Note that update and insert will never override an existing member of the
-   map here, they will always insert a new member. Also, delete will delete an
+   dict here, they will always insert a new member. Also, delete will delete an
    arbitrary member with the given key (or key=>val); there are no guarantees
    that members with the same key (or key=>val) will be deleted in any
    particular order. */
 
-null m::ordmmap = ordmmap_empty m;
-member m::ordmmap (x=>y) = ordmmap_member2 m x y;
-member m::ordmmap x = ordmmap_member m x;
-update m::ordmmap x y = ordmmap_add2 m x y $$ m;
-insert m::ordmmap (x=>y) = ordmmap_add2 m x y $$ m;
-insert m::ordmmap x = ordmmap_add m x $$ m;
-delete m::ordmmap (x=>y) = ordmmap_del2 m x y $$ m;
-delete m::ordmmap x = ordmmap_del m x $$ m;
-copy m::ordmmap = ordmmap_copy m;
-clear m::ordmmap = ordmmap_clear m;
+null m::ordmdict = ordmdict_empty m;
+member m::ordmdict (x=>y) = ordmdict_member2 m x y;
+member m::ordmdict x = ordmdict_member m x;
+update m::ordmdict x y = ordmdict_add2 m x y $$ m;
+insert m::ordmdict (x=>y) = ordmdict_add2 m x y $$ m;
+insert m::ordmdict x = ordmdict_add m x $$ m;
+delete m::ordmdict (x=>y) = ordmdict_del2 m x y $$ m;
+delete m::ordmdict x = ordmdict_del m x $$ m;
+copy m::ordmdict = ordmdict_copy m;
+clear m::ordmdict = ordmdict_clear m;
 
-keys m::ordmmap = ordmmap_keys m;
-vals m::ordmmap = ordmmap_vals m;
+keys m::ordmdict = ordmdict_keys m;
+vals m::ordmdict = ordmdict_vals m;
 
-list m::ordmmap = ordmmap_list m;
-tuple m::ordmmap = ordmmap_tuple m;
-vector m::ordmmap = ordmmap_vector m;
+list m::ordmdict = ordmdict_list m;
+tuple m::ordmdict = ordmdict_tuple m;
+vector m::ordmdict = ordmdict_vector m;
 
-do f m::ordmmap = do f (list m);
-map f m::ordmmap = map f (list m);
-catmap f m::ordmmap = catmap f (list m);
-listmap f m::ordmmap = map f (list m);
-listcatmap f m::ordmmap = catmap f (list m);
-rowmap f m::ordmmap = rowcat (map f m);
-rowcatmap f m::ordmmap = rowcat (map f m);
-colmap f m::ordmmap = colcat (map f m);
-colcatmap f m::ordmmap = colcat (map f m);
+do f m::ordmdict = do f (list m);
+map f m::ordmdict = map f (list m);
+catmap f m::ordmdict = catmap f (list m);
+listmap f m::ordmdict = map f (list m);
+listcatmap f m::ordmdict = catmap f (list m);
+rowmap f m::ordmdict = rowcat (map f m);
+rowcatmap f m::ordmdict = rowcat (map f m);
+colmap f m::ordmdict = colcat (map f m);
+colcatmap f m::ordmdict = colcat (map f m);
 
-all p m::ordmmap = all p (list m);
-any p m::ordmmap = any p (list m);
-filter p m::ordmmap = filter p (list m);
-foldl f a m::ordmmap = foldl f a (list m);
-foldl1 f m::ordmmap = foldl1 f (list m) if ~null m;
-foldr f a m::ordmmap = foldr f a (list m);
-foldr1 f m::ordmmap = foldr1 f (list m) if ~null m;
-scanl f a m::ordmmap = scanl f a (list m);
-scanl1 f m::ordmmap = scanl1 f (list m) if ~null m;
-scanr f a m::ordmmap = scanr f a (list m);
-scanr1 f m::ordmmap = scanr1 f (list m) if ~null m;
-sort p m::ordmmap = sort p (list m);
+all p m::ordmdict = all p (list m);
+any p m::ordmdict = any p (list m);
+filter p m::ordmdict = filter p (list m);
+foldl f a m::ordmdict = foldl f a (list m);
+foldl1 f m::ordmdict = foldl1 f (list m) if ~null m;
+foldr f a m::ordmdict = foldr f a (list m);
+foldr1 f m::ordmdict = foldr1 f (list m) if ~null m;
+scanl f a m::ordmdict = scanl f a (list m);
+scanl1 f m::ordmdict = scanl1 f (list m) if ~null m;
+scanr f a m::ordmdict = scanr f a (list m);
+scanr1 f m::ordmdict = scanr1 f (list m) if ~null m;
+sort p m::ordmdict = sort p (list m);

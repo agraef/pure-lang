@@ -1,18 +1,18 @@
-let m = hashmap [foo=>99,bar=>bar 4711L,baz=>1..5];
+let m = hashdict [foo=>99,bar=>bar 4711L,baz=>1..5];
 m;
-hashmap [foo=>99,bar=>bar 4711L,baz=>[1,2,3,4,5]]
-def {$$} = hashmap [];
-def {$xs@(_,_)$} = hashmap (__list__ xs);
-def {$x$} = hashmap [x];
-hashmap_symbol ({$ $});
+hashdict [foo=>99,bar=>bar 4711L,baz=>[1,2,3,4,5]]
+def {$$} = hashdict [];
+def {$xs@(_,_)$} = hashdict (__list__ xs);
+def {$x$} = hashdict [x];
+hashdict_symbol ({$ $});
 ()
-let m = hashmap [foo=>99,bar=>bar 4711L,baz=>1..5];
+let m = hashdict [foo=>99,bar=>bar 4711L,baz=>1..5];
 m;
 {$foo=>99,bar=>bar 4711L,baz=>[1,2,3,4,5]$}
-hashmap_symbol hashmap;
+hashdict_symbol hashdict;
 ()
 m;
-hashmap [foo=>99,bar=>bar 4711L,baz=>[1,2,3,4,5]]
+hashdict [foo=>99,bar=>bar 4711L,baz=>[1,2,3,4,5]]
 m!bar;
 bar 4711L
 keys m;
@@ -25,9 +25,9 @@ member m foo,member m bar;
 1,1
 let m1 = copy m;
 delete m foo;
-hashmap [bar=>bar 4711L,baz=>[1,2,3,4,5]]
+hashdict [bar=>bar 4711L,baz=>[1,2,3,4,5]]
 m1;
-hashmap [foo=>99,bar=>bar 4711L,baz=>[1,2,3,4,5]]
+hashdict [foo=>99,bar=>bar 4711L,baz=>[1,2,3,4,5]]
 m!foo;
 <stdin>, line 76: unhandled exception 'out_of_bounds' while evaluating 'm!foo'
 keys m;
@@ -42,72 +42,72 @@ listmap (\(x=>y) -> x,y) m1;
 [(foo,99),(bar,bar 4711L),(baz,[1,2,3,4,5])]
 colcatmap (\(x=>y) -> if listp y then {(x,y)} else {}) m1;
 {(baz,[1,2,3,4,5])}
-m===m,m===m1,m===copy m,hashmap [97=>98,"a"=>"b"]===hashmap ["a"=>"b",97=>98];
+m===m,m===m1,m===copy m,hashdict [97=>98,"a"=>"b"]===hashdict ["a"=>"b",97=>98];
 1,0,1,0
-m==m,m==m1,m==copy m,hashmap [97=>98,"a"=>"b"]==hashmap ["a"=>"b",97=>98];
+m==m,m==m1,m==copy m,hashdict [97=>98,"a"=>"b"]==hashdict ["a"=>"b",97=>98];
 1,0,1,1
-x::hashmap<=y::hashmap = x===y||(all (member y) xks&&vals x===listmap (\k -> y!k) xks when xks = keys x end);
-x::hashmap>=y::hashmap = x===y||(all (member x) yks&&vals y===listmap (\k -> x!k) yks when yks = keys y end);
-x::hashmap<y::hashmap = x<=y&&#x<#y;
-x::hashmap>y::hashmap = x>=y&&#x>#y;
+x::hashdict<=y::hashdict = x===y||(all (member y) xks&&vals x===listmap (\k -> y!k) xks when xks = keys x end);
+x::hashdict>=y::hashdict = x===y||(all (member x) yks&&vals y===listmap (\k -> x!k) yks when yks = keys y end);
+x::hashdict<y::hashdict = x<=y&&#x<#y;
+x::hashdict>y::hashdict = x>=y&&#x>#y;
 m<=m1,m<m1,m>=m,m>m;
 1,1,1,0
-let m = hashmap [99,bar 4711L,1..5];
+let m = hashdict [99,bar 4711L,1..5];
 m;
-hashmap [[1,2,3,4,5],99,bar 4711L]
+hashdict [[1,2,3,4,5],99,bar 4711L]
 member m 99;
 1
 m!99;
 99
 delete m 99;
-hashmap [[1,2,3,4,5],bar 4711L]
+hashdict [[1,2,3,4,5],bar 4711L]
 member m 99;
 0
 m!99;
 <stdin>, line 127: unhandled exception 'out_of_bounds' while evaluating 'm!99'
 insert m 99;
-hashmap [99,[1,2,3,4,5],bar 4711L]
+hashdict [99,[1,2,3,4,5],bar 4711L]
 delete m (bar 4711L);
-hashmap [99,[1,2,3,4,5]]
+hashdict [99,[1,2,3,4,5]]
 insert m (bar=>bar 4711L);
-hashmap [99,[1,2,3,4,5],bar=>bar 4711L]
+hashdict [99,[1,2,3,4,5],bar=>bar 4711L]
 m!99;
 99
 m!bar;
 bar 4711L
-type hashxmap x::hashmap;
-type hashxmap x::hashmmap;
-x::hashxmap+y::hashxmap = foldl insert (copy x) (list y);
-x::hashxmap-y::hashxmap = foldl delete (copy x) (list y);
-x::hashxmap*y::hashxmap = x-(x-y);
-let m1 = hashmap [5,1,3,11,3];
-let m2 = hashmap (3..6);
+type hashxdict x::hashdict;
+type hashxdict x::hashmdict;
+x::hashxdict+y::hashxdict = foldl insert (copy x) (list y);
+x::hashxdict-y::hashxdict = foldl delete (copy x) (list y);
+x::hashxdict*y::hashxdict = x-(x-y);
+let m1 = hashdict [5,1,3,11,3];
+let m2 = hashdict (3..6);
 m1;
-hashmap [11,1,3,5]
+hashdict [11,1,3,5]
 m2;
-hashmap [3,4,5,6]
+hashdict [3,4,5,6]
 m1+m2;
-hashmap [11,1,3,4,5,6]
+hashdict [11,1,3,4,5,6]
 m1-m2;
-hashmap [11,1]
+hashdict [11,1]
 m1*m2;
-hashmap [3,5]
-hashmap [foo=>99,baz=>1..5]+hashmap [bar=>bar 4711L];
-hashmap [foo=>99,bar=>bar 4711L,baz=>[1,2,3,4,5]]
-let m1 = hashmmap [5,1,3,11,3];
-let m2 = hashmmap (3..6);
+hashdict [3,5]
+hashdict [foo=>99,baz=>1..5]+hashdict [bar=>bar 4711L];
+hashdict [foo=>99,bar=>bar 4711L,baz=>[1,2,3,4,5]]
+let m1 = hashmdict [5,1,3,11,3];
+let m2 = hashmdict (3..6);
 m1;
-hashmmap [11,1,3,3,5]
+hashmdict [11,1,3,3,5]
 m2;
-hashmmap [3,4,5,6]
+hashmdict [3,4,5,6]
 m1+m2;
-hashmmap [11,1,3,3,3,4,5,5,6]
+hashmdict [11,1,3,3,3,4,5,5,6]
 m1-m2;
-hashmmap [11,1,3]
+hashmdict [11,1,3]
 m1*m2;
-hashmmap [3,5]
-let m = hashmmap [foo=>99,baz=>1..5]+hashmmap [baz=>bar 4711L];
+hashmdict [3,5]
+let m = hashmdict [foo=>99,baz=>1..5]+hashmdict [baz=>bar 4711L];
 m;
-hashmmap [foo=>99,baz=>[1,2,3,4,5],baz=>bar 4711L]
+hashmdict [foo=>99,baz=>[1,2,3,4,5],baz=>bar 4711L]
 m!![foo,bar,baz];
 [[99],[],[[1,2,3,4,5],bar 4711L]]
