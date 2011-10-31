@@ -23,11 +23,10 @@ Version @version@, |today|
 
 | Albert Gräf <Dr.Graef@t-online.de>
 
-Copyright (c) 2011. This document is available under the |FDL|_.
-
-.. note:: This document is work in progress. Please bear with us while we're
-   slaving away on it (or, if you're an experienced programmer, you might give
-   a helping hand).
+Copyright (c) 2011. This document is available under the |FDL|_. This is work
+in progress, so please bear with us while we're slaving away on it. If you're
+an experienced programmer and would like to give a helping hand, please
+contact the first author listed above.
 
 Introduction
 ============
@@ -57,8 +56,8 @@ and convenient features from functional languages left and right, so that
 these features nowadays will be a lot more familiar to programmers than, say,
 20 years ago. In any case, we hope that after working though this tutorial you
 get the feeling that Pure lets you solve many typical programming tasks just
-as easily and elegantly as in other programming languages, and in many cases
-even much *more* easily and elegantly.
+as easily and elegantly as other programming languages, and in many cases even
+much *more* easily and elegantly.
 
 Second, Pure uses `term rewriting` as its model of computation. What this
 basically means is that all your function definitions are essentially
@@ -66,31 +65,28 @@ collections of equations which are used to evaluate expressions in a symbolic
 fashion. This is probably one of Pure's most unusual aspects, but it gives the
 language a lot of power and flexibility. It is also surprisingly easy to
 understand once you grasp that, on an abstract level, all computations
-performed by the interpreter are really nothing more but sequences of simple
-algebraic manipulations, only much faster than you could ever do them by hand.
+performed by the interpreter are really nothing but sequences of simple
+algebraic manipulations.
 
 Third, Pure is a `dynamically typed` language. This is a conscious design
 decision motivated by the choice of computational model, but it also keeps the
 language simple and supports a freewheeling, interactive development style.
 Still, Pure programs are compiled to native code, so that they are executed
-with reasonable efficiency.  Pure can't really compete with compiled
-statically typed languages in terms of speed and type safety. (If you want
-Haskell or ML, you know where to find them.) But it's a small yet powerful
-language which makes programming fun and entertaining (in the author's
-opinion, anyway).
+with reasonable efficiency. Pure can't really compete with compiled statically
+typed languages such as Haskell and ML in terms of speed and type safety, but
+it's a small yet powerful language which is supposed to be both easy to learn
+and fun to use.
 
 Fourth, Pure provides a seamless interface to `external functions` written in
 C, C++ and Fortran, and thus is open to the imperative world out there and its
 wealth of useful software libraries. To these ends, despite its name, Pure
 decidedly is not a “purely” functional language. Performing I/O and doing all
 kinds of other side-effects is very easy in Pure. In fact, the ease with which
-you can integrate functions from external libraries, together with the
-interactive interpreter-like environment also turns Pure into a useful
-`scripting language` for many different purposes.
+you can integrate functions from external libraries and the interactive
+interpreter-like environment also turn Pure into a useful `scripting language`
+for many different purposes.
 
-This hopefully suffices as a little appetizer, so let's jump right in!
-
-**Typographical Conventions**
+.. rubric:: Typographical Conventions
 
 Throughout the entire Pure documentation, Pure programs are set in typewriter
 font (adding a moderate amount of syntax highlighting for easier reading). For
@@ -112,12 +108,12 @@ above factorial function may look as follows::
 In this example, you are supposed to type ``map fact (1..10);`` at the command
 prompt of the interpreter, after which the result
 ``[1,2,6,24,120,720,5040,40320,362880,3628800]`` will be printed. In general,
-all text after the prompt ``>`` is meant to be typed exactly as written
+all text after the prompt "> " is meant to be typed exactly as written
 (including the terminating semicolon), while the other lines indicate results
 and other responses printed by the interpreter.
 
 In some cases we will show commands to be typed at your system's command
-shell, which are indicated as follows (here ``$`` is taken to denote the shell
+shell, which are indicated as follows (here "$ " is taken to denote the shell
 command prompt, which of course varies for different systems):
 
 .. code-block:: console
@@ -127,16 +123,16 @@ command prompt, which of course varies for different systems):
 Getting Started
 ===============
 
-Before diving into the language, let us start out with a very brief overview
-of the Pure environment, so that you get a basic understanding of how all the
-bits and pieces fit together. For the sake of brevity, we strictly keep to the
-basics which are unlikely to change much with future releases of the Pure
-environment. For more detailed and up-to-date information, please refer to the
-`Pure website`_, where you can find the required software and all available
-documentation, as well as a wiki with additional helpful information. (Since
-you're reading this tutorial, most likely you have already discovered this.)
-Another very useful resource is the `Pure mailing list`_ where you can discuss
-Pure with fellow Pure programmers and ask any questions that you might have.
+Let us start out with a very brief overview of the Pure environment, so that
+you get a basic understanding of how all the bits and pieces fit together. For
+the sake of brevity, we strictly keep to the basics which are unlikely to
+change much with future releases of the Pure environment. For more detailed
+and up-to-date information, please refer to the `Pure website`_, where you can
+find the required software and all available documentation, as well as a wiki
+with additional helpful information. (Since you're reading this tutorial, most
+likely you have already discovered this.)  Another very useful resource is the
+`Pure mailing list`_ where you can discuss Pure with fellow Pure programmers
+and ask any questions that you might have.
 
 .. _Pure website: http://pure-lang.googlecode.com/
 .. _Pure mailing list: http://groups.google.com/group/pure-lang
@@ -147,16 +143,8 @@ The Pure Interpreter
 The Pure language is implemented by an interactive program which lets you
 enter Pure programs and execute them. This program is called the Pure
 `interpreter`. If you have used any kind of dynamic programming language such
-as Lisp, Python or Ruby then you should already be familiar with this concept.
-
-.. note:: The term "interpreter" is a bit of a misnomer here, since the Pure
-   front-end actually never "interprets" any code, but rather compiles it to
-   native code which can be executed much more efficiently. The front-end does
-   this on the fly, whenever the code first needs to be executed; this is also
-   known as `JIT` ("just in time") compilation. All this happens
-   automatically, transparently to the user, so for all practical purposes the
-   system works as if it actually was an interpreter, and offers about the
-   same degree of dynamicity and interactivity.
+as Lisp, Python or Ruby then you should already be familiar with this
+concept.\ [#]_
 
 So the first thing that you'll have to do in order to use Pure is to install
 the interpreter. For most examples in this text a basic installation
@@ -177,45 +165,11 @@ straightforward once you have all the requisite tools and libraries installed.
 In particular, you'll need the `GNU C++ compiler`_ and `GNU make`_ to compile
 the program, as well as the `LLVM library`_ which provides the compiler
 back-end the Pure interpreter uses to translate your Pure programs to
-executable code. Having unpacked the source tarball containing the interpreter
-(usually ``pure-x.y.tar.gz``, where ``x.y`` denotes the version number),
-follow the instructions in :doc:`install` to build and install the interpreter
-from source. On Linux and other Unix-like systems, a command like the
-following should do the trick:
+executable code. Detailed installation instructions can be found in the
+:doc:`install` manual.
 
-.. code-block:: console
-
-   $ ./configure --enable-release && make && sudo make install
-
-(This and the next few commands should be run in the directory created when
-you unpacked the sources.)
-
-It's advisable to also run the following command, to ensure that the
-interpreter is working properly on your system:
-
-.. code-block:: console
-
-   $ make check
-
-On some systems, you'll also have to run a special command to make the Pure
-runtime library, which just got installed along with the interpreter, known to
-the system. E.g., on Linux you'd run the following command:
-
-.. code-block:: console
-
-   $ sudo ldconfig
-
-If all that went smoothly, you should now be able to invoke the interpreter
-from the command line just like any other program.
-
-.. note:: If things didn't go smoothly, you may first try to diagnose the
-   problem yourself. In particular, if the ``make check`` command quickly
-   exits with nothing but a bunch of ``FAIL`` messages, even though the
-   interpreter built fine, then most likely there's an installation problem
-   with the LLVM libraries (forgot to run ``ldconfig``?). Otherwise your best
-   bet is to try the `Pure mailing list`_ for help.
-
-So let's give it a go:
+Having completed the installation, you should be able to invoke the
+interpreter from the command line just like any other program:
 
 .. code-block:: console
 
@@ -251,14 +205,6 @@ just enter the semicolon on a line by itself to initiate the computation::
   > ;
   42
 
-.. _GNU readline: http://www.gnu.org/s/readline/
-
-The interpreter normally offers support for the `GNU readline`_ library, which
-lets you recall previously entered lines, edit them and resubmit the edited
-lines to the interpreter. This includes a history of past input lines which
-gets saved and reloaded whenever you exit and restart the interpreter. Please
-check the GNU readline documentation for more information.
-
 To exit from the interpreter when you're finished, simply type the ``quit``
 command (or the end-of-file character, ``Ctrl-D`` on Linux, Mac OSX and other
 Unix-like systems) at the beginning of the command line, immediately after the
@@ -272,25 +218,32 @@ prompt. This will return you to the shell:
 Often you may prefer to enter Pure code in a text editor and save it in a text
 file, called a `script`, which can then be loaded in the interpreter. This can
 be done by specifying the name of the script file when invoking the
-interpreter:
+interpreter:\ [#]_
 
 .. code-block:: console
 
    $ pure -i factorial.pure
 
-(Here the ``-i`` option makes sure that we enter the interactive command loop
-after loading the script. Otherwise the interpreter would just run the script
-in batch mode and then exit immediately.)
+Instead, you can also run the script directly from the interpreter's command
+prompt like this::
 
-We mention in passing that it is also possible to edit and run scripts from
-the Emacs text editor, using Emacs Pure mode, and that there is syntax
-highlighting support for a number of other text editors. More information
-about alternative ways to invoke the Pure interpreter can be found on the
-`Using Pure`_ wiki page, and the interactive features of the interpreter are
-discussed at length in the corresponding section of :doc:`pure`. Also, the
-:doc:`install` document explains in detail what you need to do to set up Pure
-mode for use with Emacs.
+  > run factorial.pure
 
+The interpreter normally offers support for the `GNU readline`_ library, which
+lets you recall previously entered lines, edit them and resubmit the edited
+lines to the interpreter. This includes a history of past input lines which
+gets saved and reloaded whenever you exit and restart the interpreter. Another
+convenient readline feature is the completion of Pure keywords and functions.
+
+It is also possible to edit and run scripts from the Emacs text editor, using
+Emacs Pure mode, and there is syntax highlighting support for a number of
+other text editors. More information about alternative ways to invoke the Pure
+interpreter can be found on the `Using Pure`_ wiki page, and the interactive
+features of the interpreter are discussed at length in the corresponding
+section of :doc:`pure`. Also, the :doc:`install` document explains in detail
+what you need to do to set up Pure mode for use with Emacs.
+
+.. _GNU readline: http://www.gnu.org/s/readline/
 .. _Using Pure: http://code.google.com/p/pure-lang/wiki/UsingPure
 
 The Standard Library
@@ -357,11 +310,12 @@ customary to start out with a little program which just prints the text
   using system;
   puts "Hello, world";
 
-(This should be familiar to C programmers. In fact, that's really the ``puts``
-function from the C library being used there.)
-
-Put the two lines above into a file named, say, ``hello.pure``. You can then
-run this program from the command line as follows:
+This should be very familiar to C programmers; it is indeed the :func:`puts`
+function from the C library which is being called here. Note that no special
+"main" function is needed; the call to :func:`puts` will be evaluated just
+like any other toplevel expression while the program is being executed. You
+can put the two lines above into a file called, say, ``hello.pure`` which can
+then be invoked from the command line as follows:
 
 .. code-block:: console
 
@@ -371,10 +325,19 @@ run this program from the command line as follows:
 That's it. Congrats, you have just successfully executed your first Pure
 program!
 
-We remark that Pure is often used interactively, so you might just as well
-run the program directly inside the interpreter, like this::
-
-  > run hello.pure
-  Hello, world
-
 WIP, to be continued...
+
+.. rubric:: Footnotes
+
+.. [#] The term "interpreter" is a bit of a misnomer here, since the Pure
+   front-end actually never "interprets" any code, but rather compiles it to
+   native code which can be executed much more efficiently. The front-end does
+   this on the fly, whenever the code first needs to be executed; this is also
+   known as `JIT` ("just in time") compilation. All this happens
+   automatically, transparently to the user, so for all practical purposes the
+   system works as if it actually was an interpreter, and offers about the
+   same degree of dynamicity and interactivity.
+
+.. [#] Here the ``-i`` option makes sure that we enter the interactive command
+   loop after loading the script. Otherwise the interpreter would just run the
+   script in batch mode and then exit immediately.
