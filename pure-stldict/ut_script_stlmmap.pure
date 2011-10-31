@@ -1,4 +1,4 @@
-//-- --comment c_off --resume --verbose on
+//-- --comment c_off --resume --verbose off
 
 /* ut_script_stlmmap.pure -- examples for basic ops on stlmmap.
 
@@ -372,38 +372,50 @@ smm1 == (smm2,"a","a"); // oops -- tuple rule trumps;
 
 // ** bounds, size *******************************************************
 
-let smm1 = stlmmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4]; members smm1;
-//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4]
+let smm1 = stlmmap ["a"=>1,"b"=>2,"b"=>3,"b"=>1,"c"=>3,"d"=>4]; members smm1;
+//- ["a"=>1,"b"=>2,"b"=>3,"b"=>1,"c"=>3,"d"=>4]
 
-let smm2, lb, up = stl::bounds smm1; (lb, up);
+let smm2, lb, ub = stl::bounds smm1; (lb, ub);
 //- stl_begin_iterator,stl_end_iterator
 
-let smm2, lb, up = stl::bounds (smm1,"a"); (lb, up);
+let smm2, lb, ub = stl::bounds (smm1,"a"); (lb, ub);
 //- stl_begin_iterator,"b"
 
-let smm2, lb, up = stl::bounds (smm1,"a1"); (lb, up);
+let smm2, lb, ub = stl::bounds (smm1,"a1"); (lb, ub);
 //- "b","b"
 
-let smm2, lb, up = stl::bounds (smm1,"a","x"); (lb, up);
+let smm2, lb, ub = stl::bounds (smm1,"b"); (lb, ub);
+//- "b","c"
+
+members (smm2, lb, ub);
+//- ["b"=>2,"b"=>3,"b"=>1]
+
+let smm2, lb, ub = stl::bounds (smm1,"a","x"); (lb, ub);
 //- stl_begin_iterator,stl_end_iterator
 
-let smm2, lb, up = stl::bounds (smm1,"0","x"); (lb, up);
+let smm2, lb, ub = stl::bounds (smm1,"0","x"); (lb, ub);
 //- stl_begin_iterator,stl_end_iterator
 
-let smm2, lb, up = stl::bounds (smm1,"x","a"); (lb, up);
+let smm2, lb, ub = stl::bounds (smm1,"x","a"); (lb, ub);
 //- stl_end_iterator,"b"
 
-let smm2, lb, up = stl::bounds (smm1,stl::stlbeg,"a"); (lb, up);
+let smm2, lb, ub = stl::bounds (smm1,"a","b"); (lb, ub);
+//- stl_begin_iterator,"c"
+
+members (smm2, lb, ub);
+//- ["a"=>1,"b"=>2,"b"=>3,"b"=>1]
+
+let smm2, lb, ub = stl::bounds (smm1,stl::stlbeg,"a"); (lb, ub);
 //- stl_begin_iterator,"b"
 
-let smm2, lb, up = stl::bounds (smm1,stl::stlend,"x"); (lb, up);
+let smm2, lb, ub = stl::bounds (smm1,stl::stlend,"x"); (lb, ub);
 //- stl_end_iterator,stl_end_iterator
 
 stl::size smm1;
-//- 4
+//- 6
 
 stl::size (smm1,"b","d");
-//- 2
+//- 4
 
 stl::size (smm1,"c",stl::stlend);
 //- 2

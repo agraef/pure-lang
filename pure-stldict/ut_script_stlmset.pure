@@ -1,4 +1,4 @@
-//-- --comment c_off --resume --verbose on
+//-- --comment c_off --resume --verbose off
 
 /* ut_script_stlmset.pure -- examples for basic ops on stlmset.
 
@@ -345,38 +345,50 @@ sms1 == (sms2,"a","a"); // oops -- tuple rule trumps;
 
 // ** bounds, size *******************************************************
 
-let sms1 = stlmset ["a","b","c","d"]; members sms1;
-//- ["a","b","c","d"]
+let sms1 = stlmset ["a","b","b","b","c","d"]; members sms1;
+//- ["a","b","b","b","c","d"]
 
-let sms2, lb, up = stl::bounds sms1; (lb, up);
+let sms2, lb, ub = stl::bounds sms1; (lb, ub);
 //- stl_begin_iterator,stl_end_iterator
 
-let sms2, lb, up = stl::bounds (sms1,"a"); (lb, up);
+let sms2, lb, ub = stl::bounds (sms1,"a"); (lb, ub);
 //- stl_begin_iterator,"b"
 
-let sms2, lb, up = stl::bounds (sms1,"a1"); (lb, up);
+let sms2, lb, ub = stl::bounds (sms1,"a1"); (lb, ub);
 //- "b","b"
 
-let sms2, lb, up = stl::bounds (sms1,"a","x"); (lb, up);
+let sms2, lb, ub = stl::bounds (sms1,"b"); (lb, ub);
+//- "b","c"
+
+members (sms2, lb, ub);
+//- ["b","b","b"]
+
+let sms2, lb, ub = stl::bounds (sms1,"a","x"); (lb, ub);
 //- stl_begin_iterator,stl_end_iterator
 
-let sms2, lb, up = stl::bounds (sms1,"0","x"); (lb, up);
+let sms2, lb, ub = stl::bounds (sms1,"0","x"); (lb, ub);
 //- stl_begin_iterator,stl_end_iterator
 
-let sms2, lb, up = stl::bounds (sms1,"x","a"); (lb, up);
+let sms2, lb, ub = stl::bounds (sms1,"x","a"); (lb, ub);
 //- stl_end_iterator,"b"
 
-let sms2, lb, up = stl::bounds (sms1,stl::stlbeg,"a"); (lb, up);
+let sms2, lb, ub = stl::bounds (sms1,"a","b"); (lb, ub);
+//- stl_begin_iterator,"c"
+
+members (sms2, lb, ub);
+//- ["a","b","b","b"]
+
+let sms2, lb, ub = stl::bounds (sms1,stl::stlbeg,"a"); (lb, ub);
 //- stl_begin_iterator,"b"
 
-let sms2, lb, up = stl::bounds (sms1,stl::stlend,"x"); (lb, up);
+let sms2, lb, ub = stl::bounds (sms1,stl::stlend,"x"); (lb, ub);
 //- stl_end_iterator,stl_end_iterator
 
 stl::size sms1;
-//- 4
+//- 6
 
 stl::size (sms1,"b","d");
-//- 2
+//- 4
 
 stl::size (sms1,"c",stl::stlend);
 //- 2

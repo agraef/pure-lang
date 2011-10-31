@@ -1,4 +1,4 @@
-//-- --comment c_off --resume --verbose on
+//-- --comment c_off --resume --verbose off
 
 /* ut_script_stlset.pure -- examples for basic ops on stlset.
 
@@ -333,7 +333,7 @@ ss1 == (ss2,"a","a"); // oops -- tuple rule trumps;
 
 // ** bounds, size *******************************************************
 
-let ss1 = stlset ["a","b","c","d"]; members ss1;
+let ss1 = stlset ["a","b","b","b","c","d"]; members ss1;
 //- ["a","b","c","d"]
 
 let ss2, lb, up = stl::bounds ss1; (lb, up);
@@ -345,6 +345,12 @@ let ss2, lb, up = stl::bounds (ss1,"a"); (lb, up);
 let ss2, lb, up = stl::bounds (ss1,"a1"); (lb, up);
 //- "b","b"
 
+let ss2, lb, ub = stl::bounds (ss1,"b"); (lb, ub);
+//- "b","c"
+
+members (ss2, lb, ub);
+//- ["b"]
+
 let ss2, lb, up = stl::bounds (ss1,"a","x"); (lb, up);
 //- stl_begin_iterator,stl_end_iterator
 
@@ -353,6 +359,12 @@ let ss2, lb, up = stl::bounds (ss1,"0","x"); (lb, up);
 
 let ss2, lb, up = stl::bounds (ss1,"x","a"); (lb, up);
 //- stl_end_iterator,"b"
+
+let ss2, lb, ub = stl::bounds (ss1,"a","b"); (lb, ub);
+//- stl_begin_iterator,"c"
+
+members (ss2, lb, ub);
+//- ["a","b"]
 
 let ss2, lb, up = stl::bounds (ss1,stl::stlbeg,"a"); (lb, up);
 //- stl_begin_iterator,"b"

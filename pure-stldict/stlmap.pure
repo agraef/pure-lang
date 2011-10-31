@@ -88,8 +88,8 @@ const sm_difference = 2;
 const sm_intersection = 3;
 const sm_symmetric_difference = 4;
 
-wrap_sd d = STLMAP (sentry sm_delete d);
-wrap_sv d = STLVEC (sentry sm_delete d);
+wrap_sd m = STLMAP (sentry sm_delete m);
+wrap_sv m = STLVEC (sentry sm_delete m);
 
 kv_equal k1 v1 k2 v2 = k1 == k2 && v1 == v2;
 
@@ -103,7 +103,7 @@ both_maps it1 it2 = ~sm_is_set it1 && ~sm_is_set it2;
 
 vector it::smit = sm_make_vector it;
 
-(::!) (STLMAP d) key = sm_get d key;
+(::!) (STLMAP m) key = sm_get m key;
 
 (::#) sd::stlmap = sm_size sd;
 
@@ -113,11 +113,11 @@ null it::smit = sm_size it == 0;
 
 empty it::smit = sm_size it == 0;
 
-bounds (STLMAP d) = (STLMAP d), stlbeg, stlend;
+bounds (STLMAP m) = (STLMAP m), stlbeg, stlend;
 
-bounds it@(STLMAP d, _) = (STLMAP d), sm_bounds it;
+bounds it@(STLMAP m, _) = (STLMAP m), sm_bounds it;
 
-::member (STLMAP d) key = sm_member d key;
+::member (STLMAP m) key = sm_member m key;
 
 ::members it::smit = sm_listmap 0 it sm_both; 
 
@@ -131,21 +131,21 @@ bounds it@(STLMAP d, _) = (STLMAP d), sm_bounds it;
 
 ::rmlast it::smit = sm_rmlast it;
 
-::insert sd@(STLMAP d) rk = sm_insert_elm d rk $$ sd;
+::insert sd@(STLMAP m) rk = sm_insert_elm m rk $$ sd;
 
-::insert_elms sd@(STLMAP d) xs::list = sm_insert_elms_xs d xs $$ sd;
+::insert_elms sd@(STLMAP m) xs::list = sm_insert_elms_xs m xs $$ sd;
 
-::insert_elms sd@(STLMAP d) xs::matrix = sm_insert_elms_xs d xs $$ sd;
+::insert_elms sd@(STLMAP m) xs::matrix = sm_insert_elms_xs m xs $$ sd;
 
-::insert_elms sd@(STLMAP d) it::smit = sm_insert_elms_stlmap d it $$ sd;
+::insert_elms sd@(STLMAP m) it::smit = sm_insert_elms_stlmap m it $$ sd;
 
-::insert_elms sd@(STLMAP d) it::svit = sm_insert_elms_stlvec d it $$ sd;
+::insert_elms sd@(STLMAP m) it::svit = sm_insert_elms_stlvec m it $$ sd;
 
-::erase it@(STLMAP d, f, e) = sm_erase it $$ STLMAP d;
+::erase it@(STLMAP m, f, e) = sm_erase it $$ STLMAP m;
 
-::erase sd@(STLMAP d) = sm_clear d $$ sd;
+::erase sd@(STLMAP m) = sm_clear m $$ sd;
 
-::delete sd@(STLMAP d) k = sm_remove d k $$ sd;
+::delete sd@(STLMAP m) k = sm_remove m k $$ sd;
 
 allpairs fun it1::smit it2::smit = sm_allpairs fun it1 it2 
   if both_sets it1 it2 && functionp fun && nargs fun == 2 ;
@@ -226,19 +226,19 @@ end when
   sd = emptystlmap;  
 end;
 
-set_default sd@(STLMAP d) val = sm_set_default d val if ~sm_is_set sd;
+set_default sd@(STLMAP m) val = sm_set_default m val if ~sm_is_set sd;
 
 // bool, default
-get_default sd@(STLMAP d) = sm_get_default d if ~sm_is_set sd;
+get_default sd@(STLMAP m) = sm_get_default m if ~sm_is_set sd;
 
-::update sd@(STLMAP d) key x = sm_update d key x $$ sd if ~sm_is_set sd;
+::update sd@(STLMAP m) key x = sm_update m key x $$ sd if ~sm_is_set sd;
 
-::update_with f sd@(STLMAP d) key x = 
-  sm_update_with d key (f x) $$ sd if ~sm_is_set sd;
+::update_with f sd@(STLMAP m) key x = 
+  sm_update_with m key (f x) $$ sd if ~sm_is_set sd;
 
-::next_key sd@(STLMAP d) key = sm_next d key; // if ~sm_is_set s;
+::next_key sd@(STLMAP m) key = sm_next m key; // if ~sm_is_set s;
 
-::prev_key sd@(STLMAP d) key = sm_prev d key; // if ~sm_is_set sd;
+::prev_key sd@(STLMAP m) key = sm_prev m key; // if ~sm_is_set sd;
 
 ::keys it::smit = sm_listmap 0 it sm_keys if ~sm_is_set it;
 
@@ -273,9 +273,9 @@ end;
   insert_elms sd it;
 end;
 
-::next_elm (STLMAP d) elm = sm_next d elm;
+::next_elm (STLMAP m) elm = sm_next m elm;
 
-::prev_elm (STLMAP d) elm = sm_prev d elm;
+::prev_elm (STLMAP m) elm = sm_prev m elm;
 
 (::+) it1::smit it2::smit = 
   wrap_sd $ sm_setop sm_union it1 it2 if both_sets it1 it2;
