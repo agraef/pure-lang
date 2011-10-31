@@ -30,7 +30,7 @@ all: $(objects)
 	g++ $(shared) -o $@ $(MOD_CXXFLAGS) $< $(MOD_LDFLAGS) $(LIBS) -I$(stlbase)
 
 clean:
-	rm -f *.o *.$(DLL)
+	rm -f *.o *$(DLL)
 
 install: $(puresource) $(objects)
 	test -d $(installdir) || mkdir -p $(installdir)
