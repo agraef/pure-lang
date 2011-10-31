@@ -1,4 +1,4 @@
-/* stldict.cpp -- C++ support for stldict.pure
+/* stlmap.cpp -- C++ support for stlmap.pure
 
 --- DRAFT - FOR DISCUSSON PURPOSES ONLY ---
     
@@ -20,7 +20,7 @@ included with the pure-stldict distribution package for details.
 #include <iostream>
 #include <algorithm>
 #include <numeric>
-#include "stldict.hpp"
+#include "stlmap.hpp"
 
 using namespace std;
 
@@ -28,21 +28,21 @@ using namespace std;
 
 /*** Helpers for debugging only ************************************/
 
-static bool sd_trace_enabled = false;
+static bool sm_trace_enabled = false;
 
-void stl_set_sd_trace(bool enable) 
+void stl_set_sm_trace(bool enable) 
 {
-  sd_trace_enabled = enable;
+  sm_trace_enabled = enable;
 }
 
-bool stl_sd_trace_enabled()
+bool stl_sm_trace_enabled()
 {
-  return sd_trace_enabled;
+  return sm_trace_enabled;
 }
 
-/*** Helpers for stldict.cpp only ************************************/
+/*** Helpers for stlmap.cpp only ************************************/
 
-static void set_kv(sdi i, px** k, px** v)
+static void set_kv(pmi i, px** k, px** v)
 {
   const pxh h_key = i->first;
   pxh h_val = i->second;
@@ -63,27 +63,27 @@ static int is_less(px* cmp, px* x, px* y)
   return lt;
 }
 
-static pxh_pair sd_rocket_to_pair(pxh rp)
+static pxh_pair sm_rocket_to_pair(pxh rp)
 {
   px *k, *v;
   bool ok = rocket_to_pair(rp.pxp(), &k, &v);
   return pxh_pair(k,v);
 }
 
-static px* sd_pair_to_rocket(const pxh_pair& kv)
+static px* sm_pair_to_rocket(const pxh_pair& kv)
 {
   return pair_to_rocket(kv.first.pxp(), kv.second.pxp());
 }
 
-static px* sd_pair_to_key(const pxh_pair& kv)
+static px* sm_pair_to_key(const pxh_pair& kv)
 {
   return kv.first.pxp();
 }
 
-static int sd_get_size(sd* dict, sdi b, sdi e)
+static int sm_get_size(sd* map, pmi b, pmi e)
 {
  size_t sz = 0;
- sdmap& mp = dict->mp;
+ pxhmap& mp = map->mp;
  if (b == mp.begin() && e == mp.end())
     sz = mp.size();
  else if (b == e)
@@ -93,35 +93,35 @@ static int sd_get_size(sd* dict, sdi b, sdi e)
  return sz;
 }
 
-static void update_aux(sd* dict, px* k, px* v)
+static void update_aux(sd* map, px* k, px* v)
 {
-  sdmap& mp = dict->mp;
-  sdi i;
-  if ( dict->get_cached_sdi(k, i) ) {
+  pxhmap& mp = map->mp;
+  pmi i;
+  if ( map->get_cached_pmi(k, i) ) {
     i->second = v;
   }
   else {
-    pair<sdi,bool> i_ok = mp.insert(pxh_pair(k,v));
+    pair<pmi,bool> i_ok = mp.insert(pxh_pair(k,v));
     if (!i_ok.second)
       i_ok.first->second = v;
-    dict->cache_sdi(i_ok.first);
+    map->cache_pmi(i_ok.first);
   }
 }
 
-static bool insert_aux(sd* dict, px* kv)
+static bool insert_aux(sd* map, px* kv)
 {
   px *k, *v;
   bool ok = true;
-  if (dict->keys_only) {
+  if (map->keys_only) {
     k = kv;
     v = NULL;
   } 
   else {
     if ( rocket_to_pair(kv, &k, &v) )
       ;
-    else if (dict->has_dflt) {
+    else if (map->has_dflt) {
       k = kv;
-      v = dict->dflt.pxp();
+      v = map->dflt.pxp();
     }
     else {
       k = kv;
@@ -132,31 +132,31 @@ static bool insert_aux(sd* dict, px* kv)
   if (ok) {
 #ifdef STL_INSERT_SEMANTICS
     // Do NOT override existing values
-    pair<sdi,bool> i_ok = dict->mp.insert(pxh_pair(k,v));
-    dict->cache_sdi(i_ok.first);
+    pair<pmi,bool> i_ok = map->mp.insert(pxh_pair(k,v));
+    map->cache_pmi(i_ok.first);
 #else
     // Always use new values
-    update_aux(dict, k, v); 
+    update_aux(map, k, v); 
 #endif
   }
   return ok;
 }
 
-/*** stldict members  ***********************************************/
+/*** stlmap members  ***********************************************/
 
-stldict::stldict(px* cmp, bool keyonly) : 
+stlmap::stlmap(px* cmp, bool keyonly) : 
   mp(pxh_pred2(cmp)), px_comp(cmp), dflt(NULL),
-  has_dflt(0), has_recent_sdi(0), keys_only(keyonly), 
-  recent_sdi(mp.end()) {}
+  has_dflt(0), has_recent_pmi(0), keys_only(keyonly), 
+  recent_pmi(mp.end()) {}
 
-stldict::stldict(px* cmp, bool ko, px* d) :
+stlmap::stlmap(px* cmp, bool ko, px* d) :
     mp(pxh_pred2(cmp)), px_comp(cmp), dflt(d), 
-    has_dflt(1), has_recent_sdi(0), keys_only(ko),
-    recent_sdi(mp.end()) {}
+    has_dflt(1), has_recent_pmi(0), keys_only(ko),
+    recent_pmi(mp.end()) {}
 
-sdi stldict::find(px* key)
+pmi stlmap::find(px* key)
 {
-  sdi iter;
+  pmi iter;
   if (key == sdbeg())
     iter = mp.begin();
   else if (key == sdend())
@@ -166,45 +166,45 @@ sdi stldict::find(px* key)
   return iter;  
 }
 
-bool stldict::get_cached_sdi(px* k, sdi& i)
+bool stlmap::get_cached_pmi(px* k, pmi& i)
 {
   bool found = k != sdbeg() && k != sdend() &&
-    has_recent_sdi && same(recent_sdi->first.pxp(), k);
-  if (found) i = recent_sdi;
+    has_recent_pmi && same(recent_pmi->first.pxp(), k);
+  if (found) i = recent_pmi;
 #ifdef STL_DEBUG
-  if (found && stl_sd_trace_enabled())
-    cerr <<"get_cached_sdi, found "<< k <<" with refc:"<< k->refc << endl;
+  if (found && stl_sm_trace_enabled())
+    cerr <<"get_cached_pmi, found "<< k <<" with refc:"<< k->refc << endl;
 #endif
   return found;
 }
 
-void stldict::cache_sdi(sdi& i)
+void stlmap::cache_pmi(pmi& i)
 {
   if ( i != mp.end() ) {
-    has_recent_sdi = true;
-    recent_sdi = i;
+    has_recent_pmi = true;
+    recent_pmi = i;
   }
 }
 
-void stldict::clear()
+void stlmap::clear()
 {
-  has_recent_sdi = 0;
+  has_recent_pmi = 0;
   mp.clear();
 }
 
-void stldict::erase(sdi pos)
+void stlmap::erase(pmi pos)
 {
-  if (has_recent_sdi && recent_sdi == pos)
-    has_recent_sdi = 0;
+  if (has_recent_pmi && recent_pmi == pos)
+    has_recent_pmi = 0;
   mp.erase(pos);
 }
 
-int stldict::erase(px* k)
+int stlmap::erase(px* k)
 {
   int ret = 1;
   if ( !mp.empty() ) {
-    sdi i;
-    if ( get_cached_sdi(k, i) )
+    pmi i;
+    if ( get_cached_pmi(k, i) )
       erase(i);
     else {
       if (k == sdbeg())
@@ -219,19 +219,19 @@ int stldict::erase(px* k)
   return ret;
 }
 
-void stldict::erase(sdi first, sdi last)
+void stlmap::erase(pmi first, pmi last)
 {
-  has_recent_sdi = false;
+  has_recent_pmi = false;
   mp.erase(first, last);
 }
 
-/*** sd_iters functions *********************************************/
+/*** sm_iters functions *********************************************/
 
 enum {gi_find, gi_lower, gi_upper};
 
-static sdi get_iter(sdmap& mp , px* key, int mode)
+static pmi get_iter(pxhmap& mp , px* key, int mode)
 {
-  sdi iter;
+  pmi iter;
   if (key == sdbeg())
     iter = mp.begin();
   else if (key == sdend())
@@ -247,14 +247,14 @@ static sdi get_iter(sdmap& mp , px* key, int mode)
   return iter;  
 }
 
-static px* iter_to_key(const sdmap& mp, const sdi& it)
+static px* iter_to_key(const pxhmap& mp, const pmi& it)
 {
   if (it == mp.end()) return sdend();
   if (it == mp.begin()) return sdbeg();
   return it->first.pxp();
 }
 
-static sd* get_sd_from_app(px* app)
+static sd* get_sm_from_app(px* app)
 {
   void* ret = 0;
   px* fun;
@@ -269,15 +269,15 @@ static sd* get_sd_from_app(px* app)
 
 // sets two iterators [beg, end)
 // if first >= last then use  mp.end(), mp.end()
-sd_iters::sd_iters(px* sdi_tuple)
+sm_iters::sm_iters(px* pmi_tuple)
 {
   size_t tpl_sz;
   px** elems;
   
   is_valid = true;
-  pure_is_tuplev(sdi_tuple, &tpl_sz, &elems);
-  dict = get_sd_from_app(elems[0]);
-  sdmap &mp = dict->mp;
+  pure_is_tuplev(pmi_tuple, &tpl_sz, &elems);
+  map = get_sm_from_app(elems[0]);
+  pxhmap &mp = map->mp;
   int num_iters = tpl_sz-1;
   if (num_iters != 0 && num_iters != 2) {
       is_valid = false;
@@ -291,7 +291,7 @@ sd_iters::sd_iters(px* sdi_tuple)
   else {
     px* b = elems[1];
     px* e = elems[2];
-    px* comp = dict->px_comp.pxp();    
+    px* comp = map->px_comp.pxp();    
     free(elems);
     begin_it = get_iter(mp, b, gi_lower);
     end_it = get_iter(mp,e,gi_upper);
@@ -299,7 +299,7 @@ sd_iters::sd_iters(px* sdi_tuple)
       end_it = begin_it;
       return;
     }
-    sdi prec_it = end_it;
+    pmi prec_it = end_it;
     if ( prec_it != mp.begin() && e != sdend() ) {
       prec_it--;
       px* pkey = prec_it->first.pxp();
@@ -316,79 +316,79 @@ sd_iters::sd_iters(px* sdi_tuple)
 
 /*** Functions for map<pxh,pxh,pxh_pred2> *******************************/
 
-sd* sd_make_empty(px* comp, int keys_only)
+sd* sm_make_empty(px* comp, int keys_only)
 {
   sd* ret  = new sd(comp, keys_only); 
 #ifdef STL_DEBUG
-  if (stl_sd_trace_enabled())
+  if (stl_sm_trace_enabled())
     cerr << "TRACE SD:    new sd*: " << ret << endl;
 #endif
   return ret;
 }
 
-void sd_delete(sd* p){
+void sm_delete(sd* p){
 #ifdef STL_DEBUG
-  if (stl_sd_trace_enabled())
+  if (stl_sm_trace_enabled())
     cerr << "TRACE SD: delete sd*: " << p << endl;
 #endif
   delete(p);
 }
 
-bool sd_is_set(px* tpl)
+bool sm_is_set(px* tpl)
 {
-  sd_iters itrs(tpl);
+  sm_iters itrs(tpl);
   if (!itrs.is_valid) bad_argument();
-  return itrs.dict->keys_only;
+  return itrs.map->keys_only;
 }
 
-px* sd_make_vector(px* tpl) 
+px* sm_make_vector(px* tpl) 
 {
-  sd_iters itrs(tpl);
+  sm_iters itrs(tpl);
   if (!itrs.is_valid) bad_argument();
-  sdi b = itrs.beg();
-  sdi e = itrs.end();
-  int sz = sd_get_size(itrs.dict, b, e);
+  pmi b = itrs.beg();
+  pmi e = itrs.end();
+  int sz = sm_get_size(itrs.map, b, e);
   if (!sz)
     return pure_matrix_columnsv(0,NULL);
   px** bfr = (px**)malloc(sizeof(px*)*sz);
-  if (itrs.dict->keys_only) 
-    transform(b, e, bfr, sd_pair_to_key);
+  if (itrs.map->keys_only) 
+    transform(b, e, bfr, sm_pair_to_key);
   else
-    transform(b, e, bfr, sd_pair_to_rocket);
+    transform(b, e, bfr, sm_pair_to_rocket);
   px* ret = pure_matrix_columnsv(sz, bfr);
   free(bfr);
   return ret;
 }
 
-sv* sd_make_stlvec(px* tpl) 
+sv* sm_make_stlvec(px* tpl) 
 {
-  sd_iters itrs(tpl);
+  sm_iters itrs(tpl);
   if (!itrs.is_valid) bad_argument();
-  sdi b = itrs.beg();
-  sdi e = itrs.end();
+  pmi b = itrs.beg();
+  pmi e = itrs.end();
   sv* ret = new sv;
-  if (itrs.dict->keys_only) 
-    transform(b, e, back_inserter(*ret), sd_pair_to_key);
+  if (itrs.map->keys_only) 
+    transform(b, e, back_inserter(*ret), sm_pair_to_key);
   else
-    transform(b, e, back_inserter(*ret), sd_pair_to_rocket);
+    transform(b, e, back_inserter(*ret), sm_pair_to_rocket);
   return ret;
 }
 
-px* sd_set_default(sd* dict, px* val)
+px* sm_set_default(sd* map, px* val)
 {
-  if (dict->keys_only) return 0; // fail
-  dict->dflt = val;
-  dict->has_dflt = 1;
+  if (map->keys_only) return 0; // fail
+  map->dflt = val;
+  map->has_dflt = 1;
   return val;
 }
 
-px* sd_get_default(sd* dict)
+px* sm_get_default(sd* map)
 {
-  if (dict->keys_only) return 0; // fail
+  if (map->keys_only) return 0; // fail
   int ok = 1;
   px* val;
-  if (dict->has_dflt) 
-    val = dict->dflt.pxp();  
+  if (map->has_dflt) 
+    val = map->dflt.pxp();  
   else {
     val = NULL;
     ok = 0;
@@ -396,21 +396,21 @@ px* sd_get_default(sd* dict)
   return pure_tuplel(2, pure_int(ok), val);
 }
 
-int sd_size(px* tpl)
+int sm_size(px* tpl)
 {
-  sd_iters itrs(tpl);
+  sm_iters itrs(tpl);
   if (!itrs.is_valid) bad_argument();
-  return sd_get_size(itrs.dict, itrs.beg(), itrs.end());
+  return sm_get_size(itrs.map, itrs.beg(), itrs.end());
 }
 
-px* sd_bounds(px* tpl)
+px* sm_bounds(px* tpl)
 {
   px** elems;
   px *ub, *lb;
   size_t tpl_sz;
   pure_is_tuplev(tpl, &tpl_sz, &elems);
-  sd* dict = get_sd_from_app(elems[0]);
-  sdmap &mp = dict->mp;
+  sd* map = get_sm_from_app(elems[0]);
+  pxhmap &mp = map->mp;
   int num_iters = tpl_sz-1;
   switch (tpl_sz) {
   case 1:
@@ -430,19 +430,19 @@ px* sd_bounds(px* tpl)
   return pure_tuplel(2,lb,ub);
 }
 
-int sd_member(sd* dict, px* key)
+int sm_member(sd* map, px* key)
 {
   int ret = 0;
-  sdmap& mp = dict->mp;
-  sdi i;
+  pxhmap& mp = map->mp;
+  pmi i;
   if (!mp.empty()) {
-    if (dict->get_cached_sdi(key, i) ) {
+    if (map->get_cached_pmi(key, i) ) {
       ret = 1;
     }
     else {
-      i = dict->find(key);
+      i = map->find(key);
       if (i != mp.end()) {
-        dict->cache_sdi(i);
+        map->cache_pmi(i);
         ret = 1;
       }
     }
@@ -450,53 +450,53 @@ int sd_member(sd* dict, px* key)
   return ret;
 }
 
-px* sd_prev(sd* dict, px* key)
+px* sm_prev(sd* map, px* key)
 {
-  sdmap& mp = dict->mp;
+  pxhmap& mp = map->mp;
   if (mp.empty()) index_error();
-  sdi i = mp.end();
-  if ( !dict->get_cached_sdi(key,i) )
-    i = dict->find(key);
+  pmi i = mp.end();
+  if ( !map->get_cached_pmi(key,i) )
+    i = map->find(key);
   if ( i == mp.begin() || i==mp.end() && key != sdend())
     index_error();
   else
     i--;
-  dict->cache_sdi(i);
+  map->cache_pmi(i);
   return iter_to_key(mp, i);
 }
 
-px* sd_next(sd* dict, px* key)
+px* sm_next(sd* map, px* key)
 {
-  sdmap& mp = dict->mp;
-  sdi i = mp.end();
+  pxhmap& mp = map->mp;
+  pmi i = mp.end();
   if (mp.empty()) index_error();
-  if ( !dict->get_cached_sdi(key,i) )
-    i = dict->find(key);
+  if ( !map->get_cached_pmi(key,i) )
+    i = map->find(key);
   if ( i == mp.end() )
     index_error();
   else
     i++;
-  dict->cache_sdi(i);
+  map->cache_pmi(i);
   return iter_to_key(mp, i);
 }
 
-px* sd_get(sd* dict, px* key)
+px* sm_get(sd* map, px* key)
 {
-  sdmap &mp = dict->mp; 
+  pxhmap &mp = map->mp; 
   px* ret = 0;
-  sdi i;
-  if ( !dict->get_cached_sdi(key, i) ) 
+  pmi i;
+  if ( !map->get_cached_pmi(key, i) ) 
     i = get_iter(mp, key, gi_find);  
   if (i != mp.end()) {
-    dict->cache_sdi(i);
-    ret = dict->keys_only ? pure_int(1) : i->second.pxp();
+    map->cache_pmi(i);
+    ret = map->keys_only ? pure_int(1) : i->second.pxp();
   }
-  else if (dict->keys_only) {
+  else if (map->keys_only) {
     ret =  pure_int(0);
   }
-  else if (dict->has_dflt) {
-    px* dv = dict->dflt.pxp();
-    update_aux(dict, key, dv);
+  else if (map->has_dflt) {
+    px* dv = map->dflt.pxp();
+    update_aux(map, key, dv);
     ret = dv;
   } 
   else {
@@ -505,47 +505,47 @@ px* sd_get(sd* dict, px* key)
   return ret;
 }
 
-bool sd_includes(px* tpl1, px* tpl2)
+bool sm_includes(px* tpl1, px* tpl2)
 {
-  sd_iters itrs1(tpl1);
-  sd_iters itrs2(tpl2);
+  sm_iters itrs1(tpl1);
+  sm_iters itrs2(tpl2);
   if (!itrs1.is_valid || !itrs2.is_valid) bad_argument;
   try {
     return includes(itrs1.beg(), itrs1.end(), itrs2.beg(), itrs2.end(), 
-                    itrs1.dict->mp.value_comp());
+                    itrs1.map->mp.value_comp());
   }
   catch (px* e) {
     pure_throw(e);
   }
 }
 
-sd* sd_setop(int op, px* tpl1, px* tpl2)
+sd* sm_setop(int op, px* tpl1, px* tpl2)
 {
-  sd_iters itrs1(tpl1);
-  sd_iters itrs2(tpl2);
+  sm_iters itrs1(tpl1);
+  sm_iters itrs2(tpl2);
   if (!itrs1.is_valid || !itrs2.is_valid) bad_argument;
-  sd* dict = itrs1.dict;
-  px* px_comp = dict->px_comp.pxp();
-  sd* res = new sd(px_comp, dict->keys_only, dict->dflt.pxp());
-  sdmap& mp = res->mp;
+  sd* map = itrs1.map;
+  px* px_comp = map->px_comp.pxp();
+  sd* res = new sd(px_comp, map->keys_only, map->dflt.pxp());
+  pxhmap& mp = res->mp;
   try {
     switch (op) {
-    case stl_sd_union:
+    case stl_sm_union:
       set_union(itrs1.beg(), itrs1.end(), 
                 itrs2.beg(), itrs2.end(),
                 inserter(mp, mp.end()), mp.value_comp());
       break;
-    case stl_sd_difference:
+    case stl_sm_difference:
       set_difference(itrs1.beg(), itrs1.end(),
                      itrs2.beg(), itrs2.end(),
                      inserter(mp, mp.end()), mp.value_comp());
       break;
-    case stl_sd_intersection:
+    case stl_sm_intersection:
       set_intersection(itrs1.beg(), itrs1.end(),
                        itrs2.beg(), itrs2.end(),
                        inserter(mp, mp.end()), mp.value_comp());
       break;
-    case stl_sd_symmetric_difference:
+    case stl_sm_symmetric_difference:
       set_symmetric_difference(itrs1.beg(), itrs1.end(),
                                itrs2.beg(), itrs2.end(),
                                inserter(mp, mp.end()), mp.value_comp());
@@ -559,161 +559,161 @@ sd* sd_setop(int op, px* tpl1, px* tpl2)
   }
 }
 
-px* sd_update(sd* dict, px* key, px* val)
+px* sm_update(sd* map, px* key, px* val)
 {
-  if (dict->keys_only) return 0; // fail for sets
-  update_aux(dict, key, val);
+  if (map->keys_only) return 0; // fail for sets
+  update_aux(map, key, val);
   return val;
 }
 
-px* sd_update_with(sd* dict, px* key, px* unaryfun)
+px* sm_update_with(sd* map, px* key, px* unaryfun)
 {
-  if (dict->keys_only) return 0; // fail for sets
-  if (!dict->has_dflt)
+  if (map->keys_only) return 0; // fail for sets
+  if (!map->has_dflt)
     failed_cond();
-  px* old_val = sd_get(dict,key);
+  px* old_val = sm_get(map,key);
   px* exception = 0;
   px* new_val = pure_appxl(unaryfun, &exception, 1, old_val);
   if (exception) pure_throw(exception);
   if (!new_val) bad_function();
-  update_aux(dict, key, new_val);
+  update_aux(map, key, new_val);
   return new_val;
 }
 
-px* sd_first(px* tpl)
+px* sm_first(px* tpl)
 {
-  sd_iters itrs(tpl);
+  sm_iters itrs(tpl);
   if ( !itrs.is_valid ) bad_argument();
-  sdi b = itrs.beg();
+  pmi b = itrs.beg();
   if (b != itrs.end())
-    return itrs.dict->keys_only ? sd_pair_to_key(*b) : sd_pair_to_rocket(*b);
+    return itrs.map->keys_only ? sm_pair_to_key(*b) : sm_pair_to_rocket(*b);
   index_error();
 }
 
-px* sd_last(px* tpl)
+px* sm_last(px* tpl)
 {
-  sd_iters itrs(tpl);
+  sm_iters itrs(tpl);
   if ( !itrs.is_valid ) bad_argument();
-  sdi e = itrs.end();
+  pmi e = itrs.end();
   if (itrs.beg() != e--)
-    return itrs.dict->keys_only ? sd_pair_to_key(*e) : sd_pair_to_rocket(*e);
+    return itrs.map->keys_only ? sm_pair_to_key(*e) : sm_pair_to_rocket(*e);
   index_error();
 }
 
-void sd_rmfirst(px* tpl)
+void sm_rmfirst(px* tpl)
 {
-  sd_iters itrs(tpl);
+  sm_iters itrs(tpl);
   if (!itrs.is_valid) bad_argument();
   if ( itrs.beg() != itrs.end() )
-    itrs.dict->erase(itrs.beg());
+    itrs.map->erase(itrs.beg());
   else
     index_error();
 }
 
-void sd_rmlast(px* tpl)
+void sm_rmlast(px* tpl)
 {
-  sd_iters itrs(tpl);
+  sm_iters itrs(tpl);
   if (!itrs.is_valid) bad_argument();
   if ( itrs.beg() != itrs.end() )
-    itrs.dict->erase(--itrs.end());
+    itrs.map->erase(--itrs.end());
   else
     index_error();
 }
 
-void sd_insert_elm(sd* dict, px* kv)
+void sm_insert_elm(sd* map, px* kv)
 {
-  if ( !insert_aux(dict, kv) ) bad_argument();
+  if ( !insert_aux(map, kv) ) bad_argument();
 }
 
-void sd_insert_elms_xs(sd* dict, px* src)
+void sm_insert_elms_xs(sd* map, px* src)
 {
-  sdmap& mp = dict->mp;
+  pxhmap& mp = map->mp;
   size_t sz = 0;
   px** elems = NULL;
   bool ok;
   if (pure_is_listv(src, &sz, &elems)) {
     for (int i = 0; i<sz; i++)
-      if ( !insert_aux(dict, elems[i]) ) bad_argument();
+      if ( !insert_aux(map, elems[i]) ) bad_argument();
     free(elems);
   } else if (matrix_type(src) == 0) {
     sz = matrix_size(src); 
     elems = (pure_expr**) pure_get_matrix_data(src);
     for (int i = 0; i<sz; i++) 
-      if ( !insert_aux(dict, elems[i]) ) bad_argument();
+      if ( !insert_aux(map, elems[i]) ) bad_argument();
   } 
 }
 
-void sd_insert_elms_stldict(sd* dict, px* tpl)
+void sm_insert_elms_stlmap(sd* map, px* tpl)
 {
-  sd_iters itrs(tpl);
+  sm_iters itrs(tpl);
   if (!itrs.is_valid) bad_argument();
-  for (sdi i = itrs.beg(); i!=itrs.end(); i++)
-    update_aux(dict, i->first.pxp(),i->second.pxp());
+  for (pmi i = itrs.beg(); i!=itrs.end(); i++)
+    update_aux(map, i->first.pxp(),i->second.pxp());
 }
 
-void sd_insert_elms_stlvec(sd* dict, px* tpl)
+void sm_insert_elms_stlvec(sd* map, px* tpl)
 {
   sv_iters itrs(tpl);
   if (!itrs.is_valid || itrs.num_iters != 2) bad_argument();
-  sdmap& mp = dict->mp;
+  pxhmap& mp = map->mp;
   for (svi i = itrs.beg(); i!=itrs.end(); i++)
-    if ( !insert_aux(dict, i->pxp()) ) bad_argument();
+    if ( !insert_aux(map, i->pxp()) ) bad_argument();
 }
 
-void sd_erase(px* tpl)
+void sm_erase(px* tpl)
 {
-  sd_iters itrs(tpl);
+  sm_iters itrs(tpl);
   if (!itrs.is_valid) bad_argument();
-  itrs.dict->erase(itrs.beg(), itrs.end());
+  itrs.map->erase(itrs.beg(), itrs.end());
 }
 
-void sd_clear(sd* dict)
+void sm_clear(sd* map)
 {
-  dict->clear();
+  map->clear();
 }
 
-void sd_remove(sd* dict, px* k)
+void sm_remove(sd* map, px* k)
 {
-  dict->erase(k);
+  map->erase(k);
 }
 
-int sd_remove_all(sd* dict, px* k)
+int sm_remove_all(sd* map, px* k)
 {
-  return dict->erase(k);
+  return map->erase(k);
 }
 
-void sd_remove_kv(sd* dict, px* kv)
+void sm_remove_kv(sd* map, px* kv)
 {
-  sdmap& mp = dict->mp;
+  pxhmap& mp = map->mp;
   size_t sz = 0;
   px *k, *v;
-  px* cmp = dict->px_comp.pxp();
-  if (dict->keys_only)
-    dict->erase(kv);
+  px* cmp = map->px_comp.pxp();
+  if (map->keys_only)
+    map->erase(kv);
   else if (rocket_to_pair(kv, &k, &v) )
-    dict->erase(k);
+    map->erase(k);
   else 
     bad_argument();
 }
 
-bool sd_allpairs(px* comp, px* tpl1, px* tpl2)
+bool sm_allpairs(px* comp, px* tpl1, px* tpl2)
 {
   bool all_ok;
-  sd_iters itrs1(tpl1);
-  sd_iters itrs2(tpl2);
+  sm_iters itrs1(tpl1);
+  sm_iters itrs2(tpl2);
   if (!itrs1.is_valid) bad_argument();
   if (!itrs2.is_valid) bad_argument();
 
-  sd* dict1 = itrs1.dict;
-  sd* dict2 = itrs1.dict;
+  sd* map1 = itrs1.map;
+  sd* map2 = itrs1.map;
   try {
-    if (dict1->keys_only) {
-      if (!dict2->keys_only) bad_argument();
+    if (map1->keys_only) {
+      if (!map2->keys_only) bad_argument();
       pxh_pred2 fun(comp);
-      sdi i1 = itrs1.beg();
-      sdi i2 = itrs2.beg();
-      sdi end1 = itrs1.end();
-      sdi end2  =itrs2.end();
+      pmi i1 = itrs1.beg();
+      pmi i2 = itrs2.beg();
+      pmi end1 = itrs1.end();
+      pmi end2  =itrs2.end();
       all_ok = 1;
       while(i1 != end1) {
         if (i2 == end2  || !fun(i1->first, i2->first) ) {
@@ -726,8 +726,8 @@ bool sd_allpairs(px* comp, px* tpl1, px* tpl2)
         all_ok = 0;
     }
     else {
-      if (dict2->keys_only) bad_argument();
-      if ( sd_size(tpl1) != sd_size(tpl2) ) {
+      if (map2->keys_only) bad_argument();
+      if ( sm_size(tpl1) != sm_size(tpl2) ) {
         all_ok = 0;
       }
       else {
@@ -741,15 +741,15 @@ bool sd_allpairs(px* comp, px* tpl1, px* tpl2)
   return all_ok;
 }
 
-px* apply_fun(px* fun, int what, sdi i, px** exception) {
+px* apply_fun(px* fun, int what, pmi i, px** exception) {
   px *key, *val, *pxi, *res = 0;
   int bfr;
   set_kv(i, &key, &val);
-  if (what == stl_sd_both) {
+  if (what == stl_sm_both) {
     pxi = pair_to_rocket(key, val);  // bump k, v refc
     px_new(pxi);
    }
-  else if (what == stl_sd_key)
+  else if (what == stl_sm_key)
     pxi = key; 
   else
     pxi = val;
@@ -760,26 +760,26 @@ px* apply_fun(px* fun, int what, sdi i, px** exception) {
   else {
     res = pxi;
   }
-  if (what==stl_sd_both)
+  if (what==stl_sm_both)
     px_unref(pxi);  
   return res;
 }
 
 // if fun is any int then it is treated as identity (i.e., ignored)
-px* sd_listmap(px* fun, px* tpl, int what)
+px* sm_listmap(px* fun, px* tpl, int what)
 {
-  sd_iters itrs(tpl);
+  sm_iters itrs(tpl);
   if (!itrs.is_valid) bad_argument();
-  if (itrs.dict->keys_only) what = stl_sd_key;
-  sdi b = itrs.beg(); 
-  sdi e = itrs.end();
+  if (itrs.map->keys_only) what = stl_sm_key;
+  pmi b = itrs.beg(); 
+  pmi e = itrs.end();
   bool xx = b == e;
   px* cons = pure_const(cons_tag());
   px* nl = pure_const(null_list_tag());
   px* res = nl;
   px* y = 0;
   px* exception;
-  for (sdi i = b; i != e; i++){
+  for (pmi i = b; i != e; i++){
     px* pxi = apply_fun(fun, what, i, &exception);
     if (exception) {
       if (res) px_freenew(res);
@@ -797,13 +797,13 @@ px* sd_listmap(px* fun, px* tpl, int what)
   return res;  
 }
 
-px* sd_listcatmap(px* fun, px* tpl, int what)
+px* sm_listcatmap(px* fun, px* tpl, int what)
 {
-  sd_iters itrs(tpl);
+  sm_iters itrs(tpl);
   if (!itrs.is_valid) bad_argument();
-  if (itrs.dict->keys_only) what = stl_sd_key;
-  sdi b = itrs.beg(); 
-  sdi e = itrs.end(); 
+  if (itrs.map->keys_only) what = stl_sm_key;
+  pmi b = itrs.beg(); 
+  pmi e = itrs.end(); 
   px* cons = pure_const(cons_tag());
   px* nl = pure_const(null_list_tag());
   px* res = nl;
@@ -811,7 +811,7 @@ px* sd_listcatmap(px* fun, px* tpl, int what)
   px* exception;
   px* *elms;
   size_t sz;
-  for (sdi i = b; i != e; i++){
+  for (pmi i = b; i != e; i++){
     px* pxi = apply_fun(fun, what, i, &exception);
     if (exception) {
       if (res) px_freenew(res);
@@ -838,11 +838,11 @@ px* sd_listcatmap(px* fun, px* tpl, int what)
   return res;  
 }
 
-static px* sd_foldl_itrs(px* fun, px* val, sdi beg, sdi end, int mode)
+static px* sm_foldl_itrs(px* fun, px* val, pmi beg, pmi end, int mode)
 { 
   px* res = px_new(val);
   px* exception = 0;
-  for (sdi i = beg; i != end; i++){
+  for (pmi i = beg; i != end; i++){
     px* fun_v = pure_appl(fun, 1, res);
     px* fxy = apply_fun(fun_v, mode, i, &exception);
     if (exception) {
@@ -857,42 +857,42 @@ static px* sd_foldl_itrs(px* fun, px* val, sdi beg, sdi end, int mode)
   return res;
 }
 
-px* sd_foldl(px* fun, px* val, px* tpl)
+px* sm_foldl(px* fun, px* val, px* tpl)
 {
-  sd_iters itrs(tpl);
+  sm_iters itrs(tpl);
   if (!itrs.is_valid) bad_argument();
-  int mode =  itrs.dict->keys_only ? stl_sd_key : stl_sd_both;
+  int mode =  itrs.map->keys_only ? stl_sm_key : stl_sm_both;
   try {
-    return sd_foldl_itrs(fun, val, itrs.beg(), itrs.end(), mode);
+    return sm_foldl_itrs(fun, val, itrs.beg(), itrs.end(), mode);
   } catch (px* e) {
     pure_throw(e);
   }
 }
 
-px* sd_foldl1(px* fun, px* tpl)
+px* sm_foldl1(px* fun, px* tpl)
 {
-  sd_iters itrs(tpl);
+  sm_iters itrs(tpl);
   if ( !itrs.is_valid ) bad_argument();
-  int mode =  itrs.dict->keys_only ? stl_sd_key : stl_sd_both;
+  int mode =  itrs.map->keys_only ? stl_sm_key : stl_sm_both;
   if (itrs.beg() == itrs.end() ) return 0;
-  sdi b = itrs.beg();
+  pmi b = itrs.beg();
   px* val;
-  if (mode == stl_sd_key)
+  if (mode == stl_sm_key)
     val = b->first.pxp();
   else
     val = pair_to_rocket(b->first.pxp(), b->second.pxp());
   try {
-    return sd_foldl_itrs(fun, val, ++b, itrs.end(), mode);
+    return sm_foldl_itrs(fun, val, ++b, itrs.end(), mode);
   } catch (px* e) {
     pure_throw(e);
   }
 }
 
-static px* sd_foldr_itrs(px* fun, px* val, sdi beg, sdi end, int mode)
+static px* sm_foldr_itrs(px* fun, px* val, pmi beg, pmi end, int mode)
 { 
   px* res = px_new(val);
   px* exception = 0;
-  sdi i = end;
+  pmi i = end;
   while (i-- != beg) {
     px* fun_v = apply_fun(fun, mode, i, &exception);
     px_ref(fun_v);
@@ -910,32 +910,32 @@ static px* sd_foldr_itrs(px* fun, px* val, sdi beg, sdi end, int mode)
   return res;
 }
 
-px* sd_foldr(px* fun, px* val, px* tpl)
+px* sm_foldr(px* fun, px* val, px* tpl)
 {
-  sd_iters itrs(tpl);
+  sm_iters itrs(tpl);
   if (!itrs.is_valid) bad_argument();
-  int mode = itrs.dict->keys_only ? stl_sd_key : stl_sd_both;
+  int mode = itrs.map->keys_only ? stl_sm_key : stl_sm_both;
   try {
-    return sd_foldr_itrs(fun, val, itrs.beg(), itrs.end(), mode);
+    return sm_foldr_itrs(fun, val, itrs.beg(), itrs.end(), mode);
   } catch (px* x) {
     pure_throw(x);
   }
 }
 
-px* sd_foldr1(px* fun, px* tpl)
+px* sm_foldr1(px* fun, px* tpl)
 {
-  sd_iters itrs(tpl);
+  sm_iters itrs(tpl);
   if ( !itrs.is_valid ) bad_argument();
-  int mode =  itrs.dict->keys_only ? stl_sd_key : stl_sd_both;
+  int mode =  itrs.map->keys_only ? stl_sm_key : stl_sm_both;
   if ( itrs.beg() == itrs.end() ) return 0;
-  sdi e = --itrs.end();
+  pmi e = --itrs.end();
   px* val;
-  if (mode == stl_sd_key)
+  if (mode == stl_sm_key)
     val = e->first.pxp();
   else
     val = pair_to_rocket(e->first.pxp(), e->second.pxp());
   try {
-    return sd_foldr_itrs(fun, val, itrs.beg(), e, mode);
+    return sm_foldr_itrs(fun, val, itrs.beg(), e, mode);
   } catch (px* x) {
     pure_throw(x);
   }

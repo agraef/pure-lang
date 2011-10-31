@@ -20,7 +20,7 @@ CFLAGS = -g -O2
 
 # Basic rules to build the module, clean, install and uninstall.
 
-cppsource = stldict.ccp stlmmap.ccp
+cppsource = stlmap.ccp stlmmap.ccp
 puresource = $(patsubst %.ccp, %.pure, $(cppsource))
 objects = $(patsubst %.ccp, %$(DLL), $(cppsource))
 

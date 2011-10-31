@@ -1,4 +1,4 @@
-//-- --comment c_off --resume --verbose on
+//-- --comment c_off --resume --verbose off
 
 /* ut_script_stlmap.pure -- examples for basic ops on stlmap.
 
@@ -17,12 +17,12 @@
 
 //*** Imports *********************************************************
 
-using system, stldict, stlvec;
+using system, stlmap, stlvec;
 //- ()
 
-//*** Make stldict ******************************************************
+//*** Make stlmap ******************************************************
 
-let sd1 = stldict $ zipwith (=>) ("a".."e") (1..5); members sd1;
+let sd1 = stlmap $ zipwith (=>) ("a".."e") (1..5); members sd1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
 let sv1 = stlvec $ members sd1; members sv1;
@@ -34,30 +34,30 @@ let v1 = stl::vector (sd1,"b","d"); v1;
 let l1 = members (sd1,stl::stlbeg,"e"); l1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4]
 
-let sd2 = emptystldict_with (>); members sd2;
+let sd2 = emptystlmap_with (>); members sd2;
 //- []
 
 insert_elms sd2 ["a"=>1,"b"=>2]; members sd2;
 //- ["b"=>2,"a"=>1]
 
-let sd3 = stldict (sv1,1,stl::svend); members sd3;
+let sd3 = stlmap (sv1,1,stl::svend); members sd3;
 //- ["b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
-let sd4 = stldict v1; members sd4;
+let sd4 = stlmap v1; members sd4;
 //- ["b"=>2,"c"=>3]
 
-let sd5 = stldict l1; members sd5;
+let sd5 = stlmap l1; members sd5;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4]
 
-let sd6 = mkstldict 0 ("a".."e"); members sd6;
+let sd6 = mkstlmap 0 ("a".."e"); members sd6;
 //- ["a"=>0,"b"=>0,"c"=>0,"d"=>0,"e"=>0]
 
-let sd7 = emptystldict; members sd7;
+let sd7 = emptystlmap; members sd7;
 //- []
 
 //*** Simple Access and Update *************************************
 
-let sd1 = stldict ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]; members sd1;
+let sd1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]; members sd1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
 sd1!stl::stlbeg;
@@ -95,7 +95,7 @@ member sd1 "x", member sd1 "z";
 
 //*** Bidirectional iterator functions *******************************
 
-let sd1 = stldict ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]; members sd1;
+let sd1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]; members sd1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
 let kb, ke = stl::stlbeg, stl::stlend; kb, ke;
@@ -139,7 +139,7 @@ catch id $ next_key sd1 k5;
 
 //*** Members, keys, vals, first, last ********************************
 
-let sd1 = stldict ["a"=>100,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"x"=>200,"y"=>0];
+let sd1 = stlmap ["a"=>100,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"x"=>200,"y"=>0];
 //- ()
 
 members sd1;
@@ -234,10 +234,10 @@ last (sd1,"0",stl::stlend);
 
 //*** insert - STL_INSERT_SEMANTICS ************************************
 
-let sd1 = stldict ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]; members sd1;
+let sd1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]; members sd1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
-let sd2 = stldict {"k"=>11,"l"=>12,"m"=>13}; members sd2;
+let sd2 = stlmap {"k"=>11,"l"=>12,"m"=>13}; members sd2;
 //- ["k"=>11,"l"=>12,"m"=>13]
 
 // Do NOT update existing elements
@@ -273,10 +273,10 @@ catch id (insert sd1 ("e")); //can only insert rocket pairs
 
 //*** rmfirst, rmlast, erase and delete ********************************
 
-let sd1 = stldict ["a"=>100,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"x"=>200,"y"=>0];
+let sd1 = stlmap ["a"=>100,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"x"=>200,"y"=>0];
 //- ()
 
-let sd2 = stldict ["a"=>1,"b"=>2,"c"=>3];
+let sd2 = stlmap ["a"=>1,"b"=>2,"c"=>3];
 //- ()
 
 members sd1;
@@ -315,7 +315,7 @@ stl::null (sd1,"b","c");
 stl::null (sd1,"b","b");
 //- 1
 
-let sd8 = stldict $ zipwith (=>) ("f".."i") (6..9); members sd8;
+let sd8 = stlmap $ zipwith (=>) ("f".."i") (6..9); members sd8;
 //- ["f"=>6,"g"=>7,"h"=>8,"i"=>9]
 
 insert_elms sd1 (sd8,"g","i"); members sd1;
@@ -330,10 +330,10 @@ delete sd1 "l"; members sd1;
 
 //*** allpairs, ==, ~== ***********************************************
 
-let sd1 = stldict ["a"=>1,"b"=>2,"c"=>3]; members sd1;
+let sd1 = stlmap ["a"=>1,"b"=>2,"c"=>3]; members sd1;
 //- ["a"=>1,"b"=>2,"c"=>3]
 
-let sd2 = stldict ["a"=>1,"b"=>2,"c"=>3,"d"=>4]; members sd2;
+let sd2 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4]; members sd2;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4]
 
 stl::allpairs (\k1 v1 k2 v2-> k1==k2 && v1==v2) sd1 sd2;
@@ -359,7 +359,7 @@ sd1 == (sd2,"a","a"); // oops -- tuple rule trumps;
 
 // ** bounds, size *******************************************************
 
-let sd1 = stldict ["a"=>1,"b"=>2,"c"=>3,"d"=>4]; members sd1;
+let sd1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4]; members sd1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4]
 
 let sd2, lb, up = stl::bounds sd1; (lb, up);
@@ -398,7 +398,7 @@ stl::size (sd1,"c",stl::stlend);
 
 //** map, map_keys, map_vals **************************************
 
-let sd1 = stldict ["a"=>1,"b"=>2,"c"=>3,"d"=>4]; members sd1;
+let sd1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4]; members sd1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4]
 
 map (\(k=>v)->k+1=>v+10) sd1;
@@ -433,7 +433,7 @@ map (\(k=>v)->k=>v+10) (sd1,"x","a");
 
 //** listmap, catmap, catmap_keys, catmap_vals *************************
 
-let sd1 = stldict ["a"=>1,"b"=>2,"c"=>3,"d"=>4]; members sd1;
+let sd1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4]; members sd1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4]
 
 listmap (\(k=>v)->k+1=>v+10) sd1;
@@ -471,7 +471,7 @@ catmap_vals (\x->[x,x+10]) (sd1,"a","a");
 
 //** foldl, foldl1, foldr, foldr1 ***********************************
 
-let sd1 = stldict ["a"=>1,"b"=>2,"c"=>3,"d"=>4]; members sd1;
+let sd1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4]; members sd1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4]
 
 foldl (\{r,l} (k=>v) -> {r+k,l+v}) {"",0} sd1;
@@ -536,10 +536,10 @@ foldr1 (\(r=>l) (k=>v) -> (r+k=>l+v)) (sd1,"b","b"); (); // fails
 
 //*** do, filter *******************************************************
 
-let sd1 = stldict ["a"=>1,"b"=>2,"c"=>3,"d"=>4]; members sd1;
+let sd1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4]; members sd1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4]
 
-let sd2 = emptystldict_with (>); [];
+let sd2 = emptystlmap_with (>); [];
 //- []
 
 do (\(k=>v) -> update sd2 k v) sd1; members sd2;
@@ -574,10 +574,10 @@ filter (\(k=>v) -> v mod 2) (sd1,"d","d");
 
 //** Cache sensitive sequences ****************************************
 
-let sd1 = stldict $ zipwith (=>) ("a".."j") (1..10); members sd1;
+let sd1 = stlmap $ zipwith (=>) ("a".."j") (1..10); members sd1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7,"h"=>8,"i"=>9,"j"=>10]
 
-stl::set_sd_trace 1;
+stl::set_sm_trace 1;
 //- ()
 
 member sd1 "a";
@@ -640,12 +640,12 @@ member sd1 "i";
 member sd1 "e";
 //- 1
 
-stl::set_sd_trace 0;
+stl::set_sm_trace 0;
 //- ()
 
 //*** Fancy updating - C++ default value style ********************* 
 
-let sd1 = emptystldict; members sd1;
+let sd1 = emptystlmap; members sd1;
 //- []
 
 stl::set_default sd1 0; stl::get_default sd1;
