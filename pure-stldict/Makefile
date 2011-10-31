@@ -1,5 +1,5 @@
 
-pkgname = pure-stldict
+pkgname = pure-stlmap
 version = 0.0
 
 # platform-specific setup
@@ -37,14 +37,14 @@ install: $(puresource) $(objects)
 	cp $^ $(installdir)
 
 uninstall:
-	rm -f $(installdir)/$(modname).pure $(installdir)/$(modname)$(DLL)
+	rm -f $(addprefix $(installdir)/, $(puresource) $(objects))
 
 # Roll a distribution tarball.
 
-DISTFILES = README Makefile $(modname).cpp $(modname).hpp *.pure
+DISTFILES = README Makefile $(cppsource) $(puresource)
 #SEDFILES = README
 
-dist = pure-$(modname)-$(version)
+dist = pure-$(pkgname)-$(version)
 
 date = $(shell date "+%B %-d, %Y")
 datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > $(2)

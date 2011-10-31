@@ -6,13 +6,13 @@ Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>.
 
 All rights reserved.
 
-This software is is part of pure-stlmmap, an addon to the Pure Programming
+This software is is part of pure-stlmap, an addon to the Pure Programming
 Language (http://code.google.com/p/pure-lang/).
 
 This software is distributed under a BSD-style license in the hope that it
 will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the COPYING file
-included with the pure-stldict distribution package for details.
+included with the pure-stlmap distribution package for details.
 
 */
 
@@ -632,10 +632,8 @@ void smm_insert_elms_stlmmap(smm* smmp, px* tpl)
   if (itrs.beg() != itrs.end()) {
     pmmi inserted = smmp->mp.begin();
     if (!itrs.is_valid) bad_argument();
-    for (pmmi i = itrs.beg(); i!=itrs.end(); i++) {
-      pxh_pair kv(i->first.pxp(), i->second.pxp());
-      inserted = smmp->mp.insert(inserted, kv);
-    }
+    for (pmmi i = itrs.beg(); i!=itrs.end(); i++)
+      inserted = smmp->mp.insert(inserted, *i);
     smmp->cache_pmmi(inserted);
   }
 }

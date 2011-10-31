@@ -6,13 +6,13 @@ Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>.
 
 All rights reserved.
 
-This software is is part of pure-stldict, an addon to the Pure Programming
+This software is is part of pure-stlmap, an addon to the Pure Programming
 Language (http://code.google.com/p/pure-lang/).
 
 This software is distributed under a BSD-style license in the hope that it
 will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the COPYING file
-included with the pure-stldict distribution package for details.
+included with the pure-stlmap distribution package for details.
 
 */
 
@@ -48,10 +48,10 @@ struct stlmap {
   bool keys_only;
 };
 
-typedef stlmap sd; 
+typedef stlmap sm; 
 
 struct sm_iters {
-  sd* map;
+  sm* smp;
   bool is_valid;
   pmi begin_it;
   pmi end_it;
@@ -61,12 +61,12 @@ struct sm_iters {
 };
 
 struct sm_insert_iter {
-  sd* map;
+  sm* smp;
   bool is_valid;
   sm_insert_iter(px* tpl);
 };
 
-px* iter_key(sd* map, pmi iter);
+px* iter_key(sm* smp, pmi iter);
 
 enum {stl_sm_key = 1, stl_sm_val, stl_sm_both};
 
@@ -76,36 +76,36 @@ enum {stl_sm_union = 1, stl_sm_difference,
 /*** C interface for C++ map of PX Handles ***/
 
 extern "C" {
-  sd*  sm_make_empty(px* comp, int keys_only);
+  sm*  sm_make_empty(px* comp, int keys_only);
   bool sm_is_set(px* tpl);
   bool sm_includes(px* tpl1, px* tpl2);
-  sd*  sm_setop(int op, px* tpl1, px* tpl2);
-  void sm_delete(sd* map);
+  sm*  sm_setop(int op, px* tpl1, px* tpl2);
+  void sm_delete(sm* smp);
   px*  sm_make_vector(px* tpl);
   sv*  sm_make_stlvec(px* tpl);
-  px*  sm_set_default(sd* map, px* val);
-  px*  sm_get_default(sd* map);
+  px*  sm_set_default(sm* smp, px* val);
+  px*  sm_get_default(sm* smp);
   int  sm_size(px* tpl);
   px*  sm_bounds(px* tpl);
-  int  sm_member(sd* map, px* key);
-  px*  sm_prev(sd* map, px* key);
-  px*  sm_next(sd* map, px* key);
-  px*  sm_get(sd* map, px* key);
+  int  sm_member(sm* smp, px* key);
+  px*  sm_prev(sm* smp, px* key);
+  px*  sm_next(sm* smp, px* key);
+  px*  sm_get(sm* smp, px* key);
   px*  sm_first(px* tpl);
   px*  sm_last(px* tpl);
-  px*  sm_update(sd* map, px* key, px* val);
-  px*  sm_update_with(sd* map, px* key, px* binfun);
-  void sm_insert_elm(sd* map, px* kv);
-  void sm_insert_elms_xs(sd* map, px* src);
-  void sm_insert_elms_stlmap(sd* map, px* tpl);
-  void sm_insert_elms_stlvec(sd* map, px* tpl);
+  px*  sm_update(sm* smp, px* key, px* val);
+  px*  sm_update_with(sm* smp, px* key, px* binfun);
+  void sm_insert_elm(sm* smp, px* kv);
+  void sm_insert_elms_xs(sm* smp, px* src);
+  void sm_insert_elms_stlmap(sm* smp, px* tpl);
+  void sm_insert_elms_stlvec(sm* smp, px* tpl);
   void sm_rmfirst(px* tpl);
   void sm_rmlast(px* tpl);
   void sm_erase(px* tpl);
-  void sm_clear(sd* map);
-  void sm_remove(sd* map, px* x);
-  int  sm_remove_all(sd* map, px* x);
-  void sm_remove_kv(sd* map, px* x);
+  void sm_clear(sm* smp);
+  void sm_remove(sm* smp, px* x);
+  int  sm_remove_all(sm* smp, px* x);
+  void sm_remove_kv(sm* smp, px* x);
   bool sm_allpairs(px* fun, px* tpl1, px* tpl2);
   px*  sm_listmap(px* fun, px* tpl, int what);
   px*  sm_listcatmap(px* fun, px* tpl, int what);
@@ -119,8 +119,8 @@ extern "C" {
 
 }
 
-inline px* sdbeg(){return stl_begin();}
-inline px* sdend(){return stl_end();}
+inline px* smbeg(){return stl_begin();}
+inline px* smend(){return stl_end();}
 inline px* pminsert(){return stl_insert();}
 
 #endif // STLMAP_H
