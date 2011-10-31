@@ -74,14 +74,14 @@ extern expr* ordmdict_vector(ordmdict*);
 extern expr* ordmdict_keys(ordmdict*);
 extern expr* ordmdict_vals(ordmdict*);
 
-/* The orddict type. Orddicts are simply pointers to STL map objects which hold
-   key-value associations where both keys and values may be arbitrary Pure
-   expressions. The keys must be ordered using Pure's standard '<' predicate.
-   (This may be a partial order; keys x,y comparing neither x<y nor y<x will
-   be considered "equal" even though they may be syntactically different, such
-   as 0 and 0.0 in Pure.) Orddicts can be created from lists, tuples and
-   vectors using the orddict function. Memory management is automatic. Please
-   also note the following:
+/* The orddict type. Orddicts are simply pointers to STL map objects which
+   hold key-value associations where both keys and values may be arbitrary
+   Pure expressions. The keys must be ordered using Pure's standard '<'
+   predicate. (This may be a partial order; keys x,y comparing neither x<y nor
+   y<x will be considered "equal" even though they may be syntactically
+   different, such as 0 and 0.0 in Pure.) Orddicts can be created from lists,
+   tuples and vectors using the orddict function. Memory management is
+   automatic. Please also note the following:
 
    - Values can be omitted, so that orddicts can be used as an ordered set data
      structure. This obviates the need for a separate set data structure at
@@ -95,9 +95,9 @@ extern expr* ordmdict_vals(ordmdict*);
      modifies the underlying STL data structure as a side effect of the
      operation. If you need value semantics, you should use one of the dict or
      set data structures from the standard library instead. (Another
-     possibility is to take a copy of an orddict using the orddict_copy
-     operation if you need to preserve the original value, but note that this
-     operation takes O(n) time.)
+     possibility is to take a copy of an orddict using the copy function if
+     you need to preserve the original value, but note that this operation
+     takes O(n) time.)
 
    - Two orddicts are syntactically equal iff they contain the same elements in
      exactly the same order, using syntactic equality on both the keys and the
@@ -112,7 +112,7 @@ extern expr* ordmdict_vals(ordmdict*);
      might not even have semantic equality '==' defined on them).
 
    - Orddicts are pretty-printed in the format 'orddict [...]' by default,
-     which will reconstruct the expression when reentered as Pure code. With
+     which will reconstruct the container when reentered as Pure code. With
      the orddict_symbol function it is also possible to define your own custom
      pretty-printing; see examples/orddict_examp.pure for an example. */
 
