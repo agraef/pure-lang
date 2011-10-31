@@ -10,27 +10,25 @@ shared      = $(shell pkg-config pure --variable shared)
 
 libdir      = $(shell pkg-config pure --variable libdir)
 installdir  = $(addprefix $(DESTDIR), $(libdir)/pure)
-stlbase	    = ../pure-stlvec
 
-
-MOD_CXXFLAGS = $(PIC) $(shell pkg-config pure --cflags) -I$(pure-stlvec) $(CFLAGS) $(CPPFLAGS)
+MOD_CXXFLAGS  = $(PIC) $(shell pkg-config pure --cflags) $(CXXFLAGS) $(CPPFLAGS)
 MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS)
 
-CFLAGS = -g -O2
+CXXFLAGS = -g -O2 -std=c++0x -Wall
 
-# Basic rules to build the module, clean, install and uninstall.
+# Basic rules to build the modules, clean, install and uninstall.
 
-cppsource = stlmap.ccp stlmmap.ccp
-puresource = $(patsubst %.ccp, %.pure, $(cppsource))
-objects = $(patsubst %.ccp, %$(DLL), $(cppsource))
+cppsource = hashmap.cc ordmap.cc
+puresource = $(patsubst %.cc, %.pure, $(cppsource))
+objects = $(patsubst %.cc, %$(DLL), $(cppsource))
 
 all: $(objects)
 
-%$(DLL): %.cpp
-	g++ $(shared) -o $@ $(MOD_CXXFLAGS) $< $(MOD_LDFLAGS) $(LIBS) -I$(stlbase)
+%$(DLL): %.cc
+	g++ $(shared) -o $@ $(MOD_CXXFLAGS) $< $(MOD_LDFLAGS) $(LIBS)
 
 clean:
-	rm -f *.o *$(DLL)
+	rm -f *.o *$(DLL) examples/life *~
 
 install: $(puresource) $(objects)
 	test -d $(installdir) || mkdir -p $(installdir)
@@ -39,19 +37,43 @@ install: $(puresource) $(objects)
 uninstall:
 	rm -f $(addprefix $(installdir)/, $(puresource) $(objects))
 
+# Examples and tests.
+
+testdir = examples
+tests = $(patsubst %.pure, $(testdir)/%_examp.pure, $(puresource))
+logs = $(patsubst %.pure, %.log, $(tests))
+
+check:
+	./run-tests
+
+cleanlogs:
+	rm -f $(logs)
+
+logs: $(logs)
+
+%.log: %.pure $(puresource) $(objects)
+	pure -v -I. -L. < $< > $@ 2>&1
+
+# compile the 'life' example
+examples: examples/life
+
+examples/life: examples/life.pure
+	pure -I. -L. -c $< -o $@
+
 # Roll a distribution tarball.
 
-DISTFILES = README Makefile $(cppsource) $(puresource)
-#SEDFILES = README
+DISTFILES = COPYING COPYING.LESSER Makefile $(cppsource) $(puresource) \
+config.guess run-tests examples/*.pure examples/*.log
+SEDFILES = README
 
-dist = pure-$(pkgname)-$(version)
+dist = $(pkgname)-$(version)
 
 date = $(shell date "+%B %-d, %Y")
 datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > $(2)
 
 dist: $(DISTFILES)
 	rm -rf $(dist)
-	mkdir $(dist)
+	mkdir $(dist) && mkdir $(dist)/examples
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	for x in $(SEDFILES); do rm -f $(dist)/$$x; $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
 	rm -f $(dist).tar.gz
@@ -60,5 +82,5 @@ dist: $(DISTFILES)
 
 distcheck: dist
 	tar xfz $(dist).tar.gz
-	cd $(dist) && make && make install DESTDIR=./BUILD
+	cd $(dist) && make && make check && make install DESTDIR=./BUILD
 	rm -rf $(dist)
