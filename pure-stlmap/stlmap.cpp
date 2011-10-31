@@ -681,23 +681,9 @@ int sm_remove(sm* smp, px* k)
   return smp->erase(k);
 }
 
-int sm_remove_all(sm* smp, px* k)
+int  sm_remove_if(sm* smp, px* x, px* pred)
 {
-  return smp->erase(k);
-}
-
-void sm_remove_kv(sm* smp, px* kv)
-{
-  pxhmap& mp = smp->mp;
-  size_t sz = 0;
-  px *k, *v;
-  px* cmp = smp->px_comp.pxp();
-  if (smp->keys_only)
-    smp->erase(kv);
-  else if (rocket_to_pair(kv, &k, &v) )
-    smp->erase(k);
-  else 
-    bad_argument();
+  return 0;
 }
 
 bool sm_allpairs(px* comp, px* tpl1, px* tpl2)

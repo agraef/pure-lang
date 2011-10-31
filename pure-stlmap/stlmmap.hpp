@@ -103,7 +103,8 @@ extern "C" {
   void smm_rmlast(px* tpl);
   void smm_erase(px* tpl);
   void smm_clear(smm* smmp);
-  int  smm_remove(smm* smmp, px* x);
+  int  smm_remove(smm* smmp, px* x, int all);
+  int  smm_remove_if(smm* smmp, px* k, px* pred, int all);
   bool smm_allpairs(px* fun, px* tpl1, px* tpl2);
   px*  smm_listmap(px* fun, px* tpl, int what);
   px*  smm_listcatmap(px* fun, px* tpl, int what);

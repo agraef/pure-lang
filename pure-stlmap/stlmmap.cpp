@@ -193,7 +193,7 @@ int stlmmap::erase(px* k)
     if (k == smmbeg())
       erase(mp.begin());
     else if (k != smmend()) {
-      mp.erase(k);
+      ret = mp.erase(k);
     }
     else
       ret = 0;
@@ -222,7 +222,7 @@ static pmmi get_iter(pxhmmap& mp , px* key, int mode)
   else {
     if (mode==gi_upper) 
       iter = mp.upper_bound(key);
-    else if (mode=gi_lower)
+    else if (mode==gi_lower)
       iter = mp.lower_bound(key);
     else 
       iter = mp.find(key);
@@ -659,28 +659,29 @@ void smm_clear(smm* smmp)
   smmp->clear();
 }
 
-int smm_remove(smm* smmp, px* k)
+int smm_remove(smm* smmp, px* k, int all)
 {
-  return smmp->erase(k);
+  int ret = 1;
+  if (all) {
+    ret = smmp->erase(k);
+  }
+  else {
+    pxhmmap &mp = smmp->mp;
+    pmmi i;
+    if ( !smmp->get_cached_pmmi(k, i) ) 
+      i = get_iter(mp, k, gi_find);  
+    if (i != mp.end())
+      smmp->erase(i);
+    else
+      ret = 0;
+  }
 }
 
-int smm_remove_all(smm* smmp, px* k)
-{
-  return smmp->erase(k);
-}
-
-void smm_remove_kv(smm* smmp, px* kv)
+int smm_remove_if(smm* smmp, px* k, px* pred, int all)
 {
   pxhmmap& mp = smmp->mp;
   size_t sz = 0;
-  px *k, *v;
-  px* cmp = smmp->px_comp.pxp();
-  if (smmp->keys_only)
-    smmp->erase(kv);
-  else if (rocket_to_pair(kv, &k, &v) )
-    smmp->erase(k);
-  else 
-    bad_argument();
+  return 0;
 }
 
 bool smm_allpairs(px* comp, px* tpl1, px* tpl2)

@@ -248,7 +248,7 @@ insert_elms smm1 ["a"=>10,"f"=>6]; members smm1;
 insert_elms smm1 {"a"=>10,"g"=>7}; members smm1;
 //- ["a"=>1,"a"=>10,"a"=>10,"a"=>10,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7]
 
-delete smm1 "a"; members smm1;
+delete_all smm1 "a"; members smm1;
 //- ["b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7]
 
 insert_elms smm1 (smm2,"x","z"); members smm1;
@@ -272,7 +272,7 @@ insert_elms smm1 (smm2,"k=>10","m"); members smm1;
 insert_elms smm1 (smm2,"k",stl::stlend); members smm1;
 //- ["f"=>6,"g"=>7,"k"=>11,"k"=>11,"l"=>12,"l"=>12,"m"=>13]
 
-do (delete smm1) ("k".."m"); members smm1;
+do (delete_all smm1) ("k".."m"); members smm1;
 //- ["f"=>6,"g"=>7]
 
 insert_elms smm1 ["a"=>10,"b"=>21,"b"=>20]; members smm1;
@@ -289,11 +289,11 @@ catch id (insert smm1 ("e")); //can only insert rocket pairs
 let smm1 = stlmmap ["a"=>100,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"x"=>200,"y"=>0];
 //- ()
 
-let smm2 = stlmmap ["a"=>1,"b"=>2,"c"=>3];
-//- ()
-
 members smm1;
 //- ["a"=>100,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"x"=>200,"y"=>0]
+
+let smm2 = stlmmap ["a"=>1,"b"=>2,"c"=>3];
+//- ()
 
 rmfirst smm1; rmlast smm1; members smm1;
 //- ["b"=>2,"c"=>3,"d"=>4,"e"=>5,"x"=>200]
@@ -328,18 +328,38 @@ stl::null (smm1,"b","c");
 stl::null (smm1,"b","b");
 //- 1
 
-let smm8 = stlmmap $ zipwith (=>) ("f".."i") (6..9); members smm8;
+let smm3 = stlmmap ["f"=>6,"g"=>7,"h"=>8,"i"=>9]; members smm3;
 //- ["f"=>6,"g"=>7,"h"=>8,"i"=>9]
 
-insert_elms smm1 (smm8,"g","i"); members smm1;
+insert_elms smm1 (smm3,"g","i"); members smm1;
 //- ["a"=>1,"b"=>2,"c"=>3,"e"=>5,"g"=>7,"h"=>8]
 
-insert_elms smm1 $ zipwith (=>) ("j".."l") (10..12); members smm1;
-//- ["a"=>1,"b"=>2,"c"=>3,"e"=>5,"g"=>7,"h"=>8,"j"=>10,"k"=>11,"l"=>12]
+delete smm1 "h"; members smm1;
+//- ["a"=>1,"b"=>2,"c"=>3,"e"=>5,"g"=>7]
 
-delete smm1 "l"; members smm1;
-//- ["a"=>1,"b"=>2,"c"=>3,"e"=>5,"g"=>7,"h"=>8,"j"=>10,"k"=>11]
+insert_elms smm1 ["e"=>7,"e"=>6]; members smm1;
+//- ["a"=>1,"b"=>2,"c"=>3,"e"=>5,"e"=>7,"e"=>6,"g"=>7]
 
+delete smm1 "e"; members smm1;
+//- ["a"=>1,"b"=>2,"c"=>3,"e"=>5,"e"=>7,"g"=>7]
+
+delete_all smm1 "e"; members smm1;
+//- ["a"=>1,"b"=>2,"c"=>3,"g"=>7]
+
+delete_all smm1 "g"; members smm1;
+//- ["a"=>1,"b"=>2,"c"=>3]
+
+delete_all smm1 "k"; members smm1;
+//- ["a"=>1,"b"=>2,"c"=>3]
+
+delete_all smm1 "0"; members smm1;
+//- ["a"=>1,"b"=>2,"c"=>3]
+
+delete_all smm1 "a"; members smm1;
+//- ["b"=>2,"c"=>3]
+
+delete_all smm1 stl::stlbeg; members smm1;
+//- ["c"=>3]
 
 //*** allpairs, ==, ~== ***********************************************
 

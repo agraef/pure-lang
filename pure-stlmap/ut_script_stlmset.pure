@@ -237,7 +237,7 @@ insert_elms sms1 (sms2,"k","k"); members sms1;
 insert_elms sms1 (sms2,"k","l"); members sms1;
 //- ["a","a","a","a","b","c","d","e","f","g","k"]
 
-do (delete sms1) ("a".."e"); members sms1;
+do (delete_all sms1) ("a".."e"); members sms1;
 //- ["f","g","k"]
 
 insert_elms sms1 (sms2,"k","m"); members sms1;
@@ -246,7 +246,7 @@ insert_elms sms1 (sms2,"k","m"); members sms1;
 insert_elms sms1 (sms2,"k",stl::stlend); members sms1;
 //- ["f","g","k","k","k","l","l","m"]
 
-do (delete sms1) ("k".."m"); members sms1;
+do (delete_all sms1) ("k".."m"); members sms1;
 //- ["f","g"]
 
 insert_elms sms1 ["a","b","b"]; members sms1;
@@ -299,17 +299,40 @@ stl::null (sms1,"b","c");
 stl::null (sms1,"b","b");
 //- 1
 
-let sms8 = stlmset ("f".."i"); members sms8;
+let sms3 = stlmset ("f".."i"); members sms3;
 //- ["f","g","h","i"]
 
-insert_elms sms1 (sms8,"g","i"); members sms1;
+insert_elms sms1 (sms3,"g","i"); members sms1;
 //- ["a","b","c","e","g","h"]
 
-insert_elms sms1 $ ("j".."l"); members sms1;
-//- ["a","b","c","e","g","h","j","k","l"]
+delete sms1 "h"; members sms1;
+//- ["a","b","c","e","g"]
 
-delete sms1 "l"; members sms1;
-//- ["a","b","c","e","g","h","j","k"]
+insert_elms sms1 ["e","e"]; members sms1;
+//- ["a","b","c","e","e","e","g"]
+
+delete sms1 "e"; members sms1;
+//- ["a","b","c","e","e","g"]
+
+delete_all sms1 "e"; members sms1;
+//- ["a","b","c","g"]
+
+delete_all sms1 "g"; members sms1;
+//- ["a","b","c"]
+
+delete_all sms1 "k"; members sms1;
+//- ["a","b","c"]
+
+delete_all sms1 "0"; members sms1;
+//- ["a","b","c"]
+
+delete_all sms1 "a"; members sms1;
+//- ["b","c"]
+
+delete_all sms1 stl::stlbeg; members sms1;
+//- ["c"]
+
+
 
 //*** allpairs, ==, ~== ***********************************************
 

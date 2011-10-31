@@ -61,6 +61,7 @@ private extern void  sm_rmlast(expr* tpl);
 private extern void  sm_erase(expr* it);
 private extern void  sm_clear(void* map);
 private extern int   sm_remove(void* map, expr* x);
+private extern int   sm_remove_if(void* map, expr* x, expr* pred);
 private extern int   sm_allpairs(expr* fun, expr* it, expr* it);
 private extern expr* sm_listmap(expr* fun, expr* it, int what);
 private extern expr* sm_listcatmap(expr* fun, expr* it, int what);
@@ -75,7 +76,7 @@ extern bool stl_sm_trace_enabled() = sm_trace_enabled;
 /*** Helpers **************************************************************/
 
 private sm_keys sm_vals sm_both sm_union sm_difference
-  sm_intersection sm_symmetric_difference wrap_sm wrap_sv;
+  sm_intersection sm_symmetric_difference sm_wrap sm_wrap_sv;
 
 const sm_keys = 1;
 const sm_vals = 2;
@@ -86,10 +87,10 @@ const sm_difference = 2;
 const sm_intersection = 3;
 const sm_symmetric_difference = 4;
 
-wrap_sm m = STLMAP (sentry sm_delete m);
-wrap_sv m = STLVEC (sentry sm_delete m);
+sm_wrap m = STLMAP (sentry sm_delete m);
+sm_wrap_sv m = STLVEC (sentry sm_delete m);
 
-kv_equal k1 v1 k2 v2 = k1 == k2 && v1 == v2;
+sm_kv_equal k1 v1 k2 v2 = k1 == k2 && v1 == v2;
 
 both_sets it1 it2 = sm_is_set it1 && sm_is_set it2;
 
@@ -97,7 +98,7 @@ both_maps it1 it2 = ~sm_is_set it1 && ~sm_is_set it2;
 
 /*** Public functions for stlmap and stlset ******************************/
 
-::stlvec it::smit = wrap_sv $ sm_make_stlvec it;
+::stlvec it::smit = sm_wrap_sv $ sm_make_stlvec it;
 
 vector it::smit = sm_make_vector it;
 
@@ -145,16 +146,18 @@ bounds it@(STLMAP m, _) = (STLMAP m), sm_bounds it;
 
 ::delete (STLMAP m) k = sm_remove m k;
 
+::delete_if pred (STLMAP m) k = sm_remove m k pred;
+
 allpairs fun it1::smit it2::smit = sm_allpairs fun it1 it2 
   if both_sets it1 it2 && functionp fun && nargs fun == 2 ;
 
 allpairs fun it1::smit it2::smit = sm_allpairs fun it1 it2
   if ~sm_is_set it1 && ~sm_is_set it2 && functionp fun && nargs fun == 4;
 
-(::==) sd1::stlmap sd2::stlmap = allpairs kv_equal sd1 sd2
+(::==) sd1::stlmap sd2::stlmap = allpairs sm_kv_equal sd1 sd2
   if both_maps sd1 sd2;
 
-(::~=) sd1::stlmap sd2::stlmap = ~allpairs kv_equal sd1 sd2
+(::~=) sd1::stlmap sd2::stlmap = ~allpairs sm_kv_equal sd1 sd2
   if both_maps sd1 sd2;
 
 (::==) sd1::stlmap sd2::stlmap = allpairs (==) sd1 sd2 
@@ -199,9 +202,9 @@ end;
 
 /*** Functions for stlmap *******************************************/
 
-::emptystlmap = wrap_sm $ sm_make_empty (<) 0;
+::emptystlmap = sm_wrap $ sm_make_empty (<) 0;
 
-::emptystlmap_with comp = wrap_sm $ sm_make_empty comp 0;
+::emptystlmap_with comp = sm_wrap $ sm_make_empty comp 0;
 
 ::stlmap xs = sm when
   sm = ::emptystlmap;
@@ -252,9 +255,9 @@ get_default sm@(STLMAP m) = sm_get_default m if ~sm_is_set sm;
 
 /*** Functions for stlset ************************************************/
 
-::emptystlset = wrap_sm $ sm_make_empty (<) 1;
+::emptystlset = sm_wrap $ sm_make_empty (<) 1;
 
-::emptystlset_with comp = wrap_sm $ sm_make_empty comp 1;
+::emptystlset_with comp = sm_wrap $ sm_make_empty comp 1;
 
 ::stlset xs = sm when
   sm = ::emptystlset;
@@ -276,16 +279,16 @@ end;
 ::prev_elm (STLMAP m) elm = sm_prev m elm;
 
 (::+) it1::smit it2::smit = 
-  wrap_sm $ sm_setop sm_union it1 it2 if both_sets it1 it2;
+  sm_wrap $ sm_setop sm_union it1 it2 if both_sets it1 it2;
 
 (::-) it1::smit it2::smit = 
-  wrap_sm $ sm_setop sm_difference it1 it2 if both_sets it1 it2;
+  sm_wrap $ sm_setop sm_difference it1 it2 if both_sets it1 it2;
 
 (::*) it1::smit it2::smit = 
-  wrap_sm $ sm_setop sm_intersection it1 it2 if both_sets it1 it2;
+  sm_wrap $ sm_setop sm_intersection it1 it2 if both_sets it1 it2;
 
 (::/) it1::smit it2::smit = 
-  wrap_sm $ sm_setop sm_symmetric_difference it1 it2 if both_sets it1 it2;
+  sm_wrap $ sm_setop sm_symmetric_difference it1 it2 if both_sets it1 it2;
 
 (::<=) it1::smit it2::smit = sm_includes it2 it1 if both_sets it1 it2;
 

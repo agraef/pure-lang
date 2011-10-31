@@ -104,6 +104,7 @@ extern "C" {
   void sm_erase(px* tpl);
   void sm_clear(sm* smp);
   int  sm_remove(sm* smp, px* x);
+  int  sm_remove_if(sm* smp, px* x, px* pred);
   bool sm_allpairs(px* fun, px* tpl1, px* tpl2);
   px*  sm_listmap(px* fun, px* tpl, int what);
   px*  sm_listcatmap(px* fun, px* tpl, int what);
