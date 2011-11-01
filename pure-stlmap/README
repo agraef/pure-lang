@@ -9,12 +9,12 @@ A. General
 2. The pure-stlmap package provides a Pure interface to the STL's four "sorted
    associative" containers: map, set, multimap and multiset. The corresponding
    Pure containers are stlmap, stlset, stlmmap and stlmset. The stlmap and
-   stlmmap containers, sometimes referred to as "pure-stl maps", hold keys,
+   stlmmap containers, sometimes referred to simply as "maps", hold keys,
    each of which has an associated value that can be set or retrieved based on
-   key. The key value pairs in a Pure map or is refered to as an elements or
+   key. The key value pairs in a Pure map or is referred to as an elements or
    members of the map. If v is the value associate with key k, the
    corresponding element of the map is denoted by (k=>v). The stlset and
-   stlmset containers, referred to as "pure-stl sets", contain only keys with
+   stlmset containers, referred to as "sets", contain only keys with
    no associated values. In this case, the keys themselves are referred to as
    the elements or members of the pure-stl set.
 
@@ -22,22 +22,21 @@ A. General
    pure-stlmap. All of the containers are implemented with balanced binary
    trees which allow for O(log N) time for storage and retrieval.
 
-4. Keys stored in a stlmap or stlset are unique are unique. An attempt to
-   insert a new element (k=>v) or k, when k is already in the map or set does
-   not change the map or set. To change the associated value of a key value
-   pair stored in a stlmap, use the update function. In contrast to stlmaps
-   and stlsets, stlmmaps and stlmset can store multiple keys with the same
-   value.
+4. Keys stored in a stlmap or stlset are unique. An attempt to insert a new
+   element (k=>v) or k, when k is already in the map or set does not change
+   the map or set. To change the associated value of a key value pair stored
+   in a stlmap, use the update function. In contrast to stlmaps and stlsets,
+   stlmmaps and stlmset can store multiple keys with the same value.
 
 5. All of the sorted associative containers keep their keys in sorted order
-   impossed by a "less than function" that is stored in the container. By
+   imposed by a "less than function" that is stored in the container. By
    default the less than function is (<), but customized less than functions
    can be specified when a container is created. 
 
-   The ordering a sorted associative container's elements makes it possible to
-   designate well defined "ranges" of elements, using "iterator tuples".  For
-   these purposes an iterator can be thought of as a pointer to an element in
-   the container.
+   The ordering imposed on a sorted associative container's elements makes it
+   possible to designate well defined "ranges" of elements, using "iterator
+   tuples". For these purposes an iterator can be thought of as a pointer to
+   an element in the container.
 
    The iterator tuples for the sorted associative containers always specify
    ranges. They have three elements: (sac, lb_key, ub_key) where sac a stlmap,
@@ -51,7 +50,7 @@ A. General
    then (sm1,"b","d") is ["b"=>1,"b"=>2,"c"=>3], (sm1,"a","c") is
    ["b"=>1,"b"=>2] and (sm1,"c","x") is ["c"=>3].
 
-   When specifying a range of a sorted associative containter provided by
+   When specifying a range of a sorted associative container provided by
    pure-stlmap, the constant stl::stlbeg denotes the first element in the
    container and the constant stl::stlend denotes a value that is greater than
    any of the containers elements. In terms of C++ iterators, stlbeg and
@@ -121,9 +120,9 @@ B. Notable features
       If map is a stlmap or a stlmmap, and at least one k is stored in mp,
       then (update_with f map k v) changes the value of *EACH* element (k=>v)
       in map to (f v (map!k)). If k is not already stored in map, and map has
-      a default value, dv, k is stored in mp with associated value (f v
-      dv). If there is no default value, and k is not stored in mp, an
-      out_of_bounds exception is thrown.
+      a default value, dv, k is stored in map with associated value (f v
+      dv). If there is no default value, and k is not stored in map, (k=>v) is
+      stored in map.
 
    d. update_with is also useful for associating a count or lists of objects
       with a given key. E.g., 
@@ -150,7 +149,7 @@ B. Notable features
       of the set operators 
 
    d. The set operations use the native STL algorithms, which take full
-      advantage of the fact that the constainters have ordered elements. At
+      advantage of the fact that the containers have ordered elements. At
       most 2 (n1 + n2) - 1 comparisons are made where n1 and n2 are the number
       of elements in the first and second operands.
 
@@ -208,7 +207,7 @@ C. Cached iterators
 
    FIX
 
-4 In certain commonly occuring sequences caching can eliminate an O(log N)
+4 In certain commonly occurring sequences caching can eliminate an O(log N)
   lookup. E.g., "member sd k" followed by "sd!k" or "update sd k v" only
   requires only one lookup. Caching also allows efficient traversal of the
   elements in sd using "next sd k" and "prev sd k".
