@@ -301,3 +301,25 @@ reserve m::hashmdict count::int = hashmdict_reserve m count;
 bucket_count m::hashmdict = hashmdict_bucket_count m;
 bucket_size m::hashmdict i::int = hashmdict_bucket_size m i;
 end;
+
+/***************************************************************************/
+
+/* Conversions between the different hashdict types and mixed hashdict
+   operations. We also define a hashxdict union type which matches both
+   hashdict and hashmdict values. */
+
+type hashxdict x::hashdict | hashxdict x::hashmdict;
+hashxdictp x = case x of _::hashxdict = true; _ = false end;
+
+hashdict x::hashdict | hashmdict x::hashmdict = x;
+hashdict x::hashmdict = hashdict (list x);
+hashmdict x::hashdict = hashmdict (list x);
+
+/* For the mixed operations we always convert to the most general operand
+   type (i.e., hashmdict). */
+
+x::hashmdict == y::hashdict = x == hashmdict y;
+x::hashdict == y::hashmdict = hashmdict x == y;
+
+x::hashmdict ~= y::hashdict = x ~= hashmdict y;
+x::hashdict ~= y::hashmdict = hashmdict x ~= y;

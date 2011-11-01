@@ -264,3 +264,25 @@ scanl1 f m::ordmdict = scanl1 f (list m) if ~null m;
 scanr f a m::ordmdict = scanr f a (list m);
 scanr1 f m::ordmdict = scanr1 f (list m) if ~null m;
 sort p m::ordmdict = sort p (list m);
+
+/***************************************************************************/
+
+/* Conversions between the different orddict types and mixed orddict
+   operations. We also define a ordxdict union type which matches both
+   orddict and ordmdict values. */
+
+type ordxdict x::orddict | ordxdict x::ordmdict;
+ordxdictp x = case x of _::ordxdict = true; _ = false end;
+
+orddict x::orddict | ordmdict x::ordmdict = x;
+orddict x::ordmdict = orddict (list x);
+ordmdict x::orddict = ordmdict (list x);
+
+/* For the mixed operations we always convert to the most general operand
+   type (i.e., ordmdict). */
+
+x::ordmdict == y::orddict = x == ordmdict y;
+x::orddict == y::ordmdict = ordmdict x == y;
+
+x::ordmdict ~= y::orddict = x ~= ordmdict y;
+x::orddict ~= y::ordmdict = ordmdict x ~= y;
