@@ -6,55 +6,195 @@ A. General
 
 1. This is *NOT* ready for public consumption!
 
-2. Both stldict and stlset are mutable only. There are no immutable
-   versions. O(log n) access, insert. Elements are ordered by keys.
+2. The pure-stlmap package provides a Pure interface to the STL's four "sorted
+   associative" containers: map, set, multimap and multiset. The corresponding
+   Pure containers are stlmap, stlset, stlmmap and stlmset. The stlmap and
+   stlmmap containers, sometimes referred to as "pure-stl maps", hold keys,
+   each of which has an associated value that can be set or retrieved based on
+   key. The key value pairs in a Pure map or is refered to as an elements or
+   members of the map. If v is the value associate with key k, the
+   corresponding element of the map is denoted by (k=>v). The stlset and
+   stlmset containers, referred to as "pure-stl sets", contain only keys with
+   no associated values. In this case, the keys themselves are referred to as
+   the elements or members of the pure-stl set.
 
-3. See stldict.pure for functions provided. Most are just what one might expect.
+3. All four of containers are mutable; no immutable versions are provided by
+   pure-stlmap. All of the containers are implemented with balanced binary
+   trees which allow for O(log N) time for storage and retrieval.
+
+4. Keys stored in a stlmap or stlset are unique are unique. An attempt to
+   insert a new element (k=>v) or k, when k is already in the map or set does
+   not change the map or set. To change the associated value of a key value
+   pair stored in a stlmap, use the update function. In contrast to stlmaps
+   and stlsets, stlmmaps and stlmset can store multiple keys with the same
+   value.
+
+5. All of the sorted associative containers keep their keys in sorted order
+   impossed by a "less than function" that is stored in the container. By
+   default the less than function is (<), but customized less than functions
+   can be specified when a container is created. 
+
+   The ordering a sorted associative container's elements makes it possible to
+   designate well defined "ranges" of elements, using "iterator tuples".  For
+   these purposes an iterator can be thought of as a pointer to an element in
+   the container.
+
+   The iterator tuples for the sorted associative containers always specify
+   ranges. They have three elements: (sac, lb_key, ub_key) where sac a stlmap,
+   stlset, stlmmap or stlmset, lb_key is a key designating the lower bound of
+   the range and ub_key is a key designating the upper bound of the range. The
+   designated range is an ordered subsequence of elements of sac begining with
+   the first element whose key is not less than lb_key and all succeeding
+   elements that are less than ub_key.
+   
+   Thus, if sm1 is the stlmmap consisting of ["b"=>1,"b"=>2,"c"=>3","d"=>4]
+   then (sm1,"b","d") is ["b"=>1,"b"=>2,"c"=>3], (sm1,"a","c") is
+   ["b"=>1,"b"=>2] and (sm1,"c","x") is ["c"=>3].
+
+   When specifying a range of a sorted associative containter provided by
+   pure-stlmap, the constant stl::stlbeg denotes the first element in the
+   container and the constant stl::stlend denotes a value that is greater than
+   any of the containers elements. In terms of C++ iterators, stlbeg and
+   stlend correspond to sac.begin() and sac.end() where sac is the STL
+   container wrapped by the Pure container. Thus, if ss1 is the stlmset
+   consisting of ["b","b","c","d"], (ss1,"c",stlend) is the range ["c","d"].
+
+   Finally, if a function calls for a range as a parameter, the container can
+   be passed without lower and upper bounds and the function assume stlbeg and
+   stlend as the bounds. For example "do f sm1" where sm1 is a stlmap is the
+   same as "do f (sm1,stlbeg,stlend).
+
+6. See stlmap.pure and stlmmap for functions provided. Most are just what one
+   might expect for a container that holds an ordered sequence of elements.
 
 B. Notable features
 
-1. stlsets only have single values (that can be seen). You can add (k=>v)
-   as a member of a stlset. stldicts only have pairs of values (k=>v).
-
-2. stlsets and stldicts are not meant to intermix, conceptually at least. 
-   Of course a stlset can be used to make a stldict ans vis a versa, the
-   same as with a vector, list or stlvec. But that is supposed to be all.
-
-3. By default, stlsets and stldicts are constructed with (<) as the ordering
+1. By default, stlsets and stldicts are constructed with (<) as the ordering
    function. Other ordering functions can be used if desired.
 
-4. For a stldict, sd, sd!k returns v if (k=>v) is in sd. If not, see 5. For
-   a stlset, ss, ss!k is the same as (member ss k).
+2. The ! operator
 
-5. stldicts can be given a default value (al la C++ T()).
+   a. If ss is a stlset or stlmset, ss!k returns the number of elements equal
+      to k. Thus, if k is not an element of ss, ss!k is 0.
 
-   a. Generally, sd!k will throw out_of_bounds if k not the key of an element
-      of stldict sd. So will st!k if k is not an element of stlset st.
+   b. If sm is a stlmap, sm!k returns v if k is stored in sm. If k is not
+      stored in sm, sm!k returns sm's default value, if any, or throws an
+      out_of_bounds exception. (see 3 for notes on default values).
 
-   b. If sd!k would otherwise be out_of_bounds, and if sd has a default value
-      dv, (k=>dv) will be inserted into sd and dv will be returned.
+   c.  If smm is a stlmmap, smm!k smm!k returns a list of consisting of all v
+       where (k=>v) is an element of smm, provided that at least one k is
+       stored in smm. Otherwise sm!k returns sm's default value, if any, or
+       throws an out_of_bounds exception. (see 3 for notes on default values).
 
-   c. stlsets do not have default values.
+3. A stlmap or stlmmap, mp, can be given a default value (al la C++ T()).
 
-6. The function "update_with f sd k v" is pure-stldict's answer to the fact
-   that in C++ map[k] is a reference into the map. The function acts like
-   update sd k $ f v (sd!k), except that it does it in one visit into the
-   map. This is typically used when sd has a default value - say 0, an
-   emptystlvec, or [].
+   a. Generally, mp!k will throw out_of_bounds if k is not stored in mp.
 
-7. The set operations use the native STL algorithms, which take full advantage
-   of the fact that stldicts and stlsets have ordered elements.
+   b. However, if mp has a default value dv, will be returned. Contrary to
+      operator[] in C++, (k=>dv) is not inserted into mp. Using default values
+      allows one to use a error codes in lieu of exceptions.
 
-8. The insert and insert_elms functions follow STL semantics. This means, for
+         let x = mp!k;
+         if x == nothing then ... else ...
+
+      Default values such as 0 or [] can be useful for maps that are used to
+      count or collect objects that have a given key. (See update_with at 4).
+
+   c. N.B. stlsets do not have default values.
+
+4. A key value pair, (k=>v) for a stlmap or stlmmap, mp, can be "updated" using
+   (update mp k v) or (update_with f mp k v).
+
+   a. If mp is a stlmap, and k is stored in mp, then (update mp k v) changes
+      the value associated with k to v. If no k is not already stored in mp, k
+      is added to mp with associated value v.
+
+   b. If mmp is a stlmmap, and at least one k is stored in mmp, (update mmp k
+      v) changes the values of *ALL* elements in mmp with key k to v. If k is
+      not already stored in mmp, then k stored in mmp with associated value v.
+
+   c. The update_with provides precise control over the modification of key
+      value pairs in a stmap or stlmmap. E.g.,
+
+         update_with (\new old->if (bad old) then new else old) map "a" val;
+
+      If map is a stlmap or a stlmmap, and at least one k is stored in mp,
+      then (update_with f map k v) changes the value of *EACH* element (k=>v)
+      in map to (f v (map!k)). If k is not already stored in map, and map has
+      a default value, dv, k is stored in mp with associated value (f v
+      dv). If there is no default value, and k is not stored in mp, an
+      out_of_bounds exception is thrown.
+
+   d. update_with is also useful for associating a count or lists of objects
+      with a given key. E.g., 
+
+        let word_counts = emptystlmap;
+        set_default word_counts 0;
+        do (\w->update_with (+) word_counts w 1) word_list;
+
+        sort_str w = strcat $ sort (<) (chars w);
+        let anagrams = emptystlmap;
+        set_default anagrams [];
+        do (\w->update_with (:) anagrams (sort_str w) w) word_list;
+  
+5. Set operators are provided for all four of the sorted associative
+   containers. 
+
+   a. The operators are: "+", "-", "*", "/", "<" and ",=". 
+
+   b. Both operands must be the same type of container. I.e., sm1 + sm2, where
+      sm1 and sm2 are stlmaps, but no sm1 + smm1, where smm1 is a stlmmap.
+ 
+   c. The operations act on ranges, so it is possible to work with container
+      subsequences. Except for the set inclusion operators (< and <=), all
+      of the set operators 
+
+   d. The set operations use the native STL algorithms, which take full
+      advantage of the fact that the constainters have ordered elements. At
+      most 2 (n1 + n2) - 1 comparisons are made where n1 and n2 are the number
+      of elements in the first and second operands.
+
+   e. The set operations only consider keys, values are never used to
+      determine what elements are included in the resulting containers. Thus,
+      for example, mp1 + mp2 might not be the same as mp2 + mp1 where mp1
+      and mp2 are stlmaps or stlmmaps.
+
+6. The insert and insert_elms functions follow STL semantics. This means, for
    example, that if (k=>v1) is a member of stldict sd then insert sd (k=>v2)
    will *not* change sd. sd!k will still be v1. Use update to change the
    values of existing members. E.g., after (update sd k v2), sd!k will be v2.
 
-9. Most of the functions act on ranges of members, denoted by (sd,k1,k2),
-   similar to (sv,i,j) for stlvec. I.e., (sd,"0","z") would be all (k=v) where
-   k >= "0" and k < "z".
+7. Elements can be deleted from the associative containers using the delete,
+   delete_all, delete_if, delete_all_if and erase functions.
 
-D. Cached iterators
+   a. erase (sx,k1,k2) deletes all elements that have a key in sx[k1,k2)
+      where sx is a stlmap, stlmmap, stlset or stlmset.
+
+   b. delete sx k finds an element of sx with key k, if any, and deletes
+      it, where sx is a stlmap, stlmmap, stlset or stlmset.
+
+   c. delete_all sx k, is the same as delete sx k, except that all elements
+      associated with k are deleted. If sx is a stlmap, this is the same
+      as delete sx k.
+
+   d. delete_if pred sm k finds an element of sm with key k and value v, for
+      which (pred v) is true, if any, and deletes it, where sm is a stlmap or
+      stlmmap. Since pred can be a curried function, the delete_if function
+      allows fine grained control. Note that this function fails if called on
+      a stlset or stlsset.
+
+   e. delete_if_all f sm k is the same as delete_if f sm k except that all
+      elements (k=>v) that satisfy (f v) are deleted. If sx is a stlmap, this
+      is the same as delete_if pred sx k.
+
+   f. All of the delete functions return the number of elements deleted (which
+      can be 0).
+
+   g. E.g., to delete all instances of ("b"=>5) from a stlmmap smm:
+
+      let num_deleted = delete_all_if (==5) smm "b";
+
+C. Cached iterators
 
 1. The last C++ iterator used in selected operations is cached. Only one
    iterator is cached at any one time. Operations that invalidate the cached
@@ -62,7 +202,11 @@ D. Cached iterators
 
 2. The following operations cause an iterator to be cached:
 
+   FIX
+
 3. The following operations cause an iterator to be deleted from the cache:
+
+   FIX
 
 4 In certain commonly occuring sequences caching can eliminate an O(log N)
   lookup. E.g., "member sd k" followed by "sd!k" or "update sd k v" only
@@ -71,18 +215,12 @@ D. Cached iterators
 
 D. Examples/Testing
 
-1. To run the example/test scripts:
+1. To run the example/test script for stlmaps:
 
      $> pure -q -w
      > run check_eval.pure 
-     > check "ut_stldict_script_a.pure";
+     > check "ut_script_stlmap.pure";
 
-2. ut_stldict_script_a.pure is a target file for check_eval that tests stldict
-   functions.
+2. The target scripts for stlmmap, stlset, stlmset have similar names.
 
-3. ut_stldict_script_b.pure is a target file for log_eval that tests stlset
-   functions.
-
-4. More testing needs to be done.
-
-
+3. More testing needs to be done.
