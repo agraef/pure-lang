@@ -210,7 +210,7 @@ int stlmap::erase(px* k)
       if (k == smbeg())
         erase(mp.begin());
       else if (k != smend()) {
-        mp.erase(k);
+        ret = mp.erase(k);
       }
       else
         ret = 0;
@@ -239,7 +239,7 @@ static pmi get_iter(pxhmap& mp , px* key, int mode)
   else {
     if (mode==gi_upper) 
       iter = mp.upper_bound(key);
-    else if (mode=gi_lower)
+    else if (mode==gi_lower)
       iter = mp.lower_bound(key);
     else 
       iter = mp.find(key);
@@ -681,9 +681,27 @@ int sm_remove(sm* smp, px* k)
   return smp->erase(k);
 }
 
-int  sm_remove_if(sm* smp, px* x, px* pred)
+int sm_remove_if(sm* smp, px* k, px* pred)
 {
-  return 0;
+  int ret = 0;
+  pxhmap &mp = smp->mp;
+  pmi i;
+  pxh_pred1 fun(pred);
+  if (!smp->keys_only) {
+    try {
+      if ( !smp->get_cached_pmi(k, i) ) 
+        i = get_iter(mp, k, gi_find);  
+      if ( i != mp.end() && fun(i->second) ) {
+        smp->erase(i);
+        ret = 1;
+      }
+      else
+        ret = 0;
+    } catch (px* e) {
+      pure_throw(e);
+    }
+  }
+  return ret;
 }
 
 bool sm_allpairs(px* comp, px* tpl1, px* tpl2)

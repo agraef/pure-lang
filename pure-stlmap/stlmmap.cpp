@@ -679,9 +679,25 @@ int smm_remove(smm* smmp, px* k, int all)
 
 int smm_remove_if(smm* smmp, px* k, px* pred, int all)
 {
-  pxhmmap& mp = smmp->mp;
-  size_t sz = 0;
-  return 0;
+  int ret = 0;
+  pxhmmap &mp = smmp->mp;
+  pxh_pred1 fun(pred);
+  pair<pmmi,pmmi> lb_ub = mp.equal_range(k);
+  pmmi i = lb_ub.first;
+  pmmi end = lb_ub.second;
+  try {
+    while (i != end) {
+      pmmi trg = i;
+      if ( fun(i++->second) ) {
+        smmp->erase(trg);
+        ret++;
+        if (!all) break;
+      }
+    }
+  } catch (px* e) {
+    pure_throw(e);
+  }
+  return ret;
 }
 
 bool smm_allpairs(px* comp, px* tpl1, px* tpl2)

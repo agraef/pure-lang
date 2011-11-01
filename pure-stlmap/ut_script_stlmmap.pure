@@ -284,7 +284,7 @@ insert_elms smm1 {"b"=>20,"b"=>22}; members smm1;
 catch id (insert smm1 ("e")); //can only insert rocket pairs
 //- bad_argument
 
-//*** rmfirst, rmlast, erase and delete ********************************
+//*** rmfirst, rmlast, erase and ***************************************
 
 let smm1 = stlmmap ["a"=>100,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"x"=>200,"y"=>0];
 //- ()
@@ -340,26 +340,22 @@ delete smm1 "h"; members smm1;
 insert_elms smm1 ["e"=>7,"e"=>6]; members smm1;
 //- ["a"=>1,"b"=>2,"c"=>3,"e"=>5,"e"=>7,"e"=>6,"g"=>7]
 
-delete smm1 "e"; members smm1;
-//- ["a"=>1,"b"=>2,"c"=>3,"e"=>5,"e"=>7,"g"=>7]
+//*** delete, delete_all, delete_if, delete_all_if
 
-delete_all smm1 "e"; members smm1;
-//- ["a"=>1,"b"=>2,"c"=>3,"g"=>7]
+let smm1 = stlmmap ["a"=>1,"b"=>2,"c"=>3,"d"=>5,"d"=>6,"d"=>7,"d"=>8];
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>5,"d"=>6,"d"=>7,"d"=>8]
 
-delete_all smm1 "g"; members smm1;
-//- ["a"=>1,"b"=>2,"c"=>3]
+delete_if (==1) smm1 "d"; members smm1;
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>5,"d"=>6,"d"=>7,"d"=>8]
 
-delete_all smm1 "k"; members smm1;
-//- ["a"=>1,"b"=>2,"c"=>3]
+delete_if (==6) smm1 "d"; members smm1;
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>5,"d"=>7,"d"=>8]
 
-delete_all smm1 "0"; members smm1;
-//- ["a"=>1,"b"=>2,"c"=>3]
+delete_all_if (>100) smm1 "d"; members smm1;
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>5,"d"=>7,"d"=>8]
 
-delete_all smm1 "a"; members smm1;
-//- ["b"=>2,"c"=>3]
-
-delete_all smm1 stl::stlbeg; members smm1;
-//- ["c"=>3]
+delete_all_if (<8) smm1 "d"; members smm1;
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>8]
 
 //*** allpairs, ==, ~== ***********************************************
 

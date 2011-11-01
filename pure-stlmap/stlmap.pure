@@ -146,7 +146,7 @@ bounds it@(STLMAP m, _) = (STLMAP m), sm_bounds it;
 
 ::delete (STLMAP m) k = sm_remove m k;
 
-::delete_if pred (STLMAP m) k = sm_remove m k pred;
+::delete_all sm@(STLMAP m) k = sm_remove m k;
 
 allpairs fun it1::smit it2::smit = sm_allpairs fun it1 it2 
   if both_sets it1 it2 && functionp fun && nargs fun == 2 ;
@@ -236,6 +236,10 @@ get_default sm@(STLMAP m) = sm_get_default m if ~sm_is_set sm;
 
 ::update_with f sm@(STLMAP m) key x = 
   sm_update_with m key (f x) $$ sm if ~sm_is_set sm;
+
+::delete_if pred sm@(STLMAP m) k = sm_remove_if m k pred if ~sm_is_set sm;
+
+::delete_all_if pred sm@(STLMAP m) k = sm_remove_if m k pred if ~sm_is_set sm;
 
 ::next_key sm@(STLMAP m) key = sm_next m key; // if ~sm_is_set s;
 

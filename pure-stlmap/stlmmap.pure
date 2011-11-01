@@ -146,13 +146,7 @@ bounds it@(STLMMAP mm, _) = (STLMMAP mm), smm_bounds it;
 
 ::delete (STLMMAP mm) k = smm_remove mm k 0;
 
-::delete_if pred smm@(STLMMAP mm) k = 
-  smm_remove_if smm k pred 0 if ~smm_is_set smm;
-
 ::delete_all smm@(STLMMAP mm) k = smm_remove mm k 1;
-
-::delete_all_if pred smm@(STLMMAP mm) k = 
-  smm_remove_if smm k pred 1 if ~smm_is_set smm;
 
 allpairs fun it1::smmit it2::smmit = smm_allpairs fun it1 it2 
   if both_msets it1 it2 && functionp fun && nargs fun == 2 ;
@@ -242,6 +236,12 @@ get_default smm@(STLMMAP mm) = smm_get_default mm if ~smm_is_set smm;
 
 ::update_with f smm@(STLMMAP mm) key x = 
   smm_update_with mm key (f x) $$ smm if ~smm_is_set smm;
+
+::delete_if pred smm@(STLMMAP mm) k = 
+  smm_remove_if mm k pred 0 if ~smm_is_set smm;
+
+::delete_all_if pred smm@(STLMMAP mm) k = 
+  smm_remove_if mm k pred 1 if ~smm_is_set smm;
 
 ::next_key smm@(STLMMAP mm) key = smm_next mm key; // if ~smm_is_set s;
 
