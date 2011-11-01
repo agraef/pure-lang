@@ -142,6 +142,56 @@ static bool insert_aux(sm* smp, px* kv)
   return ok;
 }
 
+static px* apply_fun(px* fun, int what, pmi i, px** exception) {
+  px *key, *val, *pxi, *res = 0;
+  int bfr;
+  set_kv(i, &key, &val);
+  if (what == stl_sm_both) {
+    pxi = pair_to_rocket(key, val);  // bump k, v refc
+    px_new(pxi);
+   }
+  else if (what == stl_sm_key)
+    pxi = key; 
+  else
+    pxi = val;
+  *exception = 0;
+  if (!pure_is_int(fun, &bfr)) {
+    res = pure_appxl(fun, exception, 1, pxi);
+  }
+  else {
+    res = pxi;
+  }
+  if (what==stl_sm_both)
+    px_unref(pxi);  
+  return res;
+}
+
+static px* listmap_aux(px* fun, pmi b, pmi e, int what) 
+{
+  bool xx = b == e;
+  px* cons = pure_const(cons_tag());
+  px* nl = pure_const(null_list_tag());
+  px* res = nl;
+  px* y = 0;
+  px* exception;
+  for (pmi i = b; i != e; i++){
+    px* pxi = apply_fun(fun, what, i, &exception);
+    if (exception) {
+      if (res) px_freenew(res);
+      if (pxi) px_freenew(pxi);
+      pure_throw(exception);
+    }
+    px* last = pure_app(pure_app(cons,pxi),nl);
+    if (res==nl)
+      res = y = last;
+    else {
+      y->data.x[1] = px_new(last);
+      y = last;
+    }
+  }
+  return res;  
+}
+
 /*** stlmap members  ***********************************************/
 
 stlmap::stlmap(px* cmp, bool keyonly) : 
@@ -491,17 +541,12 @@ px* sm_get(sm* smp, px* key)
     smp->cache_pmi(i);
     ret = smp->keys_only ? pure_int(1) : i->second.pxp();
   }
-  else if (smp->keys_only) {
+  else if (smp->keys_only)
     ret =  pure_int(0);
-  }
-  else if (smp->has_dflt) {
-    px* dv = smp->dflt.pxp();
-    update_aux(smp, key, dv);
-    ret = dv;
-  } 
-  else {
+  else if (smp->has_dflt)
+    ret = smp->dflt.pxp();
+  else
     index_error();
-  }
   return ret;
 }
 
@@ -749,60 +794,12 @@ bool sm_allpairs(px* comp, px* tpl1, px* tpl2)
   return all_ok;
 }
 
-px* apply_fun(px* fun, int what, pmi i, px** exception) {
-  px *key, *val, *pxi, *res = 0;
-  int bfr;
-  set_kv(i, &key, &val);
-  if (what == stl_sm_both) {
-    pxi = pair_to_rocket(key, val);  // bump k, v refc
-    px_new(pxi);
-   }
-  else if (what == stl_sm_key)
-    pxi = key; 
-  else
-    pxi = val;
-  *exception = 0;
-  if (!pure_is_int(fun, &bfr)) {
-    res = pure_appxl(fun, exception, 1, pxi);
-  }
-  else {
-    res = pxi;
-  }
-  if (what==stl_sm_both)
-    px_unref(pxi);  
-  return res;
-}
-
-// if fun is any int then it is treated as identity (i.e., ignored)
 px* sm_listmap(px* fun, px* tpl, int what)
 {
   sm_iters itrs(tpl);
   if (!itrs.is_valid) bad_argument();
   if (itrs.smp->keys_only) what = stl_sm_key;
-  pmi b = itrs.beg(); 
-  pmi e = itrs.end();
-  bool xx = b == e;
-  px* cons = pure_const(cons_tag());
-  px* nl = pure_const(null_list_tag());
-  px* res = nl;
-  px* y = 0;
-  px* exception;
-  for (pmi i = b; i != e; i++){
-    px* pxi = apply_fun(fun, what, i, &exception);
-    if (exception) {
-      if (res) px_freenew(res);
-      if (pxi) px_freenew(pxi);
-      pure_throw(exception);
-    }
-    px* last = pure_app(pure_app(cons,pxi),nl);
-    if (res==nl)
-      res = y = last;
-    else {
-      y->data.x[1] = px_new(last);
-      y = last;
-    }
-  }
-  return res;  
+  return listmap_aux(fun, itrs.beg(), itrs.end(), what);
 }
 
 px* sm_listcatmap(px* fun, px* tpl, int what)

@@ -101,6 +101,30 @@ static void update_aux(smm* smmp, px* k, px* v)
     smmp->cache_pmmi( mp.insert(pxh_pair(k,v)) );
 }
 
+static px* apply_fun(px* fun, int what, pmmi i, px** exception) {
+  px *key, *val, *pxi, *res = 0;
+  int bfr;
+  set_kv(i, &key, &val);
+  if (what == stl_smm_both) {
+    pxi = pair_to_rocket(key, val);  // bump k, v refc
+    px_new(pxi);
+   }
+  else if (what == stl_smm_key)
+    pxi = key; 
+  else
+    pxi = val;
+  *exception = 0;
+  if (!pure_is_int(fun, &bfr)) {
+    res = pure_appxl(fun, exception, 1, pxi);
+  }
+  else {
+    res = pxi;
+  }
+  if (what==stl_smm_both)
+    px_unref(pxi);  
+  return res;
+}
+
 static bool insert_aux(smm* smmp, px* kv)
 {
   px *k, *v;
@@ -125,6 +149,33 @@ static bool insert_aux(smm* smmp, px* kv)
   if (ok)
     smmp->cache_pmmi( smmp->mp.insert(pxh_pair(k,v)) );
   return ok;
+}
+
+// if fun is any int then it is treated as identity (i.e., ignored)
+static px* listmap_aux(px* fun, pmmi b, pmmi e, int what) 
+{
+  bool xx = b == e;
+  px* cons = pure_const(cons_tag());
+  px* nl = pure_const(null_list_tag());
+  px* res = nl;
+  px* y = 0;
+  px* exception;
+  for (pmmi i = b; i != e; i++){
+    px* pxi = apply_fun(fun, what, i, &exception);
+    if (exception) {
+      if (res) px_freenew(res);
+      if (pxi) px_freenew(pxi);
+      pure_throw(exception);
+    }
+    px* last = pure_app(pure_app(cons,pxi),nl);
+    if (res==nl)
+      res = y = last;
+    else {
+      y->data.x[1] = px_new(last);
+      y = last;
+    }
+  }
+  return res;  
 }
 
 /*** stlmmap members  ***********************************************/
@@ -467,24 +518,26 @@ px* smm_get(smm* smmp, px* key)
 {
   pxhmmap &mp = smmp->mp; 
   px* ret = 0;
-  pmmi i;
-  if ( !smmp->get_cached_pmmi(key, i) ) 
-    i = get_iter(mp, key, gi_find);  
-  if (i != mp.end()) {
-    smmp->cache_pmmi(i);
-    ret = smmp->keys_only ? pure_int(1) : i->second.pxp();
+  pmmi beg;
+  if ( !smmp->get_cached_pmmi(key, beg) ) 
+    beg = get_iter(mp, key, gi_find);
+  if (beg != mp.end()) {
+    pair<pmmi,pmmi> lb_ub = mp.equal_range(beg->first);
+    beg = lb_ub.first;
+    pmmi end = lb_ub.second;
+    smmp->cache_pmmi(beg);
+    if (smmp->keys_only) {
+      ret = pure_int( smm_get_size(smmp, beg, end) );
+    } else {
+      ret = listmap_aux(pure_int(0), beg, end, stl_smm_val);
+    }
   }
-  else if (smmp->keys_only) {
+  else if (smmp->keys_only)
     ret =  pure_int(0);
-  }
-  else if (smmp->has_dflt) {
-    px* dv = smmp->dflt.pxp();
-    update_aux(smmp, key, dv);
-    ret = dv;
-  } 
-  else {
+  else if (smmp->has_dflt)
+    ret = smmp->dflt.pxp();
+  else 
     index_error();
-  }
   return ret;
 }
 
@@ -745,60 +798,12 @@ bool smm_allpairs(px* comp, px* tpl1, px* tpl2)
   return all_ok;
 }
 
-px* apply_fun(px* fun, int what, pmmi i, px** exception) {
-  px *key, *val, *pxi, *res = 0;
-  int bfr;
-  set_kv(i, &key, &val);
-  if (what == stl_smm_both) {
-    pxi = pair_to_rocket(key, val);  // bump k, v refc
-    px_new(pxi);
-   }
-  else if (what == stl_smm_key)
-    pxi = key; 
-  else
-    pxi = val;
-  *exception = 0;
-  if (!pure_is_int(fun, &bfr)) {
-    res = pure_appxl(fun, exception, 1, pxi);
-  }
-  else {
-    res = pxi;
-  }
-  if (what==stl_smm_both)
-    px_unref(pxi);  
-  return res;
-}
-
-// if fun is any int then it is treated as identity (i.e., ignored)
 px* smm_listmap(px* fun, px* tpl, int what)
 {
   smm_iters itrs(tpl);
   if (!itrs.is_valid) bad_argument();
   if (itrs.smmp->keys_only) what = stl_smm_key;
-  pmmi b = itrs.beg(); 
-  pmmi e = itrs.end();
-  bool xx = b == e;
-  px* cons = pure_const(cons_tag());
-  px* nl = pure_const(null_list_tag());
-  px* res = nl;
-  px* y = 0;
-  px* exception;
-  for (pmmi i = b; i != e; i++){
-    px* pxi = apply_fun(fun, what, i, &exception);
-    if (exception) {
-      if (res) px_freenew(res);
-      if (pxi) px_freenew(pxi);
-      pure_throw(exception);
-    }
-    px* last = pure_app(pure_app(cons,pxi),nl);
-    if (res==nl)
-      res = y = last;
-    else {
-      y->data.x[1] = px_new(last);
-      y = last;
-    }
-  }
-  return res;  
+  return listmap_aux(fun, itrs.beg(), itrs.end(), what);
 }
 
 px* smm_listcatmap(px* fun, px* tpl, int what)

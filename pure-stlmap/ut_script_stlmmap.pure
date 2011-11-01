@@ -59,23 +59,23 @@ let smm7 = emptystlmmap; members smm7;
 
 //*** Simple Access and Update *************************************
 
-let smm1 = stlmmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]; members smm1;
-//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
+let smm1 = stlmmap ["a"=>1,"a"=>2,"a"=>3,"d"=>4,"e"=>5]; members smm1;
+//- ["a"=>1,"a"=>2,"a"=>3,"d"=>4,"e"=>5]
 
 smm1!stl::stlbeg;
-//- 1
+//- [1,2,3]
 
 catch id $ smm1!stl::stlend;
 //- out_of_bounds
 
 smm1!"a";
-//- 1
+//- [1,2,3]
 
 smm1!"e";
-//- 5
+//- [5]
 
 update smm1 "a" 100; update smm1 "x" 200; members smm1;
-//- ["a"=>1,"a"=>100,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"x"=>200]
+//- ["a"=>1,"a"=>2,"a"=>3,"a"=>100,"d"=>4,"e"=>5,"x"=>200]
 
 catch err (smm1!"y");
 //- err out_of_bounds
@@ -90,7 +90,7 @@ smm1!"y";
 //- 0
 
 members smm1;
-//- ["a"=>1,"a"=>100,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"x"=>200,"y"=>0]
+//- ["a"=>1,"a"=>2,"a"=>3,"a"=>100,"d"=>4,"e"=>5,"x"=>200]
 
 member smm1 "x", member smm1 "z";
 //- 1,0
@@ -342,7 +342,10 @@ insert_elms smm1 ["e"=>7,"e"=>6]; members smm1;
 
 //*** delete, delete_all, delete_if, delete_all_if
 
-let smm1 = stlmmap ["a"=>1,"b"=>2,"c"=>3,"d"=>5,"d"=>6,"d"=>7,"d"=>8];
+let smm1 = stlmmap ["a"=>1,"b"=>2,"c"=>3,"d"=>5,"d"=>6,"d"=>7,"d"=>8]; 
+//- ()
+
+members smm1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>5,"d"=>6,"d"=>7,"d"=>8]
 
 delete_if (==1) smm1 "d"; members smm1;
@@ -615,8 +618,8 @@ filter (\(k=>v) -> v mod 2) (smm1,"d","d");
 
 //** Cache sensitive sequences ****************************************
 
-let smm1 = stlmmap $ zipwith (=>) ("a".."j") (1..10); members smm1;
-//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7,"h"=>8,"i"=>9,"j"=>10]
+let smm1 = stlmmap ["a"=>1,"a"=>2,"a"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7,"h"=>8,"i"=>9,"j"=>10]
+//- ()
 
 stl::set_smm_trace 1;
 //- ()
@@ -625,55 +628,59 @@ member smm1 "a";
 //- 1
 
 smm1!"a";
-//- 1
+//- [1,2,3]
 
-delete smm1 "b"; members smm1;
-//- ["a"=>1,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7,"h"=>8,"i"=>9,"j"=>10]
+delete smm1 "a"; members smm1;
+//- ["a"=>2,"a"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7,"h"=>8,"i"=>9,"j"=>10]
 
 smm1!"a";
-//- 1
+//- [2,3]
 
 member smm1 "a";
 //- 1
 
-delete smm1 "a"; members smm1;
-//- ["c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7,"h"=>8,"i"=>9,"j"=>10]
+
+delete_all smm1 "a"; members smm1;
+//- ["d"=>4,"e"=>5,"f"=>6,"g"=>7,"h"=>8,"i"=>9,"j"=>10]
+
+catch id (smm1!"a");
+//- out_of_bounds
 
 member smm1 "a";
 //- 0
 
 smm1!"e";
-//- 5
+//- [5]
 
 rmfirst smm1;
 //- ()
 
 smm1!"e";
-//- 5
+//- [5]
 
-member smm1 "c";
+member smm1 "d";
 //- 0
 
 smm1!"e"
-//- 5
+//- [5]
 
 rmlast smm1; members smm1;
-//- ["d"=>4,"e"=>5,"f"=>6,"g"=>7,"h"=>8,"i"=>9]
+//- ["e"=>5,"f"=>6,"g"=>7,"h"=>8,"i"=>9]
 
 smm1!"e";
-//- 5
+//- [5]
 
 member smm1 "k";
 //- 0
 
 smm1!"e";
-//- 5
+//- [5]
 
 erase (smm1, "h", stl::stlend); members smm1;
-//- ["d"=>4,"e"=>5,"f"=>6,"g"=>7]
+//- ["e"=>5,"f"=>6,"g"=>7]
 
 smm1!"e";
-//- 5
+//- [5]
 
 member smm1 "i";
 //- 0
