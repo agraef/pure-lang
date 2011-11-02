@@ -73,10 +73,10 @@ A. General
    For example, let mmp be a stlmmap that consists of
    ["a"=>1,"a"=>2,"a"=>2,"a"=>3,"a"=>3]. In C++ where ranges are easily
    defined based on individual elements, one could define a range in mmp
-   consisting of ["a"="a"=>2,"a"=>3,"a"=>3]. In pure-stlmap, this is not
-   possible: if you have one element with key "a", you must have all of
-   them. I.e., (ss1,"a","b") consists of ["a"=>1,"a"=>2,"a"=3] and
-   (ss1,"a","a")
+   consisting of ["a"=>2,"a"=>3,"a"=>3]. In pure-stlmap, this is not possible:
+   if you have one element with key "a", you must have all of them. I.e.,
+   (mmp,"a","b") consists of ["a"=>1,"a"=>2,"a"=>2,"a"=>3,"a"=>3],
+   (ss1,"a","a") is empty.
 
    This presents a design issue in the case of stlmmaps, in which keys are not
    necessarily unique. If several elements in a stlmmap have the same key, how
@@ -93,9 +93,9 @@ A. General
       erase_if (my_equal 2) (mmp,"a")
 
    More precisely, this erases all elements in the range consisting of
-   elements with k "a" that satisfy (value_equal 2). A slightly more elaborate
-   function can used to erase at most one element of mmp with key "a" and
-   value 2:
+   elements with key of "a" and value that satisfies (value_equal 2). A
+   slightly more elaborate function can used to erase at most one element of
+   mmp with key "a" and value 2:
 
       let erased = ref 0;
       my_equal_once x (_=>v) = if ~get erased && v==x then put erased 1 else 0;
@@ -144,8 +144,8 @@ B. Notable features
    functions only change values, never keys
 
    a. "update map key val" changes the values of all elements (k=>v) of map
-      where k==key to v. If key is not already stored in map, (key=v) is added
-      to the map.
+      where k==key to val. If key is not already stored in map, (key=val) is
+      added to the map.
 
    b. "update_with unary_fun (map,key)" changes the values of all elements
       (k=>v) of map where k==key to (unary_fun v). If key is not already
@@ -153,9 +153,8 @@ B. Notable features
       (key=>unary_fun dv) is added to the map, or (ii) if map does not have a
       default value, a failed_condition error is thrown.
       
-   c. "update_with unary_fun (map,kbeg,kend)" changes the values of all
-      elements of the range, kbeg, kend to (unary_fun v).
-      
+   c. "update_with unary_fun (map,kbeg,kend)" changes the values of each 
+      element (k=>v) in the range (map, kbeg, kend) to (unary_fun v).
 
    d. "update_with" provides precise control over the modification of key
       value pairs. E.g., if map is a stlmmap, all of its elements with (k=>v)
@@ -205,13 +204,14 @@ B. Notable features
    will *not* change sd. sd!k will still be v1. Use update to change the
    values of existing members. E.g., after (update sd k v2), sd!k will be v2.
 
-7. Elements can be deleted from the associative containers using the delete,
-   delete_all, delete_if, delete_all_if and erase functions.
+7. Elements can be deleted from the associative containers using "erase" and
+   "erase_if".
 
    a. erase (sac,k1,k2) deletes all elements in the indicated range.
 
    b. erase_if pred (sac,k1,k2) deletes all elements in the indicated range
-      that satisfy pred 
+      that satisfy pred. For stlmap and stlmmap pred should take (k=>v) as
+      its parameter. 
 
    c. The erase functions return the number of elements deleted (which
       can be 0).
@@ -221,12 +221,19 @@ B. Notable features
       let num_deleted = erase_if (\(_=>v)->v==5) (smm,"b");
 
 8. For any sorted associative container, sac, "next_key sac k)" and "prev_key
-   sac k) do what their name suggests. If k is the last key in sac "next_key
-   sac k)" returns stl::stlend. If k is the past end iterator, next_key throws
-   an out_of_bounds exception, and prev_key returns the key of the last
-   element in sac. If k is the first key in sac, "prev_key" throws
-   out_of_bounds exception. If k is the second key in sac, prev_key returns
-   stl::stlbeg, rather than the actual first k in sac.
+   sac k) generally do just what their names suggests. The behavior for the
+   "corener cases" is as follows: 
+
+       a. If k is the last key in sac "next_key sac k)" returns stl::stlend.
+
+       b. If k is the past end iterator, next_key throws an out_of_bounds
+          exception, and prev_key returns the key of the last element in sac.
+
+       c. If k is the first key in sac, "prev_key" throws out_of_bounds
+          exception.
+
+       d. If k is the second key in sac, prev_key returns stl::stlbeg, rather
+          than the actual first k in sac.
 
 C. Cached iterators
 
