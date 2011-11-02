@@ -99,65 +99,45 @@ member smm1 "x", member smm1 "z";
 
 let smm1 = stlmmap ["a"=>1,"b"=>2,"b"=>3,"d"=>4,"e"=>5]; members smm1;
 //- ["a"=>1,"b"=>2,"b"=>3,"d"=>4,"e"=>5]
+
 let kb, ke = stl::stlbeg, stl::stlend; kb, ke;
 //- stl_begin_iterator,stl_end_iterator
+
 smm1!kb;
 //- [1]
+
 let k1 = next_key smm1 kb; k1, smm1!k1;
 //- "b",[2,3]
+
 let k2 = next_key smm1 k1; k2, smm1!k2;
+//- "d",[4]
+
+let k1 = prev_key smm1 k2; k1, smm1!k1;
 //- "b",[2,3]
-let k1 = prev_key smm1 k2; k2, smm1!k1;
-//- "b",[1]
+
 let k0 = prev_key smm1 k1; k0,  smm1!k0;
-//- eval "let k0 = prev_key smm1 k1; k0,  smm1!k0;"
+//- stl_begin_iterator,[1]
+
 catch id $ prev_key smm1 kb; 
 //- out_of_bounds
+
 catch id $ prev_key smm1 k0; 
 //- out_of_bounds
+
 let k4 = prev_key smm1 ke; k4, smm1!k4;
 //- "e",[5]
+
 let k3 = prev_key smm1 k4; k3, smm1!k3;
 //- "d",[4]
+
 let k4 = next_key smm1 k3; k4, smm1!k4;
 //- "e",[5]
-let k5 = next_key smm1 k4; k5, smm1!k5; 
-//- eval "let k5 = next_key smm1 k4; k5, smm1!k5; "
+
+let k5 = next_key smm1 k4; k5; 
+//- stl_end_iterator
+
 catch id $ next_key smm1 ke; 
 //- out_of_bounds
-update_with (+) smm1 "a" 1; update_with (+) smm1 "a" 1; members smm1;
-//- ["a"=>1+[1]]
-
-
-let smm1 = stlmmap ["a"=>1,"b"=>2,"b"=>3,"d"=>4,"e"=>5]; members smm1;
-
-let kb, ke = stl::stlbeg, stl::stlend; kb, ke;
-
-smm1!kb;
-
-let k1 = next_key smm1 kb; k1, smm1!k1;
-
-let k2 = next_key smm1 k1; k2, smm1!k2;
-
-let k1 = prev_key smm1 k2; k2, smm1!k1;
-
-let k0 = prev_key smm1 k1; k0,  smm1!k0;
-
-catch id $ prev_key smm1 kb; 
-
-catch id $ prev_key smm1 k0; 
-
-let k4 = prev_key smm1 ke; k4, smm1!k4;
-
-let k3 = prev_key smm1 k4; k3, smm1!k3;
-
-let k4 = next_key smm1 k3; k4, smm1!k4;
-
-let k5 = next_key smm1 k4; k5, smm1!k5; 
-
-catch id $ next_key smm1 ke; 
-
-
 
 //*** Members, keys, vals, first, last ********************************
 

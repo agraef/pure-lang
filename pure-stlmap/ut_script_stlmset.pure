@@ -1,4 +1,4 @@
-//-- --comment c_off --resume --verbose off
+//-- --comment c_off --resume --verbose on
 
 /* ut_script_stlmset.pure -- examples for basic ops on stlmset.
 
@@ -110,46 +110,46 @@ member sms1 "x", member sms1 "z";
 
 //*** Bidirectional iterator functions *******************************
 
-let sms1 = stlmset ["a","b","c","d","e"]; members sms1;
-//- ["a","b","c","d","e"]
+let sms1 = stlmset ["a","b","b","d","e"]; members sms1;
+//- ["a","b","b","d","e"]
 
 let kb, ke = stl::stlbeg, stl::stlend; kb, ke;
 //- stl_begin_iterator,stl_end_iterator
 
-let k1 = next_elm sms1 kb; k1;
+let k1 = next_key sms1 kb; k1;
 //- "b"
 
-let k2 = next_elm sms1 k1; k2;
-//- "c"
-
-let k1 = prev_elm sms1 k2; k2;
-//- "c"
-
-let k0 = prev_elm sms1 k1; k0;
-//- stl_begin_iterator
-
-catch id $ prev_elm sms1 kb; 
-//- out_of_bounds
-
-catch id $ prev_elm sms1 k0; 
-//- out_of_bounds
-
-let k4 = prev_elm sms1 ke; k4;
-//- "e"
-
-let k3 = prev_elm sms1 k4; k3;
+let k2 = next_key sms1 k1; k2;
 //- "d"
 
-let k4 = next_elm sms1 k3; k4;
-//- "e"
+let k1 = prev_key sms1 k2; k1;
+//- "b"
 
-let k5 = next_elm sms1 k4; k5;
-//- stl_end_iterator
+let k0 = prev_key sms1 k1; k0;
+//- stl_begin_iterator
 
-catch id $ next_elm sms1 ke; 
+catch id $ prev_key sms1 kb; 
 //- out_of_bounds
 
-catch id $ next_elm sms1 k5; 
+catch id $ prev_key sms1 k0; 
+//- out_of_bounds
+
+let k4 = prev_key sms1 ke; k4;
+//- "e"
+
+let k3 = prev_key sms1 k4; k3;
+//- "d"
+
+let k4 = next_key sms1 k3; k4;
+//- "e"
+
+let k5 = next_key sms1 k4; k5;
+//- stl_end_iterator
+
+catch id $ next_key sms1 ke; 
+//- out_of_bounds
+
+catch id $ next_key sms1 k5; 
 //- out_of_bounds
 
 //*** Members, first, last *********************************************

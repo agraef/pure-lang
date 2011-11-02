@@ -118,7 +118,11 @@ bounds it@(STLMMAP mm, _) = (STLMMAP mm), smm_bounds it;
 
 ::member (STLMMAP mm) key = smm_member mm key;
 
-::members it::smmit = smm_listmap 0 it smm_both; 
+::members it::smmit = smm_listmap 0 it smm_both;
+
+::next_key smm@(STLMMAP mm) key = smm_next mm key;
+
+::prev_key smm@(STLMMAP mm) key = smm_prev mm key;
 
 // ::list smm::stlmmap = members smm;  // use members
 
@@ -243,10 +247,6 @@ get_default smm@(STLMMAP mm) = smm_get_default mm if ~smm_is_set smm;
 ::delete_all_if pred smm@(STLMMAP mm) k = 
   smm_remove_if mm k pred 1 if ~smm_is_set smm;
 
-::next_key smm@(STLMMAP mm) key = smm_next mm key; // if ~smm_is_set s;
-
-::prev_key smm@(STLMMAP mm) key = smm_prev mm key; // if ~smm_is_set smm;
-
 ::keys it::smmit = smm_listmap 0 it smm_keys if ~smm_is_set it;
 
 ::vals it::smmit = smm_listmap 0 it smm_vals if ~smm_is_set it;
@@ -279,10 +279,6 @@ end;
   smm = ::emptystlmset;
   insert_elms smm it;
 end;
-
-::next_elm (STLMMAP mm) elm = smm_next mm elm;
-
-::prev_elm (STLMMAP mm) elm = smm_prev mm elm;
 
 (::+) it1::smmit it2::smmit = 
   smm_wrap $ smm_setop smm_union it1 it2 if both_msets it1 it2;

@@ -120,6 +120,10 @@ bounds it@(STLMAP m, _) = (STLMAP m), sm_bounds it;
 
 ::members it::smit = sm_listmap 0 it sm_both; 
 
+::next_key sm@(STLMAP m) key = sm_next m key;
+
+::prev_key sm@(STLMAP m) key = sm_prev m key;
+
 // ::list sm::stlmap = members sm;  // use members
 
 ::first it::smit = sm_first it;
@@ -241,10 +245,6 @@ get_default sm@(STLMAP m) = sm_get_default m if ~sm_is_set sm;
 
 ::delete_all_if pred sm@(STLMAP m) k = sm_remove_if m k pred if ~sm_is_set sm;
 
-::next_key sm@(STLMAP m) key = sm_next m key; // if ~sm_is_set s;
-
-::prev_key sm@(STLMAP m) key = sm_prev m key; // if ~sm_is_set sm;
-
 ::keys it::smit = sm_listmap 0 it sm_keys if ~sm_is_set it;
 
 ::vals it::smit = sm_listmap 0 it sm_vals if ~sm_is_set it;
@@ -277,10 +277,6 @@ end;
   sm = ::emptystlset;
   insert_elms sm it;
 end;
-
-::next_elm (STLMAP m) elm = sm_next m elm;
-
-::prev_elm (STLMAP m) elm = sm_prev m elm;
 
 (::+) it1::smit it2::smit = 
   sm_wrap $ sm_setop sm_union it1 it2 if both_sets it1 it2;

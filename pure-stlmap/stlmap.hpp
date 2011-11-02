@@ -53,6 +53,7 @@ typedef stlmap sm;
 struct sm_iters {
   sm* smp;
   bool is_valid;
+  int num_iters;
   pmi begin_it;
   pmi end_it;
   sm_iters(px* tpl);

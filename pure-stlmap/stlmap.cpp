@@ -322,14 +322,13 @@ static sm* get_sm_from_app(px* app)
 sm_iters::sm_iters(px* pmi_tuple)
 {
   size_t tpl_sz;
-  px** elems;
-  
+  px** elems;  
   is_valid = true;
   pure_is_tuplev(pmi_tuple, &tpl_sz, &elems);
   smp = get_sm_from_app(elems[0]);
   pxhmap &mp = smp->mp;
-  int num_iters = tpl_sz-1;
-  if (num_iters != 0 && num_iters != 2) {
+  num_iters = tpl_sz-1;
+  if (num_iters > 2) {
       is_valid = false;
       return;
   }
@@ -337,10 +336,11 @@ sm_iters::sm_iters(px* pmi_tuple)
     begin_it = mp.begin();
     end_it = mp.end();
     free(elems);
+    num_iters = 2;
   }
   else {
     px* b = elems[1];
-    px* e = elems[2];
+    px* e = num_iters == 2 ? elems[2] : b;
     px* comp = smp->px_comp.pxp();    
     free(elems);
     begin_it = get_iter(mp, b, gi_lower);

@@ -208,9 +208,8 @@ bool stlmmap::get_cached_pmmi(px* k, pmmi& i)
     has_recent_pmmi && same(recent_pmmi->first.pxp(), k);
   if (found) i = recent_pmmi;
 #ifdef STL_DEBUG
-  if (fou123
-nd && stl_smm_trace_enabled())
-    cerr <<"get_cached_pmmi, found "<< k <<" with refc:"<< k->refc << endl;
+  if (found && stl_smm_trace_enabled())
+    cerr <<"get_cached_pmmi, found " << k <<" with refc:"<< k->refc << endl;
 #endif
   return found;
 }
@@ -306,14 +305,13 @@ static smm* get_smm_from_app(px* app)
 smm_iters::smm_iters(px* pmmi_tuple)
 {
   size_t tpl_sz;
-  px** elems;
-  
+  px** elems;  
   is_valid = true;
   pure_is_tuplev(pmmi_tuple, &tpl_sz, &elems);
   smmp = get_smm_from_app(elems[0]);
   pxhmmap &mp = smmp->mp;
-  int num_iters = tpl_sz-1;
-  if (num_iters != 0 && num_iters != 2) {
+  num_iters = tpl_sz-1;
+  if (num_iters > 2) {
       is_valid = false;
       return;
   }
@@ -321,10 +319,11 @@ smm_iters::smm_iters(px* pmmi_tuple)
     begin_it = mp.begin();
     end_it = mp.end();
     free(elems);
+    num_iters = 2;
   }
   else {
     px* b = elems[1];
-    px* e = elems[2];
+    px* e = num_iters == 2 ? elems[2] : b;
     px* comp = smmp->px_comp.pxp();    
     free(elems);
     begin_it = get_iter(mp, b, gi_lower);
@@ -355,7 +354,7 @@ smm* smm_make_empty(px* comp, int keys_only)
   smm* ret  = new smm(comp, keys_only); 
 #ifdef STL_DEBUG
   if (stl_smm_trace_enabled())
-    cerr << "TRACE SD:    new smm*: " << ret << endl;
+    cerr << "TRACE SD:    new smm*: " << (void*)ret << endl;
 #endif
   return ret;
 }
@@ -487,28 +486,41 @@ int smm_member(smm* smmp, px* key)
 px* smm_prev(smm* smmp, px* key)
 {
   pxhmmap& mp = smmp->mp;
-  if (mp.empty()) index_error();
+  if (mp.empty()) index_error(); 
   pmmi i = mp.end();
   if ( !smmp->get_cached_pmmi(key,i) )
-    i = smmp->find(key);
-  if ( i == mp.begin() || i==mp.end() && key != smmend())
-    index_error();
-  else
-    i--;
-  smmp->cache_pmmi(i);
-  return iter_to_key(mp, i);
+    i = get_iter(mp,key,gi_find);
+  if ( i == mp.begin() ) index_error();
+  pxhmmap::value_compare kc = mp.value_comp();
+  pmmi prev;
+  if (i == mp.end()) {
+    prev = --i;
+  }
+  else {
+    while (i != mp.begin() ) {
+      prev = i; prev--;
+      if (kc(*prev,*i) ) break;
+      i--;
+    }
+    if (i == mp.begin()) failed_cond();
+  }
+  smmp->cache_pmmi(prev);
+  return iter_to_key(mp, prev);
 }
 
 px* smm_next(smm* smmp, px* key)
 {
   pxhmmap& mp = smmp->mp;
-  pmmi i = get_iter(
-  if (mp.empty()) index_error();
-  
-  if ( i == mp.end() )
-    index_error();
-  else
-    i++;
+  if (mp.empty()) index_error(); 
+  pmmi i = mp.end();
+  if ( !smmp->get_cached_pmmi(key,i) )
+    i = get_iter(mp,key,gi_find);
+  if ( i == mp.end() ) index_error();
+  pxhmmap::value_compare kc = mp.value_comp();
+  while (true) {
+    pmmi prev = i++;
+    if (i==mp.end() || kc(*prev,*i) ) break;
+  }
   smmp->cache_pmmi(i);
   return iter_to_key(mp, i);
 }

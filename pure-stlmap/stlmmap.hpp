@@ -53,6 +53,7 @@ typedef stlmmap smm;
 struct smm_iters {
   smm* smmp;
   bool is_valid;
+  int num_iters;
   pmmi begin_it;
   pmmi end_it;
   smm_iters(px* tpl);
