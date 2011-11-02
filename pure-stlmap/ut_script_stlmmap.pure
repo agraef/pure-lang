@@ -97,44 +97,67 @@ member smm1 "x", member smm1 "z";
 
 //*** Bidirectional iterator functions *******************************
 
-let smm1 = stlmmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]; members smm1;
-//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
-
+let smm1 = stlmmap ["a"=>1,"b"=>2,"b"=>3,"d"=>4,"e"=>5]; members smm1;
+//- ["a"=>1,"b"=>2,"b"=>3,"d"=>4,"e"=>5]
 let kb, ke = stl::stlbeg, stl::stlend; kb, ke;
 //- stl_begin_iterator,stl_end_iterator
-
-let k1 = next_key smm1 kb; k1;
-//- "b"
-
-let k2 = next_key smm1 k1; k2;
-//- "c"
-
-let k1 = prev_key smm1 k2; k2;
-//- "c"
-
-let k0 = prev_key smm1 k1; k0;
-//- stl_begin_iterator
-
+smm1!kb;
+//- [1]
+let k1 = next_key smm1 kb; k1, smm1!k1;
+//- "b",[2,3]
+let k2 = next_key smm1 k1; k2, smm1!k2;
+//- "b",[2,3]
+let k1 = prev_key smm1 k2; k2, smm1!k1;
+//- "b",[1]
+let k0 = prev_key smm1 k1; k0,  smm1!k0;
+//- eval "let k0 = prev_key smm1 k1; k0,  smm1!k0;"
 catch id $ prev_key smm1 kb; 
 //- out_of_bounds
-
 catch id $ prev_key smm1 k0; 
 //- out_of_bounds
-
-let k4 = prev_key smm1 ke; k4;
-//- "e"
-
-let k3 = prev_key smm1 k4; k3;
-//- "d"
-
-let k4 = next_key smm1 k3; k4;
-//- "e"
-
-let k5 = next_key smm1 k4; k5;
-//- stl_end_iterator
-
+let k4 = prev_key smm1 ke; k4, smm1!k4;
+//- "e",[5]
+let k3 = prev_key smm1 k4; k3, smm1!k3;
+//- "d",[4]
+let k4 = next_key smm1 k3; k4, smm1!k4;
+//- "e",[5]
+let k5 = next_key smm1 k4; k5, smm1!k5; 
+//- eval "let k5 = next_key smm1 k4; k5, smm1!k5; "
 catch id $ next_key smm1 ke; 
 //- out_of_bounds
+update_with (+) smm1 "a" 1; update_with (+) smm1 "a" 1; members smm1;
+//- ["a"=>1+[1]]
+
+
+let smm1 = stlmmap ["a"=>1,"b"=>2,"b"=>3,"d"=>4,"e"=>5]; members smm1;
+
+let kb, ke = stl::stlbeg, stl::stlend; kb, ke;
+
+smm1!kb;
+
+let k1 = next_key smm1 kb; k1, smm1!k1;
+
+let k2 = next_key smm1 k1; k2, smm1!k2;
+
+let k1 = prev_key smm1 k2; k2, smm1!k1;
+
+let k0 = prev_key smm1 k1; k0,  smm1!k0;
+
+catch id $ prev_key smm1 kb; 
+
+catch id $ prev_key smm1 k0; 
+
+let k4 = prev_key smm1 ke; k4, smm1!k4;
+
+let k3 = prev_key smm1 k4; k3, smm1!k3;
+
+let k4 = next_key smm1 k3; k4, smm1!k4;
+
+let k5 = next_key smm1 k4; k5, smm1!k5; 
+
+catch id $ next_key smm1 ke; 
+
+
 
 //*** Members, keys, vals, first, last ********************************
 
@@ -515,65 +538,65 @@ catmap_vals (\x->[x,x+10]) (smm1,"a","a");
 
 //** foldl, foldl1, foldr, foldr1 ***********************************
 
-let smm1 = stlmmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4]; members smm1;
-//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4]
+let smm1 = stlmmap ["a"=>1,"a"=>2,"b"=>3,"b"=>4,"c"=>5,"d"=>6]; members smm1;
+//- ["a"=>1,"a"=>2,"b"=>3,"b"=>4,"c"=>5,"d"=>6]
 
 foldl (\{r,l} (k=>v) -> {r+k,l+v}) {"",0} smm1;
-//- {"abcd",10}
+//- {"aabbcd",21}
 
 foldl (\{r,l} (k=>v) -> {r+k,l+v}) {"",0} (smm1,"a","d");
-//- {"abc",6}
+//- {"aabbc",15}
 
 foldl (\{r,l} (k=>v) -> {r+k,l+v}) {"",0} (smm1,"b",stl::stlend);
-//- {"bcd",9}
+//- {"bbcd",18}
 
 foldl (\{r,l} (k=>v) -> {r+k,l+v}) {"",0} (smm1,"b","d");
-//- {"bc",5}
+//- {"bbc",12}
 
 foldl (\{r,l} (k=>v) -> {r+k,l+v}) {"",0} (smm1,"b","b");
 //- {"",0}
 
 foldl1 (\(r=>l) (k=>v) -> (r+k=>l+v)) smm1;
-//- "abcd"=>10
+//- "aabbcd"=>21
 
 foldl1 (\(r=>l) (k=>v) -> (r+k=>l+v)) (smm1,"a","d");
-//- "abc"=>6
+//- "aabbc"=>15
 
 foldl1 (\(r=>l) (k=>v) -> (r+k=>l+v)) (smm1,"b",stl::stlend);
-//- "bcd"=>9
+//- "bbcd"=>18
 
 foldl1 (\(r=>l) (k=>v) -> (r+k=>l+v)) (smm1,"b","d");
-//- "bc"=>5
+//- "bbc"=>12
 
 foldl1 (\(r=>l) (k=>v) -> (r+k=>l+v)) (smm1,"b","b"); (); // fails
 //- ()
 
 foldr (\(k=>v) {r,l} -> {r+k,l+v}) {"",0} smm1;
-//- {"dcba",10}
+//- {"dcbbaa",21}
 
 foldr (\(k=>v) {r,l} -> {r+k,l+v}) {"",0} (smm1,"a","d");
-//- {"cba",6}
+//- {"cbbaa",15}
 
 foldr (\(k=>v) {r,l} -> {r+k,l+v}) {"",0} (smm1,"b",stl::stlend);
-//- {"dcb",9}
+//- {"dcbb",18}
 
 foldr (\(k=>v) {r,l} -> {r+k,l+v}) {"",0} (smm1,"b","d");
-//- {"cb",5}
+//- {"cbb",12}
 
 foldr (\(k=>v) {r,l} -> {r+k,l+v}) {"",0} (smm1,"b","b");
 //- {"",0}
 
 foldr1 (\(r=>l) (k=>v) -> (r+k=>l+v)) smm1;
-//- "abcd"=>10
+//- "aabbcd"=>21
 
 foldr1 (\(r=>l) (k=>v) -> (r+k=>l+v)) (smm1,"a","d");
-//- "abc"=>6
+//- "aabbc"=>15
 
 foldr1 (\(r=>l) (k=>v) -> (r+k=>l+v)) (smm1,"b",stl::stlend);
-//- "bcd"=>9
+//- "bbcd"=>18
 
 foldr1 (\(r=>l) (k=>v) -> (r+k=>l+v)) (smm1,"b","d");
-//- "bc"=>5
+//- "bbc"=>12
 
 foldr1 (\(r=>l) (k=>v) -> (r+k=>l+v)) (smm1,"b","b"); (); // fails
 //- ()

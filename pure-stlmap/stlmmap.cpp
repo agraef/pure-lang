@@ -108,7 +108,7 @@ static px* apply_fun(px* fun, int what, pmmi i, px** exception) {
   if (what == stl_smm_both) {
     pxi = pair_to_rocket(key, val);  // bump k, v refc
     px_new(pxi);
-   }
+  }
   else if (what == stl_smm_key)
     pxi = key; 
   else
@@ -502,10 +502,9 @@ px* smm_prev(smm* smmp, px* key)
 px* smm_next(smm* smmp, px* key)
 {
   pxhmmap& mp = smmp->mp;
-  pmmi i = mp.end();
+  pmmi i = get_iter(
   if (mp.empty()) index_error();
-  if ( !smmp->get_cached_pmmi(key,i) )
-    i = smmp->find(key);
+  
   if ( i == mp.end() )
     index_error();
   else
@@ -595,6 +594,7 @@ smm* smm_setop(int op, px* tpl1, px* tpl2)
   }
 }
 
+// FIX ME
 px* smm_update(smm* smmp, px* key, px* val)
 {
   if (smmp->keys_only) return 0; // fail for sets
@@ -602,6 +602,7 @@ px* smm_update(smm* smmp, px* key, px* val)
   return val;
 }
 
+// FIX ME
 px* smm_update_with(smm* smmp, px* key, px* unaryfun)
 {
   if (smmp->keys_only) return 0; // fail for sets
