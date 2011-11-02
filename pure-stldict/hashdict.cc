@@ -319,9 +319,11 @@ extern "C" void hashdict_add(myhashdict *m, pure_expr *key)
   myhashdict::iterator it = m->find(key);
   if (it != m->end()) {
     if (it->second) pure_free(it->second);
-  } else
+    it->second = 0;
+  } else {
     pure_new(key);
-  (*m)[key] = 0;
+    (*m)[key] = 0;
+  }
 }
 
 extern "C" void hashdict_add2(myhashdict *m, pure_expr *key, pure_expr *val)
@@ -329,9 +331,11 @@ extern "C" void hashdict_add2(myhashdict *m, pure_expr *key, pure_expr *val)
   myhashdict::iterator it = m->find(key);
   if (it != m->end()) {
     if (it->second) pure_free(it->second);
-  } else
+    it->second = pure_new(val);
+  } else {
     pure_new(key);
-  (*m)[key] = pure_new(val);
+    (*m)[key] = pure_new(val);
+  }
 }
 
 extern "C" void hashdict_del(myhashdict *m, pure_expr *key)

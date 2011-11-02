@@ -334,9 +334,11 @@ extern "C" void orddict_add(myorddict *m, pure_expr *key)
   myorddict::iterator it = m->find(key);
   if (it != m->end()) {
     if (it->second) pure_free(it->second);
-  } else
+    it->second = 0;
+  } else {
     pure_new(key);
-  (*m)[key] = 0;
+    (*m)[key] = 0;
+  }
 }
 
 extern "C" void orddict_add2(myorddict *m, pure_expr *key, pure_expr *val)
@@ -344,9 +346,11 @@ extern "C" void orddict_add2(myorddict *m, pure_expr *key, pure_expr *val)
   myorddict::iterator it = m->find(key);
   if (it != m->end()) {
     if (it->second) pure_free(it->second);
-  } else
+    it->second = pure_new(val);
+  } else {
     pure_new(key);
-  (*m)[key] = pure_new(val);
+    (*m)[key] = pure_new(val);
+  }
 }
 
 extern "C" void orddict_del(myorddict *m, pure_expr *key)
