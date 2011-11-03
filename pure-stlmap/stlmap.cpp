@@ -873,13 +873,14 @@ px* sm_listcatmap(px* fun, px* tpl, int what)
   return res;  
 }
 
-static px* sm_foldl_itrs(px* fun, px* val, pmi beg, pmi end, int mode)
+static px* sm_foldl_itrs(px* fun, px* val, pmi i, pmi end, int mode)
 { 
   px* res = px_new(val);
   px* exception = 0;
-  for (pmi i = beg; i != end; i++){
+  while (i != end){
+    pmi trg = i++;
     px* fun_v = pure_appl(fun, 1, res);
-    px* fxy = apply_fun(fun_v, mode, i, &exception);
+    px* fxy = apply_fun(fun_v, mode, trg, &exception);
     if (exception) {
       px_unref(res);
       throw exception;
@@ -928,8 +929,9 @@ static px* sm_foldr_itrs(px* fun, px* val, pmi beg, pmi end, int mode)
   px* res = px_new(val);
   px* exception = 0;
   pmi i = end;
-  while (i-- != beg) {
-    px* fun_v = apply_fun(fun, mode, i, &exception);
+  while (i != beg) {
+    pmi trg = --i;
+    px* fun_v = apply_fun(fun, mode, trg, &exception);
     px_ref(fun_v);
     px* fxy = pure_appxl(fun_v, &exception, 1, res);
     if (exception) {

@@ -294,19 +294,6 @@ static smm* get_smm_from_app(px* app)
   return (smm*)ret; 
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
 // sets two iterators [beg, end)
 // one key goes to "k, k++)
 // if first >= last then use  mp.end(), mp.end()
@@ -366,7 +353,7 @@ smm_iters::smm_iters(px* pmmi_tuple)
  done:
   free(elems);
   if (end_it != mp.end() && k_cmp(end_it->first, begin_it->first) )
-    failed_cond();
+    begin_it=end_it;
 }
 
 /*** Functions for multimap<pxh,pxh,pxh_pred2> *******************************/
@@ -907,13 +894,14 @@ px* smm_listcatmap(px* fun, px* tpl, int what)
   return res;  
 }
 
-static px* smm_foldl_itrs(px* fun, px* val, pmmi beg, pmmi end, int mode)
+static px* smm_foldl_itrs(px* fun, px* val, pmmi i, pmmi end, int mode)
 { 
   px* res = px_new(val);
   px* exception = 0;
-  for (pmmi i = beg; i != end; i++){
+  while (i != end){
+    pmmi trg = i++;
     px* fun_v = pure_appl(fun, 1, res);
-    px* fxy = apply_fun(fun_v, mode, i, &exception);
+    px* fxy = apply_fun(fun_v, mode, trg, &exception);
     if (exception) {
       px_unref(res);
       throw exception;
@@ -962,8 +950,9 @@ static px* smm_foldr_itrs(px* fun, px* val, pmmi beg, pmmi end, int mode)
   px* res = px_new(val);
   px* exception = 0;
   pmmi i = end;
-  while (i-- != beg) {
-    px* fun_v = apply_fun(fun, mode, i, &exception);
+  while (i != beg) {
+    pmmi trg = --i;
+    px* fun_v = apply_fun(fun, mode, trg, &exception);
     px_ref(fun_v);
     px* fxy = pure_appxl(fun_v, &exception, 1, res);
     if (exception) {

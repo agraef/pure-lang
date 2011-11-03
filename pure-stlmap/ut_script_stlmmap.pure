@@ -266,28 +266,115 @@ insert_elms smm1 (smm2,"k","k"); members smm1;
 insert_elms smm1 (smm2,"k","l"); members smm1;
 //- ["b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7,"k"=>11]
 
-do (\x->erase (smm1,x)) ("a".."e"); members smm1;
-//- ["f"=>6,"g"=>7,"k"=>11]
+do (\k->erase (smm1,k)) ("c".."d"); members smm1;
+//- ["b"=>2,"e"=>5,"f"=>6,"g"=>7,"k"=>11]
 
-insert_elms smm1 (smm2,"k=>10","m"); members smm1;
-//- ["f"=>6,"g"=>7,"k"=>11,"l"=>12]
+insert_elms smm1 (smm2,"k","m"); members smm1;
+//- ["b"=>2,"e"=>5,"f"=>6,"g"=>7,"k"=>11,"k"=>11,"l"=>12]
 
-insert_elms smm1 (smm2,"k",stl::stlend); members smm1;
-//- ["f"=>6,"g"=>7,"k"=>11,"k"=>11,"l"=>12,"l"=>12,"m"=>13]
+insert_elms smm1 (smm2,"l",stl::stlend); members smm1;
+//- ["b"=>2,"e"=>5,"f"=>6,"g"=>7,"k"=>11,"k"=>11,"l"=>12,"l"=>12,"m"=>13]
 
-do (\x->erase (smm1,x)) ("k".."m"); members smm1;
-//- ["f"=>6,"g"=>7]
+do (\k->erase (smm1,k)) ("k".."m"); members smm1;
+//- ["b"=>2,"e"=>5,"f"=>6,"g"=>7]
 
 insert_elms smm1 ["a"=>10,"b"=>21,"b"=>20]; members smm1;
-//- ["a"=>10,"b"=>21,"b"=>20,"f"=>6,"g"=>7]
+//- ["a"=>10,"b"=>2,"b"=>21,"b"=>20,"e"=>5,"f"=>6,"g"=>7]
 
 insert_elms smm1 {"b"=>20,"b"=>22}; members smm1;
-//- ["a"=>10,"b"=>21,"b"=>20,"b"=>20,"b"=>22,"f"=>6,"g"=>7]
+//- ["a"=>10,"b"=>2,"b"=>21,"b"=>20,"b"=>20,"b"=>22,"e"=>5,"f"=>6,"g"=>7]
 
 catch id (insert smm1 ("e")); //can only insert rocket pairs
 //- bad_argument
 
-//-- --stop
+//*** Range specifications - corner cases *******************************
+
+let smm1 = stlmmap ["a"=>1,"a"=>1,"b"=>2,"b"=>2,"b"=>2,"e"=>3,"x"=>10,"x"=>10];
+//- ()
+
+members smm1;
+//- ["a"=>1,"a"=>1,"b"=>2,"b"=>2,"b"=>2,"e"=>3,"x"=>10,"x"=>10]
+
+catch id $ members (smm1,"0");
+//- out_of_bounds
+
+members (smm1,stl::stlbeg);
+//- ["a"=>1,"a"=>1]
+
+members (smm1,"a");
+//- ["a"=>1,"a"=>1]
+
+members (smm1,"e");
+//- ["e"=>3]
+
+catch id $ members (smm1,"f");
+//- out_of_bounds
+
+members (smm1,"x");
+//- ["x"=>10,"x"=>10]
+
+catch id $ members (smm1,"z");
+//- out_of_bounds
+
+members (smm1,"0","0");
+//- []
+
+members (smm1,"a","0");
+//- []
+
+members (smm1,stl::stlbeg,"0");
+//- []
+
+members (smm1,stl::stlbeg,"c");
+//- ["a"=>1,"a"=>1,"b"=>2,"b"=>2,"b"=>2]
+
+members (smm1,stl::stlbeg,"f");
+//- ["a"=>1,"a"=>1,"b"=>2,"b"=>2,"b"=>2,"e"=>3]
+
+members (smm1,stl::stlbeg,"x");
+//- ["a"=>1,"a"=>1,"b"=>2,"b"=>2,"b"=>2,"e"=>3]
+
+members (smm1,stl::stlbeg,stl::stlend);
+//- ["a"=>1,"a"=>1,"b"=>2,"b"=>2,"b"=>2,"e"=>3,"x"=>10,"x"=>10]
+
+members (smm1,stl::stlend,stl::stlend);
+//- []
+
+members (smm1,"0",stl::stlend);
+//- ["a"=>1,"a"=>1,"b"=>2,"b"=>2,"b"=>2,"e"=>3,"x"=>10,"x"=>10]
+
+members (smm1,"c",stl::stlend);
+//- ["e"=>3,"x"=>10,"x"=>10]
+
+members (smm1,"c","z");
+//- ["e"=>3,"x"=>10,"x"=>10]
+
+members (smm1,"b","x");
+//- ["b"=>2,"b"=>2,"b"=>2,"e"=>3]
+
+members (smm1,"b","f");
+//- ["b"=>2,"b"=>2,"b"=>2,"e"=>3]
+
+members (smm1,stl::stlend,stl::stlbeg);
+//- []
+
+members (smm1,"z","c");
+//- []
+
+members (smm1,"z","x");
+//- []
+
+members (smm1,"z","z");
+//- []
+
+members (smm1,"x","c");
+//- []
+
+members (smm1,"x","0");
+//- []
+
+members (smm1,"x","f");
+//- []
 
 //*** rmfirst, rmlast, erase *******************************************
 
@@ -339,7 +426,7 @@ let smm3 = stlmmap ["f"=>6,"g"=>7,"h"=>8,"i"=>9]; members smm3;
 insert_elms smm1 (smm3,"g","i"); members smm1;
 //- ["a"=>1,"b"=>2,"c"=>3,"e"=>5,"g"=>7,"h"=>8]
 
-delete smm1 "h"; members smm1;
+erase (smm1,"h"); members smm1;
 //- ["a"=>1,"b"=>2,"c"=>3,"e"=>5,"g"=>7]
 
 insert_elms smm1 ["e"=>7,"e"=>6]; members smm1;
@@ -353,17 +440,14 @@ let smm1 = stlmmap ["a"=>1,"b"=>2,"c"=>3,"d"=>5,"d"=>6,"d"=>7,"d"=>8];
 members smm1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>5,"d"=>6,"d"=>7,"d"=>8]
 
-delete_if (==1) smm1 "d"; members smm1;
-//- ["a"=>1,"b"=>2,"c"=>3,"d"=>5,"d"=>6,"d"=>7,"d"=>8]
+erase_if (\(_=>v)->v==1) smm1; members smm1;
+//- ["b"=>2,"c"=>3,"d"=>5,"d"=>6,"d"=>7,"d"=>8]
 
-delete_if (==6) smm1 "d"; members smm1;
-//- ["a"=>1,"b"=>2,"c"=>3,"d"=>5,"d"=>7,"d"=>8]
+erase_if (\(_=>v)->v==6) (smm1,"d"); members smm1;
+//- ["b"=>2,"c"=>3,"d"=>5,"d"=>7,"d"=>8]
 
-delete_all_if (>100) smm1 "d"; members smm1;
-//- ["a"=>1,"b"=>2,"c"=>3,"d"=>5,"d"=>7,"d"=>8]
-
-delete_all_if (<8) smm1 "d"; members smm1;
-//- ["a"=>1,"b"=>2,"c"=>3,"d"=>8]
+erase_if (\(_=>v)->v<8) (smm1,"d"); members smm1;
+//- ["b"=>2,"c"=>3,"d"=>8]
 
 //*** allpairs, ==, ~== ***********************************************
 
@@ -635,7 +719,7 @@ member smm1 "a";
 smm1!"a";
 //- [1,2,3]
 
-delete smm1 "a"; members smm1;
+erase_if (==("a"=>1)) (smm1,"a"); members smm1;
 //- ["a"=>2,"a"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7,"h"=>8,"i"=>9,"j"=>10]
 
 smm1!"a";
@@ -644,8 +728,7 @@ smm1!"a";
 member smm1 "a";
 //- 1
 
-
-delete_all smm1 "a"; members smm1;
+erase (smm1,"a"); members smm1;
 //- ["d"=>4,"e"=>5,"f"=>6,"g"=>7,"h"=>8,"i"=>9,"j"=>10]
 
 catch id (smm1!"a");
@@ -697,6 +780,9 @@ stl::set_smm_trace 0;
 //- ()
 
 //*** Fancy updating - C++ default value style ********************* 
+
+//FIX
+//-- --stop
 
 let smm1 = emptystlmmap; members smm1;
 //- []

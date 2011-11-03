@@ -20,6 +20,7 @@
 //*** Imports *********************************************************
 
 using system, stlmap, stlvec;
+//- ()
 
 //*** Make stlset ******************************************************
 
@@ -245,6 +246,92 @@ insert_elms ss1 (ss2,"k",stl::stlend); members ss1;
 
 catch id (insert ss1 ("e"=>5)); //can't compare string to rocket
 //- failed_cond
+
+//*** Range specifications - corner cases *******************************
+
+let ss1 = stlset ["a","b","c","d","e","x"]; members ss1;
+//- ["a","b","c","d","e","x"]
+
+catch id $ members (ss1,"0");
+//- out_of_bounds
+
+members (ss1,stl::stlbeg);
+//- ["a"]
+
+members (ss1,"a");
+//- ["a"]
+
+members (ss1,"e");
+//- ["e"]
+
+catch id $ members (ss1,"f");
+//- out_of_bounds
+
+members (ss1,"x");
+//- ["x"]
+
+catch id $ members (ss1,"z");
+//- out_of_bounds
+
+members (ss1,"0","0");
+//- []
+
+members (ss1,"a","0");
+//- []
+
+members (ss1,stl::stlbeg,"0");
+//- []
+
+members (ss1,stl::stlbeg,"c");
+//- ["a","b"]
+
+members (ss1,stl::stlbeg,"f");
+//- ["a","b","c","d","e"]
+
+members (ss1,stl::stlbeg,"x");
+//- ["a","b","c","d","e"]
+
+members (ss1,stl::stlbeg,stl::stlend);
+//- ["a","b","c","d","e","x"]
+
+members (ss1,stl::stlend,stl::stlend);
+//- []
+
+members (ss1,"0",stl::stlend);
+//- ["a","b","c","d","e","x"]
+
+members (ss1,"c",stl::stlend);
+//- ["c","d","e","x"]
+
+members (ss1,"c","z");
+//- ["c","d","e","x"]
+
+members (ss1,"c","x");
+//- ["c","d","e"]
+
+members (ss1,"c","f");
+//- ["c","d","e"]
+
+members (ss1,stl::stlend,stl::stlbeg);
+//- []
+
+members (ss1,"z","c");
+//- []
+
+members (ss1,"z","x");
+//- []
+
+members (ss1,"z","z");
+//- []
+
+members (ss1,"x","c");
+//- []
+
+members (ss1,"x","0");
+//- []
+
+members (ss1,"x","f");
+//- []
 
 //*** rmfirst, rmlast, erase and ********************************
 

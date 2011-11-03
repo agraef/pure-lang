@@ -271,6 +271,93 @@ insert_elms sm1 (sm2,"k",stl::stlend); members sm1;
 catch id (insert sm1 ("e")); //can only insert rocket pairs
 //- bad_argument
 
+//*** Range specifications - corner cases *******************************
+
+let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"x"=>100]; members sm1;
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"x"=>100]
+
+catch id $ members (sm1,"0");
+//- out_of_bounds
+
+members (sm1,stl::stlbeg);
+//- ["a"=>1]
+
+members (sm1,"a");
+//- ["a"=>1]
+
+members (sm1,"e");
+//- ["e"=>5]
+
+catch id $ members (sm1,"f");
+//- out_of_bounds
+
+members (sm1,"x");
+//- ["x"=>100]
+
+catch id $ members (sm1,"z");
+//- out_of_bounds
+
+
+members (sm1,"0","0");
+//- []
+
+members (sm1,"a","0");
+//- []
+
+members (sm1,stl::stlbeg,"0");
+//- []
+
+members (sm1,stl::stlbeg,"c");
+//- ["a"=>1,"b"=>2]
+
+members (sm1,stl::stlbeg,"f");
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
+
+members (sm1,stl::stlbeg,"x");
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
+
+members (sm1,stl::stlbeg,stl::stlend);
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"x"=>100]
+
+members (sm1,stl::stlend,stl::stlend);
+//- []
+
+members (sm1,"0",stl::stlend);
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"x"=>100]
+
+members (sm1,"c",stl::stlend);
+//- ["c"=>3,"d"=>4,"e"=>5,"x"=>100]
+
+members (sm1,"c","z");
+//- ["c"=>3,"d"=>4,"e"=>5,"x"=>100]
+
+members (sm1,"c","x");
+//- ["c"=>3,"d"=>4,"e"=>5]
+
+members (sm1,"c","f");
+//- ["c"=>3,"d"=>4,"e"=>5]
+
+members (sm1,stl::stlend,stl::stlbeg);
+//- []
+
+members (sm1,"z","c");
+//- []
+
+members (sm1,"z","x");
+//- []
+
+members (sm1,"z","z");
+//- []
+
+members (sm1,"x","c");
+//- []
+
+members (sm1,"x","0");
+//- []
+
+members (sm1,"x","f");
+//- []
+
 //*** rmfirst, rmlast, erase ********************************************
 
 let sm1 = stlmap ["a"=>100,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"x"=>200,"y"=>0];

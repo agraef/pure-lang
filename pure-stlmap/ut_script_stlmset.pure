@@ -20,8 +20,7 @@
 //*** Imports *********************************************************
 
 using system, stlmmap, stlvec;
-
-//-- --stop
+//- ()
 
 //*** Make stlmset ******************************************************
 
@@ -211,7 +210,7 @@ last (sms1,"0",stl::stlend);
 //- "y"
 
 //*** insert ***********************************************************
-//-- --resume
+
 let sms1 = stlmset ["a","b","c","d","e"]; members sms1; 
 //- ["a","b","c","d","e"]
 
@@ -260,6 +259,101 @@ insert_elms sms1 {"a","b","b"}; members sms1;
 catch id (insert sms1 ("e"=>5)); //can't compare string to rocket
 //- failed_cond
 
+//*** Range specifications - corner cases *******************************
+
+let sms1 = stlmset ["a","a","b","b","b","e","x","x"]; members sms1;
+//- ["a","a","b","b","b","e","x","x"]
+
+catch id $ members (sms1,"0");
+//- out_of_bounds
+
+members (sms1,stl::stlbeg);
+//- ["a","a"]
+
+members (sms1,"a");
+//- ["a","a"]
+
+members (sms1,"e");
+//- ["e"]
+
+catch id $ members (sms1,"f");
+//- out_of_bounds
+
+members (sms1,"x");
+//- ["x","x"]
+
+catch id $ members (sms1,"z");
+//- out_of_bounds
+
+members (sms1,"0","0");
+//- []
+
+members (sms1,"a","0");
+//- []
+
+members (sms1,stl::stlbeg,"0");
+//- []
+
+members (sms1,stl::stlbeg,"b");
+//- ["a","a"]
+
+members (sms1,stl::stlbeg,"d");
+//- ["a","a","b","b","b"]
+
+members (sms1,stl::stlbeg,"e");
+//- ["a","a","b","b","b"]
+
+members (sms1,stl::stlbeg,"f");
+//- ["a","a","b","b","b","e"]
+
+members (sms1,stl::stlbeg,"x");
+//- ["a","a","b","b","b","e"]
+
+members (sms1,stl::stlbeg,"z");
+//- ["a","a","b","b","b","e","x","x"]
+
+members (sms1,stl::stlbeg,stl::stlend);
+//- ["a","a","b","b","b","e","x","x"]
+
+members (sms1,stl::stlend,stl::stlend);
+//- []
+
+members (sms1,"0",stl::stlend);
+//- ["a","a","b","b","b","e","x","x"]
+
+members (sms1,"c",stl::stlend);
+//- ["e","x","x"]
+
+members (sms1,"c","z");
+//- ["e","x","x"]
+
+members (sms1,"b","x");
+//- ["b","b","b","e"]
+
+members (sms1,"b","f");
+//- ["b","b","b","e"]
+
+members (sms1,stl::stlend,stl::stlbeg);
+//- []
+
+members (sms1,"z","c");
+//- []
+
+members (sms1,"z","x");
+//- []
+
+members (sms1,"z","z");
+//- []
+
+members (sms1,"x","c");
+//- []
+
+members (sms1,"x","0");
+//- []
+
+members (sms1,"x","f");
+//- []
+
 //*** rmfirst, rmlast, erase ******************************************
 
 let sms1 = stlmset ["a","b","c","d","e","x","y"]; members sms1; 
@@ -277,7 +371,7 @@ rmfirst (sms1,"e","z"); members sms1;
 rmlast (sms1,"a","x"); members sms1;
 //- ["b","c","x"]
 
-//-- --stop
+// //-- --stop
 erase (sms1,"c"); members sms1;
 //- ["b","x"]
 
@@ -320,19 +414,17 @@ erase (sms1,"e"); members sms1;
 erase (sms1,"g"); members sms1;
 //- ["a","b","c"]
 
-erase (sms1,"k"); members sms1;
-//- ["a","b","c"]
+catch id $ erase (sms1,"k");
+//- out_of_bounds
 
-erase (sms1,"0"); members sms1;
-//- ["a","b","c"]
+catch id $ erase (sms1,"0");
+//- out_of_bounds
 
 erase (sms1, "a"); members sms1;
 //- ["b","c"]
 
 erase (sms1, stl::stlbeg); members sms1;
 //- ["c"]
-
-
 
 //*** allpairs, ==, ~== ***********************************************
 
