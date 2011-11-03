@@ -1,4 +1,4 @@
-//-- --comment c_off --resume --verbose on
+//-- --comment c_off --resume --verbose off
 
 /* ut_script_stlmset.pure -- examples for basic ops on stlmset.
 
@@ -20,6 +20,8 @@
 //*** Imports *********************************************************
 
 using system, stlmmap, stlvec;
+
+//-- --stop
 
 //*** Make stlmset ******************************************************
 
@@ -209,7 +211,7 @@ last (sms1,"0",stl::stlend);
 //- "y"
 
 //*** insert ***********************************************************
-
+//-- --resume
 let sms1 = stlmset ["a","b","c","d","e"]; members sms1; 
 //- ["a","b","c","d","e"]
 
@@ -237,7 +239,7 @@ insert_elms sms1 (sms2,"k","k"); members sms1;
 insert_elms sms1 (sms2,"k","l"); members sms1;
 //- ["a","a","a","a","b","c","d","e","f","g","k"]
 
-do (delete_all sms1) ("a".."e"); members sms1;
+do (\x->erase (sms1,x)) ("a".."e"); members sms1;
 //- ["f","g","k"]
 
 insert_elms sms1 (sms2,"k","m"); members sms1;
@@ -246,7 +248,7 @@ insert_elms sms1 (sms2,"k","m"); members sms1;
 insert_elms sms1 (sms2,"k",stl::stlend); members sms1;
 //- ["f","g","k","k","k","l","l","m"]
 
-do (delete_all sms1) ("k".."m"); members sms1;
+do (\x->erase (sms1,x)) ("k".."m"); members sms1;
 //- ["f","g"]
 
 insert_elms sms1 ["a","b","b"]; members sms1;
@@ -258,7 +260,7 @@ insert_elms sms1 {"a","b","b"}; members sms1;
 catch id (insert sms1 ("e"=>5)); //can't compare string to rocket
 //- failed_cond
 
-//*** rmfirst, rmlast, erase and delete ********************************
+//*** rmfirst, rmlast, erase ******************************************
 
 let sms1 = stlmset ["a","b","c","d","e","x","y"]; members sms1; 
 //- ["a","b","c","d","e","x","y"]
@@ -275,7 +277,8 @@ rmfirst (sms1,"e","z"); members sms1;
 rmlast (sms1,"a","x"); members sms1;
 //- ["b","c","x"]
 
-erase (sms1,"c","e"); members sms1;
+//-- --stop
+erase (sms1,"c"); members sms1;
 //- ["b","x"]
 
 erase sms1; members sms1;
@@ -305,31 +308,28 @@ let sms3 = stlmset ("f".."i"); members sms3;
 insert_elms sms1 (sms3,"g","i"); members sms1;
 //- ["a","b","c","e","g","h"]
 
-delete sms1 "h"; members sms1;
+erase (sms1,"h"); members sms1;
 //- ["a","b","c","e","g"]
 
 insert_elms sms1 ["e","e"]; members sms1;
 //- ["a","b","c","e","e","e","g"]
 
-delete sms1 "e"; members sms1;
-//- ["a","b","c","e","e","g"]
-
-delete_all sms1 "e"; members sms1;
+erase (sms1,"e"); members sms1;
 //- ["a","b","c","g"]
 
-delete_all sms1 "g"; members sms1;
+erase (sms1,"g"); members sms1;
 //- ["a","b","c"]
 
-delete_all sms1 "k"; members sms1;
+erase (sms1,"k"); members sms1;
 //- ["a","b","c"]
 
-delete_all sms1 "0"; members sms1;
+erase (sms1,"0"); members sms1;
 //- ["a","b","c"]
 
-delete_all sms1 "a"; members sms1;
+erase (sms1, "a"); members sms1;
 //- ["b","c"]
 
-delete_all sms1 stl::stlbeg; members sms1;
+erase (sms1, stl::stlbeg); members sms1;
 //- ["c"]
 
 
@@ -713,7 +713,7 @@ member sms1 "a";
 sms1!"a";
 //- 1
 
-delete sms1 "b"; members sms1;
+erase (sms1, "b"); members sms1;
 //- ["a","c","d","e","f","g","h","i","j"]
 
 sms1!"a";
@@ -722,7 +722,7 @@ sms1!"a";
 member sms1 "a";
 //- 1
 
-delete sms1 "a"; members sms1;
+erase (sms1,"a"); members sms1;
 //- ["c","d","e","f","g","h","i","j"]
 
 member sms1 "a";

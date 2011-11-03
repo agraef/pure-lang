@@ -251,7 +251,7 @@ insert_elms smm1 ["a"=>10,"f"=>6]; members smm1;
 insert_elms smm1 {"a"=>10,"g"=>7}; members smm1;
 //- ["a"=>1,"a"=>10,"a"=>10,"a"=>10,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7]
 
-delete_all smm1 "a"; members smm1;
+erase (smm1,"a"); members smm1;
 //- ["b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7]
 
 insert_elms smm1 (smm2,"x","z"); members smm1;
@@ -266,7 +266,7 @@ insert_elms smm1 (smm2,"k","k"); members smm1;
 insert_elms smm1 (smm2,"k","l"); members smm1;
 //- ["b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7,"k"=>11]
 
-do (delete smm1) ("a".."e"); members smm1;
+do (\x->erase (smm1,x)) ("a".."e"); members smm1;
 //- ["f"=>6,"g"=>7,"k"=>11]
 
 insert_elms smm1 (smm2,"k=>10","m"); members smm1;
@@ -275,7 +275,7 @@ insert_elms smm1 (smm2,"k=>10","m"); members smm1;
 insert_elms smm1 (smm2,"k",stl::stlend); members smm1;
 //- ["f"=>6,"g"=>7,"k"=>11,"k"=>11,"l"=>12,"l"=>12,"m"=>13]
 
-do (delete_all smm1) ("k".."m"); members smm1;
+do (\x->erase (smm1,x)) ("k".."m"); members smm1;
 //- ["f"=>6,"g"=>7]
 
 insert_elms smm1 ["a"=>10,"b"=>21,"b"=>20]; members smm1;
@@ -287,7 +287,9 @@ insert_elms smm1 {"b"=>20,"b"=>22}; members smm1;
 catch id (insert smm1 ("e")); //can only insert rocket pairs
 //- bad_argument
 
-//*** rmfirst, rmlast, erase and ***************************************
+//-- --stop
+
+//*** rmfirst, rmlast, erase *******************************************
 
 let smm1 = stlmmap ["a"=>100,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"x"=>200,"y"=>0];
 //- ()

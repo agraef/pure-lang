@@ -58,10 +58,11 @@ private extern void  sm_insert_elms_stlvec(void* map, expr* tpl);
 private extern void  sm_insert_elms_stlmap(void* map, expr* tpl);
 private extern void  sm_rmfirst(expr* tpl);
 private extern void  sm_rmlast(expr* tpl);
-private extern void  sm_erase(expr* it);
-private extern void  sm_clear(void* map);
-private extern int   sm_remove(void* map, expr* x);
-private extern int   sm_remove_if(void* map, expr* x, expr* pred);
+private extern int   sm_erase(expr* it);
+private extern int   sm_erase_if (expr* pred, expr* it);
+private extern int   sm_clear(void* map);
+// private extern int   sm_remove(void* map, expr* x);
+// private extern int   sm_remove_if(void* map, expr* x, expr* pred);
 private extern int   sm_allpairs(expr* fun, expr* it, expr* it);
 private extern expr* sm_listmap(expr* fun, expr* it, int what);
 private extern expr* sm_listcatmap(expr* fun, expr* it, int what);
@@ -144,13 +145,11 @@ bounds it@(STLMAP m, _) = (STLMAP m), sm_bounds it;
 
 ::insert_elms sm@(STLMAP m) it::svit = sm_insert_elms_stlvec m it $$ sm;
 
-::erase it@(STLMAP m, f, e) = sm_erase it $$ STLMAP m;
+::erase sm@(STLMAP m) = sm_clear m;
 
-::erase sm@(STLMAP m) = sm_clear m $$ sm;
+::erase it::smit = sm_erase it;
 
-::delete (STLMAP m) k = sm_remove m k;
-
-::delete_all sm@(STLMAP m) k = sm_remove m k;
+::erase_if pred smit = sm_erase_if pred smit;
 
 allpairs fun it1::smit it2::smit = sm_allpairs fun it1 it2 
   if both_sets it1 it2 && functionp fun && nargs fun == 2 ;
@@ -240,10 +239,6 @@ get_default sm@(STLMAP m) = sm_get_default m if ~sm_is_set sm;
 
 ::update_with f sm@(STLMAP m) key x = 
   sm_update_with m key (f x) $$ sm if ~sm_is_set sm;
-
-::delete_if pred sm@(STLMAP m) k = sm_remove_if m k pred if ~sm_is_set sm;
-
-::delete_all_if pred sm@(STLMAP m) k = sm_remove_if m k pred if ~sm_is_set sm;
 
 ::keys it::smit = sm_listmap 0 it sm_keys if ~sm_is_set it;
 

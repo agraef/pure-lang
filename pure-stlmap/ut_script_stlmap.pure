@@ -271,7 +271,7 @@ insert_elms sm1 (sm2,"k",stl::stlend); members sm1;
 catch id (insert sm1 ("e")); //can only insert rocket pairs
 //- bad_argument
 
-//*** rmfirst, rmlast, erase and delete ********************************
+//*** rmfirst, rmlast, erase ********************************************
 
 let sm1 = stlmap ["a"=>100,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"x"=>200,"y"=>0];
 //- ()
@@ -315,18 +315,35 @@ stl::null (sm1,"b","c");
 stl::null (sm1,"b","b");
 //- 1
 
-let sm8 = stlmap $ zipwith (=>) ("f".."i") (6..9); members sm8;
+let sm3 = stlmap $ zipwith (=>) ("f".."i") (6..9); members sm3;
 //- ["f"=>6,"g"=>7,"h"=>8,"i"=>9]
 
-insert_elms sm1 (sm8,"g","i"); members sm1;
+insert_elms sm1 (sm3,"g","i"); members sm1;
 //- ["a"=>1,"b"=>2,"c"=>3,"e"=>5,"g"=>7,"h"=>8]
 
 insert_elms sm1 $ zipwith (=>) ("j".."l") (10..12); members sm1;
 //- ["a"=>1,"b"=>2,"c"=>3,"e"=>5,"g"=>7,"h"=>8,"j"=>10,"k"=>11,"l"=>12]
 
-delete sm1 "l"; members sm1;
-//- ["a"=>1,"b"=>2,"c"=>3,"e"=>5,"g"=>7,"h"=>8,"j"=>10,"k"=>11]
+erase_if (\(_=>v)->v mod 2) (sm1,"a","g");
+//- 3
 
+members sm1;
+//- ["b"=>2,"g"=>7,"h"=>8,"j"=>10,"k"=>11,"l"=>12]
+
+let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]; members sm1;
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
+
+erase_if (cst 1) (sm1,"a","b");
+//- 1
+
+members sm1;
+//- ["b"=>2,"c"=>3,"d"=>4,"e"=>5]
+
+erase_if (cst 1) (sm1,"c");
+//- 1
+
+members sm1;
+//- ["b"=>2,"d"=>4,"e"=>5]
 
 //*** allpairs, ==, ~== ***********************************************
 
@@ -598,7 +615,7 @@ member sm1 "a";
 sm1!"a";
 //- 1
 
-delete sm1 "b"; members sm1;
+erase (sm1,"b"); members sm1;
 //- ["a"=>1,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7,"h"=>8,"i"=>9,"j"=>10]
 
 sm1!"a";
@@ -607,7 +624,7 @@ sm1!"a";
 member sm1 "a";
 //- 1
 
-delete sm1 "a"; members sm1;
+erase (sm1,"a"); members sm1;
 //- ["c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7,"h"=>8,"i"=>9,"j"=>10]
 
 member sm1 "a";

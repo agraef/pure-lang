@@ -35,9 +35,9 @@ struct stlmap {
   bool get_cached_pmi(px* k, pmi& i);
   void cache_pmi(pmi& i);
   void clear();
-  void erase(pmi pos);
-  int erase(px* k);
-  void erase(pmi first, pmi last);
+  int  erase(pmi pos);
+  int  erase(px* k);
+  int  erase(pmi first, pmi last);
 
   pxhmap mp;
   pxh px_comp;
@@ -102,8 +102,9 @@ extern "C" {
   void sm_insert_elms_stlvec(sm* smp, px* tpl);
   void sm_rmfirst(px* tpl);
   void sm_rmlast(px* tpl);
-  void sm_erase(px* tpl);
-  void sm_clear(sm* smp);
+  int  sm_clear(sm* smp);
+  int  sm_erase(px* tpl);
+  int  sm_erase_if(px* pred, px* it);
   int  sm_remove(sm* smp, px* x);
   int  sm_remove_if(sm* smp, px* x, px* pred);
   bool sm_allpairs(px* fun, px* tpl1, px* tpl2);
