@@ -340,8 +340,8 @@ sm_iters::sm_iters(px* pmi_tuple)
       if ( begin_it == mp.end() ||
            k_cmp(b, begin_it->first) || 
            k_cmp(begin_it->first,b)) {
-        free(elems);
-        index_error();
+        begin_it = end_it = mp.end(); 
+        goto done;
       }  
       end_it = begin_it;
       while (++end_it != mp.end())
