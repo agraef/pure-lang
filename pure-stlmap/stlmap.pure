@@ -149,7 +149,13 @@ bounds it@(STLMAP m, _) = (STLMAP m), sm_bounds it;
 
 ::erase it::smit = sm_erase it;
 
-::erase_if pred smit = sm_erase_if pred smit;
+::erase_if pred it::smit = sm_erase_if pred it;
+
+::delete sm::stlmap k = sm_erase (sm,k);
+
+::delete_all sm::stlmap k = sm_erase (sm,k);
+
+::delete_if pred sm::stlmap k = sm_erase_if pred (sm,k);
 
 allpairs fun it1::smit it2::smit = sm_allpairs fun it1 it2 
   if both_sets it1 it2 && functionp fun && nargs fun == 2 ;
@@ -234,6 +240,9 @@ set_default sm@(STLMAP m) val = sm_set_default m val if ~sm_is_set sm;
 
 // bool, default
 get_default sm@(STLMAP m) = sm_get_default m if ~sm_is_set sm;
+
+::delete_val sm::stlmap (k=>v) = 
+  sm_erase_if (\(_=>x)->x==v) (sm,k) if ~sm_is_set sm;
 
 ::update sm@(STLMAP m) key x = sm_update m key x $$ sm if ~sm_is_set sm;
 

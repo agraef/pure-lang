@@ -60,10 +60,9 @@ A. General
 
    Finally, if a function calls for a range as a parameter, the function can
    be passed an iterator tuple consisting of less than three elements.  A
-   tuple with two elements, (mp,lb_key), will be treated the same as
-   (mp,lb_key,lb1_key) where lb1_key is equal to (next_key mp lb_key). A tuple
-   with one element mp will be treated the same as (mp, stl::stlbeg,
-   stl::stlend).
+   tuple with two elements, (mp,k), denotes the range consisting of all
+   elements with key equal to k.  A tuple with one element mp will be treated
+   the same as (mp, stl::stlbeg, stl::stlend).
 
 6. Note that ranges defined on stlmmaps and stlmsets are based solely on
    keys. It is not possible define a range in terms of a key-value
@@ -204,8 +203,8 @@ B. Notable features
    will *not* change sd. sd!k will still be v1. Use update to change the
    values of existing members. E.g., after (update sd k v2), sd!k will be v2.
 
-7. Elements can be deleted from the associative containers using "erase" and
-   "erase_if".
+7. Elements in a range can be deleted from the associative containers using
+   "erase" and "erase_if".
 
    a. erase (sac,k1,k2) deletes all elements in the indicated range.
 
@@ -216,11 +215,21 @@ B. Notable features
    c. The erase functions return the number of elements deleted (which
       can be 0).
 
-   g. E.g., to delete all instances of ("b"=>5) from a stlmmap smm:
+8. Individual elements can be erased using the delete functions.
 
-      let num_deleted = erase_if (\(_=>v)->v==5) (smm,"b");
+   a. "delete sac k removes the first element in sac with key k, if any.
 
-8. For any sorted associative container, sac, "next_key sac k)" and "prev_key
+   b. "delete_all sac k removes all elements in sac with key k.
+
+   c. "delete_if pred sac k removes the first element in 
+      sac with key k that satifies pred, if any. If sac is a stlmap or
+      stlmmap, the elements passed to pred will be of the form (k=>v).
+
+   d. "delete_val mp (k=>v) removes the first element in mp with key k and
+      value v, if any. mp must be a stlmap or stlmmap; the function fails
+      if mp is a stlset or stlmset.
+
+9. For any sorted associative container, sac, "next_key sac k)" and "prev_key
    sac k) generally do just what their names suggests. The behavior for the
    "corener cases" is as follows: 
 

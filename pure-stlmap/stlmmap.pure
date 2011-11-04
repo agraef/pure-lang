@@ -61,8 +61,8 @@ private extern void  smm_rmlast(expr* tpl);
 private extern void  smm_clear(void* mmap);
 private extern int   smm_erase(expr* it);
 private extern int   smm_erase_if(expr* pred, expr* it);
-//private extern int   smm_remove(void* mmap, expr* k, int all);
-//private extern int   smm_remove_if(void* mmap, expr* k, expr* pred, int all);
+private extern int   smm_erase_first(expr* it);
+private extern int   smm_erase_first_if(expr* pred, expr* it);
 private extern int   smm_allpairs(expr* fun, expr* it, expr* it);
 private extern expr* smm_listmap(expr* fun, expr* it, int what);
 private extern expr* smm_listcatmap(expr* fun, expr* it, int what);
@@ -151,6 +151,12 @@ bounds it@(STLMMAP mm, _) = (STLMMAP mm), smm_bounds it;
 
 ::erase_if pred it::smmit = smm_erase_if pred it;
 
+::delete smm::stlmmap k = smm_erase_first (smm,k);
+
+::delete_all smm::stlmmap k = smm_erase (smm,k);
+
+::delete_if pred smm::stlmmap k = smm_erase_first_if pred (smm,k);
+
 allpairs fun it1::smmit it2::smmit = smm_allpairs fun it1 it2 
   if both_msets it1 it2 && functionp fun && nargs fun == 2 ;
 
@@ -234,6 +240,9 @@ set_default smm@(STLMMAP mm) val = smm_set_default mm val if ~smm_is_set smm;
 
 // bool, default
 get_default smm@(STLMMAP mm) = smm_get_default mm if ~smm_is_set smm;
+
+::delete_val smm::stlmmap (k=>v) =
+  smm_erase_first_if (\(_=>x)->x==v) (smm,k) if ~smm_is_set smm; 
 
 ::update smm@(STLMMAP mm) key x = smm_update mm key x $$ smm if ~smm_is_set smm;
 

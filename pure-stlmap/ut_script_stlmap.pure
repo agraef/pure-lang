@@ -432,6 +432,29 @@ erase_if (cst 1) (sm1,"c");
 members sm1;
 //- ["b"=>2,"d"=>4,"e"=>5]
 
+//*** delete, delete_all, delete_if, delete_val *************************
+
+let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]; members sm1;
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
+
+delete sm1 "d"; members sm1;
+//- ["a"=>1,"b"=>2,"c"=>3,"e"=>5]
+
+delete_all sm1 "c"; members sm1;
+//- ["a"=>1,"b"=>2,"e"=>5]
+
+delete_val sm1 ("a"=>3); members sm1;
+//- ["a"=>1,"b"=>2,"e"=>5]
+
+delete_val sm1 ("a"=>1); members sm1;
+//- ["b"=>2,"e"=>5]
+
+delete_if (\(_=>v)->v>10) sm1 "e"; members sm1;
+//- ["b"=>2,"e"=>5]
+
+delete_if (\(_=>v)->v>0) sm1 "e"; members sm1;
+//- ["b"=>2]
+
 //*** allpairs, ==, ~== ***********************************************
 
 let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>3]; members sm1;

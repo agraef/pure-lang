@@ -729,7 +729,15 @@ int smm_erase(px* tpl)
   return itrs.smmp->erase(itrs.beg(), itrs.end());
 }
 
-int smm_erase_if(px* pred, px* tpl)
+int smm_erase_first(px* tpl)
+{
+  smm_iters itrs(tpl);
+  if (!itrs.is_valid) bad_argument();
+  if ( itrs.beg() != itrs.end() )
+    itrs.smmp->erase(itrs.beg());
+}
+
+static int smm_erase_if_aux(px* pred, px* tpl, bool first_only)
 {
   smm_iters itrs(tpl);
   if (!itrs.is_valid) bad_argument();
@@ -747,9 +755,20 @@ int smm_erase_if(px* pred, px* tpl)
     if (exception) pure_throw(exception);
     if ( pure_is_int(pxres, &fun_res) && fun_res ) {
       smmp->erase(trg);
-     }   
+      if (first_only) break;
+     } 
   }
   return sz - mp.size();
+}
+
+int smm_erase_if(px* pred, px* tpl)
+{
+  return smm_erase_if_aux(pred, tpl, 0);
+}
+
+int smm_erase_first_if(px* pred, px* tpl)
+{
+  return smm_erase_if_aux(pred, tpl, 1);
 }
 
 int smm_clear(smm* smmp)
