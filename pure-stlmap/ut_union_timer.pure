@@ -1,0 +1,131 @@
+
+using set, stlmap, system, math;
+
+time_set empty n = () when 
+  tm = clock;
+  spin 1000;
+  tm = (clock - tm) / 1000.0;
+  printf "time for    set with n = %d 1000 times: %8.1f\n" (n,tm);
+end with
+  spin 0 = ();
+  spin n = spin (n-1) when xx = ss0 + ss1; end;
+end when 
+  elms0 = (0:2.. n);
+  elms1 = (1:3..n);
+  ss0 = if empty then emptyset else set elms0;
+  ss1 = set $ elms1;
+end;
+
+time_stlset empty n = () when 
+  tm = clock;
+  spin 1000;
+  tm = (clock - tm) / 1000.0;
+  printf "time for stlset with n = %d 1000 times: %8.1f\n" (n,tm);
+end with
+  spin 0 = ();
+  spin n = spin (n-1) when xx = ss0 + ss1; end;
+end when 
+  elms0 = (0:2.. n);
+  elms1 = (1:3..n);
+  ss0 = if empty then emptystlset else stlset elms0;
+  ss1 = stlset elms1;
+end;
+
+time_stlunion empty n = () when 
+  tm = clock;
+  spin 1000;
+  tm = (clock - tm) / 1000.0;
+  printf "time for  union with n = %d 1000 times: %8.1f\n" (n,tm);
+end with
+  spin 0 = ();
+  spin n = spin (n-1) when xx = ss0 stl::union ss1; end;
+end when 
+  elms0 = (0:2.. n);
+  elms1 = (1:3..n);
+  ss0 = if empty then emptystlset else stlset elms0;
+  ss1 = stlset elms1;
+end;
+
+time_overhead empty n = () when 
+  tm = clock;
+  spin 1000;
+  tm = (clock - tm) / 1000.0;
+  printf "time for   spin with n = %d 1000 times: %8.1f\n" (n,tm);
+end with
+  spin 0 = ();
+  spin n = spin (n-1);
+end;
+
+test empty n = () when
+  time_overhead empty n;
+  t_set = time_set empty n;
+  t_stl = time_stlset empty n;
+  t_union = time_stlunion empty n;
+end;
+
+/* Sample runs - Compare stlset (+) stl::union and dict (+). 
+
+   test 1 n means take union of  es op set where es is empty and
+   s1 has n/2 elements (1:3..n)
+
+   test 0 n means take union of  s0 op s1 where s0 has (0:2..n)
+   and s1 has (1:3..n).
+
+   Apparently, for test 1 stlset (+) and stl::union are both O(n) and
+   dict (+) is O(n log n). For test 0, it appears that stl::union is O(n)
+   and both stlset (+) and dict (+) are O(n log n).
+
+   These results reflect that fact that the C++ function map.insert(iterator
+   position, const value_type& x) takes O(log N) time in general, but takes
+   constant time if x is inserted right after the iterator position. I.e., to
+   get linear unions, crawl down the two ordered sets and insert their
+   elements into the new set in order, passing the positin returned by the
+   last insert.
+
+   Note that these operations are quite fast in all cases.
+
+  
+// union into and empty set
+
+> test 1 100;
+time for   spin with n = 100 1000 times:      0.0
+time for    set with n = 100 1000 times:    830.0
+time for stlset with n = 100 1000 times:     80.0
+time for  union with n = 100 1000 times:     60.0
+()
+> test 1 1000;
+time for   spin with n = 1000 1000 times:      0.0
+time for    set with n = 1000 1000 times:  11590.0
+time for stlset with n = 1000 1000 times:    760.0
+time for  union with n = 1000 1000 times:    570.0
+()
+> test 1 10000;
+time for   spin with n = 10000 1000 times:      0.0
+time for    set with n = 10000 1000 times: 151170.0
+time for stlset with n = 10000 1000 times:   7550.0
+time for  union with n = 10000 1000 times:   5800.0
+()
+
+
+// union int a set of equal size and no common elements
+ 
+> test 0 100;
+time for   spin with n = 100 1000 times:      0.0
+time for    set with n = 100 1000 times:    830.0
+time for stlset with n = 100 1000 times:    340.0
+time for  union with n = 100 1000 times:    190.0
+()
+> test 0 1000;
+time for   spin with n = 1000 1000 times:      0.0
+time for    set with n = 1000 1000 times:  11220.0
+time for stlset with n = 1000 1000 times:   4060.0
+time for  union with n = 1000 1000 times:   1840.0
+()
+> test 0 10000;
+time for   spin with n = 10000 1000 times:      0.0
+time for    set with n = 10000 1000 times: 153080.0
+time for stlset with n = 10000 1000 times:  48920.0
+time for  union with n = 10000 1000 times:  18800.0
+()
+
+**/

@@ -81,11 +81,50 @@ static int smm_get_size(smm* smmp, pmmi b, pmmi e)
 static void update_aux(smm* smmp, px* k, px* v)
 {
   pxhmmap& mp = smmp->mp;
-  pmmi i;
-  if ( smmp->get_cached_pmmi(k, i) )
-    i->second = v;
-  else
-    smmp->cache_pmmi( mp.insert(pxh_pair(k,v)) );
+  pmmi pos;
+  if ( smmp->has_recent_pmmi ) {
+    pos = smmp->recent_pmmi;
+    if ( !same(pos->first.pxp(), k) )
+      pos = smmp->mp.insert(smmp->recent_pmmi,pxh_pair(k,v));
+    pos->second = v;
+  }   
+  else {
+    pos = mp.insert(pxh_pair(k,v));
+  }
+  smmp->cache_pmmi(pos);  
+}
+
+static bool insert_aux(smm* smmp, px* kv)
+{
+  px *k, *v;
+  bool ok = true;
+  if (smmp->keys_only) {
+    k = kv;
+    v = NULL;
+  } 
+  else {
+    if ( rocket_to_pair(kv, &k, &v) )
+      ;
+    else if (smmp->has_dflt) {
+      k = kv;
+      v = smmp->dflt.pxp();
+    }
+    else {
+      k = kv;
+      v = NULL;
+      ok = false;
+    }
+  }
+  if (ok) {
+    pmmi pos;
+    if (smmp->has_recent_pmmi)
+      pos = smmp->mp.insert(smmp->recent_pmmi,pxh_pair(k,v));
+    else {
+      pos = smmp->mp.insert(pxh_pair(k,v));
+    }
+    smmp->cache_pmmi(++pos); //++ else unexpected order "a"=>3,"a"=>2,"a"=>1
+  }
+  return ok;
 }
 
 static px* apply_fun(px* fun, int what, pmmi i, px** exception) {
@@ -110,32 +149,6 @@ static px* apply_fun(px* fun, int what, pmmi i, px** exception) {
   if (what==stl_smm_both)
     px_unref(pxi);  
   return res;
-}
-
-static bool insert_aux(smm* smmp, px* kv)
-{
-  px *k, *v;
-  bool ok = true;
-  if (smmp->keys_only) {
-    k = kv;
-    v = NULL;
-  } 
-  else {
-    if ( rocket_to_pair(kv, &k, &v) )
-      ;
-    else if (smmp->has_dflt) {
-      k = kv;
-      v = smmp->dflt.pxp();
-    }
-    else {
-      k = kv;
-      v = NULL;
-      ok = false;
-    }
-  }
-  if (ok)
-    smmp->cache_pmmi( smmp->mp.insert(pxh_pair(k,v)) );
-  return ok;
 }
 
 // if fun is any int then it is treated as identity (i.e., ignored)

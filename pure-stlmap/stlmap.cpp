@@ -83,16 +83,19 @@ static int sm_get_size(sm* smp, pmi b, pmi e)
 static void update_aux(sm* smp, px* k, px* v)
 {
   pxhmap& mp = smp->mp;
-  pmi i;
-  if ( smp->get_cached_pmi(k, i) ) {
-    i->second = v;
-  }
+  pmi pos;
+  if ( smp->has_recent_pmi ) {
+    pos = smp->recent_pmi;
+    if ( !same(pos->first.pxp(), k) )
+      pos = smp->mp.insert(smp->recent_pmi,pxh_pair(k,v));
+    pos->second = v;
+  }   
   else {
     pair<pmi,bool> i_ok = mp.insert(pxh_pair(k,v));
-    if (!i_ok.second)
-      i_ok.first->second = v;
-    smp->cache_pmi(i_ok.first);
-  }
+    if (!i_ok.second) i_ok.first->second = v;
+    pos = i_ok.first;
+   }
+  smp->cache_pmi(pos);  
 }
 
 static bool insert_aux(sm* smp, px* kv)
@@ -119,8 +122,14 @@ static bool insert_aux(sm* smp, px* kv)
   if (ok) {
 #ifdef STL_INSERT_SEMANTICS
     // Do NOT override existing values
-    pair<pmi,bool> i_ok = smp->mp.insert(pxh_pair(k,v));
-    smp->cache_pmi(i_ok.first);
+    pmi pos;
+    if (smp->has_recent_pmi)
+      pos = smp->mp.insert(smp->recent_pmi,pxh_pair(k,v));
+    else {
+      pair<pmi,bool> i_ok = smp->mp.insert(pxh_pair(k,v));
+      pos = i_ok.first;
+    }
+    smp->cache_pmi(pos);
 #else
     // Always use new values
     update_aux(smp, k, v); 
