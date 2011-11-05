@@ -428,31 +428,31 @@ erase (sms1, stl::stlbeg); members sms1;
 
 //*** delete, delete_all, delete_if ************************************
 
-let smm1 = stlmset ["a","a","a","b","b","c","c","c"];
+let sms1 = stlmset ["a","a","a","b","b","c","c","c"];
 //- ()
 
-delete smm1 "0"; members smm1;
+delete sms1 "0"; members sms1;
 //- ["a","a","a","b","b","c","c","c"]
 
-delete smm1 "a"; members smm1;
+delete sms1 "a"; members sms1;
 //- ["a","a","b","b","c","c","c"]
 
-delete smm1 "z"; members smm1;
+delete sms1 "z"; members sms1;
 //- ["a","a","b","b","c","c","c"]
 
-delete_all smm1 "z"; members smm1;
+delete_all sms1 "z"; members sms1;
 //- ["a","a","b","b","c","c","c"]
 
-delete_all smm1 "c"; members smm1;
+delete_all sms1 "c"; members sms1;
 //- ["a","a","b","b"]
 
-delete_if (\x->(ord x) mod 2) smm1 "a"; members smm1;
+delete_if (\x->(ord x) mod 2) sms1 "a"; members sms1;
 //- ["a","b","b"]
 
-delete_if (\x->(ord x) mod 2) smm1 "a"; members smm1;
+delete_if (\x->(ord x) mod 2) sms1 "a"; members sms1;
 //- ["b","b"]
 
-delete_if (\x->(ord x) mod 2) smm1 "b"; members smm1;
+delete_if (\x->(ord x) mod 2) sms1 "b"; members sms1;
 //- ["b","b"]
 
 //*** allpairs, ==, ~== ***********************************************
@@ -697,50 +697,59 @@ filter (\k -> (ord k) mod 2) (sms1,"d","d");
 
 //** Set operations ******************************************************
 
-let sms1 = stlmset ["a","b","c","d"]; members sms1;
-//- ["a","b","c","d"]
+let sms1 = stlmset ["a","a","b","c","d"]; members sms1;
+//- ["a","a","b","c","d"]
 
-let sms2 = stlmset ["b","c","d","e"]; members sms2;
-//- ["b","c","d","e"]
+let sms2 = stlmset ["b","b","c","e"]; members sms2;
+//- ["b","b","c","e"]
 
 let sms3 = stlmset ["b","c","d"]; members sms3;
 //- ["b","c","d"]
 
+members (sms1 stl::union sms1);
+//- ["a","a","b","c","d"]
+
+members (sms1 stl::union sms2);
+//- ["a","a","b","b","c","d","e"]
+
+members (sms2 stl::union sms1);
+//- ["a","a","b","b","c","d","e"]
+
 members (sms1 + sms1);
-//- ["a","b","c","d"]
+//- ["a","a","a","a","b","b","c","c","d","d"]
 
 members (sms1 + sms2);
-//- ["a","b","c","d","e"]
+//- ["a","a","b","b","b","c","c","d","e"]
 
 members (sms2 + sms1);
-//- ["a","b","c","d","e"]
+//- ["a","a","b","b","b","c","c","d","e"]
 
 members (sms1 - sms1);
 //- []
 
 members (sms1 - sms2);
-//- ["a"]
+//- ["a","a","d"]
 
 members (sms2 - sms1);
-//- ["e"]
+//- ["b","e"]
 
 members (sms1 * sms1);
-//- ["a","b","c","d"]
+//- ["a","a","b","c","d"]
 
 members (sms1 * sms2);
-//- ["b","c","d"]
+//- ["b","c"]
 
 members (sms2 * sms1);
-//- ["b","c","d"]
+//- ["b","c"]
 
 members (sms1 / sms1);
 //- []
 
 members (sms1 / sms2);
-//- ["a","e"]
+//- ["a","a","b","d","e"]
 
 members (sms2 / sms1);
-//- ["a","e"]
+//- ["a","a","b","d","e"]
 
 sms1 < sms1;
 //- 0
@@ -758,7 +767,7 @@ sms1 < sms3;
 //- 0
 
 sms3 < sms2;
-//- 1
+//- 0
 
 sms2 < sms3;
 //- 0
@@ -779,7 +788,7 @@ sms1 <= sms3;
 //- 0
 
 sms3 <= sms2;
-//- 1
+//- 0
 
 sms2 <= sms3;
 //- 0
@@ -803,13 +812,16 @@ sms3 < (sms2,"b","e");
 //- 0
 
 (sms2,"b","e") <= sms3;
-//- 1
+//- 0
 
 sms3 <= (sms2,"b","e");
-//- 1
+//- 0
+
+members $ (sms1,"b","d") stl::union (sms2, "c","e");
+//- ["b","c"]
 
 members $ (sms1,"b","d") + (sms2, "c","e");
-//- ["b","c","d"]
+//- ["b","c","c"]
 
 members $ (sms1,"b","d") - (sms2, "c","e");
 //- ["b"]
@@ -818,7 +830,7 @@ members $ (sms1,"b","d") * (sms2, "c","e");
 //- ["c"]
 
 members $ (sms1,"b","d") / (sms2, "c","e");
-//- ["b","d"]
+//- ["b"]
 
 //** Cache sensitive sequences ****************************************
 

@@ -711,6 +711,144 @@ filter (\(k=>v) -> v mod 2) (sm1,"c",stl::stlend);
 filter (\(k=>v) -> v mod 2) (sm1,"d","d");
 //- []
 
+//** Set operations ******************************************************
+
+let sm1 = stlmap ["a"=>11,"b"=>12,"c"=>14,"d"=>15]; members sm1;
+//- ["a"=>11,"b"=>12,"c"=>14,"d"=>15]
+
+let sm2 = stlmap ["b"=>21,"c"=>22,"e"=>23]; members sm2;
+//- ["b"=>21,"c"=>22,"e"=>23]
+
+let sm3 = stlmap ["b"=>31,"c"=>32,"d"=>33]; members sm3;
+//- ["b"=>31,"c"=>32,"d"=>33]
+
+members (sm1 stl::union sm1);
+//- ["a"=>11,"b"=>12,"c"=>14,"d"=>15]
+
+members (sm1 stl::union sm2);
+//- ["a"=>11,"b"=>12,"c"=>14,"d"=>15,"e"=>23]
+
+members (sm2 stl::union sm1);
+//- ["a"=>11,"b"=>21,"c"=>22,"d"=>15,"e"=>23]
+
+members (sm1 + sm1);
+//- ["a"=>11,"b"=>12,"c"=>14,"d"=>15]
+
+members (sm1 + sm2);
+//- ["a"=>11,"b"=>12,"c"=>14,"d"=>15,"e"=>23]
+
+members (sm2 + sm1);
+//- ["a"=>11,"b"=>21,"c"=>22,"d"=>15,"e"=>23]
+
+members (sm1 - sm1);
+//- []
+
+members (sm1 - sm2);
+//- ["a"=>11,"d"=>15]
+
+members (sm2 - sm1);
+//- ["e"=>23]
+
+members (sm1 * sm1);
+//- ["a"=>11,"b"=>12,"c"=>14,"d"=>15]
+
+members (sm1 * sm2);
+//- ["b"=>12,"c"=>14]
+
+members (sm2 * sm1);
+//- ["b"=>21,"c"=>22]
+
+members (sm1 / sm1);
+//- []
+
+members (sm1 / sm2);
+//- ["a"=>11,"d"=>15,"e"=>23]
+
+members (sm2 / sm1);
+//- ["a"=>11,"d"=>15,"e"=>23]
+
+sm1 < sm1;
+//- 0
+
+sm1 < sm2;
+//- 0
+
+sm2 < sm1;
+//- 0
+
+sm3 < sm1;
+//- 1
+
+sm1 < sm3;
+//- 0
+
+sm3 < sm2;
+//- 0
+
+sm2 < sm3;
+//- 0
+
+sm1 <= sm1;
+//- 1
+
+sm1 <= sm2;
+//- 0
+
+sm2 <= sm1;
+//- 0
+
+sm3 <= sm1;
+//- 1
+
+sm1 <= sm3;
+//- 0
+
+sm3 <= sm2;
+//- 0
+
+sm2 <= sm3;
+//- 0
+
+(sm1,"b","d") < sm3;
+//- 1
+
+sm3 < (sm1,"b","d");
+//- 0
+
+(sm1,"b","d") <= sm3;
+//- 1
+
+sm3 <= (sm1,"b","d");
+//- 0
+
+(sm2,"b","e") <  sm3;
+//- 1
+
+sm3 < (sm2,"b","e");
+//- 0
+
+(sm2,"b","e") <= sm3;
+//- 1
+
+sm3 <= (sm2,"b","e");
+//- 0
+
+members $ (sm1,"b","d") stl::union (sm2, "c","e");
+//- ["b"=>12,"c"=>14]
+
+members $ (sm1,"b","d") + (sm2, "c","e");
+//- ["b"=>12,"c"=>14]
+
+members $ (sm1,"b","d") - (sm2, "c","e");
+//- ["b"=>12]
+
+members $ (sm1,"b","d") * (sm2, "c","e");
+//- ["c"=>14]
+
+members $ (sm1,"b","d") / (sm2, "c","e");
+//- ["b"=>12]
+
+
 //** Cache sensitive sequences ****************************************
 
 let sm1 = stlmap $ zipwith (=>) ("a".."j") (1..10); members sm1;

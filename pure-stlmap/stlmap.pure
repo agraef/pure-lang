@@ -61,8 +61,6 @@ private extern void  sm_rmlast(expr* tpl);
 private extern int   sm_erase(expr* it);
 private extern int   sm_erase_if (expr* pred, expr* it);
 private extern int   sm_clear(void* map);
-// private extern int   sm_remove(void* map, expr* x);
-// private extern int   sm_remove_if(void* map, expr* x, expr* pred);
 private extern int   sm_allpairs(expr* fun, expr* it, expr* it);
 private extern expr* sm_listmap(expr* fun, expr* it, int what);
 private extern expr* sm_listcatmap(expr* fun, expr* it, int what);
@@ -106,6 +104,52 @@ vector it::smit = sm_make_vector it;
 (::!) (STLMAP m) key = sm_get m key;
 
 (::#) sm::stlmap = sm_size sm;
+
+infixl (+) union;
+
+(union) it1::smit it2::smit = 
+  sm_wrap $ sm_setop sm_union it1 it2 if both_maps it1 it2;
+
+(::+) it1::smit it2::smit = res when
+  res = ::stlmap it1;
+  ::insert_elms res it2;
+end if both_maps it1 it2;
+
+(::-) it1::smit it2::smit = 
+  sm_wrap $ sm_setop sm_difference it1 it2 if both_maps it1 it2;
+
+(::*) it1::smit it2::smit = 
+  sm_wrap $ sm_setop sm_intersection it1 it2 if both_maps it1 it2;
+
+(::/) it1::smit it2::smit = 
+  sm_wrap $ sm_setop sm_symmetric_difference it1 it2 if both_maps it1 it2;
+
+(::<=) it1::smit it2::smit = sm_includes it2 it1 if both_maps it1 it2;
+
+(::<) it1::smit it2::smit = 
+  sm_size it1 < sm_size it2 && sm_includes it2 it1 if both_maps it1 it2;
+
+(union) it1::smit it2::smit = 
+  sm_wrap $ sm_setop sm_union it1 it2 if both_sets it1 it2;
+
+(::+) it1::smit it2::smit = res when
+  res = ::stlset it1;
+  ::insert_elms res it2;
+end if both_sets it1 it2;
+
+(::-) it1::smit it2::smit = 
+  sm_wrap $ sm_setop sm_difference it1 it2 if both_sets it1 it2;
+
+(::*) it1::smit it2::smit = 
+  sm_wrap $ sm_setop sm_intersection it1 it2 if both_sets it1 it2;
+
+(::/) it1::smit it2::smit = 
+  sm_wrap $ sm_setop sm_symmetric_difference it1 it2 if both_sets it1 it2;
+
+(::<=) it1::smit it2::smit = sm_includes it2 it1 if both_sets it1 it2;
+
+(::<) it1::smit it2::smit = 
+  sm_size it1 < sm_size it2 && sm_includes it2 it1 if both_sets it1 it2;
 
 size it::smit = sm_size it;
 
@@ -281,21 +325,4 @@ end;
   sm = ::emptystlset;
   insert_elms sm it;
 end;
-
-(::+) it1::smit it2::smit = 
-  sm_wrap $ sm_setop sm_union it1 it2 if both_sets it1 it2;
-
-(::-) it1::smit it2::smit = 
-  sm_wrap $ sm_setop sm_difference it1 it2 if both_sets it1 it2;
-
-(::*) it1::smit it2::smit = 
-  sm_wrap $ sm_setop sm_intersection it1 it2 if both_sets it1 it2;
-
-(::/) it1::smit it2::smit = 
-  sm_wrap $ sm_setop sm_symmetric_difference it1 it2 if both_sets it1 it2;
-
-(::<=) it1::smit it2::smit = sm_includes it2 it1 if both_sets it1 it2;
-
-(::<) it1::smit it2::smit = 
-  size it1 < size it2 && sm_includes it2 it1 if both_sets it1 it2;
 

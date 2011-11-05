@@ -481,38 +481,6 @@ delete_if (\(_=>v)->v mod 2) sm1 "c"; members sm1;
 delete_if (\(_=>v)->v mod 2) sm1 "c"; members sm1;
 //- ["a"=>2,"c"=>2,"c"=>4]
 
-//*** delete, delete_all, delete_if, delete_val *************************
-
-let sm1 = stlmmap ["a"=>1,"a"=>2,"a"=>3,"b"=>1,"b"=>2,"c"=>1,"c"=>2,"c"=>3];
-//- ()
-
-delete sm1 "0"; members sm1;
-//- ["a"=>1,"a"=>2,"a"=>3,"b"=>1,"b"=>2,"c"=>1,"c"=>2,"c"=>3]
-
-delete sm1 "a"; members sm1;
-//- ["a"=>2,"a"=>3,"b"=>1,"b"=>2,"c"=>1,"c"=>2,"c"=>3]
-
-delete_all sm1 "z"; members sm1;
-//- ["a"=>2,"a"=>3,"b"=>1,"b"=>2,"c"=>1,"c"=>2,"c"=>3]
-
-delete_all sm1 "b"; members sm1;
-//- ["a"=>2,"a"=>3,"c"=>1,"c"=>2,"c"=>3]
-
-delete_val sm1 ("a"=>10); members sm1;
-//- ["a"=>2,"a"=>3,"c"=>1,"c"=>2,"c"=>3]
-
-delete_val sm1 ("a"=>3); members sm1;
-//- ["a"=>2,"c"=>1,"c"=>2,"c"=>3]
-
-delete_if (\(_=>v)->v > 10) sm1 "c"; members sm1;
-//- ["a"=>2,"c"=>1,"c"=>2,"c"=>3]
-
-delete_if (\(_=>v)->v mod 2) sm1 "c"; members sm1;
-//- ["a"=>2,"c"=>2,"c"=>3]
-
-delete_if (\(_=>v)->v mod 2) sm1 "c"; members sm1;
-//- ["a"=>2,"c"=>2]
-
 //*** allpairs, ==, ~== ***********************************************
 
 let smm1 = stlmmap ["a"=>1,"b"=>2,"c"=>3]; members smm1;
@@ -591,7 +559,6 @@ stl::size (smm1,"b","d");
 
 stl::size (smm1,"c",stl::stlend);
 //- 2
-
 
 //** map, map_keys, map_vals **************************************
 
@@ -768,6 +735,143 @@ filter (\(k=>v) -> v mod 2) (smm1,"c",stl::stlend);
 
 filter (\(k=>v) -> v mod 2) (smm1,"d","d");
 //- []
+
+//** Set operations ******************************************************
+
+let smm1 = stlmmap ["a"=>11,"a"=>12,"b"=>13,"c"=>14,"d"=>15]; members smm1;
+//- ["a"=>11,"a"=>12,"b"=>13,"c"=>14,"d"=>15]
+
+let smm2 = stlmmap ["b"=>21,"b"=>22,"c"=>23,"e"=>24]; members smm2;
+//- ["b"=>21,"b"=>22,"c"=>23,"e"=>24]
+
+let smm3 = stlmmap ["b"=>31,"c"=>32,"d"=>33]; members smm3;
+//- ["b"=>31,"c"=>32,"d"=>33]
+
+members (smm1 stl::union smm1);
+//- ["a"=>11,"a"=>12,"b"=>13,"c"=>14,"d"=>15]
+
+members (smm1 stl::union smm2);
+//- ["a"=>11,"a"=>12,"b"=>13,"b"=>22,"c"=>14,"d"=>15,"e"=>24]
+
+members (smm2 stl::union smm1);
+//- ["a"=>11,"a"=>12,"b"=>21,"b"=>22,"c"=>23,"d"=>15,"e"=>24]
+
+members (smm1 + smm1);
+//- ["a"=>12,"a"=>11,"a"=>12,"a"=>11,"b"=>13,"b"=>13,"c"=>14,"c"=>14,"d"=>15,"d"=>15]
+
+members (smm1 + smm2);
+//- ["a"=>12,"a"=>11,"b"=>22,"b"=>21,"b"=>13,"c"=>23,"c"=>14,"d"=>15,"e"=>24]
+
+members (smm2 + smm1);
+//- ["a"=>12,"a"=>11,"b"=>13,"b"=>22,"b"=>21,"c"=>14,"c"=>23,"d"=>15,"e"=>24]
+
+members (smm1 - smm1);
+//- []
+
+members (smm1 - smm2);
+//- ["a"=>11,"a"=>12,"d"=>15]
+
+members (smm2 - smm1);
+//- ["b"=>22,"e"=>24]
+
+members (smm1 * smm1);
+//- ["a"=>11,"a"=>12,"b"=>13,"c"=>14,"d"=>15]
+
+members (smm1 * smm2);
+//- ["b"=>13,"c"=>14]
+
+members (smm2 * smm1);
+//- ["b"=>21,"c"=>23]
+
+members (smm1 / smm1);
+//- []
+
+members (smm1 / smm2);
+//- ["a"=>11,"a"=>12,"b"=>22,"d"=>15,"e"=>24]
+
+members (smm2 / smm1);
+//- ["a"=>11,"a"=>12,"b"=>22,"d"=>15,"e"=>24]
+
+smm1 < smm1;
+//- 0
+
+smm1 < smm2;
+//- 0
+
+smm2 < smm1;
+//- 0
+
+smm3 < smm1;
+//- 1
+
+smm1 < smm3;
+//- 0
+
+smm3 < smm2;
+//- 0
+
+smm2 < smm3;
+//- 0
+
+smm1 <= smm1;
+//- 1
+
+smm1 <= smm2;
+//- 0
+
+smm2 <= smm1;
+//- 0
+
+smm3 <= smm1;
+//- 1
+
+smm1 <= smm3;
+//- 0
+
+smm3 <= smm2;
+//- 0
+
+smm2 <= smm3;
+//- 0
+
+(smm1,"b","d") < smm3;
+//- 1
+
+smm3 < (smm1,"b","d");
+//- 0
+
+(smm1,"b","d") <= smm3;
+//- 1
+
+smm3 <= (smm1,"b","d");
+//- 0
+
+(smm2,"b","e") <  smm3;
+//- 0
+
+smm3 < (smm2,"b","e");
+//- 0
+
+(smm2,"b","e") <= smm3;
+//- 0
+
+smm3 <= (smm2,"b","e");
+//- 0
+
+members $ (smm1,"b","d") stl::union (smm2, "c","e");
+//- ["b"=>13,"c"=>14]
+
+members $ (smm1,"b","d") + (smm2, "c","e");
+//- ["b"=>13,"c"=>23,"c"=>14]
+
+members $ (smm1,"b","d") - (smm2, "c","e");
+//- ["b"=>13]
+
+members $ (smm1,"b","d") * (smm2, "c","e");
+//- ["c"=>14]
+
+members $ (smm1,"b","d") / (smm2, "c","e");
+//- ["b"=>13]
 
 //** Cache sensitive sequences ****************************************
 

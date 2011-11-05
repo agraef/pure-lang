@@ -138,44 +138,72 @@ B. Notable features
 
    c. N.B. stlsets do not have default values.
 
+4. The elements in a range defined on a stlmap or stlmmap can be updated using
+   the "update_range function.
+
+   a. "update_range (map,kbeg,kend) unary_fun scans the range and updates
+       selected elements. unary_fun (k=>v) must return a tuple (changed,
+       newval). If unary_fun want to change the value stored with k, it returns
+       (1,newval) else (0,0). If (1,newval) is returned, k=newval is entered
+       into the map. Returns the number of elements changed.
+
+   b. "update_range (map,kbeg,kend) (unary_fun, default_fun) is the same as
+      update_range (map,kbeg,kend) unary_fun except that if no values change
+      values are returned by unary_fun, default_fun (1,dv) or default_fn (0,0)
+      is called depending on whether or not map has a default
+      value. default_fn return (1,new_element) or (0,0) depending on whether
+      a new element should be inserted.
+
+   c. This function is useful for updating values in a stlmmap that have the
+      same key: (FIX).
+
+      let smm = stlmmap ["a"=>1,"a"=>2,"b"=>3,"b"=>4,"b"=>5];
+      
+      my_selector (k=>v) = v mod 2;
+      my_updater v = if v mod 2 then (1,v+10) else (0,0);
+      update_range (smm,"b") my_updater; members smm;
+
+      
+
 4. A key value pair, (k=>v) for a stlmap or stlmmap, map, can be "updated" using
    "update map k v" or "update_with f (map,kbeg,kend)". Note that the update
    functions only change values, never keys
 
-   a. "update map key val" changes the values of all elements (k=>v) of map
-      where k==key to val. If key is not already stored in map, (key=val) is
-      added to the map.
+   a. "update map key val" changes the values of the first element (k=>v) of
+      map where k==key to val (if any). If key is not already stored in map,
+      (key=val) is added to the map.
 
-   b. "update_with unary_fun (map,key)" changes the values of all elements
-      (k=>v) of map where k==key to (unary_fun v). If key is not already
-      stored in map then (i) if map has a default value, dv, then
+   a. "update_all map key val" changes the values of the all elements (k=>v)
+      of map where k==key to val (if any). If key is not already stored in
+      map, (key=val) is added to the map.
+
+   b. "update_with unary_fun map key" changes the value of the first element
+      (k=>v) of map where k==key (if any) to (unary_fun v). If key is not
+      already stored in map then (i) if map has a default value, dv, then
       (key=>unary_fun dv) is added to the map, or (ii) if map does not have a
       default value, a failed_condition error is thrown.
       
-   c. "update_with unary_fun (map,kbeg,kend)" changes the values of each 
-      element (k=>v) in the range (map, kbeg, kend) to (unary_fun v).
-
-   d. "update_with" provides precise control over the modification of key
-      value pairs. E.g., if map is a stlmmap, all of its elements with (k=>v)
+   c. "update_with" provides precise control over the modification of key
+      value pairs. E.g., if map is a stlmmap, the first element with (k=>v)
       where k == "a" and (pred v) is true can be changed to (k=>new v).
 
          selective_update (_=>v) = if (pred v) then (new v) else v;
-         update_with selective_update (map,"a");
+         update_with selective_update map "a;
 
-   e. "update_with" is also useful for associating a count or lists of objects
+   d. "update_range" is also useful for associating a count or lists of objects
       with a given key. E.g., 
 
         let word_counts = emptystlmap;
         set_default word_counts 0;
-        bump_count w = update_with ((\_=>v)->v+1) (word_counts, w); 
+        bump_count w = update_range ((\_=>v)->v+1) word_counts w; 
         do bump_count word_list;
 
         sort_str w = strcat $ sort (<) (chars w);
         let anagrams = emptystlmap;
         set_default anagrams [];
-        push_word w = update_with (\(_=>v)->w:v) (anagrams, sort_str w));
+        push_word w = update_range (\(_=>v)->w:v) anagrams (sort_str w);
         do push_word word_list;
-  
+
 5. Set operators are provided for all four of the sorted associative
    containers. 
 
@@ -203,8 +231,14 @@ B. Notable features
    will *not* change sd. sd!k will still be v1. Use update to change the
    values of existing members. E.g., after (update sd k v2), sd!k will be v2.
 
-7. Elements in a range can be deleted from the associative containers using
-   "erase" and "erase_if".
+7. The stl::union operator is provided to designate standard union operations
+   for multisets. The (+) operator is defined as mulitset sum, consistent with
+   set in the Pure library. The result of applying the (+) operator to stlmaps
+   and stlmmaps might still differ from result of applying the (+) operator on
+   dict and mdict, due to 6.  For stlmap and stlset (+) and (stl::union) are
+   the same.
+
+8. Elements in a range can be deleted using "erase" and "erase_if".
 
    a. erase (sac,k1,k2) deletes all elements in the indicated range.
 
@@ -215,7 +249,7 @@ B. Notable features
    c. The erase functions return the number of elements deleted (which
       can be 0).
 
-8. Individual elements can be erased using the delete functions.
+9. Individual elements can be erased using the delete functions.
 
    a. "delete sac k removes the first element in sac with key k, if any.
 
@@ -229,7 +263,7 @@ B. Notable features
       value v, if any. mp must be a stlmap or stlmmap; the function fails
       if mp is a stlset or stlmset.
 
-9. For any sorted associative container, sac, "next_key sac k)" and "prev_key
+10.For any sorted associative container, sac, "next_key sac k)" and "prev_key
    sac k) generally do just what their names suggests. The behavior for the
    "corener cases" is as follows: 
 
