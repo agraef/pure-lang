@@ -22,11 +22,10 @@ A. General
    pure-stlmap. All of the containers are implemented with balanced binary
    trees which allow for O(log N) time for storage and retrieval.
 
-4. Keys stored in a stlmap or stlset are unique. An attempt to insert a new
-   element (k=>v) or k, when k is already in the map or set does not change
-   the map or set. To change the associated value of a key value pair stored
-   in a stlmap, use the update function. In contrast to stlmaps and stlsets,
-   stlmmaps and stlmset can store multiple keys with the same value.
+4. Keys stored in a stlmap or stlset are unique while stlmmaps and stlmset can
+   store multiple keys with the same value. Contrary to C++'s insert
+   functions, pure-stlmap's insert functions insert new values into stlmaps
+   even if an element with the same key is already stored in the stlmap.
 
 5. All of the sorted associative containers keep their keys in sorted order
    imposed by a "less than function" that is stored in the container. By
@@ -216,15 +215,27 @@ B. Notable features
       subsequences. Except for the set inclusion operators (< and <=), all
       of the set operators 
 
-   d. The set operations use the native STL algorithms, which take full
-      advantage of the fact that the containers have ordered elements. At
+   d. Except for (+) set operations use the native STL algorithms, which take
+      full advantage of the fact that the containers have ordered elements. At
       most 2 (n1 + n2) - 1 comparisons are made where n1 and n2 are the number
       of elements in the first and second operands.
 
-   e. The set operations only consider keys, values are never used to
-      determine what elements are included in the resulting containers. Thus,
-      for example, mp1 + mp2 might not be the same as mp2 + mp1 where mp1
-      and mp2 are stlmaps or stlmmaps.
+   e. In the case of sm1 + sm2, where sm1 and sm2 are stlmaps, elements from
+      both maps can end up in the result. Because the result will be a stlmap,
+      there can only be element associated with each key. If sm1 has an
+      element (k=>v1) and sm2 has an element (k=>v2), the resulting stlmap
+      will contain (k=>v2). This is the opposite of what would happen if
+      C++'s set_union function were used. Similarly for set intersection.
+
+   f. In the case of smm1 + smm2, where smm1 and smm2 are stlmmaps, all of the
+      elements from both smm1 and smm2 are included in the resulting
+      stlmmap. The same is true for sms1 + sms2 where sms1 and sms2 are
+      stlmsets. For this reason, some people would refer to the + operator as
+      a multiset sum operator as opposed to mulitset union operator. They
+      would reserve the latter term for an operation that would limit
+      duplicates to the number of the duplicate items appear in smm1 or or in
+      smm2, which ever is greater. Note that the C++ set_union function builds
+      a multi_set union, not a mulitiset sum. Similarly for set intersection.
 
 6. The insert and insert_elms functions follow STL semantics. This means, for
    example, that if (k=>v1) is a member of stlmap sd then insert sd (k=>v2)
