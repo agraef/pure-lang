@@ -24,7 +24,7 @@ included with the pure-stlmap distribution package for details.
 
 using namespace std;
 
-#define STL_INSERT_SEMANTICS
+// #define STL_INSERT_SEMANTICS
 
 /*** Helpers for debugging only ************************************/
 
@@ -709,8 +709,7 @@ void sm_insert_elms_stlmap(sm* smp, px* tpl)
     pmi inserted = smp->mp.begin();
     if (!itrs.is_valid) bad_argument();
     for (pmi i = itrs.beg(); i!=itrs.end(); i++)
-      inserted = smp->mp.insert(inserted, *i);
-    smp->cache_pmi(inserted);
+      update_aux(smp, i->first.pxp(), i->second.pxp());
   } 
 }
 
