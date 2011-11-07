@@ -582,6 +582,13 @@ sm* sm_setop(int op, px* tpl1, px* tpl2)
 {
   sm_iters itrs1(tpl1);
   sm_iters itrs2(tpl2);
+#ifndef STL_INSERT_SEMANTICS
+  if (op != stl_sm_difference) {
+    sm_iters temp = itrs2;
+    itrs2 = itrs1;
+    itrs1 = temp;
+  }
+#endif
   if (!itrs1.is_valid || !itrs2.is_valid) bad_argument;
   sm* smp = itrs1.smp;
   px* px_comp = smp->px_comp.pxp();
@@ -705,6 +712,7 @@ void sm_insert_elms_xs(sm* smp, px* src)
 void sm_insert_elms_stlmap(sm* smp, px* tpl)
 {
   sm_iters itrs(tpl);
+  if (smp == itrs.smp) bad_argument();
   if (itrs.beg() != itrs.end()) {
     pmi inserted = smp->mp.begin();
     if (!itrs.is_valid) bad_argument();

@@ -94,7 +94,8 @@ static void update_aux(smm* smmp, px* k, px* v)
   else {
     pos = mp.insert(pxh_pair(k,v));
   }
-  smmp->cache_pmmi(pos);  
+  if (smmp->keys_only)
+    smmp->cache_pmmi(pos);  
 }
 
 static bool insert_aux(smm* smmp, px* kv)
@@ -125,7 +126,8 @@ static bool insert_aux(smm* smmp, px* kv)
     else {
       pos = smmp->mp.insert(pxh_pair(k,v));
     }
-    smmp->cache_pmmi(pos);
+    if (smmp->keys_only)
+      smmp->cache_pmmi(pos);
   }
   return ok;
 }
@@ -723,10 +725,15 @@ void smm_insert_elms_stlmmap(smm* smmp, px* tpl)
   if (itrs.beg() != itrs.end()) {
     pmmi inserted = smmp->mp.begin();
     if (!itrs.is_valid) bad_argument();
-    for (pmmi i = itrs.beg(); i!=itrs.end(); i++) {
-      inserted = smmp->mp.insert(inserted, *i);
+    if (smmp->keys_only) {
+      for (pmmi i = itrs.beg(); i!=itrs.end(); i++)
+        inserted = smmp->mp.insert(inserted, *i);
+      smmp->cache_pmmi(inserted);
     }
-    smmp->cache_pmmi(inserted);
+    else {
+      for (pmmi i = itrs.beg(); i!=itrs.end(); i++)
+        update_aux(smmp, i->first.pxp(), i->second.pxp());
+    }
   }
 }
 

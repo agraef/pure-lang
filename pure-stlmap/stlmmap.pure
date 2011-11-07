@@ -280,7 +280,7 @@ end;
 ::mkstlmmap y ks::list = do add ks $$ smm with
   add k = ::update smm k y;
 end when
-  smm = emptystlmmap;  
+  smm = emptystlmmap;
 end;
 
 set_default smm@(STLMMAP mm) val = smm_set_default mm val if ~smm_is_set smm;
@@ -292,6 +292,10 @@ get_default smm@(STLMMAP mm) = smm_get_default mm if ~smm_is_set smm;
   smm_erase_first_if (\(_=>x)->x==v) (smm,k) if ~smm_is_set smm; 
 
 ::update smm@(STLMMAP mm) key x = smm_update mm key x $$ smm if ~smm_is_set smm;
+
+// ::update_all smm@(STLMMAP mm) key x = 
+//   smm_update_all mm key x $$ smm if ~smm_is_set smm;
+
 
 ::update_with f smm@(STLMMAP mm) key x = 
   smm_update_with mm key (f x) $$ smm if ~smm_is_set smm;
