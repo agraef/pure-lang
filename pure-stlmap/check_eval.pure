@@ -79,6 +79,13 @@ const optspec = [
   ("--resume",      "-r", NOARG)
 ];
 
+set_default_options = () when
+  put echo_c 1;
+  put echo_cc 1;
+  put evaluate 1;
+  put verbose 1;
+end; 
+
 set_options ln = () when
   args = regsplit "[ ]+" REG_EXTENDED ln 0; 
   opts_hr, other_vals = catch bad_option $ getopt optspec args;
@@ -219,6 +226,7 @@ const usage =
 "See source file for more details.";
 
 main args = () when
+  set_default_options;
   fp = if null args then puts usage $$ exit 1 else fopen (args!0) "r";
   ec, _ = if ~pointerp fp || null fp then
          puts "could not open file" $$ 0, 0

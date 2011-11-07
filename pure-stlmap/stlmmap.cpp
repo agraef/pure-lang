@@ -7,12 +7,15 @@ Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>.
 All rights reserved.
 
 This software is is part of pure-stlmap, an addon to the Pure Programming
-Language (http://code.google.com/p/pure-lang/).
+Language (http://code.google.com/p/pure-lang/)
+.
 
-This software is distributed under a BSD-style license in the hope that it
-will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the COPYING file
-included with the pure-stlmap distribution package for details.
+This software is distributed under a BSD-style license in the hope 
+//- ()
+
+hat it will be useful, but WITHOUT ANY WARRANTY; without even the implied
+warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+COPYING file included with th e pure-stlmap distribution package for details.
 
 */
 
@@ -122,7 +125,7 @@ static bool insert_aux(smm* smmp, px* kv)
     else {
       pos = smmp->mp.insert(pxh_pair(k,v));
     }
-    smmp->cache_pmmi(++pos); //++ else unexpected order "a"=>3,"a"=>2,"a"=>1
+    smmp->cache_pmmi(pos);
   }
   return ok;
 }
@@ -720,8 +723,9 @@ void smm_insert_elms_stlmmap(smm* smmp, px* tpl)
   if (itrs.beg() != itrs.end()) {
     pmmi inserted = smmp->mp.begin();
     if (!itrs.is_valid) bad_argument();
-    for (pmmi i = itrs.beg(); i!=itrs.end(); i++)
+    for (pmmi i = itrs.beg(); i!=itrs.end(); i++) {
       inserted = smmp->mp.insert(inserted, *i);
+    }
     smmp->cache_pmmi(inserted);
   }
 }

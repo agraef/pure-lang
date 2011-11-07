@@ -107,55 +107,6 @@ vector it::smmit = smm_make_vector it;
 
 (::#) smm::stlmmap = smm_size smm;
 
-infixl (+) union;
-
-(union) it1::smmit it2::smmit = 
-  smm_wrap $ smm_setop smm_union it1 it2 if both_mmaps it1 it2;
-
-(::+) it1::smmit it2::smmit = res when
-  res = ::stlmmap it1;
-  ::insert_elms res it2;
-end if both_mmaps it1 it2;
-
-(::-) it1::smmit it2::smmit = 
-  smm_wrap $ smm_setop smm_difference it1 it2 if both_mmaps it1 it2;
-
-(::*) it1::smmit it2::smmit = 
-  smm_wrap $ smm_setop smm_intersection it1 it2 if both_mmaps it1 it2;
-
-(::/) it1::smmit it2::smmit = 
-  smm_wrap $ smm_setop smm_symmetric_difference it1 it2 if both_mmaps it1 it2;
-
-(::<=) it1::smmit it2::smmit = smm_includes it2 it1 if both_mmaps it1 it2;
-
-(::<) it1::smmit it2::smmit = 
-  smm_size it1 < smm_size it2 && smm_includes it2 it1 if both_mmaps it1 it2;
-
-(union) it1::smmit it2::smmit = 
-  smm_wrap $ smm_setop smm_union it1 it2 if both_msets it1 it2;
-
-(::+) it1::smmit it2::smmit = res when
-  res = ::stlmset it1;
-  ::insert_elms res it2;
-end if both_msets it1 it2;
-
-(::+) it1::smmit it2::smmit = 
-  smm_wrap $ smm_setop smm_union it1 it2 if both_msets it1 it2;
-
-(::-) it1::smmit it2::smmit = 
-  smm_wrap $ smm_setop smm_difference it1 it2 if both_msets it1 it2;
-
-(::*) it1::smmit it2::smmit = 
-  smm_wrap $ smm_setop smm_intersection it1 it2 if both_msets it1 it2;
-
-(::/) it1::smmit it2::smmit = 
-  smm_wrap $ smm_setop smm_symmetric_difference it1 it2 if both_msets it1 it2;
-
-(::<=) it1::smmit it2::smmit = smm_includes it2 it1 if both_msets it1 it2;
-
-(::<) it1::smmit it2::smmit = 
-  smm_size it1 < smm_size it2 && smm_includes it2 it1 if both_msets it1 it2;
-
 size it::smmit = smm_size it;
 
 null it::smmit = smm_size it == 0;
@@ -257,6 +208,53 @@ end;
 ::colmap f it::smmit = colcat (smm_listmap f it smm_both);
 
 ::colcatmap f it::smmit = colcat (smm_listmap f it smm_both);
+
+set_union it1::smmit it2::smmit = 
+  smm_wrap $ smm_setop smm_union it1 it2
+  if both_msets it1 it2 || both_mmaps it1 it2;
+
+set_difference it1::smmit it2::smmit = 
+  smm_wrap $ smm_setop smm_difference it1 it2
+  if both_msets it1 it2 || both_mmaps it1 it2;
+
+set_intersection it1::smmit it2::smmit = 
+  smm_wrap $ smm_setop smm_intersection it1 it2
+  if both_msets it1 it2 || both_mmaps it1 it2;
+
+set_symmetric_difference it1::smmit it2::smmit = 
+  smm_wrap $ smm_setop smm_symmetric_difference it1 it2 
+  if both_msets it1 it2 || both_mmaps it1 it2;
+
+set_includes it1::smmit it2::smmit = smm_includes it1 it2 
+  if both_msets it1 it2 || both_mmaps it1 it2;
+
+(::+) it1::smmit it2::smmit = res when
+  res = ::stlmmap it1;
+  ::insert_elms res it2;
+end if both_mmaps it1 it2;
+
+(::+) it1::smmit it2::smmit = res when
+  res = ::stlmset it1;
+  ::insert_elms res it2;
+end if both_msets it1 it2;
+
+// FIX (::-) do in C++ using find
+(::-) it1::smmit it2::smmit = res when
+  res = stlmmap it1;
+  do (::delete_val res) it2 
+end if both_mmaps it1 it2;
+
+(::-) it1::smmit it2::smmit = res when
+  res = stlmset it1;
+  do (::delete res) it2 
+end if both_msets it1 it2;
+
+(::*) it1::smmit it2::smmit = 
+  if size it1 < size it2 then it1 - (it1 -it2) else it2 - (it2 -it1)
+  if both_msets it1 it2 || both_mmaps it1 it2;
+
+(::/) it1::smmit it2::smmit = (it1 - it2) +  (it2 -it1)
+  if both_msets it1 it2 || both_mmaps it1 it2;
 
 /*** Functions for stlmmap *******************************************/
 

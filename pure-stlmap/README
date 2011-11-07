@@ -203,7 +203,15 @@ B. Notable features
 5. Set operators are provided for all four of the sorted associative
    containers. 
 
-   a. The operators are: "+", "-", "*", "/", "<" and ",=". 
+   a. The operators are: "+", "-", "*", "/". These are implemented the same as
+      for dict and set if the Pure standard library except that for stlmmaps,
+      there is no guaranteed order of elements with the same key the appear in
+      the result. The elements will be the same (right hand side dominates) but
+      they may be in different order.
+
+   b. The five STL set operatons, stl::set_union, stl::set_difference,
+      stl::set_intersection, stl::set_symmetric_difference and stl::include are
+      also available. They differ ...
 
    b. Both operands must be the same type of container. I.e., sm1 + sm2, where
       sm1 and sm2 are stlmaps, but no sm1 + smm1, where smm1 is a stlmmap.
@@ -214,7 +222,7 @@ B. Notable features
 
    d. In the case of sm1 + sm2, where sm1 and sm2 are stlmaps, elements from
       both maps can end up in the result. Because the result will be a stlmap,
-      there can only be element associated with each key. If sm1 has an
+      there can only be one element associated with each key. If sm1 has an
       element (k=>v1) and sm2 has an element (k=>v2), the resulting stlmap
       will contain (k=>v2). This is the opposite of what would happen if
       C++'s set_union function were used. Similarly for set intersection.
@@ -256,7 +264,7 @@ B. Notable features
 
 8. For any sorted associative container, sac, "next_key sac k)" and "prev_key
    sac k) generally do just what their names suggests. The behavior for the
-   "corener cases" is as follows: 
+   "corner cases" is as follows: 
 
        a. If k is the last key in sac "next_key sac k)" returns stl::stlend.
 

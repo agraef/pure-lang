@@ -663,15 +663,6 @@ let ss2 = stlset ["b","c","d","e"]; members ss2;
 let ss3 = stlset ["b","c","d"]; members ss3;
 //- ["b","c","d"]
 
-members (ss1 stl::union ss1);
-//- ["a","b","c","d"]
-
-members (ss1 stl::union ss2);
-//- ["a","b","c","d","e"]
-
-members (ss2 stl::union ss1);
-//- ["a","b","c","d","e"]
-
 members (ss1 + ss1);
 //- ["a","b","c","d"]
 
@@ -708,83 +699,44 @@ members (ss1 / ss2);
 members (ss2 / ss1);
 //- ["a","e"]
 
-ss1 < ss1;
-//- 0
+members (stl::set_union ss1 ss2);
+//- ["a","b","c","d","e"]
 
-ss1 < ss2;
-//- 0
+members (stl::set_union ss2 ss1);
+//- ["a","b","c","d","e"]
 
-ss2 < ss1;
-//- 0
+members (stl::set_intersection ss1 ss1);
+//- ["a","b","c","d"]
 
-ss3 < ss1;
-//- 1
-
-ss1 < ss3;
-//- 0
-
-ss3 < ss2;
-//- 1
-
-ss2 < ss3;
-//- 0
-
-ss1 <= ss1;
-//- 1
-
-ss1 <= ss2;
-//- 0
-
-ss2 <= ss1;
-//- 0
-
-ss3 <= ss1;
-//- 1
-
-ss1 <= ss3;
-//- 0
-
-ss3 <= ss2;
-//- 1
-
-ss2 <= ss3;
-//- 0
-
-(ss1,"b","d") < ss3;
-//- 1
-
-ss3 < (ss1,"b","d");
-//- 0
-
-(ss1,"b","d") <= ss3;
-//- 1
-
-ss3 <= (ss1,"b","d");
-//- 0
-
-(ss2,"b","e") <  ss3;
-//- 0
-
-ss3 < (ss2,"b","e");
-//- 0
-
-(ss2,"b","e") <= ss3;
-//- 1
-
-ss3 <= (ss2,"b","e");
-//- 1
-
-members $ (ss1,"b","d") + (ss2, "c","e");
+members (stl::set_intersection ss1 ss2);
 //- ["b","c","d"]
 
-members $ (ss1,"b","d") - (ss2, "c","e");
-//- ["b"]
+members (stl::set_intersection ss2 ss1);
+//- ["b","c","d"]
 
-members $ (ss1,"b","d") * (ss2, "c","e");
-//- ["c"]
+members (stl::set_difference ss1 ss1);
+//- []
 
-members $ (ss1,"b","d") / (ss2, "c","e");
-//- ["b","d"]
+members (stl::set_difference ss1 ss2);
+//- ["a"]
+
+members (stl::set_difference ss2 ss1);
+//- ["e"]
+
+members (stl::set_symmetric_difference ss1 ss1);
+//- []
+
+members (stl::set_symmetric_difference ss1 ss2);
+//- ["a","e"]
+
+members (stl::set_symmetric_difference ss2 ss1);
+//- ["a","e"]
+
+stl::set_includes ss1 (ss1,"b","d");
+//- 1
+
+stl::set_includes (ss1,"b","d") ss1;
+//- 0
 
 //** Cache sensitive sequences ****************************************
 

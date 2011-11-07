@@ -105,52 +105,6 @@ vector it::smit = sm_make_vector it;
 
 (::#) sm::stlmap = sm_size sm;
 
-infixl (+) union;
-
-(union) it1::smit it2::smit = 
-  sm_wrap $ sm_setop sm_union it1 it2 if both_maps it1 it2;
-
-(::+) it1::smit it2::smit = res when
-  res = ::stlmap it1;
-  ::insert_elms res it2;
-end if both_maps it1 it2;
-
-(::-) it1::smit it2::smit = 
-  sm_wrap $ sm_setop sm_difference it1 it2 if both_maps it1 it2;
-
-(::*) it1::smit it2::smit = 
-  sm_wrap $ sm_setop sm_intersection it1 it2 if both_maps it1 it2;
-
-(::/) it1::smit it2::smit = 
-  sm_wrap $ sm_setop sm_symmetric_difference it1 it2 if both_maps it1 it2;
-
-(::<=) it1::smit it2::smit = sm_includes it2 it1 if both_maps it1 it2;
-
-(::<) it1::smit it2::smit = 
-  sm_size it1 < sm_size it2 && sm_includes it2 it1 if both_maps it1 it2;
-
-(union) it1::smit it2::smit = 
-  sm_wrap $ sm_setop sm_union it1 it2 if both_sets it1 it2;
-
-(::+) it1::smit it2::smit = res when
-  res = ::stlset it1;
-  ::insert_elms res it2;
-end if both_sets it1 it2;
-
-(::-) it1::smit it2::smit = 
-  sm_wrap $ sm_setop sm_difference it1 it2 if both_sets it1 it2;
-
-(::*) it1::smit it2::smit = 
-  sm_wrap $ sm_setop sm_intersection it1 it2 if both_sets it1 it2;
-
-(::/) it1::smit it2::smit = 
-  sm_wrap $ sm_setop sm_symmetric_difference it1 it2 if both_sets it1 it2;
-
-(::<=) it1::smit it2::smit = sm_includes it2 it1 if both_sets it1 it2;
-
-(::<) it1::smit it2::smit = 
-  sm_size it1 < sm_size it2 && sm_includes it2 it1 if both_sets it1 it2;
-
 size it::smit = sm_size it;
 
 null it::smit = sm_size it == 0;
@@ -252,6 +206,46 @@ end;
 ::colmap f it::smit = colcat (sm_listmap f it sm_both);
 
 ::colcatmap f it::smit = colcat (sm_listmap f it sm_both);
+
+set_union it1::smit it2::smit = 
+  sm_wrap $ sm_setop sm_union it1 it2
+  if both_sets it1 it2 || both_maps it1 it2;
+
+set_difference it1::smit it2::smit = 
+  sm_wrap $ sm_setop sm_difference it1 it2
+  if both_sets it1 it2 || both_maps it1 it2;
+
+set_intersection it1::smit it2::smit = 
+  sm_wrap $ sm_setop sm_intersection it1 it2
+  if both_sets it1 it2 || both_maps it1 it2;
+
+set_symmetric_difference it1::smit it2::smit = 
+  sm_wrap $ sm_setop sm_symmetric_difference it1 it2 
+  if both_sets it1 it2 || both_maps it1 it2;
+
+set_includes it1::smit it2::smit = sm_includes it1 it2 
+  if both_sets it1 it2 || both_maps it1 it2;
+
+(::+) it1::smit it2::smit = res when
+  res = ::stlmap it1;
+  ::insert_elms res it2;
+end if both_maps it1 it2;
+
+(::+) it1::smit it2::smit = set_union it1 it2 if both_sets it1 it2;
+
+(::-) it1::smit it2::smit = res when
+  res = stlmap it1;
+  do (::delete_val res) it2 
+end if both_maps it1 it2;
+
+(::-) it1::smit it2::smit = set_difference it1 it2 if both_sets it1 it2;
+
+(::*) it1::smit it2::smit = 
+  if size it1 < size it2 then it1 - (it1 -it2) else it2 - (it2 -it1)
+  if both_sets it1 it2 || both_maps it1 it2;
+
+(::/) it1::smit it2::smit = (it1 - it2) +  (it2 -it1)
+  if both_sets it1 it2 || both_maps it1 it2;
 
 /*** Functions for stlmap *******************************************/
 

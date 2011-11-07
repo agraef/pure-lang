@@ -739,139 +739,92 @@ filter (\(k=>v) -> v mod 2) (smm1,"d","d");
 //** Set operations ******************************************************
 
 let smm1 = stlmmap ["a"=>11,"a"=>12,"b"=>13,"c"=>14,"d"=>15]; members smm1;
-//- ["a"=>11,"a"=>12,"b"=>13,"c"=>14,"d"=>15]
+//- ["a"=>12,"a"=>11,"b"=>13,"c"=>14,"d"=>15]
+//-
 
-let smm2 = stlmmap ["b"=>21,"b"=>22,"c"=>23,"e"=>24]; members smm2;
-//- ["b"=>21,"b"=>22,"c"=>23,"e"=>24]
+let smm2 = stlmmap ["a"=>11,"a"=>22,"a"=>23,"b"=>22,"b"=>23]; members smm2;
+//- ["a"=>23,"a"=>22,"a"=>11,"b"=>23,"b"=>22]
 
-let smm3 = stlmmap ["b"=>31,"c"=>32,"d"=>33]; members smm3;
-//- ["b"=>31,"c"=>32,"d"=>33]
+let smm3 = stlmmap ["a"=>11,"b"=>12,"b"=>12,"c"=>14,"c"=>14,"d"=>16];
+//- ()
 
-members (smm1 stl::union smm1);
-//- ["a"=>11,"a"=>12,"b"=>13,"c"=>14,"d"=>15]
-
-members (smm1 stl::union smm2);
-//- ["a"=>11,"a"=>12,"b"=>13,"b"=>22,"c"=>14,"d"=>15,"e"=>24]
-
-members (smm2 stl::union smm1);
-//- ["a"=>11,"a"=>12,"b"=>21,"b"=>22,"c"=>23,"d"=>15,"e"=>24]
+members smm3;
+//- ["a"=>11,"b"=>12,"b"=>12,"c"=>14,"c"=>14,"d"=>16]
 
 members (smm1 + smm1);
-//- ["a"=>12,"a"=>11,"a"=>12,"a"=>11,"b"=>13,"b"=>13,"c"=>14,"c"=>14,"d"=>15,"d"=>15]
+//- ["a"=>11,"a"=>12,"a"=>11,"a"=>12,"b"=>13,"b"=>13,"c"=>14,"c"=>14,"d"=>15,"d"=>15]
 
 members (smm1 + smm2);
-//- ["a"=>12,"a"=>11,"b"=>22,"b"=>21,"b"=>13,"c"=>23,"c"=>14,"d"=>15,"e"=>24]
+//- ["a"=>11,"a"=>22,"a"=>23,"a"=>11,"a"=>12,"b"=>22,"b"=>23,"b"=>13,"c"=>14,"d"=>15]
 
 members (smm2 + smm1);
-//- ["a"=>12,"a"=>11,"b"=>13,"b"=>22,"b"=>21,"c"=>14,"c"=>23,"d"=>15,"e"=>24]
+//- ["a"=>11,"a"=>12,"a"=>11,"a"=>22,"a"=>23,"b"=>13,"b"=>22,"b"=>23,"c"=>14,"d"=>15]
 
 members (smm1 - smm1);
 //- []
 
 members (smm1 - smm2);
-//- ["a"=>11,"a"=>12,"d"=>15]
+//- ["a"=>12,"b"=>13,"c"=>14,"d"=>15]
 
 members (smm2 - smm1);
-//- ["b"=>22,"e"=>24]
+//- ["a"=>22,"a"=>23,"b"=>22,"b"=>23]
 
 members (smm1 * smm1);
 //- ["a"=>11,"a"=>12,"b"=>13,"c"=>14,"d"=>15]
 
 members (smm1 * smm2);
-//- ["b"=>13,"c"=>14]
+//- ["a"=>11]
 
 members (smm2 * smm1);
-//- ["b"=>21,"c"=>23]
+//- ["a"=>11]
 
 members (smm1 / smm1);
 //- []
 
 members (smm1 / smm2);
-//- ["a"=>11,"a"=>12,"b"=>22,"d"=>15,"e"=>24]
+//- ["a"=>23,"a"=>22,"a"=>12,"b"=>23,"b"=>22,"b"=>13,"c"=>14,"d"=>15]
 
 members (smm2 / smm1);
-//- ["a"=>11,"a"=>12,"b"=>22,"d"=>15,"e"=>24]
+//- ["a"=>12,"a"=>23,"a"=>22,"b"=>13,"b"=>23,"b"=>22,"c"=>14,"d"=>15]
 
-smm1 < smm1;
-//- 0
+members (stl::set_union smm1 smm1);
+//- ["a"=>12,"a"=>11,"b"=>13,"c"=>14,"d"=>15]
 
-smm1 < smm2;
-//- 0
+members (stl::set_union smm1 smm2);
+//- ["a"=>12,"a"=>11,"a"=>11,"b"=>13,"b"=>22,"c"=>14,"d"=>15]
 
-smm2 < smm1;
-//- 0
+members (stl::set_union smm2 smm1);
+//- ["a"=>23,"a"=>22,"a"=>11,"b"=>23,"b"=>22,"c"=>14,"d"=>15]
 
-smm3 < smm1;
+members (stl::set_intersection smm1 smm1);
+//- ["a"=>12,"a"=>11,"b"=>13,"c"=>14,"d"=>15]
+
+members (stl::set_intersection smm1 smm2);
+//- ["a"=>12,"a"=>11,"b"=>13]
+
+members (stl::set_intersection smm2 smm1);
+//- ["a"=>23,"a"=>22,"b"=>23]
+
+members (stl::set_difference smm1 smm1);
+//- []
+
+members (stl::set_difference smm1 smm2);
+//- ["c"=>14,"d"=>15]
+
+members (stl::set_difference smm2 smm1);
+//- ["a"=>11,"b"=>22]
+
+members (stl::set_symmetric_difference smm1 smm1);
+//- []
+
+members (stl::set_symmetric_difference smm1 smm2);
+//- ["a"=>11,"b"=>22,"c"=>14,"d"=>15]
+
+members (stl::set_symmetric_difference smm2 smm1);
+//- ["a"=>11,"b"=>22,"c"=>14,"d"=>15]
+
+stl::set_includes smm1 (smm1,"b","d");
 //- 1
-
-smm1 < smm3;
-//- 0
-
-smm3 < smm2;
-//- 0
-
-smm2 < smm3;
-//- 0
-
-smm1 <= smm1;
-//- 1
-
-smm1 <= smm2;
-//- 0
-
-smm2 <= smm1;
-//- 0
-
-smm3 <= smm1;
-//- 1
-
-smm1 <= smm3;
-//- 0
-
-smm3 <= smm2;
-//- 0
-
-smm2 <= smm3;
-//- 0
-
-(smm1,"b","d") < smm3;
-//- 1
-
-smm3 < (smm1,"b","d");
-//- 0
-
-(smm1,"b","d") <= smm3;
-//- 1
-
-smm3 <= (smm1,"b","d");
-//- 0
-
-(smm2,"b","e") <  smm3;
-//- 0
-
-smm3 < (smm2,"b","e");
-//- 0
-
-(smm2,"b","e") <= smm3;
-//- 0
-
-smm3 <= (smm2,"b","e");
-//- 0
-
-members $ (smm1,"b","d") stl::union (smm2, "c","e");
-//- ["b"=>13,"c"=>14]
-
-members $ (smm1,"b","d") + (smm2, "c","e");
-//- ["b"=>13,"c"=>23,"c"=>14]
-
-members $ (smm1,"b","d") - (smm2, "c","e");
-//- ["b"=>13]
-
-members $ (smm1,"b","d") * (smm2, "c","e");
-//- ["c"=>14]
-
-members $ (smm1,"b","d") / (smm2, "c","e");
-//- ["b"=>13]
 
 //** Cache sensitive sequences ****************************************
 

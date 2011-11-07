@@ -697,140 +697,85 @@ filter (\k -> (ord k) mod 2) (sms1,"d","d");
 
 //** Set operations ******************************************************
 
-let sms1 = stlmset ["a","a","b","c","d"]; members sms1;
-//- ["a","a","b","c","d"]
 
-let sms2 = stlmset ["b","b","c","e"]; members sms2;
-//- ["b","b","c","e"]
+
+let sms1 = stlmset ["a","a","a","b","c"]; members sms1;
+//- ["a","a","a","b","c"]
+
+let sms2 = stlmset ["a","a","b","b","d"]; members sms2;
+//- ["a","a","b","b","d"]
 
 let sms3 = stlmset ["b","c","d"]; members sms3;
 //- ["b","c","d"]
 
-members (sms1 stl::union sms1);
-//- ["a","a","b","c","d"]
-
-members (sms1 stl::union sms2);
-//- ["a","a","b","b","c","d","e"]
-
-members (sms2 stl::union sms1);
-//- ["a","a","b","b","c","d","e"]
-
 members (sms1 + sms1);
-//- ["a","a","a","a","b","b","c","c","d","d"]
+//- ["a","a","a","a","a","a","b","b","c","c"]
 
 members (sms1 + sms2);
-//- ["a","a","b","b","b","c","c","d","e"]
+//- ["a","a","a","a","a","b","b","b","c","d"]
 
 members (sms2 + sms1);
-//- ["a","a","b","b","b","c","c","d","e"]
+//- ["a","a","a","a","a","b","b","b","c","d"]
 
 members (sms1 - sms1);
 //- []
 
 members (sms1 - sms2);
-//- ["a","a","d"]
+//- ["a","c"]
 
 members (sms2 - sms1);
-//- ["b","e"]
+//- ["b","d"]
 
 members (sms1 * sms1);
-//- ["a","a","b","c","d"]
+//- ["a","a","a","b","c"]
 
 members (sms1 * sms2);
-//- ["b","c"]
+//- ["a","a","b"]
 
 members (sms2 * sms1);
-//- ["b","c"]
+//- ["a","a","b"]
 
 members (sms1 / sms1);
 //- []
 
-members (sms1 / sms2);
-//- ["a","a","b","d","e"]
+members (stl::set_union sms1 sms2);
+//- ["a","a","a","b","b","c","d"]
 
-members (sms2 / sms1);
-//- ["a","a","b","d","e"]
+members (stl::set_union sms2 sms1);
+//- ["a","a","a","b","b","c","d"]
 
-sms1 < sms1;
-//- 0
+members (stl::set_intersection sms1 sms1);
+//- ["a","a","a","b","c"]
 
-sms1 < sms2;
-//- 0
+members (stl::set_intersection sms1 sms2);
+//- ["a","a","b"]
 
-sms2 < sms1;
-//- 0
+members (stl::set_intersection sms2 sms1);
+//- ["a","a","b"]
 
-sms3 < sms1;
+members (stl::set_difference sms1 sms1);
+//- []
+
+members (stl::set_difference sms1 sms2);
+//- ["a","c"]
+
+members (stl::set_difference sms2 sms1);
+//- ["b","d"]
+
+members (stl::set_symmetric_difference sms1 sms1);
+//- []
+
+members (stl::set_symmetric_difference sms1 sms2);
+//- ["a","b","c","d"]
+
+members (stl::set_symmetric_difference sms2 sms1);
+//- ["a","b","c","d"]
+
+stl::set_includes sms1 (sms1,"b","d");
 //- 1
 
-sms1 < sms3;
+stl::set_includes (sms1,"b","d") sms1;
 //- 0
-
-sms3 < sms2;
-//- 0
-
-sms2 < sms3;
-//- 0
-
-sms1 <= sms1;
-//- 1
-
-sms1 <= sms2;
-//- 0
-
-sms2 <= sms1;
-//- 0
-
-sms3 <= sms1;
-//- 1
-
-sms1 <= sms3;
-//- 0
-
-sms3 <= sms2;
-//- 0
-
-sms2 <= sms3;
-//- 0
-
-(sms1,"b","d") < sms3;
-//- 1
-
-sms3 < (sms1,"b","d");
-//- 0
-
-(sms1,"b","d") <= sms3;
-//- 1
-
-sms3 <= (sms1,"b","d");
-//- 0
-
-(sms2,"b","e") <  sms3;
-//- 0
-
-sms3 < (sms2,"b","e");
-//- 0
-
-(sms2,"b","e") <= sms3;
-//- 0
-
-sms3 <= (sms2,"b","e");
-//- 0
-
-members $ (sms1,"b","d") stl::union (sms2, "c","e");
-//- ["b","c"]
-
-members $ (sms1,"b","d") + (sms2, "c","e");
-//- ["b","c","c"]
-
-members $ (sms1,"b","d") - (sms2, "c","e");
-//- ["b"]
-
-members $ (sms1,"b","d") * (sms2, "c","e");
-//- ["c"]
-
-members $ (sms1,"b","d") / (sms2, "c","e");
-//- ["b"]
 
 //** Cache sensitive sequences ****************************************
 

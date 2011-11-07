@@ -248,7 +248,7 @@ insert_elms sm1 ["a"=>11,"f"=>6]; members sm1;
 //- ["a"=>11,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6]
 
 insert_elms sm1 {"a"=>12,"g"=>7}; members sm1;
-//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7]
+//- ["a"=>12,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7]
 
 insert_elms sm1 (sm2,"x","z"); members sm1;
 //- ["a"=>12,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7]
@@ -257,7 +257,7 @@ insert_elms sm1 (sm2,"0","2"); members sm1;
 //- ["a"=>12,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7]
 
 insert_elms sm1 (sm2,"k","k"); members sm1;
-//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7]
+//- ["a"=>12,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7]
 
 insert_elms sm1 (sm2,"k","l"); members sm1;
 //- ["a"=>12,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7,"k"=>11]
@@ -486,7 +486,7 @@ sm1 == (sm2,"a","a"); // oops -- tuple rule trumps;
 // ** bounds, size *******************************************************
 
 let sm1 = stlmap ["a"=>1,"b"=>2,"b"=>3,"b"=>1,"c"=>3,"d"=>4]; members sm1;
-//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4]
+//- ["a"=>1,"b"=>1,"c"=>3,"d"=>4]
 
 let sm2, lb, up = stl::bounds sm1; (lb, up);
 //- stl_begin_iterator,stl_end_iterator
@@ -501,7 +501,7 @@ let sm2, lb, ub = stl::bounds (sm1,"b"); (lb, ub);
 //- "b","c"
 
 members (sm2, lb, ub);
-//- ["b"=>2]
+//- ["b"=>1]
 
 let sm2, lb, up = stl::bounds (sm1,"a","x"); (lb, up);
 //- stl_begin_iterator,stl_end_iterator
@@ -516,7 +516,7 @@ let sm2, lb, ub = stl::bounds (sm1,"a","b"); (lb, ub);
 //- stl_begin_iterator,"c"
 
 members (sm2, lb, ub);
-//- ["a"=>1,"b"=>2]
+//- ["a"=>1,"b"=>1]
 
 let sm2, lb, up = stl::bounds (sm1,stl::stlbeg,"a"); (lb, up);
 //- stl_begin_iterator,"b"
@@ -715,139 +715,80 @@ filter (\(k=>v) -> v mod 2) (sm1,"d","d");
 let sm1 = stlmap ["a"=>11,"b"=>12,"c"=>14,"d"=>15]; members sm1;
 //- ["a"=>11,"b"=>12,"c"=>14,"d"=>15]
 
-let sm2 = stlmap ["b"=>21,"c"=>22,"e"=>23]; members sm2;
-//- ["b"=>21,"c"=>22,"e"=>23]
-
-let sm3 = stlmap ["b"=>31,"c"=>32,"d"=>33]; members sm3;
-//- ["b"=>31,"c"=>32,"d"=>33]
-
-// stl::union -- broken -- inserts STL style
-// members (sm1 stl::union sm1);
-// //- ["a"=>11,"b"=>12,"c"=>14,"d"=>15]
-
-// members (sm1 stl::union sm2);
-// //- ["a"=>11,"b"=>12,"c"=>14,"d"=>15,"e"=>23]
-
-// members (sm2 stl::union sm1);
-// //- ["a"=>11,"b"=>21,"c"=>22,"d"=>15,"e"=>23]
+let sm2 = stlmap ["a"=>11,"b"=>21,"c"=>14,"e"=>25]; members sm2;
+//- ["a"=>11,"b"=>21,"c"=>14,"e"=>25]
 
 members (sm1 + sm1);
 //- ["a"=>11,"b"=>12,"c"=>14,"d"=>15]
 
 members (sm1 + sm2);
-//- ["a"=>11,"b"=>12,"c"=>14,"d"=>15,"e"=>23]
+//- ["a"=>11,"b"=>21,"c"=>14,"d"=>15,"e"=>25]
 
 members (sm2 + sm1);
-//- ["a"=>11,"b"=>21,"c"=>22,"d"=>15,"e"=>23]
+//- ["a"=>11,"b"=>12,"c"=>14,"d"=>15,"e"=>25]
 
 members (sm1 - sm1);
 //- []
 
 members (sm1 - sm2);
-//- ["a"=>11,"d"=>15]
+//- ["b"=>12,"d"=>15]
 
 members (sm2 - sm1);
-//- ["e"=>23]
+//- ["b"=>21,"e"=>25]
 
 members (sm1 * sm1);
 //- ["a"=>11,"b"=>12,"c"=>14,"d"=>15]
 
 members (sm1 * sm2);
-//- ["b"=>12,"c"=>14]
+//- ["a"=>11,"c"=>14]
 
 members (sm2 * sm1);
-//- ["b"=>21,"c"=>22]
+//- ["a"=>11,"c"=>14]
 
-members (sm1 / sm1);
+members (stl::set_union sm1 sm1);
+//- ["a"=>11,"b"=>12,"c"=>14,"d"=>15]
+
+members (stl::set_union sm1 sm2);
+//- ["a"=>11,"b"=>12,"c"=>14,"d"=>15,"e"=>25]
+
+members (stl::set_union sm2 sm1);
+//- ["a"=>11,"b"=>21,"c"=>14,"d"=>15,"e"=>25]
+
+members (stl::set_intersection sm1 sm1);
+//- ["a"=>11,"b"=>12,"c"=>14,"d"=>15]
+
+members (stl::set_intersection sm1 sm2);
+//- ["a"=>11,"b"=>12,"c"=>14]
+
+members (stl::set_intersection sm2 sm1);
+//- ["a"=>11,"b"=>21,"c"=>14]
+
+members (stl::set_difference sm1 sm1);
 //- []
 
-members (sm1 / sm2);
-//- ["a"=>11,"d"=>15,"e"=>23]
+members (stl::set_difference sm1 sm2);
+//- ["d"=>15]
 
-members (sm2 / sm1);
-//- ["a"=>11,"d"=>15,"e"=>23]
+members (stl::set_difference sm2 sm1);
+//- ["e"=>25]
 
-sm1 < sm1;
-//- 0
+members (stl::set_symmetric_difference sm1 sm1);
+//- []
 
-sm1 < sm2;
-//- 0
+members (stl::set_symmetric_difference sm1 sm2);
+//- ["d"=>15,"e"=>25]
 
-sm2 < sm1;
-//- 0
+members (stl::set_symmetric_difference sm2 sm1);
+//- ["d"=>15,"e"=>25]
 
-sm3 < sm1;
+stl::set_includes sm1 (sm1,"b","d");
 //- 1
 
-sm1 < sm3;
+stl::set_includes (sm1,"b","d") sm1;
 //- 0
 
-sm3 < sm2;
-//- 0
-
-sm2 < sm3;
-//- 0
-
-sm1 <= sm1;
+stl::set_includes sm2 (sm1,"a","b");
 //- 1
-
-sm1 <= sm2;
-//- 0
-
-sm2 <= sm1;
-//- 0
-
-sm3 <= sm1;
-//- 1
-
-sm1 <= sm3;
-//- 0
-
-sm3 <= sm2;
-//- 0
-
-sm2 <= sm3;
-//- 0
-
-(sm1,"b","d") < sm3;
-//- 1
-
-sm3 < (sm1,"b","d");
-//- 0
-
-(sm1,"b","d") <= sm3;
-//- 1
-
-sm3 <= (sm1,"b","d");
-//- 0
-
-(sm2,"b","e") <  sm3;
-//- 1
-
-sm3 < (sm2,"b","e");
-//- 0
-
-(sm2,"b","e") <= sm3;
-//- 1
-
-sm3 <= (sm2,"b","e");
-//- 0
-
-members $ (sm1,"b","d") stl::union (sm2, "c","e");
-//- ["b"=>12,"c"=>14]
-
-members $ (sm1,"b","d") + (sm2, "c","e");
-//- ["b"=>12,"c"=>14]
-
-members $ (sm1,"b","d") - (sm2, "c","e");
-//- ["b"=>12]
-
-members $ (sm1,"b","d") * (sm2, "c","e");
-//- ["c"=>14]
-
-members $ (sm1,"b","d") / (sm2, "c","e");
-//- ["b"=>12]
-
 
 //** Cache sensitive sequences ****************************************
 
