@@ -893,41 +893,27 @@ member smm1 "e";
 stl::set_smm_trace 0;
 //- ()
 
-//*** Fancy updating - C++ default value style ********************* 
+//*** update_vals *******************************************************
 
-//FIX
-//-- --stop
+let smm1 = stlmmap ["a"=>11,"a"=>12,"b"=>13,"c"=>14,"d"=>15]; members smm1;
+//- ["a"=>11,"a"=>12,"b"=>13,"c"=>14,"d"=>15]
 
-let smm1 = emptystlmmap; members smm1;
-//- []
+update_vals smm1 "a" $ map (+100) (smm1!"a"); members smm1;
+//- ["a"=>111,"a"=>112,"b"=>13,"c"=>14,"d"=>15]
 
-stl::set_default smm1 0; stl::get_default smm1;
-//- 1,0
+update_vals smm1 "a" []; members smm1;
+//- ["b"=>13,"c"=>14,"d"=>15]
 
-update_with (+) smm1 "a" 1; update_with (+) smm1 "a" 1; members smm1;
-//- ["a"=>2]
+update_vals smm1 "e" []; members smm1;
+//- ["b"=>13,"c"=>14,"d"=>15]
 
-erase smm1; #smm1;
-//- 0
+update_vals smm1 "e" [16,17,18,19]; members smm1;
+//- ["b"=>13,"c"=>14,"d"=>15,"e"=>16,"e"=>17,"e"=>18,"e"=>19]
 
-stl::set_default smm1 []; stl::get_default smm1;
-//- 1,[]
+update_vals smm1 "e" [26,27]; members smm1;
+//- ["b"=>13,"c"=>14,"d"=>15,"e"=>26,"e"=>27]
 
-update_with (:) smm1 "a" 1; update_with (:) smm1 "a" 2; members smm1;
-//- ["a"=>[2,1]]
+update_vals smm1 "b" [23,24,25]; members smm1;
+//- ["b"=>23,"b"=>24,"b"=>25,"c"=>14,"d"=>15,"e"=>26,"e"=>27]
 
-erase smm1; #smm1;
-//- 0
-
-stl::set_default smm1 emptystlvec; stl::get_default smm1; ();
-//- ()
-
-update_with (flip append) smm1 "a" 1; ();
-//- ()
-
-update_with (flip append) smm1 "a" 2; ();
-//- ()
-
-members (smm1!"a");
-//- [1,2]
 

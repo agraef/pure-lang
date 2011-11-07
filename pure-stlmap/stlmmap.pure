@@ -51,7 +51,7 @@ private extern expr* smm_get(void* mmap, expr* key);
 private extern expr* smm_first(expr* tpl);
 private extern expr* smm_last(expr* tpl);
 private extern expr* smm_update(void* mmap, expr* key, expr* val);
-private extern expr* smm_update_with(void* mmap, expr* key, expr* unaryfun);
+private extern expr* smm_update_vals_xs(void* mmap, expr* k, expr* src);
 private extern void  smm_insert_elm(void* mmap, expr* kv);
 private extern void  smm_insert_elms_xs(void* mmap, expr* src);
 private extern void  smm_insert_elms_stlvec(void* mmap, expr* tpl);
@@ -293,12 +293,7 @@ get_default smm@(STLMMAP mm) = smm_get_default mm if ~smm_is_set smm;
 
 ::update smm@(STLMMAP mm) key x = smm_update mm key x $$ smm if ~smm_is_set smm;
 
-// ::update_all smm@(STLMMAP mm) key x = 
-//   smm_update_all mm key x $$ smm if ~smm_is_set smm;
-
-
-::update_with f smm@(STLMMAP mm) key x = 
-  smm_update_with mm key (f x) $$ smm if ~smm_is_set smm;
+::update_vals (STLMMAP mm) k vals = smm_update_vals_xs mm k vals;
 
 ::keys it::smmit = smm_listmap 0 it smm_keys if ~smm_is_set it;
 

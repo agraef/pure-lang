@@ -85,7 +85,7 @@ static void update_aux(smm* smmp, px* k, px* v)
 {
   pxhmmap& mp = smmp->mp;
   pmmi pos;
-  if ( smmp->has_recent_pmmi ) {
+  if ( smmp->keys_only && smmp->has_recent_pmmi ) {
     pos = smmp->recent_pmmi;
     if ( !same(pos->first.pxp(), k) )
       pos = smmp->mp.insert(smmp->recent_pmmi,pxh_pair(k,v));
@@ -641,21 +641,6 @@ px* smm_update(smm* smmp, px* key, px* val)
   return val;
 }
 
-// FIX ME
-px* smm_update_with(smm* smmp, px* key, px* unaryfun)
-{
-  if (smmp->keys_only) return 0; // fail for sets
-  if (!smmp->has_dflt)
-    failed_cond();
-  px* old_val = smm_get(smmp,key);
-  px* exception = 0;
-  px* new_val = pure_appxl(unaryfun, &exception, 1, old_val);
-  if (exception) pure_throw(exception);
-  if (!new_val) bad_function();
-  update_aux(smmp, key, new_val);
-  return new_val;
-}
-
 px* smm_first(px* tpl)
 {
   smm_iters itrs(tpl);
@@ -745,6 +730,49 @@ void smm_insert_elms_stlvec(smm* smmp, px* tpl)
   for (svi i = itrs.beg(); i!=itrs.end(); i++)
     if ( !insert_aux(smmp, i->pxp()) ) bad_argument();
 }
+
+px* smm_update_vals_xs(smm* smmp, px* k, px* src)
+{
+  if (smmp->keys_only) return 0;
+  pxhmmap& mp = smmp->mp;
+  pmmi trgi = get_iter(mp, k, gi_lower);
+  pmmi ub = get_iter(mp, k, gi_upper);  
+  size_t src_sz = 0;
+  px** elems = NULL;
+  bool ok;
+  int i;
+  if (pure_is_listv(src, &src_sz, &elems)) {
+    for (i = 0; i<src_sz && trgi != ub; i++, trgi++)
+      trgi->second = elems[i];
+    if (i <src_sz)
+      for (; i<src_sz; i++)
+        update_aux(smmp, k, elems[i]);
+    else
+      mp.erase(trgi,ub);
+    free(elems);
+  } 
+  else if (matrix_type(src) == 0) {
+    src_sz = matrix_size(src); 
+    elems = (pure_expr**) pure_get_matrix_data(src);
+    for (i = 0; i<src_sz && trgi != ub; i++, trgi++)
+      trgi->second = elems[i];
+    if (i <src_sz)
+      for (; i<src_sz; i++)
+        update_aux(smmp, k, elems[i]);
+    else
+      mp.erase(trgi,ub);
+  }
+  return pure_int(i);
+}
+
+// void smm_replace_vals_stlvec(smm* smmp, px* tpl)
+// {
+//   sv_iters itrs(tpl);
+//   if (!itrs.is_valid || itrs.num_iters != 2) bad_argument();
+//   pxhmmap& mp = smmp->mp;
+//   for (svi i = itrs.beg(); i!=itrs.end(); i++)
+//     if ( !insert_aux(smmp, i->pxp()) ) bad_argument();
+// }
 
 int smm_erase(px* tpl)
 {

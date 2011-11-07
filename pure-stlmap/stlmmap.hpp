@@ -95,7 +95,7 @@ extern "C" {
   px*  smm_first(px* tpl);
   px*  smm_last(px* tpl);
   px*  smm_update(smm* smmp, px* key, px* val);
-  px*  smm_update_with(smm* smmp, px* key, px* binfun);
+  px*  smm_update_vals_xs(smm* smmp, px* k, px* src);
   void smm_insert_elm(smm* smmp, px* kv);
   void smm_insert_elms_xs(smm* smmp, px* src);
   void smm_insert_elms_stlmmap(smm* smmp, px* tpl);

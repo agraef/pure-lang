@@ -136,78 +136,69 @@ B. Notable features
 
    c. N.B. stlsets do not have default values.
 
-4. The elements in a range defined on a stlmap or stlmmap can be updated using
-   the "update_range function.
-
-   a. "update_range (map,kbeg,kend) unary_fun scans the range and updates
-       selected elements. unary_fun (k=>v) must return a tuple (changed,
-       newval). If unary_fun want to change the value stored with k, it returns
-       (1,newval) else (0,0). If (1,newval) is returned, k=newval is entered
-       into the map. Returns the number of elements changed.
-
-   b. "update_range (map,kbeg,kend) (unary_fun, default_fun) is the same as
-      update_range (map,kbeg,kend) unary_fun except that if no values change
-      values are returned by unary_fun, default_fun (1,dv) or default_fn (0,0)
-      is called depending on whether or not map has a default
-      value. default_fn return (1,new_element) or (0,0) depending on whether
-      a new element should be inserted.
+4. The elements for a given key in stlmap or stlmmap can be updated using
+   the "update_vals function.
 
    c. This function is useful for updating values in a stlmmap that have the
       same key: (FIX).
 
       let smm = stlmmap ["a"=>1,"a"=>2,"b"=>3,"b"=>4,"b"=>5];
-      
-      my_selector (k=>v) = v mod 2;
-      my_updater v = if v mod 2 then (1,v+10) else (0,0);
-      update_range (smm,"b") my_updater; members smm;
+    
 
-4. A key value pair, (k=>v) for a stlmap or stlmmap, map, can be "updated" using
-   "update map k v" or "update_with f (map,kbeg,kend)". Note that the update
-   functions only change values, never keys
+5. A key value pairs can be "updated" using "update map k v", "update_with f
+   sm k" or update_vals smm k vals, where map is a stlmmap or stlmap, sm is a
+   stlmap, smm is a stlmmap, k is key, v is value, f is a unary function that
+   maps old values (re default values) to new values, and vals is a list,
+   vector or stlvec of vals.
 
-   a. "update map key val" changes the values of the first element (k=>v) of
-      map where k==key to val (if any). If key is not already stored in map,
+   a. "update map key val" changes the val of the first element (k=>v) of map
+      where k==key (if it exists) to val. If key is not already stored in map,
       (key=val) is added to the map.
 
-   a. "update_all map key val" changes the values of the all elements (k=>v)
-      of map where k==key to val (if any). If key is not already stored in
-      map, (key=val) is added to the map.
-
-   b. "update_with unary_fun map key" changes the value of the first element
-      (k=>v) of map where k==key (if any) to (unary_fun v). If key is not
-      already stored in map then (i) if map has a default value, dv, then
-      (key=>unary_fun dv) is added to the map, or (ii) if map does not have a
-      default value, a failed_condition error is thrown.
+   b. "update_with unary_fun sm key" only applies to stlmaps. It changes the
+      value of the first element (k=>v) of map where k==key (if it exists) to
+      (unary_fun v). If key is not already stored in map then (i) if map has a
+      default value, dv, then (key=>unary_fun dv) is added to the map, or (ii)
+      if map does not have a default value, a failed_condition error is
+      thrown.
       
-   c. "update_with" provides precise control over the modification of key
-      value pairs. E.g., if map is a stlmmap, the first element with (k=>v)
-      where k == "a" and (pred v) is true can be changed to (k=>new v).
+      "update_with" provides precise control over the modification of key
+      value pairs in a stlmap. E.g., if map is a stlmmap, the first element
+      with (k=>v) where k == "a" and (pred v) is true can be changed to
+      (k=>new v).
 
          selective_update (_=>v) = if (pred v) then (new v) else v;
          update_with selective_update map "a;
 
-   d. "update_range" is also useful for associating a count or lists of objects
+      "update_with" is also useful for associating a count or lists of objects
       with a given key. E.g., 
 
         let word_counts = emptystlmap;
         set_default word_counts 0;
-        bump_count w = update_range ((\_=>v)->v+1) word_counts w; 
+        bump_count w = update_with ((\_=>v)->v+1) word_counts w; 
         do bump_count word_list;
 
         sort_str w = strcat $ sort (<) (chars w);
         let anagrams = emptystlmap;
         set_default anagrams [];
-        push_word w = update_range (\(_=>v)->w:v) anagrams (sort_str w);
+        push_word w = update_with (\(_=>v)->w:v) anagrams (sort_str w);
         do push_word word_list;
+
+   c. "update_vals smm k vals applies only to stlmmaps. The effect of this
+       function is to erase vals with key k and insert (map (\v->k=>v) vals)
+       into smm. For effiency, wherever possible the values of existing
+       elements with key k are simply replaced by new values.
 
 5. Set operators are provided for all four of the sorted associative
    containers. 
 
    a. The operators are: "+", "-", "*", "/". These are implemented the same as
-      for dict and set if the Pure standard library except that for stlmmaps,
+      for dict and set in the Pure standard library except that for stlmmaps,
       there is no guaranteed order of elements with the same key the appear in
-      the result. The elements will be the same (right hand side dominates) but
-      they may be in different order.
+      the result. In tests so far the order of such elements has been the same
+      -- first inserted, first. FIX Research further re STL order
+      guarantees. The elements will be the same (right hand side dominates)
+      but they may be in different order.
 
    b. The five STL set operatons, stl::set_union, stl::set_difference,
       stl::set_intersection, stl::set_symmetric_difference and stl::include are
@@ -217,15 +208,14 @@ B. Notable features
       sm1 and sm2 are stlmaps, but no sm1 + smm1, where smm1 is a stlmmap.
  
    c. The operations act on ranges, so it is possible to work with container
-      subsequences. Except for the set inclusion operators (< and <=), all
-      of the set operators 
+      subsequences.
 
    d. In the case of sm1 + sm2, where sm1 and sm2 are stlmaps, elements from
       both maps can end up in the result. Because the result will be a stlmap,
       there can only be one element associated with each key. If sm1 has an
       element (k=>v1) and sm2 has an element (k=>v2), the resulting stlmap
       will contain (k=>v2). This is the opposite of what would happen if
-      C++'s set_union function were used. Similarly for set intersection.
+      C++'s set_union function were used. Similarly for set intersection. 
 
    e. In the case of smm1 + smm2, where smm1 and smm2 are stlmmaps, all of the
       elements from both smm1 and smm2 are included in the resulting
