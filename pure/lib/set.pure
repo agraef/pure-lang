@@ -103,17 +103,15 @@
 
    .. function:: infix + /set m1 m2
 
-      set and bag union: ``m1+m2`` adds the members of ``m2`` to ``m1``
+      union/sum: ``m1+m2`` adds the members of ``m2`` to ``m1``
 
    .. function:: infix - /set m1 m2
 
-      set and bag difference: ``m1-m2`` removes the members of ``m2`` from
-      ``m1``
+      difference: ``m1-m2`` removes the members of ``m2`` from ``m1``
 
    .. function:: infix * /set m1 m2
 
-      set and bag intersection: ``m1*m2`` removes the members *not* in ``m2``
-      from ``m1``
+      intersection: ``m1*m2`` removes the members *not* in ``m2`` from ``m1``
 
    .. function:: prefix # /set m
 
@@ -157,10 +155,25 @@
       remove all instances of ``x`` from ``m`` (in the set case, this is just
       the same as :func:`delete/set`)
 
-   Note that the infix operators (:func:`+/set`, :func:`-/set`, :func:`*\/set`,
-   as well as the comparison operations) allow you to mix arbitrary operand
-   types; the necessary conversions from less general set types (ordered, set)
-   to more general types (hashed, multiset) are handled automatically.
+   .. note:: The infix operators (:func:`+/set`, :func:`-/set`,
+      :func:`*\/set`, as well as the comparison operations) allow you to mix
+      arbitrary operand types; the necessary conversions from less general set
+      types (ordered, set) to more general types (hashed, multiset) are
+      handled automatically.
+
+      Also note that in the case of sets, :func:`+/set` is just the ordinary
+      set union. There are basically two generalizations of this operation to
+      bags, `multiset union` and `multiset sum`; :func:`+/set` implements the
+      *latter*. Thus, if a bag ``m1`` contains ``k1`` instances of an element
+      ``x`` and a bag ``m2`` contains ``k2`` instances of ``x``, then
+      ``m1+m2`` contains ``k1+k2`` instances of ``x`` (rather than ``max k1
+      k2`` instances, which would be the case for multiset union). Multiset
+      sum is probably more common in practical applications, and also
+      generalizes easily to multidicts (see Dictionaries_). However, if
+      multiset union is needed, it can easily be defined in terms of multiset
+      sum as follows::
+
+        union m1 m2 = m1+(m2-m1);
 
    Examples
    ~~~~~~~~
@@ -358,7 +371,7 @@ m1@(Bag _)  >  m2@(Bag _)  |
 m1@(HSet _) >  m2@(HSet _) |
 m1@(HBag _) >  m2@(HBag _) = m1 >= m2 && ~(m1 <= m2);
 
-// set union
+// set union/sum
 m1@(Set _)  + m2@(Set _)   |
 m1@(Bag _)  + m2@(Bag _)   |
 m1@(HSet _) + m2@(HSet _)  |
