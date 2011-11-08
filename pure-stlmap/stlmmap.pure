@@ -33,11 +33,13 @@ namespace stl;
 
 /*** C++ support *****************************************************/
 
-private extern void* smm_make_empty(expr* comp, int keys_only);
+private extern void* smm_make_empty(expr* kc, expr* vcmp, expr* veql, int ko);
 private extern void  smm_delete(void* mmap);
 private extern bool  smm_is_set(expr* tpl);
 private extern expr* smm_set_default(void* mmap, expr* val);
 private extern expr* smm_get_default(void* mmap);
+private extern int   smm_equal(expr* tpl1, expr* tpl2);
+private extern int   smm_compare(expr* tpl1, expr* tpl2);
 private extern bool  smm_includes(expr* it1, expr* it2);
 private extern void* smm_setop(int op, expr* it1, expr* it2);
 private extern expr* smm_make_vector(expr* tpl);
@@ -157,23 +159,23 @@ bounds it@(STLMMAP mm, _) = (STLMMAP mm), smm_bounds it;
 
 ::delete_if pred smm::stlmmap k = smm_erase_first_if pred (smm,k);
 
-allpairs fun it1::smmit it2::smmit = smm_allpairs fun it1 it2 
-  if both_msets it1 it2 && functionp fun && nargs fun == 2 ;
+::equal it1::smmit it2::smmit = smm_equal it1 it2 
+  if both_mmaps it1 it2 || both_msets it1 it2;
 
-allpairs fun it1::smmit it2::smmit = smm_allpairs fun it1 it2
-  if ~smm_is_set it1 && ~smm_is_set it2 && functionp fun && nargs fun == 4;
+::compare it1::smmit it2::smmit = smm_compare it1 it2 
+  if both_mmaps it1 it2 || both_msets it1 it2;
 
-(::==) smm1::stlmmap smm2::stlmmap = allpairs smm_kv_equal smm1 smm2
-  if both_mmaps smm1 smm2;
+(::==) sd1::stlmmap sd2::stlmmap = ::equal sd1 sd2;
 
-(::~=) smm1::stlmmap smm2::stlmmap = ~allpairs smm_kv_equal smm1 smm2
-  if both_mmaps smm1 smm2;
+(::~=) sd1::stlmmap sd2::stlmmap = ~::equal sd1 sd2;
 
-(::==) smm1::stlmmap smm2::stlmmap = allpairs (==) smm1 smm2 
-  if both_msets smm1 smm2;
+(::<) it1::smmit it2::smmit = ::compare it1 it2 < 0;
 
-(::~=) smm1::stlmmap smm2::stlmmap = ~allpairs (==) smm1 smm2
-  if both_msets smm1 smm2;
+(::<=) it1::smmit it2::smmit = ::compare it1 it2 <= 0;
+
+(::>) it1::smmit it2::smmit = ::compare it1 it2 > 0;
+
+(::>=) it1::smmit it2::smmit = ::compare it1 it2 >= 0;
 
 ::map f it::smmit = smm_listmap f it smm_both; // => smm_key for sets
 
@@ -238,7 +240,6 @@ end if both_mmaps it1 it2;
   ::insert_elms res it2;
 end if both_msets it1 it2;
 
-// FIX (::-) do in C++ using find
 (::-) it1::smmit it2::smmit = res when
   res = stlmmap it1;
   do (::delete_val res) it2 
@@ -258,9 +259,9 @@ end if both_msets it1 it2;
 
 /*** Functions for stlmmap *******************************************/
 
-::emptystlmmap = smm_wrap $ smm_make_empty (<) 0;
+::emptystlmmap = smm_wrap $ smm_make_empty (<) (<) (==) 0;
 
-::emptystlmmap_with comp = smm_wrap $ smm_make_empty comp 0;
+::emptystlmmap_with kcmp vcmp veq = smm_wrap $ smm_make_empty kcmp vcmp veq 0;
 
 ::stlmmap xs = smm when
   smm = ::emptystlmmap;
@@ -309,9 +310,9 @@ get_default smm@(STLMMAP mm) = smm_get_default mm if ~smm_is_set smm;
 
 /*** Functions for stlmset ************************************************/
 
-::emptystlmset = smm_wrap $ smm_make_empty (<) 1;
+::emptystlmset = smm_wrap $ smm_make_empty (<) (<) (==) 1;
 
-::emptystlmset_with comp = smm_wrap $ smm_make_empty comp 1;
+::emptystlmset_with kcmp vcmp veq = smm_wrap $ smm_make_empty kcmp vcmp veq 1; 
 
 ::stlmset xs = smm when
   smm = ::emptystlmset;

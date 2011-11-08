@@ -192,15 +192,17 @@ static px* listmap_aux(px* fun, pmi b, pmi e, int what)
 
 /*** stlmap members  ***********************************************/
 
-stlmap::stlmap(px* cmp, bool keyonly) : 
-  mp(pxh_pred2(cmp)), px_comp(cmp), dflt(NULL),
-  has_dflt(0), has_recent_pmi(0), keys_only(keyonly), 
-  recent_pmi(mp.end()) {}
+stlmap::stlmap(px* cmp, px* val_cmp, px* val_eql, bool keyonly):
+  mp(pxh_pred2(cmp)), keys_only(keyonly),
+  px_comp(cmp), px_val_comp(val_cmp), px_val_equal(val_eql),
+  has_recent_pmi(0), recent_pmi(mp.end()), 
+  has_dflt(0), dflt(NULL) {}
 
-stlmap::stlmap(px* cmp, bool ko, px* d) :
-    mp(pxh_pred2(cmp)), px_comp(cmp), dflt(d), 
-    has_dflt(1), has_recent_pmi(0), keys_only(ko),
-    recent_pmi(mp.end()) {}
+stlmap::stlmap(px* cmp, px* val_cmp, px* val_eql, bool keyonly, px *d):
+  mp(pxh_pred2(cmp)), keys_only(keyonly),
+  px_comp(cmp), px_val_comp(val_cmp), px_val_equal(val_eql),
+  has_recent_pmi(0), recent_pmi(mp.end()), 
+  has_dflt(1), dflt(d) {}
 
 pmi stlmap::find(px* key)
 {
@@ -380,9 +382,9 @@ sm_iters::sm_iters(px* pmi_tuple)
 
 /*** Functions for map<pxh,pxh,pxh_pred2> *******************************/
 
-sm* sm_make_empty(px* comp, int keys_only)
+sm* sm_make_empty(px* comp, px* v_comp, px* v_eql, int keys_only)
 {
-  sm* ret  = new sm(comp, keys_only); 
+  sm* ret  = new sm(comp, v_comp, v_eql, keys_only); 
 #ifdef STL_DEBUG
   if (stl_sm_trace_enabled())
     cerr << "TRACE SM:    new sm*: " << ret << endl;
@@ -403,6 +405,64 @@ bool sm_is_set(px* tpl)
   sm_iters itrs(tpl);
   if (!itrs.is_valid) bad_argument();
   return itrs.smp->keys_only;
+}
+
+int sm_compare(px* tpl1, px* tpl2)
+{
+  sm_iters itrs1(tpl1);
+  sm_iters itrs2(tpl2);
+  if (!itrs1.is_valid || !itrs2.is_valid) bad_argument;
+  pxh_pred2 kless = itrs1.smp->px_comp.pxp();
+  pxh_pred2 vless = itrs1.smp->px_val_comp.pxp();
+  bool have_vals = !itrs1.smp->keys_only;
+  pmi beg1 = itrs1.beg();
+  pmi end1 = itrs1.end();
+  pmi beg2 = itrs2.beg();
+  pmi end2 = itrs2.end();
+  try {
+    for ( ; (beg1 != end1) && (beg2 != end2); beg1++, beg2++ ) {
+        if (kless(beg1->first,beg2->first)) return -1;
+        if (kless(beg2->first,beg1->first)) return  1;
+        if (have_vals) {
+          if (vless(beg1->second,beg2->second)) return -1;
+          if (vless(beg2->second,beg1->second)) return  1;
+        }
+    }
+    if (beg1 == end1)
+      return (beg2 == end2) ? 0 : -1;
+    else
+      return 1;
+  }
+  catch (px* e) {
+    pure_throw(e);
+  }
+}
+
+bool sm_equal(px* tpl1, px* tpl2)
+{
+  sm_iters itrs1(tpl1);
+  sm_iters itrs2(tpl2);
+  if (!itrs1.is_valid || !itrs2.is_valid) bad_argument;
+  if ( sm_size(tpl1) != sm_size(tpl2) ) return false;
+  pxh_pred2 kless = itrs1.smp->px_comp.pxp();
+  pxh_pred2 vequal = itrs1.smp->px_val_equal.pxp();
+  bool have_vals = !itrs1.smp->keys_only;
+  pmi beg1 = itrs1.beg();
+  pmi end1 = itrs1.end();
+  pmi beg2 = itrs2.beg();
+  pmi end2 = itrs2.end();
+  try {
+    for ( ; (beg1 != end1) && (beg2 != end2); beg1++, beg2++ ) {
+        if (kless(beg1->first,beg2->first)) return false;
+        if (kless(beg2->first,beg1->first)) return false;
+        if (have_vals)
+          if (!vequal(beg1->second,beg2->second)) return false;
+    }
+    return beg1 == end1 && beg2 == end2;
+  }
+  catch (px* e) {
+    pure_throw(e);
+  }
 }
 
 px* sm_make_vector(px* tpl) 
@@ -582,6 +642,7 @@ sm* sm_setop(int op, px* tpl1, px* tpl2)
 {
   sm_iters itrs1(tpl1);
   sm_iters itrs2(tpl2);
+  if (!itrs1.is_valid || !itrs2.is_valid) bad_argument;
 #ifndef STL_INSERT_SEMANTICS
   if (op != stl_sm_difference) {
     sm_iters temp = itrs2;
@@ -589,10 +650,11 @@ sm* sm_setop(int op, px* tpl1, px* tpl2)
     itrs1 = temp;
   }
 #endif
-  if (!itrs1.is_valid || !itrs2.is_valid) bad_argument;
   sm* smp = itrs1.smp;
-  px* px_comp = smp->px_comp.pxp();
-  sm* res = new sm(px_comp, smp->keys_only, smp->dflt.pxp());
+  sm* res = new sm(smp->px_comp.pxp(),
+                   smp->px_val_comp.pxp(),
+                   smp->px_val_equal.pxp(),
+                   smp->keys_only, smp->dflt.pxp());
   pxhmap& mp = res->mp;
   try {
     switch (op) {

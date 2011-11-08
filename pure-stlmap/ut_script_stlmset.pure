@@ -36,7 +36,7 @@ let v1 = stl::vector (sms1,"b","d"); v1;
 let l1 = members (sms1,stl::stlbeg,"e"); l1;
 //- ["a","b","c","d"]
 
-let sms2 = emptystlmset_with (>); members sms2;
+let sms2 = emptystlmset_with (>) (>) (==); members sms2;
 //- []
 
 insert_elms sms2 (sms1,"a","d"); members sms2;
@@ -455,28 +455,210 @@ delete_if (\x->(ord x) mod 2) sms1 "a"; members sms1;
 delete_if (\x->(ord x) mod 2) sms1 "b"; members sms1;
 //- ["b","b"]
 
-//*** allpairs, ==, ~== ***********************************************
+//*** compare ***********************************************************
 
-let sms1 = stlmset ["a","b","c"]; members sms1;
-//- ["a","b","c"]
+let sms1 = stlmset ["a","b","b","b","e"];
+//- ()
 
-let sms2 = stlmset ["a","b","c","d"]; members sms2;
-//- ["a","b","c","d"]
+let sms2 = stlmset ["a","b","b"];
+//- ()
 
-stl::allpairs (\k1 k2-> k1==k2) sms1 sms2;
+let sms3 = stlmset ["a","b","c","d","e"];
+//- ()
+
+let sms4 = stlmset ["a","b","b","b","b"];
+//- ()
+
+let sms5 = stlmset ["0","b","b","b","e"];
+//- ()
+
+let sms6 = stlmset ["a","c","d","e"];
+//- ()
+
+let sms7 = stlmset ["a","b","f"];
+//- ()
+
+let sms8 = stlmset ["a","b","b","b","b","b"];
+//- ()
+
+let sms9 = emptystlmset;
+//- ()
+
+compare sms1 sms1;
 //- 0
 
-stl::allpairs (\k1 k2-> k1==k2) sms2 sms1;
-//- 0
-
-stl::allpairs (\k1 k2-> k1==k2) sms1 (sms2,"a","d");
+compare sms1 sms2;
 //- 1
 
-stl::allpairs (\k1 k2-> k1==k2) (sms2,"a","d") sms1;
+compare sms1 sms3;
+//- -1
+
+compare sms1 sms4;
 //- 1
 
-stl::allpairs (\k1 k2-> k1==k2) sms1 (sms2,"a","b");
+compare sms1 sms5;
+//- 1
+
+compare sms1 sms6;
+//- -1
+
+compare sms1 sms7;
+//- -1
+
+compare sms1 sms8;
+//- 1
+
+compare sms1 sms9;
+//- 1
+
+compare sms2 sms1;
+//- -1
+
+compare sms3 sms1;
+//- 1
+
+compare sms4 sms1;
+//- -1
+
+compare sms5 sms1;
+//- -1
+
+compare sms6 sms1;
+//- 1
+
+compare sms7 sms1;
+//- 1
+
+compare sms8 sms1;
+//- -1
+
+compare sms9 sms1;
+//- -1
+
+//*** equal ************************************************************
+
+
+let sms1 = stlmset ["a","b","b","b","e"];
+//- ()
+
+let sms2 = stlmset ["a","b","b"];
+//- ()
+
+let sms3 = stlmset ["a","b","c","d","e"];
+//- ()
+
+let sms4 = stlmset ["a","b","b","b","b"];
+//- ()
+
+let sms5 = stlmset ["0","b","b","b","e"];
+//- ()
+
+let sms6 = stlmset ["a","c","d","e"];
+//- ()
+
+let sms7 = stlmset ["a","b","f"];
+//- ()
+
+let sms8 = stlmset ["a","b","b","b","b","b"];
+//- ()
+
+let sms9 = emptystlmset;
+//- ()
+
+equal sms1 sms1;
+//- 1
+
+equal sms1 sms2;
 //- 0
+
+equal sms1 sms3;
+//- 0
+
+equal sms1 sms4;
+//- 0
+
+equal sms1 sms5;
+//- 0
+
+equal sms1 sms6;
+//- 0
+
+equal sms1 sms7;
+//- 0
+
+equal sms1 sms8;
+//- 0
+
+equal sms1 sms9;
+//- 0
+
+equal sms9 sms9;
+//- 1
+
+equal sms2 sms1;
+//- 0
+
+equal sms3 sms1;
+//- 0
+
+equal sms4 sms1;
+//- 0
+
+equal sms5 sms1;
+//- 0
+
+equal sms6 sms1;
+//- 0
+
+equal sms7 sms1;
+//- 0
+
+equal sms8 sms1;
+//- 0
+
+equal sms9 sms1;
+//- 0
+
+//*** operators ==, ~=, <, <=, >, >= *************************************
+
+let sms1 = stlmset ["a","b","b","b","e"];
+//- ()
+
+let sms2 = stlmset ["a","b","b"];
+//- ()
+
+let sms3 = emptystlmset;
+//- ()
+
+sms1 < sms1;
+//- 0
+
+sms1 <= sms1;
+//- 1
+
+sms1 > sms1;
+//- 0
+
+sms1 >= sms1;
+//- 1
+
+sms1 == sms1;
+//- 1
+
+sms1 ~= sms1;
+//- 0
+
+sms1 < sms2;
+//- 0
+
+sms1 <= sms2;
+//- 0
+
+sms1 > sms2;
+//- 1
+
+sms1 >= sms2;
+//- 1
 
 sms1 == sms2;
 //- 0
@@ -484,10 +666,43 @@ sms1 == sms2;
 sms1 ~= sms2;
 //- 1
 
-sms1 == (sms2,"a","a"); // oops -- tuple rule trumps;
+sms1 < sms3;
 //- 0
 
-// ** bounds, size *******************************************************
+sms1 <= sms3;
+//- 0
+
+sms1 > sms3;
+//- 1
+
+sms1 >= sms3;
+//- 1
+
+sms1 == sms3;
+//- 0
+
+sms1 ~= sms3;
+//- 1
+
+sms1 < sms1;
+//- 0
+
+sms1 <= sms1;
+//- 1
+
+sms1 > sms1;
+//- 0
+
+sms1 >= sms1;
+//- 1
+
+sms1 == sms1;
+//- 1
+
+sms1 ~= sms1;
+//- 0
+
+//*** bounds, size *******************************************************
 
 let sms1 = stlmset ["a","b","b","b","c","d"]; members sms1;
 //- ["a","b","b","b","c","d"]
@@ -662,7 +877,7 @@ foldr1 (\k acc -> k+acc) (sms1,"b","b"); (); // fails
 let sms1 = stlmset ["a","b","c","d"]; members sms1;
 //- ["a","b","c","d"]
 
-let sms2 = emptystlmset_with (>); members sms2;
+let sms2 = emptystlmset_with (>) (>) (==); members sms2;
 //- []
 
 do (insert sms2) sms1; members sms2;

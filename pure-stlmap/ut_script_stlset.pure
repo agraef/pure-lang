@@ -36,7 +36,7 @@ let v1 = stl::vector (ss1,"b","d"); v1;
 let l1 = members (ss1,stl::stlbeg,"e"); l1;
 //- ["a","b","c","d"]
 
-let ss2 = emptystlset_with (>); members ss2;
+let ss2 = emptystlset_with (>) (>) (==); members ss2;
 //- []
 
 insert_elms ss2 (ss1,"a","d"); members ss2;
@@ -412,28 +412,174 @@ delete_if (\x->(ord x) mod 2) sm1 "b"; members sm1;
 delete_if (\x->(ord x) mod 2) sm1 "c"; members sm1;
 //- ["b"]
 
-//*** allpairs, ==, ~== ***********************************************
+//*** compare *************************************************
 
-let ss1 = stlset ["a","b","c"]; members ss1;
-//- ["a","b","c"]
+let ss1 = stlset ["a","b","c","d","e"];
+//- ()
 
-let ss2 = stlset ["a","b","c","d"]; members ss2;
-//- ["a","b","c","d"]
+let ss2 = stlset ["a","b","c","d"];
+//- ()
 
-stl::allpairs (\k1 k2-> k1==k2) ss1 ss2;
+let ss3 = stlset ["a","b","c","d","e","f"];
+//- ()
+
+let ss4 = stlset ["0","b","c","d","e"];
+//- ()
+
+let ss5 = stlset ["a","c","d","e"];
+//- ()
+
+let ss6 = stlset ["b","c","d","e"];
+//- ()
+
+let ss7 = stlset ["a","b","c","d","x"];
+//- ()
+
+let ss8 = stlset ["a","b","c","e"];
+//- ()
+
+let ss9 = emptystlset;
+//- ()
+
+compare ss1 ss1;
 //- 0
 
-stl::allpairs (\k1 k2-> k1==k2) ss2 ss1;
-//- 0
-
-stl::allpairs (\k1 k2-> k1==k2) ss1 (ss2,"a","d");
+compare ss1 ss2;
 //- 1
 
-stl::allpairs (\k1 k2-> k1==k2) (ss2,"a","d") ss1;
+compare ss1 ss3;
+//- -1
+
+compare ss1 ss4;
 //- 1
 
-stl::allpairs (\k1 k2-> k1==k2) ss1 (ss2,"a","b");
+compare ss1 ss5;
+//- -1
+
+compare ss1 ss6;
+//- -1
+
+compare ss1 ss7;
+//- -1
+
+compare ss1 ss8;
+//- -1
+
+compare ss1 ss9;
+//- 1
+
+compare ss2 ss1;
+//- -1
+
+compare ss3 ss1;
+//- 1
+
+compare ss4 ss1;
+//- -1
+
+compare ss5 ss1;
+//- 1
+
+compare ss6 ss1;
+//- 1
+
+compare ss7 ss1;
+//- 1
+
+compare ss8 ss1;
+//- 1
+
+compare ss9 ss1;
+//- -1
+
+compare ss9 ss9;
 //- 0
+
+//*** equal *************************************************************
+
+let ss1 = stlset ["a","b","c","d","e"];
+//- ()
+
+let ss2 = stlset ["a","b","c","d"];
+//- ()
+
+let ss3 = stlset ["a","b","c","d","e","f"];
+//- ()
+
+let ss4 = stlset ["0","b","c","d","e"];
+//- ()
+
+let ss5 = stlset ["a","b","d","e","f"];
+//- ()
+
+let ss6 = emptystlset;
+//- ()
+
+equal ss1 ss1;
+//- 1
+
+equal ss1 ss2;
+//- 0
+
+equal ss1 ss3;
+//- 0
+
+equal ss1 ss4;
+//- 0
+
+equal ss1 ss5;
+//- 0
+
+equal ss1 ss6;
+//- 0
+
+equal ss6 ss6;
+//- 1
+
+equal ss2 ss1;
+//- 0
+
+//*** operators ==, ~=, <, <=, >, >= *************************************
+
+
+let ss1 = stlmset ["a","b","c","d","e"];
+//- ()
+
+let ss2 = stlmset ["a","b","c"];
+//- ()
+
+let ss3 = emptystlmset;
+//- ()
+
+ss1 < ss1;
+//- 0
+
+ss1 <= ss1;
+//- 1
+
+ss1 > ss1;
+//- 0
+
+ss1 >= ss1;
+//- 1
+
+ss1 == ss1;
+//- 1
+
+ss1 ~= ss1;
+//- 0
+
+ss1 < ss2;
+//- 0
+
+ss1 <= ss2;
+//- 0
+
+ss1 > ss2;
+//- 1
+
+ss1 >= ss2;
+//- 1
 
 ss1 == ss2;
 //- 0
@@ -441,7 +587,40 @@ ss1 == ss2;
 ss1 ~= ss2;
 //- 1
 
-ss1 == (ss2,"a","a"); // oops -- tuple rule trumps;
+ss1 < ss3;
+//- 0
+
+ss1 <= ss3;
+//- 0
+
+ss1 > ss3;
+//- 1
+
+ss1 >= ss3;
+//- 1
+
+ss1 == ss3;
+//- 0
+
+ss1 ~= ss3;
+//- 1
+
+ss1 < ss1;
+//- 0
+
+ss1 <= ss1;
+//- 1
+
+ss1 > ss1;
+//- 0
+
+ss1 >= ss1;
+//- 1
+
+ss1 == ss1;
+//- 1
+
+ss1 ~= ss1;
 //- 0
 
 // ** bounds, size *******************************************************
@@ -619,7 +798,7 @@ foldr1 (\k acc -> k+acc) (ss1,"b","b"); (); // fails
 let ss1 = stlset ["a","b","c","d"]; members ss1;
 //- ["a","b","c","d"]
 
-let ss2 = emptystlset_with (>); members ss2;
+let ss2 = emptystlset_with (>) (>) (==); members ss2;
 //- []
 
 do (insert ss2) ss1; members ss2;

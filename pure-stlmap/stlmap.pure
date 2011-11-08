@@ -33,11 +33,13 @@ namespace stl;
 
 /*** C++ support *****************************************************/
 
-private extern void* sm_make_empty(expr* comp, int keys_only);
+private extern void* sm_make_empty(expr* kcmp, expr* vcmp, expr* veql, int ko);
 private extern void  sm_delete(void* map);
 private extern bool  sm_is_set(expr* tpl);
 private extern expr* sm_set_default(void* map, expr* val);
 private extern expr* sm_get_default(void* map);
+private extern int   sm_equal(expr* tpl1, expr* tpl2);
+private extern int   sm_compare(expr* tpl1, expr* tpl2);
 private extern bool  sm_includes(expr* it1, expr* it2);
 private extern void* sm_setop(int op, expr* it1, expr* it2);
 private extern expr* sm_make_vector(expr* tpl);
@@ -89,8 +91,6 @@ const sm_symmetric_difference = 4;
 sm_wrap m = STLMAP (sentry sm_delete m);
 sm_wrap_sv m = STLVEC (sentry sm_delete m);
 
-sm_kv_equal k1 v1 k2 v2 = k1 == k2 && v1 == v2;
-
 both_sets it1 it2 = sm_is_set it1 && sm_is_set it2;
 
 both_maps it1 it2 = ~sm_is_set it1 && ~sm_is_set it2;
@@ -107,7 +107,7 @@ vector it::smit = sm_make_vector it;
 
 size it::smit = sm_size it;
 
-null it::smit = sm_size it == 0;
+null it::smit = sm_size it == 0; // use empty
 
 empty it::smit = sm_size it == 0;
 
@@ -155,23 +155,23 @@ bounds it@(STLMAP m, _) = (STLMAP m), sm_bounds it;
 
 ::delete_if pred sm::stlmap k = sm_erase_if pred (sm,k);
 
-allpairs fun it1::smit it2::smit = sm_allpairs fun it1 it2 
-  if both_sets it1 it2 && functionp fun && nargs fun == 2 ;
+::equal it1::smit it2::smit = sm_equal it1 it2 
+  if both_maps it1 it2 || both_sets it1 it2;
 
-allpairs fun it1::smit it2::smit = sm_allpairs fun it1 it2
-  if ~sm_is_set it1 && ~sm_is_set it2 && functionp fun && nargs fun == 4;
+::compare it1::smit it2::smit = sm_compare it1 it2 
+  if both_maps it1 it2 || both_sets it1 it2;
 
-(::==) sd1::stlmap sd2::stlmap = allpairs sm_kv_equal sd1 sd2
-  if both_maps sd1 sd2;
+(::==) sd1::stlmap sd2::stlmap = ::equal sd1 sd2;
 
-(::~=) sd1::stlmap sd2::stlmap = ~allpairs sm_kv_equal sd1 sd2
-  if both_maps sd1 sd2;
+(::~=) sd1::stlmap sd2::stlmap = ~::equal sd1 sd2;
 
-(::==) sd1::stlmap sd2::stlmap = allpairs (==) sd1 sd2 
-  if both_sets sd1 sd2;
+(::<) it1::smit it2::smit = ::compare it1 it2 < 0;
 
-(::~=) sd1::stlmap sd2::stlmap = ~allpairs (==) sd1 sd2
-  if both_sets sd1 sd2;
+(::<=) it1::smit it2::smit = ::compare it1 it2 <= 0;
+
+(::>) it1::smit it2::smit = ::compare it1 it2 > 0;
+
+(::>=) it1::smit it2::smit = ::compare it1 it2 >= 0;
 
 ::map f it::smit = sm_listmap f it sm_both; // => sm_key for sets
 
@@ -249,9 +249,9 @@ end if both_maps it1 it2;
 
 /*** Functions for stlmap *******************************************/
 
-::emptystlmap = sm_wrap $ sm_make_empty (<) 0;
+::emptystlmap = sm_wrap $ sm_make_empty (<) (<) (==) 0;
 
-::emptystlmap_with comp = sm_wrap $ sm_make_empty comp 0;
+::emptystlmap_with kcmp vcmp veql = sm_wrap $ sm_make_empty kcmp vcmp veql 0;
 
 ::stlmap xs = sm when
   sm = ::emptystlmap;
@@ -301,9 +301,9 @@ get_default sm@(STLMAP m) = sm_get_default m if ~sm_is_set sm;
 
 /*** Functions for stlset ************************************************/
 
-::emptystlset = sm_wrap $ sm_make_empty (<) 1;
+::emptystlset = sm_wrap $ sm_make_empty (<) (<) (==) 1;
 
-::emptystlset_with comp = sm_wrap $ sm_make_empty comp 1;
+::emptystlset_with kcmp vcmp veql = sm_wrap $ sm_make_empty kcmp vcmp veql 1;
 
 ::stlset xs = sm when
   sm = ::emptystlset;

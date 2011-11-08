@@ -28,8 +28,8 @@ typedef std::map<pxh,pxh,pxh_pred2> pxhmap;
 typedef pxhmap::iterator pmi;
 
 struct stlmap {
-  stlmap(px* cmp, bool keyonly); 
-  stlmap(px* cmp, bool keyonly, px* d);
+  stlmap(px* key_comp, px* val_comp, px* val_equal, bool keyonly); 
+  stlmap(px* key_comp, px* val_comp, px* val_equal, bool keyonly, px* d);
 
   pmi  find(px* key);
   bool get_cached_pmi(px* k, pmi& i);
@@ -41,6 +41,8 @@ struct stlmap {
 
   pxhmap mp;
   pxh px_comp;
+  pxh px_val_comp;
+  pxh px_val_equal;
   pxh dflt;
   bool has_recent_pmi;
   pmi recent_pmi;
@@ -77,11 +79,13 @@ enum {stl_sm_union = 1, stl_sm_difference,
 /*** C interface for C++ map of PX Handles ***/
 
 extern "C" {
-  sm*  sm_make_empty(px* comp, int keys_only);
+  sm*  sm_make_empty(px* comp, px* val_comp, px* val_equal, int keys_only);
+  void sm_delete(sm* smp);
   bool sm_is_set(px* tpl);
+  bool sm_equal(px* tpl1, px* tlp2);
+  int  sm_compare(px* tpl1, px* tlp2);
   bool sm_includes(px* tpl1, px* tpl2);
   sm*  sm_setop(int op, px* tpl1, px* tpl2);
-  void sm_delete(sm* smp);
   px*  sm_make_vector(px* tpl);
   sv*  sm_make_stlvec(px* tpl);
   px*  sm_set_default(sm* smp, px* val);

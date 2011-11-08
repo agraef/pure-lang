@@ -34,7 +34,7 @@ let v1 = stl::vector (sm1,"b","d"); v1;
 let l1 = members (sm1,stl::stlbeg,"e"); l1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4]
 
-let sm2 = emptystlmap_with (>); members sm2;
+let sm2 = emptystlmap_with (>) (>) (==); members sm2;
 //- []
 
 insert_elms sm2 ["a"=>1,"b"=>2]; members sm2;
@@ -454,24 +454,211 @@ delete_if (\(_=>v)->v>10) sm1 "e"; members sm1;
 delete_if (\(_=>v)->v>0) sm1 "e"; members sm1;
 //- ["b"=>2]
 
-//*** allpairs, ==, ~== ***********************************************
+//*** compare ********************************************************
 
-let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>3]; members sm1;
-//- ["a"=>1,"b"=>2,"c"=>3]
+let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
 
-let sm2 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4]; members sm2;
-//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4]
+let sm2 = stlmap ["a"=>2,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
 
-stl::allpairs (\k1 v1 k2 v2-> k1==k2 && v1==v2) sm1 sm2;
+let sm3 = stlmap ["a"=>0,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+let sm4 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>6];
+//- ()
+
+let sm5 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>4];
+//- ()
+
+let sm6 = stlmap ["b"=>2,"c"=>3,"d"=>4,"e"=>4];
+//- ()
+
+let sm7 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4];
+//- ()
+
+let sm8 = stlmap ["a"=>1,"b"=>2,"c"=>3,"e"=>5];
+//- ()
+
+let sm9 = emptystlmap;
+//- ()
+
+compare sm1 sm1;
 //- 0
 
-stl::allpairs (\k1 v1 k2 v2-> k1==k2 && v1==v2) sm2 sm1;
-//- 0
+compare sm1 sm2;
+//- -1
 
-stl::allpairs (\k1 v1 k2 v2-> k1==k2 && v1==v2) sm1 (sm2,"a","d");
+compare sm1 sm3;
 //- 1
 
-stl::allpairs (\k1 v1 k2 v2-> k1==k2 && v1==v2) (sm2,"a","d") sm1;
+compare sm1 sm4;
+//- -1
+
+compare sm1 sm5;
+//- 1
+
+compare sm1 sm6;
+//- -1
+
+compare sm1 sm7;
+//- 1
+
+compare sm1 sm8;
+//- -1
+
+compare sm1 sm9;
+//- 1
+
+compare sm2 sm1;
+//- 1
+
+compare sm3 sm1;
+//- -1
+
+compare sm4 sm1;
+//- 1
+
+compare sm5 sm1;
+//- -1
+
+compare sm6 sm1;
+//- 1
+
+compare sm7 sm1;
+//- -1
+
+compare sm8 sm1;
+//- 1
+
+compare sm9 sm1;
+//- -1
+
+compare sm9 sm9;
+//- 0
+
+//*** equal ******************************************************
+
+let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+let sm2 = stlmap ["a"=>2,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+let sm3 = stlmap ["a"=>0,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+let sm4 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>6];
+//- ()
+
+let sm5 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>4];
+//- ()
+
+let sm6 = stlmap ["b"=>2,"c"=>3,"d"=>4,"e"=>4];
+//- ()
+
+let sm7 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4];
+//- ()
+
+let sm8 = stlmap ["a"=>1,"b"=>2,"c"=>3,"e"=>5];
+//- ()
+
+let sm9 = emptystlmap;
+//- ()
+
+equal sm1 sm1;
+//- 1
+
+equal sm1 sm2;
+//- 0
+
+equal sm1 sm3;
+//- 0
+
+equal sm1 sm4;
+//- 0
+
+equal sm1 sm5;
+//- 0
+
+equal sm1 sm6;
+//- 0
+
+equal sm1 sm7;
+//- 0
+
+equal sm1 sm8;
+//- 0
+
+equal sm1 sm9;
+//- 0
+
+equal sm2 sm1;
+//- 0
+
+equal sm3 sm1;
+//- 0
+
+equal sm4 sm1;
+//- 0
+
+equal sm5 sm1;
+//- 0
+
+equal sm6 sm1;
+//- 0
+
+equal sm7 sm1;
+//- 0
+
+equal sm8 sm1;
+//- 0
+
+equal sm9 sm1;
+//- 0
+
+equal sm9 sm9;
+//- 1
+
+//*** operators *********************************************************
+
+let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+let sm2 = stlmap ["a"=>1,"b"=>2,"c"=>3];
+//- ()
+
+let sm3 = emptystlmap;
+//- ()
+
+sm1 < sm1;
+//- 0
+
+sm1 <= sm1;
+//- 1
+
+sm1 > sm1;
+//- 0
+
+sm1 >= sm1;
+//- 1
+
+sm1 == sm1;
+//- 1
+
+sm1 ~= sm1;
+//- 0
+
+sm1 < sm2;
+//- 0
+
+sm1 <= sm2;
+//- 0
+
+sm1 > sm2;
+//- 1
+
+sm1 >= sm2;
 //- 1
 
 sm1 == sm2;
@@ -480,7 +667,40 @@ sm1 == sm2;
 sm1 ~= sm2;
 //- 1
 
-sm1 == (sm2,"a","a"); // oops -- tuple rule trumps;
+sm1 < sm3;
+//- 0
+
+sm1 <= sm3;
+//- 0
+
+sm1 > sm3;
+//- 1
+
+sm1 >= sm3;
+//- 1
+
+sm1 == sm3;
+//- 0
+
+sm1 ~= sm3;
+//- 1
+
+sm1 < sm1;
+//- 0
+
+sm1 <= sm1;
+//- 1
+
+sm1 > sm1;
+//- 0
+
+sm1 >= sm1;
+//- 1
+
+sm1 == sm1;
+//- 1
+
+sm1 ~= sm1;
 //- 0
 
 // ** bounds, size *******************************************************
@@ -677,7 +897,7 @@ foldr1 (\(r=>l) (k=>v) -> (r+k=>l+v)) (sm1,"b","b"); (); // fails
 let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4]; members sm1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4]
 
-let sm2 = emptystlmap_with (>); [];
+let sm2 = emptystlmap_with (>) (>) (==); [];
 //- []
 
 do (\(k=>v) -> update sm2 k v) sm1; members sm2;
