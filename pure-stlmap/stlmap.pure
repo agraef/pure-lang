@@ -107,6 +107,10 @@ vector it::smit = sm_make_vector it;
 
 size it::smit = sm_size it;
 
+set_default sm@(STLMAP m) val = sm_set_default m val if ~sm_is_set sm;
+
+get_default sm@(STLMAP m) = sm_get_default m; // returns (bool, default)
+
 null it::smit = sm_size it == 0; // use empty
 
 empty it::smit = sm_size it == 0;
@@ -274,18 +278,13 @@ end when
   sm = emptystlmap;  
 end;
 
-set_default sm@(STLMAP m) val = sm_set_default m val if ~sm_is_set sm;
-
-// bool, default
-get_default sm@(STLMAP m) = sm_get_default m if ~sm_is_set sm;
-
 ::delete_val sm::stlmap (k=>v) = 
   sm_erase_if (\(_=>x)->x==v) (sm,k) if ~sm_is_set sm;
 
 ::update sm@(STLMAP m) key x = sm_update m key x $$ sm if ~sm_is_set sm;
 
 ::update_with f sm@(STLMAP m) key x = 
-  sm_update_with m key (f x) $$ sm if ~sm_is_set sm;
+  sm_update_with m key (f x) if ~sm_is_set sm;
 
 ::keys it::smit = sm_listmap 0 it sm_keys if ~sm_is_set it;
 

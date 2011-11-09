@@ -616,7 +616,7 @@ px* sm_get(sm* smp, px* key)
     ret = smp->keys_only ? pure_int(1) : i->second.pxp();
   }
   else if (smp->keys_only)
-    ret =  pure_int(0);
+    return pure_int(0);
   else if (smp->has_dflt)
     ret = smp->dflt.pxp();
   else

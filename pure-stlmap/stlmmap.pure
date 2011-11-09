@@ -111,6 +111,11 @@ vector it::smmit = smm_make_vector it;
 
 size it::smmit = smm_size it;
 
+set_default smm@(STLMMAP mm) val = smm_set_default mm val;
+
+// bool, default
+get_default smm@(STLMMAP mm) = smm_get_default mm;
+
 null it::smmit = smm_size it == 0;
 
 empty it::smmit = smm_size it == 0;
@@ -283,11 +288,6 @@ end;
 end when
   smm = emptystlmmap;
 end;
-
-set_default smm@(STLMMAP mm) val = smm_set_default mm val if ~smm_is_set smm;
-
-// bool, default
-get_default smm@(STLMMAP mm) = smm_get_default mm if ~smm_is_set smm;
 
 ::delete_val smm::stlmmap (k=>v) =
   smm_erase_first_if (\(_=>x)->x==v) (smm,k) if ~smm_is_set smm; 

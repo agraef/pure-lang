@@ -632,10 +632,8 @@ px* smm_get(smm* smmp, px* key)
   }
   else if (smmp->keys_only)
     ret =  pure_int(0);
-  else if (smmp->has_dflt)
-    ret = smmp->dflt.pxp();
   else 
-    index_error();
+    ret = pure_listl(0);
   return ret;
 }
 

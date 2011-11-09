@@ -121,20 +121,28 @@ B. Notable features
        stored in smm. Otherwise sm!k returns sm's default value, if any, or
        throws an out_of_bounds exception. (see 3 for notes on default values).
 
-3. A stlmap or stlmmap, mp, can be given a default value (al la C++ T()).
-
-   a. Generally, mp!k will throw out_of_bounds if k is not stored in mp.
-
-   b. Using default values allows one to use a error codes in lieu of
-      exceptions.
+3. A all four of the SAC's can be given a default value (al la C++ T()). It
+   affects the ! operator only in the case of a stlmap. For stlmaps, the
+   default value can be used to signal that the designated key was not 
+   stored in the map.
 
          let x = mp!k;
          if x == nothing then ... else ...
 
-      Default values such as 0 or [] can be useful for maps that are used to
-      count or collect objects that have a given key. (See update_with at 4).
+   a. If sac is a stlmap, (sac!k) will throw out_of_bounds if k is not stored
+      in mp. However, if the map or set has a default value this will be
+      returned without k being stored in the map or set.
 
-   c. N.B. stlsets do not have default values.
+   b. If sac is stlmmap (sac!k) will return a list containing all elements in
+      sac with key k, or [] is k is not stored in the stlmap. The default
+      value is not used by the ! operator.
+
+   c. If sac is a stlmset (sac!k) will the number of elements in the stlmset
+      key k, or 0 is k is not stored in the stlmap. The default value
+      is not used by the ! operator.
+
+   d. If sac is a stlset (sac!k) returns 1 if k is stored in the stlset and 0
+      if it is not.
 
 4. Key value pairs can be updated using "update mp k v", "update_with f
    sm k" or update_vals smm k vals, where mp is a stlmmap or stlmap, sm is a
@@ -144,14 +152,12 @@ B. Notable features
 
    a. "update mp key val" changes the val of the first element (k=>v) of mp
       where k==key (if it exists) to val. If key is not already stored in mp,
-      (key=val) is added to the map.
+      (key=val) is added to the map. Returns the mp.
 
-   b. "update_with unary_fun sm key" only applies to stlmaps. It changes the
-      value of the element (k=>v) of map where k==key (if it exists) to
-      (unary_fun v). If key is not already stored in sm then (i) if sm has a
-      default value, dv, then (key=>unary_fun dv) is added to sm, or (ii)
-      if sm does not have a default value, a failed_condition error is
-      thrown.
+   b. "update_with unary_fun sm key" only applies to stlmaps that have default
+      values. If key is stored in the stlmap, its value is changed the
+      (unary_fun v). If key is not already stored in sm then (key=>unary_fun
+      dv) is added to sm where dv is the stlmap's default value.
       
       "update_with" provides precise control over the modification of key
       value pairs in a stlmap. E.g., if map is a stlmmap, the first element
@@ -175,6 +181,12 @@ B. Notable features
         push_word w = update_with (\(_=>v)->w:v) anagrams (sort_str w);
         do push_word word_list;
 
+     The unary function can set variables (using ref, get, put) to indicate
+     the what it encountered and how it dealt with it.
+
+     FIX - let update_with act of stlmmaps? It could transform all elements
+     with the given key, one by one.
+
    c. "update_vals smm k vals applies only to stlmmaps. The effect of this
        function is to erase vals with key k and insert (map (\v->k=>v) vals)
        into smm. For effiency, wherever possible the values of existing
@@ -187,13 +199,23 @@ B. Notable features
       for dict and set in the Pure standard library except that for stlmmaps,
       there is no guaranteed order of elements with the same key the appear in
       the result. In tests so far the order of such elements has been the same
-      -- first inserted, first. FIX Research further re STL order
-      guarantees. The elements will be the same (right hand side dominates)
-      but they may be in different order.
+      -- first inserted, first. Apparently in C++11, For multiset and
+      multimap, insert and erase preserve the relative ordering of equivalent
+      elements. If a range containing elements equivalent to t exists in a_eq,
+      t is inserted at the end of that range. This is not guaranteed by
+      c++03. The STL set operatons assume that the stlmmaps are ordered, even
+      among elements with the same key.
 
    b. The five STL set operatons, stl::set_union, stl::set_difference,
-      stl::set_intersection, stl::set_symmetric_difference and stl::include are
-      also available. They differ ...
+      stl::set_intersection, stl::set_symmetric_difference and stl::include
+      are also available. Note that these operations only work if the elements
+      of the containers are ordered. This requires care in the case of
+      stlmmaps and stlmsets. For stlmaps and stlsets, the key comparator is
+      all that is used. For stlmmaps both the key comparator and the value
+      comparator are used.
+
+      FIX Add merge. This would be set sum. Considert a sort function
+      for ranges of stl
 
    b. Both operands must be the same type of container. I.e., sm1 + sm2, where
       sm1 and sm2 are stlmaps, but no sm1 + smm1, where smm1 is a stlmmap.
