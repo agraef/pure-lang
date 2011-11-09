@@ -73,7 +73,7 @@ px* iter_key(smm* smmp, pmmi iter);
 
 enum {stl_smm_key = 1, stl_smm_val, stl_smm_both};
 
-enum {stl_smm_union = 1, stl_smm_difference, 
+enum {stl_smm_merge = 1, stl_smm_union, stl_smm_difference, 
       stl_smm_intersection, stl_smm_symmetric_difference};
 
 /*** C interface for C++ multimap of PX Handles ***/
@@ -82,7 +82,7 @@ extern "C" {
   smm* smm_make_empty(px* comp, px* val_comp, px* val_equal, int keys_only);
   bool smm_is_set(px* tpl);
   bool smm_equal(px* tpl1, px* tlp2);
-  int  smm_compare(px* tpl1, px* tlp2);
+  int  smm_less(px* tpl1, px* tlp2);
   bool smm_includes(px* tpl1, px* tpl2);
   smm* smm_setop(int op, px* tpl1, px* tpl2);
   void smm_delete(smm* smmp);
@@ -111,7 +111,6 @@ extern "C" {
   int  smm_erase_if(px* pred, px* tpl);
   int  smm_erase_first(px* tpl);
   int  smm_erase_first_if(px* pred, px* tpl);
-  bool smm_allpairs(px* fun, px* tpl1, px* tpl2);
   px*  smm_listmap(px* fun, px* tpl, int what);
   px*  smm_listcatmap(px* fun, px* tpl, int what);
   px*  smm_foldl(px* fun, px* val, px* tpl);

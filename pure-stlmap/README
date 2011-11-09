@@ -280,6 +280,24 @@ B. Notable features
        d. If k is the second key in sac, prev_key returns stl::stlbeg, rather
           than the actual first k in sac.
 
+9. Each sac has three functions used that define how it operates: key_less
+   function, a val_less, val_equal function.
+
+   a. Keys are ordered by key_less. Default is (<).
+
+   b. val_less is to order elements in a stlmmap when order is
+      important. I.e., less, merge, and the set operations. (These operations
+      use key_less for stlmap, stlset and stlmset.) Default is (<). The
+      default gives the same results as calling these functions in C++ 
+      without a specific comp function.
+
+   c. val_equal is only for equal (==). For this function, two elements
+      (k1=>v1) == (k2=v2) iff ~key_less k1 k2 && ~key_less k2 k1 && val_equal
+      v1 v2.
+
+   d. Currently, although val_less is never used by stlmap, stlset, stlmset. It
+      is still required by emptystlmap_with, ..
+
 C. Cached iterators
 
 1. The last C++ iterator used in selected operations is cached. Only one

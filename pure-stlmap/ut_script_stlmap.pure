@@ -454,87 +454,60 @@ delete_if (\(_=>v)->v>10) sm1 "e"; members sm1;
 delete_if (\(_=>v)->v>0) sm1 "e"; members sm1;
 //- ["b"=>2]
 
-//*** compare ********************************************************
+//*** comparison operators ************************************************
 
 let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
 //- ()
 
-let sm2 = stlmap ["a"=>2,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+let sm2 = stlmap ["a"=>0,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
 //- ()
 
-let sm3 = stlmap ["a"=>0,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+let sm3 = stlmap ["b"=>2,"c"=>3,"d"=>4,"e"=>5];
 //- ()
 
-let sm4 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>6];
+let sm4 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4];
 //- ()
 
-let sm5 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>4];
+let sm5 = stlmap ["a"=>1,"b"=>2,"d"=>4,"e"=>4];
 //- ()
 
-let sm6 = stlmap ["b"=>2,"c"=>3,"d"=>4,"e"=>4];
+let sm6 = emptystlmap;
 //- ()
 
-let sm7 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4];
-//- ()
-
-let sm8 = stlmap ["a"=>1,"b"=>2,"c"=>3,"e"=>5];
-//- ()
-
-let sm9 = emptystlmap;
-//- ()
-
-compare sm1 sm1;
+less sm1 sm1;
 //- 0
 
-compare sm1 sm2;
-//- -1
+less sm1 sm2;
+//- 0
 
-compare sm1 sm3;
+less sm1 sm3;
 //- 1
 
-compare sm1 sm4;
-//- -1
+less sm1 sm4;
+//- 0
 
-compare sm1 sm5;
+less sm1 sm5;
 //- 1
 
-compare sm1 sm6;
-//- -1
+less sm1 sm6;
+//- 0
 
-compare sm1 sm7;
+less sm2 sm1;
+//- 0
+
+less sm3 sm1;
+//- 0
+
+less sm4 sm1;
 //- 1
 
-compare sm1 sm8;
-//- -1
+less sm5 sm1;
+//- 0
 
-compare sm1 sm9;
+less sm6 sm1;
 //- 1
 
-compare sm2 sm1;
-//- 1
-
-compare sm3 sm1;
-//- -1
-
-compare sm4 sm1;
-//- 1
-
-compare sm5 sm1;
-//- -1
-
-compare sm6 sm1;
-//- 1
-
-compare sm7 sm1;
-//- -1
-
-compare sm8 sm1;
-//- 1
-
-compare sm9 sm1;
-//- -1
-
-compare sm9 sm9;
+less sm6 sm6;
 //- 0
 
 //*** equal ******************************************************
@@ -964,6 +937,12 @@ members (sm1 * sm2);
 
 members (sm2 * sm1);
 //- ["a"=>11,"c"=>14]
+
+members (stl::merge sm1 sm2);
+//- ["a"=>11,"b"=>21,"c"=>14,"d"=>15,"e"=>25]
+
+members (stl::merge sm2 sm1);
+//- ["a"=>11,"b"=>12,"c"=>14,"d"=>15,"e"=>25]
 
 members (stl::set_union sm1 sm1);
 //- ["a"=>11,"b"=>12,"c"=>14,"d"=>15]

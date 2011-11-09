@@ -196,20 +196,58 @@ bool pxh_pred2::operator()(const pxh& left, const pxh& right) const
   return ok && ret;
 }
 
-bool pxh_pair_pred2::operator()(const pxh_pair& left,
-                                const pxh_pair& right) const
+bool pxh_pair_less::operator()(const pxh_pair& left,
+                               const pxh_pair& right) const
 {
-  int32_t ret;
-  px* exception = 0;
-  px* pxres = pure_appxl(fun_, &exception, 4,
-                         left.first.pxp(), left.second.pxp(),
-                         right.first.pxp(), right.second.pxp());
-  if (exception) throw exception;
-  if (!pxres) bad_function();
-  int ok = pure_is_int(pxres, &ret);
-  px_freenew(pxres);
-  if (!ok) failed_cond();
-  return ok && ret;
+  try {
+    const pxh& lf = left.first;
+    const pxh& rf = right.first;
+
+    if (first_less(lf,rf)) return 1;
+    if (first_less(rf,lf)) return 0;
+    return (second_less(left.second, right.second));
+  }
+  catch (px* e) {
+    pure_throw(e);
+  }
+}
+
+bool pxh_pair_equal::operator()(const pxh_pair& lhs,
+                                const pxh_pair& rhs) const
+{
+  try {
+    bool ok = first_equal(lhs.first, rhs.first)  && 
+              second_equal(lhs.second, rhs.second);
+    return ok;
+  }
+  catch (px* e) {
+    pure_throw(e);
+  }
+}
+
+bool pxh_pair_first_equal::operator()(const pxh_pair& lhs,
+                                      const pxh_pair& rhs) const
+{
+  try {
+    return first_equal(lhs.first, rhs.first);
+  }
+  catch (px* e) {
+    pure_throw(e);
+  }
+}
+
+bool pxh_pair_equivalent::operator()(const pxh_pair& lhs,
+                                const pxh_pair& rhs) const
+{
+  try {
+    bool ok = !first_less(lhs.first, rhs.first) && 
+              !first_less(rhs.first, lhs.first) && 
+              second_equal(lhs.second, rhs.second);
+    return ok;
+  }
+  catch (px* e) {
+    pure_throw(e);
+  }
 }
 
 pxh pxh_gen::operator()()

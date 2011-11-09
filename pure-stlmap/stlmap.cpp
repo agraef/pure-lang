@@ -190,6 +190,7 @@ static px* listmap_aux(px* fun, pmi b, pmi e, int what)
   return res;  
 }
 
+
 /*** stlmap members  ***********************************************/
 
 stlmap::stlmap(px* cmp, px* val_cmp, px* val_eql, bool keyonly):
@@ -407,31 +408,15 @@ bool sm_is_set(px* tpl)
   return itrs.smp->keys_only;
 }
 
-int sm_compare(px* tpl1, px* tpl2)
+int sm_less(px* tpl1, px* tpl2)
 {
   sm_iters itrs1(tpl1);
   sm_iters itrs2(tpl2);
   if (!itrs1.is_valid || !itrs2.is_valid) bad_argument;
-  pxh_pred2 kless = itrs1.smp->px_comp.pxp();
-  pxh_pred2 vless = itrs1.smp->px_val_comp.pxp();
-  bool have_vals = !itrs1.smp->keys_only;
-  pmi beg1 = itrs1.beg();
-  pmi end1 = itrs1.end();
-  pmi beg2 = itrs2.beg();
-  pmi end2 = itrs2.end();
   try {
-    for ( ; (beg1 != end1) && (beg2 != end2); beg1++, beg2++ ) {
-        if (kless(beg1->first,beg2->first)) return -1;
-        if (kless(beg2->first,beg1->first)) return  1;
-        if (have_vals) {
-          if (vless(beg1->second,beg2->second)) return -1;
-          if (vless(beg2->second,beg1->second)) return  1;
-        }
-    }
-    if (beg1 == end1)
-      return (beg2 == end2) ? 0 : -1;
-    else
-      return 1;
+    return lexicographical_compare(itrs1.beg(), itrs1.end(),
+                                   itrs2.beg(), itrs2.end(), 
+                                   itrs1.smp->mp.value_comp());
   }
   catch (px* e) {
     pure_throw(e);
@@ -443,27 +428,23 @@ bool sm_equal(px* tpl1, px* tpl2)
   sm_iters itrs1(tpl1);
   sm_iters itrs2(tpl2);
   if (!itrs1.is_valid || !itrs2.is_valid) bad_argument;
-  if ( sm_size(tpl1) != sm_size(tpl2) ) return false;
-  pxh_pred2 kless = itrs1.smp->px_comp.pxp();
-  pxh_pred2 vequal = itrs1.smp->px_val_equal.pxp();
-  bool have_vals = !itrs1.smp->keys_only;
-  pmi beg1 = itrs1.beg();
-  pmi end1 = itrs1.end();
-  pmi beg2 = itrs2.beg();
-  pmi end2 = itrs2.end();
+  if (sm_size(tpl1) != sm_size(tpl2)) return 0;
+  sm* smp = itrs1.smp;
   try {
-    for ( ; (beg1 != end1) && (beg2 != end2); beg1++, beg2++ ) {
-        if (kless(beg1->first,beg2->first)) return false;
-        if (kless(beg2->first,beg1->first)) return false;
-        if (have_vals)
-          if (!vequal(beg1->second,beg2->second)) return false;
+    if (smp->keys_only) {
+      pxh_pair_first_equal comp(smp->px_val_equal.pxp());   
+      return equal(itrs1.beg(), itrs1.end(), itrs2.beg(), comp);
     }
-    return beg1 == end1 && beg2 == end2;
+    else {
+      pxh_pair_equivalent comp(smp->px_comp.pxp(),smp->px_val_equal.pxp());   
+      return equal(itrs1.beg(), itrs1.end(), itrs2.beg(), comp);
+    }
   }
   catch (px* e) {
     pure_throw(e);
   }
 }
+
 
 px* sm_make_vector(px* tpl) 
 {
@@ -658,6 +639,11 @@ sm* sm_setop(int op, px* tpl1, px* tpl2)
   pxhmap& mp = res->mp;
   try {
     switch (op) {
+    case stl_sm_merge:
+      merge(itrs1.beg(), itrs1.end(), 
+            itrs2.beg(), itrs2.end(),
+            inserter(mp, mp.end()), mp.value_comp());
+      break;
     case stl_sm_union:
       set_union(itrs1.beg(), itrs1.end(), 
                 itrs2.beg(), itrs2.end(),
@@ -855,51 +841,6 @@ int sm_remove_if(sm* smp, px* k, px* pred)
     }
   }
   return ret;
-}
-
-bool sm_allpairs(px* comp, px* tpl1, px* tpl2)
-{
-  bool all_ok;
-  sm_iters itrs1(tpl1);
-  sm_iters itrs2(tpl2);
-  if (!itrs1.is_valid) bad_argument();
-  if (!itrs2.is_valid) bad_argument();
-
-  sm* map1 = itrs1.smp;
-  sm* map2 = itrs1.smp;
-  try {
-    if (map1->keys_only) {
-      if (!map2->keys_only) bad_argument();
-      pxh_pred2 fun(comp);
-      pmi i1 = itrs1.beg();
-      pmi i2 = itrs2.beg();
-      pmi end1 = itrs1.end();
-      pmi end2  =itrs2.end();
-      all_ok = 1;
-      while(i1 != end1) {
-        if (i2 == end2  || !fun(i1->first, i2->first) ) {
-          all_ok = 0;
-          break;
-        }
-        i1++; i2 ++;
-      }
-      if (all_ok && i2 != end2) 
-        all_ok = 0;
-    }
-    else {
-      if (map2->keys_only) bad_argument();
-      if ( sm_size(tpl1) != sm_size(tpl2) ) {
-        all_ok = 0;
-      }
-      else {
-        pxh_pair_pred2 fun(comp);
-        all_ok = equal(itrs1.beg(), itrs1.end(), itrs2.beg(), fun);
-      }
-    }
-  } catch (px* e) {
-    pure_throw(e);
-  }
-  return all_ok;
 }
 
 px* sm_listmap(px* fun, px* tpl, int what)

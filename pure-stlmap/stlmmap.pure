@@ -39,7 +39,7 @@ private extern bool  smm_is_set(expr* tpl);
 private extern expr* smm_set_default(void* mmap, expr* val);
 private extern expr* smm_get_default(void* mmap);
 private extern int   smm_equal(expr* tpl1, expr* tpl2);
-private extern int   smm_compare(expr* tpl1, expr* tpl2);
+private extern int   smm_less(expr* tpl1, expr* tpl2);
 private extern bool  smm_includes(expr* it1, expr* it2);
 private extern void* smm_setop(int op, expr* it1, expr* it2);
 private extern expr* smm_make_vector(expr* tpl);
@@ -65,7 +65,6 @@ private extern int   smm_erase(expr* it);
 private extern int   smm_erase_if(expr* pred, expr* it);
 private extern int   smm_erase_first(expr* it);
 private extern int   smm_erase_first_if(expr* pred, expr* it);
-private extern int   smm_allpairs(expr* fun, expr* it, expr* it);
 private extern expr* smm_listmap(expr* fun, expr* it, int what);
 private extern expr* smm_listcatmap(expr* fun, expr* it, int what);
 private extern expr* smm_foldl(expr* fun, expr* val, expr* it);
@@ -85,10 +84,11 @@ const smm_keys = 1;
 const smm_vals = 2;
 const smm_both = 3;
 
-const smm_union = 1;
-const smm_difference = 2;
-const smm_intersection = 3;
-const smm_symmetric_difference = 4;
+const smm_merge = 1;
+const smm_union = 2;
+const smm_difference = 3;
+const smm_intersection = 4;
+const smm_symmetric_difference = 5;
 
 smm_wrap mm = STLMMAP (sentry smm_delete mm);
 smm_wrap_sv mm = STLVEC (sentry smm_delete mm);
@@ -167,20 +167,20 @@ bounds it@(STLMMAP mm, _) = (STLMMAP mm), smm_bounds it;
 ::equal it1::smmit it2::smmit = smm_equal it1 it2 
   if both_mmaps it1 it2 || both_msets it1 it2;
 
-::compare it1::smmit it2::smmit = smm_compare it1 it2 
+::less it1::smmit it2::smmit = smm_less it1 it2 
   if both_mmaps it1 it2 || both_msets it1 it2;
 
-(::==) sd1::stlmmap sd2::stlmmap = ::equal sd1 sd2;
+(::==) smm1::stlmmap smm2::stlmmap = ::equal smm1 smm2;
 
-(::~=) sd1::stlmmap sd2::stlmmap = ~::equal sd1 sd2;
+(::~=) smm1::stlmmap smm2::stlmmap = ~::equal smm1 smm2;
 
-(::<) it1::smmit it2::smmit = ::compare it1 it2 < 0;
+(::<) it1::smmit it2::smmit = ::less it1 it2;
 
-(::<=) it1::smmit it2::smmit = ::compare it1 it2 <= 0;
+(::<=) it1::smmit it2::smmit = ~::less it2 it1;
 
-(::>) it1::smmit it2::smmit = ::compare it1 it2 > 0;
+(::>) it1::smmit it2::smmit = ::less it2 it1;
 
-(::>=) it1::smmit it2::smmit = ::compare it1 it2 >= 0;
+(::>=) it1::smmit it2::smmit = ~::less it1 it2;
 
 ::map f it::smmit = smm_listmap f it smm_both; // => smm_key for sets
 
@@ -215,6 +215,10 @@ end;
 ::colmap f it::smmit = colcat (smm_listmap f it smm_both);
 
 ::colcatmap f it::smmit = colcat (smm_listmap f it smm_both);
+
+merge it1::smmit it2::smmit = 
+  smm_wrap $ smm_setop smm_merge it1 it2
+  if both_msets it1 it2 || both_mmaps it1 it2;
 
 set_union it1::smmit it2::smmit = 
   smm_wrap $ smm_setop smm_union it1 it2

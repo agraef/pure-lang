@@ -15,7 +15,7 @@ This software is distributed under a BSD-style license in the hope
 
 hat it will be useful, but WITHOUT ANY WARRANTY; without even the implied
 warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-COPYING file included with th e pure-stlmap distribution package for details.
+COPYING file included with th e purse-stlmap distribution package for details.
 
 */
 
@@ -26,6 +26,7 @@ COPYING file included with th e pure-stlmap distribution package for details.
 #include "stlmmap.hpp"
 
 using namespace std;
+
 
 /*** Helpers for debugging only ************************************/
 
@@ -403,31 +404,24 @@ bool smm_is_set(px* tpl)
   return itrs.smmp->keys_only;
 }
 
-int smm_compare(px* tpl1, px* tpl2)
+int smm_less(px* tpl1, px* tpl2)
 {
   smm_iters itrs1(tpl1);
   smm_iters itrs2(tpl2);
   if (!itrs1.is_valid || !itrs2.is_valid) bad_argument;
-  pxh_pred2 kless = itrs1.smmp->px_comp.pxp();
-  pxh_pred2 vless = itrs1.smmp->px_val_comp.pxp();
-  bool have_vals = !itrs1.smmp->keys_only;
-  pmmi beg1 = itrs1.beg();
-  pmmi end1 = itrs1.end();
-  pmmi beg2 = itrs2.beg();
-  pmmi end2 = itrs2.end();
+  smm* smmp = itrs1.smmp;
   try {
-    for ( ; (beg1 != end1) && (beg2 != end2); beg1++, beg2++ ) {
-        if (kless(beg1->first,beg2->first)) return -1;
-        if (kless(beg2->first,beg1->first)) return  1;
-        if (have_vals) {
-          if (vless(beg1->second,beg2->second)) return -1;
-          if (vless(beg2->second,beg1->second)) return  1;
-        }
+    if (smmp->keys_only) {
+      return lexicographical_compare(itrs1.beg(), itrs1.end(),
+                                     itrs2.beg(), itrs2.end(), 
+                                     smmp->mp.value_comp());
     }
-    if (beg1 == end1)
-      return (beg2 == end2) ? 0 : -1;
-    else
-      return 1;
+    else {
+      pxh_pair_less comp(smmp->px_comp.pxp(),smmp->px_val_comp.pxp());   
+      return lexicographical_compare(itrs1.beg(), itrs1.end(),
+                                     itrs2.beg(), itrs2.end(), 
+                                     comp);
+    }
   }
   catch (px* e) {
     pure_throw(e);
@@ -439,22 +433,17 @@ bool smm_equal(px* tpl1, px* tpl2)
   smm_iters itrs1(tpl1);
   smm_iters itrs2(tpl2);
   if (!itrs1.is_valid || !itrs2.is_valid) bad_argument;
-  if ( smm_size(tpl1) != smm_size(tpl2) ) return false;
-  pxh_pred2 kless = itrs1.smmp->px_comp.pxp();
-  pxh_pred2 vequal = itrs1.smmp->px_val_equal.pxp();
-  bool have_vals = !itrs1.smmp->keys_only;
-  pmmi beg1 = itrs1.beg();
-  pmmi end1 = itrs1.end();
-  pmmi beg2 = itrs2.beg();
-  pmmi end2 = itrs2.end();
+  if (smm_size(tpl1) != smm_size(tpl2)) return 0;
+  smm* smmp = itrs1.smmp;
   try {
-    for ( ; (beg1 != end1) && (beg2 != end2); beg1++, beg2++ ) {
-        if (kless(beg1->first,beg2->first)) return false;
-        if (kless(beg2->first,beg1->first)) return false;
-        if (have_vals)
-          if (!vequal(beg1->second,beg2->second)) return false;
+    if (smmp->keys_only) {
+      pxh_pair_first_equal comp(smmp->px_val_equal.pxp());   
+      return equal(itrs1.beg(), itrs1.end(), itrs2.beg(), comp);
     }
-    return beg1 == end1 && beg2 == end2;
+    else {
+      pxh_pair_equivalent comp(smmp->px_comp.pxp(),smmp->px_val_equal.pxp());   
+      return equal(itrs1.beg(), itrs1.end(), itrs2.beg(), comp);
+    }
   }
   catch (px* e) {
     pure_throw(e);
@@ -642,9 +631,17 @@ bool smm_includes(px* tpl1, px* tpl2)
   smm_iters itrs1(tpl1);
   smm_iters itrs2(tpl2);
   if (!itrs1.is_valid || !itrs2.is_valid) bad_argument;
+  smm* smmp = itrs1.smmp;
   try {
-    return includes(itrs1.beg(), itrs1.end(), itrs2.beg(), itrs2.end(), 
-                    itrs1.smmp->mp.value_comp());
+    if (smmp->keys_only) {
+      return includes(itrs1.beg(), itrs1.end(),
+                      itrs2.beg(), itrs2.end(), smmp->mp.value_comp());
+    }
+    else {
+      pxh_pair_less comp(smmp->px_comp.pxp(),smmp->px_val_comp.pxp());   
+      return includes(itrs1.beg(), itrs1.end(),
+                      itrs2.beg(), itrs2.end(), comp);
+    }
   }
   catch (px* e) {
     pure_throw(e);
@@ -663,29 +660,69 @@ smm* smm_setop(int op, px* tpl1, px* tpl2)
                      smmp->keys_only, smmp->dflt.pxp());
   pxhmmap& mp = res->mp;
   try {
-    switch (op) {
-    case stl_smm_union:
-      set_union(itrs1.beg(), itrs1.end(), 
-                itrs2.beg(), itrs2.end(),
-                inserter(mp, mp.end()), mp.value_comp());
-      break;
-    case stl_smm_difference:
-      set_difference(itrs1.beg(), itrs1.end(),
-                     itrs2.beg(), itrs2.end(),
-                     inserter(mp, mp.end()), mp.value_comp());
-      break;
-    case stl_smm_intersection:
-      set_intersection(itrs1.beg(), itrs1.end(),
+    if (res->keys_only) {
+      pxhmmap::value_compare comp = mp.value_comp();
+      switch (op) {
+      case stl_smm_merge:
+        merge(itrs1.beg(), itrs1.end(), 
+              itrs2.beg(), itrs2.end(),
+              inserter(mp, mp.end()), comp);
+        break;
+      case stl_smm_union:
+        set_union(itrs1.beg(), itrs1.end(), 
+                  itrs2.beg(), itrs2.end(),
+                  inserter(mp, mp.end()), comp);
+        break;
+      case stl_smm_difference:
+        set_difference(itrs1.beg(), itrs1.end(),
                        itrs2.beg(), itrs2.end(),
-                       inserter(mp, mp.end()), mp.value_comp());
-      break;
-    case stl_smm_symmetric_difference:
-      set_symmetric_difference(itrs1.beg(), itrs1.end(),
-                               itrs2.beg(), itrs2.end(),
-                               inserter(mp, mp.end()), mp.value_comp());
-      break;
-    otherwise:
-      bad_argument();
+                       inserter(mp, mp.end()), comp);
+        break;
+      case stl_smm_intersection:
+        set_intersection(itrs1.beg(), itrs1.end(),
+                         itrs2.beg(), itrs2.end(),
+                         inserter(mp, mp.end()), comp);
+        break;
+      case stl_smm_symmetric_difference:
+        set_symmetric_difference(itrs1.beg(), itrs1.end(),
+                                 itrs2.beg(), itrs2.end(),
+                                 inserter(mp, mp.end()), comp);
+        break;
+      default:
+        bad_argument();
+      }
+    }
+    else {
+      pxh_pair_less comp(res->px_comp.pxp(),res->px_val_comp.pxp());
+      switch (op) {
+      case stl_smm_merge:
+        merge(itrs1.beg(), itrs1.end(), 
+              itrs2.beg(), itrs2.end(),
+              inserter(mp, mp.end()), comp);
+        break;
+      case stl_smm_union:
+        set_union(itrs1.beg(), itrs1.end(), 
+                  itrs2.beg(), itrs2.end(),
+                  inserter(mp, mp.end()), comp);
+        break;
+      case stl_smm_difference:
+        set_difference(itrs1.beg(), itrs1.end(),
+                       itrs2.beg(), itrs2.end(),
+                       inserter(mp, mp.end()), comp);
+        break;
+      case stl_smm_intersection:
+        set_intersection(itrs1.beg(), itrs1.end(),
+                         itrs2.beg(), itrs2.end(),
+                         inserter(mp, mp.end()), comp);
+        break;
+      case stl_smm_symmetric_difference:
+        set_symmetric_difference(itrs1.beg(), itrs1.end(),
+                                 itrs2.beg(), itrs2.end(),
+                                 inserter(mp, mp.end()), comp);
+        break;
+      default:
+        bad_argument();
+      }
     }
     return res;
   } catch (px* e) {
@@ -930,51 +967,6 @@ int smm_remove_if(smm* smmp, px* k, px* pred, int all)
     pure_throw(e);
   }
   return ret;
-}
-
-bool smm_allpairs(px* comp, px* tpl1, px* tpl2)
-{
-  bool all_ok;
-  smm_iters itrs1(tpl1);
-  smm_iters itrs2(tpl2);
-  if (!itrs1.is_valid) bad_argument();
-  if (!itrs2.is_valid) bad_argument();
-
-  smm* smmp1 = itrs1.smmp;
-  smm* smmp2 = itrs1.smmp;
-  try {
-    if (smmp1->keys_only) {
-      if (!smmp2->keys_only) bad_argument();
-      pxh_pred2 fun(comp);
-      pmmi i1 = itrs1.beg();
-      pmmi i2 = itrs2.beg();
-      pmmi end1 = itrs1.end();
-      pmmi end2  =itrs2.end();
-      all_ok = 1;
-      while(i1 != end1) {
-        if (i2 == end2  || !fun(i1->first, i2->first) ) {
-          all_ok = 0;
-          break;
-        }
-        i1++; i2 ++;
-      }
-      if (all_ok && i2 != end2) 
-        all_ok = 0;
-    }
-    else {
-      if (smmp2->keys_only) bad_argument();
-      if ( smm_size(tpl1) != smm_size(tpl2) ) {
-        all_ok = 0;
-      }
-      else {
-        pxh_pair_pred2 fun(comp);
-        all_ok = equal(itrs1.beg(), itrs1.end(), itrs2.beg(), fun);
-      }
-    }
-  } catch (px* e) {
-    pure_throw(e);
-  }
-  return all_ok;
 }
 
 px* smm_listmap(px* fun, px* tpl, int what)
