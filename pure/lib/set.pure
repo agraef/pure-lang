@@ -342,12 +342,17 @@ rmlast  (HBag m) = HBag (avl::hrmlast  m);
 
 // comparisons
 m1@(Set _)  == m2@(Set _)  |
-m1@(Bag _)  == m2@(Bag _)  = members m1 == members m2;
+m1@(Bag _)  == m2@(Bag _)  = cmp (members m1) (members m2) with
+  cmp [] [] = 1;
+  cmp (x:xs) [] = 0;
+  cmp [] (x:xs) = 0;
+  cmp (x:xs) (y:ys) = ~(x<y || y<x) && cmp xs ys;
+end;
 m1@(HSet _) == m2@(HSet _) |
 m1@(HBag _) == m2@(HBag _) = m1 <= m2 && m2 <= m1;
 
 m1@(Set _)  ~= m2@(Set _)  |
-m1@(Bag _)  ~= m2@(Bag _)  = members m1 ~= members m2;
+m1@(Bag _)  ~= m2@(Bag _)  |
 m1@(HSet _) ~= m2@(HSet _) |
 m1@(HBag _) ~= m2@(HBag _) = ~(m1 == m2);
 
