@@ -69,9 +69,8 @@
    dictionaries compare keys using equality (assuming two keys ``a`` and ``b``
    to be equal if neither ``a<b`` nor ``b<a`` holds), while hashed
    dictionaries check for syntactical equality (using :func:`===`). The
-   associated values are always compared using the :func:`==` predicate, so
-   this needs to be defined if you want to use any of the comparison
-   operations.
+   associated values are compared using the :func:`==` predicate if it is
+   defined, falling back to syntactic equality otherwise.
 
    The underlying AVL tree data structure can be found in the avltrees.pure
    module which is included in the library, but not to be invoked directly.
@@ -217,16 +216,16 @@
       	less general dictionary types (ordered, single-valued) to more general
       	types (hashed, multi-valued) are handled automatically.
 
-      * The :func:`delete_val/dict` function always compares values using
-        equality (:func:`==`), so this predicate must be defined on the values
-        stored in the dictionary in order to make this operation work. If
-        there is more than one instance of the given value under the given
-        key, the first such instance will be removed (which may be any
+      * The :func:`delete_val/dict` function compares values using equality
+        (:func:`==`) if it is defined, falling back to syntactic equality
+        (:func:`===`) otherwise. If there is more than one instance of the
+        given value under the given key, the first such instance will be
+        removed (which, if :func:`==` is defined on the values, may be any
         instance that compares equal, not necessarily an exact match).
 
       * In the multidict case, :func:`delete_val/dict` may require linear time
         with respect to the number of different values stored under the given
-        key.  Since this operation is also needed to implement some other
+        key. Since this operation is also needed to implement some other
         multidict operations like comparisons, difference and intersection,
         these may end up requiring quadratic running times in degenerate cases
         (i.e., if the majority of members happens to be associated with only
@@ -466,24 +465,47 @@ rmlast  (HMDict d) = HMDict (avl::hrmlast  d);
 (HMDict d)!k = avl::mhgetk d k;
 
 // comparisons
-d1@(Dict _)   == d2@(Dict _)   = members d1 == members d2;
+d1@(Dict _)   == d2@(Dict _)   = cmp (members d1) (members d2) with
+  /* This case is optimized so that we only need a single traversal of the
+     member lists which can be done in linear time. Also note that keys are
+     compared for equality in the sense that two keys are equal if neither is
+     less than the other, whereas values are compared for proper equality (==)
+     if it is defined, falling back to (===) otherwise. */
+  cmp [] [] = 1;
+  cmp (x:xs) [] = 0;
+  cmp [] (x:xs) = 0;
+  cmp ((xk=>xv):xs) ((yk=>yv):ys) =
+    ~(xk<yk || yk<xk) && eq xv yv && cmp xs ys;
+  eq u v = case u==v of res::int = res; _ = u===v end;
+end;
 d1@(MDict _)  == d2@(MDict _)  |
 d1@(HDict _)  == d2@(HDict _)  |
 d1@(HMDict _) == d2@(HMDict _) = d1 <= d2 && d2 <= d1;
 
-d1@(Dict _)   ~= d2@(Dict _)   = members d1 ~= members d2;
+d1@(Dict _)   ~= d2@(Dict _)   |
 d1@(MDict _)  ~= d2@(MDict _)  |
 d1@(HDict _)  ~= d2@(HDict _)  |
 d1@(HMDict _) ~= d2@(HMDict _) = ~(d1 == d2);
 
-d1@(Dict _)   <= d2@(Dict _)   =
-  all (member d2) ks1 && map (d2!) ks1 == vals d1 when ks1 = keys d1 end;
+d1@(Dict _)   <= d2@(Dict _)   = cmp (members d1) (members d2) with
+  /* Again, this case is optimized so that we only need a single traversal of
+     the member lists. Also note that the member lists are ordered by key, so
+     that we can use a kind of subset check for two ordered sequences which
+     can still be done in linear time. */
+  cmp [] [] = 1;
+  cmp (x:xs) [] = 0;
+  cmp [] (x:xs) = 1;
+  cmp xs1@((xk=>xv):xs) ((yk=>yv):ys)
+  = 0 if xk<yk;
+  = cmp xs1 ys if yk<xk;
+  = eq xv yv && cmp xs ys;
+  eq u v = case u==v of res::int = res; _ = u===v end;
+end;
 d1@(MDict _)  <= d2@(MDict _)  |
 d1@(HDict _)  <= d2@(HDict _)  |
 d1@(HMDict _) <= d2@(HMDict _) = null (d1 - d2);
 
-d1@(Dict _)   >= d2@(Dict _)   =
-  all (member d1) ks2 && map (d1!) ks2 == vals d2 when ks2 = keys d2 end;
+d1@(Dict _)   >= d2@(Dict _)   = d2 <= d1;
 d1@(MDict _)  >= d2@(MDict _)  |
 d1@(HDict _)  >= d2@(HDict _)  |
 d1@(HMDict _) >= d2@(HMDict _) = null (d2 - d1);
