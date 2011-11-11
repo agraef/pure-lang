@@ -147,16 +147,8 @@ Hashed multidicts (``hashmdict``)::
   > m!foo;
   [99]
 
-All dictionary containers can be used as generators in list and matrix
-comprehensions::
-
-  > [x y | x=>y = m];
-  [foo 99,baz [1,2,3,4,5],baz (bar 4711L)]
-  > {{x;y} | x=>y = m};
-  {foo,baz,baz;99,[1,2,3,4,5],bar 4711L}
-
-This example illustrates how to employ ordered dictionaries as a set data
-structure (note that we use the ``ordxdict`` type here so that these
+The following example illustrates how to employ ordered dictionaries as a set
+data structure (note that we use the ``ordxdict`` type here so that these
 definitions work with both ``orddict`` and ``ordmdict``)::
 
   > using orddict;
@@ -187,3 +179,35 @@ definitions work with both ``orddict`` and ``ordmdict``)::
   ordmdict [1,3,11]
   > m1*m2;
   ordmdict [3,5]
+
+All dictionary containers can be used as generators in list and matrix
+comprehensions::
+
+  > [x y | x=>y = m];
+  [foo 99,baz [1,2,3,4,5],baz (bar 4711L)]
+  > {{x;y} | x=>y = m};
+  {foo,baz,baz;99,[1,2,3,4,5],bar 4711L}
+
+Note that in the current implementation this always computes the full member
+list of the dictionary. This may use lots of extra memory in the case of large
+dictionaries. As a remedy, you can also use the ``stream`` function to convert
+the dictionary to a lazy list instead. This will often be slower, but in the
+case of big dictionaries the tradeoff between memory usage and execution speed
+may be worth considering. For instance::
+
+  > let m = hashdict [foo i => i | i = 1..1000];
+  > stream m;
+  (foo 891=>891):#<thunk 0x7f10d31679f0>
+  > stats -m
+  > #list m;
+  10000
+  0.01s, 40001 cells
+  > #stream m;
+  10000
+  0.11s, 16 cells
+  > #[y | x=>y = m; gcd y 767~=1];
+  925
+  0.05s, 61853 cells
+  > #[y | x=>y = stream m; gcd y 767~=1];
+  925
+  0.18s, 10969 cells
