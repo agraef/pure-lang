@@ -88,7 +88,7 @@ sms1!"a";
 sms1!"e";
 //- 1
 
-insert sms1 "a"; insert sms1 "x"; members sms1;
+insert_elm sms1 "a"; insert_elm sms1 "x"; members sms1;
 //- ["a","a","b","c","d","e","x"]
 
 catch err (sms1!"y");
@@ -209,7 +209,7 @@ last (sms1,stl::stlbeg,"x");
 last (sms1,"0",stl::stlend);
 //- "y"
 
-//*** insert ***********************************************************
+//*** insert_elm ***********************************************************
 
 let sms1 = stlmset ["a","b","c","d","e"]; members sms1; 
 //- ["a","b","c","d","e"]
@@ -217,7 +217,7 @@ let sms1 = stlmset ["a","b","c","d","e"]; members sms1;
 let sms2 = stlmset ["k","l","m"]; members sms2;
 //- ["k","l","m"]
 
-insert sms1 "a"; members sms1; 
+insert_elm sms1 "a"; members sms1; 
 //- ["a","a","b","c","d","e"]
 
 insert_elms sms1 ["a","f"]; members sms1; 
@@ -256,7 +256,7 @@ insert_elms sms1 ["a","b","b"]; members sms1;
 insert_elms sms1 {"a","b","b"}; members sms1;
 //- ["a","a","b","b","b","b","f","g"]
 
-catch id (insert sms1 ("e"=>5)); //can't compare string to rocket
+catch id (insert_elm sms1 ("e"=>5)); //can't compare string to rocket
 //- failed_cond
 
 //*** Range specifications - corner cases *******************************
@@ -381,7 +381,7 @@ erase sms1; members sms1;
 stl::null sms1;
 //- 1
 
-insert sms1 "e"; members sms1;
+insert_elm sms1 "e"; members sms1;
 //- ["e"]
 
 stl::null sms1;
@@ -484,59 +484,58 @@ let sms8 = stlmset ["a","b","b","b","b","b"];
 let sms9 = emptystlmset;
 //- ()
 
-less sms1 sms1;
+sms1 < sms1;
 //- 0
 
-less sms1 sms2;
+sms1 < sms2;
 //- 0
 
-less sms1 sms3;
+sms1 < sms3;
 //- 1
 
-less sms1 sms4;
+sms1 < sms4;
 //- 0
 
-less sms1 sms5;
+sms1 < sms5;
 //- 0
 
-less sms1 sms6;
+sms1 < sms6;
 //- 1
 
-less sms1 sms7;
+sms1 < sms7;
 //- 1
 
-less sms1 sms8;
+sms1 < sms8;
 //- 0
 
-less sms1 sms9;
+sms1 < sms9;
 //- 0
 
-less sms2 sms1;
+sms2 < sms1;
 //- 1
 
-less sms3 sms1;
+sms3 < sms1;
 //- 0
 
-less sms4 sms1;
+sms4 < sms1;
 //- 1
 
-less sms5 sms1;
+sms5 < sms1;
 //- 1
 
-less sms6 sms1;
+sms6 < sms1;
 //- 0
 
-less sms7 sms1;
+sms7 < sms1;
 //- 0
 
-less sms8 sms1;
+sms8 < sms1;
 //- 1
 
-less sms9 sms1;
+sms9 < sms1;
 //- 1
 
 //*** equal ************************************************************
-
 
 let sms1 = stlmset ["a","b","b","b","e"];
 //- ()
@@ -565,58 +564,58 @@ let sms8 = stlmset ["a","b","b","b","b","b"];
 let sms9 = emptystlmset;
 //- ()
 
-equal sms1 sms1;
+sms1 == sms1;
 //- 1
 
-equal sms1 sms2;
+sms1 == sms2;
 //- 0
 
-equal sms1 sms3;
+sms1 == sms3;
 //- 0
 
-equal sms1 sms4;
+sms1 == sms4;
 //- 0
 
-equal sms1 sms5;
+sms1 == sms5;
 //- 0
 
-equal sms1 sms6;
+sms1 == sms6;
 //- 0
 
-equal sms1 sms7;
+sms1 == sms7;
 //- 0
 
-equal sms1 sms8;
+sms1 == sms8;
 //- 0
 
-equal sms1 sms9;
+sms1 == sms9;
 //- 0
 
-equal sms9 sms9;
+sms9 == sms9;
 //- 1
 
-equal sms2 sms1;
+sms2 == sms1;
 //- 0
 
-equal sms3 sms1;
+sms3 == sms1;
 //- 0
 
-equal sms4 sms1;
+sms4 == sms1;
 //- 0
 
-equal sms5 sms1;
+sms5 == sms1;
 //- 0
 
-equal sms6 sms1;
+sms6 == sms1;
 //- 0
 
-equal sms7 sms1;
+sms7 == sms1;
 //- 0
 
-equal sms8 sms1;
+sms8 == sms1;
 //- 0
 
-equal sms9 sms1;
+sms9 == sms1;
 //- 0
 
 //*** operators ==, ~=, <, <=, >, >= *************************************
@@ -714,7 +713,7 @@ let sms2, lb, ub = stl::bounds (sms1,"a"); (lb, ub);
 //- stl_begin_iterator,"b"
 
 let sms2, lb, ub = stl::bounds (sms1,"a1"); (lb, ub);
-//- "b","b"
+//- stl_end_iterator,stl_end_iterator
 
 let sms2, lb, ub = stl::bounds (sms1,"b"); (lb, ub);
 //- "b","c"
@@ -729,16 +728,16 @@ let sms2, lb, ub = stl::bounds (sms1,"0","x"); (lb, ub);
 //- stl_begin_iterator,stl_end_iterator
 
 let sms2, lb, ub = stl::bounds (sms1,"x","a"); (lb, ub);
-//- stl_end_iterator,"b"
+//- stl_end_iterator,stl_end_iterator
 
 let sms2, lb, ub = stl::bounds (sms1,"a","b"); (lb, ub);
-//- stl_begin_iterator,"c"
+//- stl_begin_iterator,"b"
 
 members (sms2, lb, ub);
-//- ["a","b","b","b"]
+//- ["a"]
 
 let sms2, lb, ub = stl::bounds (sms1,stl::stlbeg,"a"); (lb, ub);
-//- stl_begin_iterator,"b"
+//- stl_begin_iterator,stl_begin_iterator
 
 let sms2, lb, ub = stl::bounds (sms1,stl::stlend,"x"); (lb, ub);
 //- stl_end_iterator,stl_end_iterator
@@ -880,22 +879,22 @@ let sms1 = stlmset ["a","b","c","d"]; members sms1;
 let sms2 = emptystlmset_with (>) (>) (==); members sms2;
 //- []
 
-do (insert sms2) sms1; members sms2;
+do (insert_elm sms2) sms1; members sms2;
 //- ["d","c","b","a"]
 
-erase sms2; do (insert sms2) (sms1,"a","d"); members sms2;
+erase sms2; do (insert_elm sms2) (sms1,"a","d"); members sms2;
 //- ["c","b","a"]
 
-erase sms2; do (insert sms2) (sms1,"b","x"); members sms2;
+erase sms2; do (insert_elm sms2) (sms1,"b","x"); members sms2;
 //- ["d","c","b"]
 
-erase sms2; do (insert sms2) (sms1,"0","0"); members sms2;
+erase sms2; do (insert_elm sms2) (sms1,"0","0"); members sms2;
 //- []
 
-erase sms2; do (insert sms2) (sms1,"x","x"); members sms2;
+erase sms2; do (insert_elm sms2) (sms1,"x","x"); members sms2;
 //- []
 
-erase sms2; do (insert sms2) (sms1,"d","x"); members sms2;
+erase sms2; do (insert_elm sms2) (sms1,"d","x"); members sms2;
 //- ["d"]
 
 filter (\k -> (ord k) mod 2) sms1;
@@ -1025,7 +1024,7 @@ member sms1 "e";
 //- 1
 
 rmfirst sms1;
-//- ()
+//- 1
 
 member sms1 "e";
 //- 1

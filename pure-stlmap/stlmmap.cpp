@@ -10,12 +10,10 @@ This software is is part of pure-stlmap, an addon to the Pure Programming
 Language (http://code.google.com/p/pure-lang/)
 .
 
-This software is distributed under a BSD-style license in the hope 
-//- ()
-
-hat it will be useful, but WITHOUT ANY WARRANTY; without even the implied
-warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-COPYING file included with th e purse-stlmap distribution package for details.
+This software is distributed under a BSD-style license in the hope that it
+will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the COPYING file
+included with th e purse-stlmap distribution package for details.
 
 */
 
@@ -514,29 +512,11 @@ int smm_size(px* tpl)
 
 px* smm_bounds(px* tpl)
 {
-  px** elems;
-  px *ub, *lb;
-  size_t tpl_sz;
-  pure_is_tuplev(tpl, &tpl_sz, &elems);
-  smm* smmp = get_smm_from_app(elems[0]);
-  pxhmmap &mp = smmp->mp;
-  int num_iters = tpl_sz-1;
-  switch (tpl_sz) {
-  case 1:
-    lb = smmbeg();
-    ub = smmend();
-    break;
-  case 2:
-    lb = iter_to_key( mp, get_iter(mp, elems[1], gi_lower) );
-    ub = iter_to_key( mp, get_iter(mp, elems[1], gi_upper) );
-    break;
-  case 3:
-    lb = iter_to_key( mp, get_iter(mp, elems[1], gi_lower) ); 
-    ub = iter_to_key( mp, get_iter(mp, elems[2], gi_upper) );     
-    break;
-  }
-  free(elems);
-  return pure_tuplel(2,lb,ub);
+  smm_iters itrs(tpl);
+  if (!itrs.is_valid) bad_argument;
+  pxhmmap& mp = itrs.smmp->mp;
+  return pure_tuplel(2,iter_to_key(mp, itrs.beg()),
+                       iter_to_key(mp, itrs.end())); 
 }
 
 int smm_member(smm* smmp, px* key)
@@ -559,7 +539,7 @@ int smm_member(smm* smmp, px* key)
   return ret;
 }
 
-px* smm_prev(smm* smmp, px* key)
+px* smm_prev_key(smm* smmp, px* key)
 {
   pxhmmap& mp = smmp->mp;
   if (mp.empty()) index_error(); 
@@ -584,7 +564,7 @@ px* smm_prev(smm* smmp, px* key)
   return iter_to_key(mp, prev);
 }
 
-px* smm_next(smm* smmp, px* key)
+px* smm_next_key(smm* smmp, px* key)
 {
   pxhmmap& mp = smmp->mp;
   if (mp.empty()) index_error(); 
@@ -601,30 +581,43 @@ px* smm_next(smm* smmp, px* key)
   return iter_to_key(mp, i);
 }
 
-px* smm_get(smm* smmp, px* key)
+
+px* smm_get_elm(smm* smmp, px* key, int what)
 {
   pxhmmap &mp = smmp->mp; 
   px* ret = 0;
-  pmmi beg;
-  if ( !smmp->get_cached_pmmi(key, beg) ) 
-    beg = get_iter(mp, key, gi_find);
-  if (beg != mp.end()) {
-    pair<pmmi,pmmi> lb_ub = mp.equal_range(beg->first);
-    beg = lb_ub.first;
+  pmmi i;
+  if ( !smmp->get_cached_pmmi(key, i) ) 
+    i = get_iter(mp, key, gi_find);  
+  if (i != mp.end()) {
+    pair<pmmi,pmmi> lb_ub = mp.equal_range(i->first);
+    pmmi beg = lb_ub.first;
     pmmi end = lb_ub.second;
     smmp->cache_pmmi(beg);
-    if (smmp->keys_only) {
+    if (what==stl_smm_key)
+      ret = i->first.pxp();
+    else if (smmp->keys_only)
       ret = pure_int( smm_get_size(smmp, beg, end) );
-    } else {
-      ret = listmap_aux(pure_int(0), beg, end, stl_smm_val);
+    else 
+      ret = listmap_aux(pure_int(0), beg, end, what);
+  }
+  else {
+    switch (what) {
+    case stl_smm_key:
+      ret = smmend();
+      break;
+    case stl_smm_val:
+    case stl_smm_both:
+     if (smmp->keys_only) 
+        ret = pure_int(0);
+      else
+        ret = pure_listl(0);
+      break;
     }
   }
-  else if (smmp->keys_only)
-    ret =  pure_int(0);
-  else 
-    ret = pure_listl(0);
   return ret;
 }
+
 
 bool smm_includes(px* tpl1, px* tpl2)
 {
@@ -738,46 +731,6 @@ px* smm_update(smm* smmp, px* key, px* val)
   return val;
 }
 
-px* smm_first(px* tpl)
-{
-  smm_iters itrs(tpl);
-  if ( !itrs.is_valid ) bad_argument();
-  pmmi b = itrs.beg();
-  if (b != itrs.end())
-    return itrs.smmp->keys_only ? smm_pair_to_key(*b) : smm_pair_to_rocket(*b);
-  index_error();
-}
-
-px* smm_last(px* tpl)
-{
-  smm_iters itrs(tpl);
-  if ( !itrs.is_valid ) bad_argument();
-  pmmi e = itrs.end();
-  if (itrs.beg() != e--)
-    return itrs.smmp->keys_only ? smm_pair_to_key(*e) : smm_pair_to_rocket(*e);
-  index_error();
-}
-
-void smm_rmfirst(px* tpl)
-{
-  smm_iters itrs(tpl);
-  if (!itrs.is_valid) bad_argument();
-  if ( itrs.beg() != itrs.end() )
-    itrs.smmp->erase(itrs.beg());
-  else
-    index_error();
-}
-
-void smm_rmlast(px* tpl)
-{
-  smm_iters itrs(tpl);
-  if (!itrs.is_valid) bad_argument();
-  if ( itrs.beg() != itrs.end() )
-    itrs.smmp->erase(--itrs.end());
-  else
-    index_error();
-}
-
 void smm_insert_elm(smm* smmp, px* kv)
 {
   if ( !insert_aux(smmp, kv) ) bad_argument();
@@ -861,16 +814,6 @@ px* smm_update_vals_xs(smm* smmp, px* k, px* src)
   }
   return pure_int(i);
 }
-
-// FIX
-// void smm_replace_vals_stlvec(smm* smmp, px* tpl)
-// {
-//   sv_iters itrs(tpl);
-//   if (!itrs.is_valid || itrs.num_iters != 2) bad_argument();
-//   pxhmmap& mp = smmp->mp;
-//   for (svi i = itrs.beg(); i!=itrs.end(); i++)
-//     if ( !insert_aux(smmp, i->pxp()) ) bad_argument();
-// }
 
 int smm_erase(px* tpl)
 {

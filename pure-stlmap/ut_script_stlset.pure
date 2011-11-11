@@ -88,7 +88,7 @@ ss1!"a";
 ss1!"e";
 //- 1
 
-insert ss1 "a"; insert ss1 "x"; members ss1;
+insert_elm ss1 "a"; insert_elm ss1 "x"; members ss1;
 //- ["a","b","c","d","e","x"]
 
 catch err (ss1!"y");
@@ -148,10 +148,10 @@ let k5 = next_key ss1 k4; k5;
 //- stl_end_iterator
 
 catch id $ next_key ss1 ke; 
-//- out_of_bounds
+//- stl_end_iterator
 
 catch id $ next_key ss1 k5; 
-//- out_of_bounds
+//- stl_end_iterator
 
 //*** Members, first, last *********************************************
 
@@ -209,7 +209,7 @@ last (ss1,stl::stlbeg,"x");
 last (ss1,"0",stl::stlend);
 //- "y"
 
-//*** insert ***********************************************************
+//*** insert_elm ***********************************************************
 
 let ss1 = stlset ["a","b","c","d","e"]; members ss1; 
 //- ["a","b","c","d","e"]
@@ -217,7 +217,7 @@ let ss1 = stlset ["a","b","c","d","e"]; members ss1;
 let ss2 = stlset ["k","l","m"]; members ss2;
 //- ["k","l","m"]
 
-insert ss1 "a"; members ss1; 
+insert_elm ss1 "a"; members ss1; 
 //- ["a","b","c","d","e"]
 
 insert_elms ss1 ["a","f"]; members ss1; 
@@ -244,7 +244,7 @@ insert_elms ss1 (ss2,"k","m"); members ss1;
 insert_elms ss1 (ss2,"k",stl::stlend); members ss1;
 //- ["a","b","c","d","e","f","g","k","l","m"]
 
-catch id (insert ss1 ("e"=>5)); //can't compare string to rocket
+catch id (insert_elm ss1 ("e"=>5)); //can't compare string to rocket
 //- failed_cond
 
 //*** Range specifications - corner cases *******************************
@@ -359,7 +359,7 @@ erase ss1; members ss1;
 stl::null ss1;
 //- 1
 
-insert ss1 "e"; members ss1;
+insert_elm ss1 "e"; members ss1;
 //- ["e"]
 
 stl::null ss1;
@@ -441,58 +441,58 @@ let ss8 = stlset ["a","b","c","e"];
 let ss9 = emptystlset;
 //- ()
 
-less ss1 ss1;
+ss1 < ss1;
 //- 0
 
-less ss1 ss2;
+ss1 < ss2;
 //- 0
 
-less ss1 ss3;
+ss1 < ss3;
 //- 1
 
-less ss1 ss4;
+ss1 < ss4;
 //- 0
 
-less ss1 ss5;
+ss1 < ss5;
 //- 1
 
-less ss1 ss6;
+ss1 < ss6;
 //- 1
 
-less ss1 ss7;
+ss1 < ss7;
 //- 1
 
-less ss1 ss8;
+ss1 < ss8;
 //- 1
 
-less ss1 ss9;
+ss1 < ss9;
 //- 0
 
-less ss2 ss1;
+ss2 < ss1;
 //- 1
 
-less ss3 ss1;
+ss3 < ss1;
 //- 0
 
-less ss4 ss1;
+ss4 < ss1;
 //- 1
 
-less ss5 ss1;
+ss5 < ss1;
 //- 0
 
-less ss6 ss1;
+ss6 < ss1;
 //- 0
 
-less ss7 ss1;
+ss7 < ss1;
 //- 0
 
-less ss8 ss1;
+ss8 < ss1;
 //- 0
 
-less ss9 ss1;
+ss9 < ss1;
 //- 1
 
-less ss9 ss9;
+ss9 < ss9;
 //- 0
 
 //*** equal *************************************************************
@@ -515,28 +515,28 @@ let ss5 = stlset ["a","b","d","e","f"];
 let ss6 = emptystlset;
 //- ()
 
-equal ss1 ss1;
+ss1 == ss1;
 //- 1
 
-equal ss1 ss2;
+ss1 == ss2;
 //- 0
 
-equal ss1 ss3;
+ss1 == ss3;
 //- 0
 
-equal ss1 ss4;
+ss1 == ss4;
 //- 0
 
-equal ss1 ss5;
+ss1 == ss5;
 //- 0
 
-equal ss1 ss6;
+ss1 == ss6;
 //- 0
 
-equal ss6 ss6;
+ss6 == ss6;
 //- 1
 
-equal ss2 ss1;
+ss2 == ss1;
 //- 0
 
 //*** operators ==, ~=, <, <=, >, >= *************************************
@@ -635,7 +635,7 @@ let ss2, lb, up = stl::bounds (ss1,"a"); (lb, up);
 //- stl_begin_iterator,"b"
 
 let ss2, lb, up = stl::bounds (ss1,"a1"); (lb, up);
-//- "b","b"
+//- stl_end_iterator,stl_end_iterator
 
 let ss2, lb, ub = stl::bounds (ss1,"b"); (lb, ub);
 //- "b","c"
@@ -650,16 +650,16 @@ let ss2, lb, up = stl::bounds (ss1,"0","x"); (lb, up);
 //- stl_begin_iterator,stl_end_iterator
 
 let ss2, lb, up = stl::bounds (ss1,"x","a"); (lb, up);
-//- stl_end_iterator,"b"
+//- stl_end_iterator,stl_end_iterator
 
 let ss2, lb, ub = stl::bounds (ss1,"a","b"); (lb, ub);
-//- stl_begin_iterator,"c"
+//- stl_begin_iterator,"b"
 
 members (ss2, lb, ub);
-//- ["a","b"]
+//- ["a"]
 
 let ss2, lb, up = stl::bounds (ss1,stl::stlbeg,"a"); (lb, up);
-//- stl_begin_iterator,"b"
+//- stl_begin_iterator,stl_begin_iterator
 
 let ss2, lb, up = stl::bounds (ss1,stl::stlend,"x"); (lb, up);
 //- stl_end_iterator,stl_end_iterator
@@ -801,22 +801,22 @@ let ss1 = stlset ["a","b","c","d"]; members ss1;
 let ss2 = emptystlset_with (>) (>) (==); members ss2;
 //- []
 
-do (insert ss2) ss1; members ss2;
+do (insert_elm ss2) ss1; members ss2;
 //- ["d","c","b","a"]
 
-erase ss2; do (insert ss2) (ss1,"a","d"); members ss2;
+erase ss2; do (insert_elm ss2) (ss1,"a","d"); members ss2;
 //- ["c","b","a"]
 
-erase ss2; do (insert ss2) (ss1,"b","x"); members ss2;
+erase ss2; do (insert_elm ss2) (ss1,"b","x"); members ss2;
 //- ["d","c","b"]
 
-erase ss2; do (insert ss2) (ss1,"0","0"); members ss2;
+erase ss2; do (insert_elm ss2) (ss1,"0","0"); members ss2;
 //- []
 
-erase ss2; do (insert ss2) (ss1,"x","x"); members ss2;
+erase ss2; do (insert_elm ss2) (ss1,"x","x"); members ss2;
 //- []
 
-erase ss2; do (insert ss2) (ss1,"d","x"); members ss2;
+erase ss2; do (insert_elm ss2) (ss1,"d","x"); members ss2;
 //- ["d"]
 
 filter (\k -> (ord k) mod 2) ss1;
@@ -950,7 +950,7 @@ member ss1 "e";
 //- 1
 
 rmfirst ss1;
-//- ()
+//- 1
 
 member ss1 "e";
 //- 1

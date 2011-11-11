@@ -131,11 +131,11 @@ let k4 = next_key sm1 k3; k4;
 let k5 = next_key sm1 k4; k5;
 //- stl_end_iterator
 
-catch id $ next_key sm1 ke; 
-//- out_of_bounds
+catch id $ next_key sm1 ke;
+//- stl_end_iterator
 
 catch id $ next_key sm1 k5; 
-//- out_of_bounds
+//- stl_end_iterator
 
 //*** Members, keys, vals, first, last ********************************
 
@@ -241,7 +241,7 @@ let sm2 = stlmap {"k"=>11,"l"=>12,"m"=>13}; members sm2;
 //- ["k"=>11,"l"=>12,"m"=>13]
 
 // Update existing elements
-insert sm1 ("a"=>10); members sm1; 
+insert_elm sm1 ("a"=>10); members sm1; 
 //- ["a"=>10,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
 insert_elms sm1 ["a"=>11,"f"=>6]; members sm1; 
@@ -268,7 +268,7 @@ insert_elms sm1 (sm2,"k","m"); members sm1;
 insert_elms sm1 (sm2,"k",stl::stlend); members sm1;
 //- ["a"=>12,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7,"k"=>11,"l"=>12,"m"=>13]
 
-catch id (insert sm1 ("e")); //can only insert rocket pairs
+catch id (insert_elm sm1 ("e")); //can only insert rocket pairs
 //- bad_argument
 
 //*** Range specifications - corner cases *******************************
@@ -386,7 +386,7 @@ erase sm1; members sm1;
 stl::null sm1;
 //- 1
 
-insert sm1 ("e"=>5); members sm1;
+insert_elm sm1 ("e"=>5); members sm1;
 //- ["e"=>5]
 
 stl::null sm1;
@@ -474,40 +474,40 @@ let sm5 = stlmap ["a"=>1,"b"=>2,"d"=>4,"e"=>4];
 let sm6 = emptystlmap;
 //- ()
 
-less sm1 sm1;
+sm1 < sm1;
 //- 0
 
-less sm1 sm2;
+sm1 < sm2;
 //- 0
 
-less sm1 sm3;
+sm1 < sm3;
 //- 1
 
-less sm1 sm4;
+sm1 < sm4;
 //- 0
 
-less sm1 sm5;
+sm1 < sm5;
 //- 1
 
-less sm1 sm6;
+sm1 < sm6;
 //- 0
 
-less sm2 sm1;
+sm2 < sm1;
 //- 0
 
-less sm3 sm1;
+sm3 < sm1;
 //- 0
 
-less sm4 sm1;
+sm4 < sm1;
 //- 1
 
-less sm5 sm1;
+sm5 < sm1;
 //- 0
 
-less sm6 sm1;
+sm6 < sm1;
 //- 1
 
-less sm6 sm6;
+sm6 < sm6;
 //- 0
 
 //*** equal ******************************************************
@@ -539,58 +539,58 @@ let sm8 = stlmap ["a"=>1,"b"=>2,"c"=>3,"e"=>5];
 let sm9 = emptystlmap;
 //- ()
 
-equal sm1 sm1;
+sm1 == sm1;
 //- 1
 
-equal sm1 sm2;
+sm1 == sm2;
 //- 0
 
-equal sm1 sm3;
+sm1 == sm3;
 //- 0
 
-equal sm1 sm4;
+sm1 == sm4;
 //- 0
 
-equal sm1 sm5;
+sm1 == sm5;
 //- 0
 
-equal sm1 sm6;
+sm1 == sm6;
 //- 0
 
-equal sm1 sm7;
+sm1 == sm7;
 //- 0
 
-equal sm1 sm8;
+sm1 == sm8;
 //- 0
 
-equal sm1 sm9;
+sm1 == sm9;
 //- 0
 
-equal sm2 sm1;
+sm2 == sm1;
 //- 0
 
-equal sm3 sm1;
+sm3 == sm1;
 //- 0
 
-equal sm4 sm1;
+sm4 == sm1;
 //- 0
 
-equal sm5 sm1;
+sm5 == sm1;
 //- 0
 
-equal sm6 sm1;
+sm6 == sm1;
 //- 0
 
-equal sm7 sm1;
+sm7 == sm1;
 //- 0
 
-equal sm8 sm1;
+sm8 == sm1;
 //- 0
 
-equal sm9 sm1;
+sm9 == sm1;
 //- 0
 
-equal sm9 sm9;
+sm9 == sm9;
 //- 1
 
 //*** operators *********************************************************
@@ -688,7 +688,7 @@ let sm2, lb, up = stl::bounds (sm1,"a"); (lb, up);
 //- stl_begin_iterator,"b"
 
 let sm2, lb, up = stl::bounds (sm1,"a1"); (lb, up);
-//- "b","b"
+//- stl_end_iterator,stl_end_iterator
 
 let sm2, lb, ub = stl::bounds (sm1,"b"); (lb, ub);
 //- "b","c"
@@ -703,15 +703,15 @@ let sm2, lb, up = stl::bounds (sm1,"0","x"); (lb, up);
 //- stl_begin_iterator,stl_end_iterator
 
 let sm2, lb, up = stl::bounds (sm1,"x","a"); (lb, up);
-//- stl_end_iterator,"b"
+//- stl_end_iterator,stl_end_iterator
 
 let sm2, lb, ub = stl::bounds (sm1,"a","b"); (lb, ub);
-//- stl_begin_iterator,"c"
+//- stl_begin_iterator,"b"
 
 members (sm2, lb, ub);
-//- ["a"=>1,"b"=>1]
+//- ["a"=>1]
 
-let sm2, lb, up = stl::bounds (sm1,stl::stlbeg,"a"); (lb, up);
+let sm2, lb, up = stl::bounds (sm1,stl::stlbeg,"b"); (lb, up);
 //- stl_begin_iterator,"b"
 
 let sm2, lb, up = stl::bounds (sm1,stl::stlend,"x"); (lb, up);
@@ -1022,7 +1022,7 @@ sm1!"e";
 //- 5
 
 rmfirst sm1;
-//- ()
+//- 1
 
 sm1!"e";
 //- 5

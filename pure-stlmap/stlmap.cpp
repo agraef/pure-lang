@@ -190,7 +190,6 @@ static px* listmap_aux(px* fun, pmi b, pmi e, int what)
   return res;  
 }
 
-
 /*** stlmap members  ***********************************************/
 
 stlmap::stlmap(px* cmp, px* val_cmp, px* val_eql, bool keyonly):
@@ -381,7 +380,7 @@ sm_iters::sm_iters(px* pmi_tuple)
     end_it = begin_it;
 }
 
-/*** Functions for map<pxh,pxh,pxh_pred2> *******************************/
+/*** Pure interface support functions  *************************************/
 
 sm* sm_make_empty(px* comp, px* v_comp, px* v_eql, int keys_only)
 {
@@ -444,7 +443,6 @@ bool sm_equal(px* tpl1, px* tpl2)
     pure_throw(e);
   }
 }
-
 
 px* sm_make_vector(px* tpl) 
 {
@@ -510,29 +508,11 @@ int sm_size(px* tpl)
 
 px* sm_bounds(px* tpl)
 {
-  px** elems;
-  px *ub, *lb;
-  size_t tpl_sz;
-  pure_is_tuplev(tpl, &tpl_sz, &elems);
-  sm* smp = get_sm_from_app(elems[0]);
-  pxhmap &mp = smp->mp;
-  int num_iters = tpl_sz-1;
-  switch (tpl_sz) {
-  case 1:
-    lb = smbeg();
-    ub = smend();
-    break;
-  case 2:
-    lb = iter_to_key( mp, get_iter(mp, elems[1], gi_lower) );
-    ub = iter_to_key( mp, get_iter(mp, elems[1], gi_upper) );
-    break;
-  case 3:
-    lb = iter_to_key( mp, get_iter(mp, elems[1], gi_lower) ); 
-    ub = iter_to_key( mp, get_iter(mp, elems[2], gi_upper) );     
-    break;
-  }
-  free(elems);
-  return pure_tuplel(2,lb,ub);
+  sm_iters itrs(tpl);
+  if (!itrs.is_valid) bad_argument;
+  pxhmap& mp = itrs.smp->mp;
+  return pure_tuplel(2,iter_to_key(mp, itrs.beg()),
+                       iter_to_key(mp, itrs.end())); 
 }
 
 int sm_member(sm* smp, px* key)
@@ -555,14 +535,14 @@ int sm_member(sm* smp, px* key)
   return ret;
 }
 
-px* sm_prev(sm* smp, px* key)
+px* sm_prev_key(sm* smp, px* key)
 {
   pxhmap& mp = smp->mp;
   if (mp.empty()) index_error();
   pmi i = mp.end();
   if ( !smp->get_cached_pmi(key,i) )
     i = smp->find(key);
-  if ( i == mp.begin() || i==mp.end() && key != smend())
+  if ( i == mp.begin() || i==mp.end() && key != smend() )
     index_error();
   else
     i--;
@@ -570,22 +550,19 @@ px* sm_prev(sm* smp, px* key)
   return iter_to_key(mp, i);
 }
 
-px* sm_next(sm* smp, px* key)
+px* sm_next_key(sm* smp, px* key)
 {
   pxhmap& mp = smp->mp;
   pmi i = mp.end();
   if (mp.empty()) index_error();
   if ( !smp->get_cached_pmi(key,i) )
     i = smp->find(key);
-  if ( i == mp.end() )
-    index_error();
-  else
-    i++;
+  if ( i != mp.end() ) i++;
   smp->cache_pmi(i);
   return iter_to_key(mp, i);
 }
 
-px* sm_get(sm* smp, px* key)
+px* sm_get_elm(sm* smp, px* key, int what)
 {
   pxhmap &mp = smp->mp; 
   px* ret = 0;
@@ -594,14 +571,41 @@ px* sm_get(sm* smp, px* key)
     i = get_iter(mp, key, gi_find);  
   if (i != mp.end()) {
     smp->cache_pmi(i);
-    ret = smp->keys_only ? pure_int(1) : i->second.pxp();
+    switch (what) {
+    case stl_sm_key:
+      ret = i->first.pxp();
+      break;
+    case stl_sm_val:
+      ret = smp->keys_only ? pure_int(1) : i->second.pxp();
+      break;
+    case stl_sm_both:
+      ret = smp->keys_only ? i->first.pxp() : sm_pair_to_rocket(*i);
+    }
   }
-  else if (smp->keys_only)
-    return pure_int(0);
-  else if (smp->has_dflt)
-    ret = smp->dflt.pxp();
-  else
-    index_error();
+  else {
+    switch (what) {
+    case stl_sm_key:
+      ret = smend();
+      break;
+    case stl_sm_val:
+      if (smp->keys_only) 
+        ret = pure_int(0);
+      else if (smp->has_dflt)
+        ret = smp->dflt.pxp();
+      else
+        index_error();
+      break;
+    case stl_sm_both:
+      if (smp->keys_only) 
+        ret = pure_int(0);
+      else if (smp->has_dflt)
+        ret = pair_to_rocket(i->first.pxp(), smp->dflt.pxp());
+      else
+        index_error();
+      break;
+      return smp->keys_only ? i->first.pxp(): sm_pair_to_rocket(*i);
+    }
+  }
   return ret;
 }
 
@@ -664,7 +668,7 @@ sm* sm_setop(int op, px* tpl1, px* tpl2)
                                itrs2.beg(), itrs2.end(),
                                inserter(mp, mp.end()), mp.value_comp());
       break;
-    otherwise:
+    default:
       bad_argument();
     }
     return res;
@@ -685,7 +689,7 @@ px* sm_update_with(sm* smp, px* key, px* unaryfun)
   if (smp->keys_only) return 0; // fail for sets
   if (!smp->has_dflt)
     failed_cond();
-  px* old_val = sm_get(smp,key);
+  px* old_val = sm_get_elm(smp,key,stl_sm_val);
   px* exception = 0;
   px* new_val = pure_appxl(unaryfun, &exception, 1, old_val);
   if (exception) pure_throw(exception);
@@ -694,45 +698,6 @@ px* sm_update_with(sm* smp, px* key, px* unaryfun)
   return new_val;
 }
 
-px* sm_first(px* tpl)
-{
-  sm_iters itrs(tpl);
-  if ( !itrs.is_valid ) bad_argument();
-  pmi b = itrs.beg();
-  if (b != itrs.end())
-    return itrs.smp->keys_only ? sm_pair_to_key(*b) : sm_pair_to_rocket(*b);
-  index_error();
-}
-
-px* sm_last(px* tpl)
-{
-  sm_iters itrs(tpl);
-  if ( !itrs.is_valid ) bad_argument();
-  pmi e = itrs.end();
-  if (itrs.beg() != e--)
-    return itrs.smp->keys_only ? sm_pair_to_key(*e) : sm_pair_to_rocket(*e);
-  index_error();
-}
-
-void sm_rmfirst(px* tpl)
-{
-  sm_iters itrs(tpl);
-  if (!itrs.is_valid) bad_argument();
-  if ( itrs.beg() != itrs.end() )
-    itrs.smp->erase(itrs.beg());
-  else
-    index_error();
-}
-
-void sm_rmlast(px* tpl)
-{
-  sm_iters itrs(tpl);
-  if (!itrs.is_valid) bad_argument();
-  if ( itrs.beg() != itrs.end() )
-    itrs.smp->erase(--itrs.end());
-  else
-    index_error();
-}
 
 void sm_insert_elm(sm* smp, px* kv)
 {

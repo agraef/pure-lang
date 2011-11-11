@@ -31,13 +31,14 @@ type smit (STLMAP _, _);
 
 namespace stl;
 
-/*** C++ support *****************************************************/
+/*** C++ support ************************************************************/
 
 private extern void* sm_make_empty(expr* kcmp, expr* vcmp, expr* veql, int ko);
 private extern void  sm_delete(void* map);
 private extern bool  sm_is_set(expr* tpl);
 private extern expr* sm_set_default(void* map, expr* val);
 private extern expr* sm_get_default(void* map);
+private extern expr* sm_get_elm(void* map, expr* key, int what);
 private extern int   sm_equal(expr* tpl1, expr* tpl2);
 private extern int   sm_less(expr* tpl1, expr* tpl2);
 private extern bool  sm_includes(expr* it1, expr* it2);
@@ -47,19 +48,14 @@ private extern void* sm_make_stlvec(expr* tpl);
 private extern int   sm_size(expr* tpl);
 private extern expr* sm_bounds(expr* tpl);
 private extern int   sm_member(void* map, expr* key);
-private extern expr* sm_next(void* map, expr* key);
-private extern expr* sm_prev(void* map, expr* key);
-private extern expr* sm_get(void* map, expr* key);
-private extern expr* sm_first(expr* tpl);
-private extern expr* sm_last(expr* tpl);
+private extern expr* sm_next_key(void* map, expr* key);
+private extern expr* sm_prev_key(void* map, expr* key);
 private extern expr* sm_update(void* map, expr* key, expr* val);
 private extern expr* sm_update_with(void* map, expr* key, expr* unaryfun);
 private extern void  sm_insert_elm(void* map, expr* kv);
 private extern void  sm_insert_elms_xs(void* map, expr* src);
 private extern void  sm_insert_elms_stlvec(void* map, expr* tpl);
 private extern void  sm_insert_elms_stlmap(void* map, expr* tpl);
-private extern void  sm_rmfirst(expr* tpl);
-private extern void  sm_rmlast(expr* tpl);
 private extern int   sm_erase(expr* it);
 private extern int   sm_erase_if (expr* pred, expr* it);
 private extern int   sm_clear(void* map);
@@ -75,12 +71,13 @@ extern bool stl_sm_trace_enabled() = sm_trace_enabled;
 
 /*** Helpers **************************************************************/
 
-private sm_keys sm_vals sm_both sm_union sm_difference
-  sm_intersection sm_symmetric_difference sm_wrap sm_wrap_sv;
+private sm_key sm_val sm_elm 
+  sm_union sm_difference sm_intersection sm_symmetric_difference 
+  sm_wrap sm_wrap_sv sm_less sm_equal;
 
-const sm_keys = 1;
-const sm_vals = 2;
-const sm_both = 3;
+const sm_key = 1;
+const sm_val = 2;
+const sm_elm = 3;
 
 const sm_merge = 1;
 const sm_union = 2;
@@ -89,21 +86,14 @@ const sm_intersection = 4;
 const sm_symmetric_difference = 5;
 
 sm_wrap m = STLMAP (sentry sm_delete m);
+
 sm_wrap_sv m = STLVEC (sentry sm_delete m);
 
 both_sets it1 it2 = sm_is_set it1 && sm_is_set it2;
 
 both_maps it1 it2 = ~sm_is_set it1 && ~sm_is_set it2;
 
-/*** Public functions for stlmap and stlset ******************************/
-
-::stlvec it::smit = sm_wrap_sv $ sm_make_stlvec it;
-
-vector it::smit = sm_make_vector it;
-
-(::!) (STLMAP m) key = sm_get m key;
-
-(::#) sm::stlmap = sm_size sm;
+/*** Accessors, modifiers and observers ********************************/
 
 size it::smit = sm_size it;
 
@@ -111,41 +101,31 @@ set_default sm@(STLMAP m) val = sm_set_default m val if ~sm_is_set sm;
 
 get_default sm@(STLMAP m) = sm_get_default m; // returns (bool, default)
 
-null it::smit = sm_size it == 0; // use empty
-
 empty it::smit = sm_size it == 0;
 
 bounds (STLMAP m) = (STLMAP m), stlbeg, stlend;
 
 bounds it@(STLMAP m, _) = (STLMAP m), sm_bounds it;
 
+::next_key sm@(STLMAP m) key = sm_next_key m key;
+
+::prev_key sm@(STLMAP m) key = sm_prev_key m key;
+
 ::member (STLMAP m) key = sm_member m key;
 
-::members it::smit = sm_listmap 0 it sm_both; 
+::find_elm what (STLMAP m) key = sm_get_elm m key what;
 
-::next_key sm@(STLMAP m) key = sm_next m key;
+::stlvec it::smit = sm_wrap_sv $ sm_make_stlvec it;
 
-::prev_key sm@(STLMAP m) key = sm_prev m key;
+::insert_elm sm@(STLMAP m) rk = sm_insert_elm m rk;
 
-// ::list sm::stlmap = members sm;  // use members
+::insert_elms sm@(STLMAP m) xs::list = sm_insert_elms_xs m xs;
 
-::first it::smit = sm_first it;
+::insert_elms sm@(STLMAP m) xs::matrix = sm_insert_elms_xs m xs;
 
-::last it::smit = sm_last it;
+::insert_elms sm@(STLMAP m) it::smit = sm_insert_elms_stlmap m it;
 
-::rmfirst it::smit = sm_rmfirst it;
-
-::rmlast it::smit = sm_rmlast it;
-
-::insert sm@(STLMAP m) rk = sm_insert_elm m rk $$ sm;
-
-::insert_elms sm@(STLMAP m) xs::list = sm_insert_elms_xs m xs $$ sm;
-
-::insert_elms sm@(STLMAP m) xs::matrix = sm_insert_elms_xs m xs $$ sm;
-
-::insert_elms sm@(STLMAP m) it::smit = sm_insert_elms_stlmap m it $$ sm;
-
-::insert_elms sm@(STLMAP m) it::svit = sm_insert_elms_stlvec m it $$ sm;
+::insert_elms sm@(STLMAP m) it::svit = sm_insert_elms_stlvec m it;
 
 ::erase sm@(STLMAP m) = sm_clear m;
 
@@ -153,109 +133,12 @@ bounds it@(STLMAP m, _) = (STLMAP m), sm_bounds it;
 
 ::erase_if pred it::smit = sm_erase_if pred it;
 
-::delete sm::stlmap k = sm_erase (sm,k);
+::update sm@(STLMAP m) key x = sm_update m key x $$ sm if ~sm_is_set sm;
 
-::delete_all sm::stlmap k = sm_erase (sm,k);
+::update_with f sm@(STLMAP m) key x = 
+  sm_update_with m key (f x) if ~sm_is_set sm;
 
-::delete_if pred sm::stlmap k = sm_erase_if pred (sm,k);
-
-::equal it1::smit it2::smit = sm_equal it1 it2 
-  if both_maps it1 it2 || both_sets it1 it2;
-
-::less it1::smit it2::smit = sm_less it1 it2 
-  if both_maps it1 it2 || both_sets it1 it2;
-
-(::==) sm1::stlmap sm2::stlmap = ::equal sm1 sm2;
-
-(::~=) sm1::stlmap sm2::stlmap = ~::equal sm1 sm2;
-
-(::<) it1::smit it2::smit = ::less it1 it2;
-
-(::<=) it1::smit it2::smit = ~::less it2 it1;
-
-(::>) it1::smit it2::smit = ::less it2 it1;
-
-(::>=) it1::smit it2::smit = ~::less it1 it2;
-
-::map f it::smit = sm_listmap f it sm_both; // => sm_key for sets
-
-::listmap f it::smit = sm_listmap f it sm_both;
-
-::catmap f it::smit = sm_listcatmap f it sm_both;
-
-::foldl f x it::smit = sm_foldl f x it;
-
-::foldl1 f it::smit = sm_foldl1 f it;
-
-::foldr f x it::smit = sm_foldr f x it;
-
-::foldr1 f it::smit = sm_foldr1 f it;
-
-::do f it::smit = sm_foldl (\_ x->f x) () it $$ ();
-
-::filter p it::smit = sm_foldr f [] it with
-  f x xs = res when
-    res = case p x of
-      1 = x:xs;
-      0 = xs;
-      y = throw failed_cond;
-    end;
-  end;
-end;
-
-::rowmap f it::smit = rowcat (sm_listmap f it sm_both);
-
-::rowcatmap f it::smit = rowcat (sm_listmap f it sm_both);
-
-::colmap f it::smit = colcat (sm_listmap f it sm_both);
-
-::colcatmap f it::smit = colcat (sm_listmap f it sm_both);
-
-merge it1::smit it2::smit = 
-  sm_wrap $ sm_setop sm_merge it1 it2
-  if both_sets it1 it2 || both_maps it1 it2;
-
-set_union it1::smit it2::smit = 
-  sm_wrap $ sm_setop sm_union it1 it2
-  if both_sets it1 it2 || both_maps it1 it2;
-
-set_difference it1::smit it2::smit = 
-  sm_wrap $ sm_setop sm_difference it1 it2
-  if both_sets it1 it2 || both_maps it1 it2;
-
-set_intersection it1::smit it2::smit = 
-  sm_wrap $ sm_setop sm_intersection it1 it2
-  if both_sets it1 it2 || both_maps it1 it2;
-
-set_symmetric_difference it1::smit it2::smit = 
-  sm_wrap $ sm_setop sm_symmetric_difference it1 it2 
-  if both_sets it1 it2 || both_maps it1 it2;
-
-set_includes it1::smit it2::smit = sm_includes it1 it2 
-  if both_sets it1 it2 || both_maps it1 it2;
-
-(::+) it1::smit it2::smit = res when
-  res = ::stlmap it1;
-  ::insert_elms res it2;
-end if both_maps it1 it2;
-
-(::+) it1::smit it2::smit = set_union it1 it2 if both_sets it1 it2;
-
-(::-) it1::smit it2::smit = res when
-  res = stlmap it1;
-  do (::delete_val res) it2 
-end if both_maps it1 it2;
-
-(::-) it1::smit it2::smit = set_difference it1 it2 if both_sets it1 it2;
-
-(::*) it1::smit it2::smit = 
-  if size it1 < size it2 then it1 - (it1 -it2) else it2 - (it2 -it1)
-  if both_sets it1 it2 || both_maps it1 it2;
-
-(::/) it1::smit it2::smit = (it1 - it2) +  (it2 -it1)
-  if both_sets it1 it2 || both_maps it1 it2;
-
-/*** Functions for stlmap *******************************************/
+/***  Constructors *********************************************************/
 
 ::emptystlmap = sm_wrap $ sm_make_empty (<) (<) (==) 0;
 
@@ -282,28 +165,6 @@ end when
   sm = emptystlmap;  
 end;
 
-::delete_val sm::stlmap (k=>v) = 
-  sm_erase_if (\(_=>x)->x==v) (sm,k) if ~sm_is_set sm;
-
-::update sm@(STLMAP m) key x = sm_update m key x $$ sm if ~sm_is_set sm;
-
-::update_with f sm@(STLMAP m) key x = 
-  sm_update_with m key (f x) if ~sm_is_set sm;
-
-::keys it::smit = sm_listmap 0 it sm_keys if ~sm_is_set it;
-
-::vals it::smit = sm_listmap 0 it sm_vals if ~sm_is_set it;
-
-::map_keys f it::smit = sm_listmap f it sm_keys if ~sm_is_set it;
-
-::map_vals f it::smit = sm_listmap f it sm_vals if ~sm_is_set it;
-
-::catmap_keys f it::smit = sm_listcatmap f it sm_keys if ~sm_is_set it;;
-
-::catmap_vals f it::smit = sm_listcatmap f it sm_vals if ~sm_is_set it;
-
-/*** Functions for stlset ************************************************/
-
 ::emptystlset = sm_wrap $ sm_make_empty (<) (<) (==) 1;
 
 ::emptystlset_with kcmp vcmp veql = sm_wrap $ sm_make_empty kcmp vcmp veql 1;
@@ -322,4 +183,157 @@ end;
   sm = ::emptystlset;
   insert_elms sm it;
 end;
+
+/*** Operators *************************************************************/
+
+(::!) (STLMAP m) key = sm_get_elm m key sm_val;
+
+(::#) sm::stlmap = sm_size sm;
+
+(::==) sm1::stlmap sm2::stlmap = sm_equal sm1 sm2;
+
+(::~=) sm1::stlmap sm2::stlmap = ~sm_equal sm1 sm2;
+
+(::<) it1::smit it2::smit = sm_less it1 it2;
+
+(::<=) it1::smit it2::smit = ~sm_less it2 it1;
+
+(::>) it1::smit it2::smit = sm_less it2 it1;
+
+(::>=) it1::smit it2::smit = ~sm_less it1 it2;
+
+sm_equal it1::smit it2::smit = sm_equal it1 it2 
+  if both_maps it1 it2 || both_sets it1 it2;
+
+sm_less it1::smit it2::smit = sm_less it1 it2 
+  if both_maps it1 it2 || both_sets it1 it2;
+
+/** STL algorithms **********************************************************/
+
+merge it1::smit it2::smit = 
+  sm_wrap $ sm_setop sm_merge it1 it2
+  if both_sets it1 it2 || both_maps it1 it2;
+
+set_union it1::smit it2::smit = 
+  sm_wrap $ sm_setop sm_union it1 it2
+  if both_sets it1 it2 || both_maps it1 it2;
+
+set_difference it1::smit it2::smit = 
+  sm_wrap $ sm_setop sm_difference it1 it2
+  if both_sets it1 it2 || both_maps it1 it2;
+
+set_intersection it1::smit it2::smit = 
+  sm_wrap $ sm_setop sm_intersection it1 it2
+  if both_sets it1 it2 || both_maps it1 it2;
+
+set_symmetric_difference it1::smit it2::smit = 
+  sm_wrap $ sm_setop sm_symmetric_difference it1 it2 
+  if both_sets it1 it2 || both_maps it1 it2;
+
+set_includes it1::smit it2::smit = sm_includes it1 it2 
+  if both_sets it1 it2 || both_maps it1 it2;
+
+// add find adj ?? some others ??05
+
+/*** List interface functions *********************************************/
+
+::members it::smit = sm_listmap 0 it sm_elm; 
+
+::map f it::smit = sm_listmap f it sm_elm; // => sm_key for sets
+
+::listmap f it::smit = sm_listmap f it sm_elm;
+
+::catmap f it::smit = sm_listcatmap f it sm_elm;
+
+::foldl f x it::smit = sm_foldl f x it;
+
+::foldl1 f it::smit = sm_foldl1 f it;
+
+::foldr f x it::smit = sm_foldr f x it;
+
+::foldr1 f it::smit = sm_foldr1 f it;
+
+::do f it::smit = sm_foldl (\_ x->f x) () it $$ ();
+
+::filter p it::smit = sm_foldr f [] it with
+  f x xs = res when
+    res = case p x of
+      1 = x:xs;
+      0 = xs;
+      y = throw failed_cond;
+    end;
+  end;
+end;
+
+::keys it::smit = sm_listmap 0 it sm_key if ~sm_is_set it;
+
+::vals it::smit = sm_listmap 0 it sm_val if ~sm_is_set it;
+
+::map_keys f it::smit = sm_listmap f it sm_key if ~sm_is_set it;
+
+::map_vals f it::smit = sm_listmap f it sm_val if ~sm_is_set it;
+
+::catmap_keys f it::smit = sm_listcatmap f it sm_key if ~sm_is_set it;;
+
+::catmap_vals f it::smit = sm_listcatmap f it sm_val if ~sm_is_set it;
+
+/*** Vector interface functions ****************************************/
+
+vector it::smit = sm_make_vector it;
+
+::rowmap f it::smit = rowcat (sm_listmap f it sm_elm);
+
+::rowcatmap f it::smit = rowcat (sm_listmap f it sm_elm);
+
+::colmap f it::smit = colcat (sm_listmap f it sm_elm);
+
+::colcatmap f it::smit = colcat (sm_listmap f it sm_elm);
+
+/*** Pure dict and set emulation *****************************************/
+
+null it::smit = sm_size it == 0; // use empty, erroneous for smit
+
+::first it::smit = sm_get_elm m b sm_elm when STLMAP m,b,e = bounds it end;
+
+::last it::smit = sm_get_elm m (sm_prev_key m e) sm_elm 
+when STLMAP m,b,e = bounds it; end;
+
+//::list sm::stlmap = members sm;  // use members
+
+::insert sm@(STLMAP m) it::smit = sm_insert_elms_stlmap m it $$ sm;
+
+::rmfirst it::smit = sm_erase (sm,b) when sm,b,e = bounds it end;
+
+::rmlast it::smit = sm_erase (sm, ::prev_key sm e) when sm,b,e = bounds it end;
+
+::delete sm::stlmap k = sm_erase (sm,k);
+
+::delete_all sm::stlmap k = sm_erase (sm,k);
+
+::delete_if pred sm::stlmap k = sm_erase_if pred (sm,k);
+
+::delete_val sm::stlmap (k=>v) = 
+  sm_erase_if (\(_=>x)->x==v) (sm,k) if ~sm_is_set sm;
+
+(::+) it1::smit it2::smit = res when
+  res = ::stlmap it1;
+  ::insert_elms res it2;
+end if both_maps it1 it2;
+
+(::+) it1::smit it2::smit = set_union it1 it2 if both_sets it1 it2;
+
+(::-) it1::smit it2::smit = res when
+  res = stlmap it1;
+  do (::delete_val res) it2 
+end if both_maps it1 it2;
+
+(::-) it1::smit it2::smit = set_difference it1 it2 if both_sets it1 it2;
+
+(::*) it1::smit it2::smit = 
+  if size it1 < size it2 then it1 - (it1 -it2) else it2 - (it2 -it1)
+  if both_sets it1 it2 || both_maps it1 it2;
+
+(::/) it1::smit it2::smit = (it1 - it2) +  (it2 -it1)
+  if both_sets it1 it2 || both_maps it1 it2;
+
 
