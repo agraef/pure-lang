@@ -119,40 +119,6 @@ static bool pure_is_symbolic_vectorv(pure_expr *x, size_t *n, pure_expr ***xv)
 
 using namespace std;
 
-// Comparing Pure expressions. This is done using Pure's standard '<'
-// predicate, so this needs to be defined on all key values used in an orddict
-// (if not, a failed_cond Pure exception will be thrown).
-
-static bool less_than(pure_expr *x, pure_expr *y)
-{
-  // FIXME: These should be interpreter-local (maybe also TLD?).
-  static int32_t lt_sym = 0, failed_cond_sym = 0;
-  if (!lt_sym) lt_sym = pure_getsym("<");
-  if (!failed_cond_sym)
-    failed_cond_sym = pure_getsym("failed_cond");
-  assert(lt_sym > 0);
-  pure_expr *res = pure_appl(pure_symbol(lt_sym), 2, x, y);
-  int32_t rc;
-  if (!pure_is_int(res, &rc)) {
-    pure_freenew(res);
-    pure_throw((failed_cond_sym>0)?
-	       pure_symbol(failed_cond_sym):0);
-    return false;
-  }
-  pure_freenew(res);
-  return rc!=0;
-}
-
-namespace std {
-  template<>
-  struct less<pure_expr*> {
-    bool operator()(pure_expr* x, pure_expr* y) const
-    { return less_than(x, y); }
-  };
-}
-
-typedef map<pure_expr*,pure_expr*> myorddict;
-
 // A little helper class to keep track of interpreter-local data.
 
 template <class T>
@@ -179,6 +145,40 @@ T& ILS<T>::operator()()
   }
   return *ptr;
 }
+
+// Comparing Pure expressions. This is done using Pure's standard '<'
+// predicate, so this needs to be defined on all key values used in an orddict
+// (if not, a failed_cond Pure exception will be thrown).
+
+static bool less_than(pure_expr *x, pure_expr *y)
+{
+  static ILS<int32_t> _lt_sym = 0, _failed_cond_sym = 0;
+  int32_t &lt_sym = _lt_sym(), &failed_cond_sym = _failed_cond_sym();
+  if (!lt_sym) lt_sym = pure_getsym("<");
+  if (!failed_cond_sym)
+    failed_cond_sym = pure_getsym("failed_cond");
+  assert(lt_sym > 0);
+  pure_expr *res = pure_appl(pure_symbol(lt_sym), 2, x, y);
+  int32_t rc;
+  if (!pure_is_int(res, &rc)) {
+    pure_freenew(res);
+    pure_throw((failed_cond_sym>0)?
+	       pure_symbol(failed_cond_sym):0);
+    return false;
+  }
+  pure_freenew(res);
+  return rc!=0;
+}
+
+namespace std {
+  template<>
+  struct less<pure_expr*> {
+    bool operator()(pure_expr* x, pure_expr* y) const
+    { return less_than(x, y); }
+  };
+}
+
+typedef map<pure_expr*,pure_expr*> myorddict;
 
 // Runtime-configurable pretty-printing support.
 
