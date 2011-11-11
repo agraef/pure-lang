@@ -254,6 +254,33 @@ static bool hashdict_same(myhashdict *x, myhashdict *y)
   return true;
 }
 
+// Value comparisons. Note that, as of Pure 0.49, the stdlib dict checks
+// values for semantic equality and falls back to syntactic equality if it
+// isn't defined. We mimic this behaviour here.
+
+static bool eqsame(pure_expr *x, pure_expr *y)
+{
+  static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
+  if (!fno) fno = pure_getsym("==");
+  assert(fno > 0);
+  pure_expr *res = pure_appl(pure_symbol(fno), 2, x, y);
+  int32_t rc;
+  if (pure_is_int(res, &rc)) {
+    pure_freenew(res);
+    return rc!=0;
+  }
+  pure_freenew(res);
+  return same(x, y);
+}
+
+static inline bool eqchk(pure_expr *x, pure_expr *y)
+{
+  if (x != y && (!x || !y))
+    return false;
+  else
+    return eqsame(x, y);
+}
+
 // Pointer type tag.
 
 extern "C" int hashdict_tag(void)
@@ -351,7 +378,7 @@ extern "C" void hashdict_del(myhashdict *m, pure_expr *key)
 extern "C" void hashdict_del2(myhashdict *m, pure_expr *key, pure_expr *val)
 {
   myhashdict::iterator it = m->find(key);
-  if (it != m->end() && it->second && same(it->second, val)) {
+  if (it != m->end() && it->second && eqsame(it->second, val)) {
     pure_free(it->first);
     if (it->second) pure_free(it->second);
     m->erase(it);
@@ -373,7 +400,7 @@ extern "C" bool hashdict_member(myhashdict *m, pure_expr *key)
 extern "C" bool hashdict_member2(myhashdict *m, pure_expr *key, pure_expr *val)
 {
   myhashdict::iterator it = m->find(key);
-  return it != m->end() && it->second && same(it->second, val);
+  return it != m->end() && it->second && eqsame(it->second, val);
 }
 
 extern "C" bool hashdict_empty(myhashdict *m)
@@ -472,7 +499,7 @@ extern "C" void hashdict_clear(myhashdict *m)
 }
 
 // Equality. We do our own version here so that we can compare the associated
-// values using same() instead of ==. This might not be the most efficient
+// values using eqchk() instead of ==. This might not be the most efficient
 // implementation, so suggestions for improvement are welcome.
 
 static bool myequal(pair<pure_expr*,pure_expr*> x,
@@ -483,7 +510,7 @@ static bool myequal(pair<pure_expr*,pure_expr*> x,
   // supposed to be equal anyway.
   assert(same(x.first, y.first));
 #endif
-  return samechk(x.second, y.second);
+  return eqchk(x.second, y.second);
 }
 
 #include <tuple>
@@ -729,7 +756,7 @@ extern "C" void hashmdict_del2(myhashmdict *m, pure_expr *key, pure_expr *val)
 {
   pair<myhashmdict::iterator, myhashmdict::iterator> r = m->equal_range(key);
   for (myhashmdict::iterator it = r.first; it != r.second; ++it)
-    if (it->second && same(it->second, val)) {
+    if (it->second && eqsame(it->second, val)) {
       pure_free(it->first);
       if (it->second) pure_free(it->second);
       m->erase(it);
@@ -759,7 +786,7 @@ extern "C" bool hashmdict_member2(myhashmdict *m, pure_expr *key, pure_expr *val
 {
   pair<myhashmdict::iterator, myhashmdict::iterator> r = m->equal_range(key);
   for (myhashmdict::iterator it = r.first; it != r.second; ++it)
-    if (it->second && same(it->second, val))
+    if (it->second && eqsame(it->second, val))
       return true;
   return false;
 }

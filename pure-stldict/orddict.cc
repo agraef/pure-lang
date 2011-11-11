@@ -269,6 +269,33 @@ static bool orddict_same(myorddict *x, myorddict *y)
   return true;
 }
 
+// Value comparisons. Note that, as of Pure 0.49, the stdlib dict checks
+// values for semantic equality and falls back to syntactic equality if it
+// isn't defined. We mimic this behaviour here.
+
+static bool eqsame(pure_expr *x, pure_expr *y)
+{
+  static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
+  if (!fno) fno = pure_getsym("==");
+  assert(fno > 0);
+  pure_expr *res = pure_appl(pure_symbol(fno), 2, x, y);
+  int32_t rc;
+  if (pure_is_int(res, &rc)) {
+    pure_freenew(res);
+    return rc!=0;
+  }
+  pure_freenew(res);
+  return same(x, y);
+}
+
+static inline bool eqchk(pure_expr *x, pure_expr *y)
+{
+  if (x != y && (!x || !y))
+    return false;
+  else
+    return eqsame(x, y);
+}
+
 // Pointer type tag.
 
 extern "C" int orddict_tag(void)
@@ -366,7 +393,7 @@ extern "C" void orddict_del(myorddict *m, pure_expr *key)
 extern "C" void orddict_del2(myorddict *m, pure_expr *key, pure_expr *val)
 {
   myorddict::iterator it = m->find(key);
-  if (it != m->end() && it->second && same(it->second, val)) {
+  if (it != m->end() && it->second && eqsame(it->second, val)) {
     pure_free(it->first);
     if (it->second) pure_free(it->second);
     m->erase(it);
@@ -388,7 +415,7 @@ extern "C" bool orddict_member(myorddict *m, pure_expr *key)
 extern "C" bool orddict_member2(myorddict *m, pure_expr *key, pure_expr *val)
 {
   myorddict::iterator it = m->find(key);
-  return it != m->end() && it->second && same(it->second, val);
+  return it != m->end() && it->second && eqsame(it->second, val);
 }
 
 extern "C" bool orddict_empty(myorddict *m)
@@ -487,7 +514,7 @@ extern "C" void orddict_clear(myorddict *m)
 }
 
 // Equality. We do our own version here so that we can compare the associated
-// values using same() instead of ==. This might not be the most efficient
+// values using eqchk() instead of ==. This might not be the most efficient
 // implementation, so suggestions for improvement are welcome.
 
 static bool myequal(pair<pure_expr*,pure_expr*> x,
@@ -498,7 +525,7 @@ static bool myequal(pair<pure_expr*,pure_expr*> x,
   // supposed to be equal anyway.
   assert(!less_than(x.first, y.first) && !less_than(y.first, x.first));
 #endif
-  return samechk(x.second, y.second);
+  return eqchk(x.second, y.second);
 }
 
 #include <tuple>
@@ -709,7 +736,7 @@ extern "C" void ordmdict_del2(myordmdict *m, pure_expr *key, pure_expr *val)
 {
   pair<myordmdict::iterator, myordmdict::iterator> r = m->equal_range(key);
   for (myordmdict::iterator it = r.first; it != r.second; ++it)
-    if (it->second && same(it->second, val)) {
+    if (it->second && eqsame(it->second, val)) {
       pure_free(it->first);
       if (it->second) pure_free(it->second);
       m->erase(it);
@@ -739,7 +766,7 @@ extern "C" bool ordmdict_member2(myordmdict *m, pure_expr *key, pure_expr *val)
 {
   pair<myordmdict::iterator, myordmdict::iterator> r = m->equal_range(key);
   for (myordmdict::iterator it = r.first; it != r.second; ++it)
-    if (it->second && same(it->second, val))
+    if (it->second && eqsame(it->second, val))
       return true;
   return false;
 }
