@@ -200,7 +200,8 @@ static const char *orddict_str(myorddict *m)
      to just construct the real term on the fly and have str() do all the hard
      work for us. */
   int32_t fsym = omsym()?omsym():pure_sym("orddict");
-  pure_expr *f = pure_const(fsym), *x = pure_applc(f, orddict_list(m));
+  pure_expr *f = pure_const(fsym), *xs = orddict_list(m),
+    *x = pure_applc(pure_new(f), pure_new(xs));
   buf = str(x);
   pure_freenew(x);
   /* Note that in the case of an outfix symbol we now have something like LEFT
@@ -605,7 +606,8 @@ static const char *ordmdict_str(myordmdict *m)
   static char *buf = 0; // TLD
   if (buf) free(buf);
   int32_t fsym = ommsym()?ommsym():pure_sym("ordmdict");
-  pure_expr *f = pure_const(fsym), *x = pure_applc(f, ordmdict_list(m));
+  pure_expr *f = pure_const(fsym), *xs = ordmdict_list(m),
+    *x = pure_applc(pure_new(f), pure_new(xs));
   buf = str(x);
   pure_freenew(x);
   if (ommsym() && pure_sym_other(ommsym())) {

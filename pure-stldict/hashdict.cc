@@ -185,7 +185,8 @@ static const char *hashdict_str(myhashdict *m)
      to just construct the real term on the fly and have str() do all the hard
      work for us. */
   int32_t fsym = hmsym()?hmsym():pure_sym("hashdict");
-  pure_expr *f = pure_const(fsym), *x = pure_applc(f, hashdict_list(m));
+  pure_expr *f = pure_const(fsym), *xs = hashdict_list(m),
+    *x = pure_applc(pure_new(f), pure_new(xs));
   buf = str(x);
   pure_freenew(x);
   /* Note that in the case of an outfix symbol we now have something like LEFT
@@ -625,7 +626,8 @@ static const char *hashmdict_str(myhashmdict *m)
   static char *buf = 0; // TLD
   if (buf) free(buf);
   int32_t fsym = hmmsym()?hmmsym():pure_sym("hashmdict");
-  pure_expr *f = pure_const(fsym), *x = pure_applc(f, hashmdict_list(m));
+  pure_expr *f = pure_const(fsym), *xs = hashmdict_list(m),
+    *x = pure_applc(pure_new(f), pure_new(xs));
   buf = str(x);
   pure_freenew(x);
   if (hmmsym() && pure_sym_other(hmmsym())) {
