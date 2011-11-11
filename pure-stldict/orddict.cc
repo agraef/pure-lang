@@ -496,7 +496,7 @@ static bool myequal(pair<pure_expr*,pure_expr*> x,
 #ifdef DEBUG
   // It should be enough to just compare the values here, as the keys are
   // supposed to be equal anyway.
-  assert(same(x.first, y.first));
+  assert(!less_than(x.first, y.first) && !less_than(y.first, x.first));
 #endif
   return samechk(x.second, y.second);
 }
