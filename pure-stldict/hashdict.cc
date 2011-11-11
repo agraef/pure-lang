@@ -567,6 +567,156 @@ extern "C" bool hashdict_equal(myhashdict *x, myhashdict *y)
   return true;
 }
 
+// Iterator API.
+
+struct myhashdict_iterator {
+  // The iterator itself. This should always be the first member so that a
+  // pointer to the iterator object can also be passed as a pointer to an
+  // ordinary C++ iterator.
+  myhashdict::iterator it;
+  // We also keep a reference to the original Pure expression holding the
+  // container, so that it doesn't get garbage-collected while the iterator is
+  // still in use.
+  pure_expr *x;
+  myhashdict_iterator(pure_expr *_x) : x(pure_new(_x)) {}
+  myhashdict_iterator(const myhashdict_iterator& y)
+    : it(y.it), x(pure_new(y.x)) {}
+  ~myhashdict_iterator() { pure_free(x); }
+};
+
+extern "C" int hashdict_iterator_tag(void)
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("hashdict_iterator*");
+  return t;
+}
+
+static pure_expr *make_hashdict_iterator(myhashdict_iterator *it)
+{
+  static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
+  if (!fno) fno = pure_sym("hashdict_iterator_free");
+  return pure_sentry(pure_symbol(fno),
+		     pure_tag(hashdict_iterator_tag(), pure_pointer(it)));
+}
+
+extern "C" pure_expr *hashdict_begin(pure_expr *x)
+{
+  myhashdict *m;
+  if (pure_is_pointer(x, (void**)&m) &&
+      pure_check_tag(hashdict_tag(), x)) {
+    myhashdict_iterator *it = new myhashdict_iterator(x);
+    it->it = m->begin();
+    return make_hashdict_iterator(it);
+  } else
+    return 0;
+}
+
+extern "C" pure_expr *hashdict_end(pure_expr *x)
+{
+  myhashdict *m;
+  if (pure_is_pointer(x, (void**)&m) &&
+      pure_check_tag(hashdict_tag(), x)) {
+    myhashdict_iterator *it = new myhashdict_iterator(x);
+    it->it = m->end();
+    return make_hashdict_iterator(it);
+  } else
+    return 0;
+}
+
+extern "C" pure_expr *hashdict_find(pure_expr *x, pure_expr *y)
+{
+  myhashdict *m;
+  if (pure_is_pointer(x, (void**)&m) &&
+      pure_check_tag(hashdict_tag(), x)) {
+    myhashdict_iterator *it = new myhashdict_iterator(x);
+    it->it = m->find(y);
+    return make_hashdict_iterator(it);
+  } else
+    return 0;
+}
+
+extern "C" pure_expr *hashdict_find2(pure_expr *x, pure_expr *key,
+				     pure_expr *val)
+{
+  myhashdict *m;
+  if (pure_is_pointer(x, (void**)&m) &&
+      pure_check_tag(hashdict_tag(), x)) {
+    myhashdict_iterator *it = new myhashdict_iterator(x);
+    it->it = m->find(key);
+    if (it->it != m->end() && !eqchk(it->it->second, val))
+      it->it = m->end();
+    return make_hashdict_iterator(it);
+  } else
+    return 0;
+}
+
+extern "C" void hashdict_iterator_free(myhashdict_iterator *it)
+{
+  delete it;
+}
+
+extern "C" pure_expr *hashdict_iterator_hashdict(myhashdict_iterator *it)
+{
+  return it->x;
+}
+
+extern "C" pure_expr *hashdict_iterator_next(myhashdict_iterator *it)
+{
+  myhashdict *m = (myhashdict*)it->x->data.p;
+  if (it->it == m->end()) return 0;
+  myhashdict_iterator *jt = new myhashdict_iterator(*it);
+  jt->it++;
+  return make_hashdict_iterator(jt);
+}
+
+extern "C" pure_expr *hashdict_iterator_get(myhashdict_iterator *it)
+{
+  myhashdict *m = (myhashdict*)it->x->data.p;
+  if (it->it == m->end()) return 0;
+  if (it->it->second) {
+    static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
+    if (!fno) fno = pure_getsym("=>");
+    assert(fno > 0);
+    return pure_appl(pure_symbol(fno), 2, it->it->first, it->it->second);
+  } else
+    return it->it->first;
+}
+
+extern "C" pure_expr *hashdict_iterator_put(myhashdict_iterator *it,
+					    pure_expr *val)
+{
+  myhashdict *m = (myhashdict*)it->x->data.p;
+  if (it->it == m->end()) return 0;
+  if (it->it->second) pure_free(it->it->second);
+  it->it->second = pure_new(val);
+  return val;
+}
+
+extern "C" void hashdict_iterator_erase(myhashdict_iterator *it)
+{
+  myhashdict *m = (myhashdict*)it->x->data.p;
+  if (it->it == m->end()) return;
+  pure_free(it->it->first);
+  if (it->it->second) pure_free(it->it->second);
+  m->erase(it->it);
+}
+
+extern "C" bool hashdict_iterator_endp(myhashdict_iterator *it)
+{
+  myhashdict *m = (myhashdict*)it->x->data.p;
+  return it->it == m->end();
+}
+
+extern "C" bool hashdict_iterator_equal(myhashdict_iterator *it,
+					myhashdict_iterator *jt)
+{
+  myhashdict *mi = (myhashdict*)it->x->data.p;
+  myhashdict *mj = (myhashdict*)jt->x->data.p;
+  return mi == mj && it->it == jt->it;
+}
+
+// Bucket and hash policy API.
+
 extern "C" float hashdict_load_factor(myhashdict *m)
 {
   return m->load_factor();
@@ -911,6 +1061,156 @@ extern "C" bool hashmdict_equal(myhashmdict *x, myhashmdict *y)
     it = r1.second;
   }
   return true;
+}
+
+struct myhashmdict_iterator {
+  // The iterator itself. This should always be the first member so that a
+  // pointer to the iterator object can also be passed as a pointer to an
+  // ordinary C++ iterator.
+  myhashmdict::iterator it;
+  // We also keep a reference to the original Pure expression holding the
+  // container, so that it doesn't get garbage-collected while the iterator is
+  // still in use.
+  pure_expr *x;
+  myhashmdict_iterator(pure_expr *_x) : x(pure_new(_x)) {}
+  myhashmdict_iterator(const myhashmdict_iterator& y)
+    : it(y.it), x(pure_new(y.x)) {}
+  ~myhashmdict_iterator() { pure_free(x); }
+};
+
+extern "C" int hashmdict_iterator_tag(void)
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("hashmdict_iterator*");
+  return t;
+}
+
+static pure_expr *make_hashmdict_iterator(myhashmdict_iterator *it)
+{
+  static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
+  if (!fno) fno = pure_sym("hashmdict_iterator_free");
+  return pure_sentry(pure_symbol(fno),
+		     pure_tag(hashmdict_iterator_tag(), pure_pointer(it)));
+}
+
+extern "C" pure_expr *hashmdict_begin(pure_expr *x)
+{
+  myhashmdict *m;
+  if (pure_is_pointer(x, (void**)&m) &&
+      pure_check_tag(hashmdict_tag(), x)) {
+    myhashmdict_iterator *it = new myhashmdict_iterator(x);
+    it->it = m->begin();
+    return make_hashmdict_iterator(it);
+  } else
+    return 0;
+}
+
+extern "C" pure_expr *hashmdict_end(pure_expr *x)
+{
+  myhashmdict *m;
+  if (pure_is_pointer(x, (void**)&m) &&
+      pure_check_tag(hashmdict_tag(), x)) {
+    myhashmdict_iterator *it = new myhashmdict_iterator(x);
+    it->it = m->end();
+    return make_hashmdict_iterator(it);
+  } else
+    return 0;
+}
+
+extern "C" pure_expr *hashmdict_find(pure_expr *x, pure_expr *y)
+{
+  myhashmdict *m;
+  if (pure_is_pointer(x, (void**)&m) &&
+      pure_check_tag(hashmdict_tag(), x)) {
+    myhashmdict_iterator *it = new myhashmdict_iterator(x);
+    it->it = m->find(y);
+    return make_hashmdict_iterator(it);
+  } else
+    return 0;
+}
+
+extern "C" pure_expr *hashmdict_find2(pure_expr *x, pure_expr *key,
+				      pure_expr *val)
+{
+  myhashmdict *m;
+  if (pure_is_pointer(x, (void**)&m) &&
+      pure_check_tag(hashmdict_tag(), x)) {
+    myhashmdict_iterator *it = new myhashmdict_iterator(x);
+    pair<myhashmdict::iterator, myhashmdict::iterator> r = m->equal_range(key);
+    it->it = m->end();
+    for (myhashmdict::iterator jt = r.first; jt != r.second; ++jt)
+      if (jt->second && eqsame(jt->second, val)) {
+	it->it = jt;
+	break;
+      }
+    return make_hashmdict_iterator(it);
+  } else
+    return 0;
+}
+
+extern "C" void hashmdict_iterator_free(myhashmdict_iterator *it)
+{
+  delete it;
+}
+
+extern "C" pure_expr *hashmdict_iterator_hashmdict(myhashmdict_iterator *it)
+{
+  return it->x;
+}
+
+extern "C" pure_expr *hashmdict_iterator_next(myhashmdict_iterator *it)
+{
+  myhashmdict *m = (myhashmdict*)it->x->data.p;
+  if (it->it == m->end()) return 0;
+  myhashmdict_iterator *jt = new myhashmdict_iterator(*it);
+  jt->it++;
+  return make_hashmdict_iterator(jt);
+}
+
+extern "C" pure_expr *hashmdict_iterator_get(myhashmdict_iterator *it)
+{
+  myhashmdict *m = (myhashmdict*)it->x->data.p;
+  if (it->it == m->end()) return 0;
+  if (it->it->second) {
+    static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
+    if (!fno) fno = pure_getsym("=>");
+    assert(fno > 0);
+    return pure_appl(pure_symbol(fno), 2, it->it->first, it->it->second);
+  } else
+    return it->it->first;
+}
+
+extern "C" pure_expr *hashmdict_iterator_put(myhashmdict_iterator *it,
+					     pure_expr *val)
+{
+  myhashmdict *m = (myhashmdict*)it->x->data.p;
+  if (it->it == m->end()) return 0;
+  if (it->it->second) pure_free(it->it->second);
+  it->it->second = pure_new(val);
+  return val;
+}
+
+extern "C" void hashmdict_iterator_erase(myhashmdict_iterator *it)
+{
+  myhashmdict *m = (myhashmdict*)it->x->data.p;
+  if (it->it == m->end()) return;
+  pure_free(it->it->first);
+  if (it->it->second) pure_free(it->it->second);
+  m->erase(it->it);
+}
+
+extern "C" bool hashmdict_iterator_endp(myhashmdict_iterator *it)
+{
+  myhashmdict *m = (myhashmdict*)it->x->data.p;
+  return it->it == m->end();
+}
+
+extern "C" bool hashmdict_iterator_equal(myhashmdict_iterator *it,
+					 myhashmdict_iterator *jt)
+{
+  myhashmdict *mi = (myhashmdict*)it->x->data.p;
+  myhashmdict *mj = (myhashmdict*)jt->x->data.p;
+  return mi == mj && it->it == jt->it;
 }
 
 extern "C" float hashmdict_load_factor(myhashmdict *m)
