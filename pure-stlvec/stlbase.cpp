@@ -313,21 +313,21 @@ px* pxh_to_pxp(pxh h){return h.pxp();}
 
 px* stl_begin()
 {
-  return pure_symbol(pure_sym("stl_begin_iterator"));
+  return pure_symbol(pure_sym("stl::stlbeg"));
 }
 
 px* stl_end()
 {
-  return pure_symbol(pure_sym("stl_end_iterator"));
+  return pure_symbol(pure_sym("stl::stlend"));
 }
 
 px* stl_insert()
 {
-  return pure_symbol(pure_sym("stl_insert_iterator"));
+  return pure_symbol(pure_sym("stl::stlinsert"));
 }
 
 px* stl_back_insert()
 {
-  return pure_symbol(pure_sym("stl_back_insert_iterator"));
+  return pure_symbol(pure_sym("stl::stlback"));
 }
 

@@ -42,6 +42,12 @@ bool stl_sm_trace_enabled()
 
 /*** Helpers for stlmap.cpp only ************************************/
 
+// px* smbegx()
+// {
+//   cerr << "smbegx\n";
+//   return pure_symbol(pure_sym("stl::stlbegx"));
+// }
+
 static void set_kv(pmi i, px** k, px** v)
 {
   const pxh h_key = i->first;
@@ -303,6 +309,7 @@ static pmi get_iter(pxhmap& mp , px* key, int mode)
 
 static px* iter_to_key(const pxhmap& mp, const pmi& it)
 {
+  //cerr << "iter_to_key" << endl;
   if (it == mp.end()) return smend();
   if (it == mp.begin()) return smbeg();
   return it->first.pxp();
