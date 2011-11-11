@@ -51,6 +51,21 @@ extern expr* hashdict_tuple(hashdict*);
 extern expr* hashdict_vector(hashdict*);
 extern expr* hashdict_keys(hashdict*);
 extern expr* hashdict_vals(hashdict*);
+
+extern int hashdict_iterator_tag();
+extern expr *hashdict_begin(expr*);
+extern expr *hashdict_end(expr*);
+extern expr *hashdict_find(expr*, expr*);
+extern expr *hashdict_find2(expr*, expr*, expr*);
+extern void hashdict_iterator_free(hashdict_iterator*); // internal use only
+extern expr *hashdict_iterator_hashdict(hashdict_iterator*);
+extern expr *hashdict_iterator_next(hashdict_iterator*);
+extern expr *hashdict_iterator_get(hashdict_iterator*);
+extern expr *hashdict_iterator_put(hashdict_iterator*, expr*);
+extern void hashdict_iterator_erase(hashdict_iterator*);
+extern bool hashdict_iterator_endp(hashdict_iterator*);
+extern bool hashdict_iterator_equal(hashdict_iterator*, hashdict_iterator*);
+
 extern float hashdict_load_factor(hashdict *m);
 extern float hashdict_max_load_factor(hashdict *m);
 extern void hashdict_set_max_load_factor(hashdict *m, float x);
@@ -80,6 +95,21 @@ extern expr* hashmdict_tuple(hashmdict*);
 extern expr* hashmdict_vector(hashmdict*);
 extern expr* hashmdict_keys(hashmdict*);
 extern expr* hashmdict_vals(hashmdict*);
+
+extern int hashmdict_iterator_tag();
+extern expr *hashmdict_begin(expr*);
+extern expr *hashmdict_end(expr*);
+extern expr *hashmdict_find(expr*, expr*);
+extern expr *hashmdict_find2(expr*, expr*, expr*);
+extern void hashmdict_iterator_free(hashmdict_iterator*); // internal use only
+extern expr *hashmdict_iterator_hashmdict(hashmdict_iterator*);
+extern expr *hashmdict_iterator_next(hashmdict_iterator*);
+extern expr *hashmdict_iterator_get(hashmdict_iterator*);
+extern expr *hashmdict_iterator_put(hashmdict_iterator*, expr*);
+extern void hashmdict_iterator_erase(hashmdict_iterator*);
+extern bool hashmdict_iterator_endp(hashmdict_iterator*);
+extern bool hashmdict_iterator_equal(hashmdict_iterator*, hashmdict_iterator*);
+
 extern float hashmdict_load_factor(hashmdict *m);
 extern float hashmdict_max_load_factor(hashmdict *m);
 extern void hashmdict_set_max_load_factor(hashmdict *m, float x);
@@ -205,10 +235,98 @@ scanr f a m::hashdict = scanr f a (list m);
 scanr1 f m::hashdict = scanr1 f (list m) if ~null m;
 sort p m::hashdict = sort p (list m);
 
+/* Iterator API. These operations give direct access to C++ iterators on the
+   underlying STL container which let you query the elements and do basic
+   manipulations of the container. This may sometimes be more efficient than
+   using the standard container API if you're dealing with large containers.
+   It is also used internally to compute lazy member lists of containers, see
+   the 'stream' function below. Most of the operations are in the stldict
+   namespace in order to keep the global namespace clean.
+
+   The following operations are provided to create an iterator for a given
+   hashdict container.
+
+   - stldict::begin m, stldict::end m return iterators pointing to the
+     beginning and the end of the container. (Note that stldict::end *must*
+     always be specified in qualified form since 'end' is a keyword in the
+     Pure language.)
+
+   - stldict::find m x locates a key or specific key=>value pair x in the
+     container and returns an iterator pointing to the corresponding member,
+     or stldict::end m if m doesn't contain x.
+
+   Note that these operations return a new iterator object for each invocation.
+   Also, the created iterator object keeps track of the container it belongs
+   to, so that the container isn't garbage-collected while the iterator is
+   still being used. However, note that removing a member from the container
+   (using either delete or stldict::erase) invalidates all iterators pointing
+   to that member; the result of trying to access such an invalidated iterator
+   is undefined (most likely you'll get a segfault).
+
+   The following operations on iterators let you query and modify the contents
+   of the underlying container:
+
+   - hashdict i returns the hashdict to which i belongs.
+
+   - stldict::endp i checks whether the iterator i points to the end of the
+     container (i.e., past the last element).
+
+   - stldict::next i advances the iterator to the next element. Note that for
+     convenience, in contrast to the corresponding C++ operation this
+     operation is non-destructive. Thus it actually creates a *new* iterator
+     object, leaving the original iterator i unmodified. The operation fails
+     if i is already at the end of the container.
+
+   - stldict::get i retrieves the key=>val pair stored in the member pointed
+     to by i (or just the key if there is no associated value). The operation
+     fails if i is at the end of the container.
+
+   - stldict::put i y changes the value associated with the member pointed to
+     by i to y, and returns the new value y. The operation fails if i is at
+     the end of the container. Note that stldict::put only allows you to set
+     the associated value, not the key of the member.
+
+   - stldict::erase i removes the member pointed to by i (and invalidates i
+     and all other iterators pointing to this member). The operation fails if
+     i is at the end of the container.
+
+   - i == j and i ~= j test two iterators for equality (i.e., whether they
+     point to the same element). */
+
+let hashdict_iterator_t = hashdict_iterator_tag;
+type hashdict_iterator x::pointer = check_ptrtag hashdict_iterator_t x;
+hashdict_iteratorp x = pointerp x && check_ptrtag hashdict_iterator_t x;
+
+hashdict i::hashdict_iterator = hashdict_iterator_hashdict i;
+i::hashdict_iterator == j::hashdict_iterator = hashdict_iterator_equal i j;
+i::hashdict_iterator ~= j::hashdict_iterator = ~hashdict_iterator_equal i j;
+
+namespace stldict with
+begin m::hashdict = hashdict_begin m;
+stldict::end m::hashdict = hashdict_end m;
+find m::hashdict (x=>y) = hashdict_find2 m x y;
+find m::hashdict x = hashdict_find m x;
+endp i::hashdict_iterator = hashdict_iterator_endp i;
+next i::hashdict_iterator = hashdict_iterator_next i if ~endp i;
+get i::hashdict_iterator = hashdict_iterator_get i if ~endp i;
+put i::hashdict_iterator y = hashdict_iterator_put i y if ~endp i;
+erase i::hashdict_iterator = hashdict_iterator_erase i if ~endp i;
+end;
+
+/* Overload the standard library stream function so that it converts a
+   hashdict to a lazy list. This is usually more efficient than ordinary lists
+   since it allows you to visit the members of a hashdict without having to
+   keep the entire member list in memory. */
+
+using namespace stldict;
+stream m::hashdict = map get $ takewhile (\i -> ~endp i) $
+  iterate next $ begin m;
+using namespace;
+
 /* Special bucket and hash policy interface. These operations are useful to
    obtain performance-related information about the underlying hash table.
-   These are in the hashdict namespace in order to keep the global namespace
-   clean. */
+   They are specific to hashdicts and are thus provided in the special
+   hashdict namespace, in order to keep the global namespace clean. */
 
 namespace hashdict with
 load_factor m::hashdict = hashdict_load_factor m;
@@ -293,6 +411,31 @@ scanl1 f m::hashmdict = scanl1 f (list m) if ~null m;
 scanr f a m::hashmdict = scanr f a (list m);
 scanr1 f m::hashmdict = scanr1 f (list m) if ~null m;
 sort p m::hashmdict = sort p (list m);
+
+let hashmdict_iterator_t = hashmdict_iterator_tag;
+type hashmdict_iterator x::pointer = check_ptrtag hashmdict_iterator_t x;
+hashmdict_iteratorp x = pointerp x && check_ptrtag hashmdict_iterator_t x;
+
+hashmdict i::hashmdict_iterator = hashmdict_iterator_hashmdict i;
+i::hashmdict_iterator == j::hashmdict_iterator = hashmdict_iterator_equal i j;
+i::hashmdict_iterator ~= j::hashmdict_iterator = ~hashmdict_iterator_equal i j;
+
+namespace stldict with
+begin m::hashmdict = hashmdict_begin m;
+stldict::end m::hashmdict = hashmdict_end m;
+find m::hashmdict (x=>y) = hashmdict_find2 m x y;
+find m::hashmdict x = hashmdict_find m x;
+endp i::hashmdict_iterator = hashmdict_iterator_endp i;
+next i::hashmdict_iterator = hashmdict_iterator_next i if ~endp i;
+get i::hashmdict_iterator = hashmdict_iterator_get i if ~endp i;
+put i::hashmdict_iterator y = hashmdict_iterator_put i y if ~endp i;
+erase i::hashmdict_iterator = hashmdict_iterator_erase i if ~endp i;
+end;
+
+using namespace stldict;
+stream m::hashmdict = map get $ takewhile (\i -> ~endp i) $
+  iterate next $ begin m;
+using namespace;
 
 namespace hashdict with
 load_factor m::hashmdict = hashmdict_load_factor m;

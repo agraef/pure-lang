@@ -582,6 +582,154 @@ extern "C" bool orddict_equal(myorddict *x, myorddict *y)
   return true;
 }
 
+// Iterator API.
+
+struct myorddict_iterator {
+  // The iterator itself. This should always be the first member so that a
+  // pointer to the iterator object can also be passed as a pointer to an
+  // ordinary C++ iterator.
+  myorddict::iterator it;
+  // We also keep a reference to the original Pure expression holding the
+  // container, so that it doesn't get garbage-collected while the iterator is
+  // still in use.
+  pure_expr *x;
+  myorddict_iterator(pure_expr *_x) : x(pure_new(_x)) {}
+  myorddict_iterator(const myorddict_iterator& y)
+    : it(y.it), x(pure_new(y.x)) {}
+  ~myorddict_iterator() { pure_free(x); }
+};
+
+extern "C" int orddict_iterator_tag(void)
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("orddict_iterator*");
+  return t;
+}
+
+static pure_expr *make_orddict_iterator(myorddict_iterator *it)
+{
+  static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
+  if (!fno) fno = pure_sym("orddict_iterator_free");
+  return pure_sentry(pure_symbol(fno),
+		     pure_tag(orddict_iterator_tag(), pure_pointer(it)));
+}
+
+extern "C" pure_expr *orddict_begin(pure_expr *x)
+{
+  myorddict *m;
+  if (pure_is_pointer(x, (void**)&m) &&
+      pure_check_tag(orddict_tag(), x)) {
+    myorddict_iterator *it = new myorddict_iterator(x);
+    it->it = m->begin();
+    return make_orddict_iterator(it);
+  } else
+    return 0;
+}
+
+extern "C" pure_expr *orddict_end(pure_expr *x)
+{
+  myorddict *m;
+  if (pure_is_pointer(x, (void**)&m) &&
+      pure_check_tag(orddict_tag(), x)) {
+    myorddict_iterator *it = new myorddict_iterator(x);
+    it->it = m->end();
+    return make_orddict_iterator(it);
+  } else
+    return 0;
+}
+
+extern "C" pure_expr *orddict_find(pure_expr *x, pure_expr *y)
+{
+  myorddict *m;
+  if (pure_is_pointer(x, (void**)&m) &&
+      pure_check_tag(orddict_tag(), x)) {
+    myorddict_iterator *it = new myorddict_iterator(x);
+    it->it = m->find(y);
+    return make_orddict_iterator(it);
+  } else
+    return 0;
+}
+
+extern "C" pure_expr *orddict_find2(pure_expr *x, pure_expr *key,
+				    pure_expr *val)
+{
+  myorddict *m;
+  if (pure_is_pointer(x, (void**)&m) &&
+      pure_check_tag(orddict_tag(), x)) {
+    myorddict_iterator *it = new myorddict_iterator(x);
+    it->it = m->find(key);
+    if (it->it != m->end() && !eqchk(it->it->second, val))
+      it->it = m->end();
+    return make_orddict_iterator(it);
+  } else
+    return 0;
+}
+
+extern "C" void orddict_iterator_free(myorddict_iterator *it)
+{
+  delete it;
+}
+
+extern "C" pure_expr *orddict_iterator_orddict(myorddict_iterator *it)
+{
+  return it->x;
+}
+
+extern "C" pure_expr *orddict_iterator_next(myorddict_iterator *it)
+{
+  myorddict *m = (myorddict*)it->x->data.p;
+  if (it->it == m->end()) return 0;
+  myorddict_iterator *jt = new myorddict_iterator(*it);
+  jt->it++;
+  return make_orddict_iterator(jt);
+}
+
+extern "C" pure_expr *orddict_iterator_get(myorddict_iterator *it)
+{
+  myorddict *m = (myorddict*)it->x->data.p;
+  if (it->it == m->end()) return 0;
+  if (it->it->second) {
+    static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
+    if (!fno) fno = pure_getsym("=>");
+    assert(fno > 0);
+    return pure_appl(pure_symbol(fno), 2, it->it->first, it->it->second);
+  } else
+    return it->it->first;
+}
+
+extern "C" pure_expr *orddict_iterator_put(myorddict_iterator *it,
+					   pure_expr *val)
+{
+  myorddict *m = (myorddict*)it->x->data.p;
+  if (it->it == m->end()) return 0;
+  if (it->it->second) pure_free(it->it->second);
+  it->it->second = pure_new(val);
+  return val;
+}
+
+extern "C" void orddict_iterator_erase(myorddict_iterator *it)
+{
+  myorddict *m = (myorddict*)it->x->data.p;
+  if (it->it == m->end()) return;
+  pure_free(it->it->first);
+  if (it->it->second) pure_free(it->it->second);
+  m->erase(it->it);
+}
+
+extern "C" bool orddict_iterator_endp(myorddict_iterator *it)
+{
+  myorddict *m = (myorddict*)it->x->data.p;
+  return it->it == m->end();
+}
+
+extern "C" bool orddict_iterator_equal(myorddict_iterator *it,
+				       myorddict_iterator *jt)
+{
+  myorddict *mi = (myorddict*)it->x->data.p;
+  myorddict *mj = (myorddict*)jt->x->data.p;
+  return mi == mj && it->it == jt->it;
+}
+
 //////////////////////////////////////////////////////////////////////////////
 
 // multidicts: This is basically the same as above, with some minor
@@ -893,4 +1041,154 @@ extern "C" bool ordmdict_equal(myordmdict *x, myordmdict *y)
     it = r1.second;
   }
   return true;
+}
+
+struct myordmdict_iterator {
+  // The iterator itself. This should always be the first member so that a
+  // pointer to the iterator object can also be passed as a pointer to an
+  // ordinary C++ iterator.
+  myordmdict::iterator it;
+  // We also keep a reference to the original Pure expression holding the
+  // container, so that it doesn't get garbage-collected while the iterator is
+  // still in use.
+  pure_expr *x;
+  myordmdict_iterator(pure_expr *_x) : x(pure_new(_x)) {}
+  myordmdict_iterator(const myordmdict_iterator& y)
+    : it(y.it), x(pure_new(y.x)) {}
+  ~myordmdict_iterator() { pure_free(x); }
+};
+
+extern "C" int ordmdict_iterator_tag(void)
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("ordmdict_iterator*");
+  return t;
+}
+
+static pure_expr *make_ordmdict_iterator(myordmdict_iterator *it)
+{
+  static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
+  if (!fno) fno = pure_sym("ordmdict_iterator_free");
+  return pure_sentry(pure_symbol(fno),
+		     pure_tag(ordmdict_iterator_tag(), pure_pointer(it)));
+}
+
+extern "C" pure_expr *ordmdict_begin(pure_expr *x)
+{
+  myordmdict *m;
+  if (pure_is_pointer(x, (void**)&m) &&
+      pure_check_tag(ordmdict_tag(), x)) {
+    myordmdict_iterator *it = new myordmdict_iterator(x);
+    it->it = m->begin();
+    return make_ordmdict_iterator(it);
+  } else
+    return 0;
+}
+
+extern "C" pure_expr *ordmdict_end(pure_expr *x)
+{
+  myordmdict *m;
+  if (pure_is_pointer(x, (void**)&m) &&
+      pure_check_tag(ordmdict_tag(), x)) {
+    myordmdict_iterator *it = new myordmdict_iterator(x);
+    it->it = m->end();
+    return make_ordmdict_iterator(it);
+  } else
+    return 0;
+}
+
+extern "C" pure_expr *ordmdict_find(pure_expr *x, pure_expr *y)
+{
+  myordmdict *m;
+  if (pure_is_pointer(x, (void**)&m) &&
+      pure_check_tag(ordmdict_tag(), x)) {
+    myordmdict_iterator *it = new myordmdict_iterator(x);
+    it->it = m->find(y);
+    return make_ordmdict_iterator(it);
+  } else
+    return 0;
+}
+
+extern "C" pure_expr *ordmdict_find2(pure_expr *x, pure_expr *key,
+				     pure_expr *val)
+{
+  myordmdict *m;
+  if (pure_is_pointer(x, (void**)&m) &&
+      pure_check_tag(ordmdict_tag(), x)) {
+    myordmdict_iterator *it = new myordmdict_iterator(x);
+    pair<myordmdict::iterator, myordmdict::iterator> r = m->equal_range(key);
+    it->it = m->end();
+    for (myordmdict::iterator jt = r.first; jt != r.second; ++jt)
+      if (jt->second && eqsame(jt->second, val)) {
+	it->it = jt;
+	break;
+      }
+    return make_ordmdict_iterator(it);
+  } else
+    return 0;
+}
+
+extern "C" void ordmdict_iterator_free(myordmdict_iterator *it)
+{
+  delete it;
+}
+
+extern "C" pure_expr *ordmdict_iterator_ordmdict(myordmdict_iterator *it)
+{
+  return it->x;
+}
+
+extern "C" pure_expr *ordmdict_iterator_next(myordmdict_iterator *it)
+{
+  myordmdict *m = (myordmdict*)it->x->data.p;
+  if (it->it == m->end()) return 0;
+  myordmdict_iterator *jt = new myordmdict_iterator(*it);
+  jt->it++;
+  return make_ordmdict_iterator(jt);
+}
+
+extern "C" pure_expr *ordmdict_iterator_get(myordmdict_iterator *it)
+{
+  myordmdict *m = (myordmdict*)it->x->data.p;
+  if (it->it == m->end()) return 0;
+  if (it->it->second) {
+    static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
+    if (!fno) fno = pure_getsym("=>");
+    assert(fno > 0);
+    return pure_appl(pure_symbol(fno), 2, it->it->first, it->it->second);
+  } else
+    return it->it->first;
+}
+
+extern "C" pure_expr *ordmdict_iterator_put(myordmdict_iterator *it,
+					    pure_expr *val)
+{
+  myordmdict *m = (myordmdict*)it->x->data.p;
+  if (it->it == m->end()) return 0;
+  if (it->it->second) pure_free(it->it->second);
+  it->it->second = pure_new(val);
+  return val;
+}
+
+extern "C" void ordmdict_iterator_erase(myordmdict_iterator *it)
+{
+  myordmdict *m = (myordmdict*)it->x->data.p;
+  if (it->it == m->end()) return;
+  pure_free(it->it->first);
+  if (it->it->second) pure_free(it->it->second);
+  m->erase(it->it);
+}
+
+extern "C" bool ordmdict_iterator_endp(myordmdict_iterator *it)
+{
+  myordmdict *m = (myordmdict*)it->x->data.p;
+  return it->it == m->end();
+}
+
+extern "C" bool ordmdict_iterator_equal(myordmdict_iterator *it,
+					myordmdict_iterator *jt)
+{
+  myordmdict *mi = (myordmdict*)it->x->data.p;
+  myordmdict *mj = (myordmdict*)jt->x->data.p;
+  return mi == mj && it->it == jt->it;
 }
