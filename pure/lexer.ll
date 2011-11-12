@@ -1174,13 +1174,9 @@ static int32_t checktag(const char *s)
 {
   int32_t ret = 0;
   bool qual = strstr(s, "::") != 0;
-  const char *id = 0;
   interpreter& interp = *interpreter::g_interp;
   symbol* sym = interp.symtab.lookup(s);
-  if (sym && sym->prec == PREC_MAX && sym->fix != outfix) {
-    ret = sym->f;
-    id = sym->s.c_str();
-  }
+  if (sym && sym->prec == PREC_MAX && sym->fix != outfix) ret = sym->f;
   if (qual) return ret; // qualified symbol, must be declared already
   // We have an unqualified symbol. Either it is one of the built-in type
   // tags, or some other symbol (if necessary, we create the symbol on the fly
@@ -1197,8 +1193,13 @@ static int32_t checktag(const char *s)
     return EXPR::PTR;
   else if (strcmp(s, "matrix") == 0)
     return EXPR::MATRIX;
+  else if (ret && interp.typeenv.find(ret) != interp.typeenv.end())
+    // The symbol was found and is declared as a type symbol. Return it.
+    return ret;
   else {
-    sym = interp.symtab.sym(s);
+    // The symbol wasn't found, or it wasn't declared as a type symbol. Return
+    // a symbol from the global namespace.
+    sym = interp.symtab.sym(string("::")+s);
     if (sym)
       return sym->f;
     else
