@@ -520,6 +520,8 @@ static bool myequal(pair<pure_expr*,pure_expr*> x,
 // My gcc 4.5 doesn't have this function in its C++ library, use the reference
 // implementation instead.
 
+#include <functional>
+
 template<class ForwardIterator1, class ForwardIterator2, class BinaryPredicate>
 static bool is_permutation(ForwardIterator1 first, ForwardIterator1 last,
 			   ForwardIterator2 d_first, BinaryPredicate p)
@@ -532,9 +534,11 @@ static bool is_permutation(ForwardIterator1 first, ForwardIterator1 last,
     ForwardIterator2 d_last = d_first;
     std::advance(d_last, std::distance(first, last));
     for (ForwardIterator1 i = first; i != last; ++i) {
-      if (i != std::find(first, i, *i)) continue; // already counted this *i
-      auto m = std::count(d_first, d_last, *i);
-      if (m==0 || std::count(i, last, *i) != m) {
+      using std::placeholders::_1;
+      if (i != std::find_if(first, i, std::bind(p, _1, *i)))
+	continue; // already counted this *i
+      auto m = std::count_if(d_first, d_last, std::bind(p, _1, *i));
+      if (m==0 || std::count_if(i, last, std::bind(p, _1, *i)) != m) {
 	return false;
       }
     }
