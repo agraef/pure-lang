@@ -26,14 +26,14 @@ STLMMAP = 'STLMMAP;
 // stlmmap types
 type stlmset (STLMMAP _);
 type stlmmap (STLMMAP _);
-type smmit (STLMMAP _);
-type smmit (STLMMAP _, _);
+type smmrng (STLMMAP _);
+type smmrng (STLMMAP _, _);
 
 namespace stl;
 
 /*** C++ support *****************************************************/
 
-private extern void* smm_make_empty(expr* kc, expr* vcmp, expr* veql, int ko);
+private extern expr* smm_make_empty(expr* kc, expr* vcmp, expr* veql, int ko);
 private extern void  smm_delete(void* mmap);
 private extern bool  smm_is_set(expr* tpl);
 private extern expr* smm_set_default(void* mmap, expr* val);
@@ -41,8 +41,8 @@ private extern expr* smm_get_default(void* mmap);
 private extern expr* smm_get_elm(void* map, expr* key, int what);
 private extern int   smm_equal(expr* tpl1, expr* tpl2);
 private extern int   smm_less(expr* tpl1, expr* tpl2);
-private extern bool  smm_includes(expr* it1, expr* it2);
-private extern void* smm_setop(int op, expr* it1, expr* it2);
+private extern bool  smm_includes(expr* rng1, expr* rng2);
+private extern expr* smm_setop(int op, expr* rng1, expr* rng2);
 private extern expr* smm_make_vector(expr* tpl);
 private extern void* smm_make_stlvec(expr* tpl);
 private extern int   smm_size(expr* tpl);
@@ -57,16 +57,16 @@ private extern int   smm_insert_elms_xs(void* mmap, expr* src);
 private extern int   smm_insert_elms_stlvec(void* mmap, expr* tpl);
 private extern int   smm_insert_elms_stlmmap(void* mmap, expr* tpl);
 private extern int   smm_clear(void* mmap);
-private extern int   smm_erase(expr* it);
-private extern int   smm_erase_if(expr* pred, expr* it);
-private extern int   smm_erase_first(expr* it);
-private extern int   smm_erase_first_if(expr* pred, expr* it);
-private extern expr* smm_listmap(expr* fun, expr* it, int what);
-private extern expr* smm_listcatmap(expr* fun, expr* it, int what);
-private extern expr* smm_foldl(expr* fun, expr* val, expr* it);
-private extern expr* smm_foldl1(expr* fun, expr* it);
-private extern expr* smm_foldr(expr* fun, expr* val, expr* it);
-private extern expr* smm_foldr1(expr* fun, expr* it);
+private extern int   smm_erase(expr* rng);
+private extern int   smm_erase_if(expr* pred, expr* rng);
+private extern int   smm_erase_first(expr* rng);
+private extern int   smm_erase_first_if(expr* pred, expr* rng);
+private extern expr* smm_listmap(expr* fun, expr* rng, int what);
+private extern expr* smm_listcatmap(expr* fun, expr* rng, int what);
+private extern expr* smm_foldl(expr* fun, expr* val, expr* rng);
+private extern expr* smm_foldl1(expr* fun, expr* rng);
+private extern expr* smm_foldr(expr* fun, expr* val, expr* rng);
+private extern expr* smm_foldr1(expr* fun, expr* rng);
 
 extern void stl_set_smm_trace(bool enable) = set_smm_trace;
 extern bool stl_smm_trace_enabled() = smm_trace_enabled;
@@ -91,23 +91,23 @@ smm_wrap mm = STLMMAP (sentry smm_delete mm);
 
 smm_wrap_sv mm = STLVEC (sentry smm_delete mm);
 
-both_msets it1 it2 = smm_is_set it1 && smm_is_set it2;
+both_msets rng1 rng2 = smm_is_set rng1 && smm_is_set rng2;
 
-both_mmaps it1 it2 = ~smm_is_set it1 && ~smm_is_set it2;
+both_mmaps rng1 rng2 = ~smm_is_set rng1 && ~smm_is_set rng2;
 
 /*** Accessors, modifiers and observers ********************************/
 
-size it::smmit = smm_size it;
+size rng::smmrng = smm_size rng;
 
 set_default smm@(STLMMAP mm) val = smm_set_default mm val;
 
 get_default smm@(STLMMAP mm) = smm_get_default mm;
 
-empty it::smmit = smm_size it == 0;
+empty rng::smmrng = smm_size rng == 0;
 
 bounds (STLMMAP mm) = (STLMMAP mm), stlbeg, stlend;
 
-bounds it@(STLMMAP mm, _) = (STLMMAP mm), smm_bounds it;
+bounds rng@(STLMMAP mm, _) = (STLMMAP mm), smm_bounds rng;
 
 ::next_key smm@(STLMMAP mm) key = smm_next_key mm key;
 
@@ -117,7 +117,7 @@ bounds it@(STLMMAP mm, _) = (STLMMAP mm), smm_bounds it;
 
 ::find_elm what (STLMMAP mm) key = smm_get_elm mm key what;
 
-::stlvec it::smmit = smm_wrap_sv $ smm_make_stlvec it;
+::stlvec rng::smmrng = smm_wrap_sv $ smm_make_stlvec rng;
 
 ::insert_elm smm@(STLMMAP mm) rk = smm_insert_elm mm rk $$ smm;
 
@@ -125,15 +125,15 @@ bounds it@(STLMMAP mm, _) = (STLMMAP mm), smm_bounds it;
 
 ::insert_elms smm@(STLMMAP mm) xs::matrix = smm_insert_elms_xs mm xs $$ smm;
 
-::insert_elms smm@(STLMMAP mm) it::smmit = smm_insert_elms_stlmmap mm it $$ smm;
+::insert_elms smm@(STLMMAP mm) rng::smmrng = smm_insert_elms_stlmmap mm rng $$ smm;
 
-::insert_elms smm@(STLMMAP mm) it::svit = smm_insert_elms_stlvec mm it $$ smm;
+::insert_elms smm@(STLMMAP mm) rng::svit = smm_insert_elms_stlvec mm rng $$ smm;
 
 ::erase smm@(STLMMAP mm) = smm_clear mm;
 
-::erase it::smmit = smm_erase it;
+::erase rng::smmrng = smm_erase rng;
 
-::erase_if pred it::smmit = smm_erase_if pred it;
+::erase_if pred rng::smmrng = smm_erase_if pred rng;
 
 ::update smm@(STLMMAP mm) key x = smm_update mm key x $$ smm if ~smm_is_set smm;
 
@@ -150,14 +150,14 @@ bounds it@(STLMMAP mm, _) = (STLMMAP mm), smm_bounds it;
   insert_elms smm xs;
 end if listp xs || matrixp xs;
 
-::stlmmap it::svit = smm when
+::stlmmap rng::svit = smm when
   smm = ::emptystlmmap;
-  insert_elms smm it;
+  insert_elms smm rng;
 end;
 
-::stlmmap it::smmit = smm when
+::stlmmap rng::smmrng = smm when
   smm = ::emptystlmmap;
-  insert_elms smm it;
+  insert_elms smm rng;
 end;
 
 ::mkstlmmap y ks::list = do add ks $$ smm with
@@ -175,14 +175,14 @@ end;
   insert_elms smm xs;
 end if listp xs || matrixp xs;
 
-::stlmset it::svit = smm when
+::stlmset rng::svit = smm when
   smm = ::emptystlmset;
-  insert_elms smm it;
+  insert_elms smm rng;
 end;
 
-::stlmset it::smmit = smm when
+::stlmset rng::smmrng = smm when
   smm = ::emptystlmset;
-  insert_elms smm it;
+  insert_elms smm rng;
 end;
 
 /*** Operators *************************************************************/
@@ -195,68 +195,68 @@ end;
 
 (::~=) smm1::stlmmap smm2::stlmmap = ~smm_equal smm1 smm2;
 
-(::<) it1::smmit it2::smmit = smm_less it1 it2;
+(::<) rng1::smmrng rng2::smmrng = smm_less rng1 rng2;
 
-(::<=) it1::smmit it2::smmit = ~smm_less it2 it1;
+(::<=) rng1::smmrng rng2::smmrng = ~smm_less rng2 rng1;
 
-(::>) it1::smmit it2::smmit = smm_less it2 it1;
+(::>) rng1::smmrng rng2::smmrng = smm_less rng2 rng1;
 
-(::>=) it1::smmit it2::smmit = ~smm_less it1 it2;
+(::>=) rng1::smmrng rng2::smmrng = ~smm_less rng1 rng2;
 
-smm_equal it1::smmit it2::smmit = smm_equal it1 it2 
-  if both_mmaps it1 it2 || both_msets it1 it2;
+smm_equal rng1::smmrng rng2::smmrng = smm_equal rng1 rng2 
+  if both_mmaps rng1 rng2 || both_msets rng1 rng2;
 
-smm_less it1::smmit it2::smmit = smm_less it1 it2 
-  if both_mmaps it1 it2 || both_msets it1 it2;
+smm_less rng1::smmrng rng2::smmrng = smm_less rng1 rng2 
+  if both_mmaps rng1 rng2 || both_msets rng1 rng2;
 
 /** STL algorithms **********************************************************/
 
-merge it1::smmit it2::smmit = 
-  smm_wrap $ smm_setop smm_merge it1 it2
-  if both_msets it1 it2 || both_mmaps it1 it2;
+merge rng1::smmrng rng2::smmrng = 
+  smm_wrap $ smm_setop smm_merge rng1 rng2
+  if both_msets rng1 rng2 || both_mmaps rng1 rng2;
 
-set_union it1::smmit it2::smmit = 
-  smm_wrap $ smm_setop smm_union it1 it2
-  if both_msets it1 it2 || both_mmaps it1 it2;
+set_union rng1::smmrng rng2::smmrng = 
+  smm_wrap $ smm_setop smm_union rng1 rng2
+  if both_msets rng1 rng2 || both_mmaps rng1 rng2;
 
-set_difference it1::smmit it2::smmit = 
-  smm_wrap $ smm_setop smm_difference it1 it2
-  if both_msets it1 it2 || both_mmaps it1 it2;
+set_difference rng1::smmrng rng2::smmrng = 
+  smm_wrap $ smm_setop smm_difference rng1 rng2
+  if both_msets rng1 rng2 || both_mmaps rng1 rng2;
 
-set_intersection it1::smmit it2::smmit = 
-  smm_wrap $ smm_setop smm_intersection it1 it2
-  if both_msets it1 it2 || both_mmaps it1 it2;
+set_intersection rng1::smmrng rng2::smmrng = 
+  smm_wrap $ smm_setop smm_intersection rng1 rng2
+  if both_msets rng1 rng2 || both_mmaps rng1 rng2;
 
-set_symmetric_difference it1::smmit it2::smmit = 
-  smm_wrap $ smm_setop smm_symmetric_difference it1 it2 
-  if both_msets it1 it2 || both_mmaps it1 it2;
+set_symmetric_difference rng1::smmrng rng2::smmrng = 
+  smm_wrap $ smm_setop smm_symmetric_difference rng1 rng2 
+  if both_msets rng1 rng2 || both_mmaps rng1 rng2;
 
-set_includes it1::smmit it2::smmit = smm_includes it1 it2 
-  if both_msets it1 it2 || both_mmaps it1 it2;
+set_includes rng1::smmrng rng2::smmrng = smm_includes rng1 rng2 
+  if both_msets rng1 rng2 || both_mmaps rng1 rng2;
 
 // add find adj ?? some others ??
 
 /*** List interface functions *********************************************/
 
-::members it::smmit = smm_listmap 0 it smm_elm;
+::members rng::smmrng = smm_listmap 0 rng smm_elm;
 
-::map f it::smmit = smm_listmap f it smm_elm;
+::map f rng::smmrng = smm_listmap f rng smm_elm;
 
-::listmap f it::smmit = smm_listmap f it smm_elm;
+::listmap f rng::smmrng = smm_listmap f rng smm_elm;
 
-::catmap f it::smmit = smm_listcatmap f it smm_elm;
+::catmap f rng::smmrng = smm_listcatmap f rng smm_elm;
 
-::foldl f x it::smmit = smm_foldl f x it;
+::foldl f x rng::smmrng = smm_foldl f x rng;
 
-::foldl1 f it::smmit = smm_foldl1 f it;
+::foldl1 f rng::smmrng = smm_foldl1 f rng;
 
-::foldr f x it::smmit = smm_foldr f x it;
+::foldr f x rng::smmrng = smm_foldr f x rng;
 
-::foldr1 f it::smmit = smm_foldr1 f it;
+::foldr1 f rng::smmrng = smm_foldr1 f rng;
 
-::do f it::smmit = smm_foldl (\_ x->f x) () it $$ ();
+::do f rng::smmrng = smm_foldl (\_ x->f x) () rng $$ ();
 
-::filter p it::smmit = smm_foldr f [] it with
+::filter p rng::smmrng = smm_foldr f [] rng with
   f x xs = res when
     res = case p x of
       1 = x:xs;
@@ -266,55 +266,55 @@ set_includes it1::smmit it2::smmit = smm_includes it1 it2
   end;
 end;
 
-::keys it::smmit = smm_listmap 0 it smm_key if ~smm_is_set it;
+::keys rng::smmrng = smm_listmap 0 rng smm_key if ~smm_is_set rng;
 
-::vals it::smmit = smm_listmap 0 it smm_val if ~smm_is_set it;
+::vals rng::smmrng = smm_listmap 0 rng smm_val if ~smm_is_set rng;
 
-::map_keys f it::smmit = smm_listmap f it smm_key if ~smm_is_set it;
+::map_keys f rng::smmrng = smm_listmap f rng smm_key if ~smm_is_set rng;
 
-::map_vals f it::smmit = smm_listmap f it smm_val if ~smm_is_set it;
+::map_vals f rng::smmrng = smm_listmap f rng smm_val if ~smm_is_set rng;
 
-::catmap_keys f it::smmit = smm_listcatmap f it smm_key if ~smm_is_set it;;
+::catmap_keys f rng::smmrng = smm_listcatmap f rng smm_key if ~smm_is_set rng;;
 
-::catmap_vals f it::smmit = smm_listcatmap f it smm_val if ~smm_is_set it;
+::catmap_vals f rng::smmrng = smm_listcatmap f rng smm_val if ~smm_is_set rng;
 
 /*** Vector interface functions ****************************************/
 
-vector it::smmit = smm_make_vector it;
+vector rng::smmrng = smm_make_vector rng;
 
-::rowmap f it::smmit = rowcat (smm_listmap f it smm_elm);
+::rowmap f rng::smmrng = rowcat (smm_listmap f rng smm_elm);
 
-::rowcatmap f it::smmit = rowcat (smm_listmap f it smm_elm);
+::rowcatmap f rng::smmrng = rowcat (smm_listmap f rng smm_elm);
 
-::colmap f it::smmit = colcat (smm_listmap f it smm_elm);
+::colmap f rng::smmrng = colcat (smm_listmap f rng smm_elm);
 
-::colcatmap f it::smmit = colcat (smm_listmap f it smm_elm);
+::colcatmap f rng::smmrng = colcat (smm_listmap f rng smm_elm);
 
 /*** Pure dict and set emulation *****************************************/
 
-null it::smmit = smm_size it == 0;
+null rng::smmrng = smm_size rng == 0;
 
-::first it::smmit = smm_get_elm mm b smm_key 
-when STLMMAP mm,b,e = bounds it end if smm_is_set it;
+::first rng::smmrng = smm_get_elm mm b smm_key 
+when STLMMAP mm,b,e = bounds rng end if smm_is_set rng;
 
-::first it::smmit = smm_get_elm mm b smm_elm 
-when STLMMAP mm,b,e = bounds it end;
+::first rng::smmrng = smm_get_elm mm b smm_elm 
+when STLMMAP mm,b,e = bounds rng end;
 
-::last it::smmit = smm_get_elm mm (smm_prev_key mm e) smm_key
-when STLMMAP mm,b,e = bounds it end  if smm_is_set it;
+::last rng::smmrng = smm_get_elm mm (smm_prev_key mm e) smm_key
+when STLMMAP mm,b,e = bounds rng end  if smm_is_set rng;
 
-::last it::smmit = smm_get_elm mm (smm_prev_key mm e) smm_elm 
-when STLMMAP mm,b,e = bounds it; end;
+::last rng::smmrng = smm_get_elm mm (smm_prev_key mm e) smm_elm 
+when STLMMAP mm,b,e = bounds rng; end;
 
-//::list smm::stlmmap = members smm;  // this is erroneous for smmit
+//::list smm::stlmmap = members smm;  // this is erroneous for smmrng
 
-::insert smm@(STLMMAP mm) it::smmit = smm_insert_elms_stlmmap mm it $$ smm;
+::insert smm@(STLMMAP mm) rng::smmrng = smm_insert_elms_stlmmap mm rng $$ smm;
 
-::rmfirst it::smmit = smm_erase (smm,b) 
-when smm,b,e = bounds it end;
+::rmfirst rng::smmrng = smm_erase (smm,b) 
+when smm,b,e = bounds rng end;
 
-::rmlast it::smmit = smm_erase (smm, ::prev_key smm e) 
-when smm,b,e = bounds it end;
+::rmlast rng::smmrng = smm_erase (smm, ::prev_key smm e) 
+when smm,b,e = bounds rng end;
 
 ::delete smm::stlmmap k = smm_erase_first (smm,k);
 
@@ -325,31 +325,31 @@ when smm,b,e = bounds it end;
 ::delete_val smm::stlmmap (k=>v) =
   smm_erase_first_if (\(_=>x)->x==v) (smm,k) if ~smm_is_set smm; 
 
-(::+) it1::smmit it2::smmit = res when
-  res = ::stlmmap it1;
-  ::insert_elms res it2;
-end if both_mmaps it1 it2;
+(::+) rng1::smmrng rng2::smmrng = res when
+  res = ::stlmmap rng1;
+  ::insert_elms res rng2;
+end if both_mmaps rng1 rng2;
 
-(::+) it1::smmit it2::smmit = res when
-  res = ::stlmset it1;
-  ::insert_elms res it2;
-end if both_msets it1 it2;
+(::+) rng1::smmrng rng2::smmrng = res when
+  res = ::stlmset rng1;
+  ::insert_elms res rng2;
+end if both_msets rng1 rng2;
 
-(::-) it1::smmit it2::smmit = res when
-  res = stlmmap it1;
-  do (::delete_val res) it2 
-end if both_mmaps it1 it2;
+(::-) rng1::smmrng rng2::smmrng = res when
+  res = stlmmap rng1;
+  do (::delete_val res) rng2 
+end if both_mmaps rng1 rng2;
 
-(::-) it1::smmit it2::smmit = res when
-  res = stlmset it1;
-  do (::delete res) it2 
-end if both_msets it1 it2;
+(::-) rng1::smmrng rng2::smmrng = res when
+  res = stlmset rng1;
+  do (::delete res) rng2 
+end if both_msets rng1 rng2;
 
-(::*) it1::smmit it2::smmit = 
-  if size it1 < size it2 then it1 - (it1 -it2) else it2 - (it2 -it1)
-  if both_msets it1 it2 || both_mmaps it1 it2;
+(::*) rng1::smmrng rng2::smmrng = 
+  if size rng1 < size rng2 then rng1 - (rng1 -rng2) else rng2 - (rng2 -rng1)
+  if both_msets rng1 rng2 || both_mmaps rng1 rng2;
 
-(::/) it1::smmit it2::smmit = (it1 - it2) +  (it2 -it1)
-  if both_msets it1 it2 || both_mmaps it1 it2;
+(::/) rng1::smmrng rng2::smmrng = (rng1 - rng2) +  (rng2 -rng1)
+  if both_msets rng1 rng2 || both_mmaps rng1 rng2;
 
 

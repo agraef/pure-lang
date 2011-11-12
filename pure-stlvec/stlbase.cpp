@@ -264,7 +264,7 @@ int stl_refc(pure_expr *x){
   return x->refc - 1; // want refc before pass into here
 }
 
-/**** Interpreter Local Storage Data ********************************/
+/**** Interpreter Local Storage Global Symbols **************************/
 
 static px* px_newsym(const char *name)
 {
@@ -334,32 +334,60 @@ px* px_failed_cond_sym()
   return sym;
 }
 
-px* stl_begin()
+/**** Interpreter Local Storage STL Namespace Data *********************/
+
+px* stlbegin_sym()
 {
   static ILS<px*> _sym = NULL; px* &sym = _sym();
   if (!sym) sym = px_newsym("stl::stlbeg");
   return sym;
 }
 
-px* stl_end()
+px* stlend_sym()
 {
   static ILS<px*> _sym = NULL; px* &sym = _sym();
   if (!sym) sym = px_newsym("stl::stlend");
   return sym;
 }
 
-px* stl_insert()
+px* stlinsert_sym()
 {
   static ILS<px*> _sym = NULL; px* &sym = _sym();
   if (!sym) sym = px_newsym("stl::stlinsert");
   return sym;
 }
 
-px* stl_back_insert()
+px* stlback_sym()
 {
   static ILS<px*> _sym = NULL; px* &sym = _sym();
   if (!sym) sym = px_newsym("stl::stlbackinsert");
   return sym;
+}
+
+int stlmap_tag() 
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("stlmap*");
+  return t;
+}
+
+int stlset_tag() 
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("stlset*");
+  return t;
+}
+int stlmmap_tag() 
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("stlmmap*");
+  return t;
+}
+int stlmset_tag() 
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("stlmset*");
+  return t;
 }
 
 

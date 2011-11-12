@@ -256,10 +256,15 @@ extern "C" {
   void stl_set_px_trace(bool enable);
   bool stl_px_trace_enabled();
 
-  px*  stl_begin();
-  px*  stl_end();
-  px*  stl_insert();
-  px*  stl_back_insert();
+  px*  stlbegin_sym();
+  px*  stlend_sym();
+  px*  stlinsert_sym();
+  px*  stlbackinsert_sym();
+
+  int  stlmap_tag();
+  int  stlset_tag();
+  int  stlmmap_tag();
+  int  stlmset_tag();
 
 }
 

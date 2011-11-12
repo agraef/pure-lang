@@ -83,13 +83,13 @@ enum {stl_sm_merge = 1, stl_sm_union, stl_sm_difference,
 /*** C interface for C++ map of PX Handles ***/
 
 extern "C" {
-  sm*  sm_make_empty(px* comp, px* val_comp, px* val_equal, int keys_only);
+  px*  sm_make_empty(px* comp, px* val_comp, px* val_equal, int keys_only);
   void sm_delete(sm* smp);
   bool sm_is_set(px* tpl);
   bool sm_equal(px* tpl1, px* tlp2);
   int  sm_less(px* tpl1, px* tlp2);
   bool sm_includes(px* tpl1, px* tpl2);
-  sm*  sm_setop(int op, px* tpl1, px* tpl2);
+  px*  sm_setop(int op, px* tpl1, px* tpl2);
   px*  sm_make_vector(px* tpl);
   sv*  sm_make_stlvec(px* tpl);
   px*  sm_set_default(sm* smp, px* val);
@@ -123,8 +123,8 @@ extern "C" {
 
 }
 
-inline px* smbeg(){return stl_begin();}
-inline px* smend(){return stl_end();}
-inline px* pminsert(){return stl_insert();}
+inline px* smbeg(){return stlbegin_sym();}
+inline px* smend(){return stlend_sym();}
+inline px* pminsert(){return stlinsert_sym();}
 
 #endif // STLMAP_H

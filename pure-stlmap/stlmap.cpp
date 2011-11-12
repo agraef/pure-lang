@@ -399,14 +399,20 @@ sm_iters::sm_iters(px* pmi_tuple)
 
 /*** Pure interface support functions  *************************************/
 
-sm* sm_make_empty(px* comp, px* v_comp, px* v_eql, int keys_only)
+static px* add_pointer_tag(sm* smp)
 {
-  sm* ret  = new sm(comp, v_comp, v_eql, keys_only); 
+  bool ko = smp->keys_only;
+  px* ptr = pure_tag(ko?stlset_tag():stlmap_tag(), pure_pointer(smp));
 #ifdef STL_DEBUG
   if (stl_sm_trace_enabled())
-    cerr << "TRACE SM:    new sm*: " << ret << endl;
+    cerr << "TRACE SM:    new sm*: " << smp << endl;
 #endif
-  return ret;
+  return ptr;
+}
+
+px* sm_make_empty(px* comp, px* v_comp, px* v_eql, int keys_only)
+{
+  return add_pointer_tag( new sm(comp, v_comp, v_eql, keys_only) );
 }
 
 void sm_delete(sm* p){
@@ -641,7 +647,7 @@ bool sm_includes(px* tpl1, px* tpl2)
   }
 }
 
-sm* sm_setop(int op, px* tpl1, px* tpl2)
+px* sm_setop(int op, px* tpl1, px* tpl2)
 {
   sm_iters itrs1(tpl1);
   sm_iters itrs2(tpl2);
@@ -654,11 +660,11 @@ sm* sm_setop(int op, px* tpl1, px* tpl2)
   }
 #endif
   sm* smp = itrs1.smp;
-  sm* res = new sm(smp->px_comp.pxp(),
+  sm* trg = new sm(smp->px_comp.pxp(),
                    smp->px_val_comp.pxp(),
                    smp->px_val_equal.pxp(),
                    smp->keys_only, smp->dflt.pxp());
-  pxhmap& mp = res->mp;
+  pxhmap& mp = trg->mp;
   try {
     switch (op) {
     case stl_sm_merge:
@@ -689,7 +695,7 @@ sm* sm_setop(int op, px* tpl1, px* tpl2)
     default:
       bad_argument();
     }
-    return res;
+    return add_pointer_tag(trg);
   } catch (px* e) {
     pure_throw(e);
   }

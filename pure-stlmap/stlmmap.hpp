@@ -85,12 +85,12 @@ enum {stl_smm_merge = 1, stl_smm_union, stl_smm_difference,
 /*** C interface for C++ multimap of PX Handles ***/
 
 extern "C" {
-  smm* smm_make_empty(px* comp, px* val_comp, px* val_equal, int keys_only);
+  px*  smm_make_empty(px* comp, px* val_comp, px* val_equal, int keys_only);
   bool smm_is_set(px* tpl);
   bool smm_equal(px* tpl1, px* tlp2);
   int  smm_less(px* tpl1, px* tlp2);
   bool smm_includes(px* tpl1, px* tpl2);
-  smm* smm_setop(int op, px* tpl1, px* tpl2);
+  px*  smm_setop(int op, px* tpl1, px* tpl2);
   void smm_delete(smm* smmp);
   px*  smm_make_vector(px* tpl);
   sv*  smm_make_stlvec(px* tpl);
@@ -125,8 +125,8 @@ extern "C" {
 
 }
 
-inline px* smmbeg(){return stl_begin();}
-inline px* smmend(){return stl_end();}
-inline px* smminsert(){return stl_insert();}
+inline px* smmbeg(){return stlbegin_sym();}
+inline px* smmend(){return stlend_sym();}
+inline px* smminsert(){return stlinsert_sym();}
 
 #endif // STLMMAP_H

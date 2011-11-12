@@ -383,14 +383,20 @@ smm_iters::smm_iters(px* pmmi_tuple)
 
 /*** Functions for multimap<pxh,pxh,pxh_pred2> *******************************/
 
-smm* smm_make_empty(px* comp, px* v_comp, px* v_eql, int keys_only)
+static px* add_pointer_tag(smm* smmp)
 {
-  smm* ret  = new smm(comp, v_comp, v_eql, keys_only);
+  bool ko = smmp->keys_only;
+  px* ptr = pure_tag(ko?stlmset_tag():stlmmap_tag(), pure_pointer(smmp));
 #ifdef STL_DEBUG
-  if (stl_smm_trace_enabled())
-    cerr << "TRACE SD:    new smm*: " << (void*)ret << endl;
+  if (stl_sm_trace_enabled())
+    cerr << "TRACE SMM:    new smm*: " << smmp << endl;
 #endif
-  return ret;
+  return ptr;
+}
+
+px* smm_make_empty(px* comp, px* v_comp, px* v_eql, int keys_only)
+{
+  return add_pointer_tag( new smm(comp, v_comp, v_eql, keys_only) );
 }
 
 void smm_delete(smm* p){
@@ -624,7 +630,6 @@ px* smm_get_elm(smm* smmp, px* key, int what)
   return ret;
 }
 
-
 bool smm_includes(px* tpl1, px* tpl2)
 {
   smm_iters itrs1(tpl1);
@@ -647,19 +652,19 @@ bool smm_includes(px* tpl1, px* tpl2)
   }
 }
 
-smm* smm_setop(int op, px* tpl1, px* tpl2)
+px* smm_setop(int op, px* tpl1, px* tpl2)
 {
   smm_iters itrs1(tpl1);
   smm_iters itrs2(tpl2);
   if (!itrs1.is_valid || !itrs2.is_valid) bad_argument;
   smm* smmp = itrs1.smmp;
-  smm* res = new smm(smmp->px_comp.pxp(),
+  smm* trg = new smm(smmp->px_comp.pxp(),
                      smmp->px_val_comp.pxp(),
                      smmp->px_val_equal.pxp(),
                      smmp->keys_only, smmp->dflt.pxp());
-  pxhmmap& mp = res->mp;
+  pxhmmap& mp = trg->mp;
   try {
-    if (res->keys_only) {
+    if (trg->keys_only) {
       pxhmmap::value_compare comp = mp.value_comp();
       switch (op) {
       case stl_smm_merge:
@@ -692,7 +697,7 @@ smm* smm_setop(int op, px* tpl1, px* tpl2)
       }
     }
     else {
-      pxh_pair_less comp(res->px_comp.pxp(),res->px_val_comp.pxp());
+      pxh_pair_less comp(trg->px_comp.pxp(),trg->px_val_comp.pxp());
       switch (op) {
       case stl_smm_merge:
         merge(itrs1.beg(), itrs1.end(), 
@@ -723,7 +728,7 @@ smm* smm_setop(int op, px* tpl1, px* tpl2)
         bad_argument();
       }
     }
-    return res;
+    return add_pointer_tag(trg);
   } catch (px* e) {
     pure_throw(e);
   }
