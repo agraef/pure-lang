@@ -448,19 +448,21 @@ using namespace;
 
 /***************************************************************************/
 
-/* Conversions between the different orddict types and mixed orddict
-   operations. We also define an ordxdict union type which matches both
-   orddict and ordmdict values. */
+/* Conversions between the different dict types and mixed operations. */
+
+using stldictbase;
 
 type ordxdict x::orddict | ordxdict x::ordmdict;
 ordxdictp x = case x of _::ordxdict = true; _ = false end;
 
+type stldict x::orddict | stlmdict x::ordmdict;
+
 orddict x::orddict | ordmdict x::ordmdict = x;
-orddict x::ordmdict = orddict (list x);
-ordmdict x::orddict = ordmdict (list x);
+orddict x::stlxdict = orddict (list x);
+ordmdict x::stlxdict = ordmdict (list x);
 
 /* For the mixed operations we always convert to the most general operand
-   type (i.e., ordmdict). */
+   type (this is always ordmdict here). */
 
 x::ordmdict == y::orddict = x == ordmdict y;
 x::orddict == y::ordmdict = ordmdict x == y;

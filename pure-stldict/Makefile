@@ -19,7 +19,7 @@ CXXFLAGS = -g -O2 -std=c++0x -Wall
 # Basic rules to build the modules, clean, install and uninstall.
 
 cppsource = hashdict.cc orddict.cc
-puresource = $(patsubst %.cc, %.pure, $(cppsource))
+puresource = stldict*.pure $(patsubst %.cc, %.pure, $(cppsource))
 objects = $(patsubst %.cc, %$(DLL), $(cppsource))
 
 all: $(objects)
@@ -40,7 +40,7 @@ uninstall:
 # Examples and tests.
 
 testdir = examples
-tests = $(patsubst %.pure, $(testdir)/%_examp.pure, $(puresource))
+tests = $(patsubst %.cc, $(testdir)/%_examp.pure, $(cppsource))
 logs = $(patsubst %.pure, %.log, $(tests))
 
 check:

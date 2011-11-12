@@ -469,43 +469,51 @@ end;
 
 /***************************************************************************/
 
-/* Conversions between the different hashdict types and mixed hashdict
-   operations. We also define a hashxdict union type which matches both
-   hashdict and hashmdict values. */
+/* Conversions between the different dict types and mixed operations. */
+
+using stldictbase;
 
 type hashxdict x::hashdict | hashxdict x::hashmdict;
 hashxdictp x = case x of _::hashxdict = true; _ = false end;
 
+type stldict x::hashdict | stlmdict x::hashmdict;
+
 hashdict x::hashdict | hashmdict x::hashmdict = x;
-hashdict x::hashmdict = hashdict (list x);
-hashmdict x::hashdict = hashmdict (list x);
+hashdict x::stlxdict = hashdict (list x);
+hashmdict x::stlxdict = hashmdict (list x);
 
 /* For the mixed operations we always convert to the most general operand
-   type (i.e., hashmdict). */
+   type (i.e., hashdict if both operands are single-valued dictionaries,
+   hashmdict otherwise). */
 
-x::hashmdict == y::hashdict = x == hashmdict y;
-x::hashdict == y::hashmdict = hashmdict x == y;
+namespace hashmap with
+coerce f x y = f (hashmdict x) (hashmdict y) if stlmdictp x || stlmdictp y;
+             = f (hashdict x) (hashdict y) otherwise;
+end;
 
-x::hashmdict ~= y::hashdict = x ~= hashmdict y;
-x::hashdict ~= y::hashmdict = hashmdict x ~= y;
+x::hashxdict == y::stlxdict |
+x::stlxdict == y::hashxdict = hashmap::coerce (==) x y;
 
-x::hashmdict <= y::hashdict = x <= hashmdict y;
-x::hashdict <= y::hashmdict = hashmdict x <= y;
+x::hashxdict ~= y::stlxdict |
+x::stlxdict ~= y::hashxdict = hashmap::coerce (~=) x y;
 
-x::hashmdict >= y::hashdict = x >= hashmdict y;
-x::hashdict >= y::hashmdict = hashmdict x >= y;
+x::hashxdict <= y::stlxdict |
+x::stlxdict <= y::hashxdict = hashmap::coerce (<=) x y;
 
-x::hashmdict < y::hashdict = x < hashmdict y;
-x::hashdict < y::hashmdict = hashmdict x < y;
+x::hashxdict >= y::stlxdict |
+x::stlxdict >= y::hashxdict = hashmap::coerce (>=) x y;
 
-x::hashmdict > y::hashdict = x > hashmdict y;
-x::hashdict > y::hashmdict = hashmdict x > y;
+x::hashxdict < y::stlxdict |
+x::stlxdict < y::hashxdict = hashmap::coerce (<) x y;
 
-x::hashmdict + y::hashdict = x + hashmdict y;
-x::hashdict + y::hashmdict = hashmdict x + y;
+x::hashxdict > y::stlxdict |
+x::stlxdict > y::hashxdict = hashmap::coerce (>) x y;
 
-x::hashmdict - y::hashdict = x - hashmdict y;
-x::hashdict - y::hashmdict = hashmdict x - y;
+x::hashxdict + y::stlxdict |
+x::stlxdict + y::hashxdict = hashmap::coerce (+) x y;
 
-x::hashmdict * y::hashdict = x * hashmdict y;
-x::hashdict * y::hashmdict = hashmdict x * y;
+x::hashxdict - y::stlxdict |
+x::stlxdict - y::hashxdict = hashmap::coerce (-) x y;
+
+x::hashxdict * y::stlxdict |
+x::stlxdict * y::hashxdict = hashmap::coerce (*) x y;
