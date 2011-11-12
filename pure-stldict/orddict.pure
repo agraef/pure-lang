@@ -150,6 +150,9 @@ orddictp x = pointerp x && check_ptrtag orddict_t x;
 // Make orddict work with numeric vectors.
 orddict x::nmatrix = orddict (smatrix x);
 
+// Create an orddict from a list of keys and a constant value.
+mkorddict y xs::rlist = orddict (zipwith (=>) xs (repeatn (#xs) y));
+
 /* Semantic equality of orddicts. These compare keys using the '<' predicate,
    and values for semantic equality (falling back to syntactic equality if
    this fails). Equality holds iff two orddicts contain the same key=>val
@@ -297,6 +300,7 @@ type ordmdict x::pointer = check_ptrtag ordmdict_t x;
 ordmdictp x = pointerp x && check_ptrtag ordmdict_t x;
 
 ordmdict x::nmatrix = ordmdict (smatrix x);
+mkordmdict y xs::rlist = ordmdict (zipwith (=>) xs (repeatn (#xs) y));
 
 /* Note that in contrast to ordinary orddicts, the complexity of the multidict
    equality check depends on the frequencies of keys and may thus require

@@ -162,6 +162,9 @@ hashdictp x = pointerp x && check_ptrtag hashdict_t x;
 // Make hashdict work with numeric vectors.
 hashdict x::nmatrix = hashdict (smatrix x);
 
+// Create a hashdict from a list of keys and a constant value.
+mkhashdict y xs::rlist = hashdict (zipwith (=>) xs (repeatn (#xs) y));
+
 /* Semantic equality of hashdicts. These compare keys for syntactic equality,
    and values for semantic equality (falling back to syntactic equality if
    this fails). Equality holds iff two hashdicts contain the same key=>val
@@ -308,6 +311,7 @@ type hashmdict x::pointer = check_ptrtag hashmdict_t x;
 hashmdictp x = pointerp x && check_ptrtag hashmdict_t x;
 
 hashmdict x::nmatrix = hashmdict (smatrix x);
+mkhashmdict y xs::rlist = hashmdict (zipwith (=>) xs (repeatn (#xs) y));
 
 /* Note that in contrast to ordinary hashdicts, the complexity of the
    multidict equality check depends on the frequencies of keys and may thus
