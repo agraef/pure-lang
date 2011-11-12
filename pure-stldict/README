@@ -66,34 +66,75 @@ check the Makefile for details.
 Usage
 =====
 
-After installation, you can use the operations of this package by placing one
-or both of the following import declarations in your Pure programs::
+After installation, you can use the operations of this package by placing the
+following import declaration in your Pure programs::
+
+  using stldict;
+
+This imports the whole shebang. If you only need either the hashed or the
+ordered dictionaries, you can also import the corresponding modules
+separately, i.e.::
 
   using hashdict;
+
+or::
+
   using orddict;
+
+Types
+=====
 
 In Pure land, the C++ ``map`` and ``unordered_map`` containers and their
 ``multimap`` variants are made available as a collection of four data
 structures:
 
-* ``hashdict``, ``hashmdict``: Hashed (unordered) dictionary data structures.
-  These work with arbitrary key (and value) types, like the hashed dictionary
-  and set data structures in the standard library, and can be found in the
-  ``hashdict.pure`` module. In addition, the ``hashxdict`` type is defined as
-  the union of the ``hashdict`` and ``hashmdict`` types so that it can be used
-  to match any kind of hashed dictionary.
+.. type:: hashdict /type
+   	  hashmdict /type
 
-* ``orddict``, ``ordmdict``: Ordered dictionary data structures. These require
-  the keys to be ordered by the standard ``<`` predicate, like the ordered
-  dictionary and set data structures in the standard library, and can be found
-  in the ``orddict.pure`` module. In addition, the ``ordxdict`` type is
-  defined as the union of the ``orddict`` and ``ordmdict`` types so that it
-  can be used to match any kind of ordered dictionary.
+  Hashed (unordered) dictionary data structures. These work with arbitrary key
+  (and value) types, like the hashed dictionary and set data structures in the
+  standard library, and can be found in the ``hashdict.pure`` module.
 
-Note that ``hashdict`` and ``hashmdict`` differ in that the former has exactly
-one key-value association for each key in the dictionary, while the latter is
-a "multidict" which allows multiple values to be associated with a key. The
-same applies to the ``orddict`` and ``ordmdict`` types.
+.. type:: orddict /type
+   	  ordmdict /type
+
+  Ordered dictionary data structures. These require the keys to be ordered by
+  the standard ``<`` predicate, like the ordered dictionary and set data
+  structures in the standard library, and can be found in the ``orddict.pure``
+  module.
+
+Note that :type:`hashdict/type` and :type:`hashmdict/type` differ in that the
+former has exactly one key-value association for each key in the dictionary,
+while the latter is a "multidict" which allows multiple values to be
+associated with a key. The same applies to the :type:`orddict/type` and
+:type:`ordmdict/type` types.
+
+There are also various supertype symbols which correspond to different unions
+of the hashed and ordered dictionary types. These are:
+
+.. type:: hashxdict /type
+   	  ordxdict /type
+
+   Denotes any kind of hashed or ordered dictionary, respectively.
+
+.. type:: stldict /type
+   	  stlmdict /type
+
+   Denotes any kind of singled-valued or multi-valued dictionary,
+   respectively.
+
+.. type:: stlxdict /type
+
+   Denotes any kind of dictionary.
+
+For instance, you can use :type:`hashxdict/type` to match both
+:type:`hashdict/type` and :type:`hashmdict/type` values. Likewise,
+:type:`stlmdict/type` matches both :type:`hashmdict/type` and
+:type:`ordmdict/type` values. To match any kind of dictionary, use the
+:type:`stlxdict/type` type.
+
+Operations
+==========
 
 All data structures offer most of the usual Pure container interface and can
 be used either as dictionaries (holding key => value pairs) or sets (holding
@@ -108,16 +149,310 @@ structures; inserting and deleting members really modifies the underlying C++
 containers. (However, it is possible to take copies of the containers in
 situations where it's necessary to preserve value semantics.)
 
-Documentation of the types and functions provided by the modules is still to
-be written, so for the time being please refer to the module sources and the
-included examples instead.
+Basic Operations
+----------------
+
+.. function:: hashdict xs
+              hashmdict xs
+              orddict xs
+              ordmdict xs
+
+   Create a dictionary of the corresponding type from a list, tuple or vector
+   of its members. Members can be specified as hash pairs ``x=>y`` to denote a
+   key-value association. Any other kind of value denotes a singleton key
+   without associated value. Note that the ordered dictionaries require that
+   the keys be ordered, i.e., the :func:`<` predicate must be defined on them.
+
+   The same operations can also be used to construct a dictionary from another
+   dictionary of any type. If the given dictionary is already of the
+   corresponding type, this is a no-op (if you want to copy the dictionary
+   instead, use the :func:`copy/stldict` function below). Otherwise the given
+   dictionary is converted to a new dictionary of the desired target type.
+
+.. function:: copy /stldict m
+
+   Create a new dictionary with the same type and content as ``m``. This is
+   useful if you want to preserve value semantics when using destructive
+   update operations such as :func:`insert/stldict` and :func:`delete/stldict`.
+   In such a case, :func:`copy/stldict` can be used to take a copy of the
+   dictionary beforehand, so that the original dictionary remains unmodified.
+
+   .. note:: This operation needs linear time with respect to the size of the
+      dictionary (i.e., its number of members). If logarithmic update times
+      are needed while still preserving value semantics, you should use the
+      dictionary and set data structures from the standard library instead.
+
+.. function:: hashdictp m
+              hashmdictp m
+              orddictp m
+              ordmdictp m
+
+   Check whether the argument is a dictionary of the corresponding type.
+
+.. function:: hashxdictp m
+              ordxdictp m
+              stldictp m
+              stlmdictp m
+              stlxdictp m
+
+   Check whether the argument is a dictionary of the corresponding union type.
+
+.. function:: prefix # /stldict m
+
+   The size of a dictionary (the number of members it contains).
+
+.. function:: infix ! /stldict m x
+
+   Get the value stored under key ``x`` in the dictionary ``m``. This may be
+   ``x`` itself if ``x`` is a member of ``m`` but has no associated value. In
+   the case of a multidict this actually returns a list of values (which may
+   be empty if ``m`` doesn't contain ``x``). Otherwise an
+   :cons:`out_of_bounds` exception is thrown if ``m`` doesn't contain ``x``.
+
+.. function:: null /stldict m
+
+   Test whether ``m`` is empty, i.e., has zero members.
+
+.. function:: member /stldict m x
+
+   Test whether ``m`` contains a member with key ``x``.
+
+.. function:: members /stldict m
+              list /stldict m
+
+   Return the list of members of ``m``. The member list will be in an
+   apparently random order in the hashed dictionary case, while it is
+   guaranteed to be in ascending order (by key) for ordered dictionaries.
+   However, note that even in the latter case, the order of different members
+   for the same key in a multidict is not specified. This must be taken into
+   account when comparing dictionaries (cf. Comparisons_). The same order is
+   also used for the other inspection operations below (:func:`stream/stldict`,
+   :func:`tuple/stldict`, :func:`vector/stldict`, :func:`keys/stldict`,
+   :func:`vals/stldict`).
+
+.. function:: stream /stldict m
+
+   Like :func:`list/stldict`, but the member list is returned as a lazy list
+   (cf. :ref:`Lazy Evaluation and Streams`) whose members will be computed on
+   the fly as the list is being traversed; cf. Iterators_.
+
+.. function:: tuple /stldict m
+              vector /stldict m
+
+   Return the members as a tuple or vector.
+
+.. function:: keys /stldict m
+
+   Return the list of keys in the dictionary.
+
+.. function:: vals /stldict m
+
+   Return the list of corresponding values. In the case of a singleton key
+   ``x`` without associated value, ``x`` itself is returned instead.
+
+Note that, in contrast to the dictionary implementations in the standard
+library, the following modification operations are destructive, i.e., they
+actually modify the underlying dictionary data structure. If this is not
+desired, you'll first have to take a copy of the target dictionary, see
+:func:`copy/stldict`.
+
+.. function:: insert /stldict m x
+              insert /stldict2 m (x=>y)
+              update /stldict m x y
+
+   Insert a singleton key ``x`` or a key-value pair ``x=>y`` into ``m`` and
+   return the modified dictionary. This always adds a new member in a
+   multidict, otherwise it replaces an existing value if there is
+   one. :func:`update/stldict` is provided as a fully curried version of
+   :func:`insert/stldict2`, so ``update m x y`` behaves exactly like ``insert
+   m (x=>y)``.
+
+.. function:: delete /stldict m x
+              delete /stldict2 m (x=>y)
+
+   Remove the key ``x`` or the specific key-value pair ``x=>y`` from ``m`` (if
+   present) and return the modified dictionary. In the multidict case, only
+   the first member with the given key ``x`` or key-value pair ``x=>y`` is
+   removed.
+
+.. function:: clear /stldict m
+
+   Remove all members from ``m``, making ``m`` an empty dictionary.
+   Returns ``()``.
+
+Comparisons
+-----------
+
+The usual comparison predicates (:func:`==`, :func:`~=`, :func:`<=`, :func:`<`
+etc.) are defined on all dictionary types, where two dictionaries are
+considered "equal" (``m1==m2``) if they both contain the same ``key=>value``
+pairs, and ``m1<=m2`` means that ``m1`` is a sub-dictionary of ``m2``, i.e.,
+all ``key=>value`` pairs of ``m1`` are also contained in ``m2`` (taking into
+account multiplicities in the multidict case). Ordered dictionaries compare
+keys using equality (assuming two keys ``a`` and ``b`` to be equal if neither
+``a<b`` nor ``b<a`` holds), while hashed dictionaries check for syntactical
+equality (using :func:`===`). The associated values are compared using the
+:func:`==` predicate if it is defined, falling back to syntactic equality
+otherwise.
+
+The modules also define syntactic equality on all dictionary types, so that
+two dictionaries of the same type are considered syntactically equal iff they
+contain the same (syntactically equal) members in the same order. This is
+always guaranteed if two dictionaries are "identical" (the same C++ pointer),
+but generally the member order will depend on how the dictionary was
+constructed. Thus if you need to check that two dictionaries contain the same
+members irrespective of the order in which the members are listed, the
+semantic equality operation :func:`==` should be used instead; this will also
+handle the case of mixed operand types.
+
+Set-Like Operations
+-------------------
+
+These operations work with mixed operand types, promoting less general types
+to more general ones (i.e., ordered to hashed, and single-valued to
+multi-valued dictionaries). The result is always a new dictionary, leaving the
+operands unmodified.
+
+.. function:: infix + /stldict m1 m2
+
+   Sum: ``m1+m2`` adds the members of ``m2`` to ``m1``.
+
+.. function:: infix - /stldict m1 m2
+
+   Difference: ``m1-m2`` removes the members of ``m2`` from ``m1``.
+
+.. function:: infix * /stldict m1 m2
+
+   Intersection: ``m1*m2`` removes the members *not* in ``m2`` from ``m1``.
+
+List-Like Operations
+--------------------
+
+The following operations are all overloaded so that they work like their list
+counterparts, treating their dictionary argument as if it was the member list
+of the dictionary:
+
+* :func:`do`, :func:`map`, :func:`catmap`, :func:`listmap`, :func:`rowmap`,
+  :func:`rowcatmap`, :func:`colmap`, :func:`colcatmap`
+
+* :func:`all`, :func:`any`, :func:`filter`, :func:`foldl`, :func:`foldl1`,
+  :func:`foldr`, :func:`foldr1`, :func:`scanl`, :func:`scanl1`, :func:`scanr`,
+  :func:`scanr1`, :func:`sort`
+
+Note that this includes the generic comprehension helpers :func:`listmap`,
+:func:`catmap` et al, so that dictionaries can be used as generators in list
+and matrix comprehensions as usual (see below for some examples_).
+
+Iterators
+---------
+
+These operations give direct access to C++ iterators on dictionaries which let
+you query the elements and do basic manipulations of the container. Most of
+the operations are in their own ``stldict`` namespace.
+
+The iterator concept is somewhat alien to Pure and there are some pitfalls
+(most notably, destructive updates may render iterators invalid), but the
+operations described here are still useful in some situations, especially if
+you need to speed up sequential accesses to large containers or modify values
+stored in a container in a direct way. They are also used internally to
+compute lazy member lists of containers (:func:`stream/stldict` function).
+
+You should only use these directly if you know what you are doing. In
+particular, make sure to consult the `C++ standard library documentation`_ for
+further details on C++ iterator usage.
+
+The following operations are provided to create an iterator for a given
+dictionary.
+
+.. function:: stldict::begin m
+   	      stldict::end m
+
+   Return iterators pointing to the beginning and the end of the container.
+   (Note that :func:`stldict::end` *must* always be specified in qualified
+   form since ``end`` is a keyword in the Pure language.)
+
+.. function:: stldict::find m x
+
+   Locates a key or specific key=>value pair ``x`` in the container and
+   returns an iterator pointing to the corresponding member (or ``stldict::end
+   m`` if ``m`` doesn't contain ``x``).
+
+Note that these operations return a new iterator object for each invocation.
+Also, the created iterator object keeps track of the container it belongs to,
+so that the container isn't garbage-collected while the iterator is still
+being used. However, note that removing a member from the container (using
+either :func:`delete/stldict` or :func:`stldict::erase`) invalidates all
+iterators pointing to that member; the result of trying to access such an
+invalidated iterator is undefined (most likely you'll get a segfault).
+
+Similar caveats also apply to the :func:`stream/stldict` function which, as
+already mentioned, uses iterators internally to implement lazy list traversal
+of the members of a dictionary. Thus, if you delete a member of a dictionary
+while traversing it using :func:`stream/stldict`, always make sure that this
+member is not the next stream element; otherwise bad things will happen.
+
+The following operations on iterators let you query and modify the contents
+of the underlying container:
+
+.. function:: hashdict /stldict i
+
+   Return the dictionary to which ``i`` belongs.
+
+.. function:: stldict::endp i
+
+   Check whether the iterator ``i`` points to the end of the container (i.e.,
+   past the last element).
+
+.. function:: stldict::next i
+
+   Advance the iterator to the next element. Note that for convenience, in
+   contrast to the corresponding C++ operation this operation is
+   non-destructive. Thus it actually creates a *new* iterator object, leaving
+   the original iterator ``i`` unmodified. The operation fails if ``i`` is
+   already at the end of the container.
+
+.. function:: stldict::get i
+
+   Retrieve the key=>val pair stored in the member pointed to by ``i`` (or
+   just the key if there is no associated value). The operation fails if ``i``
+   is at the end of the container.
+
+.. function:: stldict::put i y
+
+   Change the value associated with the member pointed to by ``i`` to ``y``,
+   and return the new value ``y``. The operation fails if ``i`` is at the end
+   of the container. Note that :func:`stldict::put` only allows you to set the
+   associated value, *not* the key of the member.
+
+.. function:: stldict::erase i
+
+   Remove the member pointed to by ``i`` (this invalidates ``i`` and all other
+   iterators pointing to this member). The operation fails if ``i`` is at the
+   end of the container.
+
+Note that iterators are in fact just pointers to a corresponding C++ data
+structure. Thus syntactical equality holds only if two iterators are exactly
+the same pointer. Equality of iterators can be tested with the :func:`==`
+operation: ``i == j`` iff ``i`` and ``j`` point to the same element in the
+same container, ``i ~= j`` iff they don't.
+
+Other Low-Level Operations
+--------------------------
+
+The :mod:`hashdict` module also provides a few specialized low-level
+operations dealing with the layouts of buckets and the hashing policy
+interface, such as ``load_factor``, ``rehash``, ``reserve`` etc. These
+operations, which are all kept in their separate ``hashdict`` namespace, are
+useful to obtain performance-related information about the underlying hash
+table. Please check the ``hashdict.pure`` module and the `C++ standard library
+documentation`_ for further details.
 
 Examples
 ========
 
-Some basic examples showing hashdicts in action::
+Some basic examples showing :type:`hashdict/type` in action::
 
-  > using hashdict;
+  > using stldict;
   > let m = hashdict [foo=>99, bar=>bar 4711L, baz=>1..5]; m;
   hashdict [foo=>99,bar=>bar 4711L,baz=>[1,2,3,4,5]]
   > m!bar;
@@ -130,10 +465,8 @@ Some basic examples showing hashdicts in action::
   [foo=>99,bar=>bar 4711L,baz=>[1,2,3,4,5]]
   > member m foo, member m bar;
   1,1
-  > [x,y | x=>y = m];
-  [(foo,99),(bar,bar 4711L),(baz,[1,2,3,4,5])]
 
-Hashed multidicts (``hashmdict``)::
+Hashed multidicts (:type:`hashmdict/type`)::
 
   > let m = hashmdict [foo=>99,baz=>1..5,baz=>bar 4711L]; m;
   hashmdict [foo=>99,baz=>[1,2,3,4,5],baz=>bar 4711L]
@@ -142,10 +475,9 @@ Hashed multidicts (``hashmdict``)::
   > m!foo;
   [99]
 
-The following example illustrates how to employ ordered dictionaries as a set
-data structure::
+The following example illustrates how to employ ordered dictionaries
+(:type:`orddict/type`) as a set data structure::
 
-  > using orddict;
   > let m1 = orddict [5,1,3,11,3];
   > let m2 = orddict (3..6);
   > m1;m2;
@@ -157,6 +489,12 @@ data structure::
   orddict [1,11]
   > m1*m2;
   orddict [3,5]
+  > m1*m2 <= m1, m1*m2 <= m2;
+  1,1
+  > m1 < m1+m2, m2 < m1+m2;
+  1,1
+
+Of course, the same works with ordered multidicts (:type:`ordmdict/type`)::
 
   > let m1 = ordmdict [5,1,3,11,3];
   > let m2 = ordmdict (3..6);
@@ -169,35 +507,65 @@ data structure::
   ordmdict [1,3,11]
   > m1*m2;
   ordmdict [3,5]
+  > m1*m2 <= m1, m1*m2 <= m2;
+  1,1
+  > m1 < m1+m2, m2 < m1+m2;
+  1,1
+
+In fact, the binary operations (comparisons as well as the set operations
+``+``, ``-`` and ``*``) work with any combination of dictionary operands::
+
+  > let m1 = hashdict (1..5);
+  > let m2 = ordmdict (3..7);
+  > m1+m2;
+  hashmdict [1,2,3,3,4,4,5,5,6,7]
+
+Note that the operands are always promoted to the more general operand type,
+where hashed beats ordered and multi-valued beats single-valued dictionaries.
+If this is not what you want, you can also specify the desired conversions
+explicitly::
+
+  > m1+orddict m2;
+  hashdict [1,2,3,4,5,6,7]
+  > orddict m1+m2;
+  ordmdict [1,2,3,3,4,4,5,5,6,7]
+
+Also note that the "set" operations not only work with proper sets, but also
+with general dictionaries::
+
+  > hashdict [i=>i+1|i=1..4]+hashdict [i=>i-1|i=3..5];
+  hashdict [1=>2,2=>3,3=>2,4=>3,5=>4]
 
 All dictionary containers can be used as generators in list and matrix
 comprehensions::
 
+  > let m = hashmdict [foo=>99,baz=>1..5,baz=>bar 4711L];
   > [x y | x=>y = m];
   [foo 99,baz [1,2,3,4,5],baz (bar 4711L)]
   > {{x;y} | x=>y = m};
   {foo,baz,baz;99,[1,2,3,4,5],bar 4711L}
 
 Note that in the current implementation this always computes the full member
-list of the dictionary. This may use lots of extra memory in the case of large
-dictionaries. As a remedy, you can also use the ``stream`` function to convert
-the dictionary to a lazy list instead. This will often be slower, but in the
-case of big dictionaries the tradeoff between memory usage and execution speed
-may be worth considering. For instance::
+list of the dictionary as an intermediate value, which will need considerable
+extra memory in the case of large dictionaries. As a remedy, you can also use
+the :func:`stream/stldict` function to convert the dictionary to a lazy list
+instead. This will often be slower, but in the case of big dictionaries the
+tradeoff between memory usage and execution speed might be worth
+considering. For instance::
 
-  > let m = hashdict [foo i => i | i = 1..1000];
+  > let m = hashdict [foo i => i | i = 1..10000];
   > stream m;
-  (foo 891=>891):#<thunk 0x7f10d31679f0>
+  (foo 1682=>1682):#<thunk 0x7f10d31679f0>
   > stats -m
   > #list m;
   10000
   0.01s, 40001 cells
   > #stream m;
   10000
-  0.11s, 16 cells
+  0.1s, 16 cells
   > #[y | x=>y = m; gcd y 767~=1];
   925
   0.05s, 61853 cells
   > #[y | x=>y = stream m; gcd y 767~=1];
   925
-  0.18s, 10969 cells
+  0.16s, 10972 cells

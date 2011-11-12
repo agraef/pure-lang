@@ -257,57 +257,7 @@ sort p m::orddict = sort p (list m);
    using the standard container API if you're dealing with large containers.
    It is also used internally to compute lazy member lists of containers, see
    the 'stream' function below. Most of the operations are in the stldict
-   namespace in order to keep the global namespace clean.
-
-   The following operations are provided to create an iterator for a given
-   orddict container.
-
-   - stldict::begin m, stldict::end m return iterators pointing to the
-     beginning and the end of the container. (Note that stldict::end *must*
-     always be specified in qualified form since 'end' is a keyword in the
-     Pure language.)
-
-   - stldict::find m x locates a key or specific key=>value pair x in the
-     container and returns an iterator pointing to the corresponding member,
-     or stldict::end m if m doesn't contain x.
-
-   Note that these operations return a new iterator object for each invocation.
-   Also, the created iterator object keeps track of the container it belongs
-   to, so that the container isn't garbage-collected while the iterator is
-   still being used. However, note that removing a member from the container
-   (using either delete or orddict::erase) invalidates all iterators pointing
-   to that member; the result of trying to access such an invalidated iterator
-   is undefined (most likely you'll get a segfault).
-
-   The following operations on iterators let you query and modify the contents
-   of the underlying container:
-
-   - orddict i returns the orddict to which i belongs.
-
-   - stldict::endp i checks whether the iterator i points to the end of the
-     container (i.e., past the last element).
-
-   - stldict::next i advances the iterator to the next element. Note that for
-     convenience, in contrast to the corresponding C++ operation this
-     operation is non-destructive. Thus it actually creates a *new* iterator
-     object, leaving the original iterator i unmodified. The operation fails
-     if i is already at the end of the container.
-
-   - stldict::get i retrieves the key=>val pair stored in the member pointed
-     to by i (or just the key if there is no associated value). The operation
-     fails if i is at the end of the container.
-
-   - stldict::put i y changes the value associated with the member pointed to
-     by i to y, and returns the new value y. The operation fails if i is at
-     the end of the container. Note that stldict::put only allows you to set
-     the associated value, not the key of the member.
-
-   - stldict::erase i removes the member pointed to by i (and invalidates i
-     and all other iterators pointing to this member). The operation fails if
-     i is at the end of the container.
-
-   - i == j and i ~= j test two iterators for equality (i.e., whether they
-     point to the same element). */
+   namespace in order to keep the global namespace clean. */
 
 let orddict_iterator_t = orddict_iterator_tag;
 type orddict_iterator x::pointer = check_ptrtag orddict_iterator_t x;
@@ -330,9 +280,7 @@ erase i::orddict_iterator = orddict_iterator_erase i if ~endp i;
 end;
 
 /* Overload the standard library stream function so that it converts an
-   orddict to a lazy list. This is usually more efficient than ordinary lists
-   since it allows you to visit the members of an orddict without having to
-   keep the entire member list in memory. */
+   orddict to a lazy list. */
 
 using namespace stldict;
 stream m::orddict = map get $ takewhile (\i -> ~endp i) $
