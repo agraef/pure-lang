@@ -385,8 +385,8 @@ px* sv_list(px* tpl)
   sv& v = *(itrs.vec);
   int b = itrs.beg() - v.begin(); 
   int e = b + itrs.size(); 
-  px* cons = pure_const(cons_tag());
-  px* nl = pure_const(null_list_tag());
+  px* cons = px_cons_sym();
+  px* nl = px_null_list_sym();
   if (b>=e) return nl;
   px* res = 0;
   px* y = 0;
@@ -410,8 +410,8 @@ px*  sv_listmap(px* fun, px* tpl)
   sv& v = *(itrs.vec);
   int b = itrs.beg() - v.begin(); 
   int e = b + itrs.size(); 
-  px* cons = pure_const(cons_tag());
-  px* nl = pure_const(null_list_tag());
+  px* cons = px_cons_sym();
+  px* nl = px_null_list_sym();
   if (b>=e) return nl;
   px* exception = 0;
   px* res = 0;
@@ -440,8 +440,8 @@ px* sv_listcatmap(px* fun, px* tpl)
   sv& v = *(itrs.vec);
   int b = itrs.beg() - v.begin(); 
   int e = b + itrs.size(); 
-  px* cons = pure_const(cons_tag());
-  px* nl = pure_const(null_list_tag());
+  px* cons = px_cons_sym();
+  px* nl = px_null_list_sym();
   if (b>=e) return nl;
   px* exception = 0;
   px* elm;

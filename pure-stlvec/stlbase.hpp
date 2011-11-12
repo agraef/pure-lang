@@ -21,7 +21,35 @@ included with the pure-stlvec distribution package for details.
 #include <map>
 #include <iterator>
 #include <functional>
+#include <stdlib.h>
 #include "pure/runtime.h"
+
+/* Class to keep track of interpreter-local data */
+
+template <class T>
+struct ILS {
+  pure_interp_key_t key;
+  T val;
+  /* This is safe to invoke at any time. */
+  ILS() : key(pure_interp_key(free)), val(T()) {}
+  ILS(T const& x) : key(pure_interp_key(free)), val(x) {}
+  /* This must only be invoked after an interpreter instance is available. It
+     will return a different reference to an object of type T (initialized to
+     the default value, if given) for each interpreter. */
+  T& operator()();
+};
+
+template <class T>
+T& ILS<T>::operator()()
+{
+  T *ptr = (T*)pure_interp_get(key);
+  if (!ptr) {
+    ptr = (T*)malloc(sizeof(T));
+    pure_interp_set(key, ptr);
+    *ptr = val;
+  }
+  return *ptr;
+}
 
 /* px - shorthand for pure_expr */
 
@@ -198,18 +226,16 @@ protected:
 
 std::ostream& operator<<(std::ostream& os, px* pe);
 
-void stl_throw_sym(const char *name);
+px* px_cons_sym();
+px* px_null_list_sym();
+px* px_rocket_sym();
 
-inline void bad_function() {stl_throw_sym("bad_function");}
-inline void index_error() {stl_throw_sym("out_of_bounds");}
-inline void range_overflow() {stl_throw_sym("range_overflow");}
-inline void range_overlap() {stl_throw_sym("range_overlap");}
-inline void bad_argument() {stl_throw_sym("bad_argument");}
-inline void failed_cond() {stl_throw_sym("failed_cond");}
-
-int cons_tag();
-int null_list_tag();
-int rocket_tag();
+void bad_function();
+void index_error();
+void range_overflow();
+void range_overlap();
+void bad_argument();
+void failed_cond();
 
 bool rocket_to_pair(px* rp, px** lhs, px** rhs);
 px* pair_to_rocket(const px* lhs, const px* rhs);

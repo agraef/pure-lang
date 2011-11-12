@@ -264,30 +264,115 @@ int stl_refc(pure_expr *x){
   return x->refc - 1; // want refc before pass into here
 }
 
-/**** Helpers **********************************************************/
+/**** Interpreter Local Storage Data ********************************/
 
-void stl_throw_sym(const char *name)
+static px* px_newsym(const char *name)
 {
-  pure_throw(pure_symbol(pure_sym(name)));
+  return pure_new(pure_symbol(pure_sym(name)));
 }
 
-int cons_tag()
+px* px_cons_sym()
 {
-  static int tag = pure_getsym(":");
-  return tag;
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym(":");
+  return sym;
 }
 
-int null_list_tag()
+px* px_null_list_sym()
 {
-  static int tag = pure_getsym("[]");
-  return tag;
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym("[]");
+  return sym;
 }
 
-int rocket_tag()
+px* px_rocket_sym()
 {
-  static int tag = pure_getsym("=>");
-  return tag;
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym("=>");
+  return sym;
 }
+
+px* px_bad_function_sym()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym("bad_function");
+  return sym;
+}
+
+px* px_out_of_bounds_sym()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym("out_of_bounds");
+  return sym;
+}
+
+px* px_range_overflow_sym()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym(":");
+  return sym;
+}
+
+px* px_range_overlap_sym()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym("range_overlap");
+  return sym;
+}
+
+px* px_bad_argument_sym()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym("bad_argument");
+  return sym;
+}
+
+px* px_failed_cond_sym()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym("failed_cond");
+  return sym;
+}
+
+px* stl_begin()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym("stl::stlbeg");
+  return sym;
+}
+
+px* stl_end()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym("stl::stlend");
+  return sym;
+}
+
+px* stl_insert()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym("stl::stlinsert");
+  return sym;
+}
+
+px* stl_back_insert()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym("stl::stlbackinsert");
+  return sym;
+}
+
+
+/*** Errors ********************************************************/
+
+void bad_function() {pure_throw(px_bad_function_sym());}
+void index_error() {pure_throw(px_out_of_bounds_sym());}
+void range_overflow() {pure_throw(px_range_overflow_sym());}
+void range_overlap() {pure_throw(px_range_overlap_sym());}
+void bad_argument() {pure_throw(px_bad_argument_sym());}
+void failed_cond() {pure_throw(px_failed_cond_sym());}
+
+/*** Helpers ********************************************************/
 
 bool rocket_to_pair(px* rp, px** lhs, px** rhs)
 {
@@ -305,29 +390,11 @@ bool rocket_to_pair(px* rp, px** lhs, px** rhs)
 
 px* pair_to_rocket(const px* lhs, const px* rhs)
 {
-  px* rocket = pure_const(rocket_tag());
+  px* rocket = px_rocket_sym();
   return pure_appl(rocket, 2, lhs, rhs); 
 } 
 
-px* pxh_to_pxp(pxh h){return h.pxp();}
-
-px* stl_begin()
+px* pxh_to_pxp(pxh h)
 {
-  return pure_symbol(pure_sym("stl::stlbeg"));
+  return h.pxp();
 }
-
-px* stl_end()
-{
-  return pure_symbol(pure_sym("stl::stlend"));
-}
-
-px* stl_insert()
-{
-  return pure_symbol(pure_sym("stl::stlinsert"));
-}
-
-px* stl_back_insert()
-{
-  return pure_symbol(pure_sym("stl::stlback"));
-}
-

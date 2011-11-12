@@ -143,8 +143,8 @@ static px* apply_fun(px* fun, int what, pmmi i, px** exception) {
 static px* listmap_aux(px* fun, pmmi b, pmmi e, int what) 
 {
   bool xx = b == e;
-  px* cons = pure_const(cons_tag());
-  px* nl = pure_const(null_list_tag());
+  px* cons = px_cons_sym();
+  px* nl = px_null_list_sym();
   px* res = nl;
   px* y = 0;
   px* exception;
@@ -939,8 +939,8 @@ px* smm_listcatmap(px* fun, px* tpl, int what)
   if (itrs.smmp->keys_only) what = stl_smm_key;
   pmmi b = itrs.beg(); 
   pmmi e = itrs.end(); 
-  px* cons = pure_const(cons_tag());
-  px* nl = pure_const(null_list_tag());
+  px* cons = px_cons_sym();
+  px* nl = px_null_list_sym();
   px* res = nl;
   px* y = 0;
   px* exception;
