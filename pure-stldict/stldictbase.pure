@@ -41,26 +41,22 @@ type ordxdict;
    to the most general type (hashed and/or multi-valued). */
 
 namespace stldict with
-// Actual conversion functions defined in the hashdict and orddict modules.
+// Interface to conversion functions and binary operations.
 public orddict ordmdict hashdict hashmdict;
+infix (==) == ~= <= >= < >; infixl (+) + -; infixl (*) *;
 coerce f x y = f (c x) (c y) when
   c = {orddict, ordmdict; hashdict, hashmdict} !
     (typep hashxdict x || typep hashxdict y, stlmdictp x || stlmdictp y);
 end;
-// Check in advance whether any conversions need to be done. This kludge is
-// necessary to prevent infinite recursion, because the rules below are
-// usually imported before the actual operations are defined.
-coercep x y = typep hashxdict x ~= typep hashxdict y ||
-  stlmdictp x ~= stlmdictp y;
 end;
 
 // Make the comparison and set operations work with any mix of operands.
-x::stlxdict == y::stlxdict = stldict::coerce (==) x y if stldict::coercep x y;
-x::stlxdict ~= y::stlxdict = stldict::coerce (~=) x y if stldict::coercep x y;
-x::stlxdict <= y::stlxdict = stldict::coerce (<=) x y if stldict::coercep x y;
-x::stlxdict >= y::stlxdict = stldict::coerce (>=) x y if stldict::coercep x y;
-x::stlxdict <  y::stlxdict = stldict::coerce (<)  x y if stldict::coercep x y;
-x::stlxdict >  y::stlxdict = stldict::coerce (>)  x y if stldict::coercep x y;
-x::stlxdict +  y::stlxdict = stldict::coerce (+)  x y if stldict::coercep x y;
-x::stlxdict -  y::stlxdict = stldict::coerce (-)  x y if stldict::coercep x y;
-x::stlxdict *  y::stlxdict = stldict::coerce (*)  x y if stldict::coercep x y;
+x::stlxdict == y::stlxdict = stldict::coerce (stldict::==) x y;
+x::stlxdict ~= y::stlxdict = stldict::coerce (stldict::~=) x y;
+x::stlxdict <= y::stlxdict = stldict::coerce (stldict::<=) x y;
+x::stlxdict >= y::stlxdict = stldict::coerce (stldict::>=) x y;
+x::stlxdict <  y::stlxdict = stldict::coerce (stldict::<)  x y;
+x::stlxdict >  y::stlxdict = stldict::coerce (stldict::>)  x y;
+x::stlxdict +  y::stlxdict = stldict::coerce (stldict::+)  x y;
+x::stlxdict -  y::stlxdict = stldict::coerce (stldict::-)  x y;
+x::stlxdict *  y::stlxdict = stldict::coerce (stldict::*)  x y;

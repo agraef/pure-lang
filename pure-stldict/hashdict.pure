@@ -171,8 +171,10 @@ mkhashdict y xs::rlist = hashdict (zipwith (=>) xs (repeatn (#xs) y));
    pairs, irrespective of their ordering. This check works in O(n log n) time
    on the average, depending on the load of the underlying hash table. */
 
+namespace stldict with
 x::hashdict == y::hashdict = hashdict_equal x y;
 x::hashdict ~= y::hashdict = ~hashdict_equal x y;
+end;
 
 // Minimal container API for hashdicts.
 
@@ -212,16 +214,20 @@ vector m::hashdict = hashdict_vector m;
 
 /* Set operations: union, difference, intersection. */
 
+namespace stldict with
 m1::hashdict + m2::hashdict = foldl insert (copy m1) (members m2);
 m1::hashdict - m2::hashdict = foldl delete (copy m1) (members m2);
 m1::hashdict * m2::hashdict = m1 - (m1 - m2);
+end;
 
 /* Subdict comparisons. */
 
+namespace stldict with
 m1::hashdict <= m2::hashdict = null (m1 - m2);
 m1::hashdict >= m2::hashdict = null (m2 - m1);
 m1::hashdict < m2::hashdict = m1 <= m2 && m1 ~= m2;
 m1::hashdict > m2::hashdict = m1 >= m2 && m1 ~= m2;
+end;
 
 /* Basic list-like operations and support for list and matrix comprehensions.
    NOTE: The most important of these should possibly be implemented in C, to
@@ -317,8 +323,10 @@ mkhashmdict y xs::rlist = hashmdict (zipwith (=>) xs (repeatn (#xs) y));
    multidict equality check depends on the frequencies of keys and may thus
    require O(n^2) time in degenerate cases. */
 
+namespace stldict with
 x::hashmdict == y::hashmdict = hashmdict_equal x y;
 x::hashmdict ~= y::hashmdict = ~hashmdict_equal x y;
+end;
 
 /* Note that m!x returns the list of *all* values associated with the key x
    here (which may be empty if the key is not in the dict, rather than raising
@@ -352,6 +360,7 @@ list m::hashmdict = hashmdict_list m;
 tuple m::hashmdict = hashmdict_tuple m;
 vector m::hashmdict = hashmdict_vector m;
 
+namespace stldict with
 m1::hashmdict + m2::hashmdict = foldl insert (copy m1) (members m2);
 m1::hashmdict - m2::hashmdict = foldl delete (copy m1) (members m2);
 m1::hashmdict * m2::hashmdict = m1 - (m1 - m2);
@@ -360,6 +369,7 @@ m1::hashmdict <= m2::hashmdict = null (m1 - m2);
 m1::hashmdict >= m2::hashmdict = null (m2 - m1);
 m1::hashmdict < m2::hashmdict = m1 <= m2 && m1 ~= m2;
 m1::hashmdict > m2::hashmdict = m1 >= m2 && m1 ~= m2;
+end;
 
 do f m::hashmdict = do f (list m);
 map f m::hashmdict = map f (list m);
@@ -433,6 +443,6 @@ hashmdict x::stlxdict = hashmdict (list x);
 
 // These are the conversions used by the stldictbase module.
 namespace stldict with
-  hashdict = ::hashdict;
-  hashmdict = ::hashmdict;
+hashdict = ::hashdict;
+hashmdict = ::hashmdict;
 end;

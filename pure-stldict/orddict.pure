@@ -158,8 +158,10 @@ mkorddict y xs::rlist = orddict (zipwith (=>) xs (repeatn (#xs) y));
    this fails). Equality holds iff two orddicts contain the same key=>val
    pairs. This test always works in O(n log n) time. */
 
+namespace stldict with
 x::orddict == y::orddict = orddict_equal x y;
 x::orddict ~= y::orddict = ~orddict_equal x y;
+end;
 
 // Minimal container API for orddicts.
 
@@ -199,23 +201,23 @@ vector m::orddict = orddict_vector m;
 
 /* Set operations: union, difference, intersection. */
 
+namespace stldict with
 m1::orddict + m2::orddict = foldl insert (copy m1) (members m2);
 m1::orddict - m2::orddict = foldl delete (copy m1) (members m2);
 m1::orddict * m2::orddict = m1 - (m1 - m2);
+end;
 
 /* Subdict comparisons. The orddict case is optimized so that we only need a
    single traversal of the member lists. (This is the same algorithm as in
    dict.pure, modified to deal with missing values.) */
 
-m1::orddict <= m2::orddict = cmp (members m1) (members m2) with
+m1::orddict stldict::<= m2::orddict = cmp (members m1) (members m2) with
   cmp [] [] = 1;
   cmp (x:xs) [] = 0;
   cmp [] (x:xs) = 1;
-  cmp xs1@(x:xs) (y:ys)
-  = 0 if key x<key y;
+  cmp xs1@(x:xs) (y:ys) = 0 if key x<key y;
   = cmp xs1 ys if key y<key x;
-  cmp ((xk=>xv):xs) ((yk=>yv):ys)
-  = eq xv yv && cmp xs ys;
+  cmp ((xk=>xv):xs) ((yk=>yv):ys) = eq xv yv && cmp xs ys;
   cmp ((xk=>xv):xs) (y:ys) |
   cmp (x:xs) ((yk=>yv):ys) = 0;
   cmp (x:xs) (y:ys) = cmp xs ys;
@@ -223,9 +225,11 @@ m1::orddict <= m2::orddict = cmp (members m1) (members m2) with
   eq u v = case u==v of res::int = res; _ = u===v end;
 end;
 
+namespace stldict with
 m1::orddict >= m2::orddict = m2 <= m1;
 m1::orddict < m2::orddict = m1 <= m2 && m1 ~= m2;
 m1::orddict > m2::orddict = m1 >= m2 && m1 ~= m2;
+end;
 
 /* Basic list-like operations and support for list and matrix comprehensions.
    NOTE: The most important of these should possibly be implemented in C, to
@@ -306,8 +310,10 @@ mkordmdict y xs::rlist = ordmdict (zipwith (=>) xs (repeatn (#xs) y));
    equality check depends on the frequencies of keys and may thus require
    O(n^2) time in degenerate cases. */
 
+namespace stldict with
 x::ordmdict == y::ordmdict = ordmdict_equal x y;
 x::ordmdict ~= y::ordmdict = ~ordmdict_equal x y;
+end;
 
 /* Note that m!x returns the list of *all* values associated with the key x
    here (which may be empty if the key is not in the dict, rather than raising
@@ -341,6 +347,7 @@ list m::ordmdict = ordmdict_list m;
 tuple m::ordmdict = ordmdict_tuple m;
 vector m::ordmdict = ordmdict_vector m;
 
+namespace stldict with
 m1::ordmdict + m2::ordmdict = foldl insert (copy m1) (members m2);
 m1::ordmdict - m2::ordmdict = foldl delete (copy m1) (members m2);
 m1::ordmdict * m2::ordmdict = m1 - (m1 - m2);
@@ -349,6 +356,7 @@ m1::ordmdict <= m2::ordmdict = null (m1 - m2);
 m1::ordmdict >= m2::ordmdict = null (m2 - m1);
 m1::ordmdict < m2::ordmdict = m1 <= m2 && m1 ~= m2;
 m1::ordmdict > m2::ordmdict = m1 >= m2 && m1 ~= m2;
+end;
 
 do f m::ordmdict = do f (list m);
 map f m::ordmdict = map f (list m);
@@ -412,6 +420,6 @@ ordmdict x::stlxdict = ordmdict (list x);
 
 // These are the conversions used by the stldictbase module.
 namespace stldict with
-  orddict = ::orddict;
-  ordmdict = ::ordmdict;
+orddict = ::orddict;
+ordmdict = ::ordmdict;
 end;
