@@ -161,13 +161,11 @@ hashdictp x = pointerp x && check_ptrtag hashdict_t x;
 // Make hashdict work with numeric vectors.
 hashdict x::nmatrix = hashdict (smatrix x);
 
-/* Semantic equality of hashdicts. These compare both keys and values for
-   syntactic equality. Equality holds iff two hashdicts contain the same
-   key=>val pairs, irrespective of their ordering. This check should work in
-   O(n log n) time, depending on the load of the underlying hash table. Note
-   that no subdict comparisons (<, <=, etc.) are provided, as the STL doesn't
-   have them either, but see hashdict_examp.pure for a possible Pure
-   implementation of these. */
+/* Semantic equality of hashdicts. These compare keys for syntactic equality,
+   and values for semantic equality (falling back to syntactic equality if
+   this fails). Equality holds iff two hashdicts contain the same key=>val
+   pairs, irrespective of their ordering. This check works in O(n log n) time
+   on the average, depending on the load of the underlying hash table. */
 
 x::hashdict == y::hashdict = hashdict_equal x y;
 x::hashdict ~= y::hashdict = ~hashdict_equal x y;
@@ -207,6 +205,19 @@ members m::hashdict = hashdict_list m;
 list m::hashdict = hashdict_list m;
 tuple m::hashdict = hashdict_tuple m;
 vector m::hashdict = hashdict_vector m;
+
+/* Set operations: union, difference, intersection. */
+
+m1::hashdict + m2::hashdict = foldl insert (copy m1) (members m2);
+m1::hashdict - m2::hashdict = foldl delete (copy m1) (members m2);
+m1::hashdict * m2::hashdict = m1 - (m1 - m2);
+
+/* Subdict comparisons. */
+
+m1::hashdict <= m2::hashdict = null (m1 - m2);
+m1::hashdict >= m2::hashdict = null (m2 - m1);
+m1::hashdict < m2::hashdict = m1 <= m2 && m1 ~= m2;
+m1::hashdict > m2::hashdict = m1 >= m2 && m1 ~= m2;
 
 /* Basic list-like operations and support for list and matrix comprehensions.
    NOTE: The most important of these should possibly be implemented in C, to
@@ -389,6 +400,15 @@ list m::hashmdict = hashmdict_list m;
 tuple m::hashmdict = hashmdict_tuple m;
 vector m::hashmdict = hashmdict_vector m;
 
+m1::hashmdict + m2::hashmdict = foldl insert (copy m1) (members m2);
+m1::hashmdict - m2::hashmdict = foldl delete (copy m1) (members m2);
+m1::hashmdict * m2::hashmdict = m1 - (m1 - m2);
+
+m1::hashmdict <= m2::hashmdict = null (m1 - m2);
+m1::hashmdict >= m2::hashmdict = null (m2 - m1);
+m1::hashmdict < m2::hashmdict = m1 <= m2 && m1 ~= m2;
+m1::hashmdict > m2::hashmdict = m1 >= m2 && m1 ~= m2;
+
 do f m::hashmdict = do f (list m);
 map f m::hashmdict = map f (list m);
 catmap f m::hashmdict = catmap f (list m);
@@ -468,3 +488,24 @@ x::hashdict == y::hashmdict = hashmdict x == y;
 
 x::hashmdict ~= y::hashdict = x ~= hashmdict y;
 x::hashdict ~= y::hashmdict = hashmdict x ~= y;
+
+x::hashmdict <= y::hashdict = x <= hashmdict y;
+x::hashdict <= y::hashmdict = hashmdict x <= y;
+
+x::hashmdict >= y::hashdict = x >= hashmdict y;
+x::hashdict >= y::hashmdict = hashmdict x >= y;
+
+x::hashmdict < y::hashdict = x < hashmdict y;
+x::hashdict < y::hashmdict = hashmdict x < y;
+
+x::hashmdict > y::hashdict = x > hashmdict y;
+x::hashdict > y::hashmdict = hashmdict x > y;
+
+x::hashmdict + y::hashdict = x + hashmdict y;
+x::hashdict + y::hashmdict = hashmdict x + y;
+
+x::hashmdict - y::hashdict = x - hashmdict y;
+x::hashdict - y::hashmdict = hashmdict x - y;
+
+x::hashmdict * y::hashdict = x * hashmdict y;
+x::hashdict * y::hashmdict = hashmdict x * y;

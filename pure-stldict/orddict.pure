@@ -131,13 +131,11 @@ extern bool ordmdict_iterator_equal(ordmdict_iterator*, ordmdict_iterator*);
      exactly the same order, using syntactic equality on both the keys and the
      associated values. This test can always be done in linear time. There's
      also a (somewhat more costly) semantic equality test which compares keys
-     using '<' (so keys may compare equal which are syntactically different),
-     and can also cope with the multidict case (see below) where different
-     entries for the "same" key may be listed in any order. Note that in
-     either case the associated values are always tested for *syntactic*
-     equality. That's because we don't assume anything about the types of
-     values stored in the container (they need not be ordered, and in fact
-     might not even have semantic equality '==' defined on them).
+     using '<' and values using '==' (so keys and values may compare equal
+     which are syntactically different), and can also cope with the multidict
+     case (see below) where different entries for the "same" key may be listed
+     in any order. (In this case values will actually be compared using '=='
+     if it is defined, falling back to syntactic equality otherwise.)
 
    - Orddicts are pretty-printed in the format 'orddict [...]' by default,
      which will reconstruct the container when reentered as Pure code. With
@@ -151,9 +149,10 @@ orddictp x = pointerp x && check_ptrtag orddict_t x;
 // Make orddict work with numeric vectors.
 orddict x::nmatrix = orddict (smatrix x);
 
-/* Semantic equality of orddicts. These compare keys using the '<' predicate
-   and values for syntactic equality. Equality holds iff two orddicts contain
-   the same key=>val pairs. This test always works in O(n log n) time. */
+/* Semantic equality of orddicts. These compare keys using the '<' predicate,
+   and values for semantic equality (falling back to syntactic equality if
+   this fails). Equality holds iff two orddicts contain the same key=>val
+   pairs. This test always works in O(n log n) time. */
 
 x::orddict == y::orddict = orddict_equal x y;
 x::orddict ~= y::orddict = ~orddict_equal x y;
@@ -193,6 +192,36 @@ members m::orddict = orddict_list m;
 list m::orddict = orddict_list m;
 tuple m::orddict = orddict_tuple m;
 vector m::orddict = orddict_vector m;
+
+/* Set operations: union, difference, intersection. */
+
+m1::orddict + m2::orddict = foldl insert (copy m1) (members m2);
+m1::orddict - m2::orddict = foldl delete (copy m1) (members m2);
+m1::orddict * m2::orddict = m1 - (m1 - m2);
+
+/* Subdict comparisons. The orddict case is optimized so that we only need a
+   single traversal of the member lists. (This is the same algorithm as in
+   dict.pure, modified to deal with missing values.) */
+
+m1::orddict <= m2::orddict = cmp (members m1) (members m2) with
+  cmp [] [] = 1;
+  cmp (x:xs) [] = 0;
+  cmp [] (x:xs) = 1;
+  cmp xs1@(x:xs) (y:ys)
+  = 0 if key x<key y;
+  = cmp xs1 ys if key y<key x;
+  cmp ((xk=>xv):xs) ((yk=>yv):ys)
+  = eq xv yv && cmp xs ys;
+  cmp ((xk=>xv):xs) (y:ys) |
+  cmp (x:xs) ((yk=>yv):ys) = 0;
+  cmp (x:xs) (y:ys) = cmp xs ys;
+  key x = case x of x=>y = x; _ = x end;
+  eq u v = case u==v of res::int = res; _ = u===v end;
+end;
+
+m1::orddict >= m2::orddict = m2 <= m1;
+m1::orddict < m2::orddict = m1 <= m2 && m1 ~= m2;
+m1::orddict > m2::orddict = m1 >= m2 && m1 ~= m2;
 
 /* Basic list-like operations and support for list and matrix comprehensions.
    NOTE: The most important of these should possibly be implemented in C, to
@@ -360,6 +389,15 @@ list m::ordmdict = ordmdict_list m;
 tuple m::ordmdict = ordmdict_tuple m;
 vector m::ordmdict = ordmdict_vector m;
 
+m1::ordmdict + m2::ordmdict = foldl insert (copy m1) (members m2);
+m1::ordmdict - m2::ordmdict = foldl delete (copy m1) (members m2);
+m1::ordmdict * m2::ordmdict = m1 - (m1 - m2);
+
+m1::ordmdict <= m2::ordmdict = null (m1 - m2);
+m1::ordmdict >= m2::ordmdict = null (m2 - m1);
+m1::ordmdict < m2::ordmdict = m1 <= m2 && m1 ~= m2;
+m1::ordmdict > m2::ordmdict = m1 >= m2 && m1 ~= m2;
+
 do f m::ordmdict = do f (list m);
 map f m::ordmdict = map f (list m);
 catmap f m::ordmdict = catmap f (list m);
@@ -411,7 +449,7 @@ using namespace;
 /***************************************************************************/
 
 /* Conversions between the different orddict types and mixed orddict
-   operations. We also define a ordxdict union type which matches both
+   operations. We also define an ordxdict union type which matches both
    orddict and ordmdict values. */
 
 type ordxdict x::orddict | ordxdict x::ordmdict;
@@ -429,3 +467,24 @@ x::orddict == y::ordmdict = ordmdict x == y;
 
 x::ordmdict ~= y::orddict = x ~= ordmdict y;
 x::orddict ~= y::ordmdict = ordmdict x ~= y;
+
+x::ordmdict <= y::orddict = x <= ordmdict y;
+x::orddict <= y::ordmdict = ordmdict x <= y;
+
+x::ordmdict >= y::orddict = x >= ordmdict y;
+x::orddict >= y::ordmdict = ordmdict x >= y;
+
+x::ordmdict < y::orddict = x < ordmdict y;
+x::orddict < y::ordmdict = ordmdict x < y;
+
+x::ordmdict > y::orddict = x > ordmdict y;
+x::orddict > y::ordmdict = ordmdict x > y;
+
+x::ordmdict + y::orddict = x + ordmdict y;
+x::orddict + y::ordmdict = ordmdict x + y;
+
+x::ordmdict - y::orddict = x - ordmdict y;
+x::orddict - y::ordmdict = ordmdict x - y;
+
+x::ordmdict * y::orddict = x * ordmdict y;
+x::orddict * y::ordmdict = ordmdict x * y;
