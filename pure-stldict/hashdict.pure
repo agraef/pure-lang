@@ -28,6 +28,7 @@
    hashmdict_free are reserved for internal use as a sentry on hashdict and
    hashmdict objects and should never be called directly. */
 
+using stldictbase;
 using "lib:hashdict";
 
 extern int hashdict_tag();
@@ -469,9 +470,7 @@ end;
 
 /***************************************************************************/
 
-/* Conversions between the different dict types and mixed operations. */
-
-using stldictbase;
+/* Conversions between the different dict types. */
 
 type hashxdict x::hashdict | hashxdict x::hashmdict;
 hashxdictp x = case x of _::hashxdict = true; _ = false end;
@@ -482,38 +481,8 @@ hashdict x::hashdict | hashmdict x::hashmdict = x;
 hashdict x::stlxdict = hashdict (list x);
 hashmdict x::stlxdict = hashmdict (list x);
 
-/* For the mixed operations we always convert to the most general operand
-   type (i.e., hashdict if both operands are single-valued dictionaries,
-   hashmdict otherwise). */
-
-namespace hashmap with
-coerce f x y = f (hashmdict x) (hashmdict y) if stlmdictp x || stlmdictp y;
-             = f (hashdict x) (hashdict y) otherwise;
+// These are the conversions used by the stldictbase module.
+namespace stldict with
+  hashdict = ::hashdict;
+  hashmdict = ::hashmdict;
 end;
-
-x::hashxdict == y::stlxdict |
-x::stlxdict == y::hashxdict = hashmap::coerce (==) x y;
-
-x::hashxdict ~= y::stlxdict |
-x::stlxdict ~= y::hashxdict = hashmap::coerce (~=) x y;
-
-x::hashxdict <= y::stlxdict |
-x::stlxdict <= y::hashxdict = hashmap::coerce (<=) x y;
-
-x::hashxdict >= y::stlxdict |
-x::stlxdict >= y::hashxdict = hashmap::coerce (>=) x y;
-
-x::hashxdict < y::stlxdict |
-x::stlxdict < y::hashxdict = hashmap::coerce (<) x y;
-
-x::hashxdict > y::stlxdict |
-x::stlxdict > y::hashxdict = hashmap::coerce (>) x y;
-
-x::hashxdict + y::stlxdict |
-x::stlxdict + y::hashxdict = hashmap::coerce (+) x y;
-
-x::hashxdict - y::stlxdict |
-x::stlxdict - y::hashxdict = hashmap::coerce (-) x y;
-
-x::hashxdict * y::stlxdict |
-x::stlxdict * y::hashxdict = hashmap::coerce (*) x y;

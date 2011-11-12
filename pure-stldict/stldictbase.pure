@@ -31,3 +31,36 @@ type stlxdict x::stldict | stlxdict x::stlmdict;
 stldictp x  = case x of _::stldict = true; _ = false end;
 stlmdictp x = case x of _::stlmdict = true; _ = false end;
 stlxdictp x = case x of _::stlxdict = true; _ = false end;
+
+/* Generic dictionary types supported by this implementation. */
+
+type hashxdict;
+type ordxdict;
+
+/* Generic coercions for mixed operations. These always convert the operands
+   to the most general type (hashed and/or multi-valued). */
+
+namespace stldict with
+// Actual conversion functions defined in the hashdict and orddict modules.
+public orddict ordmdict hashdict hashmdict;
+coerce f x y = f (c x) (c y) when
+  c = {orddict, ordmdict; hashdict, hashmdict} !
+    (typep hashxdict x || typep hashxdict y, stlmdictp x || stlmdictp y);
+end;
+// Check in advance whether any conversions need to be done. This kludge is
+// necessary to prevent infinite recursion, because the rules below are
+// usually imported before the actual operations are defined.
+coercep x y = typep hashxdict x ~= typep hashxdict y ||
+  stlmdictp x ~= stlmdictp y;
+end;
+
+// Make the comparison and set operations work with any mix of operands.
+x::stlxdict == y::stlxdict = stldict::coerce (==) x y if stldict::coercep x y;
+x::stlxdict ~= y::stlxdict = stldict::coerce (~=) x y if stldict::coercep x y;
+x::stlxdict <= y::stlxdict = stldict::coerce (<=) x y if stldict::coercep x y;
+x::stlxdict >= y::stlxdict = stldict::coerce (>=) x y if stldict::coercep x y;
+x::stlxdict <  y::stlxdict = stldict::coerce (<)  x y if stldict::coercep x y;
+x::stlxdict >  y::stlxdict = stldict::coerce (>)  x y if stldict::coercep x y;
+x::stlxdict +  y::stlxdict = stldict::coerce (+)  x y if stldict::coercep x y;
+x::stlxdict -  y::stlxdict = stldict::coerce (-)  x y if stldict::coercep x y;
+x::stlxdict *  y::stlxdict = stldict::coerce (*)  x y if stldict::coercep x y;

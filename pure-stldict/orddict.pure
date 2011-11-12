@@ -28,6 +28,7 @@
    ordmdict_free are reserved for internal use as a sentry on orddict and
    ordmdict objects and should never be called directly. */
 
+using stldictbase;
 using "lib:orddict";
 
 extern int orddict_tag();
@@ -448,9 +449,7 @@ using namespace;
 
 /***************************************************************************/
 
-/* Conversions between the different dict types and mixed operations. */
-
-using stldictbase;
+/* Conversions between the different dict types. */
 
 type ordxdict x::orddict | ordxdict x::ordmdict;
 ordxdictp x = case x of _::ordxdict = true; _ = false end;
@@ -461,32 +460,8 @@ orddict x::orddict | ordmdict x::ordmdict = x;
 orddict x::stlxdict = orddict (list x);
 ordmdict x::stlxdict = ordmdict (list x);
 
-/* For the mixed operations we always convert to the most general operand
-   type (this is always ordmdict here). */
-
-x::ordmdict == y::orddict = x == ordmdict y;
-x::orddict == y::ordmdict = ordmdict x == y;
-
-x::ordmdict ~= y::orddict = x ~= ordmdict y;
-x::orddict ~= y::ordmdict = ordmdict x ~= y;
-
-x::ordmdict <= y::orddict = x <= ordmdict y;
-x::orddict <= y::ordmdict = ordmdict x <= y;
-
-x::ordmdict >= y::orddict = x >= ordmdict y;
-x::orddict >= y::ordmdict = ordmdict x >= y;
-
-x::ordmdict < y::orddict = x < ordmdict y;
-x::orddict < y::ordmdict = ordmdict x < y;
-
-x::ordmdict > y::orddict = x > ordmdict y;
-x::orddict > y::ordmdict = ordmdict x > y;
-
-x::ordmdict + y::orddict = x + ordmdict y;
-x::orddict + y::ordmdict = ordmdict x + y;
-
-x::ordmdict - y::orddict = x - ordmdict y;
-x::orddict - y::ordmdict = ordmdict x - y;
-
-x::ordmdict * y::orddict = x * ordmdict y;
-x::orddict * y::ordmdict = ordmdict x * y;
+// These are the conversions used by the stldictbase module.
+namespace stldict with
+  orddict = ::orddict;
+  ordmdict = ::ordmdict;
+end;
