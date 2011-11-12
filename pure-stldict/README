@@ -103,6 +103,11 @@ structures:
   structures in the standard library, and can be found in the ``orddict.pure``
   module.
 
+These data structures are very thin wrappers around the C++ container types;
+in fact, they are just pointers to the C++ containers. Memory management of
+these objects is automatic, and customizable `pretty-printing`_ is provided as
+well.
+
 Note that :type:`hashdict/type` and :type:`hashmdict/type` differ in that the
 former has exactly one key-value association for each key in the dictionary,
 while the latter is a "multidict" which allows multiple values to be
@@ -136,18 +141,16 @@ For instance, you can use :type:`hashxdict/type` to match both
 Operations
 ==========
 
-All data structures offer most of the usual Pure container interface and can
-be used either as dictionaries (holding key => value pairs) or sets (holding
-only keys, without associated values). The data structures are very thin
-wrappers around the C++ container types; in fact, they are just pointers to
-the C++ containers. Memory management of these objects is automatic, and
-customizable pretty-printing is provided as well.
+All data structures offer most of the usual Pure container interface (as well
+as some extensions). In contrast to the standard library dictionaries, they
+can be used both as dictionaries (holding key => value pairs) and sets
+(holding only keys, without associated values), even at the same time.
 
-The most important difference to the dictionary and set types in the standard
-library is that the hashdict and orddict containers are *mutable* data
-structures; inserting and deleting members really modifies the underlying C++
-containers. (However, it is possible to take copies of the containers in
-situations where it's necessary to preserve value semantics.)
+The other important difference to the standard library containers is that the
+stldict containers are *mutable* data structures; inserting and deleting
+members really modifies the underlying C++ containers. (However, it is
+possible to take copies of the containers in situations where it's necessary
+to preserve value semantics.)
 
 Basic Operations
 ----------------
@@ -168,6 +171,14 @@ Basic Operations
    corresponding type, this is a no-op (if you want to copy the dictionary
    instead, use the :func:`copy/stldict` function below). Otherwise the given
    dictionary is converted to a new dictionary of the desired target type.
+
+.. function:: mkhashdict y xs
+              mkhashmdict y xs
+              mkorddict y xs
+              mkordmdict y xs
+
+   Create a dictionary from a list of keys and a constant value. The resulting
+   dictionary has the given keys and ``y`` as the value for each key.
 
 .. function:: copy /stldict m
 
@@ -279,6 +290,39 @@ desired, you'll first have to take a copy of the target dictionary, see
 
    Remove all members from ``m``, making ``m`` an empty dictionary.
    Returns ``()``.
+
+Pretty-Printing
+---------------
+
+By default, dictionaries are pretty-printed in the format ``somedict xs``,
+where ``somedict`` is the actual construction function such as ``hashdict``,
+``orddict``, etc., and ``xs`` is the member list of the dictionary. This is
+usually convenient, as the printed expression will evaluate to an equal
+container when reentered as Pure code. However, it is also possible to define
+your own custom pretty-printing with the following function.
+
+.. function:: hashdict_symbol f
+   	      hashmdict_symbol f
+	      orddict_symbol f
+   	      ordmdict_symbol f
+
+   Makes the pretty-printer use the format ``f xs`` (where ``xs`` is the
+   member list) for printing the corresponding type of dictionary.
+
+Note that ``f`` may also be an operator symbol (nonfix and unary symbols work
+best). In the case of an outfix symbol the list brackets around the members
+are removed; this makes it possible to render the container in a format
+similar to Pure's list syntax. For instance::
+
+  > using stldict;
+  > outfix {$ $};
+  > orddict_symbol ({$ $});
+  ()
+  > orddict (1..5);
+  {$1,2,3,4,5$}
+
+See ``orddict_examp.pure`` included in the distribution for a complete example
+which also discusses how to make such a custom print representation reparsable.
 
 Comparisons
 -----------
@@ -440,10 +484,10 @@ Other Low-Level Operations
 --------------------------
 
 The :mod:`hashdict` module also provides a few specialized low-level
-operations dealing with the layouts of buckets and the hashing policy
-interface, such as ``load_factor``, ``rehash``, ``reserve`` etc. These
-operations, which are all kept in their separate ``hashdict`` namespace, are
-useful to obtain performance-related information about the underlying hash
+operations dealing with the layouts of buckets and the hash policy, such as
+``bucket_count``, ``load_factor``, ``rehash`` etc. These operations, which are
+all kept in their separate ``hashdict`` namespace, are useful to obtain
+performance-related information and modify the setup of the underlying hash
 table. Please check the ``hashdict.pure`` module and the `C++ standard library
 documentation`_ for further details.
 
@@ -555,7 +599,7 @@ considering. For instance::
 
   > let m = hashdict [foo i => i | i = 1..10000];
   > stream m;
-  (foo 1682=>1682):#<thunk 0x7f10d31679f0>
+  (foo 1512=>1512):#<thunk 0x7fa1718350a8>
   > stats -m
   > #list m;
   10000
@@ -568,4 +612,4 @@ considering. For instance::
   0.05s, 61853 cells
   > #[y | x=>y = stream m; gcd y 767~=1];
   925
-  0.16s, 10972 cells
+  0.15s, 10979 cells
