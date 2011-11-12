@@ -70,9 +70,9 @@ static px* smm_pair_to_key(const pxh_pair& kv)
 static int smm_get_size(smm* smmp, pmmi b, pmmi e)
 {
  size_t sz = 0;
- pxhmmap& mp = smmp->mp;
- if (b == mp.begin() && e == mp.end())
-    sz = mp.size();
+ pxhmmap& mmp = smmp->mmp;
+ if (b == mmp.begin() && e == mmp.end())
+    sz = mmp.size();
  else if (b == e)
    sz = 0;
  else
@@ -82,8 +82,8 @@ static int smm_get_size(smm* smmp, pmmi b, pmmi e)
 
 static pmmi update_aux(smm* smmp, px* k, px* v)
 {
-  pxhmmap& mp = smmp->mp;
-  return mp.insert(pxh_pair(k,v));
+  pxhmmap& mmp = smmp->mmp;
+  return mmp.insert(pxh_pair(k,v));
 }
 
 // increases inserted by 1 iff inserted new value
@@ -109,7 +109,7 @@ static bool insert_aux(smm* smmp, px* kv, pmmi& pos, int& inserted)
     }
   }
   if (ok) {
-    pos = smmp->mp.insert(pxh_pair(k,v));
+    pos = smmp->mmp.insert(pxh_pair(k,v));
     inserted ++;
   }
   return ok;
@@ -169,13 +169,13 @@ static px* listmap_aux(px* fun, pmmi b, pmmi e, int what)
 /*** stlmmap members  ***********************************************/
 
 stlmmap::stlmmap(px* cmp, px* val_cmp, px* val_eql, bool keyonly):
-  mp(pxh_pred2(cmp)), keys_only(keyonly),
+  mmp(pxh_pred2(cmp)), keys_only(keyonly),
   px_comp(cmp), px_val_comp(val_cmp), px_val_equal(val_eql),
   has_recent_pmmi(0), latest_pmmi_pos(0),
   has_dflt(0), dflt(NULL) {}
 
 stlmmap::stlmmap(px* cmp, px* val_cmp, px* val_eql, bool keyonly, px *d):
-  mp(pxh_pred2(cmp)), keys_only(keyonly),
+  mmp(pxh_pred2(cmp)), keys_only(keyonly),
   px_comp(cmp), px_val_comp(val_cmp), px_val_equal(val_eql),
   has_recent_pmmi(0),  latest_pmmi_pos(0),
   has_dflt(1), dflt(d) {}
@@ -184,17 +184,17 @@ pmmi stlmmap::find(px* key)
 {
   pmmi iter;
   if (key == smmbeg())
-    iter = mp.begin();
+    iter = mmp.begin();
   else if (key == smmend())
-    iter = mp.end();
+    iter = mmp.end();
   else
-    iter = mp.find(key);
+    iter = mmp.find(key);
   return iter;  
 }
 
 void stlmmap::cache_pmmi(pmmi& i)
 {
-  if ( i != mp.end() ) {
+  if ( i != mmp.end() ) {
     if (!has_recent_pmmi) {
       recent_pmmi.clear();
       has_recent_pmmi = true;
@@ -233,7 +233,7 @@ bool stlmmap::get_cached_pmmi(px* k, pmmi& i)
 void stlmmap::clear()
 {
   has_recent_pmmi = 0;
-  mp.clear();
+  mmp.clear();
 }
 
 int stlmmap::erase(pmmi pos)
@@ -243,23 +243,23 @@ int stlmmap::erase(pmmi pos)
       remove(recent_pmmi.begin(),recent_pmmi.end(),pos);
     recent_pmmi.erase(end,recent_pmmi.end());
   }
-  mp.erase(pos);
+  mmp.erase(pos);
   return 1;
 }
 
 int stlmmap::erase(px* k)
 {
   int ret = 0;
-  if ( !mp.empty() ) {
+  if ( !mmp.empty() ) {
     ret = 1;
     pmmi i;
     if ( get_cached_pmmi(k, i) )
       erase(i);
     else {
       if (k == smmbeg())
-        erase(mp.begin());
+        erase(mmp.begin());
       else if (k != smmend()) {
-        ret = mp.erase(k);
+        ret = mmp.erase(k);
       }
       else
         ret = 0;
@@ -271,38 +271,38 @@ int stlmmap::erase(px* k)
 
 int stlmmap::erase(pmmi first, pmmi last)
 {
-  size_t sz = mp.size();
-  mp.erase(first, last);
+  size_t sz = mmp.size();
+  mmp.erase(first, last);
   has_recent_pmmi = false;
-  return sz - mp.size();
+  return sz - mmp.size();
 }
 
-/*** smm_iters functions *********************************************/
+/*** smm_range functions *********************************************/
 
 enum {gi_find, gi_lower, gi_upper};
 
-static pmmi get_iter(pxhmmap& mp , px* key, int mode)
+static pmmi get_iter(pxhmmap& mmp , px* key, int mode)
 {
   pmmi iter;
   if (key == smmbeg())
-    iter = mp.begin();
+    iter = mmp.begin();
   else if (key == smmend())
-    iter = mp.end();
+    iter = mmp.end();
   else {
     if (mode==gi_upper) 
-      iter = mp.upper_bound(key);
+      iter = mmp.upper_bound(key);
     else if (mode==gi_lower)
-      iter = mp.lower_bound(key);
+      iter = mmp.lower_bound(key);
     else 
-      iter = mp.find(key);
+      iter = mmp.find(key);
   }
   return iter;  
 }
 
-static px* iter_to_key(const pxhmmap& mp, const pmmi& it)
+static px* iter_to_key(const pxhmmap& mmp, const pmmi& it)
 {
-  if (it == mp.end()) return smmend();
-  if (it == mp.begin()) return smmbeg();
+  if (it == mmp.end()) return smmend();
+  if (it == mmp.begin()) return smmbeg();
   return it->first.pxp();
 }
 
@@ -321,63 +321,63 @@ static smm* get_smm_from_app(px* app)
 
 // sets two iterators [beg, end)
 // one key goes to "k, k++)
-// if first >= last then use  mp.end(), mp.end()
-smm_iters::smm_iters(px* pmmi_tuple)
+// if first >= last then use  mmp.end(), mmp.end()
+smm_range::smm_range(px* pmmi_tuple)
 {
   size_t tpl_sz;
   px** elems;  
   is_valid = true;
   pure_is_tuplev(pmmi_tuple, &tpl_sz, &elems);
   smmp = get_smm_from_app(elems[0]);
-  pxhmmap &mp = smmp->mp;
-  pxhmmap::key_compare k_cmp = mp.key_comp();
+  pxhmmap &mmp = smmp->mmp;
+  pxhmmap::key_compare k_cmp = mmp.key_comp();
   num_iters = tpl_sz-1;
   pmmi et;
   if (num_iters > 2) {
     is_valid = false;
     goto done;
   }
-  if (num_iters == 0 || mp.size() == 0) {
-    begin_it = mp.begin();
-    end_it = mp.end();
+  if (num_iters == 0 || mmp.size() == 0) {
+    begin_it = mmp.begin();
+    end_it = mmp.end();
     num_iters = 2;
     goto done;
   }
   {
     px* b = elems[1];
     px* e = num_iters == 2 ? elems[2] : b;
-    begin_it = get_iter(mp, b, gi_lower);
+    begin_it = get_iter(mmp, b, gi_lower);
     if (b == smmbeg()) b = begin_it->first.pxp();
     if (num_iters == 1) {
-      if ( begin_it == mp.end() || 
+      if ( begin_it == mmp.end() || 
            k_cmp(b, begin_it->first) ||
            k_cmp(begin_it->first,b) ){
-        begin_it = end_it = mp.end(); 
+        begin_it = end_it = mmp.end(); 
         goto done;
       }        
       end_it = begin_it;
-      while (++end_it != mp.end())
+      while (++end_it != mmp.end())
         if ( k_cmp(b, end_it->first) ) break;
       goto done;
     }
-    if ( begin_it == mp.end() || e == smmend() ) {
-      end_it = mp.end();
+    if ( begin_it == mmp.end() || e == smmend() ) {
+      end_it = mmp.end();
       goto done;
     }
-    pmmi i = get_iter(mp, e, gi_upper); // upper to high
-    while (i != mp.begin() ) {
+    pmmi i = get_iter(mmp, e, gi_upper); // upper to high
+    while (i != mmp.begin() ) {
       pmmi prev = i; prev--;
       if ( k_cmp(prev->first,e) ) break;
       i = prev;
     }
-    if (i == mp.begin())
+    if (i == mmp.begin())
       end_it = begin_it;
     else
       end_it = i;
   }
  done:
   free(elems);
-  if (end_it != mp.end() && k_cmp(end_it->first, begin_it->first) )
+  if (end_it != mmp.end() && k_cmp(end_it->first, begin_it->first) )
     begin_it=end_it;
 }
 
@@ -409,27 +409,27 @@ void smm_delete(smm* p){
 
 bool smm_is_set(px* tpl)
 {
-  smm_iters itrs(tpl);
-  if (!itrs.is_valid) bad_argument();
-  return itrs.smmp->keys_only;
+  smm_range rng(tpl);
+  if (!rng.is_valid) bad_argument();
+  return rng.smmp->keys_only;
 }
 
 int smm_less(px* tpl1, px* tpl2)
 {
-  smm_iters itrs1(tpl1);
-  smm_iters itrs2(tpl2);
-  if (!itrs1.is_valid || !itrs2.is_valid) bad_argument;
-  smm* smmp = itrs1.smmp;
+  smm_range rng1(tpl1);
+  smm_range rng2(tpl2);
+  if (!rng1.is_valid || !rng2.is_valid) bad_argument;
+  smm* smmp = rng1.smmp;
   try {
     if (smmp->keys_only) {
-      return lexicographical_compare(itrs1.beg(), itrs1.end(),
-                                     itrs2.beg(), itrs2.end(), 
-                                     smmp->mp.value_comp());
+      return lexicographical_compare(rng1.beg(), rng1.end(),
+                                     rng2.beg(), rng2.end(), 
+                                     smmp->mmp.value_comp());
     }
     else {
       pxh_pair_less comp(smmp->px_comp.pxp(),smmp->px_val_comp.pxp());   
-      return lexicographical_compare(itrs1.beg(), itrs1.end(),
-                                     itrs2.beg(), itrs2.end(), 
+      return lexicographical_compare(rng1.beg(), rng1.end(),
+                                     rng2.beg(), rng2.end(), 
                                      comp);
     }
   }
@@ -440,19 +440,19 @@ int smm_less(px* tpl1, px* tpl2)
 
 bool smm_equal(px* tpl1, px* tpl2)
 {
-  smm_iters itrs1(tpl1);
-  smm_iters itrs2(tpl2);
-  if (!itrs1.is_valid || !itrs2.is_valid) bad_argument;
+  smm_range rng1(tpl1);
+  smm_range rng2(tpl2);
+  if (!rng1.is_valid || !rng2.is_valid) bad_argument;
   if (smm_size(tpl1) != smm_size(tpl2)) return 0;
-  smm* smmp = itrs1.smmp;
+  smm* smmp = rng1.smmp;
   try {
     if (smmp->keys_only) {
       pxh_pair_first_equal comp(smmp->px_val_equal.pxp());   
-      return equal(itrs1.beg(), itrs1.end(), itrs2.beg(), comp);
+      return equal(rng1.beg(), rng1.end(), rng2.beg(), comp);
     }
     else {
       pxh_pair_equivalent comp(smmp->px_comp.pxp(),smmp->px_val_equal.pxp());   
-      return equal(itrs1.beg(), itrs1.end(), itrs2.beg(), comp);
+      return equal(rng1.beg(), rng1.end(), rng2.beg(), comp);
     }
   }
   catch (px* e) {
@@ -462,15 +462,15 @@ bool smm_equal(px* tpl1, px* tpl2)
 
 px* smm_make_vector(px* tpl) 
 {
-  smm_iters itrs(tpl);
-  if (!itrs.is_valid) bad_argument();
-  pmmi b = itrs.beg();
-  pmmi e = itrs.end();
-  int sz = smm_get_size(itrs.smmp, b, e);
+  smm_range rng(tpl);
+  if (!rng.is_valid) bad_argument();
+  pmmi b = rng.beg();
+  pmmi e = rng.end();
+  int sz = smm_get_size(rng.smmp, b, e);
   if (!sz)
     return pure_matrix_columnsv(0,NULL);
   px** bfr = (px**)malloc(sizeof(px*)*sz);
-  if (itrs.smmp->keys_only) 
+  if (rng.smmp->keys_only) 
     transform(b, e, bfr, smm_pair_to_key);
   else
     transform(b, e, bfr, smm_pair_to_rocket);
@@ -481,12 +481,12 @@ px* smm_make_vector(px* tpl)
 
 sv* smm_make_stlvec(px* tpl) 
 {
-  smm_iters itrs(tpl);
-  if (!itrs.is_valid) bad_argument();
-  pmmi b = itrs.beg();
-  pmmi e = itrs.end();
+  smm_range rng(tpl);
+  if (!rng.is_valid) bad_argument();
+  pmmi b = rng.beg();
+  pmmi e = rng.end();
   sv* ret = new sv;
-  if (itrs.smmp->keys_only) 
+  if (rng.smmp->keys_only) 
     transform(b, e, back_inserter(*ret), smm_pair_to_key);
   else
     transform(b, e, back_inserter(*ret), smm_pair_to_rocket);
@@ -517,32 +517,32 @@ px* smm_get_default(smm* smmp)
 
 int smm_size(px* tpl)
 {
-  smm_iters itrs(tpl);
-  if (!itrs.is_valid) bad_argument();
-  return smm_get_size(itrs.smmp, itrs.beg(), itrs.end());
+  smm_range rng(tpl);
+  if (!rng.is_valid) bad_argument();
+  return smm_get_size(rng.smmp, rng.beg(), rng.end());
 }
 
 px* smm_bounds(px* tpl)
 {
-  smm_iters itrs(tpl);
-  if (!itrs.is_valid) bad_argument;
-  pxhmmap& mp = itrs.smmp->mp;
-  return pure_tuplel(2,iter_to_key(mp, itrs.beg()),
-                       iter_to_key(mp, itrs.end())); 
+  smm_range rng(tpl);
+  if (!rng.is_valid) bad_argument;
+  pxhmmap& mmp = rng.smmp->mmp;
+  return pure_tuplel(2,iter_to_key(mmp, rng.beg()),
+                       iter_to_key(mmp, rng.end())); 
 }
 
 int smm_member(smm* smmp, px* key)
 {
   int ret = 0;
-  pxhmmap& mp = smmp->mp;
+  pxhmmap& mmp = smmp->mmp;
   pmmi i;
-  if (!mp.empty()) {
+  if (!mmp.empty()) {
     if (smmp->get_cached_pmmi(key, i) ) {
       ret = 1;
     }
     else {
       i = smmp->find(key);
-      if (i != mp.end()) {
+      if (i != mmp.end()) {
         smmp->cache_pmmi(i);
         ret = 1;
       }
@@ -553,56 +553,56 @@ int smm_member(smm* smmp, px* key)
 
 px* smm_prev_key(smm* smmp, px* key)
 {
-  pxhmmap& mp = smmp->mp;
-  if (mp.empty()) index_error(); 
-  pmmi i = mp.end();
+  pxhmmap& mmp = smmp->mmp;
+  if (mmp.empty()) index_error(); 
+  pmmi i = mmp.end();
   if ( !smmp->get_cached_pmmi(key,i) )
-    i = get_iter(mp,key,gi_find);
-  if ( i == mp.begin() ) index_error();
-  pxhmmap::value_compare kc = mp.value_comp();
+    i = get_iter(mmp,key,gi_find);
+  if ( i == mmp.begin() ) index_error();
+  pxhmmap::value_compare kc = mmp.value_comp();
   pmmi prev;
-  if (i == mp.end()) {
+  if (i == mmp.end()) {
     prev = --i;
   }
   else {
-    while (i != mp.begin() ) {
+    while (i != mmp.begin() ) {
       prev = i; prev--;
       if (kc(*prev,*i) ) break;
       i--;
     }
-    if (i == mp.begin()) failed_cond();
+    if (i == mmp.begin()) failed_cond();
   }
   smmp->cache_pmmi(prev);
-  return iter_to_key(mp, prev);
+  return iter_to_key(mmp, prev);
 }
 
 px* smm_next_key(smm* smmp, px* key)
 {
-  pxhmmap& mp = smmp->mp;
-  if (mp.empty()) index_error(); 
-  pmmi i = mp.end();
+  pxhmmap& mmp = smmp->mmp;
+  if (mmp.empty()) index_error(); 
+  pmmi i = mmp.end();
   if ( !smmp->get_cached_pmmi(key,i) )
-    i = get_iter(mp,key,gi_find);
-  if ( i == mp.end() ) index_error();
-  pxhmmap::value_compare kc = mp.value_comp();
+    i = get_iter(mmp,key,gi_find);
+  if ( i == mmp.end() ) index_error();
+  pxhmmap::value_compare kc = mmp.value_comp();
   while (true) {
     pmmi prev = i++;
-    if (i==mp.end() || kc(*prev,*i) ) break;
+    if (i==mmp.end() || kc(*prev,*i) ) break;
   }
   smmp->cache_pmmi(i);
-  return iter_to_key(mp, i);
+  return iter_to_key(mmp, i);
 }
 
 
 px* smm_get_elm(smm* smmp, px* key, int what)
 {
-  pxhmmap &mp = smmp->mp; 
+  pxhmmap &mmp = smmp->mmp; 
   px* ret = 0;
   pmmi i;
   if ( !smmp->get_cached_pmmi(key, i) ) 
-    i = get_iter(mp, key, gi_find);  
-  if (i != mp.end()) {
-    pair<pmmi,pmmi> lb_ub = mp.equal_range(i->first);
+    i = get_iter(mmp, key, gi_find);  
+  if (i != mmp.end()) {
+    pair<pmmi,pmmi> lb_ub = mmp.equal_range(i->first);
     pmmi beg = lb_ub.first;
     pmmi end = lb_ub.second;
     smmp->cache_pmmi(beg);
@@ -632,19 +632,19 @@ px* smm_get_elm(smm* smmp, px* key, int what)
 
 bool smm_includes(px* tpl1, px* tpl2)
 {
-  smm_iters itrs1(tpl1);
-  smm_iters itrs2(tpl2);
-  if (!itrs1.is_valid || !itrs2.is_valid) bad_argument;
-  smm* smmp = itrs1.smmp;
+  smm_range rng1(tpl1);
+  smm_range rng2(tpl2);
+  if (!rng1.is_valid || !rng2.is_valid) bad_argument;
+  smm* smmp = rng1.smmp;
   try {
     if (smmp->keys_only) {
-      return includes(itrs1.beg(), itrs1.end(),
-                      itrs2.beg(), itrs2.end(), smmp->mp.value_comp());
+      return includes(rng1.beg(), rng1.end(),
+                      rng2.beg(), rng2.end(), smmp->mmp.value_comp());
     }
     else {
       pxh_pair_less comp(smmp->px_comp.pxp(),smmp->px_val_comp.pxp());   
-      return includes(itrs1.beg(), itrs1.end(),
-                      itrs2.beg(), itrs2.end(), comp);
+      return includes(rng1.beg(), rng1.end(),
+                      rng2.beg(), rng2.end(), comp);
     }
   }
   catch (px* e) {
@@ -654,43 +654,43 @@ bool smm_includes(px* tpl1, px* tpl2)
 
 px* smm_setop(int op, px* tpl1, px* tpl2)
 {
-  smm_iters itrs1(tpl1);
-  smm_iters itrs2(tpl2);
-  if (!itrs1.is_valid || !itrs2.is_valid) bad_argument;
-  smm* smmp = itrs1.smmp;
+  smm_range rng1(tpl1);
+  smm_range rng2(tpl2);
+  if (!rng1.is_valid || !rng2.is_valid) bad_argument;
+  smm* smmp = rng1.smmp;
   smm* trg = new smm(smmp->px_comp.pxp(),
                      smmp->px_val_comp.pxp(),
                      smmp->px_val_equal.pxp(),
                      smmp->keys_only, smmp->dflt.pxp());
-  pxhmmap& mp = trg->mp;
+  pxhmmap& mmp = trg->mmp;
   try {
     if (trg->keys_only) {
-      pxhmmap::value_compare comp = mp.value_comp();
+      pxhmmap::value_compare comp = mmp.value_comp();
       switch (op) {
       case stl_smm_merge:
-        merge(itrs1.beg(), itrs1.end(), 
-              itrs2.beg(), itrs2.end(),
-              inserter(mp, mp.end()), comp);
+        merge(rng1.beg(), rng1.end(), 
+              rng2.beg(), rng2.end(),
+              inserter(mmp, mmp.end()), comp);
         break;
       case stl_smm_union:
-        set_union(itrs1.beg(), itrs1.end(), 
-                  itrs2.beg(), itrs2.end(),
-                  inserter(mp, mp.end()), comp);
+        set_union(rng1.beg(), rng1.end(), 
+                  rng2.beg(), rng2.end(),
+                  inserter(mmp, mmp.end()), comp);
         break;
       case stl_smm_difference:
-        set_difference(itrs1.beg(), itrs1.end(),
-                       itrs2.beg(), itrs2.end(),
-                       inserter(mp, mp.end()), comp);
+        set_difference(rng1.beg(), rng1.end(),
+                       rng2.beg(), rng2.end(),
+                       inserter(mmp, mmp.end()), comp);
         break;
       case stl_smm_intersection:
-        set_intersection(itrs1.beg(), itrs1.end(),
-                         itrs2.beg(), itrs2.end(),
-                         inserter(mp, mp.end()), comp);
+        set_intersection(rng1.beg(), rng1.end(),
+                         rng2.beg(), rng2.end(),
+                         inserter(mmp, mmp.end()), comp);
         break;
       case stl_smm_symmetric_difference:
-        set_symmetric_difference(itrs1.beg(), itrs1.end(),
-                                 itrs2.beg(), itrs2.end(),
-                                 inserter(mp, mp.end()), comp);
+        set_symmetric_difference(rng1.beg(), rng1.end(),
+                                 rng2.beg(), rng2.end(),
+                                 inserter(mmp, mmp.end()), comp);
         break;
       default:
         bad_argument();
@@ -700,29 +700,29 @@ px* smm_setop(int op, px* tpl1, px* tpl2)
       pxh_pair_less comp(trg->px_comp.pxp(),trg->px_val_comp.pxp());
       switch (op) {
       case stl_smm_merge:
-        merge(itrs1.beg(), itrs1.end(), 
-              itrs2.beg(), itrs2.end(),
-              inserter(mp, mp.end()), comp);
+        merge(rng1.beg(), rng1.end(), 
+              rng2.beg(), rng2.end(),
+              inserter(mmp, mmp.end()), comp);
         break;
       case stl_smm_union:
-        set_union(itrs1.beg(), itrs1.end(), 
-                  itrs2.beg(), itrs2.end(),
-                  inserter(mp, mp.end()), comp);
+        set_union(rng1.beg(), rng1.end(), 
+                  rng2.beg(), rng2.end(),
+                  inserter(mmp, mmp.end()), comp);
         break;
       case stl_smm_difference:
-        set_difference(itrs1.beg(), itrs1.end(),
-                       itrs2.beg(), itrs2.end(),
-                       inserter(mp, mp.end()), comp);
+        set_difference(rng1.beg(), rng1.end(),
+                       rng2.beg(), rng2.end(),
+                       inserter(mmp, mmp.end()), comp);
         break;
       case stl_smm_intersection:
-        set_intersection(itrs1.beg(), itrs1.end(),
-                         itrs2.beg(), itrs2.end(),
-                         inserter(mp, mp.end()), comp);
+        set_intersection(rng1.beg(), rng1.end(),
+                         rng2.beg(), rng2.end(),
+                         inserter(mmp, mmp.end()), comp);
         break;
       case stl_smm_symmetric_difference:
-        set_symmetric_difference(itrs1.beg(), itrs1.end(),
-                                 itrs2.beg(), itrs2.end(),
-                                 inserter(mp, mp.end()), comp);
+        set_symmetric_difference(rng1.beg(), rng1.end(),
+                                 rng2.beg(), rng2.end(),
+                                 inserter(mmp, mmp.end()), comp);
         break;
       default:
         bad_argument();
@@ -753,7 +753,7 @@ int smm_insert_elm(smm* smmp, px* kv)
 
 int smm_insert_elms_xs(smm* smmp, px* src)
 {
-  pxhmmap& mp = smmp->mp;
+  pxhmmap& mmp = smmp->mmp;
   size_t sz = 0;
   px** elems = NULL;
   bool ok;
@@ -774,26 +774,26 @@ int smm_insert_elms_xs(smm* smmp, px* src)
 
 int smm_insert_elms_stlmmap(smm* smmp, px* tpl)
 {
-  smm_iters itrs(tpl);
-  pxhmmap& mp = smmp->mp;
-  size_t oldsz = mp.size();
-  if (smmp == itrs.smmp) bad_argument();
-  if (itrs.beg() != itrs.end()) {
-    if (!itrs.is_valid) bad_argument();
-    for (pmmi i = itrs.beg(); i!=itrs.end(); i++)
+  smm_range rng(tpl);
+  pxhmmap& mmp = smmp->mmp;
+  size_t oldsz = mmp.size();
+  if (smmp == rng.smmp) bad_argument();
+  if (rng.beg() != rng.end()) {
+    if (!rng.is_valid) bad_argument();
+    for (pmmi i = rng.beg(); i!=rng.end(); i++)
       update_aux(smmp, i->first.pxp(), i->second.pxp());
   }
-  return mp.size() - oldsz;
+  return mmp.size() - oldsz;
 }
 
 int smm_insert_elms_stlvec(smm* smmp, px* tpl)
 {
-  sv_iters itrs(tpl);
-  if (!itrs.is_valid || itrs.num_iters != 2) bad_argument();
+  sv_range rng(tpl);
+  if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   int num_inserted = 0;
-  pxhmmap& mp = smmp->mp;
+  pxhmmap& mmp = smmp->mmp;
   pmmi pos;
-  for (svi i = itrs.beg(); i!=itrs.end(); i++)
+  for (svi i = rng.beg(); i!=rng.end(); i++)
     if ( !insert_aux(smmp, i->pxp(), pos, num_inserted) ) bad_argument();
   return num_inserted;
 }
@@ -801,9 +801,9 @@ int smm_insert_elms_stlvec(smm* smmp, px* tpl)
 px* smm_update_vals_xs(smm* smmp, px* k, px* src)
 {
   if (smmp->keys_only) return 0;
-  pxhmmap& mp = smmp->mp;
-  pmmi trgi = get_iter(mp, k, gi_lower);
-  pmmi ub = get_iter(mp, k, gi_upper);  
+  pxhmmap& mmp = smmp->mmp;
+  pmmi trgi = get_iter(mmp, k, gi_lower);
+  pmmi ub = get_iter(mmp, k, gi_upper);  
   size_t src_sz = 0;
   px** elems = NULL;
   bool ok;
@@ -834,31 +834,31 @@ px* smm_update_vals_xs(smm* smmp, px* k, px* src)
 
 int smm_erase(px* tpl)
 {
-  smm_iters itrs(tpl);
-  if (!itrs.is_valid) bad_argument();
-  return itrs.smmp->erase(itrs.beg(), itrs.end());
+  smm_range rng(tpl);
+  if (!rng.is_valid) bad_argument();
+  return rng.smmp->erase(rng.beg(), rng.end());
 }
 
 int smm_erase_first(px* tpl)
 {
-  smm_iters itrs(tpl);
-  if (!itrs.is_valid) bad_argument();
-  if ( itrs.beg() != itrs.end() )
-    itrs.smmp->erase(itrs.beg());
+  smm_range rng(tpl);
+  if (!rng.is_valid) bad_argument();
+  if ( rng.beg() != rng.end() )
+    rng.smmp->erase(rng.beg());
 }
 
 static int smm_erase_if_aux(px* pred, px* tpl, bool first_only)
 {
-  smm_iters itrs(tpl);
-  if (!itrs.is_valid) bad_argument();
-  smm* smmp = itrs.smmp;
-  pxhmmap &mp = smmp->mp;
-  size_t sz = mp.size();
+  smm_range rng(tpl);
+  if (!rng.is_valid) bad_argument();
+  smm* smmp = rng.smmp;
+  pxhmmap &mmp = smmp->mmp;
+  size_t sz = mmp.size();
   int mode = smmp->keys_only ? stl_smm_key : stl_smm_both;
   px* exception;
   int fun_res = 0;
-  pmmi i = itrs.beg();
-  pmmi end = itrs.end();
+  pmmi i = rng.beg();
+  pmmi end = rng.end();
   while (i!=end) {
     pmmi trg = i++;
     px* pxres = apply_fun(pred, mode, trg, &exception);
@@ -868,7 +868,7 @@ static int smm_erase_if_aux(px* pred, px* tpl, bool first_only)
       if (first_only) break;
     } 
   }
-  return sz - mp.size();
+  return sz - mmp.size();
 }
 
 int smm_erase_if(px* pred, px* tpl)
@@ -883,7 +883,7 @@ int smm_erase_first_if(px* pred, px* tpl)
 
 int smm_clear(smm* smmp)
 {
-  size_t sz = smmp->mp.size();
+  size_t sz = smmp->mmp.size();
   smmp->clear();
   return sz;
 }
@@ -895,11 +895,11 @@ int smm_remove(smm* smmp, px* k, int all)
     ret = smmp->erase(k);
   }
   else {
-    pxhmmap &mp = smmp->mp;
+    pxhmmap &mmp = smmp->mmp;
     pmmi i;
     if ( !smmp->get_cached_pmmi(k, i) ) 
-      i = get_iter(mp, k, gi_find);  
-    if (i != mp.end())
+      i = get_iter(mmp, k, gi_find);  
+    if (i != mmp.end())
       smmp->erase(i);
     else
       ret = 0;
@@ -909,9 +909,9 @@ int smm_remove(smm* smmp, px* k, int all)
 int smm_remove_if(smm* smmp, px* k, px* pred, int all)
 {
   int ret = 0;
-  pxhmmap &mp = smmp->mp;
+  pxhmmap &mmp = smmp->mmp;
   pxh_pred1 fun(pred);
-  pair<pmmi,pmmi> lb_ub = mp.equal_range(k);
+  pair<pmmi,pmmi> lb_ub = mmp.equal_range(k);
   pmmi i = lb_ub.first;
   pmmi end = lb_ub.second;
   try {
@@ -931,19 +931,19 @@ int smm_remove_if(smm* smmp, px* k, px* pred, int all)
 
 px* smm_listmap(px* fun, px* tpl, int what)
 {
-  smm_iters itrs(tpl);
-  if (!itrs.is_valid) bad_argument();
-  if (itrs.smmp->keys_only) what = stl_smm_key;
-  return listmap_aux(fun, itrs.beg(), itrs.end(), what);
+  smm_range rng(tpl);
+  if (!rng.is_valid) bad_argument();
+  if (rng.smmp->keys_only) what = stl_smm_key;
+  return listmap_aux(fun, rng.beg(), rng.end(), what);
 }
 
 px* smm_listcatmap(px* fun, px* tpl, int what)
 {
-  smm_iters itrs(tpl);
-  if (!itrs.is_valid) bad_argument();
-  if (itrs.smmp->keys_only) what = stl_smm_key;
-  pmmi b = itrs.beg(); 
-  pmmi e = itrs.end(); 
+  smm_range rng(tpl);
+  if (!rng.is_valid) bad_argument();
+  if (rng.smmp->keys_only) what = stl_smm_key;
+  pmmi b = rng.beg(); 
+  pmmi e = rng.end(); 
   px* cons = px_cons_sym();
   px* nl = px_null_list_sym();
   px* res = nl;
@@ -978,7 +978,7 @@ px* smm_listcatmap(px* fun, px* tpl, int what)
   return res;  
 }
 
-static px* smm_foldl_itrs(px* fun, px* val, pmmi i, pmmi end, int mode)
+static px* smm_foldl_rng(px* fun, px* val, pmmi i, pmmi end, int mode)
 { 
   px* res = px_new(val);
   px* exception = 0;
@@ -1000,11 +1000,11 @@ static px* smm_foldl_itrs(px* fun, px* val, pmmi i, pmmi end, int mode)
 
 px* smm_foldl(px* fun, px* val, px* tpl)
 {
-  smm_iters itrs(tpl);
-  if (!itrs.is_valid) bad_argument();
-  int mode =  itrs.smmp->keys_only ? stl_smm_key : stl_smm_both;
+  smm_range rng(tpl);
+  if (!rng.is_valid) bad_argument();
+  int mode =  rng.smmp->keys_only ? stl_smm_key : stl_smm_both;
   try {
-    return smm_foldl_itrs(fun, val, itrs.beg(), itrs.end(), mode);
+    return smm_foldl_rng(fun, val, rng.beg(), rng.end(), mode);
   } catch (px* e) {
     pure_throw(e);
   }
@@ -1012,24 +1012,24 @@ px* smm_foldl(px* fun, px* val, px* tpl)
 
 px* smm_foldl1(px* fun, px* tpl)
 {
-  smm_iters itrs(tpl);
-  if ( !itrs.is_valid ) bad_argument();
-  int mode =  itrs.smmp->keys_only ? stl_smm_key : stl_smm_both;
-  if (itrs.beg() == itrs.end() ) return 0;
-  pmmi b = itrs.beg();
+  smm_range rng(tpl);
+  if ( !rng.is_valid ) bad_argument();
+  int mode =  rng.smmp->keys_only ? stl_smm_key : stl_smm_both;
+  if (rng.beg() == rng.end() ) return 0;
+  pmmi b = rng.beg();
   px* val;
   if (mode == stl_smm_key)
     val = b->first.pxp();
   else
     val = pair_to_rocket(b->first.pxp(), b->second.pxp());
   try {
-    return smm_foldl_itrs(fun, val, ++b, itrs.end(), mode);
+    return smm_foldl_rng(fun, val, ++b, rng.end(), mode);
   } catch (px* e) {
     pure_throw(e);
   }
 }
 
-static px* smm_foldr_itrs(px* fun, px* val, pmmi beg, pmmi end, int mode)
+static px* smm_foldr_rng(px* fun, px* val, pmmi beg, pmmi end, int mode)
 { 
   px* res = px_new(val);
   px* exception = 0;
@@ -1054,11 +1054,11 @@ static px* smm_foldr_itrs(px* fun, px* val, pmmi beg, pmmi end, int mode)
 
 px* smm_foldr(px* fun, px* val, px* tpl)
 {
-  smm_iters itrs(tpl);
-  if (!itrs.is_valid) bad_argument();
-  int mode = itrs.smmp->keys_only ? stl_smm_key : stl_smm_both;
+  smm_range rng(tpl);
+  if (!rng.is_valid) bad_argument();
+  int mode = rng.smmp->keys_only ? stl_smm_key : stl_smm_both;
   try {
-    return smm_foldr_itrs(fun, val, itrs.beg(), itrs.end(), mode);
+    return smm_foldr_rng(fun, val, rng.beg(), rng.end(), mode);
   } catch (px* x) {
     pure_throw(x);
   }
@@ -1066,18 +1066,18 @@ px* smm_foldr(px* fun, px* val, px* tpl)
 
 px* smm_foldr1(px* fun, px* tpl)
 {
-  smm_iters itrs(tpl);
-  if ( !itrs.is_valid ) bad_argument();
-  int mode =  itrs.smmp->keys_only ? stl_smm_key : stl_smm_both;
-  if ( itrs.beg() == itrs.end() ) return 0;
-  pmmi e = --itrs.end();
+  smm_range rng(tpl);
+  if ( !rng.is_valid ) bad_argument();
+  int mode =  rng.smmp->keys_only ? stl_smm_key : stl_smm_both;
+  if ( rng.beg() == rng.end() ) return 0;
+  pmmi e = --rng.end();
   px* val;
   if (mode == stl_smm_key)
     val = e->first.pxp();
   else
     val = pair_to_rocket(e->first.pxp(), e->second.pxp());
   try {
-    return smm_foldr_itrs(fun, val, itrs.beg(), e, mode);
+    return smm_foldr_rng(fun, val, rng.beg(), e, mode);
   } catch (px* x) {
     pure_throw(x);
   }

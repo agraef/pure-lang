@@ -38,7 +38,7 @@ const int svrev  = -3;  // request reversal of iterators
 
 const int sv_max_num_iters = 3;
 
-struct sv_iters {
+struct sv_range {
   sv* vec;
   svi iters[sv_max_num_iters];
   int num_iters;
@@ -46,13 +46,13 @@ struct sv_iters {
   bool is_reversed;
   bool is_valid;
 
-  sv_iters(px* tpl);
+  sv_range(px* tpl);
   svi beg(){return iters[0];}
   svi mid(){return iters[1];}
   svi end(){return num_iters > 2 ? iters[2] : iters[1];}
   int size();
   bool contains(sv*, const svi&);
-  bool overlaps(sv_iters&);
+  bool overlaps(sv_range&);
 };
 
 struct sv_back_iter{

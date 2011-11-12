@@ -25,21 +25,21 @@ int  sva_merge(px* tpl1, px* tpl2, px* tpl3, px* cmp)
 {
   int res = 0;
   pxh_pred2 fun(cmp);
-  sv_iters itrs1(tpl1);
-  sv_iters itrs2(tpl2);
-  sv_iters trg(tpl3);
+  sv_range rng1(tpl1);
+  sv_range rng2(tpl2);
+  sv_range trg(tpl3);
   sv_back_iter bak(tpl3);
-  if (!itrs1.is_valid || itrs1.num_iters != 2) bad_argument();
-  if (!itrs2.is_valid || itrs2.num_iters != 2) bad_argument();
+  if (!rng1.is_valid || rng1.num_iters != 2) bad_argument();
+  if (!rng2.is_valid || rng2.num_iters != 2) bad_argument();
   try {
     if ( (trg.is_valid && trg.num_iters <= 2) ) {
-      if (itrs1.size() + itrs2.size() > trg.size()) range_overflow();
-      svi last3 = merge(itrs1.beg(), itrs1.end(), itrs2.beg(), itrs2.end(),
+      if (rng1.size() + rng2.size() > trg.size()) range_overflow();
+      svi last3 = merge(rng1.beg(), rng1.end(), rng2.beg(), rng2.end(),
                         trg.beg(),fun);
       res = iter_pos(trg.vec, last3);
     }
     else if (bak.is_valid) {
-      merge(itrs1.beg(), itrs1.end(), itrs2.beg(), itrs2.end(),
+      merge(rng1.beg(), rng1.end(), rng2.beg(), rng2.end(),
             back_inserter(*bak.vec), fun);
       res = svend;
     }
@@ -54,10 +54,10 @@ int  sva_merge(px* tpl1, px* tpl2, px* tpl3, px* cmp)
 void sva_inplace_merge(px* tpl, px* cmp)
 {
   pxh_pred2 fun(cmp);
-  sv_iters itrs(tpl);
+  sv_range rng(tpl);
   try {
-    if (!itrs.is_valid || itrs.num_iters != 3) bad_argument();
-    inplace_merge(itrs.beg(), itrs.mid(), itrs.end(), fun);  
+    if (!rng.is_valid || rng.num_iters != 3) bad_argument();
+    inplace_merge(rng.beg(), rng.mid(), rng.end(), fun);  
   } catch (px* e) {
     pure_throw(e);
   }
@@ -66,12 +66,12 @@ void sva_inplace_merge(px* tpl, px* cmp)
 bool sva_includes(px* tpl1, px* tpl2, px* cmp)
 {
   pxh_pred2 fun(cmp);
-  sv_iters itrs1(tpl1);
-  sv_iters itrs2(tpl2);
-  if (!itrs1.is_valid || itrs1.num_iters != 2) bad_argument();
-  if (!itrs2.is_valid || itrs2.num_iters != 2) bad_argument();
+  sv_range rng1(tpl1);
+  sv_range rng2(tpl2);
+  if (!rng1.is_valid || rng1.num_iters != 2) bad_argument();
+  if (!rng2.is_valid || rng2.num_iters != 2) bad_argument();
   try {
-    return includes(itrs1.beg(),itrs1.end(),itrs2.beg(),itrs2.end(),fun);
+    return includes(rng1.beg(),rng1.end(),rng2.beg(),rng2.end(),fun);
   } catch (px* e) {
     pure_throw(e);
   }
@@ -81,23 +81,23 @@ int sva_set_union(px* tpl1, px* tpl2, px* tpl3, px* cmp)
 {
   int res = 0;
   pxh_pred2 fun(cmp);
-  sv_iters itrs1(tpl1);
-  sv_iters itrs2(tpl2);
-  sv_iters trg(tpl3);
+  sv_range rng1(tpl1);
+  sv_range rng2(tpl2);
+  sv_range trg(tpl3);
   sv_back_iter bak(tpl3);
-  if (!itrs1.is_valid || itrs1.num_iters != 2) bad_argument();
-  if (!itrs2.is_valid || itrs2.num_iters != 2) bad_argument();
+  if (!rng1.is_valid || rng1.num_iters != 2) bad_argument();
+  if (!rng2.is_valid || rng2.num_iters != 2) bad_argument();
   try {
     if ( (trg.is_valid && trg.num_iters <= 2) ) {
-      if (itrs1.size() > trg.size() || itrs2.size() > trg.size())
+      if (rng1.size() > trg.size() || rng2.size() > trg.size())
         range_overflow();
-      svi last3 = set_union(itrs1.beg(), itrs1.end(),
-                            itrs2.beg(), itrs2.end(),
+      svi last3 = set_union(rng1.beg(), rng1.end(),
+                            rng2.beg(), rng2.end(),
                             trg.beg(),fun);
       res = iter_pos(trg.vec, last3);
     }
     else if (bak.is_valid) {
-      set_union(itrs1.beg(), itrs1.end(), itrs2.beg(), itrs2.end(),
+      set_union(rng1.beg(), rng1.end(), rng2.beg(), rng2.end(),
                 back_inserter(*bak.vec), fun);
       res = svend;
     }
@@ -113,22 +113,22 @@ int  sva_set_intersection(px* tpl1, px* tpl2, px* tpl3, px* cmp)
 {
   int res = 0;
   pxh_pred2 fun(cmp);
-  sv_iters itrs1(tpl1);
-  sv_iters itrs2(tpl2);
-  sv_iters trg(tpl3);
+  sv_range rng1(tpl1);
+  sv_range rng2(tpl2);
+  sv_range trg(tpl3);
   sv_back_iter bak(tpl3);
-  if (!itrs1.is_valid || itrs1.num_iters != 2) bad_argument();
-  if (!itrs2.is_valid || itrs2.num_iters != 2) bad_argument();
+  if (!rng1.is_valid || rng1.num_iters != 2) bad_argument();
+  if (!rng2.is_valid || rng2.num_iters != 2) bad_argument();
   try {
     if ( (trg.is_valid && trg.num_iters <= 2) ) {
-      svi last3 = set_intersection(itrs1.beg(), itrs1.end(),
-                                   itrs2.beg(), itrs2.end(),
+      svi last3 = set_intersection(rng1.beg(), rng1.end(),
+                                   rng2.beg(), rng2.end(),
                                    trg.beg(),fun);
       res = iter_pos(trg.vec, last3);
     }
     else if (bak.is_valid) {
-      set_intersection(itrs1.beg(), itrs1.end(),
-                       itrs2.beg(), itrs2.end(),
+      set_intersection(rng1.beg(), rng1.end(),
+                       rng2.beg(), rng2.end(),
                        back_inserter(*bak.vec), fun);
       res = svend;
     }
@@ -144,22 +144,22 @@ int  sva_set_difference(px* tpl1, px* tpl2, px* tpl3, px* cmp)
 {
   int res = 0;
   pxh_pred2 fun(cmp);
-  sv_iters itrs1(tpl1);
-  sv_iters itrs2(tpl2);
-  sv_iters trg(tpl3);
+  sv_range rng1(tpl1);
+  sv_range rng2(tpl2);
+  sv_range trg(tpl3);
   sv_back_iter bak(tpl3);
-  if (!itrs1.is_valid || itrs1.num_iters != 2) bad_argument();
-  if (!itrs2.is_valid || itrs2.num_iters != 2) bad_argument();
+  if (!rng1.is_valid || rng1.num_iters != 2) bad_argument();
+  if (!rng2.is_valid || rng2.num_iters != 2) bad_argument();
   try {
     if ( (trg.is_valid && trg.num_iters <= 2) ) {
-      svi last3 = set_difference(itrs1.beg(), itrs1.end(),
-                                 itrs2.beg(), itrs2.end(),
+      svi last3 = set_difference(rng1.beg(), rng1.end(),
+                                 rng2.beg(), rng2.end(),
                                  trg.beg(),fun);
       res = iter_pos(trg.vec, last3);
     }
     else if (bak.is_valid) {
-      set_difference(itrs1.beg(), itrs1.end(),
-                     itrs2.beg(), itrs2.end(),
+      set_difference(rng1.beg(), rng1.end(),
+                     rng2.beg(), rng2.end(),
                      back_inserter(*bak.vec), fun);
       res = svend;
     }
@@ -175,22 +175,22 @@ int  sva_set_symmetric_difference(px* tpl1, px* tpl2, px* tpl3, px* cmp)
 {
   int res = 0;
   pxh_pred2 fun(cmp);
-  sv_iters itrs1(tpl1);
-  sv_iters itrs2(tpl2);
-  sv_iters trg(tpl3);
+  sv_range rng1(tpl1);
+  sv_range rng2(tpl2);
+  sv_range trg(tpl3);
   sv_back_iter bak(tpl3);
-  if (!itrs1.is_valid || itrs1.num_iters != 2) bad_argument();
-  if (!itrs2.is_valid || itrs2.num_iters != 2) bad_argument();
+  if (!rng1.is_valid || rng1.num_iters != 2) bad_argument();
+  if (!rng2.is_valid || rng2.num_iters != 2) bad_argument();
   try {
     if ( (trg.is_valid && trg.num_iters <= 2) ) {
-      svi last3 = set_symmetric_difference(itrs1.beg(), itrs1.end(),
-                                           itrs2.beg(), itrs2.end(),
+      svi last3 = set_symmetric_difference(rng1.beg(), rng1.end(),
+                                           rng2.beg(), rng2.end(),
                                            trg.beg(),fun);
       res = iter_pos(trg.vec, last3);
     }
     else if (bak.is_valid) {
-      set_symmetric_difference(itrs1.beg(), itrs1.end(),
-                               itrs2.beg(), itrs2.end(),
+      set_symmetric_difference(rng1.beg(), rng1.end(),
+                               rng2.beg(), rng2.end(),
                                back_inserter(*bak.vec), fun);
       res = svend;
     }

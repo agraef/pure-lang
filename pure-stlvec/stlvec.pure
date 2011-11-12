@@ -24,28 +24,28 @@ private extern void* sv_make_empty();
 private extern void* sv_make_from_xs(expr* xs_or_sm);
 private extern void* sv_make_n(expr* xs, int n);
 private extern void  sv_delete(void* vec);
-private extern void* sv_dup(expr* it);
-private extern expr* sv_vector(expr* it);
+private extern void* sv_dup(expr* rng);
+private extern expr* sv_vector(expr* rng);
 private extern void  sv_reserve(void* vec, int n);
 private extern int   sv_size(void* vec);
-private extern int   sv_iter_size(expr* it);
+private extern int   sv_iter_size(expr* rng);
 private extern bool  sv_empty(void* vec);
 private extern int   sv_capacity(void* vec);
 private extern expr* sv_front(void* vec);
 private extern expr* sv_back(void* vec);
-private extern expr* sv_list(expr* it);
+private extern expr* sv_list(expr* rng);
 private extern void  sv_push_back(void* vec, expr* val);
 private extern void  sv_pop_back(void* vec);
-private extern void  sv_splice(void* vec, int b, expr* xs_it);
-private extern void  sv_erase(expr* it);
+private extern void  sv_splice(void* vec, int b, expr* xs_rng);
+private extern void  sv_erase(expr* rng);
 private extern void  sv_clear(void* vec);
-private extern bool  sv_allpairs(expr* fun, expr* it, expr* it);
-private extern expr* sv_listmap(expr* fun, expr* it);
-private extern expr* sv_listcatmap(expr* fun, expr* it);
-private extern expr* sv_foldl(expr* fun, expr* val, expr* it);
-private extern expr* sv_foldl1(expr* fun, expr* it);
-private extern expr* sv_foldr(expr* fun, expr* val, expr* it);
-private extern expr* sv_foldr1(expr* fun, expr* it);
+private extern bool  sv_allpairs(expr* fun, expr* rng, expr* rng);
+private extern expr* sv_listmap(expr* fun, expr* rng);
+private extern expr* sv_listcatmap(expr* fun, expr* rng);
+private extern expr* sv_foldl(expr* fun, expr* val, expr* rng);
+private extern expr* sv_foldl1(expr* fun, expr* rng);
+private extern expr* sv_foldr(expr* fun, expr* val, expr* rng);
+private extern expr* sv_foldr1(expr* fun, expr* rng);
 
 extern expr* sv_get(void* vec, int pos);
 extern void  sv_put(void* vec, int pos, expr* val);
@@ -60,7 +60,7 @@ private get_sv bad_selfwrite ensure_beg ensure_end;
 get_sv (STLVEC v) = v;
 get_sv (CONST_STLVEC v) = v;
 
-bad_selfwrite src::svit trg::svit = 
+bad_selfwrite src::svrng trg::svrng = 
   (~typep mutable_stlvec src) && (get_sv src == get_sv trg);
 
 ensure_beg v b = if b >= 0 && b < sv_size v then b
@@ -79,7 +79,7 @@ ensure_end v e = if e == svend then sz
 
 ::emptystlvec = STLVEC (sentry sv_delete (sv_make_empty));
 
-::stlvec sv::svit = STLVEC (sentry sv_delete (sv_dup sv));
+::stlvec sv::svrng = STLVEC (sentry sv_delete (sv_dup sv));
 ::stlvec v = STLVEC(sentry sv_delete(sv_make_from_xs (smatrix v))) if vectorp v;
 ::stlvec xs::list = STLVEC (sentry sv_delete (sv_make_from_xs xs));
 
@@ -126,42 +126,42 @@ bounds sv@(STLVEC v) =
 
 ::update sv@(STLVEC v) p::int x = sv_put v p x $$ sv;
 
-::erase it@(STLVEC v, f::int, l::int) = sv_erase it $$ STLVEC v;
+::erase rng@(STLVEC v, f::int, l::int) = sv_erase rng $$ STLVEC v;
 
 ::erase (STLVEC v, p::int) = erase (STLVEC v, p, p+1);
 
 ::erase sv@(STLVEC v) = sv_clear v $$ sv;
 
-::insert (STLVEC v, p::int) it::svit = sv_splice v p it $$ STLVEC v;
+::insert (STLVEC v, p::int) rng::svrng = sv_splice v p rng $$ STLVEC v;
 ::insert (STLVEC v, p::int) xs::list = sv_splice v p xs $$ STLVEC v;
 
-allpairs bin_fun it1::svit it2::svit = sv_allpairs bin_fun it1 it2;
+allpairs bin_fun rng1::svrng rng2::svrng = sv_allpairs bin_fun rng1 rng2;
 
-(::==) sv1::stlvec sv2::svit = sv_allpairs (==) sv1 sv2;
+(::==) sv1::stlvec sv2::svrng = sv_allpairs (==) sv1 sv2;
 
-(::~=) sv1::stlvec sv2::svit = ~sv_allpairs (==) sv1 sv2;
+(::~=) sv1::stlvec sv2::svrng = ~sv_allpairs (==) sv1 sv2;
 
-::map f it::svit = sv_listmap f it;
+::map f rng::svrng = sv_listmap f rng;
 
-::listmap f it::svit = sv_listmap f it;  // for list comprehensions
+::listmap f rng::svrng = sv_listmap f rng;  // for list comprehensions
 
-::catmap f it::svit = sv_listcatmap f it;
+::catmap f rng::svrng = sv_listcatmap f rng;
 
-::foldl f x it::svit = sv_foldl f x it;
+::foldl f x rng::svrng = sv_foldl f x rng;
 
-::foldl1 f it::svit = sv_foldl1 f it;
+::foldl1 f rng::svrng = sv_foldl1 f rng;
 
-::foldr f x it::svit = sv_foldr f x it;
+::foldr f x rng::svrng = sv_foldr f x rng;
 
-::foldr1 f it::svit = sv_foldr1 f it;
+::foldr1 f rng::svrng = sv_foldr1 f rng;
 
-::members it::svit = sv_list it;
+::members rng::svrng = sv_list rng;
 
 ::list sv::stlvec = members sv;
 
-::do f it::svit = sv_foldl (\_ x->f x) () it $$ ();
+::do f rng::svrng = sv_foldl (\_ x->f x) () rng $$ ();
 
-::filter p it::svit = sv_foldr f [] it with
+::filter p rng::svrng = sv_foldr f [] rng with
   f x xs = case p x of
     1 = x:xs;
     0 = xs;
@@ -169,12 +169,12 @@ allpairs bin_fun it1::svit it2::svit = sv_allpairs bin_fun it1 it2;
   end;
 end;
 
-::rowmap f it::svit = rowcat (sv_listmap f it);
+::rowmap f rng::svrng = rowcat (sv_listmap f rng);
 
-::rowcatmap f it::svit = rowcat (sv_listmap f it);
+::rowcatmap f rng::svrng = rowcat (sv_listmap f rng);
 
-::colmap f it::svit = colcat (sv_listmap f it);
+::colmap f rng::svrng = colcat (sv_listmap f rng);
 
-::colcatmap f it::svit = colcat (sv_listmap f it);
+::colcatmap f rng::svrng = colcat (sv_listmap f rng);
 
-vector it::svit = sv_vector it;
+vector rng::svrng = sv_vector rng;

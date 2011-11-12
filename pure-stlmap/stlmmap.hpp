@@ -44,7 +44,7 @@ struct stlmmap {
   int  erase(px* k);
   int  erase(pmmi first, pmmi last);
 
-  pxhmmap mp;
+  pxhmmap mmp;
   pxh px_comp;
   pxh px_val_comp;
   pxh px_val_equal;
@@ -58,13 +58,13 @@ struct stlmmap {
 
 typedef stlmmap smm; 
 
-struct smm_iters {
+struct smm_range {
   smm* smmp;
   bool is_valid;
   int num_iters;
   pmmi begin_it;
   pmmi end_it;
-  smm_iters(px* tpl);
+  smm_range(px* tpl);
   pmmi beg(){return begin_it;}
   pmmi end(){return end_it;}
 };

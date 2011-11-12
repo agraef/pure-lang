@@ -221,7 +221,6 @@ protected:
   pxh_pred2 second_equal;
 };
 
-
 /**** Helpers **********************************************************/
 
 std::ostream& operator<<(std::ostream& os, px* pe);

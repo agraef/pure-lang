@@ -22,7 +22,7 @@ included with the pure-stlvec distribution package for details.
 
 using namespace std;
 
-/*** sv_iters functions *********************************************/
+/*** sv_range functions *********************************************/
 
 // treats svback as invalid
 static bool set_iter(sv* vec, int ndx, svi& iter)
@@ -56,7 +56,7 @@ static sv* get_sv_from_app(px* app){
 
 // The svrev feature is currently ignored
 // Individual functions will decide to recognize, ignore, or throw error
-sv_iters::sv_iters(px* svi_tuple)
+sv_range::sv_range(px* svi_tuple)
 {
   size_t tpl_sz;
   px** elems;
@@ -132,7 +132,7 @@ sv_back_iter::sv_back_iter(px* svi_tuple)
   free(elems);
 }
 
-int sv_iters::size()
+int sv_range::size()
 {
   int ret = 0;
   if (is_valid) {
@@ -144,12 +144,12 @@ int sv_iters::size()
   return ret;
 }
 
-bool sv_iters::contains(sv* iter_vec, const svi& iter)
+bool sv_range::contains(sv* iter_vec, const svi& iter)
 {
   return (vec == iter_vec) && (beg() <= iter) && (iter < end()); 
 }
 
-bool sv_iters::overlaps(sv_iters&  iters)
+bool sv_range::overlaps(sv_range&  iters)
 {
   sv* vec1 = iters.vec;
   if (vec != vec1) return false;
@@ -241,9 +241,9 @@ void sv_delete(sv* p){
 
 sv* sv_dup(px* tpl)
 {
-  sv_iters itrs(tpl);
-  if (!itrs.is_valid || itrs.num_iters != 2) bad_argument();
-  sv* ret = new sv(itrs.beg(), itrs.end());  
+  sv_range rng(tpl);
+  if (!rng.is_valid || rng.num_iters != 2) bad_argument();
+  sv* ret = new sv(rng.beg(), rng.end());  
 #ifdef STL_DEBUG
   if (stl_sv_trace_enabled())
     cerr << "TRACE SV:    new sv*: " << ret << endl;
@@ -253,13 +253,13 @@ sv* sv_dup(px* tpl)
 
 px* sv_vector(px* tpl) 
 {
-  sv_iters itrs(tpl);
-  if (!itrs.is_valid || itrs.num_iters != 2) bad_argument();
-  size_t sz = itrs.size();
+  sv_range rng(tpl);
+  if (!rng.is_valid || rng.num_iters != 2) bad_argument();
+  size_t sz = rng.size();
   if (!sz)
     return pure_matrix_columnsv(0,NULL);
   px** bfr = (px**)malloc(sizeof(px*)*sz);
-  transform(itrs.beg(), itrs.end(), bfr, pxh_to_pxp);
+  transform(rng.beg(), rng.end(), bfr, pxh_to_pxp);
   px* ret = pure_matrix_columnsv(sz, bfr);
   free(bfr);
   return ret;
@@ -277,9 +277,9 @@ int sv_size(sv* vec)
 
 int sv_iter_size(px* tpl)
 {
-  sv_iters itrs(tpl);
-  if (!itrs.is_valid || itrs.num_iters != 2) bad_argument();
-  return itrs.size();
+  sv_range rng(tpl);
+  if (!rng.is_valid || rng.num_iters != 2) bad_argument();
+  return rng.size();
 }
 
 int sv_max_size(sv* vec)
@@ -345,17 +345,17 @@ void sv_splice(sv* vec, int p, px* xs_or_tpl)
     free(elems);    
   } 
   else {
-    sv_iters itrs(xs_or_tpl);
-    if (!itrs.is_valid || itrs.num_iters != 2) bad_argument();
-    vec->insert(beg1, itrs.beg(), itrs.end());  
+    sv_range rng(xs_or_tpl);
+    if (!rng.is_valid || rng.num_iters != 2) bad_argument();
+    vec->insert(beg1, rng.beg(), rng.end());  
   }
 }
 
 void sv_erase(px* tpl)
 {
-  sv_iters itrs(tpl);
-  if (!itrs.is_valid || itrs.num_iters != 2) bad_argument();
-  (itrs.vec)->erase(itrs.beg(), itrs.end());
+  sv_range rng(tpl);
+  if (!rng.is_valid || rng.num_iters != 2) bad_argument();
+  (rng.vec)->erase(rng.beg(), rng.end());
 }
 
 void sv_clear(sv* vec)
@@ -366,12 +366,12 @@ void sv_clear(sv* vec)
 bool sv_allpairs(px* comp, px* tpl1, px* tpl2)
 {
   pxh_pred2 fun(comp);
-  sv_iters itrs1(tpl1);
-  sv_iters itrs2(tpl2);
-  if (!itrs1.is_valid || itrs1.num_iters != 2) bad_argument();
-  if (!itrs2.is_valid || itrs2.num_iters != 2) bad_argument();
+  sv_range rng1(tpl1);
+  sv_range rng2(tpl2);
+  if (!rng1.is_valid || rng1.num_iters != 2) bad_argument();
+  if (!rng2.is_valid || rng2.num_iters != 2) bad_argument();
   try {
-    return equal(itrs1.beg(), itrs1.end(), itrs2.beg(), fun);
+    return equal(rng1.beg(), rng1.end(), rng2.beg(), fun);
   } catch (px* e) {
     pure_throw(e);
     return 0;
@@ -380,11 +380,11 @@ bool sv_allpairs(px* comp, px* tpl1, px* tpl2)
 
 px* sv_list(px* tpl)
 {
-  sv_iters itrs(tpl);
-  if (!itrs.is_valid || itrs.num_iters != 2) bad_argument();
-  sv& v = *(itrs.vec);
-  int b = itrs.beg() - v.begin(); 
-  int e = b + itrs.size(); 
+  sv_range rng(tpl);
+  if (!rng.is_valid || rng.num_iters != 2) bad_argument();
+  sv& v = *(rng.vec);
+  int b = rng.beg() - v.begin(); 
+  int e = b + rng.size(); 
   px* cons = px_cons_sym();
   px* nl = px_null_list_sym();
   if (b>=e) return nl;
@@ -405,11 +405,11 @@ px* sv_list(px* tpl)
 
 px*  sv_listmap(px* fun, px* tpl)
 {
-  sv_iters itrs(tpl);
-  if (!itrs.is_valid || itrs.num_iters != 2) bad_argument();
-  sv& v = *(itrs.vec);
-  int b = itrs.beg() - v.begin(); 
-  int e = b + itrs.size(); 
+  sv_range rng(tpl);
+  if (!rng.is_valid || rng.num_iters != 2) bad_argument();
+  sv& v = *(rng.vec);
+  int b = rng.beg() - v.begin(); 
+  int e = b + rng.size(); 
   px* cons = px_cons_sym();
   px* nl = px_null_list_sym();
   if (b>=e) return nl;
@@ -435,11 +435,11 @@ px*  sv_listmap(px* fun, px* tpl)
 
 px* sv_listcatmap(px* fun, px* tpl)
 {
-  sv_iters itrs(tpl);
-  if (!itrs.is_valid || itrs.num_iters != 2) bad_argument();
-  sv& v = *(itrs.vec);
-  int b = itrs.beg() - v.begin(); 
-  int e = b + itrs.size(); 
+  sv_range rng(tpl);
+  if (!rng.is_valid || rng.num_iters != 2) bad_argument();
+  sv& v = *(rng.vec);
+  int b = rng.beg() - v.begin(); 
+  int e = b + rng.size(); 
   px* cons = px_cons_sym();
   px* nl = px_null_list_sym();
   if (b>=e) return nl;
@@ -476,7 +476,7 @@ px* sv_listcatmap(px* fun, px* tpl)
   return res;  
 }
 
-static px* sv_foldl_itrs(px* fun, px* val, svi beg, svi end)
+static px* sv_foldl_rng(px* fun, px* val, svi beg, svi end)
 { 
   px* res = px_new(val);
   px* exception = 0;
@@ -496,10 +496,10 @@ static px* sv_foldl_itrs(px* fun, px* val, svi beg, svi end)
 
 px* sv_foldl(px* fun, px* val, px* tpl)
 {
-  sv_iters itrs(tpl);
-  if (!itrs.is_valid || itrs.num_iters != 2) bad_argument();
+  sv_range rng(tpl);
+  if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   try {
-    return sv_foldl_itrs(fun, val, itrs.beg(), itrs.end());
+    return sv_foldl_rng(fun, val, rng.beg(), rng.end());
   } catch (px* e) {
     pure_throw(e);
     return 0;
@@ -508,20 +508,20 @@ px* sv_foldl(px* fun, px* val, px* tpl)
 
 px* sv_foldl1(px* fun, px* tpl)
 {
-  sv_iters itrs(tpl);
-  if (!itrs.is_valid || itrs.num_iters != 2) bad_argument();
-  if (itrs.size() < 2) bad_argument();
+  sv_range rng(tpl);
+  if (!rng.is_valid || rng.num_iters != 2) bad_argument();
+  if (rng.size() < 2) bad_argument();
   try {
-    pxh valh = *(itrs.beg());
+    pxh valh = *(rng.beg());
     //px* val = valh.pxp();
-    return sv_foldl_itrs(fun, valh.pxp(), itrs.beg()+1, itrs.end());  
+    return sv_foldl_rng(fun, valh.pxp(), rng.beg()+1, rng.end());  
   }catch (px* e) {
     pure_throw(e);
     return 0;
   }
 }
 
-static px* sv_foldr_itrs(px* fun, px* val, reverse_svi beg, reverse_svi end)
+static px* sv_foldr_rng(px* fun, px* val, reverse_svi beg, reverse_svi end)
 { 
   px* res = px_new(val);
   px* exception = 0;
@@ -541,12 +541,12 @@ static px* sv_foldr_itrs(px* fun, px* val, reverse_svi beg, reverse_svi end)
 
 px* sv_foldr(px* fun, px* val, px* tpl)
 {
-  sv_iters itrs(tpl);
-  if (!itrs.is_valid || itrs.num_iters != 2) bad_argument();
-  reverse_svi beg(itrs.end());
-  reverse_svi end(itrs.beg());
+  sv_range rng(tpl);
+  if (!rng.is_valid || rng.num_iters != 2) bad_argument();
+  reverse_svi beg(rng.end());
+  reverse_svi end(rng.beg());
   try {
-    return sv_foldr_itrs(fun, val, beg, end);
+    return sv_foldr_rng(fun, val, beg, end);
   }catch (px* e) {
     pure_throw(e);
     return 0;
@@ -555,14 +555,14 @@ px* sv_foldr(px* fun, px* val, px* tpl)
 
 px* sv_foldr1(px* fun, px* tpl)
 {
-  sv_iters itrs(tpl);
-  if (!itrs.is_valid || itrs.num_iters != 2) bad_argument();
-  if (itrs.size() < 2) bad_argument();
-  reverse_svi beg(itrs.end());
-  reverse_svi end(itrs.beg());
+  sv_range rng(tpl);
+  if (!rng.is_valid || rng.num_iters != 2) bad_argument();
+  if (rng.size() < 2) bad_argument();
+  reverse_svi beg(rng.end());
+  reverse_svi end(rng.beg());
   try {
     pxh valh = *beg;
-    return sv_foldr_itrs(fun, valh.pxp(), beg+1, end);
+    return sv_foldr_rng(fun, valh.pxp(), beg+1, end);
   }catch (px* e) {
     pure_throw(e);
     return 0;
