@@ -80,24 +80,14 @@ static int smm_get_size(smm* smmp, pmmi b, pmmi e)
  return sz;
 }
 
-static void update_aux(smm* smmp, px* k, px* v)
+static pmmi update_aux(smm* smmp, px* k, px* v)
 {
   pxhmmap& mp = smmp->mp;
-  pmmi pos;
-  if ( smmp->keys_only && smmp->has_recent_pmmi ) {
-    pos = smmp->recent_pmmi;
-    if ( !same(pos->first.pxp(), k) )
-      pos = smmp->mp.insert(smmp->recent_pmmi,pxh_pair(k,v));
-    pos->second = v;
-  }   
-  else {
-    pos = mp.insert(pxh_pair(k,v));
-  }
-  if (smmp->keys_only)
-    smmp->cache_pmmi(pos);  
+  return mp.insert(pxh_pair(k,v));
 }
 
-static bool insert_aux(smm* smmp, px* kv)
+// increases inserted by 1 iff inserted new value
+static bool insert_aux(smm* smmp, px* kv, pmmi& pos, int& inserted)
 {
   px *k, *v;
   bool ok = true;
@@ -119,14 +109,8 @@ static bool insert_aux(smm* smmp, px* kv)
     }
   }
   if (ok) {
-    pmmi pos;
-    if (smmp->has_recent_pmmi)
-      pos = smmp->mp.insert(smmp->recent_pmmi,pxh_pair(k,v));
-    else {
-      pos = smmp->mp.insert(pxh_pair(k,v));
-    }
-    if (smmp->keys_only)
-      smmp->cache_pmmi(pos);
+    pos = smmp->mp.insert(pxh_pair(k,v));
+    inserted ++;
   }
   return ok;
 }
@@ -187,13 +171,13 @@ static px* listmap_aux(px* fun, pmmi b, pmmi e, int what)
 stlmmap::stlmmap(px* cmp, px* val_cmp, px* val_eql, bool keyonly):
   mp(pxh_pred2(cmp)), keys_only(keyonly),
   px_comp(cmp), px_val_comp(val_cmp), px_val_equal(val_eql),
-  has_recent_pmmi(0), recent_pmmi(mp.end()), 
+  has_recent_pmmi(0), latest_pmmi_pos(0),
   has_dflt(0), dflt(NULL) {}
 
 stlmmap::stlmmap(px* cmp, px* val_cmp, px* val_eql, bool keyonly, px *d):
   mp(pxh_pred2(cmp)), keys_only(keyonly),
   px_comp(cmp), px_val_comp(val_cmp), px_val_equal(val_eql),
-  has_recent_pmmi(0), recent_pmmi(mp.end()), 
+  has_recent_pmmi(0),  latest_pmmi_pos(0),
   has_dflt(1), dflt(d) {}
 
 pmmi stlmmap::find(px* key)
@@ -208,24 +192,42 @@ pmmi stlmmap::find(px* key)
   return iter;  
 }
 
-bool stlmmap::get_cached_pmmi(px* k, pmmi& i)
-{
-  bool found = k != smmbeg() && k != smmend() &&
-    has_recent_pmmi && same(recent_pmmi->first.pxp(), k);
-  if (found) i = recent_pmmi;
-#ifdef STL_DEBUG
-  if (found && stl_smm_trace_enabled())
-    cerr <<"get_cached_pmmi, found " << k <<" with refc:"<< k->refc << endl;
-#endif
-  return found;
-}
-
-void stlmmap::cache_pmmi(pmmi i)
+void stlmmap::cache_pmmi(pmmi& i)
 {
   if ( i != mp.end() ) {
-    has_recent_pmmi = true;
-    recent_pmmi = i;
+    if (!has_recent_pmmi) {
+      recent_pmmi.clear();
+      has_recent_pmmi = true;
+      latest_pmmi_pos = 0;
+    }
+    size_t num_cached = recent_pmmi.size();
+    if (num_cached<SMM_CACHE_SZ) {
+      recent_pmmi.push_back(i);
+      latest_pmmi_pos = num_cached;
+    }
+    else {
+      latest_pmmi_pos = (latest_pmmi_pos + 1) % SMM_CACHE_SZ;
+      recent_pmmi[latest_pmmi_pos] = i;
+    }
   }
+}
+
+bool stlmmap::get_cached_pmmi(px* k, pmmi& i)
+{
+  bool ret = false;
+  if ( k != smmend() && has_recent_pmmi ) {
+    size_t num_cached = recent_pmmi.size();
+    size_t pos = 0; 
+    for (; pos < num_cached; pos++) {
+      if ( same(recent_pmmi[pos]->first.pxp(), k) ) {
+        i = recent_pmmi[pos];
+        ret = true;
+         break;
+      }
+    }
+  }
+  //cerr << "get_cached_pmmi, k: " << k << ", ret: " << ret << endl;
+  return ret;
 }
 
 void stlmmap::clear()
@@ -236,8 +238,11 @@ void stlmmap::clear()
 
 int stlmmap::erase(pmmi pos)
 {
-  if (has_recent_pmmi && recent_pmmi == pos)
-    has_recent_pmmi = 0;
+  if (has_recent_pmmi) {
+    vector<pmmi>::iterator end = 
+      remove(recent_pmmi.begin(),recent_pmmi.end(),pos);
+    recent_pmmi.erase(end,recent_pmmi.end());
+  }
   mp.erase(pos);
   return 1;
 }
@@ -260,14 +265,15 @@ int stlmmap::erase(px* k)
         ret = 0;
     }
   }
+  has_recent_pmmi = false;
   return ret;
 }
 
 int stlmmap::erase(pmmi first, pmmi last)
 {
-  has_recent_pmmi = false;
   size_t sz = mp.size();
   mp.erase(first, last);
+  has_recent_pmmi = false;
   return sz - mp.size();
 }
 
@@ -731,54 +737,60 @@ px* smm_update(smm* smmp, px* key, px* val)
   return val;
 }
 
-void smm_insert_elm(smm* smmp, px* kv)
+int smm_insert_elm(smm* smmp, px* kv)
 {
-  if ( !insert_aux(smmp, kv) ) bad_argument();
+  int num_inserted = 0;
+  pmmi pos;
+  if ( !insert_aux(smmp, kv, pos, num_inserted) ) bad_argument();
+  smmp->cache_pmmi(pos);
+  return num_inserted;
 }
 
-void smm_insert_elms_xs(smm* smmp, px* src)
+int smm_insert_elms_xs(smm* smmp, px* src)
 {
   pxhmmap& mp = smmp->mp;
   size_t sz = 0;
   px** elems = NULL;
   bool ok;
+  int num_inserted = 0;
+  pmmi pos;
   if (pure_is_listv(src, &sz, &elems)) {
     for (int i = 0; i<sz; i++)
-      if ( !insert_aux(smmp, elems[i]) ) bad_argument();
+      if ( !insert_aux(smmp, elems[i], pos, num_inserted) ) bad_argument();
     free(elems);
   } else if (matrix_type(src) == 0) {
     sz = matrix_size(src); 
     elems = (pure_expr**) pure_get_matrix_data(src);
     for (int i = 0; i<sz; i++) 
-      if ( !insert_aux(smmp, elems[i]) ) bad_argument();
+      if ( !insert_aux(smmp, elems[i], pos, num_inserted) ) bad_argument();
   } 
+  return num_inserted;
 }
 
-void smm_insert_elms_stlmmap(smm* smmp, px* tpl)
+int smm_insert_elms_stlmmap(smm* smmp, px* tpl)
 {
   smm_iters itrs(tpl);
+  pxhmmap& mp = smmp->mp;
+  size_t oldsz = mp.size();
+  if (smmp == itrs.smmp) bad_argument();
   if (itrs.beg() != itrs.end()) {
-    pmmi inserted = smmp->mp.begin();
     if (!itrs.is_valid) bad_argument();
-    if (smmp->keys_only) {
-      for (pmmi i = itrs.beg(); i!=itrs.end(); i++)
-        inserted = smmp->mp.insert(inserted, *i);
-      smmp->cache_pmmi(inserted);
-    }
-    else {
-      for (pmmi i = itrs.beg(); i!=itrs.end(); i++)
-        update_aux(smmp, i->first.pxp(), i->second.pxp());
-    }
+    for (pmmi i = itrs.beg(); i!=itrs.end(); i++)
+      update_aux(smmp, i->first.pxp(), i->second.pxp());
   }
+  return mp.size() - oldsz;
 }
 
-void smm_insert_elms_stlvec(smm* smmp, px* tpl)
+int smm_insert_elms_stlvec(smm* smmp, px* tpl)
 {
   sv_iters itrs(tpl);
   if (!itrs.is_valid || itrs.num_iters != 2) bad_argument();
+  int num_inserted = 0;
   pxhmmap& mp = smmp->mp;
+  pmmi pos;
   for (svi i = itrs.beg(); i!=itrs.end(); i++)
-    if ( !insert_aux(smmp, i->pxp()) ) bad_argument();
+    if ( !insert_aux(smmp, i->pxp(), pos, num_inserted) ) bad_argument();
+  return num_inserted;
 }
 
 px* smm_update_vals_xs(smm* smmp, px* k, px* src)
@@ -798,7 +810,7 @@ px* smm_update_vals_xs(smm* smmp, px* k, px* src)
       for (; i<src_sz; i++)
         update_aux(smmp, k, elems[i]);
     else
-      mp.erase(trgi,ub);
+      smmp->erase(trgi,ub);
     free(elems);
   } 
   else if (matrix_type(src) == 0) {
@@ -810,7 +822,7 @@ px* smm_update_vals_xs(smm* smmp, px* k, px* src)
       for (; i<src_sz; i++)
         update_aux(smmp, k, elems[i]);
     else
-      mp.erase(trgi,ub);
+      smmp->erase(trgi,ub);
   }
   return pure_int(i);
 }
@@ -849,7 +861,7 @@ static int smm_erase_if_aux(px* pred, px* tpl, bool first_only)
     if ( pure_is_int(pxres, &fun_res) && fun_res ) {
       smmp->erase(trg);
       if (first_only) break;
-     } 
+    } 
   }
   return sz - mp.size();
 }

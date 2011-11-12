@@ -42,12 +42,6 @@ bool stl_sm_trace_enabled()
 
 /*** Helpers for stlmap.cpp only ************************************/
 
-// px* smbegx()
-// {
-//   cerr << "smbegx\n";
-//   return pure_symbol(pure_sym("stl::stlbegx"));
-// }
-
 static void set_kv(pmi i, px** k, px** v)
 {
   const pxh h_key = i->first;
@@ -86,14 +80,11 @@ static int sm_get_size(sm* smp, pmi b, pmi e)
  return sz;
 }
 
-static void update_aux(sm* smp, px* k, px* v)
+static pmi update_aux(sm* smp, px* k, px* v)
 {
   pxhmap& mp = smp->mp;
   pmi pos;
-  if ( smp->has_recent_pmi ) {
-    pos = smp->recent_pmi;
-    if ( !same(pos->first.pxp(), k) )
-      pos = smp->mp.insert(smp->recent_pmi,pxh_pair(k,v));
+  if ( smp->get_cached_pmi(k, pos) ) {
     pos->second = v;
   }   
   else {
@@ -101,10 +92,11 @@ static void update_aux(sm* smp, px* k, px* v)
     if (!i_ok.second) i_ok.first->second = v;
     pos = i_ok.first;
    }
-  smp->cache_pmi(pos);  
+  return pos;
 }
 
-static bool insert_aux(sm* smp, px* kv)
+// increases inserted by 1 iff inserted new value
+static bool insert_aux(sm* smp, px* kv, pmi& pos, int& inserted)
 {
   px *k, *v;
   bool ok = true;
@@ -128,17 +120,15 @@ static bool insert_aux(sm* smp, px* kv)
   if (ok) {
 #ifdef STL_INSERT_SEMANTICS
     // Do NOT override existing values
-    pmi pos;
-    if (smp->has_recent_pmi)
-      pos = smp->mp.insert(smp->recent_pmi,pxh_pair(k,v));
-    else {
+    if ( !smp->get_cached_pmi(k, pos) ) {
       pair<pmi,bool> i_ok = smp->mp.insert(pxh_pair(k,v));
       pos = i_ok.first;
+      inserted += i_ok.second;
     }
-    smp->cache_pmi(pos);
 #else
     // Always use new values
-    update_aux(smp, k, v); 
+    inserted++;
+    pos = update_aux(smp, k, v); 
 #endif
   }
   return ok;
@@ -201,13 +191,13 @@ static px* listmap_aux(px* fun, pmi b, pmi e, int what)
 stlmap::stlmap(px* cmp, px* val_cmp, px* val_eql, bool keyonly):
   mp(pxh_pred2(cmp)), keys_only(keyonly),
   px_comp(cmp), px_val_comp(val_cmp), px_val_equal(val_eql),
-  has_recent_pmi(0), recent_pmi(mp.end()), 
+  has_recent_pmi(0), latest_pmi_pos(0),
   has_dflt(0), dflt(NULL) {}
 
 stlmap::stlmap(px* cmp, px* val_cmp, px* val_eql, bool keyonly, px *d):
   mp(pxh_pred2(cmp)), keys_only(keyonly),
   px_comp(cmp), px_val_comp(val_cmp), px_val_equal(val_eql),
-  has_recent_pmi(0), recent_pmi(mp.end()), 
+  has_recent_pmi(0), latest_pmi_pos(0), 
   has_dflt(1), dflt(d) {}
 
 pmi stlmap::find(px* key)
@@ -222,36 +212,57 @@ pmi stlmap::find(px* key)
   return iter;  
 }
 
-bool stlmap::get_cached_pmi(px* k, pmi& i)
-{
-  bool found = k != smbeg() && k != smend() &&
-    has_recent_pmi && same(recent_pmi->first.pxp(), k);
-  if (found) i = recent_pmi;
-#ifdef STL_DEBUG
-  if (found && stl_sm_trace_enabled())
-    cerr <<"get_cached_pmi, found "<< k <<" with refc:"<< k->refc << endl;
-#endif
-  return found;
-}
-
-void stlmap::cache_pmi(pmi& i)
+void stlmap::cache_pmi(const pmi& i)
 {
   if ( i != mp.end() ) {
-    has_recent_pmi = true;
-    recent_pmi = i;
+    if (!has_recent_pmi) {
+      recent_pmi.clear();
+      has_recent_pmi = true;
+      latest_pmi_pos = 0;
+    }
+    size_t num_cached = recent_pmi.size();
+    if (num_cached<SM_CACHE_SZ) {
+      recent_pmi.push_back(i);
+      latest_pmi_pos = num_cached;
+    }
+    else {
+      latest_pmi_pos = (latest_pmi_pos + 1) % SM_CACHE_SZ;
+      recent_pmi[latest_pmi_pos] = i;
+    }
   }
+}
+
+bool stlmap::get_cached_pmi(px* k, pmi& i)
+{
+  bool ret = false;
+  if ( k != smend() && has_recent_pmi ) {
+    size_t num_cached = recent_pmi.size();
+    size_t pos = 0; 
+    for (; pos < num_cached; pos++) {
+      if ( same(recent_pmi[pos]->first.pxp(), k) ) {
+        i = recent_pmi[pos];
+        ret = true;
+         break;
+      }
+    }
+  }
+  //cerr << "get_cached_pmi, k: " << k << ", ret: " << ret << endl;
+  return ret;
 }
 
 void stlmap::clear()
 {
-  has_recent_pmi = 0;
+  has_recent_pmi = false;
   mp.clear();
 }
 
 int stlmap::erase(pmi pos)
 {
-  if (has_recent_pmi && recent_pmi == pos)
-    has_recent_pmi = 0;
+  if (has_recent_pmi) {
+    vector<pmi>::iterator end = 
+      remove(recent_pmi.begin(),recent_pmi.end(),pos);
+    recent_pmi.erase(end,recent_pmi.end());
+  }
   mp.erase(pos);
   return 1;
 }
@@ -309,7 +320,6 @@ static pmi get_iter(pxhmap& mp , px* key, int mode)
 
 static px* iter_to_key(const pxhmap& mp, const pmi& it)
 {
-  //cerr << "iter_to_key" << endl;
   if (it == mp.end()) return smend();
   if (it == mp.begin()) return smbeg();
   return it->first.pxp();
@@ -574,10 +584,11 @@ px* sm_get_elm(sm* smp, px* key, int what)
   pxhmap &mp = smp->mp; 
   px* ret = 0;
   pmi i;
-  if ( !smp->get_cached_pmi(key, i) ) 
+  if ( !smp->get_cached_pmi(key, i) ) {
     i = get_iter(mp, key, gi_find);  
-  if (i != mp.end()) {
     smp->cache_pmi(i);
+  }
+  if (i != mp.end()) {
     switch (what) {
     case stl_sm_key:
       ret = i->first.pxp();
@@ -687,67 +698,85 @@ sm* sm_setop(int op, px* tpl1, px* tpl2)
 px* sm_update(sm* smp, px* key, px* val)
 {
   if (smp->keys_only) return 0; // fail for sets
-  update_aux(smp, key, val);
+  pmi pos = update_aux(smp, key, val);
+  smp->cache_pmi(pos);
   return val;
 }
 
 px* sm_update_with(sm* smp, px* key, px* unaryfun)
 {
   if (smp->keys_only) return 0; // fail for sets
-  if (!smp->has_dflt)
-    failed_cond();
-  px* old_val = sm_get_elm(smp,key,stl_sm_val);
+  if (!smp->has_dflt) failed_cond();
+  pmi i;
+  if ( !smp->get_cached_pmi(key, i) ) {
+    // uses default only if not already stored
+    pair<pmi,bool> i_ok = smp->mp.insert(pxh_pair(key,smp->dflt.pxp()));
+    i = i_ok.first;
+    smp->cache_pmi(i);
+  }  
+  px* old_val = i->second.pxp();
   px* exception = 0;
   px* new_val = pure_appxl(unaryfun, &exception, 1, old_val);
   if (exception) pure_throw(exception);
   if (!new_val) bad_function();
-  update_aux(smp, key, new_val);
+  i->second = new_val;
   return new_val;
 }
 
-
-void sm_insert_elm(sm* smp, px* kv)
+int sm_insert_elm(sm* smp, px* kv)
 {
-  if ( !insert_aux(smp, kv) ) bad_argument();
+  int num_inserted = 0;
+  pmi pos;
+  if ( !insert_aux(smp, kv, pos, num_inserted) ) bad_argument();
+  smp->cache_pmi(pos);
+  return num_inserted;
 }
 
-void sm_insert_elms_xs(sm* smp, px* src)
+int sm_insert_elms_xs(sm* smp, px* src)
 {
   pxhmap& mp = smp->mp;
   size_t sz = 0;
   px** elems = NULL;
   bool ok;
+  int num_inserted = 0;
+  pmi pos;
   if (pure_is_listv(src, &sz, &elems)) {
     for (int i = 0; i<sz; i++)
-      if ( !insert_aux(smp, elems[i]) ) bad_argument();
+      if ( !insert_aux(smp, elems[i], pos, num_inserted) ) bad_argument();
     free(elems);
   } else if (matrix_type(src) == 0) {
     sz = matrix_size(src); 
     elems = (pure_expr**) pure_get_matrix_data(src);
     for (int i = 0; i<sz; i++) 
-      if ( !insert_aux(smp, elems[i]) ) bad_argument();
+      if ( !insert_aux(smp, elems[i], pos, num_inserted) ) bad_argument();
   } 
+  return num_inserted;
 }
 
-void sm_insert_elms_stlmap(sm* smp, px* tpl)
+int sm_insert_elms_stlmap(sm* smp, px* tpl)
 {
   sm_iters itrs(tpl);
+  pxhmap& mp = smp->mp;
+  size_t oldsz = mp.size();
   if (smp == itrs.smp) bad_argument();
   if (itrs.beg() != itrs.end()) {
-    pmi inserted = smp->mp.begin();
     if (!itrs.is_valid) bad_argument();
     for (pmi i = itrs.beg(); i!=itrs.end(); i++)
       update_aux(smp, i->first.pxp(), i->second.pxp());
-  } 
+  }
+  return mp.size() - oldsz;
 }
 
-void sm_insert_elms_stlvec(sm* smp, px* tpl)
+int sm_insert_elms_stlvec(sm* smp, px* tpl)
 {
   sv_iters itrs(tpl);
   if (!itrs.is_valid || itrs.num_iters != 2) bad_argument();
+  int num_inserted = 0;
   pxhmap& mp = smp->mp;
+  pmi pos;
   for (svi i = itrs.beg(); i!=itrs.end(); i++)
-    if ( !insert_aux(smp, i->pxp()) ) bad_argument();
+    if ( !insert_aux(smp, i->pxp(), pos, num_inserted) ) bad_argument();
+  return num_inserted;
 }
 
 int sm_erase(px* tpl)

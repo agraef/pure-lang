@@ -101,7 +101,7 @@ let smm1 = stlmmap ["a"=>1,"b"=>2,"b"=>3,"d"=>4,"e"=>5]; members smm1;
 //- ["a"=>1,"b"=>2,"b"=>3,"d"=>4,"e"=>5]
 
 let kb, ke = stl::stlbeg, stl::stlend; kb, ke;
-//- stl_begin_iterator,stl_end_iterator
+//- stl::stlbeg,stl::stlend
 
 smm1!kb;
 //- [1]
@@ -116,7 +116,7 @@ let k1 = prev_key smm1 k2; k1, smm1!k1;
 //- "b",[2,3]
 
 let k0 = prev_key smm1 k1; k0,  smm1!k0;
-//- stl_begin_iterator,[1]
+//- stl::stlbeg,[1]
 
 catch id $ prev_key smm1 kb; 
 //- out_of_bounds
@@ -134,7 +134,7 @@ let k4 = next_key smm1 k3; k4, smm1!k4;
 //- "e",[5]
 
 let k5 = next_key smm1 k4; k5; 
-//- stl_end_iterator
+//- stl::stlend
 
 catch id $ next_key smm1 ke; 
 //- out_of_bounds
@@ -734,13 +734,13 @@ let smm1 = stlmmap ["a"=>1,"b"=>2,"b"=>3,"b"=>1,"c"=>3,"d"=>4]; members smm1;
 //- ["a"=>1,"b"=>2,"b"=>3,"b"=>1,"c"=>3,"d"=>4]
 
 let smm2, lb, ub = stl::bounds smm1; (lb, ub);
-//- stl_begin_iterator,stl_end_iterator
+//- stl::stlbeg,stl::stlend
 
 let smm2, lb, ub = stl::bounds (smm1,"a"); (lb, ub);
-//- stl_begin_iterator,"b"
+//- stl::stlbeg,"b"
 
 let smm2, lb, ub = stl::bounds (smm1,"a1"); (lb, ub);
-//- stl_end_iterator,stl_end_iterator
+//- stl::stlend,stl::stlend
 
 let smm2, lb, ub = stl::bounds (smm1,"b"); (lb, ub);
 //- "b","c"
@@ -749,25 +749,25 @@ members (smm2, lb, ub);
 //- ["b"=>2,"b"=>3,"b"=>1]
 
 let smm2, lb, ub = stl::bounds (smm1,"a","x"); (lb, ub);
-//- stl_begin_iterator,stl_end_iterator
+//- stl::stlbeg,stl::stlend
 
 let smm2, lb, ub = stl::bounds (smm1,"0","x"); (lb, ub);
-//- stl_begin_iterator,stl_end_iterator
+//- stl::stlbeg,stl::stlend
 
 let smm2, lb, ub = stl::bounds (smm1,"x","a"); (lb, ub);
-//- stl_end_iterator,stl_end_iterator
+//- stl::stlend,stl::stlend
 
 let smm2, lb, ub = stl::bounds (smm1,"a","b"); (lb, ub);
-//- stl_begin_iterator,"b"
+//- stl::stlbeg,"b"
 
 members (smm2, lb, ub);
 //- ["a"=>1]
 
 let smm2, lb, ub = stl::bounds (smm1,stl::stlbeg,"a"); (lb, ub);
-//- stl_begin_iterator,stl_begin_iterator
+//- stl::stlbeg,stl::stlbeg
 
 let smm2, lb, ub = stl::bounds (smm1,stl::stlend,"x"); (lb, ub);
-//- stl_end_iterator,stl_end_iterator
+//- stl::stlend,stl::stlend
 
 stl::size smm1;
 //- 6

@@ -99,7 +99,7 @@ let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]; members sm1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
 let kb, ke = stl::stlbeg, stl::stlend; kb, ke;
-//- stl_begin_iterator,stl_end_iterator
+//- stl::stlbeg,stl::stlend
 
 let k1 = next_key sm1 kb; k1;
 //- "b"
@@ -111,7 +111,7 @@ let k1 = prev_key sm1 k2; k2;
 //- "c"
 
 let k0 = prev_key sm1 k1; k0;
-//- stl_begin_iterator
+//- stl::stlbeg
 
 catch id $ prev_key sm1 kb; 
 //- out_of_bounds
@@ -129,13 +129,13 @@ let k4 = next_key sm1 k3; k4;
 //- "e"
 
 let k5 = next_key sm1 k4; k5;
-//- stl_end_iterator
+//- stl::stlend
 
 catch id $ next_key sm1 ke;
-//- stl_end_iterator
+//- stl::stlend
 
 catch id $ next_key sm1 k5; 
-//- stl_end_iterator
+//- stl::stlend
 
 //*** Members, keys, vals, first, last ********************************
 
@@ -682,13 +682,13 @@ let sm1 = stlmap ["a"=>1,"b"=>2,"b"=>3,"b"=>1,"c"=>3,"d"=>4]; members sm1;
 //- ["a"=>1,"b"=>1,"c"=>3,"d"=>4]
 
 let sm2, lb, up = stl::bounds sm1; (lb, up);
-//- stl_begin_iterator,stl_end_iterator
+//- stl::stlbeg,stl::stlend
 
 let sm2, lb, up = stl::bounds (sm1,"a"); (lb, up);
-//- stl_begin_iterator,"b"
+//- stl::stlbeg,"b"
 
 let sm2, lb, up = stl::bounds (sm1,"a1"); (lb, up);
-//- stl_end_iterator,stl_end_iterator
+//- stl::stlend,stl::stlend
 
 let sm2, lb, ub = stl::bounds (sm1,"b"); (lb, ub);
 //- "b","c"
@@ -697,25 +697,25 @@ members (sm2, lb, ub);
 //- ["b"=>1]
 
 let sm2, lb, up = stl::bounds (sm1,"a","x"); (lb, up);
-//- stl_begin_iterator,stl_end_iterator
+//- stl::stlbeg,stl::stlend
 
 let sm2, lb, up = stl::bounds (sm1,"0","x"); (lb, up);
-//- stl_begin_iterator,stl_end_iterator
+//- stl::stlbeg,stl::stlend
 
 let sm2, lb, up = stl::bounds (sm1,"x","a"); (lb, up);
-//- stl_end_iterator,stl_end_iterator
+//- stl::stlend,stl::stlend
 
 let sm2, lb, ub = stl::bounds (sm1,"a","b"); (lb, ub);
-//- stl_begin_iterator,"b"
+//- stl::stlbeg,"b"
 
 members (sm2, lb, ub);
 //- ["a"=>1]
 
 let sm2, lb, up = stl::bounds (sm1,stl::stlbeg,"b"); (lb, up);
-//- stl_begin_iterator,"b"
+//- stl::stlbeg,"b"
 
 let sm2, lb, up = stl::bounds (sm1,stl::stlend,"x"); (lb, up);
-//- stl_end_iterator,stl_end_iterator
+//- stl::stlend,stl::stlend
 
 stl::size sm1;
 //- 4

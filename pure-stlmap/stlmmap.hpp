@@ -21,11 +21,16 @@ included with the pure-stlmap distribution package for details.
 
 #include <iostream>
 #include <map>
+#include <vector>
 #include "stlbase.hpp"
 #include "stlvec.hpp"
 
+using namespace std;
+
 typedef std::multimap<pxh,pxh,pxh_pred2> pxhmmap;
 typedef pxhmmap::iterator pmmi;
+
+const size_t SMM_CACHE_SZ = 4;
 
 struct stlmmap {
   stlmmap(px* key_comp, px* val_comp, px* val_equal, bool keyonly); 
@@ -33,7 +38,7 @@ struct stlmmap {
 
   pmmi find(px* key);
   bool get_cached_pmmi(px* k, pmmi& i);
-  void cache_pmmi(pmmi i);
+  void cache_pmmi(pmmi& i);
   void clear();
   int  erase(pmmi pos);
   int  erase(px* k);
@@ -45,7 +50,8 @@ struct stlmmap {
   pxh px_val_equal;
   pxh dflt;
   bool has_recent_pmmi;
-  pmmi recent_pmmi;
+  size_t latest_pmmi_pos;
+  vector<pmmi> recent_pmmi;
   bool has_dflt;
   bool keys_only;
 };
@@ -98,10 +104,10 @@ extern "C" {
   px*  smm_get_elm(smm* smmp, px* key, int what);
   px*  smm_update(smm* smmp, px* key, px* val);
   px*  smm_update_vals_xs(smm* smmp, px* k, px* src);
-  void smm_insert_elm(smm* smmp, px* kv);
-  void smm_insert_elms_xs(smm* smmp, px* src);
-  void smm_insert_elms_stlmmap(smm* smmp, px* tpl);
-  void smm_insert_elms_stlvec(smm* smmp, px* tpl);
+  int  smm_insert_elm(smm* smmp, px* kv);
+  int  smm_insert_elms_xs(smm* smmp, px* src);
+  int  smm_insert_elms_stlmmap(smm* smmp, px* tpl);
+  int  smm_insert_elms_stlvec(smm* smmp, px* tpl);
   int  smm_clear(smm* smmp);
   int  smm_erase(px* tpl);
   int  smm_erase_if(px* pred, px* tpl);
