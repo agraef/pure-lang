@@ -1064,13 +1064,7 @@ extern "C" bool hashmdict_equal(myhashmdict *x, myhashmdict *y)
 }
 
 struct myhashmdict_iterator {
-  // The iterator itself. This should always be the first member so that a
-  // pointer to the iterator object can also be passed as a pointer to an
-  // ordinary C++ iterator.
   myhashmdict::iterator it;
-  // We also keep a reference to the original Pure expression holding the
-  // container, so that it doesn't get garbage-collected while the iterator is
-  // still in use.
   pure_expr *x;
   myhashmdict_iterator(pure_expr *_x) : x(pure_new(_x)) {}
   myhashmdict_iterator(const myhashmdict_iterator& y)
