@@ -633,23 +633,18 @@ def void [x] | void {x} = void x;
      	> (1,2,3,4,5)!!(3..10);
      	4,5
 
-      Indices can actually be specified in any order, so that you can retrieve
+      The case of contiguous index ranges, as shown above, is optimized so
+      that it always works in linear time, see Slicing_ below for details. But
+      indices can actually be specified in any order, so that you can retrieve
       any permutation of the members, also with duplicates. E.g.::
 
         > (1..5)!![2,4,4,1];
      	[3,5,5,2]
 
-      This is less efficient than the case of contiguous index ranges (which
-      is optimized so that it always works in linear time), because it
-      requires repeated traversals of the list for each index. For larger
+      This is less efficient than the case of contiguous index ranges, because
+      it requires repeated traversals of the list for each index. For larger
       lists you should hence use vectors or matrices instead, to avoid the
       quadratic complexity.
-
-      Note: The prelude actually implements the slicing operation in a fairly
-      generic way, so that it works with any kind of container data structure
-      which defines '\ :func:`\!`\ ' in such a manner that it throws an
-      exception when the index is out of bounds. It also works with any kind
-      of index container that implements the :func:`catmap` operation.
 
    .. index:: list; arithmetic sequence
 
@@ -740,16 +735,77 @@ def void [x] | void {x} = void x;
    to apply other functions to the list and have them evaluated in a lazy
    fashion.
 
+   Slicing
+   -------
+
+   Indexing and slicing are actually fairly general operations in Pure which
+   are used not only in the context of lists and tuples, but for any type of
+   container data structure which can be "indexed" in some way. Other examples
+   in the standard library are the :mod:`array` and :mod:`dict` containers.
+
+   The prelude therefore implements slicing in a generic way, so that it works
+   with any kind of container data structure which defines '\ :func:`\!`\ ' in
+   such a manner that it throws an exception when the index is out of bounds.
+   It also works with any kind of index container that implements the
+   :func:`catmap` operation.
+
+   The prelude also optimizes the case of contiguous integer ranges so that
+   slices like ``xs!!(i..j)`` are computed in linear time if possible.  This
+   works, in particular, with lists, strings and matrices.
+
+   Moreover, the prelude includes some optimization rules and corresponding
+   helper functions to optimize the most common cases at compile time, so that
+   the index range is never actually constructed. To these ends, the slicing
+   expression ``xs!!(i..j)`` is translated to a call ``subseq xs i j`` of the
+   special :func:`subseq` function:
+
+   .. function:: subseq x i j
+
+      If ``x`` is a list, matrix or string, and ``i`` and ``j`` are int
+      values, compute the slice ``xs!!(i..j)`` in the most efficient manner
+      possible. This generally avoids constructing the index list ``i..j``.
+      Otherwise ``i..j`` is computed and :func:`subseq` falls back to the
+      :func:`slice` function below to compute the slice in the usual way.
+
+   .. function:: slice x ys
+
+      Compute the slice ``x!!ys`` using the standard slicing operation,
+      without any special compile time tricks. (Runtime optimizations are
+      still applied if possible.)
+
+   You can readily see the effects of this optimization by running the slicing
+   operator against :func:`slice`::
+
+     > let xs = 1..1000000;
+     > stats -m
+     > #(slice xs (100000..299990));
+     199991
+     0.34s, 999957 cells
+     > #(xs!!(100000..299990));
+     199991
+     0.14s, 399984 cells
+
+   Even more drastic improvements in both running time and memory usage can be
+   seen in the case of matrix slices::
+
+     > let x = rowvector xs;
+     > #(slice x (100000..299990));
+     199991
+     0.19s, 599990 cells
+     > #(x!!(100000..299990));
+     199991
+     0s, 10 cells
+
    Hash Pairs
    ----------
 
    .. index:: hash pair, hash rocket
 
-   The prelude also provides another special kind of pairs called "hash
-   pairs", which take the form ``key=>value``. These are used in various
-   contexts to denote key-value associations. The only operations on hash
-   pairs provided by the prelude are equality testing (which recursively
-   compares the components) and the functions :func:`key` and :func:`val`:
+   The prelude provides another special kind of pairs called "hash pairs",
+   which take the form ``key=>value``. These are used in various contexts to
+   denote key-value associations. The only operations on hash pairs provided
+   by the prelude are equality testing (which recursively compares the
+   components) and the functions :func:`key` and :func:`val`:
 
    .. constructor:: infix => x y
 
@@ -899,6 +955,21 @@ xs!!ns		= ys if ok ys when
 		       _ = 0 otherwise;
 		     end);
 		  end;
+
+/* Compile time optimization of contiguous slices. This optimizes the common
+   case of a slice x!!(a::int..b::int). The rules below handle the list case,
+   and the generic case in which we fall back to the standard slicing
+   operation above. Other specialized optimization rules can be found in the
+   matrices and strings modules. */
+
+def x!!(a..b) = subseq x a b;
+
+subseq [] a::int b::int = [];
+subseq xs@(_:_) a::int b::int = take (b-a+1) $ drop a xs;
+subseq x a b = slice x (a..b);
+
+// This is like (!!), but prevents application of the optimization rules.
+slice x y = id (!!) x y;
 
 /* List concatenation. For a robust implementation which works with both
    ordinary lists and streams, we want this to be tail-recursive *and*

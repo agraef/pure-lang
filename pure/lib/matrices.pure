@@ -85,6 +85,12 @@ public all any cat cst do list map reverse uncurry uncurry3;
      	> x!!(0..1,1);
      	{2;5}
 
+      As in the case of lists, matrix slices are optimized to handle cases
+      with contiguous index ranges in an efficient manner, see Slicing_ for
+      details. To these ends, the helper functions :func:`subseq/matrix` and
+      :func:`subseq2/matrix` are defined to handle the necessary compile time
+      optimizations.
+
    .. function:: infix == /matrix x y
       		 infix ~= /matrix x y
 
@@ -388,11 +394,34 @@ x::matrix!!ns		= if all intp ns && packed x
 			    nth x n = catch (cst {}) {x!n};
 			  end;
 
-/* Extract rows and columns from a matrix. */
+/* Compile time optimization of matrix slices. */
+
+/* .. function:: subseq /matrix x i j
+                 subseq2 /matrix x i j k l
+
+      Helper functions to optimize matrix slices, see Slicing_ for details.
+      :func:`subseq2/matrix` is a special version of :func:`subseq/matrix`
+      which is used to optimize the case of 2-dimensional matrix slices
+      ``xs!!(i..j,k..l)``. */
 
 namespace __C;
 extern expr* matrix_slice(expr* x, int i1, int j1, int i2, int j2);
 namespace;
+
+def x!!(a1..b1,a2..b2) = subseq2 x a1 b1 a2 b2;
+def x!!(a1,a2..b2) = subseq2 x a1 a1 a2 b2;
+def x!!(a1..b1,a2) = subseq2 x a1 b1 a2 a2;
+
+subseq2 x::matrix a1::int b1::int a2::int b2::int =
+  __C::matrix_slice x a1 a2 b1 b2;
+subseq2 x a1 a1 a2 b2 = slice x (a1,a2..b2);
+subseq2 x a1 b1 a2 a2 = slice x (a1..b1,a2);
+subseq2 x a1 b1 a2 b2 = slice x (a1..b1,a2..b2);
+
+subseq x::matrix a::int b::int =
+  __C::matrix_slice (rowvector x) 0 a 0 b;
+
+/* Extract rows and columns from a matrix. */
 
 /* .. function:: row x i
                  col x i
