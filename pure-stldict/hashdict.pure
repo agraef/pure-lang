@@ -59,7 +59,7 @@ extern expr *hashdict_end(expr*);
 extern expr *hashdict_find(expr*, expr*);
 extern expr *hashdict_find2(expr*, expr*, expr*);
 extern void hashdict_iterator_free(hashdict_iterator*); // internal use only
-extern expr *hashdict_iterator_hashdict(hashdict_iterator*);
+extern expr *hashdict_iterator_dict(hashdict_iterator*);
 extern expr *hashdict_iterator_next(hashdict_iterator*);
 extern expr *hashdict_iterator_get(hashdict_iterator*);
 extern expr *hashdict_iterator_put(hashdict_iterator*, expr*);
@@ -103,7 +103,7 @@ extern expr *hashmdict_end(expr*);
 extern expr *hashmdict_find(expr*, expr*);
 extern expr *hashmdict_find2(expr*, expr*, expr*);
 extern void hashmdict_iterator_free(hashmdict_iterator*); // internal use only
-extern expr *hashmdict_iterator_hashmdict(hashmdict_iterator*);
+extern expr *hashmdict_iterator_dict(hashmdict_iterator*);
 extern expr *hashmdict_iterator_next(hashmdict_iterator*);
 extern expr *hashmdict_iterator_get(hashmdict_iterator*);
 extern expr *hashmdict_iterator_put(hashmdict_iterator*, expr*);
@@ -212,51 +212,6 @@ list m::hashdict = hashdict_list m;
 tuple m::hashdict = hashdict_tuple m;
 vector m::hashdict = hashdict_vector m;
 
-/* Set operations: sum, difference, intersection. Please note that this is
-   just the raw, low-level interface here, operand promotion is handled by the
-   coercion rules of the stldictbase module. */
-
-namespace stldict with
-m1::hashdict + m2::hashdict = foldl insert m1 (members m2);
-m1::hashdict - m2::hashdict = foldl delete m1 (members m2);
-m1::hashdict * m2::hashdict = m1 - (copy m1 - m2);
-end;
-
-/* Subdict comparisons. */
-
-namespace stldict with
-m1::hashdict <= m2::hashdict = null (m1 - m2);
-m1::hashdict >= m2::hashdict = null (m2 - m1);
-m1::hashdict < m2::hashdict = m1 <= m2 && m1 ~= m2;
-m1::hashdict > m2::hashdict = m1 >= m2 && m1 ~= m2;
-end;
-
-/* Basic list-like operations and support for list and matrix comprehensions.
-   NOTE: The most important of these should possibly be implemented in C, to
-   avoid the construction of intermediate list values. */
-
-do f m::hashdict = do f (list m);
-map f m::hashdict = map f (list m);
-catmap f m::hashdict = catmap f (list m);
-listmap f m::hashdict = map f (list m);
-rowmap f m::hashdict = rowcat (map f m);
-rowcatmap f m::hashdict = rowcat (map f m);
-colmap f m::hashdict = colcat (map f m);
-colcatmap f m::hashdict = colcat (map f m);
-
-all p m::hashdict = all p (list m);
-any p m::hashdict = any p (list m);
-filter p m::hashdict = filter p (list m);
-foldl f a m::hashdict = foldl f a (list m);
-foldl1 f m::hashdict = foldl1 f (list m) if ~null m;
-foldr f a m::hashdict = foldr f a (list m);
-foldr1 f m::hashdict = foldr1 f (list m) if ~null m;
-scanl f a m::hashdict = scanl f a (list m);
-scanl1 f m::hashdict = scanl1 f (list m) if ~null m;
-scanr f a m::hashdict = scanr f a (list m);
-scanr1 f m::hashdict = scanr1 f (list m) if ~null m;
-sort p m::hashdict = sort p (list m);
-
 /* Iterator API. These operations give direct access to C++ iterators on the
    underlying STL container which let you query the elements and do basic
    manipulations of the container. This may sometimes be more efficient than
@@ -269,11 +224,11 @@ let hashdict_iterator_t = hashdict_iterator_tag;
 type hashdict_iterator x::pointer = check_ptrtag hashdict_iterator_t x;
 hashdict_iteratorp x = pointerp x && check_ptrtag hashdict_iterator_t x;
 
-hashdict i::hashdict_iterator = hashdict_iterator_hashdict i;
 i::hashdict_iterator == j::hashdict_iterator = hashdict_iterator_equal i j;
 i::hashdict_iterator ~= j::hashdict_iterator = ~hashdict_iterator_equal i j;
 
 namespace stldict with
+dict i::hashdict_iterator = hashdict_iterator_dict i;
 begin m::hashdict = hashdict_begin m;
 stldict::end m::hashdict = hashdict_end m;
 find m::hashdict (x=>y) = hashdict_find2 m x y;
@@ -284,14 +239,6 @@ get i::hashdict_iterator = hashdict_iterator_get i if ~endp i;
 put i::hashdict_iterator y = hashdict_iterator_put i y if ~endp i;
 erase i::hashdict_iterator = hashdict_iterator_erase i if ~endp i;
 end;
-
-/* Overload the standard library stream function so that it converts a
-   hashdict to a lazy list. */
-
-using namespace stldict;
-stream m::hashdict = map get $ takewhile (\i -> ~endp i) $
-  iterate next $ begin m;
-using namespace;
 
 /* Special bucket and hash policy interface. These operations are useful to
    obtain performance-related information about the underlying hash table.
@@ -362,48 +309,15 @@ list m::hashmdict = hashmdict_list m;
 tuple m::hashmdict = hashmdict_tuple m;
 vector m::hashmdict = hashmdict_vector m;
 
-namespace stldict with
-m1::hashmdict + m2::hashmdict = foldl insert m1 (members m2);
-m1::hashmdict - m2::hashmdict = foldl delete m1 (members m2);
-m1::hashmdict * m2::hashmdict = m1 - (copy m1 - m2);
-
-m1::hashmdict <= m2::hashmdict = null (m1 - m2);
-m1::hashmdict >= m2::hashmdict = null (m2 - m1);
-m1::hashmdict < m2::hashmdict = m1 <= m2 && m1 ~= m2;
-m1::hashmdict > m2::hashmdict = m1 >= m2 && m1 ~= m2;
-end;
-
-do f m::hashmdict = do f (list m);
-map f m::hashmdict = map f (list m);
-catmap f m::hashmdict = catmap f (list m);
-listmap f m::hashmdict = map f (list m);
-rowmap f m::hashmdict = rowcat (map f m);
-rowcatmap f m::hashmdict = rowcat (map f m);
-colmap f m::hashmdict = colcat (map f m);
-colcatmap f m::hashmdict = colcat (map f m);
-
-all p m::hashmdict = all p (list m);
-any p m::hashmdict = any p (list m);
-filter p m::hashmdict = filter p (list m);
-foldl f a m::hashmdict = foldl f a (list m);
-foldl1 f m::hashmdict = foldl1 f (list m) if ~null m;
-foldr f a m::hashmdict = foldr f a (list m);
-foldr1 f m::hashmdict = foldr1 f (list m) if ~null m;
-scanl f a m::hashmdict = scanl f a (list m);
-scanl1 f m::hashmdict = scanl1 f (list m) if ~null m;
-scanr f a m::hashmdict = scanr f a (list m);
-scanr1 f m::hashmdict = scanr1 f (list m) if ~null m;
-sort p m::hashmdict = sort p (list m);
-
 let hashmdict_iterator_t = hashmdict_iterator_tag;
 type hashmdict_iterator x::pointer = check_ptrtag hashmdict_iterator_t x;
 hashmdict_iteratorp x = pointerp x && check_ptrtag hashmdict_iterator_t x;
 
-hashmdict i::hashmdict_iterator = hashmdict_iterator_hashmdict i;
 i::hashmdict_iterator == j::hashmdict_iterator = hashmdict_iterator_equal i j;
 i::hashmdict_iterator ~= j::hashmdict_iterator = ~hashmdict_iterator_equal i j;
 
 namespace stldict with
+dict i::hashmdict_iterator = hashmdict_iterator_dict i;
 begin m::hashmdict = hashmdict_begin m;
 stldict::end m::hashmdict = hashmdict_end m;
 find m::hashmdict (x=>y) = hashmdict_find2 m x y;
@@ -414,11 +328,6 @@ get i::hashmdict_iterator = hashmdict_iterator_get i if ~endp i;
 put i::hashmdict_iterator y = hashmdict_iterator_put i y if ~endp i;
 erase i::hashmdict_iterator = hashmdict_iterator_erase i if ~endp i;
 end;
-
-using namespace stldict;
-stream m::hashmdict = map get $ takewhile (\i -> ~endp i) $
-  iterate next $ begin m;
-using namespace;
 
 namespace hashdict with
 load_factor m::hashmdict = hashmdict_load_factor m;
@@ -433,11 +342,6 @@ end;
 /***************************************************************************/
 
 /* Conversions between the different dict types. */
-
-type hashxdict x::hashdict | hashxdict x::hashmdict;
-hashxdictp x = case x of _::hashxdict = true; _ = false end;
-
-type stldict x::hashdict | stlmdict x::hashmdict;
 
 hashdict x::hashdict | hashmdict x::hashmdict = x;
 hashdict x::stlxdict = hashdict (list x);

@@ -59,7 +59,7 @@ extern expr *orddict_end(expr*);
 extern expr *orddict_find(expr*, expr*);
 extern expr *orddict_find2(expr*, expr*, expr*);
 extern void orddict_iterator_free(orddict_iterator*); // internal use only
-extern expr *orddict_iterator_orddict(orddict_iterator*);
+extern expr *orddict_iterator_dict(orddict_iterator*);
 extern expr *orddict_iterator_next(orddict_iterator*);
 extern expr *orddict_iterator_get(orddict_iterator*);
 extern expr *orddict_iterator_put(orddict_iterator*, expr*);
@@ -95,7 +95,7 @@ extern expr *ordmdict_end(expr*);
 extern expr *ordmdict_find(expr*, expr*);
 extern expr *ordmdict_find2(expr*, expr*, expr*);
 extern void ordmdict_iterator_free(ordmdict_iterator*); // internal use only
-extern expr *ordmdict_iterator_ordmdict(ordmdict_iterator*);
+extern expr *ordmdict_iterator_dict(ordmdict_iterator*);
 extern expr *ordmdict_iterator_next(ordmdict_iterator*);
 extern expr *ordmdict_iterator_get(ordmdict_iterator*);
 extern expr *ordmdict_iterator_put(ordmdict_iterator*, expr*);
@@ -199,65 +199,6 @@ list m::orddict = orddict_list m;
 tuple m::orddict = orddict_tuple m;
 vector m::orddict = orddict_vector m;
 
-/* Set operations: sum, difference, intersection. Please note that this is
-   just the raw, low-level interface here, operand promotion is handled by the
-   coercion rules of the stldictbase module. */
-
-namespace stldict with
-m1::orddict + m2::orddict = foldl insert m1 (members m2);
-m1::orddict - m2::orddict = foldl delete m1 (members m2);
-m1::orddict * m2::orddict = m1 - (copy m1 - m2);
-end;
-
-/* Subdict comparisons. The orddict case is optimized so that we only need a
-   single traversal of the member lists. (This is the same algorithm as in
-   dict.pure, modified to deal with missing values.) */
-
-namespace stldict with
-m1::orddict <= m2::orddict = cmp (members m1) (members m2) with
-  cmp [] [] = 1;
-  cmp (x:xs) [] = 0;
-  cmp [] (x:xs) = 1;
-  cmp xs1@(x:xs) (y:ys) = 0 if key x ::< key y;
-  = cmp xs1 ys if key y ::< key x;
-  cmp ((xk=>xv):xs) ((yk=>yv):ys) = eq xv yv && cmp xs ys;
-  cmp ((xk=>xv):xs) (y:ys) |
-  cmp (x:xs) ((yk=>yv):ys) = 0;
-  cmp (x:xs) (y:ys) = cmp xs ys;
-  key x = case x of x=>y = x; _ = x end;
-  eq u v = case u ::== v of res::int = res; _ = u===v end;
-end;
-m1::orddict >= m2::orddict = m2 <= m1;
-m1::orddict < m2::orddict = m1 <= m2 && m1 ~= m2;
-m1::orddict > m2::orddict = m1 >= m2 && m1 ~= m2;
-end;
-
-/* Basic list-like operations and support for list and matrix comprehensions.
-   NOTE: The most important of these should possibly be implemented in C, to
-   avoid the construction of intermediate list values. */
-
-do f m::orddict = do f (list m);
-map f m::orddict = map f (list m);
-catmap f m::orddict = catmap f (list m);
-listmap f m::orddict = map f (list m);
-rowmap f m::orddict = rowcat (map f m);
-rowcatmap f m::orddict = rowcat (map f m);
-colmap f m::orddict = colcat (map f m);
-colcatmap f m::orddict = colcat (map f m);
-
-all p m::orddict = all p (list m);
-any p m::orddict = any p (list m);
-filter p m::orddict = filter p (list m);
-foldl f a m::orddict = foldl f a (list m);
-foldl1 f m::orddict = foldl1 f (list m) if ~null m;
-foldr f a m::orddict = foldr f a (list m);
-foldr1 f m::orddict = foldr1 f (list m) if ~null m;
-scanl f a m::orddict = scanl f a (list m);
-scanl1 f m::orddict = scanl1 f (list m) if ~null m;
-scanr f a m::orddict = scanr f a (list m);
-scanr1 f m::orddict = scanr1 f (list m) if ~null m;
-sort p m::orddict = sort p (list m);
-
 /* Iterator API. These operations give direct access to C++ iterators on the
    underlying STL container which let you query the elements and do basic
    manipulations of the container. This may sometimes be more efficient than
@@ -270,11 +211,11 @@ let orddict_iterator_t = orddict_iterator_tag;
 type orddict_iterator x::pointer = check_ptrtag orddict_iterator_t x;
 orddict_iteratorp x = pointerp x && check_ptrtag orddict_iterator_t x;
 
-orddict i::orddict_iterator = orddict_iterator_orddict i;
 i::orddict_iterator == j::orddict_iterator = orddict_iterator_equal i j;
 i::orddict_iterator ~= j::orddict_iterator = ~orddict_iterator_equal i j;
 
 namespace stldict with
+dict i::orddict_iterator = orddict_iterator_dict i;
 begin m::orddict = orddict_begin m;
 stldict::end m::orddict = orddict_end m;
 find m::orddict (x=>y) = orddict_find2 m x y;
@@ -285,14 +226,6 @@ get i::orddict_iterator = orddict_iterator_get i if ~endp i;
 put i::orddict_iterator y = orddict_iterator_put i y if ~endp i;
 erase i::orddict_iterator = orddict_iterator_erase i if ~endp i;
 end;
-
-/* Overload the standard library stream function so that it converts an
-   orddict to a lazy list. */
-
-using namespace stldict;
-stream m::orddict = map get $ takewhile (\i -> ~endp i) $
-  iterate next $ begin m;
-using namespace;
 
 /***************************************************************************/
 
@@ -348,48 +281,15 @@ list m::ordmdict = ordmdict_list m;
 tuple m::ordmdict = ordmdict_tuple m;
 vector m::ordmdict = ordmdict_vector m;
 
-namespace stldict with
-m1::ordmdict + m2::ordmdict = foldl insert m1 (members m2);
-m1::ordmdict - m2::ordmdict = foldl delete m1 (members m2);
-m1::ordmdict * m2::ordmdict = m1 - (copy m1 - m2);
-
-m1::ordmdict <= m2::ordmdict = null (m1 - m2);
-m1::ordmdict >= m2::ordmdict = null (m2 - m1);
-m1::ordmdict < m2::ordmdict = m1 <= m2 && m1 ~= m2;
-m1::ordmdict > m2::ordmdict = m1 >= m2 && m1 ~= m2;
-end;
-
-do f m::ordmdict = do f (list m);
-map f m::ordmdict = map f (list m);
-catmap f m::ordmdict = catmap f (list m);
-listmap f m::ordmdict = map f (list m);
-rowmap f m::ordmdict = rowcat (map f m);
-rowcatmap f m::ordmdict = rowcat (map f m);
-colmap f m::ordmdict = colcat (map f m);
-colcatmap f m::ordmdict = colcat (map f m);
-
-all p m::ordmdict = all p (list m);
-any p m::ordmdict = any p (list m);
-filter p m::ordmdict = filter p (list m);
-foldl f a m::ordmdict = foldl f a (list m);
-foldl1 f m::ordmdict = foldl1 f (list m) if ~null m;
-foldr f a m::ordmdict = foldr f a (list m);
-foldr1 f m::ordmdict = foldr1 f (list m) if ~null m;
-scanl f a m::ordmdict = scanl f a (list m);
-scanl1 f m::ordmdict = scanl1 f (list m) if ~null m;
-scanr f a m::ordmdict = scanr f a (list m);
-scanr1 f m::ordmdict = scanr1 f (list m) if ~null m;
-sort p m::ordmdict = sort p (list m);
-
 let ordmdict_iterator_t = ordmdict_iterator_tag;
 type ordmdict_iterator x::pointer = check_ptrtag ordmdict_iterator_t x;
 ordmdict_iteratorp x = pointerp x && check_ptrtag ordmdict_iterator_t x;
 
-ordmdict i::ordmdict_iterator = ordmdict_iterator_ordmdict i;
 i::ordmdict_iterator == j::ordmdict_iterator = ordmdict_iterator_equal i j;
 i::ordmdict_iterator ~= j::ordmdict_iterator = ~ordmdict_iterator_equal i j;
 
 namespace stldict with
+dict i::ordmdict_iterator = ordmdict_iterator_dict i;
 begin m::ordmdict = ordmdict_begin m;
 stldict::end m::ordmdict = ordmdict_end m;
 find m::ordmdict (x=>y) = ordmdict_find2 m x y;
@@ -401,19 +301,9 @@ put i::ordmdict_iterator y = ordmdict_iterator_put i y if ~endp i;
 erase i::ordmdict_iterator = ordmdict_iterator_erase i if ~endp i;
 end;
 
-using namespace stldict;
-stream m::ordmdict = map get $ takewhile (\i -> ~endp i) $
-  iterate next $ begin m;
-using namespace;
-
 /***************************************************************************/
 
 /* Conversions between the different dict types. */
-
-type ordxdict x::orddict | ordxdict x::ordmdict;
-ordxdictp x = case x of _::ordxdict = true; _ = false end;
-
-type stldict x::orddict | stlmdict x::ordmdict;
 
 orddict x::orddict | ordmdict x::ordmdict = x;
 orddict x::stlxdict = orddict (list x);

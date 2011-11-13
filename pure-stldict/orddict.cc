@@ -670,7 +670,7 @@ extern "C" void orddict_iterator_free(myorddict_iterator *it)
   delete it;
 }
 
-extern "C" pure_expr *orddict_iterator_orddict(myorddict_iterator *it)
+extern "C" pure_expr *orddict_iterator_dict(myorddict_iterator *it)
 {
   return it->x;
 }
@@ -1133,7 +1133,7 @@ extern "C" void ordmdict_iterator_free(myordmdict_iterator *it)
   delete it;
 }
 
-extern "C" pure_expr *ordmdict_iterator_ordmdict(myordmdict_iterator *it)
+extern "C" pure_expr *ordmdict_iterator_dict(myordmdict_iterator *it)
 {
   return it->x;
 }

@@ -659,7 +659,7 @@ extern "C" void hashdict_iterator_free(myhashdict_iterator *it)
   delete it;
 }
 
-extern "C" pure_expr *hashdict_iterator_hashdict(myhashdict_iterator *it)
+extern "C" pure_expr *hashdict_iterator_dict(myhashdict_iterator *it)
 {
   return it->x;
 }
@@ -1151,7 +1151,7 @@ extern "C" void hashmdict_iterator_free(myhashmdict_iterator *it)
   delete it;
 }
 
-extern "C" pure_expr *hashmdict_iterator_hashmdict(myhashmdict_iterator *it)
+extern "C" pure_expr *hashmdict_iterator_dict(myhashmdict_iterator *it)
 {
   return it->x;
 }

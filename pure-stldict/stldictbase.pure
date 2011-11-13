@@ -16,39 +16,118 @@
    You should have received a copy of the GNU Lesser General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>. */
 
+/* Dictionary types supported by this implementation. */
+
+type hashdict | hashmdict | orddict | ordmdict;
+
+type hashxdict x::hashdict | hashxdict x::hashmdict;
+hashxdictp x = case x of _::hashxdict = true; _ = false end;
+
+type ordxdict x::orddict | ordxdict x::ordmdict;
+ordxdictp x = case x of _::ordxdict = true; _ = false end;
+
 /* Generic stldict types and corresponding predicates. stldict denotes any
    single-valued dictionary (i.e., hashdict and orddict), stlmdict the
    multi-valued dictionaries (hashmdict and ordmdict) and stlxdict any type of
-   dictionary. Note that this module only contains the common definitions
-   shared by hashed and ordered dictionaries, you still have to import the
-   implementations that you need (hashdict.pure, orddict.pure, or stldict.pure
-   if you want the whole shebang). */
+   dictionary. */
 
-type stldict;
-type stlmdict;
+type stldict x::hashdict | stldict x::orddict;
+type stlmdict x::hashmdict | stlmdict x::ordmdict;
 type stlxdict x::stldict | stlxdict x::stlmdict;
 
 stldictp x  = case x of _::stldict = true; _ = false end;
 stlmdictp x = case x of _::stlmdict = true; _ = false end;
 stlxdictp x = case x of _::stlxdict = true; _ = false end;
 
-/* Generic dictionary types supported by this implementation. */
-
-type hashxdict;
-type ordxdict;
-
-/* Generic coercions for mixed operations. These always convert the operands
-   to the most general type (hashed and/or multi-valued), and also take care
-   of copying the first operand if needed to preserve value semantics. */
-
-public copy;
-
-namespace stldict;
+/* Generic operations supported by all dictionary types. Note that this module
+   only contains the common definitions shared by hashed and ordered
+   dictionaries. You still have to import the implementations that you need
+   (hashdict.pure, orddict.pure, or stldict.pure if you want both). */
 
 // Internal interface to conversion functions and binary operations.
+namespace stldict with
 private orddict ordmdict hashdict hashmdict;
 private infix (==) == ~= <= >= < >;
 private infixl (+) + -; private infixl (*) *;
+end;
+
+/* Set operations: sum, difference, intersection. Please note that this is
+   just the raw interface here, operand promotion is handled by the coercion
+   rules below. */
+
+public copy members;
+namespace stldict with
+m1::stlxdict + m2::stlxdict = foldl insert m1 (members m2);
+m1::stlxdict - m2::stlxdict = foldl delete m1 (members m2);
+m1::stlxdict * m2::stlxdict = m1 - (copy m1 - m2);
+end;
+
+/* Subdict comparisons. Note that the orddict case is optimized so that we
+   only need a single traversal of the member lists (this is the same
+   algorithm as in dict.pure, modified to deal with missing values). */
+
+namespace stldict with
+m1::orddict <= m2::orddict = cmp (members m1) (members m2) with
+  cmp [] [] = 1;
+  cmp (x:xs) [] = 0;
+  cmp [] (x:xs) = 1;
+  cmp xs1@(x:xs) (y:ys) = 0 if key x ::< key y;
+  = cmp xs1 ys if key y ::< key x;
+  cmp ((xk=>xv):xs) ((yk=>yv):ys) = eq xv yv && cmp xs ys;
+  cmp ((xk=>xv):xs) (y:ys) |
+  cmp (x:xs) ((yk=>yv):ys) = 0;
+  cmp (x:xs) (y:ys) = cmp xs ys;
+  key x = case x of x=>y = x; _ = x end;
+  eq u v = case u ::== v of res::int = res; _ = u===v end;
+end;
+m1::stlxdict <= m2::stlxdict = null (m1 - m2);
+m1::stlxdict >= m2::stlxdict = m2 <= m1;
+m1::stlxdict < m2::stlxdict = m1 <= m2 && m1 ~= m2;
+m1::stlxdict > m2::stlxdict = m1 >= m2 && m1 ~= m2;
+end;
+
+/* Basic list-like operations and support for list and matrix comprehensions.
+   NOTE: The most important of these should possibly be implemented in C, to
+   avoid the construction of intermediate list values. */
+
+do f m::stlxdict = do f (list m);
+map f m::stlxdict = map f (list m);
+catmap f m::stlxdict = catmap f (list m);
+listmap f m::stlxdict = map f (list m);
+rowmap f m::stlxdict = rowcat (map f m);
+rowcatmap f m::stlxdict = rowcat (map f m);
+colmap f m::stlxdict = colcat (map f m);
+colcatmap f m::stlxdict = colcat (map f m);
+
+all p m::stlxdict = all p (list m);
+any p m::stlxdict = any p (list m);
+filter p m::stlxdict = filter p (list m);
+foldl f a m::stlxdict = foldl f a (list m);
+foldl1 f m::stlxdict = foldl1 f (list m) if ~null m;
+foldr f a m::stlxdict = foldr f a (list m);
+foldr1 f m::stlxdict = foldr1 f (list m) if ~null m;
+scanl f a m::stlxdict = scanl f a (list m);
+scanl1 f m::stlxdict = scanl1 f (list m) if ~null m;
+scanr f a m::stlxdict = scanr f a (list m);
+scanr1 f m::stlxdict = scanr1 f (list m) if ~null m;
+sort p m::stlxdict = sort p (list m);
+
+/* Overload the standard library stream function so that it converts a
+   hashdict to a lazy list. This relies on some operations of the iterator
+   API. */
+
+using namespace stldict;
+public begin endp next get;
+stream m::stlxdict = map get $ takewhile (\i -> ~endp i) $
+  iterate next $ begin m;
+using namespace;
+
+/* Coercions for mixed operations. These always convert the operands to the
+   most general type (hashed and/or multi-valued), and also take care of
+   copying the first operand if needed to preserve value semantics. */
+
+namespace stldict;
+
 private coerce coercv;
 coerce f x y = f (c x) (c y) when
   sig = typep hashxdict x || typep hashxdict y, stlmdictp x || stlmdictp y;
