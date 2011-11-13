@@ -163,6 +163,10 @@ infixl 10000   __as__ __type__ ;
 
 const false, true = 0, 1;
 
+/* Synonym for the slicing operator. This must be defined here, before pulling
+   in any of the prelude modules which define optimization rules for (!!). */
+slice x y = x!!y;
+
 /* Pull in the primitives (arithmetic etc.) and the standard string, matrix
    and record functions. Note that the math, pointers and system modules are
    *not* included here, so you have to do that yourself if your program
@@ -778,10 +782,10 @@ def void [x] | void {x} = void x;
 
      > let xs = 1..1000000;
      > stats -m
-     > #(slice xs (100000..299990));
+     > #slice xs (100000..299990);
      199991
      0.34s, 999957 cells
-     > #(xs!!(100000..299990));
+     > #xs!!(100000..299990);
      199991
      0.14s, 399984 cells
 
@@ -789,10 +793,10 @@ def void [x] | void {x} = void x;
    seen in the case of matrix slices::
 
      > let x = rowvector xs;
-     > #(slice x (100000..299990));
+     > #slice x (100000..299990);
      199991
      0.19s, 599990 cells
-     > #(x!!(100000..299990));
+     > #x!!(100000..299990);
      199991
      0s, 10 cells
 
@@ -967,9 +971,6 @@ def x!!(a..b) = subseq x a b;
 subseq [] a::int b::int = [];
 subseq xs@(_:_) a::int b::int = take (b-a+1) $ drop a xs;
 subseq x a b = slice x (a..b);
-
-// This is like (!!), but prevents application of the optimization rules.
-slice x y = id (!!) x y;
 
 /* List concatenation. For a robust implementation which works with both
    ordinary lists and streams, we want this to be tail-recursive *and*
