@@ -206,7 +206,7 @@ Basic Operations
               stlmdictp m
               stlxdictp m
 
-   Check whether the argument is a dictionary of the corresponding union type.
+   Check whether the argument is a dictionary of the corresponding supertype.
 
 .. function:: prefix # /stldict m
 
@@ -349,6 +349,13 @@ members irrespective of the order in which the members are listed, the
 semantic equality operation :func:`==` should be used instead; this will also
 handle the case of mixed operand types.
 
+Note that if you really need to check whether two dictionaries are the same
+object rather than just syntactically equal, you'll have to cast them to
+generic C pointers before comparing them with :func:`===`. This can be done
+with the following little helper function::
+
+  same_dict x y = pointer_cast "void*" x === pointer_cast "void*" y;
+
 Set-Like Operations
 -------------------
 
@@ -424,16 +431,17 @@ dictionary.
 Note that these operations return a new iterator object for each invocation.
 Also, the created iterator object keeps track of the container it belongs to,
 so that the container isn't garbage-collected while the iterator is still
-being used. However, note that removing a member from the container (using
-either :func:`delete/stldict` or :func:`stldict::erase`) invalidates all
-iterators pointing to that member; the result of trying to access such an
-invalidated iterator is undefined (most likely your program will crash).
+being used. However, removing a member from the container (using either
+:func:`delete/stldict` or :func:`stldict::erase`) invalidates all iterators
+pointing to that member; the result of trying to access such an invalidated
+iterator is undefined (most likely your program will crash).
 
 Similar caveats also apply to the :func:`stream/stldict` function which, as
 already mentioned, uses iterators internally to implement lazy list traversal
 of the members of a dictionary. Thus, if you delete a member of a dictionary
-while traversing it using :func:`stream/stldict`, always make sure that this
-member is not the next stream element; otherwise bad things will happen.
+while traversing it using :func:`stream/stldict`, you better make sure that
+this member is not the next stream element remaining to be visited; otherwise
+bad things will happen.
 
 The following operations on iterators let you query and modify the contents
 of the underlying container:
@@ -474,11 +482,15 @@ of the underlying container:
    iterators pointing to this member). The operation fails if ``i`` is at the
    end of the container.
 
-Note that iterators are in fact just pointers to a corresponding C++ data
-structure. Thus syntactical equality holds only if two iterators are exactly
-the same pointer. Equality of iterators can be tested with the :func:`==`
-operation: ``i == j`` iff ``i`` and ``j`` point to the same element in the
-same container, ``i ~= j`` iff they don't.
+.. function:: infix == /stldict_iterator i j
+   	      infix ~= /stldict_iterator i j
+
+   Semantic equality of iterators. Two iterators are considered equal (``i ==
+   j``) if ``i`` and ``j`` point to the same element in the same container,
+   and unequal (``i ~= j``) if they don't. (In contrast, note that iterators
+   are in fact just pointers to a corresponding C++ data structure, and thus
+   *syntactical* equality (``i === j``) holds only if two iterators are the
+   same object.)
 
 Other Low-Level Operations
 --------------------------
