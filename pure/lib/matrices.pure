@@ -578,15 +578,23 @@ extern expr* matrix_matcat(expr *x) = matcat;
 
 /* .. function:: rowcatmap f xs
                  colcatmap f xs
+		 rowmap f xs
+		 colmap f xs
 
-      Combinations of :func:`rowcat`, :func:`colcat` and :func:`map`. These
-      are used, in particular, for implementing matrix comprehensions. */
+      Various combinations of :func:`rowcat`, :func:`colcat` and :func:`map`.
+      These are used, in particular, for implementing matrix comprehensions. */
 
 rowcatmap f []		= {};
 rowcatmap f xs@(_:_)	= rowcat (map f xs);
 
 colcatmap f []		= {};
 colcatmap f xs@(_:_)	= colcat (map f xs);
+
+rowmap f []		= {};
+rowmap f xs@(_:_)	= rowcat (map f xs);
+
+colmap f []		= {};
+colmap f xs@(_:_)	= colcat (map f xs);
 
 /* .. function:: diagmat x
                  subdiagmat x k
@@ -734,12 +742,6 @@ colcatmap f x::matrix	= matcat (map f x);
 listmap f x::matrix	= list (map f x);
 rowmap f x::matrix	= map f x;
 colmap f x::matrix	= map f x;
-
-rowmap f x@[]		|
-rowmap f x@(_:_)	= rowcat (map f x);
-
-colmap f x@[]		|
-colmap f x@(_:_)	= colcat (map f x);
 
 /* Implementations of the other customary list operations, so that these can
    be used on matrices, too. Most of these operations treat the matrix
