@@ -170,12 +170,15 @@ public all any cat cst do list map reverse uncurry uncurry3;
      	> vectorseq 0.0 0.9 0.1;
      	{0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9}
 
-      These operations are also handy to define macros which optimize the
-      construction of vectors from list ranges, so that the intermediate list
-      values are actually never constructed. For instance::
+      The prelude also contains some optimization rules which translate calls
+      to :func:`vector` et al on arithmetic sequences to the corresponding
+      calls to :func:`vectorseq` et al, such as::
 
-        > def vector (n1:n2..m) = vectorseq n1 m (n2-n1);
-     	> def vector (n..m) = vectorseq n m 1;
+        def vector (n1:n2..m) = vectorseq n1 m (n2-n1);
+     	def vector (n..m) = vectorseq n m 1;
+
+      Example::
+
      	> foo = vector (1..10);
      	> bar = vector (0.0:0.1..0.9);
      	> show foo bar
@@ -185,9 +188,11 @@ public all any cat cst do list map reverse uncurry uncurry3;
      	{1,2,3,4,5,6,7,8,9,10}
      	{0.0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9}
 
-      (Note that the library doesn't contain any such macro rules, so you'll
-      have to add them yourself if you want to take advantage of these
-      optimizations.)
+      Please note that these optimization rules assume that basic arithmetic
+      works with the involved elements, which may give you trouble if you need
+      to use :func:`vector` et al with exotic kinds of arithmetic sequences.
+      To disable them, simply comment out the corresponding lines in
+      matrices.pure.
 
    .. function:: dmatrix xs
                  cmatrix xs
@@ -556,6 +561,22 @@ colvectorseq n::double m::int s::int =
 colvectorseq n m s = x if matrixp x when x = colvector (n:n+s..m) end;
 
 vectorseq n m s = x if matrixp x when x = rowvectorseq n m s end;
+
+/* Optimization rules (experimental). FIXME: These rules are somewhat
+   problematic since they assume that certain basic arithmetic calculations
+   involving +, - and 1 work with the elements of the arithmetic sequence,
+   which may not be the case if the elements are not actually numbers. But
+   these optimizations are simply too good to not be enabled by default, just
+   to make some rather esoteric cases work. So if you plan to use your own
+   fancy variation of arithmetic sequences with vector et al, you better make
+   sure that the required arithmetic works. */
+
+def rowvector (n1:n2..m) = rowvectorseq n1 m (n2-n1);
+def rowvector (n..m) = rowvectorseq n m 1;
+def colvector (n1:n2..m) = colvectorseq n1 m (n2-n1);
+def colvector (n..m) = colvectorseq n m 1;
+def vector (n1:n2..m) = vectorseq n1 m (n2-n1);
+def vector (n..m) = vectorseq n m 1;
 
 /* .. function:: diag x
                  subdiag x k
