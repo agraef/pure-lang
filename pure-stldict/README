@@ -4,6 +4,7 @@ pure-stldict
 ============
 
 .. default-domain:: pure
+.. module:: stldict
 .. module:: hashdict
 .. module:: orddict
 
@@ -12,14 +13,14 @@ Version @version@, |today|
 Albert Graef <Dr.Graef@t-online.de>
 
 This package provides a light-weight, no frills interface to the C++
-dictionary-like containers, ``map`` and ``unordered_map``, see the `C++
-standard library documentation`_ for details. (The C++ containers were
-originally based on the `Standard Template Library`_, so they are also
-sometimes referred to as "STL containers"; hence the name of this package.)
+dictionary containers ``map`` and ``unordered_map``. The :mod:`stldict` module
+makes these data structures available in Pure land and equips them with a
+(more or less) idiomatic Pure container interface.
 
-The package includes the ``hashdict`` and ``orddict`` modules which make these
-data structures available in Pure land and equip them with a (more or less)
-idiomatic Pure container interface.
+The C++ containers are part of the standard C++ library, see the `C++ standard
+library documentation`_ for details. They were originally based on the
+`Standard Template Library`_, so they are also sometimes referred to as "STL
+containers"; hence the name of this package.
 
 .. _C++ standard library documentation: http://en.cppreference.com/w/cpp
 .. _Standard Template Library: http://www.sgi.com/tech/stl/
@@ -103,18 +104,13 @@ structures:
   structures in the standard library, and can be found in the ``orddict.pure``
   module.
 
-These data structures are very thin wrappers around the C++ container types;
-in fact, they are just pointers to the C++ containers. Memory management of
-these objects is automatic, and customizable `pretty-printing`_ is provided as
-well.
-
 Note that :type:`hashdict/type` and :type:`hashmdict/type` differ in that the
 former has exactly one key-value association for each key in the dictionary,
 while the latter is a "multidict" which allows multiple values to be
 associated with a key. The same applies to the :type:`orddict/type` and
 :type:`ordmdict/type` types.
 
-There are also various supertype symbols which correspond to different unions
+In addition, there are various supertypes which correspond to different unions
 of the hashed and ordered dictionary types. These are:
 
 .. type:: hashxdict /type
@@ -138,8 +134,10 @@ For instance, you can use :type:`hashxdict/type` to match both
 :type:`ordmdict/type` values. To match any kind of dictionary, use the
 :type:`stlxdict/type` type.
 
-Operations
-==========
+These data structures are very thin wrappers around the C++ container types;
+in fact, they are just pointers to the C++ containers. Memory management of
+these objects is automatic, and customizable `pretty-printing`_ is provided as
+well.
 
 All data structures offer most of the usual Pure container interface (as well
 as some extensions). In contrast to the standard library dictionaries, they
@@ -151,6 +149,65 @@ stldict containers are *mutable* data structures; inserting and deleting
 members really modifies the underlying C++ containers. (However, it is
 possible to take copies of the containers in situations where it's necessary
 to preserve value semantics.)
+
+Operations
+==========
+
+All types of dictionaries are simply pointers to the corresponding C++
+containers which hold key-value associations where both keys and values may be
+arbitrary Pure expressions. The `basic operations`_ described below can be
+used to create, query and modify these objects. Comparisons_ of dictionaries
+are implemented as well, and the `set-like operations`_ let you combine
+dictionaries in different ways. These operations provide an interface similar
+to the usual Pure container API.
+
+In addition, the :mod:`stldict` module provides some `list-like operations`_
+on dictionaries, so that the member data can be processed and aggregated in a
+convenient fashion (including the ability to use dictionaries as generators in
+list and matrix comprehensions), and there's also an interface to C++
+iterators_ which enables you to traverse, inspect and modify the containers in
+a more C++-like way. Some `low-level operations`_ are available to access
+information about the underlying hash table of a hashed dictionary. Last but
+not least, the module also offers some operations to customize the
+`pretty-printing`_ of dictionary values.
+
+When working with these data structures, please note the following special
+properties of this implementation:
+
+* All dictionary types are *mutable*. Inserting and deleting members really
+  modifies the underlying C++ data structure as a side effect of the
+  operation. If you need value semantics, you should probably use one of the
+  dictionary or set data structures from the standard Pure library
+  instead. Another possibility is to take a copy of a hashdict using the
+  :func:`copy/stldict` function if you need to preserve the original value.
+
+* Keys in a hashed dictionary may be stored in an apparently random order (not
+  necessarily in the order in which they were inserted), while they are
+  guaranteed to be in ascending order (by key) for ordered dictionaries.
+  However, note that even in the latter case, the order of different members
+  for the same key in a multi-valued dictionary is not specified. This must be
+  taken into account when comparing dictionaries, see below. The order of
+  members in a dictionary also matters when listing data from a container
+  using, e.g., the :func:`members/stldict`, :func:`keys/stldict` and
+  :func:`vals/stldict` operations.
+
+* Two dictionaries are considered syntactically equal iff they contain the
+  same elements in exactly the same order, using syntactic equality on both
+  the keys and the associated values. This test can always be done in linear
+  time, but is of limited usefulness for most kinds of dictionaries, since the
+  exact order of members in the dictionary may vary depending on how the
+  dictionary was constructed. Semantic equality operations are provided which
+  check (albeit at the cost of increased running time) whether two containers
+  contain the same members irrespective of element order, using semantic
+  equality on the members. Various subset comparisons are provided as well,
+  please check the Comparisons_ section for details.
+
+* Values in a dictionary can be omitted, so that a dictionary can be also used
+  as a set data structure. This obviates the need for a separate set data
+  structure at the cost of some (small) increase in memory usage. Also note
+  that you can't really have a hash pair ``x=>y`` as a member of a set, since
+  it always denotes a key-value association. As a remedy, you may use ordinary
+  pairs ``(x,y)`` instead.
 
 Basic Operations
 ----------------
@@ -233,13 +290,8 @@ Basic Operations
 
    Return the list of members of ``m``. The member list will be in an
    apparently random order in the hashed dictionary case, while it is
-   guaranteed to be in ascending order (by key) for ordered dictionaries.
-   However, note that even in the latter case, the order of different members
-   for the same key in a multidict is not specified. This must be taken into
-   account when comparing dictionaries (cf. Comparisons_). The same order is
-   also used for the other inspection operations below (:func:`stream/stldict`,
-   :func:`tuple/stldict`, :func:`vector/stldict`, :func:`keys/stldict`,
-   :func:`vals/stldict`).
+   guaranteed to be in ascending order (by key) for ordered dictionaries. The
+   same order is also used for the other inspection operations below.
 
 .. function:: stream /stldict m
 
@@ -261,10 +313,9 @@ Basic Operations
    Return the list of corresponding values. In the case of a singleton key
    ``x`` without associated value, ``x`` itself is returned instead.
 
-Note that, in contrast to the dictionary implementations in the standard
-library, the following modification operations are destructive, i.e., they
-actually modify the underlying dictionary data structure. If this is not
-desired, you'll first have to take a copy of the target dictionary, see
+As already mentioned, the following modification operations are destructive,
+i.e., they actually modify the underlying dictionary data structure. If this
+is not desired, you'll first have to take a copy of the target dictionary, see
 :func:`copy/stldict`.
 
 .. function:: insert /stldict m x
@@ -291,39 +342,6 @@ desired, you'll first have to take a copy of the target dictionary, see
    Remove all members from ``m``, making ``m`` an empty dictionary.
    Returns ``()``.
 
-Pretty-Printing
----------------
-
-By default, dictionaries are pretty-printed in the format ``somedict xs``,
-where ``somedict`` is the actual construction function such as ``hashdict``,
-``orddict``, etc., and ``xs`` is the member list of the dictionary. This is
-usually convenient, as the printed expression will evaluate to an equal
-container when reentered as Pure code. However, it is also possible to define
-your own custom pretty-printing with the following function.
-
-.. function:: hashdict_symbol f
-   	      hashmdict_symbol f
-	      orddict_symbol f
-   	      ordmdict_symbol f
-
-   Makes the pretty-printer use the format ``f xs`` (where ``xs`` is the
-   member list) for printing the corresponding type of dictionary.
-
-Note that ``f`` may also be an operator symbol (nonfix and unary symbols work
-best). In the case of an outfix symbol the list brackets around the members
-are removed; this makes it possible to render the container in a format
-similar to Pure's list syntax. For instance::
-
-  > using stldict;
-  > outfix {$ $};
-  > orddict_symbol ({$ $});
-  ()
-  > orddict (1..5);
-  {$1,2,3,4,5$}
-
-See ``orddict_examp.pure`` included in the distribution for a complete example
-which also discusses how to make such a custom print representation reparsable.
-
 Comparisons
 -----------
 
@@ -339,7 +357,7 @@ equality (using :func:`===`). The associated values are compared using the
 :func:`==` predicate if it is defined, falling back to syntactic equality
 otherwise.
 
-The modules also define syntactic equality on all dictionary types, so that
+The module also defines syntactic equality on all dictionary types, so that
 two dictionaries of the same type are considered syntactically equal iff they
 contain the same (syntactically equal) members in the same order. This is
 always guaranteed if two dictionaries are "identical" (the same C++ pointer),
@@ -398,8 +416,8 @@ Iterators
 ---------
 
 These operations give direct access to C++ iterators on dictionaries which let
-you query the elements and do basic manipulations of the container. Most of
-the operations are in their own ``stldict`` namespace.
+you query the elements and do basic manipulations of the container. The
+operations are available in the ``stldict`` namespace.
 
 The iterator concept is somewhat alien to Pure and there are some pitfalls
 (most notably, destructive updates may render iterators invalid), but the
@@ -492,16 +510,50 @@ of the underlying container:
    *syntactical* equality (``i === j``) holds only if two iterators are the
    same object.)
 
-Other Low-Level Operations
---------------------------
+Low-Level Operations
+--------------------
 
 The :mod:`hashdict` module also provides a few specialized low-level
-operations dealing with the layouts of buckets and the hash policy, such as
+operations dealing with the layouts of buckets and the hash policy of the
+:type:`hashdict/type` and :type:`hashmdict/type` containers, such as
 ``bucket_count``, ``load_factor``, ``rehash`` etc. These operations, which are
-all kept in their separate ``hashdict`` namespace, are useful to obtain
+all kept in their own separate ``hashdict`` namespace, are useful to obtain
 performance-related information and modify the setup of the underlying hash
 table. Please check the ``hashdict.pure`` module and the `C++ standard library
 documentation`_ for further details.
+
+Pretty-Printing
+---------------
+
+By default, dictionaries are pretty-printed in the format ``somedict xs``,
+where ``somedict`` is the actual construction function such as ``hashdict``,
+``orddict``, etc., and ``xs`` is the member list of the dictionary. This is
+usually convenient, as the printed expression will evaluate to an equal
+container when reentered as Pure code. However, it is also possible to define
+your own custom pretty-printing with the following function.
+
+.. function:: hashdict_symbol f
+   	      hashmdict_symbol f
+	      orddict_symbol f
+   	      ordmdict_symbol f
+
+   Makes the pretty-printer use the format ``f xs`` (where ``xs`` is the
+   member list) for printing the corresponding type of dictionary.
+
+Note that ``f`` may also be an operator symbol (nonfix and unary symbols work
+best). In the case of an outfix symbol the list brackets around the members
+are removed; this makes it possible to render the container in a format
+similar to Pure's list syntax. For instance::
+
+  > using stldict;
+  > outfix {$ $};
+  > orddict_symbol ({$ $});
+  ()
+  > orddict (1..5);
+  {$1,2,3,4,5$}
+
+See ``orddict_examp.pure`` included in the distribution for a complete example
+which also discusses how to make such a custom print representation reparsable.
 
 Examples
 ========
