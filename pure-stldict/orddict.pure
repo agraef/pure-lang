@@ -199,33 +199,34 @@ list m::orddict = orddict_list m;
 tuple m::orddict = orddict_tuple m;
 vector m::orddict = orddict_vector m;
 
-/* Set operations: union, difference, intersection. */
+/* Set operations: sum, difference, intersection. Please note that this is
+   just the raw, low-level interface here, operand promotion is handled by the
+   coercion rules of the stldictbase module. */
 
 namespace stldict with
-m1::orddict + m2::orddict = foldl insert (copy m1) (members m2);
-m1::orddict - m2::orddict = foldl delete (copy m1) (members m2);
-m1::orddict * m2::orddict = m1 - (m1 - m2);
+m1::orddict + m2::orddict = foldl insert m1 (members m2);
+m1::orddict - m2::orddict = foldl delete m1 (members m2);
+m1::orddict * m2::orddict = m1 - (copy m1 - m2);
 end;
 
 /* Subdict comparisons. The orddict case is optimized so that we only need a
    single traversal of the member lists. (This is the same algorithm as in
    dict.pure, modified to deal with missing values.) */
 
-m1::orddict stldict::<= m2::orddict = cmp (members m1) (members m2) with
+namespace stldict with
+m1::orddict <= m2::orddict = cmp (members m1) (members m2) with
   cmp [] [] = 1;
   cmp (x:xs) [] = 0;
   cmp [] (x:xs) = 1;
-  cmp xs1@(x:xs) (y:ys) = 0 if key x<key y;
-  = cmp xs1 ys if key y<key x;
+  cmp xs1@(x:xs) (y:ys) = 0 if key x ::< key y;
+  = cmp xs1 ys if key y ::< key x;
   cmp ((xk=>xv):xs) ((yk=>yv):ys) = eq xv yv && cmp xs ys;
   cmp ((xk=>xv):xs) (y:ys) |
   cmp (x:xs) ((yk=>yv):ys) = 0;
   cmp (x:xs) (y:ys) = cmp xs ys;
   key x = case x of x=>y = x; _ = x end;
-  eq u v = case u==v of res::int = res; _ = u===v end;
+  eq u v = case u ::== v of res::int = res; _ = u===v end;
 end;
-
-namespace stldict with
 m1::orddict >= m2::orddict = m2 <= m1;
 m1::orddict < m2::orddict = m1 <= m2 && m1 ~= m2;
 m1::orddict > m2::orddict = m1 >= m2 && m1 ~= m2;
@@ -348,9 +349,9 @@ tuple m::ordmdict = ordmdict_tuple m;
 vector m::ordmdict = ordmdict_vector m;
 
 namespace stldict with
-m1::ordmdict + m2::ordmdict = foldl insert (copy m1) (members m2);
-m1::ordmdict - m2::ordmdict = foldl delete (copy m1) (members m2);
-m1::ordmdict * m2::ordmdict = m1 - (m1 - m2);
+m1::ordmdict + m2::ordmdict = foldl insert m1 (members m2);
+m1::ordmdict - m2::ordmdict = foldl delete m1 (members m2);
+m1::ordmdict * m2::ordmdict = m1 - (copy m1 - m2);
 
 m1::ordmdict <= m2::ordmdict = null (m1 - m2);
 m1::ordmdict >= m2::ordmdict = null (m2 - m1);

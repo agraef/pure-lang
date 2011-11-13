@@ -212,12 +212,14 @@ list m::hashdict = hashdict_list m;
 tuple m::hashdict = hashdict_tuple m;
 vector m::hashdict = hashdict_vector m;
 
-/* Set operations: union, difference, intersection. */
+/* Set operations: sum, difference, intersection. Please note that this is
+   just the raw, low-level interface here, operand promotion is handled by the
+   coercion rules of the stldictbase module. */
 
 namespace stldict with
-m1::hashdict + m2::hashdict = foldl insert (copy m1) (members m2);
-m1::hashdict - m2::hashdict = foldl delete (copy m1) (members m2);
-m1::hashdict * m2::hashdict = m1 - (m1 - m2);
+m1::hashdict + m2::hashdict = foldl insert m1 (members m2);
+m1::hashdict - m2::hashdict = foldl delete m1 (members m2);
+m1::hashdict * m2::hashdict = m1 - (copy m1 - m2);
 end;
 
 /* Subdict comparisons. */
@@ -361,9 +363,9 @@ tuple m::hashmdict = hashmdict_tuple m;
 vector m::hashmdict = hashmdict_vector m;
 
 namespace stldict with
-m1::hashmdict + m2::hashmdict = foldl insert (copy m1) (members m2);
-m1::hashmdict - m2::hashmdict = foldl delete (copy m1) (members m2);
-m1::hashmdict * m2::hashmdict = m1 - (m1 - m2);
+m1::hashmdict + m2::hashmdict = foldl insert m1 (members m2);
+m1::hashmdict - m2::hashmdict = foldl delete m1 (members m2);
+m1::hashmdict * m2::hashmdict = m1 - (copy m1 - m2);
 
 m1::hashmdict <= m2::hashmdict = null (m1 - m2);
 m1::hashmdict >= m2::hashmdict = null (m2 - m1);
