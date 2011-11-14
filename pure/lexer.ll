@@ -3057,8 +3057,20 @@ that memory usage is to be printed along with the cpu time.\n";
       goto stats_out;
     }
     if (on) {
+      bool stats = interp.stats, stats_mem = interp.stats_mem;
       interp.stats = true;
       if (mflag) interp.stats_mem = true;
+      if (interp.output) {
+	// If we got invoked through evalcmd, make sure that the stats info is
+	// properly initialized.
+	if (stats != interp.stats || stats_mem != interp.stats_mem) {
+	  // We need to temporarily force interactive on to make this work.
+	  bool interactive = interp.interactive;
+	  interp.interactive = true;
+	  interp.begin_stats();
+	  interp.interactive = interactive;
+	}
+      }
     } else {
       if (mflag)
 	interp.stats_mem = false;

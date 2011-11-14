@@ -1066,9 +1066,18 @@ void interpreter::end_stats()
 	 used memory at any one point is given by the new total amount of
 	 memory minus the old total, plus the difference between old and
 	 smallest size of the freelist. */
+#if 0
+      // FIXME: Disable these checks for now, as these figures may not be 100%
+      // accurate if "stats" got invoked through evalcmd.
       assert(new_memsize >= memsize && memctr <= old_memctr);
       assert(new_memsize <= memsize || memctr == 0);
       memsize = new_memsize-memsize+old_memctr-memctr;
+#else
+      if (new_memsize >= memsize && memctr <= old_memctr)
+	memsize = new_memsize-memsize+old_memctr-memctr;
+      else
+	memsize = 0;
+#endif
     }
   }
 }
