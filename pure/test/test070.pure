@@ -1,0 +1,27 @@
+
+// conditional compilation pragmas (Pure 0.49)
+
+// options are enabled by default
+#! --disable bar
+
+// test nested optional sections
+#! --option foo
+foo x = x+1; // enabled
+#! --option bar
+bar x = x-1; // disabled
+#! --endoption // bar
+#! --nooption bar
+bar x = x/2; // enabled
+#! --endoption // !bar
+baz x = 2*x; // enabled
+#! --endoption // foo
+
+// unmatched --endoption gives error
+#! --endoption
+
+// reenable an option
+#! --enable bar
+
+#! --option bar
+bar 99;
+// open option section at eof gives error

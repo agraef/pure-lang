@@ -3742,7 +3742,33 @@ pure_interp *pure_create_interp(int argc, char *argv[])
 	interp.eager_jit = true;
       else if (strcmp(arg, "-w") == 0)
 	interp.compat = true;
-      else if (strncmp(*args, "-o", 2) == 0) {
+      else if (strcmp(*args, "--enable") == 0 ||
+	       strncmp(*args, "--enable=", 9) == 0) {
+	string s = string(*args).substr(8);
+	if (s.empty()) {
+	  if (!*++args) {
+	    cerr << "pure_create_interp: --enable lacks option argument\n";
+	    delete _interp;
+	    return 0;
+	  }
+	  s = *args;
+	} else
+	  s.erase(0, 1);
+	interp.source_options[s] = true;
+      } else if (strcmp(*args, "--disable") == 0 ||
+		 strncmp(*args, "--disable=", 10) == 0) {
+	string s = string(*args).substr(9);
+	if (s.empty()) {
+	  if (!*++args) {
+	    cerr << "pure_create_interp: --disable lacks option argument\n";
+	    delete _interp;
+	    return 0;
+	  }
+	  s = *args;
+	} else
+	  s.erase(0, 1);
+	interp.source_options[s] = false;
+      } else if (strncmp(*args, "-o", 2) == 0) {
 	string s = string(*args).substr(2);
 	if (s.empty()) {
 	  if (!*++args) {
@@ -3866,6 +3892,12 @@ pure_interp *pure_create_interp(int argc, char *argv[])
 	     string(*argv).substr(0,2) == "-I" ||
 	     string(*argv).substr(0,2) == "-L") {
       string s = string(*argv).substr(2);
+      if (s.empty()) ++argv;
+    } else if (string(*argv).substr(0,8) == "--enable") {
+      string s = string(*argv).substr(8);
+      if (s.empty()) ++argv;
+    } else if (string(*argv).substr(0,9) == "--disable") {
+      string s = string(*argv).substr(9);
       if (s.empty()) ++argv;
     } else if (**argv == '-')
       ;

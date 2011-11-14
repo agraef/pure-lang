@@ -725,7 +725,7 @@ interpreter::interpreter(int _argc, char **_argv)
     pic(false), strip(true), restricted(false), ttymode(false), override(false),
     stats(false), stats_mem(false), temp(0),  ps("> "), libdir(""),
     histfile("/.pure_history"), modname("pure"),
-    last_tag(0), logging(false),
+    source_level(0), skip_level(0), last_tag(0), logging(false),
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
     result(0), lastres(0), mem(0), exps(0), tmps(0), freectr(0),
     specials_only(false), module(0),
@@ -747,6 +747,7 @@ interpreter::interpreter(int32_t nsyms, char *syms,
     pic(false), strip(true), restricted(true), ttymode(false), override(false),
     stats(false), stats_mem(false), temp(0), ps("> "), libdir(""),
     histfile("/.pure_history"), modname("pure"),
+    source_level(0), skip_level(0), 
     /* NOTE: We use a different range of pointer tags here, so that tags
        generated at compile time won't conflict with those generated at run
        time. If we start out with 0x7fffffff, the first tag generated at run
@@ -1282,6 +1283,25 @@ static string searchlib(const string& srcdir, const string& libdir,
   return fname;
 }
 
+// Source options (Pure 0.49+).
+
+#include <ctype.h>
+#include <algorithm>
+
+bool interpreter::is_enabled(const string& optname)
+{
+  map<string,bool>::iterator it = source_options.find(optname);
+  if (it != source_options.end()) return it->second;
+  // Check the environment for a default.
+  string envname = optname;
+  std::transform(envname.begin(), envname.end(), envname.begin(), ::toupper);
+  envname.insert(0, "PURE_NOOPTION_");
+  bool flag = getenv(envname.c_str()) == NULL;
+  // Cache the value.
+  source_options[optname] = flag;
+  return flag;
+}
+
 // Scoped namespaces (Pure 0.43+).
 
 void interpreter::push_namespace(string *ns)
@@ -1478,8 +1498,6 @@ static char *readfile(const char *name, map<unsigned,LineInfo>& lines)
   }
   return buf;
 }
-
-#include <algorithm>
 
 struct CtagInfo {
   const char *tag, *file;
@@ -2492,6 +2510,7 @@ pure_expr* interpreter::run(int priv, const string &_s,
   map< string, set<int32_t> > *l_search_namespaces = symtab.search_namespaces;
   bool l_checks = checks, l_folding = folding, l_consts = consts,
     l_bigints = bigints, l_use_fastcc = use_fastcc;
+  bool l_source_level = source_level, l_skip_level = skip_level;
   // save global data
   uint8_t s_verbose = g_verbose;
   bool s_interactive = g_interactive;
@@ -2501,6 +2520,7 @@ pure_expr* interpreter::run(int priv, const string &_s,
   g_interp = this;
   // initialize
   nerrs = 0;
+  source_level = skip_level = 0;
   source = name; declare_op = false;
   source_s = 0;
   output = 0;
@@ -2538,6 +2558,8 @@ pure_expr* interpreter::run(int priv, const string &_s,
   // restore local data
   interactive = l_interactive;
   source = l_source;
+  source_level = l_source_level;
+  skip_level = l_skip_level;
   nerrs = l_nerrs;
   temp = l_temp;
   source_s = l_source_s;
@@ -2589,6 +2611,7 @@ pure_expr *interpreter::runstr(const string& s)
   map< string, set<int32_t> > *l_search_namespaces = symtab.search_namespaces;
   bool l_checks = checks, l_folding = folding, l_consts = consts,
     l_bigints = bigints, l_use_fastcc = use_fastcc;
+  bool l_source_level = source_level, l_skip_level = skip_level;
   // save global data
   uint8_t s_verbose = g_verbose;
   bool s_interactive = g_interactive;
@@ -2598,6 +2621,7 @@ pure_expr *interpreter::runstr(const string& s)
   g_interp = this;
   // initialize
   nerrs = 0;
+  source_level = skip_level = 0;
   source = ""; declare_op = false;
   source_s = s.c_str();
   srcdir = ""; srcabs = "";
@@ -2624,6 +2648,8 @@ pure_expr *interpreter::runstr(const string& s)
   interactive = l_interactive;
   source = l_source;
   source_s = 0;
+  source_level = l_source_level;
+  skip_level = l_skip_level;
   nerrs = l_nerrs;
   source_s = l_source_s;
   srcdir = l_srcdir; srcabs = l_srcabs;
@@ -2653,6 +2679,7 @@ pure_expr *interpreter::parsestr(const string& s)
   map< string, set<int32_t> > *l_search_namespaces = symtab.search_namespaces;
   bool l_checks = checks, l_folding = folding, l_consts = consts,
     l_bigints = bigints, l_use_fastcc = use_fastcc;
+  bool l_source_level = source_level, l_skip_level = skip_level;
   // save global data
   uint8_t s_verbose = g_verbose;
   bool s_interactive = g_interactive;
@@ -2662,6 +2689,7 @@ pure_expr *interpreter::parsestr(const string& s)
   g_interp = this;
   // initialize
   nerrs = 0;
+  source_level = skip_level = 0;
   source = ""; declare_op = false;
   string s1 = "\007"+s;
   source_s = s1.c_str();
@@ -2709,6 +2737,8 @@ pure_expr *interpreter::parsestr(const string& s)
   interactive = l_interactive;
   source = l_source;
   source_s = 0;
+  source_level = l_source_level;
+  skip_level = l_skip_level;
   nerrs = l_nerrs;
   source_s = l_source_s;
   srcdir = l_srcdir; srcabs = l_srcabs;

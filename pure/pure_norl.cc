@@ -75,7 +75,9 @@ using namespace std;
                   pure [options ...] -x script [args ...]\n\
 -c                Batch compilation.\n\
 --ctags, --etags  Create a tags file in ctags (vi) or etags (emacs) format.\n\
+--disable=optname Disable source option (conditional compilation).\n\
 --eager-jit       Enable eager JIT compilation (LLVM 2.7 or later).\n\
+--enable=optname  Enable source option (conditional compilation).\n\
 -fPIC             Create position-independent code (batch compilation).\n\
 -g                Enable symbolic debugging.\n\
 --help, -h        Print this message and exit.\n\
@@ -310,7 +312,31 @@ main(int argc, char *argv[])
 	interp.compat = true;
       else if (strcmp(arg, "-w2") == 0)
 	interp.compat2 = true;
-      else if (strncmp(*args, "-T", 2) == 0) {
+      else if (strcmp(*args, "--enable") == 0 ||
+	       strncmp(*args, "--enable=", 9) == 0) {
+	string s = string(*args).substr(8);
+	if (s.empty()) {
+	  if (!*++args) {
+	    interp.error(prog + ": --enable lacks option argument");
+	    return 1;
+	  }
+	  s = *args;
+	} else
+	  s.erase(0, 1);
+	interp.source_options[s] = true;
+      } else if (strcmp(*args, "--disable") == 0 ||
+		 strncmp(*args, "--disable=", 10) == 0) {
+	string s = string(*args).substr(9);
+	if (s.empty()) {
+	  if (!*++args) {
+	    interp.error(prog + ": --disable lacks option argument");
+	    return 1;
+	  }
+	  s = *args;
+	} else
+	  s.erase(0, 1);
+	interp.source_options[s] = false;
+      } else if (strncmp(*args, "-T", 2) == 0) {
 	string s = string(*args).substr(2);
 	if (s.empty()) {
 	  if (!*++args) {
@@ -441,6 +467,12 @@ main(int argc, char *argv[])
 	     string(*argv).substr(0,2) == "-I" ||
 	     string(*argv).substr(0,2) == "-L") {
       string s = string(*argv).substr(2);
+      if (s.empty()) ++argv;
+    } else if (string(*argv).substr(0,8) == "--enable") {
+      string s = string(*argv).substr(8);
+      if (s.empty()) ++argv;
+    } else if (string(*argv).substr(0,9) == "--disable") {
+      string s = string(*argv).substr(9);
       if (s.empty()) ++argv;
     } else if (**argv == '-')
       ;

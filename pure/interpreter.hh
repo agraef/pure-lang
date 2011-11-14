@@ -538,6 +538,11 @@ public:
   // Additional directories to search for sources and libraries.
   list<string> includedirs, librarydirs;
 
+  // User-defined options (option, nooption, enable and disable pragmas).
+  map<string,bool> source_options;
+  int source_level, skip_level;
+  bool is_enabled(const string& optname);
+
   // Interpreter state. For internal use only.
   int32_t last_tag;  // pointer tags
   bool qual;	     // whether qualified vars are permitted in binding

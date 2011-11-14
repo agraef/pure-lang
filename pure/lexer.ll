@@ -137,7 +137,7 @@ str    ([^\"\\\n]|\\(.|\n))*
 cmd    (!|"^"?{id})
 blank  [ \t\f\v\r]
 
-%x escape comment xcode xcode_comment xdecl xdecl_comment xusing xusing_comment xsyms xsyms_comment xtag rescan xsyms_rescan
+%x escape comment srcoption xcode xcode_comment xdecl xdecl_comment xusing xusing_comment xsyms xsyms_comment xtag rescan xsyms_rescan
 
 %{
 # define YY_USER_ACTION  yylloc->columns(yyleng);
@@ -167,6 +167,7 @@ blank  [ \t\f\v\r]
   else
     interp.warning(*yylloc, "warning: bad symbol '"+sym+
 		   "' in --eager pragma");
+  yylloc->step();
 }
 ^"#!"[ \t]*"--required"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
   /* --required pragma. */
@@ -181,6 +182,7 @@ blank  [ \t\f\v\r]
   else
     interp.warning(*yylloc, "warning: bad symbol '"+sym+
 		   "' in --required pragma");
+  yylloc->step();
 }
 ^"#!"[ \t]*"--defined"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
   /* --defined pragma. */
@@ -203,6 +205,7 @@ blank  [ \t\f\v\r]
   } else
     interp.warning(*yylloc, "warning: bad symbol '"+sym+
 		   "' in --defined pragma");
+  yylloc->step();
 }
 ^"#!"[ \t]*"--nodefined"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
   /* --nodefined pragma. */
@@ -225,6 +228,60 @@ blank  [ \t\f\v\r]
   } else
     interp.warning(*yylloc, "warning: bad symbol '"+sym+
 		   "' in --nodefined pragma");
+  yylloc->step();
+}
+^"#!"[ \t]*"--enable"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
+  /* --enable pragma. */
+  char *s = strchr(yytext, '-')+strlen("--enable"), *t = s;
+  while (isspace(*t)) t++;
+  s = t;
+  while (*t && !isspace(*t)) t++;
+  string sym = string(s, t-s);
+  interp.source_options[sym] = true;
+  yylloc->step();
+}
+^"#!"[ \t]*"--disable"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
+  /* --disable pragma. */
+  char *s = strchr(yytext, '-')+strlen("--disable"), *t = s;
+  while (isspace(*t)) t++;
+  s = t;
+  while (*t && !isspace(*t)) t++;
+  string sym = string(s, t-s);
+  interp.source_options[sym] = false;
+  yylloc->step();
+}
+^"#!"[ \t]*"--option"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
+  /* --option pragma. */
+  char *s = strchr(yytext, '-')+strlen("--option"), *t = s;
+  while (isspace(*t)) t++;
+  s = t;
+  while (*t && !isspace(*t)) t++;
+  string sym = string(s, t-s);
+  interp.skip_level = interp.source_level++;
+  yylloc->step();
+  if (!interp.is_enabled(sym)) BEGIN(srcoption);
+}
+^"#!"[ \t]*"--nooption"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
+  /* --nooption pragma. */
+  char *s = strchr(yytext, '-')+strlen("--nooption"), *t = s;
+  while (isspace(*t)) t++;
+  s = t;
+  while (*t && !isspace(*t)) t++;
+  string sym = string(s, t-s);
+  interp.skip_level = interp.source_level++;
+  yylloc->step();
+  if (interp.is_enabled(sym)) BEGIN(srcoption);
+}
+^"#!"[ \t]*"--endoption"([ \t]+"//".*)? {
+  /* --endoption pragma. */
+  if (interp.source_level == 0) {
+    interp.error(*yylloc, "unmatched '--endoption' pragma");
+    // We reset the error count here so that the parser doesn't gobble up the
+    // following code, thinking that it is in error.
+    interp.nerrs--;
+  } else
+    interp.source_level--;
+  yylloc->step();
 }
 ^"#!"[ \t]*"--"[A-Za-z0-9-]+[ \t]*("//".*)? {
   /* Other pragmas (code generation). */
@@ -262,6 +319,27 @@ blank  [ \t\f\v\r]
   char *s = strchr(yytext, '-');
   interp.warning(*yylloc, "warning: unrecognized pragma '"+string(s)+"'");
   yylloc->step();
+}
+
+<srcoption>^"#!"[ \t]*"--"("no"?)"option"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
+  interp.source_level++;
+  yylloc->step();
+}
+<srcoption>^"#!"[ \t]*"--endoption"([ \t]+"//".*)? {
+  if (interp.source_level == 0) {
+    interp.error(*yylloc, "unmatched '--endoption' pragma");
+    interp.nerrs--;
+  } else
+    interp.source_level--;
+  yylloc->step();
+  if (interp.source_level == interp.skip_level) BEGIN(INITIAL);
+}
+<srcoption>.*      yylloc->step();
+<srcoption>[\n]+   yylloc->lines(yyleng); yylloc->step();
+<srcoption><<EOF>> {
+  interp.error(*yylloc, "missing '--endoption' pragma at end of file");
+  interp.source_level = interp.skip_level = 0;
+  BEGIN(INITIAL);
 }
 
 ^"#!".*    |
@@ -807,6 +885,14 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
   string msg = "invalid character '"+pstring(yytext)+"'";
   interp.error(*yylloc, msg);
   BEGIN(INITIAL);
+}
+
+<<EOF>> {
+  if (interp.source_level>0) {
+    interp.error(*yylloc, "missing '--endoption' pragma at end of file");
+    interp.source_level = interp.skip_level = 0;
+  }
+  yyterminate();
 }
 
 %%
