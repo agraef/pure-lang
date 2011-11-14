@@ -1297,6 +1297,37 @@ bool interpreter::is_enabled(const string& optname)
   std::transform(envname.begin(), envname.end(), envname.begin(), ::toupper);
   envname.insert(0, "PURE_NOOPTION_");
   bool flag = getenv(envname.c_str()) == NULL;
+  if (flag) {
+    // Predefined options.
+    string version = PACKAGE_VERSION, host = HOST;
+    if (optname == "compiled") // batch-compiled
+      flag = compiling;
+    else if (optname == "mingw") // host is mingw/Windows
+      flag = host.find("mingw") != string::npos;
+    else if (optname.compare(0, strlen("version-"), "version-") == 0) {
+      // Version check. The rest of the option name has the format
+      // major.minor[+-]. '+' or '-' means that the version must be at least
+      // or at most the given version, respectively; otherwise we're looking
+      // for exactly the given version.
+      string vers = optname.substr(strlen("version-"));
+      int act_major = 0, act_minor = 0, want_major = 0, want_minor = 0;
+      char mode = 0;
+      int res1 = sscanf(version.c_str(), "%d.%d", &act_major, &act_minor);
+      int res2 = sscanf(vers.c_str(), "%d.%d%[+-]",
+			&want_major, &want_minor, &mode);
+      if (res1 == 2 && res2 >= 2) {
+	if (mode == '+')
+	  flag = act_major > want_major ||
+	    (act_major == want_major && act_minor >= want_minor);
+	else if (mode == '-')
+	  flag = act_major < want_major ||
+	    (act_major == want_major && act_minor <= want_minor);
+	else
+	  flag = act_major == want_major && act_minor == want_minor;
+      } else
+	flag = 0;
+    }
+  }
   // Cache the value.
   source_options[optname] = flag;
   return flag;
