@@ -22,9 +22,10 @@ def event_callback cb = fclos cb FFI_DEFAULT_ABI sint_t
    expects a string in UTF-8 encoding, which is what Pure already uses
    internally, so we don't want to convert that argument either. */
 
-index sysinfo "mingw"<0 ||
+#! --if mingw
 // On Windows, we need this dll to get the following functions.
-eval "using \"lib:libgtk-win32-2.0-0\";";
+using "lib:libgtk-win32-2.0-0";
+#! --endif
 
 extern void *gtk_file_chooser_get_filename(GtkFileChooser*);
 extern void gtk_text_buffer_set_text(GtkTextBuffer*, void*, int);
