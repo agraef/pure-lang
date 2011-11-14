@@ -257,9 +257,14 @@ blank  [ \t\f\v\r]
   s = t;
   while (*t && !isspace(*t)) t++;
   string sym = string(s, t-s);
-  interp.skip_level = interp.source_level++;
+  if (interp.source_level < 64)
+    interp.else_stack[interp.source_level] = 0;
+  interp.source_level++;
   yylloc->step();
-  if (!interp.is_enabled(sym)) BEGIN(srcoption);
+  if (!interp.is_enabled(sym)) {
+    interp.skip_level = interp.source_level-1;
+    BEGIN(srcoption);
+  }
 }
 ^"#!"[ \t]*"--nooption"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
   /* --nooption pragma. */
@@ -268,16 +273,38 @@ blank  [ \t\f\v\r]
   s = t;
   while (*t && !isspace(*t)) t++;
   string sym = string(s, t-s);
-  interp.skip_level = interp.source_level++;
+  if (interp.source_level < 64)
+    interp.else_stack[interp.source_level] = 0;
+  interp.source_level++;
   yylloc->step();
-  if (interp.is_enabled(sym)) BEGIN(srcoption);
+  if (interp.is_enabled(sym)) {
+    interp.skip_level = interp.source_level-1;
+    BEGIN(srcoption);
+  }
+}
+^"#!"[ \t]*"--else"([ \t]+"//".*)? {
+  /* --else pragma. */
+  if (interp.source_level == 0) {
+    interp.error(*yylloc, "unmatched '--else' pragma");
+    // We reset the error count here so that the parser doesn't gobble up the
+    // following code, thinking that it is in error.
+    interp.nerrs--;
+  } else if (interp.source_level <= 64 &&
+	     interp.else_stack[interp.source_level-1]) {
+    interp.error(*yylloc, "double '--else' pragma");
+    interp.nerrs--;
+  } else {
+    if (interp.source_level <= 64)
+      interp.else_stack[interp.source_level-1] = 1;
+    interp.skip_level = interp.source_level-1;
+    BEGIN(srcoption);
+  }
+  yylloc->step();
 }
 ^"#!"[ \t]*"--endoption"([ \t]+"//".*)? {
   /* --endoption pragma. */
   if (interp.source_level == 0) {
     interp.error(*yylloc, "unmatched '--endoption' pragma");
-    // We reset the error count here so that the parser doesn't gobble up the
-    // following code, thinking that it is in error.
     interp.nerrs--;
   } else
     interp.source_level--;
@@ -322,17 +349,34 @@ blank  [ \t\f\v\r]
 }
 
 <srcoption>^"#!"[ \t]*"--"("no"?)"option"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
+  if (interp.source_level < 64)
+    interp.else_stack[interp.source_level] = 0;
   interp.source_level++;
+  yylloc->step();
+}
+<srcoption>^"#!"[ \t]*"--else"([ \t]+"//".*)? {
+  if (interp.source_level == 0) {
+    interp.error(*yylloc, "unmatched '--else' pragma");
+    interp.nerrs--;
+  } else if (interp.source_level <= 64 &&
+	     interp.else_stack[interp.source_level-1]) {
+    interp.error(*yylloc, "double '--else' pragma");
+    interp.nerrs--;
+  } else {
+    if (interp.source_level <= 64)
+      interp.else_stack[interp.source_level-1] = 1;
+    if (interp.source_level-1 == interp.skip_level) BEGIN(INITIAL);
+  }
   yylloc->step();
 }
 <srcoption>^"#!"[ \t]*"--endoption"([ \t]+"//".*)? {
   if (interp.source_level == 0) {
     interp.error(*yylloc, "unmatched '--endoption' pragma");
     interp.nerrs--;
-  } else
-    interp.source_level--;
+  } else if (--interp.source_level == interp.skip_level) {
+    BEGIN(INITIAL);
+  }
   yylloc->step();
-  if (interp.source_level == interp.skip_level) BEGIN(INITIAL);
 }
 <srcoption>.*      yylloc->step();
 <srcoption>[\n]+   yylloc->lines(yyleng); yylloc->step();

@@ -541,6 +541,7 @@ public:
   // User-defined options (option, nooption, enable and disable pragmas).
   map<string,bool> source_options;
   int source_level, skip_level;
+  bitset<64> else_stack;
   bool is_enabled(const string& optname);
 
   // Interpreter state. For internal use only.
