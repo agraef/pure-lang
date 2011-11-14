@@ -167,6 +167,15 @@ const false, true = 0, 1;
    in any of the prelude modules which define optimization rules for (!!). */
 slice x y = x!!y;
 
+// Disabling this option (--disable all-opt) will disable *all* special
+// compile-time optimization rules in the prelude. This isn't recommended.
+
+#! --ifnot all-opt
+#!   --disable common-opt
+#!   --disable subseq-opt
+#!   --disable vectorseq-opt
+#! --endif // not opt
+
 /* Pull in the primitives (arithmetic etc.) and the standard string, matrix
    and record functions. Note that the math, pointers and system modules are
    *not* included here, so you have to do that yourself if your program
@@ -444,14 +453,18 @@ fix f = f (fix f&);
 /* Some convenient optimization rules which eliminate saturated calls of the
    function composition combinators. */
 
+#! --if common-opt
 def f $ x	= f x;
 def (f . g) x	= f (g x);
+#! --endif
 
 /* Simplify calls to 'void'. These are also useful in conjunction with the
    optimization rules for "throwaway" list comprehensions (see below). */
 
+#! --if common-opt
 def void () | void [] | void {} = ();
 def void [x] | void {x} = void x;
+#! --endif
 
 /* ..
 
@@ -964,13 +977,17 @@ xs!!ns		= ys if ok ys when
    case of a slice x!!(a::int..b::int). The rules below handle the list case,
    and the generic case in which we fall back to the standard slicing
    operation above. Other specialized optimization rules can be found in the
-   matrices and strings modules. */
+   matrices and strings modules. NOTE: You can run the interpreter with the
+   --disable subseq-opt option if you need to disable these optimizations for
+   some reason. */
 
 subseq [] a::int b::int = [];
 subseq xs@(_:_) a::int b::int = take (b-a+1) $ drop a xs;
 subseq x a b = slice x (a..b);
 
+#! --if subseq-opt
 def x!!(a..b) = subseq x a b;
+#! --endif
 
 /* List concatenation. For a robust implementation which works with both
    ordinary lists and streams, we want this to be tail-recursive *and*
@@ -1675,6 +1692,8 @@ end;
 /* Optimize the case of "throwaway" list and matrix comprehensions (useful if
    a comprehension is evaluated solely for its side effects). */
 
+#! --if common-opt
+
 namespace __std__ with public __do__; end;
 using namespace __std__;
 
@@ -1715,6 +1734,8 @@ def __do__ (__lambda__ [x] (__ifelse__ y (void z) ())) =
 
 // Any remaining instances reduce to a plain 'do' (this must come last).
 def __do__ f = do f;
+
+#! --endif
 
 /* List defined symbols using evalcmd "show". */
 
