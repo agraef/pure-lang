@@ -250,9 +250,9 @@ blank  [ \t\f\v\r]
   interp.source_options[sym] = false;
   yylloc->step();
 }
-^"#!"[ \t]*"--option"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
-  /* --option pragma. */
-  char *s = strchr(yytext, '-')+strlen("--option"), *t = s;
+^"#!"[ \t]*"--if"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
+  /* --if pragma. */
+  char *s = strchr(yytext, '-')+strlen("--if"), *t = s;
   while (isspace(*t)) t++;
   s = t;
   while (*t && !isspace(*t)) t++;
@@ -266,9 +266,9 @@ blank  [ \t\f\v\r]
     BEGIN(srcoption);
   }
 }
-^"#!"[ \t]*"--nooption"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
-  /* --nooption pragma. */
-  char *s = strchr(yytext, '-')+strlen("--nooption"), *t = s;
+^"#!"[ \t]*"--ifnot"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
+  /* --ifnot pragma. */
+  char *s = strchr(yytext, '-')+strlen("--ifnot"), *t = s;
   while (isspace(*t)) t++;
   s = t;
   while (*t && !isspace(*t)) t++;
@@ -301,10 +301,10 @@ blank  [ \t\f\v\r]
   }
   yylloc->step();
 }
-^"#!"[ \t]*"--endoption"([ \t]+"//".*)? {
-  /* --endoption pragma. */
+^"#!"[ \t]*"--endif"([ \t]+"//".*)? {
+  /* --endif pragma. */
   if (interp.source_level == 0) {
-    interp.error(*yylloc, "unmatched '--endoption' pragma");
+    interp.error(*yylloc, "unmatched '--endif' pragma");
     interp.nerrs--;
   } else
     interp.source_level--;
@@ -348,7 +348,7 @@ blank  [ \t\f\v\r]
   yylloc->step();
 }
 
-<srcoption>^"#!"[ \t]*"--"("no"?)"option"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
+<srcoption>^"#!"[ \t]*"--if"("not"?)[ \t]+[^ \t\n]+([ \t]+"//".*)? {
   if (interp.source_level < 64)
     interp.else_stack[interp.source_level] = 0;
   interp.source_level++;
@@ -369,9 +369,9 @@ blank  [ \t\f\v\r]
   }
   yylloc->step();
 }
-<srcoption>^"#!"[ \t]*"--endoption"([ \t]+"//".*)? {
+<srcoption>^"#!"[ \t]*"--endif"([ \t]+"//".*)? {
   if (interp.source_level == 0) {
-    interp.error(*yylloc, "unmatched '--endoption' pragma");
+    interp.error(*yylloc, "unmatched '--endif' pragma");
     interp.nerrs--;
   } else if (--interp.source_level == interp.skip_level) {
     BEGIN(INITIAL);
@@ -381,7 +381,7 @@ blank  [ \t\f\v\r]
 <srcoption>.*      yylloc->step();
 <srcoption>[\n]+   yylloc->lines(yyleng); yylloc->step();
 <srcoption><<EOF>> {
-  interp.error(*yylloc, "missing '--endoption' pragma at end of file");
+  interp.error(*yylloc, "missing '--endif' pragma at end of file");
   interp.source_level = interp.skip_level = 0;
   BEGIN(INITIAL);
 }
@@ -933,7 +933,7 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
 
 <<EOF>> {
   if (interp.source_level>0) {
-    interp.error(*yylloc, "missing '--endoption' pragma at end of file");
+    interp.error(*yylloc, "missing '--endif' pragma at end of file");
     interp.source_level = interp.skip_level = 0;
   }
   yyterminate();

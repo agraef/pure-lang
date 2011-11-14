@@ -4,24 +4,34 @@
 // options are enabled by default
 #! --disable bar
 
-// test nested optional sections
-#! --option foo
+// nested conditionals
+#! --if foo
 foo x = x+1; // enabled
-#! --option bar
+#! --if bar
 bar x = x-1; // disabled
-#! --endoption // bar
-#! --nooption bar
+#! --else
 bar x = x/2; // enabled
-#! --endoption // !bar
+// double --else gives error
+#! --else
+let "oops";
+#! --endif // bar
 baz x = 2*x; // enabled
-#! --endoption // foo
+#! --endif // foo
 
-// unmatched --endoption gives error
-#! --endoption
+// unmatched --endif gives error
+#! --endif
 
 // reenable an option
 #! --enable bar
 
-#! --option bar
+#! --if bar
 bar 99;
+
+// test predefined version option
+#! --ifnot version-0.49+
+let "this can't happen";
+#! --else
+let "we're good";
+#! --endif
+
 // open option section at eof gives error
