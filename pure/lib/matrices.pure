@@ -413,10 +413,6 @@ namespace __C;
 extern expr* matrix_slice(expr* x, int i1, int j1, int i2, int j2);
 namespace;
 
-def x!!(a1..b1,a2..b2) = subseq2 x a1 b1 a2 b2;
-def x!!(a1,a2..b2) = subseq2 x a1 a1 a2 b2;
-def x!!(a1..b1,a2) = subseq2 x a1 b1 a2 a2;
-
 subseq2 x::matrix a1::int b1::int a2::int b2::int =
   __C::matrix_slice x a1 a2 b1 b2;
 subseq2 x a1 a1 a2 b2 = slice x (a1,a2..b2);
@@ -425,6 +421,10 @@ subseq2 x a1 b1 a2 b2 = slice x (a1..b1,a2..b2);
 
 subseq x::matrix a::int b::int =
   __C::matrix_slice (rowvector x) 0 a 0 b;
+
+def x!!(a1..b1,a2..b2) = subseq2 x a1 b1 a2 b2;
+def x!!(a1,a2..b2) = subseq2 x a1 a1 a2 b2;
+def x!!(a1..b1,a2) = subseq2 x a1 b1 a2 a2;
 
 /* Extract rows and columns from a matrix. */
 
