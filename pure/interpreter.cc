@@ -2570,6 +2570,7 @@ pure_expr* interpreter::run(int priv, const string &_s,
   bool l_checks = checks, l_folding = folding, l_consts = consts,
     l_bigints = bigints, l_use_fastcc = use_fastcc;
   bool l_source_level = source_level, l_skip_level = skip_level;
+  bitset<64> l_else_stack = else_stack;
   // save global data
   uint8_t s_verbose = g_verbose;
   bool s_interactive = g_interactive;
@@ -2619,6 +2620,7 @@ pure_expr* interpreter::run(int priv, const string &_s,
   source = l_source;
   source_level = l_source_level;
   skip_level = l_skip_level;
+  else_stack = l_else_stack;
   nerrs = l_nerrs;
   temp = l_temp;
   source_s = l_source_s;
@@ -2671,6 +2673,7 @@ pure_expr *interpreter::runstr(const string& s)
   bool l_checks = checks, l_folding = folding, l_consts = consts,
     l_bigints = bigints, l_use_fastcc = use_fastcc;
   bool l_source_level = source_level, l_skip_level = skip_level;
+  bitset<64> l_else_stack = else_stack;
   // save global data
   uint8_t s_verbose = g_verbose;
   bool s_interactive = g_interactive;
@@ -2709,6 +2712,7 @@ pure_expr *interpreter::runstr(const string& s)
   source_s = 0;
   source_level = l_source_level;
   skip_level = l_skip_level;
+  else_stack = l_else_stack;
   nerrs = l_nerrs;
   source_s = l_source_s;
   srcdir = l_srcdir; srcabs = l_srcabs;
@@ -2739,6 +2743,7 @@ pure_expr *interpreter::parsestr(const string& s)
   bool l_checks = checks, l_folding = folding, l_consts = consts,
     l_bigints = bigints, l_use_fastcc = use_fastcc;
   bool l_source_level = source_level, l_skip_level = skip_level;
+  bitset<64> l_else_stack = else_stack;
   // save global data
   uint8_t s_verbose = g_verbose;
   bool s_interactive = g_interactive;
@@ -2798,6 +2803,7 @@ pure_expr *interpreter::parsestr(const string& s)
   source_s = 0;
   source_level = l_source_level;
   skip_level = l_skip_level;
+  else_stack = l_else_stack;
   nerrs = l_nerrs;
   source_s = l_source_s;
   srcdir = l_srcdir; srcabs = l_srcabs;
