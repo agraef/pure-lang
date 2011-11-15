@@ -252,10 +252,18 @@ below.
 
    Create a tags file in ctags (vi) or etags (emacs) format.
 
+.. option:: --disable optname
+
+   Disable source option (conditional compilation).
+
 .. option:: --eager-jit
 
    Enable eager JIT compilation. This requires LLVM 2.7 or later, otherwise
    this flag will be ignored.
+
+.. option:: --enable optname
+
+   Enable source option (conditional compilation).
 
 .. option:: -fPIC
    	    -fpic
@@ -318,7 +326,7 @@ below.
 
 .. option:: -v[level]
 
-   Set verbosity level. See below for details.
+   Set verbosity level.
 
 .. option:: --version
 
@@ -337,9 +345,25 @@ below.
    Stop option processing and pass the remaining command line arguments in
    the ``argv`` variable.
 
-(Besides these, the interpreter also understands a number of other command
-line switches for setting various code generation options; please see `Code
-Generation Options`_ below for details.)
+Besides these, the interpreter also understands a number of other command line
+switches for setting various compilation options; please see `Compilation
+Options`_ below for details.
+
+.. note:: Option parsing follows the usual (UNIX) conventions, but is somewhat
+   more rigid than the GNU getopt conventions. In particular, it is *not*
+   possible to combine short options, and there are no abbreviations for
+   "long" options. Mixing options and other command line parameters is
+   generally possible, but note that all option processing stops right after
+   ``-x`` and ``--``, passing the remaining parameters to the executing script
+   in the Pure ``argv`` variable.
+
+   As usual, if an option takes a required argument, the argument may be
+   written either as a separate command line parameter immediately following
+   the option (as in ``-I`` *directory* or ``--enable`` *optname*), or
+   directly after the option (``-I``\ *directory* or ``--enable=``\ *optname*;
+   note the equals sign in the case of a long option). Options with optional
+   arguments work in the same fashion, but in this case the argument, if
+   present, *must* be written directly behind the option.
 
 Overview of Operation
 ---------------------
@@ -386,7 +410,9 @@ The following variables are always predefined by the interpreter:
 
    The version string of the Pure interpreter and a string identifying the
    host system. These are useful if parts of your script depend on the
-   particular version of the interpreter and the system it runs on.
+   particular version of the interpreter and the system it runs on. (An
+   alternative way to deal with version and system dependencies is to use
+   conditional compilation; see `Conditional Compilation`_.)
 
 If available, the prelude script prelude.pure is loaded by the interpreter
 prior to any other definitions, unless the :option:`-n` or
@@ -592,26 +618,24 @@ a remedy, you can use the interactive ``show`` command (see the `Interactive
 Usage`_ section) to list definitions along with additional debugging
 information.
 
-The :option:`-w` option enables some additional warnings which are useful to
-check your scripts for possible errors. In particular, it will report implicit
-declarations of function and type symbols, which might indicate undefined or
-mistyped symbols that need to be fixed, see `Symbol Lookup and Creation`_ for
-details. This option can also be controlled on a per-rule basis by adding
-corresponding "pragmas" to your script, see `Code Generation Options`_ below.
-
-Code Generation Options
------------------------
+Compilation Options
+-------------------
 
 Besides the options listed above, the interpreter also understands some
 additional command line switches and corresponding environment variables to
-control various code generation options. The options take the form ``--opt``
-and ``--noopt``, respectively, where ``opt`` denotes the option name (see
-below for a list of supported options). By default, these options are all
-enabled; ``--noopt`` disables the option, ``--opt`` reenables it. In addition,
-for each option ``opt`` there is also a corresponding environment variable
-``PURE_NOOPT`` (with the option name in uppercase) which, when set, disables
-the option by default. (Setting this variable to any value will do, the
-interpreter only checks whether the variable exists in the environment.)
+control various compilation options.
+
+Code Generation Options
+~~~~~~~~~~~~~~~~~~~~~~~
+
+These options take the form ``--opt`` and ``--noopt``, respectively, where
+``opt`` denotes the option name (see below for a list of supported
+options). By default, these options are all enabled; ``--noopt`` disables the
+option, ``--opt`` reenables it. In addition, for each option ``opt`` there is
+also a corresponding environment variable ``PURE_NOOPT`` (with the option name
+in uppercase) which, when set, disables the option by default. (Setting this
+variable to any value will do, the interpreter only checks whether the
+variable exists in the environment.)
 
 For instance, the ``checks`` option controls stack and signal checks. Thus
 ``--nochecks`` on the command line disables the option, and setting the
@@ -685,6 +709,8 @@ Currently, the following code generation options are recognized:
    compiling the Pure interpreter, in which case these options have no effect;
    see the :doc:`installation instructions<install>` for details.)
 
+.. program:: pure-pragma
+
 Besides these, there are the following special pragmas affecting the code
 generation of some global function, which is specified in the pragma. These
 pragmas can only be used in source code, they cannot be controlled using
@@ -752,16 +778,154 @@ before any pragmas involving it (cf. `Symbol Declarations`_).
    pragma can be found under `Defined Functions`_ in the `Caveats and Notes`_
    section.
 
-Last but not least, there are also the following pragmas for enabling and
-disabling compiler warnings on a per-rule basis, cf. `Verbosity and Debugging
-Options`_. Again, these pragmas are only to be used in source code; while the
-:option:`-w` flag can be used to change the default value of this option,
-there is no corresponding environment variable.
+Conditional Compilation
+~~~~~~~~~~~~~~~~~~~~~~~
+
+As of version 0.49, Pure also provides a rudimentary facility for denoting
+optional and alternative code paths. This is supposed to cover the most common
+cases where conditional compilation is needed. (For more elaborate needs you
+can always use real Pure code which enables you to configure your program at
+runtime using, e.g., the :func:`eval` function.)
+
+Pure's conditional compilation pragmas are based on the use of user-defined
+symbols (which can be really any text that does not contain whitespace or any
+of the shell wildcard characters ``*?[]``) called compilation `options`. By
+default, all options are enabled. It is possible to disable an option by
+default, by setting a corresponding environment variable ``PURE_NOOPTION``,
+where ``OPTION`` is the option symbol in uppercase.
+
+Options can be enabled and disabled in Pure scripts with the following
+pragmas, which are also available as command line options when invoking the
+Pure interpreter:
+
+.. option:: --enable option
+   	    --disable option
+
+   Enable or disable the given option, respectively.
+
+The actual conditional compilation pragmas work in exactly the same fashion as
+the C preprocessor directives ``#ifdef`` and ``#ifndef``.
+
+.. option:: --if option
+   	    --ifnot option
+
+   Begins a code section which should be included in the program if the given
+   option is enabled or disabled, respectively.
+
+.. option:: --else
+
+   Begins an alternative code section which is included in the program if the
+   corresponding :option:`--if` or :option:`--ifnot` section was excluded, and
+   vice versa.
+
+.. option:: --endif
+
+   Ends a conditional code section.
+
+Conditional code sections may be nested to an arbitrary depth. Each
+:option:`--if` or :option:`--ifnot` pragma must be followed by a matching
+:option:`--endif`. The :option:`--else` section is optional; if present, it
+applies to the most recent :option:`--if` or :option:`--ifnot` section not
+terminated by a matching :option:`--endif`. Unmatched :option:`--if`,
+:option:`--ifnot`, :option:`--else` and :option:`--endif` pragmas warrant an
+error message by the compiler.
+
+Conditional code is handled at the level of the lexical analyzer. Excluded
+code sections are treated like comments, i.e., the parser never gets to see
+them.
+
+Here's a (rather contrived) example which shows all these pragmas in action.
+You may want to type this in the interpreter to verify that the code sections
+are indeed included and excluded from the Pure program as indicated::
+
+  // disable the 'bar' option
+  #! --disable bar
+
+  #! --if foo
+  foo x = x+1; // included
+  #! --if bar
+  bar x = x-1; // excluded
+  #! --else
+  bar x = x/2; // included
+  #! --endif // bar
+  #! --endif // foo
+
+  // reenable the 'bar' option
+  #! --enable bar
+
+  #! --if bar
+  bar 99; // included
+  #! --endif // bar
+
+  #! --ifnot foo
+  baz x = 2*x; // excluded
+  #! --endif // not foo
+
+A few options are always set or unset at interpreter startup by default:
+
+``compiled``
+
+  Set if a program is batch-compiled. This lets you pick alternative code
+  paths depending on whether a script is compiled to a native executable or
+  not. Please see the `Batch Compilation`_ section for details.
+
+``version-x.y``
+
+  Indicates a check against the version of the host Pure interpreter. ``x.y``
+  indicates the required (major/minor) version. You can also use ``x.y+`` to
+  indicate version ``x.y`` or later, or ``x.y-`` for version ``x.y`` or
+  earlier. By combining these, you can also pick code depending on a
+  particular range of Pure versions, or you can reverse the test to test for
+  anything later or earlier than a given version::
+
+    #! --if version-0.36+
+    #! --if version-0.48-
+    // code to be executed for Pure versions 0.36-0.48 (inclusive)
+    #! --endif
+    #! --endif
+
+    #! --ifnot version-0.48-
+    // code to be executed for Pure versions > 0.48
+    #! --endif
+
+In addition, the interpreter always defines the target triplet of the host
+system as a symbol. This is the same as what :func:`sysinfo` returns, so you
+can check for a specific system like this::
+
+  #! --if x86_64-unknown-linux-gnu
+  // 64 bit Linux-specific code goes here
+  #! --endif
+
+It goes without saying that this method isn't really practical if you want to
+check for a wide range of systems. As a remedy, the :option:`--if` and
+:option:`--ifnot` pragmas treat shell glob patterns in tests for option
+symbols in a special way, by matching the pattern against the host triplet to
+see whether the condition holds. This allows you to write a generic test,
+e.g., for Windows systems like this::
+
+  #! --if *-mingw32
+  // Windows-specific code goes here
+  #! --endif
+
+Warning Options
+~~~~~~~~~~~~~~~
+
+The :option:`-w <pure -w>` option enables some additional warnings which are
+useful to check your scripts for possible errors. In particular, it will
+report implicit declarations of function and type symbols, which might
+indicate undefined or mistyped symbols that need to be fixed, see `Symbol
+Lookup and Creation`_ for details.
+
+This option can also be controlled on a per-rule basis by adding the following
+pragmas to your script:
 
 .. option:: --warn
    	    --nowarn
 
-   Enable or disable compiler warnings (see :option:`-w` above).
+   Enable or disable compiler warnings. The :option:`-w <pure -w>` flag sets
+   the default for these pragmas.
+
+.. program:: pure
 
 Startup Files
 -------------
@@ -842,9 +1006,9 @@ shell environment variables:
    Maximum stack size in kilobytes (default: 0 = unlimited).
 
 Besides these, the interpreter also understands a number of other environment
-variables for setting various code generation options (see `Code Generation
-Options`_ above) and commands to invoke different LLVM compilers on inline
-code (see `Inline Code`_).
+variables for setting various compilation options (see `Compilation Options`_
+above) and commands to invoke different LLVM compilers on inline code (see
+`Inline Code`_).
 
 Pure Overview
 =============
@@ -1132,11 +1296,12 @@ symbolic algebra system, but it provides the programmer with a very flexible
 model of computation and is one of Pure's most distinguishing features. In
 some cases, however, the unevaluated normal forms may also become a nuisance
 since they may obscure possible programming errors. Therefore Pure provides a
-special :option:`--defined` pragma (cf. `Code Generation Options`_) which
-forces a function to be treated as a defined function, so that it becomes more
-like functions in traditional untyped languages such as Lisp and Python which
-raise an exception under such conditions. This is described in more detail
-under `Defined Functions`_ in the `Caveats and Notes`_ section.
+special :option:`--defined <pure-pragma --defined>` pragma (cf. `Code
+Generation Options`_) which forces a function to be treated as a defined
+function, so that it becomes more like functions in traditional untyped
+languages such as Lisp and Python which raise an exception under such
+conditions. This is described in more detail under `Defined Functions`_ in the
+`Caveats and Notes`_ section.
 
 Variables in Equations
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -7424,8 +7589,9 @@ limitations:
   function definitions instead. Also, the compiler usually strips unused
   functions from the output code, so that only functions which are actually
   called somewhere in the static program text are available to :func:`eval`.
-  (The :option:`-u` option and the :option:`--required` pragma can be used to
-  avoid this, see `Options Affecting Code Size`_ below.)
+  (The :option:`-u` option and the :option:`--required <pure-pragma --required>`
+  pragma can be used to avoid this, see `Options Affecting Code
+  Size`_ below.)
 
 * Code which gets executed to compute constant values at compile time will
   generally *not* be executed in the compiled executable, so your program
@@ -7554,9 +7720,53 @@ interpreter in both batch and interactive mode, too::
   [1,2,6,24,120,720,5040]
 
   $ pure -o hello -c -x hello.pure 7
+
   $ ./hello
   Hello, world!
   [1,2,6,24,120,720,5040]
+
+In addition, there's also a *compile time* check analogous to the
+:var:`compiling` variable, which indicates whether the source script is being
+run normally or in a batch compilation; see `Conditional Compilation`_. We
+might employ this as follows, replacing the last line of the script with
+this::
+
+  #! --if compiled
+  if compiling then () else main n;
+  #! --else
+  if argc>1 then main n else puts "Try 'main n' where n is a number.";
+  #! --endif
+
+The code in the ``--if compiled`` section, which is the same as before, is now
+only executed during batch compilation and in the compiled executable. If we
+run the script normally, in the interpreter, the code in the ``--else``
+section, which just prints a welcome message if no arguments are given on the
+command line, is executed instead. So we now actually have *four* different
+code paths, depending on whether the script is run normally, with or without
+arguments, or in a batch compilation, or as a native executable. This kind of
+setup is useful if the script is to be run both interactively and
+non-interactively in the interpreter while developing it, but once the script
+is finished it gets compiled and installed as a native executable.
+
+::
+
+  $ pure -i -q hello.pure
+  Try 'main n' where n is a number.
+  > main 5;
+  Hello, world!
+  [1,2,6,24,120]
+  ()
+  > quit
+
+  $ pure -x hello.pure 7
+  Hello, world!
+  [1,2,6,24,120,720,5040]
+
+  $ pure -o hello -c -x hello.pure
+
+  $ ./hello
+  Hello, world!
+  [1,2,6,24,120,720,5040,40320,362880,3628800]
 
 You'll rarely need an elaborate setup like this, most of the time something
 like our simple first example will do the trick. But, as you've seen, Pure can
@@ -7597,8 +7807,9 @@ plain constructor symbol.
 
 If this is a problem then you can either use the :option:`-u` option to
 produce an unstripped executable, or you can force specific functions to be
-included in the stripped executable with the :option:`--required` pragma
-(cf. `Code Generation Options`_). For instance::
+included in the stripped executable with the
+:option:`--required <pure-pragma --required>` pragma (cf. `Code Generation
+Options`_). For instance::
 
   #! --required foo
   foo x = bar (x-1);
@@ -8105,11 +8316,12 @@ of the :func:`puts` function. This kind of error can easily be spotted if the
 function is invoked interactively, but it may well go unnoticed if the call is
 buried deeply in a big program which runs unattended (in batch mode).
 
-As a remedy, Pure 0.48 introduces the :option:`--defined` pragma (cf. `Code
-Generation Options`_) which allows you to explicitly declare a function symbol
-as a "defined" function, so that it will raise a proper exception when the
-defining equations (or, as it were, the external definition) of the function
-are not applicable to the subject expression::
+As a remedy, Pure 0.48 introduces the
+:option:`--defined <pure-pragma --defined>` pragma (cf. `Code Generation
+Options`_) which allows you to explicitly declare a function symbol as a
+"defined" function, so that it will raise a proper exception when the defining
+equations (or, as it were, the external definition) of the function are not
+applicable to the subject expression::
 
   > #! --defined puts
   > puts 99;
@@ -8120,39 +8332,41 @@ if the subject term fails to match all patterns in a :keyword:`case`
 construct, cf. `Exception Handling`_. However, note that the exception will
 only be generated if the symbol actually has any defining equations, so a
 "pure constructor" (i.e., a symbol without defining equations) will still
-return a normal form even if it is also declared :option:`--defined`::
+return a normal form even if it is also declared :option:`--defined <pure
+pragma --defined>`::
 
   > #! --defined foo
   > foo bar;
   foo bar
 
-Nevertheless, the :option:`--defined` pragma will be recorded and take effect
-as soon as you add an equation for the function::
+Nevertheless, the :option:`--defined <pure-pragma --defined>` pragma will be
+recorded and take effect as soon as you add an equation for the function::
 
   > foo x::int = x+1;
   > foo bar;
   <stdin>, line 4: unhandled exception 'failed_match' while evaluating 'foo bar'
 
-There's also a :option:`--nodefined` pragma which reverts the function to the
-default behaviour of returning normal forms::
+There's also a :option:`--nodefined <pure-pragma --nodefined>` pragma which
+reverts the function to the default behaviour of returning normal forms::
 
   > #! --nodefined foo
   > foo bar;
   foo bar
 
-As indicated, the :option:`--defined` and :option:`--nodefined` pragmas can be
-invoked freely at any time, and the interpreter takes care that the affected
-function is recompiled automatically as needed.
+As indicated, the :option:`--defined <pure-pragma --defined>` and
+:option:`--nodefined <pure-pragma --nodefined>` pragmas can be invoked freely
+at any time, and the interpreter takes care that the affected function is
+recompiled automatically as needed.
 
-Please note that the :option:`--defined` pragma is still considered
-experimental. It interferes with Pure's symbolic evaluation capabilities, so
-the pragma isn't currently used in the standard library and we recommend that
-programmers shouldn't use it in a careless fashion either. However, while most
-error conditions stemming from unexpected normal forms can also be caught with
-diligent unit testing, the pragma can sometimes save you some time and
-trouble, especially when testing programs which are to be executed mostly in
-batch mode. Future versions of the interpreter might also make good use of
-this pragma for static checks and optimization purposes.
+Please note that the :option:`--defined <pure-pragma --defined>` pragma is
+still considered experimental. It interferes with Pure's symbolic evaluation
+capabilities, so the pragma isn't currently used in the standard library and
+we recommend that programmers shouldn't use it in a careless fashion
+either. However, while most error conditions stemming from unexpected normal
+forms can also be caught with diligent unit testing, the pragma can sometimes
+save you some time and trouble, especially when testing programs which are to
+be executed mostly in batch mode. Future versions of the interpreter might
+also make good use of this pragma for static checks and optimization purposes.
 
 Recursive Types
 ---------------
