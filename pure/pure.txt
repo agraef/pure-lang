@@ -709,6 +709,12 @@ Currently, the following code generation options are recognized:
    compiling the Pure interpreter, in which case these options have no effect;
    see the :doc:`installation instructions<install>` for details.)
 
+.. note:: All of the options above also have a corresponding "option symbol"
+   so that they can be queried and set using the facilities described under
+   `Conditional Compilation`_ below. (The symbol is just the name of the
+   option, e.g., ``checks`` for the :option:`--checks`, :option:`--nochecks`
+   option and pragma.)
+
 .. program:: pure-pragma
 
 Besides these, there are the following special pragmas affecting the code
@@ -861,26 +867,41 @@ are indeed included and excluded from the Pure program as indicated::
   baz x = 2*x; // excluded
   #! --endif // not foo
 
-A few options are always set or unset at interpreter startup by default:
+A few options are always provided as "builtins" by the interpreter. This
+includes all of the options described under `Code Generation Options`_ and
+`Warning Options`_, so that these can also be queried with :option:`--if`,
+:option:`--ifnot` and set with :option:`--enable`, :option:`--disable`.
+For instance::
 
-``compiled``
+  #! --ifnot checks
+  puts "This program uses deep recursion, so we enable stack checks here!";
+  #! --enable checks
+  #! --endif // not checks
 
-  Set if a program is batch-compiled. This lets you pick alternative code
-  paths depending on whether a script is compiled to a native executable or
-  not. Please see the `Batch Compilation`_ section for details.
+  #! --if warn
+  puts "Beware of bugs in the above code.";
+  puts "I have only proved it correct, not tried it.";
+  #! --endif // warn
 
-``version-x.y``
+Moreover, the following options are provided as additional builtins which are
+useful for handling special compilation requirements as well as system and
+version dependencies.
 
-  Indicates a check against the version of the host Pure interpreter. ``x.y``
-  indicates the required (major/minor) version. You can also use ``x.y+`` to
-  indicate version ``x.y`` or later, or ``x.y-`` for version ``x.y`` or
-  earlier. By combining these, you can also pick code depending on a
-  particular range of Pure versions, or you can reverse the test to test for
-  anything later or earlier than a given version::
+* The ``compiled`` option is set if a program is batch-compiled. This lets you
+  pick alternative code paths depending on whether a script is compiled to a
+  native executable or not. Please see the example at the end of the `Batch
+  Compilation`_ section for details.
+
+* The ``version-x.y`` option indicates a check against the version of the host
+  Pure interpreter. ``x.y`` indicates the required (major/minor) version. You
+  can also use ``x.y+`` to indicate version ``x.y`` or later, or ``x.y-`` for
+  version ``x.y`` or earlier. By combining these, you can pick code depending
+  on a particular range of Pure versions, or you can reverse the test to check
+  for anything later or earlier than a given version::
 
     #! --if version-0.36+
     #! --if version-0.48-
-    // code to be executed for Pure versions 0.36-0.48 (inclusive)
+    // code to be executed for Pure versions 0.36..0.48 (inclusive)
     #! --endif
     #! --endif
 
@@ -888,24 +909,24 @@ A few options are always set or unset at interpreter startup by default:
     // code to be executed for Pure versions > 0.48
     #! --endif
 
-In addition, the interpreter always defines the target triplet of the host
-system as a symbol. This is the same as what :func:`sysinfo` returns, so you
-can check for a specific system like this::
+* Last but not least, the interpreter always defines the target triplet of the
+  host system as an option symbol. This is the same as what :func:`sysinfo`
+  returns, so you can check for a specific system like this::
 
-  #! --if x86_64-unknown-linux-gnu
-  // 64 bit Linux-specific code goes here
-  #! --endif
+    #! --if x86_64-unknown-linux-gnu
+    // 64 bit Linux-specific code goes here
+    #! --endif
 
-It goes without saying that this method isn't really practical if you want to
-check for a wide range of systems. As a remedy, the :option:`--if` and
-:option:`--ifnot` pragmas treat shell glob patterns in tests for option
-symbols in a special way, by matching the pattern against the host triplet to
-see whether the condition holds. This allows you to write a generic test,
-e.g., for Windows systems like this::
+  It goes without saying that this method isn't very practical if you want to
+  check for a wide range of systems. As a remedy, the :option:`--if` and
+  :option:`--ifnot` pragmas treat shell glob patterns in tests for option
+  symbols in a special way, by matching the pattern against the host triplet
+  to see whether the condition holds. This allows you to write a generic test,
+  e.g., for Windows systems like this::
 
-  #! --if *-mingw32
-  // Windows-specific code goes here
-  #! --endif
+    #! --if *-mingw32
+    // Windows-specific code goes here
+    #! --endif
 
 Warning Options
 ~~~~~~~~~~~~~~~
