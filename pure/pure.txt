@@ -3809,20 +3809,39 @@ If no existing symbol is found, a new symbol is created automatically, by
 implicitly declaring a public symbol with default attributes. New
 *unqualified* symbols are always created in the current namespace, while new
 *qualified* symbols are created in the namespace given by the namespace prefix
-of the symbol. However, note that in the latter case the compiler always
-checks that the given namespace prefix matches the current namespace::
+of the symbol.
 
-  > namespace foo;
-  > namespace;
-  > foo::bar x = 1/x;
-  <stdin>, line 3: undeclared symbol 'foo::bar'
+.. note:: Pure's implicit symbol declarations are a mixed blessing. They are
+   convenient, especially in interactive usage, but they also let missing or
+   mistyped symbols go unnoticed much to easily. As a remedy, in the case of
+   qualified symbols the compiler checks that the given namespace prefix
+   matches the current namespace, in order to catch typos and other silly
+   mistakes and prevent you from accidentally clobbering the contents of other
+   namespaces. For instance::
 
-Thus it's only possible to introduce a new symbol in a given namespace if that
-namespace is the current one. These error messages are somewhat annoying, but
-they provide at least some protection against typos and other silly mistakes
-and prevent you from accidentally clobbering the contents of other
-namespaces. To make these errors go away it's enough to just declare the
-symbols in their proper namespaces.
+     > namespace foo;
+     > namespace;
+     > foo::bar x = 1/x;
+     <stdin>, line 3: undeclared symbol 'foo::bar'
+
+   To make these errors go away it's enough to just declare the symbols in
+   their proper namespaces.
+
+   In addition, you can run the interpreter with the :option:`-w` option (see
+   `Invoking Pure`_) to check your scripts for (non-defining) uses of
+   undeclared unqualified function symbols. This is highly recommended. For
+   instance, in the following example we forgot to import the :mod:`system`
+   module which defines the :func:`puts` function. Running the interpreter
+   with :option:`-w` highlights such potential errors::
+
+     $ pure -w
+     > puts "bla"; // missing import of system module
+     <stdin>, line 1: warning: implicit declaration of 'puts'
+     puts "bla"
+
+   For legitimate uses (such as forward uses of a symbol which is defined
+   later), you can make these warnings go away by declaring the symbol before
+   using it.
 
 New symbols are also created if a global unqualified (and yet undeclared)
 symbol is being "defined" in a rewriting rule or
@@ -3842,7 +3861,8 @@ following (purely syntactic) notions:
 
 * All other occurrences of global symbols on the left-hand side, as well as
   *all* symbol occurrences on the right-hand side of a definition are
-  `referring occurrences`.
+  `referring occurrences`. (Note that this also subsumes all occurrences of
+  *type tags* on the left-hand side of an equation.)
 
 The following example illustrates these notions::
 
@@ -3862,18 +3882,21 @@ symbol defined by the rule, while in the latter case the '\ ``,``\ ' operator
 is actually declared in the prelude and thus imported from the global
 namespace.
 
-As an additional safety measure against missing or mistyped symbols, the
-interpreter provides the option :option:`-w` (see `Invoking Pure`_) to check
-your scripts for non-defining uses of undeclared unqualified function
-symbols. For instance::
+The same rules of lookup also apply to type tags on the left-hand side of an
+equation, but in this case the interpreter will look specifically for type
+symbols, avoiding any other kinds of symbols which might be visible in the
+same context. Thus, in the following example, the type tag ``bar`` is
+correctly resolved to ``bar::bar``, even though the (function) symbol
+``foo::bar`` is visible at this point::
 
-  $ pure -w
-  > puts "bla"; // missing import of system module
-  <stdin>, line 1: warning: implicit declaration of 'puts'
-  puts "bla"
-
-For legitimate uses (such as forward uses of a symbol which is defined later),
-you can make these warnings go away by declaring the symbol before using it.
+  > namespace bar;
+  > type bar;
+  > namespace foo;
+  > public bar;
+  > using namespace bar;
+  > foo x::bar = bar x;
+  > show foo::foo
+  foo::foo x :: bar::bar = foo::bar x;
 
 Note that special operator (and nonfix) symbols *always* require an explicit
 declaration. This works as already discussed in the `Symbol Declarations`_
