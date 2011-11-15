@@ -62,8 +62,16 @@ class symtable {
   int32_t fno;
   map<string, symbol> tab;
   vector<symbol*> rtab;
-  symbol* lookup_p(const char *s);
-  symbol* lookup_p(const char *s, symbol*& cache);
+  symbol* lookup_p(const char *s)
+  {
+    int count;
+    return lookup_p(s, count);
+  }
+  symbol* lookup_p(const char *s, symbol*& cache)
+  {
+    if (!cache) cache = lookup_p(s);
+    return cache;
+  }
   symbol* lookup_p(const char *s, int& count);
   symbol* sym_p(const char *s, symbol*& cache, bool priv = false);
   symbol* sym_p(const char *s, symbol*& cache,
@@ -168,6 +176,63 @@ public:
   // look up an existing symbol
   symbol* lookup(const char *s);
   symbol* lookup(const string& s) { return lookup(s.c_str()); }
+  template <class T>
+  /* Same as above, but look for a symbol in a specific class. Note that
+     stupid C++ forces us to include this right here in the header file,
+     instead of symtable.cc where it belongs, so that the template method is
+     properly instantiated. */
+  symbol* lookup_restricted(const char *s, const map<int32_t,T>& syms)
+  {
+    if (strncmp(s, "::", 2) == 0) {
+      // absolute qualifier
+      symbol *sym = lookup_p(s+2, count);
+      if (sym && syms.find(sym->f) == syms.end())
+	sym = 0;
+      return sym;
+    }
+    int priv;
+    symbol *default_sym = lookup_p(s, priv), *search_sym = 0;
+    if (default_sym && syms.find(default_sym->f) == syms.end())
+      default_sym = 0;
+    count = 0;
+    if (strcmp(s, "_") == 0) {
+      // anonymous variable is always taken as is
+      count = default_sym!=0;
+      return default_sym;
+    }
+    // first look for a symbol in the current namespace
+    if (!current_namespace->empty()) {
+      string id = (*current_namespace)+"::"+s;
+      symbol *sym = lookup_p(id.c_str());
+      if (sym && syms.find(sym->f) != syms.end()) {
+	count = 1;
+	return sym;
+      }
+    }
+    // next scan the search namespaces; if the symbol is ambiguous, bail out
+    // with an error here
+    for (map< string, set<int32_t> >::iterator it = search_namespaces->begin(),
+	   end = search_namespaces->end(); it != end; it++) {
+      string id = it->first+"::"+s;
+      int priv2;
+      symbol *sym = lookup_p(id.c_str(), priv2);
+      if (sym && syms.find(sym->f) == syms.end())
+	sym = 0;
+      if (sym && !it->second.empty() &&
+	  it->second.find(sym->f) == it->second.end())
+	continue;
+      if (!sym) priv |= priv2;
+      if (sym && ++count > 1) return 0;
+      if (!search_sym) search_sym = sym;
+    }
+    if (search_sym) return search_sym;
+    // fall back to a symbol in the default namespace, if any
+    count = (default_sym!=0) | priv;
+    return default_sym;
+  }
+  template <class T>
+  symbol* lookup_restricted(const string& s, const map<int32_t,T>& syms)
+  { return lookup_restricted<T>(s.c_str(), syms); }
   // get a symbol by its name, create if necessary
   symbol* sym(const char *s, bool priv = false);
   symbol* sym(const char *s, prec_t prec, fix_t fix, bool priv = false);

@@ -224,19 +224,6 @@ inline symbol* symtable::lookup_p(const char *s, int& count)
     return &it->second;
 }
 
-inline symbol* symtable::lookup_p(const char *s)
-{
-  int count;
-  return lookup_p(s, count);
-}
-
-inline symbol* symtable::lookup_p(const char *s, symbol*& cache)
-{
-  if (!cache)
-    cache = lookup_p(s);
-  return cache;
-}
-
 symbol* symtable::sym_p(const char *s, symbol*& cache, bool priv)
 {
   if (cache) return cache;

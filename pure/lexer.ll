@@ -53,6 +53,7 @@ static string pstring(const char *s);
 static string format_namespace(const string& name);
 static bool find_namespace(interpreter& interp, const string& name);
 static int32_t checktag(const char *s);
+static int32_t maketag(const char *s);
 static bool checkint(const char *s, string& msg);
 static string xsym(const string& ns, const string& s);
 
@@ -752,7 +753,8 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
   int32_t tag = might_be_tag && checktag(id.c_str());
   if (!find_namespace(interp, qualid)) {
     // not a valid namespace prefix
-    if (tag && find_namespace(interp, qual)) {
+    if (might_be_tag && find_namespace(interp, qual) &&
+	(tag || (tag = maketag(id.c_str())))) {
       // we can still parse this as an identifier with a type tag
       yyless(k); yylloc_update(); qualid = yytext; BEGIN(xtag);
       //check(*yylloc, yytext, false);
@@ -822,7 +824,7 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
  parse_tag:
   char *s = yytext+2;
   while (isspace(*s)) s++;
-  yylval->ival = checktag(s);
+  yylval->ival = maketag(s);
   if (yylval->ival)
     return token::TAG;
   else {
@@ -1300,17 +1302,8 @@ static void check(const yy::location& l, const char* s, bool decl)
 }
 #endif
 
-static int32_t checktag(const char *s)
+static int32_t checkbuiltintag(const char *s)
 {
-  int32_t ret = 0;
-  bool qual = strstr(s, "::") != 0;
-  interpreter& interp = *interpreter::g_interp;
-  symbol* sym = interp.symtab.lookup(s);
-  if (sym && sym->prec == PREC_MAX && sym->fix != outfix) ret = sym->f;
-  if (qual) return ret; // qualified symbol, must be declared already
-  // We have an unqualified symbol. Either it is one of the built-in type
-  // tags, or some other symbol (if necessary, we create the symbol on the fly
-  // in the global namespace).
   if (strcmp(s, "int") == 0)
     return EXPR::INT;
   else if (strcmp(s, "bigint") == 0)
@@ -1323,18 +1316,56 @@ static int32_t checktag(const char *s)
     return EXPR::PTR;
   else if (strcmp(s, "matrix") == 0)
     return EXPR::MATRIX;
+  else
+    return 0;
+}
+
+static int32_t checktag(const char *s)
+{
+  int32_t ret = 0;
+  bool qual = strstr(s, "::") != 0;
+  if (qual && strncmp(s, "::", 2) == 0) {
+    // Check for absolutely qualified builtin tags.
+    int32_t builtin_tag = checkbuiltintag(s+2);
+    if (builtin_tag) return builtin_tag;
+  }
+  interpreter& interp = *interpreter::g_interp;
+  symbol* sym = interp.symtab.lookup(s);
+  if (sym && sym->prec == PREC_MAX && sym->fix != outfix) ret = sym->f;
+  if (qual) return ret; // qualified symbol, must be declared already
+  // We have an unqualified symbol. Check whether it is one of the built-in
+  // type tags.
+  int32_t builtin_tag = checkbuiltintag(s);
+  if (builtin_tag)
+    return builtin_tag;
   else if (ret && interp.typeenv.find(ret) != interp.typeenv.end())
     // The symbol was found and is declared as a type symbol. Return it.
     return ret;
   else {
-    // The symbol wasn't found, or it wasn't declared as a type symbol. Return
-    // a symbol from the global namespace.
-    sym = interp.symtab.sym(string("::")+s);
-    if (sym)
-      return sym->f;
-    else
-      return 0;
+    // The symbol wasn't found, or it wasn't declared as a type symbol. Check
+    // whether a type symbol of this name is visible here.
+    sym = interp.symtab.lookup_restricted(s, interp.typeenv);
+    if (sym) return sym->f;
+    return 0;
   }
+}
+
+static int32_t maketag(const char *s)
+{
+  int32_t ret = checktag(s);
+  bool qual = strstr(s, "::") != 0;
+  if (qual || ret) return ret;
+  // The (unqualified) symbol wasn't found, or it wasn't declared as a type
+  // symbol. Fall back to a symbol in the current namespace. NOTE: We really
+  // have to use the fully qualified name here, as there may be other
+  // (non-type symbol) instances of this symbol visible at this point.
+  interpreter& interp = *interpreter::g_interp;
+  string qualname = *interp.symtab.current_namespace+"::"+s;
+  if (!interp.symtab.current_namespace->empty())
+    qualname.insert(0, "::");
+  symbol* sym = interp.symtab.sym(qualname);
+  if (sym) return sym->f;
+  return 0;
 }
 
 static inline char upcase(char c)
