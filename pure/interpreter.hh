@@ -538,11 +538,15 @@ public:
   // Additional directories to search for sources and libraries.
   list<string> includedirs, librarydirs;
 
-  // User-defined options (option, nooption, enable and disable pragmas).
+  // User-defined options (conditional compilation pragmas).
+private:
+  map<string,bool&> codegen_options;
   map<string,bool> source_options;
+public:
   int source_level, skip_level;
   bitset<64> else_stack;
   bool is_enabled(const string& optname);
+  void enable(const string& optname, bool flag);
 
   // Interpreter state. For internal use only.
   int32_t last_tag;  // pointer tags

@@ -3754,7 +3754,7 @@ pure_interp *pure_create_interp(int argc, char *argv[])
 	  s = *args;
 	} else
 	  s.erase(0, 1);
-	interp.source_options[s] = true;
+	interp.enable(s, true);
       } else if (strcmp(*args, "--disable") == 0 ||
 		 strncmp(*args, "--disable=", 10) == 0) {
 	string s = string(*args).substr(9);
@@ -3767,7 +3767,7 @@ pure_interp *pure_create_interp(int argc, char *argv[])
 	  s = *args;
 	} else
 	  s.erase(0, 1);
-	interp.source_options[s] = false;
+	interp.enable(s, false);
       } else if (strncmp(*args, "-o", 2) == 0) {
 	string s = string(*args).substr(2);
 	if (s.empty()) {

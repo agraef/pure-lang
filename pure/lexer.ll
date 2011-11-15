@@ -238,7 +238,7 @@ blank  [ \t\f\v\r]
   s = t;
   while (*t && !isspace(*t)) t++;
   string sym = string(s, t-s);
-  interp.source_options[sym] = true;
+  interp.enable(sym, true);
   yylloc->step();
 }
 ^"#!"[ \t]*"--disable"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
@@ -248,7 +248,7 @@ blank  [ \t\f\v\r]
   s = t;
   while (*t && !isspace(*t)) t++;
   string sym = string(s, t-s);
-  interp.source_options[sym] = false;
+  interp.enable(sym, false);
   yylloc->step();
 }
 ^"#!"[ \t]*"--if"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
@@ -332,12 +332,12 @@ blank  [ \t\f\v\r]
     interp.folding = flag;
   } else if (opt == "warn") {
     interp.compat = flag;
+  } else if (opt == "warn2") {
+    interp.compat2 = flag;
 #if USE_BIGINT_PRAGMA
   } else if (opt == "bigint") {
     interp.bigints = flag;
 #endif
-  } else if (opt == "warn2") {
-    interp.compat2 = flag;
   } else {
     interp.warning(*yylloc, "warning: unrecognized pragma '--"+opt0+"'");
   }

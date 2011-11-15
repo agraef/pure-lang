@@ -156,6 +156,15 @@ void interpreter::init()
   }
 
   source_options[HOST] = true;
+  codegen_options.insert(pair<string,bool&>("checks", checks));
+  codegen_options.insert(pair<string,bool&>("const", consts));
+  codegen_options.insert(pair<string,bool&>("fold", folding));
+  codegen_options.insert(pair<string,bool&>("tc", use_fastcc));
+  codegen_options.insert(pair<string,bool&>("warn", compat));
+  codegen_options.insert(pair<string,bool&>("warn2", compat2));
+#if USE_BIGINT_PRAGMA
+  codegen_options.insert(pair<string,bool&>("bigint", bigints));
+#endif
 
   nwrapped = 0; fptr = 0;
   sstk_sz = 0; sstk_cap = 0x10000; // 64K
@@ -1293,6 +1302,8 @@ static string searchlib(const string& srcdir, const string& libdir,
 
 bool interpreter::is_enabled(const string& optname)
 {
+  map<string,bool&>::iterator jt = codegen_options.find(optname);
+  if (jt != codegen_options.end()) return jt->second;
   map<string,bool>::iterator it = source_options.find(optname);
   if (it != source_options.end()) return it->second;
   // Check the environment for a default.
@@ -1339,6 +1350,15 @@ bool interpreter::is_enabled(const string& optname)
   // Cache the value.
   source_options[optname] = flag;
   return flag;
+}
+
+void interpreter::enable(const string& optname, bool flag)
+{
+  map<string,bool&>::iterator it = codegen_options.find(optname);
+  if (it != codegen_options.end())
+    it->second = flag;
+  else
+    source_options[optname] = flag;
 }
 
 // Scoped namespaces (Pure 0.43+).
