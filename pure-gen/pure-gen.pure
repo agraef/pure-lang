@@ -27,7 +27,7 @@ let copyright = sprintf
   version;
 
 // Set up PATH so that we pick up the proper C preprocessor.
-#! --if mingw
+#! --if *-mingw32
 extern int _putenv(void*) = putenv;
 #! --else
 extern int putenv(void*);
@@ -35,7 +35,7 @@ extern int putenv(void*);
 
 null env ||
   (putenv $ byte_cstring $ sprintf
-#! --if mingw
+#! --if *-mingw32
    "PATH=%s;%s"
 #! --else
    "PATH=%s:%s"

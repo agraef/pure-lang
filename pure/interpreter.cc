@@ -155,6 +155,8 @@ void interpreter::init()
     g_init = true;
   }
 
+  source_options[HOST] = true;
+
   nwrapped = 0; fptr = 0;
   sstk_sz = 0; sstk_cap = 0x10000; // 64K
   sstk = (pure_expr**)malloc(sstk_cap*sizeof(pure_expr*));
@@ -1286,6 +1288,7 @@ static string searchlib(const string& srcdir, const string& libdir,
 // Source options (Pure 0.49+).
 
 #include <ctype.h>
+#include <fnmatch.h>
 #include <algorithm>
 
 bool interpreter::is_enabled(const string& optname)
@@ -1295,20 +1298,25 @@ bool interpreter::is_enabled(const string& optname)
   // Check the environment for a default.
   string envname = optname;
   std::transform(envname.begin(), envname.end(), envname.begin(), ::toupper);
-  envname.insert(0, "PURE_NOOPTION_");
+  envname.insert(0, "PURE_NO");
   bool flag = getenv(envname.c_str()) == NULL;
   if (flag) {
+    bool glob = optname.find_first_of("*?[]") != string::npos;
+    if (glob) {
+      // The symbol is actually a glob pattern, query the host triplet.
+      flag = fnmatch(optname.c_str(), HOST, 0)==0;
+      // We don't cache the result here.
+      return flag;
+    }
     // Predefined options.
-    string version = PACKAGE_VERSION, host = HOST;
     if (optname == "compiled") // batch-compiled
       flag = compiling;
-    else if (optname == "mingw") // host is mingw/Windows
-      flag = host.find("mingw") != string::npos;
     else if (optname.compare(0, strlen("version-"), "version-") == 0) {
       // Version check. The rest of the option name has the format
       // major.minor[+-]. '+' or '-' means that the version must be at least
       // or at most the given version, respectively; otherwise we're looking
       // for exactly the given version.
+      string version = PACKAGE_VERSION;
       string vers = optname.substr(strlen("version-"));
       int act_major = 0, act_minor = 0, want_major = 0, want_minor = 0;
       char mode = 0;
