@@ -108,6 +108,9 @@ public:
   // assignment
   px_handle& operator=(const px_handle& pxh);
 
+  // operator conversion to px*
+  operator px*() const { return pxp_; }
+
   // destructor - not virtural
   ~px_handle(){px_free(pxp_);} //not base class (avoid vf table)
 
@@ -119,6 +122,7 @@ public:
 
   // 
   friend std::ostream& operator<<(std::ostream& os, const px_handle& pxh);
+
 private:
   px* pxp_;
 };
@@ -264,6 +268,11 @@ extern "C" {
   int  stlset_tag();
   int  stlmmap_tag();
   int  stlmset_tag();
+
+  int  stlmap_iter_tag();
+  int  stlset_iter_tag();
+  int  stlmmap_iter_tag();
+  int  stlmset_iter_tag();
 
 }
 

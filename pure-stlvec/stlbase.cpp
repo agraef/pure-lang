@@ -390,6 +390,32 @@ int stlmset_tag()
   return t;
 }
 
+int stlmap_iter_tag() 
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("stlmap_iter*");
+  return t;
+}
+
+int stlset_iter_tag() 
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("stlset_iter*");
+  return t;
+}
+int stlmmap_iter_tag() 
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("stlmmap_iter*");
+  return t;
+}
+int stlmset_iter_tag() 
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("stlmset_iter*");
+  return t;
+}
+
 
 /*** Errors ********************************************************/
 

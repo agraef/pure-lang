@@ -18,6 +18,9 @@ using "lib:stlcontainer";
 
 namespace stl;
 
+nonfix stlnothing;
+stlnothing = 'stlnothing;
+
 // Functions for testing and debugging
 extern int stl_refc(expr*) = refc;
 extern void stl_set_px_trace(bool enable) = set_px_trace;
@@ -70,3 +73,11 @@ const stlend = stlend_sym;
 
 nonfix stlbeg;    // to make stlbeg and stlend usable as beg and end markers
 nonfix stlend;    // in C++ style looping over a stldict's contents using 
+
+
+/*** Permit other STL containers to make stlvecs *********************/
+
+private extern void  sv_delete(void* vec);
+private extern void* sv_make_empty();
+private emptystlvec;
+emptystlvec = STLVEC (sentry sv_delete (sv_make_empty));
