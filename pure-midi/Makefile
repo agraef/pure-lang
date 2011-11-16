@@ -27,6 +27,7 @@ ifneq "$(findstring -mingw,$(host))" ""
 # Windows
 EXE = .exe
 DLL = .dll
+windows = true
 endif
 ifneq "$(findstring -darwin,$(host))" ""
 # OSX (untested)
@@ -83,9 +84,19 @@ generate:
 	make portmidi.pure
 
 portmidi.pure: portmidi.h porttime.h pmdev.h
+ifdef windows
+	echo 'using "lib:portmidi";' > $@
 	pure-gen -m Pm -p Pm -sportmidi.h:: portmidi.h -lpmlib -o $@
+else
+	pure-gen -m Pm -p Pm -sportmidi.h:: portmidi.h -lpmlib -o $@
+endif
 	pure-gen -N -m Pt -p Pt -sporttime.h:: porttime.h -o $@
 	pure-gen -N -m midi -p pm -spmdev.h:: pmdev.h -o $@
+ifdef windows
+	mv $@ $@.tmp
+	sed -e "s?extern int Pm_Synchronize?//extern int Pm_Synchronize?" < $@.tmp > $@
+	rm -f $@.tmp
+endif
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
