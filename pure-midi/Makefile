@@ -86,7 +86,7 @@ generate:
 portmidi.pure: portmidi.h porttime.h pmdev.h
 ifdef windows
 	echo 'using "lib:portmidi";' > $@
-	pure-gen -m Pm -p Pm -sportmidi.h:: portmidi.h -lpmlib -o $@
+	pure-gen -N -m Pm -p Pm -sportmidi.h:: portmidi.h -lpmlib -o $@
 else
 	pure-gen -m Pm -p Pm -sportmidi.h:: portmidi.h -lpmlib -o $@
 endif
