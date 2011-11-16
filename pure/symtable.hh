@@ -72,7 +72,15 @@ class symtable {
     if (!cache) cache = lookup_p(s);
     return cache;
   }
-  symbol* lookup_p(const char *s, int& count);
+  symbol* lookup_p(const char *s, int& count)
+  {
+    map<string, symbol>::iterator it = tab.find(s);
+    count = it != tab.end();
+    if (!count || !visible(it->second))
+      return 0;
+    else
+      return &it->second;
+  }
   symbol* sym_p(const char *s, symbol*& cache, bool priv = false);
   symbol* sym_p(const char *s, symbol*& cache,
 		prec_t prec, fix_t fix, bool priv = false);

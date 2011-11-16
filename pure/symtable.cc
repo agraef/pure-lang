@@ -214,16 +214,6 @@ void symtable::restore(const string& s)
 /* These operations are used internally to look up and create symbols exactly
    as specified (no namespace search). */
 
-inline symbol* symtable::lookup_p(const char *s, int& count)
-{
-  map<string, symbol>::iterator it = tab.find(s);
-  count = it != tab.end();
-  if (!count || !visible(it->second))
-    return 0;
-  else
-    return &it->second;
-}
-
 symbol* symtable::sym_p(const char *s, symbol*& cache, bool priv)
 {
   if (cache) return cache;
