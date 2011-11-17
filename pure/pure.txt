@@ -8389,50 +8389,122 @@ save you some time and trouble, especially when testing programs which are to
 be executed mostly in batch mode. Future versions of the interpreter might
 also make good use of this pragma for static checks and optimization purposes.
 
+Stack Size and Tail Recursion
+-----------------------------
+
+Pure programs may need a considerable amount of stack space to handle
+recursive function and macro calls, and the interpreter itself also takes its
+toll. So you should configure your system accordingly (8 MB of stack space is
+recommended for 32 bit systems, systems with 64 bit pointers probably need
+more). If the :envvar:`PURE_STACK` environment variable is defined, the
+interpreter performs advisory stack checks on function entry and raises a Pure
+exception if the current stack size exceeds the given limit. The value of
+:envvar:`PURE_STACK` should be the maximum stack size in kilobytes. Please
+note that this is only an advisory limit which does not change the program's
+physical stack size.  Your operating system should supply you with a command
+such as ulimit(1) to set the real process stack size. (The
+:envvar:`PURE_STACK` limit should be a little less than that, to account for
+temporary stack usage by the interpreter itself.)
+
+Like Scheme, Pure does proper tail calls (if LLVM provides that feature on the
+platform at hand), so tail-recursive definitions should work fine in limited
+stack space. For instance, the following little program will loop forever if
+your platform supports the required optimizations::
+
+  loop = loop;
+  loop;
+
+This also works if your definition involves function parameters, guards and
+multiple equations, of course. Moreover, conditional expressions
+(:keyword:`if`-:keyword:`then`-:keyword:`else`) are tail-recursive in both
+branches, and the logical operators :func:`&&/special` and :func:`||/special`,
+as well as the sequence operator :func:`$$`, are tail-recursive in their
+second operand.
+
+In addition, the Pure compiler also does a specialized form of tail recursion
+optimization for type definition rules. Due to the special way in which type
+tags are processed, however, the amount of optimization performed in this case
+is somewhat limited; see `Recursive Types`_ below.
+
+Finally, note that tail call optimization is *always* disabled if the debugger
+is enabled (-g). This makes it much easier to debug programs, but means that
+you may run into stack overflows when debugging a program that does deep tail
+recursion.
+
 Recursive Types
 ---------------
 
 Using the facilities described in `Type Rules`_, type tags can easily be
-defined in a recursive fashion. For instance, the following list type is
-defined recursively, so that it only matches proper lists which have list
+defined in a recursive fashion. In simple cases, the compiler can optimize
+such definitions so that they are executed in constant stack space, just like
+ordinary tail-recursive functions. The main difference here is that the
+recursion already takes place during *matching*, i.e., on the *left-hand* side
+of a rule, since this is where type predicates are normally invoked. This also
+limits the amount of tail recursion optimization available on type rules, as
+detailed below.
+
+For instance, the following :type:`rlist/type` type from the prelude is
+defined in such a way that it only matches "proper" lists which have list
 values in all their tails (and are thus terminated by the empty list). ::
 
-  type prlist [] | prlist (x:xs::prlist);
+  type rlist [] | rlist (x : xs::rlist);
 
-This is a perfectly legal type definition, but note that the current
-implementation doesn't do any tail call optimization for such type predicates.
-(Technically, type tags are just additional guards on an equation which are
-executed recursively before evaluating the right-hand side of an equation.)
-Therefore you'll run into stack overflows when trying to apply this definition
-to big list values::
+Note that this type definition recurses in the *last* :type:`rlist/type` tag
+of the *last* rule of the type. If tail calls are supported by the host
+implementation (cf. `Stack Size and Tail Recursion`_), the compiler makes sure
+that such definitions are safe to use even if the recursion may go arbitrarily
+deep. For instance::
 
-  > typep prlist (1..300000);
-  <stdin>, line 2: unhandled exception 'stack_fault' while evaluating
-  'typep prlist (1..300000)'
-
-It is possible to work around this by implementing the actual type check as an
-ordinary predicate, since those *will* be optimized to run in constant stack
-space if they are tail-recursive (cf. `Stack Size and Tail Recursion`_). For
-instance, here is how the proper list type :type:`rlist/type` is actually
-implemented in the prelude::
-
-  type rlist [];
-  type rlist (_:xs) = true if check xs with
-    check [] = true;
-    check (_:xs) = check xs;
-    check _ = false;
-  end;
-
-This definition works just fine with big list values::
-
-  > typep rlist (1..300000);
+  > typep rlist (1..10000000);
   1
 
-However, there's yet another important issue with recursive type definitions,
-namely the *time* it takes to check the definition. In the above example,
-checking :type:`rlist/type` takes O(n) time, where n is the size of the
-list. This will have dire consequences if you do this check repeatedly while
-traversing a list, as in the following ``sum`` function::
+The precise rules for tail-recursive type definitions are as follows:
+
+* The *last* rule of a type has a trivial right-hand side (either just
+  :cons:`true` or missing) and is *directly* recursive in the *last* type tag
+  on the left-hand side of the rule.
+
+* The rule may not contain any non-linearities since these are always checked
+  *after* the type guards for efficiency.
+
+While these are rather strict requirements, they work reasonably well for
+simple recursive types such as the recursive list type above. More general
+recursion in types will not be optimized by the compiler, however, and may
+thus be subject to stack overflows. For instance, consider the following
+binary tree type::
+
+  nonfix nil;
+  type tree nil | tree (bin x l::tree r::tree);
+
+This is a perfectly legal type definition, and the recursion in the last
+``tree`` tag of the second rule will indeed be optimized away. However, the
+second rule also recurses on the *first* ``tree`` tag which will cause trouble
+if there are long chains of left branches in a tree. For instance::
+
+  > mktree xs = foldr (\x t->bin x t nil) nil xs;
+  > mktree [];
+  nil
+  > mktree [1,2,3];
+  bin 1 (bin 2 (bin 3 nil nil) nil) nil
+  > typep tree (mktree []);
+  1
+  > typep tree (mktree [1,2,3]);
+  1
+  > typep tree (mktree (1..10000));
+  <stdin>, line 6: unhandled exception 'stack_fault' while evaluating
+  'typep tree (mktree (1..10000))'
+
+To avoid deep recursion in such cases it is necessary to implement the type
+using a general predicate, which handles the recursion by transforming it into
+a tail-recursive form using a technique like `continuation passing`_.
+
+.. _continuation passing: http://en.wikipedia.org/wiki/Continuation-passing_style
+
+There's yet another important issue with recursive type definitions, namely
+the *time* it takes to check the definition. In the above example, checking
+:type:`rlist/type` takes O(n) time, where n is the size of the list. This will
+have dire consequences if you do this check repeatedly while traversing a
+list, as in the following ``sum`` function::
 
   sum xs::rlist = if null xs then 0 else head xs+sum (tail xs);
 
@@ -8471,7 +8543,7 @@ somewhat prettier normal form instead::
 
   > clear sum
   > sum xs::rlist = sum xs with
-  >  sum xs = if null xs then 0 else head xs+sum (tail xs);
+  >   sum xs = if null xs then 0 else head xs+sum (tail xs);
   > end;
   > sum (1:2:3);
   sum (1:2:3)
@@ -8844,43 +8916,6 @@ file and read it back with ``run`` later, then you'll get the wrong
 definition. This is an outright bug in the expression printer which will
 hopefully be fixed some time. But for the time being you will have to correct
 such glitches manually.
-
-Stack Size and Tail Recursion
------------------------------
-
-Pure programs may need a considerable amount of stack space to handle
-recursive function and macro calls, and the interpreter itself also takes its
-toll. So you should configure your system accordingly (8 MB of stack space is
-recommended for 32 bit systems, systems with 64 bit pointers probably need
-more). If the :envvar:`PURE_STACK` environment variable is defined, the
-interpreter performs advisory stack checks on function entry and raises a Pure
-exception if the current stack size exceeds the given limit. The value of
-:envvar:`PURE_STACK` should be the maximum stack size in kilobytes. Please
-note that this is only an advisory limit which does not change the program's
-physical stack size.  Your operating system should supply you with a command
-such as ulimit(1) to set the real process stack size. (The
-:envvar:`PURE_STACK` limit should be a little less than that, to account for
-temporary stack usage by the interpreter itself.)
-
-Like Scheme, Pure does proper tail calls (if LLVM provides that feature on the
-platform at hand), so tail-recursive definitions should work fine in limited
-stack space. For instance, the following little program will loop forever if
-your platform supports the required optimizations::
-
-  loop = loop;
-  loop;
-
-This also works if your definition involves function parameters, guards and
-multiple equations, of course. Moreover, conditional expressions
-(:keyword:`if`-:keyword:`then`-:keyword:`else`) are tail-recursive in both
-branches, and the logical operators :func:`&&/special` and :func:`||/special`,
-as well as the sequence operator :func:`$$`, are tail-recursive in their
-second operand.
-
-Also note that tail call optimization is *always* disabled if the debugger is
-enabled (-g). This makes it much easier to debug programs, but means that you
-may run into stack overflows when debugging a program that does deep tail
-recursion.
 
 Handling of Asynchronous Signals
 --------------------------------

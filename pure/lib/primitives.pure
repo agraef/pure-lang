@@ -1119,15 +1119,10 @@ applp x		= typep ('appl) x;
 listp x		= typep ('list) x;
 tuplep x	= typep ('tuple) x;
 
-/* Recursive a.k.a. proper lists. We go to some lengths here to make this
-   tail-recursive and as fast as possible. */
+/* Recursive a.k.a. proper lists. Make sure that the rules are in the given
+   order so that the definition is tail-recursive. */
 
-type rlist [];
-type rlist (_:xs) = true if check xs with
-  check [] = true;
-  check (_:xs) = check xs;
-  check _ = false;
-end;
+type rlist [] | rlist (_:_::rlist);
 
 rlistp x	= typep ('rlist) x;
 

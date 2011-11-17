@@ -14099,7 +14099,7 @@ Function *interpreter::fun_prolog(string name)
 	symtab.sym(f.tag).prec < PREC_MAX || symtab.sym(f.tag).fix == outfix)
       scope = Function::InternalLinkage;
 #if USE_FASTCC
-    if (use_fastcc && (f.local || (!is_init(name) && !is_type(name))))
+    if (use_fastcc && (f.local || !is_init(name)))
       cc = CallingConv::Fast;
 #endif
     string pure_name = name;
@@ -14956,6 +14956,35 @@ void interpreter::complex_match(matcher *pm, const list<Value*>& xs, state *s,
    for the guard (if any) and execute the code for the first rule with a guard
    returning true. */
 
+#if USE_FASTCC
+
+/* Check for a tail-recursive type definition. At present, these are only
+   recognized if the *last* rule of a type has a trivial rhs and is *directly*
+   recursive in the *last* type guard on the lhs of the rule. Also, the rule
+   may not contain any non-linearities since these are always checked *after*
+   the type guards for efficiency. While these are rather strict limitations,
+   they work reasonably well for simple recursive types such as the recursive
+   list type. More general schemes are conceivable, but only at the cost of
+   substantial overhead and they're probably not worth the effort anyway. */
+
+static bool have_tail_guard(matcher *pm, state *s, int32_t tag)
+{
+  const rulev& rules = pm->r;
+  const ruleml& rl = s->r;
+  if (rl.empty()) return false;
+  rulem r = rl.back();
+  const rule& rr = rules[r];
+  vguardl::const_reverse_iterator last = rr.vi.guards.rbegin(),
+    rend = rr.vi.guards.rend();
+  int32_t ival;
+  return last != rend &&
+    rr.qual.is_null() && !rr.rhs.is_guarded() &&
+    rr.rhs.is_int(ival) && ival &&
+    last->ttag == tag;
+}
+
+#endif
+
 void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
 			    set<rulem>& reduced, const list<Value*>& tmps)
 {
@@ -14971,6 +15000,12 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
   assert(f.fmap.idx == 0);
   BasicBlock* rulebb = basic_block(mklabel("rule.state", s->s, rl.front()));
   f.builder.CreateBr(rulebb);
+#if USE_FASTCC
+  const bool have_tail = !debugging && use_fastcc && is_type(f.name) &&
+    have_tail_guard(pm, s, f.tag);
+#else
+  const bool have_tail = false;
+#endif
   while (r != rl.end()) {
     const rule& rr = rules[*r];
     reduced.insert(*r);
@@ -14985,10 +15020,15 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
       nextbb = basic_block(mklabel("rule.state", s->s, *next_r));
     else
       nextbb = failedbb;
+    bool tail = have_tail && nextbb == failedbb && rr.vi.eqns.empty();
     if (!rr.vi.guards.empty()) {
       // verify guards
       for (vguardl::const_iterator it = rr.vi.guards.begin(),
-	     end = rr.vi.guards.end(); it != end; ++it) {
+	     end = rr.vi.guards.end(); it != end; ) {
+	vguardl::const_iterator next_it = it;
+	// Skip the last guard in a tail-recursive type definition. We'll
+	// handle it below at the end of the code for this state.
+	if (++next_it == end && tail) break;
 	BasicBlock *checkedbb = basic_block("typechecked");
 	vector<Value*> args(2);
 	args[0] = SInt(it->ttag);
@@ -14999,6 +15039,7 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
 	f.builder.CreateCondBr(check, checkedbb, nextbb);
 	f.f->getBasicBlockList().push_back(checkedbb);
 	f.builder.SetInsertPoint(checkedbb);
+	it = next_it;
       }
     }
     if (!rr.vi.eqns.empty()) {
@@ -15037,7 +15078,9 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
     }
     Value *retv = 0, *condv = 0;
     r = next_r;
-    if (!rr.qual.is_null()) {
+    if (tail)
+      ; // handled below
+    else if (!rr.qual.is_null()) {
       // check the guard
       Value *iv = 0;
       if (rr.qual.ttag() == EXPR::INT)
@@ -15088,6 +15131,16 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
       }
       if (rp) debug_redn(rp, retv);
       f.builder.CreateRet(retv);
+    } else if (tail) {
+      // Tail-recursive type rule. Perform a direct tail call on the rightmost
+      // type guard.
+      const vguard& last = rr.vi.guards.back();
+      Function *tailfun = globaltypes[last.ttag].f;
+      vector<Value*> argv(1);
+      assert(f.n==1 && f.m==0);
+      argv[0] = vref(last.tag, last.p);
+      f.CreateCall(module->getFunction("pure_push_arg"), argv);
+      f.CreateRet(f.CreateCall(tailfun, argv));
     } else
       toplevel_codegen(rr.rhs, rp);
     rulebb = nextbb;
