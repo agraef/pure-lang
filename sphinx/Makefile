@@ -3,7 +3,7 @@
 
 # Package name and version number:
 dist = pure-docs-$(version)
-version = 0.49
+version = 0.50
 
 # Try to guess the installation prefix:
 prefix = $(patsubst %/bin/pure,%,$(shell which pure 2>/dev/null))
