@@ -8189,7 +8189,10 @@ the forthcoming 1.0 release:
 
 Pure 0.48 moved pointer arithmetic and the regex functions into separate
 :mod:`pointers` and :mod:`regex` modules, so you now have to import these
-modules if you need this functionality.
+modules if you need this functionality. It also introduced the
+:option:`--defined <pure-pragma --defined>` pragma which lets you have
+"defined" functions in Pure which throw an exception if they can't be applied,
+e.g., because they are invoked with the wrong arguments.
 
 Pure 0.49 introduced the `conditional compilation`_ pragmas, so that simple
 version and system dependencies can now be handled in a more convenient way.
@@ -8205,6 +8208,72 @@ accepts an empty definition (just ``;`` by itself) at the toplevel only. Thus,
 in interactive usage, if the parser seems to eat away your input without doing
 anything, entering an extra semicolon or two should break the spell, putting
 you back at the toplevel where you can start typing the definition again.
+
+With and when
+-------------
+
+A common source of confusion is that Pure provides two different constructs to
+bind local function and variable symbols, respectively. This distinction is
+necessary because Pure does not segregate defined functions and constructors,
+and thus there is no magic to figure out whether an equation like ``foo x =
+y`` by itself is meant as a definition of a function ``foo`` with formal
+parameter ``x`` and return value ``y``, or a pattern binding defining the
+local variable ``x`` by matching the pattern ``foo x`` against the value of
+``y``. The :keyword:`with` construct does the former, :keyword:`when` the
+latter. (As a mnemonic, you may consider that :keyword:`when` conveys a sense
+of time, so the individual variable definitions in a :keyword:`when` clause
+are executed in order, while the function definitions in a :keyword:`with`
+clause are all done simultaneously.)
+
+Also note that :keyword:`when` clauses aren't just a means to define local
+variables, they are also Pure's main workhorse to execute a series of variable
+definitions and expressions in sequence. This offers a useful and familiar bit
+of imperative "look and feel" to Pure programmers, even though the
+:keyword:`when` clause itself works in a purely functional way. For instance,
+suppose that we'd like to define a function which opens a file, checks that
+the file was opened successfully and throws an exception otherwise, outputs a
+message to indicate which file was opened, and finally returns the contents of
+the file as a string. The easiest way to do this in Pure is as follows::
+
+  using system;
+
+  read_file name::string = s when
+    fp = fopen name "r";
+    pointerp fp || throw (sprintf "%s: %s" (name,strerror errno));
+    printf "opened file %s\n" name;
+    s = fget fp;
+  end;
+
+Another speciality is that :keyword:`with` and :keyword:`when` clauses are
+tacked on to the end of the expression they belong to. This mimics
+mathematical language and makes it easy to read and understand a definition,
+because you're told right up front *what* is to be computed, before going into
+the details of *how* the computation is performed. Unfortunately, this style
+differs considerably from other block-structured programming languages, which
+often place local definitions in front of the code they apply to. For
+instance, Haskell and ML have :keyword:`let` expressions to support that kind
+of notation. Pure doesn't offer any special syntax for this, but note that you
+can always write a :keyword:`when` or :keyword:`with` clause in the following
+style which places the "body" at the bottom::
+
+  result when
+    y = foo (x+1);
+    z = bar y;
+    result = baz z;
+  end;
+
+This can be read and written more or less like a :keyword:`let` expression,
+except that the name of the result is given explicitly at the beginning.
+However, this style doesn't really save you either if you need several
+sections with both local functions and variables. In this case you'll just
+have to bite the bullet and arrange the :keyword:`with` and :keyword:`when`
+clauses the way that Pure wants them. That is, first come the local variables
+used in the right-hand side, then the local functions needed to compute those
+variables, then maybe another section with local variables needed by those
+functions, etc. When looking at a complicated definition like this, it
+sometimes helps to read the :keyword:`with` and :keyword:`when` blocks "in
+reverse", i.e., from bottom to top, which is the order in which they will
+actually be executed.
 
 Non-Linear Patterns
 -------------------
@@ -8257,6 +8326,9 @@ at runtime. For instance::
   > case bar 99 of y@(bar x) = y,x+1; end;
   bar 99,100
 
+"Head = Function" Pitfalls
+--------------------------
+
 "As" patterns are also a useful device if you need to manipulate function
 applications in a generic way. Note that the "head = function" rule means that
 the head symbol ``f`` of an application ``f x1 ... xn`` occurring on (or
@@ -8275,14 +8347,11 @@ the function and all arguments::
   [a,b,c,d]
 
 This may seem a little awkward, but as a matter of fact the "head = function"
-rule is quite useful since it covers the common cases without forcing the
-programmer to declare "constructor" symbols (except nonfix symbols). On the
-other hand, generic rules operating on arbitrary function applications are not
-all that common, so having to "escape" a variable using the anonymous "as"
-pattern trick is a small price to pay for that convenience.
-
-"Head = Function" Pitfalls
---------------------------
+rule is quite useful the way that it is, since it covers the common cases
+without forcing the programmer to declare "constructor" symbols (except nonfix
+symbols). On the other hand, generic rules operating on arbitrary function
+applications are not all that common, so having to "escape" a variable using
+the anonymous "as" pattern trick is a small price to pay for that convenience.
 
 Sometimes you may also run into the complementary problem, i.e., to match a
 function argument against a given function. Consider this code fragment::
@@ -8449,6 +8518,49 @@ is enabled (-g). This makes it much easier to debug programs, but means that
 you may run into stack overflows when debugging a program that does deep tail
 recursion.
 
+Handling of Asynchronous Signals
+--------------------------------
+
+As described in section `Exception Handling`_, signals delivered to the
+process can be caught and handled with Pure's exception handling facilities.
+This has its limitations, however. Since Pure code cannot be executed directly
+from a C signal handler, checks for pending signals are only done on function
+entry. This means that in certain situations (such as the execution of an
+external C routine), delivery of a signal may be delayed by an arbitrary
+amount of time. Moreover, if more than one signal arrives between two
+successive signal checks, only the last one will be reported in the current
+implementation.
+
+When delivering a signal which has been remapped to a Pure exception, the
+corresponding exception handler (if any) will be invoked as usual. Further
+signals are blocked while the exception handler is being executed.
+
+A fairly typical case is that you have to handle signals in a tail-recursive
+function. This can be done with code like the following::
+
+  using system;
+
+  // Remap some common POSIX signals.
+  do (trap SIG_TRAP) [SIGHUP, SIGINT, SIGTERM];
+
+  loop = catch handler process $$ loop
+  with handler (signal k) = printf "Hey, I got signal %d.\n" k end;
+  process = sleep 1; // do something
+
+Running the above ``loop`` function enters an endless loop reporting all
+signals delivered to the process. Note that to make this work, the
+tail-recursive invocation of ``loop`` must immediately follow the
+signal-handling code, so that signals don't escape the exception handler.
+
+Of course, in a real application you'd probably want the ``loop`` function to
+carry around some data to be processed by the ``process`` routine, which then
+returns an updated value for the next iteration. This can be implemented as
+follows::
+
+  loop x = loop (catch handler (process x))
+  with handler (signal k) = printf "Hey, I got signal %d.\n" k $$ 0 end;
+  process x = printf "counting: %d\n" x $$ sleep 1 $$ x+1;
+
 Recursive Types
 ---------------
 
@@ -8478,12 +8590,12 @@ deep. For instance::
 
 The precise rules for tail-recursive type definitions are as follows:
 
-* The *last* rule of a type has a trivial right-hand side (either just
-  :cons:`true` or missing) and is *directly* recursive in the *last* type tag
-  on the left-hand side of the rule.
+* The *last* rule of the type must have a trivial right-hand side (either just
+  :cons:`true` or missing) and must be *directly* recursive in the *last* type
+  tag on the left-hand side of the rule.
 
-* The rule may not contain any non-linearities since these are always checked
-  *after* the type guards for efficiency.
+* The rule may not contain any non-linearities. (That's because these are
+  always checked *after* the type guards for efficiency.)
 
 While these are rather strict requirements, they work reasonably well for
 simple recursive types such as the recursive list type above. More general
@@ -8569,51 +8681,6 @@ somewhat prettier normal form instead::
 Thus the wrapper-worker approach also has its merits, and whether to use one
 or the other depends on the situation. Similar techniques and tradeoffs also
 apply to other recursive types such as trees.
-
-With and when
--------------
-
-A common source of confusion is that Pure provides two different constructs to
-bind local function and variable symbols, respectively. This distinction is
-necessary because Pure does not segregate defined functions and constructors,
-and thus there is no magic to figure out whether an equation like ``foo x =
-y`` by itself is meant as a definition of a function ``foo`` with formal
-parameter ``x`` and return value ``y``, or a pattern binding defining the
-local variable ``x`` by matching the pattern ``foo x`` against the value of
-``y``. The :keyword:`with` construct does the former, :keyword:`when` the
-latter. (As a mnemonic, you may consider that :keyword:`when` conveys a sense
-of time, as the individual variable definitions in a :keyword:`when` clause
-are executed in order, while the function definitions in a :keyword:`with`
-clause are all done simultaneously.)
-
-Another speciality is that :keyword:`with` and :keyword:`when` clauses are
-tacked on to the end of the expression they belong to. This mimics
-mathematical language and makes it easy to read and understand a definition in
-a "top-down" fashion.  This style differs considerably from other
-block-structured programming languages, however, which often place local
-definitions in front of the code they apply to. To grasp the operational
-meaning of such nested definitions, it can be helpful to read the nested
-scopes "in reverse" (from bottom to top). Some people also prefer to write
-their programs that way. In contrast to Haskell and ML which have
-:keyword:`let` expressions to support that kind of notation, Pure doesn't
-provide any special syntax for this. But note that you can always write
-:keyword:`when` clauses in the following style which places the "body" at the
-bottom of the clause::
-
-  result when
-    y = foo (x+1);
-    z = bar y;
-    result = baz z;
-  end;
-
-This doesn't incur any overhead, since the compiler will always eliminate the
-trivial "tail binding" for the result value. E.g., the above will compile to
-exactly the same code as::
-
-  baz z when
-    y = foo (x+1);
-    z = bar y;
-  end;
 
 Numeric Calculations
 --------------------
@@ -8934,49 +9001,6 @@ file and read it back with ``run`` later, then you'll get the wrong
 definition. This is an outright bug in the expression printer which will
 hopefully be fixed some time. But for the time being you will have to correct
 such glitches manually.
-
-Handling of Asynchronous Signals
---------------------------------
-
-As described in section `Exception Handling`_, signals delivered to the
-process can be caught and handled with Pure's exception handling facilities.
-This has its limitations, however. Since Pure code cannot be executed directly
-from a C signal handler, checks for pending signals are only done on function
-entry. This means that in certain situations (such as the execution of an
-external C routine), delivery of a signal may be delayed by an arbitrary
-amount of time. Moreover, if more than one signal arrives between two
-successive signal checks, only the last one will be reported in the current
-implementation.
-
-When delivering a signal which has been remapped to a Pure exception, the
-corresponding exception handler (if any) will be invoked as usual. Further
-signals are blocked while the exception handler is being executed.
-
-A fairly typical case is that you have to handle signals in a tail-recursive
-function. This can be done with code like the following::
-
-  using system;
-
-  // Remap some common POSIX signals.
-  do (trap SIG_TRAP) [SIGHUP, SIGINT, SIGTERM];
-
-  loop = catch handler process $$ loop
-  with handler (signal k) = printf "Hey, I got signal %d.\n" k end;
-  process = sleep 1; // do something
-
-Running the above ``loop`` function enters an endless loop reporting all
-signals delivered to the process. Note that to make this work, the
-tail-recursive invocation of ``loop`` must immediately follow the
-signal-handling code, so that signals don't escape the exception handler.
-
-Of course, in a real application you'd probably want the ``loop`` function to
-carry around some data to be processed by the ``process`` routine, which then
-returns an updated value for the next iteration. This can be implemented as
-follows::
-
-  loop x = loop (catch handler (process x))
-  with handler (signal k) = printf "Hey, I got signal %d.\n" k $$ 0 end;
-  process x = printf "counting: %d\n" x $$ sleep 1 $$ x+1;
 
 Author
 ======
