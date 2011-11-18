@@ -538,10 +538,15 @@ public:
   // Additional directories to search for sources and libraries.
   list<string> includedirs, librarydirs;
 
+  // This is set by the frontend during startup to indicate that the
+  // interpreter is running an interactive session.
+  bool interactive_mode;
+
   // User-defined options (conditional compilation pragmas).
 private:
   map<string,bool&> codegen_options;
   map<string,bool> source_options;
+  set<string> readonly_options;
 public:
   int source_level, skip_level;
   bitset<64> else_stack;

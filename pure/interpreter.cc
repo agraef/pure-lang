@@ -156,6 +156,8 @@ void interpreter::init()
   }
 
   source_options[HOST] = true;
+  codegen_options.insert(pair<string,bool&>("interactive", interactive_mode));
+  codegen_options.insert(pair<string,bool&>("debugging", debugging));
   codegen_options.insert(pair<string,bool&>("checks", checks));
   codegen_options.insert(pair<string,bool&>("const", consts));
   codegen_options.insert(pair<string,bool&>("fold", folding));
@@ -165,6 +167,8 @@ void interpreter::init()
 #if USE_BIGINT_PRAGMA
   codegen_options.insert(pair<string,bool&>("bigint", bigints));
 #endif
+  readonly_options.insert("interactive");
+  readonly_options.insert("debugging");
 
   nwrapped = 0; fptr = 0;
   sstk_sz = 0; sstk_cap = 0x10000; // 64K
@@ -736,6 +740,7 @@ interpreter::interpreter(int _argc, char **_argv)
     pic(false), strip(true), restricted(false), ttymode(false), override(false),
     stats(false), stats_mem(false), temp(0),  ps("> "), libdir(""),
     histfile("/.pure_history"), modname("pure"),
+    interactive_mode(false),
     source_level(0), skip_level(0), last_tag(0), logging(false),
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
     result(0), lastres(0), mem(0), exps(0), tmps(0), freectr(0),
@@ -758,6 +763,7 @@ interpreter::interpreter(int32_t nsyms, char *syms,
     pic(false), strip(true), restricted(true), ttymode(false), override(false),
     stats(false), stats_mem(false), temp(0), ps("> "), libdir(""),
     histfile("/.pure_history"), modname("pure"),
+    interactive_mode(false),
     source_level(0), skip_level(0), 
     /* NOTE: We use a different range of pointer tags here, so that tags
        generated at compile time won't conflict with those generated at run
@@ -1355,9 +1361,12 @@ bool interpreter::is_enabled(const string& optname)
 void interpreter::enable(const string& optname, bool flag)
 {
   map<string,bool&>::iterator it = codegen_options.find(optname);
-  if (it != codegen_options.end())
-    it->second = flag;
-  else
+  if (it != codegen_options.end()) {
+    if (readonly_options.find(optname) == readonly_options.end())
+      it->second = flag;
+    else
+      warning("warning: option '"+optname+"' is read-only");
+  } else
     source_options[optname] = flag;
 }
 

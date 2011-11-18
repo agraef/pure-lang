@@ -440,6 +440,7 @@ main(int argc, char *argv[])
   }
   // load scripts specified on the command line
   int32_t last_modno = interp.modno;
+  interp.interactive_mode = force_interactive;
   for (; *argv; ++argv)
     if (string(*argv).substr(0,2) == "-v") {
       uint8_t level = 1;
@@ -528,7 +529,8 @@ main(int argc, char *argv[])
 #endif
   // enter the interactive command loop
   interp.interactive = true;
-  if (isatty(fileno(stdin)) || force_interactive) {
+  interp.interactive_mode = isatty(fileno(stdin)) || force_interactive;
+  if (interp.interactive_mode) {
     // We're connected to a terminal (or pretend that we are), print the
     // sign-on message.
     if (!quiet) {
