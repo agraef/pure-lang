@@ -698,6 +698,9 @@ Currently, the following code generation options are recognized:
      > show bar
      bar x = 2*3*x;
 
+   The same option also determines the handling of type aliases at compile
+   time, see `Type Rules`_.
+
 .. option:: --tc
    	    --notc
 
@@ -2664,19 +2667,30 @@ following example can be found in the standard library::
 
   type integer x::int | integer x::bigint;
 
-Last but not least, a type rule can also take the form of a function definition
-without arguments.  In this case, the corresponding right-hand side may either
-be another type symbol, or any kind of closure denoting a (curried) type
-predicate. In this case the defined type is simply an `alias` for the type
-denoted on the right-hand side. This is often done, e.g., for numeric types,
-to document that they actually stand for special kinds of quantities::
+A type rule can also take the form of a function definition without arguments.
+The corresponding right-hand side may either be another type symbol, or any
+kind of closure denoting a (curried) type predicate. In this case the defined
+type is simply an `alias` for the type denoted on the right-hand side. This is
+often done, e.g., for numeric types, to document that they actually stand for
+special kinds of quantities::
 
   type speed = double;
   type size = int;
 
 Note that the definition of a type alias is always complete; there's no way to
-extend the corresponding type later. However, it's also possible to just
-specify the type name, without giving the right-hand side::
+extend the corresponding type later. Therefore type aliases are normally
+resolved at compile time, so that they incur no additional runtime cost. For
+instance::
+
+  > half x::speed = x/2;
+  > show half
+  half x::double = x/2;
+
+(If necessary, this "type folding" can also be disabled with the
+:option:`--nofold` pragma.)
+
+Finally, it's also possible to just specify the type name, without giving the
+right-hand side::
 
   type thing;
 

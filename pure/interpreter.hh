@@ -821,6 +821,7 @@ public:
   expr *mksym_expr(string *s, int32_t tag = 0);
   expr *mkas_expr(string *s, expr *x);
   expr *mksimple_expr(OpStack *stk);
+  int32_t resolve_type_tag(int32_t tag);
   expr parse_simple(list<OpEntry>::iterator& act,
 		    list<OpEntry>::iterator end,
 		    prec_t min);

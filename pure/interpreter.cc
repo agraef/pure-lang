@@ -7298,6 +7298,44 @@ expr *interpreter::mkexpr(expr *x, expr *y, expr *z)
   return u;
 }
 
+static int32_t builtin_type_tag(symtable& symtab, int32_t tag)
+{
+  if (tag == symtab.int_sym().f)
+    return EXPR::INT;
+  else if (tag == symtab.bigint_sym().f)
+    return EXPR::BIGINT;
+  else if (tag == symtab.double_sym().f)
+    return EXPR::DBL;
+  else if (tag == symtab.string_sym().f)
+    return EXPR::STR;
+  else if (tag == symtab.pointer_sym().f)
+    return EXPR::PTR;
+  else if (tag == symtab.matrix_sym().f)
+    return EXPR::MATRIX;
+  else
+    return 0;
+}
+
+int32_t interpreter::resolve_type_tag(int32_t tag)
+{
+  if (tag <= 0 || !folding) return tag;
+  env::iterator e = typeenv.find(tag);
+  int32_t ftag = tag;
+  while (e != typeenv.end() && e->second.t != env_info::none &&
+	 e->second.argc == 0 && e->second.rules &&
+	 e->second.rules->size() == 1) {
+    const rule& r = e->second.rules->front();
+    tag = ftag; ftag = r.rhs.tag();
+    if (!r.qual.is_null() || ftag <= 0) break;
+    e = typeenv.find(ftag);
+  }
+  if (ftag != tag && ftag > 0 &&
+      (ftag = builtin_type_tag(symtab, ftag)))
+    // built-in type
+    tag = ftag;
+  return tag;
+}
+
 expr *interpreter::mksym_expr(string *s, int32_t tag)
 {
   expr *x;
@@ -7349,7 +7387,7 @@ expr *interpreter::mksym_expr(string *s, int32_t tag)
     if (s->find("::") != string::npos)
       x->flags() |= EXPR::QUAL;
     // record type tag:
-    x->set_ttag(tag);
+    x->set_ttag(resolve_type_tag(tag));
   }
   delete s;
   return x;
