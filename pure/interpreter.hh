@@ -544,7 +544,7 @@ public:
 
   // User-defined options (conditional compilation pragmas).
 private:
-  map<string,bool&> codegen_options;
+  map<string,bool*> codegen_options;
   map<string,bool> source_options;
   set<string> readonly_options;
 public:

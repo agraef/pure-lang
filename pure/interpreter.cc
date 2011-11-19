@@ -156,16 +156,16 @@ void interpreter::init()
   }
 
   source_options[HOST] = true;
-  codegen_options.insert(pair<string,bool&>("interactive", interactive_mode));
-  codegen_options.insert(pair<string,bool&>("debugging", debugging));
-  codegen_options.insert(pair<string,bool&>("checks", checks));
-  codegen_options.insert(pair<string,bool&>("const", consts));
-  codegen_options.insert(pair<string,bool&>("fold", folding));
-  codegen_options.insert(pair<string,bool&>("tc", use_fastcc));
-  codegen_options.insert(pair<string,bool&>("warn", compat));
-  codegen_options.insert(pair<string,bool&>("warn2", compat2));
+  codegen_options.insert(pair<string,bool*>("interactive", &interactive_mode));
+  codegen_options.insert(pair<string,bool*>("debugging", &debugging));
+  codegen_options.insert(pair<string,bool*>("checks", &checks));
+  codegen_options.insert(pair<string,bool*>("const", &consts));
+  codegen_options.insert(pair<string,bool*>("fold", &folding));
+  codegen_options.insert(pair<string,bool*>("tc", &use_fastcc));
+  codegen_options.insert(pair<string,bool*>("warn", &compat));
+  codegen_options.insert(pair<string,bool*>("warn2", &compat2));
 #if USE_BIGINT_PRAGMA
-  codegen_options.insert(pair<string,bool&>("bigint", bigints));
+  codegen_options.insert(pair<string,bool*>("bigint", &bigints));
 #endif
   readonly_options.insert("interactive");
   readonly_options.insert("debugging");
@@ -1308,8 +1308,8 @@ static string searchlib(const string& srcdir, const string& libdir,
 
 bool interpreter::is_enabled(const string& optname)
 {
-  map<string,bool&>::iterator jt = codegen_options.find(optname);
-  if (jt != codegen_options.end()) return jt->second;
+  map<string,bool*>::iterator jt = codegen_options.find(optname);
+  if (jt != codegen_options.end()) return *jt->second;
   map<string,bool>::iterator it = source_options.find(optname);
   if (it != source_options.end()) return it->second;
   // Check the environment for a default.
@@ -1360,10 +1360,10 @@ bool interpreter::is_enabled(const string& optname)
 
 void interpreter::enable(const string& optname, bool flag)
 {
-  map<string,bool&>::iterator it = codegen_options.find(optname);
+  map<string,bool*>::iterator it = codegen_options.find(optname);
   if (it != codegen_options.end()) {
     if (readonly_options.find(optname) == readonly_options.end())
-      it->second = flag;
+      *it->second = flag;
     else
       warning("warning: option '"+optname+"' is read-only");
   } else
