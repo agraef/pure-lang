@@ -54,6 +54,8 @@
 #endif
 
 #include "parserdefs.hh"
+// Get rid of silly warnings in bison-generated position.hh.
+#pragma GCC diagnostic ignored "-Wparentheses"
 #include "parser.hh"
 
 /* Add some debugging output (disable in release version!). */

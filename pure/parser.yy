@@ -36,6 +36,9 @@
 #include "printer.hh"
 #include "util.hh"
 
+// Get rid of silly warnings in bison-generated position.hh.
+#pragma GCC diagnostic ignored "-Wparentheses"
+
 #define restricted_action(task,cleanup) \
   try { if (interp.nerrs == 0) {task;} else {cleanup;} } \
   catch (err &e) { error(yyloc, e.what()); } \
