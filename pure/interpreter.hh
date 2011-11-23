@@ -770,6 +770,13 @@ public:
   void add_type_rules(env &e, rulel *r);
   void add_type_rule(env &e, rule &r, bool check = true);
   void add_type_rule_at(env &e, rule &r, int32_t g, rulel::iterator& p);
+  map< int32_t, set<int32_t> > fun_types;
+  void add_interface_rule(env &e, int32_t tag, expr& x, bool check = true);
+  void add_interface_rule_at(env &e, int32_t tag, expr& x, exprl::iterator& p);
+  int add_sub_interface(env &e, int32_t tag, int32_t iface);
+  void finalize_interface_rules(env &e, int32_t tag, size_t count,
+				exprl::iterator *p = 0);
+  rulel *compile_interface(env &e, int32_t tag);
   void add_simple_rule(rulel &rl, rule *r);
   void add_macro_rules(rulel *r);
   void add_macro_rule(rule& r, bool check = true);
@@ -784,7 +791,7 @@ public:
   void funsubst(bool ty_check, expr x, int32_t f, int32_t g, bool b = false)
   { set<int32_t> warned; funsubstw(warned, ty_check, x, f, g, b); }
   void checkfuns(bool ty_check, rule *r);
-  void checkfuns(expr x);
+  void checkfuns(expr x, bool b = false);
   void checkvars(expr x, bool b = true);
   expr subst(const env& vars, expr x, uint8_t idx = 0);
   expr fsubst(const env& funs, expr x, uint8_t idx = 0);
@@ -807,7 +814,7 @@ public:
   expr macsval(pure_expr *x);
   bool specials_only;
   expr *macspecial(expr x, envstack& estk, uint8_t idx);
-  exprl get_args(expr x);
+  exprl get_macargs(expr x);
   expr tagsubst(expr x);
   bool parse_rulel(exprl& xs, rulel& r);
   bool parse_simple_rulel(exprl& xs, rulel& r);
@@ -854,17 +861,21 @@ public:
   expr quoted_tag(expr x, int32_t astag, int32_t ttag = 0);
   pure_expr *fun_rules(int32_t f);
   pure_expr *type_rules(int32_t f);
+  pure_expr *interface_rules(int32_t f);
   pure_expr *mac_rules(int32_t f);
   bool add_fun_rules(pure_expr *x);
   bool add_type_rules(pure_expr *x);
+  bool add_interface_rules(int32_t f, pure_expr *x);
   bool add_mac_rules(pure_expr *x);
   bool add_fun_rules_at(pure_expr *y, pure_expr *x);
   bool add_type_rules_at(pure_expr *y, pure_expr *x);
+  bool add_interface_rules_at(int32_t f, pure_expr *y, pure_expr *x);
   bool add_mac_rules_at(pure_expr *y, pure_expr *x);
   bool add_var(int32_t sym, pure_expr *x);
   bool add_const(int32_t sym, pure_expr *x);
   bool del_fun_rule(pure_expr *x);
   bool del_type_rule(pure_expr *x);
+  bool del_interface_rule(int32_t f, pure_expr *x);
   bool del_mac_rule(pure_expr *x);
   bool del_var(int32_t sym);
   bool del_const(int32_t sym);
@@ -1279,23 +1290,26 @@ private:
   void unwind(int32_t tag = 0, bool terminate = true);
   llvm::Function *fun(string name, matcher *pm, bool nodefault = false);
   llvm::Function *fun_prolog(string name);
-  void fun_body(matcher *pm, bool nodefault = false);
+  void fun_body(matcher *pm, matcher *mxs, bool nodefault = false);
   void fun_finish();
   void simple_match(llvm::Value *x, state*& s,
 		    llvm::BasicBlock *matchedbb, llvm::BasicBlock *failedbb);
-  void complex_match(matcher *pm, llvm::BasicBlock *failedbb);
+  void complex_match(matcher *pm, matcher *mxs, llvm::BasicBlock *failedbb);
   void complex_match(matcher *pm, const list<llvm::Value*>& xs, state *s,
 		     llvm::BasicBlock *failedbb, set<rulem>& reduced,
-		     const list<llvm::Value*>& tmps);
+		     const list<llvm::Value*>& tmps, bool tail);
   void complex_match(matcher *pm, const list<llvm::Value*>& xs, state *s,
-		     llvm::BasicBlock *failedbb, set<rulem>& reduced)
+		     llvm::BasicBlock *failedbb, set<rulem>& reduced,
+		     bool tail = true)
   { list<llvm::Value*> tmps;
-    complex_match(pm, xs, s, failedbb, reduced, tmps); }
+    complex_match(pm, xs, s, failedbb, reduced, tmps, tail); }
   void try_rules(matcher *pm, state *s, llvm::BasicBlock *failedbb,
-		 set<rulem>& reduced, const list<llvm::Value*>& tmps);
+		 set<rulem>& reduced, const list<llvm::Value*>& tmps,
+		 bool tail);
   void try_rules(matcher *pm, state *s, llvm::BasicBlock *failedbb,
-		 set<rulem>& reduced)
-  { list<llvm::Value*> tmps; try_rules(pm, s, failedbb, reduced, tmps); }
+		 set<rulem>& reduced, bool tail = true)
+  { list<llvm::Value*> tmps;
+    try_rules(pm, s, failedbb, reduced, tmps, tail); }
   void unwind_iffalse(llvm::Value *v);
   void unwind_iftrue(llvm::Value *v);
   llvm::Value *check_tag(llvm::Value *v, int32_t tag);

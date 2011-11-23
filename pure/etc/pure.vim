@@ -36,7 +36,7 @@ syn region   pureString	        start=+L\="+ skip=+\\\\\|\\"+ end=+"+
 syn keyword pureKeyword	infix infixl infixr outfix prefix postfix
 syn keyword pureKeyword namespace nonfix private public
 syn keyword pureKeyword	case const def else end extern if let of otherwise then
-syn keyword pureKeyword	type using when with
+syn keyword pureKeyword	type using when with interface
 syn keyword pureSpecial catch throw
 syn keyword pureType bigint bool char short int long float double
 syn keyword pureType expr string pointer void

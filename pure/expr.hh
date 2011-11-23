@@ -32,6 +32,7 @@
 #include <bitset>
 #include <list>
 #include <map>
+#include <set>
 #include <string>
 
 using namespace std;
@@ -149,10 +150,12 @@ class expr;
    collections of expressions and generic matrix data in a structured way
    which facilitates code generation. In the case of exprll, each list member
    represents a matrix "row" which is in turn described by a list of
-   "columns". */
+   "columns". Moreover, the exprset data structure is used to represent sets
+   of expressions in some contexts. */
 
 typedef list<expr> exprl;
 typedef list<exprl> exprll;
+typedef set<expr> exprset;
 
 /* Auxiliary information on local variables in a rule. */
 
@@ -390,6 +393,14 @@ public:
   { return p == x.p; }
   bool operator!= (const expr& x) const
   { return p != x.p; }
+  bool operator< (const expr& x) const
+  { return p < x.p; }
+  bool operator> (const expr& x) const
+  { return p > x.p; }
+  bool operator<= (const expr& x) const
+  { return p <= x.p; }
+  bool operator>= (const expr& x) const
+  { return p >= x.p; }
 
   // constructors
   expr(int32_t tag) :
@@ -686,6 +697,15 @@ struct env_info {
       uint32_t argc;
       rulel *rules;
       matcher *m;
+      // interface types only (Pure 0.50+)
+      exprl *xs;
+      rulel *rxs;
+      matcher *mxs;
+      // This is used to keep track of the warning levels in effect when the
+      // interface description was originally parsed, in order to give more
+      // precise control over the warning diagnostics produced for an
+      // interface definition.
+      exprset *compat;
     };
   };
   env_info() : t(none) { }
@@ -697,7 +717,8 @@ struct env_info {
   env_info(void *v, uint32_t _temp = 0)
     : t(fvar), temp(_temp), val(v) { }
   env_info(uint32_t c, rulel r, uint32_t _temp = 0)
-    : t(fun), temp(_temp), argc(c), rules(new rulel(r)), m(0) { }
+    : t(fun), temp(_temp), argc(c), rules(new rulel(r)), m(0),
+      xs(0), rxs(0), mxs(0), compat(0) { }
   env_info(const env_info& e);
   env_info& operator= (const env_info& e);
   ~env_info();

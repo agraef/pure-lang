@@ -436,6 +436,7 @@ blank  [ \t\f\v\r]
 <xdecl>def        return token::DEF;
 <xdecl>let        return token::LET;
 <xdecl>type       return token::TYPE;
+<xdecl>interface  return token::INTERFACE;
 <xdecl>case	  return token::CASE;
 <xdecl>of	  return token::OF;
 <xdecl>end	  return token::END;
@@ -489,6 +490,7 @@ blank  [ \t\f\v\r]
 <xusing>def        BEGIN(INITIAL); return token::DEF;
 <xusing>let        BEGIN(INITIAL); return token::LET;
 <xusing>type       BEGIN(INITIAL); return token::TYPE;
+<xusing>interface  BEGIN(INITIAL); return token::INTERFACE;
 <xusing>case	   BEGIN(INITIAL); return token::CASE;
 <xusing>of	   BEGIN(INITIAL); return token::OF;
 <xusing>end	   BEGIN(INITIAL); return token::END;
@@ -705,6 +707,7 @@ const      return token::CONST;
 def        return token::DEF;
 let        return token::LET;
 type       return token::TYPE;
+interface  return token::INTERFACE;
 case	   return token::CASE;
 of	   return token::OF;
 end	   return token::END;
@@ -1134,9 +1137,9 @@ static bool find_namespace(interpreter& interp, const string& name)
 
 static const char *commands[] = {
   "break", "bt", "cd", "clear", "const", "def", "del", "dump", "extern", "help",
-  "infix", "infixl", "infixr", "let", "ls", "mem", "namespace", "nonfix",
-  "outfix", "override", "postfix", "prefix", "private", "public", "pwd",
-  "quit", "run", "save", "show", "stats", "trace", "type", "underride",
+  "infix", "infixl", "infixr", "interface", "let", "ls", "mem", "namespace",
+  "nonfix", "outfix", "override", "postfix", "prefix", "private", "public",
+  "pwd", "quit", "run", "save", "show", "stats", "trace", "type", "underride",
   "using", 0
 };
 
@@ -1185,6 +1188,7 @@ command_generator(const char *text, int state)
     if (!interp.symtab.visible(f) ||
 	(sym.prec == PREC_MAX && sym.fix != nonfix && sym.fix != outfix &&
 	 interp.globenv.find(f) == interp.globenv.end() &&
+	 interp.typeenv.find(f) == interp.typeenv.end() &&
 	 interp.macenv.find(f) == interp.macenv.end() &&
 	 interp.globalvars.find(f) == interp.globalvars.end() &&
 	 interp.externals.find(f) == interp.externals.end())) {
@@ -2221,6 +2225,34 @@ file for instructions on how to do this.\n";
     argl args(s, "show");
     list<string>::iterator arg;
     if (!args.ok) goto out;
+    if (args.l.size() == 2 && args.l.front() == "interface") {
+      const symbol *sym = interp.symtab.lookup(args.l.back());
+      env::iterator it = sym?interp.typeenv.find(sym->f):interp.typeenv.end();
+      if (it != interp.typeenv.end() && it->second.t != env_info::none &&
+	  it->second.xs) {
+	if (interp.dirty_types.find(sym->f) != interp.dirty_types.end())
+	  interp.compile();
+	if (it->second.rxs) {
+	  ostringstream sout;
+	  for (rulel::iterator r = it->second.rxs->begin();
+	       r != it->second.rxs->end(); ++r) {
+	    int32_t i;
+	    if (r->lhs.is_app() && r->rhs.is_int(i) && i==1) {
+	      sout << "type ";
+	      printx(sout, r->lhs, true);
+	      sout << ";\n";
+	    } else
+	      sout << "type " << *r << ";\n";
+	  }
+	  if (interp.output)
+	    (*interp.output) << sout.str();
+	  else
+	    cout << sout.str();
+	}
+      } else
+	cerr << "show: unknown interface type '"+args.l.back()+"'\n";
+      goto out;
+    }
     // process option arguments
     for (arg = args.l.begin(); arg != args.l.end(); arg++) {
       const char *s = arg->c_str();
@@ -2405,12 +2437,15 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	    _kt->second.t != env_info::none) {
 	  const rulel& rules = *_kt->second.rules;
 	  const matcher *m = _kt->second.m;
+	  const rulel *rxs = _kt->second.rxs;
+	  const matcher *mxs = _kt->second.mxs;
 	  if (sflag) {
 	    ++ntypes; trules += rules.size();
 	    sout << sym.s << string(maxsize-sym.s.size(), ' ') << "  typ";
 	    if (lflag) {
 	      sout << "  " << rules << ";";
-	      if (aflag && m) sout << '\n' << *m;
+	      if (aflag && mxs && !rxs->empty()) sout << "\ninterface " << *mxs;
+	      if (aflag && m && !rules.empty()) sout << "\ntype " << *m;
 	      if (dflag && tenv != interp.globaltypes.end() && tenv->second.f)
 		tenv->second.print(sout);
 	    } else {
@@ -2418,6 +2453,16 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	    }
 	    sout << '\n';
 	  } else {
+	    if (_kt->second.xs) {
+	      exprl& xs = *_kt->second.xs;
+	      sout << "interface " << sym.s << " with\n";
+	      for (exprl::iterator it = xs.begin(); it != xs.end(); ++it) {
+		sout << "  ";
+		printx(sout, *it, true);
+		sout << ";\n";
+	      }
+	      sout << "end;\n";
+	    }
 	    size_t n = 0;
 	    for (rulel::const_iterator it = rules.begin();
 		 it != rules.end(); ++it) {
@@ -2432,8 +2477,11 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 		++n;
 	      }
 	    }
-	    if (n > 0) {
-	      if (aflag && m) sout << *m << '\n';
+	    if (n > 0 || rxs) {
+	      if (aflag && mxs && !rxs->empty())
+		sout << "interface " << *mxs << '\n';
+	      if (aflag && m && n>0)
+		sout << "type " << *m << '\n';
 	      if (dflag && tenv != interp.globaltypes.end() && tenv->second.f)
 		tenv->second.print(sout);
 	      trules += n;
@@ -2778,6 +2826,16 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	const extmap::const_iterator _xt = it->xt;
 	if (yflag && _kt != interp.typeenv.end() &&
 	    _kt->second.t != env_info::none) {
+	  if (_kt->second.xs) {
+	    exprl& xs = *_kt->second.xs;
+	    fout << "interface " << sym.s << " with\n";
+	    for (exprl::iterator it = xs.begin(); it != xs.end(); ++it) {
+	      fout << "  ";
+	      printx(fout, *it, true);
+	      fout << ";\n";
+	    }
+	    fout << "end;\n";
+	  }
 	  const rulel& rules = *_kt->second.rules;
 	  for (rulel::const_iterator it = rules.begin();
 	       it != rules.end(); ++it) {

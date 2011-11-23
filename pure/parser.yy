@@ -129,6 +129,7 @@ static void mangle_fname(string& name);
 %token		CONST	"const"
 %token		LET	"let"
 %token		TYPE	"type"
+%token		INTERFACE "interface"
 %token		CASE	"case"
 %token		OF	"of"
 %token		END	"end"
@@ -174,7 +175,7 @@ static void mangle_fname(string& name);
 %type  <ilval>  xsyms
 %type  <smval>	name_xsyms
 %type  <smlval>	name_xsyms_list
-%type  <ival>	op scope
+%type  <ival>	op scope interface_rules
 %type  <info>	fixity
 %type  <xval>	expr prim
 %type  <opstk>  simple  "simple expression"
@@ -192,7 +193,8 @@ static void mangle_fname(string& name);
   comp_clauses comp_clause_list rows row_list row args lhs rhs qual_rhs
   rules rulel rule type_rule macro_rule pat_rules pat_rulel
   simple_rules simple_rulel simple_rule
-  ids fnames fname name_xsyms_list name_xsyms xsyms name optalias opt_ctypes ctypes ctype
+  ids fnames fname name_xsyms_list name_xsyms xsyms name optalias opt_ctypes
+  ctypes ctype
 %destructor { mpz_clear(*$$); free($$); } BIGINT CBIGINT
 %destructor { free($$); } STR
 %printer { debug_stream() << *$$; } ID name fname optalias ctype expr
@@ -264,6 +266,30 @@ item
 { interp.loc = &yyloc; action(interp.define_const($2), delete $2); }
 | DEF macro_rule
 { interp.loc = &yyloc; action(interp.add_macro_rules($2), delete $2); }
+| INTERFACE ID
+{ expr *id = 0;
+  string *s = new string(*$2);
+  try { id = interp.mksym_expr(s); }
+  catch (err &e) {
+    interp.error(yyloc, e.what());
+  }
+  if (id && id->is_fun()) {
+    // This will promote the symbol to the proper namespace if it hasn't been
+    // declared yet.
+    interp.checkfuns(*id, true);
+    interp.symtab.sym(id->tag()).unresolved = false;
+    $<ival>$ = id->tag();
+  } else {
+    error(yylloc, "error in interface declaration (invalid type identifier)");
+    $<ival>$ = 0;
+  }
+  if (id) delete id;
+}
+WITH { $<ival>$ = $<ival>3; } interface_rules END
+{ int32_t tag = $<ival>3, count = $6;
+  delete $2;
+  if (tag) interp.finalize_interface_rules(interp.typeenv, tag, count);
+}
 | TYPE type_rule
 { interp.loc = &yyloc;
   action(interp.add_type_rules(interp.typeenv, $2), delete $2); }
@@ -777,14 +803,10 @@ type_rule
   for (exprl::iterator l = $1->begin(), end = $1->end(); l != end; l++) {
     if (l->is_fun()) {
       // Just declare the symbol so that the compiler knows about it.
-      bool s_compat = interp.compat;
-      // Kludge: We temporarily disable -w here, to avoid a possible "implicit
-      // declaration" warning for the type symbol.
-      interp.compat = false;
       // This will promote the symbol to the proper namespace if it hasn't
       // been declared yet.
-      interp.checkfuns(*l);
-      interp.compat = s_compat;
+      interp.checkfuns(*l, true);
+      interp.symtab.sym(l->tag()).unresolved = false;
       if ((interp.verbose&verbosity::defs) != 0)
 	cout << "type " << *l << ";\n";
       interp.typeenv[l->tag()];
@@ -809,6 +831,39 @@ macro_rule
   for (exprl::iterator l = $1->begin(), end = $1->end(); l != end; l++)
     $$->push_back(rule(*l, *$3));
   delete $1; delete $3; }
+;
+
+/* Interface type definition. This is simply a semicolon-delimited collection
+   of patterns specifying the operations that should be defined on the type.
+   The whole section can also be empty (which means that any expression
+   matches the type). Otherwise each pattern must follow the syntactic rules
+   of the lhs of a function definition, so that the section is like a
+   collection of rules without right-hand sides and qualifiers. */
+
+interface_rules
+: /* empty */
+{ $$ = 0; }
+| interface_rules expr
+{ interp.loc = &yyloc;
+  int32_t tag = $<ival>0, count = 0;
+  if (tag) {
+    action((interp.add_interface_rule(interp.typeenv, tag, *$2), count++), );
+  }
+  $<ival>$ = count;
+}
+';'
+{ $$ = $1+$<ival>3; delete $2; }
+| interface_rules INTERFACE ID
+{ const symbol &sym = interp.symtab.checksym(*$3);
+  interp.loc = &yyloc;
+  int32_t tag = $<ival>0, iface = sym.f, count = 0;
+  if (tag) {
+    action((count = interp.add_sub_interface(interp.typeenv, tag, iface)), );
+  }
+  $<ival>$ = count;
+}
+';'
+{ $$ = $1+$<ival>3; delete $3; }
 ;
 
 %%

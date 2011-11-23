@@ -21,7 +21,7 @@ class PureLexer(RegexLexer):
     keywords = ['infix[lr]?', 'outfix', 'prefix', 'postfix', 'nonfix',
                 'namespace', 'private', 'public', 'case', 'const', 'def',
                 'else', 'end', 'extern', 'if', 'let', 'of', 'otherwise',
-                'then', 'using', 'when', 'with', 'type']
+                'then', 'using', 'when', 'with', 'type', 'interface']
 
     # These aren't really keywords but we want them to stick out anyway.
     keywords2 = ['catch', 'throw']

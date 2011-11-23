@@ -656,6 +656,16 @@ ostream& operator << (ostream& os, const env& e)
       os << "let " << sym.s << " = " << *(pure_expr**)info.val;
       break;
     case env_info::fun:
+      if (info.xs && !info.xs->empty()) {
+	exprl& xl = *info.xs;
+	os << " interface " << sym.s << " with ";
+	for (exprl::const_iterator it = xl.begin(); it != xl.end(); ++it)
+	  os << *it << "; ";
+	os << " end";
+	if ((interpreter::g_verbose&verbosity::code) && info.mxs)
+	  os << " " << *info.mxs;
+	if (!info.rules->empty()) os << "; ";
+      }
       os << *info.rules;
       if ((interpreter::g_verbose&verbosity::code) && info.m)
 	os << " " << *info.m;

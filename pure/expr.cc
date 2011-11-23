@@ -392,6 +392,22 @@ env_info::env_info(const env_info& e) : t(e.t), temp(e.temp) {
       m = new matcher(*rules, argc+1);
     else
       m = 0;
+    if (e.xs)
+      xs = new exprl(*e.xs);
+    else
+      xs = 0;
+    if (e.rxs)
+      rxs = new rulel(*e.rxs);
+    else
+      rxs = 0;
+    if (e.rxs)
+      mxs = new matcher(*rxs);
+    else
+      mxs = 0;
+    if (e.compat)
+      compat = new exprset(*e.compat);
+    else
+      compat = 0;
     break;
   }
 }
@@ -439,6 +455,22 @@ env_info& env_info::operator= (const env_info& e)
       m = new matcher(*rules, argc+1);
     else
       m = 0;
+    if (e.xs)
+      xs = new exprl(*e.xs);
+    else
+      xs = 0;
+    if (e.rxs)
+      rxs = new rulel(*e.rxs);
+    else
+      rxs = 0;
+    if (e.rxs)
+      mxs = new matcher(*rxs);
+    else
+      mxs = 0;
+    if (e.compat)
+      compat = new exprset(*e.compat);
+    else
+      compat = 0;
     break;
   }
   return *this;
@@ -459,6 +491,10 @@ env_info::~env_info() {
   case fun:
     delete rules;
     if (m) delete m;
+    if (xs) delete xs;
+    if (rxs) delete rxs;
+    if (mxs) delete mxs;
+    if (compat) delete compat;
     break;
   }
 }

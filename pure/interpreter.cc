@@ -1,5 +1,5 @@
 
-/* Copyright (c) 2008-2010 by Albert Graef <Dr.Graef@t-online.de>.
+/* Copyright (c) 2008-2011 by Albert Graef <Dr.Graef@t-online.de>.
 
    This file is part of the Pure runtime.
 
@@ -764,7 +764,7 @@ interpreter::interpreter(int32_t nsyms, char *syms,
     stats(false), stats_mem(false), temp(0), ps("> "), libdir(""),
     histfile("/.pure_history"), modname("pure"),
     interactive_mode(false),
-    source_level(0), skip_level(0), 
+    source_level(0), skip_level(0),
     /* NOTE: We use a different range of pointer tags here, so that tags
        generated at compile time won't conflict with those generated at run
        time. If we start out with 0x7fffffff, the first tag generated at run
@@ -3511,6 +3511,13 @@ void interpreter::mark_dirty(int32_t f)
       delete info.m; info.m = 0;
     }
     dirty.insert(f);
+    // also mark all interfaces as dirty which are associated with this
+    // function
+    map< int32_t, set<int32_t> >::iterator it = fun_types.find(f);
+    if (it != fun_types.end())
+      for (set<int32_t>::iterator jt = it->second.begin();
+	   jt != it->second.end(); ++jt)
+	mark_dirty_type(*jt);
   }
 }
 
@@ -3522,6 +3529,9 @@ void interpreter::mark_dirty_type(int32_t f)
     env_info& info = e->second;
     if (info.m) {
       delete info.m; info.m = 0;
+    }
+    if (info.rxs) {
+      delete info.rxs; info.rxs = 0;
     }
     dirty_types.insert(f);
   }
@@ -3580,8 +3590,18 @@ void interpreter::compile()
       if (e != typeenv.end() && e->second.t != env_info::none) {
 	int32_t ftag = e->first;
 	env_info& info = e->second;
-	info.m = new matcher(*info.rules, info.argc+1);
-	if (verbose&verbosity::code) std::cout << "type " << *info.m << '\n';
+	if (!info.rules->empty())
+	  info.m = new matcher(*info.rules, info.argc+1);
+	if ((info.rxs = compile_interface(typeenv, ftag)))
+	  info.mxs = new matcher(*info.rxs, info.argc+1);
+	if (verbose&verbosity::code) {
+	  const symbol& sym = symtab.sym(ftag);
+	  if (info.mxs && !info.rxs->empty())
+	    cout << "interface " << sym.s << " " << *info.mxs << '\n';
+	  if (info.m && !info.rules->empty())
+	    std::cout << "type " << sym.s << " " << *info.m << '\n';
+	}
+	if (!info.m && !info.rxs) continue; // no rules and no interface; skip
 	// regenerate LLVM code (prolog)
 	Env& f = globaltypes[ftag] = Env(ftag, info, false, false);
 #if DEBUG>1
@@ -3598,10 +3618,11 @@ void interpreter::compile()
       if (e != typeenv.end() && e->second.t != env_info::none) {
 	int32_t ftag = e->first;
 	env_info& info = e->second;
+	if (!info.m && !info.mxs) continue; // no rules and no interface; skip
 	// regenerate LLVM code (body)
 	Env& f = globaltypes[ftag];
 	push("compile", &f);
-	fun_body(info.m);
+	fun_body(info.m, info.mxs);
 	pop(&f);
 	// Always run the JIT on these right away and set up the runtime type
 	// information. These functions are called indirectly through the
@@ -3639,7 +3660,7 @@ void interpreter::compile()
 	// regenerate LLVM code (body)
 	Env& f = globalfuns[ftag];
 	push("compile", &f);
-	fun_body(info.m, defined.find(ftag) != defined.end());
+	fun_body(info.m, 0, defined.find(ftag) != defined.end());
 	pop(&f);
 	if (eager.find(ftag) != eager.end())
 	  to_be_jited.insert(ftag);
@@ -3758,6 +3779,24 @@ uint32_t count_args(expr x, expr& f)
   while (x.is_app(y, z)) ++count, x = y;
   f = x;
   return count;
+}
+
+exprl get_args(expr x, int32_t& f)
+{
+  expr y, z;
+  exprl xs;
+  while (x.is_app(y, z)) xs.push_front(z), x = y;
+  f = x.tag();
+  return xs;
+}
+
+exprl get_args(expr x, expr& f)
+{
+  expr y, z;
+  exprl xs;
+  while (x.is_app(y, z)) xs.push_front(z), x = y;
+  f = x;
+  return xs;
 }
 
 // build a local variable environment from an already processed pattern
@@ -4148,6 +4187,12 @@ void interpreter::clearsym(int32_t f)
     if (h != f) h->eraseFromParent();
     f->eraseFromParent();
   }
+  // Update dependent interface types.
+  map< int32_t, set<int32_t> >::iterator it = fun_types.find(f);
+  if (it != fun_types.end())
+    for (set<int32_t>::iterator jt = it->second.begin();
+	 jt != it->second.end(); ++jt)
+      mark_dirty_type(*jt);
 }
 
 void interpreter::cleartypesym(int32_t f)
@@ -4162,6 +4207,17 @@ void interpreter::cleartypesym(int32_t f)
     f->dropAllReferences();
     if (h != f) h->eraseFromParent();
     f->eraseFromParent();
+  }
+  // Update the fun_types table.
+  env::iterator it = typeenv.find(f);
+  if (it == typeenv.end()) return;
+  env_info &info = it->second;
+  if (!info.xs) return;
+  for (exprl::iterator it = info.xs->begin(); it != info.xs->end(); ++it) {
+    expr fx; count_args(*it, fx);
+    int32_t g = fx.tag();
+    assert(g>0);
+    fun_types[g].erase(f);
   }
 }
 
@@ -4259,6 +4315,10 @@ void interpreter::clear(int32_t f)
 	  if (info.m) {
 	    delete info.m;
 	    info.m = 0;
+	  }
+	  if (info.rxs) {
+	    delete info.rxs;
+	    info.rxs = 0;
 	  }
 	}
       }
@@ -4627,6 +4687,891 @@ void interpreter::add_type_rule_at(env &e, rule &r, int32_t g,
       cout << "type " << r << ";\n";
   }
   mark_dirty_type(f);
+}
+
+/* Quick and dirty checks to see whether two compile time expressions are
+   equal or equivalent (i.e. equal up to the renaming of variables). NOTE:
+   This only works with simple expressions, which is all we really need
+   here. If x or y contains any special constructs (with, when, etc.), we err
+   on the safe side, declaring the expressions to be non-equivalent. */
+
+static bool equal(map<int32_t, int32_t>& xttag, map<int32_t, int32_t>& yttag,
+		  int32_t anon_tag, expr x, expr y)
+{
+  if (x == y) return true;
+  if (x.tag() != y.tag()) return false;
+  switch (x.tag()) {
+  case EXPR::VAR: {
+    // Handle the case of anonymous variables.
+    int32_t xtag = (x.vtag() == anon_tag)?x.ttag():xttag[x.vtag()];
+    int32_t ytag = (y.vtag() == anon_tag)?y.ttag():yttag[y.vtag()];
+    return x.vtag() == y.vtag() && xtag == ytag;
+  }
+  // constants:
+  case EXPR::FVAR:
+    return x.vtag() == y.vtag();
+  case EXPR::INT:
+    return x.ival() == y.ival();
+  case EXPR::BIGINT:
+    return mpz_cmp(x.zval(), y.zval()) == 0;
+  case EXPR::DBL:
+    return x.dval() == y.dval();
+  case EXPR::STR:
+    return strcmp(x.sval(), y.sval()) == 0;
+  // application:
+  case EXPR::APP:
+    return
+      equal(xttag, yttag, anon_tag, x.xval1(), y.xval1()) &&
+      equal(xttag, yttag, anon_tag, x.xval2(), y.xval2());
+  // matrix (Pure 0.47+):
+  case EXPR::MATRIX: {
+    exprll *xs = x.xvals(), *ys = y.xvals();
+    size_t nx = xs->size(), mx = xs->empty()?0:xs->front().size();
+    size_t ny = ys->size(), my = ys->empty()?0:ys->front().size();
+    if (nx != ny || mx != my) return false;
+    for (exprll::const_iterator it = xs->begin(), jt = ys->begin();
+	 it != xs->end(); ++it, ++jt) {
+      assert(jt != ys->end());
+      for (exprl::const_iterator it2 = it->begin(), jt2 = jt->begin();
+	   it2 != it->end(); ++it2, ++jt2) {
+	assert(jt2 != jt->end());
+	if (!equal(xttag, yttag, anon_tag, *it2, *jt2))
+	  return false;
+      }
+    }
+    return true;
+  }
+  // these must not occur on the lhs:
+  case EXPR::PTR:
+  case EXPR::WRAP:
+  case EXPR::LAMBDA:
+  case EXPR::COND:
+  case EXPR::CASE:
+  case EXPR::WHEN:
+  case EXPR::WITH:
+    return false;
+  default:
+    assert(x.tag() > 0);
+    return true;
+  }
+}
+
+static bool equiv(map<int32_t, int32_t>& xvars, map<int32_t, int32_t>& yvars,
+		  map<int32_t, int32_t>& xttag, map<int32_t, int32_t>& yttag,
+		  int32_t anon_tag, expr x, expr y)
+{
+  if (x == y) return true;
+  if (x.tag() != y.tag()) return false;
+  switch (x.tag()) {
+  case EXPR::VAR: {
+    // Handle the case of anonymous variables.
+    int32_t xtag = (x.vtag() == anon_tag)?x.ttag():xttag[x.vtag()];
+    int32_t ytag = (y.vtag() == anon_tag)?y.ttag():yttag[y.vtag()];
+    if (xtag != ytag) return false;
+    if (x.vtag() != anon_tag) {
+      map<int32_t, int32_t>::iterator it = xvars.find(x.vtag());
+      if (it != xvars.end())
+	return it->second == y.vtag();
+      else {
+	xvars[x.vtag()]= y.vtag();
+	return true;
+      }
+    }
+    if (y.vtag() != anon_tag) {
+      map<int32_t, int32_t>::iterator it = yvars.find(y.vtag());
+      if (it != yvars.end())
+	return it->second == x.vtag();
+      else {
+	yvars[y.vtag()]= x.vtag();
+	return true;
+      }
+    }
+  }
+  // constants:
+  case EXPR::FVAR:
+    return x.vtag() == y.vtag();
+  case EXPR::INT:
+    return x.ival() == y.ival();
+  case EXPR::BIGINT:
+    return mpz_cmp(x.zval(), y.zval()) == 0;
+  case EXPR::DBL:
+    return x.dval() == y.dval();
+  case EXPR::STR:
+    return strcmp(x.sval(), y.sval()) == 0;
+  // application:
+  case EXPR::APP:
+    return
+      equiv(xvars, yvars, xttag, yttag, anon_tag, x.xval1(), y.xval1()) &&
+      equiv(xvars, yvars, xttag, yttag, anon_tag, x.xval2(), y.xval2());
+  // matrix (Pure 0.47+):
+  case EXPR::MATRIX: {
+    exprll *xs = x.xvals(), *ys = y.xvals();
+    size_t nx = xs->size(), mx = xs->empty()?0:xs->front().size();
+    size_t ny = ys->size(), my = ys->empty()?0:ys->front().size();
+    if (nx != ny || mx != my) return false;
+    for (exprll::const_iterator it = xs->begin(), jt = ys->begin();
+	 it != xs->end(); ++it, ++jt) {
+      assert(jt != ys->end());
+      for (exprl::const_iterator it2 = it->begin(), jt2 = jt->begin();
+	   it2 != it->end(); ++it2, ++jt2) {
+	assert(jt2 != jt->end());
+	if (!equiv(xvars, yvars, xttag, yttag, anon_tag, *it2, *jt2))
+	  return false;
+      }
+    }
+    return true;
+  }
+  // these must not occur on the lhs:
+  case EXPR::PTR:
+  case EXPR::WRAP:
+  case EXPR::LAMBDA:
+  case EXPR::COND:
+  case EXPR::CASE:
+  case EXPR::WHEN:
+  case EXPR::WITH:
+    return false;
+  default:
+    assert(x.tag() > 0);
+    return true;
+  }
+}
+
+static void get_ttags(map<int32_t, int32_t>& ttag, int32_t anon_tag, expr x)
+{
+  switch (x.tag()) {
+  case EXPR::VAR: {
+    if (x.vtag() != anon_tag) {
+      map<int32_t, int32_t>::iterator it = ttag.find(x.vtag());
+      if (it == ttag.end() || it->second == 0)
+	ttag[x.vtag()] = x.ttag();
+    }
+    break;
+  }
+  case EXPR::APP:
+    get_ttags(ttag, anon_tag, x.xval1());
+    get_ttags(ttag, anon_tag, x.xval2());
+    break;
+  case EXPR::MATRIX: {
+    exprll *xs = x.xvals();
+    for (exprll::const_iterator it = xs->begin(); it != xs->end(); ++it) {
+      for (exprl::const_iterator jt = it->begin(); jt != it->end(); ++jt) {
+	get_ttags(ttag, anon_tag, *jt);
+      }
+    }
+    break;
+  }
+  default:
+    break;
+  }
+}
+
+static inline bool equal(int32_t anon_tag, expr x, expr y)
+{
+  map<int32_t, int32_t> xttag, yttag;
+  get_ttags(xttag, anon_tag, x); get_ttags(yttag, anon_tag, y);
+  return equal(xttag, yttag, anon_tag, x, y);
+}
+
+static inline bool equiv(int32_t anon_tag, expr x, expr y)
+{
+  map<int32_t, int32_t> xvars, yvars;
+  map<int32_t, int32_t> xttag, yttag;
+  get_ttags(xttag, anon_tag, x); get_ttags(yttag, anon_tag, y);
+  return equiv(xvars, yvars, xttag, yttag, anon_tag, x, y);
+}
+
+/* Matches the subject term y against the pattern x, which can both be terms
+   with variables. The xttag and yttag variables should be set to the type
+   tags of named variables on entry. On exit, if the subject term matches,
+   xvars is set to the matching substitution; this only holds the values for
+   named variables. Also, xsubst is set to the list of terms bound to (both
+   named or anonymous) variables of the interface type given by iface_tag. */
+
+static bool match(map<int32_t, expr>& xvars, exprl& xsubst,
+		  map<int32_t, int32_t>& xttag, map<int32_t, int32_t>& yttag,
+		  int32_t anon_tag, int32_t iface_tag,
+		  expr x, expr y)
+{
+  if (x == y) return true;
+  if (x.tag() == EXPR::VAR) {
+    int32_t xtag = -1, ytag = -1;
+    xtag = (x.vtag() == anon_tag)?x.ttag():xttag[x.vtag()];
+    if (y.tag() == EXPR::VAR)
+      ytag = (y.vtag() == anon_tag)?y.ttag():yttag[y.vtag()];
+    // The interface tag matches everything here, just as if the corresponding
+    // variable was unqualified.
+    if (xtag == iface_tag) xtag = 0;
+    if (xtag > 0) {
+      /* XXXFIXME: We assume that a proper type tag doesn't match any
+         non-variable term. */
+      if (ytag < 0) return false;
+      /* XXXFIXME: If both terms are variables with a proper type
+	 qualification, we want the types to be equal. */
+      if (ytag > 0 && xtag != ytag) return false;
+    }
+    if (x.vtag() != anon_tag) {
+      map<int32_t, expr>::iterator it = xvars.find(x.vtag());
+      if (it != xvars.end()) {
+	// Variable is already bound (this may happen if the term is
+	// non-linear), check that the bindings match.
+	if (!equal(anon_tag, it->second, y))
+	  return false;
+      } else {
+	// Record a binding for this variable.
+	xvars[x.vtag()]= y;
+	if (xttag[x.vtag()] == iface_tag)
+	  xsubst.push_back(y);
+      }
+    } else if (x.ttag() == iface_tag) {
+      // Anonymous variable, simply record the binding.
+      xsubst.push_back(y);
+    }
+    return true;
+  }
+  if (x.tag() != y.tag()) return false;
+  switch (x.tag()) {
+  case EXPR::VAR:
+    return false; // handled above
+  // constants:
+  case EXPR::FVAR:
+    return x.vtag() == y.vtag();
+  case EXPR::INT:
+    return x.ival() == y.ival();
+  case EXPR::BIGINT:
+    return mpz_cmp(x.zval(), y.zval()) == 0;
+  case EXPR::DBL:
+    return x.dval() == y.dval();
+  case EXPR::STR:
+    return strcmp(x.sval(), y.sval()) == 0;
+  // application:
+  case EXPR::APP:
+    return
+      match(xvars, xsubst, xttag, yttag,
+	    anon_tag, iface_tag, x.xval1(), y.xval1()) &&
+      match(xvars, xsubst, xttag, yttag,
+	    anon_tag, iface_tag, x.xval2(), y.xval2());
+  // matrix (Pure 0.47+):
+  case EXPR::MATRIX: {
+    exprll *xs = x.xvals(), *ys = y.xvals();
+    size_t nx = xs->size(), mx = xs->empty()?0:xs->front().size();
+    size_t ny = ys->size(), my = ys->empty()?0:ys->front().size();
+    if (nx != ny || mx != my) return false;
+    for (exprll::const_iterator it = xs->begin(), jt = ys->begin();
+	 it != xs->end(); ++it, ++jt) {
+      assert(jt != ys->end());
+      for (exprl::const_iterator it2 = it->begin(), jt2 = jt->begin();
+	   it2 != it->end(); ++it2, ++jt2) {
+	assert(jt2 != jt->end());
+	if (!match(xvars, xsubst, xttag, yttag,
+		   anon_tag, iface_tag, *it2, *jt2))
+	  return false;
+      }
+    }
+    return true;
+  }
+  // these must not occur on the lhs:
+  case EXPR::PTR:
+  case EXPR::WRAP:
+  case EXPR::LAMBDA:
+  case EXPR::COND:
+  case EXPR::CASE:
+  case EXPR::WHEN:
+  case EXPR::WITH:
+    return false;
+  default:
+    assert(x.tag() > 0);
+    return true;
+  }
+}
+
+void interpreter::add_interface_rule(env &e, int32_t tag, expr& x, bool check)
+{
+  env::iterator it = e.find(tag);
+  if (it != e.end() && it->second.t != env_info::none) {
+    if (it->second.argc != 1) {
+      const symbol& sym = symtab.sym(tag);
+      ostringstream msg;
+      msg << "type predicate '" << sym.s
+	  << "' was previously defined with " << it->second.argc << " args";
+      throw err(msg.str());
+    }
+  }
+  env_info &info = e[tag];
+  if (info.t == env_info::none)
+    info = env_info(1, rulel(), temp);
+  assert(info.argc == 1);
+  if (!info.xs) info.xs = new exprl;
+  env vars; vinfo vi;
+  expr y = expr(bind(vars, vi, lcsubst(x), false));
+  if (check) {
+    rule r(y, expr(EXPR::INT, 1));
+    checkfuns(true, &r);
+    if (nerrs > 0) {
+      if (info.xs->empty()) {
+	delete info.xs; info.xs = 0;
+      }
+      return;
+    }
+  }
+  expr fx; count_args(y, fx);
+  int32_t f = fx.tag();
+  if (f <= 0) {
+    if (info.xs->empty()) {
+      delete info.xs; info.xs = 0;
+    }
+    throw err("error in interface declaration (missing head symbol)");
+  }
+  fx.flags() |= EXPR::GLOBAL;
+  // Check to see whether we got a duplicate.
+  for (exprl::iterator it = info.xs->begin(); it != info.xs->end(); ++it)
+    if (equiv(symtab.anon_sym, *it, y)) return;
+  info.xs->push_back(y);
+  if (check && compat) {
+    if (!info.compat) info.compat = new exprset;
+    info.compat->insert(y);
+  }
+}
+
+void interpreter::add_interface_rule_at(env &e, int32_t tag, expr& x,
+					exprl::iterator& p)
+{
+  env::iterator it = e.find(tag);
+  if (it != e.end() && it->second.t != env_info::none) {
+    if (it->second.argc != 1) {
+      const symbol& sym = symtab.sym(tag);
+      ostringstream msg;
+      msg << "type predicate '" << sym.s
+	  << "' was previously defined with " << it->second.argc << " args";
+      throw err(msg.str());
+    }
+  }
+  env_info &info = e[tag];
+  if (info.t == env_info::none)
+    info = env_info(1, rulel(), temp);
+  assert(info.argc == 1);
+  if (!info.xs) info.xs = new exprl;
+  env vars; vinfo vi;
+  expr y = expr(bind(vars, vi, lcsubst(x), false));
+  expr fx; count_args(y, fx);
+  int32_t f = fx.tag();
+  if (f <= 0) {
+    if (info.xs->empty()) {
+      delete info.xs; info.xs = 0;
+    }
+    throw err("error in interface declaration (missing head symbol)");
+  }
+  fx.flags() |= EXPR::GLOBAL;
+  info.xs->insert(p, y); p++;
+}
+
+static expr interface_subst(int32_t tag, int32_t tag2, expr x)
+{
+  expr y;
+  switch (x.tag()) {
+  case EXPR::VAR:
+    if (x.ttag() == tag2)
+      y = expr(EXPR::VAR, x.vtag(), 0, tag, x.vpath());
+    else
+      return x;
+    break;
+  case EXPR::APP:
+    y = expr(interface_subst(tag, tag2, x.xval1()),
+	     interface_subst(tag, tag2, x.xval2()));
+    break;
+  case EXPR::MATRIX: {
+    exprll *xs = x.xvals();
+    exprll *ys = new exprll;
+    for (exprll::const_iterator it = xs->begin(); it != xs->end(); ++it) {
+      ys->push_back(exprl());
+      exprl& zs = ys->back();
+      for (exprl::const_iterator jt = it->begin(); jt != it->end(); ++it) {
+	expr u = interface_subst(tag, tag2, *jt);
+	zs.push_back(u);
+      }
+    }
+    y = expr(EXPR::MATRIX, ys);
+    break;
+  }
+  default:
+    return x;
+  }
+  if (x.astag() > 0) {
+    y.set_astag(x.astag());
+    y.set_aspath(x.aspath());
+  }
+  return y;
+}
+
+int interpreter::add_sub_interface(env &e, int32_t tag, int32_t iface)
+{
+  env::iterator it = e.find(iface);
+  if (it == e.end() || it->second.t == env_info::none || !it->second.xs) {
+    const symbol& sym = symtab.sym(iface);
+    throw err("unknown interface type '"+sym.s+"'");
+  }
+  exprl& xs = *it->second.xs;
+  it = e.find(tag);
+  if (it != e.end() && it->second.t != env_info::none) {
+    if (it->second.argc != 1) {
+      const symbol& sym = symtab.sym(tag);
+      ostringstream msg;
+      msg << "type predicate '" << sym.s
+	  << "' was previously defined with " << it->second.argc << " args";
+      throw err(msg.str());
+    }
+  }
+  env_info &info = e[tag];
+  if (info.t == env_info::none)
+    info = env_info(1, rulel(), temp);
+  assert(info.argc == 1);
+  if (!info.xs) info.xs = new exprl;
+  for (exprl::iterator x = xs.begin(); x != xs.end(); ++x) {
+    expr u = interface_subst(tag, iface, *x);
+    info.xs->push_back(u);
+    if (compat) {
+      if (!info.compat) info.compat = new exprset;
+      info.compat->insert(u);
+      expr v = u;
+    }
+  }
+  return xs.size();
+}
+
+void interpreter::finalize_interface_rules(env &e, int32_t tag, size_t count,
+					   exprl::iterator *p)
+{
+  env::iterator it = typeenv.find(tag);
+  if (it == typeenv.end()) {
+    if ((verbose&verbosity::defs) != 0) {
+      const symbol& sym = symtab.sym(tag);
+      cout << "interface " << sym.s << " with\nend;\n";
+    }
+    // empty interface matches everything
+    env_info &info = e[tag];
+    info = env_info(1, rulel(), temp);
+    info.xs = new exprl;
+    mark_dirty_type(tag);
+    return;
+  }
+  env_info &info = it->second;
+  if (info.xs && p) {
+    if (*p == info.xs->end())
+      p = 0;
+    else
+      for (size_t i = 0; i < count; ++i) --*p;
+  }
+  if ((verbose&verbosity::defs) != 0) {
+    const symbol& sym = symtab.sym(tag);
+    cout << "interface " << sym.s << " with\n";
+    if (info.xs) {
+      exprl::iterator it;
+      if (p)
+	it = *p;
+      else {
+	it = info.xs->begin();
+	size_t sz = info.xs->size();
+	for (; sz > count && it != info.xs->end(); ++it) --sz;
+      }
+      size_t n = count;
+      for (; n-- > 0 && it != info.xs->end(); ++it) {
+	cout << "  ";
+	printx(cout, *it, true);
+	cout << ";\n";
+      }
+    }
+    cout << "end;\n";
+  }
+  if (count > 0) {
+    mark_dirty_type(tag);
+    // Keep track of the functions used by this interface, so that the type
+    // gets invalidated automatically when one of them becomes dirty.
+    if (info.xs) {
+      exprl::iterator it;
+      if (p)
+	it = *p;
+      else {
+	it = info.xs->begin();
+	size_t sz = info.xs->size();
+	for (; sz > count && it != info.xs->end(); ++it) --sz;
+      }
+      size_t n = count;
+      for (; n-- > 0 && it != info.xs->end(); ++it) {
+	expr fx; count_args(*it, fx);
+	int32_t f = fx.tag();
+	assert(f>0);
+	fun_types[f].insert(tag);
+      }
+    }
+  }
+}
+
+/* Shortcut to rebind the variables in a lhs expression which already went
+   through bind(). This updates the paths to their current values, and
+   recomputes the nonlinearities and type checks. */
+
+static expr rebind(env& vars, vinfo& vi, int32_t anon_tag,
+		   expr x, path p = path())
+{
+  expr y;
+  switch (x.tag()) {
+  case EXPR::VAR:
+    if (x.vtag() != anon_tag) {
+      env::iterator it = vars.find(x.vtag());
+      if (it != vars.end()) {
+	env_info& info = it->second;
+	// non-linearity, record an equality
+	vi.eqns.push_back(veqn(x.vtag(), *info.p, p));
+      } else
+	vars[x.vtag()] = env_info(x.ttag(), p);
+    }
+    if (x.ttag() > 0)
+      // record a type guard
+      vi.guards.push_back(vguard(x.vtag(), x.ttag(), p));
+    y = expr(EXPR::VAR, x.vtag(), 0, x.ttag(), p);
+    break;
+  case EXPR::APP:
+    y = expr(rebind(vars, vi, anon_tag, x.xval1(), path(p, 0)),
+	     rebind(vars, vi, anon_tag, x.xval2(), path(p, 1)));
+    break;
+  case EXPR::MATRIX: {
+    exprll *xs = x.xvals();
+    size_t n = xs->size(), m = xs->empty()?0:xs->front().size();
+    // Encode subterm paths inside a matrix. Check bind() to see how this
+    // magic works.
+    exprll *ys = new exprll;
+    path pi(p); size_t l = p.len();
+    for (exprll::const_iterator it = xs->begin(); n>0;) {
+      ys->push_back(exprl());
+      exprl& zs = ys->back();
+      path pj(pi, 0); pj.setmsk(l, 1);
+      for (exprl::const_iterator jt = it->begin(); m>0;) {
+	expr u = rebind(vars, vi, anon_tag, *jt, path(pj, 0));
+	zs.push_back(u);
+	if (++jt != it->end()) pj += 1; else break;
+      }
+      if (++it != xs->end()) pi += 1; else break;
+    }
+    y = expr(EXPR::MATRIX, ys);
+    break;
+  }
+  default:
+    if (x.astag() > 0) {
+      // We have to update an "as" binding. Copy the original expression so
+      // that we don't clobber its data.
+      switch (x.tag()) {
+      case EXPR::FVAR:
+	y = expr(EXPR::FVAR, x.vtag());
+	break;
+      case EXPR::INT:
+	y = expr(EXPR::INT, x.ival());
+	break;
+      case EXPR::BIGINT: {
+	mpz_t z;
+	mpz_init_set(z, x.zval());
+	y = expr(EXPR::BIGINT, z);
+	break;
+      }
+      case EXPR::DBL:
+	y = expr(EXPR::DBL, x.dval());
+	break;
+      case EXPR::STR:
+	y = expr(EXPR::STR, strdup(x.sval()));
+	break;
+      // these should have been expanded away already:
+      case EXPR::PTR:
+      case EXPR::WRAP:
+      case EXPR::LAMBDA:
+      case EXPR::COND:
+      case EXPR::CASE:
+      case EXPR::WHEN:
+      case EXPR::WITH:
+	return x;
+      default:
+	assert(x.tag() > 0);
+	y = expr(x.tag());
+	break;
+      }
+    } else
+      return x;
+    break;
+  }
+  if (x.astag() > 0) {
+    y.set_astag(x.astag());
+    y.set_aspath(p);
+  }
+  return y;
+}
+
+/* Compilation algorithm for interface definitions. This extracts the relevant
+   patterns from the program source, so the interface type becomes the type
+   defined by those patterns.
+
+   The algorithm looks for the left-hand sides of equations matching the
+   interface patterns. For each matching left-hand side, the substitutions for
+   variables in the interface patterns which are tagged with the interface
+   type give the candidate patterns which may become part of the type.
+
+   The candidate patterns are grouped by the interface functions which they
+   belong to. If P1, ..., Pn are the corresponding pattern sets for the
+   interface functions f1, ..., fn, and X1, ..., Xn are the corresponding term
+   sets (i.e., Xi is the set of all instances of any of the patterns in Pi),
+   then, in theory, the interface type is the intersection of X1, ..., Xn.
+
+   Unfortunately, the number of patterns to describe this intersection may
+   well be exponential in size. Essentially, we'd have to unify each
+   combination of patterns pi from Pi, i=1, ..., n, which simply isn't
+   practical, even for interface definitions involving just a moderate number
+   of functions.
+
+   Hence the following approach is taken: We eliminate from each Pi those
+   patterns pi which don't match at least one pattern pj in Pj, for each
+   j!=i. This way we may loose some patterns (we always err on the safe side,
+   so that the programmer can be confident that members of the type work with
+   all interface functions), but the method seems to work quite well in
+   practice. (In fact, it also has a nice advantage, namely that we can warn
+   about potentially missing rules for eliminated patterns in some of the
+   interface operations.)
+
+   Note that in pathological cases the method sketched out above may in fact
+   not just loose some, but most (or at least some important) possible
+   patterns. In such a case you'll just have to bite the bullet and write the
+   definitions of the interface operations in a way that makes them easier to
+   handle. To help with this, run the script with warnings on (-w option,
+   --warn pragma); the compiler will then inform you about the eliminated
+   patterns and the interface functions which might need some tweaking. */
+
+rulel *interpreter::compile_interface(env &e, int32_t tag)
+{
+  env::iterator it = e.find(tag);
+  if (it == e.end() || it->second.t == env_info::none || !it->second.xs)
+    return 0;
+  // The list of candidate patterns constructed by the algorithm.
+  rulel *rl = new rulel;
+  if (it->second.xs->empty()) {
+    // empty interface, produce a rule that matches everything
+    expr lhs = expr(expr(tag), expr(symtab.anon_sym)),
+      rhs = expr(EXPR::INT, 1);
+    rule r(lhs, rhs); closure(r, false);
+    rl->push_back(r);
+    return rl;
+  }
+  // The list of interface patterns.
+  exprl& xs = *it->second.xs;
+  /* Record patterns for each function in the interface, and "skip" sets which
+     indicate which functions are associated with the candidate patterns rl
+     (the latter is a list of sets in the same order as rl). */
+  map<int32_t, exprl> patterns;
+  list< set<int32_t> > skip;
+  /* We try to give fairly extensive diagnostics here (all in the form of
+     warnings), and want to be as accurate as possible and selective in that
+     we only produce the diagnostics requested by the programmer. Since the
+     interface compiler may be invoked at any time, at the compiler's
+     discretion, the current settings of the warning options when we're
+     invoked aren't really relevant. Instead, the frontend records the warning
+     options in effect when the interface definition was parsed on a per-rule
+     basis. Here we translate this to a set of interface functions for which
+     diagnostics are to be produced. */
+  exprset emptyset, &checked = it->second.compat?*it->second.compat:emptyset;
+  bool first = true;
+  bool warnings = !checked.empty();
+  bool nomatch = false;
+  set<int32_t> warned, hints;
+  /* Pass #1: Collect all candidate patterns. *******************************/
+  for (exprl::iterator it = xs.begin(); it != xs.end(); ++it) {
+    // Analyze the interface pattern.
+    int32_t f;
+    exprl args = get_args(*it, f);
+    if (f <= 0) continue;
+    bool warn = checked.find(*it) != checked.end();
+    // Additional diagnostics for patterns eliminated from an interface in
+    // pass #2 because some interface operation doesn't implement them.
+    if (warn) hints.insert(f);
+    // "Defined functions" are always considered complete, and thus don't
+    // place any additional restrictions on their arguments. That's why we
+    // don't have to consider them in pass #2 of the algorithm.
+    bool complete = defined.find(f) != defined.end();
+    // Check to see whether we have a matching function. NOTE: We currently
+    // require that the number of arguments must match exactly. Maybe we
+    // should also allow argc<n?
+    size_t n = args.size();
+    env::iterator kt = globenv.find(f);
+    if (kt == globenv.end() || kt->second.t != env_info::fun ||
+	kt->second.argc != n) {
+      // No matching function, so the interface can't be matched either.
+      nomatch = true;
+      // If we're not warning about these symbols, we might as well bail out
+      // now. Otherwise, we keep at it, to give proper diagnostics for all
+      // functions required by the interface.
+      if (!warnings) {
+	delete rl;
+	return 0;
+      } else if (warn) {
+	if (warned.find(f) == warned.end()) {
+	  if (first) {
+	    const symbol& sym = symtab.sym(tag);
+	    warning("warning: interface '"+sym.s+"' is incomplete");
+	    first = false;
+	  }
+	  const symbol& fsym = symtab.sym(f);
+	  bool mismatch = kt != globenv.end() &&
+	    kt->second.t == env_info::fun && kt->second.argc != n;
+	  ostringstream msg;
+	  if (mismatch) {
+	    msg << "function '" << fsym.s << "' was declared with " << n
+		<< " but defined with " << kt->second.argc << " args";
+	  } else
+	    msg << "function '" << fsym.s << "' is not defined anywhere";
+	  warning("warning: "+msg.str());
+	  warned.insert(f);
+	}
+	continue;
+      }
+    }
+    // To find all the patterns for the interface type, match our pattern
+    // against the left-hand sides of the function's rules.
+    map<int32_t, int32_t> xttag;
+    // these only need to be computed once
+    get_ttags(xttag, symtab.anon_sym, *it);
+    int count = 0;
+    for (rulel::iterator jt = kt->second.rules->begin();
+	 jt != kt->second.rules->end(); ++jt) {
+      exprl xsubst;
+      map<int32_t, expr> xvars;
+      map<int32_t, int32_t> yttag;
+      get_ttags(yttag, symtab.anon_sym, jt->lhs);
+      if (match(xvars, xsubst, xttag, yttag,
+		symtab.anon_sym, tag, *it, jt->lhs)) {
+	if (xsubst.empty()) {
+	  // This pattern doesn't contain the type tag and doesn't place any
+	  // restrictions on the interface. Nothing to see here, move along.
+	  count++; continue;
+	}
+	// We got a match, pass through all terms bound to variables tagged
+	// with the interface type; these give the patterns we're looking for.
+	for (exprl::iterator v = xsubst.begin(); v != xsubst.end(); ++v) {
+	  if (v->tag() == EXPR::VAR) {
+	    /* Check for singleton variables without a type tag (or the
+	       interface type tag), which just match everything and thus don't
+	       place any restrictions on the interface. */
+	    int32_t vtag = (v->vtag() == symtab.anon_sym)?v->ttag():
+	      yttag[v->vtag()];
+	    if (vtag == 0 || vtag == tag) {
+	      count++; continue;
+	    }
+	  }
+	  count++;
+	  if (!complete) patterns[f].push_back(*v);
+	  // We got a real pattern. Compare it against the patterns we
+	  // already have, to eliminate duplicates. XXXFIXME: This needs
+	  // quadratic time, later we may want to figure out something faster.
+	  bool have = false;
+	  list< set<int32_t> >::reverse_iterator s = skip.rbegin();
+	  for (rulel::reverse_iterator r = rl->rbegin();
+	       !have && r != rl->rend(); ++r, ++s) {
+	    if (equiv(symtab.anon_sym, *v, r->lhs.xval2())) {
+	      have = true; s->insert(f);
+	    }
+	  }
+	  // Skip this pattern if we already have it.
+	  if (have) continue;
+	  // Add a rule for a new pattern.
+	  env vars; vinfo vi;
+	  expr lhs = rebind(vars, vi, symtab.anon_sym, expr(expr(tag), *v)),
+	    rhs = expr(EXPR::INT, 1);
+	  rule r(lhs, rhs, vi);
+	  rl->push_back(r);
+	  // Initialize the "skip" set of functions this pattern belongs to.
+	  skip.push_back(set<int32_t>());
+	  skip.back().insert(f);
+	}
+      }
+    }
+    if (count == 0) {
+      // We didn't find any rule that matches the requested function, so the
+      // entire interface fails to match.
+      nomatch = true;
+      if (!warnings) {
+	delete rl;
+	return 0;
+      } else if (warn) {
+	if (warned.find(f) == warned.end()) {
+	  if (first) {
+	    const symbol& sym = symtab.sym(tag);
+	    warning("warning: interface '"+sym.s+"' is incomplete");
+	    first = false;
+	  }
+	  const symbol& fsym = symtab.sym(f);
+	  warning("warning: function '"+fsym.s+"' is not defined anywhere");
+	  warned.insert(f);
+	}
+      }
+    }
+  }
+  if (nomatch) {
+    delete rl;
+    return 0;
+  }
+  /* Pass #2: Eliminate candidate patterns. *********************************/
+  if (!rl->empty()) {
+    /* Make another pass over the patterns we collected, and remove all
+       patterns which aren't implemented by *all* of the functions. */
+    bool first = true, warn = warnings && !hints.empty();
+    list< set<int32_t> >::iterator s = skip.begin();
+    for (rulel::iterator r = rl->begin(); r != rl->end(); ++s) {
+      expr x = r->lhs.xval2();
+      map<int32_t, int32_t> xttag;
+      get_ttags(xttag, symtab.anon_sym, x);
+      bool good = true;
+      for (map<int32_t, exprl>::iterator p = patterns.begin();
+	   p != patterns.end(); ++p) {
+	int32_t f = p->first;
+	// Check whether the pattern actually belongs to this function. In
+	// this case it will always be matched, so we may skip ahead.
+	if (s->find(f) != s->end()) continue;
+	exprl& ys = p->second;
+	bool ok = false;
+	for (exprl::iterator y = ys.begin(); !ok && y != ys.end(); ++y) {
+	  exprl ysubst;
+	  map<int32_t, expr> yvars;
+	  map<int32_t, int32_t> yttag;
+	  get_ttags(yttag, symtab.anon_sym, *y);
+	  ok = match(yvars, ysubst, yttag, xttag, symtab.anon_sym, tag, *y, x);
+	}
+	if (!ok) {
+	  if (warn && hints.find(f) != hints.end()) {
+	    if (first) {
+	      const symbol& sym = symtab.sym(tag);
+	      warning
+		("warning: interface '"+sym.s+"' may be incomplete");
+	      first = false;
+	    }
+	    /* NOTE: This may generate spurious warnings about patterns which
+	       weren't intended to be part of the interface in the first
+	       place, but just happen to be implemented by some interface
+	       function. The compiler can't really know, but you can disable
+	       such warnings with --nowarn on a per-function basis. */
+	    const symbol& fsym = symtab.sym(f);
+	    ostringstream msg;
+	    msg << "warning: function '" << fsym.s
+		<< "' might lack a rule for '" << x << "'";
+	    warning(msg.str());
+	  }
+	  good = false;
+	  // We may as well break out of the loop now. But if warnings are
+	  // enabled, we keep going to give diagnostics about the other
+	  // interface functions.
+	  if (!warn) break;
+	}
+      }
+      rulel::iterator r1 = r; ++r;
+      if (!good) rl->erase(r1);
+    }
+  }
+  if (rl->empty()) {
+    delete rl;
+    rl = 0;
+  }
+  return rl;
 }
 
 void interpreter::add_simple_rule(rulel &rl, rule *r)
@@ -5248,9 +6193,9 @@ void interpreter::checkfuns(bool ty_check, rule *r)
   funsubst(false, r->qual, f, g);
 }
 
-void interpreter::checkfuns(expr x)
+void interpreter::checkfuns(expr x, bool b)
 {
-  funsubst(false, x, 0, 0);
+  funsubst(false, x, 0, 0, b);
 }
 
 void interpreter::checkvars(expr x, bool b)
@@ -6783,7 +7728,7 @@ expr interpreter::macred(expr x, expr y, uint8_t idx)
 
 /* Evaluate a macro call. */
 
-exprl interpreter::get_args(expr x)
+exprl interpreter::get_macargs(expr x)
 {
   expr y, z;
   exprl xs;
@@ -7177,7 +8122,7 @@ expr interpreter::macval(expr x, envstack& estk, uint8_t idx)
   if (!info.m)
     info.m = new matcher(*info.rules, info.argc+1);
   assert(info.m);
-  exprl args = get_args(x);
+  exprl args = get_macargs(x);
   assert(args.size() == argc);
   state *st = info.m->match(args);
   if (st) {
@@ -7912,6 +8857,28 @@ pure_expr *interpreter::type_rules(int32_t f)
   return y;
 }
 
+pure_expr *interpreter::interface_rules(int32_t f)
+{
+  env::iterator jt = typeenv.find(f);
+  list<pure_expr*> xs;
+  if (jt != typeenv.end() && jt->second.t == env_info::fun &&
+      jt->second.xs) {
+    env_info& info = jt->second;
+    for (exprl::iterator it = info.xs->begin(), end = info.xs->end();
+	 it!=end; ++it) {
+      expr x = vsubst(*it);
+      xs.push_back(const_value(x, true));
+    }
+  }
+  size_t n = xs.size();
+  pure_expr **xv = new pure_expr*[n];
+  list<pure_expr*>::iterator x = xs.begin(), end = xs.end();
+  for (size_t i = 0; x != end; ++x) xv[i++] = *x;
+  pure_expr *y = pure_listv(n, xv);
+  delete[] xv;
+  return y;
+}
+
 pure_expr *interpreter::mac_rules(int32_t f)
 {
   env::iterator jt = macenv.find(f);
@@ -7999,6 +8966,28 @@ bool interpreter::add_type_rules(pure_expr *y)
     }
   }
   return true;
+}
+
+bool interpreter::add_interface_rules(int32_t tag, pure_expr *y)
+{
+  expr x = pure_expr_to_expr(y);
+  exprl xs;
+  errmsg.clear(); errpos.clear();
+  if (!x.is_list(xs)) return false;
+  bool res = true;
+  size_t count = 0;
+  for (exprl::iterator x = xs.begin(), end = xs.end(); x!=end; x++) {
+    try {
+      if (restricted) throw err("operation not implemented");
+      expr u(tagsubst(*x));
+      add_interface_rule(typeenv, tag, u, false); count++;
+    } catch (err &e) {
+      errmsg = e.what() + "\n"; errpos.clear(); errpos.push_back(errmsg);
+      res = false; break;
+    }
+  }
+  finalize_interface_rules(typeenv, tag, count);
+  return res;
 }
 
 bool interpreter::add_mac_rules(pure_expr *y)
@@ -8156,6 +9145,50 @@ bool interpreter::add_type_rules_at(pure_expr *u, pure_expr *y)
       return false;
   }
   return true;
+}
+
+bool interpreter::add_interface_rules_at(int32_t tag,
+					 pure_expr *u, pure_expr *y)
+{
+  // find the rule to insert at
+  exprl::iterator p;
+  env::iterator jt = typeenv.find(tag);
+  if (jt != typeenv.end() && jt->second.t == env_info::fun && jt->second.xs) {
+    env_info& info = jt->second;
+    exprl& xs = *info.xs;
+    p = xs.end();
+    for (exprl::iterator it = xs.begin(), end = xs.end(); it!=end; ++it) {
+      expr x = vsubst(*it);
+      pure_expr *v = const_value(x, true);
+      bool eq = same(u, v);
+      pure_freenew(v);
+      if (eq) {
+	p = it;
+	break;
+      }
+    }
+    if (p == xs.end()) return false;
+  } else
+    return false;
+  // found the rule, insert other rules
+  expr x = pure_expr_to_expr(y);
+  exprl xs;
+  errmsg.clear(); errpos.clear();
+  if (!x.is_list(xs)) return false;
+  bool res = true;
+  size_t count = 0;
+  for (exprl::iterator x = xs.begin(), end = xs.end(); x!=end; x++) {
+    try {
+      if (restricted) throw err("operation not implemented");
+      expr u(tagsubst(*x));
+      add_interface_rule_at(typeenv, tag, u, p); count++;
+    } catch (err &e) {
+      errmsg = e.what() + "\n"; errpos.clear(); errpos.push_back(errmsg);
+      res = false; break;
+    }
+  }
+  finalize_interface_rules(typeenv, tag, count, &p);
+  return res;
 }
 
 bool interpreter::add_mac_rules_at(pure_expr *u, pure_expr *y)
@@ -8322,6 +9355,46 @@ bool interpreter::del_type_rule(pure_expr *x)
 	  r.erase(it);
 	  assert(!r.empty());
 	  mark_dirty_type(f);
+	}
+	return true;
+      }
+    }
+  }
+  return false;
+}
+
+bool interpreter::del_interface_rule(int32_t tag, pure_expr *x)
+{
+  env::iterator jt = typeenv.find(tag);
+  if (jt != typeenv.end() && jt->second.t == env_info::fun &&
+      jt->second.xs) {
+    env_info& info = jt->second;
+    exprl& xs = *info.xs;
+    for (exprl::iterator it = xs.begin(), end = xs.end(); it!=end; ++it) {
+      expr u = vsubst(*it);
+      pure_expr *y = const_value(u, true);
+      bool eq = same(x, y);
+      pure_freenew(y);
+      if (eq) {
+	if (xs.size() == 1 && info.rules->empty())
+	  clear_type(tag);
+	else {
+	  expr fx; count_args(*it, fx);
+	  int32_t f = fx.tag();
+	  if (info.compat) info.compat->erase(*it);
+	  xs.erase(it);
+	  for (exprl::iterator it = xs.begin(), end = xs.end(); it!=end; ++it) {
+	    expr fx; count_args(*it, fx);
+	    int32_t g = fx.tag();
+	    if (g == f) {
+	      f = 0; break;
+	    }
+	  }
+	  if (f > 0) fun_types[f].erase(tag);
+	  if (xs.empty()) {
+	    delete info.xs; info.xs = 0;
+	  }
+	  mark_dirty_type(tag);
 	}
 	return true;
       }
@@ -8681,7 +9754,7 @@ void interpreter::check_used(set<Function*>& used,
       roots.insert(f);
     } else if (f->hasNUsesOrMore(1)) {
       // Look for uses of the function.
-      for (Value::use_iterator it = f->use_begin(), end = f->use_end(); 
+      for (Value::use_iterator it = f->use_begin(), end = f->use_end();
 	   it != end; it++) {
 	if (Instruction *inst = dyn_cast<Instruction>(*it)) {
 	  Function *g = inst->getParent()->getParent();
@@ -8697,7 +9770,7 @@ void interpreter::check_used(set<Function*>& used,
 	  }
 	} else if (Constant *c = dyn_cast<Constant>(*it)) {
 	  // A function pointer. Check its uses.
-	  for (Value::use_iterator jt = c->use_begin(), end = c->use_end(); 
+	  for (Value::use_iterator jt = c->use_begin(), end = c->use_end();
 	       jt != end; jt++) {
 	    if (Instruction *inst = dyn_cast<Instruction>(*jt)) {
 	      // This is a function that refers to f via a pointer.
@@ -10595,7 +11668,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   string faust_mod, faust_fun; int faust_tag = 0;
   if (is_faust_fun) {
     parse_faust_name(name, faust_mod, faust_fun);
-    faust_tag = loaded_dsps[faust_mod].tag; 
+    faust_tag = loaded_dsps[faust_mod].tag;
   }
   // unbox arguments
   bool temps = false, vtemps = false;
@@ -13128,7 +14201,7 @@ Value *interpreter::codegen(expr x, bool quote)
       // check for an existing global variable (if the symbol is bound to a
       // global function, its cbox must exist already)
       map<int32_t,GlobalVar>::iterator v2 = globalvars.find(v->x->tag);
-      if (v2 != globalvars.end()) 
+      if (v2 != globalvars.end())
 	return act_builder().CreateLoad(v2->second.v);
     }
     return act_builder().CreateLoad(v->v);
@@ -13329,7 +14402,7 @@ Value *interpreter::codegen(expr x, bool quote)
       const env_info& info = p->second;
       Env& e = *act.fmap.act()[ftag];
       push("with", &e);
-      fun_body(info.m);
+      fun_body(info.m, 0);
       pop(&e);
     }
     Value *v = codegen(x.xval());
@@ -14094,7 +15167,7 @@ void interpreter::unwind(int32_t tag, bool terminate)
 Function *interpreter::fun(string name, matcher *pm, bool nodefault)
 {
   Function *f = fun_prolog(name);
-  fun_body(pm, nodefault);
+  fun_body(pm, 0, nodefault);
   return f;
 }
 
@@ -14228,7 +15301,7 @@ Function *interpreter::fun_prolog(string name)
   return f.f;
 }
 
-void interpreter::fun_body(matcher *pm, bool nodefault)
+void interpreter::fun_body(matcher *pm, matcher *mxs, bool nodefault)
 {
   Env& f = act_env();
   assert(f.f!=0);
@@ -14252,7 +15325,7 @@ void interpreter::fun_body(matcher *pm, bool nodefault)
   BasicBlock *failedbb = basic_block("failed");
   // emit the matching code
   if (debugging && !is_init(f.name)) debug_rule(0);
-  complex_match(pm, failedbb);
+  complex_match(pm, mxs, failedbb);
   // emit code for a failed match
   f.f->getBasicBlockList().push_back(failedbb);
   f.builder.SetInsertPoint(failedbb);
@@ -14600,13 +15673,15 @@ void interpreter::simple_match(Value *x, state*& s,
 /* The following is just the wrapper routine which decides whether to do a
    complex or simple matcher and sets up the needed environment. */
 
-void interpreter::complex_match(matcher *pm, BasicBlock *failedbb)
+void interpreter::complex_match(matcher *pm, matcher *mxs,
+				BasicBlock *failedbb)
 {
   Env& f = act_env();
   assert(f.f!=0);
   // Check to see if this is just a trie for a single unguarded
   // pattern-binding rule, then we can employ the simple matcher instead.
-  if (f.n == 1 && f.b && pm->r.size() == 1 && pm->r[0].qual.is_null() &&
+  if (f.n == 1 && f.b && pm && !mxs &&
+      pm->r.size() == 1 && pm->r[0].qual.is_null() &&
       !pm->r[0].rhs.is_guarded()) {
     Value *arg = f.args[0];
     // emit the matching code
@@ -14652,7 +15727,7 @@ void interpreter::complex_match(matcher *pm, BasicBlock *failedbb)
       const rule& rr = pm->r[0];
       rp = &rr;
       debug_rule(rp);
-    }
+      }
 #if DEBUG>1
     if (!is_init(f.name)) { ostringstream msg;
       msg << "exit " << f.name << ", result: " << pm->r[0].rhs;
@@ -14660,25 +15735,48 @@ void interpreter::complex_match(matcher *pm, BasicBlock *failedbb)
 #endif
     toplevel_codegen(pm->r[0].rhs, rp);
   } else {
-    // build the initial stack of expressions to be matched
-    list<Value*>xs;
-    for (uint32_t i = 0; i < f.n; i++) xs.push_back(f.args[i]);
-    // emit the matching code
-    set<rulem> reduced;
-    if (xs.empty())
-      // nothing to match
-      try_rules(pm, pm->start, failedbb, reduced);
-    else
-      complex_match(pm, xs, pm->start, failedbb, reduced);
-    // It is often an error (although not strictly forbidden) if there are any
-    // rules left which will never be reduced, so warn about these.
-    for (rulem r = 0; r < pm->r.size(); r++)
-      if (reduced.find(r) == reduced.end()) {
-	const rule& rr = pm->r[r];
-	ostringstream msg;
-	msg << "warning: rule never reduced: " << rr << ";";
-	warning(msg.str());
+    assert(pm || mxs);
+    if (mxs) {
+      /* Match an interface description. This case only arises in type
+	 predicates. We always do this first, before the regular type rules.
+	 If the match fails, we fall back to the regular type rules, if any,
+	 or bail out with failure. */
+      BasicBlock *iffailedbb = pm?basic_block("iffailed"):failedbb;
+      // build the initial stack of expressions to be matched
+      assert(f.n==1);
+      list<Value*>xs(1, f.args[0]);
+      // emit the matching code
+      set<rulem> reduced;
+      complex_match(mxs, xs, mxs->start, iffailedbb, reduced, pm==0);
+      // The rules to match an interface are generated automatically, so we
+      // don't do any warnings about unreduced rules here.
+      if (pm) {
+	f.f->getBasicBlockList().push_back(iffailedbb);
+	f.builder.SetInsertPoint(iffailedbb);
+	// interface match failed, fall back to the regular type rules below
       }
+    }
+    if (pm) {
+      // build the initial stack of expressions to be matched
+      list<Value*>xs;
+      for (uint32_t i = 0; i < f.n; i++) xs.push_back(f.args[i]);
+      // emit the matching code
+      set<rulem> reduced;
+      if (xs.empty())
+	// nothing to match
+	try_rules(pm, pm->start, failedbb, reduced);
+      else
+	complex_match(pm, xs, pm->start, failedbb, reduced);
+      // It is often an error (although not strictly forbidden) if there are
+      // any rules left which will never be reduced, so warn about these.
+      for (rulem r = 0; r < pm->r.size(); r++)
+	if (reduced.find(r) == reduced.end()) {
+	  const rule& rr = pm->r[r];
+	  ostringstream msg;
+	  msg << "warning: rule never reduced: " << rr << ";";
+	  warning(msg.str());
+	}
+    }
   }
 }
 
@@ -14689,9 +15787,9 @@ void interpreter::complex_match(matcher *pm, BasicBlock *failedbb)
     state *s = t->st;						\
     list<Value*> ys = xs; ys.pop_front();			\
     if (ys.empty())						\
-      try_rules(pm, s, failedbb, reduced, tmps);		\
+      try_rules(pm, s, failedbb, reduced, tmps, tail);		\
     else							\
-      complex_match(pm, ys, s, failedbb, reduced, tmps);	\
+      complex_match(pm, ys, s, failedbb, reduced, tmps, tail);	\
   } while (0)
 
 // same as above, but handles the case of an application where we recurse into
@@ -14704,7 +15802,7 @@ void interpreter::complex_match(matcher *pm, BasicBlock *failedbb)
     Value *x1 = f.CreateLoadGEP(x, Zero, ValFldIndex, "x1");	\
     Value *x2 = f.CreateLoadGEP(x, Zero, ValFld2Index, "x2");	\
     ys.push_front(x2); ys.push_front(x1);			\
-    complex_match(pm, ys, s, failedbb, reduced, tmps);		\
+    complex_match(pm, ys, s, failedbb, reduced, tmps, tail);	\
   } while (0)
 
 // same as above, but handles the case of a matrix where we recurse into
@@ -14723,7 +15821,7 @@ void interpreter::complex_match(matcher *pm, BasicBlock *failedbb)
 	tmps1.push_front(y);					\
       }								\
     ys.splice(ys.begin(), zs);					\
-    complex_match(pm, ys, s, failedbb, reduced, tmps1);		\
+    complex_match(pm, ys, s, failedbb, reduced, tmps1, tail);	\
   } while (0)
 
 /* This is the core of the decision tree construction algorithm. It emits code
@@ -14751,7 +15849,8 @@ typedef map<int32_t,trans_list_info> trans_map;
 
 void interpreter::complex_match(matcher *pm, const list<Value*>& xs, state *s,
 				BasicBlock *failedbb, set<rulem>& reduced,
-				const list<Value*>& tmps)
+				const list<Value*>& tmps,
+				bool tail)
 {
   Env& f = act_env();
   assert(!xs.empty());
@@ -15033,7 +16132,8 @@ static bool have_tail_guard(matcher *pm, state *s, int32_t tag)
 #endif
 
 void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
-			    set<rulem>& reduced, const list<Value*>& tmps)
+			    set<rulem>& reduced, const list<Value*>& tmps,
+			    bool tail)
 {
   Env& f = act_env();
   assert(s->tr.empty()); // we're in a final state here
@@ -15048,7 +16148,7 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
   BasicBlock* rulebb = basic_block(mklabel("rule.state", s->s, rl.front()));
   f.builder.CreateBr(rulebb);
 #if USE_FASTCC
-  const bool have_tail = !debugging && use_fastcc && is_type(f.name) &&
+  const bool have_tail = tail && !debugging && use_fastcc && is_type(f.name) &&
     have_tail_guard(pm, s, f.tag);
 #else
   const bool have_tail = false;

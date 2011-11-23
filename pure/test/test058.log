@@ -17,11 +17,11 @@ map foo [1:3,1..3,(1,2,3),99,foo];
 [foo (1:3),foo [1,2,3],foo (1,2,3),100,foo foo]
 type List = rlistp;
 type Tuple = tuplep;
-type {
+type List {
   rule #0: List = rlistp
   state 0: #0
 }
-type {
+type Tuple {
   rule #0: Tuple = tuplep
   state 0: #0
 }
@@ -69,7 +69,7 @@ const z = 99;
 <stdin>, line 32: failed match while evaluating 'const z = 99'
 type Null ();
 type Null [];
-type {
+type Null {
   rule #0: Null () = 1
   rule #1: Null [] = 1
   state 0: #0 #1
@@ -81,7 +81,7 @@ type {
 map (typep Null) [[],1..3,(),(1,2,3),99,foo];
 [1,0,1,0,0,0]
 type my::Null [];
-type {
+type my::Null {
   rule #0: my::Null [] = 1
   state 0: #0
 	[] state 1
@@ -93,25 +93,25 @@ type nat n/*0:1*/::int = n/*0:1*/>0;
 type odd n/*0:1*/::nat = n/*0:1*/ mod 2;
 type even n/*0:1*/::nat = ~typep odd n/*0:1*/;
 type evenc = (~).typep odd;
-type {
+type nat {
   rule #0: nat n::int = n>0
   state 0: #0
 	<var>::int state 1
   state 1: #0
 }
-type {
+type odd {
   rule #0: odd n::nat = n mod 2
   state 0: #0
 	<var> state 1
   state 1: #0
 }
-type {
+type even {
   rule #0: even n::nat = ~typep odd n
   state 0: #0
 	<var> state 1
   state 1: #0
 }
-type {
+type evenc {
   rule #0: evenc = (~).typep odd
   state 0: #0
 }
@@ -133,7 +133,7 @@ map fact (-1..10);
 map fact [10,10L];
 [3628800L,fact 10L]
 type nat n/*0:1*/::bigint = n/*0:1*/>0;
-type {
+type nat {
   rule #0: nat n::int = n>0
   rule #1: nat n::bigint = n>0
   state 0: #0 #1
@@ -146,11 +146,11 @@ map fact [10,10L];
 [3628800L,3628800L]
 type foo = int;
 type bar = intp;
-type {
+type foo {
   rule #0: foo = int
   state 0: #0
 }
-type {
+type bar {
   rule #0: bar = intp
   state 0: #0
 }

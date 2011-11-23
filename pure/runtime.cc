@@ -8672,6 +8672,16 @@ pure_expr *get_typedef(pure_expr *f)
 }
 
 extern "C"
+pure_expr *get_iface(pure_expr *f)
+{
+  if (f->tag > 0) {
+    interpreter& interp = *interpreter::g_interp;
+    return interp.interface_rules(f->tag);
+  } else
+    return 0;
+}
+
+extern "C"
 pure_expr *get_macdef(pure_expr *f)
 {
   if (f->tag > 0) {
@@ -8734,6 +8744,17 @@ pure_expr *add_typedef(pure_expr *x)
 }
 
 extern "C"
+pure_expr *add_iface(pure_expr *f, pure_expr *x)
+{
+  if (f->tag > 0 && pure_is_listv(x, 0, 0)) {
+    interpreter& interp = *interpreter::g_interp;
+    bool res = interp.add_interface_rules(f->tag, x);
+    return res?pure_tuplel(0):0;
+  } else
+    return 0;
+}
+
+extern "C"
 pure_expr *add_macdef(pure_expr *x)
 {
   if (pure_is_listv(x, 0, 0)) {
@@ -8761,6 +8782,17 @@ pure_expr *add_typedef_at(pure_expr *y, pure_expr *x)
   if (pure_is_listv(x, 0, 0)) {
     interpreter& interp = *interpreter::g_interp;
     bool res = interp.add_type_rules_at(y, x);
+    return res?pure_tuplel(0):0;
+  } else
+    return 0;
+}
+
+extern "C"
+pure_expr *add_iface_at(pure_expr *f, pure_expr *y, pure_expr *x)
+{
+  if (f->tag > 0 && pure_is_listv(x, 0, 0)) {
+    interpreter& interp = *interpreter::g_interp;
+    bool res = interp.add_interface_rules_at(f->tag, y, x);
     return res?pure_tuplel(0):0;
   } else
     return 0;
@@ -8843,6 +8875,17 @@ pure_expr *del_typedef(pure_expr *x)
   interpreter& interp = *interpreter::g_interp;
   bool res = interp.del_type_rule(x);
   return res?pure_tuplel(0):0;
+}
+
+extern "C"
+pure_expr *del_iface(pure_expr *f, pure_expr *x)
+{
+  if (f->tag > 0 && pure_is_listv(x, 0, 0)) {
+    interpreter& interp = *interpreter::g_interp;
+    bool res = interp.del_interface_rule(f->tag, x);
+    return res?pure_tuplel(0):0;
+  } else
+    return 0;
 }
 
 extern "C"

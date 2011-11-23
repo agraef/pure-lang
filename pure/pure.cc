@@ -117,9 +117,9 @@ Type 'help' in the interpreter for more help.\n"
 
 static const char *commands[] = {
   "break", "bt", "cd", "clear", "const", "def", "del", "dump", "extern", "help",
-  "infix", "infixl", "infixr", "let", "ls", "mem", "namespace", "nonfix",
-  "outfix", "override", "postfix", "prefix", "private", "public", "pwd",
-  "quit", "run", "save", "show", "stats", "trace", "type", "underride",
+  "infix", "infixl", "infixr", "interface", "let", "ls", "mem", "namespace",
+  "nonfix", "outfix", "override", "postfix", "prefix", "private", "public",
+  "pwd", "quit", "run", "save", "show", "stats", "trace", "type", "underride",
   "using", 0
 };
 
@@ -179,6 +179,7 @@ command_generator(const char *text, int state)
     if (!interp.symtab.visible(f) ||
 	(sym.prec == PREC_MAX && sym.fix != nonfix && sym.fix != outfix &&
 	 interp.globenv.find(f) == interp.globenv.end() &&
+	 interp.typeenv.find(f) == interp.typeenv.end() &&
 	 interp.macenv.find(f) == interp.macenv.end() &&
 	 interp.globalvars.find(f) == interp.globalvars.end() &&
 	 interp.externals.find(f) == interp.externals.end())) {

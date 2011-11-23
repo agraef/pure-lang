@@ -1159,6 +1159,10 @@ pure_expr *get_fundef(pure_expr *f);
 pure_expr *get_typedef(pure_expr *f);
 pure_expr *get_macdef(pure_expr *f);
 
+/* Get the list of patterns of an interface type. */
+
+pure_expr *get_iface(pure_expr *f);
+
 /* Get definitions of variables and constants. The result takes the form
    [var-->val] if the symbol is defined, otherwise the empty list is
    returned. */
@@ -1175,6 +1179,11 @@ pure_expr *add_fundef(pure_expr *x);
 pure_expr *add_typedef(pure_expr *x);
 pure_expr *add_macdef(pure_expr *x);
 
+/* Add patterns for an interface type. Note that f must be the symbol denoting
+   the interface. */
+
+pure_expr *add_iface(pure_expr *f, pure_expr *x);
+
 /* Same as above, but add the given rules x before a given rule y. In this
    case, all rules must be for the same head symbol which matches the head
    symbol of the rule y. */
@@ -1182,6 +1191,10 @@ pure_expr *add_macdef(pure_expr *x);
 pure_expr *add_fundef_at(pure_expr *y, pure_expr *x);
 pure_expr *add_typedef_at(pure_expr *y, pure_expr *x);
 pure_expr *add_macdef_at(pure_expr *y, pure_expr *x);
+
+/* Same as above, but add the given patterns x before a given pattern y.  */
+
+pure_expr *add_iface_at(pure_expr *f, pure_expr *y, pure_expr *x);
 
 /* Set global variables or constants. The argument is a list of rules in the
    format var-->val; the left-hand side of each rule *must* be a symbol (no
@@ -1201,6 +1214,10 @@ pure_expr *add_constdef(pure_expr *x);
 pure_expr *del_fundef(pure_expr *x);
 pure_expr *del_typedef(pure_expr *x);
 pure_expr *del_macdef(pure_expr *x);
+
+/* Delete patterns for an interface type. */
+
+pure_expr *del_iface(pure_expr *f, pure_expr *x);
 
 /* Delete global variables or constants. Here the argument is just the
    variable or constant symbol to be deleted. */

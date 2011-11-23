@@ -1,0 +1,339 @@
+interface nonempty_stack with
+  pop xs/*0:1*/::nonempty_stack;
+  top xs/*0:1*/::nonempty_stack;
+end;
+get_iface nonempty_stack;
+[pop (xs __type__ nonempty_stack),top (xs __type__ nonempty_stack)]
+astack xs/*0:1*/::list = xs/*0:1*/;
+foo xs/*0:1*/::nonempty_stack = top xs/*0:1*/,pop xs/*0:1*/;
+{
+  rule #0: astack xs::list = xs
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+{
+  rule #0: foo xs::nonempty_stack = top xs,pop xs
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+foo (astack (1..10));
+foo [1,2,3,4,5,6,7,8,9,10]
+pop (x/*0:101*/:xs/*0:11*/) = xs/*0:11*/;
+top (x/*0:101*/:xs/*0:11*/) = x/*0:101*/;
+interface nonempty_stack {
+  rule #0: nonempty_stack (x:xs) = 1
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+}
+{
+  rule #0: pop (x:xs) = xs
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+}
+{
+  rule #0: top (x:xs) = x
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+}
+foo (astack (1..10));
+1,[2,3,4,5,6,7,8,9,10]
+foo (astack []);
+foo []
+interface stack with
+  push xs/*0:01*/::stack x/*0:1*/;
+  pop xs/*0:1*/::stack;
+  top xs/*0:1*/::stack;
+end;
+push xs@[] x/*0:1*/ = x/*0:1*/:xs/*0:01*/;
+push xs@(_/*0:0101*/:_/*0:011*/) x/*0:1*/ = x/*0:1*/:xs/*0:01*/;
+warning: interface 'stack' may be incomplete
+warning: function 'pop' might lack a rule for 'xs@[]'
+warning: function 'top' might lack a rule for 'xs@[]'
+interface stack {
+  rule #0: stack xs@(_:_) = 1
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+}
+{
+  rule #0: push xs@[] x = x:xs
+  rule #1: push xs@(_:_) x = x:xs
+  state 0: #0 #1
+	<app> state 1
+	[] state 7
+  state 1: #1
+	<app> state 2
+  state 2: #1
+	: state 3
+  state 3: #1
+	<var> state 4
+  state 4: #1
+	<var> state 5
+  state 5: #1
+	<var> state 6
+  state 6: #1
+  state 7: #0
+	<var> state 8
+  state 8: #0
+}
+get_iface stack;
+[push (xs __type__ stack) x,pop (xs __type__ stack),top (xs __type__ stack)]
+foo xs/*0:1*/::stack = top xs/*0:1*/,pop xs/*0:1*/;
+interface nonempty_stack {
+  rule #0: nonempty_stack (x:xs) = 1
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+}
+interface stack {
+  rule #0: stack xs@[] = 1
+  rule #1: stack xs@(_:_) = 1
+  state 0: #0 #1
+	<app> state 1
+	[] state 6
+  state 1: #1
+	<app> state 2
+  state 2: #1
+	: state 3
+  state 3: #1
+	<var> state 4
+  state 4: #1
+	<var> state 5
+  state 5: #1
+  state 6: #0
+}
+{
+  rule #0: pop (x:xs) = xs
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+}
+{
+  rule #0: top (x:xs) = x
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+}
+{
+  rule #0: foo xs::nonempty_stack = top xs,pop xs
+  rule #1: foo xs::stack = top xs,pop xs
+  state 0: #0 #1
+	<var> state 1
+  state 1: #0 #1
+}
+foo (astack (1..10));
+1,[2,3,4,5,6,7,8,9,10]
+foo (astack []);
+<stdin>, line 68: unhandled exception 'failed_match' while evaluating 'foo$astack []'
+bar x/*0:01*/ xs/*0:1*/::stack = foo (push xs/*0:1*/ x/*0:01*/);
+{
+  rule #0: bar x xs::stack = foo (push xs x)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+}
+bar 99 (astack (1..3));
+99,[1,2,3]
+push xs@nil x/*0:1*/ = cons xs/*0:01*/ x/*0:1*/;
+push xs@(cons _/*0:0101*/ _/*0:011*/) x/*0:1*/ = cons xs/*0:01*/ x/*0:1*/;
+pop (cons xs/*0:101*/ x/*0:11*/) = xs/*0:101*/;
+top (cons xs/*0:101*/ x/*0:11*/) = x/*0:11*/;
+bstack xs/*0:1*/::list = foldl push nil xs/*0:1*/;
+interface nonempty_stack {
+  rule #0: nonempty_stack (x:xs) = 1
+  rule #1: nonempty_stack (cons xs x) = 1
+  state 0: #0 #1
+	<app> state 1
+  state 1: #0 #1
+	<app> state 2
+  state 2: #0 #1
+	: state 3
+	cons state 6
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+  state 6: #1
+	<var> state 7
+  state 7: #1
+	<var> state 8
+  state 8: #1
+}
+interface stack {
+  rule #0: stack xs@[] = 1
+  rule #1: stack xs@(_:_) = 1
+  rule #2: stack xs@nil = 1
+  rule #3: stack xs@(cons _ _) = 1
+  state 0: #0 #1 #2 #3
+	<app> state 1
+	[] state 9
+	nil state 10
+  state 1: #1 #3
+	<app> state 2
+  state 2: #1 #3
+	: state 3
+	cons state 6
+  state 3: #1
+	<var> state 4
+  state 4: #1
+	<var> state 5
+  state 5: #1
+  state 6: #3
+	<var> state 7
+  state 7: #3
+	<var> state 8
+  state 8: #3
+  state 9: #0
+  state 10: #2
+}
+{
+  rule #0: pop (x:xs) = xs
+  rule #1: pop (cons xs x) = xs
+  state 0: #0 #1
+	<app> state 1
+  state 1: #0 #1
+	<app> state 2
+  state 2: #0 #1
+	: state 3
+	cons state 6
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+  state 6: #1
+	<var> state 7
+  state 7: #1
+	<var> state 8
+  state 8: #1
+}
+{
+  rule #0: top (x:xs) = x
+  rule #1: top (cons xs x) = x
+  state 0: #0 #1
+	<app> state 1
+  state 1: #0 #1
+	<app> state 2
+  state 2: #0 #1
+	: state 3
+	cons state 6
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+  state 6: #1
+	<var> state 7
+  state 7: #1
+	<var> state 8
+  state 8: #1
+}
+{
+  rule #0: push xs@[] x = x:xs
+  rule #1: push xs@(_:_) x = x:xs
+  rule #2: push xs@nil x = cons xs x
+  rule #3: push xs@(cons _ _) x = cons xs x
+  state 0: #0 #1 #2 #3
+	<app> state 1
+	[] state 11
+	nil state 13
+  state 1: #1 #3
+	<app> state 2
+  state 2: #1 #3
+	: state 3
+	cons state 7
+  state 3: #1
+	<var> state 4
+  state 4: #1
+	<var> state 5
+  state 5: #1
+	<var> state 6
+  state 6: #1
+  state 7: #3
+	<var> state 8
+  state 8: #3
+	<var> state 9
+  state 9: #3
+	<var> state 10
+  state 10: #3
+  state 11: #0
+	<var> state 12
+  state 12: #0
+  state 13: #2
+	<var> state 14
+  state 14: #2
+}
+{
+  rule #0: bstack xs::list = foldl push nil xs
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+foo (bstack (1..3));
+3,cons (cons nil 1) 2
+bar 99 (bstack (1..3));
+99,cons (cons (cons nil 1) 2) 3
