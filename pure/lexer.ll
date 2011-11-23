@@ -104,6 +104,33 @@ static yy::parser::token_type optoken[5] =
   {token::NA, token::LT, token::RT, token::PR, token::PO};
 
 #define optok(_f, _fix) ((_fix<=infixr && _f==interp.symtab.minus_sym().f)?token::PR:optoken[_fix])
+
+// A little helper class to keep track of interpreter-local data.
+
+template <class T>
+struct ILS {
+  pure_interp_key_t key;
+  T val;
+  /* This is safe to invoke at any time. */
+  ILS() : key(pure_interp_key(free)), val(T()) {}
+  ILS(T const& x) : key(pure_interp_key(free)), val(x) {}
+  /* This must only be invoked after an interpreter instance is available. It
+     will return a different reference to an object of type T (initialized to
+     the default value, if given) for each interpreter. */
+  T& operator()();
+};
+
+template <class T>
+T& ILS<T>::operator()()
+{
+  T *ptr = (T*)pure_interp_get(key);
+  if (!ptr) {
+    ptr = (T*)malloc(sizeof(T)); assert(ptr);
+    pure_interp_set(key, ptr);
+    *ptr = val;
+  }
+  return *ptr;
+}
 %}
 
 %option noyywrap debug
@@ -149,6 +176,13 @@ blank  [ \t\f\v\r]
 %%
 
 %{
+  // Saved status (just one level) for --rewarn, --rewarn2.
+#if 1
+  static ILS<int> _s_compat = -1, _s_compat2 = -1;
+  int &s_compat = _s_compat(), &s_compat2 = _s_compat2();
+#else
+  static int s_compat = -1, s_compat2 = -1;
+#endif
   yylloc->step();
 %}
 
@@ -311,6 +345,14 @@ blank  [ \t\f\v\r]
     interp.source_level--;
   yylloc->step();
 }
+^"#!"[ \t]*"--rewarn"[ \t]*("//".*)? {
+  /* --rewarn pragma. */
+  if (s_compat >= 0) interp.compat = s_compat!=0;
+}
+^"#!"[ \t]*"--rewarn2"[ \t]*("//".*)? {
+  /* --rewarn2 pragma. */
+  if (s_compat2 >= 0) interp.compat2 = s_compat2!=0;
+}
 ^"#!"[ \t]*"--"[A-Za-z0-9-]+[ \t]*("//".*)? {
   /* Other pragmas (code generation). */
   char *s = strchr(yytext, '-')+2, *t = s;
@@ -331,8 +373,10 @@ blank  [ \t\f\v\r]
   } else if (opt == "fold") {
     interp.folding = flag;
   } else if (opt == "warn") {
+    if (s_compat < 0) s_compat = interp.compat;
     interp.compat = flag;
   } else if (opt == "warn2") {
+    if (s_compat2 < 0) s_compat2 = interp.compat2;
     interp.compat2 = flag;
 #if USE_BIGINT_PRAGMA
   } else if (opt == "bigint") {
