@@ -3533,6 +3533,9 @@ void interpreter::mark_dirty_type(int32_t f)
     if (info.rxs) {
       delete info.rxs; info.rxs = 0;
     }
+    if (info.mxs) {
+      delete info.mxs; info.mxs = 0;
+    }
     dirty_types.insert(f);
   }
 }
@@ -3594,6 +3597,8 @@ void interpreter::compile()
 	  info.m = new matcher(*info.rules, info.argc+1);
 	if ((info.rxs = compile_interface(typeenv, ftag)))
 	  info.mxs = new matcher(*info.rxs, info.argc+1);
+	assert(!info.rxs || !info.rxs->empty());
+	assert((!info.rxs && !info.mxs) || (info.argc==1 && info.mxs));
 	if (verbose&verbosity::code) {
 	  const symbol& sym = symtab.sym(ftag);
 	  if (info.mxs && !info.rxs->empty())
