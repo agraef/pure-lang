@@ -6178,10 +6178,6 @@ void interpreter::checkfuns(bool ty_check, rule *r)
       symbol *sym2 = symtab.sym(*symtab.current_namespace+"::"+id);
       assert(sym2);
       g = sym2->f;
-#if 0
-      if (compat && f!=g)
-	warning(*loc, "warning: implicit declaration of '"+sym2->s+"'");
-#endif
     } else if (compat2 && (x.flags()&EXPR::QUAL) &&
 	       qual == *symtab.current_namespace)
       warning(*loc, "hint: unneeded qualification in '"+sym.s+"'");
@@ -6249,10 +6245,6 @@ void interpreter::checkvars(expr x, bool b)
 	symbol *sym2 = symtab.sym("::"+*symtab.current_namespace+"::"+id);
 	assert(sym2);
 	x.set_tag(sym2->f);
-#if 0
-	if (compat)
-	  warning(*loc, "warning: implicit declaration of '"+sym2->s+"'");
-#endif
       } else
 	sym.unresolved = false;
     }
@@ -6273,10 +6265,6 @@ void interpreter::checkvars(expr x, bool b)
 	symbol *sym2 = symtab.sym("::"+*symtab.current_namespace+"::"+id);
 	assert(sym2);
 	x.set_astag(sym2->f);
-#if 0
-	if (compat)
-	  warning(*loc, "warning: implicit declaration of '"+sym2->s+"'");
-#endif
       } else
 	sym.unresolved = false;
     }
@@ -8310,23 +8298,6 @@ expr *interpreter::mksym_expr(string *s, int32_t tag)
   } else if (sym.f <= 0 || sym.prec < PREC_MAX ||
 	     sym.fix == nonfix || sym.fix == outfix) {
     throw err("error in expression (misplaced "+ttag_msg(tag)+")");
-#if 0
-  } else if (tag > 0 && (it = typeenv.find(tag)) == typeenv.end()) {
-    // This was deprecated during the development Pure 0.47, they are removed
-    // now so that we can properly handle recursive type definitions.
-    static set<int32_t> *warned = 0;
-    if (!warned) warned = new set<int32_t>;
-    if (compat && warned->find(tag) == warned->end()) {
-      warning("warning: deprecated old-style type tag '"+
-	      symtab.sym(tag).s+"'");
-      // prevent cascades of warnings for the same symbol
-      warned->insert(tag);
-    }
-    if (*s == "_")
-      x = new expr(expr(tag), expr(symtab.anon_sym));
-    else
-      return mkas_expr(s, new expr(expr(tag), expr(symtab.anon_sym)));
-#endif
   } else {
     x = new expr(sym.f);
     if (s->find("::") != string::npos)
