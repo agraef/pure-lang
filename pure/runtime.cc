@@ -8672,7 +8672,7 @@ pure_expr *get_typedef(pure_expr *f)
 }
 
 extern "C"
-pure_expr *get_iface(pure_expr *f)
+pure_expr *get_interface(pure_expr *f)
 {
   if (f->tag > 0) {
     interpreter& interp = *interpreter::g_interp;
@@ -8744,7 +8744,7 @@ pure_expr *add_typedef(pure_expr *x)
 }
 
 extern "C"
-pure_expr *add_iface(pure_expr *f, pure_expr *x)
+pure_expr *add_interface(pure_expr *f, pure_expr *x)
 {
   if (f->tag > 0 && pure_is_listv(x, 0, 0)) {
     interpreter& interp = *interpreter::g_interp;
@@ -8788,7 +8788,7 @@ pure_expr *add_typedef_at(pure_expr *y, pure_expr *x)
 }
 
 extern "C"
-pure_expr *add_iface_at(pure_expr *f, pure_expr *y, pure_expr *x)
+pure_expr *add_interface_at(pure_expr *f, pure_expr *y, pure_expr *x)
 {
   if (f->tag > 0 && pure_is_listv(x, 0, 0)) {
     interpreter& interp = *interpreter::g_interp;
@@ -8878,7 +8878,7 @@ pure_expr *del_typedef(pure_expr *x)
 }
 
 extern "C"
-pure_expr *del_iface(pure_expr *f, pure_expr *x)
+pure_expr *del_interface(pure_expr *f, pure_expr *x)
 {
   if (f->tag > 0 && pure_is_listv(x, 0, 0)) {
     interpreter& interp = *interpreter::g_interp;
