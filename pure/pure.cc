@@ -249,6 +249,7 @@ symbol_generator(const char *text, int state)
     if (!interp.symtab.visible(f) ||
 	(sym.prec == PREC_MAX && sym.fix != nonfix && sym.fix != outfix &&
 	 interp.globenv.find(f) == interp.globenv.end() &&
+	 interp.typeenv.find(f) == interp.typeenv.end() &&
 	 interp.macenv.find(f) == interp.macenv.end() &&
 	 interp.globalvars.find(f) == interp.globalvars.end() &&
 	 interp.externals.find(f) == interp.externals.end())) {

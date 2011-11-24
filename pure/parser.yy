@@ -276,8 +276,9 @@ item
   if (id && id->is_fun()) {
     // This will promote the symbol to the proper namespace if it hasn't been
     // declared yet.
-    interp.checkfuns(*id, true);
+    interp.checkvars(*id);
     interp.symtab.sym(id->tag()).unresolved = false;
+    interp.typeenv[id->tag()];
     $<ival>$ = id->tag();
   } else {
     error(yylloc, "error in interface declaration (invalid type identifier)");
@@ -805,7 +806,7 @@ type_rule
       // Just declare the symbol so that the compiler knows about it.
       // This will promote the symbol to the proper namespace if it hasn't
       // been declared yet.
-      interp.checkfuns(*l, true);
+      interp.checkvars(*l);
       interp.symtab.sym(l->tag()).unresolved = false;
       if ((interp.verbose&verbosity::defs) != 0)
 	cout << "type " << *l << ";\n";

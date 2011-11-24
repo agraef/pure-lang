@@ -2293,7 +2293,7 @@ file for instructions on how to do this.\n";
 	  else
 	    cout << sout.str();
 	}
-      } else
+      } else if (it == interp.typeenv.end())
 	cerr << "show: unknown interface type '"+args.l.back()+"'\n";
       goto out;
     }
