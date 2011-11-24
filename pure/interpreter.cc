@@ -5328,9 +5328,9 @@ static expr rebind(env& vars, vinfo& vi, int32_t anon_tag,
    j!=i. This way we may loose some patterns (we always err on the safe side,
    so that the programmer can be confident that members of the type work with
    all interface functions), but the method seems to work quite well in
-   practice. (In fact, it also has a nice advantage, namely that we can warn
-   about potentially missing rules for eliminated patterns in some of the
-   interface operations.)
+   practice. (In fact, it also has the nice advantage that we can warn about
+   potentially missing rules for eliminated patterns in some of the interface
+   operations.)
 
    Note that in pathological cases the method sketched out above may in fact
    not just loose some, but most (or at least some important) possible
