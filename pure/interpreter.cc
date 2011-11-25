@@ -10565,7 +10565,7 @@ void Env::clear()
       /* XXXFIXME: This appears to be necessary to work around a bug in the
 	 lazy JIT of LLVM >=2.7, cf. http://llvm.org/bugs/show_bug.cgi?id=6360.
 	 PR#6360 has apparently been fixed since, but test052.pure still fails
-	 for me as of LLVM 2.8, so we leave this enabled for now. */
+	 for me as of LLVM 3.0, so we leave this enabled for now. */
       // LLVM >=2.7 collects the function code anyway if we erase the IR, so
       // we just delete the body instead.
       (*fi)->deleteBody();
