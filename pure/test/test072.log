@@ -189,7 +189,81 @@ interface stack {
 foo (astack (1..10));
 10,[9,8,7,6,5,4,3,2,1]
 foo (astack []);
-<stdin>, line 73: unhandled exception 'failed_match' while evaluating 'foo$astack []'
+<stdin>, line 72: unhandled exception 'failed_match' while evaluating 'foo$astack []'
+pop [] = throw "empty stack";
+top [] = throw "empty stack";
+interface nonempty_stack {
+  rule #0: nonempty_stack (x:xs) = 1
+  rule #1: nonempty_stack [] = 1
+  state 0: #0 #1
+	<app> state 1
+	[] state 6
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+  state 6: #1
+}
+interface stack {
+  rule #0: stack xs@[] = 1
+  rule #1: stack xs@(_:_) = 1
+  state 0: #0 #1
+	<app> state 1
+	[] state 6
+  state 1: #1
+	<app> state 2
+  state 2: #1
+	: state 3
+  state 3: #1
+	<var> state 4
+  state 4: #1
+	<var> state 5
+  state 5: #1
+  state 6: #0
+}
+{
+  rule #0: pop (x:xs) = xs
+  rule #1: pop [] = throw "empty stack"
+  state 0: #0 #1
+	<app> state 1
+	[] state 6
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+  state 6: #1
+}
+{
+  rule #0: top (x:xs) = x
+  rule #1: top [] = throw "empty stack"
+  state 0: #0 #1
+	<app> state 1
+	[] state 6
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+  state 6: #1
+}
+foo (astack (1..10));
+10,[9,8,7,6,5,4,3,2,1]
+foo (astack []);
+<stdin>, line 87: unhandled exception '"empty stack"' while evaluating 'foo$astack []'
 bar x/*0:01*/ xs/*0:1*/::stack = foo (push xs/*0:1*/ x/*0:01*/);
 {
   rule #0: bar x xs::stack = foo (push xs x)
@@ -201,135 +275,240 @@ bar x/*0:01*/ xs/*0:1*/::stack = foo (push xs/*0:1*/ x/*0:01*/);
 }
 bar 99 (astack (1..3));
 99,[3,2,1]
-push xs@nil x/*0:1*/ = cons xs/*0:01*/ x/*0:1*/;
-push xs@(cons _/*0:0101*/ _/*0:011*/) x/*0:1*/ = cons xs/*0:01*/ x/*0:1*/;
-pop (cons xs/*0:101*/ x/*0:11*/) = xs/*0:101*/;
-top (cons xs/*0:101*/ x/*0:11*/) = x/*0:11*/;
-bstack xs/*0:1*/::list = foldl push nil xs/*0:1*/;
-interface nonempty_stack {
-  rule #0: nonempty_stack (x:xs) = 1
-  rule #1: nonempty_stack (cons xs x) = 1
+type cons nil;
+type cons (cons xs/*0:101*/ x/*0:11*/);
+push xs/*0:01*/::cons x/*0:1*/ = cons xs/*0:01*/ x/*0:1*/;
+pop xs/*0:1*/::cons = case xs/*0:1*/ of cons xs/*0:01*/ x/*0:1*/ = xs/*0:01*/; _/*0:*/ = throw "empty stack" {
+  rule #0: cons xs x = xs
+  rule #1: _ = throw "empty stack"
   state 0: #0 #1
-	<app> state 1
-  state 1: #0 #1
+	<var> state 1
 	<app> state 2
+  state 1: #1
   state 2: #0 #1
-	: state 3
-	cons state 6
-  state 3: #0
+	<var> state 3
+	<app> state 5
+  state 3: #1
 	<var> state 4
-  state 4: #0
-	<var> state 5
-  state 5: #0
+  state 4: #1
+  state 5: #0 #1
+	<var> state 6
+	cons state 9
   state 6: #1
 	<var> state 7
   state 7: #1
 	<var> state 8
   state 8: #1
+  state 9: #0 #1
+	<var> state 10
+  state 10: #0 #1
+	<var> state 11
+  state 11: #0 #1
+} end;
+top xs/*0:1*/::cons = case xs/*0:1*/ of cons xs/*0:01*/ x/*0:1*/ = x/*0:1*/; _/*0:*/ = throw "empty stack" {
+  rule #0: cons xs x = x
+  rule #1: _ = throw "empty stack"
+  state 0: #0 #1
+	<var> state 1
+	<app> state 2
+  state 1: #1
+  state 2: #0 #1
+	<var> state 3
+	<app> state 5
+  state 3: #1
+	<var> state 4
+  state 4: #1
+  state 5: #0 #1
+	<var> state 6
+	cons state 9
+  state 6: #1
+	<var> state 7
+  state 7: #1
+	<var> state 8
+  state 8: #1
+  state 9: #0 #1
+	<var> state 10
+  state 10: #0 #1
+	<var> state 11
+  state 11: #0 #1
+} end;
+bstack xs/*0:1*/::list = foldl push nil xs/*0:1*/;
+interface nonempty_stack {
+  rule #0: nonempty_stack (x:xs) = 1
+  rule #1: nonempty_stack [] = 1
+  rule #2: nonempty_stack xs::cons = 1
+  state 0: #0 #1 #2
+	<var> state 1
+	<app> state 2
+	[] state 12
+  state 1: #2
+  state 2: #0 #2
+	<var> state 3
+	<app> state 5
+  state 3: #2
+	<var> state 4
+  state 4: #2
+  state 5: #0 #2
+	<var> state 6
+	: state 9
+  state 6: #2
+	<var> state 7
+  state 7: #2
+	<var> state 8
+  state 8: #2
+  state 9: #0 #2
+	<var> state 10
+  state 10: #0 #2
+	<var> state 11
+  state 11: #0 #2
+  state 12: #1 #2
 }
 interface stack {
   rule #0: stack xs@[] = 1
   rule #1: stack xs@(_:_) = 1
-  rule #2: stack xs@nil = 1
-  rule #3: stack xs@(cons _ _) = 1
-  state 0: #0 #1 #2 #3
-	<app> state 1
-	[] state 9
-	nil state 10
-  state 1: #1 #3
+  rule #2: stack xs::cons = 1
+  state 0: #0 #1 #2
+	<var> state 1
 	<app> state 2
-  state 2: #1 #3
-	: state 3
-	cons state 6
+	[] state 12
+  state 1: #2
+  state 2: #1 #2
+	<var> state 3
+	<app> state 5
+  state 3: #2
+	<var> state 4
+  state 4: #2
+  state 5: #1 #2
+	<var> state 6
+	: state 9
+  state 6: #2
+	<var> state 7
+  state 7: #2
+	<var> state 8
+  state 8: #2
+  state 9: #1 #2
+	<var> state 10
+  state 10: #1 #2
+	<var> state 11
+  state 11: #1 #2
+  state 12: #0 #2
+}
+type cons {
+  rule #0: cons nil = 1
+  rule #1: cons (cons xs x) = 1
+  state 0: #0 #1
+	<app> state 1
+	nil state 6
+  state 1: #1
+	<app> state 2
+  state 2: #1
+	cons state 3
   state 3: #1
 	<var> state 4
   state 4: #1
 	<var> state 5
   state 5: #1
-  state 6: #3
-	<var> state 7
-  state 7: #3
-	<var> state 8
-  state 8: #3
-  state 9: #0
-  state 10: #2
+  state 6: #0
 }
 {
   rule #0: pop (x:xs) = xs
-  rule #1: pop (cons xs x) = xs
-  state 0: #0 #1
-	<app> state 1
-  state 1: #0 #1
+  rule #1: pop [] = throw "empty stack"
+  rule #2: pop xs::cons = case xs of cons xs x = xs; _ = throw "empty stack" end
+  state 0: #0 #1 #2
+	<var> state 1
 	<app> state 2
-  state 2: #0 #1
-	: state 3
-	cons state 6
-  state 3: #0
+	[] state 12
+  state 1: #2
+  state 2: #0 #2
+	<var> state 3
+	<app> state 5
+  state 3: #2
 	<var> state 4
-  state 4: #0
-	<var> state 5
-  state 5: #0
-  state 6: #1
+  state 4: #2
+  state 5: #0 #2
+	<var> state 6
+	: state 9
+  state 6: #2
 	<var> state 7
-  state 7: #1
+  state 7: #2
 	<var> state 8
-  state 8: #1
+  state 8: #2
+  state 9: #0 #2
+	<var> state 10
+  state 10: #0 #2
+	<var> state 11
+  state 11: #0 #2
+  state 12: #1 #2
 }
 {
   rule #0: top (x:xs) = x
-  rule #1: top (cons xs x) = x
-  state 0: #0 #1
-	<app> state 1
-  state 1: #0 #1
+  rule #1: top [] = throw "empty stack"
+  rule #2: top xs::cons = case xs of cons xs x = x; _ = throw "empty stack" end
+  state 0: #0 #1 #2
+	<var> state 1
 	<app> state 2
-  state 2: #0 #1
-	: state 3
-	cons state 6
-  state 3: #0
+	[] state 12
+  state 1: #2
+  state 2: #0 #2
+	<var> state 3
+	<app> state 5
+  state 3: #2
 	<var> state 4
-  state 4: #0
-	<var> state 5
-  state 5: #0
-  state 6: #1
+  state 4: #2
+  state 5: #0 #2
+	<var> state 6
+	: state 9
+  state 6: #2
 	<var> state 7
-  state 7: #1
+  state 7: #2
 	<var> state 8
-  state 8: #1
+  state 8: #2
+  state 9: #0 #2
+	<var> state 10
+  state 10: #0 #2
+	<var> state 11
+  state 11: #0 #2
+  state 12: #1 #2
 }
 {
   rule #0: push xs@[] x = x:xs
   rule #1: push xs@(_:_) x = x:xs
-  rule #2: push xs@nil x = cons xs x
-  rule #3: push xs@(cons _ _) x = cons xs x
-  state 0: #0 #1 #2 #3
-	<app> state 1
-	[] state 11
-	nil state 13
-  state 1: #1 #3
-	<app> state 2
-  state 2: #1 #3
-	: state 3
-	cons state 7
-  state 3: #1
+  rule #2: push xs::cons x = cons xs x
+  state 0: #0 #1 #2
+	<var> state 1
+	<app> state 3
+	[] state 16
+  state 1: #2
+	<var> state 2
+  state 2: #2
+  state 3: #1 #2
 	<var> state 4
-  state 4: #1
+	<app> state 7
+  state 4: #2
 	<var> state 5
-  state 5: #1
+  state 5: #2
 	<var> state 6
-  state 6: #1
-  state 7: #3
+  state 6: #2
+  state 7: #1 #2
 	<var> state 8
-  state 8: #3
+	: state 12
+  state 8: #2
 	<var> state 9
-  state 9: #3
+  state 9: #2
 	<var> state 10
-  state 10: #3
-  state 11: #0
-	<var> state 12
-  state 12: #0
-  state 13: #2
+  state 10: #2
+	<var> state 11
+  state 11: #2
+  state 12: #1 #2
+	<var> state 13
+  state 13: #1 #2
 	<var> state 14
-  state 14: #2
+  state 14: #1 #2
+	<var> state 15
+  state 15: #1 #2
+  state 16: #0 #2
+	<var> state 17
+  state 17: #0 #2
 }
 {
   rule #0: bstack xs::list = foldl push nil xs
@@ -352,7 +531,33 @@ get_interface stack;
 get_interface_typedef stack;
 []
 test1 (x/*0:101*/:xs/*0:11*/) = x/*0:101*/,xs/*0:11*/;
-test2 (cons xs/*0:101*/ x/*0:11*/) = xs/*0:101*/,x/*0:11*/;
+test2 xs/*0:1*/::cons = case xs/*0:1*/ of cons xs/*0:01*/ x/*0:1*/ = xs/*0:01*/,x/*0:1*/; _/*0:*/ = throw "empty stack" {
+  rule #0: cons xs x = xs,x
+  rule #1: _ = throw "empty stack"
+  state 0: #0 #1
+	<var> state 1
+	<app> state 2
+  state 1: #1
+  state 2: #0 #1
+	<var> state 3
+	<app> state 5
+  state 3: #1
+	<var> state 4
+  state 4: #1
+  state 5: #0 #1
+	<var> state 6
+	cons state 9
+  state 6: #1
+	<var> state 7
+  state 7: #1
+	<var> state 8
+  state 8: #1
+  state 9: #0 #1
+	<var> state 10
+  state 10: #0 #1
+	<var> state 11
+  state 11: #0 #1
+} end;
 {
   rule #0: test1 (x:xs) = x,xs
   state 0: #0
@@ -368,18 +573,10 @@ test2 (cons xs/*0:101*/ x/*0:11*/) = xs/*0:101*/,x/*0:11*/;
   state 5: #0
 }
 {
-  rule #0: test2 (cons xs x) = xs,x
+  rule #0: test2 xs::cons = case xs of cons xs x = xs,x; _ = throw "empty stack" end
   state 0: #0
-	<app> state 1
+	<var> state 1
   state 1: #0
-	<app> state 2
-  state 2: #0
-	cons state 3
-  state 3: #0
-	<var> state 4
-  state 4: #0
-	<var> state 5
-  state 5: #0
 }
 bar 99 (astack (1..3));
 bar 99 [3,2,1]

@@ -26,19 +26,20 @@ foo $ astack (1..10);
 pop (x:xs) = xs;
 top (x:xs) = x;
 
-// Works now.
+// The interface operations have been implemented, so this works now.
 foo $ astack (1..10);
 
-// Fails, because the nonempty_stack interface doesn't match the empty list.
+// This still fails, however, because the nonempty_stack interface doesn't
+// match the empty list.
 foo $ astack [];
 
 // Full stack interface.
 interface stack with
   push xs::stack x;
   /* Test some of the more advanced diagnostics provided by interfaces. These
-     are all enabled with the -w option or the --warn pragma. In the following
-     case, we'll be warned about the partial implementations of the pop and
-     top functions which don't apply to empty stacks (a.k.a. lists). */
+     are all enabled with the -w option or the --warn pragma. In this case,
+     we'll be warned about the partial implementations of the pop and top
+     functions which don't apply to empty stacks (a.k.a. lists). */
 #! --warn
   // Include the nonempty_stack interface. This effectively makes 'stack' a
   // subtype of the 'nonempty_stack' type which offers one additional
@@ -53,15 +54,13 @@ push xs@[] x | push xs@(_:_) x = x:xs;
 get_interface stack;
 get_interface_typedef stack;
 
-/* Looking at the actual patterns of the type (e.g., with 'show interface
-   stack'), you'll see that, just as the warnings indicate, empty stacks/lists
-   aren't supported by the interface because pop and top don't provide rules
-   for them. The easiest way to fix this is to just turn pop and top into
-   "defined functions" (with the --defined pragma) since these are always by
-   definition "complete", as far as interfaces are concerned. (This isn't
-   really the recommended method, though, since it also disables any further
-   warnings on these functions. In production code we'd want to add proper
-   rules to pop and top which handle all the relevant cases.) */
+/* Looking at the actual patterns of the type (last result above; you can also
+   print these interactively in the interpreter with the 'show interface'
+   command), you'll see that, just as the warnings indicate, empty stacks
+   (lists) aren't supported by the interface because pop and top don't provide
+   rules for them. The easiest way to fix this is to just turn pop and top
+   into "defined functions" (with the --defined pragma) since these are always
+   by definition "complete", as far as interfaces are concerned. */
 
 #! --defined pop
 #! --defined top
@@ -72,6 +71,21 @@ foo $ astack (1..10);
 // handled by pop and top.
 foo $ astack [];
 
+/* This was quick, but note that the --defined pragma will in fact silence
+   *any* further warnings concerning these functions. In production code, we'd
+   prefer to add proper rules which handle all the relevant cases in an
+   explicit fashion. */
+
+#! --nodefined pop
+#! --nodefined top
+
+// Default rules for pop and top.
+pop [] = throw "empty stack";
+top [] = throw "empty stack";
+
+foo $ astack (1..10);
+foo $ astack [];
+
 bar x xs::stack = foo (push xs x);
 bar 99 $ astack (1..3);
 
@@ -80,9 +94,11 @@ bar 99 $ astack (1..3);
 nonfix nil;
 public cons;
 
-push xs@nil x | push xs@(cons _ _) x = cons xs x;
-pop (cons xs x) = xs;
-top (cons xs x) = x;
+type cons nil | cons (cons xs x);
+
+push xs::cons x = cons xs x;
+pop xs::cons = case xs of cons xs x = xs; _ = throw "empty stack" end;
+top xs::cons = case xs of cons xs x = x;  _ = throw "empty stack" end;
 
 // Construction function for our fancy stacks.
 bstack xs::list = foldl push nil xs;
@@ -99,7 +115,7 @@ get_interface stack;
 get_interface_typedef stack;
 
 test1 (x:xs) = x,xs;
-test2 (cons xs x) = xs,x;
+test2 xs::cons = case xs of cons xs x = xs,x; _ = throw "empty stack" end;
 
 // These *must* both fail now, because test1 doesn't support the fancy stacks,
 // while test2 doesn't support the list stacks, but both are in the interface.
