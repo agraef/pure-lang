@@ -626,41 +626,34 @@ interface monoid {
   rule #0: monoid x::int = 1
   rule #1: monoid x::double = 1
   rule #2: monoid x::bigint = 1
-  rule #3: monoid c::string = 1
+  rule #3: monoid s::string = 1
   rule #4: monoid [] = 1
   rule #5: monoid xs@(_:_) = 1
-  rule #6: monoid ([]+s::string) = 1
-  state 0: #0 #1 #2 #3 #4 #5 #6
+  state 0: #0 #1 #2 #3 #4 #5
 	<var>::int state 1
 	<var>::bigint state 2
 	<var>::double state 3
 	<var>::string state 4
 	<app> state 5
-	[] state 13
+	[] state 10
   state 1: #0
   state 2: #2
   state 3: #1
   state 4: #3
-  state 5: #5 #6
+  state 5: #5
 	<app> state 6
-  state 6: #5 #6
+  state 6: #5
 	: state 7
-	+ state 10
   state 7: #5
 	<var> state 8
   state 8: #5
 	<var> state 9
   state 9: #5
-  state 10: #6
-	[] state 11
-  state 11: #6
-	<var>::string state 12
-  state 12: #6
-  state 13: #4
+  state 10: #4
 }
 add_interface monoid ('[x __type__ monoid+y __type__ monoid]);
 ()
 get_interface monoid;
 [x __type__ monoid+y __type__ monoid]
 get_interface_typedef monoid;
-[(monoid (x __type__ int)-->1),(monoid (x __type__ double)-->1),(monoid (x __type__ bigint)-->1),(monoid (c __type__ string)-->1),(monoid []-->1),(monoid (xs __as__ (_:_))-->1),(monoid ([]+s __type__ string)-->1)]
+[(monoid (x __type__ int)-->1),(monoid (x __type__ double)-->1),(monoid (x __type__ bigint)-->1),(monoid (s __type__ string)-->1),(monoid []-->1),(monoid (xs __as__ (_:_))-->1)]

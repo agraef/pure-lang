@@ -426,9 +426,9 @@ end;
 /* Character arithmetic. This allows single-character strings to be used,
    e.g., in arithmetic sequences like "a".."z". */
 
-c::string+n::int	= chr (ord c+n) if #c==1;
-c::string-n::int	= chr (ord c-n) if #c==1 && ord c>=n;
-c::string-d::string	= ord c-ord d if #c==1 && #d==1;
+s::string+n::int	= chr (ord s+n) if #s==1;
+s::string-n::int	= chr (ord s-n) if #s==1 && ord s>=n;
+s::string-t::string	= ord s-ord t if #s==1 && #t==1;
 
 /* Basic string operations: size, indexing, and concatenation. These properly
    deal with multibyte characters. Therefore indexing every character in a
@@ -546,7 +546,7 @@ string x::matrix	= string (list x) if all stringp x;
 
 s::string+[]		= chars s;
 s::string+xs@(_:_)	= chars s+xs;
-[]+s::string+[]		= chars s;
+[]+s::string		= chars s;
 xs@(_:_)+s::string	= xs+chars s;
 
 reverse s::string	= strcat (reverse (chars s));
