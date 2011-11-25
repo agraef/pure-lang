@@ -4165,7 +4165,10 @@ extern "C"
 void pure_add_rtty(int32_t tag, int argc, void *fp)
 {
   interpreter& interp = *interpreter::g_interp;
-  interp.rtty[tag] = rtty_info(argc, fp);
+  if (fp)
+    interp.rtty[tag] = rtty_info(argc, fp);
+  else
+    interp.rtty.erase(tag);
 }
 
 static inline int builtin_typecheck(interpreter& interp,
@@ -8880,7 +8883,7 @@ pure_expr *del_typedef(pure_expr *x)
 extern "C"
 pure_expr *del_interface(pure_expr *f, pure_expr *x)
 {
-  if (f->tag > 0 && pure_is_listv(x, 0, 0)) {
+  if (f->tag > 0) {
     interpreter& interp = *interpreter::g_interp;
     bool res = interp.del_interface_rule(f->tag, x);
     return res?pure_tuplel(0):0;

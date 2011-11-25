@@ -85,3 +85,39 @@ bstack xs::list = foldl push nil xs;
 // foo and bar now automagically work with these, too.
 foo $ bstack (1..3);
 bar 99 $ bstack (1..3);
+
+// Meta operations.
+
+// Add some interface functions.
+add_interface stack $ '[test1 (xs __type__ stack), test2 (xs __type__ stack)];
+get_interface stack;
+
+test1 (x:xs) = x,xs;
+test2 (cons xs x) = xs,x;
+
+// These *must* both fail now, because test1 doesn't support the fancy stacks,
+// while test2 doesn't support the list stacks, but both are in the interface.
+bar 99 $ astack (1..3);
+bar 99 $ bstack (1..3);
+
+// Delete an interface function.
+del_interface stack $ 'test2 (xs __type__ stack);
+get_interface stack;
+
+// Removing test2 makes the list part of the interface work again.
+bar 99 $ astack (1..3);
+bar 99 $ bstack (1..3);
+
+// Reinsert test2 before test1.
+add_interface_at stack ('test1 (xs __type__ stack)) $
+'[test2 (xs __type__ stack)];
+get_interface stack;
+
+// Both should fail again.
+bar 99 $ astack (1..3);
+bar 99 $ bstack (1..3);
+
+// Create an entirely new interface.
+public monoid;
+add_interface monoid $ '[x __type__ monoid+y __type__ monoid];
+get_interface monoid;

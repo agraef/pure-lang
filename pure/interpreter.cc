@@ -3598,7 +3598,8 @@ void interpreter::compile()
 	if ((info.rxs = compile_interface(typeenv, ftag)))
 	  info.mxs = new matcher(*info.rxs, info.argc+1);
 	assert(!info.rxs || !info.rxs->empty());
-	assert((!info.rxs && !info.mxs) || (info.argc==1 && info.mxs));
+	assert((!info.rxs && !info.mxs) ||
+	       (info.rxs && info.mxs && info.argc==1));
 	if (verbose&verbosity::code) {
 	  const symbol& sym = symtab.sym(ftag);
 	  if (info.mxs && !info.rxs->empty())
@@ -3606,7 +3607,23 @@ void interpreter::compile()
 	  if (info.m && !info.rules->empty())
 	    std::cout << "type " << sym.s << " " << *info.m << '\n';
 	}
-	if (!info.m && !info.rxs) continue; // no rules and no interface; skip
+	if (!info.m && !info.mxs) {
+	  // If we still have an LLVM function for the type, get rid of it now.
+	  map<int32_t,Env>::iterator g = globaltypes.find(ftag);
+	  if (g != globaltypes.end()) {
+	    llvm::Function *f = g->second.f, *h = g->second.h;
+	    assert(f && h);
+	    globaltypes.erase(g);
+	    if (h != f) h->dropAllReferences();
+	    f->dropAllReferences();
+	    if (h != f) h->eraseFromParent();
+	    f->eraseFromParent();
+	  }
+	  // Reset the runtime type information.
+	  pure_add_rtty(ftag, 0, 0);
+	  // no rules and no interface; skip
+	  continue;
+	}
 	// regenerate LLVM code (prolog)
 	Env& f = globaltypes[ftag] = Env(ftag, info, false, false);
 #if DEBUG>1
@@ -4213,6 +4230,8 @@ void interpreter::cleartypesym(int32_t f)
     if (h != f) h->eraseFromParent();
     f->eraseFromParent();
   }
+  // Reset the runtime type information.
+  pure_add_rtty(f, 0, 0);
   // Update the fun_types table.
   env::iterator it = typeenv.find(f);
   if (it == typeenv.end()) return;
@@ -5066,7 +5085,7 @@ void interpreter::add_interface_rule_at(env &e, int32_t tag, expr& x,
     throw err("error in interface declaration (missing head symbol)");
   }
   fx.flags() |= EXPR::GLOBAL;
-  info.xs->insert(p, y); p++;
+  p = info.xs->insert(p, y); p++;
 }
 
 static expr interface_subst(int32_t tag, int32_t tag2, expr x)
@@ -5430,7 +5449,8 @@ rulel *interpreter::compile_interface(env &e, int32_t tag)
 	  warned.insert(f);
 	}
 	continue;
-      }
+      } else
+	continue;
     }
     // To find all the patterns for the interface type, match our pattern
     // against the left-hand sides of the function's rules.
