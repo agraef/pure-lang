@@ -1,0 +1,97 @@
+interface stack with
+  push xs/*0:01*/::stack x/*0:1*/;
+  pop xs/*0:1*/::stack;
+  top xs/*0:1*/::stack;
+end;
+type stack [];
+type stack (x/*0:101*/:xs/*0:11*/);
+push xs@[] x/*0:1*/ = x/*0:1*/:xs/*0:01*/;
+push xs@(_/*0:0101*/:_/*0:011*/) x/*0:1*/ = x/*0:1*/:xs/*0:01*/;
+pop (x/*0:101*/:xs/*0:11*/) = xs/*0:11*/;
+top (x/*0:101*/:xs/*0:11*/) = x/*0:101*/;
+interface stack {
+  rule #0: stack xs@(_:_) = 1
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+}
+type stack {
+  rule #0: stack [] = 1
+  rule #1: stack (x:xs) = 1
+  state 0: #0 #1
+	<app> state 1
+	[] state 6
+  state 1: #1
+	<app> state 2
+  state 2: #1
+	: state 3
+  state 3: #1
+	<var> state 4
+  state 4: #1
+	<var> state 5
+  state 5: #1
+  state 6: #0
+}
+{
+  rule #0: push xs@[] x = x:xs
+  rule #1: push xs@(_:_) x = x:xs
+  state 0: #0 #1
+	<app> state 1
+	[] state 7
+  state 1: #1
+	<app> state 2
+  state 2: #1
+	: state 3
+  state 3: #1
+	<var> state 4
+  state 4: #1
+	<var> state 5
+  state 5: #1
+	<var> state 6
+  state 6: #1
+  state 7: #0
+	<var> state 8
+  state 8: #0
+}
+{
+  rule #0: pop (x:xs) = xs
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+}
+{
+  rule #0: top (x:xs) = x
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+}
+get_typedef stack;
+[(stack []-->1),(stack (x:xs)-->1)]
+get_interface stack;
+[push (xs __type__ stack) x,pop (xs __type__ stack),top (xs __type__ stack)]
+get_interface_typedef stack;
+[stack (xs __as__ (_:_))-->1]

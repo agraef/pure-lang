@@ -16159,7 +16159,14 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
   for (list<Value*>::const_iterator it = tmps.begin(); it != tmps.end(); ++it)
     f.builder.CreateCall(module->getFunction("pure_freenew"), *it);
   const rulev& rules = pm->r;
-  assert(f.fmap.root.size() == 1 || f.fmap.root.size() == rules.size());
+  // Check if we're compiling a type predicate.
+  bool have_type = is_type(f.name);
+  // If so, check if this is actually the interface part of the type; this
+  // case must be treated separately.
+  assert(!have_type || typeenv.find(f.tag) != typeenv.end());
+  bool have_iface = have_type && pm == typeenv[f.tag].mxs;
+  assert(have_iface ||
+	 f.fmap.root.size() == 1 || f.fmap.root.size() == rules.size());
   const ruleml& rl = s->r;
   ruleml::const_iterator r = rl.begin();
   assert(r != rl.end());
@@ -16167,7 +16174,7 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
   BasicBlock* rulebb = basic_block(mklabel("rule.state", s->s, rl.front()));
   f.builder.CreateBr(rulebb);
 #if USE_FASTCC
-  const bool have_tail = tail && !debugging && use_fastcc && is_type(f.name) &&
+  const bool have_tail = tail && !debugging && use_fastcc && have_type &&
     have_tail_guard(pm, s, f.tag);
 #else
   const bool have_tail = false;
@@ -16175,7 +16182,10 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
   while (r != rl.end()) {
     const rule& rr = rules[*r];
     reduced.insert(*r);
-    f.fmap.select(*r);
+    // Select the proper environment for the local functions. This is to be
+    // skipped for the interface part of a type definition which never has any
+    // local environment.
+    if (!have_iface) f.fmap.select(*r);
     f.f->getBasicBlockList().push_back(rulebb);
     f.builder.SetInsertPoint(rulebb);
     BasicBlock *okbb = basic_block("ok");
@@ -16311,7 +16321,7 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
       toplevel_codegen(rr.rhs, rp);
     rulebb = nextbb;
   }
-  f.fmap.first();
+  if (!have_iface) f.fmap.first();
 }
 
 /* Make sure to make this the very last thing in this file. TargetSelect.h

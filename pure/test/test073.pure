@@ -1,0 +1,19 @@
+
+// Regression: interface types with an attached concrete type (0.50+).
+
+interface stack with
+  push xs::stack x;
+  pop xs::stack;
+  top xs::stack;
+end;
+
+type stack [] | stack (x:xs);
+
+push xs@[] x |
+push xs@(_:_) x = x:xs;
+pop (x:xs) = xs;
+top (x:xs) = x;
+
+get_typedef stack;
+get_interface stack;
+get_interface_typedef stack;
