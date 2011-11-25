@@ -5578,7 +5578,9 @@ rulel *interpreter::compile_interface(env &e, int32_t tag)
 	    const symbol& fsym = symtab.sym(f);
 	    ostringstream msg;
 	    msg << "warning: function '" << fsym.s
-		<< "' might lack a rule for '" << x << "'";
+		<< "' might lack a rule for '";
+	    printx(msg, x, true);
+	    msg << "'";
 	    warning(msg.str());
 	  }
 	  good = false;
