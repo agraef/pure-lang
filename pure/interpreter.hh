@@ -1298,19 +1298,17 @@ private:
   void complex_match(matcher *pm, matcher *mxs, llvm::BasicBlock *failedbb);
   void complex_match(matcher *pm, const list<llvm::Value*>& xs, state *s,
 		     llvm::BasicBlock *failedbb, set<rulem>& reduced,
-		     const list<llvm::Value*>& tmps, bool tail);
+		     const list<llvm::Value*>& tmps);
   void complex_match(matcher *pm, const list<llvm::Value*>& xs, state *s,
-		     llvm::BasicBlock *failedbb, set<rulem>& reduced,
-		     bool tail = true)
+		     llvm::BasicBlock *failedbb, set<rulem>& reduced)
   { list<llvm::Value*> tmps;
-    complex_match(pm, xs, s, failedbb, reduced, tmps, tail); }
+    complex_match(pm, xs, s, failedbb, reduced, tmps); }
   void try_rules(matcher *pm, state *s, llvm::BasicBlock *failedbb,
-		 set<rulem>& reduced, const list<llvm::Value*>& tmps,
-		 bool tail);
+		 set<rulem>& reduced, const list<llvm::Value*>& tmps);
   void try_rules(matcher *pm, state *s, llvm::BasicBlock *failedbb,
-		 set<rulem>& reduced, bool tail = true)
+		 set<rulem>& reduced)
   { list<llvm::Value*> tmps;
-    try_rules(pm, s, failedbb, reduced, tmps, tail); }
+    try_rules(pm, s, failedbb, reduced, tmps); }
   void unwind_iffalse(llvm::Value *v);
   void unwind_iftrue(llvm::Value *v);
   llvm::Value *check_tag(llvm::Value *v, int32_t tag);

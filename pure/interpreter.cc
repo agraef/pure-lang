@@ -15766,7 +15766,7 @@ void interpreter::complex_match(matcher *pm, matcher *mxs,
       list<Value*>xs(1, f.args[0]);
       // emit the matching code
       set<rulem> reduced;
-      complex_match(mxs, xs, mxs->start, iffailedbb, reduced, pm==0);
+      complex_match(mxs, xs, mxs->start, iffailedbb, reduced);
       // The rules to match an interface are generated automatically, so we
       // don't do any warnings about unreduced rules here.
       if (pm) {
@@ -15806,9 +15806,9 @@ void interpreter::complex_match(matcher *pm, matcher *mxs,
     state *s = t->st;						\
     list<Value*> ys = xs; ys.pop_front();			\
     if (ys.empty())						\
-      try_rules(pm, s, failedbb, reduced, tmps, tail);		\
+      try_rules(pm, s, failedbb, reduced, tmps);		\
     else							\
-      complex_match(pm, ys, s, failedbb, reduced, tmps, tail);	\
+      complex_match(pm, ys, s, failedbb, reduced, tmps);	\
   } while (0)
 
 // same as above, but handles the case of an application where we recurse into
@@ -15821,7 +15821,7 @@ void interpreter::complex_match(matcher *pm, matcher *mxs,
     Value *x1 = f.CreateLoadGEP(x, Zero, ValFldIndex, "x1");	\
     Value *x2 = f.CreateLoadGEP(x, Zero, ValFld2Index, "x2");	\
     ys.push_front(x2); ys.push_front(x1);			\
-    complex_match(pm, ys, s, failedbb, reduced, tmps, tail);	\
+    complex_match(pm, ys, s, failedbb, reduced, tmps);		\
   } while (0)
 
 // same as above, but handles the case of a matrix where we recurse into
@@ -15840,7 +15840,7 @@ void interpreter::complex_match(matcher *pm, matcher *mxs,
 	tmps1.push_front(y);					\
       }								\
     ys.splice(ys.begin(), zs);					\
-    complex_match(pm, ys, s, failedbb, reduced, tmps1, tail);	\
+    complex_match(pm, ys, s, failedbb, reduced, tmps1);		\
   } while (0)
 
 /* This is the core of the decision tree construction algorithm. It emits code
@@ -15868,8 +15868,7 @@ typedef map<int32_t,trans_list_info> trans_map;
 
 void interpreter::complex_match(matcher *pm, const list<Value*>& xs, state *s,
 				BasicBlock *failedbb, set<rulem>& reduced,
-				const list<Value*>& tmps,
-				bool tail)
+				const list<Value*>& tmps)
 {
   Env& f = act_env();
   assert(!xs.empty());
@@ -16151,8 +16150,7 @@ static bool have_tail_guard(matcher *pm, state *s, int32_t tag)
 #endif
 
 void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
-			    set<rulem>& reduced, const list<Value*>& tmps,
-			    bool tail)
+			    set<rulem>& reduced, const list<Value*>& tmps)
 {
   Env& f = act_env();
   assert(s->tr.empty()); // we're in a final state here
@@ -16161,10 +16159,15 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
   const rulev& rules = pm->r;
   // Check if we're compiling a type predicate.
   bool have_type = is_type(f.name);
+  env::iterator ty = have_type?typeenv.find(f.tag):typeenv.end();
+  assert(!have_type || ty != typeenv.end());
   // If so, check if this is actually the interface part of the type; this
   // case must be treated separately.
-  assert(!have_type || typeenv.find(f.tag) != typeenv.end());
-  bool have_iface = have_type && pm == typeenv[f.tag].mxs;
+  bool have_iface = have_type && pm == ty->second.mxs;
+  // Also, check whether the type checking code is eligible for tail call
+  // elimination (this can only be done in the interface part if there is no
+  // regular type definition).
+  bool tail = have_type && (!have_iface || !ty->second.m);
   assert(have_iface ||
 	 f.fmap.root.size() == 1 || f.fmap.root.size() == rules.size());
   const ruleml& rl = s->r;
