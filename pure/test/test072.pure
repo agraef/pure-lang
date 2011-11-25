@@ -26,11 +26,13 @@ foo $ astack (1..10);
 pop (x:xs) = xs;
 top (x:xs) = x;
 
-// The interface operations have been implemented, so this works now.
+// The interface operations have been implemented, so this works now. (Note
+// that an interface gets recompiled automagically if there's any status
+// change in one of its operations.)
 foo $ astack (1..10);
 
 // This still fails, however, because the nonempty_stack interface doesn't
-// match the empty list.
+// match the empty list (by design).
 foo $ astack [];
 
 // Full stack interface.
@@ -54,11 +56,11 @@ push xs@[] x | push xs@(_:_) x = x:xs;
 get_interface stack;
 get_interface_typedef stack;
 
-/* Looking at the actual patterns of the type (last result above; you can also
-   print these interactively in the interpreter with the 'show interface'
-   command), you'll see that, just as the warnings indicate, empty stacks
-   (lists) aren't supported by the interface because pop and top don't provide
-   rules for them. The easiest way to fix this is to just turn pop and top
+/* Looking at the actual patterns of the type (sett the last result above; you
+   can also print these interactively in the interpreter with the 'show
+   interface' command), you'll see that, just as the warnings indicate, empty
+   stacks (lists) aren't supported by the interface because pop and top don't
+   provide rules for them. An easy way to fix this is to just turn pop and top
    into "defined functions" (with the --defined pragma) since these are always
    by definition "complete", as far as interfaces are concerned. */
 
@@ -72,9 +74,9 @@ foo $ astack (1..10);
 foo $ astack [];
 
 /* This was quick, but note that the --defined pragma will in fact silence
-   *any* further warnings concerning these functions. In production code, we'd
-   prefer to add proper rules which handle all the relevant cases in an
-   explicit fashion. */
+   *any* further warnings concerning these functions. Therefore, in production
+   code we'd prefer to add proper rules which handle all the relevant cases in
+   an explicit fashion. */
 
 #! --nodefined pop
 #! --nodefined top
