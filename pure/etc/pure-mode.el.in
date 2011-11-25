@@ -354,7 +354,7 @@ remote operation of Pd patches, as described in the pd-pure manual."
 
 (defvar pure-font-lock-keywords
   (list
-;;   (list "^#!.*" 0 'font-lock-comment-face t)
+   (list "^#!.*" 0 'font-lock-preprocessor-face t)
    (list "\\_<\\(bigint\\|bool\\|char\\|float\\|double\\|expr\\|short\\|int\\(8\\|16\\|32\\|64\\)?\\|long\\|string\\|pointer\\|void\\|[dci]?matrix\\)\\_>" 1 'font-lock-type-face)
    (list "\\_<\\(catch\\|throw\\)\\_>" 0 'font-lock-builtin-face)
    (list
@@ -367,9 +367,11 @@ remote operation of Pd patches, as described in the pd-pure manual."
   "Rules for fontifying Pure scripts.")
 
 (defvar pure-font-lock-syntactic-keywords
-  '(;; #! (shebang) and %< ... %> code sections are treated as comments
-    ("^\\(#!\\)" 1 "<") ("^#!.*\\([\n]\\)" 1 ">")
+  '(;; %< ... %> code sections are treated as comments
     ("\\(%\\)<" 1 "!" t) ("%\\(>\\)" 1 "!" t)
+    ;; Uncomment this if you'd prefer to have #! (shebang) treated as comments,
+    ;; too. This isn't recommended, though, since they can also be pragmas.
+    ;;("^\\(#!\\)" 1 "<") ("^#!.*\\([\n]\\)" 1 ">")
     ;; backslash followed by paren (lambda syntax) is treated as normal
     ;; punctuation, to prevent confusion in the sexp parser
     ("\\([\\]\\)[([{]" 1 "." t)))
@@ -898,6 +900,7 @@ Commands
 (defvar pure-eval-font-lock-keywords
   (list
 ;    (list pure-prompt-regexp 0 'font-lock-preprocessor-face t)
+   (list "^#!.*" 0 'font-lock-preprocessor-face t)
    (list pure-msg-regexp 0 'font-lock-warning-face t)
    (list "\\_<\\(bigint\\|bool\\|char\\|float\\|double\\|expr\\|short\\|int\\(8\\|16\\|32\\|64\\)?\\|long\\|string\\|pointer\\|void\\|[dci]?matrix\\)\\_>" 1 'font-lock-type-face)
 ;   (list "\\_<\\(catch\\|throw\\)\\_>" 0 'font-lock-builtin-face)
@@ -1769,7 +1772,8 @@ On success, return 0.  Otherwise, go as far as possible and return -1."
     (while (and (/= arg 0) (= n 0))
       (setq n (forward-line inc))
       (while (and (= n 0)
-		  (looking-at "\\s-*\\($\\|//\\)"))
+;		  (looking-at "\\s-*\\($\\|//\\)"))
+		  (pure-at-empty-or-comment-line))
 	(setq n (forward-line inc)))
       (setq arg (- arg inc)))
     n))
@@ -2162,10 +2166,12 @@ If prefix ARG is not nil, remove an existing tracepoint instead."
 (defconst pure-beg-block-re     "\\_<\\(case\\|when\\|with\\)\\_>")
 (defconst pure-beg-block-re2    "\\_<\\(of\\|when\\|with\\)\\_>")
 (defconst pure-end-block-re     "\\_<end\\_>")
-(defconst pure-declaration-re   "\\_<\\(const\\|extern\\|infix[lr]?\\|let\\|namespace\\|\\(non\\|out\\|post\\|pre\\)fix\\|private\\|public\\|using\\)\\_>")
+;(defconst pure-declaration-re   "\\_<\\(const\\|extern\\|infix[lr]?\\|interface\\|let\\|namespace\\|\\(non\\|out\\|post\\|pre\\)fix\\|private\\|public\\|using\\)\\_>")
+(defconst pure-declaration-re   "\\_<\\(const\\|extern\\|infix[lr]?\\|interface\\|let\\|namespace\\|\\(non\\|out\\|post\\|pre\\)fix\\|private\\|public\\|using\\)\\_>\\|^#!")
 (defconst pure-ifelse-re        "\\_<\\(if\\|else\\)\\_>")
 (defconst pure-noindent-re      "\\_<\\(end\\|then\\|else\\)\\_>")
-(defconst pure-comment-start-re "\\(/[/*]\\|%<\\|^#!\\)")
+;(defconst pure-comment-start-re "\\(/[/*]\\|%<\\|^#!\\)")
+(defconst pure-comment-start-re "\\(/[/*]\\|%<\\)")
 
 (defconst pure-indent-alist
   '((block . (+ ind pure-block-indent))
@@ -2909,7 +2915,7 @@ specify a repeat count."
 	  ;; check to see whether we might be looking at an inline code section
 	  (if (nth 4 state)
 	      state
-	    (if (and (not (nth 3 state)) (looking-at "[ \t]*%<"))
+	    (if (and (not (nth 3 state)) (looking-at "[ \t]*\\(%<\\|/\\*\\)"))
 		(save-excursion
 		  ;; skip over the start marker
 		  (skip-chars-forward " \t") (forward-char 2)
@@ -2919,10 +2925,7 @@ specify a repeat count."
 	      state)))
 	 ;; determine the start position of the comment or section, if any
 	 (start (if (nth 4 state) (nth 8 state))))
-    (when (and start
-	       (save-excursion
-		 (goto-char start)
-		 (looking-at "%<")))
+    (when start
       (goto-char start)
       (forward-comment 1)
       (set-mark (point))
