@@ -6395,7 +6395,10 @@ expr interpreter::subst(const env& vars, expr x, uint8_t idx)
     for (rulel::const_iterator it = r->begin(); it != r->end(); ++it) {
       expr u = it->lhs, v = subst(vars, it->rhs, idx);
       s->push_back(rule(u, v, it->vi));
-      if (++idx == 0)
+      if (u.is_var() && u.vtag() == symtab.anon_sym && u.ttag() == 0)
+	// anonymous binding, gets thrown away
+	;
+      else if (++idx == 0)
 	throw err("error in expression (too many nested closures)");
     }
     expr u = subst(vars, x.xval(), idx);
@@ -6522,7 +6525,10 @@ expr interpreter::fsubst(const env& funs, expr x, uint8_t idx)
     for (rulel::const_iterator it = r->begin(); it != r->end(); ++it) {
       expr u = it->lhs, v = fsubst(funs, it->rhs, idx);
       s->push_back(rule(u, v, it->vi));
-      if (++idx == 0)
+      if (u.is_var() && u.vtag() == symtab.anon_sym && u.ttag() == 0)
+	// anonymous binding, gets thrown away
+	;
+      else if (++idx == 0)
 	throw err("error in expression (too many nested closures)");
     }
     expr u = fsubst(funs, x.xval(), idx);
@@ -7174,7 +7180,10 @@ expr interpreter::vsubst(expr x, int offs, int offs1, uint8_t idx)
     for (rulel::const_iterator it = r->begin(); it != r->end(); ++it) {
       expr u = it->lhs, v = vsubst(it->rhs, offs, offs1, idx);
       s->push_back(rule(u, v, it->vi));
-      if (++idx == 0)
+      if (u.is_var() && u.vtag() == symtab.anon_sym && u.ttag() == 0)
+	// anonymous binding, gets thrown away
+	;
+      else if (++idx == 0)
 	throw err("error in expression (too many nested closures)");
     }
     expr u = vsubst(x.xval(), offs, offs1, idx);
@@ -7425,7 +7434,10 @@ expr interpreter::macsubst(expr x, envstack& estk, uint8_t idx, bool quote)
     for (rulel::const_iterator it = r->begin(); it != r->end(); ++it) {
       expr u = it->lhs, v = macsubst(it->rhs, estk, idx);
       s->push_back(rule(u, v, it->vi));
-      if (++idx == 0)
+      if (u.is_var() && u.vtag() == symtab.anon_sym && u.ttag() == 0)
+	// anonymous binding, gets thrown away
+	;
+      else if (++idx == 0)
 	throw err("error in expression (too many nested closures)");
     }
     expr u = macsubst(x.xval(), estk, idx);
@@ -7565,7 +7577,10 @@ expr interpreter::varsubst(expr x, uint8_t offs, uint8_t offs1, uint8_t idx)
     for (rulel::const_iterator it = r->begin(); it != r->end(); ++it) {
       expr u = it->lhs, v = varsubst(it->rhs, offs, offs1, idx);
       s->push_back(rule(u, v, it->vi));
-      if (++idx == 0)
+      if (u.is_var() && u.vtag() == symtab.anon_sym && u.ttag() == 0)
+	// anonymous binding, gets thrown away
+	;
+      else if (++idx == 0)
 	throw err("error in expression (too many nested closures)");
     }
     expr u = varsubst(x.xval(), offs, offs1, idx);
@@ -7709,7 +7724,10 @@ expr interpreter::macred(expr x, expr y, uint8_t idx)
     for (rulel::const_iterator it = r->begin(); it != r->end(); ++it) {
       expr u = it->lhs, v = macred(x, it->rhs, idx);
       s->push_back(rule(u, v, it->vi));
-      if (++idx == 0)
+      if (u.is_var() && u.vtag() == symtab.anon_sym && u.ttag() == 0)
+	// anonymous binding, gets thrown away
+	;
+      else if (++idx == 0)
 	throw err("error in expression (too many nested closures)");
     }
     expr u = macred(x, y.xval(), idx);
@@ -8575,17 +8593,22 @@ expr *interpreter::mkwhen_expr(expr *x, rulel *r)
   }
   rulel *s = new rulel;
   uint8_t idx = 0;
-  for (rulel::reverse_iterator it = r->rbegin();
-       it != r->rend(); ++it, ++idx) {
+  for (rulel::reverse_iterator it = r->rbegin(); it != r->rend(); ++it) {
     env vars; vinfo vi;
     expr v = bind(vars, vi, lcsubst(it->lhs)), w = rsubst(it->rhs);
     u = subst(vars, u, idx);
     uint8_t jdx = 0;
-    for (rulel::iterator jt = s->begin(); jt != s->end(); ++jdx, ++jt) {
+    for (rulel::iterator jt = s->begin(); jt != s->end(); ++jt) {
       expr v = jt->lhs, w = subst(vars, jt->rhs, jdx);
       *jt = rule(v, w, jt->vi);
+      // skip anonymous bindings, these are eventually eliminated
+      if (!(v.is_var() && v.vtag() == symtab.anon_sym && v.ttag() == 0))
+	++jdx;
     }
     s->push_front(rule(v, w, vi));
+    // skip anonymous bindings, these are eventually eliminated
+    if (!(v.is_var() && v.vtag() == symtab.anon_sym && v.ttag() == 0))
+      ++idx;
   }
   delete r;
   return new expr(expr::when(u, s));
@@ -10931,6 +10954,14 @@ void Env::build_map(expr x, rulel::const_iterator r, rulel::const_iterator end)
   // x = subject expression to be evaluated in the context of the bindings
   // r = current pattern binding rule
   // end = end of rule list
+  // Skip anonymous bindings.
+  interpreter& interp = *interpreter::g_interp;
+  while (r != end && r->lhs.is_var() &&
+	 r->lhs.vtag() == interp.symtab.anon_sym &&
+	 r->lhs.ttag() == 0) {
+    build_map(r->rhs);
+    ++r;
+  }
   if (r == end)
     build_map(x);
   else {
@@ -13049,13 +13080,23 @@ static rulel *copy_rulel(rulel::const_iterator r,
 Value *interpreter::when_codegen(expr x, matcher *m,
 				 rulel::const_iterator r,
 				 rulel::const_iterator end,
-				 rule *rp)
+				 rule *rp, int level)
 // x = subject expression to be evaluated in the context of the bindings
 // m = matching automaton for current rule
 // r = current pattern binding rule
 // end = end of rule list
 {
+  while (r != end && r->lhs.is_var() && r->lhs.vtag() == symtab.anon_sym &&
+	 r->lhs.ttag() == 0) {
+    // anonymous binding, rhs gets thrown away immediately after evaluation
+    Value *u = codegen(r->rhs);
+    act_builder().CreateCall(module->getFunction("pure_freenew"), u);
+    ++r; ++m;
+  }
   if (r == end) {
+    // check whether we actually generated any environment
+    if (!level) return codegen(x);
+    // environment was generated, so we're at toplevel
     toplevel_codegen(x, rp);
     return 0;
   } else {
@@ -13117,7 +13158,7 @@ Value *interpreter::when_codegen(expr x, matcher *m,
       e.rp = new rule(rr.lhs, y);
       debug_rule(e.rp);
     }
-    Value *v = when_codegen(x, m+1, s, end, e.rp);
+    Value *v = when_codegen(x, m+1, s, end, e.rp, level+1);
     if (v) e.CreateRet(v, e.rp);
     // failed => throw an exception
     e.f->getBasicBlockList().push_back(failedbb);

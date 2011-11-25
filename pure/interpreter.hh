@@ -1235,7 +1235,8 @@ private:
   llvm::Value *get_int(expr x);
   llvm::Value *get_double(expr x);
   llvm::Value *when_codegen(expr x, matcher *m, rulel::const_iterator r,
-			    rulel::const_iterator end, rule *rp = 0);
+			    rulel::const_iterator end,
+			    rule *rp = 0, int level = 0);
   llvm::Value *funcall(Env *f, llvm::Value *x);
   llvm::Value *funcall(Env *f, uint32_t n, expr x);
   llvm::Value *funcall(int32_t tag, uint8_t idx, uint32_t n, expr x);
