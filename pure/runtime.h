@@ -1159,9 +1159,20 @@ pure_expr *get_fundef(pure_expr *f);
 pure_expr *get_typedef(pure_expr *f);
 pure_expr *get_macdef(pure_expr *f);
 
-/* Get the list of patterns of an interface type. */
+/* Get the definition of an interface type. get_interface() returns the list
+   of interface patterns, while get_interface_typedef() returns the list of
+   actual patterns for the type (which might be used with add_typedef to
+   recreate the type as a concrete type). The empty list is returned if no
+   corresponding definition is found, or (in the latter case) if the type
+   hasn't been instantiated yet (i.e., the interface functions haven't been
+   implemented yet, or they define an empty pattern set). Note that Pure
+   allows you to have *both* an interface and a regular (concrete) definition
+   of a type, in which case both get_typedef() and get_interface() will be
+   defined, and get_interface_typedef() may well return a result different
+   from get_typedef(). */
 
 pure_expr *get_interface(pure_expr *f);
+pure_expr *get_interface_typedef(pure_expr *f);
 
 /* Get definitions of variables and constants. The result takes the form
    [var-->val] if the symbol is defined, otherwise the empty list is
@@ -1180,7 +1191,8 @@ pure_expr *add_typedef(pure_expr *x);
 pure_expr *add_macdef(pure_expr *x);
 
 /* Add patterns for an interface type. Note that f must be the symbol denoting
-   the interface. */
+   the interface. The list x should be the list of interface patterns, in the
+   same format as returned by get_interface(). */
 
 pure_expr *add_interface(pure_expr *f, pure_expr *x);
 
@@ -1192,7 +1204,7 @@ pure_expr *add_fundef_at(pure_expr *y, pure_expr *x);
 pure_expr *add_typedef_at(pure_expr *y, pure_expr *x);
 pure_expr *add_macdef_at(pure_expr *y, pure_expr *x);
 
-/* Same as above, but add the given patterns x before a given pattern y.  */
+/* Add the given interface patterns x before a given pattern y.  */
 
 pure_expr *add_interface_at(pure_expr *f, pure_expr *y, pure_expr *x);
 

@@ -8679,6 +8679,16 @@ pure_expr *get_interface(pure_expr *f)
 {
   if (f->tag > 0) {
     interpreter& interp = *interpreter::g_interp;
+    return interp.interface_patterns(f->tag);
+  } else
+    return 0;
+}
+
+extern "C"
+pure_expr *get_interface_typedef(pure_expr *f)
+{
+  if (f->tag > 0) {
+    interpreter& interp = *interpreter::g_interp;
     return interp.interface_rules(f->tag);
   } else
     return 0;

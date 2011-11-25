@@ -8853,7 +8853,7 @@ pure_expr *interpreter::type_rules(int32_t f)
   return y;
 }
 
-pure_expr *interpreter::interface_rules(int32_t f)
+pure_expr *interpreter::interface_patterns(int32_t f)
 {
   env::iterator jt = typeenv.find(f);
   list<pure_expr*> xs;
@@ -8863,6 +8863,29 @@ pure_expr *interpreter::interface_rules(int32_t f)
     for (exprl::iterator it = info.xs->begin(), end = info.xs->end();
 	 it!=end; ++it) {
       expr x = vsubst(*it);
+      xs.push_back(const_value(x, true));
+    }
+  }
+  size_t n = xs.size();
+  pure_expr **xv = new pure_expr*[n];
+  list<pure_expr*>::iterator x = xs.begin(), end = xs.end();
+  for (size_t i = 0; x != end; ++x) xv[i++] = *x;
+  pure_expr *y = pure_listv(n, xv);
+  delete[] xv;
+  return y;
+}
+
+pure_expr *interpreter::interface_rules(int32_t f)
+{
+  env::iterator jt = typeenv.find(f);
+  list<pure_expr*> xs;
+  if (jt != typeenv.end() && jt->second.t == env_info::fun &&
+      jt->second.xs && jt->second.rxs) {
+    env_info& info = jt->second;
+    for (rulel::iterator it = info.rxs->begin(), end = info.rxs->end();
+	 it!=end; ++it) {
+      expr x = expr(symtab.eqn_sym().x, vsubst(it->lhs),
+		    rsubst(vsubst(it->rhs, 1), true));
       xs.push_back(const_value(x, true));
     }
   }

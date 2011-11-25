@@ -861,6 +861,7 @@ public:
   expr quoted_tag(expr x, int32_t astag, int32_t ttag = 0);
   pure_expr *fun_rules(int32_t f);
   pure_expr *type_rules(int32_t f);
+  pure_expr *interface_patterns(int32_t f);
   pure_expr *interface_rules(int32_t f);
   pure_expr *mac_rules(int32_t f);
   bool add_fun_rules(pure_expr *x);
