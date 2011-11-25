@@ -1,9 +1,10 @@
 2011-11-25  Albert Graef  <Dr.Graef@t-online.de>
 
-	* interpreter.cc (when_codegen): Eliminate superflous environments
-	for throwaway bindings of the form 'when x end' where x is just an
-	expression. These are now treated exactly like 'x$$y' (compute x,
-	then throw it away immediately).
+	* interpreter.cc (when_codegen): Optimization of non-binding
+	'when' clauses. This eliminates superflous environments and
+	function calls for clauses of the form 'when x end' where x is
+	just an expression. These now just compute x, then throw it away
+	immediately, just like the $$ operator.
 
 	* etc/pure-mode.el.in: Have #! (shebang) treated as preprocessor
 	lines rather than comments, so that they aren't skipped by the
