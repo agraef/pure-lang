@@ -211,7 +211,8 @@ ostream& operator << (ostream& os, const expr& x)
 static ostream& printr(ostream& os, const rule& r, bool simple = false)
 {
   if (!simple || !r.lhs.is_var() ||
-      r.lhs.vtag() != interpreter::g_interp->symtab.anon_sym) {
+      r.lhs.vtag() != interpreter::g_interp->symtab.anon_sym ||
+      r.lhs.ttag() != 0) {
     printx(os, r.lhs, true);
     os << " = ";
   }
