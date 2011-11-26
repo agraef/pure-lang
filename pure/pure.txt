@@ -82,7 +82,7 @@ program. Simply run the program from the shell as follows:
 .. code-block:: console
 
    $ pure
-   Pure 0.47 (x86_64-unknown-linux-gnu) Copyright (c) 2008-2011 by Albert Graef
+   Pure @version@ (x86_64-unknown-linux-gnu) Copyright (c) 2008-2011 by Albert Graef
    (Type 'help' for help, 'help copying' for license information.)
    Loaded prelude from /usr/local/lib/pure/prelude.pure.
 
@@ -1114,10 +1114,10 @@ symbol ``|``, parentheses ``()``, brackets ``[]`` and curly braces ``{}``.
 lexeme by itself; the other symbols can be used inside operator symbols.)
 Moreover, there are some keywords which cannot be used as identifiers::
 
-  case       const   def      else    end        extern  if
-  infix      infixl  infixr   let     namespace  nonfix  of
-  otherwise  outfix  postfix  prefix  private    public  then
-  type       using   when     with
+  case   const      def     else       end     extern     if
+  infix  infixl     infixr  interface  let     namespace  nonfix
+  of     otherwise  outfix  postfix    prefix  private    public
+  then   type       using   when       with
 
 Pure fully supports the `Unicode` character set or, more precisely, UTF-8.
 This is an ASCII extension capable of representing all Unicode characters,
@@ -1890,6 +1890,7 @@ definitions, and expressions to be evaluated:
      	: | "type" `type_rule` ";"
      	: | `rule` ";"
      	: | `expr` ";"
+     	: | `decl`
 
 (The syntax of the :token:`rule`, :token:`type_rule`, :token:`macro_rule` and
 :token:`simple_rule` elements is discussed in the `Rule Syntax`_ section
@@ -1911,6 +1912,14 @@ declaration syntax, see Declarations_.)
    interpreter just treats this as a comment). Pure also provides some
    abbreviations for factoring out common left-hand or right-hand sides in
    collections of rules; see the `Rule Syntax`_ section for details.
+
+.. describe:: type lhs = rhs;
+
+   A rule starting with the keyword :keyword:`type` defines a type predicate.
+   This works pretty much like an ordinary rewriting rule, except that only a
+   single right-hand side is permitted (which may also be omitted in some
+   cases) and the left-hand side may involve at most one argument expression;
+   see the `Type Rules`_ section for details.
 
 .. describe:: def lhs = rhs;
 
@@ -2805,6 +2814,52 @@ as a general rule, a type definition should not rely on side effects such as
 doing I/O (except maybe for debugging purposes), modifying references or
 external data structures via C pointers, etc.
 
+.. _interface:
+.. _Interface Types:
+
+Interface Types
+---------------
+
+Besides the "concrete" types described in the previous section, Pure provides
+yet another, more abstract way to characterize a type through the collection
+of operations it supports. These `interface types` work in a fashion similar
+to Google's Go_ programming language which popularized their use in recent
+times, although the concept itself isn't new and has a lot of similarities to
+the notion of abstract data types in algebraic specification and
+object-oriented programming.
+
+This part of the Pure language actually belongs to the declaration syntax (see
+Declarations_), but it's convenient to describe it here because of the close
+connection to type rules.
+
+.. productionlist::
+   interface_decl : "interface" `qualified_identifier` "with"
+   		  : `interface_item`* "end" ";"
+   interface_item : `pattern` ";"
+   		  | "interface" `qualified_identifier` ";"
+
+Syntactically, an interface is just a collection of patterns which specify the
+operations of the type. For instance, let's consider the example of a stack
+data structure::
+
+  interface stack with
+    push s::stack x;
+    pop s::stack;
+    top s::stack;
+  end;
+
+Note the use of the type tag ``stack`` in the operation patterns, which marks
+the positions of ``stack`` arguments of the interface operations. The
+declaration tells us that a stack provides three operations ``push``, ``pop`
+and ``top`` which each take a stack as their first argument; also, ``push``
+takes two arguments, while ``pop`` and ``top`` just take a single (stack)
+argument.
+
+As soon as an interface has been declared, we can use it as a type tag in the
+definition of other operations.
+
+TODO
+
 Examples
 ========
 
@@ -3532,6 +3587,9 @@ consisting of several source modules:
 * :keyword:`extern` declarations specify external C functions (described in
   the `C Interface`_ section);
 
+* :keyword:`interface` declarations specify an interface type (described in
+  the `Interface Types`_ section):
+
 * :keyword:`using` clauses let you include other scripts in a Pure script;
 
 * :keyword:`namespace` declarations let you avoid name clashes and thereby
@@ -3540,10 +3598,11 @@ consisting of several source modules:
 These are toplevel elements (cf. Toplevel_):
 
 .. productionlist::
-   item : `symbol_decl` | `extern_decl` | `using_decl` | `namespace_decl`
+   decl : `symbol_decl` | `extern_decl` | `interface_decl` | `using_decl` | `namespace_decl`
 
-The syntax of each of these is described in the following subsections, except
-:token:`extern_decl` which can be found in the `C Interface`_ section.
+Note that the :keyword:`extern` and :keyword:`interface` declarations have
+their own sections. The other kinds of declarations are described in the
+following subsections.
 
 .. _public:
 .. _private:
@@ -5063,7 +5122,7 @@ Or let's lists all global variables along with their values::
 
   > catmap get_vardef (globsym "*" 0);
   [(argc-->0),(argv-->[]),(compiling-->0),
-  (sysinfo-->"x86_64-unknown-linux-gnu"),(version-->"0.47")]
+  (sysinfo-->"x86_64-unknown-linux-gnu"),(version-->"@version@")]
 
 The counterparts of :func:`add_fundef` and :func:`del_fundef` are provided as
 well. Not very surprisingly, they are named :func:`add_typedef`,
@@ -6882,7 +6941,7 @@ values (using the "long" format)::
   argv       var  argv = [];
   compiling  var  compiling = 0;
   sysinfo    var  sysinfo = "x86_64-unknown-linux-gnu";
-  version    var  version = "0.47";
+  version    var  version = "@version@";
   5 variables
 
 Or you can list just private symbols of the namespace ``foo``, as follows::
@@ -6900,21 +6959,44 @@ case you might consider to use the ``dump`` command instead, which writes the
 definitions to a file which can then be loaded into a text editor for easier
 viewing. This may occasionally be useful for debugging purposes.)
 
-Finally, there are two alternate forms of the ``show`` command: ``show
-namespace`` which lists the current and search namespaces, and ``show
-namespaces`` which lists all declared namespaces. These come in handy if you
-have forgotten what namespaces are currently active and which other namespaces
-are available in your program. For instance::
+The ``show`` command also has the following alternate forms which are used for
+special purposes:
 
-  > show namespace
-  > show namespaces
-  namespace C;
-  namespace matrix;
-  > using namespace C;
-  > namespace my;
-  > show namespace
-  namespace my;
-  using namespace C;
+* ``show interface`` lists the actual :keyword:`type` rules for an interface
+  type. This is useful if you want to verify which patterns will be matched by
+  an interface type, see `Interface Types`_ for details. For instance::
+
+    > interface stack with
+    >   push xs::stack x;
+    >   pop xs::stack;
+    >   top xs::stack;
+    > end;
+    > push xs@[] x |
+    > push xs@(_:_) x = x:xs;
+    > pop (x:xs) = xs;
+    > top (x:xs) = x;
+    > show interface stack
+    type stack xs@(_:_);
+    > pop [] = throw "empty stack";
+    > top [] = throw "empty stack";
+    > show interface stack
+    type stack xs@[];
+    type stack xs@(_:_);
+
+* ``show namespace`` lists the current and search namespaces, while ``show
+  namespaces`` lists all declared namespaces. These come in handy if you have
+  forgotten what namespaces are currently active and which other namespaces
+  are available in your program. For instance::
+
+    > show namespace
+    > show namespaces
+    namespace C;
+    namespace matrix;
+    > using namespace C;
+    > namespace my;
+    > show namespace
+    namespace my;
+    using namespace C;
 
 Definition Levels
 -----------------
@@ -8225,6 +8307,11 @@ e.g., because they are invoked with the wrong arguments.
 Pure 0.49 introduced the `conditional compilation`_ pragmas, so that simple
 version and system dependencies can now be handled in a more convenient way.
 
+Pure 0.50 introduced the declaration of `interface types`_, which make it
+possible to create the definition of a type from a description of its
+operations. To these ends, a new keyword :keyword:`interface` was added to the
+language.
+
 Error Recovery
 --------------
 
@@ -9173,6 +9260,11 @@ GNU Octave
 GNU Scientific Library
     A free software library for numeric applications, can be used with Pure's
     numeric matrices, http://www.gnu.org/software/gsl.
+
+.. _Go:
+
+Go
+    Googles Go programming language, http://golang.org.
 
 .. _Haskell:
 

@@ -501,6 +501,21 @@ using namespace __C;
       If the given symbol is defined as a function, type or macro, return the
       corresponding list of rewriting rules. Otherwise return the empty list.
 
+   .. function:: get_interface sym
+                 get_interface_typedef sym
+
+      If the given symbol is defined as an interface type, return its
+      definition; otherwise return the empty list. :func:`get_interface`
+      returns the list of patterns used to declare the type, while
+      :func:`get_interface_typedef` returns the actual list of type rules, in
+      the same format as with :func:`get_typedef`. Note that the latter may be
+      empty even if the type is defined, meaning that the type hasn't been
+      instantiated yet, see :ref:`Interface Types` for details. Also note that
+      Pure allows you to have *both* an interface and a regular (concrete)
+      definition of a type, in which case :func:`get_typedef` and
+      :func:`get_interface_typedef` may both return nonempty (and usually
+      different) results.
+
    .. function:: get_vardef sym
                  get_constdef sym
 
@@ -529,6 +544,17 @@ using namespace __C;
       left-hand side, which matches the head symbol on the left-hand side of
       ``r``.
 
+   .. function:: add_interface sym patterns
+
+      Add the given patterns to the interface type ``sym`` (given as a
+      symbol). If the interface type doesn't exist yet, it will be created.
+
+   .. function:: add_interface_at sym p patterns
+
+      Same as above, but add the given patterns at (i.e., before) the given
+      pattern ``p`` (the given interface type must already exist and contain
+      the given pattern, otherwise the call fails).
+
    .. function:: add_vardef rules
                  add_constdef rules
 
@@ -536,8 +562,8 @@ using namespace __C;
       ``sym --> value`` with a symbol on the left-hand side (no pattern
       matching is performed by these functions).
 
-   The following functions may be used to delete individual rewriting rules or
-   variable and constant symbols.
+   The following functions may be used to delete individual rewriting rules,
+   interface type patterns or variable and constant symbols.
 
    .. function:: del_fundef rule
                  del_typedef rule
@@ -547,6 +573,11 @@ using namespace __C;
       the :func:`get_fundef`, :func:`get_typedef` and :func:`get_macdef`
       functions) from the running program. Returns ``()`` if successful, fails
       otherwise.
+
+   .. function:: del_interface sym pattern
+
+      Delete the given pattern from the given interface type. Returns ``()``
+      if successful, fails otherwise.
 
    .. function:: del_vardef sym
                  del_constdef sym
