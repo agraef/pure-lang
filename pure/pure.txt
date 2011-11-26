@@ -2644,9 +2644,9 @@ This implements just the bare bones, but that should be enough to make
   > fact (s (s (s 0)));
   s (s (s (s (s (s 0)))))
 
-So, counting the ``s``\ 's, the factorial of 3 is 6. Works! It goes without
-saying, though, that this implementation of ``nat`` is rather impractical;
-you'll get mountains of ``s``\ 's for larger values of ``n``.
+So, counting the ``s``\ 's, the factorial of 3 is 6. Works! (It goes without
+saying, though, that this implementation of ``nat`` is not very practical;
+you'll get mountains of ``s``\ 's for larger values of ``n``.)
 
 As you can see, a type definition may in general consist of many type rules
 which may be scattered out over different parts of a program. This works
@@ -2765,13 +2765,11 @@ that's why this macro isn't defined in the prelude.)
 
 Pure places no a priori restrictions on the rules defining a data type (other
 than that they must either define a unary predicate or an alias for an
-existing data type). Thus any type of relation between two data types is
+existing data type). As far as Pure is concerned, types are just subsets of
+the universe of terms. Thus any type of relation between two data types is
 possible; they might be unrelated (disjoint) term sets, one may be a subset of
 another, or they might be related in some other way (some terms may be members
-of both types, while others aren't). Thus the relationships between types and
-their adherence to certain "interfaces" are the responsibility of the
-programmer. As far as Pure is concerned, types are just subsets of the
-universe of terms.
+of both types, while others aren't).
 
 For instance, consider the types ``nat`` and ``odd`` from above. Both are
 subtypes of the ``int`` type (assuming our original definition of ``nat`` as
@@ -8250,20 +8248,25 @@ y`` by itself is meant as a definition of a function ``foo`` with formal
 parameter ``x`` and return value ``y``, or a pattern binding defining the
 local variable ``x`` by matching the pattern ``foo x`` against the value of
 ``y``. The :keyword:`with` construct does the former, :keyword:`when` the
-latter. (As a mnemonic, you may consider that :keyword:`when` conveys a sense
-of time, so the individual variable definitions in a :keyword:`when` clause
-are executed in order, while the function definitions in a :keyword:`with`
-clause are all done simultaneously.)
+latter.
 
-Also note that :keyword:`when` clauses aren't just a means to define local
-variables, they are also Pure's main workhorse to execute a series of variable
-definitions and expressions in sequence. This offers a useful and familiar bit
-of imperative "look and feel" to Pure programmers, even though the
-:keyword:`when` clause itself works in a purely functional way. For instance,
-suppose that we'd like to define a function which opens a file, checks that
-the file was opened successfully and throws an exception otherwise, outputs a
-message to indicate which file was opened, and finally returns the contents of
-the file as a string. The easiest way to do this in Pure is as follows::
+Also note that the function definitions in a :keyword:`with` clause are all
+done simultaneously (and can thus be mutually recursive), while the individual
+variable definitions and expressions in a :keyword:`when` clause are executed
+in order. This works in exactly the same fashion as ``letrec`` and ``let`` in
+Scheme. (As a mnemonic, consider that :keyword:`when` conveys a sense of time,
+so its parts are "executed in sequence".)
+
+The sequential execution aspect of :keyword:`when` is rather important in
+Pure, because it enables you to do a series of "actions" (variable bindings
+and expression evaluations) in sequence by simply enclosing it in a
+:keyword:`when` clause. This provides the Pure programmer with a useful and
+familiar bit of imperative "look and feel" (even though the :keyword:`when`
+clause itself works in a purely functional way). For instance, suppose that
+we'd like to define a function which opens a file, checks that the file was
+opened successfully and throws an exception otherwise, outputs a message to
+indicate which file was opened, and finally returns the contents of the file
+as a string. The easiest way to do this in Pure is as follows::
 
   using system;
 
@@ -8274,17 +8277,16 @@ the file as a string. The easiest way to do this in Pure is as follows::
     s = fget fp;
   end;
 
-Another speciality is that :keyword:`with` and :keyword:`when` clauses are
-tacked on to the end of the expression they belong to. This mimics
+One of Pure's major idiosyncrasies is that :keyword:`with` and :keyword:`when`
+clauses are tacked on to the end of the expression they belong to. This mimics
 mathematical language and makes it easy to read and understand a definition,
 because you're told right up front *what* is to be computed, before going into
-the details of *how* the computation is performed. Unfortunately, this style
-differs considerably from other block-structured programming languages, which
-often place local definitions in front of the code they apply to. For
-instance, Haskell and ML have :keyword:`let` expressions to support that kind
-of notation. Pure doesn't offer any special syntax for this, but note that you
-can always write a :keyword:`when` or :keyword:`with` clause in the following
-style which places the "body" at the bottom::
+the details of *how* the computation is performed. However, this style differs
+considerably from other block-structured programming languages, which often
+place local definitions in front of the code they apply to. Pure doesn't offer
+any special syntax for this, but note that you can always write a
+:keyword:`when` or :keyword:`with` clause in the following style which places
+the "body" at the bottom::
 
   result when
     y = foo (x+1);
@@ -8292,8 +8294,8 @@ style which places the "body" at the bottom::
     result = baz z;
   end;
 
-This can be read and written more or less like a :keyword:`let` expression,
-except that the name of the result is given explicitly at the beginning.
+This can be read and written more or less like a ``let`` expression in Scheme
+or ML, except that the name of the result is given explicitly at the beginning.
 However, this style doesn't really save you either if you need several
 sections with both local functions and variables. In this case you'll just
 have to bite the bullet and arrange the :keyword:`with` and :keyword:`when`
