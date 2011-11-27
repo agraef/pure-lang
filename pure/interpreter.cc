@@ -4926,11 +4926,9 @@ static bool match(map<int32_t, expr>& xvars, exprl& xsubst,
     // variable was unqualified.
     if (xtag == iface_tag) xtag = 0;
     if (xtag > 0) {
-      /* XXXFIXME: We assume that a proper type tag doesn't match any
-         non-variable term. */
+      // A proper type tag *must* be matched literally. It won't match any
+      // non-variable term nor any different type tag.
       if (ytag < 0) return false;
-      /* XXXFIXME: If both terms are variables with a proper type
-	 qualification, we want the types to be equal. */
       if (ytag > 0 && xtag != ytag) return false;
     }
     if (x.vtag() != anon_tag) {
@@ -4954,26 +4952,30 @@ static bool match(map<int32_t, expr>& xvars, exprl& xsubst,
   }
   if (x.tag() != y.tag()) return false;
   switch (x.tag()) {
-  case EXPR::VAR:
-    return false; // handled above
   // constants:
   case EXPR::FVAR:
-    return x.vtag() == y.vtag();
+    if (x.vtag() != y.vtag()) return false;
+    break;
   case EXPR::INT:
-    return x.ival() == y.ival();
+    if (x.ival() != y.ival()) return false;
+    break;
   case EXPR::BIGINT:
-    return mpz_cmp(x.zval(), y.zval()) == 0;
+    if (mpz_cmp(x.zval(), y.zval()) != 0) return false;
+    break;
   case EXPR::DBL:
-    return x.dval() == y.dval();
+    if (x.dval() != y.dval()) return false;
+    break;
   case EXPR::STR:
-    return strcmp(x.sval(), y.sval()) == 0;
+    if (strcmp(x.sval(), y.sval()) != 0) return false;
+    break;
   // application:
   case EXPR::APP:
-    return
-      match(xvars, xsubst, xttag, yttag,
-	    anon_tag, iface_tag, x.xval1(), y.xval1()) &&
-      match(xvars, xsubst, xttag, yttag,
-	    anon_tag, iface_tag, x.xval2(), y.xval2());
+    if (!match(xvars, xsubst, xttag, yttag,
+	       anon_tag, iface_tag, x.xval1(), y.xval1()) ||
+	!match(xvars, xsubst, xttag, yttag,
+	       anon_tag, iface_tag, x.xval2(), y.xval2()))
+      return false;
+    break;
   // matrix (Pure 0.47+):
   case EXPR::MATRIX: {
     exprll *xs = x.xvals(), *ys = y.xvals();
@@ -4991,7 +4993,7 @@ static bool match(map<int32_t, expr>& xvars, exprl& xsubst,
 	  return false;
       }
     }
-    return true;
+    break;
   }
   // these must not occur on the lhs:
   case EXPR::PTR:
@@ -5004,8 +5006,25 @@ static bool match(map<int32_t, expr>& xvars, exprl& xsubst,
     return false;
   default:
     assert(x.tag() > 0);
-    return true;
+    break;
   }
+  if (x.astag() > 0) {
+    // Bind variables in "as" patterns. We need to do this to properly handle
+    // non-linearities.
+    if (x.astag() != anon_tag) {
+      map<int32_t, expr>::iterator it = xvars.find(x.astag());
+      if (it != xvars.end()) {
+	// Variable is already bound (this may happen if the term is
+	// non-linear), check that the bindings match.
+	if (!equal(anon_tag, it->second, y))
+	  return false;
+      } else {
+	// Record a binding for this variable.
+	xvars[x.astag()]= y;
+      }
+    }
+  }
+  return true;
 }
 
 void interpreter::add_interface_rule(env &e, int32_t tag, expr& x, bool check)
