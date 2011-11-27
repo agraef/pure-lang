@@ -2323,40 +2323,38 @@ efficiently):
 
    The type of C pointer values.
 
-To define your own data types, you employ a special kind of rule syntax, which
+Pure's standard library provides additional data types along with the
+corresponding operations, such as rational and complex numbers, lists, tuples
+and the container data types (sets, dictionaries, etc.). These are all
+described in the :doc:`purelib`.
+
+You can define your own data types using a special kind of rule syntax which
 is explained in `Type Rules`_ below. For instance, we might represent points
 in the plane using a constructor symbol ``Point`` which gets applied to pairs
 of coordinates. We can then define the ``point`` data type as follows::
 
-  type point (Point x::number y::number);
+  type point (Point x y);
 
 This introduces the type symbol ``point`` and specifies that this type
-consists of terms of the form ``Point x y`` where ``x`` and ``y`` may be any
-kinds of numbers (the :type:`number/type` type is defined in the prelude). We
-can now equip this data type with an operation ``point`` to construct a point
-from its coordinates, and two operations ``xcoord`` and ``ycoord`` to retrieve
-the coordinates::
+consists of terms of the form ``Point x y``. We can now equip this data type
+with an operation ``point`` to construct a point from its coordinates, two
+operations ``xcoord`` and ``ycoord`` to retrieve the coordinates, and an
+operation ``move`` to change the coordinates to the given values::
 
-  point x::number y::number = Point x y;
+  point x y = Point x y;
   xcoord (Point x y) = x;
   ycoord (Point x y) = y;
+  move (Point _ _) x y = Point x y;
 
 Next we might define a function ``translate`` which shifts the coordinates of
 a point by a given amount in the x and y directions as follows::
 
-  translate (x,y) p::point = point (xcoord p+x) (ycoord p+y);
+  translate x y p::point = move p (xcoord p+x) (ycoord p+y);
 
 Note the use of ``point`` as a type tag on the ``p`` variable. By these means,
 we can ensure that the argument is actually an instance of the point data type
 we just defined. The type tag acts just like an extra guard of the equation
-defining ``translate``, as if you had written::
-
-  translate (x,y) p = point (xcoord p+x) (ycoord p+y) if pointp p with
-    pointp (Point x::number y::number) = true;
-    pointp _ = false otherwise;
-  end;
-
-However, using the type tag, all the necessary type checking is done
+defining ``translate``, but all the necessary type checking is done
 automatically during pattern matching. This is often more convenient (and,
 depending on the implementation, the compiler may generate more efficient code
 for a type tag than for an ordinary guard).
@@ -2364,21 +2362,19 @@ for a type tag than for an ordinary guard).
 The ``translate`` function can be invoked as follows::
 
   > let p::point = point 3 3;
-  > p; translate (1,2) p;
+  > p; translate 1 2 p;
   Point 3 3
   Point 4 5
 
-One important point here is that ``translate`` can be defined without knowing
-or assuming *anything* about the internal representation of the ``point`` data
-type. In fact, the ``Point`` constructor might well be hidden by making it a
-private member of some namespace (cf. Namespaces_), so that all accesses to
-the data structure would have to be done through the provided operations. Such
-a data type is also known as an `abstract data type` (ADT). The kind of
-"information hiding" provided by abstract data types is very important in the
-design of larger software systems. In particular, it makes it possible to
-revise the internal representation or even provide alternative implementations
-of a data type, and have auxiliary functions (like our ``translate`` function)
-still work on the modified data structure.
+One important point to note here is that ``translate`` can be defined without
+knowing or assuming *anything* about the internal representation of the
+``point`` data type. We have defined ``point`` as a `concrete data type` in
+this example, making its constructor and internal structure visible in the
+rest of the program. This is often convenient, but the ``Point`` constructor
+might just as well be hidden by making it a private member of some namespace
+(cf. Namespaces_), so that all accesses to the data structure would have to be
+done through the provided operations. Such a data type is also known as an
+`abstract data type` (ADT).
 
 .. note:: As we've already seen, Pure has some powerful capabilities which
    enable you to write functions to inspect and manipulate terms in a
@@ -2388,14 +2384,69 @@ still work on the modified data structure.
    such dirty tricks to wreak havoc on the internal representation of an ADT,
    he gets what he deserves.
 
-Pure's standard library provides a few predefined data types, some of them
-concrete (like the derived number types), some of them abstract (like the
-container data types), and some which are just aliases for frequently used
-type predicates (such as the matrix subtypes). These are all described in the
-:doc:`purelib`.
+Pure provides some additional facilities to ease the handling of abstract data
+types through its `interface types`_. For instance, instead of defining
+``point`` as a concrete data type using a :keyword:`type` rule, we might also
+specify it as an interface type which merely lists the supported operations as
+follows::
 
-More examples and a detailed explanation of Pure's type tag concept can be
-found in the `Type Rules`_ section below.
+  interface point with
+    xcoord p::point;
+    ycoord p::point;
+    move p::point x y;
+  end;
+
+We can implement this type the same way as before::
+
+  point x y = Point x y;
+  xcoord (Point x y) = x;
+  ycoord (Point x y) = y;
+  move (Point _ _) x y = Point x y;
+
+The definition of the ``translate`` function is also unchanged::
+
+  translate x y p::point = move p (xcoord p+x) (ycoord p+y);
+
+The difference is that now the structure of members of the type is not made
+explicit *anywhere* in the definition of the type. Instead, the compiler
+figures out which data matches the ``point`` tag on its own. We can check the
+actual term patterns making up the ``point`` type with the ``show interface``
+command::
+
+  > show interface point
+  type point (Point x y);
+
+As you can see, the compiler derived our previous definition of the type. But
+in fact ``translate`` will now work with *any* data type as long as it
+implements the ``point`` interface (i.e., provides the ``xcoord``, ``ycoord``
+and ``move`` operations), so we may swap out the underlying data structure on
+a whim. For instance, if we'd like to use vectors instead of constructor
+terms, all we have to do is to provide the necessary implementations of the
+interface operations::
+
+  xcoord {x,y} = x;
+  ycoord {x,y} = y;
+  move {_,_} x y = {x,y};
+
+And everything just works::
+
+  > show interface point
+  type point (Point x y);
+  type point {x,y};
+  > let p::point = {3,3};
+  > p; translate (1,2) p;
+  {3,3}
+  {4,5}
+
+This separation of interface and implementation of a data structure is very
+important in the design of larger software systems. In particular, it makes it
+possible to revise the internal representation or even provide alternative
+implementations of a data type, and have auxiliary functions (like our
+``translate`` function) still work on the modified data structure.
+
+More examples and detailed explanations of Pure's notions of type predicates
+and interface types can be found in the `Type Rules`_ and `Interface Types`_
+sections below.
 
 General Rules
 -------------
