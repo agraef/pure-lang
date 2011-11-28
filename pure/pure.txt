@@ -2895,33 +2895,6 @@ Interfaces consist of two kinds of items:
   interface type to be included in the interface type being defined, which
   effectively turns the new interface type into a subtype of the existing one.
 
-An interface may also be empty, in which case it matches *any* value. Thus, ::
-
-  interface any with end;
-
-is just a fancy way to define the type::
-
-  type any _;
-
-Also, interface types may be refined at any time, by adding more interface
-patterns. Thus, ::
-
-  interface foo with foo x::foo; end;
-  interface foo with bar x::foo; end;
-
-is equivalent to::
-
-  interface foo with
-    foo x::foo;
-    bar x::foo;
-  end;
-
-However, note that when including one interface in another, the included
-interface must already exist and only the interface patterns known at the
-point of inclusion become part of the including interface; refining the
-included interface later has no effect on the including interface. In
-particular, this also prevents circular interface definitions.
-
 The gist of an interface is in its patterns, more precisely: in the pattern
 variables which have the name of the interface as a type tag. The precise
 meaning of the patterns is as follows:
@@ -2940,13 +2913,18 @@ meaning of the patterns is as follows:
   variable without any type tag, which thus matches *any* value) are
   eliminated as well.
 
-An interface pattern may contain type tags other than the interface
-type. These must always be matched *literally* on the left-hand sides of
-equations. Thus, ::
+Interface patterns often take a simple form like the following, ::
 
-  interface foo with
-    foo x::foo y::int;
-  end;
+  interface foo with foo x::foo y z; end;
+
+specifying the number of arguments of the interface function along with the
+position of the interface type argument. However, general patterns are
+permitted, in order to further restrict the left-hand sides of the function
+definitions to be taken into consideration. Specifically, note that type
+tags other than the interface type must always be matched *literally* on
+the left-hand sides of equations. Thus, ::
+
+  interface foo with foo x::foo y::int; end;
 
 matches any rule of the form ::
 
@@ -2957,16 +2935,16 @@ but *not*::
   foo x 0 = ...;
   foo x y::bar = ...;
 
-(unless ``bar`` happens to be an alias of the ``int`` type, of course).
-In such cases it is necessary to explicitly add these patterns to the
+(unless ``bar`` happens to be an alias of the ``int`` type, of course). In
+such cases it is necessary to explicitly add these patterns to the
 interface if you want them to be included.
 
 Interface patterns may contain the interface type tag any number of times,
-yielding candidate patterns for each occurrence of the interface type tag in
-the pattern. For instance, here is a quick way to determine the type of all
-"addable" data structures in the prelude (this uses the interactive ``show
-interface`` command to list the patterns actually matched by an interface
-type, cf. `The show Command`_)::
+yielding candidate patterns for each occurrence of the interface type tag
+in the pattern. For instance, here is a quick way to determine the type of
+all "addable" data structures in the prelude (this uses the interactive
+``show interface`` command to list the patterns actually matched by an
+interface type, cf. `The show Command`_)::
 
   > interface addable with x::addable + y::addable; end;
   > show interface addable
@@ -2977,20 +2955,44 @@ type, cf. `The show Command`_)::
   type addable [];
   type addable xs@(_:_);
 
-On the other hand, interfaces may also contain "static" patterns which do not
-include the interface type as a tag at all, such as::
+On the other hand, interfaces may also contain "static" patterns which do
+not include the interface type as a tag at all, such as::
 
   interface foo with bar x::bar y; end;
 
-These do not contribute anything to the candidate patterns of the type, but do
-restrict the type just like the other patterns, in that the type will be empty
-unless the static patterns are all "implemented". In the example above, this
-means that the ``foo`` type will be empty unless the ``bar`` function is
-defined and takes an element of the ``bar`` type as its first argument.
+These do not contribute anything to the candidate patterns of the type, but
+do restrict the type just like the other patterns, in that the type will be
+empty unless the static patterns are all "implemented". In the example
+above, this means that the ``foo`` type will be empty unless the ``bar``
+function is defined and takes an element of the ``bar`` type as its first
+argument.
 
-Let's now take a look at some examples to see how this all works in practice.
-We'll be using the following stack data structure as a running example
-throughout the remainder of this section::
+An interface may also be empty, in which case it matches *any* value. Thus, ::
+
+  interface any with end;
+
+is just a fancy way to define the type::
+
+  type any _;
+
+Also, interface types may be refined at any time, by adding more interface
+patterns. Thus, ::
+
+  interface foo with foo x::foo; end;
+  interface foo with bar x::foo; end;
+
+is equivalent to::
+
+  interface foo with foo x::foo; bar x::foo; end;
+
+However, note that when including one interface in another, the included
+interface must already exist and only the interface patterns known at the
+point of inclusion become part of the including interface; refining the
+included interface later has no effect on the including interface. In
+particular, this also prevents circular interface definitions.
+
+Let's now take a look at the example of a stack data structure to see how this
+all works in practice::
 
   interface stack with
     push s::stack x;
