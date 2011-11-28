@@ -864,7 +864,7 @@ interface_rules
   $<ival>$ = count;
 }
 ';'
-{ $$ = $1+$<ival>3; delete $3; }
+{ $$ = $1+$<ival>4; delete $3; }
 ;
 
 %%

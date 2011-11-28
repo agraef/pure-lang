@@ -4925,11 +4925,11 @@ static bool match(map<int32_t, expr>& xvars, exprl& xsubst,
     // The interface tag matches everything here, just as if the corresponding
     // variable was unqualified.
     if (xtag == iface_tag) xtag = 0;
-    if (xtag > 0) {
+    if (xtag) {
       // A proper type tag *must* be matched literally. It won't match any
       // non-variable term nor any different type tag.
-      if (ytag < 0) return false;
-      if (ytag > 0 && xtag != ytag) return false;
+      if (ytag == -1) return false;
+      if (ytag && xtag != ytag) return false;
     }
     if (x.vtag() != anon_tag) {
       map<int32_t, expr>::iterator it = xvars.find(x.vtag());
