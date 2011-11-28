@@ -4928,8 +4928,7 @@ static bool match(map<int32_t, expr>& xvars, exprl& xsubst,
     if (xtag) {
       // A proper type tag *must* be matched literally. It won't match any
       // non-variable term nor any different type tag.
-      if (ytag == -1) return false;
-      if (ytag && xtag != ytag) return false;
+      if (xtag != ytag) return false;
     }
     if (x.vtag() != anon_tag) {
       map<int32_t, expr>::iterator it = xvars.find(x.vtag());
