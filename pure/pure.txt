@@ -1890,12 +1890,10 @@ definitions, and expressions to be evaluated:
      	: | "type" `type_rule` ";"
      	: | `rule` ";"
      	: | `expr` ";"
-     	: | `decl`
 
-(The syntax of the :token:`rule`, :token:`type_rule`, :token:`macro_rule` and
-:token:`simple_rule` elements is discussed in the `Rule Syntax`_ section
-below. Also, a few additional toplevel elements are provided in the
-declaration syntax, see Declarations_.)
+These elements are discussed in more detail in the `Rule Syntax`_ section.
+Also, a few additional toplevel elements are part of the declaration syntax,
+see Declarations_.
 
 .. describe:: lhs = rhs;
 
@@ -1919,7 +1917,10 @@ declaration syntax, see Declarations_.)
    This works pretty much like an ordinary rewriting rule, except that only a
    single right-hand side is permitted (which may also be omitted in some
    cases) and the left-hand side may involve at most one argument expression;
-   see the `Type Rules`_ section for details.
+   see the `Type Rules`_ section for details. There's also an alternative
+   syntax which lets you define types in a more abstract way and have the
+   compiler generate the type rules for you; this is described in the
+   `Interface Types`_ section.
 
 .. describe:: def lhs = rhs;
 
@@ -2872,26 +2873,58 @@ Interface Types
 ---------------
 
 Besides the "concrete" types described in the previous section, Pure provides
-yet another, more abstract way to characterize a type through the collection
-of operations it supports. These `interface types` work in a fashion similar
-to Google's Go_ programming language which popularized their use in recent
-times, although the concept itself isn't new and has a lot of similarities to
-the notion of abstract data types in algebraic specification and
-object-oriented programming.
+another, more abstract way to characterize a type through the collection of
+operations it supports. These `interface types` work pretty much like in
+Google's Go_ programming language. They provide a safe form of "Duck typing"
+in which the operations available on a type are stated explicitly, and hence
+members of the type are always known to provide all of the listed operations.
 
-This part of the Pure language actually belongs to the declaration syntax (see
-Declarations_), but it's convenient to describe it here because of the close
-connection to type rules.
+Syntactically, an interface in Pure is a toplevel element (cf. Toplevel_)
+which gives the type name along with a collection of patterns, the so-called
+`signature` which specifies the manifest operations of the type:
 
 .. productionlist::
-   interface_decl : "interface" `qualified_identifier` "with"
-   		  : `interface_item`* "end" ";"
+   item : "interface" `qualified_identifier`
+   	: "with" `interface_item`* "end" ";"
    interface_item : `pattern` ";"
-   		  | "interface" `qualified_identifier` ";"
+   		  : | "interface" `qualified_identifier` ";"
 
-Syntactically, an interface is just a collection of patterns which specify the
-operations of the type. For instance, let's consider the example of a stack
-data structure::
+Interfaces consist of two kinds of items:
+
+* The patterns, which indicate which operations are supported by the type, and
+  which arguments they expect. This may be anything that can occur as the
+  left-hand side of an ordinary function definition, cf. `General Rules`_.
+
+* The name of another interface type. This causes the signature of the named
+  interface type to be included in the interface type being defined.
+
+Note that an interface may also be empty, in which case it matches *any*
+value. Thus, ``interface any with end`` is just a fancy way to define the type
+``type any _``.
+
+The gist of an interface is in its patterns, more precisely: in the pattern
+variables which have the name of the interface as a type tag. The precise
+meaning of the patterns is as follows:
+
+* The patterns are matched against the left-hand sides of ordinary function
+  definitions. If a left-hand side matches, any argument pattern substituted
+  for a variable tagged with the interface type becomes a "candidate pattern"
+  of the type.
+
+* The type consists of all candidate patterns which can be matched by some
+  candidate pattern of *each* interface function. That is, candidate patterns
+  which are only supported by some but not all of the interface functions, are
+  eliminated.
+
+* Finally, all trivial candidate patterns (``x`` where ``x`` is just a
+  variable without any type tag, which thus matches *any* value) are
+  eliminated as well.
+
+Note that an interface pattern may contain type tags other than the interface
+type. These must always be matched *literally* on the left-hand sides of
+equations.
+
+For instance, let's consider the customary stack data structure::
 
   interface stack with
     push s::stack x;
@@ -2901,15 +2934,159 @@ data structure::
 
 Note the use of the type tag ``stack`` in the operation patterns, which marks
 the positions of ``stack`` arguments of the interface operations. The
-declaration tells us that a stack provides three operations ``push``, ``pop`
+interface tells us that a stack provides three operations ``push``, ``pop``
 and ``top`` which each take a stack as their first argument; also, ``push``
 takes two arguments, while ``pop`` and ``top`` just take a single (stack)
 argument.
 
-As soon as an interface has been declared, we can use it as a type tag in the
-definition of other operations.
+This information is all that the compiler needs to figure out which terms are
+members of the ``stack`` data type. To these ends, the compiler looks at
+existing definitions of ``push``, ``pop`` and ``top`` and extracts the
+patterns for arguments marked with the ``stack`` tag in the interface. The
+``stack`` patterns implemented by *all* of the interface operations make up
+the ``stack`` type; i.e., the members of the type are all the instances of
+these patterns.
 
-TODO
+Right now our ``stack`` type doesn't have any members, because we didn't
+implement the interface operations yet, so let's do this now. For instance, to
+implement stacks as lists, we might define::
+
+  push xs@[] x | push xs@(_:_) x = x:xs;
+  pop (x:xs) = xs;
+  top (x:xs) = x;
+
+This is also known as "instantiating" the type. In addition, we will need an
+operation to create an initial stack value. The following will do for our
+purposes::
+
+  stack xs::list = xs;
+
+This yields a stack with the given initial contents. Let's give it a go::
+
+  > top (push (stack []) 99);
+  99
+
+Looks good so far. We can also check the actual definition of the type in
+terms of its :keyword:`type` rules using the ``show interface`` command
+(cf. `The show Command`_)::
+
+  > show interface stack
+  type stack xs@(_:_);
+
+Hmm, there seems to be something wrong there. The empty list pattern of the
+``push`` function is missing, where did it go? Let's restart the interpreter
+with warnings enabled (:option:`-w`) and retype the above definitions. The
+compiler tells us::
+
+  > show interface stack
+  warning: interface 'stack' may be incomplete
+  warning: function 'pop' might lack a rule for 'xs@[]'
+  warning: function 'top' might lack a rule for 'xs@[]'
+  type stack xs@(_:_);
+
+See? A pattern is only considered part of the type if it is supported by *all*
+the interface operations. Since the ``pop`` and ``top`` operations don't have
+any rules for empty list arguments, this value isn't a member of the type. We
+can fix this quite easily by adding the following "error rules" which handle
+this case::
+
+  > pop [] = throw "empty stack";
+  > top [] = throw "empty stack";
+  > show interface stack
+  type stack xs@[];
+  type stack xs@(_:_);
+
+This looks fine now, so let's see how we can put our new stack data structure
+to good use. Operations on the type are defined as usual, employing ``stack``
+as a type tag for stack arguments so that we can be sure that the ``push``,
+``pop`` and ``top`` operations are all supported. For instance, let's
+implement a little RPN ("reverse polish notation") calculator::
+
+  rpn xs::stack ops::list = foldl (call []) xs ops with
+    call ys xs op = push xs (foldl ($) op ys) if nargs op<=#ys;
+                  = call (top xs:ys) (pop xs) op otherwise;
+  end;
+
+This takes an initial stack ``xs`` and a list ``ops`` of operands and
+operations as inputs and returns the resulting stack after processing ``ops``.
+Examples::
+
+  > rpn (stack []) [10,4,3,(+),2,(*),(-)];
+  [-4]
+  > using math;
+  > rpn (stack []) [1,2,ln,(/)];
+  [1.44269504088896]
+  > rpn (stack []) [4,1,atan,(*)];
+  [3.14159265358979]
+  > rpn (stack []) [2,(*)];
+  <stdin>, line 5: unhandled exception '"empty stack"' while evaluating
+  'rpn (stack []) [2,(*)]'
+
+Ok, this is all nice and dandy, but it seems that so far we haven't done much
+more than we could have achieved just as easily with plain lists instead. So
+what are the benefits of having an interface type?
+
+First, an interface provides a fair amount of `safety`. As long as we stick to
+the interface functions, we can be sure that the data is capable of carrying
+out the requested operations. At the same time, the interface also serves as a
+valuable piece of documentation, since it tells us at a glance exactly which
+operations are supported by the type.
+
+Second, an interface provides `data abstraction`. We don't need to know how
+the interface operations are implemented, our functions will work with *any*
+implementation of the interface. In fact, now that the interface is defined,
+we can easily supply alternative implementations. For instance, suppose that
+we'd like to use our little RPN calculator with "bounded stacks", i.e., stacks
+which don't grow beyond a certain limit. These can be implemented as follows::
+
+  push (n,xs@[]) x | push (n,xs@(_:_)) x =
+    if n>0 then (n-1,x:xs) else throw "full stack";
+  pop (n,x:xs) = n+1,xs;
+  top (n,x:xs) = x;
+  pop (n,[]) = throw "empty stack";
+  top (n,[]) = throw "empty stack";
+
+Note that we represent a bounded stack by a pair ``(n,xs)`` here, where ``xs``
+is the list of elements and ``n`` is the "free space" (number of elements we
+still allow to be pushed). We also add a function to construct such values::
+
+  bstack n::int xs::list = (n-#xs,xs);
+
+Example::
+
+  > rpn (bstack 3 []) [10,4,3,(+),2,(*),(-)];
+  2,[-4]
+  > rpn (bstack 2 []) [10,4,3,(+),2,(*),(-)];
+  <stdin>, line 7: unhandled exception '"full stack"' while evaluating
+  'rpn (bstack 2 []) [10,4,3,(+),2,(*),(-)]'
+
+Compared to statically typed languages like Go, Pure's implementation of
+interface types has some limitations. First, nothing is known about the return
+type of an interface operation, but this is no real impediment in Pure since
+an interface type is all about the kind of *arguments* which can be matched by
+the left-hand side of an equation.
+
+Second, as we have seen, interface types work best if all interface operations
+are completely defined on the intended data type. This may sometimes force you
+to add default or error rules raising exceptions which may interfere with
+symbolic evaluation (cf. `Exception Handling`_ and `Defined Functions`_). This
+can be a real issue, but it is almost always possible to work around this,
+e.g., by just adding in the missing type members manually. To these ends, Pure
+allows an interface type to be augmented with ordinary type rules as described
+in `Type Rules`_. For instance, we might also have implemented the stack type
+as follows::
+
+  interface stack with
+    push s::stack x;
+    pop s::stack;
+    top s::stack;
+  end;
+
+  type stack [];
+
+  push xs@[] x | push xs@(_:_) x = x:xs;
+  pop (x:xs) = xs;
+  top (x:xs) = x;
 
 Examples
 ========
@@ -3635,11 +3812,7 @@ consisting of several source modules:
 
 * symbol declarations determine "scope" and "fixity" of a symbol;
 
-* :keyword:`extern` declarations specify external C functions (described in
-  the `C Interface`_ section);
-
-* :keyword:`interface` declarations specify an interface type (described in
-  the `Interface Types`_ section):
+* :keyword:`extern` declarations specify external C functions;
 
 * :keyword:`using` clauses let you include other scripts in a Pure script;
 
@@ -3649,10 +3822,10 @@ consisting of several source modules:
 These are toplevel elements (cf. Toplevel_):
 
 .. productionlist::
-   decl : `symbol_decl` | `extern_decl` | `interface_decl` | `using_decl` | `namespace_decl`
+   item : `symbol_decl` | `extern_decl` | `using_decl` | `namespace_decl`
 
-Note that the :keyword:`extern` and :keyword:`interface` declarations have
-their own sections. The other kinds of declarations are described in the
+We defer the discussion of :keyword:`extern` declarations to the `C
+Interface`_ section. The other kinds of declarations are described in the
 following subsections.
 
 .. _public:
