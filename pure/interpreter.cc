@@ -5463,7 +5463,7 @@ rulel *interpreter::compile_interface(env &e, int32_t tag)
 	    msg << "function '" << fsym.s << "' was declared with " << n
 		<< " but defined with " << kt->second.argc << " args";
 	  } else
-	    msg << "function '" << fsym.s << "' is not defined anywhere";
+	    msg << "no matching rule for function '" << fsym.s << "'";
 	  warning("warning: "+msg.str());
 	  warned.insert(f);
 	}
@@ -5545,7 +5545,7 @@ rulel *interpreter::compile_interface(env &e, int32_t tag)
 	    first = false;
 	  }
 	  const symbol& fsym = symtab.sym(f);
-	  warning("warning: function '"+fsym.s+"' is not defined anywhere");
+	  warning("warning: no matching rule for function '"+fsym.s+"'");
 	  warned.insert(f);
 	}
       }
