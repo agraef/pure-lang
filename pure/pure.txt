@@ -2386,10 +2386,9 @@ done through the provided operations. Such a data type is also known as an
    he gets what he deserves.
 
 Pure provides some additional facilities to ease the handling of abstract data
-types through its `interface types`_. For instance, instead of defining
-``point`` as a concrete data type using a :keyword:`type` rule, we might also
-specify it as an interface type which merely lists the supported operations as
-follows::
+types. Specifically, instead of defining ``point`` as a concrete data type
+using a :keyword:`type` rule, we might also specify it as an `interface type`
+which merely lists the supported operations as follows::
 
   interface point with
     xcoord p::point;
@@ -2418,36 +2417,33 @@ command::
   type point (Point x y);
 
 As you can see, the compiler derived our previous definition of the type. But
-in fact ``translate`` will now work with *any* data type as long as it
-implements the ``point`` interface (i.e., provides the ``xcoord``, ``ycoord``
-and ``move`` operations), so we may swap out the underlying data structure on
-a whim. For instance, if we'd like to use vectors instead of constructor
-terms, all we have to do is to provide the necessary implementations of the
-interface operations::
+in fact ``translate`` will now work with *any* data type which implements the
+``point`` interface (i.e., provides the ``xcoord``, ``ycoord`` and ``move``
+operations), so we may swap out the underlying data structure on a whim. For
+instance, if we'd like to use vectors instead of constructor terms, all we
+have to do is to provide a corresponding construction function and implement
+the interface operations::
 
+  vpoint x y = {x,y};
   xcoord {x,y} = x;
   ycoord {x,y} = y;
   move {_,_} x y = {x,y};
 
-And everything just works::
+After these definitions the new data representation works just fine with
+existing ``point`` operations such as ``translate``::
 
   > show interface point
   type point (Point x y);
   type point {x,y};
-  > let p::point = {3,3};
+  > let p::point = vpoint 3 3;
   > p; translate (1,2) p;
   {3,3}
   {4,5}
 
-This separation of interface and implementation of a data structure is very
-important in the design of larger software systems. In particular, it makes it
-possible to revise the internal representation or even provide alternative
-implementations of a data type, and have auxiliary functions (like our
-``translate`` function) still work on the modified data structure.
-
-More examples and detailed explanations of Pure's notions of type predicates
-and interface types can be found in the `Type Rules`_ and `Interface Types`_
-sections below.
+This separation of interface and implementation of a data structure is an
+important ingredient of software engineering techniques. More examples and
+detailed explanations of Pure's notions of type predicates and interface types
+can be found in the `Type Rules`_ and `Interface Types`_ sections below.
 
 General Rules
 -------------
@@ -2896,11 +2892,35 @@ Interfaces consist of two kinds of items:
   left-hand side of an ordinary function definition, cf. `General Rules`_.
 
 * The name of another interface type. This causes the signature of the named
-  interface type to be included in the interface type being defined.
+  interface type to be included in the interface type being defined, which
+  effectively turns the new interface type into a subtype of the existing one.
 
-Note that an interface may also be empty, in which case it matches *any*
-value. Thus, ``interface any with end`` is just a fancy way to define the type
-``type any _``.
+An interface may also be empty, in which case it matches *any* value. Thus, ::
+
+  interface any with end;
+
+is just a fancy way to define the type::
+
+  type any _;
+
+Also, interface types may be refined at any time, by adding more interface
+patterns. Thus, ::
+
+  interface foo with foo x::foo; end;
+  interface foo with bar x::foo; end;
+
+is equivalent to::
+
+  interface foo with
+    foo x::foo;
+    bar x::foo;
+  end;
+
+However, note that when including one interface in another, the included
+interface must already exist and only the interface patterns known at the
+point of inclusion become part of the including interface; refining the
+included interface later has no effect on the including interface. In
+particular, this also prevents circular interface definitions.
 
 The gist of an interface is in its patterns, more precisely: in the pattern
 variables which have the name of the interface as a type tag. The precise
@@ -2920,11 +2940,57 @@ meaning of the patterns is as follows:
   variable without any type tag, which thus matches *any* value) are
   eliminated as well.
 
-Note that an interface pattern may contain type tags other than the interface
+An interface pattern may contain type tags other than the interface
 type. These must always be matched *literally* on the left-hand sides of
-equations.
+equations. Thus, ::
 
-For instance, let's consider the customary stack data structure::
+  interface foo with
+    foo x::foo y::int;
+  end;
+
+matches any rule of the form ::
+
+  foo x y::int = ...;
+
+but *not*::
+
+  foo x 0 = ...;
+  foo x y::bar = ...;
+
+(unless ``bar`` happens to be an alias of the ``int`` type, of course).
+In such cases it is necessary to explicitly add these patterns to the
+interface if you want them to be included.
+
+Interface patterns may contain the interface type tag any number of times,
+yielding candidate patterns for each occurrence of the interface type tag in
+the pattern. For instance, here is a quick way to determine the type of all
+"addable" data structures in the prelude (this uses the interactive ``show
+interface`` command to list the patterns actually matched by an interface
+type, cf. `The show Command`_)::
+
+  > interface addable with x::addable + y::addable; end;
+  > show interface addable
+  type addable x::int;
+  type addable x::double;
+  type addable x::bigint;
+  type addable s::string;
+  type addable [];
+  type addable xs@(_:_);
+
+On the other hand, interfaces may also contain "static" patterns which do not
+include the interface type as a tag at all, such as::
+
+  interface foo with bar x::bar y; end;
+
+These do not contribute anything to the candidate patterns of the type, but do
+restrict the type just like the other patterns, in that the type will be empty
+unless the static patterns are all "implemented". In the example above, this
+means that the ``foo`` type will be empty unless the ``bar`` function is
+defined and takes an element of the ``bar`` type as its first argument.
+
+Let's now take a look at some examples to see how this all works in practice.
+We'll be using the following stack data structure as a running example
+throughout the remainder of this section::
 
   interface stack with
     push s::stack x;
@@ -2967,16 +3033,15 @@ This yields a stack with the given initial contents. Let's give it a go::
   99
 
 Looks good so far. We can also check the actual definition of the type in
-terms of its :keyword:`type` rules using the ``show interface`` command
-(cf. `The show Command`_)::
+terms of its :keyword:`type` rules using the ``show interface`` command::
 
   > show interface stack
   type stack xs@(_:_);
 
-Wait, there seems to be something wrong there. The empty list pattern of the
+Wait, something seems to be wrong there. The empty list pattern of the
 ``push`` function is missing, where did it go? Let's restart the interpreter
 with warnings enabled (:option:`-w`) and retype the above definitions. The
-compiler tells us::
+compiler then tells us::
 
   > show interface stack
   warning: interface 'stack' may be incomplete
@@ -2986,7 +3051,7 @@ compiler tells us::
 
 See? A pattern is only considered part of the type if it is supported by *all*
 the interface operations. Since the ``pop`` and ``top`` operations don't have
-any rules for empty list arguments, this value isn't a member of the type. We
+any rules for empty list arguments, empty lists are excluded from the type. We
 can fix this quite easily by adding the following "error rules" which handle
 this case::
 
@@ -3000,7 +3065,7 @@ This looks fine now, so let's see how we can put our new stack data structure
 to good use. Operations on the type are defined as usual, employing ``stack``
 as a type tag for stack arguments so that we can be sure that the ``push``,
 ``pop`` and ``top`` operations are all supported. For instance, let's
-implement a little RPN ("reverse polish notation") calculator::
+implement a little RPN ("Reverse Polish Notation") calculator::
 
   rpn xs::stack ops::list = foldl (call []) xs ops with
     call ys xs op = push xs (foldl ($) op ys) if nargs op<=#ys;
@@ -3059,34 +3124,6 @@ Example::
   > rpn (bstack 2 []) [10,4,3,(+),2,(*),(-)];
   <stdin>, line 7: unhandled exception '"full stack"' while evaluating
   'rpn (bstack 2 []) [10,4,3,(+),2,(*),(-)]'
-
-Compared to statically typed languages like Go, Pure's implementation of
-interface types has some limitations. First, nothing is known about the return
-type of an interface operation, but this is no real impediment in Pure since
-an interface type is all about the kind of *arguments* which can be matched by
-the left-hand side of an equation.
-
-Second, as we have seen, interface types work best if all interface operations
-are completely defined on the intended data type. This may sometimes force you
-to add default or error rules raising exceptions which may interfere with
-symbolic evaluation (cf. `Exception Handling`_ and `Defined Functions`_). This
-can be a real issue, but it is almost always possible to work around this,
-e.g., by just adding in the missing type members manually. To these ends, Pure
-allows an interface type to be augmented with ordinary type rules as described
-in `Type Rules`_. For instance, we might also have implemented the stack type
-as follows::
-
-  interface stack with
-    push s::stack x;
-    pop s::stack;
-    top s::stack;
-  end;
-
-  type stack [];
-
-  push xs@[] x | push xs@(_:_) x = x:xs;
-  pop (x:xs) = xs;
-  top (x:xs) = x;
 
 Examples
 ========
@@ -9024,6 +9061,51 @@ somewhat prettier normal form instead::
 Thus the wrapper-worker approach also has its merits, and whether to use one
 or the other depends on the situation. Similar techniques and tradeoffs also
 apply to other recursive types such as trees.
+
+Interfaces
+----------
+
+Compared to statically typed languages like Go_, Pure's implementation of
+`interface types`_ has some limitations. First, nothing is known about the
+*return type* of an interface operation, but this is no real impediment in
+Pure since Pure types are all about restricting the kind of *arguments* which
+can be passed to a function, not their result types, so return types are
+irrelevant to interface types anyway.
+
+Second, as we have seen, interface types work best if all interface operations
+are completely defined on the target data domain. This may sometimes force you
+to add default or error rules raising exceptions which may interfere with
+symbolic evaluation (cf. `Exception Handling`_ and `Defined Functions`_). This
+can be a real issue, but it is almost always possible to work around this,
+e.g., by just adding in the missing type members manually. To these ends, Pure
+allows an interface type to be augmented with ordinary type rules as described
+in `Type Rules`_. For instance, we might also have implemented the stack type
+discussed in the `Interface Types`_ section as follows::
+
+  interface stack with
+    push s::stack x;
+    pop s::stack;
+    top s::stack;
+  end;
+
+  type stack [];
+
+  push xs@[] x | push xs@(_:_) x = x:xs;
+  pop (x:xs) = xs;
+  top (x:xs) = x;
+
+Finally, Pure's interface types are really a compromise between theoretical
+soundness and practicality. From the theoretical point of view, we'd actually
+like an interface type to be the *intersection* of the instances of the
+candidate patterns for each interface function. Unfortunately, the set of
+patterns for such an intersection might well be exponential in size. Hence the
+approach taken in Pure is to eliminate those candidate patterns which aren't
+supported by all interface functions. In general, this will produce a subtype
+of the theoretically optimal intersection type, but it can be computed much
+faster. In fact, this method also has the nice advantage that the compiler can
+warn about potentially missing rules for eliminated patterns in some of the
+interface operations. We've seen in the `Interface Types`_ section that this
+can be fairly useful at times.
 
 Numeric Calculations
 --------------------
