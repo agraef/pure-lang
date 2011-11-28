@@ -1,0 +1,50 @@
+
+/* Interface type example. Please see the Pure Manual, section "Interface
+   Types", for details. */
+
+interface stack with
+  push s::stack x;
+  pop s::stack;
+  top s::stack;
+end;
+
+// An implementation of the stack interface using lists.
+
+push xs@[] x | push xs@(_:_) x = x:xs;
+
+pop (x:xs) = xs;
+top (x:xs) = x;
+
+pop [] = throw "empty stack";
+top [] = throw "empty stack";
+
+stack xs::list = xs;
+top (push (stack []) 99);
+
+// Example: poor man's RPN calculator.
+
+rpn xs::stack ops::list = foldl (call []) xs ops with
+  call ys xs op = push xs (foldl ($) op ys) if nargs op<=#ys;
+		= call (top xs:ys) (pop xs) op otherwise;
+end;
+
+rpn (stack []) [10,4,3,(+),2,(*),(-)];
+rpn (stack []) [2,(*)];
+
+using math;
+rpn (stack []) [1,2,ln,(/)];
+rpn (stack []) [4,1,atan,(*)];
+
+// An alternative implementation of the stack interface: bounded stacks.
+
+push (n,xs@[]) x | push (n,xs@(_:_)) x =
+  if n>0 then (n-1,x:xs) else throw "full stack";
+pop (n,x:xs) = n+1,xs;
+top (n,x:xs) = x;
+pop (n,[]) = throw "empty stack";
+top (n,[]) = throw "empty stack";
+
+bstack n::int xs::list = (n-#xs,xs);
+
+rpn (bstack 3 []) [10,4,3,(+),2,(*),(-)];
+rpn (bstack 2 []) [10,4,3,(+),2,(*),(-)];
