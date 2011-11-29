@@ -5169,11 +5169,16 @@ int interpreter::add_sub_interface(env &e, int32_t tag, int32_t iface)
   if (!info.xs) info.xs = new exprl;
   for (exprl::iterator x = xs.begin(); x != xs.end(); ++x) {
     expr u = interface_subst(tag, iface, *x);
+    bool have = false;
+    for (exprl::iterator it = info.xs->begin(); it != info.xs->end(); ++it)
+      if (equiv(symtab.anon_sym, *it, u)) {
+	have = true; break;
+      }
+    if (have) continue;
     info.xs->push_back(u);
     if (compat) {
       if (!info.compat) info.compat = new exprset;
       info.compat->insert(u);
-      expr v = u;
     }
   }
   return xs.size();
