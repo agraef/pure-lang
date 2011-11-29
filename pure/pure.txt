@@ -3089,9 +3089,9 @@ Examples::
   <stdin>, line 5: unhandled exception '"empty stack"' while evaluating
   'rpn (stack []) [2,(*)]'
 
-Ok, this is all nice and dandy, but it seems that so far we haven't done much
-more than we could have achieved just as easily with plain lists instead. So
-what are the benefits of having an interface type?
+Ok, this is all very nice, but it seems that so far we haven't done much more
+than we could have achieved just as easily with plain lists instead. So what
+are the benefits of having an interface type?
 
 First, an interface provides a fair amount of `safety`. As long as we stick to
 the interface functions, we can be sure that the data is capable of carrying
@@ -3100,11 +3100,11 @@ valuable piece of documentation, since it tells us at a glance exactly which
 operations are supported by the type.
 
 Second, an interface provides `data abstraction`. We don't need to know how
-the interface operations are implemented, our functions will work with *any*
-implementation of the interface. In fact, now that the interface is defined,
-we can easily supply alternative implementations. For instance, suppose that
-we'd like to use our little RPN calculator with "bounded stacks", i.e., stacks
-which don't grow beyond a certain limit. These can be implemented as follows::
+the interface operations are implemented, and in fact functions coded against
+the interface will work with *any* implementation of the interface. For
+instance, suppose that we'd like to provide a "bounded stacks" data structure,
+i.e., stacks which don't grow beyond a certain limit. These can be implemented
+as follows::
 
   push (n,xs@[]) x | push (n,xs@(_:_)) x =
     if n>0 then (n-1,x:xs) else throw "full stack";
@@ -3119,13 +3119,26 @@ still allow to be pushed). We also add a function to construct such values::
 
   bstack n::int xs::list = (n-#xs,xs);
 
-Example::
+Without any further ado, our little RPN calculator works just fine with the
+new variation of the data structure::
 
   > rpn (bstack 3 []) [10,4,3,(+),2,(*),(-)];
   2,[-4]
   > rpn (bstack 2 []) [10,4,3,(+),2,(*),(-)];
   <stdin>, line 7: unhandled exception '"full stack"' while evaluating
   'rpn (bstack 2 []) [10,4,3,(+),2,(*),(-)]'
+
+While they're quite useful in general, Pure's interface types also have their
+limitations. In particular, the guarantees provided by an interface are of a
+purely syntactic nature; the signature doesn't tell us anything about the
+actual meaning of the provided operations, so unit testing is still needed to
+ensure certain semantic properties of the implementation. Also, interface
+types are always defined in a purely syntactic way, by considering the
+left-hand sides of the definitions of the interface functions only. Guards are
+not taken into account, and thus the compiler cannot really guarantee that a
+member of an interface type will always be valid input to an interface
+function. Some further issues due to Pure's dynamically typed nature are
+discussed under Interfaces_ in the `Caveats and Notes`_ section.
 
 Examples
 ========
@@ -9098,16 +9111,31 @@ discussed in the `Interface Types`_ section as follows::
 
 Finally, Pure's interface types are really a compromise between theoretical
 soundness and practicality. From the theoretical point of view, we'd actually
-like an interface type to be the *intersection* of the instances of the
-candidate patterns for each interface function. Unfortunately, the set of
-patterns for such an intersection might well be exponential in size. Hence the
-approach taken in Pure is to eliminate those candidate patterns which aren't
-supported by all interface functions. In general, this will produce a subtype
-of the theoretically optimal intersection type, but it can be computed much
-faster. In fact, this method also has the nice advantage that the compiler can
-warn about potentially missing rules for eliminated patterns in some of the
-interface operations. We've seen in the `Interface Types`_ section that this
-can be fairly useful at times.
+like an interface type to be the *intersection* of the interface types for the
+individual interface functions. Unfortunately, the pattern set for such an
+intersection type might well be exponential in size. Hence the approach taken
+in Pure is to eliminate those candidate patterns which aren't supported by all
+interface functions. This can be done much more efficiently, but will in
+general only produce a subtype of the intersection type. (On the other hand,
+this method also has the advantage that the compiler can warn about
+potentially missing rules in some of the interface operations. We've seen in
+the `Interface Types`_ section that this can be fairly useful at times.)
+
+Another issue arises with interface operations which allow the interface type
+in multiple arguments. A typical example are operators::
+
+  interface addable with x::addable + y::addable; end;
+
+In the present implementation, the pattern set will be the *union* of the
+pattern sets for each argument, so the above definition is in fact equivalent
+to::
+
+  interface addable with x::addable + y; x + y::addable; end;
+
+This makes sense in most situations, but of course this depends on the
+particular operation. In some cases, you might have to decide on which
+argument you want to place the interface type tag, or even have different
+types for each possible argument position.
 
 Numeric Calculations
 --------------------
