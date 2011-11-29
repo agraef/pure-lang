@@ -75,14 +75,10 @@ inline void px_unref(px* x){if (x) pure_unref(x);}
 #endif
 
 /* px_handle (pxh) - wrapper around pure_expr* to automate pure_expr ref
-   counting..
-
-   Please remember that C++ will call a pxh's destructor when it goes out of
-   scope. You can stop this from happeing by calling the pxh's release
-   function.
-
-   Note that there are no virtural functions (to avoid vf table). This keeps
-   sizeof(pxh) = sizeof(px*).
+   counting. Please note that C++ will call a pxh's destructor when it goes
+   out of scope. You can stop this from happening by calling the pxh's release
+   function. Also, there are no virtural functions (to avoid vf table). This
+   keeps sizeof(pxh) = sizeof(px*).
 
 */
 class px_handle {
@@ -120,11 +116,10 @@ private:
 
 typedef px_handle pxh;  // sizeof(pxh) == sizeof(px*) -- no virtual funs
 
-/* pxhpairs - pairs of pxh's which are useful for map<pxh,pxh> and
-   multimap<pxh,pxh>. 
-
-   Conversion to pxrocket, a px of form (lhs=>rhs), from a pxhpair or from two
-   px*s, and vis-a-versa. */
+/* pxhpairs and hash-rocket expressions (lhs=>rhs) - pxhpairs are (C++) pairs
+   of pxh's which are useful for map<pxh,pxh> and multimap<pxh,pxh>. Functions
+   are provided to convert hash-rockets to pxhpairs and to extract the hash
+   rockets rhs and lhs, as well as functions that do the reverse. */
 
 typedef std::pair<pxh,pxh> pxhpair;
 
@@ -142,12 +137,12 @@ px* pxhpair_to_pxlhs(const pxhpair& pair);
 
 /* pxh_fun and subclasses - function objects to lift px* functions to pxh
    functions. When you need to pass a Pure callback to an algorithm that acts
-   on pxh'x, wrap it in one of these. Note that if the Pure callback function
-   calls throws an exception, the pxh_fun will catch it and then throw it as a
-   C++ exception. Thus, C++ functions that take a pxh_fun as an argument
-   should be called from within a try block, with a catch (px* e)
-   block. Assuming that the call was made within a function called from Pure,
-   the catch block could be {pure_throw(e)}. */
+   on pure expressions, wrap it in one of these. Note that if the Pure
+   callback function calls throws an exception, the pxh_fun will catch it and
+   then throw it as a C++ exception. Thus, C++ functions that take a pxh_fun
+   as an argument should be called from within a try block, with a catch (px*
+   e) block. Assuming that the call was made within a function called from
+   Pure, the catch block could be {pure_throw(e)}. */
 
 class pxh_fun {
 public:
