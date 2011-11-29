@@ -1,0 +1,946 @@
+/* uts_stlmap.pure -- tests for stlmap basic STL interface. */
+
+//-- --comment c_off --verbose off
+
+//*** Imports *********************************************************
+
+using system, stlmap, stlvec;
+
+//*** Constructors ******************************************************
+
+let sv1 = ::stlvec ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]; members sv1;
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
+
+let sm1 = stl::stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]; stl::elms sm1;
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
+
+let sm1 = stl::stlmap {"a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5}; stl::elms sm1;
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
+
+let sm1 = stl::stlmap (sv1,1,stl::svend); stl::elms sm1;
+//- ["b"=>2,"c"=>3,"d"=>4,"e"=>5]
+
+let sm2 = stl::stlmap sm1; stl::elms sm2;
+//- ["b"=>2,"c"=>3,"d"=>4,"e"=>5]
+
+let sm2 = stl::stlmap (sm1,"c","z"); stl::elms sm2;
+//- ["c"=>3,"d"=>4,"e"=>5]
+
+/*** Info ***************************************************************/
+
+let sm1 = stl::stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+let sm2 = stl::stlmap ["b"=>2,"c"=>3,"d"=>4];
+//- ()
+
+let ok, smx, f, l = stl::range_info sm1; ok;
+//- 1
+
+smx===sm1, f==stl::begin sm1, l==stl::pastend sm1;
+//- 1,1,1
+
+let ok, smx, f, l = stl::range_info (sm1,"b","e"); ok;
+//- 1
+
+stl::elms (f,l);
+//- ["b"=>2,"c"=>3,"d"=>4]
+
+#sm1;
+//- 5
+
+stl::size sm1;
+//- 5
+
+stl::distance (sm1,"b",stl::stlend);
+//- 4
+
+stl::empty (stl::emptystlmap (<));
+//- 1
+
+stl::is_set sm1;
+//- 0
+
+stl::count sm1 "c";
+//- 1
+
+stl::parameters sm1;
+//- 0,(<),[],(<),(==)
+
+/*** Accessing Ranges as stlvecs or lists ******************************/
+
+let sm1 = stl::stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+let sv1 = stl::stlvec sm1; members sv1;
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
+
+stl::vector (sm1,"b","d");;
+//- {"b"=>2,"c"=>3}
+
+stl::elms (sm1,stl::stlbeg,stl::stlbeg);
+//- []
+
+stl::elms (sm1,stl::stlbeg,stl::stlend);
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
+
+stl::elms (sm1,stl::stlend,stl::stlbeg);
+//- []
+
+stl::elms (sm1,stl::stlend,stl::stlend);
+//- []
+
+stl::elms (sm1,"0","c");
+//- ["a"=>1,"b"=>2]
+
+stl::elms (sm1,"a","d");
+//- ["a"=>1,"b"=>2,"c"=>3]
+
+stl::elms (sm1,"b","d");
+//- ["b"=>2,"c"=>3]
+
+stl::elms (sm1,"b",stl::stlend);
+//- ["b"=>2,"c"=>3,"d"=>4,"e"=>5]
+
+stl::elms (sm1,"c","e");
+//- ["c"=>3,"d"=>4]
+
+stl::elms (sm1,"d","b");
+//- []
+
+stl::keys (sm1,"a",stl::stlend);
+//- ["a","b","c","d","e"]
+
+stl::keys (sm1,"a","e");
+//- ["a","b","c","d"]
+
+stl::keys (sm1,"b","d");
+//- ["b","c"]
+
+stl::vals (sm1,"a",stl::stlend);
+//- [1,2,3,4,5]
+
+stl::vals (sm1,"a","e");
+//- [1,2,3,4]
+
+stl::vals (sm1,"b","d");
+//- [2,3]
+
+/*** Accessing Ranges using Streams **********************************/
+
+let sm1 = stl::stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+head $ stl::lazy_elms sm1;
+//- "a"=>1
+
+list $ stl::lazy_elms sm1;
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
+
+list $ take 3 (stl::lazy_elms sm1);
+//- ["a"=>1,"b"=>2,"c"=>3]
+
+list $ take 10 (stl::lazy_elms sm1);
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
+
+list $ take 10 $ drop 2 (stl::lazy_elms sm1);
+//- ["c"=>3,"d"=>4,"e"=>5]
+
+list $ take 3 (stl::lazy_keys sm1);
+//- ["a","b","c"]
+
+list $ take 3 (stl::lazy_vals sm1);
+//- [1,2,3]
+
+//*** Insert *************************************************************/
+
+let sm1 = stl::stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+let sm2 = stl::emptystlmap ( (>), 0);
+//- ()
+
+let i_b, i_e = stl::begin sm1, stl::pastend sm1;
+//- ()
+
+// Insert elms
+
+stl::elms sm2;
+//- []
+
+let p, ok = stl::insert sm2 ("a"=>(0..3)); stl::get_key p, ok;
+//- "a",1
+
+stl::elms sm2;
+//- ["a"=>[0,1,2,3]]
+
+let p, ok = stl::insert sm2 ("b"=>{0,1,2,3}); stl::get_key p, ok;
+//- "b",1
+
+stl::elms sm2;
+//- ["b"=>{0,1,2,3},"a"=>[0,1,2,3]]
+
+// Insert with hinted position
+
+stl::clear sm2; 
+//- 2
+
+catch id $ stl::insert sm2 ("a"=>1, i_b); // i_b is for sm1
+//- bad_argument
+
+let p1, ok = stl::insert sm2 ("a"=>1); stl::elms sm2;
+//- ["a"=>1]
+
+let p2 = stl::insert sm2 ("b"=>2, p1); stl::elms sm2;
+//- ["b"=>2,"a"=>1]
+
+let p3 = stl::insert sm2 ("c"=>3, p2); stl::elms sm2;
+//- ["c"=>3,"b"=>2,"a"=>1]
+
+// Insert from range, list, vector, k=>v
+
+stl::clear sm2; 
+//- 3
+
+let i = stl::find sm1 "a"; stl::get_elm i;
+//- "a"=>1
+
+let j = stl::find sm1 "c"; stl::get_elm j;
+//- "c"=>3
+
+stl::elms (i,j);
+//- ["a"=>1,"b"=>2]
+
+stl::insert sm2 (i,j); 
+//- 2
+
+stl::elms sm2;
+//- ["b"=>2,"a"=>1]
+
+stl::insert sm2 ["c"=>3];
+//- 1
+
+stl::elms sm2;
+//- ["c"=>3,"b"=>2,"a"=>1]
+
+stl::insert sm2 {"d"=>4};
+//- 1
+
+stl::elms sm2;
+//- ["d"=>4,"c"=>3,"b"=>2,"a"=>1]
+
+stl::insert sm2 ["e"]; 
+//- 1
+
+stl::elms sm2;
+//- ["e"=>0,"d"=>4,"c"=>3,"b"=>2,"a"=>1]
+
+let p, ok = stl::insert sm2 ("f"=>6); stl::get_key p, ok, stl::elms sm2;
+//- "f",1,["f"=>6,"e"=>0,"d"=>4,"c"=>3,"b"=>2,"a"=>1]
+
+// Attempt overwrite of existing values
+
+stl::put_val i 11; stl::get_elm i; stl::elms (i,j);
+//- ["a"=>11,"b"=>2]
+
+stl::insert sm2 (i,j);
+//- 0
+
+stl::insert sm2 ["c"=>13]; 
+//- 0
+
+stl::insert sm2 {"d"=>14}; 
+//- 0
+
+let p, ok = stl::insert sm2 ("e"=>10); stl::get_key p, ok, stl::elms sm2;
+//- "e",0,["f"=>6,"e"=>0,"d"=>4,"c"=>3,"b"=>2,"a"=>1]
+
+stl::put_val p 5; stl::elms sm2;
+//- ["f"=>6,"e"=>5,"d"=>4,"c"=>3,"b"=>2,"a"=>1]
+
+
+//*** erase ***************************************************************/
+
+// Erase element at position
+
+let sm1 = stl::stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+let i_begin, i_pastend = stl::begin sm1, stl::pastend sm1;
+//- ()
+
+let i_b, i_d = stl::find sm1 "b", stl::find sm1 "d"; 
+//- ()
+
+stl::erase sm1 i_begin; 
+//- 1
+
+stl::elms sm1;
+//- ["b"=>2,"c"=>3,"d"=>4,"e"=>5]
+
+stl::erase sm1 i_d; stl::elms sm1;
+//- ["b"=>2,"c"=>3,"e"=>5]
+
+stl::erase sm1 i_b; stl::elms sm1;
+//- ["c"=>3,"e"=>5]
+
+// Erase ranges
+
+let sm1 = stl::stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+let i_begin, i_pastend = stl::begin sm1, stl::pastend sm1;
+//- ()
+
+let i_b, i_d = stl::find sm1 "b", stl::find sm1 "d"; 
+//- ()
+
+stl::get_elm i_b;
+//- "b"=>2
+
+stl::erase sm1 (i_b,i_d);
+//- 2
+
+stl::elms sm1;
+//- ["a"=>1,"d"=>4,"e"=>5]
+
+catch id $ stl::get_elm i_b;
+//- bad_argument
+
+stl::erase sm1 (i_d,i_pastend);
+//- 2
+
+stl::elms sm1;
+//- ["a"=>1]
+
+stl::erase sm1 (i_begin,i_pastend);
+//- 1
+
+stl::elms sm1;
+//- []
+
+// Attempt erase with bad iterators
+
+let sm1 = stl::stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+let sm2 = stl::stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+let i_b, i_d = stl::find sm1 "b", stl::find sm1 "d"; 
+//- ()
+
+catch id $ stl::erase sm2 i_b;
+//- bad_argument
+
+catch id $ stl::erase sm2 (i_b,i_d);
+//- bad_argument
+
+// Erase elms with given key
+
+let sm1 = stl::stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+stl::erase sm1 "0";
+//- 0
+
+stl::erase sm1 "z";
+//- 0
+
+stl::erase sm1 "b";
+//- 1
+
+stl::elms sm1;
+//- ["a"=>1,"c"=>3,"d"=>4,"e"=>5]
+
+stl::erase sm1 "a"; stl::elms sm1;
+//- ["c"=>3,"d"=>4,"e"=>5]
+
+stl::erase sm1 "e"; stl::elms sm1;
+//- ["c"=>3,"d"=>4]
+
+//*** swap ***************************************************************/
+
+let sm1 = stl::stlmap ["a"=>1,"b"=>2];
+//- ()
+
+let sm2 = stl::stlmap ["c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+stl::swap sm1 sm2;
+//- ()
+
+stl::elms sm1;
+//- ["c"=>3,"d"=>4,"e"=>5]
+
+stl::elms sm2;
+//- ["a"=>1,"b"=>2]
+
+//** Equality and Lexicographical Comparison ****************************/
+
+let sm1 = stl::stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4];
+//- ()
+
+let sm2 = stl::stlmap ["b"=>2,"c"=>3,"d"=>4];
+//- ()
+
+stl::equal sm1 sm1;
+//- 1
+
+stl::equal sm1 sm2;
+//- 0
+
+stl::equal sm2 sm1;
+//- 0
+
+stl::equal (sm1,"b","e") sm1;
+//- 0
+
+stl::equal (sm1,"b","e") sm2;
+//- 1
+
+stl::equal (sm1,"b","d") (sm2,stl::stlbeg, "d");
+//- 1
+
+sm1 == sm1;
+//- 1
+
+sm1 == sm2;
+//- 0
+
+sm2 == sm1;
+//- 0
+
+sm1 ~= sm1;
+//- 0
+
+sm1 ~= sm2;
+//- 1
+
+sm1 <  sm1;
+//- 0
+
+sm1 <  sm2;
+//- 1
+
+sm2 <  sm1;
+//- 0
+
+sm1 <= sm1;
+//- 1
+
+sm1 <= sm2;
+//- 1
+
+sm2 <= sm1;
+//- 0
+
+sm1 >  sm1;
+//- 0
+
+sm1 >  sm2;
+//- 0
+
+sm2 >  sm1;
+//- 1
+
+sm1 >= sm1;
+//- 1
+
+sm1 >= sm2;
+//- 0
+
+sm2 >= sm1;
+//- 1
+
+(sm1,"b",stl::stlend) == sm2; // note tuple overrided issue
+//- 0
+
+stl::equal sm1 sm1;
+//- 1
+
+stl::equal sm1 sm2;
+//- 0
+
+stl::equal (sm1,"b",stl::stlend) sm2;
+//- 1
+
+stl::equal (sm1,"c",stl::stlend) sm2;
+//- 0
+
+stl::equal (sm1,"c",stl::stlend) (sm2,"c",stl::stlend);
+//- 1
+
+stl::equal sm2 (sm1,"b",stl::stlend);
+//- 1
+
+(sm1,"b",stl::stlend) < sm2;
+//- 0
+
+(sm1,"c",stl::stlend) < sm2;
+//- 0
+
+(sm1,"c",stl::stlend) < (sm2,"c",stl::stlend);
+//- 0
+
+(sm1,"b",stl::stlend) < sm2;
+//- 0
+
+(sm1,"c",stl::stlend) < sm2;
+//- 0
+
+(sm1,"c",stl::stlend) < (sm2,"c",stl::stlend);
+//- 0
+
+//*** STL Set Algorithms *********************************************
+
+let sm1 = stl::stlmap ["a"=>1,"b"=>2,"c"=>3];
+//- ()
+
+let sm2 = stl::stlmap ["b"=>2,"c"=>3,"d"=>4];
+//- ()
+
+let sm3 = stl::stlmap ["a"=>31,"b"=>32,"c"=>33,"d"=>34];
+//- ()
+
+let sm = stl::merge sm1 sm2; stl::elms sm;
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4]
+
+let sm = stl::merge sm3 sm2; stl::elms sm;
+//- ["a"=>31,"b"=>32,"c"=>33,"d"=>34]
+
+let sm = stl::merge sm2 sm3; stl::elms sm;
+//- ["a"=>31,"b"=>2,"c"=>3,"d"=>4]
+
+let sm = stl::set_union sm1 sm2; stl::elms sm;
+//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4]
+
+let sm = stl::set_union sm3 sm2; stl::elms sm;
+//- ["a"=>31,"b"=>32,"c"=>33,"d"=>34]
+
+let sm = stl::set_union sm2 sm3; stl::elms sm;
+//- ["a"=>31,"b"=>2,"c"=>3,"d"=>4]
+
+let sm = stl::set_intersection sm1 sm2; stl::elms sm;
+//- ["b"=>2,"c"=>3]
+
+let sm = stl::set_intersection sm3 sm2; stl::elms sm;
+//- ["b"=>32,"c"=>33,"d"=>34]
+
+let sm = stl::set_intersection sm2 sm3; stl::elms sm;
+//- ["b"=>2,"c"=>3,"d"=>4]
+
+let sm = stl::set_difference sm1 sm2; stl::elms sm;
+//- ["a"=>1]
+
+let sm = stl::set_difference sm3 sm2; stl::elms sm;
+//- ["a"=>31]
+
+let sm = stl::set_difference sm2 sm3; stl::elms sm;
+//- []
+
+let sm = stl::set_symmetric_difference sm1 sm2; stl::elms sm;
+//- ["a"=>1,"d"=>4]
+
+let sm = stl::set_symmetric_difference sm3 sm2; stl::elms sm;
+//- ["a"=>31]
+
+let sm = stl::set_symmetric_difference sm2 sm3; stl::elms sm;
+//- ["a"=>31]
+
+stl::set_includes sm1 sm2;
+//- 0
+
+stl::set_includes sm3 sm2;
+//- 1
+
+stl::set_includes sm2 sm3;
+//- 0
+
+//*** Mapping *****************************************************
+
+let sm1 = stl::stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+let i_begin, i_pastend = stl::begin sm1, stl::pastend sm1;
+//- ()
+
+let i_b, i_e = stl::find sm1 "b", stl::find sm1 "e";
+//- ()
+
+listmap (\(k=>v)->k+1=>v+10) sm1;
+//- ["b"=>11,"c"=>12,"d"=>13,"e"=>14,"f"=>15]
+
+listmap (\(k=>v)->k=>v+10) (i_begin,i_pastend);
+//- ["a"=>11,"b"=>12,"c"=>13,"d"=>14,"e"=>15]
+
+catch id $ listmap (\(k=>v)->k=>v+10) (i_pastend,i_begin);
+//- bad_argument
+
+listmap (\(k=>v)->k=>v+10) (i_begin,i_begin);
+//- []
+
+listmap (\(k=>v)->k=>v+10) (i_pastend,i_pastend);
+//- []
+
+listmap (\(k=>v)->k=>v+10) (i_b,i_e);
+//- ["b"=>12,"c"=>13,"d"=>14]
+
+catch id $ listmap (\(k=>v)->k=>v+10) (i_e,i_b);
+//- bad_argument
+
+listmap (\(k=>v)->k=>v+10) (i_b,i_pastend)
+//- ["b"=>12,"c"=>13,"d"=>14,"e"=>15]
+
+catch id $ listmap (\(k=>v)->k=>v+10) (i_pastend,i_b)
+//- bad_argument
+
+listmap (\(k=>v)->k+1=>v+10) sm1;
+//- ["b"=>11,"c"=>12,"d"=>13,"e"=>14,"f"=>15]
+
+catmap (\(k=>v)->[k+1=>v+10]) (i_begin,i_pastend);
+//- ["b"=>11,"c"=>12,"d"=>13,"e"=>14,"f"=>15]
+
+catch id $ catmap (\(k=>v)->[k+1=>v+10]) (i_pastend,i_begin);
+//- bad_argument
+
+catmap (\(k=>v)->[k+1=>v+10]) (i_begin,i_begin);
+//- []
+
+catmap (\(k=>v)->[k+1=>v+10]) (i_pastend,i_pastend);
+//- []
+
+catmap (\(k=>v)->[k+1=>v+10]) (i_b,i_e);
+//- ["c"=>12,"d"=>13,"e"=>14]
+
+catch id $ catmap (\(k=>v)->[k+1=>v+10]) (i_e,i_b);
+//- bad_argument
+
+catmap (\(k=>v)->[k+1=>v+10]) (i_b,i_pastend)
+//- ["c"=>12,"d"=>13,"e"=>14,"f"=>15]
+
+catch id $ catmap (\(k=>v)->[k+1=>v+10]) (i_pastend,i_b)
+//- bad_argument
+
+[ k+1 | (k=>y) = sm1];
+//- ["b","c","d","e","f"]
+
+[ k=>v | (k=>v) = sm1; v mod 2];
+//- ["a"=>1,"c"=>3,"e"=>5]
+
+{ k+1 | (k=>y) = sm1};
+//- {"b","c","d","e","f"}
+
+{ {k;v} |  (k=>v) = sm1; v mod 2};
+//- {"a","c","e";1,3,5}
+
+//*** Mapping into a Stream ******************************************
+
+let sm1 = stl::stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+head $ stl::lazy_map (\(k=>v)->(k,2*v)) sm1;
+//- "a",2
+
+list $ stl::lazy_map (\(k=>v)->(k,2*v)) sm1;
+//- [("a",2),("b",4),("c",6),("d",8),("e",10)]
+
+list $ take 3 $ stl::lazy_map (\(k=>v)->(k,2*v)) sm1;
+//- [("a",2),("b",4),("c",6)]
+
+//*** foldl, foldl1 **************************************************
+
+let sm1 = stl::stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+let i_begin, i_pastend = stl::begin sm1, stl::pastend sm1;
+//- ()
+
+let i_b, i_e = stl::find sm1 "b", stl::find sm1 "e";
+//- ()
+
+foldl (\{r,l} (k=>v) -> {r+k,l+v}) {"",0} sm1;
+//- {"abcde",15}
+
+foldl (\{r,l} (k=>v) -> {r+k,l+v}) {"",0} (i_begin,i_begin);
+//- {"",0}
+
+foldl (\{r,l} (k=>v) -> {r+k,l+v}) {"",0} (i_begin,i_pastend);
+//- {"abcde",15}
+
+catch id $ foldl (\{r,l} (k=>v) -> {r+k,l+v}) {"",0} (i_pastend,i_begin);
+//- bad_argument
+
+foldl (\{r,l} (k=>v) -> {r+k,l+v}) {"",0} (i_pastend,i_pastend);
+//- {"",0}
+
+foldl (\{r,l} (k=>v) -> {r+k,l+v}) {"",0} (i_b,i_b);
+//- {"",0}
+
+foldl (\{r,l} (k=>v) -> {r+k,l+v}) {"",0} (i_b,i_e);
+//- {"bcd",9}
+
+catch id $ foldl (\{r,l} (k=>v) -> {r+k,l+v}) {"",0} (i_e,i_b);
+//- bad_argument
+
+foldl (\{r,l} (k=>v) -> {r+k,l+v}) {"",0} (i_e,i_e);
+//- {"",0}
+
+catch id $ foldl (\{r,l} (k=>v) -> {r+k,l+v}) {"",0} (i_b,i_begin);
+//- bad_argument
+
+foldl (\{r,l} (k=>v) -> {r+k,l+v}) {"",0} (i_begin,i_b);
+//- {"a",1}
+
+foldl (\{r,l} (k=>v) -> {r+k,l+v}) {"",0} (i_b,i_pastend);
+//- {"bcde",14}
+
+catch id $ foldl (\{r,l} (k=>v) -> {r+k,l+v}) {"",0} (i_pastend,i_b);
+//- bad_argument
+
+// foldl1
+
+foldl1 (\(r=>l) (k=>v) -> (r+k=>l+v)) sm1;
+//- "abcde"=>15
+
+foldl1 (\(r=>l) (k=>v) -> (r+k=>l+v)) (i_begin,i_pastend);
+//- "abcde"=>15
+
+catch id $ foldl1 (\(r=>l) (k=>v) -> (r+k=>l+v)) (i_begin,i_begin);
+//- bad_argument
+
+catch id $ foldl1 (\(r=>l) (k=>v) -> (r+k=>l+v)) (i_pastend,i_begin);
+//- bad_argument
+
+catch id $ foldl1 (\(r=>l) (k=>v) -> (r+k=>l+v)) (i_pastend,i_pastend);
+//- bad_argument
+
+catch id $ foldl1 (\(r=>l) (k=>v) -> (r+k=>l+v)) (i_b,i_b);
+//- bad_argument
+
+foldl1 (\(r=>l) (k=>v) -> (r+k=>l+v)) (i_b,i_e);
+//- "bcd"=>9
+
+catch id $ foldl1 (\(r=>l) (k=>v) -> (r+k=>l+v)) (i_e,i_b);
+//- bad_argument
+
+catch id $ foldl1 (\(r=>l) (k=>v) -> (r+k=>l+v)) (i_e,i_e);
+//- bad_argument
+
+catch id $ foldl1 (\(r=>l) (k=>v) -> (r+k=>l+v)) (i_b,i_begin);
+//- bad_argument
+
+foldl1 (\(r=>l) (k=>v) -> (r+k=>l+v)) (i_begin,i_b);
+//- "a"=>1
+
+foldl1 (\(r=>l) (k=>v) -> (r+k=>l+v)) (i_b,i_pastend);
+//- "bcde"=>14
+
+catch id $ foldl1 (\(r=>l) (k=>v) -> (r+k=>l+v)) (i_pastend,i_b);
+//- bad_argument
+
+//*** foldr, foldr1 **************************************************
+
+let sm1 = stl::stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+foldr (\(k=>v) {r,l} -> {r+k,l+v}) {"",0} sm1;
+//- {"edcba",15}
+
+foldr (\(k=>v) {r,l} -> {r+k,l+v}) {"",0} (i_begin,i_begin);
+//- {"",0}
+
+foldr (\(k=>v) {r,l} -> {r+k,l+v}) {"",0} (i_begin,i_pastend);
+//- {"edcba",15}
+
+catch id $ foldr (\(k=>v) {r,l} -> {r+k,l+v}) {"",0} (i_pastend,i_begin);
+//- bad_argument
+
+foldr (\(k=>v) {r,l} -> {r+k,l+v}) {"",0} (i_pastend,i_pastend);
+//- {"",0}
+
+foldr (\(k=>v) {r,l} -> {r+k,l+v}) {"",0} (i_b,i_b);
+//- {"",0}
+
+foldr (\(k=>v) {r,l} -> {r+k,l+v}) {"",0} (i_b,i_e);
+//- {"dcb",9}
+
+catch id $ foldr (\(k=>v) {r,l} -> {r+k,l+v}) {"",0} (i_e,i_b);
+//- bad_argument
+
+foldr (\(k=>v) {r,l} -> {r+k,l+v}) {"",0} (i_e,i_e);
+//- {"",0}
+
+catch id $ foldr (\(k=>v) {r,l} -> {r+k,l+v}) {"",0} (i_b,i_begin);
+//- bad_argument
+
+foldr (\(k=>v) {r,l} -> {r+k,l+v}) {"",0} (i_begin,i_b);
+//- {"a",1}
+
+foldr (\(k=>v) {r,l} -> {r+k,l+v}) {"",0} (i_b,i_pastend);
+//- {"edcb",14}
+
+catch id $ foldr (\(k=>v) {r,l} -> {r+k,l+v}) {"",0} (i_pastend,i_b);
+//- bad_argument
+
+// foldr1
+
+foldr1 (\(k=>v) (r=>l) -> (r+k=>l+v)) sm1;
+//- "edcba"=>15
+
+foldr1 (\(k=>v) (r=>l) -> (r+k=>l+v)) (i_begin,i_pastend);
+//- "edcba"=>15
+
+catch id $ foldr1 (\(k=>v) (r=>l) -> (r+k=>l+v)) (i_begin,i_begin);
+//- bad_argument
+
+catch id $ foldr1 (\(k=>v) (r=>l) -> (r+k=>l+v)) (i_pastend,i_begin);
+//- bad_argument
+
+catch id $ foldr1 (\(k=>v) (r=>l) -> (r+k=>l+v)) (i_pastend,i_pastend);
+//- bad_argument
+
+catch id $ foldr1 (\(k=>v) (r=>l) -> (r+k=>l+v)) (i_b,i_b);
+//- bad_argument
+
+foldr1 (\(k=>v) (r=>l) -> (r+k=>l+v)) (i_b,i_e);
+//- "dcb"=>9
+
+catch id $ foldr1 (\(k=>v) (r=>l) -> (r+k=>l+v)) (i_e,i_b);
+//- bad_argument
+
+catch id $ foldr1 (\(k=>v) (r=>l) -> (r+k=>l+v)) (i_e,i_e);
+//- bad_argument
+
+catch id $ foldr1 (\(k=>v) (r=>l) -> (r+k=>l+v)) (i_b,i_begin);
+//- bad_argument
+
+foldr1 (\(k=>v) (r=>l) -> (r+k=>l+v)) (i_begin,i_b);
+//- "a"=>1
+
+foldr1 (\(k=>v) (r=>l) -> (r+k=>l+v)) (i_b,i_pastend);
+//- "edcb"=>14
+
+//*** do, filter *******************************************************
+
+let sm1 = stl::stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+let sm2 = stl::emptystlmap (>);
+//- ()
+
+do (\x -> stl::insert sm2 x) sm1; stl::elms sm2;
+//- ["e"=>5,"d"=>4,"c"=>3,"b"=>2,"a"=>1]
+
+filter (\(k=>v) -> v mod 2) sm1;
+//- ["a"=>1,"c"=>3,"e"=>5]
+
+//*** rowmap, rowcatmap, colmap colcatmap ********************************
+
+let sm1 = stl::stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+rowmap (\(k=>v)->(k,v)) sm1;
+//- {("a",1);("b",2);("c",3);("d",4);("e",5)}
+
+rowcatmap (\(k=>v)->{k,v})sm1;
+//- {"a",1;"b",2;"c",3;"d",4;"e",5}
+
+rowcatmap (\(k=>v)->if v mod 2 then {k,v} else {}) sm1;
+//- {"a",1;"c",3;"e",5}
+
+colmap (\(k=>v)->(k,v)) sm1;
+//- {("a",1),("b",2),("c",3),("d",4),("e",5)}
+
+colcatmap (\(k=>v)->{k;v})sm1;
+//- {"a","b","c","d","e";1,2,3,4,5}
+
+colcatmap (\(k=>v)->if v mod 2 then {v;k} else {}) sm1;
+//- {1,3,5;"a","c","e"}
+
+//*** Key Oriented Functions *********************************************
+
+let sm1 = stl::stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+sm1!stl::stlbeg, sm1!"a", sm1!"d", sm1!"e"
+//- 1,1,4,5
+
+catch id $ sm1!"0";
+//- out_of_bounds
+
+catch id $ sm1!"b1"; 
+//- out_of_bounds
+
+catch id $ sm1!"z";
+//- out_of_bounds
+
+stl::has_key sm1 "0", stl::has_key sm1 "a", stl::has_key sm1 "c";
+//- 0,1,1
+
+stl::has_key sm1 "e", stl::has_key sm1 "f", stl::has_key sm1 stl::stlbeg;
+//- 1,0,1
+
+stl::bounding_keys sm1;
+//- stl::stlbeg,stl::stlend
+
+stl::bounding_keys (sm1,"0","z");
+//- stl::stlbeg,stl::stlend
+
+stl::bounding_keys (sm1,"b","d");
+//- "b","d"
+
+stl::bounding_keys (sm1,"0","z");
+//- stl::stlbeg,stl::stlend
+
+stl::bounding_keys (sm1,"b","d");
+//- "b","d"
+
+stl::bounding_keys (sm1,"d","b");
+//- "d","d"
+
+catch id $ stl::prev_key sm1 "a";
+//- out_of_bounds
+
+stl::prev_key sm1 "b";
+//- stl::stlbeg
+
+stl::prev_key sm1 "e";
+//- "d"
+
+stl::prev_key sm1 stl::stlend;
+//- "e"
+
+stl::next_key sm1 "a";
+//- "b"
+
+stl::next_key sm1 "d";
+//- "e"
+
+stl::next_key sm1 "e";
+//- stl::stlend
+
+stl::next_key sm1 stl::stlend;
+//- stl::stlend
+
+stl::update sm1 "a" 11; stl::elms sm1;
+//- ["a"=>11,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
+
+stl::update sm1 "f" 6; stl::elms sm1;
+//- ["a"=>11,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6]
+
+stl::update_elm sm1 ("b"=>12); stl::elms sm1;
+//- ["a"=>11,"b"=>12,"c"=>3,"d"=>4,"e"=>5,"f"=>6]
+
+stl::update_elm sm1 ("g"=>7); stl::elms sm1;
+//- ["a"=>11,"b"=>12,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7]
+
+let sm2 = stl::emptystlmap (>);
+//- ()
+
+stl::update_with (:) sm2 "a" 1; stl::update_with (:) sm2 "a" 2; stl::elms sm2;
+//- ["a"=>[2,1]]
+
+stl::update_with (:) sm2 "b" 3; stl::update_with (:) sm2 "b" 4; stl::elms sm2;
+//- ["b"=>[4,3],"a"=>[2,1]]
+

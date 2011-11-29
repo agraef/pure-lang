@@ -1,331 +1,2042 @@
 
---- DRAFT - FOR DISCUSSION PURPOSES ONLY ---
+===========
+pure-stlmap
+===========
 
+.. default-domain:: pure
+.. module:: stlmap
 
-A. General
+Version @version@, |today|
 
-1. This is *NOT* ready for public consumption!
+| Peter Summerland <p.summerland@gmail.com>
 
-2. The pure-stlmap package provides a Pure interface to the STL's four "sorted
-   associative" containers: map, set, multimap and multiset. The corresponding
-   Pure containers are stlmap, stlset, stlmmap and stlmset. The stlmap and
-   stlmmap containers, sometimes referred to simply as "maps", hold keys,
-   each of which has an associated value that can be set or retrieved based on
-   key. The key value pairs in a Pure map or is referred to as an elements or
-   members of the map. If v is the value associate with key k, the
-   corresponding element of the map is denoted by (k=>v). The stlset and
-   stlmset containers, referred to as "sets", contain only keys with
-   no associated values. In this case, the keys themselves are referred to as
-   the elements or members of the pure-stl set.
+Pure's interface to C++ vectors, specialized to hold pointers to arbitrary
+Pure expressions, and the C++ Standard Template Library algorithms that act on
+them.
 
-3. All four of containers are mutable; no immutable versions are provided by
-   pure-stlmap. All of the containers are implemented with balanced binary
-   trees which allow for O(log N) time for storage and retrieval.
+.. _Pure: http://pure-lang.googlecode.com
 
-4. Keys stored in a stlmap or stlset are unique while stlmmaps and stlmset can
-   store multiple keys with the same value. Contrary to C++'s insert
-   functions, pure-stlmap's insert functions insert new values into stlmaps
-   even if an element with the same key is already stored in the stlmap.
+.. contents::
+.. sectnum::
 
-5. All of the sorted associative containers keep their keys in sorted order
-   imposed by a "less than function" that is stored in the container. By
-   default the less than function is (<), but customized less than functions
-   can be specified when a container is created. 
+Copying
+=======
 
-   The ordering imposed on a sorted associative container's elements makes it
-   possible to designate well defined "ranges" of elements, using "iterator
-   tuples". For these purposes an iterator can be thought of as a pointer to
-   an element in the container.
+| Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>.
 
-   The iterator tuples for the sorted associative containers always specify
-   ranges. They have three elements: (sac, lb_key, ub_key) where sac a stlmap,
-   stlset, stlmmap or stlmset, lb_key is a key designating the lower bound of
-   the range and ub_key is a key designating the upper bound of the range. The
-   designated range is an ordered subsequence of elements of sac beginning with
-   the first element whose key is not less than lb_key and all succeeding
-   elements that are less than ub_key.
-   
-   Thus, if sm1 is the stlmmap consisting of ["b"=>1,"b"=>2,"c"=>3","d"=>4]
-   then (Sam1,"b","d") is ["b"=>1,"b"=>2,"c"=>3], (Sm1,"a","c") is
-   ["b"=>1,"b"=>2] and (sm1,"c","x") is ["c"=>3].
+All rights reserved. 
 
-   When specifying a range of a sorted associative container provided by
-   pure-stump, the constant stl::stlbeg denotes the first element in the
-   container and the constant stl::stlend denotes a value that is greater than
-   any of the containers elements. In terms of C++ iterators, stalker and
-   stlend correspond to sac.begin() and sac.end() where sac is the STL
-   container wrapped by the Pure container. Thus, if ss1 is the stlmset
-   consisting of ["b","b","c","d"], (ss1,"c",stlend) is the range ["c","d"].
+pure-stlmap is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+A PARTICULAR PURPOSE. 
 
-   Finally, if a function calls for a range as a parameter, the function can
-   be passed an iterator tuple consisting of less than three elements.  A
-   tuple with two elements, (mp,k), denotes the range consisting of all
-   elements with key equal to k.  A tuple with one element mp will be treated
-   the same as (mp, stl::stlbeg, stl::stlend).
+pure-stlmap is distributed under a BSD-style license, see the COPYING file
+for details.
 
-6. Note that ranges defined on stlmmaps and stlmsets are based solely on
-   keys. It is not possible define a range in terms of a key-value
-   combinations. This follows from the fact that in pure-stlmap, elements and
-   ranges are always specified by key, not by individual elements. 
+Installation
+============
 
-   For example, let mmp be a stlmmap that consists of
-   ["a"=>1,"a"=>2,"a"=>2,"a"=>3,"a"=>3]. In C++ where ranges are easily
-   defined based on individual elements, one could define a range in mmp
-   consisting of ["a"=>2,"a"=>3,"a"=>3]. In pure-stlmap, this is not possible:
-   if you have one element with key "a", you must have all of them. I.e.,
-   (mmp,"a","b") consists of ["a"=>1,"a"=>2,"a"=>2,"a"=>3,"a"=>3],
-   (ss1,"a","a") is empty.
+pure-stlmap-@version@ requires at least Pure 0.48. The latest version of Pure
+is available at http://code.google.com/p/pure-lang/downloads/list.
 
-   This presents a design issue in the case of stlmmaps, in which keys are not
-   necessarily unique. If several elements in a stlmmap have the same key, how
-   does one refer to a particular instance of them? One might want to delete
-   all elements with key "a", all elements with key "a" and value 2, or just
-   one element with key "a" and value 2.
-
-   pure-stlmap deals with this issue by providing functions that update or
-   erase elements in ranges based on a function passed as one of the
-   parameters. For example following would erase all elements of mmp with 
-   key "a" and value equal to 2:
-
-      my_equal x (_=>v) = v==x;
-      erase_if (my_equal 2) (mmp,"a")
-
-   More precisely, this erases all elements in the range consisting of
-   elements with key of "a" and value that satisfies (value_equal 2). A
-   slightly more elaborate function be can used to erase at most one element
-   of mmp with key "a" and value 2:
-
-      let erased = ref 0;
-      my_equal_once x (_=>v) = if ~get erased && v==x then put erased 1 else 0;
-      erase_if (my_equal_once 2) (mmp,"a")
-
-8. See stlmap.pure and stlmmap for functions provided. Most are just what one
-   might expect for a container that holds an ordered sequence of elements.
-
-B. Notable features
-
-1. By default, stlsets and stlmaps are constructed with (<) as the ordering
-   function. Other ordering functions can be used if desired.
-
-2. The ! operator
-
-   a. If ss is a stlset or stlmset, ss!k returns the number of elements equal
-      to k. Thus, if k is not an element of ss, ss!k is 0.
-
-   b. If sm is a stlmap, sm!k returns v if k is stored in sm. If k is not
-      stored in sm, sm!k returns sm's default value, if any, or throws an
-      out_of_bounds exception. (see 3 for notes on default values).
-
-   c.  If smm is a stlmmap, smm!k returns a list of consisting of all v where
-       (k=>v) is an element of smm, provided that at least one k is stored in
-       smm. Otherwise it returns an empty list. (see 3 for notes on default
-       values).
-
-3. A all four of the SAC's can be given a default value (al la C++ T()). It
-   affects the ! operator only in the case of a stlmap. For stlmaps, the
-   default value can be used to signal that the designated key was not 
-   stored in the map.
-
-         let x = mp!k;
-         if x == nothing then ... else ...
-
-   a. If sac is a stlmap, (sac!k) will throw out_of_bounds if k is not stored
-      in mp. However, if the map or set has a default value this will be
-      returned without k being stored in the map or set.
-
-   b. If sac is stlmmap (sac!k) will return a list containing all elements in
-      sac with key k, or [] is k is not stored in the stlmap. The default
-      value is not used by the ! operator.
-
-   c. If sac is a stlmset (sac!k) will the number of elements in the stlmset
-      key k, or 0 is k is not stored in the stlmap. The default value
-      is not used by the ! operator.
-
-   d. If sac is a stlset (sac!k) returns 1 if k is stored in the stlset and 0
-      if it is not.
-
-4. Key value pairs can be updated using "update mp k v", "update_with f
-   sm k" or update_vals smm k vals, where mp is a stlmmap or stlmap, sm is a
-   stlmap, smm is a stlmmap, k is key, v is value, f is a unary function that
-   maps old values (re default values) to new values, and vals is a list,
-   vector or stlvec of vals.
-
-   a. "update mp key val" changes the val of the first element (k=>v) of mp
-      where k==key (if it exists) to val. If key is not already stored in mp,
-      (key=val) is added to the map. Returns the mp.
-
-   b. "update_with unary_fun sm key" only applies to stlmaps that have default
-      values. If key is stored in the stlmap, its value is changed the
-      (unary_fun v). If key is not already stored in sm then (key=>unary_fun
-      dv) is added to sm where dv is the stlmap's default value.
-      
-      "update_with" provides precise control over the modification of key
-      value pairs in a stlmap. E.g., if map is a stlmmap, the first element
-      with (k=>v) where k == "a" and (pred v) is true can be changed to
-      (k=>new v).
-
-         selective_update (_=>v) = if (pred v) then (new v) else v;
-         update_with selective_update map "a;
-
-      "update_with" is also useful for associating a count or lists of objects
-      with a given key. E.g., 
-
-        let word_counts = emptystlmap;
-        set_default word_counts 0;
-        bump_count w = update_with ((\_=>v)->v+1) word_counts w; 
-        do bump_count word_list;
-
-        sort_str w = strcat $ sort (<) (chars w);
-        let anagrams = emptystlmap;
-        set_default anagrams [];
-        push_word w = update_with (\(_=>v)->w:v) anagrams (sort_str w);
-        do push_word word_list;
-
-     The unary function can set variables (using ref, get, put) to indicate
-     the what it encountered and how it dealt with it.
-
-     FIX - let update_with act of stlmmaps? It could transform all elements
-     with the given key, one by one.
-
-   c. "update_vals smm k vals applies only to stlmmaps. The effect of this
-       function is to erase vals with key k and insert (map (\v->k=>v) vals)
-       into smm. For effiency, wherever possible the values of existing
-       elements with key k are simply replaced by new values.
-
-5. Set operators are provided for all four of the sorted associative
-   containers. 
-
-   a. The operators are: "+", "-", "*", "/". These are implemented the same as
-      for dict and set in the Pure standard library except that for stlmmaps,
-      there is no guaranteed order of elements with the same key the appear in
-      the result. In tests so far the order of such elements has been the same
-      -- first inserted, first. Apparently in C++11, For multiset and
-      multimap, insert and erase preserve the relative ordering of equivalent
-      elements. If a range containing elements equivalent to t exists in a_eq,
-      t is inserted at the end of that range. This is not guaranteed by
-      c++03. The STL set operatons assume that the stlmmaps are ordered, even
-      among elements with the same key.
-
-   b. The five STL set operatons, stl::set_union, stl::set_difference,
-      stl::set_intersection, stl::set_symmetric_difference and stl::include
-      are also available. Note that these operations only work if the elements
-      of the containers are ordered. This requires care in the case of
-      stlmmaps and stlmsets. For stlmaps and stlsets, the key comparator is
-      all that is used. For stlmmaps both the key comparator and the value
-      comparator are used.
-
-      FIX Add merge. This would be set sum. Considert a sort function
-      for ranges of stl
-
-   b. Both operands must be the same type of container. I.e., sm1 + sm2, where
-      sm1 and sm2 are stlmaps, but no sm1 + smm1, where smm1 is a stlmmap.
+The latest version of the source code for pure-stlmap can be downloaded from
+http://pure-lang.googlecode.com/files/pure-stlmap-@version@.tar.gz.
  
-   c. The operations act on ranges, so it is possible to work with container
-      subsequences.
+To install pure-stlmap (on Linux), extract the source code (e.g., tar -xzf
+pure-stlmap-@version@.tar.gz), cd to the pure-stlmap-@version@ directory, and
+run ``make``. After this you can (and should) also run ``make test`` to run a
+few unit tests to make sure that pure-stlmap works properly on your system. If
+``make test`` works, run ``sudo make install`` to install pure-stlmap on your
+system.  ``make`` tries to guess your Pure installation directory and
+platform-specific setup. If it gets this wrong, you can set some variables
+manually. In particular, ``make install prefix=/usr`` sets the installation
+prefix. Please see the Makefile for details.
 
-   d. In the case of sm1 + sm2, where sm1 and sm2 are stlmaps, elements from
-      both maps can end up in the result. Because the result will be a stlmap,
-      there can only be one element associated with each key. If sm1 has an
-      element (k=>v1) and sm2 has an element (k=>v2), the resulting stlmap
-      will contain (k=>v2). This is the opposite of what would happen if
-      C++'s set_union function were used. Similarly for set intersection. 
+Overview
+========
 
-   e. In the case of smm1 + smm2, where smm1 and smm2 are stlmmaps, all of the
-      elements from both smm1 and smm2 are included in the resulting
-      stlmmap. The same is true for sms1 + sms2 where sms1 and sms2 are
-      stlmsets. For this reason, some people would refer to the + operator as
-      a multiset sum operator as opposed to mulitset union operator. They
-      would reserve the latter term for an operation that would limit
-      duplicates to the number of the duplicate items appear in smm1 or or in
-      smm2, which ever is greater. Note that the C++ set_union function builds
-      a multi_set union, not a mulitiset sum. Similarly for set intersection.
+The C++ Standard Template Library ("STL") is a library of generic containers
+(data structures designed for storing other objects) and a rich set of generic
+algorithms that operate on them. pure-stlmap provides an interface to the
+STL's "sorted associative" containers: map, set, multimap and multiset. These
+containers associate keys with values. Map and multimap associate keys with
+values and provide fast insertion, removal and retrieval of elements based on
+keys. Set and mulitset provide fast insertion and removal of elements and very
+fast set operations. Often it is convenient to talk about sets and multisets
+as if they had keys. I.e., the "key" associated with an element of a set or
+multiset is the element itself.
 
-6. Elements in a range can be deleted using "erase" and "erase_if".
+Maps and sets have unique keys while multimaps and multisets can have elements
+with duplicate keys. All four of the containers keep their elements sorted by
+key. The native STL interface is based on "iterators" that point to elements
+in the container. The iterators can traverse elements by moving foward or back
+one element at a time. Given a key, one can obtain an iterator that points to
+the an element with this key, the first element with this key, the element
+following the last element with this key and so on. Given an interator one can
+retrieve, erase the element or modify its value (for maps and
+multimaps). Given a pair of iterators, one can work with all of the elements
+in the "range" defined by the pair, namely elements starting with the element
+pointed to by the first iterator up to but not including the element pointed
+to by the last iterator. There is a "pastend" iterator allows one to designate
+arange that includes the last element in the container. Iterators can move
+forward or backward through the sorted elements one step at a time. One
+advantage of using iterators is that only a handful of functions are required
+to work effectively with the container. 
 
-   a. erase (sac,k1,k2) deletes all elements in the indicated range.
+pure-stlmap provides four containers "stlmap", "stlset", "stlmmap" and
+"stlmset" that are thin wrappers around the corresponding sorted associative
+containers provided by the STL, specialize to hold keys and values that are
+arbitrary Pure expressions. All of the member functions provided by the STL
+have corresponding functions provided by pure-stlmap's "iterator
+interface". The Pure side functions have the same semantics as the STL
+functions, which in some cases is different than that of similar functions
+provided by the standard Pure library for similar containers. In addition, the
+STL set algorithm functions are provided, including merge and includes, all
+with STL semmantics. Why -- quite different than dict and the Pure containers.
 
-   b. erase_if pred (sac,k1,k2) deletes all elements in the indicated range
-      that satisfy pred. For stlmap and stlmmap pred should take (k=>v) as
-      its parameter. 
+One important exception to the "same semmantics" rule is that pure-stlmap
+attempts to detect and throw a "bad_argument" exception when confronted with
+invalid iterators or invalid ranges that would in C++ have undefined results.
 
-   c. The erase functions return the number of elements deleted (which
-      can be 0).
+Pure to STL "bridge" functions such as elms, keys, vals, map, filter, fold etc
+are provided to convert container contents to lists or lazy lists. These
+functions work with ranges and act directly on the underlying STL
+container. Conversion functions are provided for copying ranges to and from
+vectors, other pure-stlmap containers, and stlvecs.
 
-7. Individual elements can be erased using the delete functions.
+Finally, pure-stlmap provides a few convenience functions that could be easily
+implemented in terms of the basic functions introduced above.  An example
+would be the (!), the !  operator. If (k=>v) is an element of a stlmap, m,
+then m!k is v. If (k=>v1) and (k=>v2) are elements of a stlmmap, mm, then mm!k
+is [v1,v2].
 
-   a. "delete sac k removes the first element in sac with key k, if any.
 
-   b. "delete_all sac k removes all elements in sac with key k.
+Modules
+-------
 
-   c. "delete_if pred sac k removes the first element in 
-      sac with key k that satifies pred, if any. If sac is a stlmap or
-      stlmmap, the elements passed to pred will be of the form (k=>v).
+=============
+Mini Tutorial
+=============
 
-   d. "delete_val mp (k=>v) removes the first element in mp with key k and
-      value v, if any. mp must be a stlmap or stlmmap; the function fails
-      if mp is a stlset or stlmset.
+Here are some examples that use the basic operations on a stlmap ::
 
-8. For any sorted associative container, sac, "next_key sac k)" and "prev_key
-   sac k) generally do just what their names suggests. The behavior for the
-   "corner cases" is as follows: 
+   > using stlmap; using namespace stl;
 
-       a. If k is the last key in sac "next_key sac k)" returns stl::stlend.
+Make stlmap from a vector::
 
-       b. If k is the past end iterator, next_key throws an out_of_bounds
-          exception, and prev_key returns the key of the last element in sac.
+   > let sm1 = stlmap {"a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5};
 
-       c. If k is the first key in sac, "prev_key" throws out_of_bounds
-          exception.
+Get value associated with "a" ::
 
-       d. If k is the second key in sac, prev_key returns stl::stlbeg, rather
-          than the actual first k in sac.
+   > sm1!"a";
+   1
 
-9. Each sac has three functions used that define how it operates: key_less
-   function, a val_less, val_equal function.
+List all elements in sm1 ::
 
-   a. Keys are ordered by key_less. Default is (<).
+   > elms (sm1,stlbeg,stlend);
+   ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
-   b. val_less is to order elements in a stlmmap when order is
-      important. I.e., less, merge, and the set operations. (These operations
-      use key_less for stlmap, stlset and stlmset.) Default is (<). The
-      default gives the same results as calling these functions in C++ 
-      without a specific comp function.
+Make a lazy list of elements and take 3 of its elements
 
-   c. val_equal is only for equal (==). For this function, two elements
-      (k1=>v1) == (k2=v2) iff ~key_less k1 k2 && ~key_less k2 k1 && val_equal
-      v1 v2.
+   > lazy_elms sm1;
+   ("a"=>1):#<thunk 0xb7087918>
 
-   d. Currently, although val_less is never used by stlmap, stlset, stlmset. It
-      is still required by emptystlmap_with, ..
+   // take some elements from the lazy list
+   > list $ take 3 (lazy_elms sm1);
+   ["a"=>1,"b"=>2,"c"=>3]
 
-C. Cached iterators
+Update ("a"=>1) to ("a"=>10) using update and update_elm, pure-stlmap's
+"update or insert" functions. Note that update_elm the same as update except
+that the key and value are designated as hash rocket pair. The corresponding
+functions applicable to Pure standard library containers are update and
+insert. pure-stlmap uses "update_elm" instead of "insert" so that insert, when
+applied to a pure-stlmap container, can reflect STL semantics. In particular,
+when applied to a stlmap, sm, insert sm (k=>v) will NOT change the stlmap in
+any way if sm already contains and element with key k.  
 
-1. The last C++ iterator used in selected operations is cached. Only one
-   iterator is cached at any one time. Operations that invalidate the cached
-   iterator cause the iterator to be removed from the cache.
+   > update sm1 "a" 10 $$ elms sm1;
+   ["a"=>10,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
-2. The following operations cause an iterator to be cached:
+   > update_elm sm1 ("f"=>6) $$ elms sm1;
+   ["a"=>10,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6]
 
-   FIX
+Insert from a list. Note that the value associated with "b" is not changed
+because "b" is already stored in sm1. "g"=>7 is inserted. 
 
-3. The following operations cause an iterator to be deleted from the cache:
+   > insert sm1 ["b"=>12,"g"=>7] $$ elms sm1;
+   ["a"=>10,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7]
 
-   FIX
+A number of mapping, filtering, and folding operations are provided. They act
+on the underlying STL structure as opposed to operating on a tempory list.
+These examples map, lazy_map and foldr over ranges in sm1. The map and
+lazy_map are over a the range in sm1 consisting of all elements with keys
+stored in sm1 beginning with "b" and ending with the last key less than "e". ::
 
-4 In certain commonly occurring sequences caching can eliminate an O(log N)
-  lookup. E.g., "member sd k" followed by "sd!k" or "update sd k v" only
-  requires only one lookup. Caching also allows efficient traversal of the
-  elements in sd using "next sd k" and "prev sd k".
+   // map over range in sm1
+   > map (\(k=>v)->k=>2*v) (sm1,"b","e");
+   ["b"=>4,"c"=>6,"d"=>8]
 
-D. Examples/Testing
+   > lazy_map (\(k=>v)->k=>2*v) (sm1,"b","e");
+   ("b"=>4):#<thunk 0xb707f434>
 
-1. To run the example/test script for stlmaps:
+   > foldr (\(k=>v) (ks,sum)-> (k+ks,v+sum)) ("",0) sm1;
+   "abcdefg",38
 
-     $> pure -q -w
-     > run check_eval.pure 
-     > check "ut_script_stlmap.pure";
+   > filter (\(k=>v)->v mod 2) sm1;
+   ["a"=>11,"c"=>3,"e"=>5,"g"=>7]
 
-2. The target scripts for stlmmap, stlset, stlmset have similar names.
+Erase erase all elements with key == "a" and then erase all elements in the 
+range defined by a pair of iterators.
 
-3. More testing needs to be done.
+   > erase sm1 "a" $$ elms sm1;
+   ["b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
+   > let i_c, i_d, i_end = equal_range sm1 "c", pastend sm1;
+ 
+   > get_elm i_c, get_elm i_d, is_pastend i_end;
+   "c"=>3,"d"=>4,1
+
+   > elms (i_d, i_end);
+   ["d"=>4,"e"=>5]
+   
+   > erase sm1 (i_d, i_end); elms sm1;
+   ["b"=>2,"c"=>3]
+
+Note that the erasure renders i_d invalid (but i_c and i_end remain valid).
+
+   > let ok_d, _ = get_info i_d; ok_d;
+   0
+
+   > catch id $ get_elm i_d;
+   bad_argument
+
+   > let ok_c, _ = get_info i_c; ok_c;
+   1
+
+   > get_elm i_c;
+   "c"=>3
+
+All of the basic set operations are provided by calls to the STL set
+algorithms all of which have O(n+m) complexity.
+
+   > let sm1 = stlmap {"a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5};
+
+   > let sm2 = stlmap {"c"=>13,"d"=>14,"e"=>15,"f"=>16};
+
+   > elms $ set_union sm1 sm2;
+   ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>16]
+
+   > elms $ set_union sm2 sm1;
+   ["a"=>1,"b"=>2,"c"=>13,"d"=>14,"e"=>15,"f"=>16]
+
+   > elms $ set_intersection sm2 sm1;
+   ["c"=>13,"d"=>14,"e"=>15]
+
+   > elms $ set_difference sm2 sm1;
+   ["f"=>16]
+
+   > elms $ set_difference sm1 sm2;
+   ["a"=>1,"b"=>2]
+
+Note the difference between set_union sm1 sm2 and set_union sm2 sm1. This
+difference reflects the fact the elements of the map on the left are inserted
+into the resulting union before elements with the same key from the map on the
+right. 
+
+======================
+Container Construction
+======================
+
+stlmaps and stlmmaps can be constructed as empty containers or from sequences
+of key-value pairs, (k=>v). These are constructed from a key-less-than
+function that orders the map's keys, a default value, a value-less-than
+function that orders the maps values and a value-equal function that
+determines if two values are equal. There is no function to determine if two
+keys are equal. All the STL functions care about is if one key is less than
+another or if two keys are "equivalent". Two keys, k1 and k2, are equivalent
+for these purposes if ~(k1<k2) && ~(k2<k1).
+
+emptystlmap (kcmp,dflt,vcmp,veql)
+emptystlmap (kcmp,dflt,vcmp)
+emptystlmap (kcmp,dflt)
+emptystlmap kcmp
+
+emptystlmmap (kcmp,dflt,vcmp,veql)
+emptystlmmap (kcmp,dflt,vcmp)
+emptystlmmap (kcmp,dflt)
+emptystlmmap kcmp
+
+Create a new stlmap or stlmmap with the indicated parameters. The default
+values for dflt, vcmp and veql are (<), (==) and [].
+
+stlmap xs
+stlmap svrng
+stlmap smrng
+
+stlmmap xs
+stlmmap svrng
+stlmmap smmrng
+
+Create a new stlmap or stlmmap using (<) emptystlmap (<) and insert elements
+from xs, svrng, smrng or smmrng. See insert.
+
+emptystlset kcmp
+emptystlmset kcmp
+
+Create a new stlset or stlmset using kcmp to order the elements.
+
+stlset xs
+stlset svrng
+stlset smrng
+
+stlmset xs
+stlmset svrng
+stlmset smmrng
+
+=========
+Iterators
+=========
+
+Iterators are constructed by the following functions. A fresh iterator is
+returned.
+
+iterator i
+begin sac k
+pastend sac k
+find sac k
+lower_bound sac k
+upper_bound sac k
+equal_range sac k
+
+iterator constructs a new iterator that points to the same postion as
+iter. begin returns an iterator pointing to the first element in sac. pastend
+returns the past-end iterator. find returns an iterator pointng to an element
+in sac with key equivalent to k. lower_bound returns an iterator pointing to
+the first sac element with key not less than k. upperbound returns an iterator
+pointing to the first sac element with key greater than k. equal_range returns
+lower_bound and upper_bound as a pair. All of the functions that depend on k,
+if no sac element satisfies the condition sac's past-end iterator is returned
+in lieu of the desired iterator.
+
+Iterators can be moved through the sequence consisting of a sac's
+elements. The iterators are mutated by these operations, provided move is
+successful. An attempt to move to a position before the first element's
+position causes a out-of-bounds exception. Moves past the last element
+return the sac's past-end iterator.
+
+inc iter
+dec iter
+move iter n
+
+The element pointed to by an iterator can be accessed or modified. For sets,
+get_elm, get_key and get_val all return the same value. Only the value can be
+changed; put_val will fail if called on a set iterator.
+
+get_elm i
+get_key i
+get_val i
+put_val i
+
+It is useful to know if an iterator is pointing at the first element of a SAC,
+the the past-end position or if the iterator is valid. An iterator is invalid
+if the element it was pointing to has been erased.
+
+is_begin i
+is_pastend i
+get_info i
+
+get_info returns (true,sac,key,val) if i is valid and (false,_,_,_) if it is
+not.
+
+Two operators are provided. The first, (==) applies to all SACs. The second,
+(^) only applies to stlmaps. The (^) operator based on the C++ [] operator. In
+C++ sac[k] creates a reference to an element in sac with key k. If k is not
+stored in sac before the call, a new element (k=>T()) is inserted, where T()
+is the default value for values associated with keys in sac.
+
+ i == j
+ m^k
+
+The first is true if i and j point to the same element in sac, where i and j
+are iterators with the same underlying sac. The second returns an iterator
+pointing to the an element in m, a stlmap, with key k. If no such element
+existed before the call, one is created using sac's default value.
+
+======
+Ranges
+======
+
+Many of the functions that operate on SACs operate on ranges. Ranges are
+designated by a pair of iterators, (first, last) where first points to an
+element that is not greater than the element pointed to by last. The range is
+the sequence of elements that begins with the element pointed to by first and
+ends with the last element that is less than the element pointed to by
+last. For these purposes the past-end iterator can be thought of as pointing
+to a "past-end element" that is greater than all elements that can be inserted
+in the container.
+
+Eg.  -- with iterators
+
+
+Range Info
+----------
+
+parameters sac
+range_info rng
+
+parameters returns a tuple (is_set, kcmp, dflt, vcmp, veql) where kcmp, dflt,
+vcmp, veql are the parameters used to set up the sac (see Container
+Construction). range_info returns a tuple (ok, sac, first, last) where ok is
+true if the range is valid, sac is the container that the range points into,
+and first and last iterators that define the range. E.g.,
+
+   let sm1 = stl::stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+   //- ()
+
+   stl::parameters sm1;
+   //- 0,(<),[],(<),(==)
+
+   let ok, smx, f, l = stl::range_info (sm1,"b","e"); ok;
+   //- 1
+
+   ok, stl::elms (f,l);
+   1, ["b"=>2,"c"=>3,"d"=>4]
+
+size rng
+empty rng
+is_set rng
+count sac key
+
+These functions return the size of range, whether a range is empty, if the
+range is a stlset or stlmset, and the number elements in a container have a
+given key.
+
+====================
+Container Operations
+====================
+
+Very simple: constructors, access through iterators. Then insert, erase,
+clear, swap.
+
+===============================
+Using Keys in lieu of Iterators
+===============================
+
+Often it is convenient to work with containers using keys, as opposed to
+iterators, to designate elements and ranges. This is especially likely to be
+the case for stlmaps and stlsets where there is a one-to-one correspondence
+between iterators and keys.
+
+
+ For stlmmaps and stlmsets, it is
+sometimes necessary to use iterators to locate and work with specific
+elements.
+
+Accessing and Updating Elements
+-------------------------------
+
+In the native STL interface, one uses a key to obtain an iterator that points
+to a key, value pair associated with the key. The pair's value (but not key)
+can be changed and the key and value can be accessed. In pure-stlmap, these
+operations can be performed in one step using the ! operator and the update
+functions. Note that the update functions all return the updated container,
+not a new container as would be the case for dict.
+
+sm ! key
+
+If sm is a stlmap, returns the value associated with key, if any. If key is
+not stored in sm an out_of_bounds exception is thrown. If sm is a stlmmap,
+returns a list of values associated with key, if any. If there are no elements
+with k as key, an empty list is returned.
+
+update sm k v
+
+If sm is a stlmap and if k is already stored in sm, change its associated
+value to v. If not, add (k=>v) to sm. If sm is a stlmmap, add (k=>v) to sm.
+
+update_elm sm (k=>v)
+
+This function is the same as update sm k v.
+
+update_elm ss elm
+
+If ss is a stlset and elm is not already stored in ss, insert elm in ss,
+otherwise do nothing. If ss is a stlmset, insert elm in ss.
+
+update_with f sm k x
+
+This function only applies to stlmaps. It is the same as update sm k (f x v)
+where v is the value associated with k. If k is not stored in sm, then v is
+sm's default value.
+
+update_elms smm k xs
+
+This function only applies to stlmmaps. ...
+
+Accessor and Update Examples
+----------------------------
+
+let sm1 = stl::stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+sm1!stl::stlbeg, sm1!"a", sm1!"d", sm1!"e"
+//- 1,1,4,5
+
+
+let sm2 = stl::emptystlmap (<);
+
+stl::update_with (:) sm2 "a" 1; ()
+
+stl::update_with (:) sm2 "a" 2; ()
+
+stl::elms sm2;
+//- ["a"=>[2,1]]
+
+Using Keys to Designate Ranges
+------------------------------
+
+In pure-stlmap, ranges can be specified in terms of keys. If first_key and
+last_key are to keys of elements in sac, the range designated by the tuple
+(sac,first_key,last_key) begins with the first element with key equal to
+first_key and ends with the last key whose key is less than last_key.  If
+first_key is not an element of sac, the sequence begins with the first element
+whose key is greater than key. The symbols stl::stlbeg and stl::stlend can be
+used to designate a SAC's first element or past-end element.  If first_key is
+not greater than last_key, the range is empty.
+
+E.g.,
+
+
+Functions for Using Keys in Lieu of Iterators
+---------------------------------------------
+
+The following functions are useful when using keys to access elements or
+traverse ranges.
+
+   has_key sm key
+   bounding_keys rng
+   next_key sm k
+   prev_key sm k
+
+has_key is often used to test before using the ! operator in order to avoid
+and out_of_bounds exception. When used this way, the only one O(log n) lookup
+is required because pure-stlmap caches the iterator used behind the scenes to
+carry out the has_key operation. Similarly, next_key sm k and prev_key sm k
+are constant time operations, assuming an iterator of k is in the cache.
+
+E.g., mulitmap as well as map.
+
+=============
+Range Content
+=============
+
+Elements in a range can be retrieved as a list, vector, stlvec or lazy lists.
+
+elms rng
+vector rng
+stlvec rng
+
+Values and keys can be retrieved as a list.
+
+vals rng
+keys rng
+
+Elements, values and keys can be retrieved as lazy lists.
+
+lazy_elms rng
+lazy_keys rng
+lazy_vals rng
+
+=======================================
+Equality and Lexicographical Comparison
+=======================================
+
+equal rng1::smmrng rng2::smmrng = smm_equal rng1 rng2
+  if compatible_ranges rng1 rng2;
+
+(::==) sac1::stlmsac sac2::stlmsac = smm_equal sac1 sac2
+  if compatible_ranges sac1 sac2;
+
+(::~=) sac1::stlmsac sac2::stlmsac = ~smm_equal sac1 sac2
+  if compatible_ranges sac1 sac2;
+
+(::<) rng1::smmrng rng2::smmrng = smm_less rng1 rng2
+  if compatible_ranges rng1 rng2;
+
+(::<=) rng1::smmrng rng2::smmrng = ~smm_less rng2 rng1
+  if compatible_ranges rng1 rng2;
+
+(::>) rng1::smmrng rng2::smmrng = smm_less rng2 rng1
+  if compatible_ranges rng1 rng2;
+
+(::>=) rng1::smmrng rng2::smmrng = ~smm_less rng1 rng2
+  if compatible_ranges rng1 rng2;
+
+==============
+Set Algorithms
+==============
+
+merge rng1::smmrng rng2::smmrng = 
+  smm_setop smm_merge rng1 rng2 if compatible_ranges rng1 rng2;
+
+set_union rng1::smmrng rng2::smmrng = 
+  smm_setop smm_union rng1 rng2 if compatible_ranges rng1 rng2;
+
+set_difference rng1::smmrng rng2::smmrng = 
+  smm_setop smm_difference rng1 rng2 if compatible_ranges rng1 rng2;
+
+set_intersection rng1::smmrng rng2::smmrng = 
+  smm_setop smm_intersection rng1 rng2 if compatible_ranges rng1 rng2;
+
+set_symmetric_difference rng1::smmrng rng2::smmrng = 
+  smm_setop smm_symmetric_difference rng1 rng2 if compatible_ranges rng1 rng2;
+
+set_includes rng1::smmrng rng2::smmrng =
+ smm_includes rng1 rng2 if compatible_ranges rng1 rng2;
+
+====================
+Mapping, Folding Etc
+====================
+
+Now for the Pure oriented functions. 
+
+Basics
+
+::map f rng::smmrng = smm_listmap f rng smm_elm; // => smm_key for sets
+
+::foldl f x rng::smmrng = smm_foldl f x rng;
+
+::foldl1 f rng::smmrng = smm_foldl1 f rng;
+
+::foldr f x rng::smmrng = smm_foldr f x rng;
+
+::foldr1 f rng::smmrng = smm_foldr1 f rng;
+
+::do f rng::smmrng = smm_foldl (\_ x->f x) () rng $$ ();
+
+::filter p rng::smmrng = smm_foldr f [] rng with
+  f x xs = res when
+    res = case p x of
+      1 = x:xs;
+      0 = xs;
+      y = throw failed_cond;
+    end;
+  end;
+end;
+
+
+Set comprhensions
+
+::listmap f rng::smmrng = smm_listmap f rng smm_elm;
+
+::catmap f rng::smmrng = smm_listcatmap f rng smm_elm;
+
+/*** Vector functions ****************************************************/
+
+::rowmap f rng::smmrng = rowcat (smm_listmap f rng smm_elm);
+
+::rowcatmap f rng::smmrng = rowcat (smm_listmap f rng smm_elm);
+
+::colmap f rng::smmrng = colcat (smm_listmap f rng smm_elm);
+
+::colcatmap f rng::smmrng = colcat (smm_listmap f rng smm_elm);
+
+
+
+
+Multisets
+
+Multimaps
+
+
+
+creation, insertion , sets,
+
+
+
+Have iterators at the end -- for more control.
+
+Then overall list of functions?
+
+stlset
+======
+
+Here are some examples that use the basic operations provided by the
+stlset ::
+
+ 
+    // make stlset from a list
+    > let sm1 = stl::stlset ["a","b","c","d","e"]; stl::elms sm1;
+    ["a","b","c","d","e"]
+
+    // check membership 
+    has_key sm1 "a";
+    1
+
+    // range defined by a tuple - elements "b" up to but not including "e"
+    > stl::elms (sm1,"b","e");
+    ["b","c","d"]
+
+    // insert 2 new elements, "c" already there, not inserted
+    > insert sm1 {"b2","b1","c"}; elms sm1; 
+    2
+    ["a","b","b1","b2","c","d","e"]
+
+    // set up 2 iterators
+    > let i_b, i_d = stl::find sm1 "b", stl::find sm1 "d";
+
+    // get the element pointed to by i_b
+    > get_elm i_b;
+    "b"
+
+    // range defined by iterators 
+    > elms (i_b, i_d);
+    ["b","b1","b2","c"]
+
+    // erase the range defined by iterator
+    > erase sm1 (i_b, i_d); elms sm1;
+    4
+    ["a","d","e"]
+
+    // i_b is invalid 
+    > let ok, _ = get_info i_b; ok;
+    0
+
+    // try to use an invalid iterator
+    > catch id $ get_elm i_b;
+    bad_argument
+    
+
+stlmap
+------
+
+Here are some simple access examples:
+
+    // make stlmap from a vector
+    > let sm1 = stlmap {"a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5};
+
+    // get value associated with "a"
+    > sm1!"a";
+    1
+
+    // index out of bounds
+    > catch id $ sm1!"z";
+    out_of_bounds
+
+    // list all elements
+    > elms (sm1,stlbeg,stlend);
+    ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
+
+    // list keys
+    keys (sm1,"a",stlend);
+    //- ["a","b","c","d","e"]
+
+    // list vals
+    vals (sm1,"a",stlend);
+    //- [1,2,3,4,5]
+
+    // lazy list of elements
+    > lazy_elms sm1;
+    ("a"=>1):#<thunk 0xb7087918>
+
+    // take some elements from the lazy list
+    > list $ take 3 (lazy_elms sm1);
+    ["a"=>1,"b"=>2,"c"=>3]
+
+Insertion using STL iterator style calls. Note that insert does not overwrite
+existing values. ::
+
+    // insert an element with a new key
+    // p points to new element, insertion went ok
+    > let p, ok = insert sm1 ("f"=>6); get_key p, ok;
+    "f",1
+
+    // insert from a list - no change to elements with same key
+    > insert sm1 ["a"=>11,"g"=>7]; elms sm1;
+    1
+    ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7]
+
+    // attempt to insert an element with an existing key
+    // p points to prexisting element, insertion failed
+    > let p, ok = insert sm1 ("a"=>11); get_elm p, ok;
+    "a"=>1,0
+
+Updating elements ::
+
+    // update the value of the element pointed to by p
+    > put_val p 10; elms sm1;
+    10
+    ["a"=>10,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6]
+
+    // insert or update to associate 11 with "a" - like update dict (k=>v)
+    > update sm1 "a" 11"; elms sm1;
+    ["a"=>11,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6]
+
+    // insert or update -- like insert dict (k=>v)
+    > update_elm sm1 ("b"=>12) $$ elms sm1;
+    ["a"=>11,"b"=>12,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7]
+
+Using default values ::
+
+
+
+
+Mapping
+-------
+
+
+Many more examples can be found in the pure-stlmap/ut directory.
+
+Members and Sequences of Members
+--------------------------------
+
+Throughout the documentation for pure-stlmap, the member of a stlvec that is
+at the nth position in the sequence of expressions stored in the stlvec is
+referred to as its nth member or nth element. The nth member of a stlvec, sv,
+is sometimes denoted by sv!n.  The sequence of members of sv starting at
+position i up to but not including j is denoted by sv[i,j). There is a
+"past-the-end" symbol, stl::svend, that denotes the position after that
+occupied by the last member contained by a stlvec.
+
+For example, if sv contains the sequence "a", "b", "c" "d" and "e", sv!0 is
+"a", sv[1,3) is the sequence consisting of "b" followed by "c" and
+v[3,stl::svend) denotes the sequence consisting of "d" followed by "e".
+
+STL Iterators and Value Semantics
+---------------------------------
+
+In C++ a programmer accesses a STL container's elements by means of
+"iterators", which can be thought of as pointers to the container's
+elements. A single iterator can be used to access a specific element, and a
+pair of iterators can be used to access a "range" of elements. By convention,
+such a range includes the member pointed to by the first iterator and all
+succeeding members up to but not including the member pointed to by the second
+iterator. Each container has a past-the-end iterator that can be used to
+specifiy ranges that include the container's last member.
+
+In the case of vectors there is an obvious correspondence between an iterator
+that points to an element and the element's position (starting at zero) in the
+vector.  pure-stlmap uses this correspondence to designate a stlvec's members
+in a way that makes it relatively easy to see how pure-stlmap's functions are
+acting on the stlvec's underlying STL vector by referencing the STL's
+documentation. Thus, if sv is a stlvec, and j is an int, "update sv j x" uses
+the STL to replace the element pointed to by the iterator for position j of
+sv's underlying STL vector. If, in addition, k is an int, stl::sort (sv,j,k)
+(<) uses the STL to sort the elements in the range designated by the "jth" and
+"kth" iterators for sv's underlying STL vector. This range, written as
+sv[j,k), is the subsequence of sv that begins with the element at position j
+and ends with the element at position (k-1).
+
+Besides iterators, another cornerstone of the STL is its "value semantics",
+i.e., all of the STL containers are mutable and if a container is copied, all
+of its elements are copied. pure-stlmap deals with the STL's value semantics
+by introducing mutable and nonmutable stlvecs, and by storing smart pointers
+to objects (which have cheap copies) rather than the actual objects.
+
+Iterator Tuples
+---------------
+
+As mentioned in the previous section, in C++ ranges are specified by a pair
+of STL iterators.
+
+In pure-stlmap ranges of elements in a stlvec are specified by "iterator
+tuples" rather than, say, actual pointers to STL iterators. Iterator tuples
+consist of the name of a stlvec followed by one of more ints that indicate
+positions (starting from zero) of the stlvec's elements.
+
+To illustrate how iterator tuples are used, consider the STL stable_sort
+function, which sorts objects in the range [first, last) in the order imposed
+by comp. Its C++ signature looks like this:
+
+  void stable_sort ( RandomAccessIterator first, RandomAccessIterator last, Compare comp )
+
+The corresponding pure-stlmap function, from the stlvec::sort module, looks like
+this:
+
+   stable_sort (msv, first, last) comp
+
+where msv is a mutable stlvec, and first and last are ints. The first thing
+that the Pure stable_sort does is create a pair of C++ iterators that point to
+the elements in msv's underlying STL vector that occupy the positions
+designated by first and last.  Next it wraps the Pure comp function in a C++
+function object that, along with the two iterators, is passed to the C++
+stable_sort function.
+
+For convenience, (sv,stl::svbeg, stl::svend) can be written simply as
+sv. Thus, if first were stl::svbeg (or 0), and last were stl::svend (or #msv,
+the number of elements in msv), the last Pure call could be written:
+
+   stable_sort msv comp
+
+It should be noted that often the STL library provides a default version of its
+functions, which like stable_sort, use a comparator or other callback function
+provided by the caller. E.g., the C++ stable_sort has a default version that
+assumes the "<" operator can be used on the elements held by the container in
+question:
+
+   void stable_sort ( RandomAccessIterator first, RandomAccessIterator last)
+
+The corresponding functions provided by the pure-stlmap modules rarely, if
+ever, supply a default version. A typical example is stlvec::sort's stable_sort
+which must be called with a comparator callback function:
+
+  stable_sort msv (<);
+
+Note also that the comparator (e.g., (<)), or other function being passed to a
+pure-stlmap algorithm wrapper is almost always the last parameter. This
+is the opposite of what is required for similar Pure functions, but is
+consistent with the STL calling conventions.
+
+Predefined Iterator Tuple Indexes
+---------------------------------
+
+The following integer constants are defined in the stl namespace for use
+in iterator tuples.
+
+.. namespace:: stl
+
+.. constant:: svbeg = 0
+              svend = -1 
+              svback = -2
+
+These three symbols are declared as nonfix. ``svend`` corresponds to STL's
+past-end iterator for STL vectors. It makes it possible to specify ranges that
+include the last element of an stlvec. I.e., the iterator tuple
+(sv,stl::svbeg,stl::svend) would specify sv[0,n), where n is the number of
+elements in sv. In order to understand the purpose of ``svback``, it is
+necessary to understand a bit about STL's "back insert iterators."
+
+Back Insert Iterators
+---------------------
+
+Many of the STL algorithms insert members into a target range designated by an
+iterator that points to the first member of the target range. Consistent with
+raw C usage, it is ok to copy over existing elements the target
+stlvec. E.g.,::
+
+   > using stlvec::modifying;
+
+   > let v1 = stlvec (0..2);
+
+   > let v2 = stlvec ("a".."g");
+
+   > stl::copy v1 (v2,2) $$ members v2;
+   ["a","b",0,1,2,"f","g"]
+
+This is great for C++ programmers, but for Pure programmers it is almost
+always preferable to append the copied items to the end of a target stlvec,
+rather than overwriting all or part or part of it. This can be accomplished
+using stl::svback. E.g.,::
+
+   > stl::copy v1 (v2,stl::svback) $$ members v2;
+   ["a","b",0,1,2,"f","g",0,1,2]
+
+In short, when a pure-stlmap function detects "stl::svback" in a target
+iterator tuple, it constructs a STL "back inserter iterator" and passes it on
+to the corresponding wrapped STL function.
+
+Data Structure
+--------------
+
+Currently, stlvecs are of the form (STLVEC x) or (CONST_STLVEC x), where
+STLVEC AND CONST_STLVEC are defined as nonfix symbols in the global namespace
+and x is a pointer to the underlying STL vector. The stlvec module defines
+corresponding type tags, stlvec and const_stlvec, so the programmer never
+needs to worry about the underlying representaton.
+
+This representation may change in the future, and must not be relied upon
+by client modules. In particular, one must never attempt to use the
+embedded pointer directly.
+
+As the names suggest, stlvecs are mutable and const_stlvecs are
+immutable. Functions that modify a stlvec will simply fail unless the stlvec
+is mutable. ::
+
+   > let v = const_stlvec $ stlvec (0..3); v2;
+   CONST_STLVEC #<pointer 0x8c1dbf0>
+
+   > update v 0 100; // fails
+   update (CONST_STLVEC #<pointer 0x9f07690>) 0 100
+
+Types
+-----
+
+pure-stlmap introduces six type tags, all of which are in the global namespace:
+
+.. namespace:: ::
+
+.. type:: mutable_stlvec /type
+
+   The type for a mutable stlvec. 
+
+.. type:: const_stlvec /type
+
+   The type for an immutable stlvec.
+
+.. type:: stlvec /type
+
+   The type for a stlvec, mutable or immutable.
+
+.. type:: mutable_svit /type
+
+   The type for an iterator tuple whose underlying stlvec is mutable.
+
+.. type:: const_svit /type
+
+   The type for an iterator tuple whose underlying stlvec is immutable.
+ 
+.. type:: svit /type
+
+   The type for an iterator tuple. The underlying stlvec can be mutable
+   or immutable.
+
+Copy-On-Write Semantics
+-----------------------
+
+The pure-stlmap module functions do not implement automatic copy-on-write
+semantics. Functions that modify stlvec parameters will simply fail if they
+are passed a const_stlvec when they expect a mutable_stlvec.
+
+For those that prefer immutable data structures, stlvecs can be converted to
+const_stlvecs (usually after they have been created and modified within a
+function) by the ``const_stlvec`` function. This function converts a mutable
+stlvec to an immutable stlvec without changing the underlying STL vector. 
+
+Typically, a "pure" function that "updates" a stlvec passed to it as an
+argument will first copy the input stlvec to a new locally scoped (mutable)
+stlvec using the stlvec function. It will then modify the new stlvec and use
+const_stlvec to make the new stlvec immutable before it is returned. It should
+be noted that several of the STL algorithms have "copy" versions which place
+their results directly into a new stlvec, which can eliminate the need to copy
+the input stlvec. E.g.::
+
+    > let sv1 = stlvec ("a".."e");
+
+    > let sv2 = emptystlvec;
+
+    > stl::reverse_copy sv1 (sv2,stl::svback) $$ members sv2;
+    ["e","d","c","b","a"]
+
+Without reverse_copy, one would have had to copy sv1 into sv2 and then reverse
+sv2.
+
+If desired, in Pure it is easy to write functions that have automatic
+copy-on-write semantics. E.g., ::
+
+    > my_update csv::const_stlvec i x = my_update (stlvec csv) i x;
+    > my_update sv::stlvec i x = update sv i x;
+
+Documentation
+-------------
+
+The documentation of the functions provided by the stlvec module are
+reasonably complete.  In contrast, the descriptions of functions provided by
+the STL algorithm modules are purposely simplified (and may not, therefore, be
+technically accurate). This reflects that fact that the functions provided by
+pure-stlmap have an obvious correspondence to the functions provided by the
+STL, and the STL is extremely well documented. Furthermore, using the Pure
+interpreter, it is very easy to simply play around with with any of the
+pure-stlmap functions if there are doubts, especially with respect to "corner
+cases."  Often this leads to a deeper understanding compared to reading a
+precise technical description.
+
+A good book on the STL is STL Tutorial and Reference Guide, Second Edition, by
+David R. Musser, Gillmer J. Derge and Atul Saini. A summary of all of the STL
+algorithms can be found at http://www.cplusplus.com/reference/stl/.
+
+Parameter Names
+---------------
+
+In the descriptions of functions that follow, parameter names used in
+function descriptions represent specific types of Pure objects:
+
+sv
+  stlvec (mutable or immutable)
+
+csv
+  const (i.e., immutable) stlvec
+
+msv
+  mutable stlvec
+
+x
+  an arbitrary Pure expression
+
+xs
+  a list of arbitrary Pure expressions
+
+count, sz, n
+  whole numbers to indicate a number of elements, size of a vector, etc
+
+i,j
+  whole numbers used to designate indexes into a stlvec
+
+f,m,l
+  whole numbers (or stl::beg or stl::svend) designating the "first", "middle"
+  or "last" iterators in a stlvec iterator tuple
+
+p
+  a whole number (or other iterator constant such as stl::svend or
+  stl::svback) used in a two element iterator tuple (e.g., (sv,p))
+
+(sv,p)
+  an iterator tuple that will be mapped to an iterator that points
+  to the pth position of sv's underlying STL vector, v, (or to a
+  back iterator on v if p is stl::svback)
+
+(sv,f,l)
+  an iterator tuple that will be mapped to the pair of iterators
+  that are designated by (sv,f) and (sv,l)
+
+(sv,f,m,l)
+  an iterator tuple that will be mapped to the iterators that
+  are designated by (sv,f), (sv,m) and (sv,l)
+
+sv[f,l) 
+  the range of members beginning with that at (sv,f) up to but not
+  including that at (con,l)
+
+comp
+  a function that accepts two objects and returns true if the
+  first argument is less than the second (in the strict
+  weak ordering defined by comp), and false otherwise
+
+unary_pred
+  a function that accepts one object and returns true or false
+
+bin_pred
+  a function that accepts two objects and returns true or false
+
+unary_fun
+  a function that accepts one objects and returns another
+
+bin_fun
+  a function that accepts two objects and returns another
+
+gen_fun
+  a function of one parameter that produces a sequence of objects, one
+  for each call
+
+For readability, and to correspond with the STL documentation, the words
+"first", "middle", and "last", or variants such as "first1" are often used
+instead of f,m,l.
+
+Error Handling
+==============
+
+The functions provided this module handle errors by throwing exceptions.
+
+Exception Symbols
+-----------------
+
+.. constructor:: bad_argument
+
+   This exception is thrown when a function is passed an unexpected value. A
+   subtle error to watch for is a malformed iterator tuple (e.g., one with
+   the wrong number of elements).
+
+.. constructor:: bad_function
+
+   This exception is thrown when a purported Pure call-back function is not
+   even callable.
+
+.. constructor:: failed_cond /stlvec
+
+   This exception is thrown when a Pure call-back predicate returns a value
+   that is not an int.
+
+.. constructor:: out_of_bounds /stlvec
+
+   This exception is thrown if the specified index is out of bounds.
+
+.. constructor:: range_overflow                 
+ 
+   This exception is thrown by functions that write over part of a target
+   stlvec (e.g., copy) when the target range too small to accommodate the
+   result.
+
+.. constructor:: range_overlap 
+
+   This exception is thrown by algorithm functions that write over part of a
+   target stlvec when the target and source ranges overlap in a way that is
+   not allowed.
+
+In addition, any exception thrown by a Pure callback function passed to a
+pure-stlmap function will be caught and be rethrown by the pure-stlmap
+function.
+
+Examples
+--------
+
+::
+
+    > using stlvec, stlvec::modifying;
+
+    > let sv1 = stlvec (0..4); members sv1;
+    [0,1,2,3,4]
+
+    > let sv2 = stlvec ("a".."e"); members sv2;
+    ["a","b","c","d","e"]
+
+    > sv1!10;
+    <stdin>, line 25: unhandled exception 'out_of_bounds' ...
+
+    > stl::copy sv1 (sv2,10);
+    <stdin>, line 26: unhandled exception 'out_of_bounds' ...
+
+    > stl::copy sv1 (sv2,2,3); // sb (sv2,pos)
+    <stdin>, line 22: unhandled exception 'bad_argument' ...
+
+    > stl::copy sv1 (sv2,2);
+    <stdin>, line 23: unhandled exception 'range_overflow' ...
+
+    > stl::copy sv2 (sv2,2);
+    <stdin>, line 24: unhandled exception 'range_overlap' ...
+
+    > stl::copy (sv1,1,3) (sv2,0); members sv2; // ok
+    2
+    [1,2,"c","d","e"]
+
+    > stl::sort sv2 (>); // apples and oranges 
+    <stdin>, line 31: unhandled exception 'failed_cond'
+
+    > listmap (\x->throw DOA) sv1; // callback function throws exception
+    <stdin>, line 34: unhandled exception 'DOA' ...
+
+Operations Included in the stlvec Module
+========================================
+
+The stlvec module provides functions for creating, accessing and modifying
+stlvecs. In general, operations that have the same name as a corresponding
+function in the Pure standard library are in the global namespace. The
+remaining functions, which are usually specific to stlvecs, are in the stl
+namespace.
+
+Please note that "stlvec to stlvec" functions are provided by the pure-stl
+algorithm modules. Thus, for example, the stlvec module does not provide a
+function that maps one stlvec onto a new stlvec. That functionality, and more,
+is provided by stl::transform, which can be found in the stlvec::modifying
+module.
+
+Imports
+-------
+
+To use the operations of this module, add the following import declaration
+to your program::
+
+  using stlvec;
+
+Operations in the Global Namespace
+----------------------------------
+
+When reading the function descriptions that follow, please bear in mind that
+whenever a function is passed an iterator tuple of the form (sv,first, last),
+first and last can be dropped, leaving (sv), or simply sv. The function will
+treat the "unary" iterator tuple (sv) as (sv, stl::svbeg, stl::svend).
+
+.. function:: emptystlvec
+
+   return an empty stlvec
+
+.. function:: stlvec source
+
+   create a new stlvec that contains the elements of source; source can be 
+   a stlvec, an iterator tuple(sv,first,last), a list or a vector (i.e.,
+   a matrix consisting of a single row or column). The underlying STL vector
+   is always a new STL vector. I.e., if source is a stlvec the new stlvec does
+   not share source's underlying STL vector.
+
+.. function:: mkstlvec x count
+
+   create a new stlvec consisting of count x's.
+
+.. function:: const_stlvec source
+
+   create a new const_stlvec that contains the elements of source; source can
+   be a stlvec, an iterator tuple(sv,first,last), a list or a vector (i.e., a
+   matrix consisting of a single row or column). If source is a stlvec
+   (mutable or const), the new const_stlvec shares source's underlying STL
+   vector.
+
+.. function:: prefix # /stlvec sv
+
+   return the number of elements in sv. 
+
+Note that # applied to an iterator tuple like (sv,b,e) will just return the
+number of elements in the tuple. Use stl::bounds if you need to know the
+number of elements in the range denoted by an iterator tuple.
+
+.. function:: null /stlvec sv
+
+   test whether sv is empty
+
+.. function:: infix ! /stlvec sv i
+
+   return the i\th member of sv
+
+Note that !k applied to an iterator tuple like (sv,b,e) will just return the
+kth element of the tuple. In addition, in stlvec, integers used to denote
+postions (as in !k) or in iterators, *always*, are relative to the beginning
+of the underlying vector. So it makes no sense to apply ! to an iterator
+tuple.
+
+.. function:: first /stlvec sv
+              last /stlvec sv
+
+   first and last member of sv
+
+.. function:: members /stlvec (sv, first, last)
+
+   return a list of values stored in sv[first,last)
+
+.. function:: list /stlvec sv
+
+   return a list of values stored in sv.
+
+Note that if list is applied to an iterator tuple, it will return a list
+holding the elements of the tuple not the elements of the range denoted by the
+tuple. It is recommended that you use members instead.
+
+.. function:: update /stlvec msv i x
+              update /stlvec csv i x
+
+   replace the i\ th member of msv by x and return msv; copy the immutable
+   stlvec, csv a new stlvec, sv, replace the i\ th member of sv by x, convert
+   sv to an immutable stlvec and return the new immutable stlvec 
+
+.. function:: append /stlvec sv x
+
+   append x to the end of sv
+
+.. function:: insert /stlvec (msv,p) xs
+              insert (msv,p) (sv,first,last)
+
+   insert members of the list xs or the range sv[first, last)
+   into msv, all preceding the pth member of msv. Members are shifted
+   to make room for the inserted members
+
+.. function:: rmfirst /stlvec msv
+              rmlast /stlvec msv
+
+   remove the first or last member from msv
+
+.. function:: erase (msv,first,last)
+              erase (msv,p)
+              erase msv
+
+   remove msv[first,last) from msv, remove msv!p from msv, or make msv
+   empty. Members are shifted to occupy vacated slots
+
+.. function:: infix == /stlvec sv1 sv2
+              infix ~= /stlvec sv1 sv2
+
+   (x == y) is the same as stl::allpairs (==) x y and x ~= y is simply
+   ~(allpairs (==) x y)
+
+Note that ``==`` and ``~==`` are not defined for iterator tuples (the rules
+would never be executed because == is defined on tuples in the Prelude).
+
+The stlvec module provides convenience functions that apply map, catmap,
+foldl, etc, to directly access Pure expressions stored in a stlvec.
+
+.. function:: map /stlvec unary_fun (sv, first, last)
+
+   one pass equivalent of map unary_fun $ members (sv, first,
+   last)
+
+.. function:: listmap /stlvec unary_fun (sv, first, last)
+
+   same as map, used in list comprehensions
+
+.. function:: catmap /stlvec unary_fun (sv, first, last)
+
+   one pass equivalent of catmap unary_fun $ members (sv, first,
+   last)
+
+.. function:: do /stlvec unary_fun (sv, first, last)
+
+   one pass equivalent of do unary_fun $ members (sv, first,
+   last)
+
+.. function:: foldl /stlvec bin_fun x (sv, first, last)
+
+   one pass equivalent of foldl bin_fun x $ members (sv,
+   first, last)
+
+.. function:: foldl1 /stlvec bin_fun (sv, first, last)
+
+   one pass equivalent of foldl1 bin_fun $ members (sv, first,
+   last)
+
+.. function:: filter /stlvec unary_pred (sv, first, last)
+
+   one pass equivalent of filter unary_pred $ members (sv, first,
+   last)
+
+The following four functions map (or catmap) stlvecs onto row and col
+matrixes, primarily for use in matrix comprehensions.
+
+.. function:: rowmap /stlvec unary_fun (sv, first, last)
+
+.. function:: rowcatmap /stlvec unary_fun (sv, first, last)
+
+.. function:: colmap /stlvec unary_fun (sv, first, last)
+
+.. function:: colcatmap /stlvec unary_fun (sv, first, last)
+
+
+Operations in the stl Namespace
+-------------------------------
+
+.. namespace:: stl
+
+.. function:: vector (sv,first,last)
+
+   create a Pure vector that contains the members of sv[first,last)
+
+.. function:: allpairs bin_pred (sv1, first1, last1) (sv2, first2, last2)
+
+   returns true if bin_pred is true for all corresponding members of
+   sv1[first1, last1) and sv2[first2, last2)
+
+.. function:: bounds (sv,first,last)
+
+   throws out-of-bounds if first or last is out of bounds. returns the tuple
+   (sv,first,last) except that if first is stl::begin it will be replaced by 0
+   and if last is stl::svend it will be replaced by the number of elements in
+   sv.
+
+.. function:: reserve msv count
+
+   modify the underlying STL vector to have at least count slots, useful for
+   packing data into a fixed size vector and possibly to speed up the addition
+   of new members
+
+.. function:: capacity sv
+
+   return the number of slots (as opposed to the number of elements) held by
+   the underlying STL vector
+
+Examples
+--------
+
+See ut_stlvec.pure and ut_global_stlvec.pure in the pure-stlmap/ut directory.
+
+STL Nonmodifying Algorithms
+===========================
+
+The stlvec::nonmodifying module provides an interface to the STL's
+non-modifying sequence operations.
+
+Imports
+-------
+
+To use the operations of this module, add the following import declaration
+to your program::
+
+  using stlvec::nonmodifying;
+
+All of the functions are in the stl namespace.
+
+Operations
+----------
+
+.. namespace:: stl
+
+.. function:: for_each (sv, first, last) unary_fun
+
+   applies unary_fun to each of the elements in sv[first,last)
+
+.. function:: find (sv, first, last) x
+
+   returns the position of the first element in sv[first,last)
+   for which (==x) is true (or stl::svend if not found)
+
+.. function:: find_if (sv, first, last) unary_pred
+
+   returns the position of the first element in sv[first,last)
+   for which unary_pred is true (or stl::svend if not found)
+
+.. function:: find_first_of (sv1, first1, last1) (sv2, first2, last2) bin_pred
+
+   Returns the position of the first element, x, in
+   sv1[first1,last1) for which there exists y in
+   sv2[first2,last2) and (bin_pred x y) is true (or stl::svend if
+   no such x exists).
+
+.. function:: adjacent_find (sv, first, last) bin_pred
+
+   search sv[first,last) for the first occurrence of two
+   consecutive elements (x,y) for which (bin_pred x y) is
+   true. Returns the position of x, if found, or stl::svend if not found)
+
+.. function:: count (sv, first, last) x
+
+   returns the number of elements in the range sv[first,last) for
+   which (x==) is true
+
+.. function:: count_if (sv, first, last) unary_pred
+
+   returns the number of elements in the range sv[first,last) for
+   which unary_pred is true
+
+.. function:: mismatch (sv1, first1, last1) (sv2, first2) bin_pred
+
+   applies bin_pred pairwise to the elements of
+   sv1[first1,last1) and (sv2,first2,first2 + n), with
+   n equal to last1-first1 until it finds i and j such
+   that bin_pred (sv1!i) (sv2!j) is false and returns
+   (i,j). If bin_pred is true for all of the pairs of elements,
+   i will be stl::svend and j will be first2 + n (or stl::svend)
+
+.. function:: equal (sv1, first1, last1) (sv2, first2) bin_pred
+
+   applies bin_pred pairwise to the elements of
+   sv1[first1,last1) and (sv2,first2,first2 + n), with
+   n equal to last1-first1, and returns true if bin_pred is
+   true for each pair
+
+.. function:: search (sv1, first1, last1) (sv2, first2) bin_pred
+
+   using bin_pred to determine equality of the elements, searches
+   sv1[first1,last1) for the first occurrence of the sequence
+   defined by sv2[first2,last2), and returns the position in sv1
+   of its first element (or stl::svend if not found)
+
+.. function:: search_n (sv, first, last) count x bin_pred
+
+   using bin_pred to determine equality of the elements, searches
+   sv[first,last) for a sequence of count elements that equal
+   x. If such a sequence is found, it returns the position of the
+   first of its elements, otherwise it returns stl::svend
+
+.. function:: find_end (sv1, first1, last1) (sv2, first2, last2) bin_pred
+
+   using bin_pred to determine equality of the elements, searches
+   sv1[first1,last1) for the last occurrence of
+   sv2[first2,last2). Returns the position of the first element in
+   sv1 of the occurrence (or stl::svend if not found).
+
+Examples
+--------
+
+See ut_nonmodifying.pure in the pure-stlmap/ut directory.
+
+STL Modifying Algorithms
+========================
+
+The stlvec::modifying module provides an interface to the STL's modifying
+algorithms.
+
+Imports
+-------
+
+To use the operations of this module, add the following import declaration
+to your program::
+
+  using stlvec::modifying;
+
+All of the functions are in the stl namespace.
+
+Operations
+----------
+
+.. function:: copy (sv, first1, last1) (msv, first2)
+
+   copies the elements in sv[first1,last1) into the range whose
+   first element is (msv,first2)
+
+.. function:: copy_backward (sv,first1,last1) (msv,last2)
+
+   copies the elements in sv[first1,last1), moving backward from
+   (last1), into the range msv[first2,last2) where first2 is
+   last2 minus the number of elements in sv[first1,last1)
+
+.. function:: swap_ranges (sv,first,last) (msv, p)
+
+   exchanges the elements in sv[first, last) with those in
+   msv[p, p+n) where n is last - first
+
+.. function:: transform (sv,first,last) (msv, p) unary_fun
+
+   applies unary_fun to the elements of sv[first,last) and
+   places the resulting sequence in msv[p, p+n) where n is
+   last - first. If sv is mutable, msv and sv can be the
+   same stlvec. Returns (msv,p+n)
+
+.. function:: transform_2 (sv1,first1,last1) (sv2,first2) (msv, p) bin_fun
+
+   applies bin_fun to corresponding pairs of elements of
+   sv1[first1,last1) sv2[first2,n) and and places the
+   resulting sequence in msv[p, p+n) where n is last1 -
+   first1. Returns (msv,p+n)
+
+.. function:: replace (msv,first,last) x y
+
+   same as :func:`replace_if` (msv,first,last) (x==) y
+
+.. function:: replace_if (msv,first,last) unary_pred x
+
+   replace the elements of msv[first,last) that satistfy
+   unary_pred with x
+
+.. function:: replace_copy (sv,first,last) (msv,p) x y
+
+   same as :func:`replace` (msv,first,last) x y except that
+   the modified sequence is placed in msv[p,p+last-first)
+
+.. function:: replace_copy_if (sv,first,last) (msv,p) unary_pred x
+
+   same as :func:`replace_if` except that the modified sequence is placed in
+   msv[p,p+last-first)
+
+.. function:: fill (msv,first,last) x
+
+   replace all elements in msv[first,last) with x
+
+.. function:: fill_n (msv,first) n x
+
+   replace the elements of msv[first,first+n) with x
+
+.. function:: generate (msv,first,last) gen_fun
+
+   replace the elements in msv[first,last) with the sequence generated by
+   successive calls to gen_fun (), e.g., ::
+
+     > let count = ref 0;
+
+     > g _ = n when n = get count + 1; put count n; end;
+
+     > let sv = mkstlvec 0 10;
+
+     > stl::generate sv g $$ members sv;
+     [1,2,3,4,5,6,7,8,9,10]
+
+.. function:: generate_n (msv,first) n gen_fun
+
+   replace all elements in msv[first,first+n) with the sequence
+   generated by successive calls to gen_fen
+
+.. function:: remove (msv,first,last) x
+
+   same as :func:`remove_if` (msv,first,last) (==x).
+
+.. function:: remove_if (msv,first,last) unary_pred
+
+   remove elements in msv[first,last) that satisfy unary_pred. If n elements
+   do not satisfy unary_pred, they are moved to msv[first,first+n), preserving
+   their relative order. The content of msv[first+n,svend) is
+   undefined. Returns first+n, or stl::svend if first+n is greater than the
+   number of elements in msv
+
+.. function:: remove_copy (sv,first,last) (msv,first) x
+
+   same as :func:`remove` except that the purged sequence is copied to
+   (msv,first) and sv[first,last) is not changed
+
+.. function:: remove_copy_if (sv,first,last) (msv,first) unary_pred
+
+    same as :func:`remove_if` except that the purged sequence is copied to
+    (msv,first) and sv[first,last) is not changed
+
+.. function:: unique (msv,first,last) bin_pred
+
+   eliminates consecutive duplicates from sv[first,last), using
+   bin_pred to test for equality. The purged sequence is moved to
+   sv[first,first+n) preserving their relative order, where n
+   is the size of the purged sequence. Returns first+n or stl::svend if
+   first+n is greater than the number of elements in msv
+
+.. function:: unique_copy (sv,first,last) (msv,first) bin_pred
+
+   same as :func:`unique` except that the purged sequence is copied to
+   (msv,first) and sv[first,last) is not changed
+
+.. function:: reverse (msv,first,last)
+
+   Reverses the order of the elements in sv[first,last).
+
+.. function:: reverse_copy (sv,first,last) (msv,first)
+
+   same as :func:`reverse` except that the reversed sequence is copied to
+   (msv,first) and sv[first,last) is not changed.
+
+.. function:: rotate (msv,first,middle,last)
+
+   rotates the elements of msv[first,middle,last] so that
+   middle becomes the first element of msv[first,last].
+
+.. function:: rotate_copy (msv,first,middle,last) (msv,first)
+
+   same as rotate except that the rotated sequence is copied to
+   (msv,first) and sv[first,last) is not changed.
+
+.. function:: random_shuffle (msv,first,last)
+
+   randomly reorders the elements in msv[first,last)
+
+.. function:: partition (msv,first,last) unary_pred
+
+   places the elements in msv[first,last) that satisfy unary_pred
+   before those that don't. Returns middle, where msv
+   [first,middle) contains all of the elements that satisfy unary_pre,
+   and msv [middle, last) contains those that do not
+
+.. function:: stable_partition (msv,first,last) unary_pred
+
+   same as partition except that the relative positions of the elements in
+   each group are preserved
+
+Examples
+--------
+
+See ut_modifying.pure in the pure-stlmap/ut directory.
+
+
+STL Sort Algorithms
+===================
+
+The stlvec::sort module provides an interface to the STL's sorting and binary
+search algorithms.
+
+Imports
+-------
+
+To use the operations of this module, add the following import declaration
+to your program::
+
+  using stlvec::sort;
+
+All of the functions are in the stl namespace.
+
+Operations
+----------
+
+All of the functions in this module require the caller to supply an ordering
+function, comp. The functions (<) and (>) are commonly passed as comp.
+
+.. function:: sort (msv, first, last) comp
+
+   sorts msv[first, last)
+
+.. function:: stable_sort (msv, first, last) comp
+
+   sorts msv[first, last), preserving the relative order of equal
+   members
+
+.. function:: partial_sort (msv, first, middle, last) comp
+
+   fills msv[first, middle) with the elements of msv[first,last) that would
+   appear there if msv[first,last) were sorted using comp and fills
+   msv[middle,last) with the remaining elements in unspecified order
+
+.. function:: partial_sort_copy (sv, first1, last1) (msv, first2, last2) comp
+
+   let n be the number of elements in sv[first1, last1) and r be the number of
+   elements in msv[first2, last2). If r < n, :func:`partial_sort_copy` fills
+   msv[first2, last2) with the first r elements of what sv[first1, last1)
+   would be if it had been sorted. If r >= n, it fills msv[first2, first2+n)
+   with the elements of sv[first1, last1) in sorted order. sv[first1,last1) is
+   unchanged
+
+.. function:: nth_element (msv, first, middle, last) comp
+
+   rearranges the elements of msv[first, last) as follows. Let n be middle -
+   first, and let x be the nth smallest element of msv[first, last). After the
+   function is called, sv!middle will be x. All of the elements of msv[first,
+   middle) will be less than x and all of the elements of msv[middle+1, last)
+   will be greater than x
+
+The next four functions assume that sv[first, last) is ordered by comp.
+
+.. function:: lower_bound (sv, first, last) x comp
+
+   returns an int designating the first position into which x can be inserted
+   into sv[first, last) while maintaining the sorted ordering
+
+.. function:: upper_bound (sv, first, last) x comp
+
+   returns an int designating the last position into which x can be inserted
+   into sv[first, last) while maintaining the sorted ordering
+
+.. function:: equal_range (sv, first, last) x comp
+
+   returns a pair of ints, (lower, upper) where lower and upper would have
+   been returned by separate calls to lower_bound and upper_bound.
+
+.. function:: binary_search (sv, first, last) x comp
+
+   returns true if x is an element of sv[first, last)
+
+Examples
+--------
+
+See ut_sort.pure in the pure-stlmap/ut directory.
+
+
+STL Merge Algorithms
+====================
+
+The stlvec::merge module provides an interface to the STL's merge
+algorithms. These algorithms operate on sorted ranges.
+
+Imports
+-------
+
+To use the operations of this module, add the following import declaration
+to your program::
+
+  using stlvec::merge;
+
+All of the functions are in the stl namespace.
+
+Operations
+----------
+
+All of the functions in this module require the caller to supply an ordering
+function, comp (as for the Pure library sort function). They only work
+properly on input ranges that have been previously sorted using comp. The set
+operations generally do not check for range overflow because it is not
+generally possible to determine the length of the result of a set operation
+until after it is completed. In most cases you will get a nasty segmentation
+fault if the result is bigger than the target range. The best way to avoid
+this possibility it to use a back iterator to specifify the target range.
+
+See parameter naming conventions at ..
+
+.. function:: merge (sv1,first1,last1) (sv2,first2,last2) (msv,p) comp
+
+   merges the two sorted ranges into the sorted range msv[p,p+n) where n is
+   the total length of the merged sequence
+
+.. function:: inplace_merge (msv,first, middle, last) comp
+
+   merges msv[first,middle) and msv[middle,last) into the sorted range
+   msv[first,last)
+
+.. function:: includes (sv1,first1,last1) (sv2,first2,last2) comp
+
+   returns true if every element of sv2[first2,last2) is an element
+   of sv1[first1,last1)
+
+.. function:: set_union (sv1,first1,last1) (sv2,first2,last2) (msv,p) comp
+
+   places the sorted union of sv1[first1,last1) and
+   sv2[first2,last2) into msv[p,p+n) where n is the number
+   of elements in the sorted union, and returns the past-the-end position of
+   the sorted union
+
+.. function:: set_intersection (sv1,first1,last1) (sv2,first2,last2) (msv,p) comp
+
+   places the sorted intersection of sv1[first1,last1) and sv2[first2,last2)
+   into msv[p,p+n) where n is the number of elements in the sorted
+   intersection, and returns p+n (or stl::svend, if applicable)
+
+.. function:: set_difference (sv1,first1,last1) (sv2,first2,last2) (msv,p) comp
+
+   places the sorted difference of sv1[first1,last1) and sv2[first2,last2)
+   into msv[p,p+n) where n is the number of elements in the sorted difference,
+   and returns p+n (or stl::svend, if applicable)
+
+.. function:: set_symmetric_difference (sv1,first1,last1) (sv2,first2,last2) (msv,p) comp
+
+   places the sorted symmetric_difference of sv1[first1,last1) and
+   sv2[first2,last2) into msv[p,p+n) where n is the number of elements in the
+   sorted symmetric_difference, and returns returns p+n (or stl::svend, if
+   applicable)
+
+Examples
+--------
+
+See ut_merge.pure in the pure-stlmap/ut directory.
+
+STL Heap Algorithms
+===================
+
+The stlvec::heap module provides an interface to the STL's heap operations.
+
+Imports
+-------
+
+To use the operations of this module, add the following import declaration
+to your program::
+
+  using stlvec::heap;
+
+All of the functions are in the stl namespace.
+
+Operations
+----------
+
+All of the functions in this module require the caller to supply an ordering
+function, comp (as for the Pure library sort function). The functions (<)
+and (>) are commonly passed as comp.
+
+.. function:: make_heap (msv,first,last) comp
+
+   rearranges the elements of msv[first,last) so that they are a
+   heap, i.e., after this msv!first will be the largest element in
+   msv[first,last), and push_heap and pop_heap will work properly
+
+.. function:: push_heap (msv,first,last) comp
+
+    makes msv[first,last) a heap (assuming that msv[first,last-1) was a heap)
+
+.. function:: pop_heap (msv,first,last) comp
+
+   swaps msv!first with msv!(last-1), and makes msv[first,last-1) a heap
+   (assuming that msv[first,last) was a heap)
+
+.. function:: sort_heap (msv,first,last) comp
+
+   sorts the elements in msv[first,last)
+
+Examples
+--------
+
+See ut_heap.pure in the pure-stlmap/ut directory.
+
+Min/Max STL Algorithms
+======================
+
+The stlvec::minmax module provides an interface to a few additional STL
+algorithms.
+
+Imports
+-------
+
+To use the operations of this module, add the following import declaration
+to your program::
+
+  using stlvec::minmax;
+
+All of the functions are in the stl namespace.
+
+Operations
+----------
+
+All of the functions in this module require the caller to supply an ordering
+function, comp (as for the Pure library sort function). The functions (<)
+and (>) are commonly passed as comp.
+
+.. function:: min_element (sv,first,last) comp
+
+   returns the position of the minimal element of sv[first,last) under the
+   ordering defined by comp
+
+.. function:: max_element (sv,first,last) comp
+
+   returns the position of the maximal element of sv[first,last) under the
+   ordering defined by comp
+
+.. function:: lexicographical_compare (sv1,first1,last1) (sv2,first2,last2) comp
+
+   compares sv1[first1,last1) and sv2[first2,last2) element by element
+   according to the ordering defined by comp, and returns true if the first
+   sequence is less than the second
+
+Algorithms are provided for stepping through all the permutations the elements
+of a stlvec. For these purposes, the first permutation has the elements of
+msv[first,last) sorted in ascending order and the last has the elements sorted
+in descending order.
+
+.. function:: next_permutation (msv,first,last) comp
+
+   rearranges msv[first,last) to produce the next permutation, in
+   the ordering imposed by comp. If msv[first,last) is not the
+   last permutation, change msv[first,last) to the next
+   permutation and return true. Otherwise, change it to the first
+   permutation and return true
+
+.. function:: prev_permutation (msv,first,last) comp
+
+   next_permutation in reverse
+
+Examples
+--------
+
+See ut_minmax.pure in the pure-stlmap/ut directory.
+
+
+STL Numeric Algorithms
+======================
+
+The stlvec::numeric module provides an interface to the STL's numeric
+algorithms.
+
+Imports
+-------
+
+To use the operations of this module, add the following import declaration
+to your program::
+
+  using stlvec::numeric;
+
+All of the functions are in the stl namespace.
+
+Operations
+----------
+
+.. function:: accumulate (sv,first,last) x bin_fun
+
+   accumulate bin_fun over x and the members of sv[first,last), like foldl
+
+.. function:: inner_product (sv1,first1,last1) (sv2,first2,last2) x bin_fun1 bin_fun2
+
+   initialize ret with x. Traverse pairs of elements of sv1[first1,last1) and
+   sv2[first2,last2), denoted by (e1, e2), replacing ret with (bin_fun1 ret $
+   bin_fun2 e1 e2). The number pairs traversed is equal to the size of
+   sv1[first1,last1)
+
+.. function:: partial_sum (sv,first,last) (msv, p) bin_fun
+
+   accumulate bin_fun f over the elements of sv1[first1,last1), placing
+   itermediate results in msv[p,p+n), where n is last - first, and returns q
+   where m is q - n and msv[m,q) is the intermediate sequence
+
+.. function:: adjacent_difference (sv,first,last) (msv, p) bin_fun
+
+   produce a sequence of new elements by applying bin_fun to adjacent elements
+   of sv[first,last), placing the new elements in msv[p,p+n), where n is last
+   - first, with the intermediate results, and returns q where m is q - n and
+   msv[m,q) is the new sequence
+
+Examples
+--------
+
+See ut_numeric.pure in the pure-stlmap/ut directory.
+
+Trace Mode
+==========
+
+If the pure-stlmap dlls are built using 'make debug' (as opposed to 'make',
+'make all' or 'make dlls'), the pure-stlmap tracing functions will be
+enabled. These functions, all of which are defined in the stl namespace, can
+be used to trace the creation and deletion of stlvecs as well as the changes
+in ref counts that occur as Pure objects are moved and copied. In addition to
+being useful for maintaining the pure-stlmap modules, these functions can be
+used to observe STL copy semantics.
+
+.. function:: set_sv_trace on_off::int
+
+   enables or disables tracing the creation and deletion of stlvecs
+
+.. function:: sv_trace_enabled
+
+   returns 1 if stlvec tracing is enabled, else 0
+
+.. function:: set_px_trace on_off::int
+
+   enables or disables tracing 'copying' of Pure expressions
+
+.. function:: px_trace_enabled
+
+   returns 1 if Pure expression tracing is enabled, else 0
+
+In addition, the following function, also in the stl namespace, is available
+whether or not debug is passed to make.
+
+.. function:: refc x
+
+   returns the x's reference count (maintained by the Pure runtime for
+   garbage collection purposes)

@@ -19,6 +19,9 @@ included with the pure-stlmap distribution package for details.
 #ifndef STLMAP_H
 #define STLMAP_H
 
+#define PR(x,y) cerr << #x ", " #y ": " << y << endl;
+#define PR2(x,y,z) cerr << #x ", " #y ": " << y << ", " #z ": " << z << endl;
+
 #include <iostream>
 #include <map>
 #include <vector>
@@ -30,10 +33,25 @@ typedef pxhmap::iterator pmi;
 
 const size_t SM_CACHE_SZ = 4;
 
+struct sm_iter;
+
 struct stlmap {
+  bool keys_only;
+  bool has_dflt;
+  bool has_recent_pmi;
+  size_t latest_pmi_pos;
+  pxhmap mp;
+  pxh px_comp;
+  pxh px_val_comp;
+  pxh px_val_equal;
+  pxh dflt;
+  std::vector<pmi> recent_pmi;
+  std::vector<sm_iter*> smis; // sm_iters in Pure land
+
   stlmap(px* key_comp, px* val_comp, px* val_equal, bool keyonly); 
   stlmap(px* key_comp, px* val_comp, px* val_equal, bool keyonly, px* d);
-
+  ~stlmap();
+  px* parameter_tuple();
   pmi  find(px* key);
   bool get_cached_pmi(px* k, pmi& i);
   void cache_pmi(const pmi& i);
@@ -41,82 +59,105 @@ struct stlmap {
   int  erase(pmi pos);
   int  erase(px* k);
   int  erase(pmi first, pmi last);
-
-  pxhmap mp;
-  pxh px_comp;
-  pxh px_val_comp;
-  pxh px_val_equal;
-  pxh dflt;
-  bool has_recent_pmi;
-  size_t latest_pmi_pos;
-  std::vector<pmi> recent_pmi;
-  bool has_dflt;
-  bool keys_only;
+  void clear_iter(pmi pos);
+  void clear_all_iters();
+  void remove_sm_iter(sm_iter*);
 };
 
 typedef stlmap sm; 
 
 struct sm_range {
-  sm* smp;
   bool is_valid;
   int num_iters;
+  pxh pxhsmp;
   pmi begin_it;
   pmi end_it;
+
   sm_range(px* tpl);
-  pmi beg(){return begin_it;}
-  pmi end(){return end_it;}
+  bool init_from_iters(px** elems, int tlp_sz);
+  bool init_from_keys(px** elems, int num_keys);
+  pmi beg() const {return begin_it;}
+  pmi end() const {return end_it;}
+  sm* smp() const;
 };
 
-struct sm_insert_iter {
-  sm* smp;
+struct sm_iter {
   bool is_valid;
-  sm_insert_iter(px* tpl);
+  pmi iter;
+  pxh pxhsmp;
+
+  sm_iter(px* pxsmp, pmi i);
+  ~sm_iter();
+  sm* smp() const; 
 };
 
-px* iter_key(sm* smp, pmi iter);
+enum {stl_sm_key =1, stl_sm_val, stl_sm_elm,
+      stl_sm_iter, stl_sm_iter_dflt};
 
-enum {stl_sm_key = 1, stl_sm_val, stl_sm_both};
+enum {stl_sm_lower_bound=1, stl_sm_upper_bound, stl_sm_equal_range};
 
 enum {stl_sm_merge = 1, stl_sm_union, stl_sm_difference, 
       stl_sm_intersection, stl_sm_symmetric_difference};
 
+enum {stl_sm_at_beginning = 1, stl_sm_at_pastend};
+
 /*** C interface for C++ map of PX Handles ***/
 
 extern "C" {
-  px*  sm_make_empty(px* comp, px* val_comp, px* val_equal, int keys_only);
+  px*  sm_type_tags();
+  px*  sm_make_empty(px* comp, px* val_comp, 
+                     px* val_equal, px* dflt, int keys_only);
   void sm_delete(sm* smp);
+  void sm_iter_delete(sm_iter* smip);
+  px*  sm_parameters(px* tpl);
+  int  sm_size(px* tpl);
+  bool sm_empty(px* tpl); 
+  int  sm_count(px* pxsmp, px* key);
   bool sm_is_set(px* tpl);
+  px*  sm_find(px* pxsmp, px* key, int what);
+  px*  sm_copy_iter(px* pxsmip);
+  px*  sm_begin(px* pxsmp);
+  px*  sm_end(px* pxsmp); 
+  px*  sm_bounds(px* pxsmp, px* key, int what);
+  px*  sm_range_info(px* rng);
+  px*  sm_move_iter(px* pxsmip, int dist);
+  px*  sm_iter_is_at(px* pxsmip, int where);
+  px*  sm_iter_info(px* pxsmip);
+  px*  sm_equal_iter(px* pxsmip1, px* pxsmip2);
+
+  px*  sm_get_at(px* pxsmip, int what);
+  px*  sm_get_elm_at_inc(px* pxsmip);
+  px*  sm_put_at(px* pxsmip, px* val);
+  px*  sm_insert_hinted(px* pxsmp, px* pxsmip, px* kv);
+  px*  sm_insert_elm(px* pxsmp, px* kv);
+  int  sm_insert_elms_xs(px* pxsmp, px* src);
+  int  sm_insert_elms_stlmap(px* pxsmp, px* tpl);
+  int  sm_insert_elms_stlvec(px* pxsmp, px* tpl);
+  px*  sm_swap(px* pxsmp1, px* pxsmp2);
+  int  sm_clear(px* pxsmp);
+  int  sm_erase(px* pxsmp, px* trg); 
+
   bool sm_equal(px* tpl1, px* tlp2);
   int  sm_less(px* tpl1, px* tlp2);
   bool sm_includes(px* tpl1, px* tpl2);
   px*  sm_setop(int op, px* tpl1, px* tpl2);
+
   px*  sm_make_vector(px* tpl);
-  sv*  sm_make_stlvec(px* tpl);
-  px*  sm_set_default(sm* smp, px* val);
-  px*  sm_get_default(sm* smp);
-  int  sm_size(px* tpl);
-  px*  sm_bounds(px* tpl);
-  int  sm_member(sm* smp, px* key);
-  px*  sm_prev_key(sm* smp, px* key);
-  px*  sm_next_key(sm* smp, px* key);
-  px*  sm_get_elm(sm* smp, px* key, int what);
-  px*  sm_update(sm* smp, px* key, px* val);
-  px*  sm_update_with(sm* smp, px* key, px* binfun);
-  int  sm_insert_elm(sm* smp, px* kv);
-  int  sm_insert_elms_xs(sm* smp, px* src);
-  int  sm_insert_elms_stlmap(sm* smp, px* tpl);
-  int  sm_insert_elms_stlvec(sm* smp, px* tpl);
-  int  sm_clear(sm* smp);
-  int  sm_erase(px* tpl);
-  int  sm_erase_if(px* pred, px* it);
-  int  sm_remove(sm* smp, px* x);
-  int  sm_remove_if(sm* smp, px* x, px* pred);
+  void sm_fill_stlvec(px* tpl, sv* svp);
+
   px*  sm_listmap(px* fun, px* tpl, int what);
   px*  sm_listcatmap(px* fun, px* tpl, int what);
   px*  sm_foldl(px* fun, px* val, px* tpl);
   px*  sm_foldl1(px* fun, px* tpl);
   px*  sm_foldr(px* fun, px* val, px* tpl);
   px*  sm_foldr1(px* fun, px* tpl);
+
+  int  sm_member(px* pxsmp, px* key);
+  px*  sm_bounding_keys(px* rng);
+  px*  sm_prev_key(px* pxsmp, px* key);
+  px*  sm_next_key(px* pxsmp, px* key);
+  px*  sm_update(px* pxsmp, px* key, px* val);
+  px*  sm_update_with(px* pxsmp, px* key, px* binfun);
 
   void stl_set_sm_trace(bool enable);
   bool stl_sm_trace_enabled();
@@ -125,6 +166,5 @@ extern "C" {
 
 inline px* smbeg(){return stlbegin_sym();}
 inline px* smend(){return stlend_sym();}
-inline px* pminsert(){return stlinsert_sym();}
 
 #endif // STLMAP_H
