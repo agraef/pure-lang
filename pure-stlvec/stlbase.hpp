@@ -75,20 +75,11 @@ inline void px_unref(px* x){if (x) pure_unref(x);}
 #endif
 
 /* px_handle (pxh) - wrapper around pure_expr* to automate pure_expr ref
-   counting. We do not try to make these smart pointers (i.e., with -> and *
-   operators) because we want client code to be clear about when it is using a
-   pxh and when it is using a pure_expr*. Also, users should not generally be
-   dereferencing pure_expr* (directly or through a pxh) because pure_expr is
-   meant to be an obtuse data type. In spite of this, we do provide an
-   automatic type conversion from a pure_expr* to a pxh, simply because
-   the conversion occurs frequently. 
+   counting..
 
    Please remember that C++ will call a pxh's destructor when it goes out of
-   scope. When you are returning the underlying pure_expr* help by a pxh, say,
-   h, you should get the pure_expr* (with h.pxp()), release it (with
-   h.release()), and then return it. Otherwise the pure_expr's ref count
-   will be decremented after C++ sets up the return value, which is probably
-   not what you want. 
+   scope. You can stop this from happeing by calling the pxh's release
+   function.
 
    Note that there are no virtural functions (to avoid vf table). This keeps
    sizeof(pxh) = sizeof(px*).
@@ -129,13 +120,29 @@ private:
 
 typedef px_handle pxh;  // sizeof(pxh) == sizeof(px*) -- no virtual funs
 
-typedef std::pair<pxh,pxh> pxh_pair;
+/* pxhpairs - pairs of pxh's which are useful for map<pxh,pxh> and
+   multimap<pxh,pxh>. 
 
-typedef std::pair<const pxh,pxh> pxh_kvpair;
+   Conversion to pxrocket, a px of form (lhs=>rhs), from a pxhpair or from two
+   px*s, and vis-a-versa. */
+
+typedef std::pair<pxh,pxh> pxhpair;
+
+typedef std::pair<const pxh,pxh> pxhkvpair;
+
+bool pxrocket_to_pxlhs_pxrhs(px* rp, px** lhs, px** rhs);
+
+px* pxlhs_pxrhs_to_pxrocket(const px* lhs, const px* rhs);
+
+bool pxrocket_to_pxhpair(pxh rp, pxhpair& pair);
+
+px* pxhpair_to_pxrocket(const pxhpair& pair);
+
+px* pxhpair_to_pxlhs(const pxhpair& pair);
 
 /* pxh_fun and subclasses - function objects to lift px* functions to pxh
    functions. When you need to pass a Pure callback to an algorithm that acts
-   on pxh'x "wrap" it in one of these. Note that if the Pure callback function
+   on pxh'x, wrap it in one of these. Note that if the Pure callback function
    calls throws an exception, the pxh_fun will catch it and then throw it as a
    C++ exception. Thus, C++ functions that take a pxh_fun as an argument
    should be called from within a try block, with a catch (px* e)
@@ -186,40 +193,40 @@ struct pxh_gen : public pxh_fun
   pxh operator()();
 };
 
-struct pxh_pair_less : 
-  public std::binary_function<const pxh_pair&, const pxh_pair&, bool>
+struct pxhpair_less : 
+  public std::binary_function<const pxhpair&, const pxhpair&, bool>
 {
-  pxh_pair_less(px* f, px* s) : first_less(f), second_less(s) {}
-  bool operator()(const pxh_pair&, const pxh_pair&) const;
+  pxhpair_less(px* f, px* s) : first_less(f), second_less(s) {}
+  bool operator()(const pxhpair&, const pxhpair&) const;
 protected:
   pxh_pred2 first_less;
   pxh_pred2 second_less;
 };
 
-struct pxh_pair_equal : 
-  public std::binary_function<const pxh_pair&, const pxh_pair&, bool>
+struct pxhpair_equal : 
+  public std::binary_function<const pxhpair&, const pxhpair&, bool>
 {
-  pxh_pair_equal(px* f, px* s) : first_equal(f), second_equal(s) {}
-  bool operator()(const pxh_pair&, const pxh_pair&) const;
+  pxhpair_equal(px* f, px* s) : first_equal(f), second_equal(s) {}
+  bool operator()(const pxhpair&, const pxhpair&) const;
 protected:
   pxh_pred2 first_equal;
   pxh_pred2 second_equal;
 };
 
-struct pxh_pair_first_equal : 
-  public std::binary_function<const pxh_pair&, const pxh_pair&, bool>
+struct pxhpair_first_equal : 
+  public std::binary_function<const pxhpair&, const pxhpair&, bool>
 {
-  pxh_pair_first_equal(px* f) : first_equal(f) {}
-  bool operator()(const pxh_pair&, const pxh_pair&) const;
+  pxhpair_first_equal(px* f) : first_equal(f) {}
+  bool operator()(const pxhpair&, const pxhpair&) const;
 protected:
   pxh_pred2 first_equal;
 };
 
-struct pxh_pair_equivalent : 
-  public std::binary_function<const pxh_pair&, const pxh_pair&, bool>
+struct pxhpair_equivalent : 
+  public std::binary_function<const pxhpair&, const pxhpair&, bool>
 {
-  pxh_pair_equivalent(px* f, px* s) : first_less(f), second_equal(s) {}
-  bool operator()(const pxh_pair&, const pxh_pair&) const;
+  pxhpair_equivalent(px* f, px* s) : first_less(f), second_equal(s) {}
+  bool operator()(const pxhpair&, const pxhpair&) const;
 protected:
   pxh_pred2 first_less;
   pxh_pred2 second_equal;
@@ -239,9 +246,6 @@ void range_overflow();
 void range_overlap();
 void bad_argument();
 void failed_cond();
-
-bool rocket_to_pair(px* rp, px** lhs, px** rhs);
-px* pair_to_rocket(const px* lhs, const px* rhs);
 
 px* pxh_to_pxp(pxh h); // used by std::transform
 

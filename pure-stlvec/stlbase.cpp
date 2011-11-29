@@ -196,8 +196,8 @@ bool pxh_pred2::operator()(const pxh& left, const pxh& right) const
   return ok && ret;
 }
 
-bool pxh_pair_less::operator()(const pxh_pair& left,
-                               const pxh_pair& right) const
+bool pxhpair_less::operator()(const pxhpair& left,
+                               const pxhpair& right) const
 {
   try {
     const pxh& lf = left.first;
@@ -212,8 +212,8 @@ bool pxh_pair_less::operator()(const pxh_pair& left,
   }
 }
 
-bool pxh_pair_equal::operator()(const pxh_pair& lhs,
-                                const pxh_pair& rhs) const
+bool pxhpair_equal::operator()(const pxhpair& lhs,
+                                const pxhpair& rhs) const
 {
   try {
     bool ok = first_equal(lhs.first, rhs.first)  && 
@@ -225,8 +225,8 @@ bool pxh_pair_equal::operator()(const pxh_pair& lhs,
   }
 }
 
-bool pxh_pair_first_equal::operator()(const pxh_pair& lhs,
-                                      const pxh_pair& rhs) const
+bool pxhpair_first_equal::operator()(const pxhpair& lhs,
+                                     const pxhpair& rhs) const
 {
   try {
     return first_equal(lhs.first, rhs.first);
@@ -236,8 +236,8 @@ bool pxh_pair_first_equal::operator()(const pxh_pair& lhs,
   }
 }
 
-bool pxh_pair_equivalent::operator()(const pxh_pair& lhs,
-                                const pxh_pair& rhs) const
+bool pxhpair_equivalent::operator()(const pxhpair& lhs,
+                                    const pxhpair& rhs) const
 {
   try {
     bool ok = !first_less(lhs.first, rhs.first) && 
@@ -428,12 +428,12 @@ void failed_cond() {pure_throw(px_failed_cond_sym());}
 
 /*** Helpers ********************************************************/
 
-bool rocket_to_pair(px* rp, px** lhs, px** rhs)
+bool pxrocket_to_pxlhs_pxrhs(px* pxr, px** lhs, px** rhs)
 {
   px* app;
   size_t argc;
   px** args;
-  bool ok = pure_is_appv(rp, &app, &argc, &args) && argc == 2;
+  bool ok = pure_is_appv(pxr, &app, &argc, &args) && argc == 2;
   if (ok) {
     *lhs = args[0];
     *rhs = args[1];
@@ -442,11 +442,31 @@ bool rocket_to_pair(px* rp, px** lhs, px** rhs)
   return ok;
 }
 
-px* pair_to_rocket(const px* lhs, const px* rhs)
+px* pxlhs_pxrhs_to_pxrocket(const px* lhs, const px* rhs)
 {
   px* rocket = px_rocket_sym();
   return pure_appl(rocket, 2, lhs, rhs); 
-} 
+}
+
+bool pxrocket_to_pxhpair(px* pxr, pxhpair& pair)
+{
+  px* lhs = 0;
+  px* rhs = 0;
+  bool ret = pxrocket_to_pxlhs_pxrhs(pxr, &lhs, &rhs);
+  pair.first = lhs;
+  pair.second = rhs;
+  return ret;
+}
+
+px* pxhpair_to_pxrocket(const pxhpair& pair)
+{
+  return pxlhs_pxrhs_to_pxrocket(pair.first, pair.second);
+}
+
+px* pxhpair_to_pxlhs(const pxhpair& pair)
+{
+  return pair.first;
+}
 
 px* pxh_to_pxp(pxh h)
 {
