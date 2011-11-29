@@ -2885,7 +2885,7 @@ which gives the type name along with a collection of patterns, the so-called
    interface_item : `pattern` ";"
    		  : | "interface" `qualified_identifier` ";"
 
-Interfaces consist of two kinds of items:
+Interfaces thus consist of two kinds of items:
 
 * The patterns, which indicate which operations are supported by the type, and
   which arguments they expect. This may be anything that can occur as the
@@ -2975,7 +2975,7 @@ is just a fancy way to define the type::
 
   type any _;
 
-Also, interface types may be refined at any time, by adding more interface
+Interfaces can be composed in a piecemeal fashion, by adding more interface
 patterns. Thus, ::
 
   interface foo with foo x::foo; end;
@@ -2985,11 +2985,65 @@ is equivalent to::
 
   interface foo with foo x::foo; bar x::foo; end;
 
-However, note that when including one interface in another, the included
-interface must already exist and only the interface patterns known at the
-point of inclusion become part of the including interface; refining the
-included interface later has no effect on the including interface. In
-particular, this also prevents circular interface definitions.
+It is also possible to include one interface in another, which effectively
+establishes a subtype relationship. For instance, here's yet another way to
+define the ``foo`` interface above::
+
+  interface bar with
+    bar x::bar;
+  end;
+
+  interface foo with
+    foo x::foo;
+    interface bar;
+  end;
+
+This has the effect of including the signature of ``bar`` in ``foo`` (while
+renaming the interface type tags in the ``bar`` signature accordingly)::
+
+  > show foo
+  interface foo with
+    foo x::foo;
+    bar x::foo;
+  end;
+
+.. note:: Including interfaces is a static operation. Only the interface
+   patterns known at the point of inclusion become part of the including
+   interface; refining the included interface later has no effect on the set
+   of included patterns. In particular, this also prevents circular interface
+   definitions.
+
+   When composing interfaces in this fashion, it is easy to end up with
+   duplicate interface patterns from various sources. The compiler removes
+   such duplicates, even if they only match up to the renaming of variables.
+   For instance::
+
+     > show bar foo
+     interface bar with
+       bar x::bar;
+     end;
+     interface foo with
+       foo x::foo;
+       bar x::foo;
+     end;
+     > interface baz with
+     >   interface foo; interface bar;
+     >   foo y::baz;
+     > end;
+     > show baz
+     interface baz with
+       foo x::baz;
+       bar x::baz;
+     end;
+
+   Also note that, despite the obvious similarities between interfaces and
+   classes in object-oriented programming, they are really different things.
+   The former are essentially just signatures of functions living elsewhere,
+   whereas the latter also include data layouts and method implementations.
+   More on the similarities and differences of interfaces and classes can be
+   found in the `Go FAQ`_.
+
+   .. _Go FAQ: http://golang.org/doc/go_faq.html#types
 
 Let's now take a look at the example of a stack data structure to see how this
 all works in practice::
@@ -3132,13 +3186,9 @@ While they're quite useful in general, Pure's interface types also have their
 limitations. In particular, the guarantees provided by an interface are of a
 purely syntactic nature; the signature doesn't tell us anything about the
 actual meaning of the provided operations, so unit testing is still needed to
-ensure certain semantic properties of the implementation. Also, interface
-types are always defined in a purely syntactic way, by considering the
-left-hand sides of the definitions of the interface functions only. Guards are
-not taken into account, and thus the compiler cannot really guarantee that a
-member of an interface type will always be valid input to an interface
-function. Some further issues due to Pure's dynamically typed nature are
-discussed under Interfaces_ in the `Caveats and Notes`_ section.
+ensure certain semantic properties of the implementation. Some further issues
+due to Pure's dynamically typed nature are discussed under Interfaces_ in the
+`Caveats and Notes`_ section.
 
 Examples
 ========
@@ -9080,46 +9130,58 @@ apply to other recursive types such as trees.
 Interfaces
 ----------
 
-Compared to statically typed languages like Go_, Pure's implementation of
-`interface types`_ has some limitations. First, nothing is known about the
-*return type* of an interface operation, but this is no real impediment in
-Pure since Pure types are all about restricting the kind of *arguments* which
-can be passed to a function, not their result types, so return types are
-irrelevant to interface types anyway.
+Pure's implementation of `interface types`_ has some notable differences to
+interfaces in a statically typed language like Go_. These are mostly due to
+Pure's dynamically typed nature.
 
-Second, as we have seen, interface types work best if all interface operations
-are completely defined on the target data domain. This may sometimes force you
-to add default or error rules raising exceptions which may interfere with
-symbolic evaluation (cf. `Exception Handling`_ and `Defined Functions`_). This
-can be a real issue, but it is almost always possible to work around this,
-e.g., by just adding in the missing type members manually. To these ends, Pure
-allows an interface type to be augmented with ordinary type rules as described
-in `Type Rules`_. For instance, we might also have implemented the stack type
-discussed in the `Interface Types`_ section as follows::
+* Nothing is known about the *return type* of an interface operation, but this
+  is no real impediment since Pure types are all about restricting the kind of
+  *arguments* which can be passed to a function, not their result types, so
+  return types are irrelevant to Pure's interface types anyway.
 
-  interface stack with
-    push s::stack x;
-    pop s::stack;
-    top s::stack;
-  end;
+* Pure interfaces aren't based on the notion of "methods" and therefore don't
+  provide any kind of "method dispatch". Interface operations are just
+  ordinary Pure functions which rely on Pure's usual pattern-matching
+  mechanism to do the dynamic dispatch.
 
-  type stack [];
+* Membership in interface types is decided by considering the left-hand sides
+  of the definitions of the interface functions only. Guards are not taken
+  into account, and thus there's no real guarantee that a member of an
+  interface type will always be valid input to an interface function.
 
-  push xs@[] x | push xs@(_:_) x = x:xs;
-  pop (x:xs) = xs;
-  top (x:xs) = x;
+* Interface types work best if all interface operations are completely defined
+  on the target data domain. This may sometimes force you to add default or
+  error rules raising exceptions, as shown in the `Interface Types`_ section,
+  which may interfere with symbolic evaluation (cf. `Exception Handling`_ and
+  `Defined Functions`_). If this is not desirable, you can also just include
+  the missing members manually. To these ends, Pure allows an interface type
+  to be augmented with ordinary type rules as described in `Type Rules`_. For
+  instance, we might also have implemented the stack type discussed in the
+  `Interface Types`_ section as follows::
 
-Finally, Pure's interface types are really a compromise between theoretical
-soundness and practicality. From the theoretical point of view, we'd actually
-like an interface type to be the *intersection* of the interface types for the
-individual interface functions. Unfortunately, the pattern set for such an
-intersection type might well be exponential in size. Hence the approach taken
-in Pure is to eliminate those candidate patterns which aren't supported by all
-interface functions. This can be done much more efficiently, but will in
-general only produce a subtype of the intersection type. (On the other hand,
-this method also has the advantage that the compiler can warn about
-potentially missing rules in some of the interface operations. We've seen in
-the `Interface Types`_ section that this can be fairly useful at times.)
+    interface stack with
+      push s::stack x;
+      pop s::stack;
+      top s::stack;
+    end;
+
+    type stack [];
+
+    push xs@[] x | push xs@(_:_) x = x:xs;
+    pop (x:xs) = xs;
+    top (x:xs) = x;
+
+Pure's interface types are really a compromise between theoretical soundness
+and practicality. From the theoretical point of view, we'd like an interface
+type to be the *intersection* of the interface types for the individual
+interface functions. Unfortunately, the pattern set for such an intersection
+type might well be exponential in size. Hence the approach taken in Pure is to
+eliminate those candidate patterns which aren't supported by all interface
+functions. This can be done much more efficiently, but will in general only
+produce a subtype of the intersection type. (On the other hand, this method
+also has the advantage that the compiler can warn about potentially missing
+rules in some of the interface operations. We've seen in the `Interface
+Types`_ section that this can be fairly useful at times.)
 
 Another issue arises with interface operations which allow the interface type
 in multiple arguments. A typical example are operators::
@@ -9132,7 +9194,7 @@ to::
 
   interface addable with x::addable + y; x + y::addable; end;
 
-This makes sense in most situations, but of course this depends on the
+This makes sense in many situations, but of course this depends on the
 particular operation. In some cases, you might have to decide on which
 argument you want to place the interface type tag, or even have different
 types for each possible argument position.
