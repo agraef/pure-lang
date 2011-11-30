@@ -5633,6 +5633,31 @@ rulel *interpreter::compile_interface(env &e, int32_t tag)
       if (!good) rl->erase(r1);
     }
   }
+  /* Pass #3: Eliminate superflous candidate patterns. **********************/
+  if (!rl->empty()) {
+    /* Make a final pass over the patterns we collected, and remove all
+       patterns which are subsumed by other patterns, so that we only keep the
+       most general patterns. */
+    for (rulel::iterator r = rl->begin(); r != rl->end(); ) {
+      expr x = r->lhs.xval2();
+      map<int32_t, int32_t> xttag;
+      get_ttags(xttag, symtab.anon_sym, x);
+      bool have = false;
+      for (rulel::iterator r2 = rl->begin(); r2 != rl->end(); ++r2) {
+	if (r2 == r) continue;
+	expr y = r2->lhs.xval2();
+	map<int32_t, int32_t> yttag;
+	map<int32_t, expr> yvars;
+	exprl ysubst;
+	get_ttags(yttag, symtab.anon_sym, y);
+	if (match(yvars, ysubst, yttag, xttag, symtab.anon_sym, tag, y, x)) {
+	  have = true; break;
+	}
+      }
+      rulel::iterator r1 = r; ++r;
+      if (have) rl->erase(r1);
+    }
+  }
   if (rl->empty()) {
     delete rl;
     rl = 0;
