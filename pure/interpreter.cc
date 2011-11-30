@@ -1853,9 +1853,15 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
   string layout = JIT->getTargetData()->getStringRepresentation(),
     triple = HOST;
   M->setDataLayout(layout); M->setTargetTriple(triple);
-  // Mangle the names of the Faust module since they are the same for every
-  // module.
+  // Mangle the function names of the Faust module since they are usually the
+  // same for every module.
   list<string> funs;
+  list<Function*> to_be_deleted;
+  // XXXFIXME: Currently we leave the variable and type names alone
+  // and rely on the linker to make them unique instead. This works, but may
+  // produce weird names when emitting LLVM assembler code in the batch
+  // compiler. In the future we may want to mangle those, too, if only for
+  // cosmetic purposes.
   for (Module::iterator it = M->begin(), end = M->end();
        it != end; ) {
     Function &f = *(it++);
@@ -1866,18 +1872,28 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
       string fname = name.substr(0, p);
       f.setName("$$faust$"+modname+"$"+fname);
       funs.push_back(fname);
-      if (loaded && modified) {
-	/* Get rid of a previously loaded function. */
-	Function *g = module->getFunction("$$faust$"+modname+"$"+fname);
-	if (g) {
-	  JIT->freeMachineCodeForFunction(g);
-	  g->eraseFromParent();
-	}
+    } else if (!f.isDeclaration()) {
+      // Internal Faust function. Make sure that these have internal linkage.
+      if (f.hasExternalLinkage()) f.setLinkage(Function::InternalLinkage);
+      // Mangle the name of these as well, so that the batch compiler
+      // recognizes them (and doesn't accidentally strip them).
+      f.setName("$$__faust__$"+modname+"$"+name);
+    }
+    if (loaded && modified && !f.isDeclaration()) {
+      // This function may have been loaded previously, we'll get rid of those.
+      Function *g = module->getFunction(f.getName());
+      if (g) {
+	g->dropAllReferences();
+	to_be_deleted.push_back(g);
       }
-    } else if (f.hasExternalLinkage() && !f.isDeclaration())
-      // Make sure that all other functions have internal linkage, to prevent
-      // name collisions.
-      f.setLinkage(Function::InternalLinkage);
+    }
+  }
+  // Get rid of a previously loaded functions.
+  for (list<Function*>::iterator it = to_be_deleted.begin();
+       it != to_be_deleted.end(); ++it) {
+    Function *g = *it;
+    JIT->freeMachineCodeForFunction(g);
+    g->eraseFromParent();
   }
   // Link the mangled module into the Pure module. This only needs to be done
   // if the module was modified.
@@ -9662,6 +9678,11 @@ static inline bool is_faust(const string& name)
   return name.compare(0, 8, "$$faust$") == 0;
 }
 
+static inline bool is_faust_internal(const string& name)
+{
+  return name.compare(0, 12, "$$__faust__$") == 0;
+}
+
 static inline string faust_basename(const string& name)
 {
   if (is_faust(name)) {
@@ -10047,8 +10068,10 @@ int interpreter::compiler(string out, list<string> libnames)
     /* FIXME: At present, Faust functions are just always included. We might
        want to check their usage, too, but the current algorithm doesn't do
        this, as the wrappers call the Faust functions indirectly through a
-       global variable. */
-    if (strip && used.find(&f) == used.end() && !is_faust(f.getName())) {
+       global variable. Declarations of external functions are also always
+       included, for similar reasons. */
+    if (strip && used.find(&f) == used.end() && !f.isDeclaration() &&
+	!is_faust(f.getName()) && !is_faust_internal(f.getName())) {
       f.dropAllReferences();
       fun_to_be_deleted.push_back(&f);
     }
