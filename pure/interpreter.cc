@@ -1853,19 +1853,20 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
   string layout = JIT->getTargetData()->getStringRepresentation(),
     triple = HOST;
   M->setDataLayout(layout); M->setTargetTriple(triple);
-  // Mangle the function names of the Faust module since they are usually the
-  // same for every module.
-  list<string> funs;
-  list<Function*> to_be_deleted;
-  // XXXFIXME: Currently we leave the variable and type names alone
+  // Mangle the global names of the Faust module since they are usually the
+  // same for every module. XXXFIXME: Currently we leave the type names alone
   // and rely on the linker to make them unique instead. This works, but may
   // produce weird names when emitting LLVM assembler code in the batch
   // compiler. In the future we may want to mangle those, too, if only for
   // cosmetic purposes.
-  for (Module::iterator it = M->begin(), end = M->end();
-       it != end; ) {
-    Function &f = *(it++);
+  list<string> funs, aux_funs, vars;
+  // Mangle the function names.
+  for (Module::iterator it = M->begin(), end = M->end(); it != end; ++it) {
+    Function &f = *it;
     string name = f.getName();
+    // We always force external linkage here in order to avoid the automatic
+    // renaming that the linker does for internal symbols.
+    f.setLinkage(Function::ExternalLinkage);
     // Faust interface routines are stropped with the classname suffix.
     size_t p = name.rfind(classname);
     if (p != string::npos && p+classname.length() == name.length()) {
@@ -1873,27 +1874,47 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
       f.setName("$$faust$"+modname+"$"+fname);
       funs.push_back(fname);
     } else if (!f.isDeclaration()) {
-      // Internal Faust function. Make sure that these have internal linkage.
-      if (f.hasExternalLinkage()) f.setLinkage(Function::InternalLinkage);
-      // Mangle the name of these as well, so that the batch compiler
-      // recognizes them (and doesn't accidentally strip them).
+      // Internal Faust function. Mangle the names of these as well, so that
+      // the batch compiler recognizes them (and doesn't accidentally strip
+      // them).
       f.setName("$$__faust__$"+modname+"$"+name);
-    }
-    if (loaded && modified && !f.isDeclaration()) {
-      // This function may have been loaded previously, we'll get rid of those.
-      Function *g = module->getFunction(f.getName());
-      if (g) {
-	g->dropAllReferences();
-	to_be_deleted.push_back(g);
-      }
+      aux_funs.push_back(name);
     }
   }
-  // Get rid of a previously loaded functions.
-  for (list<Function*>::iterator it = to_be_deleted.begin();
-       it != to_be_deleted.end(); ++it) {
-    Function *g = *it;
-    JIT->freeMachineCodeForFunction(g);
-    g->eraseFromParent();
+  // Mangle the variable names.
+  for (Module::global_iterator it = M->global_begin(), end = M->global_end();
+       it != end; ++it) {
+    GlobalVariable &v = *it;
+    if (!v.hasName()) continue;
+    string name = v.getName();
+    string vname = "$$__faust__$"+modname+"$"+name;
+    v.setLinkage(GlobalVariable::ExternalLinkage);
+    vars.push_back(name);
+    v.setName(vname);
+  }
+  if (loaded && modified) {
+    // Get rid of all globals of the old module.
+    bcdata_t& data = loaded_dsps[modname];
+    list<Function*>& funptrs = data.funptrs;
+    list<GlobalVariable*>& varptrs = data.varptrs;
+    for (list<Function*>::iterator f = funptrs.begin();
+	 f != funptrs.end(); ++f) {
+      string fname = (*f)->getName();
+      (*f)->dropAllReferences();
+      JIT->freeMachineCodeForFunction(*f);
+    }
+    for (list<GlobalVariable*>::iterator v = varptrs.begin();
+	 v != varptrs.end(); ++v) {
+      string vname = (*v)->getName();
+      (*v)->dropAllReferences();
+      // XXXFIXME: Do we have to free the pointer returned by
+      // updateGlobalMapping() here?
+      JIT->updateGlobalMapping(*v, 0);
+    }
+    for (list<Function*>::iterator f = funptrs.begin();
+	 f != funptrs.end(); ++f) (*f)->eraseFromParent();
+    for (list<GlobalVariable*>::iterator v = varptrs.begin();
+	 v != varptrs.end(); ++v) (*v)->eraseFromParent();
   }
   // Link the mangled module into the Pure module. This only needs to be done
   // if the module was modified.
@@ -1912,16 +1933,6 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
   myfuns.push_back("newinit");
   myfuns.push_back("info");
   if (modified) {
-    if (loaded) {
-      for (list<string>::const_iterator it = myfuns.begin();
-	   it != myfuns.end(); ++it) {
-	Function *g = module->getFunction("$$faust$"+modname+"$"+*it);
-	if (g) {
-	  JIT->freeMachineCodeForFunction(g);
-	  g->eraseFromParent();
-	}
-      }
-    }
     // The newinit function calls new then init, yielding a properly
     // initialized dsp instance. It takes one i32 argument, the samplerate.
     {
@@ -2026,7 +2037,7 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
     // getSampleRate is already implemented in the latest faust2 versions.
     // On older faust2 versions we emulate it if possible.
     GlobalVariable *sr = have_getSampleRate?0:
-      module->getNamedGlobal("fSamplingFreq");
+      module->getNamedGlobal("$$__faust__$"+modname+"fSamplingFreq");
     if (sr) {
       // The getSampleRate function takes a dsp as parameter and returns its
       // sample rate.
@@ -2050,6 +2061,29 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
     }
   }
   funs.insert(funs.end(), myfuns.begin(), myfuns.end());
+  // Record the newly created function and variable pointers. These are to be
+  // stored in the module table so that we can remove them later when the
+  // module gets reloaded.
+  list<Function*> funptrs;
+  list<GlobalVariable*> varptrs;
+  for (list<string>::iterator f = funs.begin(); f != funs.end(); ++f) {
+    string fname = "$$faust$"+modname+"$"+*f;
+    Function *g = module->getFunction(fname);
+    assert(g);
+    funptrs.push_back(g);
+  }
+  for (list<string>::iterator f = aux_funs.begin(); f != aux_funs.end(); ++f) {
+    string fname = "$$__faust__$"+modname+"$"+*f;
+    Function *g = module->getFunction(fname);
+    assert(g);
+    funptrs.push_back(g);
+  }
+  for (list<string>::iterator v = vars.begin(); v != vars.end(); ++v) {
+    string vname = "$$__faust__$"+modname+"$"+*v;
+    GlobalVariable *u = module->getGlobalVariable(vname);
+    assert(u);
+    varptrs.push_back(u);
+  }
   // Create the namespace if necessary.
   if (symtab.current_namespace->empty())
     namespaces.insert(modname);
@@ -2062,9 +2096,20 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
   assert(mod != loaded_dsps.end());
   mod->second.t = mtime;
   mod->second.dbl = is_double;
-  if (mod->second.tag == 0)
-    mod->second.tag = pure_make_tag();
+  mod->second.funptrs = funptrs;
+  mod->second.varptrs = varptrs;
+  if (mod->second.tag == 0) mod->second.tag = pure_make_tag();
   dsp_mods[mod->second.tag] = mod;
+#if 0 // debugging
+  for (list<string>::iterator v = vars.begin(); v != vars.end(); ++v) {
+    string vname = "$$__faust__$"+modname+"$"+*v;
+    GlobalVariable *u = module->getGlobalVariable(vname);
+    assert(u);
+    void *p = JIT->getPointerToGlobal(u);
+    fprintf(stderr, ">>> var %s = %p\n", vname.c_str(), p);
+    u->dump();
+  }
+#endif
   // Create wrappers.
   for (list<string>::iterator it = funs.begin(), end = funs.end();
        it != end; ++it) {
@@ -2085,8 +2130,8 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
     list<string> argtypes;
     for (size_t i = 0; i < n; i++) argtypes.push_back(dsptype_name(argt[i]));
     if (loaded && modified) {
-      /* There's no need to actually regenerate the wrapper, we only need to
-         patch up the function pointer. */
+      /* There's no need to actually regenerate the wrapper, we only have to
+         patch up the function pointer here. */
       GlobalVariable *v = module->getNamedGlobal("$"+fname);
       assert(v);
       void **fp = (void**)JIT->getPointerToGlobal(v);
@@ -2104,6 +2149,8 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
       required.push_back(sym->f);
     }
 #if 0 // debugging
+    void * p = JIT->getPointerToFunction(f);
+    fprintf(stderr, ">>> fun %s = %p\n", fname.c_str(), p);
     symbol *sym = symtab.sym(asname);
     if (!sym) continue;
     ExternInfo info(sym->f, fname, rest, argt, f);
