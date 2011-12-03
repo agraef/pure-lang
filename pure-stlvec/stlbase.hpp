@@ -77,7 +77,7 @@ inline void px_unref(px* x){if (x) pure_unref(x);}
 /* px_handle (pxh) - wrapper around pure_expr* to automate pure_expr ref
    counting. Please note that C++ will call a pxh's destructor when it goes
    out of scope. You can stop this from happening by calling the pxh's release
-   function. Also, there are no virtural functions (to avoid vf table). This
+   function. Also, there are no virtual functions (to avoid vf table). This
    keeps sizeof(pxh) = sizeof(px*).
 
 */
@@ -98,7 +98,7 @@ public:
   // operator conversion to px*
   operator px*() const { return pxp_; }
 
-  // destructor - not virtural
+  // destructor - not virtual
   ~px_handle(){px_free(pxp_);} //not base class (avoid vf table)
 
   // return the underlying px*
@@ -148,8 +148,8 @@ class pxh_fun {
 public:
   pxh_fun(px* fun) : fun_(px_new(fun)){}
   pxh_fun(const pxh_fun& pxh_f) : fun_(px_new(pxh_f.fun_)) {}
-  virtual pxh_fun& operator=(const pxh_fun& rhs);
   virtual ~pxh_fun(){px_free(fun_);}
+  virtual pxh_fun& operator=(const pxh_fun& rhs);
 protected:
   px* fun_;
 };
