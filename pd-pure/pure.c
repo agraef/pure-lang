@@ -616,7 +616,7 @@ static void pure_errmsgs(t_pure *x)
       pd_error(x, "%s", s);
       s = strtok(NULL, "\n");
     }
-    free(s);
+    free(msg);
     clear_lasterr();
   }
 }
@@ -708,7 +708,7 @@ extern void pd_send(const char *receiver, pure_expr *y)
   char *sval = 0;
   double dval;
   int sym;
-  pure_expr *f, **args;
+  pure_expr *f, **args = 0;
   size_t argc;
   t_atom *argv = 0;
   int i;
@@ -828,7 +828,7 @@ static void send_message(t_pure *x, int k, pure_expr *y)
   char *sval = 0;
   double dval;
   int sym;
-  pure_expr *f, **args;
+  pure_expr *f, **args = 0;
   size_t argc;
   t_atom *argv = 0;
   int i;
@@ -960,7 +960,7 @@ static void receive_message(t_pure *x, t_symbol *s, int k,
 	xv[i] = z;
       else {
 	for (j = 0; j < i; j++)
-	  pure_free(xv[j]);
+	  pure_freenew(xv[j]);
 	free(xv);
 	return;
       }
@@ -1606,7 +1606,7 @@ static void pure_printmsgs(char *res)
       error("%s", s);
       s = strtok(NULL, "\n");
     }
-    free(s);
+    free(msg);
     clear_lasterr();
   }
 }
@@ -1614,7 +1614,7 @@ static void pure_printmsgs(char *res)
 #else
 
 #define pure_start_logging()
-#define pure_printmsgs(res)
+#define pure_printmsgs(res) free(res)
 
 #endif
 
