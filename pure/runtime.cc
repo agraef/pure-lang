@@ -547,9 +547,9 @@ gsl_matrix_symbolic_memcpy(gsl_matrix_symbolic *dest,
 #define MEMDEBUG_NEW(x)  interpreter::g_interp->mem_allocations.insert(x);
 #define MEMDEBUG_FREE(x) interpreter::g_interp->mem_allocations.erase(x);
 #endif
-#define MEMDEBUG_INIT if (interpreter::g_interp->estk.empty())	\
+#define MEMDEBUG_INIT if (!interpreter::g_interp->astk)	\
     interpreter::g_interp->mem_allocations.clear();
-#define MEMDEBUG_SUMMARY(ret) if (interpreter::g_interp->estk.empty()) {\
+#define MEMDEBUG_SUMMARY(ret) if (!interpreter::g_interp->astk) {\
     mem_mark(ret);							\
     if (!interpreter::g_interp->mem_allocations.empty()) {		\
       cerr << "** WARNING: leaked expressions:\n";			\
