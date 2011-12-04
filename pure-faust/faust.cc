@@ -40,7 +40,7 @@ class UI
 {
   bool	fStopped;
 public:
-		
+
   UI() : fStopped(false) {}
   virtual ~UI() {}
 
@@ -55,15 +55,15 @@ public:
   virtual void addTextDisplay(const char* label, double* zone, char* names[], float min, float max) = 0;
   virtual void addHorizontalBargraph(const char* label, double* zone, float min, float max) = 0;
   virtual void addVerticalBargraph(const char* label, double* zone, float min, float max) = 0;
-	
+
   virtual void openFrameBox(const char* label) = 0;
   virtual void openTabBox(const char* label) = 0;
   virtual void openHorizontalBox(const char* label) = 0;
   virtual void openVerticalBox(const char* label) = 0;
   virtual void closeBox() = 0;
-	
+
   virtual void run() = 0;
-	
+
   void stop()	{ fStopped = true; }
   bool stopped() 	{ return fStopped; }
 
@@ -93,7 +93,7 @@ class PureUI : public UI
 public:
   int nelems;
   ui_elem_t *elems;
-		
+
   PureUI();
   virtual ~PureUI();
 
@@ -117,13 +117,13 @@ public:
   virtual void addTextDisplay(const char* label, double* zone, char* names[], float min, float max);
   virtual void addHorizontalBargraph(const char* label, double* zone, float min, float max);
   virtual void addVerticalBargraph(const char* label, double* zone, float min, float max);
-  
+
   virtual void openFrameBox(const char* label);
   virtual void openTabBox(const char* label);
   virtual void openHorizontalBox(const char* label);
   virtual void openVerticalBox(const char* label);
   virtual void closeBox();
-	
+
   virtual void run();
 };
 
@@ -240,18 +240,19 @@ void PureUI::closeBox()
 { add_elem(UI_END_GROUP); }
 
 void PureUI::run() {}
-			
+
 class dsp {
  protected:
-	int fSamplingFreq;
+  int fSamplingFreq;
  public:
-	dsp() {}
-	virtual ~dsp() {}
-	virtual int getNumInputs() = 0;
-	virtual int getNumOutputs() = 0;
-	virtual void buildUserInterface(UI* interface) = 0;
-	virtual void init(int samplingRate) = 0;
- 	virtual void compute(int len, double** inputs, double** outputs) = 0;
+  dsp *prev, *next;
+  dsp() {}
+  virtual ~dsp() {}
+  virtual int getNumInputs() = 0;
+  virtual int getNumOutputs() = 0;
+  virtual void buildUserInterface(UI* interface) = 0;
+  virtual void init(int samplingRate) = 0;
+  virtual void compute(int len, double** inputs, double** outputs) = 0;
 };
 
 /* Interface of a Faust module compiled with the pure.cpp architecture file. */
