@@ -5714,9 +5714,8 @@ pure_expr *pure_force(pure_expr *x)
 #endif
     // check whether the result is again a thunk, then we have to evaluate
     // that recursively
-    if (is_thunk(ret))
-      pure_force(pure_new_internal(ret));
     pure_new_internal(ret);
+    if (is_thunk(ret)) pure_force(ret);
     // memoize the result
     assert(x!=ret);
     if (x->data.clos->ep)
