@@ -479,9 +479,11 @@ typedef list<enventry> envstack;
 
 struct pointer_type_extra_info {
   bool (*equal_cb)(void*, void*);
+  uint32_t (*hash_cb)(void*);
   const char *(*printer_cb)(void*);
   int (*prec_cb)(void*);
-  pointer_type_extra_info() : equal_cb(0), printer_cb(0), prec_cb(0) {}
+  pointer_type_extra_info()
+    : equal_cb(0), hash_cb(0), printer_cb(0), prec_cb(0) {}
 };
 
 struct errinfo {

@@ -3391,6 +3391,25 @@ pure_equal_fun pure_pointer_equal(int tag)
 }
 
 extern "C"
+void pure_pointer_add_hash(int tag, pure_hash_fun hash)
+{
+  interpreter& interp = *interpreter::g_interp;
+  interp.pointer_type_info[tag].hash_cb = hash;
+}
+
+extern "C"
+pure_hash_fun pure_pointer_hash(int tag)
+{
+  interpreter& interp = *interpreter::g_interp;
+  map<int,pointer_type_extra_info>::iterator it =
+    interp.pointer_type_info.find(tag);
+  if (it != interp.pointer_type_info.end())
+    return it->second.hash_cb;
+  else
+    return NULL;
+}
+
+extern "C"
 void pure_pointer_add_printer(int tag, pure_printer_fun printer,
 			      pure_printer_prec_fun prec)
 {
@@ -12099,7 +12118,7 @@ static uint32_t double_hash(double d)
   return h;
 }
 
-static uint32_t string_hash(char *s)
+static uint32_t string_hash(const char *s)
 {
   uint32_t h = 0, g;
   while (*s) {
@@ -12126,12 +12145,27 @@ uint32_t hash(pure_expr *x)
     return double_hash(x->data.d);
   case EXPR::STR:
     return string_hash(x->data.s);
-  case EXPR::PTR:
+  case EXPR::PTR: {
+    if (x->data.p) {
+      int tag = pure_get_tag(x);
+      pure_equal_fun eq = pure_pointer_equal(tag);
+      if (eq) {
+	// Use a custom hash function if it is available.
+	pure_hash_fun hash = pure_pointer_hash(tag);
+	if (hash) return hash(x->data.p);
+	// Or fall back to hashing the print representation if it is available.
+	pure_printer_fun printer = pure_pointer_printer(tag);
+	const char *s;
+	if (printer && (s = printer(x->data.p))) return string_hash(s);
+      }
+    }
+    // Standard generic pointer hash.
 #if SIZEOF_VOID_P==8
     return ((uint32_t)(uint64_t)x->data.p) ^ ((uint32_t)(((uint64_t)x->data.p)>>32));
 #else
     return (uint32_t)x->data.p;
 #endif
+  }
   case EXPR::APP: {
     checkstk(test);
     int h;

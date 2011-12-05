@@ -485,6 +485,19 @@ typedef bool (*pure_equal_fun)(void*, void*);
 void pure_pointer_add_equal(int tag, pure_equal_fun equal);
 pure_equal_fun pure_pointer_equal(int tag);
 
+/* Custom hashing of tagged pointers. If registered, this function will be
+   invoked by the hash() function on (non-NULL) pointers with the given type
+   tag, instead of just hashing the pointer value itself. Note that if you
+   have registered a custom syntactic equality predicate, then you should also
+   register a corresponding hash function, which should guarantee that two
+   syntactically equal pointers have the same hash code. (If no such function
+   is defined, then hash() may also fall back to hashing a custom print
+   representation if it is defined; see below.) */
+
+typedef uint32_t (*pure_hash_fun)(void*);
+void pure_pointer_add_hash(int tag, pure_hash_fun hash);
+pure_hash_fun pure_pointer_hash(int tag);
+
 /* Custom pretty-printing of tagged pointers. This is supposed to be used from
    C/C++ code to implement custom pretty-printing of opaque C/C++ data
    structures, as a light-weight alternative to __show__ which only works with
