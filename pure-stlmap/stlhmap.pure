@@ -6,13 +6,13 @@ Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>.
 
 All rights reserved.
 
-This software is is part of pure-stldict, an addon to the Pure Programming
+This software is is part of pure-stlmap, an addon to the Pure Programming
 Language (http://code.google.com/p/pure-lang/).
 
 This software is distributed under a BSD-style license in the hope that it
 will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the COPYING file
-included with the pure-stldict distribution package for details.
+included with the pure-stlmap distribution package for details.
 
 */
  
@@ -27,44 +27,36 @@ extern expr* shm_type_tags();
 private extern expr* shm_make_empty(expr* hash, expr* eql,
                                     expr* default_val, int ko);
 private extern void  shm_delete(void* shmp);
-private extern void  shm_iter_delete(void* shmip);
-private extern expr* shm_parameters(expr* rng);
-private extern int   shm_size(expr* rng);
+private extern expr* shm_parameters(expr* shmp);
+private extern int   shm_size(expr* shmp);
 private extern int   shm_count(expr* pxshmp, expr* key);
-private extern bool  shm_empty(expr* rng);
-private extern bool  shm_is_set(expr* rng);
+private extern bool  shm_empty(expr* shmp);
+private extern bool  shm_is_set(expr* shmp);
 private extern expr* shm_find(expr* pxshmp, expr* key, int what);
-private extern expr* shm_copy_iter(expr* pxshmip);
-private extern expr* shm_begin(expr* pxshmp);
-private extern expr* shm_end(expr* pxshmp); 
-private extern expr* shm_bounds(expr* pxshmp, expr* key, int what);
-private extern expr* shm_range_info(expr* rng);
-private extern expr* shm_move_iter(expr* pxshmp, int count);
-private extern expr* shm_iter_is_at(expr* pxshmip, int where);
-private extern expr* shm_iter_info(expr* pxshmip);
-private extern expr* shm_equal_iter(expr* pxshmp, expr* pxshmp);
 
-private extern expr* shm_get_at(expr* pxshmip, int what);
-private extern expr* shm_get_elm_at_inc(expr* pxshmip);
-private extern expr* shm_put_at(expr* pxshmip, expr* val);
-private extern expr* shm_insert_hinted(expr*hmap, expr* iter, expr* kv);
+extern expr* shm_copy_iter(expr* pxshmip);
+extern expr* shm_begin(expr* pxshmp);
+extern expr* shm_end(expr* pxshmp); 
+extern expr* shm_get_elm_at_inc(expr* pxshmip);
+private extern expr* shm_equal_iter(expr* pxshmip1, expr* pxshmip2);
+
 private extern expr* shm_insert_elm(expr* hmap, expr* kv);
 private extern int   shm_insert_elms_xs(expr* hmap, expr* src);
 private extern int   shm_insert_elms_stlvec(expr* hmap, expr* svrng);
-private extern int   shm_insert_elms_stlhmap(expr* hmap, expr* rng);
+private extern int   shm_insert_elms_stlhmap(expr* hmap, expr* shmp);
 private extern void  shm_swap(expr* hac1, expr* hac2);
-private extern int   shm_erase(expr* hac, expr* trg);
+private extern int   shm_erase(expr* hac, expr* key);
 private extern int   shm_clear(expr* hmap);
 
-private extern int   shm_equal(expr* rng1, expr* rng2);
+private extern int   shm_equal(expr* shmp1, expr* shmp2);
 
-private extern expr* shm_make_vector(expr* rng);
-private extern void* shm_fill_stlvec(expr* rng, void* v);
+private extern expr* shm_make_vector(expr* shmp);
+private extern void* shm_fill_stlvec(expr* shmp, void* v);
 
-private extern expr* shm_listmap(expr* fun, expr* rng, int what);
-private extern expr* shm_listcatmap(expr* fun, expr* rng, int what);
-private extern expr* shm_foldl(expr* fun, expr* val, expr* rng);
-private extern expr* shm_foldl1(expr* fun, expr* rng);
+private extern expr* shm_listmap(expr* fun, expr* shmp, int what);
+private extern expr* shm_listcatmap(expr* fun, expr* shmp, int what);
+private extern expr* shm_foldl(expr* fun, expr* val, expr* shmp);
+private extern expr* shm_foldl1(expr* fun, expr* shmp);
 
 private extern int   shm_member(expr* hmap, expr* key);
 private extern expr* shm_update(expr* hmap, expr* key, expr* val);
@@ -83,21 +75,9 @@ type stlhmap x = check_ptrtag stlhmap_t x;
 type stlhset x = check_ptrtag stlhset_t x;
 type stlhac x::stlhmap | stlhac x::stlhset;
 
-type stlhmap_iter x = check_ptrtag stlhmap_iter_t x;
-type stlhset_iter x = check_ptrtag stlhset_iter_t x;
-type stlhac_iter x::stlhmap_iter | stlhac_iter x::stlhset_iter;
-
-type shmrng x::stlhac | shmrng (x::stlhac, _);
-type shmrng (x::stlhmap_iter, y::stlhmap_iter);
-type shmrng (x::stlhset_iter, y::stlhset_iter);
-
 stlhmapp x = check_ptrtag stlhmap_t x;
 stlhsetp x = check_ptrtag stlhset_t x;
 stlhacp x = stlhmapp x || stlhsetp x;
-
-stlhmap_iter_p x = check_ptrtag stlhmap_iter_t x;
-stlhset_iter_p x = check_ptrtag stlhset_iter_t x;
-stlhac_iter_p x = stlhmap_iter_p x || stlhset_iter_p x;
 
 stlhac_range_p x = case x of x::shmrng = 1; x = 0 end; 
 
@@ -108,7 +88,7 @@ namespace stl;
 private 
   shm_update_with
   shm_iter shm_key shm_val shm_elm 
-  shm_wrap_sv shm_less shm_equal shm_compatible_ranges lazy_hmap_aux;
+  shm_wrap_sv shm_less shm_equal shm_compatible_ranges lazy_map_aux;
 
 const shm_key = 1;
 const shm_val = 2;
@@ -119,63 +99,19 @@ const shm_iter_dflt = 5;
 const shm_at_beginning = 1;
 const shm_at_pastend = 2;
 
-compatible_ranges rng1::shmrng rng2 = 
-  if shm_is_set rng1 then shm_is_set rng2 else ~shm_is_set rng2;
-
-// function of iter
-lazy_iter_hmap_aux fun i::stlhac_iter j = gen i with
-  gen i = fun i: (if shm_move_iter i 1 == j then [] else gen i &);
-end;
+compatible_ranges shm1 shm2 = 
+  if shm_is_set shm1 then shm_is_set shm2 else ~shm_is_set shm2;
 
 // function of k=>v
-lazy_hmap_aux fun first::stlhac_iter last = gen first with
-  gen i = if i==last then [] 
+lazy_map_aux fun first last = gen first with
+  gen i = if shm_equal_iter i last then [] 
           else fun (shm_get_elm_at_inc i):(gen i &);
 end;
 
-lazy_elms_aux first::stlhac_iter last = gen first with
-  gen i = if i==last then [] 
+lazy_elms_aux first last = gen first with
+  gen i = if shm_equal_iter i last then [] 
           else shm_get_elm_at_inc i : (gen i &);
 end;
-
-/*** Iterators **********************************************************/
-
-iterator pos::stlhac_iter = shm_copy_iter pos;
-
-begin shm::stlhac = shm_begin shm;
-
-pastend shm::stlhac = shm_end shm;
-
-find shm::stlhac key = shm_find shm key shm_iter;
-
-is_begin pos::stlhac_iter = shm_iter_is_at pos shm_at_beginning;
-
-is_pastend pos::stlhac_iter = shm_iter_is_at pos shm_at_pastend;
-
-get_info pos::stlhac_iter = shm_iter_info pos;
-
-get_elm pos::stlhac_iter = shm_get_at pos shm_elm;
-
-get_key pos::stlhac_iter = shm_get_at pos shm_key;
-
-get_val pos::stlhac_iter = shm_get_at pos shm_val;
-
-put_val pos::stlhmap_iter val = shm_put_at pos val;
-
-inc pos::stlhac_iter = shm_move_iter pos 1;
-
-dec pos::stlhac_iter = shm_move_iter pos (-1);
-
-move pos::stlhac_iter n::int = shm_move_iter pos n;
-
-/*** Iterator Operators ****************************************************/
-
-(::==) pos1::stlhac_iter pos2::stlhac_iter = shm_equal_iter pos1 pos2;
-
-(::^) shm::stlhmap key = shm_find shm key shm_iter_dflt;  // inserts default
-
-// (::!) shm::stlhmap pos::stlhmap_iter = shm_get_at pos shm_val 
-//   if container pos === shm;
 
 /***  Constructors *********************************************************/
 
@@ -194,11 +130,11 @@ stlhmap rng::svrng = shm when
   shm_insert_elms_stlvec shm rng;
 end;
 
-stlhmap rng::shmrng = shm when
-  _,params = shm_parameters rng;
+stlhmap shm::stlhmap = shm when
+  _,params = shm_parameters shm;
   shm = emptystlhmap params;
-  shm_insert_elms_stlhmap shm rng;
-end if ~shm_is_set rng;
+  shm_insert_elms_stlhmap shm shm;
+end if ~shm_is_set shm;
 
 emptystlhset ()                   = shm_make_empty hash (==) [] 0;
 emptystlhset (khash,keql,buckets) = shm_make_empty khash keql buckets 0;
@@ -215,98 +151,81 @@ stlhset rng::svrng = ss when
   shm_insert_elms_stlvec ss rng;
 end;
 
-stlhset rng::shmrng = ss when
-  _,kc,_ = shm_parameters rng;
+stlhset shm::stlhmap = ss when
+  _,kc,_ = shm_parameters shm;
   ss = emptystlhset kc;
-  shm_insert_elms_stlhmap ss rng;
-end if shm_is_set rng;
+  shm_insert_elms_stlhmap ss shm;
+end if shm_is_set shm;
 
 /*** Range Content ****************************************************/
 
-lazy_hmap f rng::shmrng = lazy_hmap_aux f first last if valid when 
-  valid,m,b,last = shm_range_info rng;
-  first = iterator b;
+lazy_map f shm::stlhmap = lazy_map_aux f first last when 
+  first = shm_copy_iter $ shm_begin shm;
+  last = shm_end shm;
 end;
 
-lazy_elms rng::shmrng = lazy_elms_aux first last if valid when 
-  valid,m,b,last = shm_range_info rng;
-  first = shm_copy_iter b;
+lazy_elms shm::stlhmap = lazy_elms_aux first last when 
+  first = shm_copy_iter $ shm_begin shm;
+  last = shm_end shm;
 end;
 
-lazy_keys rng::shmrng = lazy_hmap (\(k=>v)->k) rng if ~shm_is_set rng;
+lazy_keys shm::stlhmap = lazy_map (\(k=>v)->k) shm if ~shm_is_set shm;
 
-lazy_keys rng::shmrng = lazy_elms rng;
+lazy_keys shm::stlhmap = lazy_elms shm;
 
-lazy_vals rng::shmrng = lazy_hmap (\(k=>v)->v) rng if ~shm_is_set rng;
+lazy_vals shm::stlhmap = lazy_map (\(k=>v)->v) shm if ~shm_is_set shm;
 
-lazy_vals rng::shmrng = lazy_elms rng;
+lazy_vals shm::stlhmap = lazy_elms shm;
 
-elms rng::shmrng = shm_listmap 0 rng shm_elm; 
+elms shm::stlhmap = shm_listmap 0 shm shm_elm; 
 
-keys rng::shmrng = shm_listmap 0 rng shm_key;// if ~shm_is_set rng;
+keys shm::stlhmap = shm_listmap 0 shm shm_key;// if ~shm_is_set shm;
 
-vals rng::shmrng = shm_listmap 0 rng shm_val;// if ~shm_is_set rng;
+vals shm::stlhmap = shm_listmap 0 shm shm_val;// if ~shm_is_set shm;
 
-vector rng::shmrng = shm_make_vector rng;
+vector shm::stlhmap = shm_make_vector shm;
 
-stlvec rng::shmrng = sv if ok when
+stlvec shm::stlhmap = sv if ok when
   sv = emptystlvec;
   ok = case sv of  
-    STLVEC v = shm_fill_stlvec rng v $$ 1;
+    STLVEC v = shm_fill_stlvec shm v $$ 1;
     _ = 0;
   end;
 end;
 
 /*** Info ***************************************************************/
 
-range_info rng::shmrng = shm_range_info rng;
+(::#) shm::stlhmap = shm_size shm;
 
-(::#) shm::stlhac = shm_size shm;
+size shm::stlhmap = shm_size shm;
 
-size shm::stlhac = shm_size shm;
+empty shm::stlhmap = shm_empty shm;
 
-empty shm::stlhac = shm_empty shm;
+is_set shm::stlhmap = shm_is_set shm;
 
-distance rng::shmrng = shm_size rng;
+count shm::stlhmap key = shm_count shm key;
 
-is_set rng::shmrng = shm_is_set rng;
-
-count shm::stlhac key = shm_count shm key;
-
-parameters rng::shmrng = shm_parameters rng;
+parameters shm::stlhmap = shm_parameters shm;
 
 /*** Modifiers *********************************************************/
 
-insert shm::stlhac xs::list = shm_insert_elms_xs shm xs;
+insert shm::stlhmap xs::list = shm_insert_elms_xs shm xs;
 
-insert shm::stlhac xs::matrix = shm_insert_elms_xs shm xs;
+insert shm::stlhmap xs::matrix = shm_insert_elms_xs shm xs;
 
-insert shm::stlhac rng::shmrng = shm_insert_elms_stlhmap shm rng;
+insert shm::stlhmap shm::stlhmap = shm_insert_elms_stlhmap shm shm;
 
-insert shm::stlhac rng::svrng = shm_insert_elms_stlvec shm rng;
-
-insert shm::stlhmap (val@(k=>v), pos::stlhac_iter) = 
-  shm_insert_hinted shm pos val;
+insert shm::stlhmap svr::svrng = shm_insert_elms_stlvec shm svr;
 
 insert shm::stlhmap val@(k=>v) = shm_insert_elm shm val;
-
-insert shm::stlhset (key, pos::stlhac_iter) = shm_insert_hinted shm pos key;
 
 insert shm::stlhset key = shm_insert_elm shm key;
 
 insert_elm shm::stlhset key = shm_insert_elm shm key; // to get xs, etc into set
 
-clear shm::stlhac = shm_clear shm;
+clear shm::stlhmap = shm_clear shm;
 
-erase shm::stlhac tpl@(i::stlhac_iter, j::stlhac_iter) = shm_erase shm tpl;
-
-erase shm::stlhac pos::stlhac_iter = shm_erase shm pos;
-
-erase shm::stlhac (shm,key1,key2) = shm_erase shm (shm,key1,key2);
-
-erase shm::stlhac (shm,key) = shm_erase shm (shm,key);
-
-erase shm::stlhac key = shm_erase shm (shm,key);
+erase shm::stlhmap key = shm_erase shm key;
 
 swap shm1::stlhmap shm2::stlhmap = shm_swap shm1 shm2;
 
@@ -314,26 +233,26 @@ swap ss1::stlhset ss2::stlhset = shm_swap ss1 ss2;
 
 /*** Equality and Lexicographical Comparison ***************************/
 
-equal rng1::shmrng rng2::shmrng = shm_equal rng1 rng2
-  if compatible_ranges rng1 rng2;
+equal shm1::stlhmap shm2::stlhmap = shm_equal shm1 shm2
+  if compatible_ranges shm1 shm2;
 
-(::==) hac1::stlhac hac2::stlhac = shm_equal hac1 hac2
+(::==) hac1::stlhmap hac2::stlhmap = shm_equal hac1 hac2
   if compatible_ranges hac1 hac2;
 
-(::~=) hac1::stlhac hac2::stlhac = ~shm_equal hac1 hac2
+(::~=) hac1::stlhmap hac2::stlhmap = ~shm_equal hac1 hac2
   if compatible_ranges hac1 hac2;
 
 /*** Mapping and Folding ********************************************/
 
-::map f rng::shmrng = shm_listmap f rng shm_elm; // => shm_key for sets
+::map f shm::stlhmap = shm_listmap f shm shm_elm; // => shm_key for sets
 
-::foldl f x rng::shmrng = shm_foldl f x rng;
+::foldl f x shm::stlhmap = shm_foldl f x shm;
 
-::foldl1 f rng::shmrng = shm_foldl1 f rng;
+::foldl1 f shm::stlhmap = shm_foldl1 f shm;
 
-::do f rng::shmrng = shm_foldl (\_ x->f x) () rng $$ ();
+::do f shm::stlhmap = shm_foldl (\_ x->f x) () shm $$ ();
 
-// ::filter p rng::shmrng = shm_foldl f [] rng with
+// ::filter p shm::stlhmap = shm_foldl f [] shm with
 //   f x xs = res when
 //     res = case p x of
 //       1 = x:xs;
@@ -343,25 +262,25 @@ equal rng1::shmrng rng2::shmrng = shm_equal rng1 rng2
 //   end;
 // end;
 
-::listmap f rng::shmrng = shm_listmap f rng shm_elm;
+::listmap f shm::stlhmap = shm_listmap f shm shm_elm;
 
-::catmap f rng::shmrng = shm_listcatmap f rng shm_elm;
+::catmap f shm::stlhmap = shm_listcatmap f shm shm_elm;
 
 /*** Vector functions ****************************************************/
 
-::rowmap f rng::shmrng = rowcat (shm_listmap f rng shm_elm);
+::rowmap f shm::stlhmap = rowcat (shm_listmap f shm shm_elm);
 
-::rowcatmap f rng::shmrng = rowcat (shm_listmap f rng shm_elm);
+::rowcatmap f shm::stlhmap = rowcat (shm_listmap f shm shm_elm);
 
-::colmap f rng::shmrng = colcat (shm_listmap f rng shm_elm);
+::colmap f shm::stlhmap = colcat (shm_listmap f shm shm_elm);
 
-::colcatmap f rng::shmrng = colcat (shm_listmap f rng shm_elm);
+::colcatmap f shm::stlhmap = colcat (shm_listmap f shm shm_elm);
 
 /*** Key oriented interface functions *********************************/
 
-(::!) shm::stlhac key = shm_find shm key shm_val;
+(::!) shm::stlhmap key = shm_find shm key shm_val;
 
-has_key shm::stlhac key = shm_member shm key;
+has_key shm::stlhmap key = shm_member shm key;
 
 update shm::stlhmap k v = shm_update shm k v $$ shm;
 

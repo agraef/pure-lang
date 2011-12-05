@@ -41,8 +41,6 @@ bool stl_shm_trace_enabled()
 
 /*** Helpers for stlhmap.cpp only ************************************/
 
-enum {gi_find, gi_lower, gi_upper};
-
 static int range_size(shm* shmp, phmi b, phmi e)
 {
   size_t sz = 0;
@@ -59,16 +57,9 @@ static int range_size(shm* shmp, phmi b, phmi e)
 static phmi update_aux(shm* shmp, px* k, px* v)
 {
   pxhhmap& hmp = shmp->hmp;
-  phmi pos;
-  if ( shmp->get_cached_phmi(k, pos) ) {
-    pos->second = v;
-  }   
-  else {
-     pair<phmi,bool> i_ok = hmp.insert(pxhpair(k,v));
-    if (!i_ok.second) i_ok.first->second = v;
-    pos = i_ok.first;
-   }
-  return pos;
+  pair<phmi,bool> i_ok = hmp.insert(pxhpair(k,v));
+  if (!i_ok.second) i_ok.first->second = v;
+  return i_ok.first;
 }
 
 static bool extract_kv(shm* shmp, px* kv, px*& k, px*& v)
@@ -78,18 +69,9 @@ static bool extract_kv(shm* shmp, px* kv, px*& k, px*& v)
     k = kv;
     v = NULL;
   } 
-  else {
-    if ( pxrocket_to_pxlhs_pxrhs(kv, &k, &v) )
-      ;
-    else if (shmp->has_dflt) {
+  else if ( !pxrocket_to_pxlhs_pxrhs(kv, &k, &v) ) {
       k = kv;
       v = shmp->dflt;
-    }
-    else {
-      k = kv;
-      v = NULL;
-      ok = false;
-    }
   }
   return ok;
 }
@@ -100,11 +82,9 @@ static bool insert_aux(shm* shmp, px* kv, phmi& pos, int& inserted)
   px *k, *v;
   bool ok = extract_kv(shmp,kv,k,v);
   if (ok) {
-    if ( !shmp->get_cached_phmi(k, pos) ) {
-      pair<phmi,bool> i_ok = shmp->hmp.insert(pxhpair(k,v));
-      pos = i_ok.first;
-      inserted += i_ok.second;
-    }
+    pair<phmi,bool> i_ok = shmp->hmp.insert(pxhpair(k,v));
+    pos = i_ok.first;
+    inserted += i_ok.second;
   }
   return ok;
 }
@@ -161,20 +141,16 @@ static bool get_shmip(px* pxshmip, int& tag, shm_iter** itr)
   return ok;
 }
 
-static phmi get_iter(shm* shmp , px* key, int mode)
+static phmi get_iter(shm* shmp , px* key)
 {
   pxhhmap& hmp = shmp->hmp;
   phmi iter;
-  if (key == shmbeg()) {
+  if (key == shmbeg())
     iter = hmp.begin();
-  }
-  else if (key == shmend()) {
+  else if (key == shmend())
     iter = hmp.end();
-  }
-  else if (!shmp->get_cached_phmi(key, iter) ) {
+  else  
     iter = hmp.find(pxh(key));
-    shmp->cache_phmi(iter);
-  }
   return iter;
 }
 
@@ -227,14 +203,12 @@ static px* get_elm_aux(shm* shmp, phmi i, int what)
   return ret;
 }
 
-static px* shm_foldl_rng(px* fun, px* val, const shm_range rng, phmi i,  int mode)
+static px* shm_foldl_rng(px* fun, px* val, shm* shmp, phmi i, int mode)
 { 
-  phmi end = rng.end();
-  shm* shmp = rng.shmp();
-  phmi sac_end = shmp->hmp.end(); 
+  phmi end = shmp->hmp.end(); 
   px* res = px_new(val); 
   px* exception = 0;
-  while (i != end  && i != sac_end){
+  while (i != end){
     phmi trg_i = i++;
     px* trg = get_elm_aux(shmp, trg_i, mode);
     px* fxy = pure_appxl(fun, &exception, 2, res, trg);
@@ -247,25 +221,12 @@ static px* shm_foldl_rng(px* fun, px* val, const shm_range rng, phmi i,  int mod
     res = fxy;
   }
   px_unref(res);
-  if (i!=end) {
-    pure_freenew(res);
-    bad_argument();    
-  }
   return res;
 }
 
-/*** shm_iter hmehmbers  ***********************************************/
+/*** shm_iter mehmbers  ***********************************************/
 
-shm_iter::shm_iter(px* pxshmp, phmi i) : pxhshmp(pxshmp), iter(i), is_valid(1)
-{
-  if (iter != shmp()->hmp.end())
-    shmp()->shmis.push_back(this);
-}
-
-shm_iter::~shm_iter() 
-{
-  shmp()->remove_shm_iter(this);
-}
+shm_iter::shm_iter(px* pxshmp, phmi i) : pxhshmp(pxshmp), iter(i){}
 
 shm* shm_iter::shmp () const
 {
@@ -276,92 +237,29 @@ shm* shm_iter::shmp () const
 
 ostream& operator<<(ostream& os, const shm_iter* shmip)
 {
-  if (shmip->is_valid) {
-    if (shmip->iter == shmip->shmp()->hmp.end())
-      os << "pastend iterator";
-    else
-      os << shmip->iter->first;
-  }
-  else {
-    os << "invalid iterator";
-  }
+  if (shmip->iter == shmip->shmp()->hmp.end())
+    os << "pastend iterator";
+  else
+    os << shmip->iter->first;
   return os;
 }
 
-/*** stlhmap hmehmbers  ***********************************************/
+/*** stlhmap mehmbers  ***********************************************/
 
 stlhmap::stlhmap(px* hash, px* eql, px *d, bool keyonly):
   hmp(5, pxh_hash(hash), pxh_pred2(eql)), keys_only(keyonly),
-  has_recent_phmi(0), latest_phmi_pos(0), 
-  has_dflt(1), dflt(d)
+  dflt(d)
 {
   //PR(stlhmap,this);  
-}
-
-stlhmap::~stlhmap()
-{
-  //PR(~stlhmap,this);
-  assert(shmis.size()==0);
-  //clear_all_iters();
 }
 
 px* stlhmap::parameter_tuple()
 {
   px* hf = hmp.hash_function().pxfun();
   px* eq = hmp.key_eq().pxfun();
-  px* df = has_dflt ? dflt.pxp() : pure_listl(0);
+  px* df = keys_only ? pure_listl(0) : dflt.pxp();
   px* bc = pure_int( hmp.bucket_count() );
   return pure_tuplel(5,pure_int(keys_only),bc,hf,eq,df);
-}
-
-phmi stlhmap::find(px* key)
-{
-  phmi iter;
-  if (key == shmbeg())
-    iter = hmp.begin();
-  else if (key == shmend())
-    iter = hmp.end();
-  else
-    iter = hmp.find(key);
-  return iter;  
-}
-
-void stlhmap::cache_phmi(const phmi& i)
-{
-  if ( i != hmp.end() ) {
-    if (!has_recent_phmi) {
-      recent_phmi.clear();
-      has_recent_phmi = true;
-      latest_phmi_pos = 0;
-    }
-    size_t num_cached = recent_phmi.size();
-    if (num_cached<SM_CACHE_SZ) {
-      recent_phmi.push_back(i);
-      latest_phmi_pos = num_cached;
-    }
-    else {
-      latest_phmi_pos = (latest_phmi_pos + 1) % SM_CACHE_SZ;
-      recent_phmi[latest_phmi_pos] = i;
-    }
-  }
-}
-
-bool stlhmap::get_cached_phmi(px* k, phmi& i)
-{
-  bool ret = false;
-  if ( k != shmend() && has_recent_phmi ) {
-    size_t num_cached = recent_phmi.size();
-    size_t pos = 0; 
-    for (; pos < num_cached; pos++) {
-      if ( same(recent_phmi[pos]->first, k) ) {
-        i = recent_phmi[pos];
-        ret = true;
-        break;
-      }
-    }
-  }
-  // PR2(get_cached_phmi,k,ret)
-  return ret;
 }
 
 struct has_phmi {
@@ -369,134 +267,6 @@ struct has_phmi {
   bool operator()(shm_iter* shmip){return shmip->iter == iter;} 
   phmi iter;
 };
-
-void stlhmap::remove_shm_iter(shm_iter* shmip)
-{
-  shmis.erase( remove(shmis.begin(), shmis.end(), shmip), shmis.end() );
-}
-
-void stlhmap::clear_iter(phmi pos)
-{
-  if ( pos == hmp.end() ) return;
-  if (has_recent_phmi) {
-    vector<phmi>::iterator i = ::find(recent_phmi.begin(),recent_phmi.end(),pos);
-    if (i != recent_phmi.end()) recent_phmi.erase(i);
-  }
-  vector<shm_iter*>::iterator i = shmis.begin(), pe;
-  has_phmi is_trg(pos);
-  while( i!=shmis.end() ) {
-    if ( is_trg(*i) ) (*i)->is_valid = 0;
-    i++;
-  }
-  pe = remove_if( shmis.begin(), shmis.end(), is_trg );
-  shmis.erase( pe, shmis.end() );
-}
-
-void stlhmap::clear_all_iters()
-{
-  for (vector<shm_iter*>::iterator i = shmis.begin(); i!= shmis.end(); i++) {
-    (*i)->is_valid = 0;
-  }
-  shmis.clear();
-}
-
-int stlhmap::erase(phmi pos)
-{
-  clear_iter(pos);
-  hmp.erase(pos);
-  return 1;
-}
-
-int stlhmap::erase(px* k)
-{
-  int ret = 0;
-  if ( !hmp.empty() ) {
-    ret = 1;
-    phmi i;
-    if ( get_cached_phmi(k, i) )
-      erase(i);
-    else {
-      if (k == shmbeg())
-        erase(hmp.begin());
-      else if (k != shmend()) {
-        pair<phmi,phmi> er = hmp.equal_range(k);
-        ret = erase(er.first, er.second);
-       }
-      else
-        ret = 0;
-    }
-  }
-  return ret;
-}
-
-int stlhmap::erase(phmi first, phmi last)
-{
-  int ret = 0;
-  for (phmi pos = first; pos != last; pos++) {
-    clear_iter(pos); ret++;
-  }
-  hmp.erase(first, last);
-  return ret;
-}
-
-void stlhmap::clear()
-{
-  has_recent_phmi = false;
-  clear_all_iters();
-  hmp.clear();
-}
-
-/*** shm_range functions *********************************************/
-
-bool shm_range::init_from_iters(px** pxshmip, int sz)
-{
-  if (sz==0 || sz>2) return false;
-  num_iters = sz;
-  int tag;
-  shm_iter* shmip;
-  if ( !get_shmip(pxshmip[0],tag,&shmip) || !shmip->is_valid ) return false;
-
-  is_valid = false;
-  shm* shmp = shmip->shmp();
-  pxhshmp = shmip->pxhshmp;
-  begin_it = shmip->iter;
-  if (num_iters == 2) {
-    pxhhmap& hmp = shmp->hmp;
-    if (get_shmip(pxshmip[1],tag,&shmip) && 
-        shmip->is_valid && shmip->shmp()==shmp) 
-      end_it = shmip->iter;
-    else
-      goto done;
-  } 
-  else {
-    end_it = end_it++;
-  }
-  is_valid = true;
- done:
-  return is_valid;
-}
-
-shm_range::shm_range(px* phmi_tuple)
-{
-  size_t tpl_sz;
-  px** elms;
-  pure_is_tuplev(phmi_tuple, &tpl_sz, &elms);
-  try {
-    bool ok = init_from_iters(elms, tpl_sz);
-  }
-  catch (px* e) {
-    free(elms);
-    pure_throw(e);
-  }
-  free(elms);
-} 
-
-shm* shm_range::shmp() const
-{
-  void* ptr;
-  pure_is_pointer(pxhshmp, &ptr);
-  return static_cast<shm*>(ptr);
-}
 
 /*** Pure interface support functions  *************************************/
 
@@ -527,25 +297,25 @@ void shm_iter_delete(shm_iter* shmip){
   delete(shmip);
 }
 
-px* shm_parameters(px* tpl)
+px* shm_parameters(px* pxshmp)
 {
-  shm_range rng(tpl);
-  if (!rng.is_valid) bad_argument();  
-  return rng.shmp()->parameter_tuple();
+  shm* shmp;
+  if (!get_shmp(pxshmp,&shmp) ) bad_argument();
+  return shmp->parameter_tuple();
 } 
 
-int shm_size(px* tpl)
+int shm_size(px* pxshmp)
 {
-  shm_range rng(tpl);
-  if (!rng.is_valid) bad_argument();
-  return range_size(rng.shmp(), rng.beg(), rng.end());
+  shm* shmp;
+  if (!get_shmp(pxshmp,&shmp) ) bad_argument();
+  return shmp->hmp.size();
 }
 
-bool shm_empty(px* tpl)
+bool shm_empty(px* pxshmp)
 {
-  shm_range rng(tpl);
-  if (!rng.is_valid) bad_argument();
-  return rng.num_iters == 0 ? rng.shmp()->hmp.empty() : shm_size(tpl) == 0;
+  shm* shmp;
+  if (!get_shmp(pxshmp,&shmp) ) bad_argument();
+  return shmp->hmp.empty();
 }
 
 int  shm_count(px* pxshmp, px* key)
@@ -555,11 +325,11 @@ int  shm_count(px* pxshmp, px* key)
   return shmp->hmp.count(key);
 }
 
-bool shm_is_set(px* tpl)
+bool shm_is_set(px* pxshmp)
 {
-  shm_range rng(tpl);
-  if (!rng.is_valid) bad_argument();
-  return rng.shmp()->keys_only;
+  shm* shmp;
+  if (!get_shmp(pxshmp,&shmp) ) bad_argument();
+  return shmp->keys_only;
 }
 
 px* shm_find(px* pxshmp, px* key, int what)
@@ -569,8 +339,8 @@ px* shm_find(px* pxshmp, px* key, int what)
   px* ret = 0;
   pxhhmap& hmp  = shmp->hmp;
   int num_inserted;
-  phmi i = get_iter(shmp, key, gi_find);
-  if (what==stl_shm_iter_dflt && i == hmp.end() && shmp->has_dflt){
+  phmi i = get_iter(shmp, key);
+  if (what==stl_shm_iter_dflt && i == hmp.end()){
     px* dflt = shmp->dflt;
     pair<phmi,bool> i_ok = shmp->hmp.insert(pxhpair(key,dflt));
     return px_pointer(new shm_iter(pxshmp, i_ok.first));
@@ -579,184 +349,6 @@ px* shm_find(px* pxshmp, px* key, int what)
     return px_pointer(new shm_iter(pxshmp, i)); 
   else
     return get_elm_aux(shmp, i, what);
-}
-
-px* shm_copy_iter(px* pxshmip)
-{
-  shm_iter* shmip;
-  int tag;
-  if ( !get_shmip(pxshmip,tag,&shmip) || !shmip->is_valid ) bad_argument();
-  return px_pointer( new shm_iter(shmip->pxhshmp, phmi(shmip->iter)) );
-}
-
-px* shm_begin(px* pxshmp)
-{
-  shm* shmp;
-  if ( !get_shmp(pxshmp, &shmp) ) failed_cond();
-  return px_pointer(  new shm_iter(pxshmp, shmp->hmp.begin()) );
-}
-
-px* shm_end(px* pxshmp)
-{
-  shm* shmp;
-  if ( !get_shmp(pxshmp, &shmp) ) failed_cond();
-  return px_pointer(  new shm_iter(pxshmp, shmp->hmp.end()) );
-}
-
-px* shm_bounds(px* pxshmp, px* key, int what)
-{
-  shm* shmp;
-  shm_iter* shmip;
-  if ( !get_shmp(pxshmp, &shmp) ) failed_cond();
-  pxhhmap& hmp = shmp->hmp;
-  pair<phmi,phmi> l_u = hmp.equal_range(key);
-  px* pxshmip_l = px_pointer( new shm_iter(pxshmp, l_u.first) );
-  px* pxshmip_r = px_pointer( new shm_iter(pxshmp, l_u.second) );
-  return pure_tuplel(2, pxshmip_l, pxshmip_r);
-}
-
-// valid, container, i1, i2,
-px* shm_range_info(px* tpl)
-{
-  px* ret;
-  shm_range rng(tpl);
-  bool ok = rng.is_valid;
-  px* valid = pure_int(ok);
-  if (rng.is_valid) {
-    px* container = rng.pxhshmp;
-    px* beg = px_pointer( new shm_iter(rng.pxhshmp, rng.beg()) );
-    px* end = px_pointer( new shm_iter(rng.pxhshmp, rng.end()) );
-    ret = pure_tuplel(4, valid, container, beg, end);
-  }
-  else {
-    px* null_ptr = pure_pointer(0);
-    ret = pure_tuplel(4, valid, null_ptr, null_ptr, null_ptr);
-  }
-  return ret;
-}
-
-px* shm_move_iter(px* pxshmip, int count)
-{
-  shm_iter* shmip;
-  int tag;
-  if ( !get_shmip(pxshmip,tag,&shmip) ) return 0;
-  if ( !shmip->is_valid ) bad_argument();
-  phmi& i = shmip->iter;
-  phmi beg = shmip->shmp()->hmp.begin();
-  phmi end = shmip->shmp()->hmp.end();
-  while (count > 0) {
-    if (i == end) return pxshmip;
-    count--; i++;
-  }
-  return pxshmip;
-}
-
-px* shm_iter_is_at(px* pxshmip, int where)
-{
-  px* ret;
-  shm_iter* shmip;
-  int tag;
-  if ( !get_shmip(pxshmip,tag,&shmip) || !shmip->is_valid ) return 0;
-  switch (where) {
-  case stl_shm_at_beginning:
-    return pure_int( shmip->shmp()->hmp.begin() == shmip->iter );
-  case stl_shm_at_pastend:
-    return pure_int( shmip->shmp()->hmp.end() == shmip->iter );
-  default:
-    bad_argument();
-  }
-}
-
-// fix return is_valid, container, key, val 
-px* shm_iter_info(px* pxshmip)
-{
-  shm_iter* shmip;
-  int tag;
-  if ( !get_shmip(pxshmip,tag,&shmip) ) return 0;
-  px* valid = pure_int( shmip->is_valid );
-  px* cont = shmip->pxhshmp;
-  phmi i = shmip->iter;
-  shm* shmp = shmip->shmp();
-  px* key; px* val;
-  if (shmip->is_valid && i != shmp->hmp.end() ) {
-    key = iter_to_key(shmp->hmp, i);    
-    if (shmp->keys_only) 
-      val = i->first;
-    else
-      val = i->second;
-  } 
-  else {
-    key = shmend();
-    val = pure_listl(0);
-  }
-  return pure_tuplel(4,valid, cont, key, val);
-}
-
-px* shm_equal_iter(px* pxshmip1, px* pxshmip2)
-{
-  shm_iter* shmip1;
-  int tag1;
-  if ( !get_shmip(pxshmip1,tag1,&shmip1) || !shmip1->is_valid ) bad_argument();
-  shm_iter* shmip2;
-  int tag2;
-  if ( !get_shmip(pxshmip2,tag2,&shmip2) || !shmip2->is_valid ) bad_argument();
-  if (tag1 != tag2) return 0; // fail
-  return pure_int( shmip1->iter == shmip2->iter ); 
-}
-
-px* shm_get_at(px* pxshmip, int what)
-{
-  shm_iter* shmip;
-  int tag;
-  if ( !get_shmip(pxshmip,tag,&shmip) || !shmip->is_valid ) bad_argument();
-  if (shmip->iter == shmip->shmp()->hmp.end()) index_error();
-  if ( what==stl_shm_elm && tag==stlhset_iter_tag() ) what = stl_shm_key; 
-  return get_elm_aux(shmip->shmp(), shmip->iter, what);
-}
-
-px* shm_get_elm_at_inc(px* pxshmip)
-{
-  shm_iter* shmip; 
-  int tag;
-  if ( !get_shmip(pxshmip,tag,&shmip) || !shmip->is_valid ) bad_argument();
-  phmi& i = shmip->iter;
-  if ( i == shmip->shmp()->hmp.end() ) index_error();
-  int what = tag==stlhset_iter_tag() ? stl_shm_key : stl_shm_elm; 
-  px* ret = get_elm_aux(shmip->shmp(), i, what);
-  i++;
-  return ret;
-}
-
-px* shm_put_at(px* pxshmip, px* val)
-{
-  shm_iter* shmip;
-  int tag;
-  if ( !get_shmip(pxshmip,tag,&shmip) || !shmip->is_valid ) bad_argument();
-  if ( tag != stlhmap_iter_tag() ) bad_argument();
-  phmi itr = shmip->iter;
-  shm* shmp = shmip->shmp();
-  if (itr == shmp->hmp.end()) index_error();
-  shmip->iter->second = val;
-  return val;
-}
-
-px* shm_insert_hinted(px* pxshmp, px* pxshmip, px* kv)
-{
-  shm* shmp; phmi pos;
-  if (!get_shmp(pxshmp,&shmp) ) bad_argument();
-  shm_iter* shmip;
-  int tag;
-  if ( !get_shmip(pxshmip,tag,&shmip) || !shmip->is_valid ) bad_argument();
-  px *k, *v;
-  if ( !extract_kv(shmp,kv,k,v) ) bad_argument();
-  if ( !same(shmip->pxhshmp,pxshmp) ) bad_argument();
-  try {
-    pos = shmp->hmp.insert(shmip->iter, pxhpair(k,v));
-  }
-  catch (px* e) {
-    pure_throw(e);
-  }
-  return px_pointer( new shm_iter(pxshmp, pos) );
 }
 
 px* shm_insert_elm(px* pxshmp, px* kv)
@@ -770,7 +362,6 @@ px* shm_insert_elm(px* pxshmp, px* kv)
   catch (px* e) {
     pure_throw(e);
   }
-  shmp->cache_phmi(pos);
   px* it = px_pointer(new shm_iter(pxshmp, pos));
   return pure_tuplel(2,it,pure_int(num_inserted));
 }
@@ -842,8 +433,8 @@ px*  shm_swap(px* pxshmp1, px* pxshmp2)
   shm* shmp1; shm* shmp2;
   if ( !get_shmp(pxshmp1, &shmp1) ) failed_cond();
   if ( !get_shmp(pxshmp2, &shmp2) ) failed_cond();
-  shmp1->has_recent_phmi = false;
-  shmp2->has_recent_phmi = false;
+  //shmp1->has_recent_phmi = false;
+  //shmp2->has_recent_phmi = false;
   shmp1->hmp.swap(shmp2->hmp);
 }
 
@@ -852,33 +443,23 @@ int shm_clear(px* pxshmp)
   shm* shmp;
   if (!get_shmp(pxshmp,&shmp) ) bad_argument();
   size_t sz = shmp->hmp.size();
-  shmp->clear();
+  shmp->hmp.clear();
   return sz;
 }
 
-int shm_erase(px* pxshmp, px* trg)
+int shm_erase(px* pxshmp, px* key)
 {
   shm* shmp;
   if (!get_shmp(pxshmp,&shmp) ) bad_argument();
-  int res = 0;
-  size_t trg_sz;
-  px** elehms;
-  pure_is_tuplev(trg, &trg_sz, &elehms);
-  if (trg_sz == 1) {
-    shm_iter* shmip;
-    int tag;
-    if ( !get_shmip(trg,tag,&shmip) || !shmip->is_valid ) bad_argument();
-    if ( !same(pxshmp, shmip->pxhshmp) ) bad_argument();
-    shmip->shmp()->erase(shmip->iter);
-    res = 1;
+  pxhhmap& hmp = shmp->hmp;
+  size_t sz = hmp.size();
+  try {
+    hmp.erase(key);
+  } 
+  catch (px* e) {
+    pure_throw(e);
   }
-  else {
-    shm_range rng(trg);
-    if (!rng.is_valid) bad_argument();
-    if ( !same(pxshmp, rng.pxhshmp) ) bad_argument();
-    res = rng.shmp()->erase(rng.beg(), rng.end());
-  }
-  return res;
+  return sz - hmp.size();
 }
 
 bool shm_equal(px* pxshmp1, px* pxshmp2)
@@ -893,17 +474,18 @@ bool shm_equal(px* pxshmp1, px* pxshmp2)
   }
 }
 
-px* shm_make_vector(px* tpl) 
+px* shm_make_vector(px* pxshmp) 
 {
-  shm_range rng(tpl);
-  if (!rng.is_valid) bad_argument();
-  phmi b = rng.beg();
-  phmi e = rng.end();
-  int sz = range_size(rng.shmp(), b, e);
+  shm* shmp;
+  if (!get_shmp(pxshmp,&shmp) ) bad_argument();
+  pxhhmap& hmp = shmp->hmp;
+  phmi b = hmp.begin();
+  phmi e = hmp.end();
+  int sz = hmp.size();
   if (!sz)
     return pure_matrix_columnsv(0,NULL);
   px** bfr = (px**)malloc(sizeof(px*)*sz);
-  if (rng.shmp()->keys_only) 
+  if (shmp->keys_only) 
     transform(b, e, bfr, pxhpair_to_pxlhs);
   else
     transform(b, e, bfr, pxhpair_to_pxrocket);
@@ -912,29 +494,29 @@ px* shm_make_vector(px* tpl)
   return ret;
 }
 
-void shm_fill_stlvec(px* tpl, sv* svp) 
+void shm_fill_stlvec(px* pxshmp, sv* svp) 
 {
-  shm_range rng(tpl);
-  if (!rng.is_valid) bad_argument();
-  phmi b = rng.beg();
-  phmi e = rng.end();
-  if (rng.shmp()->keys_only) 
+  shm* shmp;
+  if (!get_shmp(pxshmp,&shmp) ) bad_argument();
+  pxhhmap& hmp = shmp->hmp;
+  phmi b = hmp.begin();
+  phmi e = hmp.end();
+  if (shmp->keys_only) 
     transform(b, e, back_inserter(*svp), pxhpair_to_pxlhs);
   else
     transform(b, e, back_inserter(*svp), pxhpair_to_pxrocket);
 }
 
-/*** HMapping and folding ***********************************************/
+/*** Mapping and folding ***********************************************/
 
-px* shm_listmap(px* fun, px* tpl, int what)
+px* shm_listmap(px* fun, px* pxshmp, int what)
 {
-  shm_range rng(tpl);
-  if (!rng.is_valid) bad_argument();
-  shm* shmp = rng.shmp();
+  shm* shmp;
+  if (!get_shmp(pxshmp,&shmp) ) bad_argument();
   if (shmp->keys_only) what = stl_shm_key;
-  phmi sac_end = shmp->hmp.end();
-  phmi b = rng.beg();
-  phmi e = rng.end();
+  pxhhmap& hmp = shmp->hmp;
+  phmi b = hmp.begin();
+  phmi e = hmp.end();
   px* cons = px_cons_sym();
   px* nl = pure_listl(0);
   px* res = nl;
@@ -946,7 +528,7 @@ px* shm_listmap(px* fun, px* tpl, int what)
   else
     use_function = true;
   phmi i = b;
-  for (;i != e && i != sac_end; i++){
+  for (;i != e; i++){
     px* trg = get_elm_aux(shmp, i, what);
     px* pxi = trg;
     if (use_function) {
@@ -965,22 +547,17 @@ px* shm_listmap(px* fun, px* tpl, int what)
       y = last;
     }
   }
-  if (i!=e) {
-    pure_freenew(res);
-    bad_argument();    
-  }
   return res;
 }
 
-px* shm_listcatmap(px* fun, px* tpl, int what)
+px* shm_listcatmap(px* fun, px* pxshmp, int what)
 {
-  shm_range rng(tpl);
-  if (!rng.is_valid) bad_argument();
-  shm* shmp = rng.shmp();
+  shm* shmp;
+  if (!get_shmp(pxshmp,&shmp) ) bad_argument();
   if (shmp->keys_only) what = stl_shm_key;
-  phmi i = rng.beg(); 
-  phmi e = rng.end(); 
-  phmi end = shmp->hmp.end();
+  pxhhmap& hmp = shmp->hmp;
+  phmi i = hmp.begin();
+  phmi e = hmp.end();
   px* cons = px_cons_sym();
   px* nl = pure_listl(0);
   px* res = nl;
@@ -988,7 +565,7 @@ px* shm_listcatmap(px* fun, px* tpl, int what)
   px* exception;
   px* *elms;
   size_t sz;
-  for (;i != e && i != end; i++){
+  for (;i != e; i++){
     px* trg = get_elm_aux(shmp, i, what);
     px* pxi = pure_appxl(fun, &exception, 1, trg);
     if (exception) {
@@ -1013,50 +590,41 @@ px* shm_listcatmap(px* fun, px* tpl, int what)
     px_freenew(pxi);
     free(elms);
   }
-  if (i!=e) {
-    pure_freenew(res);
-    bad_argument();    
-  }
   return res;  
 }
 
-px* shm_foldl(px* fun, px* val, px* tpl)
+px* shm_foldl(px* fun, px* val, px* pxshmp)
 {
-  shm_range rng(tpl);
-  if (!rng.is_valid) bad_argument();
-  shm* shmp = rng.shmp();
+  shm* shmp;
+  if (!get_shmp(pxshmp,&shmp) ) bad_argument();
   int mode =  shmp->keys_only ? stl_shm_key : stl_shm_elm;
-  phmi end = shmp->hmp.end();
   try {
-    px* ret = shm_foldl_rng(fun, val, rng, rng.beg(), mode);
+    px* ret = shm_foldl_rng(fun, val, shmp, shmp->hmp.begin(), mode);
     return ret;
   } catch (px* e) {
     pure_throw(e);
   }
 }
 
-px* shm_foldl1(px* fun, px* tpl)
+px* shm_foldl1(px* fun, px* pxshmp)
 {
-  shm_range rng(tpl);
-  if ( !rng.is_valid ) bad_argument();
-  shm* shmp = rng.shmp();
+  shm* shmp;
+  if (!get_shmp(pxshmp,&shmp) ) bad_argument();
   int mode =  shmp->keys_only ? stl_shm_key : stl_shm_elm;
-  phmi end = shmp->hmp.end();
-  phmi b = rng.beg();
-  phmi e = rng.end();
-  if ( b==e || b==end ) bad_argument();
+  phmi e = shmp->hmp.end();
+  phmi b = shmp->hmp.begin();
+  if ( b==e) bad_argument();
   px* val;
   if (mode == stl_shm_key)
     val = b->first;
   else
     val = pxlhs_pxrhs_to_pxrocket(b->first,b->second);
   try {
-    return shm_foldl_rng(fun, val, rng, ++b, mode);
+    return shm_foldl_rng(fun, val, shmp, ++b, mode);
   } catch (px* e) {
     pure_throw(e);
   }
 }
-
 
 /*** Key oriented interface support ***************************************/
 
@@ -1064,22 +632,7 @@ int shm_member(px* pxshmp, px* key)
 {
   shm* shmp;
   if (!get_shmp(pxshmp,&shmp) ) bad_argument();
-  int ret = 0;
-  pxhhmap& hmp = shmp->hmp;
-  phmi i;
-  if (!hmp.empty()) {
-    if (shmp->get_cached_phmi(key, i) ) {
-      ret = 1;
-    }
-    else {
-      i = shmp->find(key);
-      if (i != hmp.end()) {
-        shmp->cache_phmi(i);
-        ret = 1;
-      }
-    }
-  }
-  return ret;
+  return get_iter(shmp, key) != shmp->hmp.end();
 }
 
 px* shm_update(px* pxshmp, px* key, px* val)
@@ -1088,7 +641,6 @@ px* shm_update(px* pxshmp, px* key, px* val)
   if (!get_shmp(pxshmp,&shmp) ) bad_argument();
   if (shmp->keys_only) return 0; // fail for sets
   phmi pos = update_aux(shmp, key, val);
-  shmp->cache_phmi(pos);
   return val;
 }
 
@@ -1097,14 +649,7 @@ px* shm_update_with(px* pxshmp, px* key, px* unaryfun)
   shm* shmp;
   if (!get_shmp(pxshmp,&shmp) ) bad_argument();
   if (shmp->keys_only) return 0; // fail for sets
-  if (!shmp->has_dflt) failed_cond();
   phmi i;
-  if ( !shmp->get_cached_phmi(key, i) ) {
-    // uses default only if not already stored
-    pair<phmi,bool> i_ok = shmp->hmp.insert(pxhpair(key,shmp->dflt));
-    i = i_ok.first;
-    shmp->cache_phmi(i);
-  }  
   px* old_val = i->second;
   px* exception = 0;
   px* new_val = pure_appxl(unaryfun, &exception, 1, old_val);
@@ -1112,4 +657,51 @@ px* shm_update_with(px* pxshmp, px* key, px* unaryfun)
   if (!new_val) bad_function();
   i->second = new_val;
   return new_val;
+}
+
+px* shm_begin(px* pxshmp)
+{
+  shm* shmp;
+  if ( !get_shmp(pxshmp, &shmp) ) failed_cond();
+  return px_pointer(  new shm_iter(pxshmp, shmp->hmp.begin()) );
+}
+
+px* shm_end(px* pxshmp)
+{
+  shm* shmp;
+  if ( !get_shmp(pxshmp, &shmp) ) failed_cond();
+  return px_pointer(  new shm_iter(pxshmp, shmp->hmp.end()) );
+}
+
+px* shm_copy_iter(px* pxshmip)
+{
+  shm_iter* shmip;
+  int tag;
+  if ( !get_shmip(pxshmip,tag,&shmip) ) bad_argument();
+  return px_pointer( new shm_iter(shmip->pxhshmp, phmi(shmip->iter)) );
+}
+
+px* shm_get_elm_at_inc(px* pxshmip)
+{
+  shm_iter* shmip; 
+  int tag;
+  if ( !get_shmip(pxshmip,tag,&shmip) ) bad_argument();
+  phmi& i = shmip->iter;
+  if ( i == shmip->shmp()->hmp.end() ) index_error();
+  int what = tag==stlset_iter_tag() ? stl_shm_key : stl_shm_elm; 
+  px* ret = get_elm_aux(shmip->shmp(), i, what);
+  i++;
+  return ret;
+}
+
+px* shm_equal_iter(px* pxshmip1, px* pxshmip2)
+{
+  shm_iter* shmip1;
+  int tag1;
+  if ( !get_shmip(pxshmip1,tag1,&shmip1) ) bad_argument();
+  shm_iter* shmip2;
+  int tag2;
+  if ( !get_shmip(pxshmip2,tag2,&shmip2) ) bad_argument();
+  if (tag1 != tag2) return 0; // fail
+  return pure_int( shmip1->iter == shmip2->iter ); 
 }
