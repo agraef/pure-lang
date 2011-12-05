@@ -12174,7 +12174,56 @@ uint32_t hash(pure_expr *x)
     h ^= hash(x->data.x[1]);
     return (uint32_t)h;
   }
+  case EXPR::MATRIX: {
+    gsl_matrix_symbolic *m = (gsl_matrix_symbolic*)x->data.mat.p;
+    const size_t tda = m->tda;
+    checkstk(test);
+    int h = EXPR::MATRIX;
+    for (size_t i = 0; i < m->size1; i++)
+      for (size_t j = 0; j < m->size2; j++) {
+	h = (h<<1) | (h<0 ? 1 : 0);
+	h ^= hash(m->data[i*tda+j]);
+      }
+    return (uint32_t)h;
+  }
+  case EXPR::DMATRIX: {
+    gsl_matrix *m = (gsl_matrix*)x->data.mat.p;
+    const size_t tda = m->tda;
+    int h = EXPR::DMATRIX;
+    for (size_t i = 0; i < m->size1; i++)
+      for (size_t j = 0; j < m->size2; j++) {
+	h = (h<<1) | (h<0 ? 1 : 0);
+	h ^= double_hash(m->data[i*tda+j]);
+      }
+    return (uint32_t)h;
+  }
+  case EXPR::CMATRIX: {
+    gsl_matrix_complex *m = (gsl_matrix_complex*)x->data.mat.p;
+    const size_t tda = m->tda;
+    int h = EXPR::CMATRIX;
+    for (size_t i = 0; i < m->size1; i++)
+      for (size_t j = 0; j < m->size2; j++) {
+	const size_t k = 2*(i*tda+j);
+	h = (h<<1) | (h<0 ? 1 : 0);
+	h ^= double_hash(m->data[k]);
+	h = (h<<1) | (h<0 ? 1 : 0);
+	h ^= double_hash(m->data[k+1]);
+      }
+    return (uint32_t)h;
+  }
+  case EXPR::IMATRIX: {
+    gsl_matrix_int *m = (gsl_matrix_int*)x->data.mat.p;
+    const size_t tda = m->tda;
+    int h = EXPR::IMATRIX;
+    for (size_t i = 0; i < m->size1; i++)
+      for (size_t j = 0; j < m->size2; j++) {
+	h = (h<<1) | (h<0 ? 1 : 0);
+	h ^= (int)m->data[i*tda+j];
+      }
+    return (uint32_t)h;
+  }
   default:
+    assert(x->tag>0);
     if (x->data.clos && x->data.clos->local)
       return ((uint32_t)x->tag) ^ x->data.clos->key;
     else
