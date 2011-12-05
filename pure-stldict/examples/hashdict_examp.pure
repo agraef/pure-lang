@@ -62,9 +62,9 @@ m;
 
 // Query the dict.
 m!bar;  // => bar 4711L
-keys m; // => [bar,baz,foo]
-vals m; // => [bar 4711L,[1,2,3,4,5],99]
-list m; // => [bar=>bar 4711L,baz=>[1,2,3,4,5],foo=>99]
+keys m; // => [foo,bar,baz]
+vals m; // => [99,bar 4711L,[1,2,3,4,5]]
+list m; // => [foo=>99,bar=>bar 4711L,baz=>[1,2,3,4,5]]
 
 // Membership test.
 member m foo, member m bar;
@@ -166,3 +166,20 @@ m!![foo,bar,baz];
 
 hashmdict [97=>98,97=>99] === hashmdict [97=>99,97=>98]; // => 0
 hashmdict [97=>98,97=>99] == hashmdict [97=>99,97=>98]; // => 1
+
+/* Hashing of hashdicts. */
+
+let x,y = "x", "y";
+let v,w = {x,y}, {x,y};
+
+v==w,v===w,hash v == hash w;
+
+let hd1 = hashdict [v,w];
+let hd2 = hashdict [w,v];
+
+hd1==hd2, hd1===hd2, hash hd1 == hash hd2;
+
+let hd1 = hashmdict [v,w];
+let hd2 = hashmdict [w,v];
+
+hd1==hd2, hd1===hd2, hash hd1 == hash hd2;

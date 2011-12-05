@@ -1,6 +1,6 @@
 let m = hashdict [foo=>99,bar=>bar 4711L,baz=>1..5];
 m;
-hashdict [bar=>bar 4711L,baz=>[1,2,3,4,5],foo=>99]
+hashdict [foo=>99,bar=>bar 4711L,baz=>[1,2,3,4,5]]
 def {$$} = hashdict [];
 def {$xs@(_,_)$} = hashdict (__list__ xs);
 def {$x$} = hashdict [x];
@@ -8,26 +8,26 @@ hashdict_symbol ({$ $});
 ()
 let m = hashdict [foo=>99,bar=>bar 4711L,baz=>1..5];
 m;
-{$bar=>bar 4711L,baz=>[1,2,3,4,5],foo=>99$}
+{$foo=>99,bar=>bar 4711L,baz=>[1,2,3,4,5]$}
 hashdict_symbol hashdict;
 ()
 m;
-hashdict [bar=>bar 4711L,baz=>[1,2,3,4,5],foo=>99]
+hashdict [foo=>99,bar=>bar 4711L,baz=>[1,2,3,4,5]]
 m!bar;
 bar 4711L
 keys m;
-[bar,baz,foo]
+[foo,bar,baz]
 vals m;
-[bar 4711L,[1,2,3,4,5],99]
+[99,bar 4711L,[1,2,3,4,5]]
 list m;
-[bar=>bar 4711L,baz=>[1,2,3,4,5],foo=>99]
+[foo=>99,bar=>bar 4711L,baz=>[1,2,3,4,5]]
 member m foo,member m bar;
 1,1
 let m1 = copy m;
 delete m foo;
 hashdict [bar=>bar 4711L,baz=>[1,2,3,4,5]]
 m1;
-hashdict [bar=>bar 4711L,baz=>[1,2,3,4,5],foo=>99]
+hashdict [foo=>99,bar=>bar 4711L,baz=>[1,2,3,4,5]]
 m!foo;
 <stdin>, line 76: unhandled exception 'out_of_bounds' while evaluating 'm!foo'
 keys m;
@@ -39,7 +39,7 @@ list m;
 member m foo,member m bar;
 0,1
 listmap (\(x=>y) -> x,y) m1;
-[(bar,bar 4711L),(baz,[1,2,3,4,5]),(foo,99)]
+[(foo,99),(bar,bar 4711L),(baz,[1,2,3,4,5])]
 colcatmap (\(x=>y) -> if listp y then {(x,y)} else {}) m1;
 {(baz,[1,2,3,4,5])}
 m===m,m===m1,m===copy m,hashdict [97=>98,"a"=>"b"]===hashdict ["a"=>"b",97=>98];
@@ -66,7 +66,7 @@ hashdict [99,[1,2,3,4,5],bar 4711L]
 delete m (bar 4711L);
 hashdict [99,[1,2,3,4,5]]
 insert m (bar=>bar 4711L);
-hashdict [bar=>bar 4711L,99,[1,2,3,4,5]]
+hashdict [99,[1,2,3,4,5],bar=>bar 4711L]
 m!99;
 99
 m!bar;
@@ -84,7 +84,7 @@ hashdict [11,1]
 m1*m2;
 hashdict [3,5]
 hashdict [foo=>99,baz=>1..5]+hashdict [bar=>bar 4711L];
-hashdict [bar=>bar 4711L,baz=>[1,2,3,4,5],foo=>99]
+hashdict [foo=>99,bar=>bar 4711L,baz=>[1,2,3,4,5]]
 let m1 = hashmdict [5,1,3,11,3];
 let m2 = hashmdict (3..6);
 m1;
@@ -99,10 +99,22 @@ m1*m2;
 hashmdict [3,5]
 let m = hashmdict [foo=>99,baz=>1..5]+hashmdict [baz=>bar 4711L];
 m;
-hashmdict [baz=>[1,2,3,4,5],baz=>bar 4711L,foo=>99]
+hashmdict [foo=>99,baz=>[1,2,3,4,5],baz=>bar 4711L]
 m!![foo,bar,baz];
 [[99],[],[[1,2,3,4,5],bar 4711L]]
 hashmdict [97=>98,97=>99]===hashmdict [97=>99,97=>98];
 0
 hashmdict [97=>98,97=>99]==hashmdict [97=>99,97=>98];
 1
+let x,y = "x","y";
+let v,w = {x,y},{x,y};
+v==w,v===w,hash v==hash w;
+1,1,1
+let hd1 = hashdict [v,w];
+let hd2 = hashdict [w,v];
+hd1==hd2,hd1===hd2,hash hd1==hash hd2;
+1,1,1
+let hd1 = hashmdict [v,w];
+let hd2 = hashmdict [w,v];
+hd1==hd2,hd1===hd2,hash hd1==hash hd2;
+1,1,1
