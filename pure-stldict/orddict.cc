@@ -307,8 +307,8 @@ static bool eqsame(pure_expr *x, pure_expr *y)
 
 static inline bool eqchk(pure_expr *x, pure_expr *y)
 {
-  if (x != y && (!x || !y))
-    return false;
+  if (!x || !y)
+    return x==y;
   else
     return eqsame(x, y);
 }
