@@ -130,7 +130,7 @@ static uint32_t mpfr_hash(mpfr_ptr x)
     for (i=0; i<len; i++)
       h ^= x->_mpfr_d[i];
   }
-  if (sizeof(mpfr_exp_t) == 8) {
+  if (sizeof(mp_exp_t) == 8) {
     h ^= (uint32_t)(uint64_t)x->_mpfr_exp;
     h ^= (uint32_t)(((uint64_t)x->_mpfr_exp)>>32);
   } else {
