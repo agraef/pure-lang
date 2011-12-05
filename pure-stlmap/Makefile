@@ -20,14 +20,16 @@ CFLAGS = -g -O2
 
 # Basic rules to build the module, clean, install and uninstall.
 
-cppsource = stlmap.ccp stlmmap.ccp
-puresource = $(patsubst %.ccp, %.pure, $(cppsource))
-objects = $(patsubst %.ccp, %$(DLL), $(cppsource))
+cppsource = stlmap.cpp stlmmap.cpp stlhmap.cpp
+puresource = $(patsubst %.cpp, %.pure, $(cppsource))
+objects = $(patsubst %.cpp, %$(DLL), $(cppsource))
+
 
 all: $(objects)
 
 %$(DLL): %.cpp
-	g++ $(shared) -o $@ $(MOD_CXXFLAGS) $< $(MOD_LDFLAGS) $(LIBS) -I$(stlbase)
+	g++ $(shared) -o $@ $(MOD_CXXFLAGS) -std=c++0x \
+	$< $(MOD_LDFLAGS) $(LIBS) -I$(stlbase)
 
 clean:
 	rm -f *.o *$(DLL)

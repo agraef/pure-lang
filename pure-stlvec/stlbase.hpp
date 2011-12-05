@@ -150,6 +150,7 @@ public:
   pxh_fun(const pxh_fun& pxh_f) : fun_(px_new(pxh_f.fun_)) {}
   virtual ~pxh_fun(){px_free(fun_);}
   virtual pxh_fun& operator=(const pxh_fun& rhs);
+  px* pxfun() {return fun_;}
 protected:
   px* fun_;
 };
@@ -159,6 +160,13 @@ struct pxh_fun1 : public pxh_fun,
 {
   pxh_fun1(px* f) : pxh_fun(f){}
   pxh operator()(const pxh&) const;
+};
+
+struct pxh_hash : public pxh_fun,
+                  public std::unary_function<const pxh&, std::size_t>
+{
+  pxh_hash(px* f) : pxh_fun(f){}
+  std::size_t operator()(const pxh&) const;
 };
 
 struct pxh_fun2 : public pxh_fun, 
@@ -267,11 +275,15 @@ extern "C" {
   int  stlset_tag();
   int  stlmmap_tag();
   int  stlmset_tag();
+  int  stlhmap_tag();
+  int  stlhset_tag();
 
   int  stlmap_iter_tag();
   int  stlset_iter_tag();
   int  stlmmap_iter_tag();
   int  stlmset_iter_tag();
+  int  stlhmap_iter_tag();
+  int  stlhset_iter_tag();
 
 }
 

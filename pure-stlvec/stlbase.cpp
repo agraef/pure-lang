@@ -161,6 +161,17 @@ pxh pxh_fun1::operator()(const pxh& arg) const
   return pxh(ret);
 }
 
+size_t pxh_hash::operator()(const pxh& arg) const
+{
+  px* exception = 0;
+  px* ret =  pure_appxl(fun_, &exception, 1, arg.pxp());
+  if (exception) throw exception;
+  if (!ret) bad_function();
+  int hv;
+  if ( !pure_is_int(ret, &hv) ) bad_function();
+  return static_cast<size_t>(hv);
+}
+
 pxh pxh_fun2::operator()(const pxh& arg1, const pxh& arg2) const
 {
   px* exception = 0;
@@ -377,16 +388,32 @@ int stlset_tag()
   if (!t) t = pure_pointer_tag("stlset*");
   return t;
 }
+
 int stlmmap_tag() 
 {
   static ILS<int> _t = 0; int &t = _t();
   if (!t) t = pure_pointer_tag("stlmmap*");
   return t;
 }
+
 int stlmset_tag() 
 {
   static ILS<int> _t = 0; int &t = _t();
   if (!t) t = pure_pointer_tag("stlmset*");
+  return t;
+}
+
+int stlhmap_tag() 
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("stlhmap*");
+  return t;
+}
+
+int stlhset_tag() 
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("stlhset*");
   return t;
 }
 
@@ -403,13 +430,29 @@ int stlset_iter_tag()
   if (!t) t = pure_pointer_tag("stlset_iter*");
   return t;
 }
+
 int stlmmap_iter_tag() 
 {
   static ILS<int> _t = 0; int &t = _t();
   if (!t) t = pure_pointer_tag("stlmmap_iter*");
   return t;
 }
+
 int stlmset_iter_tag() 
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("stlmset_iter*");
+  return t;
+}
+
+int stlhmap_iter_tag() 
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("stlmmap_iter*");
+  return t;
+}
+
+int stlhset_iter_tag() 
 {
   static ILS<int> _t = 0; int &t = _t();
   if (!t) t = pure_pointer_tag("stlmset_iter*");
