@@ -115,6 +115,32 @@ static bool mpfr_same(mpfr_ptr x, mpfr_ptr y)
     return mpfr_equal_p(x, y);
 }
 
+/* Hashing (this requires Pure 0.50). */
+
+static uint32_t mpfr_hash(mpfr_ptr x)
+{
+  uint32_t h = 0;
+  int i, len = (int)ceil((double)x->_mpfr_prec/(double)GMP_NUMB_BITS);
+  if (sizeof(mp_limb_t) == 8) {
+    for (i=0; i<len; i++) {
+      h ^= (uint32_t)(uint64_t)x->_mpfr_d[i];
+      h ^= (uint32_t)(((uint64_t)x->_mpfr_d[i])>>32);
+    }
+  } else {
+    for (i=0; i<len; i++)
+      h ^= x->_mpfr_d[i];
+  }
+  if (sizeof(mpfr_exp_t) == 8) {
+    h ^= (uint32_t)(uint64_t)x->_mpfr_exp;
+    h ^= (uint32_t)(((uint64_t)x->_mpfr_exp)>>32);
+  } else {
+    h ^= x->_mpfr_exp;
+  }
+  if (x->_mpfr_sign < 0)
+    h = -h;
+  return h;
+}
+
 /* Initialize the mpfr* tag and return its value. This also sets up the
    pretty-printing and defines some manifest constants. */
 
@@ -139,6 +165,7 @@ int mpfr_tag(void)
   else {
     t = pure_pointer_tag("mpfr*");
     pure_pointer_add_equal(t, (pure_equal_fun)mpfr_same);
+    pure_pointer_add_hash(t, (pure_hash_fun)mpfr_hash);
     pure_pointer_add_printer(t, (pure_printer_fun)mpfr_str,
 			     (pure_printer_prec_fun)mpfr_prec);
     pure_def(pure_sym("MPFR_RNDN"), pure_int(MPFR_RNDN));
