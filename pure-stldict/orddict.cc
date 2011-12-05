@@ -270,6 +270,22 @@ static bool orddict_same(myorddict *x, myorddict *y)
   return true;
 }
 
+// Custom hashing. This hooks into hash().
+
+static uint32_t orddict_hash(myorddict *x)
+{
+  int h = omsym()?omsym():pure_sym("orddict");
+  for (myorddict::iterator it = x->begin(); it != x->end(); ++it) {
+    h = (h<<1) | (h<0 ? 1 : 0);
+    h ^= ::hash(it->first);
+    if (it->second) {
+      h = (h<<1) | (h<0 ? 1 : 0);
+      h ^= ::hash(it->second);
+    }
+  }
+  return h;
+}
+
 // Value comparisons. Note that, as of Pure 0.49, the stdlib dict checks
 // values for semantic equality and falls back to syntactic equality if it
 // isn't defined. We mimic this behaviour here.
@@ -305,6 +321,7 @@ extern "C" int orddict_tag(void)
   if (!t()) {
     t() = pure_pointer_tag("orddict*");
     pure_pointer_add_equal(t(), (pure_equal_fun)orddict_same);
+    pure_pointer_add_hash(t(), (pure_hash_fun)orddict_hash);
     pure_pointer_add_printer(t(), (pure_printer_fun)orddict_str,
 			     (pure_printer_prec_fun)orddict_prec);
   }
@@ -806,12 +823,27 @@ static bool ordmdict_same(myordmdict *x, myordmdict *y)
   return true;
 }
 
+static uint32_t ordmdict_hash(myordmdict *x)
+{
+  int h = ommsym()?ommsym():pure_sym("ordmdict");
+  for (myordmdict::iterator it = x->begin(); it != x->end(); ++it) {
+    h = (h<<1) | (h<0 ? 1 : 0);
+    h ^= ::hash(it->first);
+    if (it->second) {
+      h = (h<<1) | (h<0 ? 1 : 0);
+      h ^= ::hash(it->second);
+    }
+  }
+  return h;
+}
+
 extern "C" int ordmdict_tag(void)
 {
   static ILS<int> t = 0;
   if (!t()) {
     t() = pure_pointer_tag("ordmdict*");
     pure_pointer_add_equal(t(), (pure_equal_fun)ordmdict_same);
+    pure_pointer_add_hash(t(), (pure_hash_fun)ordmdict_hash);
     pure_pointer_add_printer(t(), (pure_printer_fun)ordmdict_str,
 			     (pure_printer_prec_fun)ordmdict_prec);
   }

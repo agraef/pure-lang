@@ -255,6 +255,22 @@ static bool hashdict_same(myhashdict *x, myhashdict *y)
   return true;
 }
 
+// Custom hashing. This hooks into hash().
+
+static uint32_t hashdict_hash(myhashdict *x)
+{
+  int h = hmsym()?hmsym():pure_sym("hashdict");
+  for (myhashdict::iterator it = x->begin(); it != x->end(); ++it) {
+    h = (h<<1) | (h<0 ? 1 : 0);
+    h ^= ::hash(it->first);
+    if (it->second) {
+      h = (h<<1) | (h<0 ? 1 : 0);
+      h ^= ::hash(it->second);
+    }
+  }
+  return h;
+}
+
 // Value comparisons. Note that, as of Pure 0.49, the stdlib dict checks
 // values for semantic equality and falls back to syntactic equality if it
 // isn't defined. We mimic this behaviour here.
@@ -290,6 +306,7 @@ extern "C" int hashdict_tag(void)
   if (!t()) {
     t() = pure_pointer_tag("hashdict*");
     pure_pointer_add_equal(t(), (pure_equal_fun)hashdict_same);
+    pure_pointer_add_hash(t(), (pure_hash_fun)hashdict_hash);
     pure_pointer_add_printer(t(), (pure_printer_fun)hashdict_str,
 			     (pure_printer_prec_fun)hashdict_prec);
   }
@@ -832,12 +849,27 @@ static bool hashmdict_same(myhashmdict *x, myhashmdict *y)
   return true;
 }
 
+static uint32_t hashmdict_hash(myhashmdict *x)
+{
+  int h = hmmsym()?hmmsym():pure_sym("hashmdict");
+  for (myhashmdict::iterator it = x->begin(); it != x->end(); ++it) {
+    h = (h<<1) | (h<0 ? 1 : 0);
+    h ^= ::hash(it->first);
+    if (it->second) {
+      h = (h<<1) | (h<0 ? 1 : 0);
+      h ^= ::hash(it->second);
+    }
+  }
+  return h;
+}
+
 extern "C" int hashmdict_tag(void)
 {
   static ILS<int> t = 0;
   if (!t()) {
     t() = pure_pointer_tag("hashmdict*");
     pure_pointer_add_equal(t(), (pure_equal_fun)hashmdict_same);
+    pure_pointer_add_hash(t(), (pure_hash_fun)hashmdict_hash);
     pure_pointer_add_printer(t(), (pure_printer_fun)hashmdict_str,
 			     (pure_printer_prec_fun)hashmdict_prec);
   }
