@@ -301,6 +301,22 @@ blank  [ \t\f\v\r]
     BEGIN(srcoption);
   }
 }
+^"#!"[ \t]*"--ifdef"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
+  /* --if pragma. */
+  char *s = strchr(yytext, '-')+strlen("--ifdef"), *t = s;
+  while (isspace(*t)) t++;
+  s = t;
+  while (*t && !isspace(*t)) t++;
+  string sym = string(s, t-s);
+  if (interp.source_level < 64)
+    interp.else_stack[interp.source_level] = 0;
+  interp.source_level++;
+  yylloc->step();
+  if (!interp.is_defined(sym)) {
+    interp.skip_level = interp.source_level-1;
+    BEGIN(srcoption);
+  }
+}
 ^"#!"[ \t]*"--ifnot"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
   /* --ifnot pragma. */
   char *s = strchr(yytext, '-')+strlen("--ifnot"), *t = s;
@@ -313,6 +329,22 @@ blank  [ \t\f\v\r]
   interp.source_level++;
   yylloc->step();
   if (interp.is_enabled(sym)) {
+    interp.skip_level = interp.source_level-1;
+    BEGIN(srcoption);
+  }
+}
+^"#!"[ \t]*"--ifndef"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
+  /* --ifnot pragma. */
+  char *s = strchr(yytext, '-')+strlen("--ifndef"), *t = s;
+  while (isspace(*t)) t++;
+  s = t;
+  while (*t && !isspace(*t)) t++;
+  string sym = string(s, t-s);
+  if (interp.source_level < 64)
+    interp.else_stack[interp.source_level] = 0;
+  interp.source_level++;
+  yylloc->step();
+  if (interp.is_defined(sym)) {
     interp.skip_level = interp.source_level-1;
     BEGIN(srcoption);
   }

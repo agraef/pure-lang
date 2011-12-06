@@ -557,6 +557,7 @@ public:
   int source_level, skip_level;
   bitset<64> else_stack;
   bool is_enabled(const string& optname);
+  bool is_defined(const string& optname);
   void enable(const string& optname, bool flag);
 
   // Interpreter state. For internal use only.

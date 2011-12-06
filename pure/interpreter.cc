@@ -1358,6 +1358,26 @@ bool interpreter::is_enabled(const string& optname)
   return flag;
 }
 
+bool interpreter::is_defined(const string& optname)
+{
+  map<string,bool*>::iterator jt = codegen_options.find(optname);
+  if (jt != codegen_options.end()) return true;
+  map<string,bool>::iterator it = source_options.find(optname);
+  if (it != source_options.end()) return true;
+  // Check the environment for a default.
+  string envname = optname;
+  std::transform(envname.begin(), envname.end(), envname.begin(), ::toupper);
+  envname.insert(0, "PURE_NO");
+  if (getenv(envname.c_str()) != NULL) return true;
+  // Predefined options.
+  bool glob = optname.find_first_of("*?[]") != string::npos;
+  if (glob || optname == "compiled" ||
+      optname.compare(0, strlen("version-"), "version-") == 0)
+    return true;
+  else
+    return false;
+}
+
 void interpreter::enable(const string& optname, bool flag)
 {
   map<string,bool*>::iterator it = codegen_options.find(optname);
