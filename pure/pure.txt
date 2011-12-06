@@ -804,7 +804,7 @@ default, all options are *undefined* and *enabled*. An option becomes
 or one of the :option:`--enable` and :option:`--disable` pragmas, see below.
 
 You can define the value of an option by setting a corresponding environment
-variable ``PURE_OPTION``, where ``OPTION`` is the option symbol in uppercase.
+variable ``PURE_OPTION_OPT``, where ``OPT`` is the option symbol in uppercase.
 The value of the environment variable should either be ``0`` (disabled) or
 ``1`` (enabled).
 
@@ -815,10 +815,14 @@ Pure interpreter:
 .. option:: --enable option
    	    --disable option
 
-   Enable or disable the given option, respectively.
+   Enable or disable the given option, respectively. Note that an option
+   specified in the environment is overridden by a value specified with these
+   options on the command line, which in turn is overridden by a corresponding
+   pragma in source code.
 
 The actual conditional compilation pragmas work in pretty much the same
-fashion as the C preprocessor directives ``#if``, ``#ifdef`` etc.:
+fashion as the C preprocessor directives ``#if``, ``#ifdef`` etc. (except
+that, as already mentioned, an option is always *enabled* if it is undefined).
 
 .. option:: --ifdef option
    	    --ifndef option
