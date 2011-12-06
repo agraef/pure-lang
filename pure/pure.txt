@@ -796,12 +796,17 @@ cases where conditional compilation is needed. (For more elaborate needs you
 can always use real Pure code which enables you to configure your program at
 runtime using, e.g., the :func:`eval` function.)
 
-Pure's conditional compilation pragmas are based on the use of user-defined
+Pure's conditional compilation pragmas are based on the notion of user-defined
 symbols (which can be really any text that does not contain whitespace or any
 of the shell wildcard characters ``*?[]``) called compilation `options`. By
-default, all options are enabled. It is possible to disable an option by
-default, by setting a corresponding environment variable ``PURE_NOOPTION``,
-where ``OPTION`` is the option symbol in uppercase.
+default, all options are *undefined* and *enabled*. An option becomes
+*defined* as soon as it is set explicitly, either with an environment variable
+or one of the :option:`--enable` and :option:`--disable` pragmas, see below.
+
+You can define the value of an option by setting a corresponding environment
+variable ``PURE_OPTION``, where ``OPTION`` is the option symbol in uppercase.
+The value of the environment variable should either be ``0`` (disabled) or
+``1`` (enabled).
 
 Options can be enabled and disabled in Pure scripts with the following
 pragmas, which are also available as command line options when invoking the
@@ -812,8 +817,14 @@ Pure interpreter:
 
    Enable or disable the given option, respectively.
 
-The actual conditional compilation pragmas work in exactly the same fashion as
-the C preprocessor directives ``#ifdef`` and ``#ifndef``.
+The actual conditional compilation pragmas work in pretty much the same
+fashion as the C preprocessor directives ``#if``, ``#ifdef`` etc.:
+
+.. option:: --ifdef option
+   	    --ifndef option
+
+   Begins a code section which should be included in the program if the given
+   option is defined or undefined, respectively.
 
 .. option:: --if option
    	    --ifnot option
@@ -824,24 +835,32 @@ the C preprocessor directives ``#ifdef`` and ``#ifndef``.
 .. option:: --else
 
    Begins an alternative code section which is included in the program if the
-   corresponding :option:`--if` or :option:`--ifnot` section was excluded, and
-   vice versa.
+   corresponding :option:`--ifdef`, :option:`--ifndef`, :option:`--if` or
+   :option:`--ifnot` section was excluded, and vice versa.
 
 .. option:: --endif
 
    Ends a conditional code section.
 
 Conditional code sections may be nested to an arbitrary depth. Each
-:option:`--if` or :option:`--ifnot` pragma must be followed by a matching
-:option:`--endif`. The :option:`--else` section is optional; if present, it
-applies to the most recent :option:`--if` or :option:`--ifnot` section not
-terminated by a matching :option:`--endif`. Unmatched :option:`--if`,
-:option:`--ifnot`, :option:`--else` and :option:`--endif` pragmas warrant an
-error message by the compiler.
+:option:`--ifdef`, :option:`--ifndef`, :option:`--if` or :option:`--ifnot`
+pragma must be followed by a matching :option:`--endif`. The :option:`--else`
+section is optional; if present, it applies to the most recent
+:option:`--ifdef`, :option:`--ifndef`, :option:`--if` or :option:`--ifnot`
+section not terminated by a matching :option:`--endif`. Unmatched conditional
+pragmas warrant an error message by the compiler.
 
 Conditional code is handled at the level of the lexical analyzer. Excluded
 code sections are treated like comments, i.e., the parser never gets to see
 them.
+
+The :option:`--ifdef` and :option:`--ifndef` pragmas are typically used to
+change the default of an option without globbering defaults set by the user
+through an environment variable or a command line option. For instance::
+
+  #! --ifndef opt
+  #! --disable opt
+  #! --endif
 
 Here's a (rather contrived) example which shows all these pragmas in action.
 You may want to type this in the interpreter to verify that the code sections
@@ -849,6 +868,13 @@ are indeed included and excluded from the Pure program as indicated::
 
   // disable the 'bar' option
   #! --disable bar
+
+  #! --ifdef foo
+  1/2; // excluded
+  #! --endif
+  #! --ifndef bar
+  1/3; // excluded
+  #! --endif
 
   #! --if foo
   foo x = x+1; // included
@@ -870,11 +896,11 @@ are indeed included and excluded from the Pure program as indicated::
   baz x = 2*x; // excluded
   #! --endif // not foo
 
-A few options are always provided as "builtins" by the interpreter. This
+A few options are always predefined as "builtins" by the interpreter. This
 includes all of the options described under `Code Generation Options`_ and
 `Warning Options`_, so that these can also be queried with :option:`--if`,
-:option:`--ifnot` and set with :option:`--enable`, :option:`--disable`.
-For instance::
+:option:`--ifnot` and set with :option:`--enable`, :option:`--disable`. For
+instance::
 
   #! --ifnot checks
   puts "This program uses deep recursion, so we enable stack checks here!";
@@ -890,15 +916,16 @@ Moreover, the following options are provided as additional builtins which are
 useful for handling special compilation requirements as well as system and
 version dependencies.
 
-* The ``compiled`` option is set if a program is batch-compiled. This lets you
-  pick alternative code paths depending on whether a script is compiled to a
-  native executable or not. Please see the example at the end of the `Batch
+* The ``compiled`` option is enabled if a program is batch-compiled. This lets
+  you pick alternative code paths depending on whether a script is compiled to
+  a native executable or not. Please see the example at the end of the `Batch
   Compilation`_ section for details.
 
-* The ``interactive`` and ``debugging`` options are set if a program runs in
-  interactive (:option:`-i <pure -i>`) and/or debugging (:option:`-g <pure -g>`)
-  mode, respectively. These options are read-only; they cannot be changed with
-  :option:`--enable`, :option:`--disable`. Example::
+* The ``interactive`` and ``debugging`` options are enabled if a program runs
+  in interactive (:option:`-i <pure -i>`) and/or debugging
+  (:option:`-g <pure -g>`) mode, respectively. These options are read-only;
+  they cannot be changed with :option:`--enable`, :option:`--disable`.
+  Example::
 
     #! --if interactive
     puts "Usage: run 'main filename'";
