@@ -1315,9 +1315,10 @@ bool interpreter::is_enabled(const string& optname)
   // Check the environment for a default.
   string envname = optname;
   std::transform(envname.begin(), envname.end(), envname.begin(), ::toupper);
-  envname.insert(0, "PURE_NO");
-  bool flag = getenv(envname.c_str()) == NULL;
-  if (flag) {
+  envname.insert(0, "PURE_OPTION_");
+  const char *val = getenv(envname.c_str());
+  bool flag = !val || atoi(val) != 0;
+  if (!val) {
     bool glob = optname.find_first_of("*?[]") != string::npos;
     if (glob) {
       // The symbol is actually a glob pattern, query the host triplet.
@@ -1351,7 +1352,9 @@ bool interpreter::is_enabled(const string& optname)
 	  flag = act_major == want_major && act_minor == want_minor;
       } else
 	flag = 0;
-    }
+    } else
+      // default value; not cached
+      return flag;
   }
   // Cache the value.
   source_options[optname] = flag;
@@ -1367,7 +1370,7 @@ bool interpreter::is_defined(const string& optname)
   // Check the environment for a default.
   string envname = optname;
   std::transform(envname.begin(), envname.end(), envname.begin(), ::toupper);
-  envname.insert(0, "PURE_NO");
+  envname.insert(0, "PURE_OPTION_");
   if (getenv(envname.c_str()) != NULL) return true;
   // Predefined options.
   bool glob = optname.find_first_of("*?[]") != string::npos;
