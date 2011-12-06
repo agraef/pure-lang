@@ -41,8 +41,8 @@ struct stlhmap {
   pxh dflt;
 
   stlhmap(px* hash, px* eql, px* dflt, bool keys_only); 
+  //stlhmap(const stlhmap& shm); 
   ~stlhmap(){};
-  px* parameter_tuple();
 };
 
 typedef stlhmap shm; 
@@ -66,8 +66,10 @@ enum {stl_shm_at_beginning = 1, stl_shm_at_pastend};
 extern "C" {
   px*  shm_type_tags();
   px*  shm_make_empty(px* hash, px* eql, px* dflt, int keys_only);
+  px*  shm_copy(px* pxshmp);
   void shm_delete(shm* shmp);
-  px*  shm_parameters(px* tpl);
+  void shm_reserve(px* pxshmp, double max_load, int elm_count);
+  px*  shm_hash_info(px* pxshmp);
   int  shm_size(px* tpl);
   bool shm_empty(px* tpl); 
   int  shm_count(px* pxshmp, px* key);
@@ -75,19 +77,18 @@ extern "C" {
   px*  shm_find(px* pxshmp, px* key, int what);
   px*  shm_insert_elm(px* pxshmp, px* kv);
   int  shm_insert_elms_xs(px* pxshmp, px* src);
-  int  shm_insert_elms_stlhmap(px* pxshmp1, px* pxshmp2);
   int  shm_insert_elms_stlvec(px* pxshmp, px* tpl);
   px*  shm_swap(px* pxshmp1, px* pxshmp2);
   int  shm_clear(px* pxshmp);
   int  shm_erase(px* pxshmp, px* trg); 
 
-  px*  shm_copy_iter(px* pxshmip);
   px*  shm_begin(px* pxshmp);
   px*  shm_end(px* pxshmp); 
+  px*  shm_copy_iter(px* pxshmip);
   px*  shm_get_elm_at_inc(px* pxshmip);
   px*  shm_equal_iter(px* pxshmip1, px* pxshmip2);
 
-  bool shm_equal(px* pxshmp1, px* pxshmp2);
+  bool shm_equal(px* pxshmp1, px* pxshmp2);    
   px*  shm_make_vector(px* tpl);
   void shm_fill_stlvec(px* tpl, sv* svp);
 

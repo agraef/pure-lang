@@ -164,11 +164,12 @@ pxh pxh_fun1::operator()(const pxh& arg) const
 size_t pxh_hash::operator()(const pxh& arg) const
 {
   px* exception = 0;
-  px* ret =  pure_appxl(fun_, &exception, 1, arg.pxp());
+  px* pxres =  pure_appxl(fun_, &exception, 1, arg.pxp());
   if (exception) throw exception;
-  if (!ret) bad_function();
+  if (!pxres) bad_function();
   int hv;
-  if ( !pure_is_int(ret, &hv) ) bad_function();
+  if ( !pure_is_int(pxres, &hv) ) bad_function();
+  px_freenew(pxres);
   return static_cast<size_t>(hv);
 }
 
@@ -208,12 +209,11 @@ bool pxh_pred2::operator()(const pxh& left, const pxh& right) const
 }
 
 bool pxhpair_less::operator()(const pxhpair& left,
-                               const pxhpair& right) const
+                              const pxhpair& right) const
 {
   try {
     const pxh& lf = left.first;
     const pxh& rf = right.first;
-
     if (first_less(lf,rf)) return 1;
     if (first_less(rf,lf)) return 0;
     return (second_less(left.second, right.second));
@@ -224,7 +224,7 @@ bool pxhpair_less::operator()(const pxhpair& left,
 }
 
 bool pxhpair_equal::operator()(const pxhpair& lhs,
-                                const pxhpair& rhs) const
+                               const pxhpair& rhs) const
 {
   try {
     bool ok = first_equal(lhs.first, rhs.first)  && 

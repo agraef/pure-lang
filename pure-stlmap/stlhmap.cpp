@@ -39,21 +39,6 @@ bool stl_shm_trace_enabled()
   return sm_trace_enabled;
 }
 
-/*** Helpers for stlhmap.cpp only ************************************/
-
-static int range_size(shm* shmp, phmi b, phmi e)
-{
-  size_t sz = 0;
-  pxhhmap& hmp = shmp->hmp;
-  if (b == hmp.begin() && e == hmp.end())
-    sz = hmp.size();
-  else if (b == e)
-    sz = 0;
-  else
-    while(b++ != e) sz++;
-  return sz;
-}
-
 static phmi update_aux(shm* shmp, px* k, px* v)
 {
   pxhhmap& hmp = shmp->hmp;
@@ -92,7 +77,7 @@ static bool insert_aux(shm* shmp, px* kv, phmi& pos, int& inserted)
 static px* px_pointer(shm* shmp)
 {
   static ILS<px*> _sym = NULL; px*& sym = _sym();
-  if (!sym) sym = pure_new(pure_symbol(pure_sym("stl::sm_delete")));
+  if (!sym) sym = pure_new(pure_symbol(pure_sym("stl::shm_delete")));
   int tag = shmp->keys_only ? stlhset_tag() : stlhmap_tag();
   px* ptr = pure_tag( tag, pure_pointer(shmp));
 #ifdef STL_DEBUG
@@ -247,19 +232,10 @@ ostream& operator<<(ostream& os, const shm_iter* shmip)
 /*** stlhmap mehmbers  ***********************************************/
 
 stlhmap::stlhmap(px* hash, px* eql, px *d, bool keyonly):
-  hmp(5, pxh_hash(hash), pxh_pred2(eql)), keys_only(keyonly),
+  hmp(0, pxh_hash(hash), pxh_pred2(eql)), keys_only(keyonly),
   dflt(d)
 {
   //PR(stlhmap,this);  
-}
-
-px* stlhmap::parameter_tuple()
-{
-  px* hf = hmp.hash_function().pxfun();
-  px* eq = hmp.key_eq().pxfun();
-  px* df = keys_only ? pure_listl(0) : dflt.pxp();
-  px* bc = pure_int( hmp.bucket_count() );
-  return pure_tuplel(5,pure_int(keys_only),bc,hf,eq,df);
 }
 
 struct has_phmi {
@@ -281,6 +257,14 @@ px*  shm_make_empty(px* hash, px* eql, px* dflt, int keys_only)
   return px_pointer( new shm(hash, eql, dflt, keys_only) );
 }
 
+px*  shm_copy(px* pxshmp)
+{
+  shm* shmp;
+  if (!get_shmp(pxshmp,&shmp) ) bad_argument();
+  pxhhmap& hmp = shmp->hmp;
+  return px_pointer( new shm(*shmp) );
+}
+
 void shm_delete(shm* shmp){
 #ifdef STL_DEBUG
   if (stl_shm_trace_enabled())
@@ -289,7 +273,19 @@ void shm_delete(shm* shmp){
   delete(shmp);
 }
 
-void shm_iter_delete(shm_iter* shmip){
+void shm_reserve(px* pxshmp, double max_load, int count)
+{
+  shm* shmp;
+  if (!get_shmp(pxshmp,&shmp) ) bad_argument();
+  pxhhmap& hmp = shmp->hmp;  
+  if (max_load > 0.0) 
+    hmp.max_load_factor(max_load);
+  if (count > 0)
+    hmp.reserve(count);
+}
+
+void shm_iter_delete(shm_iter* shmip)
+{
 #ifdef STL_DEBUG
   if (stl_shm_trace_enabled())
     cerr << "TRACE SHM: delete shmi*: " << shmip << endl;
@@ -297,12 +293,20 @@ void shm_iter_delete(shm_iter* shmip){
   delete(shmip);
 }
 
-px* shm_parameters(px* pxshmp)
+px* shm_hash_info(px* pxshmp)
 {
   shm* shmp;
   if (!get_shmp(pxshmp,&shmp) ) bad_argument();
-  return shmp->parameter_tuple();
-} 
+  pxhhmap& hmp = shmp->hmp;
+  px* ko = pure_int(shmp->keys_only);
+  px* bc = pure_int( hmp.bucket_count() );
+  px* lf = pure_double( hmp.load_factor() );
+  px* mlf = pure_double( hmp.max_load_factor() );
+  px* hf = hmp.hash_function().pxfun();
+  px* eq = hmp.key_eq().pxfun();
+  px* df = shmp->keys_only ? pure_listl(0) : shmp->dflt.pxp();
+  return pure_tuplel(7,ko,bc,lf,mlf,hf,eq,df);
+}
 
 int shm_size(px* pxshmp)
 {
@@ -362,8 +366,7 @@ px* shm_insert_elm(px* pxshmp, px* kv)
   catch (px* e) {
     pure_throw(e);
   }
-  px* it = px_pointer(new shm_iter(pxshmp, pos));
-  return pure_tuplel(2,it,pure_int(num_inserted));
+  return pure_int(num_inserted);
 }
 
 int shm_insert_elms_xs(px* pxshmp, px* src)
