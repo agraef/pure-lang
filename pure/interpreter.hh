@@ -1084,6 +1084,13 @@ public:
   { return ty->getTypeID() == llvm::Type::PointerTyID; }
 #endif
 
+  static bool is_struct_type(llvm_const_Type *ty)
+#ifdef LLVM27
+  { return ty->isStructTy(); }
+#else
+  { return ty->getTypeID() == llvm::Type::StructTyID; }
+#endif
+
   static llvm::Constant* constant_char_array(const char *s)
 #ifdef LLVM26
   { return llvm::ConstantArray::get(llvm::getGlobalContext(), s); }

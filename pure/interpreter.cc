@@ -11645,6 +11645,7 @@ static bool struct_type_eq(llvm_const_Type *type, llvm_const_Type *type2)
 {
   if (type == type2) return true;
 #ifdef LLVM30
+  if (!type || !type2) return false;
   if ((dyn_cast<StructType>(type))->isLayoutIdentical
       (dyn_cast<StructType>(type2)))
     return true;
@@ -11660,47 +11661,52 @@ const char *interpreter::bctype_name(llvm_const_Type *type)
      file. */
   if (is_pointer_type(type)) {
     llvm_const_Type *elem_type = type->getContainedType(0);
-    /* XXXFIXME: These checks really need to be rewritten so that they're less
-       compiler-specific. Currently they only work with recent llvm-gcc, clang
-       and dragonegg versions. */
-    // Special support for Pure expression pointers, passed through unchanged.
-    if (elem_type == module->getTypeByName("struct.pure_expr") ||
-	elem_type == module->getTypeByName("struct._pure_expr"))
-      return "expr*";
-    // Special support for the GSL matrix types.
-    else if (elem_type == module->getTypeByName("struct.gsl_matrix") ||
-	     elem_type == module->getTypeByName("struct._gsl_matrix") ||
-	     struct_type_eq
-	     (elem_type, gslmatrix_type
-	      (double_type(),
-	       module->getTypeByName("struct.gsl_block_struct"))) ||
-	     struct_type_eq
-	     (elem_type, gslmatrix_type
-	      (double_type(),
-	       module->getTypeByName("struct.gsl_block_struct"), 4)))
-      return "dmatrix*";
-    else if (elem_type == module->getTypeByName("struct.gsl_matrix_int") ||
-	     elem_type == module->getTypeByName("struct._gsl_matrix_int") ||
-	     struct_type_eq
-	     (elem_type, gslmatrix_type
-	      (int32_type(),
-	       module->getTypeByName("struct.gsl_block_int_struct"))) ||
-	     struct_type_eq
-	     (elem_type, gslmatrix_type
-	      (int32_type(),
-	       module->getTypeByName("struct.gsl_block_int_struct"), 4)))
-      return "imatrix*";
-    else if (elem_type == module->getTypeByName("struct.gsl_matrix_complex") ||
-	     elem_type == module->getTypeByName("struct._gsl_matrix_complex") ||
-	     struct_type_eq
-	     (elem_type, gslmatrix_type
-	      (double_type(),
-	       module->getTypeByName("struct.gsl_block_complex_struct"))) ||
-	     struct_type_eq
-	     (elem_type, gslmatrix_type
-	      (double_type(),
-	       module->getTypeByName("struct.gsl_block_complex_struct"), 4)))
-      return "cmatrix*";
+    if (is_struct_type(elem_type)) {
+      /* XXXFIXME: These checks really need to be rewritten so that they're
+	 less compiler-specific. Currently they only work with recent
+	 llvm-gcc, clang and dragonegg versions. */
+      // Special support for Pure expression pointers, passed through
+      // unchanged.
+      if (elem_type == module->getTypeByName("struct.pure_expr") ||
+	  elem_type == module->getTypeByName("struct._pure_expr"))
+	return "expr*";
+      // Special support for the GSL matrix types.
+      else if (elem_type == module->getTypeByName("struct.gsl_matrix") ||
+	       elem_type == module->getTypeByName("struct._gsl_matrix") ||
+	       struct_type_eq
+	       (elem_type, gslmatrix_type
+		(double_type(),
+		 module->getTypeByName("struct.gsl_block_struct"))) ||
+	       struct_type_eq
+	       (elem_type, gslmatrix_type
+		(double_type(),
+		 module->getTypeByName("struct.gsl_block_struct"), 4)))
+	return "dmatrix*";
+      else if (elem_type == module->getTypeByName("struct.gsl_matrix_int") ||
+	       elem_type == module->getTypeByName("struct._gsl_matrix_int") ||
+	       struct_type_eq
+	       (elem_type, gslmatrix_type
+		(int32_type(),
+		 module->getTypeByName("struct.gsl_block_int_struct"))) ||
+	       struct_type_eq
+	       (elem_type, gslmatrix_type
+		(int32_type(),
+		 module->getTypeByName("struct.gsl_block_int_struct"), 4)))
+	return "imatrix*";
+      else if (elem_type == module->getTypeByName
+	       ("struct.gsl_matrix_complex") ||
+	       elem_type == module->getTypeByName
+	       ("struct._gsl_matrix_complex") ||
+	       struct_type_eq
+	       (elem_type, gslmatrix_type
+		(double_type(),
+		 module->getTypeByName("struct.gsl_block_complex_struct"))) ||
+	       struct_type_eq
+	       (elem_type, gslmatrix_type
+		(double_type(),
+		 module->getTypeByName("struct.gsl_block_complex_struct"), 4)))
+	return "cmatrix*";
+    }
   }
   return type_name(type);
 }
