@@ -47,7 +47,8 @@ CXXFLAGS = -g -O2
 
 DISTFILES = COPYING COPYING.LESSER Makefile README \
 config.guess faust.cc faust.pure faust2.pure \
-examples/Makefile examples/pure.cpp examples/*.pure examples/*.dsp
+examples/Makefile examples/pure.c examples/pure.cpp \
+examples/*.pure examples/*.dsp
 SEDFILES = README
 
 all: faust$(DLL)
