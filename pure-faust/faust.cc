@@ -37,7 +37,7 @@
 /* The Faust UI and dsp classes. */
 
 #include <list>
-#include <utility>
+#include <map>
 
 using namespace std;
 
@@ -107,6 +107,7 @@ class PureUI : public UI
 public:
   int nelems;
   ui_elem_t *elems;
+  map< double*, list<strpair> > metadata;
 
   PureUI();
   virtual ~PureUI();
@@ -139,6 +140,8 @@ public:
   virtual void closeBox();
 
   virtual void run();
+
+  virtual void declare(double* zone, const char* key, const char* value);
 };
 
 PureUI::PureUI()
@@ -150,6 +153,15 @@ PureUI::PureUI()
 PureUI::~PureUI()
 {
   if (elems) free(elems);
+}
+
+void PureUI::declare(double* zone, const char* key, const char* value)
+{
+  map< double*, list<strpair> >::iterator it = metadata.find(zone);
+  if (it != metadata.end())
+    it->second.push_back(strpair(key, value));
+  else
+    metadata[zone] = list<strpair>(1, strpair(key, value));
 }
 
 inline void PureUI::add_elem(ui_elem_type_t type, const char *label)
@@ -561,6 +573,23 @@ static int pop(int &type, const char *&label, int &n, pure_expr **&xv)
   return 1;
 }
 
+static pure_expr *faust_make_meta(list<strpair>& m)
+{
+  size_t n = m.size();
+  pure_expr **xv = (pure_expr**)malloc(n*sizeof(pure_expr*));
+  pure_expr *f = pure_symbol(pure_sym("=>"));
+  assert(f && xv);
+  list<strpair>::iterator it = m.begin(), end = m.end();
+  for (size_t i = 0; i < n; i++, it++) {
+    assert(it != end);
+    xv[i] = pure_appl(f, 2,
+		      pure_cstring_dup(it->first),
+		      pure_cstring_dup(it->second));
+  }
+  pure_expr *x = pure_listv(n, xv); free(xv);
+  return x;
+}
+
 extern "C"
 pure_expr *faust_info(faust_t *fd)
 {
@@ -585,21 +614,24 @@ pure_expr *faust_info(faust_t *fd)
     int ty = __tag(double*);
     switch (ui->elems[i].type) {
     case UI_BUTTON:
-      xv[n++] = pure_appl(pure_symbol(pure_sym("button")), 2,
+      xv[n++] = pure_appl(pure_symbol(pure_sym("button")), 3,
 			  __pointer(ty, ui->elems[i].zone),
+			  faust_make_meta(ui->metadata[ui->elems[i].zone]),
 			  pure_cstring_dup(ui->elems[i].label));
       break;
     case UI_TOGGLE_BUTTON:
       /* FIXME: What's the toggle button supposed to be? Taken to mean a
 	 checkbox for now. */
     case UI_CHECK_BUTTON:
-      xv[n++] = pure_appl(pure_symbol(pure_sym("checkbox")), 2,
+      xv[n++] = pure_appl(pure_symbol(pure_sym("checkbox")), 3,
 			  __pointer(ty, ui->elems[i].zone),
+			  faust_make_meta(ui->metadata[ui->elems[i].zone]),
 			  pure_cstring_dup(ui->elems[i].label));
       break;
     case UI_V_SLIDER:
-      xv[n++] = pure_appl(pure_symbol(pure_sym("vslider")), 2,
+      xv[n++] = pure_appl(pure_symbol(pure_sym("vslider")), 3,
 			  __pointer(ty, ui->elems[i].zone),
+			  faust_make_meta(ui->metadata[ui->elems[i].zone]),
 			  pure_tuplel(5, pure_cstring_dup(ui->elems[i].label),
 				      pure_double(ui->elems[i].init),
 				      pure_double(ui->elems[i].min),
@@ -607,8 +639,9 @@ pure_expr *faust_info(faust_t *fd)
 				      pure_double(ui->elems[i].step)));
       break;
     case UI_H_SLIDER:
-      xv[n++] = pure_appl(pure_symbol(pure_sym("hslider")), 2,
+      xv[n++] = pure_appl(pure_symbol(pure_sym("hslider")), 3,
 			  __pointer(ty, ui->elems[i].zone),
+			  faust_make_meta(ui->metadata[ui->elems[i].zone]),
 			  pure_tuplel(5, pure_cstring_dup(ui->elems[i].label),
 				      pure_double(ui->elems[i].init),
 				      pure_double(ui->elems[i].min),
@@ -616,8 +649,9 @@ pure_expr *faust_info(faust_t *fd)
 				      pure_double(ui->elems[i].step)));
       break;
     case UI_NUM_ENTRY:
-      xv[n++] = pure_appl(pure_symbol(pure_sym("nentry")), 2,
+      xv[n++] = pure_appl(pure_symbol(pure_sym("nentry")), 3,
 			  __pointer(ty, ui->elems[i].zone),
+			  faust_make_meta(ui->metadata[ui->elems[i].zone]),
 			  pure_tuplel(5, pure_cstring_dup(ui->elems[i].label),
 				      pure_double(ui->elems[i].init),
 				      pure_double(ui->elems[i].min),
@@ -625,15 +659,17 @@ pure_expr *faust_info(faust_t *fd)
 				      pure_double(ui->elems[i].step)));
       break;
     case UI_V_BARGRAPH:
-      xv[n++] = pure_appl(pure_symbol(pure_sym("vbargraph")), 2,
+      xv[n++] = pure_appl(pure_symbol(pure_sym("vbargraph")), 3,
 			  __pointer(ty, ui->elems[i].zone),
+			  faust_make_meta(ui->metadata[ui->elems[i].zone]),
 			  pure_tuplel(3, pure_cstring_dup(ui->elems[i].label),
 				      pure_double(ui->elems[i].min),
 				      pure_double(ui->elems[i].max)));
       break;
     case UI_H_BARGRAPH:
-      xv[n++] = pure_appl(pure_symbol(pure_sym("hbargraph")), 2,
+      xv[n++] = pure_appl(pure_symbol(pure_sym("hbargraph")), 3,
 			  __pointer(ty, ui->elems[i].zone),
+			  faust_make_meta(ui->metadata[ui->elems[i].zone]),
 			  pure_tuplel(3, pure_cstring_dup(ui->elems[i].label),
 				      pure_double(ui->elems[i].min),
 				      pure_double(ui->elems[i].max)));
@@ -688,18 +724,7 @@ pure_expr *faust_meta(faust_t *fd)
   if (!newmeta) return 0;
   Meta *m = newmeta();
   if (!m) return 0;
-  size_t n = m->data.size();
-  pure_expr **xv = (pure_expr**)malloc(n*sizeof(pure_expr*));
-  pure_expr *f = pure_symbol(pure_sym("=>"));
-  assert(f && xv);
-  list<strpair>::iterator it = m->data.begin(), end = m->data.end();
-  for (size_t i = 0; i < n; i++, it++) {
-    assert(it != end);
-    xv[i] = pure_appl(f, 2,
-		      pure_cstring_dup(it->first),
-		      pure_cstring_dup(it->second));
-  }
-  pure_expr *x = pure_listv(n, xv); free(xv);
+  pure_expr *x = faust_make_meta(m->data);
   if (delmeta) delmeta(m);
   return x;
 }

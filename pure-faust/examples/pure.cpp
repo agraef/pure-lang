@@ -28,7 +28,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <list>
-#include <utility>
+#include <map>
 
 using namespace std;
 
@@ -171,6 +171,7 @@ class PureUI : public UI
 public:
   int nelems;
   ui_elem_t *elems;
+  map< double*, list<strpair> > metadata;
 
   PureUI();
   virtual ~PureUI();
@@ -203,6 +204,8 @@ public:
   virtual void closeBox();
 
   virtual void run();
+
+  virtual void declare(double* zone, const char* key, const char* value);
 };
 
 PureUI::PureUI()
@@ -214,6 +217,15 @@ PureUI::PureUI()
 PureUI::~PureUI()
 {
   if (elems) free(elems);
+}
+
+void PureUI::declare(double* zone, const char* key, const char* value)
+{
+  map< double*, list<strpair> >::iterator it = metadata.find(zone);
+  if (it != metadata.end())
+    it->second.push_back(strpair(key, value));
+  else
+    metadata[zone] = list<strpair>(1, strpair(key, value));
 }
 
 inline void PureUI::add_elem(ui_elem_type_t type, const char *label)

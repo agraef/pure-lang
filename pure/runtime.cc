@@ -16728,6 +16728,7 @@ class PureFaustUI : public FaustUI
 public:
   int nelems;
   ui_elem_t *elems;
+  map< double*, list<strpair> > metadata;
 		
   PureFaustUI();
   virtual ~PureFaustUI();
@@ -16761,11 +16762,7 @@ public:
 	
   virtual void run();
 
-  /* NOTE: This method is supposed to take care of interpreting meta data
-     associated with a control variable, such as size, tooltip etc. We simply
-     ignore these for now. It might be useful to implement this in the future,
-     in order to make meta data available to the application. */
-  // virtual void declare(double* zone, const char* key, const char* value) {}
+  virtual void declare(double* zone, const char* key, const char* value);
 };
 
 PureFaustUI::PureFaustUI()
@@ -16777,6 +16774,15 @@ PureFaustUI::PureFaustUI()
 PureFaustUI::~PureFaustUI()
 {
   if (elems) free(elems);
+}
+
+void PureFaustUI::declare(double* zone, const char* key, const char* value)
+{
+  map< double*, list<strpair> >::iterator it = metadata.find(zone);
+  if (it != metadata.end())
+    it->second.push_back(strpair(key, value));
+  else
+    metadata[zone] = list<strpair>(1, strpair(key, value));
 }
 
 inline void PureFaustUI::add_elem(ui_elem_type_t type, const char *label)
@@ -16918,15 +16924,13 @@ void faust_free_metadata(void *p)
   free(glue);
 }
 
-pure_expr *faust_make_metadata(void *p)
+static pure_expr *faust_make_meta(list<strpair>& m)
 {
-  FaustMeta *m = __faust_metadata;
-  if (!m) return 0;
-  size_t n = m->data.size();
+  size_t n = m.size();
   pure_expr **xv = (pure_expr**)malloc(n*sizeof(pure_expr*));
   pure_expr *f = pure_symbol(pure_sym("=>"));
   assert(f && xv);
-  list<strpair>::iterator it = m->data.begin(), end = m->data.end();
+  list<strpair>::iterator it = m.begin(), end = m.end();
   for (size_t i = 0; i < n; i++, it++) {
     assert(it != end);
     xv[i] = pure_appl(f, 2,
@@ -16935,6 +16939,13 @@ pure_expr *faust_make_metadata(void *p)
   }
   pure_expr *x = pure_listv(n, xv); free(xv);
   return x;
+}
+
+pure_expr *faust_make_metadata(void *p)
+{
+  FaustMeta *m = __faust_metadata;
+  if (!m) return 0;
+  return faust_make_meta(m->data);
 }
 
 struct UIGlue {
@@ -17256,21 +17267,24 @@ static pure_expr *faust_make_ui(void *p)
     }
     switch (ui->elems[i].type) {
     case UI_BUTTON:
-      xv[n++] = pure_appl(pure_symbol(pure_sym("button")), 2,
+      xv[n++] = pure_appl(pure_symbol(pure_sym("button")), 3,
 			  pure_tag(ty, pure_pointer(ui->elems[i].zone)),
+			  faust_make_meta(ui->metadata[ui->elems[i].zone]),
 			  pure_cstring_dup(ui->elems[i].label));
       break;
     case UI_TOGGLE_BUTTON:
       /* FIXME: What's the toggle button supposed to be? Taken to mean a
 	 checkbox for now. */
     case UI_CHECK_BUTTON:
-      xv[n++] = pure_appl(pure_symbol(pure_sym("checkbox")), 2,
+      xv[n++] = pure_appl(pure_symbol(pure_sym("checkbox")), 3,
 			  pure_tag(ty, pure_pointer(ui->elems[i].zone)),
+			  faust_make_meta(ui->metadata[ui->elems[i].zone]),
 			  pure_cstring_dup(ui->elems[i].label));
       break;
     case UI_V_SLIDER:
-      xv[n++] = pure_appl(pure_symbol(pure_sym("vslider")), 2,
+      xv[n++] = pure_appl(pure_symbol(pure_sym("vslider")), 3,
 			  pure_tag(ty, pure_pointer(ui->elems[i].zone)),
+			  faust_make_meta(ui->metadata[ui->elems[i].zone]),
 			  pure_tuplel(5, pure_cstring_dup(ui->elems[i].label),
 				      pure_double(ui->elems[i].init),
 				      pure_double(ui->elems[i].min),
@@ -17278,8 +17292,9 @@ static pure_expr *faust_make_ui(void *p)
 				      pure_double(ui->elems[i].step)));
       break;
     case UI_H_SLIDER:
-      xv[n++] = pure_appl(pure_symbol(pure_sym("hslider")), 2,
+      xv[n++] = pure_appl(pure_symbol(pure_sym("hslider")), 3,
 			  pure_tag(ty, pure_pointer(ui->elems[i].zone)),
+			  faust_make_meta(ui->metadata[ui->elems[i].zone]),
 			  pure_tuplel(5, pure_cstring_dup(ui->elems[i].label),
 				      pure_double(ui->elems[i].init),
 				      pure_double(ui->elems[i].min),
@@ -17287,8 +17302,9 @@ static pure_expr *faust_make_ui(void *p)
 				      pure_double(ui->elems[i].step)));
       break;
     case UI_NUM_ENTRY:
-      xv[n++] = pure_appl(pure_symbol(pure_sym("nentry")), 2,
+      xv[n++] = pure_appl(pure_symbol(pure_sym("nentry")), 3,
 			  pure_tag(ty, pure_pointer(ui->elems[i].zone)),
+			  faust_make_meta(ui->metadata[ui->elems[i].zone]),
 			  pure_tuplel(5, pure_cstring_dup(ui->elems[i].label),
 				      pure_double(ui->elems[i].init),
 				      pure_double(ui->elems[i].min),
@@ -17296,15 +17312,17 @@ static pure_expr *faust_make_ui(void *p)
 				      pure_double(ui->elems[i].step)));
       break;
     case UI_V_BARGRAPH:
-      xv[n++] = pure_appl(pure_symbol(pure_sym("vbargraph")), 2,
+      xv[n++] = pure_appl(pure_symbol(pure_sym("vbargraph")), 3,
 			  pure_tag(ty, pure_pointer(ui->elems[i].zone)),
+			  faust_make_meta(ui->metadata[ui->elems[i].zone]),
 			  pure_tuplel(3, pure_cstring_dup(ui->elems[i].label),
 				      pure_double(ui->elems[i].min),
 				      pure_double(ui->elems[i].max)));
       break;
     case UI_H_BARGRAPH:
-      xv[n++] = pure_appl(pure_symbol(pure_sym("hbargraph")), 2,
+      xv[n++] = pure_appl(pure_symbol(pure_sym("hbargraph")), 3,
 			  pure_tag(ty, pure_pointer(ui->elems[i].zone)),
+			  faust_make_meta(ui->metadata[ui->elems[i].zone]),
 			  pure_tuplel(3, pure_cstring_dup(ui->elems[i].label),
 				      pure_double(ui->elems[i].min),
 				      pure_double(ui->elems[i].max)));

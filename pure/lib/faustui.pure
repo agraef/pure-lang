@@ -26,18 +26,25 @@
    the 'info' function of a Faust dsp.
 
    There are various basic control elements, each associated with a control
-   variable 'ref' and a parameter tuple 'args'. The latter are the arguments
-   of the control element as given in the Faust program. Thus, e.g., 'button
-   ref "Push me!"' would denote a button with label "Push me!", and 'hslider
-   ref ("gain",1.0,0.0,10.0,0.1) a horizontal slider with label "gain" and the
-   given initial, min, max and step size values. The control variable itself
-   is implemented as a C pointer 'ref' which, depending on the dsp's sample
-   format, points either to a C float or a C double value. Changing the value
-   pointed to by 'ref' using 'put_double' or 'put_float' (before invoking the
-   dsp's 'compute' function) assigns a new value to the corresponding control
-   element in the Faust dsp. Passive control elements such as 'vbargraph' have
-   their value updated during invocation of the 'compute' function, and can
-   then be read using 'get_double' or 'get_float'.
+   variable 'ref', metadata 'meta' and a parameter tuple 'args'. The latter
+   are the arguments of the control element as given in the Faust program.
+   Thus, e.g., 'button ref meta "Push me!"' would denote a button with label
+   "Push me!", and 'hslider ref meta ("gain",1.0,0.0,10.0,0.1) a horizontal
+   slider with label "gain" and the given initial, min, max and step size
+   values.
+
+   The control variable itself is implemented as a C pointer 'ref' which,
+   depending on the dsp's sample format, points either to a C float or a C
+   double value. Changing the value pointed to by 'ref' using 'put_double' or
+   'put_float' (before invoking the dsp's 'compute' function) assigns a new
+   value to the corresponding control element in the Faust dsp. Passive
+   control elements such as 'vbargraph' have their value updated during
+   invocation of the 'compute' function, and can then be read using
+   'get_double' or 'get_float'.
+
+   The 'meta' argument is a list of key=>val string pairs holding any metadata
+   associated with the control, such as MIDI controller assignments, layout
+   instructions, etc.; please check the Faust documentation for details.
 
    There are also three constructors for denoting groups of controls,
    'vgroup', 'hgroup' and 'tgroup'. These take a single 'args' argument, which
@@ -49,24 +56,27 @@ public button checkbox vslider hslider nentry vbargraph hbargraph
   vgroup hgroup tgroup;
 
 /* Convenience functions to retrieve the components of a control description.
-   The control_type, control_ref and control_label functions return the type
-   (i.e., constructor), reference (a C double* or float* pointer) and label of
-   a control, respectively. control_args yields the remaining control
+   The control_type, control_ref, control_meta and control_label functions
+   return the type (i.e., constructor), reference (a C double* or float*
+   pointer), metadata (a list of key=>val string pairs) and label of a
+   control, respectively. control_args yields the remaining control
    parameters. */
 
-control_type (f@_ ptr args) |
+control_type (f@_ ptr meta args) |
 control_type (f@_ args) = f;
 
-control_ref (_ ptr args) = ptr;
+control_ref (_ ptr meta args) = ptr;
 
-control_label (_ ptr (label,args)) |
+control_meta (_ ptr meta args) = meta;
+
+control_label (_ ptr meta (label,args)) |
 control_label (_ (label,args)) |
-control_label (_ ptr label::string) |
+control_label (_ ptr meta label::string) |
 control_label (_ label::string) = label;
 
-control_args (_ ptr (label,args)) |
+control_args (_ ptr meta (label,args)) |
 control_args (_ (label,args)) = args;
-control_args (_ ptr label::string) |
+control_args (_ ptr meta label::string) |
 control_args (_ label::string) = ();
 
 /* The following function returns a flat representation of a control group as
@@ -87,8 +97,8 @@ pcontrols x = controls "" x with
   controls path x =
     case x of
       _ (label::string,ctls::rlist) = catmap (controls (join path label)) ctls;
-      f@_ ptr (label::string,args) = [f ptr (join path label,args)];
-      f@_ ptr label::string = [f ptr (join path label)];
+      f@_ ptr meta (label::string,args) = [f ptr meta (join path label,args)];
+      f@_ ptr meta label::string = [f ptr meta (join path label)];
       _ = [x]; // bad control description
     end;
   join "" s::string |
@@ -101,6 +111,10 @@ end;
    pointers. */
 
 control_map ui = { control_label c => control_ref c | c = ui };
+
+/* Same for the metadata. */
+
+control_metamap ui = { control_label c => control_meta c | c = ui };
 
 /* Convenience functions to get and set a control value, based on the actual
    pointer type of the control. */
