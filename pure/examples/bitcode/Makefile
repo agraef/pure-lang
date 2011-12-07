@@ -1,16 +1,16 @@
 
 # GNU Makefile to compile the C, Fortran and Faust examples to LLVM bitcode.
 
-# Edit these as needed. CC is the C compiler (llvm-gcc by default), FC the
-# Fortran compiler (llvm-fortran), FAUST the Faust compiler, including any
-# options for LLVM bitcode generation that they may need.
+# Edit these as needed. CC is the C compiler, FC the Fortran compiler, FAUST
+# the Faust compiler, including any options for LLVM bitcode generation that
+# they may need.
 
-# NOTE: If you want to use the "dragonegg" plugin for gcc, make sure to set
-# the variable below to the actual pathname of the plugin on your system. Also
-# note that at present dragonegg can't be used with -c to generate LLVM
-# bitcode directly from source files. Therefore, when using dragonegg, this
-# Makefile selects a different sets of rules which create the bitcode from
-# intermediate LLVM assembler (.ll) files instead.
+# NOTE: When using the dragonegg plugin for gcc, make sure to set the variable
+# below to the actual pathname of the plugin on your system. Also note that at
+# present dragonegg can't be used with -c to generate LLVM bitcode directly
+# from source files. Therefore the Makefile selects a different sets of rules
+# which create the bitcode from intermediate LLVM assembler (.ll) files
+# instead.
 
 # This should work out of the box if you installed dragonegg on ggc's plugin
 # path (gcc -print-file-name=plugin).
@@ -25,10 +25,11 @@ FAUST = faust -double -lang llvm
 
 # Prerequisites:
 
-# For the C and Fortran examples, you need to have a version of llvm-gcc with
-# both C and Fortran support installed. (Clang can be used instead of llvm-gcc
-# if you have it.) Also, the headers and libraries of the GNU Scientific
-# Library (GSL) are needed to compile and run the gslsort.c example.
+# For the C and Fortran examples, you need to have a version of llvm-gcc or
+# gcc+dragonegg with both C and Fortran support installed. (Clang can be used
+# instead of llvm-gcc if you have it.) Also, the headers and libraries of the
+# GNU Scientific Library (GSL) are needed to compile and run the gslsort.c
+# example.
 
 # For the Faust signal processing examples (.dsp programs), you'll need a
 # special version of Grame's Faust compiler (http://faust.grame.fr). Until
