@@ -7,11 +7,16 @@ const n  = 10;    // #samples per block
    gain factor which can be set using a corresponding control. In this example
    we simply inline the Faust code. Of course, you can also compile the Faust
    code separately and then import it with a 'using' clause. The freeverb
-   example in this directory shows how to do this. */
+   example in this directory shows how to do this.
+
+   Note that we also added some metadata (dsp version, MIDI controller
+   assignment) for illustration purposes. Faust simply records this data and
+   makes it available. It's up to the application (i.e., the Pure script) to
+   interpret the metadata as it sees fit. */
 
 %< -*- dsp:test -*-
 declare version "1.0";
-gain = nentry("gain", 0.3, 0, 10, 0.01);
+gain = nentry("gain [midi:ctrl 0x01]", 0.3, 0, 10, 0.01);
 process = + : *(gain);
 %>
 
@@ -49,12 +54,19 @@ let ui = controls ui;
 let name,dbl = dsp_name dsp, dsp_doublep dsp;
 
 /* As of Pure 0.50 it is also possible to query the metadata of a Faust
-   module. This is static data in the form of a list of key=>val string pairs,
-   which applies to all dsps of a given class. It typically includes items
-   such as the name, version and author of the dsp, which can optionally be
-   included in a Faust programs by means of the 'declare' statement. Please
-   check the Faust documentation for details. Here we use this information to
-   retrieve the version number of the dsp if it is available. */
+   module. This takes the form of a list of key=>val string pairs, which comes
+   in two flavours (please check the Faust documentation for details):
+
+   Control metadata is associated with control variables and shows up in the
+   UI part of the dsp info (see above). It provides auxiliary information
+   about a control, such as hints about units, GUI layout or MIDI controller
+   assignments.
+
+   Global metadata is static data which applies to all dsps of a given
+   class. It typically includes items such as the name, version and author of
+   the dsp, which can optionally be included in a Faust programs by means of
+   the 'declare' statement. Here we use this information to retrieve the
+   version number of the dsp if it is available. */
 
 let m = record test::meta;
 let name = if member m "version" then name+" "+m!"version" else name;
