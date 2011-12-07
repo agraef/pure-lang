@@ -16662,8 +16662,18 @@ pure_expr* record_pack(pure_expr *x)
 }
 
 /* Direct Faust interface. These data structures and routines are used to
-   handle the control parameters in a Faust DSP. (This is basically the same
-   as in the pure-faust module, but tailored for faust -lang llvm.) */
+   handle the metadata and control parameters in a Faust DSP. (This is
+   basically the same as in the pure-faust module, but tailored for faust
+   -lang llvm.) */
+
+typedef pair<const char*,const char*> strpair;
+
+struct FaustMeta
+{
+  list<strpair> data;
+  void declare (const char* key, const char* value)
+  { data.push_back(strpair(key, value)); }
+};
 
 class FaustUI
 {
@@ -16873,12 +16883,59 @@ void PureFaustUI::closeBox()
 
 void PureFaustUI::run() {}
 
-/* C callbacks for the UI construction methods. These are called in the
-   Faust-generated LLVM code (buildUserInterface routine). Note that for some
-   of these there are two variations, depending on whether floating point
-   parameters are passed as double (faust -double) or not. */
+/* C callbacks for the UI and metadata construction methods. These are called
+   in the Faust-generated LLVM code (buildUserInterface and metadata
+   routines). Note that for some of these there are two variations, depending
+   on whether floating point parameters are passed as double (faust -double)
+   or not. */
 
 extern "C" {
+
+struct MetaGlue {
+  void *declare;
+};
+
+// XXXFIXME: Faust doesn't pass the glue pointer here, so we have to use a
+// static FaustMeta object to process the metadata right now.
+static FaustMeta *__faust_metadata; // TLD
+static void declareMetaGlue(const char* key, const char* value)
+{
+  if (__faust_metadata) __faust_metadata->declare(key, value);
+}
+
+void *faust_new_metadata()
+{
+  MetaGlue *glue = (MetaGlue*)malloc(sizeof(MetaGlue));
+  glue->declare = (void*)declareMetaGlue;
+  __faust_metadata = new FaustMeta;
+  return glue;
+}
+
+void faust_free_metadata(void *p)
+{
+  MetaGlue *glue = (MetaGlue*)p;
+  if (__faust_metadata) delete __faust_metadata;
+  free(glue);
+}
+
+pure_expr *faust_make_metadata(void *p)
+{
+  FaustMeta *m = __faust_metadata;
+  if (!m) return 0;
+  size_t n = m->data.size();
+  pure_expr **xv = (pure_expr**)malloc(n*sizeof(pure_expr*));
+  pure_expr *f = pure_symbol(pure_sym("=>"));
+  assert(f && xv);
+  list<strpair>::iterator it = m->data.begin(), end = m->data.end();
+  for (size_t i = 0; i < n; i++, it++) {
+    assert(it != end);
+    xv[i] = pure_appl(f, 2,
+		      pure_cstring_dup(it->first),
+		      pure_cstring_dup(it->second));
+  }
+  pure_expr *x = pure_listv(n, xv); free(xv);
+  return x;
+}
 
 struct UIGlue {
 

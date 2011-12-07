@@ -10,6 +10,7 @@ const n  = 10;    // #samples per block
    example in this directory shows how to do this. */
 
 %< -*- dsp:test -*-
+declare version "1.0";
 gain = nentry("gain", 0.3, 0, 10, 0.01);
 process = + : *(gain);
 %>
@@ -47,9 +48,20 @@ let k,l,ui = test::info dsp;
 let ui = controls ui;
 let name,dbl = dsp_name dsp, dsp_doublep dsp;
 
+/* As of Pure 0.50 it is also possible to query the metadata of a Faust
+   module. This is static data in the form of a list of key=>val string pairs,
+   which applies to all dsps of a given class. It typically includes items
+   such as the name, version and author of the dsp, which can optionally be
+   included in a Faust programs by means of the 'declare' statement. Please
+   check the Faust documentation for details. Here we use this information to
+   retrieve the version number of the dsp if it is available. */
+
+let m = record test::meta;
+let name = if member m "version" then name+" "+m!"version" else name;
+
 // Print some information about the dsp.
 using system;
-printf "-- %s dsp --\n" name;
+printf "-- dsp: %s --\n" name;
 printf "#inputs:  %d\n" k;    // => 2
 printf "#outputs: %d\n" l;    // => 1
 printf "sample format: %s\n" (if dbl then "double" else "float");

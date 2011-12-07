@@ -27,10 +27,18 @@
 
 #include <stdlib.h>
 #include <math.h>
+#include <list>
+#include <utility>
+
+using namespace std;
+
+typedef pair<const char*,const char*> strpair;
 
 struct Meta
 {
-  void declare (const char* key, const char* value) { }
+  list< strpair > data;
+  void declare (const char* key, const char* value)
+  { data.push_back(strpair(key, value)); }
 };
 
 //-------------------------------------------------------------------
@@ -483,4 +491,16 @@ extern "C" void deldsp(mydsp* d)
     last->next = d; d->prev = last; last = d;
   } else
     first = last = d;
+}
+
+extern "C" Meta *newmeta()
+{
+  Meta *m = new Meta;
+  mydsp::metadata(m);
+  return m;
+}
+
+extern "C" void delmeta(Meta* m)
+{
+  delete m;
 }

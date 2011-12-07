@@ -36,6 +36,20 @@
 
 /* The Faust UI and dsp classes. */
 
+#include <list>
+#include <utility>
+
+using namespace std;
+
+typedef pair<const char*,const char*> strpair;
+
+struct Meta
+{
+  list<strpair> data;
+  void declare (const char* key, const char* value)
+  { data.push_back(strpair(key, value)); }
+};
+
 class UI
 {
   bool	fStopped;
@@ -259,6 +273,8 @@ class dsp {
 
 typedef dsp *(*newdspfun)();
 typedef void (*deldspfun)(dsp*);
+typedef Meta *(*newmetafun)();
+typedef void (*delmetafun)(Meta*);
 
 /* The Faust DSP proxy. This structure keeps all the necessary information,
    including the handle of the module from which the DSP gets loaded and the
@@ -269,6 +285,8 @@ struct faust_t {
   lt_dlhandle h;
   newdspfun newdsp;
   deldspfun deldsp;
+  newmetafun newmeta;
+  delmetafun delmeta;
   int rate;
   dsp *d;
   PureUI *ui;
@@ -348,6 +366,8 @@ faust_t *faust_init(const char *name, int rate)
   fd->h = NULL;
   fd->newdsp = NULL;
   fd->deldsp = NULL;
+  fd->newmeta = NULL;
+  fd->delmeta = NULL;
   fd->rate = 0;
   fd->d = NULL;
   fd->ui = NULL;
@@ -372,6 +392,8 @@ faust_t *faust_init(const char *name, int rate)
     goto error;
   fd->d = fd->newdsp();
   if (!fd->d) goto error;
+  fd->newmeta = (newmetafun)lt_dlsym(fd->h, "newmeta");
+  fd->delmeta = (delmetafun)lt_dlsym(fd->h, "delmeta");
   fd->d->init(rate);
   fd->rate = rate;
   fd->ui = new PureUI();
@@ -656,4 +678,28 @@ pure_expr *faust_info(faust_t *fd)
   free(xv);
   return pure_tuplel(3, pure_int(fd->d->getNumInputs()),
 		     pure_int(fd->d->getNumOutputs()), x);
+}
+
+extern "C"
+pure_expr *faust_meta(faust_t *fd)
+{
+  newmetafun newmeta = fd->newmeta;
+  delmetafun delmeta = fd->delmeta;
+  if (!newmeta) return 0;
+  Meta *m = newmeta();
+  if (!m) return 0;
+  size_t n = m->data.size();
+  pure_expr **xv = (pure_expr**)malloc(n*sizeof(pure_expr*));
+  pure_expr *f = pure_symbol(pure_sym("=>"));
+  assert(f && xv);
+  list<strpair>::iterator it = m->data.begin(), end = m->data.end();
+  for (size_t i = 0; i < n; i++, it++) {
+    assert(it != end);
+    xv[i] = pure_appl(f, 2,
+		      pure_cstring_dup(it->first),
+		      pure_cstring_dup(it->second));
+  }
+  pure_expr *x = pure_listv(n, xv); free(xv);
+  if (delmeta) delmeta(m);
+  return x;
 }

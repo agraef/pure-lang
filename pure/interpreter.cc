@@ -728,6 +728,12 @@ void interpreter::init()
 		 "faust_free_ui", "void",     1, "void*");
   declare_extern((void*)faust_make_info,
 		 "faust_make_info","expr*",   3, "int", "int", "void*");
+  declare_extern((void*)faust_new_metadata,
+		 "faust_new_metadata", "void*", 0);
+  declare_extern((void*)faust_free_metadata,
+		 "faust_free_metadata", "void", 1, "void*");
+  declare_extern((void*)faust_make_metadata,
+		 "faust_make_metadata","expr*", 1, "void*");
   declare_extern((void*)faust_add_rtti,
 		 "faust_add_rtti", "void",    3, "char*", "int", "bool");
 }
@@ -2051,6 +2057,51 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
       Value *u = b.CreateCall(infofun, mkargs(args));
       // Get rid of the internal UI data structure.
       Function *freefun = module->getFunction("faust_free_ui");
+      args.clear();
+      args.push_back(v);
+      b.CreateCall(freefun, mkargs(args));
+      // Return the result.
+      b.CreateRet(u);
+    }
+    // The meta function takes no parameter and returns a list with the global
+    // and static metadata of a dsp class, in the same format as the
+    // faust_meta function in the pure-faust module. Note that older Faust2
+    // versions (before git rev. 2ecd0a40) don't support this, so this
+    // function is only added if this feature is actually available.
+    Function *metadata = module->getFunction("$$faust$"+modname+"$metadata");
+    if (metadata) {
+      myfuns.push_back("meta");
+      // Type of the above; the first argument gives the metadata type.
+      llvm_const_FunctionType *ht = metadata->getFunctionType();
+      llvm_const_Type *meta_type = ht->getParamType(0);
+      // Create the call interface of our convenience function.
+      vector<llvm_const_Type*> argt;
+      FunctionType *ft = func_type(ExprPtrTy, argt, false);
+      Function *f = Function::Create(ft, Function::ExternalLinkage,
+				     "$$faust$"+modname+"$meta", module);
+      BasicBlock *bb = basic_block("entry", f);
+#ifdef LLVM26
+      Builder b(getGlobalContext());
+#else
+      Builder b;
+#endif
+      b.SetInsertPoint(bb);
+      // Call the runtime function to create the internal meta data structure.
+      Function *newfun = module->getFunction("faust_new_metadata");
+      vector<Value*> args;
+      Value *v = b.CreateCall(newfun, mkargs(args));
+      // Call the Faust function to initialize the meta data structure. Note
+      // that we need to cast the void* argument to the proper pointer type
+      // expected by the metadata routine.
+      args.push_back(b.CreateBitCast(v, meta_type));
+      b.CreateCall(metadata, mkargs(args));
+      // Construct the metadata list.
+      Function *makefun = module->getFunction("faust_make_metadata");
+      args.clear();
+      args.push_back(v);
+      Value *u = b.CreateCall(makefun, mkargs(args));
+      // Get rid of the internal meta data structure.
+      Function *freefun = module->getFunction("faust_free_metadata");
       args.clear();
       args.push_back(v);
       b.CreateCall(freefun, mkargs(args));
