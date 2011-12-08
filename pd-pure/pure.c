@@ -424,6 +424,7 @@ typedef struct _pure {
   void *tmp, *tmpst;		/* temporary storage */
   bool save;			/* enables the pd_save/pd_restore feature */
   pure_expr *sigx;		/* Pure expression holding the input signal */
+  char *open_filename;		/* menu-open filename (script by default) */
   /* asynchronous messaging */
   t_clock *clock;		/* wakeup for asynchronous processing */
   pure_expr *msg;		/* pending asynchronous message */
@@ -800,6 +801,43 @@ extern void pd_unreceive(const char *sym)
   unbind_receiver(actx, s);
 }
 
+/* Set the filename to be opened for the actx object on menu-open (instead of
+   the Pure source of the object). NOTE: This must be called during object
+   initialization or a method call, otherwise actx will be undefined. */
+
+extern void pd_setfile(const char *name)
+{
+  if (actx) {
+    if (actx->open_filename) free(actx->open_filename);
+    actx->open_filename = strdup(name);
+  }
+}
+
+/* Retrieve the filename that will be opened on a menu-open action. This can
+   be the filename set with a previous call to pd_setfile(), or the filename
+   of the Pure script by default (if any). */
+
+extern pure_expr *pd_getfile(void)
+{
+  t_canvas *canvas;
+  if (actx) {
+    if (actx->open_filename)
+      return pure_cstring_dup(actx->open_filename);
+    else {
+      t_classes *c = actx->cls;
+      if (!c) return 0;
+      if (c->dir && *c->dir) {
+	size_t l = strlen(c->dir)+strlen(c->sym->s_name)+strlen(".pure")+1;
+	char *buf = malloc(l+1);
+	if (!buf) return 0;
+	sprintf(buf, "%s/%s.pure", c->dir, c->sym->s_name);
+	return pure_cstring(buf);
+      }
+    }
+  }
+  return 0;
+}
+
 /* Process an output message and route it through the given outlet. */
 
 static inline bool check_outlet(t_pure *x, int k)
@@ -1075,21 +1113,29 @@ static void timeout(t_pure *x)
 
 static void pure_menu_open(t_pure *x)
 {
-  t_classes *c = x->cls;
-  if (!c) return; /* this should never happen */
-  if (c->dir && *c->dir)
+  if (x->open_filename) {
 #if PD_MAJOR_VERSION > 0 || PD_MINOR_VERSION >= 43
-    /* This needs a fairly recent Pd version (probably 0.43 or later). */
-    sys_vgui("::pd_menucommands::menu_openfile {%s/%s.pure}\n",
-	     c->dir, c->sym->s_name);
+    sys_vgui("::pd_menucommands::menu_openfile {%s}\n", x->open_filename);
 #else
-    /* An older Pd version before the GUI rewrite. Maybe you're lucky and this
-       works for you. */
-    sys_vgui("menu_openfile {%s/%s.pure}\n", c->dir, c->sym->s_name);
+    sys_vgui("menu_openfile {%s}\n", x->open_filename);
 #endif
-  else
-    pd_error(x, "pd-pure: %s object doesn't have a script file",
-	     c->sym->s_name);
+  } else {
+    t_classes *c = x->cls;
+    if (!c) return; /* this should never happen */
+    if (c->dir && *c->dir)
+#if PD_MAJOR_VERSION > 0 || PD_MINOR_VERSION >= 43
+      /* This needs a fairly recent Pd version (probably 0.43 or later). */
+      sys_vgui("::pd_menucommands::menu_openfile {%s/%s.pure}\n",
+	       c->dir, c->sym->s_name);
+#else
+      /* An older Pd version before the GUI rewrite. Maybe you're lucky and
+         this works for you. */
+      sys_vgui("menu_openfile {%s/%s.pure}\n", c->dir, c->sym->s_name);
+#endif
+    else
+      pd_error(x, "pd-pure: %s object doesn't have a script file",
+	       c->sym->s_name);
+  }
 }
 
 /* Handle a message to the leftmost inlet. */
@@ -1340,6 +1386,7 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
   x->recvsym = 0;
   x->args = get_expr(s, argc, argv);
   x->tmp = x->tmpst = 0; x->save = false;
+  x->open_filename = 0;
   /* Default setup for a dsp object is 1 control in/out + 1 audio in/out. */
   if (is_dsp)
     x->n_dspin = x->n_dspout = 1;
@@ -1471,6 +1518,7 @@ static void pure_fini(t_pure *x)
   if (x->dspin) free(x->dspin);
   if (x->dspout) free(x->dspout);
   if (x->sigx) pure_free(x->sigx);
+  if (x->open_filename) free(x->open_filename);
   xunlink(x);
 }
 
@@ -1516,6 +1564,10 @@ static void pure_refini(t_pure *x)
     x->tmp = make_blob(x->msg);
     pure_free(x->msg);
     x->msg = 0;
+  }
+  if (x->open_filename) {
+    free(x->open_filename);
+    x->open_filename = 0;
   }
 }
 
