@@ -25,8 +25,8 @@ once the scripts have been compiled, they are executed very efficiently.
 Copying
 =======
 
-Copyright (c) 2009 by Albert Graef. pd-pure is distributed under a 3-clause
-BSD-style license, please see the included COPYING file for details.
+Copyright (c) 2009-2011 by Albert Graef. pd-pure is distributed under a
+3-clause BSD-style license, please see the included COPYING file for details.
 
 Installation
 ============
@@ -60,7 +60,7 @@ well. You can find all packages on the Download page at
 http://pure-lang.googlecode.com. For instance, at the time of this writing,
 the available packages are:
 
-* http://pure-lang.googlecode.com/files/pure-0.48.msi
+* http://pure-lang.googlecode.com/files/pure-0.50.msi
 
 * http://pure-lang.googlecode.com/files/pd-mingw-0.42-5.msi
 
@@ -84,12 +84,12 @@ Usage
 
 After installation, you still have to tell Pd to load the Pure external at
 startup, either with the ``-lib`` option (``pd -lib pure``), or by specifying
-``pure`` in the File/Startup options. (This setting can be saved so that the
-Pure loader is always available when you run Pd.) Once the Pure loader has
-been installed, you should see a message in the Pd main window indicating that
-the external has been loaded.
+``pure`` in the File/Startup options (Media/Preferences/Startup in Pd 0.43 and
+later). This setting can be saved so that the Pure loader is always available
+when you run Pd. Once the Pure loader has been installed, you should see a
+message in the Pd main window indicating that the external has been loaded.
 
-As of version 0.12, pd-pure supports the definition of both `control` and
+Since version 0.12 pd-pure supports the definition of both `control` and
 `audio objects` in Pure. The latter are also known as "tilde objects" in Pd
 parlance; pd-pure follows the Pd convention in that audio objects have a
 trailing tilde in their name. Audio objects are used primarily for processing
@@ -1001,6 +1001,24 @@ your scripts.
    otherwise the function will fail. Also note that the results may differ for
    different instances of the same object class, depending on which patches
    the objects are located in.
+
+.. c:function:: extern expr *pd_getfile()
+
+   Returns the name of the file that will be opened with the ``menu-open``
+   action (accessible by right-clicking on a Pure object and selecting
+   ``Open``). This is usually the Pure script of the object, if available, but
+   this can be changed with :c:func:`pd_setfile` below. The function must be
+   called during object creation or in the method calls of an object, so that
+   it is clear what the current object is; otherwise the function will fail.
+
+.. c:function:: extern void pd_setfile(char *s)
+
+   Sets the name of the file to be opened with the ``menu-open`` action. By
+   default, this is the Pure script of the object, if available; this function
+   can be used to change the name of the file on a per-object basis. The
+   function must be called during object creation or in the method calls of an
+   object, so that it is clear what the current object is; otherwise the
+   function will have no effect.
 
 .. c:function:: extern void pd_post(char *s)
 
