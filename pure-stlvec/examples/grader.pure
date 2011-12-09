@@ -125,7 +125,7 @@ stl::defstruct state_info              // mutable - of course
  num_errors.int                        // errors in data file
 };
 
-#! --warn                              // let the warnings proceed
+#! --rewarn                            // let the warnings proceed
 
 /*** Helper functions ***************************************************/
 
@@ -151,7 +151,7 @@ decreasing_scores s1::student_info s2::student_info =
 
 ::__show__ s:: stl::struct = stl::tostr 5 s;  // for debugging
 
-::__show__  it::svit = stl::tostr 5 it;       // for debugging
+::__show__  it::svrng = stl::tostr 5 it;      // for debugging
 
 /*** Parse student data and make student_info **************************/
 
@@ -453,5 +453,29 @@ end;
 
 if ~compiling && argc > 0 then main (tail argv) else ();
 
-let test_args = ["grader_config.txt", "-rn", "-f", "grader_data.txt"];
+let test_args = ["grader_config.txt", "-rr", "-f", "grader_data.txt"];
 
+
+/*** Example *********************************************************
+
+> run grader.pure // pauses are for jit compilation
+> main test_args; 
+
+Name                 Rank  Curved  Standard       Score
+-------------------  ----  ------  --------  ----------
+aJohnson, Sam           1      A-        A+      100.00
+aGreen, Julia           2      B-        B-       80.00
+aWhite, Bill            2      B-        B-       80.00
+aSmith, Andrew          4      C-        C-       70.00
+aWatts, Fred            5      D+        D-       60.00
+aManning, Charles       6      F         F        50.00
+()
+
+Edit test_args, config file or data file and try again to see result without
+compile time pauses.
+
+> main test_args; // fast
+
+.... 
+
+**/

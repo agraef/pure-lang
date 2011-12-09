@@ -33,8 +33,8 @@ end;
 
 /*** readable representation of a stlvec or range ************************/
 
-tostr sz::int it::svit = tostr (sz, ",") it;
-tostr (sz::int, sep::string) it::svit = res when
+tostr sz::int it::svrng = tostr (sz, ",") it;
+tostr (sz::int, sep::string) it::svrng = res when
   sv,b,e = bounds it;
   sz = if sz <= 0 then 1000 else sz;
   rsz = e-b;
@@ -42,7 +42,7 @@ tostr (sz::int, sep::string) it::svit = res when
   s = join_with sep (map str elms);
   s = if #elms < rsz then s + sep + "..." else s;
   sfx = if e < #sv then " }" else "}";
-  pfx = if typep mutable_svit it then "sv{" else "csv{";
+  pfx = if typep mutable_svrng it then "sv{" else "csv{";
   pfx = if b > 0 then pfx + " " else pfx;
   res = pfx + s + sfx;
 end;

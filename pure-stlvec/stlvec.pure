@@ -75,7 +75,8 @@ ensure_end v e = if e == svend then sz
 
 namespace ;
 
-public emptystlvec mkstlvec first last rmfirst rmlast append erase members;
+public emptystlvec mkstlvec first last rmfirst rmlast 
+  append erase clear members;
 
 namespace stl;
 
@@ -132,11 +133,11 @@ bounds sv@(STLVEC v) =
 
 ::update sv@(STLVEC v) p::int x = sv_put v p x $$ sv;
 
-::erase rng@(STLVEC v, f::int, l::int) = sv_erase rng $$ STLVEC v;
+::erase (STLVEC v) (f::int, l::int) = sv_erase (STLVEC v,f,l) $$ STLVEC v;
 
-::erase (STLVEC v, p::int) = erase (STLVEC v, p, p+1);
+::erase (STLVEC v) p::int = erase (STLVEC v, p, p+1);
 
-::erase sv@(STLVEC v) = sv_clear v $$ sv;
+::clear sv@(STLVEC v) = sv_clear v $$ sv;
 
 ::insert (STLVEC v, p::int) rng::svrng = sv_splice v p rng $$ STLVEC v;
 ::insert (STLVEC v, p::int) xs::list = sv_splice v p xs $$ STLVEC v;
