@@ -25,20 +25,6 @@ included with the pure-stlmap distribution package for details.
 
 using namespace std;
 
-/*** Helpers for debugging only ************************************/
-
-static bool sm_trace_enabled = false;
-
-void stl_set_sm_trace(bool enable) 
-{
-  sm_trace_enabled = enable;
-}
-
-bool stl_sm_trace_enabled()
-{
-  return sm_trace_enabled;
-}
-
 /*** Helpers for stlmap.cpp only ************************************/
 
 enum {gi_find, gi_lower, gi_upper};
@@ -115,10 +101,6 @@ static px* px_pointer(sm* smp)
   if (!sym) sym = pure_new(pure_symbol(pure_sym("stl::sm_delete")));
   int tag = smp->keys_only ? stlset_tag() : stlmap_tag();
   px* ptr = pure_tag( tag, pure_pointer(smp));
-#ifdef STL_DEBUG
-  if (stl_sm_trace_enabled())
-    cerr << "TRACE SM:    new sm*: " << smp << endl;
-#endif
   return pure_sentry(sym,ptr);
 }
 
@@ -128,10 +110,6 @@ static px* px_pointer(sm_iter* smip)
   if (!sym) sym = pure_new(pure_symbol(pure_sym("stl::sm_iter_delete")));
   int tag = smip->smp()->keys_only ? stlset_iter_tag() : stlmap_iter_tag();
   px* ptr = pure_tag( tag, pure_pointer(smip));
-#ifdef STL_DEBUG
-  if (stl_sm_trace_enabled())
-    cerr << "TRACE SMI:    new smi*: " << smip << endl;
-#endif
   return pure_sentry(sym,ptr);
 }
 
@@ -200,10 +178,13 @@ static px* get_elm_aux(sm* smp, pmi i, int what)
   if (i != mp.end()) {
     switch (what) {
     case stl_sm_key:
-      ret = i->first;
+      ret = i->first; 
       break;
     case stl_sm_val:
-      ret = smp->keys_only ? i->first : i->second;
+      if (smp->keys_only)
+        ret = i->first;
+      else
+        ret = i->second; 
       break;
     case stl_sm_elm:
       px* key = i->first;     
@@ -212,25 +193,10 @@ static px* get_elm_aux(sm* smp, pmi i, int what)
     }
   }
   else {
-    switch (what) {
-    case stl_sm_key:
+    if (what==stl_sm_key)
       ret = smend();
-      break;
-    case stl_sm_val:
-      if (smp->keys_only) 
-        ret = pure_int(0);
-      else
-        index_error();
-      break;
-    case stl_sm_elm:
-      if (smp->keys_only) 
-        ret = pure_int(0);
-      else
-        index_error();
-      break;
-      px* key = i->first;
-      return smp->keys_only ? key : pxhpair_to_pxrocket(*i);
-    }
+    else
+      index_error();
   }
   return ret;
 }
@@ -628,22 +594,14 @@ px* sm_make_empty(px* comp, px* v_comp, px* v_eql, px* dflt, int keys_only)
 }
 
 void sm_delete(sm* smp){
-#ifdef STL_DEBUG
-  if (stl_sm_trace_enabled())
-    cerr << "TRACE SM: delete sm*: " << smp << endl;
-#endif
   delete(smp);
 }
 
 void sm_iter_delete(sm_iter* smip){
-#ifdef STL_DEBUG
-  if (stl_sm_trace_enabled())
-    cerr << "TRACE SM: delete smi*: " << smip << endl;
-#endif
   delete(smip);
 }
 
-px* sm_parameters(px* tpl)
+px* sm_container_info(px* tpl)
 {
   sm_range rng(tpl);
   if (!rng.is_valid) bad_argument();  
@@ -682,7 +640,6 @@ px* sm_find(px* pxsmp, px* key, int what)
 {
   sm* smp;
   if ( !get_smp(pxsmp,&smp) ) bad_argument();
-  px* ret = 0;
   pxhmap& mp  = smp->mp;
   int num_inserted;
   pmi i = get_iter(smp, key, gi_find);

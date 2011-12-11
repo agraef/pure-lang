@@ -24,7 +24,6 @@ included with the pure-stlmap distribution package for details.
 
 #include <iostream>
 #include <map>
-#include <vector>
 #include "stlbase.hpp"
 #include "stlvec.hpp"
 
@@ -53,7 +52,7 @@ struct stlmap {
   ~stlmap();
   px* parameter_tuple();
   pmi  find(px* key);
-  bool get_cached_pmi(px* k, pmi& i);
+  bool get_cached_pmi(px* k, pmi& i); 
   void cache_pmi(const pmi& i);
   void clear();
   int  erase(pmi pos);
@@ -109,7 +108,7 @@ extern "C" {
                      px* val_equal, px* dflt, int keys_only);
   void sm_delete(sm* smp);
   void sm_iter_delete(sm_iter* smip);
-  px*  sm_parameters(px* tpl);
+  px*  sm_container_info(px* tpl);
   int  sm_size(px* tpl);
   bool sm_empty(px* tpl); 
   int  sm_count(px* pxsmp, px* key);
@@ -158,9 +157,6 @@ extern "C" {
   px*  sm_next_key(px* pxsmp, px* key);
   px*  sm_update(px* pxsmp, px* key, px* val);
   px*  sm_update_with(px* pxsmp, px* key, px* binfun);
-
-  void stl_set_sm_trace(bool enable);
-  bool stl_sm_trace_enabled();
 
 }
 

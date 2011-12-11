@@ -24,7 +24,6 @@ included with the pure-stlmap distribution package for details.
 
 #include <iostream>
 #include <map>
-#include <vector>
 #include "stlbase.hpp"
 #include "stlvec.hpp"
 
@@ -109,8 +108,8 @@ extern "C" {
   px*  smm_make_empty(px* comp, px* val_comp, 
                      px* val_equal, px* dflt, int keys_only);
   void smm_delete(smm* smmp);
-  void smm_iter_delete(smm_iter* smmip);
-  px*  smm_parameters(px* tpl);
+  void smm_iter_delete(smm_iter* smmip); 
+  px*  smm_container_info(px* tpl);
   int  smm_size(px* tpl);
   bool smm_empty(px* tpl); 
   int  smm_count(px* pxsmmp, px* key);

@@ -411,7 +411,8 @@ void stlmmap::clear_iter(pmmi pos)
 {
   if ( pos == mmp.end() ) return;
   if (has_recent_pmmi) {
-    vector<pmmi>::iterator i = ::find(recent_pmmi.begin(),recent_pmmi.end(),pos);
+    vector<pmmi>::iterator i = 
+      ::find(recent_pmmi.begin(),recent_pmmi.end(),pos);
     if (i != recent_pmmi.end()) recent_pmmi.erase(i);
   }
   vector<smm_iter*>::iterator i = smis.begin(), pe;
@@ -624,7 +625,7 @@ void smm_iter_delete(smm_iter* smmip){
   delete(smmip);
 }
 
-px* smm_parameters(px* tpl)
+px* smm_container_info(px* tpl) 
 {
   smm_range rng(tpl);
   if (!rng.is_valid) bad_argument();  
