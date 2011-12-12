@@ -1,0 +1,376 @@
+
+using pdfaust;
+using namespace pdfaust;
+
+// Lexicographic order of tuples so that they can be used as dictionary keys.
+(x1,y1) < (x2,y2) = x1<x2 || x1==x2 && y1<y2;
+
+fsynth_dsp name instance chan::int nvoices::int =
+  catch error (k,l,fsynth with
+
+  // bang outputs the current (non-voice) control values in OSC format.
+  fsynth bang = out when
+    out = map (\(id=>ptr) -> oscid id $ get_control ptr) (get ctrls!0);
+  end;
+
+  // write writes the current control values as MIDI and OSC controller
+  // messages to the special "midiout" and "oscout" receivers.
+  fsynth write = () when
+    do (pd_send "midiout") $
+    catmap (\(id=>ptr) -> midivals id $ get_control ptr) (get ctrls!0);
+    do (pd_send "oscout") $
+    catmap (\(id=>ptr) -> oscvals id $ get_control ptr) (get ctrls!0);
+  end;
+
+  // write with an argument (a flag) puts the unit in "writing" mode in which
+  // MIDI and OSC output is generated in response to controller messages.
+  fsynth (write val) = () when
+    put writing (val~=0);
+  end;
+
+  // reload reloads the Faust synth.
+  fsynth reload = catch (cst ().error) (() when
+    // Uninstall receivers for the previous GUI elements.
+    do (\(id=>ptr) -> pd_unreceive id) (get ctrls!0);
+    // Get rid of the old synths.
+    do faust_exit $ get syn;
+    // Initialize the new synths.
+    dsp = load_dsp name samplerate; dsp_source name;
+    put syn {faust_clone dsp | i = 1..nvoices};
+    // Reinitialize the GUI and grab the control variables.
+    zipwith put [vctrls,ctrls,defaults,ctrlmap,oscmap] [vc,c,df,cm,om] when
+      vc,c,df,cm,om = create_gui {faust_info s!2 | s = get syn};
+    end;
+    put rctrlmap $ ordmdict [id=>(n,args) | n=>(id,args) = get ctrlmap];
+    put roscmap $ ordmdict [id=>p | p=>id = get oscmap];
+    // Reset all voices.
+    put voc initvoc;
+    put active 1;
+    put writing 0; put recording 0;
+    // Give some feedback that we're up and running again.
+    pd_post $ sprintf "%s (%s): %d inputs, %d outputs *** reloaded ***"
+    (instance,name,k,l);
+  end);
+
+  fsynth (reload _) = fsynth reload; // reload receiver
+
+  // The dsp loop.
+  fsynth in::matrix = sum when
+    // render all the voices
+    do (\(syn,out) -> faust_compute syn in out) (zip (get syn) out);
+    // mix down to a single stereo signal
+    //sum = foldl1 (zipwith (+)) out;
+    mix out sum;
+  end;
+
+  // Respond to note messages.
+  fsynth (note num vel ch) = () if ~get active;
+  // For convenience, if in omni mode ignore channel 10 = GM percussion.
+  = () if chan && ch~=chan || ~chan && ch==10;
+  = () when
+    num = int num; vel = int vel; ch = int ch;
+    // note on: allocate (or steal) a voice
+    i,v = alloc (get voc) (ch,num); put voc v;
+    //printf "[%d] %d %d %d\n" (i,num,vel,ch);
+    // update the control variables
+    {freq,gain,gate} = get vctrls!i!!["freq","gain","gate"];
+    put_control freq (midicps (num+get_bend ch));
+    put_control gain (vel/127);
+    put_control gate 1.0;
+  end if vel > 0; // note on
+  = () when
+    num = int num; vel = int vel; ch = int ch;
+    // note off: deallocate a voice
+    case dealloc (get voc) (ch,num) of
+      i,v = () when
+	// printf "[%d] %d %d %d\n" (i,num,vel,ch);
+	put voc v;
+	// update the control variables
+	gate = get vctrls!i!"gate";
+	put_control gate 0.0;
+      end;
+      // note not on at present, ignore
+      _ = ();
+    end;
+  end; // note off
+
+  // Respond to pitch bend messages.
+  fsynth (bend val ch) = () if ~get active || chan && ch~=chan;
+  = () when
+    val = int val; ch = int ch;
+    set_bend ch (2*(val-8192)/8192);
+    do adjust_freq (get_notes (get voc) ch) with
+      adjust_freq (num=>i) = put_control freq (midicps (num+get_bend ch)) when
+	freq = get vctrls!i!"freq";
+      end;
+    end;
+  end;
+
+  // Controller 123. Turn all notes off, on the given channel.
+  fsynth (ctl val num ch) = () if chan && ch~=chan;
+  fsynth (ctl val num ch) = () when
+    ch = int ch;
+    do note_off (get_notes (get voc) ch) with
+      note_off (num=>i) = fsynth (note num 0 ch);
+    end;
+  end if num==123;
+
+  // Other MIDI controllers.
+  fsynth (ctl val num ch) = () if get writing || chan && ch~=chan;
+  fsynth (ctl val num ch) = () when
+    num = int num;
+    ~member (get ctrlmap) num ||
+    do send (get ctrlmap!num) with
+      send (id,args) = pd_send id $ map_ctrl args val;
+    end;
+  end;
+
+  // Stop message. Turn all notes off, on all channels.
+  fsynth stop = () when
+    do (flip put_control 0.0 . (!"gate")) $ get vctrls;
+    put voc initvoc;
+  end;
+
+  // Controller messages.
+  fsynth (id@_ val) = () when
+    oldval = get_control (get ctrls!0!id);
+    if val===bang then
+      do (\c -> put_control (c!id) 1.0) $ get ctrls $$
+      // schedule the button release
+      pd_delay delay_time (id 0.0)
+    else
+      do (\c -> put_control (c!id) val) $ get ctrls;
+    val = if val===bang then 1.0 else val;
+    // In recording mode send the messages in OSC format to the oscrecord
+    // receiver. This is to be used by automation.
+    ~(get recording && val~==oldval) || pd_send "oscrecord" (oscid id val);
+    // In writing mode output MIDI/OSC controller messages for all defined
+    // MIDI and OSC controllers ('midi' and 'osc' attributes in the Faust
+    // source), to sync external MIDI and OSC controllers.
+    ~get writing || do (pd_send "midiout") (midivals id val);
+    ~get writing || do (pd_send "oscout") (oscvals id val);
+  end if member (get ctrls!0) id;
+
+  // Convert controller messages to the corresponding MIDI/OSC messages.
+  midivals id val =
+    [ctl (rmap_ctrl args val) n chan | n,args = get rctrlmap!id] if chan;
+  // omni mode
+  = [ctl (rmap_ctrl args val) n ch | n,args = get rctrlmap!id;
+     ch = 1..16; ch~=10];
+  oscvals id val = [p val | p = get roscmap!id];
+
+  // Special 'init' control.
+  fsynth (id@_ val) = () when
+    do (\(id=>val) -> pd_send id val) $ get defaults;
+  end if id === init_sym;
+
+  // Special 'active' control.
+  fsynth (id@_ val) = () when
+    put active (val~=0);
+    get active || fsynth stop;
+  end if id === active_sym;
+
+  // Special 'record' control.
+  fsynth (id@_ val) = () when
+    put recording (val~=0);
+  end if id === record_sym;
+
+  /* Default OSC message processing. OSC messages are denoted by a leading
+     "/". We translate these to the corresponding Faust controls on the fly.
+     The special 'init' and 'active' controls are also supported. OSC path
+     mappings in the Faust source ('osc' attribute) are handled as well. */
+  fsynth (id@(_::string) val) = case tail id of
+    _ = get writing || do (flip pd_send val) (get oscmap!id)
+      if member (get oscmap) id;
+    id = pd_send id val
+      if member (get ctrls!0) id || any (==id) [init_sym, active_sym];
+    _ = (); // ignore
+  end if ~null id && id!0=="/";
+
+  /* OSC playback. This is to be used by automation. Only the proper OSC paths
+     are recognized here, in the same format as they are output to the
+     "oscrecord" receiver. */
+  fsynth (oscplay bang) = () when
+    // report all current controller settings
+    out = map (\(id=>ptr) -> oscid id $ get_control ptr) (get ctrls!0);
+    do (pd_send "oscrecord") out;
+  end if get recording;
+  fsynth (oscplay (id@(_::string) val)) = case tail id of
+    id = put_control (get ctrls!0!id) val $$ pd_send id val
+      if member (get ctrls!0) id;
+    _ = (); // ignore
+  end if ~null id && id!0=="/";
+
+  // Ignore everything else.
+  //fsynth msg = pd_post $ sprintf "unknown: %s" $ str msg;
+  fsynth _ = ();
+
+  // Translate MIDI note numbers to frequencies in Hz.
+  midicps num = 440*2^((num-69)/12);
+
+  // Keep track of pitch bends.
+  set_bend chan val = insert bend (chan=>val);
+  get_bend chan = if member bend chan then bend!chan else 0.0;
+
+end when
+  nvoices > 0 || throw "fsynth~: bad number of voices";
+  // Special control symbols to reset controls to their defaults and change
+  // the activation status of the synth. These are the same for all synths.
+  init_sym = control_sym instance "init";
+  active_sym = control_sym instance "active";
+  record_sym = control_sym instance "record";
+  // Load the Faust dsp.
+  dsp = load_dsp name samplerate; dsp_source name;
+  // Initialize the synth voices.
+  syn = ref {faust_clone dsp | i = 1..nvoices};
+  faust_exit dsp;
+  // Get the number of inputs and outputs (these can't be changed later).
+  k,l,_ = faust_info (get syn!0);
+  // Initialize the GUI and grab the control variables.
+  vctrls,ctrls,defaults,ctrlmap,oscmap = ref vc,ref c,ref df,ref cm,ref om when
+    vc,c,df,cm,om = create_gui {faust_info s!2 | s = get syn};
+  end;
+  rctrlmap = ref $ ordmdict [id=>(n,args) | n=>(id,args) = get ctrlmap];
+  roscmap = ref $ ordmdict [id=>p | p=>id = get oscmap];
+  // Create the signal buffers.
+  n = blocksize;
+  out = smatrix [dmatrix (l,n) | i = 1..nvoices];
+  sum = dmatrix (l,n);
+  // Create the initial voice allocation.
+  voc = ref initvoc;
+  // Pitch bends.
+  bend = orddict [];
+  // Activity flag.
+  active = ref 1;
+  // Writing and recording flags.
+  writing = ref 0; recording = ref 0;
+  // Give some feedback that we're up and running.
+  pd_post $ sprintf "%s (%s): %d inputs, %d outputs" (instance,name,k,l);
+end with
+
+  // Convert controller symbols to the corresponding OSC pathname.
+  oscid id::string = "/"+id;
+  oscid id = oscid (str id) otherwise;
+
+  // Helper functions for analyzing controller symbols.
+  is_voice_control id = any (==basename id) ["freq","gain","gate"];
+  basename id = last $ split "/" id;
+
+  // pdfaustui mangles the control names, adjust the faustui names accordingly.
+  adjust_controls ctrls = {control_sym instance id => ptr | id=>ptr = ctrls};
+
+  // Load a Faust dsp.
+  load_dsp name::string samplerate::int = dsp when
+    fname = join "/" [pd_getdir, synthdir, name];
+    dsp = faust_init fname samplerate;
+    pointerp dsp || throw $ sprintf "fsynth~: error loading '%s'" name;
+  end;
+
+  // Set the menu-open filename, if we can locate the dsp source file.
+  dsp_source name::string = pd_setfile fname if pointerp (fopen fname "r") when
+    fname = join "/" [pd_getdir, synthdir, name+".dsp"];
+  end;
+
+  // Create the GUI.
+  create_gui ui = vctrls,ctrls,defaults,ctrlmap,oscmap when
+    // Get a map with the fully qualified names of the controls for each voice.
+    pctrls = map (control_map.pcontrols) ui;
+    // The metadata will be the same for each voice.
+    ctrl_descr = pcontrols (ui!0);
+    pmeta = control_metamap ctrl_descr;
+    /* Extract the "voice" controls. These are the freq, gain and gate
+       controls which may differ depending on which note is being played on a
+       voice. Note that we only use the basenames of the controls here. Also
+       note that we extract the controls in reverse, in case a control name
+       occurs more than once. That's because it's the *last* member for a
+       given key in a Pure record which gets chosen (which then corresponds to
+       the first control of that name in the original UI description). */
+    vctrls = map filter_controls pctrls with
+      filter_controls ctrls =
+	reverse {basename id => ptr | id=>ptr = ctrls; is_voice_control id};
+    end;
+    /* Grab the auxiliary (non-voice) controls. In contrast to the voice
+       controls these are always kept in lockstep. Also note that here we have
+       to adjust the control names so that they match up with the actual
+       control symbols used in the pdfaustui-generated patch, which are
+       prefixed with the instance name for disambiguation purposes and mangled
+       to become valid Pd symbols. */
+    ctrls = map (adjust_controls.filter_controls) pctrls with
+      filter_controls ctrls =
+	{id=>ptr | id=>ptr = ctrls; ~is_voice_control id};
+    end;
+    meta = adjust_controls pmeta;
+    // Get the default values of the auxiliary controls.
+    defaults = {id => get_control ptr | id=>ptr = ctrls!0};
+    // Construct the MIDI and OSC controller maps.
+    ctrlargs = adjust_controls
+      {control_label c => control_type c (control_args c) | c = ctrl_descr};
+    ctrlmap = ordmdict
+      [post (n => (id,ctrlargs!id)) |
+       id=>ptr = ctrls!0; m = meta!id; n = ctrl_num m]
+    with
+      ctrl_num ("midi"=>v) = case catch (\_->()) (sscanf v "%s %s") of
+	"ctrl",s = case val s of n::int = [n]; _ = [] end;
+	_ = [] otherwise;
+      end;
+      ctrl_num _ = [];
+      post c@(n=>(id,_)) = c when
+	~verbose_ctrlmap || pd_post (sprintf "%s: ctrl %d" (id,n));
+      end;
+    end;
+    oscmap = ordmdict
+      [post (p => id) | id=>ptr = ctrls!0; m = meta!id; p = osc_path m]
+    with
+      osc_path ("osc"=>v) = [oscid v];
+      osc_path _ = [];
+      oscid v::string = "/"+v if null v || v!0~="/";
+      oscid v = v otherwise;
+      post c@(p=>id) = c when
+	~verbose_oscmap || pd_post (sprintf "%s: %s" (id,p));
+      end;
+    end;
+    // Create the Pd GUI.
+    gui = sprintf "pd-%s" instance;
+    wd,ht,objs = make_gui instance nvoices (ui!0);
+    // Set the GOP area and fill the GUI patch.
+    pd_send gui clear;
+    pd_send gui (coords 0 (-1) 1 1 wd ht 1 0 0);
+    do (pd_send gui) objs;
+    // Initialize the GUI elements.
+    do (\(id=>ptr) -> pd_send id (get_control ptr)) (ctrls!0);
+    // Install receivers for the GUI elements.
+    do (\(id=>ptr) -> pd_receive id) (ctrls!0);
+    // Install receivers for the special init, active and record controls.
+    pd_receive (control_sym instance "init");
+    pd_receive (control_sym instance "active");
+    pd_receive (control_sym instance "record");
+    // Install a receiver for OSC playback (automation).
+    pd_receive "oscplay";
+    // Install a receiver for reload messages (remote control).
+    pd_receive "reload";
+  end;
+
+  // A simple voice allocation algorithm.
+  initvoc = orddict [],[],0..nvoices-1;
+  // note plays already, reuse existing voice
+  alloc voc@(notes,used,free) note = notes!note,voc if member notes note;
+  // use an unused voice if available
+  alloc (notes,used,i:free) note = i,insert notes (note=>i),used+[i],free;
+  // steal a voice from the longest sounding note
+  alloc (notes,i:used,free) note = i,insert notes (note=>i),used+[i],free;
+  // free a voice
+  dealloc (notes,used,free) note = i,delete notes note,filter (~=i) used,
+    free+[i] when i = notes!note end if member notes note;
+  // note not allocated, return a sentinel value
+  dealloc _ _ = -1;
+  // get all notes playing on a given channel
+  get_notes (notes,used,free) chan =
+    [num=>i | (ch,num)=>i = list notes; ch==chan];
+
+end when
+  name = if symbolp name then str name else name;
+  instance = if symbolp instance then str instance else instance;
+  stringp name && stringp instance ||
+  throw "fsynth~: bad name or instance parameter";
+  chan>=0 && chan<=16 || throw "fsynth~: bad MIDI channel parameter";
+end);

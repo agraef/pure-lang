@@ -1,0 +1,25 @@
+using faust2;
+using "dsp:xfade";
+
+let d = faust_init "xfade" 100;
+let k,l,ui = faust_info d;
+k,l;
+let ctrls = control_map $ controls ui;
+let {switch,time} = ctrls!!["switch","time"];
+switch,time;
+
+let n = 10;
+let zero = dmatrix n;
+let one = map (+1) zero;
+let in = {one;one;zero;zero};
+let out = {zero;zero};
+
+faust_compute d in out;
+put_control switch 1.0;
+faust_compute d in out;
+faust_compute d in out;
+faust_compute d in out;
+put_control switch 0.0;
+faust_compute d in out;
+faust_compute d in out;
+faust_compute d in out;

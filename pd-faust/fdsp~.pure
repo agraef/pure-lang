@@ -1,0 +1,298 @@
+
+using pdfaust;
+using namespace pdfaust;
+
+extern void *memcpy(void *dest, void *src, size_t n);
+
+fdsp_dsp name instance chan::int = catch error (k,l,fdsp with
+
+  // bang outputs the current control values in an OSC-friendly format.
+  fdsp bang = out when
+    out = map (\(id=>ptr) -> oscid id $ get_control ptr) (get ctrls);
+  end;
+
+  // write writes the current control values as MIDI and OSC controller
+  // messages to the special "midiout" and "oscout" receivers.
+  fdsp write = () when
+    do (pd_send "midiout") $
+    catmap (\(id=>ptr) -> midivals id $ get_control ptr) (get ctrls);
+    do (pd_send "oscout") $
+    catmap (\(id=>ptr) -> oscvals id $ get_control ptr) (get ctrls);
+  end;
+
+  // write with an argument (a flag) puts the unit in "writing" mode in which
+  // MIDI and OSC output is generated in response to controller messages.
+  fdsp (write val) = () when
+    put writing (val~=0);
+  end;
+
+  // reload reloads the Faust dsp.
+  fdsp reload = catch (cst ().error) (() when
+    // Uninstall receivers for the previous GUI elements.
+    do (\(id=>ptr) -> pd_unreceive id) (get ctrls);
+    // Get rid of the old dsp.
+    faust_exit $ get dsp;
+    // Initialize the new dsp.
+    put dsp $ load_dsp name samplerate; dsp_source name;
+    // Reinitialize the GUI and grab the control variables.
+    zipwith put [ctrls,octrls,defaults,ctrlmap,oscmap] [c,oc,df,cm,om] when
+      c,oc,df,cm,om = create_gui $ faust_info (get dsp)!2;
+    end;
+    put rctrlmap $ ordmdict [id=>(n,args) | n=>(id,args) = get ctrlmap];
+    put roscmap $ ordmdict [id=>p | p=>id = get oscmap];
+    put writing 0; put recording 0;
+    // Give some feedback that we're up and running again.
+    pd_post $ sprintf "%s (%s): %d inputs, %d outputs *** reloaded ***"
+    (instance,name,k,l);
+  end);
+
+  fdsp (reload _) = fdsp reload; // reload receiver
+
+  // The dsp loop.
+  fdsp in::matrix = out,cout when
+    faust_compute (get dsp) in out2;
+    // Do smooth cross fades depending on the status of the 'active' control.
+    sig = if k==l /* pass through */ then in else ();
+    // Fill the extra channels in the out2 buffer with sig. We do this with
+    // memcpy for maximum efficiency. Note that this will only be executed if
+    // sig equals in; otherwise the alternate signal is just silence anyway.
+    sz = l*n*SIZEOF_DOUBLE;
+    memcpy (shift (pointer out2) sz) (pointer sig) sz with
+      shift p i = pointer (__C::pure_bigintval p+i);
+    end;
+    faust_compute xfade out2 out;
+    cout = if get_control switch==0 then control_out else ();
+  end if k==2 && l==2;
+  // FIXME: xfade requires stereo signals. :(
+  = out,cout when
+    out = if get_control switch==0 then faust_compute (get dsp) in out
+	  else if k==l /* pass through */ then in else ();
+    cout = if get_control switch==0 then control_out else ();
+  end;
+
+  // Update the passive controls. (Doing this for each dsp cycle is a cpu hog,
+  // so we only update the controls after some given time has passed.)
+  control_out = do (\(id=>ptr) -> pd_send id (get_control ptr)) (get octrls)
+    if do_controls with
+      do_controls = put lasttime time $$ true
+	if time >= get lasttime + update_time when time = pd_time end;
+      = false otherwise;
+    end;
+  = () otherwise;
+
+  // MIDI controllers.
+  fdsp (ctl val num ch) = () if get writing || chan && ch~=chan;
+  fdsp (ctl val num ch) = () when
+    num = int num;
+    ~member (get ctrlmap) num ||
+    do send (get ctrlmap!num) with
+      // XXXFIXME: How to deal with the case of coarse/fine controllers here?
+      send (id,args) = pd_send id $ map_ctrl args val;
+    end;
+  end;
+
+  // Controller messages.
+  fdsp (id@_ val) = () when
+    oldval = get_control (get ctrls!id);
+    if val===bang then
+      put_control (get ctrls!id) 1.0 $$
+      // schedule the button release
+      pd_delay delay_time (id 0.0)
+    else
+      put_control (get ctrls!id) val;
+    val = if val===bang then 1.0 else val;
+    // In recording mode send the messages in OSC format to the oscrecord
+    // receiver. This is to be used by automation.
+    ~(get recording && val~==oldval) || pd_send "oscrecord" (oscid id val);
+    // In writing mode output MIDI/OSC controller messages for all defined
+    // MIDI and OSC controllers ('midi' and 'osc' attributes in the Faust
+    // source), to sync external MIDI and OSC controllers.
+    ~get writing || do (pd_send "midiout") (midivals id val);
+    ~get writing || do (pd_send "oscout") (oscvals id val);
+  end if member (get ctrls) id;
+
+  // Convert controller messages to the corresponding MIDI/OSC messages.
+  midivals id val =
+    [ctl (rmap_ctrl args val) n chan | n,args = get rctrlmap!id] if chan;
+  // omni mode
+  = [ctl (rmap_ctrl args val) n ch | n,args = get rctrlmap!id;
+     ch = 1..16; ch~=10];
+  oscvals id val = [p val | p = get roscmap!id];
+
+  // Special 'init' control.
+  fdsp (id@_ val) = () when
+    do (\(id=>val) -> pd_send id val) $ get defaults;
+  end if id === init_sym;
+
+  // Special 'active' control.
+  fdsp (id@_ val) = () when
+    put_control switch (double (val==0));
+  end if id === active_sym;
+
+  // Special 'record' control.
+  fdsp (id@_ val) = () when
+    put recording (val~=0);
+  end if id === record_sym;
+
+  /* Default OSC message processing. OSC messages are denoted by a leading
+     "/". We translate these to the corresponding Faust controls on the fly.
+     The special 'init' and 'active' controls are also supported. OSC path
+     mappings in the Faust source ('osc' attribute) are handled as well. */
+  fdsp (id@(_::string) val) = case tail id of
+    _ = get writing || do (flip pd_send val) (get oscmap!id)
+      if member (get oscmap) id;
+    id = pd_send id val
+      if member (get ctrls) id || any (==id) [init_sym, active_sym];
+    _ = (); // ignore
+  end if ~null id && id!0=="/";
+
+  /* OSC playback. This is to be used by automation. Only the proper OSC paths
+     are recognized here, in the same format as they are output to the
+     "oscrecord" receiver. */
+  fdsp (oscplay bang) = () when
+    // report all current controller settings
+    out = map (\(id=>ptr) -> oscid id $ get_control ptr) (get ctrls);
+    do (pd_send "oscrecord") out;
+  end if get recording;
+  fdsp (oscplay c@(id@(_::string) val)) = case tail id of
+    id = put_control (get ctrls!id) val $$ pd_send id val
+      if member (get ctrls) id;
+    _ = (); // ignore
+  end if ~null id && id!0=="/";
+
+  // Ignore everything else.
+  //fdsp msg = pd_post $ sprintf "unknown: %s" $ str msg;
+  fdsp _ = ();
+
+end when
+  // Special control symbols to reset controls to their defaults and change
+  // the activation status of the dsp. These are the same for all dsps.
+  init_sym = control_sym instance "init";
+  active_sym = control_sym instance "active";
+  record_sym = control_sym instance "record";
+  // Last time for passive controller update.
+  lasttime = ref pd_time;
+  // Load the Faust dsp.
+  dsp = ref (load_dsp name samplerate); dsp_source name;
+  // Get the number of inputs and outputs (these can't be changed later).
+  k,l,ui = faust_info (get dsp);
+  // Initialize the GUI and grab the control variables.
+  ctrls,octrls,defaults,ctrlmap,oscmap = ref c,ref oc,ref df,ref cm,ref om when
+    c,oc,df,cm,om = create_gui ui;
+  end;
+  rctrlmap = ref $ ordmdict [id=>(n,args) | n=>(id,args) = get ctrlmap];
+  roscmap = ref $ ordmdict [id=>p | p=>id = get oscmap];
+  // Create some signal buffers.
+  n = blocksize;
+  out = dmatrix (l,n);
+  out2 = dmatrix (2*l,n);
+  // Helper dsp to do smooth cross fades when the 'active' control changes.
+  xfade = faust_clone xfade;
+  pointerp xfade || throw "fdsp~: error loading 'xfade'";
+  switch = control_map (controls (faust_info xfade!2))!"switch";
+  // Writing and recording flags.
+  writing = ref 0; recording = ref 0;
+  // Give some feedback that we're up and running.
+  pd_post $ sprintf "%s (%s): %d inputs, %d outputs" (instance,name,k,l);
+end with
+
+  // Convert controller symbols to the corresponding OSC pathname.
+  oscid id::string = "/"+id;
+  oscid id = oscid (str id) otherwise;
+
+  // pdfaustui mangles the control names, adjust the faustui names accordingly.
+  adjust_controls ctrls = {control_sym instance id => ptr | id=>ptr = ctrls};
+
+  // Load a Faust dsp.
+  load_dsp name::string samplerate::int = dsp when
+    fname = join "/" [pd_getdir, synthdir, name];
+    dsp = faust_init fname samplerate;
+    pointerp dsp || throw $ sprintf "fdsp~: error loading '%s'" name;
+  end;
+
+  // Set the menu-open filename, if we can locate the dsp source file.
+  dsp_source name::string = pd_setfile fname if pointerp (fopen fname "r") when
+    fname = join "/" [pd_getdir, synthdir, name+".dsp"];
+  end;
+
+  // Create the GUI.
+  create_gui ui = ctrls,octrls,defaults,ctrlmap,oscmap when
+    // Get a map with the fully qualified names of the controls.
+    ctrl_descr = pcontrols ui;
+    pctrls = control_map ctrl_descr;
+    pmeta = control_metamap ctrl_descr;
+    /* We have to adjust the control names so that they match up with the
+       actual control symbols used in the pdfaustui-generated patch, which are
+       prefixed with the instance name for disambiguation purposes and mangled
+       to become valid Pd symbols. */
+    ctrls = adjust_controls pctrls;
+    meta = adjust_controls pmeta;
+    // Get the default values.
+    defaults = {id => get_control ptr | id=>ptr = ctrls};
+    // Extract the active (input) and passive (output) controls.
+    ictrls,octrls =
+      {control_label c => control_ref c | c = ctrl_descr;
+       ~is_passive_control c},
+      {control_label c => control_ref c | c = ctrl_descr;
+       is_passive_control c}
+    with
+      is_passive_control c = any (===control_type c) [hbargraph,vbargraph];
+    end;
+    ictrls = adjust_controls ictrls;
+    octrls = adjust_controls octrls;
+    // Construct the MIDI and OSC controller maps.
+    ctrlargs = adjust_controls
+      {control_label c => control_type c (control_args c) | c = ctrl_descr};
+    ctrlmap = ordmdict
+      [post (n => (id,ctrlargs!id)) |
+       id=>ptr = ictrls; m = meta!id; n = ctrl_num m]
+    with
+      ctrl_num ("midi"=>v) = case catch (\_->()) (sscanf v "%s %s") of
+	"ctrl",s = case val s of n::int = [n]; _ = [] end;
+	_ = [] otherwise;
+      end;
+      ctrl_num _ = [];
+      post c@(n=>(id,_)) = c when
+	~verbose_ctrlmap || pd_post (sprintf "%s: ctrl %d" (id,n));
+      end;
+    end;
+    // XXXTODO: We might also want to handle the passive controls in some way.
+    oscmap = ordmdict
+      [post (p => id) | id=>ptr = ictrls; m = meta!id; p = osc_path m]
+    with
+      osc_path ("osc"=>v) = [oscid v];
+      osc_path _ = [];
+      oscid v::string = "/"+v if null v || v!0~="/";
+      oscid v = v otherwise;
+      post c@(p=>id) = c when
+	~verbose_oscmap || pd_post (sprintf "%s: %s" (id,p));
+      end;
+    end;
+    // Create the Pd GUI.
+    gui = sprintf "pd-%s" instance;
+    wd,ht,objs = make_gui instance 0 ui;
+    // Set the GOP area and fill the GUI patch.
+    pd_send gui clear;
+    pd_send gui (coords 0 (-1) 1 1 wd ht 1 0 0);
+    do (pd_send gui) objs;
+    // Initialize the GUI elements.
+    do (\(id=>ptr) -> pd_send id (get_control ptr)) ctrls;
+    // Install receivers for the active GUI elements.
+    do (\(id=>ptr) -> pd_receive id) ictrls;
+    // Install receivers for the special init, active and record controls.
+    pd_receive (control_sym instance "init");
+    pd_receive (control_sym instance "active");
+    pd_receive (control_sym instance "record");
+    // Install a receiver for OSC playback (automation).
+    pd_receive "oscplay";
+    // Install a receiver for reload messages (remote control).
+    pd_receive "reload";
+  end;
+
+end when
+  name = if symbolp name then str name else name;
+  instance = if symbolp instance then str instance else instance;
+  stringp name && stringp instance ||
+  throw "fdsp~: bad name or instance parameter";
+  chan>=0 && chan<=16 || throw "fdsp~: bad MIDI channel parameter";
+end);

@@ -1,0 +1,37 @@
+
+Optimizations:
+
+- Deactivated units should be skipped in computation once their output falls
+  below a certain threshold.
+
+Features:
+
+- Add metadata support to pick up layout parameters (width, height, fake
+  buttons, slider radios, etc.). Add an 'invisible' attribute so that the
+  display of controls can be suppressed.
+
+- Support for multichannel dsps. (Only stereo units are fully supported right
+  now.)
+
+- OSC support for passive controls. Maybe we'd like to output these to an OSC
+  client?
+
+- Implement passive controls in fsynth~ objects. The problem here is how to
+  aggregate the values of the different voices: sum, average, min, max?
+
+Bugs and Design Issues:
+
+- Some of the included faust-stk instruments have bugs (badly out of tune
+  and/or refusing to work for certain parameter combinations). Check with the
+  faust-stk developers at CCRMA to get these fixed.
+
+- Refactor the sources so that fsynth~ and fdsp~ share as much code as
+  possible.
+
+- How should voice controls (freq, gain, gate) be handled? They are currently
+  addressed using their basename only (without path), and only one of these
+  (the first one) will be used if different instances of a voice control exist
+  in different subgroups. Also, we may want to make the basenames of the voice
+  controls configurable.
+
+- How to handle coarse/fine MIDI controllers?

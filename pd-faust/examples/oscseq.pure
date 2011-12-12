@@ -1,0 +1,160 @@
+
+/* oscseq object: Simple OSC recorder and sequencer. This object is to be
+   driven by midiseq which provides the timebase. The name of the osc file is
+   specified as a creation argument. The object understands the following
+   messages:
+
+   - offset t starts playback/recording at the given time offset in msec
+   - stop or abort stops playback/recording
+   - clear purges the sequence so that you can start recording a new one
+   - save saves the current sequence in the file specified by the creation arg
+   - record 0 and record 1 disable and enable recording, respectively
+
+   Recorded OSC messages are output on the outlet. When in recording mode, OSC
+   messages received on the inlet (actually anything that doesn't look like
+   one of the messages above) are recorded during playback; a stop message
+   then stores the recorded sequence. An abort message works like stop, but
+   throws away the current recording. A clear message purges the entire
+   recording so that you can start a new one. */
+
+nonfix bang stop abort clear save;
+public record offset;
+
+extern expr *pd_getdir();
+extern void pd_post(char*);
+extern void pd_error_s(char*);
+extern void pd_receive(char*);
+extern double pd_time();
+public pd_delay;
+
+using system;
+
+extern int mkdir(char *path, int mode);
+
+oscseq name = catch (\msg->pd_error_s msg $$ cst ()) (seq with
+  seq stop = pd_delay inf () when
+    put running false;
+    s = if get startt===() then []
+	else deltas (get startt) $ reverse $ get rec with
+	  // Convert a track with absolute timestamps starting at the given
+	  // time to a relative sequence with delta timestamps.
+	  deltas t1 [] = [];
+	  deltas t1 ((t2,msg):xs) = (t2-t1,msg):deltas t2 xs;
+	end;
+    null s || (put all $ mix 0.0 (get all) (get offs) s) with
+      // Mix two tracks with relative timestamps.
+      mix t1 xs t2 [] = if t1<=t2 then xs else shift (t1-t2) xs;
+      mix t1 [] t2 ys = if t2<=t1 then ys else shift (t2-t1) ys;
+      mix t1 xs@(x1@(dt1,msg1):xs1) t2 ys@(y2@(dt2,msg2):ys2)
+      = x1 : mix (t1+dt1) xs1 t2 ys if t1+dt1<=t2+dt2;
+      = y2 : mix t1 xs (t2+dt2) ys2 otherwise;
+      shift t xs = case xs of
+	(dt,msg):xs = (t+dt,msg):xs;
+	_ = xs;
+      end;
+    end;
+    put rec []; put startt ();
+  end;
+  seq abort = pd_delay inf () when
+    put running false;
+    put rec []; put startt ();
+  end;
+  seq clear = () when
+    put act []; put all [];
+    put rec []; put startt ();
+  end;
+  seq save = osc_save name $ get all;
+  seq (offset t) = case nextmsgs of
+    () = put running false $$ outmsg;
+    dt,msgs = put running true $$ {outmsg,pd_delay (dt-dt1) msgs};
+  end when
+    t = if doublep t then t else 0.0;
+    put startt pd_time; put offs t;
+    dt1,s = drop t (get all) with
+      drop t [] = t,[];
+      drop t s@((dt,msg):xs) = if t>dt then drop (t-dt) xs else t,s;
+    end;
+    put act s;
+    // When we start recording a new sequence, output a bang message to also
+    // record the current controller settings at the beginning of the
+    // recording.
+    outmsg = if get recording && null (get all) && t==0.0 then {bang} else {};
+  end;
+  seq (record val) = () when
+    put recording (val~=0.0);
+  end;
+  // process pending messages
+  seq msgs::list = () if ~get running;
+  seq msgs::list = case nextmsgs of
+    () = smatrix msgs when
+      put running false;
+    end;
+    dt,newmsgs = {smatrix msgs,pd_delay dt newmsgs};
+  end;
+  seq msg = () when
+    put rec $ (pd_time,msg):get rec;
+  end if get recording && get startt ~== ();
+  seq _ = ();
+  // grab the next chunk of messages
+  nextmsgs = case get act of
+    [] = ();
+    (dt,msg):xs = dt,msg:ys when
+      ys = map (!1) $ takewhile (\(dt,msg) -> dt == 0) xs;
+      xs = dropwhile (\(dt,msg) -> dt == 0) xs;
+      put act xs;
+    end;
+  end;
+end when
+  name = if symbolp name then str name+".osc" else basename name+".osc";
+  loaded,s = test name with
+    test name = false,[]
+      if ~pointerp (fopen (join "/" [pd_getdir, "osc", name]) "r");
+    = catch readerr (true,osc_load name) otherwise;
+    readerr msg::string = false,[] when
+      pd_error_s ("oscseq: error loading "+name);
+      pd_error_s msg;
+    end;
+    readerr _ = false,[] when
+      pd_error_s ("oscseq: error loading "+name);
+    end;
+  end;
+  all = ref s; rec = ref []; act = ref s;
+  startt = ref (); offs = ref 0;
+  running = ref false;
+  recording = ref false;
+  pd_receive "offset";
+  ~loaded || pd_post $ "oscseq: loaded "+name;
+end) with
+  basename name = case split "." name of
+    [name] = name;
+    parts = join "." $ init parts;
+  end;
+  // Our OSC file format is a simple text file with three columns: relative
+  // timestamps in msecs, OSC address of the control, value (a floating point
+  // number).
+  osc_load name::string = case fopen pathname "r" of
+    fp::pointer = map parse $ filter ok $ linenos $ split "\n" s with
+      linenos lines = zip (1..#lines) lines;
+      ok (_,s) = ~null s && s!0~="#"; // filter out empty and comment lines
+      parse (n,s) = t,addr val when
+	t,addr,val = catch (\_->throw $ sprintf "%s: %d: %s" (name,n,s))
+	  (sscanf s "%g %s %g");
+      end;
+    end if stringp s when s = fget fp end;
+    _ = []; // the file doesn't exist yet or is empty; this isn't an error
+  end when
+    pathname = join "/" [pd_getdir, "osc", name];
+  end;
+  osc_save name::string s = catch (\msg->pd_error_s msg $$ ())
+    (() when
+       // Create the osc subdir if necessary.
+       mkdir (join "/" [pd_getdir, "osc"]) 0755;
+       pathname = join "/" [pd_getdir, "osc", name];
+       fp = fopen pathname "w";
+       pointerp fp || throw ("oscseq: error saving "+name);
+       fprintf fp "# written by oscseq %s\n%-8s /oscaddr value\n"
+       (ctime time, "# delta");
+       do (\(t,addr@_ val) -> fprintf fp "%-8.6g %s %g\n" (t,addr,val)) s;
+       pd_post $ "oscseq: saved "+name;
+     end);
+end;

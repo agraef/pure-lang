@@ -1,0 +1,236 @@
+
+using faustui, system, regex;
+
+/* Pd objects. */
+
+public obj bng tgl nbx hsl vsl hradio vradio;
+
+// Put the remaining stuff in the pdfaust namespace to keep the global
+// namespace clean.
+namespace pdfaust;
+
+/* Global data. */
+
+const black = -1;
+const white = -0x40000;
+const gray  = -0x38e39;
+
+/* FIXME: The following is mostly guesswork, so you might have to customize
+   this. Maybe these values should be configurable, or a better layout
+   algorithm should be designed which also takes into account the widget
+   labels. */
+
+const button_x,button_y = 50,30;
+const nentry_x,nentry_y = 75,30;
+const hslider_x,hslider_y = 150,30;
+const vslider_x,vslider_y = 50,150;
+
+let fn1,fn2 = 10,10; // default GUI font sizes, adapt as needed
+
+/* Default layout parameters. Adjust as needed. These have the same meaning as
+   the corresponding faust2pd options. */
+
+let width,height = 0,0;
+let radio_sliders = 0;
+let fake_buttons_flag = false;
+let slider_nums_flag = false;
+
+/* Control symbols. This maps a faustui control name (possibly including a
+   path) to the corresponding Pd symbol, which is used to send and receive
+   values from the GUI. The control symbol may also contain the given instance
+   name (if not empty) as a prefix for disambiguation purposes. Both the
+   instance prefix and the control names are mangled in order to form valid Pd
+   symbols. */
+
+// Mangle control names (this is basically the same as in faust2pd).
+mangle s = join "-" $ filter (\x->~null x) $
+  regsplit "[^A-Za-z0-9]+" REG_EXTENDED s 0;
+
+control_sym instance path =
+  if null instance then path else sprintf "%s:%s" (instance,path)
+when
+  path = join "/" $ map mangle $ dropwhile null $ split "/" path;
+  instance = mangle instance;
+end;
+
+/* Create the GUI subpatch. Returns a list with the Pd objects. The parameters
+   are: instance (the name of the instance, is used as a prefix for the send
+   and receive symbols), nvoices (the number of voices of a synth, 0 for an
+   effect unit) and ui, the Faust UI description in the format given by
+   faustui.pure. */
+
+make_gui instance::string nvoices::int ui = x,y,c+
+  [obj (x-58) 3 tgl 15 1
+   (control_sym instance "record") (control_sym instance "record")
+   "empty" 0 (-6) 0 fn1 gray black black 0 1,
+   obj (x-38) 3 bng 15 250 50 1
+   (control_sym instance "init") (control_sym instance "init")
+   "empty" 0 (-6) 0 fn1 white black black,
+   obj (x-18) 3 tgl 15 1
+   (control_sym instance "active") (control_sym instance "active")
+   "empty" 0 (-6) 0 fn1 white black black 1 1]
+  if ~null c
+  when x,y,c = make_group "" (10,30) ui end
+
+with
+
+make_group path (x,y) (tgroup g)
+		= make_group path (x,y) (hgroup g);
+make_group path (x,y) (hgroup (name,items))
+		= //printf "end %s\n" $ join2 path name $$
+		  x,y,cat (reverse c)
+		    when _,_,_,_,x,y,c =
+		      //printf "hgroup %s\n" $ join2 path name $$
+		      foldl (hstep (make_group (join2 path name)))
+		      (x,y,x,y,x,y,[]) items;
+		    end;
+make_group path (x,y) (vgroup (name,items))
+		= //printf "end %s\n" $ join2 path name $$
+		  x,y,cat (reverse c)
+		    when _,_,_,_,x,y,c =
+		      //printf "vgroup %s\n" $ join2 path name $$
+		      foldl (vstep (make_group (join2 path name)))
+		      (x,y,x,y,x,y,[]) items;
+		    end;
+make_group path (x,y) item
+		= //printf "%s [%s] item %s\n" (str (x,y),path,str item) $$
+		  add_widget path (x,y) item;
+
+hstep f (x0,y0,x1,y1,x2,y2,c) item
+		= hbreak f (x0,y0,x1,y1,x2,y2,c) item (x,y,c1)
+		    when x,y,c1 = f (x1,y1) item end;
+hbreak f (x0,y0,x1,y1,x2,y2,c) item (x,y,c1)
+		= x0,y0,x,y1,max x2 x,max y2 y,c1:c
+		    if width<=0 || x<=width || x1<=x0;
+		= hbreak f (x0,y0,x0,y2,x2,y2,c) item (f (x0,y2) item);
+vstep f (x0,y0,x1,y1,x2,y2,c) item
+		= vbreak f (x0,y0,x1,y1,x2,y2,c) item (x,y,c1)
+		    when x,y,c1 = f (x1,y1) item end;
+vbreak f (x0,y0,x1,y1,x2,y2,c) item (x,y,c1)
+		= x0,y0,x1,y,max x2 x,max y2 y,c1:c
+		    if height<=0 || y<=height || y1<=y0;
+		= vbreak f (x0,y0,x2,y0,x2,y2,c) item (f (x2,y0) item);
+
+add_widget path (x,y) item
+		= x,y,[]
+		    if null s || hidden s || nvoices > 0 &&
+		      // exclude passive and voice controls of synths
+		      (any (===control_type item) [hbargraph,vbargraph] ||
+		       any ((==)name) ["freq","gain","gate"])
+		    when
+		      name = control_label item;
+		      s = join2 path name;
+		    end;
+add_widget path (x,y) (button _ _ name)
+		= add_widget path (x,y) (checkbox name) if fake_buttons_flag;
+add_widget path (x,y) (button _ _ name)
+		= x+button_x,y+button_y,
+		  [obj x y bng 15 250 50 0 s s
+		   name 0 (-6) 0 fn1 white black black]
+		    when
+		      s = control_sym instance $ join2 path name;
+		      name = checkname $ mangle name;
+		    end;
+add_widget path (x,y) (checkbox _ _ name)
+		= x+button_x,y+button_y,
+		  [obj x y tgl 15 0 s s
+		   name 0 (-6) 0 fn1 white black black 0 1]
+		    when
+		      s = control_sym instance $ join2 path name;
+		      name = checkname $ mangle name;
+		    end;
+add_widget path (x,y) (nentry _ _ (name,init,min,max,_))
+		= x+nentry_x,y+nentry_y,
+		  [obj x y nbx 5 14 min max 0 0 s s
+		   name 0 (-6) 0 fn2 white black black 256]
+		    when
+		      s = control_sym instance $ join2 path name;
+		      name = checkname $ mangle name;
+		    end;
+add_widget path (x,y) (hslider _ _ (name,init,min,max,step))
+		= if radio_sliders>0 && min==0 &&
+		    step==1 && max<radio_sliders then
+		    x + ::max hslider_x (radio_sliders*15), y+hslider_y,
+		    [obj x y hradio 15 1 0 (max+1) s s
+		     name 0 (-6) 0 fn1 white black black 0]
+		  else if slider_nums_flag then
+		    x+hslider_x+nentry_x,y+hslider_y,
+		    [obj x y hsl 128 15 min max 0 0 s s
+		     name (-2) (-6) 0 fn1 white black black 0 1,
+		     obj (x+hslider_x) y nbx 5 14 min max 0 0 s s
+		     "empty" 0 (-6) 0 fn2 white black black 256]
+		  else
+		    x+hslider_x,y+hslider_y,
+		    [obj x y hsl 128 15 min max 0 0 s s
+		     name (-2) (-6) 0 fn1 white black black 0 1]
+		    when
+		      s = control_sym instance $ join2 path name;
+		      name = checkname $ mangle name;
+		    end;
+add_widget path (x,y) (vslider _ _ (name,init,min,max,step))
+		= if radio_sliders>0 && min==0 &&
+		    step==1 && max<radio_sliders then
+		    x+vslider_x, y + ::max vslider_y (radio_sliders*15),
+		    [obj x y vradio 15 1 0 (max+1) s s
+		     name 0 (-6) 0 fn1 white black black 0]
+		  else if slider_nums_flag then
+		    x+nentry_x,y+vslider_y+nentry_y,
+		    [obj x y vsl 15 128 min max 0 0 s s
+		     name 0 (-8) 0 fn1 white black black 0 1,
+		     obj x (y+vslider_y-10) nbx 5 14 min max 0 0 s s
+		     "empty" 0 (-6) 0 fn2 white black black 256]
+		  else
+		    x+vslider_x,y+vslider_y,
+		    [obj x y vsl 15 128 min max 0 0 s s
+		     name 0 (-8) 0 fn1 white black black 0 1]
+		    when
+		      s = control_sym instance $ join2 path name;
+		      name = checkname $ mangle name;
+		    end;
+add_widget path (x,y) (hbargraph _ _ (name,min,max))
+		= if slider_nums_flag then
+		    x+hslider_x+nentry_x,y+hslider_y,
+		    [obj x y hsl 128 15 min max 0 0 s s
+		     name (-2) (-6) 0 fn1 gray black black 0 1,
+		     obj (x+hslider_x) y nbx 5 14 min max 0 0 s s
+		     "empty" 0 (-6) 0 fn2 gray black black 256]
+		  else
+		    x+hslider_x,y+hslider_y,
+		    [obj x y hsl 128 15 min max 0 0 s s
+		     name (-2) (-6) 0 fn1 gray black black 0 1]
+		    when
+		      s = control_sym instance $ join2 path name;
+		      name = checkname $ mangle name;
+		    end;
+add_widget path (x,y) (vbargraph _ _ (name,min,max))
+		= if slider_nums_flag then
+		    x+nentry_x,y+vslider_y+nentry_y,
+		    [obj x y vsl 15 128 min max 0 0 s s
+		     name 0 (-8) 0 fn1 gray black black 0 1,
+		     obj x (y+vslider_y-10) nbx 5 14 min max 0 0 s s
+		     "empty" 0 (-6) 0 fn2 gray black black 256]
+		  else
+		    x+vslider_x,y+vslider_y,
+		    [obj x y vsl 15 128 min max 0 0 s s
+		     name 0 (-8) 0 fn1 gray black black 0 1]
+		    when
+		      s = control_sym instance $ join2 path name;
+		      name = checkname $ mangle name;
+		    end;
+add_widget _ (x,y) _
+		= x,y,[] otherwise;
+
+/* Helper functions. */
+
+join2 "" s	= "/"+s;
+join2 s ""	= s;
+join2 s t	= s+"/"+t otherwise;
+
+hidden name	= false; // TODO
+
+checkname name	= "empty" if null name;
+		= name otherwise;
+
+end;
+
+= 0,0,[] otherwise;

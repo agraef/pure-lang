@@ -1,0 +1,188 @@
+
+# -*- makefile-gmake -*-
+
+# Generic GNU Makefile to compile C, C++, Fortran and Faust sources to shared
+# libraries and/or LLVM bitcode. This contains all the necessary implicit
+# rules to handle the compilation as well as generic list variables with
+# C/C++/Fortran/Faust sources and the corresponding potential targets, but no
+# actual targets, so you still have to provide 'all', 'clean' etc. yourself.
+
+# Default for C/C++ compilation is gcc. If you have clang, you can also use it
+# instead (you can change this below). Clang offers faster compilation and
+# better diagnostics, but the generated code is still slower than gcc in some
+# cases, although this has been improving in the latest clang versions. In any
+# case, you'll need clang when compiling to LLVM bitcode (see below).
+
+CC = gcc
+CXX = g++
+#CC = clang
+#CXX = clang++
+
+# Default compilation flags. You may adjust these from the command line if
+# necessary. The defaults here enable auto-vectorization and fast math on x86
+# and similar cpus (this works with both gcc and clang). CPPFLAGS, LDFLAGS and
+# LIBS are by default empty, but can also be set on the command line if you
+# need them.
+CFLAGS = -O3 -ffast-math -msse
+CXXFLAGS = -O3 -ffast-math -msse
+
+# Faust2 is needed to create LLVM bitcode from Faust sources. For compiling
+# C/C++ to bitcode you can use either llvm-gcc (now deprecated), gcc >= 4.5
+# with the dragonegg plugin, or clang. Fortran can be compiled to bitcode
+# using either llvm-gfortran (deprecated) or gfortran >= 4.5 with dragonegg.
+# Defaults are gcc/gfortran+dragonegg, you can change these below.
+
+# Enable direct compilation Faust -> LLVM bitcode/assembler. Note that at
+# present this doesn't work for some of the STK examples which require
+# auxiliary C code to work, so this is disabled for now.
+#faustllvm=yes
+
+# This should work out of the box if you installed dragonegg on ggc's plugin
+# path (gcc -print-file-name=plugin).
+dragonegg=dragonegg
+
+#LLVMCC = llvm-gcc -emit-llvm
+#LLVMCXX = llvm-g++ -emit-llvm
+#LLVMFC = llvm-gfortran -emit-llvm
+LLVMCC = gcc -fplugin=dragonegg -flto
+LLVMCXX = g++ -fplugin=dragonegg -flto
+LLVMFC = gfortran -fplugin=dragonegg -flto
+#LLVMCC = clang -emit-llvm
+#LLVMCXX = clang++ -emit-llvm
+#FAUST = faust -double
+FAUST = faust -double -cn $(<:.dsp=)
+
+# Enable optimization of Faust bitcode modules for direct Faust bitcode output
+# (faust -lang llvm).
+OPT = | opt -O3
+
+# This *must* be overridden in submakefiles so that the config.guess script is
+# found.
+srcdir = .
+
+# Platform-specific setup, edit this as needed.
+
+# Try to guess the host system type.
+host = $(shell $(srcdir)/config.guess)
+
+#PIC = -fPIC # uncomment for x86-64 compilation
+DLL = .so
+shared = -shared
+
+# Take care of some common systems.
+ifneq "$(findstring -mingw,$(host))" ""
+# Windows (untested)
+EXE = .exe
+DLL = .dll
+endif
+ifneq "$(findstring -darwin,$(host))" ""
+# OSX (untested)
+DLL = .dylib
+shared = -dynamiclib
+endif
+ifneq "$(findstring x86_64-,$(host))" ""
+# 64 bit, needs -fPIC flag
+PIC = -fPIC
+endif
+
+# This is the collection of flags which actually gets passed in the C/C++
+# recipes. Normally you shouldn't have to edit or override these.
+ALL_CFLAGS = $(PIC) $(CFLAGS) $(CPPFLAGS) -I.
+ALL_CXXFLAGS = $(PIC) $(CXXFLAGS) $(CPPFLAGS) -I.
+ALL_LDFLAGS = $(LDFLAGS) $(LIBS)
+
+# Various kinds of source files in this directory.
+c_source   := $(wildcard *.c)
+cpp_source := $(wildcard *.cpp)
+f_source   := $(wildcard *.f) $(wildcard *.f90) $(wildcard *.f03)
+dsp_source := $(wildcard *.dsp)
+
+# All source files and their basenames.
+source     := $(c_source) $(cpp_source) $(f_source) $(dsp_source)
+basenames  := $(basename $(source))
+
+# Potential targets. Bitcode files and shared libs from any source.
+bitcode    := $(basenames:%=%.bc)
+sharedlibs := $(basenames:%=%$(DLL))
+# C, C++ and LLVM assembler source from Faust (.dsp) source (C and LLVM
+# assembler require faust2).
+csource    := $(dsp_source:%.dsp=%.c)
+cppsource  := $(dsp_source:%.dsp=%.cpp)
+asmsource  := $(dsp_source:%.dsp=%.ll)
+
+%$(DLL): %.cpp
+	$(CXX) $(shared) $(ALL_CXXFLAGS) $< -o $@ $(ALL_LDFLAGS)
+
+%$(DLL): %.c
+	$(CC) $(shared) $(ALL_CFLAGS) $< -o $@ $(ALL_LDFLAGS)
+
+# direct rules to generate LLVM bitcode (these don't work with dragonegg)
+
+ifeq (,$(findstring $(dragonegg),$(LLVMCC)))
+%.bc: %.c
+	$(LLVMCC) $(ALL_CFLAGS) -c $< -o $@
+endif
+
+ifeq (,$(findstring $(dragonegg),$(LLVMCXX)))
+%.bc: %.cpp
+	$(LLVMCXX) $(ALL_CXXFLAGS) -c $< -o $@
+endif
+
+ifeq (,$(findstring $(dragonegg),$(LLVMFC)))
+%.bc: %.f
+	$(LLVMFC) -c $< -o $@
+%.bc: %.f90
+	$(LLVMFC) -c $< -o $@
+%.bc: %.f03
+	$(LLVMFC) -c $< -o $@
+endif
+
+# fallback rule to generate LLVM bitcode from assembler
+%.bc: %.ll
+	llvm-as $< -o $@
+
+# compile C source to LLVM assembler
+%.ll: %.c
+	$(LLVMCC) $(ALL_CFLAGS) -S $< -o $@
+
+# compile C++ source to LLVM assembler
+%.ll: %.cpp
+	$(LLVMCXX) $(ALL_CXXFLAGS) -S $< -o $@
+
+# compile Fortran source to LLVM assembler
+%.ll: %.f
+	$(LLVMFC) -S $< -o $@
+%.ll: %.f90
+	$(LLVMFC) -S $< -o $@
+%.ll: %.f03
+	$(LLVMFC) -S $< -o $@
+
+# compile Faust source to C++ module (Pure architecture)
+%.cpp: %.dsp
+	$(FAUST) -a pure.cpp $< -o $@
+
+# compile Faust source to C code (needs faust2)
+%.c: %.dsp
+	$(FAUST) -lang c -a pure.c $< -o $@
+
+ifdef faustllvm
+# compile Faust source to LLVM bitcode (needs faust2)
+%.bc: %.dsp
+	$(FAUST) -lang llvm $< $(OPT) -o $@
+
+# compile Faust source to LLVM assembler (needs faust2)
+%.ll: %.dsp
+	$(FAUST) -lang llvm $< > $@
+endif
+
+# Faust-specific stuff
+
+# svg and xml targets
+svg := $(dsp_source:.dsp=-svg)
+xml := $(dsp_source:.dsp=.dsp.xml)
+
+%-svg: %.dsp
+	faust -svg -sd $< -o /dev/null >/dev/null
+
+%.dsp.xml: %.dsp
+	faust -xml $< -o /dev/null
