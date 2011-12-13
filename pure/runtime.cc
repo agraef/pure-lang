@@ -16728,7 +16728,7 @@ class PureFaustUI : public FaustUI
 public:
   int nelems;
   ui_elem_t *elems;
-  map< double*, list<strpair> > metadata;
+  map< int, list<strpair> > metadata;
 		
   PureFaustUI();
   virtual ~PureFaustUI();
@@ -16778,11 +16778,11 @@ PureFaustUI::~PureFaustUI()
 
 void PureFaustUI::declare(double* zone, const char* key, const char* value)
 {
-  map< double*, list<strpair> >::iterator it = metadata.find(zone);
+  map< int, list<strpair> >::iterator it = metadata.find(nelems);
   if (it != metadata.end())
     it->second.push_back(strpair(key, value));
   else
-    metadata[zone] = list<strpair>(1, strpair(key, value));
+    metadata[nelems] = list<strpair>(1, strpair(key, value));
 }
 
 inline void PureFaustUI::add_elem(ui_elem_type_t type, const char *label)
@@ -17201,9 +17201,7 @@ void faust_free_ui(void *p)
    is analogous to the faust_info routine in the pure-faust module. */
 
 static struct stack_elem_t {
-  int type;
-  const char *label;
-  int n;
+  int i, n;
   pure_expr **xv;
 } *stack = NULL; // TLD
 
@@ -17216,7 +17214,7 @@ static void clear()
   free(stack); stack = NULL; astacksz = stacksz = 0;
 }
 
-static int push(int type, const char *label, int n, pure_expr **xv)
+static int push(int i, int n, pure_expr **xv)
 {
   if (stacksz+1 >= astacksz) {
     stack_elem_t *stack1 =
@@ -17225,20 +17223,18 @@ static int push(int type, const char *label, int n, pure_expr **xv)
     stack = stack1;
     astacksz += 100;
   }
-  stack[stacksz].type = type;
-  stack[stacksz].label = label;
+  stack[stacksz].i = i;
   stack[stacksz].n = n;
   stack[stacksz].xv = xv;
   stacksz++;
   return 1;
 }
 
-static int pop(int &type, const char *&label, int &n, pure_expr **&xv)
+static int pop(int &i, int &n, pure_expr **&xv)
 {
   if (stacksz <= 0) return 0;
   stacksz--;
-  type = stack[stacksz].type;
-  label = stack[stacksz].label;
+  i = stack[stacksz].i;
   n = stack[stacksz].n;
   xv = stack[stacksz].xv;
   return 1;
@@ -17255,8 +17251,6 @@ static pure_expr *faust_make_ui(void *p)
   int n = 0;
   for (int i = 0; i < ui->nelems; i++) {
     pure_expr *x;
-    int type = 0;
-    const char *label = NULL;
     pure_expr **xv1 = (pure_expr**)realloc(xv, (n+1)*sizeof(pure_expr*));
     if (xv1)
       xv = xv1;
@@ -17269,7 +17263,7 @@ static pure_expr *faust_make_ui(void *p)
     case UI_BUTTON:
       xv[n++] = pure_appl(pure_symbol(pure_sym("button")), 3,
 			  pure_tag(ty, pure_pointer(ui->elems[i].zone)),
-			  faust_make_meta(ui->metadata[ui->elems[i].zone]),
+			  faust_make_meta(ui->metadata[i]),
 			  pure_cstring_dup(ui->elems[i].label));
       break;
     case UI_TOGGLE_BUTTON:
@@ -17278,13 +17272,13 @@ static pure_expr *faust_make_ui(void *p)
     case UI_CHECK_BUTTON:
       xv[n++] = pure_appl(pure_symbol(pure_sym("checkbox")), 3,
 			  pure_tag(ty, pure_pointer(ui->elems[i].zone)),
-			  faust_make_meta(ui->metadata[ui->elems[i].zone]),
+			  faust_make_meta(ui->metadata[i]),
 			  pure_cstring_dup(ui->elems[i].label));
       break;
     case UI_V_SLIDER:
       xv[n++] = pure_appl(pure_symbol(pure_sym("vslider")), 3,
 			  pure_tag(ty, pure_pointer(ui->elems[i].zone)),
-			  faust_make_meta(ui->metadata[ui->elems[i].zone]),
+			  faust_make_meta(ui->metadata[i]),
 			  pure_tuplel(5, pure_cstring_dup(ui->elems[i].label),
 				      pure_double(ui->elems[i].init),
 				      pure_double(ui->elems[i].min),
@@ -17294,7 +17288,7 @@ static pure_expr *faust_make_ui(void *p)
     case UI_H_SLIDER:
       xv[n++] = pure_appl(pure_symbol(pure_sym("hslider")), 3,
 			  pure_tag(ty, pure_pointer(ui->elems[i].zone)),
-			  faust_make_meta(ui->metadata[ui->elems[i].zone]),
+			  faust_make_meta(ui->metadata[i]),
 			  pure_tuplel(5, pure_cstring_dup(ui->elems[i].label),
 				      pure_double(ui->elems[i].init),
 				      pure_double(ui->elems[i].min),
@@ -17304,7 +17298,7 @@ static pure_expr *faust_make_ui(void *p)
     case UI_NUM_ENTRY:
       xv[n++] = pure_appl(pure_symbol(pure_sym("nentry")), 3,
 			  pure_tag(ty, pure_pointer(ui->elems[i].zone)),
-			  faust_make_meta(ui->metadata[ui->elems[i].zone]),
+			  faust_make_meta(ui->metadata[i]),
 			  pure_tuplel(5, pure_cstring_dup(ui->elems[i].label),
 				      pure_double(ui->elems[i].init),
 				      pure_double(ui->elems[i].min),
@@ -17314,7 +17308,7 @@ static pure_expr *faust_make_ui(void *p)
     case UI_V_BARGRAPH:
       xv[n++] = pure_appl(pure_symbol(pure_sym("vbargraph")), 3,
 			  pure_tag(ty, pure_pointer(ui->elems[i].zone)),
-			  faust_make_meta(ui->metadata[ui->elems[i].zone]),
+			  faust_make_meta(ui->metadata[i]),
 			  pure_tuplel(3, pure_cstring_dup(ui->elems[i].label),
 				      pure_double(ui->elems[i].min),
 				      pure_double(ui->elems[i].max)));
@@ -17322,7 +17316,7 @@ static pure_expr *faust_make_ui(void *p)
     case UI_H_BARGRAPH:
       xv[n++] = pure_appl(pure_symbol(pure_sym("hbargraph")), 3,
 			  pure_tag(ty, pure_pointer(ui->elems[i].zone)),
-			  faust_make_meta(ui->metadata[ui->elems[i].zone]),
+			  faust_make_meta(ui->metadata[i]),
 			  pure_tuplel(3, pure_cstring_dup(ui->elems[i].label),
 				      pure_double(ui->elems[i].min),
 				      pure_double(ui->elems[i].max)));
@@ -17330,24 +17324,31 @@ static pure_expr *faust_make_ui(void *p)
     case UI_T_GROUP:
     case UI_V_GROUP:
     case UI_H_GROUP:
-      push(ui->elems[i].type, ui->elems[i].label, n, xv);
+      push(i, n, xv);
       n = 0; xv = NULL;
       break;
-    case UI_END_GROUP:
+    case UI_END_GROUP: {
+      int i = 0;
       x = pure_listv(n, xv); free(xv);
-      pop(type, label, n, xv);
-      switch (type) {
+      pop(i, n, xv);
+      switch (ui->elems[i].type) {
       case UI_T_GROUP:
-	xv[n++] = pure_app(pure_symbol(pure_sym("tgroup")),
-			   pure_tuplel(2, pure_cstring_dup(label), x));
+	xv[n++] = pure_appl
+	  (pure_symbol(pure_sym("tgroup")), 2,
+	   faust_make_meta(ui->metadata[i]),
+	   pure_tuplel(2, pure_cstring_dup(ui->elems[i].label), x));
 	break;
       case UI_V_GROUP:
-	xv[n++] = pure_app(pure_symbol(pure_sym("vgroup")),
-			   pure_tuplel(2, pure_cstring_dup(label), x));
+	xv[n++] = pure_appl
+	  (pure_symbol(pure_sym("vgroup")), 2,
+	   faust_make_meta(ui->metadata[i]),
+	   pure_tuplel(2, pure_cstring_dup(ui->elems[i].label), x));
 	break;
       case UI_H_GROUP:
-	xv[n++] = pure_app(pure_symbol(pure_sym("hgroup")),
-			   pure_tuplel(2, pure_cstring_dup(label), x));
+	xv[n++] = pure_appl
+	  (pure_symbol(pure_sym("hgroup")), 2,
+	   faust_make_meta(ui->metadata[i]),
+	   pure_tuplel(2, pure_cstring_dup(ui->elems[i].label), x));
 	break;
       default:
 	/* can't happen */
@@ -17355,6 +17356,7 @@ static pure_expr *faust_make_ui(void *p)
 	break;
       }
       break;
+    }
     default:
       /* can't happen */
       xv[n++] = NULL;

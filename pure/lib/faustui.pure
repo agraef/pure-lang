@@ -47,7 +47,8 @@
    instructions, etc.; please check the Faust documentation for details.
 
    There are also three constructors for denoting groups of controls,
-   'vgroup', 'hgroup' and 'tgroup'. These take a single 'args' argument, which
+   'vgroup', 'hgroup' and 'tgroup'. These take two arguments: 'meta' has the
+   metadata associated with the group, in the same format as above, and 'args'
    is a pair (label,elems) consisting of the label of the group, as given in
    the Faust program, and the list of all control elements in that group. The
    toplevel control element is always a group (a 'vgroup' by default). */
@@ -63,28 +64,29 @@ public button checkbox vslider hslider nentry vbargraph hbargraph
    parameters. */
 
 control_type (f@_ ptr meta args) |
-control_type (f@_ args) = f;
+control_type (f@_ meta args) = f;
 
 control_ref (_ ptr meta args) = ptr;
 
-control_meta (_ ptr meta args) = meta;
+control_meta (_ ptr meta args) |
+control_meta (_ meta args) = meta;
 
 control_label (_ ptr meta (label,args)) |
-control_label (_ (label,args)) |
+control_label (_ meta (label,args)) |
 control_label (_ ptr meta label::string) |
-control_label (_ label::string) = label;
+control_label (_ ptr label::string) = label;
 
 control_args (_ ptr meta (label,args)) |
-control_args (_ (label,args)) = args;
+control_args (_ meta (label,args)) = args;
 control_args (_ ptr meta label::string) |
-control_args (_ label::string) = ();
+control_args (_ ptr label::string) = ();
 
 /* The following function returns a flat representation of a control group as
    a list of basic control descriptions, which provides a quick way to access
    all the control values of a Faust DSP. The grouping controls themselves are
    omitted. */
 
-controls (_ (_,ctls::rlist)) = catmap controls ctls;
+controls (_ _ (_,ctls::rlist)) = catmap controls ctls;
 controls x = [x] otherwise;
 
 /* The following function works like the controls function above, but also
@@ -96,7 +98,8 @@ controls x = [x] otherwise;
 pcontrols x = controls "" x with
   controls path x =
     case x of
-      _ (label::string,ctls::rlist) = catmap (controls (join path label)) ctls;
+      _ _ (label::string,ctls::rlist) =
+	catmap (controls (join path label)) ctls;
       f@_ ptr meta (label::string,args) = [f ptr meta (join path label,args)];
       f@_ ptr meta label::string = [f ptr meta (join path label)];
       _ = [x]; // bad control description
