@@ -74,9 +74,9 @@ make_gui instance::string nvoices::int ui = x,y,c+
 
 with
 
-make_group path (x,y) (tgroup g)
-		= make_group path (x,y) (hgroup g);
-make_group path (x,y) (hgroup (name,items))
+make_group path (x,y) (tgroup meta g)
+		= make_group path (x,y) (hgroup meta g);
+make_group path (x,y) (hgroup _ (name,items))
 		= //printf "end %s\n" $ join2 path name $$
 		  x,y,cat (reverse c)
 		    when _,_,_,_,x,y,c =
@@ -84,7 +84,7 @@ make_group path (x,y) (hgroup (name,items))
 		      foldl (hstep (make_group (join2 path name)))
 		      (x,y,x,y,x,y,[]) items;
 		    end;
-make_group path (x,y) (vgroup (name,items))
+make_group path (x,y) (vgroup _ (name,items))
 		= //printf "end %s\n" $ join2 path name $$
 		  x,y,cat (reverse c)
 		    when _,_,_,_,x,y,c =
