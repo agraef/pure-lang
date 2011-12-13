@@ -33,7 +33,7 @@ let fn1,fn2 = 10,10; // default GUI font sizes, adapt as needed
 let width,height = 0,0;
 let radio_sliders = 0;
 let fake_buttons_flag = false;
-let slider_nums_flag = false;
+let slider_nums_flag = true;
 
 /* Control symbols. This maps a faustui control name (possibly including a
    path) to the corresponding Pd symbol, which is used to send and receive
@@ -113,7 +113,7 @@ vbreak f (x0,y0,x1,y1,x2,y2,c) item (x,y,c1)
 
 add_widget path (x,y) item
 		= x,y,[]
-		    if null s || hidden s || nvoices > 0 &&
+		    if null s || hidden s name || nvoices > 0 &&
 		      // exclude passive and voice controls of synths
 		      (any (===control_type item) [hbargraph,vbargraph] ||
 		       any ((==)name) ["freq","gain","gate"])
@@ -121,8 +121,9 @@ add_widget path (x,y) item
 		      name = control_label item;
 		      s = join2 path name;
 		    end;
-add_widget path (x,y) (button _ _ name)
-		= add_widget path (x,y) (checkbox name) if fake_buttons_flag;
+add_widget path (x,y) (button ref meta name)
+		= add_widget path (x,y) (checkbox ref meta name)
+		  if fake_buttons_flag;
 add_widget path (x,y) (button _ _ name)
 		= x+button_x,y+button_y,
 		  [obj x y bng 15 250 50 0 s s
@@ -226,10 +227,36 @@ join2 "" s	= "/"+s;
 join2 s ""	= s;
 join2 s t	= s+"/"+t otherwise;
 
-hidden name	= false; // TODO
+hidden path name
+		= any (match_control path name) exclude;
+
+match_control path name pat
+		= fnmatch pat path 0 if index pat "/" >= 0;
+		= fnmatch pat name 0 otherwise;
 
 checkname name	= "empty" if null name;
 		= name otherwise;
+
+end when
+
+// Retrieve options from the toplevel group.
+opts = case ui of _ meta::list _ = meta; _ = [] end;
+opts = record [mkopt val | key=>val = opts; key=="pd"] with
+  mkopt s = case split "=" s of key:val = key => join "=" val; _ = s=>"" end;
+end;
+fnsize = if member opts "font-size" then val (opts!"font-size") else 0;
+fn1,fn2 = if intp fnsize && fnsize>0 then fnsize,fnsize else fn1,fn2;
+radio = if member opts "radio-sliders" then val (opts!"radio-sliders") else 0;
+radio_sliders = if intp radio && radio>=0 then radio else radio_sliders;
+wd = if member opts "width" then val (opts!"width") else 0;
+width = if intp wd && wd>=0 then wd else width;
+ht = if member opts "height" then val (opts!"height") else 0;
+height = if intp ht && ht>=0 then ht else height;
+exclude = if member opts "exclude" then split "," (opts!"exclude") else [];
+fake_buttons_flag = fake_buttons_flag && ~member opts "no-fake-buttons" ||
+member opts "fake-buttons";
+slider_nums_flag = slider_nums_flag && ~member opts "no-slider-nums" ||
+member opts "slider-nums";
 
 end;
 
