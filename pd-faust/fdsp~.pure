@@ -40,6 +40,10 @@ fdsp_dsp name instance chan::int = catch error (k,l,fdsp with
     end;
     put rctrlmap $ ordmdict [id=>(n,args) | n=>(id,args) = get ctrlmap];
     put roscmap $ ordmdict [id=>p | p=>id = get oscmap];
+    put ctrlmap $ ordmdict
+    [c | c@(n=>(id,args)) = get ctrlmap; ~member (get octrls) id];
+    put oscmap $ ordmdict
+    [c | c@(p=>id) = get oscmap; ~member (get octrls) id];
     put writing 0; put recording 0;
     // Give some feedback that we're up and running again.
     pd_post $ sprintf "%s (%s): %d inputs, %d outputs *** reloaded ***"
@@ -72,12 +76,21 @@ fdsp_dsp name instance chan::int = catch error (k,l,fdsp with
 
   // Update the passive controls. (Doing this for each dsp cycle is a cpu hog,
   // so we only update the controls after some given time has passed.)
-  control_out = do (\(id=>ptr) -> pd_send id (get_control ptr)) (get octrls)
-    if do_controls with
-      do_controls = put lasttime time $$ true
-	if time >= get lasttime + update_time when time = pd_time end;
-      = false otherwise;
-    end;
+  control_out = () when
+    do (\(id=>ptr) -> pd_send id (get_control ptr)) (get octrls);
+    // Also update external MIDI/OSC controllers in write mode, for passive
+    // controls which have a MIDI or OSC controller assigned to them.
+    ~get writing ||
+    (do (pd_send "midiout") $
+     catmap (\(id=>ptr) -> midivals id $ get_control ptr) (get octrls));
+    ~get writing ||
+    (do (pd_send "oscout") $
+     catmap (\(id=>ptr) -> oscvals id $ get_control ptr) (get octrls));
+  end if do_controls with
+    do_controls = put lasttime time $$ true
+      if time >= get lasttime + update_time when time = pd_time end;
+    = false otherwise;
+  end;
   = () otherwise;
 
   // MIDI controllers.
@@ -180,8 +193,18 @@ end when
   ctrls,octrls,defaults,ctrlmap,oscmap = ref c,ref oc,ref df,ref cm,ref om when
     c,oc,df,cm,om = create_gui ui;
   end;
+  // Compute the reverse MIDI and OSC controller maps. These are used in write
+  // mode to generate MIDI and OSC messages from controller input.
   rctrlmap = ref $ ordmdict [id=>(n,args) | n=>(id,args) = get ctrlmap];
   roscmap = ref $ ordmdict [id=>p | p=>id = get oscmap];
+  // Remove the passive controls from the MIDI and OSC controller maps. Only
+  // the active controls can be set from incoming MIDI and OSC messages. Note
+  // that we do this after computing the reverse mappings, as we still want
+  // the passive controls to be included there.
+  put ctrlmap $ ordmdict
+  [c | c@(n=>(id,args)) = get ctrlmap; ~member (get octrls) id];
+  put oscmap $ ordmdict
+  [c | c@(p=>id) = get oscmap; ~member (get octrls) id];
   // Create some signal buffers.
   n = blocksize;
   out = dmatrix (l,n);
@@ -245,7 +268,7 @@ end with
       {control_label c => control_type c (control_args c) | c = ctrl_descr};
     ctrlmap = ordmdict
       [post (n => (id,ctrlargs!id)) |
-       id=>ptr = ictrls; m = meta!id; n = ctrl_num m]
+       id=>ptr = ctrls; m = meta!id; n = ctrl_num m]
     with
       ctrl_num ("midi"=>v) = case catch (\_->()) (sscanf v "%s %s") of
 	"ctrl",s = case val s of n::int = [n]; _ = [] end;
@@ -256,9 +279,8 @@ end with
 	~verbose_ctrlmap || pd_post (sprintf "%s: ctrl %d" (id,n));
       end;
     end;
-    // XXXTODO: We might also want to handle the passive controls in some way.
     oscmap = ordmdict
-      [post (p => id) | id=>ptr = ictrls; m = meta!id; p = osc_path m]
+      [post (p => id) | id=>ptr = ctrls; m = meta!id; p = osc_path m]
     with
       osc_path ("osc"=>v) = [oscid v];
       osc_path _ = [];

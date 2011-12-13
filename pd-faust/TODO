@@ -13,25 +13,24 @@ Features:
 - Support for multichannel dsps. (Only stereo units are fully supported right
   now.)
 
-- OSC support for passive controls. Maybe we'd like to output these to an OSC
-  client?
-
 - Implement passive controls in fsynth~ objects. The problem here is how to
   aggregate the values of the different voices: sum, average, min, max?
 
-Bugs and Design Issues:
+- Add support for polyphonic aftertouch and channel pressure messages, it
+  should be possible to map these to Faust controls as well.
 
-- Some of the included faust-stk instruments have bugs (badly out of tune
-  and/or refusing to work for certain parameter combinations). Check with the
-  faust-stk developers at CCRMA to get these fixed.
+Design Issues:
 
 - Refactor the sources so that fsynth~ and fdsp~ share as much code as
   possible.
 
-- How should voice controls (freq, gain, gate) be handled? They are currently
-  addressed using their basename only (without path), and only one of these
-  (the first one) will be used if different instances of a voice control exist
-  in different subgroups. Also, we may want to make the basenames of the voice
-  controls configurable.
+- Voice controls (freq, gain, gate) are currently addressed using their
+  basename only (without path), and only one of these (the first one) will be
+  used if different instances of a voice control exist in different subgroups.
+  This is done for efficiency, but it might be useful to handle multiple
+  instances of the voice controls in different subgroups. Also, we may want
+  to make the basenames of the voice controls configurable.
 
-- How to handle coarse/fine MIDI controllers?
+- There's no special handling of coarse/fine MIDI controllers in the current
+  implementation. Maybe there should be a way to map them to a single Faust
+  control?

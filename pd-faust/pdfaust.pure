@@ -131,9 +131,11 @@ map_ctrl args val = case args of
   _ = double (val>=64);
 end;
 
-// Reverse MIDI controller mapping.
+// Reverse MIDI controller mapping. We also have to deal with the case of
+// passive controllers here.
 rmap_ctrl args val = case args of
-  _ (init,min,max,step) =
+  _ (init,min,max,step) |
+  _ (min,max) =
     (::max 0 . ::min 127) $ round ((val-min)/(max-min)*128);
   _ = if val~=0 then 64 else 0;
 end;
