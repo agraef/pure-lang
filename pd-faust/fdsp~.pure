@@ -105,9 +105,9 @@ fdsp_dsp name instance chan::int = catch error (k,l,fdsp with
   end;
 
   // Controller messages.
-  fdsp (id@_ val) = () when
+  fdsp (id@_ val) = out when
     oldval = get_control (get ctrls!id);
-    if val===bang then
+    out = if val===bang then
       put_control (get ctrls!id) 1.0 $$
       // schedule the button release
       pd_delay delay_time (id 0.0)

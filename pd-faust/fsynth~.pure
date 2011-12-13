@@ -132,9 +132,9 @@ fsynth_dsp name instance chan::int nvoices::int =
   end;
 
   // Controller messages.
-  fsynth (id@_ val) = () when
+  fsynth (id@_ val) = out when
     oldval = get_control (get ctrls!0!id);
-    if val===bang then
+    out = if val===bang then
       do (\c -> put_control (c!id) 1.0) $ get ctrls $$
       // schedule the button release
       pd_delay delay_time (id 0.0)
