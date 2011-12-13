@@ -74,6 +74,12 @@ make_gui instance::string nvoices::int ui = x,y,c+
 
 with
 
+check_flag default meta name
+		= default && ~any (===("pd"=>"no-"+name)) meta ||
+		  any (===("pd"=>name)) meta;
+
+make_group path (x,y) (_ meta g)
+		= x,y,[] if check_flag false meta "hidden";
 make_group path (x,y) (tgroup meta g)
 		= make_group path (x,y) (hgroup meta g);
 make_group path (x,y) (hgroup _ (name,items))
@@ -111,9 +117,18 @@ vbreak f (x0,y0,x1,y1,x2,y2,c) item (x,y,c1)
 		    if height<=0 || y<=height || y1<=y0;
 		= vbreak f (x0,y0,x2,y0,x2,y2,c) item (f (x2,y0) item);
 
+hradio_x n	= //max hslider_x // uncomment to align with hsliders
+		  (//max radio_sliders // uncomment to align with other hradios
+		   (n+1)*15+20);
+vradio_y n	= //max vslider_y // uncomment to align with vsliders
+		  (//max radio_sliders // uncomment to align with other vradios
+		   (n+1)*15+20);
+
 add_widget path (x,y) item
 		= x,y,[]
-		    if null s || hidden s name || nvoices > 0 &&
+		    if null s ||
+		      check_flag (hidden s name) (control_meta item) "hidden" ||
+		      nvoices > 0 &&
 		      // exclude passive and voice controls of synths
 		      (any (===control_type item) [hbargraph,vbargraph] ||
 		       any ((==)name) ["freq","gain","gate"])
@@ -123,7 +138,7 @@ add_widget path (x,y) item
 		    end;
 add_widget path (x,y) (button ref meta name)
 		= add_widget path (x,y) (checkbox ref meta name)
-		  if fake_buttons_flag;
+		  if check_flag fake_buttons_flag meta "fake-button";
 add_widget path (x,y) (button _ _ name)
 		= x+button_x,y+button_y,
 		  [obj x y bng 15 250 50 0 s s
@@ -140,21 +155,28 @@ add_widget path (x,y) (checkbox _ _ name)
 		      s = control_sym instance $ join2 path name;
 		      name = checkname $ mangle name;
 		    end;
-add_widget path (x,y) (nentry _ _ (name,init,min,max,_))
-		= x+nentry_x,y+nentry_y,
-		  [obj x y nbx 5 14 min max 0 0 s s
-		   name 0 (-6) 0 fn2 white black black 256]
+add_widget path (x,y) (nentry _ meta (name,init,min,max,step))
+		= if min==0 && step==1 &&
+		    check_flag false meta "radio-slider" then
+		    x + hradio_x max, y+hslider_y,
+		    [obj x y hradio 15 1 0 (max+1) s s
+		     name 0 (-6) 0 fn1 white black black 0]
+		  else
+		    x+nentry_x,y+nentry_y,
+		    [obj x y nbx 5 14 min max 0 0 s s
+		     name 0 (-6) 0 fn2 white black black 256]
 		    when
 		      s = control_sym instance $ join2 path name;
 		      name = checkname $ mangle name;
 		    end;
-add_widget path (x,y) (hslider _ _ (name,init,min,max,step))
-		= if radio_sliders>0 && min==0 &&
-		    step==1 && max<radio_sliders then
-		    x + ::max hslider_x (radio_sliders*15), y+hslider_y,
+add_widget path (x,y) (hslider _ meta (name,init,min,max,step))
+		= if min==0 && step==1 &&
+		    check_flag (radio_sliders>0 && max<radio_sliders)
+		    meta "radio-slider" then
+		    x + hradio_x max, y+hslider_y,
 		    [obj x y hradio 15 1 0 (max+1) s s
 		     name 0 (-6) 0 fn1 white black black 0]
-		  else if slider_nums_flag then
+		  else if check_flag slider_nums_flag meta "slider-num" then
 		    x+hslider_x+nentry_x,y+hslider_y,
 		    [obj x y hsl 128 15 min max 0 0 s s
 		     name (-2) (-6) 0 fn1 white black black 0 1,
@@ -168,13 +190,14 @@ add_widget path (x,y) (hslider _ _ (name,init,min,max,step))
 		      s = control_sym instance $ join2 path name;
 		      name = checkname $ mangle name;
 		    end;
-add_widget path (x,y) (vslider _ _ (name,init,min,max,step))
-		= if radio_sliders>0 && min==0 &&
-		    step==1 && max<radio_sliders then
-		    x+vslider_x, y + ::max vslider_y (radio_sliders*15),
+add_widget path (x,y) (vslider _ meta (name,init,min,max,step))
+		= if min==0 && step==1 &&
+		    check_flag (radio_sliders>0 && max<radio_sliders)
+		    meta "radio-slider" then
+		    x+vslider_x, y + vradio_y max,
 		    [obj x y vradio 15 1 0 (max+1) s s
 		     name 0 (-6) 0 fn1 white black black 0]
-		  else if slider_nums_flag then
+		  else if check_flag slider_nums_flag meta "slider-num" then
 		    x+nentry_x,y+vslider_y+nentry_y,
 		    [obj x y vsl 15 128 min max 0 0 s s
 		     name 0 (-8) 0 fn1 white black black 0 1,
