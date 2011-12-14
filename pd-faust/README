@@ -62,7 +62,9 @@ example instruments; please check the Makefile for details.
 For a basic installation run ``make``, then ``sudo make install``. This will
 install the pd-faust objects in your Pd lib/extra/faust folder. Add this
 directory to your Pd library search path (``--path`` option or
-``Preferences/Path`` in Pd) and you should be set.
+``Preferences/Path`` in Pd) and you should be set. The ``make`` command also
+compiles the Faust dsps included in the distribution, so that the provided
+examples will be ready to run afterwards (see Examples_ below).
 
 Some further build options are described in the Makefile. In particular, it is
 possible to compile the Faust dsps to LLVM bitcode which can be loaded
@@ -95,7 +97,13 @@ The ``fdsp~`` object is invoked as follows::
   fdsp~ dspname instname channel
 
 * ``dspname`` denotes the name of the Faust dsp (usually this is just the name
-  of the .dsp file with the extension stripped off).
+  of the .dsp file with the extension stripped off). Please note that the
+  Faust dsp must be provided in a form which can be loaded in *Pure* (not
+  Pd!), so the ``pure.cpp`` architecture included in recent Faust versions
+  must be used to compile the dsp to a shared library. (If you're already
+  running Faust2, you can also compile to an LLVM bitcode file instead; Pure
+  has built-in support for loading these.) The Makefiles included in the
+  pd-faust distribution show how to do this.
 
 * ``instname`` denotes the name of the instance of the Faust unit. Multiple
   instances of the same Faust dsp can be used in a Pd patch, which must all
