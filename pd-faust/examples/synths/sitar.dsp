@@ -44,5 +44,5 @@ filter = oneZero1(b0,b1)
 		b1 = -zero*b0;
 	};
 
-process = (*(loopGain) : filter + (envelope*noise*amGain))~delayLine : *(8) : 
-stereo : instrReverb;
+process = stkmain(((*(loopGain) : filter + (envelope*noise*amGain))~delayLine : *(8) : 
+stereo : instrReverb));

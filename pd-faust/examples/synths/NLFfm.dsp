@@ -67,4 +67,4 @@ vibrato = osc(vibratoFreq)*vibratoGain*envVibrato(0.1*2*vibratoAttack,0.9*2*vibr
 envelope = adsr(envelopeAttack,envelopeDecay,90,envelopeRelease,gate)*gain;
 breath = envelope + envelope*vibrato;
 
-process = osc(freq)*breath : NLFM : stereo : instrReverb;
+process = stkmain((osc(freq)*breath : NLFM : stereo : instrReverb));

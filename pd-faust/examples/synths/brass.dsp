@@ -98,7 +98,7 @@ borePressure = *(0.85);
 //differencial presure
 deltaPressure = mouthPressure - _;
 
-process = (borePressure <: deltaPressure,_ : 
+process = stkmain(((borePressure <: deltaPressure,_ : 
 	  (lipFilter <: *(mouthPressure),(1-_)),_ : _, * :> + :
 	  dcblocker) ~ (boreDelay : NLFM) :
-	  *(gain)*4 : stereo : instrReverb;
+	  *(gain)*4 : stereo : instrReverb));

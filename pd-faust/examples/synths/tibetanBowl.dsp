@@ -146,10 +146,10 @@ bowing = bowVelocity - velocityInput <: *(bow(tableOffset,tableSlope)) : /(nMode
 //One resonance
 resonance(x) = + : + (excitation(preset,x)*select) : delayLine(x) : *(basegains(preset,x)) : bandPassFilter(x);
 
-process =
+process = stkmain((
 		//Bowed Excitation
 		(bowing*((select-1)*-1) <:
 		//nModes resonances with nModes feedbacks for bow table look-up 
 		par(i,nModes,(resonance(i)~_)))~par(i,nModes,_) :> + : 
 		//Signal Scaling and stereo
-		NLFM : stereo : instrReverb;
+		NLFM : stereo : instrReverb));

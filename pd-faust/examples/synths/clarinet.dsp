@@ -96,7 +96,7 @@ vibrato = osc(vibratoFreq)*vibratoGain*
 breath = envelope + envelope*noise*noiseGain;
 breathPressure = breath + breath*vibrato;
 
-process =
+process = stkmain((
 	//Commuted Loss Filtering
 	(_,(breathPressure <: _,_) : (filter*-0.95 - _ <: 
 	
@@ -107,4 +107,4 @@ process =
 	(delayLine : NLFM) : 
 	
 	//scaling and stereo
-	*(gain)*1.5 : stereo : instrReverb; 
+	*(gain)*1.5 : stereo : instrReverb));

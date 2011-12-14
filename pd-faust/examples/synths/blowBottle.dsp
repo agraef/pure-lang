@@ -95,9 +95,9 @@ breathPressure = envelope + vibrato;
 //breath noise
 randPressure = noiseGain*noise*breathPressure ;
 
-process = 
+process = stkmain((
 	//differential pressure
 	(-(breathPressure) <: 
 	((+(1))*randPressure : +(breathPressure)) - *(jetTable),_ : bandPassFilter,_)~NLFM : !,_ : 
 	//signal scaling
-	dcblocker*envelopeG*0.5 : stereo : instrReverb;
+	dcblocker*envelopeG*0.5 : stereo : instrReverb));

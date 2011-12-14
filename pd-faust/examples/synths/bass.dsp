@@ -79,6 +79,6 @@ delayLine = asympT60(0,delayLength,0.01,gate),_ : fdelay(4096);
 //the resonance duration is different whether a note-on signal is sent or not 
 resonanceGain = gate + (gate < 1 <: *(asympT60(1,0.9,0.05)));
 
-process = excitation : 
+process = stkmain((excitation : 
 	(+)~(delayLine : NLFM : reflexionFilter*resonanceGain) <: 
-	bodyFilter*1.5 + *(0.5) : *(4) : stereo : instrReverb;
+	bodyFilter*1.5 + *(0.5) : *(4) : stereo : instrReverb));

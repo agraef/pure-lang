@@ -86,5 +86,5 @@ stringLoopGainT = gate*0.9996 + (gate<1)*releaseLoopGain(freqn)*0.9 : smooth(0.9
 //one string
 string = (*(stringLoopGainT)+_ : delay(4096,delayLength) : loopFilter)~NLFM;
 
-process = soundBoard : string : stereo : instrReverb;
+process = stkmain((soundBoard : string : stereo : instrReverb));
 

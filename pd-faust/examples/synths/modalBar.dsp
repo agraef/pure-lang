@@ -103,8 +103,8 @@ excitation = counterSamples < (marmstk1TableSize*rate1) : *(marmstk1Wave*gate)
 		marmstk1Wave = rdtable(marmstk1TableSize,marmstk1,int(dataRate(rate1)*gate));
 	   };
 
-process = excitation : sourceFilter : *(gain) <: 
+process = stkmain((excitation : sourceFilter : *(gain) <: 
 	//resonance
 	(biquadBank <: -(*(directGain))) + (directGain*_) :
 	//vibrato for the vibraphone
-	*(vibrato) : NLFM*0.6 : stereo : instrReverb;
+	*(vibrato) : NLFM*0.6 : stereo : instrReverb));

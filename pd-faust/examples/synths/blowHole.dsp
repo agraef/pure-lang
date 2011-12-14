@@ -150,4 +150,4 @@ threePortJunction(twoPortOutput) =  (_ <: junctionScattering(twoPortOutput),_ : 
 		junctionScattering(portA2,portB2) = (((portA2+portB2-2*_)*scattering) <: toneHole(_,portA2,portB2),_,_)~_ : !,_,_;
 	};
 
-process = (twoPortJunction : threePortJunction,_) ~ (delay1 : NLFM) : !,*(gain)*1.5 : stereo : instrReverb;
+process = stkmain(((twoPortJunction : threePortJunction,_) ~ (delay1 : NLFM) : !,*(gain)*1.5 : stereo : instrReverb));

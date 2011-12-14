@@ -111,11 +111,11 @@ boreDelay = fdelay(4096,boreDelayLength);
 //reflexion filter is a one pole and a dcblocker
 reflexionFilters = onePoleFilter : dcblocker;
 
-process =
+process = stkmain((
 	(reflexionFilters <: 
 	//Differential Pressure
 	((breathPressure - _*jetReflexion) : 
 	jetDelay : jetTable) + (_*endReflexion)) ~ (boreDelay : NLFM) : 
 	//output scaling and stereo signal
-	*(0.3*gain) : stereo : instrReverb; 
+	*(0.3*gain) : stereo : instrReverb));
 

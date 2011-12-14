@@ -113,5 +113,5 @@ breath = noise*env1;
 flow = env1 + breath*breathAmp + vibrato;
 
 //instrReverb is declared in instrument.lib
-process = (_ <: (flow + *(feedBack1) : embouchureDelay : poly) + *(feedBack2) : reflexionFilter)~(boreDelay : NLFM) : *(env2)*gain : 
-stereo : instrReverb;
+process = stkmain(((_ <: (flow + *(feedBack1) : embouchureDelay : poly) + *(feedBack2) : reflexionFilter)~(boreDelay : NLFM) : *(env2)*gain : 
+stereo : instrReverb));

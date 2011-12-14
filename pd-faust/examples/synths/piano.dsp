@@ -250,6 +250,6 @@ stereo = stereoizer(SR/freq);
 conditionLowNote = freqn < FIRST_HIGH_NOTE;
 conditionHighNote = freqn >= FIRST_HIGH_NOTE;
 
-process = soundBoard <: (*(conditionLowNote)*6 : hammer : dcBlock1 : coupledStrings <: +(eq)),
+process = stkmain((soundBoard <: (*(conditionLowNote)*6 : hammer : dcBlock1 : coupledStrings <: +(eq)),
 (*(conditionHighNote) : hiPass : dcBlock1 : hammer : dcBlock2a : highBqs : dcBlock2b) :> + : *(12) : 
-stereo : instrReverb;
+stereo : instrReverb));

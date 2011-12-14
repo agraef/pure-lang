@@ -107,8 +107,8 @@ bodyFilter = *(gain) : oneZero1(b0,b1)
 instrumentBody(delay1FeedBack,breathP) = delay1FeedBack <: -(delay2) <: 
 	((breathP - _ <: breathP - _*reedTable) - delay1FeedBack),_;
 
-process =
+process = stkmain((
 	(bodyFilter,breathPressure : instrumentBody) ~ 
 	(delay1 : NLFM) : !,
 	//Scaling Output and stereo
-	*(gain) : stereo : instrReverb;
+	*(gain) : stereo : instrReverb));

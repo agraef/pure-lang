@@ -120,7 +120,7 @@ voiced = imptrain(freq+vibrato) : lowpass3e(3300) : *(voiceGain*voicedEnvelope);
 //ficative sounds are produced by a noise generator
 frica = noise*noiseEnvelope*noiseGain;
 
-process = voiced : oneZeroFilter : onePoleFilter : 
+process = stkmain((voiced : oneZeroFilter : onePoleFilter : 
 		 +(frica) <: filter0,filter1,filter2,filter3 :> + : stereo : 
-		 instrReverb;
+		 instrReverb));
 
