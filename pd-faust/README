@@ -248,8 +248,9 @@ of the instruments and effects are contained in corresponding subdirectories
 the faust-stk instruments from the Faust distribution is also included, please
 check the examples/synths/README-STK file for more information about these.
 
-The MIDI files are all in standard MIDI file format. The OSC files used by
-pd-faust for controller automation are plain ASCII files suitable for
+The MIDI files are all in standard MIDI file format. (Some of these come from
+the faust-stk distribution, others can be found on the web.) The OSC files
+used by pd-faust for controller automation are plain ASCII files suitable for
 hand-editing if you know what you are doing; the format should be fairly
 self-explanatory.
 
@@ -397,7 +398,11 @@ Tweaking the GUI Layout
 -----------------------
 
 As already mentioned, pd-faust provides the same global GUI layout options as
-:doc:`faust2pd<faust2pd>`. Here is a brief rundown of the available options:
+:doc:`faust2pd<faust2pd>`. Please check the faust2pd documentation for details.
+There are a few minor changes in the meaning of some of the options, though,
+which we consider notable improvements after some experience working with
+faust2pd. Here is a brief rundown of the available options, as they are
+implemented in pd-faust:
 
 * ``width=wd``, ``height=ht``: Specify the maximum horizontal and/or vertical
   dimensions of the layout area. If one or both of these values are nonzero,
@@ -408,53 +413,49 @@ As already mentioned, pd-faust provides the same global GUI layout options as
 * ``fake-buttons``: Render ``button`` controls as Pd toggles rather than
   bangs.
 
-* ``radio-sliders=max``: Render zero-based sliders with stepsize 1 and up to
-  ``max`` different values as Pd radio controls rather than Pd sliders.
+* ``radio-sliders=max``: Render sliders with up to ``max`` different values as
+  Pd radio controls rather than Pd sliders. Note that in pd-faust this option
+  not only applies to sliders, but also to numeric entries, i.e., ``nentry``
+  in the Faust source. However, as with faust2pd's ``radio-sliders`` option,
+  the option is only applicable if the control is zero-based and has a
+  stepsize of 1.
 
-* ``slider-nums``: Add a number box to each slider control. This is actually
-  the default in pd-faust, which can be disabled with the ``no-slider-nums``
-  option.
+* ``slider-nums``: Add a number box to each slider control. Note that in
+  pd-faust this is actually the default, which can be disabled with the
+  ``no-slider-nums`` option.
 
 * ``exclude=pat,...``: Exclude the controls whose labels match the given glob
   patterns from the Pd GUI.
 
-Please check the faust2pd documentation for a detailed description of these
-options. The only notable difference to faust2pd here is that the
-``slider-nums`` option is always the default in pd-faust, so you'll have to
-specify ``no-slider-nums`` if you want to *disable* this option.
-
-With pd-faust there is no way to specify the above options on the command
-line, so you'll have to put them as ``pd`` attributes on the *main* group of
-your Faust program, as described in the faust2pd documentation. For instance::
+In pd-faust there is no way to specify the above options on the command line,
+so you'll have to put them as ``pd`` attributes on the *main* group of your
+Faust program, as described in the faust2pd documentation. For instance::
 
   process = vgroup("[pd:no-slider-nums][pd:font-size=12]", ...);
 
 In addition, the following options can be used to change the appearance of
 individual control items. If present, these options override the corresponding
-built-in or user-specified defaults. Each option can also be prefixed with
-"\ ``no-``\ " to negate the option value. (Thus, e.g., ``no-hidden`` makes
-items visible which would otherwise, by means of the global ``exclude``
-option, be removed from the GUI.)
+defaults. Each option can also be prefixed with "\ ``no-``\ " to negate the
+option value. (Thus, e.g., ``no-hidden`` makes items visible which would
+otherwise, by means of the global ``exclude`` option, be removed from the
+GUI.)
 
-* ``hidden``: Removes the corresponding control from the Pd GUI. This is the
-  only option which can also be used for group controls, in which case *all*
+* ``hidden``: Hides the corresponding control in the Pd GUI. This is the only
+  option which can also be used for group controls, in which case *all*
   controls in the group will become invisible in the Pd GUI.
 
 * ``fake-button``, ``radio-slider``, ``slider-num``: These have the same
-  meaning as the corresponding global ``fake-buttons``, ``radio-sliders`` and
-  ``slider-nums`` options, but apply to individual control items. Also note
-  that pd-faust allows the ``radio-slider`` option to be placed not only on
-  sliders, but also on numeric entries, i.e., ``nentry`` in the Faust source.
-  (However, as with the ``radio-sliders`` option, this option is only
-  applicable if the control is zero-based and has a stepsize of 1.)
+  meaning as the corresponding global options, but apply to individual control
+  items.
 
 Again, these options are specified with the ``pd`` attribute in the label of
-the corresponding Faust control. For instance, the following definitions make
-the ``pan`` control invisible in the Pd GUI and render the ``mode`` item as a
-Pd radio control::
+the corresponding Faust control. For instance, the following Faust code hides
+the controls in the ``aux`` group, removes the number entry from the ``pan``
+control, and renders the ``preset`` item as a Pd radio control::
 
-  pan = hslider("pan [pd:hidden]", 0, -1, 1, 0.01);
-  mode = nentry("mode [pd:radio-slider]", 0, 0, 4, 1);
+  aux = vgroup("aux [pd:hidden]", aux_part);
+  pan = hslider("pan [pd:no-slider-num]", 0, -1, 1, 0.01);
+  preset = nentry("preset [pd:radio-slider]", 0, 0, 7, 1);
 
 Remote Control
 --------------
