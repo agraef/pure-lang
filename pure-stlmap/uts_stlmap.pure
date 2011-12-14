@@ -49,9 +49,6 @@ stl::elms (f,l);
 #sm1;
 //- 5
 
-stl::size sm1;
-//- 5
-
 stl::distance (sm1,"b",stl::stlend);
 //- 4
 
@@ -240,7 +237,7 @@ let p, ok = stl::insert sm2 ("f"=>6); stl::get_key p, ok, stl::elms sm2;
 
 // Attempt overwrite of existing values
 
-stl::put_val i 11; stl::get_elm i; stl::elms (i,j);
+stl::put i 11; stl::get_elm i; stl::elms (i,j);
 //- ["a"=>11,"b"=>2]
 
 stl::insert sm2 (i,j);
@@ -255,7 +252,7 @@ stl::insert sm2 {"d"=>14};
 let p, ok = stl::insert sm2 ("e"=>10); stl::get_key p, ok, stl::elms sm2;
 //- "e",0,["f"=>6,"e"=>0,"d"=>4,"c"=>3,"b"=>2,"a"=>1]
 
-stl::put_val p 5; stl::elms sm2;
+stl::put p 5; stl::elms sm2;
 //- ["f"=>6,"e"=>5,"d"=>4,"c"=>3,"b"=>2,"a"=>1]
 
 
@@ -923,24 +920,36 @@ stl::next_key sm1 "e";
 stl::next_key sm1 stl::stlend;
 //- stl::stlend
 
-stl::update sm1 "a" 11; stl::elms sm1;
+stl::insert_or_update sm1 ("a"=>11); stl::elms sm1;
 //- ["a"=>11,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
-stl::update sm1 "f" 6; stl::elms sm1;
+stl::insert_or_update sm1 ("f"=>6); stl::elms sm1;
 //- ["a"=>11,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6]
 
-stl::update_elm sm1 ("b"=>12); stl::elms sm1;
+stl::insert_or_update sm1 ("b"=>12); stl::elms sm1;
 //- ["a"=>11,"b"=>12,"c"=>3,"d"=>4,"e"=>5,"f"=>6]
 
-stl::update_elm sm1 ("g"=>7); stl::elms sm1;
+stl::insert_or_update_key_val sm1 "g" 7; stl::elms sm1;
 //- ["a"=>11,"b"=>12,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"g"=>7]
 
 let sm2 = stl::emptystlmap (>);
 //- ()
 
-stl::update_with (:) sm2 "a" 1; stl::update_with (:) sm2 "a" 2; stl::elms sm2;
+stl::insert_or_update_with (:) sm2 "a" 1; stl::elms sm2;
+//- ["a"=>[1]]
+
+stl::insert_or_update_with (:) sm2 "a" 2; stl::elms sm2;
 //- ["a"=>[2,1]]
 
-stl::update_with (:) sm2 "b" 3; stl::update_with (:) sm2 "b" 4; stl::elms sm2;
+stl::insert_or_update_with (:) sm2 "b" 3; stl::elms sm2;
+//- ["b"=>[3],"a"=>[2,1]]
+
+stl::insert_or_update_with (:) sm2 "b" 4; stl::elms sm2;
 //- ["b"=>[4,3],"a"=>[2,1]]
+
+stl::put (sm2,"f") [5,6]; stl::elms sm2;
+//- ["f"=>[5,6],"b"=>[4,3],"a"=>[2,1]]
+
+stl::get (sm2,"f");
+//- [5,6]
 

@@ -164,9 +164,9 @@ get_elm pos::stlsacon_iter = sm_get_at pos sm_elm;
 
 get_key pos::stlsacon_iter = sm_get_at pos sm_key;
 
-get_val pos::stlsacon_iter = sm_get_at pos sm_val;
+get pos::stlsacon_iter = sm_get_at pos sm_val;
 
-put_val pos::stlmap_iter val = sm_put_at pos val;
+put pos::stlmap_iter val = sm_put_at pos val;
 
 inc pos::stlsacon_iter = sm_move_iter pos 1;
 
@@ -226,8 +226,6 @@ end if sm_is_set rng;
 container_info rng::smrng = sm_container_info rng;
 
 (::#) sm::stlsacon = sm_size sm;
-
-size sm::stlsacon = sm_size sm;
 
 empty sm::stlsacon = sm_empty sm;
 
@@ -295,6 +293,12 @@ insert sm::stlmap (val@(k=>v), pos::stlsacon_iter) =
   sm_insert_hinted sm pos val;
 
 insert sm::stlmap val@(k=>v) = sm_insert_elm sm val;
+
+insert_or_update sm::stlmap (k=>v) = sm_update sm k v;
+
+insert_or_update_key_val sm::stlmap k v = sm_update sm k v;
+
+insert_or_update_with f sm::stlmap key x = sm_update_with sm key (f x) $$ sm;
 
 insert sm::stlset (key, pos::stlsacon_iter) = sm_insert_hinted sm pos key;
 
@@ -370,11 +374,15 @@ set_includes rng1::smrng rng2::smrng =
    returns the value of the element with the indicated key, if any, or throws
    an out_of_bounds exception. When applied to a stlset it returns the element
    that is equivalent to the key.
- 
+
+
 */
 
-
 (::!) sm::stlsacon key = sm_find sm key sm_val;
+
+get (sm::stlsacon,key) = sm_find sm key sm_val; // like get iter
+
+put (sm::stlmap,key) val = sm_update sm key val;
 
 has_key sm::stlsacon key = sm_member sm key;
 
@@ -384,13 +392,7 @@ next_key sm::stlsacon key = sm_next_key sm key;
 
 prev_key sm::stlsacon key = sm_prev_key sm key;
 
-update sm::stlmap k v = sm_update sm k v $$ sm;
-
-update_elm sm::stlmap (k=>v) = sm_update sm k v $$ sm;
-
-update_with f sm::stlmap key x = sm_update_with sm key (f x) $$ sm;
-
-/*** Mapping and Folding ********************************************/
+/*** Mapping and Folding *************************************************/
 
 ::map f rng::smrng = sm_listmap f rng sm_elm; // => sm_key for sets
 

@@ -51,9 +51,6 @@ stl::elms (f,l);
 #sm1;
 //- 5
 
-stl::size sm1;
-//- 5
-
 stl::distance (sm1,"b",stl::stlend);
 //- 4
 
@@ -240,7 +237,7 @@ stl::elms sm2;
 let p = stl::insert sm2 ("f"=>6); stl::get_key p, stl::elms sm2;
 //- "f",["f"=>6,"e"=>0,"d"=>4,"c"=>3,"b"=>2,"a"=>1]
 
-stl::put_val i 11; stl::get_elm i; stl::elms (i,j);
+stl::put i 11; stl::get_elm i; stl::elms (i,j);
 //- ["a"=>11,"b"=>2]
 
 // Add elements with non-unique keys
@@ -257,7 +254,7 @@ let p = stl::insert sm2 ("e"=>10); stl::get_key p;
 stl::elms sm2;
 //- ["f"=>6,"e"=>0,"e"=>10,"d"=>4,"c"=>3,"c"=>13,"b"=>2,"b"=>2,"a"=>1,"a"=>11]
 
-stl::put_val p 5; stl::elms sm2;
+stl::put p 5; stl::elms sm2;
 //- ["f"=>6,"e"=>0,"e"=>5,"d"=>4,"c"=>3,"c"=>13,"b"=>2,"b"=>2,"a"=>1,"a"=>11]
 
 //*** erase ***************************************************************/
@@ -970,18 +967,21 @@ stl::next_key sm1 "e";
 stl::next_key sm1 stl::stlend;
 //- stl::stlend
 
-stl::update sm1 "a" [11]; stl::elms sm1;
+stl::put (sm1,"a") [11]; stl::elms sm1;
 //- ["a"=>11,"c"=>2,"c"=>3,"d"=>4,"e"=>5]
 
-stl::update sm1 "f" [6,7,8]; stl::elms sm1;
+stl::put (sm1,"f") [6,7,8]; stl::elms sm1;
 //- ["a"=>11,"c"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"f"=>7,"f"=>8]
 
-stl::update_elms sm1 ("b"=>[1]); stl::elms sm1;
-//- ["a"=>11,"b"=>1,"c"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6,"f"=>7,"f"=>8]
+stl::get (sm1,"f");
+//- [6,7,8]
 
-stl::update_elms sm1 ("f"=>[]); stl::elms sm1;
-//- ["a"=>11,"b"=>1,"c"=>2,"c"=>3,"d"=>4,"e"=>5]
+stl::put (sm1,"f") []; stl::elms sm1;
+//- ["a"=>11,"c"=>2,"c"=>3,"d"=>4,"e"=>5]
 
-stl::update_elms sm1 ("b"=>[2,3]); stl::elms sm1;
-//- ["a"=>11,"b"=>2,"b"=>3,"c"=>2,"c"=>3,"d"=>4,"e"=>5]
+stl::get (sm1,"f");
+//- []
+
+stl::put sm1 ("b"=>[2,3]); stl::elms sm1;
+//- ["a"=>11,"c"=>2,"c"=>3,"d"=>4,"e"=>5]
 

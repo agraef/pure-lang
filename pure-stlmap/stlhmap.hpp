@@ -88,6 +88,7 @@ extern "C" {
 
   int  shm_member(px* pxshmp, px* key);
   px*  shm_update(px* pxshmp, px* key, px* val);
+  px*  shm_update_with(px* pxshmp, px* key, px* unaryfun);
 
 }
 

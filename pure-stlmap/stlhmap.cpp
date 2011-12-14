@@ -590,6 +590,8 @@ px* shm_update(px* pxshmp, px* key, px* val)
   return val;
 }
 
+/*** Lazy list iterator support ******************************************/
+
 px* shm_begin(px* pxshmp)
 {
   shm* shmp;
@@ -628,3 +630,4 @@ px* shm_equal_iter(px* pxshmip1, px* pxshmip2)
   if (tag1 != tag2) return 0; // fail
   return pure_int( shmip1->iter == shmip2->iter ); 
 }
+

@@ -103,7 +103,7 @@ stlhmap rng::svrng = shm when
   shm_insert_elms_stlvec shm rng;
 end;
 
-stlhset hm::stlhmap = shm_copy hm;
+stlhmap shm::stlhmap = shm_copy shm;
 
 emptystlhset ()                   = shm_make_empty hash (==) 1;
 emptystlhset (khash,keql)         = shm_make_empty khash keql 1;
@@ -119,9 +119,9 @@ stlhset rng::svrng = ss when
   shm_insert_elms_stlvec ss rng;
 end;
 
-stlhset hs::stlhset = shm_copy hs;
+stlhset shs::stlhset = shm_copy shs;
 
-reserve shm::stlhacon mlf::double size::int = shm_reserve shm mlf size;
+hash_reserve shm::stlhacon mlf::double size::int = shm_reserve shm mlf size;
 
 /*** Info ***************************************************************/
 
@@ -133,19 +133,17 @@ hash_info shm::stlhacon = shm_hash_info shm;
 
 count shm::stlhacon key = shm_count shm key;
 
-using system;
-
-member shm::stlhacon key = puts "stl" $$ shm_member shm key;
+has_key shm::stlhacon key = shm_member shm key;
 
 /*** Access *************************************************************/
 
 (::!) shm::stlhacon key = shm_find shm key shm_val;
 
-::get (shm::stlhacon,key) = shm_find shm key shm_val;
+get (shm::stlhacon,key) = shm_find shm key shm_val;
 
 lazy_elms shm::stlhacon = gen first with
   gen i = if shm_equal_iter i last then [] 
-          else shm_get_elm_at_inc i : (gen i &);  
+          else shm_get_elm_at_inc i : (gen i &);
 end when 
   first = shm_begin shm;
   last = shm_end shm;
@@ -169,8 +167,6 @@ end;
 
 /*** Modifiers *********************************************************/
 
-put shm::stlhmap (key=>v) = shm_update shm key v $$ shm;
-
 put (shm::stlhmap,key) v = shm_update shm key v;
 
 insert shm::stlhacon xs::list = shm_insert_elms_xs shm xs;
@@ -179,9 +175,13 @@ insert shm::stlhacon xs::matrix = shm_insert_elms_xs shm xs;
 
 insert shm::stlhacon svr::svrng = shm_insert_elms_stlvec shm svr;
 
-insert shm::stlhacon val@(k=>v) = shm_insert_elm shm val;// use xs as key
+insert shm::stlhacon val@(k=>v) = shm_insert_elm shm val;
 
-insert shm::stlhset key = shm_insert_elm shm key; 
+insert_or_update shm::stlhmap (k=>v) = shm_update shm k v;
+
+insert_or_update_key_val shm::stlhmap k v = shm_update shm k v;
+
+insert shm::stlhset elm = shm_insert_elm shm elm; 
 
 clear shm::stlhacon = shm_clear shm;
 
