@@ -2469,7 +2469,7 @@ static string lang_tag(string &code, string &modname)
 void interpreter::inline_code(bool priv, string &code)
 {
   // Get the language tag and configure accordingly.
-  string modname, tag = lang_tag(code, modname), ext = "";
+  string modname, tag = lang_tag(code, modname), ext = "", optargs = "";
   const char *env, *drv, *args;
   char *asmargs = 0;
   if (tag == "c") {
@@ -2500,6 +2500,8 @@ void interpreter::inline_code(bool priv, string &code)
   } else if (tag == "dsp") {
     env = "PURE_FAUST"; drv = "faust -double";
     args = " -lang llvm ";
+    const char *opt = getenv("FAUST_OPT");
+    if (opt) optargs = string((!*opt||isspace(*opt))?"":" ")+opt;
     if (modname.empty())
       throw err("missing Faust module name in inline code (try dsp:name)");
   } else {
@@ -2556,7 +2558,7 @@ void interpreter::inline_code(bool priv, string &code)
       args = asmargs;
     }
     string fname = nm, bcname = string(fnm)+ext, bcname2 = string(fnm)+".bc",
-      cmd = string(pure_cc)+args+fname+" -o "+bcname;
+      cmd = string(pure_cc)+args+fname+optargs+" -o "+bcname;
     const char *bcnm = bcname.c_str(), *bcnm2 = bcname2.c_str();
     bool vflag = (verbose&verbosity::compiler) != 0;
     if (vflag) std::cerr << cmd << '\n';
