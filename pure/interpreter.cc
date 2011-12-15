@@ -2504,6 +2504,13 @@ void interpreter::inline_code(bool priv, string &code)
     if (opt) optargs = string((!*opt||isspace(*opt))?"":" ")+opt;
     if (modname.empty())
       throw err("missing Faust module name in inline code (try dsp:name)");
+    // Mangle the module name so that it can be supplied as the Faust class
+    // name (-cn).
+    string name = modname;
+    for (size_t i = 0, n = name.size(); i < n; i++)
+      if ((i==0 && !isalpha(name[i])) || !isalnum(name[i]))
+	name[i] = '_';
+    optargs = " -cn "+name+optargs;
   } else {
     throw err("bad tag '"+tag+
 	      "' in inline code (try one of c, fortran, dsp:name)");
