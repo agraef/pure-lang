@@ -19,7 +19,7 @@
 
 # Package name and version number:
 dist = pd-faust-$(version)
-version = 0.0
+version = 0.1
 
 # Try to guess the host system type.
 host = $(shell ./config.guess)

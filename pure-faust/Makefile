@@ -1,7 +1,7 @@
 
 # Package name and version number:
 dist = pure-faust-$(version)
-version = 0.5
+version = 0.6
 
 # Try to guess the Pure installation prefix:
 prefix = $(patsubst %/bin/pure,%,$(shell which pure 2>/dev/null))
