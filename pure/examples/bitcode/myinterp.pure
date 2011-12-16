@@ -1,0 +1,76 @@
+
+/* Construct a secondary interpreter instance. 2011-12-16 AG */
+
+/* This example illustrates how to use the runtime API to create a secondary
+   Pure interpreter instance inside Pure and use it to evaluate a quoted
+   expression in a given instance. (Compare also the poor.c example which
+   shows how to invoke the Pure interpreter from a C program.) */
+
+%<
+#include <stdlib.h>
+#include <pure/runtime.h>
+
+pure_interp *myinterp_create(void)
+{
+  return pure_create_interp(0, 0);
+}
+
+void myinterp_delete(pure_interp *interp)
+{
+  pure_delete_interp(interp);
+}
+
+pure_expr *myeval(pure_interp *interp, pure_expr *x)
+{
+  /* Note that to keep things simple, we transfer expression data between the
+     two interpreter instances using strings. A better possibility would be to
+     use blobs for the necessary marshalling instead. */
+  char *s = str(x);
+  if (s) {
+    pure_interp *s_interp = pure_current_interp();
+    pure_expr *y;
+    /* Switch over to our interpreter instance and do the evaluation there. */
+    pure_switch_interp(interp);
+    y = pure_eval(s);
+    free(s); s = NULL;
+    if (y) {
+      s = str(y);
+      pure_freenew(y); y = NULL;
+    }
+    /* Switch back to the calling interpreter and return the result if we
+       got any. */
+    pure_switch_interp(s_interp);
+    if (s) {
+      y = pure_val(s);
+      free(s);
+    }
+    return y;
+  } else
+    return NULL;
+}
+%>
+
+// Convenience function to create a new interpreter instance which
+// garbage-collects itself.
+
+myinterp = sentry myinterp_delete myinterp_create;
+
+// Quickly evaluate an expression in a "sandbox". Note that we quote the
+// expression so that it gets evaluated in the secondary instance.
+myeval myinterp ('(6*7));
+
+// Create an interpreter instance with just the prelude loaded.
+let a = myinterp;
+
+// Create another instance which also has the system module loaded.
+let b = myinterp;
+myeval b ('eval "using system;");
+
+// Try to evaluate some things.
+myeval a ('puts "hello a");
+myeval b ('puts "hello b");
+
+// This invokes interpreter a to evaluate 6*7, then applies str on the result
+// in the main interpreter instance, and finally evaluates printf on the
+// result in interpreter b.
+myeval b (('printf "res b = %s\n") (str (myeval a ('(6*7)))));
