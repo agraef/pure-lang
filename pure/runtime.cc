@@ -4293,10 +4293,10 @@ pure_expr *typep(pure_expr *ty, pure_expr *x)
     return 0;
 }
 
-list<char*> temps; // XXXFIXME: This should be TLD.
-
 char *pure_get_cstring(pure_expr *x)
 {
+  interpreter& interp = *interpreter::g_interp;
+  list<char*>& temps = interp.temps;
   assert(x && x->tag == EXPR::STR);
   char *s = fromutf8(x->data.s, 0);
   assert(s);
@@ -4307,6 +4307,8 @@ char *pure_get_cstring(pure_expr *x)
 extern "C"
 void pure_free_cstrings()
 {
+  interpreter& interp = *interpreter::g_interp;
+  list<char*>& temps = interp.temps;
   for (list<char*>::iterator t = temps.begin(); t != temps.end(); t++)
     if (*t) free(*t);
   temps.clear();
@@ -4371,34 +4373,6 @@ void *pure_get_matrix_data(pure_expr *x)
     return 0;
   }
 }
-
-enum cvd_type {
-  cvd_none, cvd_void, cvd_char,
-  cvd_byte, cvd_short, cvd_int, cvd_int64, cvd_float, cvd_double
-};
-
-struct cvector_data {
-  pure_expr *x;
-  void *v, *w;
-  cvd_type ty;
-  bool vdata;
-  cvector_data(pure_expr *_x, void *_v, cvd_type _ty, bool _vdata = false) :
-    x(_x), v(_v), w(0), ty(_ty), vdata(_vdata)
-  {
-    if (vdata && ty == cvd_char) {
-      // Back up the original vector, so that we can free the temporary
-      // strings afterwards.
-      size_t n = 0;
-      char **s = (char**)v;
-      for (; s[n]; n++) ;
-      w = malloc((n+1)*sizeof(char*));
-      if (!w) return;
-      memcpy(w, v, (n+1)*sizeof(char*));
-    }
-  }
-};
-
-list<cvector_data> cvector_temps; // XXXFIXME: This should be TLD.
 
 bool is_contiguous(pure_expr *x)
 {
@@ -4595,6 +4569,8 @@ static void *matrix_to_int64_array(void *p, pure_expr *x)
 
 void *pure_get_matrix_data_byte(pure_expr *x)
 {
+  interpreter& interp = *interpreter::g_interp;
+  list<cvector_data>& cvector_temps = interp.cvector_temps;
   void *v = matrix_to_byte_array(0, x);
   cvector_temps.push_back(cvector_data(x, v, cvd_byte));
   return v;
@@ -4602,6 +4578,8 @@ void *pure_get_matrix_data_byte(pure_expr *x)
 
 void *pure_get_matrix_data_short(pure_expr *x)
 {
+  interpreter& interp = *interpreter::g_interp;
+  list<cvector_data>& cvector_temps = interp.cvector_temps;
   void *v = matrix_to_short_array(0, x);
   cvector_temps.push_back(cvector_data(x, v, cvd_short));
   return v;
@@ -4609,6 +4587,8 @@ void *pure_get_matrix_data_short(pure_expr *x)
 
 void *pure_get_matrix_data_int(pure_expr *x)
 {
+  interpreter& interp = *interpreter::g_interp;
+  list<cvector_data>& cvector_temps = interp.cvector_temps;
   void *v = is_contiguous(x)?pure_get_matrix_data(x):
     matrix_to_int_array(0, x);
   cvector_temps.push_back(cvector_data(x, v, cvd_int));
@@ -4617,6 +4597,8 @@ void *pure_get_matrix_data_int(pure_expr *x)
 
 void *pure_get_matrix_data_int64(pure_expr *x)
 {
+  interpreter& interp = *interpreter::g_interp;
+  list<cvector_data>& cvector_temps = interp.cvector_temps;
   void *v = matrix_to_int64_array(0, x);
   cvector_temps.push_back(cvector_data(x, v, cvd_int64));
   return v;
@@ -4624,6 +4606,8 @@ void *pure_get_matrix_data_int64(pure_expr *x)
 
 void *pure_get_matrix_data_float(pure_expr *x)
 {
+  interpreter& interp = *interpreter::g_interp;
+  list<cvector_data>& cvector_temps = interp.cvector_temps;
   void *v = matrix_to_float_array(0, x);
   cvector_temps.push_back(cvector_data(x, v, cvd_float));
   return v;
@@ -4631,6 +4615,8 @@ void *pure_get_matrix_data_float(pure_expr *x)
 
 void *pure_get_matrix_data_double(pure_expr *x)
 {
+  interpreter& interp = *interpreter::g_interp;
+  list<cvector_data>& cvector_temps = interp.cvector_temps;
   void *v = is_contiguous(x)?pure_get_matrix_data(x):
     matrix_to_double_array(0, x);
   cvector_temps.push_back(cvector_data(x, v, cvd_double));
@@ -4980,6 +4966,8 @@ static void *float_vector_to_matrix(pure_expr *x, void *q)
 
 void *pure_get_matrix_vector_void(pure_expr *x)
 {
+  interpreter& interp = *interpreter::g_interp;
+  list<cvector_data>& cvector_temps = interp.cvector_temps;
   void *v = matrix_to_void_vector(x);
   cvector_temps.push_back(cvector_data(x, v, cvd_void, true));
   return v;
@@ -4987,6 +4975,8 @@ void *pure_get_matrix_vector_void(pure_expr *x)
 
 void *pure_get_matrix_vector_char(pure_expr *x)
 {
+  interpreter& interp = *interpreter::g_interp;
+  list<cvector_data>& cvector_temps = interp.cvector_temps;
   void *v = matrix_to_char_vector(x);
   cvector_temps.push_back(cvector_data(x, v, cvd_char, true));
   return v;
@@ -4994,6 +4984,8 @@ void *pure_get_matrix_vector_char(pure_expr *x)
 
 void *pure_get_matrix_vector_byte(pure_expr *x)
 {
+  interpreter& interp = *interpreter::g_interp;
+  list<cvector_data>& cvector_temps = interp.cvector_temps;
   void *v = matrix_to_byte_vector(x);
   cvector_temps.push_back(cvector_data(x, v, cvd_byte, true));
   return v;
@@ -5001,6 +4993,8 @@ void *pure_get_matrix_vector_byte(pure_expr *x)
 
 void *pure_get_matrix_vector_short(pure_expr *x)
 {
+  interpreter& interp = *interpreter::g_interp;
+  list<cvector_data>& cvector_temps = interp.cvector_temps;
   void *v = matrix_to_short_vector(x);
   cvector_temps.push_back(cvector_data(x, v, cvd_short, true));
   return v;
@@ -5008,6 +5002,8 @@ void *pure_get_matrix_vector_short(pure_expr *x)
 
 void *pure_get_matrix_vector_int(pure_expr *x)
 {
+  interpreter& interp = *interpreter::g_interp;
+  list<cvector_data>& cvector_temps = interp.cvector_temps;
   void *v = matrix_to_int_vector(x);
   cvector_temps.push_back(cvector_data(x, v, cvd_int, true));
   return v;
@@ -5015,6 +5011,8 @@ void *pure_get_matrix_vector_int(pure_expr *x)
 
 void *pure_get_matrix_vector_int64(pure_expr *x)
 {
+  interpreter& interp = *interpreter::g_interp;
+  list<cvector_data>& cvector_temps = interp.cvector_temps;
   void *v = matrix_to_int64_vector(x);
   cvector_temps.push_back(cvector_data(x, v, cvd_int64, true));
   return v;
@@ -5022,6 +5020,8 @@ void *pure_get_matrix_vector_int64(pure_expr *x)
 
 void *pure_get_matrix_vector_float(pure_expr *x)
 {
+  interpreter& interp = *interpreter::g_interp;
+  list<cvector_data>& cvector_temps = interp.cvector_temps;
   void *v = matrix_to_float_vector(x);
   cvector_temps.push_back(cvector_data(x, v, cvd_float, true));
   return v;
@@ -5029,6 +5029,8 @@ void *pure_get_matrix_vector_float(pure_expr *x)
 
 void *pure_get_matrix_vector_double(pure_expr *x)
 {
+  interpreter& interp = *interpreter::g_interp;
+  list<cvector_data>& cvector_temps = interp.cvector_temps;
   void *v = matrix_to_double_vector(x);
   cvector_temps.push_back(cvector_data(x, v, cvd_double, true));
   return v;
@@ -5037,6 +5039,8 @@ void *pure_get_matrix_vector_double(pure_expr *x)
 extern "C"
 void pure_free_cvectors()
 {
+  interpreter& interp = *interpreter::g_interp;
+  list<cvector_data>& cvector_temps = interp.cvector_temps;
   for (list<cvector_data>::iterator t = cvector_temps.begin();
        t != cvector_temps.end(); t++) {
     if (t->v) {

@@ -498,6 +498,32 @@ struct errinfo {
     line1(l1), col1(c1), line2(l2), col2(c2), filename(_filename), msg(_msg) {}
 };
 
+enum cvd_type {
+  cvd_none, cvd_void, cvd_char,
+  cvd_byte, cvd_short, cvd_int, cvd_int64, cvd_float, cvd_double
+};
+
+struct cvector_data {
+  pure_expr *x;
+  void *v, *w;
+  cvd_type ty;
+  bool vdata;
+  cvector_data(pure_expr *_x, void *_v, cvd_type _ty, bool _vdata = false) :
+    x(_x), v(_v), w(0), ty(_ty), vdata(_vdata)
+  {
+    if (vdata && ty == cvd_char && v) {
+      // Back up the original vector, so that we can free the temporary
+      // strings afterwards.
+      size_t n = 0;
+      char **s = (char**)v;
+      for (; s[n]; n++) ;
+      w = malloc((n+1)*sizeof(char*));
+      if (!w) return;
+      memcpy(w, v, (n+1)*sizeof(char*));
+    }
+  }
+};
+
 class interpreter
 {
 public:
@@ -1352,8 +1378,16 @@ public:
   static int stackmax;
   static int stackdir;
 
-  // Destructors for thread-local storage.
+  // Destructors for interpreter-local storage.
   static map<uint32_t, void (*)(void*)> locals_destroy_cb;
+
+  // Some data used in the runtime to keep track of temporary strings and
+  // vectors. These must be interpreter-local s.t. they are not overwritten if
+  // an interpreter instance gets invoked recursively from another. XXXFIXME:
+  // These should actually become TLD when the interpreter goes multithreaded.
+
+  list<char*> temps; // TLD
+  list<cvector_data> cvector_temps; // TLD
 
 private:
 
