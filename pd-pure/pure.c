@@ -38,10 +38,6 @@
 #define LOG_MSGS 1
 #endif
 
-/* Comment this out for debugging purposes. */
-#define NDEBUG
-#include <assert.h>
-
 /* These aren't in the official API, but have been around at least since Pd
    0.39, so are hopefully stable. */
 
@@ -414,27 +410,6 @@ static inline int get_delay_sym(void)
     return pure_sym("pd_delay");
 }
 
-static int stacksz = 0;
-
-static inline void pure_push_interp(pure_interp *interp)
-{
-  assert(!s_interp || s_interp == interp);
-  if (s_interp != interp) {
-    pure_switch_interp(interp);
-    s_interp = interp;
-  }
-  stacksz++;
-}
-
-static inline void pure_pop_interp(void)
-{
-  assert(s_interp == pure_current_interp() && stacksz>0);
-  if (--stacksz == 0) {
-    pure_switch_interp(interp);
-    s_interp = 0;
-  }
-}
-
 /* The Pure object class. */
 
 typedef struct _pure {
@@ -477,6 +452,24 @@ typedef struct _pure {
 static t_canvas *pure_canvas(t_pure *x)
 {
   return x->canvas;
+}
+
+static inline pure_interp *pure_push_interp(t_pure *x)
+{
+  pure_interp *x_interp = s_interp;
+  if (s_interp != x->interp) {
+    s_interp = x->interp;
+    pure_switch_interp(s_interp?s_interp:interp);
+  }
+  return x_interp;
+}
+
+static inline void pure_pop_interp(pure_interp *x_interp)
+{
+  if (s_interp != x_interp) {
+    s_interp = x_interp;
+    pure_switch_interp(s_interp?s_interp:interp);
+  }
 }
 
 /* Proxy objects for extra inlets (pilfered from flext by Thomas Grill). */
@@ -526,7 +519,7 @@ static void add_class(t_symbol *sym, t_class *class, char *dir)
   new->sym = sym;
   new->class = class;
   new->interp = NULL;
-  new->dir = dir?strdup(dir):NULL;
+  new->dir = strdup(dir);
   new->next = pure_classes;
   pure_classes = new;
 }
@@ -1123,14 +1116,15 @@ static void timeout(t_pure *x)
   pure_expr *f = x->foo, *y = x->msg, *msg;
   pure_expr **xv = 0, **yv = 0;
   int ix;
+  pure_interp *x_interp;
 
   /* check whether we have something to evaluate */
   if (!f || !y) return;
   /* apply the object function */
-  if (x->interp) pure_push_interp(x->interp);
+  x_interp = pure_push_interp(x);
   y = pure_appxx(x, f, y);
   if (!y) {
-    if (x->interp) pure_pop_interp();
+    pure_pop_interp(x_interp);
     return;
   }
   pure_new(y);
@@ -1156,7 +1150,7 @@ static void timeout(t_pure *x)
   if (xv) free(xv);
   if (yv) free(yv);
   pure_free(y);
-  if (x->interp) pure_pop_interp();
+  pure_pop_interp(x_interp);
 }
 
 /* Menu callback. Thanks to Martin Peach for pointing out on pd-dev how this
@@ -1193,9 +1187,9 @@ static void pure_menu_open(t_pure *x)
 
 static void pure_any(t_pure *x, t_symbol *s, int argc, t_atom *argv)
 {
-  if (x->interp) pure_push_interp(x->interp);
+  pure_interp *x_interp = pure_push_interp(x);
   receive_message(x, s, 0, argc, argv);
-  if (x->interp) pure_pop_interp();
+  pure_pop_interp(x_interp);
 }
 
 /* Handle messages to secondary inlets (these are routed through proxies,
@@ -1204,9 +1198,9 @@ static void pure_any(t_pure *x, t_symbol *s, int argc, t_atom *argv)
 
 static void px_any(t_px *px, t_symbol *s, int argc, t_atom *argv)
 {
-  if (px->x->interp) pure_push_interp(px->x->interp);
+  pure_interp *x_interp = pure_push_interp(px->x);
   receive_message(px->x, s, px->ix, argc, argv);
-  if (px->x->interp) pure_pop_interp();
+  pure_pop_interp(x_interp);
 }
 
 /* Configuring receivers. FIXME: We should really use a doubly linked list
@@ -1290,7 +1284,7 @@ static t_int *pure_perform(t_int *w)
   t_pure *x = (t_pure*)(w[1]);
   pure_expr *y = 0, *z = 0, **xv, **yv;
   int n = (int)(w[2]);
-  if (x->interp) pure_push_interp(x->interp);
+  pure_interp *x_interp = pure_push_interp(x);
   if (x->foo && x->sigx) {
     gsl_matrix *sig;
     /* get the input data */
@@ -1359,7 +1353,7 @@ static t_int *pure_perform(t_int *w)
   }
  err:
   if (y) pure_free(y);
-  if (x->interp) pure_pop_interp();
+  pure_pop_interp(x_interp);
   return (w+3);
 }
 
@@ -1385,7 +1379,7 @@ static void pure_dsp(t_pure *x, t_signal **sp)
      (number of columns) is the block size n. (This is true even if the number
      of signal inlets is zero in which case the matrix will be empty.) */
   if (x->sig == NULL || x->sig->size2 != n) {
-    if (x->interp) pure_push_interp(x->interp);
+    pure_interp *x_interp = pure_push_interp(x);
     if (x->sigx) pure_free(x->sigx);
     x->sig = create_double_matrix(x->n_dspin, n);
     if (x->sig)
@@ -1394,7 +1388,7 @@ static void pure_dsp(t_pure *x, t_signal **sp)
       x->sigx = NULL;
       x->n = 0;
     }
-    if (x->interp) pure_pop_interp();
+    pure_pop_interp(x_interp);
   }
 }
 
@@ -1428,11 +1422,12 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
   t_canvas *canvas = canvas_getcurrent();
   t_classes *c = lookup(s);
   bool is_dsp = is_dsp_fun(s);
+  pure_interp *x_interp;
 
   /* this shouldn't happen unless we're out of memory */
   if (!c || !c->class) return 0;
   x = (t_pure*)pd_new(c->class);
-  xappend(x);
+  if (!c->interp) xappend(x);
 
   x->cls = c;
   x->interp = c->interp;
@@ -1444,6 +1439,7 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
   x->n_recv = 0;
   x->recvin = 0;
   x->recvsym = 0;
+  x_interp = pure_push_interp(x);
   x->args = get_expr(s, argc, argv);
   x->tmp = x->tmpst = 0; x->save = false;
   x->open_filename = 0;
@@ -1458,13 +1454,13 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
   x->n = 0;
   if (!x->args) {
     pd_error(x, "pd-pure: memory allocation failed");
+    pure_pop_interp(x_interp);
     return (void *)x;
   }
   x->clock = clock_new(x, (t_method)timeout);
   x->msg = 0;
   /* initialize the object function and determine the number of inlets and
      outlets (these cannot be changed later) */
-  if (x->interp) pure_push_interp(x->interp);
   if (x->args != 0) {
     int n_in = 1, n_out = 1;
     pure_expr *f = parse_expr(x, x->args);
@@ -1553,7 +1549,7 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
     x->n_in = x->n_out = 0;
     x->n_dspin = x->n_dspout = 0;
   }
-  if (x->interp) pure_pop_interp();
+  pure_pop_interp(x_interp);
   return (void *)x;
 }
 
@@ -1562,7 +1558,7 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
 static void pure_fini(t_pure *x)
 {
   int i;
-  if (x->interp) pure_push_interp(x->interp);
+  pure_interp *x_interp = pure_push_interp(x);
   clock_unset(x->clock);
   if (x->msg) pure_free(x->msg);
   free(x->args);
@@ -1583,8 +1579,8 @@ static void pure_fini(t_pure *x)
   if (x->dspout) free(x->dspout);
   if (x->sigx) pure_free(x->sigx);
   if (x->open_filename) free(x->open_filename);
-  xunlink(x);
-  if (x->interp) pure_pop_interp();
+  if (!x->interp) xunlink(x);
+  pure_pop_interp(x_interp);
 }
 
 /* Reinitialize Pure objects in a new interpreter context. */
@@ -1948,7 +1944,7 @@ extern int pure_register_class(const char *name, pure_interp *interp)
     /* Object class is already defined, fail. */
     return 0;
   /* Create the object class. */
-  class_setup(name, NULL);
+  class_setup(name, "");
   /* This will be non-NULL unless the class setup failed. */
   c = lookup(sym);
   if (c) c->interp = interp;
