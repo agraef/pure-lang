@@ -27,8 +27,13 @@ using orddict, pdfaustui, system;
 stringp (eval "extern char *pd_version_s(); pd_version_s;") &&
 eval "#! --enable pd\n";
 
+#! --ifndef pd
+// Stubs provided so that we can run the objects outside Pd (during batch
+// compilation, in particular).
+using "lib:lib/pdstub";
+#! --endif
+
 // These are provided by pd-pure.
-#! --ifdef pd
 extern expr *pd_getdir();
 extern expr *pd_getfile();
 extern void pd_setfile(char*);
@@ -38,26 +43,10 @@ extern void pd_unreceive(char*);
 extern void pd_post(char*);
 extern void pd_error_s(char*);
 extern double pd_time();
-#! --endif
 public pd_delay;
 
 // These are provided by the Pd runtime.
-#! --ifdef pd
 extern float sys_getsr(), int sys_getblksize();
-#! --endif
-
-// Defaults provided so that we can run the objects outside Pd.
-extern int puts(char*);
-#! --ifndef pd
-pd_getdir = ".";
-pd_post s = puts s;
-pd_error_s s = puts s;
-pd_time = 0.0;
-pd_send id::string x = puts (id+": "+str x);
-pd_receive _::string |
-pd_unreceive _::string |
-pd_setfile _::string = ();
-#! --endif
 
 // Special Pd symbols.
 nonfix bang write stop clear reload oscplay oscrecord;
@@ -73,13 +62,8 @@ public note polytouch ctl pgm touch bend;
 namespace pdfaust;
 
 // Get Pd's default sample rate and block size.
-#! --ifdef pd
 let samplerate = int sys_getsr;
 let blocksize = sys_getblksize;
-#! --else
-let samplerate = 48000;
-let blocksize = 10;
-#! --endif
 
 // Make sure that samplerate and blocksize have sane values.
 let samplerate = if samplerate>0 then samplerate else 48000;

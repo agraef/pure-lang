@@ -1,6 +1,6 @@
 
-# This is a GNU makefile. Please also check Makefile.common for additional
-# setup information and the actual compilation rules.
+# This is a GNU makefile. Please also check Makefile.config for customizable
+# setup information and Makefile.common for the actual compilation rules.
 
 # Normally you just run 'make' and then 'make install' to build and install
 # the package. The usual standard targets to clean (clean, distclean,
@@ -17,37 +17,15 @@
 # natively by the Pure interpreter, you also need to run 'make bitcode' before
 # 'make install'. Please check pdfaust.pure for details.
 
-# Package name and version number:
+include Makefile.config
+
+# Package name (the version number is in Makefile.config):
 dist = pd-faust-$(version)
-version = 0.1
 
-# Try to guess the host system type.
-host = $(shell ./config.guess)
-ifneq "$(findstring -mingw,$(host))" ""
-EXE = .exe
-endif
-
-# Try to guess the Pd installation prefix:
-prefix = $(patsubst %/bin/pd$(EXE),%,$(shell which pd 2>/dev/null))
-ifeq ($(strip $(prefix)),)
-# Fall back to /usr/local.
-prefix = /usr/local
-endif
-
-# Installation goes into $(libdir)/pd, you can also set this directly
-# instead of $(prefix).
-libdir = $(prefix)/lib
-
-# Pd library path.
-pdlibdir = $(libdir)/pd
-
-# Install dir for the externals and accompanying stuff.
-pdextradir = $(pdlibdir)/extra/faust
-
-DISTFILES = COPYING COPYING.LESSER Makefile Makefile.common README TODO \
-config.guess *.pure etc/*.el etc/*.pd examples/*.pure examples/*.pd \
-examples/midi/*.mid examples/osc/*.osc examples/synths/README* \
-examples/synths/Makefile \
+DISTFILES = COPYING COPYING.LESSER Makefile Makefile.config Makefile.common \
+README TODO config.guess *.pure etc/*.el etc/*.pd \
+examples/*.pure examples/*.pd examples/midi/*.mid examples/osc/*.osc \
+examples/synths/README* examples/synths/Makefile \
 examples/synths/*.dsp examples/synths/*.lib examples/synths/*.h \
 lib/Makefile lib/*.c lib/*.dsp lib/*.pure
 SEDFILES = README
@@ -71,7 +49,7 @@ realclean:
 
 install:
 	test -d "$(DESTDIR)$(pdextradir)" || mkdir -p "$(DESTDIR)$(pdextradir)"
-	cp COPYING COPYING.LESSER README TODO *.pure examples/*.pure examples/midiosc.pd "$(DESTDIR)$(pdextradir)"
+	cp COPYING COPYING.LESSER README TODO *.pure examples/*.pure examples/midiosc.pd lib/pdfaust$(PDDLL) "$(DESTDIR)$(pdextradir)"
 	test -d "$(DESTDIR)$(pdextradir)/lib" || mkdir -p "$(DESTDIR)$(pdextradir)/lib"
 	cp lib/mix.* lib/xfade.* "$(DESTDIR)$(pdextradir)/lib"
 

@@ -1,6 +1,11 @@
 
 # -*- makefile-gmake -*-
 
+# This *must* be overridden in submakefiles.
+srcdir = .
+# Platform-specific setup.
+include $(srcdir)/Makefile.config
+
 # Generic GNU Makefile to compile C, C++, Fortran and Faust sources to shared
 # libraries and/or LLVM bitcode. This contains all the necessary implicit
 # rules to handle the compilation as well as generic list variables with
@@ -55,35 +60,6 @@ FAUST = faust -double -cn $(<:.dsp=)
 # Enable optimization of Faust bitcode modules for direct Faust bitcode output
 # (faust -lang llvm).
 OPT = | opt -O3
-
-# This *must* be overridden in submakefiles so that the config.guess script is
-# found.
-srcdir = .
-
-# Platform-specific setup, edit this as needed.
-
-# Try to guess the host system type.
-host = $(shell $(srcdir)/config.guess)
-
-#PIC = -fPIC # uncomment for x86-64 compilation
-DLL = .so
-shared = -shared
-
-# Take care of some common systems.
-ifneq "$(findstring -mingw,$(host))" ""
-# Windows (untested)
-EXE = .exe
-DLL = .dll
-endif
-ifneq "$(findstring -darwin,$(host))" ""
-# OSX (untested)
-DLL = .dylib
-shared = -dynamiclib
-endif
-ifneq "$(findstring x86_64-,$(host))" ""
-# 64 bit, needs -fPIC flag
-PIC = -fPIC
-endif
 
 # This is the collection of flags which actually gets passed in the C/C++
 # recipes. Normally you shouldn't have to edit or override these.
