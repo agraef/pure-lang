@@ -38,6 +38,10 @@
 #define LOG_MSGS 1
 #endif
 
+/* Comment this out for debugging purposes. */
+#define NDEBUG
+#include <assert.h>
+
 /* These aren't in the official API, but have been around at least since Pd
    0.39, so are hopefully stable. */
 
@@ -386,11 +390,50 @@ extern void pd_setbuffer(const char *name, pure_expr *x)
   }
 }
 
-/* We maintain a single Pure interpreter instance for all Pure objects. */
+/* We maintain a single Pure interpreter instance for all Pure objects in
+   source scripts. Secondary interpreters are used for preloaded
+   a.k.a. batch-compiled Pure modules. */
 
-static pure_interp *interp = 0;
+static pure_interp *interp = 0, *s_interp = 0;
 static int void_sym = 0, delay_sym = 0;
 static int save_sym = 0, restore_sym = 0;
+
+static inline int get_void_sym(void)
+{
+  if (!s_interp)
+    return void_sym;
+  else
+    return pure_sym("()");
+}
+
+static inline int get_delay_sym(void)
+{
+  if (!s_interp)
+    return delay_sym;
+  else
+    return pure_sym("pd_delay");
+}
+
+static int stacksz = 0;
+
+static inline void pure_push_interp(pure_interp *interp)
+{
+  assert(!s_interp || s_interp == interp);
+  if (s_interp != interp) {
+    pure_switch_interp(interp);
+    s_interp = interp;
+  }
+  stacksz++;
+}
+
+static inline void pure_pop_interp(void)
+{
+  assert(s_interp == pure_current_interp() && stacksz>0);
+  if (--stacksz == 0) {
+    pure_switch_interp(interp);
+    s_interp = 0;
+  }
+}
 
 /* The Pure object class. */
 
@@ -402,6 +445,7 @@ typedef struct _pure {
   int fence;			/* dummy field (not used) */
 #endif
   struct _classes *cls;		/* pointer into Pure class list */
+  pure_interp *interp;		/* preloaded module, otherwise NULL */
   t_canvas *canvas;		/* canvas this object belongs to */
   struct _pure *next, *prev;	/* double-linked list of all Pure objects */
   /* control inlets and outlets */
@@ -467,6 +511,7 @@ static t_pure *xhead = 0, *xtail = 0;
 typedef struct _classes {
   t_symbol *sym;
   t_class *class;
+  pure_interp *interp;
   char *dir;
   struct _classes *next;
 } t_classes;
@@ -480,7 +525,8 @@ static void add_class(t_symbol *sym, t_class *class, char *dir)
   if (!new) return;
   new->sym = sym;
   new->class = class;
-  new->dir = strdup(dir);
+  new->interp = NULL;
+  new->dir = dir?strdup(dir):NULL;
   new->next = pure_classes;
   pure_classes = new;
 }
@@ -498,7 +544,7 @@ static t_classes *lookup(t_symbol *sym)
 static t_classes *lookup_script(t_symbol *sym, const char *dir)
 {
   t_classes *act = pure_classes;
-  while (act && (act->sym != sym || strcmp(act->dir, dir)))
+  while (act && (act->sym != sym || (!act->interp && strcmp(act->dir, dir))))
     act = act->next;
   if (act)
     return act;
@@ -673,7 +719,7 @@ static inline bool is_delay(pure_expr *x, double *t, pure_expr **msg)
   int sym;
   pure_expr *y, *z, *u, *v;
   if (pure_is_app(x, &y, &z) && pure_is_app(y, &u, &v) &&
-      pure_is_symbol(u, &sym) && sym == delay_sym) {
+      pure_is_symbol(u, &sym) && sym == get_delay_sym()) {
     int i;
     if (pure_is_double(v, t))
       ;
@@ -757,7 +803,7 @@ extern void pd_send(const char *receiver, pure_expr *y)
 	create_atom(&argv[i+1], args[i]);
       pd_list(s->s_thing, &s_list, argc+1, argv);
     }
-  } else if (pure_is_symbol(f, &sym) && sym > 0 && sym != void_sym) {
+  } else if (pure_is_symbol(f, &sym) && sym > 0 && sym != get_void_sym()) {
     /* manufacture a message with the given symbol as selector */
     const char *pname;
     if ((pname = pure_sym_pname(sym))) {
@@ -913,7 +959,7 @@ static void send_message(t_pure *x, int k, pure_expr *y)
 	create_atom(&argv[i+1], args[i]);
       outlet_list(x->out[k], &s_list, argc+1, argv);
     }
-  } else if (pure_is_symbol(f, &sym) && sym > 0 && sym != void_sym) {
+  } else if (pure_is_symbol(f, &sym) && sym > 0 && sym != get_void_sym()) {
     /* manufacture a message with the given symbol as selector */
     const char *pname;
     if (!check_outlet(x, k)) goto errexit;
@@ -1081,8 +1127,12 @@ static void timeout(t_pure *x)
   /* check whether we have something to evaluate */
   if (!f || !y) return;
   /* apply the object function */
+  if (x->interp) pure_push_interp(x->interp);
   y = pure_appxx(x, f, y);
-  if (!y) return;
+  if (!y) {
+    if (x->interp) pure_pop_interp();
+    return;
+  }
   pure_new(y);
   pure_free(x->msg); x->msg = 0;
   /* process the results and route them through the appropriate outlets */
@@ -1106,6 +1156,7 @@ static void timeout(t_pure *x)
   if (xv) free(xv);
   if (yv) free(yv);
   pure_free(y);
+  if (x->interp) pure_pop_interp();
 }
 
 /* Menu callback. Thanks to Martin Peach for pointing out on pd-dev how this
@@ -1142,7 +1193,9 @@ static void pure_menu_open(t_pure *x)
 
 static void pure_any(t_pure *x, t_symbol *s, int argc, t_atom *argv)
 {
+  if (x->interp) pure_push_interp(x->interp);
   receive_message(x, s, 0, argc, argv);
+  if (x->interp) pure_pop_interp();
 }
 
 /* Handle messages to secondary inlets (these are routed through proxies,
@@ -1151,7 +1204,9 @@ static void pure_any(t_pure *x, t_symbol *s, int argc, t_atom *argv)
 
 static void px_any(t_px *px, t_symbol *s, int argc, t_atom *argv)
 {
+  if (px->x->interp) pure_push_interp(px->x->interp);
   receive_message(px->x, s, px->ix, argc, argv);
+  if (px->x->interp) pure_pop_interp();
 }
 
 /* Configuring receivers. FIXME: We should really use a doubly linked list
@@ -1235,6 +1290,7 @@ static t_int *pure_perform(t_int *w)
   t_pure *x = (t_pure*)(w[1]);
   pure_expr *y = 0, *z = 0, **xv, **yv;
   int n = (int)(w[2]);
+  if (x->interp) pure_push_interp(x->interp);
   if (x->foo && x->sigx) {
     gsl_matrix *sig;
     /* get the input data */
@@ -1303,6 +1359,7 @@ static t_int *pure_perform(t_int *w)
   }
  err:
   if (y) pure_free(y);
+  if (x->interp) pure_pop_interp();
   return (w+3);
 }
 
@@ -1328,6 +1385,7 @@ static void pure_dsp(t_pure *x, t_signal **sp)
      (number of columns) is the block size n. (This is true even if the number
      of signal inlets is zero in which case the matrix will be empty.) */
   if (x->sig == NULL || x->sig->size2 != n) {
+    if (x->interp) pure_push_interp(x->interp);
     if (x->sigx) pure_free(x->sigx);
     x->sig = create_double_matrix(x->n_dspin, n);
     if (x->sig)
@@ -1336,6 +1394,7 @@ static void pure_dsp(t_pure *x, t_signal **sp)
       x->sigx = NULL;
       x->n = 0;
     }
+    if (x->interp) pure_pop_interp();
   }
 }
 
@@ -1376,6 +1435,7 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
   xappend(x);
 
   x->cls = c;
+  x->interp = c->interp;
   x->canvas = canvas;
   x->foo = 0;
   x->n_in = 0; x->n_out = 1;
@@ -1404,6 +1464,7 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
   x->msg = 0;
   /* initialize the object function and determine the number of inlets and
      outlets (these cannot be changed later) */
+  if (x->interp) pure_push_interp(x->interp);
   if (x->args != 0) {
     int n_in = 1, n_out = 1;
     pure_expr *f = parse_expr(x, x->args);
@@ -1440,12 +1501,13 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
 	}
       }
       if (xv) free(xv);
-      {
+      if (!x->interp) {
 	pure_expr *y = pure_get_sentry(x->foo);
 	int32_t sym;
 	x->save = y && pure_is_symbol(y, &sym) && sym==save_sym;
 	if (x->save) pure_clear_sentry(y);
-      }
+      } else
+	x->save = false;
     } else {
       pd_error(x, "pd-pure: error in '%s' creation function", s->s_name);
       pure_errmsgs(x);
@@ -1491,6 +1553,7 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
     x->n_in = x->n_out = 0;
     x->n_dspin = x->n_dspout = 0;
   }
+  if (x->interp) pure_pop_interp();
   return (void *)x;
 }
 
@@ -1499,6 +1562,7 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
 static void pure_fini(t_pure *x)
 {
   int i;
+  if (x->interp) pure_push_interp(x->interp);
   clock_unset(x->clock);
   if (x->msg) pure_free(x->msg);
   free(x->args);
@@ -1520,14 +1584,16 @@ static void pure_fini(t_pure *x)
   if (x->sigx) pure_free(x->sigx);
   if (x->open_filename) free(x->open_filename);
   xunlink(x);
+  if (x->interp) pure_pop_interp();
 }
 
 /* Reinitialize Pure objects in a new interpreter context. */
 
 static void pure_refini(t_pure *x)
 {
-  /* Get rid of receivers. */
   int i;
+  if (x->interp) return; /* preloaded module */
+  /* Get rid of receivers. */
   for (i = 0; i < x->n_recv; i++)
     if (x->recvsym[i]) {
       pd_unbind(&x->recvin[i]->obj.ob_pd, x->recvsym[i]);
@@ -1573,6 +1639,7 @@ static void pure_refini(t_pure *x)
 
 static void pure_reinit(t_pure *x)
 {
+  if (x->interp) return; /* preloaded module */
   if (x->args != 0) {
     int n_in = 1, n_out = 1;
     pure_expr *f = parse_expr(x, x->args);
@@ -1620,7 +1687,7 @@ static void pure_reinit(t_pure *x)
 
 /* Setup for a Pure object class with the given name. */
 
-static void class_setup(char *name, char *dir)
+static void class_setup(const char *name, char *dir)
 {
   size_t l = strlen(name);
   bool is_dsp = l>0 && name[l-1]=='~';
@@ -1628,6 +1695,7 @@ static void class_setup(char *name, char *dir)
   t_class *class =
     class_new(class_s, (t_newmethod)pure_init, (t_method)pure_fini,
 	      sizeof(t_pure), CLASS_DEFAULT, A_GIMME, A_NULL);
+  if (!class) return;
   if (is_dsp)
     class_addmethod(class, (t_method)pure_dsp, gensym((char*)"dsp"), A_NULL);
   class_addanything(class, pure_any);
@@ -1749,7 +1817,8 @@ static void reload(t_classes *c)
      which the classes were originally created. */
   if (c) {
     reload(c->next);
-    if (strcmp(c->sym->s_name, "pure") &&
+    if (!c->interp &&
+	strcmp(c->sym->s_name, "pure") &&
 	strcmp(c->sym->s_name, "pure~")) {
       class_set_extern_dir(gensym(c->dir));
       if (chdir(c->dir)) {}
@@ -1861,6 +1930,29 @@ static void runtime_any(t_runtime *x, t_symbol *s, int argc, t_atom *argv)
       pd_typedmess(s->s_thing, argv[0].a_w.w_symbol, argc-1, argv+1);
     else
       pd_list(s->s_thing, &s_list, argc, argv);
+}
+
+/* Hook to register external object classes residing in preloaded
+   (batch-compiled) Pure modules. This is to be invoked with the name of the
+   object class and the Pure interpreter which manages this class. */
+
+extern int pure_register_class(const char *name, pure_interp *interp)
+{
+  t_classes *c;
+  t_symbol *sym;
+  if (!interp)
+    /* No interpreter, bail out. */
+    return 0;
+  sym = gensym(name);
+  if (lookup(sym) != 0)
+    /* Object class is already defined, fail. */
+    return 0;
+  /* Create the object class. */
+  class_setup(name, NULL);
+  /* This will be non-NULL unless the class setup failed. */
+  c = lookup(sym);
+  if (c) c->interp = interp;
+  return c != 0;
 }
 
 /* Loader setup. */
