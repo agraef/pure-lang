@@ -17,7 +17,10 @@ experimental, but it seems to work fairly well at least with Pure versions
 0.34 and later. In particular, note that Pure is a *compiled* language and
 thus there are some inevitable latencies at startup, when the embedded Pure
 interpreter loads your Pure scripts and compiles them on the fly. However,
-once the scripts have been compiled, they are executed very efficiently.
+once the scripts have been compiled, they are executed very efficiently. As of
+pd-pure 0.15, it is also possible to *precompile* a collection of Pure objects
+to a library in binary format which can be loaded much faster with Pd's
+``-lib`` option.
 
 .. contents::
 .. sectnum::
@@ -962,6 +965,29 @@ Of course you can easily add more like these, just have a look at how the
 keybindings are implemented in pure-remote.el or pure-mode.el and create your
 own in an analogous fashion. Together with Pure mode, this gives you a nice
 interactive environment for developing pd-pure applications.
+
+Compiling Objects
+-----------------
+
+pd-pure's livecoding abilities require that objects are run from source code.
+As already mentioned, this needs some (in some cases, substantial) time at
+startup when the Pure interpreter is loaded and your Pure scripts are compiled
+to native code on the fly. This is wasted effort if you are finished
+developing your Pure objects and just want to run them as they are.
+
+Therefore pd-pure also supports compiling a collection of Pure objects to a
+binary which can be loaded with Pd's ``-lib`` option just like any other
+external library of Pd objects. This basically involves using the Pure
+interpreter as a batch compiler to translate the Pure scripts implementing the
+objects to a shared library. You also have to link in a small amount of C code
+so that the shared module can be loaded by Pd and registers its Pd object
+classes with pd-pure. The examples/lib folder contains a complete example
+showing how this is done.
+
+Note that even if you load all your pd-pure objects from such libraries, you
+still need to load the pd-pure module first, since it provides the basic
+infrastructure required to run any kind of pd-pure object (no matter whether
+it's implemented in compiled or source form).
 
 Programming Interface
 ---------------------
