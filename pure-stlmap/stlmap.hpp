@@ -48,7 +48,7 @@ struct stlmap {
   std::vector<sm_iter*> smis; // sm_iters in Pure land
 
   stlmap(px* key_comp, px* val_comp, px* val_equal, bool keyonly); 
-  stlmap(px* key_comp, px* val_comp, px* val_equal, bool keyonly, px* d);
+  stlmap(px* key_comp, px* val_comp, px* val_equal, bool keyonly, px* dflt);
   ~stlmap();
   px* parameter_tuple();
   pmi  find(px* key);

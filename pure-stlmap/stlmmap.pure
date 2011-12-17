@@ -25,7 +25,7 @@ namespace stl;
 
 extern expr* smm_type_tags();
 private extern expr* smm_make_empty(expr* kcmp, expr* vcmp, expr* veql,
-                                   expr* default_val, int ko);
+                                    expr* default_val, int ko);
 private extern void  smm_delete(void* smp);
 private extern void  smm_iter_delete(void* smip);
 private extern expr* smm_container_info(expr* rng);
@@ -33,7 +33,6 @@ private extern int   smm_size(expr* rng);
 private extern int   smm_count(expr* pxsmmp, expr* key);
 private extern bool  smm_empty(expr* rng);
 private extern bool  smm_is_set(expr* rng);
-
 private extern expr* smm_find(expr* pxsmp, expr* key, int what);
 private extern expr* smm_copy_iter(expr* pxsmip);
 private extern expr* smm_begin(expr* pxsmp);
@@ -44,7 +43,6 @@ private extern expr* smm_move_iter(expr* pxsmp, int count);
 private extern expr* smm_iter_is_at(expr* pxsmip, int where);
 private extern expr* smm_iter_info(expr* pxsmip);
 private extern expr* smm_equal_iter(expr* pxsmp, expr* pxsmp);
-
 private extern expr* smm_get_at(expr* pxsmip, int what);
 private extern expr* smm_get_elm_at_inc(expr* pxsmip);
 private extern expr* smm_put_at(expr* pxsmip, expr* val);
@@ -56,27 +54,24 @@ private extern int   smm_insert_elms_stlmmap(expr* map, expr* rng);
 private extern void  smm_swap(expr* sac1, expr* sac2);
 private extern int   smm_erase(expr* sac, expr* trg);
 private extern int   smm_clear(expr* map);
-
 private extern int   smm_equal(expr* rng1, expr* rng2);
 private extern int   smm_less(expr* rng1, expr* rng2);
 private extern bool  smm_includes(expr* rng1, expr* rng2);
 private extern expr* smm_setop(int op, expr* rng1, expr* rng2);
-
 private extern expr* smm_make_vector(expr* rng);
 private extern void* smm_fill_stlvec(expr* rng, void* v);
-
 private extern expr* smm_listmap(expr* fun, expr* rng, int what);
 private extern expr* smm_listcatmap(expr* fun, expr* rng, int what);
 private extern expr* smm_foldl(expr* fun, expr* val, expr* rng);
 private extern expr* smm_foldl1(expr* fun, expr* rng);
 private extern expr* smm_foldr(expr* fun, expr* val, expr* rng);
 private extern expr* smm_foldr1(expr* fun, expr* rng);
-
 private extern int   smm_member(expr* map, expr* key);
 private extern expr* smm_bounding_keys(expr* rng);
 private extern expr* smm_prev_key(expr* map, expr* key);
 private extern expr* smm_next_key(expr* map, expr* key);
 private extern expr* smm_update(expr* map, expr* key, expr* val);
+
 
 /*** Global Type Definitions ********************************************/
 
@@ -86,25 +81,15 @@ let stlmmap_t, stlmmap_iter_t, stlmset_t, stlmset_iter_t = stl::smm_type_tags;
 
 type stlmmap x = check_ptrtag stlmmap_t x;     //c++ multimap
 type stlmset x = check_ptrtag stlmset_t x;     //c++ multiset
-type stlmsacon x::stlmmap | stlmsacon x::stlmset;  //multi sorted assoc container
+type stlmacon x::stlmmap | stlmacon x::stlmset;  //multi sorted assoc container
 
 type stlmmap_iter x = check_ptrtag stlmmap_iter_t x;
 type stlmset_iter x = check_ptrtag stlmset_iter_t x;
-type stlmsacon_iter x::stlmmap_iter | stlmsacon_iter x::stlmset_iter;
+type stlmacon_iter x::stlmmap_iter | stlmacon_iter x::stlmset_iter;
 
-type smmrng x::stlmsacon | smmrng (x::stlmsacon, _);
-type smmrng (x::stlmmap_iter, y::stlmmap_iter);
-type smmrng (x::stlmset_iter, y::stlmset_iter);
-
-stlmmapp x = check_ptrtag stlmmap_t x;
-stlmsetp x = check_ptrtag stlmset_t x;
-stlmsaconp x = stlmmapp x || stlmsetp x;
-
-stlmmap_iter_p x = check_ptrtag stlmmap_iter_t x;
-stlmset_iter_p x = check_ptrtag stlmset_iter_t x;
-stlmsacon_iter_p x = stlmmap_iter_p x || stlmset_iter_p x;
-
-stlmsacon_range_p x = case x of x::smmrng = 1; x = 0 end; 
+type stlmacon_rng x::stlmacon | stlmacon_rng (x::stlmacon, _);
+type stlmacon_rng (x::stlmmap_iter, y::stlmmap_iter);
+type stlmacon_rng (x::stlmset_iter, y::stlmset_iter);
 
 namespace stl;
 
@@ -135,48 +120,48 @@ const smm_symmetric_difference = 5;
 const smm_at_beginning = 1;
 const smm_at_pastend = 2;
 
-compatible_ranges rng1::smmrng rng2 = 
+compatible_ranges rng1::stlmacon_rng rng2 = 
   if smm_is_set rng1 then smm_is_set rng2 else ~smm_is_set rng2;
 
 /*** Iterators **********************************************************/
 
-iterator pos::stlmsacon_iter = smm_copy_iter pos;
+iterator pos::stlmacon_iter = smm_copy_iter pos;
 
-begin smm::stlmsacon = smm_begin smm;
+begin smm::stlmacon = smm_begin smm;
 
-pastend smm::stlmsacon = smm_end smm;
+pastend smm::stlmacon = smm_end smm;
 
-find smm::stlmsacon key = smm_find smm key smm_iter;
+find smm::stlmacon key = smm_find smm key smm_iter;
 
-lower_bound smm::stlmsacon key = smm_bounds smm key smm_lower_bound;
+lower_bound smm::stlmacon key = smm_bounds smm key smm_lower_bound;
 
-upper_bound smm::stlmsacon key = smm_bounds smm key smm_upper_bound;
+upper_bound smm::stlmacon key = smm_bounds smm key smm_upper_bound;
 
-equal_range smm::stlmsacon key = smm_bounds smm key smm_equal_range;
+equal_range smm::stlmacon key = smm_bounds smm key smm_equal_range;
 
-is_begin pos::stlmsacon_iter = smm_iter_is_at pos smm_at_beginning;
+is_begin pos::stlmacon_iter = smm_iter_is_at pos smm_at_beginning;
 
-is_pastend pos::stlmsacon_iter = smm_iter_is_at pos smm_at_pastend;
+is_pastend pos::stlmacon_iter = smm_iter_is_at pos smm_at_pastend;
 
-get_info pos::stlmsacon_iter = smm_iter_info pos;
+get_info pos::stlmacon_iter = smm_iter_info pos;
 
-get_elm pos::stlmsacon_iter = smm_get_at pos smm_elm;
+get pos::stlmacon_iter = smm_get_at pos smm_elm;
 
-get_key pos::stlmsacon_iter = smm_get_at pos smm_key;
+get_key pos::stlmacon_iter = smm_get_at pos smm_key;
 
-get pos::stlmsacon_iter = smm_get_at pos smm_val;
+get_val pos::stlmacon_iter = smm_get_at pos smm_val;
 
 put pos::stlmmap_iter val = smm_put_at pos val;
 
-inc pos::stlmsacon_iter = smm_move_iter pos 1;
+inc pos::stlmacon_iter = smm_move_iter pos 1;
 
-dec pos::stlmsacon_iter = smm_move_iter pos (-1);
+dec pos::stlmacon_iter = smm_move_iter pos (-1);
 
-move pos::stlmsacon_iter n::int = smm_move_iter pos n;
+move pos::stlmacon_iter n::int = smm_move_iter pos n;
 
 /*** Iterator Operators ****************************************************/
 
-(::==) pos1::stlmsacon_iter pos2::stlmsacon_iter = smm_equal_iter pos1 pos2;
+(::==) pos1::stlmacon_iter pos2::stlmacon_iter = smm_equal_iter pos1 pos2;
 
 (::^) smm::stlmmap key = smm_find smm key smm_iter_dflt;  // inserts default
 
@@ -197,7 +182,7 @@ stlmmap rng::svrng = smm when
   smm_insert_elms_stlvec smm rng;
 end;
 
-stlmmap rng::smmrng = smm when
+stlmmap rng::stlmacon_rng = smm when
   _,params = smm_container_info rng;
   smm = emptystlmmap params;
   smm_insert_elms_stlmmap smm rng;
@@ -215,7 +200,7 @@ stlmset rng::svrng = ss when
   smm_insert_elms_stlvec ss rng;
 end;
 
-stlmset rng::smmrng = ss when
+stlmset rng::stlmacon_rng = ss when
   _,kc,_ = smm_container_info rng;
   ss = emptystlmset kc;
   smm_insert_elms_stlmmap ss rng;
@@ -223,23 +208,23 @@ end if smm_is_set rng;
 
 /*** Info ***************************************************************/
 
-container_info rng::smmrng = smm_container_info rng;
+container_info rng::stlmacon_rng = smm_container_info rng;
 
-(::#) smm::stlmsacon = smm_size smm;
+(::#) smm::stlmacon = smm_size smm;
 
-empty smm::stlmsacon = smm_empty smm;
+empty smm::stlmacon = smm_empty smm;
 
-count smm::stlmsacon key = smm_count smm key;
+count smm::stlmacon key = smm_count smm key;
 
-range_info rng::smmrng = smm_range_info rng;
+range_info rng::stlmacon_rng = smm_range_info rng;
 
-distance rng::smmrng = smm_size rng;
+distance rng::stlmacon_rng = smm_size rng;
 
-is_set rng::smmrng = smm_is_set rng;
+is_set rng::stlmacon_rng = smm_is_set rng;
 
 /*** Range Access ******************************************************/
 
-lazy_map f rng::smmrng = gen first with
+lazy_map f rng::stlmacon_rng = gen first with
   gen i = if smm_equal_iter i last then [] 
           else f (smm_get_elm_at_inc i) : (gen i &);  
 end if valid when 
@@ -247,7 +232,7 @@ end if valid when
   first = smm_copy_iter b;
 end;
 
-lazy_elms rng::smmrng = gen first with 
+lazy_elms rng::stlmacon_rng = gen first with 
   gen i = if smm_equal_iter i last then [] 
           else smm_get_elm_at_inc i : (gen i &);  
 end if valid when 
@@ -255,23 +240,23 @@ end if valid when
   first = smm_copy_iter b;
 end;
 
-lazy_keys rng::smmrng = lazy_map (\(k=>v)->k) rng if ~smm_is_set rng;
+lazy_keys rng::stlmacon_rng = lazy_map (\(k=>v)->k) rng if ~smm_is_set rng;
 
-lazy_keys rng::smmrng = lazy_elms rng;
+lazy_keys rng::stlmacon_rng = lazy_elms rng;
 
-lazy_vals rng::smmrng = lazy_map (\(k=>v)->v) rng if ~smm_is_set rng;
+lazy_vals rng::stlmacon_rng = lazy_map (\(k=>v)->v) rng if ~smm_is_set rng;
 
-lazy_vals rng::smmrng = lazy_elms rng;
+lazy_vals rng::stlmacon_rng = lazy_elms rng;
 
-elms rng::smmrng = smm_listmap 0 rng smm_elm; 
+elms rng::stlmacon_rng = smm_listmap 0 rng smm_elm; 
 
-keys rng::smmrng = smm_listmap 0 rng smm_key;// if ~smm_is_set rng;
+keys rng::stlmacon_rng = smm_listmap 0 rng smm_key;// if ~smm_is_set rng;
 
-vals rng::smmrng = smm_listmap 0 rng smm_val;// if ~smm_is_set rng;
+vals rng::stlmacon_rng = smm_listmap 0 rng smm_val;// if ~smm_is_set rng;
 
-vector rng::smmrng = smm_make_vector rng;
+vector rng::stlmacon_rng = smm_make_vector rng;
 
-stlvec rng::smmrng = sv if ok when
+stlvec rng::stlmacon_rng = sv if ok when
   sv = emptystlvec;
   ok = case sv of  
     STLVEC v = smm_fill_stlvec rng v $$ 1;
@@ -281,15 +266,15 @@ end;
 
 /*** Modifiers *********************************************************/
 
-insert smm::stlmsacon xs::list = smm_insert_elms_xs smm xs;
+insert smm::stlmacon xs::list = smm_insert_elms_xs smm xs;
 
-insert smm::stlmsacon xs::matrix = smm_insert_elms_xs smm xs;
+insert smm::stlmacon xs::matrix = smm_insert_elms_xs smm xs;
 
-insert smm::stlmsacon rng::smmrng = smm_insert_elms_stlmmap smm rng;
+insert smm::stlmacon rng::stlmacon_rng = smm_insert_elms_stlmmap smm rng;
 
-insert smm::stlmsacon rng::svrng = smm_insert_elms_stlvec smm rng;
+insert smm::stlmacon rng::svrng = smm_insert_elms_stlvec smm rng;
 
-insert smm::stlmmap (val@(k=>v), pos::stlmsacon_iter) = 
+insert smm::stlmmap (val@(k=>v), pos::stlmacon_iter) = 
   smm_insert_hinted smm pos val;
 
 insert smm::stlmmap val@(k=>v) = smm_insert_elm smm val;
@@ -300,24 +285,23 @@ insert smm::stlmmap val@(k=>v) = smm_insert_elm smm val;
 
 //insert_or_update_with -- N/A
 
-insert smm::stlmset (key, pos::stlmsacon_iter) = smm_insert_hinted smm pos key;
+insert smm::stlmset (key, pos::stlmacon_iter) = smm_insert_hinted smm pos key;
 
 insert smm::stlmset key = smm_insert_elm smm key;
 
 insert_elm smm::stlmset key = smm_insert_elm smm key; // to get xs, etc into set
 
-clear smm::stlmsacon = smm_clear smm;
+clear smm::stlmacon = smm_clear smm;
 
-erase smm::stlmsacon tpl@(i::stlmsacon_iter, j::stlmsacon_iter) = 
-  smm_erase smm tpl;
+erase smm::stlmacon (i::stlmacon_iter,j::stlmacon_iter) = smm_erase smm (i,j);
 
-erase smm::stlmsacon pos::stlmsacon_iter = smm_erase smm pos;
+erase smm::stlmacon pos::stlmacon_iter = smm_erase smm pos;
 
-erase smm::stlmsacon (smm,key1,key2) = smm_erase smm (smm,key1,key2);
+erase smm::stlmacon (key1,key2) = smm_erase smm (smm,key1,key2);
 
-erase smm::stlmsacon (smm,key) = smm_erase smm (smm,key);
+erase smm::stlmacon (smm,key) = smm_erase smm (smm,key);
 
-erase smm::stlmsacon key = smm_erase smm (smm,key);
+erase smm::stlmacon (key) = smm_erase smm (smm,key);
 
 swap sm1::stlmmap sm2::stlmmap = smm_swap sm1 sm2;
 
@@ -325,45 +309,45 @@ swap ss1::stlmset ss2::stlmset = smm_swap ss1 ss2;
 
 /*** Equality and Lexicographical Comparison ***************************/
 
-equal rng1::smmrng rng2::smmrng = smm_equal rng1 rng2
+equal rng1::stlmacon_rng rng2::stlmacon_rng = smm_equal rng1 rng2
   if compatible_ranges rng1 rng2;
 
-(::==) sac1::stlmsacon sac2::stlmsacon = smm_equal sac1 sac2
+(::==) sac1::stlmacon sac2::stlmacon = smm_equal sac1 sac2
   if compatible_ranges sac1 sac2;
 
-(::~=) sac1::stlmsacon sac2::stlmsacon = ~smm_equal sac1 sac2
+(::~=) sac1::stlmacon sac2::stlmacon = ~smm_equal sac1 sac2
   if compatible_ranges sac1 sac2;
 
-(::<) rng1::smmrng rng2::smmrng = smm_less rng1 rng2
+(::<) rng1::stlmacon_rng rng2::stlmacon_rng = smm_less rng1 rng2
   if compatible_ranges rng1 rng2;
 
-(::<=) rng1::smmrng rng2::smmrng = ~smm_less rng2 rng1
+(::<=) rng1::stlmacon_rng rng2::stlmacon_rng = ~smm_less rng2 rng1
   if compatible_ranges rng1 rng2;
 
-(::>) rng1::smmrng rng2::smmrng = smm_less rng2 rng1
+(::>) rng1::stlmacon_rng rng2::stlmacon_rng = smm_less rng2 rng1
   if compatible_ranges rng1 rng2;
 
-(::>=) rng1::smmrng rng2::smmrng = ~smm_less rng1 rng2
+(::>=) rng1::stlmacon_rng rng2::stlmacon_rng = ~smm_less rng1 rng2
   if compatible_ranges rng1 rng2;
 
 /** STL Set Algorithms ***************************************************/
 
-merge rng1::smmrng rng2::smmrng = 
+merge rng1::stlmacon_rng rng2::stlmacon_rng = 
   smm_setop smm_merge rng1 rng2 if compatible_ranges rng1 rng2;
 
-set_union rng1::smmrng rng2::smmrng = 
+set_union rng1::stlmacon_rng rng2::stlmacon_rng = 
   smm_setop smm_union rng1 rng2 if compatible_ranges rng1 rng2;
 
-set_difference rng1::smmrng rng2::smmrng = 
+set_difference rng1::stlmacon_rng rng2::stlmacon_rng = 
   smm_setop smm_difference rng1 rng2 if compatible_ranges rng1 rng2;
 
-set_intersection rng1::smmrng rng2::smmrng = 
+set_intersection rng1::stlmacon_rng rng2::stlmacon_rng = 
   smm_setop smm_intersection rng1 rng2 if compatible_ranges rng1 rng2;
 
-set_symmetric_difference rng1::smmrng rng2::smmrng = 
+set_symmetric_difference rng1::stlmacon_rng rng2::stlmacon_rng = 
   smm_setop smm_symmetric_difference rng1 rng2 if compatible_ranges rng1 rng2;
 
-set_includes rng1::smmrng rng2::smmrng =
+set_includes rng1::stlmacon_rng rng2::stlmacon_rng =
  smm_includes rng1 rng2 if compatible_ranges rng1 rng2;
 
 // add find adj ?? some others ??05
@@ -378,35 +362,35 @@ set_includes rng1::smmrng rng2::smmrng =
    with list of vals as opposed to many keys each with a val.
 */
 
-(::!) smm::stlmsacon key = smm_listmap 0 (smm,key) smm_val;
+(::!) smm::stlmacon key = smm_listmap 0 (smm,key) smm_val;
 
-get (smm::stlmsacon,key) = smm_listmap 0 (smm,key) smm_val; 
+get (smm::stlmacon,key) = smm_listmap 0 (smm,key) smm_val; 
 
 put (smm::stlmmap,key) vals = smm_update smm key vals;
 
-has_key smm::stlmsacon key = smm_member smm key;
+has_key smm::stlmacon key = smm_member smm key;
 
-bounding_keys rng::smmrng = smm_bounding_keys rng;
+bounding_keys rng::stlmacon_rng = smm_bounding_keys rng;
 
-next_key smm::stlmsacon key = smm_next_key smm key;
+next_key smm::stlmacon key = smm_next_key smm key;
 
-prev_key smm::stlmsacon key = smm_prev_key smm key;
+prev_key smm::stlmacon key = smm_prev_key smm key;
 
 /*** Mapping and Folding ********************************************/
 
-::map f rng::smmrng = smm_listmap f rng smm_elm; // => smm_key for sets
+::map f rng::stlmacon_rng = smm_listmap f rng smm_elm; // => smm_key for sets
 
-::foldl f x rng::smmrng = smm_foldl f x rng;
+::foldl f x rng::stlmacon_rng = smm_foldl f x rng;
 
-::foldl1 f rng::smmrng = smm_foldl1 f rng;
+::foldl1 f rng::stlmacon_rng = smm_foldl1 f rng;
 
-::foldr f x rng::smmrng = smm_foldr f x rng;
+::foldr f x rng::stlmacon_rng = smm_foldr f x rng;
 
-::foldr1 f rng::smmrng = smm_foldr1 f rng;
+::foldr1 f rng::stlmacon_rng = smm_foldr1 f rng;
 
-::do f rng::smmrng = smm_foldl (\_ x->f x) () rng $$ ();
+::do f rng::stlmacon_rng = smm_foldl (\_ x->f x) () rng $$ ();
 
-::filter p rng::smmrng = smm_foldr f [] rng with
+::filter p rng::stlmacon_rng = smm_foldr f [] rng with
   f x xs = res when
     res = case p x of
       1 = x:xs;
@@ -416,15 +400,15 @@ prev_key smm::stlmsacon key = smm_prev_key smm key;
   end;
 end;
 
-::listmap f rng::smmrng = smm_listmap f rng smm_elm;
+::listmap f rng::stlmacon_rng = smm_listmap f rng smm_elm;
 
-::catmap f rng::smmrng = smm_listcatmap f rng smm_elm;
+::catmap f rng::stlmacon_rng = smm_listcatmap f rng smm_elm;
 
-::rowmap f rng::smmrng = rowcat (smm_listmap f rng smm_elm);
+::rowmap f rng::stlmacon_rng = rowcat (smm_listmap f rng smm_elm);
 
-::rowcatmap f rng::smmrng = rowcat (smm_listmap f rng smm_elm);
+::rowcatmap f rng::stlmacon_rng = rowcat (smm_listmap f rng smm_elm);
 
-::colmap f rng::smmrng = colcat (smm_listmap f rng smm_elm);
+::colmap f rng::stlmacon_rng = colcat (smm_listmap f rng smm_elm);
 
-::colcatmap f rng::smmrng = colcat (smm_listmap f rng smm_elm);
+::colcatmap f rng::stlmacon_rng = colcat (smm_listmap f rng smm_elm);
 

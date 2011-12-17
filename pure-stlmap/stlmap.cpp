@@ -328,7 +328,7 @@ px* stlmap::parameter_tuple()
     px* df = dflt;
     px* vc = px_val_comp;
     px* ve = px_val_equal;
-    ret = pure_tuplel(5, pure_int(0),kc, df, vc, ve);
+    ret = pure_tuplel(5, pure_int(0), kc, df, vc, ve);
   }
   return ret;
 }
