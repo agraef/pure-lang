@@ -98,6 +98,7 @@ using namespace std;
 -I directory      Add directory to search for included source files.\n\
 -L directory      Add directory to search for dynamic libraries.\n\
 -l libname        Library to be linked in batch compilation.\n\
+--main=name       Name of main entry point in batch compilation.\n\
 --noediting       Disable command-line editing.\n\
 --noprelude, -n   Do not load the prelude.\n\
 --norc            Do not run the interactive startup files.\n\
@@ -566,6 +567,18 @@ main(int argc, char *argv[])
 	} else
 	  s.erase(0, 1);
 	interp.enable(s, false);
+      } else if (strcmp(*args, "--main") == 0 ||
+		 strncmp(*args, "--main=", 7) == 0) {
+	string s = string(*args).substr(6);
+	if (s.empty()) {
+	  if (!*++args) {
+	    interp.error(prog + ": --main lacks name argument");
+	    return 1;
+	  }
+	  s = *args;
+	} else
+	  s.erase(0, 1);
+	interp.mainname = s;
       } else if (strncmp(*args, "-T", 2) == 0) {
 	string s = string(*args).substr(2);
 	if (s.empty()) {
@@ -704,6 +717,9 @@ main(int argc, char *argv[])
       if (s.empty()) ++argv;
     } else if (string(*argv).substr(0,9) == "--disable") {
       string s = string(*argv).substr(9);
+      if (s.empty()) ++argv;
+    } else if (string(*argv).substr(0,6) == "--main") {
+      string s = string(*argv).substr(6);
       if (s.empty()) ++argv;
     } else if (**argv == '-')
       ;

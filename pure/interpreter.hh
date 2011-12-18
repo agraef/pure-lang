@@ -566,6 +566,7 @@ public:
   string libdir;     // library dir to search for source files
   string histfile;   // command history file
   string modname;    // name of output (LLVM) module
+  string mainname;   // name of main entry point (batch compilation)
 
   // Additional directories to search for sources and libraries.
   list<string> includedirs, librarydirs;

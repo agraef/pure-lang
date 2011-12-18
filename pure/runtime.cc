@@ -3787,6 +3787,17 @@ pure_interp *pure_create_interp(int argc, char *argv[])
 	} else
 	  s.erase(0, 1);
 	interp.enable(s, false);
+      } else if (strcmp(*args, "--main") == 0 ||
+		 strncmp(*args, "--main=", 7) == 0) {
+	string s = string(*args).substr(6);
+	if (s.empty()) {
+	  if (!*++args) {
+	    cerr << "pure_create_interp: --main lacks name argument\n";
+	    delete _interp;
+	    return 0;
+	  }
+	}
+	/* ignored */
       } else if (strncmp(*args, "-o", 2) == 0) {
 	string s = string(*args).substr(2);
 	if (s.empty()) {
@@ -3917,6 +3928,9 @@ pure_interp *pure_create_interp(int argc, char *argv[])
       if (s.empty()) ++argv;
     } else if (string(*argv).substr(0,9) == "--disable") {
       string s = string(*argv).substr(9);
+      if (s.empty()) ++argv;
+    } else if (string(*argv).substr(0,6) == "--main") {
+      string s = string(*argv).substr(6);
       if (s.empty()) ++argv;
     } else if (**argv == '-')
       ;

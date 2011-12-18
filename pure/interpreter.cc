@@ -10121,7 +10121,17 @@ int interpreter::compiler(string out, list<string> libnames)
      __pure_main__ (int argc, char **argv), which initializes the interpreter
      so that a minimal runtime environment is available. This function is to
      be called by the main() or other initialization code of the standalone
-     module. It takes two arguments, the argc and argv of the interpreter. */
+     module. It takes two arguments, the argc and argv of the interpreter.
+
+     Note that, as of Pure 0.50, the name of the main entry point can be
+     configured with the --main option. This allows several modules created
+     with the batch compiler to coexist in a single program. However, to make
+     this work, *all* Pure-related globals are set to internal linkage if this
+     option is used. This implies that Pure functions in the module can't be
+     called directly any more, but *must* be invoked through the runtime
+     (using pure_appl et al). This is necessary to prevent name clashes
+     between different batch-compiled modules, but hopefully isn't too much of
+     an obstacle in cases where the --main option is needed. */
   setlocale(LC_ALL, "C");
 #if RAW_STREAM
   // As of LLVM 2.7 (svn), these need to be wrapped up in a raw_ostream.
@@ -10205,6 +10215,8 @@ int interpreter::compiler(string out, list<string> libnames)
       Function *f = module->getFunction(name.substr(1));
       assert(f);
       v.setInitializer(f);
+      if (!mainname.empty())
+	v.setLinkage(Function::InternalLinkage);
       continue;
     }
     map<GlobalVariable*,Function*>::iterator jt = varmap.find(&v);
@@ -10213,6 +10225,8 @@ int interpreter::compiler(string out, list<string> libnames)
       Function *f = jt->second;
       if (strip && used.find(f) == used.end())
 	var_to_be_deleted.push_back(&v);
+      else if (!mainname.empty())
+	v.setLinkage(Function::InternalLinkage);
     }
   }
   // Remove unused functions.
@@ -10229,7 +10243,9 @@ int interpreter::compiler(string out, list<string> libnames)
 	!is_faust(f.getName()) && !is_faust_internal(f.getName())) {
       f.dropAllReferences();
       fun_to_be_deleted.push_back(&f);
-    }
+    } else if (!f.isDeclaration() && !mainname.empty())
+      f.setLinkage(Function::InternalLinkage);
+
   }
   for (list<GlobalVariable*>::iterator it = var_to_be_deleted.begin(),
 	 end = var_to_be_deleted.end(); it != end; it++) {
@@ -10242,12 +10258,13 @@ int interpreter::compiler(string out, list<string> libnames)
   }
   fun_to_be_deleted.clear();
   // Finally build the main function with all the initialization code.
+  if (mainname.empty()) mainname = "__pure_main__";
   vector<llvm_const_Type*> argt;
   argt.push_back(int32_type());
   argt.push_back(VoidPtrTy);
   FunctionType *ft = func_type(void_type(), argt, false);
   Function *main = Function::Create(ft, Function::ExternalLinkage,
-				    "__pure_main__", module);
+				    mainname, module);
   BasicBlock *bb = basic_block("entry", main);
 #ifdef LLVM26
   Builder b(llvm::getGlobalContext());
