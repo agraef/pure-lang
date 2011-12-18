@@ -3,6 +3,7 @@
    against the batch-compiled Pure module to produce a shared library object
    which can be loaded by Pd. */
 
+#include <string.h>
 #include <unistd.h>
 #include <limits.h>
 #include <pure/runtime.h>
@@ -17,9 +18,12 @@ static const char *classes[] = {"fdsp~", "fsynth~", "midiseq", "oscseq", NULL};
 
 /* This is defined in the batch-compiled Pure module. */
 extern void __pdfaust_main__(int argc, char** argv);
-/* This is defined in pd-pure (requires pd-pure 0.15 or later). */
-extern int pure_register_class(const char *name, pure_interp *interp);
+/* This is defined in pd-pure. */
 extern const char *pd_libdir(void);
+extern int pure_register_class(const char *name, pure_interp *interp,
+			       const char *help);
+
+#define HELP "/extra/faust/faust-help.pd"
 
 extern void pdfaust_setup(void)
 {
@@ -38,10 +42,13 @@ extern void pdfaust_setup(void)
     if (interp) {
       bool ok = true;
       const char **c;
+      int l = strlen(pd_libdir())+strlen(HELP);
+      char *help = malloc(l+1);
+      strcpy(help, pd_libdir()); strcat(help, HELP);
       post("%s %s (c) 2011 Albert Graef <Dr.Graef@t-online.de>",
 	   loader_name, VERSION);
       for (c = classes; *c; c++) {
-	if (!pure_register_class(*c, interp)) {
+	if (!pure_register_class(*c, interp, help)) {
 	  ok = false;
 	  error("%s: failed to register class %s", loader_name, *c);
 	}
