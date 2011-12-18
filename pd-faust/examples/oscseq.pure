@@ -42,13 +42,14 @@ oscseq name = catch (\msg->pd_error_s msg $$ cst ()) (seq with
 	  deltas t1 [] = [];
 	  deltas t1 ((t2,msg):xs) = (t2-t1,msg):deltas t2 xs;
 	end;
-    null s || (put all $ mix 0.0 (get all) (get offs) s) with
+    null s || (put all $ mix 0.0 0.0 (get all) (get offs) s) with
       // Mix two tracks with relative timestamps.
-      mix t1 xs t2 [] = if t1<=t2 then xs else shift (t1-t2) xs;
-      mix t1 [] t2 ys = if t2<=t1 then ys else shift (t2-t1) ys;
-      mix t1 xs@(x1@(dt1,msg1):xs1) t2 ys@(y2@(dt2,msg2):ys2)
-      = x1 : mix (t1+dt1) xs1 t2 ys if t1+dt1<=t2+dt2;
-      = y2 : mix t1 xs (t2+dt2) ys2 otherwise;
+      mix t t1 xs t2 [] = shift (t1-t) xs;
+      mix t t1 [] t2 ys = shift (t2-t) ys;
+      mix t t1 xs@((dt1,msg1):xs1) t2 ys@((dt2,msg2):ys2)
+      = (t1-t,msg1) : mix t1 t1 xs1 t2 ys when t1 = t1+dt1 end
+	if t1+dt1<=t2+dt2;
+      = (t2-t,msg2) : mix t2 t1 xs t2 ys2 when t2 = t2+dt2 end;
       shift t xs = case xs of
 	(dt,msg):xs = (t+dt,msg):xs;
 	_ = xs;
