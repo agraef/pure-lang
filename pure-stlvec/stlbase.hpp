@@ -225,6 +225,15 @@ protected:
   pxh_pred2 first_equal;
 };
 
+struct pxhpair_first_equivalent : 
+  public std::binary_function<const pxhpair&, const pxhpair&, bool>
+{
+  pxhpair_first_equivalent(px* f) : first_less(f) {}
+  bool operator()(const pxhpair&, const pxhpair&) const;
+protected:
+  pxh_pred2 first_less;
+};
+
 struct pxhpair_equivalent : 
   public std::binary_function<const pxhpair&, const pxhpair&, bool>
 {

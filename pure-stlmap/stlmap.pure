@@ -79,8 +79,8 @@ namespace ;
 
 let stlmap_t, stlmap_iter_t, stlset_t, stlset_iter_t = stl::sm_type_tags;
 
-type stlmap x = check_ptrtag stlmap_t x;       //c++ map
-type stlset x = check_ptrtag stlset_t x;       //c++ set 
+type stlmap x = check_ptrtag stlmap_t x;     //c++ map
+type stlset x = check_ptrtag stlset_t x;     //c++ set 
 type stlacon x::stlmap | stlacon x::stlset;  //c++ sorted assoc container
 
 type stlmap_iter x = check_ptrtag stlmap_iter_t x;
@@ -220,8 +220,6 @@ range_info rng::stlacon_rng = sm_range_info rng;
 
 distance rng::stlacon_rng = sm_size rng;
 
-is_set rng::stlacon_rng = sm_is_set rng;
-
 /*** Range Access ****************************************************/
 
 lazy_map f rng::stlacon_rng = gen first with
@@ -232,7 +230,7 @@ end if valid when
   first = sm_copy_iter b;
 end;
 
-lazy_elms rng::stlacon_rng = gen first with 
+stream rng::stlacon_rng = gen first with 
   gen i = if sm_equal_iter i last then [] 
           else sm_get_elm_at_inc i : (gen i &);  
 end if valid when 
@@ -240,13 +238,13 @@ end if valid when
   first = sm_copy_iter b;
 end;
 
-lazy_keys rng::stlacon_rng = lazy_map (\(k=>v)->k) rng if ~sm_is_set rng;
+// lazy_keys rng::stlacon_rng = lazy_map (\(k=>v)->k) rng if ~sm_is_set rng;
 
-lazy_keys rng::stlacon_rng = lazy_elms rng;
+// lazy_keys rng::stlacon_rng = lazy_elms rng;
 
-lazy_vals rng::stlacon_rng = lazy_map (\(k=>v)->v) rng if ~sm_is_set rng;
+// lazy_vals rng::stlacon_rng = lazy_map (\(k=>v)->v) rng if ~sm_is_set rng;
 
-lazy_vals rng::stlacon_rng = lazy_elms rng;
+// lazy_vals rng::stlacon_rng = lazy_elms rng;
 
 elms rng::stlacon_rng = sm_listmap 0 rng sm_elm; 
 
@@ -357,7 +355,6 @@ set_includes rng1::stlacon_rng rng2::stlacon_rng =
    returns the value of the element with the indicated key, if any, or throws
    an out_of_bounds exception. When applied to a stlset it returns the element
    that is equivalent to the key.
-
 
 */
 

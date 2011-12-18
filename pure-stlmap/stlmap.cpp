@@ -972,8 +972,8 @@ bool sm_equal(px* tpl1, px* tpl2)
   sm* smp = rng1.smp();
   try {
     if (smp->keys_only) {
-      pxhpair_first_equal comp(smp->px_val_equal);   
-      return equal(rng1.beg(), rng1.end(), rng2.beg(), comp);
+      pxhpair_first_equivalent comp(smp->px_comp);   
+      return equal(rng1.beg(), rng1.end(), rng2.beg(), );
     }
     else {
       pxhpair_equivalent comp(smp->px_comp,smp->px_val_equal);   

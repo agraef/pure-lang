@@ -247,6 +247,19 @@ bool pxhpair_first_equal::operator()(const pxhpair& lhs,
   }
 }
 
+bool pxhpair_first_equivalent::operator()(const pxhpair& lhs,
+                                          const pxhpair& rhs) const
+{
+  try {
+    bool ok = !first_less(lhs.first, rhs.first) && 
+      !first_less(rhs.first, lhs.first);
+    return ok;
+  }
+  catch (px* e) {
+    pure_throw(e);
+  }
+}
+
 bool pxhpair_equivalent::operator()(const pxhpair& lhs,
                                     const pxhpair& rhs) const
 {

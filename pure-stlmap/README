@@ -12,13 +12,10 @@ Version @version@, |today|
 
 | Peter Summerland <p.summerland@gmail.com>
 
-pure-stlmap is a Pure interface to C++'s standard library ("STL")'s sorted
-associative containers ("SACs"), specialized to hold pointers to arbitrary
-Pure expressions. pure-stlmap can be thought of as an alternative to stldic
-which provides an interface to the same containers (and additional
-contanters). pure-stldict has been tailored to fit in well with the interfaces
-for other similar containers provided by the Pure standard library. In
-contrast, stlmap attempts to match the C++ interface as closely as possible.
+pure-stlmap is a Pure interface to C++'s standard library ("STL")'s four
+associative containers ("acons") and two of its unordered associative
+containers ("hacons") specialized to hold pointers to arbitrary Pure
+expressions.
 
 .. _Pure: http://pure-lang.googlecode.com
 
@@ -58,91 +55,227 @@ platform-specific setup. If it gets this wrong, you can set some variables
 manually. In particular, ``make install prefix=/usr`` sets the installation
 prefix. Please see the Makefile for details.
 
-Overview
-========
+Introduction
+============
 
-The C++ Standard Template Library ("STL") is a library of generic containers
-(data structures designed for storing other objects) and a rich set of generic
-algorithms that operate on them. pure-stlmap provides an interface to the
-STL's "sorted associative" containers: map, set, multimap and multiset. These
-containers associate keys with values. Map and multimap associate keys with
-values and provide fast insertion, removal and retrieval of elements based on
-keys. Set and mulitset provide fast insertion and removal of elements and very
-fast set operations. 
+The Standard C++ Library`_ provides templates for generic containers and
+generic algorithms. For historical reasons this part of the library is often
+referred to a the standard template library ("STL"). pure-stlmap provides an
+interface to the STL's associative containers: map, set, multimap and multiset
+and two of its unordered associative containers: unordered_map and
+unordered_set. 
 
-In the following, maps and multimaps contain elements, each of which has a key
-and value. The element is sometimes denoted by (k=>v). Set and multisets
-really only have elements, but it is convenient to treat them as if they had
-keys, where an element's key is just the element itself.
 
-Maps and sets have unique keys while multimaps and multisets can have elements
-with duplicate keys. All four of the containers keep their elements sorted by
-key. 
+.. _C++ standard library documentation: http://en.cppreference.com/w/cpp
 
-pure-stlmap provides four containers "stlmap", "stlset", "stlmmap" and
-"stlmset" that are thin wrappers around the corresponding sorted associative
-containers provided by the STL, specialized to hold keys and values that are
-arbitrary Pure expressions. 
+pure-stlmap provides six containers "stlmap", "stlset", "stlmmap", "stlmset",
+"stlhmap" and "stlhset" that are thin wrappers around the corresponding
+associative containers provided by the STL, specialized to hold keys and
+values that are arbitrary Pure expressions. pure-stlmap does not provide
+wrappers for unordered_multimap and unordered_multiset. In addition, the
+interfaces for stlhmap and stlhset are limited compared to those provided for
+the other four (ordered) associative containers. 
 
-All of the member functions provided by the STL for maps, multimaps, sets and
-multisets have corresponding functions in pure-stlmap. The corresponding
+Correspondence with the Native Interface
+----------------------------------------
+
+Most of the functions provided by the STL for maps, multimaps, sets and
+multisets, and some of the functions for unordered_maps and unordered_sets,
+have corresponding functions in pure-stlmap. When provided, the corresponding
 functions provided by pure-stlmap have *exactly the same semantics* as the STL
 functions, which in some cases is different than that of similar functions
 provided by the standard Pure library for similar containers. In addition, the
 STL set algorithm functions are provided, including merge and includes, all
 with STL semmantics, which again, have different semmantics than corresponding
-functions provided by similar Pure library containers. Thus users can consult
-the STL documentation and many books and articles to understand the
-performance characteritics and corner case behavior of any pure-stlmap
-function that has a corresponding function in the STL.
+functions provided by similar Pure library containers.
 
-Pure-to-STL "bridge" functions such as elms, keys, vals, map, filter, and fold
-functions are provided to convert container contents to lists or lazy
-lists. These functions work with ranges and act *directly* on the underlying
-STL container. Conversion functions are provided for copying ranges to and
-from lists, vectors, other pure-stlmap containers, and stlvecs.
+One advantage of this approach is that users can consult the STL documentation
+and many books and articles to understand the performance characteritics and
+corner case behavior of any pure-stlmap function that has a corresponding
+function in the STL. In addition calling underlying STL functions such the set
+operations, swap, or copy on a one to one basis preserves O(n) time complexity
+behavior that are difficult to match if the operations are reimplemented by
+hand in order to conform to Pure standard library behavior. A disadvantage is
+that the behavior of some of the pure-stlmap functions including "insert" and
+the set operations will sometimes (depending on the container) be different
+than the corresponding functions applicable to containers in the Pure standard
+library.
 
-Iterator and Key-Based Interfaces
-=================================
+Functional Programming Interface
+--------------------------------
+
+pure-stlmap provides functions to extract lists of a container's elements,
+keys or values or extract its elements as a lazy list. Functions that map,
+filter or fold elements are also provided. These functions *directly* on the
+underlying STL container. Except for the unordered associative containers,
+stlhmap and stlhset, these functions can act on a subsequence or "range" of
+elements instead of all of the elments. Conversion functions are provided for
+copying ranges to and from lists, vectors, other pure-stlmap containers, and
+stlvecs.
+
+Keys Values and Elements
+------------------------
+
+The three map containers associate values with keys. If v is associated with k
+in a map contianer, m, then we say that (k=>v) is an element of m that k is
+stored in m. The three set containers only have elements. If e is contained a
+set container, s, we say that e is and element of s, that e is stored in s and
+that s has key e. In other words, we sometimes spead of a set container as if
+it were a map whose elements are the same as its keys. All six of the
+containers are mutable. map, set, unordered_map and unordered_set all have
+unique keys. multimap and multiset can have multiple element with the same
+key.
+
+Iterators and Ranges
+--------------------
 
 The native STL interface is based on "iterators" that point to elements in the
-container. As mentioned, pure-stlmap provides functions faithfully replicate
-the functions provided by the native STL interface, assuming that the result
-is defined. If pure-stlmap detects a function call that would otherwise lead
-to undefined results and throw a "bad_argument" exception. 
+container. Given a valid iterator you can access, modify or erase the element
+it points to.  Given two iterators pointing into a container aoc, i and j, the
+range (i,j), denoted aoc's elements starting with "aoc[i]" the element pointed
+to by j up to but not including the aoc[j]. In pure-stlmap, this range is
+denoted by the tuple (i,j).
 
-The native STL interface is very compact; only a handful of functions are
-required to work effectively with the container. Given a key, one can obtain
-an iterator that points to the first element with this key or the element
-following the last element with this key and so on. After obtaining an
-iterator one can retrieve, erase the element or modify (for maps
-and multimaps) the element pointed to by the iterator. 
+In pure-stlmap it is also possible to define a range using keys. Given an
+ordered associative container, aoc, and keys k and l, the range (aoc,k,l)
+consists of all of the elements in aoc starting with the first element that is
+greater or equal to k up to but not including the first element that is
+greater or equal to l. Note that k and l do not have to be stored in aoc. Here
+are some examples::
 
-Given a pair of iterators, one can access, erase or modify all of the elements
-in the "range" defined by the pair, namely elements starting with the element
-pointed to by the first iterator up to but not including the element pointed
-to by the last iterator. In this regard, there is a "pastend" iterator allows
-one to designate arange that includes the last element in the
-container. Sometimes we refer to a container's past-end element, which is not
-really a member of the container, which would appear after all of the
-container's elments if it were added to the container. Iterators can be moved
-forward or backward through the sorted elements one step at a time. 
+   > let sm1 = stlmap {"a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5};
 
-In addition to the iterator based interface, pure-stlmap provides a higher
-level key-based interface which is well suited for stlmap, stlset,
-stlmset. For stlmmaps, where non-equivalent elements can have the same key, it
-is often easier to use the STL iterator-based interface. Also, the iterator
-based interface may be preferred by programmers that are already familiar with
-the STL.
+   > elms sm1;
+   ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
-Modules
-=======
+   > elms (sm1,"b","e");
+   ["b"=>2,"c"=>3,"d"=>4]
 
-Two modules.
+   > let i = stl::find sm1 "b";
 
-using stlmap, stlmmap;
-stlvec must be installed
-STL namespace
+   > let j = stl::find sm1 "e";
+
+   > elms (i,j);
+   ["b"=>2,"c"=>3,"d"=>4]
+
+Please note that pure-stlmap provides iteraters and support for ranges only
+for the four ordered associative containe.  Support for ranges is not provided
+for the unordered associtiave containers, stlhmap and stlhset.
+
+Usage
+=====
+
+After installation of pure-stlmap (and pure-stlvec), you can use the operations
+of this package by placing one or more the following import declarations in
+your Pure programs::
+
+  using stlmap;
+  using stlmmap;
+  using stlhmap;
+
+Types
+=====
+
+The stlmap module introduces the two ordered uniquely-keyed associatice
+containers along with their corresponding iterators and ranges:
+ 
+.. type:: stlmap /type
+          stlset /type
+          stlacon /type
+
+  Ordered associative containers corresponding to the STL's map and set. stlacon
+  includes stlmap and stlset.
+
+Please note that in general, "acon" means (ordered) associative container
+(with unique keys), "macon" means multi-key ordered container and "hacon"
+means hashed associative container (i.e., unordered with unique keys).
+
+.. type stlmap_iter /type
+        stlset_iter /type
+        stlacon_iter /type
+
+  Iterators on stlmap and stlse. stlacon_iter includes stlmap_iter and
+  stlset_iter.
+
+.. type stlacon_rng /type
+
+  A range of elements in an ordered associative container.
+
+The stlmap module also introduces the multi-keyed ordered associative
+containers along with their corresponding iterators and ranges
+
+.. type:: stlmmap /type
+          stlmset /type
+          stlmacon /type
+
+  Ordered associative containers corresponding to the STL's map and set. stlacon
+  includes stlmmap and stlmset.
+
+.. type stlmmap_iter /type
+        stlmset_iter /type
+        stlmacon_iter /type
+
+  Iterators on stlmmap and stlmset. stlacon_iter includes stlmmap_iter and
+  stlmset_iter.
+
+.. type stlmacon_rng /type
+
+  A range of elements in a multi-keyed ordered associative container.
+
+Finally, the stlhmap module also introduces the "hashed" or unordered
+associative containers. Note that no iterators or ranges are provided.
+
+.. type:: stlhmap /type
+          stlhset /type
+          stlhacon /type
+
+  Ordered associative containers corresponding to the STL's map and set. stlacon
+  includes stlmap and stlset.
+
+Container Construction
+======================
+
+Empty containers can be constructed using the full range of constructor
+parameters. Containers constructed from directly from lists, vectors or other
+sources use the default values. 
+
+Please note that there is no function to determine if two keys are equal. All
+the STL functions care about is if one key is less than another or if two keys
+are "equivalent". Two keys, k1 and k2, are equivalent for these purposes if
+~(k1<k2) && ~(k2<k1), where < is the container's key-less-than function.
+
+.. function:: emptystlmap /stlmap (kcmp,dflt,vcmp,veql)
+              emptystlmmap /stlmmap (kcmp,dflt,vcmp,veql)
+              emptystlset /stlmap kcmp
+              emptystlmset /stlmmap kcmp
+              emptystlhmap /stlhmap hash
+              emptystlhset /stlhmap hash
+
+   create a new SAC. The key comparison function, kcmp is required, the others
+   which only apply to maps have default values: [], (<) and (==) for dftl,
+   vcmp and respectively.
+
+
+
+.. function:: stlmap /stlmap src
+              stlmmap /stlmmap src
+              stlset /stlmap src
+              stlmset /stlmmap src
+
+   create a new SAC with default parameters (<) [] (<) and (==) and insert
+   elements from src. src can be a list, vector, or a stlvec range. If the new
+   SAC is a map, the elements of src must be key=>value hash rocket stlmap.
+
+
+
+
+
+
+
+
+
+
+
 
 Tutorial
 ========
@@ -164,6 +297,9 @@ rocket pairs and its keys as a list ::
 
    > keys sm1;
    ["a","b","c","d","e"]
+
+Use the key base interface only here.
+
 
 Accessing Elements
 ------------------
@@ -207,6 +343,9 @@ Make a lazy list of elements and take 3 of its elements
    // take some elements from the lazy list
    > list $ take 3 (lazy_elms sm1);
    ["a"=>1,"b"=>12,"c"=>3]
+
+CHANGE TO FOLLOW THE C++ TABLES
+===============================
 
 Inserting and Updating Elements
 -------------------------------
@@ -999,3 +1138,38 @@ prev_key sm k are constant time operations (after the first lookup) when
 applied sequentially.
 
 E.g., mulitmap as well as map.
+
+
+
+
+
+Iterator and Key-Based Interfaces
+=================================
+
+The native STL interface is based on "iterators" that point to elements in the
+container. If pure-stlmap detects a function call that would otherwise lead
+to undefined results and throw a "bad_argument" exception. 
+
+The native STL interface is very compact; only a handful of functions are
+required to work effectively with the container. Given a key, one can obtain
+an iterator that points to the first element with this key or the element
+following the last element with this key and so on. After obtaining an
+iterator one can retrieve, erase the element or modify (for maps
+and multimaps) the element pointed to by the iterator. 
+
+Given a pair of iterators, one can access, erase or modify all of the elements
+in the "range" defined by the pair, namely elements starting with the element
+pointed to by the first iterator up to but not including the element pointed
+to by the last iterator. In this regard, there is a "pastend" iterator allows
+one to designate arange that includes the last element in the
+container. Sometimes we refer to a container's past-end element, which is not
+really a member of the container, which would appear after all of the
+container's elments if it were added to the container. Iterators can be moved
+forward or backward through the sorted elements one step at a time. 
+
+In addition to the iterator based interface, pure-stlmap provides a higher
+level key-based interface which is probably all you really need for stlmap,
+stlset, stlmset, stlhmap and stlhset. For stlmmaps, where non-equivalent
+elements can have the same key, it might be easier to use the STL
+iterator-based interface. Also, the iterator based interface may be preferred
+by programmers that are already familiar with the STL.

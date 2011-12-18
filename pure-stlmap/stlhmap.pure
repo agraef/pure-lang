@@ -1,4 +1,4 @@
-/* stlhmap.pure: Pure interface to C++ STL hmap
+/* stlhmap.pure: Pure interface to C++ STL unordered_map
     
 --- DRAFT - FOR DISCUSSON PURPOSES ONLY ---
 
@@ -24,26 +24,22 @@ namespace stl;
 /*** C++ support **********************************************************/
 
 extern expr* shm_type_tags();
-private extern expr* shm_make_empty(expr* hash, expr* eql, int ko);
+private extern expr* shm_make_empty(expr* hash, expr* keql, expr* veql, int ko);
 private extern expr* shm_copy(expr* pxshmp);
 private extern void  shm_delete(void* shmp);
 private extern void  shm_reserve(expr* shmp, double mlf, int size);
 private extern expr* shm_hash_info(expr* shmp);
-
 private extern expr* shm_begin(expr* pxshmp);
 private extern expr* shm_end(expr* pxshmp); 
 private extern expr* shm_get_elm_at_inc(expr* pxshmip);
 private extern expr* shm_equal_iter(expr* pxshmip1, expr* pxshmip2);
-
 private extern int   shm_size(expr* shmp);
 private extern bool  shm_empty(expr* shmp);
 private extern bool  shm_is_set(expr* shmp);
 private extern int   shm_equal(expr* shmp1, expr* shmp2);
-
 private extern int   shm_count(expr* pxshmp, expr* key);
 private extern int   shm_member(expr* pxshmp, expr* key);
 private extern expr* shm_find(expr* pxshmp, expr* key, int what);
-
 private extern expr* shm_insert_elm(expr* pxshmp, expr* kv);
 private extern int   shm_insert_elms_xs(expr* pxshmp, expr* src);
 private extern int   shm_insert_elms_stlvec(expr* pxshmp, expr* svrng);
@@ -51,14 +47,12 @@ private extern expr* shm_update(expr* pxshmp, expr* key, expr* val);
 private extern void  shm_swap(expr* pxshmp1, expr* pxshmp2);
 private extern int   shm_erase(expr* pxshmp, expr* key);
 private extern int   shm_clear(expr* pxshmp);
-
 private extern expr* shm_make_vector(expr* shmp);
 private extern void* shm_fill_stlvec(expr* shmp, void* v);
 private extern expr* shm_listmap(expr* fun, expr* shmp, int what);
 private extern expr* shm_listcatmap(expr* fun, expr* shmp, int what);
 private extern expr* shm_foldl(expr* fun, expr* val, expr* shmp);
 private extern expr* shm_foldl1(expr* fun, expr* shmp);
-
 
 /*** global type definitions ********************************************/
 
@@ -69,10 +63,6 @@ let stlhmap_t, stlhmap_iter_t, stlhset_t, stlhset_iter_t = stl::shm_type_tags;
 type stlhmap x = check_ptrtag stlhmap_t x;        //hash map
 type stlhset x = check_ptrtag stlhset_t x;        //hash set     
 type stlhacon x::stlhmap | stlhacon x::stlhset;   //hash associative container
-
-stlhmapp x = check_ptrtag stlhmap_t x;
-stlhsetp x = check_ptrtag stlhset_t x;
-stlhaconp x = stlhmapp x || stlhsetp x;
 
 namespace stl;
 
@@ -89,9 +79,10 @@ compatible_ranges shm1 shm2 =
 
 /***  Constructors *********************************************************/
 
-emptystlhmap ()                = shm_make_empty hash (==) 0;
-emptystlhmap (khash,keql)      = shm_make_empty khash keql 0;
-emptystlhmap  khash            = shm_make_empty khash (==) 0;
+emptystlhmap ()                = shm_make_empty hash (==) (==) 0;
+emptystlhmap (khash,keql,veql) = shm_make_empty khash keql veql 0;
+emptystlhmap (khash,keql)      = shm_make_empty khash keql (==) 0;
+emptystlhmap  khash            = shm_make_empty khash (==) (==) 0;
 
 stlhmap xs = shm when
   shm = emptystlhmap hash;
@@ -105,8 +96,9 @@ end;
 
 stlhmap shm::stlhmap = shm_copy shm;
 
-emptystlhset ()                   = shm_make_empty hash (==) 1;
-emptystlhset (khash,keql)         = shm_make_empty khash keql 1;
+emptystlhset ()                   = shm_make_empty hash (==) (==) 1;
+emptystlhset (khash,keql,veql)    = shm_make_empty khash keql veql 1;
+emptystlhset (khash,keql)         = shm_make_empty khash keql (==) 1;
 emptystlhset  khash               = shm_make_empty khash (==) 1;
 
 stlhset xs = ss when
@@ -141,7 +133,7 @@ has_key shm::stlhacon key = shm_member shm key;
 
 get (shm::stlhacon,key) = shm_find shm key shm_val;
 
-lazy_elms shm::stlhacon = gen first with
+stream shm::stlhacon = gen first with
   gen i = if shm_equal_iter i last then [] 
           else shm_get_elm_at_inc i : (gen i &);
 end when 

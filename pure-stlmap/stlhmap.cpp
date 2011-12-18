@@ -194,10 +194,11 @@ ostream& operator<<(ostream& os, const shm_iter* shmip)
   return os;
 }
 
-/*** stlhmap mehmbers  ***********************************************/
+/*** stlhmap members  ***********************************************/
 
-stlhmap::stlhmap(px* hash, px* eql, bool keyonly):
-  hmp(0, pxh_hash(hash), pxh_pred2(eql)), keys_only(keyonly)
+stlhmap::stlhmap(px* hash, px* keql, px* veql, bool keyonly):
+  keys_only(keyonly), hmp(0, pxh_hash(hash), pxh_pred2(keql)),
+  px_key_equal(keql), px_val_equal(veql)  
 {
   //PR(stlhmap,this);  
 }
@@ -412,8 +413,17 @@ bool shm_equal(px* pxshmp1, px* pxshmp2)
 {
   shm *shmp1, *shmp2;
   if ( !get_shmp(pxshmp1,&shmp1) || !get_shmp(pxshmp2,&shmp2) ) bad_argument();
+  pxhhmap& hmp1 = shmp1->hmp;
+  pxhhmap& hmp2 = shmp2->hmp;
   try {
-    return shmp1->hmp == shmp2->hmp;
+    if (shmp1->keys_only) {
+      pxhpair_first_equal comp(shmp1->px_key_equal);   
+      return equal(hmp1.begin(), hmp1.end(), hmp2.begin(), comp);
+    }
+    else {
+      pxhpair_equal comp(shmp1->px_key_equal,shmp1->px_val_equal);   
+      return equal(hmp1.begin(), hmp1.end(), hmp2.begin(), comp);
+    }
   }
   catch (px* e) {
     pure_throw(e);

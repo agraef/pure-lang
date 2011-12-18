@@ -35,7 +35,9 @@ struct shm_iter;
 struct stlhmap {
   bool keys_only;
   pxhhmap hmp;
-  stlhmap(px* hash, px* eql, bool keys_only); 
+  pxh px_key_equal;
+  pxh px_val_equal;
+  stlhmap(px* hash, px* keql, px* veql, bool keys_only); 
   ~stlhmap(){};
 };
 
@@ -55,7 +57,7 @@ enum {stl_shm_key =1, stl_shm_val, stl_shm_elm};
 
 extern "C" {
   px*  shm_type_tags();
-  px*  shm_make_empty(px* hash, px* eql, int keys_only);
+  px*  shm_make_empty(px* hash, px* keql, px* veql, int keys_only);
   px*  shm_copy(px* pxshmp);
   void shm_delete(shm* shmp);
   void shm_reserve(px* pxshmp, double max_load, int elm_count);

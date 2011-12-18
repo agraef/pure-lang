@@ -220,8 +220,6 @@ range_info rng::stlmacon_rng = smm_range_info rng;
 
 distance rng::stlmacon_rng = smm_size rng;
 
-is_set rng::stlmacon_rng = smm_is_set rng;
-
 /*** Range Access ******************************************************/
 
 lazy_map f rng::stlmacon_rng = gen first with
@@ -232,7 +230,7 @@ end if valid when
   first = smm_copy_iter b;
 end;
 
-lazy_elms rng::stlmacon_rng = gen first with 
+stream rng::stlmacon_rng = gen first with 
   gen i = if smm_equal_iter i last then [] 
           else smm_get_elm_at_inc i : (gen i &);  
 end if valid when 
@@ -240,13 +238,13 @@ end if valid when
   first = smm_copy_iter b;
 end;
 
-lazy_keys rng::stlmacon_rng = lazy_map (\(k=>v)->k) rng if ~smm_is_set rng;
+// lazy_keys rng::stlmacon_rng = lazy_map (\(k=>v)->k) rng if ~smm_is_set rng;
 
-lazy_keys rng::stlmacon_rng = lazy_elms rng;
+// lazy_keys rng::stlmacon_rng = lazy_elms rng;
 
-lazy_vals rng::stlmacon_rng = lazy_map (\(k=>v)->v) rng if ~smm_is_set rng;
+// lazy_vals rng::stlmacon_rng = lazy_map (\(k=>v)->v) rng if ~smm_is_set rng;
 
-lazy_vals rng::stlmacon_rng = lazy_elms rng;
+// lazy_vals rng::stlmacon_rng = lazy_elms rng;
 
 elms rng::stlmacon_rng = smm_listmap 0 rng smm_elm; 
 
@@ -280,8 +278,6 @@ insert smm::stlmmap (val@(k=>v), pos::stlmacon_iter) =
 insert smm::stlmmap val@(k=>v) = smm_insert_elm smm val;
 
 //insert_or_update -- N/A because items are always inserted
-
-//insert_or_update_key_val -- N/A because items are always inserted
 
 //insert_or_update_with -- N/A
 
