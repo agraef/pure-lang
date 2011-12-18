@@ -1930,9 +1930,12 @@ static void runtime_any(t_runtime *x, t_symbol *s, int argc, t_atom *argv)
 
 /* Hook to register external object classes residing in preloaded
    (batch-compiled) Pure modules. This is to be invoked with the name of the
-   object class and the Pure interpreter which manages this class. */
+   object class and the Pure interpreter which manages this class. If the help
+   argument is not NULL, it will be set as the help file for the class instead
+   of the default pd-pure help file. */
 
-extern int pure_register_class(const char *name, pure_interp *interp)
+extern int pure_register_class(const char *name, pure_interp *interp,
+			       const char *help)
 {
   t_classes *c;
   t_symbol *sym;
@@ -1947,7 +1950,10 @@ extern int pure_register_class(const char *name, pure_interp *interp)
   class_setup(name, "");
   /* This will be non-NULL unless the class setup failed. */
   c = lookup(sym);
-  if (c) c->interp = interp;
+  if (c) {
+    c->interp = interp;
+    if (help) class_sethelpsymbol(c->class, gensym(help));
+  }
   return c != 0;
 }
 

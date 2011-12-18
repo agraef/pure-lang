@@ -18,7 +18,8 @@ static const char *classes[] = {"add", "counter", NULL};
 /* This is the main entry point in the batch-compiled Pure module. */
 extern void LOADER_MAIN(int argc, char** argv);
 /* This is defined in pd-pure (requires pd-pure 0.15 or later). */
-extern int pure_register_class(const char *name, pure_interp *interp);
+extern int pure_register_class(const char *name, pure_interp *interp,
+			       const char *help);
 
 extern void LOADER_SETUP(void)
 {
@@ -39,7 +40,10 @@ extern void LOADER_SETUP(void)
       bool ok = true;
       const char **c;
       for (c = classes; *c; c++) {
-	if (!pure_register_class(*c, interp)) {
+      /* NOTE: The help argument is always NULL here. You can also specify the
+	 absolute path of a help file which should be used instead of the
+	 default pd-pure help file for the corresponding object class. */
+	if (!pure_register_class(*c, interp, NULL)) {
 	  ok = false;
 	  error("%s: failed to register class %s", loader_name, *c);
 	}
