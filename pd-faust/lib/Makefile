@@ -29,7 +29,7 @@ pdfaust$(PDDLL): pdfaust.o pdloader.o
 
 pdfaust.o: $(addprefix ../, fdsp~.pure fsynth~.pure) \
 $(addprefix ../examples/, midiseq.pure oscseq.pure)
-	pure $(PIC) -I.. -L.. -c $^ -o $@
+	pure $(PIC) -I.. -L.. -c $^ -o $@ --main __pdfaust_main__
 
 pdloader.o: pdloader.c
 	gcc $(ALL_CFLAGS) -DVERSION="\"$(version)\"" -c $< -o $@

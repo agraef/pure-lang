@@ -22,8 +22,10 @@ test$(PDEXT): test.o loader.o
 	test "$(DLL)" = "$(PDEXT)" || mv test$(DLL) test$(PDEXT)
 
 # This uses the Pure interpreter to compile our pd-pure objects to native code.
+# Note that the --main option is necessary to prevent name clashes and allow
+# the module to coexist with other modules of its kind.
 test.o: add.pure counter.pure
-	pure $(PIC) -c $^ -o $@
+	pure $(PIC) -c $^ -o $@ --main=__test_main__
 
 # Compile a minimal loader module which is needed to interface to Pd and
 # register the object classes with pd-pure.

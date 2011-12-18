@@ -6,13 +6,17 @@
 #include <pure/runtime.h>
 #include <m_pd.h>
 
-/* This is just an example. Adjust these for your object library as needed. */
+/* This is just an example. Adjust these for your object library as needed.
+   If you change the name of the module ('test' in this example), you'll also
+   have to adjust the names of the __test_main__ and test_setup entry points
+   below and in the Makefile accordingly. */
+#define LOADER_MAIN __test_main__
 #define LOADER_SETUP test_setup
 static const char *loader_name = "test";
 static const char *classes[] = {"add", "counter", NULL};
 
 /* This is the main entry point in the batch-compiled Pure module. */
-extern void __pure_main__(int argc, char** argv);
+extern void LOADER_MAIN(int argc, char** argv);
 /* This is defined in pd-pure (requires pd-pure 0.15 or later). */
 extern int pure_register_class(const char *name, pure_interp *interp);
 
@@ -25,7 +29,7 @@ extern void LOADER_SETUP(void)
   if (s_interp) {
     /* This creates a Pure interpreter for the module and runs the
        initialization code of the included scripts, if any. */
-    __pure_main__(0, 0);
+    LOADER_MAIN(0, 0);
     /* Save the interpreter instance we just created. */
     interp = pure_current_interp();
     /* Switch back to the default pd-pure interpreter. */

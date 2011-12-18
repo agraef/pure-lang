@@ -16,7 +16,7 @@ static const char *classes[] = {"fdsp~", "fsynth~", "midiseq", "oscseq", NULL};
 #endif
 
 /* This is defined in the batch-compiled Pure module. */
-extern void __pure_main__(int argc, char** argv);
+extern void __pdfaust_main__(int argc, char** argv);
 /* This is defined in pd-pure (requires pd-pure 0.15 or later). */
 extern int pure_register_class(const char *name, pure_interp *interp);
 extern const char *pd_libdir(void);
@@ -30,7 +30,7 @@ extern void pdfaust_setup(void)
     /* Try to execute this in the installation directory, so that the fdsp~
        and fsynth~ objects find their stuff during initialization. */
     if (chdir(pd_libdir()) || chdir("extra/faust")) cwd && chdir(cwd);
-    __pure_main__(0, 0);
+    __pdfaust_main__(0, 0);
     /* Restore the working directory. */
     cwd && chdir(cwd);
     interp = pure_current_interp();
