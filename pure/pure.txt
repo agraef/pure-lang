@@ -295,6 +295,10 @@ below.
 
    Library to be linked in batch compilation.
 
+.. option:: --main name
+
+   Name of main entry point in batch compilation.
+
 .. option:: --noediting
 
    Disable command-line editing.
@@ -8550,8 +8554,30 @@ position-independent code is generated::
 
   $ pure -c -fPIC pure-odbc/examples/menagerie.pure -o menagerie.o
 
-Also note that even when building a shared module, you'll have to supply an
+Note that even when building a shared module, you'll have to supply an
 initialization routine which calls ``__pure_main__`` somewhere.
+
+Also note that since Pure doesn't support separate compilation in the present
+implementation, if you create different shared modules like this, each will
+contain their own copy all the required Pure functions from the prelude and
+other imported Pure modules. This becomes a problem when trying to link
+several separate batch-compiled modules into the same executable or library,
+because you'll get many name clashes for routines present in different modules
+(including the ``__pure_main__`` entry point). To prevent this, the batch
+compiler can be invoked with the :option:`--main` option to explicitly set a
+name for the main entry point. For instance::
+
+  $ pure -c hello.pure -o hello.o --main __hello_main__
+
+This has two effects. First, the main entry point will be called whatever you
+specified with :option:`--main`, so you have to call this function instead of
+``__pure_main__`` to initialize the module. Second, if :option:`--main` is
+specified, then all Pure functions in the module will be changed to internal
+linkage (like ``static`` functions in C) to prevent any possible name clashes
+between different modules. (Alas, this also makes it impossible to employ
+``pure_funcall`` to call Pure functions directly from C, as described in the
+following section, so you'll have to use other runtime routines such as
+``pure_eval`` or ``pure_appl`` to achieve this in an indirect way.)
 
 Last but not least, ``pure -c`` can also generate just plain LLVM assembler
 code::
