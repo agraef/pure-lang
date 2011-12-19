@@ -19,8 +19,9 @@
 
 include Makefile.config
 
-# Package name (the version number is in Makefile.config):
+# Package name and version:
 dist = pd-faust-$(version)
+version = 0.1
 
 DISTFILES = COPYING COPYING.LESSER Makefile Makefile.config Makefile.common \
 README TODO config.guess *.pure etc/*.el etc/*.pd \
