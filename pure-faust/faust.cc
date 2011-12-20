@@ -514,10 +514,13 @@ pure_expr *faust_compute(faust_t *fd, pure_expr *in, pure_expr *out)
   } else
     return NULL;
   if (out_nrows < m) return NULL;
-  if ((in_ncols > 0 || n>0) && (out_ncols > 0 || m>0) &&
-      in_ncols != out_ncols) return NULL;
   /* Number of samples to be processed. */
-  int count = (in_ncols>0)?in_ncols:out_ncols;
+  int count = 0;
+  if (n==0 || m==0)
+    count = (in_ncols<out_ncols)?out_ncols:in_ncols;
+  else
+    count = (in_ncols<out_ncols)?in_ncols:out_ncols;
+  if (count == 0) return out; // nothing to do
   /* The Faust compute() method expects a vector of double pointers for each
      channel, we compute this on the fly. Note that the out matrix will be
      modified in-place. */
