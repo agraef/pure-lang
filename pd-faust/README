@@ -88,12 +88,22 @@ dialog.
 
 Some further build options are described in the Makefile. In particular, it is
 possible to compile the Faust dsps to LLVM bitcode which can be loaded
-directly by the Pure interpreter, but for that you'll need an LLVM-capable
-C/C++ compiler such as clang or gcc with the dragonegg plugin (please check
-the LLVM_ website for details). Also note that dsps in bitcode format don't
-work with the precompiled pd-faust module yet.
+directly by the Pure interpreter, but for that you'll need a special Faust
+version (see the Faust2_ website for how to get this version up and running)
+and an LLVM-capable C/C++ compiler such as clang or gcc with the dragonegg
+plugin (please check the Makefile and the LLVM_ website for details).
 
 .. _LLVM: http://llvm.org/
+.. _Faust2: http://www.grame.fr/~letz/faust_llvm.html
+
+If you have the required tools then you can build the bitcode modules by
+running ``make bitcode`` after ``make``. If you run ``make install``
+afterwards, the bitcode modules will be installed along with the "normal"
+Faust plugins. In addition, a second object library called ``pdfaust2`` will
+be built and installed, which can be used as a drop-in replacement for
+``pdfaust`` and lets you run the bitcode modules. (Note that in the present
+implementation it is not possible to load both ``pdfaust`` and ``pdfaust2`` in
+Pd, you'll have to pick one or the other.)
 
 Usage
 =====
@@ -122,7 +132,7 @@ The ``fdsp~`` object is invoked as follows::
   Faust dsp must be provided in a form which can be loaded in *Pure* (not
   Pd!), so the ``pure.cpp`` architecture included in recent Faust versions
   must be used to compile the dsp to a shared library. (If you're already
-  running Faust2, you can also compile to an LLVM bitcode file instead; Pure
+  running Faust2_, you can also compile to an LLVM bitcode file instead; Pure
   has built-in support for loading these.) The Makefiles included in the
   pd-faust distribution show how to do this.
 
@@ -527,14 +537,11 @@ implementation:
   separate Faust controls.
 
 * With the present :doc:`pure-faust<pure-faust>` version, dynamic reloading of
-  a Faust module only works if there is only a single instance of the module
-  in the patch. This is actually a limitation of pure-faust, so it doesn't
-  affect the reloading of Faust bitcode modules which are handled directly by
-  the Pure interpreter. Our expectation is that pure-faust will eventually be
-  phased out in favour of Pure's native Faust interface, but Faust bitcode
-  modules often don't perform quite as well as Faust modules compiled to
-  native code using gcc yet, so using Pure's native Faust interface isn't the
-  default right now. This might change in the future.
+  a (native) Faust module only works if there is only a single instance of the
+  module in the patch. However, this doesn't affect the reloading of Faust2_
+  bitcode modules which are handled directly by the Pure interpreter. Thus if
+  you need this functionality then you should use dsps in bitcode format. To
+  these ends, load the ``pdfaust2`` object library in Pd instead of ``pdfaust``.
 
 Also, please check the TODO file included in the distribution for other issues
 which we are already aware of and which will hopefully be addressed in future
