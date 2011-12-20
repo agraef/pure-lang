@@ -9,7 +9,11 @@
 #include <pure/runtime.h>
 #include <m_pd.h>
 
+#ifdef FAUST2
+static const char *loader_name = "pd-faust2";
+#else
 static const char *loader_name = "pd-faust";
+#endif
 static const char *classes[] = {"fdsp~", "fsynth~", "midiseq", "oscseq", NULL};
 
 #ifndef VERSION
@@ -25,7 +29,11 @@ extern int pure_register_class(const char *name, pure_interp *interp,
 
 #define HELP "/extra/faust/faust-help.pd"
 
+#ifdef FAUST2
+extern void pdfaust2_setup(void)
+#else
 extern void pdfaust_setup(void)
+#endif
 {
   pure_interp *interp, *s_interp = pure_current_interp();
   if (s_interp) {

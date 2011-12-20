@@ -10,7 +10,7 @@ bcmodules  := $(dsp_source:.dsp=.bc)
 $(somodules): CXXFLAGS += -DNVOICES=16
 
 all: $(solibs) $(somodules) pdfaust$(PDDLL)
-bitcode: $(bclibs) $(bcmodules)
+bitcode: $(bclibs) $(bcmodules) pdfaust2$(PDDLL)
 
 # We need the location of some of the installed Pure library modules.
 purelib = $(shell pkg-config pure --variable libdir)/pure
@@ -27,12 +27,24 @@ pdfaust$(PDDLL): pdfaust.o pdloader.o
 	gcc $(PIC) $(shared) $^ -Wl,-rpath=$(purelib) $(addprefix $(purelib)/, orddict$(DLL) faust$(DLL) midifile$(DLL)) -Wl,-rpath=$(pdextradir)/lib mix$(DLL) -o pdfaust$(DLL)
 	test "$(DLL)" = "$(PDDLL)" || mv pdfaust$(DLL) pdfaust$(PDDLL)
 
+pdfaust2$(PDDLL): pdfaust2.o pdloader2.o
+	rm -f pdfaust2$(PDDLL)
+	gcc $(PIC) $(shared) $^ -Wl,-rpath=$(purelib) $(addprefix $(purelib)/, orddict$(DLL) faust$(DLL) midifile$(DLL)) -Wl,-rpath=$(pdextradir)/lib mix$(DLL) -o pdfaust2$(DLL)
+	test "$(DLL)" = "$(PDDLL)" || mv pdfaust2$(DLL) pdfaust2$(PDDLL)
+
 pdfaust.o: $(addprefix ../, fdsp~.pure fsynth~.pure) \
 $(addprefix ../examples/, midiseq.pure oscseq.pure)
 	pure $(PIC) -I.. -L.. -c $^ -o $@ --main __pdfaust_main__
 
+pdfaust2.o: $(addprefix ../, fdsp~.pure fsynth~.pure) \
+$(addprefix ../examples/, midiseq.pure oscseq.pure)
+	pure $(PIC) -I.. -L.. -c $^ -o $@ --main __pdfaust_main__ --enable faust2
+
 pdloader.o: pdloader.c
 	gcc $(ALL_CFLAGS) -DVERSION="\"$(version)\"" -c $< -o $@
+
+pdloader2.o: pdloader.c
+	gcc $(ALL_CFLAGS) -DVERSION="\"$(version)\"" -DFAUST2 -c $< -o $@
 
 # Faust-specific stuff
 svg: $(svg)
