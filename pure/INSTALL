@@ -38,7 +38,7 @@ Quick Summary
 =============
 
 Here is the executive summary for the impatient. This assumes that you're
-using LLVM 2.9 and Pure @version@, please substitute your actual version
+using LLVM 3.0 and Pure @version@, please substitute your actual version
 numbers in the commands given below.
 
 Prerequisites: gcc, GNU make, flex/bison (development sources only), libltdl,
@@ -51,8 +51,9 @@ You'll probably need the latest Pure and LLVM tarballs which, at the time of
 this writing, are available here:
 
 | http://pure-lang.googlecode.com/files/pure-@version@.tar.gz
-| http://llvm.org/releases/2.9/llvm-2.9.tgz
-| http://llvm.org/releases/2.9/clang-2.9.tgz
+| http://llvm.org/releases/3.0/llvm-3.0.tar.gz
+| http://llvm.org/releases/3.0/clang-3.0.tar.gz
+| http://llvm.org/releases/3.0/dragonegg-3.0.tar.gz
 
 .. note:: If you're reading this documentation online, then the Pure version
    described here most likely is still under development, in which case you
@@ -62,9 +63,9 @@ this writing, are available here:
 
 Installing LLVM and clang (the latter is optional but recommended)::
 
-  $ tar xfvz llvm-2.9.tgz
-  $ tar xfvz clang-2.9.tgz && mv clang-2.9 llvm-2.9/tools/clang
-  $ cd llvm-2.9
+  $ tar xfvz llvm-3.0.tar.gz
+  $ tar xfvz clang-3.0.tar.gz && mv clang-3.0 llvm-3.0/tools/clang
+  $ cd llvm-3.0
   $ ./configure --enable-shared --enable-optimized --enable-targets=host-only
   $ make && sudo make install
 
@@ -73,6 +74,10 @@ libraries only, and ``--enable-targets=host-only`` if you want to enable cross
 compilation for all supported targets in LLVM. (With some older LLVM versions
 you may also have to add ``--disable-assertions --disable-expensive-checks``
 to disable stuff that makes LLVM very slow and/or breaks it on some systems.)
+
+If you're running gcc 4.5 or later, you may also want to install the LLVM
+"DragonEgg" plugin for gcc, please check the dragonegg_ section below for
+details.
 
 Installing Pure::
 
@@ -110,7 +115,7 @@ Uninstalling::
 
   $ cd pure-@version@
   $ sudo make uninstall
-  $ cd ../llvm-2.9
+  $ cd ../llvm-3.0
   $ sudo make uninstall
 
 Please see below for much more detailed installation instructions.
@@ -223,12 +228,11 @@ also lets you disable readline and/or editline support using the
 You can find these at http://llvm.org/releases/download.html.
 
 You only need the llvm-2.x or 3.x tarball which contains the LLVM library as
-well as most of the LLVM toolchain. LLVM 2.9 is the latest stable release at
-the time of this writing, but LLVM 3.0 will also be available soon. LLVM
-versions 2.5 thru 3.0 have all been tested and are known to work with Pure. We
-really recommend using LLVM 2.8 or later, however, because LLVM has improved
-considerably in recent releases. (Support for older versions may be dropped in
-the future.)
+well as most of the LLVM toolchain. LLVM 3.0 is the latest stable release at
+the time of this writing. LLVM versions 2.5 thru 3.0 have all been tested and
+are known to work with Pure. We really recommend using LLVM 2.8 or later,
+however, because LLVM has improved considerably in recent releases. (Support
+for older versions may be dropped in the future.)
 
 The latest LLVM from svn might work as well, but we don't guarantee this.
 While we're committed to make Pure work with new LLVM versions as they become
@@ -253,7 +257,7 @@ with LLVM. You can also use llvm-gcc or dragonegg instead, please see
 
 **Step 3.** Configure, build and install LLVM as follows::
 
-  $ cd llvm-2.9
+  $ cd llvm-3.0
   $ ./configure --enable-shared --enable-optimized --enable-targets=host-only
   $ make
   $ sudo make install
@@ -513,7 +517,7 @@ tarball into the ``llvm-x.y/tools`` directory, renaming the resulting
 ``clang-x.y`` directory to just ``clang``. Then build and install clang as
 follows::
 
-  $ cd llvm-2.9/tools/clang
+  $ cd llvm-3.0/tools/clang
   $ make
   $ sudo make install
 
@@ -530,12 +534,14 @@ then be the default for C/C++ compilation.)
 llvm-gcc
 --------
 
-You may also want to install llvm-gcc (also available from the LLVM website),
-either as an alternative or in addition to clang. The main advantage of
-llvm-gcc over clang is that it has additional language frontends (Ada and
-Fortran). However, note that llvm-gcc is currently being phased out in favour
-of the new dragonegg plugin (see below), so it won't be available for the LLVM
-3.x series any more.
+.. note:: This section applies to LLVM versions up to 2.9. With LLVM 3.0 or
+   later, llvm-gcc is not supported any more and you should use dragonegg_
+   instead, see below. (However, if you still have a recent version of
+   llvm-gcc installed on your system, it should continue work with LLVM 3.0.)
+
+If available, llvm-gcc can be installed either as an alternative or in
+addition to clang. The main advantage of llvm-gcc over clang is that it has
+additional language frontends (Ada and Fortran).
 
 Installing llvm-gcc from source actually isn't all that difficult, if a bit
 time-consuming. Assuming that you have unpacked both the LLVM and the llvm-gcc
