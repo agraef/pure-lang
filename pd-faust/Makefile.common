@@ -92,6 +92,28 @@ asmsource  := $(dsp_source:%.dsp=%.ll)
 %$(DLL): %.c
 	$(CC) $(shared) $(ALL_CFLAGS) $< -o $@ $(ALL_LDFLAGS)
 
+ifdef faustllvm
+# compile Faust source to LLVM bitcode (needs faust2)
+%.bc: %.dsp
+	$(FAUST) -lang llvm $< $(OPT) -o $@
+
+# compile Faust source to LLVM assembler (needs faust2)
+%.ll: %.dsp
+	$(FAUST) -lang llvm $< > $@
+else
+# make sure that we go through faust -lang c here
+%.bc: %.dsp
+	$(FAUST) -lang c -a pure.c $< -o $(<:.dsp=.c)
+ifeq (,$(findstring $(dragonegg),$(LLVMCC)))
+	$(LLVMCC) $(ALL_CFLAGS) -c $(<:.dsp=.c) -o $@
+	rm -f $(<:.dsp=.c)
+else
+	$(LLVMCC) $(ALL_CFLAGS) -S $(<:.dsp=.c) -o $(<:.dsp=.ll)
+	llvm-as $(<:.dsp=.ll) -o $@
+	rm -f $(<:.dsp=.c) $(<:.dsp=.ll)
+endif
+endif
+
 # direct rules to generate LLVM bitcode (these don't work with dragonegg)
 
 ifeq (,$(findstring $(dragonegg),$(LLVMCC)))
@@ -140,16 +162,6 @@ endif
 # compile Faust source to C code (needs faust2)
 %.c: %.dsp
 	$(FAUST) -lang c -a pure.c $< -o $@
-
-ifdef faustllvm
-# compile Faust source to LLVM bitcode (needs faust2)
-%.bc: %.dsp
-	$(FAUST) -lang llvm $< $(OPT) -o $@
-
-# compile Faust source to LLVM assembler (needs faust2)
-%.ll: %.dsp
-	$(FAUST) -lang llvm $< > $@
-endif
 
 # Faust-specific stuff
 
