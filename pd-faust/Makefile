@@ -23,8 +23,8 @@ include Makefile.config
 dist = pd-faust-$(version)
 version = 0.2
 
-DISTFILES = COPYING COPYING.LESSER Makefile Makefile.config Makefile.common \
-README TODO config.guess *.pure etc/*.el etc/*.pd \
+DISTFILES = COPYING COPYING.LESSER Makefile Makefile.config.in Makefile.config \
+Makefile.common README TODO config.guess *.pure etc/*.el etc/*.pd \
 examples/*.pure examples/*.pd examples/midi/*.mid examples/osc/*.osc \
 examples/synths/README* examples/synths/Makefile \
 examples/synths/*.dsp examples/synths/*.lib examples/synths/*.h \
@@ -57,6 +57,9 @@ install:
 
 uninstall:
 	rm -rf "$(DESTDIR)$(pdextradir)"
+
+Makefile.config: Makefile.config.in Makefile
+	sed -e "s?@version@?$(version)?g" < $< > $@
 
 date = $(shell date "+%B %-d, %Y")
 datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > $(2)
