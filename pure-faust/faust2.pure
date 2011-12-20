@@ -6,7 +6,7 @@
    the provided operations. Note that you can only import either faust.pure or
    faust2.pure, trying to use both in the same program will *not* work. */
 
-/* Copyright (c) 2009-2011 by Albert Graef <Dr.Graef@t-online.de>.
+/* Copyright (c) 2011 by Albert Graef <Dr.Graef@t-online.de>.
 
    This file is part of the Pure standard library.
 
@@ -25,16 +25,19 @@
 
 using faustui;
 
-/* There are some limitations in the current implementation. In particular,
-   note that faust_init requires 'eval' to load the dsp from an LLVM bitcode
-   module which will not work in batch-compiled scripts, unless it's executed
-   at compile time. Thus, if you need to create dsps dynamically in a
-   batch-compiled script, you'll either have to "preload" the dsps at compile
-   time (employing an ordinary 'using' clause) or use faust.pure instead. */
+#! --if version-0.51+
+extern expr *faust_load(char *name);
+#! --endif
 
 faust_init name::string rate::int = dsp if pointerp dsp when
   // Try to load the dsp if necessary, ignore any errors.
+#! --if version-0.51+
+  faust_load name;
+#! --else
+  // For Pure <=0.50, we have to use eval to load the dsp. This will not work
+  // in batch-compiled scripts unless it's executed at compile time.
   eval $ "using \"dsp:"+name+"\";";
+#! --endif
   basename = last (split "/" name);
   newinit = dsp_fun basename "newinit";
   dsp = newinit rate;
