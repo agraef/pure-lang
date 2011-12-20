@@ -1,0 +1,221 @@
+/* uts_stlhmap.pure -- tests for stlhmap basic STL interface. */
+
+//-- --comment c_off --verbose off
+
+//*** Imports *********************************************************
+
+using system, stlhmap, stlvec;
+
+hs_elms shm::stlhset = sort (<) (stl::elms shm);
+//- ()
+
+//*** Constructors ******************************************************
+
+let sv1 = ::stlvec ["a","b","c","d","e"]; members sv1;
+//- ["a","b","c","d","e"]
+
+let shm1 = stl::stlhset ["a","b","c","d","e"]; hs_elms shm1;
+//- ["a","b","c","d","e"]
+
+let shm1 = stl::stlhset {"a","b","c","d","e"}; hs_elms shm1;
+//- ["a","b","c","d","e"]
+
+let shm1 = stl::stlhset (sv1,1,stl::svend); stl::elms shm1; hs_elms shm1;
+//- ["b","c","d","e"]
+
+let shm2 = stl::stlhset shm1; hs_elms shm2;
+//- ["b","c","d","e"]
+
+/*** Info ***************************************************************
+
+let shm1 = stl::stlhset ["a","b","c","d","e"];
+//- ()
+
+let shm2 = stl::stlhset ["b","c","d"];
+//- ()
+
+#shm1, #shm2;
+//- 5,3
+
+stl::container_info shm1;
+//- 1,5,1.0,1.0,hash,(==),(==)
+
+stl::count shm1 "a", stl::count shm1 "e", stl::count shm2 "e";
+//- 1,1,0
+
+stl::has_key shm1 "a";
+//- 1
+
+/*** Accessing Elements  **********************************************
+
+let shm1 = stl::stlhset ["a","b","c","d","e"];
+//- ()
+
+shm1!"a", shm1!"b", shm1!"e";
+//- "a","b","e"
+
+catch id $ shm1!"x";
+//- out_of_bounds
+
+// shm1!stl::stlbeg; FIX -- should be error -- has no meaning
+
+thunkp (tail $ stl::stream shm1);
+//- 1
+
+sort (<) (list $ stl::stream shm1);
+//- ["a","b","c","d","e"]
+
+sort (<) (stl::elms shm1);
+//- ["a","b","c","d","e"]
+
+sort (<) (stl::keys shm1);
+//- ["a","b","c","d","e"]
+
+sort (<) (stl::vals shm1);
+//- ["a","b","c","d","e"]
+
+let sv1 = stl::stlvec shm1;  #sv1;
+//- 5
+
+sort (<) (stl::vector shm1);
+//- {"a","b","c","d","e"}
+
+//*** Custom Hash and Equal ***********************************************
+
+//FIX
+
+//*** Modification ********************************************************
+
+let shm1 = stl::emptystlhset ();
+//- ()
+
+stl::insert shm1 ["a","b","c","d"]; 
+//- 4
+
+hs_elms shm1;
+//- ["a","b","c","d"]
+
+stl::insert shm1 ("a");
+//- 0
+
+hs_elms shm1;
+//- ["a","b","c","d"]
+
+stl::insert shm1 ("e");
+//- 1
+
+hs_elms shm1;
+//- ["a","b","c","d","e"]
+
+let shm2 = stl::stlhset ["x","y","z"];
+//- ()
+
+stl::swap shm1 shm2;
+//- ()
+
+hs_elms shm1;
+//- ["x","y","z"]
+
+hs_elms shm2;
+//- ["a","b","c","d","e"]
+
+stl::erase shm1; 
+//- 3
+
+#shm1;
+//- 0
+
+//** Equality **************************************************************
+
+let shm1 = stl::stlhset ["a","b","c","d"];
+//- ()
+
+let shm2 = stl::stlhset ["b","c","d"];
+//- ()
+
+shm1 == shm1;
+//- 1
+
+shm1 == shm2;
+//- 0
+
+shm2 == shm1;
+//- 0
+
+shm1 ~= shm1;
+//- 0
+
+shm1 ~= shm2;
+//- 1
+
+//*** Mapping *****************************************************
+
+let shm1 = stl::stlhset ["a","b","c","d","e"];
+//- ()
+
+listmap (\k->k+1) shm1;
+//- ["e","f","b","c","d"]
+
+catmap (\k->[k+1]) shm1;
+//- ["e","f","b","c","d"]
+
+[ k+1 | k = shm1];
+//- ["e","f","b","c","d"]
+
+{ k+1 | k = shm1};
+//- {"e","f","b","c","d"}
+
+{ (k,k) | k = shm1};
+//- {("d","d"),("e","e"),("a","a"),("b","b"),("c","c")}
+
+//*** foldl, foldl1 **************************************************
+
+let shm1 = stl::stlhset ["a","b","c","d","e"];
+//- ()
+
+foldl (\r k ->r+k) "" shm1;
+//- "deabc"
+
+foldl1 (\r k -> r+k) shm1;
+//- "deabc"
+
+let shm2 = stl::emptystlhset ();
+//- ()
+
+do (stl::insert shm2) shm1;
+//- ()
+
+hs_elms shm2;
+//- ["a","b","c","d","e"]
+
+//*** rowmap, rowcatmap, colmap colcatmap ********************************
+
+let shm1 = stl::stlhset ["a","b","c","d","e"];
+//- ()
+
+rowmap (\k->(k,ord k - ord "a" + 1)) shm1;
+//- {("d",4);("e",5);("a",1);("b",2);("c",3)}
+
+rowcatmap (\k->{k,ord k - ord "a" + 1})shm1;
+//- {"d",4;"e",5;"a",1;"b",2;"c",3}
+
+rowcatmap (\k->if (ord k) mod 2 then {k, ord k - ord "a" + 1} else {}) shm1;
+//- {"e",5;"a",1;"c",3}
+
+colmap (\k->(k,k+1)) shm1;
+//- {("d","e"),("e","f"),("a","b"),("b","c"),("c","d")}
+
+colcatmap (\k->{k;ord k - ord "a" + 1})shm1;
+//- {"d","e","a","b","c";4,5,1,2,3}
+
+//*** Key Oriented Functions *********************************************
+
+let shm1 = stl::stlhset ["a","b","c","d","e"];
+//- ()
+
+stl::has_key shm1 "0", stl::has_key shm1 "a", stl::has_key shm1 "c";
+//- 0,1,1
+
+stl::has_key shm1 "e", stl::has_key shm1 "f", stl::has_key shm1 stl::stlbeg;
+//- 1,0,1
+
