@@ -78,6 +78,48 @@ wrappers for unordered_multimap and unordered_multiset. In addition, the
 interfaces for stlhmap and stlhset are limited compared to those provided for
 the other four (ordered) associative containers. 
 
+Nomenclature
+------------
+
+It is sometimes convenient to discuss the supported containers in terms of
+certain defining characteristics:
+
+  * associative container - stlmap, stlset, stlmmap, stlmmset, stlhmap or
+                            stlhset
+
+  * ordered container - stlmap, stlset, stlmmap, stlmmset
+
+  * unique-keyed container - stlmap, stlset, stlhmap, stlhset
+
+  * multi-keyed container - stlmmap, stlmset
+
+  * unordered container - stlhmap, stlhset
+
+  * associative map - stlmap, stlmmap, stlhmap
+
+  * ordered map - stlmap, stlmmap
+
+  * unique-keyed map - stlmap, stlhmap
+
+  * multi-keyed map - stlmmap
+
+  * unordered map - stlhmap
+  
+  * associative set - stlset, stlmset, stlhset
+
+  * ordered set - stlset, stlmset
+
+  * unique-keyed set - stlset, stlhset
+
+  * multi-keyed set - stlmset
+
+  * unordered set - stlhset
+
+Hopefully these names are intuitive enough that there is little need for their
+formal definition. Writing out the various combinations does, however, have
+the advantage of emphasizing the many combinations (and subtle differences)
+that have been considered by the designers of the native C++ interface.
+
 Correspondence with the Native Interface
 ----------------------------------------
 
@@ -468,35 +510,44 @@ E.g., use foldl to insert elements from a stlhmap into stlmap.
 
 E.g., use (+) to count words.
 
-..function:: clear /stlmap acon
-
-..function:: erase /stlmap (acon,k)
+..function:: erase /stlmap acon
+             erase /stlmap (acon,k)
              erase /stlmap (acon,i)
              erase /stlmap (acon,k1,k2)
              erase /stlmap (acon,i,j)
 
-  The first form erases all elements with key equivalent to k. The second form
-  erases the element pointed by the iterator i. The third form erases the
-  elements in the range (acon,k1,k2). The forth form erases the elements in
-  the range (i,j), assuming i and j are iterators on acon. Note that the third
-  and forth forms only apply to the ordered associative containers, not
-  stlhmap or stlhset.
+  The first form erases all elements in acon. The second erases all elements
+  with key equivalent to k. The third erases the element pointed by the
+  iterator i. The fourth erases the elements in the range (acon,k1,k2). The
+  fifth form erases the elements in the range (i,j), assuming i and j are
+  iterators on acon. Note that the fourth and fifth forms only apply to the
+  ordered associative containers, not stlhmap or stlhset.
 
 List-Like Operations
 ====================
 
-The operations described in this section are like their list
-counterparts. They apply to ranges defined the ordered associative containers
-(but not to stlhmap or stlhset). The functions in the first list operate
-directly on the underlying data structure while those in the second list
-operate on an intermediate list produced by listmap.
+They apply to ranges defined the ordered associative containers
+(but not to stlhmap or stlhset). Theses functions operate directly on the
+underlying data structure
 
-   * do, map, listmap, catmap, foldl, foldl1, foldr, foldr1, filter
+The following "standard" list-like operations are applicable to all four of
+the ordered associative containers. They act directly on the underlying data
+structures.
+
+   * do, map, listmap, catmap, foldl, foldl1
+
+   * foldr, foldr1, filter
+
+The functions in the first rwo, stating with do, are also applicable to two
+unordered associative containers stlhmap and stlhset.
+
+The following functions, along with listmap, make it possible to stlmap,
+stlset, stlmmap and stlmset as generators in list and matrix comprehensions for
+all six supported associative containers.
 
    * rowmap, rowcatmap, colmap, colcatmap
 
-The functions in the second row, and listmap, make it possible to stlmap,
-stlset, stlmmap and stlmset as generators in list and matrix comprehensions.
+
 
 Set Algorithms
 ==============

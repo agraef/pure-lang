@@ -74,9 +74,6 @@ const shm_key = 1;
 const shm_val = 2;
 const shm_elm = 3;
 
-compatible_ranges shm1 shm2 = 
-  if shm_is_set shm1 then shm_is_set shm2 else ~shm_is_set shm2;
-
 /***  Constructors *********************************************************/
 
 emptystlhmap ()                = shm_make_empty  hash (==) (==) 0;
@@ -175,9 +172,9 @@ insert_or_update_key_val shm::stlhmap k v = shm_update shm k v;
 
 insert shm::stlhset elm = shm_insert_elm shm elm; 
 
-clear shm::stlhacon = shm_clear shm;
+erase shm::stlhacon = shm_clear shm;
 
-erase shm::stlhacon key = shm_erase shm key;
+erase (shm::stlhacon,key) = shm_erase shm key;
 
 swap shm1::stlhmap shm2::stlhmap = shm_swap shm1 shm2;
 
@@ -185,14 +182,13 @@ swap ss1::stlhset ss2::stlhset = shm_swap ss1 ss2;
 
 /*** Equality **********************************************************/
 
-equal shm1::stlhacon shm2::stlhacon = shm_equal shm1 shm2
-  if compatible_ranges shm1 shm2;
+(::==) hac1::stlhmap hac2::stlhmap = shm_equal hac1 hac2
 
-(::==) hac1::stlhacon hac2::stlhacon = shm_equal hac1 hac2
-  if compatible_ranges hac1 hac2;
+(::==) hac1::stlhset hac2::stlhset = shm_equal hac1 hac2
 
-(::~=) hac1::stlhacon hac2::stlhacon = ~shm_equal hac1 hac2
-  if compatible_ranges hac1 hac2;
+(::~=) hac1::stlhmap hac2::stlhmap = ~shm_equal hac1 hac2
+
+(::~=) hac1::stlhset hac2::stlhset = ~shm_equal hac1 hac2
 
 /*** Mapping and Folding ***********************************************/
 
