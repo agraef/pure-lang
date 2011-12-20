@@ -217,9 +217,9 @@ px* shm_type_tags()
                         pure_int(stlhset_tag()), pure_int(stlhset_iter_tag()));
 }
 
-px*  shm_make_empty(px* hash, px* eql, int keys_only)
+px*  shm_make_empty(px* hash, px* keql, px* veql, int keys_only)
 {
-  return px_pointer( new shm(hash, eql, keys_only) );
+  return px_pointer( new shm(hash, keql, veql, keys_only) );
 }
 
 px*  shm_copy(px* pxshmp)
@@ -260,8 +260,9 @@ px* shm_hash_info(px* pxshmp)
   px* lf = pure_double( hmp.load_factor() );
   px* mlf = pure_double( hmp.max_load_factor() );
   px* hf = hmp.hash_function().pxfun();
-  px* eq = hmp.key_eq().pxfun();
-  return pure_tuplel(6,ko,bc,lf,mlf,hf,eq);
+  px* keq = shmp->px_key_equal;
+  px* veq = shmp->px_val_equal;
+  return pure_tuplel(7,ko,bc,lf,mlf,hf,keq,veq);
 }
 
 int shm_size(px* pxshmp)

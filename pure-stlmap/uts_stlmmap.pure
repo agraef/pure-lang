@@ -267,16 +267,16 @@ let i_begin, i_pastend = stl::begin sm1, stl::pastend sm1;
 let i_b, i_d = stl::find sm1 "b", stl::find sm1 "d"; 
 //- ()
 
-stl::erase sm1 i_begin; 
+stl::erase (sm1,i_begin); 
 //- 1
 
 stl::elms sm1;
 //- ["b"=>2,"c"=>3,"c"=>13,"d"=>4,"e"=>5]
 
-stl::erase sm1 i_d; stl::elms sm1;
+stl::erase (sm1,i_d); stl::elms sm1;
 //- ["b"=>2,"c"=>3,"c"=>13,"e"=>5]
 
-stl::erase sm1 i_b; stl::elms sm1;
+stl::erase (sm1,i_b); stl::elms sm1;
 //- ["c"=>3,"c"=>13,"e"=>5]
 
 // Erase ranges
@@ -293,7 +293,7 @@ let i_b, i_d = stl::find sm1 "b", stl::find sm1 "d";
 stl::get i_b;
 //- "b"=>2
 
-stl::erase sm1 (i_b,i_d);
+stl::erase (sm1,i_b,i_d);
 //- 3
 
 stl::elms sm1;
@@ -302,13 +302,13 @@ stl::elms sm1;
 catch id $ stl::get i_b;
 //- bad_argument
 
-stl::erase sm1 (i_d,i_pastend);
+stl::erase (sm1,i_d,i_pastend);
 //- 2
 
 stl::elms sm1;
 //- ["a"=>1]
 
-stl::erase sm1 (i_begin,i_pastend);
+stl::erase (sm1,i_begin,i_pastend);
 //- 1
 
 stl::elms sm1;
@@ -325,13 +325,13 @@ let i_c3 = stl::find sm1 "c";
 let i_c13 = stl::inc $ stl::iterator i_c3;
 //- ()
 
-stl::erase sm1 i_c13; stl::elms sm1;
+stl::erase (sm1,i_c13); stl::elms sm1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
 let ok, rest = stl::get_info i_c13; ok;
 //- 0
 
-stl::erase sm1 i_c3; stl::elms sm1;
+stl::erase (sm1,i_c3); stl::elms sm1;
 //- ["a"=>1,"b"=>2,"d"=>4,"e"=>5]
 
 let ok, rest = stl::get_info i_c3; ok;
@@ -346,13 +346,13 @@ let i_begin, i_pastend = stl::begin sm1, stl::pastend sm1;
 let i_c3, i_d = stl::find sm1 "c", stl::find sm1 "d"; 
 //- ()
 
-stl::erase sm1 (i_begin,i_c3);  stl::elms sm1;
+stl::erase (sm1,i_begin,i_c3);  stl::elms sm1;
 //- ["c"=>3,"c"=>13,"d"=>4,"e"=>5]
 
-stl::erase sm1 (i_c3,i_d);  stl::elms sm1;
+stl::erase (sm1,i_c3,i_d);  stl::elms sm1;
 //- ["d"=>4,"e"=>5]
 
-stl::erase sm1 (i_d,i_pastend);  stl::elms sm1;
+stl::erase (sm1,i_d,i_pastend);  stl::elms sm1;
 //- []
 
 // Attempt erase with bad iterators
@@ -366,10 +366,10 @@ let sm2 = stl::stlmmap ["a"=>1,"b"=>2,"c"=>3,"c"=>13,"d"=>4,"e"=>5];
 let i_b, i_d = stl::find sm1 "b", stl::find sm1 "d"; 
 //- ()
 
-catch id $ stl::erase sm2 i_b;
+catch id $ stl::erase (sm2,i_b);
 //- bad_argument
 
-catch id $ stl::erase sm2 (i_b,i_d);
+catch id $ stl::erase (sm2,i_b,i_d);
 //- bad_argument
 
 // Erase elms with given key
@@ -377,25 +377,25 @@ catch id $ stl::erase sm2 (i_b,i_d);
 let sm1 = stl::stlmmap ["a"=>1,"b"=>2,"c"=>3,"c"=>13,"d"=>4,"e"=>5];
 //- ()
 
-stl::erase sm1 "0";
+stl::erase (sm1,"0");
 //- 0
 
-stl::erase sm1 "z";
+stl::erase (sm1,"z");
 //- 0
 
-stl::erase sm1 "b";
+stl::erase (sm1,"b");
 //- 1
 
 stl::elms sm1;
 //- ["a"=>1,"c"=>3,"c"=>13,"d"=>4,"e"=>5]
 
-stl::erase sm1 "a"; stl::elms sm1;
+stl::erase (sm1,"a"); stl::elms sm1;
 //- ["c"=>3,"c"=>13,"d"=>4,"e"=>5]
 
-stl::erase sm1 "e"; stl::elms sm1;
+stl::erase (sm1,"e"); stl::elms sm1;
 //- ["c"=>3,"c"=>13,"d"=>4]
 
-stl::erase sm1 "c"; stl::elms sm1;
+stl::erase (sm1,"c"); stl::elms sm1;
 //- ["d"=>4]
 
 //*** swap ***************************************************************/
