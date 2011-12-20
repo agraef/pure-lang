@@ -1846,14 +1846,22 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
   string classname = "_llvm";
   string buildui = "buildUserInterface";
   size_t len = buildui.length();
-  for (Module::iterator it = M->begin(), end = M->end();
-       it != end; ) {
+  bool found = false;
+  for (Module::iterator it = M->begin(), end = M->end(); it != end; ) {
     Function &f = *(it++);
     string name = f.getName();
     if (name.compare(0, len, buildui) == 0) {
       classname = name.substr(len);
+      found = true;
       break;
     }
+  }
+  if (!found) {
+    // This doesn't look like a valid Faust bitcode module, bail out.
+    if (msg) *msg = "Not a valid dsp file";
+    dsp_errmsg(name, msg);
+    delete M;
+    return false;
   }
   // Check whether getSampleRate is available.
   bool have_getSampleRate = M->getFunction("getSampleRate"+classname) != 0;
@@ -1873,6 +1881,7 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
       if (msg)
 	*msg = "Module was previously compiled for " + prec + " precision";
       dsp_errmsg(name, msg);
+      delete M;
       return false;
     }
   }
@@ -2207,10 +2216,21 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
       /* There's no need to actually regenerate the wrapper, we only have to
          patch up the function pointer here. */
       GlobalVariable *v = module->getNamedGlobal("$"+fname);
-      assert(v);
-      void **fp = (void**)JIT->getPointerToGlobal(v);
-      assert(fp);
-      *fp = JIT->getPointerToFunction(f);
+      if (v) {
+	void **fp = (void**)JIT->getPointerToGlobal(v);
+	assert(fp);
+	*fp = JIT->getPointerToFunction(f);
+      } else {
+	/* The variable may not actually exist in the JIT yet if we're being
+	   called in a batch-compiled program which has the same dsp module
+	   already linked into it. In this case we fix up the symbol table so
+	   that the wrapper and its variable get recreated below. */
+	assert(!declared);
+	symbol *sym = symtab.sym(asname);
+	assert(sym);
+	externals.erase(sym->f);
+	globalvars.erase(sym->f);
+      }
     }
     if (!declared) {
       // Manufacture an extern declaration for the function so that it can be

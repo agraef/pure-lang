@@ -16679,10 +16679,38 @@ pure_expr* record_pack(pure_expr *x)
     return 0;
 }
 
-/* Direct Faust interface. These data structures and routines are used to
-   handle the metadata and control parameters in a Faust DSP. (This is
-   basically the same as in the pure-faust module, but tailored for faust
-   -lang llvm.) */
+/* Direct Faust interface. */
+
+#ifndef DSPEXT
+// These are dsp modules which reside in bitcode files created with the Faust
+// compiler.
+#define DSPEXT ".bc"
+#endif
+
+extern "C"
+pure_expr *faust_load(const char *fname)
+{
+  string name = fname, msg;
+  interpreter& interp = *interpreter::g_interp;
+  interp.errmsg.clear(); interp.errpos.clear();
+  // See whether we need to add the DSPEXT suffix.
+  if (name.size() <= strlen(DSPEXT) ||
+      name.substr(name.size()-strlen(DSPEXT)) != DSPEXT)
+    name += DSPEXT;
+  if (!interp.LoadFaustDSP(false, name.c_str(), &msg)) {
+    bool logging = interp.logging;
+    interp.logging = true;
+    if (msg.empty()) msg = name+": Error loading Faust bitcode file";
+    interp.error(msg);
+    interp.logging = logging;
+    return 0;
+  } else
+    return pure_tuplel(0);
+}
+
+/* These data structures and routines are used to handle the metadata and
+   control parameters in a Faust DSP. (This is basically the same as in the
+   pure-faust module, but tailored for faust -lang llvm.) */
 
 typedef pair<const char*,const char*> strpair;
 

@@ -988,6 +988,14 @@ pure_expr *faust_dbl(pure_expr *dsp);
 pure_expr *faust_method(pure_expr *dsp, const char *method);
 pure_expr *faust_mods();
 
+/* Load a Faust dsp in bitcode format. This works like 'using "dsp:..."' but
+   doesn't perform any library search, so the given filename is taken as is,
+   except that the .bc filename extension is added if necessary. The function
+   fails if there was an error loading the file, leaving an error message in
+   lasterr(), otherwise it returns (). */
+
+pure_expr *faust_load(const char *name);
+
 /* LIBRARY API. *************************************************************/
 
 /* Add any stuff that is needed in the standard library here. Applications and
