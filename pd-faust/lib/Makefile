@@ -2,7 +2,7 @@
 override srcdir = ..
 include $(srcdir)/Makefile.common
 
-solibs     := mix$(DLL) pdstub$(DLL)
+solibs     := util$(DLL) pdstub$(DLL)
 somodules  := $(dsp_source:.dsp=.so)
 bcmodules  := $(dsp_source:.dsp=.bc)
 
@@ -24,12 +24,12 @@ purelib = $(shell pkg-config pure --variable libdir)/pure
 
 pdfaust$(PDDLL): pdfaust.o pdloader.o
 	rm -f pdfaust$(PDDLL)
-	gcc $(PIC) $(shared) $^ -Wl,-rpath=$(purelib) $(addprefix $(purelib)/, orddict$(DLL) faust$(DLL) midifile$(DLL)) -Wl,-rpath=$(pdextradir)/lib mix$(DLL) -o pdfaust$(DLL)
+	gcc $(PIC) $(shared) $^ -Wl,-rpath=$(purelib) $(addprefix $(purelib)/, orddict$(DLL) faust$(DLL) midifile$(DLL)) -Wl,-rpath=$(pdextradir)/lib util$(DLL) -o pdfaust$(DLL)
 	test "$(DLL)" = "$(PDDLL)" || mv pdfaust$(DLL) pdfaust$(PDDLL)
 
 pdfaust2$(PDDLL): pdfaust2.o pdloader2.o
 	rm -f pdfaust2$(PDDLL)
-	gcc $(PIC) $(shared) $^ -Wl,-rpath=$(purelib) $(addprefix $(purelib)/, orddict$(DLL) faust$(DLL) midifile$(DLL)) -Wl,-rpath=$(pdextradir)/lib mix$(DLL) -o pdfaust2$(DLL)
+	gcc $(PIC) $(shared) $^ -Wl,-rpath=$(purelib) $(addprefix $(purelib)/, orddict$(DLL) faust$(DLL) midifile$(DLL)) -Wl,-rpath=$(pdextradir)/lib util$(DLL) -o pdfaust2$(DLL)
 	test "$(DLL)" = "$(PDDLL)" || mv pdfaust2$(DLL) pdfaust2$(PDDLL)
 
 pdfaust.o: $(addprefix ../, fdsp~.pure fsynth~.pure) \
@@ -51,7 +51,7 @@ svg: $(svg)
 xml: $(xml)
 
 clean:
-	rm -f $(solibs) $(somodules) $(bclibs) $(bcmodules) *.o pdfaust$(PDDLL)
+	rm -f $(solibs) $(somodules) $(bclibs) $(bcmodules) *.o pdfaust$(PDDLL) pdfaust2$(PDDLL)
 
 distclean: clean
 	rm -Rf $(csource) $(cppsource) $(asmsource) $(svg) $(xml)

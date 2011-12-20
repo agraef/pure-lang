@@ -53,7 +53,7 @@ install:
 	cp COPYING COPYING.LESSER README TODO *.pure examples/*.pure examples/midiosc.pd examples/faust-help.pd etc/faust-remote.* lib/pdfaust*$(PDDLL) "$(DESTDIR)$(pdextradir)"
 	cp -R examples/midi examples/osc examples/synths "$(DESTDIR)$(pdextradir)"
 	test -d "$(DESTDIR)$(pdextradir)/lib" || mkdir -p "$(DESTDIR)$(pdextradir)/lib"
-	cp lib/mix.* lib/xfade.* "$(DESTDIR)$(pdextradir)/lib"
+	cp lib/util.* lib/xfade.* "$(DESTDIR)$(pdextradir)/lib"
 
 uninstall:
 	rm -rf "$(DESTDIR)$(pdextradir)"

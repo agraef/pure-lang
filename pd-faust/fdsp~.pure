@@ -2,8 +2,6 @@
 using pdfaust;
 using namespace pdfaust;
 
-extern void *memcpy(void *dest, void *src, size_t n);
-
 #! --required fdsp_dsp
 fdsp_dsp name instance chan::int = catch error (k,l,fdsp with
 
@@ -58,21 +56,16 @@ fdsp_dsp name instance chan::int = catch error (k,l,fdsp with
     faust_compute (get dsp) in out2;
     // Do smooth cross fades depending on the status of the 'active' control.
     sig = if k==l /* pass through */ then in else ();
-    // Fill the extra channels in the out2 buffer with sig. We do this with
-    // memcpy for maximum efficiency. Note that this will only be executed if
-    // sig equals in; otherwise the alternate signal is just silence anyway.
-    sz = l*n*SIZEOF_DOUBLE;
-    memcpy (shift (pointer out2) sz) (pointer sig) sz with
-      shift p i = pointer (__C::pure_bigintval p+i);
-    end;
-    faust_compute xfade out2 out;
-    cout = if get_control switch==0 then control_out else ();
-  end if k==2 && l==2;
-  // FIXME: xfade requires stereo signals. :(
-  = out,cout when
-    out = if get_control switch==0 then faust_compute (get dsp) in out
-	  else if k==l /* pass through */ then in else ();
-    cout = if get_control switch==0 then control_out else ();
+    // Fill the right half of the out2 buffer with sig. Note that this will
+    // only be executed if sig equals in; otherwise the alternate signal is
+    // just silence anyway.
+    fill sig out2;
+    // Do crossfades for each channel. This corresponds to the following Pure
+    // code, but is done in C to avoid costly allocations in the dsp loop:
+    // do (\i -> faust_compute (xfade!i) (redim (2,n) $ row out2 i) (row out i))
+    // (0..#xfade-1);
+    crossfade faust_compute xfade out2 out;
+    cout = if get_control (switch!0)==0 then control_out else ();
   end;
 
   // Update the passive controls. (Doing this for each dsp cycle is a cpu hog,
@@ -140,7 +133,7 @@ fdsp_dsp name instance chan::int = catch error (k,l,fdsp with
 
   // Special 'active' control.
   fdsp (id@_ val) = () when
-    put_control switch (double (val==0));
+    do (flip put_control (double (val==0))) switch;
   end if id === active_sym;
 
   // Special 'record' control.
@@ -209,11 +202,11 @@ end when
   // Create some signal buffers.
   n = blocksize;
   out = dmatrix (l,n);
-  out2 = dmatrix (2*l,n);
+  out2 = dmatrix (l,2*n);
   // Helper dsp to do smooth cross fades when the 'active' control changes.
-  xfade = faust_clone xfade;
   pointerp xfade || throw "fdsp~: error loading 'xfade'";
-  switch = control_map (controls (faust_info xfade!2))!"switch";
+  xfade = {faust_clone xfade | i = 1..l};
+  switch = {control_map (controls (faust_info xf!2))!"switch" | xf = xfade};
   // Writing and recording flags.
   writing = ref 0; recording = ref 0;
   // Give some feedback that we're up and running.

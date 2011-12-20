@@ -1,4 +1,4 @@
-// simple linear crossfade for a stereo signal
+// simple linear crossfade for a mono signal
 
 import("math.lib");
 
@@ -15,4 +15,4 @@ xfade(x,y) = (1-c)*x+c*y with {
   ramp(n,x) = abs (x-x')*n : (+ ~ (-(1) : max(0))) : /(n);
 };
 
-process(x1,y1,x2,y2) = xfade(x1,x2), xfade(y1,y2);
+process = xfade;
