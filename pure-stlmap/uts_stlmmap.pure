@@ -6,8 +6,6 @@
 
 using system, stlmmap, stlvec;
 
-//--
-
 //*** Constructors ******************************************************
 
 let sv1 = ::stlvec ["a"=>1,"b"=>2,"b"=>3,"d"=>4,"e"=>5]; members sv1;
@@ -54,7 +52,7 @@ stl::elms (f,l);
 stl::distance (sm1,"b",stl::stlend);
 //- 4
 
-stl::empty (stl::emptystlmmap (<));
+stl::empty stl::emptystlmmap;
 //- 1
 
 stl::count sm1 "b";
@@ -153,7 +151,7 @@ list $ take 10 $ drop 2 (stl::stream sm1);
 let sm1 = stl::stlmmap ["a"=>1,"b"=>2,"c"=>3,"c"=>13,"d"=>4,"e"=>5];
 //- ()
 
-let sm2 = stl::emptystlmmap ( (>), 0);
+let sm2 = stl::mkstlmmap ( (>), 0);
 //- ()
 
 let i_b, i_e = stl::begin sm1, stl::pastend sm1;
@@ -867,7 +865,7 @@ foldr1 (\(k=>v) (r=>l) -> (r+k=>l+v)) (i_b,i_pastend);
 let sm1 = stl::stlmmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
 //- ()
 
-let sm2 = stl::emptystlmmap (>);
+let sm2 = stl::mkstlmmap (>);
 //- ()
 
 do (\x -> stl::insert sm2 x) sm1; stl::elms sm2;
@@ -955,8 +953,8 @@ stl::prev_key sm1 stl::stlend;
 stl::next_key sm1 "a";
 //- "c"
 
-stl::next_key sm1 "d";
-//- "e"
+stl::next_key sm1 "c";
+//- "d"
 
 stl::next_key sm1 "e";
 //- stl::stlend

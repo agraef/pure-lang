@@ -167,42 +167,46 @@ move pos::stlacon_iter n::int = sm_move_iter pos n;
 
 /***  Constructors *********************************************************/
 
-emptystlmap (kcmp,dflt,vcmp,veql) = sm_make_empty kcmp vcmp veql dflt 0;
-emptystlmap (kcmp,dflt,vcmp)      = sm_make_empty kcmp vcmp (==) dflt 0;
-emptystlmap (kcmp,dflt)           = sm_make_empty kcmp (<) (==) dflt  0;
-emptystlmap kcmp                  = sm_make_empty kcmp (<) (==) [] 0;
+emptystlmap                    = sm_make_empty (<) (<) (==) [] 0;
+
+mkstlmap (kcmp,dflt,vcmp,veql) = sm_make_empty kcmp vcmp veql dflt 0;
+mkstlmap (kcmp,dflt,vcmp)      = sm_make_empty kcmp vcmp (==) dflt 0;
+mkstlmap (kcmp,dflt)           = sm_make_empty kcmp (<) (==) dflt  0;
+mkstlmap kcmp                  = sm_make_empty kcmp (<) (==) [] 0;
 
 stlmap xs = sm when
-  sm = emptystlmap (<);
+  sm = emptystlmap;
   sm_insert_elms_xs sm xs;
 end if listp xs || matrixp xs;
 
 stlmap rng::svrng = sm when
-  sm = emptystlmap (<);
+  sm = emptystlmap;
   sm_insert_elms_stlvec sm rng;
 end;
 
 stlmap rng::stlacon_rng = sm when
   _,params = sm_container_info rng;
-  sm = emptystlmap params;
+  sm = mkstlmap params;
   sm_insert_elms_stlmap sm rng;
 end if ~sm_is_set rng;
 
-emptystlset kcmp = sm_make_empty kcmp (<) (==) [] 1;
+emptystlset = sm_make_empty (<) (<) (==) [] 1;
+
+mkstlset kcmp = sm_make_empty kcmp (<) (==) [] 1;
 
 stlset xs = ss when
-  ss = emptystlset (<);
+  ss = emptystlset;
   sm_insert_elms_xs ss xs;
 end if listp xs || matrixp xs;
 
 stlset rng::svrng = ss when
-  ss = emptystlset (<);
+  ss = emptystlset;
   sm_insert_elms_stlvec ss rng;
 end;
 
 stlset rng::stlacon_rng = ss when
   _,kc,_ = sm_container_info rng;
-  ss = emptystlset kc;
+  ss = mkstlset kc;
   sm_insert_elms_stlmap ss rng;
 end if sm_is_set rng;
 
@@ -237,14 +241,6 @@ end if valid when
   valid,m,b,last = sm_range_info rng;
   first = sm_copy_iter b;
 end;
-
-// lazy_keys rng::stlacon_rng = lazy_map (\(k=>v)->k) rng if ~sm_is_set rng;
-
-// lazy_keys rng::stlacon_rng = lazy_elms rng;
-
-// lazy_vals rng::stlacon_rng = lazy_map (\(k=>v)->v) rng if ~sm_is_set rng;
-
-// lazy_vals rng::stlacon_rng = lazy_elms rng;
 
 elms rng::stlacon_rng = sm_listmap 0 rng sm_elm; 
 

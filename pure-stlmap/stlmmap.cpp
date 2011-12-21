@@ -554,7 +554,7 @@ bool smm_range::init_from_keys(px** smmp_keys, int tpl_sz)
     goto done;
   }
   else {
-    pmmi i = get_iter(smmp, e, gi_upper); // upper to high
+    pmmi i = get_iter(smmp, e, gi_upper); // upper too high
     while (i != mmp.begin() ) {
       pmmi prev = i; prev--;
       if ( k_cmp(prev->first,e) ) break;
@@ -1377,13 +1377,18 @@ px* smm_prev_key(px* pxsmmp, px* key)
   if (!get_smmp(pxsmmp,&smmp) ) bad_argument();
   pxhmmap& mmp = smmp->mmp;
   if (mmp.empty()) index_error();
+  pxhmmap::key_compare k_cmp = mmp.key_comp();
   pmmi i = mmp.end();
   if ( !smmp->get_cached_pmmi(key,i) )
     i = smmp->find(key);
-  if ( i == mmp.begin() || i==mmp.end() && key != smend() )
-    index_error();
-  else
-    i--;
+  for (;;) {
+    if ( i == mmp.begin() || i==mmp.end() && key != smend() )
+      index_error();
+    else {
+      i--;
+      if ( key==smend() || k_cmp(i->first,key) ) break;
+    }
+  }
   smmp->cache_pmmi(i);
   return iter_to_key(mmp, i);
 }
@@ -1393,11 +1398,17 @@ px* smm_next_key(px* pxsmmp, px* key)
   smm* smmp;
   if (!get_smmp(pxsmmp,&smmp) ) bad_argument();
   pxhmmap& mmp = smmp->mmp;
+  pxhmmap::key_compare k_cmp = mmp.key_comp();
   pmmi i = mmp.end();
   if (mmp.empty()) index_error();
+  if (key == smend()) return key;
   if ( !smmp->get_cached_pmmi(key,i) )
     i = smmp->find(key);
-  if ( i != mmp.end() ) i++;
+  if (i==mmp.end()) index_error();
+  for (;;) {
+    i++;
+    if ( key==smbeg() || i==mmp.end() || k_cmp(key,i->first) ) break;
+  }
   smmp->cache_pmmi(i);
   return iter_to_key(mmp, i);
 }

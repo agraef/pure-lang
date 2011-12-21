@@ -167,42 +167,46 @@ move pos::stlmacon_iter n::int = smm_move_iter pos n;
 
 /***  Constructors *********************************************************/
 
-emptystlmmap (kcmp,dflt,vcmp,veql) = smm_make_empty kcmp vcmp veql dflt 0;
-emptystlmmap (kcmp,dflt,vcmp)      = smm_make_empty kcmp vcmp (==) dflt 0;
-emptystlmmap (kcmp,dflt)           = smm_make_empty kcmp (<) (==) dflt  0;
-emptystlmmap kcmp                  = smm_make_empty kcmp (<) (==) [] 0;
+emptystlmmap                    = smm_make_empty (<) (<) (==) [] 0;
+
+mkstlmmap (kcmp,dflt,vcmp,veql) = smm_make_empty kcmp vcmp veql dflt 0;
+mkstlmmap (kcmp,dflt,vcmp)      = smm_make_empty kcmp vcmp (==) dflt 0;
+mkstlmmap (kcmp,dflt)           = smm_make_empty kcmp (<) (==) dflt  0;
+mkstlmmap kcmp                  = smm_make_empty kcmp (<) (==) [] 0;
 
 stlmmap xs = smm when
-  smm = emptystlmmap (<);
+  smm = emptystlmmap;
   smm_insert_elms_xs smm xs;
 end if listp xs || matrixp xs;
 
 stlmmap rng::svrng = smm when
-  smm = emptystlmmap (<);
+  smm = emptystlmmap;
   smm_insert_elms_stlvec smm rng;
 end;
 
 stlmmap rng::stlmacon_rng = smm when
   _,params = smm_container_info rng;
-  smm = emptystlmmap params;
+  smm = mkstlmmap params;
   smm_insert_elms_stlmmap smm rng;
 end if ~smm_is_set rng;
 
-emptystlmset kcmp = smm_make_empty kcmp (<) (==) [] 1;
+emptystlmset = smm_make_empty (<) (<) (==) [] 1;
+
+mkstlmset kcmp = smm_make_empty kcmp (<) (==) [] 1;
 
 stlmset xs = ss when
-  ss = emptystlmset (<);
+  ss = emptystlmset;
   smm_insert_elms_xs ss xs;
 end if listp xs || matrixp xs;
 
 stlmset rng::svrng = ss when
-  ss = emptystlmset (<);
+  ss = emptystlmset;
   smm_insert_elms_stlvec ss rng;
 end;
 
 stlmset rng::stlmacon_rng = ss when
   _,kc,_ = smm_container_info rng;
-  ss = emptystlmset kc;
+  ss = mkstlmset kc;
   smm_insert_elms_stlmmap ss rng;
 end if smm_is_set rng;
 
@@ -237,14 +241,6 @@ end if valid when
   valid,m,b,last = smm_range_info rng;
   first = smm_copy_iter b;
 end;
-
-// lazy_keys rng::stlmacon_rng = lazy_map (\(k=>v)->k) rng if ~smm_is_set rng;
-
-// lazy_keys rng::stlmacon_rng = lazy_elms rng;
-
-// lazy_vals rng::stlmacon_rng = lazy_map (\(k=>v)->v) rng if ~smm_is_set rng;
-
-// lazy_vals rng::stlmacon_rng = lazy_elms rng;
 
 elms rng::stlmacon_rng = smm_listmap 0 rng smm_elm; 
 
