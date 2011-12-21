@@ -102,12 +102,32 @@ let xfade = faust_init "lib/xfade" samplerate;
 // Handle exceptions in objects.
 error msg = pd_error_s msg $$ cst ();
 
+// Helper functions to dissect a filename.
+filename "" = "";
+filename name = join "/" $ init path +
+[case split "." name of
+   [] = "";
+   [name] = name;
+   parts = join "." $ init parts;
+ end] when
+  path = split "/" name;
+  name = last path;
+end;
+filetype "" = "";
+filetype name = case split "." name of
+  [] | [name] = "";
+  parts = "." + last parts;
+end when
+  path = split "/" name;
+  name = last path;
+end;
+
 // Library search for a given filename.
 libsearch dir::string name::string = join "/" [pd_getdir, name]
-  if index name "/" >= 0;
+  if index name "/" == 0;
 = catch id (default when
   // List of extensions to try for dsp modules:
-  ext = if index name "." >= 0 || dir ~= synthdir then [""] else
+  ext = if ~null (filetype name) || dir ~= synthdir then [""] else
 #! --ifdef faust2
 	[".bc"];
 #! --else
@@ -125,8 +145,8 @@ end) with
   try name ext = throw name if pointerp (fopen (name+ext) "r");
 end;
 
-// Return an abbreviated print name for a file. This is just the basename if
-// the file is in the patch directory, or the complete pathname otherwise.
+// Return an abbreviated print name for a file. This removes the patch
+// directory, if present, or returns the complete pathname otherwise.
 pfile name::string = case split "/" name of
   path = join "/" $ drop n path if ~null path && take n (init path) == pd_path
   when

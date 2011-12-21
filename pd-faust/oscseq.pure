@@ -101,7 +101,7 @@ oscseq name = catch (\msg->pd_error_s msg $$ cst ()) (seq with
     end;
   end;
 end when
-  name = if symbolp name then str name+".osc" else basename name+".osc";
+  name = if symbolp name then str name+".osc" else filename name+".osc";
   fname = libsearch "osc" name;
   loaded,s = test name with
     test name = false,[] if ~pointerp (fopen fname "r");
@@ -121,10 +121,6 @@ end when
   pd_receive "offset";
   ~loaded || pd_post $ "oscseq: loaded "+pfile fname;
 end) with
-  basename name = case split "." name of
-    [name] = name;
-    parts = join "." $ init parts;
-  end;
   // Our OSC file format is a simple text file with three columns: relative
   // timestamps in msecs, OSC address of the control, value (a floating point
   // number).
