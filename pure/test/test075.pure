@@ -1,0 +1,14 @@
+
+// Regression in macro substitution (Pure 0.50, fixed in 0.51).
+
+using system;
+
+foo x = catch id $ (y when
+  y = x;
+  bar (x+1);
+  bar (x-1);
+end) with
+  bar z = throw z if puts $ str z $$ z>100;
+end;
+
+foo 99;

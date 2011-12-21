@@ -849,7 +849,7 @@ public:
   exprl get_macargs(expr x);
   expr tagsubst(expr x);
   bool parse_rulel(exprl& xs, rulel& r);
-  bool parse_simple_rulel(exprl& xs, rulel& r);
+  bool parse_simple_rulel(exprl& xs, rulel& r, int& offs);
   bool parse_env(exprl& xs, env& e);
   bool checkguards(expr x, const vguardl& guards);
   bool checkeqns(expr x, const veqnl& eqns);
@@ -888,7 +888,7 @@ public:
   expr quoted_when(expr x, rulel *rules);
   expr quoted_with(expr x, env *defs);
   expr quoted_rules(rulel *rules);
-  expr quoted_simple_rules(rulel *rules);
+  expr quoted_simple_rules(rulel *rules, int& offs);
   expr quoted_env(env *defs);
   expr quoted_tag(expr x, int32_t astag, int32_t ttag = 0);
   pure_expr *fun_rules(int32_t f);

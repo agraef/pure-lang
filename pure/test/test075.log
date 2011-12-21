@@ -1,0 +1,31 @@
+foo x/*0:1*/ = catch id (y/*0:*/ when y/*0:*/ = x/*1:1*/; bar/*2*/ (x/*2:1*/+1); bar/*2*/ (x/*2:1*/-1) {
+  rule #0: _ = bar (x-1)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: _ = bar (x+1)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: y = x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end) with bar z/*0:1*/ = throw z/*0:1*/ if puts (str z/*0:1*/)$$z/*0:1*/>100 {
+  rule #0: bar z = throw z if puts (str z)$$z>100
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
+{
+  rule #0: foo x = catch id (y when y = x; bar (x+1); bar (x-1) end) with bar z = throw z if puts (str z)$$z>100 end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+100
+98
+foo 99;
+99

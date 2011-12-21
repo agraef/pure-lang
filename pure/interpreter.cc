@@ -8209,14 +8209,20 @@ bool interpreter::parse_rulel(exprl& xs, rulel& rl)
   return true;
 }
 
-bool interpreter::parse_simple_rulel(exprl& xs, rulel& rl)
+bool interpreter::parse_simple_rulel(exprl& xs, rulel& rl, int& offs)
 {
-  int offs = 0;
-  for (exprl::iterator x = xs.begin(), end = xs.end(); x!=end; x++, offs++) {
+  offs = 0;
+  for (exprl::iterator x = xs.begin(), end = xs.end(); x!=end; x++) {
     expr u, v;
     if (get2args(*x, u, v) == symtab.eqn_sym().f) {
-      rule r(tagsubst(u), (offs==0)?v:varsubst(v, offs));
+      expr w = tagsubst(u);
+      rule r(w, (offs==0)?v:varsubst(v, offs));
       rl.push_back(r);
+      if (w.tag() == symtab.anon_sym && w.ttag() == 0)
+	// anonymous binding, gets thrown away
+	;
+      else
+	offs++;
     } else {
       rule r(expr(symtab.anon_sym), (offs==0)?*x:varsubst(*x, offs));
       rl.push_back(r);
@@ -8308,9 +8314,10 @@ expr *interpreter::macspecial(expr x, envstack& estk, uint8_t idx)
       delete r;
   } else if (f == symtab.when_sym().f) {
     rulel *r = new rulel; exprl xs;
-    if (v.is_list(xs) && parse_simple_rulel(xs, *r)) {
+    int offs = 0;
+    if (v.is_list(xs) && parse_simple_rulel(xs, *r, offs)) {
       try {
-	expr *y = mkwhen_expr(new expr(varsubst(u, r->size())), r);
+	expr *y = mkwhen_expr(new expr((offs==0)?u:varsubst(u, offs)), r);
 	return y;
       } catch (err &e) {
 	// fail
@@ -8968,8 +8975,9 @@ expr interpreter::quoted_case(expr x, rulel *rules)
 expr interpreter::quoted_when(expr x, rulel *rules)
 {
   assert(!rules->empty());
-  return expr(symtab.when_sym().x, vsubst(x, rules->size()),
-	      quoted_simple_rules(rules));
+  int offs = 0;
+  expr xs = quoted_simple_rules(rules, offs);
+  return expr(symtab.when_sym().x, (offs==0)?x:vsubst(x, offs), xs);
 }
 
 expr interpreter::quoted_with(expr x, env *defs)
@@ -8992,15 +9000,21 @@ expr interpreter::quoted_rules(rulel *rules)
   return expr::list(xs);
 }
 
-expr interpreter::quoted_simple_rules(rulel *rules)
+expr interpreter::quoted_simple_rules(rulel *rules, int& offs)
 {
   exprl xs;
-  int offs = 0;
+  offs = 0;
   for (rulel::iterator it = rules->begin(), end = rules->end(); it!=end;
-       ++it, ++offs) {
+       ++it) {
     assert(it->qual.is_null());
-    xs.push_back(expr(symtab.eqn_sym().x, vsubst(it->lhs),
-		      (offs==0)?it->rhs:vsubst(it->rhs, offs)));
+    expr u = it->lhs, v = it->rhs;
+    xs.push_back(expr(symtab.eqn_sym().x, vsubst(u),
+		      (offs==0)?v:vsubst(v, offs)));
+    if (u.is_var() && u.vtag() == symtab.anon_sym && u.ttag() == 0)
+      // anonymous binding, gets thrown away
+      ;
+    else
+      offs++;
   }
   return expr::list(xs);
 }
