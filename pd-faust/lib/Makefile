@@ -18,18 +18,20 @@ purelib = $(shell pkg-config pure --variable libdir)/pure
 # pure-faust precompiled module.
 
 # NOTE: This requires a linker that handles the -rpath option. Otherwise you
-# may have to add the Pure library directory and the lib subdir of the
-# pd-faust installation directory to your system dll search path so that the
-# linked library modules are found when the pdfaust module is loaded by Pd.
+# may have to add the Pure library directory to your system dll search path so
+# that the linked library modules are found when the pdfaust module is loaded
+# by Pd.
 
-pdfaust$(PDDLL): pdfaust.o pdloader.o
+extralibs = -Wl,-rpath=$(purelib) $(addprefix $(purelib)/, orddict$(DLL) faust$(DLL) midifile$(DLL))
+
+pdfaust$(PDDLL): pdfaust.o pdloader.o util.o
 	rm -f pdfaust$(PDDLL)
-	gcc $(PIC) $(shared) $^ -Wl,-rpath=$(purelib) $(addprefix $(purelib)/, orddict$(DLL) faust$(DLL) midifile$(DLL)) -Wl,-rpath=$(pdextradir)/lib util$(DLL) -o pdfaust$(DLL)
+	gcc $(PIC) $(shared) $^ $(extralibs) -o pdfaust$(DLL)
 	test "$(DLL)" = "$(PDDLL)" || mv pdfaust$(DLL) pdfaust$(PDDLL)
 
-pdfaust2$(PDDLL): pdfaust2.o pdloader2.o
+pdfaust2$(PDDLL): pdfaust2.o pdloader2.o util.o
 	rm -f pdfaust2$(PDDLL)
-	gcc $(PIC) $(shared) $^ -Wl,-rpath=$(purelib) $(addprefix $(purelib)/, orddict$(DLL) faust$(DLL) midifile$(DLL)) -Wl,-rpath=$(pdextradir)/lib util$(DLL) -o pdfaust2$(DLL)
+	gcc $(PIC) $(shared) $^ $(extralibs) -o pdfaust2$(DLL)
 	test "$(DLL)" = "$(PDDLL)" || mv pdfaust2$(DLL) pdfaust2$(PDDLL)
 
 pdfaust.o: $(addprefix ../, fdsp~.pure fsynth~.pure) \
@@ -45,6 +47,9 @@ pdloader.o: pdloader.c
 
 pdloader2.o: pdloader.c
 	gcc $(ALL_CFLAGS) -DVERSION="\"$(version)\"" -DFAUST2 -c $< -o $@
+
+util.o: util.c
+	gcc $(ALL_CFLAGS) -c $< -o $@
 
 # Faust-specific stuff
 svg: $(svg)
