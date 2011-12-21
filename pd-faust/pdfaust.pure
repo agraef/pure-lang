@@ -125,6 +125,16 @@ end) with
   try name ext = throw name if pointerp (fopen (name+ext) "r");
 end;
 
+// Return an abbreviated print name for a file. This is just the basename if
+// the file is in the patch directory, or the complete pathname otherwise.
+pfile name::string = case split "/" name of
+  path = join "/" $ drop n path if ~null path && take n (init path) == pd_path
+  when
+    pd_path = split "/" pd_getdir; n = #pd_path;
+  end;
+  _ = name;
+end;
+
 // Map a MIDI controller to a Faust control value.
 map_ctrl args val = case args of
   /* Continuous controllers. The problem here is that the range 0..127 is not

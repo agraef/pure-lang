@@ -102,16 +102,16 @@ oscseq name = catch (\msg->pd_error_s msg $$ cst ()) (seq with
   end;
 end when
   name = if symbolp name then str name+".osc" else basename name+".osc";
+  fname = libsearch "osc" name;
   loaded,s = test name with
-    test name = false,[]
-      if ~pointerp (fopen (libsearch "osc" name) "r");
+    test name = false,[] if ~pointerp (fopen fname "r");
     = catch readerr (true,osc_load name) otherwise;
     readerr msg::string = false,[] when
-      pd_error_s ("oscseq: error loading "+name);
+      pd_error_s ("oscseq: error loading "+fname);
       pd_error_s msg;
     end;
     readerr _ = false,[] when
-      pd_error_s ("oscseq: error loading "+name);
+      pd_error_s ("oscseq: error loading "+fname);
     end;
   end;
   all = ref s; rec = ref []; act = ref s;
@@ -119,7 +119,7 @@ end when
   running = ref false;
   recording = ref false;
   pd_receive "offset";
-  ~loaded || pd_post $ "oscseq: loaded "+name;
+  ~loaded || pd_post $ "oscseq: loaded "+pfile fname;
 end) with
   basename name = case split "." name of
     [name] = name;
@@ -143,12 +143,12 @@ end) with
   end;
   osc_save name::string s = catch (\msg->pd_error_s msg $$ ())
     (() when
-       pathname = libsearch "osc" name;
-       fp = fopen pathname "w";
-       pointerp fp || throw ("oscseq: error saving "+name);
+       fname = libsearch "osc" name;
+       fp = fopen fname "w";
+       pointerp fp || throw ("oscseq: error saving "+fname);
        fprintf fp "# written by oscseq %s\n%-8s /oscaddr value\n"
        (ctime time, "# delta");
        do (\(t,addr@_ val) -> fprintf fp "%-8.6g %s %g\n" (t,addr,val)) s;
-       pd_post $ "oscseq: saved "+name;
+       pd_post $ "oscseq: saved "+pfile fname;
      end);
 end;

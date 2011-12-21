@@ -136,12 +136,13 @@ midiseq name = catch (\msg->pd_error_s msg $$ cst ()) (seq with
   end;
 end when
   name = if symbolp name then str name+".mid" else name;
-  s = if stringp name then load $ libsearch "midi" name else [];
+  fname = libsearch "midi" name;
+  s = if stringp fname then load fname else [];
   listp s || throw ("midiseq: error loading "+name);
   s = decode s; n = #s;
   act = ref s; last = ref s;
   running = ref false;
   looping = ref false;
   stopmsgs = { ctl 0 123 chan | chan = 1..16 };
-  pd_post $ "midiseq: loaded "+name;
+  pd_post $ "midiseq: loaded "+pfile fname;
 end);
