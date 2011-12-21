@@ -10,6 +10,11 @@ extern char *pd_version_s(void)
   return buf;
 }
 
+pure_expr *pd_path(void)
+{
+  return pure_listl(0);
+}
+
 pure_expr *pd_getdir(void)
 {
   return pure_cstring_dup(".");

@@ -36,6 +36,7 @@ using "lib:lib/pdstub";
 // These are provided by pd-pure.
 extern expr *pd_getdir();
 extern expr *pd_getfile();
+extern expr *pd_path();
 extern void pd_setfile(char*);
 extern void pd_send(char*, expr*);
 extern void pd_receive(char*);
@@ -102,7 +103,27 @@ let xfade = faust_init "lib/xfade" samplerate;
 error msg = pd_error_s msg $$ cst ();
 
 // Library search for a given filename.
-libsearch dir::string name::string = join "/" [pd_getdir, dir, name];
+libsearch dir::string name::string = join "/" [pd_getdir, name]
+  if index name "/" >= 0;
+= catch id (default when
+  // List of extensions to try for dsp modules:
+  ext = if index name "." >= 0 || dir ~= synthdir then [""] else
+#! --ifdef faust2
+	[".bc"];
+#! --else
+	[".so",".dylib",".dll"];
+#! --endif
+  // try the current directory first
+  default = join "/" [pd_getdir, name];
+  do (try default) ext;
+  // try the given directory
+  do (try $ join "/" [pd_getdir, dir, name]) ext;
+  // try the library path
+  do (\path -> do (try $ join "/" [path, name]) ext) pd_path;
+  do (\path -> do (try $ join "/" [path, dir, name]) ext) pd_path;
+end) with
+  try name ext = throw name if pointerp (fopen (name+ext) "r");
+end;
 
 // Map a MIDI controller to a Faust control value.
 map_ctrl args val = case args of
