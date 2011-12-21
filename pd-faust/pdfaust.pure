@@ -123,8 +123,8 @@ end when
 end;
 
 // Library search for a given filename.
-libsearch dir::string name::string = join "/" [pd_getdir, name]
-  if index name "/" == 0;
+libsearch dir::string name::string = name
+  if index name "/" == 0 || index name "./" == 0 || index name "../" == 0;
 = catch id (default when
   // List of extensions to try for dsp modules:
   ext = if ~null (filetype name) || dir ~= synthdir then [""] else
