@@ -25,7 +25,7 @@ version = 0.2
 
 DISTFILES = COPYING COPYING.LESSER Makefile Makefile.config.in Makefile.config \
 Makefile.common README TODO config.guess *.pure etc/*.el etc/*.pd \
-examples/*.pure examples/*.pd examples/midi/*.mid examples/osc/*.osc \
+examples/*.pd examples/midi/*.mid examples/osc/*.osc \
 examples/synths/README* examples/synths/Makefile \
 examples/synths/*.dsp examples/synths/*.lib examples/synths/*.h \
 lib/Makefile lib/*.c lib/*.dsp lib/*.pure
@@ -50,7 +50,7 @@ realclean:
 
 install:
 	test -d "$(DESTDIR)$(pdextradir)" || mkdir -p "$(DESTDIR)$(pdextradir)"
-	cp COPYING COPYING.LESSER README TODO *.pure examples/*.pure examples/midiosc.pd examples/faust-help.pd etc/faust-remote.* lib/pdfaust*$(PDDLL) "$(DESTDIR)$(pdextradir)"
+	cp COPYING COPYING.LESSER README TODO *.pure examples/midiosc.pd examples/faust-help.pd etc/faust-remote.* lib/pdfaust*$(PDDLL) "$(DESTDIR)$(pdextradir)"
 	cp -R examples/midi examples/osc examples/synths "$(DESTDIR)$(pdextradir)"
 	test -d "$(DESTDIR)$(pdextradir)/lib" || mkdir -p "$(DESTDIR)$(pdextradir)/lib"
 	cp lib/util.* lib/xfade.* "$(DESTDIR)$(pdextradir)/lib"

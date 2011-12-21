@@ -34,12 +34,10 @@ pdfaust2$(PDDLL): pdfaust2.o pdloader2.o util.o
 	gcc $(PIC) $(shared) $^ $(extralibs) -o pdfaust2$(DLL)
 	test "$(DLL)" = "$(PDDLL)" || mv pdfaust2$(DLL) pdfaust2$(PDDLL)
 
-pdfaust.o: $(addprefix ../, fdsp~.pure fsynth~.pure) \
-$(addprefix ../examples/, midiseq.pure oscseq.pure)
+pdfaust.o: $(addprefix ../, fdsp~.pure fsynth~.pure midiseq.pure oscseq.pure)
 	pure $(PIC) -I.. -L.. -c $^ -o $@ --main __pdfaust_main__
 
-pdfaust2.o: $(addprefix ../, fdsp~.pure fsynth~.pure) \
-$(addprefix ../examples/, midiseq.pure oscseq.pure)
+pdfaust2.o: $(addprefix ../, fdsp~.pure fsynth~.pure midiseq.pure oscseq.pure)
 	pure $(PIC) -I.. -L.. -c $^ -o $@ --main __pdfaust_main__ --enable faust2
 
 pdloader.o: pdloader.c

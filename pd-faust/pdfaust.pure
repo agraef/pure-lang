@@ -69,8 +69,8 @@ let blocksize = sys_getblksize;
 let samplerate = if samplerate>0 then samplerate else 48000;
 let blocksize = if blocksize>0 then blocksize else 10;
 
-/* Faust modules are assumed to be found in the directory indicated by
-   'synthdir' (taken relative to the patch directory). */
+/* Faust modules are searched for in the directory indicated by 'synthdir'
+   (taken relative to the patch directory). */
 let synthdir = "synths";
 
 // Post messages about MIDI and OSC controller assignments, respectively.
@@ -98,8 +98,11 @@ extern void fill(expr*, double*);
 extern void crossfade(expr*, expr*, expr*, expr*);
 let xfade = faust_init "lib/xfade" samplerate;
 
-// Helper function to handle exceptions in objects.
+// Handle exceptions in objects.
 error msg = pd_error_s msg $$ cst ();
+
+// Library search for a given filename.
+libsearch dir::string name::string = join "/" [pd_getdir, dir, name];
 
 // Map a MIDI controller to a Faust control value.
 map_ctrl args val = case args of

@@ -20,16 +20,10 @@
 nonfix bang stop abort clear save;
 public record offset;
 
-extern expr *pd_getdir();
-extern void pd_post(char*);
-extern void pd_error_s(char*);
-extern void pd_receive(char*);
-extern double pd_time();
-public pd_delay;
+using pdfaust;
+using namespace pdfaust;
 
 using system;
-
-extern int mkdir(char *path, int mode);
 
 #! --required oscseq
 oscseq name = catch (\msg->pd_error_s msg $$ cst ()) (seq with
@@ -110,7 +104,7 @@ end when
   name = if symbolp name then str name+".osc" else basename name+".osc";
   loaded,s = test name with
     test name = false,[]
-      if ~pointerp (fopen (join "/" [pd_getdir, "osc", name]) "r");
+      if ~pointerp (fopen (libsearch "osc" name) "r");
     = catch readerr (true,osc_load name) otherwise;
     readerr msg::string = false,[] when
       pd_error_s ("oscseq: error loading "+name);
@@ -145,13 +139,11 @@ end) with
     end if stringp s when s = fget fp end;
     _ = []; // the file doesn't exist yet or is empty; this isn't an error
   end when
-    pathname = join "/" [pd_getdir, "osc", name];
+    pathname = libsearch "osc" name;
   end;
   osc_save name::string s = catch (\msg->pd_error_s msg $$ ())
     (() when
-       // Create the osc subdir if necessary.
-       mkdir (join "/" [pd_getdir, "osc"]) 0755;
-       pathname = join "/" [pd_getdir, "osc", name];
+       pathname = libsearch "osc" name;
        fp = fopen pathname "w";
        pointerp fp || throw ("oscseq: error saving "+name);
        fprintf fp "# written by oscseq %s\n%-8s /oscaddr value\n"

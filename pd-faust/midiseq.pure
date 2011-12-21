@@ -72,14 +72,9 @@ decode xs = convert $ filter valid xs with
 end;
 
 namespace;
-using namespace midiseq;
 
-extern expr *pd_getdir();
-extern void pd_post(char*);
-extern void pd_error_s(char*);
-extern void pd_send(char*, expr*);
-extern double pd_time();
-public pd_delay;
+using pdfaust;
+using namespace pdfaust, midiseq;
 
 /* midiseq object: Play a MIDI file. The name of the midi file is specified as
    a creation argument. The object understands the following messages:
@@ -141,7 +136,7 @@ midiseq name = catch (\msg->pd_error_s msg $$ cst ()) (seq with
   end;
 end when
   name = if symbolp name then str name+".mid" else name;
-  s = if stringp name then load $ join "/" [pd_getdir, "midi", name] else [];
+  s = if stringp name then load $ libsearch "midi" name else [];
   listp s || throw ("midiseq: error loading "+name);
   s = decode s; n = #s;
   act = ref s; last = ref s;

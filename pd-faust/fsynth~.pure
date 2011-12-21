@@ -262,14 +262,14 @@ end with
 
   // Load a Faust dsp.
   load_dsp name::string samplerate::int = dsp when
-    fname = join "/" [pd_getdir, synthdir, name];
+    fname = libsearch synthdir name;
     dsp = faust_init fname samplerate;
     pointerp dsp || throw $ sprintf "fsynth~: error loading '%s'" name;
   end;
 
   // Set the menu-open filename, if we can locate the dsp source file.
   dsp_source name::string = pd_setfile fname if pointerp (fopen fname "r") when
-    fname = join "/" [pd_getdir, synthdir, name+".dsp"];
+    fname = libsearch synthdir (name+".dsp");
   end;
 
   // Create the GUI.
