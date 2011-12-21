@@ -120,11 +120,13 @@ which can be used to handle MIDI input and playback as well as OSC controller
 automation. This useful helper abstraction is described in more detail under
 `Operating the Patches`_ below.
 
-.. note:: In the present version, pd-faust always locates MIDI, OSC and Faust
-   dsp files relative to the hosting Pd patch, in the ``midi``, ``osc`` and
-   ``synths`` subfolders, respectively. This directory layout is hardwired
-   right now, so you'll have to follow it for your own pd-faust patches unless
-   you're prepared to change the pd-faust sources.
+.. note:: pd-faust interprets MIDI, OSC and Faust dsp filenames relative to
+   the hosting Pd patch by default. It will also search the ``midi``, ``osc``
+   and ``synths`` subfolders, if they exist, for the corresponding types of
+   files. Failing that, it finally searches the directories on the Pd library
+   path (including their ``midi``, ``osc`` and ``synths`` subfolders). To
+   disable this search, just use absolute pathnames (or pathnames relative to
+   the ``.`` or ``..`` directory) instead.
 
 The fdsp~ and fsynth~ Objects
 -----------------------------
@@ -357,6 +359,12 @@ is not immediately obvious, here is a brief rundown of the available controls:
   data or by manually operating the control elements in the Pd GUI, see
   `External MIDI and OSC Controllers`_ below for details.
 
+.. note:: If you use the ``midiosc`` abstraction in your own patches, you
+   should copy it to the directory containing your patch and other required
+   files, so that MIDI and OSC files are properly located. Alternatively, you
+   can also set up Pd's search path as described at the beginning of the
+   Usage_ section.
+
 Note that ``midiosc`` is merely an example which should cover most common
 uses. If you don't need all the fancy functionality it provides, your patches
 may simply feed control messages directly into ``fdsp~`` and ``fsynth~``
@@ -526,7 +534,9 @@ implementation:
 * Passive Faust controls are only supported in ``fdsp~`` objects.
 
 * The names of the voice controls in the ``fsynth~`` object (``freq``,
-  ``gain``, ``gate``) are currently hard-coded.
+  ``gain``, ``gate``) are currently hard-coded, as are the names of the
+  ``midi``, ``osc`` and ``synths`` subfolders used to locate various kinds of
+  files.
 
 * Polyphonic aftertouch and channel pressure messages are not supported in the
   MIDI interface right now, so you'll have to use ordinary MIDI controllers
