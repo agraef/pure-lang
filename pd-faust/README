@@ -53,9 +53,9 @@ tested.
 
 The pd-faust objects are written in the Pure_ programming language, so you'll
 also need an installation of the Pure interpreter (0.50 or later), along with
-the following packages: :doc:`pd-pure<pd-pure>` (0.15 or later),
-:doc:`pure-faust<pure-faust>` (0.6 or later) and
-:doc:`pure-stldict<pure-stldict>` (any version).
+the following packages (minimum required versions are given in parentheses):
+:doc:`pd-pure<pd-pure>` (0.15), :doc:`pure-faust<pure-faust>` (0.6),
+:doc:`pure-midi<pure-midi>` (0.5) and :doc:`pure-stldict<pure-stldict>` (0.2).
 
 Finally, gcc and GNU make (or compatible) are required to compile the helper
 dsps and the example instruments; please check the Makefile for details.
@@ -119,6 +119,12 @@ For your convenience, the distribution also includes a ``midiosc`` object
 which can be used to handle MIDI input and playback as well as OSC controller
 automation. This useful helper abstraction is described in more detail under
 `Operating the Patches`_ below.
+
+.. note:: In the present version, pd-faust always locates MIDI, OSC and Faust
+   dsp files relative to the hosting Pd patch, in the ``midi``, ``osc`` and
+   ``synths`` subfolders, respectively. This directory layout is hardwired
+   right now, so you'll have to follow it for your own pd-faust patches unless
+   you're prepared to change the pd-faust sources.
 
 The fdsp~ and fsynth~ Objects
 -----------------------------
@@ -268,9 +274,10 @@ Examples
 
 The examples folder contains a few example patches which illustrate how this
 all works. Having installed pd-faust as described above, you can run these
-from the examples directory, e.g.: ``pd test.pd``. You can also run the
-examples without actually installing pd-faust, if you add the ``-path ..``
-option when running Pd from the examples directory.
+from the examples directory, e.g.: ``pd test.pd``. (You can also run the
+examples without actually installing pd-faust if you invoke Pd from the main
+pd-faust source directory, e.g., as follows: ``pd -lib lib/pdfaust
+examples/test.pd``.)
 
 Here are some of the examples that are currently available:
 
@@ -291,11 +298,6 @@ the faust-stk distribution, others can be found on the web.) The OSC files
 used by pd-faust for controller automation are plain ASCII files suitable for
 hand-editing if you know what you are doing; the format should be fairly
 self-explanatory.
-
-Please note that in the present version the patch directory layout (MIDI, OSC
-and Faust source files can be found in the midi, osc and synths subfolders,
-respectively) is hardwired, so you'll have to follow this layout for your own
-pd-faust patches unless you're prepared to change the pd-faust sources.
 
 Operating the Patches
 ---------------------
