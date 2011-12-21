@@ -67,8 +67,8 @@ datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > 
 dist:
 	rm -rf $(dist)
 	for x in $(dist) $(addprefix $(dist)/, etc lib examples $(addprefix examples/, dsp midi osc)); do mkdir $$x; done
-	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
-	for x in $(SEDFILES); do rm -f $(dist)/$$x; $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
+	for x in $(DISTFILES); do ln -sf "$$PWD"/$$x $(dist)/$$x; done
+	for x in $(SEDFILES); do rm -f $(dist)/$$x; $(call datesubst,"$$PWD"/$$x,$(dist)/$$x); done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
 	rm -rf $(dist)
