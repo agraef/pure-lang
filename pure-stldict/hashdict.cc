@@ -533,15 +533,17 @@ static bool myequal(pair<pure_expr*,pure_expr*> x,
 
 #include <tuple>
 
-#ifndef HAVE_STD_IS_PERMUTATION
+#ifdef HAVE_STD_IS_PERMUTATION
+#define my_is_permutation is_permutation
+#else
 // My gcc 4.5 doesn't have this function in its C++ library, use the reference
 // implementation instead.
 
 #include <functional>
 
 template<class ForwardIterator1, class ForwardIterator2, class BinaryPredicate>
-static bool is_permutation(ForwardIterator1 first, ForwardIterator1 last,
-			   ForwardIterator2 d_first, BinaryPredicate p)
+static bool my_is_permutation(ForwardIterator1 first, ForwardIterator1 last,
+			      ForwardIterator2 d_first, BinaryPredicate p)
 {
   // skip common prefix
   std::tie(first, d_first) = std::mismatch(first, last, d_first, p);
@@ -578,7 +580,7 @@ extern "C" bool hashdict_equal(myhashdict *x, myhashdict *y)
       r2 = y->equal_range(it->first);
     if (distance(r1.first, r1.second) != distance(r2.first, r2.second))
       return false;
-    if (!is_permutation(r1.first, r1.second, r2.first, myequal))
+    if (!my_is_permutation(r1.first, r1.second, r2.first, myequal))
       return false;
 #ifdef DEBUG
     assert(it == r1.first);
@@ -1084,7 +1086,7 @@ extern "C" bool hashmdict_equal(myhashmdict *x, myhashmdict *y)
       r2 = y->equal_range(it->first);
     if (distance(r1.first, r1.second) != distance(r2.first, r2.second))
       return false;
-    if (!is_permutation(r1.first, r1.second, r2.first, myequal))
+    if (!my_is_permutation(r1.first, r1.second, r2.first, myequal))
       return false;
 #ifdef DEBUG
     // We assume that equal_range always yields the first element for a given
