@@ -643,9 +643,9 @@ only depend on a particular field of records that are inserted into it.
 
 ..function:: insert_elm s elm
 
-  If s is an associative set this is the same as insert s elm, except that
+  s must be an associative set. This is the same as insert s elm, except that
   insert_elm will attempt to insert elm into s even if it is a valid insert
-  source.
+  source (i.e., lists, vectors, etc., can be inserted in s).
 
 Here are some insert examples::
 
@@ -660,46 +660,54 @@ Here are some insert examples::
    > put p 2 $ elms smx;  // used iterator p to update "a"'s value to 2
    ["a"=>2,"b"=>2]
 
-> let q = insert smx ("aa"=>11,p);
-> get q;
-"aa"=>11
-> elms smx;
-["a"=>2,"aa"=>11,"b"=>2]
-
-
    > let smmx = emptystlmmap;
    > insert smmx {"a"=>1,"b"=>2};
      2
 
-   > let p = insert smmx ("a"=>2); get p;
+   > let p = insert smmx ("a"=>2); get p; // returns iterator only
    "a"=>2
 
    > elms smmx;
    ["a"=>1,"a"=>2,"b"=>2]
-
-
 
 The next two functions can be used to insert new items and update existing
 items in an associative map. They return the map rather than the number of
 elements inserted so that they can be used with foldl or foldr to insert
 elements from another container. 
 
-..function:: insert_or_update m (k=>v)
+..function:: insert_or_update acon elm
 
-  Inserts (k=>v) into m, an associative map. If m is a stlmap or stlhmap, and
-  m contains an element with key equivalent to k, updates the elements value
-  to v. Returns m. I.e., this function is the same as Pure standard library's
-  insert function.
+  If acon is a map, elm must be a key value pair, (k=>v). If acon is
+  multi-keyed, a stlmmap, or stlmset, insert elm. If acon is a stlmap/stlhmp,
+  insert (k=>v) unless there is an element in acon with key equivalent/equal
+  to k. If there is such an element, change its value to v. If acon is a
+  stlset/stlhset, insert elm only if acon does not already have an elm that is
+  equivalent/equal to elm. Returns acon. E.g.,::
 
-E.g., use foldl to insert elements from a stlhmap into stlmap.
+   > let src = ["a"=>1,"b"=>2,"c"=>3,"c"=>4,"c"=>5];
+
+   > elms $ foldl insert_or_update emptystlmmap src;
+   ["a"=>1,"b"=>2,"c"=>3,"c"=>4,"c"=>5]
+
+   > elms $ foldl insert_or_update emptystlmap src;
+   ["a"=>1,"b"=>2,"c"=>5]
 
 ..function:: insert_or_update_with f m (k=>x)
 
   This function only applies to stlmaps. The effect of this function is as
   follows: (a) if k is not already stored in m, insert (k=>dflt) in m where
-  dflt is m's dflt value. (b) put (m,k) nv when nv = f x v end. Returns m.
+  dflt is m's dflt value. (b) put (m,k) nv when nv = f x v end. Returns
+  m. E.g.,
 
-E.g., use (+) to count words.
+   > let src = ["a"=>1,"b"=>2,"c"=>3,"c"=>4,"c"=>5];
+
+   > let lists = foldl (insert_or_update_with (:)) emptystlmap src;
+   > elms lists;
+   ["a"=>[1],"b"=>[2],"c"=>[5,4,3]]
+
+   > let sums = foldl (insert_or_update_with (+)) (mkstlmap ((<),0)) src;
+   > elms sums;
+   ["a"=>1,"b"=>2,"c"=>12]
 
 ..function:: erase /stlmap acon
              erase /stlmap (acon,k)
@@ -712,47 +720,100 @@ E.g., use (+) to count words.
   iterator i. The fourth erases the elements in the range (acon,k1,k2). The
   fifth form erases the elements in the range (i,j), assuming i and j are
   iterators on acon. Note that the fourth and fifth forms only apply to the
-  ordered associative containers, not stlhmap or stlhset.
+  ordered containers, not stlhmap or stlhset. E.g.,::
+
+   > elms smm;
+   ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"d"=>4,"e"=>5]
+   > erase (sm,"z");
+   0
+   > erase (smm,"c");
+   2
+   > elms smm;
+   ["a"=>1,"b"=>2,"d"=>4,"e"=>5]
+
+   > erase (smm,"b","e");
+   2
+   > elms smm;;
+   ["a"=>1,"e"=>5]
+
+   > elms ss;
+   ["a","b","c","d","e"]
+   > let _,_,i,j = range_info (ss,"b","e");
+   > erase (ss,i,j);
+   3
+   > elms ss;
+   ["a","e"]
 
 List-Like Operations
 ====================
 
-They apply to ranges defined the ordered associative containers
-(but not to stlhmap or stlhset). Theses functions operate directly on the
-underlying data structure
+pure-stlmap provides list like operations that act directly on the underlying
+data structures. Additional list like operations, such as scanl, can be
+simulated by using elms (or stream) to produce a list of elements and then
+applying the operation to the list.
 
-The following "standard" list-like operations are applicable to all four of
-the ordered associative containers. They act directly on the underlying data
-structures.
+The first two rows of "standard" list-like operations are applicable all six
+associative contaners while the last row is applicable only to the ordered
+containers.
 
    * do, map, listmap, catmap, foldl, foldl1
 
-   * foldr, foldr1, filter
-
-The functions in the first rwo, stating with do, are also applicable to two
-unordered associative containers stlhmap and stlhset.
-
-The following functions, along with listmap, make it possible to stlmap,
-stlset, stlmmap and stlmset as generators in list and matrix comprehensions for
-all six supported associative containers.
-
    * rowmap, rowcatmap, colmap, colcatmap
 
+   * foldr, foldr1, filter
+
+Except for their domain, ranges defined on associative containers, these
+functions are the same as the corresponding list functions in the Pure
+standard Library. E.g.,
+
+   > elms sm;
+   ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
+
+   > map (\(k=>v)->k+str v) (sm,"b","e");
+   ["b2","c3","d4"]
+
+   > foldr1 (\(k=>v) (ks=>sum)-> (k+ks=>v+sum)) (sm,"b","e");
+   "bcd"=>9
+
+   > filter (\(k=>v)->v mod 2) sm;
+   ["a"=>1,"c"=>3,"e"=>5]
+
+The list functions provided are sufficient to support list and matrix
+comprehensions. ::
+
+   > [ k + str v | (k=>v) = (sm,"b","e")];
+   ["b2","c3","d4"]
+
+   > [ k=>v | (k=>v) = sm; v mod 2];
+   ["a"=>1,"c"=>3,"e"=>5]
+
+   > { {k;v} |  (k=>v) = sm; v mod 2};
+   {"a","c","e";1,3,5}
 
 
 Set Algorithms
 ==============
 
-The set algorithms apply to ranges defined on the four ordered associative
-containers. They assume that the elements of the two ranges are ordered. Thus,
-when dealing with stlmmaps care must be taken to ensure that items with the
-same key are ordered by their values. These functions are thin wrappers around
-the corresponding STL functions which ensures that they have linear time
-complexity.
+pure-stlmap provides wrappers for the STL set algorithms that apply to ranges
+defined on the four ordered associative containers. These algorithms are very
+efficient, with linear time complexity, but they do require that the elements
+of the two ranges are ordered. Accordingly, the set algorithms are not
+applicable to stlhmap or stlhset. Also, when dealing with stlmmaps care must
+be taken to ensure that items with the same key are ordered by their
+values. If this is not possible, it might be better to use a stlmap with
+buckets for values (with appropriately customized less-than and equal
+operators).
+
+When applied to the multi-keyed containers, stlmmap and stlmset, these
+operations do not necessarily produce the same results as their Pure standard
+library counter parts. In particular, when applied to multi-keyed contaners,
+set_union is multiset union while (+) in the Pure standard library is the
+multiset sum. If you want the multiset sum of a stlmmap or stlhmap, use merge.
 
 ..function:: merge /stlmap rng1 rng2
 
-  construct a new sac from rng1 and then insert rng2 and return it
+  Construct a new ordered container from rng1 and then insert rng2 and return
+  it. rng1 and rng2 must be defined on the same type of ordered container.
 
 ..function:: set_union /stlmap rng1 rng2
              set_difference /stlmap rng1 rng2
@@ -762,18 +823,38 @@ complexity.
              set difference of rng1 and rng2 as a new sac
              set_includes /stlmap rng1 rng2
 
-   Returns a new ordered associative container of the same type as rng1 and
-   rng2. The for stlmaps and stlmmaps elements of rng1 have priority over the
-   elments of rng2.
+   Returns a new ordered associative container of the same type as the ordered
+   containers underlying rng1 and rng2. If the ranges are defined over a
+   stlmap or stlmmap elements of rng1 have priority over the elments of rng2.
+
+Here are some examples that show how these operations differ from those in the
+Pure standare library. ::
+
+   > let smm1 = stlmmap ["a"=>1,"b"=>2,"c"=>31,"c"=>32];
+   > let smm2 = stlmmap ["c"=>32,"c"=>32,"c"=>33,"d"=>4,"e"=>5];
+
+   > elms $ merge smm1 smm2; // three "c"=>32
+   ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"c"=>32,"c"=>32,"c"=>33,"d"=>4,"e"=>5]
+
+   > elms $ set_union smm1 smm2;  // two "c"=>32
+   ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"c"=>32,"c"=>33,"d"=>4,"e"=>5]
+
+   > let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>31];
+   > let sm2 = stlmap ["c"=>32,"d"=>4,"e"=>5];
+
+   > elms $ set_union sm1 sm2; // "c"=>31 from sm1, not "c"=>32 from sm2
+   ["a"=>1,"b"=>2,"c"=>31,"d"=>4,"e"=>5]
+
+   > elms $ set_intersection sm1 sm2;
+   ["c"=>31]
+
 
 Iterator Operations
 ===================
 
 Iterator support is provided only for ordered associative containers, stlmap,
 stlset, stlmmap and stlmset. An iterator remains valid until the element it
-was pointing to has been erased. The iterators are mutable in the sense that
-there are functions available to move them around the container.
-
+was pointing to has been erased.
 
 ..function:: iterator /stlmap i
              begin acon /stlmap

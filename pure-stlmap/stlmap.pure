@@ -268,12 +268,14 @@ insert sm::stlacon rng::stlacon_rng = sm_insert_elms_stlmap sm rng;
 
 insert sm::stlacon rng::svrng = sm_insert_elms_stlvec sm rng;
 
-insert sm::stlmap (val@(k=>v), pos::stlacon_iter) = 
-  sm_insert_hinted sm pos val;
+insert sm::stlmap (elm@(k=>v), pos::stlacon_iter) = 
+  sm_insert_hinted sm pos elm;
 
-insert sm::stlmap val@(k=>v) = sm_insert_elm sm val;
+insert sm::stlmap elm@(k=>v) = sm_insert_elm sm elm;
 
 insert_or_update sm::stlmap (k=>v) = sm_update sm k v $$ sm;
+
+insert_or_update sm::stlset k = sm_insert_elm sm k $$ sm;
 
 insert_or_update_with f sm::stlmap (key=>x) = sm_update_with sm key (f x) $$ sm;
 

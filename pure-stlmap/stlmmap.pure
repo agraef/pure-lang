@@ -268,12 +268,14 @@ insert smm::stlmacon rng::stlmacon_rng = smm_insert_elms_stlmmap smm rng;
 
 insert smm::stlmacon rng::svrng = smm_insert_elms_stlvec smm rng;
 
-insert smm::stlmmap (val@(k=>v), pos::stlmacon_iter) = 
-  smm_insert_hinted smm pos val;
+insert smm::stlmmap (elm@(k=>v), pos::stlmacon_iter) = 
+  smm_insert_hinted smm pos elm;
 
-insert smm::stlmmap val@(k=>v) = smm_insert_elm smm val;
+insert smm::stlmmap elm@(k=>v) = smm_insert_elm smm elm;
 
-//insert_or_update -- N/A because items are always inserted
+insert_or_update smm::stlmmap elm@(k=>v) = smm_insert_elm smm elm $$ smm;
+
+insert_or_update smm::stlmset k = smm_insert_elm smm k $$ smm;
 
 //insert_or_update_with -- N/A
 
