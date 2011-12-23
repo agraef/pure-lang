@@ -1,8 +1,10 @@
 
 /* oscseq object: Simple OSC recorder and sequencer. This object is to be
-   driven by midiseq which provides the timebase. The name of the osc file is
-   specified as a creation argument. The object understands the following
-   messages:
+   driven by midiseq which provides the timebase. The name of the midi and osc
+   files are specified as creation arguments (the second argument is optional;
+   if specified as 0 or an empty string, it defaults to the midi file name in
+   the first argument with new extension .osc). The object understands the
+   following messages:
 
    - offset t starts playback/recording at the given time offset in msec
    - stop or abort stops playback/recording
@@ -26,7 +28,7 @@ using namespace pdfaust;
 using system;
 
 #! --required oscseq
-oscseq name = catch (\msg->pd_error_s msg $$ cst ()) (seq with
+oscseq name1 name2 = catch (\msg->pd_error_s msg $$ cst ()) (seq with
   seq stop = pd_delay inf () when
     put running false;
     s = if get startt===() then []
@@ -101,7 +103,9 @@ oscseq name = catch (\msg->pd_error_s msg $$ cst ()) (seq with
     end;
   end;
 end when
-  name = if symbolp name then str name+".osc" else filename name+".osc";
+  name1 = if symbolp name1 then str name1+".osc" else filename name1+".osc";
+  name2 = if symbolp name2 then str name2+".osc" else name2;
+  name = if stringp name2 then name2 else name1;
   fname = libsearch "osc" name;
   loaded,s = test name with
     test name = false,[] if ~pointerp (fopen fname "r");
