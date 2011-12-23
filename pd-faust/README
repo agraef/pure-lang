@@ -115,10 +115,10 @@ typically takes input from Pd's MIDI interface (``notein``, ``ctlin``, etc.)
 and outputs the signals produced by the Faust units to Pd's audio interface
 (``dac~``).
 
-For your convenience, the distribution also includes a ``midiosc`` object
-which can be used to handle MIDI input and playback as well as OSC controller
-automation. This useful helper abstraction is described in more detail under
-`Operating the Patches`_ below.
+For convenience, pd-faust also includes the ``midiseq`` and ``oscseq`` objects
+and a corresponding ``midiosc`` abstraction which can be used to handle MIDI
+input and playback as well as OSC controller automation. This useful helper
+abstraction is described in more detail under `Operating the Patches`_ below.
 
 .. note:: pd-faust interprets MIDI, OSC and Faust dsp filenames relative to
    the hosting Pd patch by default. It will also search the ``midi``, ``osc``
@@ -329,22 +329,28 @@ is not immediately obvious, here is a brief rundown of the available controls:
   Pd main window.
 
 * The gray "record" toggle in the upper right corner of the abstraction
-  enables recording of OSC controller automation data from any of the Faust
-  units which have their "record" toggle switched on. Once ``midiosc``\ 's
-  "record" toggle is switched on, recording will be started and stopped with
-  the ``start``, ``stop`` and ``cont`` controls in the first row.
+  enables recording of OSC controller automation data. Note that this toggle
+  merely *arms* the OSC recorder; you still have to actually start the
+  recording with the ``start`` button. However, you can also first start
+  playback with ``start`` and then switch recording on and off as needed at
+  any point in the sequence. The ``stop`` and ``cont`` controls stop and
+  continue both playback and recording as usual. Pushing the ``stop`` button
+  also stores the recorded sequence for later playback. Also note that before
+  you can start recording any OSC data, you first have to arm the Faust units
+  that you want to record. This is done with the "record" toggle in the Pd GUI
+  of each unit.
 
 * There are some additional controls related to OSC recording in the *second*
   row: ``save`` saves the currently recorded data in an OSC file for later use
-  (this file will be located in the osc subdirectory, and have the same name
-  as the MIDI file with new extension .osc); ``abort`` is like ``stop`` in
+  (this file will have the same basename as the MIDI file set with the
+  creation argument, with new extension .osc); ``abort`` is like ``stop`` in
   that it stops recording and playback, but also throws away the data recorded
-  in this run (while ``stop`` keeps it for later playback); and ``clear``
-  clears the entire recorded OSC sequence so that you can start a new one.
+  in this take (rather than keeping it for later playback); and ``clear``
+  purges the entire recorded OSC sequence so that you can start a new one.
 
 * Once some automation data has been recorded, it will be played back along
   with the MIDI file. You can then just listen to it, or go on to record more
-  automation data, etc., ad lib. Use the ``echo`` toggle in the second row to
+  automation data as needed. Use the ``echo`` toggle in the second row to
   print the OSC messages as they are played back. If you save the automation
   data with the ``save`` button, it will be reloaded from its OSC file next
   time the patch is opened.
