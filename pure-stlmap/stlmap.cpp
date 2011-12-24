@@ -379,8 +379,10 @@ bool stlmap::get_cached_pmi(px* k, pmi& i)
       }
     }
   }
-  // PR2(get_cached_pmi,k,ret)
-  return ret;
+  // if (ret==true) {
+  //   cerr << "found iterator for: " << k << endl; 
+  // }
+  // return ret;
 }
 
 struct has_pmi {

@@ -61,12 +61,12 @@ prefix. Please see the Makefile for details.
 Introduction
 ============
 
-Part of the Standard C++ Library`_ that is often refered to as the standard
+A part of the Standard C++ Library`_ that is often refered to as the standard
 template library ("STL") provides templates for generic containers and generic
 algorithms. pure-stlmap provides an interface to the STL's associative
 containers: map, set, multimap and multiset and two of its unordered
-associative containers: unordered_map and unordered_set, specialized to
-hold arbitrary Pure expressions.
+associative containers: unordered_map and unordered_set, specialized to hold
+arbitrary Pure expressions.
 
 .. _C++ standard library documentation: http://en.cppreference.com/w/cpp
 
@@ -74,13 +74,12 @@ hold arbitrary Pure expressions.
 Containers Supported
 --------------------
 
-pure-stlmap provides six containers "stlmap", "stlset", "stlmmap", "stlmset",
-"stlhmap" and "stlhset" that are thin wrappers around the corresponding
-associative containers provided by the STL, specialized to hold keys and
-values that are arbitrary Pure expressions.  pure-stlmap does not provide
-wrappers for unordered_multimap and unordered_multiset. In addition, the
-interfaces for stlhmap and stlhset are limited compared to those provided for
-the other four (ordered) associative containers.
+pure-stlmap provides six mutable containers "stlmap", "stlset", "stlmmap",
+"stlmset", "stlhmap" and "stlhset" that are thin wrappers around the
+corresponding associative containers provided by the STL. pure-stlmap does not
+provide wrappers for unordered_multimap and unordered_multiset. In addition,
+the interfaces for stlhmap and stlhset are limited compared to those provided
+for the other four (ordered) associative containers.
 
 It is sometimes convenient to discuss the supported containers in terms of
 certain defining characteristics:
@@ -120,22 +119,34 @@ Hopefully these names are intuitive enough that defining them here was not
 really necessay. On the other hand, the groupings are a nice summary of what
 is available in this package.
 
+Keys, Values and Elements
+-------------------------
+
 The maps provided by pure-stlmap, stlmap, stlmmap and stlhmap, associate
 values with keys. If v is associated with k in an map, m, then we say that
-(k=>v) is an element of m that k is stored in m. The sets provided by
+(k=>v) is an element of m and that k is stored in m. The sets provided by
 pure-stlmap, stlset, stlmset and stlhset simply hold elements. If e is
 contained a set, s, we say that e is an element of s, that e is stored in s,
 that s has key e and that s has value e. In other words, we sometimes speak of
-a set container as if it were a map whose elements, keys and values all the
-same.  
+a set container as if it were a map whose elements, keys and values are all
+the same object.
 
-The if e1 and e2 are elements of one of the unique-keyed containers, stlmap,
-stlset, stlhmap, stlhset their keys will not be equivalent. Two keys are
-equivalent if one is not less than the other according to the containers
-"less-than" function. The multi-keyed containers allow distinct elements to
-have the same key.
+Each ordered container has a less-than function that is used to order its
+elements by key. The default less-than function, (<) generally works well, but
+a customized less-than function can be specified when the ordered container is
+constructed. Two elements of a given ordered container are considered to have
+unique keys if their keys are not "equivalent", i.e., one key is is not
+less-than the other key. For purposes of lexicographical comparisons one
+element, e1, is less than another, e2, if (a) their e1's key is less-than e2's
+key and (b) e1's value is less than e2's value. Also, e1 and e2 are considered
+to be equal if (a) their keys are equivalent and (b) their values are
+equal. The default "value-less-than" and "value-equal" functions (<) and (==),
+but these also can be customized.
 
-All of the associative containers are mutable.
+The unordered containers do not have less-than functions. They have a hash
+function, a key-equal function and a value-equal function. These default to
+'hash', '(==)' and '(==)' but customized functions can be specified when the
+container is constructed. 
 
 Correspondence with the Native Interface
 ----------------------------------------
@@ -148,9 +159,9 @@ One advantage of this approach is that users can consult the STL documentation
 to understand the performance characteristics and corner case behavior of any
 pure-stlmap function that has a corresponding function in the STL. In addition
 calling underlying STL functions such the set operations, swap, or copy on a
-one to one basis preserves O(n) time complexity behavior that are difficult to
-match if the operations are reimplemented by hand in order to conform to Pure
-standard library behavior.
+one to one basis preserves O(n) time complexity behavior that is difficult to
+guarantee if the operations are reimplemented by hand in order to conform to
+Pure standard library behavior.
 
 Unfortunately, often the STL functions do not have the same semantics as
 similar functions standard Pure library. 
@@ -161,13 +172,14 @@ Examples
 The code snippets that appear in the rest of this document assume that
 something similar to the following has been entered at the prompt. ::
 
-    pure-stlmap$> pure -q -w
+    pure-stlmap$> pure -q
     > using stlmap, stlhmap, stlmmap;
     > using namespace stl;
 
     > let sm  = stlmap  ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
     > let shm = stlhmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
     > let smm = stlmmap ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"d"=>4,"e"=>5];
+
     > let ss  = stlset  ["a","b","c","d","e"];
     > let shs = stlhset ["a","b","c","d","e"];
     > let sms = stlmset ["a","b","c","c","d"];
@@ -175,12 +187,13 @@ something similar to the following has been entered at the prompt. ::
     > let sm_rng  = sm,"b","d";
     > let shm_rng = shm,"b","d";
     > let smm_rng = smm,"b","d";
+
     > let ss_rng  = ss,"b","d";
     > let shs_rng = sm,"b","d";
     > let sms_rng = sm,"b","d";
 
-In the unique-keyed maps, 1 is associated with the key "a", etc. In the
-multi-keyed map, 1 is associated with ["a"], etc. ::
+The value (or values for a multi-key container) associated with a key can be
+accssed using the (!) operator. ::
 
     > sm!"a";
     1
@@ -191,8 +204,8 @@ multi-keyed map, 1 is associated with ["a"], etc. ::
     > smm!"c";
     [31,32]
 
-Note that elms of the ordered containers are indeed ordered and those in the
-unordered (or "hashed") containers are not. ::
+As expected, the elments of the ordered containers are indeed ordered and those
+in the unordered (or "hashed") containers are not. ::
 
     > elms ss;
     ["a","b","c","d","e"]   
@@ -201,27 +214,26 @@ unordered (or "hashed") containers are not. ::
     ["d","e","a","b","c"]
 
 Note that the last element in the range specification is not included in the
-ranged. Also, ranges are not supported for stlhmap and stlhset.
+range. Also, ranges are not supported for stlhmap and stlhset.
 
-    > elms ss_rng;
+    > elms ss_rng;        // ranges supported for stlsets
     ["b","c"]
 
-    > elms (shm,"b","d");
+    > elms (shm,"b","d"); // fails - ranges not supported for stlhmaps
     stl::elms (#<pointer 0x83b4908>,"b","d")
-
 
 Iterators
 ---------
 
-The native STL interface is based on "iterators" that point to elements in the
-container. pure-stlmap provides support for iterators defined on its ordered
+The native STL interface is based on "iterators" that point to elements in
+containers. pure-stlmap provides support for iterators defined on its ordered
 containters, stlmap, stlmmap, stlset and stlmset.
 
 Given a valid iterator you can access, modify or erase the element it points
-to.  Given two iterators pointing into a ordered container oc, i and j, the
-range (i,j), denoted aoc's elements starting with "oc[i]" the element pointed
-to by j up to but not including the aoc[j]. In pure-stlmap, this range is
-denoted by the tuple (i,j). ::
+to.  Given two iterators, i and j, pointing into a ordered container oc, the
+range (i,j), denotes oc's elements starting with "oc[i]" the element pointed
+to by i up to but not including oc[j]. In pure-stlmap, this range is denoted
+by the tuple (i,j). ::
 
    > elms sm;
    ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
@@ -245,16 +257,19 @@ l do not have to be stored in oc. ::
    > elms (sm,"c1",stlend);
    ["d"=>4,"e"=>5]
 
-When a range is required, the keys can be dropped, in which case the range is
+When a range is required, the keys can be dropped, in which case the range
 consists of all of the container's elements.
 
    > elms sm;
    ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
 Please note that support for iterators and ranges is not provided for the
-unordered containers, stlhmap and stlhset. Accordingly whenever the
-documentation of a function refers to a range, and the container in question
-is a a stlhmap or stlhset, the range simply refers to the container itself.
+unordered containers, stlhmap and stlhset. Most pure-stlmap functions that act
+on ranges can, however, operate on stlhmaps or stlhsets as well, except that,
+for stlhmaps and stlhsets, they always operate on all of the container's
+elements. Accordingly, whenever the documentation of a function refers to a
+range, and the container in question is a a stlhmap or stlhset, the range
+simply refers to the container itself.
 
 Usage
 =====
@@ -268,15 +283,24 @@ your Pure programs::
   using stlhmap;
 
 You do not need to import stlvec to use pure-stlmap, and pure-stlmap does not
-itself import stlvec. For example, if you import stlmap, you will be able to
-produce a stlvec that contains the elements of a given stlmap, but unless you
-import stlvec you will not be able to access the stlvec's members.
+itself import stlvec. Thus, for example, if you import stlmap, you will be
+able to produce a stlvec that contains the elements of a given stlmap, but
+unless you import stlvec you will not be able to access the stlvec's members.
+
+   > let sv = stlvec sm;  // make a stlvec
+
+   > sv!3;                // fails, (!) not defined for stlvecs
+   STLVEC #<pointer 0xa546978>!3
+
+   > using stlvec;        // now (!) is defined for stlvecs
+   > sv!3;
+   "d"=>4
 
 Types
 =====
 
-Importing the stlmap module introduces a types to describe stlmap and stlset,
-along with their iterators and ranges defined on them.
+Importing the stlmap module introduces types to describe stlmap and stlset,
+their iterators and ranges defined on them.
  
 .. type:: stlmap /type
           stlset /type
@@ -295,8 +319,8 @@ along with their iterators and ranges defined on them.
 
   A range of elements defined on a stlmap or stlset.
 
-Importing the stlmmap module introduces a types to describe stlmmap and
-stlmset, along with their iterators and ranges defined on them.
+Importing the stlmmap module introduces types to describe stlmmap and stlmset,
+along with their iterators and ranges defined on them.
 
 .. type:: stlmmap /type
           stlmset /type
@@ -322,17 +346,15 @@ stlhset.
           stlhset /type
           stlhacon /type
 
-  Types for stlmmap and stlmset. stlmacon includes stlmmap and stlmset.
-
 Container Operations
 ====================
 
 Required Container Operations
 -----------------------------
 
-New empty containers can be constructed using optional parameters that allow you
-to specifiy when one key is less than another, when two elements are equal,
-etc.
+New empty containers can be constructed using optional parameters that allow
+you to specifiy customized less-than functions, hash functions and equality
+functions. 
 
 .. function:: mkstlmap (kcmp,dflt,vcmp,veql)
               mkstlmmap (kcmp,vcmp,veql)
@@ -347,15 +369,18 @@ etc.
    another or equal to another, respectively. The function keql is used to
    determine if one key is equal to another. The object dflt is a the
    containers default value. The default values for dflt, vcmp, veql and keql
-   are [], (<) (==) and (==) respectively.
+   are [], (<) (==) and (==) respectively. E.g., ::
 
-> let xx = mkstlhmap hash;
-> elms xx;
-[]
+   > let xx = mkstlhmap hash;
+   > container_info xx;
+   0,2,0.0,1.0,hash,(==),(==)
 
-Default empty containers and ontainers constructed from directly from lists,
-vectors or other sources use default values. In addition to those specified
-for mkstlxxx, these include defaults for kcmp and khash, namely (<) and hash.
+   > let xx = mkstlmap (>);
+   > container_info xx;
+   0,(>),[],(<),(==)
+
+Convenience functions are provided to construct empty containers using default
+values.
 
 .. function:: emptystlmap
               emptystlmmap
@@ -365,6 +390,11 @@ for mkstlxxx, these include defaults for kcmp and khash, namely (<) and hash.
               emptystlhset
 
    Create a new associative container using default values.
+
+Convenience functions are also provided to construct an empty container and
+insert elements into it in one go. The source of the elements can be a list,
+vector, a range defined on a stlvec, or another container of the same type as
+the new container.
 
 .. function:: stlmap /stlmap src
               stlmmap /stlmmap src
@@ -403,31 +433,30 @@ load factor and bucket count.
 
 .. function:: empty /stlmap acon
 
-  Return true if acon is empty, else 0.
+  Return true if acon is empty, else false.
 
 Equality and Comparison
 -----------------------
 
 Two associative containers of the same type are considered to be equal if they
 contain the same number of elements and if each pair of their corresponding
-elements are equal. For ordered containers, two elements are equal if their
-keys are equalivalent (neither is less than the other) and their values, if
-any are equal. For the unordered containers the keys and values must be
-equal.
+elements are equal.
 
-.. function:: infix == /stlmap acon1 acon2
-              infix ~= /stlmap acon1 acon2
+.. function:: infix == /stlmap rng1 rng2
+              infix ~= /stlmap rng1 rng2
 
-  Test acon1 and acon2 for equality or nonequality where acon1 and acon2 are
-  of the same type. 
+  Test rng1 and rng2 for equality or nonequality where rng1 and rng2 are
+  ranges defined over containers of the same type.
+ 
+   > let xx = stlset ss;
+   > xx == ss;
+   1
 
-The == and ~= operators are not defined for ranges. Use the equal function
-instead.
+   > (xx,"a","c") == (ss,"a","c");
+   1
 
-.. function:: equal /stlmap rng1 rng2
-
-  Test rng1 and rng2 for equality, where rng1 and rng2 are ranges defined
-  on (ordered) associative containers of the same type.
+   > (xx,"a","c") == (ss,"b","c");
+   0
 
 .. function:: infix <  /stlmap rng1 rng2
 
@@ -444,9 +473,9 @@ instead.
   The these three operators are the same as rng2 < rng2, ~(rng1>rng2) and
   ~(rng1<rng2).
 
-The equivalence and comparison operators are not generally useful for stlmmaps
-because elements with the same key and different values are not necessarily
-ordered by values. ::
+Care must be taken when using equivalence and comparison operators with
+stlmmaps because elements with the same key and different values are not
+necessarily ordered by values. ::
 
     > let smm2 = stlmmap ["a"=>1,"b"=>2,"c"=>32,"c"=>31,"d"=>4];
 
@@ -460,16 +489,27 @@ ordered by values. ::
     0 
 
 For stlmap, stlset and stlmmset, the equivalence and comparison operators can
-be thought of as set operators, e.g., if ac1 <= ac2 then ac2 contains ac1.
+be thought of as set operators, e.g., if ac1 <= ac2 then ac2 contains
+ac1. This is also true for stlmmap, provided that elements with equivalent
+keys are stored in order. Check your implementation to see if it is even
+possible to control the order (C++11 is ok). Please note that the comparison
+operators are not provided for unordered containers.
 
 Key Oriented Functions
 ----------------------
 
+Most of the following functions are basically convenience functions that are
+easier to use than iterators. They use cached iterators for faster lookup time
+for some commonly occuring sequences of operations.
+
 .. function:: count /stlmap acon k
               has_key /stlmap acon k
 
-   Return the number of elements that have k as key; or 1 if there is such a
-   key or 0 if not, respectively.
+   Returns the number of elements that has k as their key.
+
+.. function:: has_key /stlmap acon k
+
+   Returns true if acon contains an element that has k as its key.    
 
 .. function infix ! /stlmap acon k
 
@@ -481,11 +521,14 @@ Key Oriented Functions
 
     > sm!"c";
     3
+
     > catch id $ sm!"f";
     out_of_bounds
+
     > smm!"c";
     [31,32]
-    > smm!"f";
+
+    > smm!"f";  // does not throw exception -- returns empty list
     []
 
 .. function:: get /stlmap (acon,k)
@@ -533,6 +576,45 @@ Key Oriented Functions
    that has a key that is less that k, or, if no such element exists, throws
    an out_of_bounds execption. If k is not an element of oc, stlbeg or stlend
    throw an out_of_bound exception.
+
+Iterator Cache
+--------------
+
+pure-stlmap maintains a cache of iterators that are contructed by certain of
+the key oriented functions described in the previous section. Here are some
+examples produced by compiling pure-stlmap with a trace function that shows
+when caching eliminates a key lookup.
+
+   > has_key sm "a";
+   1
+
+   > sm!"a";
+   found iterator for: "a"
+   1
+
+   > put (sm,"a") 10;
+   found iterator for: "a"
+   10
+
+   > let k = next_key sm "a";
+   found iterator for: "a"
+
+   > let k = next_key sm k;
+   found iterator for: "b"
+
+   > put (sm,k) 30;
+   found iterator for: "c"
+   30
+
+   > elms sm;
+   ["a"=>10,"b"=>2,"c"=>30,"d"=>4,"e"=>5]
+
+In particular, using has_key followed by a get or put only requires one
+lookup. Also, traversing a range with next_key (or prev_key) followed by gets
+and puts can be accomplished in linear time (i.e., next_key requires constant
+time, assuming the current key is cached, as do put or get after next_key
+caches its result). Currently the four most recently accessed iterators are
+cached.
 
 Range Access
 ------------
