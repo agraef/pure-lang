@@ -70,7 +70,6 @@ arbitrary Pure expressions.
 
 .. _C++ standard library documentation: http://en.cppreference.com/w/cpp
 
-
 Containers Supported
 --------------------
 
@@ -282,10 +281,19 @@ your Pure programs::
   using stlmmap;
   using stlhmap;
 
-You do not need to import stlvec to use pure-stlmap, and pure-stlmap does not
-itself import stlvec. Thus, for example, if you import stlmap, you will be
-able to produce a stlvec that contains the elements of a given stlmap, but
-unless you import stlvec you will not be able to access the stlvec's members.
+Relationship with pure-stlvec
+-----------------------------
+
+pure-stlvec and pure-stlmap are linked into a common shared library
+(libstlcontainer.so on Linux) that is installed when pure-stlvec is
+installed. Accordingly pure-stlvec must be installed before you can use
+pure-stlvec.
+
+That said, you do not need to import stlvec (i.e., with a using statement) to
+use stlmap, stlmmap or stlhmap. And pure-stlmap does not itself import
+stlvec. Also, if you import stlmap, stlmmap or stlhmap but not stlvec, you
+will be able to produce a stlvec that contains the elements of a given stlmap,
+but you will not be able to access the stlvec's members.
 
    > let sv = stlvec sm;  // make a stlvec
 
@@ -295,6 +303,28 @@ unless you import stlvec you will not be able to access the stlvec's members.
    > using stlvec;        // now (!) is defined for stlvecs
    > sv!3;
    "d"=>4
+
+Suggested Uses
+--------------
+
+Consider using stlmap or stlset unless there is some compelling reason to use
+one of the others. The time complexity is guaranteed and having ordered
+elements is often very useful. E.g., sparse arrays. In pure-stlmap, these two
+containers support ranges and the key oriented functions cache iterators to
+speed up key based lookups. Finally, if you are using set operations, these
+two are unsurpassed for ease of use and efficiency.
+
+If all you want is quick lookup, stlhmap or stlhset might be a slightly
+faster. Set operations, ranges and iterator caching are not available for
+these containers,
+
+If you really need a multi-keyed container then, in pure-stlmap, stlmmap and
+stlmset are your only choices. Set operations and ranges are supported, but
+the semmantics are much more complicated than is the case for stlmap and
+stlset. Iterator caching by key oriented functions is not provided because the
+keys are not unique. For the same reason, the key oriented functions might are
+less than ideal when dealing with multi-keyed containers. Using the
+pure-stlmap iterator interface might be your best choice.
 
 Types
 =====
@@ -580,10 +610,13 @@ for some commonly occuring sequences of operations.
 Iterator Cache
 --------------
 
-pure-stlmap maintains a cache of iterators that are contructed by certain of
-the key oriented functions described in the previous section. Here are some
-examples produced by compiling pure-stlmap with a trace function that shows
-when caching eliminates a key lookup.
+stlmaps and stlsets maintain a cache of iterators that are contructed by all
+of the key oriented functions described in the previous section. In addition,
+insert (of a single element), insert_or_update, and insert_or_update_with also
+cache iterators.
+
+Here are some examples produced by compiling pure-stlmap with a trace function
+that shows when caching eliminates a key lookup.
 
    > has_key sm "a";
    1
@@ -910,7 +943,7 @@ multiset sum. If you want the multiset sum of a stlmmap or stlhmap, use merge.
    stlmap or stlmmap elements of rng1 have priority over the elments of rng2.
 
 Here are some examples that show how these operations differ from those in the
-Pure standare library. ::
+Pure standard library. ::
 
    > let smm1 = stlmmap ["a"=>1,"b"=>2,"c"=>31,"c"=>32];
    > let smm2 = stlmmap ["c"=>32,"c"=>32,"c"=>33,"d"=>4,"e"=>5];
@@ -927,16 +960,54 @@ Pure standare library. ::
    > elms $ set_union sm1 sm2; // "c"=>31 from sm1, not "c"=>32 from sm2
    ["a"=>1,"b"=>2,"c"=>31,"d"=>4,"e"=>5]
 
-   > elms $ set_intersection sm1 sm2;
+   > elms $ set_intersection sm1 sm2; // "c"=>31 from sm1
    ["c"=>31]
 
 
-Iterator Operations
-===================
+Iterator Interface
+==================
 
-Iterator support is provided only for ordered associative containers, stlmap,
-stlset, stlmmap and stlmset. An iterator remains valid until the element it
-was pointing to has been erased.
+Iterator support is provided only for the ordered associative containers,
+stlmap, stlset, stlmmap and stlmset. 
+
+Exceptions
+----------
+
+Theses functions throw a bad_argument exception if called with an invalid
+iterator. An iterator remains valid until the element it was pointing to has
+been erased. The also attempt to throw bad argument exceptions for bad uses
+that would otherwise result in undefined behavior. E.g., ::
+
+
+   > let i,j = find sm "a", find sm "d";
+
+   > get i, get j;
+   "a"=>1,"d"=>4
+
+   > elms (i,j);
+   ["a"=>1,"b"=>2,"c"=>3]
+
+   > catch id $ elms (j,i); // j and i transposed, C++ would segfault
+   bad_argument
+
+   > erase (sm,"b");  // erase "b"=>2, leaving i and j valid
+   1
+
+   > get i; // still valid
+   "a"=>1
+
+   > erase (sm,"a");  // erase "a"=>1 - invalidating i
+   1
+
+   > catch id $ get i; // bad iterator exception
+   bad_argument
+
+
+Functions
+---------
+
+The functions in this section never cache iterators, on the assumption that if
+you call them you are not using the key-oriented functions.
 
 ..function:: iterator /stlmap i
              begin acon /stlmap
@@ -1010,3 +1081,48 @@ was pointing to has been erased.
    Returns an iterator pointing to the element in m, a stlmap, with key k. If
    no such element existed before the call, one is created using map's default
    value.
+
+Here are some examples using iterators. 
+
+   > let b,e = begin smm, pastend smm;
+
+   > elms (b,e);
+   ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"d"=>4,"e"=>5]
+
+   > let i,j = equal_range smm "c";
+
+   > elms (b,i);
+   ["a"=>1,"b"=>2]
+
+   > elms (i,j);
+   ["c"=>31,"c"=>32]
+
+   > elms (j,e);
+   ["d"=>4,"e"=>5]
+
+   > get i;
+   "c"=>31
+
+   > get (inc i);
+   "c"=>32
+
+   > put i 132;
+   132
+
+   > map (\(k=>_)->k=>ord k) (b,i);
+   ["a"=>97,"b"=>98,"c"=>99]
+
+   > let is_set, smm1, k, v = get_info i; is_set, elms smm1, k, v;
+   1,["a"=>1,"b"=>2,"c"=>31,"c"=>132,"d"=>4,"e"=>5],"c",132
+
+   > get (dec j);
+   "c"=>132
+
+   > inc j $$ inc j $$ get j;
+   "e"=>5
+
+   > inc j $$ is_pastend j;
+   1
+
+
+ 

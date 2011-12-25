@@ -159,7 +159,6 @@ static pmi get_iter(sm* smp , px* key, int mode)
       iter = mp.lower_bound(key);
     else 
       iter = mp.find(key);
-    smp->cache_pmi(iter);
   }
   return iter;  
 }
@@ -354,6 +353,8 @@ void stlmap::cache_pmi(const pmi& i)
       latest_pmi_pos = 0;
     }
     size_t num_cached = recent_pmi.size();
+    for (int pos = 0; pos < num_cached; pos++)
+      if ( recent_pmi[pos] == i ) return;
     if (num_cached<SM_CACHE_SZ) {
       recent_pmi.push_back(i);
       latest_pmi_pos = num_cached;
@@ -362,6 +363,7 @@ void stlmap::cache_pmi(const pmi& i)
       latest_pmi_pos = (latest_pmi_pos + 1) % SM_CACHE_SZ;
       recent_pmi[latest_pmi_pos] = i;
     }
+    //PR2(stlmap::cache_pmi - cached,i->first,latest_pmi_pos);
   }
 }
 
@@ -380,9 +382,9 @@ bool stlmap::get_cached_pmi(px* k, pmi& i)
     }
   }
   // if (ret==true) {
-  //   cerr << "found iterator for: " << k << endl; 
+  //   PR(stlmap::get_cached_pmi success,k);
   // }
-  // return ret;
+  return ret;
 }
 
 struct has_pmi {
@@ -650,10 +652,13 @@ px* sm_find(px* pxsmp, px* key, int what)
     pair<pmi,bool> i_ok = smp->mp.insert(pxhpair(key,dflt));
     return px_pointer(new sm_iter(pxsmp, i_ok.first));
   }
-  else if (what==stl_sm_iter || what == stl_sm_iter_dflt)
+  else if (what==stl_sm_iter || what == stl_sm_iter_dflt) {
     return px_pointer(new sm_iter(pxsmp, i)); 
-  else
+  }
+  else {
+    smp->cache_pmi(i);
     return get_elm_aux(smp, i, what);
+  }
 }
 
 px* sm_copy_iter(px* pxsmip)
@@ -857,8 +862,8 @@ px* sm_insert_elm(px* pxsmp, px* kv)
   catch (px* e) {
     pure_throw(e);
   }
-  smp->cache_pmi(pos);
   px* it = px_pointer(new sm_iter(pxsmp, pos));
+  smp->cache_pmi(pos);
   return pure_tuplel(2,it,pure_int(num_inserted));
 }
 
@@ -1299,7 +1304,10 @@ px* sm_bounding_keys(px* tpl)
 {
   sm_range rng(tpl);
   if (!rng.is_valid) bad_argument;
-  pxhmap& mp = rng.smp()->mp;
+  sm* smp = rng.smp();
+  pxhmap& mp = smp->mp;
+  smp->cache_pmi(rng.beg());
+  smp->cache_pmi(rng.end());
   return pure_tuplel(2,iter_to_key(mp, rng.beg()),
                        iter_to_key(mp, rng.end())); 
 }
