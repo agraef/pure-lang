@@ -356,7 +356,10 @@ set_includes rng1::stlmacon_rng rng2::stlmacon_rng =
 
 (::!) smm::stlmacon key = smm_listmap 0 (smm,key) smm_val;
 
-get (smm::stlmacon,key) = smm_listmap 0 (smm,key) smm_val; 
+get (smm::stlmacon,key) = throw out_of_bounds if empty smm;
+get (smm::stlmacon,key) = k=>(smm_listmap 0 (smm,key) smm_val) when 
+  k = if key === stlbeg then get_key (find smm stlbeg) else key;
+end;
 
 put (smm::stlmmap,key) vals = smm_update smm key vals;
 
