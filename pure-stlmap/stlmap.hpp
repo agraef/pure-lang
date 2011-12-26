@@ -19,9 +19,6 @@ included with the pure-stlmap distribution package for details.
 #ifndef STLMAP_H
 #define STLMAP_H
 
-#define PR(x,y) cerr << #x ", " #y ": " << y << endl;
-#define PR2(x,y,z) cerr << #x ", " #y ": " << y << ", " #z ": " << z << endl;
-
 #include <iostream>
 #include <map>
 #include "stlbase.hpp"

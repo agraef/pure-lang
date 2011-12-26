@@ -565,11 +565,27 @@ for some commonly occuring sequences of operations.
 
    Same as (!).
 
-.. function:: put /stlmap (acon,k) v
+.. function:: put /stlmap (um,k) v
+              put /stlmap (mm,k) src
 
-   Associate v with k in acon wher acon is a stlmap, stlmmap or stlhmsp.
-   If (k=>v) is not an element of acon, or if acon is a stlmmap, insert (k=>v).
-   Otherwise update the value associated with k in acon to v. 
+   Associate v with k (i.e., insert (k=>v)) in um where um is is a stlmap or
+   stlhmsp, or the elments of src with k in a stlmmap, mm. src can be a list
+   or a vector. FIX should allow stlvec.
+
+   > elms smm;
+   ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"d"=>4,"e"=>5]
+
+   > put (smm,"c") [31,33,35,36];
+   4
+
+   > elms smm;
+   ["a"=>1,"b"=>2,"c"=>31,"c"=>33,"c"=>35,"c"=>36,"d"=>4,"e"=>5]
+
+   > put (smm,"c") [];
+   0
+
+   > elms smm;
+   ["a"=>1,"b"=>2,"d"=>4,"e"=>5]
 
 .. function:: bounding_keys /stlmap rng
 
@@ -674,16 +690,6 @@ the unordered containers assuming that "range" is the entire container.
               stlvec /stlmap rng
 
   Return a vector or stlvec containing the elments of rng. E.g., ::
-
-   > let sv = stlvec smm;
-   > members sv;
-
-   <stdin>, line 34: warning: implicit declaration of 'members'
-   members (STLVEC #<pointer 0x87281b8>)
-
-   > using stlvec;
-   > members sv;
-   ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"d"=>4,"e"=>5]
 
 .. function:: stream /stlmap rng
               lazy_map f 

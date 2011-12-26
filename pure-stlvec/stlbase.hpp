@@ -24,6 +24,11 @@ included with the pure-stlvec distribution package for details.
 #include <stdlib.h>
 #include "pure/runtime.h"
 
+/* Quick print macro for debugging */
+
+#define PR(x,y) cerr << #x ", " #y ": " << y << endl;
+#define PR2(x,y,z) cerr << #x ", " #y ": " << y << ", " #z ": " << z << endl;
+
 /* Class to keep track of interpreter-local data */
 
 template <class T>
