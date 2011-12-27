@@ -56,19 +56,19 @@ host = $(shell ./config.guess)
 #PIC = -fPIC # needed for x86-64 compilation
 DLL = .so
 shared = -shared
+LD_LIB_PATH = LD_LIBRARY_PATH
 
 # Take care of some common systems.
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows
 DLL = .dll
 EXE = .exe
-# WINDOWS ONLY: needed to link stlalgorithm.dll.
-CONTAINER_LIB = $(DLL_DIR)/stlcontainer$(DLL)
 endif
 ifneq "$(findstring -darwin,$(host))" ""
 # OSX (untested)
 DLL = .dylib
 shared = -dynamiclib
+LD_LIB_PATH = DYLD_LIBRARY_PATH
 endif
 ifneq "$(findstring x86_64-,$(host))" ""
 # 64 bit, needs -fPIC flag
@@ -96,6 +96,7 @@ DLL_DIR = $(if $(DBG_SUPPORT),$(DEBUG_DLL_DIR),$(PROD_DLL_DIR))
 PURE_BASENAMES = $(CONTAINER_BASENAMES)
 CONTAINER_HPPS = $(addsuffix .hpp, $(CONTAINER_BASENAMES))
 CONTAINER_CPPS = $(addsuffix .cpp, $(CONTAINER_BASENAMES))
+CONTAINER_LIB = stlcontainer$(DLL)
 ALGO_HPPS = stlbase.hpp stlvec.hpp sv_algorithm.hpp
 ALGO_CPPS = $(addsuffix .cpp, $(ALGO_BASENAMES))
 
@@ -115,36 +116,33 @@ all: dll
 
 dll debug: $(DLLS)
 
-$(DLLS): $(DLL_TRGS)
-	cp $(DLL_DIR)/*$(DLL) .
+stlcontainer$(DLL): $(DLL_DIR)/stlcontainer$(DLL)
+	cp $< $@
+
+stlalgorithm$(DLL): $(DLL_DIR)/stlalgorithm$(DLL)
+	cp $< $@
 
 $(DLL_DIR)/stlcontainer$(DLL): $(CONTAINER_HPPS) $(CONTAINER_CPPS)
-	@ test -d $(DLL_DIR) || mkdir $(DLL_DIR)
+	test -d $(DLL_DIR) || mkdir -p $(DLL_DIR)
 	$(CXX) $(shared) $(FLAGS) $(PIC) $(CONTAINER_CPPS) -o $@ -lpure
 
-$(DLL_DIR)/stlalgorithm$(DLL): $(ALGO_HPPS) $(ALGO_CPPS)
-	@ test -d $(DLL_DIR) || mkdir $(DLL_DIR)
-	$(CXX) $(shared) $(FLAGS) $(PIC) $(ALGO_CPPS) -o $@ $(CONTAINER_LIB) -lpure
+$(DLL_DIR)/stlalgorithm$(DLL): $(ALGO_HPPS) $(ALGO_CPPS) $(CONTAINER_LIB)
+	$(CXX) $(shared) $(FLAGS) $(PIC) $(ALGO_CPPS) -o $@ -Wl,-rpath="$(libdir)/pure" $(CONTAINER_LIB) -lpure
 
 ### Compile unit tests
 
 test:
-	pure -I. -L. -x ut/ut_all.pure
-
+	$(LD_LIB_PATH)=$(shell pwd) pure -I. -L. -x ut/ut_all.pure
 
 ### Remove dlls
 
 clean:	
-	@ test -d $(DEBUG_DLL_DIR) || mkdir $(DEBUG_DLL_DIR)
-	@ test -d $(PROD_DLL_DIR) || mkdir $(PROD_DLL_DIR)
-	@ rm -f $(DEBUG_DLL_DIR)/* $(PROD_DLL_DIR)/*
-	@ rm -f *.so
+	rm -f $(DEBUG_DLL_DIR)/* $(PROD_DLL_DIR)/* *.so
 
 ### Install and uninstall
 
 install: dll
-	@ test -d "$(DESTDIR)$(libdir)/pure" || \
-          mkdir -p "$(DESTDIR)$(libdir)/pure"
+	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
 	cp -r $(LIBFILES) "$(DESTDIR)$(libdir)/pure"
 
 uninstall:
