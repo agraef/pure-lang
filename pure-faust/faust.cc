@@ -22,6 +22,10 @@
 
 #include <pure/runtime.h>
 
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 #if PURE_POINTER_TAG
 /* Convenience macros to handle tagged pointers (new in Pure 0.45). */
 #define __pointer(ty, p) pure_tag(ty, pure_pointer(p))
@@ -288,25 +292,29 @@ typedef void (*deldspfun)(dsp*);
 typedef Meta *(*newmetafun)();
 typedef void (*delmetafun)(Meta*);
 
-/* The Faust DSP proxy. This structure keeps all the necessary information,
-   including the handle of the module from which the DSP gets loaded and the
-   DSP object itself. */
+/* A proxy for the loadable module of a Faust dsp. */
 
-struct faust_t {
-  int *refc;
-  lt_dlhandle h;
+struct module_t;
+static module_t *load_module(const char *name);
+static void unload_module(module_t *mod);
+static void clone_module(module_t *mod);
+
+struct module_t {
   newdspfun newdsp;
   deldspfun deldsp;
   newmetafun newmeta;
   delmetafun delmeta;
-  int rate;
-  dsp *d;
-  PureUI *ui;
-  double **inbuf, **outbuf;
-  int nsamples;
+  time_t mtime;
+protected:
+  module_t(const char *name);
+  ~module_t() { if (h) lt_dlclose(h); }
+  void reload();
+  lt_dlhandle h;
+  int refc;
+  friend module_t *load_module(const char *name);
+  friend void unload_module(module_t *mod);
+  friend void clone_module(module_t *mod);
 };
-
-/* Initialization and finalization. */
 
 static void ltdl_init()
 {
@@ -321,6 +329,131 @@ static void ltdl_init()
     atexit((void(*)())lt_dlexit);
     init = true;
   }
+}
+
+module_t::module_t(const char *name)
+{
+  ltdl_init();
+  /* Make sure that we search the current directory for modules. */
+  char *path = lt_dlgetsearchpath()?strdup(lt_dlgetsearchpath()):NULL;
+  lt_dlsetsearchpath(".");
+  h = lt_dlopenext(name);
+  if (path) {
+    lt_dlsetsearchpath(path);
+    free(path);
+  }
+  if (h) {
+    newdsp = (newdspfun)lt_dlsym(h, "newdsp");
+    deldsp = (deldspfun)lt_dlsym(h, "deldsp");
+    newmeta = (newmetafun)lt_dlsym(h, "newmeta");
+    delmeta = (delmetafun)lt_dlsym(h, "delmeta");
+    // Record the timestamp of the module, so that we can reload it after
+    // changes. This emulates the functionality of Pure's built-in Faust
+    // interface.
+    const lt_dlinfo *info = lt_dlgetinfo(h);
+    struct stat st;
+    if (!stat(info->filename, &st))
+      mtime = st.st_mtime;
+    else
+      mtime = 0;
+  } else {
+    newdsp = NULL;
+    deldsp = NULL;
+    newmeta = NULL;
+    delmeta = NULL;
+    mtime = 0;
+  }
+  refc = 0;
+}
+
+void module_t::reload()
+{
+  if (!h) return;
+  const lt_dlinfo *info = lt_dlgetinfo(h);
+  if (!info || !info->filename) return;
+  struct stat st;
+  if (!stat(info->filename, &st)) {
+    time_t mtime1 = st.st_mtime;
+    // If the module is newer that what's already loaded, try to reload it.
+    if (mtime1 > mtime) {
+      char *filename = strdup(info->filename);
+      lt_dlclose(h);
+      h = lt_dlopen(filename);
+      free(filename);
+      if (h) {
+	newdsp = (newdspfun)lt_dlsym(h, "newdsp");
+	deldsp = (deldspfun)lt_dlsym(h, "deldsp");
+	newmeta = (newmetafun)lt_dlsym(h, "newmeta");
+	delmeta = (delmetafun)lt_dlsym(h, "delmeta");
+	mtime = mtime1;
+      } else {
+	// This renders the module invalid.
+	newdsp = NULL;
+	deldsp = NULL;
+	newmeta = NULL;
+	delmeta = NULL;
+	mtime = 0;
+      }
+    }
+  }
+}
+
+// Keep track of the current set of modules that have been loaded.
+static map<lt_dlhandle,module_t*> loaded_modules;
+
+static module_t *load_module(const char *name)
+{
+  module_t *mod = new module_t(name);
+  if (!mod->h || !mod->newdsp || !mod->deldsp) {
+    delete mod;
+    return NULL;
+  }
+  // See whether this module has been loaded already.
+  map<lt_dlhandle,module_t*>::iterator it = loaded_modules.find(mod->h);
+  if (it != loaded_modules.end()) {
+    // Module is loaded already, return the existing instance instead.
+    delete mod;
+    mod = it->second;
+    // Try to reload the module if it has been modified.
+    loaded_modules.erase(mod->h);
+    mod->reload();
+  }
+  if (!mod->h) return NULL;
+  loaded_modules[mod->h] = mod;
+  mod->refc++;
+  return mod;
+}
+
+static inline void unload_module(module_t *mod)
+{
+  if (--mod->refc == 0) {
+    if (mod->h) loaded_modules.erase(mod->h);
+    delete mod;
+  }
+}
+
+static inline void clone_module(module_t *mod)
+{
+  ++mod->refc;
+}
+
+/* The Faust DSP proxy. This structure keeps all the necessary information,
+   including the handle of the module from which the DSP gets loaded and the
+   DSP object itself. */
+
+struct faust_t {
+  module_t *mod;
+  time_t mtime;
+  int rate;
+  dsp *d;
+  PureUI *ui;
+  double **inbuf, **outbuf;
+  int nsamples;
+};
+
+static inline bool valid(faust_t *fd)
+{
+  return fd->mtime == fd->mod->mtime;
 }
 
 static void init_bufs(faust_t *fd)
@@ -352,60 +485,37 @@ static void init_bufs(faust_t *fd)
 extern "C"
 void faust_exit(faust_t *fd)
 {
-  ltdl_init();
   if (!fd) return;
-  if (fd->d) fd->deldsp(fd->d);
+  // NOTE: If valid(fd) returns false then the Faust module was reloaded and
+  // the dsp object was deleted already. In that case we still have to free
+  // the other resources, though.
+  if (fd->mod && fd->mod->deldsp && fd->d && valid(fd))
+    fd->mod->deldsp(fd->d);
   if (fd->ui) delete fd->ui;
   if (fd->inbuf) free(fd->inbuf);
   if (fd->outbuf) free(fd->outbuf);
-  if (fd->refc && --(*fd->refc) == 0) {
-    if (fd->h) lt_dlclose(fd->h);
-    free(fd->refc);
-  }
+  if (fd->mod) unload_module(fd->mod);
   free(fd);
 }
 
 extern "C"
 faust_t *faust_init(const char *name, int rate)
 {
-  faust_t *fd = (faust_t*)malloc(sizeof(faust_t));
-  char *path;
-  if (!fd || !name) {
-    if (fd) free(fd);
-    return NULL;
-  }
-  fd->refc = NULL;
-  fd->h = NULL;
-  fd->newdsp = NULL;
-  fd->deldsp = NULL;
-  fd->newmeta = NULL;
-  fd->delmeta = NULL;
+  faust_t *fd;
+  if (!name) return NULL;
+  fd = (faust_t*)malloc(sizeof(faust_t));
+  if (!fd) return NULL;
   fd->rate = 0;
+  fd->mod = NULL;
   fd->d = NULL;
   fd->ui = NULL;
   fd->inbuf = fd->outbuf = NULL;
   fd->nsamples = 0;
-  fd->refc = (int*)malloc(sizeof(int));
-  if (!fd->refc) goto error;
-  *fd->refc = 1;
-  /* Make sure that we search the current directory for modules. */
-  ltdl_init();
-  path = lt_dlgetsearchpath()?strdup(lt_dlgetsearchpath()):NULL;
-  lt_dlsetsearchpath(".");
-  fd->h = lt_dlopenext(name);
-  if (path) {
-    lt_dlsetsearchpath(path);
-    free(path);
-  }
-  if (!fd->h) goto error;
-  fd->newdsp = (newdspfun)lt_dlsym(fd->h, "newdsp");
-  fd->deldsp = (deldspfun)lt_dlsym(fd->h, "deldsp");
-  if (!fd->newdsp || !fd->deldsp)
-    goto error;
-  fd->d = fd->newdsp();
+  fd->mod = load_module(name);
+  if (!fd->mod) goto error;
+  fd->mtime = fd->mod->mtime;
+  fd->d = fd->mod->newdsp();
   if (!fd->d) goto error;
-  fd->newmeta = (newmetafun)lt_dlsym(fd->h, "newmeta");
-  fd->delmeta = (delmetafun)lt_dlsym(fd->h, "delmeta");
   fd->d->init(rate);
   fd->rate = rate;
   fd->ui = new PureUI();
@@ -421,16 +531,18 @@ faust_t *faust_init(const char *name, int rate)
 extern "C"
 void faust_reinit(faust_t *fd, int rate)
 {
+  if (!valid(fd)) return;
   fd->d->init(rate);
 }
 
 extern "C"
 faust_t *faust_clone(faust_t *fd1)
 {
+  if (!valid(fd1)) return NULL;
   faust_t *fd = (faust_t*)malloc(sizeof(faust_t));
   if (!fd) return NULL;
   *fd = *fd1;
-  fd->d = fd->newdsp();
+  fd->d = fd->mod->newdsp();
   if (!fd->d) {
     free(fd);
     return NULL;
@@ -438,13 +550,13 @@ faust_t *faust_clone(faust_t *fd1)
   fd->d->init(fd->rate);
   fd->ui = new PureUI();
   if (!fd->ui) {
-    fd->deldsp(fd->d);
+    fd->mod->deldsp(fd->d);
     free(fd);
     return NULL;
   }
   fd->d->buildUserInterface(fd->ui);
   init_bufs(fd);
-  (*fd->refc)++;
+  clone_module(fd->mod);
   return fd;
 }
 
@@ -486,6 +598,7 @@ typedef struct _gsl_matrix_symbolic
 extern "C"
 pure_expr *faust_compute(faust_t *fd, pure_expr *in, pure_expr *out)
 {
+  if (!valid(fd)) return NULL;
   int n = fd->d->getNumInputs(), m = fd->d->getNumOutputs();
   double *in_data, *out_data;
   size_t in_nrows, in_ncols, in_tda, out_nrows, out_ncols, out_tda;
@@ -592,6 +705,7 @@ static pure_expr *faust_make_meta(list<strpair>& m)
 extern "C"
 pure_expr *faust_info(faust_t *fd)
 {
+  if (!valid(fd)) return NULL;
   PureUI *ui = fd->ui;
   if (ui->nelems <= 0)
     return pure_tuplel(3, pure_int(fd->d->getNumInputs()),
@@ -724,8 +838,8 @@ pure_expr *faust_info(faust_t *fd)
 extern "C"
 pure_expr *faust_meta(faust_t *fd)
 {
-  newmetafun newmeta = fd->newmeta;
-  delmetafun delmeta = fd->delmeta;
+  newmetafun newmeta = fd->mod->newmeta;
+  delmetafun delmeta = fd->mod->delmeta;
   if (!newmeta) return 0;
   Meta *m = newmeta();
   if (!m) return 0;
