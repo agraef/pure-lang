@@ -110,11 +110,22 @@ load the dsp as follows::
 
 The ``faust_init`` function loads the ``"mydsp.so"`` module (the ``.so``
 suffix is supplied automatically) and returns a pointer to the Faust dsp
-object which can then be used in subsequent operations. The second parameter
-of ``faust_init``, 48000 in this example, denotes the sample rate in Hz. This
-can be an arbitrary integer value which is available to the hosted dsp (it's
-up to the dsp whether it actually uses this value in some way). The sample
-rate can also be changed on the fly with the ``faust_reinit`` function::
+object which can then be used in subsequent operations.
+
+.. note:: ``faust_init`` only loads the dsp module if it hasn't been loaded
+   before. However, as of pure-faust 0.8, ``faust_init`` also checks the
+   modification time of the module and reloads it if the module was recompiled
+   since it was last loaded. (This is for compatibility with Pure's built-in
+   Faust interface which behaves in the same way.) If this happens, *all*
+   existing dsp instances created with the old version of the module become
+   invalid immediately (i.e., all subsequent operations on them will fail,
+   except ``faust_exit``) and must be recreated.
+
+The second parameter of ``faust_init``, 48000 in this example, denotes the
+sample rate in Hz. This can be an arbitrary integer value which is available
+to the hosted dsp (it's up to the dsp whether it actually uses this value in
+some way). The sample rate can also be changed on the fly with the
+``faust_reinit`` function::
 
   > faust_reinit dsp 44100;
 
