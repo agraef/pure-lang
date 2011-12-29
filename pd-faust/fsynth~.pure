@@ -289,8 +289,12 @@ end with
        given key in a Pure record which gets chosen (which then corresponds to
        the first control of that name in the original UI description). */
     vctrls = map filter_controls pctrls with
-      filter_controls ctrls =
-	reverse {basename id => ptr | id=>ptr = ctrls; is_voice_control id};
+      filter_controls ctrls = record c when
+	c = reverse {basename id => ptr | id=>ptr = ctrls; is_voice_control id};
+	// We assume that these controls are always present, so provide some
+	// dummy values in case they aren't.
+	c = {"freq"=>(),"gain"=>(),"gate"=>(),c};
+      end;
     end;
     /* Grab the auxiliary (non-voice) controls. In contrast to the voice
        controls these are always kept in lockstep. Also note that here we have
