@@ -96,7 +96,8 @@ fsynth_dsp name instance chan::int nvoices::int =
   end; // note off
 
   // Respond to pitch bend messages.
-  fsynth (bend val ch) = () if ~get active || chan && ch~=chan;
+  fsynth (bend val ch) = ()
+    if ~get active || chan && ch~=chan || ~chan && ch==10;
   = () when
     val = int val; ch = int ch;
     set_bend ch (2*(val-8192)/8192);
@@ -108,7 +109,7 @@ fsynth_dsp name instance chan::int nvoices::int =
   end;
 
   // Controller 123. Turn all notes off, on the given channel.
-  fsynth (ctl val num ch) = () if chan && ch~=chan;
+  fsynth (ctl val num ch) = () if chan && ch~=chan || ~chan && ch==10;
   fsynth (ctl val num ch) = () when
     ch = int ch;
     do note_off (get_notes (get voc) ch) with
@@ -117,7 +118,8 @@ fsynth_dsp name instance chan::int nvoices::int =
   end if num==123;
 
   // Other MIDI controllers.
-  fsynth (ctl val num ch) = () if get writing || chan && ch~=chan;
+  fsynth (ctl val num ch) = ()
+    if get writing || chan && ch~=chan || ~chan && ch==10;
   fsynth (ctl val num ch) = () when
     num = int num;
     ~member (get ctrlmap) num ||
