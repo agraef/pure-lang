@@ -144,12 +144,15 @@ oscseq name1 name2 = catch (\msg->pd_error_s msg $$ cst ()) (seq with
     end;
   end;
 end when
-  name1 = if symbolp name1 then str name1+".osc" else filename name1+".osc";
+  name1 = if symbolp name1 then str name1+".osc"
+	  else if stringp name1 && ~null name1 then filename name1+".osc"
+	  else "";
   name2 = if symbolp name2 then str name2+".osc" else name2;
-  name = if stringp name2 then name2 else name1;
+  name = if stringp name2 && ~null name2 then name2 else name1;
+  name = if stringp name then name else "";
   fname = libsearch "osc" name;
   loaded,s = test name with
-    test name = false,[] if ~pointerp (fopen fname "r");
+    test name = false,[] if null name || ~pointerp (fopen fname "r");
     = catch readerr (true,osc_load name) otherwise;
     readerr msg::string = false,[] when
       pd_error_s ("oscseq: error loading "+fname);
