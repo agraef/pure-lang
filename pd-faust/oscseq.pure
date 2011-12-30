@@ -20,7 +20,7 @@
    recording so that you can start a new one. */
 
 nonfix bang stop abort clear save;
-public record offset;
+public record offset sysex;
 
 using pdfaust;
 using namespace pdfaust;
@@ -30,7 +30,7 @@ using system;
 #! --required oscseq
 oscseq name1 name2 = catch (\msg->pd_error_s msg $$ cst ()) (seq with
   seq stop = pd_delay inf () when
-    put running false;
+    put running false; put savestate ();
     s = if get startt===() then []
 	else deltas (get startt) $ reverse $ get rec with
 	  // Convert a track with absolute timestamps starting at the given
@@ -54,39 +54,80 @@ oscseq name1 name2 = catch (\msg->pd_error_s msg $$ cst ()) (seq with
     put rec []; put startt ();
   end;
   seq abort = pd_delay inf () when
-    put running false;
+    put running false; put savestate ();
     put rec []; put startt ();
   end;
   seq clear = () when
     put act []; put all [];
-    put rec []; put startt ();
+    put rec []; put startt (); put savestate ();
   end;
   seq save = osc_save name $ get all;
   seq (offset t) = case nextmsgs of
-    () = put running false $$ outmsg;
-    dt,msgs = put running true $$ {outmsg,pd_delay (dt-dt1) msgs};
+    () = outmsg;
+    dt,msgs = {outmsg,pd_delay (dt-dt1) msgs};
   end when
     t = if doublep t then t else 0.0;
-    put startt pd_time; put offs t;
-    dt1,s = drop t (get all) with
-      drop t [] = t,[];
-      drop t s@((dt,msg):xs) = if t>dt then drop (t-dt) xs else t,s;
+    /* Throw away the recorded sequence in case we got called while recording
+       is already in progress (e.g., when looping). XXXFIXME: It's not clear
+       what to do with earlier takes when our playback position suddenly
+       changes. Maybe we'd want to stash them away somewhere so that we can
+       merge them later? */
+    put rec []; put startt pd_time; put offs t;
+    dt1,s,msgs = case get savestate of
+      // Reuse the saved state if we got reset to the previous offset. This
+      // optimizes the case of a jump back to the beginning of a loop.
+      last_t,state = state if last_t==t;
+      _ = drop t (get all) [] with
+	drop t [] ys = t,[],reverse ys;
+	drop t s@((dt,msg):xs) ys =
+	  if t>dt then drop (t-dt) xs (msg:ys) else t,s,reverse ys;
+      end;
     end;
-    put act s;
+    msgs = {addr val | addr=>val = msgs} when
+      // This only keeps the last value for each OSC address, to avoid
+      // cascades of control changes for the same parameter.
+      msgs = record {addr=>val | addr@_ val = msgs};
+    end;
+    put act s; put running true; put savestate (t,dt1,s,msgs);
     // When we start recording a new sequence, output a bang message to also
     // record the current controller settings at the beginning of the
     // recording.
     outmsg = if get recording && null (get all) && t==0.0 then {bang} else {};
+    // Add any messages that we skipped over so that they are output
+    // immediately.
+    outmsg = if null msgs then outmsg else {outmsg,msgs};
   end;
   seq (record val) = () when
     put recording (val~=0.0);
   end;
+  // MMC support
+  seq (sysex msg::list) = res when
+    msg = map int msg;
+    //printf "sysex: %s\n" (str msg);
+    res = case msg of
+      // 0x7f = universal realtime sysex, n = device id (0x7f=any), 6 = MMC cmd
+      0x7f:n:6:cmd = case cmd of
+	[2] = seq (offset (get offs)); // MMC start
+	[1] = seq stop; // MMC stop
+	[0x44,6,1,h,m,s,fr,ff] = res when // MMC goto
+	  // h=hours m=min s=sec fr=frames (30/sec) ff=subframes (100/fr)
+	  // Rosegarden botches this value, ensure that's in the proper range.
+	  h = h mod 24;
+	  t = round (((((h*60+m)*60+s)*30+fr)*100+ff)/3);
+	  //printf "offset = %g\n" t;
+	  put offs t;
+	  res = if get running then seq (offset (get offs)) else ();
+	end;
+	_ = ();
+      end;
+      _ = ();
+    end;
+  end;
+  seq (sysex _) = ();
   // process pending messages
   seq msgs::list = () if ~get running;
   seq msgs::list = case nextmsgs of
-    () = smatrix msgs when
-      put running false;
-    end;
+    () = smatrix msgs;
     dt,newmsgs = {smatrix msgs,pd_delay dt newmsgs};
   end;
   seq msg = () when
@@ -122,7 +163,9 @@ end when
   startt = ref (); offs = ref 0;
   running = ref false;
   recording = ref false;
+  savestate = ref ();
   pd_receive "offset";
+  pd_receive "sysex";
   ~loaded || pd_post $ "oscseq: loaded "+pfile fname;
 end) with
   // Our OSC file format is a simple text file with three columns: relative
