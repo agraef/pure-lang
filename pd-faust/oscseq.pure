@@ -11,6 +11,10 @@
    - clear purges the sequence so that you can start recording a new one
    - save saves the current sequence in the file specified by the creation arg
    - record 0 and record 1 disable and enable recording, respectively
+   - bang records the current setting of the controls in armed units (this is
+     also done automatically when you start recording a new sequence from
+     scratch; the bang message does the same explicitly if not in playback
+     mode)
 
    Recorded OSC messages are output on the outlet. When in recording mode, OSC
    messages received on the inlet (actually anything that doesn't look like
@@ -38,7 +42,7 @@ oscseq name1 name2 = catch (\msg->pd_error_s msg $$ cst ()) (seq with
 	  deltas t1 [] = [];
 	  deltas t1 ((t2,msg):xs) = (t2-t1,msg):deltas t2 xs;
 	end;
-    null s || (put all $ mix 0.0 0.0 (get all) (get offs) s) with
+    null s || (put all $ comp [] $ mix 0.0 0.0 (get all) (get offs) s) with
       // Mix two tracks with relative timestamps.
       mix t t1 xs t2 [] = shift (t1-t) xs;
       mix t t1 [] t2 ys = shift (t2-t) ys;
@@ -49,6 +53,15 @@ oscseq name1 name2 = catch (\msg->pd_error_s msg $$ cst ()) (seq with
       shift t xs = case xs of
 	(dt,msg):xs = (t+dt,msg):xs;
 	_ = xs;
+      end;
+      // Compress the parameter settings at time 0, to prevent redundant
+      // parameter changes from piling up at the beginning of the sequence.
+      comp ys [] = mkmsgs (reverse ys);
+      comp ys xs@((dt,msg):xs1) =
+	if dt==0 then comp (msg:ys) xs1 else mkmsgs (reverse ys)+xs;
+      mkmsgs msgs = [0.0,addr val | addr=>val = msgs] when
+	// This only keeps the last value for each OSC address.
+	msgs = record {addr=>val | addr@_ val = msgs};
       end;
     end;
     put rec []; put startt ();
@@ -100,6 +113,12 @@ oscseq name1 name2 = catch (\msg->pd_error_s msg $$ cst ()) (seq with
   seq (record val) = () when
     put recording (val~=0.0);
   end;
+  seq bang = {bang,pd_delay 250.0 stop} when
+    // This tentatively puts us in recording mode so that the reply can be
+    // recorded. We subsequently send ourselves a stop message to store the
+    // recorded parameter settings.
+    put rec []; put startt pd_time; put offs 0.0;
+  end if get recording && get startt === ();
   // MMC support
   seq (sysex msg::list) = res when
     msg = map int msg;
