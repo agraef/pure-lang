@@ -318,13 +318,21 @@ is not immediately obvious, here is a brief rundown of the available controls:
   argument specifies the name of the OSC file. Both arguments are optional; if
   the second argument is omitted, it defaults to the name of the MIDI file
   with new extension .osc. You can also omit both arguments if neither MIDI
-  file playback nor saving recorded OSC data is required.
+  file playback nor saving recorded OSC data is required. Or you can leave the
+  first parameter empty (specify ``""`` or ``0`` instead) to only set an OSC
+  filename, if you don't need MIDI playback. The latter is useful, in
+  particular, if you use ``midiosc`` with an external MIDI sequencer (see
+  below).
 
 * The abstraction has a single control outlet through which it feeds the
   generated MIDI and other messages to the connected ``fsynth~`` and ``fdsp~``
-  objects. In addition, live MIDI input is also accepted and forwarded to the
-  control outlet, after being translated to the format understood by
-  ``fsynth~`` and ``fdsp~`` objects.
+  objects. Live MIDI input is also accepted and forwarded to the control
+  outlet, after being translated to the format understood by ``fsynth~`` and
+  ``fdsp~`` objects. In addition, ``midiosc`` can also be controlled through
+  an external MIDI sequencer connected to Pd's MIDI input. To these ends,
+  `MIDI Machine Control`_ (MMC) can be used to start and stop OSC playback and
+  recording with the transport controls of the external sequencer program. To
+  make this work, the external sequencer must be configured as an MMC master.
 
 * The ``start``, ``stop`` and ``cont`` controls in the *first* row of control
   elements start, stop and continue MIDI and OSC playback, respectively. The
@@ -342,6 +350,16 @@ is not immediately obvious, here is a brief rundown of the available controls:
   you can start recording any OSC data, you first have to arm the Faust units
   that you want to record. This is done with the "record" toggle in the Pd GUI
   of each unit.
+
+* The "bang" button next to the "record" toggle lets you record a static
+  snapshot of the current parameter settings of all armed units. This is also
+  done automatically when starting a fresh recording. The "bang" button lets
+  you change the starting defaults of parameters of an existing recording. It
+  is also useful if you just want to record a static snapshot of the current
+  parameter settings without recording any live parameter changes. To do this,
+  recording must be enabled and playback must be *off*. Then just arm the
+  Faust units that you wish to record, change the controls to what you want
+  their values to be, and finally push the "bang" button.
 
 * There are some additional controls related to OSC recording in the *second*
   row: ``save`` saves the currently recorded data in an OSC file for later
@@ -366,6 +384,8 @@ is not immediately obvious, here is a brief rundown of the available controls:
   same with MIDI and OSC controller data generated either through automation
   data or by manually operating the control elements in the Pd GUI, see
   `External MIDI and OSC Controllers`_ below for details.
+
+.. _MIDI Machine Control: http://en.wikipedia.org/wiki/MIDI_Machine_Control
 
 .. note:: If you use the ``midiosc`` abstraction in your own patches, you
    should copy it to the directory containing your patch and other required
