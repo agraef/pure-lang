@@ -7,7 +7,7 @@ using midifile;
 
 public note polytouch ctl pgm touch bend;
 nonfix start stop continue;
-public loop;
+public loop offset;
 
 namespace midiseq;
 
@@ -82,6 +82,7 @@ using namespace pdfaust, midiseq;
    - start starts the playback
    - stop stops the playback
    - continue resumes playback at last position
+   - offset t positions the playback cursor at the given offset t (msecs)
    - loop 0 and loop 1 disable and enable looping, respectively
    - 0 and 1 are equivalent to stop and continue, respectively
    - bang reports the length of the sequence to the "timer" receiver
@@ -102,6 +103,7 @@ midiseq name = catch (\msg->pd_error_s msg $$ cst ()) (seq with
   end;
   seq stop = {stopmsgs, pd_delay inf ()} when
     put act (get last); put running false;
+    put last_offs ();
   end;
   seq continue = case nextmsgs of
     () = put running false $$ ();
@@ -112,7 +114,11 @@ midiseq name = catch (\msg->pd_error_s msg $$ cst ()) (seq with
       pd_send "timer" seqlen;
       pd_send "offset" t;
     end;
-  end;
+  end when set_offset end;
+  seq (offset t) = () when
+    t = if doublep t then t else 0.0;
+    put last_offs t;
+  end if ~get running;
   seq (loop val) = () when
     put looping (val~=0.0);
   end;
@@ -137,13 +143,22 @@ midiseq name = catch (\msg->pd_error_s msg $$ cst ()) (seq with
   end when
     put last (get act);
   end;
+  // process pending offset
+  set_offset = () when
+    t = get last_offs; put last_offs ();
+    s = drop t s with
+      drop t [] = [];
+      drop t s@((dt,msg):xs) = if t>dt then drop (t-dt) xs else s;
+    end;
+    put act s; put last s;
+  end if doublep (get last_offs);
 end when
   name = if symbolp name then str name+".mid" else name;
   fname = libsearch "midi" name;
   loaded,s = if stringp fname && ~null fname then true,load fname else false,[];
   listp s || throw ("midiseq: error loading "+name);
   s = decode s; n = #s;
-  act = ref s; last = ref s;
+  act = ref s; last = ref s; last_offs = ref ();
   running = ref false;
   looping = ref false;
   stopmsgs = { ctl 0 123 chan | chan = 1..16 };

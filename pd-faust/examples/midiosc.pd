@@ -1,4 +1,4 @@
-#N canvas 191 268 1041 582 10;
+#N canvas 195 268 1041 582 10;
 #X obj 16 401 notein;
 #X obj 16 430 pack f f f;
 #X msg 16 458 note \$1 \$2 \$3;
@@ -58,37 +58,37 @@
 #X text 278 511 write controls -> MIDI/OSC;
 #X obj 192 4 tgl 15 0 \$0-rec \$0-rec empty 17 7 0 10 -228856 -1 -1
 0 1;
-#X text 356 122 OSC sequencer;
-#X msg 307 189 stop;
-#X obj 442 251 spigot;
-#X obj 307 205 t a;
-#X obj 307 143 r \$0-stop;
-#X text 495 250 print osc msgs;
-#X obj 499 296 print oscseq;
-#X obj 416 143 r \$0-abort;
-#X obj 459 165 r \$0-clear;
-#X msg 416 189 abort;
-#X msg 459 189 clear;
-#X obj 380 219 r oscrecord;
-#X obj 307 261 s oscplay;
+#X text 423 118 OSC sequencer;
+#X msg 321 189 stop;
+#X obj 456 251 spigot;
+#X obj 321 205 t a;
+#X obj 321 143 r \$0-stop;
+#X text 509 250 print osc msgs;
+#X obj 513 296 print oscseq;
+#X obj 430 143 r \$0-abort;
+#X obj 473 165 r \$0-clear;
+#X msg 430 189 abort;
+#X msg 473 189 clear;
+#X obj 394 219 r oscrecord;
+#X obj 321 261 s oscplay;
 #X obj 57 41 bng 15 250 50 0 \$0-abort \$0-abort abort 17 7 0 10 -261234
 -1 -1;
 #X obj 109 41 bng 15 250 50 0 \$0-clear \$0-clear clear 17 7 0 10 -203904
 -1 -1;
 #X obj 57 62 tgl 15 0 \$0-write \$0-write write 17 7 0 10 -262144 -1
 -1 0 1;
-#X obj 348 165 r \$0-rec;
-#X msg 348 189 record \$1;
+#X obj 362 165 r \$0-rec;
+#X msg 362 189 record \$1;
 #X obj 130 143 r \$0-abort;
-#X msg 528 189 save;
+#X msg 542 189 save;
 #X obj 7 41 bng 15 250 50 0 \$0-save \$0-save save 17 7 0 10 -262130
 -1 -1;
-#X obj 528 143 r \$0-save;
+#X obj 542 143 r \$0-save;
 #X text 4 60 MIDI OUT;
 #X obj 160 41 tgl 15 0 \$0-print-osc \$0-print-osc echo 17 7 0 10 -262144
 -1 -1 0 1;
 #X obj 185 223 r \$0-print-midi;
-#X obj 475 223 r \$0-print-osc;
+#X obj 489 223 r \$0-print-osc;
 #X obj 444 496 r myoscinput;
 #X text 428 472 NOT IMPLEMENTED YET;
 #X text 446 459 OSC input;
@@ -98,7 +98,7 @@
 #X obj 334 443 f;
 #X obj 334 379 t b;
 #X obj 334 400 del 100;
-#X obj 307 235 oscseq \$1 \$2;
+#X obj 321 235 oscseq \$1 \$2;
 #X obj 867 214 sysexin;
 #X obj 867 244 sel 240;
 #X msg 867 268 1;
@@ -119,8 +119,8 @@
 #X obj 906 477 s sysex;
 #X obj 172 4 bng 15 250 50 0 \$0-bang \$0-bang empty 17 7 0 10 -262144
 -1 -1;
-#X obj 307 105 r \$0-bang;
-#X obj 442 274 route bang;
+#X obj 321 121 r \$0-bang;
+#X obj 456 274 route bang;
 #X text 703 117 time display;
 #X obj 673 143 r timer;
 #X obj 673 169 route stop offset;
@@ -140,10 +140,10 @@
 #X obj 722 428 /;
 #X obj 757 403 max 1;
 #X obj 7 81 hsl 140 15 0 1 0 0 \$0-pos \$0-progress empty -2 -8 0 10
--262144 -1 -1 0 1;
+-262144 -1 -1 5777 1;
 #X obj 722 482 s \$0-progress;
 #X obj 153 82 nbx 5 14 0 1e+37 0 0 \$0-time \$0-time empty 0 -8 0 10
--262144 -1 -1 0 256;
+-262144 -1 -1 495.5 256;
 #X obj 660 483 s \$0-time;
 #X obj 722 304 metro 100;
 #X obj 753 335 + 100;
@@ -151,11 +151,23 @@
 #X obj 660 428 int;
 #X obj 660 457 / 10;
 #X obj 788 304 s \$0-len;
-#X obj 593 365 *;
-#X obj 660 328 r \$0-len;
-#X obj 593 328 r \$0-pos;
+#X obj 578 365 *;
+#X obj 642 328 r \$0-len;
+#X obj 578 328 r \$0-pos;
 #X obj 17 235 midiseq \$1;
 #X obj 94 219 loadbang;
+#X obj 611 401 swap 1;
+#X obj 611 424 -;
+#X obj 611 449 tgl 15 0 empty empty empty 17 7 0 10 -262144 -1 -1 1
+1;
+#X obj 578 473 spigot;
+#X obj 611 357 loadbang;
+#X msg 611 378 0;
+#X msg 242 189 offset \$1;
+#X obj 242 165 r \$0-offset;
+#X obj 578 499 s \$0-offset;
+#X obj 543 401 r \$0-time;
+#X obj 543 424 * 1000;
 #X connect 0 0 1 0;
 #X connect 0 1 1 1;
 #X connect 0 2 1 2;
@@ -251,6 +263,7 @@
 #X connect 109 0 112 0;
 #X connect 109 1 111 0;
 #X connect 110 0 127 0;
+#X connect 110 0 138 0;
 #X connect 111 0 110 0;
 #X connect 112 0 118 1;
 #X connect 112 0 113 1;
@@ -276,9 +289,21 @@
 #X connect 130 0 131 0;
 #X connect 131 0 126 0;
 #X connect 133 0 129 0;
+#X connect 133 0 141 0;
 #X connect 134 0 133 1;
 #X connect 135 0 133 0;
 #X connect 136 0 31 0;
 #X connect 136 0 4 0;
 #X connect 137 0 136 0;
+#X connect 138 0 139 0;
+#X connect 138 1 139 1;
+#X connect 139 0 140 0;
+#X connect 140 0 141 1;
+#X connect 141 0 146 0;
+#X connect 142 0 143 0;
+#X connect 143 0 138 0;
+#X connect 144 0 35 0;
+#X connect 145 0 144 0;
+#X connect 147 0 148 0;
+#X connect 148 0 141 0;
 #X coords 0 -1 1 1 210 100 1 0 0;
