@@ -84,6 +84,7 @@ using namespace pdfaust, midiseq;
    - continue resumes playback at last position
    - loop 0 and loop 1 disable and enable looping, respectively
    - 0 and 1 are equivalent to stop and continue, respectively
+   - bang reports the length of the sequence to the "timer" receiver
 
    Notes are output on the outlet, using the format 'note num vel chan'. In
    addition, controller messages of the form 'ctl 123 0 chan' for each MIDI
@@ -91,6 +92,7 @@ using namespace pdfaust, midiseq;
 
 #! --required midiseq
 midiseq name = catch (\msg->pd_error_s msg $$ cst ()) (seq with
+  seq bang = pd_send "timer" seqlen;
   seq 0.0 = seq stop;
   seq 1.0 = seq continue;
   seq start | seq continue = () if get running;
@@ -107,6 +109,7 @@ midiseq name = catch (\msg->pd_error_s msg $$ cst ()) (seq with
       // calculate the timebase
       m = #get act;
       t = foldl (\t (dt,_) -> t+dt) 0.0 $ take (n-m) s;
+      pd_send "timer" seqlen;
       pd_send "offset" t;
     end;
   end;
@@ -144,5 +147,6 @@ end when
   running = ref false;
   looping = ref false;
   stopmsgs = { ctl 0 123 chan | chan = 1..16 };
+  seqlen = foldl (\t (dt,_) -> t+dt) 0.0 s;
   ~loaded || pd_post $ "midiseq: loaded "+pfile fname;
 end);

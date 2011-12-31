@@ -34,6 +34,7 @@ using system;
 #! --required oscseq
 oscseq name1 name2 = catch (\msg->pd_error_s msg $$ cst ()) (seq with
   seq stop = pd_delay inf () when
+    pd_send "timer" stop;
     put running false; put savestate ();
     s = if get startt===() then []
 	else deltas (get startt) $ reverse $ get rec with
@@ -65,14 +66,17 @@ oscseq name1 name2 = catch (\msg->pd_error_s msg $$ cst ()) (seq with
       end;
     end;
     put rec []; put startt ();
+    put seqlen $ foldl (\t (dt,_) -> t+dt) 0.0 (get all);
   end;
   seq abort = pd_delay inf () when
+    pd_send "timer" stop;
     put running false; put savestate ();
     put rec []; put startt ();
   end;
   seq clear = () when
     put act []; put all [];
     put rec []; put startt (); put savestate ();
+    put seqlen 0.0;
   end;
   seq save = osc_save name $ get all;
   seq (offset t) = case nextmsgs of
@@ -80,6 +84,8 @@ oscseq name1 name2 = catch (\msg->pd_error_s msg $$ cst ()) (seq with
     dt,msgs = {outmsg,pd_delay (dt-dt1) msgs};
   end when
     t = if doublep t then t else 0.0;
+    pd_send "timer" (get seqlen);
+    pd_send "timer" (offset t);
     /* Throw away the recorded sequence in case we got called while recording
        is already in progress (e.g., when looping). XXXFIXME: It's not clear
        what to do with earlier takes when our playback position suddenly
@@ -183,6 +189,7 @@ end when
   end;
   all = ref s; rec = ref []; act = ref s;
   startt = ref (); offs = ref 0;
+  seqlen = ref $ foldl (\t (dt,_) -> t+dt) 0.0 s;
   running = ref false;
   recording = ref false;
   savestate = ref ();
