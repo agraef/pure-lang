@@ -224,9 +224,9 @@ end) with
        fname = libsearch "osc" name;
        fp = fopen fname "w";
        pointerp fp || throw ("oscseq: error saving "+fname);
-       fprintf fp "# written by oscseq %s\n%-8s /oscaddr value\n"
+       fprintf fp "# written by oscseq %s\n%-11s /oscaddr value\n"
        (ctime time, "# delta");
-       do (\(t,addr@_ val) -> fprintf fp "%-8.6g %s %g\n" (t,addr,val)) s;
+       do (\(t,addr@_ val) -> fprintf fp "%10.2f  %s %g\n" (t,addr,val)) s;
        pd_post $ "oscseq: saved "+pfile fname;
      end);
 end;
