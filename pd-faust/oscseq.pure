@@ -6,7 +6,8 @@
    the first argument with new extension .osc). The object understands the
    following messages:
 
-   - offset t starts playback/recording at the given time offset in msec
+   - start t starts playback/recording at the given time offset in msec
+   - offset t only sets the playback offset
    - stop or abort stops playback/recording
    - clear purges the sequence so that you can start recording a new one
    - save saves the current sequence in the file specified by the creation arg
@@ -23,7 +24,7 @@
    throws away the current recording. A clear message purges the entire
    recording so that you can start a new one. */
 
-nonfix bang stop abort clear save;
+nonfix bang start stop abort clear save;
 public record offset sysex;
 
 using pdfaust;
@@ -79,7 +80,7 @@ oscseq name1 name2 = catch (\msg->pd_error_s msg $$ cst ()) (seq with
     put seqlen 0.0;
   end;
   seq save = osc_save name $ get all;
-  seq (offset t) = case nextmsgs of
+  seq (start t) = case nextmsgs of
     () = outmsg;
     dt,msgs = {outmsg,pd_delay (dt-dt1) msgs};
   end when
@@ -116,6 +117,10 @@ oscseq name1 name2 = catch (\msg->pd_error_s msg $$ cst ()) (seq with
     // immediately.
     outmsg = if null msgs then outmsg else {outmsg,msgs};
   end;
+  seq (offset t) = () when
+    t = if doublep t then t else 0.0;
+    put offs t;
+  end if get startt === ();
   seq (record val) = () when
     put recording (val~=0.0);
   end;
@@ -123,7 +128,8 @@ oscseq name1 name2 = catch (\msg->pd_error_s msg $$ cst ()) (seq with
     // This tentatively puts us in recording mode so that the reply can be
     // recorded. We subsequently send ourselves a stop message to store the
     // recorded parameter settings.
-    put rec []; put startt pd_time; put offs 0.0;
+    put rec []; put startt pd_time;
+    //printf "bang: %s\n" $ str $ get offs;
   end if get recording && get startt === ();
   // MMC support
   seq (sysex msg::list) = res when
@@ -132,7 +138,7 @@ oscseq name1 name2 = catch (\msg->pd_error_s msg $$ cst ()) (seq with
     res = case msg of
       // 0x7f = universal realtime sysex, n = device id (0x7f=any), 6 = MMC cmd
       0x7f:n:6:cmd = case cmd of
-	[2] = seq (offset (get offs)); // MMC start
+	[2] = seq (start (get offs)); // MMC start
 	[1] = seq stop; // MMC stop
 	[0x44,6,1,h,m,s,fr,ff] = res when // MMC goto
 	  // h=hours m=min s=sec fr=frames (30/sec) ff=subframes (100/fr)
@@ -141,7 +147,7 @@ oscseq name1 name2 = catch (\msg->pd_error_s msg $$ cst ()) (seq with
 	  t = round (((((h*60+m)*60+s)*30+fr)*100+ff)/3);
 	  //printf "offset = %g\n" t;
 	  put offs t;
-	  res = if get running then seq (offset (get offs)) else ();
+	  res = if get running then seq (start (get offs)) else ();
 	end;
 	_ = ();
       end;
@@ -193,7 +199,7 @@ end when
   running = ref false;
   recording = ref false;
   savestate = ref ();
-  pd_receive "offset";
+  pd_receive "start";
   pd_receive "sysex";
   ~loaded || pd_post $ "oscseq: loaded "+pfile fname;
 end) with

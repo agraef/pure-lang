@@ -112,7 +112,7 @@ midiseq name = catch (\msg->pd_error_s msg $$ cst ()) (seq with
       m = #get act;
       t = foldl (\t (dt,_) -> t+dt) 0.0 $ take (n-m) s;
       pd_send "timer" seqlen;
-      pd_send "offset" t;
+      pd_send "start" t;
     end;
   end when set_offset end;
   seq (offset t) = () when
@@ -126,7 +126,7 @@ midiseq name = catch (\msg->pd_error_s msg $$ cst ()) (seq with
   // process pending messages
   seq msgs::list = case nextmsgs of
     () = {smatrix msgs,loopmsg} when
-      put running false;
+      put running false; put last_offs ();
       loopmsg = if get looping then pd_delay 500 start else {};
     end;
     dt,newmsgs = {smatrix msgs,pd_delay dt newmsgs};
