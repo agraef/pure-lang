@@ -1,5 +1,5 @@
-#N canvas 330 253 771 572 10;
-#X obj 514 460 tgl 30 0 empty play empty 17 7 0 10 -203904 -1 -1 0
+#N canvas 334 253 771 572 10;
+#X obj 514 460 tgl 30 0 empty play empty 17 7 0 10 -203904 -1 -1 1
 1;
 #X obj 594 519 faust-remote;
 #X msg 514 500 \; on \$1 \; pd dsp \$1;
@@ -7,7 +7,7 @@
 -1;
 #X obj 22 520 print;
 #N canvas 545 488 450 300 audio 0;
-#X obj 140 24 tgl 15 0 empty on empty 17 7 0 10 -262144 -1 -1 0 1;
+#X obj 140 24 tgl 15 0 empty on empty 17 7 0 10 -262144 -1 -1 1 1;
 #X obj 140 53 metro 40;
 #X obj 52 99 dac~;
 #X obj 19 53 inlet~;
@@ -21,7 +21,7 @@
 #X connect 3 0 5 0;
 #X connect 4 0 2 1;
 #X connect 4 0 6 0;
-#X restore 106 520 pd audio;
+#X restore 105 520 pd audio;
 #X text 42 306 print controls;
 #X text 558 467 audio on/off;
 #X msg 215 412 reload;
@@ -46,9 +46,9 @@ sustain -2 -6 0 10 -262144 -1 -1 6350 1;
 #X obj 160 120 nbx 5 14 0 1 0 0 1002-synth:organ/1-adsr/sustain 1002-synth:organ/1-adsr/sustain
 empty 0 -6 0 10 -262144 -1 -1 0.5 256;
 #X obj 10 150 hsl 128 15 0 1 0 0 1002-synth:organ/2-master/pan 1002-synth:organ/2-master/pan
-pan -2 -6 0 10 -262144 -1 -1 6350 1;
+pan -2 -6 0 10 -262144 -1 -1 6223 1;
 #X obj 160 150 nbx 5 14 0 1 0 0 1002-synth:organ/2-master/pan 1002-synth:organ/2-master/pan
-empty 0 -6 0 10 -262144 -1 -1 0.5 256;
+empty 0 -6 0 10 -262144 -1 -1 0.49 256;
 #X obj 10 180 hsl 128 15 0 10 0 0 1002-synth:organ/2-master/vol 1002-synth:organ/2-master/vol
 vol -2 -6 0 10 -262144 -1 -1 381 1;
 #X obj 160 180 nbx 5 14 0 10 0 0 1002-synth:organ/2-master/vol 1002-synth:organ/2-master/vol
@@ -131,13 +131,13 @@ balance -2 -6 0 10 -262144 -1 -1 6350 1;
 #X obj 160 60 nbx 5 14 -1 1 0 0 1002-fx3:amp/3-balance/balance 1002-fx3:amp/3-balance/balance
 empty 0 -6 0 10 -262144 -1 -1 0 256;
 #X obj 10 90 hsl 128 15 -96 10 0 0 1002-fx3:amp/4-meter/left 1002-fx3:amp/4-meter/left
-left -2 -6 0 10 -233017 -1 -1 11502 1;
+left -2 -6 0 10 -233017 -1 -1 8819 1;
 #X obj 160 90 nbx 5 14 -96 10 0 0 1002-fx3:amp/4-meter/left 1002-fx3:amp/4-meter/left
-empty 0 -6 0 10 -233017 -1 -1 0 256;
+empty 0 -6 0 10 -233017 -1 -1 -22.3954 256;
 #X obj 10 120 hsl 128 15 -96 10 0 0 1002-fx3:amp/4-meter/right 1002-fx3:amp/4-meter/right
-right -2 -6 0 10 -233017 -1 -1 11502 1;
+right -2 -6 0 10 -233017 -1 -1 8880 1;
 #X obj 160 120 nbx 5 14 -96 10 0 0 1002-fx3:amp/4-meter/right 1002-fx3:amp/4-meter/right
-empty 0 -6 0 10 -233017 -1 -1 0 256;
+empty 0 -6 0 10 -233017 -1 -1 -21.8813 256;
 #X obj 177 3 tgl 15 1 1002-fx3:record 1002-fx3:record empty 0 -6 0
 10 -233017 -1 -1 0 1;
 #X obj 197 3 bng 15 250 50 1 1002-fx3:init 1002-fx3:init empty 0 -6
@@ -146,7 +146,6 @@ empty 0 -6 0 10 -233017 -1 -1 0 256;
 10 -262144 -1 -1 1 1;
 #X coords 0 -1 1 1 235 150 1 0 0;
 #X restore 514 295 pd \$0-fx3;
-#X obj 22 399 fsynth~ organ "\$0-synth" 0 10;
 #N canvas 0 0 450 300 (subpatch) 0;
 #X array scope-l 1920 float 0;
 #X array scope-r 1920 float 0;
@@ -159,27 +158,28 @@ empty 0 -6 0 10 -233017 -1 -1 0 256;
 #X obj 22 355 t a;
 #X text 63 331 MIDI/OSC output;
 #X obj 22 186 midiosc take5;
-#X obj 22 428 fdsp~ chorus "\$0-fx1" 0x00000;
-#X obj 22 457 fdsp~ freeverb "\$0-fx2" 0x000;
-#X obj 22 486 fdsp~ amp "\$0-fx3" 0x00000000;
+#X obj 22 399 fsynth~ organ "\$0-synth" 0 8;
+#X obj 22 428 fdsp~ chorus "\$0-fx1" 0x0000;
+#X obj 22 457 fdsp~ freeverb "\$0-fx2" 0x00;
+#X obj 22 486 fdsp~ amp "\$0-fx3" 0x0000000;
 #X connect 0 0 2 0;
-#X connect 3 0 16 0;
+#X connect 3 0 23 0;
 #X connect 3 0 24 0;
 #X connect 3 0 25 0;
 #X connect 3 0 26 0;
 #X connect 8 0 24 0;
 #X connect 9 0 25 0;
-#X connect 10 0 16 0;
+#X connect 10 0 23 0;
 #X connect 11 0 26 0;
-#X connect 16 0 4 0;
-#X connect 16 1 24 1;
-#X connect 16 2 24 2;
-#X connect 19 0 21 0;
-#X connect 21 0 16 0;
-#X connect 21 0 24 0;
-#X connect 21 0 25 0;
-#X connect 21 0 26 0;
-#X connect 23 0 21 0;
+#X connect 18 0 20 0;
+#X connect 20 0 23 0;
+#X connect 20 0 24 0;
+#X connect 20 0 25 0;
+#X connect 20 0 26 0;
+#X connect 22 0 20 0;
+#X connect 23 0 4 0;
+#X connect 23 1 24 1;
+#X connect 23 2 24 2;
 #X connect 24 0 4 0;
 #X connect 24 1 25 1;
 #X connect 24 2 25 2;
