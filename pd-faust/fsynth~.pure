@@ -77,6 +77,16 @@ fsynth_dsp name instance chan::int nvoices::int =
     {freq,gain,gate} = get vctrls!i!!["freq","gain","gate"];
     put_control freq (midicps (num+get_bend ch));
     put_control gain (vel/127);
+    trigger!i < pd_time ||
+    // Force a voice to be retriggered immediately by resetting its gate and
+    // reading a single sample.
+    /* XXXFIXME: This is a simplistic approach to fix voice collisions on the
+       spot. It works reasonably well for percussive instruments, but in
+       general the note-on should be delayed until the reassigned voice has
+       had a chance to complete its envelope. As things stand now, the
+       existing note is terminated immediately, which may lead to audible
+       clicks. You'll have to allocate more voices in order to avoid these. */
+    (put_control gate 0.0 $$ faust_compute (get syn!i) in1 out1);
     put_control gate 1.0;
   end if vel > 0; // note on
   = () when
@@ -89,6 +99,7 @@ fsynth_dsp name instance chan::int nvoices::int =
 	// update the control variables
 	gate = get vctrls!i!"gate";
 	put_control gate 0.0;
+	insert trigger (i=>pd_time);
       end;
       // note not on at present, ignore
       _ = ();
@@ -239,8 +250,11 @@ end when
   n = blocksize;
   out = smatrix [dmatrix (l,n) | i = 1..nvoices];
   sum = dmatrix (l,n);
+  // Dummy signal buffers for retriggering a stolen voice.
+  in1 = dmatrix (k,1); out1 = dmatrix (l,1);
   // Create the initial voice allocation.
   voc = ref initvoc;
+  trigger = orddict [i-1 => 0.0 | i = 1..nvoices];
   // Pitch bends.
   bend = orddict [];
   // Activity flag.
