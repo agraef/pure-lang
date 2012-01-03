@@ -343,6 +343,15 @@ the external sequencer must be configured as an MMC master.
 
 .. _MIDI Machine Control: http://en.wikipedia.org/wiki/MIDI_Machine_Control
 
+At the bottom of the abstraction there is a little progress bar along with a
+time display which indicates the current song position. If playback is
+stopped, you can also use these to change the current position for playback,
+recording and a number of other operations as described below. Note that if
+you drive ``midiosc`` from an external MIDI sequencer instead, then it is a
+good idea to load the same MIDI file in ``midiosc`` anyway, so that it knows
+about the length of the MIDI sequence. This will make the progress bar
+display the proper position in the file.
+
 Here is a brief rundown of the available controls:
 
 * The ``start``, ``stop`` and ``cont`` controls in the *first* row of control
@@ -367,10 +376,15 @@ Here is a brief rundown of the available controls:
   done automatically when starting a fresh recording. The "bang" button lets
   you change the starting defaults of parameters of an existing recording. It
   is also useful if you just want to record a static snapshot of the current
-  parameter settings without recording any live parameter changes. To do this,
-  recording must be enabled and playback must be *off*. Then just arm the
-  Faust units that you wish to record, change the controls to what you want
-  their values to be, and finally push the "bang" button.
+  parameter settings without recording any live parameter changes. Moreover,
+  you can also set the parameters at any given point in the piece if you first
+  position the progress bar or the time display accordingly; in this case you
+  may first want to recall the parameter settings at the given point with the
+  ``send`` button described below. In either case, recording must be enabled
+  and playback must be *off*. Then just arm the Faust units that you wish to
+  record, set the playback position as needed, change the controls to what you
+  want their values to be (maybe after recalling the current settings), and
+  finally push the "bang" button.
 
 * There are some additional controls related to OSC recording in the *second*
   row: ``save`` saves the currently recorded data in an OSC file for later
@@ -396,13 +410,12 @@ Here is a brief rundown of the available controls:
   data or by manually operating the control elements in the Pd GUI, see
   `External MIDI and OSC Controllers`_ below for details.
 
-* At the bottom of the abstraction there is a little progress bar along with a
-  time display which indicates the current song position. If playback is
-  stopped, you can also use these to change the start position for playback
-  and recording. Note that if you drive ``midiosc`` from an external MIDI
-  sequencer instead, then it is a good idea to load the same MIDI file in
-  ``midiosc`` anyway, so that it knows about the length of the MIDI sequence.
-  This will make the progress bar display the proper position in the file.
+* There's one additional button in the third row, the ``send`` button which
+  recalls the recorded OSC parameter settings at a given point in the
+  sequence. Playback must be off for this to work. After setting the playback
+  position as desired, just push the ``send`` button. This sets the controls
+  to the current parameter values at the given point, for *all* parameters
+  which have been recorded up to (and including) this point.
 
 Please note that ``midiosc`` is merely an example which should cover most
 common uses. If you don't need all the fancy functionality it provides, your
@@ -472,14 +485,20 @@ of OSC messages for the OSC ``/pan`` address::
 Also note that while the necessary infrastructure to support OSC input and
 output is already provided by pd-faust, the OSC input and output facilities
 themselves which are needed to make this actually work are not implemented in
-the ``midiosc`` abstraction right now. That's because Pd doesn't provide any
-built-in objects for OSC input and output, although a few different solutions
-exist and are included in Hans-Christoph Steiner's Pd-extended_ distribution,
-such as Martin Peach's `OSC externals`_. Thus, you'll have to edit the
-``midiosc`` abstraction and add OSC input/output yourself if you need this.
+the default version of the ``midiosc`` abstraction distributed with pd-faust.
+That's because Pd doesn't provide any built-in objects for OSC input and
+output, although a few different solutions exist and are included in
+Hans-Christoph Steiner's Pd-extended_ distribution, such as Martin Peach's
+`OSC externals`_.
 
 .. _Pd-extended: http://puredata.info/community/projects/software/pd-extended
 .. _OSC externals: http://puredata.info/Members/martinrp/OSCobjects
+
+The distribution includes a version of the ``midiosc`` abstraction which
+implements OSC input and output using Martin Peach's objects in the
+midiosc-mrpeach.pd file. You most likely have to edit this abstraction for
+your purposes; at least you'll have to change the network addresses so that it
+works with the OSC device or application that you use.
 
 Tweaking the GUI Layout
 -----------------------
