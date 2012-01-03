@@ -146,7 +146,7 @@ fdsp_dsp name instance chan::int = catch error (k,l,fdsp with
      The special 'init' and 'active' controls are also supported. OSC path
      mappings in the Faust source ('osc' attribute) are handled as well. */
   fdsp (id@(_::string) val) = case tail id of
-    _ = get writing || do (flip pd_send val) (get oscmap!id)
+    _ = get writing || do (flip pd_send val) (get oscmap!id) $$ ()
       if member (get oscmap) id;
     id = pd_send id val
       if member (get ctrls) id || any (==id) [init_sym, active_sym];
