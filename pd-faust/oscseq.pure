@@ -12,10 +12,13 @@
    - clear purges the sequence so that you can start recording a new one
    - save saves the current sequence in the file specified by the creation arg
    - record 0 and record 1 disable and enable recording, respectively
-   - bang records the current setting of the controls in armed units (this is
-     also done automatically when you start recording a new sequence from
-     scratch; the bang message does the same explicitly if not in playback
-     mode)
+   - bang records the current setting of the controls in armed units at time 0
+     or at the time set with a previous offset message (this is also done
+     automatically when you start recording a new sequence from scratch; the
+     bang message does the same explicitly if not in playback mode)
+   - send t outputs the recorded parameter values for a given time t; send
+     without parameters does the same for the time set with a previous offset
+     message (or 0 if not set)
 
    Recorded OSC messages are output on the outlet. When in recording mode, OSC
    messages received on the inlet (actually anything that doesn't look like
@@ -24,7 +27,7 @@
    throws away the current recording. A clear message purges the entire
    recording so that you can start a new one. */
 
-nonfix bang start stop abort clear save;
+nonfix bang start stop abort clear save send;
 public record offset sysex;
 
 using pdfaust;
@@ -131,6 +134,19 @@ oscseq name1 name2 = catch (\msg->pd_error_s msg $$ cst ()) (seq with
     put rec []; put startt pd_time;
     //printf "bang: %s\n" $ str $ get offs;
   end if get recording && get startt === ();
+  seq (send t) = msgs when
+    t = if doublep t then t else 0.0;
+    msgs = drop t (get all) [] with
+      drop t [] ys = reverse ys;
+      drop t s@((dt,msg):xs) ys =
+	if t>=dt then drop (t-dt) xs (msg:ys) else reverse ys;
+    end;
+    msgs = {addr val | addr=>val = msgs} when
+      // This only keeps the last value for each recorded parameter.
+      msgs = record {addr=>val | addr@_ val = msgs};
+    end;
+  end if get startt === ();
+  seq send = seq $ send $ get offs;
   // MMC support
   seq (sysex msg::list) = res when
     msg = map int msg;
