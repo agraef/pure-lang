@@ -40,6 +40,7 @@ oscseq name1 name2 = catch (\msg->pd_error_s msg $$ cst ()) (seq with
   seq stop = pd_delay inf () when
     pd_send "timer" stop;
     put running false; put savestate ();
+    stop_offs = pd_time-get startt+get offs;
     s = if get startt===() then []
 	else deltas (get startt) $ reverse $ get rec with
 	  // Convert a track with absolute timestamps starting at the given
@@ -71,11 +72,16 @@ oscseq name1 name2 = catch (\msg->pd_error_s msg $$ cst ()) (seq with
     end;
     put rec []; put startt ();
     put seqlen $ foldl (\t (dt,_) -> t+dt) 0.0 (get all);
+    ~doublep stop_offs || put offs stop_offs;
+    //printf "stop: %s\n" $ str $ get offs;
   end;
   seq abort = pd_delay inf () when
     pd_send "timer" stop;
     put running false; put savestate ();
+    stop_offs = pd_time-get startt+get offs;
     put rec []; put startt ();
+    ~doublep stop_offs || put offs stop_offs;
+    //printf "abort: %s\n" $ str $ get offs;
   end;
   seq clear = () when
     put act []; put all [];
@@ -145,6 +151,7 @@ oscseq name1 name2 = catch (\msg->pd_error_s msg $$ cst ()) (seq with
       // This only keeps the last value for each recorded parameter.
       msgs = record {addr=>val | addr@_ val = msgs};
     end;
+    //printf "send: %s\n" $ str t;
   end if get startt === ();
   seq send = seq $ send $ get offs;
   // MMC support
