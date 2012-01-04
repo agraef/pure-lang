@@ -161,7 +161,7 @@ oscseq name1 name2 = catch (\msg->pd_error_s msg $$ cst ()) (seq with
     res = case msg of
       // 0x7f = universal realtime sysex, n = device id (0x7f=any), 6 = MMC cmd
       0x7f:n:6:cmd = case cmd of
-	[2] = seq (start (get offs)); // MMC start
+	[2] | [3] = seq (start (get offs)); // MMC start
 	[1] = seq stop; // MMC stop
 	[0x44,6,1,h,m,s,fr,ff] = res when // MMC goto
 	  // h=hours m=min s=sec fr=frames (30/sec) ff=subframes (100/fr)
