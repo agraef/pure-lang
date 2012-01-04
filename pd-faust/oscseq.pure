@@ -95,7 +95,7 @@ oscseq name1 name2 = catch (\msg->pd_error_s msg $$ cst ()) (seq with
   end when
     t = if doublep t then t else 0.0;
     pd_send "timer" (get seqlen);
-    pd_send "timer" (offset t);
+    pd_send "timer" (offset 1 t);
     /* Throw away the recorded sequence in case we got called while recording
        is already in progress (e.g., when looping). XXXFIXME: It's not clear
        what to do with earlier takes when our playback position suddenly
@@ -170,7 +170,8 @@ oscseq name1 name2 = catch (\msg->pd_error_s msg $$ cst ()) (seq with
 	  t = round (((((h*60+m)*60+s)*30+fr)*100+ff)/3);
 	  //printf "offset = %g\n" t;
 	  put offs t;
-	  res = if get running then seq (start (get offs)) else ();
+	  res = if get running then seq (start (get offs))
+		else pd_send "timer" (offset 0 t);
 	end;
 	_ = ();
       end;
