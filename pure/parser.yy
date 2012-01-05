@@ -236,23 +236,15 @@ items
 
 item_pos
 : { interp.line = yylloc.begin.line; interp.column = yylloc.begin.column; }
-  item1
-;
-
-item1
-: item ';'
-| CODE
-{ action(interp.inline_code(false, interp.xcode), {}); interp.xcode.clear(); }
-| scope { interp.declare_op = false; } CODE
-{ action(interp.inline_code($1, interp.xcode), {}); interp.xcode.clear(); }
+  item
 ;
 
 item
-: expr
+: expr ';'
 { interp.loc = &yyloc;
   if (!interp.tags) { restricted_action(interp.exec($1), delete $1); }
   else delete $1; }
-| ESCAPE expr
+| ESCAPE expr ';'
 { interp.loc = &yyloc;
   if (!interp.tags) { restricted_action(interp.parse($2), delete $2); }
   else delete $2;
@@ -260,11 +252,11 @@ item
   if (yychar > 0 && interp.nerrs == 0)
     error(yylloc, "syntax error, expected end of file");
   YYACCEPT; }
-| LET simple_rule
+| LET simple_rule ';'
 { interp.loc = &yyloc; action(interp.define($2), delete $2); }
-| CONST simple_rule
+| CONST simple_rule ';'
 { interp.loc = &yyloc; action(interp.define_const($2), delete $2); }
-| DEF macro_rule
+| DEF macro_rule ';'
 { interp.loc = &yyloc; action(interp.add_macro_rules($2), delete $2); }
 | INTERFACE ID
 { expr *id = 0;
@@ -286,15 +278,15 @@ item
   }
   if (id) delete id;
 }
-WITH { $<ival>$ = $<ival>3; } interface_rules END
+WITH { $<ival>$ = $<ival>3; } interface_rules END ';'
 { int32_t tag = $<ival>3, count = $6;
   delete $2;
   if (tag) interp.finalize_interface_rules(interp.typeenv, tag, count);
 }
-| TYPE type_rule
+| TYPE type_rule ';'
 { interp.loc = &yyloc;
   action(interp.add_type_rules(interp.typeenv, $2), delete $2); }
-| rule
+| rule ';'
 { interp.loc = &yyloc;
   rulel *rl = 0;
   bool headless = $1->front().lhs.is_null();
@@ -306,22 +298,22 @@ WITH { $<ival>$ = $<ival>3; } interface_rules END
       $1->prec >= PREC_MAX) {
     error(yylloc, "invalid fixity declaration"); $1->prec = 0;
   } }
-  ids
+  ids ';'
 { interp.declare_op = false;
   action(interp.declare($1->priv, $1->prec, $1->fix, $3), );
   if (interp.tags) interp.add_tags($3);
   delete $3; delete $1; }
-| USING fnames
+| USING fnames ';'
 { action(interp.run(*$2), {}); delete $2; }
-| USING scope { interp.declare_op = false; } fnames
+| USING scope { interp.declare_op = false; } fnames ';'
 { action(interp.run($2, *$4), {}); delete $4; }
-| NAMESPACE name
+| NAMESPACE name ';'
 { if (interp.active_namespaces.empty()) {
     action(interp.set_namespace($2), );
   } else
     error(yylloc, "namespace declaration is not permitted here");
 }
-| NAMESPACE
+| NAMESPACE ';'
 { if (interp.active_namespaces.empty()) {
     action(interp.clear_namespace(), );
   } else
@@ -329,14 +321,18 @@ WITH { $<ival>$ = $<ival>3; } interface_rules END
 }
 | NAMESPACE name WITH
 { action(interp.push_namespace(new string(*$2)), ); }
-  items END
+  items END ';'
 { interp.pop_namespace(); delete $2; }
-| USING NAMESPACE name_xsyms_list
+| USING NAMESPACE name_xsyms_list ';'
 { action(interp.using_namespaces($3), ); }
-| USING NAMESPACE
+| USING NAMESPACE ';'
 { action(interp.using_namespaces(), ); }
-| scope EXTERN { interp.declare_op = false; extern_priv = $1; } prototypes
-| EXTERN { extern_priv = -1; } prototypes
+| scope EXTERN { interp.declare_op = false; extern_priv = $1; } prototypes ';'
+| EXTERN { extern_priv = -1; } prototypes ';'
+| CODE
+{ action(interp.inline_code(false, interp.xcode), {}); interp.xcode.clear(); }
+| scope { interp.declare_op = false; } CODE
+{ action(interp.inline_code($1, interp.xcode), {}); interp.xcode.clear(); }
 ;
 
 /* Lexical tie-in: We need to tell the lexer that we're defining new operator
