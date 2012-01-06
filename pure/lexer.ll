@@ -57,6 +57,8 @@ static int32_t maketag(const char *s);
 static bool checkint(const char *s, string& msg);
 static string xsym(const string& ns, const string& s);
 
+static bool esc_mode = false;
+
 /* Uncomment this to enable checking for interactive command names. This is
    rather annoying and hence disabled by default. */
 //#define CHECK_NAMES 1
@@ -468,7 +470,7 @@ blank  [ \t\f\v\r]
 
 "/*"       { parse_comment: BEGIN(comment); }
 
-<escape>""            { BEGIN(INITIAL); return token::ESCAPE; }
+<escape>""            { BEGIN(INITIAL); esc_mode = true; return token::ESCAPE; }
 
 <comment>[^*\n]*        yylloc->step();
 <comment>"*"+[^*/\n]*   yylloc->step();
@@ -1013,6 +1015,10 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
 }
 
 <<EOF>> {
+  if (esc_mode) {
+    esc_mode = false;
+    return token::EOX;
+  }
   if (interp.source_level>0) {
     interp.error(*yylloc, "missing '--endif' pragma at end of file");
     interp.source_level = interp.skip_level = 0;
@@ -1084,6 +1090,7 @@ static void lex_input(const char *prompt, char *buf,
 bool
 interpreter::lex_begin(const string& fname, bool esc)
 {
+  esc_mode = false;
   yy_flex_debug = (verbose&verbosity::lexer) != 0 && !source_s;
   FILE *fp;
   if (source_s)

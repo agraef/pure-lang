@@ -160,6 +160,7 @@ static void mangle_fname(string& name);
 %token		MAPSTO	"->"
 %token		ELLIPSIS "..."
 %token		ESCAPE
+%token		EOX	"end of input"
 %token		CODE	"code section"
 %token <sval>	ID	"identifier"
 %token <ival>	XID	"symbol"
@@ -244,7 +245,7 @@ item
 { interp.loc = &yyloc;
   if (!interp.tags) { restricted_action(interp.exec($1), delete $1); }
   else delete $1; }
-| ESCAPE expr ';'
+| ESCAPE expr EOX
 { interp.loc = &yyloc;
   if (!interp.tags) { restricted_action(interp.parse($2), delete $2); }
   else delete $2;
