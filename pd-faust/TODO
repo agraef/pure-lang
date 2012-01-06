@@ -12,6 +12,13 @@ Features:
 - Add support for polyphonic aftertouch and channel pressure messages. It
   should be possible to map these to Faust controls as well.
 
+- Add support for erasing and editing already recorded automation data. This
+  might use something like "touch mode" in Cubase and Logic, or an explicit
+  "punch in/out" control. (Suggested by Julius Smith.)
+
+- Add a "full duplex" mode to allow both reading and writing controller data
+  from external MIDI and OSC devices at the same time.
+
 Design Issues:
 
 - Refactor the sources so that fsynth~ and fdsp~ share as much code as
@@ -27,3 +34,9 @@ Design Issues:
 - There's no special handling of coarse/fine MIDI controllers in the current
   implementation. Maybe there should be a way to map them to a single Faust
   control?
+
+- To accommodate buggy and/or incomplete MMC implementations in sequencer
+  programs, the oscseq object always assumes an SMPTE framerate of 30 when
+  interpreting MMC locate commands. At present there's no way to configure the
+  framerate either, so you should check that your sequencer indeed uses the
+  30fps value in order to get accurate playback positions.
