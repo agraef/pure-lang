@@ -164,9 +164,15 @@ oscseq name1 name2 = catch (\msg->pd_error_s msg $$ cst ()) (seq with
 	[2] | [3] = seq (start (get offs)); // MMC start
 	[1] = seq stop; // MMC stop
 	[0x44,6,1,h,m,s,fr,ff] = res when // MMC goto
-	  // h=hours m=min s=sec fr=frames (30/sec) ff=subframes (100/fr)
-	  // Rosegarden botches this value, ensure that's in the proper range.
-	  h = h mod 24;
+	  // h=hours m=min s=sec fr=frames (fps/sec) ff=subframes (100/fr)
+	  /* NOTE: Bit 6 and 7 of the h field encode the frame rate as
+	     follows: 00 = 24, 01 = 25, 10 = 30 drop, 11 = 30 fps. These are
+	     masked out to get the proper h value. XXXFIXME: Unfortunately,
+	     the fps bits don't seem to be set by all clients, so we don't
+	     actually use this value here and generally assume fps=30 instead.
+	     Thus you'll have to set your sequencer or mixer console to 30fps
+	     to get accurate offsets. */
+	  h = h and 0b11111;
 	  t = round (((((h*60+m)*60+s)*30+fr)*100+ff)/3);
 	  //printf "offset = %g\n" t;
 	  put offs t;
