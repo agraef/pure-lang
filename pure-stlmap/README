@@ -154,7 +154,7 @@ documentation to understand the performance characteristics and corner case
 behavior of any pure-stlmap function that has a corresponding function in the
 STL. In addition calling underlying STL functions such the set operations,
 swap, or copy on a one-to-one basis preserves O(n) time complexity for certain
-operations that would be difficult to guarantee if the operations are
+operations that would be difficult to guarantee if the operations were
 reimplemented by hand in order to conform to Pure standard library behavior.
 
 The most important disadvantage of this approach is that often the STL
@@ -164,18 +164,18 @@ in m, ``insert m (k=>v)`` will not change the value associated with k to v. If
 m were a stldict, or dict, the value would be changed. (If you want this
 behavior, you can use pure-stlmap's `insert_or_update` function).
 
-Another disadvantage is that the C++ library is in some instances more
-complicated than the Pure Library. For example many of the applicable C++
-functions, including set operations and tests for equality are based on
-lexicographical ordering. For stlset and stlmap, the ordering is handled
-automatically, so there is no inconvenience once you get used to the
-idea. However, in the case of stlmmap and stlmset, care must be taken to
-ensure that elements with the same key are properly lexicographically ordered,
-or the applicable C++ functions will not work properly. In contrast, the set
-operations supplied by the Pure Library, just work -- you don't have to think
-about these things. The C++ approach might take some getting used to, but the
-benefit is O(n) time complexity for set operations (as opposed to the Pure
-Library's O(n log n) time complexity).
+Another disadvantage is that the C++ library is in sometimes more complicated
+than the Pure Library. For example many of the applicable C++ functions,
+including set operations and tests for equality are based on lexicographical
+ordering. For stlset and stlmap, the ordering is handled automatically, so
+there is no inconvenience once you get used to the idea. However, in the case
+of stlmmap and stlmset, care must be taken to ensure that elements with the
+same key are properly lexicographically ordered, or the applicable C++
+functions will not work properly. In contrast, the set operations supplied by
+the Pure Library, just work -- you don't have to think about these things. The
+C++ approach might take some getting used to, but the benefit is O(n) time
+complexity for set operations (as opposed to the Pure Library's O(n log n)
+time complexity).
 
 Examples
 --------
@@ -317,6 +317,31 @@ and stlset. Iterator caching by key oriented functions is not provided because
 the keys are not unique. For the same reason, the key oriented functions might
 are less than ideal when dealing with multi-keyed containers. Using the
 pure-stlmap iterator interface might be your best choice.
+
+Functional Interface for Working with Ranges
+--------------------------------------------
+
+The usual list operations including map, foldl, do, etc. are available for all
+six containers provided by pure-stlmap. They operate directly on the
+underlying data, so it is not necessary, for example, to make a list of
+elements and foldl over the list.
+
+It is possible to use iterators or key oriented functions to "manually" move
+through the elements in a range, as if one were programming in C++, but this
+is not recommended unless there is no alternative. As is the case with lists,
+your code will probably be faster and easier to understand if you stick with
+map, foldl, filter, etc., rather than maintaining pointers, be they iterators
+or keys, into a container. E.g.,::
+
+  > filter (\(k=>v)->v mod 2) sm;
+   ["a"=>1,"c"=>3,"e"=>5]
+
+Clearly it would be painful move through the elements via a recursive loop
+that bumps keys using `next_key` and pushes filtered elements onto a list. 
+
+In short, it should be possible to apply most if not all of the functional
+programming idioms that you use with lists to the containers provided by
+pure-stlmap.
 
 Usage
 =====
@@ -491,21 +516,34 @@ Two associative containers of the same type are considered to be equal if they
 contain the same number of elements and if each pair of their corresponding
 elements are equal.
 
+.. function:: equal /stlmap rng1 rng2
+
 .. function:: infix == /stlmap rng1 rng2
               infix ~= /stlmap rng1 rng2
 
   Test rng1 and rng2 for equality or nonequality where rng1 and rng2 are
-  ranges defined over containers of the same type.
+  ranges defined over containers of the same type. ::
  
    > let xx = stlset ss;
    > xx == ss;
    1
 
-   > (xx,"a","c") == (ss,"a","c");
+Please note that the == defined on all tuples in the prelude will trump
+pure-stlmap's == operators when applied to range tuples. E.g.::
+
+   > stl::elms ss;
+   ["a","b","c","d","e"]
+
+   > let xx  = stl::stlset  ["a","b","c","d"];
+
+   > stl::equal (xx,"a","c") (ss,"a","c");
    1
 
-   > (xx,"a","c") == (ss,"b","c");
+   > (xx,"a","c") == (ss,"a","c");
    0
+
+Thus, for ranges, use equal rather than ==. This issue does not arrise for
+the other comparison operators such as (<).
 
 .. function:: infix <  /stlmap rng1 rng2
 
@@ -582,7 +620,7 @@ for some commonly occurring sequences of operations.
 
 .. function:: get /stlmap (acon,k)
 
-   Same as (!) except that it returns a key value(s) pair.
+   Same as (!) except that it returns a key value(s) pair instead of a value.
 
    > get (sm,stlbeg);
    "a"=>1
@@ -699,11 +737,12 @@ Range Access
 These functions access ranges defined on ordered containers. The work on
 the unordered containers assuming that "range" is the entire container.
 
-.. function:: elms /stlmap rng
+.. function:: members /stlmap rng
+              elms /stlmap rng
               keys /stlmap rng
               vals /stlmap rng
 
-  Return a list of the elms, keys or vals of rng. E.g.,::
+  Return a list of the elments, keys or vals of rng. E.g.,::
 
     > elms shm;   // cannot do (shm,k1,k2)
    ["d"=>4,"e"=>5,"a"=>1,"b"=>2,"c"=>3]
@@ -713,8 +752,6 @@ the unordered containers assuming that "range" is the entire container.
 
    > vals (sm,"b","e");
    [2,3,4]
-
-.. function:: members /stlmap rng
 
   Same as elms.
 

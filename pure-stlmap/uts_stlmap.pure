@@ -140,6 +140,12 @@ list $ take 10 (stl::stream sm1);
 list $ take 10 $ drop 2 (stl::stream sm1);
 //- ["c"=>3,"d"=>4,"e"=>5]
 
+// list $ take 3 (stl::lazy_keys sm1);
+// //- ["a","b","c"]
+
+// list $ take 3 (stl::lazy_vals sm1);
+// //- [1,2,3]
+
 //*** Insert *************************************************************/
 
 let sm1 = stl::stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
@@ -371,12 +377,22 @@ let sm1 = stl::stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4];
 let sm2 = stl::stlmap ["b"=>2,"c"=>3,"d"=>4];
 //- ()
 
-let rng_1be = (sm1,"b","e");
+stl::equal sm1 sm1;
+//- 1
 
-rng_1be == sm1;
+stl::equal sm1 sm2;
 //- 0
 
-rng_1be == sm2;
+stl::equal sm2 sm1;
+//- 0
+
+stl::equal (sm1,"b","e") sm1;
+//- 0
+
+stl::equal (sm1,"b","e") sm2;
+//- 1
+
+stl::equal (sm1,"b","d") (sm2,stl::stlbeg, "d");
 //- 1
 
 sm1 == sm1;
@@ -432,6 +448,24 @@ sm2 >= sm1;
 
 (sm1,"b",stl::stlend) == sm2; // note tuple overrided issue
 //- 0
+
+stl::equal sm1 sm1;
+//- 1
+
+stl::equal sm1 sm2;
+//- 0
+
+stl::equal (sm1,"b",stl::stlend) sm2;
+//- 1
+
+stl::equal (sm1,"c",stl::stlend) sm2;
+//- 0
+
+stl::equal (sm1,"c",stl::stlend) (sm2,"c",stl::stlend);
+//- 1
+
+stl::equal sm2 (sm1,"b",stl::stlend);
+//- 1
 
 (sm1,"b",stl::stlend) < sm2;
 //- 0
@@ -910,5 +944,5 @@ stl::put (sm2,"f") [5,6]; stl::elms sm2;
 //- ["f"=>[5,6],"b"=>[4,3],"a"=>[2,1]]
 
 stl::get (sm2,"f");
-//- [5,6]
+//- "f"=>[5,6]
 
