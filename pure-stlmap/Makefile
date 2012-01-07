@@ -22,24 +22,24 @@ CFLAGS = -g -O2
 
 cppsource = stlmap.cpp stlmmap.cpp stlhmap.cpp
 puresource = $(patsubst %.cpp, %.pure, $(cppsource))
-objects = $(patsubst %.cpp, %$(DLL), $(cppsource))
+object = stlassoc$(DLL)
 
 
-all: $(objects)
+all: $(object)
 
-%$(DLL): %.cpp
+$(object): $(cppsource)
 	g++ $(shared) -o $@ $(MOD_CXXFLAGS) -std=c++0x \
-	$< $(MOD_LDFLAGS) $(LIBS) -I$(stlbase)
+	$(cppsource) $(MOD_LDFLAGS) $(LIBS) -I$(stlbase)
 
 clean:
 	rm -f *.o *$(DLL)
 
-install: $(puresource) $(objects)
+install: $(puresource) $(object)
 	test -d $(installdir) || mkdir -p $(installdir)
 	cp $^ $(installdir)
 
 uninstall:
-	rm -f $(addprefix $(installdir)/, $(puresource) $(objects))
+	rm -f $(addprefix $(installdir)/, $(puresource) $(object))
 
 # Roll a distribution tarball.
 
