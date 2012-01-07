@@ -12,14 +12,13 @@ Version @version@, |today|
 
 | Peter Summerland <p.summerland@gmail.com>
 
-pure-stlmap is a Pure interface to six associative containers provided by a
-part of `C++'s Standard Library`_ that is often refered to as the Standard
-Template Library ("STL"). The interface provides access to the STL's four
-ordered associative containers, map, set, multimap and multiset, and two of
-its unordered associative containers, unordered_map and unordered_set,
-specialized to hold pointers to arbitrary Pure expressions.
+pure-stlmap is a `Pure` interface to six of the eight associative containers
+provided by the `C++ Standard Library`_: map, set, multimap, multiset,
+unordered_map and unordered_set.
 
 .. _Pure: http://pure-lang.googlecode.com
+
+.. _C++ Standard Library: http://en.cppreference.com/w/cpp
 
 .. contents::
 .. sectnum::
@@ -48,12 +47,11 @@ is available at http://code.google.com/p/pure-lang/downloads/list.
 The latest version of the source code for pure-stlmap can be downloaded from
 http://pure-lang.googlecode.com/files/pure-stlmap-@version@.tar.gz.
  
-To install pure-stlmap (on Linux), extract the source code (e.g., tar -xzf
+Before installing pure-stlmap, you need to install pure-stlvec. After you have
+installed pure-stlvec, extract the source code for pure-stlmap (e.g., tar -xzf
 pure-stlmap-@version@.tar.gz), cd to the pure-stlmap-@version@ directory, and
-run ``make``. After this you can (and should) also run ``make test`` to run a
-few unit tests to make sure that pure-stlmap works properly on your system. If
-``make test`` works, run ``sudo make install`` to install pure-stlmap on your
-system.  ``make`` tries to guess your Pure installation directory and
+run ``make`` and then ``sudo make install`` to install pure-stlmap on your
+(Linux) system.  ``make`` tries to guess your Pure installation directory and
 platform-specific setup. If it gets this wrong, you can set some variables
 manually. In particular, ``make install prefix=/usr`` sets the installation
 prefix. Please see the Makefile for details.
@@ -63,25 +61,19 @@ Introduction
 
 A part of the Standard C++ Library`_ that is often refered to as the standard
 template library ("STL") provides templates for generic containers and generic
-algorithms. pure-stlmap provides an interface to the STL's associative
-containers: map, set, multimap and multiset and two of its unordered
-associative containers: unordered_map and unordered_set, specialized to hold
-arbitrary Pure expressions.
-
-.. _C++ standard library documentation: http://en.cppreference.com/w/cpp
-
-Containers Supported
---------------------
-
-pure-stlmap provides six mutable containers "stlmap", "stlset", "stlmmap",
-"stlmset", "stlhmap" and "stlhset" that are thin wrappers around the
-corresponding associative containers provided by the STL. pure-stlmap does not
+algorithms. pure-stlmap provides six mutable containers "stlmap", "stlset",
+"stlmmap", "stlmset", "stlhmap" and "stlhset" that are thin wrappers around
+the corresponding associative containers provided by the STL: map, set,
+multimap, multiset, unordered_map and unordered_set. pure-stlmap does not
 provide wrappers for unordered_multimap and unordered_multiset. In addition,
 the interfaces for stlhmap and stlhset are limited compared to those provided
 for the other four (ordered) associative containers.
 
+Container Attributes
+--------------------
+
 It is sometimes convenient to discuss the supported containers in terms of
-certain defining characteristics:
+certain defining attributes. The following terms are useful:
 
   * associative container - stlmap, stlset, stlmmap, stlmmset, stlhmap or
                             stlhset
@@ -115,55 +107,75 @@ certain defining characteristics:
   * unordered set - stlhset
 
 Hopefully these names are intuitive enough that defining them here was not
-really necessay. On the other hand, the groupings are a nice summary of what
-is available in this package.
+really necessary. On the other hand, the groupings do summarize what is
+available in this package.
 
 Keys, Values and Elements
 -------------------------
 
-The maps provided by pure-stlmap, stlmap, stlmmap and stlhmap, associate
-values with keys. If v is associated with k in an map, m, then we say that
-(k=>v) is an element of m and that k is stored in m. The sets provided by
-pure-stlmap, stlset, stlmset and stlhset simply hold elements. If e is
-contained a set, s, we say that e is an element of s, that e is stored in s,
-that s has key e and that s has value e. In other words, we sometimes speak of
-a set container as if it were a map whose elements, keys and values are all
-the same object.
+The three maps provided by pure-stlmap, stlmap, stlmmap and stlhmap, associate
+values with keys. If a value v is associated with a key k in an map, m, then
+we say that (k=>v) is an element of m and that k is stored in m. The three
+sets provided by pure-stlmap, stlset, stlmset and stlhset, simply hold
+elements. If an element e is contained a set, s, we say that e is an element
+of s, that e is stored in s, that s has key e and that s has value e. In other
+words, we sometimes speak of a set as if it were a map where each element, key
+and value are the same object.
 
-Each ordered container has a less-than function that is used to order its
-elements by key. The default less-than function, (<) generally works well, but
-a customized less-than function can be specified when the ordered container is
-constructed. Two elements of a given ordered container are considered to have
-unique keys if their keys are not "equivalent", i.e., one key is is not
-less-than the other key. For purposes of lexicographical comparisons one
-element, e1, is less than another, e2, if (a) their e1's key is less-than e2's
-key and (b) e1's value is less than e2's value. Also, e1 and e2 are considered
-to be equal if (a) their keys are equivalent and (b) their values are
-equal. The default "value-less-than" and "value-equal" functions (<) and (==),
-but these also can be customized.
+Each ordered container, stlmap, stlset, stlmmap, have stlmset, has a
+key-less-than function that is used to order its elements by key. In addition,
+stlmap and stlmmap each have a value-less-than function and a value-equal
+function. The default less-than function, (<), value-less-than function (<),
+and value-equal function generally work well, but customized versions can be
+specified when the ordered container is constructed. Two elements of a given
+ordered container are considered to have unique keys if their keys are not
+"equivalent", i.e., one key is is not key-less-than the other key. For
+purposes of lexicographical comparisons one element, e1, is less than another,
+e2, if (a) e1's key is less-than e2's key and, for the two maps, (b) e1's
+value is value-less-than e2's value. Also, for the two maps, e1 and e2 are
+considered to be equal if (a) their keys are equivalent and (b) their values
+are value-equal.
 
-The unordered containers do not have less-than functions. They have a hash
-function, a key-equal function and a value-equal function. These default to
-'hash', '(==)' and '(==)' but customized functions can be specified when the
-container is constructed. 
+The unordered containers, stlhmap and sthset, do not have a key-less-than or a
+value-less-than function. They have a hash function, a key-equal function and
+a value-equal function. These default to 'hash', '(==)' and '(==)' but
+customized functions can be specified when the container is constructed.
 
 Correspondence with the Native Interface
 ----------------------------------------
 
 The core functions provided by pure-stlmap, such as the constructors,
-equivalence and comparison operators, insert and erase operations, and the set
-operations are just thin wrappers around the the corresponding C++ functions.
+equivalence and lexicographical comparison operators, insert and erase
+operations, and the set operations are just thin wrappers around the the
+corresponding C++ functions.
 
-One advantage of this approach is that users can consult the STL documentation
-to understand the performance characteristics and corner case behavior of any
-pure-stlmap function that has a corresponding function in the STL. In addition
-calling underlying STL functions such the set operations, swap, or copy on a
-one to one basis preserves O(n) time complexity behavior that is difficult to
-guarantee if the operations are reimplemented by hand in order to conform to
-Pure standard library behavior.
+The main advantage of this approach is that users can consult the C++ Library
+documentation to understand the performance characteristics and corner case
+behavior of any pure-stlmap function that has a corresponding function in the
+STL. In addition calling underlying STL functions such the set operations,
+swap, or copy on a one-to-one basis preserves O(n) time complexity for certain
+operations that would be difficult to guarantee if the operations are
+reimplemented by hand in order to conform to Pure standard library behavior.
 
-Unfortunately, often the STL functions do not have the same semantics as
-similar functions standard Pure library. 
+The most important disadvantage of this approach is that often the STL
+functions do not have the same semantics as similar functions standard Pure
+library. For example, if m is a stlmap or stlhmap and if k is already stored
+in m, ``insert m (k=>v)`` will not change the value associated with k to v. If
+m were a stldict, or dict, the value would be changed. (If you want this
+behavior, you can use pure-stlmap's `insert_or_update` function).
+
+Another disadvantage is that the C++ library is in some instances more
+complicated than the Pure Library. For example many of the applicable C++
+functions, including set operations and tests for equality are based on
+lexicographical ordering. For stlset and stlmap, the ordering is handled
+automatically, so there is no inconvenience once you get used to the
+idea. However, in the case of stlmmap and stlmset, care must be taken to
+ensure that elements with the same key are properly lexicographically ordered,
+or the applicable C++ functions will not work properly. In contrast, the set
+operations supplied by the Pure Library, just work -- you don't have to think
+about these things. The C++ approach might take some getting used to, but the
+benefit is O(n) time complexity for set operations (as opposed to the Pure
+Library's O(n log n) time complexity).
 
 Examples
 --------
@@ -192,7 +204,7 @@ something similar to the following has been entered at the prompt. ::
     > let sms_rng = sm,"b","d";
 
 The value (or values for a multi-key container) associated with a key can be
-accssed using the (!) operator. ::
+accessed using the (!) operator. ::
 
     > sm!"a";
     1
@@ -203,7 +215,7 @@ accssed using the (!) operator. ::
     > smm!"c";
     [31,32]
 
-As expected, the elments of the ordered containers are indeed ordered and those
+As expected, the elements of the ordered containers are indeed ordered and those
 in the unordered (or "hashed") containers are not. ::
 
     > elms ss;
@@ -221,12 +233,14 @@ range. Also, ranges are not supported for stlhmap and stlhset.
     > elms (shm,"b","d"); // fails - ranges not supported for stlhmaps
     stl::elms (#<pointer 0x83b4908>,"b","d")
 
-Iterators
----------
+Many more examples can be found in the pure-stlmap/ut directory.
+
+Iterators and Ranges
+--------------------
 
 The native STL interface is based on "iterators" that point to elements in
 containers. pure-stlmap provides support for iterators defined on its ordered
-containters, stlmap, stlmmap, stlset and stlmset.
+containers, stlmap, stlmmap, stlset and stlmset.
 
 Given a valid iterator you can access, modify or erase the element it points
 to.  Given two iterators, i and j, pointing into a ordered container oc, the
@@ -270,6 +284,40 @@ elements. Accordingly, whenever the documentation of a function refers to a
 range, and the container in question is a a stlhmap or stlhset, the range
 simply refers to the container itself.
 
+Modules
+-------
+
+pure-stlmap provides three separate modules ``stlmap``, ``stlmmap`` and
+``stlhmap``. If you want to use a stlmap or stlset, import stlmap. For
+stlmmaps and stlmsets import stlmmap and for stlhmaps aor stlhsets import
+stlhmap. This separation reflects the idea that ordered maps, unordered maps
+and multimaps (and their corresponding set containers) each have unique
+charateristics and that they are not meant to be interchangable
+implimentations of a common interface. For example, in order to guarantee O(n)
+set operations, stl-pure the set operations are defined on the ordered
+containers, stlmap, stlset, stlmmap and stlmset, but not on stlhmap or
+stlhset.
+
+Consider using the stlmap module which provides stlmap or stlset unless there
+is some compelling reason to use one of the others. The time complexity is
+guaranteed and having ordered elements is often very useful. E.g., sparse
+arrays. In pure-stlmap, these two containers support ranges and the key
+oriented functions cache iterators to speed up key based lookups. Finally, if
+you are using set operations, these two are probably your best choice.
+
+If all you want is quick lookup and you don't need ranges, stlhmap and
+stlhset, provided by the stlhmap module might be slightly faster than stlmap
+and stlset. Set operations, ranges and iterator caching are not available for
+these containers,
+
+If you need a multi-keyed container, stlmmap and stlmset, provided by the
+stlmmap module, are your only choices. Set operations and ranges are
+supported, but the semantics are more complicated than is the case for stlmap
+and stlset. Iterator caching by key oriented functions is not provided because
+the keys are not unique. For the same reason, the key oriented functions might
+are less than ideal when dealing with multi-keyed containers. Using the
+pure-stlmap iterator interface might be your best choice.
+
 Usage
 =====
 
@@ -281,19 +329,12 @@ your Pure programs::
   using stlmmap;
   using stlhmap;
 
-Relationship with pure-stlvec
------------------------------
-
-pure-stlvec and pure-stlmap are linked into a common shared library
-(libstlcontainer.so on Linux) that is installed when pure-stlvec is
-installed. Accordingly pure-stlvec must be installed before you can use
-pure-stlvec.
-
-That said, you do not need to import stlvec (i.e., with a using statement) to
-use stlmap, stlmmap or stlhmap. And pure-stlmap does not itself import
-stlvec. Also, if you import stlmap, stlmmap or stlhmap but not stlvec, you
-will be able to produce a stlvec that contains the elements of a given stlmap,
-but you will not be able to access the stlvec's members.
+As mentioned, pure-stlvec must be installed before you can use
+pure-stlvec. That said, you do not need to import stlvec (i.e., with a using
+statement) to use stlmap, stlmmap or stlhmap. And pure-stlmap does not itself
+import stlvec. Also, if you import stlmap, stlmmap or stlhmap but not stlvec,
+you will be able to produce a stlvec that contains the elements of a given
+stlmap, but you will not be able to access the stlvec's members.
 
    > let sv = stlvec sm;  // make a stlvec
 
@@ -303,28 +344,6 @@ but you will not be able to access the stlvec's members.
    > using stlvec;        // now (!) is defined for stlvecs
    > sv!3;
    "d"=>4
-
-Suggested Uses
---------------
-
-Consider using stlmap or stlset unless there is some compelling reason to use
-one of the others. The time complexity is guaranteed and having ordered
-elements is often very useful. E.g., sparse arrays. In pure-stlmap, these two
-containers support ranges and the key oriented functions cache iterators to
-speed up key based lookups. Finally, if you are using set operations, these
-two are unsurpassed for ease of use and efficiency.
-
-If all you want is quick lookup, stlhmap or stlhset might be a slightly
-faster. Set operations, ranges and iterator caching are not available for
-these containers,
-
-If you really need a multi-keyed container then, in pure-stlmap, stlmmap and
-stlmset are your only choices. Set operations and ranges are supported, but
-the semmantics are much more complicated than is the case for stlmap and
-stlset. Iterator caching by key oriented functions is not provided because the
-keys are not unique. For the same reason, the key oriented functions might are
-less than ideal when dealing with multi-keyed containers. Using the
-pure-stlmap iterator interface might be your best choice.
 
 Types
 =====
@@ -379,11 +398,11 @@ stlhset.
 Container Operations
 ====================
 
-Required Container Operations
------------------------------
+Container Construction and Related Operations
+---------------------------------------------
 
 New empty containers can be constructed using optional parameters that allow
-you to specifiy customized less-than functions, hash functions and equality
+you to specify customized less-than functions, hash functions and equality
 functions. 
 
 .. function:: mkstlmap (kcmp,dflt,vcmp,veql)
@@ -391,7 +410,7 @@ functions.
               mkstlset kcmp
               mkstlmset kcmp
               mkstlhmap (khash,keql,veql)
-              mkstlhset (khash,keql,veql)
+              mkstlhset (khash,keql)
 
    Create a new associative container. The key comparison and hash functions,
    kcmp and khash, are required, the other parameters are optional. The
@@ -492,7 +511,7 @@ elements are equal.
 
    Traverse the ranges comparing pairs of elements e1 and e2. If e1 is less
    than e2, stop and return true; if e2 is less than e1 then stop and return
-   false. If rng1 is exhaused but rng2 is not, return true, else return false. 
+   false. If rng1 is exhausted but rng2 is not, return true, else return false. 
    The two ranges must be defined on ordered associative containers of the
    same type.
 
@@ -530,7 +549,7 @@ Key Oriented Functions
 
 Most of the following functions are basically convenience functions that are
 easier to use than iterators. They use cached iterators for faster lookup time
-for some commonly occuring sequences of operations.
+for some commonly occurring sequences of operations.
 
 .. function:: count /stlmap acon k
               has_key /stlmap acon k
@@ -563,7 +582,7 @@ for some commonly occuring sequences of operations.
 
 .. function:: get /stlmap (acon,k)
 
-   Same as get except that it returns a key value(s) pair.
+   Same as (!) except that it returns a key value(s) pair.
 
    > get (sm,stlbeg);
    "a"=>1
@@ -578,7 +597,7 @@ for some commonly occuring sequences of operations.
               put /stlmap (mm,k) src
 
    Associate v with k (i.e., insert (k=>v)) in um where um is is a stlmap or
-   stlhmsp, or the elments of src with k in a stlmmap, mm. src can be a list
+   stlhmsp, or the elements of src with k in a stlmmap, mm. src can be a list
    or a vector. FIX should allow stlvec.
 
    > elms smm;
@@ -625,7 +644,7 @@ for some commonly occuring sequences of operations.
 .. function:: next_key /stlmap oc k
               prev_key /stlmap oc k
 
-   next_key returns the key of the first element in oc, an oredered container,
+   next_key returns the key of the first element in oc, an ordered container,
    that has a key that is greater than k. If no such element exists or if k is
    stl::stlend, return stl::stlend. prev_key returns the last element in acon
    that has a key that is less that k, or, if no such element exists, throws
@@ -694,6 +713,10 @@ the unordered containers assuming that "range" is the entire container.
 
    > vals (sm,"b","e");
    [2,3,4]
+
+.. function:: members /stlmap rng
+
+  Same as elms.
 
 .. function:: vector /stlmap rng
               stlvec /stlmap rng
@@ -883,7 +906,7 @@ simulated by using elms (or stream) to produce a list of elements and then
 applying the operation to the list.
 
 The first two rows of "standard" list-like operations are applicable all six
-associative contaners while the last row is applicable only to the ordered
+associative containers while the last row is applicable only to the ordered
 containers.
 
    * do, map, listmap, catmap, foldl, foldl1
