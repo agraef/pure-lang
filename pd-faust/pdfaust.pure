@@ -181,3 +181,14 @@ rmap_ctrl args val = case args of
     (::max 0 . ::min 127) $ round ((val-min)/(max-min)*128);
   _ = if val~=0 then 64 else 0;
 end;
+
+// Compare controller values. Returns true iff the given values are identical
+// up to rounding errors.
+
+const eps = 1e-5;
+eq_ctrl x::double y::double = abs (x-y) / z < eps when
+  z = max (abs x) (abs y);
+  z = if z>0 then z else 1.0;
+end;
+eq_ctrl x::real y::real = eq_ctrl (double x) (double y);
+eq_ctrl x y = x===y otherwise;

@@ -42,6 +42,8 @@ fsynth_dsp name instance chan::int nvoices::int =
     zipwith put [vctrls,ctrls,defaults,ctrlmap,oscmap] [vc,c,df,cm,om] when
       vc,c,df,cm,om = create_gui {faust_info s!2 | s = get syn};
     end;
+    clear devctrls;
+    do (\(id=>ptr) -> insert devctrls (id=>get_control ptr)) (get ctrls!0);
     put rctrlmap $ ordmdict [id=>(n,args) | n=>(id,args) = get ctrlmap];
     put roscmap $ ordmdict [id=>p | p=>id = get oscmap];
     // Reset all voices.
@@ -128,22 +130,28 @@ fsynth_dsp name instance chan::int nvoices::int =
     end;
   end if num==123;
 
-  // Other MIDI controllers.
-  fsynth (ctl val num ch) = ()
-    if get writing || chan && ch~=chan || ~chan && ch==10;
-  fsynth (ctl val num ch) = () when
-    num = int num;
-    ~member (get ctrlmap) num ||
-    do send (get ctrlmap!num) with
-      send (id,args) = pd_send id $ map_ctrl args val;
-    end;
-  end;
-
   // Stop message. Turn all notes off, on all channels.
   fsynth stop = () when
     do (flip put_control 0.0 . (!"gate")) $ get vctrls;
     put voc initvoc;
   end;
+
+  // Other MIDI controllers.
+  fsynth (ctl val num ch) = () if chan && ch~=chan || ~chan && ch==10;
+  fsynth (ctl val num ch) = () when
+    num = int num;
+    ~member (get ctrlmap) num ||
+    do send (get ctrlmap!num) with
+      send (id,args) = send_reg id $ map_ctrl args val;
+    end;
+  end;
+
+  // Send a controller value to the GUI and also store it in devctrls. This
+  // prevents the value to be reemitted in write mode, in order to avoid
+  // feedback loops with external MIDI and OSC controllers. XXXFIXME: We
+  // should distinguish between different external controllers here, so that
+  // parameters can be kept in sync if they are mapped to different devices.
+  send_reg id val = insert devctrls (id=>val) $$ pd_send id val;
 
   // Controller messages.
   fsynth (id@_ val) = out when
@@ -161,8 +169,10 @@ fsynth_dsp name instance chan::int nvoices::int =
     // In writing mode output MIDI/OSC controller messages for all defined
     // MIDI and OSC controllers ('midi' and 'osc' attributes in the Faust
     // source), to sync external MIDI and OSC controllers.
-    ~get writing || do (pd_send "midiout") (midivals id val);
-    ~get writing || do (pd_send "oscout") (oscvals id val);
+    oldval = devctrls!id; newval = ~eq_ctrl val oldval;
+    ~(get writing && newval) || do (pd_send "midiout") (midivals id val);
+    ~(get writing && val~==oldval) || do (pd_send "oscout") (oscvals id val);
+    insert devctrls (id=>val);
   end if member (get ctrls!0) id;
 
   // Convert controller messages to the corresponding MIDI/OSC messages.
@@ -194,7 +204,7 @@ fsynth_dsp name instance chan::int nvoices::int =
      The special 'init' and 'active' controls are also supported. OSC path
      mappings in the Faust source ('osc' attribute) are handled as well. */
   fsynth (id@(_::string) val) = case tail id of
-    _ = get writing || do (flip pd_send val) (get oscmap!id) $$ ()
+    _ = do (flip send_reg val) (get oscmap!id)
       if member (get oscmap) id;
     id = pd_send id val
       if member (get ctrls!0) id || any (==id) [init_sym, active_sym];
@@ -244,6 +254,7 @@ end when
   vctrls,ctrls,defaults,ctrlmap,oscmap = ref vc,ref c,ref df,ref cm,ref om when
     vc,c,df,cm,om = create_gui {faust_info s!2 | s = get syn};
   end;
+  devctrls = orddict [id=>get_control ptr | id=>ptr = get ctrls!0];
   rctrlmap = ref $ ordmdict [id=>(n,args) | n=>(id,args) = get ctrlmap];
   roscmap = ref $ ordmdict [id=>p | p=>id = get oscmap];
   // Create the signal buffers.

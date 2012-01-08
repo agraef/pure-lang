@@ -37,6 +37,8 @@ fdsp_dsp name instance chan::int = catch error (k,l,fdsp with
     zipwith put [ctrls,octrls,defaults,ctrlmap,oscmap] [c,oc,df,cm,om] when
       c,oc,df,cm,om = create_gui $ faust_info (get dsp)!2;
     end;
+    clear devctrls;
+    do (\(id=>ptr) -> insert devctrls (id=>get_control ptr)) (get ctrls);
     put rctrlmap $ ordmdict [id=>(n,args) | n=>(id,args) = get ctrlmap];
     put roscmap $ ordmdict [id=>p | p=>id = get oscmap];
     put ctrlmap $ ordmdict
@@ -88,15 +90,22 @@ fdsp_dsp name instance chan::int = catch error (k,l,fdsp with
   = () otherwise;
 
   // MIDI controllers.
-  fdsp (ctl val num ch) = () if get writing || chan && ch~=chan;
+  fdsp (ctl val num ch) = () if chan && ch~=chan;
   fdsp (ctl val num ch) = () when
     num = int num;
     ~member (get ctrlmap) num ||
     do send (get ctrlmap!num) with
       // XXXFIXME: How to deal with the case of coarse/fine controllers here?
-      send (id,args) = pd_send id $ map_ctrl args val;
+      send (id,args) = send_reg id $ map_ctrl args val;
     end;
   end;
+
+  // Send a controller value to the GUI and also store it in devctrls. This
+  // prevents the value to be reemitted in write mode, in order to avoid
+  // feedback loops with external MIDI and OSC controllers. XXXFIXME: We
+  // should distinguish between different external controllers here, so that
+  // parameters can be kept in sync if they are mapped to different devices.
+  send_reg id val = insert devctrls (id=>val) $$ pd_send id val;
 
   // Controller messages.
   fdsp (id@_ val) = out when
@@ -114,8 +123,10 @@ fdsp_dsp name instance chan::int = catch error (k,l,fdsp with
     // In writing mode output MIDI/OSC controller messages for all defined
     // MIDI and OSC controllers ('midi' and 'osc' attributes in the Faust
     // source), to sync external MIDI and OSC controllers.
-    ~get writing || do (pd_send "midiout") (midivals id val);
-    ~get writing || do (pd_send "oscout") (oscvals id val);
+    oldval = devctrls!id; newval = ~eq_ctrl val oldval;
+    ~(get writing && newval) || do (pd_send "midiout") (midivals id val);
+    ~(get writing && val~==oldval) || do (pd_send "oscout") (oscvals id val);
+    insert devctrls (id=>val);
   end if member (get ctrls) id;
 
   // Convert controller messages to the corresponding MIDI/OSC messages.
@@ -146,7 +157,7 @@ fdsp_dsp name instance chan::int = catch error (k,l,fdsp with
      The special 'init' and 'active' controls are also supported. OSC path
      mappings in the Faust source ('osc' attribute) are handled as well. */
   fdsp (id@(_::string) val) = case tail id of
-    _ = get writing || do (flip pd_send val) (get oscmap!id) $$ ()
+    _ = do (flip send_reg val) (get oscmap!id)
       if member (get oscmap) id;
     id = pd_send id val
       if member (get ctrls) id || any (==id) [init_sym, active_sym];
@@ -187,6 +198,7 @@ end when
   ctrls,octrls,defaults,ctrlmap,oscmap = ref c,ref oc,ref df,ref cm,ref om when
     c,oc,df,cm,om = create_gui ui;
   end;
+  devctrls = orddict [id=>get_control ptr | id=>ptr = get ctrls];
   // Compute the reverse MIDI and OSC controller maps. These are used in write
   // mode to generate MIDI and OSC messages from controller input.
   rctrlmap = ref $ ordmdict [id=>(n,args) | n=>(id,args) = get ctrlmap];
