@@ -1,10 +1,11 @@
 
 /* oscseq object: Simple OSC recorder and sequencer. This object is to be
-   driven by midiseq which provides the timebase. The name of the midi and osc
-   files are specified as creation arguments (the second argument is optional;
-   if specified as 0 or an empty string, it defaults to the midi file name in
-   the first argument with new extension .osc). The object understands the
-   following messages:
+   driven by midiseq which provides the timebase. (It is also possible to use
+   an external MIDI sequencer if it is configured as an MMC master.) The name
+   of the midi and osc files are specified as creation arguments (the second
+   argument is optional; if specified as 0 or an empty string, it defaults to
+   the midi file name in the first argument with new extension .osc). The
+   object understands the following messages:
 
    - start t starts playback/recording at the given time offset in msec
    - offset t only sets the playback offset
@@ -161,9 +162,15 @@ oscseq name1 name2 = catch (\msg->pd_error_s msg $$ cst ()) (seq with
     res = case msg of
       // 0x7f = universal realtime sysex, n = device id (0x7f=any), 6 = MMC cmd
       0x7f:n:6:cmd = case cmd of
-	[2] | [3] = seq (start (get offs)); // MMC start
-	[1] = seq stop; // MMC stop
-	[0x44,6,1,h,m,s,fr,ff] = res when // MMC goto
+	/* This is probably incomplete. We just implement the basic MMC
+	   commands that we need, and there aren't any replies. MMC pause is
+	   understood as a synonym for MMC stop, and MMC deferred play does
+	   the same as an ordinary MMC play message. */
+	[1] | [9] = seq stop; // MMC stop / pause
+	[2] | [3] = seq (start (get offs)); // MMC play / deferred play
+	[6] = seq (record 1) $$ record 1; // MMC punch in
+	[7] = seq (record 0) $$ record 0; // MMC punch out
+	[0x44,6,1,h,m,s,fr,ff] = res when // MMC locate
 	  // h=hours m=min s=sec fr=frames (fps/sec) ff=subframes (100/fr)
 	  /* NOTE: Bit 6 and 7 of the h field encode the frame rate as
 	     follows: 00 = 24, 01 = 25, 10 = 30 drop, 11 = 30 fps. These are
