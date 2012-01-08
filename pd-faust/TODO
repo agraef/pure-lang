@@ -16,9 +16,6 @@ Features:
   might use something like "touch mode" in Cubase and Logic, or an explicit
   "punch in/out" control. (Suggested by Julius Smith.)
 
-- Distinguish between different external MIDI and OSC controllers in write
-  mode, so that parameters can be kept in sync across different devices.
-
 Design Issues:
 
 - Refactor the sources so that fsynth~ and fdsp~ share as much code as
@@ -40,3 +37,9 @@ Design Issues:
   interpreting MMC locate commands. At present there's no way to configure the
   framerate either, so you should check that your sequencer indeed uses the
   30fps value in order to get accurate playback positions.
+
+- We don't distinguish between different external MIDI and OSC controllers in
+  write mode right now. Maybe we should keep track of the external source that
+  initiated a control change, so that the new data can still be written back
+  to all other external devices. This is necessary if we want parameters to be
+  kept in sync across different devices.
