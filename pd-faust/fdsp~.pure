@@ -38,7 +38,7 @@ fdsp_dsp name instance chan::int = catch error (k,l,fdsp with
       c,oc,df,cm,om = create_gui $ faust_info (get dsp)!2;
     end;
     clear devctrls;
-    do (\(id=>ptr) -> insert devctrls (id=>get_control ptr)) (get ctrls);
+    do (\(id=>ptr) -> insert devctrls (id=>())) (get ctrls);
     put rctrlmap $ ordmdict [id=>(n,args) | n=>(id,args) = get ctrlmap];
     put roscmap $ ordmdict [id=>p | p=>id = get oscmap];
     put ctrlmap $ ordmdict
@@ -126,7 +126,7 @@ fdsp_dsp name instance chan::int = catch error (k,l,fdsp with
     oldval = devctrls!id; newval = ~eq_ctrl val oldval;
     ~(get writing && newval) || do (pd_send "midiout") (midivals id val);
     ~(get writing && val~==oldval) || do (pd_send "oscout") (oscvals id val);
-    insert devctrls (id=>val);
+    ~get writing || insert devctrls (id=>val);
   end if member (get ctrls) id;
 
   // Convert controller messages to the corresponding MIDI/OSC messages.
@@ -198,7 +198,7 @@ end when
   ctrls,octrls,defaults,ctrlmap,oscmap = ref c,ref oc,ref df,ref cm,ref om when
     c,oc,df,cm,om = create_gui ui;
   end;
-  devctrls = orddict [id=>get_control ptr | id=>ptr = get ctrls];
+  devctrls = orddict [id=>() | id=>ptr = get ctrls];
   // Compute the reverse MIDI and OSC controller maps. These are used in write
   // mode to generate MIDI and OSC messages from controller input.
   rctrlmap = ref $ ordmdict [id=>(n,args) | n=>(id,args) = get ctrlmap];
