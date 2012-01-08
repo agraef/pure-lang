@@ -431,28 +431,24 @@ External MIDI and OSC Controllers
 The ``fsynth~`` object has built-in (and hard-wired) support for MIDI notes,
 pitch bend and MIDI controller 123 (all notes off).
 
-Other MIDI and OSC controller data can be handled as well, by configuring the
-controls in your Faust units accordingly. pd-faust's treatment of such
-controller data depends on the *mode* the ``fdsp~`` or ``fsynth~`` object is
-in.
-
-The default mode is *read mode*, in which controller data received from
-external MIDI and OSC devices is interpreted according to the controller
-mappings defined in the Faust source (this is explained below), by updating
-the corresponding GUI elements and the control variables of the Faust dsp.
-For obvious reasons, this only works with *active* Faust controls.
+Other controller data received from external MIDI and OSC devices is
+interpreted according to the controller mappings defined in the Faust source
+(this is explained below), by updating the corresponding GUI elements and the
+control variables of the Faust dsp. For obvious reasons, this only works with
+*active* Faust controls.
 
 An ``fdsp~`` or ``fsynth~`` object can also be put in *write mode* by feeding
-a message of the form ``write 1`` into its control inlet. For convenience, the
-``write`` toggle in the ``midiosc`` abstraction allows you to do this
-simultaneously for all Faust units connected to ``midiosc``\ 's control
-outlet.
+a message of the form ``write 1`` into its control inlet (the ``write 0``
+message disables write mode again). For convenience, the ``write`` toggle in
+the ``midiosc`` abstraction allows you to do this simultaneously for all Faust
+units connected to ``midiosc``\ 's control outlet.
 
-Once an object is in write mode, it does not interpret incoming MIDI and OSC
-controller data any more, but rather *outputs* MIDI and OSC controller data in
-response to both automation data and the manual operation of the Pd GUI
-elements, again according to the controller mappings defined in the Faust
-source. Note that this works with both *active* and *passive* Faust controls.
+When an object is in write mode, it also *outputs* MIDI and OSC controller
+data in response to both automation data and the manual operation of the Pd
+GUI elements, again according to the controller mappings defined in the Faust
+source, so that it can drive an external device such as a MIDI fader box or a
+multitouch OSC controller. Note that this works with both *active* and
+*passive* Faust controls.
 
 To configure MIDI controller assignments, the labels of the Faust control
 elements have to be marked up with the special ``midi`` attribute in the Faust
@@ -461,19 +457,18 @@ the Faust source as follows::
 
   pan = hslider("pan [midi:ctrl 10]", 0, -1, 1, 0.01);
 
-In read mode, pd-faust will then provide the necessary logic to handle MIDI
-input from controller 10 by changing the pan control in the Faust unit
-accordingly, mapping the controller values 0..127 to the range and step size
-given in the Faust source. Conversely, in write mode corresponding MIDI
-controller data will be generated and sent to Pd's MIDI output, on the MIDI
-channel specified in the creation arguments of the Faust unit (0 meaning
-"omni", i.e., output on all MIDI channels), so that it can drive an external
-MIDI device such as a keyboard or a faderbox.
+pd-faust will then provide the necessary logic to handle MIDI input from
+controller 10 by changing the pan control in the Faust unit accordingly,
+mapping the controller values 0..127 to the range and step size given in the
+Faust source. Moreover, in write mode corresponding MIDI controller data will
+be generated and sent to Pd's MIDI output, on the MIDI channel specified in
+the creation arguments of the Faust unit (0 meaning "omni", i.e., output on
+all MIDI channels).
 
-In principle, the same functionality is also available for external OSC
-devices, employing explicit OSC controller assignments in the Faust source by
-means of the ``osc`` attribute. E.g., the following enables input and output
-of OSC messages for the OSC ``/pan`` address::
+The same functionality is also available for external OSC devices, employing
+explicit OSC controller assignments in the Faust source by means of the
+``osc`` attribute. E.g., the following enables input and output of OSC
+messages for the OSC ``/pan`` address::
 
   pan = hslider("pan [osc:/pan]", 0, -1, 1, 0.01);
 
