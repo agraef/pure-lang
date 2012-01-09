@@ -73,9 +73,11 @@ private extern expr* smm_next_key(expr* map, expr* key);
 private extern expr* smm_update(expr* map, expr* key, expr* val);
 
 
-/*** Global Type Definitions ********************************************/
+/*** Global Definitions ************************************************/
 
 namespace ;
+
+public emptystlmmap mkstlmmap emptystlmset mkstlmset; 
 
 let stlmmap_t, stlmmap_iter_t, stlmset_t, stlmset_iter_t = stl::smm_type_tags;
 
@@ -167,44 +169,44 @@ move pos::stlmacon_iter n::int = smm_move_iter pos n;
 
 /***  Constructors *********************************************************/
 
-emptystlmmap                    = smm_make_empty (<) (<) (==) [] 0;
+::emptystlmmap                    = smm_make_empty (<) (<) (==) [] 0;
 
-mkstlmmap (kcmp,dflt,vcmp,veql) = smm_make_empty kcmp vcmp veql dflt 0;
-mkstlmmap (kcmp,dflt,vcmp)      = smm_make_empty kcmp vcmp (==) dflt 0;
-mkstlmmap (kcmp,dflt)           = smm_make_empty kcmp (<) (==) dflt  0;
-mkstlmmap kcmp                  = smm_make_empty kcmp (<) (==) [] 0;
+::mkstlmmap (kcmp,dflt,vcmp,veql) = smm_make_empty kcmp vcmp veql dflt 0;
+::mkstlmmap (kcmp,dflt,vcmp)      = smm_make_empty kcmp vcmp (==) dflt 0;
+::mkstlmmap (kcmp,dflt)           = smm_make_empty kcmp (<) (==) dflt  0;
+::mkstlmmap kcmp                  = smm_make_empty kcmp (<) (==) [] 0;
 
-stlmmap xs = smm when
-  smm = emptystlmmap;
+::stlmmap xs = smm when
+  smm = ::emptystlmmap;
   smm_insert_elms_xs smm xs;
 end if listp xs || matrixp xs;
 
-stlmmap rng::svrng = smm when
-  smm = emptystlmmap;
+::stlmmap rng::svrng = smm when
+  smm = ::emptystlmmap;
   smm_insert_elms_stlvec smm rng;
 end;
 
-stlmmap rng::stlmacon_rng = smm when
+::stlmmap rng::stlmacon_rng = smm when
   _,params = smm_container_info rng;
   smm = mkstlmmap params;
   smm_insert_elms_stlmmap smm rng;
 end if ~smm_is_set rng;
 
-emptystlmset = smm_make_empty (<) (<) (==) [] 1;
+::emptystlmset = smm_make_empty (<) (<) (==) [] 1;
 
-mkstlmset kcmp = smm_make_empty kcmp (<) (==) [] 1;
+::mkstlmset kcmp = smm_make_empty kcmp (<) (==) [] 1;
 
-stlmset xs = ss when
-  ss = emptystlmset;
+::stlmset xs = ss when
+  ss = ::emptystlmset;
   smm_insert_elms_xs ss xs;
 end if listp xs || matrixp xs;
 
-stlmset rng::svrng = ss when
-  ss = emptystlmset;
+::stlmset rng::svrng = ss when
+  ss = ::emptystlmset;
   smm_insert_elms_stlvec ss rng;
 end;
 
-stlmset rng::stlmacon_rng = ss when
+::stlmset rng::stlmacon_rng = ss when
   _,kc,_ = smm_container_info rng;
   ss = mkstlmset kc;
   smm_insert_elms_stlmmap ss rng;

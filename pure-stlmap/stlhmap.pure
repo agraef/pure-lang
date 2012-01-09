@@ -54,9 +54,11 @@ private extern expr* shm_listcatmap(expr* fun, expr* shmp, int what);
 private extern expr* shm_foldl(expr* fun, expr* val, expr* shmp);
 private extern expr* shm_foldl1(expr* fun, expr* shmp);
 
-/*** global type definitions ********************************************/
+/*** Global Definitions **************************************************/
 
 namespace ;
+
+public emptystlhmap mkstlhmap emptystlhset mkstlhset; 
 
 let stlhmap_t, stlhmap_iter_t, stlhset_t, stlhset_iter_t = stl::shm_type_tags;
 
@@ -76,40 +78,40 @@ const shm_elm = 3;
 
 /***  Constructors *********************************************************/
 
-emptystlhmap                = shm_make_empty hash (==) (==) 0;
+::emptystlhmap                = shm_make_empty hash (==) (==) 0;
 
-mkstlhmap (khash,keql,veql) = shm_make_empty khash keql veql 0;
-mkstlhmap (khash,keql)      = shm_make_empty khash keql (==) 0;
-mkstlhmap  khash            = shm_make_empty khash (==) (==) 0;
+::mkstlhmap (khash,keql,veql) = shm_make_empty khash keql veql 0;
+::mkstlhmap (khash,keql)      = shm_make_empty khash keql (==) 0;
+::mkstlhmap  khash            = shm_make_empty khash (==) (==) 0;
 
-stlhmap xs = shm when
-  shm = emptystlhmap;
+::stlhmap xs = shm when
+  shm = ::emptystlhmap;
   shm_insert_elms_xs shm xs;
 end if listp xs || matrixp xs;
 
-stlhmap rng::svrng = shm when
-  shm = emptystlhmap;
+::stlhmap rng::svrng = shm when
+  shm = ::emptystlhmap;
   shm_insert_elms_stlvec shm rng;
 end;
 
-stlhmap shm::stlhmap = shm_copy shm;
+::stlhmap shm::stlhmap = shm_copy shm;
 
-emptystlhset                   = shm_make_empty hash (==) (==) 1;
+::emptystlhset                   = shm_make_empty hash (==) (==) 1;
 
-mkstlhset (khash,keql)         = shm_make_empty khash keql keql 1;
-mkstlhset  khash               = shm_make_empty khash (==) (==) 1;
+::mkstlhset (khash,keql)         = shm_make_empty khash keql keql 1;
+::mkstlhset  khash               = shm_make_empty khash (==) (==) 1;
 
-stlhset xs = ss when
-  ss = emptystlhset;
+::stlhset xs = ss when
+  ss = ::emptystlhset;
   shm_insert_elms_xs ss xs;
 end if listp xs || matrixp xs;
 
-stlhset rng::svrng = ss when
-  ss = emptystlhset;
+::stlhset rng::svrng = ss when
+  ss = ::emptystlhset;
   shm_insert_elms_stlvec ss rng;
 end;
 
-stlhset shs::stlhset = shm_copy shs;
+::stlhset shs::stlhset = shm_copy shs;
 
 hash_reserve shm::stlhacon mlf::double size::int = shm_reserve shm mlf size;
 
