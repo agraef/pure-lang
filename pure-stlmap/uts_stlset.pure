@@ -11,27 +11,27 @@ using system, stlmap, stlvec;
 let sv1 = ::stlvec ["a","b","c","d","e"]; members sv1;
 //- ["a","b","c","d","e"]
 
-let sm1 = stl::stlset ["a","b","c","d","e"]; stl::elms sm1;
+let sm1 = stlset ["a","b","c","d","e"]; stl::elms sm1;
 //- ["a","b","c","d","e"]
 
-let sm1 = stl::stlset {"a","b","c","d","e"}; stl::elms sm1;
+let sm1 = stlset {"a","b","c","d","e"}; stl::elms sm1;
 //- ["a","b","c","d","e"]
 
-let sm1 = stl::stlset (sv1,1,stl::svend); stl::elms sm1;
+let sm1 = stlset (sv1,1,stl::svend); stl::elms sm1;
 //- ["b","c","d","e"]
 
-let sm2 = stl::stlset sm1; stl::elms sm2;
+let sm2 = stlset sm1; stl::elms sm2;
 //- ["b","c","d","e"]
 
-let sm2 = stl::stlset (sm1,"c","z"); stl::elms sm2;
+let sm2 = stlset (sm1,"c","z"); stl::elms sm2;
 //- ["c","d","e"]
 
 /*** Info ***************************************************************/
 
-let sm1 = stl::stlset ["a","b","c","d","e"];
+let sm1 = stlset ["a","b","c","d","e"];
 //- ()
 
-let sm2 = stl::stlset ["b","c","d"];
+let sm2 = stlset ["b","c","d"];
 //- ()
 
 let ok, smx, f, l = stl::range_info sm1; ok;
@@ -52,7 +52,7 @@ stl::elms (f,l);
 stl::distance (sm1,"b",stl::stlend);
 //- 4
 
-stl::empty stl::emptystlset;
+stl::empty emptystlset;
 //- 1
 
 stl::count sm1 "c";
@@ -63,7 +63,7 @@ stl::container_info sm1;
 
 /*** Accessing Ranges as stlvecs or lists ******************************/
 
-let sm1 = stl::stlset ["a","b","c","d","e"];
+let sm1 = stlset ["a","b","c","d","e"];
 //- ()
 
 let sv1 = stl::stlvec sm1; members sv1;
@@ -122,7 +122,7 @@ stl::vals (sm1,"b","d");
 
 /*** Accessing Ranges using Streams **********************************/
 
-let sm1 = stl::stlset ["a","b","c","d","e"];
+let sm1 = stlset ["a","b","c","d","e"];
 //- ()
 
 head $ stl::stream sm1;
@@ -152,10 +152,10 @@ list $ take 10 $ stl::lazy_map f sm1 with f x = x+10 end;
 //*** Insert *************************************************************/
 
 
-let sm1 = stl::stlset ["a","b","c","d","e"];
+let sm1 = stlset ["a","b","c","d","e"];
 //- ()
 
-let sm2 = stl::mkstlset (>);
+let sm2 = mkstlset (>);
 //- ()
 
 let i_b, i_e = stl::begin sm1, stl::pastend sm1;
@@ -257,7 +257,7 @@ stl::put p 5; stl::elms sm2;
 
 // Erase element at position
 
-let sm1 = stl::stlset ["a","b","c","d","e"];
+let sm1 = stlset ["a","b","c","d","e"];
 //- ()
 
 let i_begin, i_pastend = stl::begin sm1, stl::pastend sm1;
@@ -280,7 +280,7 @@ stl::erase (sm1,i_b); stl::elms sm1;
 
 // Erase ranges
 
-let sm1 = stl::stlset ["a","b","c","d","e"];
+let sm1 = stlset ["a","b","c","d","e"];
 //- ()
 
 let i_begin, i_pastend = stl::begin sm1, stl::pastend sm1;
@@ -315,10 +315,10 @@ stl::elms sm1;
 
 // Attempt erase with bad iterators
 
-let sm1 = stl::stlset ["a","b","c","d","e"];
+let sm1 = stlset ["a","b","c","d","e"];
 //- ()
 
-let sm2 = stl::stlset ["a","b","c","d","e"];
+let sm2 = stlset ["a","b","c","d","e"];
 //- ()
 
 let i_b, i_d = stl::find sm1 "b", stl::find sm1 "d"; 
@@ -332,7 +332,7 @@ catch id $ stl::erase (sm2,i_b,i_d);
 
 // Erase elms with given key
 
-let sm1 = stl::stlset ["a","b","c","d","e"];
+let sm1 = stlset ["a","b","c","d","e"];
 //- ()
 
 stl::erase (sm1,"0");
@@ -355,10 +355,10 @@ stl::erase (sm1,"e"); stl::elms sm1;
 
 //*** swap ***************************************************************/
 
-let sm1 = stl::stlset ["a","b"];
+let sm1 = stlset ["a","b"];
 //- ()
 
-let sm2 = stl::stlset ["c","d","e"];
+let sm2 = stlset ["c","d","e"];
 //- ()
 
 stl::swap sm1 sm2;
@@ -372,10 +372,10 @@ stl::elms sm2;
 
 //** Equality and Lexicographical Comparison ****************************/
 
-let sm1 = stl::stlset ["a","b","c","d"];
+let sm1 = stlset ["a","b","c","d"];
 //- ()
 
-let sm2 = stl::stlset ["b","c","d"];
+let sm2 = stlset ["b","c","d"];
 //- ()
 
 stl::equal sm1 sm1;
@@ -488,13 +488,13 @@ stl::equal sm2 (sm1,"b",stl::stlend);
 
 //*** STL Set Algorithms *********************************************
 
-let sm1 = stl::stlset ["a","b","c"];
+let sm1 = stlset ["a","b","c"];
 //- ()
 
-let sm2 = stl::stlset ["b","c","d"];
+let sm2 = stlset ["b","c","d"];
 //- ()
 
-let sm3 = stl::stlset ["a","b","c","d"];
+let sm3 = stlset ["a","b","c","d"];
 //- ()
 
 let sm = stl::merge sm1 sm2; stl::elms sm;
@@ -553,7 +553,7 @@ stl::set_includes sm2 sm3;
 
 //*** Mapping *****************************************************
 
-let sm1 = stl::stlset ["a","b","c","d","e"];
+let sm1 = stlset ["a","b","c","d","e"];
 //- ()
 
 let i_begin, i_pastend = stl::begin sm1, stl::pastend sm1;
@@ -630,7 +630,7 @@ catch id $ catmap (\e->[e+10]) (i_pastend,i_b)
 
 //*** Mapping into a Stream ******************************************
 
-let sm1 = stl::stlset ["a","b","c","d","e"];
+let sm1 = stlset ["a","b","c","d","e"];
 //- ()
 
 head $ stl::lazy_map (\k->k+1) sm1;
@@ -644,7 +644,7 @@ list $ take 3 $ stl::lazy_map  (\k->k+1) sm1;
 
 //** foldl, foldl1 **************************************************
 
-let sm1 = stl::stlset ["a","b","c","d","e"];
+let sm1 = stlset ["a","b","c","d","e"];
 //- ()
 
 let i_begin, i_pastend = stl::begin sm1, stl::pastend sm1;
@@ -703,7 +703,7 @@ catch id $ foldl1 (\acc e -> e+","+acc) (i_pastend,i_b);
 
 //** foldr, foldr1 **************************************************
 
-let sm1 = stl::stlset ["a","b","c","d","e"];
+let sm1 = stlset ["a","b","c","d","e"];
 //- ()
 
 let i_begin, i_pastend = stl::begin sm1, stl::pastend sm1;
@@ -792,10 +792,10 @@ catch id $ foldr1 (\e acc -> e+","+acc) (i_pastend,i_b);
 
 //*** do, filter *******************************************************
 
-let sm1 = stl::stlset ["a","b","c","d","e"];
+let sm1 = stlset ["a","b","c","d","e"];
 //- ()
 
-let sm2 = stl::mkstlset (>);
+let sm2 = mkstlset (>);
 //- ()
 
 do (\x -> stl::insert sm2 x) sm1; stl::elms sm2;
@@ -806,7 +806,7 @@ filter (\e -> (ord e) mod 2) sm1;
 
 //*** rowmap, rowcatmap, colmap colcatmap ********************************
 
-let sm1 = stl::stlset ["a","b","c","d","e"];
+let sm1 = stlset ["a","b","c","d","e"];
 //- ()
 
 
@@ -830,7 +830,7 @@ colcatmap (\e->if ord e mod 2 then {e;ord e} else {}) sm1;
 
 //*** Key Oriented Functions *********************************************
 
-let sm1 = stl::stlset ["a","b","c","d","e"];
+let sm1 = stlset ["a","b","c","d","e"];
 //- ()
 
 sm1!stl::stlbeg, sm1!"a", sm1!"d", sm1!"e"

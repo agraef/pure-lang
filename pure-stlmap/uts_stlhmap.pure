@@ -17,24 +17,24 @@ hm_elms shm::stlhmap = sort elmless (stl::elms shm);
 let sv1 = ::stlvec ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]; members sv1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
-let shm1 = stl::stlhmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]; hm_elms shm1;
+let shm1 = stlhmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]; hm_elms shm1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
-let shm1 = stl::stlhmap {"a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5}; hm_elms shm1;
+let shm1 = stlhmap {"a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5}; hm_elms shm1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
-let shm1 = stl::stlhmap (sv1,1,stl::svend); stl::elms shm1; hm_elms shm1;
+let shm1 = stlhmap (sv1,1,stl::svend); stl::elms shm1; hm_elms shm1;
 //- ["b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
-let shm2 = stl::stlhmap shm1; hm_elms shm2;
+let shm2 = stlhmap shm1; hm_elms shm2;
 //- ["b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
 /*** Info ***************************************************************/
 
-let shm1 = stl::stlhmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+let shm1 = stlhmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
 //- ()
 
-let shm2 = stl::stlhmap ["b"=>2,"c"=>3,"d"=>4];
+let shm2 = stlhmap ["b"=>2,"c"=>3,"d"=>4];
 //- ()
 
 #shm1, #shm2;
@@ -51,7 +51,7 @@ stl::has_key shm1 "a";
 
 /*** Accessing Elements  **********************************************/
 
-let shm1 = stl::stlhmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+let shm1 = stlhmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
 //- ()
 
 shm1!"a", shm1!"b", shm1!"e";
@@ -92,7 +92,7 @@ sort elmless (stl::vector shm1);
 
 //*** Modification ********************************************************/
 
-let shm1 = stl::emptystlhmap;
+let shm1 = emptystlhmap;
 //- ()
 
 stl::put (shm1,"a") 10;
@@ -149,7 +149,7 @@ stl::erase (shm1,"f");
 hm_elms shm1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
-let shm2 = stl::stlhmap ["x"=>23,"y"=>24,"z"=>26];
+let shm2 = stlhmap ["x"=>23,"y"=>24,"z"=>26];
 //- ()
 
 stl::swap shm1 shm2;
@@ -169,10 +169,10 @@ stl::erase shm1;
 
 //** Equality **************************************************************/
 
-let shm1 = stl::stlhmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4];
+let shm1 = stlhmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4];
 //- ()
 
-let shm2 = stl::stlhmap ["b"=>2,"c"=>3,"d"=>4];
+let shm2 = stlhmap ["b"=>2,"c"=>3,"d"=>4];
 //- ()
 
 shm1 == shm1;
@@ -192,7 +192,7 @@ shm1 ~= shm2;
 
 //*** Mapping *****************************************************
 
-let shm1 = stl::stlhmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+let shm1 = stlhmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
 //- ()
 
 listmap (\(k=>v)->k+1=>v+10) shm1;
@@ -215,7 +215,7 @@ catmap (\(k=>v)->[k+1=>v+10]) shm1;
 
 //*** foldl, foldl1 **************************************************
 
-let shm1 = stl::stlhmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+let shm1 = stlhmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
 //- ()
 
 foldl (\{r,l} (k=>v) -> {r+k,l+v}) {"",0} shm1;
@@ -224,7 +224,7 @@ foldl (\{r,l} (k=>v) -> {r+k,l+v}) {"",0} shm1;
 foldl1 (\(r=>l) (k=>v) -> (r+k=>l+v)) shm1;
 //- "deabc"=>15
 
-let shm2 = stl::emptystlhmap;
+let shm2 = emptystlhmap;
 //- ()
 
 do (stl::insert_or_update shm2) shm1;
@@ -235,7 +235,7 @@ hm_elms shm2;
 
 //*** rowmap, rowcatmap, colmap colcatmap ********************************
 
-let shm1 = stl::stlhmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+let shm1 = stlhmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
 //- ()
 
 rowmap (\(k=>v)->(k,v)) shm1;
@@ -258,7 +258,7 @@ colcatmap (\(k=>v)->if v mod 2 then {v;k} else {}) shm1;
 
 //*** Key Oriented Functions *********************************************
 
-let shm1 = stl::stlhmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+let shm1 = stlhmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
 //- ()
 
 stl::has_key shm1 "0", stl::has_key shm1 "a", stl::has_key shm1 "c";
