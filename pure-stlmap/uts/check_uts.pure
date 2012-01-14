@@ -233,13 +233,15 @@ main args = () when
        else
          check_eval (fget fp), fclose fp;
   if ec > 0 then 
-    printf "--- warning: encountered %d error(s) ---\n" ec
-  else
-    puts "no errors encountered";
+    printf "--- script failed with %d error(s) ---\n" ec
+  else if argc <=1 then
+    puts "--- no errors encountered"
+  else ();
+  if argc > 1 then exit (ec>0) else ();
 end;
 
 check filename = main [filename];
 
-check_default = main ["ut_check_eval_script.pure"];
-
 if argc > 1 then main (tail argv) else ();
+
+
