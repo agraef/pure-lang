@@ -1,0 +1,167 @@
+
+/* poly.pure - polynomial arithmetic using stlmaps. 
+
+   Each poly is a closure that has a stlmap whose elements are terms. Each
+   element has a key that is the order of the term and a val that is its
+   coeficient. Coeficients are anything that the arithmetic operators
+   (+,-,*,/) are defined on, with % used in lieu of / if either coeficient
+   satisfies rationalp.  Terms whose coeficient statisfy is_zero are never
+   saved in the poly's underlying stlmap. The underlying stlmap's elements
+   are ordered by (>) (i.e., not the default ordering which is (<)).
+
+   The value of a poly at x is determined in the usual way based on the order
+   and coeficients of its elements. E.g.,
+
+   $> pure -w -q
+
+   > run poly.pure
+
+   > let p1 = mkpoly [1,1];     // x+1
+   > let p2 = mkpoly [1,2,1];   // x^2 + 2*x + 1
+   > terms p1;
+   [1=>1,0=>1]
+
+   > p1 4, p2 4;
+   5,25
+
+   > terms (p1+p2);
+   [2=>1,1=>3,0=>2]             // x^2 + 3*x + 2
+
+   > (p1+p2) 4;
+   30
+
+   > (p1+p2) * p1 $ 4;
+   150
+
+   > let q,r = p2 / p1; terms q; terms r;
+   [1=>1.0,0=>1.0]
+   []
+   > q 4;
+   5.0
+
+  For division rational coeficients are preserved when possible.
+
+   > let p3 = mkpoly [1%1,1%1];
+   > let q,r = (p2/p3); terms q;
+   [1=>1L%1L,0=>1L%1L]
+
+  Note the use of custom ordering on stlmaps and the use of foldr to compute
+  values in a way that preserves integer and rationals.
+
+*/
+
+using system, math, stlmap;
+using namespace stl;
+
+/* Operations on the underlying stlmaps 'term_maps' ************************/
+
+is_zero x::double = abs x < 1.0e-12;
+
+is_zero x::number = x == 0;
+
+type term_map tm::stlmap; 
+
+empty_term_map = mkstlmap (>);
+
+mkterms coefs = mk_aux (#coefs-1) coefs with
+  mk_aux _ [] = res;
+  mk_aux n _ = throw "bad_argument" if n < 0;
+  mk_aux n (c:cs) = mk_aux (ord-1) cs when
+    ord, coef = case c of
+      o=>cf = o,cf;
+      o,cf = o,cf;
+      cf = n,cf;
+    end;
+    if ~(integerp ord) then throw "bad_argument" else ();
+    insert res (ord=>coef);
+  end;
+end when
+  res = empty_term_map;
+end;
+
+adjust_term poly::stlmap ord adj = insert poly (ord=>adj) if ~has_key poly ord;
+
+adjust_term poly::stlmap ord adj = () when
+  coef = adj + poly!ord;
+  if is_zero coef then erase (poly,ord) else insert_or_update poly (ord=>coef);
+end;
+
+terms_add poly1 poly2 = do add_term poly2 $$ poly1 with
+  add_term (ord=>coef) = adjust_term poly1 ord coef;
+end;
+
+terms_sub poly1 poly2 = do sub_term poly2 $$ poly1 with
+  sub_term (ord=>coef) = adjust_term poly1 ord (-coef);
+end;
+
+terms_mult poly1::stlmap poly2::stlmap = do add_row poly1 $$ res 
+with
+  add_row (o1=>c1) = do (add_elm o1 c1) poly2;
+  add_elm o1 c1 (o2=>c2) = adjust_term res (o1+o2) (c1*c2);
+end when
+  res = mkstlmap (>);
+end;
+
+terms_divide dividend::stlmap divisor::stlmap = mk_quot with  
+  mk_quot = quot, rem if empty rem;
+  mk_quot = mk_term rem_ord rem_coef $$ mk_quot
+    if div_ord <= rem_ord when rem_ord=>rem_coef = get (rem,stlbeg) end;
+  mk_quot = quot, rem;
+  mk_term rem_ord rem_coef = () when
+    term_coef = div_coefs rem_coef div_coef;
+    term_ord = rem_ord - div_ord;
+    insert quot (term_ord=>term_coef);
+    do (adjust_rem term_ord (-term_coef)) divisor;
+  end;
+  div_coefs c1 c2 = if rationalp c1 || rationalp c2 then c1 % c2 else c1 / c2;
+  adjust_rem q_ord q_coef (d_ord=>d_coef) = () when
+    adj_ord = q_ord + d_ord;
+    adj_coef = q_coef * d_coef;
+    adjust_term rem adj_ord adj_coef;
+  end;
+end when
+  quot = empty_term_map;
+  rem = stlmap dividend;
+  div_ord=>div_coef = get (divisor,stlbeg);
+end;
+
+/*** Polynomials ********************************************************/
+
+type poly x::function = check_ptrtag stlmap_t (x [[stlbeg]]);
+
+stlmapp x = check_ptrtag stlmap_t x;
+
+term_map p::poly = p [[stlbeg]];
+
+terms (q::poly,r::poly) = elms (term_map q), elms (term_map r);
+
+terms p::poly = elms (term_map p);
+
+mkpoly p1::poly = mkpoly (stlmap $ term_map p1);
+
+mkpoly terms = poly with
+  poly [[stlbeg]] = tm;
+  poly x = res when xr,res = foldr (term_val x) (1,0) tm end;
+  term_val x (ord=>coef) (xr, res) = xr*x, res + coef * xr; 
+end when
+  tm = if typep term_map terms then terms else mkterms terms;
+end;
+
+p1::poly + p2::poly =  mkpoly $ terms_add lhs rhs when
+  pt1, pt2 = term_map p1, term_map p2;
+  lhs,rhs = if #pt1 > #pt2 then stlmap pt1, pt2 else stlmap pt2, pt1;
+end;
+
+p1::poly - p2::poly = mkpoly $ terms_sub (stlmap $ term_map p1) (term_map p2);
+
+p1::poly * p2::poly = mkpoly $ terms_mult (term_map p1) (term_map p2);
+
+p1::poly / p2::poly = mkpoly t1, mkpoly t2 when
+  t1, t2 = terms_divide (term_map p1) (term_map p2);
+end;
+
+p1::poly ^ 0 = mkpoly [1];
+
+p1::poly ^ 1 = mkpoly p1;
+
+p1::poly ^ n = p1 * (p1 ^ (n-1));
