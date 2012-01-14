@@ -1,0 +1,44 @@
+/* anagrams.pure - print groups of words that have the same letters.
+
+Copyright (c) 2012 by Peter Summerland <p.summerland@gmail.com>.
+
+All rights reserved.
+
+This software is is part of pure-stlmap, an addon to the Pure Programming
+Language (http://code.google.com/p/pure-lang/).
+
+This software is distributed under a BSD-style license in the hope that it
+will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the COPYING file
+included with the pure-stlvec distribution package for details.
+
+*/
+
+using system, stlmap;
+
+collect_anagrams n fp = () when
+  do add_word (split "\n" (fget fp));
+  anagrams = sort (<) (map str_words (filter (\(k=>v)->#v>=n) word_groups)); 
+  do puts anagrams;
+end with
+  add_word word = stl::insert_or_update_with (:) word_groups (key=>word) when
+    key = strcat $ sort (<) (list word);
+  end;
+  str_words (k=>words) = join " " (reverse words);
+end when
+  word_groups = mkstlmap ((<),[]);  
+end;
+
+list_anagrams n = () when
+  fp = case fopen "anagram_groups_dict.txt" "r" of 
+    fopen _ _ = pointer 0;
+    fp = fp;
+  end;
+  if null fp then
+    puts "Can't open word file" 
+  else if feof fp then
+    puts "Empty word file"
+  else
+    collect_anagrams n fp;
+  fclose fp;
+end;
