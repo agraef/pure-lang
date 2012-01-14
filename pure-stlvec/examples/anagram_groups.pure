@@ -5,7 +5,7 @@
 
 using system, stlvec, stlvec::algorithms;
 
-collect_anagrams fp = () when
+print_anagrams fp = () when
   do add_pair (split "\n" (fget fp));
   stl::stable_sort word_pairs first_less;
   put_groups 0;
@@ -34,7 +34,7 @@ end when
   anagrams = emptystlvec;   // list of words with same letters
 end;
 
-list_anagrams = () when
+anagrams = () when
   fp = case fopen "anagram_groups_dict.txt" "r" of 
     fopen _ _ = pointer 0;
     fp = fp;
@@ -44,7 +44,7 @@ list_anagrams = () when
   else if feof fp then
     puts "Empty word file"
   else
-    collect_anagrams fp;
+    print_anagrams fp;
   fclose fp;
 end;
 

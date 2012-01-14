@@ -16,7 +16,7 @@ included with the pure-stlvec distribution package for details.
 
 using system, stlmap;
 
-collect_anagrams n fp = () when
+print_anagrams n fp = () when
   do add_word (split "\n" (fget fp));
   anagrams = sort (<) (map str_words (filter (\(k=>v)->#v>=n) word_groups)); 
   do puts anagrams;
@@ -29,7 +29,7 @@ end when
   word_groups = mkstlmap ((<),[]);  
 end;
 
-list_anagrams n = () when
+anagrams n = () when
   fp = case fopen "anagram_groups_dict.txt" "r" of 
     fopen _ _ = pointer 0;
     fp = fp;
@@ -39,6 +39,6 @@ list_anagrams n = () when
   else if feof fp then
     puts "Empty word file"
   else
-    collect_anagrams n fp;
+    print_anagrams n fp;
   fclose fp;
 end;
