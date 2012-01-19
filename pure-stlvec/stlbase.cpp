@@ -363,14 +363,14 @@ px* px_failed_cond_sym()
 px* stlbegin_sym()
 {
   static ILS<px*> _sym = NULL; px* &sym = _sym();
-  if (!sym) sym = px_newsym("stl::stlbeg");
+  if (!sym) sym = px_newsym("stl::smbeg");
   return sym;
 }
 
 px* stlend_sym()
 {
   static ILS<px*> _sym = NULL; px* &sym = _sym();
-  if (!sym) sym = px_newsym("stl::stlend");
+  if (!sym) sym = px_newsym("stl::smend");
   return sym;
 }
 

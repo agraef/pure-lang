@@ -49,7 +49,7 @@ stl::elms (f,l);
 #sm1;
 //- 5
 
-stl::distance (sm1,"b",stl::stlend);
+stl::distance (sm1,"b",stl::smend);
 //- 4
 
 stl::empty emptystlmmap;
@@ -72,16 +72,16 @@ let sv1 = stl::stlvec sm1; members sv1;
 stl::vector (sm1,"b","d");;
 //- {"b"=>2,"c"=>3,"c"=>13}
 
-stl::elms (sm1,stl::stlbeg,stl::stlbeg);
+stl::elms (sm1,stl::smbeg,stl::smbeg);
 //- []
 
-stl::elms (sm1,stl::stlbeg,stl::stlend);
+stl::elms (sm1,stl::smbeg,stl::smend);
 //- ["a"=>1,"b"=>2,"c"=>3,"c"=>13,"d"=>4,"e"=>5]
 
-stl::elms (sm1,stl::stlend,stl::stlbeg);
+stl::elms (sm1,stl::smend,stl::smbeg);
 //- []
 
-stl::elms (sm1,stl::stlend,stl::stlend);
+stl::elms (sm1,stl::smend,stl::smend);
 //- []
 
 stl::elms (sm1,"0","c");
@@ -93,7 +93,7 @@ stl::elms (sm1,"a","d");
 stl::elms (sm1,"b","d");
 //- ["b"=>2,"c"=>3,"c"=>13]
 
-stl::elms (sm1,"b",stl::stlend);
+stl::elms (sm1,"b",stl::smend);
 //- ["b"=>2,"c"=>3,"c"=>13,"d"=>4,"e"=>5]
 
 stl::elms (sm1,"c","e");
@@ -102,7 +102,7 @@ stl::elms (sm1,"c","e");
 stl::elms (sm1,"d","b");
 //- []
 
-stl::keys (sm1,"a",stl::stlend);
+stl::keys (sm1,"a",stl::smend);
 //- ["a","b","c","c","d","e"]
 
 stl::keys (sm1,"a","e");
@@ -111,7 +111,7 @@ stl::keys (sm1,"a","e");
 stl::keys (sm1,"b","d");
 //- ["b","c","c"]
 
-stl::vals (sm1,"a",stl::stlend);
+stl::vals (sm1,"a",stl::smend);
 //- [1,2,3,13,4,5]
 
 stl::vals (sm1,"a","e");
@@ -436,7 +436,7 @@ stl::equal (sm1,"b","e") sm1;
 stl::equal (sm1,"b","e") sm2;
 //- 1
 
-stl::equal (sm1,"b","d") (sm2,stl::stlbeg, "d");
+stl::equal (sm1,"b","d") (sm2,stl::smbeg, "d");
 //- 1
 
 sm1 == sm1;
@@ -490,7 +490,7 @@ sm1 >= sm2;
 sm2 >= sm1;
 //- 1
 
-(sm1,"b",stl::stlend) == sm2; // note tuple overrided issue
+(sm1,"b",stl::smend) == sm2; // note tuple overrided issue
 //- 0
 
 stl::equal sm1 sm1;
@@ -499,34 +499,34 @@ stl::equal sm1 sm1;
 stl::equal sm1 sm2;
 //- 0
 
-stl::equal (sm1,"b",stl::stlend) sm2;
+stl::equal (sm1,"b",stl::smend) sm2;
 //- 1
 
-stl::equal (sm1,"c",stl::stlend) sm2;
+stl::equal (sm1,"c",stl::smend) sm2;
 //- 0
 
-stl::equal (sm1,"c",stl::stlend) (sm2,"c",stl::stlend);
+stl::equal (sm1,"c",stl::smend) (sm2,"c",stl::smend);
 //- 1
 
-stl::equal sm2 (sm1,"b",stl::stlend);
+stl::equal sm2 (sm1,"b",stl::smend);
 //- 1
 
-(sm1,"b",stl::stlend) < sm2;
+(sm1,"b",stl::smend) < sm2;
 //- 0
 
-(sm1,"c",stl::stlend) < sm2;
+(sm1,"c",stl::smend) < sm2;
 //- 0
 
-(sm1,"c",stl::stlend) < (sm2,"c",stl::stlend);
+(sm1,"c",stl::smend) < (sm2,"c",stl::smend);
 //- 0
 
-(sm1,"b",stl::stlend) < sm2;
+(sm1,"b",stl::smend) < sm2;
 //- 0
 
-(sm1,"c",stl::stlend) < sm2;
+(sm1,"c",stl::smend) < sm2;
 //- 0
 
-(sm1,"c",stl::stlend) < (sm2,"c",stl::stlend);
+(sm1,"c",stl::smend) < (sm2,"c",stl::smend);
 //- 0
 
 //*** STL Set Algorithms *********************************************
@@ -902,7 +902,7 @@ colcatmap (\(k=>v)->if v mod 2 then {v;k} else {}) sm1;
 let sm1 = stlmmap ["a"=>1,"c"=>2,"c"=>3,"d"=>4,"e"=>5];
 //- ()
 
-sm1!stl::stlbeg, sm1!"a", sm1!"c", sm1!"d", sm1!"e"
+sm1!stl::smbeg, sm1!"a", sm1!"c", sm1!"d", sm1!"e"
 //- [1],[1],[2,3],[4],[5]
 
 catch id $ sm1!"0";
@@ -917,20 +917,20 @@ catch id $ sm1!"z";
 stl::has_key sm1 "0", stl::has_key sm1 "a", stl::has_key sm1 "c";
 //- 0,1,1
 
-stl::has_key sm1 "e", stl::has_key sm1 "f", stl::has_key sm1 stl::stlbeg;
+stl::has_key sm1 "e", stl::has_key sm1 "f", stl::has_key sm1 stl::smbeg;
 //- 1,0,1
 
 stl::bounding_keys sm1;
-//- stl::stlbeg,stl::stlend
+//- stl::smbeg,stl::smend
 
 stl::bounding_keys (sm1,"0","z");
-//- stl::stlbeg,stl::stlend
+//- stl::smbeg,stl::smend
 
-stl::bounding_keys (sm1,stl::stlbeg,"d");
-//- stl::stlbeg,"d"
+stl::bounding_keys (sm1,stl::smbeg,"d");
+//- stl::smbeg,"d"
 
 stl::bounding_keys (sm1,"0","z");
-//- stl::stlbeg,stl::stlend
+//- stl::smbeg,stl::smend
 
 stl::bounding_keys (sm1,"b","d");
 //- "c","d"
@@ -942,12 +942,12 @@ catch id $ stl::prev_key sm1 "a";
 //- out_of_bounds
 
 stl::prev_key sm1 "c";
-//- stl::stlbeg
+//- stl::smbeg
 
 stl::prev_key sm1 "e";
 //- "d"
 
-stl::prev_key sm1 stl::stlend;
+stl::prev_key sm1 stl::smend;
 //- "e"
 
 stl::next_key sm1 "a";
@@ -957,10 +957,10 @@ stl::next_key sm1 "c";
 //- "d"
 
 stl::next_key sm1 "e";
-//- stl::stlend
+//- stl::smend
 
-stl::next_key sm1 stl::stlend;
-//- stl::stlend
+stl::next_key sm1 stl::smend;
+//- stl::smend
 
 stl::put (sm1,"a") [11]; stl::elms sm1;
 //- ["a"=>11,"c"=>2,"c"=>3,"d"=>4,"e"=>5]
