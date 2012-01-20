@@ -49,7 +49,7 @@ private extern expr* smm_put_at(expr* pxsmip, expr* val);
 private extern expr* smm_insert_hinted(expr*map, expr* iter, expr* kv);
 private extern expr* smm_insert_elm(expr* map, expr* kv);
 private extern int   smm_insert_elms_xs(expr* map, expr* src);
-private extern int   smm_insert_elms_stlvec(expr* map, expr* svrng);
+private extern int   smm_insert_elms_stlvec(expr* map, void* svp);
 private extern int   smm_insert_elms_stlmmap(expr* map, expr* rng);
 private extern void  smm_swap(expr* sac1, expr* sac2);
 private extern int   smm_erase(expr* sac, expr* trg);
@@ -181,9 +181,9 @@ move pos::stlmacon_iter n::int = smm_move_iter pos n;
   smm_insert_elms_xs smm xs;
 end if listp xs || matrixp xs;
 
-::stlmmap rng::svrng = smm when
+::stlmmap (STLVEC svp) = smm when
   smm = ::emptystlmmap;
-  smm_insert_elms_stlvec smm rng;
+  smm_insert_elms_stlvec smm svp;
 end;
 
 ::stlmmap rng::stlmacon_rng = smm when
@@ -201,9 +201,9 @@ end if ~smm_is_set rng;
   smm_insert_elms_xs ss xs;
 end if listp xs || matrixp xs;
 
-::stlmset rng::svrng = ss when
+::stlmset (STLVEC svp) = ss when
   ss = ::emptystlmset;
-  smm_insert_elms_stlvec ss rng;
+  smm_insert_elms_stlvec ss svp;
 end;
 
 ::stlmset rng::stlmacon_rng = ss when
@@ -270,7 +270,7 @@ insert smm::stlmacon xs::matrix = smm_insert_elms_xs smm xs;
 
 insert smm::stlmacon rng::stlmacon_rng = smm_insert_elms_stlmmap smm rng;
 
-insert smm::stlmacon rng::svrng = smm_insert_elms_stlvec smm rng;
+insert smm::stlmacon (STLVEC svp) = smm_insert_elms_stlvec smm svp;
 
 insert smm::stlmmap (elm@(k=>v), pos::stlmacon_iter) = 
   smm_insert_hinted smm pos elm;

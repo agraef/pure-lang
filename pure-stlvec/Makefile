@@ -16,7 +16,7 @@
 
 ### Usage:
 #
-# make dll       - updates production versions of stl dlls and copys them to .
+# make dll       - updates release versions of stl dlls and copys them to .
 # make debug     - does the same for Pure debug support versions
 # make           - same as make dll
 # make install   - copy dlls and Pure files to $(libdir)/pure/
@@ -77,7 +77,7 @@ endif
 
 ### Parameter Macros
 
-DLL_BASENAMES = stlcontainer stlalgorithm
+DLL_BASENAMES = stlbase stlvec stlalgorithm
 CONTAINER_BASENAMES = stlbase stlvec
 ALGO_BASENAMES = sv_modifying sv_nonmodifying sv_sort \
 	         sv_merge sv_heap sv_minmax sv_numeric
@@ -96,7 +96,7 @@ DLL_DIR = $(if $(DBG_SUPPORT),$(DEBUG_DLL_DIR),$(PROD_DLL_DIR))
 PURE_BASENAMES = $(CONTAINER_BASENAMES)
 CONTAINER_HPPS = $(addsuffix .hpp, $(CONTAINER_BASENAMES))
 CONTAINER_CPPS = $(addsuffix .cpp, $(CONTAINER_BASENAMES))
-CONTAINER_LIB = stlcontainer$(DLL)
+CONTAINER_LIBS = $(addsuffix $(DLL), $(CONTAINER_BASENAMES))
 ALGO_HPPS = stlbase.hpp stlvec.hpp sv_algorithm.hpp
 ALGO_CPPS = $(addsuffix .cpp, $(ALGO_BASENAMES))
 
@@ -116,18 +116,26 @@ all: dll
 
 dll debug: $(DLLS)
 
-stlcontainer$(DLL): $(DLL_DIR)/stlcontainer$(DLL)
+stlbase$(DLL): $(DLL_DIR)/stlbase$(DLL)
+	cp $< $@
+
+stlvec$(DLL): $(DLL_DIR)/stlvec$(DLL)
 	cp $< $@
 
 stlalgorithm$(DLL): $(DLL_DIR)/stlalgorithm$(DLL)
 	cp $< $@
 
-$(DLL_DIR)/stlcontainer$(DLL): $(CONTAINER_HPPS) $(CONTAINER_CPPS)
+$(DLL_DIR)/stlbase$(DLL): stlbase.hpp stlbase.cpp
 	test -d $(DLL_DIR) || mkdir -p $(DLL_DIR)
-	$(CXX) $(shared) $(FLAGS) $(PIC) $(CONTAINER_CPPS) -o $@ -lpure
+	$(CXX) $(shared) $(FLAGS) $(PIC) stlbase.cpp -o $@ -lpure
 
-$(DLL_DIR)/stlalgorithm$(DLL): $(ALGO_HPPS) $(ALGO_CPPS) $(CONTAINER_LIB)
-	$(CXX) $(shared) $(FLAGS) $(PIC) $(ALGO_CPPS) -o $@ -Wl,-rpath="$(libdir)/pure" $(CONTAINER_LIB) -lpure
+$(DLL_DIR)/stlvec$(DLL): $(CONTAINER_HPPS) stlvec.cpp
+	test -d $(DLL_DIR) || mkdir -p $(DLL_DIR)
+	$(CXX) $(shared) $(FLAGS) $(PIC) stlvec.cpp -o $@ -Wl,-rpath="$(libdir)/pure" stlbase$(DLL) -lpure
+
+
+$(DLL_DIR)/stlalgorithm$(DLL): $(ALGO_HPPS) $(ALGO_CPPS) $(CONTAINER_LIBS)
+	$(CXX) $(shared) $(FLAGS) $(PIC) $(ALGO_CPPS) -o $@ -Wl,-rpath="$(libdir)/pure" $(CONTAINER_LIBS) -lpure
 
 ### Compile unit tests
 

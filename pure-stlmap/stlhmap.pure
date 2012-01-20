@@ -42,7 +42,7 @@ private extern int   shm_member(expr* pxshmp, expr* key);
 private extern expr* shm_find(expr* pxshmp, expr* key, int what);
 private extern expr* shm_insert_elm(expr* pxshmp, expr* kv);
 private extern int   shm_insert_elms_xs(expr* pxshmp, expr* src);
-private extern int   shm_insert_elms_stlvec(expr* pxshmp, expr* svrng);
+private extern int   shm_insert_elms_stlvec(expr* pxshmp, void* svp);
 private extern expr* shm_update(expr* pxshmp, expr* key, expr* val);
 private extern void  shm_swap(expr* pxshmp1, expr* pxshmp2);
 private extern int   shm_erase(expr* pxshmp, expr* key);
@@ -89,9 +89,9 @@ const shm_elm = 3;
   shm_insert_elms_xs shm xs;
 end if listp xs || matrixp xs;
 
-::stlhmap rng::svrng = shm when
+::stlhmap (STLVEC svp) = shm when
   shm = ::emptystlhmap;
-  shm_insert_elms_stlvec shm rng;
+  shm_insert_elms_stlvec shm svp;
 end;
 
 ::stlhmap shm::stlhmap = shm_copy shm;
@@ -106,9 +106,9 @@ end;
   shm_insert_elms_xs ss xs;
 end if listp xs || matrixp xs;
 
-::stlhset rng::svrng = ss when
+::stlhset (STLVEC svp) = ss when
   ss = ::emptystlhset;
-  shm_insert_elms_stlvec ss rng;
+  shm_insert_elms_stlvec ss svp;
 end;
 
 ::stlhset shs::stlhset = shm_copy shs;
@@ -169,7 +169,7 @@ insert shm::stlhacon xs::list = shm_insert_elms_xs shm xs;
 
 insert shm::stlhacon xs::matrix = shm_insert_elms_xs shm xs;
 
-insert shm::stlhacon svr::svrng = shm_insert_elms_stlvec shm svr;
+insert shm::stlhacon (STLVEC svp) = shm_insert_elms_stlvec shm svp;
 
 insert shm::stlhacon val@(k=>v) = shm_insert_elm shm val;
 

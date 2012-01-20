@@ -25,7 +25,6 @@ included with the pure-stlmap distribution package for details.
 
 using namespace std;
 
-
 static int stlmap_tag() 
 {
   static ILS<int> _t = 0; int &t = _t();
@@ -938,16 +937,14 @@ int sm_insert_elms_stlmap(px* pxsmp, px* tpl)
   return mp.size() - oldsz;
 }
 
-int sm_insert_elms_stlvec(px* pxsmp, px* tpl)
+int sm_insert_elms_stlvec(px* pxsmp, sv* sv_p)
 {
   sm* smp; pmi pos;
   if (!get_smp(pxsmp,&smp) ) bad_argument();
-  sv_range rng(tpl);
-  if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   int num_inserted = 0;
   pxhmap& mp = smp->mp;
   try {
-    for (svi i = rng.beg(); i!=rng.end(); i++)
+    for (sv::iterator i = sv_p->begin(); i!=sv_p->end(); i++)
       if ( !insert_aux(smp, *i, pos, num_inserted) ) bad_argument();
   }
   catch (px* e) {

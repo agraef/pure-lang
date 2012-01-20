@@ -66,7 +66,7 @@ extern "C" {
   px*  shm_find(px* pxshmp, px* key, int what);
   px*  shm_insert_elm(px* pxshmp, px* kv);
   int  shm_insert_elms_xs(px* pxshmp, px* src);
-  int  shm_insert_elms_stlvec(px* pxshmp, px* tpl);
+  int  shm_insert_elms_stlvec(px* pxshmp, sv* svp);
   px*  shm_swap(px* pxshmp1, px* pxshmp2);
   int  shm_clear(px* pxshmp);
   int  shm_erase(px* pxshmp, px* trg); 

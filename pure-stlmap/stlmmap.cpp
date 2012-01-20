@@ -950,16 +950,14 @@ int smm_insert_elms_stlmmap(px* pxsmmp, px* tpl)
   return mmp.size() - oldsz;
 }
 
-int smm_insert_elms_stlvec(px* pxsmmp, px* tpl)
+int smm_insert_elms_stlvec(px* pxsmmp, sv* sv_p)
 {
   smm* smmp; pmmi pos;
   if (!get_smmp(pxsmmp,&smmp) ) bad_argument();
-  sv_range rng(tpl);
-  if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   int num_inserted = 0;
   pxhmmap& mmp = smmp->mmp;
   try {
-    for (svi i = rng.beg(); i!=rng.end(); i++)
+    for (sv::iterator i = sv_p->begin(); i!=sv_p->end(); i++)
       if ( !insert_aux(smmp, *i, pos, num_inserted) ) bad_argument();
   }
   catch (px* e) {

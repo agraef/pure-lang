@@ -22,7 +22,7 @@ included with the pure-stlmap distribution package for details.
 #include <iostream>
 #include <map>
 #include "stlbase.hpp"
-#include "stlvec.hpp"
+//#include "stlvec.hpp"
 
 typedef std::map<pxh,pxh,pxh_pred2> pxhmap;
 typedef pxhmap::iterator pmi;
@@ -128,7 +128,7 @@ extern "C" {
   px*  sm_insert_elm(px* pxsmp, px* kv);
   int  sm_insert_elms_xs(px* pxsmp, px* src);
   int  sm_insert_elms_stlmap(px* pxsmp, px* tpl);
-  int  sm_insert_elms_stlvec(px* pxsmp, px* tpl);
+  int  sm_insert_elms_stlvec(px* pxsmp, sv* svp);
   px*  sm_swap(px* pxsmp1, px* pxsmp2);
   int  sm_clear(px* pxsmp);
   int  sm_erase(px* pxsmp, px* trg); 

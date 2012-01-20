@@ -29,7 +29,7 @@ all: $(object)
 
 $(object): $(cppsource)
 	g++ $(shared) -o $@ $(MOD_CXXFLAGS) -std=c++0x \
-	$(cppsource) $(MOD_LDFLAGS) $(LIBS) -I$(stlbase)
+	$(cppsource) $(libdir)/pure/stlbase$(DLL) -I../pure-stlvec $(MOD_LDFLAGS) $(LIBS) -lpure 
 
 clean:
 	rm -f *.o *$(DLL)

@@ -267,7 +267,7 @@ void failed_cond();
 px* pxh_to_pxp(pxh h); // used by std::transform
 
 
-/*** Interface ***********************************************************/
+/*** C functions used by Pure scripts *************************************/
 
 /* stl_refc and friends - functions to return a pure_expr's refc and to
    enable or disable pure_expr ref count tracing or the tracing of stlvec's

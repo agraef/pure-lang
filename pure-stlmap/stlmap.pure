@@ -49,7 +49,7 @@ private extern expr* sm_put_at(expr* pxsmip, expr* val);
 private extern expr* sm_insert_hinted(expr*map, expr* iter, expr* kv);
 private extern expr* sm_insert_elm(expr* map, expr* kv);
 private extern int   sm_insert_elms_xs(expr* map, expr* src);
-private extern int   sm_insert_elms_stlvec(expr* map, expr* svrng);
+private extern int   sm_insert_elms_stlvec(expr* map, void* svp);
 private extern int   sm_insert_elms_stlmap(expr* map, expr* rng);
 private extern void  sm_swap(expr* sac1, expr* sac2);
 private extern int   sm_erase(expr* sac, expr* trg);
@@ -101,7 +101,7 @@ private
   sm_lower_bound sm_update_with
   sm_iter sm_key sm_val sm_elm 
   sm_merge sm_union sm_difference sm_intersection sm_symmetric_difference 
-  sm_less sm_equal compatible_ranges sm_emptystlvec;
+  sm_less sm_equal compatible_ranges;
 
 const sm_lower_bound = 1;
 const sm_upper_bound = 2;
@@ -181,9 +181,9 @@ move pos::stlacon_iter n::int = sm_move_iter pos n;
   sm_insert_elms_xs sm xs;
 end if listp xs || matrixp xs;
 
-::stlmap rng::svrng = sm when
+::stlmap (STLVEC svp) = sm when
   sm = ::emptystlmap;
-  sm_insert_elms_stlvec sm rng;
+  sm_insert_elms_stlvec sm svp;
 end;
 
 ::stlmap rng::stlacon_rng = sm when
@@ -201,9 +201,9 @@ end if ~sm_is_set rng;
   sm_insert_elms_xs ss xs;
 end if listp xs || matrixp xs;
 
-::stlset rng::svrng = ss when
+::stlset (STLVEC svp) = ss when
   ss = ::emptystlset;
-  sm_insert_elms_stlvec ss rng;
+  sm_insert_elms_stlvec ss svp;
 end;
 
 ::stlset rng::stlacon_rng = ss when
@@ -270,7 +270,7 @@ insert sm::stlacon xs::matrix = sm_insert_elms_xs sm xs;
 
 insert sm::stlacon rng::stlacon_rng = sm_insert_elms_stlmap sm rng;
 
-insert sm::stlacon rng::svrng = sm_insert_elms_stlvec sm rng;
+insert sm::stlacon (STLVEC svp) = sm_insert_elms_stlvec sm svp;
 
 insert sm::stlmap (elm@(k=>v), pos::stlacon_iter) = 
   sm_insert_hinted sm pos elm;
