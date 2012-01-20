@@ -358,22 +358,6 @@ px* px_failed_cond_sym()
   return sym;
 }
 
-/**** Interpreter Local Storage STL Namespace Data *********************/
-
-px* stlbegin_sym()
-{
-  static ILS<px*> _sym = NULL; px* &sym = _sym();
-  if (!sym) sym = px_newsym("stl::smbeg");
-  return sym;
-}
-
-px* stlend_sym()
-{
-  static ILS<px*> _sym = NULL; px* &sym = _sym();
-  if (!sym) sym = px_newsym("stl::smend");
-  return sym;
-}
-
 /*** Errors ********************************************************/
 
 void bad_function() {pure_throw(px_bad_function_sym());}
@@ -428,4 +412,39 @@ px* pxhpair_to_pxlhs(const pxhpair& pair)
 px* pxh_to_pxp(pxh h)
 {
   return h.pxp();
+}
+
+
+/**** Symbols and functions for stlmap and stlvec *********************/
+
+px* stlbegin_sym()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym("stl::smbeg");
+  return sym;
+}
+
+px* stlend_sym()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym("stl::smend");
+  return sym;
+}
+
+void sv_delete(sv* p){
+#ifdef STL_DEBUG
+  if (stl_sv_trace_enabled())
+    cerr << "TRACE SV: delete sv*: " << p << endl;
+#endif
+  delete(p);
+}
+
+sv* sv_make_empty()
+{
+  sv* ret  = new sv;
+#ifdef STL_DEBUG
+  if (stl_sv_trace_enabled())
+    cerr << "TRACE SV:    new sv*: " << ret << endl;
+#endif
+  return ret;
 }

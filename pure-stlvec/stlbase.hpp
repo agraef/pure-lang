@@ -14,8 +14,8 @@ included with the pure-stlvec distribution package for details.
 
 */
 
-#ifndef STL_H
-#define STL_H
+#ifndef STLBASE_H
+#define STLBASE_H
 
 #include <vector>
 #include <map>
@@ -279,10 +279,19 @@ extern "C" {
   int  stl_refc(px *x);
   void stl_set_px_trace(bool enable);
   bool stl_px_trace_enabled();
-
-  px*  stlbegin_sym();
-  px*  stlend_sym();
 }
 
+/* Global symbols used by stlmap. Basic stlvec creation and deletion --
+   available to stlmap modules. */
 
-#endif // STL_H
+typedef std::vector<pxh> sv;
+
+extern "C" {
+  px*  stlbegin_sym();
+  px*  stlend_sym();
+
+  sv*  sv_make_empty();
+  void sv_delete(sv* sv_p);
+}
+
+#endif // STLBASE_H

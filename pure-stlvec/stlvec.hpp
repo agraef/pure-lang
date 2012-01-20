@@ -25,7 +25,7 @@ included with the pure-stlvec distribution package for details.
    pointed to by a stlvec on the Pure side of the interface. A svi is an
    iterator on a sv.*/
 
-typedef std::vector<pxh> sv;
+typedef std::vector<pxh> sv; 
 typedef sv::iterator svi;
 typedef sv::const_iterator const_svi;
 typedef sv::reverse_iterator reverse_svi;
@@ -66,10 +66,8 @@ int iter_pos(sv* vec, svi iter);
 /*** C interface for vector of PX Handles ***/
 
 extern "C" {
-  sv*  sv_make_empty();
   sv*  sv_make_from_xs(px* xs);
   sv*  sv_make_n(px* xs, int n);
-  void sv_delete(sv* sv_p);
   sv*  sv_dup(px* tpl);
   px*  sv_vector(px* it);
   void sv_reserve(sv* vec, int n);

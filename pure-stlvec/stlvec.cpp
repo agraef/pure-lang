@@ -187,16 +187,6 @@ static inline int ndx_ok(sv* vec, int n)
 
 /*** Functions for sv vector<pxh> ***********************************/
 
-sv* sv_make_empty()
-{
-  sv* ret  = new sv;
-#ifdef STL_DEBUG
-  if (stl_sv_trace_enabled())
-    cerr << "TRACE SV:    new sv*: " << ret << endl;
-#endif
-  return ret;
-}
-
 sv* sv_make_from_xs(px* xs_or_vec)
 { 
   px** elems = NULL;
@@ -229,14 +219,6 @@ sv* sv_make_n(px* x, int n)
     cerr << "TRACE SV:    new sv*: " << ret << endl;
 #endif
   return ret;
-}
-
-void sv_delete(sv* p){
-#ifdef STL_DEBUG
-  if (stl_sv_trace_enabled())
-    cerr << "TRACE SV: delete sv*: " << p << endl;
-#endif
-  delete(p);
 }
 
 sv* sv_dup(px* tpl)
