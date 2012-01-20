@@ -25,6 +25,36 @@ included with the pure-stlmap distribution package for details.
 
 using namespace std;
 
+
+static int stlmap_tag() 
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("stlmap*");
+  return t;
+}
+
+static int stlset_tag() 
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("stlset*");
+  return t;
+}
+
+static int stlmap_iter_tag() 
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("stlmap_iter*");
+  return t;
+}
+
+static int stlset_iter_tag() 
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("stlset_iter*");
+  return t;
+}
+
+
 /*** Helpers for stlmap.cpp only ************************************/
 
 enum {gi_find, gi_lower, gi_upper};

@@ -282,23 +282,6 @@ extern "C" {
 
   px*  stlbegin_sym();
   px*  stlend_sym();
-  px*  stlinsert_sym();
-  px*  stlbackinsert_sym();
-
-  int  stlmap_tag();
-  int  stlset_tag();
-  int  stlmmap_tag();
-  int  stlmset_tag();
-  int  stlhmap_tag();
-  int  stlhset_tag();
-
-  int  stlmap_iter_tag();
-  int  stlset_iter_tag();
-  int  stlmmap_iter_tag();
-  int  stlmset_iter_tag();
-  int  stlhmap_iter_tag();
-  int  stlhset_iter_tag();
-
 }
 
 

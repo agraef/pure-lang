@@ -25,7 +25,33 @@ included with the pure-stlmap distribution package for details.
 
 using namespace std;
 
-// #define PURE_INSERT_SEMANTICS
+static int stlmmap_tag() 
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("stlmmap*");
+  return t;
+}
+
+static int stlmset_tag() 
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("stlmset*");
+  return t;
+}
+
+static int stlmmap_iter_tag() 
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("stlmmap_iter*");
+  return t;
+}
+
+static int stlmset_iter_tag() 
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("stlmset_iter*");
+  return t;
+}
 
 /*** Helpers for debugging only ************************************/
 

@@ -25,6 +25,34 @@ included with the pure-stlmap distribution package for details.
 
 using namespace std;
 
+static int stlhmap_tag() 
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("stlhmap*");
+  return t;
+}
+
+static int stlhset_tag() 
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("stlhset*");
+  return t;
+}
+
+static int stlhmap_iter_tag() 
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("stlmmap_iter*");
+  return t;
+}
+
+static int stlhset_iter_tag() 
+{
+  static ILS<int> _t = 0; int &t = _t();
+  if (!t) t = pure_pointer_tag("stlmset_iter*");
+  return t;
+}
+
 /*** Helpers *************************************************************/
 
 static phmi update_aux(shm* shmp, px* k, px* v)
@@ -624,7 +652,7 @@ px* shm_get_elm_at_inc(px* pxshmip)
   if ( !get_shmip(pxshmip,tag,&shmip) ) bad_argument();
   phmi& i = shmip->iter;
   if ( i == shmip->shmp()->hmp.end() ) index_error();
-  int what = tag==stlset_iter_tag() ? stl_shm_key : stl_shm_elm; 
+  int what = tag==stlhset_iter_tag() ? stl_shm_key : stl_shm_elm; 
   px* ret = get_elm_aux(shmip->shmp(), i, what);
   i++;
   return ret;
