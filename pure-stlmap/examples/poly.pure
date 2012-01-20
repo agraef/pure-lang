@@ -15,13 +15,14 @@ included with the pure-stlvec distribution package for details.
 */
 
 
-/* Each poly is a closure that has a stlmap whose elements are terms. Each
-   element has a key that is the order of the term and a val that is its
-   coeficient. Coeficients are anything that the arithmetic operators
-   (+,-,*,/) are defined on, with % used in lieu of / if either coeficient
-   satisfies rationalp.  Terms whose coeficient statisfy is_zero are never
-   saved in the poly's underlying stlmap. The underlying stlmap's elements
-   are ordered by (>) (i.e., not the default ordering which is (<)).
+/* Each poly is a closure that has a stlmap (or "term map") whose elements
+   represent the terms of a polynomial. Each element has a key that is the
+   order of the term and a val that is its coeficient. Coeficients are
+   anything that the arithmetic operators (+,-,*,/) are defined on, with %
+   used in lieu of / if either coeficient satisfies rationalp.  Terms whose
+   coeficient statisfy is_zero are never saved in the poly's underlying
+   stlmap. The underlying stlmap's elements are ordered by (>) (i.e., not the
+   default ordering which is (<)).
 
    The value of a poly at x is determined in the usual way based on the order
    and coeficients of its elements. E.g.,
@@ -67,13 +68,11 @@ included with the pure-stlvec distribution package for details.
 using system, math, stlmap;
 using namespace stl;
 
-/* Operations on the underlying stlmaps 'term_maps' ************************/
+/* Operations on term_maps *********************************************/
 
 is_zero x::double = abs x < 1.0e-12;
 
 is_zero x::number = x == 0;
-
-type term_map tm::stlmap; 
 
 empty_term_map = mkstlmap (>);
 
@@ -93,24 +92,24 @@ end when
   res = empty_term_map;
 end;
 
-adjust_term poly::stlmap ord adj = insert poly (ord=>adj) if ~has_key poly ord;
+adjust_term tm ord adj = insert tm (ord=>adj) if ~has_key tm ord;
 
-adjust_term poly::stlmap ord adj = () when
-  coef = adj + poly!ord;
-  if is_zero coef then erase (poly,ord) else insert_or_update poly (ord=>coef);
+adjust_term tm::stlmap ord adj = () when
+  coef = adj + tm!ord;
+  if is_zero coef then erase (tm,ord) else insert_or_update tm (ord=>coef);
 end;
 
-terms_add poly1 poly2 = do add_term poly2 $$ poly1 with
-  add_term (ord=>coef) = adjust_term poly1 ord coef;
+terms_add tm1 tm2 = do add_term tm2 $$ tm1 with
+  add_term (ord=>coef) = adjust_term tm1 ord coef;
 end;
 
-terms_sub poly1 poly2 = do sub_term poly2 $$ poly1 with
-  sub_term (ord=>coef) = adjust_term poly1 ord (-coef);
+terms_sub tm1 tm2 = do sub_term tm2 $$ tm1 with
+  sub_term (ord=>coef) = adjust_term tm1 ord (-coef);
 end;
 
-terms_mult poly1::stlmap poly2::stlmap = do add_row poly1 $$ res 
+terms_mult tm1::stlmap tm2::stlmap = do add_row tm1 $$ res 
 with
-  add_row (o1=>c1) = do (add_elm o1 c1) poly2;
+  add_row (o1=>c1) = do (add_elm o1 c1) tm2;
   add_elm o1 c1 (o2=>c2) = adjust_term res (o1+o2) (c1*c2);
 end when
   res = mkstlmap (>);
@@ -119,7 +118,7 @@ end;
 terms_divide dividend::stlmap divisor::stlmap = mk_quot with  
   mk_quot = quot, rem if empty rem;
   mk_quot = mk_term rem_ord rem_coef $$ mk_quot
-    if div_ord <= rem_ord when rem_ord=>rem_coef = get (rem,stlbeg) end;
+    if div_ord <= rem_ord when rem_ord=>rem_coef = get (rem,smbeg) end;
   mk_quot = quot, rem;
   mk_term rem_ord rem_coef = () when
     term_coef = div_coefs rem_coef div_coef;
@@ -136,16 +135,16 @@ terms_divide dividend::stlmap divisor::stlmap = mk_quot with
 end when
   quot = empty_term_map;
   rem = stlmap dividend;
-  div_ord=>div_coef = get (divisor,stlbeg);
+  div_ord=>div_coef = get (divisor,smbeg);
 end;
 
 /*** Polynomials ********************************************************/
 
-type poly x::function = check_ptrtag stlmap_t (x [[stlbeg]]);
+type poly x::function = check_ptrtag stlmap_t (x [[smbeg]]);
 
 stlmapp x = check_ptrtag stlmap_t x;
 
-term_map p::poly = p [[stlbeg]];
+term_map p::poly = p [[smbeg]];
 
 terms (q::poly,r::poly) = elms (term_map q), elms (term_map r);
 
@@ -154,12 +153,12 @@ terms p::poly = elms (term_map p);
 mkpoly p1::poly = mkpoly (stlmap $ term_map p1);
 
 mkpoly terms = poly with
-  poly [[stlbeg]] = tm;
+  poly [[smbeg]] = tm;
   poly x = foldl (add_term_val x) 0 tm;
   add_term_val x res (ord=>coef) = res + coef * pwr x ord;
   pwr x p = if rationalp x || integerp x then pow x p else x ^ p;
 end when
-  tm = if typep term_map terms then terms else mkterms terms;
+  tm = if typep stlmap terms then terms else mkterms terms;
 end;
 
 p1::poly + p2::poly =  mkpoly $ terms_add lhs rhs when
