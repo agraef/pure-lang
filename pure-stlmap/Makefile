@@ -10,10 +10,10 @@ shared      = $(shell pkg-config pure --variable shared)
 
 libdir      = $(shell pkg-config pure --variable libdir)
 installdir  = $(addprefix $(DESTDIR), $(libdir)/pure)
-stlbase	    = ../pure-stlvec
+stlvecdir   = ../pure-stlvec
 
 
-MOD_CXXFLAGS = $(PIC) $(shell pkg-config pure --cflags) -I$(pure-stlvec) $(CFLAGS) $(CPPFLAGS)
+MOD_CXXFLAGS = $(PIC) $(shell pkg-config pure --cflags) -I$(stlvecdir) $(CFLAGS) $(CPPFLAGS)
 MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS)
 
 CFLAGS = -g -O2
@@ -28,8 +28,7 @@ object = stlassoc$(DLL)
 all: $(object)
 
 $(object): $(cppsource)
-	g++ $(shared) -o $@ $(MOD_CXXFLAGS) -std=c++0x \
-	$(cppsource) $(libdir)/pure/stlbase$(DLL) -I../pure-stlvec $(MOD_LDFLAGS) $(LIBS) -lpure 
+	$(CXX) $(shared) -o $@ $(MOD_CXXFLAGS) -std=c++0x $(cppsource) $(libdir)/pure/stlbase$(DLL) $(MOD_LDFLAGS) $(LIBS) 
 
 clean:
 	rm -f *.o *$(DLL)

@@ -94,7 +94,7 @@ end;
 
 adjust_term tm ord adj = insert tm (ord=>adj) if ~has_key tm ord;
 
-adjust_term tm::stlmap ord adj = () when
+adjust_term tm ord adj = () when
   coef = adj + tm!ord;
   if is_zero coef then erase (tm,ord) else insert_or_update tm (ord=>coef);
 end;
@@ -107,7 +107,7 @@ terms_sub tm1 tm2 = do sub_term tm2 $$ tm1 with
   sub_term (ord=>coef) = adjust_term tm1 ord (-coef);
 end;
 
-terms_mult tm1::stlmap tm2::stlmap = do add_row tm1 $$ res 
+terms_mult tm1 tm2 = do add_row tm1 $$ res 
 with
   add_row (o1=>c1) = do (add_elm o1 c1) tm2;
   add_elm o1 c1 (o2=>c2) = adjust_term res (o1+o2) (c1*c2);
@@ -115,7 +115,7 @@ end when
   res = mkstlmap (>);
 end;
 
-terms_divide dividend::stlmap divisor::stlmap = mk_quot with  
+terms_divide dividend divisor = mk_quot with  
   mk_quot = quot, rem if empty rem;
   mk_quot = mk_term rem_ord rem_coef $$ mk_quot
     if div_ord <= rem_ord when rem_ord=>rem_coef = get (rem,smbeg) end;
