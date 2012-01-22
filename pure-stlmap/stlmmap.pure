@@ -77,7 +77,8 @@ private extern expr* smm_update(expr* map, expr* key, expr* val);
 
 namespace ;
 
-public emptystlmmap mkstlmmap emptystlmset mkstlmset; 
+public emptystlmmap mkstlmmap emptystlmset mkstlmset members erase
+  insert_or_update insert_elm; 
 
 let stlmmap_t, stlmmap_iter_t, stlmset_t, stlmset_iter_t = stl::smm_type_tags;
 
@@ -147,13 +148,13 @@ is_pastend pos::stlmacon_iter = smm_iter_is_at pos smm_at_pastend;
 
 get_info pos::stlmacon_iter = smm_iter_info pos;
 
-get pos::stlmacon_iter = smm_get_at pos smm_elm;
+::get pos::stlmacon_iter = smm_get_at pos smm_elm;
 
 get_key pos::stlmacon_iter = smm_get_at pos smm_key;
 
 get_val pos::stlmacon_iter = smm_get_at pos smm_val;
 
-put pos::stlmmap_iter val = smm_put_at pos val;
+::put pos::stlmmap_iter val = smm_put_at pos val;
 
 inc pos::stlmacon_iter = smm_move_iter pos 1;
 
@@ -236,7 +237,7 @@ end if valid when
   first = smm_copy_iter b;
 end;
 
-stream rng::stlmacon_rng = gen first with 
+::stream rng::stlmacon_rng = gen first with 
   gen i = if smm_equal_iter i last then [] 
           else smm_get_elm_at_inc i : (gen i &);  
 end if valid when 
@@ -246,15 +247,15 @@ end;
 
 elms rng::stlmacon_rng = smm_listmap 0 rng smm_elm; 
 
-members rng::stlmacon_rng = smm_listmap 0 rng smm_elm; 
+::members rng::stlmacon_rng = smm_listmap 0 rng smm_elm; 
 
-keys rng::stlmacon_rng = smm_listmap 0 rng smm_key;// if ~smm_is_set rng;
+::keys rng::stlmacon_rng = smm_listmap 0 rng smm_key;// if ~smm_is_set rng;
 
-vals rng::stlmacon_rng = smm_listmap 0 rng smm_val;// if ~smm_is_set rng;
+::vals rng::stlmacon_rng = smm_listmap 0 rng smm_val;// if ~smm_is_set rng;
 
-vector rng::stlmacon_rng = smm_make_vector rng;
+::vector rng::stlmacon_rng = smm_make_vector rng;
 
-stlvec rng::stlmacon_rng = sv if ok when
+::stlvec rng::stlmacon_rng = sv if ok when
   sv = emptystlvec;
   ok = case sv of  
     STLVEC v = smm_fill_stlvec rng v $$ 1;
@@ -264,40 +265,40 @@ end;
 
 /*** Modifiers *********************************************************/
 
-insert smm::stlmacon xs::list = smm_insert_elms_xs smm xs;
+::insert smm::stlmacon xs::list = smm_insert_elms_xs smm xs;
 
-insert smm::stlmacon xs::matrix = smm_insert_elms_xs smm xs;
+::insert smm::stlmacon xs::matrix = smm_insert_elms_xs smm xs;
 
-insert smm::stlmacon rng::stlmacon_rng = smm_insert_elms_stlmmap smm rng;
+::insert smm::stlmacon rng::stlmacon_rng = smm_insert_elms_stlmmap smm rng;
 
-insert smm::stlmacon (STLVEC svp) = smm_insert_elms_stlvec smm svp;
+::insert smm::stlmacon (STLVEC svp) = smm_insert_elms_stlvec smm svp;
 
-insert smm::stlmmap (elm@(k=>v), pos::stlmacon_iter) = 
+::insert smm::stlmmap (elm@(k=>v), pos::stlmacon_iter) = 
   smm_insert_hinted smm pos elm;
 
-insert smm::stlmmap elm@(k=>v) = smm_insert_elm smm elm;
+::insert smm::stlmmap elm@(k=>v) = smm_insert_elm smm elm;
 
-insert_or_update smm::stlmmap elm@(k=>v) = smm_insert_elm smm elm $$ smm;
+::insert_or_update smm::stlmmap elm@(k=>v) = smm_insert_elm smm elm $$ smm;
 
-insert_or_update smm::stlmset k = smm_insert_elm smm k $$ smm;
+::insert_or_update smm::stlmset k = smm_insert_elm smm k $$ smm;
 
 //insert_or_update_with -- N/A
 
-insert smm::stlmset (key, pos::stlmacon_iter) = smm_insert_hinted smm pos key;
+::insert smm::stlmset (key, pos::stlmacon_iter) = smm_insert_hinted smm pos key;
 
-insert smm::stlmset key = smm_insert_elm smm key;
+::insert smm::stlmset key = smm_insert_elm smm key;
 
-insert_elm smm::stlmset key = smm_insert_elm smm key; // to get xs, etc into set
+::insert_elm smm::stlmset key = smm_insert_elm smm key; // to get xs, into set
 
-erase smm::stlmacon = smm_clear smm;
+::erase smm::stlmacon = smm_clear smm;
 
-erase (smm::stlmacon,i::stlmacon_iter,j::stlmacon_iter) = smm_erase smm (i,j);
+::erase (smm::stlmacon,i::stlmacon_iter,j::stlmacon_iter) = smm_erase smm (i,j);
 
-erase (smm::stlmacon,pos::stlmacon_iter) = smm_erase smm pos;
+::erase (smm::stlmacon,pos::stlmacon_iter) = smm_erase smm pos;
 
-erase (smm::stlmacon,key1,key2) = smm_erase smm (smm,key1,key2);
+::erase (smm::stlmacon,key1,key2) = smm_erase smm (smm,key1,key2);
 
-erase (smm::stlmacon,key) = smm_erase smm (smm,key);
+::erase (smm::stlmacon,key) = smm_erase smm (smm,key);
 
 swap sm1::stlmmap sm2::stlmmap = smm_swap sm1 sm2;
 
@@ -356,16 +357,20 @@ set_includes rng1::stlmacon_rng rng2::stlmacon_rng =
    (!key) is applied to a stlmset it returns the elements that are equivalent
    to the key. Basically as if the container had unique keys were associated
    with list of vals as opposed to many keys each with a val.
+
+
+
 */
 
 (::!) smm::stlmacon key = smm_listmap 0 (smm,key) smm_val;
 
-get (smm::stlmacon,key) = throw out_of_bounds if empty smm;
-get (smm::stlmacon,key) = k=>(smm_listmap 0 (smm,key) smm_val) when 
+::get (smm::stlmacon,key) = throw out_of_bounds if empty smm;
+
+::get (smm::stlmacon,key) = k=>(smm_listmap 0 (smm,key) smm_val) when 
   k = if key === smbeg then get_key (find smm smbeg) else key;
 end;
 
-put (smm::stlmmap,key) vals = smm_update smm key vals;
+::put (smm::stlmmap,key) vals = smm_update smm key vals;
 
 has_key smm::stlmacon key = smm_member smm key;
 

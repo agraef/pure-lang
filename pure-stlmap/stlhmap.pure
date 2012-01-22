@@ -58,7 +58,8 @@ private extern expr* shm_foldl1(expr* fun, expr* shmp);
 
 namespace ;
 
-public emptystlhmap mkstlhmap emptystlhset mkstlhset; 
+public emptystlhmap mkstlhmap emptystlhset mkstlhset erase
+  insert_or_update; 
 
 let stlhmap_t, stlhmap_iter_t, stlhset_t, stlhset_iter_t = stl::shm_type_tags;
 
@@ -133,9 +134,9 @@ distance shm::stlhacon = shm_size shm;
 
 (::!) shm::stlhacon key = shm_find shm key shm_val;
 
-get (shm::stlhacon,key) = shm_find shm key shm_elm;
+::get (shm::stlhacon,key) = shm_find shm key shm_elm;
 
-stream shm::stlhacon = gen first with
+::stream shm::stlhacon = gen first with
   gen i = if shm_equal_iter i last then [] 
           else shm_get_elm_at_inc i : (gen i &);
 end when 
@@ -145,15 +146,15 @@ end;
 
 elms shm::stlhacon = shm_listmap 0 shm shm_elm;
 
-members shm::stlhacon = shm_listmap 0 shm shm_elm;
+::members shm::stlhacon = shm_listmap 0 shm shm_elm;
 
-keys shm::stlhacon = shm_listmap 0 shm shm_key;
+::keys shm::stlhacon = shm_listmap 0 shm shm_key;
 
-vals shm::stlhacon = shm_listmap 0 shm shm_val;
+::vals shm::stlhacon = shm_listmap 0 shm shm_val;
 
-vector shm::stlhacon = shm_make_vector shm;
+::vector shm::stlhacon = shm_make_vector shm;
 
-stlvec shm::stlhacon = sv if ok when
+::stlvec shm::stlhacon = sv if ok when
   sv = emptystlvec;
   ok = case sv of  
     STLVEC v = shm_fill_stlvec shm v $$ 1;
@@ -163,25 +164,25 @@ end;
 
 /*** Modifiers *********************************************************/
 
-put (shm::stlhmap,key) v = shm_update shm key v;
+::put (shm::stlhmap,key) v = shm_update shm key v;
 
-insert shm::stlhacon xs::list = shm_insert_elms_xs shm xs;
+::insert shm::stlhacon xs::list = shm_insert_elms_xs shm xs;
 
-insert shm::stlhacon xs::matrix = shm_insert_elms_xs shm xs;
+::insert shm::stlhacon xs::matrix = shm_insert_elms_xs shm xs;
 
-insert shm::stlhacon (STLVEC svp) = shm_insert_elms_stlvec shm svp;
+::insert shm::stlhacon (STLVEC svp) = shm_insert_elms_stlvec shm svp;
 
-insert shm::stlhacon val@(k=>v) = shm_insert_elm shm val;
+::insert shm::stlhacon val@(k=>v) = shm_insert_elm shm val;
 
-insert_or_update shm::stlhmap (k=>v) = shm_update shm k v $$ shm;
+::insert_or_update shm::stlhmap (k=>v) = shm_update shm k v $$ shm;
 
-insert_or_update shm::stlhset k = shm_insert_elm shm k $$ shm;
+::insert_or_update shm::stlhset k = shm_insert_elm shm k $$ shm;
 
-insert shm::stlhset elm = shm_insert_elm shm elm; 
+::insert shm::stlhset elm = shm_insert_elm shm elm; 
 
-erase shm::stlhacon = shm_clear shm;
+::erase shm::stlhacon = shm_clear shm;
 
-erase (shm::stlhacon,key) = shm_erase shm key;
+::erase (shm::stlhacon,key) = shm_erase shm key;
 
 swap shm1::stlhmap shm2::stlhmap = shm_swap shm1 shm2;
 

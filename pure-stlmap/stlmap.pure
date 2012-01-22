@@ -77,7 +77,8 @@ private extern expr* sm_update_with(expr* map, expr* key, expr* unaryfun);
 
 namespace ;
 
-public emptystlmap mkstlmap emptystlset mkstlset; 
+public emptystlmap mkstlmap emptystlset mkstlset members erase
+  insert_or_update insert_or_update_with insert_elm; 
 
 let stlmap_t, stlmap_iter_t, stlset_t, stlset_iter_t = stl::sm_type_tags;
 
@@ -147,13 +148,13 @@ is_pastend pos::stlacon_iter = sm_iter_is_at pos sm_at_pastend;
 
 get_info pos::stlacon_iter = sm_iter_info pos;
 
-get pos::stlacon_iter = sm_get_at pos sm_elm;     // like *p
+::get pos::stlacon_iter = sm_get_at pos sm_elm;     // like *p
 
 get_key pos::stlacon_iter = sm_get_at pos sm_key; // p->first
 
 get_val pos::stlacon_iter = sm_get_at pos sm_val; // p->second
 
-put pos::stlmap_iter val = sm_put_at pos val;
+::put pos::stlmap_iter val = sm_put_at pos val;
 
 inc pos::stlacon_iter = sm_move_iter pos 1;
 
@@ -236,7 +237,7 @@ end if valid when
   first = sm_copy_iter b;
 end;
 
-stream rng::stlacon_rng = gen first with 
+::stream rng::stlacon_rng = gen first with 
   gen i = if sm_equal_iter i last then [] 
           else sm_get_elm_at_inc i : (gen i &);  
 end if valid when 
@@ -246,15 +247,15 @@ end;
 
 elms rng::stlacon_rng = sm_listmap 0 rng sm_elm; 
 
-members rng::stlacon_rng = sm_listmap 0 rng sm_elm; 
+::members rng::stlacon_rng = sm_listmap 0 rng sm_elm; 
 
-keys rng::stlacon_rng = sm_listmap 0 rng sm_key;// if ~sm_is_set rng;
+::keys rng::stlacon_rng = sm_listmap 0 rng sm_key;// if ~sm_is_set rng;
 
-vals rng::stlacon_rng = sm_listmap 0 rng sm_val;// if ~sm_is_set rng;
+::vals rng::stlacon_rng = sm_listmap 0 rng sm_val;// if ~sm_is_set rng;
 
-vector rng::stlacon_rng = sm_make_vector rng;
+::vector rng::stlacon_rng = sm_make_vector rng;
 
-stlvec rng::stlacon_rng = sv if ok when
+::stlvec rng::stlacon_rng = sv if ok when
   sv = emptystlvec;
   ok = case sv of  
     STLVEC v = sm_fill_stlvec rng v $$ 1;
@@ -264,40 +265,40 @@ end;
 
 /*** Modifiers *********************************************************/
 
-insert sm::stlacon xs::list = sm_insert_elms_xs sm xs;
+::insert sm::stlacon xs::list = sm_insert_elms_xs sm xs;
 
-insert sm::stlacon xs::matrix = sm_insert_elms_xs sm xs;
+::insert sm::stlacon xs::matrix = sm_insert_elms_xs sm xs;
 
-insert sm::stlacon rng::stlacon_rng = sm_insert_elms_stlmap sm rng;
+::insert sm::stlacon rng::stlacon_rng = sm_insert_elms_stlmap sm rng;
 
-insert sm::stlacon (STLVEC svp) = sm_insert_elms_stlvec sm svp;
+::insert sm::stlacon (STLVEC svp) = sm_insert_elms_stlvec sm svp;
 
-insert sm::stlmap (elm@(k=>v), pos::stlacon_iter) = 
+::insert sm::stlmap (elm@(k=>v), pos::stlacon_iter) = 
   sm_insert_hinted sm pos elm;
 
-insert sm::stlmap elm@(k=>v) = sm_insert_elm sm elm;
+::insert sm::stlmap elm@(k=>v) = sm_insert_elm sm elm;
 
-insert_or_update sm::stlmap (k=>v) = sm_update sm k v $$ sm;
+::insert_or_update sm::stlmap (k=>v) = sm_update sm k v $$ sm;
 
-insert_or_update sm::stlset k = sm_insert_elm sm k $$ sm;
+::insert_or_update sm::stlset k = sm_insert_elm sm k $$ sm;
 
-insert_or_update_with f sm::stlmap (key=>x) = sm_update_with sm key (f x) $$ sm;
+::insert_or_update_with f sm::stlmap (key=>x) = sm_update_with sm key (f x) $$ sm;
 
-insert sm::stlset (key, pos::stlacon_iter) = sm_insert_hinted sm pos key;
+::insert sm::stlset (key, pos::stlacon_iter) = sm_insert_hinted sm pos key;
 
-insert sm::stlset key = sm_insert_elm sm key;
+::insert sm::stlset key = sm_insert_elm sm key;
 
-insert_elm sm::stlset key = sm_insert_elm sm key; // to get xs, etc into set
+::insert_elm sm::stlset key = sm_insert_elm sm key; // to get xs, etc into set
 
-erase sm::stlacon = sm_clear sm;
+::erase sm::stlacon = sm_clear sm;
 
-erase (sm::stlacon,i::stlacon_iter, j::stlacon_iter) = sm_erase sm (i,j);
+::erase (sm::stlacon,i::stlacon_iter, j::stlacon_iter) = sm_erase sm (i,j);
 
-erase (sm::stlacon,pos::stlacon_iter) = sm_erase sm pos;
+::erase (sm::stlacon,pos::stlacon_iter) = sm_erase sm pos;
 
-erase (sm::stlacon,key1,key2) = sm_erase sm (sm,key1,key2);
+::erase (sm::stlacon,key1,key2) = sm_erase sm (sm,key1,key2);
 
-erase (sm::stlacon,key) = sm_erase sm (sm,key);
+::erase (sm::stlacon,key) = sm_erase sm (sm,key);
 
 swap sm1::stlmap sm2::stlmap = sm_swap sm1 sm2;
 
@@ -363,9 +364,13 @@ set_includes rng1::stlacon_rng rng2::stlacon_rng =
 
 (::!) sm::stlacon key = sm_find sm key sm_val;  // no default
 
-get (sm::stlmap,key) = sm_find sm key sm_elm;    // no default, like get . find
+::get (sm::stlmap,key) = sm_find sm key sm_elm;  // no default, like get . find
 
-put (sm::stlmap,key) val = sm_update sm key val;
+
+
+
+
+::put (sm::stlmap,key) val = sm_update sm key val;
 
 has_key sm::stlacon key = sm_member sm key;
 
