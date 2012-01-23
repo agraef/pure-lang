@@ -66,9 +66,10 @@ stl::container_info sm1;
 let sm1 = stlset ["a","b","c","d","e"];
 //- ()
 
-let sv1 = stl::stlvec sm1; members sv1;
+let sv1 = stlvec sm1; members sv1;
 //- ["a","b","c","d","e"]
 
+stl::vector (sm1,"b","d");;
 stl::vector (sm1,"b","d");;
 //- {"b","c"}
 
@@ -102,22 +103,22 @@ stl::elms (sm1,"c","e");
 stl::elms (sm1,"d","b");
 //- []
 
-stl::keys (sm1,"a",stl::smend);
+keys (sm1,"a",stl::smend);
 //- ["a","b","c","d","e"]
 
-stl::keys (sm1,"a","e");
+keys (sm1,"a","e");
 //- ["a","b","c","d"]
 
-stl::keys (sm1,"b","d");
+keys (sm1,"b","d");
 //- ["b","c"]
 
-stl::vals (sm1,"a",stl::smend);
+vals (sm1,"a",stl::smend);
 //- ["a","b","c","d","e"]
 
-stl::vals (sm1,"a","e");
+vals (sm1,"a","e");
 //- ["a","b","c","d"]
 
-stl::vals (sm1,"b","d");
+vals (sm1,"b","d");
 //- ["b","c"]
 
 /*** Accessing Ranges using Streams **********************************/
@@ -125,19 +126,19 @@ stl::vals (sm1,"b","d");
 let sm1 = stlset ["a","b","c","d","e"];
 //- ()
 
-head $ stl::stream sm1;
+head $ stream sm1;
 //- "a"
 
-list $ stl::stream sm1;
+list $ stream sm1;
 //- ["a","b","c","d","e"]
 
-list $ take 3 (stl::stream sm1);
+list $ take 3 (stream sm1);
 //- ["a","b","c"]
 
-list $ take 10 (stl::stream sm1);
+list $ take 10 (stream sm1);
 //- ["a","b","c","d","e"]
 
-list $ take 10 $ drop 2 (stl::stream sm1);
+list $ take 10 $ drop 2 (stream sm1);
 //- ["c","d","e"]
 
 // list $ take 3 (stl::lazy_keys sm1);
@@ -163,13 +164,13 @@ let i_b, i_e = stl::begin sm1, stl::pastend sm1;
 
 // Insert elms
 
-stl::insert sm2 ("a".."c");
+insert sm2 ("a".."c");
 //- 3
 
 stl::elms sm2;
 //- ["c","b","a"]
 
-stl::insert sm2 {"c","d","e"};
+insert sm2 {"c","d","e"};
 //- 2
 
 stl::elms sm2;
@@ -177,80 +178,80 @@ stl::elms sm2;
 
 // Insert with hinted position
 
-stl::erase sm2; 
+erase sm2; 
 //- 5
 
-catch id $ stl::insert sm2 ("a", i_b); // i_b is for sm1
+catch id $ insert sm2 ("a", i_b); // i_b is for sm1
 //- bad_argument
 
-let p1, ok = stl::insert sm2 ("a"); stl::elms sm2;
+let p1, ok = insert sm2 ("a"); stl::elms sm2;
 //- ["a"]
 
-let p2 = stl::insert sm2 ("b", p1); stl::elms sm2;
+let p2 = insert sm2 ("b", p1); stl::elms sm2;
 //- ["b","a"]
 
-let p3 = stl::insert sm2 ("c", p2); stl::elms sm2;
+let p3 = insert sm2 ("c", p2); stl::elms sm2;
 //- ["c","b","a"]
 
 // Insert from range, list, vector, k=>v
 
-stl::erase sm2; 
+erase sm2; 
 //- 3
 
-let i = stl::find sm1 "a"; stl::get i;
+let i = stl::find sm1 "a"; get i;
 //- "a"
 
-let j = stl::find sm1 "c"; stl::get j;
+let j = stl::find sm1 "c"; get j;
 //- "c"
 
 stl::elms (i,j);
 //- ["a","b"]
 
-stl::insert sm2 (i,j); 
+insert sm2 (i,j); 
 //- 2
 
 stl::elms sm2;
 //- ["b","a"]
 
-stl::insert sm2 ["c"];
+insert sm2 ["c"];
 //- 1
 
 stl::elms sm2;
 //- ["c","b","a"]
 
-stl::insert sm2 {"d"};
+insert sm2 {"d"};
 //- 1
 
 stl::elms sm2;
 //- ["d","c","b","a"]
 
-stl::insert sm2 ["e"]; 
+insert sm2 ["e"]; 
 //- 1
 
 stl::elms sm2;
 //- ["e","d","c","b","a"]
 
-let p, ok = stl::insert sm2 ("f"); stl::get_key p, ok, stl::elms sm2;
+let p, ok = insert sm2 ("f"); stl::get_key p, ok, stl::elms sm2;
 //- "f",1,["f","e","d","c","b","a"]
 
 // Attempt overwrite of existing values
 
-stl::put i 11; stl::get i; stl::elms (i,j);
+put i 11; get i; stl::elms (i,j);
 //- ["a","b"]
 
-stl::insert sm2 (i,j);
+insert sm2 (i,j);
 //- 0
 
-stl::insert sm2 ["c"]; 
+insert sm2 ["c"]; 
 //- 0
 
-stl::insert sm2 {"d"}; 
+insert sm2 {"d"}; 
 //- 0
 
-let p, ok = stl::insert sm2 ("e"); stl::get_key p, ok, stl::elms sm2;
+let p, ok = insert sm2 ("e"); stl::get_key p, ok, stl::elms sm2;
 //- "e",0,["f","e","d","c","b","a"]
 
-stl::put p 5; stl::elms sm2;
+put p 5; stl::elms sm2;
 //- ["f","e","d","c","b","a"]
 
 //*** erase ***************************************************************/
@@ -266,16 +267,16 @@ let i_begin, i_pastend = stl::begin sm1, stl::pastend sm1;
 let i_b, i_d = stl::find sm1 "b", stl::find sm1 "d"; 
 //- ()
 
-stl::erase (sm1,i_begin); 
+erase (sm1,i_begin); 
 //- 1
 
 stl::elms sm1;
 //- ["b","c","d","e"]
 
-stl::erase (sm1,i_d); stl::elms sm1;
+erase (sm1,i_d); stl::elms sm1;
 //- ["b","c","e"]
 
-stl::erase (sm1,i_b); stl::elms sm1;
+erase (sm1,i_b); stl::elms sm1;
 //- ["c","e"]
 
 // Erase ranges
@@ -289,25 +290,25 @@ let i_begin, i_pastend = stl::begin sm1, stl::pastend sm1;
 let i_b, i_d = stl::find sm1 "b", stl::find sm1 "d"; 
 //- ()
 
-stl::get i_b;
+get i_b;
 //- "b"
 
-stl::erase (sm1,i_b,i_d);
+erase (sm1,i_b,i_d);
 //- 2
 
 stl::elms sm1;
 //- ["a","d","e"]
 
-catch id $ stl::get i_b;
+catch id $ get i_b;
 //- bad_argument
 
-stl::erase (sm1,i_d,i_pastend);
+erase (sm1,i_d,i_pastend);
 //- 2
 
 stl::elms sm1;
 //- ["a"]
 
-stl::erase (sm1,i_begin,i_pastend);
+erase (sm1,i_begin,i_pastend);
 //- 1
 
 stl::elms sm1;
@@ -324,10 +325,10 @@ let sm2 = stlset ["a","b","c","d","e"];
 let i_b, i_d = stl::find sm1 "b", stl::find sm1 "d"; 
 //- ()
 
-catch id $ stl::erase (sm2,i_b);
+catch id $ erase (sm2,i_b);
 //- bad_argument
 
-catch id $ stl::erase (sm2,i_b,i_d);
+catch id $ erase (sm2,i_b,i_d);
 //- bad_argument
 
 // Erase elms with given key
@@ -335,22 +336,22 @@ catch id $ stl::erase (sm2,i_b,i_d);
 let sm1 = stlset ["a","b","c","d","e"];
 //- ()
 
-stl::erase (sm1,"0");
+erase (sm1,"0");
 //- 0
 
-stl::erase (sm1,"z");
+erase (sm1,"z");
 //- 0
 
-stl::erase (sm1,"b");
+erase (sm1,"b");
 //- 1
 
 stl::elms sm1;
 //- ["a","c","d","e"]
 
-stl::erase (sm1,"a"); stl::elms sm1;
+erase (sm1,"a"); stl::elms sm1;
 //- ["c","d","e"]
 
-stl::erase (sm1,"e"); stl::elms sm1;
+erase (sm1,"e"); stl::elms sm1;
 //- ["c","d"]
 
 //*** swap ***************************************************************/
@@ -798,7 +799,7 @@ let sm1 = stlset ["a","b","c","d","e"];
 let sm2 = mkstlset (>);
 //- ()
 
-do (\x -> stl::insert sm2 x) sm1; stl::elms sm2;
+do (\x -> insert sm2 x) sm1; stl::elms sm2;
 //- ["e","d","c","b","a"]
 
 filter (\e -> (ord e) mod 2) sm1;
