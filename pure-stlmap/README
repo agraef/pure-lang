@@ -77,12 +77,9 @@ there is no inconvenience once you get used to the idea. However, in the case
 of stlmmap and stlmset, care must be taken to ensure that elements with the
 same key are properly lexicographically ordered, or the applicable C++
 functions will not work properly. In contrast, the set operations supplied by
-the Pure Library, just work -- you don't have to think about these things. The
-C++ approach might take some getting used to, but the benefit is O(n) time
-complexity for set operations (as opposed to the Pure Library's O(n log n)
-time complexity).
+the Pure Library, just work -- you don't have to think about these things.
 
-The main advantage of mirroring the C++ library is that users can consult the
+An advantage of following C++ library semantics is that users can consult the
 C++ Library documentation to understand the performance characteristics and
 corner case behavior of any pure-stlmap function that has a corresponding
 function in the STL. In addition calling underlying STL functions on a
@@ -135,25 +132,41 @@ something similar to the following has been entered at the prompt. ::
    > let ss_rng  = ss,"b","d";
    > let sms_rng = sm,"b","d";
 
-You might consider pasting this code into a temp.pure file that can be loaded
-into the Pure interpreter if you want to try things out as you read the manual.
+The file "readme-data.pure", which can be found in the pure-stlmap/examples
+directory contains the corresponding source code.
 
 Quick Start Examples
 ====================
 
 Hopefully, a quick read of these examples should get you up and running with
-pure-stlmap.
+pure-stlmap. If you want to try things out as you go, start up Pure, run
+readme-data.pure, and use the elms function to make sure things are ok. E.g., ::
+
+   $> cd pure-stlmap/examples/
+   /home/ps/Downloads/pure-lang/pure-stlmap/examples
+
+   $> pure -q
+   > run readme-data.pure 
+   > elms sm;
+   ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
 Constructors and Insertion
 --------------------------
 
-The section Containers and Ranges Used in Examples shows how to make a new
-associative container form a list of elements. You can also make empty
-containers. ::
+You can make empty containers with customized orderings, etc., as well as with
+default values. ::
 
-   > let sm1 = emptystlmap ;
+   > let ss1 = mkstlset (>);  // uses (>) to order elements
+
+   > let sm1 = emptystlmap;   // uses default, (<), to order keys
 
 You can add elements using insert or insert_or_update. 
+
+   > insert ss1 ss;           // insert ss's elements into ss1
+   5
+
+   > elms ss1;
+   ["e","d","c","b","a"]
 
    > insert sm1 (sm,"b","e"); // insert sm's elements with keys "a" to "d"
    3
@@ -161,24 +174,27 @@ You can add elements using insert or insert_or_update.
    > elms sm1;
    ["b"=>2,"c"=>3,"d"=>4]
 
-   > insert_or_update sm1 ("d"=>40) $$ elms sm1;
-   ["b"=>2,"c"=>3,"d"=>40,"e"=>50]
-
-The insert function will not "insert" elements with a key that is already
-stored in the target container.
+If the targeted container is has unique keys (i.e., stlmap or stlhmap), the
+insert function will not "insert" elements with a key that is already stored
+in the container. ::
 
    > insert sm1 ("e"=>5);    // insert element with new key
    #<pointer 0xa95cc60>,1    // returns (iterator, true)
 
    > elms sm1;               // check that "e"=>5 was inserted
-   ["b"=>2,"c"=>3,"d"=>40,"e"=>5]
+   ["b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
    > insert sm1 ("e"=>50);   // attempt insert where key already in sm1
    #<pointer 0xaa08cb8>,0    // returns (iterator, false)
 
    > elms sm1;               // Note that "e"=>5 was not updated
-   ["b"=>2,"c"=>3,"d"=>40,"e"=>5]
+   ["b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
+If you want to update the value of an element with a given key, you can use
+the insert_or_update function (or the put function, described below). ::
+
+   > insert_or_update sm1 ("e"=>50) $$ elms sm1;
+   ["b"=>2,"c"=>3,"d"=>4,"e"=>50]
 
 Access
 ------
@@ -186,47 +202,203 @@ Access
 The value (or values for a multi-key container) associated with a key can be
 accessed using the (!) operator. ::
 
-    > sm!"a";
-    1
+   > sm!"a";   // return value associated with "a"
+   1
 
-    > shm!"b";
-    2
+   > shm!"b";  // try it with a hashed map
+   2
 
-    > smm!"c";
-    [31,32]
+   > smm!"c";  // return the list of values associated with "c"
+   [31,32]
 
-An associative container elements or a (sub)range of its elements can
-be accessed using the elms function. As expected, the elements of the ordered
-containers are indeed ordered and those in the unordered containers are
-not. ::
+   > ss!"a";   // with sets, return the key
+   "a"
 
-    > elms ss;
-    ["a","b","c","d","e"]   
+   > sms!"c";  // with multisets, return a list of keys
+   ["c","c"]
 
-    > elms shs;
-    ["d","e","a","b","c"]
+If the key is not stored in the container, (!) throws and out_of_bounds
+exception.
 
-    > elms ss_rng;
-    ["b","c"]
+   > catch id $ sm!"x"; // "x" is not stored as a key in sm
+   out_of_bounds
 
-    > elms (shm,"b","d"); // fails - ranges not supported for stlhmaps
-    stl::elms (#<pointer 0x83b4908>,"b","d")
+If you want to see if a key is stored in a container use the has_key
+function. ::
 
-Note that the last element in the range specification is not included in the
-range. Also, ranges are not supported for stlhmap and stlhset.
+   > has_key sm "x";
+   0
+   > has_key sm "a";
+   1
+
+When applied to a stlmap or stlset, the has_key function caches the C++
+iterator that it uses to make the test. That way, a put or get to the same
+location in the map can be done in constant time as opposed to O(log n)
+time. E.g., ::
+
+   > inc_sum m k v = put (m,k) (if has_key m k then m!k + v else v);  
+
+   > let sm1 = emptystlmap;
+
+   > inc_sum sm1 "a" 1;
+   1
+
+   > inc_sum sm1 "a" 5;
+   6
+
+   > elms sm1;
+   ["a"=>6]
+
+When inc_sum is called the first time, there will be an O(log n) look up when
+has_key is called, and a constant time look up for the put. All the rest of
+the calls to has_key, (!) and put use constant time lookups. Currently four
+C++ iterators are cached.
+
+For maps (stlmap, stlhmap and stlmmap) you can retrieve an elements key and
+value using the get function. ::
+
+   > get (sm,"b");
+   "b"=>2
+
+   > get (smm,"c");
+   "c"=>[31,32]
+
+The elements of an ordered container (stlmap, stlset, stlmmap and stlmset) or
+a subsequence of its elements can be accessed using the elms function. The
+elms function can be used with the unordered containers (stlhmap and stlhset)
+as well except that subsequences are not supported. ::
+
+   > elms ss;
+   ["a","b","c","d","e"]
+
+   > elms (smm,"c","e");   // list subsequence from "c" up to but not "e"
+   ["c"=>31,"c"=>32,"d"=>4]
+   
+   > elms ss_rng;           
+   ["b","c"]
+
+   > elms (shm,"b","d"); // fails - ranges not supported for stlhmaps
+   stl::elms (#<pointer 0x83b4908>,"b","d")
+
+   > elms shm;          // ok - the entire stlhmap is treated as a range 
+   ["d"=>4,"e"=>5,"a"=>1,"b"=>2,"c"=>3]
+
+Please note that the last element in the range specification is not included
+in the range. Also, ranges are not supported for stlhmap and stlhset.
+
+Changing Values
+---------------
+
+You can change the value of an element stored in a map using the put
+function. ::
+
+   > let sm1 = stlmap sm;     // make a copy of sm
+
+   > put (sm1,"e") 50;        // change the value associated with "e"
+   50
+
+   > put (sm1,"x") 24;        // put can also add new elements
+   24
+
+   > elms sm1;
+   ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>50,"x"=>24]
+
+   > elms sm1;
+   ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>50]
+
+When it comes to stlmmaps, put treats all the elements with the same key as a
+list of the corresponding values to be inserted or updated en masse. This
+allows precise control over the ordering of elements that have equivalent
+keys. E.g., ::
+
+   > let smm1 = stlmmap smm;  // make a copy of smm
+
+   > insert smm1 ("c"=>30) $$ elms smm1;
+   ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"c"=>30,"d"=>4,"e"=>5]
+
+   > put (smm1,"c") [30,31,32] $$ elms smm1;
+   ["a"=>1,"b"=>2,"c"=>30,"c"=>31,"c"=>32,"d"=>4,"e"=>5]
+
+   > put (smm1,"c") [] $$ elms smm1;
+   ["a"=>1,"b"=>2,"d"=>4,"e"=>5]
 
 Erasing Elements
 ----------------
 
+You can use the erase function to remove all the elements associated with a
+given key from a container, all of the elements in a container or all of the
+elements in subsequence of elements in a container. ::
+
+   > let shm1 = stlhmap shm;       // make some copies
+   > let smm1 = stlmmap smm;
+   > let sm1 = stlmap sm;
+
+   > erase (shm1,"c");             // erase elmenent with key "c"
+   1
+   > elms shm1;
+   ["d"=>4,"e"=>5,"a"=>1,"b"=>2]
+
+   > erase shm1;                   // erase all elements
+   4
+   > empty shm1;
+   1
+
+   > erase (sm1,"b","d");         // erase a subsequence       
+   2
+   > elms sm1;
+   ["a"=>1,"d"=>4,"e"=>5]
+
+   > erase (sm1,"x");             // attempt to erase something not there
+   0
+
+   > erase (smm1,"c");            // erase all elements with key "c"
+   2
+   > elms smm1;
+   ["a"=>1,"b"=>2,"d"=>4,"e"=>5]
+
 List-Like Operations
 --------------------
+
+Most of the Pure list operations, including map, do, filter, catmap, foldl and
+foldl1 can be applied to pure-stlmap's associative containers. E.g., ::
+
+   > map (\x->x-32) shs;
+   ["D","E","A","B","C"]
+
+   > using system;
+
+   > do (puts . str) (sm,smbeg,"c");
+   "a"=>1
+   "b"=>2
+   ()
+
+   > let sm1 = foldl insert_or_update (mkstlmap (>)) (sm,"c",smend);
+   > elms sm1;
+   ["e"=>5,"d"=>4,"c"=>3]
+
+List comprehensions also work. ::
+
+   > [k-32=>v+100 | (k=>v) = smm; k>"a" && k<"e"];
+   ["B"=>102,"C"=>131,"C"=>132,"D"=>104]
+
+   > {k-32=>v+100 | (k=>v) = (smm,"b","e")};
+   {"B"=>102,"C"=>131,"C"=>132,"D"=>104}
+
+C++ Like Operations
+-------------------
+
+next_key, 
+
+Don't use unless necessary. Stick with map, do, foldl, etc
 
 
 More Examples
 -------------
 
-Many more examples can be found in the pure-stlmap/ut directory.
+Some examples are provided in pure-stlmap/examples. Comment re fold vrs C++
+style -- terms_mult in poly.pure.
 
+Many one line examples can be found in the pure-stlmap/ut directory.
 
 Usage
 =====
@@ -1424,6 +1596,3 @@ Here are some examples using iterators.
 
    > inc j $$ is_pastend j;
    1
-
-
- 
