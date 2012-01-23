@@ -107,7 +107,7 @@ stlvec module. ::
     > sv1!![2,4,6];
     [2,4,6]
 
-    > update sv1 3 33; members sv1;
+    > put (sv1,3) 33; members sv1;
     STLVEC #<pointer 0xaf4d2c0>
     [0,1,2,33,4,5,6,7]
 
@@ -209,7 +209,7 @@ that points to an element and the element's position (starting at zero) in the
 vector.  pure-stlvec uses this correspondence to designate a stlvec's members
 in a way that makes it relatively easy to see how pure-stlvec's functions are
 acting on the stlvec's underlying STL vector by referencing the STL's
-documentation. Thus, if sv is a stlvec, and j is an int, "update sv j x" uses
+documentation. Thus, if sv is a stlvec, and j is an int, "put (sv,j) x" uses
 the STL to replace the element pointed to by the iterator for position j of
 sv's underlying STL vector. If, in addition, k is an int, stl::sort (sv,j,k)
 (<) uses the STL to sort the elements in the range designated by the "jth" and
@@ -345,8 +345,8 @@ is mutable. ::
    > let v = const_stlvec $ stlvec (0..3); v2;
    CONST_STLVEC #<pointer 0x8c1dbf0>
 
-   > update v 0 100; // fails
-   update (CONST_STLVEC #<pointer 0x9f07690>) 0 100
+   > put (v,0) 100; // fails
+   put (CONST_STLVEC #<pointer 0x9f07690>,0) 100
 
 Types
 -----
@@ -687,12 +687,13 @@ Note that if list is applied to an iterator tuple, it will return a list
 holding the elements of the tuple not the elements of the range denoted by the
 tuple. It is recommended that you use members instead.
 
-.. function:: update /stlvec msv i x
-              update /stlvec csv i x
+.. function:: put /stlvec (msv,i) x
+ 
+   replace the i\ th member of msv by x and return msv;
 
-   replace the i\ th member of msv by x and return msv; copy the immutable
-   stlvec, csv a new stlvec, sv, replace the i\ th member of sv by x, convert
-   sv to an immutable stlvec and return the new immutable stlvec 
+.. function:: update /stlvec msv i x
+
+   same as put (msv,i) x
 
 .. function:: append /stlvec sv x
 
