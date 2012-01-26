@@ -236,7 +236,8 @@ iterator that it uses to make the test. That way, a put or get to the same
 location in the map can be done in constant time as opposed to O(log n)
 time. E.g., ::
 
-   > inc_sum m k v = put (m,k) (if has_key m k then m!k + v else v);  
+   > inc_sum m k v = update m k v1 
+       when v1 = if has_key m k then m!k + v else v end;  
 
    > let sm1 = emptystlmap;
 
@@ -250,7 +251,7 @@ time. E.g., ::
    ["a"=>6]
 
 When inc_sum is called the first time, there will be an O(log n) look up when
-has_key is called, and a constant time look up for the put. All the rest of
+has_key is called, and a constant time look up for the update. All the rest of
 the calls to has_key, (!) and put use constant time lookups. Currently four
 C++ iterators are cached.
 
@@ -289,15 +290,15 @@ in the range. Also, ranges are not supported for stlhmap and stlhset.
 Changing Values
 ---------------
 
-You can change the value of an element stored in a map using the put
+You can change the value of an element stored in a map using the update
 function. ::
 
-   > let sm1 = stlmap sm;     // make a copy of sm
+   > let sm1 = stlmap sm;           // make a copy of sm
 
-   > put (sm1,"e") 50;        // change the value associated with "e"
+   > update sm1 "e" 50 $$ sm1!"e";  // change the value associated with "e"
    50
 
-   > put (sm1,"x") 24;        // put can also add new elements
+   > update sm1 "x" 24 $$ sm1!"x"   // update can also add new elements
    24
 
    > elms sm1;
@@ -306,8 +307,8 @@ function. ::
    > elms sm1;
    ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>50]
 
-When it comes to stlmmaps, put treats all the elements with the same key as a
-list of the corresponding values to be inserted or updated en masse. This
+When it comes to stlmmaps, update treats all the elements with the same key as
+a list of the corresponding values to be inserted or updated en masse. This
 allows precise control over the ordering of elements that have equivalent
 keys. E.g., ::
 
@@ -316,10 +317,10 @@ keys. E.g., ::
    > insert smm1 ("c"=>30) $$ elms smm1;
    ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"c"=>30,"d"=>4,"e"=>5]
 
-   > put (smm1,"c") [30,31,32] $$ elms smm1;
+   > update smm1 "c" [30,31,32] $$ elms smm1;
    ["a"=>1,"b"=>2,"c"=>30,"c"=>31,"c"=>32,"d"=>4,"e"=>5]
 
-   > put (smm1,"c") [] $$ elms smm1;
+   > update smm1 "c" [] $$ elms smm1;
    ["a"=>1,"b"=>2,"d"=>4,"e"=>5]
 
 Erasing Elements
@@ -597,7 +598,7 @@ If you don't like iterators, you can use pure-stlmap's "key-based" interface. ::
   > get (sm,"c");
   "c"=>3
 
-  > put (sm,"c") 30;
+  > update sm "c" 30 $$ sm!"c"
   30
 
   > elms sm;
@@ -618,16 +619,10 @@ the elements associated with a given key on a all or nothing basis. ::
    > get (smm,"c");
    "c"=>[31,32]
 
-   > put (smm,"c") [31,32,33];
-   3
-
-   > elms smm;
+   > update smm "c" [31,32,33]; elms smm;
    ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"c"=>33,"d"=>4]
 
-   > put (smm,"c") [];
-   0
-
-   > elms smm;
+   > update smm "c" []; elms smm;
    ["a"=>1,"b"=>2,"d"=>4,"e"=>5]
 
 Please note that elements are never identified by key value pairs. I.e., the
@@ -635,12 +630,6 @@ value never is used to locate an element. Thus, if you want to delete "c"=>32
 from smm while preserving "c"=>31 and "c"=>33 using the key-based interface
 you have to use put, i.e., you cannot say something like delete_val smm
 ("c"=>32) ::
-
-   > put (smm,"c") [31,33];
-   2
-
-   > elms smm;
-   ["a"=>1,"b"=>2,"c"=>31,"c"=>33,"e"=>5]
 
 If this is not convenient, you can always use iterators to track down and deal
 with any element individually.
@@ -1076,8 +1065,8 @@ for some commonly occurring sequences of operations.
    > get (smm,smbeg);
    "a"=>[1]
 
-.. function:: put /stlmap (uniq_map,k) v
-              put /stlmap (multi_map,k) src
+.. function:: update /stlmap uniq_map k v
+              update /stlmap multi_map k src
 
    Associate v with k (i.e., insert (k=>v)) in uniq_map where uniq_map is a
    stlmap or stlhmap, or associate the elements of src with k in a in
@@ -1088,17 +1077,8 @@ for some commonly occurring sequences of operations.
    > elms smm;
    ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"d"=>4,"e"=>5]
 
-   > put (smm,"c") [31,33,35,36];
-   4
-
-   > elms smm;
+   > update smm "c" [31,33,35,36]; elms smm;
    ["a"=>1,"b"=>2,"c"=>31,"c"=>33,"c"=>35,"c"=>36,"d"=>4,"e"=>5]
-
-   > put (smm,"c") [];
-   0
-
-   > elms smm;
-   ["a"=>1,"b"=>2,"d"=>4,"e"=>5]
 
 .. function:: bounding_keys /stlmap rng
 
@@ -1145,7 +1125,8 @@ insert (of a single element), insert_or_update, and insert_or_update_with also
 cache iterators. [FIX -- is this correct?]
 
 Here are some examples produced by compiling pure-stlmap with a trace function
-that shows when caching eliminates a key lookup.
+that shows when caching eliminates a key lookup. FIX -- may now have to
+use let key_a = "a" to get caching.
 
    > has_key sm "a";
    1
@@ -1154,7 +1135,7 @@ that shows when caching eliminates a key lookup.
    found iterator for: "a"
    1
 
-   > put (sm,"a") 10;
+   > update sm "a" 10;
    found iterator for: "a"
    10
 
@@ -1336,7 +1317,7 @@ the Pure standard library's insert function when applied to a dict or hdict.
 
   This function only applies to stlmaps. The effect of this function is as
   follows: (a) if ~has_key m k then insert m (k=>dflt) else (), where dflt is
-  m's dflt value, (b) put (m,k) nv when nv = f v (m!k) end. Returns m. E.g.,
+  m's dflt value, (b) update m k nv when nv = f v (m!k) end. Returns m. E.g.,
 
    > let src = ["a"=>1,"b"=>2,"c"=>3,"c"=>4,"c"=>5];
 

@@ -265,6 +265,8 @@ end;
 
 /*** Modifiers *********************************************************/
 
+::update sm::stlmap key val = sm_update sm key val;
+
 ::insert sm::stlacon xs::list = sm_insert_elms_xs sm xs;
 
 ::insert sm::stlacon xs::matrix = sm_insert_elms_xs sm xs;
@@ -278,11 +280,11 @@ end;
 
 ::insert sm::stlmap elm@(k=>v) = sm_insert_elm sm elm;
 
-::insert_or_update sm::stlmap (k=>v) = sm_update sm k v $$ sm;
+::insert_or_update sm::stlmap (k=>v) = sm_update sm k v;
 
 ::insert_or_update sm::stlset k = sm_insert_elm sm k $$ sm;
 
-::insert_or_update_with f sm::stlmap (key=>x) = sm_update_with sm key (f x) $$ sm;
+::insert_or_update_with f sm::stlmap (k=>x) = sm_update_with sm k (f x);
 
 ::insert sm::stlset (key, pos::stlacon_iter) = sm_insert_hinted sm pos key;
 
@@ -370,7 +372,6 @@ subset rng1::stlacon_rng rng2::stlacon_rng =
 
 
 
-::put (sm::stlmap,key) val = sm_update sm key val;
 
 has_key sm::stlacon key = sm_member sm key;
 

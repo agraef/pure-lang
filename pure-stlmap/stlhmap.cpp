@@ -624,7 +624,7 @@ px* shm_update(px* pxshmp, px* key, px* val)
   if ( !get_shmp(pxshmp,&shmp) ) bad_argument();
   if (shmp->keys_only) return 0; // fail for sets
   phmi pos = update_aux(shmp, key, val);
-  return val;
+  return pxshmp;
 }
 
 /*** Lazy list iterator support ******************************************/

@@ -403,7 +403,8 @@ bool stlmap::get_cached_pmi(px* k, pmi& i)
     size_t num_cached = recent_pmi.size();
     size_t pos = 0; 
     for (; pos < num_cached; pos++) {
-      if ( same(recent_pmi[pos]->first, k) ) {
+      //      if ( same(recent_pmi[pos]->first, k) ) {
+      if ( recent_pmi[pos]->first == k ) {
         i = recent_pmi[pos];
         ret = true;
         break;
@@ -1377,7 +1378,7 @@ px* sm_update(px* pxsmp, px* key, px* val)
   if (smp->keys_only) return 0; // fail for sets
   pmi pos = update_aux(smp, key, val);
   smp->cache_pmi(pos);
-  return val;
+  return pxsmp;
 }
 
 px* sm_update_with(px* pxsmp, px* key, px* unaryfun)

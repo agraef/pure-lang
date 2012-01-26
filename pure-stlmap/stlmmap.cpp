@@ -1470,5 +1470,5 @@ px* smm_update(px* pxsmmp, px* k, px* src)
     else
       smmp->erase(trgi,ub);
   }
-  return pure_int(i);
+  return pxsmmp;
 }
