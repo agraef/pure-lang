@@ -229,14 +229,6 @@ distance rng::stlacon_rng = sm_size rng;
 
 /*** Range Access ****************************************************/
 
-lazy_map f rng::stlacon_rng = gen first with
-  gen i = if sm_equal_iter i last then [] 
-          else f (sm_get_elm_at_inc i) : (gen i &);  
-end if valid when 
-  valid,m,b,last = sm_range_info rng;
-  first = sm_copy_iter b;
-end;
-
 ::stream rng::stlacon_rng = gen first with 
   gen i = if sm_equal_iter i last then [] 
           else sm_get_elm_at_inc i : (gen i &);  
@@ -363,12 +355,6 @@ subset rng1::stlacon_rng rng2::stlacon_rng =
 */
 
 (::!) sm::stlacon key = sm_find sm key sm_val;  // no default
-
-::get (sm::stlmap,key) = sm_find sm key sm_elm;  // no default, like get . find
-
-
-
-
 
 ::member sm::stlacon key = sm_member sm key;
 

@@ -141,12 +141,6 @@ list $ take 10 (stream sm1);
 list $ take 10 $ drop 2 (stream sm1);
 //- ["c"=>3,"d"=>4,"e"=>5]
 
-// list $ take 3 (stl::lazy_keys sm1);
-// //- ["a","b","c"]
-
-// list $ take 3 (stl::lazy_vals sm1);
-// //- [1,2,3]
-
 //*** Insert *************************************************************/
 
 let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
@@ -628,20 +622,6 @@ catch id $ catmap (\(k=>v)->[k+1=>v+10]) (i_pastend,i_b)
 { {k;v} |  (k=>v) = sm1; v mod 2};
 //- {"a","c","e";1,3,5}
 
-//*** Mapping into a Stream ******************************************
-
-let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
-//- ()
-
-head $ stl::lazy_map (\(k=>v)->(k,2*v)) sm1;
-//- "a",2
-
-list $ stl::lazy_map (\(k=>v)->(k,2*v)) sm1;
-//- [("a",2),("b",4),("c",6),("d",8),("e",10)]
-
-list $ take 3 $ stl::lazy_map (\(k=>v)->(k,2*v)) sm1;
-//- [("a",2),("b",4),("c",6)]
-
 //*** foldl, foldl1 **************************************************
 
 let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
@@ -944,6 +924,6 @@ update_elm_with (:) sm2 ("b"=>4); members sm2;
 update sm2 "f" [5,6]; members sm2;
 //- ["f"=>[5,6],"b"=>[4,3],"a"=>[2,1]]
 
-get (sm2,"f");
-//- "f"=>[5,6]
+sm2!"f";
+//- [5,6]
 

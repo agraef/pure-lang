@@ -229,14 +229,6 @@ distance rng::stlmacon_rng = smm_size rng;
 
 /*** Range Access ******************************************************/
 
-lazy_map f rng::stlmacon_rng = gen first with
-  gen i = if smm_equal_iter i last then [] 
-          else f (smm_get_elm_at_inc i) : (gen i &);  
-end if valid when 
-  valid,m,b,last = smm_range_info rng;
-  first = smm_copy_iter b;
-end;
-
 ::stream rng::stlmacon_rng = gen first with 
   gen i = if smm_equal_iter i last then [] 
           else smm_get_elm_at_inc i : (gen i &);  
@@ -363,12 +355,6 @@ subset rng1::stlmacon_rng rng2::stlmacon_rng =
 */
 
 (::!) smm::stlmacon key = smm_listmap 0 (smm,key) smm_val;
-
-::get (smm::stlmacon,key) = throw out_of_bounds if empty smm;
-
-::get (smm::stlmacon,key) = k=>(smm_listmap 0 (smm,key) smm_val) when 
-  k = if key === smbeg then get_key (find smm smbeg) else key;
-end;
 
 ::member smm::stlmacon key = smm_member smm key;
 
