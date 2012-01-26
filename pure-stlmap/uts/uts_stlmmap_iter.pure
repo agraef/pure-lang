@@ -245,19 +245,19 @@ let sm1 = stlmmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
 let i = sm1^"a"; get i;
 //- "a"=>1
 
-stl::elms sm1;
+members sm1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
 let j = sm1^"a"; get j;
 //- "a"=>1
 
-stl::elms sm1;
+members sm1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
 let k = sm1^"z"; get k;
 //- "z"=>[]
 
-stl::elms sm1;
+members sm1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"z"=>[]]
 
 i == j;
@@ -322,52 +322,52 @@ let ok, smx, f, l = stl::range_info (i_a,i_c); ok;
 smx===sm1, f===i_a, l===i_c, f==i_a, l==i_c;
 //- 1,0,0,1,1
 
-stl::elms (i_begin,i_begin);
+members (i_begin,i_begin);
 //- []
 
-stl::elms (i_begin,i_pastend);
+members (i_begin,i_pastend);
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
-catch id $ stl::elms (i_pastend,i_begin);
+catch id $ members (i_pastend,i_begin);
 //- bad_argument
 
-stl::elms (i_pastend,i_pastend);
+members (i_pastend,i_pastend);
 //- []
 
-stl::elms (i_a,i_a);
+members (i_a,i_a);
 //- []
 
-stl::elms (i_a,i_c);
+members (i_a,i_c);
 //- ["a"=>1,"b"=>2]
 
-catch id $ stl::elms (i_c,i_a);
+catch id $ members (i_c,i_a);
 //- bad_argument
 
-stl::elms (i_c,i_c);
+members (i_c,i_c);
 //- []
 
-stl::elms (i_begin,i_a);
+members (i_begin,i_a);
 //- []
 
-stl::elms (i_a,i_begin);
+members (i_a,i_begin);
 //- []
 
-stl::elms (i_a,i_pastend);
+members (i_a,i_pastend);
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
-catch id $ stl::elms (i_pastend,i_a);
+catch id $ members (i_pastend,i_a);
 //- bad_argument
 
-stl::elms (i_begin,i_c);
+members (i_begin,i_c);
 //- ["a"=>1,"b"=>2]
 
-catch id $ stl::elms (i_c,i_begin);
+catch id $ members (i_c,i_begin);
 //- bad_argument
 
-stl::elms (i_c,i_pastend);
+members (i_c,i_pastend);
 //- ["c"=>3,"d"=>4,"e"=>5]
 
-catch id $ stl::elms (i_pastend,i_c);
+catch id $ members (i_pastend,i_c);
 //- bad_argument
 
 /*** Erroneous Ranges **************************************************/
@@ -414,13 +414,13 @@ stl::range_info (i1_a,i2_a);
 stl::range_info (i1_c,i2_c);
 //- 0,#<pointer 0>,#<pointer 0>,#<pointer 0>
 
-erase (sm1,i1_c); stl::elms sm1;
+erase (sm1,i1_c); members sm1;
 //- ["a"=>1,"b"=>2,"d"=>4,"e"=>5]
 
 let ok, smx, k, v = stl::get_info i1_c; ok, smx===sm1;
 //- 0,1
 
-catch id $ stl::elms (i1_c,i1_pastend);
+catch id $ members (i1_c,i1_pastend);
 //- bad_argument
 
 catch id $ erase (sm2,i1_c);

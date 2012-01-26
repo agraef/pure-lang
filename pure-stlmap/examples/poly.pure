@@ -92,11 +92,11 @@ end when
   res = empty_term_map;
 end;
 
-adjust_term tm ord adj = insert tm (ord=>adj) if ~has_key tm ord;
+adjust_term tm ord adj = insert tm (ord=>adj) if ~member tm ord;
 
 adjust_term tm ord adj = () when
   coef = adj + tm!ord;
-  if is_zero coef then erase (tm,ord) else insert_or_update tm (ord=>coef);
+  if is_zero coef then erase (tm,ord) else update_elm tm (ord=>coef);
 end;
 
 terms_add tm1 tm2 = do add_term tm2 $$ tm1 with
@@ -146,9 +146,9 @@ stlmapp x = check_ptrtag stlmap_t x;
 
 term_map p::poly = p [[smbeg]];
 
-terms (q::poly,r::poly) = elms (term_map q), elms (term_map r);
+terms (q::poly,r::poly) = members (term_map q), members (term_map r);
 
-terms p::poly = elms (term_map p);
+terms p::poly = members (term_map p);
 
 mkpoly p1::poly = mkpoly (stlmap $ term_map p1);
 

@@ -9,7 +9,7 @@ using system, stlhmap, stlvec;
 elmless (k1=>_) (k2=>_) = k1 < k2; 
 //- ()
 
-hm_elms shm::stlhmap = sort elmless (stl::elms shm);
+hm_elms shm::stlhmap = sort elmless (members shm);
 //- ()
 
 //*** Constructors ******************************************************
@@ -23,7 +23,7 @@ let shm1 = stlhmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]; hm_elms shm1;
 let shm1 = stlhmap {"a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5}; hm_elms shm1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
-let shm1 = stlhmap sv1; stl::elms shm1; hm_elms shm1;
+let shm1 = stlhmap sv1; members shm1; hm_elms shm1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
 let shm2 = stlhmap shm1; hm_elms shm2;
@@ -46,7 +46,7 @@ stl::container_info shm1;
 stl::count shm1 "a", stl::count shm1 "e", stl::count shm2 "e";
 //- 1,1,0
 
-stl::has_key shm1 "a";
+member shm1 "a";
 //- 1
 
 /*** Accessing Elements  **********************************************/
@@ -71,7 +71,7 @@ thunkp (tail $ stream shm1);
 sort elmless (list $ stream shm1);
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
-sort elmless (stl::elms shm1);
+sort elmless (members shm1);
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
 sort (<) (keys shm1);
@@ -119,13 +119,13 @@ insert shm1 ("e"=>5);
 hm_elms shm1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
-let xx = insert_or_update shm1 ("a"=>20); xx!"a";
+let xx = update_elm shm1 ("a"=>20); xx!"a";
 //- 20
 
 hm_elms shm1;
 //- ["a"=>20,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
-let xx  = insert_or_update shm1 ("f"=>5); xx!"f";
+let xx  = update_elm shm1 ("f"=>5); xx!"f";
 //- 5
 
 hm_elms shm1;
@@ -218,7 +218,7 @@ foldl1 (\(r=>l) (k=>v) -> (r+k=>l+v)) shm1;
 let shm2 = emptystlhmap;
 //- ()
 
-do (insert_or_update shm2) shm1;
+do (update_elm shm2) shm1;
 //- ()
 
 hm_elms shm2;
@@ -252,9 +252,9 @@ colcatmap (\(k=>v)->if v mod 2 then {v;k} else {}) shm1;
 let shm1 = stlhmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
 //- ()
 
-stl::has_key shm1 "0", stl::has_key shm1 "a", stl::has_key shm1 "c";
+member shm1 "0", member shm1 "a", member shm1 "c";
 //- 0,1,1
 
-stl::has_key shm1 "e", stl::has_key shm1 "f", stl::has_key shm1 stl::smbeg;
+member shm1 "e", member shm1 "f", member shm1 stl::smbeg;
 //- 1,0,1
 

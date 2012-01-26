@@ -58,8 +58,8 @@ private extern expr* shm_foldl1(expr* fun, expr* shmp);
 
 namespace ;
 
-public emptystlhmap mkstlhmap emptystlhset mkstlhset members erase
-  insert_or_update; 
+public emptystlhmap mkstlhmap emptystlhset mkstlhset member members erase
+  update_elm; 
 
 let stlhmap_t, stlhmap_iter_t, stlhset_t, stlhset_iter_t = stl::shm_type_tags;
 
@@ -126,7 +126,7 @@ container_info shm::stlhacon = shm_hash_info shm;
 
 count shm::stlhacon key = shm_count shm key;
 
-has_key shm::stlhacon key = shm_member shm key;
+::member shm::stlhacon key = shm_member shm key;
 
 distance shm::stlhacon = shm_size shm;
 
@@ -143,8 +143,6 @@ end when
   first = shm_begin shm;
   last = shm_end shm;
 end;
-
-elms shm::stlhacon = shm_listmap 0 shm shm_elm;
 
 ::members shm::stlhacon = shm_listmap 0 shm shm_elm;
 
@@ -164,8 +162,6 @@ end;
 
 /*** Modifiers *********************************************************/
 
-::update shm::stlhmap key v = shm_update shm key v;
-
 ::insert shm::stlhacon xs::list = shm_insert_elms_xs shm xs;
 
 ::insert shm::stlhacon xs::matrix = shm_insert_elms_xs shm xs;
@@ -174,11 +170,13 @@ end;
 
 ::insert shm::stlhacon val@(k=>v) = shm_insert_elm shm val;
 
-::insert_or_update shm::stlhmap (k=>v) = shm_update shm k v;
-
-::insert_or_update shm::stlhset k = shm_insert_elm shm k $$ shm;
-
 ::insert shm::stlhset elm = shm_insert_elm shm elm; 
+
+::update shm::stlhmap key v = shm_update shm key v;
+
+::update_elm shm::stlhmap (k=>v) = shm_update shm k v;
+
+::update_elm shm::stlhset k = shm_insert_elm shm k $$ shm;
 
 ::erase shm::stlhacon = shm_clear shm;
 

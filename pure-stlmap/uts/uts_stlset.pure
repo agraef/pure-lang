@@ -11,19 +11,19 @@ using system, stlmap, stlvec;
 let sv1 = ::stlvec ["a","b","c","d","e"]; members sv1;
 //- ["a","b","c","d","e"]
 
-let sm1 = stlset ["a","b","c","d","e"]; stl::elms sm1;
+let sm1 = stlset ["a","b","c","d","e"]; members sm1;
 //- ["a","b","c","d","e"]
 
-let sm1 = stlset {"a","b","c","d","e"}; stl::elms sm1;
+let sm1 = stlset {"a","b","c","d","e"}; members sm1;
 //- ["a","b","c","d","e"]
 
-let sm1 = stlset sv1; stl::elms sm1;
+let sm1 = stlset sv1; members sm1;
 //- ["a","b","c","d","e"]
 
-let sm2 = stlset sm1; stl::elms sm2;
+let sm2 = stlset sm1; members sm2;
 //- ["a","b","c","d","e"]
 
-let sm2 = stlset (sm1,"c","z"); stl::elms sm2;
+let sm2 = stlset (sm1,"c","z"); members sm2;
 //- ["c","d","e"]
 
 /*** Info ***************************************************************/
@@ -43,7 +43,7 @@ smx===sm1, f==stl::begin sm1, l==stl::pastend sm1;
 let ok, smx, f, l = stl::range_info (sm1,"b","e"); ok;
 //- 1
 
-stl::elms (f,l);
+members (f,l);
 //- ["b","c","d"]
 
 #sm1;
@@ -73,34 +73,34 @@ stl::vector (sm1,"b","d");;
 stl::vector (sm1,"b","d");;
 //- {"b","c"}
 
-stl::elms (sm1,stl::smbeg,stl::smbeg);
+members (sm1,stl::smbeg,stl::smbeg);
 //- []
 
-stl::elms (sm1,stl::smbeg,stl::smend);
+members (sm1,stl::smbeg,stl::smend);
 //- ["a","b","c","d","e"]
 
-stl::elms (sm1,stl::smend,stl::smbeg);
+members (sm1,stl::smend,stl::smbeg);
 //- []
 
-stl::elms (sm1,stl::smend,stl::smend);
+members (sm1,stl::smend,stl::smend);
 //- []
 
-stl::elms (sm1,"0","c");
+members (sm1,"0","c");
 //- ["a","b"]
 
-stl::elms (sm1,"a","d");
+members (sm1,"a","d");
 //- ["a","b","c"]
 
-stl::elms (sm1,"b","d");
+members (sm1,"b","d");
 //- ["b","c"]
 
-stl::elms (sm1,"b",stl::smend);
+members (sm1,"b",stl::smend);
 //- ["b","c","d","e"]
 
-stl::elms (sm1,"c","e");
+members (sm1,"c","e");
 //- ["c","d"]
 
-stl::elms (sm1,"d","b");
+members (sm1,"d","b");
 //- []
 
 keys (sm1,"a",stl::smend);
@@ -162,18 +162,18 @@ let sm2 = mkstlset (>);
 let i_b, i_e = stl::begin sm1, stl::pastend sm1;
 //- ()
 
-// Insert elms
+// Insert members
 
 insert sm2 ("a".."c");
 //- 3
 
-stl::elms sm2;
+members sm2;
 //- ["c","b","a"]
 
 insert sm2 {"c","d","e"};
 //- 2
 
-stl::elms sm2;
+members sm2;
 //- ["e","d","c","b","a"]
 
 // Insert with hinted position
@@ -184,13 +184,13 @@ erase sm2;
 catch id $ insert sm2 ("a", i_b); // i_b is for sm1
 //- bad_argument
 
-let p1, ok = insert sm2 ("a"); stl::elms sm2;
+let p1, ok = insert sm2 ("a"); members sm2;
 //- ["a"]
 
-let p2 = insert sm2 ("b", p1); stl::elms sm2;
+let p2 = insert sm2 ("b", p1); members sm2;
 //- ["b","a"]
 
-let p3 = insert sm2 ("c", p2); stl::elms sm2;
+let p3 = insert sm2 ("c", p2); members sm2;
 //- ["c","b","a"]
 
 // Insert from range, list, vector, k=>v
@@ -204,39 +204,39 @@ let i = stl::find sm1 "a"; get i;
 let j = stl::find sm1 "c"; get j;
 //- "c"
 
-stl::elms (i,j);
+members (i,j);
 //- ["a","b"]
 
 insert sm2 (i,j); 
 //- 2
 
-stl::elms sm2;
+members sm2;
 //- ["b","a"]
 
 insert sm2 ["c"];
 //- 1
 
-stl::elms sm2;
+members sm2;
 //- ["c","b","a"]
 
 insert sm2 {"d"};
 //- 1
 
-stl::elms sm2;
+members sm2;
 //- ["d","c","b","a"]
 
 insert sm2 ["e"]; 
 //- 1
 
-stl::elms sm2;
+members sm2;
 //- ["e","d","c","b","a"]
 
-let p, ok = insert sm2 ("f"); stl::get_key p, ok, stl::elms sm2;
+let p, ok = insert sm2 ("f"); stl::get_key p, ok, members sm2;
 //- "f",1,["f","e","d","c","b","a"]
 
 // Attempt overwrite of existing values
 
-put i 11; get i; stl::elms (i,j);
+put i 11; get i; members (i,j);
 //- ["a","b"]
 
 insert sm2 (i,j);
@@ -248,10 +248,10 @@ insert sm2 ["c"];
 insert sm2 {"d"}; 
 //- 0
 
-let p, ok = insert sm2 ("e"); stl::get_key p, ok, stl::elms sm2;
+let p, ok = insert sm2 ("e"); stl::get_key p, ok, members sm2;
 //- "e",0,["f","e","d","c","b","a"]
 
-put p 5; stl::elms sm2;
+put p 5; members sm2;
 //- ["f","e","d","c","b","a"]
 
 //*** erase ***************************************************************/
@@ -270,13 +270,13 @@ let i_b, i_d = stl::find sm1 "b", stl::find sm1 "d";
 erase (sm1,i_begin); 
 //- 1
 
-stl::elms sm1;
+members sm1;
 //- ["b","c","d","e"]
 
-erase (sm1,i_d); stl::elms sm1;
+erase (sm1,i_d); members sm1;
 //- ["b","c","e"]
 
-erase (sm1,i_b); stl::elms sm1;
+erase (sm1,i_b); members sm1;
 //- ["c","e"]
 
 // Erase ranges
@@ -296,7 +296,7 @@ get i_b;
 erase (sm1,i_b,i_d);
 //- 2
 
-stl::elms sm1;
+members sm1;
 //- ["a","d","e"]
 
 catch id $ get i_b;
@@ -305,13 +305,13 @@ catch id $ get i_b;
 erase (sm1,i_d,i_pastend);
 //- 2
 
-stl::elms sm1;
+members sm1;
 //- ["a"]
 
 erase (sm1,i_begin,i_pastend);
 //- 1
 
-stl::elms sm1;
+members sm1;
 //- []
 
 // Attempt erase with bad iterators
@@ -331,7 +331,7 @@ catch id $ erase (sm2,i_b);
 catch id $ erase (sm2,i_b,i_d);
 //- bad_argument
 
-// Erase elms with given key
+// Erase members with given key
 
 let sm1 = stlset ["a","b","c","d","e"];
 //- ()
@@ -345,13 +345,13 @@ erase (sm1,"z");
 erase (sm1,"b");
 //- 1
 
-stl::elms sm1;
+members sm1;
 //- ["a","c","d","e"]
 
-erase (sm1,"a"); stl::elms sm1;
+erase (sm1,"a"); members sm1;
 //- ["c","d","e"]
 
-erase (sm1,"e"); stl::elms sm1;
+erase (sm1,"e"); members sm1;
 //- ["c","d"]
 
 //*** swap ***************************************************************/
@@ -365,10 +365,10 @@ let sm2 = stlset ["c","d","e"];
 stl::swap sm1 sm2;
 //- ()
 
-stl::elms sm1;
+members sm1;
 //- ["c","d","e"]
 
-stl::elms sm2;
+members sm2;
 //- ["a","b"]
 
 //** Equality and Lexicographical Comparison ****************************/
@@ -498,49 +498,49 @@ let sm2 = stlset ["b","c","d"];
 let sm3 = stlset ["a","b","c","d"];
 //- ()
 
-let sm = stl::add sm1 sm2; stl::elms sm;
+let sm = stl::add sm1 sm2; members sm;
 //- ["a","b","c","d"]
 
-let sm = stl::add sm3 sm2; stl::elms sm;
+let sm = stl::add sm3 sm2; members sm;
 //- ["a","b","c","d"]
 
-let sm = stl::add sm2 sm3; stl::elms sm;
+let sm = stl::add sm2 sm3; members sm;
 //- ["a","b","c","d"]
 
-let sm = stl::union sm1 sm2; stl::elms sm;
+let sm = stl::union sm1 sm2; members sm;
 //- ["a","b","c","d"]
 
-let sm = stl::union sm3 sm2; stl::elms sm;
+let sm = stl::union sm3 sm2; members sm;
 //- ["a","b","c","d"]
 
-let sm = stl::union sm2 sm3; stl::elms sm;
+let sm = stl::union sm2 sm3; members sm;
 //- ["a","b","c","d"]
 
-let sm = stl::intersection sm1 sm2; stl::elms sm;
+let sm = stl::intersection sm1 sm2; members sm;
 //- ["b","c"]
 
-let sm = stl::intersection sm3 sm2; stl::elms sm;
+let sm = stl::intersection sm3 sm2; members sm;
 //- ["b","c","d"]
 
-let sm = stl::intersection sm2 sm3; stl::elms sm;
+let sm = stl::intersection sm2 sm3; members sm;
 //- ["b","c","d"]
 
-let sm = stl::difference sm1 sm2; stl::elms sm;
+let sm = stl::difference sm1 sm2; members sm;
 //- ["a"]
 
-let sm = stl::difference sm3 sm2; stl::elms sm;
+let sm = stl::difference sm3 sm2; members sm;
 //- ["a"]
 
-let sm = stl::difference sm2 sm3; stl::elms sm;
+let sm = stl::difference sm2 sm3; members sm;
 //- []
 
-let sm = stl::symmetric_difference sm1 sm2; stl::elms sm;
+let sm = stl::symmetric_difference sm1 sm2; members sm;
 //- ["a","d"]
 
-let sm = stl::symmetric_difference sm3 sm2; stl::elms sm;
+let sm = stl::symmetric_difference sm3 sm2; members sm;
 //- ["a"]
 
-let sm = stl::symmetric_difference sm2 sm3; stl::elms sm;
+let sm = stl::symmetric_difference sm2 sm3; members sm;
 //- ["a"]
 
 stl::subset sm1 sm2;
@@ -799,7 +799,7 @@ let sm1 = stlset ["a","b","c","d","e"];
 let sm2 = mkstlset (>);
 //- ()
 
-do (\x -> insert sm2 x) sm1; stl::elms sm2;
+do (\x -> insert sm2 x) sm1; members sm2;
 //- ["e","d","c","b","a"]
 
 filter (\e -> (ord e) mod 2) sm1;
@@ -840,10 +840,10 @@ sm1!stl::smbeg, sm1!"a", sm1!"d", sm1!"e"
 catch id $ sm1!"0";
 //- out_of_bounds
 
-stl::has_key sm1 "0", stl::has_key sm1 "a", stl::has_key sm1 "c";
+member sm1 "0", member sm1 "a", member sm1 "c";
 //- 0,1,1
 
-stl::has_key sm1 "e", stl::has_key sm1 "f", stl::has_key sm1 stl::smbeg;
+member sm1 "e", member sm1 "f", member sm1 stl::smbeg;
 //- 1,0,1
 
 stl::bounding_keys sm1;

@@ -77,8 +77,8 @@ private extern expr* sm_update_with(expr* map, expr* key, expr* unaryfun);
 
 namespace ;
 
-public emptystlmap mkstlmap emptystlset mkstlset members erase
-  insert_or_update insert_or_update_with insert_elm; 
+public emptystlmap mkstlmap emptystlset mkstlset member members erase
+  update_elm update_elm_with insert_elm; 
 
 let stlmap_t, stlmap_iter_t, stlset_t, stlset_iter_t = stl::sm_type_tags;
 
@@ -245,8 +245,6 @@ end if valid when
   first = sm_copy_iter b;
 end;
 
-elms rng::stlacon_rng = sm_listmap 0 rng sm_elm; 
-
 ::members rng::stlacon_rng = sm_listmap 0 rng sm_elm; 
 
 ::keys rng::stlacon_rng = sm_listmap 0 rng sm_key;// if ~sm_is_set rng;
@@ -265,8 +263,6 @@ end;
 
 /*** Modifiers *********************************************************/
 
-::update sm::stlmap key val = sm_update sm key val;
-
 ::insert sm::stlacon xs::list = sm_insert_elms_xs sm xs;
 
 ::insert sm::stlacon xs::matrix = sm_insert_elms_xs sm xs;
@@ -280,17 +276,19 @@ end;
 
 ::insert sm::stlmap elm@(k=>v) = sm_insert_elm sm elm;
 
-::insert_or_update sm::stlmap (k=>v) = sm_update sm k v;
-
-::insert_or_update sm::stlset k = sm_insert_elm sm k $$ sm;
-
-::insert_or_update_with f sm::stlmap (k=>x) = sm_update_with sm k (f x);
-
 ::insert sm::stlset (key, pos::stlacon_iter) = sm_insert_hinted sm pos key;
 
 ::insert sm::stlset key = sm_insert_elm sm key;
 
 ::insert_elm sm::stlset key = sm_insert_elm sm key; // to get xs, etc into set
+
+::update sm::stlmap key val = sm_update sm key val;
+
+::update_elm sm::stlmap (k=>v) = sm_update sm k v;
+
+::update_elm sm::stlset k = sm_insert_elm sm k $$ sm;
+
+::update_elm_with f sm::stlmap (k=>x) = sm_update_with sm k (f x);
 
 ::erase sm::stlacon = sm_clear sm;
 
@@ -360,7 +358,7 @@ subset rng1::stlacon_rng rng2::stlacon_rng =
    that is equivalent to the key.
 
    These functions cache iterators. In addition, insert (for an element),
-   insert_or_update, and insert_or_update_with also cache iterators.
+   update_elm, and update_elm_with also cache iterators.
 
 */
 
@@ -372,8 +370,7 @@ subset rng1::stlacon_rng rng2::stlacon_rng =
 
 
 
-
-has_key sm::stlacon key = sm_member sm key;
+::member sm::stlacon key = sm_member sm key;
 
 bounding_keys rng::stlacon_rng = sm_bounding_keys rng;
 

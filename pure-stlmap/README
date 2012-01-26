@@ -67,7 +67,7 @@ not have the same semantics as similar functions standard Pure library. For
 example, if m is a stlmap or stlhmap and if k is already stored in m, ``insert
 m (k=>v)`` will not change the value associated with k to v. If m were a
 stldict, or dict, the value would be changed. (If you want this behavior, you
-can use pure-stlmap's `insert_or_update` function).
+can use pure-stlmap's `update_elm` function).
 
 Another disadvantage is that the C++ library is in sometimes more complicated
 than the Pure Library. For example many of the applicable C++ functions,
@@ -140,14 +140,14 @@ Quick Start Examples
 
 Hopefully, a quick read of these examples should get you up and running with
 pure-stlmap. If you want to try things out as you go, start up Pure, run
-readme-data.pure, and use the elms function to make sure things are ok. E.g., ::
+readme-data.pure, and use the members function to make sure things are ok. E.g., ::
 
    $> cd pure-stlmap/examples/
    /home/ps/Downloads/pure-lang/pure-stlmap/examples
 
    $> pure -q
    > run readme-data.pure 
-   > elms sm;
+   > members sm;
    ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
 Constructors and Insertion
@@ -160,18 +160,18 @@ default values. ::
 
    > let sm1 = emptystlmap;   // uses default, (<), to order keys
 
-You can add elements using insert or insert_or_update. 
+You can add elements using insert or update_elm. 
 
    > insert ss1 ss;           // insert ss's elements into ss1
    5
 
-   > elms ss1;
+   > members ss1;
    ["e","d","c","b","a"]
 
    > insert sm1 (sm,"b","e"); // insert sm's elements with keys "a" to "d"
    3
 
-   > elms sm1;
+   > members sm1;
    ["b"=>2,"c"=>3,"d"=>4]
 
 If the targeted container is has unique keys (i.e., stlmap or stlhmap), the
@@ -181,19 +181,19 @@ in the container. ::
    > insert sm1 ("e"=>5);    // insert element with new key
    #<pointer 0xa95cc60>,1    // returns (iterator, true)
 
-   > elms sm1;               // check that "e"=>5 was inserted
+   > members sm1;               // check that "e"=>5 was inserted
    ["b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
    > insert sm1 ("e"=>50);   // attempt insert where key already in sm1
    #<pointer 0xaa08cb8>,0    // returns (iterator, false)
 
-   > elms sm1;               // Note that "e"=>5 was not updated
+   > members sm1;               // Note that "e"=>5 was not updated
    ["b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
 If you want to update the value of an element with a given key, you can use
-the insert_or_update function (or the put function, described below). ::
+the update_elm function (or the put function, described below). ::
 
-   > insert_or_update sm1 ("e"=>50) $$ elms sm1;
+   > update_elm sm1 ("e"=>50) $$ members sm1;
    ["b"=>2,"c"=>3,"d"=>4,"e"=>50]
 
 Access
@@ -223,21 +223,21 @@ exception.
    > catch id $ sm!"x"; // "x" is not stored as a key in sm
    out_of_bounds
 
-If you want to see if a key is stored in a container use the has_key
+If you want to see if a key is stored in a container use the member
 function. ::
 
-   > has_key sm "x";
+   > member sm "x";
    0
-   > has_key sm "a";
+   > member sm "a";
    1
 
-When applied to a stlmap or stlset, the has_key function caches the C++
+When applied to a stlmap or stlset, the member function caches the C++
 iterator that it uses to make the test. That way, a put or get to the same
 location in the map can be done in constant time as opposed to O(log n)
 time. E.g., ::
 
    > inc_sum m k v = update m k v1 
-       when v1 = if has_key m k then m!k + v else v end;  
+       when v1 = if member m k then m!k + v else v end;  
 
    > let sm1 = emptystlmap;
 
@@ -247,12 +247,12 @@ time. E.g., ::
    > inc_sum sm1 "a" 5;
    6
 
-   > elms sm1;
+   > members sm1;
    ["a"=>6]
 
 When inc_sum is called the first time, there will be an O(log n) look up when
-has_key is called, and a constant time look up for the update. All the rest of
-the calls to has_key, (!) and put use constant time lookups. Currently four
+member is called, and a constant time look up for the update. All the rest of
+the calls to member, (!) and put use constant time lookups. Currently four
 C++ iterators are cached.
 
 For maps (stlmap, stlhmap and stlmmap) you can retrieve an elements key and
@@ -265,23 +265,23 @@ value using the get function. ::
    "c"=>[31,32]
 
 The elements of an ordered container (stlmap, stlset, stlmmap and stlmset) or
-a subsequence of its elements can be accessed using the elms function. The
-elms function can be used with the unordered containers (stlhmap and stlhset)
+a subsequence of its elements can be accessed using the members function. The
+members function can be used with the unordered containers (stlhmap and stlhset)
 as well except that subsequences are not supported. ::
 
-   > elms ss;
+   > members ss;
    ["a","b","c","d","e"]
 
-   > elms (smm,"c","e");   // list subsequence from "c" up to but not "e"
+   > members (smm,"c","e");   // list subsequence from "c" up to but not "e"
    ["c"=>31,"c"=>32,"d"=>4]
    
-   > elms ss_rng;           
+   > members ss_rng;           
    ["b","c"]
 
-   > elms (shm,"b","d"); // fails - ranges not supported for stlhmaps
-   stl::elms (#<pointer 0x83b4908>,"b","d")
+   > members (shm,"b","d"); // fails - ranges not supported for stlhmaps
+   stl::members (#<pointer 0x83b4908>,"b","d")
 
-   > elms shm;          // ok - the entire stlhmap is treated as a range 
+   > members shm;          // ok - the entire stlhmap is treated as a range 
    ["d"=>4,"e"=>5,"a"=>1,"b"=>2,"c"=>3]
 
 Please note that the last element in the range specification is not included
@@ -301,10 +301,10 @@ function. ::
    > update sm1 "x" 24 $$ sm1!"x"   // update can also add new elements
    24
 
-   > elms sm1;
+   > members sm1;
    ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>50,"x"=>24]
 
-   > elms sm1;
+   > members sm1;
    ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>50]
 
 When it comes to stlmmaps, update treats all the elements with the same key as
@@ -314,13 +314,13 @@ keys. E.g., ::
 
    > let smm1 = stlmmap smm;  // make a copy of smm
 
-   > insert smm1 ("c"=>30) $$ elms smm1;
+   > insert smm1 ("c"=>30) $$ members smm1;
    ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"c"=>30,"d"=>4,"e"=>5]
 
-   > update smm1 "c" [30,31,32] $$ elms smm1;
+   > update smm1 "c" [30,31,32] $$ members smm1;
    ["a"=>1,"b"=>2,"c"=>30,"c"=>31,"c"=>32,"d"=>4,"e"=>5]
 
-   > update smm1 "c" [] $$ elms smm1;
+   > update smm1 "c" [] $$ members smm1;
    ["a"=>1,"b"=>2,"d"=>4,"e"=>5]
 
 Erasing Elements
@@ -336,7 +336,7 @@ elements in subsequence of elements in a container. ::
 
    > erase (shm1,"c");             // erase elmenent with key "c"
    1
-   > elms shm1;
+   > members shm1;
    ["d"=>4,"e"=>5,"a"=>1,"b"=>2]
 
    > erase shm1;                   // erase all elements
@@ -346,7 +346,7 @@ elements in subsequence of elements in a container. ::
 
    > erase (sm1,"b","d");         // erase a subsequence       
    2
-   > elms sm1;
+   > members sm1;
    ["a"=>1,"d"=>4,"e"=>5]
 
    > erase (sm1,"x");             // attempt to erase something not there
@@ -354,7 +354,7 @@ elements in subsequence of elements in a container. ::
 
    > erase (smm1,"c");            // erase all elements with key "c"
    2
-   > elms smm1;
+   > members smm1;
    ["a"=>1,"b"=>2,"d"=>4,"e"=>5]
 
 List-Like Operations
@@ -373,8 +373,8 @@ foldl1 can be applied to pure-stlmap's associative containers. E.g., ::
    "b"=>2
    ()
 
-   > let sm1 = foldl insert_or_update (mkstlmap (>)) (sm,"c",smend);
-   > elms sm1;
+   > let sm1 = foldl update_elm (mkstlmap (>)) (sm,"c",smend);
+   > members sm1;
    ["e"=>5,"d"=>4,"c"=>3]
 
 List comprehensions also work. ::
@@ -590,7 +590,7 @@ referred to as an iterator, and then read or modify the element. ::
    > put p 20;
    20
 
-   > elms sm;
+   > members sm;
    ["a"=>1,"b"=>10,"c"=>3,"d"=>4,"e"=>5]
 
 If you don't like iterators, you can use pure-stlmap's "key-based" interface. ::
@@ -601,7 +601,7 @@ If you don't like iterators, you can use pure-stlmap's "key-based" interface. ::
   > update sm "c" 30 $$ sm!"c"
   30
 
-  > elms sm;
+  > members sm;
   ["a"=>1,"b"=>20,"c"=>30,"d"=>4,"e"=>5]
 
   > sm!"a";
@@ -619,10 +619,10 @@ the elements associated with a given key on a all or nothing basis. ::
    > get (smm,"c");
    "c"=>[31,32]
 
-   > update smm "c" [31,32,33]; elms smm;
+   > update smm "c" [31,32,33]; members smm;
    ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"c"=>33,"d"=>4]
 
-   > update smm "c" []; elms smm;
+   > update smm "c" []; members smm;
    ["a"=>1,"b"=>2,"d"=>4,"e"=>5]
 
 Please note that elements are never identified by key value pairs. I.e., the
@@ -652,14 +652,14 @@ range (i,j), denotes oc's elements starting with "oc[i]", the element pointed
 to by i, up to but not including oc[j]. In pure-stlmap, this range is denoted
 by the tuple (i,j). ::
 
-   > elms sm;
+   > members sm;
    ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
    > let i = stl::find sm1 "b"; // get the iterator
 
    > let j = stl::find sm1 "e";
 
-   > elms (i,j);               // get the elements in the range
+   > members (i,j);               // get the elements in the range
    ["b"=>2,"c"=>3,"d"=>4]
 
 It is also possible to define a range using keys. Given an ordered container,
@@ -668,16 +668,16 @@ aoc starting with the first element that is not less than k up to but
 not including the first element that is greater or equal to l. Note that k and
 l do not have to be stored in oc. ::
 
-   > elms (sm,"b","e");
+   > members (sm,"b","e");
    ["b"=>2,"c"=>3,"d"=>4]
 
-   > elms (sm,"c1",smend);
+   > members (sm,"c1",smend);
    ["d"=>4,"e"=>5]
 
 When a range is passed to a function provided by pure-stlmap, the keys can be
 dropped, in which case the range consists of all of the container's elements.
 
-   > elms sm;
+   > members sm;
    ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
 Please note that support for iterators and ranges is not provided for the
@@ -964,7 +964,7 @@ elements are equal.
 Please note that the == defined on all tuples in the prelude will trump
 pure-stlmap's == operators when applied to range tuples. E.g.::
 
-   > stl::elms ss;
+   > stl::members ss;
    ["a","b","c","d","e"]
 
    > let xx  = stl::stlset  ["a","b","c","d"];
@@ -999,10 +999,10 @@ necessarily ordered by values. ::
 
     > let smm2 = stlmmap ["a"=>1,"b"=>2,"c"=>32,"c"=>31,"d"=>4];
 
-    > elms smm;
+    > members smm;
     ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"d"=>4]
 
-    > elms smm2;
+    > members smm2;
     ["a"=>1,"b"=>2,"c"=>32,"c"=>31,"d"=>4]
 
     > smm == smm2; // probably not what you want
@@ -1024,11 +1024,11 @@ easier to use than iterators. They use cached iterators for faster lookup time
 for some commonly occurring sequences of operations.
 
 .. function:: count /stlmap acon k
-              has_key /stlmap acon k
+              member /stlmap acon k
 
    Returns the number of elements that has k as their key.
 
-.. function:: has_key /stlmap acon k
+.. function:: member /stlmap acon k
 
    Returns true if acon contains an element that has k as its key.    
 
@@ -1074,10 +1074,10 @@ for some commonly occurring sequences of operations.
    elements associated with k in multi_map are placed in the same order as
    they appear in src. src can be empty.
 
-   > elms smm;
+   > members smm;
    ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"d"=>4,"e"=>5]
 
-   > update smm "c" [31,33,35,36]; elms smm;
+   > update smm "c" [31,33,35,36]; members smm;
    ["a"=>1,"b"=>2,"c"=>31,"c"=>33,"c"=>35,"c"=>36,"d"=>4,"e"=>5]
 
 .. function:: bounding_keys /stlmap rng
@@ -1088,7 +1088,7 @@ for some commonly occurring sequences of operations.
    of the first element of rng's container, the first member of the returned
    pair will stl::smbeg. E.g.,
 
-   > elms sm;
+   > members sm;
    ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
    > bounding_keys sm;
@@ -1097,13 +1097,13 @@ for some commonly occurring sequences of operations.
   > bounding_keys (sm,"a1","e");
    "b","e"
 
-   > elms (sm,ans);
+   > members (sm,ans);
    ["b"=>2,"c"=>3,"d"=>4]
 
    > bounding_keys (smm,"a","d");
    stl::smbeg,"d"
 
-   > elms (smm,ans);
+   > members (smm,ans);
    ["a"=>1,"b"=>2,"c"=>31,"c"=>32]
 
 .. function:: next_key /stlmap oc k
@@ -1121,14 +1121,14 @@ Iterator Cache
 
 stlmaps and stlsets maintain a cache of iterators that are updated by all of
 the key oriented functions described in the previous section. In addition,
-insert (of a single element), insert_or_update, and insert_or_update_with also
+insert (of a single element), update_elm, and update_elm_with also
 cache iterators. [FIX -- is this correct?]
 
 Here are some examples produced by compiling pure-stlmap with a trace function
 that shows when caching eliminates a key lookup. FIX -- may now have to
 use let key_a = "a" to get caching.
 
-   > has_key sm "a";
+   > member sm "a";
    1
 
    > sm!"a";
@@ -1149,10 +1149,10 @@ use let key_a = "a" to get caching.
    found iterator for: "c"
    30
 
-   > elms sm;
+   > members sm;
    ["a"=>10,"b"=>2,"c"=>30,"d"=>4,"e"=>5]
 
-In particular, using has_key followed by a get or put only requires one
+In particular, using member followed by a get or put only requires one
 lookup. Also, traversing a range with next_key (or prev_key) followed by gets
 and puts can be accomplished in linear time (i.e., next_key requires constant
 time, assuming the current key is cached, as do put or get after next_key
@@ -1167,14 +1167,14 @@ unordered containers (stlhmap and stlhset) only if range is the entire
 container.
 
 .. function:: members /stlmap rng
-              elms /stlmap rng
+              members /stlmap rng
               keys /stlmap rng
               vals /stlmap rng
 
-  members and elms Return a list of the elments in the range, rng. keys and
+  members and members Return a list of the elments in the range, rng. keys and
   vals return the keys and vals of the ranges elements. E.g.,::
 
-    > elms shm;   // cannot do (shm,k1,k2)
+    > members shm;   // cannot do (shm,k1,k2)
    ["d"=>4,"e"=>5,"a"=>1,"b"=>2,"c"=>3]
 
    > keys (sm,"b","e");
@@ -1192,7 +1192,7 @@ container.
 .. function:: stream /stlmap rng
               lazy_map f rng
 
-  These are lazy versions of (elms rng) and (map f rng). E.g., ::
+  These are lazy versions of (members rng) and (map f rng). E.g., ::
 
    > take 3 $ stream smm;
    ("a"=>1):#<thunk 0xb70f438c>
@@ -1208,7 +1208,7 @@ container.
 
    > let ok, smx, f, l = stl::range_info (sm1,"b","e");
 
-   > ok, smx === sm1, stl::elms (f,l);
+   > ok, smx === sm1, stl::members (f,l);
    1,1,["b"=>2,"c"=>3,"d"=>4]
 
 .. function:: distance /stlmap rng
@@ -1268,14 +1268,14 @@ only depend on a particular field of records that are inserted into it.
 Here are some insert examples::
 
    > let smx  = emptystlmap;
-   > insert smx {"a"=>1,"b"=>2}; elms smx;
+   > insert smx {"a"=>1,"b"=>2}; members smx;
    2
    ["a"=>1,"b"=>2]
 
    > let p, ok = insert smx ("a"=>2); get p,ok; // will not update "a"
    "a"=>1,0
 
-   > put p 2 $ elms smx;  // used iterator p to update "a"'s value to 2
+   > put p 2 $ members smx;  // used iterator p to update "a"'s value to 2
    ["a"=>2,"b"=>2]
 
    > let smmx = emptystlmmap;
@@ -1285,16 +1285,16 @@ Here are some insert examples::
    > let p = insert smmx ("a"=>2); get p; // returns iterator only
    "a"=>2
 
-   > elms smmx;
+   > members smmx;
    ["a"=>1,"a"=>2,"b"=>2]
 
 The next two functions can be used to insert new items and update existing
 items in an associative map. They return the map rather than the number of
 elements inserted so that they can be used with foldl or foldr to insert
-elements from another container. In essence, insert_or_update is acts like
+elements from another container. In essence, update_elm is acts like
 the Pure standard library's insert function when applied to a dict or hdict.
 
-..function:: insert_or_update acon elm
+..function:: update_elm acon elm
 
   If acon is a map, elm must be a key value pair, (k=>v); if it is a set, then
   elm can be anything, where elm is treated as its own key, k. If acon is
@@ -1307,26 +1307,26 @@ the Pure standard library's insert function when applied to a dict or hdict.
 
    > let src = ["a"=>1,"b"=>2,"c"=>3,"c"=>4,"c"=>5];
 
-   > elms $ foldl insert_or_update emptystlmmap src;
+   > members $ foldl update_elm emptystlmmap src;
    ["a"=>1,"b"=>2,"c"=>3,"c"=>4,"c"=>5]
 
-   > elms $ foldl insert_or_update emptystlmap src;
+   > members $ foldl update_elm emptystlmap src;
    ["a"=>1,"b"=>2,"c"=>5]
 
-..function:: insert_or_update_with f m (k=>v)
+..function:: update_elm_with f m (k=>v)
 
   This function only applies to stlmaps. The effect of this function is as
-  follows: (a) if ~has_key m k then insert m (k=>dflt) else (), where dflt is
+  follows: (a) if ~member m k then insert m (k=>dflt) else (), where dflt is
   m's dflt value, (b) update m k nv when nv = f v (m!k) end. Returns m. E.g.,
 
    > let src = ["a"=>1,"b"=>2,"c"=>3,"c"=>4,"c"=>5];
 
-   > let lists = foldl (insert_or_update_with (:)) emptystlmap src;
-   > elms lists;
+   > let lists = foldl (update_elm_with (:)) emptystlmap src;
+   > members lists;
    ["a"=>[1],"b"=>[2],"c"=>[5,4,3]]
 
-   > let sums = foldl (insert_or_update_with (+)) (mkstlmap ((<),0)) src;
-   > elms sums;
+   > let sums = foldl (update_elm_with (+)) (mkstlmap ((<),0)) src;
+   > members sums;
    ["a"=>1,"b"=>2,"c"=>12]
 
 ..function:: erase /stlmap acon
@@ -1344,26 +1344,26 @@ the Pure standard library's insert function when applied to a dict or hdict.
   not defined for stlhmap or stlhset). Returns the number of elements removed
   from the container. E.g.,::
 
-   > elms smm;
+   > members smm;
    ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"d"=>4,"e"=>5]
    > erase (sm,"z");
    0
    > erase (smm,"c");
    2
-   > elms smm;
+   > members smm;
    ["a"=>1,"b"=>2,"d"=>4,"e"=>5]
 
    > erase (smm,"b","e");
    2
-   > elms smm;;
+   > members smm;;
    ["a"=>1,"e"=>5]
 
-   > elms ss;
+   > members ss;
    ["a","b","c","d","e"]
    > let _,_,i,j = range_info (ss,"b","e");
    > erase (ss,i,j);
    3
-   > elms ss;
+   > members ss;
    ["a","e"]
 
 List-Like Operations
@@ -1371,7 +1371,7 @@ List-Like Operations
 
 pure-stlmap provides the most commonly used list-like operations, implemented
 to act directly on the underlying data structures. Additional list like
-operations, such as scanl, can be simulated by using elms (or stream) to
+operations, such as scanl, can be simulated by using members (or stream) to
 produce a list of elements and then applying the operation to the list.
 
 The first two rows of "standard" list-like operations are applicable all six
@@ -1388,7 +1388,7 @@ Except for their domain, ranges defined on associative containers, these
 functions are the same as the corresponding list functions in the Pure
 standard Library. E.g.,
 
-   > elms sm;
+   > members sm;
    ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
    > map (\(k=>v)->k+str v) (sm,"b","e");
@@ -1455,19 +1455,19 @@ those in the Pure standard library. ::
    > let smm1 = stlmmap ["a"=>1,"b"=>2,"c"=>31,"c"=>32];
    > let smm2 = stlmmap ["c"=>32,"c"=>32,"c"=>33,"d"=>4,"e"=>5];
 
-   > elms $ add smm1 smm2; // three "c"=>32
+   > members $ add smm1 smm2; // three "c"=>32
    ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"c"=>32,"c"=>32,"c"=>33,"d"=>4,"e"=>5]
 
-   > elms $ union smm1 smm2;  // two "c"=>32
+   > members $ union smm1 smm2;  // two "c"=>32
    ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"c"=>32,"c"=>33,"d"=>4,"e"=>5]
 
    > let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>31];
    > let sm2 = stlmap ["c"=>32,"d"=>4,"e"=>5];
 
-   > elms $ union sm1 sm2; // "c"=>31 from sm1, not "c"=>32 from sm2
+   > members $ union sm1 sm2; // "c"=>31 from sm1, not "c"=>32 from sm2
    ["a"=>1,"b"=>2,"c"=>31,"d"=>4,"e"=>5]
 
-   > elms $ intersection sm1 sm2; // "c"=>31 from sm1
+   > members $ intersection sm1 sm2; // "c"=>31 from sm1
    ["c"=>31]
 
 
@@ -1494,10 +1494,10 @@ errors. ::
    > get i, get j;
    "a"=>1,"d"=>4
 
-   > elms (i,j);
+   > members (i,j);
    ["a"=>1,"b"=>2,"c"=>3]
 
-   > catch id $ elms (j,i); // j and i transposed, C++ would segfault
+   > catch id $ members (j,i); // j and i transposed, C++ would segfault
    bad_argument
 
    > erase (sm,"b");  // erase "b"=>2, leaving i and j valid
@@ -1596,18 +1596,18 @@ Here are some examples using iterators.
 
    > let b,e = begin smm, pastend smm;
 
-   > elms (b,e);
+   > members (b,e);
    ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"d"=>4,"e"=>5]
 
    > let i,j = lu_bounds smm "c";
 
-   > elms (b,i);
+   > members (b,i);
    ["a"=>1,"b"=>2]
 
-   > elms (i,j);
+   > members (i,j);
    ["c"=>31,"c"=>32]
 
-   > elms (j,e);
+   > members (j,e);
    ["d"=>4,"e"=>5]
 
    > get i;
@@ -1622,7 +1622,7 @@ Here are some examples using iterators.
    > map (\(k=>_)->k=>ord k) (b,i);
    ["a"=>97,"b"=>98,"c"=>99]
 
-   > let is_set, smm1, k, v = get_info i; is_set, elms smm1, k, v;
+   > let is_set, smm1, k, v = get_info i; is_set, members smm1, k, v;
    1,["a"=>1,"b"=>2,"c"=>31,"c"=>132,"d"=>4,"e"=>5],"c",132
 
    > get (dec j);
