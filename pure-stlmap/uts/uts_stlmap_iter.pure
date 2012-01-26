@@ -11,13 +11,13 @@ using system, stlmap, stlvec;
 let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
 //- ()
 
-let i = stl::find sm1 "0"; stl::is_pastend i;
+let i = stl::find sm1 "0"; stl::endp i;
 //- 1
 
 let i = stl::find sm1 "a"; get i;
 //- "a"=>1
 
-let i = stl::find sm1 "z"; stl::is_pastend i;
+let i = stl::find sm1 "z"; stl::endp i;
 //- 1
 
 let i = stl::l_bound sm1 "0"; get i;
@@ -35,10 +35,10 @@ let i = stl::l_bound sm1 "dd"; get i;
 let i = stl::l_bound sm1 "e";  get i;
 //- "e"=>5
 
-let i = stl::l_bound sm1 "z"; stl::is_pastend i;
+let i = stl::l_bound sm1 "z"; stl::endp i;
 //- 1
 
-let i = stl::l_bound sm1 "f"; stl::is_pastend i;
+let i = stl::l_bound sm1 "f"; stl::endp i;
 //- 1
 
 let i = stl::u_bound sm1 "0"; get i;
@@ -53,10 +53,10 @@ let i = stl::u_bound sm1 "bb"; get i;
 let i = stl::u_bound sm1 "dd"; get i;
 //- "e"=>5
 
-let i = stl::u_bound sm1 "e"; stl::is_pastend i;
+let i = stl::u_bound sm1 "e"; stl::endp i;
 //- 1
 
-let i = stl::u_bound sm1 "z"; stl::is_pastend i;
+let i = stl::u_bound sm1 "z"; stl::endp i;
 //- 1
 
 let i, j = stl::lu_bounds sm1 "0"; (get i,get j);
@@ -74,14 +74,14 @@ let i, j = stl::lu_bounds sm1 "bb"; (get i,get j);
 let i, j = stl::lu_bounds sm1 "dd"; (get i,get j);
 //- "e"=>5,"e"=>5
 
-let i, j = stl::lu_bounds sm1 "e"; (get i,stl::is_pastend j);
+let i, j = stl::lu_bounds sm1 "e"; (get i,stl::endp j);
 //- "e"=>5,1
 
-let i, j = stl::lu_bounds sm1 "z"; (stl::is_pastend i,stl::is_pastend j);
+let i, j = stl::lu_bounds sm1 "z"; (stl::endp i,stl::endp j);
 //- 1,1
 
 
-let k = stl::iterator j; (stl::is_pastend k, j==k, j===k);
+let k = stl::iterator j; (stl::endp k, j==k, j===k);
 //- 1,1,0
 
 get (stl::dec k); (get k, j==k);
@@ -101,16 +101,16 @@ let i_a = stl::find sm1 "a"; get i_a;
 let i_c = stl::find sm1 "c"; get i_c;
 //- "c"=>3
 
-stl::is_begin i_begin, stl::is_begin i_pastend;
+stl::beginp i_begin, stl::beginp i_pastend;
 //- 1,0
 
-stl::is_begin i_a, stl::is_begin i_c;
+stl::beginp i_a, stl::beginp i_c;
 //- 1,0
 
-stl::is_pastend i_begin, stl::is_pastend i_pastend;
+stl::endp i_begin, stl::endp i_pastend;
 //- 0,1
 
-stl::is_pastend i_a, stl::is_pastend i_c;
+stl::endp i_a, stl::endp i_c;
 //- 0,0
 
 let ok, smx, k, v = stl::get_info i_begin; (ok, smx===sm1, k, v);
@@ -198,10 +198,10 @@ stl::inc i; get i;
 stl::inc i; get i;
 //- "e"=>5
 
-stl::inc i; stl::is_pastend i;
+stl::inc i; stl::endp i;
 //- 1
 
-stl::inc i; stl::is_pastend i;
+stl::inc i; stl::endp i;
 //- 1
 
 catch id $ get i;
@@ -228,7 +228,7 @@ catch id $ stl::dec i;
 stl::move i 4; get i;
 //- "e"=>5
 
-stl::move i 100; stl::is_pastend i;
+stl::move i 100; stl::endp i;
 //- 1
 
 stl::move i (-1); get i;

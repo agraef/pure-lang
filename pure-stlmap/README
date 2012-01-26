@@ -153,7 +153,7 @@ readme-data.pure, and use the members function to make sure things are ok. E.g.,
 Constructors and Insertion
 --------------------------
 
-You can make empty containers with customized orderings, etc., as well as with
+You can make null containers with customized orderings, etc., as well as with
 default values. ::
 
    > let ss1 = mkstlset (>);  // uses (>) to order elements
@@ -341,7 +341,7 @@ elements in subsequence of elements in a container. ::
 
    > erase shm1;                   // erase all elements
    4
-   > empty shm1;
+   > null shm1;
    1
 
    > erase (sm1,"b","d");         // erase a subsequence       
@@ -846,7 +846,7 @@ instincts it should not be hard as it sounds.
 Container Construction and Related Operations
 ---------------------------------------------
 
-New empty containers can be constructed using optional parameters that allow
+New null containers can be constructed using optional parameters that allow
 you to specify customized key-less-than functions, default values,
 value-less-than and value-equal functions for the ordered associative
 containers (stlmap, stlset, stlmmap and stlmset) as well as hash, key-equal
@@ -878,7 +878,7 @@ and stlhset).
    > container_info xx;
    0,(>),[],(<),(==)
 
-Convenience functions are provided to construct empty containers using default
+Convenience functions are provided to construct null containers using default
 values.
 
 .. function:: emptystlmap
@@ -890,7 +890,7 @@ values.
 
    Create a new associative container using default values.
 
-Convenience functions are also provided to construct an empty container and
+Convenience functions are also provided to construct an null container and
 insert elements into it in one go. The source of the elements can be a list,
 vector, a stlvec, or a range defined on another container of the same type as
 the new container.
@@ -930,9 +930,9 @@ load factor and bucket count.
 
   Swap the elements of the two containers of the same type.
 
-.. function:: empty /stlmap acon
+.. function:: null /stlmap acon
 
-  Return true if acon is empty, else false.
+  Return true if acon is null, else false.
 
 .. namespace:: ::
 
@@ -1038,7 +1038,7 @@ for some commonly occurring sequences of operations.
   value (or matching key if acon is a set), otherwise throw an out_of_bounds
   exception. If acon is a stlmmap then if acon has as least one element with
   key k return a list of values of all the elements with key k, otherwise
-  return an empty list. E.g.::
+  return an null list. E.g.::
 
     > sm!"c";
     3
@@ -1049,7 +1049,7 @@ for some commonly occurring sequences of operations.
     > smm!"c";
     [31,32]
 
-    > smm!"f";  // does not throw exception -- returns empty list
+    > smm!"f";  // does not throw exception -- returns null list
     []
 
 .. function:: get /stlmap (acon,k)
@@ -1072,7 +1072,7 @@ for some commonly occurring sequences of operations.
    stlmap or stlhmap, or associate the elements of src with k in a in
    multi_map, where multi_is a stlmmap. src can be a list or a vector. The
    elements associated with k in multi_map are placed in the same order as
-   they appear in src. src can be empty.
+   they appear in src. src can be null.
 
    > members smm;
    ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"d"=>4,"e"=>5]
@@ -1568,8 +1568,8 @@ you call them you are not using the key-oriented functions. [FIX -- change?]
   Change the value of the element pointed to by i to newvalue. The element's
   key cannot be changed. The iterator must point into a map, not a set.
 
-..function:: is_begin /stlmap i
-             is_pastend /stlmap i
+..function:: beginp /stlmap i
+             pastendp /stlmap i
 
   Returns true if the iterator i is it's acon's begin iterator or its pastend
   iterator.
@@ -1630,5 +1630,5 @@ Here are some examples using iterators.
    > inc j $$ inc j $$ get j;
    "e"=>5
 
-   > inc j $$ is_pastend j;
+   > inc j $$ pastendp j;
    1
