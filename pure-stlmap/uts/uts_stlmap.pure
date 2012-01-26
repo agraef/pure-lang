@@ -378,22 +378,22 @@ let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4];
 let sm2 = stlmap ["b"=>2,"c"=>3,"d"=>4];
 //- ()
 
-stl::equal sm1 sm1;
+stl::equal_elms sm1 sm1;
 //- 1
 
-stl::equal sm1 sm2;
+stl::equal_elms sm1 sm2;
 //- 0
 
-stl::equal sm2 sm1;
+stl::equal_elms sm2 sm1;
 //- 0
 
-stl::equal (sm1,"b","e") sm1;
+stl::equal_elms (sm1,"b","e") sm1;
 //- 0
 
-stl::equal (sm1,"b","e") sm2;
+stl::equal_elms (sm1,"b","e") sm2;
 //- 1
 
-stl::equal (sm1,"b","d") (sm2,stl::smbeg, "d");
+stl::equal_elms (sm1,"b","d") (sm2,stl::smbeg, "d");
 //- 1
 
 sm1 == sm1;
@@ -450,22 +450,22 @@ sm2 >= sm1;
 (sm1,"b",stl::smend) == sm2; // note tuple overrided issue
 //- 0
 
-stl::equal sm1 sm1;
+stl::equal_elms sm1 sm1;
 //- 1
 
-stl::equal sm1 sm2;
+stl::equal_elms sm1 sm2;
 //- 0
 
-stl::equal (sm1,"b",stl::smend) sm2;
+stl::equal_elms (sm1,"b",stl::smend) sm2;
 //- 1
 
-stl::equal (sm1,"c",stl::smend) sm2;
+stl::equal_elms (sm1,"c",stl::smend) sm2;
 //- 0
 
-stl::equal (sm1,"c",stl::smend) (sm2,"c",stl::smend);
+stl::equal_elms (sm1,"c",stl::smend) (sm2,"c",stl::smend);
 //- 1
 
-stl::equal sm2 (sm1,"b",stl::smend);
+stl::equal_elms sm2 (sm1,"b",stl::smend);
 //- 1
 
 (sm1,"b",stl::smend) < sm2;
@@ -497,49 +497,49 @@ let sm2 = stlmap ["b"=>2,"c"=>3,"d"=>4];
 let sm3 = stlmap ["a"=>31,"b"=>32,"c"=>33,"d"=>34];
 //- ()
 
-let sm = stl::merge sm1 sm2; stl::elms sm;
+let sm = stl::add sm1 sm2; stl::elms sm;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4]
 
-let sm = stl::merge sm3 sm2; stl::elms sm;
+let sm = stl::add sm3 sm2; stl::elms sm;
 //- ["a"=>31,"b"=>32,"c"=>33,"d"=>34]
 
-let sm = stl::merge sm2 sm3; stl::elms sm;
+let sm = stl::add sm2 sm3; stl::elms sm;
 //- ["a"=>31,"b"=>2,"c"=>3,"d"=>4]
 
-let sm = stl::set_union sm1 sm2; stl::elms sm;
+let sm = stl::union sm1 sm2; stl::elms sm;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4]
 
-let sm = stl::set_union sm3 sm2; stl::elms sm;
+let sm = stl::union sm3 sm2; stl::elms sm;
 //- ["a"=>31,"b"=>32,"c"=>33,"d"=>34]
 
-let sm = stl::set_union sm2 sm3; stl::elms sm;
+let sm = stl::union sm2 sm3; stl::elms sm;
 //- ["a"=>31,"b"=>2,"c"=>3,"d"=>4]
 
-let sm = stl::set_intersection sm1 sm2; stl::elms sm;
+let sm = stl::intersection sm1 sm2; stl::elms sm;
 //- ["b"=>2,"c"=>3]
 
-let sm = stl::set_intersection sm3 sm2; stl::elms sm;
+let sm = stl::intersection sm3 sm2; stl::elms sm;
 //- ["b"=>32,"c"=>33,"d"=>34]
 
-let sm = stl::set_intersection sm2 sm3; stl::elms sm;
+let sm = stl::intersection sm2 sm3; stl::elms sm;
 //- ["b"=>2,"c"=>3,"d"=>4]
 
-let sm = stl::set_difference sm1 sm2; stl::elms sm;
+let sm = stl::difference sm1 sm2; stl::elms sm;
 //- ["a"=>1]
 
-let sm = stl::set_difference sm3 sm2; stl::elms sm;
+let sm = stl::difference sm3 sm2; stl::elms sm;
 //- ["a"=>31]
 
-let sm = stl::set_difference sm2 sm3; stl::elms sm;
+let sm = stl::difference sm2 sm3; stl::elms sm;
 //- []
 
-let sm = stl::set_symmetric_difference sm1 sm2; stl::elms sm;
+let sm = stl::symmetric_difference sm1 sm2; stl::elms sm;
 //- ["a"=>1,"d"=>4]
 
-let sm = stl::set_symmetric_difference sm3 sm2; stl::elms sm;
+let sm = stl::symmetric_difference sm3 sm2; stl::elms sm;
 //- ["a"=>31]
 
-let sm = stl::set_symmetric_difference sm2 sm3; stl::elms sm;
+let sm = stl::symmetric_difference sm2 sm3; stl::elms sm;
 //- ["a"=>31]
 
 stl::set_includes sm1 sm2;

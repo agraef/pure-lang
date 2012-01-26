@@ -384,12 +384,70 @@ List comprehensions also work. ::
    > {k-32=>v+100 | (k=>v) = (smm,"b","e")};
    {"B"=>102,"C"=>131,"C"=>132,"D"=>104}
 
+Streams
+-------
+
+You can access an associative containers elements (or a subrange of its
+elements if the container is ordered) as a stream. E.g.,
+
+   > stats -m
+
+   > let ss1 = stlhset (0..100000);
+   0.19s, 300006 cells
+
+   > let xx = drop 99998 $ scanl (+) 0 (stream ss);
+   0.3s, 18 cells
+
+   > list xx;
+   [704782707,704882705,704982704,705082704]
+   0s, 17 cells
+
+
 C++ Like Operations
 -------------------
 
 next_key, 
 
 Don't use unless necessary. Stick with map, do, foldl, etc
+
+Speed
+-----
+
+The simplest and fastest container is usually stlhmap. It appears to be ideal
+where keys are unique and where you do not need ordered elements. E.g.,
+
+   > stats -m
+
+> let sh1 = stlhset (0..1000000);
+1.97s, 3000006 cells
+> dotimes (#sh1) (\i->put sum (sh1!i));
+()
+5.63s, 6 cells
+
+> dotimes (#sh1) (\i->put sum i);
+()
+2.04s, 4 cells
+
+> let ss1 = stlset (0..1000000);
+15.7s, 3000006 cells
+> dotimes (#ss1) (\i->put sum (ss1!i));
+()
+12.45s, 6 cells
+
+> using stlvec;
+> let sv1 = stlvec (0..1000000);
+0.82s, 3000006 cells
+> dotimes (#sv1) (\i->put sum (sv1!i));
+()
+4.61s, 6 cells
+
+// do this with strings -- will make stlvec comparable to vector?
+
+
+
+
+ 
+
 
 
 More Examples
@@ -902,7 +960,7 @@ elements are equal.
 
 .. namespace:: 
 
-.. function:: equal /stlmap rng1 rng2
+.. function:: equal_elms /stlmap rng1 rng2
 
 .. function:: infix == /stlmap rng1 rng2
               infix ~= /stlmap rng1 rng2
@@ -922,14 +980,14 @@ pure-stlmap's == operators when applied to range tuples. E.g.::
 
    > let xx  = stl::stlset  ["a","b","c","d"];
 
-   > stl::equal (xx,"a","c") (ss,"a","c");
+   > stl::equal_elms (xx,"a","c") (ss,"a","c");
    1
 
    > (xx,"a","c") == (ss,"a","c");
    0
 
-Thus, for ranges, use equal rather than ==. This issue does not arrise for
-the other comparison operators such as (<).
+Thus, for ranges, use equal_elms rather than ==. This issue does not arrise
+for the other comparison operators such as (<).
 
 .. function:: infix <  /stlmap rng1 rng2
 
@@ -1390,19 +1448,19 @@ operators).
 When applied to the multi-keyed containers, stlmmap and stlmset, these
 operations do not necessarily produce the same results as their Pure standard
 library counter parts. In particular, when applied to multi-keyed contaners,
-set_union is multiset union while (+) in the Pure standard library is the
-multiset sum. If you want the multiset sum of a stlmmap or stlhmap, use merge.
+union is multiset union while (+) in the Pure standard library is the
+multiset sum. If you want the multiset sum of a stlmmap or stlhmap, use add.
 
-..function:: merge /stlmap rng1 rng2
+..function:: add /stlmap rng1 rng2
 
   Construct a new ordered container from rng1 and then insert rng2 and return
   it. rng1 and rng2 must be defined on the same type of ordered container.
 
-..function:: set_union /stlmap rng1 rng2
-             set_difference /stlmap rng1 rng2
-             set_intersection /stlmap rng1 rng2
+..function:: union /stlmap rng1 rng2
+             difference /stlmap rng1 rng2
+             intersection /stlmap rng1 rng2
              set difference of rng1 and rng2
-             set_symmetric_difference /stlmap rng1 rng2
+             symmetric_difference /stlmap rng1 rng2
              set difference of rng1 and rng2 as a new sac
              set_includes /stlmap rng1 rng2
 
@@ -1418,19 +1476,19 @@ those in the Pure standard library. ::
    > let smm1 = stlmmap ["a"=>1,"b"=>2,"c"=>31,"c"=>32];
    > let smm2 = stlmmap ["c"=>32,"c"=>32,"c"=>33,"d"=>4,"e"=>5];
 
-   > elms $ merge smm1 smm2; // three "c"=>32
+   > elms $ add smm1 smm2; // three "c"=>32
    ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"c"=>32,"c"=>32,"c"=>33,"d"=>4,"e"=>5]
 
-   > elms $ set_union smm1 smm2;  // two "c"=>32
+   > elms $ union smm1 smm2;  // two "c"=>32
    ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"c"=>32,"c"=>33,"d"=>4,"e"=>5]
 
    > let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>31];
    > let sm2 = stlmap ["c"=>32,"d"=>4,"e"=>5];
 
-   > elms $ set_union sm1 sm2; // "c"=>31 from sm1, not "c"=>32 from sm2
+   > elms $ union sm1 sm2; // "c"=>31 from sm1, not "c"=>32 from sm2
    ["a"=>1,"b"=>2,"c"=>31,"d"=>4,"e"=>5]
 
-   > elms $ set_intersection sm1 sm2; // "c"=>31 from sm1
+   > elms $ intersection sm1 sm2; // "c"=>31 from sm1
    ["c"=>31]
 
 
@@ -1494,19 +1552,19 @@ you call them you are not using the key-oriented functions. [FIX -- change?]
   Create a new iterator that points to the element with key equivalent to k or
   acon's past-end iterator if none exists.
 
-..function:: lower_bound /stlmap acon k
+..function:: l_bound /stlmap acon k
 
   Return a new iterator that points to the first element in acon that is not
   less than k, or acon's past-end iterator if none exists.
  
-..function:: upper_bound /stlmap acon k
+..function:: u_bound /stlmap acon k
 
   Return a new iterator that points to the first element in acon that is
   greater than k, or acon's past-end iterator if none exists.
  
-..function:: equal_range /stlmap acon k
+..function:: lu_bounds /stlmap acon k
 
-  Return the pair lower_bound acon k, upper_bound acon k.
+  Return the pair l_bound acon k, u_bound acon k.
 
 ..function:: inc /stlmap iter
              dec /stlmap iter
@@ -1562,7 +1620,7 @@ Here are some examples using iterators.
    > elms (b,e);
    ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"d"=>4,"e"=>5]
 
-   > let i,j = equal_range smm "c";
+   > let i,j = lu_bounds smm "c";
 
    > elms (b,i);
    ["a"=>1,"b"=>2]
