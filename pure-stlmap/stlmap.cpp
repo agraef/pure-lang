@@ -438,8 +438,7 @@ void stlmap::clear_iter(pmi pos)
     i++;
   }
   pe = remove_if( smis.begin(), smis.end(), is_trg );
-  smis.clear();
-
+  smis.erase( pe, smis.end() );
 }
 
 void stlmap::clear_all_iters()
