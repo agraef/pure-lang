@@ -22,7 +22,6 @@ included with the pure-stlmap distribution package for details.
 #include <iostream>
 #include <map>
 #include "stlbase.hpp"
-//#include "stlvec.hpp"
 
 typedef std::map<pxh,pxh,pxh_pred2> pxhmap;
 typedef pxhmap::iterator pmi;
@@ -31,17 +30,22 @@ const size_t SM_CACHE_SZ = 4;
 
 struct sm_iter;
 
+struct key_iter {
+  key_iter(px* k, pmi i) : iter(i), key(k) {};
+  pxh key;
+  pmi iter;
+};
+
 struct stlmap {
   bool keys_only;
   bool has_dflt;
-  bool has_recent_pmi;
   size_t latest_pmi_pos;
   pxhmap mp;
   pxh px_comp;
   pxh px_val_comp;
   pxh px_val_equal;
   pxh dflt;
-  std::vector<pmi> recent_pmi;
+  std::vector<key_iter> ki_cache;
   std::vector<sm_iter*> smis; // sm_iters in Pure land
 
   stlmap(px* key_comp, px* val_comp, px* val_equal, bool keyonly); 
@@ -50,7 +54,7 @@ struct stlmap {
   px* parameter_tuple();
   pmi  find(px* key);
   bool get_cached_pmi(px* k, pmi& i); 
-  void cache_pmi(const pmi& i);
+  void cache_pmi(px* key, pmi& i);
   void clear();
   int  erase(pmi pos);
   int  erase(px* k);
@@ -58,6 +62,7 @@ struct stlmap {
   void clear_iter(pmi pos);
   void clear_all_iters();
   void remove_sm_iter(sm_iter*);
+  void clear_ki_cache();
 };
 
 typedef stlmap sm; 

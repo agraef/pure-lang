@@ -322,8 +322,7 @@ ostream& operator<<(ostream& os, const sm_iter* smip)
 stlmap::stlmap(px* cmp, px* val_cmp, px* val_eql, bool keyonly):
   mp(pxh_pred2(cmp)), keys_only(keyonly),
   px_comp(cmp), px_val_comp(val_cmp), px_val_equal(val_eql),
-  has_recent_pmi(0), latest_pmi_pos(0),
-  has_dflt(0), dflt(NULL)
+  latest_pmi_pos(0), has_dflt(0), dflt(NULL)
 {
   //PR(stlmap,this);
 }
@@ -331,8 +330,7 @@ stlmap::stlmap(px* cmp, px* val_cmp, px* val_eql, bool keyonly):
 stlmap::stlmap(px* cmp, px* val_cmp, px* val_eql, bool keyonly, px *d):
   mp(pxh_pred2(cmp)), keys_only(keyonly),
   px_comp(cmp), px_val_comp(val_cmp), px_val_equal(val_eql),
-  has_recent_pmi(0), latest_pmi_pos(0), 
-  has_dflt(1), dflt(d)
+  latest_pmi_pos(0), has_dflt(1), dflt(d)
 {
   //PR(stlmap,this);  
 }
@@ -373,46 +371,41 @@ pmi stlmap::find(px* key)
   return iter;  
 }
 
-void stlmap::cache_pmi(const pmi& i)
+void stlmap::cache_pmi( px* key, pmi& i)
 {
   if ( i != mp.end() ) {
-    if (!has_recent_pmi) {
-      recent_pmi.clear();
-      has_recent_pmi = true;
-      latest_pmi_pos = 0;
-    }
-    size_t num_cached = recent_pmi.size();
+    size_t num_cached = ki_cache.size();
     for (int pos = 0; pos < num_cached; pos++)
-      if ( recent_pmi[pos] == i ) return;
+      if ( ki_cache[pos].iter == i ) return;
     if (num_cached<SM_CACHE_SZ) {
-      recent_pmi.push_back(i);
+      ki_cache.push_back(key_iter(key,i));
       latest_pmi_pos = num_cached;
     }
     else {
       latest_pmi_pos = (latest_pmi_pos + 1) % SM_CACHE_SZ;
-      recent_pmi[latest_pmi_pos] = i;
+      ki_cache[latest_pmi_pos].iter = i;
+      ki_cache[latest_pmi_pos].key = key;
     }
-    //PR2(stlmap::cache_pmi - cached,i->first,latest_pmi_pos);
   }
 }
 
 bool stlmap::get_cached_pmi(px* k, pmi& i)
 {
   bool ret = false;
-  if ( k != smend() && has_recent_pmi ) {
-    size_t num_cached = recent_pmi.size();
+  if ( k != smend() ) {
+    size_t num_cached = ki_cache.size();
     size_t pos = 0; 
     for (; pos < num_cached; pos++) {
-      //      if ( same(recent_pmi[pos]->first, k) ) {
-      if ( recent_pmi[pos]->first == k ) {
-        i = recent_pmi[pos];
+      px* key =  ki_cache[pos].key;
+      if (key == k ) {
+        i = ki_cache[pos].iter;
         ret = true;
         break;
       }
     }
   }
   // if (ret==true) {
-  //   PR(stlmap::get_cached_pmi success,k);
+  //   PR(cache hit,k);
   // }
   return ret;
 }
@@ -426,15 +419,18 @@ struct has_pmi {
 void stlmap::remove_sm_iter(sm_iter* smip)
 {
   smis.erase( remove(smis.begin(), smis.end(), smip), smis.end() );
+  clear_ki_cache();
+}
+
+void stlmap::clear_ki_cache() {
+  ki_cache.clear();
+  latest_pmi_pos = 0;
 }
 
 void stlmap::clear_iter(pmi pos)
 {
   if ( pos == mp.end() ) return;
-  if (has_recent_pmi) {
-    vector<pmi>::iterator i = ::find(recent_pmi.begin(),recent_pmi.end(),pos);
-    if (i != recent_pmi.end()) recent_pmi.erase(i);
-  }
+  clear_ki_cache();
   vector<sm_iter*>::iterator i = smis.begin(), pe;
   has_pmi is_trg(pos);
   while( i!=smis.end() ) {
@@ -442,7 +438,8 @@ void stlmap::clear_iter(pmi pos)
     i++;
   }
   pe = remove_if( smis.begin(), smis.end(), is_trg );
-  smis.erase( pe, smis.end() );
+  smis.clear();
+
 }
 
 void stlmap::clear_all_iters()
@@ -457,6 +454,7 @@ int stlmap::erase(pmi pos)
 {
   clear_iter(pos);
   mp.erase(pos);
+  clear_ki_cache();
   return 1;
 }
 
@@ -479,6 +477,7 @@ int stlmap::erase(px* k)
         ret = 0;
     }
   }
+  if (ret) clear_ki_cache();
   return ret;
 }
 
@@ -489,13 +488,14 @@ int stlmap::erase(pmi first, pmi last)
     clear_iter(pos); ret++;
   }
   mp.erase(first, last);
+  if (ret) clear_ki_cache();
   return ret;
 }
 
 void stlmap::clear()
 {
-  has_recent_pmi = false;
   clear_all_iters();
+  clear_ki_cache();
   mp.clear();
 }
 
@@ -686,7 +686,7 @@ px* sm_find(px* pxsmp, px* key, int what)
     return px_pointer(new sm_iter(pxsmp, i)); 
   }
   else {
-    smp->cache_pmi(i);
+    smp->cache_pmi(key,i);
     return get_elm_aux(smp, i, what);
   }
 }
@@ -893,7 +893,7 @@ px* sm_insert_elm(px* pxsmp, px* kv)
     pure_throw(e);
   }
   px* it = px_pointer(new sm_iter(pxsmp, pos));
-  smp->cache_pmi(pos);
+  //smp->cache_pmi(pos, );
   return pure_tuplel(2,it,pure_int(num_inserted));
 }
 
@@ -959,8 +959,8 @@ px*  sm_swap(px* pxsmp1, px* pxsmp2)
   sm* smp1; sm* smp2;
   if ( !get_smp(pxsmp1, &smp1) ) failed_cond();
   if ( !get_smp(pxsmp2, &smp2) ) failed_cond();
-  smp1->has_recent_pmi = false;
-  smp2->has_recent_pmi = false;
+  smp1->clear_ki_cache();
+  smp2->clear_ki_cache();
   smp1->mp.swap(smp2->mp);
 }
 
@@ -977,6 +977,7 @@ int sm_erase(px* pxsmp, px* trg)
 {
   sm* smp;
   if (!get_smp(pxsmp,&smp) ) bad_argument();
+  smp->clear_ki_cache();
   int res = 0;
   size_t trg_sz;
   px** elems;
@@ -1320,7 +1321,7 @@ int sm_member(px* pxsmp, px* key)
     else {
       i = smp->find(key);
       if (i != mp.end()) {
-        smp->cache_pmi(i);
+        smp->cache_pmi(key,i);
         ret = 1;
       }
     }
@@ -1334,8 +1335,8 @@ px* sm_bounding_keys(px* tpl)
   if (!rng.is_valid) bad_argument;
   sm* smp = rng.smp();
   pxhmap& mp = smp->mp;
-  smp->cache_pmi(rng.beg());
-  smp->cache_pmi(rng.end());
+  //smp->cache_pmi(rng.beg());
+  //smp->cache_pmi(rng.end());
   return pure_tuplel(2,iter_to_key(mp, rng.beg()),
                        iter_to_key(mp, rng.end())); 
 }
@@ -1353,8 +1354,9 @@ px* sm_prev_key(px* pxsmp, px* key)
     index_error();
   else
     i--;
-  smp->cache_pmi(i);
-  return iter_to_key(mp, i);
+  px* ret = iter_to_key(mp, i);
+  smp->cache_pmi(ret,i);
+  return ret;
 }
 
 px* sm_next_key(px* pxsmp, px* key)
@@ -1367,8 +1369,9 @@ px* sm_next_key(px* pxsmp, px* key)
   if ( !smp->get_cached_pmi(key,i) )
     i = smp->find(key);
   if ( i != mp.end() ) i++;
-  smp->cache_pmi(i);
-  return iter_to_key(mp, i);
+  px* ret = iter_to_key(mp, i);
+  smp->cache_pmi(ret,i);
+  return ret;
 }
 
 px* sm_update(px* pxsmp, px* key, px* val)
@@ -1377,7 +1380,7 @@ px* sm_update(px* pxsmp, px* key, px* val)
   if (!get_smp(pxsmp,&smp) ) bad_argument();
   if (smp->keys_only) return 0; // fail for sets
   pmi pos = update_aux(smp, key, val);
-  smp->cache_pmi(pos);
+  smp->cache_pmi(key,pos);
   return pxsmp;
 }
 
@@ -1392,7 +1395,7 @@ px* sm_update_with(px* pxsmp, px* key, px* unaryfun)
     // uses default only if not already stored
     pair<pmi,bool> i_ok = smp->mp.insert(pxhpair(key,smp->dflt));
     i = i_ok.first;
-    smp->cache_pmi(i);
+    smp->cache_pmi(key,i);
   }  
   px* old_val = i->second;
   px* exception = 0;
