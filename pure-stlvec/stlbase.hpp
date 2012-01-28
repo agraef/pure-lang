@@ -26,8 +26,8 @@ included with the pure-stlvec distribution package for details.
 
 /* Quick print macro for debugging */
 
-#define PR(x,y) cerr << #x ", " #y ": " << y << endl;
-#define PR2(x,y,z) cerr << #x ", " #y ": " << y << ", " #z ": " << z << endl;
+#define PR(x,y) std::cerr << #x ", " #y ": " << y << std::endl;
+#define PR2(x,y,z) std::cerr << #x ", " #y ": " << y << ", " #z ": " << z << std::endl;
 
 /* Class to keep track of interpreter-local data */
 

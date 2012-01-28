@@ -337,9 +337,8 @@ stlmap::stlmap(px* cmp, px* val_cmp, px* val_eql, bool keyonly, px *d):
 
 stlmap::~stlmap()
 {
-  //PR(~stlmap,this);
+  cerr << "~stlmap or stlset: " << this << endl;
   assert(smis.size()==0);
-  //clear_all_iters();
 }
 
 px* stlmap::parameter_tuple()
@@ -371,42 +370,47 @@ pmi stlmap::find(px* key)
   return iter;  
 }
 
-void stlmap::cache_pmi( px* key, pmi& i)
+void stlmap::cache_pmi( px* key, pmi& pos)
 {
-  if ( i != mp.end() ) {
+  if ( pos != mp.end() && key != smbeg() ) {
     size_t num_cached = ki_cache.size();
-    for (int pos = 0; pos < num_cached; pos++)
-      if ( ki_cache[pos].iter == i ) return;
+    for (int i = 0; i < num_cached; i++) {
+      px* k =  ki_cache[i].key;
+      if ( key == k) {
+        assert( ki_cache[i].iter == pos );
+        return;
+      }
+    }
     if (num_cached<SM_CACHE_SZ) {
-      ki_cache.push_back(key_iter(key,i));
+      ki_cache.push_back(key_iter(key,pos));
       latest_pmi_pos = num_cached;
     }
     else {
       latest_pmi_pos = (latest_pmi_pos + 1) % SM_CACHE_SZ;
-      ki_cache[latest_pmi_pos].iter = i;
+      ki_cache[latest_pmi_pos].iter = pos;
       ki_cache[latest_pmi_pos].key = key;
     }
   }
 }
 
-bool stlmap::get_cached_pmi(px* k, pmi& i)
+bool stlmap::get_cached_pmi(px* key, pmi& pos)
 {
   bool ret = false;
-  if ( k != smend() ) {
+  if ( key != smend() && key != smbeg() ) {
     size_t num_cached = ki_cache.size();
-    size_t pos = 0; 
-    for (; pos < num_cached; pos++) {
-      px* key =  ki_cache[pos].key;
-      if (key == k ) {
-        i = ki_cache[pos].iter;
+    size_t i = 0; 
+    for (; i < num_cached; i++) {
+      px* k =  ki_cache[i].key;
+      if ( key == k ) {
+        pos = ki_cache[i].iter;
         ret = true;
         break;
       }
     }
   }
-  // if (ret==true) {
-  //   PR(cache hit,k);
-  // }
+  if (ret==true) {
+    PR(--- trace cache hit,key);
+  }
   return ret;
 }
 
@@ -419,18 +423,29 @@ struct has_pmi {
 void stlmap::remove_sm_iter(sm_iter* smip)
 {
   smis.erase( remove(smis.begin(), smis.end(), smip), smis.end() );
-  clear_ki_cache();
 }
 
 void stlmap::clear_ki_cache() {
+  //PR(clear_ki_cache - in,ki_cache.size());
   ki_cache.clear();
   latest_pmi_pos = 0;
+  //PR(clear_ki_cache - out,ki_cache.size());
 }
 
-void stlmap::clear_iter(pmi pos)
+void stlmap::kill_ki_cache_elm(pmi pos)
+{
+  size_t num_cached = ki_cache.size();
+  size_t i = 0; 
+  for (; i < num_cached; i++) {
+    if ( ki_cache[i].iter == pos )
+      ki_cache[i].key = pxh(0);
+  }
+}
+
+void stlmap::invalidate_iter(pmi pos)
 {
   if ( pos == mp.end() ) return;
-  clear_ki_cache();
+  kill_ki_cache_elm(pos);
   vector<sm_iter*>::iterator i = smis.begin(), pe;
   has_pmi is_trg(pos);
   while( i!=smis.end() ) {
@@ -441,19 +456,19 @@ void stlmap::clear_iter(pmi pos)
   smis.erase( pe, smis.end() );
 }
 
-void stlmap::clear_all_iters()
+void stlmap::invalidate_all_iters()
 {
   for (vector<sm_iter*>::iterator i = smis.begin(); i!= smis.end(); i++) {
     (*i)->is_valid = 0;
   }
+  clear_ki_cache();
   smis.clear();
 }
 
 int stlmap::erase(pmi pos)
 {
-  clear_iter(pos);
+  invalidate_iter(pos);
   mp.erase(pos);
-  clear_ki_cache();
   return 1;
 }
 
@@ -476,7 +491,6 @@ int stlmap::erase(px* k)
         ret = 0;
     }
   }
-  if (ret) clear_ki_cache();
   return ret;
 }
 
@@ -484,17 +498,15 @@ int stlmap::erase(pmi first, pmi last)
 {
   int ret = 0;
   for (pmi pos = first; pos != last; pos++) {
-    clear_iter(pos); ret++;
+    invalidate_iter(pos); ret++;
   }
   mp.erase(first, last);
-  if (ret) clear_ki_cache();
   return ret;
 }
 
 void stlmap::clear()
 {
-  clear_all_iters();
-  clear_ki_cache();
+  invalidate_all_iters();
   mp.clear();
 }
 
@@ -627,6 +639,7 @@ px* sm_make_empty(px* comp, px* v_comp, px* v_eql, px* dflt, int keys_only)
 }
 
 void sm_delete(sm* smp){
+  // cerr << "sm_delete: " << (void*)smp << endl; 
   delete(smp);
 }
 
@@ -892,7 +905,9 @@ px* sm_insert_elm(px* pxsmp, px* kv)
     pure_throw(e);
   }
   px* it = px_pointer(new sm_iter(pxsmp, pos));
-  //smp->cache_pmi(pos, );
+  px *k, *v;
+  pxrocket_to_pxlhs_pxrhs(kv, &k, &v);
+  smp->cache_pmi(k,pos);
   return pure_tuplel(2,it,pure_int(num_inserted));
 }
 
@@ -958,8 +973,8 @@ px*  sm_swap(px* pxsmp1, px* pxsmp2)
   sm* smp1; sm* smp2;
   if ( !get_smp(pxsmp1, &smp1) ) failed_cond();
   if ( !get_smp(pxsmp2, &smp2) ) failed_cond();
-  smp1->clear_ki_cache();
-  smp2->clear_ki_cache();
+  smp1->invalidate_all_iters();
+  smp2->invalidate_all_iters();
   smp1->mp.swap(smp2->mp);
 }
 
@@ -976,7 +991,6 @@ int sm_erase(px* pxsmp, px* trg)
 {
   sm* smp;
   if (!get_smp(pxsmp,&smp) ) bad_argument();
-  smp->clear_ki_cache();
   int res = 0;
   size_t trg_sz;
   px** elems;
@@ -1334,8 +1348,6 @@ px* sm_bounding_keys(px* tpl)
   if (!rng.is_valid) bad_argument;
   sm* smp = rng.smp();
   pxhmap& mp = smp->mp;
-  //smp->cache_pmi(rng.beg());
-  //smp->cache_pmi(rng.end());
   return pure_tuplel(2,iter_to_key(mp, rng.beg()),
                        iter_to_key(mp, rng.end())); 
 }

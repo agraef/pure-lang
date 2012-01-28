@@ -59,9 +59,10 @@ struct stlmap {
   int  erase(pmi pos);
   int  erase(px* k);
   int  erase(pmi first, pmi last);
-  void clear_iter(pmi pos);
-  void clear_all_iters();
+  void invalidate_iter(pmi pos);
+  void invalidate_all_iters();
   void remove_sm_iter(sm_iter*);
+  void kill_ki_cache_elm(pmi pos);
   void clear_ki_cache();
 };
 

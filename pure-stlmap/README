@@ -111,8 +111,9 @@ prefix. Please see the Makefile for details.
 Containers and Ranges Used in Examples
 ======================================
 
-The code snippets that appear in the rest of this document assume that
-something similar to the following has been entered at the prompt. ::
+The code snippets that appear in the examples, including those accompanying
+function documentation, assume that something similar to the following has
+been entered at the prompt. ::
 
    pure-stlmap$> pure -q
    > using stlmap, stlhmap, stlmmap;
@@ -126,12 +127,6 @@ something similar to the following has been entered at the prompt. ::
    > let shs = stlhset ["a","b","c","d","e"];
    > let sms = stlmset ["a","b","c","c","d"];
 
-   > // Define some ranges
-   > let sm_rng  = sm,"b","d";
-   > let smm_rng = smm,"b","d";
-   > let ss_rng  = ss,"b","d";
-   > let sms_rng = sm,"b","d";
-
 The file "readme-data.pure", which can be found in the pure-stlmap/examples
 directory contains the corresponding source code.
 
@@ -140,7 +135,8 @@ Quick Start Examples
 
 Hopefully, a quick read of these examples should get you up and running with
 pure-stlmap. If you want to try things out as you go, start up Pure, run
-readme-data.pure, and use the members function to make sure things are ok. E.g., ::
+readme-data.pure, and use the members function to make sure things are
+ok. E.g., ::
 
    $> cd pure-stlmap/examples/
    /home/ps/Downloads/pure-lang/pure-stlmap/examples
@@ -272,12 +268,12 @@ as well except that subsequences are not supported. ::
    > members ss;
    ["a","b","c","d","e"]
 
-   > members (smm,"c","e");   // list subsequence from "c" up to but not "e"
-   ["c"=>31,"c"=>32,"d"=>4]
-   
-   > members ss_rng;           
+   > members (ss,"b","d"); // list subsequence from "b" up to but not "d" 
    ["b","c"]
 
+   > members (smm,"c","e");
+   ["c"=>31,"c"=>32,"d"=>4]
+   
    > members (shm,"b","d"); // fails - ranges not supported for stlhmaps
    stl::members (#<pointer 0x83b4908>,"b","d")
 
@@ -747,8 +743,9 @@ Consider using the stlmap module which provides stlmap or stlset unless there
 is some compelling reason to use one of the others. The time complexity is
 guaranteed and having ordered elements is often very useful. E.g., sparse
 arrays. In pure-stlmap, these two containers support ranges and the key
-oriented functions cache iterators to speed up key based lookups. Finally, if
-you are using set operations, these two are probably your best choice.
+oriented functions cache keys and internal pointers to speed up key based
+lookups. Finally, if you are using set operations, these two are probably your
+best choice.
 
 You can import the stlmap module by adding the following using statement to
 your code. ::
@@ -1020,7 +1017,7 @@ Key Oriented Functions
 .. namespace:: stl
 
 Most of the following functions are basically convenience functions that are
-easier to use than iterators. They use cached iterators for faster lookup time
+easier to use than iterators. They cache C++ iterators for faster lookup time
 for some commonly occurring sequences of operations.
 
 .. function:: count /stlmap acon k
@@ -1119,10 +1116,17 @@ for some commonly occurring sequences of operations.
 Iterator Cache
 --------------
 
-stlmaps and stlsets maintain a cache of iterators that are updated by all of
-the key oriented functions described in the previous section. In addition,
-insert (of a single element), update_elm, and update_elm_with also
-cache iterators. [FIX -- is this correct?]
+Each stlmap or stlset maintains a cache key-(C++)iterator pairs that are
+updated by all of the key oriented functions described in the previous
+section. In addition, insert (of a single element), update_elm, and
+update_elm_with also cache iterators. When one of these functions needs to
+access an element of the stlmap or stlset by key, it first checks to see if
+the key is stored in the cache. If so the function uses the corresponding
+cached C++ iterator to locate the element without having to do a O(log n)
+search. For speed, the key matches only if it is same element that was cached
+(i.e., the test is C++ pointer equality). Erasure of any element in the
+container clears the cache. [FIX -- is this entirely correct -- be more
+specific?]
 
 Here are some examples produced by compiling pure-stlmap with a trace function
 that shows when caching eliminates a key lookup. FIX -- may now have to
