@@ -1,0 +1,73 @@
+/* uts_stlmap_cache.pure -- tests for  */
+//-- --comment c++_on --verbose on
+
+//*** Imports *********************************************************
+
+using system, stlmap;
+//- ()
+
+//*** Check FIFO ordering of cached keys ******************************
+
+let sm = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+let [ak,bk,ck,dk,ek] = "a".."e"; stl::refc ak;
+//- 1
+
+sm!ak,sm!bk,sm!ck;
+//- 1,2,3
+
+// cache: ak,bk,ck 
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [2,2,2,1,1]
+
+sm!ak;
+//- 1
+
+// cache: bk,ck,ak 
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [2,2,2,1,1]
+
+--- trace cache hit, key: "c"
+sm!ck;
+//- 3
+
+// cache: bk,ak,ck
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [2,2,2,1,1]
+
+sm!ck;
+//- 3
+
+// cache: bk,ak,ck
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [2,2,2,1,1]
+
+sm!ek
+//- 5
+
+// cache: ak,ck,ek
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [2,1,2,1,2]
+
+catch id $ sm!"x";
+//- out_of_bounds
+
+// cache: ak,ck,ek
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [2,1,2,1,2]
+
+sm!"e";
+//- 5
+
+// cache: ck,ek,"e"
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [1,1,2,1,2]
+
+sm!"e"; 
+//- 5
+
+// cache: ek,"e","e"
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [1,1,1,1,2]
+

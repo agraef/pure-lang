@@ -322,7 +322,7 @@ ostream& operator<<(ostream& os, const sm_iter* smip)
 stlmap::stlmap(px* cmp, px* val_cmp, px* val_eql, bool keyonly):
   mp(pxh_pred2(cmp)), keys_only(keyonly),
   px_comp(cmp), px_val_comp(val_cmp), px_val_equal(val_eql),
-  latest_pmi_pos(0), has_dflt(0), dflt(NULL)
+  last_in_pos(0), has_dflt(0), dflt(NULL)
 {
   //PR(stlmap,this);
 }
@@ -330,7 +330,7 @@ stlmap::stlmap(px* cmp, px* val_cmp, px* val_eql, bool keyonly):
 stlmap::stlmap(px* cmp, px* val_cmp, px* val_eql, bool keyonly, px *d):
   mp(pxh_pred2(cmp)), keys_only(keyonly),
   px_comp(cmp), px_val_comp(val_cmp), px_val_equal(val_eql),
-  latest_pmi_pos(0), has_dflt(1), dflt(d)
+  last_in_pos(0), has_dflt(1), dflt(d)
 {
   //PR(stlmap,this);  
 }
@@ -378,17 +378,29 @@ void stlmap::cache_pmi( px* key, pmi& pos)
       px* k =  ki_cache[i].key;
       if ( key == k) {
         assert( ki_cache[i].iter == pos );
+        // key is already cached - move to last in position
+        // SM_CACHE_SZ must be 3 for this to work right
+        if ( i!=last_in_pos ) {
+          size_t next_lip = (last_in_pos + 1) % SM_CACHE_SZ;
+          if ( i==next_lip ) {
+            last_in_pos = next_lip;
+          } else {
+            ki_cache[i] = ki_cache[last_in_pos];
+            ki_cache[last_in_pos].key = key;
+            ki_cache[last_in_pos].iter = pos;
+          }
+        }
         return;
       }
     }
     if (num_cached<SM_CACHE_SZ) {
       ki_cache.push_back(key_iter(key,pos));
-      latest_pmi_pos = num_cached;
+      last_in_pos = num_cached;
     }
     else {
-      latest_pmi_pos = (latest_pmi_pos + 1) % SM_CACHE_SZ;
-      ki_cache[latest_pmi_pos].iter = pos;
-      ki_cache[latest_pmi_pos].key = key;
+      last_in_pos = (last_in_pos + 1) % SM_CACHE_SZ;
+      ki_cache[last_in_pos].iter = pos;
+      ki_cache[last_in_pos].key = key;
     }
   }
 }
@@ -428,7 +440,7 @@ void stlmap::remove_sm_iter(sm_iter* smip)
 void stlmap::clear_ki_cache() {
   //PR(clear_ki_cache - in,ki_cache.size());
   ki_cache.clear();
-  latest_pmi_pos = 0;
+  last_in_pos = 0;
   //PR(clear_ki_cache - out,ki_cache.size());
 }
 

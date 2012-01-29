@@ -26,7 +26,7 @@ included with the pure-stlmap distribution package for details.
 typedef std::map<pxh,pxh,pxh_pred2> pxhmap;
 typedef pxhmap::iterator pmi;
 
-const size_t SM_CACHE_SZ = 4;
+const size_t SM_CACHE_SZ = 3;  // must be 3 for cache to work right
 
 struct sm_iter;
 
@@ -39,7 +39,7 @@ struct key_iter {
 struct stlmap {
   bool keys_only;
   bool has_dflt;
-  size_t latest_pmi_pos;
+  size_t last_in_pos;
   pxhmap mp;
   pxh px_comp;
   pxh px_val_comp;
