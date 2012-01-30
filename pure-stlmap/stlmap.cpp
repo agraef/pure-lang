@@ -337,7 +337,7 @@ stlmap::stlmap(px* cmp, px* val_cmp, px* val_eql, bool keyonly, px *d):
 
 stlmap::~stlmap()
 {
-  cerr << "~stlmap or stlset: " << this << endl;
+  //cerr << "~stlmap or stlset: " << this << endl;
   assert(smis.size()==0);
 }
 
@@ -420,9 +420,9 @@ bool stlmap::get_cached_pmi(px* key, pmi& pos)
       }
     }
   }
-  if (ret==true) {
-    PR(--- trace cache hit,key);
-  }
+  // if (ret==true) {
+  //   PR(--- trace cache hit,key);
+  // }
   return ret;
 }
 
@@ -450,7 +450,15 @@ void stlmap::kill_ki_cache_elm(pmi pos)
   size_t i = 0; 
   for (; i < num_cached; i++) {
     if ( ki_cache[i].iter == pos )
-      ki_cache[i].key = pxh(0);
+      break;
+  }
+  if (i<num_cached) {
+    std::vector<key_iter>::iterator ii = ki_cache.begin() + i;
+    ki_cache.erase(ii);
+    if (last_in_pos >= i)
+      last_in_pos--;
+    if (last_in_pos < 0)
+      last_in_pos = num_cached -1;
   }
 }
 
@@ -894,8 +902,8 @@ px* sm_insert_hinted(px* pxsmp, px* pxsmip, px* kv)
   int tag;
   if ( !get_smip(pxsmip,tag,&smip) || !smip->is_valid ) bad_argument();
   px *k, *v;
-  if ( !extract_kv(smp,kv,k,v) ) bad_argument();
   if ( !same(smip->pxhsmp,pxsmp) ) bad_argument();
+  if ( !extract_kv(smp,kv,k,v) ) bad_argument();
   try {
     pos = smp->mp.insert(smip->iter, pxhpair(k,v));
   }
@@ -908,7 +916,7 @@ px* sm_insert_hinted(px* pxsmp, px* pxsmip, px* kv)
 px* sm_insert_elm(px* pxsmp, px* kv)
 {
   sm* smp; pmi pos;
-  if (!get_smp(pxsmp,&smp) ) bad_argument();
+  if (!get_smp(pxsmp,&smp)) bad_argument();
   int num_inserted = 0;
   try {
     if ( !insert_aux(smp, kv, pos, num_inserted) ) bad_argument();
@@ -918,7 +926,10 @@ px* sm_insert_elm(px* pxsmp, px* kv)
   }
   px* it = px_pointer(new sm_iter(pxsmp, pos));
   px *k, *v;
-  pxrocket_to_pxlhs_pxrhs(kv, &k, &v);
+  if (smp->keys_only)
+    k = kv;
+  else
+    pxrocket_to_pxlhs_pxrhs(kv, &k, &v);
   smp->cache_pmi(k,pos);
   return pure_tuplel(2,it,pure_int(num_inserted));
 }
