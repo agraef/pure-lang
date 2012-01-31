@@ -39,7 +39,7 @@ struct key_iter {
 struct stlmap {
   bool keys_only;
   bool has_dflt;
-  size_t last_in_pos;
+  int last_in_pos;
   pxhmap mp;
   pxh px_comp;
   pxh px_val_comp;

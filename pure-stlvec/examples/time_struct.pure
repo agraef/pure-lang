@@ -1,0 +1,51 @@
+/* time_struct.pure -- compare struct look up to record lookup */
+
+using stlstruct;
+
+using namespace stl;
+
+const repeats = 1000000;
+
+#! --nowarn
+defstruct mystruct {name, age};
+#! --rewarn
+
+let x_struct = mystruct {"Peter",100};
+
+let x_rec = record {"name"=>"Fred","age"=>101};
+
+time_struct = () when
+  tm = clock;
+  spin repeats;
+  tm = (clock - tm) / 1000.0;
+  printf "  lookup struct: %8.1f\n" tm;
+end with
+  spin 0 = ();
+  spin n = name x_struct, age x_struct $$ spin (n-1);
+end;
+
+time_rec = () when
+  tm = clock;
+  spin repeats;
+  tm = (clock - tm) / 1000.0;
+  printf "  lookup rec  : %8.1f\n" tm;
+end with
+  spin 0 = ();
+  spin n = x_rec!"name", x_rec!"age" $$ spin (n-1);
+end;
+
+/*** Sample output ***************************************************
+
+> time_rec;
+  lookup rec  :   2440.0
+()
+> time_struct;
+  lookup struct:   1470.0
+()
+
+time_struct is about 1.36M lookups per second
+time_rec    is about 0.82M lookups per second
+
+
+
+*/

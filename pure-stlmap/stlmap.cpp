@@ -1384,7 +1384,7 @@ px* sm_prev_key(px* pxsmp, px* key)
   pmi i = mp.end();
   if ( !smp->get_cached_pmi(key,i) )
     i = smp->find(key);
-  if ( i == mp.begin() || i==mp.end() && key != smend() )
+  if ( i == mp.begin() || (i==mp.end() && key != smend()) )
     index_error();
   else
     i--;
