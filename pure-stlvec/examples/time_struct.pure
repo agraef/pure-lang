@@ -1,4 +1,4 @@
-/* time_struct.pure -- compare struct look up to record lookup */
+/* time_struct.pure -- compare access time for stlstruct and record */
 
 using stlstruct;
 
@@ -14,38 +14,91 @@ let x_struct = mystruct {"Peter",100};
 
 let x_rec = record {"name"=>"Fred","age"=>101};
 
-time_struct = () when
+nonfix name_sym;
+nonfix age_sym;
+
+let x_rec_sym = record {name_sym=>"Fred",age_sym=>101};
+
+lookup_struct = () when
   tm = clock;
   spin repeats;
   tm = (clock - tm) / 1000.0;
-  printf "  lookup struct: %8.1f\n" tm;
+  printf "  lookup struct: %8.1f msec\n" tm;
 end with
   spin 0 = ();
   spin n = name x_struct, age x_struct $$ spin (n-1);
 end;
 
-time_rec = () when
+lookup_rec = () when
   tm = clock;
   spin repeats;
   tm = (clock - tm) / 1000.0;
-  printf "  lookup rec  : %8.1f\n" tm;
+  printf "  lookup rec   : %8.1f msec\n" tm;
 end with
   spin 0 = ();
   spin n = x_rec!"name", x_rec!"age" $$ spin (n-1);
 end;
 
+lookup_rec_sym = () when
+  tm = clock;
+  spin repeats;
+  tm = (clock - tm) / 1000.0;
+  printf "  lookup rec   : %8.1f msec\n" tm;
+end with
+  spin 0 = ();
+  spin n = x_rec_sym!name_sym, x_rec_sym!age_sym $$ spin (n-1);
+end;
+
+count_struct = age counter when
+  tm = clock;
+  spin repeats;
+  tm = (clock - tm) / 1000.0;
+  printf "  count struct : %8.1f msec\n" tm;
+end with
+  spin 0 = ();
+  spin n = set_age counter (age counter + 1) $$ spin (n-1);
+end when
+  counter = mystruct {"_",0};
+end;
+
+count_rec = res when
+  x_rec = record {"name"=>"_","age"=>0};
+  tm = clock;
+  res = spin x_rec repeats;
+  tm = (clock - tm) / 1000.0;
+  printf "  count rec    : %8.1f msec\n" tm;
+end with
+  spin r 0 = r!"age";
+  spin r n = spin (record {r,"age"=>(r!"age"+1)}) (n-1);
+end when
+  counter = mystruct {"_",0};
+end;
+
+
 /*** Sample output ***************************************************
 
-> time_rec;
-  lookup rec  :   2440.0
+> // repeats = 1,000,000 (2,000,000 lookups)
+
+> lookup_struct;
+  lookup struct:   1480.0 msec
 ()
-> time_struct;
-  lookup struct:   1470.0
+
+> lookup_rec_sym;
+  lookup rec   :   2090.0 msec
 ()
 
-time_struct is about 1.36M lookups per second
-time_rec    is about 0.82M lookups per second
+> lookup_rec;
+  lookup rec   :   2380.0 msec
+()
 
+> // repeats = 1,000,000 (1M lookups and 1M updates)
 
+> count_struct ;
+  count struct :   1740.0 msec
+1000000
+
+> count_rec ;
+  count rec    :   4220.0 msec
+1000000
 
 */
