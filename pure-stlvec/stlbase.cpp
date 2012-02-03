@@ -171,7 +171,7 @@ pxh_less::pxh_less(px* f) : pxh_fun(f)
     is_gt = true;
 }
 
-// For (<) and (>) use built-ins for strings, ints and doubles
+// For (<) and (>) use built-ins for strings, ints, doubles and bigints
 // else callback on (>) or (>). For others callback on comp.
 bool pxh_less::operator()(const pxh& x_pxh, const pxh& y_pxh) const
 {
@@ -190,6 +190,17 @@ bool pxh_less::operator()(const pxh& x_pxh, const pxh& y_pxh) const
     double x_dbl, y_dbl;
     if (pure_is_double(x,&x_dbl) && pure_is_double(y,&y_dbl))
       return (is_lt && x_dbl < y_dbl) || (is_gt && x_dbl > y_dbl);
+    mpz_t x_mpz, y_mpz;
+    if (pure_is_mpz(x,&x_mpz)) {
+        if (pure_is_mpz(y,&y_mpz)) {
+          int cmp = bigint_cmp(x_mpz,y_mpz);
+          mpz_clear(x_mpz);
+          mpz_clear(y_mpz);
+          return (is_lt && cmp<0) || (is_gt && cmp>0);
+        }
+        else
+          mpz_clear(x_mpz);
+    }
   }
   px* exception = 0;
   px* pxres =  pure_appxl(fun_, &exception, 2, x, y);
