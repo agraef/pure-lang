@@ -27,32 +27,33 @@ extern expr* shm_type_tags();
 private extern expr* shm_make_empty(expr* hash, expr* keql, expr* veql, int ko);
 private extern expr* shm_copy(expr* pxshmp);
 private extern void  shm_delete(void* shmp);
-private extern void  shm_reserve(expr* shmp, double mlf, int size);
-private extern expr* shm_hash_info(expr* shmp);
-private extern expr* shm_begin(expr* pxshmp);
-private extern expr* shm_end(expr* pxshmp); 
-private extern expr* shm_get_elm_at_inc(expr* pxshmip);
-private extern expr* shm_equal_iter(expr* pxshmip1, expr* pxshmip2);
-private extern int   shm_size(expr* shmp);
-private extern bool  shm_empty(expr* shmp);
-private extern bool  shm_is_set(expr* shmp);
-private extern int   shm_equal(expr* shmp1, expr* shmp2);
-private extern int   shm_count(expr* pxshmp, expr* key);
-private extern int   shm_member(expr* pxshmp, expr* key);
-private extern expr* shm_find(expr* pxshmp, expr* key, int what);
-private extern expr* shm_insert_elm(expr* pxshmp, expr* kv);
-private extern int   shm_insert_elms_xs(expr* pxshmp, expr* src);
-private extern int   shm_insert_elms_stlvec(expr* pxshmp, void* svp);
-private extern expr* shm_update(expr* pxshmp, expr* key, expr* val);
-private extern void  shm_swap(expr* pxshmp1, expr* pxshmp2);
-private extern int   shm_erase(expr* pxshmp, expr* key);
-private extern int   shm_clear(expr* pxshmp);
-private extern expr* shm_make_vector(expr* shmp);
-private extern void* shm_fill_stlvec(expr* shmp, void* v);
-private extern expr* shm_listmap(expr* fun, expr* shmp, int what);
-private extern expr* shm_listcatmap(expr* fun, expr* shmp, int what);
-private extern expr* shm_foldl(expr* fun, expr* val, expr* shmp);
-private extern expr* shm_foldl1(expr* fun, expr* shmp);
+
+extern void  shm_reserve(expr* shmp, double mlf, int size);
+extern expr* shm_hash_info(expr* shmp);
+extern expr* shm_begin(expr* pxshmp);
+extern expr* shm_end(expr* pxshmp); 
+extern expr* shm_get_elm_at_inc(expr* pxshmip);
+extern expr* shm_equal_iter(expr* pxshmip1, expr* pxshmip2);
+extern int   shm_size(expr* shmp);
+extern bool  shm_empty(expr* shmp);
+extern bool  shm_is_set(expr* shmp);
+extern int   shm_equal(expr* shmp1, expr* shmp2);
+extern int   shm_count(expr* pxshmp, expr* key);
+extern int   shm_member(expr* pxshmp, expr* key);
+extern expr* shm_find(expr* pxshmp, expr* key, int what);
+extern expr* shm_insert_elm(expr* pxshmp, expr* kv);
+extern int   shm_insert_elms_xs(expr* pxshmp, expr* src);
+extern int   shm_insert_elms_stlvec(expr* pxshmp, void* svp);
+extern expr* shm_update(expr* pxshmp, expr* key, expr* val);
+extern void  shm_swap(expr* pxshmp1, expr* pxshmp2);
+extern int   shm_erase(expr* pxshmp, expr* key);
+extern int   shm_clear(expr* pxshmp);
+extern expr* shm_make_vector(expr* shmp);
+extern void* shm_fill_stlvec(expr* shmp, void* v);
+extern expr* shm_listmap(expr* fun, expr* shmp, int what);
+extern expr* shm_listcatmap(expr* fun, expr* shmp, int what);
+extern expr* shm_foldl(expr* fun, expr* val, expr* shmp);
+extern expr* shm_foldl1(expr* fun, expr* shmp);
 
 /*** Global Definitions **************************************************/
 
@@ -71,7 +72,7 @@ namespace stl;
 
 /*** Helpers **************************************************************/
 
-private shm_key shm_val shm_elm shm_equal compatible_ranges;
+private shm_key shm_val shm_elm compatible_ranges;
 
 const shm_key = 1;
 const shm_val = 2;
@@ -79,11 +80,11 @@ const shm_elm = 3;
 
 /***  Constructors *********************************************************/
 
-::emptystlhmap                = shm_make_empty hash (==) (==) 0;
+::emptystlhmap                = shm_make_empty hash same same 0;
 
 ::mkstlhmap (khash,keql,veql) = shm_make_empty khash keql veql 0;
-::mkstlhmap (khash,keql)      = shm_make_empty khash keql (==) 0;
-::mkstlhmap  khash            = shm_make_empty khash (==) (==) 0;
+::mkstlhmap (khash,keql)      = shm_make_empty khash keql same 0;
+::mkstlhmap  khash            = shm_make_empty khash same same 0;
 
 ::stlhmap xs = shm when
   shm = ::emptystlhmap;
@@ -97,10 +98,10 @@ end;
 
 ::stlhmap shm::stlhmap = shm_copy shm;
 
-::emptystlhset                   = shm_make_empty hash (==) (==) 1;
+::emptystlhset               = shm_make_empty hash same same 1;
 
-::mkstlhset (khash,keql)         = shm_make_empty khash keql keql 1;
-::mkstlhset  khash               = shm_make_empty khash (==) (==) 1;
+::mkstlhset (khash,keql)     = shm_make_empty khash keql keql 1;
+::mkstlhset  khash           = shm_make_empty khash same same 1;
 
 ::stlhset xs = ss when
   ss = ::emptystlhset;

@@ -167,11 +167,11 @@ struct pxh_fun1 : public pxh_fun,
   pxh operator()(const pxh&) const;
 };
 
-struct pxh_hash : public pxh_fun,
-                  public std::unary_function<const pxh&, std::size_t>
+struct pxh_less : public pxh_fun, 
+                  public std::binary_function<const pxh&, const pxh&, pxh>
 {
-  pxh_hash(px* f) : pxh_fun(f){}
-  std::size_t operator()(const pxh&) const;
+  pxh_less(px* f) : pxh_fun(f){}
+  bool operator()(const pxh&, const pxh&) const;
 };
 
 struct pxh_fun2 : public pxh_fun, 

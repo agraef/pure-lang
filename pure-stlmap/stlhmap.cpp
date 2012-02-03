@@ -202,7 +202,17 @@ static px* shm_foldl_rng(px* fun, px* val, shm* shmp, phmi i, int mode)
   return res;
 }
 
-/*** shm_iter mehmbers  ***********************************************/
+/*** shm_pxh_same members  *******************************************/
+
+bool shm_pxh_same::operator()(const pxh x, const pxh y) const
+{
+  px* xpx = const_cast<px*>(x.pxp());
+  px* ypx = const_cast<px*>(y.pxp());
+  return same(xpx,ypx);
+}
+
+
+/*** shm_iter members  ***********************************************/
 
 shm_iter::shm_iter(px* pxshmp, phmi i) : pxhshmp(pxshmp), iter(i){}
 
@@ -225,7 +235,7 @@ ostream& operator<<(ostream& os, const shm_iter* shmip)
 /*** stlhmap members  ***********************************************/
 
 stlhmap::stlhmap(px* hash, px* keql, px* veql, bool keyonly):
-  keys_only(keyonly), hmp(0, pxh_hash(hash), pxh_pred2(keql)),
+  keys_only(keyonly),
   px_key_equal(keql), px_val_equal(veql)  
 {
   //PR(stlhmap,this);  
@@ -287,7 +297,7 @@ px* shm_hash_info(px* pxshmp)
   px* bc = pure_int( hmp.bucket_count() );
   px* lf = pure_double( hmp.load_factor() );
   px* mlf = pure_double( hmp.max_load_factor() );
-  px* hf = hmp.hash_function().pxfun();
+  px* hf = shmp->px_key_equal;  //FIX
   px* keq = shmp->px_key_equal;
   px* veq = shmp->px_val_equal;
   return pure_tuplel(7,ko,bc,lf,mlf,hf,keq,veq);

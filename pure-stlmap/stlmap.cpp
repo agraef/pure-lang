@@ -21,6 +21,7 @@ included with the pure-stlmap distribution package for details.
 #include <iostream>
 #include <algorithm>
 #include <numeric>
+#include <cstring>
 #include "stlmap.hpp"
 
 using namespace std;
@@ -320,7 +321,8 @@ ostream& operator<<(ostream& os, const sm_iter* smip)
 /*** stlmap members  ***********************************************/
 
 stlmap::stlmap(px* cmp, px* val_cmp, px* val_eql, bool keyonly):
-  mp(pxh_pred2(cmp)), keys_only(keyonly),
+  mp(pxh_less(cmp)),
+  keys_only(keyonly),
   px_comp(cmp), px_val_comp(val_cmp), px_val_equal(val_eql),
   last_in_pos(0), has_dflt(0), dflt(NULL)
 {
@@ -328,7 +330,8 @@ stlmap::stlmap(px* cmp, px* val_cmp, px* val_eql, bool keyonly):
 }
 
 stlmap::stlmap(px* cmp, px* val_cmp, px* val_eql, bool keyonly, px *d):
-  mp(pxh_pred2(cmp)), keys_only(keyonly),
+  mp(pxh_less(cmp)), 
+  keys_only(keyonly),
   px_comp(cmp), px_val_comp(val_cmp), px_val_equal(val_eql),
   last_in_pos(0), has_dflt(1), dflt(d)
 {

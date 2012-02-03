@@ -24,7 +24,17 @@ included with the pure-stlmap distribution package for details.
 #include "stlbase.hpp"
 #include "stlvec.hpp"
 
-typedef std::unordered_map<pxh,pxh,pxh_hash,pxh_pred2> pxhhmap;
+struct shm_pxh_hash
+{
+  size_t operator()(pxh x) const
+  { return hash(x); };
+};
+
+struct shm_pxh_same {
+  bool operator()(const pxh x, const pxh y) const;
+};
+
+typedef std::unordered_map<pxh,pxh,shm_pxh_hash,shm_pxh_same> pxhhmap;
 typedef pxhhmap::iterator phmi;
 
 struct shm_iter;

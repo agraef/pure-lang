@@ -17,6 +17,7 @@ included with the pure-stlvec distribution package for details.
 #include "stlbase.hpp"
 #include <iostream>
 #include <stdlib.h>
+#include <cstring>
 
 using namespace std;
 
@@ -161,16 +162,31 @@ pxh pxh_fun1::operator()(const pxh& arg) const
   return pxh(ret);
 }
 
-size_t pxh_hash::operator()(const pxh& arg) const
+// Use built-ins for strings, ints and doubles
+// else fall back on user supplied
+bool pxh_less::operator()(const pxh& x_pxh, const pxh& y_pxh) const
 {
+  bool ret = 0;
+  px* x = const_cast<px*>(x_pxh.pxp());
+  px* y = const_cast<px*>(y_pxh.pxp());
+  const char *x_str, *y_str;
+  if (pure_is_string(x,&x_str) && pure_is_string(y,&y_str))
+    return strcmp(x_str,y_str) < 0;
+  int x_int, y_int;
+  if (pure_is_int(x,&x_int) && pure_is_int(y,&y_int))
+    return x_int < y_int;
+  double x_dbl, y_dbl;
+  if (pure_is_double(x,&x_dbl) && pure_is_double(y,&y_dbl))
+    return x_dbl < y_dbl;
+
   px* exception = 0;
-  px* pxres =  pure_appxl(fun_, &exception, 1, arg.pxp());
+  px* pxres =  pure_appxl(fun_, &exception, 2, x, y);
   if (exception) throw exception;
   if (!pxres) bad_function();
-  int hv;
-  if ( !pure_is_int(pxres, &hv) ) bad_function();
+  int is_less; 
+  if ( !pure_is_int(pxres, &is_less) ) bad_function();
   px_freenew(pxres);
-  return static_cast<size_t>(hv);
+  return is_less != 0;
 }
 
 pxh pxh_fun2::operator()(const pxh& arg1, const pxh& arg2) const
