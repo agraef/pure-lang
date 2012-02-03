@@ -170,8 +170,11 @@ struct pxh_fun1 : public pxh_fun,
 struct pxh_less : public pxh_fun, 
                   public std::binary_function<const pxh&, const pxh&, pxh>
 {
-  pxh_less(px* f) : pxh_fun(f){}
+  bool is_lt;
+  bool is_gt;
+  pxh_less(px* f);
   bool operator()(const pxh&, const pxh&) const;
+  
 };
 
 struct pxh_fun2 : public pxh_fun, 
@@ -256,6 +259,9 @@ std::ostream& operator<<(std::ostream& os, px* pe);
 px* px_cons_sym();
 px* px_null_list_sym();
 px* px_rocket_sym();
+px* px_less_than_sym();
+px* px_equal_sym();
+px* px_greater_than_sym();
 
 void bad_function();
 void index_error();

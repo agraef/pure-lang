@@ -162,23 +162,35 @@ pxh pxh_fun1::operator()(const pxh& arg) const
   return pxh(ret);
 }
 
-// Use built-ins for strings, ints and doubles
-// else fall back on user supplied
+pxh_less::pxh_less(px* f) : pxh_fun(f) 
+{
+  is_lt = is_gt = false;
+  if ( same(f,px_less_than_sym()) ) 
+    is_lt = true;
+  else if ( same(f,px_greater_than_sym()) ) 
+    is_gt = true;
+}
+
+// For (<) and (>) use built-ins for strings, ints and doubles
+// else callback on (>) or (>). For others callback on comp.
 bool pxh_less::operator()(const pxh& x_pxh, const pxh& y_pxh) const
 {
   bool ret = 0;
   px* x = const_cast<px*>(x_pxh.pxp());
   px* y = const_cast<px*>(y_pxh.pxp());
-  const char *x_str, *y_str;
-  if (pure_is_string(x,&x_str) && pure_is_string(y,&y_str))
-    return strcmp(x_str,y_str) < 0;
-  int x_int, y_int;
-  if (pure_is_int(x,&x_int) && pure_is_int(y,&y_int))
-    return x_int < y_int;
-  double x_dbl, y_dbl;
-  if (pure_is_double(x,&x_dbl) && pure_is_double(y,&y_dbl))
-    return x_dbl < y_dbl;
-
+  if (is_lt || is_gt) {
+    const char *x_str, *y_str;
+    if (pure_is_string(x,&x_str) && pure_is_string(y,&y_str)) {
+      int cmp = strcmp(x_str,y_str);
+      return (is_lt && cmp<0) || (is_gt && cmp>0);
+    }
+    int x_int, y_int;
+    if (pure_is_int(x,&x_int) && pure_is_int(y,&y_int))
+      return (is_lt && x_int < y_int) || (is_gt && x_int > y_int);
+    double x_dbl, y_dbl;
+    if (pure_is_double(x,&x_dbl) && pure_is_double(y,&y_dbl))
+      return (is_lt && x_dbl < y_dbl) || (is_gt && x_dbl > y_dbl);
+  }
   px* exception = 0;
   px* pxres =  pure_appxl(fun_, &exception, 2, x, y);
   if (exception) throw exception;
@@ -329,6 +341,27 @@ px* px_rocket_sym()
 {
   static ILS<px*> _sym = NULL; px* &sym = _sym();
   if (!sym) sym = px_newsym("=>");
+  return sym;
+}
+
+px* px_less_than_sym()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym("<");
+  return sym;
+}
+
+px* px_equal_sym()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym(">");
+  return sym;
+}
+
+px* px_greater_than_sym()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym(">");
   return sym;
 }
 

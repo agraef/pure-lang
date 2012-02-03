@@ -21,7 +21,6 @@ included with the pure-stlmap distribution package for details.
 #include <iostream>
 #include <algorithm>
 #include <numeric>
-#include <cstring>
 #include "stlmap.hpp"
 
 using namespace std;
