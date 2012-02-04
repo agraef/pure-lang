@@ -26,7 +26,7 @@ int  sva_min_element(px* tpl, px* cmp)
   sv_range rng(tpl);
   if (!rng.is_valid || !rng.num_iters == 2) bad_argument();
   try {
-    pxh_pred2 fun(cmp);
+    pxh_less fun(cmp);
     svi p = min_element(rng.beg(), rng.end(), fun);
     return iter_pos(rng.vec,p);
   } catch (px* e) {
@@ -39,7 +39,7 @@ int  sva_max_element(px* tpl, px* cmp)
   sv_range rng(tpl);
   if (!rng.is_valid || !rng.num_iters == 2) bad_argument();
   try {
-    pxh_pred2 fun(cmp);
+    pxh_less fun(cmp);
     svi p = max_element(rng.beg(), rng.end(), fun);
     return iter_pos(rng.vec,p);
   } catch (px* e) {
@@ -49,7 +49,7 @@ int  sva_max_element(px* tpl, px* cmp)
 
 bool sva_lexicographical_compare(px* tpl1, px* tpl2, px* cmp)
 {
-  pxh_pred2 fun(cmp);
+  pxh_less fun(cmp);
   sv_range rng1(tpl1);
   sv_range rng2(tpl2);
   if (!rng1.is_valid || rng1.num_iters != 2) bad_argument();
@@ -64,7 +64,7 @@ bool sva_lexicographical_compare(px* tpl1, px* tpl2, px* cmp)
 
 bool sva_next_permutation(px* tpl, px* cmp)
 {
-  pxh_pred2 fun(cmp);
+  pxh_less fun(cmp);
   sv_range rng(tpl);
   if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   try {
@@ -76,7 +76,7 @@ bool sva_next_permutation(px* tpl, px* cmp)
 
 bool sva_prev_permutation(px* tpl, px* cmp)
 {
-  pxh_pred2 fun(cmp);
+  pxh_less fun(cmp);
   sv_range rng(tpl);
   if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   try {

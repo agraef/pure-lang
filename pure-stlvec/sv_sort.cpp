@@ -22,7 +22,7 @@ using namespace std;
 
 void sva_sort(px* tpl, px* cmp)
 {
-  pxh_pred2 fun(cmp);
+  pxh_less fun(cmp);
   sv_range rng(tpl);
   if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   try {
@@ -34,7 +34,7 @@ void sva_sort(px* tpl, px* cmp)
 
 void sva_stable_sort(px* tpl, px* cmp)
 {
-  pxh_pred2 fun(cmp);
+  pxh_less fun(cmp);
   sv_range rng(tpl);
   if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   try {
@@ -45,7 +45,7 @@ void sva_stable_sort(px* tpl, px* cmp)
 }
 
 void sva_partial_sort(px* tpl, px* cmp){
-  pxh_pred2 fun(cmp);
+  pxh_less fun(cmp);
   sv_range rng(tpl);
   if (!rng.is_valid || rng.num_iters != 3) bad_argument();
   try {
@@ -57,7 +57,7 @@ void sva_partial_sort(px* tpl, px* cmp){
 
 void sva_partial_sort_copy(px* tpl1, px* tpl2, px* cmp)
 {
-  pxh_pred2 fun(cmp);
+  pxh_less fun(cmp);
   sv_range rng1(tpl1);
   sv_range rng2(tpl2);
   if (!rng1.is_valid || rng1.num_iters != 2) bad_argument();
@@ -71,7 +71,7 @@ void sva_partial_sort_copy(px* tpl1, px* tpl2, px* cmp)
 }
 
 void sva_nth_element(px* tpl, px* cmp){
-  pxh_pred2 fun(cmp);
+  pxh_less fun(cmp);
   sv_range rng(tpl);
   if (!rng.is_valid || rng.num_iters != 3) bad_argument();
   try {
@@ -83,7 +83,7 @@ void sva_nth_element(px* tpl, px* cmp){
 
 int  sva_lower_bound(px* tpl, px* val, px* cmp)
 {
-  pxh_pred2 fun(cmp);
+  pxh_less fun(cmp);
   sv_range rng(tpl);
   if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   try {
@@ -96,7 +96,7 @@ int  sva_lower_bound(px* tpl, px* val, px* cmp)
 
 int  sva_upper_bound(px* tpl, px* val, px* cmp)
 {
-  pxh_pred2 fun(cmp);
+  pxh_less fun(cmp);
   sv_range rng(tpl);
   if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   try {
@@ -109,7 +109,7 @@ int  sva_upper_bound(px* tpl, px* val, px* cmp)
 
 px*  sva_equal_range(px* tpl, px* val, px* cmp)
 {
-  pxh_pred2 fun(cmp);
+  pxh_less fun(cmp);
   sv_range rng(tpl);
   if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   try {
@@ -126,7 +126,7 @@ px*  sva_equal_range(px* tpl, px* val, px* cmp)
 
 bool sva_binary_search(px* tpl, px* val, px* cmp)
 {
-  pxh_pred2 fun(cmp);
+  pxh_less fun(cmp);
   sv_range rng(tpl);
   try {
     if (!rng.is_valid || rng.num_iters != 2) bad_argument();

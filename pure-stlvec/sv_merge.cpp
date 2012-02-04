@@ -24,7 +24,7 @@ using namespace std;
 int  sva_merge(px* tpl1, px* tpl2, px* tpl3, px* cmp)
 {
   int res = 0;
-  pxh_pred2 fun(cmp);
+  pxh_less fun(cmp);
   sv_range rng1(tpl1);
   sv_range rng2(tpl2);
   sv_range trg(tpl3);
@@ -53,7 +53,7 @@ int  sva_merge(px* tpl1, px* tpl2, px* tpl3, px* cmp)
 
 void sva_inplace_merge(px* tpl, px* cmp)
 {
-  pxh_pred2 fun(cmp);
+  pxh_less fun(cmp);
   sv_range rng(tpl);
   try {
     if (!rng.is_valid || rng.num_iters != 3) bad_argument();
@@ -65,7 +65,7 @@ void sva_inplace_merge(px* tpl, px* cmp)
 
 bool sva_includes(px* tpl1, px* tpl2, px* cmp)
 {
-  pxh_pred2 fun(cmp);
+  pxh_less fun(cmp);
   sv_range rng1(tpl1);
   sv_range rng2(tpl2);
   if (!rng1.is_valid || rng1.num_iters != 2) bad_argument();
@@ -80,7 +80,7 @@ bool sva_includes(px* tpl1, px* tpl2, px* cmp)
 int sva_set_union(px* tpl1, px* tpl2, px* tpl3, px* cmp)
 {
   int res = 0;
-  pxh_pred2 fun(cmp);
+  pxh_less fun(cmp);
   sv_range rng1(tpl1);
   sv_range rng2(tpl2);
   sv_range trg(tpl3);
@@ -112,7 +112,7 @@ int sva_set_union(px* tpl1, px* tpl2, px* tpl3, px* cmp)
 int  sva_set_intersection(px* tpl1, px* tpl2, px* tpl3, px* cmp)
 {
   int res = 0;
-  pxh_pred2 fun(cmp);
+  pxh_less fun(cmp);
   sv_range rng1(tpl1);
   sv_range rng2(tpl2);
   sv_range trg(tpl3);
@@ -143,7 +143,7 @@ int  sva_set_intersection(px* tpl1, px* tpl2, px* tpl3, px* cmp)
 int  sva_set_difference(px* tpl1, px* tpl2, px* tpl3, px* cmp)
 {
   int res = 0;
-  pxh_pred2 fun(cmp);
+  pxh_less fun(cmp);
   sv_range rng1(tpl1);
   sv_range rng2(tpl2);
   sv_range trg(tpl3);
@@ -174,7 +174,7 @@ int  sva_set_difference(px* tpl1, px* tpl2, px* tpl3, px* cmp)
 int  sva_set_symmetric_difference(px* tpl1, px* tpl2, px* tpl3, px* cmp)
 {
   int res = 0;
-  pxh_pred2 fun(cmp);
+  pxh_less fun(cmp);
   sv_range rng1(tpl1);
   sv_range rng2(tpl2);
   sv_range trg(tpl3);
