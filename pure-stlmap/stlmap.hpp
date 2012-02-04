@@ -30,8 +30,8 @@ const size_t SM_CACHE_SZ = 3;  // must be 3 for cache to work right
 
 struct sm_iter;
 
-struct key_iter {
-  key_iter(px* k, pmi i) : iter(i), key(k) {};
+struct sm_key_iter {
+  sm_key_iter(px* k, pmi i) : iter(i), key(k) {};
   pxh key;
   pmi iter;
 };
@@ -41,12 +41,11 @@ struct stlmap {
   bool has_dflt;
   int last_in_pos;
   pxhmap mp;
-
   pxh px_comp;
   pxh px_val_comp;
   pxh px_val_equal;
   pxh dflt;
-  std::vector<key_iter> ki_cache;
+  std::vector<sm_key_iter> ki_cache;
   std::vector<sm_iter*> smis; // sm_iters in Pure land
 
   stlmap(px* key_comp, px* val_comp, px* val_equal, bool keyonly); 

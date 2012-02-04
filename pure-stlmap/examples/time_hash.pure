@@ -9,12 +9,11 @@
 
 using system, stlvec, stlvec::algorithms;
 
-const repeats = 1000;
+const repeats = 10000;
 const lookups = 100;
 
-using hashdict;
-using stlhash;
 using stlhmap;
+using hashdict;
 
 /*** hashdict *********************************************************/
 
@@ -31,29 +30,11 @@ end with
   spin 0 = ();
   spin n = lookup keys $ spin (n-1);
   lookup [] = ();
+  // Note - using hashict_member is almost 8 times faster
   lookup (k:ks) = hashdict_member ss k $$ hashdict_get ss k $$ lookup ks;
+  //lookup (k:ks) = member ss k $$ ss!k $$ lookup ks;
 end when 
   ss = hashdict [];
-end;
-
-/*** stlhash *********************************************************/
-
-time_stlhash words keys = () when
-  tm = clock;
-  insert ss (members words);
-  tm = (clock - tm) / 1000.0;
-  printf "\nfill    stlhash: %8.1f msecs, %d words\n"  (tm,#ss);
-  tm = clock;
-  spin repeats;
-  tm = (clock - tm) / 1000.0;
-  printf "lookup  stlhash: %8.1f msecs\n" tm;
-end with
-  spin 0 = ();
-  spin n = lookup keys $ spin (n-1);
-  lookup [] = ();
-  lookup (k:ks) = stl::sh_member ss k $$ stl::sh_find ss k  $$ lookup ks;
-end when 
-  ss = emptystlhashset;
 end;
 
 /*** stlhmap *********************************************************/
@@ -72,10 +53,12 @@ end with
   spin 0 = ();
   spin n = lookup keys $ spin (n-1);
   lookup [] = ();
-  lookup (k:ks) = stl::shm_member ss k $$ stl::shm_find ss k 2 $$ lookup ks;
+  lookup (k:ks) = stl::sh_member ss k $$ stl::sh_find_val ss k $$ lookup ks;
 end when 
   ss = emptystlhset;
 end;
+
+/*** Harness ********************************************************/
 
 // returns a stlvec of shuffled words and a list of keys
 get_words num_words filename = words, keys when
@@ -101,8 +84,7 @@ main num_words = () when
   words, keys = get_words num_words "anagram_groups_dict.txt";
   num_words = min num_words (#words);
   printf "Test %d lookups, %d repeats\n" (lookups,repeats);
-  time_hashdict words keys;
-  time_stlhash words keys;
   time_stlhmap words keys;
+  time_hashdict words keys;
 end;
     

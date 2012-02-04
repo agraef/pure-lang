@@ -20,7 +20,7 @@ CFLAGS = -g -O2
 
 # Basic rules to build the module, clean, install and uninstall.
 
-cppsource = stlmap.cpp stlmmap.cpp stlhmap.cpp stlhash.cpp
+cppsource = stlmap.cpp stlmmap.cpp stlhmap.cpp
 puresource = $(patsubst %.cpp, %.pure, $(cppsource))
 object = stlassoc$(DLL)
 
