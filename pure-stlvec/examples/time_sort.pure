@@ -59,9 +59,33 @@ main num_words = () when
   time_copy words;
   time_sort words;
 end;
+
+
+/*** Recent Improvements (Feb 5,2012) ************************************/
+
+/* Times before code tuning - uses generic pxh_pred2 for sorting
+
+> main 100;
+Test with 100 words and 100 repeats
+  copy words:      0.0 msecs
+  sort words:     80.0 msecs
+()
+> main 1000;
+Test with 1000 words and 100 repeats
+  copy words:     10.0 msecs
+  sort words:   1270.0 msecs
+()
+> main 10000;
+Test with 10000 words and 100 repeats
+  copy words:    100.0 msecs
+  sort words:  16930.0 msecs
+()
+
+*/
+
     
-/* Times using generic pxh_less -- i.e., optimized for ints, bigints, doubles
-   and strings
+/* Times after replacing pxh_pred2 with pxh_less, which is optimized for
+   comparinsons of ints, bigints, doubles and strings
 
 > run time_sort.pure
 > main 100;
@@ -82,23 +106,22 @@ Test with 10000 words and 100 repeats
 
 */
 
-/* Times using generic pxh_pred2 -- i.e., callbacks to (<) for all
-   arguments
-
+/* Times with pxh_less, after changes to px_handle's constructors and 
+   destructor. The changes avoid pure_new, pure_free thrashing.
+   
 > main 100;
 Test with 100 words and 100 repeats
   copy words:      0.0 msecs
-  sort words:     80.0 msecs
+  sort words:     10.0 msecs
 ()
 > main 1000;
 Test with 1000 words and 100 repeats
-  copy words:     10.0 msecs
-  sort words:   1270.0 msecs
+  copy words:      0.0 msecs
+  sort words:    140.0 msecs
 ()
 > main 10000;
 Test with 10000 words and 100 repeats
-  copy words:    100.0 msecs
-  sort words:  16930.0 msecs
+  copy words:     90.0 msecs
+  sort words:   1790.0 msecs
 ()
-
-*/
+>

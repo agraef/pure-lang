@@ -123,16 +123,53 @@ void px_unref(px* x)
 
 /**** Handles to hold pure_expr* ****************************************/
 
-px_handle::px_handle() : pxp_(px_new(pure_pointer(0))){}
+//px_handle::px_handle() : pxp_(px_new(pure_pointer(0)))
+px_handle::px_handle() : pxp_(0)
+{
+}
+
+//px_handle::px_handle(px* p) : pxp_(px_new(p)) {}
+px_handle::px_handle(px* p)
+{
+  // what if p is 0?
+  if (p->refc > 0)
+    ++(p->refc);
+  else
+    pure_new(p);
+  pxp_ = p;
+}
+
+//px_handle::px_handle(const px_handle& pxh) : pxp_(px_new(pxh.pxp_)) {}
+px_handle::px_handle(const px_handle& pxh)
+{
+  px* p = pxh.pxp_;
+  if (p->refc > 0)
+    ++(p->refc);
+  else
+    pure_new(p);
+  pxp_ = p;
+}
 
 px_handle& px_handle::operator=(const px_handle& rhs)
 {
   if (&rhs!=this){
-    px_new(rhs.pxp_);
-    px_free(pxp_);
+    if (pxp_->refc > 1)
+      --(pxp_->refc);
+    else
+      pure_free(pxp_);
     pxp_ = rhs.pxp_;
+    ++(pxp_->refc);
   }
   return *this;
+}
+
+//px_handle:: ~px_handle(){px_free(pxp_);}
+px_handle:: ~px_handle()
+{
+    if (pxp_->refc > 1)
+      --(pxp_->refc);
+    else
+      pure_free(pxp_);
 }
 
 ostream& operator<<(ostream& os, const px_handle& pxh)

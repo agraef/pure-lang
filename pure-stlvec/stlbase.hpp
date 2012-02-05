@@ -88,14 +88,14 @@ inline void px_unref(px* x){if (x) pure_unref(x);}
 */
 class px_handle {
 public:
-  // constructor
+  // default constructor
   px_handle();
 
   // constructor and type conversion from px*
-  px_handle(px* p) : pxp_(px_new(p)) {}
+  px_handle(px* p);
 
   // copy constructor
-  px_handle(const px_handle& pxh) : pxp_(px_new(pxh.pxp_)) {}
+  px_handle(const px_handle& pxh);
 
   // assignment
   px_handle& operator=(const px_handle& pxh);
@@ -103,8 +103,8 @@ public:
   // operator conversion to px*
   operator px*() const { return pxp_; }
 
-  // destructor - not virtual
-  ~px_handle(){px_free(pxp_);} //not base class (avoid vf table)
+  // destructor - not virtual - (avoid vf table)
+  ~px_handle(); 
 
   // return the underlying px*
   px* pxp() const {return pxp_;}
