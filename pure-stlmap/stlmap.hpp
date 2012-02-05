@@ -153,6 +153,7 @@ extern "C" {
   px*  sm_foldl1(px* fun, px* tpl);
   px*  sm_foldr(px* fun, px* val, px* tpl);
   px*  sm_foldr1(px* fun, px* tpl);
+  void sm_do(px* fun, px* tpl);
 
   int  sm_member(px* pxsmp, px* key);
   px*  sm_bounding_keys(px* rng);

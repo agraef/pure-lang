@@ -67,6 +67,7 @@ extern expr* sm_foldl(expr* fun, expr* val, expr* rng);
 extern expr* sm_foldl1(expr* fun, expr* rng);
 extern expr* sm_foldr(expr* fun, expr* val, expr* rng);
 extern expr* sm_foldr1(expr* fun, expr* rng);
+extern void  sm_do(expr* fun, expr* rng);
 extern int   sm_member(expr* map, expr* key);
 extern expr* sm_bounding_keys(expr* rng);
 extern expr* sm_prev_key(expr* map, expr* key);
@@ -366,7 +367,7 @@ prev_key sm::stlacon key = sm_prev_key sm key;
 
 ::foldr1 f rng::stlacon_rng = sm_foldr1 f rng;
 
-::do f rng::stlacon_rng = sm_foldl (\_ x->f x) () rng $$ ();
+::do f rng::stlacon_rng = sm_do f rng; 
 
 ::filter p rng::stlacon_rng = sm_foldr f [] rng with
   f x xs = res when

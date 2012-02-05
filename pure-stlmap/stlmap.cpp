@@ -229,7 +229,7 @@ static px* get_elm_aux(sm* smp, pmi i, int what)
   return ret;
 }
 
-static px* sm_foldl_rng(px* fun, px* val, const sm_range rng, pmi i,  int mode)
+static px* sm_foldl_aux(px* fun, px* val, const sm_range rng, pmi i,  int mode)
 { 
   pmi end = rng.end();
   sm* smp = rng.smp();
@@ -256,7 +256,7 @@ static px* sm_foldl_rng(px* fun, px* val, const sm_range rng, pmi i,  int mode)
   return res;
 }
 
-static px* sm_foldr_rng(px* fun, px* val, const sm_range& rng, pmi i, int mode)
+static px* sm_foldr_aux(px* fun, px* val, const sm_range& rng, pmi i, int mode)
 { 
   pmi beg = rng.beg();
   sm* smp = rng.smp();
@@ -1272,7 +1272,7 @@ px* sm_foldl(px* fun, px* val, px* tpl)
   int mode =  smp->keys_only ? stl_sm_key : stl_sm_elm;
   pmi end = smp->mp.end();
   try {
-    px* ret = sm_foldl_rng(fun, val, rng, rng.beg(), mode);
+    px* ret = sm_foldl_aux(fun, val, rng, rng.beg(), mode);
     return ret;
   } catch (px* e) {
     pure_throw(e);
@@ -1295,7 +1295,7 @@ px* sm_foldl1(px* fun, px* tpl)
   else
     val = pxlhs_pxrhs_to_pxrocket(b->first,b->second);
   try {
-    return sm_foldl_rng(fun, val, rng, ++b, mode);
+    return sm_foldl_aux(fun, val, rng, ++b, mode);
   } catch (px* e) {
     pure_throw(e);
   }
@@ -1307,7 +1307,7 @@ px* sm_foldr(px* fun, px* val, px* tpl)
   if (!rng.is_valid) bad_argument();
   int mode = rng.smp()->keys_only ? stl_sm_key : stl_sm_elm;
   try {
-    px* ret = sm_foldr_rng(fun, val, rng, rng.end(), mode);
+    px* ret = sm_foldr_aux(fun, val, rng, rng.end(), mode);
     return ret;
   } catch (px* x) {
     pure_throw(x);
@@ -1332,9 +1332,27 @@ px* sm_foldr1(px* fun, px* tpl)
   else
     val = pxlhs_pxrhs_to_pxrocket(e->first,e->second);
   try {
-    return sm_foldr_rng(fun, val, rng, e, mode);
+    return sm_foldr_aux(fun, val, rng, e, mode);
   } catch (px* x) {
     pure_throw(x);
+  }
+}
+
+void sm_do(px* fun, px* tpl)
+{ 
+  sm_range rng(tpl);
+  if ( !rng.is_valid ) bad_argument();
+  sm* smp = rng.smp();
+  int mode =  smp->keys_only ? stl_sm_key : stl_sm_elm;
+  pmi b = rng.beg();
+  pmi e = rng.end();
+  pmi i = b;
+  px* exception = 0;
+  while (i != e) {
+    px* trg = get_elm_aux(smp, i++, mode);
+    px* fx = pure_appxl(fun, &exception, 1, trg);
+    px_freenew(fx);
+    if (exception) pure_throw(exception);
   }
 }
 

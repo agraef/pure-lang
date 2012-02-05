@@ -66,6 +66,7 @@ private extern expr* smm_foldl(expr* fun, expr* val, expr* rng);
 private extern expr* smm_foldl1(expr* fun, expr* rng);
 private extern expr* smm_foldr(expr* fun, expr* val, expr* rng);
 private extern expr* smm_foldr1(expr* fun, expr* rng);
+private extern void  smm_do(expr* fun, expr* rng);
 private extern int   smm_member(expr* map, expr* key);
 private extern expr* smm_bounding_keys(expr* rng);
 private extern expr* smm_prev_key(expr* map, expr* key);
@@ -343,7 +344,7 @@ subset rng1::stlmacon_rng rng2::stlmacon_rng =
 
 (::!) smm::stlmacon key = smm_listmap 0 (smm,key) smm_val;
 
-::get (smm::stlmacon,key) = smm_find sm key smm_elm; 
+::get (smm::stlmacon,key) = smm_find smm key smm_elm; 
 
 ::member smm::stlmacon key = smm_member smm key;
 
@@ -365,7 +366,7 @@ prev_key smm::stlmacon key = smm_prev_key smm key;
 
 ::foldr1 f rng::stlmacon_rng = smm_foldr1 f rng;
 
-::do f rng::stlmacon_rng = smm_foldl (\_ x->f x) () rng $$ ();
+::do f rng::stlmacon_rng = smm_do f rng;
 
 ::filter p rng::stlmacon_rng = smm_foldr f [] rng with
   f x xs = res when

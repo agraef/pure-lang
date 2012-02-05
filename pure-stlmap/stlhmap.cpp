@@ -153,6 +153,30 @@ static px* get_elm_aux(sh* shp, pxhmapi i, int what)
   return ret;
 }
 
+static px* sh_foldl_aux(px* fun, px* val, sh* shp, int is_foldl1)
+{ 
+  int mode =  shp->keys_only ? stl_sh_key : stl_sh_elm;
+  pxhmapi e = shp->hm.end();
+  pxhmapi i = shp->hm.begin();
+  px* res = px_new(val); 
+  px* exception = 0;
+  if (is_foldl1) i++;
+  while (i != e) {
+    pxhmapi trg_i = i++;
+    px* trg = get_elm_aux(shp, trg_i, mode);
+    px* fxy = pure_appxl(fun, &exception, 2, res, trg);
+    if (exception) {
+      px_freenew(res);
+      pure_throw(exception);
+    }
+    px_new(fxy);
+    px_free(res);
+    res = fxy;
+  }
+  px_unref(res);
+  return res;
+}
+
 /*** Pure interface support functions  *************************************/
 
 px* sh_type_tags()
@@ -314,6 +338,22 @@ int sh_insert_elms_stlhmap(px* pxshp1, px* pxshp2)
   return hmp1.size() - oldsz;
 }
 
+int sh_insert_elms_stlvec(px* pxshp, sv* svp)
+{
+  sh* shp; 
+  pxhmapi pos;
+  if (!get_shp(pxshp,&shp) ) bad_argument();
+  int num_inserted = 0;
+  try {
+    for (sv::iterator i = svp->begin(); i!=svp->end(); i++)
+      if ( !insert_aux(shp, *i, pos, num_inserted) ) bad_argument();
+  }
+  catch (px* e) {
+    pure_throw(e);
+  }
+  return num_inserted;
+}
+
 px*  sh_swap(px* pxshp1, px* pxshp2)
 {
   sh* shp1; sh* shp2;
@@ -389,6 +429,17 @@ px* sh_make_vector(px* pxshp)
   return ret;
 }
 
+void sh_fill_stlvec(px* pxshp, sv* svp) 
+{
+  sh* shp;
+  if ( !get_shp(pxshp,&shp) ) bad_argument();
+  pxhmapi b = shp->hm.begin();
+  pxhmapi e = shp->hm.end();
+  if (shp->keys_only) 
+    transform(b, e, back_inserter(*svp), pxhpair_to_pxlhs);
+  else
+    transform(b, e, back_inserter(*svp), pxhpair_to_pxrocket);
+}
 
 /*** Mapping and folding ***********************************************/
 
@@ -476,52 +527,6 @@ px* sh_listcatmap(px* fun, px* pxshp, int what)
   return res;  
 }
 
-/*** Key oriented interface support ***************************************/
-
-int sh_member(px* pxshp, px* key)
-{
-  void* ptr;
-  if (!pure_is_pointer(pxshp,&ptr)) bad_argument();
-  pxhmap &hm = static_cast<sh*>(ptr)->hm;
-  return hm.find(key) != hm.end();
-}
-
-px* sh_update(px* pxshp, px* key, px* val)
-{
-  sh* shp;
-  if ( !get_shp(pxshp,&shp) ) bad_argument();
-  if (shp->keys_only) return 0; // fail for sets
-  pxhmapi pos = update_aux(shp, key, val);
-  return pxshp;
-}
-
-
-/*** Addon **********************************************************/
-
-static px* sh_foldl_aux(px* fun, px* val, sh* shp, int is_foldl1)
-{ 
-  int mode =  shp->keys_only ? stl_sh_key : stl_sh_elm;
-  pxhmapi e = shp->hm.end();
-  pxhmapi i = shp->hm.begin();
-  px* res = px_new(val); 
-  px* exception = 0;
-  if (is_foldl1) i++;
-  while (i != e) {
-    pxhmapi trg_i = i++;
-    px* trg = get_elm_aux(shp, trg_i, mode);
-    px* fxy = pure_appxl(fun, &exception, 2, res, trg);
-    if (exception) {
-      px_freenew(res);
-      pure_throw(exception);
-    }
-    px_new(fxy);
-    px_free(res);
-    res = fxy;
-  }
-  px_unref(res);
-  return res;
-}
-
 px* sh_foldl(px* fun, px* val, px* pxshp)
 {
   sh* shp;
@@ -559,30 +564,22 @@ void sh_do(px* fun, px* pxshp)
 }
 
 
-void sh_fill_stlvec(px* pxshp, sv* svp) 
+/*** Key oriented interface support ***************************************/
+
+int sh_member(px* pxshp, px* key)
+{
+  void* ptr;
+  if (!pure_is_pointer(pxshp,&ptr)) bad_argument();
+  pxhmap &hm = static_cast<sh*>(ptr)->hm;
+  return hm.find(key) != hm.end();
+}
+
+px* sh_update(px* pxshp, px* key, px* val)
 {
   sh* shp;
   if ( !get_shp(pxshp,&shp) ) bad_argument();
-  pxhmapi b = shp->hm.begin();
-  pxhmapi e = shp->hm.end();
-  if (shp->keys_only) 
-    transform(b, e, back_inserter(*svp), pxhpair_to_pxlhs);
-  else
-    transform(b, e, back_inserter(*svp), pxhpair_to_pxrocket);
+  if (shp->keys_only) return 0; // fail for sets
+  pxhmapi pos = update_aux(shp, key, val);
+  return pxshp;
 }
 
-int sh_insert_elms_stlvec(px* pxshp, sv* svp)
-{
-  sh* shp; 
-  pxhmapi pos;
-  if (!get_shp(pxshp,&shp) ) bad_argument();
-  int num_inserted = 0;
-  try {
-    for (sv::iterator i = svp->begin(); i!=svp->end(); i++)
-      if ( !insert_aux(shp, *i, pos, num_inserted) ) bad_argument();
-  }
-  catch (px* e) {
-    pure_throw(e);
-  }
-  return num_inserted;
-}
