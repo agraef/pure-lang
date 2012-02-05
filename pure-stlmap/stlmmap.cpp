@@ -1368,9 +1368,8 @@ void smm_do(px* fun, px* tpl)
   if ( !rng.is_valid ) bad_argument();
   smm* smmp = rng.smmp();
   int mode =  smmp->keys_only ? stl_smm_key : stl_smm_elm;
-  pmmi b = rng.beg();
+  pmmi i = rng.beg();
   pmmi e = rng.end();
-  pmmi i = b;
   px* exception = 0;
   while (i != e) {
     px* trg = get_elm_aux(smmp, i++, mode);
