@@ -131,15 +131,14 @@ static bool get_smmp(px* pxsmmp, smm** smmpp)
   return ok;
 }
 
-static bool get_smmip(px* pxsmmip, int& tag, smm_iter** itr)
+static bool get_smmip(px* pxsmmip, smm_iter** itr)
 {
   void* ptr;
   smm_iter* smmip;
   bool ok = pure_is_pointer(pxsmmip,&ptr);
   if (ok) { 
     smmip = (smm_iter*)ptr;
-    tag = pure_get_tag(pxsmmip);
-    ok = tag ==stlmmap_iter_tag();
+    ok = pure_get_tag(pxsmmip) ==stlmmap_iter_tag();
     if (ok) *itr = smmip;
   }
   return ok;
@@ -487,9 +486,8 @@ bool smm_range::init_from_iters(px** pxsmmip, int sz)
   is_valid = false;
   if (sz==0 || sz>2) return false;
   num_iters = sz;
-  int tag;
   smm_iter* smmip;
-  if ( !get_smmip(pxsmmip[0],tag,&smmip) || !smmip->is_valid ) return false;
+  if ( !get_smmip(pxsmmip[0],&smmip) || !smmip->is_valid ) return false;
 
   smm* smmp = smmip->smmp();
   pxhsmmp = smmip->pxhsmmp;
@@ -497,7 +495,7 @@ bool smm_range::init_from_iters(px** pxsmmip, int sz)
   if (num_iters == 2) {
     pxhmmap& mmp = smmp->mmp;
     pxhmmap::key_compare k_cmp = mmp.key_comp();
-    if (get_smmip(pxsmmip[1],tag,&smmip) && 
+    if (get_smmip(pxsmmip[1],&smmip) && 
         smmip->is_valid && smmip->smmp()==smmp) 
       end_it = smmip->iter;
     else
@@ -674,8 +672,7 @@ px* smm_find(px* pxsmmp, px* key, int what)
 px* smm_copy_iter(px* pxsmmip)
 {
   smm_iter* smmip;
-  int tag;
-  if ( !get_smmip(pxsmmip,tag,&smmip) || !smmip->is_valid ) bad_argument();
+  if ( !get_smmip(pxsmmip,&smmip) || !smmip->is_valid ) bad_argument();
   return px_pointer( new smm_iter(smmip->pxhsmmp, pmmi(smmip->iter)) );
 }
 
@@ -736,8 +733,7 @@ px* smm_range_info(px* tpl)
 px* smm_move_iter(px* pxsmmip, int count)
 {
   smm_iter* smmip;
-  int tag;
-  if ( !get_smmip(pxsmmip,tag,&smmip) ) return 0;
+  if ( !get_smmip(pxsmmip,&smmip) ) return 0;
   if ( !smmip->is_valid ) bad_argument();
   pmmi& i = smmip->iter;
   pmmi beg = smmip->smmp()->mmp.begin();
@@ -757,8 +753,7 @@ px* smm_iter_is_at(px* pxsmmip, int where)
 {
   px* ret;
   smm_iter* smmip;
-  int tag;
-  if ( !get_smmip(pxsmmip,tag,&smmip) || !smmip->is_valid ) return 0;
+  if ( !get_smmip(pxsmmip,&smmip) || !smmip->is_valid ) return 0;
   switch (where) {
   case stl_smm_at_beginning:
     return pure_int( smmip->smmp()->mmp.begin() == smmip->iter );
@@ -773,8 +768,7 @@ px* smm_iter_is_at(px* pxsmmip, int where)
 px* smm_iter_info(px* pxsmmip)
 {
   smm_iter* smmip;
-  int tag;
-  if ( !get_smmip(pxsmmip,tag,&smmip) ) return 0;
+  if ( !get_smmip(pxsmmip,&smmip) ) return 0;
   px* valid = pure_int( smmip->is_valid );
   px* cont = smmip->pxhsmmp;
   pmmi i = smmip->iter;
@@ -797,12 +791,10 @@ px* smm_iter_info(px* pxsmmip)
 px* smm_equal_iter(px* pxsmmip1, px* pxsmmip2)
 {
   smm_iter* smmip1;
-  int tag1;
-  if ( !get_smmip(pxsmmip1,tag1,&smmip1) || !smmip1->is_valid ) bad_argument();
+  if ( !get_smmip(pxsmmip1,&smmip1) || !smmip1->is_valid ) bad_argument();
   smm* smmp1 = smmip1->smmp();
   smm_iter* smmip2;
-  int tag2;
-  if ( !get_smmip(pxsmmip2,tag2,&smmip2) || !smmip2->is_valid ) bad_argument();
+  if ( !get_smmip(pxsmmip2,&smmip2) || !smmip2->is_valid ) bad_argument();
   smm* smmp2 = smmip2->smmp();
   bool compatible = true;
   if (smmp1->keys_only) 
@@ -816,8 +808,7 @@ px* smm_equal_iter(px* pxsmmip1, px* pxsmmip2)
 px* smm_get_at(px* pxsmmip, int what)
 {
   smm_iter* smmip;
-  int tag;
-  if ( !get_smmip(pxsmmip,tag,&smmip) || !smmip->is_valid ) bad_argument();
+  if ( !get_smmip(pxsmmip,&smmip) || !smmip->is_valid ) bad_argument();
   smm* smmp = smmip->smmp();
   if (smmip->iter == smmp->mmp.end()) index_error();
   if ( what==smmp->keys_only ) what = stl_smm_key; 
@@ -827,8 +818,7 @@ px* smm_get_at(px* pxsmmip, int what)
 px* smm_get_elm_at_inc(px* pxsmmip)
 {
   smm_iter* smmip; 
-  int tag;
-  if ( !get_smmip(pxsmmip,tag,&smmip) || !smmip->is_valid ) bad_argument();
+  if ( !get_smmip(pxsmmip,&smmip) || !smmip->is_valid ) bad_argument();
   smm* smmp = smmip->smmp();
   pmmi& i = smmip->iter;
   if ( i == smmp->mmp.end() ) index_error();
@@ -841,8 +831,7 @@ px* smm_get_elm_at_inc(px* pxsmmip)
 px* smm_put_at(px* pxsmmip, px* val)
 {
   smm_iter* smmip;
-  int tag;
-  if ( !get_smmip(pxsmmip,tag,&smmip) || !smmip->is_valid ) bad_argument();
+  if ( !get_smmip(pxsmmip,&smmip) || !smmip->is_valid ) bad_argument();
   pmmi itr = smmip->iter;
   smm* smmp = smmip->smmp();
   if (smmp->keys_only) bad_argument();
@@ -856,8 +845,7 @@ px* smm_insert_hinted(px* pxsmmp, px* pxsmmip, px* kv)
   smm* smmp; pmmi pos;
   if (!get_smmp(pxsmmp,&smmp) ) bad_argument();
   smm_iter* smmip;
-  int tag;
-  if ( !get_smmip(pxsmmip,tag,&smmip) || !smmip->is_valid ) bad_argument();
+  if ( !get_smmip(pxsmmip,&smmip) || !smmip->is_valid ) bad_argument();
   px *k, *v;
   if ( !extract_kv(smmp,kv,k,v) ) bad_argument();
   if ( !same(smmip->pxhsmmp,pxsmmp) ) bad_argument();
@@ -970,8 +958,7 @@ int smm_erase(px* pxsmmp, px* trg)
   pure_is_tuplev(trg, &trg_sz, &elems);
   if (trg_sz == 1) {
     smm_iter* smmip;
-    int tag;
-    if ( !get_smmip(trg,tag,&smmip) || !smmip->is_valid ) bad_argument();
+    if ( !get_smmip(trg,&smmip) || !smmip->is_valid ) bad_argument();
     if ( !same(pxsmmp, smmip->pxhsmmp) ) bad_argument();
     smmip->smmp()->erase(smmip->iter);
     res = 1;
