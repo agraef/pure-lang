@@ -7,33 +7,41 @@
    corresponding c functions are called, e.g., hashdict_member rather than
    member.
 
-   There are two tests for hashdict and three for stlhmap. The "fast" test
+   There are two tests applicable to both hashdict stlhmap. The "fast" test
    calls the underlying c functions directly. The "plain" test uses the
-   Pure member and (!) functions. The "wrapped" test, applicable only
-   to stlhmap, uses versions of member and (!) specialized on (STLHMAP x)
-   as opposed to the stlhmap type (a pointer tag).
+   Pure member and (!) functions. 
+
+   The "wrapped" test, applicable only to stlhmap, uses versions of member and
+   (!) specialized on (STLHMAP x) as opposed to the stlhmap type (a pointer
+   tag). The "p_" and the "w_" tests, applicable only to stlhmap, are the
+   like plain and wrapped (i.e., comparing pointer tag to data type based
+   dispatch) except that they use unique names (e.g., p_member i/o member).
 
    The fast times for hashdict and stlhmap are basically the same.
 
-   The other times depend on the order of the using statements for stlhmap and
-   hashdict. If stlhmap comes first in the using statement, the stlhmap plain
-   time is about 60% slower than the stlhmap wrapped time, and the hashdict
-   time is about 50% slower than the stlhmap plain time. However if hashdict
-   comes first in the using statement, both the stlhmap times are about 50%
-   slower than the hashdict plain time.
+   The times for the plain and wrapped tests depend on the order of the using
+   statements for stlhmap and hashdict. If stlhmap comes first in the using
+   statement, the stlhmap plain time is about 60% slower than the stlhmap
+   wrapped time, and the hashdict time is about 50% slower than the stlhmap
+   plain time. However if hashdict comes first in the using statement, both
+   the stlhmap times are about 50% slower than the hashdict plain time.
 
-   If you want to test changing the the using statement, please remember
-   to quit and restart Pure, as "clear" will not reload the modules.
+   The times for p_ and w_ tests are, of course, not affected by the order of
+   the using statements because they have unique names. Either way, the p_
+   time is about 50% slower than the the w_ time.
+
+   Please note that if you want to test changing the the using statement, you
+   have to quit and restart Pure, as "clear" will not reload the modules.
 
 */
 
 using system, stlvec, stlvec::algorithms;
 
-const repeats = 10000;
-const lookups = 100;
-
 //using hashdict, stlhmap;
 using stlhmap, hashdict;
+
+const repeats = 10000;
+const lookups = 100;
 
 /*** hashdict *********************************************************/
 
@@ -133,6 +141,46 @@ end when
   wss = wrap ss;
 end;
 
+time_p_stlhmap words keys = () when
+  tm = clock;
+  insert ss words;
+  tm = (clock - tm) / 1000.0;
+  printf "\nfill         p stlhmap: %8.1f msecs, %d words\n"  (tm,#ss);
+  tm = clock;
+  spin repeats;
+  tm = (clock - tm) / 1000.0;
+  printf "lookup       p stlhmap: %8.1f msecs\n" tm;
+  puts (get val);
+end with
+  spin 0 = ();
+  spin n = lookup keys $ spin (n-1);
+  lookup [] = ();
+  lookup (k:ks) = p_member ss k $$ p_find ss k $$ lookup ks;
+end when 
+  ss = emptystlhset;
+end;
+
+time_w_stlhmap words keys = () when
+  tm = clock;
+  insert ss words;
+  tm = (clock - tm) / 1000.0;
+  printf "\nfill         w stlhmap: %8.1f msecs, %d words\n"  (tm,#ss);
+  tm = clock;
+  spin repeats;
+  tm = (clock - tm) / 1000.0;
+  printf "lookup       w stlhmap: %8.1f msecs\n" tm;
+  puts (get val);
+end with
+  spin 0 = ();
+  spin n = lookup keys $ spin (n-1);
+  lookup [] = ();
+  lookup (k:ks) = w_member wss k $$ w_find wss k $$ lookup ks;
+end when 
+  ss = emptystlhset;
+  wss = wrap ss;
+end;
+
+
 /*** Harness ********************************************************/
 
 // returns a stlvec of shuffled words and a list of keys
@@ -162,6 +210,8 @@ main num_words = () when
   time_plain_stlhmap words keys;
   time_wrapped_stlhmap words keys;
   time_fast_stlhmap words keys;
+  time_p_stlhmap words keys;
+  time_w_stlhmap words keys;
   time_plain_hashdict words keys;
   time_fast_hashdict words keys;
 end;
@@ -172,19 +222,25 @@ end;
 Test 100 lookups, 10000 repeats
 
 fill     plain stlhmap:      0.0 msecs, 1000 words
-lookup   plain stlhmap:   1630.0 msecs
+lookup   plain stlhmap:   1600.0 msecs
 
 fill   wrapped stlhmap:      0.0 msecs, 1000 words
 lookup wrapped stlhmap:   1010.0 msecs
 
 fill      fast stlhmap:      0.0 msecs, 1000 words
-lookup    fast stlhmap:    550.0 msecs
+lookup    fast stlhmap:    560.0 msecs
+
+fill         p stlhmap:      0.0 msecs, 1000 words
+lookup       p stlhmap:   1590.0 msecs
+
+fill         w stlhmap:      0.0 msecs, 1000 words
+lookup       w stlhmap:    990.0 msecs
 
 fill    plain hashdict:     10.0 msecs, 1000 words
-lookup  plain hashdict:   2450.0 msecs
+lookup  plain hashdict:   2440.0 msecs
 
 fill     fast hashdict:     10.0 msecs, 1000 words
-lookup   fast hashdict:    560.0 msecs
+lookup   fast hashdict:    570.0 msecs
 ()
 
 */
@@ -194,20 +250,26 @@ lookup   fast hashdict:    560.0 msecs
 > main 1000;
 Test 100 lookups, 10000 repeats
 
-fill     plain stlhmap:      0.0 msecs, 1000 words
-lookup   plain stlhmap:   2810.0 msecs
+fill     plain stlhmap:     10.0 msecs, 1000 words
+lookup   plain stlhmap:   2790.0 msecs
 
 fill   wrapped stlhmap:      0.0 msecs, 1000 words
-lookup wrapped stlhmap:   2840.0 msecs
+lookup wrapped stlhmap:   2750.0 msecs
 
 fill      fast stlhmap:      0.0 msecs, 1000 words
 lookup    fast stlhmap:    560.0 msecs
 
+fill         p stlhmap:      0.0 msecs, 1000 words
+lookup       p stlhmap:   1550.0 msecs
+
+fill         w stlhmap:      0.0 msecs, 1000 words
+lookup       w stlhmap:    990.0 msecs
+
 fill    plain hashdict:      0.0 msecs, 1000 words
 lookup  plain hashdict:   1830.0 msecs
 
-fill     fast hashdict:      0.0 msecs, 1000 words
-lookup   fast hashdict:    570.0 msecs
+fill     fast hashdict:     10.0 msecs, 1000 words
+lookup   fast hashdict:    560.0 msecs
 ()
 
 */
