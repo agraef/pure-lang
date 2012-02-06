@@ -245,21 +245,21 @@ static px* smm_foldl_rng(px* fun, px* val, const smm_range rng, pmmi i,  int mod
   pmmi end = rng.end();
   smm* smmp = rng.smmp();
   pmmi sac_end = smmp->mmp.end(); 
-  px* res = px_new(val); 
+  px* res = pure_new(val); 
   px* exception = 0;
   while (i != end  && i != sac_end){
     pmmi trg_i = i++;
     px* trg = get_elm_aux(smmp, trg_i, mode);
     px* fxy = pure_appxl(fun, &exception, 2, res, trg);
     if (exception) {
-      px_freenew(res);
+      pure_freenew(res);
       throw exception;
     }
-    px_new(fxy);
-    px_free(res);
+    pure_new(fxy);
+    pure_free(res);
     res = fxy;
   }
-  px_unref(res);
+  pure_unref(res);
   if (i!=end) {
     pure_freenew(res);
     bad_argument();    
@@ -272,21 +272,21 @@ static px* smm_foldr_rng(px* fun, px* val, const smm_range& rng, pmmi i, int mod
   pmmi beg = rng.beg();
   smm* smmp = rng.smmp();
   pmmi sac_beg = smmp->mmp.begin();  
-  px* res = px_new(val);
+  px* res = pure_new(val);
   px* exception = 0;
   while (i != beg && i != sac_beg) {
     pmmi trg_i = --i;
     px* trg = get_elm_aux(smmp, trg_i, mode);
     px* fxy = pure_appxl(fun, &exception, 2, trg, res);
     if (exception) {
-      px_freenew(res);
+      pure_freenew(res);
       throw exception;
     }
-    px_new(fxy);
-    px_free(res);
+    pure_new(fxy);
+    pure_free(res);
     res = fxy;
   }
-  px_unref(res);
+  pure_unref(res);
   if (i!=beg) {
     pure_freenew(res);
     bad_argument();    
@@ -1220,8 +1220,8 @@ px* smm_listmap(px* fun, px* tpl, int what)
     if (use_function) {
       pxi = pure_appxl(fun, &exception, 1, trg);
       if (exception) {
-        if (res) px_freenew(res);
-        if (pxi) px_freenew(pxi);
+        if (res) pure_freenew(res);
+        if (pxi) pure_freenew(pxi);
         pure_throw(exception);
       }
     }
@@ -1229,7 +1229,7 @@ px* smm_listmap(px* fun, px* tpl, int what)
     if (res==nl)
       res = y = last;
     else {
-      y->data.x[1] = px_new(last);
+      y->data.x[1] = pure_new(last);
       y = last;
     }
   }
@@ -1260,13 +1260,13 @@ px* smm_listcatmap(px* fun, px* tpl, int what)
     px* trg = get_elm_aux(smmp, i, what);
     px* pxi = pure_appxl(fun, &exception, 1, trg);
     if (exception) {
-      if (res) px_freenew(res);
-      if (pxi) px_freenew(pxi);
+      if (res) pure_freenew(res);
+      if (pxi) pure_freenew(pxi);
       pure_throw(exception);
     }
     if ( !pure_is_listv(pxi, &sz, &elms) ){
-      px_freenew(pxi);
-      if (res) px_freenew(res);
+      pure_freenew(pxi);
+      if (res) pure_freenew(res);
       bad_argument();      
     }
     for (int j = 0; j < sz; j++) {
@@ -1274,11 +1274,11 @@ px* smm_listcatmap(px* fun, px* tpl, int what)
       if (res==nl)
         res = y = last;    
       else {
-        y->data.x[1] = px_new(last);
+        y->data.x[1] = pure_new(last);
         y = last;
       }
     }
-    px_freenew(pxi);
+    pure_freenew(pxi);
     free(elms);
   }
   if (i!=e) {
@@ -1374,7 +1374,7 @@ void smm_do(px* fun, px* tpl)
   while (i != e) {
     px* trg = get_elm_aux(smmp, i++, mode);
     px* fx = pure_appxl(fun, &exception, 1, trg);
-    px_freenew(fx);
+    pure_freenew(fx);
     if (exception) pure_throw(exception);
   }
 }

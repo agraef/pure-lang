@@ -1,7 +1,7 @@
 /* stlmap.cpp -- C++ support for stlmap.pure
 
 --- DRAFT - FOR DISCUSSON PURPOSES ONLY ---
-    
+
 Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>.
 
 All rights reserved.
@@ -241,21 +241,21 @@ static px* sm_foldl_aux(px* fun, px* val, const sm_range rng, pmi i,  int mode)
   pmi end = rng.end();
   sm* smp = rng.smp();
   pmi sac_end = smp->mp.end(); 
-  px* res = px_new(val); 
+  px* res = pure_new(val); 
   px* exception = 0;
   while (i != end  && i != sac_end){
     pmi trg_i = i++;
     px* trg = get_elm_aux(smp, trg_i, mode);
     px* fxy = pure_appxl(fun, &exception, 2, res, trg);
     if (exception) {
-      px_freenew(res);
+      pure_freenew(res);
       throw exception;
     }
-    px_new(fxy);
-    px_free(res);
+    pure_new(fxy);
+    pure_free(res);
     res = fxy;
   }
-  px_unref(res);
+  pure_unref(res);
   if (i!=end) {
     pure_freenew(res);
     bad_argument();    
@@ -268,21 +268,21 @@ static px* sm_foldr_aux(px* fun, px* val, const sm_range& rng, pmi i, int mode)
   pmi beg = rng.beg();
   sm* smp = rng.smp();
   pmi sac_beg = smp->mp.begin();  
-  px* res = px_new(val);
+  px* res = pure_new(val);
   px* exception = 0;
   while (i != beg && i != sac_beg) {
     pmi trg_i = --i;
     px* trg = get_elm_aux(smp, trg_i, mode);
     px* fxy = pure_appxl(fun, &exception, 2, trg, res);
     if (exception) {
-      px_freenew(res);
+      pure_freenew(res);
       throw exception;
     }
-    px_new(fxy);
-    px_free(res);
+    pure_new(fxy);
+    pure_free(res);
     res = fxy;
   }
-  px_unref(res);
+  pure_unref(res);
   if (i!=beg) {
     pure_freenew(res);
     bad_argument();    
@@ -431,7 +431,6 @@ bool stlmap::get_cached_pmi(px* key, pmi& pos)
   // if (ret==true) {
   //   PR(--- trace cache hit,key);
   // }
-  PR2(get_cached_pmi,key,ret);
   return ret;
 }
 
@@ -921,8 +920,6 @@ px* sm_insert_elm(px* pxsmp, px* kv)
 {
   sm* smp; pmi pos;
   if (!get_smp(pxsmp,&smp)) bad_argument();
-  PR(sm_insert_elm_a,kv);
-  dump_smp(smp);
   int num_inserted = 0;
   try {
     if ( !insert_aux(smp, kv, pos, num_inserted) ) bad_argument();
@@ -930,8 +927,6 @@ px* sm_insert_elm(px* pxsmp, px* kv)
   catch (px* e) {
     pure_throw(e);
   }
-  PR(sm_insert_elm_b,kv);
-  dump_smp(smp);
   px* it = px_pointer(new sm_iter(pxsmp, pos));
   px *k, *v;
   if (smp->keys_only)
@@ -1206,8 +1201,8 @@ px* sm_listmap(px* fun, px* tpl, int what)
     if (use_function) {
       pxi = pure_appxl(fun, &exception, 1, trg);
       if (exception) {
-        if (res) px_freenew(res);
-        if (pxi) px_freenew(pxi);
+        if (res) pure_freenew(res);
+        if (pxi) pure_freenew(pxi);
         pure_throw(exception);
       }
     }
@@ -1215,7 +1210,7 @@ px* sm_listmap(px* fun, px* tpl, int what)
     if (res==nl)
       res = y = last;
     else {
-      y->data.x[1] = px_new(last);
+      y->data.x[1] = pure_new(last);
       y = last;
     }
   }
@@ -1246,13 +1241,13 @@ px* sm_listcatmap(px* fun, px* tpl, int what)
     px* trg = get_elm_aux(smp, i, what);
     px* pxi = pure_appxl(fun, &exception, 1, trg);
     if (exception) {
-      if (res) px_freenew(res);
-      if (pxi) px_freenew(pxi);
+      if (res) pure_freenew(res);
+      if (pxi) pure_freenew(pxi);
       pure_throw(exception);
     }
     if ( !pure_is_listv(pxi, &sz, &elms) ){
-      px_freenew(pxi);
-      if (res) px_freenew(res);
+      pure_freenew(pxi);
+      if (res) pure_freenew(res);
       bad_argument();      
     }
     for (int j = 0; j < sz; j++) {
@@ -1260,11 +1255,11 @@ px* sm_listcatmap(px* fun, px* tpl, int what)
       if (res==nl)
         res = y = last;    
       else {
-        y->data.x[1] = px_new(last);
+        y->data.x[1] = pure_new(last);
         y = last;
       }
     }
-    px_freenew(pxi);
+    pure_freenew(pxi);
     free(elms);
   }
   if (i!=e) {
@@ -1360,7 +1355,7 @@ void sm_do(px* fun, px* tpl)
   while (i != e) {
     px* trg = get_elm_aux(smp, i++, mode);
     px* fx = pure_appxl(fun, &exception, 1, trg);
-    px_freenew(fx);
+    pure_freenew(fx);
     if (exception) pure_throw(exception);
   }
 }

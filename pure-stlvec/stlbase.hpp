@@ -60,15 +60,6 @@ T& ILS<T>::operator()()
 
 typedef pure_expr px;
 
-/* px_new and friends - wrappers around pure_new and friends that check
-   for null px* */
-
-inline px* px_new(px* x){return x ? pure_new(x) : x;}
-inline void px_free(px* x){if (x) pure_free(x);}
-inline void px_freenew(px* x){if (x) pure_freenew(x);}
-// inline void px_ref(px* x){if (x) pure_ref(x);}
-inline void px_unref(px* x){if (x) pure_unref(x);}
-
 /* px_handle (pxh) - wrapper around pure_expr* to automate pure_expr ref
    counting. Please note that C++ will call a pxh's destructor when it goes
    out of scope. You can stop this from happening by calling the pxh's release

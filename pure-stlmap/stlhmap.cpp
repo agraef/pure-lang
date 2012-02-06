@@ -158,7 +158,7 @@ static px* sh_foldl_aux(px* fun, px* val, sh* shp, int is_foldl1)
   int mode =  shp->keys_only ? stl_sh_key : stl_sh_elm;
   pxhmapi e = shp->hm.end();
   pxhmapi i = shp->hm.begin();
-  px* res = px_new(val); 
+  px* res = pure_new(val); 
   px* exception = 0;
   if (is_foldl1) i++;
   while (i != e) {
@@ -166,14 +166,14 @@ static px* sh_foldl_aux(px* fun, px* val, sh* shp, int is_foldl1)
     px* trg = get_elm_aux(shp, trg_i, mode);
     px* fxy = pure_appxl(fun, &exception, 2, res, trg);
     if (exception) {
-      px_freenew(res);
+      pure_freenew(res);
       pure_throw(exception);
     }
-    px_new(fxy);
-    px_free(res);
+    pure_new(fxy);
+    pure_free(res);
     res = fxy;
   }
-  px_unref(res);
+  pure_unref(res);
   return res;
 }
 
@@ -468,8 +468,8 @@ px* sh_listmap(px* fun, px* pxshp, int what)
     if (use_function) {
       pxi = pure_appxl(fun, &exception, 1, trg);
       if (exception) {
-        if (res) px_freenew(res);
-        if (pxi) px_freenew(pxi);
+        if (res) pure_freenew(res);
+        if (pxi) pure_freenew(pxi);
         pure_throw(exception);
       }
     }
@@ -477,7 +477,7 @@ px* sh_listmap(px* fun, px* pxshp, int what)
     if (res==nl)
       res = y = last;
     else {
-      y->data.x[1] = px_new(last);
+      y->data.x[1] = pure_new(last);
       y = last;
     }
   }
@@ -503,13 +503,13 @@ px* sh_listcatmap(px* fun, px* pxshp, int what)
     px* trg = get_elm_aux(shp, i, what);
     px* pxi = pure_appxl(fun, &exception, 1, trg);
     if (exception) {
-      if (res) px_freenew(res);
-      if (pxi) px_freenew(pxi);
+      if (res) pure_freenew(res);
+      if (pxi) pure_freenew(pxi);
       pure_throw(exception);
     }
     if ( !pure_is_listv(pxi, &sz, &elms) ){
-      px_freenew(pxi);
-      if (res) px_freenew(res);
+      pure_freenew(pxi);
+      if (res) pure_freenew(res);
       bad_argument();      
     }
     for (int j = 0; j < sz; j++) {
@@ -517,11 +517,11 @@ px* sh_listcatmap(px* fun, px* pxshp, int what)
       if (res==nl)
         res = y = last;    
       else {
-        y->data.x[1] = px_new(last);
+        y->data.x[1] = pure_new(last);
         y = last;
       }
     }
-    px_freenew(pxi);
+    pure_freenew(pxi);
     free(elms);
   }
   return res;  
@@ -559,7 +559,7 @@ void sh_do(px* fun, px* pxshp)
     px* fx = pure_appxl(fun, &exception, 1, trg);
     if (exception)
        pure_throw(exception);
-    px_freenew(fx);
+    pure_freenew(fx);
   }
 }
 
