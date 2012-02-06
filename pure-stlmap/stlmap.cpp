@@ -32,24 +32,10 @@ static int stlmap_tag()
   return t;
 }
 
-static int stlset_tag() 
-{
-  static ILS<int> _t = 0; int &t = _t();
-  if (!t) t = pure_pointer_tag("stlset*");
-  return t;
-}
-
 static int stlmap_iter_tag() 
 {
   static ILS<int> _t = 0; int &t = _t();
   if (!t) t = pure_pointer_tag("stlmap_iter*");
-  return t;
-}
-
-static int stlset_iter_tag() 
-{
-  static ILS<int> _t = 0; int &t = _t();
-  if (!t) t = pure_pointer_tag("stlset_iter*");
   return t;
 }
 
@@ -135,8 +121,7 @@ static px* px_pointer(sm* smp)
 {
  static ILS<px*> _sym = NULL; px*& sym = _sym();
   if (!sym) sym = pure_new(pure_symbol(pure_sym("stl::sm_delete")));
-  int tag = smp->keys_only ? stlset_tag() : stlmap_tag();
-  px* ptr = pure_tag( tag, pure_pointer(smp));
+  px* ptr = pure_tag( stlmap_tag(), pure_pointer(smp));
   return pure_sentry(sym,ptr);
 }
 
@@ -144,8 +129,7 @@ static px* px_pointer(sm_iter* smip)
 {
   static ILS<px*> _sym = NULL; px*& sym = _sym();
   if (!sym) sym = pure_new(pure_symbol(pure_sym("stl::sm_iter_delete")));
-  int tag = smip->smp()->keys_only ? stlset_iter_tag() : stlmap_iter_tag();
-  px* ptr = pure_tag( tag, pure_pointer(smip));
+  px* ptr = pure_tag(stlmap_iter_tag(), pure_pointer(smip));
   return pure_sentry(sym,ptr);
 }
 
@@ -154,8 +138,7 @@ static bool get_smp(px* pxsmp, sm** smpp)
   void* ptr;
   bool ok = false;
   if ( pure_is_pointer(pxsmp, &ptr) ) {
-    int tag = pure_get_tag(pxsmp);
-    ok = tag == stlmap_tag() || tag == stlset_tag();
+    ok = pure_get_tag(pxsmp) == stlmap_tag();
   }
   *smpp = ok ? (sm*)ptr : NULL; 
   return ok;
@@ -169,7 +152,7 @@ static bool get_smip(px* pxsmip, int& tag, sm_iter** itr)
   if (ok) { 
     smip = (sm_iter*)ptr;
     tag = pure_get_tag(pxsmip);
-    if ( tag != stlmap_iter_tag() && tag != stlset_iter_tag() ) ok = false;
+    if ( tag != stlmap_iter_tag() ) ok = false;
     if (ok) *itr = smip;
   }
   return ok;
@@ -344,7 +327,7 @@ stlmap::stlmap(px* cmp, px* val_cmp, px* val_eql, bool keyonly, px *d):
 
 stlmap::~stlmap()
 {
-  //cerr << "~stlmap or stlset: " << this << endl;
+  //cerr << "~stlmap: " << this << endl;
   assert(smis.size()==0);
 }
 
@@ -654,8 +637,7 @@ sm* sm_range::smp() const
 
 px* sm_type_tags()
 {
-  return pure_tuplel(4, pure_int(stlmap_tag()), pure_int(stlmap_iter_tag()), 
-                        pure_int(stlset_tag()), pure_int(stlset_iter_tag()));
+  return pure_tuplel(2, pure_int(stlmap_tag()), pure_int(stlmap_iter_tag())); 
 }
 
 px* sm_make_empty(px* comp, px* v_comp, px* v_eql, px* dflt, int keys_only)
@@ -854,10 +836,17 @@ px* sm_equal_iter(px* pxsmip1, px* pxsmip2)
   sm_iter* smip1;
   int tag1;
   if ( !get_smip(pxsmip1,tag1,&smip1) || !smip1->is_valid ) bad_argument();
+  sm* smp1 = smip1->smp();
   sm_iter* smip2;
   int tag2;
   if ( !get_smip(pxsmip2,tag2,&smip2) || !smip2->is_valid ) bad_argument();
-  if (tag1 != tag2) return 0; // fail
+  sm* smp2 = smip2->smp();
+  bool compatible = true;
+  if (smp1->keys_only) 
+    compatible = smp2->keys_only;
+  else
+    compatible = !smp2->keys_only;
+  if (!compatible) bad_argument();
   return pure_int( smip1->iter == smip2->iter ); 
 }
 
@@ -866,9 +855,10 @@ px* sm_get_at(px* pxsmip, int what)
   sm_iter* smip;
   int tag;
   if ( !get_smip(pxsmip,tag,&smip) || !smip->is_valid ) bad_argument();
-  if (smip->iter == smip->smp()->mp.end()) index_error();
-  if ( what==stl_sm_elm && tag==stlset_iter_tag() ) what = stl_sm_key; 
-  return get_elm_aux(smip->smp(), smip->iter, what);
+  sm* smp = smip->smp();
+  if (smip->iter == smp->mp.end()) index_error();
+  if ( what==stl_sm_elm && smp->keys_only ) what = stl_sm_key; 
+  return get_elm_aux(smp, smip->iter, what);
 }
 
 px* sm_get_elm_at_inc(px* pxsmip)
@@ -876,10 +866,11 @@ px* sm_get_elm_at_inc(px* pxsmip)
   sm_iter* smip; 
   int tag;
   if ( !get_smip(pxsmip,tag,&smip) || !smip->is_valid ) bad_argument();
+  sm* smp = smip->smp();
   pmi& i = smip->iter;
-  if ( i == smip->smp()->mp.end() ) index_error();
-  int what = tag==stlset_iter_tag() ? stl_sm_key : stl_sm_elm; 
-  px* ret = get_elm_aux(smip->smp(), i, what);
+  if ( i == smp->mp.end() ) index_error();
+  int what = smp->keys_only ? stl_sm_key : stl_sm_elm; 
+  px* ret = get_elm_aux(smp, i, what);
   i++;
   return ret;
 }

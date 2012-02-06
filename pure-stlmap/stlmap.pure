@@ -82,19 +82,15 @@ namespace ;
 public emptystlmap mkstlmap emptystlset mkstlset member members erase
   update_elm update_elm_with insert_elm; 
 
-let stlmap_t, stlmap_iter_t, stlset_t, stlset_iter_t = stl::sm_type_tags;
+let stlmap_t, stlmap_iter_t = stl::sm_type_tags;
 
-type stlmap x = check_ptrtag stlmap_t x;     //c++ map
-type stlset x = check_ptrtag stlset_t x;     //c++ set 
-type stlacon x::stlmap | stlacon x::stlset;  //c++ sorted assoc container
+type stlmap x::pointer = check_ptrtag stlmap_t x;     //c++ map
+type stlset x::pointer = check_ptrtag stlmap_t x && stl::sm_is_set x;
 
-type stlmap_iter x = check_ptrtag stlmap_iter_t x;
-type stlset_iter x = check_ptrtag stlset_iter_t x;
-type stlacon_iter x::stlmap_iter | stlacon_iter x::stlset_iter;
+type stlmap_iter x::pointer = check_ptrtag stlmap_iter_t x;
 
-type stlacon_rng x::stlacon | stlacon_rng (x::stlacon, _);
-type stlacon_rng (x::stlmap_iter, y::stlmap_iter);
-type stlacon_rng (x::stlset_iter, y::stlset_iter);
+type stlmap_rng x::stlmap | stlmap_rng (x::stlmap, _);
+type stlmap_rng (x::stlmap_iter, y::stlmap_iter);
 
 namespace stl;
 
@@ -125,48 +121,48 @@ const sm_symmetric_difference = 5;
 const sm_at_beginning = 1;
 const sm_at_pastend = 2; 
 
-compatible_ranges rng1::stlacon_rng rng2 = 
+compatible_ranges rng1::stlmap_rng rng2 = 
   if sm_is_set rng1 then sm_is_set rng2 else ~sm_is_set rng2;
 
 /*** Iterators **********************************************************/
 
-iterator pos::stlacon_iter = sm_copy_iter pos;
+iterator pos::stlmap_iter = sm_copy_iter pos;
 
-begin sm::stlacon = sm_begin sm;
+begin sm::stlmap = sm_begin sm;
 
-pastend sm::stlacon = sm_end sm;
+pastend sm::stlmap = sm_end sm;
 
-find sm::stlacon key = sm_find sm key sm_iter;
+find sm::stlmap key = sm_find sm key sm_iter;
 
-l_bound sm::stlacon key = sm_bounds sm key sm_lower_bound;
+l_bound sm::stlmap key = sm_bounds sm key sm_lower_bound;
 
-u_bound sm::stlacon key = sm_bounds sm key sm_upper_bound;
+u_bound sm::stlmap key = sm_bounds sm key sm_upper_bound;
 
-lu_bounds sm::stlacon key = sm_bounds sm key sm_equal_range;
+lu_bounds sm::stlmap key = sm_bounds sm key sm_equal_range;
 
-beginp pos::stlacon_iter = sm_iter_is_at pos sm_at_beginning;
+beginp pos::stlmap_iter = sm_iter_is_at pos sm_at_beginning;
 
-endp pos::stlacon_iter = sm_iter_is_at pos sm_at_pastend;
+endp pos::stlmap_iter = sm_iter_is_at pos sm_at_pastend;
 
-get_info pos::stlacon_iter = sm_iter_info pos;
+get_info pos::stlmap_iter = sm_iter_info pos;
 
-::get pos::stlacon_iter = sm_get_at pos sm_elm;   // like *p
+::get pos::stlmap_iter = sm_get_at pos sm_elm;   // like *p
 
-get_key pos::stlacon_iter = sm_get_at pos sm_key; // p->first
+get_key pos::stlmap_iter = sm_get_at pos sm_key; // p->first
 
-get_val pos::stlacon_iter = sm_get_at pos sm_val; // p->second
+get_val pos::stlmap_iter = sm_get_at pos sm_val; // p->second
 
 ::put pos::stlmap_iter val = sm_put_at pos val;
 
-inc pos::stlacon_iter = sm_move_iter pos 1;
+inc pos::stlmap_iter = sm_move_iter pos 1;
 
-dec pos::stlacon_iter = sm_move_iter pos (-1);
+dec pos::stlmap_iter = sm_move_iter pos (-1);
 
-move pos::stlacon_iter n::int = sm_move_iter pos n;
+move pos::stlmap_iter n::int = sm_move_iter pos n;
 
 /*** Iterator Operators ****************************************************/
 
-(::==) pos1::stlacon_iter pos2::stlacon_iter = sm_equal_iter pos1 pos2;
+(::==) pos1::stlmap_iter pos2::stlmap_iter = sm_equal_iter pos1 pos2;
 
 (::^) sm::stlmap key = sm_find sm key sm_iter_dflt;  // inserts like [k]
 
@@ -189,7 +185,7 @@ end if listp xs || matrixp xs;
   sm_insert_elms_stlvec sm svp;
 end;
 
-::stlmap rng::stlacon_rng = sm when
+::stlmap rng::stlmap_rng = sm when
   _,params = sm_container_info rng;
   sm = mkstlmap params;
   sm_insert_elms_stlmap sm rng;
@@ -209,7 +205,7 @@ end if listp xs || matrixp xs;
   sm_insert_elms_stlvec ss svp;
 end;
 
-::stlset rng::stlacon_rng = ss when
+::stlset rng::stlmap_rng = ss when
   _,kc,_ = sm_container_info rng;
   ss = mkstlset kc;
   sm_insert_elms_stlmap ss rng;
@@ -217,21 +213,21 @@ end if sm_is_set rng;
 
 /*** Info ***************************************************************/
 
-container_info rng::stlacon_rng = sm_container_info rng;
+container_info rng::stlmap_rng = sm_container_info rng;
 
-(::#) sm::stlacon = sm_size sm;
+(::#) sm::stlmap = sm_size sm;
 
-empty sm::stlacon = sm_empty sm;
+empty sm::stlmap = sm_empty sm;
 
-count sm::stlacon key = sm_count sm key;
+count sm::stlmap key = sm_count sm key;
 
-range_info rng::stlacon_rng = sm_range_info rng;
+range_info rng::stlmap_rng = sm_range_info rng;
 
-distance rng::stlacon_rng = sm_size rng;
+distance rng::stlmap_rng = sm_size rng;
 
 /*** Range Access ****************************************************/
 
-::stream rng::stlacon_rng = gen first with 
+::stream rng::stlmap_rng = gen first with 
   gen i = if sm_equal_iter i last then [] 
           else sm_get_elm_at_inc i : (gen i &);  
 end if valid when 
@@ -239,15 +235,15 @@ end if valid when
   first = sm_copy_iter b;
 end;
 
-::members rng::stlacon_rng = sm_listmap 0 rng sm_elm; 
+::members rng::stlmap_rng = sm_listmap 0 rng sm_elm; 
 
-::keys rng::stlacon_rng = sm_listmap 0 rng sm_key;// if ~sm_is_set rng;
+::keys rng::stlmap_rng = sm_listmap 0 rng sm_key;// if ~sm_is_set rng;
 
-::vals rng::stlacon_rng = sm_listmap 0 rng sm_val;// if ~sm_is_set rng;
+::vals rng::stlmap_rng = sm_listmap 0 rng sm_val;// if ~sm_is_set rng;
 
-vector rng::stlacon_rng = sm_make_vector rng;
+vector rng::stlmap_rng = sm_make_vector rng;
 
-::stlvec rng::stlacon_rng = sv if ok when
+::stlvec rng::stlmap_rng = sv if ok when
   sv = emptystlvec;
   ok = case sv of  
     STLVEC v = sm_fill_stlvec rng v $$ 1;
@@ -257,20 +253,20 @@ end;
 
 /*** Modifiers *********************************************************/
 
-::insert sm::stlacon xs::list = sm_insert_elms_xs sm xs;
+::insert sm::stlmap xs::list = sm_insert_elms_xs sm xs;
 
-::insert sm::stlacon xs::matrix = sm_insert_elms_xs sm xs;
+::insert sm::stlmap xs::matrix = sm_insert_elms_xs sm xs;
 
-::insert sm::stlacon rng::stlacon_rng = sm_insert_elms_stlmap sm rng;
+::insert sm::stlmap rng::stlmap_rng = sm_insert_elms_stlmap sm rng;
 
-::insert sm::stlacon (STLVEC svp) = sm_insert_elms_stlvec sm svp;
+::insert sm::stlmap (STLVEC svp) = sm_insert_elms_stlvec sm svp;
 
-::insert sm::stlmap (elm@(k=>v), pos::stlacon_iter) = 
+::insert sm::stlmap (elm@(k=>v), pos::stlmap_iter) = 
   sm_insert_hinted sm pos elm;
 
 ::insert sm::stlmap elm@(k=>v) = sm_insert_elm sm elm;
 
-::insert sm::stlset (key, pos::stlacon_iter) = sm_insert_hinted sm pos key;
+::insert sm::stlset (key, pos::stlmap_iter) = sm_insert_hinted sm pos key;
 
 ::insert sm::stlset key = sm_insert_elm sm key;
 
@@ -284,15 +280,15 @@ end;
 
 ::update_elm_with f sm::stlmap (k=>x) = sm_update_with sm k (f x);
 
-::erase sm::stlacon = sm_clear sm;
+::erase sm::stlmap = sm_clear sm;
 
-::erase (sm::stlacon,i::stlacon_iter, j::stlacon_iter) = sm_erase sm (i,j);
+::erase (sm::stlmap,i::stlmap_iter, j::stlmap_iter) = sm_erase sm (i,j);
 
-::erase (sm::stlacon,pos::stlacon_iter) = sm_erase sm pos;
+::erase (sm::stlmap,pos::stlmap_iter) = sm_erase sm pos;
 
-::erase (sm::stlacon,key1,key2) = sm_erase sm (sm,key1,key2);
+::erase (sm::stlmap,key1,key2) = sm_erase sm (sm,key1,key2);
 
-::erase (sm::stlacon,key) = sm_erase sm (sm,key);
+::erase (sm::stlmap,key) = sm_erase sm (sm,key);
 
 swap sm1::stlmap sm2::stlmap = sm_swap sm1 sm2;
 
@@ -300,76 +296,76 @@ swap ss1::stlset ss2::stlset = sm_swap ss1 ss2;
 
 /*** Equality and Lexicographical Comparison ***************************/
 
-equal_elms rng1::stlacon_rng rng2::stlacon_rng = sm_equal rng1 rng2
+equal_elms rng1::stlmap_rng rng2::stlmap_rng = sm_equal rng1 rng2
   if compatible_ranges rng1 rng2;
 
-(::==) sac1::stlacon sac2::stlacon = sm_equal sac1 sac2
+(::==) sac1::stlmap sac2::stlmap = sm_equal sac1 sac2
   if compatible_ranges sac1 sac2;
 
-(::~=) sac1::stlacon sac2::stlacon = ~sm_equal sac1 sac2
+(::~=) sac1::stlmap sac2::stlmap = ~sm_equal sac1 sac2
   if compatible_ranges sac1 sac2;
 
-(::<) rng1::stlacon_rng rng2::stlacon_rng = sm_less rng1 rng2
+(::<) rng1::stlmap_rng rng2::stlmap_rng = sm_less rng1 rng2
   if compatible_ranges rng1 rng2;
 
-(::<=) rng1::stlacon_rng rng2::stlacon_rng = ~sm_less rng2 rng1
+(::<=) rng1::stlmap_rng rng2::stlmap_rng = ~sm_less rng2 rng1
   if compatible_ranges rng1 rng2;
 
-(::>) rng1::stlacon_rng rng2::stlacon_rng = sm_less rng2 rng1
+(::>) rng1::stlmap_rng rng2::stlmap_rng = sm_less rng2 rng1
   if compatible_ranges rng1 rng2;
 
-(::>=) rng1::stlacon_rng rng2::stlacon_rng = ~sm_less rng1 rng2
+(::>=) rng1::stlmap_rng rng2::stlmap_rng = ~sm_less rng1 rng2
   if compatible_ranges rng1 rng2;
 
 /** STL Set Algorithms ***************************************************/
 
-add rng1::stlacon_rng rng2::stlacon_rng = 
+add rng1::stlmap_rng rng2::stlmap_rng = 
   sm_setop sm_merge rng1 rng2 if compatible_ranges rng1 rng2;
 
-union rng1::stlacon_rng rng2::stlacon_rng = 
+union rng1::stlmap_rng rng2::stlmap_rng = 
   sm_setop sm_union rng1 rng2 if compatible_ranges rng1 rng2;
 
-difference rng1::stlacon_rng rng2::stlacon_rng = 
+difference rng1::stlmap_rng rng2::stlmap_rng = 
   sm_setop sm_difference rng1 rng2 if compatible_ranges rng1 rng2;
 
-intersection rng1::stlacon_rng rng2::stlacon_rng = 
+intersection rng1::stlmap_rng rng2::stlmap_rng = 
   sm_setop sm_intersection rng1 rng2 if compatible_ranges rng1 rng2;
 
-symmetric_difference rng1::stlacon_rng rng2::stlacon_rng = 
+symmetric_difference rng1::stlmap_rng rng2::stlmap_rng = 
   sm_setop sm_symmetric_difference rng1 rng2 if compatible_ranges rng1 rng2;
 
-subset rng1::stlacon_rng rng2::stlacon_rng =
+subset rng1::stlmap_rng rng2::stlmap_rng =
   sm_includes rng1 rng2 if compatible_ranges rng1 rng2;
 
 /*** Key Oriented Interface Functions *********************************/
 
-(::!) sm::stlacon key = sm_find sm key sm_val;
+(::!) sm::stlmap key = sm_find sm key sm_val;
 
-::get (sm::stlacon,key) = sm_find sm key sm_elm; 
+::get (sm::stlmap,key) = sm_find sm key sm_elm; 
 
-::member sm::stlacon key = sm_member sm key;
+::member sm::stlmap key = sm_member sm key;
 
-bounding_keys rng::stlacon_rng = sm_bounding_keys rng;
+bounding_keys rng::stlmap_rng = sm_bounding_keys rng;
 
-next_key sm::stlacon key = sm_next_key sm key;
+next_key sm::stlmap key = sm_next_key sm key;
 
-prev_key sm::stlacon key = sm_prev_key sm key;
+prev_key sm::stlmap key = sm_prev_key sm key;
 
 /*** Mapping and Folding *************************************************/
 
-::map f rng::stlacon_rng = sm_listmap f rng sm_elm;
+::map f rng::stlmap_rng = sm_listmap f rng sm_elm;
 
-::foldl f x rng::stlacon_rng = sm_foldl f x rng;
+::foldl f x rng::stlmap_rng = sm_foldl f x rng;
 
-::foldl1 f rng::stlacon_rng = sm_foldl1 f rng;
+::foldl1 f rng::stlmap_rng = sm_foldl1 f rng;
 
-::foldr f x rng::stlacon_rng = sm_foldr f x rng;
+::foldr f x rng::stlmap_rng = sm_foldr f x rng;
 
-::foldr1 f rng::stlacon_rng = sm_foldr1 f rng;
+::foldr1 f rng::stlmap_rng = sm_foldr1 f rng;
 
-::do f rng::stlacon_rng = sm_do f rng; 
+::do f rng::stlmap_rng = sm_do f rng; 
 
-::filter p rng::stlacon_rng = sm_foldr f [] rng with
+::filter p rng::stlmap_rng = sm_foldr f [] rng with
   f x xs = res when
     res = case p x of
       1 = x:xs;
@@ -379,15 +375,15 @@ prev_key sm::stlacon key = sm_prev_key sm key;
   end;
 end;
 
-::listmap f rng::stlacon_rng = sm_listmap f rng sm_elm;
+::listmap f rng::stlmap_rng = sm_listmap f rng sm_elm;
 
-::catmap f rng::stlacon_rng = sm_listcatmap f rng sm_elm;
+::catmap f rng::stlmap_rng = sm_listcatmap f rng sm_elm;
 
-::rowmap f rng::stlacon_rng = rowcat (sm_listmap f rng sm_elm);
+::rowmap f rng::stlmap_rng = rowcat (sm_listmap f rng sm_elm);
 
-::rowcatmap f rng::stlacon_rng = rowcat (sm_listmap f rng sm_elm);
+::rowcatmap f rng::stlmap_rng = rowcat (sm_listmap f rng sm_elm);
 
-::colmap f rng::stlacon_rng = colcat (sm_listmap f rng sm_elm);
+::colmap f rng::stlmap_rng = colcat (sm_listmap f rng sm_elm);
 
-::colcatmap f rng::stlacon_rng = colcat (sm_listmap f rng sm_elm);
+::colcatmap f rng::stlmap_rng = colcat (sm_listmap f rng sm_elm);
 

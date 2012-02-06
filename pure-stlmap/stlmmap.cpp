@@ -32,24 +32,10 @@ static int stlmmap_tag()
   return t;
 }
 
-static int stlmset_tag() 
-{
-  static ILS<int> _t = 0; int &t = _t();
-  if (!t) t = pure_pointer_tag("stlmset*");
-  return t;
-}
-
 static int stlmmap_iter_tag() 
 {
   static ILS<int> _t = 0; int &t = _t();
   if (!t) t = pure_pointer_tag("stlmmap_iter*");
-  return t;
-}
-
-static int stlmset_iter_tag() 
-{
-  static ILS<int> _t = 0; int &t = _t();
-  if (!t) t = pure_pointer_tag("stlmset_iter*");
   return t;
 }
 
@@ -122,12 +108,7 @@ static px* px_pointer(smm* smmp)
 {
   static ILS<px*> _sym = NULL; px*& sym = _sym();
   if (!sym) sym = pure_new(pure_symbol(pure_sym("stl::smm_delete")));
-  int tag = smmp->keys_only ? stlmset_tag() : stlmmap_tag();
-  px* ptr = pure_tag( tag, pure_pointer(smmp));
-#ifdef STL_DEBUG
-  if (stl_smm_trace_enabled())
-    cerr << "TRACE SM:    new smm*: " << smmp << endl;
-#endif
+  px* ptr = pure_tag(stlmmap_tag(), pure_pointer(smmp));
   return pure_sentry(sym,ptr);
 }
 
@@ -135,12 +116,7 @@ static px* px_pointer(smm_iter* smmip)
 {
   static ILS<px*> _sym = NULL; px*& sym = _sym();
   if (!sym) sym = pure_new(pure_symbol(pure_sym("stl::smm_iter_delete")));
-  int tag = smmip->smmp()->keys_only ? stlmset_iter_tag() : stlmmap_iter_tag();
-  px* ptr = pure_tag( tag, pure_pointer(smmip));
-#ifdef STL_DEBUG
-  if (stl_smm_trace_enabled())
-    cerr << "TRACE SMI:    new smi*: " << smmip << endl;
-#endif
+  px* ptr = pure_tag(stlmmap_iter_tag(), pure_pointer(smmip));
   return pure_sentry(sym,ptr);
 }
 
@@ -149,8 +125,7 @@ static bool get_smmp(px* pxsmmp, smm** smmpp)
   void* ptr;
   bool ok = false;
   if ( pure_is_pointer(pxsmmp, &ptr) ) {
-    int tag = pure_get_tag(pxsmmp);
-    ok = tag == stlmmap_tag() || tag == stlmset_tag();
+    ok = pure_get_tag(pxsmmp) == stlmmap_tag();
   }
   *smmpp = ok ? (smm*)ptr : NULL; 
   return ok;
@@ -164,7 +139,7 @@ static bool get_smmip(px* pxsmmip, int& tag, smm_iter** itr)
   if (ok) { 
     smmip = (smm_iter*)ptr;
     tag = pure_get_tag(pxsmmip);
-    if ( tag != stlmmap_iter_tag() && tag != stlmset_iter_tag() ) ok = false;
+    ok = tag ==stlmmap_iter_tag();
     if (ok) *itr = smmip;
   }
   return ok;
@@ -626,8 +601,7 @@ smm* smm_range::smmp() const
 
 px* smm_type_tags()
 {
-  return pure_tuplel(4, pure_int(stlmmap_tag()), pure_int(stlmmap_iter_tag()), 
-                        pure_int(stlmset_tag()), pure_int(stlmset_iter_tag()));
+  return pure_tuplel(2, pure_int(stlmmap_tag()), pure_int(stlmmap_iter_tag())); 
 }
 
 px* smm_make_empty(px* comp, px* v_comp, px* v_eql, px* dflt, int keys_only)
@@ -636,18 +610,10 @@ px* smm_make_empty(px* comp, px* v_comp, px* v_eql, px* dflt, int keys_only)
 }
 
 void smm_delete(smm* smmp){
-#ifdef STL_DEBUG
-  if (stl_smm_trace_enabled())
-    cerr << "TRACE SM: delete smm*: " << smmp << endl;
-#endif
   delete(smmp);
 }
 
 void smm_iter_delete(smm_iter* smmip){
-#ifdef STL_DEBUG
-  if (stl_smm_trace_enabled())
-    cerr << "TRACE SM: delete smi*: " << smmip << endl;
-#endif
   delete(smmip);
 }
 
@@ -833,10 +799,17 @@ px* smm_equal_iter(px* pxsmmip1, px* pxsmmip2)
   smm_iter* smmip1;
   int tag1;
   if ( !get_smmip(pxsmmip1,tag1,&smmip1) || !smmip1->is_valid ) bad_argument();
+  smm* smmp1 = smmip1->smmp();
   smm_iter* smmip2;
   int tag2;
   if ( !get_smmip(pxsmmip2,tag2,&smmip2) || !smmip2->is_valid ) bad_argument();
-  if (tag1 != tag2) return 0; // fail
+  smm* smmp2 = smmip2->smmp();
+  bool compatible = true;
+  if (smmp1->keys_only) 
+    compatible = smmp2->keys_only;
+  else
+    compatible = !smmp2->keys_only;
+  if (!compatible) bad_argument();
   return pure_int( smmip1->iter == smmip2->iter ); 
 }
 
@@ -845,9 +818,10 @@ px* smm_get_at(px* pxsmmip, int what)
   smm_iter* smmip;
   int tag;
   if ( !get_smmip(pxsmmip,tag,&smmip) || !smmip->is_valid ) bad_argument();
-  if (smmip->iter == smmip->smmp()->mmp.end()) index_error();
-  if ( what==stl_smm_elm && tag==stlmset_iter_tag() ) what = stl_smm_key; 
-  return get_elm_aux(smmip->smmp(), smmip->iter, what);
+  smm* smmp = smmip->smmp();
+  if (smmip->iter == smmp->mmp.end()) index_error();
+  if ( what==smmp->keys_only ) what = stl_smm_key; 
+  return get_elm_aux(smmp, smmip->iter, what);
 }
 
 px* smm_get_elm_at_inc(px* pxsmmip)
@@ -855,10 +829,11 @@ px* smm_get_elm_at_inc(px* pxsmmip)
   smm_iter* smmip; 
   int tag;
   if ( !get_smmip(pxsmmip,tag,&smmip) || !smmip->is_valid ) bad_argument();
+  smm* smmp = smmip->smmp();
   pmmi& i = smmip->iter;
-  if ( i == smmip->smmp()->mmp.end() ) index_error();
-  int what = tag==stlmset_iter_tag() ? stl_smm_key : stl_smm_elm; 
-  px* ret = get_elm_aux(smmip->smmp(), i, what);
+  if ( i == smmp->mmp.end() ) index_error();
+  int what = smmp->keys_only ? stl_smm_key : stl_smm_elm; 
+  px* ret = get_elm_aux(smmp, i, what);
   i++;
   return ret;
 }
@@ -868,9 +843,9 @@ px* smm_put_at(px* pxsmmip, px* val)
   smm_iter* smmip;
   int tag;
   if ( !get_smmip(pxsmmip,tag,&smmip) || !smmip->is_valid ) bad_argument();
-  if ( tag != stlmmap_iter_tag() ) bad_argument();
   pmmi itr = smmip->iter;
   smm* smmp = smmip->smmp();
+  if (smmp->keys_only) bad_argument();
   if (itr == smmp->mmp.end()) index_error();
   smmip->iter->second = val;
   return val;
