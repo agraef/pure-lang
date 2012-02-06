@@ -31,7 +31,7 @@ px*  sva_accumulate(px* tpl, px* val, px* bin_op)
     pxh resh = accumulate(rng1.beg(), rng1.end(), valh, fun);
     px* res = resh.pxp();
     resh.release();
-    px_unref(res);
+    pure_unref(res);
     return res;
   } catch (px* e) {
     pure_throw(e);
@@ -55,7 +55,7 @@ px*  sva_inner_product(px* tpl1,
                              valh, fun1, fun2);
     px* res = resh.pxp();
     resh.release();
-    px_unref(res);
+    pure_unref(res);
     return res;
   } catch (px* e) {
     pure_throw(e);

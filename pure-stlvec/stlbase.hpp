@@ -60,32 +60,22 @@ T& ILS<T>::operator()()
 
 typedef pure_expr px;
 
-/* px_new and friends - wrappers around pure_new and friends to
-   allow observation of pure_expr ref count changes if STL_DEBUG
-   is defined. 
-*/
+/* px_new and friends - wrappers around pure_new and friends that check
+   for null px* */
 
-#ifdef STL_DEBUG
-px* px_new(px* x);
-void px_free(px* x);
-void px_freenew(px* x);
-void px_ref(px* x);
-void px_unref(px* x);
-#else 
 inline px* px_new(px* x){return x ? pure_new(x) : x;}
 inline void px_free(px* x){if (x) pure_free(x);}
 inline void px_freenew(px* x){if (x) pure_freenew(x);}
-inline void px_ref(px* x){if (x) pure_ref(x);}
+// inline void px_ref(px* x){if (x) pure_ref(x);}
 inline void px_unref(px* x){if (x) pure_unref(x);}
-#endif
 
 /* px_handle (pxh) - wrapper around pure_expr* to automate pure_expr ref
    counting. Please note that C++ will call a pxh's destructor when it goes
    out of scope. You can stop this from happening by calling the pxh's release
    function. Also, there are no virtual functions (to avoid vf table). This
    keeps sizeof(pxh) = sizeof(px*).
-
 */
+
 class px_handle {
 public:
   // default constructor
@@ -151,9 +141,9 @@ px* pxhpair_to_pxlhs(const pxhpair& pair);
 
 class pxh_fun {
 public:
-  pxh_fun(px* fun) : fun_(px_new(fun)){}
-  pxh_fun(const pxh_fun& pxh_f) : fun_(px_new(pxh_f.fun_)) {}
-  virtual ~pxh_fun(){px_free(fun_);}
+  pxh_fun(px* fun) : fun_(pure_new(fun)){}
+  pxh_fun(const pxh_fun& pxh_f) : fun_(pure_new(pxh_f.fun_)) {}
+  virtual ~pxh_fun(){pure_free(fun_);}
   virtual pxh_fun& operator=(const pxh_fun& rhs);
   px* pxfun() {return fun_;}
 protected:
@@ -275,24 +265,11 @@ px* pxh_to_pxp(pxh h); // used by std::transform
 
 /*** C functions used by Pure scripts *************************************/
 
-/* stl_refc and friends - functions to return a pure_expr's refc and to
-   enable or disable pure_expr ref count tracing or the tracing of stlvec's
-   (sv's). These functions can be called whether or not STl_DEBUG is
-   defined. If it is not, however, the tracing facility does nothing.
- */
-
-extern "C" {
-  int  stl_refc(px *x);
-  void stl_set_px_trace(bool enable);
-  bool stl_px_trace_enabled();
-}
-
-/* Global symbols used by stlmap. Basic stlvec creation and deletion --
-   available to stlmap modules. */
-
 typedef std::vector<pxh> sv;
 
 extern "C" {
+  int  stl_refc(px *x);
+
   px*  stlbegin_sym();
   px*  stlend_sym();
 

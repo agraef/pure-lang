@@ -203,10 +203,6 @@ sv* sv_make_from_xs(px* xs_or_vec)
   }
   else
     bad_argument();
-#ifdef STL_DEBUG
-  if (stl_sv_trace_enabled())
-    cerr << "TRACE SV:    new sv*: " << ret << endl;
-#endif
   return ret;
 }
 
@@ -214,10 +210,6 @@ sv* sv_make_n(px* x, int n)
 { 
   if (n<0) bad_argument();
   sv* ret = new sv(n, x);
-#ifdef STL_DEBUG
-  if (stl_sv_trace_enabled())
-    cerr << "TRACE SV:    new sv*: " << ret << endl;
-#endif
   return ret;
 }
 
@@ -225,11 +217,7 @@ sv* sv_dup(px* tpl)
 {
   sv_range rng(tpl);
   if (!rng.is_valid || rng.num_iters != 2) bad_argument();
-  sv* ret = new sv(rng.beg(), rng.end());  
-#ifdef STL_DEBUG
-  if (stl_sv_trace_enabled())
-    cerr << "TRACE SV:    new sv*: " << ret << endl;
-#endif
+  sv* ret = new sv(rng.beg(), rng.end()); 
   return ret;
 }
 
@@ -378,7 +366,7 @@ px* sv_list(px* tpl)
     if (!res)
       res = y = last;
     else {
-      y->data.x[1] = px_new(last);
+      y->data.x[1] = pure_new(last);
       y = last;
     }
   }
@@ -401,14 +389,14 @@ px*  sv_listmap(px* fun, px* tpl)
   for (int i = b; i < e; i++){
     px* fx = pure_appxl(fun, &exception, 1, v[i].pxp());
     if (exception) {
-      if (res) px_freenew(res);
+      if (res) pure_freenew(res);
       pure_throw(exception);
     }
     px* last = pure_app(pure_app(cons,fx),nl);
     if (!res)
       res = y = last;    
     else {
-      y->data.x[1] = px_new(last);
+      y->data.x[1] = pure_new(last);
       y = last;
     }
   }
@@ -434,12 +422,13 @@ px* sv_listcatmap(px* fun, px* tpl)
   for (int i = b; i < e; i++){
     px* fx =  pure_appxl(fun, &exception, 1, v[i].pxp());
     if (exception) {
-      if (res) px_freenew(res);
+      if (res) pure_freenew(res);
+      if (fx) pure_freenew(fx);
       pure_throw(exception);
     }
     if ( !pure_is_listv(fx, &sz, &elms) ){
-      px_freenew(fx);
-      if (res) px_freenew(res);
+      if (fx) pure_freenew(fx);
+      if (res) pure_freenew(res);
       bad_argument();      
     }
     for (int j = 0; j < sz; j++) {
@@ -447,11 +436,11 @@ px* sv_listcatmap(px* fun, px* tpl)
       if (!res)
         res = y = last;    
       else {
-        y->data.x[1] = px_new(last);
+        y->data.x[1] = pure_new(last);
         y = last;
       }
     }
-    px_freenew(fx);
+    pure_freenew(fx);
     free(elms);
   }
 
@@ -460,19 +449,19 @@ px* sv_listcatmap(px* fun, px* tpl)
 
 static px* sv_foldl_rng(px* fun, px* val, svi beg, svi end)
 { 
-  px* res = px_new(val);
+  px* res = pure_new(val);
   px* exception = 0;
   for (svi i = beg; i != end; i++){
     px* fxy =  pure_appxl(fun, &exception, 2, res, i->pxp());
     if (exception) {
-      px_free(res);
+      if (res) pure_free(res);
       throw exception;
     }
-    px_new(fxy);
-    px_free(res);
+    pure_new(fxy);  // FIX -- fxy is not NULL
+    pure_free(res);
     res = fxy;
   }
-  px_unref(res);
+  pure_unref(res);
   return res;
 }
 
@@ -495,7 +484,6 @@ px* sv_foldl1(px* fun, px* tpl)
   if (rng.size() < 2) bad_argument();
   try {
     pxh valh = *(rng.beg());
-    //px* val = valh.pxp();
     return sv_foldl_rng(fun, valh.pxp(), rng.beg()+1, rng.end());  
   }catch (px* e) {
     pure_throw(e);
@@ -505,19 +493,19 @@ px* sv_foldl1(px* fun, px* tpl)
 
 static px* sv_foldr_rng(px* fun, px* val, reverse_svi beg, reverse_svi end)
 { 
-  px* res = px_new(val);
+  px* res = pure_new(val);
   px* exception = 0;
   for (reverse_svi i = beg; i != end; i++){
     px* fxy =  pure_appxl(fun, &exception, 2, i->pxp(), res);
     if (exception) {
-      px_free(res);
+      if (res) pure_free(res);
       throw exception;
     }
-    px_new(fxy);
-    px_free(res);
+    pure_new(fxy);
+    pure_free(res);
     res = fxy;
   }
-  px_unref(res);
+  pure_unref(res);
   return res;
 }
 

@@ -21,7 +21,7 @@ included with the pure-stlvec distribution package for details.
 
 using namespace std;
 
-/**** Helpers for pure_expr *******************************************/
+/**** Helpers for px* ***************************************************/
 
 ostream& operator<<(ostream& os, px* x){
   char *s = str(x);
@@ -30,146 +30,59 @@ ostream& operator<<(ostream& os, px* x){
   return os;
 }
 
-static bool px_trace_enabled = false;
-
-void stl_set_px_trace(bool enable)
-{
-  px_trace_enabled = enable;
-}
-
-bool stl_px_trace_enabled()
-{
-  return px_trace_enabled;
-}
-
-#ifdef STL_DEBUG
-px* px_new(px* x)
-{
-  void* ptr = x;
-  if (px_trace_enabled)
-    cerr << "[px_new(" << x << ") --> ";
-  pure_new(x);
-  if (px_trace_enabled)
-    cerr << x->refc << "]"  << endl;
-  return x;
-}
-
-void px_free(px* x)
-{
-  void* ptr = x;
-  if (x->refc <= 0) {
-    cerr << "[tried to free px with refc le 0\n";
-    cerr << ptr << "]\n";
-    bad_argument();
-  }
-  if (px_trace_enabled)
-    cerr << "[px_free(" << x << ") --> ";
-  if (x->refc > 1) {
-    pure_free(x);
-    if (px_trace_enabled)
-      cerr << x->refc << "]" << endl;
-  }
-  else {
-    if (px_trace_enabled)
-      cerr << 0 << "]" << endl;
-    pure_free(x);    
-  }
-}
-
-void px_freenew(px* x)
-{
-  void* ptr = x;
-  if (px_trace_enabled) {
-    cerr << "[px_freenew(" << x << ") with refc = ";
-    cerr << x->refc <<  "]" << endl;
-  }
-  pure_freenew(x);
-}
-
-void px_ref(px* x)
-{
-  void* ptr = x;
-  if (px_trace_enabled)
-    cerr << "[px_ref(" << x << ") --> ";
-  pure_ref(x);
-  if (px_trace_enabled)
-    cerr << x->refc << "]"  << endl;
-}
-
-void px_unref(px* x)
-{
-  void* ptr = x;
-  if (x->refc <= 0) {
-    cerr << "[tried to unref px with refc le 0\n";
-    cerr << ptr << "]\n";
-    bad_argument();
-  }
-  if (px_trace_enabled)
-    cerr << "[px_unref(" << x << ") --> ";
-  if (x->refc > 1) {
-    pure_unref(x);
-    if (px_trace_enabled)
-      cerr << x->refc << "]" << endl;
-  }
-  else {
-    if (px_trace_enabled)
-      cerr << 0 << "]" << endl;
-    pure_unref(x);    
-  }
-}
-
-#endif
-
-
 /**** Handles to hold pure_expr* ****************************************/
 
-//px_handle::px_handle() : pxp_(px_new(pure_pointer(0)))
 px_handle::px_handle() : pxp_(0)
-{
+{ 
 }
 
-//px_handle::px_handle(px* p) : pxp_(px_new(p)) {}
 px_handle::px_handle(px* p)
 {
-  // what if p is 0?
-  if (p->refc > 0)
-    ++(p->refc);
-  else
-    pure_new(p);
+  if (p) {
+    if (p->refc > 0)
+      ++(p->refc);
+    else
+      pure_new(p);
+  }
   pxp_ = p;
 }
 
-//px_handle::px_handle(const px_handle& pxh) : pxp_(px_new(pxh.pxp_)) {}
 px_handle::px_handle(const px_handle& pxh)
 {
   px* p = pxh.pxp_;
-  if (p->refc > 0)
-    ++(p->refc);
-  else
-    pure_new(p);
+  if (p) {
+    if (p->refc > 0)
+      ++(p->refc);
+    else
+      pure_new(p);
+  }
   pxp_ = p;
 }
 
 px_handle& px_handle::operator=(const px_handle& rhs)
 {
   if (&rhs!=this){
-    if (pxp_->refc > 1)
-      --(pxp_->refc);
-    else
-      pure_free(pxp_);
+    if (pxp_) {
+      if (pxp_->refc > 1)
+        --(pxp_->refc);
+      else
+        pure_free(pxp_);
+    }
     pxp_ = rhs.pxp_;
-    ++(pxp_->refc);
+    if (pxp_)
+      ++(pxp_->refc);
   }
   return *this;
 }
 
-//px_handle:: ~px_handle(){px_free(pxp_);}
 px_handle:: ~px_handle()
 {
+  if (pxp_) {
     if (pxp_->refc > 1)
       --(pxp_->refc);
     else
       pure_free(pxp_);
+  }
 }
 
 ostream& operator<<(ostream& os, const px_handle& pxh)
@@ -183,8 +96,8 @@ ostream& operator<<(ostream& os, const px_handle& pxh)
 pxh_fun& pxh_fun::operator=(const pxh_fun& rhs)
 {
   if (&rhs!=this){
-    px_new(rhs.fun_);
-    px_free(fun_);
+    pure_new(rhs.fun_);
+    pure_free(fun_);
     fun_ = rhs.fun_;
   }
   return *this;
@@ -245,7 +158,7 @@ bool pxh_less::operator()(const pxh& x_pxh, const pxh& y_pxh) const
   if (!pxres) bad_function();
   int is_less; 
   if ( !pure_is_int(pxres, &is_less) ) bad_function();
-  px_freenew(pxres);
+  pure_freenew(pxres);
   return is_less != 0;
 }
 
@@ -266,7 +179,7 @@ bool pxh_pred1::operator()(const pxh& arg) const
   if (exception) throw exception;
   if (!pxres) bad_function();
   int ok = pure_is_int(pxres, &ret);
-  px_freenew(pxres);
+  pure_freenew(pxres);
   if (!ok) failed_cond();
   return ok && ret;
 }
@@ -279,7 +192,7 @@ bool pxh_pred2::operator()(const pxh& left, const pxh& right) const
   if (exception) throw exception;
   if (!pxres) bad_function();
   int ok = pure_is_int(pxres, &ret);
-  px_freenew(pxres);
+  pure_freenew(pxres);
   if (!ok) failed_cond();
   return ok && ret;
 }
@@ -359,9 +272,9 @@ pxh pxh_gen::operator()()
   return pxh(ret);
 }
 
-extern "C"
-int stl_refc(pure_expr *x){
-  return x->refc - 1; // want refc before pass into here
+int stl_refc(pure_expr *x)
+{
+  return x->refc - 1; // want x->refc before x was passed into here
 }
 
 /**** Interpreter Local Storage Global Symbols **************************/
@@ -511,7 +424,6 @@ px* pxh_to_pxp(pxh h)
   return h.pxp();
 }
 
-
 /**** Symbols and functions for stlmap and stlvec *********************/
 
 px* stlbegin_sym()
@@ -529,19 +441,11 @@ px* stlend_sym()
 }
 
 void sv_delete(sv* p){
-#ifdef STL_DEBUG
-  if (stl_sv_trace_enabled())
-    cerr << "TRACE SV: delete sv*: " << p << endl;
-#endif
   delete(p);
 }
 
 sv* sv_make_empty()
 {
   sv* ret  = new sv;
-#ifdef STL_DEBUG
-  if (stl_sv_trace_enabled())
-    cerr << "TRACE SV:    new sv*: " << ret << endl;
-#endif
   return ret;
 }

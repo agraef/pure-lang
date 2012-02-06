@@ -17,7 +17,7 @@
 ### Usage:
 #
 # make dll       - updates release versions of stl dlls and copys them to .
-# make debug     - does the same for Pure debug support versions
+# make debug     - NOT USED
 # make           - same as make dll
 # make install   - copy dlls and Pure files to $(libdir)/pure/
 # make test      - run unit test scripts

@@ -53,6 +53,13 @@ static int stlset_iter_tag()
   return t;
 }
 
+static void dump_smp(sm* smp) {
+  PR2(dump_smp,smp->keys_only,smp->has_dflt);
+  PR2(dump_smp,smp->last_in_pos,smp->px_comp);
+  PR2(dump_smp,smp->dflt,smp->dflt.pxp()->refc);
+  PR2(dump_smp,smp->ki_cache.size(),smp->smis.size());
+  PR(dump_smp,smp->mp.size());
+}
 
 /*** Helpers for stlmap.cpp only ************************************/
 
@@ -126,7 +133,7 @@ static bool insert_aux(sm* smp, px* kv, pmi& pos, int& inserted)
 
 static px* px_pointer(sm* smp)
 {
-  static ILS<px*> _sym = NULL; px*& sym = _sym();
+ static ILS<px*> _sym = NULL; px*& sym = _sym();
   if (!sym) sym = pure_new(pure_symbol(pure_sym("stl::sm_delete")));
   int tag = smp->keys_only ? stlset_tag() : stlmap_tag();
   px* ptr = pure_tag( tag, pure_pointer(smp));
@@ -424,6 +431,7 @@ bool stlmap::get_cached_pmi(px* key, pmi& pos)
   // if (ret==true) {
   //   PR(--- trace cache hit,key);
   // }
+  PR2(get_cached_pmi,key,ret);
   return ret;
 }
 
@@ -539,7 +547,6 @@ bool sm_range::init_from_iters(px** pxsmip, int sz)
   int tag;
   sm_iter* smip;
   if ( !get_smip(pxsmip[0],tag,&smip) || !smip->is_valid ) return false;
-
   is_valid = false;
   sm* smp = smip->smp();
   pxhsmp = smip->pxhsmp;
@@ -567,10 +574,9 @@ bool sm_range::init_from_iters(px** pxsmip, int sz)
 bool sm_range::init_from_keys(px** smp_keys, int tpl_sz)
 {
   is_valid = false;
-  pxhsmp = smp_keys[0];
   sm* smp;
-  if ( !get_smp(pxhsmp, &smp) ) return false;
-  
+  if ( !get_smp(smp_keys[0], &smp) ) return false;
+  pxhsmp = smp_keys[0];
   pxhmap &mp = smp->mp;
   pxhmap::key_compare k_cmp = mp.key_comp();
   num_iters = tpl_sz-1;
@@ -915,6 +921,8 @@ px* sm_insert_elm(px* pxsmp, px* kv)
 {
   sm* smp; pmi pos;
   if (!get_smp(pxsmp,&smp)) bad_argument();
+  PR(sm_insert_elm_a,kv);
+  dump_smp(smp);
   int num_inserted = 0;
   try {
     if ( !insert_aux(smp, kv, pos, num_inserted) ) bad_argument();
@@ -922,6 +930,8 @@ px* sm_insert_elm(px* pxsmp, px* kv)
   catch (px* e) {
     pure_throw(e);
   }
+  PR(sm_insert_elm_b,kv);
+  dump_smp(smp);
   px* it = px_pointer(new sm_iter(pxsmp, pos));
   px *k, *v;
   if (smp->keys_only)
