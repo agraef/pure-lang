@@ -1,9 +1,29 @@
-/* time_hash.pure -- compare set element lookup times for hashdict, stlhash and
-   stlhmap. 
+/* time_hash.pure -- lookup times for hashdict and stlhmap.
+
+   Usage: > run time_hash.pure
+          > main num_words_in_hash_table
 
    A lookup is a sequence like "if member set x then set!x else ()". The
    corresponding c functions are called, e.g., hashdict_member rather than
    member.
+
+   There are two tests for hashdict and three for stlhmap. The "fast" test
+   calls the underlying c functions directly. The "plain" test uses the
+   Pure member and (!) functions. The "wrapped" test, applicable only
+   to stlhmap, uses versions of member and (!) specialized on (STLHMAP x)
+   as opposed to the stlhmap type (a pointer tag).
+
+   The fast times for hashdict and stlhmap are basically the same.
+
+   The other times depend on the order of the using statements for stlhmap and
+   hashdict. If stlhmap comes first in the using statement, the stlhmap plain
+   time is about 60% slower than the stlhmap wrapped time, and the hashdict
+   time is about 50% slower than the stlhmap plain time. However if hashdict
+   comes first in the using statement, both the stlhmap times are about 50%
+   slower than the hashdict plain time.
+
+   If you want to test changing the the using statement, please remember
+   to quit and restart Pure, as "clear" will not reload the modules.
 
 */
 
@@ -12,42 +32,58 @@ using system, stlvec, stlvec::algorithms;
 const repeats = 10000;
 const lookups = 100;
 
-using stlhmap;
-using hashdict;
+//using hashdict, stlhmap;
+using stlhmap, hashdict;
 
 /*** hashdict *********************************************************/
 
-time_hashdict words keys = () when
+time_fast_hashdict words keys = () when
   tm = clock;
   do (insert ss) words;
   tm = (clock - tm) / 1000.0;
-  printf "\nfill   hashdict: %8.1f msecs, %d words\n"  (tm,#ss);
+  printf "\nfill     fast hashdict: %8.1f msecs, %d words\n"  (tm,#ss);
   tm = clock;
   spin repeats;
   tm = (clock - tm) / 1000.0;
-  printf "lookup hashdict: %8.1f msecs\n" tm;
+  printf "lookup   fast hashdict: %8.1f msecs\n" tm;
 end with
   spin 0 = ();
   spin n = lookup keys $ spin (n-1);
   lookup [] = ();
-  // Note - using hashict_member is almost 8 times faster
   lookup (k:ks) = hashdict_member ss k $$ hashdict_get ss k $$ lookup ks;
-  //lookup (k:ks) = member ss k $$ ss!k $$ lookup ks;
+end when 
+  ss = hashdict [];
+end;
+
+time_plain_hashdict words keys = () when
+  tm = clock;
+  do (insert ss) words;
+  tm = (clock - tm) / 1000.0;
+  printf "\nfill    plain hashdict: %8.1f msecs, %d words\n"  (tm,#ss);
+  tm = clock;
+  spin repeats;
+  tm = (clock - tm) / 1000.0;
+  printf "lookup  plain hashdict: %8.1f msecs\n" tm;
+end with
+  spin 0 = ();
+  spin n = lookup keys $ spin (n-1);
+  lookup [] = ();
+  lookup (k:ks) = member ss k $$ ss!k $$ lookup ks;
 end when 
   ss = hashdict [];
 end;
 
 /*** stlhmap *********************************************************/
 
-time_stlhmap words keys = () when
+time_fast_stlhmap words keys = () when
   tm = clock;
   insert ss words;
   tm = (clock - tm) / 1000.0;
-  printf "\nfill    stlhmap: %8.1f msecs, %d words\n"  (tm,#ss);
+  printf "\nfill      fast stlhmap: %8.1f msecs, %d words\n"  (tm,#ss);
   tm = clock;
   spin repeats;
   tm = (clock - tm) / 1000.0;
-  printf "lookup  stlhmap: %8.1f msecs\n" tm;
+  printf "lookup    fast stlhmap: %8.1f msecs\n" tm;
   puts (get val);
 end with
   spin 0 = ();
@@ -56,6 +92,45 @@ end with
   lookup (k:ks) = stl::sh_member ss k $$ stl::sh_find_val ss k $$ lookup ks;
 end when 
   ss = emptystlhset;
+end;
+
+time_plain_stlhmap words keys = () when
+  tm = clock;
+  insert ss words;
+  tm = (clock - tm) / 1000.0;
+  printf "\nfill     plain stlhmap: %8.1f msecs, %d words\n"  (tm,#ss);
+  tm = clock;
+  spin repeats;
+  tm = (clock - tm) / 1000.0;
+  printf "lookup   plain stlhmap: %8.1f msecs\n" tm;
+  puts (get val);
+end with
+  spin 0 = ();
+  spin n = lookup keys $ spin (n-1);
+  lookup [] = ();
+  lookup (k:ks) = member ss k $$ ss!k $$ lookup ks;
+end when 
+  ss = emptystlhset;
+end;
+
+time_wrapped_stlhmap words keys = () when
+  tm = clock;
+  insert ss words;
+  tm = (clock - tm) / 1000.0;
+  printf "\nfill   wrapped stlhmap: %8.1f msecs, %d words\n"  (tm,#ss);
+  tm = clock;
+  spin repeats;
+  tm = (clock - tm) / 1000.0;
+  printf "lookup wrapped stlhmap: %8.1f msecs\n" tm;
+  puts (get val);
+end with
+  spin 0 = ();
+  spin n = lookup keys $ spin (n-1);
+  lookup [] = ();
+  lookup (k:ks) = member wss k $$ wss!k $$ lookup ks;
+end when 
+  ss = emptystlhset;
+  wss = wrap ss;
 end;
 
 /*** Harness ********************************************************/
@@ -84,7 +159,55 @@ main num_words = () when
   words, keys = get_words num_words "anagram_groups_dict.txt";
   num_words = min num_words (#words);
   printf "Test %d lookups, %d repeats\n" (lookups,repeats);
-  time_stlhmap words keys;
-  time_hashdict words keys;
+  time_plain_stlhmap words keys;
+  time_wrapped_stlhmap words keys;
+  time_fast_stlhmap words keys;
+  time_plain_hashdict words keys;
+  time_fast_hashdict words keys;
 end;
     
+/* Sample "with using stlhmap, hashdict" *******************************
+
+> main 1000;
+Test 100 lookups, 10000 repeats
+
+fill     plain stlhmap:      0.0 msecs, 1000 words
+lookup   plain stlhmap:   1630.0 msecs
+
+fill   wrapped stlhmap:      0.0 msecs, 1000 words
+lookup wrapped stlhmap:   1010.0 msecs
+
+fill      fast stlhmap:      0.0 msecs, 1000 words
+lookup    fast stlhmap:    550.0 msecs
+
+fill    plain hashdict:     10.0 msecs, 1000 words
+lookup  plain hashdict:   2450.0 msecs
+
+fill     fast hashdict:     10.0 msecs, 1000 words
+lookup   fast hashdict:    560.0 msecs
+()
+
+*/
+
+/* Sample "with using hashdict, stlhmap" *******************************
+
+> main 1000;
+Test 100 lookups, 10000 repeats
+
+fill     plain stlhmap:      0.0 msecs, 1000 words
+lookup   plain stlhmap:   2810.0 msecs
+
+fill   wrapped stlhmap:      0.0 msecs, 1000 words
+lookup wrapped stlhmap:   2840.0 msecs
+
+fill      fast stlhmap:      0.0 msecs, 1000 words
+lookup    fast stlhmap:    560.0 msecs
+
+fill    plain hashdict:      0.0 msecs, 1000 words
+lookup  plain hashdict:   1830.0 msecs
+
+fill     fast hashdict:      0.0 msecs, 1000 words
+lookup   fast hashdict:    570.0 msecs
+()
+
+*/
