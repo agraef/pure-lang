@@ -271,6 +271,14 @@ px* sh_find_val(px* pxshp, px* key)
   return (static_cast<sh*>(ptr)->keys_only) ? i->first : i->second;
 }
 
+px* x_sh_find_val(sh* shp, px* key)
+{
+  pxhmap &hm = shp->hm;
+  pxhmapi i = hm.find(key);
+  if (i==hm.end()) index_error();
+  return (shp->keys_only) ? i->first : i->second;
+}
+
 px* sh_find(px* pxshp, px* key, int what)
 {
   sh* shp;
@@ -563,7 +571,6 @@ void sh_do(px* fun, px* pxshp)
   }
 }
 
-
 /*** Key oriented interface support ***************************************/
 
 int sh_member(px* pxshp, px* key)
@@ -571,6 +578,12 @@ int sh_member(px* pxshp, px* key)
   void* ptr;
   if (!pure_is_pointer(pxshp,&ptr)) bad_argument();
   pxhmap &hm = static_cast<sh*>(ptr)->hm;
+  return hm.find(key) != hm.end();
+}
+
+int x_sh_member(sh* shp, px* key)
+{
+  pxhmap &hm = shp->hm;
   return hm.find(key) != hm.end();
 }
 

@@ -106,6 +106,9 @@ extern "C" {
 
   void sh_fill_stlvec(px* pxshp, sv* svp);
   int  sh_insert_elms_stlvec(px* pxshp, sv* svp);
+
+  px*  x_sh_find_val(sh* shp, px* key);
+  int  x_sh_member(sh* shp, px* key);
 }
 
 #endif // STLHMAP_H
