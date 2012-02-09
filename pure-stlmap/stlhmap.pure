@@ -37,9 +37,9 @@ extern bool  sh_empty(expr* pxshp);
 extern bool  sh_is_set(expr* pxshp);
 extern int   sh_equal(expr* pxshp1, expr* pxshp2);
 extern int   sh_count(expr* pxshp, expr* key);
-extern int   sh_member(expr* pxshp, expr* key);
+extern int   sh_member(stlhmap* pxshp, expr* key);
 extern expr* sh_find(expr* pxshp, expr* key, int what);
-extern expr* sh_find_val(expr* pxshp, expr* key);
+extern expr* sh_find_val(stlhmap* pxshp, expr* key);
 extern expr* sh_insert_elm(expr* pxshp, expr* kv);
 extern int   sh_insert_elms_xs(expr* pxshp, expr* src);
 extern int   sh_insert_elms_stlvec(expr* map, void* svp);
@@ -81,13 +81,14 @@ w_find (STLHMAP hm) key = stl::sh_find_val hm key;
 
 w_member (STLHMAP hm) key = stl::sh_member hm key;
 
-p_find hm::stlhmap key = stl::sh_find_val hm key;
+p_find hm key = stl::sh_find_val hm key;
 
-p_member hm::stlhmap key = stl::sh_member hm key;
+p_member hm key = stl::sh_member hm key;
+
+extern int   x_sh_member(stlhmap* pxshp, expr* key) = x_member;
 
 extern expr* x_sh_find_val(stlhmap* pxshp, expr* key) = x_find;
 
-extern int   x_sh_member(stlhmap* pxshp, expr* key) = x_member;
 
 namespace stl;
 

@@ -261,16 +261,15 @@ bool sh_is_set(px* pxshp)
   return shp->keys_only;
 }
 
-px* sh_find_val(px* pxshp, px* key)
+px* sh_find_val(sh* shp, px* key)
 {
-  void* ptr;
-  if (!pure_is_pointer(pxshp,&ptr)) bad_argument();
-  pxhmap &hm = static_cast<sh*>(ptr)->hm;
+  pxhmap &hm = shp->hm;
   pxhmapi i = hm.find(key);
   if (i==hm.end()) index_error();
-  return (static_cast<sh*>(ptr)->keys_only) ? i->first : i->second;
+  return (shp->keys_only) ? i->first : i->second;
 }
 
+// FIX - remove soon -- here for time tests only
 px* x_sh_find_val(sh* shp, px* key)
 {
   pxhmap &hm = shp->hm;
@@ -573,14 +572,13 @@ void sh_do(px* fun, px* pxshp)
 
 /*** Key oriented interface support ***************************************/
 
-int sh_member(px* pxshp, px* key)
+int sh_member(sh* shp, px* key)
 {
-  void* ptr;
-  if (!pure_is_pointer(pxshp,&ptr)) bad_argument();
-  pxhmap &hm = static_cast<sh*>(ptr)->hm;
+  pxhmap &hm = shp->hm;
   return hm.find(key) != hm.end();
 }
 
+// FIX - remove:: this is only here for timing tests
 int x_sh_member(sh* shp, px* key)
 {
   pxhmap &hm = shp->hm;

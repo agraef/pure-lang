@@ -50,7 +50,35 @@ end with
   spin 0 = ();
   spin n = lookup keys $ spin (n-1);
   lookup [] = ();
-  lookup (k:ks) = stl::sm_member ss k $$ stl::sm_find ss k 2 $$ lookup ks;
+  lookup (k:ks) = member ss k $$ ss!k $$ lookup ks;
+  //lookup (k:ks) = stl::sm_member ss k $$ stl::sm_find ss k 2 $$ lookup ks;
+end when 
+  ss = emptystlset;
+end;
+
+
+time_stlmap_iter words keys = () when
+  tm = clock;
+  insert ss words;
+  tm = (clock - tm) / 1000.0;
+  printf "\nfill      iter: %8.1f msecs, %d words\n"  (tm,#ss);
+  tm = clock;
+  spin repeats;
+  tm = (clock - tm) / 1000.0;
+  printf "lookup    iter: %8.1f msecs\n" tm;
+  puts (get val);
+end with
+  spin 0 = ();
+  spin n = lookup keys $ spin (n-1);
+  lookup [] = ();
+  lookup (k:ks) =  lookup ks when
+    i = stl::find ss k;
+    stl::endp i;
+    
+    // i = stl::sm_find ss k 4;
+    // stl::sm_iter_is_at i 2;
+    // stl::sm_get_at i 3;
+  end;
 end when 
   ss = emptystlset;
 end;
@@ -79,7 +107,8 @@ main num_words = () when
   words, keys = get_words num_words "anagram_groups_dict.txt";
   num_words = min num_words (#words);
   printf "Test %d lookups, %d repeats\n" (lookups,repeats);
-  time_orddict words keys;
+  //time_orddict words keys;
   time_stlmap words keys;
+  time_stlmap_iter words keys;
 end;
     
