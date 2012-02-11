@@ -49,7 +49,7 @@ extern expr* sm_get_elm_at_inc(expr* pxsmip);
 extern expr* sm_put_at(expr* pxsmip, expr* val);
 extern expr* sm_insert_hinted(expr*map, expr* iter, expr* kv);
 extern expr* sm_insert_elm(expr* map, expr* kv);
-extern int   sm_insert_elms_xs(expr* map, expr* src);
+extern int   sm_insert(expr* map, expr* src);
 extern int   sm_insert_elms_stlvec(expr* map, void* svp);
 extern int   sm_insert_elms_stlmap(expr* map, expr* rng);
 extern void  sm_swap(expr* sac1, expr* sac2);
@@ -160,6 +160,10 @@ dec pos::stlmap_iter = sm_move_iter pos (-1);
 
 move pos::stlmap_iter n::int = sm_move_iter pos n;
 
+insert_elm sm::stlmap (elm,pos::stlmap_iter) = sm_insert_hinted sm pos elm;
+
+insert_elm sm::stlmap elm = sm_insert_elm sm elm;
+
 /*** Iterator Operators ****************************************************/
 
 (::==) pos1::stlmap_iter pos2::stlmap_iter = sm_equal_iter pos1 pos2;
@@ -177,7 +181,7 @@ move pos::stlmap_iter n::int = sm_move_iter pos n;
 
 ::stlmap xs = sm when
   sm = ::emptystlmap;
-  sm_insert_elms_xs sm xs;
+  sm_insert sm xs;
 end if listp xs || matrixp xs;
 
 ::stlmap (STLVEC svp) = sm when
@@ -197,7 +201,7 @@ end if ~sm_is_set rng;
 
 ::stlset xs = ss when
   ss = ::emptystlset;
-  sm_insert_elms_xs ss xs;
+  sm_insert ss xs;
 end if listp xs || matrixp xs;
 
 ::stlset (STLVEC svp) = ss when
@@ -253,30 +257,15 @@ end;
 
 /*** Modifiers *********************************************************/
 
-::insert sm::stlmap xs::list = sm_insert_elms_xs sm xs;
-
-::insert sm::stlmap xs::matrix = sm_insert_elms_xs sm xs;
+::insert sm::stlmap (STLVEC svp) = sm_insert_elms_stlvec sm svp;
 
 ::insert sm::stlmap rng::stlmap_rng = sm_insert_elms_stlmap sm rng;
 
-::insert sm::stlmap (STLVEC svp) = sm_insert_elms_stlvec sm svp;
-
-::insert sm::stlmap (elm@(k=>v), pos::stlmap_iter) = 
-  sm_insert_hinted sm pos elm;
-
-::insert sm::stlmap elm@(k=>v) = sm_insert_elm sm elm;
-
-::insert sm::stlset (key, pos::stlmap_iter) = sm_insert_hinted sm pos key;
-
-::insert sm::stlset key = sm_insert_elm sm key;
-
-::insert_elm sm::stlset key = sm_insert_elm sm key; // to get xs, into set
+::insert sm::stlmap src = sm_insert sm src;
 
 ::update sm::stlmap key val = sm_update sm key val;
 
 ::update_elm sm::stlmap (k=>v) = sm_update sm k v;
-
-::update_elm sm::stlset k = sm_insert_elm sm k $$ sm;
 
 ::update_elm_with f sm::stlmap (k=>x) = sm_update_with sm k (f x);
 

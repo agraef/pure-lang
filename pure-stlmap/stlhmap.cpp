@@ -32,6 +32,16 @@ static int stlhmap_tag()
   return t;
 }
 
+static px* pxpair_to_pxrocket(const pxp_pair& pair)
+{
+  return pxlhs_pxrhs_to_pxrocket(pair.first, pair.second);
+}
+
+static px* pxpair_to_pxlhs(const pxp_pair& pair)
+{
+  return pair.first;
+}
+
 /*** stlhmap member functions ********************************************/
 
 stlhmap::stlhmap(bool ko) : keys_only(ko)
@@ -194,7 +204,9 @@ px*  sh_copy(px* pxshp)
   sh* shp;
   if (!get_shp(pxshp,&shp) ) bad_argument();
   pxhmap& hm = shp->hm;
-  return px_pointer( new sh(*shp) );
+  sh* cpy = new sh(*shp);
+  cpy->refc_elms();
+  return px_pointer( cpy );
 }
 
 void sh_delete(sh* shp){
@@ -286,21 +298,7 @@ px* sh_find(px* pxshp, px* key, int what)
   return get_elm_aux(shp, i, what);
 }
 
-px* sh_insert_elm(px* pxshp, px* kv)
-{
-  sh* shp; pxhmapi pos;
-  if (!get_shp(pxshp,&shp) ) bad_argument();
-  int num_inserted = 0;
-  try {
-    if ( !insert_aux(shp, kv, pos, num_inserted) ) bad_argument();
-  }
-  catch (px* e) {
-    pure_throw(e);
-  }
-  return pure_int(num_inserted);
-}
-
-int sh_insert_elms_xs(px* pxshp, px* src)
+int sh_insert(px* pxshp, px* src)
 {
   sh* shp; pxhmapi pos;
   if (!get_shp(pxshp,&shp) ) bad_argument();
@@ -318,6 +316,10 @@ int sh_insert_elms_xs(px* pxshp, px* src)
       px** hmelms = (pure_expr**) pure_get_matrix_data(src);
       for (int i = 0; i<sz; i++) 
         if ( !insert_aux(shp, hmelms[i], pos, num_inserted) ) bad_argument();
+    }
+    else {
+
+      if ( !insert_aux(shp, src, pos, num_inserted) ) bad_argument();
     }
   }
   catch (px* e){
@@ -347,13 +349,14 @@ int sh_insert_elms_stlhmap(px* pxshp1, px* pxshp2)
 
 int sh_insert_elms_stlvec(px* pxshp, sv* svp)
 {
+  int num_inserted = 0;
   sh* shp; 
   pxhmapi pos;
   if (!get_shp(pxshp,&shp) ) bad_argument();
-  int num_inserted = 0;
   try {
-    for (sv::iterator i = svp->begin(); i!=svp->end(); i++)
+    for (sv::iterator i = svp->begin(); i!=svp->end(); i++) {
       if ( !insert_aux(shp, *i, pos, num_inserted) ) bad_argument();
+    }
   }
   catch (px* e) {
     pure_throw(e);
@@ -428,9 +431,9 @@ px* sh_make_vector(px* pxshp)
     return pure_matrix_columnsv(0,NULL);
   px** bfr = (px**)malloc(sizeof(px*)*sz);
   if (shp->keys_only) 
-    transform(b, e, bfr, pxhpair_to_pxlhs);
+    transform(b, e, bfr, pxpair_to_pxlhs);
   else
-    transform(b, e, bfr, pxhpair_to_pxrocket);
+    transform(b, e, bfr, pxpair_to_pxrocket);
   px* ret = pure_matrix_columnsv(sz, bfr);
   free(bfr);
   return ret;
@@ -443,9 +446,9 @@ void sh_fill_stlvec(px* pxshp, sv* svp)
   pxhmapi b = shp->hm.begin();
   pxhmapi e = shp->hm.end();
   if (shp->keys_only) 
-    transform(b, e, back_inserter(*svp), pxhpair_to_pxlhs);
+    transform(b, e, back_inserter(*svp), pxpair_to_pxlhs);
   else
-    transform(b, e, back_inserter(*svp), pxhpair_to_pxrocket);
+    transform(b, e, back_inserter(*svp), pxpair_to_pxrocket);
 }
 
 /*** Mapping and folding ***********************************************/

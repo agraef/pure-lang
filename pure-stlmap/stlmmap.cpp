@@ -873,7 +873,7 @@ px* smm_insert_elm(px* pxsmmp, px* kv)
   return px_pointer(new smm_iter(pxsmmp, pos));
 }
 
-int smm_insert_elms_xs(px* pxsmmp, px* src)
+int smm_insert(px* pxsmmp, px* src)
 {
   smm* smmp; pmmi pos;
   if (!get_smmp(pxsmmp,&smmp) ) bad_argument();
@@ -891,7 +891,7 @@ int smm_insert_elms_xs(px* pxsmmp, px* src)
       elems = (pure_expr**) pure_get_matrix_data(src);
       for (int i = 0; i<sz; i++) 
         if ( !insert_aux(smmp, elems[i], pos, num_inserted) ) bad_argument();
-    }
+    } else if ( !insert_aux(smmp, src, pos, num_inserted) ) bad_argument();
   }
   catch (px* e){
     free(elems);

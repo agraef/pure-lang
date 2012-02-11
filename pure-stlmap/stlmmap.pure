@@ -49,7 +49,7 @@ extern expr* smm_get_elm_at_inc(expr* pxsmip);
 extern expr* smm_put_at(expr* pxsmip, expr* val);
 extern expr* smm_insert_hinted(expr*map, expr* iter, expr* kv);
 extern expr* smm_insert_elm(expr* map, expr* kv);
-extern int   smm_insert_elms_xs(expr* map, expr* src);
+extern int   smm_insert(expr* map, expr* src);
 extern int   smm_insert_elms_stlvec(expr* map, void* svp);
 extern int   smm_insert_elms_stlmmap(expr* map, expr* rng);
 extern void  smm_swap(expr* sac1, expr* sac2);
@@ -160,6 +160,10 @@ dec pos::stlmmap_iter = smm_move_iter pos (-1);
 
 move pos::stlmmap_iter n::int = smm_move_iter pos n;
 
+insert_elm smm::stlmmap (elm, p::stlmmap_iter) = smm_insert_hinted smm p elm;
+
+insert_elm smm::stlmmap elm = smm_insert_elm smm elm;
+
 /*** Iterator Operators ****************************************************/
 
 (::==) pos1::stlmmap_iter pos2::stlmmap_iter = smm_equal_iter pos1 pos2;
@@ -177,7 +181,7 @@ move pos::stlmmap_iter n::int = smm_move_iter pos n;
 
 ::stlmmap xs = smm when
   smm = ::emptystlmmap;
-  smm_insert_elms_xs smm xs;
+  smm_insert smm xs;
 end if listp xs || matrixp xs;
 
 ::stlmmap (STLVEC svp) = smm when
@@ -197,7 +201,7 @@ end if ~smm_is_set rng;
 
 ::stlmset xs = ss when
   ss = ::emptystlmset;
-  smm_insert_elms_xs ss xs;
+  smm_insert ss xs;
 end if listp xs || matrixp xs;
 
 ::stlmset (STLVEC svp) = ss when
@@ -253,24 +257,11 @@ end;
 
 /*** Modifiers *********************************************************/
 
-::insert smm::stlmmap xs::list = smm_insert_elms_xs smm xs;
-
-::insert smm::stlmmap xs::matrix = smm_insert_elms_xs smm xs;
+::insert smm::stlmmap (STLVEC svp) = smm_insert_elms_stlvec smm svp;
 
 ::insert smm::stlmmap rng::stlmmap_rng = smm_insert_elms_stlmmap smm rng;
 
-::insert smm::stlmmap (STLVEC svp) = smm_insert_elms_stlvec smm svp;
-
-::insert smm::stlmmap (elm@(k=>v), pos::stlmmap_iter) = 
-  smm_insert_hinted smm pos elm;
-
-::insert smm::stlmmap elm@(k=>v) = smm_insert_elm smm elm;
-
-::insert smm::stlmset (key, pos::stlmmap_iter) = smm_insert_hinted smm pos key;
-
-::insert smm::stlmset key = smm_insert_elm smm key;
-
-::insert_elm smm::stlmset key = smm_insert_elm smm key; // to get xs, into set
+::insert smm::stlmmap src = smm_insert smm src;
 
 ::update smm::stlmmap key vals = smm_update smm key vals;
 

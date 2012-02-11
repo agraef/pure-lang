@@ -175,13 +175,13 @@ insert function will not "insert" elements with a key that is already stored
 in the container. ::
 
    > insert sm1 ("e"=>5);    // insert element with new key
-   #<pointer 0xa95cc60>,1    // returns (iterator, true)
+   1
 
-   > members sm1;               // check that "e"=>5 was inserted
+   > members sm1;            // check that "e"=>5 was inserted
    ["b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
    > insert sm1 ("e"=>50);   // attempt insert where key already in sm1
-   #<pointer 0xaa08cb8>,0    // returns (iterator, false)
+   0
 
    > members sm1;               // Note that "e"=>5 was not updated
    ["b"=>2,"c"=>3,"d"=>4,"e"=>5]
@@ -1239,11 +1239,15 @@ only depend on a particular field of records that are inserted into it.
 
   Tries to insert elements in a valid "insert source" into an associative
   container, and then returns the number of elements inserted. A valid "insert
-  source" is a list, vector, stlvec, or a range over an associative container
-  of the same type as acon. If acon is an associative map (stlmap, stlmmap or
-  stlhmap), the elements of src must be key value pairs of the form (k=>v).
+  source" is (a) a single element, (b) a list, vector, stlvec of elements or
+  (c), a range over an associative container of the same type as acon. If
+  acon is an associative map (stlmap, stlmmap or stlhmap), the elements of src
+  must be key value pairs of the form (k=>v). Returns the number of elements
+  inserted, if any.
 
-..function:: insert /stlmap acon elm
+.. namespace:: stl
+
+..function:: insert_elm /stlmap acon elm
 
   If acon is an associative map and elm is a key value pair, (k=>v), attempts
   to insert (k=>v) into acon.  If acon is an associative set, and elm is not a
@@ -1255,18 +1259,12 @@ only depend on a particular field of records that are inserted into it.
   second element in the pair is a boolean value that is true if a new element
   was inserted.
 
-..function:: insert /stlmap acon (elm,p)
+..function:: insert_elm /stlmap acon (elm,p)
 
   This is the same as the previous function except that (a) p is passed in as
   a hint to where the new element should be inserted and (b) a single iterator
   is returned rather than a iterator,boolean pair. If the new element is
   inserted just after p, the insertion can have constant time complexity.
-
-..function:: insert_elm s elm
-
-  s must be an associative set. This is the same as insert s elm, except that
-  insert_elm will attempt to insert elm into s even if it is a valid insert
-  source (i.e., lists, vectors, etc., can be inserted in s).
 
 Here are some insert examples::
 
@@ -1275,7 +1273,7 @@ Here are some insert examples::
    2
    ["a"=>1,"b"=>2]
 
-   > let p, ok = insert smx ("a"=>2); get p,ok; // will not update "a"
+   > let p, ok = insert_elm smx ("a"=>2); get p,ok; // will not update "a"
    "a"=>1,0
 
    > put p 2 $ members smx;  // used iterator p to update "a"'s value to 2
@@ -1285,7 +1283,7 @@ Here are some insert examples::
    > insert smmx {"a"=>1,"b"=>2};
      2
 
-   > let p = insert smmx ("a"=>2); get p; // returns iterator only
+   > let p = insert_elm smmx ("a"=>2); get p; // for mmap,returns iterator only
    "a"=>2
 
    > members smmx;

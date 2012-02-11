@@ -488,3 +488,100 @@ let ok, smx, f, l = stl::range_info (sm1,"b"); ok;
 smx===sm1, f==i_b, l==i_c;
 //- 1,1,1
 
+//*** Insert *************************************************************/
+
+let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+let sm2 = mkstlmap ((>),0);
+//- ()
+
+let i_b, i_e = stl::begin sm1, stl::pastend sm1;
+//- ()
+
+members sm2;
+//- []
+
+let p, ok = stl::insert_elm sm2 ("a"=>(0..3)); stl::get_key p, ok;
+//- "a",1
+
+members sm2;
+//- ["a"=>[0,1,2,3]]
+
+let p, ok = stl::insert_elm sm2 ("b"=>{0,1,2,3}); stl::get_key p, ok;
+//- "b",1
+
+members sm2;
+//- ["b"=>{0,1,2,3},"a"=>[0,1,2,3]]
+
+// Stl::Insert_Elm with hinted position
+
+erase sm2; 
+//- 2
+
+catch id $ stl::insert_elm sm2 ("a"=>1, i_b); // i_b is for sm1
+//- bad_argument
+
+let p1, ok = stl::insert_elm sm2 ("a"=>1); members sm2;
+//- ["a"=>1]
+
+let p2 = stl::insert_elm sm2 ("b"=>2, p1); members sm2;
+//- ["b"=>2,"a"=>1]
+
+let p3 = stl::insert_elm sm2 ("c"=>3, p2); members sm2;
+//- ["c"=>3,"b"=>2,"a"=>1]
+
+// Stl::Insert_Elm from range, list, vector, k=>v
+
+erase sm2; 
+//- 3
+
+let i = stl::find sm1 "a"; get i;
+//- "a"=>1
+
+let j = stl::find sm1 "c"; get j;
+//- "c"=>3
+
+members (i,j);
+//- ["a"=>1,"b"=>2]
+
+insert sm2 (i,j); 
+//- 2
+
+members sm2;
+//- ["b"=>2,"a"=>1]
+
+insert sm2 ["c"=>3];
+//- 1
+
+members sm2;
+//- ["c"=>3,"b"=>2,"a"=>1]
+
+insert sm2 {"d"=>4,"e"=>5};
+//- 2
+
+members sm2;
+//- ["e"=>5,"d"=>4,"c"=>3,"b"=>2,"a"=>1]
+
+let p, ok = stl::insert_elm sm2 ("f"=>6); stl::get_key p, ok, members sm2;
+//- "f",1,["f"=>6,"e"=>5,"d"=>4,"c"=>3,"b"=>2,"a"=>1]
+
+// Attempt overwrite of existing values
+
+put i 11; get i; members (i,j);
+//- ["a"=>11,"b"=>2]
+
+insert sm2 (i,j);
+//- 0
+
+insert sm2 ["c"=>13]; 
+//- 0
+
+let p, ok = stl::insert_elm sm2 ("d"=>14); stl::get_key p, ok, members sm2;
+//- "d",0,["f"=>6,"e"=>5,"d"=>4,"c"=>3,"b"=>2,"a"=>1]
+
+let p, ok = stl::insert_elm sm2 ("e"=>10); stl::get_key p, ok, members sm2;
+//- "e",0,["f"=>6,"e"=>5,"d"=>4,"c"=>3,"b"=>2,"a"=>1]
+
+put p 15; members sm2;
+//- ["f"=>6,"e"=>15,"d"=>4,"c"=>3,"b"=>2,"a"=>1]

@@ -40,8 +40,7 @@ extern int   sh_count(expr* pxshp, expr* key);
 extern int   sh_member(stlhmap* pxshp, expr* key);
 extern expr* sh_find(expr* pxshp, expr* key, int what);
 extern expr* sh_find_val(stlhmap* pxshp, expr* key);
-extern expr* sh_insert_elm(expr* pxshp, expr* kv);
-extern int   sh_insert_elms_xs(expr* pxshp, expr* src);
+extern int   sh_insert(expr* pxshp, expr* src);
 extern int   sh_insert_elms_stlvec(expr* map, void* svp);
 extern expr* sh_update(expr* pxshp, expr* key, expr* val);
 extern void  sh_swap(expr* pxshp1, expr* pxshp2);
@@ -108,7 +107,7 @@ compatible c1 c2 = if sh_is_set c1 then sh_is_set c2 else ~sh_is_set c2;
 
 ::stlhmap xs = hm when
   hm = ::emptystlhmap;
-  sh_insert_elms_xs hm xs;
+  sh_insert hm xs;
 end if listp xs || matrixp xs;
 
 ::stlhmap (STLVEC svp) = hm when
@@ -122,7 +121,7 @@ end;
 
 ::stlhset xs = hs when
   hs = ::emptystlhset;
-  sh_insert_elms_xs hs xs;
+  sh_insert hs xs;
 end if listp xs || matrixp xs;
 
 ::stlhset (STLVEC svp) = hs when
@@ -172,19 +171,13 @@ end;
 
 /*** Modifiers *********************************************************/
 
-::insert hm::stlhmap xs::list = sh_insert_elms_xs hm xs;
-
-::insert hm::stlhmap xs::matrix = sh_insert_elms_xs hm xs;
-
 ::insert hm::stlhmap (STLVEC svp) = sh_insert_elms_stlvec hm svp;
 
-::insert hm::stlhmap val@(k=>v) = sh_insert_elm hm val;
-
-::insert hm::stlhmap elm = sh_insert_elm hm elm if sh_is_set hm; 
+::insert hm::stlhmap src = sh_insert hm src;
 
 ::update hm::stlhmap key v = sh_update hm key v;
 
-::update_elm hm::stlhmap (k=>v) = sh_update hm k v;
+::update_elm hm::stlhmap (key=>val) = sh_update hm key val;
 
 ::erase hm::stlhmap = sh_clear hm;
 

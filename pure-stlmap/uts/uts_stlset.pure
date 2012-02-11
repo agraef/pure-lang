@@ -172,16 +172,16 @@ members sm2;
 erase sm2; 
 //- 5
 
-catch id $ insert sm2 ("a", i_b); // i_b is for sm1
+catch id $ stl::insert_elm sm2 ("a", i_b); // i_b is for sm1
 //- bad_argument
 
-let p1, ok = insert sm2 ("a"); members sm2;
+let p1, ok = stl::insert_elm sm2 ("a"); members sm2;
 //- ["a"]
 
-let p2 = insert sm2 ("b", p1); members sm2;
+let p2 = stl::insert_elm sm2 ("b", p1); members sm2;
 //- ["b","a"]
 
-let p3 = insert sm2 ("c", p2); members sm2;
+let p3 = stl::insert_elm sm2 ("c", p2); members sm2;
 //- ["c","b","a"]
 
 // Insert from range, list, vector, k=>v
@@ -222,7 +222,7 @@ insert sm2 ["e"];
 members sm2;
 //- ["e","d","c","b","a"]
 
-let p, ok = insert sm2 ("f"); stl::get_key p, ok, members sm2;
+let p, ok = stl::insert_elm sm2 ("f"); stl::get_key p, ok, members sm2;
 //- "f",1,["f","e","d","c","b","a"]
 
 // Attempt overwrite of existing values
@@ -239,7 +239,7 @@ insert sm2 ["c"];
 insert sm2 {"d"}; 
 //- 0
 
-let p, ok = insert sm2 ("e"); stl::get_key p, ok, members sm2;
+let p, ok = stl::insert_elm sm2 ("e"); stl::get_key p, ok, members sm2;
 //- "e",0,["f","e","d","c","b","a"]
 
 put p 5; members sm2;

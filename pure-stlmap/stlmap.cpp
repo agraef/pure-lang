@@ -928,7 +928,7 @@ px* sm_insert_elm(px* pxsmp, px* kv)
   return pure_tuplel(2,it,pure_int(num_inserted));
 }
 
-int sm_insert_elms_xs(px* pxsmp, px* src)
+int sm_insert(px* pxsmp, px* src)
 {
   sm* smp; pmi pos;
   if (!get_smp(pxsmp,&smp) ) bad_argument();
@@ -947,6 +947,7 @@ int sm_insert_elms_xs(px* pxsmp, px* src)
       for (int i = 0; i<sz; i++) 
         if ( !insert_aux(smp, melems[i], pos, num_inserted) ) bad_argument();
     }
+    else if ( !insert_aux(smp, src, pos, num_inserted) ) bad_argument();
   }
   catch (px* e){
     free(elems);

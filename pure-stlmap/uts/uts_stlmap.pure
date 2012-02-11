@@ -149,65 +149,23 @@ let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
 let sm2 = mkstlmap ((>),0);
 //- ()
 
-let i_b, i_e = stl::begin sm1, stl::pastend sm1;
-//- ()
-
-// Insert members
-
 members sm2;
 //- []
 
-let p, ok = insert sm2 ("a"=>(0..3)); stl::get_key p, ok;
-//- "a",1
+insert sm2 ("a"=>(0..3));
+//- 1
 
 members sm2;
 //- ["a"=>[0,1,2,3]]
 
-let p, ok = insert sm2 ("b"=>{0,1,2,3}); stl::get_key p, ok;
-//- "b",1
-
-members sm2;
+insert sm2 ("b"=>{0,1,2,3}) $$ members sm2;
 //- ["b"=>{0,1,2,3},"a"=>[0,1,2,3]]
 
-// Insert with hinted position
-
 erase sm2; 
 //- 2
 
-catch id $ insert sm2 ("a"=>1, i_b); // i_b is for sm1
-//- bad_argument
-
-let p1, ok = insert sm2 ("a"=>1); members sm2;
-//- ["a"=>1]
-
-let p2 = insert sm2 ("b"=>2, p1); members sm2;
-//- ["b"=>2,"a"=>1]
-
-let p3 = insert sm2 ("c"=>3, p2); members sm2;
-//- ["c"=>3,"b"=>2,"a"=>1]
-
-// Insert from range, list, vector, k=>v
-
-erase sm2; 
+insert sm2 ["a"=>1,"b"=>2,"c"=>3];
 //- 3
-
-let i = stl::find sm1 "a"; get i;
-//- "a"=>1
-
-let j = stl::find sm1 "c"; get j;
-//- "c"=>3
-
-members (i,j);
-//- ["a"=>1,"b"=>2]
-
-insert sm2 (i,j); 
-//- 2
-
-members sm2;
-//- ["b"=>2,"a"=>1]
-
-insert sm2 ["c"=>3];
-//- 1
 
 members sm2;
 //- ["c"=>3,"b"=>2,"a"=>1]
@@ -218,34 +176,30 @@ insert sm2 {"d"=>4};
 members sm2;
 //- ["d"=>4,"c"=>3,"b"=>2,"a"=>1]
 
-insert sm2 ["e"]; 
-//- 1
+insert sm2 ["d"=>0]; 
+//- 0
 
 members sm2;
-//- ["e"=>0,"d"=>4,"c"=>3,"b"=>2,"a"=>1]
+//- ["d"=>4,"c"=>3,"b"=>2,"a"=>1]
 
-let p, ok = insert sm2 ("f"=>6); stl::get_key p, ok, members sm2;
-//- "f",1,["f"=>6,"e"=>0,"d"=>4,"c"=>3,"b"=>2,"a"=>1]
+erase (sm2,"c",stl::smend);
+//- 3
 
-// Attempt overwrite of existing values
+members sm2;
+//- ["d"=>4]
 
-put i 11; get i; members (i,j);
-//- ["a"=>11,"b"=>2]
+insert sm2 (sm1,"a","c");
+//- 2
 
-insert sm2 (i,j);
-//- 0
+members sm2;
+//- ["d"=>4,"b"=>2,"a"=>1]
 
-insert sm2 ["c"=>13]; 
-//- 0
+insert sm2 sm1;
+//- 2
 
-insert sm2 {"d"=>14}; 
-//- 0
+members sm2;
+//- ["e"=>5,"d"=>4,"c"=>3,"b"=>2,"a"=>1]
 
-let p, ok = insert sm2 ("e"=>10); stl::get_key p, ok, members sm2;
-//- "e",0,["f"=>6,"e"=>0,"d"=>4,"c"=>3,"b"=>2,"a"=>1]
-
-put p 5; members sm2;
-//- ["f"=>6,"e"=>5,"d"=>4,"c"=>3,"b"=>2,"a"=>1]
 
 //*** erase ***************************************************************/
 

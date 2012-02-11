@@ -86,8 +86,8 @@ extern "C" {
   bool sh_is_set(px* pxshp);
   px*  sh_find_val(sh* shp, px* key);
   px*  sh_find(px* pxshp, px* key, int what);
-  px*  sh_insert_elm(px* pxshp, px* kv);
-  int  sh_insert_elms_xs(px* pxshp, px* src);
+  int  sh_insert(px* pxshp, px* src);
+  int  sh_insert_elms_stlvec(px* pxshp, sv* svp);
   px*  sh_swap(px* pxshp1, px* pxshp2);
   int  sh_clear(px* pxshp);
   int  sh_erase(px* pxshp, px* trg); 
@@ -105,7 +105,6 @@ extern "C" {
   void sh_do(px* fun, px* pxshp);
 
   void sh_fill_stlvec(px* pxshp, sv* svp);
-  int  sh_insert_elms_stlvec(px* pxshp, sv* svp);
 
   px*  x_sh_find_val(sh* shp, px* key);
   int  x_sh_member(sh* shp, px* key);

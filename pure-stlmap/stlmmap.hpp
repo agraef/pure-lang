@@ -127,7 +127,7 @@ extern "C" {
   px*  smm_put_at(px* pxsmmip, px* val);
   px*  smm_insert_hinted(px* pxsmmp, px* pxsmmip, px* kv);
   px*  smm_insert_elm(px* pxsmmp, px* kv);
-  int  smm_insert_elms_xs(px* pxsmmp, px* src);
+  int  smm_insert(px* pxsmmp, px* src);
   int  smm_insert_elms_stlmmap(px* pxsmmp, px* tpl);
   int  smm_insert_elms_stlvec(px* pxsmmp, sv* svp);
   px*  smm_swap(px* pxsmmp1, px* pxsmmp2);
