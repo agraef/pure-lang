@@ -693,14 +693,21 @@ tuple. It is recommended that you use members instead.
 
 .. function:: update /stlvec msv i x
 
-   same as put (msv,i) x except that it returns msv. Deprecated.
+   same as put (msv,i) x except that it returns msv; throws out_of_bounds
 
-This function is deprecated because its behavior is different than that of the
-functions named update in the Pure standard library. In addition to modifying
-the values of existing elements, these functions will insert a new element
-with the desired value, rather than throwing an exception. In contrast the
-deprecated update provided by pure-stlvec will throws and out of bounds
-exception if the targeted element is not a member.
+Note that the update function provided by pure-stlvec never inserts new
+elements. This behavior is different than that of the update functions in the
+Pure standard library. 
+
+[FIX -- IMHO pure-stlvec's "update" function is a misnomer that should be
+deprecated or just dropped. The name "update" is used in the Pure standard
+library for functions that insert_or_replace. In pure-stlvec "update" only
+applies to elements that already exist (i.e., are stored in the stlvec), and
+means replace_but_never_insert, not insert_or_replace. Thus, "update sv i x"
+could be misleading. Also, IMHO, "put (sv,i) x" more clearly reflects an
+attempt to change the ith element of sv to x. Finally, "insert_or_replace the
+ith element of sv with x" doesn't really make sense for a stlvec because
+insertion at i implies shifting all elments after i to new positions.]
 
 .. function:: append /stlvec sv x
 
