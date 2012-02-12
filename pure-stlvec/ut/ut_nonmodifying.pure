@@ -89,7 +89,7 @@ test_find_first_of = ok when
   ok1 = find_first_of sv1 sv2 (==) == stl::svend;
   append sv2 "c";
   ok2 = find_first_of (sv1,2,4) sv2 (==) == 2;
-  update sv2 0 (sv1!0);
+  put (sv2, 0) (sv1!0);
   rmlast sv2;
   ok3 = find_first_of sv1 sv2 (==) == 0;
   ok4 = check_refcs sv1 [2,1,1,1,1];
@@ -111,11 +111,11 @@ test_adjacent_find = ok when
   ok0 = get err_p;
   ok1 = adjacent_find sv1 (==) == 0;
   ok2 = adjacent_find (sv1,2,svend) (==) == 2;
-  update sv1 0 "x";
+  put (sv1,0) "x";
   ok3 = adjacent_find sv1 (==) == 2;
-  update sv1 3 "c";
+  put (sv1,3) "c";
   ok4 = adjacent_find sv1 (==) == 3;
-  update sv1 3 "y";
+  put (sv1,3) "y";
   ok5 = adjacent_find sv1 (==) == svend;
   ok6 = check_refcs sv1 1;
   ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5,ok6];
@@ -193,7 +193,7 @@ test_equal = ok when
   catch eh $ equal sv1 sv2 crash;
   ok0 = get err_p;
   ok1 = equal sv1 sv2 (==) == true;
-  update sv2 1 "x";
+  put (sv2, 1) "x";
   ok2 = equal sv1 sv2 (==) == false;
   ok3 = check_refcs sv1 [2,1,2,2,2];
   ok4 = check_refcs sv2 1;

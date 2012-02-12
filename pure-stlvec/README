@@ -392,7 +392,7 @@ const_stlvecs (usually after they have been created and modified within a
 function) by the ``const_stlvec`` function. This function converts a mutable
 stlvec to an immutable stlvec without changing the underlying STL vector. 
 
-Typically, a "pure" function that "updates" a stlvec passed to it as an
+Typically, a "pure" function that "modifies" a stlvec passed to it as an
 argument will first copy the input stlvec to a new locally scoped (mutable)
 stlvec using the stlvec function. It will then modify the new stlvec and use
 const_stlvec to make the new stlvec immutable before it is returned. It should
@@ -689,11 +689,18 @@ tuple. It is recommended that you use members instead.
 
 .. function:: put /stlvec (msv,i) x
  
-   replace the i\ th member of msv by x and return msv;
+   replace the i\ th member of msv by x and return x; throws out_of_bounds
 
 .. function:: update /stlvec msv i x
 
-   same as put (msv,i) x
+   same as put (msv,i) x except that it returns msv. Deprecated.
+
+This function is deprecated because its behavior is different than that of the
+functions named update in the Pure standard library. In addition to modifying
+the values of existing elements, these functions will insert a new element
+with the desired value, rather than throwing an exception. In contrast the
+deprecated update provided by pure-stlvec will throws and out of bounds
+exception if the targeted element is not a member.
 
 .. function:: append /stlvec sv x
 
