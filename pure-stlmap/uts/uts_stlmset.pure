@@ -365,22 +365,22 @@ let sm1 = stlmset ["a","b","c","d"];
 let sm2 = stlmset ["b","c","d"];
 //- ()
 
-stl::equal_elms sm1 sm1;
+stl::map_equal sm1 sm1;
 //- 1
 
-stl::equal_elms sm1 sm2;
+stl::map_equal sm1 sm2;
 //- 0
 
-stl::equal_elms sm2 sm1;
+stl::map_equal sm2 sm1;
 //- 0
 
-stl::equal_elms (sm1,"b","e") sm1;
+stl::map_equal (sm1,"b","e") sm1;
 //- 0
 
-stl::equal_elms (sm1,"b","e") sm2;
+stl::map_equal (sm1,"b","e") sm2;
 //- 1
 
-stl::equal_elms (sm1,"b","d") (sm2,stl::smbeg, "d");
+stl::map_equal (sm1,"b","d") (sm2,stl::smbeg, "d");
 //- 1
 
 sm1 == sm1;
@@ -437,22 +437,22 @@ sm2 >= sm1;
 (sm1,"b",stl::smend) == sm2; // note tuple overrided issue
 //- 0
 
-stl::equal_elms sm1 sm1;
+stl::map_equal sm1 sm1;
 //- 1
 
-stl::equal_elms sm1 sm2;
+stl::map_equal sm1 sm2;
 //- 0
 
-stl::equal_elms (sm1,"b",stl::smend) sm2;
+stl::map_equal (sm1,"b",stl::smend) sm2;
 //- 1
 
-stl::equal_elms (sm1,"c",stl::smend) sm2;
+stl::map_equal (sm1,"c",stl::smend) sm2;
 //- 0
 
-stl::equal_elms (sm1,"c",stl::smend) (sm2,"c",stl::smend);
+stl::map_equal (sm1,"c",stl::smend) (sm2,"c",stl::smend);
 //- 1
 
-stl::equal_elms sm2 (sm1,"b",stl::smend);
+stl::map_equal sm2 (sm1,"b",stl::smend);
 //- 1
 
 (sm1,"b",stl::smend) < sm2;
@@ -485,58 +485,58 @@ let sm3 = stlmset ["a","b","c","d"];
 //- ()
 
 
-let sm = stl::add sm1 sm2; members sm;
+let sm = stl::map_merge sm1 sm2; members sm;
 //- ["a","b","b","c","c","d"]
 
-let sm = stl::add sm3 sm2; members sm;
+let sm = stl::map_merge sm3 sm2; members sm;
 //- ["a","b","b","c","c","d","d"]
 
-let sm = stl::add sm2 sm3; members sm;
+let sm = stl::map_merge sm2 sm3; members sm;
 //- ["a","b","b","c","c","d","d"]
 
-let sm = stl::union sm1 sm2; members sm;
+let sm = stl::map_union sm1 sm2; members sm;
 //- ["a","b","c","d"]
 
-let sm = stl::union sm3 sm2; members sm;
+let sm = stl::map_union sm3 sm2; members sm;
 //- ["a","b","c","d"]
 
-let sm = stl::union sm2 sm3; members sm;
+let sm = stl::map_union sm2 sm3; members sm;
 //- ["a","b","c","d"]
 
-let sm = stl::intersection sm1 sm2; members sm;
+let sm = stl::map_intersection sm1 sm2; members sm;
 //- ["b","c"]
 
-let sm = stl::intersection sm3 sm2; members sm;
+let sm = stl::map_intersection sm3 sm2; members sm;
 //- ["b","c","d"]
 
-let sm = stl::intersection sm2 sm3; members sm;
+let sm = stl::map_intersection sm2 sm3; members sm;
 //- ["b","c","d"]
 
-let sm = stl::difference sm1 sm2; members sm;
+let sm = stl::map_difference sm1 sm2; members sm;
 //- ["a"]
 
-let sm = stl::difference sm3 sm2; members sm;
+let sm = stl::map_difference sm3 sm2; members sm;
 //- ["a"]
 
-let sm = stl::difference sm2 sm3; members sm;
+let sm = stl::map_difference sm2 sm3; members sm;
 //- []
 
-let sm = stl::symmetric_difference sm1 sm2; members sm;
+let sm = stl::map_symmetric_difference sm1 sm2; members sm;
 //- ["a","d"]
 
-let sm = stl::symmetric_difference sm3 sm2; members sm;
+let sm = stl::map_symmetric_difference sm3 sm2; members sm;
 //- ["a"]
 
-let sm = stl::symmetric_difference sm2 sm3; members sm;
+let sm = stl::map_symmetric_difference sm2 sm3; members sm;
 //- ["a"]
 
-stl::subset sm1 sm2;
+stl::map_includes sm1 sm2;
 //- 0
 
-stl::subset sm3 sm2;
+stl::map_includes sm3 sm2;
 //- 1
 
-stl::subset sm2 sm3;
+stl::map_includes sm2 sm3;
 //- 0
 
 //*** Mapping *****************************************************

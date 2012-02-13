@@ -1,4 +1,4 @@
-/* ut_set_timer.pure -- time set union and set intersection operations */
+/* ut_set_timer.pure -- time set map_union and set map_intersection operations */
 
 using set, stlmap, system, stldict;
 
@@ -48,8 +48,8 @@ time_stlset empty n = () when
 end with
   spin 0 = ();
   spin n = spin (n-1) when 
-    xx = stl::union ss0 ss1;
-    yy = stl::intersection xx ss1;
+    xx = stl::map_union ss0 ss1;
+    yy = stl::map_intersection xx ss1;
   end;
 end when 
   elms0 = (0:2.. n);
@@ -77,22 +77,22 @@ end;
 
 /* Sample runs - Compare dict, pure-stldict and pure-stlmap
 
-   (test 1 n) times set union and intersection where the left hand set,
+   (test 1 n) times set map_union and map_intersection where the left hand set,
    s1, is empty and the right hand set, s2 contains (1:3..n). (test 0 n) does
    the same except that s1 contains (0:2..n).
 
    Three subtests are performed. Each subtest uses a different operator to
-   compute the union or sum.
+   compute the map_union or sum.
 
-     time_set times the union and intersection of Pure standard library sets,
+     time_set times the map_union and map_intersection of Pure standard library sets,
      using + and *.
 
-     time_orddict times the union and itersection of orddicts provided by
+     time_orddict times the map_union and itersection of orddicts provided by
      stldict, using + and *.
 
-     time_stlset times the union and intersections of pure-stlmap stlsets,
-     using the stl::union and stl::intersection. For multimaps and
-     multisets, not tested here, if produces a multiset union rather than
+     time_stlset times the map_union and intersections of pure-stlmap stlsets,
+     using the stl::map_union and stl::map_intersection. For multimaps and
+     multisets, not tested here, if produces a multiset map_union rather than
      multiset sum.
 
    > // Results for left set empty.

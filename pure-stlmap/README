@@ -156,7 +156,7 @@ default values. ::
 
    > let sm1 = emptystlmap;   // uses default, (<), to order keys
 
-You can add elements using insert or update_elm. 
+You can map_merge elements using insert or update_elm. 
 
    > insert ss1 ss;           // insert ss's elements into ss1
    5
@@ -294,7 +294,7 @@ function. ::
    > update sm1 "e" 50 $$ sm1!"e";  // change the value associated with "e"
    50
 
-   > update sm1 "x" 24 $$ sm1!"x"   // update can also add new elements
+   > update sm1 "x" 24 $$ sm1!"x"   // update can also map_merge new elements
    24
 
    > members sm1;
@@ -946,7 +946,7 @@ elements are equal.
 
 .. namespace:: 
 
-.. function:: equal_elms /stlmap rng1 rng2
+.. function:: map_equal /stlmap rng1 rng2
 
 .. function:: infix == /stlmap rng1 rng2
               infix ~= /stlmap rng1 rng2
@@ -966,13 +966,13 @@ pure-stlmap's == operators when applied to range tuples. E.g.::
 
    > let xx  = stl::stlset  ["a","b","c","d"];
 
-   > stl::equal_elms (xx,"a","c") (ss,"a","c");
+   > stl::map_equal (xx,"a","c") (ss,"a","c");
    1
 
    > (xx,"a","c") == (ss,"a","c");
    0
 
-Thus, for ranges, use equal_elms rather than ==. This issue does not arrise
+Thus, for ranges, use map_equal rather than ==. This issue does not arrise
 for the other comparison operators such as (<).
 
 .. function:: infix <  /stlmap rng1 rng2
@@ -1430,19 +1430,19 @@ operators).
 When applied to the multi-keyed containers, stlmmap and stlmset, these
 operations do not necessarily produce the same results as their Pure standard
 library counter parts. In particular, when applied to multi-keyed contaners,
-union is multiset union while (+) in the Pure standard library is the
-multiset sum. If you want the multiset sum of a stlmmap or stlhmap, use add.
+map_union is multiset map_union while (+) in the Pure standard library is the
+multiset sum. If you want the multiset sum of a stlmmap or stlhmap, use map_merge.
 
-..function:: add /stlmap rng1 rng2
+..function:: map_merge /stlmap rng1 rng2
 
   Construct a new ordered container from rng1 and then insert rng2 and return
   it. rng1 and rng2 must be defined on the same type of ordered container.
 
-..function:: union /stlmap rng1 rng2
-             difference /stlmap rng1 rng2
-             intersection /stlmap rng1 rng2
-             symmetric_difference /stlmap rng1 rng2
-             subset /stlmap rng1 rng2
+..function:: map_union /stlmap rng1 rng2
+             map_difference /stlmap rng1 rng2
+             map_intersection /stlmap rng1 rng2
+             map_symmetric_difference /stlmap rng1 rng2
+             map_includes /stlmap rng1 rng2
 
    Returns a new ordered associative container of the same type as the ordered
    containers underlying rng1 and rng2. If the ranges are defined over a
@@ -1456,19 +1456,19 @@ those in the Pure standard library. ::
    > let smm1 = stlmmap ["a"=>1,"b"=>2,"c"=>31,"c"=>32];
    > let smm2 = stlmmap ["c"=>32,"c"=>32,"c"=>33,"d"=>4,"e"=>5];
 
-   > members $ add smm1 smm2; // three "c"=>32
+   > members $ map_merge smm1 smm2; // three "c"=>32
    ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"c"=>32,"c"=>32,"c"=>33,"d"=>4,"e"=>5]
 
-   > members $ union smm1 smm2;  // two "c"=>32
+   > members $ map_union smm1 smm2;  // two "c"=>32
    ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"c"=>32,"c"=>33,"d"=>4,"e"=>5]
 
    > let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>31];
    > let sm2 = stlmap ["c"=>32,"d"=>4,"e"=>5];
 
-   > members $ union sm1 sm2; // "c"=>31 from sm1, not "c"=>32 from sm2
+   > members $ map_union sm1 sm2; // "c"=>31 from sm1, not "c"=>32 from sm2
    ["a"=>1,"b"=>2,"c"=>31,"d"=>4,"e"=>5]
 
-   > members $ intersection sm1 sm2; // "c"=>31 from sm1
+   > members $ map_intersection sm1 sm2; // "c"=>31 from sm1
    ["c"=>31]
 
 
