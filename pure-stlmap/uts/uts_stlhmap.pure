@@ -1,5 +1,5 @@
 /* uts_stlhmap.pure -- tests for stlhmap */
-//-- --comment c_on --verbose off
+//-- --comment c_on --verbose on
 
 //*** Imports *********************************************************
 
@@ -80,17 +80,16 @@ sort elmless (stl::vector shm1);
 
 //*** Custom Hash and Equal ***********************************************/
 
-//-- -s
 
 //*** Modification ********************************************************/
 
 let shm1 = emptystlhmap;
 //- ()
 
-update shm1 "a" 10; hm_elms shm1;
+insert shm1 ("a", 10); hm_elms shm1;
 //- ["a"=>10]
 
-update shm1 "a" 1; hm_elms shm1;
+insert_or_update shm1 ("a",1); hm_elms shm1;
 //- ["a"=>1]
 
 insert shm1 ["a"=>10,"b"=>2,"c"=>3,"d"=>4]; 
@@ -99,11 +98,23 @@ insert shm1 ["a"=>10,"b"=>2,"c"=>3,"d"=>4];
 hm_elms shm1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4]
 
-insert shm1 ("a"=>20);
-//- 0
+insert_or_update shm1 {"a"=>10,"b"=>20};
+//- 2
+
+hm_elms shm1;
+//- ["a"=>10,"b"=>20,"c"=>3,"d"=>4]
+
+update shm1 "a" 1;
+//- 1
+
+update shm1 "b" 2;
+//- 2
 
 hm_elms shm1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4]
+
+catch id $ update shm1 "x" 24;
+//- out_of_bounds
 
 insert shm1 ("e"=>5);
 //- 1
@@ -111,26 +122,11 @@ insert shm1 ("e"=>5);
 hm_elms shm1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
-let xx = update_elm shm1 ("a"=>20); xx!"a";
-//- 20
-
-hm_elms shm1;
-//- ["a"=>20,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
-
-let xx  = update_elm shm1 ("f"=>5); xx!"f";
-//- 5
-
-hm_elms shm1;
-//- ["a"=>20,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>5]
-
-update shm1 "a" 1; hm_elms shm1;
-//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>5]
-
-erase (shm1,"f");
+erase (shm1,"d");
 //- 1
 
 hm_elms shm1;
-//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
+//- ["a"=>1,"b"=>2,"c"=>3,"e"=>5]
 
 let shm2 = stlhmap ["x"=>23,"y"=>24,"z"=>26];
 //- ()
@@ -142,7 +138,7 @@ hm_elms shm1;
 //- ["x"=>23,"y"=>24,"z"=>26]
 
 hm_elms shm2;
-//- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
+//- ["a"=>1,"b"=>2,"c"=>3,"e"=>5]
 
 erase shm1; 
 //- 3
@@ -211,7 +207,7 @@ foldl1 (\(r=>l) (k=>v) -> (r+k=>l+v)) shm1;
 let shm2 = emptystlhmap;
 //- ()
 
-do (update_elm shm2) shm1;
+do (insert_or_update shm2) shm1;
 //- ()
 
 hm_elms shm2;

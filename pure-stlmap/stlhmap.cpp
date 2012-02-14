@@ -72,18 +72,6 @@ void stlhmap::refc_elms()
 
 /*** Helpers *************************************************************/
 
-static pxhmapi update_aux(sh* shp, px* k, px* v)
-{
-  pxhmap& hm = shp->hm;
-  pair<pxhmapi,bool> i_ok = hm.insert(make_pair(pure_new(k),pure_new(v)));
-  if (!i_ok.second) {
-    pure_free(k);
-    pure_free(i_ok.first->second);
-    i_ok.first->second = v;
-  }
-  return i_ok.first;
-}
-
 static bool extract_kv(sh* shp, px* kv, px*& k, px*& v)
 {
   bool ok = true;
@@ -97,19 +85,24 @@ static bool extract_kv(sh* shp, px* kv, px*& k, px*& v)
   return ok;
 }
 
-// increases inserted by 1 iff inserted new value
-static bool insert_aux(sh* shp, px* kv, pxhmapi& pos, int& inserted)
+// increases inserted by 1 iff inserted a (k=>val) elm or changed existing val
+static bool insert_aux(sh* shp,px* kv, pxhmapi& pos,int& inserted,bool update)
 {
   px *k, *v;
   bool ok = extract_kv(shp,kv,k,v);
   if (ok) {
     pair<pxhmapi,bool> i_ok = shp->hm.insert(make_pair(k,v));
+    pos = i_ok.first;
     if (i_ok.second) {
       pure_new(k);
       if (v) pure_new(v);
-    }    
-    pos = i_ok.first;
-    inserted += i_ok.second;
+      inserted++;
+    } 
+    else if (update) {
+      pos->second = v;
+      if (v) pure_new(v);
+      inserted++;
+    }
   }
   return ok;
 }
@@ -199,7 +192,7 @@ px*  sh_make_empty(int keys_only)
   return px_pointer( new sh(keys_only) );
 }
 
-px*  sh_copy(px* pxshp)
+px* sh_copy(px* pxshp)
 {
   sh* shp;
   if (!get_shp(pxshp,&shp) ) bad_argument();
@@ -298,7 +291,7 @@ px* sh_find(px* pxshp, px* key, int what)
   return get_elm_aux(shp, i, what);
 }
 
-int sh_insert(px* pxshp, px* src)
+int sh_insert(px* pxshp, px* src, bool update)
 {
   sh* shp; pxhmapi pos;
   if (!get_shp(pxshp,&shp) ) bad_argument();
@@ -308,19 +301,21 @@ int sh_insert(px* pxshp, px* src)
   int num_inserted = 0;
   try {
     if (pure_is_listv(src, &sz, &elms)) {
-      for (int i = 0; i<sz; i++)
-        if ( !insert_aux(shp, elms[i], pos, num_inserted) ) bad_argument();
+      for (int i = 0; i<sz; i++) {
+        if ( !insert_aux(shp, elms[i], pos, num_inserted, update) )
+          bad_argument();
+      }
       free(elms);
     } else if (matrix_type(src) == 0) {
       sz = matrix_size(src); 
       px** hmelms = (pure_expr**) pure_get_matrix_data(src);
-      for (int i = 0; i<sz; i++) 
-        if ( !insert_aux(shp, hmelms[i], pos, num_inserted) ) bad_argument();
-    }
-    else {
-
-      if ( !insert_aux(shp, src, pos, num_inserted) ) bad_argument();
-    }
+      for (int i = 0; i<sz; i++) {
+        if ( !insert_aux(shp, hmelms[i], pos, num_inserted, update) ) 
+          bad_argument();
+      }
+    } else
+      if ( !insert_aux(shp, src, pos, num_inserted, update) ) 
+        bad_argument();
   }
   catch (px* e){
     free(elms);
@@ -329,7 +324,7 @@ int sh_insert(px* pxshp, px* src)
   return num_inserted;
 }
 
-int sh_insert_elms_stlhmap(px* pxshp1, px* pxshp2)
+int sh_insert_stlhmap(px* pxshp1, px* pxshp2, bool update)
 {
   sh *shp1, *shp2;
   if (!get_shp(pxshp1,&shp1) ) bad_argument();
@@ -338,8 +333,22 @@ int sh_insert_elms_stlhmap(px* pxshp1, px* pxshp2)
   pxhmap& hmp2 = shp2->hm;
   size_t oldsz = hmp1.size();
   try {
-    hmp1.insert(hmp2.begin(),hmp2.end());
-    shp1->refc_elms();
+    if (update) {
+      int num_inserted = 0; 
+      for (pxhmapi i = hmp2.begin(); i!=hmp2.end(); i++) {
+        pair<pxhmapi,bool> i_ok = hmp1.insert(*i);
+        if (!i_ok.second)
+          (i_ok.first)->second = i->second;
+        pure_new(i->second);
+        num_inserted++;
+      }
+      return num_inserted;
+    }
+    else {
+      int oldsz = hmp1.size();
+      hmp1.insert(hmp2.begin(),hmp2.end());
+      return hmp1.size() - oldsz;
+    } 
   }
   catch (px* e) {
     pure_throw(e);
@@ -347,7 +356,7 @@ int sh_insert_elms_stlhmap(px* pxshp1, px* pxshp2)
   return hmp1.size() - oldsz;
 }
 
-int sh_insert_elms_stlvec(px* pxshp, sv* svp)
+int sh_insert_stlvec(px* pxshp, sv* svp, bool update)
 {
   int num_inserted = 0;
   sh* shp; 
@@ -355,13 +364,24 @@ int sh_insert_elms_stlvec(px* pxshp, sv* svp)
   if (!get_shp(pxshp,&shp) ) bad_argument();
   try {
     for (sv::iterator i = svp->begin(); i!=svp->end(); i++) {
-      if ( !insert_aux(shp, *i, pos, num_inserted) ) bad_argument();
+      if ( !insert_aux(shp, *i, pos, num_inserted, update) )
+        bad_argument();
     }
   }
   catch (px* e) {
     pure_throw(e);
   }
   return num_inserted;
+}
+
+px*  sh_insert_stlhmap(px* pxshp, bool update)
+{
+  sh* shp;
+  if (!get_shp(pxshp,&shp) ) bad_argument();
+  pxhmap& hm = shp->hm;
+  sh* cpy = new sh(*shp);
+  cpy->refc_elms();
+  return px_pointer( cpy );
 }
 
 px*  sh_swap(px* pxshp1, px* pxshp2)
@@ -593,7 +613,10 @@ px* sh_update(px* pxshp, px* key, px* val)
   sh* shp;
   if ( !get_shp(pxshp,&shp) ) bad_argument();
   if (shp->keys_only) return 0; // fail for sets
-  pxhmapi pos = update_aux(shp, key, val);
-  return pxshp;
+  pxhmap& hm = shp->hm;
+  pxhmapi pos = hm.find(key);
+  if ( pos == hm.end() ) index_error();
+  pos->second = val;
+  if (val) pure_new(val);
+  return val;
 }
-

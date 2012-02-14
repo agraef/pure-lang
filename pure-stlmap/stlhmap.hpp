@@ -86,8 +86,9 @@ extern "C" {
   bool sh_is_set(px* pxshp);
   px*  sh_find_val(sh* shp, px* key);
   px*  sh_find(px* pxshp, px* key, int what);
-  int  sh_insert(px* pxshp, px* src);
-  int  sh_insert_elms_stlvec(px* pxshp, sv* svp);
+  int  sh_insert(px* pxshp, px* src, bool update);
+  px*  sh_insert_stlhmap(px* pxshp, bool update);
+  int  sh_insert_stlvec(px* pxshp, sv* svp, bool update);
   px*  sh_swap(px* pxshp1, px* pxshp2);
   int  sh_clear(px* pxshp);
   int  sh_erase(px* pxshp, px* trg); 

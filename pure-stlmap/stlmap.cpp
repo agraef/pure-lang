@@ -64,20 +64,6 @@ static int range_size(sm* smp, pmi b, pmi e)
   return sz;
 }
 
-static pmi update_aux(sm* smp, px* k, px* v)
-{
-  pxhmap& mp = smp->mp;
-  pmi pos;
-  if ( smp->get_cached_pmi(k, pos) ) {
-    pos->second = v;
-  }   
-  else {
-    pos = mp.find(k);
-    if ( pos == mp.end() ) index_error();
-    pos->second = v;
-  }
-  return pos;
-}
 
 static bool extract_kv(sm* smp, px* kv, px*& k, px*& v)
 {
@@ -111,7 +97,7 @@ static bool insert_aux(sm* smp, px* kv, pmi& pos, int& inserted, bool update)
     if ( smp->get_cached_pmi(k, pos) ) {
       if (update) {
         pos->second = v;
-        inserted += 1;
+        inserted++;
       }
     }
     else {
@@ -121,7 +107,7 @@ static bool insert_aux(sm* smp, px* kv, pmi& pos, int& inserted, bool update)
         inserted += 1;
       else if (update) {
         pos->second = v;
-        inserted +=1;
+        inserted++;
       }
     }
   }
@@ -926,7 +912,8 @@ px* sm_insert_elm(px* pxsmp, px* kv)
   if (!get_smp(pxsmp,&smp)) bad_argument();
   int num_inserted = 0;
   try {
-    if ( !insert_aux(smp, kv, pos, num_inserted, update) ) bad_argument();
+    if ( !insert_aux(smp, kv, pos, num_inserted, update) )
+      bad_argument();
   }
   catch (px* e) {
     pure_throw(e);
@@ -1007,9 +994,10 @@ int sm_insert_stlvec(px* pxsmp, sv* sv_p, bool update)
   if (!get_smp(pxsmp,&smp) ) bad_argument();
   int num_inserted = 0;
   try {
-    for (sv::iterator i = sv_p->begin(); i!=sv_p->end(); i++)
+    for (sv::iterator i = sv_p->begin(); i!=sv_p->end(); i++) {
       if ( !insert_aux(smp, *i, pos, num_inserted, update) )
         bad_argument();
+    }
   } catch (px* e) {
     pure_throw(e);
   }
@@ -1456,10 +1444,35 @@ px* sm_update(px* pxsmp, px* key, px* val)
   sm* smp;
   if (!get_smp(pxsmp,&smp) ) bad_argument();
   if (smp->keys_only) return 0; // fail for sets
-  pmi pos = update_aux(smp, key, val);
+  pxhmap& mp = smp->mp;
+  pmi pos;
+  if ( smp->get_cached_pmi(key, pos) ) {
+    pos->second = val;
+  }   
+  else {
+    pos = mp.find(key);
+    if ( pos == mp.end() ) index_error();
+    pos->second = val;
+  }
   smp->cache_pmi(key,pos);
   return val;
 }
+
+static pmi update_aux(sm* smp, px* k, px* v)
+{
+  pxhmap& mp = smp->mp;
+  pmi pos;
+  if ( smp->get_cached_pmi(k, pos) ) {
+    pos->second = v;
+  }   
+  else {
+    pos = mp.find(k);
+    if ( pos == mp.end() ) index_error();
+    pos->second = v;
+  }
+  return pos;
+}
+
 
 px* sm_update_with(px* pxsmp, px* key, px* unaryfun)
 {
