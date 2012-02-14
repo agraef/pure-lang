@@ -72,10 +72,10 @@ static pmi update_aux(sm* smp, px* k, px* v)
     pos->second = v;
   }   
   else {
-    pair<pmi,bool> i_ok = mp.insert(pxhpair(k,v));
-    if (!i_ok.second) i_ok.first->second = v;
-    pos = i_ok.first;
-   }
+    pos = mp.find(k);
+    if ( pos == mp.end() ) index_error();
+    pos->second = v;
+  }
   return pos;
 }
 
@@ -102,7 +102,7 @@ static bool extract_kv(sm* smp, px* kv, px*& k, px*& v)
   return ok;
 }
 
-// increases inserted by 1 iff inserted new value
+// increases inserted by 1 iff inserted a (k=>val) elm or changed existing val
 static bool insert_aux(sm* smp, px* kv, pmi& pos, int& inserted, bool update)
 {
   px *k, *v;
@@ -1458,7 +1458,7 @@ px* sm_update(px* pxsmp, px* key, px* val)
   if (smp->keys_only) return 0; // fail for sets
   pmi pos = update_aux(smp, key, val);
   smp->cache_pmi(key,pos);
-  return pxsmp;
+  return val;
 }
 
 px* sm_update_with(px* pxsmp, px* key, px* unaryfun)

@@ -16,7 +16,7 @@ included with the pure-stlvec distribution package for details.
 
 using system, stlhmap, stlmap;
 
-// uses stlmap, update_elm_with
+// uses stlmap, update_with
 print_anagrams_map_1 n words = tm when
   tm = clock;
   do add_word words;
@@ -24,7 +24,7 @@ print_anagrams_map_1 n words = tm when
   tm = clock - tm;
   do puts anagrams;
 end with
-  add_word word = update_elm_with (:) word_groups (key=>word) when
+  add_word word = update_with (:) word_groups (key=>word) when
     key = strcat $ sort (<) (list word);
   end;
   str_words (k=>words) = join " " (reverse words);
@@ -45,7 +45,7 @@ end with
     if member word_groups key then 
       update word_groups key (word:(word_groups!key))
     else
-      update word_groups key [word];                         
+      insert word_groups (key=>[word]);                         
   end;
   str_words (k=>words) = join " " (reverse words);
 end when
@@ -65,7 +65,7 @@ end with
     if member word_groups key then 
       update word_groups key (word:(word_groups!key))
     else
-      update word_groups key [word];                         
+      insert word_groups (key=>[word]);                         
   end;
   str_words (k=>words) = join " " (reverse words);
 end when

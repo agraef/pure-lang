@@ -892,33 +892,26 @@ stl::next_key sm1 "e";
 stl::next_key sm1 stl::smend;
 //- stl::smend
 
-update_elm sm1 ("a"=>11); members sm1;
+update sm1 "a" 11; members sm1;
 //- ["a"=>11,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
-update sm1 "f" 6; members sm1;
-//- ["a"=>11,"b"=>2,"c"=>3,"d"=>4,"e"=>5,"f"=>6]
+catch id $ update sm1 "f" 6;
+//- out_of_bounds
 
-update_elm sm1 ("b"=>12); members sm1;
-//- ["a"=>11,"b"=>12,"c"=>3,"d"=>4,"e"=>5,"f"=>6]
+update sm1 "b" 12; members sm1;
+//- ["a"=>11,"b"=>12,"c"=>3,"d"=>4,"e"=>5]
 
 let sm2 = mkstlmap (>);
 //- ()
 
-update_elm_with (:) sm2 ("a"=>1); members sm2;
+update_with (:) sm2 ("a"=>1); members sm2;
 //- ["a"=>[1]]
 
-update_elm_with (:) sm2 ("a"=>2); members sm2;
+update_with (:) sm2 ("a"=>2); members sm2;
 //- ["a"=>[2,1]]
 
-update_elm_with (:) sm2 ("b"=>3); members sm2;
+update_with (:) sm2 ("b"=>3); members sm2;
 //- ["b"=>[3],"a"=>[2,1]]
 
-update_elm_with (:) sm2 ("b"=>4); members sm2;
+update_with (:) sm2 ("b"=>4); members sm2;
 //- ["b"=>[4,3],"a"=>[2,1]]
-
-update sm2 "f" [5,6]; members sm2;
-//- ["f"=>[5,6],"b"=>[4,3],"a"=>[2,1]]
-
-sm2!"f";
-//- [5,6]
-
