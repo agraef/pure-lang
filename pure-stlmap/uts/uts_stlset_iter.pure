@@ -1,10 +1,12 @@
 /* uts_stlset_iter.pure -- tests for stlset iterators */
-//-- --comment c_off --verbose off
+//-- --comment c_off --verbose on
 
 //*** Imports *********************************************************
 
 using system, stlmap, stlvec;
 //- ()
+
+//-- -s
 
 /*** Iterators - Construction ****************************************/
 
@@ -451,3 +453,101 @@ let ok, smx, f, l = stl::range_info (sm1,"b"); ok;
 smx===sm1, f==i_b, l==i_c;
 //- 1,1,1
 
+//*** Insert *************************************************************/
+
+//-- -r
+let sm1 = stlmap ["a","b","c","d","e"];
+//- ()
+
+let sm2 = mkstlmap ((>),0);
+//- ()
+
+let i_b, i_e = stl::begin sm1, stl::pastend sm1;
+//- ()
+
+members sm2;
+//- []
+
+let p, ok = stl::insert_elm sm2 ("a"); stl::get_key p, ok;
+//- "a",1
+
+members sm2;
+//- ["a"0,1,2,3]]
+
+let p, ok = stl::insert_elm sm2 ("b"); stl::get_key p, ok;
+//- "b",1
+
+members sm2;
+//- ["b"0,1,2,3},"a"0,1,2,3]]
+
+// Stl::Insert_Elm with hinted position
+
+erase sm2; 
+//- 2
+
+catch id $ stl::insert_elm sm2 ("a", i_b); // i_b is for sm1
+//- bad_argument
+
+let p1, ok = stl::insert_elm sm2 ("a"); members sm2;
+//- ["a"]
+
+let p2 = stl::insert_elm sm2 ("b", p1); members sm2;
+//- ["b","a"]
+
+let p3 = stl::insert_elm sm2 ("c", p2); members sm2;
+//- ["c","b","a"]
+
+// Stl::Insert_Elm from range, list, vector, k
+
+erase sm2; 
+//- 3
+
+let i = stl::find sm1 "a"; get i;
+//- "a"
+
+let j = stl::find sm1 "c"; get j;
+//- "c"
+
+members (i,j);
+//- ["a","b"]
+
+insert sm2 (i,j); 
+//- 2
+
+members sm2;
+//- ["b","a"]
+
+insert sm2 ["c"];
+//- 1
+
+members sm2;
+//- ["c","b","a"]
+
+insert sm2 {"d","e"};
+//- 2
+
+members sm2;
+//- ["e","d","c","b","a"]
+
+let p, ok = stl::insert_elm sm2 ("f"); stl::get_key p, ok, members sm2;
+//- "f",1,["f","e","d","c","b","a"]
+
+// Attempt overwrite of existing values
+
+put i 11; get i; members (i,j);
+//- ["a"1,"b"]
+
+insert sm2 (i,j);
+//- 0
+
+insert sm2 ["c"3]; 
+//- 0
+
+let p, ok = stl::insert_elm sm2 ("d"4); stl::get_key p, ok, members sm2;
+//- "d",0,["f","e","d","c","b","a"]
+
+let p, ok = stl::insert_elm sm2 ("e"0); stl::get_key p, ok, members sm2;
+//- "e",0,["f","e","d","c","b","a"]
+
+put p 15; members sm2;
+//- ["f","e"5,"d","c","b","a"]

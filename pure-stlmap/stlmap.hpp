@@ -132,9 +132,9 @@ extern "C" {
   px*  sm_put_at(px* pxsmip, px* val);
   px*  sm_insert_hinted(px* pxsmp, px* pxsmip, px* kv);
   px*  sm_insert_elm(px* pxsmp, px* kv);
-  int  sm_insert(px* pxsmp, px* src);
-  int  sm_insert_elms_stlmap(px* pxsmp, px* tpl);
-  int  sm_insert_elms_stlvec(px* pxsmp, sv* svp);
+  int  sm_insert(px* pxsmp, px* src, bool update);
+  int  sm_insert_stlmap(px* pxsmp, px* tpl, bool update);
+  int  sm_insert_stlvec(px* pxsmp, sv* svp, bool update);
   px*  sm_swap(px* pxsmp1, px* pxsmp2);
   int  sm_clear(px* pxsmp);
   int  sm_erase(px* pxsmp, px* trg); 

@@ -200,6 +200,47 @@ insert sm2 sm1;
 members sm2;
 //- ["e"=>5,"d"=>4,"c"=>3,"b"=>2,"a"=>1]
 
+//*** Insert or Update **************************************************/
+
+let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+let sm2 = mkstlmap ((>),0);
+//- ()
+
+members sm2;
+//- []
+
+insert_or_update sm2 ("a"=>1);
+//- 1
+
+members sm2;
+//- ["a"=>1]
+
+insert_or_update sm2 ["a"=>10,"b"=>2,"c"=>3];
+//- 3
+
+members sm2;
+//- ["c"=>3,"b"=>2,"a"=>10]
+
+insert_or_update sm2 {"c"=>30,"d"=>40};
+//- 2
+
+members sm2;
+//- ["d"=>40,"c"=>30,"b"=>2,"a"=>10]
+
+insert_or_update sm2 (sm1,"a","c");
+//- 2
+
+members sm2;
+//- ["d"=>40,"c"=>30,"b"=>2,"a"=>1]
+
+insert_or_update sm2 sm1;
+//- 5
+
+members sm2;
+//- ["e"=>5,"d"=>4,"c"=>3,"b"=>2,"a"=>1]
+
 
 //*** erase ***************************************************************/
 

@@ -103,15 +103,26 @@ static bool extract_kv(sm* smp, px* kv, px*& k, px*& v)
 }
 
 // increases inserted by 1 iff inserted new value
-static bool insert_aux(sm* smp, px* kv, pmi& pos, int& inserted)
+static bool insert_aux(sm* smp, px* kv, pmi& pos, int& inserted, bool update)
 {
   px *k, *v;
   bool ok = extract_kv(smp,kv,k,v);
   if (ok) {
-    if ( !smp->get_cached_pmi(k, pos) ) {
+    if ( smp->get_cached_pmi(k, pos) ) {
+      if (update) {
+        pos->second = v;
+        inserted += 1;
+      }
+    }
+    else {
       pair<pmi,bool> i_ok = smp->mp.insert(pxhpair(k,v));
       pos = i_ok.first;
-      inserted += i_ok.second;
+      if (i_ok.second)
+        inserted += 1;
+      else if (update) {
+        pos->second = v;
+        inserted +=1;
+      }
     }
   }
   return ok;
@@ -907,13 +918,15 @@ px* sm_insert_hinted(px* pxsmp, px* pxsmip, px* kv)
   return px_pointer( new sm_iter(pxsmp, pos) );
 }
 
+// returns iterator
 px* sm_insert_elm(px* pxsmp, px* kv)
 {
+  bool update = 0;
   sm* smp; pmi pos;
   if (!get_smp(pxsmp,&smp)) bad_argument();
   int num_inserted = 0;
   try {
-    if ( !insert_aux(smp, kv, pos, num_inserted) ) bad_argument();
+    if ( !insert_aux(smp, kv, pos, num_inserted, update) ) bad_argument();
   }
   catch (px* e) {
     pure_throw(e);
@@ -928,7 +941,7 @@ px* sm_insert_elm(px* pxsmp, px* kv)
   return pure_tuplel(2,it,pure_int(num_inserted));
 }
 
-int sm_insert(px* pxsmp, px* src)
+int sm_insert(px* pxsmp, px* src, bool update)
 {
   sm* smp; pmi pos;
   if (!get_smp(pxsmp,&smp) ) bad_argument();
@@ -939,15 +952,18 @@ int sm_insert(px* pxsmp, px* src)
   try {
     if (pure_is_listv(src, &sz, &elems)) {
       for (int i = 0; i<sz; i++)
-        if ( !insert_aux(smp, elems[i], pos, num_inserted) ) bad_argument();
+        if ( !insert_aux(smp, elems[i], pos, num_inserted, update) ) 
+          bad_argument();
       free(elems);
     } else if (matrix_type(src) == 0) {
       sz = matrix_size(src); 
       px** melems = (pure_expr**) pure_get_matrix_data(src);
       for (int i = 0; i<sz; i++) 
-        if ( !insert_aux(smp, melems[i], pos, num_inserted) ) bad_argument();
+        if ( !insert_aux(smp, melems[i], pos, num_inserted, update) ) 
+          bad_argument();
     }
-    else if ( !insert_aux(smp, src, pos, num_inserted) ) bad_argument();
+    else if ( !insert_aux(smp, src, pos, num_inserted, update) )
+      bad_argument();
   }
   catch (px* e){
     free(elems);
@@ -956,30 +972,45 @@ int sm_insert(px* pxsmp, px* src)
   return num_inserted;
 }
 
-int sm_insert_elms_stlmap(px* pxsmp, px* tpl)
+int sm_insert_stlmap(px* pxsmp, px* tpl, bool update)
 {
   sm* smp;
   if (!get_smp(pxsmp,&smp) ) bad_argument();
   sm_range rng(tpl);
   if (!rng.is_valid) bad_argument();
   if (smp == rng.smp()) bad_argument();
-
-  pxhmap& mp = smp->mp;
-  size_t oldsz = mp.size();
-  mp.insert(rng.beg(),rng.end());
-  return mp.size() - oldsz;
+  try {
+    if (update) {
+      int num_inserted = 0; 
+      for (pmi i = rng.beg(); i!=rng.end(); i++) {
+        pair<pmi,bool> i_ok = smp->mp.insert(*i);
+        if (!i_ok.second)
+          (i_ok.first)->second = i->second;
+        num_inserted++;
+      }
+      return num_inserted;
+    }
+    else {
+      pxhmap& mp = smp->mp;
+      int oldsz = mp.size();
+      mp.insert(rng.beg(),rng.end());
+      return mp.size() - oldsz;
+    } 
+  } catch (px* e) {
+    pure_throw(e);
+  } 
 }
 
-int sm_insert_elms_stlvec(px* pxsmp, sv* sv_p)
+int sm_insert_stlvec(px* pxsmp, sv* sv_p, bool update)
 {
   sm* smp; pmi pos;
   if (!get_smp(pxsmp,&smp) ) bad_argument();
   int num_inserted = 0;
   try {
     for (sv::iterator i = sv_p->begin(); i!=sv_p->end(); i++)
-      if ( !insert_aux(smp, *i, pos, num_inserted) ) bad_argument();
-  }
-  catch (px* e) {
+      if ( !insert_aux(smp, *i, pos, num_inserted, update) )
+        bad_argument();
+  } catch (px* e) {
     pure_throw(e);
   }
   return num_inserted;

@@ -49,9 +49,9 @@ extern expr* sm_get_elm_at_inc(expr* pxsmip);
 extern expr* sm_put_at(expr* pxsmip, expr* val);
 extern expr* sm_insert_hinted(expr*map, expr* iter, expr* kv);
 extern expr* sm_insert_elm(expr* map, expr* kv);
-extern int   sm_insert(expr* map, expr* src);
-extern int   sm_insert_elms_stlvec(expr* map, void* svp);
-extern int   sm_insert_elms_stlmap(expr* map, expr* rng);
+extern int   sm_insert(expr* map, expr* src, bool update);
+extern int   sm_insert_stlvec(expr* map, void* svp, bool update);
+extern int   sm_insert_stlmap(expr* map, expr* rng, bool update);
 extern void  sm_swap(expr* sac1, expr* sac2);
 extern int   sm_erase(expr* sac, expr* trg);
 extern int   sm_clear(expr* map);
@@ -80,7 +80,7 @@ extern expr* sm_update_with(expr* map, expr* key, expr* unaryfun);
 namespace ;
 
 public emptystlmap mkstlmap emptystlset mkstlset member members erase
-  update_elm update_elm_with insert_elm; 
+  insert_or_update update_elm update_elm_with insert_elm; 
 
 let stlmap_t, stlmap_iter_t = stl::sm_type_tags;
 
@@ -181,18 +181,18 @@ insert_elm sm::stlmap elm = sm_insert_elm sm elm;
 
 ::stlmap xs = sm when
   sm = ::emptystlmap;
-  sm_insert sm xs;
+  sm_insert sm xs 0;
 end if listp xs || matrixp xs;
 
 ::stlmap (STLVEC svp) = sm when
   sm = ::emptystlmap;
-  sm_insert_elms_stlvec sm svp;
+  sm_insert_stlvec sm svp 0;
 end;
 
 ::stlmap rng::stlmap_rng = sm when
   _,params = sm_container_info rng;
   sm = mkstlmap params;
-  sm_insert_elms_stlmap sm rng;
+  sm_insert_stlmap sm rng 0;
 end if ~sm_is_set rng;
 
 ::emptystlset = sm_make_empty (<) (<) (==) [] 1;
@@ -201,18 +201,18 @@ end if ~sm_is_set rng;
 
 ::stlset xs = ss when
   ss = ::emptystlset;
-  sm_insert ss xs;
+  sm_insert ss xs 0;
 end if listp xs || matrixp xs;
 
 ::stlset (STLVEC svp) = ss when
   ss = ::emptystlset;
-  sm_insert_elms_stlvec ss svp;
+  sm_insert_stlvec ss svp 0;
 end;
 
 ::stlset rng::stlmap_rng = ss when
   _,kc,_ = sm_container_info rng;
   ss = mkstlset kc;
-  sm_insert_elms_stlmap ss rng;
+  sm_insert_stlmap ss rng 0;
 end if sm_is_set rng;
 
 /*** Info ***************************************************************/
@@ -257,11 +257,21 @@ end;
 
 /*** Modifiers *********************************************************/
 
-::insert sm::stlmap (STLVEC svp) = sm_insert_elms_stlvec sm svp;
+::insert sm::stlmap (STLVEC svp) = sm_insert_stlvec sm svp 0;
 
-::insert sm::stlmap rng::stlmap_rng = sm_insert_elms_stlmap sm rng;
+::insert sm::stlmap rng::stlmap_rng = 
+  sm_insert_stlmap sm rng 0 if compatible_ranges sm rng;
 
-::insert sm::stlmap src = sm_insert sm src;
+::insert sm::stlmap src = sm_insert sm src 0;
+
+::insert_or_update sm::stlmap (STLVEC svp) = 
+  sm_insert_stlvec sm svp 1 if ~sm_is_set sm;
+
+::insert_or_update sm::stlmap rng::stlmap_rng = 
+  sm_insert_stlmap sm rng 1 if ~sm_is_set sm && ~sm_is_set rng;
+
+::insert_or_update sm::stlmap src = 
+  sm_insert sm src 1 if ~sm_is_set sm;
 
 ::update sm::stlmap key val = sm_update sm key val;
 
