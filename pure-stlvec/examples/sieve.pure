@@ -10,11 +10,11 @@ using stlvec;
 sieve_a n = (foldl sieve 0 (0..n-1), filter ((~=)0) x)
 with
   sieve count i = count+1 when
-                    p = i+1; do (\j -> update x j 0) (i+p:i+2*p..n-1);
+                    p = i+1; do (\j -> replace x j 0) (i+p:i+2*p..n-1);
                   end if x!i; // x!i is prime
                 = count otherwise;
 end when
-  x = stlvec (1..n); update x 0 0;
+  x = stlvec (1..n); replace x 0 0;
 end;
 
 
@@ -31,9 +31,9 @@ sieve_b n = sift 2 with
     loop_ms p (2*p); 
     q = find_if (sv,p+1,svend) (~=0);
   end; 
-  loop_ms p m = if m<=n then update sv m 0 $$ loop_ms p (m+p) else ();   
+  loop_ms p m = if m<=n then replace sv m 0 $$ loop_ms p (m+p) else ();   
 end when
-  sv = stlvec (0..n); update sv 1 0;
+  sv = stlvec (0..n); replace sv 1 0;
 end;
 
 // Returns the number of primes up to n, and a stlvec containing them.
@@ -41,11 +41,11 @@ end;
 sieve_c n = sift 2 with
   sift svend = #sv, sv when tail = remove sv 0; erase (sv,tail,svend); end;
   sift p = sift q when 
-    do (\j -> update sv j 0) (2*p:3*p..n);
+    do (\j -> replace sv j 0) (2*p:3*p..n);
     q = find_if (sv,p+1,svend) (~=0);
   end; 
 end when
-  sv = stlvec (0..n); update sv 1 0;
+  sv = stlvec (0..n); replace sv 1 0;
 end;
 
 /*** Harness to compare compiled versions ********************************/

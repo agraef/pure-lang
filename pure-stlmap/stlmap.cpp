@@ -89,13 +89,13 @@ static bool extract_kv(sm* smp, px* kv, px*& k, px*& v)
 }
 
 // increases inserted by 1 iff inserted a (k=>val) elm or changed existing val
-static bool insert_aux(sm* smp, px* kv, pmi& pos, int& inserted, bool update)
+static bool insert_aux(sm* smp, px* kv, pmi& pos, int& inserted, bool replace)
 {
   px *k, *v;
   bool ok = extract_kv(smp,kv,k,v);
   if (ok) {
     if ( smp->get_cached_pmi(k, pos) ) {
-      if (update) {
+      if (replace) {
         pos->second = v;
         inserted++;
       }
@@ -105,7 +105,7 @@ static bool insert_aux(sm* smp, px* kv, pmi& pos, int& inserted, bool update)
       pos = i_ok.first;
       if (i_ok.second)
         inserted += 1;
-      else if (update) {
+      else if (replace) {
         pos->second = v;
         inserted++;
       }
@@ -907,12 +907,12 @@ px* sm_insert_hinted(px* pxsmp, px* pxsmip, px* kv)
 // returns iterator - no cache
 px* sm_insert_elm(px* pxsmp, px* kv)
 {
-  bool update = 0;
+  bool replace = 0;
   sm* smp; pmi pos;
   if (!get_smp(pxsmp,&smp)) bad_argument();
   int num_inserted = 0;
   try {
-    if ( !insert_aux(smp, kv, pos, num_inserted, update) )
+    if ( !insert_aux(smp, kv, pos, num_inserted, replace) )
       bad_argument();
   }
   catch (px* e) {
@@ -922,7 +922,7 @@ px* sm_insert_elm(px* pxsmp, px* kv)
   return pure_tuplel(2,it,pure_int(num_inserted));
 }
 
-int sm_insert(px* pxsmp, px* src, bool update)
+int sm_insert(px* pxsmp, px* src, bool replace)
 {
   sm* smp; pmi pos;
   if (!get_smp(pxsmp,&smp) ) bad_argument();
@@ -933,17 +933,17 @@ int sm_insert(px* pxsmp, px* src, bool update)
   try {
     if (pure_is_listv(src, &sz, &elems)) {
       for (int i = 0; i<sz; i++)
-        if ( !insert_aux(smp, elems[i], pos, num_inserted, update) ) 
+        if ( !insert_aux(smp, elems[i], pos, num_inserted, replace) ) 
           bad_argument();
       free(elems);
     } else if (matrix_type(src) == 0) {
       sz = matrix_size(src); 
       px** melems = (pure_expr**) pure_get_matrix_data(src);
       for (int i = 0; i<sz; i++) 
-        if ( !insert_aux(smp, melems[i], pos, num_inserted, update) ) 
+        if ( !insert_aux(smp, melems[i], pos, num_inserted, replace) ) 
           bad_argument();
     }
-    else if ( !insert_aux(smp, src, pos, num_inserted, update) )
+    else if ( !insert_aux(smp, src, pos, num_inserted, replace) )
       bad_argument();
   }
   catch (px* e){
@@ -953,7 +953,7 @@ int sm_insert(px* pxsmp, px* src, bool update)
   return num_inserted;
 }
 
-int sm_insert_stlmap(px* pxsmp, px* tpl, bool update)
+int sm_insert_stlmap(px* pxsmp, px* tpl, bool replace)
 {
   sm* smp;
   if (!get_smp(pxsmp,&smp) ) bad_argument();
@@ -961,7 +961,7 @@ int sm_insert_stlmap(px* pxsmp, px* tpl, bool update)
   if (!rng.is_valid) bad_argument();
   if (smp == rng.smp()) bad_argument();
   try {
-    if (update) {
+    if (replace) {
       int num_inserted = 0; 
       for (pmi i = rng.beg(); i!=rng.end(); i++) {
         pair<pmi,bool> i_ok = smp->mp.insert(*i);
@@ -982,14 +982,14 @@ int sm_insert_stlmap(px* pxsmp, px* tpl, bool update)
   } 
 }
 
-int sm_insert_stlvec(px* pxsmp, sv* sv_p, bool update)
+int sm_insert_stlvec(px* pxsmp, sv* sv_p, bool replace)
 {
   sm* smp; pmi pos;
   if (!get_smp(pxsmp,&smp) ) bad_argument();
   int num_inserted = 0;
   try {
     for (sv::iterator i = sv_p->begin(); i!=sv_p->end(); i++) {
-      if ( !insert_aux(smp, *i, pos, num_inserted, update) )
+      if ( !insert_aux(smp, *i, pos, num_inserted, replace) )
         bad_argument();
     }
   } catch (px* e) {
@@ -1433,7 +1433,7 @@ px* sm_next_key(px* pxsmp, px* key)
   return ret;
 }
 
-px* sm_update(px* pxsmp, px* key, px* val)
+px* sm_replace(px* pxsmp, px* key, px* val)
 {
   sm* smp;
   if (!get_smp(pxsmp,&smp) ) bad_argument();
@@ -1452,7 +1452,7 @@ px* sm_update(px* pxsmp, px* key, px* val)
   return val;
 }
 
-static pmi update_aux(sm* smp, px* k, px* v)
+static pmi replace_aux(sm* smp, px* k, px* v)
 {
   pxhmap& mp = smp->mp;
   pmi pos;
@@ -1468,7 +1468,7 @@ static pmi update_aux(sm* smp, px* k, px* v)
 }
 
 
-px* sm_update_with(px* pxsmp, px* key, px* unaryfun)
+px* sm_replace_with(px* pxsmp, px* key, px* unaryfun)
 {
   sm* smp;
   if (!get_smp(pxsmp,&smp) ) bad_argument();

@@ -89,7 +89,7 @@ let shm1 = emptystlhmap;
 insert shm1 ("a", 10); hm_elms shm1;
 //- ["a"=>10]
 
-insert_or_update shm1 ("a",1); hm_elms shm1;
+insert_or_replace shm1 ("a",1); hm_elms shm1;
 //- ["a"=>1]
 
 insert shm1 ["a"=>10,"b"=>2,"c"=>3,"d"=>4]; 
@@ -98,22 +98,22 @@ insert shm1 ["a"=>10,"b"=>2,"c"=>3,"d"=>4];
 hm_elms shm1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4]
 
-insert_or_update shm1 {"a"=>10,"b"=>20};
+insert_or_replace shm1 {"a"=>10,"b"=>20};
 //- 2
 
 hm_elms shm1;
 //- ["a"=>10,"b"=>20,"c"=>3,"d"=>4]
 
-update shm1 "a" 1;
+replace shm1 "a" 1;
 //- 1
 
-update shm1 "b" 2;
+replace shm1 "b" 2;
 //- 2
 
 hm_elms shm1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4]
 
-catch id $ update shm1 "x" 24;
+catch id $ replace shm1 "x" 24;
 //- out_of_bounds
 
 insert shm1 ("e"=>5);
@@ -207,7 +207,7 @@ foldl1 (\(r=>l) (k=>v) -> (r+k=>l+v)) shm1;
 let shm2 = emptystlhmap;
 //- ()
 
-do (insert_or_update shm2) shm1;
+do (insert_or_replace shm2) shm1;
 //- ()
 
 hm_elms shm2;

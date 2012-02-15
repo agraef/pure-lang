@@ -414,7 +414,7 @@ If desired, in Pure it is easy to write functions that have automatic
 copy-on-write semantics. E.g., ::
 
     > my_update csv::const_stlvec i x = my_update (stlvec csv) i x;
-    > my_update sv::stlvec i x = update sv i x;
+    > my_update sv::stlvec i x = replace sv i x;
 
 Documentation
 -------------
@@ -687,13 +687,14 @@ Note that if list is applied to an iterator tuple, it will return a list
 holding the elements of the tuple not the elements of the range denoted by the
 tuple. It is recommended that you use members instead.
 
+.. function:: replace /stlvec msv i x
+
+   replace the i\ th member of msv by x and return x; throws out_of_bounds if
+   i is less than 0 or great or equal to the #msv
+
 .. function:: update /stlvec msv i x
 
-   replace the i\ th member of msv by x and return x; throws out_of_bounds
-
-Note that the update function provided by pure-stlvec never inserts new
-elements. This behavior is different than that of the update functions in the
-Pure standard library. 
+   same as replace  // FIX - kill this function
 
 .. function:: append /stlvec sv x
 
@@ -961,10 +962,6 @@ Operations
    sv1[first1,last1) sv2[first2,n) and and places the
    resulting sequence in msv[p, p+n) where n is last1 -
    first1. Returns (msv,p+n)
-
-.. function:: replace (msv,first,last) x y
-
-   same as :func:`replace_if` (msv,first,last) (x==) y
 
 .. function:: replace_if (msv,first,last) unary_pred x
 

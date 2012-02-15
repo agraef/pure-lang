@@ -49,9 +49,9 @@ extern expr* sm_get_elm_at_inc(expr* pxsmip);
 extern expr* sm_put_at(expr* pxsmip, expr* val);
 extern expr* sm_insert_hinted(expr*map, expr* iter, expr* kv);
 extern expr* sm_insert_elm(expr* map, expr* kv);
-extern int   sm_insert(expr* map, expr* src, bool update);
-extern int   sm_insert_stlvec(expr* map, void* svp, bool update);
-extern int   sm_insert_stlmap(expr* map, expr* rng, bool update);
+extern int   sm_insert(expr* map, expr* src, bool replace);
+extern int   sm_insert_stlvec(expr* map, void* svp, bool replace);
+extern int   sm_insert_stlmap(expr* map, expr* rng, bool replace);
 extern void  sm_swap(expr* sac1, expr* sac2);
 extern int   sm_erase(expr* sac, expr* trg);
 extern int   sm_clear(expr* map);
@@ -72,15 +72,15 @@ extern int   sm_member(expr* map, expr* key);
 extern expr* sm_bounding_keys(expr* rng);
 extern expr* sm_prev_key(expr* map, expr* key);
 extern expr* sm_next_key(expr* map, expr* key);
-extern expr* sm_update(expr* map, expr* key, expr* val);
-extern expr* sm_update_with(expr* map, expr* key, expr* unaryfun);
+extern expr* sm_replace(expr* map, expr* key, expr* val);
+extern expr* sm_replace_with(expr* map, expr* key, expr* unaryfun);
 
 /*** Global Definitions **************************************************/
 
 namespace ;
 
 public emptystlmap mkstlmap emptystlset mkstlset member members erase
-  insert_or_update update_with insert_elm; 
+  insert_or_replace replace replace_with insert_elm; 
 
 let stlmap_t, stlmap_iter_t = stl::sm_type_tags;
 
@@ -264,18 +264,18 @@ end;
 
 ::insert sm::stlmap src = sm_insert sm src 0;
 
-::insert_or_update sm::stlmap (STLVEC svp) = 
+::insert_or_replace sm::stlmap (STLVEC svp) = 
   sm_insert_stlvec sm svp 1 if ~sm_is_set sm;
 
-::insert_or_update sm::stlmap rng::stlmap_rng = 
+::insert_or_replace sm::stlmap rng::stlmap_rng = 
   sm_insert_stlmap sm rng 1 if ~sm_is_set sm && ~sm_is_set rng;
 
-::insert_or_update sm::stlmap src = 
+::insert_or_replace sm::stlmap src = 
   sm_insert sm src 1 if ~sm_is_set sm;
 
-::update sm::stlmap key val = sm_update sm key val;
+::replace sm::stlmap key val = sm_replace sm key val;
 
-::update_with f sm::stlmap (k=>x) = sm_update_with sm k (f x);
+::replace_with f sm::stlmap (k=>x) = sm_replace_with sm k (f x);
 
 ::erase sm::stlmap = sm_clear sm;
 

@@ -132,9 +132,9 @@ extern "C" {
   px*  sm_put_at(px* pxsmip, px* val);
   px*  sm_insert_hinted(px* pxsmp, px* pxsmip, px* kv);
   px*  sm_insert_elm(px* pxsmp, px* kv);
-  int  sm_insert(px* pxsmp, px* src, bool update);
-  int  sm_insert_stlmap(px* pxsmp, px* tpl, bool update);
-  int  sm_insert_stlvec(px* pxsmp, sv* svp, bool update);
+  int  sm_insert(px* pxsmp, px* src, bool replace);
+  int  sm_insert_stlmap(px* pxsmp, px* tpl, bool replace);
+  int  sm_insert_stlvec(px* pxsmp, sv* svp, bool replace);
   px*  sm_swap(px* pxsmp1, px* pxsmp2);
   int  sm_clear(px* pxsmp);
   int  sm_erase(px* pxsmp, px* trg); 
@@ -159,8 +159,8 @@ extern "C" {
   px*  sm_bounding_keys(px* rng);
   px*  sm_prev_key(px* pxsmp, px* key);
   px*  sm_next_key(px* pxsmp, px* key);
-  px*  sm_update(px* pxsmp, px* key, px* val);
-  px*  sm_update_with(px* pxsmp, px* key, px* binfun);
+  px*  sm_replace(px* pxsmp, px* key, px* val);
+  px*  sm_replace_with(px* pxsmp, px* key, px* binfun);
 
 }
 

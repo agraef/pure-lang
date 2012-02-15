@@ -41,10 +41,10 @@ extern int   sh_count(expr* pxshp, expr* key);
 extern int   sh_member(stlhmap* pxshp, expr* key);
 extern expr* sh_find(expr* pxshp, expr* key, int what);
 extern expr* sh_find_val(stlhmap* pxshp, expr* key);
-extern int   sh_insert(expr* pxshp, expr* src, bool update);
-extern expr* sh_insert_stlhmap(expr* pxshp, bool update);
-extern int   sh_insert_stlvec(expr* map, void* svp, bool update);
-extern expr* sh_update(expr* pxshp, expr* key, expr* val);
+extern int   sh_insert(expr* pxshp, expr* src, bool replace);
+extern expr* sh_insert_stlhmap(expr* pxshp, bool replace);
+extern int   sh_insert_stlvec(expr* map, void* svp, bool replace);
+extern expr* sh_replace(expr* pxshp, expr* key, expr* val);
 extern void  sh_swap(expr* pxshp1, expr* pxshp2);
 extern int   sh_erase(expr* pxshp, expr* key);
 extern int   sh_clear(expr* pxshp);
@@ -61,7 +61,8 @@ extern void  sh_do(expr* fun, expr* pxshp);
 
 namespace ;
 
-public emptystlhmap emptystlhset member members erase insert_or_update;
+public emptystlhmap emptystlhset member members erase 
+  insert_or_replace replace;
 
 let stlhmap_t = stl::sh_type_tags;
 
@@ -180,15 +181,15 @@ end;
 
 ::insert hm::stlhmap src = sh_insert hm src 0;
 
-::insert_or_update hm::stlhmap (STLVEC svp) = 
+::insert_or_replace hm::stlhmap (STLVEC svp) = 
   sh_insert_stlvec hm svp 1 if ~sh_is_set hm;
 
-::insert_or_update hm::stlhmap src::stlhmap = 
+::insert_or_replace hm::stlhmap src::stlhmap = 
   sh_insert_stlhmap hm src 1 if ~sh_is_set hm && ~sh_is_set src;
 
-::insert_or_update hm::stlhmap src = sh_insert hm src 1 if ~sh_is_set hm;
+::insert_or_replace hm::stlhmap src = sh_insert hm src 1 if ~sh_is_set hm;
 
-::update hm::stlhmap key v = sh_update hm key v;
+::replace hm::stlhmap key v = sh_replace hm key v;
 
 ::erase hm::stlhmap = sh_clear hm;
 

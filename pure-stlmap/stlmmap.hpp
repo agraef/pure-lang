@@ -154,7 +154,7 @@ extern "C" {
   px*  smm_bounding_keys(px* rng);
   px*  smm_prev_key(px* pxsmmp, px* key);
   px*  smm_next_key(px* pxsmmp, px* key);
-  px*  smm_update(px* pxsmmp, px* key, px* src);
+  px*  smm_replace(px* pxsmmp, px* key, px* src);
 
   void stl_set_smm_trace(bool enable);
   bool stl_smm_trace_enabled();

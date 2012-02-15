@@ -86,9 +86,9 @@ extern "C" {
   bool sh_is_set(px* pxshp);
   px*  sh_find_val(sh* shp, px* key);
   px*  sh_find(px* pxshp, px* key, int what);
-  int  sh_insert(px* pxshp, px* src, bool update);
-  px*  sh_insert_stlhmap(px* pxshp, bool update);
-  int  sh_insert_stlvec(px* pxshp, sv* svp, bool update);
+  int  sh_insert(px* pxshp, px* src, bool replace);
+  px*  sh_insert_stlhmap(px* pxshp, bool replace);
+  int  sh_insert_stlvec(px* pxshp, sv* svp, bool replace);
   px*  sh_swap(px* pxshp1, px* pxshp2);
   int  sh_clear(px* pxshp);
   int  sh_erase(px* pxshp, px* trg); 
@@ -99,7 +99,7 @@ extern "C" {
   px*  sh_listmap(px* fun, px* shp, int what);
   px*  sh_listcatmap(px* fun, px* pxshp, int what);
   int  sh_member(sh* shp, px* key);
-  px*  sh_update(px* pxshp, px* key, px* val);
+  px*  sh_replace(px* pxshp, px* key, px* val);
 
   px*  sh_foldl(px* fun, px* val, px* pxshp);
   px*  sh_foldl1(px* fun, px* tpl);

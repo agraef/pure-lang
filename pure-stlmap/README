@@ -67,7 +67,7 @@ not have the same semantics as similar functions standard Pure library. For
 example, if m is a stlmap or stlhmap and if k is already stored in m, ``insert
 m (k=>v)`` will not change the value associated with k to v. If m were a
 stldict, or dict, the value would be changed. (If you want this behavior, you
-can use pure-stlmap's `update_elm` function).
+can use pure-stlmap's `insert_or_replace` function).
 
 Another disadvantage is that the C++ library is in sometimes more complicated
 than the Pure Library. For example many of the applicable C++ functions,
@@ -156,7 +156,8 @@ default values. ::
 
    > let sm1 = emptystlmap;   // uses default, (<), to order keys
 
-You can map_merge elements using insert or update_elm. 
+You can insert elements from another container or a range defined on a
+container.
 
    > insert ss1 ss;           // insert ss's elements into ss1
    5
@@ -170,7 +171,7 @@ You can map_merge elements using insert or update_elm.
    > members sm1;
    ["b"=>2,"c"=>3,"d"=>4]
 
-If the targeted container is has unique keys (i.e., stlmap or stlhmap), the
+If the targeted container has unique keys (i.e., stlmap or stlhmap), the
 insert function will not "insert" elements with a key that is already stored
 in the container. ::
 
@@ -183,13 +184,13 @@ in the container. ::
    > insert sm1 ("e"=>50);   // attempt insert where key already in sm1
    0
 
-   > members sm1;               // Note that "e"=>5 was not updated
+   > members sm1;               // Note that "e"=>5 was not changed
    ["b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
-If you want to update the value of an element with a given key, you can use
-the update_elm function (or the put function, described below). ::
+If you want to replace the value of an element with a given key, you can use
+the insert_or_replace function (or the put function, described below). ::
 
-   > update_elm sm1 ("e"=>50) $$ members sm1;
+   > insert_or_replace sm1 ("e"=>50) $$ members sm1;
    ["b"=>2,"c"=>3,"d"=>4,"e"=>50]
 
 Access
@@ -228,12 +229,12 @@ function. ::
    1
 
 When applied to a stlmap or stlset, the member function caches the C++
-iterator that it uses to make the test. That way, a put or get to the same
-location in the map can be done in constant time as opposed to O(log n)
-time. E.g., ::
+iterator that it uses to make the test. That way, subsequent access from, or a
+replace or insert to the same location in the map can be done in constant time
+as opposed to O(log n) time. E.g., ::
 
-   > inc_sum m k v = update m k v1 
-       when v1 = if member m k then m!k + v else v end;  
+   > inc_sum m k v = if member m k then replace m k (m!k + v) 
+                     else insert m k v;
 
    > let sm1 = emptystlmap;
 
@@ -247,8 +248,8 @@ time. E.g., ::
    ["a"=>6]
 
 When inc_sum is called the first time, there will be an O(log n) look up when
-member is called, and a constant time look up for the update. All the rest of
-the calls to member, (!) and put use constant time lookups. Currently three
+member is called, and a constant time look up for the insert. All the rest of
+the calls to member, (!) and replace use constant time lookups. Currently three
 C++ iterators are cached.
 
 For maps (stlmap, stlhmap and stlmmap) you can retrieve an elements key and
@@ -286,15 +287,19 @@ in the range. Also, ranges are not supported for stlhmap and stlhset.
 Changing Values
 ---------------
 
-You can change the value of an element stored in a map using the update
-function. ::
+You can change the value of an element stored in a map using the replace
+function, and you can insert new elements or change the value of and existing
+element using insert_or_replace ::
 
    > let sm1 = stlmap sm;           // make a copy of sm
 
-   > update sm1 "e" 50 $$ sm1!"e";  // change the value associated with "e"
+   > replace sm1 "e" 50 $$ sm1!"e";  // change the value associated with "e"
    50
 
-   > update sm1 "x" 24 $$ sm1!"x"   // update can also map_merge new elements
+   > catch id $ replace sm1 "x" 24  // replace only applies to stored keys
+   out_of_bounds
+
+   > insert_or_replace sm1 "x" 24   // acts like insert if is key not stored
    24
 
    > members sm1;
@@ -303,21 +308,24 @@ function. ::
    > members sm1;
    ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>50]
 
-When it comes to stlmmaps, update treats all the elements with the same key as
-a list of the corresponding values to be inserted or updated en masse. This
+When it comes to stlmmaps, replace treats all the elements with the same key as
+a list of the corresponding values to be inserted or changed en masse. This
 allows precise control over the ordering of elements that have equivalent
-keys. E.g., ::
+keys. FIX --- expand on insert also E.g., ::
 
    > let smm1 = stlmmap smm;  // make a copy of smm
 
    > insert smm1 ("c"=>30) $$ members smm1;
    ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"c"=>30,"d"=>4,"e"=>5]
 
-   > update smm1 "c" [30,31,32] $$ members smm1;
+   > replace smm1 "c" [30,31,32] $$ members smm1;
    ["a"=>1,"b"=>2,"c"=>30,"c"=>31,"c"=>32,"d"=>4,"e"=>5]
 
-   > update smm1 "c" [] $$ members smm1;
+   > replace smm1 "c" [] $$ members smm1;
    ["a"=>1,"b"=>2,"d"=>4,"e"=>5]
+
+FIX -- insert smm1 ("d"=>[40,41,42]);
+    -- insert smm1 ("d"=>[[140,141]]);
 
 Erasing Elements
 ----------------
@@ -369,7 +377,7 @@ foldl1 can be applied to pure-stlmap's associative containers. E.g., ::
    "b"=>2
    ()
 
-   > let sm1 = foldl update_elm (mkstlmap (>)) (sm,"c",smend);
+   > let sm1 = foldl insert_or_replace (mkstlmap (>)) (sm,"c",smend);
    > members sm1;
    ["e"=>5,"d"=>4,"c"=>3]
 
@@ -594,7 +602,7 @@ If you don't like iterators, you can use pure-stlmap's "key-based" interface. ::
   > get (sm,"c");
   "c"=>3
 
-  > update sm "c" 30 $$ sm!"c"
+  > replace sm "c" 30 $$ sm!"c"
   30
 
   > members sm;
@@ -615,10 +623,10 @@ the elements associated with a given key on a all or nothing basis. ::
    > get (smm,"c");
    "c"=>[31,32]
 
-   > update smm "c" [31,32,33]; members smm;
+   > replace smm "c" [31,32,33]; members smm;
    ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"c"=>33,"d"=>4]
 
-   > update smm "c" []; members smm;
+   > replace smm "c" []; members smm;
    ["a"=>1,"b"=>2,"d"=>4,"e"=>5]
 
 Please note that elements are never identified by key value pairs. I.e., the
@@ -1062,8 +1070,8 @@ for some commonly occurring sequences of operations.
    > get (smm,smbeg);
    "a"=>[1]
 
-.. function:: update /stlmap uniq_map k v
-              update /stlmap multi_map k src
+.. function:: replace /stlmap uniq_map k v
+              replace /stlmap multi_map k src
 
    Associate v with k (i.e., insert (k=>v)) in uniq_map where uniq_map is a
    stlmap or stlhmap, or associate the elements of src with k in a in
@@ -1074,7 +1082,7 @@ for some commonly occurring sequences of operations.
    > members smm;
    ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"d"=>4,"e"=>5]
 
-   > update smm "c" [31,33,35,36]; members smm;
+   > replace smm "c" [31,33,35,36]; members smm;
    ["a"=>1,"b"=>2,"c"=>31,"c"=>33,"c"=>35,"c"=>36,"d"=>4,"e"=>5]
 
 .. function:: bounding_keys /stlmap rng
@@ -1117,16 +1125,15 @@ Iterator Cache
 --------------
 
 Each stlmap or stlset maintains a cache key-(C++)iterator pairs that are
-updated by all of the key oriented functions described in the previous
-section. In addition, insert (of a single element), update_elm, and
-update_elm_with also cache iterators. When one of these functions needs to
-access an element of the stlmap or stlset by key, it first checks to see if
-the key is stored in the cache. If so the function uses the corresponding
-cached C++ iterator to locate the element without having to do a O(log n)
-search. For speed, the key matches only if it is same element that was cached
-(i.e., the test is C++ pointer equality). Erasure of any element in the
-container clears the cache. [FIX -- is this entirely correct -- be more
-specific?]
+replaced by all of the key oriented functions described in the previous
+section. In addition, insert (of a single element) also caches iterators. When
+one of these functions needs to access an element of the stlmap or stlset by
+key, it first checks to see if the key is stored in the cache. If so the
+function uses the corresponding cached C++ iterator to locate the element
+without having to do a O(log n) search. For speed, the key matches only if it
+is same element that was cached (i.e., the test is C++ pointer
+equality). Erasure of any element in the container clears the cache. [FIX --
+is this entirely correct -- be more specific?]
 
 Here are some examples produced by compiling pure-stlmap with a trace function
 that shows when caching eliminates a key lookup. FIX -- may now have to
@@ -1139,7 +1146,7 @@ use let key_a = "a" to get caching.
    found iterator for: "a"
    1
 
-   > update sm "a" 10;
+   > replace sm "a" 10;
    found iterator for: "a"
    10
 
@@ -1227,7 +1234,7 @@ container or individually. In either case, if an item is about to be inserted
 in a unique key associative container (stlmap, stlset, stlhmap, stlhset), the
 element will not be inserted if the its key is already stored in the target
 container. Please note that this behavior is the opposite to that the Pure
-standard library's insert which would update the old element to match the
+standard library's insert which would replace the old element to match the
 element being inserted.
 
 Of course elements are always inserted into multi key associative
@@ -1247,24 +1254,6 @@ only depend on a particular field of records that are inserted into it.
 
 .. namespace:: stl
 
-..function:: insert_elm /stlmap acon elm
-
-  If acon is an associative map and elm is a key value pair, (k=>v), attempts
-  to insert (k=>v) into acon.  If acon is an associative set, and elm is not a
-  valid insert source, attempts to insert elm into acon. If acon is a
-  multi-keyed container, returns an iterator pointing to the element with key
-  k that was just inserted. If acon is uniquely keyed, returns a pair, the
-  first of which is an iterator pointing to the element with key k that was
-  just inserted (or the pre-existing element that blocked the insertion). The
-  second element in the pair is a boolean value that is true if a new element
-  was inserted.
-
-..function:: insert_elm /stlmap acon (elm,p)
-
-  This is the same as the previous function except that (a) p is passed in as
-  a hint to where the new element should be inserted and (b) a single iterator
-  is returned rather than a iterator,boolean pair. If the new element is
-  inserted just after p, the insertion can have constant time complexity.
 
 Here are some insert examples::
 
@@ -1273,10 +1262,10 @@ Here are some insert examples::
    2
    ["a"=>1,"b"=>2]
 
-   > let p, ok = insert_elm smx ("a"=>2); get p,ok; // will not update "a"
+   > let p, ok = insert_elm smx ("a"=>2); get p,ok; // will not replace "a"
    "a"=>1,0
 
-   > put p 2 $ members smx;  // used iterator p to update "a"'s value to 2
+   > put p 2 $ members smx;  // used iterator p to replace "a"'s value by 2
    ["a"=>2,"b"=>2]
 
    > let smmx = emptystlmmap;
@@ -1289,44 +1278,20 @@ Here are some insert examples::
    > members smmx;
    ["a"=>1,"a"=>2,"b"=>2]
 
-The next two functions can be used to insert new items and update existing
-items in an associative map. They return the map rather than the number of
-elements inserted so that they can be used with foldl or foldr to insert
-elements from another container. In essence, update_elm is acts like
-the Pure standard library's insert function when applied to a dict or hdict.
 
-..function:: update_elm acon elm
-
-  If acon is a map, elm must be a key value pair, (k=>v); if it is a set, then
-  elm can be anything, where elm is treated as its own key, k. If acon is
-  multi-keyed (i.e., stlmmap, or stlmset), insert elm. If acon is a uniquely
-  keyed map (i.e., a stlmap, stlhmp) insert elm unless there is an element in
-  acon with key equivalent/equal to k. If there is such an element, change its
-  value to v. If acon is a uniquely keyed set (i.e., stlset or stlhset),
-  insert elm only if acon does not already have an elm that is equal to
-  elm. Returns acon. E.g.,::
-
-   > let src = ["a"=>1,"b"=>2,"c"=>3,"c"=>4,"c"=>5];
-
-   > members $ foldl update_elm emptystlmmap src;
-   ["a"=>1,"b"=>2,"c"=>3,"c"=>4,"c"=>5]
-
-   > members $ foldl update_elm emptystlmap src;
-   ["a"=>1,"b"=>2,"c"=>5]
-
-..function:: update_elm_with f m (k=>v)
+..function:: replace_with f m (k=>v)
 
   This function only applies to stlmaps. The effect of this function is as
   follows: (a) if ~member m k then insert m (k=>dflt) else (), where dflt is
-  m's dflt value, (b) update m k nv when nv = f v (m!k) end. Returns m. E.g.,
+  m's dflt value, (b) replacee m k nv when nv = f v (m!k) end. Returns m. E.g.,
 
    > let src = ["a"=>1,"b"=>2,"c"=>3,"c"=>4,"c"=>5];
 
-   > let lists = foldl (update_elm_with (:)) emptystlmap src;
+   > let lists = foldl (replace_with (:)) emptystlmap src;
    > members lists;
    ["a"=>[1],"b"=>[2],"c"=>[5,4,3]]
 
-   > let sums = foldl (update_elm_with (+)) (mkstlmap ((<),0)) src;
+   > let sums = foldl (replace_with (+)) (mkstlmap ((<),0)) src;
    > members sums;
    ["a"=>1,"b"=>2,"c"=>12]
 
@@ -1517,8 +1482,9 @@ errors. ::
 Functions
 ---------
 
-The functions in this section never cache iterators, on the assumption that if
-you call them you are not using the key-oriented functions. [FIX -- change?]
+The functions in this section never cache c++ iterators, on the assumption
+that if you call them you are not using the key-oriented functions. [FIX --
+change?]
 
 ..function:: iterator /stlmap i
              begin /stlmap acon
@@ -1531,6 +1497,25 @@ you call them you are not using the key-oriented functions. [FIX -- change?]
  
   Create a new iterator that points to the element with key equivalent to k or
   acon's past-end iterator if none exists.
+
+..function:: insert_elm /stlmap acon elm
+
+  If acon is an associative map and elm is a key value pair, (k=>v), attempts
+  to insert (k=>v) into acon.  If acon is an associative set, and elm is not a
+  valid insert source, attempts to insert elm into acon. If acon is a
+  multi-keyed container, returns an iterator pointing to the element with key
+  k that was just inserted. If acon is uniquely keyed, returns a pair, the
+  first of which is an iterator pointing to the element with key k that was
+  just inserted (or the pre-existing element that blocked the insertion). The
+  second element in the pair is a boolean value that is true if a new element
+  was inserted.
+
+..function:: insert_elm /stlmap acon (elm,p)
+
+  This is the same as the previous function except that (a) p is passed in as
+  a hint to where the new element should be inserted and (b) a single iterator
+  is returned rather than a iterator,boolean pair. If the new element is
+  inserted just after p, the insertion can have constant time complexity.
 
 ..function:: l_bound /stlmap acon k
 
@@ -1634,3 +1619,4 @@ Here are some examples using iterators.
 
    > inc j $$ pastendp j;
    1
+

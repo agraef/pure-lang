@@ -86,7 +86,7 @@ static bool extract_kv(sh* shp, px* kv, px*& k, px*& v)
 }
 
 // increases inserted by 1 iff inserted a (k=>val) elm or changed existing val
-static bool insert_aux(sh* shp,px* kv, pxhmapi& pos,int& inserted,bool update)
+static bool insert_aux(sh* shp,px* kv, pxhmapi& pos,int& inserted,bool replace)
 {
   px *k, *v;
   bool ok = extract_kv(shp,kv,k,v);
@@ -98,7 +98,7 @@ static bool insert_aux(sh* shp,px* kv, pxhmapi& pos,int& inserted,bool update)
       if (v) pure_new(v);
       inserted++;
     } 
-    else if (update) {
+    else if (replace) {
       pos->second = v;
       if (v) pure_new(v);
       inserted++;
@@ -291,7 +291,7 @@ px* sh_find(px* pxshp, px* key, int what)
   return get_elm_aux(shp, i, what);
 }
 
-int sh_insert(px* pxshp, px* src, bool update)
+int sh_insert(px* pxshp, px* src, bool replace)
 {
   sh* shp; pxhmapi pos;
   if (!get_shp(pxshp,&shp) ) bad_argument();
@@ -302,7 +302,7 @@ int sh_insert(px* pxshp, px* src, bool update)
   try {
     if (pure_is_listv(src, &sz, &elms)) {
       for (int i = 0; i<sz; i++) {
-        if ( !insert_aux(shp, elms[i], pos, num_inserted, update) )
+        if ( !insert_aux(shp, elms[i], pos, num_inserted, replace) )
           bad_argument();
       }
       free(elms);
@@ -310,11 +310,11 @@ int sh_insert(px* pxshp, px* src, bool update)
       sz = matrix_size(src); 
       px** hmelms = (pure_expr**) pure_get_matrix_data(src);
       for (int i = 0; i<sz; i++) {
-        if ( !insert_aux(shp, hmelms[i], pos, num_inserted, update) ) 
+        if ( !insert_aux(shp, hmelms[i], pos, num_inserted, replace) ) 
           bad_argument();
       }
     } else
-      if ( !insert_aux(shp, src, pos, num_inserted, update) ) 
+      if ( !insert_aux(shp, src, pos, num_inserted, replace) ) 
         bad_argument();
   }
   catch (px* e){
@@ -324,7 +324,7 @@ int sh_insert(px* pxshp, px* src, bool update)
   return num_inserted;
 }
 
-int sh_insert_stlhmap(px* pxshp1, px* pxshp2, bool update)
+int sh_insert_stlhmap(px* pxshp1, px* pxshp2, bool replace)
 {
   sh *shp1, *shp2;
   if (!get_shp(pxshp1,&shp1) ) bad_argument();
@@ -333,7 +333,7 @@ int sh_insert_stlhmap(px* pxshp1, px* pxshp2, bool update)
   pxhmap& hmp2 = shp2->hm;
   size_t oldsz = hmp1.size();
   try {
-    if (update) {
+    if (replace) {
       int num_inserted = 0; 
       for (pxhmapi i = hmp2.begin(); i!=hmp2.end(); i++) {
         pair<pxhmapi,bool> i_ok = hmp1.insert(*i);
@@ -356,7 +356,7 @@ int sh_insert_stlhmap(px* pxshp1, px* pxshp2, bool update)
   return hmp1.size() - oldsz;
 }
 
-int sh_insert_stlvec(px* pxshp, sv* svp, bool update)
+int sh_insert_stlvec(px* pxshp, sv* svp, bool replace)
 {
   int num_inserted = 0;
   sh* shp; 
@@ -364,7 +364,7 @@ int sh_insert_stlvec(px* pxshp, sv* svp, bool update)
   if (!get_shp(pxshp,&shp) ) bad_argument();
   try {
     for (sv::iterator i = svp->begin(); i!=svp->end(); i++) {
-      if ( !insert_aux(shp, *i, pos, num_inserted, update) )
+      if ( !insert_aux(shp, *i, pos, num_inserted, replace) )
         bad_argument();
     }
   }
@@ -374,7 +374,7 @@ int sh_insert_stlvec(px* pxshp, sv* svp, bool update)
   return num_inserted;
 }
 
-px*  sh_insert_stlhmap(px* pxshp, bool update)
+px*  sh_insert_stlhmap(px* pxshp, bool replace)
 {
   sh* shp;
   if (!get_shp(pxshp,&shp) ) bad_argument();
@@ -608,7 +608,7 @@ int x_sh_member(sh* shp, px* key)
   return hm.find(key) != hm.end();
 }
 
-px* sh_update(px* pxshp, px* key, px* val)
+px* sh_replace(px* pxshp, px* key, px* val)
 {
   sh* shp;
   if ( !get_shp(pxshp,&shp) ) bad_argument();

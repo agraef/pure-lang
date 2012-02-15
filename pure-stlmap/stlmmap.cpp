@@ -1443,7 +1443,7 @@ px* smm_next_key(px* pxsmmp, px* key)
   return iter_to_key(mmp, i);
 }
 
-px* smm_update(px* pxsmmp, px* k, px* src)
+px* smm_replace(px* pxsmmp, px* k, px* src)
 {
   smm* smmp;
   if (!get_smmp(pxsmmp,&smmp) ) bad_argument();  
