@@ -50,8 +50,8 @@ extern expr* smm_put_at(expr* pxsmip, expr* val);
 extern expr* smm_insert_hinted(expr*map, expr* iter, expr* kv);
 extern expr* smm_insert_elm(expr* map, expr* kv);
 extern int   smm_insert(expr* map, expr* src);
-extern int   smm_insert_elms_stlvec(expr* map, void* svp);
-extern int   smm_insert_elms_stlmmap(expr* map, expr* rng);
+extern int   smm_insert_stlvec(expr* map, void* svp);
+extern int   smm_insert_stlmmap(expr* map, expr* rng);
 extern void  smm_swap(expr* sac1, expr* sac2);
 extern int   smm_erase(expr* sac, expr* trg);
 extern int   smm_clear(expr* map);
@@ -186,13 +186,13 @@ end if listp xs || matrixp xs;
 
 ::stlmmap (STLVEC svp) = smm when
   smm = ::emptystlmmap;
-  smm_insert_elms_stlvec smm svp;
+  smm_insert_stlvec smm svp;
 end;
 
 ::stlmmap rng::stlmmap_rng = smm when
   _,params = smm_container_info rng;
   smm = mkstlmmap params;
-  smm_insert_elms_stlmmap smm rng;
+  smm_insert_stlmmap smm rng;
 end if ~smm_is_set rng;
 
 ::emptystlmset = smm_make_empty (<) (<) (==) [] 1;
@@ -206,13 +206,13 @@ end if listp xs || matrixp xs;
 
 ::stlmset (STLVEC svp) = ss when
   ss = ::emptystlmset;
-  smm_insert_elms_stlvec ss svp;
+  smm_insert_stlvec ss svp;
 end;
 
 ::stlmset rng::stlmmap_rng = ss when
   _,kc,_ = smm_container_info rng;
   ss = mkstlmset kc;
-  smm_insert_elms_stlmmap ss rng;
+  smm_insert_stlmmap ss rng;
 end if smm_is_set rng;
 
 /*** Info ***************************************************************/
@@ -257,17 +257,23 @@ end;
 
 /*** Modifiers *********************************************************/
 
-::insert smm::stlmmap (STLVEC svp) = smm_insert_elms_stlvec smm svp;
+::insert smm::stlmmap (STLVEC svp) = smm_insert_stlvec smm svp;
 
-::insert smm::stlmmap rng::stlmmap_rng = smm_insert_elms_stlmmap smm rng;
+::insert smm::stlmmap rng::stlmmap_rng = 
+  smm_insert_stlmmap smm rng if compatible_ranges smm rng;
 
 ::insert smm::stlmmap src = smm_insert smm src;
 
-::update smm::stlmmap key vals = smm_update smm key vals;
+//insert_or_update -- N/A
 
-::update_elm smm::stlmmap elm@(k=>v) = smm_insert_elm smm elm $$ smm;
 
-::update_elm smm::stlmset k = smm_insert_elm smm k $$ smm;
+//insert_or_update -- N/A
+
+
+//insert_or_update -- N/A
+
+
+::update smm::stlmmap key vals::list = smm_update smm key vals;
 
 //update_elm_with -- N/A
 

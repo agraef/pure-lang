@@ -93,13 +93,40 @@ static bool extract_kv(smm* smmp, px* kv, px*& k, px*& v)
   return ok;
 }
 
+// If kv is k (for sets) insert it. For maps, kv must be (k=>v). If v is a
+// list, say, [v1,..vn], then insert (k=>v1) .. (k=>2), else insert (k=>v).
+// Bump number inserted.  
 static bool insert_aux(smm* smmp, px* kv, pmmi& pos, int& inserted)
 {
   px *k, *v;
-  bool ok = extract_kv(smmp,kv,k,v);
-  if (ok) {
-    inserted++;
-    pos = smmp->mmp.insert(pxhpair(k,v));
+  bool ok = true;
+  try {
+    if (smmp->keys_only) {
+      inserted++;
+      pos = smmp->mmp.insert(pxhpair(kv,0));    
+    }
+    else {
+      ok = extract_kv(smmp,kv,k,v);
+      if (!ok) return false;
+      if (!v) bad_argument();
+      size_t src_sz = 0;
+      px** elems = NULL;
+      int i;
+      if (pure_is_listv(v, &src_sz, &elems)) {
+        for (i = 0; i<src_sz; i++) {
+          pmmi p = smmp->mmp.insert(pxhpair(k,elems[i]));
+          if (i==0) pos = p;
+          inserted++;
+        }
+        free(elems);
+      }
+      else {
+        pos = smmp->mmp.insert(pxhpair(k,v));
+        inserted++;
+      }
+    }
+  } catch (px* e) {
+    pure_throw(e);
   }
   return ok;
 }
@@ -862,15 +889,15 @@ px* smm_insert_elm(px* pxsmmp, px* kv)
 {
   smm* smmp;  pmmi pos;
   if (!get_smmp(pxsmmp,&smmp) ) bad_argument();
-  int num_inserted = 0;
+  px *k, *v;
+  if ( !extract_kv(smmp,kv,k,v) ) bad_argument();
   try {
-    if ( !insert_aux(smmp, kv, pos, num_inserted) ) bad_argument();
+    pos = smmp->mmp.insert(pxhpair(k,v));
   }
   catch (px* e) {
     pure_throw(e);
   }
-  smmp->cache_pmmi(pos);
-  return px_pointer(new smm_iter(pxsmmp, pos));
+  return px_pointer( new smm_iter(pxsmmp, pos) );
 }
 
 int smm_insert(px* pxsmmp, px* src)
@@ -900,7 +927,7 @@ int smm_insert(px* pxsmmp, px* src)
   return num_inserted;
 }
 
-int smm_insert_elms_stlmmap(px* pxsmmp, px* tpl)
+int smm_insert_stlmmap(px* pxsmmp, px* tpl)
 {
   smm* smmp;
   if (!get_smmp(pxsmmp,&smmp) ) bad_argument();
@@ -913,7 +940,7 @@ int smm_insert_elms_stlmmap(px* pxsmmp, px* tpl)
   return mmp.size() - oldsz;
 }
 
-int smm_insert_elms_stlvec(px* pxsmmp, sv* sv_p)
+int smm_insert_stlvec(px* pxsmmp, sv* sv_p)
 {
   smm* smmp; pmmi pos;
   if (!get_smmp(pxsmmp,&smmp) ) bad_argument();
@@ -1423,31 +1450,26 @@ px* smm_update(px* pxsmmp, px* k, px* src)
   if (smmp->keys_only) return 0;
   pxhmmap& mmp = smmp->mmp;
   pmmi trgi = get_iter(smmp, k, gi_lower);
+  if (trgi == mmp.end())
+    index_error();
   pmmi ub = get_iter(smmp, k, gi_upper);  
   size_t src_sz = 0;
   px** elems = NULL;
   bool ok;
   int i;
-  if (pure_is_listv(src, &src_sz, &elems)) {
-    for (i = 0; i<src_sz && trgi != ub; i++, trgi++)
-      trgi->second = elems[i];
-    if (i <src_sz)
-      for (; i<src_sz; i++)
-        mmp.insert(pxhpair(k,elems[i]));
-    else
-      smmp->erase(trgi,ub);
-    free(elems);
-  } 
-  else if (matrix_type(src) == 0) {
-    src_sz = matrix_size(src); 
-    elems = (pure_expr**) pure_get_matrix_data(src);
-    for (i = 0; i<src_sz && trgi != ub; i++, trgi++)
-      trgi->second = elems[i];
-    if (i <src_sz)
-      for (; i<src_sz; i++)
-        mmp.insert(pxhpair(k,elems[i]));
-    else
-      smmp->erase(trgi,ub);
+  try {
+    if (pure_is_listv(src, &src_sz, &elems)) {
+      for (i = 0; i<src_sz && trgi != ub; i++, trgi++)
+        trgi->second = elems[i];
+      if (i <src_sz)
+        for (; i<src_sz; i++)
+          mmp.insert(pxhpair(k,elems[i]));
+      else
+        smmp->erase(trgi,ub);
+      free(elems);
+    } 
+  } catch (px* e) {
+    pure_throw(e);
   }
-  return pxsmmp;
+  return src;
 }

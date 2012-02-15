@@ -904,7 +904,7 @@ px* sm_insert_hinted(px* pxsmp, px* pxsmip, px* kv)
   return px_pointer( new sm_iter(pxsmp, pos) );
 }
 
-// returns iterator
+// returns iterator - no cache
 px* sm_insert_elm(px* pxsmp, px* kv)
 {
   bool update = 0;
@@ -919,12 +919,6 @@ px* sm_insert_elm(px* pxsmp, px* kv)
     pure_throw(e);
   }
   px* it = px_pointer(new sm_iter(pxsmp, pos));
-  px *k, *v;
-  if (smp->keys_only)
-    k = kv;
-  else
-    pxrocket_to_pxlhs_pxrhs(kv, &k, &v);
-  smp->cache_pmi(k,pos);
   return pure_tuplel(2,it,pure_int(num_inserted));
 }
 
