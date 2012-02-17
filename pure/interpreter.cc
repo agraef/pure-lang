@@ -3194,7 +3194,7 @@ expr interpreter::pure_expr_to_expr(pure_expr *x, bool check)
   case EXPR::INT:
     return expr(EXPR::INT, x->data.i);
   case EXPR::BIGINT: {
-    // The expr constructor globbers its mpz_t argument, so take a copy.
+    // The expr constructor clobbers its mpz_t argument, so take a copy.
     mpz_t z;
     mpz_init_set(z, x->data.z);
     return expr(EXPR::BIGINT, z);
@@ -7452,7 +7452,7 @@ expr interpreter::vsubst(expr x)
       return x;
   case EXPR::BIGINT:
     if (x.astag()) {
-      // The expr constructor globbers its mpz_t argument, so take a copy.
+      // The expr constructor clobbers its mpz_t argument, so take a copy.
       mpz_t z;
       mpz_init_set(z, x.zval());
       expr u = expr(EXPR::BIGINT, z);
@@ -8553,7 +8553,7 @@ expr *interpreter::mksym_expr(string *s, int32_t tag)
     } else {
 #if 1
       /* TO BE REVIEWED: This used to be a cached function node, but this
-	 might globber the expression flags if the same function symbol is
+	 might clobber the expression flags if the same function symbol is
 	 used in different contexts (e.g., as both a global and a local
 	 symbol, or in different local environments). */
       x = new expr(sym.f);
@@ -8582,7 +8582,7 @@ expr *interpreter::mkas_expr(string *s, expr *x)
     throw err("error in  \"as\" pattern (bad variable symbol)");
 #if 0
   if (x->tag() > 0) {
-    // Avoid globbering cached function symbols.
+    // Avoid clobbering cached function symbols.
     // FIXME: Is this needed any more?
     expr *y = new expr(x->tag());
     delete x;
