@@ -2,9 +2,6 @@
 #include "sfinfo.h"
 #include <stdlib.h>
 
-/* Force linkage of libsndfile. */
-static int (*__force_sndfile)() = sf_error;
-
 #define SIZEOF_SF_INFO sizeof(SF_INFO)
 #define SIZEOF_SF_FORMAT_INFO sizeof(SF_FORMAT_INFO)
 
@@ -14,6 +11,19 @@ void __sndfile_defs(void)
 {
   define(SIZEOF_SF_INFO);
   define(SIZEOF_SF_FORMAT_INFO);
+}
+
+/* NOTE: This function isn't really needed as the same information is also
+   available with the sf_version_string() API function. However, we supply
+   this function for consistency with libsamplerate (which provides a
+   src_get_version() function). In addition, this forces libsndfile to be
+   linked into the module which may not be the case otherwise on some systems
+   which use the --as-needed linker option by default, such as Arch Linux. */
+const char *sf_get_version(void)
+{
+  static char buffer[128] ;
+  sf_command(NULL, SFC_GET_LIB_VERSION, buffer, sizeof(buffer));
+  return buffer;
 }
 
 SF_INFO *sf_make_info(int samplerate, int channels, int format)
