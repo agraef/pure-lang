@@ -19,45 +19,45 @@ using "lib:stlalgorithm";
 
 namespace stl;
 
-private extern int  sva_copy(expr* it1, expr* it2);
-private extern int  sva_copy_backward(expr* it1, expr* it2);
-private extern int  sva_swap_ranges(expr* it1, expr* it2);
-private extern int  sva_transform(expr* it1, expr* it2, expr* unary_op);
-private extern int  sva_transform_2(expr* it1, expr* it2, expr* it3,
+private extern int  sva_copy(expr* rng1, expr* rng2);
+private extern int  sva_copy_backward(expr* rng1, expr* rng2);
+private extern int  sva_swap_ranges(expr* rng1, expr* rng2);
+private extern int  sva_transform(expr* rng1, expr* rng2, expr* unary_op);
+private extern int  sva_transform_2(expr* rng1, expr* rng2, expr* rng3,
                                     expr* bin_op);
-private extern void sva_replace_if(expr* it, expr* pred, expr* val);
-private extern int  sva_replace_copy_if(expr* it1, expr* it2, expr* pred,
+private extern void sva_replace_if(expr* rng, expr* pred, expr* val);
+private extern int  sva_replace_copy_if(expr* rng1, expr* rng2, expr* pred,
                                         expr* val);
-private extern void sva_fill(expr* it, expr* val);
-private extern void sva_fill_n(expr* it, int n, expr* val);
-private extern void sva_generate(expr* it1, expr* gen);
+private extern void sva_fill(expr* rng, expr* val);
+private extern void sva_fill_n(expr* rng, int n, expr* val);
+private extern void sva_generate(expr* rng1, expr* gen);
 private extern void sva_generate_n(expr*, int n, expr* gen);
-private extern int  sva_remove_if(expr* it1, expr* pred);
-private extern int  sva_remove_copy_if(expr* it1, expr* it2, expr* pred);
-private extern int  sva_unique(expr* it1, expr* bin_pred);
-private extern int  sva_unique_copy(expr* it1, expr* it2, expr* bin_pred);
-private extern void sva_reverse(expr* it1);
-private extern int  sva_reverse_copy(expr* it1, expr* it2);
-private extern void sva_rotate(expr* it);
-private extern void sva_rotate_copy(expr* it1, expr* it2);
-private extern void sva_random_shuffle(expr* it);  
-private extern int  sva_partition(expr* it, expr* pred);
-private extern int  sva_stable_partition(expr* it, expr* pred);
+private extern int  sva_remove_if(expr* rng1, expr* pred);
+private extern int  sva_remove_copy_if(expr* rng1, expr* rng2, expr* pred);
+private extern int  sva_unique(expr* rng1, expr* bin_pred);
+private extern int  sva_unique_copy(expr* rng1, expr* rng2, expr* bin_pred);
+private extern void sva_reverse(expr* rng1);
+private extern int  sva_reverse_copy(expr* rng1, expr* rng2);
+private extern void sva_rotate(expr* rng);
+private extern void sva_rotate_copy(expr* rng1, expr* rng2);
+private extern void sva_random_shuffle(expr* rng);  
+private extern int  sva_partition(expr* rng, expr* pred);
+private extern int  sva_stable_partition(expr* rng, expr* pred);
 
 copy src::svrng trg::mutable_svrng = sva_copy src trg;
 
 copy_backward src::svrng trg::mutable_svrng = 
   sva_copy_backward src trg;
 
-swap_ranges it1::mutable_svrng it2::mutable_svrng = 
-  sva_swap_ranges it1 it2;
+swap_ranges rng1::mutable_svrng rng2::mutable_svrng = 
+  sva_swap_ranges rng1 rng2;
 
 transform src::svrng trg::mutable_svrng f = sva_transform src trg f;
 
 transform_2 src1::svrng src2::svrng trg::mutable_svrng f = 
   sva_transform_2 src1 src2 trg f;
 
-replace_if it::mutable_svrng pred val = sva_replace_if it pred val;
+replace_if rng::mutable_svrng pred val = sva_replace_if rng pred val;
 
 replace_copy_if src::svrng trg::mutable_svrng pred val =
   sva_replace_copy_if src trg pred val; 
@@ -65,17 +65,17 @@ replace_copy_if src::svrng trg::mutable_svrng pred val =
 replace_copy src::svrng trg::mutable_svrng x y =
   replace_copy_if src trg (x==) y;
 
-fill it::mutable_svrng x = sva_fill it x;
+fill rng::mutable_svrng x = sva_fill rng x;
 
-fill_n it::mutable_svrng n::int x = sva_fill_n it n x;
+fill_n rng::mutable_svrng n::int x = sva_fill_n rng n x;
 
-generate it::mutable_svrng gen = sva_generate it gen;
+generate rng::mutable_svrng gen = sva_generate rng gen;
 
-generate_n it::mutable_svrng n::int gen = sva_generate_n it n gen;
+generate_n rng::mutable_svrng n::int gen = sva_generate_n rng n gen;
 
-remove_if it::mutable_svrng pred = sva_remove_if it pred;
+remove_if rng::mutable_svrng pred = sva_remove_if rng pred;
 
-remove it::mutable_svrng x = sva_remove_if it (x==);
+remove rng::mutable_svrng x = sva_remove_if rng (x==);
 
 remove_copy_if src::svrng trg::mutable_svrng pred =
   sva_remove_copy_if src trg pred; 
@@ -83,22 +83,22 @@ remove_copy_if src::svrng trg::mutable_svrng pred =
 remove_copy src::svrng trg::mutable_svrng x =
   remove_copy_if src trg (x==);
 
-unique it::mutable_svrng pred = sva_unique it pred;
+unique rng::mutable_svrng pred = sva_unique rng pred;
 
 unique_copy src::svrng trg::mutable_svrng pred = sva_unique_copy src trg pred; 
 
-reverse it::mutable_svrng = sva_reverse it;
+reverse rng::mutable_svrng = sva_reverse rng;
 
 reverse_copy src::svrng trg::mutable_svrng = sva_reverse_copy src trg; 
 
-rotate it::mutable_svrng = sva_rotate it;
+rotate rng::mutable_svrng = sva_rotate rng;
 
-rotate_copy it::svrng trg::mutable_svrng = sva_rotate_copy it trg;
+rotate_copy src::svrng trg::mutable_svrng = sva_rotate_copy src trg;
 
-random_shuffle it::mutable_svrng = sva_random_shuffle it;
+random_shuffle rng::mutable_svrng = sva_random_shuffle rng;
 
-partition it::mutable_svrng pred = sva_partition it pred;
+partition rng::mutable_svrng pred = sva_partition rng pred;
 
-stable_partition it::mutable_svrng pred = sva_stable_partition it pred;
+stable_partition rng::mutable_svrng pred = sva_stable_partition rng pred;
 
 

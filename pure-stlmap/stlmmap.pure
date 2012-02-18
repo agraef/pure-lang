@@ -97,20 +97,19 @@ namespace stl;
 /*** Helpers **************************************************************/
 
 private 
-  smm_lower_bound
-  smm_iter smm_key smm_val smm_elm 
-  smm_merge smm_union smm_difference smm_intersection smm_symmetric_difference 
-  compatible_ranges;
+  compatible smm_lower_bound_flg smm_upper_bound_flg smm_equal_range_flg
+  smm_key_flg smm_val_flg smm_elm_flg smm_iter_flg smm_iter_dflt_flg
+  smm_merge smm_union smm_difference smm_intersection smm_symmetric_difference; 
 
-const smm_lower_bound = 1;
-const smm_upper_bound = 2;
-const smm_equal_range = 3;
+const smm_lower_bound_flg = 1;
+const smm_upper_bound_flg = 2;
+const smm_equal_range_flg = 3;
 
-const smm_key = 1;
-const smm_val = 2;
-const smm_elm = 3;
-const smm_iter = 4;
-const smm_iter_dflt = 5;
+const smm_key_flg = 1;
+const smm_val_flg = 2;
+const smm_elm_flg = 3;
+const smm_iter_flg = 4;
+const smm_iter_dflt_flg = 5;
 
 const smm_merge = 1;
 const smm_union = 2;
@@ -121,44 +120,44 @@ const smm_symmetric_difference = 5;
 const smm_at_beginning = 1;
 const smm_at_pastend = 2;
 
-compatible_ranges rng1::stlmmap_rng rng2 = 
+compatible rng1::stlmmap_rng rng2 = 
   if smm_is_set rng1 then smm_is_set rng2 else ~smm_is_set rng2;
 
 /*** Iterators **********************************************************/
 
-iterator pos::stlmmap_iter = smm_copy_iter pos;
+iterator itr::stlmmap_iter = smm_copy_iter itr;
 
 begin smm::stlmmap = smm_begin smm;
 
 pastend smm::stlmmap = smm_end smm;
 
-find smm::stlmmap key = smm_find smm key smm_iter;
+find smm::stlmmap key = smm_find smm key smm_iter_flg;
 
-l_bound smm::stlmmap key = smm_bounds smm key smm_lower_bound;
+l_bound smm::stlmmap key = smm_bounds smm key smm_lower_bound_flg;
 
-u_bound smm::stlmmap key = smm_bounds smm key smm_upper_bound;
+u_bound smm::stlmmap key = smm_bounds smm key smm_upper_bound_flg;
 
-lu_bounds smm::stlmmap key = smm_bounds smm key smm_equal_range;
+lu_bounds smm::stlmmap key = smm_bounds smm key smm_equal_range_flg;
 
-beginp pos::stlmmap_iter = smm_iter_is_at pos smm_at_beginning;
+beginp itr::stlmmap_iter = smm_iter_is_at itr smm_at_beginning;
 
-endp pos::stlmmap_iter = smm_iter_is_at pos smm_at_pastend;
+endp itr::stlmmap_iter = smm_iter_is_at itr smm_at_pastend;
 
-get_info pos::stlmmap_iter = smm_iter_info pos;
+get_info itr::stlmmap_iter = smm_iter_info itr;
 
-::get pos::stlmmap_iter = smm_get_at pos smm_elm;
+::get itr::stlmmap_iter = smm_get_at itr smm_elm_flg;
 
-get_key pos::stlmmap_iter = smm_get_at pos smm_key;
+get_key itr::stlmmap_iter = smm_get_at itr smm_key_flg;
 
-get_val pos::stlmmap_iter = smm_get_at pos smm_val;
+get_val itr::stlmmap_iter = smm_get_at itr smm_val_flg;
 
-::put pos::stlmmap_iter val = smm_put_at pos val;
+::put itr::stlmmap_iter val = smm_put_at itr val;
 
-inc pos::stlmmap_iter = smm_move_iter pos 1;
+inc itr::stlmmap_iter = smm_move_iter itr 1;
 
-dec pos::stlmmap_iter = smm_move_iter pos (-1);
+dec itr::stlmmap_iter = smm_move_iter itr (-1);
 
-move pos::stlmmap_iter n::int = smm_move_iter pos n;
+move itr::stlmmap_iter n::int = smm_move_iter itr n;
 
 insert_elm smm::stlmmap (elm, p::stlmmap_iter) = smm_insert_hinted smm p elm;
 
@@ -166,9 +165,9 @@ insert_elm smm::stlmmap elm = smm_insert_elm smm elm;
 
 /*** Iterator Operators ****************************************************/
 
-(::==) pos1::stlmmap_iter pos2::stlmmap_iter = smm_equal_iter pos1 pos2;
+(::==) itr1::stlmmap_iter itr2::stlmmap_iter = smm_equal_iter itr1 itr2;
 
-(::^) smm::stlmmap key = smm_find smm key smm_iter_dflt;  // inserts default
+(::^) smm::stlmmap key = smm_find smm key smm_iter_dflt_flg; 
 
 /***  Constructors *********************************************************/
 
@@ -239,11 +238,11 @@ end if valid when
   first = smm_copy_iter b;
 end;
 
-::members rng::stlmmap_rng = smm_listmap 0 rng smm_elm; 
+::members rng::stlmmap_rng = smm_listmap 0 rng smm_elm_flg; 
 
-::keys rng::stlmmap_rng = smm_listmap 0 rng smm_key;// if ~smm_is_set rng;
+::keys rng::stlmmap_rng = smm_listmap 0 rng smm_key_flg;// if ~smm_is_set rng;
 
-::vals rng::stlmmap_rng = smm_listmap 0 rng smm_val;// if ~smm_is_set rng;
+::vals rng::stlmmap_rng = smm_listmap 0 rng smm_val_flg;// if ~smm_is_set rng;
 
 vector rng::stlmmap_rng = smm_make_vector rng;
 
@@ -260,7 +259,7 @@ end;
 ::insert smm::stlmmap (STLVEC svp) = smm_insert_stlvec smm svp;
 
 ::insert smm::stlmmap rng::stlmmap_rng = 
-  smm_insert_stlmmap smm rng if compatible_ranges smm rng;
+  smm_insert_stlmmap smm rng if compatible smm rng;
 
 ::insert smm::stlmmap src = smm_insert smm src;
 
@@ -279,66 +278,65 @@ end;
 
 ::erase smm::stlmmap = smm_clear smm;
 
-::erase (smm::stlmmap,i::stlmmap_iter,j::stlmmap_iter) = smm_erase smm (i,j);
+::erase (smm::stlmmap,itr1::stlmmap_iter, itr2::stlmmap_iter) = 
+  smm_erase smm (itr1,itr2);
 
-::erase (smm::stlmmap,pos::stlmmap_iter) = smm_erase smm pos;
+::erase (smm::stlmmap,itr::stlmmap_iter) = smm_erase smm itr;
 
 ::erase (smm::stlmmap,key1,key2) = smm_erase smm (smm,key1,key2);
 
 ::erase (smm::stlmmap,key) = smm_erase smm (smm,key);
 
-swap sm1::stlmmap sm2::stlmmap = smm_swap sm1 sm2;
-
-swap ss1::stlmset ss2::stlmset = smm_swap ss1 ss2;
+swap smm1::stlmmap smm2::stlmmap = smm_swap smm1 smm2 if compatible smm1 smm2;
 
 /*** Equality and Lexicographical Comparison ***************************/
 
 map_equal rng1::stlmmap_rng rng2::stlmmap_rng = smm_equal rng1 rng2
-  if compatible_ranges rng1 rng2;
+  if compatible rng1 rng2;
 
-(::==) sac1::stlmmap_rng sac2::stlmmap_rng = smm_equal sac1 sac2
-  if compatible_ranges sac1 sac2;
+(::==) rng1::stlmmap_rng rng2::stlmmap_rng = smm_equal rng1 rng2
+  if compatible rng1 rng2;
 
-(::~=) sac1::stlmmap_rng sac2::stlmmap_rng = ~smm_equal sac1 sac2
-  if compatible_ranges sac1 sac2;
+(::~=) rng1::stlmmap_rng rng2::stlmmap_rng = ~smm_equal rng1 rng2
+  if compatible rng1 rng2;
 
 (::<) rng1::stlmmap_rng rng2::stlmmap_rng = smm_less rng1 rng2
-  if compatible_ranges rng1 rng2;
+  if compatible rng1 rng2;
 
 (::<=) rng1::stlmmap_rng rng2::stlmmap_rng = ~smm_less rng2 rng1
-  if compatible_ranges rng1 rng2;
+  if compatible rng1 rng2;
 
 (::>) rng1::stlmmap_rng rng2::stlmmap_rng = smm_less rng2 rng1
-  if compatible_ranges rng1 rng2;
+  if compatible rng1 rng2;
 
 (::>=) rng1::stlmmap_rng rng2::stlmmap_rng = ~smm_less rng1 rng2
-  if compatible_ranges rng1 rng2;
+  if compatible rng1 rng2;
 
 /** STL Set Algorithms ***************************************************/
 
 map_merge rng1::stlmmap_rng rng2::stlmmap_rng = 
-  smm_setop smm_merge rng1 rng2 if compatible_ranges rng1 rng2;
+  smm_setop smm_merge rng1 rng2 if compatible rng1 rng2;
 
 map_union rng1::stlmmap_rng rng2::stlmmap_rng = 
-  smm_setop smm_union rng1 rng2 if compatible_ranges rng1 rng2;
+  smm_setop smm_union rng1 rng2 if compatible rng1 rng2;
 
 map_difference rng1::stlmmap_rng rng2::stlmmap_rng = 
-  smm_setop smm_difference rng1 rng2 if compatible_ranges rng1 rng2;
+  smm_setop smm_difference rng1 rng2 if compatible rng1 rng2;
 
 map_intersection rng1::stlmmap_rng rng2::stlmmap_rng = 
-  smm_setop smm_intersection rng1 rng2 if compatible_ranges rng1 rng2;
+  smm_setop smm_intersection rng1 rng2 if compatible rng1 rng2;
 
 map_symmetric_difference rng1::stlmmap_rng rng2::stlmmap_rng = 
-  smm_setop smm_symmetric_difference rng1 rng2 if compatible_ranges rng1 rng2;
+  smm_setop smm_symmetric_difference rng1 rng2 if compatible rng1 rng2;
 
 map_includes rng1::stlmmap_rng rng2::stlmmap_rng =
- smm_includes rng1 rng2 if compatible_ranges rng1 rng2;
+ smm_includes rng1 rng2 if compatible rng1 rng2;
 
 /*** Key oriented interface functions *********************************/
 
-(::!) smm::stlmmap key = smm_listmap 0 (smm,key) smm_val;
+(::!) smm::stlmmap key = smm_listmap 0 (smm,key) smm_val_flg;
 
-::get (smm::stlmmap,key) = smm_find smm key smm_elm; 
+::get (smm::stlmmap,key) = smm_find smm key smm_elm_flg; 
 
 ::member smm::stlmmap key = smm_member smm key;
 
@@ -350,7 +348,7 @@ prev_key smm::stlmmap key = smm_prev_key smm key;
 
 /*** Mapping and Folding ********************************************/
 
-::map f rng::stlmmap_rng = smm_listmap f rng smm_elm; // => smm_key for sets
+::map f rng::stlmmap_rng = smm_listmap f rng smm_elm_flg;
 
 ::foldl f x rng::stlmmap_rng = smm_foldl f x rng;
 
@@ -372,15 +370,15 @@ prev_key smm::stlmmap key = smm_prev_key smm key;
   end;
 end;
 
-::listmap f rng::stlmmap_rng = smm_listmap f rng smm_elm;
+::listmap f rng::stlmmap_rng = smm_listmap f rng smm_elm_flg;
 
-::catmap f rng::stlmmap_rng = smm_listcatmap f rng smm_elm;
+::catmap f rng::stlmmap_rng = smm_listcatmap f rng smm_elm_flg;
 
-::rowmap f rng::stlmmap_rng = rowcat (smm_listmap f rng smm_elm);
+::rowmap f rng::stlmmap_rng = rowcat (smm_listmap f rng smm_elm_flg);
 
-::rowcatmap f rng::stlmmap_rng = rowcat (smm_listmap f rng smm_elm);
+::rowcatmap f rng::stlmmap_rng = rowcat (smm_listmap f rng smm_elm_flg);
 
-::colmap f rng::stlmmap_rng = colcat (smm_listmap f rng smm_elm);
+::colmap f rng::stlmmap_rng = colcat (smm_listmap f rng smm_elm_flg);
 
-::colcatmap f rng::stlmmap_rng = colcat (smm_listmap f rng smm_elm);
+::colcatmap f rng::stlmmap_rng = colcat (smm_listmap f rng smm_elm_flg);
 

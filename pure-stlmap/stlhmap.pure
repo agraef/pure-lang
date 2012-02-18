@@ -69,40 +69,41 @@ let stlhmap_t = stl::sh_type_tags;
 type stlhmap x::pointer = check_ptrtag stlhmap_t x;
 type stlhset x::pointer = check_ptrtag stlhmap_t x && stl::sh_is_set x;
 
-/*** Experiment *********************************************************/
+// /*** Experiment *********************************************************/
 
-nonfix STLHMAP;
+// nonfix STLHMAP;
 
-wrap x = STLHMAP x;
+// wrap x = STLHMAP x;
 
-(!) (STLHMAP hm) key = stl::sh_find_val hm key;
+// (!) (STLHMAP hm) key = stl::sh_find_val hm key;
 
-member (STLHMAP hm) key = stl::sh_member hm key;
+// member (STLHMAP hm) key = stl::sh_member hm key;
 
-w_find (STLHMAP hm) key = stl::sh_find_val hm key;
+// w_find (STLHMAP hm) key = stl::sh_find_val hm key;
 
-w_member (STLHMAP hm) key = stl::sh_member hm key;
+// w_member (STLHMAP hm) key = stl::sh_member hm key;
 
-p_find hm key = stl::sh_find_val hm key;
+// p_find hm key = stl::sh_find_val hm key;
 
-p_member hm key = stl::sh_member hm key;
+// p_member hm key = stl::sh_member hm key;
 
-extern int   x_sh_member(stlhmap* pxshp, expr* key) = x_member;
+// extern int   x_sh_member(stlhmap* pxshp, expr* key) = x_member;
 
-extern expr* x_sh_find_val(stlhmap* pxshp, expr* key) = x_find;
+// extern expr* x_sh_find_val(stlhmap* pxshp, expr* key) = x_find;
 
+// /*** End experiment
 
 namespace stl;
 
 /*** Helpers **************************************************************/
 
-private sh_key_flag sh_val_flag sh_elm_flag compatible_ranges;
+private sh_key_flg sh_val_flg sh_elm_flg compatible;
 
-const sh_key_flag = 1;
-const sh_val_flag = 2;
-const sh_elm_flag = 3;
+const sh_key_flg = 1;
+const sh_val_flg = 2;
+const sh_elm_flg = 3;
 
-compatible c1 c2 = if sh_is_set c1 then sh_is_set c2 else ~sh_is_set c2; 
+compatible hm1 hm2 = if sh_is_set hm1 then sh_is_set hm2 else ~sh_is_set hm2; 
 
 /***  Constructors *********************************************************/
 
@@ -132,7 +133,7 @@ end if listp xs || matrixp xs;
   sh_insert_stlvec hs svp 0;
 end;
 
-::stlhset hs::stlhset = sh_copy hs;
+::stlhset hm::stlhset = sh_copy hm;
 
 hmap_reserve hm::stlhmap mlf::double size::int = sh_reserve hm mlf size;
 
@@ -154,13 +155,13 @@ count hm::stlhmap key = sh_count hm key;
 
 (::!) hm::stlhmap key = sh_find_val hm key;
 
-::get (hm::stlhmap,key) = sh_find hm key sh_elm_flag; 
+::get (hm::stlhmap,key) = sh_find hm key sh_elm_flg; 
 
-::members hm::stlhmap = sh_listmap 0 hm sh_elm_flag;
+::members hm::stlhmap = sh_listmap 0 hm sh_elm_flg;
 
-::keys hm::stlhmap = sh_listmap 0 hm sh_key_flag;
+::keys hm::stlhmap = sh_listmap 0 hm sh_key_flg;
 
-::vals hm::stlhmap = sh_listmap 0 hm sh_val_flag;
+::vals hm::stlhmap = sh_listmap 0 hm sh_val_flg;
 
 vector hm::stlhmap = sh_make_vector hm;
 
@@ -189,7 +190,7 @@ end;
 
 ::insert_or_replace hm::stlhmap src = sh_insert hm src 1 if ~sh_is_set hm;
 
-::replace hm::stlhmap key v = sh_replace hm key v;
+::replace hm::stlhmap key val = sh_replace hm key val;
 
 ::erase hm::stlhmap = sh_clear hm;
 
@@ -199,13 +200,13 @@ swap hm1::stlhmap hm2::stlhmap = sh_swap hm1 hm2 if compatible hm1 hm2;
 
 /*** Equality **********************************************************/
 
-(::==) c1::stlhmap c2::stlhmap = sh_equal c1 c2 if compatible c1 c2;
+(::==) hm1::stlhmap hm2::stlhmap = sh_equal hm1 hm2 if compatible hm1 hm2;
 
-(::~=) c1::stlhmap c2::stlhmap = ~sh_equal c1 c2 if compatible c1 c2;
+(::~=) hm1::stlhmap hm2::stlhmap = ~sh_equal hm1 hm2 if compatible hm1 hm2;
 
-/*** Mapping ***********************************************************/
+/*** Mapping and Folding ************************************************/
 
-::map f hm::stlhmap = sh_listmap f hm sh_elm_flag;
+::map f hm::stlhmap = sh_listmap f hm sh_elm_flg;
 
 ::foldl f x hm::stlhmap = sh_foldl f x hm;
 
@@ -213,7 +214,7 @@ swap hm1::stlhmap hm2::stlhmap = sh_swap hm1 hm2 if compatible hm1 hm2;
 
 ::do f hm::stlhmap = sh_do f hm;
 
-::filter p hm::stlhmap = sh_listcatmap f hm sh_elm_flag with
+::filter p hm::stlhmap = sh_listcatmap f hm sh_elm_flg with
   f x = res when
     res = case p x of
       1 = [x];
@@ -223,15 +224,15 @@ swap hm1::stlhmap hm2::stlhmap = sh_swap hm1 hm2 if compatible hm1 hm2;
   end;
 end;
 
-::listmap f hm::stlhmap = sh_listmap f hm sh_elm_flag;
+::listmap f hm::stlhmap = sh_listmap f hm sh_elm_flg;
 
-::catmap f hm::stlhmap = sh_listcatmap f hm sh_elm_flag;
+::catmap f hm::stlhmap = sh_listcatmap f hm sh_elm_flg;
 
-::rowmap f hm::stlhmap = rowcat (sh_listmap f hm sh_elm_flag);
+::rowmap f hm::stlhmap = rowcat (sh_listmap f hm sh_elm_flg);
 
-::rowcatmap f hm::stlhmap = rowcat (sh_listmap f hm sh_elm_flag);
+::rowcatmap f hm::stlhmap = rowcat (sh_listmap f hm sh_elm_flg);
 
-::colmap f hm::stlhmap = colcat (sh_listmap f hm sh_elm_flag);
+::colmap f hm::stlhmap = colcat (sh_listmap f hm sh_elm_flg);
 
-::colcatmap f hm::stlhmap = colcat (sh_listmap f hm sh_elm_flag);
+::colcatmap f hm::stlhmap = colcat (sh_listmap f hm sh_elm_flg);
 
