@@ -7071,27 +7071,27 @@ expr interpreter::lcsubst(expr x)
   case EXPR::COND: {
     expr u = quoted_ifelse(x.xval1(), x.xval2(), x.xval3());
     u.set_astag(x.astag());
-    return u;
+    return lcsubst(u);
   }
   case EXPR::LAMBDA: {
     expr u = quoted_lambda(x.largs(), x.lrule().rhs);
     u.set_astag(x.astag());
-    return u;
+    return lcsubst(u);
   }
   case EXPR::CASE: {
     expr u = quoted_case(x.xval(), x.rules());
     u.set_astag(x.astag());
-    return u;
+    return lcsubst(u);
   }
   case EXPR::WHEN: {
     expr u = quoted_when(x.xval(), x.rules());
     u.set_astag(x.astag());
-    return u;
+    return lcsubst(u);
   }
   case EXPR::WITH: {
     expr u = quoted_with(x.xval(), x.fenv());
     u.set_astag(x.astag());
-    return u;
+    return lcsubst(u);
   }
   // matrix (Pure 0.47+):
   case EXPR::MATRIX: {
