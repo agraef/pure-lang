@@ -1160,8 +1160,7 @@ which provides you with thousands of characters from most of the languages of
 the world, as well as an abundance of special symbols for almost any purpose.
 If your text editor supports the UTF-8 encoding (most editors do nowadays),
 you can use all Unicode characters in your Pure programs, not only inside
-strings, but also for denoting identifiers and special operator and constant
-symbols. 
+strings, but also for denoting identifiers and special operator symbols.
 
 The customary notations for identifiers, numbers and strings are all
 provided. In addition, Pure also allows you to define your own operator
@@ -1177,7 +1176,7 @@ rules in EBNF format:
    punct : "!"|"#"|"$"|"%"|"&"|...
 
 Pure uses the following rules to distinguish "punctuation" (which may only
-occur in declared operator and constant symbols) and "letters" (identifier
+occur in declared operator symbols) and "letters" (identifier
 constituents). In addition to the punctuation symbols in the 7 bit ASCII
 range, the following code points in the Unicode repertoire are considered as
 punctuation: U+00A1 through U+00BF, U+00D7, U+00F7, and U+20D0 through
@@ -1431,7 +1430,7 @@ interpreter, while identifiers in variable positions denote, well,
 variables. We also refer to this convention as the `head = function rule`. It
 is quite intuitive and lets us get away without declaring the variables in
 equations. (There are some corner cases not covered here, however. In
-particular, Pure allows you to declare special constant symbols, if you need a
+particular, Pure allows you to declare special "nonfix" symbols, if you need a
 symbol to be recognized as a literal even if it occurs in a variable
 position. This is done by means of a :keyword:`nonfix` declaration, see
 `Symbol Declarations`_ for details.)
@@ -1565,24 +1564,24 @@ Function and variable symbols: ``foo``, ``foo_bar``, ``BAR``, ``foo::bar``
     like in ``foo::bar``. (This requires that the given namespace has already
     been created, as explained under Namespaces_ in the Declarations_ section.)
 
-Operator and constant symbols: ``+``, ``==``, ``not``
+Operator symbols: ``+``, ``==``, ``not``
     For convenience, Pure also provides you with a limited means to extend the
-    syntax of the language with special operator and constant symbols by means
-    of a corresponding `fixity` declaration, as discussed in section `Symbol
+    syntax of the language with special operator symbols by means of a
+    corresponding `fixity` declaration, as discussed in section `Symbol
     Declarations`_. Besides the usual infix, prefix and postfix operators,
-    Pure also provides outfix (bracket) and nonfix (constant) symbols. (Nonfix
-    symbols actually work more or less like ordinary identifiers, but the
-    :keyword:`nonfix` attribute tells the compiler that when such a symbol
-    occurs on the left-hand side of an equation, it is always to be
-    interpreted as a literal constant, cf. `Variables in Equations`_.)
+    Pure also provides outfix (bracket) and nonfix (nullary operator)
+    symbols. (Nonfix symbols actually work more or less like ordinary
+    identifiers, but the :keyword:`nonfix` attribute tells the compiler that
+    when such a symbol occurs on the left-hand side of an equation, it is
+    always to be interpreted as a literal, cf. `Variables in Equations`_.)
 
-    Operator and constant symbols may take the form of an identifier or a
-    sequence of punctuation characters. They must always be declared before
-    use. Once declared, they are always special, and can't be used as ordinary
+    Operator (and nonfix) symbols may take the form of an identifier or a
+    sequence of punctuation characters, which may optionally be qualified with
+    a namespace prefix. These symbols must always be declared before use. Once
+    declared, they are always special, and can't be used as ordinary
     identifiers any more. However, like in Haskell, by enclosing an operator
     in parentheses, such as ``(+)`` or ``(not)``, you can turn it into an
-    ordinary function symbol. Also, operators and constant symbols can be
-    qualified with a namespace just like normal identifiers.
+    ordinary function symbol.
 
     .. note:: The common operator symbols like ``+``, ``-``, ``*``, ``/``
        etc. are all declared at the beginning of the prelude, see the
@@ -4020,9 +4019,9 @@ specify the scope of the declared symbols (if the scope prefix is omitted, it
 defaults to :keyword:`public`).
 
 The following "fixity" declarations are available for introducing special
-operator and constant symbols. This changes the way that these symbols are
-parsed and thus provides you with a limited means to extend the Pure language
-at the lexical and syntactical level.
+operator symbols. This changes the way that these symbols are parsed and thus
+provides you with a limited means to extend the Pure language at the lexical
+and syntactical level.
 
 .. describe:: infix level symbol ...;
    	      infixl level symbol ...;
@@ -4053,6 +4052,17 @@ table can be found in the :ref:`Prelude` section of the :doc:`purelib`)::
   infixl 2300 * / div mod ;
   infixr 2500 ^ ;
   prefix 2600 # ;
+
+.. NOTE:: Unary minus plays a special role in the syntax. Like in Haskell and
+   following mathematical tradition, unary minus is the only prefix operator
+   symbol which is also used as an infix operator, and is always on the same
+   precedence level as binary minus, whose precedence may be chosen freely in
+   the prelude. (The minus operator is the only symbol which gets that special
+   treatment; all other operators must have distinct lexical representations.)
+   Thus, with the standard prelude, ``-x+y`` will be parsed as ``(-x)+y``,
+   whereas ``-x*y`` is the same as ``-(x*y)``. Also note that the notation
+   ``(-)`` always denotes the binary minus operator; the unary minus operation
+   can be denoted using the built-in ``neg`` function.
 
 Instead of denoting the precedence by an explicit integer value, you can also
 specify an existing operator symbol enclosed in parentheses. Thus the
@@ -4086,9 +4096,9 @@ other operators, you can turn outfix symbols into ordinary functions by
 enclosing them in parentheses, but you have to specify the symbols in matching
 pairs, such as ``(BEGIN END)``.
 
-Pure also has a notation for "nullary" operators, i.e., "operators without
-operands", which are used to denote special constants. These are introduced
-using a :keyword:`nonfix` declaration:
+Pure also has a notation for "nullary" operators, that is, "operators without
+operands". These are used to denote special literals which simply stand for
+themselves. They are introduced using a :keyword:`nonfix` declaration:
 
 .. describe:: nonfix symbol ...;
 
@@ -4096,11 +4106,20 @@ For instance::
 
   nonfix red green blue;
 
-Syntactically, these work just like ordinary identifiers, so they may stand
-whereever an identifier is allowed (no parentheses are required to "escape"
-them). The difference to ordinary identifiers is that nonfix symbols are
-always interpreted as literals, even if they occur in a variable position on
-the left-hand side of a rule. So, with the above declaration, you can write
+Semantically, nonfix symbols are a kind of "symbolic constants". However, it
+is important to note the difference to *defined* constants, which are symbols
+bound to a constant value by means of a :keyword:`const` definition. In fact,
+there are some use cases where a symbol may be *both* a defined constant and a
+nonfix symbol, see `Constant Definitions`_ in the `Caveats and Notes`_ section
+for details.
+
+Syntactically, nonfix symbols work just like ordinary identifiers, so they may
+stand whereever an identifier is allowed (no parentheses are required to
+"escape" them). However, just like other kinds of operators, they may also
+consist of punctuation (which isn't allowed in ordinary identifiers). The
+other difference to ordinary identifiers is that nonfix symbols are always
+interpreted as literals, even if they occur in a variable position on the
+left-hand side of a rule. So, with the above declaration, you can write
 something like::
 
   > foo x = case x of red = green; green = blue; blue = red end;
@@ -4109,8 +4128,8 @@ something like::
 
 Thus nonfix symbols are pretty much like nullary constructor symbols in
 languages like Haskell. Non-fixity is just a syntactic attribute,
-however. Pure doesn't enforce that such values are really "constant", so you
-can still write a "constructor equation" like the following::
+however. Pure doesn't enforce that such values are irreducible, so you can
+still write a "constructor equation" like the following::
 
   > red = blue;
   > map foo [red,green,blue];
@@ -4121,17 +4140,6 @@ Examples for all types of symbol declarations can be found in the
 relational, logical) operator symbols as well as the list and pair
 constructors '``:``' and '``,``', and a few nonfix symbols (mostly for
 denoting different kinds of exceptions).
-
-One final thing worth noting here is that unary minus plays a special role in
-the syntax. Like in Haskell and following mathematical tradition, unary minus
-is the only prefix operator symbol which is also used as an infix operator,
-and is always on the same precedence level as binary minus, whose precedence
-may be chosen freely in the prelude. (The minus operator is the only symbol
-which gets that special treatment; all other operators must have distinct
-lexical representations.) Thus, with the standard prelude, ``-x+y`` will be
-parsed as ``(-x)+y``, whereas ``-x*y`` is the same as ``-(x*y)``. Also note
-that the notation ``(-)`` always denotes the binary minus operator; the unary
-minus operation can be denoted using the built-in ``neg`` function.
 
 .. _using:
 
@@ -4296,7 +4304,7 @@ namespaces can be created with the :keyword:`namespace` declaration, which
 also switches to the given namespace (makes it the *current* namespace), so
 that new symbols are then created in that namespace rather than the default
 one. The current namespace also applies to all kinds of symbol declarations,
-including operator and constant symbol declarations, as well as
+including operator and nonfix symbol declarations, as well as
 :keyword:`extern` declarations (the latter are described in the `C Interface`_
 section).
 
@@ -5557,7 +5565,7 @@ subject term fails to match the pattern in a pattern-matching lambda
 abstraction, or a :keyword:`let`, :keyword:`case` or :keyword:`when`
 construct. These types of exceptions are reported using the symbols
 :cons:`stack_fault`, :cons:`failed_cond` and :cons:`failed_match`,
-respectively, which are declared as constant symbols in the standard
+respectively, which are declared as nonfix symbols in the standard
 prelude. You can use :func:`catch` to handle these kinds of exceptions just
 like any other. For instance::
 
@@ -8259,11 +8267,11 @@ executed as usual, i.e., the script is also run *at compile time*. This might
 first seem to be a big annoyance, but it actually opens the door for some
 powerful programming techniques like `partial evaluation`_. It is also a
 necessity because of Pure's highly dynamic nature. For instance, Pure allows
-you to define constants by evaluating an arbitrary expression (see `Constant
-Definitions`_ below), and using :func:`eval` a program can easily modify
-itself in even more unforeseeable ways. Therefore pretty much anything in your
-program can actually depend on previous computations performed while the
-program is being executed.
+you to define constants by evaluating an arbitrary expression (cf. `Constant
+Definitions`_), and using :func:`eval` a program can easily modify itself in
+even more unforeseeable ways. Therefore pretty much anything in your program
+can actually depend on previous computations performed while the program is
+being executed.
 
 .. _partial evaluation: http://en.wikipedia.org/wiki/Partial_evaluation
 
