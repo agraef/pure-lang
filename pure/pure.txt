@@ -2185,13 +2185,10 @@ in such cases), but is a crucial feature of term rewriting languages, as it
 opens the door to symbolic evaluation techniques, see `Definitions and
 Expression Evaluation`_.
 
-Pretty much any kind of legal Pure expression can be used as a pattern; the
-only exceptions are list and matrix comprehensions. (These are in fact
-syntactic sugar for ordinary expressions, cf. `Primary Expressions`_; in
-patterns, you will have to represent them in their "unsugared" form.)
-Syntactically, patterns are `simple expressions`_, thus `special expressions`_
-need to be parenthesized if they occur in a pattern. (Special expressions in a
-pattern are automatically translated to their quoted representations, see `The
+Any kind of legal Pure expression can be used as a pattern. Syntactically,
+patterns are `simple expressions`_, thus `special expressions`_ need to be
+parenthesized if they occur in a pattern. (Special expressions in a pattern
+are automatically translated to their quoted representations, see `The
 Quote`_. These are typically used in macro definitions, see the Macros_
 section for details.)
 
@@ -5139,6 +5136,18 @@ expression in the interpreter::
   __lambda__ [x] (x+1)
   > '(f with f x = y when y = x+1 end end);
   f __with__ [f x-->y __when__ [y-->x+1]]
+
+List and matrix comprehensions can also be quoted. These are basically
+syntactic sugar for lambda applications, cf. `Primary Expressions`_. The
+compiler expands them to their "unsugared" form already before macro
+substitution, so no special kinds of built-in macros are needed to represent
+them. When quoted, comprehensions are thus denoted in their unsugared form,
+which consists of a pile of lambda expressions and list or matrix construction
+functions for the generation clauses, and possibly some conditionals for the
+filter clauses of the comprehension. For instance::
+
+  > '[2*x | x = 1..3];
+  listmap (__lambda__ [x] (2*x)) (1..3)
 
 Here's how type tags and "as" patterns in quoted specials look like::
 
