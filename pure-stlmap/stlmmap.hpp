@@ -115,7 +115,7 @@ extern "C" {
   px*  smm_copy_iter(px* pxsmmip);
   px*  smm_begin(px* pxsmmp);
   px*  smm_end(px* pxsmmp); 
-  px*  smm_bounds(px* pxsmmp, px* key, int what);
+  px*  smm_iter_bounds(px* pxsmmp, px* key, int what);
   px*  smm_range_info(px* rng);
   px*  smm_move_iter(px* pxsmmip, int dist);
   px*  smm_iter_is_at(px* pxsmmip, int where);
@@ -151,7 +151,7 @@ extern "C" {
   void smm_do(px* fun, px* tpl);
 
   int  smm_member(px* pxsmmp, px* key);
-  px*  smm_bounding_keys(px* rng);
+  px*  smm_bounds(px* rng);
   px*  smm_prev_key(px* pxsmmp, px* key);
   px*  smm_next_key(px* pxsmmp, px* key);
   px*  smm_replace(px* pxsmmp, px* key, px* src);

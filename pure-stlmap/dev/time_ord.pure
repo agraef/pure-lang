@@ -1,0 +1,151 @@
+/* time_ord.pure -- compare set element lookup times for orddict, stlmap.
+
+   A lookup is a sequence like "if member set x then set!x else ()". The
+   corresponding c functions are called, e.g., orddict_member rather than
+   member.
+
+*/
+
+using system, stlvec, stlvec::algorithms;
+
+const repeats = 1000;
+const lookups = 100;
+
+using stlmap, orddict;
+//using orddict, stlmap;
+
+/*** orddict *********************************************************/
+
+time_orddict words keys = () when
+  tm = clock;
+  do (insert ss) words;
+  tm = (clock - tm) / 1000.0;
+  printf "fill   orddict: %8.1f msecs, %d words\n"  (tm,#ss);
+  tm = clock;
+  spin repeats;
+  tm = (clock - tm) / 1000.0;
+  printf "lookup orddict: %8.1f msecs\n" tm;
+end with
+  spin 0 = ();
+  spin n = lookup keys $ spin (n-1);
+  lookup [] = ();
+  lookup (k:ks) = orddict_member ss k $$ orddict_get ss k $$ lookup ks;
+end when 
+  ss = orddict [];
+end;
+
+/*** stlmap *********************************************************/
+
+time_stlmap words keys = () when
+  tm = clock;
+  insert ss words;
+  tm = (clock - tm) / 1000.0;
+  printf "fill    stlmap: %8.1f msecs, %d words\n"  (tm,#ss);
+  tm = clock;
+  spin repeats;
+  tm = (clock - tm) / 1000.0;
+  printf "lookup  stlmap: %8.1f msecs\n" tm;
+  puts (get val);
+end with
+  spin 0 = ();
+  spin n = lookup keys $ spin (n-1);
+  lookup [] = ();
+  lookup (k:ks) = member ss k $$ ss!k $$ lookup ks;
+end when 
+  ss = emptystlset;
+end;
+
+
+time_stlmap_iter words keys = () when
+  tm = clock;
+  insert ss words;
+  tm = (clock - tm) / 1000.0;
+  printf "fill      iter: %8.1f msecs, %d words\n"  (tm,#ss);
+  tm = clock;
+  spin repeats;
+  tm = (clock - tm) / 1000.0;
+  printf "lookup    iter: %8.1f msecs\n" tm;
+  puts (get val);
+end with
+  spin 0 = ();
+  spin n = lookup keys $ spin (n-1);
+  lookup [] = ();
+  lookup (k:ks) =  lookup ks when
+    i = stl::find ss k;
+    stl::endp i;
+    
+    // i = stl::sm_find ss k 4;
+    // stl::sm_iter_is_at i 2;
+    // stl::sm_get_at i 3;
+  end;
+end when 
+  ss = emptystlset;
+end;
+
+// returns a stlvec of shuffled words and a list of keys
+get_words num_words filename = words, keys when
+  fp = case fopen filename  "r" of 
+    fopen _ _ = pointer 0;
+    fp = fp;
+  end;
+  all_words = if null fp then
+                puts "Can't open word file" $$ emptystlvec
+              else
+                stlvec $ drop 200 (split "\n" (fget fp));
+  fclose fp;
+  num_words = min (#all_words) num_words;
+  num_keys = min num_words lookups; 
+  stl::random_shuffle all_words;
+  words = stlvec (all_words,stl::svbeg,num_words);
+  allkeys = stlvec words;
+  stl::random_shuffle allkeys;
+  keys = members (allkeys,0,num_keys);
+end;
+
+main num_words = () when
+  sep = "------------------------------------------";
+  words, keys = get_words num_words "../examples/anagram_groups_dict.txt";
+  num_words = min num_words (#words);
+  printf "Test %d lookups, %d repeats\n" (lookups,repeats);
+  puts sep;
+  time_orddict words keys;
+  puts sep;
+  time_stlmap words keys;
+  puts sep;
+  time_stlmap_iter words keys;
+end;
+    
+/* Sample with stlmap loaded before orddict *****************************
+
+> main 1000;
+Test 100 lookups, 1000 repeats
+------------------------------------------
+fill   orddict:     20.0 msecs, 1000 words
+lookup orddict:   1630.0 msecs
+------------------------------------------
+fill    stlmap:      0.0 msecs, 1000 words
+lookup  stlmap:    280.0 msecs
+------------------------------------------
+fill      iter:      0.0 msecs, 1000 words
+lookup    iter:    370.0 msecs
+()
+
+/*
+
+/* Sample with orddict loaded before stlmap *****************************
+
+> main 1000;
+Test 100 lookups, 1000 repeats
+------------------------------------------
+fill   orddict:     20.0 msecs, 1000 words
+lookup orddict:   1690.0 msecs
+------------------------------------------
+fill    stlmap:      0.0 msecs, 1000 words
+lookup  stlmap:    400.0 msecs
+------------------------------------------
+fill      iter:      0.0 msecs, 1000 words
+lookup    iter:    360.0 msecs
+()
+> 
+
+*/

@@ -717,7 +717,7 @@ px* smm_end(px* pxsmmp)
   return px_pointer(  new smm_iter(pxsmmp, smmp->mmp.end()) );
 }
 
-px* smm_bounds(px* pxsmmp, px* key, int what)
+px* smm_iter_bounds(px* pxsmmp, px* key, int what)
 {
   smm* smmp;
   smm_iter* smmip;
@@ -1392,7 +1392,7 @@ int smm_member(px* pxsmmp, px* key)
   return ret;
 }
 
-px* smm_bounding_keys(px* tpl)
+px* smm_bounds(px* tpl)
 {
   smm_range rng(tpl);
   if (!rng.is_valid) bad_argument;
