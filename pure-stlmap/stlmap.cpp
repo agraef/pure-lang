@@ -705,6 +705,13 @@ px* sm_find(px* pxsmp, px* key, int what)
   }
 }
 
+px* sm_get(sm* smp, px* key)
+{
+  pmi i = get_iter(smp, key, gi_find);
+  smp->cache_pmi(key,i);
+  return get_elm_aux(smp, i, stl_sm_val);
+}
+
 px* sm_copy_iter(px* pxsmip)
 {
   sm_iter* smip;
@@ -1367,10 +1374,8 @@ void sm_do(px* fun, px* tpl)
 
 /*** Key oriented interface support ***************************************/
 
-int sm_member(px* pxsmp, px* key)
+int sm_member(sm* smp, px* key)
 {
-  sm* smp;
-  if (!get_smp(pxsmp,&smp) ) bad_argument();
   int ret = 0;
   pxhmap& mp = smp->mp;
   pmi i;
@@ -1433,11 +1438,9 @@ px* sm_next_key(px* pxsmp, px* key)
   return ret;
 }
 
-px* sm_replace(px* pxsmp, px* key, px* val)
+void sm_put(sm* smp, px* key, px* val)
 {
-  sm* smp;
-  if (!get_smp(pxsmp,&smp) ) bad_argument();
-  if (smp->keys_only) return 0; // fail for sets
+  if (smp->keys_only) bad_argument();
   pxhmap& mp = smp->mp;
   pmi pos;
   if ( smp->get_cached_pmi(key, pos) ) {
@@ -1449,7 +1452,6 @@ px* sm_replace(px* pxsmp, px* key, px* val)
     pos->second = val;
   }
   smp->cache_pmi(key,pos);
-  return val;
 }
 
 static pmi replace_aux(sm* smp, px* k, px* v)
@@ -1466,7 +1468,6 @@ static pmi replace_aux(sm* smp, px* k, px* v)
   }
   return pos;
 }
-
 
 px* sm_replace_with(px* pxsmp, px* key, px* unaryfun)
 {

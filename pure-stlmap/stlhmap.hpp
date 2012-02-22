@@ -84,7 +84,7 @@ extern "C" {
   bool sh_empty(px* pxshp); 
   int  sh_count(px* pxshp, px* key);
   bool sh_is_set(px* pxshp);
-  px*  sh_find_val(sh* shp, px* key);
+  px*  sh_get(sh* shp, px* key);
   px*  sh_find(px* pxshp, px* key, int what);
   int  sh_insert(px* pxshp, px* src, bool replace);
   px*  sh_insert_stlhmap(px* pxshp, bool replace);
@@ -99,16 +99,13 @@ extern "C" {
   px*  sh_listmap(px* fun, px* shp, int what);
   px*  sh_listcatmap(px* fun, px* pxshp, int what);
   int  sh_member(sh* shp, px* key);
-  px*  sh_replace(px* pxshp, px* key, px* val);
+  void sh_put(sh* shp, px* key, px* val);
 
   px*  sh_foldl(px* fun, px* val, px* pxshp);
   px*  sh_foldl1(px* fun, px* tpl);
   void sh_do(px* fun, px* pxshp);
 
   void sh_fill_stlvec(px* pxshp, sv* svp);
-
-  px*  x_sh_find_val(sh* shp, px* key);
-  int  x_sh_member(sh* shp, px* key);
 }
 
 #endif // STLHMAP_H

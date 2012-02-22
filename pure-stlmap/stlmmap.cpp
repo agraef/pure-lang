@@ -1443,11 +1443,11 @@ px* smm_next_key(px* pxsmmp, px* key)
   return iter_to_key(mmp, i);
 }
 
-px* smm_replace(px* pxsmmp, px* k, px* src)
+void smm_put(px* pxsmmp, px* k, px* src)
 {
   smm* smmp;
   if (!get_smmp(pxsmmp,&smmp) ) bad_argument();  
-  if (smmp->keys_only) return 0;
+  if (smmp->keys_only) bad_argument();
   pxhmmap& mmp = smmp->mmp;
   pmmi trgi = get_iter(smmp, k, gi_lower);
   if (trgi == mmp.end())
@@ -1471,5 +1471,9 @@ px* smm_replace(px* pxsmmp, px* k, px* src)
   } catch (px* e) {
     pure_throw(e);
   }
-  return src;
+}
+
+px*  smm_get(px* pxsmmp, px* key)
+{
+  return smm_find(pxsmmp, key, stl_smm_val);
 }

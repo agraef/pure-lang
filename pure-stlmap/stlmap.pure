@@ -23,57 +23,61 @@ namespace stl;
 
 /*** C++ Support **********************************************************/
 
-extern expr* sm_type_tags();
+private extern expr* sm_type_tags();
 private extern expr* sm_make_empty(expr* kcmp, expr* vcmp, expr* veql,
                                    expr* default_val, int ko);
 private extern void  sm_delete(void* smp);
 private extern void  sm_iter_delete(void* smip);
 
-extern expr* sm_container_info(expr* rng); 
-extern int   sm_size(expr* rng);
-extern int   sm_count(expr* pxsmp, expr* key);
-extern bool  sm_empty(expr* rng);
-extern bool  sm_is_set(expr* rng);
-extern expr* sm_find(expr* pxsmp, expr* key, int what);
-extern expr* sm_copy_iter(expr* pxsmip);
-extern expr* sm_begin(expr* pxsmp);
-extern expr* sm_end(expr* pxsmp); 
-extern expr* sm_iter_bounds(expr* pxsmp, expr* key, int what);
-extern expr* sm_range_info(expr* rng);
-extern expr* sm_move_iter(expr* pxsmp, int count);
-extern expr* sm_iter_is_at(expr* pxsmip, int where);
-extern expr* sm_iter_info(expr* pxsmip);
-extern expr* sm_equal_iter(expr* pxsmp, expr* pxsmp);
-extern expr* sm_get_at(expr* pxsmip, int what);
-extern expr* sm_get_elm_at_inc(expr* pxsmip);
-extern expr* sm_put_at(expr* pxsmip, expr* val);
-extern expr* sm_insert_hinted(expr*map, expr* iter, expr* kv);
-extern expr* sm_insert_elm(expr* map, expr* kv);
-extern int   sm_insert(expr* map, expr* src, bool replace);
-extern int   sm_insert_stlvec(expr* map, void* svp, bool replace);
-extern int   sm_insert_stlmap(expr* map, expr* rng, bool replace);
-extern void  sm_swap(expr* sac1, expr* sac2);
-extern int   sm_erase(expr* sac, expr* trg);
-extern int   sm_clear(expr* map);
-extern int   sm_equal(expr* rng1, expr* rng2);
-extern int   sm_less(expr* rng1, expr* rng2);
-extern bool  sm_includes(expr* rng1, expr* rng2);
-extern expr* sm_setop(int op, expr* rng1, expr* rng2);
-extern expr* sm_make_vector(expr* rng);
-extern void* sm_fill_stlvec(expr* rng, void* v);
-extern expr* sm_listmap(expr* fun, expr* rng, int what);
-extern expr* sm_listcatmap(expr* fun, expr* rng, int what);
-extern expr* sm_foldl(expr* fun, expr* val, expr* rng);
-extern expr* sm_foldl1(expr* fun, expr* rng);
-extern expr* sm_foldr(expr* fun, expr* val, expr* rng);
-extern expr* sm_foldr1(expr* fun, expr* rng);
-extern void  sm_do(expr* fun, expr* rng);
-extern int   sm_member(expr* map, expr* key);
-extern expr* sm_bounds(expr* rng);
-extern expr* sm_prev_key(expr* map, expr* key);
-extern expr* sm_next_key(expr* map, expr* key);
-extern expr* sm_replace(expr* map, expr* key, expr* val);
-extern expr* sm_replace_with(expr* map, expr* key, expr* unaryfun);
+private extern expr* sm_container_info(expr* rng); 
+private extern int   sm_size(expr* rng);
+private extern int   sm_count(expr* pxsmp, expr* key);
+private extern bool  sm_empty(expr* rng);
+private extern expr* sm_find(expr* pxsmp, expr* key, int what);
+private extern expr* sm_copy_iter(expr* pxsmip);
+private extern expr* sm_begin(expr* pxsmp);
+private extern expr* sm_end(expr* pxsmp); 
+private extern expr* sm_iter_bounds(expr* pxsmp, expr* key, int what);
+private extern expr* sm_range_info(expr* rng);
+private extern expr* sm_move_iter(expr* pxsmp, int count);
+private extern expr* sm_iter_is_at(expr* pxsmip, int where);
+private extern expr* sm_iter_info(expr* pxsmip);
+private extern expr* sm_equal_iter(expr* pxsmp, expr* pxsmp);
+private extern expr* sm_get_at(expr* pxsmip, int what);
+private extern expr* sm_get_elm_at_inc(expr* pxsmip);
+private extern expr* sm_put_at(expr* pxsmip, expr* val);
+private extern expr* sm_insert_hinted(expr*map, expr* iter, expr* kv);
+private extern expr* sm_insert_elm(expr* map, expr* kv);
+private extern int   sm_insert(expr* map, expr* src, bool replace);
+private extern int   sm_insert_stlvec(expr* map, void* svp, bool replace);
+private extern int   sm_insert_stlmap(expr* map, expr* rng, bool replace);
+private extern void  sm_swap(expr* sac1, expr* sac2);
+private extern int   sm_erase(expr* sac, expr* trg);
+private extern int   sm_clear(expr* map);
+private extern int   sm_equal(expr* rng1, expr* rng2);
+private extern int   sm_less(expr* rng1, expr* rng2);
+private extern bool  sm_includes(expr* rng1, expr* rng2);
+private extern expr* sm_setop(int op, expr* rng1, expr* rng2);
+private extern expr* sm_make_vector(expr* rng);
+private extern void* sm_fill_stlvec(expr* rng, void* v);
+private extern expr* sm_listmap(expr* fun, expr* rng, int what);
+private extern expr* sm_listcatmap(expr* fun, expr* rng, int what);
+private extern expr* sm_foldl(expr* fun, expr* val, expr* rng);
+private extern expr* sm_foldl1(expr* fun, expr* rng);
+private extern expr* sm_foldr(expr* fun, expr* val, expr* rng);
+private extern expr* sm_foldr1(expr* fun, expr* rng);
+private extern void  sm_do(expr* fun, expr* rng);
+private extern expr* sm_bounds(expr* rng);
+private extern expr* sm_prev_key(expr* map, expr* key);
+private extern expr* sm_next_key(expr* map, expr* key);
+private extern expr* sm_replace_with(expr* map, expr* key, expr* unaryfun);
+
+extern bool  sm_is_set(expr* rng) = sm_setp;
+extern int   sm_member(stlmap* smp, expr* key);
+extern expr* sm_get(stlmap* smp, expr* key);
+extern void  sm_put(stlmap* smp, expr* key, expr* val);
+
+let stlmap_t, stlmap_iter_t = stl::sm_type_tags;
 
 /*** Global Definitions **************************************************/
 
@@ -82,12 +86,10 @@ namespace ;
 public emptystlmap mkstlmap emptystlset mkstlset member members erase
   insert_or_replace replace replace_with insert_elm; 
 
-let stlmap_t, stlmap_iter_t = stl::sm_type_tags;
+type stlmap x::pointer = check_ptrtag stl::stlmap_t x;     //c++ map
+type stlset x::pointer = check_ptrtag stl::stlmap_t x && stl::sm_setp x;
 
-type stlmap x::pointer = check_ptrtag stlmap_t x;     //c++ map
-type stlset x::pointer = check_ptrtag stlmap_t x && stl::sm_is_set x;
-
-type stlmap_iter x::pointer = check_ptrtag stlmap_iter_t x;
+type stlmap_iter x::pointer = check_ptrtag stl::stlmap_iter_t x;
 
 type stlmap_rng x::stlmap | stlmap_rng (x::stlmap, _);
 type stlmap_rng (x::stlmap_iter, y::stlmap_iter);
@@ -121,7 +123,7 @@ const sm_at_beginning = 1;
 const sm_at_pastend = 2; 
 
 sm_compatible rng1::stlmap_rng rng2 = 
-  if sm_is_set rng1 then sm_is_set rng2 else ~sm_is_set rng2;
+  if sm_setp rng1 then sm_setp rng2 else ~sm_setp rng2;
 
 /*** Iterators **********************************************************/
 
@@ -151,7 +153,7 @@ get_key itr::stlmap_iter = sm_get_at itr sm_key_flg; // p->first
 
 get_val itr::stlmap_iter = sm_get_at itr sm_val_flg; // p->second
 
-::put itr::stlmap_iter val = sm_put_at itr val;
+::put itr::stlmap_iter val = sm_put_at itr val $$ val;
 
 inc itr::stlmap_iter = sm_move_iter itr 1;
 
@@ -192,7 +194,7 @@ end;
   _,params = sm_container_info rng;
   sm = mkstlmap params;
   sm_insert_stlmap sm rng 0;
-end if ~sm_is_set rng;
+end if ~sm_setp rng;
 
 ::emptystlset = sm_make_empty (<) (<) (==) [] 1;
 
@@ -212,7 +214,7 @@ end;
   _,kc,_ = sm_container_info rng;
   ss = mkstlset kc;
   sm_insert_stlmap ss rng 0;
-end if sm_is_set rng;
+end if sm_setp rng;
 
 /*** Info ***************************************************************/
 
@@ -240,9 +242,9 @@ end;
 
 ::members rng::stlmap_rng = sm_listmap 0 rng sm_elm_flg; 
 
-::keys rng::stlmap_rng = sm_listmap 0 rng sm_key_flg;// if ~sm_is_set rng;
+::keys rng::stlmap_rng = sm_listmap 0 rng sm_key_flg;// if ~sm_setp rng;
 
-::vals rng::stlmap_rng = sm_listmap 0 rng sm_val_flg;// if ~sm_is_set rng;
+::vals rng::stlmap_rng = sm_listmap 0 rng sm_val_flg;// if ~sm_setp rng;
 
 vector rng::stlmap_rng = sm_make_vector rng;
 
@@ -264,15 +266,15 @@ end;
 ::insert sm::stlmap src = sm_insert sm src 0;
 
 ::insert_or_replace sm::stlmap (STLVEC svp) = 
-  sm_insert_stlvec sm svp 1 if ~sm_is_set sm;
+  sm_insert_stlvec sm svp 1 if ~sm_setp sm;
 
 ::insert_or_replace sm::stlmap rng::stlmap_rng = 
-  sm_insert_stlmap sm rng 1 if ~sm_is_set sm && ~sm_is_set rng;
+  sm_insert_stlmap sm rng 1 if ~sm_setp sm && ~sm_setp rng;
 
 ::insert_or_replace sm::stlmap src = 
-  sm_insert sm src 1 if ~sm_is_set sm;
+  sm_insert sm src 1 if ~sm_setp sm;
 
-::replace sm::stlmap key val = sm_replace sm key val;
+::replace sm::stlmap key val = sm_put sm key val;
 
 ::replace_with f sm::stlmap (key=>val) = sm_replace_with sm key (f val);
 

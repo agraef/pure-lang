@@ -155,11 +155,13 @@ extern "C" {
   px*  sm_foldr1(px* fun, px* tpl);
   void sm_do(px* fun, px* tpl);
 
-  int  sm_member(px* pxsmp, px* key);
+  int  sm_member(sm* smp, px* key);
   px*  sm_bounds(px* rng);
   px*  sm_prev_key(px* pxsmp, px* key);
   px*  sm_next_key(px* pxsmp, px* key);
-  px*  sm_replace(px* pxsmp, px* key, px* val);
+  
+  px*  sm_get(sm* smp, px* key);
+  void sm_put(sm* smp, px* key, px* val);
   px*  sm_replace_with(px* pxsmp, px* key, px* binfun);
 
 }

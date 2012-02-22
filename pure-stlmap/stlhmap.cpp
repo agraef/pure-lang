@@ -266,16 +266,7 @@ bool sh_is_set(px* pxshp)
   return shp->keys_only;
 }
 
-px* sh_find_val(sh* shp, px* key)
-{
-  pxhmap &hm = shp->hm;
-  pxhmapi i = hm.find(key);
-  if (i==hm.end()) index_error();
-  return (shp->keys_only) ? i->first : i->second;
-}
-
-// FIX - remove soon -- here for time tests only
-px* x_sh_find_val(sh* shp, px* key)
+px* sh_get(sh* shp, px* key)
 {
   pxhmap &hm = shp->hm;
   pxhmapi i = hm.find(key);
@@ -601,22 +592,12 @@ int sh_member(sh* shp, px* key)
   return hm.find(key) != hm.end();
 }
 
-// FIX - remove:: this is only here for timing tests
-int x_sh_member(sh* shp, px* key)
+void sh_put(sh* shp, px* key, px* val)
 {
-  pxhmap &hm = shp->hm;
-  return hm.find(key) != hm.end();
-}
-
-px* sh_replace(px* pxshp, px* key, px* val)
-{
-  sh* shp;
-  if ( !get_shp(pxshp,&shp) ) bad_argument();
-  if (shp->keys_only) return 0; // fail for sets
+  if (shp->keys_only) bad_argument();
   pxhmap& hm = shp->hm;
   pxhmapi pos = hm.find(key);
   if ( pos == hm.end() ) index_error();
   pos->second = val;
   if (val) pure_new(val);
-  return val;
 }
