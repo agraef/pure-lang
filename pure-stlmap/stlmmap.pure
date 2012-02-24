@@ -28,7 +28,6 @@ private extern expr* smm_make_empty(expr* kcmp, expr* vcmp, expr* veql,
                                     expr* default_val, int ko);
 private extern void  smm_delete(void* smp);
 private extern void  smm_iter_delete(void* smip);
-
 private extern expr* smm_container_info(expr* rng);
 private extern int   smm_size(expr* rng);
 private extern int   smm_count(expr* pxsmmp, expr* key);
@@ -70,6 +69,7 @@ private extern void  smm_do(expr* fun, expr* rng);
 private extern expr* smm_bounds(expr* rng);
 private extern expr* smm_prev_key(expr* map, expr* key);
 private extern expr* smm_next_key(expr* map, expr* key);
+
 
 extern bool  smm_is_set(expr* rng) = smm_setp;
 extern int   smm_member(expr* pxsmmp, expr* key);
@@ -126,6 +126,8 @@ smm_compatible rng1::stlmmap_rng rng2 =
 
 /*** Iterators **********************************************************/
 
+(::==) itr1::stlmmap_iter itr2::stlmmap_iter = smm_equal_iter itr1 itr2;
+
 iterator itr::stlmmap_iter = smm_copy_iter itr;
 
 begin smm::stlmmap = smm_begin smm;
@@ -133,6 +135,8 @@ begin smm::stlmmap = smm_begin smm;
 pastend smm::stlmmap = smm_end smm;
 
 find smm::stlmmap key = smm_find smm key smm_iter_flg;
+
+find_with_default smm::stlmmap key = smm_find smm key smm_iter_dflt_flg; 
 
 l_bound smm::stlmmap key = smm_iter_bounds smm key smm_lower_bound_flg;
 
@@ -163,12 +167,6 @@ move itr::stlmmap_iter n::int = smm_move_iter itr n;
 insert_elm smm::stlmmap (elm, p::stlmmap_iter) = smm_insert_hinted smm p elm;
 
 insert_elm smm::stlmmap elm = smm_insert_elm smm elm;
-
-/*** Iterator Operators ****************************************************/
-
-(::==) itr1::stlmmap_iter itr2::stlmmap_iter = smm_equal_iter itr1 itr2;
-
-(::^) smm::stlmmap key = smm_find smm key smm_iter_dflt_flg; 
 
 /***  Constructors *********************************************************/
 
@@ -225,11 +223,13 @@ empty smm::stlmmap = smm_empty smm;
 
 count smm::stlmmap key = smm_count smm key;
 
+bounds rng::stlmmap_rng = smm_bounds rng;
+
 range_info rng::stlmmap_rng = smm_range_info rng;
 
 distance rng::stlmmap_rng = smm_size rng;
 
-/*** Range Access ******************************************************/
+/*** Conversions ********************************************************/
 
 ::stream rng::stlmmap_rng = gen first with 
   gen i = if smm_equal_iter i last then [] 
@@ -255,7 +255,7 @@ vector rng::stlmmap_rng = smm_make_vector rng;
   end;
 end;
 
-/*** Modifiers *********************************************************/
+/*** Modification *****************************************************/
 
 ::insert smm::stlmmap (STLVEC svp) = smm_insert_stlvec smm svp;
 
@@ -296,11 +296,11 @@ swap smm1::stlmmap smm2::stlmmap = smm_swap smm1 smm2
 map_equal rng1::stlmmap_rng rng2::stlmmap_rng = smm_equal rng1 rng2
   if smm_compatible rng1 rng2;
 
-(::==) rng1::stlmmap_rng rng2::stlmmap_rng = smm_equal rng1 rng2
-  if smm_compatible rng1 rng2;
+(::==) smm1::stlmmap smm2::stlmmap = smm_equal smm1 smm2
+  if smm_compatible smm1 smm2;
 
-(::~=) rng1::stlmmap_rng rng2::stlmmap_rng = ~smm_equal rng1 rng2
-  if smm_compatible rng1 rng2;
+(::~=) smm1::stlmmap smm2::stlmmap = ~smm_equal smm1 smm2
+  if smm_compatible smm1 smm2;
 
 (::<) rng1::stlmmap_rng rng2::stlmmap_rng = smm_less rng1 rng2
   if smm_compatible rng1 rng2;
@@ -333,20 +333,6 @@ map_symmetric_difference rng1::stlmmap_rng rng2::stlmmap_rng =
 
 map_includes rng1::stlmmap_rng rng2::stlmmap_rng =
  smm_includes rng1 rng2 if smm_compatible rng1 rng2;
-
-/*** Key oriented interface functions *********************************/
-
-(::!) smm::stlmmap key = smm_listmap 0 (smm,key) smm_val_flg;
-
-::get (smm::stlmmap,key) = smm_find smm key smm_elm_flg; 
-
-::member smm::stlmmap key = smm_member smm key;
-
-bounds rng::stlmmap_rng = smm_bounds rng;
-
-next_key smm::stlmmap key = smm_next_key smm key;
-
-prev_key smm::stlmmap key = smm_prev_key smm key;
 
 /*** Mapping and Folding ********************************************/
 
@@ -383,4 +369,25 @@ end;
 ::colmap f rng::stlmmap_rng = colcat (smm_listmap f rng smm_elm_flg);
 
 ::colcatmap f rng::stlmmap_rng = colcat (smm_listmap f rng smm_elm_flg);
+
+/*** Accessing Elements by Key ****************************************/
+
+(::!) smm::stlmmap key = smm_listmap 0 (smm,key) smm_val_flg;
+
+::member smm::stlmmap key = smm_member smm key;
+
+next_key smm::stlmmap key = smm_next_key smm key;
+
+prev_key smm::stlmmap key = smm_prev_key smm key;
+
+::first smm::stlmmap = key=>vals when
+  key = smm_get_at (smm_begin smm) smm_key_flg;
+  vals = smm_listmap 0 (smm,key) smm_val_flg;
+end;
+
+::last smm::stlmmap = key=>vals when
+  i = smm_end smm;
+  key = smm_get_at (smm_move_iter i (-1)) smm_key_flg;
+  vals = smm_listmap 0 (smm,key) smm_val_flg;
+end;
 

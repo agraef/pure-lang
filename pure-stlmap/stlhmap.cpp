@@ -156,7 +156,7 @@ static px* get_elm_aux(sh* shp, pxhmapi i, int what)
   return ret;
 }
 
-static px* sh_foldl_aux(px* fun, px* val, sh* shp, int is_foldl1)
+static px* shm_foldl_aux(px* fun, px* val, sh* shp, int is_foldl1)
 { 
   int mode =  shp->keys_only ? stl_sh_key : stl_sh_elm;
   pxhmapi e = shp->hm.end();
@@ -182,17 +182,17 @@ static px* sh_foldl_aux(px* fun, px* val, sh* shp, int is_foldl1)
 
 /*** Pure interface support functions  *************************************/
 
-px* sh_type_tags()
+px* shm_type_tags()
 {
   return pure_int(stlhmap_tag());
 }
 
-px*  sh_make_empty(int keys_only)
+px*  shm_make_empty(int keys_only)
 {
   return px_pointer( new sh(keys_only) );
 }
 
-px* sh_copy(px* pxshp)
+px* shm_copy(px* pxshp)
 {
   sh* shp;
   if (!get_shp(pxshp,&shp) ) bad_argument();
@@ -202,11 +202,11 @@ px* sh_copy(px* pxshp)
   return px_pointer( cpy );
 }
 
-void sh_delete(sh* shp){
+void shm_delete(sh* shp){
   delete(shp);
 }
 
-void sh_reserve(px* pxshp, double max_load, int count)
+void shm_reserve(px* pxshp, double max_load, int count)
 {
   sh* shp;
   if (!get_shp(pxshp,&shp) ) bad_argument();
@@ -217,7 +217,7 @@ void sh_reserve(px* pxshp, double max_load, int count)
     hm.reserve(count);
 }
 
-px* sh_info(px* pxshp)
+px* shm_info(px* pxshp)
 {
   sh* shp;
   if (!get_shp(pxshp,&shp) ) bad_argument();
@@ -229,7 +229,7 @@ px* sh_info(px* pxshp)
   return pure_tuplel(4,ko,bc,lf,mlf);
 }
 
-int sh_bucket_size(px* pxshp, int i)
+int shm_bucket_size(px* pxshp, int i)
 {
   sh* shp;
   if (!get_shp(pxshp,&shp) ) bad_argument();
@@ -238,35 +238,35 @@ int sh_bucket_size(px* pxshp, int i)
   return  hm.bucket_size(i);
 }
 
-int sh_size(px* pxshp)
+int shm_size(px* pxshp)
 {
   sh* shp;
   if (!get_shp(pxshp,&shp) ) bad_argument();
   return shp->hm.size();
 }
 
-bool sh_empty(px* pxshp)
+bool shm_empty(px* pxshp)
 {
   sh* shp;
   if (!get_shp(pxshp,&shp) ) bad_argument();
   return shp->hm.empty();
 }
 
-int  sh_count(px* pxshp, px* key)
+int  shm_count(px* pxshp, px* key)
 {
   sh* shp;
   if ( !get_shp(pxshp,&shp) ) bad_argument();
   return shp->hm.count(key);
 }
 
-bool sh_is_set(px* pxshp)
+bool shm_is_set(px* pxshp)
 {
   sh* shp;
   if (!get_shp(pxshp,&shp) ) bad_argument();
   return shp->keys_only;
 }
 
-px* sh_get(sh* shp, px* key)
+px* shm_get(sh* shp, px* key)
 {
   pxhmap &hm = shp->hm;
   pxhmapi i = hm.find(key);
@@ -274,7 +274,7 @@ px* sh_get(sh* shp, px* key)
   return (shp->keys_only) ? i->first : i->second;
 }
 
-px* sh_find(px* pxshp, px* key, int what)
+px* shm_find(px* pxshp, px* key, int what)
 {
   sh* shp;
   if ( !get_shp(pxshp,&shp) ) bad_argument();
@@ -282,7 +282,7 @@ px* sh_find(px* pxshp, px* key, int what)
   return get_elm_aux(shp, i, what);
 }
 
-int sh_insert(px* pxshp, px* src, bool replace)
+int shm_insert(px* pxshp, px* src, bool replace)
 {
   sh* shp; pxhmapi pos;
   if (!get_shp(pxshp,&shp) ) bad_argument();
@@ -315,7 +315,7 @@ int sh_insert(px* pxshp, px* src, bool replace)
   return num_inserted;
 }
 
-int sh_insert_stlhmap(px* pxshp1, px* pxshp2, bool replace)
+int shm_insert_stlhmap(px* pxshp1, px* pxshp2, bool replace)
 {
   sh *shp1, *shp2;
   if (!get_shp(pxshp1,&shp1) ) bad_argument();
@@ -347,7 +347,7 @@ int sh_insert_stlhmap(px* pxshp1, px* pxshp2, bool replace)
   return hmp1.size() - oldsz;
 }
 
-int sh_insert_stlvec(px* pxshp, sv* svp, bool replace)
+int shm_insert_stlvec(px* pxshp, sv* svp, bool replace)
 {
   int num_inserted = 0;
   sh* shp; 
@@ -365,7 +365,7 @@ int sh_insert_stlvec(px* pxshp, sv* svp, bool replace)
   return num_inserted;
 }
 
-px*  sh_insert_stlhmap(px* pxshp, bool replace)
+px*  shm_insert_stlhmap(px* pxshp, bool replace)
 {
   sh* shp;
   if (!get_shp(pxshp,&shp) ) bad_argument();
@@ -375,7 +375,7 @@ px*  sh_insert_stlhmap(px* pxshp, bool replace)
   return px_pointer( cpy );
 }
 
-px*  sh_swap(px* pxshp1, px* pxshp2)
+px*  shm_swap(px* pxshp1, px* pxshp2)
 {
   sh* shp1; sh* shp2;
   if ( !get_shp(pxshp1, &shp1) ) failed_cond();
@@ -383,7 +383,7 @@ px*  sh_swap(px* pxshp1, px* pxshp2)
   shp1->hm.swap(shp2->hm);
 }
 
-int sh_clear(px* pxshp)
+int shm_clear(px* pxshp)
 {
   sh* shp;
   if (!get_shp(pxshp,&shp) ) bad_argument();
@@ -393,7 +393,7 @@ int sh_clear(px* pxshp)
   return sz;
 }
 
-int sh_erase(px* pxshp, px* key)
+int shm_erase(px* pxshp, px* key)
 {
   sh* shp;
   if (!get_shp(pxshp,&shp) ) bad_argument();
@@ -414,7 +414,7 @@ int sh_erase(px* pxshp, px* key)
   return ret;
 }
 
-bool sh_equal(px* pxshp1, px* pxshp2)
+bool shm_equal(px* pxshp1, px* pxshp2)
 {
   sh *shp1, *shp2;
   if ( !get_shp(pxshp1,&shp1) || !get_shp(pxshp2,&shp2) ) bad_argument();
@@ -430,7 +430,7 @@ bool sh_equal(px* pxshp1, px* pxshp2)
   return true;
 }
 
-px* sh_make_vector(px* pxshp) 
+px* shm_make_vector(px* pxshp) 
 {
   sh* shp;
   if (!get_shp(pxshp,&shp) ) bad_argument();
@@ -450,7 +450,7 @@ px* sh_make_vector(px* pxshp)
   return ret;
 }
 
-void sh_fill_stlvec(px* pxshp, sv* svp) 
+void shm_fill_stlvec(px* pxshp, sv* svp) 
 {
   sh* shp;
   if ( !get_shp(pxshp,&shp) ) bad_argument();
@@ -464,7 +464,7 @@ void sh_fill_stlvec(px* pxshp, sv* svp)
 
 /*** Mapping and folding ***********************************************/
 
-px* sh_listmap(px* fun, px* pxshp, int what)
+px* shm_listmap(px* fun, px* pxshp, int what)
 {
   sh* shp;
   if (!get_shp(pxshp,&shp) ) bad_argument();
@@ -505,7 +505,7 @@ px* sh_listmap(px* fun, px* pxshp, int what)
   return res;
 }
 
-px* sh_listcatmap(px* fun, px* pxshp, int what)
+px* shm_listcatmap(px* fun, px* pxshp, int what)
 {
   sh* shp;
   if (!get_shp(pxshp,&shp) ) bad_argument();
@@ -548,14 +548,14 @@ px* sh_listcatmap(px* fun, px* pxshp, int what)
   return res;  
 }
 
-px* sh_foldl(px* fun, px* val, px* pxshp)
+px* shm_foldl(px* fun, px* val, px* pxshp)
 {
   sh* shp;
   if ( !get_shp(pxshp,&shp) ) bad_argument();
-  return sh_foldl_aux(fun, val, shp, 0);
+  return shm_foldl_aux(fun, val, shp, 0);
 }
 
-px* sh_foldl1(px* fun, px* pxshp)
+px* shm_foldl1(px* fun, px* pxshp)
 {
   sh* shp;
   if ( !get_shp(pxshp,&shp) ) bad_argument();
@@ -564,10 +564,10 @@ px* sh_foldl1(px* fun, px* pxshp)
   if ( b==e )  bad_argument();
   int mode =  shp->keys_only ? stl_sh_key : stl_sh_elm;
   px* val = get_elm_aux(shp, b, mode);
-  return sh_foldl_aux(fun, val, shp, 1);
+  return shm_foldl_aux(fun, val, shp, 1);
 }
 
-void sh_do(px* fun, px* pxshp)
+void shm_do(px* fun, px* pxshp)
 { 
   sh* shp;
   if ( !get_shp(pxshp,&shp) ) bad_argument();
@@ -586,13 +586,13 @@ void sh_do(px* fun, px* pxshp)
 
 /*** Key oriented interface support ***************************************/
 
-int sh_member(sh* shp, px* key)
+int shm_member(sh* shp, px* key)
 {
   pxhmap &hm = shp->hm;
   return hm.find(key) != hm.end();
 }
 
-void sh_put(sh* shp, px* key, px* val)
+void shm_put(sh* shp, px* key, px* val)
 {
   if (shp->keys_only) bad_argument();
   pxhmap& hm = shp->hm;

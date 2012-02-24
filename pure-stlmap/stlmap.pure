@@ -28,7 +28,6 @@ private extern expr* sm_make_empty(expr* kcmp, expr* vcmp, expr* veql,
                                    expr* default_val, int ko);
 private extern void  sm_delete(void* smp);
 private extern void  sm_iter_delete(void* smip);
-
 private extern expr* sm_container_info(expr* rng); 
 private extern int   sm_size(expr* rng);
 private extern int   sm_count(expr* pxsmp, expr* key);
@@ -127,6 +126,8 @@ sm_compatible rng1::stlmap_rng rng2 =
 
 /*** Iterators **********************************************************/
 
+(::==) itr1::stlmap_iter itr2::stlmap_iter = sm_equal_iter itr1 itr2;
+
 iterator itr::stlmap_iter = sm_copy_iter itr;
 
 begin sm::stlmap = sm_begin sm;
@@ -134,6 +135,8 @@ begin sm::stlmap = sm_begin sm;
 pastend sm::stlmap = sm_end sm;
 
 find sm::stlmap key = sm_find sm key sm_iter_flg;
+
+find_with_default sm::stlmap key = sm_find sm key sm_iter_dflt_flg;
 
 l_bound sm::stlmap key = sm_iter_bounds sm key sm_lower_bound_flg;
 
@@ -164,12 +167,6 @@ move itr::stlmap_iter n::int = sm_move_iter itr n;
 insert_elm sm::stlmap (elm,itr::stlmap_iter) = sm_insert_hinted sm itr elm;
 
 insert_elm sm::stlmap elm = sm_insert_elm sm elm;
-
-/*** Iterator Operators ****************************************************/
-
-(::==) itr1::stlmap_iter itr2::stlmap_iter = sm_equal_iter itr1 itr2;
-
-(::^) sm::stlmap key = sm_find sm key sm_iter_dflt_flg;  // inserts like [k]
 
 /***  Constructors *********************************************************/
 
@@ -226,11 +223,13 @@ empty sm::stlmap = sm_empty sm;
 
 count sm::stlmap key = sm_count sm key;
 
+bounds rng::stlmap_rng = sm_bounds rng;
+
 range_info rng::stlmap_rng = sm_range_info rng;
 
 distance rng::stlmap_rng = sm_size rng;
 
-/*** Range Access ****************************************************/
+/*** Conversions ********************************************************/
 
 ::stream rng::stlmap_rng = gen first with 
   gen i = if sm_equal_iter i last then [] 
@@ -256,7 +255,7 @@ vector rng::stlmap_rng = sm_make_vector rng;
   end;
 end;
 
-/*** Modifiers *********************************************************/
+/*** Modification *****************************************************/
 
 ::insert sm::stlmap (STLVEC svp) = sm_insert_stlvec sm svp 0;
 
@@ -335,20 +334,6 @@ map_symmetric_difference rng1::stlmap_rng rng2::stlmap_rng =
 map_includes rng1::stlmap_rng rng2::stlmap_rng =
   sm_includes rng1 rng2 if sm_compatible rng1 rng2;
 
-/*** Key Oriented Interface Functions *********************************/
-
-(::!) sm::stlmap key = sm_find sm key sm_val_flg;
-
-::get (sm::stlmap,key) = sm_find sm key sm_elm_flg; 
-
-::member sm::stlmap key = sm_member sm key;
-
-bounds rng::stlmap_rng = sm_bounds rng;
-
-next_key sm::stlmap key = sm_next_key sm key;
-
-prev_key sm::stlmap key = sm_prev_key sm key;
-
 /*** Mapping and Folding *************************************************/
 
 ::map f rng::stlmap_rng = sm_listmap f rng sm_elm_flg;
@@ -384,4 +369,21 @@ end;
 ::colmap f rng::stlmap_rng = colcat (sm_listmap f rng sm_elm_flg);
 
 ::colcatmap f rng::stlmap_rng = colcat (sm_listmap f rng sm_elm_flg);
+
+/*** Accessing Elements by Key ****************************************/
+
+(::!) sm::stlmap key = sm_find sm key sm_val_flg;
+
+::member sm::stlmap key = sm_member sm key;
+
+next_key sm::stlmap key = sm_next_key sm key;
+
+prev_key sm::stlmap key = sm_prev_key sm key;
+
+::first sm::stlmap = sm_find sm smbeg sm_elm_flg;
+
+::last sm::stlmap = sm_get_at i sm_elm_flg when
+  i = sm_end sm;
+  sm_move_iter i (-1);
+end;
 

@@ -23,38 +23,38 @@ namespace stl;
 
 /*** C++ support ***********************************************************/
 
-private extern expr* sh_type_tags();
-private extern expr* sh_make_empty(int ko);
-private extern expr* sh_copy(expr* pxshp);
-private extern void  sh_delete(void* shmapp);
-private extern void  sh_reserve(expr* pxshp, double mlf, int size);
-private extern expr* sh_info(expr* pxshp);
-private extern int   sh_bucket_size(expr* pxshp, int bucket_pos);
-private extern int   sh_size(expr* pxshp);
-private extern bool  sh_empty(expr* pxshp);
-private extern int   sh_equal(expr* pxshp1, expr* pxshp2);
-private extern int   sh_count(expr* pxshp, expr* key);
-private extern expr* sh_find(expr* pxshp, expr* key, int what);
-private extern int   sh_insert(expr* pxshp, expr* src, bool replace);
-private extern expr* sh_insert_stlhmap(expr* pxshp, bool replace);
-private extern int   sh_insert_stlvec(expr* map, void* svp, bool replace);
-private extern void  sh_swap(expr* pxshp1, expr* pxshp2);
-private extern int   sh_erase(expr* pxshp, expr* key);
-private extern int   sh_clear(expr* pxshp);
-private extern expr* sh_make_vector(expr* pxshp);
-private extern void* sh_fill_stlvec(expr* rng, void* v);
-private extern expr* sh_listmap(expr* fun, expr* pxshp, int what);
-private extern expr* sh_listcatmap(expr* fun, expr* pxshp, int what);
-private extern expr* sh_foldl(expr* fun, expr* val, expr* pxshp);
-private extern expr* sh_foldl1(expr* fun, expr* pxshp);
-private extern void  sh_do(expr* fun, expr* pxshp);
+private extern expr* shm_type_tags();
+private extern expr* shm_make_empty(int ko);
+private extern expr* shm_copy(expr* pxshp);
+private extern void  shm_delete(void* shmapp);
+private extern void  shm_reserve(expr* pxshp, double mlf, int size);
+private extern expr* shm_info(expr* pxshp);
+private extern int   shm_bucket_size(expr* pxshp, int bucket_pos);
+private extern int   shm_size(expr* pxshp);
+private extern bool  shm_empty(expr* pxshp);
+private extern int   shm_equal(expr* pxshp1, expr* pxshp2);
+private extern int   shm_count(expr* pxshp, expr* key);
+private extern expr* shm_find(expr* pxshp, expr* key, int what);
+private extern int   shm_insert(expr* pxshp, expr* src, bool replace);
+private extern expr* shm_insert_stlhmap(expr* pxshp, bool replace);
+private extern int   shm_insert_stlvec(expr* map, void* svp, bool replace);
+private extern void  shm_swap(expr* pxshp1, expr* pxshp2);
+private extern int   shm_erase(expr* pxshp, expr* key);
+private extern int   shm_clear(expr* pxshp);
+private extern expr* shm_make_vector(expr* pxshp);
+private extern void* shm_fill_stlvec(expr* rng, void* v);
+private extern expr* shm_listmap(expr* fun, expr* pxshp, int what);
+private extern expr* shm_listcatmap(expr* fun, expr* pxshp, int what);
+private extern expr* shm_foldl(expr* fun, expr* val, expr* pxshp);
+private extern expr* shm_foldl1(expr* fun, expr* pxshp);
+private extern void  shm_do(expr* fun, expr* pxshp);
 
-extern bool  sh_is_set(expr* pxshp) = sh_setp;
-extern int   sh_member(stlhmap* pmap, expr* key);
-extern expr* sh_get(stlhmap* pmap, expr* key);
-extern void  sh_put(stlhmap* pmap, expr* key, expr* val);
+extern bool  shm_is_set(expr* pxshp) = shm_setp;
+extern int   shm_member(stlhmap* pmap, expr* key);
+extern expr* shm_get(stlhmap* pmap, expr* key);
+extern void  shm_put(stlhmap* pmap, expr* key, expr* val);
 
-let stlhmap_t = stl::sh_type_tags;
+let stlhmap_t = stl::shm_type_tags;
 
 /*** Global Definitions **************************************************/
 
@@ -63,7 +63,7 @@ namespace ;
 public emptystlhmap emptystlhset members erase insert_or_replace replace;
 
 type stlhmap x::pointer = check_ptrtag stl::stlhmap_t x;
-type stlhset x::pointer = check_ptrtag stl::stlhmap_t x && stl::sh_setp x;
+type stlhset x::pointer = check_ptrtag stl::stlhmap_t x && stl::shm_setp x;
 
 namespace stl;
 
@@ -75,21 +75,21 @@ nonfix STLHMAP;
 
 wrap x = STLHMAP x;
 
-(!) (STLHMAP hm) key = stl::sh_get hm key;
+(!) (STLHMAP hm) key = stl::shm_get hm key;
 
-member (STLHMAP hm) key = stl::sh_member hm key;
+member (STLHMAP hm) key = stl::shm_member hm key;
 
-w_find (STLHMAP hm) key = stl::sh_get hm key;
+w_find (STLHMAP hm) key = stl::shm_get hm key;
 
-w_member (STLHMAP hm) key = stl::sh_member hm key;
+w_member (STLHMAP hm) key = stl::shm_member hm key;
 
-p_find hm::stlhmap key = stl::sh_get hm key;
+p_find hm::stlhmap key = stl::shm_get hm key;
 
-p_member hm::stlhmap key = stl::sh_member hm key;
+p_member hm::stlhmap key = stl::shm_member hm key;
 
-q_find hm key = stl::sh_get hm key;
+q_find hm key = stl::shm_get hm key;
 
-q_member hm key = stl::sh_member hm key;
+q_member hm key = stl::shm_member hm key;
 
 namespace stl;
 
@@ -97,124 +97,124 @@ namespace stl;
 
 /*** Helpers **************************************************************/
 
-private sh_key_flg sh_val_flg sh_elm_flg sh_compatible;
+private shm_key_flg shm_val_flg shm_elm_flg shm_compatible;
 
-const sh_key_flg = 1;
-const sh_val_flg = 2;
-const sh_elm_flg = 3;
+const shm_key_flg = 1;
+const shm_val_flg = 2;
+const shm_elm_flg = 3;
 
-sh_compatible hm1 hm2 = if sh_setp hm1 then sh_setp hm2 else ~sh_setp hm2; 
+shm_compatible hm1 hm2 = if shm_setp hm1 then shm_setp hm2 else ~shm_setp hm2; 
 
 /***  Constructors *********************************************************/
 
-::emptystlhmap = sh_make_empty 0;
+::emptystlhmap = shm_make_empty 0;
 
 ::stlhmap xs = hm when
   hm = ::emptystlhmap;
-  sh_insert hm xs 0;
+  shm_insert hm xs 0;
 end if listp xs || matrixp xs;
 
 ::stlhmap (STLVEC svp) = hm when
   hm = ::emptystlhmap;
-  sh_insert_stlvec hm svp 0;
+  shm_insert_stlvec hm svp 0;
 end;
 
-::stlhmap hm::stlhmap = sh_copy hm if ~sh_setp hm;
+::stlhmap hm::stlhmap = shm_copy hm if ~shm_setp hm;
 
-::emptystlhset = sh_make_empty 1;
+::emptystlhset = shm_make_empty 1;
 
 ::stlhset xs = hs when
   hs = ::emptystlhset;
-  sh_insert hs xs 0;
+  shm_insert hs xs 0;
 end if listp xs || matrixp xs;
 
 ::stlhset (STLVEC svp) = hs when
   hs = ::emptystlhset;
-  sh_insert_stlvec hs svp 0;
+  shm_insert_stlvec hs svp 0;
 end;
 
-::stlhset hm::stlhset = sh_copy hm;
+::stlhset hm::stlhset = shm_copy hm;
 
-hmap_reserve hm::stlhmap mlf::double size::int = sh_reserve hm mlf size;
+hmap_reserve hm::stlhmap mlf::double size::int = shm_reserve hm mlf size;
 
 /*** Info ***************************************************************/
 
-(::#) hm::stlhmap = sh_size hm;
+(::#) hm::stlhmap = shm_size hm;
 
-empty hm::stlhmap = sh_empty hm;
+empty hm::stlhmap = shm_empty hm;
 
-container_info hm::stlhmap = sh_info hm;
+container_info hm::stlhmap = shm_info hm;
 
-bucket_size hm::stlhmap i::int = sh_bucket_size hm i;
+bucket_size hm::stlhmap i::int = shm_bucket_size hm i;
 
-count hm::stlhmap key = sh_count hm key;
+count hm::stlhmap key = shm_count hm key;
 
-::member hm::stlhmap key = sh_member hm key;
+::member hm::stlhmap key = shm_member hm key;
 
 /*** Access *************************************************************/
 
-(::!) hm::stlhmap key = sh_get hm key;
+(::!) hm::stlhmap key = shm_get hm key;
 
-::get (hm::stlhmap,key) = sh_find hm key sh_elm_flg; 
+::members hm::stlhmap = shm_listmap 0 hm shm_elm_flg;
 
-::members hm::stlhmap = sh_listmap 0 hm sh_elm_flg;
+::keys hm::stlhmap = shm_listmap 0 hm shm_key_flg;
 
-::keys hm::stlhmap = sh_listmap 0 hm sh_key_flg;
+::vals hm::stlhmap = shm_listmap 0 hm shm_val_flg;
 
-::vals hm::stlhmap = sh_listmap 0 hm sh_val_flg;
-
-vector hm::stlhmap = sh_make_vector hm;
+vector hm::stlhmap = shm_make_vector hm;
 
 ::stlvec hm::stlhmap = sv if ok when
   sv = emptystlvec;
   ok = case sv of  
-    STLVEC v = sh_fill_stlvec hm v $$ 1;
+    STLVEC v = shm_fill_stlvec hm v $$ 1;
     _ = 0;
   end;
 end;
 
 /*** Modifiers *********************************************************/
 
-::insert hm::stlhmap (STLVEC svp) = sh_insert_stlvec hm svp 0;
+::insert hm::stlhmap (STLVEC svp) = shm_insert_stlvec hm svp 0;
 
 ::insert hm::stlhmap src::stlhmap = 
-  sh_insert_stlhmap hm src 0 if sh_compatible hm src;
+  shm_insert_stlhmap hm src 0 if shm_compatible hm src;
 
-::insert hm::stlhmap src = sh_insert hm src 0;
+::insert hm::stlhmap src = shm_insert hm src 0;
 
 ::insert_or_replace hm::stlhmap (STLVEC svp) = 
-  sh_insert_stlvec hm svp 1 if ~sh_setp hm;
+  shm_insert_stlvec hm svp 1 if ~shm_setp hm;
 
 ::insert_or_replace hm::stlhmap src::stlhmap = 
-  sh_insert_stlhmap hm src 1 if ~sh_setp hm && ~sh_setp src;
+  shm_insert_stlhmap hm src 1 if ~shm_setp hm && ~shm_setp src;
 
-::insert_or_replace hm::stlhmap src = sh_insert hm src 1 if ~sh_setp hm;
+::insert_or_replace hm::stlhmap src = shm_insert hm src 1 if ~shm_setp hm;
 
-::replace hm::stlhmap key val = sh_put hm key val $$ val;
+::replace hm::stlhmap key val = shm_put hm key val $$ val;
 
-::erase hm::stlhmap = sh_clear hm;
+::erase hm::stlhmap = shm_clear hm;
 
-::erase (hm::stlhmap,key) = sh_erase hm key;
+::erase (hm::stlhmap,key) = shm_erase hm key;
 
-swap hm1::stlhmap hm2::stlhmap = sh_swap hm1 hm2 if sh_compatible hm1 hm2;
+swap hm1::stlhmap hm2::stlhmap = shm_swap hm1 hm2 if shm_compatible hm1 hm2;
 
 /*** Equality **********************************************************/
 
-(::==) hm1::stlhmap hm2::stlhmap = sh_equal hm1 hm2 if sh_compatible hm1 hm2;
+(::==) hm1::stlhmap hm2::stlhmap = shm_equal hm1 hm2 if shm_compatible hm1 hm2;
 
-(::~=) hm1::stlhmap hm2::stlhmap = ~sh_equal hm1 hm2 if sh_compatible hm1 hm2;
+(::~=) hm1::stlhmap hm2::stlhmap = ~shm_equal hm1 hm2 if shm_compatible hm1 hm2;
+
+map_equal hm1::stlhmap hm2::stlhmap = shm_equal hm1 hm2 if shm_compatible hm1 hm2;
 
 /*** Mapping and Folding ************************************************/
 
-::map f hm::stlhmap = sh_listmap f hm sh_elm_flg;
+::map f hm::stlhmap = shm_listmap f hm shm_elm_flg;
 
-::foldl f x hm::stlhmap = sh_foldl f x hm;
+::foldl f x hm::stlhmap = shm_foldl f x hm;
 
-::foldl1 f hm::stlhmap = sh_foldl1 f hm;
+::foldl1 f hm::stlhmap = shm_foldl1 f hm;
 
-::do f hm::stlhmap = sh_do f hm;
+::do f hm::stlhmap = shm_do f hm;
 
-::filter p hm::stlhmap = sh_listcatmap f hm sh_elm_flg with
+::filter p hm::stlhmap = shm_listcatmap f hm shm_elm_flg with
   f x = res when
     res = case p x of
       1 = [x];
@@ -224,15 +224,15 @@ swap hm1::stlhmap hm2::stlhmap = sh_swap hm1 hm2 if sh_compatible hm1 hm2;
   end;
 end;
 
-::listmap f hm::stlhmap = sh_listmap f hm sh_elm_flg;
+::listmap f hm::stlhmap = shm_listmap f hm shm_elm_flg;
 
-::catmap f hm::stlhmap = sh_listcatmap f hm sh_elm_flg;
+::catmap f hm::stlhmap = shm_listcatmap f hm shm_elm_flg;
 
-::rowmap f hm::stlhmap = rowcat (sh_listmap f hm sh_elm_flg);
+::rowmap f hm::stlhmap = rowcat (shm_listmap f hm shm_elm_flg);
 
-::rowcatmap f hm::stlhmap = rowcat (sh_listmap f hm sh_elm_flg);
+::rowcatmap f hm::stlhmap = rowcat (shm_listmap f hm shm_elm_flg);
 
-::colmap f hm::stlhmap = colcat (sh_listmap f hm sh_elm_flg);
+::colmap f hm::stlhmap = colcat (shm_listmap f hm shm_elm_flg);
 
-::colcatmap f hm::stlhmap = colcat (sh_listmap f hm sh_elm_flg);
+::colcatmap f hm::stlhmap = colcat (shm_listmap f hm shm_elm_flg);
 

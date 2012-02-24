@@ -73,39 +73,39 @@ enum {stl_sh_key =1, stl_sh_val, stl_sh_elm};
 /*** C interface for C++ unordered map **********************************/
 
 extern "C" {
-  px*  sh_type_tags();
-  px*  sh_make_empty(int keys_only);
-  px*  sh_copy(px* pxshp);
-  void sh_delete(sh* shp);
-  void sh_reserve(px* pxshp, double max_load, int elm_count);
-  px*  sh_info(px* pxshp);
-  int  sh_bucket_size(px* pxshp, int i);
-  int  sh_size(px* pxshp);
-  bool sh_empty(px* pxshp); 
-  int  sh_count(px* pxshp, px* key);
-  bool sh_is_set(px* pxshp);
-  px*  sh_get(sh* shp, px* key);
-  px*  sh_find(px* pxshp, px* key, int what);
-  int  sh_insert(px* pxshp, px* src, bool replace);
-  px*  sh_insert_stlhmap(px* pxshp, bool replace);
-  int  sh_insert_stlvec(px* pxshp, sv* svp, bool replace);
-  px*  sh_swap(px* pxshp1, px* pxshp2);
-  int  sh_clear(px* pxshp);
-  int  sh_erase(px* pxshp, px* trg); 
+  px*  shm_type_tags();
+  px*  shm_make_empty(int keys_only);
+  px*  shm_copy(px* pxshp);
+  void shm_delete(sh* shp);
+  void shm_reserve(px* pxshp, double max_load, int elm_count);
+  px*  shm_info(px* pxshp);
+  int  shm_bucket_size(px* pxshp, int i);
+  int  shm_size(px* pxshp);
+  bool shm_empty(px* pxshp); 
+  int  shm_count(px* pxshp, px* key);
+  bool shm_is_set(px* pxshp);
+  px*  shm_get(sh* shp, px* key);
+  px*  shm_find(px* pxshp, px* key, int what);
+  int  shm_insert(px* pxshp, px* src, bool replace);
+  px*  shm_insert_stlhmap(px* pxshp, bool replace);
+  int  shm_insert_stlvec(px* pxshp, sv* svp, bool replace);
+  px*  shm_swap(px* pxshp1, px* pxshp2);
+  int  shm_clear(px* pxshp);
+  int  shm_erase(px* pxshp, px* trg); 
 
-  bool sh_equal(px* pxshp1, px* pxshp2);    
-  px*  sh_make_vector(px* pxshp);
+  bool shm_equal(px* pxshp1, px* pxshp2);    
+  px*  shm_make_vector(px* pxshp);
 
-  px*  sh_listmap(px* fun, px* shp, int what);
-  px*  sh_listcatmap(px* fun, px* pxshp, int what);
-  int  sh_member(sh* shp, px* key);
-  void sh_put(sh* shp, px* key, px* val);
+  px*  shm_listmap(px* fun, px* shp, int what);
+  px*  shm_listcatmap(px* fun, px* pxshp, int what);
+  int  shm_member(sh* shp, px* key);
+  void shm_put(sh* shp, px* key, px* val);
 
-  px*  sh_foldl(px* fun, px* val, px* pxshp);
-  px*  sh_foldl1(px* fun, px* tpl);
-  void sh_do(px* fun, px* pxshp);
+  px*  shm_foldl(px* fun, px* val, px* pxshp);
+  px*  shm_foldl1(px* fun, px* tpl);
+  void shm_do(px* fun, px* pxshp);
 
-  void sh_fill_stlvec(px* pxshp, sv* svp);
+  void shm_fill_stlvec(px* pxshp, sv* svp);
 }
 
 #endif // STLHMAP_H
