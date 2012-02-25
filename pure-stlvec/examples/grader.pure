@@ -14,8 +14,8 @@ included with the pure-stlvec distribution package for details.
 
 */
 
-/* This little was written to test drive the stlvec module. It began as a port
-   of one of the versions of the C++ student grading program presented in
+/* This program was written to test drive the stlvec module. It began as a
+   port of one of the versions of the C++ student grading program presented in
    Accelerated C++ by Andrew Koenig and Barbara Moo. Along the way features
    were added to expand the use of functions imported from stlvec::algorithms.
 
@@ -72,7 +72,7 @@ included with the pure-stlvec distribution package for details.
 
 using system, getopt, stlvec, stlvec::algorithms, stlstruct, stlutil;
 
-using namespace stl (svend svbeg svback readonly);
+using namespace stl (svend svbeg svback readonly empty);
 
 const report_ranks = "r";
 const report_names = "n";
@@ -240,12 +240,12 @@ end with
   when
     sws = stlvec weights;
     normalizers = mkstlvec 1.0 (#weights);
-    si = if ~null scores then
+    si = if ~empty scores then
            mk_si sws qzstyle extra_qzs normalizers "perfect"  scores
          else ();
     c_scores = combined_scores si;
     stl::transform c_scores (normalizers,0) normal;
-    perfect = if ~null scores then total_score si else 0.0;
+    perfect = if ~empty scores then total_score si else 0.0;
     sci = score_info {#scores, normalizers, qzstyle, extra_qzs, sws,
                       stlvec cg_counts, stlvec pg_cutoffs};
     set_score_parameters S sci;
@@ -275,7 +275,7 @@ end;
 // sis is a stlvec of student infos - ordered by decreasing total_score
 // grade_counts is number at each grade level, highest first 
 assign_curve_grades grade_counts::stlvec sis::stlvec = 
-  if null grade_counts || null sis then () else acg 0 0 with
+  if empty grade_counts || empty sis then () else acg 0 0 with
     acg svend _ = (); // should not happen
     acg _ svend = ();
     acg gc_i sis_b = acg next_gc_i sis_e when 

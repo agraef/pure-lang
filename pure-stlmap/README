@@ -439,7 +439,7 @@ subsequence of elements in a container. ::
 
    > erase shm1;                   // erase all elements
    4
-   > null shm1;
+   > empty shm1;
    1
 
    > erase (sm1,"b","d");         // erase a subsequence       
@@ -541,66 +541,68 @@ elements if the container is ordered) as a stream. E.g.,
    0s, 17 cells
 
 
-Fundamentals - Containers, Iterators, Ranges and Their Elements
-===============================================================
+Containers, Elements, Iterators and Ranges
+==========================================
 
 This section describes the objects and concepts that underly
 pure-stlmap. These include the supported containers, iterators, ranges,
 elements, keys, values and a group of functions that help define a container's
 behavior.
 
-Containers
-----------
+Containers and Elements
+-----------------------
 
 The six associative containers supported by pure-stlmap can be grouped
 together in terms of certain defining attributes. 
 
-  * associative container - stlmap, stlset, stlmmap, stlmmset, stlhmap or
-                            stlhset
+The three "maps" provided by pure-stlmap, stlmap, stlmmap and stlhmap,
+associate values with keys. If a value v is associated with a key, k, in an
+map, m, then we say that (k=>v) is an element of m and that k is stored in m.
 
-  * ordered container - stlmap, stlset, stlmmap, stlmmset
+The three "sets" provided by pure-stlmap, stlset, stlmset and stlhset, hold
+single elements, as opposed to key value pairs. If an element e is contained a
+set, s, we say that e is an element of s, that e is stored in s, that s has
+key e and that s has value e. In other words, we sometimes speak of a set as
+if it were a map where each element, key and value are the same object.
 
-  * unique-keyed container - stlmap, stlset, stlhmap, stlhset
+The "ordered" containers, stlmap, stlset, stlmmap and stlmset, keep their
+element a sequence that is ordered by keys according to their key-less-than
+function. The default key-less-than function is (<), but this can be changed
+when the container is created. The elements stored in a stlmap or stlset have
+unique keys, i.e., no other elment stored in the container will have an
+"equivalent" key. In contrast, different elements stored in a stlmmap or
+stlmset can have equivalent keys. Two keys are "equivalent" if neither key is
+key-less-than the other.
 
-  * multi-keyed container - stlmmap, stlmset
-
-  * unordered container - stlhmap, stlhset
-
-  * map - stlmap, stlmmap, stlhmap
-
-  * ordered map - stlmap, stlmmap
-
-  * unique-keyed map - stlmap, stlhmap
-
-  * multi-keyed map - stlmmap
-
-  * unordered map - stlhmap
+The "hashed" containers, sthmap and stlhset do not keep there elements in a
+sequence. Instead they store their elments in a hash table using a key-hash
+function and a key-equal function. Currently the key-hash function is hash and
+the key-equal function is (===), both of which are defined in the Prelude. The
+elements stored in a hashed container have unique keys. I.e., currently
+pure-stlmap does not provide a stlhmmap or stlhmset.
   
-  * set - stlset, stlmset, stlhset
+The "ordered maps", stlmap and stlmmap, each have a value-less-than function
+and a value-equal function that is used for lexicographical comparisons. The
+default functions are (<) and (==) respectively, but these can customized when
+the container is created.
 
-  * ordered set - stlset, stlmset
+As is the case for the underlying C++ functions, set operations (i.e., union,
+intersection, etc.) and container equivalence for the ordered containers are
+based on lexicographical comparisons. For these purposes one element, e1, is
+less than another, e2, if (a) e1's key is less-than e2's key and, (b) if the
+ordered container is a stlmap or stlmap, e1's value is value-less-than e2's
+value. Finally, for purposes of determining if two ordered containers are
+equal, e1 and e2 are considered to be equal if (a) their keys are equivalent
+and (b), in the case of stlmap or stlmmap, their values are value-equal.
 
-  * unique-keyed set - stlset, stlhset
+Set operations are not provided for the hashed containers, stlhmap and
+stlhset. A pair of hashed containers are treated as equal (==) their keys are
+key-equal and, in the case of sthmaps, if their values are
+value-equal. Currently, a stlhmap's key-equal and value-equal functions are
+always (===) and (==).
 
-  * multi-keyed set - stlmset
-
-  * unordered set - stlhset
-
-Hopefully these names are intuitive enough that defining them here was not
-really necessary. On the other hand, the groupings do summarize what is
-available in this package.
-
-Keys, Values and Elements
--------------------------
-
-The three maps provided by pure-stlmap (stlmap, stlmmap and stlhmap) associate
-values with keys. If a value v is associated with a key, k, in an map, m, then
-we say that (k=>v) is an element of m and that k is stored in m. The three
-sets provided by pure-stlmap (stlset, stlmset and stlhset) simply hold single
-elements, as opposed to key value pairs. If an element e is contained a set,
-s, we say that e is an element of s, that e is stored in s, that s has key e
-and that s has value e. In other words, we sometimes speak of a set as if it
-were a map where each element, key and value are the same object.
+C++ Implementation
+------------------
 
 For those that want to refer to the C++ documentation, stlmap is (essentially)
 map<px*,px*>, stlmmap is multimap<px*,px*> and stlhmap is
@@ -613,100 +615,6 @@ mapped_types. The C++ objects for stlset, stlmset and stlhset are the same as
 stlmap, stmmap and stlhmap except that pure-stlmap ensures that the second
 member of the C++ value_type pair is always NULL.
 
-Defining Customized Containers
-------------------------------
-
-You can change the semmantics of some of the pure-stlmap containers by
-specifying certain functions when the containers are created.
-
-Each ordered container (stlmap, stlset, stlmmap, and stlmset) has a
-key-less-than function that is used to order its elements by key. In addition,
-stlmap and stlmmap each have a value-less-than function and a value-equal
-function. Two keys are "equivalent" if neither key is key-less-than the
-other. For purposes of lexicographical comparisons one element, e1, is less
-than another, e2, if (a) e1's key is less-than e2's key and, (b) if the
-ordered container is a stlmap or stlmap, e1's value is value-less-than e2's
-value. Finally, for purposes of determining if two containers are equal, e1
-and e2 are considered to be equal if (a) their keys are equivalent and (b),
-ifn the case of stlmap or stlmmap, their values are value-equal. The default
-key-less-than function, (<), value-less-than function (<), and value-equal
-function generally work well, but customized versions can be specified when
-the ordered container is constructed.
-
-The unordered containers (stlhmap and sthset) do not have a key-less-than or a
-value-less-than function. Instead, they have a hash function, a key-equal
-function and a value-equal function. These default to 'hash', '(===)' and
-'(==)' respectively. If e1 and e2 are elements of unordered maps, they are
-considered to be equal if they are key-equal and value-equal. Currently, only
-the default functions can be use for stlhmap and stlhset.
-
-Accessing and Modifying Elements
---------------------------------
-
-In pure-stlmap, an element can be thought of as occupying a slot that is
-identified by its container and key. You can get a pointer to the slot,
-referred to as an iterator, and then read or modify the element. ::
-
-   > let sm  = stlmap  ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
-
-   > let p = find sm "b";
-   > get p;
-   "b"=>2
-
-   > put p 20;
-   20
-
-   > members sm;
-   ["a"=>1,"b"=>10,"c"=>3,"d"=>4,"e"=>5]
-
-If you don't like iterators, you can use pure-stlmap's "key-based" interface. ::
-
-  > get (sm,"c");
-  "c"=>3
-
-  > replace sm "c" 30 $$ sm!"c"
-  30
-
-  > members sm;
-  ["a"=>1,"b"=>20,"c"=>30,"d"=>4,"e"=>5]
-
-  > sm!"a";
-  1
-
-When it comes to the multi-keyed containers (stlmmap and stlmset), iterators
-are used the same as for the unique-keyed containers (stlmap and
-stlset). However, because access is always by key, and never by key value
-pairs, it is not possible to access use the key-based interface to access a
-single element. As a result, the key-based put and get functions work with
-the elements associated with a given key on a all or nothing basis. ::
-
-   let smm = stlmmap ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"d"=>4];
-
-   > get (smm,"c");
-   "c"=>[31,32]
-
-   > replace smm "c" [31,32,33]; members smm;
-   ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"c"=>33,"d"=>4]
-
-   > replace smm "c" []; members smm;
-   ["a"=>1,"b"=>2,"d"=>4,"e"=>5]
-
-Please note that elements are never identified by key value pairs. I.e., the
-value never is used to locate an element. Thus, if you want to delete "c"=>32
-from smm while preserving "c"=>31 and "c"=>33 using the key-based interface
-you have to use put, i.e., you cannot say something like delete_val smm
-("c"=>32) ::
-
-It should be noted that in pure-stlmap's key-based interface, all access is
-based on keys. You can never, for example, find or erase a specific
-(k=>v). You can only access, modify and erase base on key. If this is not
-convenient, you can always use iterators to track down and deal with any
-element individually.
-
-Finally, it should be noted that you can never modify an element's key, only
-its value. If you want to do that, you have to erase the element and insert a
-new element.
-
 Iterators and Ranges
 --------------------
 
@@ -716,7 +624,26 @@ containers (stlmap, stlmmap, stlset and stlmset) but not for its unordered
 containers (stlhmap and stlhset).
 
 Given a valid iterator you can access, modify or erase the element it points
-to.  Given two iterators, i and j, pointing into a ordered container oc, the
+to.
+
+   > members sm;  
+   ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+
+   > let p = find sm "b";
+   > get p;
+   "b"=>2
+
+   > put p 20;
+   20
+
+   > members sm;
+   ["a"=>1,"b"=>20,"c"=>3,"d"=>4,"e"=>5]
+
+Please note that you can never modify an element's key, only its value. If you
+want to change both key and value, you have to erase the element and insert a
+new element.
+
+Given two iterators, i and j, pointing into a ordered container oc, the
 range (i,j), denotes oc's elements starting with "oc[i]", the element pointed
 to by i, up to but not including oc[j]. In pure-stlmap, this range is denoted
 by the tuple (i,j). ::
@@ -728,14 +655,67 @@ by the tuple (i,j). ::
 
    > let j = stl::find sm1 "e";
 
-   > members (i,j);               // get the elements in the range
+   > members (i,j);             // get the elements in the range
    ["b"=>2,"c"=>3,"d"=>4]
 
-It is also possible to define a range using keys. Given an ordered container,
-oc, and keys k and l, the range (oc,k,l) consists of all of the elements in
-aoc starting with the first element that is not less than k up to but
-not including the first element that is greater or equal to l. Note that k and
-l do not have to be stored in oc. ::
+Iterators are most useful when dealing with stlmmaps where elements with
+different values can have equivalent keys. In most cases, it is recommended
+that you avoid using iterators. Functions that operate on or return iterators
+are discussed separately at the end of this document.
+
+Key-Based Interface
+===================
+
+pure-stlmap provides a "key-based" interface that lets you access and modify
+elements without using iterators. In addition, you can specify a range using
+keys instead of iterators. 
+
+Accessing and Modifying Elements
+--------------------------------
+
+You can access and change values associated with a key using the (!) and
+replace functions ::
+
+  > sm!"c";
+  "c"=>3
+
+  > replace sm "c" 30 $$ members sm;
+  ["a"=>1,"b"=>20,"c"=>30,"d"=>4,"e"=>5]
+
+It should be noted that in in the key-based interface, elements are identified
+solely based on keys. You can never, for example, find or erase a specific
+(k=>v). For stlmmaps and stlmsets this can be an issue because multiple
+elements can have equivalent keys. Accordingly, (!) and replace work with
+lists of elements associated with a given key rather than say the first elment
+with the given key.
+
+   > members smm;
+   ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"d"=>4];
+
+   > smm!"c";
+   "c"=>[31,32]
+
+   > replace smm "c" [31,32,33]; members smm;
+   ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"c"=>33,"d"=>4]
+
+   > replace smm "c" []; members smm;
+   ["a"=>1,"b"=>2,"d"=>4,"e"=>5]
+
+This approach reflects the fact that elements are never identified by key
+value pairs. I.e., the value never is used to locate an element. Thus, if you
+want to delete "c"=>32 from smm while preserving "c"=>31 and "c"=>33 using the
+key-based interface you have to use put, i.e., you cannot say something like
+delete_val smm ("c"=>32). If this is not convenient, you can always use
+iterators to track down and modify any specific element.
+
+Specifying Ranges
+-----------------
+
+For the ordered containers, stlmap, stlset, stlmmap and stlmset, ranges can be
+specified using keys. Given an ordered container, oc, and keys k and l, the
+range (oc,k,l) consists of all of the elements in aoc starting with the first
+element that is not less than k up to but not including the first element that
+is greater or equal to l. Note that k and l do not have to be stored in oc. ::
 
    > members (sm,"b","e");
    ["b"=>2,"c"=>3,"d"=>4]
@@ -749,16 +729,31 @@ dropped, in which case the range consists of all of the container's elements.
    > members sm;
    ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
-Please note that support for iterators and ranges is not provided for the
-unordered containers (stlhmap and stlhset). Most pure-stlmap functions that act
-on ranges can, however, operate on stlhmaps or stlhsets as well, except that,
-for stlhmaps and stlhsets, they always operate on all of the container's
+Please note that support for ranges is not provided for the unordered
+containers (stlhmap and stlhset). Most pure-stlmap functions that act on
+ranges can, however, operate on stlhmaps or stlhsets as well, except that, for
+stlhmaps and stlhsets, they always operate on all of the container's
 elements. Accordingly, whenever the documentation of a function refers to a
 range, and the container in question is a a stlhmap or stlhset, the range
 simply refers to the container itself.
 
+Perhaps it is worth mentioning that functions that act on ranges do not care
+if the range is specified by a pair of iterators or by keys.
+
+   > members ss;
+   ["a","b","c","d","e"]
+
+   > map (+21) (ss,"c",smend);
+   ["x","y","z"]
+
+   > let i = find ss "c";
+   > let j = pastend ss;
+   > map (+21) (i,j);
+   ["x","y","z"]
+
+
 Functional Interface for Working with Ranges
---------------------------------------------
+============================================
 
 The usual list operations including map, foldl, do, etc. are available for all
 six containers provided by pure-stlmap. They operate directly on the
@@ -781,38 +776,63 @@ that bumps keys using `next_key` and pushes filtered elements onto a list.
 In short, it should be possible to apply most if not all of the functional
 programming idioms that you use with lists to the containers provided by
 pure-stlmap. A good example of this is the "terms_mult" function in the
-poly.pure example in the pure-stlmap/examples directory. 
+poly.pure example in the pure-stlmap/examples directory.
 
-Modules, Types and Namespaces
-=============================
+
+Iterator Cache
+==============
+
+Each stlmap or stlset maintains a cache key-(C++)iterator pairs that are
+replaced by all of the key oriented functions described in the previous
+section. In addition, insert (of a single element) also caches iterators. When
+one of these functions needs to access an element of the stlmap or stlset by
+key, it first checks to see if the key is stored in the cache. If so the
+function uses the corresponding cached C++ iterator to locate the element
+without having to do a O(log n) search. For speed, the key matches only if it
+is same element that was cached (i.e., the test is C++ pointer
+equality). Erasure of an element in the container clears any affected
+iterators from the cache.
+
+Here are some examples produced by compiling pure-stlmap with a trace function
+that shows when caching eliminates a key lookup. FIX -- may now have to
+use let key_a = "a" to get caching.
+
+   > member sm "a";
+   1
+
+   > sm!"a";
+   found iterator for: "a"
+   1
+
+   > replace sm "a" 10;
+   found iterator for: "a"
+   10
+
+   > let k = next_key sm "a";
+   found iterator for: "a"
+
+   > let k = next_key sm k;
+   found iterator for: "b"
+
+   > put (sm,k) 30;
+   found iterator for: "c"
+   30
+
+   > members sm;
+   ["a"=>10,"b"=>2,"c"=>30,"d"=>4,"e"=>5]
+
+In particular, using member followed by a get or put only requires one
+lookup. Also, traversing a range with next_key (or prev_key) followed by gets
+and puts can be accomplished in linear time (i.e., next_key requires constant
+time, assuming the current key is cached, as do put or get after next_key
+caches its result). Currently the three most recently accessed iterators are
+cached.
 
 Modules
--------
+=======
 
 pure-stlmap provides three separate modules ``stlmap``, ``stlmmap`` and
-``stlhmap``. If you want to use a stlmap or stlset, import stlmap. For
-stlmmaps and stlmsets import stlmmap and for stlhmaps aor stlhsets import
-stlhmap. This separation reflects the idea that ordered maps, unordered maps
-and multimaps (and their corresponding set containers) each have unique
-charateristics and that they are not meant to be interchangable
-implimentations of a common interface. For example, in order to guarantee O(n)
-set operations, in pure-stlmap the set operations are defined on the ordered
-containers, stlmap, stlset, stlmmap and stlmset, but not on stlhmap or
-stlhset.
-
-It should be noted that stlmaps and stlsets are just pointers to opaque
-objects and that the opaque objects are exactly the same for for each type.
-The only difference is that when a stlset is created the opaque object's
-keys_only flag is set to true. The functions that act on stlmaps check for
-the flag an act accordingly. The same scheme applies to stlmmaps and stlhmaps.
-
-Namespaces
-----------
-
-Global and stl. Operators all in ::. Constructors and types in :: If function
-already exists in ::, then :: (e.g., put, get, foldl, etc).
-
-FIX
+``stlhmap``.
 
 The stlhmap Module
 ------------------
@@ -822,7 +842,7 @@ elements stored in the container (or use set operations like
 map_intersection), stlhamp or stlhset are probably the best choices. They are
 simpler and faster that the other containers.
 
-You can import the stlmmap module by adding the following using statement to
+You can import the stlhmap module by adding the following using statement to
 your code. ::
 
   > using stlhmap;
@@ -832,9 +852,6 @@ stlhset.
 
 .. type:: stlhmap /type
           stlhset /type
-
-Please note that a stlhset is just a stlhmap where the values associated with
-keys cannot be accessed or modified.
 
 The stlmap Module
 -----------------
@@ -861,8 +878,7 @@ keys cannot be accessed or modified.
 
 .. type stlmap_iter /type
 
-  Types for iterators on a stlmap or stlset. stlacon_iter includes stlmap_iter
-  and stlset_iter.
+  Type for an iterators on a stlmap or stlset.
 
 .. type stlmap_rng /type
 
@@ -893,14 +909,9 @@ along with their iterators and ranges defined on them.
 Please note that a stlset is just a stlmap where the values associated with
 keys cannot be accessed or modified.
 
-  Types for stlmmap and stlmset. stlmacon includes stlmmap and stlmset.
-
  .. type stlmmap_iter /type
-        stlmset_iter /type
-        stlmacon_iter /type
 
-  Types for iterators on stlmmap and stlmset. stlacon_iter includes
-  stlmmap_iter and stlmset_iter.
+  Type for an iterator defined on a stlmmap or stlmset.
 
 .. type stlmacon_rng /type
 
@@ -910,14 +921,15 @@ Container Operations
 ====================
 
 As mentioned, each of the six associative containers supported by pure-stlmap
-has its own set of unique characteristics. On the other hand, they all share
-..  So attempt is made to describe each function for all. If follow natural
-instincts it should not be hard as it sounds.
+has its own set of unique characteristics. Because of this the description of
+functions that operate on more than one type of container can get a little 
+complicated. It might be helpful to refer to pure-stlmap-functions.pdf, in the
+pure-stlmap/examples subdirectory.
 
-Container Construction and Related Operations
----------------------------------------------
+Container Construction
+----------------------
 
-New null containers can be constructed using optional parameters that allow
+New empty containers can be constructed using optional parameters that allow
 you to specify customized key-less-than functions, default values,
 value-less-than and value-equal functions for the ordered associative
 containers (stlmap, stlset, stlmmap and stlmset) as well as hash, key-equal
@@ -927,41 +939,35 @@ and stlhset).
 .. namespace:: ::
 
 .. function:: mkstlmap (kcmp,dflt,vcmp,veql)
-              mkstlmmap (kcmp,vcmp,veql)
-              mkstlset kcmp
+              mkstlmmap (kcmp,dflt,vcmp,veql)
+  
+   Create a new stlmap or stlmmap where kcmp is the map's key-less-than
+   function. dflt is the maps default value (used by replace_with and
+   find_with_default). vcmp is the map's value-compare function and veql is
+   its value-equal function.  Only kcmp is required, and the default values
+   for dflt, vcmp, veql are [], (<) and (==) respectively.
+
+.. function:: mkstlset kcmp
               mkstlmset kcmp
-              mkstlhmap (khash,keql,veql)
-              mkstlhset (khash,keql)
 
-   Create a new associative container. The key comparison and hash functions,
-   kcmp and khash, are required, the other parameters are optional. The
-   functions vcmp and veql are used to determine if one value is less than
-   another or equal to another, respectively. The function keql is used to
-   determine if one key is equal to another. The object dflt is a the
-   containers default value. The default values for dflt, vcmp, veql and keql
-   are [], (<) (==) and (==) respectively. E.g., ::
-
-   > let xx = mkstlhmap hash;
-   > container_info xx;
-   0,2,0.0,1.0,hash,(==),(==)
-
-   > let xx = mkstlmap (>);
-   > container_info xx;
-   0,(>),[],(<),(==)
-
-Convenience functions are provided to construct null containers using default
-values.
+   Create a new stlset or stlmset where kcmp is the set's key-less-than
+   function. 
 
 .. function:: emptystlmap
               emptystlmmap
               emptystlset
               emptystlmset
-              emptystlhmap
+
+   Create a new ordered map or set using default values. I.e., emptystlmap is
+   the same as mkstlmap (<), and so on. 
+
+.. function:: emptystlhmap
               emptystlhset
 
-   Create a new associative container using default values.
+   Create a new stlhmap or stlhset with default values. The hash-function is
+   hash and the value-equal function is (===).
 
-Convenience functions are also provided to construct an null container and
+Convenience functions are also provided to construct an empty container and
 insert elements into it in one go. The source of the elements can be a list,
 vector, a stlvec, or a range defined on another container of the same type as
 the new container.
@@ -974,36 +980,20 @@ the new container.
               stlhset /stlhmap src
 
    Create an associative constructor using default values and insert elements
-   from src. src can be a list, vector, stlvec or a range defined over a
-   container of the same type as the new container. If the new container is
-   one of the three maps, the elements of src must be (k=>v) hash-rocket
-   pairs.
+   from copied from src. src can be a list, vector or stlvec of elements or a
+   range defined over a container of the same type as the new container. If
+   the new container is one of the three maps, the elements of src must be
+   (key=>val) pairs. For the three sets they can be any pure expression that
+   can be used as a key (i.e., anything except for stl::smbeg or stl::smend).
 
-After a stlhmap or stlhset is created, it is possible to adjust its maximum
-load factor and bucket count.
+Information
+-----------
 
-.. namespace:: stl
-
-.. function:: hash_reserve hacon mlf size
-
-   Sets hacon's max_load_factor to mlf, sets the number of buckets to size/mlf
-   and rehashes hacon.
-
-.. function:: container_info /stlmmap acon
-
-   If acon is an ordered associative container, returns (is_set, kcmp, dflt,
-   vcmp, veql). If is set is true, dflt, vcmp, and veql will be random values
-   that should not be used. If acon is unordered, returns (is_set,
-   bucket_count, load_factor, max_load_factor, khash, keql, veql), where veql
-   has no meaning if is_set is true.
-
-..function:: swap /stlmap acon1 acon2
-
-  Swap the elements of the two containers of the same type.
-
-.. function:: null /stlmap acon
-
-  Return true if acon is null, else false.
+This group of functions allows you make inquiries regarding the number of
+elments in a container, the number of instances of a given key held by a
+container, the upper and lower bounds of a range and other information. In
+addition this group includes a function that can be used to change the number
+of slots used by a stlhmap or stlhset.
 
 .. namespace:: ::
 
@@ -1011,14 +1001,300 @@ load factor and bucket count.
 
   Return the number of elements in acon.
 
-Equality and Comparison
------------------------
+.. function:: empty /stlmap acon
+
+  Return true if acon is empty, else false.
+
+.. function:: distance /stlmap rng
+
+   Returns the number of elements contained in rng where rng is a range
+   defined on an ordered container (stlmap, stlmmap, stlset, stlmset).
+
+.. function:: count /stlmap acon k
+
+   Returns the number of elements in an associative container, acon, that have
+   a key that is equivalent to k.
+
+.. function:: bounds /stlmap rng
+
+   Return a pair of keys, first and last, such that first <= k < last for each
+   k, where k is the key of an element in rng. If there is no such last, the
+   second member of the returned pair will be stl::smend. If first is the key
+   of the first element of rng's container, the first member of the returned
+   pair will stl::smbeg. E.g.,
+
+   > members sm;
+   ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
+
+   > bounds sm;
+   stl::smbeg,stl::smend
+
+  > bounds (sm,"a1","e");
+   "b","e"
+
+.. function range_info /stlmap rng
+
+   Returns a tuple (ok, sac, first, last) where ok is true if the range is
+   valid, sac is the container that the range points into, and first and last
+   are iterators that define the range. E.g., ::
+
+   > let ok, smx, f, l = stl::range_info (sm1,"b","e");
+
+   > ok, smx === sm1, stl::members (f,l);
+   1,1,["b"=>2,"c"=>3,"d"=>4]
+
+.. function:: container_info /stlmap acon
+
+   If acon is an ordered associative container (stlmap, stlmmap, stlset or
+   stlmset, returns (is_set, kcmp, dflt, vcmp, veql). If is set is true, dflt,
+   vcmp, and veql will be random values that should not be used. If acon is an
+   unordered container (stlhmap or stlhset), returns (is_set, bucket_count,
+   load_factor, max_load_factor), where veql has no meaning if is_set is true.
+
+.. function:: bucket_size /stlmap hacon n
+
+   Returns the number of elements in bucket n (zero-based).
+
+.. function:: hash_reserve hacon mlf size
+
+   Sets hacon's max_load_factor to mlf, sets the number of buckets to size/mlf
+   and rehashes hacon.
+
+Modification
+------------
+
+Elements can be inserted into associative containers en masse from another
+container or individually. In either case, Please note that this behavior is
+the opposite to that the Pure standard library's insert which would replace
+the old element to match the element being inserted.
+
+Of course elements are always inserted into multi key associative
+containers. Note also that keys can be equivalent for these purposes even if
+they are not equal in other respects. E.g., a set's less than function might
+only depend on a particular field of records that are inserted into it.
+
+..function:: insert /stlmap acon src
+
+  Tries to insert elements in a valid "insert source" into an associative
+  container, and then returns the number of elements inserted. A valid "insert
+  source" is (a) a single element, (b) a list, vector, stlvec of elements or
+  (c), a range over an associative container of the same type as acon. If acon
+  is an associative map (stlmap, stlmmap or stlhmap), the elements of src must
+  be key value pairs of the form (k=>v).  if an element is about to be
+  inserted in a unique key associative container (stlmap, stlset, stlhmap,
+  stlhset), the element will not be inserted if the its key is already stored
+  in the target container. Returns the number of elements inserted, if any.
+
+..function:: insert_or_replace /stlmap acon src
+
+  The same as insert except that (a) acon must be a stlmap or a stlhmap and
+  (b) if an element (key=>newval) is about to be inserted and the container
+  already contains an element (key=>oldval) the element in the container will
+  be changed to (key=>newval). Returns the number of elements inserted or
+  updated. 
+
+.. function:: replace /stlmap map key val
+              replace /stlmap mmap key vals
+
+   If key is not stored in map (a stlmap or stlhmap) or in mmap (a stlmmap)
+   throw out_of_bounds. If (key=>oldval) is an element of map, change it to
+   (key=>val). If key is stored in mmap then the values associated with key in
+   mmap are changed to the elments of vals, where vals is a list of pure
+   expressions. If vals is [], the effect is to erase key from mmap. Returns
+   vals. E.g.,
+
+   > members smm1;
+   ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"d"=>4,"e"=>5]
+
+   > replace smm1 "c" [31,33,35,36]; members smm;
+   ["a"=>1,"b"=>2,"c"=>31,"c"=>33,"c"=>35,"c"=>36,"d"=>4,"e"=>5]
+
+..function:: replace_with f m (k=>v)
+
+  This function only applies to stlmaps. The effect of this function is as
+  follows: (a) if ~member m k then insert m (k=>dflt) else (), where dflt is
+  m's dflt value, (b) replacee m k nv when nv = f v (m!k) end. Returns m. E.g.,
+
+   > let src = ["a"=>1,"b"=>2,"c"=>3,"c"=>4,"c"=>5];
+
+   > let lists = foldl (replace_with (:)) emptystlmap src;
+   > members lists;
+   ["a"=>[1],"b"=>[2],"c"=>[5,4,3]]
+
+   > let sums = foldl (replace_with (+)) (mkstlmap ((<),0)) src;
+   > members sums;
+   ["a"=>1,"b"=>2,"c"=>12]
+
+..function:: erase /stlmap acon
+             erase /stlmap (acon,k)
+             erase /stlmap (acon,k1,k2)
+
+  The first form erases all elements in acon. The second erases all elements
+  with key equivalent to k. The third erases the elements in the range
+  (acon,k1,k2). The third form only applys to the ordered containers (stlmap,
+  stlmmap, stlset and stlmset), not stlhmap or stlhset (because ranges and
+  iterators are not defined for stlhmap or stlhset). Returns the number of
+  elements removed from the container. E.g.,::
+
+   > members smm;
+   ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"d"=>4,"e"=>5]
+   > erase (sm,"z");
+   0
+   > erase (smm,"c");
+   2
+   > members smm;
+   ["a"=>1,"b"=>2,"d"=>4,"e"=>5]
+
+   > erase (smm,"b","e");
+   2
+   > members smm;;
+   ["a"=>1,"e"=>5]
+
+..function:: swap /stlmap acon1 acon2
+
+  Swap the elements of the two containers of the same type.
+
+Accessing Elements
+------------------
+
+..namespace:: ::
+
+Most of the following functions are basically convenience functions that are
+easier to use than iterators. They cache C++ iterators for faster lookup time
+for some commonly occurring sequences of operations.
+
+.. function:: member /stlmap acon k
+
+   Returns true if acon contains an element that has k as its key.    
+
+.. function infix ! /stlmap acon k
+
+  If acon is not a stlmmap then if acon has an element with key k return its
+  value (or matching key if acon is a set), otherwise throw an out_of_bounds
+  exception. If acon is a stlmmap then if acon has as least one element with
+  key k return a list of values of all the elements with key k, otherwise
+  return an null list. E.g.::
+
+    > sm!"c";
+    3
+
+    > catch id $ sm!"f";
+    out_of_bounds
+
+    > smm!"c";
+    [31,32]
+
+    > smm!"f";  // does not throw exception -- returns null list
+    []
+
+.. namespace:: stl
+
+.. function:: next_key /stlmap acon k
+              prev_key /stlmap acon k
+
+   acon must be a stlmap, stlset, stlmmap or stlmmap. Also k is must be
+   stl::smbeg, stl::smend or an element of acon or an out_of_bounds exception
+   will be throw.  next_key returns the key of the first element in acon that
+   has a key that is greater than k. If no such element exists or if k is
+   stl::smend, returns stl::smend. prev_key returns the last element in acon
+   that has a key that is less that k, or, if no such element exists, throws
+   an out_of_bounds execption.
+
+Conversions
+-----------
+
+The contents of an associative container can be copied to a list, vector,
+stlvec. For stlmaps, stlsets, stlmmaps and stlmsets, these operations
+act on ranges as well as on the entire container.
+
+.. function:: members /stlmap rng
+              members /stlmap rng
+              keys /stlmap rng
+              vals /stlmap rng
+
+  members and members Return a list of the elments in the range, rng. keys and
+  vals return the keys and vals of the ranges elements. E.g.,::
+
+    > members shm;   // cannot do (shm,k1,k2)
+   ["d"=>4,"e"=>5,"a"=>1,"b"=>2,"c"=>3]
+
+   > keys (sm,"b","e");
+   ["b","c","d"]
+
+   > vals (sm,"b","e");
+   [2,3,4]
+
+.. function:: vector /stlmap rng
+              stlvec /stlmap rng
+
+  Return a vector or stlvec containing the elments of in the range, rng. E.g.,
+  ::
+
+.. function:: stream /stlmap rng
+
+  These a lazy versions of (members rng). E.g., ::
+
+   > take 3 $ stream smm;
+   ("a"=>1):#<thunk 0xb70f438c>
+
+   > list ans;
+   ["a"=>1,"b"=>2,"c"=>31]
+
+
+Functional Programming
+======================
+
+pure-stlmap provides the most commonly used list-like operations, implemented
+to act directly on the underlying data structures. Additional list like
+operations, such as scanl, can be simulated by using members (or stream) to
+produce a list of elements and then applying the operation to the list.
+
+The first two rows of "standard" list-like operations are applicable all six
+associative containers while the last row is applicable only to the ordered
+containers.
+
+   * do, map, listmap, catmap, foldl, foldl1
+
+   * rowmap, rowcatmap, colmap, colcatmap
+
+   * foldr, foldr1, filter
+
+Except for their domain, ranges defined on associative containers, these
+functions are the same as the corresponding list functions in the Pure
+standard Library. E.g.,
+
+   > members sm;
+   ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
+
+   > map (\(k=>v)->k+str v) (sm,"b","e");
+   ["b2","c3","d4"]
+
+   > foldr1 (\(k=>v) (ks=>sum)-> (k+ks=>v+sum)) (sm,"b","e");
+   "bcd"=>9
+
+   > filter (\(k=>v)->v mod 2) sm;
+   ["a"=>1,"c"=>3,"e"=>5]
+
+The list functions provided are sufficient to support list and matrix
+comprehensions for all six of pure-stlmap's containers. ::
+
+   > [ k + str v | (k=>v) = (sm,"b","e")];
+   ["b2","c3","d4"]
+
+   > [ k=>v | (k=>v) = sm; v mod 2];
+   ["a"=>1,"c"=>3,"e"=>5]
+
+   > { {k;v} |  (k=>v) = sm; v mod 2};
+   {"a","c","e";1,3,5}
+
+Comparison 
+----------
 
 Two associative containers of the same type are considered to be equal if they
 contain the same number of elements and if each pair of their corresponding
 elements are equal.
 
-.. namespace:: 
+.. namespace:: :: 
 
 .. function:: map_equal /stlmap rng1 rng2
 
@@ -1085,368 +1361,8 @@ function. Check your implementation to see if it is even possible to control
 the order (C++11 is ok). Please note that the comparison operators are not
 provided for unordered containers.
 
-Key Oriented Functions
-----------------------
-
-.. namespace:: stl
-
-Most of the following functions are basically convenience functions that are
-easier to use than iterators. They cache C++ iterators for faster lookup time
-for some commonly occurring sequences of operations.
-
-.. function:: count /stlmap acon k
-              member /stlmap acon k
-
-   Returns the number of elements that has k as their key.
-
-.. function:: member /stlmap acon k
-
-   Returns true if acon contains an element that has k as its key.    
-
-.. function infix ! /stlmap acon k
-
-  If acon is not a stlmmap then if acon has an element with key k return its
-  value (or matching key if acon is a set), otherwise throw an out_of_bounds
-  exception. If acon is a stlmmap then if acon has as least one element with
-  key k return a list of values of all the elements with key k, otherwise
-  return an null list. E.g.::
-
-    > sm!"c";
-    3
-
-    > catch id $ sm!"f";
-    out_of_bounds
-
-    > smm!"c";
-    [31,32]
-
-    > smm!"f";  // does not throw exception -- returns null list
-    []
-
-.. function:: get /stlmap (acon,k)
-
-   Same as (!) except that it returns a key value(s) pair instead of a value.
-
-   > get (sm,smbeg);
-   "a"=>1
-
-   > get (smm,"c");
-   "c"=>[31,32]
-
-   > get (smm,smbeg);
-   "a"=>[1]
-
-.. function:: replace /stlmap uniq_map k v
-              replace /stlmap multi_map k src
-
-   Associate v with k (i.e., insert (k=>v)) in uniq_map where uniq_map is a
-   stlmap or stlhmap, or associate the elements of src with k in a in
-   multi_map, where multi_is a stlmmap. src can be a list or a vector. The
-   elements associated with k in multi_map are placed in the same order as
-   they appear in src. src can be null.
-
-   > members smm;
-   ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"d"=>4,"e"=>5]
-
-   > replace smm "c" [31,33,35,36]; members smm;
-   ["a"=>1,"b"=>2,"c"=>31,"c"=>33,"c"=>35,"c"=>36,"d"=>4,"e"=>5]
-
-.. function:: bounds /stlmap rng
-
-   Return a pair of keys, first and last, such that first <= k < last for each
-   k, where k is the key of an element in rng. If there is no such last, the
-   second member of the returned pair will be stl::smend. If first is the key
-   of the first element of rng's container, the first member of the returned
-   pair will stl::smbeg. E.g.,
-
-   > members sm;
-   ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
-
-   > bounds sm;
-   stl::smbeg,stl::smend
-
-  > bounds (sm,"a1","e");
-   "b","e"
-
-   > members (sm,ans);
-   ["b"=>2,"c"=>3,"d"=>4]
-
-   > bounds (smm,"a","d");
-   stl::smbeg,"d"
-
-   > members (smm,ans);
-   ["a"=>1,"b"=>2,"c"=>31,"c"=>32]
-
-.. function:: next_key /stlmap oc k
-              prev_key /stlmap oc k
-
-   next_key returns the key of the first element in oc, an ordered associative
-   container, that has a key that is greater than k. If no such element exists
-   or if k is stl::smend, returns stl::smend. prev_key returns the last
-   element in oc that has a key that is less that k, or, if no such element
-   exists, throws an out_of_bounds execption. If k is not smbeg, smend or an
-   element of oc, out_of_bounds exception.
-
-Iterator Cache
---------------
-
-Each stlmap or stlset maintains a cache key-(C++)iterator pairs that are
-replaced by all of the key oriented functions described in the previous
-section. In addition, insert (of a single element) also caches iterators. When
-one of these functions needs to access an element of the stlmap or stlset by
-key, it first checks to see if the key is stored in the cache. If so the
-function uses the corresponding cached C++ iterator to locate the element
-without having to do a O(log n) search. For speed, the key matches only if it
-is same element that was cached (i.e., the test is C++ pointer
-equality). Erasure of any element in the container clears the cache. [FIX --
-is this entirely correct -- be more specific?]
-
-Here are some examples produced by compiling pure-stlmap with a trace function
-that shows when caching eliminates a key lookup. FIX -- may now have to
-use let key_a = "a" to get caching.
-
-   > member sm "a";
-   1
-
-   > sm!"a";
-   found iterator for: "a"
-   1
-
-   > replace sm "a" 10;
-   found iterator for: "a"
-   10
-
-   > let k = next_key sm "a";
-   found iterator for: "a"
-
-   > let k = next_key sm k;
-   found iterator for: "b"
-
-   > put (sm,k) 30;
-   found iterator for: "c"
-   30
-
-   > members sm;
-   ["a"=>10,"b"=>2,"c"=>30,"d"=>4,"e"=>5]
-
-In particular, using member followed by a get or put only requires one
-lookup. Also, traversing a range with next_key (or prev_key) followed by gets
-and puts can be accomplished in linear time (i.e., next_key requires constant
-time, assuming the current key is cached, as do put or get after next_key
-caches its result). Currently the three most recently accessed iterators are
-cached.
-
-Range Access
-------------
-
-These functions access ranges defined on ordered containers. They work on the
-unordered containers (stlhmap and stlhset) only if range is the entire
-container.
-
-.. function:: members /stlmap rng
-              members /stlmap rng
-              keys /stlmap rng
-              vals /stlmap rng
-
-  members and members Return a list of the elments in the range, rng. keys and
-  vals return the keys and vals of the ranges elements. E.g.,::
-
-    > members shm;   // cannot do (shm,k1,k2)
-   ["d"=>4,"e"=>5,"a"=>1,"b"=>2,"c"=>3]
-
-   > keys (sm,"b","e");
-   ["b","c","d"]
-
-   > vals (sm,"b","e");
-   [2,3,4]
-
-.. function:: vector /stlmap rng
-              stlvec /stlmap rng
-
-  Return a vector or stlvec containing the elments of in the range, rng. E.g.,
-  ::
-
-.. function:: stream /stlmap rng
-
-  These a lazy versions of (members rng). E.g., ::
-
-   > take 3 $ stream smm;
-   ("a"=>1):#<thunk 0xb70f438c>
-
-   > list ans;
-   ["a"=>1,"b"=>2,"c"=>31]
-
-.. function range_info /stlmap rng
-
-   Returns a tuple (ok, sac, first, last) where ok is true if the range is
-   valid, sac is the container that the range points into, and first and last
-   are iterators that define the range. E.g., ::
-
-   > let ok, smx, f, l = stl::range_info (sm1,"b","e");
-
-   > ok, smx === sm1, stl::members (f,l);
-   1,1,["b"=>2,"c"=>3,"d"=>4]
-
-.. function:: distance /stlmap rng
-
-   Returns the number of elements contained in rng where rng is a range
-   defined on an associative container.
-
-Insertion, Erasure and Updating
--------------------------------
-
-Elements can be inserted into associative containers en masse from another
-container or individually. In either case, if an item is about to be inserted
-in a unique key associative container (stlmap, stlset, stlhmap, stlhset), the
-element will not be inserted if the its key is already stored in the target
-container. Please note that this behavior is the opposite to that the Pure
-standard library's insert which would replace the old element to match the
-element being inserted.
-
-Of course elements are always inserted into multi key associative
-containers. Note also that keys can be equivalent for these purposes even if
-they are not equal in other respects. E.g., a set's less than function might
-only depend on a particular field of records that are inserted into it.
-
-..function:: insert /stlmap acon src
-
-  Tries to insert elements in a valid "insert source" into an associative
-  container, and then returns the number of elements inserted. A valid "insert
-  source" is (a) a single element, (b) a list, vector, stlvec of elements or
-  (c), a range over an associative container of the same type as acon. If
-  acon is an associative map (stlmap, stlmmap or stlhmap), the elements of src
-  must be key value pairs of the form (k=>v). Returns the number of elements
-  inserted, if any.
-
-.. namespace:: stl
-
-
-Here are some insert examples::
-
-   > let smx  = emptystlmap;
-   > insert smx {"a"=>1,"b"=>2}; members smx;
-   2
-   ["a"=>1,"b"=>2]
-
-   > let p, ok = insert_elm smx ("a"=>2); get p,ok; // will not replace "a"
-   "a"=>1,0
-
-   > put p 2 $ members smx;  // used iterator p to replace "a"'s value by 2
-   ["a"=>2,"b"=>2]
-
-   > let smmx = emptystlmmap;
-   > insert smmx {"a"=>1,"b"=>2};
-     2
-
-   > let p = insert_elm smmx ("a"=>2); get p; // for mmap,returns iterator only
-   "a"=>2
-
-   > members smmx;
-   ["a"=>1,"a"=>2,"b"=>2]
-
-
-..function:: replace_with f m (k=>v)
-
-  This function only applies to stlmaps. The effect of this function is as
-  follows: (a) if ~member m k then insert m (k=>dflt) else (), where dflt is
-  m's dflt value, (b) replacee m k nv when nv = f v (m!k) end. Returns m. E.g.,
-
-   > let src = ["a"=>1,"b"=>2,"c"=>3,"c"=>4,"c"=>5];
-
-   > let lists = foldl (replace_with (:)) emptystlmap src;
-   > members lists;
-   ["a"=>[1],"b"=>[2],"c"=>[5,4,3]]
-
-   > let sums = foldl (replace_with (+)) (mkstlmap ((<),0)) src;
-   > members sums;
-   ["a"=>1,"b"=>2,"c"=>12]
-
-..function:: erase /stlmap acon
-             erase /stlmap (acon,k)
-             erase /stlmap (acon,i)
-             erase /stlmap (acon,k1,k2)
-             erase /stlmap (acon,i,j)
-
-  The first form erases all elements in acon. The second erases all elements
-  with key equivalent to k. The third erases the element pointed by the
-  iterator i. The fourth erases the elements in the range (acon,k1,k2). The
-  fifth form erases the elements in the range (i,j), assuming i and j are
-  iterators on acon. Note that the fourth and fifth forms only apply to the
-  ordered containers, not stlhmap or stlhset (because ranges and iterators are
-  not defined for stlhmap or stlhset). Returns the number of elements removed
-  from the container. E.g.,::
-
-   > members smm;
-   ["a"=>1,"b"=>2,"c"=>31,"c"=>32,"d"=>4,"e"=>5]
-   > erase (sm,"z");
-   0
-   > erase (smm,"c");
-   2
-   > members smm;
-   ["a"=>1,"b"=>2,"d"=>4,"e"=>5]
-
-   > erase (smm,"b","e");
-   2
-   > members smm;;
-   ["a"=>1,"e"=>5]
-
-   > members ss;
-   ["a","b","c","d","e"]
-   > let _,_,i,j = range_info (ss,"b","e");
-   > erase (ss,i,j);
-   3
-   > members ss;
-   ["a","e"]
-
-Functional Programming List-Like Operations
-===========================================
-
-pure-stlmap provides the most commonly used list-like operations, implemented
-to act directly on the underlying data structures. Additional list like
-operations, such as scanl, can be simulated by using members (or stream) to
-produce a list of elements and then applying the operation to the list.
-
-The first two rows of "standard" list-like operations are applicable all six
-associative containers while the last row is applicable only to the ordered
-containers.
-
-   * do, map, listmap, catmap, foldl, foldl1
-
-   * rowmap, rowcatmap, colmap, colcatmap
-
-   * foldr, foldr1, filter
-
-Except for their domain, ranges defined on associative containers, these
-functions are the same as the corresponding list functions in the Pure
-standard Library. E.g.,
-
-   > members sm;
-   ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
-
-   > map (\(k=>v)->k+str v) (sm,"b","e");
-   ["b2","c3","d4"]
-
-   > foldr1 (\(k=>v) (ks=>sum)-> (k+ks=>v+sum)) (sm,"b","e");
-   "bcd"=>9
-
-   > filter (\(k=>v)->v mod 2) sm;
-   ["a"=>1,"c"=>3,"e"=>5]
-
-The list functions provided are sufficient to support list and matrix
-comprehensions for all six of pure-stlmap's containers. ::
-
-   > [ k + str v | (k=>v) = (sm,"b","e")];
-   ["b2","c3","d4"]
-
-   > [ k=>v | (k=>v) = sm; v mod 2];
-   ["a"=>1,"c"=>3,"e"=>5]
-
-   > { {k;v} |  (k=>v) = sm; v mod 2};
-   {"a","c","e";1,3,5}
-
-
 Set Algorithms
-==============
+--------------
 
 pure-stlmap provides wrappers for the STL set algorithms that apply to ranges
 defined on the four ordered associative containers. These algorithms are very
@@ -1503,15 +1419,11 @@ those in the Pure standard library. ::
    > members $ map_intersection sm1 sm2; // "c"=>31 from sm1
    ["c"=>31]
 
+Direct C Calls
+--------------
 
-Iterator Interface
-==================
 
-Iterator support is provided only for the ordered associative containers,
-stlmap, stlset, stlmmap and stlmset. 
 
-Exceptions
-----------
 
 In pure-stlmap functions that accept iterators throw a bad_argument exception
 if called with an invalid iterator. An iterator remains valid until the
@@ -1545,13 +1457,54 @@ errors. ::
    > catch id $ get i; // bad iterator exception
    bad_argument
 
+Iterators
+=========
+
+This section provides a quick overview of pure-stlmap's "iterator-based"
+interface.
+
+Exceptions
+----------
+
+In pure-stlmap functions that accept iterators throw a bad_argument exception
+if called with an invalid iterator. An iterator remains valid until the
+element it was pointing to has been erased. These functions also attempt to
+throw bad argument exceptions for bad uses that would otherwise result in
+undefined behavior. An example of an invalid use would be a range specified by
+iterators from different containers. Here are some examples of iterator
+errors. ::
+
+   > let i,j = find sm "a", find sm "d";
+
+   > get i, get j;
+   "a"=>1,"d"=>4
+
+   > members (i,j);
+   ["a"=>1,"b"=>2,"c"=>3]
+
+   > catch id $ members (j,i); // j and i transposed, C++ would segfault
+   bad_argument
+
+   > erase (sm,"b");  // erase "b"=>2, leaving i and j valid
+   1
+
+   > get i; // still valid
+   "a"=>1
+
+   > erase (sm,"a");  // erase "a"=>1 - invalidating i
+   1
+
+   > catch id $ get i; // bad iterator exception
+   bad_argument
+
+Iterator Cache
+--------------
+
+The functions in this section never cache c++ iterators, on the assumption
+that if you call them you are not using the key-oriented functions. 
 
 Functions
 ---------
-
-The functions in this section never cache c++ iterators, on the assumption
-that if you call them you are not using the key-oriented functions. [FIX --
-change?]
 
 ..function:: iterator /stlmap i
              begin /stlmap acon
@@ -1564,6 +1517,12 @@ change?]
  
   Create a new iterator that points to the element with key equivalent to k or
   acon's past-end iterator if none exists.
+
+ .. function:: find_with_default /stlmap m k
+
+   Returns an iterator pointing to the element in m, a stlmap, with key k. If
+   no such element existed before the call, one is created using map's default
+   value.
 
 ..function:: insert_elm /stlmap acon elm
 
@@ -1639,11 +1598,15 @@ change?]
    
    Returns true if the iterators i and j point to the same element.
 
- .. function:: infixr ^ /stlmap m k
+..namespace:: ::
 
-   Returns an iterator pointing to the element in m, a stlmap, with key k. If
-   no such element existed before the call, one is created using map's default
-   value.
+..function erase /stlmap (acon,i)
+           erase /stlmap (acon,i,j)
+
+..namespace:: stl
+
+Examples
+--------
 
 Here are some examples using iterators. 
 
@@ -1684,6 +1647,6 @@ Here are some examples using iterators.
    > inc j $$ inc j $$ get j;
    "e"=>5
 
-   > inc j $$ pastendp j;
+   > inc j $$ endp j;
    1
 
