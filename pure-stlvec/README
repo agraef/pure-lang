@@ -107,7 +107,7 @@ stlvec module. ::
     > sv1!![2,4,6];
     [2,4,6]
 
-    > put (sv1,3) 33; members sv1;
+    > replace sv1 3 33; members sv1;
     STLVEC #<pointer 0xaf4d2c0>
     [0,1,2,33,4,5,6,7]
 
@@ -209,7 +209,7 @@ that points to an element and the element's position (starting at zero) in the
 vector.  pure-stlvec uses this correspondence to designate a stlvec's members
 in a way that makes it relatively easy to see how pure-stlvec's functions are
 acting on the stlvec's underlying STL vector by referencing the STL's
-documentation. Thus, if sv is a stlvec, and j is an int, "put (sv,j) x" uses
+documentation. Thus, if sv is a stlvec, and j is an int, "replace sv j x" uses
 the STL to replace the element pointed to by the iterator for position j of
 sv's underlying STL vector. If, in addition, k is an int, stl::sort (sv,j,k)
 (<) uses the STL to sort the elements in the range designated by the "jth" and
@@ -345,8 +345,8 @@ is mutable. ::
    > let v = const_stlvec $ stlvec (0..3); v2;
    CONST_STLVEC #<pointer 0x8c1dbf0>
 
-   > put (v,0) 100; // fails
-   put (CONST_STLVEC #<pointer 0x9f07690>,0) 100
+   > replace v 0 100; // fails
+   replace (CONST_STLVEC #<pointer 0x9f07690> 0 100
 
 Types
 -----
@@ -413,8 +413,8 @@ sv2.
 If desired, in Pure it is easy to write functions that have automatic
 copy-on-write semantics. E.g., ::
 
-    > my_update csv::const_stlvec i x = my_update (stlvec csv) i x;
-    > my_update sv::stlvec i x = replace sv i x;
+    > my_replace csv::const_stlvec i x = my_replace (stlvec csv) i x;
+    > my_replace sv::stlvec i x = replace sv i x;
 
 Documentation
 -------------
@@ -679,10 +679,6 @@ tuple.
 
    replace the i\ th member of msv by x and return x; throws out_of_bounds if
    i is less than 0 or great or equal to the #msv
-
-.. function:: update /stlvec msv i x
-
-   same as replace  // FIX - kill this function
 
 .. function:: append /stlvec sv x
 

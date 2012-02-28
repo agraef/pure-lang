@@ -1,0 +1,104 @@
+
+======================
+New in pure-stlvec-0.3
+======================
+
+Changes to interface
+====================
+
+Removed update - added replace.
+------------------------------
+
+In the Pure standard library update means insert, or
+if an element is already at i replace it. This is does
+not make sense for stlvecs. Elements are appended. Insert
+has a completely different meaning for stlvecs than it does
+for dict, hdict etc.
+
+Instead of 
+  
+  let sv = foldl update emptystlvec (0..10);
+
+Use
+
+  let sv = emptystlvec;
+  do (append sv) (0..10);
+
+
+Removed null - added empty
+--------------------------
+
+When applied to a range, (sv, i, j), null always returned false, which is
+never correct. This happens because null is defined in the Prelude to act on
+tuples.
+
+Removed list
+------------
+
+When applied to a range, (sv, i, j), list would return [sv,i,j], not what
+we wanted. Use members instead.
+
+Removed replace from the stlvec/modifying module.
+-------------------------------------------------
+
+The replace in stlvec/modifying was
+
+   replace (msv,first,last) x y // replace x with y
+
+This conflicts with the new replace in pure-stlvec (and in the one in
+pure-stlmap)
+
+   replace (sv,first,last) i x // change value at pos i to x
+
+Use stlvec/modifying's replace_if instead.
+
+   replace_if (sv,first,last) (x==) y // replace each x with y
+
+
+Removed all tracing functions
+-----------------------------
+
+These were experimental. Better to use the PR macro when debugging.
+
+Under the Hood
+==============
+
+Removed Tracing Facility
+------------------------
+
+See above.
+
+Optimized the pxh_less
+----------------------
+
+Modified to detect and work fast on (<) and (>) if the parameters are ints,
+bigints, doubles or strings.
+
+Optimized pxh ref counting
+--------------------------
+
+Inline refcounts up and down in the easy safe cases. Call pure_new and
+pure_free when necessary.
+
+Added new pxh function objects
+------------------------------
+
+Added function objects to stlbase for functions needed by pure-stlmap. E.g.,
+pxhpair_equivalent.
+
+Reduced the number of global symbol generators in stlbase.?pp
+-------------------------------------------------------------
+
+These use Albert's ILS macro. Move most of them to stlmap. E.g., stlmmap_tag.
+
+Added Utility Functions to stlbase.?pp
+--------------------------------------
+
+Functions for changing (px*=>px*) to pair<phx,phx> and back, etc.
+
+Moved sv_make_empty and sv_delete from stlvec.?pp to stlbase.?pp
+----------------------------------------------------------------
+
+This exposed these functions to stlmap.pure, making it possible to convert
+pure-stlmap containers to stlvecs without having to import the stlvec module.
+
