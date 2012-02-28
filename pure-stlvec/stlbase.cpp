@@ -157,7 +157,7 @@ bool pxh_less::operator()(const pxh& x_pxh, const pxh& y_pxh) const
   if (exception) throw exception;
   if (!pxres) bad_function();
   int is_less; 
-  if ( !pure_is_int(pxres, &is_less) ) bad_function();
+  if ( !pure_is_int(pxres, &is_less) ) bad_argument();
   pure_freenew(pxres);
   return is_less != 0;
 }

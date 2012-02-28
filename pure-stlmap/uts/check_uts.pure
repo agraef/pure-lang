@@ -218,30 +218,32 @@ end;
 /** main *************************************************************/
 
 const usage = 
-"Usage: pure -x check_eval FILE\n"+
-"Evaluate single line Pure statements and check the results. File is a\n"+
-"Pure script where each statement occurs on one line. Expected results\n" +
-"are specified on the next line, prefixed by '//- '. Commments recognized\n"+
-"by check_eval must begin on a fresh line, preceded only by whitespace.\n" +
-"See source file for more details.";
+"Usage: pure -x check_eval FILES\n\
+For each \"unit test script file\" in FILES, evaluate single-line Pure\n\
+statements and check the results. See source file for more details. Stops\n\
+and returns 1 at the end of the first file with an error. If no errors are\n\
+encountered, returns 0.";
 
-main args = () when
+do_file filename = () when
   set_default_options;
-  fp = if null args then puts usage $$ exit 1 else fopen (args!0) "r";
+  fp = fopen filename "r";
   ec, _ = if ~pointerp fp || null fp then
-         puts "could not open file" $$ 0, 0
+         puts "could not open file" $$ exit 1
        else
          check_eval (fget fp), fclose fp;
   if ec > 0 then 
-    printf "--- script failed with %d error(s) ---\n" ec
-  else if argc <=1 then
-    puts "--- no errors encountered"
+    printf "--- %s failed with %d error(s) ---\n" (filename, ec)
   else ();
-  if argc > 1 then exit (ec>0) else ();
 end;
+
+main args = if argc < 2 then 
+              puts usage $$ exit 1 
+            else 
+              do do_file (tail argv) $$ exit 0;
 
 check filename = main [filename];
 
-if argc > 1 then main (tail argv) else ();
+// cannot compile this -- uses eval
+if argc > 0 then main argv else ();
 
 

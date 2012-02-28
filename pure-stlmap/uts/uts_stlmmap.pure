@@ -191,10 +191,10 @@ let p3 = stl::insert_elm sm2 ("c"=>3, p2); members sm2;
 erase sm2; 
 //- 3
 
-let i = stl::find sm1 "a"; get i;
+let i = stl::find sm1 "a"; stl::get_elm i;
 //- "a"=>1
 
-let j = stl::find sm1 "c"; get j;
+let j = stl::find sm1 "c"; stl::get_elm j;
 //- "c"=>3
 
 members (i,j);
@@ -227,7 +227,7 @@ members sm2;
 let p = stl::insert_elm sm2 ("f"=>6); stl::get_key p, members sm2;
 //- "f",["f"=>6,"e"=>0,"d"=>4,"c"=>3,"b"=>2,"a"=>1]
 
-put i 11; get i; members (i,j);
+stl::put_val i 11; stl::get_elm i; members (i,j);
 //- ["a"=>11,"b"=>2]
 
 // Add elements with non-unique keys
@@ -244,7 +244,7 @@ let p = stl::insert_elm sm2 ("e"=>10); stl::get_key p;
 members sm2;
 //- ["f"=>6,"e"=>0,"e"=>10,"d"=>4,"c"=>3,"c"=>13,"b"=>2,"b"=>2,"a"=>1,"a"=>11]
 
-put p 5; members sm2;
+stl::put_val p 5; members sm2;
 //- ["f"=>6,"e"=>0,"e"=>5,"d"=>4,"c"=>3,"c"=>13,"b"=>2,"b"=>2,"a"=>1,"a"=>11]
 
 
@@ -284,7 +284,7 @@ let i_begin, i_pastend = stl::begin sm1, stl::pastend sm1;
 let i_b, i_d = stl::find sm1 "b", stl::find sm1 "d"; 
 //- ()
 
-get i_b;
+stl::get_elm i_b;
 //- "b"=>2
 
 erase (sm1,i_b,i_d);
@@ -293,7 +293,7 @@ erase (sm1,i_b,i_d);
 members sm1;
 //- ["a"=>1,"d"=>4,"e"=>5]
 
-catch id $ get i_b;
+catch id $ stl::get_elm i_b;
 //- bad_argument
 
 erase (sm1,i_d,i_pastend);

@@ -14,25 +14,25 @@ let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
 let i = stl::find sm1 "0"; stl::endp i;
 //- 1
 
-let i = stl::find sm1 "a"; get i;
+let i = stl::find sm1 "a"; stl::get_elm i;
 //- "a"=>1
 
 let i = stl::find sm1 "z"; stl::endp i;
 //- 1
 
-let i = stl::l_bound sm1 "0"; get i;
+let i = stl::l_bound sm1 "0"; stl::get_elm i;
 //- "a"=>1
 
-let i = stl::l_bound sm1 "a";  get i;
+let i = stl::l_bound sm1 "a";  stl::get_elm i;
 //- "a"=>1
 
-let i = stl::l_bound sm1 "bb"; get i;
+let i = stl::l_bound sm1 "bb"; stl::get_elm i;
 //- "c"=>3
 
-let i = stl::l_bound sm1 "dd"; get i;
+let i = stl::l_bound sm1 "dd"; stl::get_elm i;
 //- "e"=>5
 
-let i = stl::l_bound sm1 "e";  get i;
+let i = stl::l_bound sm1 "e";  stl::get_elm i;
 //- "e"=>5
 
 let i = stl::l_bound sm1 "z"; stl::endp i;
@@ -41,16 +41,16 @@ let i = stl::l_bound sm1 "z"; stl::endp i;
 let i = stl::l_bound sm1 "f"; stl::endp i;
 //- 1
 
-let i = stl::u_bound sm1 "0"; get i;
+let i = stl::u_bound sm1 "0"; stl::get_elm i;
 //- "a"=>1
 
-let i = stl::u_bound sm1 "a";  get i;
+let i = stl::u_bound sm1 "a";  stl::get_elm i;
 //- "b"=>2
 
-let i = stl::u_bound sm1 "bb"; get i;
+let i = stl::u_bound sm1 "bb"; stl::get_elm i;
 //- "c"=>3
 
-let i = stl::u_bound sm1 "dd"; get i;
+let i = stl::u_bound sm1 "dd"; stl::get_elm i;
 //- "e"=>5
 
 let i = stl::u_bound sm1 "e"; stl::endp i;
@@ -59,22 +59,22 @@ let i = stl::u_bound sm1 "e"; stl::endp i;
 let i = stl::u_bound sm1 "z"; stl::endp i;
 //- 1
 
-let i, j = stl::lu_bounds sm1 "0"; (get i,get j);
+let i, j = stl::lu_bounds sm1 "0"; (stl::get_elm i,stl::get_elm j);
 //- "a"=>1,"a"=>1
 
-let i, j = stl::lu_bounds sm1 "a"; (get i,get j);
+let i, j = stl::lu_bounds sm1 "a"; (stl::get_elm i,stl::get_elm j);
 //- "a"=>1,"b"=>2
 
-let i, j = stl::lu_bounds sm1 "b"; (get i,get j);
+let i, j = stl::lu_bounds sm1 "b"; (stl::get_elm i,stl::get_elm j);
 //- "b"=>2,"c"=>3
 
-let i, j = stl::lu_bounds sm1 "bb"; (get i,get j);
+let i, j = stl::lu_bounds sm1 "bb"; (stl::get_elm i,stl::get_elm j);
 //- "c"=>3,"c"=>3
 
-let i, j = stl::lu_bounds sm1 "dd"; (get i,get j);
+let i, j = stl::lu_bounds sm1 "dd"; (stl::get_elm i,stl::get_elm j);
 //- "e"=>5,"e"=>5
 
-let i, j = stl::lu_bounds sm1 "e"; (get i,stl::endp j);
+let i, j = stl::lu_bounds sm1 "e"; (stl::get_elm i,stl::endp j);
 //- "e"=>5,1
 
 let i, j = stl::lu_bounds sm1 "z"; (stl::endp i,stl::endp j);
@@ -84,7 +84,7 @@ let i, j = stl::lu_bounds sm1 "z"; (stl::endp i,stl::endp j);
 let k = stl::iterator j; (stl::endp k, j==k, j===k);
 //- 1,1,0
 
-get (stl::dec k); (get k, j==k);
+stl::get_elm (stl::dec k); (stl::get_elm k, j==k);
 //- "e"=>5,0
 
 /*** Info **************************************************************/
@@ -95,10 +95,10 @@ let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
 let i_begin, i_pastend = stl::begin sm1, stl::pastend sm1;
 //- ()
 
-let i_a = stl::find sm1 "a"; get i_a;
+let i_a = stl::find sm1 "a"; stl::get_elm i_a;
 //- "a"=>1
 
-let i_c = stl::find sm1 "c"; get i_c;
+let i_c = stl::find sm1 "c"; stl::get_elm i_c;
 //- "c"=>3
 
 stl::beginp i_begin, stl::beginp i_pastend;
@@ -133,22 +133,22 @@ let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
 let i_begin, i_pastend = stl::begin sm1, stl::pastend sm1;
 //- ()
 
-let i_a = stl::find sm1 "a"; get i_a;
+let i_a = stl::find sm1 "a"; stl::get_elm i_a;
 //- "a"=>1
 
-let i_c = stl::find sm1 "c"; get i_c;
+let i_c = stl::find sm1 "c"; stl::get_elm i_c;
 //- "c"=>3
 
-get i_begin, stl::get_key i_begin, stl::get_val i_begin;
+stl::get_elm i_begin, stl::get_key i_begin, stl::get_val i_begin;
 //- "a"=>1,"a",1
 
-get i_a, stl::get_key i_a, stl::get_val i_a;
+stl::get_elm i_a, stl::get_key i_a, stl::get_val i_a;
 //- "a"=>1,"a",1
 
-get i_c, stl::get_key i_c, stl::get_val i_c;
+stl::get_elm i_c, stl::get_key i_c, stl::get_val i_c;
 //- "c"=>3,"c",3
 
-catch id $ get i_pastend;
+catch id $ stl::get_elm i_pastend;
 //- out_of_bounds
 
 catch id $ stl::get_key i_pastend;
@@ -157,16 +157,16 @@ catch id $ stl::get_key i_pastend;
 catch id $ stl::get_val i_pastend;
 //- out_of_bounds
 
-put i_begin 11; stl::get_val i_begin;
+stl::put_val i_begin 11; stl::get_val i_begin;
 //- 11
 
-put i_a 21; stl::get_val i_a;
+stl::put_val i_a 21; stl::get_val i_a;
 //- 21
 
-put i_c 33; stl::get_val i_c;
+stl::put_val i_c 33; stl::get_val i_c;
 //- 33
 
-catch id $ put i_pastend 42;
+catch id $ stl::put_val i_pastend 42;
 //- out_of_bounds
 
 /*** Navigation *******************************************************/
@@ -180,22 +180,22 @@ let i_b, i_e = stl::begin sm1, stl::pastend sm1;
 let i = stl::begin sm1;
 //- ()
 
-get i, stl::get_key i, stl::get_val i;
+stl::get_elm i, stl::get_key i, stl::get_val i;
 //- "a"=>1,"a",1
 
-put i 0, get i;
+stl::put_val i 0, stl::get_elm i;
 //- 0,"a"=>0
 
-stl::inc i; get i;
+stl::inc i; stl::get_elm i;
 //- "b"=>2
 
-stl::inc i; get i;
+stl::inc i; stl::get_elm i;
 //- "c"=>3
 
-stl::inc i; get i;
+stl::inc i; stl::get_elm i;
 //- "d"=>4
 
-stl::inc i; get i;
+stl::inc i; stl::get_elm i;
 //- "e"=>5
 
 stl::inc i; stl::endp i;
@@ -204,34 +204,34 @@ stl::inc i; stl::endp i;
 stl::inc i; stl::endp i;
 //- 1
 
-catch id $ get i;
+catch id $ stl::get_elm i;
 //- out_of_bounds
 
-stl::dec i; get i;
+stl::dec i; stl::get_elm i;
 //- "e"=>5
 
-stl::dec i; get i;
+stl::dec i; stl::get_elm i;
 //- "d"=>4
 
-stl::dec i; get i;
+stl::dec i; stl::get_elm i;
 //- "c"=>3
 
-stl::dec i; get i;
+stl::dec i; stl::get_elm i;
 //- "b"=>2
 
-stl::dec i; get i;
+stl::dec i; stl::get_elm i;
 //- "a"=>0
 
 catch id $ stl::dec i;
 //- out_of_bounds
 
-stl::move i 4; get i;
+stl::move i 4; stl::get_elm i;
 //- "e"=>5
 
 stl::move i 100; stl::endp i;
 //- 1
 
-stl::move i (-1); get i;
+stl::move i (-1); stl::get_elm i;
 //- "e"=>5
 
 catch id $ stl::move i (-100);
@@ -242,19 +242,19 @@ catch id $ stl::move i (-100);
 let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
 //- ()
 
-let i = stl::find sm1 "a"; get i;
+let i = stl::find sm1 "a"; stl::get_elm i;
 //- "a"=>1
 
 members sm1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
-let j = stl::find sm1 "a"; get j;
+let j = stl::find sm1 "a"; stl::get_elm j;
 //- "a"=>1
 
 members sm1;
 //- ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
-let k = stl::find_with_default sm1 "z"; get k;
+let k = stl::find_with_default sm1 "z"; stl::get_elm k;
 //- "z"=>[]
 
 members sm1;
@@ -289,10 +289,10 @@ let sm1 = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
 let i_begin, i_pastend = stl::begin sm1, stl::pastend sm1;
 //- ()
 
-let i_a = stl::find sm1 "a"; get i_a;
+let i_a = stl::find sm1 "a"; stl::get_elm i_a;
 //- "a"=>1
 
-let i_c = stl::find sm1 "c"; get i_c;
+let i_c = stl::find sm1 "c"; stl::get_elm i_c;
 //- "c"=>3
 
 let ok, smx, f, l = stl::range_info (i_begin,i_begin); ok;
@@ -437,7 +437,7 @@ let i_begin, i_pastend = stl::begin sm1, stl::pastend sm1;
 let i_a, i_b, i_c = stl::find sm1 "a", stl::find sm1 "b", stl::find sm1 "c";
 //- ()
 
-let i_a = stl::find sm1 "a"; get i_a;
+let i_a = stl::find sm1 "a"; stl::get_elm i_a;
 //- "a"=>1
 
 let ok, smx, f, l = stl::range_info (sm1,stl::smbeg,stl::smbeg); ok;
@@ -536,10 +536,10 @@ let p3 = stl::insert_elm sm2 ("c"=>3, p2); members sm2;
 erase sm2; 
 //- 3
 
-let i = stl::find sm1 "a"; get i;
+let i = stl::find sm1 "a"; stl::get_elm i;
 //- "a"=>1
 
-let j = stl::find sm1 "c"; get j;
+let j = stl::find sm1 "c"; stl::get_elm j;
 //- "c"=>3
 
 members (i,j);
@@ -568,7 +568,7 @@ let p, ok = stl::insert_elm sm2 ("f"=>6); stl::get_key p, ok, members sm2;
 
 // Attempt overwrite of existing values
 
-put i 11; get i; members (i,j);
+stl::put_val i 11; stl::get_elm i; members (i,j);
 //- ["a"=>11,"b"=>2]
 
 insert sm2 (i,j);
@@ -583,5 +583,5 @@ let p, ok = stl::insert_elm sm2 ("d"=>14); stl::get_key p, ok, members sm2;
 let p, ok = stl::insert_elm sm2 ("e"=>10); stl::get_key p, ok, members sm2;
 //- "e",0,["f"=>6,"e"=>5,"d"=>4,"c"=>3,"b"=>2,"a"=>1]
 
-put p 15; members sm2;
+stl::put_val p 15; members sm2;
 //- ["f"=>6,"e"=>15,"d"=>4,"c"=>3,"b"=>2,"a"=>1]
