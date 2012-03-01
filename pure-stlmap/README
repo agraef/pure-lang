@@ -885,7 +885,7 @@ or stlmset, both of which can hold multiple elements with equivalent keys).
 
 .. function:: insert /stlmap acon src
 
-  Tries to copy elements from ``src`` a valid "insert source" into ``acon``
+  Attempts to copy elements from ``src`` a valid "insert source" into ``acon``
   which can be any pure-stlmap container. A valid insert source is (a) a
   single element, (b) a list, vector, stlvec of elements or (c), a range over
   an associative container of the same type as acon. If ``acon`` is an
@@ -947,10 +947,10 @@ you can use the :func:`insert_or_replace` function.
   ``map`` must be a stlmap. The effect of this function is as follows: (a) if
   ~member ``map`` ``k`` then :func:`insert` ``map`` (``k``=>dflt) else (),
   where dflt is ``map``'s dflt value, (b) :func:`replace` ``map`` ``k`` nv
-  when nv = ``fun`` ``v`` (``map``!``k``) end. Returns ``map``. FIX better would
-  be what was inserted.
+  when nv = ``fun`` ``v`` (``map``!``k``) end. Returns ``map``. 
 
-Here is an example in which a stlmmap is converted to a stlmap. ::
+Here is an example using replace_with in which a stlmmap is converted to a
+stlmap. ::
 
    > let sm1 = emptystlmap;
 
@@ -1505,20 +1505,21 @@ errors. ::
 Functions
 ---------
 
-.. function:: iterator /stlmap i
-              begin /stlmap acon
-              pastend /stlmap acon
+In this section "acon" always denotes one of the containers that supports
+interators (stlmap, stlset, stlmmap and stlmset).
 
-  Return a new iterator that points to the same element as ``i``.
+.. function:: iterator /stlmap i
+
+   Returns a new iterator that points to the same element as ``i``.
 
 .. function:: begin /stlmap acon
               pastend /stlmap acon
 
-   return ``acon``'s begin or past-end iterator.
+   Returns ``acon``'s begin or past-end iterator.
 
 .. function:: find /stlmap acon k
  
-  Create a new iterator that points to an element in ``acon`` with key
+  Creates a new iterator that points to an element in ``acon`` with key
   equivalent to ``k`` (if any) or ``acon``'s past-end iterator if no such
   element exists. 
 
@@ -1530,15 +1531,16 @@ Functions
 
 .. function:: insert_elm /stlmap acon elm
 
-  FIX -- see insert above If ``acon`` is a stlmap or stlmmap, and elm is a key
-  value pair, (k=>v), attempts to insert (k=>v) into acon.  If acon is a
-  stlset or stlmset, and elm is not a valid insert source, attempts to insert
-  elm into acon. If acon is a multi-keyed container, returns an iterator
-  pointing to the element with key k that was just inserted. If acon is
-  uniquely keyed, returns a pair, the first of which is an iterator pointing
-  to the element with key k that was just inserted (or the pre-existing
-  element that blocked the insertion). The second element in the pair is a
-  boolean value that is true if a new element was inserted.
+  Attempts to insert ``elm`` into ``acon``. (If ``acon`` is a stlmap or
+  stlmmap, then elm must be a key value pair, (k=>v)). If acon is a stlmap or
+  stlset (i.e., with unique keys) :func:`insert_elm` returns a pair, the first
+  of which is an iterator pointing to the element with key k that was just
+  inserted (or the pre-existing element that blocked the insertion). The
+  second element in the pair is a boolean value that is true if a new element
+  was inserted. In contrast, if ``acon`` is a multi-keyed container (stlmmap
+  or stlmset) the insert will always be successful and :func:`insert_elm`
+  returns an iterator pointing to the element with key k that was just
+  inserted.
 
 .. function:: insert_elm /stlmap acon (elm,i)
 
@@ -1612,7 +1614,8 @@ Functions
   Returns a tuple (is_valid,acon,key,val) where is_valid is true if the
   iterator ``i`` is valid or false if not, acon is the container that i is
   defined on, and key, val are the key and value of the element ``i`` points
-  to, if any. If ``i`` is the past-end iterator, key and value are FIX.
+  to, if any. If ``i`` is the past-end iterator, key and val are set to
+  ``stl::smend`` and ``[]``, respectively.
 
 .. function:: infix == /stlmap i j
    
@@ -1656,7 +1659,7 @@ Here are some examples using iterators.
    > get_elm (inc i);
    "c"=>32
 
-   > put i 132;
+   > put_val i 132;
    132
 
    > map (\(k=>_)->k=>ord k) (b,i);
@@ -1673,3 +1676,4 @@ Here are some examples using iterators.
 
    > inc j $$ endp j;
    1
+
