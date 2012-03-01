@@ -820,7 +820,7 @@ void octave_free(void *val)
   Execute the Pure function named NAME (a string) with the given arguments.\n\
   Arguments and result types may be scalars and matrices of boolean, integer,\n\
   double, complex and character data. The Pure function may return multiple\n\
-  results as a tuple. Example: pure('succ', 99) => 100.\n"
+  results as a tuple. Example: pure_call('succ', 99) => 100.\n"
 
 DEFUN_DLD(pure_call, args, nargout, PURE_HELP)
 {
