@@ -16730,18 +16730,14 @@ public:
   virtual ~FaustUI() {}
 
   virtual void addButton(const char* label, double* zone) = 0;
-  virtual void addToggleButton(const char* label, double* zone) = 0;
   virtual void addCheckButton(const char* label, double* zone) = 0;
   virtual void addVerticalSlider(const char* label, double* zone, double init, double min, double max, double step) = 0;
   virtual void addHorizontalSlider(const char* label, double* zone, double init, double min, double max, double step) = 0;
   virtual void addNumEntry(const char* label, double* zone, double init, double min, double max, double step) = 0;
 
-  virtual void addNumDisplay(const char* label, double* zone, int precision) = 0;
-  virtual void addTextDisplay(const char* label, double* zone, const char* names[], double min, double max) = 0;
   virtual void addHorizontalBargraph(const char* label, double* zone, double min, double max) = 0;
   virtual void addVerticalBargraph(const char* label, double* zone, double min, double max) = 0;
 	
-  virtual void openFrameBox(const char* label) = 0;
   virtual void openTabBox(const char* label) = 0;
   virtual void openHorizontalBox(const char* label) = 0;
   virtual void openVerticalBox(const char* label) = 0;
@@ -16756,7 +16752,7 @@ public:
 };
 
 enum ui_elem_type_t {
-  UI_BUTTON, UI_TOGGLE_BUTTON, UI_CHECK_BUTTON,
+  UI_BUTTON, UI_CHECK_BUTTON,
   UI_V_SLIDER, UI_H_SLIDER, UI_NUM_ENTRY,
   UI_V_BARGRAPH, UI_H_BARGRAPH,
   UI_END_GROUP, UI_V_GROUP, UI_H_GROUP, UI_T_GROUP
@@ -16789,18 +16785,14 @@ protected:
 
 public:
   virtual void addButton(const char* label, double* zone);
-  virtual void addToggleButton(const char* label, double* zone);
   virtual void addCheckButton(const char* label, double* zone);
   virtual void addVerticalSlider(const char* label, double* zone, double init, double min, double max, double step);
   virtual void addHorizontalSlider(const char* label, double* zone, double init, double min, double max, double step);
   virtual void addNumEntry(const char* label, double* zone, double init, double min, double max, double step);
 
-  virtual void addNumDisplay(const char* label, double* zone, int precision);
-  virtual void addTextDisplay(const char* label, double* zone, const char* names[], double min, double max);
   virtual void addHorizontalBargraph(const char* label, double* zone, double min, double max);
   virtual void addVerticalBargraph(const char* label, double* zone, double min, double max);
   
-  virtual void openFrameBox(const char* label);
   virtual void openTabBox(const char* label);
   virtual void openHorizontalBox(const char* label);
   virtual void openVerticalBox(const char* label);
@@ -16903,8 +16895,6 @@ inline void PureFaustUI::add_elem(ui_elem_type_t type, const char *label, double
 
 void PureFaustUI::addButton(const char* label, double* zone)
 { add_elem(UI_BUTTON, label, zone); }
-void PureFaustUI::addToggleButton(const char* label, double* zone)
-{ add_elem(UI_TOGGLE_BUTTON, label, zone); }
 void PureFaustUI::addCheckButton(const char* label, double* zone)
 { add_elem(UI_CHECK_BUTTON, label, zone); }
 void PureFaustUI::addVerticalSlider(const char* label, double* zone, double init, double min, double max, double step)
@@ -16914,16 +16904,11 @@ void PureFaustUI::addHorizontalSlider(const char* label, double* zone, double in
 void PureFaustUI::addNumEntry(const char* label, double* zone, double init, double min, double max, double step)
 { add_elem(UI_NUM_ENTRY, label, zone, init, min, max, step); }
 
-// FIXME: addNumDisplay and addTextDisplay not implemented in Faust yet?
-void PureFaustUI::addNumDisplay(const char* label, double* zone, int precision) {}
-void PureFaustUI::addTextDisplay(const char* label, double* zone, const char* names[], double min, double max) {}
 void PureFaustUI::addHorizontalBargraph(const char* label, double* zone, double min, double max)
 { add_elem(UI_H_BARGRAPH, label, zone, min, max); }
 void PureFaustUI::addVerticalBargraph(const char* label, double* zone, double min, double max)
 { add_elem(UI_V_BARGRAPH, label, zone, min, max); }
 
-// FIXME: openFrameBox ignored for now, do we need this?
-void PureFaustUI::openFrameBox(const char* label) {}
 void PureFaustUI::openTabBox(const char* label)
 { add_elem(UI_T_GROUP, label); }
 void PureFaustUI::openHorizontalBox(const char* label)
@@ -16998,30 +16983,20 @@ struct UIGlue {
 
   void* uiInterface;
     
-  void *openFrameBox;
   void *openTabBox;
   void *openHorizontalBox;
   void *openVerticalBox;
   void *closeBox;
   void *addButton;
-  void *addToggleButton;
   void *addCheckButton;
   void *addVerticalSlider;
   void *addHorizontalSlider;
   void *addNumEntry;
-  void *addNumDisplay;
-  void *addTextDisplay;
   void *addHorizontalBargraph;
   void *addVerticalBargraph;
   void *declare;
 
 };
-
-static void openFrameBoxGlue(void* cpp_interface, const char* label)
-{
-    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
-    fstinterface->openFrameBox(label);
-}
 
 static void openTabBoxGlue(void* cpp_interface, const char* label)
 {
@@ -17053,12 +17028,6 @@ static void addButtonFloatGlue(void* cpp_interface, const char* label, float* zo
     fstinterface->addButton(label, (double*)zone);
 }
 
-static void addToggleButtonFloatGlue(void* cpp_interface, const char* label, float* zone)
-{
-    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
-    fstinterface->addToggleButton(label, (double*)zone);
-}
-
 static void addCheckButtonFloatGlue(void* cpp_interface, const char* label, float* zone)
 {
     FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
@@ -17081,18 +17050,6 @@ static void addNumEntryFloatGlue(void* cpp_interface, const char* label, float* 
 {
     FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
     fstinterface->addNumEntry(label, (double*)zone, init, min, max, step);
-}
-
-static void addNumDisplayFloatGlue(void* cpp_interface, const char* label, float* zone, int precision)
-{
-    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
-    fstinterface->addNumDisplay(label, (double*)zone, precision);
-}
-
-static void addTextDisplayFloatGlue(void* cpp_interface, const char* label, float* zone, const char* names[], float min, float max)
-{
-    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
-    fstinterface->addTextDisplay(label, (double*)zone, names, min, max);
 }
 
 static void addHorizontalBargraphFloatGlue(void* cpp_interface, const char* label, float* zone, float min, float max)
@@ -17119,12 +17076,6 @@ static void addButtonDoubleGlue(void* cpp_interface, const char* label, double* 
     fstinterface->addButton(label, zone);
 }
 
-static void addToggleButtonDoubleGlue(void* cpp_interface, const char* label, double* zone)
-{
-    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
-    fstinterface->addToggleButton(label, zone);
-}
-
 static void addCheckButtonDoubleGlue(void* cpp_interface, const char* label, double* zone)
 {
     FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
@@ -17147,18 +17098,6 @@ static void addNumEntryDoubleGlue(void* cpp_interface, const char* label, double
 {
     FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
     fstinterface->addNumEntry(label, zone, init, min, max, step);
-}
-
-static void addNumDisplayDoubleGlue(void* cpp_interface, const char* label, double* zone, int precision)
-{
-    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
-    fstinterface->addNumDisplay(label, zone, precision);
-}
-
-static void addTextDisplayDoubleGlue(void* cpp_interface, const char* label, double* zone, const char* names[], double min, double max)
-{
-    FaustUI* fstinterface = static_cast<FaustUI*>(cpp_interface);
-    fstinterface->addTextDisplay(label, zone, names, min, max);
 }
 
 static void addHorizontalBargraphDoubleGlue(void* cpp_interface, const char* label, double* zone, double min, double max)
@@ -17190,19 +17129,15 @@ void *faust_float_ui()
   PureFaustUI *ui = new PureFaustUI;
   assert(glue && ui);
   glue->uiInterface = ui;
-  glue->openFrameBox = (void*)openFrameBoxGlue;
   glue->openTabBox = (void*)openTabBoxGlue;
   glue->openHorizontalBox = (void*)openHorizontalBoxGlue;
   glue->openVerticalBox = (void*)openVerticalBoxGlue;
   glue->closeBox = (void*)closeBoxGlue;
   glue->addButton = (void*)addButtonFloatGlue;
-  glue->addToggleButton = (void*)addToggleButtonFloatGlue;
   glue->addCheckButton = (void*)addCheckButtonFloatGlue;
   glue->addVerticalSlider = (void*)addVerticalSliderFloatGlue;
   glue->addHorizontalSlider = (void*)addHorizontalSliderFloatGlue;
   glue->addNumEntry = (void*)addNumEntryFloatGlue;
-  glue->addNumDisplay = (void*)addNumDisplayFloatGlue;
-  glue->addTextDisplay = (void*)addTextDisplayFloatGlue;
   glue->addHorizontalBargraph = (void*)addHorizontalBargraphFloatGlue;
   glue->addVerticalBargraph = (void*)addVerticalBargraphFloatGlue;
   glue->declare = (void*)declareFloatGlue;
@@ -17215,19 +17150,15 @@ void *faust_double_ui()
   PureFaustUI *ui = new PureFaustUI;
   assert(glue && ui);
   glue->uiInterface = ui;
-  glue->openFrameBox = (void*)openFrameBoxGlue;
   glue->openTabBox = (void*)openTabBoxGlue;
   glue->openHorizontalBox = (void*)openHorizontalBoxGlue;
   glue->openVerticalBox = (void*)openVerticalBoxGlue;
   glue->closeBox = (void*)closeBoxGlue;
   glue->addButton = (void*)addButtonDoubleGlue;
-  glue->addToggleButton = (void*)addToggleButtonDoubleGlue;
   glue->addCheckButton = (void*)addCheckButtonDoubleGlue;
   glue->addVerticalSlider = (void*)addVerticalSliderDoubleGlue;
   glue->addHorizontalSlider = (void*)addHorizontalSliderDoubleGlue;
   glue->addNumEntry = (void*)addNumEntryDoubleGlue;
-  glue->addNumDisplay = (void*)addNumDisplayDoubleGlue;
-  glue->addTextDisplay = (void*)addTextDisplayDoubleGlue;
   glue->addHorizontalBargraph = (void*)addHorizontalBargraphDoubleGlue;
   glue->addVerticalBargraph = (void*)addVerticalBargraphDoubleGlue;
   glue->declare = (void*)declareDoubleGlue;
@@ -17312,9 +17243,6 @@ static pure_expr *faust_make_ui(void *p)
 			  faust_make_meta(ui->metadata[i]),
 			  pure_cstring_dup(ui->elems[i].label));
       break;
-    case UI_TOGGLE_BUTTON:
-      /* FIXME: What's the toggle button supposed to be? Taken to mean a
-	 checkbox for now. */
     case UI_CHECK_BUTTON:
       xv[n++] = pure_appl(pure_symbol(pure_sym("checkbox")), 3,
 			  pure_tag(ty, pure_pointer(ui->elems[i].zone)),
