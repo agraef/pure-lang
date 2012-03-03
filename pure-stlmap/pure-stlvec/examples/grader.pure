@@ -1,0 +1,480 @@
+/* grader.pure - some utilities for working with stlvecs
+
+Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>.
+
+All rights reserved.
+
+This software is is part of pure-stlvec, an addon to the Pure Programming
+Language (http://code.google.com/p/pure-lang/).
+
+This software is distributed under a BSD-style license in the hope that it
+will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the COPYING file
+included with the pure-stlvec distribution package for details.
+
+*/
+
+/* This program was written to test drive the stlvec module. It began as a
+   port of one of the versions of the C++ student grading program presented in
+   Accelerated C++ by Andrew Koenig and Barbara Moo. Along the way features
+   were added to expand the use of functions imported from stlvec::algorithms.
+
+   The basic idea is that students are graded on some major tests (including
+   projects) as well as quizes (including homework if desired). The quizes are
+   aggregated, after dropping a few of them, by taking their average, their
+   mean or their total, which is then treated as a single major test. The
+   major test scores are normalized on a 0 to 100 scale and then
+   weighted. E.g., a students score might be based 20% on a midterm, 20% on a
+   project, 20% on quizes and 40% on a final. A score is computed for each
+   student and grades are assigned on a curve or on an absolute scale.
+
+   The quiz aggregation style, the number of quizes to be dropped, the grading
+   scales and the weights assigned to the major tests are specified in a
+   configuration file. E.g., see grader_config.txt.  
+
+   Each student's scores are specified in a poor man's csv formated data
+   file. Each record is the students name, in quotes, followed by a sequence
+   of scores. The program determines the number, say N, of major tests
+   (including the aggregated quizes) from the configuraton file. When reading
+   the data file, the program treats the first (N-1) scores and major test
+   scores and the remaining scores as quiz scores. The first "perfect"
+   student, is a dummy record that contains perfect scores for each major test
+   and each quiz. E.g., see grader_data.txt.
+
+   The program writes two reports: a short report, which can be in class rank
+   or student name order, and a long report that dumps all input data,
+   intermediate computations and final grades in csv format. Here is an
+   example of a short report in rank order:
+
+      $> pure -c grader.pure
+
+      $> ./a.out grader_config.txt -rr < grader_data.txt
+
+      Name                Rank  Curved  Standard       Score
+      ------------------  ----  ------  --------  ----------
+      Johnson, Sam           1      A-        A+      100.00
+      Green, Julia           2      B-        B-       80.00
+      White, Bill            2      B-        B-       80.00
+      Smith, Andrew          4      C-        C-       70.00
+      Watts, Fred            5      D+        D-       60.00
+      Manning, Charles       6      F         F        50.00
+
+   See usage below for the command line interface.
+
+   In addition to using a fair number of stlvec-module functions, the program
+   uses some utilities that were written with stlvec in mind. These include a
+   poor man's configuration file reader that uses Pure to do the heavy
+   lifting, a file filter, and the defstruct macro. 
+
+*/
+
+/*** Imports and constants ************************************************/
+
+using system, getopt, stlvec, stlvec::algorithms, stlstruct, stlutil;
+
+using namespace stl (svend svbeg svback readonly empty);
+
+const report_ranks = "r";
+const report_names = "n";
+const report_csv = "c";
+ 
+/*** Data structures ******************************************************/
+
+// Tuple types for grade levels and their ! accessors
+type grade_count (g::string, d::double);  // e.g., ("B+",    3) 
+type grade_cutoff (g::string, d::double); // e.g., ("B+", 87.0)
+const gc_grade = 0;                       // e.g., (gc!gc_grade) --> "B+"
+const gc_points = 1;                      // e.g., (gc!gc_points) --> 87.0
+const gc_count = 1;                       // e.g., (gc!gc_count) --> 3
+
+#! --nowarn                            // defstruct would cause warnings
+
+// One student_info per student
+stl::defstruct student_info            // generates accessor functions
+{                                      //   see stlstruct.pure
+ student_name.string/readonly,         // per data file
+ raw_scores.stlvec/readonly,           // per data file
+ combined_scores.stlvec/readonly,      // qzs replaced by aggregate qz score
+ normalized_scores.stlvec/readonly,   
+ weighted_scores.stlvec/readonly,      // weighted combined_scores
+ total_score.double,                   // sum of weighted_scores
+ rank.int,                             // #1 is best
+ curve_grade,              
+ point_grade
+};
+
+// Parameters used to control grading algorithms
+stl::defstruct (score_info/stl::immutable)
+{
+ num_scores.int/readonly,              // number of raw scores per student
+ normalizers.stlvec/readonly,          // convert raw to normal scores
+ qzstyle.string/readonly,              // "a" "m" "t", average, median, total
+ extra_quizes.int/readonly,            // number of quizes to discard
+ weights.stlvec/readonly,              // weights for combined scores
+ curve_grade_counts.stlvec/readonly,   // ordered stlvec of grade_counts
+ point_grade_cutoffs.stlvec/readonly   // ordered stlvec of grade_cutoffs
+};
+
+// Overall state - kept in the call stack
+stl::defstruct state_info              // mutable - of course
+{
+ score_parameters.score_info,          // see above 
+ student_infos.stlvec/readonly,        // stlvec of student_infos
+ data_ffp/readonly,                    // filtered file - see stlutil.pure
+ num_errors.int                        // errors in data file
+};
+
+#! --rewarn                            // let the warnings proceed
+
+/*** Helper functions ***************************************************/
+
+log_err S msg = () when
+  line_num = #(data_ffp S);
+  printf "log_err %s %s\n" (str line_num, str msg); 
+  if line_num > 0 then
+    fprintf "error: line %d, %s\n" (line_num, msg )
+  else
+    fprintf "error: %s\n" msg;
+  set_num_errors S (num_errors S + 1);
+end;
+
+si_filter line::string = ~is_comment line && ~is_ws line with
+  is_comment line = regex "^[[:space:]]*#" REG_NOSUB line 0;
+  is_ws line = regex "^[[:space:]]*$" REG_NOSUB line 0;
+end;
+
+flags_ok flags x = charp x && index flags x >= 0;
+
+decreasing_scores s1::student_info s2::student_info = 
+  total_score s1 > total_score s2;
+
+::__show__ s:: stl::struct = stl::tostr 5 s;  // for debugging
+
+::__show__  it::svrng = stl::tostr 5 it;      // for debugging
+
+/*** Parse student data and make student_info **************************/
+
+const name_rest_pat = "\\s*\"([[:alpha:], ]+)\",\\s*([^\n]*)";
+
+parse_student_data S num_scores_needed line = ok, name, stlvec scores when
+  ris = list $ reg_info (regex name_rest_pat REG_EXTENDED line 0);
+  [ok, name, scores] = if null ris then [0, "", []] 
+                       else [1,ris!3,ris!5]; 
+  if ~ok then log_err S "badly formatted" line else ();
+  scores = if ok then parse_scores scores else [];
+end with
+  parse_scores s = scores when
+    scores = map val (split "," s);
+    scores = if #scores < num_scores_needed then 
+               log_err S "missing scores" $$ [] 
+             else if ~(all numberp scores) then
+               log_err S "at least one score is not a number" $$ []
+             else scores;
+    scores = map double scores;
+  end;
+end;
+
+// Make si_info
+mk_si weights qzstyle extra_qz normalizers name::string raw_scores = si when
+  num_tests = #weights - 1;
+  qzs = stlvec (raw_scores,num_tests,svend);
+  stl::nth_element (qzs,0,extra_qz,svend) (<);
+  erase (qzs,0,extra_qz);
+  num_qzs = #qzs;
+  total_qz = foldl (+) 0.0 qzs;
+  qz_score = case qzstyle of
+    "a" = if num_qzs > 0 then total_qz / num_qzs else 0.0;
+    "m" = if num_qzs > 0 then median qzs else 0.0;
+    "t" = total_qz;
+  end;
+  c_scores = stlvec (raw_scores,0,num_tests);
+  append c_scores qz_score;
+  n_scores = emptystlvec;
+  stl::transform_2 normalizers (c_scores,0) (n_scores,svback) (*);  
+  w_scores = emptystlvec;
+  stl::transform_2 weights (n_scores,0) (w_scores,svback) (*);
+  score = stl::accumulate w_scores 0.0 (+);
+  si = student_info {name, raw_scores, c_scores, n_scores, w_scores, 
+                     score, 0,"", ""};
+end with
+  median sv = m when 
+    mid = #sv div 2;
+    stl::nth_element (sv,0,mid,svend) (<);
+    m = if #sv mod 2 then sv!mid else (sv!mid + sv!(mid-1)) / 2.0;
+  end;
+end;
+
+read_student_infos S = () if feof (data_ffp S);
+read_student_infos S = read_student_infos S when
+  ps = score_parameters S;
+  line = fgets (data_ffp S);
+  ok, name, raw_scores = parse_student_data S (num_scores ps) line;
+  si = if ok then
+          mk_si (weights ps) (qzstyle ps) (extra_quizes ps)
+         (normalizers ps) name raw_scores
+       else ();
+  if ok then append (student_infos S) si else ();
+end;
+
+/*** Make a new state_info ********************************************/
+
+const config_key_funs =
+[
+ ("quiz_scoring", stl::parse_parameter (flags_ok "mat")),
+ ("extra_quizes", stl::parse_parameter intp),
+ ("score_weights", stl::parse_parameter_list doublep),
+ ("curve_grade_counts", stl::parse_parameter_list (typep grade_count)),
+ ("point_grade_cutoffs", stl::parse_parameter_list (typep grade_cutoff))
+];
+
+setup_state_info config_fp data_fp = ok, S when
+  ffp = filter si_filter data_fp;
+  S = state_info {mk_score_info (), emptystlvec, ffp, 0};
+  ok1, name, scores = if ~feof ffp then parse_student_data S 0 (fgets ffp) 
+                      else log_err S "missing perfect student" $$ 0,"",[];
+  ok2, config_sv = stl::parse_parameter_file config_key_funs config_fp;
+  ok = ok1 && ok2 && add_score_info (S:scores:(members config_sv));
+end with
+  add_score_info [S, scores, qzstyle, extra_qzs, 
+                  weights, cg_counts, pg_cutoffs] = perfect > 0.0    
+  when
+    sws = stlvec weights;
+    normalizers = mkstlvec 1.0 (#weights);
+    si = if ~empty scores then
+           mk_si sws qzstyle extra_qzs normalizers "perfect"  scores
+         else ();
+    c_scores = combined_scores si;
+    stl::transform c_scores (normalizers,0) normal;
+    perfect = if ~empty scores then total_score si else 0.0;
+    sci = score_info {#scores, normalizers, qzstyle, extra_qzs, sws,
+                      stlvec cg_counts, stlvec pg_cutoffs};
+    set_score_parameters S sci;
+  end;
+  normal x = if x <= 0.0 then 1.0 else 100.0 / x; 
+end;
+
+/*** Assign grades based on curve or absolute point system ************/
+
+// sis is a vec of student infos - ordered by decreasing total_score
+// grade_cutoffs is cutoffs, highest first
+assign_point_grades sis::stlvec grade_cutoffs::stlvec = apg 0 0 with
+  apg svend _ = ();
+  apg _ svend = ();
+  apg gc_i s_i = if below_grade_cutoff (grade_cutoffs!gc_i) (sis!s_i) 
+                 then apg (next_gc_i gc_i) s_i
+                 else apg_range gc_i s_i;
+  apg_range gc_i s_i = apg (next_gc_i gc_i) s_j when
+    gc = grade_cutoffs!gc_i;
+    s_j = stl::find_if (sis,s_i,svend) (below_grade_cutoff gc);
+    do ((flip set_point_grade) (gc!gc_grade)) (sis,s_i,s_j);
+  end;
+  below_grade_cutoff gc si = total_score si < gc!gc_points;
+  next_gc_i i = if j == #grade_cutoffs then svend else j when j = i+1 end;
+end;
+
+// sis is a stlvec of student infos - ordered by decreasing total_score
+// grade_counts is number at each grade level, highest first 
+assign_curve_grades grade_counts::stlvec sis::stlvec = 
+  if empty grade_counts || empty sis then () else acg 0 0 with
+    acg svend _ = (); // should not happen
+    acg _ svend = ();
+    acg gc_i sis_b = acg next_gc_i sis_e when 
+      gc = grade_counts!gc_i;
+      sis_e = sis_b + gc!gc_count;
+      sis_e = if sis_e >= #sis then svend else sis_e;
+      do ((flip set_curve_grade) (gc!gc_grade)) (sis,sis_b,sis_e);
+      next_gc_i = if gc_i == #grade_counts - 1 then svend else gc_i + 1;
+    end;
+  end;
+
+adjust_curve curve_counts::stlvec num_sis = counts when
+  grades = emptystlvec;
+  stl::transform curve_counts (grades, svback) (!gc_grade);
+  temp = emptystlvec;
+  stl::transform curve_counts (temp, svback) (!gc_count);
+  sum_counts = stl::accumulate temp 0.0 (+);
+  stl::partial_sum temp (temp,0) (+);
+  students_factor = num_sis / last temp;
+  stl::transform temp (temp,0) (int . round . (students_factor*));
+  if last temp ~= num_sis then replace temp (num_sis-1) num_sis else ();
+  stl::adjacent_difference temp (temp,0) (-);
+  counts = emptystlvec;
+  stl::transform_2 grades (temp,0) (counts,svback) (\ltr c-> (ltr,c));
+end;
+
+// also ensures that tied total scores have same curve grade
+assign_ranks sis = () when
+  set_rank (sis!0) 1;
+  ars (sis!0) 1;
+end with
+  ars _ i = () if i >= #sis;
+  ars prev_si i::int = ars cur_si (i+1) when
+    cur_si = sis!i;
+    r = if total_score cur_si == total_score prev_si then 
+          set_curve_grade cur_si (curve_grade prev_si) $$
+          rank prev_si
+        else 
+          i+1;
+    set_rank cur_si r;
+  end;
+end;
+
+assign_grades S = () when
+  sis = student_infos S;
+  sps = score_parameters S;
+  stl::sort sis decreasing_scores;
+  assign_point_grades sis (point_grade_cutoffs sps);
+  adjusted_curve = adjust_curve (curve_grade_counts sps) (#sis);
+  assign_curve_grades adjusted_curve sis;
+  assign_ranks sis;
+end;
+
+/*** Reports ************************************************************/
+
+print_short_report out name_width sis = () when
+  fprintf out "\nName%s  Rank  Curved  Standard       Score\n" (pad "Name");
+  fprintf out "%s  ----  ------  --------  ----------\n" 
+         (strcat $ repeatn (name_width+2) "-");
+  do psr sis;
+end with
+  psr si = () when
+    name = student_name si;
+    padding = pad name;
+    fprintf out "%s%s  %4d      %-2s        %-2s %11.2f\n"
+    (name, padding, rank si, curve_grade si, point_grade si, total_score si); 
+  end;
+  pad name = strcat $ repeatn (name_width + 2 - (#name)) " ";
+end;
+
+print_csv_report out sis = do pcsv_line sis with
+  pcsv_line si = () when
+    sv = stlvec [student_name si,rank si,curve_grade si,point_grade si,""];
+    insert (sv,svend) (raw_scores si);
+    append sv "";
+    insert (sv,svend) (combined_scores si);
+    append sv "";
+    insert (sv,svend) (normalized_scores si);
+    append sv "";
+    insert (sv,svend) (weighted_scores si);
+    append sv (total_score si);
+    stl::transform sv (sv,0) fmt;
+    fprintf out "%s\n" $ join "," (members sv);
+  end;
+  fmt x::string = x;
+  fmt x::double = sprintf "%.2f" x;
+  fmt x = str x;
+end;
+
+print_report out option S = () when
+  sis = student_infos S;
+  stl::sort sis (\s1 s2 -> student_name s1 < student_name s2);
+  if option == report_ranks then
+    stl::stable_sort sis decreasing_scores
+  else ();
+  name_width = stl::accumulate sis 0 max_name_len;
+  if option == report_ranks || option == report_names then
+    print_short_report out name_width sis
+  else
+    print_csv_report out sis;
+end with
+  max_name_len nl si = if nl < si_nl then si_nl else nl when
+    si_nl = #(student_name si); 
+  end;
+end;
+
+/*** Usage and line arg parsing  **************************************/
+
+const usage = 
+"Usage: grader [OPTIONS] [CONFIG_FILE]\n"+
+"Compute grades for students in DATAFILE and send output to OUTFILE.\n"+
+"Default DATAFILE is stdin, and default OUTFILE is stdout. The default\n"+
+"report type is r.\n" +
+"Options:\n" +
+"  -f --file     DATAFILE\n"+  
+"  -h --help     Print help\n"+  
+"  -r --report   Report type, one of:\n"+
+"                n    -- Short report - ordered by student name\n"+
+"                r    -- Short report - ordered by student rank\n"+
+"                c    -- Long report, in csv format\n"+
+"  -o --out      OUTFILE\n";
+
+const optspec = [
+  ("--help",            "-h", NOARG), 
+  ("--file",            "-f", REQARG),
+  ("--report",          "-r", REQARG),
+  ("--out",             "-o", REQARG)
+];
+
+parse_args args = config_fp, data_fp, out_fp, report_type when
+  opts_hr, other_vals = catch bad_option $ getopt optspec args;
+  if opts_hr === () then quit else ();
+  opts = record $ ("--report"=>"r"):opts_hr;
+  config_file = if #other_vals == 1 then head other_vals else quit;
+  config_fp = fopen config_file "r";
+  if null config_fp then 
+    fprintf stderr "missing configuration file type" () $$ quit 
+  else ();
+  if member opts "--help" then quit else ();
+  report_type = opts!"--report";
+  if index "nrc" report_type < 0 then 
+    fprintf stderr "bad report type: %s\n" report_type $$ quit 
+  else ();
+  datafile = if member opts "--file" then opts!"--file" else "";
+  data_fp = if null datafile then stdin else fopen datafile "r";
+  if null data_fp then 
+    fprintf "could not open data file: %s" datafile $$ quit
+  else ();
+  outfile = if member opts "--out" then opts!"--out" else "";
+  out_fp = if null outfile then stdout else fopen outfile "w";
+  if null out_fp then 
+    fprintf "could not open outfile: %s" outfile $$ quit
+  else ();
+end with
+  bad_option opt = fprintf stderr "bad option: %s" opt $$ (),[];
+  quit = puts usage $$ exit 1;
+end;
+
+/*** Main ************************************************************/
+
+main args = () when
+  config, data, out, report_type = parse_args args;
+  init_ok, S = setup_state_info config data; 
+  if init_ok then read_student_infos S else 0;
+  fclose config;
+  fclose data;
+  if init_ok && num_errors S == 0 then 
+    assign_grades S $$ 
+    print_report out report_type S 
+  else 
+    printf "aborted with %d data errors\n" (num_errors S);
+  fclose out;
+end;
+
+if ~compiling && argc > 0 then main (tail argv) else ();
+
+let test_args = ["grader_config.txt", "-rr", "-f", "grader_data.txt"];
+
+
+/*** Example *********************************************************
+
+> run grader.pure // pauses are for jit compilation
+> main test_args; 
+
+Name                Rank  Curved  Standard       Score
+------------------  ----  ------  --------  ----------
+Johnson, Sam           1      A-        A+      100.00
+Green, Julia           2      B-        B-       80.00
+White, Bill            2      B-        B-       80.00
+Smith, Andrew          4      C-        C-       70.00
+Watts, Fred            5      D+        D-       60.00
+Manning, Charles       6      F         F        50.00
+()
+
+Edit test_args, config file or data file and try again to see result without
+compile time pauses.
+
+> main test_args; // fast
+
+.... 
+
+**/

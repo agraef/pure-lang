@@ -1,0 +1,714 @@
+/* ut_modifying.pure -- Unit tests for modifying.pure
+    
+Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>.
+
+All rights reserved.
+
+This software is is part of pure-stlvec, an addon to the Pure Programming
+Language (http://code.google.com/p/pure-lang/).
+
+This software is distributed under a BSD-style license in the hope that it
+will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the COPYING file
+included with the pure-stlvec distribution package for details.
+
+*/
+
+using system;
+using stlvec;
+using stlvec::modifying;
+using ut_helpers;
+
+using namespace stl;
+
+nonfix exception;
+
+test_copy = ok when
+  show_start "copy";
+  sv1 = stlvec ("a".."f");
+  ok0 = 1;
+  // copy into mutable vector
+  sv2 = stlvec (0..7);
+  last2 = copy sv1 (sv2,1);
+  ok1 = last2 == 7 && members sv2 == [0,"a","b","c","d","e","f",7];
+  last2 = copy (sv1,0,2) (sv2,3);
+  ok1 = last2 == 5 && members sv2 == [0,"a","b","a","b","e","f",7] && ok1;
+  // attempt copy into immutable vector
+  sv3 = const_stlvec $ stlvec (0..7);
+  copy sv1 (sv3,1);  // failed, did nothing to sv3;
+  ok2 = members sv3 == (0..7);
+  // poor man's rotate using copy overlap
+  sv2 = stlvec (0..7);
+  sv3 = stlvec (sv2,0,3);
+  last2 = copy (sv2,3,svend) (sv2,0);
+  ok3 = last2 == 5 && members sv2 == [3,4,5,6,7,5,6,7];
+  last2 = copy sv3 (sv2,5);
+  ok3 = last2 == svend && members sv2 == [3,4,5,6,7,0,1,2] && ok3;
+  // copy to new back inserter
+  sv2 = emptystlvec;
+  last2 == copy (sv1,2,#sv1-2) (sv2,svback);
+  ok4 = last2 == svend && members sv2 == ["c","d"];
+
+  // check refcounts
+  ok5 = check_refcs sv1 [1,1,2,2,1,1];
+  ok6 = check_refcs sv2 1;
+
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5,ok6];
+  show_result "copy" ok;
+end; 
+
+test_copy_backward = ok when
+  show_start "copy_backward";
+  sv1 = stlvec ("a".."f");
+  ok0 = 1;
+  // copy_backward into mutable vector
+  sv2 = stlvec (0..7);
+  first2 = copy_backward sv1 (sv2,7);
+  ok1 = first2 == 1 && members sv2 == [0,"a","b","c","d","e","f",7];
+  first2 = copy_backward (sv1,0,2) (sv2,5);
+  ok1 = first2 == 3 && members sv2 == [0,"a","b","a","b","e","f",7] && ok1;
+  // attempt copy_backward into immutable vector
+  sv3 = const_stlvec $ stlvec (0..7);
+  copy_backward sv1 (sv3,7);  // failed, did nothing to sv3;
+  ok2 = members sv3 == (0..7);
+  // poor man's rotate using copy_backward overlap
+  sv2 = stlvec (0..7);
+  sv3 = stlvec (sv2, #sv2 - 3, svend);
+  first2 = copy_backward (sv2,0,#sv2 -3) (sv2,svend);
+  ok3 = first2 == 3 && members sv2 == [0,1,2,0,1,2,3,4];
+  last2 = copy sv3 (sv2,svbeg);
+  ok3 = last2 == 3 && members sv2 == [5,6,7,0,1,2,3,4] && ok3;
+  // check refcounts 
+  ok4 = check_refcs sv1 1;
+  ok5 = check_refcs sv2 [2,2,2,1,1,1,1,1];
+  ok6 = check_refcs sv3 1;
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5,ok6];
+  show_result "copy_backward" ok;
+end; 
+
+test_swap_ranges = ok when
+  show_start "swap_ranges";
+  sv1 = stlvec ("a".."f");
+  ok0 = 1;
+  swap_ranges (sv1,0,2) (sv1,4);
+  ok1 = members sv1 == ["e","f","c","d","a","b"];
+  swap_ranges (sv1,0,2) (sv1,4);
+  ok2 = members sv1 == ["a","b","c","d","e","f"];
+  sv2 = stlvec (0..5);
+  swap_ranges (sv1,5,svend) (sv2,5);
+  ok3 = members sv1 == ["a","b","c","d","e",5];
+  ok4 = members sv2 == [0,1,2,3,4,"f"];
+  sv3 = const_stlvec $ stlvec (10..15);
+  swap_ranges (sv3,0,1) (sv3,5);
+  ok5 = members sv3 == (10..15);
+  ok6 = check_refcs sv1 1;
+  ok7 = check_refcs sv2 1;
+  ok8 = check_refcs sv3 1;
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5,ok6,ok7,ok8];
+  show_result "swap_ranges" ok;
+end; 
+
+test_transform = ok when
+  show_start "transform";
+  // map sv1 onto itself
+  sv1 = stlvec (0..5);
+  put err_p false; 
+  catch eh $ transform sv1 (sv1,0) crash;
+  ok0 = get err_p;
+  pos = transform sv1 (sv1,0) (+10);
+  ok1 = pos == svend && members sv1 == (10..15);
+  pos = transform (sv1,1,3) (sv1,1) (+10);
+  ok1 = pos == 3 && members sv1 == [10,21,22,13,14,15] && ok1;
+  // map sv2 to sv3
+  sv2 = stlvec (0..5);
+  sv3 = mkstlvec 0 6;
+  pos = transform sv2 (sv3,0) (+10);
+  ok2 = pos == svend && members sv3 == (10..15);
+  sv3 = const_stlvec sv3;
+  transform sv2 (sv3,0) (+10);
+  ok2 = members sv3 == (10..15) && ok2;
+  // map sv2 to sv4 using back inserter
+  sv2 = stlvec (0..5);
+  sv4 = emptystlvec;
+  pos = transform sv2 (sv4,svback) (+10);
+  ok3 = pos == svend && members sv4 == (10..15);
+  // check refcounts
+  ok4 = check_refcs sv1 1;
+  ok5 = check_refcs sv2 1;
+  ok6 = check_refcs sv3 1;
+  ok7 = check_refcs sv4 1;
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5,ok6,ok7];
+  show_result "transform" ok;
+end with 
+  eh x = put err_p true; 
+  crash x = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_transform_2 = ok when
+  show_start "transform_2";
+  // zip sv1 onto itself
+  sv1 = stlvec (0..5);
+  put err_p false; 
+  catch eh $ transform_2 sv1 (sv1,0) (sv1,0) crash;
+  ok0 = get err_p;
+  pos = transform_2 sv1 (sv1,0) (sv1,0) (+);
+  ok1 = pos == svend && members sv1 == (0:2..10);
+  pos = transform_2 (sv1,2,4) (sv1,2) (sv1,2) (-);
+  ok1 = pos == 4 && members sv1 == [0,2,0,0,8,10] && ok1;
+  sv1 = const_stlvec sv1;
+  transform_2 (sv1,2,4) (sv1,2) (sv1,2) (+); 
+  ok1 = members sv1 == [0,2,0,0,8,10] && ok1;
+  // zip sv1 and sv2 to sv3
+  sv1 = stlvec (0..5);
+  sv2 = stlvec (0..5);
+  sv3 = mkstlvec 0 6;
+  pos = transform_2 sv1 (sv2,0) (sv3,0) (+);
+  ok2 = pos == svend && members sv3 == (0:2..10);
+  sv3 = const_stlvec sv3;
+  transform_2 sv1 (sv2,0) (sv3,0) (+);
+  ok2 = members sv3 == (0:2..10) && ok2;
+  sv3 = const_stlvec sv3;
+  transform_2 sv1 (sv2,0) (sv3,0) (+);
+  ok2 = members sv3 == (0:2..10) && ok2;
+  // zip sv1 and sv2 to sv4 using back inserter
+  sv4 = emptystlvec;
+  pos = transform_2 sv1 (sv2,0) (sv4,svback) (+);
+  ok3 = pos == svend && members sv4 == (0:2..10);
+  // check refcounts
+  ok4 = check_refcs sv1 1;
+  ok5 = check_refcs sv2 1;
+  ok6 = check_refcs sv3 1;
+  ok7 = check_refcs sv4 1;
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5,ok6,ok7];
+  show_result "transform_2" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+// test_replace = ok when
+//   show_start "replace";
+//   sv1 = stlvec ["a","b","a","a","c"];
+//   ok0 = 1;
+//   replace sv1 "a" "x";
+//   ok1 = members sv1 == ["x","b","x","x","c"];
+//   replace (sv1,0,2) "x" "a";
+//   ok2 = members sv1 == ["a","b","x","x","c"];
+//   sv1 = const_stlvec $ sv1;
+//   replace sv1 "c" "x";
+//   ok3 = members sv1 == ["a","b","x","x","c"];
+//   ok4 = check_refcs sv1 [1,1,2,2,1];
+//   ok = all_ok [ok0,ok1,ok2,ok3,ok4];
+//   show_result "replace" ok;
+// end; 
+
+test_replace_if = ok when
+  show_start "replace_if";
+  sv1 = stlvec ["a","b","a","a","c"];
+  put err_p false; 
+  catch eh $ replace_if sv1 crash "x";
+  ok0 = get err_p;
+  replace_if sv1 (<"b") "x";
+  ok1 = members sv1 == ["x","b","x","x","c"];
+  replace_if (sv1,0,2) (>"b") "a";
+  ok2 = members sv1 == ["a","b","x","x","c"];
+  sv1 = const_stlvec $ sv1;
+  replace_if sv1 (<"d") "x";
+  ok3 = members sv1 == ["a","b","x","x","c"];
+  ok4 = check_refcs sv1 [1,1,2,2,1];
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4];
+  show_result "replace_if" ok;
+end with 
+  eh x = put err_p true; 
+  crash x = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_replace_copy = ok when
+  show_start "replace_copy";
+  a = "a";
+  b = "b";
+  c = "c";
+  x = "x";
+  y = "y";
+  z = "z";
+  sv1 = stlvec [a,b,a,a,c];
+  sv2 = mkstlvec a 5;
+  ok0 = 1;
+  replace_copy sv1 (sv2,0) a x;
+  ok1 = members sv2 == [x,b,x,x,c];
+  replace_copy (sv1,0,2) (sv2,0) b y;
+  ok2 = members sv2 == [a,y,x,x,c];
+  sv1 = const_stlvec $ sv1;
+  replace_copy sv1 c x;
+  ok3 = members sv2 == [a,y,x,x,c];
+  sv3 = emptystlvec;
+  replace_copy sv1 (sv3,svback) a z;
+  ok4 = members sv3 == [z,b,z,z,c];
+  ok5 = check_refcs sv1 [4,2,4,4,3];
+  ok6 = check_refcs sv2 [1,1,2,2,2];
+  ok7 = check_refcs sv3 [3,1,3,3,1];
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5,ok6,ok7];
+  show_result "replace_copy" ok;
+end; 
+
+test_replace_copy_if = ok when
+  show_start "replace_copy_if";
+  a = "a";
+  b = "b";
+  c = "c";
+  x = "x";
+  y = "y";
+  z = "z";
+  sv1 = stlvec [a,b,a,a,c];
+  sv2 = mkstlvec a 5;
+  put err_p false; 
+  catch eh $ replace_copy_if sv1 (sv2,0) crash x;
+  ok0 = get err_p;
+  replace_copy_if sv1 (sv2,0) (==a) x;
+  ok1 = members sv2 == [x,b,x,x,c];
+  replace_copy_if (sv1,0,2) (sv2,0) (==b) y;
+  ok2 = members sv2 == [a,y,x,x,c];
+  sv1 = const_stlvec $ sv1;
+  replace_copy_if sv1 c (a==) x;
+  ok3 = members sv2 == [a,y,x,x,c];
+  sv3 = emptystlvec;
+  replace_copy_if sv1 (sv3,svback) (==a) z;
+  ok4 = members sv3 == [z,b,z,z,c];
+  ok5 = check_refcs sv1 [4,2,4,4,3];
+  ok6 = check_refcs sv2 [1,1,2,2,2];
+  ok7 = check_refcs sv3 [3,1,3,3,1];
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5,ok6,ok7];
+  show_result "replace_copy_if" ok;
+end with 
+  eh x = put err_p true; 
+  crash x = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_fill = ok when
+  show_start "fill";
+  sv1 = stlvec (0..4);
+  ok0 = 1;
+  fill (sv1,1,4) "x";
+  ok1 = members sv1 == [0,"x","x","x",4];
+  sv1 = const_stlvec $ sv1;
+  fill (sv1,1,4) "y";
+  ok2 = members sv1 == [0,"x","x","x",4];
+  ok3 = check_refcs sv1 [1,3,3,3,1];
+  ok = all_ok [ok0,ok1,ok2,ok3];
+  show_result "fill" ok;
+end; 
+
+test_fill_n = ok when
+  show_start "fill_n";
+  sv1 = stlvec (0..4);
+  ok0 = 1;
+  fill_n (sv1,1) 3 "x";
+  ok1 = members sv1 == [0,"x","x","x",4];
+  sv1 = const_stlvec $ sv1;
+  fill_n (sv1,1) 3 "y";
+  ok2 = members sv1 == [0,"x","x","x",4];
+  ok3 = check_refcs sv1 [1,3,3,3,1];
+  ok = all_ok [ok0,ok1,ok2,ok3];
+  show_result "fill_n" ok;
+end; 
+
+test_generate = ok when
+  show_start "generate";
+  sv1 = mkstlvec "x" 8;
+  sv2 = mkstlvec "x" 10;
+  put err_p false; 
+  catch eh $ generate sv1 crash;
+  ok0 = get err_p;
+  generate sv1 gen1;
+  generate (sv2,1,#sv2-1) gen2;
+  ok1 = allpairs (==) sv1 (sv2,1,#sv2-1);
+  ok2 = members sv2 == ["x",1,2,3,4,5,6,7,8,"x"];
+  sv3 = const_stlvec $ sv1;
+  generate (sv3,1,#sv1-1) gen1; //fails
+  put count1 (); // elements in count1 and count2 might affect refc
+  put count2 (); // in vector's elements. set to something they wont' have
+  ok3 = check_refcs sv1 1;
+  ok4 = check_refcs sv2 [2,1,1,1,1,1,1,1,1,2];
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4];
+  show_result "generate" ok;
+end with 
+  eh x = put err_p true; 
+  crash x = throw exception;
+  gen1 _ = x when x = get count1 + 1; put count1 x; end;
+  gen2 _ = x when x = get count2 + 1; put count2 x; end;
+end when 
+  err_p = ref false;
+  count1 = ref 0;
+  count2 = ref 0; 
+end;
+
+test_generate_n = ok when
+  show_start "generate_n";
+  sv1 = mkstlvec "x" 8;
+  sv2 = mkstlvec "x" 10;
+  put err_p false; 
+  catch eh $ generate_n sv1 1 crash;
+  ok0 = get err_p;
+  generate_n (sv1,0) 8 gen1;
+  generate_n (sv2,1) 8 gen2;
+  ok1 = allpairs (==) sv1 (sv2,1,#sv2-1);
+  ok2 = members sv2 == ["x",1,2,3,4,5,6,7,8,"x"];
+  sv3 = const_stlvec $ sv1;
+  generate_n (sv3,1) 3 gen1; //fails
+  put count1 (); // elements in count1 and count2 might affect refc
+  put count2 (); // in vector's elements. set to something they wont' have
+  ok3 = check_refcs sv1 1;
+  ok4 = check_refcs sv2 [2,1,1,1,1,1,1,1,1,2];
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4];
+  show_result "generate_n" ok;
+end with 
+  eh x = put err_p true; 
+  crash x = throw exception;
+  gen1 _ = x when x = get count1 + 1; put count1 x; end;
+  gen2 _ = x when x = get count2 + 1; put count2 x; end;
+end when 
+  err_p = ref false;
+  count1 = ref 0;
+  count2 = ref 0; 
+end;
+
+test_remove = ok when
+  show_start "remove";
+  sv1 = stlvec ["a","b","a","a","c"];
+  ok0 = 1;
+  pei = remove sv1 "a";
+  ok1 = pei == 2 && members (sv1,0,2) == ["b","c"];
+  pei = remove (sv1,0,2) "b";
+  ok2 = pei == 1 && members (sv1,0,1) == ["c"];
+  sv1 = const_stlvec $ sv1;
+  remove sv1 "c" ;
+  ok3 = members (sv1,0,1) == ["c"];
+  // elements of sv1 are implentation dependent - skip check_refc
+  ok = all_ok [ok0,ok1,ok2,ok3];
+  show_result "remove" ok;
+end; 
+
+test_remove_if = ok when
+  show_start "remove_if";
+  sv1 = stlvec ["a","b","a","a","c"];
+  put err_p false; 
+  catch eh $ remove_if sv1 crash;
+  ok0 = get err_p;
+  pei = remove_if sv1 (=="a");
+  ok1 = pei == 2 && members (sv1,0,2) == ["b","c"];
+  pei = remove_if (sv1,0,2) (=="b");
+  ok2 = pei == 1 && members (sv1,0,1) == ["c"];
+  sv1 = const_stlvec $ sv1;
+  remove_if sv1 (=="c") ;
+  ok3 = members (sv1,0,1) == ["c"];
+  // elements of sv1 are implementation dependent - skip check_refc
+  ok = all_ok [ok0,ok1,ok2,ok3];
+  show_result "remove_if" ok;
+end with 
+  eh x = put err_p true; 
+  crash x = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_remove_copy = ok when
+  show_start "remove_copy";
+  a = "a";
+  b = "b";
+  c = "c";
+  x = "x";
+  y = "y";
+  z = "z";
+  sv1 = stlvec [a,b,a,a,c];
+  sv2 = mkstlvec z 5;
+  ok0 = 1;
+  pei = remove_copy sv1 (sv2,0) a;
+  ok1 = pei == 2 && members sv2 == [b,c,z,z,z];
+  sv3 = emptystlvec;
+  pei = remove_copy sv1 (sv3,svback) a;
+  ok2 = pei == svend && members sv3 == [b,c];
+  sv3 = const_stlvec sv3;
+  pei = remove_copy sv1 (sv3,svback) a;
+  ok3 = members sv3 == [b,c];
+  ok4 = check_refcs sv1 3;
+  ok5 = check_refcs sv2 [2,2,3,3,3];
+  ok6 = check_refcs sv3 [1,1];
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5,ok6];
+  show_result "remove_copy" ok;
+end; 
+
+test_remove_copy_if = ok when
+  show_start "remove_copy_if";
+  a = "a";
+  b = "b";
+  c = "c";
+  x = "x";
+  y = "y";
+  z = "z";
+  sv1 = stlvec [a,b,a,a,c];
+  sv2 = mkstlvec z 5;
+  put err_p false; 
+  catch eh $ remove_copy_if sv1 (sv2,0) crash;
+  ok0 = get err_p;
+  pei = remove_copy_if sv1 (sv2,0) (==a);
+  ok1 = pei == 2 && members sv2 == [b,c,z,z,z];
+  sv3 = emptystlvec;
+  pei = remove_copy_if sv1 (sv3,svback) (a==);
+  ok2 = pei == svend && members sv3 == [b,c];
+  sv3 = const_stlvec sv3;
+  pei = remove_copy_if sv1 (sv3,svback) (==a);
+  ok3 = members sv3 == [b,c];
+  ok4 = check_refcs sv1 3;
+  ok5 = check_refcs sv2 [2,2,3,3,3];
+  ok6 = check_refcs sv3 [1,1];
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5,ok6];
+  show_result "remove_copy_if" ok;
+end with 
+  eh x = put err_p true; 
+  crash x = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_unique = ok when
+  show_start "unique";
+  sv1 = stlvec ["a","b","b","a","c","c"];
+  put err_p false; 
+  catch eh $ unique sv1 crash;
+  ok0 = get err_p;
+  pei = unique sv1 (==);
+  ok1 = pei == 4 && members (sv1,0,pei) == ["a","b","a","c"];
+  sv1 = stlvec ["a","b","b","a","c","c"];
+  pei = unique (sv1,2,svend) (==);
+  ok2 = pei == 5 && members (sv1,0,pei) == ["a","b","b","a","c"];
+  sv1 = const_stlvec $ stlvec ["a","a","a"];
+  unique sv1 (==);
+  ok3 = members sv1 == ["a","a","a"];
+  // elements of sv1 are implentation dependent - skip check_refc
+  ok = all_ok [ok0,ok1,ok2,ok3];
+  show_result "unique" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_unique_copy = ok when
+  show_start "unique_copy";
+  a = "a";
+  b = "b";
+  c = "c";
+  x = "x";
+  y = "y";
+  z = "z";
+  sv1 = stlvec [a,b,b,a,c,c];
+  sv2 = mkstlvec z 6;
+  put err_p false; 
+  catch eh $ unique_copy sv1 (sv2,0) crash;
+  ok0 = get err_p;
+  pei = unique_copy sv1 (sv2,0) (==);
+  ok1 = pei == 4 && members sv2 == [a,b,a,c,z,z];
+  sv3 = emptystlvec;
+  pei = unique_copy sv1 (sv3,svback) (==);
+  ok2 = pei == svend && members sv3 == [a,b,a,c];
+  sv3 = const_stlvec sv3;
+  pei = unique_copy sv1 (sv3,svback) (==);
+  ok3 = members sv3 == [a,b,a,c];
+  ok4 = check_refcs sv1 [6,4,4,6,4,4];
+  ok5 = check_refcs sv2 [4,2,4,2,2,2];
+  ok6 = check_refcs sv3 [2,1,2,1];
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5,ok6];
+  show_result "unique_copy" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_reverse = ok when
+  show_start "reverse";
+  sv1 = stlvec (0..5);
+  ok0 = 1;
+  reverse sv1;
+  ok1 = members sv1 == (5:4..0);
+  sv1 = stlvec (0..5);
+  reverse (sv1,1,5);
+  ok2 = members sv1 == [0,4,3,2,1,5];
+  sv1 = const_stlvec $ stlvec (0..5);
+  reverse sv1;
+  ok3 = members sv1 == (0..5);
+  ok4 = check_refcs sv1 1;
+  ok = all_ok [ok0,ok1,ok2,ok3];
+  show_result "reverse" ok;
+end; 
+
+test_reverse_copy = ok when
+  show_start "reverse_copy";
+  a = "a";
+  b = "b";
+  c = "c";
+  d = "d";
+  e = "e";
+  z = "z";
+  sv1 = stlvec (a..e);
+  sv2 = mkstlvec "z" 7;
+  ok0 = 1;
+  pei = reverse_copy sv1 (sv2,0);
+  ok1 = pei == 5 && members sv2 == [e,d,c,b,a,z,z];
+  sv3 = emptystlvec;
+  pei = reverse_copy sv1 (sv3,svback);
+  ok2 = pei == svend && members sv3 == [e,d,c,b,a];
+  sv3 = const_stlvec sv3;
+  pei = reverse_copy sv1 (sv3,svback);
+  ok3 = members sv3 == [e,d,c,b,a];
+  ok4 = check_refcs sv1 3;
+  ok5 = check_refcs sv2 2;
+  ok6 = check_refcs sv3 1;
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5,ok6];
+  show_result "reverse_copy" ok;
+end; 
+
+test_rotate = ok when
+  show_start "rotate";
+  sv1 = stlvec (0..10);
+  ok0 = 1;
+  rotate (sv1,0,3,svend);
+  //show_vec sv1;
+  ok1 = members sv1 == [3,4,5,6,7,8,9,10,0,1,2];
+  sv1 = stlvec (0..10);
+  rotate (sv1,1,3,#sv1-1);
+  //show_vec sv1;
+  ok2 = members sv1 == [0,3,4,5,6,7,8,9,1,2,10];
+  sv1 = const_stlvec $ stlvec (0..10);
+  rotate sv1;
+  ok3 = members sv1 == (0..10);
+  ok4 = check_refcs sv1 1;
+  ok = all_ok [ok0,ok1,ok2,ok3];
+  show_result "rotate" ok;
+end; 
+
+test_rotate_copy = ok when
+  show_start "rotate_copy";
+  a = "a";
+  b = "b";
+  c = "c";
+  d = "d";
+  e = "e";
+  z = "z";
+  sv1 = stlvec (a..e);
+  sv2 = mkstlvec z 7;
+  ok0 = 1;
+  rotate_copy (sv1,0,2,svend) sv2;
+  ok1 = members sv2 == [c,d,e,a,b,z,z];
+  sv3 = emptystlvec;
+  pei = rotate_copy (sv1,0,2,svend) (sv3,svback);
+  ok2 = members sv3 == [c,d,e,a,b];
+  sv3 = const_stlvec sv3;
+  rotate_copy (sv1,0,2,svend) (sv3,svback);
+  ok3 = members sv3 == [c,d,e,a,b];
+  ok4 = check_refcs sv1 3;
+  ok5 = check_refcs sv2 2;
+  ok6 = check_refcs sv3 1;
+  ok = all_ok [ok0,ok1,ok2,ok3,ok4,ok5,ok6];
+  show_result "rotate_copy" ok;
+end with 
+  eh x = put err_p true; 
+  crash x y = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_random_shuffle = ok when
+  show_start "random_shuffle";
+  sv1 = stlvec (0..10);
+  ok0 = 1;
+  random_shuffle (sv1,0,svend);
+  random_shuffle (sv1,1,#sv1-1);
+  ok1 = check_refcs sv1 1;
+  ok = all_ok [ok1];
+  show_result "random_shuffle" ok;
+end; 
+
+test_partition = ok when
+  show_start "partition";
+  sv1 = stlvec (0..8);
+  put err_p false; 
+  catch eh $ partition sv1 crash;
+  ok0 = get err_p;
+  mid = partition sv1 odd;
+  lsv1 = members sv1;
+  // show sv1; // e.g., [7,1,5,3,4,2,6,0,8]
+  ok1 = all odd (take mid lsv1) && all even (drop mid lsv1);
+  ok2 = check_refcs sv1 1;
+  ok = all_ok [ok0,ok1,ok2];
+  show_result "partition" ok;
+end with
+  odd x = x mod 2;
+  even x = ~odd x;
+  eh x = put err_p true; 
+  crash x = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_stable_partition = ok when
+  show_start "stable_partition";
+  sv1 = stlvec (0..8);
+  put err_p false; 
+  catch eh $ stable_partition sv1 crash;
+  ok0 = get err_p;
+  mid = stable_partition sv1 odd;
+  ok1 = members sv1 == [1,3,5,7,0,2,4,6,8];
+  ok2 = check_refcs sv1 1;
+  ok = all_ok [ok0,ok1,ok2];
+  show_result "stable_partition" ok;
+end with
+  odd x = x mod 2;
+  even x = ~odd x;
+  eh x = put err_p true; 
+  crash x = throw exception; 
+end when 
+  err_p = ref false; 
+end; 
+
+test_modifying = ok when
+  show_suite_start "SV_MODIFYING";
+  ok = 1;
+  ok = test_copy && ok;
+  ok = test_copy_backward && ok;
+  ok = test_swap_ranges && ok;
+  ok = test_transform && ok;
+  ok = test_transform_2 && ok;
+  // ok = test_replace && ok;
+  ok = test_replace_if && ok;
+  ok = test_replace_copy && ok;
+  ok = test_replace_copy_if && ok;
+  ok = test_fill && ok;
+  ok = test_fill_n && ok;
+  ok = test_generate && ok;
+  ok = test_generate_n && ok;
+  ok = test_remove && ok;
+  ok = test_remove_if && ok;
+  ok = test_remove_copy && ok;
+  ok = test_remove_copy_if && ok;
+  ok = test_unique && ok;
+  ok = test_unique_copy && ok;
+  ok = test_reverse && ok;
+  ok = test_reverse_copy && ok;
+  ok = test_rotate && ok;
+  ok = test_rotate_copy && ok;
+  ok = test_random_shuffle && ok;
+  ok = test_partition && ok;
+  ok = test_stable_partition && ok;
+  show_suite_result "SV_MODIFYING" ok;
+end;

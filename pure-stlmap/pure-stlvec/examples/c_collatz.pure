@@ -1,0 +1,25 @@
+/* c_collatz.pure - compute the length of Collatz chains using a native
+   C function to do the arithmetic and a stlvec to cache results.
+
+   Run gcc -shared c_collatz.c -lpure -o c_collatz.so to set up
+   "lib:c_collatz".
+
+   See collatz.pure for a native Pure implementation.
+
+*/
+
+using system, stlvec,  "lib:c_collatz";
+
+extern int lenchain(expr* memget, expr* memput, expr* N, int n);
+extern int atoi(char*);
+
+const N = 1000000;
+let v = mkstlvec 0 (N+1);
+update v 1 1;
+
+maxchain n m = foldl max 0 (map (lenchain (v!) (update v) N) (n..m));
+
+main = if argc ~= 2 then puts "usage: c_collatz n"
+       else puts $ str (maxchain 1 (atoi (argv!1)));
+
+if compiling then () else main;

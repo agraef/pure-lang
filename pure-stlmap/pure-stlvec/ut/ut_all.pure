@@ -1,0 +1,44 @@
+/* ut_all.pure -- Unit tests for stlvec and the stlvec algorithm modules
+    
+Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>.
+
+All rights reserved.
+
+This software is is part of pure-stlvec, an addon to the Pure Programming
+Language (http://code.google.com/p/pure-lang/).
+
+This software is distributed under a BSD-style license in the hope that it
+will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the COPYING file
+included with the pure-stlvec distribution package for details.
+
+
+*/
+
+using system;
+using ut_helpers;
+using ut_global_stlvec;
+using ut_stlvec;
+using ut_nonmodifying;
+using ut_modifying;
+using ut_sort;
+using ut_merge;
+using ut_heap;
+using ut_minmax;
+
+test_all = ok when
+  puts "--- START STLVEC UNIT TESTS ---";
+  ok = 1;
+  ok = test_global_stlvec && ok;
+  ok = test_stlvec && ok;
+  ok = test_nonmodifying && ok;
+  ok = test_modifying && ok;
+  ok = test_sort && ok;
+  ok = test_merge && ok;
+  ok = test_heap && ok;
+  ok = test_minmax && ok;
+  if ~ok then puts "--- FAILED STLVEC UNIT TESTS ---" $$ exit 1 
+  else puts "\n--- PASSED STLVEC UNIT TESTS ---" $$ exit 0;
+end;
+
+if ~compiling then test_all else ();

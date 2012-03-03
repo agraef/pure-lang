@@ -1,0 +1,78 @@
+/* stlbase.pure: base module for Pure interface to C++ STL Containers 
+
+Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>.
+
+All rights reserved.
+
+This software is is part of pure-stlvec, an addon to the Pure Programming
+Language (http://code.google.com/p/pure-lang/).
+
+This software is distributed under a BSD-style license in the hope that it
+will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the COPYING file
+included with the pure-stlvec distribution package for details.
+
+*/
+
+using "lib:stlbase";
+
+namespace stl;
+
+// Functions for testing and debugging
+extern int stl_refc(expr*) = refc;
+
+namespace ;
+
+// stlvec constuctors
+nonfix STLVEC;
+nonfix CONST_STLVEC;
+STLVEC = 'STLVEC;
+CONST_STLVEC = 'CONST_STLVEC;
+
+// stlvec types
+type stlvec (STLVEC _);
+type stlvec (CONST_STLVEC _);
+type mutable_stlvec (STLVEC _);
+type const_stlvec (CONST_STLVEC _);
+
+// stlvec iterator tuples
+type svrng (STLVEC _);
+type svrng (STLVEC _, _);
+type svrng (CONST_STLVEC _);
+type svrng (CONST_STLVEC _, _);
+type const_svrng (CONST_STLVEC _);
+type const_svrng (CONST_STLVEC _, _);
+type mutable_svrng (STLVEC _);
+type mutable_svrng (STLVEC _, _);
+
+/*** Constants used to specify "iterator tuples" *************************/
+
+namespace stl;
+
+// For use with pure-stlvec
+const svbeg  =  0;  // corresponds to C++ first element iterator
+const svend  = -1;  // corresponds to C++ past-end iterator
+const svback = -2;  // corresponds to C++ back_insert_iterator
+const svrev  = -3;  // request reversal of iterators
+
+nonfix svbeg;       // to make svbeg and svend usable as beg and end markers
+nonfix svend;       // in C++ style looping over a stlvec's contents using 
+nonfix svback;      // a recursion. i.e., make them literal constants like
+nonfix svrev;       // (), []
+
+// For use with pure-stlmap
+private extern expr* stl_begin_sym();
+private extern expr* stl_end_sym();
+const smbeg = stl_begin_sym;
+const smend = stl_end_sym;
+
+nonfix smbeg;    // to make smbeg and smend usable as beg and end markers
+nonfix smend;    // in C++ style looping over a stlmap's contents 
+
+
+/*** Permit other STL containers to make stlvecs *********************/
+
+private extern void  stl_sv_delete(void* vec);
+private extern void* stl_sv_make_empty();
+private emptystlvec;
+emptystlvec = STLVEC (sentry stl_sv_delete (stl_sv_make_empty));

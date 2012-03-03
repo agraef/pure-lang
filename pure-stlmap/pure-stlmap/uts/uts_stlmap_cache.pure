@@ -1,0 +1,317 @@
+/* uts_stlmap_cache.pure -- tests for caching keys for stlmaps */
+//-- --comment c++_on --verbose off
+
+//*** Imports *********************************************************
+
+using system, stlmap;
+//- ()
+
+//*** Set up some keys ************************************************
+
+let [ak,bk,ck,dk,ek] = "a".."e";
+//- ()
+
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [1,1,1,1,1]
+
+//*** Check FIFO ordering of cached keys ******************************
+
+let sm = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+sm!ak,sm!bk,sm!ck;
+//- 1,2,3
+
+// cache: ak,bk,ck 
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [2,2,2,1,1]
+
+sm!ak;
+//- 1
+
+// cache: bk,ck,ak 
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [2,2,2,1,1]
+
+--- trace cache hit, key: "c"
+sm!ck;
+//- 3
+
+// cache: bk,ak,ck
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [2,2,2,1,1]
+
+sm!ck;
+//- 3
+
+// cache: bk,ak,ck
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [2,2,2,1,1]
+
+sm!ek
+//- 5
+
+// cache: ak,ck,ek
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [2,1,2,1,2]
+
+catch id $ sm!"x";
+//- out_of_bounds
+
+// cache: ak,ck,ek
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [2,1,2,1,2]
+
+sm!"e";
+//- 5
+
+// cache: ck,ek,"e"
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [1,1,2,1,2]
+
+sm!"e"; 
+//- 5
+
+// cache: ek,"e","e"
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [1,1,1,1,2]
+
+//*** Check Removal of Invalid Iterators (last in pos = 0) ****************
+
+~stlmap or stlset: 0xadf7120
+let sm = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+// cache: empty
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [1,1,1,1,1]
+
+// push forward so the physical cache is "c","a","b" ("c" is last_in)
+sm!ek,sm!ak,sm!bk,sm!ck;
+//- 5,1,2,3
+
+erase (sm,ak);  // erase first cache element
+//- 1
+
+// cache: bk,ck
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [1,2,2,1,1]
+
+sm!dk,sm!ek;  // push "b" out of cache
+//- 4,5
+
+// cache: dk,ek,ck
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [1,2,1,2,2]
+
+
+~stlmap or stlset: 0xc153048
+let sm = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+// cache: empty
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [1,1,1,1,1]
+
+sm!ek,sm!ak,sm!bk,sm!ck;
+//- 5,1,2,3
+
+erase (sm,bk);  // erase middle cache element
+//- 1
+
+// cache: ak,ck
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [2,1,2,1,1]
+
+sm!dk,sm!ek;  // push "a" out of cache
+//- 4,5
+
+// cache: dk,ek,ck
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [2,1,1,2,2]
+
+~stlmap or stlset: 0xaf94e70
+let sm = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+// cache: empty
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [1,1,1,1,1]
+
+sm!ek,sm!ak,sm!bk,sm!ck;
+//- 5,1,2,3
+
+erase (sm,ck);  // erase last cache element
+//- 1
+
+// cache: ak,bk
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [2,2,1,1,1]
+
+sm!dk,sm!ek;  // push "a" out of cache
+//- 4,5
+
+// cache: dk,ek,bk
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [1,2,1,2,2]
+
+
+//*** Check Removal of Invalid Iterators (last in pos = 1) ****************
+
+~stlmap or stlset: 0xadf7120
+let sm = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+// cache: empty
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [1,1,1,1,1]
+
+// push forward so the physical cache is "b","c","a" ("c" is last_in)
+sm!dk,sm!ek,sm!ak,sm!bk,sm!ck;
+//- 4,5,1,2,3
+
+erase (sm,ak);  // erase first cache element
+//- 1
+
+// cache: bk,ck
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [1,2,2,1,1]
+
+sm!dk,sm!ek;  // push "b" out of cache
+//- 4,5
+
+// cache: dk,ek,ck
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [1,1,2,2,2]
+
+
+~stlmap or stlset: 0xc153048
+let sm = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+// cache: empty
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [1,1,1,1,1]
+
+sm!ek,sm!ak,sm!bk,sm!ck;
+//- 5,1,2,3
+
+erase (sm,bk);  // erase middle cache element
+//- 1
+
+// cache: ak,ck
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [2,1,2,1,1]
+
+sm!dk,sm!ek;  // push "a" out of cache
+//- 4,5
+
+// cache: dk,ek,ck
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [2,1,1,2,2]
+
+~stlmap or stlset: 0xaf94e70
+let sm = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+// cache: empty
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [1,1,1,1,1]
+
+sm!ek,sm!ak,sm!bk,sm!ck;
+//- 5,1,2,3
+
+erase (sm,ck);  // erase last cache element
+//- 1
+
+// cache: ak,bk
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [2,2,1,1,1]
+
+sm!dk,sm!ek;  // push "a" out of cache
+//- 4,5
+
+// cache: dk,ek,bk
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [1,2,1,2,2]
+
+//*** Check Removal of Invalid Iterators (last in pos = 2) ****************
+
+~stlmap or stlset: 0xb4f1940
+let sm = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+// cache: empty
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [1,1,1,1,1]
+
+// physical cache is "a","b","c" ("c" is last_in)
+sm!ak,sm!bk,sm!ck;
+//- 1,2,3
+
+erase (sm,ak);  // erase first cache element
+//- 1
+
+// cache: bk,ck
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [1,2,2,1,1]
+
+sm!dk,sm!ek;  // push "b" out of cache
+//- 4,5
+
+// cache: dk,ek,ck
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [1,1,2,2,2]
+
+
+~stlmap or stlset: 0xbbc1c90
+let sm = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+// cache: empty
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [1,1,1,1,1]
+
+sm!ak,sm!bk,sm!ck;
+//- 1,2,3
+
+erase (sm,bk);  // erase middle cache element
+//- 1
+
+// cache: ak,ck
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [2,1,2,1,1]
+
+sm!dk,sm!ek;  // push "a" out of cache
+//- 4,5
+
+// cache: dk,ek,ck
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [1,1,2,2,2]
+
+~stlmap or stlset: 0xadf7fc8
+let sm = stlmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
+//- ()
+
+// cache: empty
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [1,1,1,1,1]
+
+sm!ak,sm!bk,sm!ck;
+//- 1,2,3
+
+erase (sm,ck);  // erase last cache element
+//- 1
+
+// cache: ak,bk
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [2,2,1,1,1]
+
+sm!dk,sm!ek;  // push "a" out of cash
+//- 4,5
+
+// cache: dk,ek,bk
+[stl::refc ak,stl::refc bk,stl::refc ck,stl::refc dk,stl::refc ek]
+//- [1,2,1,2,2]
+
+

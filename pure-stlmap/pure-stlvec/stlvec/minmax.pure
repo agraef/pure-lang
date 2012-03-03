@@ -1,0 +1,38 @@
+/* minmax.pure -- Pure interface for C++ STL minmax algorithms
+    
+Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>.
+
+All rights reserved.
+
+This software is is part of pure-stlvec, an addon to the Pure Programming
+Language (http://code.google.com/p/pure-lang/).
+
+This software is distributed under a BSD-style license in the hope that it
+will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the COPYING file
+included with the pure-stlvec distribution package for details.
+
+*/
+
+using stlvec;
+using "lib:stlalgorithm";
+
+namespace stl;
+
+private extern bool stl_sva_next_permutation(expr* rng, expr* cmp);
+private extern bool stl_sva_prev_permutation(expr* rng, expr* cmp);
+private extern bool stl_sva_lexicographical_compare(expr* rng1,
+                                                expr* rng2, expr* cmp);
+private extern int  stl_sva_min_element(expr* rng, expr* cmp);
+private extern int  stl_sva_max_element(expr* rng, expr* cmp);
+
+min_element rng::svrng cmp = stl_sva_min_element rng cmp;
+
+max_element rng::svrng cmp = stl_sva_max_element rng cmp;
+
+lexicographical_compare rng1::svrng rng2::svrng cmp =
+  stl_sva_lexicographical_compare rng1 rng2 cmp;
+
+next_permutation rng::mutable_svrng cmp = stl_sva_next_permutation rng cmp;
+
+prev_permutation rng::mutable_svrng cmp = stl_sva_prev_permutation rng cmp;

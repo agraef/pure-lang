@@ -1,0 +1,186 @@
+/* stlvec.pure: Pure interface to C++ STL Vectors
+    
+Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>.
+
+All rights reserved.
+
+This software is is part of pure-stlvec, an addon to the Pure Programming
+Language (http://code.google.com/p/pure-lang/).
+
+This software is distributed under a BSD-style license in the hope that it
+will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the COPYING file
+included with the pure-stlvec distribution package for details.
+
+*/
+ 
+using stlbase;
+
+using "lib:stlvec";
+
+namespace stl;
+
+/*** C++ support *****************************************************/
+
+private extern void* stl_sv_make_empty();
+private extern void  stl_sv_delete(void* vec);
+private extern void* stl_sv_make_from_xs(expr* xs_or_sm);
+private extern void* stl_sv_make_n(expr* xs, int n);
+private extern void* stl_sv_dup(expr* rng);
+private extern expr* stl_sv_vector(expr* rng);
+private extern void  stl_sv_reserve(void* vec, int n);
+private extern int   stl_sv_size(void* vec);
+private extern int   stl_sv_iter_size(expr* rng);
+private extern bool  stl_sv_empty(void* vec);
+private extern int   stl_sv_capacity(void* vec);
+private extern expr* stl_sv_front(void* vec);
+private extern expr* stl_sv_back(void* vec);
+private extern expr* stl_sv_list(expr* rng);
+private extern void  stl_sv_push_back(void* vec, expr* val);
+private extern void  stl_sv_pop_back(void* vec);
+private extern void  stl_sv_splice(void* vec, int b, expr* xs_rng);
+private extern void  stl_sv_erase(expr* rng);
+private extern void  stl_sv_clear(void* vec);
+private extern bool  stl_sv_allpairs(expr* fun, expr* rng, expr* rng);
+private extern expr* stl_sv_listmap(expr* fun, expr* rng);
+private extern expr* stl_sv_listcatmap(expr* fun, expr* rng);
+private extern expr* stl_sv_foldl(expr* fun, expr* val, expr* rng);
+private extern expr* stl_sv_foldl1(expr* fun, expr* rng);
+private extern expr* stl_sv_foldr(expr* fun, expr* val, expr* rng);
+private extern expr* stl_sv_foldr1(expr* fun, expr* rng);
+
+extern expr* stl_sv_get(void* vec, int pos);
+extern void  stl_sv_put(void* vec, int pos, expr* val);
+
+/*** Private functions on stlvecs *****************************************/
+
+private get_sv bad_selfwrite ensure_beg ensure_end;
+
+get_sv (STLVEC v) = v;
+get_sv (CONST_STLVEC v) = v;
+
+bad_selfwrite src::svrng trg::svrng = 
+  (~typep mutable_stlvec src) && (get_sv src == get_sv trg);
+
+ensure_beg v b = if b >= 0 && b < stl_sv_size v then b
+                 else throw out_of_bounds;
+
+ensure_end v e = if e == svend then sz 
+                 else if e < 0 || e > sz then throw out_of_bounds 
+                 else e when sz = stl_sv_size v end;
+
+
+/*** Public functions on stlvec *****************************************/
+
+namespace ;
+
+public emptystlvec mkstlvec first last rmfirst rmlast 
+       update replace append erase clear members;
+
+namespace stl;
+
+::const_stlvec (STLVEC v) = (CONST_STLVEC v);
+::const_stlvec (CONST_STLVEC v) = (CONST_STLVEC v);
+::const_stlvec x = ::const_stlvec (::stlvec x);
+
+::emptystlvec = STLVEC (sentry stl_sv_delete (stl_sv_make_empty));
+
+::stlvec sv::svrng = STLVEC (sentry stl_sv_delete (stl_sv_dup sv));
+::stlvec v = STLVEC(sentry stl_sv_delete(stl_sv_make_from_xs (smatrix v))) if vectorp v;
+::stlvec xs::list = STLVEC (sentry stl_sv_delete (stl_sv_make_from_xs xs));
+
+::mkstlvec x n::int = STLVEC (sentry stl_sv_delete (stl_sv_make_n x n));
+
+reserve (STLVEC v) i::int = stl_sv_reserve v i;
+
+capacity (STLVEC v) |
+capacity (CONST_STLVEC v) = stl_sv_capacity v;
+
+empty (STLVEC v) |
+empty (CONST_STLVEC v) = stl_sv_empty v;
+
+(::!) (STLVEC v) p::int |
+(::!) (CONST_STLVEC v) p::int = stl_sv_get v p;
+
+(::#) (STLVEC v) |
+(::#) (CONST_STLVEC v) = stl_sv_size v;
+
+bounds (csv@(CONST_STLVEC v),f::int,l::int) = 
+  csv, ensure_beg v f, ensure_end v l;
+bounds (csv@(CONST_STLVEC v),f::int) = 
+  csv, p, p when p = ensure_beg v f end;
+bounds csv@(CONST_STLVEC v) = 
+  csv, 0, stl_sv_size v;
+bounds (sv@(STLVEC v),f::int,l::int) =
+  sv, ensure_beg v f, ensure_end v l;
+bounds (sv@(STLVEC v),f::int) = 
+  sv, p, p when p = ensure_beg v f end;
+bounds sv@(STLVEC v) = 
+  sv, 0, stl_sv_size v;
+
+::first (STLVEC v) |
+::first (CONST_STLVEC v) = stl_sv_front v;
+
+::last (STLVEC v) |
+::last (CONST_STLVEC v) = stl_sv_back v;
+
+::append sv@(STLVEC v) x = stl_sv_push_back v x $$ sv;
+
+::rmfirst sv@(STLVEC v) = stl_sv_erase (STLVEC v, 0, 1) $$ sv;
+
+::rmlast sv@(STLVEC v) = stl_sv_pop_back v $$ sv;
+
+::replace sv@(STLVEC v) p::int x = stl_sv_put v p x $$ x;
+
+::update sv@(STLVEC v) p::int x = stl_sv_put v p x $$ sv;
+
+::erase (STLVEC v, f::int, l::int) = stl_sv_erase (STLVEC v,f,l) $$ STLVEC v;
+
+::erase (STLVEC v, p::int) = erase (STLVEC v, p, p+1);
+
+::erase sv@(STLVEC v) = stl_sv_clear v $$ sv;
+
+::insert (STLVEC v, p::int) rng::svrng = stl_sv_splice v p rng $$ STLVEC v;
+::insert (STLVEC v, p::int) xs::list = stl_sv_splice v p xs $$ STLVEC v;
+
+allpairs bin_fun rng1::svrng rng2::svrng = stl_sv_allpairs bin_fun rng1 rng2;
+
+(::==) sv1::stlvec sv2::svrng = stl_sv_allpairs (==) sv1 sv2;
+
+(::~=) sv1::stlvec sv2::svrng = ~stl_sv_allpairs (==) sv1 sv2;
+
+::map f rng::svrng = stl_sv_listmap f rng;
+
+::listmap f rng::svrng = stl_sv_listmap f rng;  // for list comprehensions
+
+::catmap f rng::svrng = stl_sv_listcatmap f rng;
+
+::foldl f x rng::svrng = stl_sv_foldl f x rng;
+
+::foldl1 f rng::svrng = stl_sv_foldl1 f rng;
+
+::foldr f x rng::svrng = stl_sv_foldr f x rng;
+
+::foldr1 f rng::svrng = stl_sv_foldr1 f rng;
+
+::members rng::svrng = stl_sv_list rng;
+
+::do f rng::svrng = stl_sv_foldl (\_ x->f x) () rng $$ ();
+
+::filter p rng::svrng = stl_sv_foldr f [] rng with
+  f x xs = case p x of
+    1 = x:xs;
+    0 = xs;
+    y = throw failed_cond;
+  end;
+end;
+
+::rowmap f rng::svrng = rowcat (stl_sv_listmap f rng);
+
+::rowcatmap f rng::svrng = rowcat (stl_sv_listmap f rng);
+
+::colmap f rng::svrng = colcat (stl_sv_listmap f rng);
+
+::colcatmap f rng::svrng = colcat (stl_sv_listmap f rng);
+
+vector rng::svrng = stl_sv_vector rng;

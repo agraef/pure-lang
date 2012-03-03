@@ -1,0 +1,129 @@
+/* time_sort.pure -- time tests for sv_sort.cpp */
+
+using system, stlvec, stlvec::algorithms;
+
+const repeats = 100;
+
+/*** Tests *********************************************************/
+
+time_copy words = () when
+  tm = clock;
+  spin repeats;
+  tm = (clock - tm) / 1000.0;
+  printf "  copy words: %8.1f msecs\n" tm;
+  // puts $ str (take 5 (members cpy));
+end with
+  spin 0 = ();
+  spin n = do_sort $ spin (n-1);
+  do_sort = erase cpy $$ stl::copy words (cpy,stl::svback);
+end when
+  cpy = emptystlvec; 
+end;
+
+time_sort words = () when
+  tm = clock;
+  spin repeats;
+  tm = (clock - tm) / 1000.0;
+  printf "  sort words: %8.1f msecs\n" tm;
+  // puts $ str (take 5 (members cpy));
+end with
+  spin 0 = ();
+  spin n = do_sort $ spin (n-1);
+  do_sort = erase cpy $$ stl::copy words (cpy,stl::svback) $$ stl::sort cpy (<);
+end when
+  cpy = emptystlvec; 
+end;
+
+/*** Harness ********************************************************/
+
+// returns a stlvec of shuffled words
+get_words num_words filename = words when
+  fp = case fopen filename  "r" of 
+    fopen _ _ = pointer 0;
+    fp = fp;
+  end;
+  all_words = if null fp then
+                puts "Can't open word file" $$ emptystlvec
+              else
+                stlvec $ drop 200 (split "\n" (fget fp));
+  fclose fp;
+  num_words = min (#all_words) num_words;
+  stl::random_shuffle all_words;
+  words = stlvec (all_words,stl::svbeg,num_words);
+end;
+
+main num_words = () when
+  words = get_words num_words "anagram_groups_dict.txt";
+  num_words = min num_words (#words);
+  printf "Test with %d words and %d repeats\n" (num_words, repeats);
+  time_copy words;
+  time_sort words;
+end;
+
+
+/*** Recent Improvements (Feb 5,2012) ************************************/
+
+/* Times before code tuning - uses generic pxh_pred2 for sorting
+
+> main 100;
+Test with 100 words and 100 repeats
+  copy words:      0.0 msecs
+  sort words:     80.0 msecs
+()
+> main 1000;
+Test with 1000 words and 100 repeats
+  copy words:     10.0 msecs
+  sort words:   1270.0 msecs
+()
+> main 10000;
+Test with 10000 words and 100 repeats
+  copy words:    100.0 msecs
+  sort words:  16930.0 msecs
+()
+
+*/
+
+    
+/* Times after replacing pxh_pred2 with pxh_less, which is optimized for
+   comparinsons of ints, bigints, doubles and strings
+
+> run time_sort.pure
+> main 100;
+Test with 100 words and 100 repeats
+  copy words:     20.0 msecs
+  sort words:     20.0 msecs
+()
+> main 1000;
+Test with 1000 words and 100 repeats
+  copy words:     10.0 msecs
+  sort words:    160.0 msecs
+()
+> main 10000;
+Test with 10000 words and 100 repeats
+  copy words:    100.0 msecs
+  sort words:   2140.0 msecs
+()
+
+*/
+
+/* Times with pxh_less, after changes to px_handle's constructors and 
+   destructor. The changes avoid pure_new, pure_free thrashing.
+   
+> main 100;
+Test with 100 words and 100 repeats
+  copy words:      0.0 msecs
+  sort words:     10.0 msecs
+()
+> main 1000;
+Test with 1000 words and 100 repeats
+  copy words:      0.0 msecs
+  sort words:    140.0 msecs
+()
+> main 10000;
+Test with 10000 words and 100 repeats
+  copy words:     90.0 msecs
+  sort words:   1790.0 msecs
+()
+>
+
+*/
