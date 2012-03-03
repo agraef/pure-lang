@@ -153,21 +153,22 @@ namespace as the name of the struct being defined.
 
 */
 
-using system, regex, "lib:stlvec";
+using system, regex;
+using stlbase, "lib:stlvec";
 
 public members;
 
 namespace stl;
 
-private extern void* sv_make_from_xs(expr* xs_or_sm);
-private extern void* sv_make_n(expr* xs, int n);
-private extern void  sv_delete(void* vec);
-private extern void* sv_dup(expr* it);
-private extern expr* sv_vector(expr* it);
-private extern expr* sv_foldr(expr* fun, expr* val, expr* it);
+private extern void* stl_sv_make_from_xs(expr* xs_or_sm);
+private extern void* stl_sv_make_n(expr* xs, int n);
+private extern void  stl_sv_delete(void* vec);
+private extern void* stl_sv_dup(expr* it);
+private extern expr* stl_sv_vector(expr* it);
+private extern expr* stl_sv_foldr(expr* fun, expr* val, expr* it);
 
-extern expr* sv_get(void* vec, int pos);
-extern void  sv_put(void* vec, int pos, expr* val);
+extern expr* stl_sv_get(void* vec, int pos) = sv_get;
+extern void  stl_sv_put(void* vec, int pos, expr* val) = sv_put;
 
 private extern int pure_sym(char* s);
 private extern int atoi(char* s);
@@ -191,11 +192,12 @@ private parse_field_spec parse_name_spec parse_field_specs eval_code
 
 struct_err msg = throw (struct_error msg);
 
-struct_mk_sv x n::int = sentry sv_delete (sv_make_n x n);
+struct_mk_sv x n::int = sentry stl_sv_delete (stl_sv_make_n x n);
 
-struct_sv v = sentry sv_delete (sv_make_from_xs (smatrix v)) if vectorp v;
+struct_sv v = sentry stl_sv_delete (stl_sv_make_from_xs (smatrix v))
+  if vectorp v;
 
-struct_dup sv = sentry sv_delete (sv_dup (STRUCT sv));
+struct_dup sv = sentry stl_sv_delete (stl_sv_dup (STRUCT sv));
 
 struct_put sv i x = sv_put sv i x $$ sv;
 
@@ -320,7 +322,7 @@ def defstruct name fields =
 def defstruct_code name fields = 
   stl::mk_struct 1 (str ('name)) (str ('fields));
 
-::members (STRUCT _ sv) = sv_foldr (\x xs->x:xs) [] (STRUCT sv);
+::members (STRUCT _ sv) = stl_sv_foldr (\x xs->x:xs) [] (STRUCT sv);
 
 struct_name (STRUCT name _) = str name; 
 
