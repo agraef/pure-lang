@@ -55,13 +55,13 @@ uninstall:
 	$(MAKE) uninstall --directory=pure-stlmap
 
 check:
+	rm -rf BUILD
 	$(MAKE) install DESTDIR=$(shell pwd)/BUILD
-	chmod +x check_script
 	./check_script $(shell pwd)/BUILD
 
 # Roll a distribution tarball.
 
-distfiles = Makefile README COPYING *.pure *.hpp *.cpp *.pdf
+distfiles = Makefile README COPYING check_script *.pure *.hpp *.cpp *.pdf
 sedfiles = README
 dist = pure-$(pkgname)-$(version)
 date = $(shell date "+%B %-d, %Y")
