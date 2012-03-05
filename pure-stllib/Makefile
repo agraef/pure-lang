@@ -2,9 +2,7 @@
 
 pkgname = stllib
 
-stllib_version = 0.1
-stlvec_version = 0.3
-stlmap_version = 0.1
+version = 0.1
 
 .PHONY: all stlvec stlmap dist check install uninstall clean dist distcheck
 
@@ -66,11 +64,9 @@ check:
 
 distfiles = Makefile README COPYING *.pure *.hpp *.cpp *.pdf
 sedfiles = README
-dist = pure-$(pkgname)-$(stllib_version)
+dist = pure-$(pkgname)-$(version)
 date = $(shell date "+%B %-d, %Y")
-datesubst = sed -e "s?@stllibversion@?$(stllib_version)?g" \
-	        -e "s?@stlvecversion@?$(stlvec_version)?g" \
-	        -e "s?@stlmapversion@?$(stlmap_version)?g" \
+datesubst = sed -e "s?@version@?$(version)?g" \
 	        -e "s?|today|?$(date)?g" < $(1) > $(2)
 dist:
 	rm -rf $(dist)
@@ -78,12 +74,8 @@ dist:
 	for x in $(distfiles); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	for x in $(sedfiles); do rm -f $(dist)/$$x; \
                               $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
-	$(MAKE) dist stlvec_version=$(stlvec_version) \
-                     stllib_version=$(stllib_version) \
-                     DIST=../$(dist) --directory=pure-stlvec
-	$(MAKE) dist stlmap_version=$(stlmap_version) \
-                     stllib_version=$(stllib_version) \
-                     DIST=../$(dist) --directory=pure-stlmap
+	$(MAKE) dist DIST=../$(dist) --directory=pure-stlvec
+	$(MAKE) dist DIST=../$(dist) --directory=pure-stlmap
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
 	rm -rf $(dist)

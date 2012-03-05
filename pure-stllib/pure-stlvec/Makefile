@@ -1,5 +1,6 @@
 
 pkgname = pure-stlvec
+version = 0.3
 
 # platform-specific setup
 
@@ -56,8 +57,7 @@ distfiles = README Makefile *.hpp *.cpp *.pure stlvec/* ut/* examples/*
 sedfiles = README
 dist = $(DIST)/$(pkgname)
 date = $(shell date "+%B %-d, %Y")
-datesubst = sed -e "s?@stlvecversion@?$(stlvec_version)?g" \
-                -e "s?@stllibversion@?$(stllib_version)?g" \
+datesubst = sed -e "s?@version@?$(version)?g" \
                 -e "s?|today|?$(date)?g" < $(1) > $(2)
 
 dist:
