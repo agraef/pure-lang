@@ -56,9 +56,8 @@ uninstall:
 
 check:
 	$(MAKE) install DESTDIR=$(shell pwd)/BUILD
-	$(MAKE) check DESTDIR=$(shell pwd)/BUILD --directory=pure-stlvec
-	$(MAKE) check DESTDIR=$(shell pwd)/BUILD --directory=pure-stlmap
-	rm -rf $(shell pwd)/BUILD
+	chmod +x check_script
+	./check_script $(shell pwd)/BUILD
 
 # Roll a distribution tarball.
 

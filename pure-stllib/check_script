@@ -1,0 +1,45 @@
+#! /bin/sh
+
+# check_script - called by make check
+
+DESTDIR=$1
+
+libdir=`pkg-config pure --variable libdir`
+installdir=${DESTDIR}${libdir}/pure
+
+curdir=$PWD
+
+# run ut for stlvec
+cd pure-stlvec/ut
+pure -I${installdir} -L${installdir} -x ut_all.pure
+stlvec_ec=$?
+
+cd ${curdir}
+
+echo 
+
+cd pure-stlmap/uts
+pure -I${installdir} -L${installdir} -x check_uts.pure uts_*.pure
+stlmap_ec=$?
+
+cd ${curdir}
+
+rm -rf ${DESTDIR}
+
+if [ ${stlvec_ec} -ne 0 -o ${stlmap_ec} -ne 0 ] 
+then
+  echo
+  echo --- MAKE CHECK FAILED ---
+  exit 1
+else
+  echo
+  echo --- MAKE CHECK PASSED ---
+  exit 0
+fi
+
+
+
+
+
+
+
