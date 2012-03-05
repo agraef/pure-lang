@@ -1,0 +1,40 @@
+
+/* There's an obscure pitfall concerning the use of the 'reduce' macro in
+   situations where some 'with' clauses in the lexical context surrounding the
+   'reduce' call are arguments to another macro call. In this case the 'with'
+   clause will be implicitly quoted (as described in section Built-in Macros
+   and Special Expressions in the Pure Manual) before it is passed to the
+   outer macro call and is subsequently expanded again, clobbering the
+   argument of the 'reduce_with' call 'reduce' expands to, before the call to
+   'reduce_with' gets executed. For instance, consider the following trace:
+
+   > trace -m $ reduce __locals__ __with__
+   > id $ (reduce (foo x) with x = 99 end);
+   -- macro reduce: reduce --> reduce_with __locals__
+   -- macro __locals__: __locals__ --> [x=>x]
+   -- macro ($): id$(reduce_with [x=>x] (foo x) with x = 99 end) --> id (reduce_with [x=>x] (foo x) __with__ [x-->99])
+   -- macro (__with__): reduce_with [x=>x] (foo x) __with__ [x-->99] --> reduce_with [x=>x] (foo x) with x = 99 end
+   reduce_with [99=>99] (foo 99)
+
+   One might argue that this is a bug in the implementation of 'reduce', but
+   taken the current implementation for granted, according to Pure's macro
+   expansion rules this behaviour is in fact *correct*, if somewhat
+   unexpected. To work around this issue, you'll either have to keep all
+   relevant 'with' clauses outside of the outer macro call, or avoid the outer
+   macro call altogether. For instance, the following will both yield the
+   expected results.
+
+   > id (reduce (foo x) with x = 99 end);
+   foo 99
+   > id $ reduce (foo x) with x = 99 end;
+   foo 99
+
+   This regression test merely serves to document this misfeature, in case we
+   find an alternative implementation of 'reduce' which eliminates this defect
+   in the future. */
+
+// This works as expected.
+id (reduce (foo x) with x = 99 end);
+id $ reduce (foo x) with x = 99 end;
+// This doesn't.
+id $ (reduce (foo x) with x = 99 end);

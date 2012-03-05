@@ -1,0 +1,18 @@
+
+/* Forms of name capture in macro calls involving specials in macro
+   arguments. */
+
+def F x = x+y when y = x+1 end;
+def G x = x+y;
+
+// This works as expected.
+F y;
+id (F y);
+// This doesn't.
+id $ F y;
+
+// This works as expected.
+G 10 when y = 99 end;
+id (G 10 when y = 99 end);
+// This doesn't.
+id $ (G 10 when y = 99 end);
