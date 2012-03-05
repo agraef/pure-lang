@@ -54,6 +54,7 @@ typedef struct _gsl_matrix_symbolic
   pure_expr **data;
   gsl_block_symbolic *block;
   int owner;
+  void *q; // used internally, do not touch
 } gsl_matrix_symbolic;
 
 static gsl_matrix* 
@@ -124,6 +125,7 @@ gsl_matrix_symbolic_alloc(const size_t n1, const size_t n2)
   m->tda = n2; 
   m->block = block;
   m->owner = 1;
+  m->q = 0;
   return m;
 }
 
