@@ -2030,6 +2030,7 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
 	if (f > 0) {
 	  env::const_iterator jt = interp.macenv.find(f);
 	  if ((jt != interp.macenv.end() && jt->second.t == env_info::fun) ||
+	      f == interp.symtab.locals_sym().f ||
 	      f == interp.symtab.eval_sym().f ||
 	      f == interp.symtab.ifelse_sym().f ||
 	      f == interp.symtab.lambda_sym().f ||
