@@ -55,7 +55,9 @@ help:
 # needs to be updated (along with the toctree in the master document index.txt)
 # when the set of documentation changes.
 
-rst_sources = pure/pure.txt pure/purelib.txt pure/puretut.txt pure/install.txt faust2pd/faust2pd.txt gnumeric-pure/gnumeric-pure.txt pd-faust/pd-faust.txt pd-pure/pd-pure.txt pure-audio/pure-audio.txt pure-csv/pure-csv.txt pure-doc/pure-doc.txt pure-fastcgi/pure-fastcgi.txt pure-faust/pure-faust.txt pure-ffi/pure-ffi.txt pure-g2/pure-g2.txt pure-gen/pure-gen.txt pure-gl/pure-gl.txt pure-glpk/pure-glpk.txt pure-gplot/pure-gplot.txt pure-gsl/pure-gsl.txt pure-gtk/pure-gtk.txt pure-liblo/pure-liblo.txt pure-midi/pure-midi.txt pure-mpfr/pure-mpfr.txt pure-octave/pure-octave.txt pure-odbc/pure-odbc.txt pure-rational/pure-rational.txt pure-readline/pure-readline.txt pure-sockets/pure-sockets.txt pure-sql3/pure-sql3.txt pure-stldict/pure-stldict.txt pure-stlvec/pure-stlvec.txt pure-tk/pure-tk.txt pure-xml/pure-xml.txt
+rst_sources = pure/pure.txt pure/purelib.txt pure/puretut.txt pure/install.txt faust2pd/faust2pd.txt gnumeric-pure/gnumeric-pure.txt pd-faust/pd-faust.txt pd-pure/pd-pure.txt pure-audio/pure-audio.txt pure-csv/pure-csv.txt pure-doc/pure-doc.txt pure-fastcgi/pure-fastcgi.txt pure-faust/pure-faust.txt pure-ffi/pure-ffi.txt pure-g2/pure-g2.txt pure-gen/pure-gen.txt pure-gl/pure-gl.txt pure-glpk/pure-glpk.txt pure-gplot/pure-gplot.txt pure-gsl/pure-gsl.txt pure-gtk/pure-gtk.txt pure-liblo/pure-liblo.txt pure-midi/pure-midi.txt pure-mpfr/pure-mpfr.txt pure-octave/pure-octave.txt pure-odbc/pure-odbc.txt pure-rational/pure-rational.txt pure-readline/pure-readline.txt pure-sockets/pure-sockets.txt pure-sql3/pure-sql3.txt pure-stldict/pure-stldict.txt pure-stllib/pure-stllib.txt pure-stllib/pure-stlmap/pure-stlmap.txt pure-stllib/pure-stlvec/pure-stlvec.txt pure-tk/pure-tk.txt pure-xml/pure-xml.txt
+
+rst_dirs = $(dir $(rst_sources))
 
 # Extra (static) rst sources.
 
@@ -97,9 +99,9 @@ docs: alldocs
 # This is also used internally for the 'dist' and 'update' targets.
 
 alldocs:
-	@rm -rf $(dir $(rst_sources))
+	@rm -rf $(rst_dirs)
 	@$(MAKE) --no-print-directory sources
-	@(manifest=`ls */*.txt 2>/dev/null || true`; test -n "$$manifest" && cp $$manifest .; rm -rf $(dir $(rst_sources)); true)
+	@(manifest=`ls */*.txt */*/*.txt 2>/dev/null || true`; test -n "$$manifest" && cp $$manifest .; rm -rf $(rst_dirs); true)
 	@$(MAKE) --no-print-directory $(BUILDDIR)/html/index.html $(BUILDDIR)/latex/puredoc.pdf
 
 sources: conf.py $(rst_sources)
@@ -117,18 +119,18 @@ $(BUILDDIR)/latex/puredoc.pdf: conf.py $(rst_extra) $(notdir $(rst_sources))
 # the 'install' and 'update-html' targets.
 
 allhtml:
-	@rm -rf $(dir $(rst_sources))
+	@rm -rf $(rst_dirs)
 	@$(MAKE) --no-print-directory sources
-	@(manifest=`ls */*.txt 2>/dev/null || true`; test -n "$$manifest" && cp $$manifest .; rm -rf $(dir $(rst_sources)); true)
+	@(manifest=`ls */*.txt */*/*.txt 2>/dev/null || true`; test -n "$$manifest" && cp $$manifest .; rm -rf $(rst_dirs); true)
 	@$(MAKE) --no-print-directory $(BUILDDIR)/html/index.html
 
 # Same as above, but update the texinfo (and info) docs. This is used
 # internally for the 'update-info' target.
 
 allinfo:
-	@rm -rf $(dir $(rst_sources))
+	@rm -rf $(rst_dirs)
 	@$(MAKE) --no-print-directory sources
-	@(manifest=`ls */*.txt 2>/dev/null || true`; test -n "$$manifest" && cp $$manifest .; rm -rf $(dir $(rst_sources)); true)
+	@(manifest=`ls */*.txt */*/*.txt 2>/dev/null || true`; test -n "$$manifest" && cp $$manifest .; rm -rf $(rst_dirs); true)
 	@$(MAKE) texinfo && (cd $(BUILDDIR)/texinfo && $(MAKE) info)
 
 # Same as above, but don't run sphinx-builder yet, leave that to the user.
@@ -136,10 +138,10 @@ allinfo:
 # but then you won't be able to do anything with the rst files.
 
 rst:
-	@rm -rf $(dir $(rst_sources))
+	@rm -rf $(rst_dirs)
 	@$(MAKE) --no-print-directory sources
-	@(manifest=`ls */*.txt 2>/dev/null || true`; test -n "$$manifest" && cp $$manifest .; if test -n "$$manifest"; then echo "Updated rst sources; try 'make help' for a list of available options."; else echo "No updated rst sources; nothing to be done."; fi)
-	@rm -rf $(dir $(rst_sources))
+	@(manifest=`ls */*.txt */*/*.txt 2>/dev/null || true`; test -n "$$manifest" && cp $$manifest .; if test -n "$$manifest"; then echo "Updated rst sources; try 'make help' for a list of available options."; else echo "No updated rst sources; nothing to be done."; fi)
+	@rm -rf $(rst_dirs)
 
 # A little helper function which patches up a rst document and checks whether
 # it's different from what we already have (if so, then get rid of it
@@ -222,7 +224,7 @@ dist: alldocs docs/Makefile
 # fresh build.
 
 cleanrst:
-	rm -rf $(dir $(rst_sources))
+	rm -rf $(rst_dirs)
 	rm -rf $(notdir $(rst_sources))
 
 # Get rid of really *everything* that we generated, and other unneccessary
