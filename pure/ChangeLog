@@ -1,3 +1,27 @@
+2012-03-06  Albert Graef  <Dr.Graef@t-online.de>
+
+	* Makefile.in: Fix a glitch causing discrepancies between
+	generated log and actual test log for the prelude.
+
+	* lib/prelude.pure: Fix up the definition of the __do__ macro for
+	the reworked treatment of macro arguments.
+
+	* interpreter.cc/hh, lexer.ll: Fixed some of the bad side-effects
+	of autoquoting of macro arguments which would break macro hygiene.
+
+	Implicit quoting of macro arguments is now disabled by default,
+	and can be selectively enabled for individual macros with the new
+	--quoteargs pragma. Also, autoquoted macro parameters are now
+	actually quoted, i.e., embedded macro calls are not evaluated.
+
+	This fixes name capture issues due to premature evaluation of
+	embedded macros in quoted macro arguments. One minor defect which
+	remains is the case of a free variable in a macro substition being
+	captured by a local definition if the entire construct is quoted;
+	see the last example in test078.pure. (One might argue, though,
+	that in this specific case the behaviour of the macro evaluator is
+	actually correct.)
+
 2012-02-20  Albert Graef  <Dr.Graef@t-online.de>
 
 	* interpreter.cc (lcsubst): Added a missing recursion in the

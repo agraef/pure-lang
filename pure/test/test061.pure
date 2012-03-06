@@ -25,9 +25,12 @@ let x = baz y;
 x; eval x 99;
 
 /* Manipulate a special with a macro. These are the same as the bar and baz
-   functions above, but implemented as macros. Note that the quoting of
-   specials is implicit in macro arguments. */
+   functions above, but implemented as macros. Note that we use the
+   --quoteargs pragma with these macros so that the macro arguments are quoted
+   automatically. */
 
+#! --quoteargs bar
+#! --quoteargs baz
 def bar (\x y -> z) = __eval__ ('(\y x -> z));
 def baz x = __eval__ ('(\x->x+1));
 

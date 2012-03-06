@@ -267,6 +267,21 @@ blank  [ \t\f\v\r]
 		   "' in --nodefined pragma");
   yylloc->step();
 }
+^"#!"[ \t]*"--quoteargs"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
+  /* --quoteargs pragma. */
+  char *s = strchr(yytext, '-')+strlen("--quoteargs"), *t = s;
+  while (isspace(*t)) t++;
+  s = t;
+  while (*t && !isspace(*t)) t++;
+  string sym = string(s, t-s);
+  int32_t f = pure_sym(sym.c_str());
+  if (f > 0)
+    interp.quoteargs.insert(f);
+  else
+    interp.warning(*yylloc, "warning: bad symbol '"+sym+
+		   "' in --quoteargs pragma");
+  yylloc->step();
+}
 ^"#!"[ \t]*"--enable"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
   /* --enable pragma. */
   char *s = strchr(yytext, '-')+strlen("--enable"), *t = s;

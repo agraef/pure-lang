@@ -1694,22 +1694,46 @@ end;
 
 #! --if common-opt
 
-namespace __std__ with public __do__; end;
+namespace __std__ with
+  public __do__ __voidchk__ __voidchk1__ __voidchk2__ __voidfun__;
+end;
+
 using namespace __std__;
 
+// This is needed to make the following rules work.
+#! --quoteargs __std__::__do__
+
+// Entry points.
 def void (catmap f x) | void (listmap f x) = __do__ f x;
 def void (rowcatmap f x) | void (colcatmap f x) = __do__ f x;
 def void (rowmap f x) | void (colmap f x) = __do__ f x;
 
-// Handle the case of an outermost filter clause.
-def void (__ifelse__ y z []) | void (__ifelse__ y z {}) =
-    __ifelse__ y (void z) ();
+/* Handle the case of an outermost filter clause. We have to go to some
+   lengths here since we want to avoid making 'void' quote its argument. But
+   we need to get the argument in quoted form so that we can check for a
+   conditional expression. The '__voidchk__' macro takes care of that. */
+
+#! --quoteargs __std__::__voidchk__
+def void x = __voidchk__ x x;
+
+// Check for an outermost filter clause.
+def __voidchk__ (__ifelse__ y z []) | __voidchk__ (__ifelse__ y z {}) =
+  __voidchk1__ (__ifelse__ y (void z) ());
+def __voidchk1__ x y = x;
+
+// Default case. This is the tricky part. We want '__voidchk2__ x y' to expand
+// to just 'void y'. We can't just write 'void y', though, since that would
+// make the __voidchk__ macro loop. But since __voidfun__ is a constant, it
+// gets substituted only after macro evaluation, so we can use that here.
+const __voidfun__ = void;
+def __voidchk__ x = __voidchk2__ x;
+def __voidchk2__ x y = __voidfun__ y;
 
 /* The '__do__' macro eventually reduces to just a plain 'do' call, but
    applies some optimizations along the way. While the following rules are
    always valid, we use a separate macro here instead of clobbering 'do'
-   itself, so that these optimizations do not interfere with calls to 'do' in
-   ordinary user code. */
+   itself, so that these optimizations do not interfere with ordinary calls
+   to 'do'. */
 
 // Recurse into embedded generator clauses.
 def __do__ (__lambda__ [x] y@(listmap _ _)) |
@@ -1718,18 +1742,20 @@ def __do__ (__lambda__ [x] y@(listmap _ _)) |
     __do__ (__lambda__ [x] y@(catmap _ _)) |
     __do__ (__lambda__ [x] y@(rowcatmap _ _)) |
     __do__ (__lambda__ [x] y@(colcatmap _ _)) =
-    __do__ (__lambda__ [x] (void y));
+    __do__ $ (__lambda__ [x] (void y));
 
 // Recurse into embedded filter clauses.
 def __do__ (__lambda__ [x] (__ifelse__ y z [])) |
     __do__ (__lambda__ [x] (__ifelse__ y z {})) =
-    __do__ (__lambda__ [x] (__ifelse__ y (void z) ()));
+    __do__ $ (__lambda__ [x] (__ifelse__ y (void z) ()));
 
 // Eliminate extra calls to 'void' in generator clauses.
-def __do__ (__lambda__ [x] (void y)) = __do__ (__lambda__ [x] y);
+def __do__ (__lambda__ [x] (void y)) |
+    __do__ (__lambda__ [x] (__voidfun__ y)) = __do__ (__lambda__ [x] y);
 
 // Eliminate extra calls to 'void' in filter clauses.
-def __do__ (__lambda__ [x] (__ifelse__ y (void z) ())) =
+def __do__ (__lambda__ [x] (__ifelse__ y (void z) ())) |
+    __do__ (__lambda__ [x] (__ifelse__ y (__voidfun__ z) ())) =
     __do__ (__lambda__ [x] (__ifelse__ y z ()));
 
 // Any remaining instances reduce to a plain 'do' (this must come last).

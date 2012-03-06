@@ -608,6 +608,7 @@ public:
   list<int> required; // required symbols (--required pragma)
   set<int> eager;    // eager compilation symbols (--eager pragma)
   set<int> defined;  // defined symbols (--defined pragma)
+  set<int> quoteargs; // macros with autoquoted args (--quoteargs pragma)
   ostream *output;   // redirected output stream for interactive commands
   symtable symtab;   // the symbol table
   pure_expr *result; // last result computed by exec() or parse()
@@ -846,7 +847,7 @@ public:
   expr macsval(pure_expr *x);
   bool specials_only;
   expr *macspecial(expr x, envstack& estk, uint8_t idx);
-  exprl get_macargs(expr x);
+  exprl get_macargs(expr x, bool quote);
   expr tagsubst(expr x);
   bool parse_rulel(exprl& xs, rulel& r);
   bool parse_simple_rulel(exprl& xs, rulel& r, int& offs);

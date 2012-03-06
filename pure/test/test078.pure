@@ -1,6 +1,9 @@
 
-/* Forms of name capture in macro calls involving specials in macro
-   arguments. */
+/* Forms of name capture in macro calls involving quoted specials. This has
+   largely been fixed in Pured 0.52. One minor defect which remains is the
+   case of a free variable in a macro substition being captured by a local
+   definition if the entire construct is quoted (see the last example below).
+   Alas, it's not really obvious how to fix this (rather obscure) case. */
 
 def F x = x+y when y = x+1 end;
 def G x = x+y;
@@ -8,11 +11,14 @@ def G x = x+y;
 // This works as expected.
 F y;
 id (F y);
-// This doesn't.
 id $ F y;
 
-// This works as expected.
 G 10 when y = 99 end;
 id (G 10 when y = 99 end);
-// This doesn't.
+id $ (G 10 when y = 99 end);
+
+#! --quoteargs $
+// This still works as expected.
+id $ F y;
+// This doesn't (name capture on G's free y variable).
 id $ (G 10 when y = 99 end);
