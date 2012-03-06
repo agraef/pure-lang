@@ -724,15 +724,16 @@ Currently, the following code generation options are recognized:
 
 .. program:: pure-pragma
 
-Besides these, there are the following special pragmas affecting the code
-generation of some global function, which is specified in the pragma. These
-pragmas can only be used in source code, they cannot be controlled using
-command line options or environment variables. Note that the given symbol
-``fun`` may in fact be an arbitrary symbol (not just an identifier), so that
-these pragmas can also be applied to special operator symbols (cf. `Lexical
-Matters`_). Also note that each of these pragmas also implicitly declares the
-symbol, so if a symbol needs any special attributes then it must be declared
-before any pragmas involving it (cf. `Symbol Declarations`_).
+Besides these, there are the following special pragmas affecting the
+evaluation of some global function or macro, which is specified in the
+pragma. These pragmas can only be used in source code, they cannot be
+controlled using command line options or environment variables. Note that the
+given symbol ``fun`` may in fact be an arbitrary symbol (not just an
+identifier), so that these pragmas can also be applied to special operator
+symbols (cf. `Lexical Matters`_). Also note that each of these pragmas also
+implicitly declares the symbol, so if a symbol needs any special attributes
+then it must be declared before any pragmas involving it (cf. `Symbol
+Declarations`_).
 
 .. option:: --eager fun
 
@@ -789,6 +790,13 @@ before any pragmas involving it (cf. `Symbol Declarations`_).
 
    More information and examples for common uses of the :option:`--defined`
    pragma can be found under `Defined Functions`_ in the `Caveats and Notes`_
+   section.
+
+.. option:: --quoteargs fun
+
+   This pragma tells the macro evaluator (cf. Macros_) that the given macro
+   should receive its arguments unevaluated, i.e., in quoted form. This is
+   described in more detail in the `Built-in Macros and Special Expressions`_
    section.
 
 Conditional Compilation
@@ -3931,10 +3939,12 @@ actually produces some ordinary "placeholder" terms for these::
 Note that these placeholders are in fact special built-in macros which
 reconstruct the special expression when evaluated. Moreover, special
 expressions are implicitly quoted when they occur on the left-hand side of an
-equation or as an argument of a macro call. This is often used to implement
-macros which manipulate these constructs as literals. For instance, the
-following macro swaps the arguments in a lambda::
+equation or as an argument of a ":option:`quoteargs <pure-pragma --quoteargs>`"
+macro call. This is often used to implement macros which manipulate these
+constructs as literals. For instance, the following macro swaps the arguments
+in a lambda::
 
+  > #! --quoteargs bar
   > def bar (\x y -> z) = __eval__ ('(\y x -> z));
   > show bar
   def bar (__lambda__ [x,y] z) = __eval__ ('__lambda__ [y,x] z);
@@ -4844,8 +4854,8 @@ evaluated by reducing them to normal form using the available macro rules. The
 resulting expressions are then substituted for the macro calls. All macro
 substitution happens before constant substitutions and the actual compilation
 step. Macros can be defined in terms of other macros (also recursively), and
-are evaluated using call by value (i.e., macro calls in macro arguments are
-expanded before the macro gets applied to its parameters).
+are normally evaluated using call by value (i.e., macro calls in macro
+arguments are expanded before the macro gets applied to its parameters).
 
 .. _Optimization Rules:
 
@@ -5046,8 +5056,9 @@ Note that the expansion of the ``G`` macro correctly uses the global instance
 of ``y``, even though ``y`` is locally defined in the context of the macro
 call. (In some languages this form of name capture is sometimes used
 deliberately in order to make the macro use the binding of the symbol which is
-active at the point of the macro call. This never works in Pure, hence in such
-cases you will have to explicitly pass such symbols to the macro.)
+active at the point of the macro call. Normally, this won't work in Pure,
+although there is a way to force this behaviour in Pure as well, see `Name
+Capture`_ in the `Caveats and Notes`_ section.)
 
 In contrast, the second form of name capture is usually not intended, and is
 therefore more dangerous. Consider the following example::
@@ -5227,19 +5238,23 @@ pattern. We'll see examples of these later.
 
 Quoted specials can be manipulated with macros just as well as with functions.
 In fact, this is quite common and thus the macro evaluator has some special
-support to make this more convenient. First, special expressions in macro
-arguments are implicitly quoted. To illustrate this, let's redefine ``swap``
-as a macro::
+support to make this more convenient. Specifically, it is possible to make a
+macro quote its arguments in an automatic fashion, by means of the
+:option:`--quoteargs <pure-pragma --quoteargs>` pragma. To illustrate this,
+let's redefine ``swap`` as a macro::
 
   > clear swap
+  > #! --quoteargs swap
   > def swap (\x y -> z) = '(\y x -> z);
   > swap (\a b->a-b);
   __lambda__ [b,a] (a-b)
 
-Note that the quote on the lambda argument of ``swap`` can now be omitted.
-However, the result is still a quoted lambda. It's tempting to just omit the
-quote on the right-hand side of the macro definition as well, in order to get
-a real lambda instead::
+The :option:`--quoteargs <pure-pragma --quoteargs>` pragma makes the ``swap``
+macro receive its argument unevaluated, as if it was quoted (but without a
+literal quote around it). Therefore the quote on the lambda argument of
+``swap`` can now be omitted.  However, the result is still a quoted
+lambda. It's tempting to just omit the quote on the right-hand side of the
+macro definition as well, in order to get a real lambda instead::
 
   > clear swap
   > def swap (\x y -> z) = \y x -> z;
@@ -5274,9 +5289,10 @@ macro in a direct way, as we've seen before::
   > ans 2 3;
   1
 
-This works, but sometimes it's more convenient to first construct a quoted
-term involving the necessary specials and then have it evaluated during macro
-evaluation. Pure provides yet another built-in macro for this purpose:
+This works, but doesn't look very nice. Often it's more convenient to first
+construct a quoted term involving the necessary specials and then have it
+evaluated during macro evaluation. Pure provides yet another built-in macro
+for this purpose:
 
 .. macro:: __eval__ x
 
@@ -5296,19 +5312,21 @@ Using :macro:`__eval__`, we can implement the ``swap`` macro as follows::
   > ans 2 3;
   1
 
-Lisp programmers should note the difference: Lisp macros usually yield a
+Lisp programmers should note the difference. In Lisp, macros usually yield a
 quoted expression which is evaluated implicitly during macro expansion. This
 is never done automatically in Pure, since many Pure macros work perfectly
 well without it. Instead, quotes in a macro expansion are treated as literals,
 and you'll have to explicitly call ``__eval__`` to remove them during macro
 evaluation.
 
-Finally, note that placeholder terms for specials are just simple expressions;
+A final caveat: Placeholder terms for specials are just simple expressions;
 they don't do any variable binding by themselves. Thus the rules of `macro
 hygiene`_ don't apply to them, which makes it possible to manipulate lambdas
 and local definitions in any desired way. On the other hand, this means that
 it is the programmer's responsibility to avoid accidental name capture when
-using these facilities.
+using these facilities. Most macro code will work all right when written in a
+straightforward way, but there are some corner cases which need special
+attention (cf. `Name Capture`_).
 
 Advanced Optimization
 ---------------------
@@ -5317,25 +5335,23 @@ We are now in a position to have a look at some of the trickier optimization
 macros defined in the prelude. Most of the following macros can be found near
 the end of the prelude.pure module; they are used to optimize the case of
 "throwaway" list comprehensions. This is useful if a comprehension is
-evaluated solely for its side effects. (In fact, there are some more rules
-like these in the prelude to handle the case of matrix comprehensions.
-However, as these are analogous, for the sake of simplicity we only discuss
-the case of list comprehensions here.) ::
+evaluated solely for its side effects. To keep things simple, we discuss a
+slightly abridged version here which only deals with list comprehensions.
+Please check the actual prelude code for the full version. ::
+
+  #! --quoteargs __do__
 
   def void [x] = void x;
   def void (catmap f x) | void (listmap f x) = __do__ f x;
 
-  // Handle the case of an outermost filter clause.
-  def void (__ifelse__ y z []) = __ifelse__ y (void z) ();
-
   // Recurse into embedded generator clauses.
   def __do__ (__lambda__ [x] y@(listmap _ _)) |
       __do__ (__lambda__ [x] y@(catmap _ _)) =
-      __do__ (__lambda__ [x] (void y));
+      __do__ $ (__lambda__ [x] (void y));
 
   // Recurse into embedded filter clauses.
   def __do__ (__lambda__ [x] (__ifelse__ y z [])) =
-      __do__ (__lambda__ [x] (__ifelse__ y (void z) ()));
+      __do__ $ (__lambda__ [x] (__ifelse__ y (void z) ()));
 
   // Eliminate extra calls to 'void' in generator clauses.
   def __do__ (__lambda__ [x] (void y)) = __do__ (__lambda__ [x] y);
@@ -5415,7 +5431,19 @@ instance::
 
 Again, you should run this with macro tracing enabled to see how the
 ``__do__`` macro recurses into the outer lambda body of the list
-comprehension.
+comprehension. Here's the rule which actually does this::
+
+  def __do__ (__lambda__ [x] y@(catmap _ _)) =
+      __do__ $ (__lambda__ [x] (void y));
+
+Note that ``__do__`` is actually implemented as a
+":option:`quoteargs <pure-pragma --quoteargs>`" macro so that it can inspect
+and recurse into the lambda terms in its argument. Also note the :func:`$` on
+the right-hand side of this rule; this is also implemented as a macro in the
+prelude. Here the :func:`$` operator is used to forcibly evaluate the macro
+argument ``__lambda__ [x] (void y)``, so that the embedded call to the
+``void`` macro gets expanded. (Without the :func:`$` the argument to
+``__do__`` would be quoted and thus not be evaluated.)
 
 Reflection
 ----------
@@ -9681,14 +9709,51 @@ aware of:
   is being traversed, leading to rather nasty memory leaks. Please see the
   ``all_primes`` function in `Lazy Evaluation and Streams`_ for an example.
 
-Showing Macro Expansions
-------------------------
+Name Capture
+------------
 
-As mentioned in the `Macro Hygiene`_ section, Pure macros are lexically scoped
-and thus "hygienic". So Pure macros are not suceptible to name capture, but
-there is also one Pure-related caveat here. The expression printer currently
-doesn't check for different bindings of the same variable identifier when it
-prints a (compile time) expression. For instance, consider::
+As explained in the `Macro Hygiene`_ section, Pure macros are lexically scoped
+and thus "hygienic". So in principle Pure macros are not susceptible to name
+capture. However, this principle only applies to "real" block constructs, not
+their quoted "placeholder" representations described in `Built-in Macros and
+Special Expressions`_. One (rather obscure) case which deserves special
+attention is the case of macros involving free variables which are being
+called inside quoted block constructs. Note that this corresponds to the
+"mild" first form of name capture described in the `Macro Hygiene`_
+section. For instance, consider the following example::
+
+  > def G x = x+y;
+  > '(G 10 when y = 99 end);
+  G 10 __when__ [y-->99]
+  > eval ans;
+  109
+
+Here the free ``y`` variable of the macro ``G`` got captured by the quoted
+:keyword:`when` clause when the quoted expression is evaluated. This happens
+because, using call by value, the call ``G 10`` gets evaluated before the
+:macro:`__when__` macro. So the behaviour of the macro evaluator in this case
+is in fact correct; the only remedy here is to avoid macros involving free
+variables inside a quoted block construct. The same applies to
+":option:`quoteargs <pure-pragma --quoteargs>`" macros which quote their
+arguments automatically, as described in `Built-in Macros and Special
+Expressions`_. On the other hand, the described behaviour might even be useful
+at times, to forcibly rebind a free macro variable. The following little
+helper macro illustrates this trick::
+
+  > #! --quoteargs invoke
+  > def invoke x = x;
+  > foo = invoke (G 10 when y = 99 end);
+  > show foo
+  foo = 10+y when y = 99 end;
+  > foo;
+  109
+
+Besides the above form of real name capture in quoted specials, there's also a
+case of apparent name capture in the expression printer which isn't actually
+real name capture, but just looks like it was. The reason for this is that the
+expression printer currently doesn't check for different bindings of the same
+variable identifier when it prints a (compile time) expression. For instance,
+consider::
 
   > def F x = x+y when y = x+1 end;
   > foo y = F y;
@@ -9711,10 +9776,10 @@ second instance refers to the local binding ``y = y+1`` in the :keyword:`when`
 clause.
 
 Alas, this means that if you use ``dump`` to write such a definition to a text
-file and read it back with ``run`` later, then you'll get the wrong
-definition. This is an outright bug in the expression printer which will
-hopefully be fixed some time. But for the time being you will have to correct
-such glitches manually.
+file and read it back with ``run`` later, then the apparent name capture
+becomes a real one and you'll get the wrong definition. This is an outright
+bug in the expression printer which will hopefully be fixed some time. But for
+the time being you will have to correct such glitches manually.
 
 Author
 ======
