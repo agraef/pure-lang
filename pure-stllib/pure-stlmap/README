@@ -912,7 +912,7 @@ Here are some examples using :func:`replace`. ::
    ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
 
    > replace sm1 "e" 50;
-   ()
+   50
 
    > members sm1;
    ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>50]
@@ -1074,7 +1074,7 @@ large containers.
 To speed things up, each stlmap or stlset maintains a small cache of (key, C++
 iterator) pairs for recently accessed keys. During lookup, the cache is
 checked for a matching key, and if the key is found, the element pointed to by
-the C++ iterator is used immediately. Thus, when applied to a stlmap or stlset
+the C++ iterator is used immediately. Thus, when applied to a stlmap or Sstlset
 bump_wc will use only one O(log N) search, rather than two or three. For these
 purposes, a key matches a key in the cache only if it is the same Pure object
 (i.e., the test is C++ pointer equality, not Pure's :func:`(===)` or
@@ -1119,7 +1119,7 @@ that shows caching in action. ::
    > let k1 = next_key sm k;    // now k1 is at the head of the queue
    found iterator for: "b"
 
-   > put (sm,k1) 30;
+   > replace sm k1 30;
    found iterator for: "c"
    30
 
@@ -1184,11 +1184,11 @@ Functional Programming
 pure-stlmap provides the most commonly used functional programming operations,
 implemented to act on its associative containers as if they were lists. ::
 
-   * :func:`do`, :func:`map`, :func:`listmap`, :func:`catmap`, :func:`foldl`, :func:`foldl1`
+* :func:`do`, :func:`map`, :func:`listmap`, :func:`catmap`, :func:`foldl`, :func:`foldl1`
 
-   * :func:`rowmap`, :func:`rowcatmap`, :func:`colmap`, :func:`colcatmap`
+* :func:`rowmap`, :func:`rowcatmap`, :func:`colmap`, :func:`colcatmap`
 
-   * :func:`foldr`, :func:`foldr1` (not applicable to stlhmaps or stlhsets)
+* :func:`foldr`, :func:`foldr1` (not applicable to stlhmaps or stlhsets)
 
 Here are some examples. ::
 
@@ -1336,7 +1336,7 @@ set operations to a pair of stlmaps or stlmmaps.
 .. function:: map_merge /stlmap rng1 rng2
 
   Construct a new ordered container from ``rng1`` and then insert the elments
-  of ``rng2`` into the new container and return it.``rng1`` and ``rng2`` must
+  of ``rng2`` into the new container and return it. ``rng1`` and ``rng2`` must
   be defined on the same type of ordered container.
 
 .. function:: map_union /stlmap rng1 rng2
@@ -1378,13 +1378,13 @@ Direct C Calls
 .. namespace:: stl
 
 It is very common to encounter code that (a) tests if a key is stored in a
-container using the member functin and (b) in the case of maps, retreives the
-value or values associated with the key using (!) and/or change the value or
-values using the replace function. Depending on what modules have been loaded
-these functions may be "heavily" overloaded which can cause a small delay when
-the functions are called. To avoid this, pure-stlmap exposes the corresponding
-C functions so that they can be called directly. For stlhmaps the functions
-begin with a prefix ``shm_``:
+container using :func:`member`and (b) in the case of maps, retreives the value
+or values associated with the key using :func:`(!)` and/or (c) change the
+value or values using :func:`replace`. Depending on what modules have
+been loaded these functions may be "heavily" overloaded which can cause a
+small delay when the functions are called. To avoid this, pure-stlmap exposes
+the corresponding C functions so that they can be called directly. For
+stlhmaps the functions begin with a prefix ``shm_``:
 
 .. function:: shm_member shm key
               shm_get shm key
@@ -1413,12 +1413,12 @@ to. ::
    > let sm1 = stlmap sm; members sm1;  
    ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
 
-   > let i = find sm1 "b";
+   > let i = find sm1 "b";   // use find to get an iterator - like C++
 
-   > get_elm i;
+   > get_elm i; 
    "b"=>2
 
-   > get_val i;
+   > get_val i; 
    2
 
    > put_val i 20;
@@ -1469,12 +1469,12 @@ if the range is specified by a pair of iterators or by keys. ::
 Exceptions
 ----------
 
-In pure-stlmap functions that accept iterators throw a bad_argument exception
-if called with an invalid iterator. An iterator remains valid until the
-element it was pointing to has been erased. These functions also attempt to
-throw bad argument exceptions for bad uses that would otherwise result in
-undefined behavior. An example of an invalid use would be a range specified by
-iterators from different containers. Here are some examples of iterator
+In pure-stlmap functions that accept iterators throw a ``bad_argument``
+exception if called with an invalid iterator. An iterator remains valid until
+the element it was pointing to has been erased. These functions also attempt
+to throw bad argument exceptions for invalid usage that would otherwise result
+in undefined behavior. An example of an invalid use would be a range specified
+by iterators from different containers. Here are some examples of iterator
 errors. ::
 
    > let i,j = find sm "a", find sm "d";
@@ -1526,7 +1526,8 @@ interators (stlmap, stlset, stlmmap and stlmset).
 
    Returns an iterator pointing to the element in ``map``, a stlmap, with key
    equivalent to ``k``. If no such element existed before the call, one is
-   created and inserted using ``k`` and ``map``'s default value.
+   created and inserted using ``k`` and ``map``'s default value. This function
+   is pure-stlmap's version of C++'s [] operator for associative containers.
 
 .. function:: insert_elm /stlmap acon elm
 
@@ -1539,14 +1540,15 @@ interators (stlmap, stlset, stlmmap and stlmset).
   was inserted. In contrast, if ``acon`` is a multi-keyed container (stlmmap
   or stlmset) the insert will always be successful and :func:`insert_elm`
   returns an iterator pointing to the element with key k that was just
-  inserted.
+  inserted, instead of an (iterator, boolean) tuple.
 
 .. function:: insert_elm /stlmap acon (elm,i)
 
-  This is the same as the previous function except that (a) i is passed in as
-  a hint to where the new element should be inserted and (b) a single iterator
-  is returned rather than a iterator,boolean pair. If the new element is
-  inserted just after i, the insertion can have constant time complexity.
+  This is the same as the previous function except that (a) ``i`` is passed in
+  as a hint to where the new element should be inserted and (b) a single
+  iterator is returned rather than a iterator,boolean pair. If the new element
+  is inserted just after ``i``, the insertion can have constant time
+  complexity.
 
 .. function:: l_bound /stlmap acon k
 
@@ -1599,8 +1601,8 @@ interators (stlmap, stlset, stlmmap and stlmset).
 .. function:: put_val i newvalue
 
   Change the value of the element pointed to by the iterator ``i`` to
-  newvalue. The element's key cannot be changed. The iterator must point into
-  a stlmap or stlmmap.
+  ``newvalue``. The element's key cannot be changed. The iterator must point
+  into a stlmap or stlmmap.
 
 .. function:: beginp /stlmap i
               pastendp /stlmap i
@@ -1627,7 +1629,7 @@ interators (stlmap, stlset, stlmmap and stlmset).
 
    Erases the element pointed to by ``i`` or the elements in the range
    (``i``,``j``). Both ``i`` and ``j`` are must be iterators defined on
-   ``acon`` (or a bad_argument exception will be thrown).
+   ``acon`` (or a ``bad_argument`` exception will be thrown).
 
 .. namespace:: stl
 

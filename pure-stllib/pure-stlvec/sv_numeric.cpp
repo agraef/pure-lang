@@ -1,6 +1,6 @@
 /* sv_numeric.cpp -- C++ support for sv_numeric.pure
     
-Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>.
+Copyright (c) 2011-2012 by Peter Summerland <p.summerland@gmail.com>.
 
 All rights reserved.
 

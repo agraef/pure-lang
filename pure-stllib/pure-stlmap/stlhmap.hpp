@@ -1,8 +1,6 @@
 /* stlhmap.hpp -- C++ support for stlhmap.pure
     
---- DRAFT - FOR DISCUSSON PURPOSES ONLY ---
-
-Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>.
+Copyright (c) 2012 by Peter Summerland <p.summerland@gmail.com>.
 
 All rights reserved.
 

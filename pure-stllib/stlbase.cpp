@@ -1,6 +1,6 @@
 /* stl.cpp -- Support for stl containers of pure_expr*
     
-Copyright (c) 2011 by Peter Summerland <p.summerland@gmail.com>.
+Copyright (c) 2011-2012 by Peter Summerland <p.summerland@gmail.com>.
 
 All rights reserved.
 
