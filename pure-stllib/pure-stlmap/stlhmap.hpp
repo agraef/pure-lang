@@ -41,12 +41,12 @@ struct px_pair_same {
   {
     bool ok = 0;
     if ( same(pr1.first,pr2.first) ) {
-      px* rhs1 = pr1.second;
-      px* rhs2 = pr2.second;
-      if ( rhs1 )
-        ok = rhs2 && same(rhs1,rhs2); 
+      px* pr1_val = pr1.second; // 0 if pr1 is a set element
+      px* pr2_val = pr2.second; // 0 if pr2 is a set element
+      if ( pr1_val)
+        ok = pr2_val && same(pr1_val,pr2_val);
       else
-        ok = !rhs2;
+        ok = !pr2_val;
     }
     return ok;
   }

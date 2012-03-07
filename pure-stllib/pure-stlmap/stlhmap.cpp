@@ -420,7 +420,8 @@ bool stl_shm_equal(px* pxshp1, px* pxshp2)
   pxhmap& hmp2 = shp2->hm;
   px_pair_same eql;
   try {
-    return equal(hmp1.begin(), hmp1.end(), hmp2.begin(),eql);
+    bool are_equal = equal(hmp1.begin(), hmp1.end(), hmp2.begin(), eql);
+    return are_equal ? 1 : 0;  // try to fix for windows
   }
   catch (px* e) {
     pure_throw(e);
