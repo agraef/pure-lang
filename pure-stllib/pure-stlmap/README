@@ -41,15 +41,19 @@ for details.
 Introduction
 ============
 
+This is pure-stlmap-0.1, the first release of pure-stlmap. It is possible that
+some of the functions might be changed slightly or even removed. Comments and
+questions would be especially appreciated at this early stage. 
+
 Supported Containers
 --------------------
 
 The Standard C++ Containers Library, often refered to as the standard template
 library ("STL"), provides templates for generic containers and generic
 algorithms. pure-stlmap provides six mutable containers "stlmap", "stlset",
-"stlmmap", "stlmset", "stlhmap" and "stlhset" that are thin wrappers around
-the corresponding associative containers provided by the STL: map, set,
-multimap, multiset, unordered_map and unordered_set specialized to hold
+"stlmmap", "stlmset", "stlhmap" and "stlhset", that are thin wrappers around
+the corresponding associative containers provided by the STL, map, set,
+multimap, multiset, unordered_map and unordered_set, specialized to hold
 pure-expressions. pure-stlmap does not provide wrappers for unordered_multimap
 and unordered_multiset.
 
@@ -64,7 +68,7 @@ associated with keys and functions like :func:`map`, :func:`foldl`,
 container's elements without using an explict tail recursive loop. In
 addition, for the ordered containers, stlmap, stlmmap, stlset and stlmset,
 pure-stlmap provides an "interator-based" interface that corresponds to the
-C++ interface on a one-to-one basis.
+C++ interface, mostly on a one-to-one basis.
 
 The interface for the unordered or "hash table" containers, stlhmap and
 stlhset, is limited compared to that provided for the ordered containers. In
@@ -210,8 +214,8 @@ elements. ::
    > members shm;              // works on a unordered set (with no range keys)
    ["c"=>3,"d"=>4,"e"=>5,"a"=>1,"b"=>2]
 
-Two special keys, ``stl::smbeg`` and ``stl::smend`` are reserved for use in
-ranges to designate the first element in a container and the imaginary
+Two special keys, :cons:`stl::smbeg` and :cons:`stl::smend` are reserved for
+use in ranges to designate the first element in a container and the imaginary
 "past-end" element. ::
 
    > members (sm,smbeg,"d");
@@ -228,7 +232,7 @@ Inserting and Replacing Elements
 
 You can insert elements and, for the maps (stlmap, stlmmap and stlhmap),
 replace the values associated with keys that are already stored in the map,
-using the :func:`insert`, :func:`replace` and :func:`insert_or_replace`
+using the ``insert``, :func:`replace` and :func:`insert_or_replace`
 functions. For the maps, the elements to inserted are specified as hash-pairs
 (i.e., (key=>value). ::
 
@@ -310,8 +314,8 @@ accessed using the :func:`(!)` operator. ::
    > sms!"c";  // with multisets, return a list of keys
    ["c","c"]
 
-If the key is not stored in the container, :func:`(!)` throws an out_of_bounds
-exception. ::
+If the key is not stored in the container, :func:`(!)` throws an
+:cons:`out_of_bounds` exception. ::
 
    > catch id $ sm!"x"; // "x" is not stored as a key in sm
    out_of_bounds
@@ -761,7 +765,7 @@ the new container.
    container. If the new container is a stlmap, stlmmap or stlhmap, the
    elements of src must be (key=>val) pairs. If the new container is a stlset,
    stlmset or stlhset they can be any pure expression that can be used as a
-   key (i.e., anything except for ``stl::smbeg`` or ``stl::smend``).
+   key (i.e., anything except for :cons:`stl::smbeg` or :cons:`stl::smend`).
 
 Information
 -----------
@@ -798,9 +802,9 @@ of slots used by a stlhmap or stlhset.
 
    Return a pair of keys, first and last, such that first <= k < last for each
    k, where k is the key of an element in ``rng``. If there is no such last,
-   the second member of the returned pair will be ``stl::smend``. If first is
-   the key of the first element of ``rng's`` container, the first member of
-   the returned pair will ``stl::smbeg``. E.g., ::
+   the second member of the returned pair will be :cons:`stl::smend`. If first
+   is the key of the first element of ``rng's`` container, the first member of
+   the returned pair will :cons:`stl::smbeg`. E.g., ::
 
      > members sm;
      ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5]
@@ -833,6 +837,8 @@ of slots used by a stlhmap or stlhset.
 
 Modification
 ------------
+
+.. namespace:: ::
 
 You can insert new items or, for the maps (stlmap, stlmmap and stlhmap),
 replace values associated with keys using the :func:`insert`, :func:`replace`
@@ -877,9 +883,9 @@ or stlmset, both of which can hold multiple elements with equivalent keys).
   associative map (stlmap, stlmmap or stlhmap), the ``src`` itself, or all the
   elements of ``src``, must be key value pairs of the form (k=>v). In
   contrast, if ``acon`` is a stlset, stlmset or stlhset, ``src`` or all of its
-  elements can be any pure object (except ``stl::smbeg`` or
-  ``stl::smend``). If ``acon`` is a stlmap, stlset, stlhmap or stlhset, the
-  element will not be inserted if its key is already stored in the target
+  elements can be any pure object (except :cons:`stl::smbeg` or
+  :cons:`stl::smend`). If ``acon`` is a stlmap, stlset, stlhmap or stlhset,
+  the element will not be inserted if its key is already stored in the target
   container. Returns the number of elements inserted, if any.
 
 If you are dealing with a stlmap or stlhmap and want to override the values of
@@ -897,14 +903,14 @@ you can use the :func:`insert_or_replace` function.
 .. function:: replace /stlmap map key x
 
    ``map`` must be a stlmap, stlmmap or stlhmap. If ``key`` is not stored in
-   ``map`` this function throws out_of_bounds. If ``map`` is a stlmap or
-   stlhmap and (oldkey=>oldval) is an element of ``map``, where oldkey is
+   ``map`` this function throws :cons:`out_of_bounds`. If ``map`` is a stlmap
+   or stlhmap and (oldkey=>oldval) is an element of ``map``, where oldkey is
    equivalent to ``key``, change the element to (oldkey=>``x``). If ``map`` is
    a stlmmap and ``key`` is stored in ``map``, change the values of elements
    with key eqivalent to ``key``, one by one, to the elements of ``x``. Add or
    delete elements as necessary so that, when the smoke clears, the values of
    ``map``!``key`` are copies of the elements of ``x``. In all cases, if
-   ``key`` is stored in ``map`` returns ``x``. 
+   ``key`` is stored in ``map`` returns ``x``.
 
 Here are some examples using :func:`replace`. ::
 
@@ -999,6 +1005,8 @@ equivalent to a given key or a remove a range of elements using the
    > members smm;;
    ["a"=>1,"e"=>5]
 
+.. namespace:: stl
+
 .. function:: swap /stlmap acon1 acon2
 
   Swaps the elements of the two containers, ``acon1`` and ``acon2`` where
@@ -1021,11 +1029,11 @@ with a key using the familiar :func:`member` and :func:`(!)` functions.
 .. function infix ! /stlmap acon k
 
   If ``acon`` is not a stlmmap then (a) if ``acon`` has an element with key
-  equivalent to ``k`` return its value, otherwise (b) throw an out_of_bounds
-  exception. If ``acon`` is a stlmmap then (a) if acon has as least one
-  element with key equivalent to ``k`` return a list of values of all the
-  elements with key equivalent to ``k``, otherwise (b) return an null
-  list. E.g.::
+  equivalent to ``k`` return its value, otherwise (b) throw an
+  :cons:`out_of_bounds` exception. If ``acon`` is a stlmmap then (a) if acon
+  has as least one element with key equivalent to ``k`` return a list of
+  values of all the elements with key equivalent to ``k``, otherwise (b)
+  return an null list. E.g.::
 
    > sm!"c";
    3
@@ -1052,12 +1060,13 @@ prev_key functions.
               prev_key /stlmap acon k
 
    acon must be a stlmap, stlset, stlmmap or stlmmap. Also k is must be
-   stl::smbeg, stl::smend or an element of acon or an out_of_bounds exception
-   will be throw.  next_key returns the key of the first element in acon that
-   has a key that is greater than k. If no such element exists or if k is
-   stl::smend, returns stl::smend. prev_key returns the last element in acon
-   that has a key that is less that k, or, if no such element exists, throws
-   an out_of_bounds execption.
+   :cons:`stl::smbeg`, :cons:`stl::smend` or an element of acon or an
+   :cons:`out_of_bounds` exception will be throw.  next_key returns the key of
+   the first element in acon that has a key that is greater than k. If no such
+   element exists or if k is :cons:`stl::smend`, returns
+   :cons:`stl::smend`. prev_key returns the last element in acon that has a
+   key that is less that k, or, if no such element exists, throws an
+   :cons:`out_of_bounds` exception.
 
 For various reasons, it is very common to see a call to :func:`(!)` or
 :func:`replace` preceded by a call to :func:`member`, all with the same
@@ -1469,7 +1478,7 @@ if the range is specified by a pair of iterators or by keys. ::
 Exceptions
 ----------
 
-In pure-stlmap functions that accept iterators throw a ``bad_argument``
+In pure-stlmap functions that accept iterators throw a :cons:`bad_argument`
 exception if called with an invalid iterator. An iterator remains valid until
 the element it was pointing to has been erased. These functions also attempt
 to throw bad argument exceptions for invalid usage that would otherwise result
@@ -1585,7 +1594,7 @@ interators (stlmap, stlset, stlmmap and stlmset).
   Move the iterator ``i`` forward one, back one or forward ``n`` elements
   respectively, where n can be negative.  The iterator is mutated by these
   operations, provided the move is successful. An attempt to move to a
-  position before the first element's position causes a out-of-bounds
+  position before the first element's position causes an :cons:`out_of_bounds`
   exception. Moves past the last element return the past-end iterator for the
   container that ``i`` is defined on.
 
@@ -1616,22 +1625,20 @@ interators (stlmap, stlset, stlmmap and stlmset).
   iterator ``i`` is valid or false if not, acon is the container that i is
   defined on, and key, val are the key and value of the element ``i`` points
   to, if any. If ``i`` is the past-end iterator, key and val are set to
-  ``stl::smend`` and ``[]``, respectively.
+  :cons:`stl::smend` and ``[]``, respectively.
+
+.. namespace:: ::
 
 .. function:: infix == /stlmap i j
    
    Returns true if the iterators ``i`` and ``j`` point to the same element.
-
-.. namespace:: ::
 
 .. function:: erase /stlmap (acon,i)
               erase /stlmap (acon,i,j)
 
    Erases the element pointed to by ``i`` or the elements in the range
    (``i``,``j``). Both ``i`` and ``j`` are must be iterators defined on
-   ``acon`` (or a ``bad_argument`` exception will be thrown).
-
-.. namespace:: stl
+   ``acon`` (or a :cons:`bad_argument` exception will be thrown).
 
 Examples
 --------
