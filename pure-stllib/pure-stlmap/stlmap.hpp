@@ -127,7 +127,7 @@ extern "C" {
   int  stl_sm_erase(px* pxsmp, px* trg); 
 
   bool stl_sm_equal(px* tpl1, px* tlp2);
-  int  stl_sm_less(px* tpl1, px* tlp2);
+  bool stl_sm_less(px* tpl1, px* tlp2);
   bool stl_sm_includes(px* tpl1, px* tpl2);
   px*  stl_sm_setop(int op, px* tpl1, px* tpl2);
 

@@ -961,7 +961,7 @@ bool stl_smm_equal(px* tpl1, px* tpl2)
   }
 }
 
-int stl_smm_less(px* tpl1, px* tpl2)
+bool stl_smm_less(px* tpl1, px* tpl2)
 {
   smm_range rng1(tpl1);
   smm_range rng2(tpl2);
