@@ -15,6 +15,10 @@ MOD_CXXFLAGS = $(PIC) $(shell pkg-config pure --cflags) -I.. \
 MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS)
 
 CFLAGS = -g -O2
+ifeq "$(DLL)" ".dll"
+# Windows: additional libraries to be linked
+LIBS = ../stlbase$(DLL)
+endif
 
 # Basic rules to build the module, clean, install and uninstall.
 

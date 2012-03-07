@@ -16,6 +16,11 @@ MOD_CXXFLAGS = $(PIC) $(shell pkg-config pure --cflags) -I.. \
 MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS)
 
 CFLAGS = -g -O2
+ifeq "$(DLL)" ".dll"
+# Windows: additional libraries to be linked
+LIBS = ../stlbase$(DLL)
+STLVECLIB = stlvec$(DLL)
+endif
 
 # Basic rules to build the module, clean, install and uninstall.
 
@@ -34,7 +39,7 @@ stlvec$(DLL): stlvec.cpp
 
 stlalgorithm$(DLL): $(algo_source) 
 	$(CXX) $(shared) -o $@ $(MOD_CXXFLAGS) \
-        $(algo_source) $(MOD_LDFLAGS) $(LIBS) -L$(installdir)
+        $(algo_source) $(MOD_LDFLAGS) $(LIBS) $(STLVECLIB) -L$(installdir)
 #       -Wl,-rpath="$(installdir)"\
 
 clean:

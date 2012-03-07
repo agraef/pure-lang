@@ -29,7 +29,7 @@ all: $(object) stlmap stlvec
 
 $(object): $(cppsource)
 	$(CXX) $(shared) -o $@ $(MOD_CXXFLAGS) $(cppsource) \
-        $(MOD_LDFLAGS) $(LIBS)
+        $(MOD_LDFLAGS) $(LIBS) -lgmp
 
 stlvec:
 	$(MAKE) --directory=pure-stlvec
