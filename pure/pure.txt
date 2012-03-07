@@ -5334,12 +5334,12 @@ Advanced Optimization
 We are now in a position to have a look at some of the trickier optimization
 macros defined in the prelude. Most of the following macros can be found near
 the end of the prelude.pure module; they are used to optimize the case of
-"throwaway" list comprehensions. This is useful if a comprehension is
-evaluated solely for its side effects. To keep things simple, we discuss a
+"throwaway" list and matrix comprehensions. This is useful if a comprehension
+is evaluated solely for its side effects. To keep things simple, we discuss a
 slightly abridged version here which only deals with list comprehensions.
 Please check the actual prelude code for the full version. ::
 
-  #! --quoteargs __do__
+  #! --quoteargs __std__::__do__
 
   def void [x] = void x;
   def void (catmap f x) | void (listmap f x) = __do__ f x;
@@ -5372,7 +5372,10 @@ need those results anyway. These are both defined in the prelude. The
 some optimizations along the way. (While the above rules for ``__do__`` are
 always valid optimizations for ``do``, the prelude uses a separate macro here
 instead of clobbering ``do`` itself, so that these optimizations do not
-interfere with calls to ``do`` in ordinary user code.)
+interfere with calls to ``do`` in ordinary user code. Also note that the
+``__do__`` macro is not intended to be invoked directly by the programmer, so
+the prelude puts it into the ``__std__`` namespace, to keep the default
+namespace clean.)
 
 Before we further delve into this example, a few remarks are in order about
 the way list comprehensions are implemented in Pure. As already mentioned,
