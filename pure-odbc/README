@@ -103,8 +103,8 @@ Likewise, the list of ODBC drivers available on your system can be obtained
 with the ``odbc::drivers`` function which returns a list of pairs of driver
 names and attributes. (Older ODBC implementations on Unix lacked this feature,
 but it seems to be properly supported in recent unixODBC implementations at
-least.) On Windows this function can be used to determine a legal value for
-the DRIVER attribute in the connect string, see below.
+least.) This function can be used to determine a legal value for the
+``DRIVER`` attribute in the connect string, see below.
 
 The ``odbc::connect`` function is invoked with a single parameter, the connect
 string, which is used to describe the data source and various other parameters
@@ -138,6 +138,7 @@ systems. (Case is insignificant in the attribute names, so e.g. the
 or ``database``.)
 
 - DSN=<data source name>
+- DRIVER=<driver name>
 - HOST=<server host name>
 - DATABASE=<database path>
 - UID=<user name>
@@ -146,7 +147,6 @@ or ``database``.)
 The following attributes appear to be Windows-specific:
 
 - FILEDSN=<DSN file name>
-- DRIVER=<driver name>
 - DBQ=<database file name>
 
 Using the ``FILEDSN`` option you can establish a connection to a data source
@@ -154,7 +154,7 @@ described in a .dsn file on Windows, as follows::
 
   > odbc::connect "FILEDSN=test.dsn";
 
-On Windows it is also possible to directly connect to a driver and name a
+Usually it is also possible to directly connect to a driver and name a
 database file as the data source. For instance, using the MS Access ODBC
 driver you can connect to a database file test.mdb as follows::
 
@@ -166,7 +166,7 @@ driver available at http://www.ch-werner.de/sqliteodbc. Then you can open an
 SQLite database as follows (the database file is named with the ``DATABASE``
 attribute and is created automatically if it doesn't exist)::
 
-  > odbc::connect "DSN=SQLite3 Datasource;Database=test.db";
+  > odbc::connect "DRIVER=SQLite3;Database=test.db";
 
 SQLite generally performs very well if you avoid some pitfalls (in particular,
 big batches of updates/inserts should be done within a transaction, otherwise
