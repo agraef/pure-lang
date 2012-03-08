@@ -2003,40 +2003,73 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
     }
   } else if (strcmp(cmd, "trace") == 0)  {
     const char *s = cmdline+5;
+    bool aflag = false, mflag = false;
     argl args(s, "trace");
-    bool mflag = false;
+    list<string>::iterator arg;
     if (!args.ok) goto trace_out;
     // process option arguments
-    if (args.c >= 1) {
-      mflag = args.l.front() == "-m";
-      if (mflag) {
-	  args.c--;
-	  args.l.pop_front();
+    for (arg = args.l.begin(); arg != args.l.end(); arg++) {
+      const char *s = arg->c_str();
+      if (s[0] != '-' || !s[1] || !strchr("am", s[1])) break;
+      while (*++s) {
+	switch (*s) {
+	case 'a': aflag = true; break;
+	case 'm': mflag = true; break;
+	default:
+	  cerr << "trace: invalid option character '" << *s << "'\n";
+	  goto trace_out;
+	}
       }
     }
+    args.l.erase(args.l.begin(), arg);
     if (!mflag && !interp.debugging) {
       cerr << "trace: debugging not enabled (try run -g)\n";
       goto trace_out;
     }
-    if (args.c == 0) {
-      ostringstream sout;
-      list<string> syms;
-      if (mflag) {
-	for (set<int32_t>::iterator it = interp.mac_tracepoints.begin();
-	     it != interp.mac_tracepoints.end(); ++it)
-	  syms.push_back(interp.symtab.sym(*it).s);
+    if (args.l.empty()) {
+      if (aflag) {
+	int32_t n = interp.symtab.nsyms();
+	if (mflag) {
+	  for (int32_t f = 1; f < n; f++) {
+	    env::const_iterator jt = interp.macenv.find(f);
+	    if ((jt != interp.macenv.end() && jt->second.t == env_info::fun) ||
+		f == interp.symtab.locals_sym().f ||
+		f == interp.symtab.eval_sym().f ||
+		f == interp.symtab.ifelse_sym().f ||
+		f == interp.symtab.lambda_sym().f ||
+		f == interp.symtab.case_sym().f ||
+		f == interp.symtab.when_sym().f ||
+		f == interp.symtab.with_sym().f)
+	      interp.mac_tracepoints.insert(f);
+	  }
+	} else {
+	  for (int32_t f = 1; f < n; f++) {
+	    env::const_iterator jt = interp.globenv.find(f);
+	    if ((jt != interp.globenv.end() && jt->second.t == env_info::fun) ||
+		interp.externals.find(f) != interp.externals.end())
+	      interp.tracepoints.insert(f);
+	  }
+	}
       } else {
-	for (set<int32_t>::iterator it = interp.tracepoints.begin();
-	     it != interp.tracepoints.end(); ++it)
-	  syms.push_back(interp.symtab.sym(*it).s);
+	ostringstream sout;
+	list<string> syms;
+	if (mflag) {
+	  for (set<int32_t>::iterator it = interp.mac_tracepoints.begin();
+	       it != interp.mac_tracepoints.end(); ++it)
+	    syms.push_back(interp.symtab.sym(*it).s);
+	} else {
+	  for (set<int32_t>::iterator it = interp.tracepoints.begin();
+	       it != interp.tracepoints.end(); ++it)
+	    syms.push_back(interp.symtab.sym(*it).s);
+	}
+	syms.sort();
+	for (list<string>::iterator it = syms.begin(); it != syms.end(); ++it)
+	  sout << *it << '\n';
+	if (interp.output)
+	  (*interp.output) << sout.str();
+	else
+	  cout << sout.str();
       }
-      syms.sort();
-      for (list<string>::iterator it = syms.begin(); it != syms.end(); ++it)
-	sout << *it << '\n';
-      if (interp.output)
-	(*interp.output) << sout.str();
-      else
-	cout << sout.str();
     } else if (mflag) {
       for (list<string>::iterator it = args.l.begin();
 	   it != args.l.end(); ++it) {
