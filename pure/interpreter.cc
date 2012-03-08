@@ -123,7 +123,7 @@ void interpreter::debug_init()
   cin.clear();
   tmp_breakpoints.clear();
   debug_info.clear();
-  stoplevel = 0;
+  stoplevel = 0; tracelevel = -1;
   debug_skip = false;
 }
 
@@ -751,7 +751,8 @@ interpreter::interpreter(int _argc, char **_argv)
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
     result(0), lastres(0), mem(0), exps(0), tmps(0), freectr(0),
     specials_only(false), module(0),
-    JIT(0), FPM(0), astk(0), sstk(__sstk), stoplevel(0), debug_skip(false),
+    JIT(0), FPM(0), astk(0), sstk(__sstk),
+    stoplevel(0), tracelevel(-1), debug_skip(false), trace_skip(false),
     fptr(__fptr), tags(0), line(0), column(0), tags_init(false),
     declare_op(false)
 {
@@ -779,7 +780,8 @@ interpreter::interpreter(int32_t nsyms, char *syms,
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
     result(0), lastres(0), mem(0), exps(0), tmps(0), freectr(0),
     specials_only(false), module(0),
-    JIT(0), FPM(0), astk(0), sstk(*_sstk), stoplevel(0), debug_skip(false),
+    JIT(0), FPM(0), astk(0), sstk(*_sstk),
+    stoplevel(0), tracelevel(-1), debug_skip(false), trace_skip(false),
     fptr(*(Env**)_fptr), tags(0), line(0), column(0), tags_init(false),
     declare_op(false)
 {
@@ -7548,7 +7550,8 @@ expr interpreter::vsubst(expr x)
    little term rewriting interpreter here, so it's kind of slow compared to
    compiled code, but for macro substitution it should be good enough. */
 
-expr interpreter::macsubst(expr x, envstack& estk, uint8_t idx, bool quote)
+expr interpreter::macsubst(bool trace, expr x, envstack& estk,
+			   uint8_t idx, bool quote)
 {
   char test;
   if (x.is_null()) return x;
@@ -7574,7 +7577,7 @@ expr interpreter::macsubst(expr x, envstack& estk, uint8_t idx, bool quote)
       exprl& vs = us->back();
       for (exprl::iterator ys = xs->begin(), end = xs->end();
 	   ys != end; ys++) {
-	vs.push_back(macsubst(*ys, estk, idx, quote));
+	vs.push_back(macsubst(trace, *ys, estk, idx, quote));
       }
     }
     return expr(EXPR::MATRIX, us);
@@ -7582,29 +7585,29 @@ expr interpreter::macsubst(expr x, envstack& estk, uint8_t idx, bool quote)
   // application:
   case EXPR::APP:
     if (quote) {
-      expr u = macsubst(x.xval1(), estk, idx, quote),
-	v = macsubst(x.xval2(), estk, idx, quote),
+      expr u = macsubst(false, x.xval1(), estk, idx, quote),
+	v = macsubst(false, x.xval2(), estk, idx, quote),
 	w = expr(u, v);
       w.flags() |= x.flags()&EXPR::PAREN;
       return w;
     } else if (is_quote(x.xval1().tag())) {
       expr u = x.xval1(),
-	v = macsubst(x.xval2(), estk, idx, true);
+	v = macsubst(false, x.xval2(), estk, idx, true);
       return expr(u, v);
     } else if (x.xval1().tag() == symtab.amp_sym().f) {
       if (++idx == 0)
 	throw err("error in expression (too many nested closures)");
-      expr v = macsubst(x.xval2(), estk, idx);
+      expr v = macsubst(trace, x.xval2(), estk, idx);
       return expr(symtab.amp_sym().x, v);
     } else if (x.xval1().tag() == EXPR::APP &&
 	       x.xval1().xval1().tag() == symtab.catch_sym().f) {
-      expr u = macsubst(x.xval1().xval2(), estk, idx);
+      expr u = macsubst(trace, x.xval1().xval2(), estk, idx);
       if (++idx == 0)
 	throw err("error in expression (too many nested closures)");
-      expr v = macsubst(x.xval2(), estk, idx);
+      expr v = macsubst(trace, x.xval2(), estk, idx);
       return expr(symtab.catch_sym().x, u, v);
     } else {
-      expr u = macsubst(x.xval1(), estk, idx);
+      expr u = macsubst(trace, x.xval1(), estk, idx);
       // See whether we're constructing a quoteargs macro call here, in this
       // case the argument must be quoted to prevent name capture in embedded
       // macro calls.
@@ -7612,39 +7615,43 @@ expr interpreter::macsubst(expr x, envstack& estk, uint8_t idx, bool quote)
       env::iterator it = macenv.find(f);
       quote = it != macenv.end() && argc <= it->second.argc &&
 	quoteargs.find(f) != quoteargs.end();
-      expr v = macsubst(x.xval2(), estk, idx, quote);
+      // See whether we're tracing a macro call.
+      trace = trace ||
+	(!trace_skip && mac_tracepoints.find(f) != mac_tracepoints.end());
+      expr v = macsubst(trace, x.xval2(), estk, idx, quote);
       expr w = expr(u, v);
       w.flags() |= x.flags()&EXPR::PAREN;
-      return macval(w, estk, idx);
+      return macval(trace, w, estk, idx);
     }
   // conditionals:
   case EXPR::COND: {
-    expr u = macsubst(x.xval1(), estk, idx, quote),
-      v = macsubst(x.xval2(), estk, idx, quote),
-      w = macsubst(x.xval3(), estk, idx, quote);
+    expr u = macsubst(trace, x.xval1(), estk, idx, quote),
+      v = macsubst(trace, x.xval2(), estk, idx, quote),
+      w = macsubst(trace, x.xval3(), estk, idx, quote);
     return expr::cond(u, v, w);
   }
   case EXPR::COND1: {
-    expr u = macsubst(x.xval1(), estk, idx, quote),
-      v = macsubst(x.xval2(), estk, idx, quote);
+    expr u = macsubst(trace, x.xval1(), estk, idx, quote),
+      v = macsubst(trace, x.xval2(), estk, idx, quote);
     return expr::cond1(u, v);
   }
   // nested closures:
   case EXPR::LAMBDA: {
     if (++idx == 0)
       throw err("error in expression (too many nested closures)");
-    exprl *u = x.largs(); expr v = macsubst(x.lrule().rhs, estk, idx, quote);
+    exprl *u = x.largs();
+    expr v = macsubst(trace, x.lrule().rhs, estk, idx, quote);
     return expr::lambda(new exprl(*u), v, x.lrule().vi);
   }
   case EXPR::CASE: {
-    expr u = macsubst(x.xval(), estk, idx, quote);
+    expr u = macsubst(trace, x.xval(), estk, idx, quote);
     if (++idx == 0)
       throw err("error in expression (too many nested closures)");
     const rulel *r = x.rules();
     rulel *s = new rulel;
     for (rulel::const_iterator it = r->begin(); it != r->end(); ++it) {
-      expr u = it->lhs,	v = macsubst(it->rhs, estk, idx, quote),
-	w = macsubst(it->qual, estk, idx, quote);
+      expr u = it->lhs,	v = macsubst(trace, it->rhs, estk, idx, quote),
+	w = macsubst(trace, it->qual, estk, idx, quote);
       s->push_back(rule(u, v, it->vi, w));
     }
     return expr::cases(u, s);
@@ -7653,7 +7660,7 @@ expr interpreter::macsubst(expr x, envstack& estk, uint8_t idx, bool quote)
     const rulel *r = x.rules();
     rulel *s = new rulel;
     for (rulel::const_iterator it = r->begin(); it != r->end(); ++it) {
-      expr u = it->lhs, v = macsubst(it->rhs, estk, idx, quote);
+      expr u = it->lhs, v = macsubst(trace, it->rhs, estk, idx, quote);
       s->push_back(rule(u, v, it->vi));
       if (u.is_var() && u.vtag() == symtab.anon_sym && u.ttag() == 0)
 	// anonymous binding, gets thrown away
@@ -7661,13 +7668,13 @@ expr interpreter::macsubst(expr x, envstack& estk, uint8_t idx, bool quote)
       else if (++idx == 0)
 	throw err("error in expression (too many nested closures)");
     }
-    expr u = macsubst(x.xval(), estk, idx, quote);
+    expr u = macsubst(trace, x.xval(), estk, idx, quote);
     return expr::when(u, s);
   }
   case EXPR::WITH: {
     const env *e = x.fenv();
     estk.push_front(enventry(e, idx));
-    expr u = macsubst(x.xval(), estk, idx, quote);
+    expr u = macsubst(trace, x.xval(), estk, idx, quote);
     env *f = new env;
     if (++idx == 0)
       throw err("error in expression (too many nested closures)");
@@ -7677,8 +7684,8 @@ expr interpreter::macsubst(expr x, envstack& estk, uint8_t idx, bool quote)
       const rulel *r = info.rules;
       rulel s;
       for (rulel::const_iterator jt = r->begin(); jt != r->end(); ++jt) {
-	expr u = jt->lhs, v = macsubst(jt->rhs, estk, idx, quote),
-	  w = macsubst(jt->qual, estk, idx, quote);
+	expr u = jt->lhs, v = macsubst(trace, jt->rhs, estk, idx, quote),
+	  w = macsubst(trace, jt->qual, estk, idx, quote);
 	s.push_back(rule(u, v, jt->vi, w));
       }
       (*f)[g] = env_info(info.argc, s, info.temp);
@@ -7688,7 +7695,7 @@ expr interpreter::macsubst(expr x, envstack& estk, uint8_t idx, bool quote)
   }
   default:
     assert(x.tag() > 0);
-    return quote?x:macval(x, estk, idx);
+    return quote?x:macval(trace, x, estk, idx);
   }
 }
 
@@ -8257,7 +8264,7 @@ bool interpreter::parse_env(exprl& xs, env& e)
   return true;
 }
 
-expr *interpreter::macspecial(expr x, envstack& estk, uint8_t idx)
+expr *interpreter::macspecial(bool trace, expr x, envstack& estk, uint8_t idx)
 {
   expr u, v, w;
   if (!specials_only && x.tag() == symtab.namespace_sym().f) {
@@ -8293,7 +8300,7 @@ expr *interpreter::macspecial(expr x, envstack& estk, uint8_t idx)
       return new expr(expr::cons(v, expr::nil()));
   }
   if (!specials_only && x.is_app(u, v) && u.tag() == symtab.eval_sym().f)
-    return new expr(maceval(v, estk, idx));
+    return new expr(maceval(trace, v, estk, idx));
   int32_t f = get2args(x, u, v);
   if (f == symtab.lambda_sym().f) {
     exprl xs;
@@ -8358,7 +8365,7 @@ static string pname(interpreter& interp, int32_t tag)
     return "#<closure>";
 }
 
-expr interpreter::macval(expr x, envstack& estk, uint8_t idx)
+expr interpreter::macval(bool trace, expr x, envstack& estk, uint8_t idx)
 {
   char test;
   if (x.is_null()) return x;
@@ -8367,10 +8374,10 @@ expr interpreter::macval(expr x, envstack& estk, uint8_t idx)
   int32_t f; uint32_t argc = count_args(x, f);
   if (f <= 0) return x;
   // Evaluate built-in macros for the specials.
-  expr *z = macspecial(x, estk, idx);
+  expr *z = macspecial(trace, x, estk, idx);
   if (z) {
     expr y = *z; delete z;
-    if (mac_tracepoints.find(f) != mac_tracepoints.end())
+    if (trace || mac_tracepoints.find(f) != mac_tracepoints.end())
       std::cout << "-- macro " << pname(*this, f) << ": "
 		<< x << " --> " << y << '\n';
     return y;
@@ -8398,17 +8405,17 @@ expr interpreter::macval(expr x, envstack& estk, uint8_t idx)
       rule& r = info.m->r[*rp];
       if (checkguards(x1, r.vi.guards) && checkeqns(x1, r.vi.eqns)) {
 	expr y = macred(x1, r.rhs);
-	if (mac_tracepoints.find(f) != mac_tracepoints.end())
+	if (trace || mac_tracepoints.find(f) != mac_tracepoints.end())
 	  std::cout << "-- macro " << pname(*this, f) << ": "
 		    << x << " --> " << y << '\n';
-	return macsubst(y, estk, idx);
+	return macsubst(trace, y, estk, idx);
       }
     }
   }
   return x;
 }
 
-expr interpreter::maceval(expr x, envstack& estk, uint8_t idx)
+expr interpreter::maceval(bool trace, expr x, envstack& estk, uint8_t idx)
 {
   if (x.is_null()) return x;
   switch (x.tag()) {
@@ -8421,7 +8428,7 @@ expr interpreter::maceval(expr x, envstack& estk, uint8_t idx)
       exprl& vs = us->back();
       for (exprl::iterator ys = xs->begin(), end = xs->end();
 	   ys != end; ys++) {
-	vs.push_back(maceval(*ys, estk, idx));
+	vs.push_back(maceval(trace, *ys, estk, idx));
       }
     }
     return expr(EXPR::MATRIX, us);
@@ -8429,21 +8436,22 @@ expr interpreter::maceval(expr x, envstack& estk, uint8_t idx)
   // application:
   case EXPR::APP: {
     if (is_quote(x.xval1().tag()))
-      return macsubst(x.xval2(), estk, idx);
+      return macsubst(trace, x.xval2(), estk, idx);
     else if (x.xval1().tag() == symtab.amp_sym().f) {
       if (++idx == 0)
 	throw err("error in expression (too many nested closures)");
-      expr v = maceval(x.xval2(), estk, idx);
+      expr v = maceval(trace, x.xval2(), estk, idx);
       return expr(symtab.amp_sym().x, v);
     } else if (x.xval1().tag() == EXPR::APP &&
 	       x.xval1().xval1().tag() == symtab.catch_sym().f) {
-      expr u = maceval(x.xval1().xval2(), estk, idx);
+      expr u = maceval(trace, x.xval1().xval2(), estk, idx);
       if (++idx == 0)
 	throw err("error in expression (too many nested closures)");
-      expr v = maceval(x.xval2(), estk, idx);
+      expr v = maceval(trace, x.xval2(), estk, idx);
       return expr(symtab.catch_sym().x, u, v);
     } else {
-      expr u = maceval(x.xval1(), estk, idx), v = maceval(x.xval2(), estk, idx);
+      expr u = maceval(trace, x.xval1(), estk, idx),
+	v = maceval(trace, x.xval2(), estk, idx);
       return expr(u, v);
     }
   }

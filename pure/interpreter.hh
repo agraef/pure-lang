@@ -837,16 +837,17 @@ public:
   expr vsubst(expr x, int offs) { return vsubst(x, offs, offs, 0); }
   expr vsubst(expr x);
   expr macsubst(expr x, bool quote = false)
-  { envstack estk; return macsubst(x, estk, 0, quote); }
-  expr macsubst(expr x, envstack& estk, uint8_t idx, bool quote = false);
+  { envstack estk; return macsubst(false, x, estk, 0, quote); }
+  expr macsubst(bool trace, expr x, envstack& estk, uint8_t idx,
+		bool quote = false);
   expr varsubst(expr x, uint8_t offs, uint8_t offs1, uint8_t idx = 0);
   expr varsubst(expr x, int offs) { return varsubst(x, offs, 0, 0); }
   expr macred(expr x, expr y, uint8_t idx = 0);
-  expr macval(expr x, envstack& estk, uint8_t idx);
-  expr maceval(expr x, envstack& estk, uint8_t idx);
+  expr macval(bool trace, expr x, envstack& estk, uint8_t idx);
+  expr maceval(bool trace, expr x, envstack& estk, uint8_t idx);
   expr macsval(pure_expr *x);
   bool specials_only;
-  expr *macspecial(expr x, envstack& estk, uint8_t idx);
+  expr *macspecial(bool trace, expr x, envstack& estk, uint8_t idx);
   exprl get_macargs(expr x, bool quote);
   expr tagsubst(expr x);
   bool parse_rulel(exprl& xs, rulel& r);
@@ -1199,8 +1200,8 @@ public:
   int compiler(string out, list<string> libnames);
   list<DebugInfo> debug_info;
   set<int32_t> breakpoints, tmp_breakpoints, tracepoints, mac_tracepoints;
-  int32_t stoplevel;
-  bool debug_skip;
+  int32_t stoplevel, tracelevel;
+  bool debug_skip, trace_skip;
   string bt;
   llvm::Value *debug_rule(const rule *r);
   llvm::Value *debug_redn(const rule *r, llvm::Value *v = 0);
@@ -1227,13 +1228,15 @@ public:
   }
   bool traced(int32_t tag)
   {
-    return interactive && tag>0 &&
-      tracepoints.find(tag) != tracepoints.end();
-  }
-  bool mac_traced(int32_t tag)
-  {
-    return interactive && tag>0 &&
-      mac_tracepoints.find(tag) != mac_tracepoints.end();
+    if (!interactive)
+      return false;
+    if (tracelevel >= 0 && debug_info.size() > (uint32_t)tracelevel)
+      return true;
+    if (tag>0 && tracepoints.find(tag) != tracepoints.end()) {
+      if (!trace_skip && tracelevel < 0) tracelevel = debug_info.size();
+      return true;
+    }
+    return false;
   }
   bool stopped(Env *e) { return stopped(e->tag); }
   bool traced(Env *e) { return traced(e->tag); }

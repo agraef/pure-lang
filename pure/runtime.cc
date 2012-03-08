@@ -6107,6 +6107,9 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x)
 	size_t new_di_sz = interp.debug_info.size();
 	while (new_di_sz-- > old_di_sz)
 	  interp.debug_info.pop_back();
+	if (interp.tracelevel >= 0 &&
+	    (uint32_t)interp.tracelevel > interp.debug_info.size())
+	  interp.tracelevel = -1;
       }
       if (!e)
 	e = pure_new_internal(mk_void());
@@ -7256,6 +7259,9 @@ void pure_debug_redn(void *_e, void *_r, pure_expr *x)
  pop:
   // pop an activation record
   interp.debug_info.pop_back();
+  if (interp.tracelevel >= 0 &&
+      (uint32_t)interp.tracelevel > interp.debug_info.size())
+    interp.tracelevel = -1;
 }
 
 /* LIBRARY API. *************************************************************/

@@ -2003,18 +2003,20 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
     }
   } else if (strcmp(cmd, "trace") == 0)  {
     const char *s = cmdline+5;
-    bool aflag = false, mflag = false;
+    bool aflag = false, mflag = false, sflag = false, rsflag = false;
     argl args(s, "trace");
     list<string>::iterator arg;
     if (!args.ok) goto trace_out;
     // process option arguments
     for (arg = args.l.begin(); arg != args.l.end(); arg++) {
       const char *s = arg->c_str();
-      if (s[0] != '-' || !s[1] || !strchr("am", s[1])) break;
+      if (s[0] != '-' || !s[1] || !strchr("amrs", s[1])) break;
       while (*++s) {
 	switch (*s) {
 	case 'a': aflag = true; break;
 	case 'm': mflag = true; break;
+	case 'r': rsflag = true; sflag = false; break;
+	case 's': rsflag = sflag = true; break;
 	default:
 	  cerr << "trace: invalid option character '" << *s << "'\n";
 	  goto trace_out;
@@ -2022,10 +2024,11 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
       }
     }
     args.l.erase(args.l.begin(), arg);
-    if (!mflag && !interp.debugging) {
+    if (!mflag && !rsflag && !interp.debugging) {
       cerr << "trace: debugging not enabled (try run -g)\n";
       goto trace_out;
     }
+    if (rsflag) interp.trace_skip = sflag;
     if (args.l.empty()) {
       if (aflag) {
 	int32_t n = interp.symtab.nsyms();
@@ -2050,7 +2053,7 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
 	      interp.tracepoints.insert(f);
 	  }
 	}
-      } else {
+      } else if (!rsflag) {
 	ostringstream sout;
 	list<string> syms;
 	if (mflag) {
