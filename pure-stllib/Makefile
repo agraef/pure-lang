@@ -61,7 +61,7 @@ check:
 
 # Roll a distribution tarball.
 
-distfiles = Makefile README COPYING check_script *.pure *.hpp *.cpp *.pdf
+distfiles = Makefile README COPYING check_script *.pure *.hpp *.cpp doc/*.pdf
 sedfiles = README
 dist = pure-$(pkgname)-$(version)
 date = $(shell date "+%B %-d, %Y")
@@ -70,6 +70,7 @@ datesubst = sed -e "s?@version@?$(version)?g" \
 dist:
 	rm -rf $(dist)
 	mkdir $(dist)
+	mkdir $(dist)/doc
 	for x in $(distfiles); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	for x in $(sedfiles); do rm -f $(dist)/$$x; \
                               $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
