@@ -165,7 +165,7 @@ parse_line s = tp, ln, rst when
 
 /** Process file ******************************************************/
 
-check_eval script::string = doline script with
+check_scripts script::string = doline script with
   doline "" = get num_errs;
   doline s = doline rest when
     tp, line, rest = parse_line s;
@@ -213,6 +213,35 @@ end when
   num_errs = ref 0;
 end;
 
+do_file_aux num_errs [] = num_errs;
+
+do_file_aux num_errs (filename:rst) = do_file_aux (num_errs + ec) rst when
+  set_default_options;
+  fp = fopen filename "r";
+  ec = if ~pointerp fp || null fp then
+         printf "--- could not open file: %s\n" filename $$ 1
+       else
+         check_and_close fp;
+  if ec > 0 then 
+    printf "--- %s failed with %d error(s) ---\n" (filename, ec)
+  else ();
+end with
+  check_and_close fp = ec when
+    ec = check_scripts (fget fp);
+    fclose fp;
+  end;
+end;
+
+do_files filenames = num_errors when
+  puts "\n--- START STLMAP UTS TESTS ---\n";
+  num_errors = do_file_aux 0 filenames;
+  if num_errors == 0 then
+    puts "\n--- PASSED STLMAP UTS TESTS ---"
+  else 
+    printf "\n--- FAILED STLMAP UTS TESTS: %d ERRORS ---\n" num_errors $$
+    exit 1;
+end; 
+
 /** main *************************************************************/
 
 const usage = 
@@ -222,31 +251,10 @@ statements and check the results. See source file for more details. Stops\n\
 and exits 1 at the end of the first file with an error. If no errors are\n\
 encountered, exits 0.";
 
-do_file filename = () when
-  set_default_options;
-  fp = fopen filename "r";
-  ec, _ = if ~pointerp fp || null fp then
-         puts "could not open file" $$ exit 1
+main = if argc < 2 then 
+         puts usage $$ exit 1
        else
-         check_eval (fget fp), fclose fp;
-  if ec > 0 then 
-    printf "-- %s failed with %d error(s) ---\n" (filename, ec) $$ 
-    puts "/* failed stlmap uts tests */" $$
-    exit 1
-  else ();
-end;
-
-main args = if argc < 2 then 
-              puts usage $$ exit 1 
-            else 
-              puts "\n--- START STLMAP UTS TESTS ---\n" $$
-              do do_file (tail argv) $$ 
-              puts "\n--- PASSED STLMAP UTS TESTS ---" $$
-              exit 0;
-
-check filename = do_file filename;
+         do_files (tail argv);
 
 // cannot compile this -- uses eval
-if argc > 0 then main argv else ();
-
-
+if argc > 0 then main else ();
