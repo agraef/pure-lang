@@ -5421,7 +5421,7 @@ concert to rewrite a "voided" comprehension. To these ends, you can rerun the
 right-hand side of ``g`` with some tracing enabled, as follows (we omit the
 tracing output here for brevity)::
 
-  > trace -m void __std__::__do__
+  > trace -a
   > void [printf "%g\n" (2^x+1) | x=1..5; x mod 2];
 
 The above optimization rules also take care of nested list comprehensions,
@@ -7289,7 +7289,7 @@ addition, you can define your own commands for frequently-used operations; see
    the memory usage statistics.
 
 .. index:: trace (command)
-.. describe:: trace [-m] [symbol ...]
+.. describe:: trace [-a] [-m] [symbol ...]
 
    Sets tracepoints on the given function or operator symbols. Without the
    ``-m`` option, this works like the ``break`` command (see above) but only
@@ -7299,7 +7299,16 @@ addition, you can define your own commands for frequently-used operations; see
    The ``-m`` option allows you to trace macro (rather than function)
    calls. If this option is specified, the compiler prints reductions by the
    given macro symbol, which is useful when debugging macros; see the Macros_
-   section for details and an example.
+   section for details and examples. Note that macro tracing works even if the
+   interpreter was invoked without debugging mode.
+
+   If the ``-a`` option is specified, tracepoints are set on *all* global
+   function or macro symbols, respectively (in this case the symbol arguments
+   are ignored). This is convenient if you want to show all reductions
+   performed in a computation. Otherwise, if neither ``-a`` nor any symbols
+   are specified then the currently defined tracepoints are printed. Note
+   that, as with the ``break`` command, existing tracepoints can be deleted
+   with the ``del`` command (see above).
 
 .. index:: underride (command)
 .. describe:: underride
@@ -7916,9 +7925,12 @@ to debug some functions while only tracing others.
 The current sets of breakpoints and tracepoints can be changed with the
 ``break``, ``trace`` and ``del`` commands, as shown above, and just ``break``
 or ``trace`` without any arguments lists the currently defined breakpoints or
-tracepoints, respectively. Please see `Interactive Commands`_ above for
-details. Also note that these are really interpreter commands, so to invoke
-them in the debugger you have to escape them with the ``!`` command.
+tracepoints, respectively. Moreover, the ``trace`` command can also be invoked
+with the ``-a`` option to trace all global function or macro calls, which is
+convenient if you want to get a full transcript of a reduction sequence.
+Please see `Interactive Commands`_ above for details. Also note that these are
+really interpreter commands, so to invoke them in the debugger you have to
+escape them with the ``!`` command.
 
 Last Result
 -----------
