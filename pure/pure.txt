@@ -5285,6 +5285,7 @@ macro in a direct way, as we've seen before::
   > def swap (__lambda__ [x,y] z) = __lambda__ [y,x] z;
   > swap (\a b->a-b);
   -- macro swap: swap (\a b -> a-b) --> __lambda__ [b,a] (a-b)
+  -- macro __lambda__: __lambda__ [b,a] (a-b) --> \b a -> a-b
   #<closure 0x7f1934156f00>
   > ans 2 3;
   1
@@ -5304,9 +5305,9 @@ Using :macro:`__eval__`, we can implement the ``swap`` macro as follows::
 
   > clear swap
   > def swap (\x y -> z) = __eval__ ('(\y x -> z));
-  > trace -m __eval__
   > swap (\a b->a-b);
   -- macro swap: swap (\a b -> a-b) --> __eval__ ('__lambda__ [b,a] (a-b))
+  -- macro __lambda__: __lambda__ [b,a] (a-b) --> \b a -> a-b
   -- macro __eval__: __eval__ ('__lambda__ [b,a] (a-b)) --> \b a -> a-b
   #<closure 0x7f7e1f867dc8>
   > ans 2 3;
@@ -5421,7 +5422,7 @@ concert to rewrite a "voided" comprehension. To these ends, you can rerun the
 right-hand side of ``g`` with some tracing enabled, as follows (we omit the
 tracing output here for brevity)::
 
-  > trace -a
+  > trace -m void
   > void [printf "%g\n" (2^x+1) | x=1..5; x mod 2];
 
 The above optimization rules also take care of nested list comprehensions,
@@ -7289,26 +7290,35 @@ addition, you can define your own commands for frequently-used operations; see
    the memory usage statistics.
 
 .. index:: trace (command)
-.. describe:: trace [-a] [-m] [symbol ...]
+.. describe:: trace [-a] [-m] [-r] [-s] [symbol ...]
 
    Sets tracepoints on the given function or operator symbols. Without the
-   ``-m`` option, this works like the ``break`` command (see above) but only
-   prints rule invocations and reductions without actually interrupting the
-   evaluation; see Debugging_ below for details.
+   ``-m`` option, this works pretty much like the ``break`` command (see
+   above) but only prints rule invocations and reductions without actually
+   interrupting the evaluation; see Debugging_ below for details.
 
    The ``-m`` option allows you to trace macro (rather than function)
-   calls. If this option is specified, the compiler prints reductions by the
-   given macro symbol, which is useful when debugging macros; see the Macros_
-   section for details and examples. Note that macro tracing works even if the
-   interpreter was invoked without debugging mode.
+   calls. If this option is specified, the compiler prints reduction sequences
+   involving the given macro symbol, which is useful when debugging macros;
+   see the Macros_ section for details and examples. Note that macro tracing
+   works even if the interpreter was invoked without debugging mode.
 
    If the ``-a`` option is specified, tracepoints are set on *all* global
    function or macro symbols, respectively (in this case the symbol arguments
-   are ignored). This is convenient if you want to show all reductions
-   performed in a computation. Otherwise, if neither ``-a`` nor any symbols
-   are specified then the currently defined tracepoints are printed. Note
-   that, as with the ``break`` command, existing tracepoints can be deleted
-   with the ``del`` command (see above).
+   are ignored). This is convenient if you want to see any and all reductions
+   performed in a computation.
+
+   Tracing can actually be performed in two different modes, *recursive* mode
+   in which the trace is triggered by any of the active tracepoints and
+   continues until the corresponding call is finished, or *skip* mode in which
+   *only* calls by the active tracepoints are reported. The former is usually
+   more helpful and is the default. The ``-s`` option allows you to switch to
+   skip mode, while the ``-r`` option switches back to recursive mode.
+
+   Finally, if neither symbols nor any of the ``-a``, ``-r`` and ``-s``
+   options are specified then the currently defined tracepoints are printed.
+   Note that, as with the ``break`` command, existing tracepoints can be
+   deleted with the ``del`` command (see above).
 
 .. index:: underride (command)
 .. describe:: underride
@@ -7914,6 +7924,11 @@ assuming the same example as above, let's first remove the breakpoint on
   ++ [2] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
        n = 0
        --> 1
+  ** [2] (*): x::int*y::int = x*y;
+       x = 1; y = 1
+  ++ [2] (*): x::int*y::int = x*y;
+       x = 1; y = 1
+       --> 1
   ++ [1] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
        n = 1
        --> 1
@@ -7922,15 +7937,46 @@ assuming the same example as above, let's first remove the breakpoint on
 The ``break`` and ``trace`` commands can also be used in concert if you want
 to debug some functions while only tracing others.
 
+Note that the ``trace`` command can actually be run in two different modes:
+*recursive* mode in which the trace is triggered by any of the active
+tracepoints and continues until the corresponding call is finished, or *skip*
+mode in which *only* calls by the active tracepoints are reported. The former
+is the default and is often preferable, because it gives you a complete
+transcript of the reductions performed during a global function call,
+including reductions of local and anonymous function applications.
+
+If you don't need that much detail, you can also switch to skip mode by
+invoking the ``trace`` command with the ``-s`` option. This allows you to see
+a quick summary of the computation which only shows reductions by rules
+directly involving the active breakpoints. (Note that it's only possible to
+see reductions by global functions that way, since there's no way to set
+breakpoints or tracepoints on a local function.) For instance::
+
+  > trace -s
+  > fact 1;
+  ** [1] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
+       n = 1
+  ** [2] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
+       n = 0
+  ++ [2] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
+       n = 0
+       --> 1
+  ++ [1] fact: fact n::int = if n>0 then n*fact (n-1) else 1;
+       n = 1
+       --> 1
+  1
+
+Moreover, the ``trace`` command can also be invoked with the ``-a`` option to
+trace all global function calls, which is convenient to quickly obtain a full
+transcript of a reduction sequence. The same options also work in an analogous
+fashion with macro calls, see the Macros_ section for some examples.
+
 The current sets of breakpoints and tracepoints can be changed with the
 ``break``, ``trace`` and ``del`` commands, as shown above, and just ``break``
 or ``trace`` without any arguments lists the currently defined breakpoints or
-tracepoints, respectively. Moreover, the ``trace`` command can also be invoked
-with the ``-a`` option to trace all global function or macro calls, which is
-convenient if you want to get a full transcript of a reduction sequence.
-Please see `Interactive Commands`_ above for details. Also note that these are
-really interpreter commands, so to invoke them in the debugger you have to
-escape them with the ``!`` command.
+tracepoints, respectively. Please see `Interactive Commands`_ above for
+details. Also note that these are really interpreter commands, so to invoke
+them in the debugger you have to escape them with the ``!`` command.
 
 Last Result
 -----------
