@@ -642,7 +642,7 @@ The stlhmap Module
 
 If all you want is fast insertion and lookup, you don't care about the order
 of the elements stored in the container, and you do not want to use set
-operations like :func:`map_intersection/stlmap`, then :mod:`stlhamp` is
+operations like :func:`stl::map_intersection/stlmap`, then :mod:`stlhmap` is
 probably your best choice. The supported containers, stlhmap and stlhset are
 simpler to use and faster than the other containers provided by pure-stlmap.
 
@@ -667,7 +667,8 @@ The stlmap Module
 The :mod:`stlmap` module provides you with stlmaps and stlsets and the
 functions that operate on them. Consider using these containers if you want
 their elements to be orderd by key, want to use ranges or if you are using any
-set operations (map_union, map_intersections, etc).
+set operations (:func:`stl::map_union/stlmap`,
+:func:`stl::map_intersection/stlmap`, etc).
 
 You can import the stlmap module by adding the following using statement to
 your code. ::
@@ -835,7 +836,7 @@ of slots used by a stlhmap or stlhset.
    ``rng's`` container, the first member of the returned pair will
    :cons:`stl::smbeg/stlmap`. 
 
-Here are two examples using the :fun:`stl::bounds/stlmap` function. Notice
+Here are two examples using the :func:`stl::bounds/stlmap` function. Notice
 that bounds returns :cons:`stl::smbeg/stlmap` instead of "a" in the first
 example. ::
 
@@ -971,9 +972,10 @@ Here are some examples using :func:`replace/stlmap`. ::
 .. function:: replace_with /stlmap fun map (k=>v)
 
   ``map`` must be a stlmap. The effect of this function is as follows: (a) if
-  ~member ``map`` ``k`` then :func:`insert/stlmap` ``map`` (``k``=>dflt) else
-  (), where dflt is ``map``'s dflt value, (b) :func:`replace/stlmap` ``map``
-  ``k`` nv when nv = ``fun`` ``v`` (``map``!``k``) end. Returns ``map``.
+  ~ :func:`member/stlmap` ``map`` ``k`` then :func:`insert/stlmap` ``map``
+  (``k``=>dflt) else (), where dflt is ``map``'s dflt value, (b)
+  :func:`replace/stlmap` ``map`` ``k`` nv when nv = ``fun`` ``v``
+  (``map``!``k``) end. Returns ``map``.
 
 Here is an example using :func:`replace_with/stlmap` in which a stlmmap is
 converted to a stlmap. ::
@@ -1094,19 +1096,21 @@ prev_key functions.
 .. function:: next_key /stlmap acon k
               prev_key /stlmap acon k
 
-   acon must be a stlmap, stlset, stlmmap or stlmmap. Also k is must be
+   ``acon`` must be a stlmap, stlset, stlmmap or stlmmap. Also if ``k`` is not
    :cons:`stl::smbeg/stlmap`, :cons:`stl::smend/stlmap` or an element of acon
-   or an :cons:`out_of_bounds` exception will be throw.
-   :func:`next_key/stlmap` returns the key of the first element in acon that
-   has a key that is greater than k. If no such element exists or if k is
+   an :cons:`out_of_bounds` exception will be throw.  :func:`next_key/stlmap`
+   returns the key of the first element in acon that has a key that is greater
+   than ``k``. If no such element exists or if ``k`` is
    :cons:`stl::smend/stlmap`, returns :cons:`stl::smend/stlmap`.
    :func:`prev_key/stlmap` returns the last element in acon that has a key
-   that is less that k, or, if no such element exists, throws an
+   that is less that ``k``, or, if no such element exists, throws an
    :cons:`out_of_bounds` exception.
 
+.. namespace:: ::
+
 For various reasons, it is very common to see a call to (!) or
-:func:`replace/stlmap` preceded by a call to :func:`member/stlmap`, all with
-the same container and key. E.g., ::
+:func:`replace/stlmap` preceded by a call to :func:`member/stlmap` with the
+same container and key. E.g., ::
 
    > bump_wc sm w = if member sm w then replace sm w (sm!w + 1)
                     else insert sm (w=>1);
@@ -1172,7 +1176,8 @@ that shows caching in action. ::
    ["a"=>10,"b"=>2,"c"=>30,"d"=>4,"e"=>5]
 
 These examples show that caching can be effective wnen visiting elements of a
-stlmap or stlset in order using :func:`next_key/stlmap` or :func:`prev_key/stlmap`. 
+stlmap or stlset in order using :func:`next_key/stlmap` or
+:func:`prev_key/stlmap`.
 
 Conversions
 -----------
@@ -1424,13 +1429,13 @@ items with the equivalent keys are ordered by their values.
 
 pure-stlmap's set functions do not necessarily produce the same results as
 their Pure standard library counterparts. In particular, when applied to
-multi-keyed contaners, map_union produces the multiset union of its arguments
-while (+) in the Pure standard library produces the multiset sum. If you want
-the multiset sum of a stlmmap or stlhmap, use map_merge. Also, in pure-stlmap,
-as in the STL, the left hand map or set has priority of elements while in the
-Pure standard library the right hand set has priority of elements. This can
-make a difference when applying set operations to a pair of stlmaps or
-stlmmaps. E.g., ::
+multi-keyed contaners, :func:`stl::map_union/stlmap` Produces the multiset
+union of its arguments while (+) in the Pure standard library produces the
+multiset sum. If you want the multiset sum of a stlmmap or stlhmap, use
+:func:`stl::map_merge/stlmap`. Also, in pure-stlmap, as in the STL, the left
+hand map or set has priority of elements while in the Pure standard library
+the right hand set has priority of elements. This can make a difference when
+applying set operations to a pair of stlmaps or stlmmaps. E.g., ::
 
    > let smm1 = stlmmap ["a"=>1,"b"=>2,"c"=>31,"c"=>32];
    > let smm2 = stlmmap ["c"=>32,"c"=>32,"c"=>33,"d"=>4,"e"=>5];
@@ -1453,7 +1458,7 @@ stlmmaps. E.g., ::
 Direct C Calls
 --------------
 
-.. namespace:: stl
+.. namespace:: ::
 
 It is common to encounter code that (a) tests if a key is stored in a
 container using :func:`member/stlmap` and (b) in the case of maps, retreives
@@ -1463,6 +1468,8 @@ been loaded, these functions may be heavily overloaded which can cause a
 small delay when the functions are called. To avoid this, pure-stlmap exposes
 the corresponding C functions so that they can be called directly. For
 stlhmaps the functions begin with a prefix ``shm_``:
+
+.. namespace:: stl
 
 .. function:: shm_member shm key
               shm_get shm key
