@@ -20,18 +20,17 @@ ifeq "$(DLL)" ".dll"
 LIBS = ../stlbase$(DLL)
 endif
 
-# Basic rules to build the module, clean, install and uninstall.
+# Basic rules to build the modules, clean, install and uninstall.
 
 cppsource = stlmap.cpp stlmmap.cpp stlhmap.cpp
 puresource = $(patsubst %.cpp, %.pure, $(cppsource))
-objects = stlmap$(DLL)
+objects = $(patsubst %.cpp, %$(DLL), $(cppsource))
 
 all: $(objects)
 
-$(objects): $(cppsource) 
-	$(CXX) $(shared) -std=c++0x -o $@ $(MOD_CXXFLAGS) \
-	$(cppsource) $(MOD_LDFLAGS) $(LIBS) -L$(installdir)
-#        -Wl,-rpath="$(installdir)"\
+%$(DLL) : %.cpp
+	$(CXX) $(shared) -std=c++0x $< -o $@ $(MOD_CXXFLAGS) \
+	$(MOD_LDFLAGS) $(LIBS) -L$(installdir)
 
 clean:
 	rm -f *.o *$(DLL)
