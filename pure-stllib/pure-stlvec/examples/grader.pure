@@ -1,4 +1,4 @@
-/* grader.pure - some utilities for working with stlvecs
+/* grader.pure - a sampe program using stlvec algorithms
 
 Copyright (c) 2011-2012 by Peter Summerland <p.summerland@gmail.com>.
 
@@ -92,11 +92,11 @@ const gc_count = 1;                       // e.g., (gc!gc_count) --> 3
 // One student_info per student
 stl::defstruct student_info            // generates accessor functions
 {                                      //   see stlstruct.pure
- student_name.string/readonly,         // per data file
- raw_scores.stlvec/readonly,           // per data file
- combined_scores.stlvec/readonly,      // qzs replaced by aggregate qz score
- normalized_scores.stlvec/readonly,   
- weighted_scores.stlvec/readonly,      // weighted combined_scores
+ student_name.string/r,                // per data file
+ raw_scores.stlvec/r,                  // per data file
+ combined_scores.stlvec/r,             // qzs replaced by aggregate qz score
+ normalized_scores.stlvec/r,          
+ weighted_scores.stlvec/r,             // weighted combined_scores
  total_score.double,                   // sum of weighted_scores
  rank.int,                             // #1 is best
  curve_grade,              
@@ -104,23 +104,23 @@ stl::defstruct student_info            // generates accessor functions
 };
 
 // Parameters used to control grading algorithms
-stl::defstruct (score_info/stl::immutable)
+stl::defstruct (score_info/immutable)
 {
- num_scores.int/readonly,              // number of raw scores per student
- normalizers.stlvec/readonly,          // convert raw to normal scores
- qzstyle.string/readonly,              // "a" "m" "t", average, median, total
- extra_quizes.int/readonly,            // number of quizes to discard
- weights.stlvec/readonly,              // weights for combined scores
- curve_grade_counts.stlvec/readonly,   // ordered stlvec of grade_counts
- point_grade_cutoffs.stlvec/readonly   // ordered stlvec of grade_cutoffs
+ num_scores.int/r,                     // number of raw scores per student
+ normalizers.stlvec/r,                 // convert raw to normal scores
+ qzstyle.string/r,                     // "a" "m" "t", average, median, total
+ extra_quizes.int/r,                   // number of quizes to discard
+ weights.stlvec/r,                     // weights for combined scores
+ curve_grade_counts.stlvec/r,          // ordered stlvec of grade_counts
+ point_grade_cutoffs.stlvec/r          // ordered stlvec of grade_cutoffs
 };
 
 // Overall state - kept in the call stack
 stl::defstruct state_info              // mutable - of course
 {
  score_parameters.score_info,          // see above 
- student_infos.stlvec/readonly,        // stlvec of student_infos
- data_ffp/readonly,                    // filtered file - see stlutil.pure
+ student_infos.stlvec/r,               // stlvec of student_infos
+ data_ffp/r,                           // filtered file - see stlutil.pure
  num_errors.int                        // errors in data file
 };
 
@@ -229,7 +229,7 @@ const config_key_funs =
 
 setup_state_info config_fp data_fp = ok, S when
   ffp = filter si_filter data_fp;
-  S = state_info {mk_score_info (), emptystlvec, ffp, 0};
+  S = state_info [(), emptystlvec, ffp, 0]; // () could be anything 
   ok1, name, scores = if ~feof ffp then parse_student_data S 0 (fgets ffp) 
                       else log_err S "missing perfect student" $$ 0,"",[];
   ok2, config_sv = stl::parse_parameter_file config_key_funs config_fp;
@@ -438,7 +438,7 @@ end;
 
 main args = () when
   config, data, out, report_type = parse_args args;
-  init_ok, S = setup_state_info config data; 
+  init_ok, S = setup_state_info config data;
   if init_ok then read_student_infos S else 0;
   fclose config;
   fclose data;
