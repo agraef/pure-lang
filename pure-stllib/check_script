@@ -11,7 +11,15 @@ curdir=$PWD
 
 trap 'x=$?; rm -rf '$DESTDIR'; exit $x;' ALRM HUP INT TERM
 
-# run ut for stlvec
+# remove and recompile all dlls
+make clean
+if ! make install DESTDIR=${DESTDIR} ; then
+  echo 
+  echo --- MAKE CHECK FAILED ---
+  exit 1
+fi
+
+# run ut for pure-stlvec
 cd pure-stlvec/ut
 pure -I${installdir} -L${installdir} -x ut_all.pure
 stlvec_ec=$?
@@ -20,24 +28,28 @@ cd ${curdir}
 
 echo 
 
+# run uts for pure-stlmap
 cd pure-stlmap/uts
 pure -I${installdir} -L${installdir} -x check_uts.pure uts_*.pure
 stlmap_ec=$?
 
 cd ${curdir}
 
+# clean up
 rm -rf ${DESTDIR}
+make clean
 
 if [ ${stlvec_ec} -ne 0 -o ${stlmap_ec} -ne 0 ] 
 then
   echo
   echo --- MAKE CHECK FAILED ---
   exit 1
-else
-  echo
-  echo --- MAKE CHECK PASSED ---
-  exit 0
 fi
+
+echo
+echo --- MAKE CHECK PASSED ---
+exit 0
+
 
 
 

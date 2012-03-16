@@ -14,10 +14,9 @@ shared      = $(shell pkg-config pure --variable shared)
 libdir      = $(shell pkg-config pure --variable libdir)
 installdir  = $(addprefix $(DESTDIR), $(libdir)/pure)
 
+CFLAGS = -g -O2
 MOD_CXXFLAGS = $(PIC) $(shell pkg-config pure --cflags) $(CFLAGS) $(CPPFLAGS)
 MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS)
-
-CFLAGS = -g -O2
 
 # Basic rules to build the module, clean, check, install and uninstall.
 
@@ -29,17 +28,20 @@ all: $(object) stlmap stlvec
 
 $(object): $(cppsource)
 	$(CXX) $(shared) -o $@ $(MOD_CXXFLAGS) $(cppsource) \
-        $(MOD_LDFLAGS) $(LIBS) -lgmp
+               $(MOD_LDFLAGS) $(LIBS) -lgmp
 
-stlvec:
+stlvec: $(object)
+	test -d $(installdir) || mkdir -p $(installdir)
+	cp -p $^ $(installdir)
 	$(MAKE) --directory=pure-stlvec
 
-stlmap:
+stlmap: $(object)
+	test -d $(installdir) || mkdir -p $(installdir)
+	cp -p $^ $(installdir)
 	$(MAKE) --directory=pure-stlmap
 
 clean:
 	rm -f *.o *$(DLL)
-	rm -fr BUILD
 	$(MAKE) clean --directory=pure-stlvec
 	$(MAKE) clean --directory=pure-stlmap
 
@@ -54,10 +56,9 @@ uninstall:
 	$(MAKE) uninstall --directory=pure-stlvec
 	$(MAKE) uninstall --directory=pure-stlmap
 
-check:
-	rm -rf BUILD
-	$(MAKE) install DESTDIR=$(shell pwd)/BUILD
+check:  
 	./check_script $(shell pwd)/BUILD
+	rm -f *.o *$(DLL)
 
 # Roll a distribution tarball.
 
@@ -82,5 +83,5 @@ dist:
 
 distcheck: dist
 	tar xfz $(dist).tar.gz
-	cd $(dist) && $(MAKE) && $(MAKE) check
+	cd $(dist) && $(MAKE) check
 	rm -rf $(dist)

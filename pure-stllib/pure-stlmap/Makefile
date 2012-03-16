@@ -9,16 +9,12 @@ PIC         = $(shell pkg-config pure --variable PIC)
 shared      = $(shell pkg-config pure --variable shared)
 libdir      = $(shell pkg-config pure --variable libdir)
 installdir  = $(addprefix $(DESTDIR), $(libdir)/pure)
-
-MOD_CXXFLAGS = $(PIC) $(shell pkg-config pure --cflags) -I.. \
-	       $(CFLAGS) $(CPPFLAGS)
-MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS)
+stlbaselib  = $(installdir)/stlbase$(DLL)
 
 CFLAGS = -g -O2
-ifeq "$(DLL)" ".dll"
-# Windows: additional libraries to be linked
-LIBS = ../stlbase$(DLL)
-endif
+MOD_CXXFLAGS = $(PIC) $(shell pkg-config pure --cflags) -I.. \
+	       $(CFLAGS) $(CPPFLAGS) -std=c++0x 
+MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS)
 
 # Basic rules to build the modules, clean, install and uninstall.
 
@@ -29,8 +25,8 @@ objects = $(patsubst %.cpp, %$(DLL), $(cppsource))
 all: $(objects)
 
 %$(DLL) : %.cpp
-	$(CXX) $(shared) -std=c++0x $< -o $@ $(MOD_CXXFLAGS) \
-	$(MOD_LDFLAGS) $(LIBS) -L$(installdir)
+	$(CXX) $(shared) $< -o $@ $(MOD_CXXFLAGS) \
+	$(MOD_LDFLAGS) $(LIBS) -L$(installdir) $(stlbaselib)
 
 clean:
 	rm -f *.o *$(DLL)
@@ -41,9 +37,6 @@ install: $(puresource) $(objects)
 
 uninstall:
 	rm -f $(addprefix $(installdir)/, $(puresource) $(objects))
-
-check:
-	cd uts; pure -I$(installdir) -L$(installdir) -x check_uts.pure uts_*
 
 # Make distribution files in $(DIST)/$(pkgname)
 
