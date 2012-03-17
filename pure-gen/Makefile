@@ -57,7 +57,7 @@ pure-gen: pure-gen.pure
 # needed to do without this kludge.
 
 dump-ast: dump-ast.hs
-	ghc -XTypeSynonymInstances --make $< -o $@
+	ghc -XTypeSynonymInstances -XFlexibleInstances --make $< -o $@
 
 # Minimal test suite:
 
