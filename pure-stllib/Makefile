@@ -14,9 +14,15 @@ shared      = $(shell pkg-config pure --variable shared)
 libdir      = $(shell pkg-config pure --variable libdir)
 installdir  = $(addprefix $(DESTDIR), $(libdir)/pure)
 
-CFLAGS = -g -O2
 MOD_CXXFLAGS = $(PIC) $(shell pkg-config pure --cflags) $(CFLAGS) $(CPPFLAGS)
 MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS)
+
+CFLAGS = -g -O2
+
+ifeq "$(DLL)" ".dylib"
+# OSX may need this (untested)
+DLL_FLAGS = -install_name "$(libdir)/pure/$@"
+endif
 
 # Basic rules to build the module, clean, check, install and uninstall.
 
@@ -27,27 +33,24 @@ object = $(patsubst %.cpp, %$(DLL), $(cppsource))
 all: $(object) stlmap stlvec
 
 $(object): $(cppsource)
-	$(CXX) $(shared) -o $@ $(MOD_CXXFLAGS) $(cppsource) \
-               $(MOD_LDFLAGS) $(LIBS) -lgmp
+	$(CXX) $(shared) $(DLL_FLAGS) -o $@ $(MOD_CXXFLAGS) $(cppsource) \
+	$(MOD_LDFLAGS) $(LIBS) -lgmp
 
-stlvec: $(object)
-	test -d $(installdir) || mkdir -p $(installdir)
-	cp -p $^ $(installdir)
+stlvec:
 	$(MAKE) --directory=pure-stlvec
 
-stlmap: $(object)
-	test -d $(installdir) || mkdir -p $(installdir)
-	cp -p $^ $(installdir)
+stlmap:
 	$(MAKE) --directory=pure-stlmap
 
 clean:
 	rm -f *.o *$(DLL)
+	rm -fr BUILD
 	$(MAKE) clean --directory=pure-stlvec
 	$(MAKE) clean --directory=pure-stlmap
 
-install: $(puresource) $(object)
+install:
 	test -d $(installdir) || mkdir -p $(installdir)
-	cp $^ $(installdir)
+	cp $(puresource) $(object) $(installdir)
 	$(MAKE) install DESTDIR=$(DESTDIR) --directory=pure-stlvec
 	$(MAKE) install DESTDIR=$(DESTDIR) --directory=pure-stlmap 
 
@@ -56,9 +59,10 @@ uninstall:
 	$(MAKE) uninstall --directory=pure-stlvec
 	$(MAKE) uninstall --directory=pure-stlmap
 
-check:  
+check:
+	rm -rf BUILD
+	$(MAKE) install DESTDIR=$(shell pwd)/BUILD
 	./check_script $(shell pwd)/BUILD
-	rm -f *.o *$(DLL)
 
 # Roll a distribution tarball.
 
@@ -83,5 +87,5 @@ dist:
 
 distcheck: dist
 	tar xfz $(dist).tar.gz
-	cd $(dist) && $(MAKE) check
+	cd $(dist) && $(MAKE) && $(MAKE) check
 	rm -rf $(dist)
