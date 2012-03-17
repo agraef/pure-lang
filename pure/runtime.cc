@@ -6094,14 +6094,16 @@ pure_expr *pure_catch(pure_expr *h, pure_expr *x)
 	  pure_free_internal(interp.sstk[i]);
       interp.sstk_sz = sz;
       if (interp.debugging) {
-	DebugInfo& d = interp.debug_info.back();
-	if (interp.stopped(d.e) || interp.traced(d.e)) {
-	  /* We're running in debugging mode. Print a little debugging
-	     message so that the user knows what's going on. */
-	  cout << "++ [" << d.n << "] " << pname(interp, d.e)
-	       << ": *** caught exception ***\n";
-	  if (e)
-	    cout << "     --> " << printx(e, 68) << endl;
+	if (!interp.debug_info.empty()) {
+	  DebugInfo& d = interp.debug_info.back();
+	  if (interp.stopped(d.e) || interp.traced(d.e)) {
+	    /* We're running in debugging mode. Print a little debugging
+	       message so that the user knows what's going on. */
+	    cout << "++ [" << d.n << "] " << pname(interp, d.e)
+		 << ": *** caught exception ***\n";
+	    if (e)
+	      cout << "     --> " << printx(e, 68) << endl;
+	  }
 	}
 	/* Unwind the debug info. */
 	size_t new_di_sz = interp.debug_info.size();
