@@ -10547,8 +10547,13 @@ int interpreter::compiler(string out, list<string> libnames)
     /* Call llc (and opt) to create a native assembler file which can then be
        passed to gcc to handle assembly and linkage (if requested). */
     string asmfile = (ext==".s")?out:out+".s";
+    string custom_opts = "";
+#if LLVM30 && __APPLE__
+    // The -disable-cfi seems to be needed on OSX as of LLVM 3.0.
+    custom_opts = "-disable-cfi ";
+#endif
     string cmd = "opt -f -std-compile-opts "+quote(target)+
-      " | llc "+string(pic?"-relocation-model=pic ":"")+
+      " | llc "+custom_opts+string(pic?"-relocation-model=pic ":"")+
       "-o "+quote(asmfile);
     if (vflag) std::cerr << cmd << '\n';
     unlink(asmfile.c_str());
