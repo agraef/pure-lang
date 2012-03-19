@@ -1,0 +1,291 @@
+/* timers.pure -- compute lookup times for dict, orddict, hashdict, stlmap and
+   stlhmap.
+
+   A lookup is a sequence like "if member set x then set!x else ()". The
+   corresponding c functions are called, e.g., orddict_member rather than
+   member.
+
+   Depending on these variables you can change the tests that are included
+
+   DICT, HASHDICT, etc 
+
+   You can have the tests use direct c calls by defining:
+
+   DCC
+
+   You can use compile line values by defining COMPILING
+
+   The test results shown at the end of this file were run after quitting
+   and restarting pure for each case.
+
+*/
+
+/*** Compilation options ***************************************************/
+
+// #! --enable DICT
+// #! --enable ORDDICT
+// #! --enable HASHDICT
+// #! --enable STLMAP
+// #! --enable STLHMAP
+
+// #! --enable DCC
+
+/*** Globals ********************************************************/
+
+using system;
+
+extern int atoi(char*);
+
+const repeats = 1000;
+const lookups = 100;
+
+#! --ifdef DCC
+const dcc_str = "(with direct C calls)";
+const dcc = 1;
+#! --else
+const dcc_str = "";
+const dcc = 0;
+#! --endif
+
+/*** dict *********************************************************/
+
+#! --ifdef DICT
+using dict;
+
+time_dict v words keys = () when
+  tm = clock;
+  spin repeats;
+  tm = (clock - tm) / 1000.0;
+  printf "lookup     dict: %8.1f msecs\n" tm;
+end with
+  spin 0 = ();
+  spin n = lookup keys $ spin (n-1);
+  lookup [] = ();
+  lookup (k:ks) =  member ss k $$ ss!k $$ lookup ks;
+end when 
+  tm = clock;
+  ss = foldl insert emptydict words;
+  tm = (clock - tm) / 1000.0;
+  if v then 
+    printf "fill      dict: %8.1f msecs, %d words\n"  (tm,#ss) 
+  else ();
+end;
+
+#! --endif
+
+/*** orddict *********************************************************/
+
+#! --ifdef ORDDICT
+using orddict;
+
+time_orddict v words keys = () when
+  tm = clock;
+  spin repeats;
+  tm = (clock - tm) / 1000.0;
+  printf "lookup  orddict: %8.1f msecs %s\n" (tm,dcc_str);
+end with
+  spin 0 = ();
+  spin n = lookup keys $ spin (n-1);
+  lookup [] = ();
+  lookup (k:ks) = lookup ks when
+    if ~dcc then member ss k $$ ss!k
+    else orddict_member ss k $$ orddict_get ss;
+  end;
+end when 
+  ss = orddict [];
+  tm = clock;
+  do (insert ss) words;
+  tm = (clock - tm) / 1000.0;
+  if v then 
+    printf "fill   orddict: %8.1f msecs, %d words\n"  (tm,#ss)
+  else ();
+end;
+
+#! --endif
+
+/*** hashdict *********************************************************/
+
+#! --ifdef HASHDICT
+using hashdict;
+
+time_hashdict v words keys = () when
+  tm = clock;
+  spin repeats;
+  tm = (clock - tm) / 1000.0;
+  printf "lookup hashdict: %8.1f msecs %s\n" (tm,dcc_str);
+end with
+  spin 0 = ();
+  spin n = lookup keys $ spin (n-1);
+  lookup [] = ();
+  lookup (k:ks) = lookup ks when
+    if ~dcc then member ss k $$ ss!k 
+    else hashdict_member ss k $$ hashdict_get ss k;
+  end;
+end when 
+  ss = hashdict [];
+  tm = clock;
+  do (insert ss) words;
+  tm = (clock - tm) / 1000.0;
+  if v then
+    printf "fill  hashdict: %8.1f msecs, %d words\n"  (tm,#ss)
+  else ();
+end;
+
+#! --endif
+
+/*** stlmap *********************************************************/
+
+#! --ifdef STLMAP
+using stlmap;
+
+time_stlmap v words keys = () when
+  tm = clock;
+  spin repeats;
+  tm = (clock - tm) / 1000.0;
+  printf "lookup   stlmap: %8.1f msecs %s\n" (tm,dcc_str);
+end with
+  spin 0 = ();
+  spin n = lookup keys $ spin (n-1);
+  lookup [] = ();
+  lookup (k:ks) = lookup ks when
+    if ~dcc then member ss k $$ ss!k 
+    else stl::sm_member ss k $$ stl::sm_get ss k;
+  end;
+end when 
+  ss = emptystlmap;
+  tm = clock;
+  insert ss words;
+  tm = (clock - tm) / 1000.0;
+  if v then
+    printf "fill    stlmap: %8.1f msecs, %d words\n"  (tm,#ss)
+  else ();
+end;
+
+#! --endif
+
+/*** stlmap using iterators ********************************************/
+
+#! --ifdef STLMAP
+using stlmap;
+
+time_stlmap_iter v words keys = () when
+  tm = clock;
+  spin repeats;
+  tm = (clock - tm) / 1000.0;
+  printf "lookup     iter: %8.1f msecs\n" (tm);
+  puts (get val);
+end with
+  spin 0 = ();
+  spin n = lookup keys $ spin (n-1);
+  lookup [] = ();
+  lookup (k:ks) =  lookup ks when
+    i = stl::find ss k;
+    stl::get_val i 3;
+  end;
+end when 
+  ss = emptystlmap;
+  tm = clock;
+  insert ss words;
+  tm = (clock - tm) / 1000.0;
+  if v then
+    printf "fill      iter: %8.1f msecs, %d words\n"  (tm,#ss)
+  else ();
+end;
+
+#! --endif
+
+/*** stlhmap *********************************************************/
+
+#! --ifdef STLHMAP
+using stlhmap;
+
+time_stlhmap v words keys = () when
+  tm = clock;
+  spin repeats;
+  tm = (clock - tm) / 1000.0;
+  printf "lookup  stlhmap: %8.1f msecs %s\n" (tm,dcc_str);
+end with
+  spin 0 = ();
+  spin n = lookup keys $ spin (n-1);
+  lookup [] = ();
+  lookup (k:ks) = lookup ks when
+    if ~dcc then member ss k $$ ss!k 
+    else stl::shm_member ss k $$ stl::shm_get ss k;
+  end;
+end when 
+  ss = emptystlhmap;
+  tm = clock;
+  insert ss words;
+  tm = (clock - tm) / 1000.0;
+  if v then
+    printf "fill   stlhmap: %8.1f msecs, %d words\n"  (tm,#ss)
+  else ();
+end;
+
+#! --endif
+
+/*** harness for tests ***********************************************/
+
+// returns a list of (word=>int) elements and a list of keys
+get_elements num_words filename = elms, keys when
+  fp = case fopen filename  "r" of 
+    fopen _ _ = pointer 0;
+    fp = fp;
+  end;
+  all_words = if null fp then
+                puts "Can't open word file" $$ []
+              else
+                split "\n" (fget fp);
+  fclose fp;
+  num_words = min (#all_words) num_words;
+  num_keys = min num_words lookups; 
+  words = take num_words all_words;
+  keys = take num_keys words;
+  elms = list $ zipwith (=>) words (0..inf);
+end;
+
+time_lookups verbose num_words word_file = () when
+  sep = "------------------------------------------";
+  if verbose then
+    printf "Time %d lookups, %d repeats %s\n" (lookups,repeats,dcc_str) 
+  else ();
+  elements, keys = get_elements num_words word_file;  
+  if verbose then puts sep else ();
+#! --ifdef DICT
+  time_dict verbose elements keys;
+  if verbose then puts sep else ();
+#! --endif
+#! --ifdef ORDDICT
+  time_orddict verbose elements keys;
+  if verbose then puts sep else ();
+#! --endif
+#! --ifdef STLMAP
+  time_stlmap verbose elements keys;
+  if verbose then puts sep else ();
+#! --endif
+#! --ifdef STLMAP
+  time_stlmap_iter verbose elements keys;
+  if verbose then puts sep else ();
+#! --endif
+#! --ifdef HASHDICT
+  time_hashdict verbose elements keys;
+  if verbose then puts sep else ();
+#! --endif
+#! --ifdef STLHMAP
+  time_stlhmap verbose elements keys;
+  if verbose then puts sep else ();
+#! --endif
+end;
+
+let a_file = "random_words.txt";
+    
+let usage = "usage: timer_xx verbose MAX_NUM_WORDS SOURCE_FILE";
+
+main = () when
+  if argc == 4 then 
+    time_lookups (atoi (argv!1)) (atoi (argv!2)) (argv!3)
+  else
+    puts usage;   
+end;
+
+if compiling || argc == 0 then () else main;

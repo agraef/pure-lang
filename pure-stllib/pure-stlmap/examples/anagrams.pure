@@ -91,7 +91,21 @@ anagrams n = () when
   puts "--------------------------------";
   tm_hmap = print_anagrams_hmap n words;
   puts "--------------------------------";
-  printf "map1 time: %5.1f msecs\n" (tm_map1 / clocks_per_msec);
-  printf "map2 time: %5.1f msecs\n" (tm_map2 / clocks_per_msec);
-  printf "maph time: %5.1f msecs\n" (tm_hmap / clocks_per_msec);
+  printf "Times for %d words\n" (#words); 
+  printf "stlmap1 time: %5.1f msecs (this is stlmap using replace_with)\n" 
+         (tm_map1 / clocks_per_msec);
+  printf "stlmap2 time: %5.1f msecs\n" (tm_map2 / clocks_per_msec);
+  printf "stlhmap time: %5.1f msecs\n" (tm_hmap / clocks_per_msec);
 end;
+
+
+/* Bottom line - For string keys and (<) or (>) ordering, it appears that
+   stlmap is almost as fast as stlhmap. Here are the last four lines of
+   a test run.
+
+   Times for 25105 words
+   stlmap1 time: 640.0 msecs (this is stlmap using replace_with)
+   stlmap2 time: 760.0 msecs
+   stlhmap time: 650.0 msecs
+
+*/

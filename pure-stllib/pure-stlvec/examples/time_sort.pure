@@ -10,7 +10,7 @@ time_copy words = () when
   tm = clock;
   spin repeats;
   tm = (clock - tm) / 1000.0;
-  printf "  copy words: %8.1f msecs\n" tm;
+  printf "  copy words : %8.1f msecs\n" tm;
   // puts $ str (take 5 (members cpy));
 end with
   spin 0 = ();
@@ -20,11 +20,11 @@ end when
   cpy = emptystlvec; 
 end;
 
-time_sort words = () when
+time_stlvec_sort words = () when
   tm = clock;
   spin repeats;
   tm = (clock - tm) / 1000.0;
-  printf "  sort words: %8.1f msecs\n" tm;
+  printf "  sort stlvec: %8.1f msecs\n" tm;
   // puts $ str (take 5 (members cpy));
 end with
   spin 0 = ();
@@ -33,6 +33,21 @@ end with
 end when
   cpy = emptystlvec; 
 end;
+
+time_list_sort words = () when
+  tm = clock;
+  spin repeats;
+  tm = (clock - tm) / 1000.0;
+  printf "  sort list  : %8.1f msecs\n" tm;
+  // puts $ str (take 5 (members cpy));
+end with
+  spin 0 = ();
+  spin n = do_sort $ spin (n-1);
+  do_sort = sort (<) word_list;
+end when
+  word_list = members words; 
+end;
+
 
 /*** Harness ********************************************************/
 
@@ -57,11 +72,24 @@ main num_words = () when
   num_words = min num_words (#words);
   printf "Test with %d words and %d repeats\n" (num_words, repeats);
   time_copy words;
-  time_sort words;
+  time_stlvec_sort words;
+  time_list_sort words;
 end;
 
 
 /*** Recent Improvements (Feb 5,2012) ************************************/
+
+/* The bottom line is that stl::sort sv (<) on stlvecs containing strings,
+   doubles, ints or bigints is about 14 times faster than before. The same
+   improvements should apply to any stl algorithm that uses (>) or (<) to
+   compared elements (i.e., the set algorithms, heap algorithms, etc.)
+
+   After the improvements sorting words in a stlvec
+   using (<) or (>) takes about 1/9 the time required to sort a list of the
+   same words. Before the improvements, sorting the stlvec would have taken
+   about 1.6 the time require to sort the list. I.e., s
+
+*/
 
 /* Times before code tuning - uses generic pxh_pred2 for sorting
 
@@ -85,7 +113,7 @@ Test with 10000 words and 100 repeats
 
     
 /* Times after replacing pxh_pred2 with pxh_less, which is optimized for
-   comparinsons of ints, bigints, doubles and strings
+   comparisons of ints, bigints, doubles and strings
 
 > run time_sort.pure
 > main 100;
@@ -106,24 +134,28 @@ Test with 10000 words and 100 repeats
 
 */
 
-/* Times with pxh_less, after changes to px_handle's constructors and 
-   destructor. The changes avoid pure_new, pure_free thrashing.
-   
+/* Times with pxh_less, after changes to px_handle's constructors and
+   destructor. The changes avoid pure_new, pure_free thrashing. Compared to
+   the previous output, the output label for sorting the random words in a
+   stlvec was changed from "sort words" to "sort stlvec". Also, a test for
+   sorting the same words as a list was added.
+
 > main 100;
 Test with 100 words and 100 repeats
-  copy words:      0.0 msecs
-  sort words:     10.0 msecs
+  copy words :      0.0 msecs
+  sort stlvec:     10.0 msecs
+  sort list  :     50.0 msecs
 ()
 > main 1000;
 Test with 1000 words and 100 repeats
-  copy words:      0.0 msecs
-  sort words:    140.0 msecs
+  copy words :     10.0 msecs
+  sort stlvec:     70.0 msecs
+  sort list  :    760.0 msecs
 ()
 > main 10000;
 Test with 10000 words and 100 repeats
-  copy words:     90.0 msecs
-  sort words:   1790.0 msecs
-()
->
+  copy words :     30.0 msecs
+  sort stlvec:   1150.0 msecs
+  sort list  :  10600.0 msecs
 
-*/
+**/

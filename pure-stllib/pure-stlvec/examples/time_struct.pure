@@ -7,12 +7,13 @@ using namespace stl;
 const repeats = 1000000;
 
 #! --nowarn
-defstruct mystruct {name, age, info1, info2, info3};
+defstruct mystruct {name, age, info1, info2, info3, info4, info5};
 #! --rewarn
 
-let x_struct = mystruct {"Peter",100,1,2,3};
+let x_struct = mystruct {"Peter",100,1,2,3,4,5};
 
-let x_rec = record {"name"=>"Fred","age"=>101,"info1"=>1,"info2"=>2,"info3"=>3};
+let x_rec = record {"name"=>"Fred","age"=>101,
+                    "info1"=>1,"info2"=>2,"info3"=>3,"info4"=>4,"info5"=>5};
 
 nonfix name_sym;
 nonfix age_sym;
@@ -21,7 +22,8 @@ nonfix info2;
 nonfix info3;
 
 let x_rec_sym = record 
-  {name_sym=>"Fred",age_sym=>101,info1=>1,info2=>2,info2=>3};
+  {name_sym=>"Fred",age_sym=>101,
+   "info1"=>1,"info2"=>2,"info3"=>3,"info4"=>4,"info5"=>5};
 
 lookup_struct = () when
   tm = clock;
@@ -47,7 +49,7 @@ lookup_rec_sym = () when
   tm = clock;
   spin repeats;
   tm = (clock - tm) / 1000.0;
-  printf "  lookup rec   : %8.1f msec\n" tm;
+  printf "  lookup recsym: %8.1f msec\n" tm;
 end with
   spin 0 = ();
   spin n = x_rec_sym!name_sym, x_rec_sym!age_sym $$ spin (n-1);
@@ -62,11 +64,12 @@ end with
   spin 0 = ();
   spin n = set_age counter (age counter + 1) $$ spin (n-1);
 end when
-  counter = mystruct {"_",0,1,1,1};
+  counter = mystruct {"_",0,1,2,3,4,5};
 end;
 
 count_rec = res when
-  x_rec = record {"name"=>"_","age"=>0,"info1"=>1,"info2"=>2,"info2"=>3};
+  x_rec = record {"name"=>"_","age"=>0,
+                  "info1"=>1,"info2"=>2,"info3"=>3,"info4"=>4,"info5"=>5};
   tm = clock;
   res = spin x_rec repeats;
   tm = (clock - tm) / 1000.0;
