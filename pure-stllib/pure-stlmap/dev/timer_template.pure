@@ -59,7 +59,7 @@ time_dict v words keys = () when
   printf "lookup     dict: %8.1f msecs\n" tm;
 end with
   spin 0 = ();
-  spin n = lookup keys $ spin (n-1);
+  spin n = lookup keys $$ spin (n-1);
   lookup [] = ();
   lookup (k:ks) =  member ss k $$ ss!k $$ lookup ks;
 end when 
@@ -67,7 +67,7 @@ end when
   ss = foldl insert emptydict words;
   tm = (clock - tm) / 1000.0;
   if v then 
-    printf "fill      dict: %8.1f msecs, %d words\n"  (tm,#ss) 
+    printf "fill       dict: %8.1f msecs, %d words\n"  (tm,#ss) 
   else ();
 end;
 
@@ -85,11 +85,11 @@ time_orddict v words keys = () when
   printf "lookup  orddict: %8.1f msecs %s\n" (tm,dcc_str);
 end with
   spin 0 = ();
-  spin n = lookup keys $ spin (n-1);
+  spin n = lookup keys $$ spin (n-1);
   lookup [] = ();
   lookup (k:ks) = lookup ks when
     if ~dcc then member ss k $$ ss!k
-    else orddict_member ss k $$ orddict_get ss;
+    else orddict_member ss k $$ orddict_get ss; 
   end;
 end when 
   ss = orddict [];
@@ -97,7 +97,7 @@ end when
   do (insert ss) words;
   tm = (clock - tm) / 1000.0;
   if v then 
-    printf "fill   orddict: %8.1f msecs, %d words\n"  (tm,#ss)
+    printf "fill    orddict: %8.1f msecs, %d words\n"  (tm,#ss)
   else ();
 end;
 
@@ -115,7 +115,7 @@ time_hashdict v words keys = () when
   printf "lookup hashdict: %8.1f msecs %s\n" (tm,dcc_str);
 end with
   spin 0 = ();
-  spin n = lookup keys $ spin (n-1);
+  spin n = lookup keys $$ spin (n-1);
   lookup [] = ();
   lookup (k:ks) = lookup ks when
     if ~dcc then member ss k $$ ss!k 
@@ -127,7 +127,7 @@ end when
   do (insert ss) words;
   tm = (clock - tm) / 1000.0;
   if v then
-    printf "fill  hashdict: %8.1f msecs, %d words\n"  (tm,#ss)
+    printf "fill   hashdict: %8.1f msecs, %d words\n"  (tm,#ss)
   else ();
 end;
 
@@ -145,7 +145,7 @@ time_stlmap v words keys = () when
   printf "lookup   stlmap: %8.1f msecs %s\n" (tm,dcc_str);
 end with
   spin 0 = ();
-  spin n = lookup keys $ spin (n-1);
+  spin n = lookup keys $$ spin (n-1);
   lookup [] = ();
   lookup (k:ks) = lookup ks when
     if ~dcc then member ss k $$ ss!k 
@@ -157,7 +157,7 @@ end when
   insert ss words;
   tm = (clock - tm) / 1000.0;
   if v then
-    printf "fill    stlmap: %8.1f msecs, %d words\n"  (tm,#ss)
+    printf "fill     stlmap: %8.1f msecs, %d words\n"  (tm,#ss)
   else ();
 end;
 
@@ -173,10 +173,9 @@ time_stlmap_iter v words keys = () when
   spin repeats;
   tm = (clock - tm) / 1000.0;
   printf "lookup     iter: %8.1f msecs\n" (tm);
-  puts (get val);
 end with
   spin 0 = ();
-  spin n = lookup keys $ spin (n-1);
+  spin n = lookup keys $$ spin (n-1);
   lookup [] = ();
   lookup (k:ks) =  lookup ks when
     i = stl::find ss k;
@@ -188,7 +187,7 @@ end when
   insert ss words;
   tm = (clock - tm) / 1000.0;
   if v then
-    printf "fill      iter: %8.1f msecs, %d words\n"  (tm,#ss)
+    printf "fill       iter: %8.1f msecs, %d words\n"  (tm,#ss)
   else ();
 end;
 
@@ -206,7 +205,7 @@ time_stlhmap v words keys = () when
   printf "lookup  stlhmap: %8.1f msecs %s\n" (tm,dcc_str);
 end with
   spin 0 = ();
-  spin n = lookup keys $ spin (n-1);
+  spin n = lookup keys $$ spin (n-1);
   lookup [] = ();
   lookup (k:ks) = lookup ks when
     if ~dcc then member ss k $$ ss!k 
@@ -218,13 +217,15 @@ end when
   insert ss words;
   tm = (clock - tm) / 1000.0;
   if v then
-    printf "fill   stlhmap: %8.1f msecs, %d words\n"  (tm,#ss)
+    printf "fill    stlhmap: %8.1f msecs, %d words\n"  (tm,#ss)
   else ();
 end;
 
 #! --endif
 
 /*** harness for tests ***********************************************/
+
+using stlvec, stlvec::modifying;
 
 // returns a list of (word=>int) elements and a list of keys
 get_elements num_words filename = elms, keys when
@@ -240,7 +241,9 @@ get_elements num_words filename = elms, keys when
   num_words = min (#all_words) num_words;
   num_keys = min num_words lookups; 
   words = take num_words all_words;
-  keys = take num_keys words;
+  words_sv = stlvec words;
+  stl::random_shuffle words_sv;
+  keys = members (words_sv,0,num_keys);
   elms = list $ zipwith (=>) words (0..inf);
 end;
 

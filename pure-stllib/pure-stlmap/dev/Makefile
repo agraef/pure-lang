@@ -1,15 +1,18 @@
 # Makefile for the pure-stlmap/dev directory
 
 # It compiles pure scripts that load up stlmaps, dicts, ordicts, etc with
-# random words and then do $(num_lookups) lookups $(num_repeats) time and print out
-# how long it took.
+# random words and then do $(num_lookups) lookups $(num_repeats) time and
+# print out how long it took.
 #
 # A "lookup" is "if member cont key then cont!key else ();
 #
 
 # all	    compile the scripts
 # run	    do the lookups using normal calls (member and !)
-# run_dcc   do the lookups using direct C calls where available (e.g., hashdict_get, stl::sm_get)
+
+# run_dcc   do the lookups using direct C calls where available (e.g., 
+#           hashdict_get, stl::sm_get)
+
 # clean     remove the executables
 
 # For run and run_dcc you can specify NUMWORDS the number of words to be in
