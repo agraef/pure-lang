@@ -322,17 +322,27 @@ void stl_sv_clear(sv* vec)
 
 bool stl_sv_allpairs(px* comp, px* tpl1, px* tpl2)
 {
+  bool ret = false;
   pxh_pred2 fun(comp);
   sv_range rng1(tpl1);
   sv_range rng2(tpl2);
   if (!rng1.is_valid || rng1.num_iters != 2) bad_argument();
   if (!rng2.is_valid || rng2.num_iters != 2) bad_argument();
   try {
-    return equal(rng1.beg(), rng1.end(), rng2.beg(), fun);
+    svi i1 = rng1.beg();
+    svi i2 = rng2.beg();
+    svi e1 = rng1.end();
+    svi e2 = rng2.end();
+    while (i1 != e1 && i2 != e2) {
+      if ( !fun(*i1, *i2) ) break;
+      i1++; i2++;
+    }
+    if (i1 == e1 && i2 == e2)
+      ret = true;
   } catch (px* e) {
     pure_throw(e);
-    return 0;
   }
+  return ret;
 }
 
 px* stl_sv_list(px* tpl)

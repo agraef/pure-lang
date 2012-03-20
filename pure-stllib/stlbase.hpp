@@ -148,16 +148,6 @@ struct pxh_fun1 : public pxh_fun,
   pxh operator()(const pxh&) const;
 };
 
-struct pxh_less : public pxh_fun, 
-                  public std::binary_function<const pxh&, const pxh&, pxh>
-{
-  bool is_lt;
-  bool is_gt;
-  pxh_less(px* f);
-  bool operator()(const pxh&, const pxh&) const;
-  
-};
-
 struct pxh_fun2 : public pxh_fun, 
                   public std::binary_function<const pxh&, const pxh&, pxh>
 {
@@ -175,7 +165,12 @@ struct pxh_pred1 : public pxh_fun,
 struct pxh_pred2 : public pxh_fun,
                    public std::binary_function<const pxh&, const pxh&, bool>
 {
-  pxh_pred2(px* f) : pxh_fun(f){}
+  bool is_eq;
+  bool is_same;
+  bool is_lt;
+  bool is_gt;
+  bool is_fast;
+  pxh_pred2(px* f);
   bool operator()(const pxh&, const pxh&) const;
 };
 
@@ -184,6 +179,8 @@ struct pxh_gen : public pxh_fun
   pxh_gen(px* f) : pxh_fun(f){}
   pxh operator()();
 };
+
+// TODO FIX -- change pxhpair_xx to use pxh_less and pxh_equal
 
 struct pxhpair_less : 
   public std::binary_function<const pxhpair&, const pxhpair&, bool>

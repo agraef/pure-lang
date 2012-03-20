@@ -22,7 +22,7 @@ using namespace std;
 
 void stl_sva_push_heap(px* tpl, px* cmp)
 {
-  pxh_less fun(cmp);
+  pxh_pred2 fun(cmp);
   sv_range rng(tpl);
   if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   try {
@@ -35,7 +35,7 @@ void stl_sva_push_heap(px* tpl, px* cmp)
 
 void stl_sva_pop_heap(px* tpl, px* cmp)
 {
-  pxh_less fun(cmp);
+  pxh_pred2 fun(cmp);
   sv_range rng(tpl);
   if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   try {
@@ -47,7 +47,7 @@ void stl_sva_pop_heap(px* tpl, px* cmp)
 
 void stl_sva_make_heap(px* tpl, px* cmp)
 {
-  pxh_less fun(cmp);
+  pxh_pred2 fun(cmp);
   sv_range rng(tpl);
   if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   try {
@@ -59,7 +59,7 @@ void stl_sva_make_heap(px* tpl, px* cmp)
 
 void stl_sva_sort_heap(px* tpl, px* cmp)
 {
-  pxh_less fun(cmp);
+  pxh_pred2 fun(cmp);
   sv_range rng(tpl);
   if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   try {

@@ -21,6 +21,105 @@ included with the pure-stlvec distribution package for details.
 
 using namespace std;
 
+
+/**** Interpreter Local Storage Global Symbols **************************/
+
+static px* px_newsym(const char *name)
+{
+  return pure_new(pure_symbol(pure_sym(name)));
+}
+
+px* px_cons_sym()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym(":");
+  return sym;
+}
+
+px* px_null_list_sym()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym("[]");
+  return sym;
+}
+
+px* px_rocket_sym()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym("=>");
+  return sym;
+}
+
+px* px_less_than_sym()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym("<");
+  return sym;
+}
+
+px* px_equal_sym()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym("==");
+  return sym;
+}
+
+px* px_greater_than_sym()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym(">");
+  return sym;
+}
+
+px* px_same_sym()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym("===");
+  return sym;
+}
+
+px* px_bad_function_sym()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym("bad_function");
+  return sym;
+}
+
+px* px_out_of_bounds_sym()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym("out_of_bounds");
+  return sym;
+}
+
+px* px_range_overflow_sym()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym(":");
+  return sym;
+}
+
+px* px_range_overlap_sym()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym("range_overlap");
+  return sym;
+}
+
+px* px_bad_argument_sym()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym("bad_argument");
+  return sym;
+}
+
+px* px_failed_cond_sym()
+{
+  static ILS<px*> _sym = NULL; px* &sym = _sym();
+  if (!sym) sym = px_newsym("failed_cond");
+  return sym;
+}
+
 /**** Helpers for px* ***************************************************/
 
 ostream& operator<<(ostream& os, px* x){
@@ -91,7 +190,14 @@ ostream& operator<<(ostream& os, const px_handle& pxh)
   return os;
 }
 
-/*** Function objects to lift px* functions to pxh functions ***/
+/*** Function objects to lift px* functions to pxh functions ***********/
+
+enum {
+  INT		= -3,	// 32 bit signed integer
+  BIGINT	= -4,	// bigint (mpz_t)
+  DBL		= -5,	// double precision floating point number
+  STR		= -6,	// utf-8 string (char*)
+};
 
 pxh_fun& pxh_fun::operator=(const pxh_fun& rhs)
 {
@@ -110,56 +216,6 @@ pxh pxh_fun1::operator()(const pxh& arg) const
   if (exception) throw exception;
   if (!ret) bad_function();
   return pxh(ret);
-}
-
-pxh_less::pxh_less(px* f) : pxh_fun(f) 
-{
-  is_lt = is_gt = false;
-  if ( same(f,px_less_than_sym()) ) 
-    is_lt = true;
-  else if ( same(f,px_greater_than_sym()) ) 
-    is_gt = true;
-}
-
-// For (<) and (>) use built-ins for strings, ints, doubles and bigints
-// else callback on (>) or (>). For others callback on comp.
-bool pxh_less::operator()(const pxh& x_pxh, const pxh& y_pxh) const
-{
-  bool ret = 0;
-  px* x = const_cast<px*>(x_pxh.pxp());
-  px* y = const_cast<px*>(y_pxh.pxp());
-  if (is_lt || is_gt) {
-    const char *x_str, *y_str;
-    if (pure_is_string(x,&x_str) && pure_is_string(y,&y_str)) {
-      int cmp = strcmp(x_str,y_str);
-      return (is_lt && cmp<0) || (is_gt && cmp>0);
-    }
-    int x_int, y_int;
-    if (pure_is_int(x,&x_int) && pure_is_int(y,&y_int))
-      return (is_lt && x_int < y_int) || (is_gt && x_int > y_int);
-    double x_dbl, y_dbl;
-    if (pure_is_double(x,&x_dbl) && pure_is_double(y,&y_dbl))
-      return (is_lt && x_dbl < y_dbl) || (is_gt && x_dbl > y_dbl);
-    mpz_t x_mpz, y_mpz;
-    if (pure_is_mpz(x,&x_mpz)) {
-        if (pure_is_mpz(y,&y_mpz)) {
-          int cmp = bigint_cmp(x_mpz,y_mpz);
-          mpz_clear(x_mpz);
-          mpz_clear(y_mpz);
-          return (is_lt && cmp<0) || (is_gt && cmp>0);
-        }
-        else
-          mpz_clear(x_mpz);
-    }
-  }
-  px* exception = 0;
-  px* pxres =  pure_appxl(fun_, &exception, 2, x, y);
-  if (exception) throw exception;
-  if (!pxres) bad_function();
-  int is_less; 
-  if ( !pure_is_int(pxres, &is_less) ) bad_argument();
-  pure_freenew(pxres);
-  return is_less != 0;
 }
 
 pxh pxh_fun2::operator()(const pxh& arg1, const pxh& arg2) const
@@ -184,18 +240,94 @@ bool pxh_pred1::operator()(const pxh& arg) const
   return ok && ret;
 }
 
-bool pxh_pred2::operator()(const pxh& left, const pxh& right) const
+pxh_pred2::pxh_pred2(px* f) : pxh_fun(f) 
 {
-  int32_t ret;
+  is_eq = is_same = is_lt = is_gt = false;
+  if ( same(f,px_less_than_sym()) ) 
+    is_lt = true;
+  else if ( same(f,px_greater_than_sym()) ) 
+    is_gt = true;
+  else if ( same(f,px_equal_sym()) ) 
+    is_eq = true;
+  else if ( same(f,px_same_sym()) ) 
+    is_same = true;
+  is_fast = is_eq || is_same || is_lt || is_gt;
+}
+
+bool pxh_pred2::operator()(const pxh& x_pxh, const pxh& y_pxh) const
+{
+  bool ret = 0;
+  int comp;
+  px* x = const_cast<px*>(x_pxh.pxp());
+  px* y = const_cast<px*>(y_pxh.pxp());
+  bool can_optimize = is_fast && (x->tag == y->tag && x->tag < 0);
+  if (can_optimize) {
+    if (is_lt || is_gt) {
+      switch (x->tag) {
+      case STR:
+        comp = strcmp(x->data.s, y->data.s);
+        if (comp==0)
+          return 0;
+        else
+          ret = comp < 0;
+        break;
+      case INT:
+        ret = x->data.i < y->data.i;
+        break;
+      case DBL:
+        ret = x->data.d < y->data.d;
+        break;
+      case BIGINT:
+        ret = bigint_cmp(x->data.z, y->data.z) < 0;
+        break;
+      }
+      return is_lt ? ret : !ret;
+    }
+    else {
+      if (x==y) {
+        ret = 1;
+      }
+      else {
+        switch (x->tag) {
+        case STR:
+          ret = strcmp(x->data.s, y->data.s) == 0;
+          break;
+        case INT:
+          ret = x->data.i == y->data.i;
+          break;
+        case DBL:
+          ret = x->data.d == y->data.d;
+          break;
+        case BIGINT:
+          ret = bigint_cmp(x->data.z, y->data.z) == 0;
+          break;
+        }
+      }
+      return ret;
+    }
+  }
   px* exception = 0;
-  px* pxres = pure_appxl(fun_, &exception, 2, left.pxp(), right.pxp());
+  px* pxres =  pure_appxl(fun_, &exception, 2, x, y);
   if (exception) throw exception;
   if (!pxres) bad_function();
-  int ok = pure_is_int(pxres, &ret);
+  int satisfied; 
+  if ( !pure_is_int(pxres, &satisfied) ) bad_argument();
   pure_freenew(pxres);
-  if (!ok) failed_cond();
-  return ok && ret;
+  return satisfied != 0;
 }
+
+// bool pxh_pred2::operator()(const pxh& left, const pxh& right) const
+// {
+//   int32_t ret;
+//   px* exception = 0;
+//   px* pxres = pure_appxl(fun_, &exception, 2, left.pxp(), right.pxp());
+//   if (exception) throw exception;
+//   if (!pxres) bad_function();
+//   int ok = pure_is_int(pxres, &ret);
+//   pure_freenew(pxres);
+//   if (!ok) failed_cond();
+//   return ok && ret;
+// }
 
 bool pxhpair_less::operator()(const pxhpair& left,
                               const pxhpair& right) const
@@ -277,96 +409,6 @@ int stl_refc(pure_expr *x)
   return x->refc - 1; // want x->refc before x was passed into here
 }
 
-/**** Interpreter Local Storage Global Symbols **************************/
-
-static px* px_newsym(const char *name)
-{
-  return pure_new(pure_symbol(pure_sym(name)));
-}
-
-px* px_cons_sym()
-{
-  static ILS<px*> _sym = NULL; px* &sym = _sym();
-  if (!sym) sym = px_newsym(":");
-  return sym;
-}
-
-px* px_null_list_sym()
-{
-  static ILS<px*> _sym = NULL; px* &sym = _sym();
-  if (!sym) sym = px_newsym("[]");
-  return sym;
-}
-
-px* px_rocket_sym()
-{
-  static ILS<px*> _sym = NULL; px* &sym = _sym();
-  if (!sym) sym = px_newsym("=>");
-  return sym;
-}
-
-px* px_less_than_sym()
-{
-  static ILS<px*> _sym = NULL; px* &sym = _sym();
-  if (!sym) sym = px_newsym("<");
-  return sym;
-}
-
-px* px_equal_sym()
-{
-  static ILS<px*> _sym = NULL; px* &sym = _sym();
-  if (!sym) sym = px_newsym(">");
-  return sym;
-}
-
-px* px_greater_than_sym()
-{
-  static ILS<px*> _sym = NULL; px* &sym = _sym();
-  if (!sym) sym = px_newsym(">");
-  return sym;
-}
-
-px* px_bad_function_sym()
-{
-  static ILS<px*> _sym = NULL; px* &sym = _sym();
-  if (!sym) sym = px_newsym("bad_function");
-  return sym;
-}
-
-px* px_out_of_bounds_sym()
-{
-  static ILS<px*> _sym = NULL; px* &sym = _sym();
-  if (!sym) sym = px_newsym("out_of_bounds");
-  return sym;
-}
-
-px* px_range_overflow_sym()
-{
-  static ILS<px*> _sym = NULL; px* &sym = _sym();
-  if (!sym) sym = px_newsym(":");
-  return sym;
-}
-
-px* px_range_overlap_sym()
-{
-  static ILS<px*> _sym = NULL; px* &sym = _sym();
-  if (!sym) sym = px_newsym("range_overlap");
-  return sym;
-}
-
-px* px_bad_argument_sym()
-{
-  static ILS<px*> _sym = NULL; px* &sym = _sym();
-  if (!sym) sym = px_newsym("bad_argument");
-  return sym;
-}
-
-px* px_failed_cond_sym()
-{
-  static ILS<px*> _sym = NULL; px* &sym = _sym();
-  if (!sym) sym = px_newsym("failed_cond");
-  return sym;
-}
 
 /*** Errors ********************************************************/
 

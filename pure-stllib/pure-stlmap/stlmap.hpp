@@ -21,7 +21,7 @@ included with the pure-stlmap distribution package for details.
 #include <map>
 #include "stlbase.hpp"
 
-typedef std::map<pxh,pxh,pxh_less> pxhmap;
+typedef std::map<pxh,pxh,pxh_pred2> pxhmap;
 typedef pxhmap::iterator pmi;
 
 

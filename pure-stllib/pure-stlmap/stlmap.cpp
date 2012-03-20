@@ -307,7 +307,7 @@ ostream& operator<<(ostream& os, const sm_iter* smip)
 /*** stlmap members  ***********************************************/
 
 stlmap::stlmap(px* cmp, px* val_cmp, px* val_eql, bool keyonly):
-  mp(pxh_less(cmp)),
+  mp(pxh_pred2(cmp)),
   keys_only(keyonly), last_in_pos(0), has_dflt(0), dflt(NULL),
   px_comp(cmp), px_val_comp(val_cmp), px_val_equal(val_eql)
 {
@@ -315,7 +315,7 @@ stlmap::stlmap(px* cmp, px* val_cmp, px* val_eql, bool keyonly):
 }
 
 stlmap::stlmap(px* cmp, px* val_cmp, px* val_eql, bool keyonly, px *d):
-  mp(pxh_less(cmp)), 
+  mp(pxh_pred2(cmp)), 
   keys_only(keyonly), last_in_pos(0), has_dflt(1), dflt(d),
   px_comp(cmp), px_val_comp(val_cmp), px_val_equal(val_eql)
 {
