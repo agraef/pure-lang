@@ -41,7 +41,7 @@ extern "C" {
   int  stl_sva_reverse_copy(px* tpl1, px* tpl2);
   void stl_sva_rotate(px* tpl);
   void stl_sva_rotate_copy(px* tpl1, px* tpl2);
-  void stl_sva_random_shuffle(px* tpl);  
+  void stl_sva_random_shuffle(px* tpl, int seed);  
   int  stl_sva_partition(px* tpl, px* pred);
   int  stl_sva_stable_partition(px* tpl, px* pred);
 

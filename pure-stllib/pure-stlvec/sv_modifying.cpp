@@ -407,18 +407,23 @@ void stl_sva_rotate_copy(px* tpl1, px* tpl2){
   }
 }
 
-
-void stl_sva_random_shuffle(px* tpl) 
+void stl_sva_random_shuffle(px* tpl, int seed) 
 {
   sv_range rng(tpl);
   if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   try {
-    random_shuffle(rng.beg(), rng.end());  
+    srand(seed);
+    int i, n, p;
+    svi first = rng.beg();
+    n = (rng.end() - first);
+    for (i=n-1; i>0; --i) {
+      p = rand() % (i+1);
+      swap (first[i],first[p]);
+    } 
   } catch (px* e) {
     pure_throw(e);
   }
 }
-
 
 int stl_sva_partition(px* tpl, px* pred)
 {
