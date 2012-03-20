@@ -36,13 +36,13 @@ struct sm_key_iter {
 struct stlmap {
   bool keys_only;
   bool has_dflt;
-  int last_in_pos;
   pxhmap mp;
   pxh px_comp;
   pxh px_val_comp;
   pxh px_val_equal;
   pxh dflt;
-  std::vector<sm_key_iter> ki_cache;
+  pxh cache_key;
+  pmi cache_iter;
   std::vector<sm_iter*> smis; // sm_iters in Pure land
 
   stlmap(px* key_comp, px* val_comp, px* val_equal, bool keyonly); 
@@ -50,8 +50,6 @@ struct stlmap {
   ~stlmap();
   px* parameter_tuple();
   pmi  find(px* key);
-  bool get_cached_pmi(px* k, pmi& i); 
-  void cache_pmi(px* key, pmi& i);
   void clear();
   int  erase(pmi pos);
   int  erase(px* k);
@@ -59,7 +57,7 @@ struct stlmap {
   void invalidate_iter(pmi pos);
   void invalidate_all_iters();
   void remove_sm_iter(sm_iter*);
-  void kill_ki_cache_elm(pmi pos);
+  void kill_cache_iter(pmi pos);
   void clear_ki_cache();
 };
 

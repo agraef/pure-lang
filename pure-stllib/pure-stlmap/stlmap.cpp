@@ -49,9 +49,8 @@ static int stlmap_iter_tag()
 
 static void dump_smp(sm* smp) {
   PR2(dump_smp,smp->keys_only,smp->has_dflt);
-  PR2(dump_smp,smp->last_in_pos,smp->px_comp);
   PR2(dump_smp,smp->dflt,smp->dflt.pxp()->refc);
-  PR2(dump_smp,smp->ki_cache.size(),smp->smis.size());
+  PR(dump_smp,smp->cache_key);
   PR(dump_smp,smp->mp.size());
 }
 
@@ -94,9 +93,9 @@ static bool insert_aux(sm* smp, px* kv, pmi& pos, int& inserted, bool replace)
   px *k, *v;
   bool ok = extract_kv(smp,kv,k,v);
   if (ok) {
-    if ( smp->get_cached_pmi(k, pos) ) {
+    if ( smp->cache_key.pxp() == k) {
       if (replace) {
-        pos->second = v;
+        smp->cache_iter->second = v;
         inserted++;
       }
     }
@@ -165,7 +164,8 @@ static pmi get_iter(sm* smp , px* key, int mode)
   else if (key == smend()) {
     iter = mp.end();
   }
-  else if (smp->get_cached_pmi(key, iter) ) {
+  else if (smp->cache_key.pxp() == key) {
+    iter = smp->cache_iter;
     if (mode==gi_upper) iter++;
   }
   else {
@@ -307,16 +307,16 @@ ostream& operator<<(ostream& os, const sm_iter* smip)
 /*** stlmap members  ***********************************************/
 
 stlmap::stlmap(px* cmp, px* val_cmp, px* val_eql, bool keyonly):
-  mp(pxh_pred2(cmp)),
-  keys_only(keyonly), last_in_pos(0), has_dflt(0), dflt(NULL),
+  mp(pxh_pred2(cmp)), cache_key( pxh(0) ),
+  keys_only(keyonly), has_dflt(0), dflt(NULL),
   px_comp(cmp), px_val_comp(val_cmp), px_val_equal(val_eql)
 {
   //PR(stlmap,this);
 }
 
 stlmap::stlmap(px* cmp, px* val_cmp, px* val_eql, bool keyonly, px *d):
-  mp(pxh_pred2(cmp)), 
-  keys_only(keyonly), last_in_pos(0), has_dflt(1), dflt(d),
+  mp(pxh_pred2(cmp)),  cache_key( pxh(0) ),
+  keys_only(keyonly), has_dflt(1), dflt(d),
   px_comp(cmp), px_val_comp(val_cmp), px_val_equal(val_eql)
 {
   //PR(stlmap,this);  
@@ -358,64 +358,7 @@ pmi stlmap::find(px* key)
 }
 
 
-const size_t SM_CACHE_SZ = 3;  // must be 3 for cache to work right
 
-void stlmap::cache_pmi( px* key, pmi& pos)
-{
-  if ( pos != mp.end() && key != smbeg() ) {
-    size_t num_cached = ki_cache.size();
-    for (int i = 0; i < num_cached; i++) {
-      px* k =  ki_cache[i].key;
-      if ( key == k) {
-        assert( ki_cache[i].iter == pos );
-        // key is already cached - move to last in position
-        // SM_CACHE_SZ must be 3 for this to work right
-        if ( i!=last_in_pos ) {
-          size_t next_lip = (last_in_pos + 1) % SM_CACHE_SZ;
-          if ( i==next_lip ) {
-            last_in_pos = next_lip;
-          } else {
-            ki_cache[i] = ki_cache[last_in_pos];
-            ki_cache[last_in_pos].key = key;
-            ki_cache[last_in_pos].iter = pos;
-          }
-        }
-        return;
-      }
-    }
-    if (num_cached<SM_CACHE_SZ) {
-      sm_key_iter ki(key,pos);
-      ki_cache.push_back(ki);
-      last_in_pos = num_cached;
-    }
-    else {
-      last_in_pos = (last_in_pos + 1) % SM_CACHE_SZ;
-      ki_cache[last_in_pos].iter = pos;
-      ki_cache[last_in_pos].key = key;
-    }
-  }
-}
-
-bool stlmap::get_cached_pmi(px* key, pmi& pos)
-{
-  bool ret = false;
-  if ( key != smend() && key != smbeg() ) {
-    size_t num_cached = ki_cache.size();
-    size_t i = 0; 
-    for (; i < num_cached; i++) {
-      px* k =  ki_cache[i].key;
-      if ( key == k ) {
-        pos = ki_cache[i].iter;
-        ret = true;
-        break;
-      }
-    }
-  }
-  // if (ret==true) {
-  //   PR(--- trace cache hit,key);
-  // }
-  return ret;
-}
 
 struct has_pmi {
   has_pmi(pmi _iter) : iter(_iter) {}
@@ -429,32 +372,22 @@ void stlmap::remove_sm_iter(sm_iter* smip)
 }
 
 void stlmap::clear_ki_cache() {
-  ki_cache.clear();
-  last_in_pos = 0;
+  cache_key = pxh(0);
+  cache_iter = mp.end();
 }
 
-void stlmap::kill_ki_cache_elm(pmi pos)
+void stlmap::kill_cache_iter(pmi pos)
 {
-  size_t num_cached = ki_cache.size();
-  size_t i = 0; 
-  for (; i < num_cached; i++) {
-    if ( ki_cache[i].iter == pos )
-      break;
-  }
-  if (i<num_cached) {
-    std::vector<sm_key_iter>::iterator ii = ki_cache.begin() + i;
-    ki_cache.erase(ii);
-    if (last_in_pos >= i)
-      last_in_pos--;
-    if (last_in_pos < 0)
-      last_in_pos = num_cached -1;
+  if ( cache_iter == pos ) {
+    cache_key = pxh(0);
+    cache_iter = mp.end();
   }
 }
 
 void stlmap::invalidate_iter(pmi pos)
 {
   if ( pos == mp.end() ) return;
-  kill_ki_cache_elm(pos);
+  kill_cache_iter(pos);
   vector<sm_iter*>::iterator i = smis.begin(), pe;
   has_pmi is_trg(pos);
   while( i!=smis.end() ) {
@@ -487,7 +420,7 @@ int stlmap::erase(px* k)
   if ( !mp.empty() ) {
     ret = 1;
     pmi i;
-    if ( get_cached_pmi(k, i) )
+    if ( cache_key.pxp() == k )
       erase(i);
     else {
       if (k == smbeg()) {
@@ -703,17 +636,44 @@ px* stl_sm_find(px* pxsmp, px* key, int what)
     return px_pointer(new sm_iter(pxsmp, i)); 
   }
   else {
-    smp->cache_pmi(key,i);
+    smp->cache_key = pxh(key);
+    smp->cache_iter = i;
     return get_elm_aux(smp, i, what);
   }
 }
 
 px* stl_sm_get(sm* smp, px* key)
 {
-  pmi i = get_iter(smp, key, gi_find);
-  smp->cache_pmi(key,i);
-  return get_elm_aux(smp, i, stl_sm_val);
+  pxhmap &mp = smp->mp;
+  pmi i;
+
+  if ( smp->cache_key.pxp() == key ) {
+    i = smp->cache_iter;
+  }
+  else {
+    if (key == smbeg()) {
+      i = mp.begin();
+    }
+    else {
+      i = mp.find(key);
+      if (i != mp.end()) {
+        smp->cache_key = pxh(key);
+        smp->cache_iter = i;
+      }
+    }
+  }
+  if (i == mp.end()) index_error();
+  return (smp->keys_only) ? i->first : i->second;
 }
+
+// px* stl_sm_get(sm* smp, px* key)
+// {
+//   pxhmap& mp = smp->mp;
+//   pmi i;
+//   i = mp.find(key);
+//   if (i == mp.end()) index_error();
+//   return (smp->keys_only) ? i->first : i->second;
+// }
 
 px* stl_sm_copy_iter(px* pxsmip)
 {
@@ -1380,21 +1340,20 @@ void stl_sm_do(px* fun, px* tpl)
 int stl_sm_member(sm* smp, px* key)
 {
   int ret = 0;
-  pxhmap& mp = smp->mp;
+  pxhmap&  mp = smp->mp;
   pmi i;
   // FIX use get_iter
-  if (!mp.empty()) {
-    if (smp->get_cached_pmi(key, i) ) {
+  if (smp->cache_key.pxp() == key ) {
+    ret = 1;
+  }
+  else {
+    i = (smp->mp).find(key);
+    if (i != mp.end()) {
+      smp->cache_key = pxh(key);
+      smp->cache_iter = i;
       ret = 1;
     }
-    else {
-      i = smp->find(key);
-      if (i != mp.end()) {
-        smp->cache_pmi(key,i);
-        ret = 1;
-      }
-    }
-  }
+  } 
   return ret;
 }
 
@@ -1413,16 +1372,14 @@ px* stl_sm_prev_key(px* pxsmp, px* key)
   sm* smp;
   if (!get_smp(pxsmp,&smp) ) bad_argument();
   pxhmap& mp = smp->mp;
-  if (mp.empty()) index_error();
-  pmi i = mp.end();
-  if ( !smp->get_cached_pmi(key,i) )
-    i = smp->find(key);
+  pmi i = get_iter(smp, key, gi_find);
   if ( i == mp.begin() || (i==mp.end() && key != smend()) )
     index_error();
   else
     i--;
+  smp->cache_key = pxh(key);
+  smp->cache_iter = i;
   px* ret = iter_to_key(mp, i);
-  smp->cache_pmi(ret,i);
   return ret;
 }
 
@@ -1431,13 +1388,11 @@ px* stl_sm_next_key(px* pxsmp, px* key)
   sm* smp;
   if (!get_smp(pxsmp,&smp) ) bad_argument();
   pxhmap& mp = smp->mp;
-  pmi i = mp.end();
-  if (mp.empty()) index_error();
-  if ( !smp->get_cached_pmi(key,i) )
-    i = smp->find(key);
+  pmi i = get_iter(smp, key, gi_find);
   if ( i != mp.end() ) i++;
+  smp->cache_key = pxh(key);
+  smp->cache_iter = i;
   px* ret = iter_to_key(mp, i);
-  smp->cache_pmi(ret,i);
   return ret;
 }
 
@@ -1445,31 +1400,18 @@ void stl_sm_put(sm* smp, px* key, px* val)
 {
   if (smp->keys_only) bad_argument();
   pxhmap& mp = smp->mp;
-  pmi pos;
-  if ( smp->get_cached_pmi(key, pos) ) {
-    pos->second = val;
-  }   
-  else {
-    pos = mp.find(key);
-    if ( pos == mp.end() ) index_error();
-    pos->second = val;
+  pmi i;
+  if ( smp->cache_key.pxp() == key ) {
+    i = smp->cache_iter;
+    i->second = val;
   }
-  smp->cache_pmi(key,pos);
-}
-
-static pmi replace_aux(sm* smp, px* k, px* v)
-{
-  pxhmap& mp = smp->mp;
-  pmi pos;
-  if ( smp->get_cached_pmi(k, pos) ) {
-    pos->second = v;
-  }   
   else {
-    pos = mp.find(k);
-    if ( pos == mp.end() ) index_error();
-    pos->second = v;
+    i = (smp->mp).find(key);
+    if ( i == mp.end() ) index_error();
+    i->second = val;
+    smp->cache_key = pxh(key);
+    smp->cache_iter = i;
   }
-  return pos;
 }
 
 px* stl_sm_replace_with(px* pxsmp, px* key, px* unaryfun)
@@ -1479,11 +1421,16 @@ px* stl_sm_replace_with(px* pxsmp, px* key, px* unaryfun)
   if (smp->keys_only) return 0; // fail for sets
   if (!smp->has_dflt) failed_cond();
   pmi i;
-  if ( !smp->get_cached_pmi(key, i) ) {
+
+  if ( smp->cache_key.pxp() == key ) {
+    i = smp->cache_iter;
+  }
+  else {
     // uses default only if not already stored
     pair<pmi,bool> i_ok = smp->mp.insert(pxhpair(key,smp->dflt));
     i = i_ok.first;
-    smp->cache_pmi(key,i);
+    smp->cache_key = pxh(key);
+    smp->cache_iter = i;
   }  
   px* old_val = i->second;
   px* exception = 0;
