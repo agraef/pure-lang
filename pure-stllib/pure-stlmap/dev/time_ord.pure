@@ -28,7 +28,7 @@ using stlmap, stlhmap, dict, orddict, hashdict;
 time_dict words keys = () when
   tm = clock;
   spin repeats;
-  tm = (clock - tm) / 1000.0;
+  tm = (clock - tm) / CLOCKS_PER_SEC * 1000.0;
   printf "lookup    dict: %8.1f msecs\n" tm;
 end with
   spin 0 = ();
@@ -38,7 +38,7 @@ end with
 end when 
   tm = clock;
   ss = foldl insert emptydict words;
-  tm = (clock - tm) / 1000.0;
+  tm = (clock - tm) / CLOCKS_PER_SEC * 1000.0;
   printf "fill      dict: %8.1f msecs, %d words\n"  (tm,#ss);
 end;
 
@@ -47,7 +47,7 @@ end;
 time_orddict words keys = () when
   tm = clock;
   spin repeats;
-  tm = (clock - tm) / 1000.0;
+  tm = (clock - tm) / CLOCKS_PER_SEC * 1000.0;
   printf "lookup orddict: %8.1f msecs\n" tm;
 end with
   spin 0 = ();
@@ -59,7 +59,7 @@ end when
   ss = orddict [];
   tm = clock;
   do (insert ss) words;
-  tm = (clock - tm) / 1000.0;
+  tm = (clock - tm) / CLOCKS_PER_SEC * 1000.0;
   printf "fill   orddict: %8.1f msecs, %d words\n"  (tm,#ss);
 end;
 
@@ -68,7 +68,7 @@ end;
 time_hashdict words keys = () when
   tm = clock;
   spin repeats;
-  tm = (clock - tm) / 1000.0;
+  tm = (clock - tm) / CLOCKS_PER_SEC * 1000.0;
   printf "lookup hashdict: %8.1f msecs\n" tm;
 end with
   spin 0 = ();
@@ -80,7 +80,7 @@ end when
   ss = hashdict [];
   tm = clock;
   do (insert ss) words;
-  tm = (clock - tm) / 1000.0;
+  tm = (clock - tm) / CLOCKS_PER_SEC * 1000.0;
   printf "fill  hashdict: %8.1f msecs, %d words\n"  (tm,#ss);
 end;
 
@@ -89,7 +89,7 @@ end;
 time_stlmap words keys = () when
   tm = clock;
   spin repeats;
-  tm = (clock - tm) / 1000.0;
+  tm = (clock - tm) / CLOCKS_PER_SEC * 1000.0;
   printf "lookup  stlmap: %8.1f msecs\n" tm;
 end with
   spin 0 = ();
@@ -101,7 +101,7 @@ end when
   ss = emptystlmap;
   tm = clock;
   insert ss words;
-  tm = (clock - tm) / 1000.0;
+  tm = (clock - tm) / CLOCKS_PER_SEC * 1000.0;
   printf "fill    stlmap: %8.1f msecs, %d words\n"  (tm,#ss);
 end;
 
@@ -110,7 +110,7 @@ end;
 time_stlmap_iter words keys = () when
   tm = clock;
   spin repeats;
-  tm = (clock - tm) / 1000.0;
+  tm = (clock - tm) / CLOCKS_PER_SEC * 1000.0;
   printf "lookup    iter: %8.1f msecs\n" tm;
   puts (get val);
 end with
@@ -125,7 +125,7 @@ end when
   ss = emptystlmap;
   tm = clock;
   insert ss words;
-  tm = (clock - tm) / 1000.0;
+  tm = (clock - tm) / CLOCKS_PER_SEC * 1000.0;
   printf "fill      iter: %8.1f msecs, %d words\n"  (tm,#ss);
 end;
 
@@ -134,7 +134,7 @@ end;
 time_stlhmap words keys = () when
   tm = clock;
   spin repeats;
-  tm = (clock - tm) / 1000.0;
+  tm = (clock - tm) / CLOCKS_PER_SEC * 1000.0;
   printf "lookup stlhmap: %8.1f msecs\n" tm;
 end with
   spin 0 = ();
@@ -146,7 +146,7 @@ end when
   ss = emptystlhmap;
   tm = clock;
   insert ss words;
-  tm = (clock - tm) / 1000.0;
+  tm = (clock - tm) / CLOCKS_PER_SEC * 1000.0;
   printf "fill   stlhmap: %8.1f msecs, %d words\n"  (tm,#ss);
 end;
 
