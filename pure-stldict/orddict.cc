@@ -150,8 +150,28 @@ T& ILS<T>::operator()()
 // predicate, so this needs to be defined on all key values used in an orddict
 // (if not, a failed_cond Pure exception will be thrown).
 
+enum {
+  INT		= -3,	// 32 bit signed integer
+  BIGINT	= -4,	// bigint (mpz_t)
+  DBL		= -5,	// double precision floating point number
+  STR		= -6,	// utf-8 string (char*)
+};
+
 static bool less_than(pure_expr *x, pure_expr *y)
 {
+  // Optimize some common cases of POD (plain old data).
+  if (x->tag == y->tag && x->tag < 0) {
+    switch (x->tag) {
+    case INT:
+      return x->data.i < y->data.i;
+    case DBL:
+      return x->data.d < y->data.d;
+    case BIGINT:
+      return bigint_cmp(x->data.z, y->data.z) < 0;
+    case STR:
+      return strcmp(x->data.s, y->data.s) < 0;
+    }
+  }
   static ILS<int32_t> _lt_sym = 0, _failed_cond_sym = 0;
   int32_t &lt_sym = _lt_sym(), &failed_cond_sym = _failed_cond_sym();
   if (!lt_sym) lt_sym = pure_getsym("<");
