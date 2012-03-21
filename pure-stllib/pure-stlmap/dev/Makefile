@@ -26,13 +26,8 @@
 #
 # Defaults are zz_wordlist.txt zx_words.txt zx_keys.txt
 
-#ifndef WORDS
 WORDS = zx_words.txt
-#endif
-
-#ifndef KEYS
 KEYS = zx_keys.txt
-#endif
 
 # These parameters are fixed in timer_template.pure - do not change
 
@@ -79,7 +74,7 @@ time_stlhmap_dcc :
 	pure -c timer_template.pure -o time_stlhmap_dcc --enable STLHMAP --enable DCC
 
 clean   :
-	rm -f $(all_tests) $(WORDS) $(KEYS)
+	rm -f $(all_tests) setup_wk $(WORDS) $(KEYS)
 
 run     : $(plain_tests) $(KEYS) 
 	@ ./print_test_title $(num_repeats) $(KEYS) $(WORDS)
@@ -89,5 +84,10 @@ run_dcc : $(dcc_tests) $(KEYS)
 	@ ./print_test_title $(num_repeats) $(KEYS) $(WORDS)
 	@ for x in $(dcc_tests) ; do ./$$x 0 $(KEYS) $(WORDS) ; done
 
-.PHONY	: all clean run run_plain run_dcc setup_wk
+# Generate a default sample if setup_wk wasn't run manually.
+
+$(WORDS) $(KEYS): zz_wordlist.txt setup_wk
+	./setup_wk 7 10000 100 $< $(WORDS) $(KEYS)
+
+.PHONY	: all clean run run_dcc
 
