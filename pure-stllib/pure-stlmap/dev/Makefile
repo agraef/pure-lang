@@ -3,53 +3,36 @@
 # Compiles pure scripts that load up stlmaps, dicts, ordicts, etc with random
 # words then do repeated lookups with random keys lookup.
 #
-# A "lookup" is "if member cont key then cont!key else ();
+# A "lookup" is "if member cont key then cont!key else ();"
 #
 
-# all	    compile the scripts
+# all	    compile the test scripts and setup_wk
 
 # run	    do the lookups using normal calls (member and !)
 
 # run_dcc   do the lookups using direct C calls where available (e.g., 
 #           hashdict_get, stl::sm_get)
 
-# words     make a new random word file from WORDSOURCE based on 
-#           NUMWORDS and WORDSEED
+# clean     remove the compiled test scripts
 
-# keys      build a new random key file from WORDFILE based on 
-#           NUMKEYS and KEYSEED 
+# For run and run_dcc work with  two files: $(WORDS) and $(KEYS). The first is
+# a list  of words that are  inserted int the  containers and the second  is a
+# list of keys that are used to look up entries.
 
-# clean     remove the executables
+# setup_wk can be used to make a shuffled word_file and a shuffled
+# key_file that contains keys selected from the word_file. Usage:
+#
+#   setup_wk seed num_words num_keys [source_file [word_file key_file]]
+#
+# Defaults are zz_wordlist.txt zx_words.txt zx_keys.txt
 
-# For run and run_dcc you can specify NUMWORDS the number of words to be in
-# the containers and WORDFILE, a text file that contains a random list of
-# words, one per line. The entries in the containers are (word=>int). A
-# different key is used for each lookup. 
+#ifndef WORDS
+WORDS = zx_words.txt
+#endif
 
-ifndef NUMWORDS
-  NUMWORDS = 10000
-endif
-
-ifndef NUMKEYS
-  NUMKEYS = 100
-endif
-
-ifndef WORDSOURCE
-  WORDSOURCE = random_words.txt
-endif
-
-ifndef WORDSEED
-  WORDSEED = 1
-endif
-
-ifndef KEYSEED
-  KEYSEED = 1
-endif
-
-
-WORDFILE = x_words.txt
-
-KEYFILE = x_keys.txt
+#ifndef KEYS
+KEYS = zx_keys.txt
+#endif
 
 # These parameters are fixed in timer_template.pure - do not change
 
@@ -60,22 +43,10 @@ dcc_tests = $(addprefix time_, $(containers_dcc))
 all_tests = $(plain_tests) $(dcc_tests)
 num_repeats = 1000
 
-all	: $(plain_tests) $(dcc_tests) shuffle
+all	: $(plain_tests) $(dcc_tests) setup_wk
 
-shuffle : shuffle.pure
-	pure -c shuffle.pure -o shuffle
-
-words   : $(WORDSOURCE) shuffle
-	./shuffle $(WORDSEED) $(NUMWORDS) $(WORDSOURCE) > $(WORDFILE)
-
-$(WORDFILE) : $(WORDSOURCE)
-	./shuffle $(WORDSEED) $(NUMWORDS) $(WORDSOURCE) > $(WORDFILE)
-
-keys    : $(WORDFILE) shuffle
-	./shuffle $(KEYSEED) $(NUMKEYS) $(WORDFILE) > $(KEYFILE)	
-
-$(KEYFILE) : $(WORDFILE) shuffle
-	./shuffle $(KEYSEED) $(NUMKEYS) $(WORDFILE) > $(KEYFILE)
+setup_wk : setup_wk_source.pure
+	pure -c setup_wk_source.pure -o setup_wk
 
 time_dict : 
 	pure -c timer_template.pure -o time_dict --enable DICT
@@ -108,15 +79,15 @@ time_stlhmap_dcc :
 	pure -c timer_template.pure -o time_stlhmap_dcc --enable STLHMAP --enable DCC
 
 clean   :
-	rm -f $(all_tests) $(WORDFILE) $(KEYFILE)
+	rm -f $(all_tests) $(WORDS) $(KEYS)
 
-run     : $(plain_tests) $(KEYFILE) 
-	@ ./print_test_title $(num_repeats) $(KEYFILE) $(WORDFILE)
-	@ for x in $(plain_tests) ; do ./$$x 0 $(KEYFILE) $(WORDFILE) ; done
+run     : $(plain_tests) $(KEYS) 
+	@ ./print_test_title $(num_repeats) $(KEYS) $(WORDS)
+	@ for x in $(plain_tests) ; do ./$$x 0 $(KEYS) $(WORDS) ; done
 
-run_dcc : $(dcc_tests) $(KEYFILE)
-	@ ./print_test_title $(num_repeats) $(KEYFILE) $(WORDFILE)
-	@ for x in $(dcc_tests) ; do ./$$x 0 $(KEYFILE) $(WORDFILE) ; done
+run_dcc : $(dcc_tests) $(KEYS)
+	@ ./print_test_title $(num_repeats) $(KEYS) $(WORDS)
+	@ for x in $(dcc_tests) ; do ./$$x 0 $(KEYS) $(WORDS) ; done
 
-.PHONY	: all clean run run_plain run_dcc ensure_shuffle
+.PHONY	: all clean run run_plain run_dcc setup_wk
 

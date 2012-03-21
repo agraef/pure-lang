@@ -1,0 +1,83 @@
+
+Use make and ./setup_wk to run time tests for dict, orddict, hashdict,
+stlmap and stlhmap. E.g.,
+
+dev$> make
+pure -c timer_template.pure -o time_dict --enable DICT
+pure -c timer_template.pure -o time_orddict --enable ORDDICT
+pure -c timer_template.pure -o time_hashdict --enable HASHDICT
+pure -c timer_template.pure -o time_stlmap --enable STLMAP
+pure -c timer_template.pure -o time_stlhmap --enable STLHMAP
+pure -c timer_template.pure -o time_dict_dcc --enable DICT --enable DCC
+pure -c timer_template.pure -o time_orddict_dcc --enable ORDDICT --enable DCC
+pure -c timer_template.pure -o time_hashdict_dcc --enable HASHDICT --enable DCC
+pure -c timer_template.pure -o time_stlmap_dcc --enable STLMAP --enable DCC
+pure -c timer_template.pure -o time_stlhmap_dcc --enable STLHMAP --enable DCC
+pure -c setup_wk_source.pure -o setup_wk
+
+dev$> ls
+Makefile              time_dict          time_orddict_dcc     time_stlmap
+print_test_title      time_dict_dcc      timer_template.pure  time_stlmap_dcc
+pure-fun-list.pure    time_hashdict      time_set.pure        zz_wordlist.txt
+setup_wk              time_hashdict_dcc  time_stlhmap
+setup_wk_source.pure  time_orddict       time_stlhmap_dcc
+
+dev$> ./setup_wk
+Set up a files of random words and keys. Usage:
+
+   setup_utility seed nwords nkeys [source [words keys]]
+
+Seed random number generator with seed, an integer. Read source a file which
+contains one word per line. Take a random sample of nwords from source
+and write it to words. Take a random sampe of nkeys from words and write it
+to keys. Defaults are zz_wordlist.txt, zx_words.txt and zx_keys.txt
+
+dev$> ./setup_wk 7 200 10
+
+dev$> make run
+---------------------------------------------------------------
+test - 200 words in container, 10 lookups repeated 1000 times
+---------------------------------------------------------------
+lookup     dict:    100.0 msecs
+lookup  orddict:     20.0 msecs 
+lookup hashdict:     20.0 msecs 
+lookup   stlmap:     20.0 msecs 
+lookup     iter:     30.0 msecs
+lookup  stlhmap:     20.0 msecs 
+
+dev$> make run_dcc
+---------------------------------------------------------------
+test - 200 words in container, 10 lookups repeated 1000 times
+---------------------------------------------------------------
+lookup     dict:    100.0 msecs
+lookup  orddict:     10.0 msecs (with direct C calls)
+lookup hashdict:     10.0 msecs (with direct C calls)
+lookup   stlmap:     10.0 msecs (with direct C calls)
+lookup     iter:     30.0 msecs
+lookup  stlhmap:     10.0 msecs (with direct C calls)
+
+dev$> ./setup_wk 7 10000 100
+dev$> make run
+---------------------------------------------------------------
+test - 10000 words in container, 100 lookups repeated 1000 times
+---------------------------------------------------------------
+lookup     dict:   1670.0 msecs
+lookup  orddict:    300.0 msecs 
+lookup hashdict:    190.0 msecs 
+lookup   stlmap:    230.0 msecs 
+lookup     iter:    280.0 msecs
+lookup  stlhmap:    180.0 msecs 
+
+dev$> make run_dcc
+---------------------------------------------------------------
+test - 10000 words in container, 100 lookups repeated 1000 times
+---------------------------------------------------------------
+lookup     dict:   1680.0 msecs
+lookup  orddict:    100.0 msecs (with direct C calls)
+lookup hashdict:     60.0 msecs (with direct C calls)
+lookup   stlmap:    110.0 msecs (with direct C calls)
+lookup     iter:    280.0 msecs
+lookup  stlhmap:     70.0 msecs (with direct C calls)
+
+
+

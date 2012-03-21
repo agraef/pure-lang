@@ -1,0 +1,85 @@
+/* setup_wk_source.pure - setup words and keys for timer tests */
+
+using system, stlvec, stlvec::algorithms;
+
+let sf = "zz_wordlist.txt";
+let wf = "zx_words.txt";
+let kf = "zx_keys.txt";
+
+let usage = "Set up a files of random words and keys. Usage:\n\n\
+   setup_utility seed nwords nkeys [source [words keys]]\n\n\
+Seed random number generator with seed, an integer. Read source a file which\n\
+contains one word per line. Take a random sample of nwords from source\n\
+and write it to words. Take a random sampe of nkeys from words and write it\n\
+to keys. Defaults are zz_wordlist.txt, zx_words.txt and zx_keys.txt";
+
+open_file filename mode = fp when
+  fp = case fopen filename mode of 
+    fopen _ _ = pointer 0;
+    fp = fp;
+  end;
+  if null fp then
+    printf "error: could not open %s\n" filename
+  else ();
+end;
+
+get_words filename = words when
+  fp = case fopen filename  "r" of 
+    fopen _ _ = pointer 0;
+    fp = fp;
+  end;
+  words = if null fp then
+                puts "Can't open file" $$ []
+          else
+            stlvec (split "\n" (fget fp));
+  fclose fp;
+end;
+
+shuffle_words seed num_words words::stlvec = res when
+  nw = min (#words) num_words;
+  tmp = stlvec words;
+  stl::random_shuffle tmp seed;
+  res = stlvec (tmp,0,nw);
+end;
+
+make_words_keys_aux seed num_words num_keys source words keys = ()
+when
+  in_fp = open_file source "r";
+  w_fp = open_file words "w";
+  k_fp = open_file keys "w";
+  if null in_fp || null w_fp || null k_fp then () else make_wk in_fp w_fp k_fp;
+end with
+  make_wk in_fp w_fp k_fp = () when
+    src_words = stlvec (split "\n" (fget in_fp));
+    words = shuffle_words seed num_words src_words;
+    keys = shuffle_words seed num_keys words;
+    do (fprintf w_fp "%s\n" ) words;
+    do (fprintf k_fp "%s\n" ) keys;
+  end; 
+end;
+
+make_words_keys seed num_words num_keys source words keys = () when
+  seed = val seed;
+  num_words = val num_words;
+  num_keys = val num_keys;
+  if ~all intp [seed, num_words, num_keys] then 
+    puts usage $$ exit 1 
+  else 
+    make_words_keys_aux seed num_words num_keys source words keys;
+end;    
+
+main = () when
+  if argc == 7 then 
+    make_words_keys (argv!1) (argv!2) (argv!3) (argv!4) (argv!5) (argv!6)
+  else if argc == 5 then 
+    make_words_keys (argv!1) (argv!2) (argv!3) (argv!4) wf kf
+  else if argc == 4 then 
+    make_words_keys (argv!1) (argv!2) (argv!3) sf wf kf
+  else
+    puts usage;   
+end;
+
+if compiling || argc == 0 then () else main;
+
+x_main nws nks= make_words_keys_aux 7 nws nks sf wf kf;
+
