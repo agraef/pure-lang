@@ -37,7 +37,6 @@ using system;
 extern int atoi(char*);
 
 const repeats = 1000;
-const lookups = 100;
 
 #! --ifdef DCC
 const dcc_str = "(with direct C calls)";
@@ -227,32 +226,26 @@ end;
 
 using stlvec, stlvec::modifying;
 
-// returns a list of (word=>int) elements and a list of keys
-get_elements num_words filename = elms, keys when
+get_words filename = words when
   fp = case fopen filename  "r" of 
     fopen _ _ = pointer 0;
     fp = fp;
   end;
-  all_words = if null fp then
-                puts "Can't open word file" $$ []
-              else
-                split "\n" (fget fp);
+  words = if null fp then
+                puts "Can't open file" $$ []
+          else
+            split "\n" (fget fp);
   fclose fp;
-  num_words = min (#all_words) num_words;
-  num_keys = min num_words lookups; 
-  words = take num_words all_words;
-  words_sv = stlvec words;
-  stl::random_shuffle words_sv 10;
-  keys = members (words_sv,0,num_keys);
-  elms = list $ zipwith (=>) words (0..inf);
 end;
 
-time_lookups verbose num_words word_file = () when
+time_lookups verbose keyfile wordfile = () when
   sep = "------------------------------------------";
+  keys = get_words keyfile;
+  words = get_words wordfile;
+  elements = list $ zipwith (=>) words (0..inf);
   if verbose then
-    printf "Time %d lookups, %d repeats %s\n" (lookups,repeats,dcc_str) 
+    printf "Time %d lookups, %d repeats %s\n" (#keys,repeats,dcc_str) 
   else ();
-  elements, keys = get_elements num_words word_file;  
   if verbose then puts sep else ();
 #! --ifdef DICT
   time_dict verbose elements keys;
@@ -280,13 +273,14 @@ time_lookups verbose num_words word_file = () when
 #! --endif
 end;
 
-let a_file = "random_words.txt";
+let a_wordfile = "x_words.txt";
+let a_keyfile = "x_keys.txt";
     
-let usage = "usage: timer_xx verbose MAX_NUM_WORDS SOURCE_FILE";
+let usage = "usage: timer_xx verbose KEYFILE SOURCE_FILE";
 
 main = () when
   if argc == 4 then 
-    time_lookups (atoi (argv!1)) (atoi (argv!2)) (argv!3)
+    time_lookups (atoi (argv!1)) (argv!2) (argv!3)
   else
     puts usage;   
 end;
