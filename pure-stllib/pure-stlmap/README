@@ -88,7 +88,7 @@ pure-stlmap function that has a corresponding function in the STL.
 
 The C++ library is sometimes more complicated than the Pure Standard
 Library. For example many of the applicable C++ functions, including set
-operations and tests for equality assume that the containers are
+operations and tests for equality, assume that the containers are
 lexicographically ordered. The reward for playing by the rules (which occurs
 automatically for stlmap and stlset) is O(n) time complexity for comparison
 and set operations.
@@ -1464,22 +1464,45 @@ It is common to encounter code that (a) tests if a key is stored in a
 container using :func:`member/stlmap` and (b) in the case of maps, retreives
 the value or values associated with the key using (!) and/or (c) changes the
 value or values using :func:`replace/stlmap`. Depending on what modules have
-been loaded, these functions may be heavily overloaded which can cause a
-small delay when the functions are called. To avoid this, pure-stlmap exposes
-the corresponding C functions so that they can be called directly. For
-stlhmaps the functions begin with a prefix ``shm_``:
+been loaded, these functions may be heavily overloaded which can cause a small
+delay when the functions are called. To avoid this, pure-stlmap exposes the
+corresponding C functions so that they can be called directly. The C functions
+have the same name as the overloaded functions except for a prefix. E.g.,
 
 .. namespace:: stl
 
-.. function:: shm_member shm key
-              shm_get shm key
-              shm_put shm key val
- 
-  These are the direct C call equivalents of (member shm key), (shm!key) and
-  (replace shm key val) where shm is a stlhmap.
+.. function:: sm_member /stlmap sm key
+              sm_get /stlmap sm key
+              sm_put /stlmap sm key val
 
-Similar functions are provided for all of the other associative containers. See
-pure-stlmap-functions.pdf, in the pure-stlmap/examples subdirectory. 
+  These are the direct C call equivalents of (:func:`::member/stlmap` ``sm``
+  ``key``), (``sm!key``) and (:func:`::replace/stlmap` ``sm`` ``key``
+  ``val``) where ``sm`` is a stlmap or a stlset (except that sm_put is not
+  defined for stlsets).
+
+.. namespace:: stl
+
+.. function:: shm_member /stlmap shm key
+              shm_get /stlmap shm key
+              shm_put /stlmap shm key val
+
+  These are the direct C call equivalents of (:func:`::member/stlmap` ``shm``
+  ``key``), (``shm!key``) and (:func:`::replace/stlmap` ``shm`` ``key``
+  ``val``) where ``shm`` is a stlhmap or a stlhset (except that shm_put is not
+  defined for stlhsets).
+
+.. namespace:: stl
+
+.. function:: smm_member /stlmap smm key
+              smm_get /stlmap smm key
+              smm_put /stlmap smm key val
+
+  These are the direct C call equivalents of (:func:`::member/stlmap` ``smm``
+  ``key``), (``smm!key``) and (:func:`::replace/stlmap` ``smm`` ``key``
+  ``val``) where ``smm`` is a stlmmap or a stlmset (except that smm_put is not
+  defined for stlmsets).
+
+
 
 Iterators
 =========
@@ -1762,4 +1785,17 @@ Here are some examples using iterators. ::
 
    > inc j $$ endp j;
    1
+
+Backward Compatibilty
+=====================
+
+.. namespace:: ::
+
+This section documents changes in pure-stlmap that might have introduced
+backward compatiblity issues.
+
+pure-stlmap-0.2
+---------------
+
+Version 0.2 made no changes to the user interface.
 
