@@ -1,0 +1,56 @@
+
+// Sorting tests.
+
+sort (<) (1..10);
+sort (>) (1..10);
+
+sort (<) (1L..10L);
+sort (>) (1L..10L);
+
+sort (<) (1.0..10.0);
+sort (>) (1.0..10.0);
+
+sort (<) [str x | x = 1..20];
+sort (>) [str x | x = 1..20];
+
+// Random numbers.
+using math;
+srandom 7;
+let rand_nums = [random53 | _ = 1..100];
+sort (<) rand_nums;
+
+// Enumeration type.
+nonfix sun mon tue wed thu fri sat;
+type wday sun | wday mon | wday tue | wday wed | wday thu | wday fri | wday sat;
+
+let wdays = {day=>idx | day,idx = zip [sun,mon,tue,wed,thu,fri,sat] (0..6)};
+
+ord day::wday = wdays!day;
+wday n::int = key (wdays!n) if n>=0 && n<7;
+
+// Define an order on the week days.
+x::wday < y::wday = ord x < ord y;
+
+map wday (0..6);
+map (ord.wday) (0..6) == (0..6);
+
+// Sort a list of random wdays.
+let rand_days = [wday (random31 mod 7) | _ = 1..30];
+sort (<) rand_days;
+
+// Same as above, but using vectors instead.
+
+sort (<) $ vector (1..10);
+sort (>) $ vector (1..10);
+
+sort (<) $ vector (1L..10L);
+sort (>) $ vector (1L..10L);
+
+sort (<) $ vector (1.0..10.0);
+sort (>) $ vector (1.0..10.0);
+
+sort (<) {str x | x = 1..20};
+sort (>) {str x | x = 1..20};
+
+sort (<) $ vector rand_nums;
+sort (<) $ vector rand_days;

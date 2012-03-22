@@ -1,0 +1,402 @@
+sort (<) (1..10);
+[1,2,3,4,5,6,7,8,9,10]
+sort (>) (1..10);
+[10,9,8,7,6,5,4,3,2,1]
+sort (<) (1L..10L);
+[1L,2L,3L,4L,5L,6L,7L,8L,9L,10L]
+sort (>) (1L..10L);
+[10L,9L,8L,7L,6L,5L,4L,3L,2L,1L]
+sort (<) (1.0..10.0);
+[1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0]
+sort (>) (1.0..10.0);
+[10.0,9.0,8.0,7.0,6.0,5.0,4.0,3.0,2.0,1.0]
+sort (<) (listmap (\x/*0:1*/ -> str x/*0:1*/ {
+  rule #0: _ x = str x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) (1..20));
+["1","10","11","12","13","14","15","16","17","18","19","2","20","3","4","5","6","7","8","9"]
+sort (>) (listmap (\x/*0:1*/ -> str x/*0:1*/ {
+  rule #0: _ x = str x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) (1..20));
+["9","8","7","6","5","4","3","20","2","19","18","17","16","15","14","13","12","11","10","1"]
+srandom 7;
+()
+{
+  rule #0: rand_nums = listmap (\_ -> random53) (1..100)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let rand_nums = listmap (\_/*0:1*/ -> random53 {
+  rule #0: _ _ = random53
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) (1..100);
+sort (<) rand_nums;
+[0.00142688056275819,0.024899227550348,0.0406558094366858,0.0531286906729576,0.0659363469059051,0.0720511333597615,0.0763082893739572,0.0922623458467521,0.131110642347914,0.13316944575925,0.136876118797451,0.147147571941693,0.165501400465787,0.180451619202682,0.204849090297795,0.213385353579916,0.230302879020965,0.235120407257464,0.268438980101871,0.276049048330695,0.276563072451134,0.288145599307994,0.30041890431804,0.308733657297835,0.308852684863797,0.313994677212662,0.324426169672443,0.343536529704358,0.352978365944395,0.365890385780593,0.370351082988035,0.372384689385059,0.380941133148538,0.412991829113835,0.414885978439443,0.414901772573252,0.42237404364314,0.426453572684942,0.438409231440893,0.448120657502723,0.452123961817683,0.4528429325464,0.459092977891431,0.460630296163277,0.462996394154417,0.467752859744981,0.472323996288402,0.475764499424244,0.477401154851588,0.485825228708897,0.49076588909107,0.49988250082556,0.501120463659938,0.522390128001612,0.522906201028345,0.523412580673766,0.524345596765197,0.538495870410434,0.54848991923603,0.572625332643954,0.592594687323373,0.600548917464123,0.634379868633839,0.657399462779758,0.658748258954145,0.669013240883914,0.674918769866788,0.67922999612094,0.682913854375418,0.696160463516969,0.709394393725213,0.71724223227523,0.719324122509042,0.723465177830941,0.741118872913264,0.741847200683467,0.750409859102035,0.768647506519509,0.774900375814017,0.778213601543897,0.779918792240115,0.796390700782548,0.796760956931902,0.800479048998464,0.803739036104375,0.837917994309261,0.841476714898397,0.848400880837689,0.875671724870083,0.887288951852735,0.906423269164339,0.909128374886731,0.909593527719614,0.931206019689022,0.939111353732185,0.945048223792794,0.950129500413646,0.955468323002926,0.964970999536127,0.977989511996603]
+type wday sun;
+type wday mon;
+type wday tue;
+type wday wed;
+type wday thu;
+type wday fri;
+type wday sat;
+type wday {
+  rule #0: wday sun = 1
+  rule #1: wday mon = 1
+  rule #2: wday tue = 1
+  rule #3: wday wed = 1
+  rule #4: wday thu = 1
+  rule #5: wday fri = 1
+  rule #6: wday sat = 1
+  state 0: #0 #1 #2 #3 #4 #5 #6
+	sun state 1
+	mon state 2
+	tue state 3
+	wed state 4
+	thu state 5
+	fri state 6
+	sat state 7
+  state 1: #0
+  state 2: #1
+  state 3: #2
+  state 4: #3
+  state 5: #4
+  state 6: #5
+  state 7: #6
+}
+{
+  rule #0: wdays = colmap (\(day,idx) -> day=>idx) (zip [sun,mon,tue,wed,thu,fri,sat] (0..6))
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let wdays = colmap (\(day/*0:101*/,idx/*0:11*/) -> day/*0:101*/=>idx/*0:11*/ {
+  rule #0: _ (day,idx) = day=>idx
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+}) (zip [sun,mon,tue,wed,thu,fri,sat] (0..6));
+ord day/*0:1*/::wday = wdays!day/*0:1*/;
+wday n/*0:1*/::int = key (wdays!n/*0:1*/) if n/*0:1*/>=0&&n/*0:1*/<7;
+x/*0:01*/::wday<y/*0:1*/::wday = ord x/*0:01*/<ord y/*0:1*/;
+{
+  rule #0: x::int<y::int = x<y
+  rule #1: x::double<y::double = x<y
+  rule #2: x::int<y::double = x<y
+  rule #3: x::double<y::int = x<y
+  rule #4: x::bigint<y::bigint = __C::bigint_cmp x y<0
+  rule #5: x::int<y::bigint = bigint x<y
+  rule #6: x::bigint<y::int = x<bigint y
+  rule #7: x::bigint<y::double = double x<y
+  rule #8: x::double<y::bigint = x<double y
+  rule #9: x::string<y::string = __C::strcmp x y<0
+  rule #10: x1%y1<x2%y2 = x1*y2<x2*y1
+  rule #11: x1%y1<x2 = x1<x2*y1 if realp x2
+  rule #12: x1<x2%y2 = x1*y2<x2 if realp x2
+  rule #13: x::wday<y::wday = ord x<ord y
+  state 0: #0 #1 #2 #3 #4 #5 #6 #7 #8 #9 #10 #11 #12 #13
+	<var> state 1
+	<var>::int state 13
+	<var>::bigint state 28
+	<var>::double state 43
+	<var>::string state 58
+	<app> state 71
+  state 1: #12 #13
+	<var> state 2
+	<app> state 3
+  state 2: #13
+  state 3: #12 #13
+	<var> state 4
+	<app> state 6
+  state 4: #13
+	<var> state 5
+  state 5: #13
+  state 6: #12 #13
+	<var> state 7
+	% state 10
+  state 7: #13
+	<var> state 8
+  state 8: #13
+	<var> state 9
+  state 9: #13
+  state 10: #12 #13
+	<var> state 11
+  state 11: #12 #13
+	<var> state 12
+  state 12: #12 #13
+  state 13: #0 #2 #5 #12 #13
+	<var> state 14
+	<var>::int state 15
+	<var>::bigint state 16
+	<var>::double state 17
+	<app> state 18
+  state 14: #13
+  state 15: #0 #13
+  state 16: #5 #13
+  state 17: #2 #13
+  state 18: #12 #13
+	<var> state 19
+	<app> state 21
+  state 19: #13
+	<var> state 20
+  state 20: #13
+  state 21: #12 #13
+	<var> state 22
+	% state 25
+  state 22: #13
+	<var> state 23
+  state 23: #13
+	<var> state 24
+  state 24: #13
+  state 25: #12 #13
+	<var> state 26
+  state 26: #12 #13
+	<var> state 27
+  state 27: #12 #13
+  state 28: #4 #6 #7 #12 #13
+	<var> state 29
+	<var>::int state 30
+	<var>::bigint state 31
+	<var>::double state 32
+	<app> state 33
+  state 29: #13
+  state 30: #6 #13
+  state 31: #4 #13
+  state 32: #7 #13
+  state 33: #12 #13
+	<var> state 34
+	<app> state 36
+  state 34: #13
+	<var> state 35
+  state 35: #13
+  state 36: #12 #13
+	<var> state 37
+	% state 40
+  state 37: #13
+	<var> state 38
+  state 38: #13
+	<var> state 39
+  state 39: #13
+  state 40: #12 #13
+	<var> state 41
+  state 41: #12 #13
+	<var> state 42
+  state 42: #12 #13
+  state 43: #1 #3 #8 #12 #13
+	<var> state 44
+	<var>::int state 45
+	<var>::bigint state 46
+	<var>::double state 47
+	<app> state 48
+  state 44: #13
+  state 45: #3 #13
+  state 46: #8 #13
+  state 47: #1 #13
+  state 48: #12 #13
+	<var> state 49
+	<app> state 51
+  state 49: #13
+	<var> state 50
+  state 50: #13
+  state 51: #12 #13
+	<var> state 52
+	% state 55
+  state 52: #13
+	<var> state 53
+  state 53: #13
+	<var> state 54
+  state 54: #13
+  state 55: #12 #13
+	<var> state 56
+  state 56: #12 #13
+	<var> state 57
+  state 57: #12 #13
+  state 58: #9 #12 #13
+	<var> state 59
+	<var>::string state 60
+	<app> state 61
+  state 59: #13
+  state 60: #9 #13
+  state 61: #12 #13
+	<var> state 62
+	<app> state 64
+  state 62: #13
+	<var> state 63
+  state 63: #13
+  state 64: #12 #13
+	<var> state 65
+	% state 68
+  state 65: #13
+	<var> state 66
+  state 66: #13
+	<var> state 67
+  state 67: #13
+  state 68: #12 #13
+	<var> state 69
+  state 69: #12 #13
+	<var> state 70
+  state 70: #12 #13
+  state 71: #10 #11 #12 #13
+	<var> state 72
+	<app> state 85
+  state 72: #12 #13
+	<var> state 73
+  state 73: #12 #13
+	<var> state 74
+	<app> state 75
+  state 74: #13
+  state 75: #12 #13
+	<var> state 76
+	<app> state 78
+  state 76: #13
+	<var> state 77
+  state 77: #13
+  state 78: #12 #13
+	<var> state 79
+	% state 82
+  state 79: #13
+	<var> state 80
+  state 80: #13
+	<var> state 81
+  state 81: #13
+  state 82: #12 #13
+	<var> state 83
+  state 83: #12 #13
+	<var> state 84
+  state 84: #12 #13
+  state 85: #10 #11 #12 #13
+	<var> state 86
+	% state 100
+  state 86: #12 #13
+	<var> state 87
+  state 87: #12 #13
+	<var> state 88
+  state 88: #12 #13
+	<var> state 89
+	<app> state 90
+  state 89: #13
+  state 90: #12 #13
+	<var> state 91
+	<app> state 93
+  state 91: #13
+	<var> state 92
+  state 92: #13
+  state 93: #12 #13
+	<var> state 94
+	% state 97
+  state 94: #13
+	<var> state 95
+  state 95: #13
+	<var> state 96
+  state 96: #13
+  state 97: #12 #13
+	<var> state 98
+  state 98: #12 #13
+	<var> state 99
+  state 99: #12 #13
+  state 100: #10 #11 #12 #13
+	<var> state 101
+  state 101: #10 #11 #12 #13
+	<var> state 102
+  state 102: #10 #11 #12 #13
+	<var> state 103
+	<app> state 104
+  state 103: #11 #13
+  state 104: #10 #11 #12 #13
+	<var> state 105
+	<app> state 107
+  state 105: #11 #13
+	<var> state 106
+  state 106: #11 #13
+  state 107: #10 #11 #12 #13
+	<var> state 108
+	% state 111
+  state 108: #11 #13
+	<var> state 109
+  state 109: #11 #13
+	<var> state 110
+  state 110: #11 #13
+  state 111: #10 #11 #12 #13
+	<var> state 112
+  state 112: #10 #11 #12 #13
+	<var> state 113
+  state 113: #10 #11 #12 #13
+}
+{
+  rule #0: ord s::string = n if intp n when n = __C::string_ord s end
+  rule #1: ord day::wday = wdays!day
+  state 0: #0 #1
+	<var> state 1
+	<var>::string state 2
+  state 1: #1
+  state 2: #0 #1
+}
+{
+  rule #0: wday n::int = key (wdays!n) if n>=0&&n<7
+  state 0: #0
+	<var>::int state 1
+  state 1: #0
+}
+map wday (0..6);
+[sun,mon,tue,wed,thu,fri,sat]
+map (ord.wday) (0..6)==(0..6);
+1
+{
+  rule #0: rand_days = listmap (\_ -> wday (random31 mod 7)) (1..30)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let rand_days = listmap (\_/*0:1*/ -> wday (random31 mod 7) {
+  rule #0: _ _ = wday (random31 mod 7)
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) (1..30);
+sort (<) rand_days;
+[sun,sun,sun,mon,mon,mon,tue,tue,tue,tue,tue,tue,tue,tue,wed,thu,thu,thu,thu,thu,thu,fri,fri,fri,sat,sat,sat,sat,sat,sat]
+sort (<) (vectorseq 1 10 1);
+{1,2,3,4,5,6,7,8,9,10}
+sort (>) (vectorseq 1 10 1);
+{10,9,8,7,6,5,4,3,2,1}
+sort (<) (vectorseq 1L 10L 1);
+{1L,2L,3L,4L,5L,6L,7L,8L,9L,10L}
+sort (>) (vectorseq 1L 10L 1);
+{10L,9L,8L,7L,6L,5L,4L,3L,2L,1L}
+sort (<) (vectorseq 1.0 10.0 1);
+{1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0,10.0}
+sort (>) (vectorseq 1.0 10.0 1);
+{10.0,9.0,8.0,7.0,6.0,5.0,4.0,3.0,2.0,1.0}
+sort (<) (colmap (\x/*0:1*/ -> str x/*0:1*/ {
+  rule #0: _ x = str x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) (1..20));
+{"1","10","11","12","13","14","15","16","17","18","19","2","20","3","4","5","6","7","8","9"}
+sort (>) (colmap (\x/*0:1*/ -> str x/*0:1*/ {
+  rule #0: _ x = str x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) (1..20));
+{"9","8","7","6","5","4","3","20","2","19","18","17","16","15","14","13","12","11","10","1"}
+sort (<) (vector rand_nums);
+{0.00142688056275819,0.024899227550348,0.0406558094366858,0.0531286906729576,0.0659363469059051,0.0720511333597615,0.0763082893739572,0.0922623458467521,0.131110642347914,0.13316944575925,0.136876118797451,0.147147571941693,0.165501400465787,0.180451619202682,0.204849090297795,0.213385353579916,0.230302879020965,0.235120407257464,0.268438980101871,0.276049048330695,0.276563072451134,0.288145599307994,0.30041890431804,0.308733657297835,0.308852684863797,0.313994677212662,0.324426169672443,0.343536529704358,0.352978365944395,0.365890385780593,0.370351082988035,0.372384689385059,0.380941133148538,0.412991829113835,0.414885978439443,0.414901772573252,0.42237404364314,0.426453572684942,0.438409231440893,0.448120657502723,0.452123961817683,0.4528429325464,0.459092977891431,0.460630296163277,0.462996394154417,0.467752859744981,0.472323996288402,0.475764499424244,0.477401154851588,0.485825228708897,0.49076588909107,0.49988250082556,0.501120463659938,0.522390128001612,0.522906201028345,0.523412580673766,0.524345596765197,0.538495870410434,0.54848991923603,0.572625332643954,0.592594687323373,0.600548917464123,0.634379868633839,0.657399462779758,0.658748258954145,0.669013240883914,0.674918769866788,0.67922999612094,0.682913854375418,0.696160463516969,0.709394393725213,0.71724223227523,0.719324122509042,0.723465177830941,0.741118872913264,0.741847200683467,0.750409859102035,0.768647506519509,0.774900375814017,0.778213601543897,0.779918792240115,0.796390700782548,0.796760956931902,0.800479048998464,0.803739036104375,0.837917994309261,0.841476714898397,0.848400880837689,0.875671724870083,0.887288951852735,0.906423269164339,0.909128374886731,0.909593527719614,0.931206019689022,0.939111353732185,0.945048223792794,0.950129500413646,0.955468323002926,0.964970999536127,0.977989511996603}
+sort (<) (vector rand_days);
+{sun,sun,sun,mon,mon,mon,tue,tue,tue,tue,tue,tue,tue,tue,wed,thu,thu,thu,thu,thu,thu,fri,fri,fri,sat,sat,sat,sat,sat,sat}

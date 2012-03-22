@@ -7449,10 +7449,45 @@ pure_expr *pure_double_colvect(double from, double to, double step)
    and to also support Pure matrices. */
 
 static pure_expr* cmp_p; // TLD
+static unsigned cmp_pno; // TLD
+
+static inline int sgn(int x)
+{
+  return x<0?-1:x>0?1:0;
+}
+
+static inline int sgn(double x)
+{
+  return x<0?-1:x>0?1:0;
+}
+
+// Optimize comparisons for some common cases of POD (plain old data).
+
+enum { CMP_P, CMP_LE, CMP_GR };
+
 static int cmp(const void *xp, const void *yp)
 {
   int res = 0;
   pure_expr *x = *(pure_expr**)xp, *y = *(pure_expr**)yp;
+  if (cmp_pno != CMP_P) {
+    if (x->tag == y->tag && x->tag < 0) {
+      int res = 0;
+      switch (x->tag) {
+      case EXPR::INT:
+	res = sgn(x->data.i - y->data.i); break;
+      case EXPR::DBL:
+	res = sgn(x->data.d - y->data.d); break;
+      case EXPR::BIGINT:
+	res = sgn(bigint_cmp(x->data.z, y->data.z)); break;
+      case EXPR::STR:
+	res = sgn(strcmp(x->data.s, y->data.s)); break;
+      default:
+	goto generic;
+      }
+      return cmp_pno==CMP_LE?res:-res;
+    }
+  }
+ generic:
   pure_expr *p = pure_appl(cmp_p, 2, x, y); /* x<y? */
   if (!pure_is_int(p, &res))
     pure_throw(pure_symbol(interpreter::g_interp->
@@ -7499,18 +7534,22 @@ pure_expr *pure_sort(pure_expr *p, pure_expr *x)
 {
   size_t size;
   pure_expr **elems;
+  interpreter& interp = *interpreter::g_interp;
   /* Deconstruct the list argument which is passed as a pure_expr* value.
      This yields a vector of pure_expr* elements which can be passed to the
      qsort() routine. */
   if (pure_is_listv(x, &size, &elems)) {
     /* Save the current predicate, so that we can be invoked recursively. */
     pure_expr *save_cmp_p = cmp_p;
+    unsigned save_cmp_pno = cmp_pno;
     pure_expr *y = 0, *e = 0;
     /* Invoke qsort() to sort the elems vector. */
     cmp_p = p;
+    cmp_pno = (p->tag==interp.symtab.less_sym().f)?CMP_LE:
+      (p->tag==interp.symtab.greater_sym().f)?CMP_GR:CMP_P;
     y = sort_wrapper(size, elems, 0, &e);
     /* Clean up. */
-    cmp_p = save_cmp_p;
+    cmp_p = save_cmp_p; cmp_pno = save_cmp_pno;
     free(elems);
     /* If we got an exception, throw it again, otherwise return the sorted
        list. */
@@ -7529,10 +7568,13 @@ pure_expr *pure_sort(pure_expr *p, pure_expr *x)
       /* Sort the new matrix using qsort(), handle exceptions. Analogous to
 	 the list case. */
       pure_expr *save_cmp_p = cmp_p;
+      unsigned save_cmp_pno = cmp_pno;
       pure_expr *y = 0, *e = 0;
       cmp_p = p;
+      cmp_pno = (p->tag==interp.symtab.less_sym().f)?CMP_LE:
+	(p->tag==interp.symtab.greater_sym().f)?CMP_GR:CMP_P;
       y = sort_wrapper(size, elems, m1, &e);
-      cmp_p = save_cmp_p;
+      cmp_p = save_cmp_p; cmp_pno = save_cmp_pno;
       if (e) {
 	gsl_matrix_symbolic_free(m1);
 	pure_throw(e);
