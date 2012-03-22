@@ -275,8 +275,28 @@ static uint32_t hashdict_hash(myhashdict *x)
 // values for semantic equality and falls back to syntactic equality if it
 // isn't defined. We mimic this behaviour here.
 
+enum {
+  INT		= -3,	// 32 bit signed integer
+  BIGINT	= -4,	// bigint (mpz_t)
+  DBL		= -5,	// double precision floating point number
+  STR		= -6,	// utf-8 string (char*)
+};
+
 static bool eqsame(pure_expr *x, pure_expr *y)
 {
+  // Optimize some common cases of POD (plain old data).
+  if (x->tag == y->tag && x->tag < 0) {
+    switch (x->tag) {
+    case INT:
+      return x->data.i == y->data.i;
+    case DBL:
+      return x->data.d == y->data.d;
+    case BIGINT:
+      return bigint_cmp(x->data.z, y->data.z) == 0;
+    case STR:
+      return strcmp(x->data.s, y->data.s) == 0;
+    }
+  }
   static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
   if (!fno) fno = pure_getsym("==");
   assert(fno > 0);
