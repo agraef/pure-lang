@@ -77,7 +77,7 @@ extern "C" {
   int  stl_sv_capacity(sv* vec);
 
   px*  stl_sv_get(sv* vec, int pos);
-  void stl_sv_put(sv* vec, int pos, px* val);
+  px*  stl_sv_put(sv* vec, int pos, px* val);
   px*  stl_sv_front(sv* vec);
   px*  stl_sv_back(sv* vec);
   px*  stl_sv_list(px* tpl);

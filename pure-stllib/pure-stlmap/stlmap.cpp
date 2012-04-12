@@ -1396,7 +1396,7 @@ px* stl_sm_next_key(px* pxsmp, px* key)
   return ret;
 }
 
-void stl_sm_put(sm* smp, px* key, px* val)
+px* stl_sm_replace(sm* smp, px* key, px* val)
 {
   if (smp->keys_only) bad_argument();
   pxhmap& mp = smp->mp;
@@ -1412,6 +1412,26 @@ void stl_sm_put(sm* smp, px* key, px* val)
     smp->cache_key = pxh(key);
     smp->cache_iter = i;
   }
+  return val;
+}
+
+px* stl_sm_put(sm* smp, px* key, px* val)
+{
+  if (smp->keys_only) bad_argument();
+  pxhmap& mp = smp->mp;
+  pmi i;
+  if ( smp->cache_key.pxp() == key ) {
+    i = smp->cache_iter;
+    i->second = val;
+  }
+  else {
+    pair<pmi,bool> i_ok = mp.insert(pxhpair(key,val));
+    i = i_ok.first;
+    if (!i_ok.second) i->second = val;
+    smp->cache_key = pxh(key);
+    smp->cache_iter = i;
+  }
+  return val;
 }
 
 px* stl_sm_replace_with(px* pxsmp, px* key, px* unaryfun)

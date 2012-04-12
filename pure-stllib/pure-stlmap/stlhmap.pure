@@ -36,6 +36,7 @@ private extern expr* stl_shm_find(expr* pxshp, expr* key, int what);
 private extern int   stl_shm_insert(expr* pxshp, expr* src, bool replace);
 private extern expr* stl_shm_insert_stlhmap(expr* pxshp, bool replace);
 private extern int   stl_shm_insert_stlvec(expr* map, void* svp, bool replace);
+private extern expr* stl_shm_replace(stlhmap* pmap, expr* key, expr* val);
 private extern void  stl_shm_swap(expr* pxshp1, expr* pxshp2);
 private extern int   stl_shm_erase(expr* pxshp, expr* key);
 private extern int   stl_shm_clear(expr* pxshp);
@@ -50,7 +51,7 @@ private extern void  stl_shm_do(expr* fun, expr* pxshp);
 extern bool  stl_shm_is_set(expr* pxshp) = shm_setp;
 extern int   stl_shm_member(stlhmap* pmap, expr* key) = shm_member;
 extern expr* stl_shm_get(stlhmap* pmap, expr* key) = shm_get;
-extern void  stl_shm_put(stlhmap* pmap, expr* key, expr* val) = shm_put;
+extern expr* stl_shm_put(stlhmap* pmap, expr* key, expr* val) = shm_put;
 
 let stlhmap_t = stl::stl_shm_type_tags;
 
@@ -158,7 +159,7 @@ end;
 
 ::insert_or_replace hm::stlhmap src = stl_shm_insert hm src 1 if ~shm_setp hm;
 
-::replace hm::stlhmap key val = shm_put hm key val $$ val;
+::replace hm::stlhmap key val = stl_shm_replace hm key val;
 
 ::erase hm::stlhmap = stl_shm_clear hm;
 

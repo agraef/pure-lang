@@ -87,6 +87,7 @@ extern "C" {
   int  stl_shm_insert(px* pxshp, px* src, bool replace);
   px*  stl_shm_insert_stlhmap(px* pxshp, bool replace);
   int  stl_shm_insert_stlvec(px* pxshp, sv* svp, bool replace);
+  px*  stl_shm_replace(stlhmap* pmap, px* key, px* val);
   px*  stl_shm_swap(px* pxshp1, px* pxshp2);
   int  stl_shm_clear(px* pxshp);
   int  stl_shm_erase(px* pxshp, px* trg); 
@@ -97,7 +98,7 @@ extern "C" {
   px*  stl_shm_listmap(px* fun, px* shp, int what);
   px*  stl_shm_listcatmap(px* fun, px* pxshp, int what);
   int  stl_shm_member(sh* shp, px* key);
-  void stl_shm_put(sh* shp, px* key, px* val);
+  px*  stl_shm_put(sh* shp, px* key, px* val);
 
   px*  stl_shm_foldl(px* fun, px* val, px* pxshp);
   px*  stl_shm_foldl1(px* fun, px* tpl);

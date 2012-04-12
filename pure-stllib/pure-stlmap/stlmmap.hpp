@@ -110,6 +110,7 @@ extern "C" {
   int  stl_smm_insert(px* pxsmmp, px* src);
   int  stl_smm_insert_stlmmap(px* pxsmmp, px* tpl);
   int  stl_smm_insert_stlvec(px* pxsmmp, sv* svp);
+  px*  stl_smm_replace(px* pxsmmp, px* key, px* src, bool strict);
   px*  stl_smm_swap(px* pxsmmp1, px* pxsmmp2);
   int  stl_smm_clear(px* pxsmmp);
   int  stl_smm_erase(px* pxsmmp, px* trg); 
@@ -135,7 +136,6 @@ extern "C" {
   px*  stl_smm_prev_key(px* pxsmmp, px* key);
   px*  stl_smm_next_key(px* pxsmmp, px* key);
   px*  stl_smm_get(px* pxsmmp, px* key);
-  void stl_smm_put(px* pxsmmp, px* key, px* src);
 
 }
 

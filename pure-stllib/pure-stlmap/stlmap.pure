@@ -48,6 +48,7 @@ private extern expr* stl_sm_insert_elm(expr* map, expr* kv);
 private extern int   stl_sm_insert(expr* map, expr* src, bool replace);
 private extern int   stl_sm_insert_stlvec(expr* map, void* svp, bool replace);
 private extern int   stl_sm_insert_stlmap(expr* map, expr* rng, bool replace);
+private extern expr* stl_sm_replace(stlmap* smp, expr* key, expr* val);
 private extern void  stl_sm_swap(expr* sac1, expr* sac2);
 private extern int   stl_sm_erase(expr* sac, expr* trg);
 private extern int   stl_sm_clear(expr* map);
@@ -72,7 +73,7 @@ private extern expr* stl_sm_replace_with(expr* map, expr* key, expr* unaryfun);
 extern bool  stl_sm_is_set(expr* rng) = sm_setp;
 extern int   stl_sm_member(stlmap* smp, expr* key) = sm_member;
 extern expr* stl_sm_get(stlmap* smp, expr* key) = sm_get;
-extern void  stl_sm_put(stlmap* smp, expr* key, expr* val) = sm_put;
+extern expr* stl_sm_put(stlmap* smp, expr* key, expr* val) = sm_put;
 
 let stlmap_t, stlmap_iter_t = stl::stl_sm_type_tags;
 
@@ -271,7 +272,7 @@ end;
 ::insert_or_replace sm::stlmap src = 
   stl_sm_insert sm src 1  if ~sm_setp sm;
 
-::replace sm::stlmap key val = sm_put sm key val $$ val;
+::replace sm::stlmap key val = stl_sm_replace sm key val;
 
 ::replace_with f sm::stlmap (key=>val) = stl_sm_replace_with sm key (f val);
 

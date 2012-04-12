@@ -33,6 +33,8 @@ private extern int   stl_sv_size(void* vec);
 private extern int   stl_sv_iter_size(expr* rng);
 private extern bool  stl_sv_empty(void* vec);
 private extern int   stl_sv_capacity(void* vec);
+extern expr* stl_sv_get(void* vec, int pos);
+extern expr* stl_sv_put(void* vec, int pos, expr* val);
 private extern expr* stl_sv_front(void* vec);
 private extern expr* stl_sv_back(void* vec);
 private extern expr* stl_sv_list(expr* rng);
@@ -49,8 +51,9 @@ private extern expr* stl_sv_foldl1(expr* fun, expr* rng);
 private extern expr* stl_sv_foldr(expr* fun, expr* val, expr* rng);
 private extern expr* stl_sv_foldr1(expr* fun, expr* rng);
 
-extern expr* stl_sv_get(void* vec, int pos);
-extern void  stl_sv_put(void* vec, int pos, expr* val);
+sv_get (STLVEC v) p::int |
+sv_get (CONST_STLVEC v) p::int = stl_sv_get v p;
+sv_put sv@(STLVEC v) p::int x = stl_sv_put v p x;
 
 /*** Private functions on stlvecs *****************************************/
 
@@ -130,7 +133,7 @@ bounds sv@(STLVEC v) =
 
 ::rmlast sv@(STLVEC v) = stl_sv_pop_back v $$ sv;
 
-::replace sv@(STLVEC v) p::int x = stl_sv_put v p x $$ x;
+::replace sv@(STLVEC v) p::int x = stl_sv_put v p x;
 
 ::update sv@(STLVEC v) p::int x = stl_sv_put v p x $$ sv;
 

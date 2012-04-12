@@ -590,7 +590,7 @@ int stl_shm_member(sh* shp, px* key)
   return hm.find(key) != hm.end();
 }
 
-void stl_shm_put(sh* shp, px* key, px* val)
+px* stl_shm_replace(sh* shp, px* key, px* val)
 {
   if (shp->keys_only) bad_argument();
   pxhmap& hm = shp->hm;
@@ -598,4 +598,15 @@ void stl_shm_put(sh* shp, px* key, px* val)
   if ( pos == hm.end() ) index_error();
   pos->second = val;
   if (val) pure_new(val);
+  return val;
+}
+
+px* stl_shm_put(sh* shp, px* key, px* val)
+{
+  if (shp->keys_only) bad_argument();
+  pxhmap& hm = shp->hm;
+  pxhmapi pos = hm.find(key);
+  if ( pos == hm.end() ) pure_new(key);
+  hm[key]= pure_new(val);
+  return val;
 }

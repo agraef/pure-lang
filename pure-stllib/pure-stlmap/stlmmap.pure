@@ -48,6 +48,7 @@ private extern expr* stl_smm_insert_elm(expr* map, expr* kv);
 private extern int   stl_smm_insert(expr* map, expr* src);
 private extern int   stl_smm_insert_stlvec(expr* map, void* svp);
 private extern int   stl_smm_insert_stlmmap(expr* map, expr* rng);
+private extern expr* stl_smm_replace(expr* pxsmmp, expr* k, expr* vs, bool strict);
 private extern void  stl_smm_swap(expr* sac1, expr* sac2);
 private extern int   stl_smm_erase(expr* sac, expr* trg);
 private extern int   stl_smm_clear(expr* map);
@@ -72,7 +73,7 @@ private extern expr* stl_smm_next_key(expr* map, expr* key);
 extern bool  stl_smm_is_set(expr* rng) = smm_setp;
 extern int   stl_smm_member(expr* pxsmmp, expr* key) = smm_member;
 extern expr* stl_smm_get(expr* pxsmmp, expr* key) = smm_get;
-extern void  stl_smm_put(expr* pxsmmp, expr* key, expr* vals) = smm_put;
+             smm_put map key vals = stl_smm_replace map key vals 0;
 
 let stlmmap_t, stlmmap_iter_t = stl::stl_smm_type_tags;
 
@@ -271,7 +272,7 @@ end;
 //insert_or_replace -- N/A
 
 
-::replace smm::stlmmap key vals::list = smm_put smm key vals $$ vals;
+::replace smm::stlmmap key vals::list = stl_smm_replace smm key vals 1 $$ vals;
 
 //replace_elm_with -- N/A
 

@@ -329,9 +329,9 @@ stored in sm; you can only ask if the key "a" is stored in sm.
 Erasing Elements
 ----------------
 
-For any pure-stlmap container, you can use the :func:`erase/stlmap` function to
-remove all the elements associated with a given key in the container, all of
-the elements in the container or, unless the container is not stlhmap or
+For any pure-stlmap container, you can use the :func:`erase/stlmap` function
+to remove all the elements associated with a given key in the container, all
+of the elements in the container or, unless the container is a stlhmap or
 stlhset, all of the elements in a range defined on the container. ::
 
    > let shm1 = stlhmap shm;       // make some copies of maps
@@ -863,7 +863,7 @@ example. ::
    Returns the number of elements in ``hacon``'s nth (zero-based) bucket where 
    ``hacon`` is a stlhmap or stlhset.
 
-.. function:: hash_reserve /stlmap hacon mlf size
+.. function:: hmap_reserve /stlmap hacon mlf size
 
    Sets ``hacon``'s max_load_factor to ``mlf``, sets the number of ``hacon 's
    buckets to ``size``/``mlf` and rehashes ``hacon`` where ``hacon`` is a
@@ -1475,10 +1475,11 @@ have the same name as the overloaded functions except for a prefix. E.g.,
               sm_get /stlmap sm key
               sm_put /stlmap sm key val
 
-  These are the direct C call equivalents of (:func:`::member/stlmap` ``sm``
-  ``key``), (``sm!key``) and (:func:`::replace/stlmap` ``sm`` ``key``
-  ``val``) where ``sm`` is a stlmap or a stlset (except that sm_put is not
-  defined for stlsets).
+  The first two functions are the direct C call equivalents of
+  (:func:`::member/stlmap` ``sm`` ``key``) and (``sm!key``). The third is like
+  (:func:`::replace/stlmap` ``sm`` ``key`` ``val``) except that it will insert
+  (key=>val) if key is not already stored in ``sm``. Here, ``sm`` is a stlmap
+  or a stlset (except that sm_put is not defined for stlsets).
 
 .. namespace:: stl
 
@@ -1486,23 +1487,24 @@ have the same name as the overloaded functions except for a prefix. E.g.,
               shm_get /stlmap shm key
               shm_put /stlmap shm key val
 
-  These are the direct C call equivalents of (:func:`::member/stlmap` ``shm``
-  ``key``), (``shm!key``) and (:func:`::replace/stlmap` ``shm`` ``key``
-  ``val``) where ``shm`` is a stlhmap or a stlhset (except that shm_put is not
-  defined for stlhsets).
+  The first two functions are the direct C call equivalents of
+  (:func:`::member/stlmap` ``shm`` ``key``) and (``shm!key``). The third is
+  like (:func:`::replace/stlmap` ``shm`` ``key`` ``val``) except that it will
+  insert (key=>val) if key is not already stored in ``shm``. Here, ``shm`` is
+  a stlhmap or a stlhset (except that shm_put is not defined for stlhsets).
 
 .. namespace:: stl
 
 .. function:: smm_member /stlmap smm key
               smm_get /stlmap smm key
-              smm_put /stlmap smm key val
+              smm_put /stlmap smm key vals
 
-  These are the direct C call equivalents of (:func:`::member/stlmap` ``smm``
-  ``key``), (``smm!key``) and (:func:`::replace/stlmap` ``smm`` ``key``
-  ``val``) where ``smm`` is a stlmmap or a stlmset (except that smm_put is not
-  defined for stlmsets).
-
-
+  The first two functions are the direct C call equivalents of
+  (:func:`::member/stlmap` ``smm`` ``key``) and (``smm!key``). The third is
+  like (:func:`::replace/stlmap` ``smm`` ``key`` ``val``) except that it will
+  insert (key=>val1, key=>val2, ...) if key is not already stored in ``smm``.
+  Here, ``smm`` is a stlmmap or a stlmset (except that smm_put is not defined
+  for stlmsets).
 
 Iterators
 =========

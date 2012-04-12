@@ -1372,14 +1372,14 @@ px* stl_smm_next_key(px* pxsmmp, px* key)
   return iter_to_key(mmp, i);
 }
 
-void stl_smm_put(px* pxsmmp, px* k, px* src)
+px* stl_smm_replace(px* pxsmmp, px* k, px* src, bool strict)
 {
   smm* smmp;
   if (!get_smmp(pxsmmp,&smmp) ) bad_argument();  
   if (smmp->keys_only) bad_argument();
   pxhmmap& mmp = smmp->mmp;
   pmmi trgi = get_iter(smmp, k, gi_lower);
-  if (trgi == mmp.end())
+  if (trgi == mmp.end() && strict)
     index_error();
   pmmi ub = get_iter(smmp, k, gi_upper);  
   size_t src_sz = 0;
@@ -1400,6 +1400,7 @@ void stl_smm_put(px* pxsmmp, px* k, px* src)
   } catch (px* e) {
     pure_throw(e);
   }
+  return src;
 }
 
 px*  stl_smm_get(px* pxsmmp, px* key)

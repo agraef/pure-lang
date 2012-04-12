@@ -260,13 +260,14 @@ px* stl_sv_get(sv* vec, int n)
   return (*vec)[n].pxp();
 }
 
-void stl_sv_put(sv* vec, int n, px* val)
+px* stl_sv_put(sv* vec, int n, px* val)
 {
   if (ndx_ok(vec, n)) {
     (*vec)[n] = val;
   }
   else
     index_error();
+  return val;
 }
 
 px* stl_sv_front(sv* vec)

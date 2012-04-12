@@ -120,6 +120,7 @@ extern "C" {
   int  stl_sm_insert(px* pxsmp, px* src, bool replace);
   int  stl_sm_insert_stlmap(px* pxsmp, px* tpl, bool replace);
   int  stl_sm_insert_stlvec(px* pxsmp, sv* svp, bool replace);
+  px*  stl_sm_replace(sm* smp, px* key, px* val);
   px*  stl_sm_swap(px* pxsmp1, px* pxsmp2);
   int  stl_sm_clear(px* pxsmp);
   int  stl_sm_erase(px* pxsmp, px* trg); 
@@ -146,7 +147,7 @@ extern "C" {
   px*  stl_sm_next_key(px* pxsmp, px* key);
   
   px*  stl_sm_get(sm* smp, px* key);
-  void stl_sm_put(sm* smp, px* key, px* val);
+  px*  stl_sm_put(sm* smp, px* key, px* val);
   px*  stl_sm_replace_with(px* pxsmp, px* key, px* binfun);
 
 }
