@@ -21,11 +21,13 @@
 
 #include <llvm/DerivedTypes.h>
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
+#include <llvm/ExecutionEngine/JIT.h>
 #include <llvm/Module.h>
 #include <llvm/PassManager.h>
 #include <llvm/GlobalValue.h>
 #include <llvm/Analysis/Verifier.h>
 #include <llvm/Target/TargetData.h>
+#include <llvm/Target/TargetOptions.h>
 #include <llvm/Transforms/Scalar.h>
 #include <llvm/Support/IRBuilder.h>
 
@@ -47,6 +49,16 @@
 #ifndef HAVE_LLVM_TYPESYMBOLTABLE_H
 // LLVM 3.0 and later don't have this header any more.
 #define LLVM30 1
+#endif
+
+#if !HAVE_DECL_LLVM__GUARANTEEDTAILCALLOPT
+#if HAVE_DECL_LLVM__PERFORMTAILCALLOPT
+// API breakage in LLVM 2.7.
+#define GuaranteedTailCallOpt PerformTailCallOpt
+#else
+// LLVM 3.1 and later have the target options in a separate class
+#define LLVM31 1
+#endif
 #endif
 
 #if LLVM26
@@ -1121,10 +1133,14 @@ public:
 #endif
 
   static llvm::Constant* constant_char_array(const char *s)
+#ifdef LLVM31
+  { return llvm::ConstantDataArray::getString(llvm::getGlobalContext(), s); }
+#else
 #ifdef LLVM26
   { return llvm::ConstantArray::get(llvm::getGlobalContext(), s); }
 #else
   { return llvm::ConstantArray::get(s); }
+#endif
 #endif
 
   static llvm::GlobalVariable* global_variable

@@ -200,6 +200,23 @@ void interpreter::init()
 #if !LLVM27
   MP = new ExistingModuleProvider(module);
 #endif
+#if LLVM31
+  llvm::EngineBuilder factory(module);
+  factory.setEngineKind(llvm::EngineKind::JIT);
+  factory.setAllocateGVsWithCode(false);
+#if USE_FASTCC || FAST_JIT
+  llvm::TargetOptions Opts;
+#if USE_FASTCC
+  Opts.GuaranteedTailCallOpt = true;
+#endif
+#if FAST_JIT
+#warning "You selected FAST_JIT. This isn't recommended!"
+  Opts.EnableFastISel = true;
+#endif
+  factory.setTargetOptions(Opts);
+#endif
+  JIT = factory.create();
+#else // LLVM 3.0 or earlier
 #if LLVM26
   string error;
 #if LLVM27
@@ -228,13 +245,14 @@ void interpreter::init()
      effectively ignored and this call isn't needed.) */
   if (!eager_jit) JIT->DisableLazyCompilation(false);
 #endif
-#else
+#else // LLVM 2.5 and earlier
 #if FAST_JIT
   JIT = ExecutionEngine::create(MP, false, 0, true);
 #else
   JIT = ExecutionEngine::create(MP);
 #endif
-#endif
+#endif // LLVM 2.5 and earlier
+#endif // LLVM 3.0 or earlier
   assert(JIT);
 #if LLVM27
   FPM = new FunctionPassManager(module);
@@ -255,6 +273,10 @@ void interpreter::init()
   FPM->add(createGVNPass());
   // Simplify the control flow graph (deleting unreachable blocks, etc).
   FPM->add(createCFGSimplificationPass());
+#if LLVM31
+  // It seems that this is needed for LLVM 3.1 and later.
+  FPM->doInitialization();
+#endif
 
   // Install a fallback mechanism to resolve references to the runtime, on
   // systems which do not allow the program to dlopen itself.
@@ -890,7 +912,13 @@ interpreter::~interpreter()
   // LLVM 2.4 or later, or disable this line.
   if (JIT) delete JIT;
 #endif
-  if (FPM) delete FPM;
+  if (FPM) {
+#if LLVM31
+    // It seems that this is needed for LLVM 3.1 and later.
+    FPM->doFinalization();
+#endif
+    delete FPM;
+  }
   // if this was the global interpreter, reset it now
   if (g_interp == this) g_interp = 0;
 }
@@ -3771,7 +3799,7 @@ void interpreter::compile()
 	if (verbose&verbosity::code) {
 	  const symbol& sym = symtab.sym(ftag);
 	  if (info.mxs && !info.rxs->empty())
-	    cout << "interface " << sym.s << " " << *info.mxs << '\n';
+	    std::cout << "interface " << sym.s << " " << *info.mxs << '\n';
 	  if (info.m && !info.rules->empty())
 	    std::cout << "type " << sym.s << " " << *info.m << '\n';
 	}
@@ -10260,7 +10288,7 @@ int interpreter::compiler(string out, list<string> libnames)
     }
     // While we're at it, also check for variables pointing to Faust functions
     // and update their initializations.
-    string name = v.getNameStr();
+    string name = v.getName();
     if (is_faust_var(name)) {
       Function *f = module->getFunction(name.substr(1));
       assert(f);
@@ -10898,7 +10926,7 @@ CallInst *Env::CreateCall(Function *f, const vector<Value*>& args)
     ok = false;
   }
   if (!ok) {
-    std::cerr << "** calling function: " << f->getNameStr() << '\n';
+    std::cerr << "** calling function: " << f->getName().data() << '\n';
     f->dump();
     assert(0 && "bad function call");
   }

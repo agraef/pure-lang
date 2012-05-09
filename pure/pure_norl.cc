@@ -48,15 +48,6 @@
 
 #include "config.h"
 
-#if HAVE_DECL_LLVM__GUARANTEEDTAILCALLOPT
-// API breakage in LLVM 2.7.
-#define PerformTailCallOpt GuaranteedTailCallOpt
-#else
-#if !HAVE_DECL_LLVM__PERFORMTAILCALLOPT && USE_FASTCC
-#error "Your LLVM version lacks the llvm::PerformTailCallOpt flag."
-#endif
-#endif
-
 using namespace std;
 
 #ifndef HOST
@@ -428,10 +419,10 @@ main(int argc, char *argv[])
       }
     }
   }
-#if USE_FASTCC
+#if USE_FASTCC && !LLVM31
   // This global option is needed to get tail call optimization (you'll also
   // need to have USE_FASTCC in interpreter.hh enabled).
-  if (interp.use_fastcc) llvm::PerformTailCallOpt = true;
+  if (interp.use_fastcc) llvm::GuaranteedTailCallOpt = true;
 #endif
   interp.init_jit_mode();
   if ((env = getenv("PURE_INCLUDE")))

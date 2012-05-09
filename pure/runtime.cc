@@ -3682,15 +3682,6 @@ static string unixize(const string& s)
   return t;
 }
 
-#if HAVE_DECL_LLVM__GUARANTEEDTAILCALLOPT
-// API breakage in LLVM 2.7.
-#define PerformTailCallOpt GuaranteedTailCallOpt
-#else
-#if !HAVE_DECL_LLVM__PERFORMTAILCALLOPT && USE_FASTCC
-#error "Your LLVM version lacks the llvm::PerformTailCallOpt flag."
-#endif
-#endif
-
 extern "C"
 pure_interp *pure_create_interp(int argc, char *argv[])
 {
@@ -3871,10 +3862,10 @@ pure_interp *pure_create_interp(int argc, char *argv[])
       }
     }
   }
-#if USE_FASTCC
+#if USE_FASTCC && !LLVM31
   // This global option is needed to get tail call optimization (you'll also
   // need to have USE_FASTCC in interpreter.hh enabled).
-  if (interp.use_fastcc) llvm::PerformTailCallOpt = true;
+  if (interp.use_fastcc) llvm::GuaranteedTailCallOpt = true;
 #endif
   interp.init_jit_mode();
   if ((env = getenv("PURE_INCLUDE")))
@@ -4061,10 +4052,10 @@ pure_interp *pure_interp_main(int argc, char *argv[],
     add_path(interp.includedirs, unixize(env));
   if ((env = getenv("PURE_LIBRARY")))
     add_path(interp.librarydirs, unixize(env));
-#if USE_FASTCC
+#if USE_FASTCC && !LLVM31
   // This global option is needed to get tail call optimization (you'll also
   // need to have USE_FASTCC in interpreter.hh enabled).
-  llvm::PerformTailCallOpt = true;
+  llvm::GuaranteedTailCallOpt = true;
 #endif
   // scan the command line options
   list<string> myargs;
