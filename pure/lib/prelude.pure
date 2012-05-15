@@ -982,7 +982,20 @@ xs!!ns		= ys if ok ys when
    some reason. */
 
 subseq [] a::int b::int = [];
-subseq xs@(_:_) a::int b::int = take (b-a+1) $ drop a xs;
+subseq xs@(_:_) a::int b::int = take (b-a+1) $ drop a xs with
+  // This is a version of take modified to expand thunked tails. It uses the
+  // same basic logic to make it tail-recursive.
+  take n::int []	= [];
+  take n::int xs@(_:_)	= tick n [] xs;
+  tick n::int zs xs	= tack zs [] if n<=0;
+			= case xs of
+			    []   = tack zs [];
+			    x:xs = tick (n-1) (x:zs) xs;
+			    _    = tack zs (take n xs);
+			  end;
+  tack (x:xs) ys	= tack xs (x:ys);
+  tack [] ys		= ys;
+end;
 subseq x a b = slice x (a..b);
 
 #! --if subseq-opt

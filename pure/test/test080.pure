@@ -1,0 +1,10 @@
+// Regression in optimization rules for list slices introduced in Pure 0.49.
+
+all_primes	= sieve (2..inf) with
+  sieve (p:qs)	= p : sieve [q | q = qs; q mod p] &;
+end;
+
+let P = all_primes;
+
+// This should be an ordinary list, not a stream.
+P!!(0..20);

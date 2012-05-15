@@ -302,7 +302,84 @@ xs/*0:01*/!!ns/*0:1*/ = ys/*0:*/ if ok/*1*/ ys/*0:*/ when ys/*0:*/ = case ns/*0:
   state 18: #0 #1
 } end;
 subseq [] a/*0:01*/::int b/*0:1*/::int = [];
-subseq xs@(_/*0:00101*/:_/*0:0011*/) a/*0:01*/::int b/*0:1*/::int = take (b/*0:1*/-a/*0:01*/+1) (drop a/*0:01*/ xs/*0:001*/);
+subseq xs@(_/*0:00101*/:_/*0:0011*/) a/*0:01*/::int b/*0:1*/::int = take/*0*/ (b/*0:1*/-a/*0:01*/+1) (drop a/*0:01*/ xs/*0:001*/) with take n/*0:01*/::int [] = []; take n/*0:01*/::int xs@(_/*0:101*/:_/*0:11*/) = tick/*1*/ n/*0:01*/ [] xs/*0:1*/ {
+  rule #0: take n::int [] = []
+  rule #1: take n::int xs@(_:_) = tick n [] xs
+  state 0: #0 #1
+	<var>::int state 1
+  state 1: #0 #1
+	<app> state 2
+	[] state 7
+  state 2: #1
+	<app> state 3
+  state 3: #1
+	: state 4
+  state 4: #1
+	<var> state 5
+  state 5: #1
+	<var> state 6
+  state 6: #1
+  state 7: #0
+}; tick n/*0:001*/::int zs/*0:01*/ xs/*0:1*/ = tack/*1*/ zs/*0:01*/ [] if n/*0:001*/<=0; tick n/*0:001*/::int zs/*0:01*/ xs/*0:1*/ = case xs/*0:1*/ of [] = tack/*2*/ zs/*1:01*/ []; x/*0:01*/:xs/*0:1*/ = tick/*2*/ (n/*1:001*/-1) (x/*0:01*/:zs/*1:01*/) xs/*0:1*/; _/*0:*/ = tack/*2*/ zs/*1:01*/ (take/*2*/ n/*1:001*/ xs/*1:1*/) {
+  rule #0: [] = tack zs []
+  rule #1: x:xs = tick (n-1) (x:zs) xs
+  rule #2: _ = tack zs (take n xs)
+  state 0: #0 #1 #2
+	<var> state 1
+	<app> state 2
+	[] state 12
+  state 1: #2
+  state 2: #1 #2
+	<var> state 3
+	<app> state 5
+  state 3: #2
+	<var> state 4
+  state 4: #2
+  state 5: #1 #2
+	<var> state 6
+	: state 9
+  state 6: #2
+	<var> state 7
+  state 7: #2
+	<var> state 8
+  state 8: #2
+  state 9: #1 #2
+	<var> state 10
+  state 10: #1 #2
+	<var> state 11
+  state 11: #1 #2
+  state 12: #0 #2
+} end {
+  rule #0: tick n::int zs xs = tack zs [] if n<=0
+  rule #1: tick n::int zs xs = case xs of [] = tack zs []; x:xs = tick (n-1) (x:zs) xs; _ = tack zs (take n xs) end
+  state 0: #0 #1
+	<var>::int state 1
+  state 1: #0 #1
+	<var> state 2
+  state 2: #0 #1
+	<var> state 3
+  state 3: #0 #1
+}; tack (x/*0:0101*/:xs/*0:011*/) ys/*0:1*/ = tack/*1*/ xs/*0:011*/ (x/*0:0101*/:ys/*0:1*/); tack [] ys/*0:1*/ = ys/*0:1*/ {
+  rule #0: tack (x:xs) ys = tack xs (x:ys)
+  rule #1: tack [] ys = ys
+  state 0: #0 #1
+	<app> state 1
+	[] state 7
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+	<var> state 6
+  state 6: #0
+  state 7: #1
+	<var> state 8
+  state 8: #1
+} end;
 subseq x/*0:001*/ a/*0:01*/ b/*0:1*/ = slice x/*0:001*/ (a/*0:01*/..b/*0:1*/);
 def x/*0:01*/!!(a/*0:101*/..b/*0:11*/) = subseq x/*0:01*/ a/*0:101*/ b/*0:11*/;
 []+ys/*0:1*/ = ys/*0:1*/;
@@ -4315,7 +4392,7 @@ def __std__::__voidchk1__ x/*0:01*/ y/*0:1*/ = x/*0:01*/;
   rule #0: subseq x::matrix a::int b::int = __C::matrix_slice (rowvector x) 0 a 0 b
   rule #1: subseq s::string a::int b::int = substr s a (b-a+1)
   rule #2: subseq [] a::int b::int = []
-  rule #3: subseq xs@(_:_) a::int b::int = take (b-a+1) (drop a xs)
+  rule #3: subseq xs@(_:_) a::int b::int = take (b-a+1) (drop a xs) with take n::int [] = []; take n::int xs@(_:_) = tick n [] xs; tick n::int zs xs = tack zs [] if n<=0; tick n::int zs xs = case xs of [] = tack zs []; x:xs = tick (n-1) (x:zs) xs; _ = tack zs (take n xs) end; tack (x:xs) ys = tack xs (x:ys); tack [] ys = ys end
   rule #4: subseq x a b = slice x (a..b)
   state 0: #0 #1 #2 #3 #4
 	<var> state 1

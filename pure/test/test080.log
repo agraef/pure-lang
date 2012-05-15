@@ -1,0 +1,32 @@
+all_primes = sieve/*0*/ (2..inf) with sieve (p/*0:101*/:qs/*0:11*/) = p/*0:101*/:sieve/*2*/ (catmap (\q/*0:1*/ -> if q/*0:1*/ mod p/*2:101*/ then [q/*0:1*/] else [] {
+  rule #0: _ q = if q mod p then [q] else []
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) qs/*1:11*/)& {
+  rule #0: sieve (p:qs) = p:sieve (catmap (\q -> if q mod p then [q] else []) qs)&
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	: state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+} end;
+{
+  rule #0: all_primes = sieve (2..inf) with sieve (p:qs) = p:sieve (catmap (\q -> if q mod p then [q] else []) qs)& end
+  state 0: #0
+}
+{
+  rule #0: P = all_primes
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+let P = all_primes;
+subseq P 0 20;
+[2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73]
