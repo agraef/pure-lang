@@ -6,6 +6,11 @@ version = 0.15
 # Here are some variables you can specify when invoking 'make', besides the
 # usual CXXFLAGS, CPPFLAGS etc.:
 
+# PD=pd: This sets the flavour of Pd for which pd-pure is to be installed. By
+# default this is just 'pd', which will work with Miller Puckette's "vanilla"
+# distribution of Pd. You can set this, e.g., to 'pd-extended' or 'pd-l2ork'
+# if you're running these alternative Pd distributions instead.
+
 # VERBOSE=-DVERBOSE: This enables special code to make pd-pure give some
 # feedback on stdout when it's compiling scripts. This is disabled by default.
 
@@ -15,8 +20,10 @@ version = 0.15
 # manually. However, you can forcibly disable this option (not recommended) by
 # passing 'EAGER='.
 
+PD=pd
+
 # Try to guess the Pd installation prefix (this needs GNU make):
-prefix = $(patsubst %/bin/pd$(EXE),%,$(shell which pd 2>/dev/null))
+prefix = $(patsubst %/bin/$(PD)$(EXE),%,$(shell which $(PD) 2>/dev/null))
 ifeq ($(strip $(prefix)),)
 # Fall back to /usr/local.
 prefix = /usr/local
@@ -27,16 +34,17 @@ endif
 pureminor = $(shell pure --version 2>/dev/null | sed -n -e 's/^Pure 0\.\([0-9]*\).*/\1/' -e '/^[0-9]*$$/p' 2>/dev/null)
 EAGER = $(shell (test -z "$(pureminor)" || test "$(pureminor)" -ge 34) && echo '-DEAGER')
 
-# Installation goes into $(libdir)/pd, you can also set this directly
+# Installation goes into $(libdir)/$(PD), you can also set this directly
 # instead of $(prefix).
 libdir = $(prefix)/lib
 includedir = $(prefix)/include
 
-# Pd include path.
-pdincludedir = $(includedir)/pd
+# Pd include path. Note: This removes the hyphen from the Pd distribution
+# name, since this is what pd-extended and pd-l2ork need.
+pdincludedir = $(includedir)/$(shell echo $(PD) | sed -e s/-//)
 
 # Pd library path.
-pdlibdir = $(libdir)/pd
+pdlibdir = $(libdir)/$(PD)
 
 # Install dir for the external and accompanying stuff.
 pdextradir = $(pdlibdir)/extra/pure
@@ -99,7 +107,7 @@ pure$(DLL): pure.o
 	$(CC) $(shared) -o $@ $(PIC) $(LDFLAGS) $< -lpure $(LIBS)
 
 pure.o: pure.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(PIC) -o $@ -c $< -DVERSION="\"$(version)\"" -DLIBDIR="\"$(pdlibdir)\""
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(PIC) -o $@ -c $< -DPD="\"$(PD)\"" -DVERSION="\"$(version)\"" -DLIBDIR="\"$(pdlibdir)\""
 
 clean:
 	rm -f pure$(DLL) *~ *.a *.o

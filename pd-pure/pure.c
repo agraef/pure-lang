@@ -12,6 +12,10 @@
 #include <pure/runtime.h>
 #include <m_pd.h>
 
+#ifndef PD
+#define PD "pd"
+#endif
+
 #ifndef VERSION
 #define VERSION "0.0"
 #endif
@@ -1160,24 +1164,28 @@ static void pure_menu_open(t_pure *x)
 {
   if (x->open_filename) {
 #if PD_MAJOR_VERSION > 0 || PD_MINOR_VERSION >= 43
+    /* This needs a fairly recent Pd version (probably 0.43 or later). */
     sys_vgui("::pd_menucommands::menu_openfile {%s}\n", x->open_filename);
 #else
-    sys_vgui("menu_openfile {%s}\n", x->open_filename);
+    /* An older Pd version before the GUI rewrite. Let's just fire up emacs
+       instead. */
+    char cmd[1024];
+    snprintf(cmd, 1024, "emacs '%s' &", x->open_filename);
+    if (system(cmd)) ;
 #endif
   } else {
     t_classes *c = x->cls;
     if (!c) return; /* this should never happen */
-    if (c->dir && *c->dir)
+    if (c->dir && *c->dir) {
 #if PD_MAJOR_VERSION > 0 || PD_MINOR_VERSION >= 43
-      /* This needs a fairly recent Pd version (probably 0.43 or later). */
       sys_vgui("::pd_menucommands::menu_openfile {%s/%s.pure}\n",
 	       c->dir, c->sym->s_name);
 #else
-      /* An older Pd version before the GUI rewrite. Maybe you're lucky and
-         this works for you. */
-      sys_vgui("menu_openfile {%s/%s.pure}\n", c->dir, c->sym->s_name);
+      char cmd[1024];
+      snprintf(cmd, 1024, "emacs '%s/%s.pure' &", c->dir, c->sym->s_name);
+      if (system(cmd)) ;
 #endif
-    else
+    } else
       pd_error(x, "pd-pure: %s object doesn't have a script file",
 	       c->sym->s_name);
   }
@@ -1969,8 +1977,8 @@ extern void pure_setup(void)
     pure_expr *x = pure_symbol(pure_sym("version"));
     char *pure_version = 0;
     pure_is_cstring_dup(x, &pure_version);
-    post("pd-pure %s (pure-%s) (c) 2009-2011 Albert Graef <Dr.Graef@t-online.de>", VERSION, pure_version);
-    post("pd-pure: compiled for pd-%d.%d on %s %s", PD_MAJOR_VERSION, PD_MINOR_VERSION, __DATE__, __TIME__);
+    post("pd-pure %s (pure-%s) (c) 2009-2012 Albert Graef <Dr.Graef@t-online.de>", VERSION, pure_version);
+    post("pd-pure: compiled for %s-%d.%d on %s %s", PD, PD_MAJOR_VERSION, PD_MINOR_VERSION, __DATE__, __TIME__);
     if (pure_version) free (pure_version);
     /* Register the loader for Pure externals. */
     sys_register_loader(pure_loader);

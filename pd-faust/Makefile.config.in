@@ -34,19 +34,27 @@ ifneq "$(findstring x86_64-,$(host))" ""
 PIC = -fPIC
 endif
 
+# Pd flavour (e.g., pd, pd-extended, pd-l2ork, etc.)
+PD=pd
+
 # Try to guess the Pd installation prefix:
-prefix = $(patsubst %/bin/pd$(EXE),%,$(shell which pd 2>/dev/null))
+prefix = $(patsubst %/bin/$(PD)$(EXE),%,$(shell which $(PD) 2>/dev/null))
 ifeq ($(strip $(prefix)),)
 # Fall back to /usr/local.
 prefix = /usr/local
 endif
 
-# Installation goes into $(libdir)/pd, you can also set this directly
+# Installation goes into $(libdir)/$(PD), you can also set this directly
 # instead of $(prefix).
 libdir = $(prefix)/lib
+includedir = $(prefix)/include
+
+# Pd include path. Note: This removes the hyphen from the Pd distribution
+# name, since this is what pd-extended and pd-l2ork need.
+pdincludedir = $(includedir)/$(shell echo $(PD) | sed -e s/-//)
 
 # Pd library path.
-pdlibdir = $(libdir)/pd
+pdlibdir = $(libdir)/$(PD)
 
 # Install dir for the externals and accompanying stuff.
 pdextradir = $(pdlibdir)/extra/faust
