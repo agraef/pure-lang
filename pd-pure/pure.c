@@ -1169,9 +1169,7 @@ static void pure_menu_open(t_pure *x)
 #else
     /* An older Pd version before the GUI rewrite. Let's just fire up emacs
        instead. */
-    char cmd[1024];
-    snprintf(cmd, 1024, "emacs '%s' &", x->open_filename);
-    if (system(cmd)) ;
+    sys_vgui("exec -- sh -c {emacs '%s'} &\n", x->open_filename);
 #endif
   } else {
     t_classes *c = x->cls;
@@ -1181,9 +1179,8 @@ static void pure_menu_open(t_pure *x)
       sys_vgui("::pd_menucommands::menu_openfile {%s/%s.pure}\n",
 	       c->dir, c->sym->s_name);
 #else
-      char cmd[1024];
-      snprintf(cmd, 1024, "emacs '%s/%s.pure' &", c->dir, c->sym->s_name);
-      if (system(cmd)) ;
+      sys_vgui("exec -- sh -c {emacs '%s/%s.pure'} &\n",
+	       c->dir, c->sym->s_name);
 #endif
     } else
       pd_error(x, "pd-pure: %s object doesn't have a script file",
