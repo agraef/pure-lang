@@ -6355,7 +6355,7 @@ void interpreter::funsubstw(set<int32_t>& warned, bool ty_check,
   }
   default:
     assert(x.tag() > 0);
-    if (!b && x.tag() == f && g != f) {
+    if (!b && x.tag() == f && g != f && (x.flags()&EXPR::QUAL) == 0) {
       // make sure that we don't accidentally clobber a cached symbol node here
       assert(x != symtab.sym(x.tag()).x);
       x.set_tag(g);
