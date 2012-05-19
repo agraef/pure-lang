@@ -227,7 +227,85 @@ format (f/*0:101*/,x/*0:1101*/,z/*0:111*/) = str f/*0:101*/+","+print x/*0:1101*
 let eps = 1/100000000;
 roundz x/*0:1*/::double = if abs x/*0:1*/<eps then 0.0 else x/*0:1*/;
 print x/*0:1*/::double = str x/*0:1*/ if infp x/*0:1*/||nanp x/*0:1*/;
-print x/*0:1*/::double = sprintf double_format (roundz x/*0:1*/);
+print x/*0:1*/::double = print_double (roundz x/*0:1*/);
+print_double x/*0:1*/ = case split "e" s/*0:*/ of [x/*0:01*/,y/*0:101*/] = case take 1 y/*0:101*/ of "+" = x/*1:01*/+"e"+y/*1:101*/!0+f/*1*/ (drop 1 y/*1:101*/); "-" = x/*1:01*/+"e"+y/*1:101*/!0+f/*1*/ (drop 1 y/*1:101*/); _/*0:*/ = x/*1:01*/+"e"+f/*1*/ y/*1:101*/ {
+  rule #0: "+" = x+"e"+y!0+f (drop 1 y)
+  rule #1: "-" = x+"e"+y!0+f (drop 1 y)
+  rule #2: _ = x+"e"+f y
+  state 0: #0 #1 #2
+	<var> state 1
+	"+"::string state 2
+	"-"::string state 3
+  state 1: #2
+  state 2: #0 #2
+  state 3: #1 #2
+} end with f s/*0:1*/ = case val s/*0:1*/ of x/*0:*/::int = sprintf "%02d" x/*0:*/; _/*0:*/ = s/*1:1*/ {
+  rule #0: x::int = sprintf "%02d" x
+  rule #1: _ = s
+  state 0: #0 #1
+	<var> state 1
+	<var>::int state 2
+  state 1: #1
+  state 2: #0 #1
+} end {
+  rule #0: f s = case val s of x::int = sprintf "%02d" x; _ = s end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end; _/*0:*/ = s/*1:*/ {
+  rule #0: [x,y] = case take 1 y of "+" = x+"e"+y!0+f (drop 1 y); "-" = x+"e"+y!0+f (drop 1 y); _ = x+"e"+f y end with f s = case val s of x::int = sprintf "%02d" x; _ = s end end
+  rule #1: _ = s
+  state 0: #0 #1
+	<var> state 1
+	<app> state 2
+  state 1: #1
+  state 2: #0 #1
+	<var> state 3
+	<app> state 5
+  state 3: #1
+	<var> state 4
+  state 4: #1
+  state 5: #0 #1
+	<var> state 6
+	: state 9
+  state 6: #1
+	<var> state 7
+  state 7: #1
+	<var> state 8
+  state 8: #1
+  state 9: #0 #1
+	<var> state 10
+  state 10: #0 #1
+	<var> state 11
+	<app> state 12
+  state 11: #1
+  state 12: #0 #1
+	<var> state 13
+	<app> state 15
+  state 13: #1
+	<var> state 14
+  state 14: #1
+  state 15: #0 #1
+	<var> state 16
+	: state 19
+  state 16: #1
+	<var> state 17
+  state 17: #1
+	<var> state 18
+  state 18: #1
+  state 19: #0 #1
+	<var> state 20
+  state 20: #0 #1
+	<var> state 21
+	[] state 22
+  state 21: #1
+  state 22: #0 #1
+} end when s/*0:*/ = sprintf double_format x/*0:1*/ {
+  rule #0: s = sprintf double_format x
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} end;
 print (x/*0:101*/+:y/*0:11*/) = print x/*0:101*/+"+:"+print y/*0:11*/;
 print (x/*0:101*/::double<:y/*0:11*/::double) = print x/*0:101*/+"<:"+print 0.0 if abs x/*0:101*/~==0.0&&roundz x/*0:101*/==0.0&&~infp y/*0:11*/&&~nanp y/*0:11*/;
 print (x/*0:101*/<:y/*0:11*/) = print x/*0:101*/+"<:"+print y/*0:11*/;
@@ -255,7 +333,7 @@ tests = puts "*** UNARY ***"$$do (\f/*0:1*/ -> do (\x/*0:1*/ -> test (f/*1:1*/,x
 }) f2;
 {
   rule #0: print x::double = str x if infp x||nanp x
-  rule #1: print x::double = sprintf double_format (roundz x)
+  rule #1: print x::double = print_double (roundz x)
   rule #2: print (x+:y) = print x+"+:"+print y
   rule #3: print (x::double<:y::double) = print x+"<:"+print 0.0 if abs x~==0.0&&roundz x==0.0&&~infp y&&~nanp y
   rule #4: print (x<:y) = print x+"<:"+print y
@@ -302,6 +380,12 @@ tests = puts "*** UNARY ***"$$do (\f/*0:1*/ -> do (\x/*0:1*/ -> test (f/*1:1*/,x
   rule #0: roundz x::double = if abs x<eps then 0.0 else x
   state 0: #0
 	<var>::double state 1
+  state 1: #0
+}
+{
+  rule #0: print_double x = case split "e" s of [x,y] = case take 1 y of "+" = x+"e"+y!0+f (drop 1 y); "-" = x+"e"+y!0+f (drop 1 y); _ = x+"e"+f y end with f s = case val s of x::int = sprintf "%02d" x; _ = s end end; _ = s end when s = sprintf double_format x end
+  state 0: #0
+	<var> state 1
   state 1: #0
 }
 {

@@ -54,7 +54,24 @@ roundz x::double = if abs x < eps then 0.0 else x;
 
 print x::double
 = str x if infp x || nanp x; // Windows compatibility
-= sprintf double_format (roundz x) otherwise;
+= print_double (roundz x) otherwise;
+
+// Kludge: Some printf implementations print the scale factor with more than
+// the usual two digits by default, we take care of these discrepancies here.
+print_double x = case split "e" s of
+  [x,y] = case take 1 y of
+    "+" | "-" = x + "e" + y!0 + f (drop 1 y);
+    _ = x + "e" + f y;
+  end with
+    f s = case val s of
+      x::int = sprintf "%02d" x;
+      _ = s;
+    end;
+  end;
+  _ = s;
+end when
+  s = sprintf double_format x;
+end;
 
 print (x+:y) = print x+"+:"+print y;
 // Kludge: Normalize the argument in polar representation if the absolute
