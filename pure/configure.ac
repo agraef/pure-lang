@@ -202,8 +202,8 @@ if test $fastcc = yes; then
   AC_DEFINE(HAVE_FASTCC, 1, [Define to build with fastcc/TCO support (broken on some systems).])
 fi
 
-dnl Check for LLVM.
-AC_CHECK_PROG(LLVMCONF,llvm-config,llvm-config,no)
+dnl Check for LLVM (try various LLVM versions).
+AC_CHECK_PROGS(LLVMCONF,[llvm-config llvm-config-3.1 llvm-config-3.0 llvm-config-2.9 llvm-config-2.8 llvm-config-2.7 llvm-config-2.6 llvm-config-2.5],no)
 if test "$LLVMCONF" = no; then
   AC_MSG_ERROR([Cannot find LLVM.])
 fi
