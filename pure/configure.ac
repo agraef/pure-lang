@@ -114,6 +114,9 @@ AC_ARG_ENABLE(warnings,
   [case "${enableval}" in
     yes)  CXXFLAGS="$CXXFLAGS -Wall"; CFLAGS="$CFLAGS -Wall" ;;
   esac])
+dnl These are just dummy options to make the Debian package builder happy.
+AC_ARG_ENABLE(maintainer-mode, [  --enable-maintainer-mode (ignored)], [])
+AC_ARG_ENABLE(dependency-tracking, [  --enable-dependency-tracking (ignored)], [])
 dnl Readline/libedit support.
 vl_readline_libs="readline"
 vl_editline_libs="edit editline"
