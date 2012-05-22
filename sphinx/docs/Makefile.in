@@ -34,12 +34,22 @@ install:
 uninstall:
 	rm -rf $(DESTDIR)$(datadir)
 
-distfiles = Makefile _images/* _sources/* _static/* $(htmlfiles) $(pdffiles)
+distfiles = Makefile debian/* _images/* _sources/* _static/* $(htmlfiles) $(pdffiles)
 
 dist:
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/_images && mkdir $(dist)/_sources && mkdir $(dist)/_static
+	mkdir $(dist) && mkdir $(dist)/debian && mkdir $(dist)/_images && mkdir $(dist)/_sources && mkdir $(dist)/_static
 	for x in $(distfiles); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
 	rm -rf $(dist)
+
+debsrc = $(shell echo $(dist) | sed -e 's/-$(version)/_$(version)/').orig.tar.gz
+
+deb: $(debsrc) dist
+	tar xfz $(dist).tar.gz
+	cd $(dist) && debuild $(DEBUILD_FLAGS)
+	rm -rf $(dist)
+
+$(debsrc):
+	wget -nv http://pure-lang.googlecode.com/files/$(dist).tar.gz -O $@

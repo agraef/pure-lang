@@ -212,8 +212,9 @@ docs/Makefile: docs/Makefile.in Makefile
 
 dist: alldocs docs/Makefile
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/_images && mkdir $(dist)/_sources && mkdir $(dist)/_static
+	mkdir $(dist) && mkdir $(dist)/debian && mkdir $(dist)/_images && mkdir $(dist)/_sources && mkdir $(dist)/_static
 	ln -sf $$PWD/docs/Makefile $(dist)/Makefile
+	for x in debian/*; do ln -sf $$PWD/$$x $(dist)/$$x; done
 	(cd $(BUILDDIR)/html && for x in $(htmldist); do ln -sf $$PWD/$$x ../../$(dist)/$$x; done)
 	(cd $(BUILDDIR)/latex && for x in $(pdfdist); do ln -sf $$PWD/$$x ../../$(dist)/$$x; done)
 	rm -f $(dist).tar.gz
