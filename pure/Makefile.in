@@ -413,11 +413,15 @@ distcheck: dist
 
 # create a Debian package (this requires special tools like debuild)
 
+# NOTE: To run this, the tarball for the current version must be available in
+# the project download area. If you're running this from repository sources,
+# it will create a Debian package from these, with the appropriate patches
+# against the release tarball. In this case, maintainers should update
+# debian/changelog accordingly. DEBUILD_FLAGS may be set as needed. E.g., -S
+# will only create the source package, -us -uc skips the signing step, etc.
+
 # name of the pristine tarball
 debsrc = $(shell echo $(dist) | sed -e 's/-$(version)/_$(version)/').orig.tar.gz
-
-# NOTE: You may set DEBUILD_FLAGS as needed. E.g., -S will only create the
-# source package, -us -uc skips the signing step, etc.
 
 deb: $(debsrc) dist
 	tar xfz $(dist).tar.gz
