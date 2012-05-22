@@ -413,12 +413,28 @@ distcheck: dist
 
 # create a Debian package (this requires special tools like debuild)
 
-# NOTE: To run this, the tarball for the current version must be available in
-# the project download area. If you're running this from repository sources,
-# it will create a Debian package from these, with the appropriate patches
-# against the release tarball. In this case, maintainers should update
-# debian/changelog accordingly. DEBUILD_FLAGS may be set as needed. E.g., -S
-# will only create the source package, -us -uc skips the signing step, etc.
+# NOTE: It is assumed that the source tarball for the current version is
+# available in the project download area, in which case it will be downloaded
+# and renamed to something like pure_$(version).orig.tar.gz which is what the
+# Debian tools look for. Otherwise you'll have to provide a suitable source
+# tarball yourself and place it into the build directory. The easiest way to
+# do this is to just roll a distribution tarball using 'make dist' and rename
+# it appropriately.
+
+# By default, running this target (as 'make deb') will build binary packages
+# which you'll have to sign with your PGP key. You can change this by setting
+# the DEBUILD_FLAGS variable accordingly (e.g., 'make deb DEBUILD_FLAGS=-S'
+# will only create the source package, adding '-us -uc' skips the signing
+# step, etc.). See debuild(1) for details.
+
+# If you're running this from repository sources, it will create a Debian
+# package from these, with the appropriate patches against the release
+# tarball. In this case, maintainers should update debian/changelog
+# accordingly. If there is no corresponding release tarball (usually because
+# the version number has been bumped), you'll have to provide a corresponding
+# .orig tarball yourself (see above). In this case it is a good idea to pick a
+# version number which clearly indicates that the package was built from
+# repository sources.
 
 # name of the pristine tarball
 debsrc = $(shell echo $(dist) | sed -e 's/-$(version)/_$(version)/').orig.tar.gz
