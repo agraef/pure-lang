@@ -182,6 +182,7 @@ config/config.guess config/config.sub config/install-sh \
 $(SOURCE) $(EXTRA_SOURCE) w3centities.c strptime.c pure.cc pure_norl.cc \
 pure_main.c pure.1 pure.txt puretut.txt install-docs.sh run-tests.in \
 run-test.in pure.pc.in etc/pure-mode.el.in etc/pure.* etc/gpure.lang \
+debian/* \
 examples/COPYING examples/Makefile.in examples/*.pure examples/*.purerc \
 examples/*.c examples/*.f90 examples/libor/COPYING examples/libor/*.pure \
 examples/bitcode/Makefile examples/bitcode/*.c examples/bitcode/*.f90 \
@@ -391,7 +392,7 @@ uninstall-elc:
 date = $(shell date "+%B %-d, %Y")
 datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > $(2)
 
-distdirs = config etc examples examples/bitcode examples/hellomod examples/libor lib test
+distdirs = config debian etc examples examples/bitcode examples/hellomod examples/libor lib test
 dist: $(addprefix $(srcdir)/, $(filter-out test/%.log, $(DISTFILES)))
 	rm -rf $(dist)
 	mkdir $(dist)
@@ -409,6 +410,23 @@ distcheck: dist
 	  && $(MAKE) check \
 	  && $(MAKE) install DESTDIR=./BUILD
 	rm -rf $(dist)
+
+# create a Debian package (this requires special tools like debuild)
+
+# name of the pristine tarball
+debsrc = $(shell echo $(dist) | sed -e 's/-$(version)/_$(version)/').orig.tar.gz
+
+# NOTE: You may set DEBUILD_FLAGS as needed. E.g., -S will only create the
+# source package, -us -uc skips the signing step, etc.
+
+deb: $(debsrc) dist
+	tar xfz $(dist).tar.gz
+	cd $(dist) && debuild $(DEBUILD_FLAGS)
+	rm -rf $(dist)
+
+# grab the pristine tarball
+$(debsrc):
+	wget -nv http://pure-lang.googlecode.com/files/$(dist).tar.gz -O $@
 
 # test logs, make check
 
