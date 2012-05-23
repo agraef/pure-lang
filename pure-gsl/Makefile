@@ -49,7 +49,7 @@ CFLAGS = -g -O2
 
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
-DISTFILES = COPYING Makefile README config.guess examples/*.pure gsl/*.pure gsl.c gsl.pure
+DISTFILES = COPYING Makefile README config.guess debian/* examples/*.pure gsl/*.pure gsl.c gsl.pure
 
 all: gsl$(DLL)
 
@@ -71,7 +71,7 @@ uninstall:
 
 dist:
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/examples && mkdir $(dist)/gsl
+	mkdir $(dist) && mkdir $(dist)/debian && mkdir $(dist)/examples && mkdir $(dist)/gsl
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
@@ -81,6 +81,16 @@ distcheck: dist
 	tar xfz $(dist).tar.gz
 	cd $(dist) && make && make install DESTDIR=./BUILD
 	rm -rf $(dist)
+
+debsrc = $(shell echo $(dist) | sed -e 's/-$(version)/_$(version)/').orig.tar.gz
+
+deb: $(debsrc) dist
+	tar xfz $(dist).tar.gz
+	cd $(dist) && debuild $(DEBUILD_FLAGS)
+	rm -rf $(dist)
+
+$(debsrc):
+	wget -nv http://pure-lang.googlecode.com/files/$(dist).tar.gz -O $@
 
 # Generate the documentation from the library sources.
 # Keep the files in order of the GSL manual Chapter order.
