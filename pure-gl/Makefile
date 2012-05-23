@@ -58,8 +58,8 @@ modules = GL.pure GL_ARB.pure GL_EXT.pure GL_NV.pure GL_ATI.pure \
 GLU.pure GLUT.pure
 c-modules = $(patsubst %.pure,%.c,$(modules))
 
-DISTFILES = COPYING Makefile README config.guess gl.templ examples/*.pure \
-examples/*.jpg examples/flexi-line/*.pure \
+DISTFILES = COPYING Makefile README config.guess gl.templ debian/* \
+examples/*.pure examples/*.jpg examples/flexi-line/*.pure \
 GL/all_gl.h GL/all_gl_freeglut.h $(modules) $(c-modules)
 SEDFILES = README
 
@@ -107,7 +107,7 @@ datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > 
 
 dist:
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/examples $(dist)/examples/flexi-line $(dist)/GL
+	mkdir $(dist) && mkdir $(dist)/debian && mkdir $(dist)/examples $(dist)/examples/flexi-line $(dist)/GL
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	for x in $(SEDFILES); do rm -f $(dist)/$$x; $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
 	rm -f $(dist).tar.gz
@@ -118,6 +118,18 @@ distcheck: dist
 	tar xfz $(dist).tar.gz
 	cd $(dist) && make && make install DESTDIR=./BUILD
 	rm -rf $(dist)
+
+# Debian packaging
+
+debsrc = $(shell echo $(dist) | sed -e 's/-$(version)/_$(version)/').orig.tar.gz
+
+deb: $(debsrc) dist
+	tar xfz $(dist).tar.gz
+	cd $(dist) && debuild $(DEBUILD_FLAGS)
+	rm -rf $(dist)
+
+$(debsrc):
+	wget -nv http://pure-lang.googlecode.com/files/$(dist).tar.gz -O $@
 
 #############################################################################
 # Generator stuff. You only need this if you want to regenerate the wrappers.
