@@ -66,7 +66,7 @@ check:
 
 # Roll a distribution tarball.
 
-distfiles = Makefile README COPYING check_script *.pure *.hpp *.cpp doc/*.pdf
+distfiles = Makefile README COPYING check_script *.pure *.hpp *.cpp doc/*.pdf debian/*
 sedfiles = README
 dist = pure-$(pkgname)-$(version)
 date = $(shell date "+%B %-d, %Y")
@@ -76,6 +76,7 @@ dist:
 	rm -rf $(dist)
 	mkdir $(dist)
 	mkdir $(dist)/doc
+	mkdir $(dist)/debian
 	for x in $(distfiles); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	for x in $(sedfiles); do rm -f $(dist)/$$x; \
                               $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
@@ -89,3 +90,13 @@ distcheck: dist
 	tar xfz $(dist).tar.gz
 	cd $(dist) && $(MAKE) && $(MAKE) check
 	rm -rf $(dist)
+
+debsrc = $(shell echo $(dist) | sed -e 's/-$(version)/_$(version)/').orig.tar.gz
+
+deb: $(debsrc) dist
+	tar xfz $(dist).tar.gz
+	cd $(dist) && debuild $(DEBUILD_FLAGS)
+	rm -rf $(dist)
+
+$(debsrc):
+	wget -nv http://pure-lang.googlecode.com/files/$(dist).tar.gz -O $@
