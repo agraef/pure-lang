@@ -14,7 +14,7 @@ endif
 # instead of $(prefix).
 libdir = $(prefix)/lib
 
-distfiles = COPYING COPYING.LESSER Makefile gplot.pure gplot_test.pure
+distfiles = COPYING COPYING.LESSER Makefile gplot.pure gplot_test.pure debian/*
 
 all:
 	@echo "Try 'make install' to install, 'make uninstall' to uninstall the package."
@@ -33,8 +33,18 @@ uninstall:
 
 dist:
 	rm -rf $(dist)
-	mkdir $(dist)
+	mkdir $(dist) && mkdir $(dist)/debian
 	for x in $(distfiles); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
 	rm -rf $(dist)
+
+debsrc = $(shell echo $(dist) | sed -e 's/-$(version)/_$(version)/').orig.tar.gz
+
+deb: $(debsrc) dist
+	tar xfz $(dist).tar.gz
+	cd $(dist) && debuild $(DEBUILD_FLAGS)
+	rm -rf $(dist)
+
+$(debsrc):
+	wget -nv http://pure-lang.googlecode.com/files/$(dist).tar.gz -O $@
