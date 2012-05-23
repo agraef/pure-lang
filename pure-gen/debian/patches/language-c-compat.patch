@@ -1,0 +1,23 @@
+Author: Albert Graef <Dr.Graef@t-online.de>
+Description: The upstream sources assume the latest and greatest Language.C,
+ roll back the relevant changes so that we can use Language.C 3.x and early
+ 4.x versions instead.
+--- pure-gen-0.15.orig/dump-ast.hs
++++ pure-gen-0.15/dump-ast.hs
+@@ -147,13 +147,12 @@ instance Dump CExtDecl where
+   dump (CFDefExt cFunDef)  = parens $ "CFDefExt "++ dump cFunDef
+   -- The version of CAsmExt in the repository has an additional second
+   -- argument. Uncomment this if needed.
+-  dump (CAsmExt cStrLit _) = parens $ "CAsmExt " ++ dump cStrLit
+-  --dump (CAsmExt cStrLit) = parens $ "CAsmExt " ++ dump cStrLit
++  --dump (CAsmExt cStrLit _) = parens $ "CAsmExt " ++ dump cStrLit
++  dump (CAsmExt cStrLit) = parens $ "CAsmExt " ++ dump cStrLit
+ 
+ cDeclFile (CDecl _ _ nodeInfo) =
+   case fileOfNode nodeInfo of
+-    Nothing -> ""
+-    Just filePath -> "\"" ++ filePath ++ "\""
++    filePath -> "\"" ++ filePath ++ "\""
+ 
+ -- | C function definition (C99 6.9.1, K&R A10.1)
+ --

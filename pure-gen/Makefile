@@ -35,7 +35,8 @@ EXE = .exe
 endif
 
 DISTFILES = COPYING ChangeLog Makefile config.guess README README.dump-ast \
-dump-ast.hs pure-gen.pure pure-gen.1 pure-gen.txt run-tests examples/*.templ
+dump-ast.hs pure-gen.pure pure-gen.1 pure-gen.txt run-tests debian/* \
+examples/*.templ
 
 all: pure-gen dump-ast
 
@@ -85,7 +86,7 @@ uninstall:
 
 dist:
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/examples
+	mkdir $(dist) && mkdir $(dist)/debian && mkdir $(dist)/examples
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
@@ -95,3 +96,13 @@ distcheck: dist
 	tar xfz $(dist).tar.gz
 	cd $(dist) && make && make check && make install DESTDIR=./BUILD
 	rm -rf $(dist)
+
+debsrc = $(shell echo $(dist) | sed -e 's/-$(version)/_$(version)/').orig.tar.gz
+
+deb: $(debsrc) dist
+	tar xfz $(dist).tar.gz
+	cd $(dist) && debuild $(DEBUILD_FLAGS)
+	rm -rf $(dist)
+
+$(debsrc):
+	wget -nv http://pure-lang.googlecode.com/files/$(dist).tar.gz -O $@
