@@ -1,0 +1,15 @@
+Author: Albert Graef <Dr.Graef@t-online.de>
+Description: Eliminate some extra libs to prevent packaging tools from
+ bailing out with missing symbols error.
+diff --git a/pure-glpk/Makefile b/pure-glpk/Makefile
+--- pure-glpk.orig/Makefile
++++ pure-glpk/Makefile
+@@ -59,7 +59,7 @@
+ all: glpk$(DLL)
+ 
+ glpk$(DLL): glpk.c
+-	$(CC) $(shared) -o $@ $< $(FLAGS) $(ODBCLIB) -lglpk -lpure -lgmp -lltdl -lz $(LIBS)
++	$(CC) $(shared) -o $@ $< $(FLAGS) -lglpk -lpure -lgmp $(LIBS)
+ 
+ clean:
+ 	rm -f *$(DLL) *~ *.a *.o
