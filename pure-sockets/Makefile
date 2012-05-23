@@ -40,8 +40,8 @@ endif
 libdir = $(prefix)/lib
 
 # Anything listed below will also be included in the tarball. Adjust as needed.
-extradirs = examples
-extradist = examples/*.pure
+extradirs = examples debian
+extradist = examples/*.pure debian/*
 
 # Distribution files for dist and distcheck targets below.
 distfiles = COPYING COPYING.LESSER Makefile README config.guess $(source) $(extradist)
@@ -109,3 +109,13 @@ distcheck: dist
 	tar xfz $(dist).tar.gz
 	cd $(dist) && make && make install DESTDIR=./BUILD
 	rm -rf $(dist)
+
+debsrc = $(shell echo $(dist) | sed -e 's/-$(version)/_$(version)/').orig.tar.gz
+
+deb: $(debsrc) dist
+	tar xfz $(dist).tar.gz
+	cd $(dist) && debuild $(DEBUILD_FLAGS)
+	rm -rf $(dist)
+
+$(debsrc):
+	wget -nv http://pure-lang.googlecode.com/files/$(dist).tar.gz -O $@
