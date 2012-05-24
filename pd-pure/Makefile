@@ -97,7 +97,7 @@ endif
 override CPPFLAGS += -I$(pdincludedir)
 
 DISTFILES = COPYING Makefile README config.guess pure.c \
-examples/*.pure examples/*.pd examples/*.el \
+debian/* examples/*.pure examples/*.pd examples/*.el \
 examples/lib/Makefile examples/lib/*.pure examples/lib/*.c examples/lib/*.pd
 SEDFILES = README
 
@@ -126,7 +126,7 @@ datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > 
 
 dist:
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/examples && mkdir $(dist)/examples/lib
+	mkdir $(dist) && mkdir $(dist)/debian && mkdir $(dist)/examples && mkdir $(dist)/examples/lib
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	for x in $(SEDFILES); do rm -f $(dist)/$$x; $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
 	rm -f $(dist).tar.gz
@@ -137,3 +137,13 @@ distcheck: dist
 	tar xfz $(dist).tar.gz
 	cd $(dist) && make && make install DESTDIR=./BUILD
 	rm -rf $(dist)
+
+debsrc = $(shell echo $(dist) | sed -e 's/-$(version)/_$(version)/').orig.tar.gz
+
+deb: $(debsrc) dist
+	tar xfz $(dist).tar.gz
+	cd $(dist) && debuild $(DEBUILD_FLAGS)
+	rm -rf $(dist)
+
+$(debsrc):
+	wget -nv http://pure-lang.googlecode.com/files/$(dist).tar.gz -O $@
