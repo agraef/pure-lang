@@ -25,7 +25,7 @@ version = 0.4
 
 DISTFILES = COPYING COPYING.LESSER Makefile Makefile.config.in Makefile.config \
 Makefile.common README TODO config.guess *.pure etc/*.el etc/*.pd \
-examples/*.pd examples/midi/*.mid examples/osc/*.osc \
+debian/* examples/*.pd examples/midi/*.mid examples/osc/*.osc \
 examples/dsp/README* examples/dsp/Makefile \
 examples/dsp/*.dsp examples/dsp/*.lib examples/dsp/*.h \
 lib/Makefile lib/*.c lib/*.dsp lib/*.pure
@@ -66,7 +66,7 @@ datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > 
 
 dist:
 	rm -rf $(dist)
-	for x in $(dist) $(addprefix $(dist)/, etc lib examples $(addprefix examples/, dsp midi osc)); do mkdir $$x; done
+	for x in $(dist) $(addprefix $(dist)/, debian etc lib examples $(addprefix examples/, dsp midi osc)); do mkdir $$x; done
 	for x in $(DISTFILES); do ln -sf "$$PWD"/$$x $(dist)/$$x; done
 	for x in $(SEDFILES); do rm -f $(dist)/$$x; $(call datesubst,"$$PWD"/$$x,$(dist)/$$x); done
 	rm -f $(dist).tar.gz
@@ -77,3 +77,13 @@ distcheck: dist
 	tar xfz $(dist).tar.gz
 	cd $(dist) && make && make install DESTDIR=./BUILD
 	rm -rf $(dist)
+
+debsrc = $(shell echo $(dist) | sed -e 's/-$(version)/_$(version)/').orig.tar.gz
+
+deb: $(debsrc) dist
+	tar xfz $(dist).tar.gz
+	cd $(dist) && debuild $(DEBUILD_FLAGS)
+	rm -rf $(dist)
+
+$(debsrc):
+	wget -nv http://pure-lang.googlecode.com/files/$(dist).tar.gz -O $@
