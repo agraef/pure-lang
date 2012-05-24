@@ -54,7 +54,7 @@ LO_CFLAGS = $(shell pkg-config --cflags liblo) $(shell pkg-config --atleast-vers
 LO_LIBS = $(shell pkg-config --libs liblo)
 
 DISTFILES = COPYING COPYING.LESSER Makefile README config.guess \
-examples/*.pure lo.c lo.pure lo-add.c lo-add.pure osc.pure
+debian/* examples/*.pure lo.c lo.pure lo-add.c lo-add.pure osc.pure
 SEDFILES = README
 
 all: lo$(DLL)
@@ -77,7 +77,7 @@ datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > 
 
 dist:
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/examples
+	mkdir $(dist) && mkdir $(dist)/debian && mkdir $(dist)/examples
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	for x in $(SEDFILES); do rm -f $(dist)/$$x; $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
 	rm -f $(dist).tar.gz
@@ -88,6 +88,16 @@ distcheck: dist
 	tar xfz $(dist).tar.gz
 	cd $(dist) && make && make install DESTDIR=./BUILD
 	rm -rf $(dist)
+
+debsrc = $(shell echo $(dist) | sed -e 's/-$(version)/_$(version)/').orig.tar.gz
+
+deb: $(debsrc) dist
+	tar xfz $(dist).tar.gz
+	cd $(dist) && debuild $(DEBUILD_FLAGS)
+	rm -rf $(dist)
+
+$(debsrc):
+	wget -nv http://pure-lang.googlecode.com/files/$(dist).tar.gz -O $@
 
 #############################################################################
 # Generator stuff. You only need this if you want to regenerate the wrappers.
