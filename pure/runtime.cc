@@ -7618,7 +7618,7 @@ pure_expr *pure_pointerval(pure_expr *x)
   switch (x->tag) {
   case EXPR::PTR:	return x;
   case EXPR::STR:	return pure_pointer(x->data.s);
-  case EXPR::INT:	return pure_pointer((void*)x->data.i);
+  case EXPR::INT:	return pure_pointer((void*)(intptr_t)x->data.i);
   case EXPR::BIGINT:
     if (sizeof(mp_limb_t) == 8)
 #if SIZEOF_VOID_P==8
