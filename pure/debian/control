@@ -2,8 +2,7 @@ Source: pure
 Section: devel
 Priority: extra
 Maintainer: Albert Graef <Dr.Graef@t-online.de>
-Build-Depends: debhelper (>= 7.0.50~), autotools-dev, bison, flex,
- llvm-3.1-dev | llvm-3.0-dev | llvm-2.9-dev | llvm-2.8-dev | llvm-dev,
+Build-Depends: debhelper (>= 7.0.50~), autotools-dev, bison, flex, llvm-dev,
  libgmp3-dev, libmpfr-dev, libreadline6-dev, emacs
 Standards-Version: 3.9.1
 Homepage: http://pure-lang.googlecode.com
@@ -38,7 +37,7 @@ Description: Functional programming language based on term rewriting
 
 Package: pure-dev
 Architecture: any
-Depends: libpure8 (= ${binary:Version}), libgmp3-dev, libmpfr-dev,
+Depends: libpure8 (= ${binary:Version}), libgmp3-dev, libmpfr-dev, llvm,
  ${misc:Depends}
 Description: Functional programming language based on term rewriting
  Pure is a modern-style functional programming language based on term
@@ -48,7 +47,9 @@ Description: Functional programming language based on term rewriting
  interface. The interpreter uses LLVM as a backend to JIT-compile Pure
  programs to fast native code.
  .
- This package contains the development files (headers and libraries).
+ This package contains the development files (headers and libraries). These
+ are needed for batch compilation of Pure programs and for developing addon
+ modules. The batch compiler also requires the LLVM toolchain.
 
 Package: pure-elisp
 Architecture: any
@@ -62,3 +63,112 @@ Description: Functional programming language based on term rewriting
  programs to fast native code.
  .
  This package contains the Pure Emacs mode.
+
+# Metapackages to pull in the various Pure-related packages.
+
+Package: pure-base
+Architecture: all
+Depends: ${misc:Depends}, pure, pure-dev, pure-elisp
+Description: Functional programming language based on term rewriting
+ Pure is a modern-style functional programming language based on term
+ rewriting. It offers equational definitions with pattern matching, full
+ symbolic rewriting capabilities, dynamic typing, eager and lazy evaluation,
+ lexical closures, built-in list and matrix support and an easy-to-use C
+ interface. The interpreter uses LLVM as a backend to JIT-compile Pure
+ programs to fast native code.
+ .
+ This is a dependency package which provides the basic parts of the Pure
+ system (interpreter, runtime, standard library, development files and Emacs
+ mode), i.e., everything that's needed for basic Pure development.
+
+Package: pure-util
+Architecture: all
+Depends: ${misc:Depends}, pure-doc, pure-gen, pure-ffi, pure-readline,
+ pure-sockets, pure-stldict, pure-stllib
+Description: Functional programming language based on term rewriting
+ Pure is a modern-style functional programming language based on term
+ rewriting. It offers equational definitions with pattern matching, full
+ symbolic rewriting capabilities, dynamic typing, eager and lazy evaluation,
+ lexical closures, built-in list and matrix support and an easy-to-use C
+ interface. The interpreter uses LLVM as a backend to JIT-compile Pure
+ programs to fast native code.
+ .
+ This is a dependency package which provides basic support utilities and
+ libraries. At the time of this writing, this comprises the pure-doc and
+ pure-gen utilities, as well as the ffi, readline, sockets and STL container
+ interfaces.
+
+Package: pure-math
+Architecture: all
+Depends: ${misc:Depends}, pure-glpk, pure-gplot, pure-gsl, pure-mpfr,
+ pure-octave, pure-rational
+Description: Functional programming language based on term rewriting
+ Pure is a modern-style functional programming language based on term
+ rewriting. It offers equational definitions with pattern matching, full
+ symbolic rewriting capabilities, dynamic typing, eager and lazy evaluation,
+ lexical closures, built-in list and matrix support and an easy-to-use C
+ interface. The interpreter uses LLVM as a backend to JIT-compile Pure
+ programs to fast native code.
+ .
+ This is a dependency package which provides the interfaces to various 3rd
+ party mathematical software (GLPK, GSL, MPFR, Octave, Gnuplot). It also
+ includes Jiri Spitz' Pure port of Rob Hubbard's rational number library.
+
+Package: pure-web
+Architecture: all
+Depends: ${misc:Depends}, pure-csv, pure-fastcgi, pure-odbc, pure-sql3,
+ pure-xml
+Description: Functional programming language based on term rewriting
+ Pure is a modern-style functional programming language based on term
+ rewriting. It offers equational definitions with pattern matching, full
+ symbolic rewriting capabilities, dynamic typing, eager and lazy evaluation,
+ lexical closures, built-in list and matrix support and an easy-to-use C
+ interface. The interpreter uses LLVM as a backend to JIT-compile Pure
+ programs to fast native code.
+ .
+ This is a dependency package which provides the interfaces for database and
+ web programming (CSV, ODBC, SQLite3, FastCGI, XML).
+
+Package: pure-graphics
+Architecture: all
+Depends: ${misc:Depends}, pure-g2, pure-gl, pure-gtk, pure-tk
+Description: Functional programming language based on term rewriting
+ Pure is a modern-style functional programming language based on term
+ rewriting. It offers equational definitions with pattern matching, full
+ symbolic rewriting capabilities, dynamic typing, eager and lazy evaluation,
+ lexical closures, built-in list and matrix support and an easy-to-use C
+ interface. The interpreter uses LLVM as a backend to JIT-compile Pure
+ programs to fast native code.
+ .
+ This is a dependency package which provides the interfaces for GUI and
+ graphics programming (G2, OpenGL, GTK+, Tcl/Tk).
+
+Package: pure-multimedia
+Architecture: all
+Depends: ${misc:Depends}, pure-g2, pure-gl, pure-gtk, pure-tk
+Description: Functional programming language based on term rewriting
+ Pure is a modern-style functional programming language based on term
+ rewriting. It offers equational definitions with pattern matching, full
+ symbolic rewriting capabilities, dynamic typing, eager and lazy evaluation,
+ lexical closures, built-in list and matrix support and an easy-to-use C
+ interface. The interpreter uses LLVM as a backend to JIT-compile Pure
+ programs to fast native code.
+ .
+ This is a dependency package which provides Pure's multimedia library, which
+ covers the audio, OSC and MIDI interfaces, as well as utilities and libraries
+ for interfacing with Faust and Pd (Pure Data).
+
+Package: pure-complete
+Architecture: all
+Depends: ${misc:Depends}, pure-base, pure-util, pure-math, pure-web,
+ pure-graphics, pure-multimedia
+Description: Functional programming language based on term rewriting
+ Pure is a modern-style functional programming language based on term
+ rewriting. It offers equational definitions with pattern matching, full
+ symbolic rewriting capabilities, dynamic typing, eager and lazy evaluation,
+ lexical closures, built-in list and matrix support and an easy-to-use C
+ interface. The interpreter uses LLVM as a backend to JIT-compile Pure
+ programs to fast native code.
+ .
+ This is a dependency package which provides the complete Pure programming
+ environment including all available addon modules.
