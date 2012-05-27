@@ -3690,7 +3690,7 @@ pure_interp *pure_create_interp(int argc, char *argv[])
   char base;
   interpreter *_interp = new interpreter(0, 0), &interp = *_interp;
   int count = 0;
-  bool want_prelude = true, have_prelude = false;
+  bool want_prelude = true;
   // We use some stuff which is not safe to call while another interpreter is
   // active, so we temporarily switch to the new interpreter now.
   interpreter *s_interp = interpreter::g_interp;
@@ -3876,7 +3876,6 @@ pure_interp *pure_create_interp(int argc, char *argv[])
   if (want_prelude) {
     // load the prelude if we can find it
     if (chkfile(prelude)) {
-      have_prelude = true;
       try { interp.run(prelude, false); } catch (err &e) {
 	cerr << "pure_create_interp: " << e.what() << endl;
 	delete _interp;
@@ -17002,9 +17001,9 @@ static pure_expr *faust_make_meta(list<strpair>& m)
   pure_expr **xv = (pure_expr**)malloc(n*sizeof(pure_expr*));
   pure_expr *f = pure_symbol(pure_sym("=>"));
   assert(f && xv);
-  list<strpair>::iterator it = m.begin(), end = m.end();
+  list<strpair>::iterator it = m.begin();
   for (size_t i = 0; i < n; i++, it++) {
-    assert(it != end);
+    assert(it != m.end());
     xv[i] = pure_appl(f, 2,
 		      pure_cstring_dup(it->first),
 		      pure_cstring_dup(it->second));

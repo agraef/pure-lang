@@ -2955,8 +2955,6 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
       for (list<env_sym>::const_iterator it = l.begin();
 	   it != l.end(); ++it) {
 	const symbol& sym = *it->sym;
-	int32_t ftag = sym.f;
-	map<int32_t,Env>::iterator fenv = interp.globalfuns.find(ftag);
 	const env::const_iterator _it = it->it, _jt = it->jt, _kt = it->kt;
 	const extmap::const_iterator _xt = it->xt;
 	if (yflag && _kt != interp.typeenv.end() &&
@@ -3225,8 +3223,6 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
       for (list<env_sym>::const_iterator it = l.begin();
 	   it != l.end(); ++it) {
 	const symbol& sym = *it->sym;
-	int32_t ftag = sym.f;
-	map<int32_t,Env>::iterator fenv = interp.globalfuns.find(ftag);
 	const env::const_iterator _it = it->it, _jt = it->jt, _kt = it->kt;
 	if (_it != interp.globenv.end() &&
 	    (_it->second.t == env_info::fvar||

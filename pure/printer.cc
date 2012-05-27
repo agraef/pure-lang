@@ -853,7 +853,7 @@ static prec_t pure_expr_nprec(const pure_expr *x)
     if (pure_is_list(x))
       return NPREC_MAX;
     else {
-      const pure_expr *u = x->data.x[0], *v = x->data.x[1], *w;
+      const pure_expr *u = x->data.x[0], *v = x->data.x[1];
       prec_t p;
       if (u->tag > 0 &&
 	  interpreter::g_interp->symtab.sym(u->tag).fix == outfix)
@@ -864,7 +864,7 @@ static prec_t pure_expr_nprec(const pure_expr *x)
 	// unary (prefix, postfix)
 	return p;
       else if (u->tag == EXPR::APP) {
-	v = u->data.x[0]; w = u->data.x[1];
+	v = u->data.x[0];
 	if (v->tag > 0 && (p = sym_nprec(v->tag)) < NPREC_MAX && prec(p) < 3)
 	  // binary (infix, infixl, infixr)
 	  return p;

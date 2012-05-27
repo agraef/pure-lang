@@ -733,7 +733,7 @@ static char *
 pstr(char *s1, const char *s2)
 {
   char *s;
-  const char *t;
+  const char *t = 0;
 
   *s1 = '\0';
   for (s = s1; *s2; s2 = t) {
