@@ -35,8 +35,8 @@ EXE = .exe
 endif
 
 DISTFILES = COPYING ChangeLog Makefile config.guess README README.dump-ast \
-dump-ast.hs pure-gen.pure pure-gen.1 pure-gen.txt run-tests debian/* \
-examples/*.templ
+dump-ast.hs dump-ast-old.hs pure-gen.pure pure-gen.1 pure-gen.txt run-tests \
+debian/* examples/*.templ
 
 all: pure-gen dump-ast
 
