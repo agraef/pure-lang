@@ -1,7 +1,7 @@
 
 # GNU Makefile to compile the examples in this directory to native executables.
 
-GTK_LIBS = $(shell pkg-config --libs gtk+-2.0)
+GTK_LIBS = $(shell pkg-config --libs gtk+-2.0 | sed -e s/-pthread//g)
 
 progs = tk_hello tk_examp earth uiexample
 
