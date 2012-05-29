@@ -129,7 +129,7 @@ pure-loader/boot.c pure-loader/pure-gnumeric.c pure-loader/pure-gnumeric.h \
 pure-loader/pure-loader.c pure-loader/pure-loader.h \
 pure-loader/plugin.xml pure-loader/pure-ui.xml \
 pure-func/*.pure pure-func/plugin.xml \
-pure-glfunc/*.pure pure-glfunc/plugin.xml examples/*.gnumeric
+pure-glfunc/*.pure pure-glfunc/plugin.xml examples/*.gnumeric debian/*
 SEDFILES = README
 
 all: pure-loader/pure_loader$(DLL)
@@ -171,7 +171,7 @@ datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > 
 
 dist:
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/doc && mkdir $(dist)/examples && mkdir $(dist)/pure-func $(dist)/pure-glfunc && mkdir $(dist)/pure-loader
+	mkdir $(dist) && mkdir $(dist)/doc && mkdir $(dist)/debian && mkdir $(dist)/examples && mkdir $(dist)/pure-func $(dist)/pure-glfunc && mkdir $(dist)/pure-loader
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	for x in $(SEDFILES); do rm -f $(dist)/$$x; $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
 	rm -f $(dist).tar.gz
@@ -182,3 +182,13 @@ distcheck: dist
 	tar xfz $(dist).tar.gz
 	cd $(dist) && make && make install DESTDIR=./BUILD
 	rm -rf $(dist)
+
+debsrc = $(shell echo $(dist) | sed -e 's/-$(version)/_$(version)/').orig.tar.gz
+
+deb: $(debsrc) dist
+	tar xfz $(dist).tar.gz
+	cd $(dist) && debuild $(DEBUILD_FLAGS)
+	rm -rf $(dist)
+
+$(debsrc):
+	wget -nv http://pure-lang.googlecode.com/files/$(dist).tar.gz -O $@
