@@ -11657,7 +11657,7 @@ llvm_const_Type *interpreter::named_type(string name)
     throw err("unknown C type '"+name+"'");
 }
 
-const char *interpreter::type_name(llvm_const_Type *type)
+string interpreter::type_name(llvm_const_Type *type)
 {
   if (type == void_type())
     return "void";
@@ -11728,7 +11728,7 @@ const char *interpreter::type_name(llvm_const_Type *type)
   else if (type == GSLIntMatrixPtrTy)
     return "imatrix*";
   else if (is_pointer_type(type))
-    return pointer_type_name(type).c_str();
+    return pointer_type_name(type);
   else
     return "<unknown C type>";
 }
@@ -11762,7 +11762,7 @@ static bool struct_type_eq(llvm_const_Type *type, llvm_const_Type *type2)
   return false;
 }
 
-const char *interpreter::bctype_name(llvm_const_Type *type)
+string interpreter::bctype_name(llvm_const_Type *type)
 {
   /* This is basically like type_name above, but we need to give special
      treatment to some pointer types (Pure expressions, GSL matrices) which
@@ -11820,7 +11820,7 @@ const char *interpreter::bctype_name(llvm_const_Type *type)
   return type_name(type);
 }
 
-const char *interpreter::dsptype_name(llvm_const_Type *type)
+string interpreter::dsptype_name(llvm_const_Type *type)
 {
   /* Special version of bctype_name for Faust modules. This doesn't have the
      Pure expression and GSL matrix types, but instead we map i8* to void*. */

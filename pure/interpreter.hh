@@ -1184,9 +1184,9 @@ public:
   }
 
   llvm_const_Type *named_type(string name);
-  const char *type_name(llvm_const_Type *type);
-  const char *bctype_name(llvm_const_Type *type);
-  const char *dsptype_name(llvm_const_Type *type);
+  string type_name(llvm_const_Type *type);
+  string bctype_name(llvm_const_Type *type);
+  string dsptype_name(llvm_const_Type *type);
   bool compatible_types(llvm_const_Type *type1, llvm_const_Type *type2);
   llvm_const_Type *gslmatrix_type(llvm_const_Type *elem_ty,
 				  llvm_const_Type *block_ty,
