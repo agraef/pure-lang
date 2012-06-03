@@ -2516,6 +2516,16 @@ static string lang_tag(string &code, string &modname)
 #define WEXITSTATUS(w) (w)
 #endif
 
+// On some systems the LLVM toolchain gets installed into special directories
+// so that multiple LLVM versions can coexist on the same system. We take care
+// of that here.
+
+#ifndef TOOL_PREFIX
+#define TOOL_PREFIX ""
+#endif
+
+static string tool_prefix = TOOL_PREFIX;
+
 void interpreter::inline_code(bool priv, string &code)
 {
   // Get the language tag and configure accordingly.
@@ -2602,7 +2612,7 @@ void interpreter::inline_code(bool priv, string &code)
     const char *pure_cc = getenv(env);
     if (!pure_cc) pure_cc = drv;
     // Quick and dirty hack to make inlining work with dragonegg, which can't
-    // generate bitcode files directly, so llvm-asm must be used. FIXME: This
+    // generate bitcode files directly, so llvm-as must be used. FIXME: This
     // currently works only if the plugin is really named "dragonegg" and is
     // named explicitly on the command line.
     string ext = ".bc";
@@ -2625,7 +2635,7 @@ void interpreter::inline_code(bool priv, string &code)
     if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
       if (ext == ".ll") {
 	// Invoke llvm-as to translate intermediate assembler to real bitcode.
-	string cmd = "llvm-as "+bcname+" -o "+bcname2;
+	string cmd = tool_prefix+"llvm-as "+bcname+" -o "+bcname2;
 	if (vflag) std::cerr << cmd << '\n';
 	status = system(cmd.c_str());
 	if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
@@ -10580,8 +10590,9 @@ int interpreter::compiler(string out, list<string> libnames)
     // The -disable-cfi seems to be needed on OSX as of LLVM 3.0.
     custom_opts = "-disable-cfi ";
 #endif
-    string cmd = "opt -f -std-compile-opts "+quote(target)+
-      " | llc "+custom_opts+string(pic?"-relocation-model=pic ":"")+
+    string cmd = tool_prefix+"opt -f -std-compile-opts "+quote(target)+
+      " | "+tool_prefix+"llc "+custom_opts+
+      string(pic?"-relocation-model=pic ":"")+
       "-o "+quote(asmfile);
     if (vflag) std::cerr << cmd << '\n';
     unlink(asmfile.c_str());

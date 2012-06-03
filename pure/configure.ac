@@ -143,6 +143,17 @@ AC_ARG_WITH(static-llvm,
   [case "${withval}" in
      yes) static_llvm_libs="yes" ;;
    esac])
+dnl How to find the LLVM tools.
+TOOL_PREFIX=""
+AC_ARG_WITH(tool-prefix,
+  [  --with-tool-prefix      prefix under which the LLVM toolchain is installed],
+  [case "${withval}" in
+     no)  ;;
+     yes) ;;
+     *)   TOOL_PREFIX="${withval}/" ;;
+   esac])
+AC_SUBST(TOOL_PREFIX)
+AC_DEFINE_UNQUOTED(TOOL_PREFIX, "${TOOL_PREFIX}", [Define to the prefix under which the LLVM toolchain is installed.])
 dnl How to link GMP/MPIR.
 pure_cv_gmp="gmp"
 AC_ARG_WITH(mpir,
@@ -326,6 +337,7 @@ Pure ${PACKAGE_VERSION} is now configured for LLVM ${llvm_version} on ${host}.
   C compiler:           $CC $CFLAGS $CPPFLAGS
   C++ compiler:         $CXX $CXXFLAGS $CPPFLAGS
   Linker:               $CXX $LDFLAGS $LIBS
+  LLVM tool prefix:     ${TOOL_PREFIX}
   Readline support:	$rllib
   Build libpure:        $sharedlib
   fastcc/TCO support:   $fastcc
