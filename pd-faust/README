@@ -178,7 +178,8 @@ The ``fdsp~`` object is invoked as follows::
    integer to be specified in hexadecimal, octal or binary.
 
 The ``fdsp~`` object requires a Faust dsp which can work as an effect unit,
-processing audio input and producing audio output.
+processing audio input and producing audio output. The unit can have as many
+audio input and output channels as you like (including zero).
 
 The ``fsynth~`` object works in a similar fashion, but has an additional
 creation argument specifying the desired number of voices::
@@ -186,8 +187,11 @@ creation argument specifying the desired number of voices::
   fsynth~ dspname instname channel numvoices
 
 The ``fsynth~`` object requires a Faust dsp which can work as a monophonic
-synthesizer (having zero audio inputs and a nonzero number of audio outputs).
-To these ends, pd-faust assumes that the Faust unit provides three so-called
+synthesizer. This typically means that the unit has zero audio inputs and a
+nonzero number of audio outputs, although it is possible to have synths
+processing any number of audio input channels as well. (You can even have
+synths producing zero audio outputs, but this is generally not very useful.)
+In addition, pd-faust assumes that the Faust unit provides three so-called
 "voice controls" which indicate which note to play:
 
 * ``freq`` is the fundamental frequency of the note in Hz.
@@ -201,7 +205,8 @@ To these ends, pd-faust assumes that the Faust unit provides three so-called
 
 pd-faust doesn't care at which path inside the Faust dsp these controls are
 located, but they must all be there, and the basenames of the controls must be
-unique throughout the entire dsp.
+unique throughout the entire dsp. Otherwise the synth will not work as
+expected.
 
 Like :doc:`faust2pd<faust2pd>`, pd-faust implements the necessary logic to
 drive the given number of voices of an ``fsynth~`` object. That is, it will
