@@ -16,12 +16,15 @@
 # path (gcc -print-file-name=plugin).
 dragonegg=dragonegg
 
-CC = llvm-gcc -emit-llvm
-#CC = gcc -fplugin=dragonegg -flto
+#CC = llvm-gcc -emit-llvm
+CC = gcc -fplugin=dragonegg -flto
 #CC = clang -emit-llvm
-FC = llvm-gfortran -emit-llvm
-#FC = gfortran -fplugin=dragonegg -flto
+#FC = llvm-gfortran -emit-llvm
+FC = gfortran -fplugin=dragonegg -flto
 FAUST = faust -double -lang llvm
+
+# Where the LLVM toolchain (llvm-as et al) is located:
+LLVMBIN = $(shell pkg-config pure --variable tool_prefix)
 
 # Prerequisites:
 
@@ -86,7 +89,7 @@ endif
 
 # fallback rule to generate LLVM bitcode from assembler
 %.bc: %.ll
-	-llvm-as $< -o $@
+	-$(LLVMBIN)llvm-as $< -o $@
 
 # compile C source to LLVM assembler
 %.ll: %.c
