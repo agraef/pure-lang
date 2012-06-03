@@ -191,7 +191,7 @@ gtk$(DLL): gtk.c
 
 gtk.pure gtk.c:
 	pure-gen $(PGFLAGS) $(GTK_INCLUDES) -s '$(gtkdir)/gdk*/*.h;' -p gdk -m gdk -o gtk.pure -c gtk.c -fc-auto $(gtkdir)/gdk/gdk.h $(GTK_DLLS)
-	pure-gen $(PGFLAGS) -N $(GTK_INCLUDES) -s '$(gtkdir)/gtk/*.h;' -p gtk -m gtk -fc-auto $(gtkdir)/gtk/gtk.h
+	pure-gen $(PGFLAGS) -N $(GTK_INCLUDES) -s '$(gtkdir)/gtk/*.h;' -x '^ubuntu_' -p gtk -m gtk -fc-auto $(gtkdir)/gtk/gtk.h
 	sed -e 's|#include \"$(gtkdir)/\(\([A-Za-z-]\+/\)\?[A-Za-z-]\+\.h\)\"|#include <\1>|g' < gtk.c > gtk.c.new && rm gtk.c && mv gtk.c.new gtk.c
 
 # glib et al
