@@ -1,10 +1,26 @@
 2012-06-03  Albert Graef  <Dr.Graef@t-online.de>
 
-	* configure.ac, interpreter.cc: Add a configure option
-	--with-tool-prefix which allows to specify the prefix for the LLVM
-	toolchain. Some systems such as Mac OSX and Ubuntu may have these
-	installed under different prefixes, so that several LLVM versions
-	can coexist on the same system.
+	* configure.ac, interpreter.cc: Add some options to deal with
+	systems such as Mac OSX and Ubuntu which may have the LLVM
+	toolchain and configure script installed under different prefixes,
+	so that several LLVM versions can coexist on the same system.
+
+	First, the configure option --with-tool-prefix allows to specify
+	the prefix for the LLVM toolchain. This option, if specified, is
+	also used to locate the llvm-config script, so that the proper
+	LLVM version is selected.
+
+	Second, the --with-llvm-version option allows to set the desired
+	LLVM version, in which case configure tries to locate the
+	llvm-config-<version> script on the PATH (after trying the tool
+	prefix, if specified). If this option isn't specified, we default
+	to looking for the llvm-config script on the PATH, which matches
+	the behaviour in previous releases.
+
+	If none of these yield a usable llvm-config script, we fall back
+	to trying llvm-config-<version> for recent LLVM versions,
+	preferring the latest version if found. Otherwise we give up and
+	print an error message.
 
 2012-05-22  Albert Graef  <Dr.Graef@t-online.de>
 

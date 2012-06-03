@@ -143,6 +143,16 @@ AC_ARG_WITH(static-llvm,
   [case "${withval}" in
      yes) static_llvm_libs="yes" ;;
    esac])
+dnl Which LLVM version to link against (default: latest version). This
+dnl requires that you have the llvm-config-<version> script on your PATH.
+llvm_config_pre="llvm-config"
+AC_ARG_WITH(llvm-version,
+  [  --with-llvm-version     force LLVM version to link against],
+  [case "${withval}" in
+     no)  ;;
+     yes) ;;
+     *)   llvm_config_pre="llvm-config-${withval}" ;;
+   esac])
 dnl How to find the LLVM tools.
 TOOL_PREFIX=""
 AC_ARG_WITH(tool-prefix,
@@ -150,7 +160,9 @@ AC_ARG_WITH(tool-prefix,
   [case "${withval}" in
      no)  ;;
      yes) ;;
-     *)   TOOL_PREFIX="${withval}/" ;;
+     *)   TOOL_PREFIX="${withval}/";
+     	  llvm_config_pre="${withval}/llvm-config ${llvm_config_pre}";
+	  ;;
    esac])
 AC_SUBST(TOOL_PREFIX)
 AC_DEFINE_UNQUOTED(TOOL_PREFIX, "${TOOL_PREFIX}", [Define to the prefix under which the LLVM toolchain is installed.])
@@ -217,7 +229,7 @@ if test $fastcc = yes; then
 fi
 
 dnl Check for LLVM (try various LLVM versions).
-AC_CHECK_PROGS(LLVMCONF,[llvm-config llvm-config-3.1 llvm-config-3.0 llvm-config-2.9 llvm-config-2.8 llvm-config-2.7 llvm-config-2.6 llvm-config-2.5],no)
+AC_CHECK_PROGS(LLVMCONF,[${llvm_config_pre} llvm-config-3.1 llvm-config-3.0 llvm-config-2.9 llvm-config-2.8 llvm-config-2.7 llvm-config-2.6 llvm-config-2.5],no,"$PATH:/")
 if test "$LLVMCONF" = no; then
   AC_MSG_ERROR([Cannot find LLVM.])
 fi
