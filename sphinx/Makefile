@@ -186,7 +186,10 @@ docsdir = ../../pure-lang-docs
 $(docsdir)/Makefile: docs/Makefile.in Makefile
 	sed -e 's/@version@/$(version)/g' < $< > $@
 
-update: alldocs $(docsdir)/Makefile
+$(docsdir)/debian/changelog: debian/changelog
+	cp $< $@
+
+update: alldocs $(docsdir)/Makefile $(docsdir)/debian/changelog
 	rm -rf $(addprefix $(docsdir)/, _images _sources _static $(htmlfiles) $(pdffiles))
 	cp -r $(addprefix $(BUILDDIR)/, $(addprefix html/, _images _sources _static $(htmlfiles)) $(addprefix latex/, $(pdffiles))) $(docsdir)
 
