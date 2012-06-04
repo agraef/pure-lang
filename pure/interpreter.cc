@@ -2458,18 +2458,18 @@ bool interpreter::LoadBitcode(bool priv, const char *name, string *msg)
    - "-*- c -*-" (or "-*- C -*-", case is insignificant in the language label)
      selects the C language, which is also the default. The command with which
      the compiler is to be invoked can be set with the PURE_CC environment
-     variable, by default this is llvm-gcc (or clang if it was used to compile
-     Pure). The necessary options to switch llvm-gcc to bitcode output are
-     supplied automatically.
+     variable, by default this is clang. The necessary options to switch
+     the compiler to bitcode output are supplied automatically.
 
-   - "-*- c++ -*-" selects C++ (PURE_CXX environment variable, llvm-g++ or
-     clang++ by default).
+   - "-*- c++ -*-" selects C++ (PURE_CXX environment variable, clang++ by
+     default).
 
    - "-*- fortran -*-" selects Fortran (PURE_FC environment variable,
-     llvm-gfortran by default). Optionally, the fortran tag may be followed by
-     a two-digit sequence denoting the desired Fortran standard (as of this
-     writing, gfortran recognizes the Fortran 90, 95, 03 and 08 standards). If
-     this is omitted, the default is old-style (fixed form) Fortran.
+     gfortran -fplugin=dragonegg by default). Optionally, the fortran tag may
+     be followed by a two-digit sequence denoting the desired Fortran standard
+     (as of this writing, gfortran recognizes the Fortran 90, 95, 03 and 08
+     standards). If this is omitted, the default is old-style (fixed form)
+     Fortran.
 
    - "-*- dsp:name -*-" selects Faust (PURE_FAUST environment variable, faust
      by default), where 'name' denotes the name of the Faust dsp, which is
@@ -2534,26 +2534,18 @@ void interpreter::inline_code(bool priv, string &code)
   char *asmargs = 0;
   if (tag == "c") {
     env = "PURE_CC";
-#if __clang__
     drv = "clang";
-#else
-    drv = "llvm-gcc";
-#endif
     args = " -x c -emit-llvm -c ";
   } else if (tag == "c++") {
     env = "PURE_CXX";
-#if __clang__
     drv = "clang++";
-#else
-    drv = "llvm-g++";
-#endif
     args = " -x c++ -emit-llvm -c ";
   } else if (tag.compare(0, 7, "fortran") == 0) {
     string std = tag.substr(7);
     if (!std.empty() &&
 	std != "90" && std != "95" && std != "03" && std != "08")
       throw err("unknown Fortran dialect in inline code (try one of 90, 95, 03, 08)");
-    env = "PURE_FC"; drv = "llvm-gfortran";
+    env = "PURE_FC"; drv = "gfortran -fplugin=dragonegg";
     // gfortran doesn't understand -x, so we have to do some trickery with
     // filename extensions instead.
     args = " -emit-llvm -c "; ext = ".f"+std;
@@ -2611,10 +2603,10 @@ void interpreter::inline_code(bool priv, string &code)
     // Invoke the compiler.
     const char *pure_cc = getenv(env);
     if (!pure_cc) pure_cc = drv;
-    // Quick and dirty hack to make inlining work with dragonegg, which can't
-    // generate bitcode files directly, so llvm-as must be used. FIXME: This
-    // currently works only if the plugin is really named "dragonegg" and is
-    // named explicitly on the command line.
+    // Quick and dirty hack to make inlining work with dragonegg, which at
+    // present can't generate bitcode files directly, so llvm-as must be
+    // used. FIXME: This currently works only if the plugin is really named
+    // "dragonegg" and is named explicitly on the command line.
     string ext = ".bc";
     if (strstr(pure_cc, "dragonegg")) {
       ext = ".ll";
