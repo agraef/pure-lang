@@ -247,10 +247,17 @@ gplp_load_base(GOPluginLoader *loader, GOErrorInfo **ret_error)
   GnmPurePluginLoader *loader_pure = GNM_PURE_PLUGIN_LOADER(loader);
   const char *modname = loader_pure->module_name;
   const char *dir = go_plugin_get_dir_name(go_plugin_loader_get_plugin(loader));
-  gchar *script, *path;
-
-  script = g_strconcat(modname, ".pure", NULL);
-  path = g_build_filename(dir, script, NULL);
+  const char *homedir = g_getenv("HOME");
+  gchar *path;
+  if (!homedir) homedir = g_get_home_dir();
+  /* We expand ~ here, other non-absolute paths are taken relative to the
+     plugin directory. */
+  if (strncmp(modname, "~/", 2) == 0)
+    path = g_build_filename(homedir, modname+2, NULL);
+  else if (g_path_is_absolute(modname))
+    path = g_strdup(modname);
+  else
+    path = g_build_filename(dir, modname, NULL);
   if (g_file_test(path, G_FILE_TEST_EXISTS)) {
     if (!interp) {
       // First invocation, create an interpreter instance.
@@ -266,24 +273,30 @@ gplp_load_base(GOPluginLoader *loader, GOErrorInfo **ret_error)
     if (!interp)
       *ret_error = go_error_info_new_printf(_("** Error creating Pure interpreter."));
     else {
+      gchar *cwd = g_get_current_dir(), *dir = g_path_get_dirname(path);
       gchar *cmdbuf = g_strdup_printf("using \"%s\";\n", path);
+      /* Plugin scripts get loaded in the directory of the script, so that
+	 they can find other files that they may need. We also record that we
+	 have loaded the script so that it can be edited and reloaded later. */
+      g_chdir(dir);
       // FIXME: This only prints errors on stderr right now.
       pure_evalcmd(cmdbuf);
-      g_free(cmdbuf);
+      g_chdir(cwd); g_free(cmdbuf); g_free(dir); g_free(cwd);
       modnames = g_list_append(modnames, path);
     }
   } else {
-    *ret_error = go_error_info_new_printf(_("** Couldn't find \"%s\"."), script);
+    *ret_error = go_error_info_new_printf(_("** Couldn't find \"%s\"."), path);
   }
-  g_free(script);
 }
 
 static void pure_reload_script(gpointer data, gpointer unused)
 {
   const char *path = (const char*)data;
+  gchar *cwd = g_get_current_dir(), *dir = g_path_get_dirname(path);
   gchar *cmdbuf = g_strdup_printf("using \"%s\";\n", path);
+  g_chdir(dir);
   pure_evalcmd(cmdbuf);
-  g_free(cmdbuf);
+  g_chdir(cwd); g_free(cmdbuf); g_free(dir); g_free(cwd);
 }
 
 #ifndef _WIN32
