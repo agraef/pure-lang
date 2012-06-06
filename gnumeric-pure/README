@@ -312,7 +312,7 @@ as follows:
       <require_explicit_enabling/>
     </information>
     <loader type="Gnumeric_PureLoader:pure">
-      <attribute value="gnumeric" name="module_name"/>
+      <attribute name="module_name" value="gnumeric.pure"/>
     </loader>
     <services>
       <service type="function_group" id="my_pure_func">
@@ -325,16 +325,40 @@ as follows:
     </services>
   </plugin>
 
+.. note:: As indicated here, the plugin script is usually in the same
+   directory as the plugin.xml file, but this isn't required. Instead you can
+   also specify the script file using an absolute path, a path relative to
+   your home directory (indicated with the tilde ``~`` prefix) or a path
+   relative to the directory with the plugin.xml file, using the
+   ``module_name`` attribute of the ``<loader>`` tag. Also note that the Pure
+   script is always executed in its own directory (even if it different from
+   the directory with the plugin.xml file) so that it can locate imported
+   scripts and other files that it may need in a convenient fashion.
+
 The following steps are needed to tell Gnumeric about your new Pure plugin:
 
 * Open the Directories tab in the Tools/Plug-ins dialog and check that the
   ``/some/path/pure`` directory is in your plugin search path. Add it if
-  necessary, and restart Gnumeric after that. (Note that you really have to
-  add the *parent* directory ``/some/path/pure``, not
-  ``/some/path/pure/gnumeric`` itself.)
+  necessary and restart Gnumeric after that. Note that you really have to add
+  the *parent* directory ``/some/path/pure``, not ``/some/path/pure/gnumeric``
+  itself, because each Gnumeric plugin directory may in fact contain as many
+  subdirectories with plugins as you like. Also note that this step can also
+  be avoided if you place your plugin directory into the appropriate
+  ``~/.gnumeric/<version>/plugins`` directory instead, since Gnumeric will
+  search that directory by default.
 
 * The new plugin should now be listed as "My Pure functions" on the Plugin
-  List tab in the Tools/Plug-ins dialog. Check it to enable it.
+  List tab in the Tools/Plug-ins dialog. Check it to enable it. The functions
+  defined in the plugin should now be available, and you can create a new
+  worksheet (or load an existing one) which makes use of these functions.
+
+.. note:: One little quirk here is that, as already mentioned, changes in the
+   plugin configuration generally require a restart of Gnumeric to take
+   effect. A common mishap is that you open a workbook without having enabled
+   the plugins it uses. An easily visible symptom of that is that you'll see
+   lots of cells showing the ``#NAME`` error. You will then have to enable
+   those plugins *and* reload the workbook afterwards, so that everything is
+   recalculated properly.
 
 The Pure loader can load multiple Pure plugins. You only need to tell Gnumeric
 about them after creating the scripts and plugin.xml files and placing them
@@ -351,8 +375,15 @@ Gnumeric/Pure Interface
 By default, when a Pure function is called from Gnumeric, it receives its
 arguments in a list. However, it is possible to tell Gnumeric about the
 expected arguments of the function and also specify a help text to be
-displayed in the "f(x)" dialog, by giving a definition of the special
-``gnm_info`` function as explained below.
+displayed in the "f(x)" dialog, by giving a definition of the ``gnm_info``
+function as explained below.
+
+Note that ``gnm_info`` is really an ordinary Pure function. Thus, rather than
+hardcoding this information as static text, the function descriptions can also
+be constructed dynamically using arbitrary Pure code. This offers an
+opportunity for programmatic customizations, but note that the ``gnm_info``
+function will only be invoked once for each function when the plugin script is
+loaded.
 
 Function Descriptions
 ---------------------
@@ -964,7 +995,7 @@ screenshot below shows how the example looks like in Gnumeric.
 Copying
 =======
 
-Copyright (c) 2009 by Albert Graef.
+Copyright (c) 2009-2012 by Albert Graef.
 
 Gnumeric/Pure is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
