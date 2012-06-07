@@ -335,13 +335,26 @@ void pure_reload(GnmAction const *action, WorkbookControl *wbc)
   }
 }
 
+static void pure_edit_script(gpointer data, gpointer user_data)
+{
+  const char *path = (const char*)data;
+  gchar **files = (gchar**)user_data;
+  gchar *new_files = *files ? g_strdup_printf("%s \"%s\"", *files, path) :
+    g_strdup_printf("\"%s\"", path);
+  if (*files) g_free(*files);
+  *files = new_files;
+}
+
 void pure_edit(GnmAction const *action, WorkbookControl *wbc)
 {
   GList *current = g_list_last(modnames);
   if (current) {
-    const char *path = (const char*)current->data;
     const char *editor = getenv("EDITOR");
-    gchar *cmdbuf = g_strdup_printf("%s \"%s\" &", editor?editor:"emacs", path);
+    gchar *cmdbuf = g_strdup_printf("%s", editor?editor:"emacs");
+    g_list_foreach(modnames, pure_edit_script, &cmdbuf);
+    cmdbuf = g_realloc(cmdbuf, strlen(cmdbuf)+3);
+    if (!cmdbuf) return;
+    strcat(cmdbuf, " &");
     if (system(cmdbuf) == -1) perror("system");
     g_free(cmdbuf);
   }
