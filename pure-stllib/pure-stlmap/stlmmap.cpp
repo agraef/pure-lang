@@ -97,7 +97,7 @@ static bool insert_aux(smm* smmp, px* kv, pmmi& pos, int& inserted)
   try {
     if (smmp->keys_only) {
       inserted++;
-      pos = smmp->mmp.insert(pxhpair(kv,0));    
+      pos = smmp->mmp.insert(pxhpair(kv,pxh(0)));
     }
     else {
       ok = extract_kv(smmp,kv,k,v);
