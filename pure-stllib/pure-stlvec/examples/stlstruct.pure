@@ -291,9 +291,9 @@ type struct (STRUCT _ _ );
 
 nonfix struct_error;
 
-extern expr* stl_sv_get(void* vec, int pos) = sv_get;
+extern expr* stl_sv_get(void* vec, int pos);
 
-extern void  stl_sv_put(void* vec, int pos, expr* val) = sv_put;
+extern expr* stl_sv_put(void* vec, int pos, expr* val);
 
 struct_err msg = throw (struct_error msg);
 
@@ -301,7 +301,7 @@ struct_sv xs = sentry stl_sv_delete (stl_sv_make_from_xs xs);
 
 struct_dup sv = sentry stl_sv_delete (stl_sv_dup (STRUCT sv));
 
-struct_put sv i x = sv_put sv i x $$ sv;
+struct_put sv i x = stl_sv_put sv i x $$ sv;
 
 
 /* Bootstrapped stlstruct To Hold Field Info *********************************/
@@ -319,13 +319,13 @@ field_def (stl::STRUCT field_def sv) = stl::STRUCT field_def (stl::struct_dup sv
 field_def v@{p0:: string,p1:: string,p2:: string,p3:: string} = stl::STRUCT field_def (stl::struct_sv v);
 field_def xs = stl::STRUCT field_def (stl::struct_sv xs) if ~vectorp xs && #xs == 4;
 field_def _ = throw ::bad_argument;
-fnamespace (stl::STRUCT field_def v) = stl::sv_get v 0;
+fnamespace (stl::STRUCT field_def v) = stl::stl_sv_get v 0;
 set_fnamespace (stl::STRUCT field_def sv) x:: string = stl::STRUCT field_def (stl::struct_put sv 0 x);
-fname (stl::STRUCT field_def v) = stl::sv_get v 1;
+fname (stl::STRUCT field_def v) = stl::stl_sv_get v 1;
 set_fname (stl::STRUCT field_def sv) x:: string = stl::STRUCT field_def (stl::struct_put sv 1 x);
-ftype (stl::STRUCT field_def v) = stl::sv_get v 2;
+ftype (stl::STRUCT field_def v) = stl::stl_sv_get v 2;
 set_ftype (stl::STRUCT field_def sv) x:: string = stl::STRUCT field_def (stl::struct_put sv 2 x);
-faccess (stl::STRUCT field_def v) = stl::sv_get v 3;
+faccess (stl::STRUCT field_def v) = stl::stl_sv_get v 3;
 set_faccess (stl::STRUCT field_def sv) x:: string = stl::STRUCT field_def (stl::struct_put sv 3 x);
 
 /* Functions To Parse defstruct And Generate Code *****************************/
@@ -424,7 +424,7 @@ with
     cd = if indexed then
           "const " + name + "_" + fldname + " = " + str ndx 
          else
-           qfname + " (" + constr_name + " v) = stl::sv_get v " + str ndx;
+           qfname + " (" + constr_name + " v) = stl::stl_sv_get v " + str ndx;
     eval_code print cd;
     if faccess fdef == readonly_tag then ()
     else if mutable then
@@ -466,7 +466,7 @@ def defstruct_code name fields =
 
 struct_name (STRUCT name _) = str name; 
 
-// (::!) (STRUCT _ sv) ndx::int = stl::sv_get sv ndx;
+// (::!) (STRUCT _ sv) ndx::int = stl::stl_sv_get sv ndx;
 
 namespace ;
 
