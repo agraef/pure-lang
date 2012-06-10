@@ -17,7 +17,7 @@ installdir  = $(addprefix $(DESTDIR), $(libdir)/pure)
 MOD_CXXFLAGS = $(PIC) $(shell pkg-config pure --cflags) $(CFLAGS) $(CPPFLAGS)
 MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS)
 
-CFLAGS = -g -O2
+CFLAGS = -g -O2 -Wall -Wextra
 
 ifeq "$(DLL)" ".dylib"
 # OSX may need this (untested)
