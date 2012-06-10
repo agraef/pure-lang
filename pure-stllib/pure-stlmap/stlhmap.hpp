@@ -85,10 +85,10 @@ extern "C" {
   px*  stl_shm_get(sh* shp, px* key);
   px*  stl_shm_find(px* pxshp, px* key, int what);
   int  stl_shm_insert(px* pxshp, px* src, bool replace);
-  px*  stl_shm_insert_stlhmap(px* pxshp, bool replace);
+  int  stl_shm_insert_stlhmap(px* pxshp1, px* pxshp2, bool replace);
   int  stl_shm_insert_stlvec(px* pxshp, sv* svp, bool replace);
   px*  stl_shm_replace(stlhmap* pmap, px* key, px* val);
-  px*  stl_shm_swap(px* pxshp1, px* pxshp2);
+  void stl_shm_swap(px* pxshp1, px* pxshp2);
   int  stl_shm_clear(px* pxshp);
   int  stl_shm_erase(px* pxshp, px* trg); 
 

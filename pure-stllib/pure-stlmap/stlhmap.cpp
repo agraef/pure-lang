@@ -127,7 +127,7 @@ static bool get_shp(px* pxshp, sh** shpp)
 
 static px* get_elm_aux(sh* shp, pxhmapi i, int what) 
 {
-  px* ret;
+  px* ret = 0;
   pxhmap &hm = shp->hm; 
   if (i != hm.end()) {
     switch (what) {
@@ -194,7 +194,6 @@ px* stl_shm_copy(px* pxshp)
 {
   sh* shp;
   if (!get_shp(pxshp,&shp) ) bad_argument();
-  pxhmap& hm = shp->hm;
   sh* cpy = new sh(*shp);
   cpy->refc_elms();
   return px_pointer( cpy );
@@ -232,7 +231,7 @@ int stl_shm_bucket_size(px* pxshp, int i)
   sh* shp;
   if (!get_shp(pxshp,&shp) ) bad_argument();
   pxhmap& hm = shp->hm;
-  if (i<0 || i>=hm.bucket_count()) bad_argument();
+  if (i<0 || i>=(int)hm.bucket_count()) bad_argument();
   return  hm.bucket_size(i);
 }
 
@@ -286,11 +285,10 @@ int stl_shm_insert(px* pxshp, px* src, bool replace)
   if (!get_shp(pxshp,&shp) ) bad_argument();
   size_t sz = 0;
   px** elms = NULL;
-  bool ok;
   int num_inserted = 0;
   try {
     if (pure_is_listv(src, &sz, &elms)) {
-      for (int i = 0; i<sz; i++) {
+      for (size_t i = 0; i<sz; i++) {
         if ( !insert_aux(shp, elms[i], pos, num_inserted, replace) )
           bad_argument();
       }
@@ -298,7 +296,7 @@ int stl_shm_insert(px* pxshp, px* src, bool replace)
     } else if (matrix_type(src) == 0) {
       sz = matrix_size(src); 
       px** hmelms = (pure_expr**) pure_get_matrix_data(src);
-      for (int i = 0; i<sz; i++) {
+      for (size_t i = 0; i<sz; i++) {
         if ( !insert_aux(shp, hmelms[i], pos, num_inserted, replace) ) 
           bad_argument();
       }
@@ -363,17 +361,7 @@ int stl_shm_insert_stlvec(px* pxshp, sv* svp, bool replace)
   return num_inserted;
 }
 
-px*  stl_shm_insert_stlhmap(px* pxshp, bool replace)
-{
-  sh* shp;
-  if (!get_shp(pxshp,&shp) ) bad_argument();
-  pxhmap& hm = shp->hm;
-  sh* cpy = new sh(*shp);
-  cpy->refc_elms();
-  return px_pointer( cpy );
-}
-
-px*  stl_shm_swap(px* pxshp1, px* pxshp2)
+void stl_shm_swap(px* pxshp1, px* pxshp2)
 {
   sh* shp1; sh* shp2;
   if ( !get_shp(pxshp1, &shp1) ) failed_cond();
@@ -531,7 +519,7 @@ px* stl_shm_listcatmap(px* fun, px* pxshp, int what)
       if (res) pure_freenew(res);
       bad_argument();      
     }
-    for (int j = 0; j < sz; j++) {
+    for (size_t j = 0; j < sz; j++) {
       px* last = pure_app(pure_app(cons,elms[j]),nl);
       if (res==nl)
         res = y = last;    
