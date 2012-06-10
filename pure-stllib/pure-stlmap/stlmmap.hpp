@@ -27,12 +27,12 @@ typedef pxhmmap::iterator pmmi;
 struct smm_iter;
 
 struct stlmmap {
-  bool keys_only;
-  bool has_dflt;
   pxhmmap mmp;
+  bool keys_only;
   pxh px_comp;
   pxh px_val_comp;
   pxh px_val_equal;
+  bool has_dflt;
   pxh dflt;
   std::vector<smm_iter*> smis; // smm_iters in Pure land
 
@@ -69,9 +69,9 @@ struct smm_range {
 };
 
 struct smm_iter {
-  bool is_valid;
-  pmmi iter;
   pxh pxhsmmp;
+  pmmi iter;
+  bool is_valid;
 
   smm_iter(px* pxsmmp, pmmi i);
   ~smm_iter();
@@ -111,7 +111,7 @@ extern "C" {
   int  stl_smm_insert_stlmmap(px* pxsmmp, px* tpl);
   int  stl_smm_insert_stlvec(px* pxsmmp, sv* svp);
   px*  stl_smm_replace(px* pxsmmp, px* key, px* src, bool strict);
-  px*  stl_smm_swap(px* pxsmmp1, px* pxsmmp2);
+  void stl_smm_swap(px* pxsmmp1, px* pxsmmp2);
   int  stl_smm_clear(px* pxsmmp);
   int  stl_smm_erase(px* pxsmmp, px* trg); 
 
