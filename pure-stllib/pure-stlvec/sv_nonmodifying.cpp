@@ -34,60 +34,69 @@ void stl_sva_for_each(px* tpl, px* unary_fun)
 
 int stl_sva_find_if(px* tpl, px* pred)
 {
+  int res = 0;
   pxh_pred1 fun(pred);
   sv_range rng(tpl);
   if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   try {
-    svi res = find_if(rng.beg(), rng.end(), fun);
-    return iter_pos(rng.vec, res);
+    svi res_it = find_if(rng.beg(), rng.end(), fun);
+    res = iter_pos(rng.vec, res_it);
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 int  stl_sva_find_first_of(px* tpl1, px* tpl2, px* comp)
 {
+  int res = 0;
   pxh_pred2 fun(comp);
   sv_range rng1(tpl1);
   sv_range rng2(tpl2);
   if (!rng1.is_valid || rng1.num_iters != 2) bad_argument();
   if (!rng2.is_valid || rng2.num_iters != 2) bad_argument();
   try {
-    svi res = find_first_of(rng1.beg(), rng1.end(),
-                            rng2.beg(), rng2.end(), fun);
-    return iter_pos(rng1.vec, res);
+    svi res_it = find_first_of(rng1.beg(), rng1.end(),
+                               rng2.beg(), rng2.end(), fun);
+    res = iter_pos(rng1.vec, res_it);
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 int stl_sva_adjacent_find(px* tpl, px* comp)
 {
+  int res = 0;
   pxh_pred2 fun(comp);
   sv_range rng(tpl);
   if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   try {
-    svi res = adjacent_find(rng.beg(), rng.end(), fun);
-    return iter_pos(rng.vec, res);
+    svi res_it = adjacent_find(rng.beg(), rng.end(), fun);
+    res = iter_pos(rng.vec, res_it);
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
-int  stl_sva_count_if(px* tpl, px* unary_pred)
+int stl_sva_count_if(px* tpl, px* unary_pred)
 {
+  int res = 0;
   pxh_pred1 fun(unary_pred);
   sv_range rng(tpl);
   if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   try {
-    return count_if(rng.beg(), rng.end(), fun);
+    res = count_if(rng.beg(), rng.end(), fun);
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
-px*  stl_sva_mismatch(px* tpl1, px* tpl2, px* comp)
+px* stl_sva_mismatch(px* tpl1, px* tpl2, px* comp)
 {
+  px* res = 0;
   pxh_pred2 fun(comp);
   sv_range rng1(tpl1);
   sv_range rng2(tpl2);
@@ -100,10 +109,11 @@ px*  stl_sva_mismatch(px* tpl1, px* tpl2, px* comp)
     svi svi_j = res_pair.second;
     int i = iter_pos(rng1.vec, svi_i);
     int j = iter_pos(rng2.vec, svi_j);
-    return pure_tuplel(2, pure_int(i), pure_int(j));
+    res = pure_tuplel(2, pure_int(i), pure_int(j));
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 bool stl_sva_equal(px* tpl1, px* tpl2, px* comp)
@@ -113,44 +123,50 @@ bool stl_sva_equal(px* tpl1, px* tpl2, px* comp)
 
 int stl_sva_search(px* tpl1, px* tpl2, px* comp)
 {
+  int res = 0;
   pxh_pred2 fun(comp);
   sv_range rng1(tpl1);
   sv_range rng2(tpl2);
   if (!rng1.is_valid || rng1.num_iters != 2) bad_argument();
   if (!rng2.is_valid || rng2.num_iters != 2) bad_argument();
   try {
-    svi res = search(rng1.beg(), rng1.end(), rng2.beg(), rng2.end(), fun);
-    return iter_pos(rng1.vec, res);
+    svi res_it = search(rng1.beg(), rng1.end(), rng2.beg(), rng2.end(), fun);
+    res = iter_pos(rng1.vec, res_it);
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
-int  stl_sva_search_n(px* tpl, int count, px* val,  px* comp)
+int stl_sva_search_n(px* tpl, int count, px* val,  px* comp)
 {
+  int res = 0;
   pxh_pred2 fun(comp);
   pxh value(val);
   sv_range rng(tpl);
   if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   try {
-    svi res = search_n(rng.beg(), rng.end(), count, value, fun);
-    return iter_pos(rng.vec, res);
+    svi res_it = search_n(rng.beg(), rng.end(), count, value, fun);
+    res = iter_pos(rng.vec, res_it);
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
-int  stl_sva_find_end(px* tpl1, px* tpl2, px* comp)
+int stl_sva_find_end(px* tpl1, px* tpl2, px* comp)
 {
+  int res = 0;
   pxh_pred2 fun(comp);
   sv_range rng1(tpl1);
   sv_range rng2(tpl2);
   if (!rng1.is_valid || rng1.num_iters != 2) bad_argument();
   if (!rng2.is_valid || rng2.num_iters != 2) bad_argument();
   try {
-    svi res = find_end(rng1.beg(), rng1.end(), rng2.beg(), rng2.end(), fun);
-    return iter_pos(rng1.vec, res);
+    svi res_it = find_end(rng1.beg(), rng1.end(), rng2.beg(), rng2.end(), fun);
+    res = iter_pos(rng1.vec, res_it);
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }

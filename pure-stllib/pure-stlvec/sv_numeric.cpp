@@ -23,25 +23,27 @@ using namespace std;
 
 px*  stl_sva_accumulate(px* tpl, px* val, px* bin_op)
 {
+  px* res = 0;
   pxh_fun2 fun(bin_op);
   pxh valh(val);
   sv_range rng1(tpl);
   if (!rng1.is_valid || rng1.num_iters != 2) bad_argument();
   try {
     pxh resh = accumulate(rng1.beg(), rng1.end(), valh, fun);
-    px* res = resh.pxp();
+    res = resh.pxp();
     resh.release();
     pure_unref(res);
-    return res;
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
-px*  stl_sva_inner_product(px* tpl1,
-                       px* tpl2, px* val,
-                       px* bin_op1, px* bin_op2)
+px* stl_sva_inner_product(px* tpl1,
+                          px* tpl2, px* val,
+                          px* bin_op1, px* bin_op2)
 {
+  px* res = 0;
   pxh_fun2 fun1(bin_op1);
   pxh_fun2 fun2(bin_op2);
   pxh valh(val);
@@ -53,13 +55,13 @@ px*  stl_sva_inner_product(px* tpl1,
     if (rng1.size() > rng2.size()) range_overflow();
     pxh resh = inner_product(rng1.beg(), rng1.end(), rng2.beg(),
                              valh, fun1, fun2);
-    px* res = resh.pxp();
+    res = resh.pxp();
     resh.release();
     pure_unref(res);
-    return res;
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 int  stl_sva_partial_sum(px* tpl1, px* tpl2, px* bin_op)
@@ -83,10 +85,10 @@ int  stl_sva_partial_sum(px* tpl1, px* tpl2, px* bin_op)
     }
     else
       bad_argument();
-    return res;
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 int  stl_sva_adjacent_difference(px* tpl1, px* tpl2, px* bin_op)
@@ -110,10 +112,10 @@ int  stl_sva_adjacent_difference(px* tpl1, px* tpl2, px* bin_op)
     }
     else
       bad_argument();
-    return res;
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 

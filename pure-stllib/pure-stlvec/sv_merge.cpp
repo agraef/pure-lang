@@ -20,7 +20,6 @@ included with the pure-stlvec distribution package for details.
 
 using namespace std;
 
-
 int  stl_sva_merge(px* tpl1, px* tpl2, px* tpl3, px* cmp)
 {
   int res = 0;
@@ -45,10 +44,10 @@ int  stl_sva_merge(px* tpl1, px* tpl2, px* tpl3, px* cmp)
     }
     else
       bad_argument();
-    return res;
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 void stl_sva_inplace_merge(px* tpl, px* cmp)
@@ -65,16 +64,18 @@ void stl_sva_inplace_merge(px* tpl, px* cmp)
 
 bool stl_sva_includes(px* tpl1, px* tpl2, px* cmp)
 {
+  bool res = false;
   pxh_pred2 fun(cmp);
   sv_range rng1(tpl1);
   sv_range rng2(tpl2);
   if (!rng1.is_valid || rng1.num_iters != 2) bad_argument();
   if (!rng2.is_valid || rng2.num_iters != 2) bad_argument();
   try {
-    return includes(rng1.beg(),rng1.end(),rng2.beg(),rng2.end(),fun);
+    res = includes(rng1.beg(),rng1.end(),rng2.beg(),rng2.end(),fun);
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 int stl_sva_set_union(px* tpl1, px* tpl2, px* tpl3, px* cmp)
@@ -103,10 +104,10 @@ int stl_sva_set_union(px* tpl1, px* tpl2, px* tpl3, px* cmp)
     }
     else
       bad_argument();
-    return res;
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 int  stl_sva_set_intersection(px* tpl1, px* tpl2, px* tpl3, px* cmp)
@@ -134,10 +135,10 @@ int  stl_sva_set_intersection(px* tpl1, px* tpl2, px* tpl3, px* cmp)
     }
     else
       bad_argument();
-    return res;
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 int  stl_sva_set_difference(px* tpl1, px* tpl2, px* tpl3, px* cmp)
@@ -165,10 +166,10 @@ int  stl_sva_set_difference(px* tpl1, px* tpl2, px* tpl3, px* cmp)
     }
     else
       bad_argument();
-    return res;
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 int  stl_sva_set_symmetric_difference(px* tpl1, px* tpl2, px* tpl3, px* cmp)
@@ -196,8 +197,8 @@ int  stl_sva_set_symmetric_difference(px* tpl1, px* tpl2, px* tpl3, px* cmp)
     }
     else
       bad_argument();
-    return res;
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }

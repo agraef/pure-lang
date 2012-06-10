@@ -43,10 +43,10 @@ int stl_sva_copy(px* tpl1, px* tpl2)
     }
     else
       bad_argument();
-    return res;
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 int stl_sva_copy_backward(px* tpl1, px* tpl2)
@@ -66,14 +66,13 @@ int stl_sva_copy_backward(px* tpl1, px* tpl2)
     }
     else
       bad_argument();
-    return res;
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 void stl_sva_swap_ranges(px* tpl1, px* tpl2){
-  int res = 0;
   sv_range rng(tpl1);
   if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   sv_range trg(tpl2);
@@ -112,10 +111,10 @@ int  stl_sva_transform(px* tpl1, px* tpl2, px* unary_op)
     }
     else
       bad_argument();
-    return res;
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 int  stl_sva_transform_2(px* tpl1, px* tpl2, px* tpl3, px* bin_op)
@@ -142,10 +141,10 @@ int  stl_sva_transform_2(px* tpl1, px* tpl2, px* tpl3, px* bin_op)
     }
     else
       bad_argument();
-    return res;
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 void stl_sva_replace_if(px* tpl, px* pred, px* val)
@@ -182,10 +181,10 @@ int stl_sva_replace_copy_if(px* tpl1, px* tpl2, px* pred, px* val){
     }
     else
       bad_argument();
-    return res;
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 void stl_sva_fill(px* tpl, px* val)
@@ -252,14 +251,16 @@ void stl_sva_generate_n(px* tpl, int n, px* gen)
 
 int stl_sva_remove_if(px* tpl, px* pred)
 {
+  int res = 0;
   sv_range rng(tpl);
   if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   try {
     svi pei = remove_if(rng.beg(), rng.end(), pxh_pred1(pred));
-    return iter_pos(rng.vec, pei);
+    res = iter_pos(rng.vec, pei);
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 int stl_sva_remove_copy_if(px* tpl1, px* tpl2, px* pred)
@@ -286,22 +287,24 @@ int stl_sva_remove_copy_if(px* tpl1, px* tpl2, px* pred)
     }
     else
       bad_argument();
-    return res;
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 int  stl_sva_unique(px* tpl, px* bin_pred)
 {
+  int res = 0;
   sv_range rng(tpl);
   if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   try {
     svi pei = unique(rng.beg(), rng.end(), pxh_pred2(bin_pred));
-    return iter_pos(rng.vec, pei);
+    res = iter_pos(rng.vec, pei);
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 int  stl_sva_unique_copy(px* tpl1, px* tpl2, px* bin_pred)
@@ -328,10 +331,10 @@ int  stl_sva_unique_copy(px* tpl1, px* tpl2, px* bin_pred)
     }
     else
       bad_argument();
-    return res;
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 void stl_sva_reverse(px* tpl)
@@ -367,10 +370,10 @@ int  stl_sva_reverse_copy(px* tpl1, px* tpl2)
     }
     else
       bad_argument();
-    return res;
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 void stl_sva_rotate(px* tpl) 
@@ -427,26 +430,30 @@ void stl_sva_random_shuffle(px* tpl, int seed)
 
 int stl_sva_partition(px* tpl, px* pred)
 {
+  int res = 0;
   sv_range rng(tpl);
   if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   try {
     sv* v = rng.vec;
     svi mid = partition(rng.beg(), rng.end(), pxh_pred1(pred));
-    return iter_pos(v,mid);
+    res = iter_pos(v,mid);
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 int stl_sva_stable_partition(px* tpl, px* pred)
 {
+  bool res = 0;
   sv_range rng(tpl);
   if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   try {
     sv* v = rng.vec;
     svi mid = stable_partition(rng.beg(), rng.end(), pxh_pred1(pred));
-    return iter_pos(v,mid);
+    res = iter_pos(v,mid);
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }

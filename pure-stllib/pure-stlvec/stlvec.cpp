@@ -27,7 +27,7 @@ using namespace std;
 // treats svback as invalid
 static bool set_iter(sv* vec, int ndx, svi& iter)
 {
-  size_t vec_sz = vec->size();
+  int vec_sz = vec->size();
   if (ndx == svbeg)
     iter = vec->begin();
   else if (ndx == svend)
@@ -169,7 +169,7 @@ typedef sv::size_type svsize_t;
 
 static inline int ndx_ok(sv* vec, int n)
 {
-  return n >= 0 && n < vec->size();
+  return n >= 0 && n < static_cast<int>( vec->size() );
 }
 
 /*** Functions for sv vector<pxh> ***********************************/
@@ -412,7 +412,6 @@ px* stl_sv_listcatmap(px* fun, px* tpl)
   px* nl = px_null_list_sym();
   if (b>=e) return nl;
   px* exception = 0;
-  px* elm;
   px* res = 0;
   px* y = 0;
   px* *elms;
@@ -429,7 +428,7 @@ px* stl_sv_listcatmap(px* fun, px* tpl)
       if (res) pure_freenew(res);
       bad_argument();      
     }
-    for (int j = 0; j < sz; j++) {
+    for (size_t j = 0; j < sz; j++) {
       px* last = pure_app(pure_app(cons,elms[j]),nl);
       if (!res)
         res = y = last;    

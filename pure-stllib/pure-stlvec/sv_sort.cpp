@@ -81,34 +81,39 @@ void stl_sva_nth_element(px* tpl, px* cmp){
   }
 }
 
-int  stl_sva_lower_bound(px* tpl, px* val, px* cmp)
+int stl_sva_lower_bound(px* tpl, px* val, px* cmp)
 {
+  int res = 0;
   pxh_pred2 fun(cmp);
   sv_range rng(tpl);
   if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   try {
-    svi res = lower_bound(rng.beg(), rng.end(), val, fun);  
-    return iter_pos(rng.vec, res);
+    svi res_iter = lower_bound(rng.beg(), rng.end(), val, fun);  
+    res = iter_pos(rng.vec, res_iter);
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 int  stl_sva_upper_bound(px* tpl, px* val, px* cmp)
 {
+  int res = 0;
   pxh_pred2 fun(cmp);
   sv_range rng(tpl);
   if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   try {
-    svi res = upper_bound(rng.beg(), rng.end(), val, fun);  
-    return iter_pos(rng.vec, res);
+    svi res_iter = upper_bound(rng.beg(), rng.end(), val, fun);  
+    res = iter_pos(rng.vec, res_iter);
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 px*  stl_sva_equal_range(px* tpl, px* val, px* cmp)
 {
+  px* res = 0;
   pxh_pred2 fun(cmp);
   sv_range rng(tpl);
   if (!rng.is_valid || rng.num_iters != 2) bad_argument();
@@ -118,20 +123,23 @@ px*  stl_sva_equal_range(px* tpl, px* val, px* cmp)
     svi svi_j = res_pair.second;
     int i = svi_i == rng.vec->end() ? svend : svi_i - rng.vec->begin(); 
     int j = svi_j == rng.vec->end() ? svend : svi_j - rng.vec->begin(); 
-    return pure_tuplel(2, pure_int(i), pure_int(j));  
+    res = pure_tuplel(2, pure_int(i), pure_int(j));  
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 bool stl_sva_binary_search(px* tpl, px* val, px* cmp)
 {
+  bool res = false;
   pxh_pred2 fun(cmp);
   sv_range rng(tpl);
   try {
     if (!rng.is_valid || rng.num_iters != 2) bad_argument();
-    return binary_search(rng.beg(), rng.end(), val, fun);  
+    res = binary_search(rng.beg(), rng.end(), val, fun);  
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
