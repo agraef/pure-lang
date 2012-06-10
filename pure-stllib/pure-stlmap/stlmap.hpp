@@ -24,24 +24,23 @@ included with the pure-stlmap distribution package for details.
 typedef std::map<pxh,pxh,pxh_pred2> pxhmap;
 typedef pxhmap::iterator pmi;
 
-
 struct sm_iter;
 
 struct sm_key_iter {
   sm_key_iter(px* k, pmi i) : iter(i), key(k) {};
-  pxh key;
   pmi iter;
+  pxh key;
 };
 
 struct stlmap {
+  pxhmap mp;
+  pxh cache_key;
   bool keys_only;
   bool has_dflt;
-  pxhmap mp;
+  pxh dflt;
   pxh px_comp;
   pxh px_val_comp;
   pxh px_val_equal;
-  pxh dflt;
-  pxh cache_key;
   pmi cache_iter;
   std::vector<sm_iter*> smis; // sm_iters in Pure land
 
@@ -79,13 +78,13 @@ struct sm_range {
 };
 
 struct sm_iter {
-  bool is_valid;
-  pmi iter;
   pxh pxhsmp;
+  pmi iter;
+  bool is_valid;
 
   sm_iter(px* pxsmp, pmi i);
   ~sm_iter();
-  sm* smp() const; 
+  sm* smp() const;
 };
 
 /*** C interface for C++ map of PX Handles ***/
@@ -121,7 +120,7 @@ extern "C" {
   int  stl_sm_insert_stlmap(px* pxsmp, px* tpl, bool replace);
   int  stl_sm_insert_stlvec(px* pxsmp, sv* svp, bool replace);
   px*  stl_sm_replace(sm* smp, px* key, px* val);
-  px*  stl_sm_swap(px* pxsmp1, px* pxsmp2);
+  void stl_sm_swap(px* pxsmp1, px* pxsmp2);
   int  stl_sm_clear(px* pxsmp);
   int  stl_sm_erase(px* pxsmp, px* trg); 
 

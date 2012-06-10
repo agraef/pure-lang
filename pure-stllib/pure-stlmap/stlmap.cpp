@@ -47,12 +47,12 @@ static int stlmap_iter_tag()
   return t;
 }
 
-static void dump_smp(sm* smp) {
-  PR2(dump_smp,smp->keys_only,smp->has_dflt);
-  PR2(dump_smp,smp->dflt,smp->dflt.pxp()->refc);
-  PR(dump_smp,smp->cache_key);
-  PR(dump_smp,smp->mp.size());
-}
+// static void dump_smp(sm* smp) {
+//   PR2(dump_smp,smp->keys_only,smp->has_dflt);
+//   PR2(dump_smp,smp->dflt,smp->dflt.pxp()->refc);
+//   PR(dump_smp,smp->cache_key);
+//   PR(dump_smp,smp->mp.size());
+// }
 
 /*** Helpers for stlmap.cpp only ************************************/
 
@@ -188,32 +188,32 @@ static px* iter_to_key(const pxhmap& mp, const pmi& it)
 
 static px* get_elm_aux(sm* smp, pmi i, int what) 
 {
-  px* ret;
+  px* res = 0;
   pxhmap &mp = smp->mp; 
   if (i != mp.end()) {
     switch (what) {
     case stl_sm_key:
-      ret = i->first; 
+      res = i->first; 
       break;
     case stl_sm_val:
       if (smp->keys_only)
-        ret = i->first;
+        res = i->first;
       else
-        ret = i->second; 
+        res = i->second; 
       break;
     case stl_sm_elm:
       px* key = i->first;     
-      ret = smp->keys_only ? key : pxhpair_to_pxrocket(*i);
+      res = smp->keys_only ? key : pxhpair_to_pxrocket(*i);
       break;
     }
   }
   else {
     if (what==stl_sm_key)
-      ret = smend();
+      res = smend();
     else
       index_error();
   }
-  return ret;
+  return res;
 }
 
 static px* sm_foldl_aux(px* fun, px* val, const sm_range rng, pmi i,  int mode)
@@ -356,9 +356,6 @@ pmi stlmap::find(px* key)
     iter = mp.find(key);
   return iter;  
 }
-
-
-
 
 struct has_pmi {
   has_pmi(pmi _iter) : iter(_iter) {}
@@ -550,7 +547,7 @@ sm_range::sm_range(px* pmi_tuple)
   px** elems;
   pure_is_tuplev(pmi_tuple, &tpl_sz, &elems);
   try {
-    bool ok = init_from_iters(elems, tpl_sz) || init_from_keys(elems, tpl_sz);
+    init_from_iters(elems, tpl_sz) || init_from_keys(elems, tpl_sz);
   }
   catch (px* e) {
     free(elems);
@@ -699,22 +696,30 @@ px* stl_sm_end(px* pxsmp)
 
 px* stl_sm_iter_bounds(px* pxsmp, px* key, int what)
 {
+  px* res = 0;
   sm* smp;
-  sm_iter* smip;
+  px* pxsmip_l = 0;
+  px* pxsmip_r = 0;
+  pair<pmi,pmi> l_u;
   if ( !get_smp(pxsmp, &smp) ) failed_cond();
   pxhmap& mp = smp->mp;
   switch (what) {
   case stl_sm_lower_bound:
-    return px_pointer( new sm_iter(pxsmp, mp.lower_bound(key)) );
+    res = px_pointer( new sm_iter(pxsmp, mp.lower_bound(key)) );
+    break;
   case stl_sm_upper_bound:
-    return px_pointer( new sm_iter(pxsmp, mp.upper_bound(key)) );
+    res = px_pointer( new sm_iter(pxsmp, mp.upper_bound(key)) );
+    break;
   case stl_sm_equal_range:
-    pair<pmi,pmi> l_u = mp.equal_range(key);
-    px* pxsmip_l = px_pointer( new sm_iter(pxsmp, l_u.first) );
-    px* pxsmip_r = px_pointer( new sm_iter(pxsmp, l_u.second) );
-    return pure_tuplel(2, pxsmip_l, pxsmip_r);
+    l_u = mp.equal_range(key);
+    pxsmip_l = px_pointer( new sm_iter(pxsmp, l_u.first) );
+    pxsmip_r = px_pointer( new sm_iter(pxsmp, l_u.second) );
+    res = pure_tuplel(2, pxsmip_l, pxsmip_r);
+    break;
+  default:
+    bad_argument();
   }
-  bad_argument();
+  return res;
 }
 
 // valid, container, i1, i2,
@@ -759,18 +764,21 @@ px* stl_sm_move_iter(px* pxsmip, int count)
 
 px* stl_sm_iter_is_at(px* pxsmip, int where)
 {
-  px* ret;
+  px* res = 0;
   sm_iter* smip;
   int tag;
   if ( !get_smip(pxsmip,tag,&smip) || !smip->is_valid ) return 0;
   switch (where) {
   case stl_sm_at_beginning:
-    return pure_int( smip->smp()->mp.begin() == smip->iter );
+    res = pure_int( smip->smp()->mp.begin() == smip->iter );
+    break;
   case stl_sm_at_pastend:
-    return pure_int( smip->smp()->mp.end() == smip->iter );
+    res = pure_int( smip->smp()->mp.end() == smip->iter );
+    break;
   default:
     bad_argument();
   }
+  return res;
 }
 
 // fix return is_valid, container, key, val 
@@ -898,18 +906,17 @@ int stl_sm_insert(px* pxsmp, px* src, bool replace)
   if (!get_smp(pxsmp,&smp) ) bad_argument();
   size_t sz = 0;
   px** elems = NULL;
-  bool ok;
   int num_inserted = 0;
   try {
     if (pure_is_listv(src, &sz, &elems)) {
-      for (int i = 0; i<sz; i++)
+      for (size_t i = 0; i<sz; i++)
         if ( !insert_aux(smp, elems[i], pos, num_inserted, replace) ) 
           bad_argument();
       free(elems);
     } else if (matrix_type(src) == 0) {
       sz = matrix_size(src); 
       px** melems = (pure_expr**) pure_get_matrix_data(src);
-      for (int i = 0; i<sz; i++) 
+      for (size_t i = 0; i<sz; i++) 
         if ( !insert_aux(smp, melems[i], pos, num_inserted, replace) ) 
           bad_argument();
     }
@@ -925,6 +932,7 @@ int stl_sm_insert(px* pxsmp, px* src, bool replace)
 
 int stl_sm_insert_stlmap(px* pxsmp, px* tpl, bool replace)
 {
+  int num_inserted = 0; 
   sm* smp;
   if (!get_smp(pxsmp,&smp) ) bad_argument();
   sm_range rng(tpl);
@@ -932,24 +940,23 @@ int stl_sm_insert_stlmap(px* pxsmp, px* tpl, bool replace)
   if (smp == rng.smp()) bad_argument();
   try {
     if (replace) {
-      int num_inserted = 0; 
-      for (pmi i = rng.beg(); i!=rng.end(); i++) {
+       for (pmi i = rng.beg(); i!=rng.end(); i++) {
         pair<pmi,bool> i_ok = smp->mp.insert(*i);
         if (!i_ok.second)
           (i_ok.first)->second = i->second;
         num_inserted++;
       }
-      return num_inserted;
     }
     else {
       pxhmap& mp = smp->mp;
       int oldsz = mp.size();
       mp.insert(rng.beg(),rng.end());
-      return mp.size() - oldsz;
+      num_inserted = mp.size() - oldsz;
     } 
   } catch (px* e) {
     pure_throw(e);
   } 
+  return num_inserted;
 }
 
 int stl_sm_insert_stlvec(px* pxsmp, sv* sv_p, bool replace)
@@ -968,7 +975,7 @@ int stl_sm_insert_stlvec(px* pxsmp, sv* sv_p, bool replace)
   return num_inserted;
 }
 
-px*  stl_sm_swap(px* pxsmp1, px* pxsmp2)
+void stl_sm_swap(px* pxsmp1, px* pxsmp2)
 {
   sm* smp1; sm* smp2;
   if ( !get_smp(pxsmp1, &smp1) ) failed_cond();
@@ -1014,60 +1021,67 @@ int stl_sm_erase(px* pxsmp, px* trg)
 
 bool stl_sm_equal(px* tpl1, px* tpl2)
 {
+  bool res = false;
   sm_range rng1(tpl1);
   sm_range rng2(tpl2);
-  if (!rng1.is_valid || !rng2.is_valid) bad_argument;
+  if (!rng1.is_valid || !rng2.is_valid) bad_argument();
   if (stl_sm_size(tpl1) != stl_sm_size(tpl2)) return 0;
   sm* smp = rng1.smp();
   try {
     if (smp->keys_only) {
       pxhpair_first_equivalent comp(smp->px_comp);   
-      return equal(rng1.beg(), rng1.end(), rng2.beg(), comp);
+      res = equal(rng1.beg(), rng1.end(), rng2.beg(), comp);
     }
     else {
       pxhpair_equivalent comp(smp->px_comp,smp->px_val_equal);   
-      return equal(rng1.beg(), rng1.end(), rng2.beg(), comp);
+      res = equal(rng1.beg(), rng1.end(), rng2.beg(), comp);
     }
   }
   catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 bool stl_sm_less(px* tpl1, px* tpl2)
 {
+  bool res = false;
   sm_range rng1(tpl1);
   sm_range rng2(tpl2);
-  if (!rng1.is_valid || !rng2.is_valid) bad_argument;
+  if (!rng1.is_valid || !rng2.is_valid) bad_argument();
   try {
-    return lexicographical_compare(rng1.beg(), rng1.end(),
-                                   rng2.beg(), rng2.end(), 
-                                   rng1.smp()->mp.value_comp());
+    res = lexicographical_compare(rng1.beg(), rng1.end(),
+                                  rng2.beg(), rng2.end(), 
+                                  rng1.smp()->mp.value_comp());
   }
   catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 bool stl_sm_includes(px* tpl1, px* tpl2)
 {
+  bool res = false;
   sm_range rng1(tpl1);
   sm_range rng2(tpl2);
-  if (!rng1.is_valid || !rng2.is_valid) bad_argument;
+  if (!rng1.is_valid || !rng2.is_valid) bad_argument();
   try {
-    return includes(rng1.beg(), rng1.end(), rng2.beg(), rng2.end(), 
-                    rng1.smp()->mp.value_comp());
+    res = includes(rng1.beg(), rng1.end(), rng2.beg(), rng2.end(), 
+                   rng1.smp()->mp.value_comp());
   }
   catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 px* stl_sm_setop(int op, px* tpl1, px* tpl2)
 {
+  px* res = 0;
   sm_range rng1(tpl1);
   sm_range rng2(tpl2);
-  if (!rng1.is_valid || !rng2.is_valid) bad_argument;
+  if (!rng1.is_valid || !rng2.is_valid) bad_argument();
 #ifdef PURE_INSERT_SEMANTICS
   if (op != stl_sm_difference) {
     sm_range temp = rng2;
@@ -1111,10 +1125,11 @@ px* stl_sm_setop(int op, px* tpl1, px* tpl2)
     default:
       bad_argument();
     }
-    return px_pointer(trg);
+    res = px_pointer(trg);
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 px* stl_sm_make_vector(px* tpl) 
@@ -1225,7 +1240,7 @@ px* stl_sm_listcatmap(px* fun, px* tpl, int what)
       if (res) pure_freenew(res);
       bad_argument();      
     }
-    for (int j = 0; j < sz; j++) {
+    for (size_t j = 0; j < sz; j++) {
       px* last = pure_app(pure_app(cons,elms[j]),nl);
       if (res==nl)
         res = y = last;    
@@ -1246,21 +1261,22 @@ px* stl_sm_listcatmap(px* fun, px* tpl, int what)
 
 px* stl_sm_foldl(px* fun, px* val, px* tpl)
 {
+  px* ret = 0;
   sm_range rng(tpl);
   if (!rng.is_valid) bad_argument();
   sm* smp = rng.smp();
   int mode =  smp->keys_only ? stl_sm_key : stl_sm_elm;
-  pmi end = smp->mp.end();
   try {
-    px* ret = sm_foldl_aux(fun, val, rng, rng.beg(), mode);
-    return ret;
+    ret = sm_foldl_aux(fun, val, rng, rng.beg(), mode);
   } catch (px* e) {
     pure_throw(e);
   }
+  return ret;
 }
 
 px* stl_sm_foldl1(px* fun, px* tpl)
 {
+  px* res = 0;
   sm_range rng(tpl);
   if ( !rng.is_valid ) bad_argument();
   sm* smp = rng.smp();
@@ -1275,27 +1291,30 @@ px* stl_sm_foldl1(px* fun, px* tpl)
   else
     val = pxlhs_pxrhs_to_pxrocket(b->first,b->second);
   try {
-    return sm_foldl_aux(fun, val, rng, ++b, mode);
+    res = sm_foldl_aux(fun, val, rng, ++b, mode);
   } catch (px* e) {
     pure_throw(e);
   }
+  return res;
 }
 
 px* stl_sm_foldr(px* fun, px* val, px* tpl)
 {
+  px* res = 0;
   sm_range rng(tpl);
   if (!rng.is_valid) bad_argument();
   int mode = rng.smp()->keys_only ? stl_sm_key : stl_sm_elm;
   try {
-    px* ret = sm_foldr_aux(fun, val, rng, rng.end(), mode);
-    return ret;
+    res = sm_foldr_aux(fun, val, rng, rng.end(), mode);
   } catch (px* x) {
     pure_throw(x);
   }
+  return res;
 }
 
 px* stl_sm_foldr1(px* fun, px* tpl)
 {
+  px* res = 0;
   sm_range rng(tpl);
   if ( !rng.is_valid ) bad_argument();
   sm* smp = rng.smp();
@@ -1312,10 +1331,11 @@ px* stl_sm_foldr1(px* fun, px* tpl)
   else
     val = pxlhs_pxrhs_to_pxrocket(e->first,e->second);
   try {
-    return sm_foldr_aux(fun, val, rng, e, mode);
+    res = sm_foldr_aux(fun, val, rng, e, mode);
   } catch (px* x) {
     pure_throw(x);
   }
+  return res;
 }
 
 void stl_sm_do(px* fun, px* tpl)
@@ -1360,7 +1380,7 @@ int stl_sm_member(sm* smp, px* key)
 px* stl_sm_bounds(px* tpl)
 {
   sm_range rng(tpl);
-  if (!rng.is_valid) bad_argument;
+  if (!rng.is_valid) bad_argument();
   sm* smp = rng.smp();
   pxhmap& mp = smp->mp;
   return pure_tuplel(2,iter_to_key(mp, rng.beg()),
