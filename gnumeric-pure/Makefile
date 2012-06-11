@@ -133,7 +133,8 @@ pure-loader/plugin.xml pure-loader/pure-ui.xml \
 pure-func/*.pure pure-func/plugin.xml \
 pure-glfunc/*.pure pure-glfunc/plugin.xml \
 pure-gnm/*.pure pure-gnm/plugin.xml pure-gnm/Makefile \
-examples/*.gnumeric debian/*
+examples/*.gnumeric examples/myplugin/*.pure examples/myplugin/Makefile \
+debian/*
 SEDFILES = README
 
 all: pure-loader/pure_loader$(DLL) pure-func/plugin.xml pure-glfunc/plugin.xml
@@ -187,7 +188,7 @@ datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > 
 
 dist:
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/doc && mkdir $(dist)/debian && mkdir $(dist)/examples && mkdir $(dist)/pure-func $(dist)/pure-glfunc && mkdir $(dist)/pure-gnm && mkdir $(dist)/pure-loader
+	mkdir $(dist) && mkdir $(dist)/doc && mkdir $(dist)/debian && mkdir $(dist)/examples && mkdir $(dist)/examples/myplugin && mkdir $(dist)/pure-func $(dist)/pure-glfunc && mkdir $(dist)/pure-gnm && mkdir $(dist)/pure-loader
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	for x in $(SEDFILES); do rm -f $(dist)/$$x; $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
 	rm -f $(dist).tar.gz
