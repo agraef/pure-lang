@@ -257,23 +257,18 @@ pxh_pred2::pxh_pred2(px* f) : pxh_fun(f)
 bool pxh_pred2::operator()(const pxh& x_pxh, const pxh& y_pxh) const
 {
   bool ret = 0;
-  int comp;
   px* x = const_cast<px*>(x_pxh.pxp());
   px* y = const_cast<px*>(y_pxh.pxp());
   bool can_optimize = is_fast && (x->tag == y->tag && x->tag < 0);
   if (can_optimize) {
-    if (is_lt || is_gt) {
+    if (is_lt) {
       switch (x->tag) {
       case STR:
-        comp = strcmp(x->data.s, y->data.s);
-        if (comp==0)
-          return 0;
-        else
-          ret = comp < 0;
+        ret = strcmp(x->data.s, y->data.s) < 0;
         break;
       case INT:
         ret = x->data.i < y->data.i;
-        break;
+         break;
       case DBL:
         ret = x->data.d < y->data.d;
         break;
@@ -281,7 +276,22 @@ bool pxh_pred2::operator()(const pxh& x_pxh, const pxh& y_pxh) const
         ret = bigint_cmp(x->data.z, y->data.z) < 0;
         break;
       }
-      return is_lt ? ret : !ret;
+    }
+    else if (is_gt) {
+      switch (x->tag) {
+      case STR:
+        ret = strcmp(x->data.s, y->data.s) > 0;
+        break;
+      case INT:
+        ret = x->data.i > y->data.i;
+         break;
+      case DBL:
+        ret = x->data.d > y->data.d;
+        break;
+      case BIGINT:
+        ret = bigint_cmp(x->data.z, y->data.z) > 0;
+        break;
+      }
     }
     else {
       if (x==y) {
@@ -303,31 +313,21 @@ bool pxh_pred2::operator()(const pxh& x_pxh, const pxh& y_pxh) const
           break;
         }
       }
-      return ret;
     }
+    return ret;
   }
-  px* exception = 0;
-  px* pxres =  pure_appxl(fun_, &exception, 2, x, y);
-  if (exception) throw exception;
-  if (!pxres) bad_function();
-  int satisfied; 
-  if ( !pure_is_int(pxres, &satisfied) ) bad_argument();
-  pure_freenew(pxres);
-  return satisfied != 0;
+  else {
+    px* exception = 0;
+    px* pxres =  pure_appxl(fun_, &exception, 2, x, y);
+    if (exception) throw exception;
+    if (!pxres) bad_function();
+    int satisfied; 
+    if ( !pure_is_int(pxres, &satisfied) ) bad_argument();
+    pure_freenew(pxres);
+    ret = satisfied != 0;
+  }
+  return ret;
 }
-
-// bool pxh_pred2::operator()(const pxh& left, const pxh& right) const
-// {
-//   int32_t ret;
-//   px* exception = 0;
-//   px* pxres = pure_appxl(fun_, &exception, 2, left.pxp(), right.pxp());
-//   if (exception) throw exception;
-//   if (!pxres) bad_function();
-//   int ok = pure_is_int(pxres, &ret);
-//   pure_freenew(pxres);
-//   if (!ok) failed_cond();
-//   return ok && ret;
-// }
 
 bool pxhpair_less::operator()(const pxhpair& left,
                               const pxhpair& right) const

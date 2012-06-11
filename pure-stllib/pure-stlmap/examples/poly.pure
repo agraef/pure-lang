@@ -90,7 +90,7 @@ mkterms coefs = mk_aux (#coefs-1) coefs with
       cf = n,cf;
     end;
     if ~(integerp ord) then throw "bad_argument" else ();
-    if ~is_zero coef then insert res (ord=>coef) else ();
+    if ~is_zero coef then insert_or_replace res (ord=>coef) else ();
   end;
 end when
   res = empty_term_map;
@@ -99,11 +99,12 @@ end;
 adjust_term tm ord adj = insert tm (ord=>adj) if ~member tm ord;
 
 adjust_term tm ord adj = () when
-  coef = adj + tm!ord;
-  if is_zero coef then erase (tm,ord) else insert_or_replace tm (ord=>coef);
-end;
+  coef = tm!ord + adj;
+  if is_zero coef then erase (tm,ord) else replace tm ord coef;  
+end if member tm ord;
 
-terms_add tm1 tm2 = do add_term tm2 $$ tm1 with
+terms_add tm1 tm2 = do add_term tm2 $$ tm1 
+with
   add_term (ord=>coef) = adjust_term tm1 ord coef;
 end;
 
@@ -183,3 +184,14 @@ p1::poly ^ 0 = mkpoly [1];
 p1::poly ^ 1 = mkpoly p1;
 
 p1::poly ^ n = p1 * (p1 ^ (n-1));
+
+
+/** test **/
+
+let p2 = mkpoly [3=>3,0=>-1];
+let p1 = mkpoly [1,1];
+let p3 = p1 + p2;
+let p4 = p1 * p2;
+let p5,r5 = p4 / p1;
+let p6,r6 = p4 / p2;
+let p7,r7 = p3 / p1;
