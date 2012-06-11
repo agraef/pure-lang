@@ -1,0 +1,94 @@
+#! /usr/local/bin/pure -x
+
+/* This script can be run interactively (by invoking the 'main' function
+   below), from the command line (to make this work, adjust the shebang above
+   as needed), or as a compiled executable (pure -c pure-gnm.pure -o
+   pure-gnm). */
+
+using system, regex;
+
+// This will be adjusted automatically if the script is installed with
+// 'make install'.
+let template = "plugin.xml";
+
+read_descr name::string = fields when
+  fp = fopen name "r";
+  pointerp fp || throw $ sprintf "script file '%s' not found" name;
+  pat = "^#![[:blank:]]*([CDFN]):[[:blank:]]*(.*)$";
+  code = map parse $ filter commentp $ split "\n" $ fget fp with
+    commentp s = regex pat (REG_EXTENDED or REG_NOSUB) s 0;
+    parse s = reg 1 info!1 => reg 2 info!1 when
+      info = reg_info $ regex pat REG_EXTENDED s 0;
+    end;
+  end;
+  fields = foldl accum ("Unnamed","Unknown","",[]) code with
+    accum (name,category,description,funcs) (t=>s) = case t of
+      "N" = (s,category,description,funcs);
+      "C" = (name,s,description,funcs);
+      "D" = (name,category,
+	     (if null description then s else join "\n" [description, s]),
+	     funcs);
+      "F" = (name,category,description,funcs+split " " s);
+    end;
+  end;
+end;
+
+basename s::string = last path if ~null path when
+  path = split "/" s;
+end;
+= s otherwise;
+dirname s::string = join "/" $ init path if ~null path when
+  path = split "/" s;
+end;
+= "" otherwise;
+strip_ext s::string = head name if ~null name when
+  name = split "." s;
+end;
+= s otherwise;
+mkpath dir::string fname::string =
+  if null dir then fname else dir+"/"+fname;
+
+// If we're being run uninstalled from the command line, adjust the template
+// path accordingly.
+let template = if argc>=1 && null (dirname template) then
+  mkpath (dirname (argv!0)) template else template;
+
+make_xml fname::string template::string
+(name,category,description,funcs) = xml when
+  module_name = fname;
+  group_name = strip_ext $ basename fname;
+  fp = fopen template "r";
+  pointerp fp || throw $ sprintf "template '%s' not found" template;
+  xml = fget fp;
+  pat = "@([A-Za-z_][A-Za-z_0-9]*)@";
+  xml = regsub subst pat REG_EXTENDED xml 0 with
+    subst info = case reg 1 info!1 of
+      "module_name" = module_name;
+      "group_name" = group_name;
+      "name" = name;
+      "category" = category;
+      "description" = description;
+      "funcs" = join "\n" $ map (sprintf "\t<function name=\"%s\"/>") funcs;
+      // unrecognized metavariable, keep unchanged
+      _ = reg 0 info!1;
+    end;
+  end;
+end;
+
+// main function, to be invoked with the plugin script as argument
+main fname::string = catch error (exit 0 when
+  descr = read_descr fname;
+  xml = make_xml fname template descr;
+  fputs xml stdout;
+end) with
+  error s::string = fprintf stderr "pure-gnm: %s\n" s $$ exit 1;
+  error x = fprintf stderr "pure-gnm: unhandled exception '%s'\n" (str x) $$
+    exit 1;
+end;
+usage = fputs "Usage: pure-gnm script\n" stderr $$ exit 1;
+
+#! --if compiled
+if compiling then () else if argc==2 then main (argv!1) else usage;
+#! --else
+if argc < 1 then () else if argc==2 then main (argv!1) else usage;
+#! --endif

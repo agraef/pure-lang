@@ -96,10 +96,12 @@ shared = -shared
 # Take care of some common systems.
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows/mingw
+EXE = .exe
 DLL = .dll
 LDFLAGS = -Wl,--enable-auto-import
 LIBS = -lgsl -lgmp
 GLDEPS = gtkglext-1.0 gtkglext-win32-1.0
+export EXE
 endif
 ifneq "$(findstring -darwin,$(host))" ""
 # OSX (untested)
@@ -129,10 +131,13 @@ pure-loader/boot.c pure-loader/pure-gnumeric.c pure-loader/pure-gnumeric.h \
 pure-loader/pure-loader.c pure-loader/pure-loader.h \
 pure-loader/plugin.xml pure-loader/pure-ui.xml \
 pure-func/*.pure pure-func/plugin.xml \
-pure-glfunc/*.pure pure-glfunc/plugin.xml examples/*.gnumeric debian/*
+pure-glfunc/*.pure pure-glfunc/plugin.xml \
+pure-gnm/*.pure pure-gnm/plugin.xml pure-gnm/Makefile \
+examples/*.gnumeric debian/*
 SEDFILES = README
 
-all: pure-loader/pure_loader$(DLL)
+all: pure-loader/pure_loader$(DLL) pure-func/plugin.xml pure-glfunc/plugin.xml
+	$(MAKE) -C pure-gnm
 
 pure-loader/pure_loader$(DLL): pure-loader/boot.o pure-loader/pure-gnumeric.o pure-loader/pure-loader.o
 	$(CC) $(shared) -o $@ $(LDFLAGS) $^ $(GTKLIBS) -lpure $(LIBS)
@@ -140,9 +145,16 @@ pure-loader/pure_loader$(DLL): pure-loader/boot.o pure-loader/pure-gnumeric.o pu
 %.o: %.c
 	$(CC) $(INCLUDES) -I. -I.. $(CPPFLAGS) -DGNM_VERSION='"$(gnmversion)"' -DPLUGIN_VERSION='"$(version)"' -DPURE_INCLUDES='"-I$(gnmplugindir)/$(purefuncdir)","-I$(gnmlocalplugindir)/$(purefuncdir)"' $(CFLAGS) $(PIC) -o $@ -c $<
 
+pure-func/plugin.xml: pure-func/pure_func.pure
+	(cd pure-func && pure -x ../pure-gnm/pure-gnm.pure pure_func.pure > plugin.xml)
+
+pure-glfunc/plugin.xml: pure-glfunc/pure_glfunc.pure
+	(cd pure-glfunc && pure -x ../pure-gnm/pure-gnm.pure pure_glfunc.pure > plugin.xml)
+
 clean:
 	(cd pure-loader/ && rm -f pure_loader$(DLL) *~ *.a *.o)
 	rm -f *~
+	$(MAKE) -C pure-gnm clean
 
 install:
 	test -d "$(DESTDIR)$(gnmplugindir)/$(purefuncdir)" || mkdir -p "$(DESTDIR)$(gnmplugindir)/$(purefuncdir)"
@@ -151,6 +163,7 @@ install:
 	cp COPYING README pure-func/*.pure pure-func/plugin.xml "$(DESTDIR)$(gnmplugindir)/$(purefuncdir)"
 	cp pure-glfunc/*.pure pure-glfunc/plugin.xml "$(DESTDIR)$(gnmplugindir)/$(pureglfuncdir)"
 	cp pure-loader/pure_loader$(DLL) pure-loader/plugin.xml pure-loader/pure-ui.xml "$(DESTDIR)$(gnmplugindir)/$(pureloaderdir)"
+	$(MAKE) -C pure-gnm install
 
 install-local:
 	test -d "$(DESTDIR)$(gnmlocalplugindir)/$(purefuncdir)" || mkdir -p "$(DESTDIR)$(gnmlocalplugindir)/$(purefuncdir)"
@@ -159,19 +172,22 @@ install-local:
 	cp COPYING README pure-func/*.pure pure-func/plugin.xml "$(DESTDIR)$(gnmlocalplugindir)/$(purefuncdir)"
 	cp pure-glfunc/*.pure pure-glfunc/plugin.xml "$(DESTDIR)$(gnmlocalplugindir)/$(pureglfuncdir)"
 	cp pure-loader/pure_loader$(DLL) pure-loader/plugin.xml pure-loader/pure-ui.xml "$(DESTDIR)$(gnmlocalplugindir)/$(pureloaderdir)"
+	$(MAKE) -C pure-gnm install
 
 uninstall:
 	rm -rf "$(DESTDIR)$(gnmplugindir)/$(purefuncdir)" "$(DESTDIR)$(gnmplugindir)/$(pureglfuncdir)" "$(DESTDIR)$(gnmplugindir)/$(pureloaderdir)"
+	make -C pure-gnm uninstall
 
 uninstall-local:
 	rm -rf "$(DESTDIR)$(gnmlocalplugindir)/$(purefuncdir)" "$(DESTDIR)$(gnmlocalplugindir)/$(pureglfuncdir)" "$(DESTDIR)$(gnmlocalplugindir)/$(pureloaderdir)"
+	make -C pure-gnm uninstall
 
 date = $(shell date "+%B %-d, %Y")
 datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > $(2)
 
 dist:
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/doc && mkdir $(dist)/debian && mkdir $(dist)/examples && mkdir $(dist)/pure-func $(dist)/pure-glfunc && mkdir $(dist)/pure-loader
+	mkdir $(dist) && mkdir $(dist)/doc && mkdir $(dist)/debian && mkdir $(dist)/examples && mkdir $(dist)/pure-func $(dist)/pure-glfunc && mkdir $(dist)/pure-gnm && mkdir $(dist)/pure-loader
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	for x in $(SEDFILES); do rm -f $(dist)/$$x; $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
 	rm -f $(dist).tar.gz
