@@ -26,6 +26,41 @@ let sm2 = stlmmap sm1; members sm2;
 let sm2 = stlmmap (sm1,"b","z"); members sm2;
 //- ["b"=>2,"b"=>3,"d"=>4,"e"=>5]
 
+//*** Basic lookup for (<) and (>) ordered sets *************************
+
+let sm1 = stlmmap [1=>10, 2.0=>20, 3=>30, 3.0=>31]; members sm1;
+//- [1=>10,2.0=>20,3=>30,3.0=>31]
+
+member sm1 1, member sm1 2, member sm1 3, member sm1 4; 
+//- 1,1,1,0
+
+member sm1 1.0, member sm1 2.0, member sm1 3.0, member sm1 4.0; 
+//- 1,1,1,0
+
+sm1!1, sm1!2, sm1!3;
+//- [10],[20],[30,31]
+
+sm1!1.0, sm1!2.0, sm1!3.0;
+//- [10],[20],[30,31]
+
+let sm2 = mkstlmmap (>);
+//- ()
+
+insert sm2 [1=>10, 2.0=>20, 3=>30, 3.0=>31]; members sm2;
+//- [3=>30,3.0=>31,2.0=>20,1=>10]
+
+member sm2 1, member sm2 2, member sm2 3, member sm2 4; 
+//- 1,1,1,0
+
+member sm2 1.0, member sm2 2.0, member sm2 3.0, member sm2 4.0; 
+//- 1,1,1,0
+
+sm2!1, sm2!2, sm2!3;
+//- [10],[20],[30,31]
+
+sm2!1.0, sm2!2.0, sm2!3.0;
+//- [10],[20],[30,31]
+
 /*** Info ***************************************************************/
 
 let sm1 = stlmmap ["a"=>1,"b"=>2,"b"=>3,"d"=>4,"e"=>5];
