@@ -18,7 +18,7 @@ clean:
 # NOTE: This requires GNU make and that you have the Gnumeric development
 # files installed.
 gnmversion=$(shell pkg-config --modversion libspreadsheet-1.10)
-plugindir=$(HOME)/.gnumeric/$(gnmversion)/plugins/myplugin
+plugindir=$(HOME)/.gnumeric/$(gnmversion)/plugins/octave
 
 install: $(myplugin)
 	test -d $(plugindir) || mkdir -p $(plugindir)
