@@ -134,7 +134,8 @@ pure-func/*.pure pure-func/plugin.xml \
 pure-glfunc/*.pure pure-glfunc/plugin.xml \
 pure-gnm/*.pure pure-gnm/plugin.xml pure-gnm/Makefile \
 debian/* examples/*.gnumeric \
-examples/*/*.pure examples/*/*.gnumeric examples/*/Makefile
+examples/*/*.pure examples/*/*.dsp examples/*/*.gnumeric \
+examples/*/Makefile examples/*/config.guess
 SEDFILES = README
 
 all: pure-loader/pure_loader$(DLL) pure-func/plugin.xml pure-glfunc/plugin.xml
@@ -186,7 +187,7 @@ uninstall-local:
 date = $(shell date "+%B %-d, %Y")
 datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > $(2)
 
-distsubdirs = doc debian examples examples/myplugin examples/octave pure-func pure-glfunc pure-gnm pure-loader
+distsubdirs = doc debian examples examples/faust examples/myplugin examples/octave pure-func pure-glfunc pure-gnm pure-loader
 
 dist: pure-func/plugin.xml pure-glfunc/plugin.xml
 	rm -rf $(dist)

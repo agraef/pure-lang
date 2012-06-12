@@ -1,0 +1,174 @@
+
+#! N: Faust examples
+#! C: Faust
+#! D: Faust examples.
+#! F: mesh fold faust_load faust_descr faust_process
+
+using faust, pure_func;
+
+extern char *getcwd(void*, size_t);
+
+let buf = malloc(1024);
+let dir = getcwd buf 1024+"/";
+let helptext = "See the mydsps.gnumeric spreadsheet for an example. This \
+is an example taken from 'Term Rewriting Extension for the Faust Programming \
+Language' in the LAC 2010 proceedings.";
+
+/* Mesh example. See dsps.gnumeric. */
+
+let mesh_dsp = faust_init "mesh" 1;
+
+gnm_info "mesh" = gnm_help "mesh:Systolic array example" []
+ helptext [] ["=mesh(1,1,1,1,1)"] [];
+
+mesh in = faust_compute mesh_dsp in out when
+  in  = transpose $ dmatrix $ ranges in;
+  out = dmatrix (dim in);
+end;
+
+/* Fold example. See dsps.gnumeric. */
+
+let fold_dsp = faust_init "fold" 250;
+let n,m,ui = faust_info fold_dsp;
+let freq_ctl = control_ref $ controls ui!0;
+
+gnm_info "fold" = "fb", gnm_help "fold:Additive synthesis example" []
+ helptext [] ["=fold(10,FALSE)"] [];
+
+let out = dmatrix 10;
+
+fold f0 b = faust_compute fold_dsp {} out when
+  faust_reinit fold_dsp 250;
+  put_double freq_ctl f0;
+end if f0 ~= get_double freq_ctl;
+
+fold _ b = if b ~= 0 then faust_compute fold_dsp {} out else out;
+
+/* Generic functions to operate any Faust DSP from Gnumeric. See
+   organ.gnumeric for an example. */
+
+let dsp = ref ();
+
+gnm_info "faust_load" = "sf", gnm_help "faust_load:Load a Faust DSP"
+["filename:string","samplerate:integer"]
+"Loads the Faust DSP with the given @{filename} into memory. @{samplerate} \
+specifies the desired sample rate in Hz. This value is available in the \
+loaded DSP by means of the Faust SR variable.\n\n\
+The filename must refer to the shared object compiled from a Faust program \
+using the Pure architecture. #N/A is returned if the given file is not found \
+or not a valid plugin.\n\n\
+Otherwise @{faust_load} returns three numbers: the number of control elements \
+(which can be used to allocate a suitable range for the control descriptions, \
+see @{faust_descr}), the number of input channels (which determines the number \
+of rows of input data to be supplied to the @{faust_process} function, and \
+the number of output channels returned by  @{faust_process}."
+[] ["faust_load(\"mydsp\",44100)"] ["faust_descr","faust_process"];
+
+faust_load fname::string sr::double =
+catch (cst (gnm_error "#N/A")) (k,n,m when
+  // Find the file in the plugin directory unless an absolute path is given.
+  fname = if ~null fname && fname!0~="/" then dir+fname else fname;
+  // Load the new dsp and store it.
+  d::pointer = faust_init fname (int sr);
+  n,m,ui = faust_info d; k = #controls ui;
+  put dsp d;
+end);
+
+gnm_info "faust_descr" = "",
+gnm_help "faust_descr:Control descriptions of a Faust DSP" []
+"Gets the control descriptions of a Faust DSP previously loaded with \
+@{faust_load} and returns them as an array with six columns (control type, \
+fully qualified control name, current value, min and max values and step \
+size). #N/A is returned if the DSP hasn't been loaded yet.\n\n\
+Note that the number of controls is returned by @{faust_load}. Typically, you \
+will enter this call as an array formula which allocates one row for each \
+control value."
+[] ["faust_descr()"] ["faust_load","faust_process"];
+
+using system;
+
+faust_descr =
+catch (cst (gnm_error "#N/A")) (descr when
+  d::pointer = get dsp;
+  n,m,ui = faust_info d; descr = matrix $ map make_descr $ pcontrols ui;
+end) with
+  /* There are basically three types of control descriptions. Buttons and
+     checkboxes only have a name, passive controls (bargraphs) only name, min
+     and max values, and the remaining controls (nentry etc.) have the full set
+     of attributes. */
+  make_descr (f@_ ptr::pointer _ (name::string,value,min,max,step))
+    = [str f,name,value,min,max,step];
+  make_descr (f@_ ptr::pointer _ (name::string,min,max))
+    = [str f,name,"",min,max,""];
+  make_descr (f@_ ptr::pointer _ name::string)
+    = [str f,name,"","","",""];
+end;
+
+gnm_info "faust_process" = "rrrr",
+gnm_help "faust_process:Process one block of samples with a Faust DSP"
+["control_names:range","control_vals:range","input:range","output:range"]
+"Runs a Faust DSP previously loaded with @{faust_load} to process a block of \
+samples. The names and current values of the controls must be in the ranges \
+indicated by @{control_names} and @{control_vals}, respectively; @{input} \
+and @{output} indicate the ranges from which the input samples are read and \
+to which the resulting output samples will be written, respectively.\n\n\
+The number of rows of the input and output areas must match the number of \
+input and output channels of the DSP; the number of columns in these ranges \
+must match and indicate the number of samples to be processed.\n\n\
+The values for active controls are set in the DSP before it is invoked, and \
+the current values of passive controls are written back to the \
+@{control_vals} range when the function returns."
+[]
+["faust_process(B9:B19,G9:G19,C21:L22,C23:L24) processes 10 samples of a \
+stereo input signal in the range C21:L22 and writes the resulting stereo \
+output signal to the range C23:L24. The control names and values are in the \
+ranges B9:B19 and G9:G19, respectively."]
+["faust_load","faust_descr"];
+
+faust_process cnames cvals input output =
+catch (cst (gnm_error "#N/A")) (() when
+  d::pointer = get dsp;
+  n,m,ui = faust_info d; ctrls = map make_descr $ pcontrols ui;
+  in_ctrls  = {name=>ptr | in,name=>ptr = ctrls; in};
+  out_ctrls = {name=>ptr | in,name=>ptr = ctrls; ~in};
+  ctrl_names = get_range cnames;
+  ctrl_vals = get_range cvals;
+  dim ctrl_names === dim ctrl_vals && (null ctrl_names || vectorp ctrl_names) ||
+  throw "invalid control parameters";
+  ctrl_names,ctrl_vals = if colvectorp ctrl_names then ctrl_names,ctrl_vals
+  		       	 else transpose ctrl_names,transpose ctrl_vals;
+  ctrl_vals = {ctrl_names,ctrl_vals};
+  in_vals   = get_range input;
+  in_vals   = if n>0 && dmatrixp in_vals then in_vals else {};
+  out_vals  = if m>0 then dmatrix $ dim $ get_range output else {};
+  n==0 || m==0 || dim in_vals!1 == dim out_vals!1 ||
+  throw "invalid input/output parameters";
+  // Set the input control values.
+  do set_control $ list2 ctrl_vals with
+    set_control [name,val] = put_double (in_ctrls!name) val
+      if member in_ctrls name && doublep val;
+  end;
+  // Run the Faust DSP to get a block of samples.
+  faust_compute d in_vals out_vals;
+  // Output the computed values.
+  set_range output out_vals;
+  // Get the output control values.
+  sheet,c1,r1,c2,r2 = case parse_range cvals of
+    sheet,c1,r1,c2,r2 = sheet,c1,r1,c2,r2;
+    sheet,c,r = sheet,c,r,c,r;
+  end;
+  r = [make_range (sheet,c,r) | r = r1..r2; c = c1..c2];
+  dowith get_control r $ list2 ctrl_vals with
+    get_control cell [name,_] = () when
+      val = get_double (out_ctrls!name);
+      set_cell cell val;
+    end if member out_ctrls name;
+  end;
+end) with
+  make_descr (f@_ ptr::pointer _ (name::string,value,min,max,step))
+    = true,name=>ptr;
+  make_descr (f@_ ptr::pointer _ (name::string,min,max))
+    = false,name=>ptr;
+  make_descr (f@_ ptr::pointer _ name::string)
+    = true,name=>ptr;
+end;
