@@ -1,0 +1,25 @@
+
+/* Ever wanted to compute eigenvalues of *nonsymmetric* matrices with
+   Gnumeric? Gnumeric's eigen() function doesn't do this, but using
+   Gnumeric/Pure you can embed Octave in Gnumeric and call the Octave eig()
+   function which happily computes the eigenvalues and -vectors of any nxn
+   matrix. */
+
+#! N: Octave function example
+#! C: Octave
+#! D: Octave function example.
+#! F: eig
+
+using octave;
+
+/* Here we massage the result of calling Octave's eig() with two return values
+   so that it looks like the output of the Gnumeric eigen() function. */
+
+eig x = {diag l;v} when v,l = octave_call "eig" 2 x end;
+
+using pure_func; // for the gnm_help function
+gnm_info "eig" = "A", gnm_help "eig:Eigenvalues and -vectors of an nxn matrix"
+ ["x:matrix"] "Computes the eigenvalues and -vectors of @{x}. @{x} must be an \
+nxn matrix. The result is an (n+1) x n matrix with the eigenvalues in the \
+first row and the eigenvectors in the columns of the n remaining rows."
+ [] ["{=eig({1,2;3,4})}"] [];
