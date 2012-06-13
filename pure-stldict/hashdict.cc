@@ -782,7 +782,10 @@ extern "C" void hashdict_rehash(myhashdict *m, unsigned count)
 
 extern "C" void hashdict_reserve(myhashdict *m, unsigned count)
 {
+  // This requires g++ >= 4.5. (Add other compilers as needed.)
+#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
   m->reserve(count);
+#endif
 }
 
 extern "C" unsigned hashdict_bucket_count(myhashdict *m)
@@ -1287,7 +1290,10 @@ extern "C" void hashmdict_rehash(myhashmdict *m, unsigned count)
 
 extern "C" void hashmdict_reserve(myhashmdict *m, unsigned count)
 {
+  // This requires g++ >= 4.5. (Add other compilers as needed.)
+#if __GNUC__ > 4 || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
   m->reserve(count);
+#endif
 }
 
 extern "C" unsigned hashmdict_bucket_count(myhashmdict *m)
