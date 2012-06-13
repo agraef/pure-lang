@@ -327,12 +327,12 @@ can be implemented as follows::
   factorial [x] = foldl (*) 1 (1..x);
 
 Note the list bracket around the argument ``x``. You wouldn't normally pass a
-single numeric argument that way in Pure, but this is needed since by default
-Gnumeric passes arguments as a list to a Pure function. There are other ways
-to configure the call interface to Pure functions, but these require that we
-tell Gnumeric about the number and types of arguments, see `Gnumeric/Pure
-Interface`_ below. For the moment let's stick to the default scheme, however,
-in order to keep things simple.
+single numeric argument that way in Pure, but this is needed here since by
+default Gnumeric passes arguments as a list to a Pure function. There are
+other ways to configure the call interface to Pure functions, but these
+require that we tell Gnumeric about the number and types of arguments, see
+`Gnumeric/Pure Interface`_ below. For the moment let's stick to the default
+scheme, however, in order to keep things simple.
 
 Put the above definition into a script file, say, ``myplugin.pure``. Next we
 need to create a ``plugin.xml`` file to tell Gnumeric about our plugin and
@@ -349,17 +349,28 @@ case, this might look as follows::
   #! F: factorial
 
 You can add this comment block anywhere in your plugin script, but usually it
-is placed near the beginning. The meaning of the fields are:
+is placed near the beginning. The different fields have the following meaning:
 
 * ``N``: the name of the plugin
 
-* ``C``: the category under which the functions provided by the plugin will
-  show in the "f(x)" dialog in Gnumeric
+* ``C``: the function category
 
-* ``D``: (optionally) a more detailed description of the plugin
+* ``D``: a more detailed description of the plugin
 
-* ``F``: a whitespace-delimited list of the names of the functions provided by
-  the plugin
+* ``F``: a whitespace-delimited list of Pure function names
+
+The contents of the ``N`` and ``D`` fields (name and description) are visible
+in Gnumeric's "Plugin Manager" dialog. You should specify at least the name
+field (otherwise the plugin will be displayed as "Unnamed" in the dialog),
+while the description is optional (if you don't specify one, the description
+of the plugin will be empty). The ``C`` field denotes the category under which
+the functions listed in the ``F`` field will be shown in Gnumeric's "f(x)"
+dialog; if you don't specify this, the functions will be in the "Unknown"
+category. The ``F`` field is the most crucial part. It must contain all Pure
+functions defined in the plugin script or its imports that you want to be
+visible in Gnumeric, so you have to keep this in sync with the actual function
+definitions in the script; if you don't specify this, the plugin will provide
+no functions at all.
 
 The ``D`` and ``F`` fields can also be split into multiple lines (each
 prefixed with the "hashbang" comment marker and the corresponding field
@@ -374,8 +385,8 @@ So our ``myplugin.pure`` script now looks like this::
 
   factorial [x] = foldl (*) 1 (1..x);
 
-You can now generate the ``plugin.xml`` file for the plugin simply as
-follows:
+Once you've added the comment block, you can generate the ``plugin.xml`` file
+for the plugin simply as follows:
 
 .. code-block:: sh
 
@@ -485,27 +496,26 @@ you can go about this:
 
 * If you want to keep plugin script and the ``plugin.xml`` file where they
   are, you'll have to change Gnumeric's plugin path so that it includes the
-  *parent* directory ``/some/path`` (not ``/some/path/myplugin``). This is the
-  least convenient method. It requires you to add the directory under the
-  Directories tab in Gnumeric's Tools/Plug-ins dialog, after which you'll have
-  to restart Gnumeric so that it picks up the changes in the plugin search
-  path.
+  *parent* directory ``/some/path`` (not ``/some/path/myplugin``). This is
+  done by adding the directory under the Directories tab in Gnumeric's
+  Tools/Plug-ins dialog, after which you'll have to restart Gnumeric so that
+  it picks up the changes in the plugin search path.
 
 * Second, you can also move or copy the entire ``/some/path/myplugin``
-  directory to your personal Gnumeric plugin folder (usually something like
-  ``~/.gnumeric/<version>/plugins``). This is somewhat more convenient, since
-  Gnumeric will always search this directory for new plugins by default, so
-  modifying the plugin search path is not necessary. However, it will move the
-  plugin to a hidden location in your home directory, which may not be very
-  convenient if you want to modify the plugin script later.
+  directory to your personal Gnumeric plugin folder (usually
+  ``~/.gnumeric/<version>/plugins``). Gnumeric will always search this
+  directory for new plugins by default, so modifying the plugin search path is
+  not necessary. However, keeping the plugin script in a hidden location in
+  your home directory may not be very convenient if you want to modify the
+  script later.
 
-* Third, you can get the best features of both previous methods by keeping the
-  plugin script where it is and copying just the ``plugin.xml`` file to your
-  personal Gnumeric plugin folder.
+* Third, you can get the best of both previous methods by keeping the plugin
+  script where it is and copying just the ``plugin.xml`` file to your personal
+  Gnumeric plugin folder.
 
 The third method tends to be the easiest, but note that it requires that the
 plugin script needs to be specified as an absolute path (as sketched out
-previously). Fortunately, it's fairly easy to automatize this with ``make``.
+previously). Fortunately, it's fairly easy to automate this with ``make``.
 The following requires GNU make to work, and you'll also need to have the
 Gnumeric development files installed, so that the Gnumeric version can be
 determined easily with a shell command. These rules are to be added to the end
@@ -527,10 +537,10 @@ Now you can just run ``make install`` to make the plugin known to Gnumeric.
 Note that we also added a rule that allows you to uninstall the plugin if it
 isn't needed any more.
 
-In any case, once you fire up Gnumeric again, the new plugin should now be
-listed as "My Pure functions" on the Plugin List tab in the Tools/Plug-ins
+In any case, once you fire up Gnumeric again, the new plugin should be listed
+as "My Pure functions" on the Plugin List tab in the Tools/Plug-ins
 dialog. Check it to enable it. The ``factorial`` function defined in the
-plugin should now be available, and is ready to be called just like any other
+plugin should now be available and ready to be called just like any other
 Gnumeric function. For instance, type this into a cell to have the factorial
 of 10 computed::
 
@@ -543,13 +553,13 @@ should display the proper value of the factorial.
 .. note:: Once you start playing around with your own Pure plugins, you may
    run into one common mishap: You open an existing spreadsheet without having
    enabled the plugins it uses. An easily visible symptom of that is that
-   you'll see cells showing the ``#NAME`` error. You will then have to enable
+   you'll see cells showing the ``#NAME?`` error. You will then have to enable
    those plugins again *and* reload the spreadsheet afterwards, so that
    everything is recalculated properly.
 
-   In contrast, just changing the definition of a function in a plugin usually
-   needs neither a restart of Gnumeric nor a reloading of the spreadsheet. In
-   this case it's often sufficient to reload all scripts with the "Reload Pure
+   In contrast, just changing the body of a function in a plugin usually needs
+   neither a restart of Gnumeric nor a reloading of the spreadsheet. In this
+   case it's often sufficient to reload all scripts with the "Reload Pure
    Scripts" option in the Tools/Pure menu, after which you can use
    “Recalculate” (F9) to recompute the spreadsheet.
 
@@ -802,6 +812,11 @@ so usually you'll want to enter these as array functions (``Ctrl-Shift-Enter``
 in Gnumeric). As a special case, the empty tuple can be used to denote empty
 cell values (but note that empty Gnumeric values may become zeros when passed
 as float or array arguments to Pure functions).
+
+Another special case is a term of the form ``gnm_error msg``, where ``msg`` is
+a string value indicating a Gnumeric error value such as ``"#N/A"``,
+``"#NAME?"``, ``"#NULL!"``, etc. When returned by a plugin function, the error
+text will be displayed in the corresponding Gnumeric cell.
 
 If a Pure function returns a value that doesn't match any of the above then it
 is converted to a string in Pure expression syntax and that string is returned
