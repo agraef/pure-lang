@@ -2032,9 +2032,38 @@ namespace;
 
       Predicate to check for reference values.
 
-   Note that manually removing the :func:`unref` sentry of a reference turns
-   the reference into just a normal pointer object and renders it unusable as
-   a reference. Doing this will also leak memory, so don't! */
+   Note that manually changing or removing the :func:`unref` sentry of a
+   reference turns the reference into just a normal pointer object and renders
+   it unusable as a reference. Doing this will also leak memory, so don't!
+
+   There is another pitfall with expression references, namely that they can
+   be used to create cyclic chains which currently can't be reclaimed by
+   Pure's reference-counting garbage collector. For instance::
+
+     > using system;
+     > done r = printf "done %s\n" (str r);
+     > let x = ref ();
+     > let y = ref (sentry done 2,x);
+     > put x (sentry done 1,y);
+     1,#<pointer 0x3036400>
+
+   At this point ``x`` points to ``y`` and vice versa. If you now purge the
+   ``x`` and ``y`` variables then Pure won't be able to reclaim the cycle,
+   resulting in a memory leak (you can verify this by noting that the sentries
+   are not being called). To prevent this, you'll have to break the cycle
+   first::
+
+     > put y 3;
+     done 2
+     3
+     > clear x y
+     done 1
+
+   Note that, in a way, sentries work similar to expression references and
+   thus the same caveats apply there. Having a limited amount of cyclic
+   references won't do any harm. But if they can grow indefinitely then they
+   may cause problems with long-running programs due to memory leakage, so
+   it's a good idea to avoid such cycles if possible. */
 
 namespace __C;
 extern expr* pure_new(expr*), expr* pure_expr_pointer();
