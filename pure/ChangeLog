@@ -1,3 +1,13 @@
+2012-06-16  Albert Graef  <Dr.Graef@t-online.de>
+
+	* interpreter.cc (const_defn, clearsym): Make sure that we
+	allocate a fresh expression pointer for each constant value cached
+	in a read-only variable. This will leak a tiny amount of memory
+	each time such a constant is redefined (which is possible using
+	interactive commands and the introspection facilities), but this
+	is needed to keep any dangling references to the constant intact.
+	This fixes issue #77.
+
 2012-06-15  Albert Graef  <Dr.Graef@t-online.de>
 
 	* runtime.cc (get_funptr): get_funptr() might be invoked after a

@@ -3531,7 +3531,8 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
 	  globalvars.erase(it);
 	  JIT->addGlobalMapping(oldv, x);
 	}
-	globalvars.insert(pair<int32_t,GlobalVar>(f, GlobalVar()));
+	pure_expr **xp = new pure_expr*; *xp = 0;
+	globalvars.insert(pair<int32_t,GlobalVar>(f, GlobalVar(xp)));
 	it = globalvars.find(f);
 	assert(it != globalvars.end());
 	GlobalVar& gv = it->second;
@@ -4379,7 +4380,8 @@ void interpreter::clearsym(int32_t f)
       /* This is a constant value cached in a read-only variable. We need to
 	 keep that variable, so create a new one in its place. */
       globalvars.erase(v);
-      globalvars.insert(pair<int32_t,GlobalVar>(f, GlobalVar()));
+      pure_expr **xp = new pure_expr*; *xp = 0;
+      globalvars.insert(pair<int32_t,GlobalVar>(f, GlobalVar(xp)));
       v = globalvars.find(f);
       assert(v != globalvars.end());
       symbol& sym = symtab.sym(f);
