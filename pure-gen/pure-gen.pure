@@ -1212,7 +1212,17 @@ let w = if dry_run then __none__ else if noclobber then "a" else "w";
 let out_pure   = fopen out_name w;
 
 let all_defines = filter (matches fnpat cstpat) defines;
-let all_protos = filter (matches fnpat funpat) func_protos;
+let all_protos = unique $ filter (matches fnpat funpat) func_protos with
+  unique (s, [], out) = reverse out;
+  unique (s,  l@(x:xs), out) =
+    if member s name then
+      s!name ~== x &&
+      warning 1 (sprintf "conflicting prototypes for %s" name) $$
+      unique (s, xs, out)
+    else unique (insert s (name=>x), xs, x:out)
+    when name = x!0; end;
+  unique l = unique (emptydict, l, []);
+end;
 
 let extern_decl = case iface_opt of
   "extern" = pure_extern_decl;

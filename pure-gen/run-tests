@@ -10,13 +10,16 @@ case "$host" in
   *-*-mingw*) diff="diff --strip-trailing-cr";;
 esac
 
+# darktjm: check that duplicate prototypes are removed
 echo "#define DUMMY 99" > dummy.h
+echo "extern int rand(void);" >> dummy.h
 echo "extern int rand(void);" >> dummy.h
 
 # Check that dump-ast works:
 
 dump-ast dummy.h > dummy.ast
 $diff dummy.ast - > /dev/null <<EOF
+(CDeclExt (CDecl [(CStorageSpec CExtern),(CTypeSpec CIntType)] [((Just (CDeclr (Just "rand") [(CFunDeclr (Right ([(CDecl [(CTypeSpec CVoidType)] [])],0)) [])] Nothing [])),Nothing,Nothing)]) "dummy.h")
 (CDeclExt (CDecl [(CStorageSpec CExtern),(CTypeSpec CIntType)] [((Just (CDeclr (Just "rand") [(CFunDeclr (Right ([(CDecl [(CTypeSpec CVoidType)] [])],0)) [])] Nothing [])),Nothing,Nothing)]) "dummy.h")
 
 EOF
@@ -36,6 +39,23 @@ $diff dummy.pure - > /dev/null <<EOF
 /* dummy.h: */
 const DUMMY = 99;
 extern int rand();
+EOF
+
+if [ $? != 0 ]; then
+  echo "pure-gen: FAILED"
+  rm -f dummy.*
+  exit 1
+fi
+
+# darktjm: check that duplicate prototypes are removed
+DUMP_AST=dump-ast pure-gen -fc dummy.h
+$diff dummy.c - > /dev/null <<EOF
+#include "dummy.h"
+
+int Pure_rand()
+{
+  return rand();
+}
 EOF
 
 if [ $? == 0 ]; then
