@@ -16221,7 +16221,10 @@ void interpreter::complex_match(matcher *pm, matcher *mxs,
 	tmps1.push_front(y);					\
       }								\
     ys.splice(ys.begin(), zs);					\
-    complex_match(pm, ys, s, failedbb, reduced, tmps1);		\
+    if (ys.empty())						\
+      try_rules(pm, s, failedbb, reduced, tmps1);		\
+    else							\
+      complex_match(pm, ys, s, failedbb, reduced, tmps1);	\
   } while (0)
 
 /* This is the core of the decision tree construction algorithm. It emits code

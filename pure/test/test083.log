@@ -1,0 +1,46 @@
+foo x/*0:1*/ = case x/*0:1*/ of {} = zero; y@{_/*0:00*/} = one,y/*0:*/; y@{_/*0:00*/,_/*0:010*/} = two,y/*0:*/; y@{_/*0:00*/,_/*0:010*/,_/*0:0110*/} = three,y/*0:*/; y@_/*0:*/ = other,y/*0:*/ {
+  rule #0: {} = zero
+  rule #1: y@{_} = one,y
+  rule #2: y@{_,_} = two,y
+  rule #3: y@{_,_,_} = three,y
+  rule #4: y@_ = other,y
+  state 0: #0 #1 #2 #3 #4
+	<var> state 1
+	<0x0 matrix> state 2
+	<1x1 matrix> state 3
+	<1x2 matrix> state 5
+	<1x3 matrix> state 8
+  state 1: #4
+  state 2: #0 #4
+  state 3: #1 #4
+	<var> state 4
+  state 4: #1 #4
+  state 5: #2 #4
+	<var> state 6
+  state 6: #2 #4
+	<var> state 7
+  state 7: #2 #4
+  state 8: #3 #4
+	<var> state 9
+  state 9: #3 #4
+	<var> state 10
+  state 10: #3 #4
+	<var> state 11
+  state 11: #3 #4
+} end;
+{
+  rule #0: foo x = case x of {} = zero; y@{_} = one,y; y@{_,_} = two,y; y@{_,_,_} = three,y; y@_ = other,y end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+foo {};
+zero
+foo {1};
+one,{1}
+foo {1,2};
+two,{1,2}
+foo {1,2,3};
+three,{1,2,3}
+foo {1,2,3,4};
+other,{1,2,3,4}
