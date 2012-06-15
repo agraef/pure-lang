@@ -5548,14 +5548,16 @@ static inline void *get_funptr(pure_expr *x)
     // The function hasn't been JITed yet. Do it now.
     interpreter& interp = *interpreter::g_interp;
     map<int32_t,Env>::iterator g = interp.globalfuns.find(x->tag);
-    assert(g != interp.globalfuns.end());
-    llvm::Function *f = g->second.f, *h = g->second.h;
-    assert(h);
-    if (f != h) interp.JIT->getPointerToFunction(f);
-    x->data.clos->fp = interp.JIT->getPointerToFunction(h);
+    // Make sure that the function wasn't purged in the meantime.
+    if (g != interp.globalfuns.end()) {
+      llvm::Function *f = g->second.f, *h = g->second.h;
+      assert(h);
+      if (f != h) interp.JIT->getPointerToFunction(f);
+      x->data.clos->fp = interp.JIT->getPointerToFunction(h);
 #if DEBUG>1
-    std::cerr << "JIT " << h->getNameStr() << " -> " << x->data.clos->fp << '\n';
+      std::cerr << "JIT " << h->getNameStr() << " -> " << x->data.clos->fp << '\n';
 #endif
+    }
   }
   return x->data.clos->fp;
 }
@@ -5663,19 +5665,20 @@ extern "C"
 pure_expr *pure_call(pure_expr *x)
 {
   char test;
+  void *fp = 0;
   assert(x);
-  if (x->tag <= 0 || !x->data.clos || x->data.clos->n != 0) {
+  if (x->tag <= 0 || !x->data.clos || x->data.clos->n != 0 ||
+      (fp = get_funptr(x)) == 0) {
 #if DEBUG>2
     cerr << "pure_call: returning " << x << endl;
 #endif
     checkstk(test);
     return x;
   }
-  void *fp = get_funptr(x);
 #if DEBUG>1
   cerr << "pure_call: calling " << x << " -> " << fp << endl;
 #endif
-  assert(x->refc > 0 && !x->data.clos->local);
+  assert(fp && x->refc > 0 && !x->data.clos->local);
   // parameterless call
   interpreter& interp = *interpreter::g_interp;
   if (!interp.checks) { checkall(test); }
@@ -5847,6 +5850,7 @@ extern "C"
 pure_expr *pure_apply(pure_expr *x, pure_expr *y)
 {
   char test;
+  void *fp = 0;
   assert(x && y && x->refc > 0 && y->refc > 0);
   // if the function in this call is a thunk, evaluate it now
   if (is_thunk(x)) pure_force(x);
@@ -5855,7 +5859,8 @@ pure_expr *pure_apply(pure_expr *x, pure_expr *y)
   uint32_t n = 1;
   while (f->tag == EXPR::APP) { f = f->data.x[0]; n++; }
   f0 = f;
-  if (f->tag < 0 || !f->data.clos || f->data.clos->n != n) {
+  if (f->tag < 0 || !f->data.clos || f->data.clos->n != n ||
+      (fp = get_funptr(f)) == 0) {
     // construct a literal application node
     f = new_expr();
     f->tag = EXPR::APP;
@@ -5866,12 +5871,11 @@ pure_expr *pure_apply(pure_expr *x, pure_expr *y)
   }
   // saturated call; execute it now
   interpreter& interp = *interpreter::g_interp;
-  void *fp = get_funptr(f);
   size_t m = f->data.clos->m;
   uint32_t env = 0;
   static pure_expr *argv[MAXARGS];
   assert(n <= MAXARGS && "pure_apply: function call exceeds maximum #args");
-  assert(f->data.clos->local || m == 0);
+  assert(fp && (f->data.clos->local || m == 0));
   // collect arguments
   f = x;
   for (size_t j = 1; f->tag == EXPR::APP; j++, f = f->data.x[0]) {
@@ -6019,16 +6023,17 @@ extern "C"
 pure_expr *pure_catch(pure_expr *h, pure_expr *x)
 {
   char test;
+  void *fp = 0;
   assert(h && x);
-  if (x->tag >= 0 && x->data.clos && x->data.clos->n == 0) {
+  if (x->tag >= 0 && x->data.clos && x->data.clos->n == 0 &&
+      (fp = get_funptr(x)) != 0) {
     interpreter& interp = *interpreter::g_interp;
-    void *fp = get_funptr(x);
 #if DEBUG>1
     cerr << "pure_catch: calling " << x << " -> " << fp << endl;
 #endif
     assert(h->refc > 0 && x->refc > 0);
     size_t m = x->data.clos->m;
-    assert(x->data.clos->local || m == 0);
+    assert(fp && (x->data.clos->local || m == 0));
     pure_expr **env = 0;
     size_t oldsz = interp.sstk_sz, old_di_sz = 0;
     if (interp.debugging) old_di_sz = interp.debug_info.size();
