@@ -6447,7 +6447,6 @@ void interpreter::checkfuns(bool ty_check, rule *r)
 	return;
       }
       // Might have to fix up the head symbol.
-      assert(qual.empty());
       symbol *sym2 = symtab.sym(*symtab.current_namespace+"::"+id);
       assert(sym2);
       g = sym2->f;
