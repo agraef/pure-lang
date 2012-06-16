@@ -8335,7 +8335,7 @@ expr *interpreter::macspecial(bool trace, expr x, envstack& estk, uint8_t idx)
   int32_t f = get2args(x, u, v);
   if (f == symtab.lambda_sym().f) {
     exprl xs;
-    if (u.is_list(xs)) {
+    if (u.is_list(xs) && !xs.empty()) {
       exprl *ys = new exprl;
       for (exprl::iterator it = xs.begin(), end = xs.end(); it!=end; ++it)
 	ys->push_back(tagsubst(*it));
@@ -8348,7 +8348,7 @@ expr *interpreter::macspecial(bool trace, expr x, envstack& estk, uint8_t idx)
     }
   } else if (f == symtab.case_sym().f) {
     rulel *r = new rulel; exprl xs;
-    if (v.is_list(xs) && parse_rulel(xs, *r)) {
+    if (v.is_list(xs) && !xs.empty() && parse_rulel(xs, *r)) {
       try {
 	expr *y = mkcase_expr(new expr(u), r);
 	return y;
@@ -8360,7 +8360,7 @@ expr *interpreter::macspecial(bool trace, expr x, envstack& estk, uint8_t idx)
   } else if (f == symtab.when_sym().f) {
     rulel *r = new rulel; exprl xs;
     int offs = 0;
-    if (v.is_list(xs) && parse_simple_rulel(xs, *r, offs)) {
+    if (v.is_list(xs) && !xs.empty() && parse_simple_rulel(xs, *r, offs)) {
       try {
 	expr *y = mkwhen_expr(new expr((offs==0)?u:varsubst(u, offs)), r);
 	return y;
@@ -8371,7 +8371,7 @@ expr *interpreter::macspecial(bool trace, expr x, envstack& estk, uint8_t idx)
       delete r;
   } else if (f == symtab.with_sym().f) {
     env *e = new env; exprl xs;
-    if (v.is_list(xs) && parse_env(xs, *e)) {
+    if (v.is_list(xs) && !xs.empty() && parse_env(xs, *e)) {
       try {
 	expr *y = mkwith_expr(new expr(u), e);
 	return y;
