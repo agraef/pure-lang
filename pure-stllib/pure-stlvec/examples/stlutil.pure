@@ -34,11 +34,11 @@ end;
 /*** readable representation of a stlvec or range ************************/
 
 tostr sz::int it::svrng = tostr (sz, ",") it;
-tostr (sz::int, sep::string) it::svrng = case bounds it of
-  sv,b,e = mkstr sv b e;
-  _ = str it;
-end with
-  mkstr sv b e = res when
+tostr (sz::int, sep::string) it::svrng = catch bad mkstr
+with
+  mkstr = pfx + s + sfx
+  when
+    sv,b,e = bounds it;
     sz = if sz <= 0 then 1000 else sz;
     rsz = e-b;
     elms = if rsz < 1 then [] else take sz (members it);
@@ -47,14 +47,13 @@ end with
     sfx = if e < #sv then " }" else "}";
     pfx = if typep mutable_svrng it then "sv{" else "csv{";
     pfx = if b > 0 then pfx + " " else pfx;
-    res = pfx + s + sfx;
   end;
+  bad _ = str it;
 end;
 
 namespace;
 
 __show__ r::svrng = stl::tostr 5 r;
-
 
 // examples$> pure -w -q
 // > using stlutil;
@@ -65,6 +64,18 @@ __show__ r::svrng = stl::tostr 5 r;
 // sv{ 10,11,12,13,14,...}
 // > (sv1, 17, stl::svend);
 // sv{ 17,18,19,20}
+
+// > sv1,1,"ten";
+// STLVEC #<pointer 0x9086b90>,1,"ten"
+// > sv1,2,2000;
+// STLVEC #<pointer 0x9086b90>,2,2000
+// > sv1 1;
+// sv{1,2,3,4,5,...} 1
+// > sv1, 1;
+// sv{  }
+// > sv1,2,5;
+// sv{ 3,4,5 }
+
 // > let csv1 = const_stlvec (0..20);
 // > csv1;
 // csv{0,1,2,3,4,...}
