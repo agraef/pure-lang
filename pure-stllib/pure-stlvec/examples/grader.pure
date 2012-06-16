@@ -71,8 +71,9 @@ included with the pure-stlvec distribution package for details.
 /*** Imports and constants ************************************************/
 
 using system, getopt, stlvec, stlvec::algorithms, stlstruct, stlutil;
+using grader_util;
 
-using namespace stl (svend svbeg svback readonly empty);
+using namespace stl; // (svend svbeg svback readonly empty);
 
 const report_ranks = "r";
 const report_names = "n";
@@ -220,11 +221,11 @@ end;
 
 const config_key_funs =
 [
- ("quiz_scoring", stl::parse_parameter (flags_ok "mat")),
- ("extra_quizes", stl::parse_parameter intp),
- ("score_weights", stl::parse_parameter_list doublep),
- ("curve_grade_counts", stl::parse_parameter_list (typep grade_count)),
- ("point_grade_cutoffs", stl::parse_parameter_list (typep grade_cutoff))
+ ("quiz_scoring", parse_parameter (flags_ok "mat")),
+ ("extra_quizes", parse_parameter intp),
+ ("score_weights", parse_parameter_list doublep),
+ ("curve_grade_counts", parse_parameter_list (typep grade_count)),
+ ("point_grade_cutoffs", parse_parameter_list (typep grade_cutoff))
 ];
 
 setup_state_info config_fp data_fp = ok, S when
@@ -232,7 +233,7 @@ setup_state_info config_fp data_fp = ok, S when
   S = state_info [(), emptystlvec, ffp, 0]; // () could be anything 
   ok1, name, scores = if ~feof ffp then parse_student_data S 0 (fgets ffp) 
                       else log_err S "missing perfect student" $$ 0,"",[];
-  ok2, config_sv = stl::parse_parameter_file config_key_funs config_fp;
+  ok2, config_sv = parse_parameter_file config_key_funs config_fp;
   ok = ok1 && ok2 && add_score_info (S:scores:(members config_sv));
 end with
   add_score_info [S, scores, qzstyle, extra_qzs, 
