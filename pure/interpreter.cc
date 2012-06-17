@@ -7561,9 +7561,9 @@ expr interpreter::vsubst(expr x)
   }
   default: {
     assert(x.tag() > 0);
-    if (x.astag()) {
+    if (x.astag() || x.ttag()) {
       expr u = expr(x.tag());
-      return quoted_tag(u, x.astag());
+      return quoted_tag(u, x.astag(), x.ttag());
     } else
       return x;
   }
@@ -9087,12 +9087,16 @@ expr interpreter::quoted_env(env *defs)
 
 expr interpreter::quoted_tag(expr x, int32_t astag, int32_t ttag)
 {
+  expr u, v;
   if (ttag != 0)
-    return expr(symtab.ttag_sym().x, x, symtab.sym(ttag_sym(ttag)).x);
-  else if (astag != 0)
-    return expr(symtab.astag_sym().x, symtab.sym(astag).x, x);
+    u = expr(symtab.ttag_sym().x, x, symtab.sym(ttag_sym(ttag)).x);
   else
-    return x;
+    u = x;
+  if (astag != 0)
+    v = expr(symtab.astag_sym().x, symtab.sym(astag).x, u);
+  else
+    v = u;
+  return v;
 }
 
 pure_expr *interpreter::fun_rules(int32_t f)
