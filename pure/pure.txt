@@ -26,7 +26,7 @@ Version @version@, |today|
 
 Albert Gräf <Dr.Graef@t-online.de>
 
-Copyright (c) 2009-2011 by Albert Gräf. This document is available under the
+Copyright (c) 2009-2012 by Albert Gräf. This document is available under the
 |FDL|_. Also see the Copying_ section for licensing information of the
 software.
 
@@ -82,7 +82,7 @@ program. Simply run the program from the shell as follows:
 .. code-block:: console
 
    $ pure
-   Pure @version@ (x86_64-unknown-linux-gnu) Copyright (c) 2008-2011 by Albert Graef
+   Pure @version@ (x86_64-unknown-linux-gnu) Copyright (c) 2008-2012 by Albert Graef
    (Type 'help' for help, 'help copying' for license information.)
    Loaded prelude from /usr/local/lib/pure/prelude.pure.
 
@@ -1141,8 +1141,8 @@ Pure is a `free-format` language, i.e., whitespace is insignificant (unless it
 is used to delimit other symbols). Thus, in contrast to "layout-based"
 languages like Haskell, you *must* use the proper delimiters (``;``) and
 keywords (:keyword:`end`) to terminate definitions and block structures. In
-particular, as shown in the example above, definitions and expressions at the
-toplevel have to be terminated with a semicolon, even in interactive mode.
+particular, definitions and expressions at the toplevel have to be terminated
+with a semicolon, even if you're typing them interactively in the interpreter.
 
 Comments use the same syntax as in C++: ``//`` for line-oriented, and
 ``/* ... */`` for multiline comments. The latter must not be nested. Lines
@@ -1395,7 +1395,7 @@ the left-hand side of a definition. Thus equational definitions like the above
 are forbidden in these languages. In Pure they are just normal business.
 
 This symbolic mode of evaluation is rather unusual outside of the realm of
-symbolic algebra system, but it provides the programmer with a very flexible
+symbolic algebra systems, but it provides the programmer with a very flexible
 model of computation and is one of Pure's most distinguishing features. In
 some cases, however, the unevaluated normal forms may also become a nuisance
 since they may obscure possible programming errors. Therefore Pure provides a
@@ -1793,27 +1793,27 @@ Lambdas: ``\x -> y``
     against the lambda arguments, such as ``\(x,y) -> x*y``. An exception is
     raised if the actual lambda arguments do not match the given patterns.
 
-Case expressions: ``case x of rule; ... end``
+Case expressions: ``case x of u = v; ... end``
     Matches an expression, discriminating over a number of different cases,
     similar to the Haskell case construct. The expression ``x`` is matched in
-    turn against each left-hand side pattern in the rule list, and the first
-    pattern which matches ``x`` gives the value of the entire expression, by
-    evaluating the corresponding right-hand side with the variables in the
-    pattern bound to their corresponding values. An exception is raised if the
-    target expression doesn't match any of the patterns.
+    turn against each left-hand side pattern ``u`` in the rule list, and the
+    first pattern which matches ``x`` gives the value of the entire
+    expression, by evaluating the corresponding right-hand side ``v`` with the
+    variables in the pattern bound to their corresponding values. An exception
+    is raised if the target expression doesn't match any of the patterns.
 
-When expressions: ``x when rule; ... end``
+When expressions: ``x when u = v; ... end``
     An alternative way to bind local variables by matching a collection of
     subject terms against corresponding patterns, similar to Aardappel_'s
-    ``when`` construct. A single binding such as ``x when u = v end`` is
-    equivalent to ``case v of u = x end``, but the former is often more
-    convenient to write. A ``when`` clause may contain multiple definitions,
-    which are processed from left to right, so that later definitions may
-    refer to the variables in earlier ones. This is exactly the same as
-    several nested single definitions, with the first binding being the
-    "outermost" one.
+    ``when`` construct. A single binding ``x when u = v end`` is equivalent to
+    the ``case`` expression ``case v of u = x end``, but the former is often
+    more convenient to write. A ``when`` clause may contain multiple
+    definitions, which are processed from left to right, so that later
+    definitions may refer to the variables in earlier ones. This is exactly
+    the same as several nested single definitions, with the first binding
+    being the "outermost" one.
 
-With expressions: ``x with rule; ... end``
+With expressions: ``x with u = v; ... end``
     Defines local functions. Like Haskell's ``where`` construct, but it can be
     used anywhere inside an expression (just like Aardappel's ``where``, but
     Pure uses the keyword ``with`` which better lines up with ``case`` and
@@ -2101,7 +2101,7 @@ following grammar rules:
    	: (";" "=" `expr` [`guard`])*
    type_rule : `pattern` ("|" `pattern`)* [ "=" `expr` [`guard`] ]
    macro_rule : `pattern` ("|" `pattern`)* "=" `expr`
-   simple_rule : `pattern` = `expr` | `expr`
+   simple_rule : `pattern` "=" `expr` | `expr`
    pattern : `simple_expr`
    guard : "if" `simple_expr`
          : | "otherwise"
@@ -4484,7 +4484,7 @@ of the symbol.
 
 .. note:: Pure's implicit symbol declarations are a mixed blessing. They are
    convenient, especially in interactive usage, but they also let missing or
-   mistyped symbols go unnoticed much to easily. As a remedy, in the case of
+   mistyped symbols go unnoticed much too easily. As a remedy, in the case of
    qualified symbols the compiler checks that the given namespace prefix
    matches the current namespace, in order to catch typos and other silly
    mistakes and prevent you from accidentally clobbering the contents of other
@@ -5612,11 +5612,27 @@ like any other. For instance::
 checks, see the discussion of the :envvar:`PURE_STACK` environment variable in
 `Stack Size and Tail Recursion`_.)
 
-Note that unhandled exceptions are reported by the interpreter with a
-corresponding error message::
+Unhandled exceptions are reported by the interpreter with a corresponding
+error message::
 
   > fact foo;
   <stdin>, line 2: unhandled exception 'failed_cond' while evaluating 'fact foo'
+
+Note that since the right-hand side of a type definition (cf. `Type Rules`_)
+is just ordinary Pure code, it may be susceptible to exceptions, too.  Such
+exceptions are reported or caught just like any other. In particular, if you
+want to make a type definition just fail silently in case of an exception,
+you'll have to wrap it up in a suitable :func:`catch` clause::
+
+  > foo x = throw foo; // dummy predicate which always throws an exception
+  > type bar x = foo x;
+  > type baz x = catch (cst false) (foo x);
+  > test_bar x::bar = x;
+  > test_baz x::baz = x;
+  > test_bar ();
+  <stdin>, line 6: unhandled exception 'foo' while evaluating 'test_bar ()'
+  > test_baz ();
+  test_baz ()
 
 Exceptions also provide a way to handle asynchronous signals. Pure's system
 module provides symbolic constants for common POSIX signals and also defines
@@ -5641,8 +5657,9 @@ up to produce corresponding Pure exceptions of the form ``signal SIG`` where
 you'll have to do this yourself (otherwise most signals will terminate the
 program).
 
-Last but not least, exceptions can also be used to implement non-local value
-returns. For instance, here's a variation of our n queens algorithm which only
+While exceptions are normally used to report abnormal error conditions, they
+also provide a way to implement non-local value returns. For instance, here's
+a variation of our n queens algorithm (cf. `List Comprehensions`_) which only
 returns the first solution. Note the use of :func:`throw` in the recursive
 search routine to bail out with a solution as soon as we found one. The value
 thrown there is caught in the main routine. Also note the use of :func:`void`
@@ -5665,22 +5682,6 @@ E.g., let's compute a solution for a standard 8x8 board::
 
   > queens 8;
   [(1,1),(2,5),(3,8),(4,6),(5,3),(6,7),(7,2),(8,4)]
-
-Finally, note that since the right-hand side of a type definition (cf. `Type
-Rules`_) is just ordinary Pure code, it may be susceptible to exceptions, too.
-Such exceptions are reported or caught just like any other. In particular, if
-you want to make a type definition just fail silently in case of an exception,
-you'll have to wrap it up in a suitable :func:`catch` clause::
-
-  > foo x = throw foo; // dummy predicate which always throws an exception
-  > type bar x = foo x;
-  > type baz x = catch (cst false) (foo x);
-  > test_bar x::bar = x;
-  > test_baz x::baz = x;
-  > test_bar ();
-  <stdin>, line 6: unhandled exception 'foo' while evaluating 'test_bar ()'
-  > test_baz ();
-  test_baz ()
 
 Standard Library
 ================
@@ -5739,14 +5740,14 @@ operators, are probably used most frequently:
 .. describe:: x!!ys
 
    This is the "slicing" operation, which returns the list, tuple, matrix or
-   string of all ``x!y`` while ``y`` runs through the (list or matrix)
-   ``ys``. Thus, e.g., ``x!!(i..j)`` returns all the elements between ``i``
-   and ``j`` (inclusive). Indices which fall outside the valid index range
-   are quietly discarded. The index range ``ys`` may contain any number of
-   indices (also duplicates), in any order. Thus ``x!![0|i=1..n]`` returns the
-   first element of ``x`` ``n`` times, and, if ``ys`` is a permutation of the
-   range ``0..#x-1``, then ``x!!ys`` yields the corresponding permutation of
-   the elements of ``x``. In the case of matrices the index range may also
+   string of all ``x!y`` while ``y`` runs through the elements of the list or
+   matrix ``ys``. Thus, e.g., ``x!!(i..j)`` returns all the elements between
+   ``i`` and ``j`` (inclusive). Indices which fall outside the valid index
+   range are quietly discarded. The index range ``ys`` may contain any number
+   of indices (also duplicates), in any order. Thus ``x!![0|i=1..n]`` returns
+   the first element of ``x`` ``n`` times, and, if ``ys`` is a permutation of
+   the range ``0..#x-1``, then ``x!!ys`` yields the corresponding permutation
+   of the elements of ``x``. In the case of matrices the index range may also
    contain two-dimensional subscripts, or the index range itself may be
    specified as a pair of row/column index lists such as ``x!!(i..j,k..l)``.
 
@@ -9903,7 +9904,7 @@ accompanying the software. Also, please see the source code for the copyright
 and license notes pertaining to individual source files which are part of this
 software.
 
-Pure uses LLVM_ as its compiler backend. LLVM is under Copyright (c) 2003-2011
+Pure uses LLVM_ as its compiler backend. LLVM is under Copyright (c) 2003-2012
 by the University of Illinois at Urbana-Champaign, and is licensed under a
 3-clause BSD-style license, please read COPYING.LLVM included in the
 distribution for the exact licensing terms. You can also find the LLVM license
