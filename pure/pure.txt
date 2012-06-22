@@ -1469,6 +1469,11 @@ Pure's expression syntax can be summarized in the following grammar rules:
                : | `prim_expr`
    rules : `rule` (";" `rule`)* [";"]
    simple_rules : `simple_rule` (";" `simple_rule`)* [";"]
+
+(Note that the :token:`rule` and :token:`simple_rule` elements are part of the
+definition syntax, which is explained in the `Rule Syntax`_ section.)
+
+.. productionlist::
    prim_expr : `qualified_symbol`
              : | `number`
              : | `string`
@@ -1486,9 +1491,6 @@ Pure's expression syntax can be summarized in the following grammar rules:
    op : `qualified_symbol`
    left_op : `qualified_symbol`
    right_op : `qualified_symbol`
-
-(Note that the :token:`rule` and :token:`simple_rule` elements are part of the
-definition syntax, which is explained in the `Rule Syntax`_ section.)
 
 Typical examples of the different expression types are summarized in the
 following table. Note that lambdas bind most weakly, followed by the special
@@ -1544,178 +1546,186 @@ are actually defined in the prelude.
 Together, these "atomic" types of expressions make up Pure's `primary
 expression` syntax. Here is a brief rundown of the primary expression types.
 
-Numbers: ``4711``, ``4711L``, ``1.2e-3``
-    The usual C notations for integers (decimal: ``1000``, hexadecimal:
-    ``0x3e8``, octal: ``01750``) and floating point values are all provided.
-    Integers can also be denoted in base 2 by using the ``0b`` or ``0B``
-    prefix: ``0b1111101000``. Integer constants that are too large to fit into
-    machine integers are promoted to bigints automatically.  Moreover, integer
-    literals immediately followed by the uppercase letter ``L`` are always
-    interpreted as bigint constants, even if they fit into machine integers.
-    This notation is also used when printing bigint constants, to distinguish
-    them from machine integers.
+.. describe:: Numbers: 4711, 4711L, 1.2e-3
 
-Strings: ``"Hello, world!\n"``
-    String constants are double-quoted and terminated with a null character,
-    like in C. In contrast to C, strings are always encoded in UTF-8, and
-    character escapes in Pure strings have a more flexible syntax (borrowed
-    from the author's Q language) which provides notations to specify any
-    Unicode character. Please refer to `Lexical Matters`_ for details.
+   The usual C notations for integers (decimal: ``1000``, hexadecimal:
+   ``0x3e8``, octal: ``01750``) and floating point values are all provided.
+   Integers can also be denoted in base 2 by using the ``0b`` or ``0B``
+   prefix: ``0b1111101000``. Integer constants that are too large to fit into
+   machine integers are promoted to bigints automatically.  Moreover, integer
+   literals immediately followed by the uppercase letter ``L`` are always
+   interpreted as bigint constants, even if they fit into machine integers.
+   This notation is also used when printing bigint constants, to distinguish
+   them from machine integers.
 
-Function and variable symbols: ``foo``, ``foo_bar``, ``BAR``, ``foo::bar``
-    These consist of the usual sequence of letters (including the underscore)
-    and digits, starting with a letter. Case is significant, thus ``foo``,
-    ``Foo`` and ``FOO`` are distinct identifiers. The '``_``' symbol, when
-    occurring on the left-hand side of an equation, is special; it denotes the
-    `anonymous variable` which matches any value without actually binding a
-    variable. Identifiers can also be prefixed with a namespace identifier,
-    like in ``foo::bar``. (This requires that the given namespace has already
-    been created, as explained under Namespaces_ in the Declarations_ section.)
+.. describe:: Strings: "Hello, world!\\n"
 
-Operator symbols: ``+``, ``==``, ``not``
-    For convenience, Pure also provides you with a limited means to extend the
-    syntax of the language with special operator symbols by means of a
-    corresponding `fixity` declaration, as discussed in section `Symbol
-    Declarations`_. Besides the usual infix, prefix and postfix operators,
-    Pure also provides outfix (bracket) and nonfix (nullary operator)
-    symbols. (Nonfix symbols actually work more or less like ordinary
-    identifiers, but the :keyword:`nonfix` attribute tells the compiler that
-    when such a symbol occurs on the left-hand side of an equation, it is
-    always to be interpreted as a literal, cf. `Variables in Equations`_.)
+   String constants are double-quoted and terminated with a null character,
+   like in C. In contrast to C, strings are always encoded in UTF-8, and
+   character escapes in Pure strings have a more flexible syntax (borrowed
+   from the author's Q language) which provides notations to specify any
+   Unicode character. Please refer to `Lexical Matters`_ for details.
 
-    Operator (and nonfix) symbols may take the form of an identifier or a
-    sequence of punctuation characters, which may optionally be qualified with
-    a namespace prefix. These symbols must always be declared before use. Once
-    declared, they are always special, and can't be used as ordinary
-    identifiers any more. However, like in Haskell, by enclosing an operator
-    in parentheses, such as ``(+)`` or ``(not)``, you can turn it into an
-    ordinary function symbol.
+.. describe:: Function and variable symbols: foo, foo_bar, BAR, foo::bar
 
-    .. note::
+   These consist of the usual sequence of letters (including the underscore)
+   and digits, starting with a letter. Case is significant, thus ``foo``,
+   ``Foo`` and ``FOO`` are distinct identifiers. The '``_``' symbol, when
+   occurring on the left-hand side of an equation, is special; it denotes the
+   `anonymous variable` which matches any value without actually binding a
+   variable. Identifiers can also be prefixed with a namespace identifier,
+   like in ``foo::bar``. (This requires that the given namespace has already
+   been created, as explained under Namespaces_ in the Declarations_ section.)
 
-       The common operator symbols like ``+``, ``-``, ``*``, ``/`` etc. are
-       all declared at the beginning of the prelude, see the :doc:`purelib`
-       for a list of these. Arithmetic and relational operators mostly follow
-       C conventions. However, out of necessity (``!``, ``&`` and ``|`` are
-       used for other purposes in Pure) the logical and bitwise operations, as
-       well as the negated equality predicates are named a bit differently:
-       ``~``, ``&&`` and ``||`` denote logical negation, conjunction and
-       disjunction, while the corresponding bitwise operations are named
-       ``not``, ``and`` and ``or``.  Moreover, following these conventions,
-       inequality is denoted ``~=``. Also note that ``&&`` and ``||`` are
-       special forms which are evaluated in short-circuit mode (see `Special
-       Forms`_ below), whereas the bitwise connectives receive their arguments
-       using call-by-value, just like the other arithmetic operations.
+.. describe:: Operator symbols: +, ==, not
 
-Lists: ``[x,y,z]``, ``x:xs``
-    Pure's basic list syntax is the same as in Haskell, thus ``[]`` is the
-    empty list and ``x:xs`` denotes a list with head element ``x`` and tail
-    list ``xs``. The infix constructor symbol '\ :cons:`:`\ ' is declared in
-    the prelude. The usual syntactic sugar for list values in brackets is
-    provided, thus ``[x,y,z]`` is exactly the same as ``x:y:z:[]``. (This kind
-    of list value is also called a "proper" list. Pure also permits "improper"
-    list values such as ``1:2:3`` with a non-list value in the tail. These
-    aren't of much use as ordinary list values, but are frequently used in
-    patterns or symbolic expressions such as ``x:xs`` where the tail usually
-    is a variable. Also, lists can be "lazy" in which case the tail is a
-    special kind of deferred value known as a "thunk", see `Lazy Evaluation
-    and Streams`_; technically, such lazy list values are improper lists,
-    too.)
+   For convenience, Pure also provides you with a limited means to extend the
+   syntax of the language with special operator symbols by means of a
+   corresponding `fixity` declaration, as discussed in section `Symbol
+   Declarations`_. Besides the usual infix, prefix and postfix operators,
+   Pure also provides outfix (bracket) and nonfix (nullary operator)
+   symbols. (Nonfix symbols actually work more or less like ordinary
+   identifiers, but the :keyword:`nonfix` attribute tells the compiler that
+   when such a symbol occurs on the left-hand side of an equation, it is
+   always to be interpreted as a literal, cf. `Variables in Equations`_.)
 
-    There's also a way to denote arithmetic sequences such as ``1..5``, which
-    denotes the list ``[1,2,3,4,5]``. Haskell users should note the missing
-    brackets. In contrast to Haskell, Pure doesn't use any special syntax for
-    arithmetic sequences, the '\ :func:`..`\ ' symbol is just an ordinary
-    infix operator declared and defined in the prelude. Sequences with
-    arbitrary stepsizes can be written by denoting the first two sequence
-    elements using the '\ :cons:`:`\ ' operator, as in ``1.0:1.2..3.0``. To
-    prevent unwanted artifacts due to rounding errors, the upper bound in a
-    floating point sequence is always rounded to the nearest grid point. Thus,
-    e.g., ``0.0:0.1..0.29`` actually yields ``[0.0,0.1,0.2,0.3]``, as does
-    ``0.0:0.1..0.31``.
+   Operator (and nonfix) symbols may take the form of an identifier or a
+   sequence of punctuation characters, which may optionally be qualified with
+   a namespace prefix. These symbols must always be declared before use. Once
+   declared, they are always special, and can't be used as ordinary
+   identifiers any more. However, like in Haskell, by enclosing an operator
+   in parentheses, such as ``(+)`` or ``(not)``, you can turn it into an
+   ordinary function symbol.
 
-Tuples: ``(x,y,z)``
-    Pure's tuples are a bit unusual: They are constructed by just "pairing"
-    things using the '\ :cons:`,`\ ' operator, for which the empty tuple
-    :cons:`()` acts as a neutral element (i.e., ``(),x`` is just ``x``, as is
-    ``x,()``). Pairs always associate to the right, meaning that ``x,y,z ==
-    x,(y,z) == (x,y),z``, where ``x,(y,z)`` is the normalized representation.
-    This implies that tuples are always flat, i.e., there are no nested tuples
-    (tuples of tuples); if you need such constructs then you should use lists
-    instead.
+   .. note::
 
-    Note that the parentheses are in fact *not* part of the tuple syntax in
-    Pure (they're just used to group expressions). However, they will be
-    needed to include a tuple in a list or matrix. (E.g., ``[(1,2),3,(4,5)]``
-    is a three element list consisting of the tuple ``1,2``, the integer
-    ``3``, and another tuple ``4,5``.) Hence, tuples aren't really primary
-    expressions at all, but we still include them here because they are often
-    used as a simpler replacement for lists, in particular in function
-    arguments and return values, when no elaborate hierarchical structure is
-    needed.
+      The common operator symbols like ``+``, ``-``, ``*``, ``/`` etc. are
+      all declared at the beginning of the prelude, see the :doc:`purelib`
+      for a list of these. Arithmetic and relational operators mostly follow
+      C conventions. However, out of necessity (``!``, ``&`` and ``|`` are
+      used for other purposes in Pure) the logical and bitwise operations, as
+      well as the negated equality predicates are named a bit differently:
+      ``~``, ``&&`` and ``||`` denote logical negation, conjunction and
+      disjunction, while the corresponding bitwise operations are named
+      ``not``, ``and`` and ``or``.  Moreover, following these conventions,
+      inequality is denoted ``~=``. Also note that ``&&`` and ``||`` are
+      special forms which are evaluated in short-circuit mode (see `Special
+      Forms`_ below), whereas the bitwise connectives receive their arguments
+      using call-by-value, just like the other arithmetic operations.
 
-Matrices: ``{1.0,2.0,3.0}``, ``{1,2;3,4}``, ``{1L,y+1;foo,bar}``
-    Pure also offers matrices, a kind of two-dimensional arrays, as a built-in
-    data structure which provides efficient storage and element access. These
-    work more or less like their Octave/MATLAB equivalents, but using curly
-    braces instead of brackets. As indicated, commas are used to separate the
-    columns of a matrix, semicolons for its rows. In fact, the ``{...}``
-    construct is rather general and allows you to construct new matrices from
-    any collection of individual elements ("scalars") and submatrices,
-    provided that all dimensions match up. Here, any expression which doesn't
-    yield a matrix denotes a scalar, which is considered to be a 1x1 matrix
-    for the purpose of matrix construction. The comma arranges submatrices in
-    columns, while the semicolon arranges them in rows. So, if both ``x`` and
-    ``y`` are ``n``\ x\ ``m`` matrices, then ``{x,y}`` becomes an ``n`` x
-    ``2*m`` matrix consisting of all the columns of ``x`` followed by all the
-    columns of ``y``. Likewise, ``{x;y}`` becomes a ``2*n`` x ``m`` matrix
-    (all the rows of ``x`` above of all rows of ``y``). In addition, ``{...}``
-    constructs can be nested to an arbitrary depth. Thus ``{{1;3},{2;4}}`` is
-    another way to write the 2x2 matrix ``{1,2;3,4}`` in a kind of
-    "column-major" format (however, internally all matrices are stored in C's
-    row-major format).
+.. describe:: Lists: [x,y,z], x:xs
 
-    Note that ``{...}`` only behaves this way when *constructing* matrix
-    values. When used as a pattern on the left-hand side of equations, nested
-    matrices are matched literally, and variables can only match single
-    elements, not rows or columns. Thus the pattern ``{x,y}`` will only match
-    a 1x2 matrix and bind ``x`` and ``y`` to the two elements of the matrix.
-    Similarly, the pattern ``{{x,y},z}`` matches a (symbolic) 1x2 matrix which
-    has another matrix ``{x,y}`` as its first element.
+   Pure's basic list syntax is the same as in Haskell, thus ``[]`` is the
+   empty list and ``x:xs`` denotes a list with head element ``x`` and tail
+   list ``xs``. The infix constructor symbol '\ :cons:`:`\ ' is declared in
+   the prelude. The usual syntactic sugar for list values in brackets is
+   provided, thus ``[x,y,z]`` is exactly the same as ``x:y:z:[]``. (This kind
+   of list value is also called a "proper" list. Pure also permits "improper"
+   list values such as ``1:2:3`` with a non-list value in the tail. These
+   aren't of much use as ordinary list values, but are frequently used in
+   patterns or symbolic expressions such as ``x:xs`` where the tail usually
+   is a variable. Also, lists can be "lazy" in which case the tail is a
+   special kind of deferred value known as a "thunk", see `Lazy Evaluation
+   and Streams`_; technically, such lazy list values are improper lists,
+   too.)
 
-    Pure supports both numeric and symbolic matrices. The former are
-    homogeneous arrays of double, complex double or (machine) int matrices,
-    while the latter can contain any mixture of Pure expressions. Pure will
-    pick the appropriate type for the data at hand. If a matrix contains
-    values of different types, or Pure values which cannot be stored in a
-    numeric matrix, then a symbolic matrix is created instead (this also
-    includes the case of bigints, which are considered as symbolic values as
-    far as matrix construction is concerned). Numeric matrices use an internal
-    data layout that is fully compatible with the `GNU Scientific Library`_
-    (GSL), and can readily be passed to GSL routines via the C interface. (The
-    Pure interpreter does not require GSL, however, so numeric matrices will
-    work even if GSL is not installed.)
+   There's also a way to denote arithmetic sequences such as ``1..5``, which
+   denotes the list ``[1,2,3,4,5]``. Haskell users should note the missing
+   brackets. In contrast to Haskell, Pure doesn't use any special syntax for
+   arithmetic sequences, the '\ :func:`..`\ ' symbol is just an ordinary
+   infix operator declared and defined in the prelude. Sequences with
+   arbitrary stepsizes can be written by denoting the first two sequence
+   elements using the '\ :cons:`:`\ ' operator, as in ``1.0:1.2..3.0``. To
+   prevent unwanted artifacts due to rounding errors, the upper bound in a
+   floating point sequence is always rounded to the nearest grid point. Thus,
+   e.g., ``0.0:0.1..0.29`` actually yields ``[0.0,0.1,0.2,0.3]``, as does
+   ``0.0:0.1..0.31``.
 
-    More information about matrices and corresponding examples can be found in
-    the Examples_ section below.
+.. describe:: Tuples: (x,y,z)
 
-Comprehensions: ``[x,y | x=1..n; y=1..m; x<y]``, ``{f x | x=1..n}``
-    Pure provides both list and matrix comprehensions as a convenient means to
-    construct list and matrix values from a "template" expression and one or
-    more "generator" and "filter" clauses. The former bind a pattern to values
-    drawn from a list or matrix, the latter are just predicates determining
-    which generated elements should actually be added to the result. Both list
-    and matrix comprehensions are in fact syntactic sugar for a combination of
-    nested lambdas, conditional expressions and "catmaps" (a collection of
-    operations which combine list or matrix construction and mapping a
-    function over a list or matrix, defined in the prelude), but they are
-    often much easier to write.
+   Pure's tuples are a bit unusual: They are constructed by just "pairing"
+   things using the '\ :cons:`,`\ ' operator, for which the empty tuple
+   :cons:`()` acts as a neutral element (i.e., ``(),x`` is just ``x``, as is
+   ``x,()``). Pairs always associate to the right, meaning that ``x,y,z ==
+   x,(y,z) == (x,y),z``, where ``x,(y,z)`` is the normalized representation.
+   This implies that tuples are always flat, i.e., there are no nested tuples
+   (tuples of tuples); if you need such constructs then you should use lists
+   instead.
 
-    Matrix comprehensions work pretty much like list comprehensions, but
-    produce matrices instead of lists. List generators in matrix
-    comprehensions alternate between row and column generation so that most
-    common mathematical abbreviations carry over quite easily. Examples of
-    both kinds of comprehensions can be found in the Examples_ section below.
+   Note that the parentheses are in fact *not* part of the tuple syntax in
+   Pure (they're just used to group expressions). However, they will be
+   needed to include a tuple in a list or matrix. (E.g., ``[(1,2),3,(4,5)]``
+   is a three element list consisting of the tuple ``1,2``, the integer
+   ``3``, and another tuple ``4,5``.) Hence, tuples aren't really primary
+   expressions at all, but we still include them here because they are often
+   used as a simpler replacement for lists, in particular in function
+   arguments and return values, when no elaborate hierarchical structure is
+   needed.
+
+.. describe:: Matrices: {1.0,2.0,3.0}, {1,2;3,4}, {1L,y+1;foo,bar}
+
+   Pure also offers matrices, a kind of two-dimensional arrays, as a built-in
+   data structure which provides efficient storage and element access. These
+   work more or less like their Octave/MATLAB equivalents, but using curly
+   braces instead of brackets. As indicated, commas are used to separate the
+   columns of a matrix, semicolons for its rows. In fact, the ``{...}``
+   construct is rather general and allows you to construct new matrices from
+   any collection of individual elements ("scalars") and submatrices,
+   provided that all dimensions match up. Here, any expression which doesn't
+   yield a matrix denotes a scalar, which is considered to be a 1x1 matrix
+   for the purpose of matrix construction. The comma arranges submatrices in
+   columns, while the semicolon arranges them in rows. So, if both ``x`` and
+   ``y`` are ``n``\ x\ ``m`` matrices, then ``{x,y}`` becomes an ``n`` x
+   ``2*m`` matrix consisting of all the columns of ``x`` followed by all the
+   columns of ``y``. Likewise, ``{x;y}`` becomes a ``2*n`` x ``m`` matrix
+   (all the rows of ``x`` above of all rows of ``y``). In addition, ``{...}``
+   constructs can be nested to an arbitrary depth. Thus ``{{1;3},{2;4}}`` is
+   another way to write the 2x2 matrix ``{1,2;3,4}`` in a kind of
+   "column-major" format (however, internally all matrices are stored in C's
+   row-major format).
+
+   Note that ``{...}`` only behaves this way when *constructing* matrix
+   values. When used as a pattern on the left-hand side of equations, nested
+   matrices are matched literally, and variables can only match single
+   elements, not rows or columns. Thus the pattern ``{x,y}`` will only match
+   a 1x2 matrix and bind ``x`` and ``y`` to the two elements of the matrix.
+   Similarly, the pattern ``{{x,y},z}`` matches a (symbolic) 1x2 matrix which
+   has another matrix ``{x,y}`` as its first element.
+
+   Pure supports both numeric and symbolic matrices. The former are
+   homogeneous arrays of double, complex double or (machine) int matrices,
+   while the latter can contain any mixture of Pure expressions. Pure will
+   pick the appropriate type for the data at hand. If a matrix contains
+   values of different types, or Pure values which cannot be stored in a
+   numeric matrix, then a symbolic matrix is created instead (this also
+   includes the case of bigints, which are considered as symbolic values as
+   far as matrix construction is concerned). Numeric matrices use an internal
+   data layout that is fully compatible with the `GNU Scientific Library`_
+   (GSL), and can readily be passed to GSL routines via the C interface. (The
+   Pure interpreter does not require GSL, however, so numeric matrices will
+   work even if GSL is not installed.)
+
+   More information about matrices and corresponding examples can be found in
+   the Examples_ section below.
+
+.. describe:: Comprehensions: [x,y | x=1..n; y=1..m; x<y], {f x | x=1..n}
+
+   Pure provides both list and matrix comprehensions as a convenient means to
+   construct list and matrix values from a "template" expression and one or
+   more "generator" and "filter" clauses. The former bind a pattern to values
+   drawn from a list or matrix, the latter are just predicates determining
+   which generated elements should actually be added to the result. Both list
+   and matrix comprehensions are in fact syntactic sugar for a combination of
+   nested lambdas, conditional expressions and "catmaps" (a collection of
+   operations which combine list or matrix construction and mapping a
+   function over a list or matrix, defined in the prelude), but they are
+   often much easier to write.
+
+   Matrix comprehensions work pretty much like list comprehensions, but
+   produce matrices instead of lists. List generators in matrix
+   comprehensions alternate between row and column generation so that most
+   common mathematical abbreviations carry over quite easily. Examples of
+   both kinds of comprehensions can be found in the Examples_ section below.
 
 Simple Expressions
 ~~~~~~~~~~~~~~~~~~
@@ -1781,45 +1791,50 @@ Some special notations are provided for conditional expressions as well as
 anonymous functions (lambdas) and blocks of local function and variable
 definitions.
 
-Conditional expressions: ``if x then y else z``
-    Evaluates to ``y`` or ``z`` depending on whether ``x`` is "true" (i.e., a
-    nonzero integer). An exception is raised if the condition is not an
-    integer.
+.. describe:: Conditional expressions: if x then y else z
 
-Lambdas: ``\x -> y``
-    These denote anonymous functions and work pretty much like in Haskell.
-    Pure supports multiple-argument lambdas (e.g, ``\x y -> x*y``), as well as
-    pattern-matching lambda abstractions which match one or more patterns
-    against the lambda arguments, such as ``\(x,y) -> x*y``. An exception is
-    raised if the actual lambda arguments do not match the given patterns.
+   Evaluates to ``y`` or ``z`` depending on whether ``x`` is "true" (i.e., a
+   nonzero integer). An exception is raised if the condition is not an
+   integer.
 
-Case expressions: ``case x of u = v; ... end``
-    Matches an expression, discriminating over a number of different cases,
-    similar to the Haskell case construct. The expression ``x`` is matched in
-    turn against each left-hand side pattern ``u`` in the rule list, and the
-    first pattern which matches ``x`` gives the value of the entire
-    expression, by evaluating the corresponding right-hand side ``v`` with the
-    variables in the pattern bound to their corresponding values. An exception
-    is raised if the target expression doesn't match any of the patterns.
+.. describe:: Lambdas: \\x -> y
 
-When expressions: ``x when u = v; ... end``
-    An alternative way to bind local variables by matching a collection of
-    subject terms against corresponding patterns, similar to Aardappel_'s
-    ``when`` construct. A single binding ``x when u = v end`` is equivalent to
-    the ``case`` expression ``case v of u = x end``, but the former is often
-    more convenient to write. A ``when`` clause may contain multiple
-    definitions, which are processed from left to right, so that later
-    definitions may refer to the variables in earlier ones. This is exactly
-    the same as several nested single definitions, with the first binding
-    being the "outermost" one.
+   These denote anonymous functions and work pretty much like in Haskell.
+   Pure supports multiple-argument lambdas (e.g, ``\x y -> x*y``), as well as
+   pattern-matching lambda abstractions which match one or more patterns
+   against the lambda arguments, such as ``\(x,y) -> x*y``. An exception is
+   raised if the actual lambda arguments do not match the given patterns.
 
-With expressions: ``x with u = v; ... end``
-    Defines local functions. Like Haskell's ``where`` construct, but it can be
-    used anywhere inside an expression (just like Aardappel's ``where``, but
-    Pure uses the keyword ``with`` which better lines up with ``case`` and
-    ``when``). Several functions can be defined in a single ``with`` clause,
-    and the definitions can be mutually recursive and consist of as many
-    equations as you want.
+.. describe:: Case expressions: case x of u = v; ... end
+
+   Matches an expression, discriminating over a number of different cases,
+   similar to the Haskell ``case`` construct. The expression ``x`` is matched
+   in turn against each left-hand side pattern ``u`` in the rule list, and the
+   first pattern which matches ``x`` gives the value of the entire expression,
+   by evaluating the corresponding right-hand side ``v`` with the variables in
+   the pattern bound to their corresponding values. An exception is raised if
+   the target expression doesn't match any of the patterns.
+
+.. describe:: When expressions: x when u = v; ... end
+
+   An alternative way to bind local variables by matching a collection of
+   subject terms against corresponding patterns, similar to Aardappel_'s
+   ``when`` construct. A single binding ``x when u = v end`` is equivalent to
+   the ``case`` expression ``case v of u = x end``, but the former is often
+   more convenient to write. A ``when`` clause may contain multiple
+   definitions, which are processed from left to right, so that later
+   definitions may refer to the variables in earlier ones. This is exactly
+   the same as several nested single definitions, with the first binding
+   being the "outermost" one.
+
+.. describe:: With expressions: x with u = v; ... end
+
+   Defines local functions. Like Haskell's ``where`` construct, but it can be
+   used anywhere inside an expression (just like Aardappel's ``where``, but
+   Pure uses the keyword ``with`` which better lines up with ``case`` and
+   ``when``). Several functions can be defined in a single ``with`` clause,
+   and the definitions can be mutually recursive and consist of as many
+   equations as you want.
 
 Note that most of these constructs introduce local bindings of variable and
 function symbols which may override other global or local bindings of these
@@ -2078,12 +2093,12 @@ bound in the surrounding context::
   87,97
 
 Observe how changing the value of the global ``x`` variable immediately
-affects the value of the global ``bar`` function. This works pretty much like
-global variables in imperative languages, but note that in Pure the value of a
-global variable can only be changed with a :keyword:`let` command at the
-toplevel. Thus referential transparency is unimpaired; while the value of a
-global variable may change between different toplevel expressions, it will
-always take the same value in a single evaluation.
+affects the value computed by the global ``bar`` function. This works pretty
+much like global variables in imperative languages, but note that in Pure the
+value of a global variable can only be changed with a :keyword:`let` command
+at the toplevel. Thus referential transparency is unimpaired; while the value
+of a global variable may change between different toplevel expressions, it
+will always take the same value in a single evaluation.
 
 Similarly, you can also add new equations to an existing function at any
 time. The Pure interpreter will then automatically recompile the function as
@@ -2111,12 +2126,16 @@ been processed, toplevel definitions may well evolve while the program is
 being processed, and the interpreter will always use the latest definitions at
 a given point in the source when an expression is evaluated.
 
-.. note:: Such dynamic behaviour is often frowned upon by functional
-   programming purists. But, as already mentioned, it makes Pure much more
-   convenient to use in an interactive setting. On the other hand, Pure's
-   dynamic toplevel admittedly has its pitfalls. Specifically, even in a
-   script file you'll have to make sure that all symbols needed in an
-   evaluation are defined before entering the expression to be evaluated.
+.. note:: As already mentioned, this behaviour makes Pure much more convenient
+   to use in an interactive setting. We should point out, however, that
+   dynamic environments are often frowned upon by functional programming
+   purists (for good reasons), and Pure's dynamic toplevel certainly has its
+   pitfalls just like any other. Specifically, even in a script file you'll
+   have to take care that all symbols needed in an evaluation are completely
+   defined before entering the expression to be evaluated. Nevertheless, it is
+   expected that most Pure programmers will use Pure interactively most of the
+   time, and so tailoring the design to interactive usage seems justifiable in
+   this case.
 
 Rule Syntax
 ===========
