@@ -1821,6 +1821,12 @@ With expressions: ``x with u = v; ... end``
     and the definitions can be mutually recursive and consist of as many
     equations as you want.
 
+Note that most of these constructs introduce local bindings of variable and
+function symbols which may override other global or local bindings of these
+symbols. This gives rise to a kind of `block structure` similar to Algol-like
+programming languages. Please check `Scoping Rules`_ below for more
+information about this.
+
 .. _Special Forms:
 
 Special Forms
@@ -2012,7 +2018,21 @@ Scoping Rules
 -------------
 
 A few remarks about the scope of identifiers and other symbols are in order
-here. Like most modern functional languages, Pure uses `lexical` or `static`
+here. `Special expressions`_ introduce `local scopes` of functions and
+variables. Specifically, lambda expressions, as well as the left-hand sides of
+rules in ``case``, ``when`` and ``with`` expressions, bind the variables in
+the patterns to their corresponding values. In addition, a ``with`` expression
+also binds function names to the corresponding functions defined by the rules
+given in the expression. In either case, these bindings are limited to the
+scope of the corresponding construct, i.e., the body of a lambda expression or
+the right-hand sides of the rules in ``case``, ``when`` and ``with``
+expressions. Inside that scope they override other (global or local)
+definitions of the same symbols which may be present in the surrounding
+program code. This gives rise to a hierarchical `block structure` where each
+occurrence of a symbol refers to the innermost definition of that symbol
+visible at that point of the program.
+
+Like most modern functional languages, Pure uses `lexical` or `static`
 binding for local functions and variables. What this means is that the binding
 of a local name is completely determined at compile time by the surrounding
 program text, and does not change as the program is being executed. In
@@ -2034,34 +2054,40 @@ when the closure is invoked::
   > let x = 77; f 10, (f 20 when x = 88 end);
   109,119
 
-Global bindings of variable and function symbols work a bit differently,
-though. Like many languages which are to be used interactively, Pure binds
-global symbols `dynamically`, so that the bindings can be changed easily at
-any time during an interactive session. This is mainly a convenience for
-interactive usage, but works the same no matter whether the source code is
-entered interactively or being read from a script, in order to ensure
-consistent behaviour between interactive and batch mode operation.
+In contrast to local bindings, Pure's toplevel environment binds global
+symbols `dynamically`, so that the bindings can be changed easily at any time
+during an interactive session. This is mainly a convenience for interactive
+usage, but works the same no matter whether the source code is entered
+interactively or being read from a script, in order to ensure consistent
+behaviour between interactive and batch mode operation.
 
-So, for instance, you can easily bind a global variable to a new value by just
-entering a corresponding :keyword:`let` command::
+In particular, you can easily bind a global variable to a new value by just
+entering a corresponding :keyword:`let` command. For instance, contrast the
+following with the local ``bar`` function from above which had the ``x`` value
+bound in the surrounding context::
 
-  > foo x = c*x;
-  > foo 99;
-  c*99
-  > let c = 2; foo 99;
-  198
-  > let c = 3; foo 99;
-  297
+  > clear x
+  > bar y = x+y;
+  > bar 10, bar 20;
+  x+10,x+20
+  > let x = 99;
+  > bar 10, bar 20;
+  109,119
+  > let x = 77;
+  > bar 10, bar 20;
+  87,97
 
-This works pretty much like global variables in imperative languages, but note
-that in Pure the value of a global variable can only be changed with a
-:keyword:`let` command at the toplevel. Thus referential transparency is
-unimpaired; while the value of a global variable may change between different
-toplevel expressions, it will always take the same value in a single
-evaluation.
+Observe how changing the value of the global ``x`` variable immediately
+affects the value of the global ``bar`` function. This works pretty much like
+global variables in imperative languages, but note that in Pure the value of a
+global variable can only be changed with a :keyword:`let` command at the
+toplevel. Thus referential transparency is unimpaired; while the value of a
+global variable may change between different toplevel expressions, it will
+always take the same value in a single evaluation.
 
 Similarly, you can also add new equations to an existing function at any
-time::
+time. The Pure interpreter will then automatically recompile the function as
+needed. For instance::
 
   > fact 0 = 1;
   > fact n::int = n*fact (n-1) if n>0;
@@ -2076,15 +2102,21 @@ time::
   > fact 10;
   3628800
 
-(In interactive mode, it is even possible to completely erase a definition,
-see section `Interactive Usage`_ for details.)
+In interactive mode, it is even possible to completely erase a function
+definition and redo it from scratch, see section `Interactive Usage`_ for
+details.
 
 So, while the meaning of a local symbol never changes once its definition has
 been processed, toplevel definitions may well evolve while the program is
 being processed, and the interpreter will always use the latest definitions at
-a given point in the source when an expression is evaluated. This means that,
-even in a script file, you have to define all symbols needed in an evaluation
-before entering the expression to be evaluated.
+a given point in the source when an expression is evaluated.
+
+.. note:: Such dynamic behaviour is often frowned upon by functional
+   programming purists. But, as already mentioned, it makes Pure much more
+   convenient to use in an interactive setting. On the other hand, Pure's
+   dynamic toplevel admittedly has its pitfalls. Specifically, even in a
+   script file you'll have to make sure that all symbols needed in an
+   evaluation are defined before entering the expression to be evaluated.
 
 Rule Syntax
 ===========
