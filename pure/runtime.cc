@@ -12286,7 +12286,7 @@ uint32_t hash(pure_expr *x)
     return (uint32_t)h;
   }
   default:
-    assert(x->tag>0);
+    assert(x->tag>=0);
     if (x->data.clos && x->data.clos->local)
       return ((uint32_t)x->tag) ^ x->data.clos->key;
     else
