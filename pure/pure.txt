@@ -5002,6 +5002,11 @@ step. Macros can be defined in terms of other macros (also recursively), and
 are normally evaluated using call by value (i.e., macro calls in macro
 arguments are expanded before the macro gets applied to its parameters).
 
+In the first half of this section we start out with some common uses of macros
+which should cover most aspects of macro programming that the average Pure
+programmer will need. The remainder of this section then discusses some more
+advanced features of Pure's macro system intended for power users.
+
 .. _Optimization Rules:
 
 Optimization Rules
@@ -5082,13 +5087,38 @@ lambdas. After that we'll return to the subject of optimization rules in
 Recursive Macros
 ----------------
 
-Macros can be recursive, in which case they usually consist of multiple rules
-and make use of pattern-matching like ordinary function definitions. As a
-simple example, let's implement a Pure version of Lisp's quasiquote which
-allows you to create a quoted expression from a "template" while substituting
-variable parts of the template. (For the sake of brevity, our definition is
-somewhat simplified and does not cover some corner cases. See the Pure
-distribution for a full version of this example.)
+Macros can also be recursive, in which case they usually consist of multiple
+rules and make use of pattern-matching just like ordinary function definitions.
+
+.. note:: Pure macros are just as powerful as (unconditional) term rewriting
+   systems and thus they are Turing-complete. This implies that a badly
+   written macro may well send the Pure compiler into an infinite recursion,
+   which usually results in a stack overflow at compile time. See `Stack Size
+   and Tail Recursion`_ in the `Caveats and Notes`_ section for information on
+   how to deal with these by setting the :envvar:`PURE_STACK` environment
+   variable.
+
+As a simple example, let's see how we can inline invocations of the :func:`#`
+size operator on list constants::
+
+  def #[] = 0;
+  def #(x:xs) = #xs+1;
+
+As you can see, the definition is pretty straightforward; exactly the same
+rules might also be used for an ordinary function definition (although the
+standard library actually implements :func:`#` a bit differently to make good
+use of tail recursion). Let's check that this actually works::
+
+  > foo = #[1,2,3,4];
+  > show foo
+  foo = 4;
+
+This was rather easy. So let's implement a more elaborate example: a basic
+Pure version of Lisp's quasiquote which allows you to create a quoted
+expression from a "template" while substituting variable parts of the
+template. (For the sake of brevity, we present a somewhat abridged version
+here which does not cover all corner cases. The full version of this macro can
+be found as lib/quasiquote.pure in the Pure distribution.)
 
 ::
 
@@ -5129,14 +5159,6 @@ Examples::
   foo 1 2 (2/3) (3/4) (5/6)
   > `foo 1 2 (,@args) (5/6) when args = '[2/3,3/4] end;
   foo 1 2 (2/3) (3/4) (5/6)
-
-We mention in passing here that, technically, Pure macros are just as powerful
-as (unconditional) term rewriting systems and thus they are Turing-complete.
-This implies that a badly written macro may well send the Pure compiler into
-an infinite recursion, which results in a stack overflow at compile time. See
-`Stack Size and Tail Recursion`_ in the `Caveats and Notes`_ section for
-information on how to deal with these by setting the :envvar:`PURE_STACK`
-environment variable.
 
 User-Defined Special Forms
 --------------------------
@@ -5224,6 +5246,14 @@ with C macros:
 
 Here ``F(y)`` expands to ``{ int y = y+1; return y+y; }`` which is usually
 *not* what you want.
+
+This completes our little introduction to Pure's macro facilities. The above
+material should in fact cover all the common uses of Pure macros that most
+Pure programmers will ever need. However, if you want to become a real Pure
+macro wizard then read on. In the following subsections we're going to
+discover some more advanced features of Pure's macro system which let you
+write macros for manipulating special forms and give you access to Pure's
+reflection capabilities.
 
 Built-in Macros and Special Expressions
 ---------------------------------------
