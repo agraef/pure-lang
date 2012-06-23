@@ -2185,86 +2185,124 @@ definitions. For instance, the following variable definition matches the
 result of evaluating the right-hand side list expression against the pattern
 ``x:y:xs`` and binds the variables ``x`` and ``y`` to the first two elements
 of the resulting list and ``xs`` to the list of remaining elements,
-respectively. ::
+respectively. We can then place ``x`` and ``y`` at the end of the list,
+thereby performing a kind of "rotation" of the first two list members::
 
   > let x:y:xs = 1..10;
-  > x,y,xs;
-  1,2,[3,4,5,6,7,8,9,10]
+  > xs+[x,y];
+  [3,4,5,6,7,8,9,10,1,2]
 
-The same works with local variable definitions::
+The same works with a local variable definition::
 
-  > x,y,xs when x:y:xs = 1..10 end;
-  1,2,[3,4,5,6,7,8,9,10]
+  > xs+[x,y] when x:y:xs = 1..10 end;
+  [3,4,5,6,7,8,9,10,1,2]
 
-Or with :keyword:`case` expressions::
+Or with a :keyword:`case` expression::
 
-  > case 1..10 of x:y:xs = x,y,xs end;
-  1,2,[3,4,5,6,7,8,9,10]
+  > case 1..10 of x:y:xs = xs+[x,y] end;
+  [3,4,5,6,7,8,9,10,1,2]
 
 The arguments of functions (and macros) are handled in the same fashion, too::
 
-  > swap [x,y] = [y,x];
-  > swap [1,2];
-  [2,1]
+  > rot2 (x:y:xs) = xs+[x,y];
+  > rot2 (1..10);
+  [3,4,5,6,7,8,9,10,1,2]
 
-However, in this case you can keep adding more equations to make the function
-work with different argument patterns::
-
-  > swap (x,y) = y,x;
-  > swap {x,y} = {y,x};
-  > swap (1,2); swap {1,2};
-  2,1
-  {2,1}
-
-This doesn't only work with the usual predefined aggregates (such as lists,
-tuples and matrices, as shown in the above examples), but with any kind of
-Pure expression::
-
-  > foo (bar x) = x+1;
-  > foo (bar 99);
-  100
-
-If a pattern fails to match the target expression, the corresponding rule
-isn't applicable. In the case of global and local variable bindings, this
-indicates an error which raises a corresponding exception::
+However, there is a big difference here. For global and local variable
+definitions, it is an error if the pattern does not match the target
+expression::
 
   > let x:y:xs = [1];
-  <stdin>, line 12: failed match while evaluating 'let x:y:xs = [1]'
+  <stdin>, line 7: failed match while evaluating 'let x:y:xs = [1]'
 
-However, for the rules in a function definition a match failure just means
-that the corresponding rule will be bypassed and other rules will be tried
-instead. Failing that, the target expression becomes a normal form which is
-simply returned as is::
+The same holds if the target expression doesn't match any of the left-hand
+side patterns in a :keyword:`case` expression::
 
-  > swap [1,2,3];
-  swap [1,2,3]
+  > case [1] of x:y:xs = xs+[x,y] end;
+  <stdin>, line 8: unhandled exception 'failed_match' while evaluating
+  'case [1] of x:y:xs = xs+[x,y] end'
+
+(The error message is slightly different in this case, but the reported kind
+of exception is actually the same as with the :keyword:`let` expression above.)
+
+This doesn't normally happen with functions and macros. Instead, a match
+failure just means that the corresponding rule will be bypassed and other
+rules will be tried instead. If there are no more rules, the target expression
+becomes a normal form which is simply returned as is::
+
+  > rot2 [1];
+  rot2 [1]
 
 This may come as a surprise (other functional languages will give you an error
 in such cases), but is a crucial feature of term rewriting languages, as it
 opens the door to symbolic evaluation techniques, see `Definitions and
 Expression Evaluation`_.
 
-Any kind of legal Pure expression can be used as a pattern. Syntactically,
-patterns are `simple expressions`_, thus `special expressions`_ need to be
-parenthesized if they occur in a pattern. (Special expressions in a pattern
-are automatically translated to their quoted representations, see `The
-Quote`_. These are typically used in macro definitions, see the Macros_
-section for details.)
+There are two different ways to force a function definition to bail out with
+an error if you prefer that behaviour. First, you can provide an explicit rule
+which raises an exception (cf. `Exception Handling`_). But this can make it
+difficult or even impossible to add more rules to the function later, as
+discussed below. Instead, you may want to use the :option:`--defined
+<pure-pragma --defined>` pragma as follows::
 
-Also note that the pattern matching capabilities for matrices are somewhat
-limited, as a matrix pattern can only match a matrix with exactly the same
-dimensions as the pattern. To match a matrix of arbitrary dimensions, you'll
-have to use the built-in :type:`matrix/type` type (or a user-defined type
-derived from that), see `Matrix Computations`_ for some examples.
+  > #! --defined rot2
+  > rot2 [1];
+  <stdin>, line 13: unhandled exception 'failed_match' while evaluating 'rot2 [1]'
 
-The '``_``' symbol is special in patterns; it denotes the `anonymous variable`
-which matches an arbitrary value (independently for all occurrences) without
-actually binding a variable. For instance::
+.. note:: This pragma tells the compiler that ``rot2`` is supposed to be a
+   "defined" function, which means that it should be an error if no rule
+   applies to it; please see `Defined Functions`_ in the `Caveats and Notes`_
+   section for details. Also note that exceptions will always interfere with
+   symbolic evaluation and thus the use of this facility isn't really
+   recommended. However, there are situations in which it can make your life a
+   lot easier.
 
-  foo _ _ = 0;
+One of Pure's key features is that you can usually just keep on adding new
+rules to existing function definitions in order to handle different kinds of
+arguments. As already mentioned, the rules will then be considered in the
+order in which they are written, and the first rule which matches the given
+arguments will be used to reduce the function application. For instance,
+adding the following rule we can make the ``rot2`` function also work with
+tuples::
 
-This will match the application of ``foo`` to any combination of two
-arguments (and just ignore the values of these arguments).
+  > rot2 (x,y,xs) = xs,x,y;
+  > rot2 (1,2,3,4,5);
+  3,4,5,1,2
+
+This is also known as `ad-hoc polymorphism`. By these means, you can make a
+function apply to as many different kinds of arguments as you want, and the
+pattern matching handles the necessary "dispatching" so that the right rule
+gets invoked for the provided arguments.
+
+Pattern matching is not limited to the predefined aggregates such as lists,
+tuples and matrices. In principle, any legal Pure expression can occur as a
+pattern on the left-hand side of a rule or definition, so you can also write
+something like::
+
+  > rot2 (point x y z) = point z x y;
+  > rot2 (point 1 2 3);
+  point 3 1 2
+
+Or even::
+
+  > foo (foo x) = foo x;
+  > bar (foo x) = foo (bar x);
+  > foo (bar (foo 99));
+  foo (bar 99)
+
+Note that symbolic rules like in the latter example (which in this case
+express the idempotence of ``foo`` and a kind of commutativity with respect to
+``bar``) often involve symbols which play the role of both a function *and* a
+constructor symbol.
+
+Syntactically, patterns are `simple expressions`_, thus `special expressions`_
+need to be parenthesized if you want to include them in a pattern. (In fact,
+special expressions are given special treatment if they occur in patterns, see
+the Macros_ section for details.) A few other special elements in patterns are
+discussed below.
+
+Constant Patterns
+~~~~~~~~~~~~~~~~~
 
 Constants in patterns must be matched literally. For instance::
 
@@ -2273,6 +2311,24 @@ Constants in patterns must be matched literally. For instance::
 This will only match an application of ``foo`` to the machine integer ``0``,
 not ``0.0`` or ``0L`` (even though these compare equal to ``0`` using the
 '\ :func:`==`\ ' operator).
+
+The Anonymous Variable
+~~~~~~~~~~~~~~~~~~~~~~
+
+The '``_``' symbol is special in patterns; it denotes the `anonymous variable`
+which matches an arbitrary value (independently for all occurrences) without
+actually binding a variable. This is useful if you don't care about an
+argument or one of its components, in which case you can just use the
+anonymous variable as a placeholder for the value and don't have to invent a
+variable name for it. For instance::
+
+  foo _ _ = 0;
+
+This will match the application of ``foo`` to any combination of two
+arguments (and just ignore the values of these arguments).
+
+Non-Linear Patterns and Syntactic Equality
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In contrast to Haskell, patterns may contain repeated variables (other than
 the anonymous variable), i.e., they may be `non-linear`. Thus rules like the
@@ -2319,8 +2375,46 @@ flexibility to define '\ :func:`==`\ ' in any way that he sees fit, which is
 consistent with the way the other comparison operators like '\ :func:`<`\ '
 and '\ :func:`>`\ ' are handled in Pure.
 
-Patterns may contain the following special elements which are not permitted in
-right-hand side expressions:
+Syntactic equality is also used in pattern matching in order to decide whether
+a constant in a pattern matches the corresponding subterm in the target
+expression. This explains why the pattern ``foo 0``, as already mentioned,
+only matches an application of ``foo`` to the machine integer ``0``, not
+``0.0`` or ``0L`` which aren't syntactically equal to ``0``.
+
+However, there is one caveat here. Due to its term rewriting heritage, Pure
+distinguishes between literal function symbols in patterns and named
+functions. The latter are runtime objects which are only considered
+syntactically equal if they not only have the same name but actually refer to
+the same (global or local) closure. In contrast, a function symbol in a
+pattern is just a literal symbol without reference to any particular closure
+that the symbol may be bound to in some context. Thus a function symbol in a
+pattern matches *any* instance of the symbol in the target expression, no
+matter whether it happens to be a pure constructor, quoted symbol or any named
+closure bound to that symbol.
+
+This leads to some discrepancies between pattern matching and syntactic
+equality which may be surprising at first sight. For instance, consider::
+
+  > foo x = case x of bar y = x===bar y end;
+  > bar x y = x+y;
+  > foo (bar 99);
+  1
+  > foo ('bar 99);
+  0
+  > foo (bar 99) with bar x y = x*y end;
+  0
+
+Note that the argument term ``bar 99`` matches the pattern ``bar y`` in the
+:keyword:`case` expression in either case, even though in the last two
+expressions ``bar`` is *not* considered syntactically equal to the global
+``bar`` function because it is quoted (cf. `The Quote`_) or bound to a local
+closure of the same name, respectively.
+
+Special Patterns
+~~~~~~~~~~~~~~~~
+
+Last but not least, patterns may also contain the following special elements
+which are not permitted in right-hand side expressions:
 
 * A Haskell-style `"as" pattern` of the form *variable* ``@`` *pattern*
   binds the given variable to the expression matched by the subpattern
