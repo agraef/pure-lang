@@ -1,9 +1,9 @@
 
 /* An implementation of Lisp's quasiquote. 2009-05-26 AG. */
 
-/* NOTE: This is still considered experimental and is not part of the official
-   Pure library (yet). But it's installed in the Pure library directory for
-   those who need it. */
+/* NOTE: This is still considered experimental and not officially part of the
+   Pure library (yet). But it's installed along with the Pure library anyway
+   for those who need it. */
 
 /* Copyright (c) 2009-2012 by Albert Graef <Dr.Graef@t-online.de>.
 
@@ -38,19 +38,28 @@
    This version implements the quasiquote as a macro, which has the advantage
    that quasiquoted expressions are (mostly) expanded at compile time.
    However, this also means that nested quasiquotes are expanded in one go;
-   see quasiquote1.pure for a more Scheme-like version which only strips away
-   the outermost quasiquote level. E.g., the macro implementation produces:
+   see examples/quasiquote1.pure for a more Scheme-like version which only
+   strips away the outermost quasiquote level. E.g., the macro implementation
+   produces:
 
    > `(a (`(b (,$(1+2)) (,$(foo (,$(1+3)) d)) e)) f);
    a (quote b (1+2) (foo 4 d) (quote e)) f
 
    Conversely, the implementation in quasiquote1.pure yields:
 
-   > `(a ('`(b (,$(1+2)) (,$(foo (,$(1+3)) d)) e)) f);
+   > `(a (`(b (,$(1+2)) (,$(foo (,$(1+3)) d)) e)) f);
    a (quasiquote (b (unquote (1+2)) (unquote (foo 4 d)) e)) f
 
    Whether to prefer one or the other is a matter of taste; note that both
-   forms yield the same result 'a (b 3 (foo 4 d) e) f' when evaluated. */
+   forms yield the same result 'a (b 3 (foo 4 d) e) f' when evaluated.
+
+   Also note that the present implementation only knows how to deal with
+   simple Pure expressions, so it won't recurse into special forms such as
+   'case', 'with' and 'when' expressions or lambdas. If you need that, then
+   you'll have to turn quasiquote into a quoteargs macro, see the Macros
+   section of the manual for details. */
+
+//#! --quoteargs quasiquote
 
 public quasiquote unquote splice;
 
