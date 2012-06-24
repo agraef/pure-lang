@@ -1,0 +1,49 @@
+
+/* A simplified version of the __do__ macro from the prelude for educational
+   purposes. To keep things simple, this only deals with list comprehensions
+   and ignores some obscure corner cases. */
+
+/* We define our own versions of void and __do__ here which are placed into
+   the my namespace to avoid conflicts with the prelude. */
+
+namespace my;
+
+void _ = ();
+
+#! --quoteargs my::__do__
+
+def void [x] = void x;
+def void (catmap f x) | void (listmap f x) = __do__ f x;
+
+// Recurse into embedded generator clauses.
+def __do__ (__lambda__ [x] y@(listmap _ _)) |
+    __do__ (__lambda__ [x] y@(catmap _ _)) =
+    __do__ $ (__lambda__ [x] (void y));
+
+// Recurse into embedded filter clauses.
+def __do__ (__lambda__ [x] (__ifelse__ y z [])) =
+    __do__ $ (__lambda__ [x] (__ifelse__ y (void z) ()));
+
+// Eliminate extra calls to 'void' in generator clauses.
+def __do__ (__lambda__ [x] (void y)) = __do__ (__lambda__ [x] y);
+
+// Eliminate extra calls to 'void' in filter clauses.
+def __do__ (__lambda__ [x] (__ifelse__ y (void z) ())) =
+    __do__ (__lambda__ [x] (__ifelse__ y z ()));
+
+// Any remaining instances reduce to a plain 'do' (this must come last).
+def __do__ f = do f;
+
+namespace;
+
+/* Some examples taken from the "Macros" section of the manual, see "Advanced
+   Optimization". Use 'show f g h' to compare the macro expansions. It's also
+   instructive to run these interactively with 'trace -m my::void' to see how
+   the macro rules work in concert to rewrite a "voided" comprehension. */
+
+using system;
+using namespace my;
+
+f = [printf "%g\n" (2^x+1) | x=1..5; x mod 2];
+g = void [printf "%g\n" (2^x+1) | x=1..5; x mod 2];
+h = void [puts $ str (x,y) | x=1..2; y=1..3];
