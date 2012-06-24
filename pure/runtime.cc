@@ -12287,9 +12287,14 @@ uint32_t hash(pure_expr *x)
   }
   default:
     assert(x->tag>=0);
-    if (x->data.clos && x->data.clos->local)
-      return ((uint32_t)x->tag) ^ x->data.clos->key;
-    else
+    if (x->data.clos && x->data.clos->local) {
+      int h = x->tag ^ x->data.clos->key;
+      for (uint32_t i = 0; i < x->data.clos->m; i++) {
+	h = (h<<1) | (h<0 ? 1 : 0);
+	h ^= hash(x->data.clos->env[i]);
+      }
+      return (uint32_t)h;
+    } else
       return (uint32_t)x->tag;
   }
 }
