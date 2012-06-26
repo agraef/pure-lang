@@ -5087,7 +5087,7 @@ rules and make use of pattern-matching just like ordinary function definitions.
    written macro may well send the Pure compiler into an infinite recursion,
    which results in a stack overflow at compile time. See `Stack Size and Tail
    Recursion`_ in the `Caveats and Notes`_ section for information on how to
-   deal with these by setting the :envvar:`PURE_STACK` environment variable.
+   deal with this by setting the :envvar:`PURE_STACK` environment variable.
 
 As a simple example, let's see how we can inline invocations of the :func:`#`
 size operator on list constants::
@@ -5096,13 +5096,18 @@ size operator on list constants::
   def #(x:xs) = #xs+1;
 
 As you can see, the definition is pretty straightforward; exactly the same
-rules might also be used for an ordinary function definition (although the
+rules might also be used for an ordinary function definition, although the
 standard library actually implements :func:`#` a bit differently to make good
-use of tail recursion). Let's check that this actually works::
+use of tail recursion. Let's check that this actually works::
 
   > foo = #[1,2,3,4];
   > show foo
   foo = 4;
+
+Note that the result of macro expansion is actually ``0+1+1+1+1`` here, you
+can check that by running the macro with ``trace -m #``. Constant folding
+contracts this to ``4`` after macro expansion, as explained in the previous
+subsection.
 
 This was rather easy. So let's implement a more elaborate example: a basic
 Pure version of Lisp's quasiquote which allows you to create a quoted
