@@ -53,48 +53,6 @@ public all any cat cst do list map reverse uncurry uncurry3;
       Check for empty matrices. Note that there are various kinds of these, as
       a matrix may have zero rows or columns, or both.
 
-   .. function:: infix ! /matrix x i
-      		 infix !! /matrix x is
-
-      Indexing and slicing works pretty much like in MATLAB and Octave, except
-      that the Pure operators '\ :func:`\!`\ ' and '\ :func:`\!\!`\ ' are used
-      and indices are zero-based. It is possible to access elements with a
-      one-dimensional index (in row-major oder)::
-
-        > x!3;
-     	4
-
-      Or you can specify a pair of row and column index::
-
-        > x!(1,0);
-     	4
-
-      Slicing works accordingly. You can either specify a list of (one- or
-      two-dimensional) indices, in which case the result is always a row
-      vector::
-
-        > x!!(2..5);
-     	{3,4,5,6}
-
-      Or you can specify a pair of row and column index lists::
-
-        > x!!(0..1,1..2);
-     	{2,3;5,6}
-
-      The following abbreviations are provided to grab a slice from a row or
-      column::
-
-        > x!!(1,1..2);
-     	{5,6}
-     	> x!!(0..1,1);
-     	{2;5}
-
-      As in the case of lists, matrix slices are optimized to handle cases
-      with contiguous index ranges in an efficient manner, see Slicing_ for
-      details. To these ends, the helper functions :func:`subseq/matrix` and
-      :func:`subseq2/matrix` are defined to handle the necessary compile time
-      optimizations.
-
    .. function:: infix == /matrix x y
       		 infix ~= /matrix x y
 
@@ -104,54 +62,53 @@ public all any cat cst do list map reverse uncurry uncurry3;
         > x == transpose x;
      	0
 
-   .. _non-splicing:
+   .. function:: infix ! /matrix x i
+      		 infix !! /matrix x is
 
-   The following special syntax is provided as a shorthand notation for nested
-   vector structures:
+      Indexing and slicing.
 
-   .. macro:: outfix {` `} x, y, z, ...
+   Indexing and slicing employ the standard Pure operators '\ :func:`\!`\ '
+   and '\ :func:`\!\!`\ '. They work pretty much like in MATLAB and Octave,
+   but note that Pure matrices are in row-major order and the indices are
+   zero-based. It is possible to access elements with a one-dimensional index
+   (in row-major oder)::
 
-      Non-splicing vector brackets. These work like ``{x,y,z,...}``, but
-      unlike these they will *not* splice submatrices in the arguments
-      ``x,y,z,...`` So they work a bit like quoted vectors ``'{x,y,z,...}``,
-      but the arguments ``x,y,z,...`` will be evaluated as usual.
+     > x!3;
+     4
 
-      The non-splicing vector brackets provide a convenient shorthand to enter
-      symbolic vector values which may contain other vectors or matrices as
-      components. For instance, note how the ordinary matrix brackets combine
-      the column subvectors in the first example below to a 3x2 matrix, while
-      the non-splicing brackets in the second example create a 1x2 row vector
-      with the column vectors as members instead::
+   Or you can specify a pair of row and column index::
 
-        > {{1;2;3},{4;5;6}};
-	{1,4;2,5;3,6}
-	> {`{1;2;3},{4;5;6}`};
-	{{1;2;3},{4;5;6}}
+     > x!(1,0);
+     4
 
-      The second example works like a quoted matrix expression such as
-      ``'{{1;2;3},{4;5;6}}``, but the non-splicing brackets also evaluate
-      their arguments::
+   Slicing works accordingly. You can either specify a list of (one- or
+   two-dimensional) indices, in which case the result is always a row
+   vector::
 
-        > '{vector (1..3),vector (4..6)};
-	{vector (1..3),vector (4..6)}
-	> {`vector (1..3),vector (4..6)`};
-	{{1,2,3},{4,5,6}}
+     > x!!(2..5);
+     {3,4,5,6}
 
-      The ``{` `}`` brackets can also be nested. Examples::
+   Or you can specify a pair of row and column index lists::
 
-        > {`1,{`vector (1..5),2*3`},{}`};
-	{1,{{1,2,3,4,5},6},{}}
-	> {`{`{1,2}`},{`{3,4}`}`};
-	{{{1,2}},{{3,4}}}
+     > x!!(0..1,1..2);
+     {2,3;5,6}
 
-      Finally, note that the ``{` `}`` brackets only produce row vectors, but
-      you can just transpose the result if you need a column vector instead::
+   The following abbreviations are provided to grab a slice from a row or
+   column::
 
-        > transpose ({`{1;2;3},{4;5;6}`});
-	{{1;2;3};{4;5;6}}
+     > x!!(1,1..2);
+     {5,6}
+     > x!!(0..1,1);
+     {2;5}
 
-   Most of the generic list operations are implemented on matrices, see
-   `Common List Functions`_. Hence operations like :func:`map` and
+   As in the case of lists, matrix slices are optimized to handle cases
+   with contiguous index ranges in an efficient manner, see Slicing_ for
+   details. To these ends, the helper functions :func:`subseq/matrix` and
+   :func:`subseq2/matrix` are defined to handle the necessary compile time
+   optimizations.
+
+   Most of the generic list operations are implemented on matrices as well,
+   see `Common List Functions`_. Hence operations like :func:`map` and
    :func:`zipwith` work as expected::
 
      > map succ {1,2,3;4,5,6};
@@ -206,7 +163,7 @@ public all any cat cst do list map reverse uncurry uncurry3;
 
       Note that for convenience, there's also an alternative syntax for
       entering nested vectors more easily, see the description of the
-      :ref:`non-splicing vector brackets<non-splicing>` above for details.
+      :ref:`non-splicing vector brackets<non-splicing>` below for details.
 
    .. function:: rowvectorseq x y step
                  colvectorseq x y step
@@ -290,6 +247,55 @@ public all any cat cst do list map reverse uncurry uncurry3;
      	[[1,2,3],[4,5,6]]
      	> list2 {1,2,3};
      	[[1,2,3]]
+
+   .. _non-splicing:
+
+   In addition, the following special syntax is provided as a shorthand
+   notation for nested vector structures:
+
+   .. macro:: outfix {` `} x, y, z, ...
+
+      Non-splicing vector brackets. These work like ``{x,y,z,...}``, but
+      unlike these they will *not* splice submatrices in the arguments
+      ``x,y,z,...`` So they work a bit like quoted vectors ``'{x,y,z,...}``,
+      but the arguments ``x,y,z,...`` will be evaluated as usual.
+
+   The non-splicing vector brackets provide a convenient shorthand to enter
+   symbolic vector values which may contain other vectors or matrices as
+   components. For instance, note how the ordinary matrix brackets combine the
+   column subvectors in the first example below to a 3x2 matrix, while the
+   non-splicing brackets in the second example create a 1x2 row vector with
+   the column vectors as members instead::
+
+     > {{1;2;3},{4;5;6}};
+     {1,4;2,5;3,6}
+     > {`{1;2;3},{4;5;6}`};
+     {{1;2;3},{4;5;6}}
+
+   The second example works like a quoted matrix expression such as
+   ``'{{1;2;3},{4;5;6}}``, but the non-splicing brackets also evaluate
+   their arguments::
+
+     > '{vector (1..3),vector (4..6)};
+     {vector (1..3),vector (4..6)}
+     > {`vector (1..3),vector (4..6)`};
+     {{1,2,3},{4,5,6}}
+
+   The ``{` `}`` brackets can be nested. Examples::
+
+     > {`1,{`vector (1..5),2*3`},{}`};
+     {1,{{1,2,3,4,5},6},{}}
+     > {`{`{1,2}`},{`{3,4}`}`};
+     {{{1,2}},{{3,4}}}
+
+   Also note that the ``{` `}`` brackets only produce row vectors, but you
+   can just transpose the result if you need a column vector instead::
+
+     > transpose {`{1;2;3},{4;5;6}`};
+     {{1;2;3};{4;5;6}}
+
+   Finally, note that the notation ``{` `}`` without any arguments is not
+   supported, simply write ``{}`` for the empty vector instead.
 
    Matrix Inspection and Manipulation
    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
