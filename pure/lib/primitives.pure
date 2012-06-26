@@ -444,6 +444,30 @@ using namespace __C;
       available to Pure programs. Thus there's no way to actually define this
       macro in Pure, which is why it is provided as a builtin instead.
 
+      Another rather obscure point that deserves mentioning here is that the
+      special processing of parenthesized expressions happens also if the
+      macro is applied in prefix form. This should rarely be a problem in
+      practice, but if it is then you can use :func:`$` to pass arguments
+      without adding an (undesired) extra level of parentheses::
+
+        > ((::)) ((1,2),(3,4));
+	[(1,2,3,4)]
+	> ((::)) $ (1,2),(3,4);
+	[(1,2),(3,4)]
+
+      Note that the first expression is really equivalent to
+      ``(:((1,2),(3,4)):)``, *not* ``(:(1,2),(3,4):)`` which can be specified
+      in prefix form using :func:`$` as shown in the second expression.
+      (Remember that :func:`$` is also implemented as a macro and so is
+      substituted away at macro expansion time in the example above.) The same
+      trick works if for some reason you want to apply :macro:`__list__` in a
+      direct fashion::
+
+        > __list__ ((1,2),(3,4));
+	[(1,2,3,4)]
+	> __list__ $ (1,2),(3,4);
+	[(1,2),(3,4)]
+
    .. macro:: __locals__
 
       Built-in macro which expands to a list with the local function bindings
