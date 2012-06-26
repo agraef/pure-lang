@@ -1,0 +1,114 @@
+/*
+"Natural" or "adaptive" bottom-up merge sort.
+
+Optimized to exploit existing runs of ascending/descending elements,
+to consume at most O(log n) levels of its working stack,
+and to be mostly tail-recursive, while minimizing how often
+sorted and merged runs need to be reversed.
+
+Inspired by http://www.drmaciver.com/tag/timsort/.
+
+Sort is stable, and has O(n log n) avg and worst-case behavior.
+Is 5-10% faster on random data than the naive mergesort in
+pure/examples/sortalgos.pure; and should be even faster on less random data.
+Also it won't overflow your stack. It generates about 5 cells per list element,
+and takes about 30s to sort a list of 1 million ints.
+
+By comparison, the C-implemented sort (which uses qsort) is, although
+not stable, 8-20x faster; and generates about 2 cells per list element.
+
+Copyright (c) 2012 by Dubiousjim <dubiousjim@gmail.com>.
+See license at https://github.com/dubiousjim/unspoiled/blob/master/LICENSE
+
+This implementation accepts (<) as its first argument, and operates only on
+lists. It could easily be extended to operate on other immutable structures.
+
+Supplying (<=) as the comparison predicate will reverse-stably sort: that is,
+of elements that are mutually <=, the later-occurring one will occur earlier in
+the result. This may sometimes be useful.
+*/
+
+reverse_onto [] base = base;
+reverse_onto (x:xs) base = reverse_onto xs (x:base);
+
+public msort;
+
+msort _ [] = [];
+msort lt (x:xs) = step lt xs x [] 1 (-1) [] with
+    // ya = are these ys strictly ascending?
+    step lt (x:xs) y ys 1 _ zss
+        = step lt xs x (y:ys) 2 (lt x y) zss;
+    step lt (x:xs) y ys yn ya zss
+        = step lt xs x (y:ys) (succ yn) ya zss if (lt x y) == ya;
+    step lt (x:xs) y ys yn ya zss = case merge1 lt (y:ys) yn ya zss of
+        0 = step lt xs x [] 1 (-1) ((y:ys,yn,ya):zss);
+        zss = step lt xs x [] 1 (-1) zss; // we merged ys with top layer of zss
+    end;
+    // we've finished stepping through original list
+    // note: at this point yn,ya may still be 1,-1
+    step lt [] y ys yn ya zss = case merge1 lt (y:ys) 0 ya zss of
+        [(ys,0,ya)] = if ya then ys else reverse ys;
+        0 = if ya then y:ys else reverse (y:ys);
+    end;
+
+    merge1 lt ys yn ya [] = 0;
+    merge1 lt ys@(y:_) yn ya ((zs@(z:_),zn,za):zss) =
+        // yn = 0 forces collapse of stack
+        if yn > 0 && yn*2 <= zn then 0
+        else (
+            // merge ys with top layer of zss
+            // then check if we need to merge further
+            if more === 0 then (ws,wn,wa):zss else more
+            when
+                wn = if yn > 0 then yn + zn else yn;
+                ws, wa = if ya && ~za && ~(lt y z) then
+                            reverse_onto ys zs, 0
+                         else if ~ya && za && (lt y z) then
+                            reverse_onto zs ys, 0
+                         else if ya < 0 then
+                            // ys has only one member
+                            merge lt (~za) ys zs [], ~za
+                         else case (if ya == za then ~za, ys, zs
+                                    else if zn < yn then za, ys, reverse zs
+                                    else ya, reverse ys, zs) of
+                                wa, ys, zs = merge lt wa ys zs [], wa;
+                         end;
+                more = merge1 lt ws wn wa zss;
+            end
+        );
+
+    merge _ _ us [] ws | merge _ _ [] us ws = reverse_onto us ws;
+    merge lt wa (yy@(y:ys)) (zz@(z:zs)) ws =
+        if (lt y z) ~= wa then
+            merge lt wa ys zz (y:ws)
+        else
+            merge lt wa yy zs (z:ws);
+
+end;
+
+#! --ifdef TEST
+    // We test with tuples, for which we provide a definition of <.
+    // The second alphabetic element tracks where the tuple occurred in the
+    // original list, so we can verify the stability of the sort.
+    // < is blind to the presence of the alphabetic element.
+    // We also define a >= which does take account of the alphabetic element.
+    // This isn't used in the sort algorithm, but only when verifying whether
+    // its results are stably sorted.
+
+    (a,_) < (b,_) = a < b;
+    (b,j) >= (a,i) = b > a || (b==a && j >= i);
+    sorted [] = true;
+    sorted (b:bs) = aux b bs with
+        aux _ [] = true;
+        aux a (b:bs) = b >= a && aux b bs;
+    end;
+
+    // generate random test tuples
+    using math;
+    rand n = random31 mod n;
+    data top len = map (\i -> rand top,i) ("a".."a"+len-1);
+
+    // To test:
+    // > all id [sorted $ msort (<) (data j 26) | i=1..300;j=2..8];
+    // 1
+#! --endif
