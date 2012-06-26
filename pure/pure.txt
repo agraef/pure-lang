@@ -5499,6 +5499,51 @@ using these facilities. Most macro code will work all right when written in a
 straightforward way, but there are some corner cases which need special
 attention (cf. `Name Capture`_).
 
+Sometimes the only convenient way to avoid name capture is to create new
+symbols on the fly. This will often be necessary if a macro generates an
+entire block construct (:keyword:`case`, :keyword:`when`, :keyword:`with` or
+lambda) from scratch. The following built-in macro is provided for this
+purpose:
+
+.. macro:: __gensym__
+
+   Create a new unqualified symbol which is guaranteed to not exist at the
+   time of the macro call. These symbols typically look like ``__x123__`` and
+   can be used for any purpose (i.e., as global or local as well as function
+   or variable symbols).
+
+For instance, here's how we can implement a macro ``foo`` which creates a
+lambda from a given argument, using :macro:`__gensym__` to generate a fresh
+local variable for the lambda argument. This guarantees that variables in the
+argument expression don't get captured by the lambda variable when the closure
+is created with a call to the built-in :macro:`__lambda__` macro. ::
+
+  > def foo x = bar __gensym__ x;
+  > def bar x y = __lambda__ [x] (x+y);
+  > trace -m foo
+  > foo (a*b);
+  -- macro foo: foo (a*b) --> bar __gensym__ (a*b)
+  -- macro __gensym__: __gensym__ --> __x1__
+  -- macro bar: bar __x1__ (a*b) --> __lambda__ [__x1__] (__x1__+a*b)
+  -- macro __lambda__: __lambda__ [__x1__] (__x1__+a*b) --> \__x1__ -> __x1__+a*b
+  #<closure 0x7f66f6c88db0>
+  > ans 77;
+  77+a*b
+
+The :macro:`__gensym__` macro returns a new variable for each invocation, and
+always ensures that it doesn't accidentally reuse a symbol already introduced
+by the user (even if it looks like a symbol that :macro:`__gensym__` might
+itself create)::
+
+  > foo (a*__x2__);
+  -- macro foo: foo (a*__x2__) --> bar __gensym__ (a*__x2__)
+  -- macro __gensym__: __gensym__ --> __x3__
+  -- macro bar: bar __x3__ (a*__x2__) --> __lambda__ [__x3__] (__x3__+a*__x2__)
+  -- macro __lambda__: __lambda__ [__x3__] (__x3__+a*__x2__) --> \__x3__ -> __x3__+a*__x2__
+  #<closure 0x7f66f6c887e8>
+  > ans 77;
+  77+a*__x2__
+
 Advanced Optimization
 ---------------------
 

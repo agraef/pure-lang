@@ -8298,40 +8298,63 @@ bool interpreter::parse_env(exprl& xs, env& e)
 expr *interpreter::macspecial(bool trace, expr x, envstack& estk, uint8_t idx)
 {
   expr u, v, w;
-  if (!specials_only && x.tag() == symtab.namespace_sym().f) {
-    const char *s = symtab.current_namespace?
-      symtab.current_namespace->c_str():"";
-    return new expr(EXPR::STR, strdup(s));
-  }
-  if (!specials_only && x.tag() == symtab.locals_sym().f) {
-    // substitute calls to the '__locals__' builtin
-    set<int32_t> done;
-    exprl xs;
-    for (envstack::iterator it = estk.begin(), end = estk.end();
-	 it != end; ++it) {
-      uint8_t jdx = it->idx;
-      for (env::const_iterator jt = it->e->begin(); jt != it->e->end(); ++jt) {
-	int32_t g = jt->first;
-	if (done.find(g) == done.end()) {
-	  expr y = expr(EXPR::FVAR, g, idx-jdx);
-	  expr x = expr(interpreter::g_interp->symtab.mapsto_sym().x,
-			expr(g), y);
-	  xs.push_back(x);
-	  done.insert(g);
+  if (!specials_only) {
+    if (x.tag() == symtab.gensym_sym().f) {
+      // generate a new unqualified symbol in the default namespace
+      static unsigned count = 0;
+      char s[20];
+      while (1) {
+	sprintf(s, "__x%u__", ++count);
+	// If the next symbol already exists or cannot be created for some
+	// reason, we simply keep on incrementing the counter until we find
+	// a good one. This must eventually succeed.
+	if (!symtab.lookup(s)) {
+	  string *name = new string(s);
+	  try { return mksym_expr(name); }
+	  catch (err &e) { delete name; }
 	}
       }
+      assert(0 && "this can't happen");
+      return 0;
     }
-    return new expr(expr::list(xs));
-  }
-  if (!specials_only && x.is_app(u, v) && u.tag() == symtab.list_sym().f) {
-    exprl xs;
-    if (v.is_pair() && v.is_tuplel(xs))
+    if (x.tag() == symtab.namespace_sym().f) {
+      const char *s = symtab.current_namespace?
+	symtab.current_namespace->c_str():"";
+      return new expr(EXPR::STR, strdup(s));
+    }
+    if (x.tag() == symtab.locals_sym().f) {
+      // substitute calls to the '__locals__' builtin
+      set<int32_t> done;
+      exprl xs;
+      for (envstack::iterator it = estk.begin(), end = estk.end();
+	   it != end; ++it) {
+	uint8_t jdx = it->idx;
+	for (env::const_iterator jt = it->e->begin();
+	     jt != it->e->end(); ++jt) {
+	  int32_t g = jt->first;
+	  if (done.find(g) == done.end()) {
+	    expr y = expr(EXPR::FVAR, g, idx-jdx);
+	    expr x = expr(interpreter::g_interp->symtab.mapsto_sym().x,
+			  expr(g), y);
+	    xs.push_back(x);
+	    done.insert(g);
+	  }
+	}
+      }
       return new expr(expr::list(xs));
-    else
-      return new expr(expr::cons(v, expr::nil()));
+    }
+    if (x.is_app(u, v)) {
+      if (u.tag() == symtab.list_sym().f) {
+	exprl xs;
+	if (v.is_pair() && v.is_tuplel(xs))
+	  return new expr(expr::list(xs));
+	else
+	  return new expr(expr::cons(v, expr::nil()));
+      }
+      if (u.tag() == symtab.eval_sym().f)
+	return new expr(maceval(trace, v, estk, idx));
+    }
   }
-  if (!specials_only && x.is_app(u, v) && u.tag() == symtab.eval_sym().f)
-    return new expr(maceval(trace, v, estk, idx));
   int32_t f = get2args(x, u, v);
   if (f == symtab.lambda_sym().f) {
     exprl xs;

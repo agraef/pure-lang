@@ -85,6 +85,7 @@ class symtable {
   symbol* sym_p(const char *s, symbol*& cache,
 		prec_t prec, fix_t fix, bool priv = false);
   // these are cached here to speed up predefined symbol lookups
+  symbol* __gensym_sym;
   symbol* __namespace_sym;
   symbol* __locals_sym;
   symbol* __func_sym;
@@ -261,6 +262,8 @@ public:
     return visible(*rtab[f]); }
   // retrieve various builtin symbols (create when necessary)
   int32_t anon_sym, __show__sym; // Cached here to improve performance.
+  symbol& gensym_sym()
+  { return *sym_p("__gensym__", __gensym_sym); }
   symbol& namespace_sym()
   { return *sym_p("__namespace__", __namespace_sym); }
   symbol& locals_sym()

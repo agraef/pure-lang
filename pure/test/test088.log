@@ -1,0 +1,26 @@
+def foo x/*0:1*/ = bar __gensym__ x/*0:1*/;
+def bar x/*0:01*/ y/*0:1*/ = __lambda__ [x/*0:01*/] (x/*0:01*/+y/*0:1*/);
+evalcmd "trace -m foo";
+""
+-- macro foo: foo (a*b) --> bar __gensym__ (a*b)
+-- macro __gensym__: __gensym__ --> __x1__
+-- macro bar: bar __x1__ (a*b) --> __lambda__ [__x1__] (__x1__+a*b)
+-- macro __lambda__: __lambda__ [__x1__] (__x1__+a*b) --> \__x1__/*0:1*/ -> __x1__/*0:1*/+a*b
+(\__x1__/*0:1*/ -> __x1__/*0:1*/+a*b {
+  rule #0: _ __x1__ = __x1__+a*b
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) 99;
+99+a*b
+-- macro foo: foo (a*b) --> bar __gensym__ (a*b)
+-- macro __gensym__: __gensym__ --> __x2__
+-- macro bar: bar __x2__ (a*b) --> __lambda__ [__x2__] (__x2__+a*b)
+-- macro __lambda__: __lambda__ [__x2__] (__x2__+a*b) --> \__x2__/*0:1*/ -> __x2__/*0:1*/+a*b
+(\__x2__/*0:1*/ -> __x2__/*0:1*/+a*b {
+  rule #0: _ __x2__ = __x2__+a*b
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}) 77;
+77+a*b
