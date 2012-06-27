@@ -828,6 +828,10 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     bool esc = s[0] == '^';
     if (esc) s++;
     string cmd = s, cmdline = s;
+    if (s[0] == '!' && s[1])
+      // Fix up a shell escape, this may get messed up due to the new escape
+      // syntax if we're actually in default mode.
+      cmd.erase(1);
     register int c;
     int count = 0;
     while ((c = yyinput()) != EOF && c != 0 && c != '\n') {
@@ -1557,6 +1561,7 @@ static bool checkcmd(interpreter &interp, const char *s)
   if (interp.escape_mode && interp.interactive)
     return s[0]=='!';
   else {
+    if (s[0] == '!') return true; // shell escape
     size_t nel = sizeof(builtin_commands)/sizeof(builtin_commands[0]);
     if (s[0]=='^') s++;
     return bsearch(&s, builtin_commands, nel, sizeof(builtin_commands[0]),
