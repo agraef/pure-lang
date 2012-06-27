@@ -265,6 +265,11 @@ below.
 
    Enable source option (conditional compilation).
 
+.. option:: -e
+   	    --escape
+
+   Interactive commands are prefixed with '\ ``!``\ '.
+
 .. option:: -fPIC
    	    -fpic
 
@@ -570,9 +575,8 @@ Verbosity and Debugging Options
 The :option:`-v` option is useful for debugging the interpreter, or if you are
 interested in the code your program gets compiled to. The level argument is
 optional; it defaults to 1. Seven different levels are implemented at this
-time (one more bit is reserved for future extensions). Only the first two
-levels will be useful for the average Pure programmer; the remaining levels
-are mostly intended for maintenance purposes.
+time. Only the first two levels will be useful for the average Pure
+programmer; the remaining levels are mostly intended for maintenance purposes.
 
 1 (0x1, 001)
     denotes echoing of parsed definitions and expressions.
@@ -611,8 +615,8 @@ either decimal, hexadecimal or octal. Thus 0xff or 0777 always gives you full
 debugging output (which isn't likely to be used by anyone but the Pure
 developers). Some useful flag combinations for experts are (in octal) 007
 (echo definitions along with de Bruijn indices and matching automata), 011
-(definitions and assembler code) and 021 (parser debugging output along with
-parsed definitions).
+(definitions and assembler code), 021 (parser debugging output along with
+parsed definitions) and 0100 (verbose batch compilation).
 
 Note that the :option:`-v` option is only applied after the prelude has been
 loaded. If you want to debug the prelude, use the :option:`-n` option and
@@ -1069,6 +1073,11 @@ shell environment variables:
 
    Enable eager JIT compilation (same as :option:`--eager-jit`), see
    `Compiling Scripts`_ for details.
+
+.. envvar:: PURE_ESCAPE
+
+   If set, interactive commands are prefixed with '\ ``!``\ ' (same as
+   :option:`--escape`), see `Interactive Usage`_ for details.
 
 .. envvar:: PURE_HELP
 
@@ -7243,6 +7252,12 @@ by default. It is also possible to override the print representation of any
 kind of expression by means of the :func:`__show__` function, see
 `Pretty-Printing`_ below for details.
 
+A number of other special features of Pure's command line interface are
+discussed in the following subsections.
+
+Command Syntax
+--------------
+
 Besides Pure definitions and expressions, the interpreter also understands a
 number of special interactive commands for performing basic maintenance tasks,
 such as loading source scripts, exiting and restarting the interpreter,
@@ -7256,13 +7271,63 @@ own. However, it can be extended with user-defined commands implemented as
 ordinary Pure functions; this is described in the `User-Defined Commands`_
 section below.
 
-.. note:: The interactive commands are only recognized at the very beginning
-   of the command line. As most of the commands look just like ordinary
-   identifiers, you may run into situations where the beginning of an
-   expression or definition to be typed at the prompt can be mistaken for a
-   command word. In such cases it will be necessary to "escape" the input by
-   inserting one or more spaces at the beginning of the line, so that the
-   interpreter reads the line as normal Pure code.
+In fact, as of Pure 0.56 the interpreter actually provides two slightly
+different command syntaxes, which we'll refer to as "default" and "escape
+mode". The manual assumes that you're running the interpreter in its
+traditional `default mode` where interactive commands are typed simply as they
+are shown in the following subsections, with the command word at the very
+beginning of the line. However, this mode has its pitfalls, especially for
+beginners. As most of the commands look just like ordinary identifiers, you
+may run into situations where the beginning of an expression or definition to
+be typed at the prompt can be mistaken for a command word. In such cases the
+default mode requires that you "escape" the input by inserting one or more
+spaces at the beginning of the line, so that the interpreter reads the line as
+normal Pure code. Unfortunately, it's much too easy to forget this if you're
+not familiar with the command language.
+
+Therefore there is an alternative `escape mode` available which handles
+special command input more like some other popular programming language
+interpreters. In escape mode *all* interactive commands have to be escaped by
+prefixing them with an additional '\ ``!``\ ' character at the very beginning
+of the line. The command itself must follow the '\ ``!``\ ' prefix, without
+any intervening whitespace. Any line not prefixed with '\ ``!``\ ' will then
+be considered normal Pure code. This mode can be enabled with the :option:`-e`
+(or :option:`--escape`) option, or you can just set the :envvar:`PURE_ESCAPE`
+variable in your environment to enable escape mode by default. (Setting this
+variable to any value will do, the interpreter only checks whether the
+variable exists in the environment.)
+
+Many Pure programmers prefer escape mode, and in fact we recommend it for Pure
+novices even though it's not the default (yet). Others may prefer default mode
+because it's less effort to type. In any case, for the manual we decided to
+stick to the default mode syntax so that we can present the interactive
+commands just as they are, without the purely syntactic baggage of the escape
+syntax. This means that if you're running the interpreter in escape mode then
+you'll have to do the necessary translation of the command syntax yourself.
+For instance, if the manual tells you to type the following command, ::
+
+  > show foldl
+
+you will have to type this in escape mode instead::
+
+  > !show foldl
+
+Similarly, to type a shell escape, ::
+
+  > ! find . '*.pure'
+
+in escape mode you actually have to type two exclamation marks::
+
+  > !! find . '*.pure'
+
+This should be rather straightforward, so in the following we just use the
+default mode command syntax throughout without further notice.
+
+.. note:: Escape mode only applies to the interactive command line. It doesn't
+   affect the :func:`evalcmd` function in any way, so interactive commands in
+   the string argument of :func:`evalcmd` are always specified without the
+   extra '\ ``!``\ ' escape character no matter which mode the interpreter is
+   running in.
 
 Online Help
 -----------
@@ -9168,7 +9233,9 @@ variables; please see the :doc:`installation instructions<install>` for
 details.
 
 Pure 0.56 introduced the :ref:`non-splicing vector brackets<non-splicing>`
-``{| |}`` as an alternative notation for nested vector structures.
+``{| |}`` as an alternative notation for nested vector structures. Moreover,
+interactive commands can now optionally be escaped by prefixing them with
+'\ ``!``\ ' (see `Interactive Usage`_ for details).
 
 Error Recovery
 --------------

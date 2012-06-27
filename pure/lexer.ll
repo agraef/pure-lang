@@ -164,7 +164,7 @@ int    [0-9][0-9A-Za-z]*
 exp    ([Ee][+-]?{int})
 float  {int}{exp}|{int}\.{exp}|({int})?\.{int}{exp}?
 str    ([^\"\\\n]|\\(.|\n))*
-cmd    (!|"^"?{id})
+cmd    ("!"?(!|"^"?{id}))
 blank  [ \t\f\v\r]
 
 %x escape comment srcoption xcode xcode_comment xdecl xdecl_comment xusing xusing_comment xsyms xsyms_comment xtag rescan xsyms_rescan
@@ -819,8 +819,15 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
      (operator or identifier) symbols otherwise. */
   if ((interp.interactive || interp.output) && checkcmd(interp, yytext)) {
     /* Read the rest of the command line. */
-    bool esc = yytext[0] == '^';
-    string cmd = yytext+esc, cmdline = yytext+esc;
+    /* Pure 0.56+: If we're in escape command mode and running interactively,
+       then interactive commands *must* begin with '!' which is then stripped
+       off to parse the rest of the command line. */
+    const char *s = yytext;
+    bool escmode = interp.escape_mode && interp.interactive;
+    if (escmode) s++; // assert yytext[0]=='!'
+    bool esc = s[0] == '^';
+    if (esc) s++;
+    string cmd = s, cmdline = s;
     register int c;
     int count = 0;
     while ((c = yyinput()) != EOF && c != 0 && c != '\n') {
@@ -1303,20 +1310,19 @@ command_generator(const char *text, int state)
       if (strncmp(s.c_str(), text, len) == 0)
 	return strdup(s.c_str());
       else {
-	/* Look for a symbol in the current namespace, the __cmd__ namespace
-	   and the search namespaces. */
-	size_t p = s.rfind(text);
-	if (p != string::npos &&
-	    (p == 0 || (p > 1 && s.compare(p-2, 2, "::") == 0))) {
-	  string prefix = s.substr(0, p?p-2:p),
-	    name = s.substr(p, string::npos);
+	/* Look for a qualified symbol in the current namespace, the __cmd__
+	   namespace and the search namespaces. */
+	size_t p = s.rfind("::"+string(text));
+	if (p != string::npos) {
+	  string prefix = s.substr(0, p),
+	    name = s.substr(p+2, string::npos);
 	  bool found = prefix==*interp.symtab.current_namespace ||
 	    (prefix=="__cmd__" && checkusercmd(interp, name.c_str()));
 	  for (map< string, set<int32_t> >::iterator
 		 it = interp.symtab.search_namespaces->begin(),
 		 end = interp.symtab.search_namespaces->end();
 	       !found && it != end; it++)
-	    found = prefix==it->first && checksym(f, it->second);
+	    found = prefix==it->first && checksym(sym.f, it->second);
 	  if (found)
 	    return strdup(name.c_str());
 	}
@@ -1545,10 +1551,17 @@ static bool checkusercmd(interpreter &interp, const char *s)
 
 static bool checkcmd(interpreter &interp, const char *s)
 {
-  size_t nel = sizeof(builtin_commands)/sizeof(builtin_commands[0]);
-  if (s[0]=='^') s++;
-  return bsearch(&s, builtin_commands, nel, sizeof(builtin_commands[0]), mycmp)
-    || checkusercmd(interp, s);
+  /* Pure 0.56+: If we're in escape command mode and running interactively,
+     then interactive commands *must* begin with '!' which is then stripped
+     off to parse the rest of the command line. */
+  if (interp.escape_mode && interp.interactive)
+    return s[0]=='!';
+  else {
+    size_t nel = sizeof(builtin_commands)/sizeof(builtin_commands[0]);
+    if (s[0]=='^') s++;
+    return bsearch(&s, builtin_commands, nel, sizeof(builtin_commands[0]),
+		   mycmp) || checkusercmd(interp, s);
+  }
 }
 
 struct argl {
@@ -3461,5 +3474,10 @@ that memory usage is to be printed along with the cpu time.\n";
     if (idx->lookup(s, target))
       (interp.output?*interp.output:cout)
 	<< interp.libdir+"docs/"+target << endl;
+  } else {
+    if (!*cmd)
+      cerr << "???: empty command\n";
+    else
+      cerr << cmd << ": unknown command\n";
   }
 }

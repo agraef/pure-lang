@@ -69,6 +69,7 @@ using namespace std;
 --disable=optname Disable source option (conditional compilation).\n\
 --eager-jit       Enable eager JIT compilation (LLVM 2.7 or later).\n\
 --enable=optname  Enable source option (conditional compilation).\n\
+--escape, -e      Interactive commands are prefixed with '!'.\n\
 -fPIC             Create position-independent code (batch compilation).\n\
 -g                Enable symbolic debugging.\n\
 --help, -h        Print this message and exit.\n\
@@ -84,7 +85,7 @@ using namespace std;
 -q                Quiet startup (suppresses sign-on message).\n\
 -T filename       Tags file to be written by --ctags or --etags.\n\
 -u                Do not strip unused functions in batch compilation.\n\
--v[level]         Set debugging level (default: 1).\n\
+-v[level]         Set verbosity level (default: 1).\n\
 --version         Print version information and exit.\n\
 -w                Enable compiler warnings.\n\
 -x                Execute script with given command line arguments.\n\
@@ -236,6 +237,7 @@ main(int argc, char *argv[])
   if ((env = getenv("PURE_NOFOLD"))) interp.folding = false;
   if ((env = getenv("PURE_NOTC"))) interp.use_fastcc = false;
   if ((env = getenv("PURE_EAGER_JIT"))) interp.eager_jit = true;
+  if ((env = getenv("PURE_ESCAPE"))) interp.escape_mode = true;
   if ((env = getenv("PURELIB"))) {
     string s = unixize(env);
     if (!s.empty() && s[s.size()-1] != '/') s.append("/");
@@ -266,6 +268,8 @@ main(int argc, char *argv[])
 	interp.debugging = true;
       else if (strcmp(arg, "-i") == 0)
 	force_interactive = true;
+      else if (strcmp(arg, "-e") == 0 || strcmp(arg, "--escape") == 0)
+	interp.escape_mode = true;
       else if (strcmp(arg, "--ctags") == 0)
 	interp.tags = 1;
       else if (strcmp(arg, "--etags") == 0)

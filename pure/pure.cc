@@ -82,6 +82,7 @@ using namespace std;
 --disable=optname Disable source option (conditional compilation).\n\
 --eager-jit       Enable eager JIT compilation (LLVM 2.7 or later).\n\
 --enable=optname  Enable source option (conditional compilation).\n\
+--escape, -e      Interactive commands are prefixed with '!'.\n\
 -fPIC             Create position-independent code (batch compilation).\n\
 -g                Enable symbolic debugging.\n\
 --help, -h        Print this message and exit.\n\
@@ -97,7 +98,7 @@ using namespace std;
 -q                Quiet startup (suppresses sign-on message).\n\
 -T filename       Tags file to be written by --ctags or --etags.\n\
 -u                Do not strip unused functions in batch compilation.\n\
--v[level]         Set debugging level (default: 1).\n\
+-v[level]         Set verbosity level (default: 1).\n\
 --version         Print version information and exit.\n\
 -w                Enable compiler warnings.\n\
 -x                Execute script with given command line arguments.\n\
@@ -108,11 +109,15 @@ Type 'help' in the interpreter for more help.\n"
 #ifdef HAVE_LIBREADLINE
 
 static const char *commands[] = {
-  "break", "bt", "cd", "clear", "const", "def", "del", "dump", "extern", "help",
-  "infix", "infixl", "infixr", "interface", "let", "ls", "mem", "namespace",
-  "nonfix", "outfix", "override", "postfix", "prefix", "private", "public",
-  "pwd", "quit", "run", "save", "show", "stats", "trace", "type", "underride",
-  "using", 0
+  "break", "bt", "cd", "clear", "del", "dump", "help", "ls", "mem",
+  "override", "pwd", "quit", "run", "save", "show", "stats", "trace",
+  "underride", 0
+};
+
+static const char *keywords[] = {
+  "const", "def", "extern", "infix", "infixl", "infixr", "interface",
+  "let", "namespace", "nonfix", "outfix", "postfix", "prefix",
+  "private", "public", "type", "underride", "using", 0
 };
 
 /* Generator functions for command completion. */
@@ -133,105 +138,111 @@ static bool checkusercmd(interpreter &interp, const char *s)
      interp.externals.find(sym->f) != interp.externals.end());
 }
 
+// completion state
+static bool absname;
+static int keyword_index, command_index, len;
+static int32_t f, n;
+
+static void
+init_generator(const char *text, int state)
+{
+  assert(interpreter::g_interp);
+  interpreter& interp = *interpreter::g_interp;
+  command_index = keyword_index = 0;
+  // Must do this here, so that symbols are entered into the globalvars table.
+  interp.compile();
+  f = 1; n = interp.symtab.nsyms();
+  len = strlen(text);
+  // See whether we're looking for an absolutely qualified symbol.
+  absname = strncmp(text, "::", 2) == 0;
+}
+
+static char *
+symbol_generator(const char *text, int state);
+
 static char *
 command_generator(const char *text, int state)
 {
-  static bool absname;
-  static int list_index, len;
-  static int32_t f, n;
   const char *name;
-  assert(interpreter::g_interp);
-  interpreter& interp = *interpreter::g_interp;
 
   /* New match. */
-  if (!state) {
-    list_index = 0;
-    /* Must do this here, so that symbols are entered into the globalvars
-       table. */
-    interp.compile();
-    f = 1; n = interp.symtab.nsyms();
-    len = strlen(text);
-    /* See whether we're looking for an absolutely qualified symbol. */
-    absname = strncmp(text, "::", 2) == 0;
-  }
+  if (!state) init_generator(text, state);
 
   /* Return the next name which partially matches from the
      command list. */
-  while ((name = commands[list_index])) {
-    list_index++;
+  while ((name = commands[command_index])) {
+    command_index++;
+    if (strncmp(name, text, len) == 0)
+      return strdup(name);
+  }
+
+  /* Chain to the symbol generator (state 4711 indicates that we want
+     user-defined commands only). */
+  return symbol_generator(text, 4711);
+}
+
+static char *
+keyword_generator(const char *text, int state)
+{
+  const char *name;
+
+  /* New match. */
+  if (!state) init_generator(text, state);
+
+  /* Return the next name which partially matches from the
+     keyword list. */
+  while ((name = keywords[keyword_index])) {
+    keyword_index++;
+    if (strncmp(name, text, len) == 0)
+      return strdup(name);
+  }
+
+  /* Chain to the symbol generator. */
+  return symbol_generator(text, 1);
+}
+
+static char *
+command_keyword_generator(const char *text, int state)
+{
+  const char *name;
+
+  /* New match. */
+  if (!state) init_generator(text, state);
+
+  /* Return the next name which partially matches from the
+     command list. */
+  while ((name = commands[command_index])) {
+    command_index++;
     if (strncmp(name, text, len) == 0)
       return strdup(name);
   }
 
   /* Return the next name which partially matches from the
-     symbol list. */
-  while (f <= n) {
-    /* Skip non-toplevel symbols. */
-    const symbol& sym = interp.symtab.sym(f);
-    if (!interp.symtab.visible(f) ||
-	(sym.prec == PREC_MAX && sym.fix != nonfix && sym.fix != outfix &&
-	 interp.globenv.find(f) == interp.globenv.end() &&
-	 interp.typeenv.find(f) == interp.typeenv.end() &&
-	 interp.macenv.find(f) == interp.macenv.end() &&
-	 interp.globalvars.find(f) == interp.globalvars.end() &&
-	 interp.externals.find(f) == interp.externals.end())) {
-      f++;
-      continue;
-    }
-    const string& s = sym.s;
-    f++;
-    if (absname) {
-      /* Absolute symbol, normalize the name. */
-      if (strncmp(s.c_str(), text+2, len-2) == 0)
-	return strdup(("::"+s).c_str());
-    } else {
-      if (strncmp(s.c_str(), text, len) == 0)
-	return strdup(s.c_str());
-      else {
-	/* Look for a symbol in the current namespace, the __cmd__ namespace
-	   and the search namespaces. */
-	size_t p = s.rfind(text);
-	if (p != string::npos &&
-	    (p == 0 || (p > 1 && s.compare(p-2, 2, "::") == 0))) {
-	  string prefix = s.substr(0, p?p-2:p),
-	    name = s.substr(p, string::npos);
-	  bool found = prefix==*interp.symtab.current_namespace ||
-	    (prefix=="__cmd__" && checkusercmd(interp, name.c_str()));
-	  for (map< string, set<int32_t> >::iterator
-		 it = interp.symtab.search_namespaces->begin(),
-		 end = interp.symtab.search_namespaces->end();
-	       !found && it != end; it++)
-	    found = prefix==it->first && checksym(f, it->second);
-	  if (found)
-	    return strdup(name.c_str());
-	}
-      }
-    }
+     keyword list. */
+  while ((name = keywords[keyword_index])) {
+    keyword_index++;
+    if (strncmp(name, text, len) == 0)
+      return strdup(name);
   }
 
-  /* If no names matched, then return NULL. */
-  return 0;
+  /* Chain to the symbol generator (state 4712 indicates that we want both
+     user-defined commands and ordinary symbols). */
+  return symbol_generator(text, 4712);
 }
 
 static char *
 symbol_generator(const char *text, int state)
 {
-  static bool absname;
-  static int len;
-  static int32_t f, n;
   assert(interpreter::g_interp);
   interpreter& interp = *interpreter::g_interp;
 
   /* New match. */
-  if (!state) {
-    /* Must do this here, so that symbols are entered into the globalvars
-       table. */
-    interp.compile();
-    f = 1; n = interp.symtab.nsyms();
-    len = strlen(text);
-    /* See whether we're looking for an absolutely qualified symbol. */
-    absname = strncmp(text, "::", 2) == 0;
-  }
+  if (!state) init_generator(text, state);
+
+  if (absname && state == 4711)
+    // qualified symbol but we're only looking for user-defined commands, so
+    // there's nothing to do
+    return 0;
 
   /* Return the next name which partially matches from the
      symbol list. */
@@ -255,22 +266,27 @@ symbol_generator(const char *text, int state)
       if (strncmp(s.c_str(), text+2, len-2) == 0)
 	return strdup(("::"+s).c_str());
     } else {
-      if (strncmp(s.c_str(), text, len) == 0)
+      if (state != 4711 && strncmp(s.c_str(), text, len) == 0)
 	return strdup(s.c_str());
       else {
-	/* Look for a symbol in the current namespace and the search
-	   namespaces. */
-	size_t p = s.rfind(text);
-	if (p != string::npos &&
-	    (p == 0 || (p > 1 && s.compare(p-2, 2, "::") == 0))) {
-	  string prefix = s.substr(0, p?p-2:p),
-	    name = s.substr(p, string::npos);
-	  bool found = prefix==*interp.symtab.current_namespace;
-	  for (map< string, set<int32_t> >::iterator
-		 it = interp.symtab.search_namespaces->begin(),
-		 end = interp.symtab.search_namespaces->end();
-	       !found && it != end; it++)
-	    found = prefix==it->first && checksym(f, it->second);
+	/* Look for a qualified symbol in the current namespace, the __cmd__
+	   namespace and the search namespaces, as requested. */
+	size_t p = s.rfind("::"+string(text));
+	if (p != string::npos) {
+	  string prefix = s.substr(0, p),
+	    name = s.substr(p+2, string::npos);
+	  bool found =
+	    (state != 4711 &&
+	     prefix==*interp.symtab.current_namespace) ||
+	    (state >= 4711 &&
+	     prefix=="__cmd__" && checkusercmd(interp, name.c_str()));
+	  if (state != 4711) {
+	    for (map< string, set<int32_t> >::iterator
+		   it = interp.symtab.search_namespaces->begin(),
+		   end = interp.symtab.search_namespaces->end();
+		 !found && it != end; it++)
+	      found = prefix==it->first && checksym(sym.f, it->second);
+	  }
 	  if (found)
 	    return strdup(name.c_str());
 	}
@@ -289,13 +305,33 @@ pure_completion(const char *text, int start, int end)
 
   matches = (char **)NULL;
 
-  /* If this word is at the start of the line, then it is a command to
-     complete. Otherwise it is a global function or variable symbol, or the
-     name of a file in the current directory. */
-  if (start == 0)
-    matches = rl_completion_matches(text, command_generator);
-  else
-    matches = rl_completion_matches(text, symbol_generator);
+  /* NOTE: As of Pure 0.56, interactive commands may also be escaped with a
+     leading '!' on the command line. If this mode is enabled, we only want to
+     match command names after a leading '!' and just keywords or symbols at
+     the real beginning of the line. In normal mode we match both commands,
+     keywords and symbols at the beginning of a line. In all other cases, just
+     the symbols are matched. */
+  assert(interpreter::g_interp);
+  interpreter& interp = *interpreter::g_interp;
+  bool esc = interp.escape_mode;
+
+  /* If this word is at the start of the line, then it might be a command or
+     keyword to complete. Otherwise it is a global function or variable symbol
+     (or the name of a file in the current directory, readline handles this on
+     its own). */
+  if (esc) {
+    if (start == 0)
+      matches = rl_completion_matches(text, keyword_generator);
+    else if (start == 1 && rl_line_buffer[0] == '!')
+      matches = rl_completion_matches(text, command_generator);
+    else
+      matches = rl_completion_matches(text, symbol_generator);
+  } else {
+    if (start == 0)
+      matches = rl_completion_matches(text, command_keyword_generator);
+    else
+      matches = rl_completion_matches(text, symbol_generator);
+  }
 
   return matches;
 }
@@ -466,6 +502,7 @@ main(int argc, char *argv[])
   if ((env = getenv("PURE_NOFOLD"))) interp.folding = false;
   if ((env = getenv("PURE_NOTC"))) interp.use_fastcc = false;
   if ((env = getenv("PURE_EAGER_JIT"))) interp.eager_jit = true;
+  if ((env = getenv("PURE_ESCAPE"))) interp.escape_mode = true;
   if ((env = getenv("PURELIB"))) {
     string s = unixize(env);
     if (!s.empty() && s[s.size()-1] != '/') s.append("/");
@@ -496,6 +533,8 @@ main(int argc, char *argv[])
 	interp.debugging = true;
       else if (strcmp(arg, "-i") == 0)
 	force_interactive = true;
+      else if (strcmp(arg, "-e") == 0 || strcmp(arg, "--escape") == 0)
+	interp.escape_mode = true;
       else if (strcmp(arg, "--ctags") == 0)
 	interp.tags = 1;
       else if (strcmp(arg, "--etags") == 0)
@@ -789,6 +828,7 @@ main(int argc, char *argv[])
     exit_handler = my_exit_handler;
     rl_readline_name = (char*)"Pure";
     rl_attempted_completion_function = pure_completion;
+    rl_basic_word_break_characters = " \t\n\"\\'`@$><=,;!|&{([";
 #ifdef HAVE_READLINE_HISTORY
     using_history();
     read_history(interp.histfile.c_str());

@@ -3725,7 +3725,8 @@ pure_interp *pure_create_interp(int argc, char *argv[])
   if (argv && *argv) for (char **args = ++argv; *args; ++args) {
     if (**args == '-') {
       char *arg = *args;
-      if ((arg[1] && arg[2] == 0 && strchr("hcgiqsu", arg[1])) ||
+      if ((arg[1] && arg[2] == 0 && strchr("hcgieqsu", arg[1])) ||
+	  strcmp(arg, "--escape") == 0 ||
 	  strcmp(arg, "--help") == 0 || strcmp(arg, "--version") == 0 ||
 	  strcmp(arg, "-fPIC") == 0 || strcmp(arg, "-fpic") == 0 ||
 	  strcmp(arg, "--norc") == 0 || strcmp(arg, "--noediting") == 0)

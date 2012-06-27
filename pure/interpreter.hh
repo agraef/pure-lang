@@ -586,6 +586,9 @@ public:
   // This is set by the frontend during startup to indicate that the
   // interpreter is running an interactive session.
   bool interactive_mode;
+  // Set this to indicate command escape mode (interactive commands are
+  // prefixed with '!').
+  bool escape_mode;
 
   // User-defined options (conditional compilation pragmas).
 private:
