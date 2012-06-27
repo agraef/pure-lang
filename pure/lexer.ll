@@ -1913,6 +1913,86 @@ void Index::scan()
   }
 }
 
+static bool is_fun_sym(interpreter &interp, int f)
+{
+  // check for defined function symbols (Pure function or external)
+  if (f <= 0) return false;
+  env::const_iterator it = interp.globenv.find(f);
+  if ((it != interp.globenv.end() && it->second.t == env_info::fun) ||
+      interp.externals.find(f) != interp.externals.end())
+    return true;
+  else
+    return false;
+}
+
+static bool is_mac_sym(interpreter &interp, int f)
+{
+  // check for defined macro symbols
+  if (f <= 0) return false;
+  env::const_iterator it = interp.macenv.find(f);
+  if ((it != interp.macenv.end() && it->second.t == env_info::fun))
+    return true;
+  if (f == interp.symtab.list_sym().f ||
+      f == interp.symtab.gensym_sym().f ||
+      f == interp.symtab.locals_sym().f ||
+      f == interp.symtab.eval_sym().f ||
+      f == interp.symtab.ifelse_sym().f ||
+      f == interp.symtab.lambda_sym().f ||
+      f == interp.symtab.case_sym().f ||
+      f == interp.symtab.when_sym().f ||
+      f == interp.symtab.with_sym().f)
+    return true;
+  return false;
+}
+
+static bool is_def_sym(interpreter &interp, int f)
+{
+  // check for any kind of defined symbol
+  if (f <= 0) return false;
+  // function, variable, constant
+  env::const_iterator it = interp.globenv.find(f);
+  if (it != interp.globenv.end() &&
+      (it->second.t == env_info::fun ||
+       it->second.t == env_info::fvar ||
+       it->second.t == env_info::cvar))
+    return true;
+  // external
+  if (interp.externals.find(f) != interp.externals.end())
+    return true;
+  // type
+  it = interp.typeenv.find(f);
+  if (it != interp.typeenv.end() && it->second.t != env_info::none)
+    return true;
+  // macro
+  return is_mac_sym(interp, f);
+}
+
+static bool isglob(const char *s)
+{
+  // special characters in Unix glob syntax (wildcards and escapes)
+  const char *globchars = "*?[]\\";
+  for (size_t i = 0; s[i]; i++)
+    if (strchr(globchars, s[i]))
+      return true;
+  return false;
+}
+
+void check_symbols(interpreter &interp, const list<string>& l, bool gflag)
+{
+  // Do a quick check on the symbol arguments. Note that this only gives
+  // diagnostics for informational purposes. We don't bail out in case of
+  // error, since we may still be able to do something useful.
+  for (list<string>::const_iterator it = l.begin(); it != l.end(); ++it) {
+    const char *s = it->c_str();
+    // can't really check glob patterns here, pass
+    if (gflag && isglob(s)) continue;
+    // see whether this symbol actually has a definition
+    int32_t f = pure_getsym(s);
+    if (!is_def_sym(interp, f))
+      cerr << "clear: unknown symbol '" << s << "'\n";
+  }
+}
+
 static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const char *cmd, const char *cmdline, bool esc)
 {
   static Index *idx = NULL;
@@ -2047,22 +2127,12 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
 	int32_t n = interp.symtab.nsyms();
 	if (mflag) {
 	  for (int32_t f = 1; f < n; f++) {
-	    env::const_iterator jt = interp.macenv.find(f);
-	    if ((jt != interp.macenv.end() && jt->second.t == env_info::fun) ||
-		f == interp.symtab.locals_sym().f ||
-		f == interp.symtab.eval_sym().f ||
-		f == interp.symtab.ifelse_sym().f ||
-		f == interp.symtab.lambda_sym().f ||
-		f == interp.symtab.case_sym().f ||
-		f == interp.symtab.when_sym().f ||
-		f == interp.symtab.with_sym().f)
+	    if (is_mac_sym(interp, f))
 	      interp.mac_tracepoints.insert(f);
 	  }
 	} else {
 	  for (int32_t f = 1; f < n; f++) {
-	    env::const_iterator jt = interp.globenv.find(f);
-	    if ((jt != interp.globenv.end() && jt->second.t == env_info::fun) ||
-		interp.externals.find(f) != interp.externals.end())
+	    if (is_fun_sym(interp, f))
 	      interp.tracepoints.insert(f);
 	  }
 	}
@@ -2092,15 +2162,7 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
 	const char *s = it->c_str();
 	int32_t f = pure_getsym(s);
 	if (f > 0) {
-	  env::const_iterator jt = interp.macenv.find(f);
-	  if ((jt != interp.macenv.end() && jt->second.t == env_info::fun) ||
-	      f == interp.symtab.locals_sym().f ||
-	      f == interp.symtab.eval_sym().f ||
-	      f == interp.symtab.ifelse_sym().f ||
-	      f == interp.symtab.lambda_sym().f ||
-	      f == interp.symtab.case_sym().f ||
-	      f == interp.symtab.when_sym().f ||
-	      f == interp.symtab.with_sym().f)
+	  if (is_mac_sym(interp, f))
 	    if (interp.mac_tracepoints.find(f) == interp.mac_tracepoints.end())
 	      interp.mac_tracepoints.insert(f);
 	    else
@@ -2117,9 +2179,7 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
 	const char *s = it->c_str();
 	int32_t f = pure_getsym(s);
 	if (f > 0) {
-	  env::const_iterator jt = interp.globenv.find(f);
-	  if ((jt != interp.globenv.end() && jt->second.t == env_info::fun) ||
-	      interp.externals.find(f) != interp.externals.end())
+	  if (is_fun_sym(interp, f))
 	    if (interp.tracepoints.find(f) == interp.tracepoints.end())
 	      interp.tracepoints.insert(f);
 	    else
@@ -2475,6 +2535,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
       cflag = fflag = mflag = vflag = yflag = true;
     if (lflag) sflag = true;
     if (!tflag && args.l.empty()) tlevel = 1;
+    check_symbols(interp, args.l, gflag);
     {
       size_t maxsize = 0, nfuns = 0, nmacs = 0, ntypes = 0,
 	nvars = 0, ncsts = 0, nrules = 0, mrules = 0, trules = 0;
@@ -2869,6 +2930,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
     if (!cflag && !fflag && !mflag && !vflag && !yflag)
       cflag = fflag = mflag = vflag = yflag = true;
     if (!tflag && args.l.empty()) tlevel = 1;
+    check_symbols(interp, args.l, gflag);
     {
       list<env_sym> l;
       for (int32_t f = 1; f <= interp.symtab.nsyms(); f++) {
@@ -3154,6 +3216,7 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
       goto out3;
     }
     {
+      check_symbols(interp, args.l, gflag);
       list<env_sym> l;
       for (int32_t f = 1; f <= interp.symtab.nsyms(); f++) {
 	const symbol& sym = interp.symtab.sym(f);
