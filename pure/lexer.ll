@@ -1954,6 +1954,11 @@ static bool is_def_sym(interpreter &interp, int f)
 {
   // check for any kind of defined symbol
   if (f <= 0) return false;
+  // check for declared operator symbols
+  const symbol& sym = interp.symtab.sym(f);
+  if (sym.fix == nonfix || (sym.fix == outfix && sym.g) ||
+      sym.prec < PREC_MAX)
+    return true;
   // function, variable, constant
   env::const_iterator it = interp.globenv.find(f);
   if (it != interp.globenv.end() &&
@@ -1982,7 +1987,8 @@ static bool isglob(const char *s)
   return false;
 }
 
-void check_symbols(interpreter &interp, const list<string>& l, bool gflag)
+static void check_symbols(interpreter &interp, const list<string>& l,
+			  bool gflag, const char *cmd)
 {
   // Do a quick check on the symbol arguments. Note that this only gives
   // diagnostics for informational purposes. We don't bail out in case of
@@ -1994,7 +2000,7 @@ void check_symbols(interpreter &interp, const list<string>& l, bool gflag)
     // see whether this symbol actually has a definition
     int32_t f = pure_getsym(s);
     if (!is_def_sym(interp, f))
-      cerr << "clear: unknown symbol '" << s << "'\n";
+      cerr << cmd << ": unknown symbol '" << s << "'\n";
   }
 }
 
@@ -2540,7 +2546,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
       cflag = fflag = mflag = vflag = yflag = true;
     if (lflag) sflag = true;
     if (!tflag && args.l.empty()) tlevel = 1;
-    check_symbols(interp, args.l, gflag);
+    check_symbols(interp, args.l, gflag, "show");
     {
       size_t maxsize = 0, nfuns = 0, nmacs = 0, ntypes = 0,
 	nvars = 0, ncsts = 0, nrules = 0, mrules = 0, trules = 0;
@@ -2935,7 +2941,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
     if (!cflag && !fflag && !mflag && !vflag && !yflag)
       cflag = fflag = mflag = vflag = yflag = true;
     if (!tflag && args.l.empty()) tlevel = 1;
-    check_symbols(interp, args.l, gflag);
+    check_symbols(interp, args.l, gflag, "dump");
     {
       list<env_sym> l;
       for (int32_t f = 1; f <= interp.symtab.nsyms(); f++) {
@@ -3221,7 +3227,7 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
       goto out3;
     }
     {
-      check_symbols(interp, args.l, gflag);
+      check_symbols(interp, args.l, gflag, "clear");
       list<env_sym> l;
       for (int32_t f = 1; f <= interp.symtab.nsyms(); f++) {
 	const symbol& sym = interp.symtab.sym(f);
