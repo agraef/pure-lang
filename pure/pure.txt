@@ -4142,8 +4142,8 @@ Symbol Declarations
 -------------------
 
 .. productionlist::
-   symbol_decl : `scope` `symbol`+ ";"
-   	       : | [`scope`] `fixity` `symbol`+ ";"
+   symbol_decl : `scope` `qualified_symbol`+ ";"
+   	       : | [`scope`] `fixity` `qualified_symbol`+ ";"
    scope : "public" | "private"
    fixity : "nonfix" | "outfix"
    	  : | ("infix"|"infixl"|"infixr"|"prefix"|"postfix") `precedence`
@@ -4155,16 +4155,24 @@ Scope declarations take the following form:
    	      private symbol ...;
 
 This declares the listed symbols as public or private, respectively. Each
-symbol must either be an identifier or a sequence of punctuation
-characters. The latter kind of symbols *must* always be declared before use,
-whereas ordinary identifiers can be used without a prior declaration in which
-case they are declared implicitly and default to public scope, meaning that
-they are visible everywhere in a program. An explicit public declaration of
+symbol must either be an identifier or a sequence of punctuation characters.
+The latter kind of symbols *must* always be declared before use, whereas
+ordinary identifiers can be used without a prior declaration in which case
+they are declared implicitly and default to public scope, meaning that they
+are visible everywhere in a program. An explicit public declaration of
 ordinary identifiers is thus rarely needed (unless you want to declare symbols
 as members of a specific namespace, see `Namespaces`_ below). Symbols can also
 be declared private, meaning that the symbol is visible only in the namespace
 it belongs to. This is explained in more detail under `Private Symbols`_ in
 the Namespaces_ section below.
+
+.. note:: The declared symbols may optionally be qualified with a namespace
+   prefix, but since new symbols can only be created in the current namespace,
+   the namespace prefix must match the current namespace (see `Namespaces`_).
+   Thus the namespace prefix isn't really needed, unless you want to declare a
+   symbol which happens to be a reserved Pure keyword (cf. `Lexical
+   Matters`_). In this specific case, it will be necessary to use a qualified
+   name so that the symbol isn't mistaken for a keyword.
 
 Note that to declare several symbols in a single declaration, you can list
 them all with whitespace in between. The same syntax applies to the other
@@ -4440,10 +4448,11 @@ Namespaces
 ----------
 
 .. productionlist::
-   namespace_decl : "namespace" [`name`] ";"
-   		  : | "namespace" `name` "with" `item`+ "end" ";"
+   namespace_decl : "namespace" [`name`] [`brackets`] ";"
+   		  : | "namespace" `name` [`brackets`] "with" `item`+ "end" ";"
    		  : | "using" "namespace" [`name_spec` ("," `name_spec`)*] ";"
-   name_spec : `name` ["(" `symbol`+ ")"]
+   brackets : "(" `left_op` `right_op` ")"
+   name_spec : `name` ["(" `qualified_symbol`+ ")"]
 
 To facilitate modular development, Pure also provides namespaces as a means to
 avoid name clashes between symbols, and to keep the global namespace tidy and
@@ -4514,8 +4523,9 @@ e.g.::
 Note that the namespace prefix in a qualified identifier must be a legal
 identifier, so it isn't possible to access symbols in namespaces with such
 descriptive labels in a direct fashion. The only way to get at the symbols in
-this case is to use a :keyword:`namespace` or :keyword:`using namespace`
-declaration (for the latter see `Using Namespaces`_ below).
+this case is with `namespace brackets`_ or by using a :keyword:`namespace` or
+:keyword:`using namespace` declaration (for the latter see `Using Namespaces`_
+below).
 
 .. _using namespace:
 
@@ -4532,9 +4542,9 @@ namespace` declaration, which takes the following form::
   // ...
   using namespace;
 
-(As with :keyword:`namespace` declarations, the second form without any
+As with :keyword:`namespace` declarations, the second form without any
 namespace arguments gets you back to the default empty list of search
-namespaces.)
+namespaces.
 
 For instance, consider this example::
 
@@ -4586,7 +4596,9 @@ following form::
 
 As indicated, the symbols to be imported can optionally be placed as a
 whitespace-delimited list inside parentheses, following the corresponding
-namespace name. For instance::
+namespace name. (As with symbol declarations, the symbols may optionally be
+qualified with a namespace prefix, which must match the imported namespace
+here.) For instance::
 
   > using namespace foo, bar (bar);
   > foo 99;
@@ -4668,8 +4680,8 @@ distinguish "defining" from "referring" uses of a global symbol, Pure uses the
 following (purely syntactic) notions:
 
 * A `defining occurrence` of a global *function*, *macro* or *type symbol* is
-  any occurrence of the symbol as the *head symbol* on the left-hand side of a
-  rewriting rule.
+  any occurrence of the symbol as the (leftmost) *head symbol* on the
+  left-hand side of a rewriting rule.
 
 * A `defining occurrence` of a global *variable* or *constant symbol* is any
   occurrence of the symbol in a *variable position* (as given by the "head =
@@ -4774,7 +4786,7 @@ below). For instance::
 
 (The above is a rather contrived example, since the very same functionality
 can be accomplished much easier, but there are some situations where this
-approach is necessary.)
+method is needed.)
 
 Private Symbols
 ~~~~~~~~~~~~~~~
@@ -4813,6 +4825,106 @@ namespace current again::
   198
   > secret::baz 99;
   198
+
+Namespace Brackets
+~~~~~~~~~~~~~~~~~~
+
+All the namespace-related constructs we discussed so far only provide a means
+to switch namespaces on a per-rule basis. Sometimes it is convenient if you
+can switch namespaces on the fly inside an expression. This is especially
+useful if you want to embed a domain-specific sublanguage (DSL) in Pure. DSLs
+typically provide their own system of operators which differ from the standard
+Pure operators and thus need to be declared in their own namespace.
+
+To make this possible, Pure allows you to associate a namespace with a
+corresponding pair of outfix symbols. This turns the outfix symbols into
+special `namespace brackets` which can then be used to quickly switch
+namespaces in an expression by just enclosing a subexpression in the namespace
+brackets.
+
+To these ends, the syntax of :keyword:`namespace` declarations allows you to
+optionally specify a pair of outfix symbols inside parentheses after the
+namespace name. The outfix symbols to be used as namespace brackets must have
+been declared beforehand. For instance::
+
+  outfix « »;
+  namespace foo (« »);
+  infixr (::^) ^;
+  x^y = 2*x+y;
+  namespace;
+
+The code above introduces a ``foo`` namespace which defines a special
+variation of the ``(^)`` operator. It also associates the namespace with the
+``« »`` brackets so that you can write::
+
+  > (a+b)^c+10;
+  (a+b)^c+10
+  > «(a+b)^c»+10;
+  2*(a+b)+c+10
+
+Note the use of the namespace brackets in the second input line. This changes
+the meaning of the ``^`` operator, which now refers to ``foo::^`` instead.
+Also note that the namespace brackets themselves are removed from the
+resulting expression; they are only used to temporarily switch the namespace
+to ``foo`` inside the bracketed subexpression. This works pretty much like a
+:keyword:`namespace` declaration (so any active search namespaces remain in
+effect), but is limited in scope to the bracketed subexpression and only gives
+access to the public symbols of the namespace (like a :keyword:`using
+namespace` declaration would do).
+
+The rules of visibility for the namespace bracket symbols themselves are the
+same as for any other symbols. So they need to be in scope if you want to
+denote them in unqualified form (which is always the case if they are declared
+in the default namespace, as in the example above). If necessary, you can also
+specify them in their qualified form as usual.
+
+Namespace brackets can be used anywhere inside an expression, even on the
+left-hand side of a rule. So, for instance, we might also have written the
+example above as follows::
+
+  outfix « »;
+  namespace foo (« »);
+  infixr (::^) ^;
+  namespace;
+
+  «x^y» = 2*x+y;
+
+Note the use of the namespace brackets on the last line. This rule actually
+expands to::
+
+  x foo::^ y  = 2*x+y;
+
+The special meaning of namespace brackets can be turned off and back on again
+at any time with a corresponding :keyword:`namespace` declaration. For
+instance::
+
+  > namespace (« »); // turn off the special meaning of « »
+  > «(a+b)^c»+10;
+  « (a+b)^c »+10
+  > namespace foo (« »); // turn it on again
+  > namespace;
+  > «(a+b)^c»+10;
+  2*(a+b)+c+10
+
+(Note that as a side effect these declarations also change the current
+namespace, so that we use the ``namespace;`` declaration in the second last
+line to change back to the default namespace.)
+
+As shown in the first line of the example above, a namespace brackets
+declaration without a namespace just turns off the special processing of the
+brackets. In order to define a namespace bracket for the *default* namespace,
+you need to explicitly specify an empty namespace instead, as follows::
+
+  > outfix «: :»;
+  > namespace "" («: :»);
+  > «(a+b)^«:x^y:»»;
+  2*(a+b)+x^y
+
+As this example illustrates, namespace brackets can also be nested, which is
+useful, e.g., if you need to combine subexpressions from several DSLs in a
+single expression. In this example we employ the ``«:x^y:»`` subexpression to
+temporarily switch back to the default namespace inside the ``« »``-bracketed
+expression which is parsed in the ``foo`` namespace.
 
 Hierarchical Namespaces
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -4956,7 +5068,7 @@ functions and operators::
   bar x;
   <: x,y :>;
 
-Pure's namespaces can thus be used pretty much like "modules" or "packages" in
+Pure's namespaces can thus be used pretty much like "packages" or "modules" in
 languages like Ada or Modula-2. They provide a structured way to describe
 program components offering collections of related data and operations, which
 can be brought into scope in a controlled way by making judicious use of
@@ -9233,9 +9345,10 @@ variables; please see the :doc:`installation instructions<install>` for
 details.
 
 Pure 0.56 introduced the :ref:`non-splicing vector brackets<non-splicing>`
-``{| |}`` as an alternative notation for nested vector structures. Moreover,
-interactive commands can now optionally be escaped by prefixing them with
-'\ ``!``\ ' (see `Interactive Usage`_ for details).
+``{| |}`` as an alternative notation for nested vector structures, as well as
+the `namespace brackets`_ to quickly switch namespaces inside an
+expression. Moreover, interactive commands can now optionally be escaped by
+prefixing them with '\ ``!``\ ' (see `Interactive Usage`_ for details).
 
 Error Recovery
 --------------
