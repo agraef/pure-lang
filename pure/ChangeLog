@@ -1,3 +1,39 @@
+2012-07-06  Albert Graef  <Dr.Graef@t-online.de>
+
+	* lexer.ll, parser.yy, interpreter.cc/hh, symtable.cc/hh:
+	Implemented namespace brackets, based on an idea by Yann Orlarey.
+	This makes it much more convenient to use embedded domain-specific
+	sublanguages in Pure. For instance, you may now write something
+	like:
+
+	outfix « »;
+	namespace faust (« »);
+
+	This means that the namespace 'faust' can now be accessed on the
+	fly in expressions like «(a,b,c) : (sin,cos,tan)». The
+	subexpression inside the namespace brackets is then parsed by
+	temporarily switching to the corresponding namespace. The
+	namespace brackets themselves must be a pair of outfix symbols
+	which has been declared already, and are removed from the
+	resulting expression. This works pretty much like a 'namespace'
+	declaration, but only gives access to the public symbols of the
+	namespace, and can be used anywhere inside an expression (even on
+	the left-hand side of a rule). Nesting these constructs is also
+	possible.
+
+	Also, to accommodate these changes, the declaration syntax is now
+	slightly more liberal in that qualified symbols are permitted in
+	symbol and namespace declarations. (In the case of symbol and
+	'using namespace' declarations, it will also be checked that
+	qualified symbols are declared in or imported from the proper
+	namespace.) This allows you to write stuff like:
+
+	namespace faust with outfix faust::begin faust::end; end;
+	namespace faust (faust::begin faust::end);
+
+	which isn't possible without using namespace qualifiers because
+	'end' by itself is a reserved keyword in Pure.
+
 2012-06-28  Albert Graef  <Dr.Graef@t-online.de>
 
 	* lexer.ll (docmd): Bugfixes and improvements in the interactive

@@ -276,8 +276,8 @@ symbol* symtable::lookup(const char *s)
     return default_sym;
   }
   // first look for a symbol in the current namespace
-  if (!current_namespace->empty()) {
-    string id = (*current_namespace)+"::"+s;
+  if (!current_namespace->empty() || !temp_namespaces.empty()) {
+    string id = current_namespace->empty()?s:(*current_namespace)+"::"+s;
     symbol *sym = lookup_p(id.c_str());
     if (sym) {
       count = 1;
@@ -288,7 +288,7 @@ symbol* symtable::lookup(const char *s)
   // with an error here
   for (map< string, set<int32_t> >::iterator it = search_namespaces->begin(),
 	 end = search_namespaces->end(); it != end; it++) {
-    string id = it->first+"::"+s;
+    string id = it->first.empty()?s:it->first+"::"+s;
     int priv2;
     symbol *sym = lookup_p(id.c_str(), priv2);
     if (sym && !it->second.empty() &&
@@ -385,7 +385,11 @@ bool symtable::visible(const symbol& sym)
     size_t k = symsplit(sym.s);
     if (k == string::npos) k = 0;
     string qual = sym.s.substr(0, k);
-    return qual.empty() || qual == *current_namespace;
+    // A private symbol is always visible if it is in the default namespace.
+    // Other private symbols are only visible in their home namespace.
+    // Temporary namespaces (inside a namespace bracket) don't count here.
+    return qual.empty() ||
+      (qual == *current_namespace && temp_namespaces.empty());
   } else
     return true;
 }

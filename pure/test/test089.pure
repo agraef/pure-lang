@@ -1,0 +1,88 @@
+
+// Namespace brackets (Pure 0.56+).
+
+outfix « »;
+namespace faust («»);
+
+// BDA operations
+
+infixr 1110 <: :> ;	// merge/split composition
+infixr 1120 : ;		// sequential composition
+infixr 1130 , ;		// parallel composition
+infixl 1140 ~ ;		// recursive composition
+
+// iterations
+
+public par seq sum prod;
+
+// primitives
+
+// BDA constants -- id (denoted __) and cut
+nonfix __ ! ;
+
+// arithmetic and (bitwise) logical operations (| and & are denoted or, and)
+infixl 1150 + - or ;
+infixl 1160 * / % and xor << >> ;
+infixr 1170 ^ ;
+
+// relational operations
+infixl 1180 < <= > >= == != ;
+
+// delays (@ is denoted @@)
+infix 1190 @@ ;
+postfix 1200 ' ;
+
+// other primitives; these are ordinary prefix functions
+
+public int float ffunction fconstant fvariable;
+
+public acos asin atan atan2 cos sin tan exp log log10 pow sqrt abs min max fmod
+  remainder floor ceil rint;
+
+// prefix is denoted prefx
+public mem prefx rdtable rwtable select2 select3;
+
+public button checkbox vslider hslider nentry vgroup hgroup tgroup
+  vbargraph hbargraph attach;
+
+namespace;
+
+// For cosmetic purposes, remove the faust:: qualifiers on output.
+__show__ x = strcat $ split "faust::" $ str x;
+
+// Now you can write something like:
+dsp «(a,b,c) : (sin,cos,tan)»;
+
+// Any pair of (Unicode) outfix symbols can be used.
+outfix 〈 〉 〚 〛;
+namespace faust (〈 〉);
+namespace faust (〚 〛);
+namespace;
+
+dsp 〈(a,b,c) : (sin,cos,tan)〉;
+dsp 〚(a,b,c) : (sin,cos,tan)〛;
+
+// Qualified symbols work, too.
+namespace faust with
+outfix faust::begin faust::end;
+end;
+namespace faust (faust::begin faust::end);
+namespace;
+
+dsp faust::begin (a,b,c) : (sin,cos,tan) faust::end;
+
+// The special processing of a namespace bracket can be turned off like this:
+namespace («»);
+dsp «(a,b,c) : (sin,cos,tan)»;
+
+// And turned back on again:
+namespace faust («»);
+namespace;
+dsp «(a,b,c) : (sin,cos,tan)»;
+
+// A namespace bracket for the default namespace can be declared like this:
+outfix (: :);
+namespace "" ((: :));
+
+// Nesting namespace brackets is possible, too:
+dsp «(:a,b,c:) : (:sin,cos,tan:)»;

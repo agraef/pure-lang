@@ -55,7 +55,7 @@ static bool find_namespace(interpreter& interp, const string& name);
 static int32_t checktag(const char *s);
 static int32_t maketag(const char *s);
 static bool checkint(const char *s, string& msg);
-static string xsym(const string& ns, const string& s);
+static string xsym(const string *ns, const string& s);
 
 static bool esc_mode = false;
 
@@ -68,6 +68,9 @@ static void check(const yy::location& l, const char* s, bool decl);
 #else
 #define check(l, s, decl) 
 #endif
+
+// Check for namespace brackets.
+static void nsbracket(symbol* sym);
 
 /* Hook for interactive command input. */
 char *(*command_input)(const char *prompt);
@@ -649,19 +652,29 @@ blank  [ \t\f\v\r]
 <xsyms,xsyms_rescan>")"	   BEGIN(xusing); return yy::parser::token_type(yytext[0]);
 <xsyms>{blank}+    yylloc->step();
 <xsyms>[\n]+	   yylloc->lines(yyleng); yylloc->step();
-<xsyms>{id}        {
+<xsyms>{qual}?{id}  {
  xsyms_parse_id:
   symbol* sym = interp.symtab.lookup(xsym(interp.xsym_prefix, yytext));
-  bool res = interp.symtab.count > 0;
-  if (sym) {
+  bool res = interp.symtab.count > 0, res2 = false;
+  if (interp.xsym_prefix) {
+    string id0 = yytext;
+    size_t k = symsplit(yytext);
+    if (k != string::npos) {
+      string qual = id0.substr(0, k), id = id0.substr(k+2);
+      if (qual.compare(0, 2, "::") == 0) qual.erase(0, 2);
+      res2 = qual != *interp.xsym_prefix;
+    }
+  }
+  if (sym && !res2) {
     yylval->ival = sym->f;
     return token::XID;
   }
-  string msg = res?("symbol '"+string(yytext)+"' is private here"):
+  string msg = res2?"qualified symbol '"+string(yytext)+"' has wrong namespace":
+    res?("symbol '"+string(yytext)+"' is private here"):
     ("undeclared symbol '")+string(yytext)+"'";
   interp.error(*yylloc, msg);
 }
-<xsyms>([[:punct:]]|{punct})+  {
+<xsyms>{qual}?([[:punct:]]|{punct})+  {
  xsyms_parse_op:
   if (yytext[0] == '/' && yytext[1] == '*') {
     yyless(2); yylloc_update();
@@ -670,22 +683,36 @@ blank  [ \t\f\v\r]
   while (yyleng > 1 && yytext[yyleng-1] == ';') yyless(yyleng-1);
   yylloc_update();
   symbol* sym = interp.symtab.lookup(xsym(interp.xsym_prefix, yytext));
-  bool res = interp.symtab.count > 0;
-  while (!sym && !res && yyleng > 1) {
+  bool res = interp.symtab.count > 0, res2 = false;
+  size_t k = 0;
+  if (interp.xsym_prefix) {
+    string id0 = yytext;
+    k = symsplit(yytext);
+    if (k != string::npos) {
+      string qual = id0.substr(0, k), id = id0.substr(k+2);
+      if (qual.compare(0, 2, "::") == 0) qual.erase(0, 2);
+      res2 = qual != *interp.xsym_prefix;
+      k += 2;
+    }
+  }
+  while (!sym && !res && !res2 && yyleng > (int)k+1) {
     if (yyleng == 2 && yytext[0] == '-' && yytext[1] == '>')
       return token::MAPSTO;
     yyless(yyleng-1); yylloc_update();
     sym = interp.symtab.lookup(xsym(interp.xsym_prefix, yytext));
     res = interp.symtab.count > 0;
   }
-  if (sym) {
+  if (res2) {
+    string msg = "qualified symbol '"+string(yytext)+"' has wrong namespace";
+    interp.error(*yylloc, msg);
+  } else if (sym) {
     yylval->ival = sym->f;
     return token::XID;
   } else if (res) {
     string msg = "symbol '"+string(yytext)+"' is private here";
     interp.error(*yylloc, msg);
   } else {
-    assert(yyleng == 1);
+    assert(yyleng == k+1);
     /* If we come here, we failed to recognize the input as a special symbol
        and have to rescan everything in a special mode which excludes this
        rule. This hack is necessary in order to avoid the use of REJECT. */
@@ -884,9 +911,10 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
       yylval->xval->flags() |= EXPR::QUAL;
     } else
       yylval->xval = new expr(sym->x);
-    if (sym->fix == outfix)
+    if (sym->fix == outfix) {
+      nsbracket(sym);
       return sym->g?token::LO:token::RO;
-    else
+    } else
       return optok(sym->f, sym->fix);
   } else {
     if (!interp.nerrs && !sym && interp.symtab.count != 1 &&
@@ -918,9 +946,10 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
   symbol* sym = interp.symtab.lookup(yytext);
   if (sym && ((sym->prec >= 0 && sym->prec < PREC_MAX) || sym->fix == outfix)) {
     yylval->xval = new expr(sym->x);
-    if (sym->fix == outfix)
+    if (sym->fix == outfix) {
+      nsbracket(sym);
       return sym->g?token::LO:token::RO;
-    else
+    } else
       return optok(sym->f, sym->fix);
   } else {
     yylval->sval = new string(yytext);
@@ -982,9 +1011,10 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
 	yylval->xval->flags() |= EXPR::QUAL;
       } else
 	yylval->xval = new expr(sym->x);
-      if (sym->fix == outfix)
+      if (sym->fix == outfix) {
+	nsbracket(sym);
 	return sym->g?token::LO:token::RO;
-      else
+      } else
 	return optok(sym->f, sym->fix);
     } else {
       yylval->sval = new string(yytext);
@@ -1017,9 +1047,10 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
   if (sym) {
     if (sym->prec < PREC_MAX || sym->fix == outfix) {
       yylval->xval = new expr(sym->x);
-      if (sym->fix == outfix)
+      if (sym->fix == outfix) {
+	nsbracket(sym);
 	return sym->g?token::LO:token::RO;
-      else
+      } else
 	return optok(sym->f, sym->fix);
     } else {
       yylval->sval = new string(yytext);
@@ -1414,6 +1445,17 @@ static void check(const yy::location& l, const char* s, bool decl)
 }
 #endif
 
+static void nsbracket(symbol* sym)
+{
+  // Check for namespace brackets.
+  interpreter& interp = *interpreter::g_interp;
+  assert(sym->fix == outfix);
+  if (sym->g && sym->ns)
+    // This is an opening namespace bracket. Push the namespace on the top
+    // of the symbol table's temporary namespace stack.
+    interp.symtab.push_namespace(*sym->ns);
+}
+
 static int32_t checkbuiltintag(const char *s)
 {
   if (strcmp(s, "int") == 0)
@@ -1523,12 +1565,19 @@ static bool checkint(const char *s, string& msg)
     return true;
 }
 
-static string xsym(const string& ns, const string& s)
+static string xsym(const string *ns, const string& s)
 {
-  if (ns.empty())
+  if (!ns)
+    return s;
+  else if (s.find("::") != string::npos)
+    if (s.compare(0, 2, "::") == 0)
+      return s;
+    else
+      return "::"+s;
+  else if (ns->empty())
     return "::"+s;
   else
-    return "::"+ns+"::"+s;
+    return "::"+*ns+"::"+s;
 }
 
 /* Interactive command processing. */

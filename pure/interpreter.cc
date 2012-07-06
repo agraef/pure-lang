@@ -155,6 +155,8 @@ void interpreter::init()
     g_init = true;
   }
 
+  xsym_prefix = 0;
+
   source_options[HOST] = true;
   codegen_options.insert(pair<string,bool*>("interactive", &interactive_mode));
   codegen_options.insert(pair<string,bool*>("debugging", &debugging));
@@ -1431,12 +1433,12 @@ void interpreter::enable(const string& optname, bool flag)
 
 // Scoped namespaces (Pure 0.43+).
 
-void interpreter::push_namespace(string *ns)
+void interpreter::push_namespace(string *ns, int32_t bracket)
 {
   string parent = *symtab.current_namespace;
   map< string, set<int32_t> > search_namespaces = *symtab.search_namespaces;
   active_namespaces.push_front(nsinfo(parent, search_namespaces));
-  set_namespace(ns);
+  set_namespace(ns, bracket);
 }
 
 void interpreter::pop_namespace()
@@ -1447,7 +1449,7 @@ void interpreter::pop_namespace()
   active_namespaces.pop_front();
 }
 
-void interpreter::set_namespace(string *ns)
+void interpreter::set_namespace(string *ns, int32_t bracket)
 {
   size_t k = symsplit(*ns);
   if (k != string::npos &&
@@ -1455,15 +1457,31 @@ void interpreter::set_namespace(string *ns)
     symtab.current_namespace->clear();
     throw err("unknown namespace '"+ns->substr(0, k)+"'");
   } else {
-    namespaces.insert(*ns);
+    if (!ns->empty()) namespaces.insert(*ns);
     delete symtab.current_namespace;
     symtab.current_namespace = ns;
+    if (bracket > 0) {
+      symbol& sym = symtab.sym(bracket);
+      assert(sym.g); // must be an outfix symbol
+      // set the special namespace attribute of the brackets
+      if (sym.ns) delete sym.ns;
+      sym.ns = new string(*ns);
+    }
   }
 }
 
-void interpreter::clear_namespace()
+void interpreter::clear_namespace(int32_t bracket)
 {
   symtab.current_namespace->clear();
+  if (bracket > 0) {
+    symbol& sym = symtab.sym(bracket);
+    assert(sym.g); // must be an outfix symbol
+    if (sym.ns) {
+      // revoke the special namespace attribute of the brackets
+      delete sym.ns;
+      sym.ns = 0;
+    }
+  }
 }
 
 // Ctags/etags support.
@@ -4142,7 +4160,7 @@ void interpreter::using_namespaces(list< pair< string, list<int32_t> > > *items)
   if (items) {
     for (list< pair< string, list<int32_t> > >::iterator
 	   it = items->begin(), end = items->end(); it != end; it++) {
-      namespaces.insert(it->first);
+      if (!it->first.empty()) namespaces.insert(it->first);
       map< string, set<int32_t> >::iterator jt =
 	symtab.search_namespaces->find(it->first);
       if (jt == symtab.search_namespaces->end()) {
@@ -4180,11 +4198,17 @@ void interpreter::declare(bool priv, prec_t prec, fix_t fix, list<string> *ids)
 {
   for (list<string>::const_iterator it = ids->begin();
        it != ids->end(); ++it) {
-    if (it->find("::") != string::npos) {
-      string id = *it;
-      throw err("qualified symbol '"+id+"' not permitted in declaration");
+    string id0 = *it;
+    size_t k = symsplit(id0);
+    if (k != string::npos) {
+      string qual = id0.substr(0, k), id = id0.substr(k+2);
+      if (qual.compare(0, 2, "::") == 0) qual.erase(0, 2);
+      if (qual == *symtab.current_namespace)
+	id0 = id;
+      else
+	throw err("qualified symbol '"+id0+"' has wrong namespace");
     }
-    string id = make_qualid(*it), absid = make_absid(*it);
+    string id = make_qualid(id0), absid = make_absid(id0);
     symbol* sym = symtab.lookup(absid);
     if (sym) {
       // Make sure that the symbol is marked as resolved.
@@ -4210,7 +4234,17 @@ void interpreter::declare(bool priv, prec_t prec, fix_t fix, list<string> *ids)
 	if (jt == ids->end()) {
 	  throw err("right symbol missing in outfix declaration");
 	}
-	string id2 = make_qualid(*it), absid2 = make_absid(*it);
+	string id0 = *it;
+	size_t k = symsplit(id0);
+	if (k != string::npos) {
+	  string qual = id0.substr(0, k), id = id0.substr(k+2);
+	  if (qual.compare(0, 2, "::") == 0) qual.erase(0, 2);
+	  if (qual == *symtab.current_namespace)
+	    id0 = id;
+	  else
+	    throw err("qualified symbol '"+id0+"' has wrong namespace");
+	}
+	string id2 = make_qualid(id0), absid2 = make_absid(id0);
 	symbol* sym2 = symtab.lookup(absid2);
 	if (!sym2 || sym->g != sym2->f) {
 	  throw err("right outfix symbol '"+id2+"' doesn't match existing declaration");
@@ -4223,7 +4257,17 @@ void interpreter::declare(bool priv, prec_t prec, fix_t fix, list<string> *ids)
       if (jt == ids->end()) {
 	throw err("right symbol missing in outfix declaration");
       }
-      string id2 = make_qualid(*it), absid2 = make_absid(*it);
+      string id0 = *it;
+      size_t k = symsplit(id0);
+      if (k != string::npos) {
+	string qual = id0.substr(0, k), id = id0.substr(k+2);
+	if (qual.compare(0, 2, "::") == 0) qual.erase(0, 2);
+	if (qual == *symtab.current_namespace)
+	  id0 = id;
+	else
+	  throw err("qualified symbol '"+id0+"' has wrong namespace");
+      }
+      string id2 = make_qualid(id0), absid2 = make_absid(id0);
       symbol* sym2 = symtab.lookup(absid2);
       if (sym2) {
 	if (sym2->g != 0)

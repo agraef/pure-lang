@@ -177,6 +177,7 @@ static void mangle_fname(string& name);
 %type  <smval>	name_xsyms
 %type  <smlval>	name_xsyms_list
 %type  <ival>	op scope interface_rules
+%type  <ival>	opt_brackets "namespace brackets"
 %type  <info>	fixity
 %type  <xval>	expr prim
 %type  <opstk>  simple  "simple expression"
@@ -223,7 +224,8 @@ source
 | source ';'
 | source item_pos
 | error ';'
-{ interp.nerrs = yyerrstatus_ = 0; interp.declare_op = false; }
+{ interp.nerrs = yyerrstatus_ = 0; interp.declare_op = false;
+  interp.symtab.clean_namespaces(); }
 ;
 
 /* Same as above for namespace scopes. This doesn't allow empty items. */
@@ -232,7 +234,8 @@ items
 : item_pos
 | items item_pos
 | error ';'
-{ interp.nerrs = yyerrstatus_ = 0; interp.declare_op = false; }
+{ interp.nerrs = yyerrstatus_ = 0; interp.declare_op = false;
+  interp.symtab.clean_namespaces(); }
 ;
 
 item_pos
@@ -308,20 +311,20 @@ WITH { $<ival>$ = $<ival>3; } interface_rules END ';'
 { action(interp.run(*$2), {}); delete $2; }
 | USING scope { interp.declare_op = false; } fnames ';'
 { action(interp.run($2, *$4), {}); delete $4; }
-| NAMESPACE name ';'
+| NAMESPACE name opt_brackets ';'
 { if (interp.active_namespaces.empty()) {
-    action(interp.set_namespace($2), );
+    action(interp.set_namespace($2, $3), );
   } else
     error(yylloc, "namespace declaration is not permitted here");
 }
-| NAMESPACE ';'
+| NAMESPACE opt_brackets ';'
 { if (interp.active_namespaces.empty()) {
-    action(interp.clear_namespace(), );
+    action(interp.clear_namespace($2), );
   } else
     error(yylloc, "namespace declaration is not permitted here");
 }
-| NAMESPACE name WITH
-{ action(interp.push_namespace(new string(*$2)), ); }
+| NAMESPACE name opt_brackets WITH
+{ action(interp.push_namespace(new string(*$2), $3), ); }
   items END ';'
 { interp.pop_namespace(); delete $2; }
 | USING NAMESPACE name_xsyms_list ';'
@@ -397,6 +400,29 @@ fname
 			  $$ = new string(s); free(s); }
 ;
 
+opt_brackets
+: /* empty */		{ $$ = 0; }
+| '(' { interp.xsym_prefix = 0; } XID XID ')'
+			{ int32_t g = interp.symtab.sym($3).g;
+			  if (g != 0 && g == $4)
+			    $$ = $3;
+			  else {
+			    string msg;
+			    if (g == 0) {
+			      string id = interp.symtab.sym($3).s;
+			      msg = "syntax error, unexpected '"+id+
+				"', expecting outfix operator";
+			    } else {
+			      string id = interp.symtab.sym($4).s;
+			      string rid = interp.symtab.sym(g).s;
+			      msg = "syntax error, unexpected '"+id+
+				"', expecting '"+rid+"'";
+			    }
+			    interp.error(yyloc, msg);
+			    YYERROR;
+			  } }
+;
+
 name_xsyms_list
 : name_xsyms
 { $$ = new list< pair< string, list<int32_t> > >;
@@ -408,7 +434,7 @@ name_xsyms_list
 name_xsyms
 : name
 { $$ = new pair< string, list<int32_t> >(*$1, list<int32_t>()); delete $1; }
-| name '(' { interp.xsym_prefix = *$1; } xsyms ')'
+| name '(' { interp.xsym_prefix = $1; } xsyms ')'
 { $$ = new pair< string, list<int32_t> >(*$1, *$4); delete $1; delete $4; }
 ;
 
@@ -544,9 +570,16 @@ prim
 | STR			{ $$ = new expr(EXPR::STR, $1); }
 | LO expr RO		{ int32_t g = interp.symtab.sym($1->tag()).g;
 			  assert(g != 0);
-			  if (g == $3->tag())
-			    $$ = interp.mkexpr($1, $2);
-			  else {
+			  if (g == $3->tag()) {
+			    if (interp.symtab.sym($1->tag()).ns) {
+			      // special namespace bracket
+			      delete $1;
+			      $$ = $2;
+			      interp.symtab.pop_namespace();
+			    } else
+			      $$ = interp.mkexpr($1, $2);
+			    delete $3;
+			  } else {
 			    string id = interp.symtab.sym($3->tag()).s;
 			    string rid = interp.symtab.sym(g).s;
 			    string msg = "syntax error, unexpected '"+id+
@@ -571,9 +604,10 @@ prim
 | '(' PO ')'		{ $$ = $2; }
 | '(' LO RO ')'		{ int32_t g = interp.symtab.sym($2->tag()).g;
 			  assert(g != 0);
-			  if (g == $3->tag())
+			  if (g == $3->tag()) {
 			    $$ = $2;
-			  else {
+			    delete $3;
+			  } else {
 			    string id = interp.symtab.sym($3->tag()).s;
 			    string rid = interp.symtab.sym(g).s;
 			    string msg = "syntax error, unexpected '"+id+

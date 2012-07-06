@@ -37,21 +37,22 @@ public:
   int32_t f; // symbol tag
   int32_t g; // right paren for outfix symbol
   string s; // print name
+  string *ns; // non-null indicates namespace bracket
   prec_t prec; // precedence level
   fix_t fix; // fixity
   bool priv; // private attribute
   bool unresolved; // unresolved symbol
   symbol() // constructor for dummy entries
-    : f(0), g(0), s(""), prec(PREC_MAX), fix(infix), priv(false),
+    : f(0), g(0), s(""), ns(0), prec(PREC_MAX), fix(infix), priv(false),
       unresolved(false)
   {}
   symbol(const string& _s, int _f, bool _priv = false)
-    : f(_f), g(0), s(_s), prec(PREC_MAX), fix(infix), priv(_priv),
+    : f(_f), g(0), s(_s), ns(0), prec(PREC_MAX), fix(infix), priv(_priv),
       unresolved(false)
   { x = expr(f); }
   symbol(const string& _s, int _f, prec_t _prec, fix_t _fix,
 	 bool _priv = false)
-    : f(_f), g(0), s(_s), prec(_prec), fix(_fix), priv(_priv),
+    : f(_f), g(0), s(_s), ns(0), prec(_prec), fix(_fix), priv(_priv),
       unresolved(false)
   { x = expr(f); }
 };
@@ -159,6 +160,25 @@ public:
   string *current_namespace;
   // additional namespaces to be searched for unqualified symbols
   map< string, set<int32_t> > *search_namespaces;
+  // stack of temporary namespaces used to handle namespace brackets
+  list<string*> temp_namespaces;
+  void push_namespace(const string& ns)
+  {
+    temp_namespaces.push_front(current_namespace);
+    current_namespace = new string(ns);
+  }
+  void pop_namespace()
+  {
+    assert(!temp_namespaces.empty());
+    delete current_namespace;
+    current_namespace = temp_namespaces.front();
+    temp_namespaces.pop_front();
+  }
+  void clean_namespaces()
+  {
+    while (!temp_namespaces.empty())
+      pop_namespace();
+  }
   // these are for internal use only
   void dump(string& s);
   void restore(const string& s);
@@ -186,10 +206,10 @@ public:
   symbol* lookup(const char *s);
   symbol* lookup(const string& s) { return lookup(s.c_str()); }
   template <class T>
-  /* Same as above, but look for a symbol in a specific class. Note that
-     stupid C++ forces us to include this right here in the header file,
-     instead of symtable.cc where it belongs, so that the template method is
-     properly instantiated. */
+  /* This is basically the same as above, but looks for a symbol in a specific
+     class. Note that stupid C++ forces us to include this right here in the
+     header file, instead of symtable.cc where it belongs, so that the
+     template method is properly instantiated. */
   symbol* lookup_restricted(const char *s, const map<int32_t,T>& syms)
   {
     if (strncmp(s, "::", 2) == 0) {
@@ -210,8 +230,8 @@ public:
       return default_sym;
     }
     // first look for a symbol in the current namespace
-    if (!current_namespace->empty()) {
-      string id = (*current_namespace)+"::"+s;
+    if (!current_namespace->empty() || !temp_namespaces.empty()) {
+      string id = current_namespace->empty()?s:(*current_namespace)+"::"+s;
       symbol *sym = lookup_p(id.c_str());
       if (sym && syms.find(sym->f) != syms.end()) {
 	count = 1;

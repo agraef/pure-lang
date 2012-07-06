@@ -1509,12 +1509,12 @@ private:
   // Namespaces.
 
 public:
-  void set_namespace(string *ns);
-  void clear_namespace();
+  void set_namespace(string *ns, int32_t bracket = 0);
+  void clear_namespace(int32_t bracket = 0);
 
   // Stack of scoped namespaces (Pure 0.43+).
   list<nsinfo> active_namespaces; // namespaces currently in scope
-  void push_namespace(string *ns);
+  void push_namespace(string *ns, int32_t bracket = 0);
   void pop_namespace();
 
   // Closure keys and associated refcounters.
@@ -1540,7 +1540,7 @@ public:
 
 public:
   bool declare_op;
-  string srcdir, xsym_prefix, xcode;
+  string srcdir, *xsym_prefix, xcode;
   void begin_code() { xcode.clear(); }
   void add_code(const char *s) { xcode.append(s); }
   void end_code() { }
