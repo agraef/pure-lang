@@ -6056,6 +6056,24 @@ string interpreter::ttag_msg(int32_t tag)
   return "type tag '"+symtab.sym(tag).s+"'";
 }
 
+/* Rectify unqualified variable symbols. We always resolve these in the
+   current namespace, to avoid any discrepancies due to the use of namespace
+   brackets. Note that this might well yield a different symbol if the symbol
+   was shadowed by a namespace bracket when it was parsed. */
+
+int32_t interpreter::rectify(int32_t f, bool b)
+{
+  const symbol& sym = symtab.sym(f);
+  if (b || sym.f == symtab.anon_sym ||
+      sym.prec < PREC_MAX || sym.fix == nonfix || sym.fix == outfix)
+    return f;
+  string id = sym.s;
+  size_t p = symsplit(id);
+  if (p != string::npos) id.erase(0, p+2);
+  const symbol &sym2 = symtab.checksym(id);
+  return sym2.f;
+}
+
 /* Bind variable symbols in a pattern. NOTE: The a flag indicates whether
    we're operating inside an application or a toplevel context; this is always
    true except for the immediate subterms of a matrix pattern. (You should
@@ -6158,6 +6176,8 @@ expr interpreter::bind(env& vars, vinfo& vi, expr x, bool b, path p, bool a)
 	throw err("error in pattern (misplaced "+ttag_msg(x.ttag())+")");
       y = x;
     } else {
+      const symbol& sym =
+	symtab.sym(rectify(x.tag(), x.flags()&EXPR::ASQUAL));
       env::iterator it = vars.find(sym.f);
       if (sym.f != symtab.anon_sym) { // '_' = anonymous variable
 	if (it != vars.end()) {
@@ -6178,7 +6198,8 @@ expr interpreter::bind(env& vars, vinfo& vi, expr x, bool b, path p, bool a)
   }
   // check for "as" patterns
   if (x.astag() > 0) {
-    const symbol& sym = symtab.sym(x.astag());
+    const symbol& sym =
+      symtab.sym(rectify(x.astag(), x.flags()&EXPR::ASQUAL));
     if (sym.f != symtab.anon_sym) {
       if ((!qual && (x.flags()&EXPR::ASQUAL)) ||
 	  sym.prec < PREC_MAX || sym.fix == nonfix || sym.fix == outfix)
@@ -6200,7 +6221,7 @@ expr interpreter::bind(env& vars, vinfo& vi, expr x, bool b, path p, bool a)
 	vi.eqns.push_back(veqn(sym.f, *info.p, p));
       }
       vars[sym.f] = env_info(0, p);
-      y.set_astag(x.astag());
+      y.set_astag(sym.f);
       y.set_aspath(p);
     }
   }
@@ -6728,7 +6749,7 @@ expr interpreter::subst(const env& vars, expr x, uint8_t idx)
     if (x.ttag() != 0)
       throw err("error in expression (misplaced "+ttag_msg(x.ttag())+")");
     const symbol& sym = symtab.sym(x.tag());
-    env::const_iterator it = vars.find(sym.f);
+    env::const_iterator it = vars.find(rectify(sym.f, x.flags()&EXPR::QUAL));
     if (sym.prec < PREC_MAX || sym.fix == nonfix || sym.fix == outfix ||
 	it == vars.end() || (!qual && (x.flags()&EXPR::QUAL))) {
       // not a bound variable

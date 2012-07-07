@@ -832,6 +832,7 @@ public:
   void promote_ttags(expr f, expr x, expr u);
   void promote_ttags(expr f, expr x, expr u, expr v);
   string ttag_msg(int32_t tag);
+  int32_t rectify(int32_t f, bool b);
   expr bind(env& vars, vinfo& vi,
 	    expr x, bool b = true, path p = path(), bool a = true);
   void funsubstw(set<int32_t>& warned, bool ty_check,
