@@ -6295,6 +6295,14 @@ static void check_typetag(interpreter& interp, yy::location* loc,
   }
 }
 
+bool interpreter::is_quoteargs(expr x)
+{
+  int32_t f; uint32_t argc = count_args(x, f);
+  env::iterator it = macenv.find(f);
+  return it != macenv.end() && argc <= it->second.argc &&
+    quoteargs.find(f) != quoteargs.end();
+}
+
 void interpreter::funsubstw(set<int32_t>& warned, bool ty_check,
 			    expr x, int32_t f, int32_t g, bool b)
 {
@@ -6327,7 +6335,7 @@ void interpreter::funsubstw(set<int32_t>& warned, bool ty_check,
   // application:
   case EXPR::APP:
     funsubstw(warned, ty_check, x.xval1(), f, g, b);
-    if (is_quote(x.xval1().tag())) {
+    if (is_quote(x.xval1().tag()) || is_quoteargs(x)) {
       // suppress warnings in quoted subexpression
       bool s_compat = compat; compat = false;
       funsubstw(warned, ty_check, x.xval2(), f, g);

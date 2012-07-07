@@ -1284,6 +1284,7 @@ private:
   Builder& act_builder() { return act_env().builder; }
   bool is_quote(int32_t f)
   { return f == symtab.quote_sym().f || f == symtab.quoteop_sym().f; }
+  bool is_quoteargs(expr x);
   expr wrap_expr(pure_expr *x, bool check = false);
   pure_expr *const_value(expr x, bool quote = false);
   pure_expr *const_value_invoke(expr x, pure_expr*& e, bool quote = false);
