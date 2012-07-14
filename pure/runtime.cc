@@ -12336,7 +12336,7 @@ bool same(pure_expr *x, pure_expr *y)
 	  same_env(x->data.clos, y->data.clos);
       else
 	/* Otherwise we have two local closures, in which case we just need to
-	   compare their keys. */
+	   compare their keys and environments. */
 	return x->data.clos->key == y->data.clos->key &&
 	  same_env(x->data.clos, y->data.clos);
     else
