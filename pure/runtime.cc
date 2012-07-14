@@ -12332,8 +12332,7 @@ bool same(pure_expr *x, pure_expr *y)
 	/* If one of the closures is a global, they can only be equal if the
 	   other is a global, too, and in this case we already know that they
 	   must be identical since their function symbols match up. */
-	return x->data.clos->local == y->data.clos->local &&
-	  same_env(x->data.clos, y->data.clos);
+	return x->data.clos->local == y->data.clos->local;
       else
 	/* Otherwise we have two local closures, in which case we just need to
 	   compare their keys and environments. */
