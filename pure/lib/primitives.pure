@@ -2034,6 +2034,11 @@ namespace;
    pass them as pointers to a C function which expects a ``pure_expr**``
    parameter. This may even be useful at times.
 
+   .. type:: ref /type
+
+      The type of expression references. This is a subtype of the
+      :type:`pointer/type` type.
+
    .. function:: ref x
 
       Create a reference pointing to ``x`` initially.
@@ -2097,15 +2102,16 @@ namespace;
 
 public ref unref refp;
 
+type ref x::pointer = refp x;
+
 ref x = pointer_put_expr r (pure_new x) $$
 	sentry unref r when r::pointer = pure_expr_pointer end;
 
-unref r::pointer = pure_free (pointer_get_expr r) $$
-		   clear_sentry r if refp r;
+unref r::ref = pure_free (pointer_get_expr r) $$ clear_sentry r;
 
-put r::pointer x = pure_free (pointer_get_expr r) $$
-		   pointer_put_expr r (pure_new x) $$ x if refp r;
+put r::ref x = pure_free (pointer_get_expr r) $$
+	       pointer_put_expr r (pure_new x) $$ x;
 
-get r::pointer = pointer_get_expr r if refp r;
+get r::ref = pointer_get_expr r;
 
 refp r = case r of _::pointer = get_sentry r===unref; _ = 0 end;

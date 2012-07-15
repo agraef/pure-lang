@@ -140,7 +140,7 @@ let R = listmap (\sym/*0:1*/ -> sym/*0:1*/ __with__ get_fundef sym/*0:1*/ {
 '(fscanf __with__ [fscanf fp ::pointer format ::string-->catch error (do_scanf 0 [] formats) __if__ listp formats __when__ [formats-->__C::pure_scanf_split format] __with__ [(error (scanf_error vals ::list)-->throw (scanf_error (tuple (reverse vals)))),(error x-->throw x),(literal s-->head s~="%"||take 2 s=="%%"||take 2 s=="%*"),(format_type x format-->__ifelse__ (x=="n") "n" (__ifelse__ (index "diouxX" x>=0) (__ifelse__ (index format "["<0&&index format "Z">=0) "Z" "d") (__ifelse__ (index "eEfga" x>=0) "g" (__ifelse__ (x=="]"||x=="c") "s" x)))),(do_scanf count vals (format:formats)-->do_scanf count vals formats __when__ [(res-->__C::pure_fscanf fp format),(count-->__ifelse__ (res>=0) (count+res) (throw (scanf_error vals)))] __if__ literal format),(do_scanf count vals (format:formats)-->do_scanf count (val:vals) formats __when__ [(t-->format_type (last format) format),(size,format-->__case__ t [("s"-->guestimate format),("Z"-->32,format),(_-->16,kludge t format)]),(buf-->calloc size 1),(_-->~null buf||throw malloc_error),(res-->__case__ t [("n"-->__C::pure_fscanf_int fp format buf),("d"-->__C::pure_fscanf_int fp format buf),("g"-->__C::pure_fscanf_double fp format buf),("s"-->__C::pure_fscanf_string fp format buf),("p"-->__C::pure_fscanf_pointer fp format buf),("Z"-->__C::pure_fscanf_mpz fp format buf)]),(_-->res>=0||(free buf$$throw (scanf_error vals))),(val-->__case__ t [("n"-->count+get_int buf),("d"-->get_int buf),("g"-->get_double buf),("s"-->cstring buf),("p"-->get_pointer buf),("Z"-->__C::pure_mpz buf)]),(count-->count+res),(_-->__case__ t [("Z"-->__C::mpz_clear buf$$free buf),("s"-->()),(_-->free buf)])]),(do_scanf count vals []-->tuple (reverse vals)),(kludge "g" format-->init format+"l"+last format),(kludge _ format-->format),(guestimate "%c"-->2,"%c"),(guestimate format-->n,format __when__ [(p-->__C::pure_scanf_prec format),(n,format-->__ifelse__ (p<=0) (scanf_max_fld+1,make_prec scanf_max_fld format) (p+1,format))]),(make_prec p format-->"%"+str p+tail format)]]);
 '(functionp __with__ [functionp x-->nargs x>0 __with__ [(nargs ((x __as__ _) _)-->nargs x-1),(nargs x-->nargs x)]]);
 '(gcd __with__ [(gcd x ::bigint y ::bigint-->__C::bigint_gcd x y),(gcd x ::int y ::bigint-->__C::bigint_gcd (bigint x) y),(gcd x ::bigint y ::int-->__C::bigint_gcd x (bigint y)),(gcd x ::int y ::int-->int (__C::bigint_gcd (bigint x) (bigint y)))]);
-'(get __with__ [get r ::pointer-->__C::pointer_get_expr r __if__ refp r]);
+'(get __with__ [get r ::ref-->__C::pointer_get_expr r]);
 '(get_byte __with__ [get_byte x ::pointer-->__C::pointer_get_byte x]);
 '(get_double __with__ [get_double x ::pointer-->__C::pointer_get_double x]);
 '(get_float __with__ [get_float x ::pointer-->__C::pointer_get_float x]);
@@ -205,7 +205,7 @@ let R = listmap (\sym/*0:1*/ -> sym/*0:1*/ __with__ get_fundef sym/*0:1*/ {
 '(pred __with__ [pred x-->x-1]);
 '(printf __with__ [printf format ::string args-->fprintf stdout format args]);
 '(publicp __with__ [publicp x ::symbol-->symbolp (val (str x))]);
-'(put __with__ [put r ::pointer x-->__C::pure_free (__C::pointer_get_expr r)$$__C::pointer_put_expr r (__C::pure_new x)$$x __if__ refp r]);
+'(put __with__ [put r ::ref x-->__C::pure_free (__C::pointer_get_expr r)$$__C::pointer_put_expr r (__C::pure_new x)$$x]);
 '(put_byte __with__ [put_byte x ::pointer y ::int-->__C::pointer_put_byte x y]);
 '(put_double __with__ [put_double x ::pointer y ::double-->__C::pointer_put_double x y]);
 '(put_float __with__ [put_float x ::pointer y ::double-->__C::pointer_put_float x y]);
@@ -271,7 +271,7 @@ let R = listmap (\sym/*0:1*/ -> sym/*0:1*/ __with__ get_fundef sym/*0:1*/ {
 '(ulong __with__ [ulong-->uint64]);
 '(uncurry __with__ [uncurry f (x,y)-->f x y]);
 '(uncurry3 __with__ [uncurry3 f (x,y,z)-->f x y z]);
-'(unref __with__ [unref r ::pointer-->__C::pure_free (__C::pointer_get_expr r)$$clear_sentry r __if__ refp r]);
+'(unref __with__ [unref r ::ref-->__C::pure_free (__C::pointer_get_expr r)$$clear_sentry r]);
 '(update2 __with__ [update2 (x __as__ Array a) (i ::int,j ::int) y-->update x i (update (x!i) j y)]);
 '(ushort __with__ [ushort x ::int-->__ifelse__ (x>=0) x (x+65536)]);
 '(val __with__ [val (x=>v)-->v]);
@@ -406,7 +406,7 @@ let R2 = catmap (\x/*0:1*/ -> if (stringp s/*0:*/&&index s/*0:*/ "#<"<0&&(eval (
 '(fscanf __with__ [fscanf fp ::pointer format ::string-->catch error (do_scanf 0 [] formats) __if__ listp formats __when__ [formats-->__C::pure_scanf_split format] __with__ [(error (scanf_error vals ::list)-->throw (scanf_error (tuple (reverse vals)))),(error x-->throw x),(literal s-->head s~="%"||take 2 s=="%%"||take 2 s=="%*"),(format_type x format-->__ifelse__ (x=="n") "n" (__ifelse__ (index "diouxX" x>=0) (__ifelse__ (index format "["<0&&index format "Z">=0) "Z" "d") (__ifelse__ (index "eEfga" x>=0) "g" (__ifelse__ (x=="]"||x=="c") "s" x)))),(do_scanf count vals (format:formats)-->do_scanf count vals formats __when__ [(res-->__C::pure_fscanf fp format),(count-->__ifelse__ (res>=0) (count+res) (throw (scanf_error vals)))] __if__ literal format),(do_scanf count vals (format:formats)-->do_scanf count (val:vals) formats __when__ [(t-->format_type (last format) format),(size,format-->__case__ t [("s"-->guestimate format),("Z"-->32,format),(_-->16,kludge t format)]),(buf-->calloc size 1),(_-->~null buf||throw malloc_error),(res-->__case__ t [("n"-->__C::pure_fscanf_int fp format buf),("d"-->__C::pure_fscanf_int fp format buf),("g"-->__C::pure_fscanf_double fp format buf),("s"-->__C::pure_fscanf_string fp format buf),("p"-->__C::pure_fscanf_pointer fp format buf),("Z"-->__C::pure_fscanf_mpz fp format buf)]),(_-->res>=0||(free buf$$throw (scanf_error vals))),(val-->__case__ t [("n"-->count+get_int buf),("d"-->get_int buf),("g"-->get_double buf),("s"-->cstring buf),("p"-->get_pointer buf),("Z"-->__C::pure_mpz buf)]),(count-->count+res),(_-->__case__ t [("Z"-->__C::mpz_clear buf$$free buf),("s"-->()),(_-->free buf)])]),(do_scanf count vals []-->tuple (reverse vals)),(kludge "g" format-->init format+"l"+last format),(kludge _ format-->format),(guestimate "%c"-->2,"%c"),(guestimate format-->n,format __when__ [(p-->__C::pure_scanf_prec format),(n,format-->__ifelse__ (p<=0) (scanf_max_fld+1,make_prec scanf_max_fld format) (p+1,format))]),(make_prec p format-->"%"+str p+tail format)]]);
 '(functionp __with__ [functionp x-->nargs x>0 __with__ [(nargs ((x __as__ _) _)-->nargs x-1),(nargs x-->nargs x)]]);
 '(gcd __with__ [(gcd x ::bigint y ::bigint-->__C::bigint_gcd x y),(gcd x ::int y ::bigint-->__C::bigint_gcd (bigint x) y),(gcd x ::bigint y ::int-->__C::bigint_gcd x (bigint y)),(gcd x ::int y ::int-->int (__C::bigint_gcd (bigint x) (bigint y)))]);
-'(get __with__ [get r ::pointer-->__C::pointer_get_expr r __if__ refp r]);
+'(get __with__ [get r ::ref-->__C::pointer_get_expr r]);
 '(get_byte __with__ [get_byte x ::pointer-->__C::pointer_get_byte x]);
 '(get_double __with__ [get_double x ::pointer-->__C::pointer_get_double x]);
 '(get_float __with__ [get_float x ::pointer-->__C::pointer_get_float x]);
@@ -471,7 +471,7 @@ let R2 = catmap (\x/*0:1*/ -> if (stringp s/*0:*/&&index s/*0:*/ "#<"<0&&(eval (
 '(pred __with__ [pred x-->x-1]);
 '(printf __with__ [printf format ::string args-->fprintf stdout format args]);
 '(publicp __with__ [publicp x ::symbol-->symbolp (val (str x))]);
-'(put __with__ [put r ::pointer x-->__C::pure_free (__C::pointer_get_expr r)$$__C::pointer_put_expr r (__C::pure_new x)$$x __if__ refp r]);
+'(put __with__ [put r ::ref x-->__C::pure_free (__C::pointer_get_expr r)$$__C::pointer_put_expr r (__C::pure_new x)$$x]);
 '(put_byte __with__ [put_byte x ::pointer y ::int-->__C::pointer_put_byte x y]);
 '(put_double __with__ [put_double x ::pointer y ::double-->__C::pointer_put_double x y]);
 '(put_float __with__ [put_float x ::pointer y ::double-->__C::pointer_put_float x y]);
@@ -537,7 +537,7 @@ let R2 = catmap (\x/*0:1*/ -> if (stringp s/*0:*/&&index s/*0:*/ "#<"<0&&(eval (
 '(ulong __with__ [ulong-->uint64]);
 '(uncurry __with__ [uncurry f (x,y)-->f x y]);
 '(uncurry3 __with__ [uncurry3 f (x,y,z)-->f x y z]);
-'(unref __with__ [unref r ::pointer-->__C::pure_free (__C::pointer_get_expr r)$$clear_sentry r __if__ refp r]);
+'(unref __with__ [unref r ::ref-->__C::pure_free (__C::pointer_get_expr r)$$clear_sentry r]);
 '(update2 __with__ [update2 (x __as__ Array a) (i ::int,j ::int) y-->update x i (update (x!i) j y)]);
 '(ushort __with__ [ushort x ::int-->__ifelse__ (x>=0) x (x+65536)]);
 '(val __with__ [val (x=>v)-->v]);
@@ -667,7 +667,7 @@ let R2 = listmap (\x/*0:1*/ -> eval (sprintf "'(%s)" (__str__ x/*0:1*/)) {
 '(fscanf __with__ [fscanf fp pointer format string-->catch error (do_scanf 0 [] formats) __if__ listp formats __when__ [formats-->__C::pure_scanf_split format] __with__ [(error (scanf_error vals list)-->throw (scanf_error (tuple (reverse vals)))),(error x-->throw x),(literal s-->head s~="%"||take 2 s=="%%"||take 2 s=="%*"),(format_type x format-->__ifelse__ (x=="n") "n" (__ifelse__ (index "diouxX" x>=0) (__ifelse__ (index format "["<0&&index format "Z">=0) "Z" "d") (__ifelse__ (index "eEfga" x>=0) "g" (__ifelse__ (x=="]"||x=="c") "s" x)))),(do_scanf count vals (format:formats)-->do_scanf count vals formats __when__ [(res-->__C::pure_fscanf fp format),(count-->__ifelse__ (res>=0) (count+res) (throw (scanf_error vals)))] __if__ literal format),(do_scanf count vals (format:formats)-->do_scanf count (val:vals) formats __when__ [(t-->format_type (last format) format),(size,format-->__case__ t [("s"-->guestimate format),("Z"-->32,format),(_-->16,kludge t format)]),(buf-->calloc size 1),(_-->~null buf||throw malloc_error),(res-->__case__ t [("n"-->__C::pure_fscanf_int fp format buf),("d"-->__C::pure_fscanf_int fp format buf),("g"-->__C::pure_fscanf_double fp format buf),("s"-->__C::pure_fscanf_string fp format buf),("p"-->__C::pure_fscanf_pointer fp format buf),("Z"-->__C::pure_fscanf_mpz fp format buf)]),(_-->res>=0||(free buf$$throw (scanf_error vals))),(val-->__case__ t [("n"-->count+get_int buf),("d"-->get_int buf),("g"-->get_double buf),("s"-->cstring buf),("p"-->get_pointer buf),("Z"-->__C::pure_mpz buf)]),(count-->count+res),(_-->__case__ t [("Z"-->__C::mpz_clear buf$$free buf),("s"-->()),(_-->free buf)])]),(do_scanf count vals []-->tuple (reverse vals)),(kludge "g" format-->init format+"l"+last format),(kludge _ format-->format),(guestimate "%c"-->2,"%c"),(guestimate format-->n,format __when__ [(p-->__C::pure_scanf_prec format),(n,format-->__ifelse__ (p<=0) (scanf_max_fld+1,make_prec scanf_max_fld format) (p+1,format))]),(make_prec p format-->"%"+str p+tail format)]]);
 '(functionp __with__ [functionp x-->nargs x>0 __with__ [(nargs ((x __as__ _) _)-->nargs x-1),(nargs x-->nargs x)]]);
 '(gcd __with__ [(gcd x bigint y bigint-->__C::bigint_gcd x y),(gcd x int y bigint-->__C::bigint_gcd (bigint x) y),(gcd x bigint y int-->__C::bigint_gcd x (bigint y)),(gcd x int y int-->int (__C::bigint_gcd (bigint x) (bigint y)))]);
-'(get __with__ [get r pointer-->__C::pointer_get_expr r __if__ refp r]);
+'(get __with__ [get r ref-->__C::pointer_get_expr r]);
 '(get_byte __with__ [get_byte x pointer-->__C::pointer_get_byte x]);
 '(get_double __with__ [get_double x pointer-->__C::pointer_get_double x]);
 '(get_float __with__ [get_float x pointer-->__C::pointer_get_float x]);
@@ -732,7 +732,7 @@ let R2 = listmap (\x/*0:1*/ -> eval (sprintf "'(%s)" (__str__ x/*0:1*/)) {
 '(pred __with__ [pred x-->x-1]);
 '(printf __with__ [printf format string args-->fprintf stdout format args]);
 '(publicp __with__ [publicp x symbol-->symbolp (val (str x))]);
-'(put __with__ [put r pointer x-->__C::pure_free (__C::pointer_get_expr r)$$__C::pointer_put_expr r (__C::pure_new x)$$x __if__ refp r]);
+'(put __with__ [put r ref x-->__C::pure_free (__C::pointer_get_expr r)$$__C::pointer_put_expr r (__C::pure_new x)$$x]);
 '(put_byte __with__ [put_byte x pointer y int-->__C::pointer_put_byte x y]);
 '(put_double __with__ [put_double x pointer y double-->__C::pointer_put_double x y]);
 '(put_float __with__ [put_float x pointer y double-->__C::pointer_put_float x y]);
@@ -798,7 +798,7 @@ let R2 = listmap (\x/*0:1*/ -> eval (sprintf "'(%s)" (__str__ x/*0:1*/)) {
 '(ulong __with__ [ulong-->uint64]);
 '(uncurry __with__ [uncurry f (x,y)-->f x y]);
 '(uncurry3 __with__ [uncurry3 f (x,y,z)-->f x y z]);
-'(unref __with__ [unref r pointer-->__C::pure_free (__C::pointer_get_expr r)$$clear_sentry r __if__ refp r]);
+'(unref __with__ [unref r ref-->__C::pure_free (__C::pointer_get_expr r)$$clear_sentry r]);
 '(update2 __with__ [update2 (x __as__ Array a) (i int,j int) y-->update x i (update (x!i) j y)]);
 '(ushort __with__ [ushort x int-->__ifelse__ (x>=0) x (x+65536)]);
 '(val __with__ [val (x=>v)-->v]);
