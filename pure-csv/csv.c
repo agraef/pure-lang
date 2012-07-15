@@ -8,6 +8,7 @@
    updated: July 15, 2010 handle space after quote and code cleanup
    updated: November 7, 2010 sniff for correct line terminators, including
             \r for EXCEL on MAC, and allow the user to define their own.
+   updated: July 14, 2012 fix opening nonexisting file crash
 */
 
 /*
@@ -386,7 +387,7 @@ csv_t *csv_open(char *fname,
     t->header = NULL;
     if ((t->buffer = buffer_new())) {
       t->rw = *rw; // get first char since rw is one of "r", "w", "a".
-      if ((t->fp = fopen(fname, rw))) {
+      if ((t->fp = fopen(fname, rw)) != NULL) {
 	if ((t->record = record_new())) {
 	  t->dialect = d;
 	  if ((opts & HEADER) && rw[0] == 'r') {
@@ -399,7 +400,7 @@ csv_t *csv_open(char *fname,
 	  t->opts = opts;
 	  return t;
 	}
-      }
+      } else return NULL;
     }
     dialect_free(d);
     csv_close(t);
