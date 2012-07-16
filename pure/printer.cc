@@ -317,7 +317,7 @@ ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
       for (size_t i = 0; i < p.len(); i++)
 	os << p[i];
       os << "*/";
-      pad = false;
+      pad = true;
     }
     if (pat) print_ttag(os, x.ttag(), pad);
     return os;

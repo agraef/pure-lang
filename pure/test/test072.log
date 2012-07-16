@@ -1,13 +1,13 @@
 interface nonempty_stack with
-  pop xs/*0:1*/::nonempty_stack;
-  top xs/*0:1*/::nonempty_stack;
+  pop xs/*0:1*/ :: nonempty_stack;
+  top xs/*0:1*/ :: nonempty_stack;
 end;
 get_interface nonempty_stack;
 [pop (xs __type__ nonempty_stack),top (xs __type__ nonempty_stack)]
 get_interface_typedef nonempty_stack;
 []
-astack xs/*0:1*/::list = reverse xs/*0:1*/;
-foo xs/*0:1*/::nonempty_stack = top xs/*0:1*/,pop xs/*0:1*/;
+astack xs/*0:1*/ :: list = reverse xs/*0:1*/;
+foo xs/*0:1*/ :: nonempty_stack = top xs/*0:1*/,pop xs/*0:1*/;
 {
   rule #0: astack xs::list = reverse xs
   state 0: #0
@@ -71,9 +71,9 @@ foo (astack (1..10));
 foo (astack []);
 foo []
 interface stack with
-  push xs/*0:01*/::stack x/*0:1*/;
-  pop xs/*0:1*/::stack;
-  top xs/*0:1*/::stack;
+  push xs/*0:01*/ :: stack x/*0:1*/;
+  pop xs/*0:1*/ :: stack;
+  top xs/*0:1*/ :: stack;
 end;
 push xs@[] x/*0:1*/ = x/*0:1*/:xs/*0:01*/;
 push xs@(_/*0:0101*/:_/*0:011*/) x/*0:1*/ = x/*0:1*/:xs/*0:01*/;
@@ -119,7 +119,7 @@ get_interface stack;
 [push (xs __type__ stack) x,pop (xs __type__ stack),top (xs __type__ stack)]
 get_interface_typedef stack;
 [stack (xs __as__ (_:_))-->1]
-foo xs/*0:1*/::stack = top xs/*0:1*/,pop xs/*0:1*/;
+foo xs/*0:1*/ :: stack = top xs/*0:1*/,pop xs/*0:1*/;
 interface nonempty_stack {
   rule #0: nonempty_stack (x:xs) = 1
   state 0: #0
@@ -264,7 +264,7 @@ foo (astack (1..10));
 10,[9,8,7,6,5,4,3,2,1]
 foo (astack []);
 <stdin>, line 89: unhandled exception '"empty stack"' while evaluating 'foo$astack []'
-bar x/*0:01*/ xs/*0:1*/::stack = foo (push xs/*0:1*/ x/*0:01*/);
+bar x/*0:01*/ xs/*0:1*/ :: stack = foo (push xs/*0:1*/ x/*0:01*/);
 {
   rule #0: bar x xs::stack = foo (push xs x)
   state 0: #0
@@ -277,8 +277,8 @@ bar 99 (astack (1..3));
 99,[3,2,1]
 type cons nil;
 type cons (cons xs/*0:101*/ x/*0:11*/);
-push xs/*0:01*/::cons x/*0:1*/ = cons xs/*0:01*/ x/*0:1*/;
-pop xs/*0:1*/::cons = case xs/*0:1*/ of cons xs/*0:01*/ x/*0:1*/ = xs/*0:01*/; _/*0:*/ = throw "empty stack" {
+push xs/*0:01*/ :: cons x/*0:1*/ = cons xs/*0:01*/ x/*0:1*/;
+pop xs/*0:1*/ :: cons = case xs/*0:1*/ of cons xs/*0:01*/ x/*0:1*/ = xs/*0:01*/; _/*0:*/ = throw "empty stack" {
   rule #0: cons xs x = xs
   rule #1: _ = throw "empty stack"
   state 0: #0 #1
@@ -305,7 +305,7 @@ pop xs/*0:1*/::cons = case xs/*0:1*/ of cons xs/*0:01*/ x/*0:1*/ = xs/*0:01*/; _
 	<var> state 11
   state 11: #0 #1
 } end;
-top xs/*0:1*/::cons = case xs/*0:1*/ of cons xs/*0:01*/ x/*0:1*/ = x/*0:1*/; _/*0:*/ = throw "empty stack" {
+top xs/*0:1*/ :: cons = case xs/*0:1*/ of cons xs/*0:01*/ x/*0:1*/ = x/*0:1*/; _/*0:*/ = throw "empty stack" {
   rule #0: cons xs x = x
   rule #1: _ = throw "empty stack"
   state 0: #0 #1
@@ -332,7 +332,7 @@ top xs/*0:1*/::cons = case xs/*0:1*/ of cons xs/*0:01*/ x/*0:1*/ = x/*0:1*/; _/*
 	<var> state 11
   state 11: #0 #1
 } end;
-bstack xs/*0:1*/::list = foldl push nil xs/*0:1*/;
+bstack xs/*0:1*/ :: list = foldl push nil xs/*0:1*/;
 interface nonempty_stack {
   rule #0: nonempty_stack (x:xs) = 1
   rule #1: nonempty_stack [] = 1
@@ -521,8 +521,8 @@ foo (bstack (1..3));
 bar 99 (bstack (1..3));
 99,cons (cons (cons nil 1) 2) 3
 interface stack with
-  test1 xs/*0:1*/::stack;
-  test2 xs/*0:1*/::stack;
+  test1 xs/*0:1*/ :: stack;
+  test2 xs/*0:1*/ :: stack;
 end;
 add_interface stack ('[test1 (xs __type__ stack),test2 (xs __type__ stack)]);
 ()
@@ -531,7 +531,7 @@ get_interface stack;
 get_interface_typedef stack;
 []
 test1 (x/*0:101*/:xs/*0:11*/) = x/*0:101*/,xs/*0:11*/;
-test2 xs/*0:1*/::cons = case xs/*0:1*/ of cons xs/*0:01*/ x/*0:1*/ = xs/*0:01*/,x/*0:1*/; _/*0:*/ = throw "empty stack" {
+test2 xs/*0:1*/ :: cons = case xs/*0:1*/ of cons xs/*0:01*/ x/*0:1*/ = xs/*0:01*/,x/*0:1*/; _/*0:*/ = throw "empty stack" {
   rule #0: cons xs x = xs,x
   rule #1: _ = throw "empty stack"
   state 0: #0 #1
@@ -607,7 +607,7 @@ bar 99 (astack (1..3));
 bar 99 (bstack (1..3));
 bar 99 (cons (cons (cons nil 1) 2) 3)
 interface stack with
-  test2 xs/*0:1*/::stack;
+  test2 xs/*0:1*/ :: stack;
 end;
 add_interface_at stack ('test1 (xs __type__ stack)) ('[test2 (xs __type__ stack)]);
 ()
@@ -620,7 +620,7 @@ bar 99 [3,2,1]
 bar 99 (bstack (1..3));
 bar 99 (cons (cons (cons nil 1) 2) 3)
 interface monoid with
-  x/*0:01*/::monoid+y/*0:1*/::monoid;
+  x/*0:01*/ :: monoid+y/*0:1*/ :: monoid;
 end;
 interface monoid {
   rule #0: monoid x::int = 1

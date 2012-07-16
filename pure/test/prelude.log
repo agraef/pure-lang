@@ -48,7 +48,7 @@ _/*0:01*/~=() = 1;
 null () = 1;
 null (x/*0:101*/,xs/*0:11*/) = 0;
 #() = 0;
-#(x/*0:101*/,xs/*0:11*/) = accum/*0*/ 1 xs/*0:11*/ with accum n/*0:01*/::int (x/*0:101*/,xs/*0:11*/) = accum/*1*/ (n/*0:01*/+1) xs/*0:11*/; accum n/*0:01*/::int x/*0:1*/ = n/*0:01*/+1 {
+#(x/*0:101*/,xs/*0:11*/) = accum/*0*/ 1 xs/*0:11*/ with accum n/*0:01*/ :: int (x/*0:101*/,xs/*0:11*/) = accum/*1*/ (n/*0:01*/+1) xs/*0:11*/; accum n/*0:01*/ :: int x/*0:1*/ = n/*0:01*/+1 {
   rule #0: accum n::int (x,xs) = accum (n+1) xs
   rule #1: accum n::int x = n+1
   state 0: #0 #1
@@ -77,12 +77,12 @@ null (x/*0:101*/,xs/*0:11*/) = 0;
 	<var> state 12
   state 12: #0 #1
 } end;
-(x/*0:0101*/,xs/*0:011*/)!n/*0:1*/::int = throw out_of_bounds if n/*0:1*/<0;
+(x/*0:0101*/,xs/*0:011*/)!n/*0:1*/ :: int = throw out_of_bounds if n/*0:1*/<0;
 (x/*0:0101*/,xs/*0:011*/)!0 = x/*0:0101*/;
-(x/*0:0101*/,y/*0:01101*/,xs/*0:0111*/)!n/*0:1*/::int = (y/*0:01101*/,xs/*0:0111*/)!(n/*0:1*/-1);
+(x/*0:0101*/,y/*0:01101*/,xs/*0:0111*/)!n/*0:1*/ :: int = (y/*0:01101*/,xs/*0:0111*/)!(n/*0:1*/-1);
 (x/*0:0101*/,y/*0:011*/)!1 = y/*0:011*/;
-(x/*0:0101*/,y/*0:011*/)!n/*0:1*/::int = throw out_of_bounds;
-()!n/*0:1*/::int = throw out_of_bounds;
+(x/*0:0101*/,y/*0:011*/)!n/*0:1*/ :: int = throw out_of_bounds;
+()!n/*0:1*/ :: int = throw out_of_bounds;
 xs@()!!ns/*0:1*/ = tuple (list xs/*0:01*/!!ns/*0:1*/);
 xs@(_/*0:0101*/,_/*0:011*/)!!ns/*0:1*/ = tuple (list xs/*0:01*/!!ns/*0:1*/);
 reverse () = ();
@@ -126,7 +126,7 @@ x/*0:0101*/:xs/*0:011*/~=y/*0:101*/:ys/*0:11*/ = x/*0:0101*/~=y/*0:101*/||xs/*0:
 null [] = 1;
 null (x/*0:101*/:xs/*0:11*/) = 0;
 #[] = 0;
-#(x/*0:101*/:xs/*0:11*/) = accum/*0*/ 1 xs/*0:11*/ with accum n/*0:01*/::int (x/*0:101*/:xs/*0:11*/) = accum/*1*/ (n/*0:01*/+1) xs/*0:11*/; accum n/*0:01*/::int [] = n/*0:01*/; accum n/*0:01*/::int xs/*0:1*/ = n/*0:01*/+#xs/*0:1*/ {
+#(x/*0:101*/:xs/*0:11*/) = accum/*0*/ 1 xs/*0:11*/ with accum n/*0:01*/ :: int (x/*0:101*/:xs/*0:11*/) = accum/*1*/ (n/*0:01*/+1) xs/*0:11*/; accum n/*0:01*/ :: int [] = n/*0:01*/; accum n/*0:01*/ :: int xs/*0:1*/ = n/*0:01*/+#xs/*0:1*/ {
   rule #0: accum n::int (x:xs) = accum (n+1) xs
   rule #1: accum n::int [] = n
   rule #2: accum n::int xs = n+#xs
@@ -158,11 +158,11 @@ null (x/*0:101*/:xs/*0:11*/) = 0;
   state 12: #0 #2
   state 13: #1 #2
 } end;
-[]!n/*0:1*/::int = throw out_of_bounds;
+[]!n/*0:1*/ :: int = throw out_of_bounds;
 (x/*0:0101*/:xs/*0:011*/)!0 = x/*0:0101*/;
-(x/*0:0101*/:xs/*0:011*/)!n/*0:1*/::int = xs/*0:011*/!(n/*0:1*/-1) if n/*0:1*/>0;
-(x/*0:0101*/:xs/*0:011*/)!n/*0:1*/::int = throw out_of_bounds;
-xs/*0:01*/!!ns/*0:1*/ = ys/*0:*/ if ok/*1*/ ys/*0:*/ when ys/*0:*/ = case ns/*0:1*/ of ns@(n/*0:01*/::int:_/*0:1*/) = list (take (count/*1*/ ns/*0:*/) (drop n/*0:01*/ xs/*1:01*/)) if listp xs/*1:01*/&&cont/*1*/ ns/*0:*/; _/*0:*/ = catmap (nth/*1*/ xs/*1:01*/) ns/*1:1*/ {
+(x/*0:0101*/:xs/*0:011*/)!n/*0:1*/ :: int = xs/*0:011*/!(n/*0:1*/-1) if n/*0:1*/>0;
+(x/*0:0101*/:xs/*0:011*/)!n/*0:1*/ :: int = throw out_of_bounds;
+xs/*0:01*/!!ns/*0:1*/ = ys/*0:*/ if ok/*1*/ ys/*0:*/ when ys/*0:*/ = case ns/*0:1*/ of ns@(n/*0:01*/ :: int:_/*0:1*/) = list (take (count/*1*/ ns/*0:*/) (drop n/*0:01*/ xs/*1:01*/)) if listp xs/*1:01*/&&cont/*1*/ ns/*0:*/; _/*0:*/ = catmap (nth/*1*/ xs/*1:01*/) ns/*1:1*/ {
   rule #0: ns@(n::int:_) = list (take (count ns) (drop n xs)) if listp xs&&cont ns
   rule #1: _ = catmap (nth xs) ns
   state 0: #0 #1
@@ -197,7 +197,7 @@ xs/*0:01*/!!ns/*0:1*/ = ys/*0:*/ if ok/*1*/ ys/*0:*/ when ys/*0:*/ = case ns/*0:
   state 0: #0
 	<var> state 1
   state 1: #0
-} end with cont (n/*0:101*/::int:ns/*0:11*/) = ~thunkp ns/*0:11*/&&(case ns/*0:11*/ of [] = 1; m/*0:01*/::int:_/*0:1*/ = cont/*2*/ ns/*1:11*/ if m/*0:01*/==n/*1:101*/+1; _/*0:*/ = 0 {
+} end with cont (n/*0:101*/ :: int:ns/*0:11*/) = ~thunkp ns/*0:11*/&&(case ns/*0:11*/ of [] = 1; m/*0:01*/ :: int:_/*0:1*/ = cont/*2*/ ns/*1:11*/ if m/*0:01*/==n/*1:101*/+1; _/*0:*/ = 0 {
   rule #0: [] = 1
   rule #1: m::int:_ = cont ns if m==n+1
   rule #2: _ = 0
@@ -250,7 +250,7 @@ xs/*0:01*/!!ns/*0:1*/ = ys/*0:*/ if ok/*1*/ ys/*0:*/ when ys/*0:*/ = case ns/*0:
   state 1: #0
 	<var> state 2
   state 2: #0
-}; count ns/*0:1*/ = #dropwhile (\n/*0:1*/::int -> n/*0:1*/<0 {
+}; count ns/*0:1*/ = #dropwhile (\n/*0:1*/ :: int -> n/*0:1*/<0 {
   rule #0: _ n::int = n<0
   state 0: #0
 	<var>::int state 1
@@ -301,8 +301,8 @@ xs/*0:01*/!!ns/*0:1*/ = ys/*0:*/ if ok/*1*/ ys/*0:*/ when ys/*0:*/ = case ns/*0:
 	<var> state 18
   state 18: #0 #1
 } end;
-subseq [] a/*0:01*/::int b/*0:1*/::int = [];
-subseq xs@(_/*0:00101*/:_/*0:0011*/) a/*0:01*/::int b/*0:1*/::int = take/*0*/ (b/*0:1*/-a/*0:01*/+1) (drop a/*0:01*/ xs/*0:001*/) with take n/*0:01*/::int [] = []; take n/*0:01*/::int xs@(_/*0:101*/:_/*0:11*/) = tick/*1*/ n/*0:01*/ [] xs/*0:1*/ {
+subseq [] a/*0:01*/ :: int b/*0:1*/ :: int = [];
+subseq xs@(_/*0:00101*/:_/*0:0011*/) a/*0:01*/ :: int b/*0:1*/ :: int = take/*0*/ (b/*0:1*/-a/*0:01*/+1) (drop a/*0:01*/ xs/*0:001*/) with take n/*0:01*/ :: int [] = []; take n/*0:01*/ :: int xs@(_/*0:101*/:_/*0:11*/) = tick/*1*/ n/*0:01*/ [] xs/*0:1*/ {
   rule #0: take n::int [] = []
   rule #1: take n::int xs@(_:_) = tick n [] xs
   state 0: #0 #1
@@ -320,7 +320,7 @@ subseq xs@(_/*0:00101*/:_/*0:0011*/) a/*0:01*/::int b/*0:1*/::int = take/*0*/ (b
 	<var> state 6
   state 6: #1
   state 7: #0
-}; tick n/*0:001*/::int zs/*0:01*/ xs/*0:1*/ = tack/*1*/ zs/*0:01*/ [] if n/*0:001*/<=0; tick n/*0:001*/::int zs/*0:01*/ xs/*0:1*/ = case xs/*0:1*/ of [] = tack/*2*/ zs/*1:01*/ []; x/*0:01*/:xs/*0:1*/ = tick/*2*/ (n/*1:001*/-1) (x/*0:01*/:zs/*1:01*/) xs/*0:1*/; _/*0:*/ = tack/*2*/ zs/*1:01*/ (take/*2*/ n/*1:001*/ xs/*1:1*/) {
+}; tick n/*0:001*/ :: int zs/*0:01*/ xs/*0:1*/ = tack/*1*/ zs/*0:01*/ [] if n/*0:001*/<=0; tick n/*0:001*/ :: int zs/*0:01*/ xs/*0:1*/ = case xs/*0:1*/ of [] = tack/*2*/ zs/*1:01*/ []; x/*0:01*/:xs/*0:1*/ = tick/*2*/ (n/*1:001*/-1) (x/*0:01*/:zs/*1:01*/) xs/*0:1*/; _/*0:*/ = tack/*2*/ zs/*1:01*/ (take/*2*/ n/*1:001*/ xs/*1:1*/) {
   rule #0: [] = tack zs []
   rule #1: x:xs = tick (n-1) (x:zs) xs
   rule #2: _ = tack zs (take n xs)
@@ -634,10 +634,10 @@ any p/*0:01*/ [] = 0;
 any p/*0:01*/ (x/*0:101*/:xs/*0:11*/) = p/*0:01*/ x/*0:101*/||any p/*0:01*/ xs/*0:11*/;
 do f/*0:01*/ [] = ();
 do f/*0:01*/ (x/*0:101*/:xs/*0:11*/) = f/*0:01*/ x/*0:101*/$$do f/*0:01*/ xs/*0:11*/;
-drop n/*0:01*/::int [] = [];
-drop n/*0:01*/::int ys@(x/*0:101*/:xs/*0:11*/) = drop (n/*0:01*/-1) xs/*0:11*/ if n/*0:01*/>1;
-drop n/*0:01*/::int ys@(x/*0:101*/:xs/*0:11*/) = xs/*0:11*/ if n/*0:01*/==1;
-drop n/*0:01*/::int ys@(x/*0:101*/:xs/*0:11*/) = ys/*0:1*/;
+drop n/*0:01*/ :: int [] = [];
+drop n/*0:01*/ :: int ys@(x/*0:101*/:xs/*0:11*/) = drop (n/*0:01*/-1) xs/*0:11*/ if n/*0:01*/>1;
+drop n/*0:01*/ :: int ys@(x/*0:101*/:xs/*0:11*/) = xs/*0:11*/ if n/*0:01*/==1;
+drop n/*0:01*/ :: int ys@(x/*0:101*/:xs/*0:11*/) = ys/*0:1*/;
 dropwhile p/*0:01*/ [] = [];
 dropwhile p/*0:01*/ ys@(x/*0:101*/:xs/*0:11*/) = dropwhile p/*0:01*/ xs/*0:11*/ if p/*0:01*/ x/*0:101*/;
 dropwhile p/*0:01*/ ys@(x/*0:101*/:xs/*0:11*/) = ys/*0:1*/;
@@ -1322,8 +1322,8 @@ scanr1 f/*0:01*/ xs@(_/*0:101*/:_/*0:11*/) = tick/*0*/ [] xs/*0:1*/ with tick zs
   state 8: #1
 } end;
 tail (x/*0:101*/:xs/*0:11*/) = xs/*0:11*/;
-take n/*0:01*/::int [] = [];
-take n/*0:01*/::int xs@(_/*0:101*/:_/*0:11*/) = tick/*0*/ n/*0:01*/ [] xs/*0:1*/ with tick n/*0:001*/::int zs/*0:01*/ xs/*0:1*/ = tack/*1*/ zs/*0:01*/ [] if n/*0:001*/<=0; tick n/*0:001*/::int zs/*0:01*/ xs/*0:1*/ = tack/*1*/ zs/*0:01*/ (take n/*1:001*/ xs/*1:1*/&) if thunkp xs/*0:1*/; tick n/*0:001*/::int zs/*0:01*/ xs/*0:1*/ = case xs/*0:1*/ of [] = tack/*2*/ zs/*1:01*/ []; x/*0:01*/:xs/*0:1*/ = tick/*2*/ (n/*1:001*/-1) (x/*0:01*/:zs/*1:01*/) xs/*0:1*/; _/*0:*/ = tack/*2*/ zs/*1:01*/ (take n/*1:001*/ xs/*1:1*/) {
+take n/*0:01*/ :: int [] = [];
+take n/*0:01*/ :: int xs@(_/*0:101*/:_/*0:11*/) = tick/*0*/ n/*0:01*/ [] xs/*0:1*/ with tick n/*0:001*/ :: int zs/*0:01*/ xs/*0:1*/ = tack/*1*/ zs/*0:01*/ [] if n/*0:001*/<=0; tick n/*0:001*/ :: int zs/*0:01*/ xs/*0:1*/ = tack/*1*/ zs/*0:01*/ (take n/*1:001*/ xs/*1:1*/&) if thunkp xs/*0:1*/; tick n/*0:001*/ :: int zs/*0:01*/ xs/*0:1*/ = case xs/*0:1*/ of [] = tack/*2*/ zs/*1:01*/ []; x/*0:01*/:xs/*0:1*/ = tick/*2*/ (n/*1:001*/-1) (x/*0:01*/:zs/*1:01*/) xs/*0:1*/; _/*0:*/ = tack/*2*/ zs/*1:01*/ (take n/*1:001*/ xs/*1:1*/) {
   rule #0: [] = tack zs []
   rule #1: x:xs = tick (n-1) (x:zs) xs
   rule #2: _ = tack zs (take n xs)
@@ -1650,7 +1650,7 @@ catmap f/*0:01*/ xs@(_/*0:101*/:_/*0:11*/) = cat (map f/*0:01*/ xs/*0:1*/);
 listmap f/*0:01*/ [] = [];
 listmap f/*0:01*/ xs@(_/*0:101*/:_/*0:11*/) = map f/*0:01*/ xs/*0:1*/;
 index [] _/*0:1*/ = -1;
-index (x/*0:0101*/:xs/*0:011*/) y/*0:1*/ = search/*0*/ 0 (x/*0:0101*/:xs/*0:011*/) with search _/*0:01*/ [] = -1; search n/*0:01*/::int (x/*0:101*/:xs/*0:11*/) = n/*0:01*/ if x/*0:101*/==y/*1:1*/; search n/*0:01*/::int (x/*0:101*/:xs/*0:11*/) = search/*1*/ (n/*0:01*/+1) xs/*0:11*/; search _/*0:01*/ xs/*0:1*/ = index xs/*0:1*/ y/*1:1*/ {
+index (x/*0:0101*/:xs/*0:011*/) y/*0:1*/ = search/*0*/ 0 (x/*0:0101*/:xs/*0:011*/) with search _/*0:01*/ [] = -1; search n/*0:01*/ :: int (x/*0:101*/:xs/*0:11*/) = n/*0:01*/ if x/*0:101*/==y/*1:1*/; search n/*0:01*/ :: int (x/*0:101*/:xs/*0:11*/) = search/*1*/ (n/*0:01*/+1) xs/*0:11*/; search _/*0:01*/ xs/*0:1*/ = index xs/*0:1*/ y/*1:1*/ {
   rule #0: search _ [] = -1
   rule #1: search n::int (x:xs) = n if x==y
   rule #2: search n::int (x:xs) = search (n+1) xs
@@ -1705,8 +1705,8 @@ iterwhile p/*0:001*/ f/*0:01*/ x/*0:1*/ = accum/*0*/ [] p/*0:001*/ f/*0:01*/ x/*
 	<var> state 4
   state 4: #0 #1
 } end;
-iteraten n/*0:001*/::int f/*0:01*/ x/*0:1*/ = [] if n/*0:001*/<=0;
-iteraten n/*0:001*/::int f/*0:01*/ x/*0:1*/ = accum/*0*/ [] n/*0:001*/ f/*0:01*/ x/*0:1*/ with accum xs/*0:0001*/ n/*0:001*/::int f/*0:01*/ x/*0:1*/ = reverse (x/*0:1*/:xs/*0:0001*/) if n/*0:001*/==1; accum xs/*0:0001*/ n/*0:001*/::int f/*0:01*/ x/*0:1*/ = accum/*1*/ (x/*0:1*/:xs/*0:0001*/) (n/*0:001*/-1) f/*0:01*/ (f/*0:01*/ x/*0:1*/) {
+iteraten n/*0:001*/ :: int f/*0:01*/ x/*0:1*/ = [] if n/*0:001*/<=0;
+iteraten n/*0:001*/ :: int f/*0:01*/ x/*0:1*/ = accum/*0*/ [] n/*0:001*/ f/*0:01*/ x/*0:1*/ with accum xs/*0:0001*/ n/*0:001*/ :: int f/*0:01*/ x/*0:1*/ = reverse (x/*0:1*/:xs/*0:0001*/) if n/*0:001*/==1; accum xs/*0:0001*/ n/*0:001*/ :: int f/*0:01*/ x/*0:1*/ = accum/*1*/ (x/*0:1*/:xs/*0:0001*/) (n/*0:001*/-1) f/*0:01*/ (f/*0:01*/ x/*0:1*/) {
   rule #0: accum xs n::int f x = reverse (x:xs) if n==1
   rule #1: accum xs n::int f x = accum (x:xs) (n-1) f (f x)
   state 0: #0 #1
@@ -1719,7 +1719,7 @@ iteraten n/*0:001*/::int f/*0:01*/ x/*0:1*/ = accum/*0*/ [] n/*0:001*/ f/*0:01*/
 	<var> state 4
   state 4: #0 #1
 } end;
-repeatn n/*0:01*/::int x/*0:1*/ = accum/*0*/ [] n/*0:01*/ x/*0:1*/ with accum xs/*0:001*/ n/*0:01*/::int x/*0:1*/ = xs/*0:001*/ if n/*0:01*/<=0; accum xs/*0:001*/ n/*0:01*/::int x/*0:1*/ = accum/*1*/ (x/*0:1*/:xs/*0:001*/) (n/*0:01*/-1) x/*0:1*/ {
+repeatn n/*0:01*/ :: int x/*0:1*/ = accum/*0*/ [] n/*0:01*/ x/*0:1*/ with accum xs/*0:001*/ n/*0:01*/ :: int x/*0:1*/ = xs/*0:001*/ if n/*0:01*/<=0; accum xs/*0:001*/ n/*0:01*/ :: int x/*0:1*/ = accum/*1*/ (x/*0:1*/:xs/*0:001*/) (n/*0:01*/-1) x/*0:1*/ {
   rule #0: accum xs n::int x = xs if n<=0
   rule #1: accum xs n::int x = accum (x:xs) (n-1) x
   state 0: #0 #1
@@ -1730,8 +1730,8 @@ repeatn n/*0:01*/::int x/*0:1*/ = accum/*0*/ [] n/*0:01*/ x/*0:1*/ with accum xs
 	<var> state 3
   state 3: #0 #1
 } end;
-cyclen n/*0:01*/::int (x/*0:101*/:xs/*0:11*/) = [] if n/*0:01*/<=0;
-cyclen n/*0:01*/::int (x/*0:101*/:xs/*0:11*/) = accum/*0*/ [] n/*2:01*/ with accum ys/*0:01*/ n/*0:1*/::int = cat ys/*0:01*/+take n/*0:1*/ xs/*2:*/ if n/*0:1*/<=m/*1:*/; accum ys/*0:01*/ n/*0:1*/::int = accum/*1*/ (xs/*2:*/:ys/*0:01*/) (n/*0:1*/-m/*1:*/) {
+cyclen n/*0:01*/ :: int (x/*0:101*/:xs/*0:11*/) = [] if n/*0:01*/<=0;
+cyclen n/*0:01*/ :: int (x/*0:101*/:xs/*0:11*/) = accum/*0*/ [] n/*2:01*/ with accum ys/*0:01*/ n/*0:1*/ :: int = cat ys/*0:01*/+take n/*0:1*/ xs/*2:*/ if n/*0:1*/<=m/*1:*/; accum ys/*0:01*/ n/*0:1*/ :: int = accum/*1*/ (xs/*2:*/:ys/*0:01*/) (n/*0:1*/-m/*1:*/) {
   rule #0: accum ys n::int = cat ys+take n xs if n<=m
   rule #1: accum ys n::int = accum (xs:ys) (n-m)
   state 0: #0 #1
@@ -1739,7 +1739,7 @@ cyclen n/*0:01*/::int (x/*0:101*/:xs/*0:11*/) = accum/*0*/ [] n/*2:01*/ with acc
   state 1: #0 #1
 	<var>::int state 2
   state 2: #0 #1
-} end when xs/*0:*/ = x/*0:101*/:xs/*0:11*/; m/*0:*/::int = #xs/*0:*/ {
+} end when xs/*0:*/ = x/*0:101*/:xs/*0:11*/; m/*0:*/ :: int = #xs/*0:*/ {
   rule #0: m::int = #xs
   state 0: #0
 	<var>::int state 1
@@ -5789,13 +5789,13 @@ def __std__::__do__ (__lambda__ [x/*0:10101*/] (__std__::__voidfun__ y/*0:111*/)
 def __std__::__do__ (__lambda__ [x/*0:10101*/] (__ifelse__ y/*0:11001*/ (void z/*0:11011*/) ())) = __std__::__do__ (__lambda__ [x/*0:10101*/] (__ifelse__ y/*0:11001*/ z/*0:11011*/ ()));
 def __std__::__do__ (__lambda__ [x/*0:10101*/] (__ifelse__ y/*0:11001*/ (__std__::__voidfun__ z/*0:11011*/) ())) = __std__::__do__ (__lambda__ [x/*0:10101*/] (__ifelse__ y/*0:11001*/ z/*0:11011*/ ()));
 def __std__::__do__ f/*0:1*/ = do f/*0:1*/;
-__C::pure_quoted_symbol s/*0:1*/::string = __C::pure_quoted_symbol id/*0:*/ if id/*0:*/>0 when id/*0:*/::int = __C::pure_getsym s/*0:1*/ {
+__C::pure_quoted_symbol s/*0:1*/ :: string = __C::pure_quoted_symbol id/*0:*/ if id/*0:*/>0 when id/*0:*/ :: int = __C::pure_getsym s/*0:1*/ {
   rule #0: id::int = __C::pure_getsym s
   state 0: #0
 	<var>::int state 1
   state 1: #0
 } end;
-globsym pat/*0:01*/::string level/*0:1*/::int = uniq/*2*/ (catmap descr/*2*/ info/*0:*/) when res/*0:*/ = evalcmd ("show -gst"+str level/*0:1*/+" "+pat/*0:01*/); stringp res/*0:*/||throw evalcmd; info/*0:*/ = init (init (split "\n" res/*0:*/)) {
+globsym pat/*0:01*/ :: string level/*0:1*/ :: int = uniq/*2*/ (catmap descr/*2*/ info/*0:*/) when res/*0:*/ = evalcmd ("show -gst"+str level/*0:1*/+" "+pat/*0:01*/); stringp res/*0:*/||throw evalcmd; info/*0:*/ = init (init (split "\n" res/*0:*/)) {
   rule #0: info = init (init (split "\n" res))
   state 0: #0
 	<var> state 1
@@ -5856,7 +5856,7 @@ globsym pat/*0:01*/::string level/*0:1*/::int = uniq/*2*/ (catmap descr/*2*/ inf
   state 20: #0 #1
 	<var> state 21
   state 21: #0 #1
-}; descr s/*0:1*/::string = case filter (flip (~=) "") (split " " s/*0:1*/) of sym/*0:01*/:_/*0:1*/ = if any (flip (==) sym/*0:01*/) ["extern","private","infix","infixl","infixr","prefix","postfix","outfix","nonfix"] then [] else catmap (\x/*0:1*/ -> if symbolp x/*0:1*/ then [x/*0:1*/] else [] {
+}; descr s/*0:1*/ :: string = case filter (flip (~=) "") (split " " s/*0:1*/) of sym/*0:01*/:_/*0:1*/ = if any (flip (==) sym/*0:01*/) ["extern","private","infix","infixl","infixr","prefix","postfix","outfix","nonfix"] then [] else catmap (\x/*0:1*/ -> if symbolp x/*0:1*/ then [x/*0:1*/] else [] {
   rule #0: _ x = if symbolp x then [x] else []
   state 0: #0
 	<var> state 1
@@ -5893,7 +5893,7 @@ globsym pat/*0:01*/::string level/*0:1*/::int = uniq/*2*/ (catmap descr/*2*/ inf
 	<var>::string state 1
   state 1: #0
 } end;
-clearsym sym/*0:01*/::string level/*0:1*/::int = () when res/*0:*/ = evalcmd ("clear -t"+str level/*0:1*/+" "+sym/*0:01*/); stringp res/*0:*/||throw evalcmd {
+clearsym sym/*0:01*/ :: string level/*0:1*/ :: int = () when res/*0:*/ = evalcmd ("clear -t"+str level/*0:1*/+" "+sym/*0:01*/); stringp res/*0:*/||throw evalcmd {
   rule #0: _ = stringp res||throw evalcmd
   state 0: #0
 	<var> state 1
@@ -5904,7 +5904,7 @@ clearsym sym/*0:01*/::string level/*0:1*/::int = () when res/*0:*/ = evalcmd ("c
 	<var> state 1
   state 1: #0
 } end;
-clearsym sym/*0:01*/::symbol level/*0:1*/::int = clearsym sym/*0:*/ level/*2:1*/ when sym/*0:*/ = str sym/*0:01*/; sym/*0:*/ = if sym/*0:*/!0=="(" then substr sym/*0:*/ 2 (#sym/*0:*/-2) else sym/*0:*/ {
+clearsym sym/*0:01*/ :: symbol level/*0:1*/ :: int = clearsym sym/*0:*/ level/*2:1*/ when sym/*0:*/ = str sym/*0:01*/; sym/*0:*/ = if sym/*0:*/!0=="(" then substr sym/*0:*/ 2 (#sym/*0:*/-2) else sym/*0:*/ {
   rule #0: sym = if sym!0=="(" then substr sym 2 (#sym-2) else sym
   state 0: #0
 	<var> state 1
