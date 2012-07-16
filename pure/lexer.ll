@@ -712,7 +712,7 @@ blank  [ \t\f\v\r]
     string msg = "symbol '"+string(yytext)+"' is private here";
     interp.error(*yylloc, msg);
   } else {
-    assert(yyleng == k+1);
+    assert(yyleng == (int)k+1);
     /* If we come here, we failed to recognize the input as a special symbol
        and have to rescan everything in a special mode which excludes this
        rule. This hack is necessary in order to avoid the use of REJECT. */
