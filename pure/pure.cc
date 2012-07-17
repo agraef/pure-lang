@@ -511,7 +511,7 @@ main(int argc, char *argv[])
 	interp.escape_mode = s[0];
       else
 	interp.warning(prog + ": warning: invalid escape prefix '" +
-		       s.substr(1) + "'");
+		       s.substr(0, 1) + "'");
     }
   }
   if ((env = getenv("PURELIB"))) {
@@ -598,7 +598,7 @@ main(int argc, char *argv[])
             interp.escape_mode = s[0];
 	  else
 	    interp.warning(prog + ": warning: invalid escape prefix '" +
-			   s.substr(1) + "'");
+			   s.substr(0, 1) + "'");
 	}
       } else if (strcmp(*args, "--enable") == 0 ||
 	       strncmp(*args, "--enable=", 9) == 0) {
