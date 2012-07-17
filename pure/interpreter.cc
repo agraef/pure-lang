@@ -770,7 +770,7 @@ interpreter::interpreter(int _argc, char **_argv)
     pic(false), strip(true), restricted(false), ttymode(false), override(false),
     stats(false), stats_mem(false), temp(0),  ps("> "), libdir(""),
     histfile("/.pure_history"), modname("pure"),
-    interactive_mode(false), escape_mode(false),
+    interactive_mode(false), escape_mode(0),
     source_level(0), skip_level(0), last_tag(0), logging(false),
     nerrs(0), modno(-1), modctr(0), source_s(0), output(0),
     result(0), lastres(0), mem(0), exps(0), tmps(0), freectr(0),
@@ -794,7 +794,7 @@ interpreter::interpreter(int32_t nsyms, char *syms,
     pic(false), strip(true), restricted(true), ttymode(false), override(false),
     stats(false), stats_mem(false), temp(0), ps("> "), libdir(""),
     histfile("/.pure_history"), modname("pure"),
-    interactive_mode(false), escape_mode(false),
+    interactive_mode(false), escape_mode(0),
     source_level(0), skip_level(0),
     /* NOTE: We use a different range of pointer tags here, so that tags
        generated at compile time won't conflict with those generated at run

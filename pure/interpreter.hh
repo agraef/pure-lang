@@ -132,6 +132,11 @@
 #error "Unknown size of size_t type."
 #endif
 
+/* Permitted characters for --escape mode. */
+#ifndef ESCAPECHARS
+#define ESCAPECHARS "!$%&*,:<>@\\|"
+#endif
+
 using namespace std;
 
 /* The Pure interpreter. */
@@ -587,8 +592,8 @@ public:
   // interpreter is running an interactive session.
   bool interactive_mode;
   // Set this to indicate command escape mode (interactive commands are
-  // prefixed with '!').
-  bool escape_mode;
+  // prefixed with the specified char, if it's non-null).
+  char escape_mode;
 
   // User-defined options (conditional compilation pragmas).
 private:

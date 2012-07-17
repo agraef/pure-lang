@@ -82,7 +82,7 @@ using namespace std;
 --disable=optname Disable source option (conditional compilation).\n\
 --eager-jit       Enable eager JIT compilation (LLVM 2.7 or later).\n\
 --enable=optname  Enable source option (conditional compilation).\n\
---escape, -e      Interactive commands are prefixed with '!'.\n\
+--escape=char     Interactive commands are prefixed with the specified char.\n\
 -fPIC             Create position-independent code (batch compilation).\n\
 -g                Enable symbolic debugging.\n\
 --help, -h        Print this message and exit.\n\
@@ -306,14 +306,14 @@ pure_completion(const char *text, int start, int end)
   matches = (char **)NULL;
 
   /* NOTE: As of Pure 0.56, interactive commands may also be escaped with a
-     leading '!' on the command line. If this mode is enabled, we only want to
-     match command names after a leading '!' and just keywords or symbols at
-     the real beginning of the line. In normal mode we match both commands,
-     keywords and symbols at the beginning of a line. In all other cases, just
-     the symbols are matched. */
+     leading escape char on the command line. If this mode is enabled, we only
+     want to match command names after a leading escape char and just keywords
+     or symbols at the real beginning of the line. In normal mode we match both
+     commands, keywords and symbols at the beginning of a line. In all other
+     cases, just the symbols are matched. */
   assert(interpreter::g_interp);
   interpreter& interp = *interpreter::g_interp;
-  bool esc = interp.escape_mode;
+  char esc = interp.escape_mode;
 
   /* If this word is at the start of the line, then it might be a command or
      keyword to complete. Otherwise it is a global function or variable symbol
@@ -322,7 +322,7 @@ pure_completion(const char *text, int start, int end)
   if (esc) {
     if (start == 0)
       matches = rl_completion_matches(text, keyword_generator);
-    else if (start == 1 && rl_line_buffer[0] == '!')
+    else if (start == 1 && rl_line_buffer[0] == esc)
       matches = rl_completion_matches(text, command_generator);
     else
       matches = rl_completion_matches(text, symbol_generator);
@@ -463,6 +463,7 @@ main(int argc, char *argv[])
 {
   char base;
   interpreter interp(argc, argv);
+  const string prog = *argv;
   int count = 0;
   bool quiet = false, force_interactive = false,
     want_prelude = true, have_prelude = false,
@@ -502,7 +503,17 @@ main(int argc, char *argv[])
   if ((env = getenv("PURE_NOFOLD"))) interp.folding = false;
   if ((env = getenv("PURE_NOTC"))) interp.use_fastcc = false;
   if ((env = getenv("PURE_EAGER_JIT"))) interp.eager_jit = true;
-  if ((env = getenv("PURE_ESCAPE"))) interp.escape_mode = true;
+  if ((env = getenv("PURE_ESCAPE"))) {
+    string s = string(env);
+    string prefixes = ESCAPECHARS;
+    if (!s.empty()) {
+      if (prefixes.find(s[0]) != string::npos)
+	interp.escape_mode = s[0];
+      else
+	interp.warning(prog + ": warning: invalid escape prefix '" +
+		       s.substr(1) + "'");
+    }
+  }
   if ((env = getenv("PURELIB"))) {
     string s = unixize(env);
     if (!s.empty() && s[s.size()-1] != '/') s.append("/");
@@ -511,7 +522,6 @@ main(int argc, char *argv[])
     interp.libdir = string(PURELIB)+"/";
   string prelude = interp.libdir+string("prelude.pure");
   // scan the command line options
-  const string prog = *argv;
   list<string> myargs;
   for (char **args = ++argv; *args; ++args) {
     if (**args == '-') {
@@ -533,8 +543,6 @@ main(int argc, char *argv[])
 	interp.debugging = true;
       else if (strcmp(arg, "-i") == 0)
 	force_interactive = true;
-      else if (strcmp(arg, "-e") == 0 || strcmp(arg, "--escape") == 0)
-	interp.escape_mode = true;
       else if (strcmp(arg, "--ctags") == 0)
 	interp.tags = 1;
       else if (strcmp(arg, "--etags") == 0)
@@ -573,7 +581,26 @@ main(int argc, char *argv[])
 	interp.compat = true;
       else if (strcmp(arg, "-w2") == 0)
 	interp.compat2 = true;
-      else if (strcmp(*args, "--enable") == 0 ||
+      else if (strcmp(*args, "--escape") == 0 ||
+	       strncmp(*args, "--escape=", 9) == 0) {
+	string s = string(*args).substr(8);
+	if (s.empty()) {
+	  if (!*++args) {
+	    interp.error(prog + ": --escape lacks option argument");
+	    return 1;
+	  }
+	  s = *args;
+	} else
+	  s.erase(0, 1);
+        string prefixes = ESCAPECHARS;
+        if (!s.empty()) {
+	  if (prefixes.find(s[0]) != string::npos)
+            interp.escape_mode = s[0];
+	  else
+	    interp.warning(prog + ": warning: invalid escape prefix '" +
+			   s.substr(1) + "'");
+	}
+      } else if (strcmp(*args, "--enable") == 0 ||
 	       strncmp(*args, "--enable=", 9) == 0) {
 	string s = string(*args).substr(8);
 	if (s.empty()) {
@@ -741,6 +768,9 @@ main(int argc, char *argv[])
 	     string(*argv).substr(0,2) == "-I" ||
 	     string(*argv).substr(0,2) == "-L") {
       string s = string(*argv).substr(2);
+      if (s.empty()) ++argv;
+    } else if (string(*argv).substr(0,8) == "--escape") {
+      string s = string(*argv).substr(8);
       if (s.empty()) ++argv;
     } else if (string(*argv).substr(0,8) == "--enable") {
       string s = string(*argv).substr(8);

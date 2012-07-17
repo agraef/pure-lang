@@ -3713,6 +3713,17 @@ pure_interp *pure_create_interp(int argc, char *argv[])
   if ((env = getenv("PURE_NOFOLD"))) interp.folding = false;
   if ((env = getenv("PURE_NOTC"))) interp.use_fastcc = false;
   if ((env = getenv("PURE_EAGER_JIT"))) interp.eager_jit = true;
+  if ((env = getenv("PURE_ESCAPE"))) {
+    string s = string(env);
+    string prefixes = ESCAPECHARS;
+    if (!s.empty()) {
+      if (prefixes.find(s[0]) != string::npos)
+	interp.escape_mode = s[0];
+      else
+	interp.warning("pure_create_interp: warning: invalid escape prefix '" +
+		       s.substr(1) + "'");
+    }
+  }
   if ((env = getenv("PURELIB"))) {
     string s = unixize(env);
     if (!s.empty() && s[s.size()-1] != '/') s.append("/");
@@ -3725,8 +3736,7 @@ pure_interp *pure_create_interp(int argc, char *argv[])
   if (argv && *argv) for (char **args = ++argv; *args; ++args) {
     if (**args == '-') {
       char *arg = *args;
-      if ((arg[1] && arg[2] == 0 && strchr("hcgieqsu", arg[1])) ||
-	  strcmp(arg, "--escape") == 0 ||
+      if ((arg[1] && arg[2] == 0 && strchr("hcgiqsu", arg[1])) ||
 	  strcmp(arg, "--help") == 0 || strcmp(arg, "--version") == 0 ||
 	  strcmp(arg, "-fPIC") == 0 || strcmp(arg, "-fpic") == 0 ||
 	  strcmp(arg, "--norc") == 0 || strcmp(arg, "--noediting") == 0)
@@ -3753,7 +3763,27 @@ pure_interp *pure_create_interp(int argc, char *argv[])
 	interp.eager_jit = true;
       else if (strcmp(arg, "-w") == 0)
 	interp.compat = true;
-      else if (strcmp(*args, "--enable") == 0 ||
+      else if (strcmp(*args, "--escape") == 0 ||
+	       strncmp(*args, "--escape=", 9) == 0) {
+	string s = string(*args).substr(8);
+	if (s.empty()) {
+	  if (!*++args) {
+	    cerr << "pure_create_interp: --escape lacks option argument\n";
+	    delete _interp;
+	    return 0;
+	  }
+	  s = *args;
+	} else
+	  s.erase(0, 1);
+        string prefixes = ESCAPECHARS;
+        if (!s.empty()) {
+	  if (prefixes.find(s[0]) != string::npos)
+            interp.escape_mode = s[0];
+	  else
+	    interp.warning("pure_create_interp: warning: invalid escape prefix '" +
+			   s.substr(1) + "'");
+	}
+      } else if (strcmp(*args, "--enable") == 0 ||
 	       strncmp(*args, "--enable=", 9) == 0) {
 	string s = string(*args).substr(8);
 	if (s.empty()) {
@@ -3913,6 +3943,9 @@ pure_interp *pure_create_interp(int argc, char *argv[])
 	     string(*argv).substr(0,2) == "-I" ||
 	     string(*argv).substr(0,2) == "-L") {
       string s = string(*argv).substr(2);
+      if (s.empty()) ++argv;
+    } else if (string(*argv).substr(0,8) == "--escape") {
+      string s = string(*argv).substr(8);
       if (s.empty()) ++argv;
     } else if (string(*argv).substr(0,8) == "--enable") {
       string s = string(*argv).substr(8);
@@ -6801,7 +6834,7 @@ static string pname(interpreter& interp, Env *e)
     return "#<closure>";
 }
 
-static void parse_cmd(string& cmdline, string& cmd, string& arg)
+static void parse_cmd(string& cmdline, string& cmd, string& arg, char escape_mode)
 {
   // strip trailing whitespace
   size_t p = cmdline.find_last_not_of(" \t");
@@ -6816,11 +6849,27 @@ static void parse_cmd(string& cmdline, string& cmd, string& arg)
   else
     cmdline.clear();
   // tokenize
-  if (!cmdline.empty() &&
-      (cmdline[0] == '!' || cmdline[0] == '?' || cmdline[0] == '.')) {
-    cmd = cmdline.substr(0, 1);
-    arg = cmdline.substr(1);
-    return;
+  if (!cmdline.empty()) {
+    if (cmdline[0] == '?' || cmdline[0] == '.') {
+      cmd = cmdline.substr(0, 1);
+      arg = cmdline.substr(1);
+      return;
+    }
+    if (!escape_mode || escape_mode == '!') {
+      if (cmdline[0] == '!') {
+        cmd = "!";
+        arg = cmdline.substr(1);
+        return;
+      }
+    } else if (cmdline[0] == escape_mode) {
+        cmd = "!";
+        arg = cmdline.substr(1);
+        return;
+    } else if (cmdline[0] == '!') {
+        cmd = "!";
+        arg = cmdline;
+        return;
+    }
   }
   if (cmdline.substr(0, 2) == "//") {
     cmd = cmdline.substr(0, 2);
@@ -6967,7 +7016,7 @@ void pure_debug_rule(void *_e, void *_r)
       cout << ": ";
       getline(cin, cmdline);
     }
-    parse_cmd(cmdline, cmd, arg);
+    parse_cmd(cmdline, cmd, arg, interp.escape_mode);
     if (!cin.good()) cout << endl;
     if (cmd=="//")
       // comment line
@@ -7210,8 +7259,15 @@ s       single step: step into reduction\n\
 t, b    move to the top or bottom of the rule stack\n\
 u, d    move up or down one level in the rule stack\n\
 x       exit the interpreter (after confirmation)\n\
-.       reprint current rule\n\
-! cmd   execute interpreter command\n\
+.       reprint current rule\n";
+      if (!interp.escape_mode || interp.escape_mode == '!')
+        cout.put('!');
+      else {
+        cout << "! cmd   execute shell command\n";
+        cout.put(interp.escape_mode);
+      }
+      cout << "\
+ cmd   execute interpreter command\n\
 ? expr  evaluate expression\n\
 <cr>    single step (same as 's')\n\
 <eof>   step through program, run unattended (same as 'a')\n";

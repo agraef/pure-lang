@@ -58,6 +58,7 @@ static bool checkint(const char *s, string& msg);
 static string xsym(const string *ns, const string& s);
 
 static bool esc_mode = false;
+static string prefixes = ESCAPECHARS;
 
 /* Uncomment this to enable checking for interactive command names. This is
    rather annoying and hence disabled by default. */
@@ -167,7 +168,8 @@ int    [0-9][0-9A-Za-z]*
 exp    ([Ee][+-]?{int})
 float  {int}{exp}|{int}\.{exp}|({int})?\.{int}{exp}?
 str    ([^\"\\\n]|\\(.|\n))*
-cmd    ("!"?(!|"^"?{id}))
+cmdprefix [!:,$&<>@|%*\\]
+cmd    ({cmdprefix}?(!|"^"?{id}))
 blank  [ \t\f\v\r]
 
 %x escape comment srcoption xcode xcode_comment xdecl xdecl_comment xusing xusing_comment xsyms xsyms_comment xtag rescan xsyms_rescan
@@ -548,7 +550,12 @@ blank  [ \t\f\v\r]
 <xdecl>^{cmd} {
   if ((interp.interactive || interp.output) && checkcmd(interp, yytext))
     goto parse_cmd;
-  else if (yytext[0] == '!' || yytext[0] == '^')
+  else if (yytext[0] == ',') {
+    // This is a valid token in xdecl mode.
+    yyless(1); yylloc_update();
+    return yy::parser::token_type(yytext[0]);
+  } else if (yytext[0] == '!' || yytext[0] == '^' ||
+	     (interp.escape_mode && yytext[0] == interp.escape_mode))
     goto xdecl_bad_char;
   else
     goto xdecl_parse_id;
@@ -604,7 +611,12 @@ blank  [ \t\f\v\r]
 <xusing>^{cmd} {
   if ((interp.interactive || interp.output) && checkcmd(interp, yytext))
     goto parse_cmd;
-  else if (yytext[0] == '!' || yytext[0] == '^')
+  else if (yytext[0] == ',') {
+    // This is a valid token in xusing mode.
+    yyless(1); yylloc_update();
+    return yy::parser::token_type(yytext[0]);
+  } else if (yytext[0] == '!' || yytext[0] == '^' ||
+	   (interp.escape_mode && yytext[0] == interp.escape_mode))
     goto xusing_bad_char;
   else
     goto xusing_parse_id;
@@ -641,7 +653,7 @@ blank  [ \t\f\v\r]
 <xsyms>^{cmd} {
   if ((interp.interactive || interp.output) && checkcmd(interp, yytext))
     goto parse_cmd;
-  else if (yytext[0] == '!' || yytext[0] == '^')
+  else if (yytext[0] == '^' || prefixes.find(yytext[0]) != string::npos)
     goto xsyms_parse_op;
   else
     goto xsyms_parse_id;
@@ -847,11 +859,11 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
   if ((interp.interactive || interp.output) && checkcmd(interp, yytext)) {
     /* Read the rest of the command line. */
     /* Pure 0.56+: If we're in escape command mode and running interactively,
-       then interactive commands *must* begin with '!' which is then stripped
-       off to parse the rest of the command line. */
+       then interactive commands *must* begin with an escape char which is then
+       stripped off to parse the rest of the command line. */
     const char *s = yytext;
-    bool escmode = interp.escape_mode && interp.interactive;
-    if (escmode) s++; // assert yytext[0]=='!'
+    bool prefixing = interp.escape_mode && interp.interactive;
+    if (prefixing && s[0] == interp.escape_mode) s++;
     bool esc = s[0] == '^';
     if (esc) s++;
     string cmd = s, cmdline = s;
@@ -870,7 +882,7 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     else
       yylloc->columns(count);
     docmd(interp, yylloc, cmd.c_str(), cmdline.c_str(), esc);
-  } else if (yytext[0] == '!' || yytext[0] == '^')
+  } else if (yytext[0] == '^' || prefixes.find(yytext[0]) != string::npos)
     goto parse_op;
   else {
     check(*yylloc, yytext, false);
@@ -1605,12 +1617,15 @@ static bool checkusercmd(interpreter &interp, const char *s)
 static bool checkcmd(interpreter &interp, const char *s)
 {
   /* Pure 0.56+: If we're in escape command mode and running interactively,
-     then interactive commands *must* begin with '!' which is then stripped
-     off to parse the rest of the command line. */
-  if (interp.escape_mode && interp.interactive)
-    return s[0]=='!';
+     then interactive commands *must* begin with a special char which is then
+     stripped off to parse the rest of the command line. If the special char
+     is not '!', then we also permit shell escapes beginning with '!'. */
+  if (interp.escape_mode == '!' && interp.interactive)
+    return s[0] == '!';
   else {
     if (s[0] == '!') return true; // shell escape
+    if (interp.escape_mode && interp.interactive)
+      return s[0] == interp.escape_mode;
     size_t nel = sizeof(builtin_commands)/sizeof(builtin_commands[0]);
     if (s[0]=='^') s++;
     return bsearch(&s, builtin_commands, nel, sizeof(builtin_commands[0]),

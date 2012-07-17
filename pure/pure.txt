@@ -265,10 +265,10 @@ below.
 
    Enable source option (conditional compilation).
 
-.. option:: -e
-   	    --escape
+.. option:: --escape char
 
-   Interactive commands are prefixed with '\ ``!``\ '.
+   Interactive commands are prefixed with the specified character.
+   Permitted prefixes are: ``!$%&*,:<>@\|``.
 
 .. option:: -fPIC
    	    -fpic
@@ -1076,8 +1076,9 @@ shell environment variables:
 
 .. envvar:: PURE_ESCAPE
 
-   If set, interactive commands are prefixed with '\ ``!``\ ' (same as
-   :option:`--escape`), see `Interactive Usage`_ for details.
+   If set, interactive commands are prefixed with the first character in the
+   value of this variable (same as :option:`--escape`), see `Interactive
+   Usage`_ for details.
 
 .. envvar:: PURE_HELP
 
@@ -7392,22 +7393,46 @@ beginning of the line. However, this mode has its pitfalls, especially for
 beginners. As most of the commands look just like ordinary identifiers, you
 may run into situations where the beginning of an expression or definition to
 be typed at the prompt can be mistaken for a command word. In such cases the
-default mode requires that you "escape" the input by inserting one or more
-spaces at the beginning of the line, so that the interpreter reads the line as
-normal Pure code. Unfortunately, it's much too easy to forget this if you're
-not familiar with the command language.
+default mode requires that you insert one or more spaces at the beginning of
+the line, so that the interpreter reads the line as normal Pure code.
+Unfortunately, it's much too easy to forget this if you're not familiar with
+the command language.
 
 Therefore there is an alternative `escape mode` available which handles
 special command input more like some other popular programming language
 interpreters. In escape mode *all* interactive commands have to be escaped by
-prefixing them with an additional '\ ``!``\ ' character at the very beginning
-of the line. The command itself must follow the '\ ``!``\ ' prefix, without
-any intervening whitespace. Any line not prefixed with '\ ``!``\ ' will then
-be considered normal Pure code. This mode can be enabled with the :option:`-e`
-(or :option:`--escape`) option, or you can just set the :envvar:`PURE_ESCAPE`
-variable in your environment to enable escape mode by default. (Setting this
-variable to any value will do, the interpreter only checks whether the
-variable exists in the environment.)
+prefixing them with a special character at the very beginning of the line.
+The command itself must follow the prefix character, without any intervening
+whitespace. Any line not prefixed with the prefix character will then be
+considered normal Pure code. This mode can be enabled with the
+:option:`--escape` option, which takes the desired prefix character as an
+argument, or you can just set the :envvar:`PURE_ESCAPE` variable in your
+environment to enable escape mode by default.
+
+For example, to set the escape character to '\ ``!``\ ' you'll invoke the
+interpreter as follows:
+
+.. code-block:: console
+
+   $ pure --escape="!"
+
+Alternatively, you could also set the :envvar:`PURE_ESCAPE` environment
+variable like this (using Bourne shell syntax):
+
+.. code-block:: console
+
+   $ export PURE_ESCAPE="!"
+
+Note that specifying the prefix character with the :option:`--escape` option
+overrides the value of the environment variable, and only the initial
+character in the value of :option:`--escape` or :envvar:`PURE_ESCAPE` will be
+used. If the specified value is empty, the interpreter reverts to the default
+mode. The following prefix characters can be used: ``!$%&*,:<>@\|``. Note that
+these all belong to 7 bit ASCII, and only some of the ASCII punctuation
+characters are permitted in order to prevent conflicts with ordinary Pure
+code. In any case, all of these characters *can* also occur in ordinary Pure
+code, so you should use a prefix that you aren't likely to type at the
+beginning of a line in your usual coding style.
 
 Many Pure programmers prefer escape mode, and in fact we recommend it for Pure
 novices even though it's not the default (yet). Others may prefer default mode
@@ -7419,15 +7444,17 @@ the following command, ::
 
   > show foldl
 
-you will have to type this in escape mode instead::
+and you are using '\ ``:``\ ' as an escape char, then you will have to type
+this in escape mode instead::
 
-  > !show foldl
+  > :show foldl
 
-Similarly, to type a shell escape, ::
+Note that in this case `\ ``!``\ ' will continue to serve as a shell escape::
 
   > ! find . '*.pure'
 
-in escape mode you actually have to type two exclamation marks::
+But if you are using '\ ``!``\ ' as your escape character, you will have to
+type *two* exclamation marks instead::
 
   > !! find . '*.pure'
 
@@ -7437,8 +7464,7 @@ default mode command syntax throughout without further notice.
 .. note:: Escape mode only applies to the interactive command line. It doesn't
    affect the :func:`evalcmd` function in any way, so interactive commands in
    the string argument of :func:`evalcmd` are always specified without the
-   extra '\ ``!``\ ' escape character no matter which mode the interpreter is
-   running in.
+   escape character prefix no matter which mode the interpreter is running in.
 
 Online Help
 -----------
@@ -8209,6 +8235,11 @@ debugger prompt to print the following list:
   <cr>    single step (same as 's')
   <eof>   step through program, run unattended (same as 'a')
 
+.. note:: If you specified an :option:`--escape` prefix other than '``!``'
+   (cf. `Command Syntax`_), that prefix will be used to execute interpreter
+   commands instead, see below. The help message will tell you which command
+   prefix is in effect.
+
 The command syntax is very simple. Besides the commands listed above you can
 also enter comment lines (``// comment text``) which will just be
 ignored. Extra arguments on commands which don't expect any will generally be
@@ -8234,12 +8265,17 @@ The debugger can be exited or suspended in the following ways:
 * You can also type ``x`` to exit from the debugger *and* the interpreter
   immediately (after confirmation).
 
-In addition, you can use the ``!`` command to run any interpreter command
+In addition, you can use the ``!`` command (or whatever command prefix has
+been set with the :option:`--escape` option) to run any interpreter command
 while in the debugger. This is particularly useful to invoke the ``break`` and
-``del`` commands to change breakpoints, or you can use ``!!`` to escape a
-shell command. (However, you shouldn't try to modify the program while you're
-debugging it. This may work in some cases, but will have nasty consequences if
-you happen to change a function which is currently being executed.)
+``del`` commands to change breakpoints. (However, you shouldn't try to modify
+the program while you're debugging it. This may work in some cases, but will
+have nasty consequences if you happen to change a function which is currently
+being executed.)
+
+The interpreter's shell escape can also be used from the debugger. In default
+mode or when using ``!`` as the :option:`--escape` prefix, you'll have to
+escape shell commands with ``!!``, otherwise a single ``!`` suffices.
 
 At the debugger prompt, you can use the ``u`` ("up"), ``d`` ("down"), ``t``
 ("top") and ``b`` ("bottom") commands to move around on the current call
@@ -8387,7 +8423,8 @@ The current sets of breakpoints and tracepoints can be changed with the
 or ``trace`` without any arguments lists the currently defined breakpoints or
 tracepoints, respectively. Please see `Interactive Commands`_ above for
 details. Also note that these are really interpreter commands, so to invoke
-them in the debugger you have to escape them with the ``!`` command.
+them in the debugger you have to escape them with the ``!`` command
+(or whatever other :option:`--escape` prefix you specified).
 
 Last Result
 -----------
@@ -9348,7 +9385,7 @@ Pure 0.56 introduced the :ref:`non-splicing vector brackets<non-splicing>`
 ``{| |}`` as an alternative notation for nested vector structures, as well as
 the `namespace brackets`_ to quickly switch namespaces inside an
 expression. Moreover, interactive commands can now optionally be escaped by
-prefixing them with '\ ``!``\ ' (see `Interactive Usage`_ for details).
+prefixing them with a special character (see `Interactive Usage`_ for details).
 
 Error Recovery
 --------------
