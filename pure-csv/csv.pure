@@ -37,6 +37,7 @@ public
   LF
   LIST
   HEADER
+  DEFAULT
   RFC4180
   EXCEL
   dialect
@@ -45,6 +46,7 @@ public
   delimiter
   terminator
   quote_flag
+  flags
   space_around_quoted_field
   trim_space
   open
@@ -157,7 +159,7 @@ dialect rec::matrix
     end;
 
 /* Predefined dialects */
-const default = dialect {};
+const DEFAULT = dialect {};
 const RFC4180 = dialect {terminator=>"\r\n"};
 const EXCEL = dialect {quote_flag=>MINIMAL, 
                        space_around_quoted_field=>BOTH,
@@ -193,11 +195,11 @@ open (fname::string, rw_flag::string, d::matrix)
 
 /* Open a CSV file like above but with the library default dialect */
 open (fname::string, rw_flag::string)
-  = open (fname, rw_flag, default, []);
+  = open (fname, rw_flag, DEFAULT, []);
 
 /* Open a CSV file for reading with the library default dialect */
 open fname::string
-  = open (fname, "r", default, []);
+  = open (fname, "r", DEFAULT, []);
 
 /* Close a CSV file. Sentries ensure files will automatically be closed
    and internal buffers will be freed when the file pointer goes out of
