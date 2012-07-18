@@ -327,14 +327,14 @@ main(int argc, char *argv[])
 	  s = *args;
 	} else
 	  s.erase(0, 1);
-        string prefixes = ESCAPECHARS;
-        if (!s.empty()) {
-	  if (prefixes.find(s[0]) != string::npos)
-            interp.escape_mode = s[0];
-	  else
-	    interp.warning(prog + ": warning: invalid escape prefix '" +
-			   s.substr(0, 1) + "'");
-	}
+	string prefixes = ESCAPECHARS;
+	if (s.empty())
+	  interp.escape_mode = 0;
+	else if (prefixes.find(s[0]) != string::npos)
+	  interp.escape_mode = s[0];
+	else
+	  interp.warning(prog + ": warning: invalid escape prefix '" +
+			 s.substr(0, 1) + "'");
       } else if (strcmp(*args, "--enable") == 0 ||
 	       strncmp(*args, "--enable=", 9) == 0) {
 	string s = string(*args).substr(8);
