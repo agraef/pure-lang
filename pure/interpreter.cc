@@ -11384,9 +11384,12 @@ void Env::build_map(expr x, rulel::const_iterator r, rulel::const_iterator end)
 void Env::build_map(const rulel& rl)
 {
   // build the maps for the rh sides in a 'case' expression
-  for (rulel::const_iterator r = rl.begin(); r != rl.end(); r++) {
+  // we need a separate submap for each rule
+  rulel::const_iterator r = rl.begin(), end = rl.end();
+  while (r != end) {
     build_map(r->rhs);
     if (!r->qual.is_null()) build_map(r->qual);
+    if (++r != end) fmap.next();
   }
 }
 
