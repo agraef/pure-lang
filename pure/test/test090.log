@@ -1,0 +1,25 @@
+bar y/*0:1*/ = case y/*0:1*/ of 0 = a/*0*/ with a = 0 {
+  rule #0: a = 0
+  state 0: #0
+} end; 1 = b/*0*/ with b = 1 {
+  rule #0: b = 1
+  state 0: #0
+} end {
+  rule #0: 0 = a with a = 0 end
+  rule #1: 1 = b with b = 1 end
+  state 0: #0 #1
+	0::int state 1
+	1::int state 2
+  state 1: #0
+  state 2: #1
+} end;
+{
+  rule #0: bar y = case y of 0 = a with a = 0 end; 1 = b with b = 1 end end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}
+bar 0;
+0
+bar 1;
+1
