@@ -555,9 +555,10 @@ blank  [ \t\f\v\r]
     yyless(1); yylloc_update();
     return yy::parser::token_type(yytext[0]);
   } else if (yytext[0] == '!' || yytext[0] == '^' ||
-	     (interp.escape_mode && yytext[0] == interp.escape_mode))
+	     (interp.escape_mode && yytext[0] == interp.escape_mode)) {
+    yyless(1); yylloc_update();
     goto xdecl_bad_char;
-  else
+  } else
     goto xdecl_parse_id;
 }
 
@@ -616,9 +617,10 @@ blank  [ \t\f\v\r]
     yyless(1); yylloc_update();
     return yy::parser::token_type(yytext[0]);
   } else if (yytext[0] == '!' || yytext[0] == '^' ||
-	   (interp.escape_mode && yytext[0] == interp.escape_mode))
+	     (interp.escape_mode && yytext[0] == interp.escape_mode)) {
+    yyless(1); yylloc_update();
     goto xusing_bad_char;
-  else
+  } else
     goto xusing_parse_id;
 }
 
@@ -653,10 +655,18 @@ blank  [ \t\f\v\r]
 <xsyms>^{cmd} {
   if ((interp.interactive || interp.output) && checkcmd(interp, yytext))
     goto parse_cmd;
-  else if (yytext[0] == '^' || prefixes.find(yytext[0]) != string::npos)
-    goto xsyms_parse_op;
-  else
-    goto xsyms_parse_id;
+  else {
+    // Skip over any command prefix. Note that the prefix chars are all ASCII
+    // punctuation (except '_'), so the following will stop at the identifier.
+    size_t n = 0;
+    while (ispunct(yytext[n]) && yytext[n] != '_') n++;
+    if (n > 0) {
+      // strip off the trailing identifier
+      yyless(n); yylloc_update();
+      goto xsyms_parse_op;
+    } else
+      goto xsyms_parse_id;
+  }
 }
 
 <xsyms>"//".*	   yylloc->step();
@@ -882,11 +892,19 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     else
       yylloc->columns(count);
     docmd(interp, yylloc, cmd.c_str(), cmdline.c_str(), esc);
-  } else if (yytext[0] == '^' || prefixes.find(yytext[0]) != string::npos)
-    goto parse_op;
-  else {
-    check(*yylloc, yytext, false);
-    goto parse_id;
+  } else {
+    // Skip over any command prefix. Note that the prefix chars are all ASCII
+    // punctuation (except '_'), so the following will stop at the identifier.
+    size_t n = 0;
+    while (ispunct(yytext[n]) && yytext[n] != '_') n++;
+    if (n > 0) {
+      // strip off the trailing identifier
+      yyless(n); yylloc_update();
+      goto parse_op;
+    } else {
+      check(*yylloc, yytext, false);
+      goto parse_id;
+    }
   }
 }
 
