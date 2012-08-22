@@ -589,11 +589,19 @@ prim
 			  } }
 | '{' rows '}'		{ $$ = new expr(EXPR::MATRIX, $2); }
 | '{' expr '|' comp_clauses '}'
-			{ $$ = interp.mkmatcomp_expr($2, $4); }
+			{ try { $$ = interp.mkmatcomp_expr($2, $4); }
+			  catch (err &e) {
+			    interp.error(yyloc, e.what());
+			    $$ = new dummy_expr;
+			  } }
 | '[' expr ']'		{ $$ = interp.mklist_expr($2); }
 | '[' ']'		{ $$ = new expr(interp.symtab.nil_sym().f); }
 | '[' expr '|' comp_clauses ']'
-			{ $$ = interp.mklistcomp_expr($2, $4); }
+			{ try { $$ = interp.mklistcomp_expr($2, $4); }
+			  catch (err &e) {
+			    interp.error(yyloc, e.what());
+			    $$ = new dummy_expr;
+			  } }
 | '(' expr ')'		{ $$ = $2;
 			  if ($$->is_pair()) $$->flags() |= EXPR::PAREN; }
 | '(' ')'		{ $$ = new expr(interp.symtab.void_sym().f); }
