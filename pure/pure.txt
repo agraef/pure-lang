@@ -3290,12 +3290,44 @@ world!`` message appears. That's because the interpreter first has to compile
 the definitions in your script as well as the prelude and other imported
 modules before the ``puts "Hello, world!"`` expression can be evaluated. The
 startup times can be reduced (sometimes considerably) by compiling scripts to
-native executables; we'll return to this below.
+native executables, see below.
 
-There are basically two ways to turn a Pure program like hello.pure into a
-standalone application which can be run directly from the shell. First, on
-Unix-like systems, it is possible to make any script file executable like
-this:
+Sometimes you may want to pass parameters to a script from the command line.
+The easiest way to do that is to invoke the interpreter as ``pure -x``
+followed by the script name and the parameters. The interpreter makes the
+command line parameters available as a list of strings in the ``argv``
+variable. For instance, here is a version of the "hello world" program which
+uses :func:`printf` to print the line ``Hello, foo!`` where ``foo`` is
+whatever was specified as the first command line parameter::
+
+  using system;
+  printf "Hello, %s!\n" (argv!1);
+
+This script is invoked as:
+
+.. code-block:: console
+
+   $ pure -x hello.pure foo
+   Hello, foo!
+
+(Many real-world programs will require more elaborate processing of command
+line parameters, such as recognizing program options. We won't discuss this
+here, but you can have a look at the :mod:`getopt` module which provides that
+kind of functionality in a convenient package.)
+
+This should be about all that you need to know if you always run your scripts
+with the interpreter. However, it is often convenient if you can turn a script
+into a standalone executable which can be invoked by just typing its name on
+the command line. There are basically three ways to do this.
+
+First, on most systems you can invoke the Pure script through some kind of
+shell script or command file which contains the command to invoke the
+interpreter with the script file and possibly some command line arguments. The
+details of this depend on the operating system and type of shell that you use,
+however, so we won't go into this here.
+
+Second, on Unix-like systems it is possible to make any script file executable
+like this:
 
 .. code-block:: console
 
@@ -3312,7 +3344,11 @@ it looks like::
   using system;
   puts "Hello, world!";
 
-Note that you have to give the full path to the Pure interpreter in the
+Note that the ``-x`` option is only needed if the script actually processes
+its command line parameters. But it's a good idea to include it anyway, so
+that any extra arguments aren't read and processed by the interpreter instead.
+
+Also note that you *must* give the full path to the Pure interpreter in the
 shebang line. This path of course depends on where you installed Pure. The
 above shebang will work with an installation from source, unless you changed
 the installation prefix when configuring the source package. If you installed
@@ -3325,7 +3361,7 @@ lives by typing the following command in the shell:
    $ which pure
    /usr/local/bin/pure
 
-If you get anything else on your system, you'll have to fix the shebang
+If you get anything else on your system then you'll have to fix the shebang
 accordingly. You should then be able to run the script as follows:
 
 .. code-block:: console
@@ -3333,15 +3369,32 @@ accordingly. You should then be able to run the script as follows:
    $ ./hello.pure
    Hello, world!
 
-An alternative way to turn a Pure script into an executable is to
-"batch-compile" it. This works on all supported system (provided that you have
-the necessary LLVM tools and 3rd party compilers installed, see the
-:doc:`installation instructions<install>` for details). The result is a real
-native executable which can then be run directly just like any other binary
-program on your system. To these ends, the interpreter is run with the
-:option:`-c` option which tells it to run in batch compilation mode, and the
-:option:`-o` option which specifies the desired name of the executable. For
-instance:
+.. note:: Many modern Unix-like systems provide the ``/usr/bin/env`` utility
+   which can perform a search for the interpreter executable, so that you can
+   use a shebang like::
+
+     #!/usr/bin/env pure
+
+   This will always work if the Pure interpreter is installed somewhere on the
+   system :envvar:`PATH`. However, due to incompatibilities in the ways
+   shebang lines are parsed by the shell on different Unix systems, the
+   following shebang line might *not* work as expected::
+
+     #!/usr/bin/env pure -x
+
+   In particular, on Linux this causes ``env`` to look for an executable named
+   "``pure -x``", which won't work. So, while ``env`` may be more convenient
+   for simple shebangs, we generally advise against using it because of these
+   limitations.
+
+Third, you can also turn a Pure script into an executable by "batch-compiling"
+it. This works on all supported systems (provided that you have the necessary
+LLVM tools and 3rd party compilers installed, see the :doc:`installation
+instructions<install>` for details). The result is a real native executable
+which can then be run directly just like any other binary program on your
+system. To these ends, the interpreter is run with the :option:`-c` option
+which tells it to run in batch compilation mode, and the :option:`-o` option
+which specifies the desired name of the executable. For instance:
 
 .. code-block:: console
 
@@ -3398,8 +3451,15 @@ simply as follows:
    $ pure
 
 The interpreter then prints its sign-on message and leaves you at its command
-prompt "> ", waiting for you to type definitions and expressions to be
-evaluated.
+prompt, waiting for you to type definitions and expressions to be evaluated:
+
+.. code-block:: console
+
+   Pure @version@ (x86_64-unknown-linux-gnu) Copyright (c) 2008-2012 by Albert Graef
+   (Type 'help' for help, 'help copying' for license information.)
+   Loaded prelude from /usr/local/lib/pure/prelude.pure.
+
+   >
 
 Pure's prelude defines many of the common operations on numbers, strings,
 lists and other basic data types that you may want to use, so the interpreter
@@ -5288,9 +5348,9 @@ determine the elements that are to be included in the result list. ::
   > [2*x-1 | x = 1..10; x mod 3];
   [1,3,7,9,13,15,19]
 
-This can be read aloud as "the list of all ``2*x-1`` for which ``x`` runs
-through ``1..10`` and for which ``x mod 3``". Note that ``x mod 3`` is in fact
-a predicate which returns "true" (non-zero) if and only if ``x`` is not a
+This can be read as "the list of all ``2*x-1`` for which ``x`` runs through
+``1..10`` and for which ``x mod 3``". Note that ``x mod 3`` is in fact a
+predicate which returns "true" (non-zero) if and only if ``x`` is not a
 multiple of ``3``.
 
 List comprehensions can have as many generator and filter clauses as you want,
@@ -6116,9 +6176,9 @@ that duplicate keys are always removed)::
   {x=>(5,10),y=>(12,24)}
 
 Thus the full power of generic matrix operations is available for records,
-which turns them into a very versatile data structure, much more powerful than
-records in conventional programming languages which are usually limited to
-constructing records and accessing or modifying their components.
+which turns them into a much more versatile data structure than records in
+conventional programming languages, which are usually limited to constructing
+records and accessing or modifying their components.
 
 Note that since the values stored in records can be arbitrary Pure values, you
 can also have records with mutable components by making use of Pure's
@@ -6134,7 +6194,7 @@ Another interesting application of records are the "virtual method tables"
 used in object-oriented programming. Pure has a built-in :macro:`__locals__`
 macro which captures the environment of local functions at the point of the
 call and returns it as a list of hash pairs of function symbols and the
-corresponding closures. We can readily turn this into a record data
+corresponding closures. We can readily convert this into a record data
 structure which can be used as a virtual method table. For instance::
 
   > record __locals__ with f x = x+1 end;
@@ -6143,7 +6203,8 @@ structure which can be used as a virtual method table. For instance::
   100
 
 Here is a little helper macro that we can use to turn the virtual method table
-into an object closure::
+into an anonymous function which, when applied to a symbol, returns the
+appropriate closure::
 
   def obj = (\x -> vt!x) when
     vt = record __locals__;
@@ -6187,11 +6248,11 @@ discussed above; we leave this as an exercise for the interested reader.
 The Quote
 ---------
 
-We've already used the quote in several examples, so let's have a closer look
-at it now. As described in `Special Forms`_, the :func:`quote` operation
-quotes an expression, so that it can be passed around and manipulated freely
-until its value is needed, in which case you can pass it to the :func:`eval`
-function to obtain its value. For instance::
+We've already seen some uses of the quote in previous examples, so let's have
+a closer look at it now. As described in `Special Forms`_, the :func:`quote`
+operation quotes an expression, so that it can be passed around and
+manipulated freely until its value is needed, in which case you can pass it to
+the :func:`eval` function to obtain its value. For instance::
 
   > let x = '(2*42+2^12); x;
   2*42+2^12
