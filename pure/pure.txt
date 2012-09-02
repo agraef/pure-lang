@@ -4290,7 +4290,7 @@ Using these we can rewrite our definition of the ``point`` object as follows::
     coords = get x, get y;
     move (dx,dy) = put x (get x+dx), put y (get y+dy);
   end) when
-    x = ref x; y = ref y;
+    x,y = ref x,ref y;
   end;
 
 Note that the coordinates are kept in corresponding expression references
@@ -5274,17 +5274,16 @@ with lambdas::
   [1,3,5,7,9,11,13,15,17,19]
 
 This can be read aloud as "the list of all ``2*x-1`` for which ``x`` runs
-through the list ``1..10``". The part ``x = 1..10`` is called a `generator` or
-`binding clause`. The comprehension binds ``x`` to each member of the list
-``1..10`` in turn and evaluates the target expression ``2*x+1`` in the context
-of this binding. This is equivalent to the following ``map`` expression::
+through the list ``1..10``". The part ``x = 1..10`` is called a `generator
+clause`. The comprehension binds ``x`` to each member of the list ``1..10`` in
+turn and evaluates the target expression ``2*x+1`` in the context of this
+binding. This is equivalent to the following ``map`` expression::
 
   > map (\x->2*x-1) (1..10);
   [1,3,5,7,9,11,13,15,17,19]
 
-List comprehensions may also involve `conditional` or `filter clauses`:
-predicates which determine the elements that are to be included in the result
-list. ::
+List comprehensions may also involve `filter clauses`: predicates which
+determine the elements that are to be included in the result list. ::
 
   > [2*x-1 | x = 1..10; x mod 3];
   [1,3,7,9,13,15,19]
@@ -5294,16 +5293,16 @@ through ``1..10`` and for which ``x mod 3``". Note that ``x mod 3`` is in fact
 a predicate which returns "true" (non-zero) if and only if ``x`` is not a
 multiple of ``3``.
 
-List comprehensions can have as many binding and filter clauses as you want,
+List comprehensions can have as many generator and filter clauses as you want,
 which are considered in left-to-right order so that later clauses may refer to
-any variables introduced in earlier binding clauses. E.g., here's how you can
+any variables introduced in earlier generator clauses. E.g., here's how you can
 generate the list of all pairs ``(i,j)`` with ``1<=i<=j<=5`` such that ``i+j``
 is even::
 
   > [i,j | i = 1..5; j = i..5; ~(i+j) mod 2];
   [(1,1),(1,3),(1,5),(2,2),(2,4),(3,3),(3,5),(4,4),(5,5)]
 
-The left-hand side of a binding clause can be an arbitary pattern, which is
+The left-hand side of a generator clause can be an arbitary pattern, which is
 useful if you need to dissect the list elements. E.g., let's check the sums of
 the previous result to see whether they're in fact all even::
 
@@ -5474,26 +5473,19 @@ Matrices and Vectors
 Pure has a versatile matrix data structure offering compact storage and
 efficient random access to its members. Pure matrices work pretty much like in
 MATLAB or Octave, except that indexes are zero-based and elements are stored
-in C's row-major rather than Fortran's column-major format. The `C interface`_
-allows you to pass numeric Pure matrices to the corresponding C data types
-without much ado, so that they can be used to shuffle around copious amounts
-of numeric data which is useful, e.g., in graphics, video, audio and other
-signal processing applications. They are also binary-compatible with the `GNU
-Scientific Library`_ (GSL) so that they can be passed to GSL functions for
-doing numeric calculations.
+in C's row-major rather than Fortran's column-major format. They are also
+binary-compatible with the `GNU Scientific Library`_ (GSL) so that they can
+readily be passed to GSL functions for doing numeric calculations.
 
 Pure offers a number of basic matrix operations, such as matrix construction,
 pattern matching, indexing, slicing, as well as getting the size and
-dimensions of a matrix. However, it does *not* supply built-in support for
-matrix arithmetic and other linear algebra algorithms. The idea is that these
-can and should be provided through separate libraries (please check the Pure
-website for the pure-gsl module which is an ongoing project to provide a full
-GSL interface for the Pure language). You can also just roll your own using
-Pure's generic facilities for matrix and list processing defined in the
-prelude; we'll see examples of this below. Usually these won't perform as well
-as the GSL operations which are implemented entirely in C for maximum
-efficiency, but this is certainly an alternative if you need more specialized
-operations which aren't readily supported by the GSL.
+dimensions of a matrix. It does *not* supply built-in support for matrix
+arithmetic and other linear algebra algorithms, but it's easy to roll your own
+if desired, as we'll see below. (Usually this won't offer the same performance
+as the GSL and other carefully optimized C and Fortran routines, however. So
+if you need to do some heavy-duty number crunching then you might want to take
+a look at the pure-gsl module available at the Pure website, which is an
+ongoing project to make the GSL functions available in Pure.)
 
 Matrices are denoted using curly braces in Pure::
 
@@ -5533,8 +5525,8 @@ particular, you can also use this to convert between row and column vectors::
 
 Note that matrices are immutable in Pure, so matrix functions like
 :func:`transpose` always return a *new* matrix, leaving the original matrix
-unchanged. (If you need to modify matrices in-place then you'll have to use
-the GSL or other C functions.)
+unchanged. (If you need to modify matrices in-place for efficiency, then you
+can use the GSL or other C or Fortran functions.)
 
 You can change the dimensions of a matrix with the :func:`redim` function,
 provided that the size stays the same. So, for instance, we can turn the
@@ -5555,10 +5547,10 @@ of rows or columns is still zero. For instance::
   3,0
 
 Another way to do this is to just construct a zero matrix with zero rows or
-columns directly, see below. (In case you're asking yourself what these
-different kinds of empty matrices could possibly be good for, they are indeed
-needed to represent corner cases of linear mappings where one of the involved
-vector spaces is the zero space.)
+columns directly, see below. (Note that these different kinds of empty
+matrices are needed to represent the corner cases. E.g., a linear mapping from
+3-dimensional vectors to the zero vector space corresponds to a 0x3 matrix
+which yields a 3x0 matrix when transposed.)
 
 A number of other specific conversion operations are available, such as
 :func:`rowvector` and :func:`colvector` which convert a matrix to a row or
@@ -5593,41 +5585,38 @@ which treats the entire matrix as a single vector in row-major order::
   4
 
 Slicing is done with the ':func:`\!\!/matrix`' operator. The index range can
-be specified in different ways:
+be specified in different ways. First, a pair of lists of row and column
+indices cuts a rectangular slice from the matrix::
 
-* as a pair of lists of row and column indices which cuts a rectangular slice
-  from the matrix::
+  > x!!(0..1,1..2);
+  {2,3;5,6}
 
-    > x!!(0..1,1..2);
-    {2,3;5,6}
+Second, a pair of a list and a row or column index cuts slices from individual
+rows or columns::
 
-* as a pair of a list and a row or column index which cuts slices from
-  individual rows or columns::
+  > x!!(0,1..2); x!!(0..1,2);
+  {2,3}
+  {3;6}
 
-    > x!!(0,1..2); x!!(0..1,2);
-    {2,3}
-    {3;6}
+Third, a list of pairs of row and column indices, or a list of element indices
+gives a row vector with all the corresponding elements::
 
-* as a list of pairs of row and column indices, or a list of element indices,
-  which gives a row vector with all the corresponding elements::
+  > x!![(0,2),(1,2)];
+  {3,6}
+  > x!!(2..3);
+  {3,4}
 
-    > x!![(0,2),(1,2)];
-    {3,6}
-    > x!!(2..3);
-    {3,4}
+While most of the slices above are contiguous (a case which the prelude
+optimizes for), you can also specify indices in any order, possibly with
+duplicates. So we may not only cut submatrix slices, but also permute and/or
+copy rows and columns of a matrix along the way::
 
-While we mostly used contiguous slices here (a case which Pure optimizes for),
-it is possible to specify indices in any order, possibly with duplicates. So
-we may not only cut submatrix slices, but also permute and/or copy rows and
-columns of a matrix along the way::
-
-     > x!!([1,0,1],0..2);
-     {4,5,6;1,2,3;4,5,6}
+  > x!!([1,0,1],0..2);
+  {4,5,6;1,2,3;4,5,6}
 
 Matrices can also be constructed from submatrices by arranging the submatrices
-in rows or columns. In fact, the curly braces can be nested to any degree and
-accept any combination of submatrices and scalars, provided that all
-dimensions match up::
+in rows or columns. In fact, the curly braces accept any combination of
+submatrices and scalars, provided that all dimensions match up::
 
   > {1,{2,3};{4,5},6};
   {1,2,3;4,5,6}
@@ -5636,8 +5625,8 @@ dimensions match up::
   > {{1;2;3},{4;5;6}};
   {1,4;2,5;3,6}
 
-The end result *must* be a rectangular matrix, otherwise you'll get an
-exception indicating a submatrix whose dimensions don't match::
+The end result *must* be a rectangular matrix, however, otherwise you'll get
+an exception indicating a submatrix whose dimensions don't match::
 
   > {1,{2,3};{4,5}};
   <stdin>, line 24: unhandled exception 'bad_matrix_value {4,5}'
@@ -5702,26 +5691,25 @@ amounts to mapping the function ``(a*)`` to x, which can be done as follows::
   > 2*{1,2,3;4,5,6};
   {2,4,6;8,10,12}
 
-(Note that we introduced a convenience type ``scalar`` for non-matrix values
-here, so that we can distinguish scalar from matrix multiplication which will
-be discussed below.)
+Note that the :type:`matrix/type` type tag or the :func:`matrixp` predicate
+can be used to restrict a variable to matrix values. (The prelude provides a
+few other types and corresponding predicates for various specific kinds of
+matrices, see the :doc:`purelib` for details.) In addition, we also introduced
+a convenience type ``scalar`` for non-matrix values here, so that we can
+distinguish scalar from matrix multiplication which will be discussed below.
 
-Likewise, matrix addition and other element-wise operations can be realized
-using :func:`zipwith`, which combines corresponding elements of two matrices
-using a given binary function::
+Matrix addition and other element-wise operations can be realized using
+:func:`zipwith`, which combines corresponding elements of two matrices using a
+given binary function::
 
   > x::matrix + y::matrix = zipwith (+) x y if dim x == dim y;
   > {1,2,3;4,5,6}+{1,2,1;3,2,3};
   {2,4,4;7,7,9}
 
-Note that, as shown in the examples above, the :type:`matrix/type` tag can be
-used on the left-hand side of an equation to restrict a variable to matrix
-values. (The prelude provides a few other types for various specific kinds of
-matrices, see the :doc:`purelib` for details.) Another possibility is to
-employ a `matrix pattern`. The Pure language has built-in support for these,
-so that they work like the other kinds of patterns we've already encountered.
-For instance, to compute the dot product of two 2D vectors, you may write
-something like::
+Another way to define matrix functions in Pure is to employ a `matrix
+pattern`. The Pure language has built-in support for these, so that they work
+like the other kinds of patterns we've already encountered. For instance, to
+compute the dot product of two 2D vectors, you may write something like::
 
   > {x1,y1}*{x2,y2} = x1*x2+y1*y2;
   > {2,3}*{1,4};
@@ -5733,11 +5721,11 @@ Or, to compute the determinant of a 2x2 matrix::
   > det {1,2;3,4};
   -2
 
-This simplifies the definitions if the dimensions of the involved matrices are
-small and known beforehand. If you need to go beyond this, `matrix
-comprehensions` provide a means to express a variety of algorithms which would
-typically be implemented using ``for`` loops in conventional programming
-languages.
+These patterns are convenient if the dimensions of the involved matrices are
+small and known beforehand. If this isn't the case then it's better to use
+`matrix comprehensions` instead, which work with arbitrary dimensions and make
+it easy to express many simple kinds of algorithms which would typically be
+done using ``for`` loops in conventional programming languages.
 
 Matrix comprehensions work pretty much like list comprehensions, but with a
 special twist: if values are drawn from lists then the generator clauses
@@ -5787,11 +5775,22 @@ it a try::
   > {0,1;1,0;1,1}*{1,2,3;4,5,6};
   {4,5,6;1,2,3;5,7,9}
 
+You can also use this operation to apply a matrix to a column vector::
+
+  > {1,2;3,4}*{1;1};
+  {3;7}
+
+Or, if you prefer to work with row vectors, you simply multiply with the
+transposed matrix on the right::
+
+  > {1,1}*transpose {1,2;3,4};
+  {3,7}
+
 Well, that was easy. So let's take a look at a more challenging example,
-Gaussian elimination, which can be used to solve systems of linear
-equations. The algorithm brings a matrix into "row echelon" form, a
-generalization of triangular matrices. The resulting system can then be solved
-quite easily using back substitution.
+Gaussian elimination, which can be used to solve systems of linear equations.
+The algorithm brings a matrix into "row echelon" form, a generalization of
+triangular matrices. The resulting system can then be solved quite easily
+using back substitution.
 
 Here is a Pure implementation of the algorithm. Note that the real meat is in
 the pivoting and elimination step (``step`` function) which is iterated over
@@ -5884,8 +5883,7 @@ is a symbolic one::
   1
 
 Note that this may not always be obvious. For instance, you can use the
-:func:`smatrix` function to explicitly convert a numeric matrix to a symbolic
-one::
+:func:`smatrix` function to explicitly convert a numeric matrix::
 
   > smatrix {1,2;3,4};
   {1,2;3,4}
@@ -5911,7 +5909,7 @@ However, you can easily convert these to a numeric type if needed, e.g.::
 
 Symbolic matrices are a convenient data structure for storing arbitrary
 collections of values which provides fast random access to its members. In
-principle, they can also be nested, and thus multidimensional tensors or
+particular, they can also be nested, and thus multidimensional tensors or
 arrays of arbitrary dimension can be realized as nested symbolic vectors.
 However, you have to be careful when constructing such values, because the
 ``{...}`` construct normally combines submatrices to larger matrices. For
@@ -5934,7 +5932,7 @@ required to access the subvector elements::
   > ans!0!1;
   2
 
-You can also match these values with a nested matrix pattern as usual, e.g.::
+You can also match these values with a nested matrix pattern, e.g.::
 
   > let {{a,b},{c,d}} = '{{1,2},{3,4}};
   > a,b,c,d;
@@ -6003,6 +6001,12 @@ are a few examples which illustrate how to create records and work with them::
   {x=>99,y=>12,z=>77}
   > delete ans z;
   {x=>99,y=>12}
+
+Records can also be nested::
+
+  > let r = {a => {b=>1,c=>2}, b => 2};
+  > r!a, r!b, r!a!b;
+  {b=>1,c=>2},2,1
 
 Note the use of the "hash rocket" :cons:`=>` which denotes the ``key=>value``
 associations in a record. The hash rocket is a constructor declared as an
@@ -6114,22 +6118,79 @@ that duplicate keys are always removed)::
 Thus the full power of generic matrix operations is available for records,
 which turns them into a very versatile data structure, much more powerful than
 records in conventional programming languages which are usually limited to
-constructing records and accessing or modifying their components. Note that
-since the values stored in records can be arbitrary Pure values, you can also
-have mutable records by making use of Pure's expression references (see
-:ref:`Expression References` in the library manual). And of course records can
-be nested, too::
+constructing records and accessing or modifying their components.
 
-  > let r = {a => {b=>1,c=>2}, b => 2};
-  > r!a, r!b, r!a!b;
-  {b=>1,c=>2},2,1
+Note that since the values stored in records can be arbitrary Pure values, you
+can also have records with mutable components by making use of Pure's
+:ref:`expression references<expression references>`. For instance::
+
+  > let r = {x=>ref 1,y=>ref 2}; maprec get r;
+  {x=>1,y=>2}
+  > put (r!x) 99; maprec get r;
+  99
+  {x=>99,y=>2}
+
+Another interesting application of records are the "virtual method tables"
+used in object-oriented programming. Pure has a built-in :macro:`__locals__`
+macro which captures the environment of local functions at the point of the
+call and returns it as a list of hash pairs of function symbols and the
+corresponding closures. We can readily turn this into a record data
+structure which can be used as a virtual method table. For instance::
+
+  > record __locals__ with f x = x+1 end;
+  {f=>f}
+  > (ans!f) 99;
+  100
+
+Here is a little helper macro that we can use to turn the virtual method table
+into an object closure::
+
+  def obj = (\x -> vt!x) when
+    vt = record __locals__;
+  end;
+
+Continuing our example from `Local Functions and Variables`_, we can now
+implement the ``point`` object as follows::
+
+  point (x,y) = obj with
+    coords () = get x,get y;
+    move (dx,dy) = put x (get x+dx), put y (get y+dy);
+  end when
+    x,y = ref x,ref y;
+  end;
+
+Note that ``obj`` really needs to be implemented as a macro so that its body
+is inserted into the ``point`` function and the ``_locals__`` call is executed
+in the context of the local function environment there. (A macro is like a
+function which gets evaluated at compile time; see the Macros_ section for
+details.) Also note that we changed the ``coords`` "method" so that it takes a
+dummy parameter ``()`` now; this prevents premature evaluation of the closure.
+If ``coords`` was a parameterless function then its value would be fixed at
+the time we construct the virtual method table, which is not what we want here.
+
+Now we can write::
+
+  > let p = point (1,2);
+  > p coords ();
+  1,2
+  > p move (2,3);
+  3,5
+  > p coords ();
+  3,5
+
+This provides us with an interesting way to represent stateful objects which
+works very much like object-oriented programming. What's still missing here is
+the inheritance of methods from other objects, but this can now be done by
+just combining virtual method tables using the record operations we've already
+discussed above; we leave this as an exercise for the interested reader.
 
 The Quote
 ---------
 
-As already mentioned in `Special Forms`_, the :func:`quote` operation quotes
-an expression, so that it can be passed around and manipulated freely until
-its value is needed, in which case you can pass it to the :func:`eval`
+We've already used the quote in several examples, so let's have a closer look
+at it now. As described in `Special Forms`_, the :func:`quote` operation
+quotes an expression, so that it can be passed around and manipulated freely
+until its value is needed, in which case you can pass it to the :func:`eval`
 function to obtain its value. For instance::
 
   > let x = '(2*42+2^12); x;
