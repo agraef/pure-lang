@@ -2494,6 +2494,8 @@ variable name for it. For instance::
 This will match the application of ``foo`` to any combination of two
 arguments (and just ignore the values of these arguments).
 
+.. _syntactic equality:
+
 Non-Linear Patterns and Syntactic Equality
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -3258,14 +3260,16 @@ external data structures via C pointers, etc.
 Examples
 ========
 
-Now that we've introduced the basic elements of the Pure language, we can
-bring the pieces together and show you how simple but typical problems can be
-solved using Pure. You might use this section as a mini-tutorial on the Pure
-language. As we haven't discussed the more advanced elements of the Pure
-language yet, the scope of this section is necessarily limited. But it should
-give you a pretty good idea of how Pure programs looks like. After working
-through these examples you should be able to write useful Pure programs and
-understand the more advanced features discussed in subsequent sections.
+This section assumes that you've read the `Pure Overview`_ and `Rule Syntax`_
+sections, so that you are familiar with the basic elements of the Pure
+language. We now bring the pieces together and show you how simple but typical
+problems can be solved using Pure. You might use this section as a
+mini-tutorial on the Pure language. As we haven't discussed the more advanced
+elements of the Pure language yet, the scope of this section is necessarily
+limited. But it should give you a pretty good idea of how Pure programs looks
+like. After working through these examples you should be able to write useful
+Pure programs and understand the more advanced features discussed in
+subsequent sections.
 
 Hello, World
 ------------
@@ -3294,7 +3298,7 @@ native executables, see below.
 
 Sometimes you may want to pass parameters to a script from the command line.
 The easiest way to do that is to invoke the interpreter as ``pure -x``
-followed by the script name and the parameters. The interpreter makes the
+followed by the script name and the parameters. The interpreter then makes the
 command line parameters available as a list of strings in the ``argv``
 variable. For instance, here is a version of the "hello world" program which
 uses :func:`printf` to print the line ``Hello, foo!`` where ``foo`` is
@@ -3310,10 +3314,10 @@ This script is invoked as:
    $ pure -x hello.pure foo
    Hello, foo!
 
-(Many real-world programs will require more elaborate processing of command
-line parameters, such as recognizing program options. We won't discuss this
-here, but you can have a look at the :mod:`getopt` module which provides that
-kind of functionality in a convenient package.)
+Of course, many real-world programs will require more elaborate processing of
+command line parameters, such as recognizing program options. We won't discuss
+this here, but you can have a look at the :mod:`getopt` module which provides
+that kind of functionality in a convenient package.
 
 This should be about all that you need to know if you always run your scripts
 with the interpreter. However, it is often convenient if you can turn a script
@@ -3334,7 +3338,7 @@ like this:
    $ chmod a+x hello.pure
 
 However, we also have to tell the shell about the command interpreter which
-should be invoked to run the script. (Otherwise the shell itself will try to
+should be invoked to run the script. (Otherwise the shell itself may try to
 execute the script, which won't work because it's not a shell script.) As
 already mentioned in `Overview of Operation`_, this is done by adding a
 special kind of comment, a "shebang", to the beginning of the script, so that
@@ -3540,13 +3544,6 @@ have to convert at least one of the operands to a bigint beforehand::
   > 2147483647L + 1;
   2147483648L
 
-This can also be done with an explicit conversion (which is useful if the
-operand isn't a constant)::
-
-  > let u = 2147483647;
-  > bigint u + 1;
-  2147483648L
-
 Also note that, in contrast to C or Fortran, the result of the :func:`/`
 (division) and :func:`^` (exponentiation) operators is *always* a floating
 point value in Pure, even if both operands are integers::
@@ -3590,7 +3587,7 @@ message. Reasonable enough. Let's try another one::
 
 We might expect to again get an error message here, because we mistyped the
 name of the ``pow`` function. But that doesn't happen because Pure is
-perfectly happy with undefined symbols, in fact that's exactly what makes
+perfectly happy with undefined symbols; in fact that's exactly what makes
 symbolic evaluations work, cf. `Definitions and Expression Evaluation`_.
 However, it's often a good idea to invoke the interpreter with the
 :option:`-w` option so that it at least warns us about unknown symbols. If we
@@ -3637,7 +3634,19 @@ function. We can apply this function, e.g., to a list of values, as follows::
   > map (max 0) [-3,-2,-1,0,1,2,3];
   [0,0,0,0,1,2,3]
 
-This gives us a quick way of tabulating function values.
+This gives us a quick way of tabulating function values. Note that in the
+latter example, ``max 0`` is a partial application since ``max`` expects two
+arguments but we've only specified one. We also say that ``max 0`` is an
+`unsaturated` application. So ``max 0`` becomes a function expecting one
+argument which ``map`` applies to the list members. When this function gets
+applied, say, to the first list member ``-3``, we obtain the application
+``max 0 (-3)`` which now has all the arguments that it needs; we also say that
+``max 0 (-3)`` is `saturated`, which means that it's "ready to go". Evaluating
+``max 0 (-3)`` gives ``0`` which becomes the first member of the result list
+returned by ``map``. The other list members are calculated in an analogous
+fashion. It is easy to see that ``max 0`` calculates what mathematicians call
+the "positive part" of its argument ``x``, which is ``x`` itself if it is
+greater than ``0`` and ``0`` otherwise.
 
 Operators aren't special either, they are just functions in disguise. You can
 turn any operator into an ordinary function by enclosing it in parentheses.
@@ -3714,11 +3723,14 @@ you can write, e.g.::
   > map ($1) [(+2),(*2),(/2)];
   [3,2,0.5]
 
-Note that rather than applying a given function to a list of arguments, this
-expression applies a list of functions to a given argument. Moreover, the
-:func:`$` operator has a low precedence and is right-associative so that it is
-sometimes used to eliminate the parentheses in cascading function calls. For
-instance::
+Recall that ``($1)`` is a right section which, when applied to an argument
+``f``, evaluates to ``f $ 1 == f 1``. E.g., we have that ``($1) (+2) == (+2) $
+1 == (+2) 1 == 2+1 == 3``. Hence the above expression actually applies a list
+of functions to the given argument ``1``.
+
+The :func:`$` operator has a low precedence and is right-associative, so that
+it is sometimes used to eliminate the parentheses in cascading function
+calls. For instance::
 
   > sqrt $ sqrt $ 2*3;
   1.56508458007329
@@ -3728,9 +3740,36 @@ This is the same as::
   > sqrt (sqrt (2*3));
   1.56508458007329
 
-Pure has a global variable environment in which you can store arbitrary
-expression values. This provides a convenient means to define abbreviations
-for frequently-used expressions and for storing intermediate results. Global
+Another convenient operation for combining functions is the function
+composition operator, denoted ':func:`.`'. It applies two functions in
+sequence, so that ``(f.g) x`` evaluates to ``f (g x)``. E.g., consider the
+following function ``g``::
+
+  > g x = 2*x-1;
+
+We will have much more to say about function definitions later, but the above
+should be fairly self-explanatory: given ``x``, ``g`` calculates ``2*x-1``.
+For instance::
+
+  > map g [-3,-2,-1,0,1,2,3];
+  [-7,-5,-3,-1,1,3,5]
+
+Composing ``g`` with our "positive part" function ``max 0`` from above we
+obtain::
+
+  > map (max 0 . g) [-3,-2,-1,0,1,2,3];
+  [0,0,0,0,1,3,5]
+
+Thus ``max 0 . g`` gives us a quick way to denote the "positive part" of a
+function ``g``.
+
+Note that operations like ':func:`.`', which take functions as arguments and
+return other functions as results, are also called `higher-order functions`.
+We'll have a closer look at these later.
+
+The interpreter also has a global variable environment in which you can store
+arbitrary expression values. This provides a means to define abbreviations for
+frequently-used expressions and for storing intermediate results. Global
 variable definitions are done with :keyword:`let`. For instance::
 
   > let x = 16.3805*5;
@@ -3758,15 +3797,6 @@ The value of a global variable can be changed at any time. So we can type::
 
   > let f = sin;
   > f x/0.05;
-  4.38588407225469
-
-We will have much more to say about functions later (in particular, see
-`Defining Functions`_ below), but we mention in passing here that functions
-can be defined just as easily. In this case the left-hand side of the
-definition also includes the arguments of the function::
-
-  > g x = f x/0.05;
-  > g x;
   4.38588407225469
 
 Pure also provides a kind of "read-only" variables a.k.a. `constants`. They
@@ -3827,7 +3857,7 @@ accomplished so far::
 
   > show
   let f = sqrt;
-  g x = f x/0.05;
+  g x = 2*x-1;
   h x = sin (6.28318530717959*x);
   let x = 81.9025;
   const π = 3.14159265358979;
@@ -4088,7 +4118,7 @@ of ``square`` we gave in `Defining Functions`_::
   square x = x*x;
 
 The latter definition applies to *any* argument ``x`` whatsoever and thus the
-definition is "closed": Because equations are considered in the order in which
+definition is "closed". Because equations are considered in the order in which
 they are written, there's no way you could add another "special case" rule to
 this definition later.
 
@@ -4565,11 +4595,13 @@ recursively, e.g., as follows::
 .. _continuation passing: http://en.wikipedia.org/wiki/Continuation-passing_style
 
 Note that these functions can't be made tail-recursive using the accumulating
-parameter technique. There is a more general `continuation passing`_ technique
-to do this, but we won't go into that here. Fortunately, some important
-recursive structures such as lists only involve simple recursion and can thus
-be traversed and manipulated in a tail-recursive fashion quite easily. For
-instance, consider our earlier definition of the ``sum`` function::
+parameter technique, because traversing a tree structure requires more general
+forms of recursion. There is in fact a more general `continuation passing`_
+technique to do this, which we will look at in `The Same-Fringe Problem`_
+below; alas, it's not as easy as accumulating parameters. Fortunately, some
+important recursive structures such as lists only involve simple recursion and
+can thus be traversed and manipulated in a tail-recursive fashion more easily.
+For instance, consider our earlier definition of the ``sum`` function::
 
   sum [] = 0;
   sum (x:xs) = x+sum xs;
@@ -4596,10 +4628,13 @@ call each other::
   > skip (1..10);
   [2,4,6,8,10]
 
-Let's finally have a look at a somewhat more practical example: a numeric root
-finder. That is, we're going to write a function which takes another function
-``f`` and determines a (double) value ``x`` such that ``f x`` becomes (close
-to) zero.
+A Numeric Root Finder
+~~~~~~~~~~~~~~~~~~~~~
+
+Let's now see how we can apply the techniques explained above in the context
+of a somewhat more practical example: a numeric root finder. That is, we're
+going to write a function which takes another function ``f`` and determines a
+(double) value ``x`` such that ``f x`` becomes (close to) zero.
 
 We'll develop this in a bottom-up fashion. The method we employ here is known
 as the Newton-Raphson algorithm, whose basic building block is the following
@@ -4714,6 +4749,227 @@ poorly. Further improvements of the method presented here can be found in
 textbooks on numeric algorithms; the interested reader may want to cut his
 teeth on these algorithms by translating them to Pure in the way we've shown
 here.
+
+The Same-Fringe Problem
+~~~~~~~~~~~~~~~~~~~~~~~
+
+This is one of the classical problems in functional programming which has a
+straightforward recursive solution, but needs some thought if we want to solve
+it in an efficient way. Consider a (rooted, directed) tree consisting of
+branches and leaves. To keep things simple, we may represent these structures
+as nested lists, e.g.::
+
+  let t1 = [[a,b],c,[[d]],e,[f,[[g,h]]]];
+  let t2 = [a,b,c,[[d],[],e],[f,[g,[h]]]];
+  let t3 = [[a,b],d,[[c]],e,[f,[[g,h]]]];
+
+Thus each inner node of the tree is represented as a list containing its (zero
+or more) subtrees, and the leaves are the "atomic" (non-list) elements. The
+`fringe` of such a structure is the list of all leaves in left-to-right order,
+which can be computed as follows::
+
+  fringe t = if listp t then catmap fringe t else [t];
+
+Note that :func:`listp` is a predicate which decides whether its argument is a
+(proper or improper) list and the :func:`catmap` function applies the given
+function to a list, like :func:`map`, and concatenates all the resulting
+lists, like :func:`cat`. Thus, if the argument ``t`` is an "atom" (leaf) then
+``fringe`` simply returns ``[t]``, otherwise it recursively applies itself to
+all the subtrees and concatenates the results::
+
+  > fringe t1;
+  [a,b,c,d,e,f,g,h]
+  > fringe t2;
+  [a,b,c,d,e,f,g,h]
+  > fringe t3;
+  [a,b,d,c,e,f,g,h]
+
+Note that ``t1`` and ``t2`` differ in structure but have the same fringe,
+while ``t1`` and ``t3`` have the same structure but different fringes. The
+problem now is, given any two trees, whether they have the same fringe. Of
+course, we can easily solve this by just computing the fringes and comparing
+them with ':func:`===`' (note that we employ `syntactic equality`_ here which
+also allows us to compare symbols, for which ':func:`==`' isn't normally
+defined)::
+
+  > fringe t1 === fringe t2;
+  1
+  > fringe t3 === fringe t2;
+  0
+
+However, this is rather inefficient since we always have to fully construct
+the fringes which may need considerable extra time and space if the trees are
+large. Most of this effort may be completely wasted if we only need to inspect
+a tiny fraction of the fringes to find out that they're different, as in the
+case of ``t2`` and ``t3``. Also note that our version of the ``fringe``
+function isn't tail-recursive and we may thus run into stack overflows for
+large trees.
+
+This problem, while posed in an abstract way here, is not only of academic
+interest. For instance, trees may be used as a data structure for "strings"
+which allows us to implement concatenation in constant time. In this case we
+certainly don't want to explicitly carry out all those concatenations in order
+to decide whether two such strings are the same.
+
+Therefore, this problem has been studied extensively and more efficient
+approaches have been developed. One way to solve the problem involves the
+technique of `continuation passing` which is a generalization of the
+accumulating parameter technique we already discussed. It never constructs any
+part of the fringes explicitly and also works in constant stack space. The
+algorithm can be implemented in Pure as follows. (This is a slightly modified
+transliteration of a Lisp program given in Henry Baker's article "Iterators:
+Signs of Weakness in Object-Oriented Languages", ACM OOPS Messenger 4(3),
+1993, pp. 18-25, which is also available from `Henry Baker's Archive of
+Research Papers`_.)
+
+.. _Henry Baker's Archive of Research Papers: http://home.pipeline.com/~hbaker1/
+
+::
+
+  samefringe t1 t2 =
+  samefringe (\c -> genfringe t1 c done) (\c -> genfringe t2 c done) with
+    done c = c [] done;
+    samefringe g1 g2 =
+      g1 (\x1 g1 -> g2 (\x2 g2 -> x1===x2 && (x1===[] || samefringe g1 g2)));
+    genfringe [] c g = g c;
+    genfringe (x:t) c g = genfringe x c (\c -> genfringe t c g);
+    genfringe x c g = c x g;
+  end;
+
+As Baker admits himself, this style of programming isn't "particularly
+perspicuous", so we'll explain the algorithm in a moment. But first let's
+verify that the program indeed works as advertized. For this purpose, it's
+helpful to print out the actual comparisons performed in the innermost lambda
+in the definition of the local ``samefringe`` function. To these ends, add a
+little debugging statement so that the code reads as follows (also, don't
+forget to add the import clause "``using system;``" before the global
+definition of ``samefringe``, so that the :func:`printf` function is
+available)::
+
+  samefringe g1 g2 =
+    g1 (\x1 g1 -> g2 (\x2 g2 -> printf "%s === %s?\n" (str x1,str x2) $$
+       	       	     	     	x1===x2 && (x1===[] || samefringe g1 g2)));
+
+With this we get::
+
+  > samefringe t1 t2;
+  a === a?
+  b === b?
+  c === c?
+  d === d?
+  e === e?
+  f === f?
+  g === g?
+  h === h?
+  [] === []?
+  1
+
+So in this case we do a complete traversal of both trees which is the best
+that we can hope for if the fringes are the same. Note that the final
+comparison ``[] === []`` ensures that we also hit the end of the two fringes
+at the same time. This test deals with the corner case that one fringe is a
+prefix of the other. For instance::
+
+  > let t4 = [[a,b],c,[[d]],e,[f,[[g,h,i]]]];
+  > samefringe t4 t2;
+  a == a?
+  b == b?
+  c == c?
+  d == d?
+  e == e?
+  f == f?
+  g == g?
+  h == h?
+  i == []?
+  0
+
+Things go a bit differently, however, when comparing ``t3`` and ``t2``::
+
+  > samefringe t3 t2;
+  a === a?
+  b === b?
+  d === c?
+  0
+
+So, as soon as we hit the first discrepany between the two fringes, the
+algorithm bails out and correctly asserts that the fringes are different.
+
+It goes without saying that the above algorithm is anything but obvious,
+although at first sight the code looks innocent enough. So let's take a closer
+look at its various parts now. First, the ``genfringe`` function::
+
+  genfringe [] c g = g c;
+  genfringe (x:t) c g = genfringe x c (\c -> genfringe t c g);
+  genfringe x c g = c x g;
+
+This routine generates the fringe of a tree, given as the first argument, on
+the fly. The second argument ``c`` (the "consumer") is a function which gets
+invoked on the current leaf, to do any required processing. (As we'll see
+later, it may also get invoked with the special "sentinel" value ``[]`` to
+indicate the end of the fringe.)
+
+The third argument ``g`` (the "generator") is a `continuation`, a kind of
+"callback function" to be invoked *after* the current subtree has been
+traversed, in order to process the remainder of the tree. It takes the
+consumer function ``c`` as its sole argument. Consequently, ``genfringe``
+simply invokes the continuation ``g`` on the consumer ``c`` when applied to an
+empty subtree ``[]``, i.e., if there aren't any leaves to be processed. This
+case is handled in the first equation for ``genfringe``.
+
+The second equation for ``genfringe`` is the interesting one where the
+recursion happens. It deals with a nonempty tree ``x:t`` by invoking itself
+recursively on ``x``, setting up a new continuation ``\c -> genfringe t c g``,
+which will take care of processing the rest of the subtree ``t``, after which
+it chains to the previous continuation ``g`` which will handle the rest of the
+tree.
+
+The third equation for ``genfringe`` handles the case of a non-list argument,
+i.e., a leaf. In this case we just pass the leaf ``x`` to the consumer
+function ``c`` along with the continuation ``g``. The consumer processes ``x``
+as needed and may then decide to call the continuation ``g`` on itself in
+order to continue processing the rest of the tree, or simply bail out,
+returning any value. Note that this entire process is tail-recursive, as long
+as ``c`` chains to ``g`` as the last call. It thus only needs constant stack
+space in addition to what ``c`` itself uses.
+
+Note that we need an initial continuation ``g`` to get the process started.
+This is provided by the ``done`` function::
+
+  done c = c [] done;
+
+As we've defined it, ``done`` invokes the consumer ``c`` on an empty list to
+signal the end of the fringe. For good measure, it also passes itself as the
+continuation argument; however, normally the consumer will never use this
+argument and just bail out when invoked on the ``[]`` value.
+
+To see how this works, we can just enter ``done`` and ``genfringe`` as global
+functions and invoke them on a suitable consumer function, e.g.::
+
+  > done c = c [] done;
+  > genfringe [] c g = g c;
+  > genfringe (x:t) c g = genfringe x c (\c -> genfringe t c g);
+  > genfringe x c g = c x g;
+  > c x g = if x===[] then g else printf "%s... " (str x) $$ g c;
+  > genfringe t1 c done;
+  a... b... c... d... e... f... g... h... done
+
+In the case of ``samefringe``, we use the local ``samefringe`` function as our
+consumer instead. This works pretty much the same, except that ``samefringe``
+employs *two* continuations ``g1`` and ``g2`` to traverse both trees at the
+same time::
+
+  samefringe g1 g2 =
+    g1 (\x1 g1 -> g2 (\x2 g2 -> x1===x2 && (x1===[] || samefringe g1 g2)));
+
+Note that the outer lambda ``(\x1 g1 -> ...)`` becomes the consumer for the
+first generator ``g1`` which traverses ``t1``. When called, it then invokes
+the second generator ``g2``, which traverses ``t2``, on the consumer (inner
+lambda) ``(\x2 g2 -> ...)``.  This in turn does the necessary tests to verify
+that the current leaf elements are the same, or to bail out from the recursion
+if they aren't or if we reached the end of the fringes. Also note that this is
+still tail-recursive because the short-circuit logical operations :func:`&&`
+and :func:`||` are both tail-recursive in their second operand (cf. `Stack
+Size and Tail Recursion`_).
 
 Higher-Order Functions
 ----------------------
