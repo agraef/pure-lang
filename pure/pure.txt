@@ -4750,6 +4750,8 @@ textbooks on numeric algorithms; the interested reader may want to cut his
 teeth on these algorithms by translating them to Pure in the way we've shown
 here.
 
+.. _same-fringe problem:
+
 The Same-Fringe Problem
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -4786,11 +4788,11 @@ all the subtrees and concatenates the results::
 
 Note that ``t1`` and ``t2`` differ in structure but have the same fringe,
 while ``t1`` and ``t3`` have the same structure but different fringes. The
-problem now is, given any two trees, whether they have the same fringe. Of
-course, we can easily solve this by just computing the fringes and comparing
-them with ':func:`===`' (note that we employ `syntactic equality`_ here which
-also allows us to compare symbols, for which ':func:`==`' isn't normally
-defined)::
+problem now is to decide, given any two trees, whether they have the same
+fringe. Of course, we can easily solve this by just computing the fringes and
+comparing them with ':func:`===`' (note that we employ `syntactic equality`_
+here which also allows us to compare symbols, for which ':func:`==`' isn't
+normally defined)::
 
   > fringe t1 === fringe t2;
   1
@@ -5748,8 +5750,8 @@ appropriate stream result::
   > rats!!(0..10);
   [(1,1),(1,2),(2,1),(1,3),(3,1),(1,4),(2,3),(3,2),(4,1),(1,5),(5,1)]
 
-Finally, let's rewrite our prime sieve so that it generates the infinite
-stream of *all* prime numbers::
+We can also rewrite our prime sieve so that it generates the infinite stream
+of *all* prime numbers::
 
   all_primes      = sieve (2..inf) with
     sieve (p:qs)  = p : sieve [q | q = qs; q mod p] &;
@@ -5774,12 +5776,72 @@ You can also just print the entire stream. This will run forever, so hit
   5
     ...
 
-.. note:: Make sure that you really use the ``all_primes`` function instead of
-   the ``P`` variable to print the stream. Otherwise, because of memoization
-   the stream stored in ``P`` will grow with the number of elements printed
-   until memory is exhausted. Calling :func:`do` on a fresh instance of the
-   stream of primes allows :func:`do` to get rid of each "cons" cell after
-   having printed the corresponding stream element.
+(Make sure that you really use the ``all_primes`` function instead of the
+``P`` variable to print the stream. Otherwise, because of memoization the
+stream stored in ``P`` will grow with the number of elements printed until
+memory is exhausted. Calling :func:`do` on a fresh instance of the stream of
+primes allows :func:`do` to get rid of each "cons" cell after having printed
+the corresponding stream element.)
+
+Finally, here's an alternative solution to the `same-fringe problem`_ we
+discussed earlier. To these ends, we just need to make sure that the fringe is
+computed in a lazy fashion. This can be done with the :func:`stream` function
+which turns an ordinary list into a stream::
+
+  > stream (1..10);
+  1:#<thunk 0x7f2692a0f138>
+
+This may seem like a silly thing to do, because the original list is already
+fully known beforehand. But this transformation allows us to traverse the list
+in a lazy fashion, which can be useful if we apply other functions such as
+:func:`cat` and :func:`map` to the list. For instance, we may rewrite the
+``fringe`` function from `The Same-Fringe Problem`_ so that it calculates the
+fringe in a lazy fashion instead::
+
+  lazyfringe t = if listp t then catmap lazyfringe (stream t) else [t];
+
+Now a simple syntactic equality check suffices to solve the problem in an
+efficient way. For instance, consider::
+
+  > let t1 = [[a,b],c,[[d]],e,[f,[[g,h]]]];
+  > let t2 = [a,b,c,[[d],[],e],[f,[g,[h]]]];
+  > let t3 = [[a,b],d,[[c]],e,[f,[[g,h]]]];
+
+Let's also bind the lazy fringes to some variables so that we can check which
+parts actually get evaluated::
+
+  > let l1 = lazyfringe t1;
+  > let l2 = lazyfringe t2;
+  > let l3 = lazyfringe t3;
+
+Now comparing ``l3`` and ``l2`` we get::
+
+  > l3 === l2;
+  0
+  > l3; l2;
+  a:b:d:#<thunk 0x7fd308116178>
+  a:b:c:#<thunk 0x7fd308116060>
+
+Note that because of lazy evaluation the two fringes were only constructed as
+far as needed to decide that they differ. Of course, if we compare ``l1`` and
+``l2`` then the fringes will still be fully constructed before we find that
+they're equal::
+
+  > l1 === l2;
+  1
+  > l1; l2;
+  [a,b,c,d,e,f,g,h]
+  [a,b,c,d,e,f,g,h]
+
+However, as in the case of the infinite prime sieve, if we don't keep the
+fringes in global variables then only the part of the fringes will be in
+memory which are currently under scrutiny; the prefixes which have already
+been found to be equal can be garbage-collected. Moreover, the ':func:`===`'
+operator is tail-recursive so that the entire equality test can be executed in
+constant stack space. This gives us an easier way to solve the same-fringe
+problem which has pretty much the same benefits. (Our previous solution using
+continuation passing might still be considered more elegant, though, because
+it works without actually constructing the fringes at all.)
 
 .. _Matrices and Vectors:
 
