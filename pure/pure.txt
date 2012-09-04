@@ -3294,12 +3294,15 @@ world!`` message appears. That's because the interpreter first has to compile
 the definitions in your script as well as the prelude and other imported
 modules before the ``puts "Hello, world!"`` expression can be evaluated. The
 startup times can be reduced (sometimes considerably) by compiling scripts to
-native executables, see below.
+native executables, see `Compiled Scripts`_ below.
+
+Passing Parameters
+~~~~~~~~~~~~~~~~~~
 
 Sometimes you may want to pass parameters to a script from the command line.
 The easiest way to do that is to invoke the interpreter as ``pure -x``
 followed by the script name and the parameters. The interpreter then makes the
-command line parameters available as a list of strings in the ``argv``
+command line parameters available as a list of strings in the :var:`argv`
 variable. For instance, here is a version of the "hello world" program which
 uses :func:`printf` to print the line ``Hello, foo!`` where ``foo`` is
 whatever was specified as the first command line parameter::
@@ -3319,16 +3322,17 @@ command line parameters, such as recognizing program options. We won't discuss
 this here, but you can have a look at the :mod:`getopt` module which provides
 that kind of functionality in a convenient package.
 
-This should be about all that you need to know if you always run your scripts
-with the interpreter. However, it is often convenient if you can turn a script
-into a standalone executable which can be invoked by just typing its name on
-the command line. There are basically three ways to do this.
+Executable Scripts
+~~~~~~~~~~~~~~~~~~
+
+It is often convenient if you can turn a script into a standalone executable
+which can be invoked by just typing its name on the command line. There are
+several ways to do this.
 
 First, on most systems you can invoke the Pure script through some kind of
 shell script or command file which contains the command to invoke the
-interpreter with the script file and possibly some command line arguments. The
-details of this depend on the operating system and type of shell that you use,
-however, so we won't go into this here.
+interpreter. The details of this depend on the operating system and type of
+shell that you use, however, so we won't go into this here.
 
 Second, on Unix-like systems it is possible to make any script file executable
 like this:
@@ -3350,7 +3354,8 @@ it looks like::
 
 Note that the ``-x`` option is only needed if the script actually processes
 its command line parameters. But it's a good idea to include it anyway, so
-that any extra arguments aren't read and processed by the interpreter instead.
+that any extra arguments aren't accidentally read and processed by the
+interpreter instead.
 
 Also note that you *must* give the full path to the Pure interpreter in the
 shebang line. This path of course depends on where you installed Pure. The
@@ -3391,14 +3396,18 @@ accordingly. You should then be able to run the script as follows:
    for simple shebangs, we generally advise against using it because of these
    limitations.
 
-Third, you can also turn a Pure script into an executable by "batch-compiling"
-it. This works on all supported systems (provided that you have the necessary
-LLVM tools and 3rd party compilers installed, see the :doc:`installation
-instructions<install>` for details). The result is a real native executable
-which can then be run directly just like any other binary program on your
-system. To these ends, the interpreter is run with the :option:`-c` option
-which tells it to run in batch compilation mode, and the :option:`-o` option
-which specifies the desired name of the executable. For instance:
+Compiled Scripts
+~~~~~~~~~~~~~~~~
+
+Last but not least, you can also turn a Pure script into an executable by
+"batch-compiling" it. This works on all supported systems (provided that you
+have the necessary LLVM tools and 3rd party compilers installed, see the
+:doc:`installation instructions<install>` for details). The result is a real
+native executable which can then be run directly just like any other binary
+program on your system. To these ends, the interpreter is run with the
+:option:`-c` option which tells it to run in batch compilation mode, and the
+:option:`-o` option which specifies the desired name of the executable. For
+instance:
 
 .. code-block:: console
 
@@ -3425,10 +3434,10 @@ that in contrast to C, the name ``main`` has no special significance in Pure;
 it's just a function like any other. We still have to include a call to this
 function at the end of our program so that it gets executed.)
 
-The important point here is that the script now only executes the ``main``
-function if the built-in ``compiling`` variable is ``false``. In a batch
-compilation the interpreter sets this variable to ``true`` so that the
-evaluation of ``main`` is skipped:
+The last line now reads ``compiling || main`` which is a shorthand for "if the
+``compiling`` variable is nonzero then do nothing, otherwise evaluate the
+``main`` function". In a batch compilation the interpreter sets this variable
+to a nonzero value so that the evaluation of ``main`` is skipped:
 
 .. code-block:: console
 
@@ -3436,26 +3445,26 @@ evaluation of ``main`` is skipped:
    $ ./hello
    Hello, world!
 
-It should be noted here that there are a few other gotchas when
-batch-compiling Pure scripts. These won't usually affect run-of-the-mill
-scripts like the one above, but if your script uses some of the more advanced
-features such as Pure's metaprogramming facilities, then you should refer to
-`Batch Compilation`_ for all the gory details.
+We should mention here that batch-compiled scripts have some limitations
+because the compiled executable runs under a trimmed-down runtime system. This
+disables some of the advanced compile time features which are only available
+when running a script with the interpreter or at batch-compilation time.
+However, this won't usually affect run-of-the-mill scripts like the one above.
+More information about this can be found in the `Batch Compilation`_ section.
 
-Basic Examples
---------------
+Running the Interpreter
+-----------------------
 
-While, as we've just seen, Pure scripts can be run as standalone programs
-directly from the shell, the Pure interpreter is typically used in an
-interactive way. To these ends, you can run the interpreter from the shell
-simply as follows:
+While Pure scripts can be run as standalone programs directly from the shell,
+most of the time you'll probably use the Pure interpreter in an interactive
+way. You then simply run it like this:
 
 .. code-block:: console
 
    $ pure
 
-The interpreter then prints its sign-on message and leaves you at its command
-prompt, waiting for you to type definitions and expressions to be evaluated:
+The interpreter prints its sign-on message and leaves you at its command
+prompt:
 
 .. code-block:: console
 
@@ -3465,24 +3474,17 @@ prompt, waiting for you to type definitions and expressions to be evaluated:
 
    >
 
-Pure's prelude defines many of the common operations on numbers, strings,
-lists and other basic data types that you may want to use, so the interpreter
-can be used as a sophisticated kind of desktop calculator right away. Let's
-start out with some simple calculations involving integer and floating point
-numbers. (Just type everything following the command prompt as is, terminating
-each line with a carriage return.) ::
+At this point you can just start typing definitions and expressions to be
+evaluated. For instance::
 
-  > 6*7;
-  42
-  > 16.3805*5.0;
-  81.9025
-  > 16753418726345 * 991726534256718265234;
-  16614809890429729930396098173389730L
+  > fact n = if n<=0 then 1 else n*fact (n-1);
+  > map fact (1..10);
+  [1,2,6,24,120,720,5040,40320,362880,3628800]
 
-One thing worth noting here is that Pure is a free-format language, and thus
-each expression *must* be terminated with a semicolon, so that the interpreter
-knows when you're done entering it. This may need some time getting used to,
-but it's actually pretty convenient because you can easily type more than one
+Note that Pure is a free-format language, and thus definitions and expressions
+*must* be terminated with a semicolon, so that the interpreter knows when
+you're done entering each item. This may need some time getting used to, but
+it's actually pretty convenient because you can easily type more than one
 expression on a single line, or split longer constructs across multiple
 lines::
 
@@ -3503,15 +3505,123 @@ such a case you can just type the semicolon on a line by itself::
 (This won't do any harm even if it's not needed, because an empty item is
 always valid input at Pure's toplevel.)
 
-Let's now take a closer look at the last example::
+The interpreter also reports syntax errors if you mistype an expression::
 
+  > 16.3805*(5;
+  <stdin>, line 8: syntax error, unexpected ';', expecting when or with or ')'
+
+In such a case, just correct the error and resubmit the offending input. The
+interpreter's readline facility makes this pretty convenient, because you can
+use the cursor keys to recall previous input lines and edit them as needed.
+
+Note that in contrast to most other programming languages, undefined
+identifiers are generally *not* an error in Pure. Instead, you'll simply get
+an unevaluated normal form::
+
+  > foo 5;
+  foo 5
+
+Therefore, we recommend invoking the interpreter with the :option:`-w` option
+so that it at least warns you about unknown symbols. You can also enter this
+option interactively using the :option:`--warn` pragma::
+
+  > #! --warn
+  > bar 5;
+  <stdin>, line 11: warning: implicit declaration of 'bar'
+  bar 5
+
+The interpreter has a global variable environment in which you can store
+intermediate results::
+
+  > let x = 16.3805*5;
+  > x; x/2; 1/x;
+  81.9025
+  40.95125
+  0.0122096395103935
+  > let y = 2*x; y;
+  163.805
+
+Another handy feature is the special built-in function :func:`ans` which
+yields the most recent result printed by the interpreter::
+
+  > 16.3805*5;
+  81.9025
+  > ans*2;
+  163.805
+
+The interpreter has a few other special commands which, like :func:`ans`, are
+only available when the interpreter is run interactively. For instance, you
+can purge the value of a variable like this (this also works with any other
+defined item, such as constants, functions and macros)::
+
+  > clear x
+  > x;
+  x
+
+Another useful command is ``show`` which prints the definition of anything
+that you can define in a Pure script, such as variables and functions::
+
+  > show y
+  let y = 163.805;
+  > show fact
+  fact n = if n<=0 then 1 else n*fact (n-1);
+
+You can also just type ``show`` to print all definitions done interactively at
+the command prompt of the interpreter, and review what we've accomplished so
+far::
+
+  > show
+  fact n = if n<=0 then 1 else n*fact (n-1);
+  let y = 163.805;
+
+Another helpful command is ``help`` which brings up the online documentation
+(this requires that you've configured the interpreter for the web browser that
+you use; see `Online Help`_)::
+
+  > help help
+
+Last but not least, you can use the following command to exit the interpreter
+and return to the command shell::
+
+  > quit
+
+Typing just an end-of-file character (usually :kbd:`Ctrl-d` on Unix-like
+systems) at the beginning of the command line does the same.
+
+There are a few other built-in commands that you may find useful when working
+with the interpreter, and you can even define your own. These interactive
+commands are special; they have their own syntax and need to be typed on a
+separate line. Please refer to `Interactive Usage`_ for a detailed explanation
+of the command syntax and the available commands.
+
+Basic Examples
+--------------
+
+Pure has a few built-in data types, namely numbers (machine integers, bigints
+and double precision floating point numbers), strings, matrices, symbols,
+functions and pointer values. Other expressions are formed from these using
+function application. We also refer to these data objects as terms. Some terms
+may be function applications which reduce to other terms, others simply stand
+for themselves; these are also called "normal forms" and are what constitutes
+a "value" in Pure.
+
+Pure's prelude defines many of the common operations on numbers, strings,
+lists and other basic data types that you may want to use, so the interpreter
+can be used as a sophisticated kind of desktop calculator right away. Let's
+start out with some simple calculations involving integer and floating point
+numbers::
+
+  > 6*7;
+  42
+  > 16.3805*5.0;
+  81.9025
   > 16753418726345 * 991726534256718265234;
   16614809890429729930396098173389730L
 
-Note that the integer constants exceeded the 32 bit range of machine integers,
-so they were promoted to bigints. The result is again a bigint (indicated by
-the ``L`` suffix). You can also turn *any* integer constant into a bigint by
-explicitly adding the ``L`` suffix::
+Note that the integer constants in the last example exceeded the 32 bit range
+of machine integers, so they were promoted to bigints. The result is again a
+bigint (indicated by the ``L`` suffix). You can also turn *any* integer
+constant into a bigint by explicitly adding the ``L`` suffix::
 
   > 6L*7L;
   42L
@@ -3565,7 +3675,8 @@ with the :func:`pow` function::
 
 Also note that many of the standard math functions are available in a separate
 :mod:`math` module, so we need to import that module if we want to use one of
-these. For instance::
+these (see `Modules and Imports`_ for a detailed explanation of Pure's module
+system). For instance::
 
   > using math;
   > sqrt (16.3805*5)/.05;
@@ -3573,29 +3684,6 @@ these. For instance::
 
 The :mod:`math` module also provides you with complex and rational number
 types for doing more advanced calculations.
-
-What happens if we mistype an expression? Let's see::
-
-  > 16.3805*(5;
-  <stdin>, line 17: syntax error, unexpected ';', expecting when or with or ')'
-
-Ok, so the interpreter notices the syntax error and spits out an error
-message. Reasonable enough. Let's try another one::
-
-  > pwo 2 60;
-  pwo 2 60
-
-We might expect to again get an error message here, because we mistyped the
-name of the ``pow`` function. But that doesn't happen because Pure is
-perfectly happy with undefined symbols; in fact that's exactly what makes
-symbolic evaluations work, cf. `Definitions and Expression Evaluation`_.
-However, it's often a good idea to invoke the interpreter with the
-:option:`-w` option so that it at least warns us about unknown symbols. If we
-did that, we'd get::
-
-  > pwo 2 60;
-  <stdin>, line 18: warning: implicit declaration of 'pwo'
-  pwo 2 60
 
 Before we proceed, a few remarks about the syntax of function applications are
 in order. The first thing you should note is that in Pure, like in most other
@@ -3767,10 +3855,11 @@ Note that operations like ':func:`.`', which take functions as arguments and
 return other functions as results, are also called `higher-order functions`.
 We'll have a closer look at these later.
 
-The interpreter also has a global variable environment in which you can store
-arbitrary expression values. This provides a means to define abbreviations for
-frequently-used expressions and for storing intermediate results. Global
-variable definitions are done with :keyword:`let`. For instance::
+As already mentioned, the interpreter also has a global variable environment
+in which you can store arbitrary expression values. This provides a means to
+define abbreviations for frequently-used expressions and for storing
+intermediate results. Global variable definitions are done with :keyword:`let`.
+For instance::
 
   > let x = 16.3805*5;
   > x;
@@ -3822,59 +3911,6 @@ Greek letter and thus an identifier as good as any other, although you will
 have a hard time finding that letter on an English keyboard. Fortunately, most
 operating systems nowadays provide you with an applet that lets you enter
 foreign language characters and other special symbols with ease.
-
-Another handy feature is the special built-in function :func:`ans` which
-yields the most recent expression value printed by the interpreter::
-
-  > let f = sqrt; f x/0.05;
-  181.0
-  > ans;
-  181.0
-  > 2*ans;
-  362.0
-
-The interpreter has a few other special commands which, like :func:`ans`, are
-only available when the interpreter is run interactively. For instance, you
-can purge the value of a variable like this (this also works with any other
-defined item, such as constants and functions)::
-
-  > clear x
-  > x;
-  x
-
-Another useful command that we've already used above is ``show`` which prints
-the definition of anything that you can define in a Pure script, such as
-variables and functions::
-
-  > show f
-  let f = sqrt;
-  > show flip
-  flip f x y = f y x;
-
-You can also just type ``show`` to print all definitions we've done
-interactively at the command prompt of the interpreter, and review what we've
-accomplished so far::
-
-  > show
-  let f = sqrt;
-  g x = 2*x-1;
-  h x = sin (6.28318530717959*x);
-  let x = 81.9025;
-  const π = 3.14159265358979;
-
-Last but not least, you can use the following command to exit the interpreter
-and return to the command shell::
-
-  > quit
-
-Typing just an end-of-file character (usually ``Ctrl+D`` on Unix-like systems)
-at the beginning of the command line does the same.
-
-There are a few other built-in commands that you may find useful when working
-with the interpreter, and you can even define your own. These interactive
-commands are special; they have their own syntax and need to be typed on a
-separate line. Please refer to `Interactive Usage`_ for a detailed explanation
-of the command syntax and the available commands.
 
 Defining Functions
 ------------------
@@ -5781,8 +5817,8 @@ It's also possible to convert an ordinary list to a stream::
 This may seem like a silly thing to do, because the original list is already
 fully known beforehand. But this transformation allows us to traverse the list
 in a lazy fashion, which can be useful if the list is employed in a list
-comprehension or by functions such as :func:`cat` and :func:`map`. For
-instance, we can use this to rewrite the ``fringe`` function from `The
+comprehension or processed by functions such as :func:`cat` and :func:`map`.
+For instance, we can use this to rewrite the ``fringe`` function from `The
 Same-Fringe Problem`_ so that it calculates the fringe in a lazy fashion::
 
   lazyfringe t = if listp t then catmap lazyfringe (stream t) else [t];
