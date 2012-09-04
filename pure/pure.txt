@@ -4750,8 +4750,6 @@ textbooks on numeric algorithms; the interested reader may want to cut his
 teeth on these algorithms by translating them to Pure in the way we've shown
 here.
 
-.. _same-fringe problem:
-
 The Same-Fringe Problem
 ~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -5706,24 +5704,23 @@ list, forcing its evaluation::
   > list (take 10 fibs);
   [0L,1L,1L,2L,3L,5L,8L,13L,21L,34L]
 
-An easier way to achieve this is to cut a "slice" from the stream::
+An alternative way to achieve this is to cut a "slice" from the stream::
 
   > fibs!!(0..10);
   [0L,1L,1L,2L,3L,5L,8L,13L,21L,34L,55L]
 
-Also note that since we bound the stream to a variable, the already computed
-prefix of the stream has been memoized, so that this portion of the stream is
-now readily available in case we need to have another look at it later. By
-these means, possibly costly reevaluations are avoided, trading memory for
-execution speed::
+Note that since we bound the stream to a variable, the already computed prefix
+of the stream has been memoized, so that this portion of the stream is now
+readily available in case we need to have another look at it later. By these
+means, possibly costly reevaluations are avoided, trading memory for execution
+speed::
 
   > fibs;
   0L:1L:1L:2L:3L:5L:8L:13L:21L:34L:55L:#<thunk 0xb5d54590>
 
-Let's take a look at some of the other convenience operations for generating
-stream values. The prelude defines infinite arithmetic sequences, using
-``inf`` or ``-inf`` to denote an upper (or lower) infinite bound for the
-sequence, e.g.::
+The prelude also provides some convenience operations for generating stream
+values. Infinite arithmetic sequences are specified using ``inf`` or ``-inf``
+to denote an upper (or lower) infinite bound for the sequence, e.g.::
 
   > let u = 1..inf; let v = -1.0:-1.2..-inf;
   > u!!(0..10); v!!(0..10);
@@ -5776,72 +5773,76 @@ You can also just print the entire stream. This will run forever, so hit
   5
     ...
 
-(Make sure that you really use the ``all_primes`` function instead of the
-``P`` variable to print the stream. Otherwise, because of memoization the
-stream stored in ``P`` will grow with the number of elements printed until
-memory is exhausted. Calling :func:`do` on a fresh instance of the stream of
-primes allows :func:`do` to get rid of each "cons" cell after having printed
-the corresponding stream element.)
-
-Finally, here's an alternative solution to the `same-fringe problem`_ we
-discussed earlier. To these ends, we just need to make sure that the fringe is
-computed in a lazy fashion. This can be done with the :func:`stream` function
-which turns an ordinary list into a stream::
+It's also possible to convert an ordinary list to a stream::
 
   > stream (1..10);
   1:#<thunk 0x7f2692a0f138>
 
 This may seem like a silly thing to do, because the original list is already
 fully known beforehand. But this transformation allows us to traverse the list
-in a lazy fashion, which can be useful if we apply other functions such as
-:func:`cat` and :func:`map` to the list. For instance, we may rewrite the
-``fringe`` function from `The Same-Fringe Problem`_ so that it calculates the
-fringe in a lazy fashion instead::
+in a lazy fashion, which can be useful if the list is employed in a list
+comprehension or by functions such as :func:`cat` and :func:`map`. For
+instance, we can use this to rewrite the ``fringe`` function from `The
+Same-Fringe Problem`_ so that it calculates the fringe in a lazy fashion::
 
   lazyfringe t = if listp t then catmap lazyfringe (stream t) else [t];
 
-Now a simple syntactic equality check suffices to solve the problem in an
-efficient way. For instance, consider::
+Recall that the fringe of a tree is the list of its leaves in left-to-right
+order. The tree itself is represented as a nested list, to which
+``lazyfringe`` applies :func:`stream` recursively so that the fringe becomes a
+stream whose elements are only produced on demand::
 
-  > let t1 = [[a,b],c,[[d]],e,[f,[[g,h]]]];
-  > let t2 = [a,b,c,[[d],[],e],[f,[g,[h]]]];
-  > let t3 = [[a,b],d,[[c]],e,[f,[[g,h]]]];
+  > lazyfringe [[a,b],c,[[d]],e,[f,[[g,h]]]];
+  a:#<thunk 0x7f127fc1f090>
+  > list ans;
+  [a,b,c,d,e,f,g,h]
 
-Let's also bind the lazy fringes to some variables so that we can check which
-parts actually get evaluated::
+Hence a simple syntactic equality check now suffices to solve the same-fringe
+problem in an efficient way. For instance, consider the following sample trees
+from `The Same-Fringe Problem`_::
 
-  > let l1 = lazyfringe t1;
-  > let l2 = lazyfringe t2;
-  > let l3 = lazyfringe t3;
+  let t1 = [[a,b],c,[[d]],e,[f,[[g,h]]]];
+  let t2 = [a,b,c,[[d],[],e],[f,[g,[h]]]];
+  let t3 = [[a,b],d,[[c]],e,[f,[[g,h]]]];
+
+Let's also bind the fringes to some variables so that we can check which parts
+actually get evaluated::
+
+  let l1 = lazyfringe t1;
+  let l2 = lazyfringe t2;
+  let l3 = lazyfringe t3;
 
 Now comparing ``l3`` and ``l2`` we get::
 
-  > l3 === l2;
+  > l3 === l2; l3; l2;
   0
-  > l3; l2;
   a:b:d:#<thunk 0x7fd308116178>
   a:b:c:#<thunk 0x7fd308116060>
 
-Note that because of lazy evaluation the two fringes were only constructed as
-far as needed to decide that they differ. Of course, if we compare ``l1`` and
-``l2`` then the fringes will still be fully constructed before we find that
-they're equal::
+As you can see, the two fringes were only constructed as far as needed to
+decide that they differ. Of course, if we compare ``l1`` and ``l2`` then the
+fringes will still be fully constructed before we find that they're equal::
 
-  > l1 === l2;
+  > l1 === l2; l1; l2;
   1
-  > l1; l2;
   [a,b,c,d,e,f,g,h]
   [a,b,c,d,e,f,g,h]
 
-However, as in the case of the infinite prime sieve, if we don't keep the
-fringes in global variables then only the part of the fringes will be in
-memory which are currently under scrutiny; the prefixes which have already
-been found to be equal can be garbage-collected. Moreover, the ':func:`===`'
-operator is tail-recursive so that the entire equality test can be executed in
-constant stack space. This gives us an easier way to solve the same-fringe
-problem which has pretty much the same benefits. (Our previous solution using
-continuation passing might still be considered more elegant, though, because
-it works without actually constructing the fringes at all.)
+But this doesn't really matter if we construct the fringes as temporary
+values, as in::
+
+  > fringe t1 === fringe t2;
+
+Now only the parts of the fringes are in memory which are currently under
+scrutiny as the ':func:`===`' operator passes over them; the prefixes which
+have already been found to be equal can be garbage-collected immediately.
+Moreover, the ':func:`===`' operator is tail-recursive so that the entire
+equality test can be executed in constant stack space. This gives us an easier
+way to solve the same-fringe problem which has pretty much the same benefits
+as our earlier solution using continuations. The latter might still be
+considered more elegant, because it works without actually constructing the
+fringes at all. But the solution using lazy evaluation is certainly much
+simpler.
 
 .. _Matrices and Vectors:
 
@@ -6152,17 +6153,8 @@ it a try::
   {3,4;1,2}
   > {0,1;1,0;1,1}*{1,2,3;4,5,6};
   {4,5,6;1,2,3;5,7,9}
-
-You can also use this operation to apply a matrix to a column vector::
-
   > {1,2;3,4}*{1;1};
   {3;7}
-
-Or, if you prefer to work with row vectors, you simply multiply with the
-transposed matrix on the right::
-
-  > {1,1}*transpose {1,2;3,4};
-  {3,7}
 
 Well, that was easy. So let's take a look at a more challenging example,
 Gaussian elimination, which can be used to solve systems of linear equations.
