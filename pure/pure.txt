@@ -1722,8 +1722,8 @@ belong to the `simple expressions`_.
    needed. They are constructed using the infix "pairing" operator
    ':cons:`,`', for which the empty tuple :cons:`()` acts as a neutral element
    (i.e., ``(),x`` is just ``x``, as is ``x,()``). Pairs always associate to
-   the right, meaning that ``x,y,z == x,(y,z) == (x,y),z``, where ``x,(y,z)``
-   is the normalized representation. These rules imply that tuples can't be
+   the right, meaning that ``x,y,z = x,(y,z) = (x,y),z``, where ``x,(y,z)`` is
+   the normalized representation. These rules imply that tuples can't be
    nested and that there are no "true" 1-tuples distinct from their single
    members; if you need this then you should use lists instead (cf. `Splicing
    Tuples and Matrices`_).
@@ -3474,6 +3474,9 @@ prompt:
 
    >
 
+(You can also try ``pure --spiffy`` for a fancier sign-on, or ``pure -q`` to
+suppress the message.)
+
 At this point you can just start typing definitions and expressions to be
 evaluated. For instance::
 
@@ -3567,8 +3570,35 @@ that you can define in a Pure script, such as variables and functions::
   fact n = if n<=0 then 1 else n*fact (n-1);
 
 You can also just type ``show`` to print all definitions done interactively at
-the command prompt of the interpreter, and review what we've accomplished so
-far::
+the command prompt, which is useful to review our accomplishments so far::
+
+  > show
+  fact n = if n<=0 then 1 else n*fact (n-1);
+  let y = 163.805;
+
+The ``dump`` command saves these definitions in a file for later use::
+
+  > dump
+
+This command doesn't print anything, but you can have a look at the written
+file in a text editor and maybe edit it as needed. By default, ``dump`` saves
+interactive definitions in a hidden file named ``.pure`` in the current
+directory, which gets reloaded automatically if we later rerun the interpreter
+in the same directory. We can also print this file, e.g., with the Unix
+``cat`` command (note that ``!`` executes a shell command)::
+
+  > !cat .pure
+  // dump written Wed Sep  5 10:00:15 2012
+  fact n = if n<=0 then 1 else n*fact (n-1);
+  let y = 163.805;
+
+If we mess up badly, it's often convenient to just rerun the interpreter from
+scratch so that we can restart from a clean environment::
+
+  > run
+
+As we've saved our scribblings with ``dump`` previously, those definitions
+will be reloaded::
 
   > show
   fact n = if n<=0 then 1 else n*fact (n-1);
@@ -3600,10 +3630,9 @@ Basic Examples
 Pure has a few built-in data types, namely numbers (machine integers, bigints
 and double precision floating point numbers), strings, matrices, symbols,
 functions and pointer values. Other expressions are formed from these using
-function application. We also refer to these data objects as terms. Some terms
-may be function applications which reduce to other terms, others simply stand
-for themselves; these are also called "normal forms" and are what constitutes
-a "value" in Pure.
+function application. We also call these `terms`. Some terms may reduce to
+other terms, others simply stand for themselves; these are also called `normal
+forms` and are what constitutes a "value" in Pure.
 
 Pure's prelude defines many of the common operations on numbers, strings,
 lists and other basic data types that you may want to use, so the interpreter
@@ -3648,8 +3677,8 @@ This has the advantage that you always know the type of the result of each
 operation beforehand by just looking at the types of the operands. It also
 makes it possible to compile machine integer operations to efficient native
 code. Therefore, if you suspect that a machine integer operation may wrap
-around and you'd prefer to do the calculation with bigints instead, you'll
-have to convert at least one of the operands to a bigint beforehand::
+around and you'd thus prefer to do the calculation with bigints instead,
+you'll have to convert at least one of the operands to a bigint beforehand::
 
   > 2147483647L + 1;
   2147483648L
@@ -3717,24 +3746,27 @@ symbol itself, or a function symbol applied to some but not all arguments (a
 so-called `partial application`) is a proper Pure value which represents a
 function. We can apply this function, e.g., to a list of values, as follows::
 
-  > map sqrt [0,1,2];
+  > map sqrt (0..2);
   [0.0,1.0,1.4142135623731]
-  > map (max 0) [-3,-2,-1,0,1,2,3];
+  > map (max 0) (-3..3);
   [0,0,0,0,1,2,3]
 
-This gives us a quick way of tabulating function values. Note that in the
-latter example, ``max 0`` is a partial application since ``max`` expects two
-arguments but we've only specified one. We also say that ``max 0`` is an
-`unsaturated` application. So ``max 0`` becomes a function expecting one
-argument which ``map`` applies to the list members. When this function gets
-applied, say, to the first list member ``-3``, we obtain the application
-``max 0 (-3)`` which now has all the arguments that it needs; we also say that
-``max 0 (-3)`` is `saturated`, which means that it's "ready to go". Evaluating
-``max 0 (-3)`` gives ``0`` which becomes the first member of the result list
-returned by ``map``. The other list members are calculated in an analogous
-fashion. It is easy to see that ``max 0`` calculates what mathematicians call
-the "positive part" of its argument ``x``, which is ``x`` itself if it is
-greater than ``0`` and ``0`` otherwise.
+The expression ``0..2`` denotes an arithmetic sequence which evaluates to the
+list ``[0,1,2]``. Likewise, ``-3..3`` denotes the list of integers between
+``-3`` and ``3``. This gives us a quick way of tabulating function values.
+
+Note that in the latter example, ``max 0`` is a partial application since
+``max`` expects two arguments but we've only specified one. We also say that
+``max 0`` is an `unsaturated` application. So ``max 0`` becomes a function
+expecting one argument which ``map`` applies to the list members. When this
+function gets applied, say, to the first list member ``-3``, we obtain the
+application ``max 0 (-3)`` which now has all the arguments that it needs; we
+also say that ``max 0 (-3)`` is `saturated`, which means that it's "ready to
+go". Evaluating ``max 0 (-3)`` gives ``0`` which becomes the first member of
+the result list returned by ``map``. The other list members are calculated in
+an analogous fashion. It is easy to see that ``max 0`` calculates what
+mathematicians call the "positive part" of its argument ``x``, which is ``x``
+itself if it is greater than ``0`` and ``0`` otherwise.
 
 Operators aren't special either, they are just functions in disguise. You can
 turn any operator into an ordinary function by enclosing it in parentheses.
@@ -3757,9 +3789,9 @@ Moreover, Pure offers some convenient syntactic sugar to denote so-called
 or right operand.  For instance, ``(+1)`` denotes the "increment by 1" and
 ``(1/)`` the reciprocal function::
 
-  > map (+1) [1,2,3,4,5];
+  > map (+1) (1..5);
   [2,3,4,5,6]
-  > map (1/) [1,2,3,4,5];
+  > map (1/) (1..5);
   [1.0,0.5,0.333333333333333,0.25,0.2]
 
 Note that the latter kind of section (also called a `left section`) is just a
@@ -3785,19 +3817,19 @@ operands. For another example, here's how you can compute third powers ``3^x``
 of some numbers ``x``. We can do this with a right section of the :func:`^`
 operator as follows::
 
-  > map (^3) [1,2,3,4,5];
+  > map (^3) (1..5);
   [1.0,8.0,27.0,64.0,125.0]
 
 Note that this is exactly the same as::
 
-  > map (flip (^) 3) [1,2,3,4,5];
+  > map (flip (^) 3) (1..5);
   [1.0,8.0,27.0,64.0,125.0]
 
 Such explicit applications of :func:`flip` also work with ordinary functions
 like :func:`pow`, so if we want to compute the cubes as exact bigint numbers,
 we can also write::
 
-  > map (flip pow 3) [1,2,3,4,5];
+  > map (flip pow 3) (1..5);
   [1L,8L,27L,64L,125L]
 
 Note the difference between ``flip pow 3`` which computes third powers, and
@@ -3812,48 +3844,28 @@ you can write, e.g.::
   [3,2,0.5]
 
 Recall that ``($1)`` is a right section which, when applied to an argument
-``f``, evaluates to ``f $ 1 == f 1``. E.g., we have that ``($1) (+2) == (+2) $
-1 == (+2) 1 == 2+1 == 3``. Hence the above expression actually applies a list
-of functions to the given argument ``1``.
+``f``, evaluates to ``f $ 1 = f 1``. E.g., we have that ``($1) (+2) = (+2) $ 1
+= (+2) 1 = 2+1 = 3``. Hence the above expression actually applies a list of
+functions to the given argument ``1``.
 
 The :func:`$` operator has a low precedence and is right-associative, so that
 it is sometimes used to eliminate the parentheses in cascading function
-calls. For instance::
-
-  > sqrt $ sqrt $ 2*3;
-  1.56508458007329
-
-This is the same as::
-
-  > sqrt (sqrt (2*3));
-  1.56508458007329
+calls. For instance, ``sqrt $ sqrt $ 2*3`` is the same as ``sqrt (sqrt
+(2*3))``.
 
 Another convenient operation for combining functions is the function
 composition operator, denoted ':func:`.`'. It applies two functions in
-sequence, so that ``(f.g) x`` evaluates to ``f (g x)``. E.g., consider the
-following function ``g``::
+sequence, so that ``(f.g) x`` evaluates to ``f (g x)``. For instance::
 
   > g x = 2*x-1;
-
-We will have much more to say about function definitions later, but the above
-should be fairly self-explanatory: given ``x``, ``g`` calculates ``2*x-1``.
-For instance::
-
-  > map g [-3,-2,-1,0,1,2,3];
+  > map g (-3..3);
   [-7,-5,-3,-1,1,3,5]
-
-Composing ``g`` with our "positive part" function ``max 0`` from above we
-obtain::
-
-  > map (max 0 . g) [-3,-2,-1,0,1,2,3];
+  > map (max 0 . g) (-3..3);
   [0,0,0,0,1,3,5]
 
-Thus ``max 0 . g`` gives us a quick way to denote the "positive part" of a
-function ``g``.
-
-Note that operations like ':func:`.`', which take functions as arguments and
-return other functions as results, are also called `higher-order functions`.
-We'll have a closer look at these later.
+Operations like ':func:`.`', which take functions as arguments and return
+other functions as results, are also called `higher-order functions`.  We'll
+have a closer look at these later.
 
 As already mentioned, the interpreter also has a global variable environment
 in which you can store arbitrary expression values. This provides a means to
@@ -3872,21 +3884,19 @@ assigned to variables as well::
   > f x/0.05;
   181.0
 
-You can also bind several variables at once by using an expression `pattern`
-as the left-hand side of a variable definition. For instance, here we assign a
-pair consisting of a function and a double to the pattern ``f,x``, which binds
-the variables ``f`` and ``x`` in the pattern accordingly. (In general, any
-simple expression can be used as a pattern, cf. Patterns_.) ::
-
-  > let f, x = sqrt, 16.3805*5;
-  > f x/0.05;
-  181.0
-
 The value of a global variable can be changed at any time. So we can type::
 
   > let f = sin;
   > f x/0.05;
   4.38588407225469
+
+You can also bind several variables at once by using an expression `pattern`
+as the left-hand side of a variable definition. This is useful if we need to
+extract elements from an aggregate value such as a list::
+
+  > let x1:x2:xs = map (^3) (1..5);
+  > x1,x2,xs;
+  1.0,8.0,[27.0,64.0,125.0]
 
 Pure also provides a kind of "read-only" variables a.k.a. `constants`. They
 are defined pretty much like global variables (using the :keyword:`const`
@@ -3894,8 +3904,8 @@ keyword in lieu of :keyword:`let`), but work more like a parameterless
 function whose value is precomputed at compile time::
 
   > const π = 4*atan 1.0;
-  > π;
-  3.14159265358979
+  > show π
+  const π = 3.14159265358979;
   > h x = sin (2*π*x);
   > show h
   h x = sin (6.28318530717959*x);
@@ -3906,11 +3916,12 @@ Note that the compiler normally computes constant subexpressions at compile
 time, such as ``2*π`` in the function ``h``. This works with all simple
 scalars (machine ints and doubles), see `Constant Definitions`_ for details.
 
-This example also shows that Pure has no problems with Unicode. ``π`` is a
-Greek letter and thus an identifier as good as any other, although you will
-have a hard time finding that letter on an English keyboard. Fortunately, most
-operating systems nowadays provide you with an applet that lets you enter
-foreign language characters and other special symbols with ease.
+As an aside, the last example also shows that Pure has no problems with
+Unicode. ``π`` is a Greek letter and thus an identifier as good as any other,
+although you will have a hard time finding that letter on an English keyboard.
+Fortunately, most operating systems nowadays provide you with an applet that
+lets you enter foreign language characters and other special symbols with
+ease.
 
 Defining Functions
 ------------------
@@ -4434,6 +4445,102 @@ It goes without saying that this style isn't preferred in functional programs,
 but it certainly has its uses, especially when interfacing to imperative code
 written in other languages such as C.
 
+Data Types
+----------
+
+Before we consider the more advanced uses of functions in Pure, a few remarks
+about data types are in order. Like Lisp, Pure is basically a "typeless"
+language. That doesn't mean that there are no data types; in fact, they're a
+dime a dozen in Pure. But often those data types will only be in your head, as
+Pure allows you to make up new data formats as you go.
+
+As we've seen, Pure knows about a few built-in types such as numbers, strings,
+symbols and functions; everything else is a function application. If a symbol
+is defined as a function, which merely means that there are some rewriting
+rules for it, then an application of that function to some arguments may
+evaluate to something else. But if it doesn't, then Pure is perfectly happy
+with that; it just means that the function application is in normal form and
+thus becomes a "value". For instance::
+
+  > cons 3 (cons 5 nil);
+  cons 3 (cons 5 nil)
+
+There's nothing mysterious about this; the ``cons`` and ``nil`` symbols being
+used here aren't defined anywhere, and thus any terms constructed with these
+symbols are just "data", no questions asked. Sometimes we also call such
+symbols `constructors`. (Note that this usage of the term "constructor" means
+something completely different from constructors in object-oriented
+programming, which are special routines used to instantiate an object.)
+
+We can now go ahead and define some operations on this kind of data. (To these
+ends, it's necessary to declare ``nil`` as a nonfix symbol so that we can use
+it as a literal in patterns; cf. `Pattern Matching`_.)
+
+::
+
+  nonfix nil;
+
+  #nil = 0;
+  #cons x xs = #xs+1;
+
+  head (cons x xs) = x;
+  tail (cons x xs) = xs;
+
+  nil + ys = ys;
+  cons x xs + ys = cons x (xs + ys);
+
+Et voilà, we've just created our own list data structure! It's admittedly
+still a bit paltry, but if we keep at it and define all the other functions
+that we need then we could turn it into a full-blown replacement for Pure's
+list data structure. In fact Pure's lists work in a very similar fashion,
+using the infix '``:``' constructor and the empty list ``[]`` in lieu of
+``cons`` and ``nil``, respectively.
+
+If we want, we can use the facilities described in `Type Rules`_ to define a
+new data type for the data structure we just invented, e.g.::
+
+  type mylist nil | mylist (cons x xs);
+
+This lets us use the ``mylist`` type as a tag on the left-hand side of an
+equation, cf. `Pattern Matching`_. But if we're content with using the
+patterns directly then we might just as well do without that.
+
+These types are sometimes also called `algebraic`, i.e., an algebraic type
+consists of terms made from constructor symbols which are applied to other
+data elements. In fact, most user-defined data structures are algebraic types
+in Pure, and there are plenty of examples of these in the standard library.
+E.g., lists and tuples are algebraic types, as are complex and rational
+numbers. Most of Pure's container data types such as dictionaries and sets are
+implemented as algebraic types as well.
+
+Pure allows you to have constructor symbols with equations, too. For
+instance::
+
+  cons nil ys = ys;
+  cons (cons x xs) ys = cons x (cons xs ys);
+
+Now ``cons`` has become a (partially) defined function. These rules make
+``cons`` associative and turn ``nil`` into a left-neutral element for
+``cons``, so that our lists are always flat now::
+
+  > cons (cons 1 (cons 2 nil)) (cons 3 nil);
+  cons 1 (cons 2 (cons 3 nil))
+
+Another possible use of constructor equations is to check the well-formedness
+of constructor terms. For instance, in our example we might want to preclude
+terms like ``cons 1 2`` which don't have a ``mylist`` in the second argument
+to ``cons``. This can be done with a constructor equation which raises an
+exception in such cases (cf. `Exception Handling`_)::
+
+  > cons x y = throw (bad_mylist y) if ~typep mylist y;
+  > cons 1 2;
+  <stdin>, line 18: unhandled exception 'bad_mylist 2' while evaluating 'cons 1 2'
+
+To summarize, Pure's generic term data structure makes it really easy to
+create custom kinds of data by just applying a constructor or partial function
+to other data. Named data types can be defined as a convenience or for the
+purpose of data abstraction, but that's completely optional.
+
 Recursion
 ---------
 
@@ -4602,9 +4709,9 @@ this takes a little while; the result has 208988 digits.) ::
   > fib 1000000;
   1953282128707757731632014947596256332443... // lots of digits follow
 
-Recursion also naturally occurs when traversing recursive data structures. We
-already saw an example of this earlier when we discussed the use of
-`pattern matching`_ on a binary tree data structure::
+Recursion also naturally occurs when traversing recursive data structures.
+We've already seen various examples of these, such as the binary tree data
+structure::
 
   nonfix nil;
 
@@ -4843,9 +4950,9 @@ large trees.
 
 This problem, while posed in an abstract way here, is not only of academic
 interest. For instance, trees may be used as a data structure for "strings"
-which allows us to implement concatenation in constant time. In this case we
-certainly don't want to explicitly carry out all those concatenations in order
-to decide whether two such strings are the same.
+which allows us to do concatenation in constant time by just delaying it. In
+this case we certainly don't want to explicitly carry out all those
+concatenations in order to decide whether two such strings are the same.
 
 Therefore, this problem has been studied extensively and more efficient
 approaches have been developed. One way to solve the problem involves the
@@ -5083,6 +5190,11 @@ which "clamps" its argument between given bounds by just combining the
   > clamp a b = max a . min b;
   > map (clamp (-3) 3) (-5..5);
   [-3,-3,-3,-2,-1,0,1,2,3,3,3]
+
+Note that partial application works with constructor symbols, too::
+
+  > map (0:) [1..3,4..6,7..9];
+  [[0,1,2,3],[0,4,5,6],[0,7,8,9]]
 
 Another more direct way to define combinators is to make them return a local
 or anonymous function. For instance, the following equations lift the
