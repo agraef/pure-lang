@@ -465,7 +465,7 @@ main(int argc, char *argv[])
   interpreter interp(argc, argv);
   const string prog = *argv;
   int count = 0;
-  bool quiet = false, force_interactive = false,
+  bool quiet = false, spiffy = false, force_interactive = false,
     want_prelude = true, have_prelude = false,
     want_rcfile = true, want_editing = true;
   string rcfile;
@@ -514,6 +514,7 @@ main(int argc, char *argv[])
 		       s.substr(0, 1) + "'");
     }
   }
+  if ((env = getenv("PURE_SPIFFY"))) spiffy = true;
   if ((env = getenv("PURELIB"))) {
     string s = unixize(env);
     if (!s.empty() && s[s.size()-1] != '/') s.append("/");
@@ -573,6 +574,8 @@ main(int argc, char *argv[])
 	interp.use_fastcc = true;
       else if (strcmp(arg, "-q") == 0)
 	quiet = true;
+      else if (strcmp(arg, "--spiffy") == 0)
+	spiffy = true;
       else if (strcmp(arg, "-s") == 0)
 	interp.strip = true;
       else if (strcmp(arg, "-u") == 0)
@@ -840,8 +843,17 @@ main(int argc, char *argv[])
     // We're connected to a terminal (or pretend that we are), print the
     // sign-on message.
     if (!quiet) {
-      cout << "Pure " << PACKAGE_VERSION << " (" << HOST << ") "
-	   << COPYRIGHT << '\n' << LICENSE;
+      if (spiffy)
+	// Spiffy new sign-on logo.
+	printf("\n\
+ __ \\  |   |  __| _ \\    Pure %s (%s)\n\
+ |   | |   | |    __/    %s\n\
+ .__/ \\__,_|_|  \\___|    (Type 'help' for help, 'help copying'\n\
+_|                       for license information.)\n\
+\n", PACKAGE_VERSION, HOST, COPYRIGHT);
+      else
+	cout << "Pure " << PACKAGE_VERSION << " (" << HOST << ") "
+	     << COPYRIGHT << '\n' << LICENSE;
       if (have_prelude)
 	cout << "Loaded prelude from " << prelude << ".\n";
       else if (want_prelude)
