@@ -1073,9 +1073,15 @@ public iterate iterwhile; // see below for these
 
 n1:n2..m	= if nanp n1 || nanp m || double m===-s then []
 		  else if double m===s then iterate (+k) n1
-		  else iterwhile (p (m+0.5*k)) (+k) n1
-		  when s,p = if k>0 then inf,(>=) else -inf,(<=) end
-		  if realp k && k~=0 && ~infp n1 && ~infp n2
+		  else iterwhile (p u) (+k) n1 when
+		    s,p = if k>0 then inf,cmp (>=) else -inf,cmp (<=) with
+		      // Safe comparison. If the predicate doesn't yield a
+		      // truth value, we just assume false.
+		      cmp p x y = case p x y of res::int = res; _ = false end;
+		    end;
+		    // Prevent unwanted artifacts due to rounding errors.
+		    u = if doublep k || doublep m then m+0.5*k else m;
+		  end if realp k && k~=0 && ~infp n1 && ~infp n2
 		  when k = n2-n1 end;
 n..m		= if nanp n || nanp m || double m===-inf then []
 		  else if double m===inf then iterate (+1) n

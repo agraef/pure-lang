@@ -608,8 +608,30 @@ stream (x/*0:101*/:xs/*0:11*/) = x/*0:101*/:xs/*0:11*/ if thunkp xs/*0:11*/;
 stream (x/*0:101*/:xs/*0:11*/) = x/*0:101*/:stream xs/*1:11*/&;
 stream () = [];
 stream xs@(_/*0:101*/,_/*0:11*/) = stream (list xs/*0:1*/);
-n1/*0:0101*/:n2/*0:011*/..m/*0:1*/ = if nanp n1/*2:0101*/||nanp m/*2:1*/||double m/*2:1*/===-s/*0:01*/ then [] else if double m/*2:1*/===s/*0:01*/ then iterate (flip (+) k/*1:*/) n1/*2:0101*/ else iterwhile (p/*0:1*/ (m/*2:1*/+0.5*k/*1:*/)) (flip (+) k/*1:*/) n1/*2:0101*/ when s/*0:01*/,p/*0:1*/ = if k/*0:*/>0 then inf,(>=) else -inf,(<=) {
-  rule #0: s,p = if k>0 then inf,(>=) else -inf,(<=)
+n1/*0:0101*/:n2/*0:011*/..m/*0:1*/ = if nanp n1/*3:0101*/||nanp m/*3:1*/||double m/*3:1*/===-s/*1:01*/ then [] else if double m/*3:1*/===s/*1:01*/ then iterate (flip (+) k/*2:*/) n1/*3:0101*/ else iterwhile (p/*1:1*/ u/*0:*/) (flip (+) k/*2:*/) n1/*3:0101*/ when s/*0:01*/,p/*0:1*/ = if k/*0:*/>0 then inf,cmp/*0*/ (>=) else -inf,cmp/*0*/ (<=) with cmp p/*0:001*/ x/*0:01*/ y/*0:1*/ = case p/*0:001*/ x/*0:01*/ y/*0:1*/ of res/*0:*/ :: int = res/*0:*/; _/*0:*/ = 0 {
+  rule #0: res::int = res
+  rule #1: _ = 0
+  state 0: #0 #1
+	<var> state 1
+	<var>::int state 2
+  state 1: #1
+  state 2: #0 #1
+} end {
+  rule #0: cmp p x y = case p x y of res::int = res; _ = 0 end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+	<var> state 2
+  state 2: #0
+	<var> state 3
+  state 3: #0
+} end; u/*0:*/ = if doublep k/*1:*/||doublep m/*2:1*/ then m/*2:1*/+0.5*k/*1:*/ else m/*2:1*/ {
+  rule #0: u = if doublep k||doublep m then m+0.5*k else m
+  state 0: #0
+	<var> state 1
+  state 1: #0
+} {
+  rule #0: s,p = if k>0 then inf,cmp (>=) else -inf,cmp (<=) with cmp p x y = case p x y of res::int = res; _ = 0 end end
   state 0: #0
 	<app> state 1
   state 1: #0
@@ -3438,7 +3460,7 @@ def __std__::__voidchk1__ x/*0:01*/ y/*0:1*/ = x/*0:01*/;
   rule #11: n1::double:n2::int..m::int = __C::pure_double_seq n1 (double m) (n2-n1) if ~infp n1&&n1~=n2
   rule #12: a::string..b::string = map chr (ord a..ord b) if charp a&&charp b
   rule #13: a::string:b::string..c::string = map chr (ord a:ord b..ord c) if charp a&&charp b&&charp c
-  rule #14: n1:n2..m = if nanp n1||nanp m||double m===-s then [] else if double m===s then iterate (flip (+) k) n1 else iterwhile (p (m+0.5*k)) (flip (+) k) n1 when s,p = if k>0 then inf,(>=) else -inf,(<=) end if realp k&&k~=0&&~infp n1&&~infp n2 when k = n2-n1 end
+  rule #14: n1:n2..m = if nanp n1||nanp m||double m===-s then [] else if double m===s then iterate (flip (+) k) n1 else iterwhile (p u) (flip (+) k) n1 when s,p = if k>0 then inf,cmp (>=) else -inf,cmp (<=) with cmp p x y = case p x y of res::int = res; _ = 0 end end; u = if doublep k||doublep m then m+0.5*k else m end if realp k&&k~=0&&~infp n1&&~infp n2 when k = n2-n1 end
   rule #15: n..m = if nanp n||nanp m||double m===-inf then [] else if double m===inf then iterate (flip (+) 1) n else iterwhile ((>=) m) (flip (+) 1) n if ~listp n&&~infp n
   state 0: #0 #1 #2 #3 #4 #5 #6 #7 #8 #9 #10 #11 #12 #13 #14 #15
 	<var> state 1
