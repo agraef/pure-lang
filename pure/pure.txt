@@ -82,9 +82,13 @@ program. Simply run the program from the shell as follows:
 .. code-block:: console
 
    $ pure
-   Pure @version@ (x86_64-unknown-linux-gnu) Copyright (c) 2008-2012 by Albert Graef
-   (Type 'help' for help, 'help copying' for license information.)
-   Loaded prelude from /usr/local/lib/pure/prelude.pure.
+
+    __ \  |   |  __| _ \    Pure @version@ (x86_64-unknown-linux-gnu)
+    |   | |   | |    __/    Copyright (c) 2008-2012 by Albert Graef
+    .__/ \__,_|_|  \___|    (Type 'help' for help, 'help copying'
+   _|                       for license information.)
+
+   Loaded prelude from /usr/lib/pure/prelude.pure.
 
    >
 
@@ -112,7 +116,8 @@ text editors are included in the Pure sources.
 
 More information about invoking the Pure interpreter can be found in the
 `Invoking Pure`_ section below. This is followed by a description of the Pure
-language in `Pure Overview`_ and subsequent sections. The interactive
+language in `Pure Overview`_ and subsequent sections, including an extensive
+Examples_ section which can serve as a mini-tutorial on Pure. The interactive
 facilities of the Pure interpreter are discussed in the `Interactive Usage`_
 section, while the `Batch Compilation`_ section explains how to translate Pure
 programs to native executables and a number of other object file formats. The
@@ -3462,20 +3467,19 @@ way. You then simply run it like this:
 .. code-block:: console
 
    $ pure
+   
+    __ \  |   |  __| _ \    Pure @version@ (x86_64-unknown-linux-gnu)
+    |   | |   | |    __/    Copyright (c) 2008-2012 by Albert Graef
+    .__/ \__,_|_|  \___|    (Type 'help' for help, 'help copying'
+   _|                       for license information.)
 
-The interpreter prints its sign-on message and leaves you at its command
-prompt:
-
-.. code-block:: console
-
-   Pure @version@ (x86_64-unknown-linux-gnu) Copyright (c) 2008-2012 by Albert Graef
-   (Type 'help' for help, 'help copying' for license information.)
-   Loaded prelude from /usr/local/lib/pure/prelude.pure.
+   Loaded prelude from /usr/lib/pure/prelude.pure.
 
    >
 
-(You can also try ``pure --spiffy`` for a fancier sign-on, or ``pure -q`` to
-suppress the message.)
+The interpreter prints its sign-on message and leaves you at its command
+prompt. (You can also try ``pure --plain`` for a less fancy sign-on, or ``pure
+-q`` to completely suppress the message.)
 
 At this point you can just start typing definitions and expressions to be
 evaluated. For instance::
@@ -3517,6 +3521,19 @@ In such a case, just correct the error and resubmit the offending input. The
 interpreter's readline facility makes this pretty convenient, because you can
 use the cursor keys to recall previous input lines and edit them as needed.
 
+Other kinds of errors may happen at runtime, when evaluating a syntactically
+correct expression. These give rise to so-called exceptions. For instance::
+
+  > fact fact;
+  <stdin>, line 9: unhandled exception 'failed_cond' while evaluating 'fact fact'
+
+Common sources of exceptions are failed matches and conditionals (as in the
+example above), integer division by zero, interrupts (e.g., if the user aborts
+an evaluation with :kbd:`Ctrl-c`) and stack overflows (cf. `Stack Size and
+Tail Recursion`_). Normally these are fatal and require you to fix the program
+or the expression that you entered, but programs can also catch these errors
+and handle them in any desired way, cf. `Exception Handling`_.
+
 Note that in contrast to most other programming languages, undefined
 identifiers are generally *not* an error in Pure. Instead, you'll simply get
 an unevaluated normal form::
@@ -3526,11 +3543,11 @@ an unevaluated normal form::
 
 Therefore, we recommend invoking the interpreter with the :option:`-w` option
 so that it at least warns you about unknown symbols. You can also enter this
-option interactively using the :option:`--warn` pragma::
+option interactively or in a script using the :option:`--warn` pragma::
 
   > #! --warn
   > bar 5;
-  <stdin>, line 11: warning: implicit declaration of 'bar'
+  <stdin>, line 12: warning: implicit declaration of 'bar'
   bar 5
 
 The interpreter has a global variable environment in which you can store
@@ -3564,13 +3581,11 @@ defined item, such as constants, functions and macros)::
 Another useful command is ``show`` which prints the definition of anything
 that you can define in a Pure script, such as variables and functions::
 
-  > show y
-  let y = 163.805;
   > show fact
   fact n = if n<=0 then 1 else n*fact (n-1);
 
 You can also just type ``show`` to print all definitions done interactively at
-the command prompt, which is useful to review our accomplishments so far::
+the command prompt, which lets us review our accomplishments so far::
 
   > show
   fact n = if n<=0 then 1 else n*fact (n-1);
@@ -3585,7 +3600,7 @@ file in a text editor and maybe edit it as needed. By default, ``dump`` saves
 interactive definitions in a hidden file named ``.pure`` in the current
 directory, which gets reloaded automatically if we later rerun the interpreter
 in the same directory. We can also print this file, e.g., with the Unix
-``cat`` command (note that ``!`` executes a shell command)::
+``cat`` command (note that '``!``' executes a shell command)::
 
   > !cat .pure
   // dump written Wed Sep  5 10:00:15 2012
@@ -3593,16 +3608,19 @@ in the same directory. We can also print this file, e.g., with the Unix
   let y = 163.805;
 
 If we mess up badly, it's often convenient to just rerun the interpreter from
-scratch so that we can restart from a clean environment::
+scratch so that we can try again in a clean environment::
 
   > run
 
 As we've saved our scribblings with ``dump`` previously, those definitions
-will be reloaded::
+will be reloaded automatically::
 
   > show
   fact n = if n<=0 then 1 else n*fact (n-1);
   let y = 163.805;
+
+If you don't want this then you can just remove the ``.pure`` file or rename
+it before invoking ``run``.
 
 Another helpful command is ``help`` which brings up the online documentation
 (this requires that you've configured the interpreter for the web browser that
@@ -3629,16 +3647,21 @@ Basic Examples
 
 Pure has a few built-in data types, namely numbers (machine integers, bigints
 and double precision floating point numbers), strings, matrices, symbols,
-functions and pointer values. Other expressions are formed from these using
-function application. We also call these `terms`. Some terms may reduce to
-other terms, others simply stand for themselves; these are also called `normal
-forms` and are what constitutes a "value" in Pure.
+functions and pointer values. Compound expressions are formed from these using
+function application. In the syntax of the Pure language, these are also known
+as `simple expressions`_. For want of a catchier name, we also simply call
+them `terms`. Pure is a programming language based on `term rewriting`, so all
+computations performed in Pure consist of the rewriting of terms. Some terms
+may reduce to other terms, others simply stand for themselves; the latter are
+also called `normal forms` and are what constitutes a "value" in the Pure
+language.
 
-Pure's prelude defines many of the common operations on numbers, strings,
-lists and other basic data types that you may want to use, so the interpreter
-can be used as a sophisticated kind of desktop calculator right away. Let's
-start out with some simple calculations involving integer and floating point
-numbers::
+When the Pure interpreter starts up, it normally loads a collection of Pure
+scripts collectively called the `prelude`. The prelude defines many of the
+usual operations on numbers, strings, lists and other basic data structures
+that you may need, so you can start using the interpreter as a sophisticated
+kind of desktop calculator right away. Let's begin with some simple
+calculations involving integer and floating point numbers::
 
   > 6*7;
   42
