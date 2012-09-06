@@ -95,6 +95,7 @@ using namespace std;
 --noprelude, -n   Do not load the prelude.\n\
 --norc            Do not run the interactive startup files.\n\
 -o filename       Output filename for batch compilation.\n\
+--plain           Minimal sign-on message (no fancy logo).\n\
 -q                Quiet startup (suppresses sign-on message).\n\
 -T filename       Tags file to be written by --ctags or --etags.\n\
 -u                Do not strip unused functions in batch compilation.\n\
@@ -465,7 +466,7 @@ main(int argc, char *argv[])
   interpreter interp(argc, argv);
   const string prog = *argv;
   int count = 0;
-  bool quiet = false, spiffy = false, force_interactive = false,
+  bool quiet = false, spiffy = true, force_interactive = false,
     want_prelude = true, have_prelude = false,
     want_rcfile = true, want_editing = true;
   string rcfile;
@@ -514,7 +515,7 @@ main(int argc, char *argv[])
 		       s.substr(0, 1) + "'");
     }
   }
-  if ((env = getenv("PURE_SPIFFY"))) spiffy = true;
+  if ((env = getenv("PURE_PLAIN"))) spiffy = false;
   if ((env = getenv("PURELIB"))) {
     string s = unixize(env);
     if (!s.empty() && s[s.size()-1] != '/') s.append("/");
@@ -574,8 +575,8 @@ main(int argc, char *argv[])
 	interp.use_fastcc = true;
       else if (strcmp(arg, "-q") == 0)
 	quiet = true;
-      else if (strcmp(arg, "--spiffy") == 0)
-	spiffy = true;
+      else if (strcmp(arg, "--plain") == 0)
+	spiffy = false;
       else if (strcmp(arg, "-s") == 0)
 	interp.strip = true;
       else if (strcmp(arg, "-u") == 0)
