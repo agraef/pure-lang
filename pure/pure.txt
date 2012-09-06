@@ -4506,12 +4506,13 @@ equation, cf. `Pattern Matching`_. But if we're content with using the
 patterns directly then we might just as well do without that.
 
 These types are sometimes also called `algebraic`, i.e., an algebraic type
-consists of terms made from constructor symbols which are applied to other
-data elements. In fact, most user-defined data structures are algebraic types
-in Pure, and there are plenty of examples of these in the standard library.
-E.g., lists and tuples are algebraic types, as are complex and rational
-numbers. Most of Pure's container data types such as dictionaries and sets are
-implemented as algebraic types as well.
+consists of terms made from constructor symbols which may be applied to other
+data elements to form a compound data structure. In fact, most user-defined
+data structures are algebraic types in Pure, and there are plenty of examples
+of these in the standard library as well. In particular, lists and tuples are
+algebraic types, as are complex and rational numbers, and most of Pure's
+container data types such as dictionaries and sets are also implemented as
+algebraic types.
 
 Pure allows you to have constructor symbols with equations, too. For
 instance::
@@ -4519,9 +4520,10 @@ instance::
   cons nil ys = ys;
   cons (cons x xs) ys = cons x (cons xs ys);
 
-Now ``cons`` has become a (partially) defined function. These rules make
-``cons`` associative and turn ``nil`` into a left-neutral element for
-``cons``, so that our lists are always flat now::
+Now ``cons`` has become a (partially) defined function. Note that these rules
+make ``cons`` associative and turn ``nil`` into a left-neutral element for
+``cons``. This in fact makes ``cons`` behave like concatenation, so that our
+lists are always flat now::
 
   > cons (cons 1 (cons 2 nil)) (cons 3 nil);
   cons 1 (cons 2 (cons 3 nil))
