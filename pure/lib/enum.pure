@@ -23,6 +23,11 @@
       the type, ``sym 1`` the second, etc.). The members of the type are in
       the same order as given in the definition of the type.
 
+   .. function:: defenum sym [symbols,...]
+
+      A convenience function which declares a type ``sym`` with the given
+      elements and invokes :func:`enum` on it to make it enumerable in one go.
+
    .. function:: enumof sym
 
       Given a member of an enumerated type as defined with :func:`enum`, this
@@ -48,6 +53,11 @@
    follows::
 
      enum day;
+
+   There's also a convenience function :func:`defenum` which defines the type
+   and makes it enumerable in one go::
+
+     defenum day [sun,mon,tue,wed,thu,fri,sat];
 
    In particular, this sets up the functions ``day`` and ``ord`` so that you
    can convert between members of the ``day`` type and the corresponding
@@ -112,7 +122,7 @@
 
    */
 
-public enum enump enumof;
+public enum enump enumof defenum;
 
 /* We only want enum to be executed when running interpreted, since it
    requires meta programming stuff that's not available in native executables.
@@ -124,12 +134,23 @@ enum name::symbol = () if ~compiling;
 #! --endif
 enum name::symbol = () when
   defs = zip defs (0..#defs-1);
-  add_fundef $ ['(ord x-->n) | (_ x-->_),n = defs; ~enump x] +
-               ['(name n-->x) | (_ x-->_),n = defs; ~enump x] +
-               ['(enumof x-->name) | (_ x-->_),n = defs; ~enump x];
+  add_fundef $ ['(ord x-->n) | (_ x-->v),n = defs; ok x v] +
+               ['(name n-->x) | (_ x-->v),n = defs; ok x v] +
+               ['(enumof x-->name) | (_ x-->v),n = defs; ok x v] with
+		  ok x v = ~enump x && intp v && v;
+		end;
 end if ~null defs && all symbolp [x | _ x-->_ = defs] when
   defs = get_typedef name;
 end;
+
+#! --if compiled
+defenum name::symbol elts::list = () if ~compiling;
+#! --endif
+defenum name::symbol elts::list = enum name when
+  // Make sure that all the symbols are nonfix.
+  eval $ "nonfix "+join " " (map str elts);
+  add_typedef ['(name x-->1) | x = elts; ~enump x];
+end if ~null elts && all symbolp elts;
 
 /* The enum type is implemented as an interface type which matches everything
    for which both ord and enumof are defined. This will even work if you

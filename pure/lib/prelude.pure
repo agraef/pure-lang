@@ -1085,8 +1085,9 @@ n1:n2..m	= if nanp n1 || nanp m || double m===-s then []
 		  when k = n2-n1 end;
 n..m		= if nanp n || nanp m || double m===-inf then []
 		  else if double m===inf then iterate (+1) n
-		  else iterwhile ((>=) m) (+1) n
-		  if ~listp n && ~infp n;
+		  else iterwhile (cmp (>=) m) (+1) n with
+		    cmp p x y = case p x y of res::int = res; _ = false end;
+		  end if ~listp n && ~infp n;
 
 /* ..
 
