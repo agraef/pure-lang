@@ -4474,8 +4474,12 @@ Data Types
 Before we consider the more advanced uses of functions in Pure, a few remarks
 about data types are in order. Like Lisp, Pure is basically a "typeless"
 language. That doesn't mean that there are no data types; in fact, they're a
-dime a dozen in Pure. But often those data types will only be in your head, as
-Pure allows you to make up new data formats as you go.
+dime a dozen in Pure. But Pure lets you make up your own data structures as
+you go, without even formally defining a data type. Data types *can* be
+defined and associated with a name pretty much in the same way as functions,
+but that's just a convenience and completely optional. This sets Pure apart
+from statically typed languages like ML and Haskell, where explicit data type
+definitions are mandatory if you want to introduce new data structures.
 
 As we've seen, Pure knows about a few built-in types such as numbers, strings,
 symbols and functions; everything else is a function application. If a symbol
@@ -4519,23 +4523,25 @@ list data structure. In fact Pure's lists work in a very similar fashion,
 using the infix '``:``' constructor and the empty list ``[]`` in lieu of
 ``cons`` and ``nil``, respectively.
 
-If we want, we can use the facilities described in `Type Rules`_ to define a
-new data type for the data structure we just invented, e.g.::
+If we want, we can define a new data type for the data structure we just
+invented. This works by giving a number of `type rules`_ similar to those used
+in function definitions. In general, these may denote arbitrary unary
+predicates, but in our case it's sufficient to just list the patterns of terms
+which are supposed to be members of the type (see `Type Rules`_ for an
+explanation of the definition syntax)::
 
   type mylist nil | mylist (cons x xs);
 
-This lets us use the ``mylist`` type as a tag on the left-hand side of an
-equation, cf. `Pattern Matching`_. But if we're content with using the
+This definition lets us use the ``mylist`` type as a tag on the left-hand side
+of an equation, cf. `Pattern Matching`_. But if we're content with using the
 patterns directly then we might just as well do without that.
 
-These types are sometimes also called `algebraic`, i.e., an algebraic type
-consists of terms made from constructor symbols which may be applied to other
-data elements to form a compound data structure. In fact, most user-defined
-data structures are algebraic types in Pure, and there are plenty of examples
-of these in the standard library as well. In particular, lists and tuples are
-algebraic types, as are complex and rational numbers, and most of Pure's
-container data types such as dictionaries and sets are also implemented as
-algebraic types.
+Types consisting solely of term patterns are sometimes also called `algebraic
+types`. In fact, most user-defined data structures are algebraic types in
+Pure, and there are plenty of examples of these in the standard library as
+well. In particular, lists and tuples are algebraic types, as are complex and
+rational numbers, and most of Pure's container data types such as dictionaries
+and sets are also implemented as algebraic types.
 
 Pure allows you to have constructor symbols with equations, too. For
 instance::
@@ -4575,8 +4581,8 @@ instance::
 
 However, to make this type actually work as an enumerated type, we may want to
 provide definitions for basic arithmetic, :func:`ord`, :func:`succ`, etc. This
-is rather straightforward, but tedious. So as of version 0.56, the standard
-library provides a litlle utility module, :mod:`enum`, which generates the
+is rather straightforward, but tedious. So as of Pure 0.56, the standard
+library provides a little utility module, :mod:`enum`, which generates the
 necessary definitions in an automatic fashion. All we have to do is to import
 the module and then invoke the :func:`enum` function on the type and we're
 set::
@@ -4584,8 +4590,14 @@ set::
   using enum;
   enum day;
 
-Now we can perform calculations with the members of the type just like with
-predefined enumerated types such as characters (cf. `String Processing`_)::
+It's also possible to define the type and make it enumerable in one go using
+the :func:`defenum` function::
+
+  defenum day [sun,mon,tue,wed,thu,fri,sat];
+
+In either case, we can now perform calculations with the members of the type
+just like with other predefined enumerated types such as numbers and
+characters::
 
   > ord sun;
   0
@@ -4606,13 +4618,41 @@ predefined enumerated types such as characters (cf. `String Processing`_)::
   > sat:fri..mon;
   [sat,fri,thu,wed,tue,mon]
 
-So Pure's generic term data structure makes it possible to create custom data
-structures without any ado. You don't even have to explicitly define a data
-type to make that happen, but this is sometimes convenient and in any case it
-is useful for data abstraction purposes. (We didn't mention this here, but
-Pure also provides a way to define data types in a completely abstract way, by
-just giving its interface operations; please see `Interface Types`_ in the
-Declarations_ section for a discussion of these.)
+A more abstract way to define algebraic types are the `interface types`_. For
+instance, if we take another look at the operations defined on our list type,
+we may observe that the data structure is quite apparent from the patterns in
+the rules of operations such as '``#``' and '``+``'. Pure lets you leverage
+that information by creating an algebraic type from a collection of operation
+patterns it supports. For instance, we may write::
+
+  interface list_alike with
+    #x::list_alike;
+    x::list_alike + y::list_alike;
+  end;
+
+This defines a generic type consisting of all terms which may be passed as an
+argument to both '``#``' and '``+``'. We can ask the interpreter about the
+patterns actually matched by the type as follows::
+
+  > show interface list_alike
+  type list_alike s::string;
+  type list_alike [];
+  type list_alike (x:xs);
+  type list_alike nil;
+  type list_alike (cons x xs);
+
+Note that the ``list_alike`` type not only includes our own list type, but
+also any other data structure providing the '``#``' and '``+``' operations.
+This also comprises the standard list and string types for which there are
+definitions of the '``#``' and '``+``' operations in the prelude.
+
+Pure's interface types are a first attempt at formalizing the notion of `Duck
+typing`_ in Pure. It is thus still a bit experimental and requires some
+diligence in defining the interface operations in a suitable way. Please check
+`Interface Types`_ in the Declarations_ section for more information and
+examples.
+
+.. _Duck typing: http://en.wikipedia.org/wiki/Duck_typing
 
 Recursion
 ---------
@@ -7103,8 +7143,8 @@ Interface Types
 Besides the "concrete" types already described in the `Type Rules`_ section,
 Pure provides another, more abstract way to characterize a type through the
 collection of operations it supports. These `interface types` work pretty much
-like in Google's Go_ programming language. They provide a safe form of "Duck
-typing" in which the operations available on a type are stated explicitly, and
+like in Google's Go_ programming language. They provide a safe form of `Duck
+typing`_ in which the operations available on a type are stated explicitly, and
 hence members of the type are always known to provide all of the listed
 operations.
 
