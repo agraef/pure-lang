@@ -4551,6 +4551,10 @@ lists are always flat now::
   > cons (cons 1 (cons 2 nil)) (cons 3 nil);
   cons 1 (cons 2 (cons 3 nil))
 
+Examples of such constructor equations can be found in the standard library as
+well, such as the rules used to flatten tuples, keep rational numbers in
+lowest terms, or confine the angles of complex numbers in polar notation.
+
 Another possible use of constructor equations is to check the well-formedness
 of constructor terms. For instance, in our example we might want to preclude
 terms like ``cons 1 2`` which don't have a ``mylist`` in the second argument
@@ -4561,10 +4565,54 @@ exception in such cases (cf. `Exception Handling`_)::
   > cons 1 2;
   <stdin>, line 18: unhandled exception 'bad_mylist 2' while evaluating 'cons 1 2'
 
-To summarize, Pure's generic term data structure makes it really easy to
-create custom kinds of data by just applying a constructor or partial function
-to other data. Named data types can be defined as a convenience or for the
-purpose of data abstraction, but that's completely optional.
+A specific kind of algebraic data types which are useful in many applications
+are the `enumerated types`. In this case the type consists of symbolic
+constants (nonfix symbols) only, which are the elements of the type. For
+instance::
+
+  nonfix sun mon tue wed thu fri sat;
+  type day sun | day mon | day tue | day wed | day thu | day fri | day sat;
+
+However, to make this type actually work as an enumerated type, we may want to
+provide definitions for basic arithmetic, :func:`ord`, :func:`succ`, etc. This
+is rather straightforward, but tedious. So as of version 0.56, the standard
+library provides a litlle utility module, :mod:`enum`, which generates the
+necessary definitions in an automatic fashion. All we have to do is to import
+the module and then invoke the :func:`enum` function on the type and we're
+set::
+
+  using enum;
+  enum day;
+
+Now we can perform calculations with the members of the type just like with
+predefined enumerated types such as characters (cf. `String Processing`_)::
+
+  > ord sun;
+  0
+  > day (ans+3);
+  wed
+  > pred sat;
+  fri
+  > sun+3;
+  wed
+  > fri-2;
+  wed
+  > fri-tue;
+  3
+  > mon..fri;
+  [mon,tue,wed,thu,fri]
+  > sun:tue..sat;
+  [sun,tue,thu,sat]
+  > sat:fri..mon;
+  [sat,fri,thu,wed,tue,mon]
+
+So Pure's generic term data structure makes it possible to create custom data
+structures without any ado. You don't even have to explicitly define a data
+type to make that happen, but this is sometimes convenient and in any case it
+is useful for data abstraction purposes. (We didn't mention this here, but
+Pure also provides a way to define data types in a completely abstract way, by
+just giving its interface operations; please see `Interface Types`_ in the
+Declarations_ section for a discussion of these.)
 
 Recursion
 ---------
@@ -5685,7 +5733,8 @@ For instance::
   > rot13 ans;
   "The quick brown fox"
 
-Character arithmetic also makes enumerations of characters work as expected::
+Character arithmetic also makes arithmetic sequences of characters work as
+expected::
 
   > "a".."k"; "k":"j".."a";
   ["a","b","c","d","e","f","g","h","i","j","k"]
