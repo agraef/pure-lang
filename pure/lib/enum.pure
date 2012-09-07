@@ -1,0 +1,167 @@
+
+/* .. module:: enum
+
+   Enumeration Types
+   =================
+
+   Enumeration types are algebraic types consisting only of nullary
+   constructor symbols. The operations of this module equip such types with
+   the necessary function definitions so that the members of the type can be
+   employed in arithmetic operations, comparisons, etc. in the same way as the
+   predefined enumeration types such as integers and characters. This also
+   includes support for arithmetic sequences.
+
+   .. function:: enum sym
+
+      The given symbol must denote an algebraic type consisting only of nonfix
+      symbols. :func:`enum` adds the necessary rules for making members of the
+      type work with enumeration type operations such as :func:`ord`,
+      :func:`succ`, :func:`pred`, comparisons, basic arithmetic and arithmetic
+      sequences. It also defines ``sym`` as an ordinary function, called the
+      `enumeration function` of the type, which maps ordinal numbers to the
+      corresponding members of the type (``sym 0`` yields the first member of
+      the type, ``sym 1`` the second, etc.). The members of the type are in
+      the same order as given in the definition of the type.
+
+   .. function:: enumof sym
+
+      Given a member of an enumeration type as defined with :func:`enum`, this
+      returns the enumeration function of the type. Rules for this function
+      are generated automatically by :func:`enum`.
+
+   .. type:: enum /type
+
+      The type of all enumeration type members. This is actually implemented
+      as an interface type. It matches members of all enumeration types
+      constructed with :func:`enum`.
+
+   .. function:: enump x
+
+      Predicate to check for enumeration type members.
+
+   For instance, consider::
+
+     nonfix sun mon tue wed thu fri sat;
+     type day sun | day mon | day tue | day wed | day thu | day fri | day sat;
+
+   Once the type is defined, we can turn it into an enumeration type simply
+   as follows::
+
+     enum day;
+
+   In particular, this sets up the functions ``day`` and ``ord`` so that you
+   can convert between members of the ``day`` type and the corresponding
+   ordinals::
+
+     > ord sun;
+     0
+     > day (ans+3);
+     wed
+
+   You can also retrieve the type of an enumeration type member (or rather its
+   enumeration function) with :func:`enumof`::
+
+     > enumof sun;
+     day
+     > ans 5;
+     fri
+
+   Basic arithmetic, comparisons and arithmetic sequences also work as usual,
+   provided that the involved members are all from the same enumeration type::
+
+     > succ mon;
+     tue
+     > pred sat;
+     fri
+     > sun+3;
+     wed
+     > fri-2;
+     wed
+     > fri-tue;
+     3
+     > mon..fri;
+     [mon,tue,wed,thu,fri]
+     > sun:tue..sat;
+     [sun,tue,thu,sat]
+     > sat:fri..mon;
+     [sat,fri,thu,wed,tue,mon]
+
+   Note that given one member of the enumeration type, you can use
+   :func:`enumof` to quickly enumerate *all* members of the type starting at
+   the given member. Here's a little helper function which does this::
+
+     enumerate x::enum = iterwhile (typep ty) succ x when ty = enumof x end;
+
+   For instance::
+
+     > enumerate sun;
+     [sun,mon,tue,wed,thu,fri,sat]
+
+   Also note that :func:`enum` silently skips elements which are already
+   enumeration type members (no matter whether of the same or another type).
+   Thus if you later add more elements to the ``day`` type, you can just call
+   :func:`enum` again to update the enumeration accordingly::
+
+     > succ sat;
+     sat+1
+     > type day doomsday;
+     > enum day;
+     ()
+     > succ sat;
+     doomsday
+
+   */
+
+public enum enump enumof;
+
+/* We only want enum to be executed when running interpreted, since it
+   requires meta programming stuff that's not available in native executables.
+   So for batch-compiled scripts you need to make sure that enum gets invoked
+   at compile time. */
+
+#! --if compiled
+enum name::symbol = () if ~compiling;
+#! --endif
+enum name::symbol = () when
+  defs = zip defs (0..#defs-1);
+  add_fundef $ ['(ord x-->n) | (_ x-->_),n = defs; ~enump x] +
+               ['(name n-->x) | (_ x-->_),n = defs; ~enump x] +
+               ['(enumof x-->name) | (_ x-->_),n = defs; ~enump x];
+end if ~null defs && all symbolp [x | _ x-->_ = defs] when
+  defs = get_typedef name;
+end;
+
+/* The enum type is implemented as an interface type which matches everything
+   for which both ord and enumof are defined. This will even work if you
+   just define ord and enumof manually for a given type. */
+
+interface enum with ord x::enum; enumof x::enum; end;
+
+enump x::enum = true;
+enump _ = false otherwise;
+
+/* Characters have ord defined on them, so we want to define enumof on them,
+   too, to silence compiler warnings about an incomplete interface. */
+
+enumof x::string = chr if charp x;
+
+/* Basic arithmetic and comparisons. Note that we don't need to define succ
+   and pred here since the prelude provides a generic definition. */
+
+x::enum + k::int = y if typep enum y === true when
+  enum = enumof x; y = enum (ord x+k);
+end;
+
+x::enum - k::int = y if typep enum y === true when
+  enum = enumof x; y = enum (ord x-k);
+end;
+
+/* These require that both operands are of the same enumeration type. */
+
+x::enum - y::enum = ord x - ord y if enumof x === enumof y;
+x::enum < y::enum = ord x < ord y if enumof x === enumof y;
+x::enum > y::enum = ord x > ord y if enumof x === enumof y;
+x::enum <= y::enum = ord x <= ord y if enumof x === enumof y;
+x::enum >= y::enum = ord x >= ord y if enumof x === enumof y;
+x::enum == y::enum = ord x == ord y if enumof x === enumof y;
+x::enum ~= y::enum = ord x ~= ord y if enumof x === enumof y;
