@@ -1544,44 +1544,6 @@ evaluation of expressions, and expressions also form the building blocks of
 the equational rules which are used to define the constants, variables,
 functions and macros of a Pure program.
 
-Pure's expression syntax can be summarized in the following grammar rules:
-
-.. productionlist::
-   expr : "\" `prim_expr`+ "->" `expr`
-    	: | "case" `expr` "of" `rules` "end"
-    	: | `expr` "when" `simple_rules` "end"
-    	: | `expr` "with" `rules` "end"
-    	: | "if" `expr` "then" `expr` "else" `expr`
-    	: | `simple_expr`
-   simple_expr : `simple_expr` `op` `simple_expr`
-               : | `op` `simple_expr`
-               : | `simple_expr` `op`
-               : | `application`
-   application : `application` `prim_expr`
-               : | `prim_expr`
-   rules : `rule` (";" `rule`)* [";"]
-   simple_rules : `simple_rule` (";" `simple_rule`)* [";"]
-   prim_expr : `qualified_symbol`
-             : | `number`
-             : | `string`
-             : | "(" `op` ")"
-             : | "(" `left_op` `right_op` ")"
-             : | "(" `simple_expr` `op` ")"
-             : | "(" `op` `simple_expr` ")"
-             : | "(" `expr` ")"
-             : | `left_op` `expr` `right_op`
-   	     : | "[" `exprs` "]"
-   	     : | "{" `exprs` (";" `exprs`)* [";"] "}"
-   	     : | "[" `expr` "|" `simple_rules` "]"
-   	     : | "{" `expr` "|" `simple_rules` "}"
-   exprs : `expr` ("," `expr`)*
-   op : `qualified_symbol`
-   left_op : `qualified_symbol`
-   right_op : `qualified_symbol`
-
-(Note that the :token:`rule` and :token:`simple_rule` elements are part of the
-definition syntax, which is explained in the `Rule Syntax`_ section.)
-
 Typical examples of the different expression types are summarized in the
 following table. Note that lambdas bind most weakly, followed by the special
 :keyword:`case`, :keyword:`when` and :keyword:`with` constructs, followed by
@@ -1614,6 +1576,43 @@ Primary      ``4711``, ``1.2e-3``              number
 \            ``[x,-y | x=1..n; y=1..m; x<y]``  list comprehension
 \            ``{i==j | i=1..n; j=1..m}``       matrix comprehension
 ===========  ================================  ============================
+
+The formal syntax of expressions is as follows. (Note that the :token:`rule`
+and :token:`simple_rule` elements are part of the definition syntax, which is
+explained in the `Rule Syntax`_ section.)
+
+.. productionlist::
+   expr : "\" `prim_expr`+ "->" `expr`
+    	: | "case" `expr` "of" `rules` "end"
+    	: | `expr` "when" `simple_rules` "end"
+    	: | `expr` "with" `rules` "end"
+    	: | "if" `expr` "then" `expr` "else" `expr`
+    	: | `simple_expr`
+   simple_expr : `simple_expr` `op` `simple_expr`
+               : | `op` `simple_expr`
+               : | `simple_expr` `op`
+               : | `application`
+   application : `application` `prim_expr`
+               : | `prim_expr`
+   prim_expr : `qualified_symbol`
+             : | `number`
+             : | `string`
+             : | "(" `op` ")"
+             : | "(" `left_op` `right_op` ")"
+             : | "(" `simple_expr` `op` ")"
+             : | "(" `op` `simple_expr` ")"
+             : | "(" `expr` ")"
+             : | `left_op` `expr` `right_op`
+   	     : | "[" `exprs` "]"
+   	     : | "{" `exprs` (";" `exprs`)* [";"] "}"
+   	     : | "[" `expr` "|" `simple_rules` "]"
+   	     : | "{" `expr` "|" `simple_rules` "}"
+   exprs : `expr` ("," `expr`)*
+   op : `qualified_symbol`
+   left_op : `qualified_symbol`
+   right_op : `qualified_symbol`
+   rules : `rule` (";" `rule`)* [";"]
+   simple_rules : `simple_rule` (";" `simple_rule`)* [";"]
 
 .. _Primary Expressions:
 
@@ -1748,13 +1747,12 @@ belong to the `simple expressions`_.
    Pure you can take your pick and use either flat tuples or nestable lists,
    whatever is most convenient for the problem at hand.
 
-.. describe:: Matrices: {1.0,2.0,3.0}, {1,2;3,4}, {1L,y+1;foo,bar}
+.. describe:: Matrices: {1.0,2.0,3.0}, {1,2;3,4}, {cos t,-sin t;sin t,cos t}
 
    Pure also offers matrices, a kind of two-dimensional arrays, as a built-in
    data structure which provides efficient storage and element access. These
    work more or less like their Octave/MATLAB equivalents, but using curly
-   braces instead of brackets; commas are used to separate the columns of a
-   matrix, semicolons for its rows. Component values may either be individual
+   braces instead of brackets. Component values may either be individual
    elements ("scalars") or submatrices which are combined to form a larger
    matrix, provided that all dimensions match up. Here, a scalar is any
    expression which doesn't yield a matrix; these are considered to be 1x1
@@ -1762,14 +1760,15 @@ belong to the `simple expressions`_.
    "splicing" behaviour pertains to matrix construction only; nested matrix
    patterns_ are always matched literally.)
 
-   The comma arranges submatrices in columns, while the semicolon arranges
-   them in rows. So, if both ``x`` and ``y`` are ``n`` x ``m`` matrices, then
-   ``{x,y}`` becomes an ``n`` x ``2*m`` matrix consisting of all the columns
-   of ``x`` followed by all the columns of ``y``. Likewise, ``{x;y}`` becomes
-   a ``2*n`` x ``m`` matrix (all the rows of ``x`` above of all rows of
-   ``y``). For instance, ``{{1;3},{2;4}}`` is another way to write the 2x2
-   matrix ``{1,2;3,4}``. More examples can be found in the `Matrices and
-   Vectors`_ section.
+   The comma arranges submatrices and scalars in columns, while the semicolon
+   arranges them in rows. So, if both ``x`` and ``y`` are ``n`` x ``m``
+   matrices, then ``{x,y}`` becomes an ``n`` x ``2*m`` matrix consisting of
+   all the columns of ``x`` followed by all the columns of ``y``. Likewise,
+   ``{x;y}`` becomes a ``2*n`` x ``m`` matrix (all the rows of ``x`` above of
+   all rows of ``y``). For instance, ``{{1;3},{2;4}}`` is another way to write
+   the 2x2 matrix ``{1,2;3,4}``. Row vectors are denoted as 1 x ``n`` matrices
+   (``{1,2,3}``), column vectors as ``n`` x 1 matrices (``{1;2;3}``). More
+   examples can be found in the `Matrices and Vectors`_ section.
 
    Pure supports both numeric and symbolic matrices. The former are
    homogeneous arrays of double, complex double or (machine) int matrices,
@@ -1795,12 +1794,19 @@ belong to the `simple expressions`_.
    lambdas, conditional expressions and certain list and matrix operations,
    but they are often much easier to write.
 
+   Thus, for instance, ``[f x | x=1..n]`` is pretty much the same as ``map f
+   (1..n)``, while ``[x | x=xs; x>0]`` corresponds to ``filter (>0) xs``.
+   However, comprehensions are considerably more general in that they allow
+   you to draw values from different kinds of aggregates including lists,
+   matrices and strings. Also, matrix comprehensions alternate between row and
+   column generation so that most common mathematical abbreviations carry over
+   quite easily. Patterns can be used on the left-hand side of generator
+   clauses as usual; they will be matched against the actual list or matrix
+   elements, which in case of mismatch will raise a :const:`failed_match`
+   exception.
+
    More details and examples can be found in the Examples_ section; in
-   particular, see `List Comprehensions`_. Matrix comprehensions work pretty
-   much like list comprehensions, but produce matrices instead of lists; they
-   also alternate between row and column generation so that most common
-   mathematical abbreviations carry over quite easily, see `Matrices and
-   Vectors`_.
+   particular, see `List Comprehensions`_ and `Matrices and Vectors`_.
 
 Simple Expressions
 ~~~~~~~~~~~~~~~~~~
@@ -1872,14 +1878,25 @@ Special Expressions
 ~~~~~~~~~~~~~~~~~~~
 
 Some special notations are provided for conditional expressions as well as
-anonymous functions (lambdas) and blocks of local function and variable
-definitions.
+anonymous functions (lambdas) and local function and variable definitions.
+The latter are also called `block expressions` since they introduce local
+bindings of variable and function symbols which may override other global or
+local bindings of these symbols. This gives rise to a kind of `block
+structure` similar to Algol-like programming languages. Please check `Scoping
+Rules`_ below for more information about this.
+
+The constructs described here are called "special" because they direct the
+flow of computation rather than being first-class values in their own right.
+So in contrast to the other forms of expressions they cannot occur in normal
+form terms as is, although they have an alternative quoted representation in
+terms of built-in macros which are first-class values and can thus be
+manipulated at runtime (cf. `Built-in Macros and Special Expressions`_).
 
 .. describe:: Conditional expressions: if x then y else z
 
    Evaluates to ``y`` or ``z`` depending on whether ``x`` is "true" (i.e., a
-   nonzero integer). An exception is raised if the condition is not an
-   integer.
+   nonzero integer). A :const:`failed_cond` exception is raised if the
+   condition is not an integer.
 
 .. describe:: Lambdas: \\x -> y
 
@@ -1888,8 +1905,8 @@ definitions.
    then evaluates the right-hand side body ``y`` with the variables in ``x``
    bound to their corresponding values. Pure supports multiple-argument
    lambdas (e.g, ``\x y -> x*y``), as well as pattern-matching lambda
-   abstractions such as ``\(x,y) -> x*y``. An exception is raised if the
-   actual arguments do not match the given patterns.
+   abstractions such as ``\(x,y) -> x*y``. A :const:`failed_match` exception
+   is raised if the actual arguments do not match the given patterns.
 
 .. describe:: Case expressions: case x of u = v; ... end
 
@@ -1898,8 +1915,9 @@ definitions.
    in turn against each left-hand side pattern ``u`` in the rule list, and the
    first pattern which matches ``x`` gives the value of the entire expression,
    by evaluating the corresponding right-hand side ``v`` with the variables in
-   the pattern bound to their corresponding values. An exception is raised if
-   the target expression doesn't match any of the patterns.
+   the pattern bound to their corresponding values. A :const:`failed_match`
+   exception is raised if the target expression doesn't match any of the
+   patterns.
 
 .. describe:: When expressions: x when u = v; ... end
 
@@ -1909,11 +1927,11 @@ definitions.
    the lambda expression ``(\u -> x) v`` or the ``case`` expression ``case v
    of u = x end``, so it matches ``v`` against the pattern ``u`` and evaluates
    ``x`` with the variables in ``u`` bound to their corresponding values (or
-   raises an exception if ``v`` doesn't match ``u``). However, a ``when``
-   clause may contain multiple definitions, which are processed from left to
-   right, so that later definitions may refer to the variables in earlier
-   ones. (This is exactly the same as several nested single definitions, with
-   the first binding being the "outermost" one.)
+   raises a :const:`failed_match` exception if ``v`` doesn't match ``u``).
+   However, a ``when`` clause may contain multiple definitions, which are
+   processed from left to right, so that later definitions may refer to the
+   variables in earlier ones. (This is exactly the same as several nested
+   single definitions, with the first binding being the "outermost" one.)
 
 .. describe:: With expressions: x with u = v; ... end
 
@@ -1931,11 +1949,41 @@ definitions.
    is raised in this case. (This is in contrast to a lambda which otherwise is
    pretty much like a nameless local function defined by a single rule.)
 
-Note that most of these constructs introduce local bindings of variable and
-function symbols which may override other global or local bindings of these
-symbols. This gives rise to a kind of `block structure` similar to Algol-like
-programming languages. Please check `Scoping Rules`_ below for more
-information about this.
+The block constructs are similar to those available in most modern functional
+languages. In Pure these constructs are all implemented in terms of the basic
+term rewriting machinery, using `lambda lifting`_ to eliminate local
+functions, and the following equivalences which reduce all constructs to
+corresponding local functions ``f``::
+
+  \x1 ... xn -> y
+  ≡ f with f x1 ... xn = y; f _ ... _ = throw failed_match end
+
+  case x of y1 = z1; ...; yn = zn end
+  ≡ f x with f y1 = z1; ...; f yn = zn; f _ = throw failed_match end
+
+  x when y = z end
+  ≡ f z with f y = x; f _ = throw failed_match end
+
+Also note that the case of a :keyword:`when` expression with multiple clauses
+reduces to nested single-clause :keyword:`when` expressions which are handled
+above. That is::
+
+  x when y1 = z1; ...; yn = zn end
+  ≡ x when yn = zn end ... when y1 = z1 end
+
+.. _lambda lifting: http://en.wikipedia.org/wiki/Lambda_lifting
+
+So lambdas as well as :keyword:`case` and :keyword:`when` expressions are
+effectively just syntactic sugar for special kinds of local functions or local
+function applications. Note that by convention all these constructs report a
+:const:`failed_match` exception in case of argument mismatch. So they're
+treated like `defined functions`_, which is somewhat at odds with the term
+rewriting semantics. This is done for convenience, however, so that the
+programmer doesn't have to deal with unevaluated applications of nameless
+block constructs in normal form terms. The case of named local functions is
+considered different because it effectively represents a local rewriting
+system which should be treated accordingly, in order to allow for symbolic
+evaluation.
 
 .. _Special Forms:
 
@@ -5881,16 +5929,39 @@ is even::
   [(1,1),(1,3),(1,5),(2,2),(2,4),(3,3),(3,5),(4,4),(5,5)]
 
 The left-hand side of a generator clause can be an arbitary pattern, which is
-useful if you need to dissect the list elements. E.g., let's check the sums of
-the previous result to see whether they're in fact all even::
+useful if you need to dissect the list elements. For instance, let's take the
+previous result and check the sums of the number pairs to see whether they're
+in fact all even::
 
   > [i+j | i,j = ans];
   [2,4,6,4,6,6,8,8,10]
 
-All this can of course also be done with the Pure's generic list functions,
-but list comprehensions are often easier to write and understand. For
-instance, here's how we can apply a list comprehension recursively to
-implement a variation of Erathosthenes' classical prime sieve::
+In Pure generator clauses never work as filters, so when using patterns you
+may well run into match failures which are reported using a
+:const:`failed_match` exception::
+
+  > [i+j | i,j = [(1,1),(2,2),3]];
+  <stdin>, line 6: unhandled exception 'failed_match' while evaluating
+  'listmap (\(i,j) -> i+j) [(1,1),(2,2),3]'
+
+Note that this is different from Haskell's list comprehensions which filter
+out unmatched elements automatically. We can emulate this in Pure as follows,
+although it's a bit awkward::
+
+  > cat [case x of i,j = [i+j]; _ = [] end | x = [(1,1),(2,2),3]];
+  [2,4]
+
+Or we might use an explicit filter clause, which is a little more
+perspicuous::
+
+  > [i+j when i,j = x end | x = [(1,1),(2,2),3]; tuplep x];
+  [2,4]
+
+Anything that can be done with a list comprehension can of course also be
+accomplished with Pure's generic list functions. But list comprehensions are
+often easier to write and understand. For instance, here's how we can apply a
+list comprehension recursively to implement a variation of Erathosthenes'
+classical prime sieve::
 
   primes n        = sieve (2..n) with
     sieve []      = [];
