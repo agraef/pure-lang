@@ -363,7 +363,7 @@ Besides these, the interpreter also understands a number of other command line
 switches for setting various compilation options; please see `Compilation
 Options`_ below for details.
 
-.. note:: Option parsing follows the usual (UNIX) conventions, but is somewhat
+.. note:: Option parsing follows the usual (Unix) conventions, but is somewhat
    more rigid than the GNU getopt conventions. In particular, it is *not*
    possible to combine short options, and there are no abbreviations for
    "long" options. Mixing options and other command line parameters is
@@ -1557,18 +1557,17 @@ override default precedences as usual.
 ===========  ================================  ============================
 Type         Example                           Description
 ===========  ================================  ============================
-Lambda       ``\x->x+1``                       anonymous function
+Block        ``\x y->2*x-y``                   anonymous function (lambda)
+\            ``case f u of x,y = x+y end``     case expression
+\            ``x+y when x,y = f u end``        local variable definition
+\            ``f u with f (x,y) = x+y end``    local function definition
 -----------  --------------------------------  ----------------------------
-Block        ``case x of y = z; ... end``      pattern-matching conditional
-\            ``x when y = z; ... end``         local variable definition
-\            ``x with f y = z; ... end``       local function definition
------------  --------------------------------  ----------------------------
-Conditional  ``if x then y else z``            conditional expression
+Conditional  ``if x>0 then x else -x``         conditional expression
 -----------  --------------------------------  ----------------------------
 Simple       ``x+y``, ``-x``, ``x mod y``      operator application
 \            ``sin x``, ``max a b``            function application
 -----------  --------------------------------  ----------------------------
-Primary      ``4711``, ``1.2e-3``              number
+Primary      ``4711``, ``4711L``, ``1.2e-3``   number
 \            ``"Hello, world!\n"``             string
 \            ``foo``, ``x``, ``(+)``           function or variable symbol
 \            ``[1,2,3]``, ``(1,2,3)``          list and tuple
@@ -1885,12 +1884,12 @@ local bindings of these symbols. This gives rise to a kind of `block
 structure` similar to Algol-like programming languages. Please check `Scoping
 Rules`_ below for more information about this.
 
-The constructs described here are called "special" because they direct the
-flow of computation rather than being first-class values in their own right.
-So in contrast to the other forms of expressions they cannot occur in normal
-form terms as is, although they have an alternative quoted representation in
-terms of built-in macros which are first-class values and can thus be
-manipulated at runtime (cf. `Built-in Macros and Special Expressions`_).
+The constructs described here are called "special" because, in contrast to the
+other forms of expressions, they cannot occur in normal form terms as
+first-class values (at least not literally; there is an alternative quoted
+representation of special expressions, however, which *can* be manipulated
+with macros and functions for meta programming purposes, cf. `Built-in Macros
+and Special Expressions`_).
 
 .. describe:: Conditional expressions: if x then y else z
 
@@ -1952,8 +1951,9 @@ manipulated at runtime (cf. `Built-in Macros and Special Expressions`_).
 The block constructs are similar to those available in most modern functional
 languages. In Pure these constructs are all implemented in terms of the basic
 term rewriting machinery, using `lambda lifting`_ to eliminate local
-functions, and the following equivalences which reduce all constructs to
-corresponding local functions ``f``::
+functions, and the following equivalences which reduce lambdas as well as
+:keyword:`case` and :keyword:`when` expressions to special kinds of local
+functions or local function applications::
 
   \x1 ... xn -> y
   ≡ f with f x1 ... xn = y; f _ ... _ = throw failed_match end
@@ -1969,17 +1969,14 @@ corresponding local functions ``f``::
 
 .. _lambda lifting: http://en.wikipedia.org/wiki/Lambda_lifting
 
-So lambdas as well as :keyword:`case` and :keyword:`when` expressions are
-effectively just syntactic sugar for special kinds of local functions or local
-function applications. Note that by convention all these constructs report a
-:const:`failed_match` exception in case of argument mismatch. So they're
-treated like `defined functions`_, which is somewhat at odds with the term
-rewriting semantics. This is done for convenience, however, so that the
-programmer doesn't have to deal with unevaluated applications of nameless
-block constructs in normal form terms. The case of named local functions is
-considered different because it effectively represents a local rewriting
-system which should be treated accordingly, in order to allow for symbolic
-evaluation.
+Note that by convention these constructs report a :const:`failed_match`
+exception in case of argument mismatch. So they're treated like `defined
+functions`_, which is somewhat at odds with the term rewriting semantics. This
+is done for convenience, however, so that the programmer doesn't have to deal
+with unevaluated applications of nameless block constructs in normal form
+terms. The case of named local functions is considered different because it
+effectively represents a local rewriting system which should be treated
+accordingly, in order to allow for symbolic evaluation.
 
 .. _Special Forms:
 
@@ -3338,8 +3335,8 @@ line as follows:
    $ pure hello.pure
    Hello, world!
 
-You may notice a slight delay when executing the script, before the ``Hello,
-world!`` message appears. That's because the interpreter first has to compile
+You may notice a slight delay when executing the script, before the "``Hello,
+world!``" message appears. That's because the interpreter first has to compile
 the definitions in your script as well as the prelude and other imported
 modules before the ``puts "Hello, world!"`` expression can be evaluated. The
 startup times can be reduced (sometimes considerably) by compiling scripts to
@@ -3436,7 +3433,7 @@ accordingly. You should then be able to run the script as follows:
    This will always work if the Pure interpreter is installed somewhere on the
    system :envvar:`PATH`. However, due to incompatibilities in the ways
    shebang lines are parsed by the shell on different Unix systems, the
-   following shebang line might *not* work as expected::
+   following might *not* work as expected::
 
      #!/usr/bin/env pure -x
 
@@ -3534,10 +3531,9 @@ evaluated. For instance::
 
 Note that Pure is a free-format language, and thus definitions and expressions
 *must* be terminated with a semicolon, so that the interpreter knows when
-you're done entering each item. This may need some time getting used to, but
-it's actually pretty convenient because you can easily type more than one
-expression on a single line, or split longer constructs across multiple
-lines::
+you're done entering each item. This probably needs getting used to, but it's
+convenient because you can easily type more than one expression on a single
+line, or split longer constructs across multiple lines::
 
   > 6*7; 16.3805*5.0;
   42
@@ -3568,15 +3564,16 @@ use the cursor keys to recall previous input lines and edit them as needed.
 Other kinds of errors may happen at runtime, when evaluating a syntactically
 correct expression. These give rise to so-called exceptions. For instance::
 
-  > fact fact;
-  <stdin>, line 9: unhandled exception 'failed_cond' while evaluating 'fact fact'
+  > 1 div 0;
+  <stdin>, line 9: unhandled exception 'signal 8' while evaluating '1 div 0'
 
-Common sources of exceptions are failed matches and conditionals (as in the
-example above), integer division by zero, interrupts (e.g., if the user aborts
-an evaluation with :kbd:`Ctrl-c`) and stack overflows (cf. `Stack Size and
-Tail Recursion`_). Normally these are fatal and require you to fix the program
-or the expression that you entered, but programs can also catch these errors
-and handle them in any desired way, cf. `Exception Handling`_.
+Besides integer division by zero (flagged as '``signal 8``' here), common
+sources of exceptions are failed matches and conditionals, interrupts (e.g.,
+if the user aborts an evaluation with :kbd:`Ctrl-c`) and stack overflows
+(cf. `Stack Size and Tail Recursion`_). Normally these are fatal and require
+you to fix the program or the expression that you entered, but programs can
+also catch these errors and handle them in any desired way, cf. `Exception
+Handling`_.
 
 Note that in contrast to most other programming languages, undefined
 identifiers are generally *not* an error in Pure. Instead, you'll simply get
@@ -3613,17 +3610,18 @@ yields the most recent result printed by the interpreter::
   > ans*2;
   163.805
 
-The interpreter has a few other special commands which, like :func:`ans`, are
-only available when the interpreter is run interactively. For instance, you
-can purge the value of a variable like this (this also works with any other
-defined item, such as constants, functions and macros)::
+The interpreter recognizes a few other special commands which, like
+:func:`ans`, are only available when it is run interactively. For instance,
+you can purge the value of a variable like this (this also works with any
+other defined item, such as constants, functions and macros)::
 
   > clear x
   > x;
   x
 
 Another useful command is ``show`` which prints the definition of anything
-that you can define in a Pure script, such as variables and functions::
+that you can define in a Pure script, such as variables and functions. For
+instance::
 
   > show fact
   fact n = if n<=0 then 1 else n*fact (n-1);
@@ -3779,24 +3777,38 @@ system). For instance::
   181.0
 
 The :mod:`math` module also provides you with complex and rational number
-types for doing more advanced calculations.
+types for doing more advanced calculations, but we won't go into that here.
 
 Before we proceed, a few remarks about the syntax of function applications are
-in order. The first thing you should note is that in Pure, like in most other
-modern functional languages, function application is simply denoted by
-juxtaposition::
+in order. Function application is an explicit operation in Pure, so that
+functions become first class values which can be passed around as function
+arguments and results. Like in most modern functional languages, function
+application is simply denoted by juxtaposition::
 
   > sqrt 2;
   1.4142135623731
 
-Multiple arguments are specified in the same fashion::
+In this case, you may also write ``sqrt(2)`` instead, but multiple arguments
+are normally specified as ``f x y z`` rather than ``f(x,y,z)``. The former
+notation is known as `currying` (named after the American mathematician and
+logician Haskell B. Curry), and is ubiquitous in modern functional programming
+languages. The latter notation can be used in Pure as well, but it actually
+indicates that ``f`` is called on a *single*, structured argument (in this
+case a tuple). However, most predefined functions use the curried notation in
+Pure. For instance, the :func:`max` function defined in the prelude takes two
+separate arguments, so it is invoked as follows::
 
   > max 4 7;
   7
 
-Parentheses can be used for grouping expressions as usual. In particular, if a
-function application appears as an argument in another function application
-then it must be parenthesized as follows::
+Function application associates to the left, so the above is parsed as ``(max
+4) 7``, where ``max 4`` is called a `partial application` of the :func:`max`
+function. A partial application is a function in its own right; e.g., ``max
+4`` denotes the function which computes ``max 4 y`` for each given ``y``.
+
+Parentheses are used for grouping expressions as usual. In particular, since
+function application associates to the left, a nested function application in
+a function argument must be parenthesized as follows::
 
   > sqrt (sqrt 2);
   1.18920711500272
@@ -3807,33 +3819,29 @@ function application binds stronger than any of these::
   > sqrt (2*3);
   2.44948974278318
 
-This style of writing function applications is also known as `currying`, and
-is ubiquitous in modern functional programming languages. Just the function
-symbol itself, or a function symbol applied to some but not all arguments (a
-so-called `partial application`) is a proper Pure value which represents a
-function. We can apply this function, e.g., to a list of values, as follows::
+The :func:`map` function lets us apply a function to each member of a given
+list, which gives us a quick way of tabulating function values::
 
   > map sqrt (0..2);
   [0.0,1.0,1.4142135623731]
+
+Here, the list argument is specified as an `arithmetic sequence` ``0..2``
+which evaluates to the list ``[0,1,2]``. This is fairly convenient when
+tabulating values of numeric functions. Here is another example which employs
+a partial application of the :func:`max` function as the function argument::
+
   > map (max 0) (-3..3);
   [0,0,0,0,1,2,3]
 
-The expression ``0..2`` denotes an arithmetic sequence which evaluates to the
-list ``[0,1,2]``. Likewise, ``-3..3`` denotes the list of integers between
-``-3`` and ``3``. This gives us a quick way of tabulating function values.
-
-Note that in the latter example, ``max 0`` is a partial application since
-``max`` expects two arguments but we've only specified one. We also say that
-``max 0`` is an `unsaturated` application. So ``max 0`` becomes a function
-expecting one argument which ``map`` applies to the list members. When this
-function gets applied, say, to the first list member ``-3``, we obtain the
-application ``max 0 (-3)`` which now has all the arguments that it needs; we
-also say that ``max 0 (-3)`` is `saturated`, which means that it's "ready to
-go". Evaluating ``max 0 (-3)`` gives ``0`` which becomes the first member of
-the result list returned by ``map``. The other list members are calculated in
-an analogous fashion. It is easy to see that ``max 0`` calculates what
-mathematicians call the "positive part" of its argument ``x``, which is ``x``
-itself if it is greater than ``0`` and ``0`` otherwise.
+Note that when the ``max 0`` function gets applied, say, to the first list
+member ``-3``, we obtain the application ``max 0 (-3)`` which now has all the
+arguments that it needs; we also say that ``max 0 (-3)`` is a `saturated`
+application, which means that it's "ready to go". Evaluating ``max 0 (-3)``
+gives ``0`` which becomes the first member of the result list returned by
+``map``. The other list members are calculated in an analogous fashion. It is
+easy to see that ``max 0`` thus computes what mathematicians call the
+"positive part" of its argument ``x``, which is ``x`` itself if it is greater
+than ``0`` and ``0`` otherwise.
 
 Operators aren't special either, they are just functions in disguise. You can
 turn any operator into an ordinary function by enclosing it in parentheses.
@@ -3853,7 +3861,8 @@ denotes a function which doubles its argument::
 
 Moreover, Pure offers some convenient syntactic sugar to denote so-called
 `operator sections` which specify a binary operator with only either its left
-or right operand.  For instance, ``(+1)`` denotes the "increment by 1" and
+or right operand. So the doubling function above may also be denoted as
+``(2*)`` or ``(*2)``. Similarly, ``(+1)`` denotes the "increment by 1" and
 ``(1/)`` the reciprocal function::
 
   > map (+1) (1..5);
@@ -3867,8 +3876,10 @@ convenient shorthand for a partial application::
   > (1/);
   (/) 1
 
-In contrast, the former kind (a `right section`) expands to an application of
-the :func:`flip` function, ::
+The former kind (a `right section`) can't be handled this way, because it's
+the *first* operand which is missing, and partial applications only allow you
+to omit trailing arguments. Instead, right sections expand to a partial
+application of the :func:`flip` function, ::
 
   > (+1);
   flip (+) 1
@@ -3877,12 +3888,11 @@ which is defined in the prelude as follows::
 
   flip f x y = f y x;
 
-Thus a right section like ``(+1)`` expands to a partial application of
-:func:`flip` which, when the missing operand is supplied, reduces to an
-application of the first (function) argument while also flipping around the
-operands. For another example, here's how you can compute third powers ``3^x``
-of some numbers ``x``. We can do this with a right section of the :func:`^`
-operator as follows::
+Note that ``flip (+) 1`` thus denotes a function which, when the missing
+operand is supplied, reduces to an application of the first (function)
+argument while also flipping around the operands. For another example, here's
+how you can compute third powers ``3^x`` of some numbers ``x`` with a right
+section of the ':func:`^`' operator::
 
   > map (^3) (1..5);
   [1.0,8.0,27.0,64.0,125.0]
@@ -4188,24 +4198,22 @@ rule is invoked with the variables in the patterns bound to their
 corresponding values.
 
 The simplest nontrivial patterns are `type tags`_ which can be placed on a
-variable to restrict the type of value an argument can match. For instance,
-let's reconsider our ``square`` function. If we already know that we will only
-apply this function to machine int values then it makes sense to restrict the
-argument pattern ``x`` so that it can only match an int value. (If you try
-this interactively, make sure that you restart the interpreter with ``run`` or
-at least ``clear`` any existing definition of ``square`` before entering the
-new definition.) ::
+variable to restrict the type of value an argument can match. For instance::
 
   > square x::int = x*x;
   > square 7;
   49
+
+Note that in contrast to our previous generic definition of the ``square``
+function we gave in `Defining Functions`_, this definition now only applies to
+the case of an ``int`` argument::
+
   > square 7.0;
   square 7.0
 
-Note that since we added the type tag ``int``, the double value ``7.0``
-doesn't match the ``x`` parameter any more, so ``square 7.0`` has now become a
-normal form term. However, we can still add a rule for double values if we
-want these to be handled as well::
+Polymorphic definitions can be made by giving separate equations for the
+different argument types. For instance, we can easily add an equation for the
+``double`` case::
 
   > square x::double = x*x;
   > show square
@@ -4215,62 +4223,66 @@ want these to be handled as well::
   49
   49.0
 
-Here the right-hand side of both rules is the same. In such cases it is
-possible to factor out the common right-hand side using the '``|``' delimiter
-as follows::
+Here the right-hand sides of both rules are the same. Pure has a convenient
+shorthand notation for this case which lets you factor out the common
+right-hand side using the '``|``' delimiter as follows::
 
   square x::int | square x::double = x*x;
 
-The compiler will expand this to::
+The compiler expands this to the same two rules as above::
 
   square x::int = x*x;
   square x::double = x*x;
 
-It is important to note the difference between this and the generic definition
-of ``square`` we gave in `Defining Functions`_::
+Let's compare this to our earlier generic definition of ``square``::
 
   square x = x*x;
 
-The latter definition applies to *any* argument ``x`` whatsoever and thus the
-definition is "closed". Because equations are considered in the order in which
-they are written, there's no way you could add another "special case" rule to
-this definition later.
+There are two different kinds of polymorphism at work here. The latter,
+generic definition is an example of `parametric polymorphism`; it applies to
+*any* type of argument ``x`` whatsoever (at least if it makes sense to
+multiply a member of the type with itself). Also note that this definition is
+"closed"; because equations are considered in the order in which they are
+written, there's no way you could add another "special case" rule to this
+definition later.
 
 In contrast, the former definition leaves any application of ``square`` to a
-value other than an int or a double undefined. By these means, we can define
-an operation on as many types of arguments as we like, and (this is the
-crucial point) define the function in *different* ways for different argument
-types. For instance, here is a rule which defines ``square`` on lists in a
-pointwise fashion, by squaring each list member::
+value other than ``int`` or ``double`` undefined. This gives us the
+opportunity to define ``square`` on as many types of arguments as we like, and
+(this is the crucial point) define the function in *different* ways for
+different argument types. This is also known as `ad-hoc polymorphism` or
+`function overloading`. For instance, if we later need to square 2x2 matrices,
+we might add a rule like::
 
-  > square x::list = map square x;
-  > square (1..7);
-  [1,4,9,16,25,36,49]
+  square {a,b;c,d} = {a*a+b*c,a*b+b*d;c*a+d*c,c*b+d*d};
 
 Pure places no restriction on the number of equations used to define a
 function, and the different equations may in fact be scattered out over many
-different places. This gives us a kind of "function overloading", and in fact
-Pure makes heavy use of this feature in its standard library as well. For
-instance, the arithmetic operators are defined on all built-in numeric types
-and even on mixed arguments. You can also add your own equations for the
-predefined operations. For instance, we may want to extend the predefined
-:func:`*` operator so that it also works on strings, by repeating a string a
-given number of times, like in Python. Here's a rule for :func:`*` which does
-this. Our definition employs a list comprehension and the standard library
-function :func:`strcat` which concatenates a list of strings::
+different places. So as long as the left-hand side patterns properly
+discriminate between the different cases, you can overload any operation in
+Pure to handle as many argument types as you want. However, it is important to
+note that in contrast to overloaded functions in statically typed languages
+such as C++, there's really only *one* ``square`` function here which handles
+all the different argument types. The necessary "dispatching" to select the
+proper rewriting rule for the argument values at hand is done at runtime by
+pattern matching.
 
-  > n::int * s::string = strcat [s | i = 1..n];
-  > 5*"abc";
-  "abcabcabcabcabc"
+Parametric polymorphism has the advantage that it lets you define polymorphic
+functions in a very concise way. On the other hand, ad-hoc polymorphism lets
+you deal with disparate cases of an operation which cannot easily be
+reconciled. It also allows you to tailor the definition to the specific case
+at hand, which might be more efficient than using a generic rule. You can also
+combine both approaches, but in this case you have to list the special case
+rules before the generic ones. For instance::
 
-So as long as the left-hand side patterns properly discriminate between the
-different cases, you can "overload" any operation in Pure to handle as many
-argument types as you want. However, it is important to note that in contrast
-to overloaded functions in statically typed languages such as C++, there's
-really only *one* ``square`` function and *one* ``*`` operator here which
-handle all the different argument types. The necessary "dispatching" to select
-the proper rewriting rule for the argument values at hand is done by pattern
-matching.
+  square x::int | square x::double |
+  square x = x*x;
+
+(Note that the first two rules are just specialization of the last rule to
+``int`` and ``double`` arguments, so we could in fact eliminate the special
+case rules here and still get the same results. But the type tags tell the
+compiler that the argument in these rules is always an ``int`` or ``double``,
+respectively, so it may generate more efficient code for these cases.)
 
 Patterns may also involve constant values, in which case the constant must be
 matched literally in the argument. For instance, here is another definition of
@@ -4292,15 +4304,15 @@ equation before the first one will cause the definition to loop on ``ack 0 0``.
 Another point that deserves mentioning here is that constants on the left-hand
 side of a rule *must* be matched literally, cf. `Constant Patterns`_. E.g.,
 ``ack 0 y`` only matches if the first argument is really ``0``, not ``0.0`` or
-``0L``, although these compare equal to ``0``. So the above definition of
+``0L`` (although these compare equal to ``0``). So the above definition of
 ``ack`` isn't quite the same as our previous definition from `Defining
 Functions`_. If you wanted the definition above to also work with double and
 bigint values, you'd have to add corresponding rules for the ``0.0`` and
 ``0L`` cases.
 
-Patterns can also be used to "destructure" aggregate values like lists, tuples
-and matrices, binding variables to the component values. For instance, to
-compute the sum of a list of values, you may write::
+Last but not least, patterns are also used to "deconstruct" structured values
+like lists, tuples and matrices, binding variables to the component
+values. For instance, to compute the sum of a list of values, you may write::
 
   > sum [] = 0;
   > sum (x:xs) = x+sum xs;
@@ -4319,18 +4331,28 @@ function above is actually equivalent to ``foldr (+) 0``, see `List
 Processing`_ below for details.)
 
 Instead of placing the patterns directly into the left-hand sides of the
-function definition, it is also possible to do the necessary pattern-matching
-in the right hand side, by employing a :keyword:`case` expression::
+function definition, you might also do the necessary pattern-matching in the
+right hand side, by employing a :keyword:`case` expression::
 
   sum xs = case xs of [] = 0; x:xs = x+sum xs end;
 
-Note that the :keyword:`case` expression works slightly different to a pattern
-matching function definition in that it raises an exception if the target
-expression is not matched (cf. Patterns_).  To avoid that, you may want to add
-a type tag here, which ensures that the argument of ``sum`` is of the proper
-type::
+This works a bit different, though, since a :keyword:`case` expression raises
+an exception if the target expression is not matched (cf. Patterns_)::
+
+  > sum (1:2:xs);
+  <stdin>, line 2: unhandled exception 'failed_match' while evaluating 'sum (1:2:xs)'
+
+To avoid that, you may want to add a type tag, which ensures that the argument
+of ``sum`` is of the proper type::
 
   sum xs::list = case xs of [] = 0; x:xs = x+sum xs end;
+
+Now the case of an improper list is handled a bit more gracefully, yielding
+the same normal form expression you'd get with the first definition of ``sum``
+above::
+
+  > sum (1:2:xs);
+  1+(2+sum xs)
 
 Pure also allows to define ``sum`` in a more traditional way which will be
 familiar to Lisp programmers (note that :func:`head` and :func:`tail`
@@ -4342,9 +4364,10 @@ Choosing one or the other is again a question of style. However, if you're
 dealing with concrete data structures such as lists, pattern-matching
 definitions are often more convenient and easier to understand.
 
-Pattern matching also works with user-defined constructors. For instance,
-here's how to implement an insertion operation which can be used to construct
-a binary tree data structure useful for sorting and searching::
+Pattern matching also works with user-defined constructors (cf. `Data
+Types`_). For instance, here's how to implement an insertion operation which
+can be used to construct a binary tree data structure useful for sorting and
+searching::
 
   nonfix nil;
 
@@ -4538,10 +4561,11 @@ thus becomes a "value". For instance::
 
 There's nothing mysterious about this; the ``cons`` and ``nil`` symbols being
 used here aren't defined anywhere, and thus any terms constructed with these
-symbols are just "data", no questions asked. Sometimes we also call such
-symbols `constructors`. (Note that this usage of the term "constructor" means
-something completely different from constructors in object-oriented
-programming, which are special routines used to instantiate an object.)
+symbols are just "data", no questions asked. We also call such symbols
+`constructors`. (Note that these are different from constructors in
+object-oriented programming; constructor applications in term rewriting and
+functional programming normally don't execute any code, they're just literal
+data objects.)
 
 We can now go ahead and define some operations on this kind of data. (To these
 ends, it's necessary to declare ``nil`` as a nonfix symbol so that we can use
@@ -4580,15 +4604,16 @@ This definition lets us use the ``mylist`` type as a tag on the left-hand side
 of an equation, cf. `Pattern Matching`_. But if we're content with using the
 patterns directly then we might just as well do without that.
 
-Types consisting solely of term patterns are sometimes also called `algebraic
-types`. In fact, most user-defined data structures are algebraic types in
-Pure, and there are plenty of examples of these in the standard library as
-well. In particular, lists and tuples are algebraic types, as are complex and
-rational numbers, and most of Pure's container data types such as dictionaries
-and sets are also implemented as algebraic types.
+Types consisting solely of constructor term patterns are sometimes also called
+`algebraic types`. In fact, most user-defined data structures are algebraic
+types in Pure, and there are plenty of examples of these in the standard
+library as well. In particular, lists and tuples are algebraic types, as are
+complex and rational numbers, and most of Pure's container data types such as
+dictionaries and sets are also implemented as algebraic types.
 
-Pure allows you to have constructor symbols with equations, too. For
-instance::
+Pure differs from most functional languages in that symbols may act as *both*
+constructors and defined functions, depending on the arguments. Thus Pure
+allows you to have "constructors with equations". For instance::
 
   cons nil ys = ys;
   cons (cons x xs) ys = cons x (cons xs ys);
@@ -4665,13 +4690,13 @@ characters::
 A more abstract way to define algebraic types are the `interface types`_. For
 instance, if we take another look at the operations defined on our list type,
 we may observe that the data structure is quite apparent from the patterns in
-the rules of operations such as '``#``' and '``+``'. Pure lets you leverage
+the rules of operations such as '``#``' and '``+``'. Pure lets us leverage
 that information by creating an algebraic type from a collection of operation
 patterns it supports. For instance, we may write::
 
   interface list_alike with
     #x::list_alike;
-    x::list_alike + y::list_alike;
+    x::list_alike + y;
   end;
 
 This defines a generic type consisting of all terms which may be passed as an
@@ -4691,7 +4716,7 @@ This also comprises the standard list and string types for which there are
 definitions of the '``#``' and '``+``' operations in the prelude.
 
 Pure's interface types are a first attempt at formalizing the notion of `Duck
-typing`_ in Pure. It is thus still a bit experimental and requires some
+typing`_ in Pure. They are thus still a bit experimental and require some
 diligence in defining the interface operations in a suitable way. Please check
 `Interface Types`_ in the Declarations_ section for more information and
 examples.
@@ -4734,10 +4759,10 @@ works::
   > map fact (1..10);
   [1,2,6,24,120,720,5040,40320,362880,3628800]
 
-We mention in passing here that these numbers grow fairly quickly, so they
-outgrow the 32 bit range and start wrapping around already at ``n==13``. To
-avoid that, you'll have to do the computation with bigints, or you could use
-floating point values if you don't mind the limited precision. ::
+Note that these numbers grow fairly quickly; they outgrow the 32 bit range and
+start wrapping around already at ``n==13``. To avoid that, you'll have to do
+the computation with bigints, or you could use floating point values if you
+don't mind the limited precision. ::
 
   > fact 13;
   1932053504
@@ -4748,13 +4773,14 @@ floating point values if you don't mind the limited precision. ::
   > fact 30.0;
   2.65252859812191e+32
 
-However, you'll run into another, more serious issue if you want to compute
-some really huge factorials. That's because each recursive invocation of
-``fact`` needs some amount of stack space. (If you're not familiar with how
-subroutine calls are executed by keeping the execution context on a stack then
-you should revisit your basic computer science lessons now.) When the numbers
-become big enough then the stack space may be exhausted which usually results
-in a fatal runtime error::
+However, you'll run into another, more serious obstacle if you want to compute
+factorials for some really big values ``n``. That's because each recursive
+invocation of ``fact`` needs some small amount of memory on the execution
+stack, a so-called "stack frame". (If you're not familiar with how subroutine
+calls are executed by keeping the execution context on a stack then you should
+revisit your basic computer science lessons now.) When ``n`` becomes big
+enough then the stack space may be exhausted, which usually results in a fatal
+runtime error::
 
   > fact 1000000L;
   Segmentation fault
@@ -4763,8 +4789,8 @@ The Pure interpreter can optionally do stack checks so that at least you get
 an orderly exception when this happens, see `Stack Size and Tail Recursion`_
 for details. To enable this, you'll need to set the :envvar:`PURE_STACK`
 environment variable to the maximum stack size in kilobytes. E.g., on
-Unix-like systems you can type the following in a Bourne-compatible shell (or
-put this command into your shell's startup file):
+Unix-like systems you can type the following in a Bourne-compatible shell, or
+put this command into your shell's startup file:
 
 .. code-block:: console
 
@@ -4785,11 +4811,10 @@ try it with some large value of ``n``. You'll get something like::
 Ok, so we now get an orderly exception, which is much better than being kicked
 out of the interpreter. But this doesn't really solve the problem. How can we
 avoid using all that stack space in the first place? In a language like C we'd
-be using a specialized loop construct instead of recursion, which translates
-to some kind of "goto" instruction instead of a subroutine call so that we're
-safe. But this isn't an option in Pure. Instead, we can rewrite the definition
-so that it becomes `tail-recursive`. This means that the recursive call
-becomes the final operation on the right-hand side of the recursive rule.
+be using a specialized loop construct instead of recursion. But this isn't an
+option in Pure. Instead, we can rewrite the definition so that it becomes
+`tail-recursive`. This means that the recursive call becomes the final
+operation on the right-hand side of the recursive rule.
 
 The trick of the trade to turn a recursive function into a tail-recursive one
 is the `accumulating parameter` technique. The idea here is to have a separate
@@ -4811,23 +4836,21 @@ is fairly common in functional programs.
 Our worker function is tail-recursive since the recursive call to ``loop`` is
 indeed the final call on the right-hand side of the first equation defining
 ``loop``. The Pure compiler generates code which optimizes such "tail calls"
-so that they essentially become "goto" instructions rather than subroutine
-calls in the generated assembler code. These don't require any additional
-stack space, so our definition should work in constant stack space now. And in
-fact after entering our new definition of ``fact`` we can now compute ``fact
-100000L`` just fine::
+so that they reuse the stack frame of the calling function. Thus a
+tail-recursive function like ``loop`` will execute in constant stack
+space. And in fact after entering our new definition of ``fact`` we can now
+compute ``fact 100000L`` just fine::
 
   > fact 100000L;
   2824229407960347874293421578024535518477... // lots of digits follow
 
-The accumulating parameter technique is actually pretty general. While it
-can't deal with general recursion (e.g., if a function needs to traverse a
-tree-like data structure, which requires multiple recursive calls), it covers
-all the kinds of simple iterative algorithms which you'd do using loop
-constructs in traditional programming languages. Some algorithms may require
-additional techniques such as tabulation, however, so that they can be written
-in an iterative form. To see how this works, let's consider the Fibonacci
-numbers. These can be computed with the following naive recursive definition::
+The accumulating parameter technique isn't fully general, but it covers all
+the kinds of simple iterative algorithms which you'd do using loop constructs
+in traditional programming languages. Some algorithms may require additional
+techniques such as `tabulation` (keeping track of some or all intermediate
+results), however, so that they can be written in an iterative form. To see
+how this can be done in Pure, let's consider the Fibonacci numbers. These can
+be computed with the following naive recursive definition::
 
   fib n = if n<=1 then n else fib (n-2) + fib (n-1);
 
@@ -4838,20 +4861,17 @@ Here are some members of this famous sequence::
 
 Note that the right-hand side of the definition above involves *two* recursive
 invocations of ``fib`` in the :keyword:`else` branch. This is bad because it
-means our definition will need exponential running time. (More precisely, if
-you do the math then you'll find that the ratio between the running times of
-successive invocations quickly starts approaching the golden ratio φ =
-1.618..., which is no accident because the times are proportional to the
-Fibonacci function itself!)
+means our definition will need exponential running time. (More precisely,
+you'll find that the ratio between the running times of successive invocations
+quickly starts approaching the golden ratio φ = 1.618..., which is no accident
+because the times are proportional to the Fibonacci function itself!)
 
 Using a simple iterative algorithm, it is possible to calculate the Fibonacci
 numbers in linear time instead. Observe that each member of the sequence is
-simply the sum of the two preceding members. Thus if we just keep track of two
-successive members ``fib (n-1)`` and ``fib n`` of the sequence then we can
-compute the next pair of members ``fib n`` and ``fib (n+1)`` with a single
-addition. This yields the following tail-recursive implementation, using the
-same kind of "wrapper-worker" design that we already saw in the case of the
-factorial above::
+simply the sum of the two preceding members. If we keep track of the last two
+members of the sequence then we can compute the next member with a single
+addition. This yields the following tail-recursive implementation which uses
+the same kind of "wrapper-worker" design::
 
   fib n = loop n 0L 1L with
     loop n a b = loop (n-1) b (a+b) if n>0;
@@ -5887,7 +5907,10 @@ List Comprehensions
 List comprehensions are Pure's main workhorse for generating and processing
 all kinds of list values. You can think of them as a combination of
 :func:`map` and :func:`filter` using a prettier syntax reminiscent of the way
-in which sets are commonly specified in mathematics.
+in which sets are commonly specified in mathematics. List comprehensions are
+just syntactic sugar, so anything that can be done with them can also be
+accomplished with Pure's generic list functions. But list comprehensions are
+often easier to write and understand.
 
 In the simplest case, list comprehensions are just a shorthand for :func:`map`
 with lambdas::
@@ -5932,50 +5955,48 @@ in fact all even::
   > [i+j | i,j = ans];
   [2,4,6,4,6,6,8,8,10]
 
-In Pure generator clauses never work as filters, so when using patterns you
-may well run into match failures which are reported using a
-:const:`failed_match` exception::
+This works because the elements of the generator list all match the ``(i,j)``
+pattern here. Of course, in general this might not be the case. So what would
+we expect to happen if a list element does *not* match the generator pattern?
+Let's try::
 
   > [i+j | i,j = [(1,1),(2,2),3]];
   <stdin>, line 6: unhandled exception 'failed_match' while evaluating
   'listmap (\(i,j) -> i+j) [(1,1),(2,2),3]'
 
-Note that this is different from Haskell's list comprehensions which filter
-out unmatched elements automatically. We can emulate this in Pure as follows,
-although it's a bit awkward::
+To understand this result, note that this list comprehension really just maps
+``(\(i,j) -> i+j)`` to the generator list. As discussed in `Special
+Expressions`_, a lambda gives us an exception in case of argument mismatch,
+and this is in fact what happened here. Note that this is different from
+Haskell's list comprehensions which filter out unmatched elements
+automatically. In Pure, generator clauses never work as filters, although there
+are different ways to emulate this behaviour::
 
   > cat [case x of i,j = [i+j]; _ = [] end | x = [(1,1),(2,2),3]];
   [2,4]
-
-Or we might use an explicit filter clause, which is a little more
-perspicuous::
-
   > [i+j when i,j = x end | x = [(1,1),(2,2),3]; tuplep x];
   [2,4]
 
-Anything that can be done with a list comprehension can of course also be
-accomplished with Pure's generic list functions. But list comprehensions are
-often easier to write and understand. For instance, here's how we can apply a
-list comprehension recursively to implement a variation of Erathosthenes'
-classical prime sieve::
+Neither is particularly convenient, though, so list comprehensions involving
+patterns are best used with homogeneous lists; if necessary, the generator
+list might be filtered beforehand.
+
+As another example, here's how we can apply a list comprehension recursively
+to implement a variation of Erathosthenes' classical prime sieve (this method
+is rather slow and thus not suitable for computing large primes, but we're not
+concerned with that here)::
 
   primes n        = sieve (2..n) with
     sieve []      = [];
     sieve (p:qs)  = p : sieve [q | q = qs; q mod p];
   end;
 
-At a glance, we can see how this definition works: Starting from the list
-``2..n``, we successively take the first element ``p`` from the list and
-remove all multiples of ``p`` from the rest of the list. We then apply this
-process recursively to the rest of the list. The result is the list of all
-primes up to ``n``::
+Note that the sieve recursively filters out the multiples of the current front
+element ``p`` of the list, which, by virtue of the construction, is always a
+prime number. The result is the list of all primes up to ``n``::
 
   > primes 100;
   [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73,79,83,89,97]
-
-Note that this is a rather inefficient version of Erathosthenes' sieve; it
-needs quadratic running time which makes it unsuitable for computing larger
-primes. But it's nice to look at and easy to understand.
 
 List comprehensions are also a useful device to organize backtracking
 searches. For instance, here's an algorithm for the n queens problem, which
@@ -9811,7 +9832,7 @@ times ``m`` matrix ``y`` and puts the result into the ``n`` times ``m`` matrix
 Also new in Pure 0.45 is the support for passing ``argv``-style vectors as
 arguments. For instance, here is how you can use ``fork`` and ``execvp`` to
 implement a poor man's version of the C ``system`` function. (This is
-UNIX-specific and doesn't do much error-checking, but you get the idea.)
+Unix-specific and doesn't do much error-checking, but you get the idea.)
 
 ::
 
