@@ -1766,6 +1766,11 @@ def __do__ (__lambda__ [x] y@(listmap _ _)) |
     __do__ (__lambda__ [x] y@(colcatmap _ _)) =
     __do__ $ (__lambda__ [x] (void y));
 
+// Handle the case of generator clauses involving patterns (Pure 0.56+).
+def __do__ (__lambda__ [x] (__case__ x [(y-->z),(u-->[])])) |
+    __do__ (__lambda__ [x] (__case__ x [(y-->z),(u-->{})])) =
+    __do__ $ (__lambda__ [x] (__case__ x [(y-->void z),(u-->())]));
+
 // Recurse into embedded filter clauses.
 def __do__ (__lambda__ [x] (__ifelse__ y z [])) |
     __do__ (__lambda__ [x] (__ifelse__ y z {})) =
@@ -1774,6 +1779,11 @@ def __do__ (__lambda__ [x] (__ifelse__ y z [])) |
 // Eliminate extra calls to 'void' in generator clauses.
 def __do__ (__lambda__ [x] (void y)) |
     __do__ (__lambda__ [x] (__voidfun__ y)) = __do__ (__lambda__ [x] y);
+
+// Handle the case of generator clauses involving patterns (Pure 0.56+).
+def __do__ (__lambda__ [x] (__case__ x [(y-->void z),(u-->())])) |
+    __do__ (__lambda__ [x] (__case__ x [(y-->__voidfun__ z),(u-->())])) =
+    __do__ (__lambda__ [x] (__case__ x [(y-->z),(u-->())]));
 
 // Eliminate extra calls to 'void' in filter clauses.
 def __do__ (__lambda__ [x] (__ifelse__ y (void z) ())) |
