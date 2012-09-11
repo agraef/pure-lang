@@ -72,24 +72,42 @@ type wday {
   state 7: #6
 }
 {
-  rule #0: wdays = colmap (\(day,idx) -> day=>idx) (zip [sun,mon,tue,wed,thu,fri,sat] (0..6))
+  rule #0: wdays = colcatmap (\__v8__ -> case __v8__ of day,idx = {day=>idx}; _ = {} end) (zip [sun,mon,tue,wed,thu,fri,sat] (0..6))
   state 0: #0
 	<var> state 1
   state 1: #0
 }
-let wdays = colmap (\(day/*0:101*/,idx/*0:11*/) -> day/*0:101*/=>idx/*0:11*/ {
-  rule #0: _ (day,idx) = day=>idx
-  state 0: #0
-	<app> state 1
-  state 1: #0
+let wdays = colcatmap (\__v8__/*0:1*/ -> case __v8__/*0:1*/ of day/*0:01*/,idx/*0:1*/ = {day/*0:01*/=>idx/*0:1*/}; _/*0:*/ = {} {
+  rule #0: day,idx = {day=>idx}
+  rule #1: _ = {}
+  state 0: #0 #1
+	<var> state 1
 	<app> state 2
-  state 2: #0
-	, state 3
-  state 3: #0
+  state 1: #1
+  state 2: #0 #1
+	<var> state 3
+	<app> state 5
+  state 3: #1
 	<var> state 4
-  state 4: #0
-	<var> state 5
-  state 5: #0
+  state 4: #1
+  state 5: #0 #1
+	<var> state 6
+	, state 9
+  state 6: #1
+	<var> state 7
+  state 7: #1
+	<var> state 8
+  state 8: #1
+  state 9: #0 #1
+	<var> state 10
+  state 10: #0 #1
+	<var> state 11
+  state 11: #0 #1
+} end {
+  rule #0: _ __v8__ = case __v8__ of day,idx = {day=>idx}; _ = {} end
+  state 0: #0
+	<var> state 1
+  state 1: #0
 }) (zip [sun,mon,tue,wed,thu,fri,sat] (0..6));
 ord day/*0:1*/ :: wday = wdays!day/*0:1*/;
 wday n/*0:1*/ :: int = key (wdays!n/*0:1*/) if n/*0:1*/>=0&&n/*0:1*/<7;

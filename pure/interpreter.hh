@@ -904,6 +904,8 @@ public:
   expr *mkmatcomp_expr(expr *x, comp_clause_list *cs);
   expr mkmatcomp_expr(expr x, size_t n, comp_clause_list::iterator cs,
 		      comp_clause_list::iterator end);
+  expr mkpat_expr(expr x, expr y1, expr y2, expr z, bool& ispat);
+  expr gensym_expr(char name);
   expr quoted_ifelse(expr x, expr y, expr z);
   expr quoted_if(expr x, expr y);
   expr quoted_lambda(exprl *args, expr rhs);

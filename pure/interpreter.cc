@@ -8373,22 +8373,7 @@ expr *interpreter::macspecial(bool trace, expr x, envstack& estk, uint8_t idx)
   expr u, v, w;
   if (!specials_only) {
     if (x.tag() == symtab.gensym_sym().f) {
-      // generate a new unqualified symbol in the default namespace
-      static unsigned count = 0;
-      char s[20];
-      while (1) {
-	sprintf(s, "__x%u__", ++count);
-	// If the next symbol already exists or cannot be created for some
-	// reason, we simply keep on incrementing the counter until we find
-	// a good one. This must eventually succeed.
-	if (!symtab.lookup(s)) {
-	  string *name = new string(s);
-	  try { return mksym_expr(name); }
-	  catch (err &e) { delete name; }
-	}
-      }
-      assert(0 && "this can't happen");
-      return 0;
+      return new expr(gensym_expr('x'));
     }
     if (x.tag() == symtab.namespace_sym().f) {
       const char *s = symtab.current_namespace?
@@ -9019,6 +9004,53 @@ expr *interpreter::mklist_expr(expr *x)
   return u;
 }
 
+expr interpreter::mkpat_expr(expr x, expr y1, expr y2, expr z, bool& ispat)
+{
+  // Check whether we have a nontrivial pattern x which must be filtered. The
+  // lambda body is y1, y2 is a wrapped version of y1 (either y1 itself or
+  // [y1] in the listmap case), z is the null aggregate ([] or {}) which is to
+  // be returned in case of a failed match.
+  ispat = x.tag() <= 0 || (x.flags()&EXPR::QUAL);
+  if (!ispat) {
+    const symbol& sym = symtab.sym(x.tag());
+    ispat = sym.prec < PREC_MAX || sym.fix == nonfix || sym.fix == outfix;
+  }
+  if (ispat) {
+    // We have a nontrivial pattern here which must be filtered. We translate
+    // this to \u -> case u of x = y2; _ = z end, where u is a fresh variable.
+    expr u = gensym_expr('v');
+    rule r1(x, y2), r2(expr(symtab.anon_sym), z);
+    rulel *rl = new rulel;
+    add_rule(*rl, r1, true);
+    add_rule(*rl, r2, true);
+    expr v = expr::cases(u, rl);
+    return lambda_expr(new exprl(1, u), v);
+  } else
+    // Plain variable, nothing special to do.
+    return lambda_expr(new exprl(1, x), y1);
+}
+
+expr interpreter::gensym_expr(char name)
+{
+  // generate a new unqualified symbol in the default namespace
+  static unsigned count[256];
+  char s[20];
+  while (1) {
+    sprintf(s, "__%c%u__", name, ++count[(int)name]);
+    // If the next symbol already exists or cannot be created for some
+    // reason, we simply keep on incrementing the counter until we find
+    // a good one. This must eventually succeed.
+    if (!symtab.lookup(s)) {
+      try {
+	const symbol &sym = symtab.checksym(s);
+	return expr(sym.f);
+      } catch (err &e) { }
+    }
+  }
+  assert(0 && "this can't happen");
+  return expr();
+}
+
 expr interpreter::mklistcomp_expr(expr x, comp_clause_list::iterator cs,
 				  comp_clause_list::iterator end)
 {
@@ -9032,14 +9064,17 @@ expr interpreter::mklistcomp_expr(expr x, comp_clause_list::iterator cs,
       expr p = c.first;
       return expr::cond(p, mklistcomp_expr(x, next_cs, end), expr::nil());
     } else if (next_cs == end) {
-      expr pat = c.first, arg = c.second;
+      bool ispat;
+      expr pat = c.first, arg = c.second,
+	y = mkpat_expr(pat, x, expr(expr::cons(x, expr::nil())),
+		       expr::nil(), ispat);
       return
-	expr(symtab.listmap_sym().x, lambda_expr(new exprl(1, pat), x), arg);
+	expr(ispat?symtab.catmap_sym().x:symtab.listmap_sym().x, y, arg);
     } else {
+      bool ispat;
       expr pat = c.first, body = mklistcomp_expr(x, next_cs, end),
-	arg = c.second;
-      return
-	expr(symtab.catmap_sym().x, lambda_expr(new exprl(1, pat), body), arg);
+	arg = c.second, y = mkpat_expr(pat, body, body, expr::nil(), ispat);
+      return expr(symtab.catmap_sym().x, y, arg);
     }
   }
 }
@@ -9062,19 +9097,24 @@ expr interpreter::mkmatcomp_expr(expr x, size_t n,
     comp_clause_list::iterator next_cs = cs;
     ++next_cs;
     comp_clause& c = *cs;
+    expr z(EXPR::MATRIX, new exprll);
     if (c.second.is_null()) {
       expr p = c.first;
-      return expr::cond(p, mkmatcomp_expr(x, n, next_cs, end),
-			expr(EXPR::MATRIX, new exprll));
+      return expr::cond(p, mkmatcomp_expr(x, n, next_cs, end), z);
     } else if (next_cs == end) {
-      expr pat = c.first, arg = c.second;
+      bool ispat;
+      exprll *xs = new exprll(1, exprl(1, x));
+      expr u(EXPR::MATRIX, xs);
+      expr pat = c.first, arg = c.second, y = mkpat_expr(pat, x, u, z, ispat);
       expr f = (n&1)?symtab.colmap_sym().x:symtab.rowmap_sym().x;
-      return expr(f, lambda_expr(new exprl(1, pat), x), arg);
+      expr g = (n&1)?symtab.colcatmap_sym().x:symtab.rowcatmap_sym().x;
+      return expr(ispat?g:f, y, arg);
     } else {
+      bool ispat;
       expr pat = c.first, body = mkmatcomp_expr(x, n-1, next_cs, end),
-	arg = c.second;
+	arg = c.second, y = mkpat_expr(pat, body, body, z, ispat);
       expr f = (n&1)?symtab.colcatmap_sym().x:symtab.rowcatmap_sym().x;
-      return expr(f, lambda_expr(new exprl(1, pat), body), arg);
+      return expr(f, y, arg);
     }
   }
 }

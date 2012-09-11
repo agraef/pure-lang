@@ -5619,7 +5619,7 @@ def __std__::__voidchk1__ x/*0:01*/ y/*0:1*/ = x/*0:01*/;
   state 55: #2 #3
 }
 {
-  rule #0: unzip x::matrix = colmap (\(u,_) -> u) x,colmap (\(_,v) -> v) x if all check x with check (_,_) = 1; check x = throw (bad_tuple_value x) end
+  rule #0: unzip x::matrix = colcatmap (\__v1__ -> case __v1__ of u,_ = {u}; _ = {} end) x,colcatmap (\__v2__ -> case __v2__ of _,v = {v}; _ = {} end) x if all check x with check (_,_) = 1; check x = throw (bad_tuple_value x) end
   rule #1: unzip [] = [],[]
   rule #2: unzip us@(_:_) = foldr accum ([],[]) us with check us@(_,_) = us; check (foldr _ _ us) = throw (bad_list_value us); check us = throw (bad_tuple_value us); accum u@(x,y) us = x:(xs when xs,_ = check us end)&,y:(ys when _,ys = check us end)& if thunkp us; accum u@(x,y) us = x:xs,y:ys when xs,ys = check us end; accum u _ = throw (bad_tuple_value u) end
   state 0: #0 #1 #2
@@ -5639,7 +5639,7 @@ def __std__::__voidchk1__ x/*0:01*/ y/*0:1*/ = x/*0:01*/;
   state 7: #1
 }
 {
-  rule #0: unzip3 x::matrix = colmap (\(u,_) -> u) x,colmap (\(_,v,_) -> v) x,colmap (\(_,_,w) -> w) x if all check x with check (_,_,_) = 1; check x = throw (bad_tuple_value x) end
+  rule #0: unzip3 x::matrix = colcatmap (\__v3__ -> case __v3__ of u,_ = {u}; _ = {} end) x,colcatmap (\__v4__ -> case __v4__ of _,v,_ = {v}; _ = {} end) x,colcatmap (\__v5__ -> case __v5__ of _,_,w = {w}; _ = {} end) x if all check x with check (_,_,_) = 1; check x = throw (bad_tuple_value x) end
   rule #1: unzip3 [] = [],[],[]
   rule #2: unzip3 us@(_:_) = foldr accum ([],[],[]) us with check us@(_,_,_) = us; check (foldr _ _ us) = throw (bad_list_value us); check us = throw (bad_tuple_value us); accum u@(x,y,z) us = x:(xs when xs,_,_ = check us end)&,y:(ys when _,ys,_ = check us end)&,z:(zs when _,_,zs = check us end)& if thunkp us; accum u@(x,y,z) us = x:xs,y:ys,z:zs when xs,ys,zs = check us end; accum u _ = throw (bad_tuple_value u) end
   state 0: #0 #1 #2
