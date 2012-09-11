@@ -4445,6 +4445,11 @@ with an equivalent lambda::
   > map (\x -> x*x) (1..10);
   [1,4,9,16,25,36,49,64,81,100]
 
+For obvious reasons lambdas work best for non-recursive functions. While there
+are techniques to create recursive functions out of lambdas using so-called
+fixed point combinators (cf. :func:`fix`), named functions are much more
+convenient for that purpose.
+
 `Pattern matching`_ works in local definitions as usual. For instance, here
 are several ways to swap two values represented as a tuple, using either a
 local function or a :keyword:`when` or :keyword:`case` expression::
@@ -4458,22 +4463,47 @@ local function or a :keyword:`when` or :keyword:`case` expression::
   > case 1,2 of x,y = y,x end;
   2,1
 
-As discussed earlier, local definitions provide a kind of hierarchical block
-structure, cf. `Scoping Rules`_. A local function can refer to other local
-functions and variables in its parent environments. It can also be returned as
-a function value, in which case it becomes a `lexical closure` which carries
-around with it the local variable environment it was created in. For
-instance::
+You'll also frequently find code like the following, where a global "wrapper"
+function just sets up some initial parameter values and then invokes a local
+"worker" function which does all the real work. The following function
+calculates the sum of the positive integers up to ``n`` (the "accumulating
+parameters" technique used in this example will be explained later,
+cf. Recursion_). ::
 
-  > adder x = f with f y = x+y end;
+  sum n = sum 0 n with
+    sum s n = s if n < 0;
+    	    = sum (s+n) (n-1) otherwise;
+  end;
+
+Note that there are actually *two* separate functions named ``sum`` here. This
+works because according to the `scoping rules`_ the right-hand side of the
+global definition is under the scope of the :keyword:`with` clause, and thus
+the call ``sum 0 n`` on the right-hand refers to the *local* ``sum`` function,
+not the global one. (While it is perfectly correct and even makes sense in
+this example, this style may be somewhat confusing, so we often prefer to give
+wrapper and worker different names for clarity.)
+
+As discussed in `Scoping Rules`_, a local function can refer to other local
+functions and variables in its parent environments. It can also be returned as
+a function value, which is where things get really interesting. The local
+function value then becomes a `lexical closure` which carries around with it
+the local variable environment it was created in. For instance::
+
+  > adder x = add with add y = x+y end;
   > let g = adder 5; g; map g (1..5);
-  f
+  add
   [6,7,8,9,10]
 
-Note that here the local function ``f`` refers to the argument value ``x`` of
-its parent function ``adder``. The invocation ``adder 5`` returns an instance
-of ``f`` which has ``x`` bound to the value ``5`` so that ``f y`` reduces to
-``5+y`` for each ``y``.
+Note that here the local function ``add`` refers to the argument value ``x``
+of its parent function ``adder``. The invocation ``adder 5`` thus returns an
+instance of ``add`` which has ``x`` bound to the value ``5``, so that ``add
+y`` reduces to ``5+y`` for each ``y``. This works as if this instance of the
+``add`` closure had an invisible ``x`` argument of ``5`` attached to it. (And
+this is in fact how closures are implemented internally, using a
+transformation called `lambda lifting`_ which effectively turns local
+functions into global ones.) You should study this example carefully until you
+fully understand how it works; we'll see a bunch of other, more complicated
+examples of this kind later.
 
 Lexical closures also provide a means to encapsulate data in a way reminiscent
 of object-oriented programming. For instance::
@@ -4774,7 +4804,7 @@ don't mind the limited precision. ::
   2.65252859812191e+32
 
 However, you'll run into another, more serious obstacle if you want to compute
-factorials for some really big values ``n``. That's because each recursive
+factorials for some really big values of ``n``. That's because each recursive
 invocation of ``fact`` needs some small amount of memory on the execution
 stack, a so-called "stack frame". (If you're not familiar with how subroutine
 calls are executed by keeping the execution context on a stack then you should
@@ -4803,8 +4833,6 @@ overflows are detected sooner.)
 Now start the interpreter again, enter the above definition of ``fact`` and
 try it with some large value of ``n``. You'll get something like::
 
-  > fact n = n*fact (n-1) if n>0;
-  >        = 1 otherwise;
   > fact 100000L;
   <stdin>, line 3: unhandled exception 'stack_fault' while evaluating 'fact 100000L'
 
@@ -5934,15 +5962,25 @@ determine the elements that are to be included in the result list. ::
   [1,3,7,9,13,15,19]
 
 This can be read as "the list of all ``2*x-1`` for which ``x`` runs through
-``1..10`` and for which ``x mod 3``". Note that ``x mod 3`` is in fact a
-predicate which returns "true" (non-zero) if and only if ``x`` is not a
-multiple of ``3``.
+``1..10`` and for which ``x mod 3`` is non-zero" (which means that ``x`` is
+not a multiple of ``3``). It is roughly equivalent to::
 
-List comprehensions can have as many generator and filter clauses as you want,
-which are considered in left-to-right order so that later clauses may refer to
-any variables introduced in earlier generator clauses. E.g., here's how you can
-generate the list of all pairs ``(i,j)`` with ``1<=i<=j<=5`` such that ``i+j``
-is even::
+  > map (\x->2*x-1) (filter (\x->x mod 3) (1..10));
+  [1,3,7,9,13,15,19]
+
+List comprehensions can also draw values from other kinds of aggregates such
+as strings and matrices, but the result is always a list::
+
+  > [x-1 | x = "IBM"];
+  ["H","A","L"]
+  > [1/x | x = {1,2,3;4,5,6}; ~x mod 2];
+  [0.5,0.25,0.166666666666667]
+
+List comprehensions can have as many generator and filter clauses as you want.
+The clauses are considered in left-to-right order so that later clauses may
+refer to any variables introduced in earlier generator clauses. E.g., here's
+how you can generate the list of all pairs ``(i,j)`` with ``1<=i<=j<=5`` such
+that ``i+j`` is even::
 
   > [i,j | i = 1..5; j = i..5; ~(i+j) mod 2];
   [(1,1),(1,3),(1,5),(2,2),(2,4),(3,3),(3,5),(4,4),(5,5)]
@@ -5955,7 +5993,8 @@ pairs are in fact all even::
   > [i+j | i,j = ans];
   [2,4,6,4,6,6,8,8,10]
 
-Unmatched elements are filtered out automatically::
+Generator clauses involving patterns also act as filters; unmatched elements
+are filtered out automatically::
 
   > [i+j | i,j = ["to be ignored",(1,1),(2,2),3]];
   [2,4]
@@ -5967,10 +6006,10 @@ group the pairs into sublists for each value of ``i``::
   > [[i,j | j = i..5; ~(i+j) mod 2] | i = 1..5];
   [[(1,1),(1,3),(1,5)],[(2,2),(2,4)],[(3,3),(3,5)],[(4,4)],[(5,5)]]
 
-A notorious example is the following recursive list comprehension which
-implements a variation of Erathosthenes' classical prime sieve. (This method
-is actually rather slow and thus not suitable for computing large primes, but
-we're not concerned with that here.) ::
+A notorious example is the following recursive algorithm which implements a
+variation of Erathosthenes' classical prime sieve. (This method is actually
+rather slow and thus not suitable for computing large primes, but we're not
+concerned with that here.) ::
 
   primes n        = sieve (2..n) with
     sieve []      = [];
