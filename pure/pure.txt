@@ -5154,10 +5154,10 @@ function isn't tail-recursive and we may thus run into stack overflows for
 large trees.
 
 This problem, while posed in an abstract way here, is not only of academic
-interest. For instance, trees may be used as a data structure for "strings"
-which allows us to do concatenation in constant time by just delaying it. In
-this case we certainly don't want to explicitly carry out all those
-concatenations in order to decide whether two such strings are the same.
+interest. For instance, trees may be used as an alternative string data
+structure which implements concatenation in constant time by just delaying
+it. In this case we certainly don't want to explicitly carry out all those
+concatenations in order to decide whether two such objects are the same.
 
 Therefore, this problem has been studied extensively and more efficient
 approaches have been developed. One way to solve the problem involves the
@@ -5185,14 +5185,12 @@ Research Papers`_.)
   end;
 
 As Baker admits himself, this style of programming isn't "particularly
-perspicuous", so we'll explain the algorithm in a moment. But first let's
-verify that the program indeed works as advertized. For this purpose, it's
-helpful to print out the actual comparisons performed in the innermost lambda
-in the definition of the local ``samefringe`` function. To these ends, add a
-little debugging statement so that the code reads as follows (also, don't
-forget to add the import clause "``using system;``" before the global
-definition of ``samefringe``, so that the :func:`printf` function is
-available)::
+perspicuous", so we'll explain the algorithm in a moment. But first let us
+verify that the program indeed works as advertized. It's helpful to print out
+the actual comparisons performed in the innermost lambda in the definition of
+the local ``samefringe`` function, which can be done by adding a little
+debugging statement as follows (this also needs an import clause "``using
+system;``" to make the :func:`printf` function available)::
 
   samefringe g1 g2 =
     g1 (\x1 g1 -> g2 (\x2 g2 -> printf "%s === %s?\n" (str x1,str x2) $$
@@ -5220,18 +5218,20 @@ prefix of the other. For instance::
 
   > let t4 = [[a,b],c,[[d]],e,[f,[[g,h,i]]]];
   > samefringe t4 t2;
-  a == a?
-  b == b?
-  c == c?
-  d == d?
-  e == e?
-  f == f?
-  g == g?
-  h == h?
-  i == []?
+  a === a?
+  b === b?
+  c === c?
+  d === d?
+  e === e?
+  f === f?
+  g === g?
+  h === h?
+  i === []?
   0
 
-Things go a bit differently, however, when comparing ``t3`` and ``t2``::
+Things go a bit differently, however, when comparing ``t3`` and ``t2``; as
+soon as we hit the first discrepany between the two fringes, the algorithm
+bails out and correctly asserts that the fringes are different::
 
   > samefringe t3 t2;
   a === a?
@@ -5239,12 +5239,8 @@ Things go a bit differently, however, when comparing ``t3`` and ``t2``::
   d === c?
   0
 
-So, as soon as we hit the first discrepany between the two fringes, the
-algorithm bails out and correctly asserts that the fringes are different.
-
-It goes without saying that the above algorithm is anything but obvious,
-although at first sight the code looks innocent enough. So let's take a closer
-look at its various parts now. First, the ``genfringe`` function::
+Let's take a closer look at the various parts of the algorithm now. First, the
+``genfringe`` function::
 
   genfringe [] c g = g c;
   genfringe (x:t) c g = genfringe x c (\c -> genfringe t c g);
