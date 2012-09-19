@@ -83,11 +83,7 @@
       		 false = 0
 
       These are actually just integers in Pure, but sometimes it's convenient
-      to refer to them using these symbolic constants. Note that if you also
-      want to use these on the left-hand side of equations, you still have to
-      declare them as ``nonfix`` symbols yourself, using a declaration like::
-
-        nonfix false true;
+      to refer to them using these symbolic constants.
 
    In addition, the following special exception symbols are provided:
 
@@ -162,6 +158,8 @@ infixl 0       __if__ __when__ __with__;
 infixl 10000   __as__ __type__ ;
 
 const false, true = 0, 1;
+// Make these nonfix so that they can also be used in patterns.
+nonfix false true;
 
 /* Synonym for the slicing operator. This must be defined here, before pulling
    in any of the prelude modules which define optimization rules for (!!). */
@@ -196,6 +194,7 @@ using primitives, matrices, records, strings;
              real /type
              rational /type
              integer /type
+	     bool /type
 
       Additional number types.
 
@@ -205,8 +204,12 @@ using primitives, matrices, records, strings;
    Predicates and Types`_.
 
    :type:`integer/type` is the union of Pure's built-in integer types, i.e.,
-   it comprises all :type:`int/type` and :type:`bigint/type`
-   values. :type:`rational/type` and :type:`complex/type` are the rational and
+   it comprises all :type:`int/type` and :type:`bigint/type` values.
+   :type:`bool/type` is a subtype of :type:`int/type` which denotes just the
+   normalized truth values ``0`` and ``1`` (a.k.a. :const:`false` and
+   :const:`true`).
+
+   :type:`rational/type` and :type:`complex/type` are the rational and
    complex types, while :type:`real/type` is the union of the
    :type:`double/type`, :type:`integer/type` and :type:`rational/type` types
    (i.e., anything that can represent a real number and be used for the real

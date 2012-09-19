@@ -1677,7 +1677,7 @@ belong to the `simple expressions`_.
    symbols. (Nonfix symbols actually work more or less like ordinary
    identifiers, but the :keyword:`nonfix` attribute tells the compiler that
    when such a symbol occurs on the left-hand side of an equation, it is
-   always to be interpreted as a literal, cf. `Variables in Equations`_.)
+   always to be interpreted as a literal, cf. `The "Head = Function" Rule`_.)
 
    Operator (and nonfix) symbols may take the form of an identifier or a
    sequence of punctuation characters, which may optionally be qualified with
@@ -7240,8 +7240,8 @@ still write a "constructor equation" like the following::
 Examples for all types of symbol declarations can be found in the
 :ref:`prelude <prelude>` which declares a bunch of standard (arithmetic,
 relational, logical) operator symbols as well as the list and pair
-constructors '``:``' and '``,``', and a few nonfix symbols (mostly for
-denoting different kinds of exceptions).
+constructors '``:``' and '``,``', and a few nonfix symbols (:const:`true` and
+:const:`false`, as well as different kinds of exceptions).
 
 .. _interface:
 .. _Interface Types:
@@ -12689,11 +12689,15 @@ was in fact very inconvenient in most situations.
 
 Pure 0.56 also introduced the :ref:`non-splicing vector brackets<non-splicing>`
 ``{| |}`` as an alternative notation for nested vector structures, as well as
-the `namespace brackets`_ to quickly switch namespaces inside an
-expression. There's also a new :mod:`enum` module to facilitate the creation
-of enumerated types. Moreover, interactive commands can now optionally be
-escaped by prefixing them with a special character (see `Interactive Usage`_
-for details).
+the `namespace brackets`_ to quickly switch namespaces inside an expression.
+The :const:`true` and :const:`false` constants are now declared as
+:keyword:`nonfix` symbols in the prelude so that they can be used in patterns,
+and there's a new :type:`bool/type` type to check for normalized truth values
+and a :func:`bool` function to convert machine integers to normalized truth
+values. There's also a new :mod:`enum` module to facilitate the creation of
+enumerated types. Moreover, interactive commands can now optionally be escaped
+by prefixing them with a special character (see `Interactive Usage`_ for
+details).
 
 Error Recovery
 --------------
@@ -12876,26 +12880,24 @@ at runtime. For instance::
 "Head = Function" Pitfalls
 --------------------------
 
-"As" patterns are also a useful device if you need to manipulate function
-applications in a generic way. Note that `the "head = function" rule`_
-stipulates that the head symbol ``f`` of an application ``f x1 ... xn``
-occurring on (or inside) the left-hand side of an equation, variable binding,
-or pattern-matching lambda expression, is always interpreted as a literal
-function symbol (not a variable). This implies that you cannot match the
-"function" component of an application against a variable, at least not
-directly. An anonymous "as" pattern like ``f@_`` does the trick, however,
-since the anonymous variable is always recognized, even if it occurs as the
-head symbol of a function application. Here's a little example which
-demonstrates how you can convert a function application to a list containing
-the function and all arguments::
+`The "head = function" rule`_ stipulates that the head symbol ``f`` of an
+application ``f x1 ... xn`` occurring on (or inside) the left-hand side of an
+equation, variable binding, or pattern-matching lambda expression, is always
+interpreted as a literal function symbol (not a variable). This implies that
+you cannot match the "function" component of an application against a
+variable, at least not directly. An anonymous "as" pattern like ``f@_`` does
+the trick, however, since the anonymous variable is always recognized, even if
+it occurs as the head symbol of a function application. Here's a little
+example which demonstrates how you can convert a function application to a
+list containing the function and all arguments::
 
   > foo x = a [] x with a xs (x@_ y) = a (y:xs) x; a xs x = x:xs end;
   > foo (a b c d);
   [a,b,c,d]
 
 This may seem a little awkward, but as a matter of fact the "head = function"
-rule is quite useful the way that it is, since it covers the common cases
-without forcing the programmer to declare "constructor" symbols (except nonfix
+rule is quite convenient, since it covers the common cases without forcing the
+programmer to declare variable or constructor symbols (other than nonfix
 symbols). On the other hand, generic rules operating on arbitrary function
 applications are not all that common, so having to "escape" a variable using
 the anonymous "as" pattern trick is a small price to pay for that convenience.
@@ -12907,23 +12909,21 @@ function argument against a given function. Consider this code fragment::
   foop f = case f of foo = 1; _ = 0 end;
 
 You might expect ``foop`` to return true for ``foo``, and false on all other
-values. Better think again, because in reality ``foop`` will always return
-true! In fact, the Pure compiler will warn you about the second rule of the
-:keyword:`case` expression not being used at all::
+values, but in reality ``foop`` will always return true! In fact, the Pure
+compiler will warn you about the second rule of the :keyword:`case` expression
+not being used at all::
 
   > foop 99;
   warning: rule never reduced: _ = 0;
   1
 
-This happens because an identifier on the left-hand side of a rule, which is
-neither the head symbol of a function application nor a :keyword:`nonfix`
-symbol, is always considered to be a variable (cf. `Variables in Equations`_),
-even if that symbol is defined as a global function elsewhere.  So ``foo``
-isn't a literal name in the above :keyword:`case` expression, it's a variable!
-(As a matter of fact, this is rather useful, since otherwise a rule like ``f g
-= g+1`` would suddenly change meaning if you happen to add a definition like
-``g x = x-1`` somewhere else in your program, which certainly isn't
-desirable.)
+This is again due to the "head = function" rule; ``foo`` is neither the head
+symbol of a function application nor a :keyword:`nonfix` symbol here, so it is
+considered a variable, even though it is defined as a global function
+elsewhere. (As a matter of fact, this is rather useful, since otherwise a rule
+like ``f g = g+1`` would suddenly change meaning if you happen to add a
+definition like ``g x = x-1`` somewhere else in your program, which certainly
+isn't desirable.)
 
 A possible workaround is to "escape" the function symbol using an empty
 namespace qualifier::
@@ -13372,15 +13372,11 @@ an existing constant or variable as a different kind of symbol. The same also
 holds if a symbol is currently defined as a function or a macro.)
 
 Constants can also be used in patterns (i.e., on the left-hand side of a rule
-in a definition or a :keyword:`case` expression), but only if you also declare
-the corresponding symbol as :keyword:`nonfix`. This is useful, e.g., if you'd
-like to use constants such as :const:`true` and :const:`false` on the
-left-hand side of a definition, just like other :keyword:`nonfix` symbols::
+in a definition or a :keyword:`case` expression), but only if they're also
+declared as :keyword:`nonfix`. The prelude already does this for the truth
+values :const:`true` and :const:`false` (which are in fact just ``1`` and
+``0``), so that you can write, e.g.::
 
-  > show false true
-  const false = 0;
-  const true = 1;
-  > nonfix false true;
   > check false = "no"; check true = "yes";
   > show check
   check 0 = "no";
@@ -13388,13 +13384,17 @@ left-hand side of a definition, just like other :keyword:`nonfix` symbols::
   > check (5>0);
   "yes"
 
-Note that without the :keyword:`nonfix` declaration, the above definition of
-``check`` wouldn't work as intended, because the :const:`true` and
-:const:`false` symbols on the left-hand side of the two equations would be
-interpreted as local variables. Also note that the standard library never
-declares any constant symbols as :keyword:`nonfix`, since once a symbol is
-:keyword:`nonfix` there's no going back. Thus the library leaves this to the
-programmer to decide.
+Note that if :const:`true` and :const:`false` weren't :keyword:`nonfix`, the
+above definition of ``check`` wouldn't work as intended, because the
+:const:`true` and :const:`false` symbols on the left-hand side of the two
+equations would be interpreted as local variables. Also note that
+:const:`true` and :const:`false` are really an exceptional case; they aren't
+likely to be used as variables, so the prelude can make them :keyword:`nonfix`
+by default. In most cases the standard library refrains from declaring
+constant symbols as :keyword:`nonfix`, so that they don't accidentally clobber
+variables in user code. This is the case, in particular, for constants in the
+:mod:`math` module such as :const:`e`, :const:`pi` and :const:`i` which are
+much more likely to be used as variable symbols.
 
 As the value of a constant is known at compile time, the compiler can apply
 various optimizations to uses of such values. In particular, the Pure compiler

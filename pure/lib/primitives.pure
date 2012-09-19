@@ -208,6 +208,10 @@ using namespace __C;
 
       Compute a 32 bit hash code of a Pure expression.
 
+   .. function:: bool x
+
+      Convert a machine integer to a normalized truth value (``0`` or ``1``).
+
    .. function:: int x
                  bigint x
                  double x
@@ -296,9 +300,13 @@ using namespace __C;
 
       Predicates to check for the built-in types.
 
+   .. function:: boolp x
+
+      Predicate to check for normalized truth values (``0`` and ``1``).
+
    .. function:: charp x
 
-      Single character string predicate.
+      Predicate to check for single character strings.
 
    .. function:: numberp x
                  complexp x
@@ -1094,12 +1102,14 @@ charp x		= typep ('char) x;
 
 /* Additional number types and predicates. */
 
+type bool false | bool true;
 type integer _::int | integer _::bigint;
 type rational (x::integer%y::integer);
 type real x::integer | real x::double | real (x::real%y::real);
 type complex (x::real+:y::real) | complex (x::real<:y::real);
 type number x::real | number x::complex;
 
+boolp x		= typep ('bool) x;
 integerp x	= typep ('integer) x;
 rationalp x	= typep ('rational) x;
 realp x		= typep ('real) x;
@@ -1198,6 +1208,8 @@ namespace __C;
 extern expr* pure_intval(expr*), expr* pure_dblval(expr*),
   expr* pure_bigintval(expr*), expr* pure_pointerval(expr*);
 namespace;
+
+bool x::int		= ~~x;
 
 int x::int		= x;
 int x::bigint		|
