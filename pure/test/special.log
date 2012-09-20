@@ -94,6 +94,8 @@ let R = listmap (\sym/*0:1*/ -> sym/*0:1*/ __with__ get_fundef sym/*0:1*/ {
 '(bigintp __with__ [bigintp x-->__case__ x [(_ __type__ bigint-->1),(_-->0)]]);
 '(bigintvalp __with__ [bigintvalp x-->ratvalp x&&frac (re x)==0]);
 '(blobp __with__ [blobp _-->0]);
+'(bool __with__ [bool (x __type__ int)-->~(~x)]);
+'(boolp __with__ [boolp x-->typep ('bool) x]);
 '(byte_cstring __with__ [byte_cstring (s __type__ string)-->ptrtag 1$__C::pure_byte_cstring s]);
 '(byte_cstring_pointer __with__ [byte_cstring_pointer xs-->__ifelse__ (null p) (throw malloc_error) (make_pointer (map byte_cstring xs)) __with__ [(make_pointer xs-->ptrtag 3$sentry free_pointer p __when__ [_-->dowith (__lambda__ [i,x] (put_pointer (shift_pointer p i) x)) (0..n-1) xs]),(free_pointer p-->free p __when__ [_-->do (__lambda__ [i] (free (get_pointer (shift_pointer p i)))) (0..n-1)]),(shift_pointer p i-->pointer (__C::pure_bigintval p+i*8))] __when__ [(n-->#xs),(p-->calloc (n+1) 8),(xs-->__ifelse__ (smatrixp xs) (list xs) xs)] __if__ (rlistp xs||smatrixp xs)&&all stringp xs]);
 '(byte_matrix __with__ [(byte_matrix (n __type__ int,m __type__ int) (p __type__ pointer)-->__C::matrix_from_byte_array n m p),(byte_matrix (n __type__ int) (p __type__ pointer)-->byte_matrix (1,n) p)]);
@@ -478,6 +480,8 @@ let R2 = catmap (\x/*0:1*/ -> if (stringp s/*0:*/&&index s/*0:*/ "#<"<0&&(eval (
 '(bigintp __with__ [bigintp x-->__case__ x [(_ __type__ bigint-->1),(_-->0)]]);
 '(bigintvalp __with__ [bigintvalp x-->ratvalp x&&frac (re x)==0]);
 '(blobp __with__ [blobp _-->0]);
+'(bool __with__ [bool (x __type__ int)-->~(~x)]);
+'(boolp __with__ [boolp x-->typep ('bool) x]);
 '(byte_cstring __with__ [byte_cstring (s __type__ string)-->ptrtag 1$__C::pure_byte_cstring s]);
 '(byte_cstring_pointer __with__ [byte_cstring_pointer xs-->__ifelse__ (null p) (throw malloc_error) (make_pointer (map byte_cstring xs)) __with__ [(make_pointer xs-->ptrtag 3$sentry free_pointer p __when__ [_-->dowith (__lambda__ [i,x] (put_pointer (shift_pointer p i) x)) (0..n-1) xs]),(free_pointer p-->free p __when__ [_-->do (__lambda__ [i] (free (get_pointer (shift_pointer p i)))) (0..n-1)]),(shift_pointer p i-->pointer (__C::pure_bigintval p+i*8))] __when__ [(n-->#xs),(p-->calloc (n+1) 8),(xs-->__ifelse__ (smatrixp xs) (list xs) xs)] __if__ (rlistp xs||smatrixp xs)&&all stringp xs]);
 '(byte_matrix __with__ [(byte_matrix (n __type__ int,m __type__ int) (p __type__ pointer)-->__C::matrix_from_byte_array n m p),(byte_matrix (n __type__ int) (p __type__ pointer)-->byte_matrix (1,n) p)]);
@@ -857,6 +861,8 @@ let R2 = listmap (\x/*0:1*/ -> eval (sprintf "'(%s)" (__str__ x/*0:1*/)) {
 '(bigintp __with__ [bigintp x-->__case__ x [(_ __type__ bigint-->1),(_-->0)]]);
 '(bigintvalp __with__ [bigintvalp x-->ratvalp x&&frac (re x)==0]);
 '(blobp __with__ [blobp _-->0]);
+'(bool __with__ [bool (x __type__ int)-->~(~x)]);
+'(boolp __with__ [boolp x-->typep ('bool) x]);
 '(byte_cstring __with__ [byte_cstring (s __type__ string)-->ptrtag 1$__C::pure_byte_cstring s]);
 '(byte_cstring_pointer __with__ [byte_cstring_pointer xs-->__ifelse__ (null p) (throw malloc_error) (make_pointer (map byte_cstring xs)) __with__ [(make_pointer xs-->ptrtag 3$sentry free_pointer p __when__ [_-->dowith (__lambda__ [i,x] (put_pointer (shift_pointer p i) x)) (0..n-1) xs]),(free_pointer p-->free p __when__ [_-->do (__lambda__ [i] (free (get_pointer (shift_pointer p i)))) (0..n-1)]),(shift_pointer p i-->pointer (__C::pure_bigintval p+i*8))] __when__ [(n-->#xs),(p-->calloc (n+1) 8),(xs-->__ifelse__ (smatrixp xs) (list xs) xs)] __if__ (rlistp xs||smatrixp xs)&&all stringp xs]);
 '(byte_matrix __with__ [(byte_matrix (n __type__ int,m __type__ int) (p __type__ pointer)-->__C::matrix_from_byte_array n m p),(byte_matrix (n __type__ int) (p __type__ pointer)-->byte_matrix (1,n) p)]);
