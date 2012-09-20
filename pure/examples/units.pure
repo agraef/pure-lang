@@ -1,0 +1,162 @@
+
+/* Unit conversion example 2012-09-14 by Albert Graef. As discussed on the
+   mailing list, this example uses symbolic manipulations and a Newton-
+   Raphson solver to normalize dimensioned values and convert between
+   different units. See the end of the script for some examples showing how to
+   use these functions. The functions are pretty generic so that it should be
+   easy to support other units by just adding them to the unit data type and
+   the standard_units function below. */
+
+// sample units
+nonfix
+  miles yards feet inches kilometers meters centimeters millimeters // length
+  acres // area
+  gallons liters // volume
+  kilograms grams pounds ounces // mass
+  seconds minutes hours // time
+  fahrenheit celsius kelvin; // temperature
+
+// base units
+type unit miles | unit yards | unit feet | unit inches |
+  unit kilometers | unit meters | unit centimeters | unit millimeters |
+  unit acres | unit gallons | unit liters |
+  unit kilograms | unit grams | unit pounds | unit ounces |
+  unit seconds | unit minutes | unit hours |
+  unit fahrenheit | unit celsius | unit kelvin;
+// powers of base units
+type unit (u::unit^n::int);
+// complement type
+type nonunit x = ~typep unit x;
+
+// Some helper functions to deal with units and dimensioned values.
+
+// determine the base and power of a unit
+base_of u::unit = case u of u^n = base_of u; _ = u end;
+power_of u::unit = case u of u^n = n*power_of u; _ = 1 end;
+
+// split a dimensioned value in the normal form x*u1*...*un (see below) into
+// its value (x) and unit (u1*...*un) parts
+value_of x = case x of x*u::unit = value_of x; _ = x end;
+unit_of x = case x of
+  x*u::unit = case unit_of x of 1 = u; v = v*u end;
+  _ = 1;
+end;
+
+// Conversions to standard (SI) units.
+
+standard_units = reduce with
+  miles = 1760*yards;
+  yards = 3*feet;
+  feet = 12*inches;
+  inches = 2.54*centimeters;
+  kilometers = 1000*meters;
+  centimeters = 0.01*meters;
+  millimeters = 0.001*meters;
+
+  acres = 43560*feet^2;
+
+  gallons = 231*inches^3;
+  liters = 1000*centimeters^3;
+
+  grams = 0.001*kilograms;
+  pounds = 453.59237*grams;
+  ounces = pounds/16;
+
+  minutes = 60*seconds;
+  hours = 60*minutes;
+
+  x*celsius = (x+273.15)*kelvin;
+  x*fahrenheit = (5*(x-32)/9)*celsius;
+end;
+
+/* The following rules shuffle around units until a dimensioned value x*u ends
+   up in the normal form x*u1*...*un. It also sorts the units according to
+   their names and reduces to powers of units where possible. Units in the
+   denominator are expressed as negative powers; these always come last. */
+
+reduce_units = reduce with
+  x/u::unit = x*u^(-1);
+
+  u::unit^0 = 1;
+  u::unit^1 = u;
+  (u::unit^n::int)^m::int = u^(n*m);
+
+  x*u::unit*v::unit = x*u^(power_of u+power_of v) if base_of u === base_of v;
+
+  x*(y*u::unit) = x*y*u;
+  x*(y/u::unit) = x*y/u;
+  x/(y*u::unit) = x/y/u;
+  x/(y/u::unit) = x/y*u;
+
+  u::unit*y::nonunit = y*u;
+  u::unit/y::nonunit = 1/y*u;
+  x*u::unit*y::nonunit = x*y*u;
+  x*u::unit/y::nonunit = x/y*u;
+  x/u::unit*y::nonunit = x*y/u;
+  x/u::unit/y::nonunit = x/y/u;
+
+  x*u::unit*v::unit = x*v*u
+    if sgn (power_of u) < sgn (power_of v) ||
+      sgn (power_of u) == sgn (power_of v) && str (base_of u) > str (base_of v);
+
+  (x*u::unit)^n::int = x^n*u^n;
+
+  x*u::unit+y*u = (x+y)*u;
+  x*u::unit-y*u = (x-y)*u;
+  -x*u::unit = (-x)*u;
+end;
+
+// Normalize a dimensioned value, converting it to standard units. Note that
+// you can just use reduce_units instead if you want to normalize the value
+// without converting it.
+
+si x = reduce_units (standard_units x);
+
+// Convert a dimensioned value to any (possibly non-standard) units, reduced
+// to normal form. Source and target units must be compatible.
+
+infix 1450 as;
+
+x as u = reduce_units (y*u) when
+  // Note that we invoke the solver with the precomputed normal form v of the
+  // target unit instead of u itself. The results shouldn't differ but this
+  // will presumably speed up the computation.
+  v = unit_of (reduce_units (1*u));
+  y = solve v (value_of x);
+end if unit_of y === unit_of x when
+  // Normalize x so that it uses standard units.
+  x = reduce_units (standard_units x);
+  // Also normalize the target unit so that we can check that source and
+  // target are compatible.
+  y = reduce_units (standard_units (1*u));
+end with
+  solve u x = solve f x with
+    // The target function: To solve for a given unit u, compute its SI value
+    // and subtract the target value x.
+    f y = value_of (si (y*u)) - x;
+    // Newton-Raphson root finder. You might have to adjust the dx, dy and
+    // nmax values below to make this work.
+    solve f = loop nmax (improve f) with
+      loop n f x = x if n <= 0;
+        = if abs (x-y) < dy then y else loop (n-1) f y when y = f x end;
+      improve f x = x - f x / derive f x;
+      derive f x = (f (x+dx) - f x) / dx;
+    end when
+      dx = 1e-8;  // delta value for the approximation of the derivative
+      dy = 1e-12; // delta value for testing convergence
+      nmax = 50;  // maximum number of iterations
+    end;
+  end;
+end;
+
+// Examples (to be run interactively):
+
+si (1*feet^3/minutes+1*gallons/seconds);
+ans as liters/minutes;
+si ans;
+ans as inches^3/hours;
+
+si (1*yards^2);
+ans as inches^2;
+
+30*celsius as fahrenheit;
