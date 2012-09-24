@@ -267,8 +267,8 @@ disable the timeout, but this isn't recommended."
   :type 'integer
   :group 'pure)
 
-(defcustom pure-prompt-regexp "^> \\|^[A-Za-z_0-9-]*> \\|^: "
-  "Regexp to match prompts in the Pure interpreter.
+(defcustom pure-prompt-regexp "^> \\|^: "
+  "Regexp to match prompts in the pure-eval buffer.
 If you customize the interpreter's default prompt, you will have
 to change this value accordingly."
   :type 'regexp
@@ -298,6 +298,18 @@ Non-nil means always go to the next Pure code line after sending."
   "Enable or disable echoing of input sent to the Pure interpreter.
 Non-nil means that input sent to the Pure interpreter is echoed
 at the command prompt."
+  :type 'boolean
+  :group 'pure)
+
+(defcustom pure-send-skip-prompts t
+  "Enable or disable preprocessing of input sent to the Pure interpreter.
+Non-nil means that input starting with `pure-prompt-regexp' is
+preprocessed to remove the command prompts and skip lines not
+beginning with a command prompt. This is convenient, in
+particular, with the `pure-send-yank' command. It lets you send
+transcripts of interpreter interactions containing both command
+input and results printed by the inpreter, as can be found, e.g.,
+in the online help."
   :type 'boolean
   :group 'pure)
 
@@ -741,6 +753,15 @@ of Pure code into a running interpreter with the
 `pure-send-region' (\\[pure-send-region]) and `pure-send-yank' (\\[pure-send-yank])
 commands. (This starts a new interpreter instance without a
 script if necessary.)
+
+If `pure-send-skip-prompts' is set (the default), the send
+commands will recognize transcripts of an interactive session
+which contain both command lines starting with a prompt and
+results printed by the interpreter. In this case the command
+prompts are removed and all lines not starting with a command
+prompt are skipped, which is convenient, in particular, to send
+examples from the online documentation which show sample
+interpreter interactions.
 
 When working with these commands, it is often convenient to have
 a scratchpad for entering Pure definitions and expressions; this
@@ -1810,12 +1831,20 @@ On success, return 0.  Otherwise, go as far as possible and return -1."
 ;; buffer) into the interpreter. A new interpreter is started if none is
 ;; currently running.
 
+(defun pure-trim-whitespace (string)
+  (if (string-match "^[ \t]+" string)
+      (substring string (match-end 0))
+    string))
+
 (defun pure-send-string (string)
   "Send a string to the Pure interpreter."
   (interactive "sPure Code: ")
   (pure-start t)
   (let* ((pure-eval-buffer (get-buffer "*pure-eval*"))
 	 (proc (get-buffer-process pure-eval-buffer))
+	 (skip-prompts (and pure-send-skip-prompts
+			    (string-match pure-prompt-regexp
+					  (pure-trim-whitespace string))))
 	 line)
     (save-excursion
       (set-buffer pure-eval-buffer)
@@ -1825,14 +1854,21 @@ On success, return 0.  Otherwise, go as far as possible and return -1."
 	    (setq line (substring string 0 (match-beginning 0))
 		  string (substring string (match-end 0)))
 	  (setq line string string ""))
-	(pure-send-list-and-digest (list (concat line "\n")))
-	(insert-before-markers
-	 (mapconcat 'identity
-		    (append
-		     (if pure-send-echo-input (list line) (list ""))
-		     pure-output-list
-		     (list pure-output-string))
-		    "\n"))))
+	(if skip-prompts
+	    (let ((str (pure-trim-whitespace line)))
+	      (if (string-match pure-prompt-regexp str)
+		  (setq line (substring str (match-end 0)))
+		(setq line nil))))
+	(if line
+	    (progn
+	     (pure-send-list-and-digest (list (concat line "\n")))
+	     (insert-before-markers
+	      (mapconcat 'identity
+			 (append
+			  (if pure-send-echo-input (list line) (list ""))
+			  pure-output-list
+			  (list pure-output-string))
+			 "\n"))))))
     (if pure-send-show-buffer
 	(display-buffer pure-eval-buffer))))
 
