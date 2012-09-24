@@ -1,0 +1,282 @@
+/******************************************************************************
+   LU decomposition by Crout's algorithm, Pure version by Johannes Engels
+   <johannes.engels@hft-stuttgart.de>
+
+   See e.g. Press, Teukolsky, Vetterling, Flannery (1992): Numerical recipes
+   in C, p. 43.
+
+   NOTE: This code also shows how to do imperative coding in Pure. The LU
+   decomposition is constructed in-place; if you need to preserve the original
+   matrix, you'll have to take a copy with 'pack' beforehand, as shown below.
+
+   Example:
+
+   > let x = { -0.2, 12.4,  0.7,   2.6,  9.3;
+   >           -8.1,  0.3,  7.2,  -1.8,  2.4;
+   >            0.6,  7.4, -0.9,   8.5,  3.2;
+   >            7.4, -6.9,  2.0,   7.4,  5.2;
+   >            8.3,  8.3,  8.3, -12.1,  8.0 } ;
+
+   > let x_backup = pack x ;
+
+
+   The LU decomposition and the pivot vector:
+
+   > let (lu,p) = mylu x ;
+   > lu ;
+
+     -8.10000   0.30000   7.20000  -1.80000   2.40000
+      0.02469  12.39259   0.52222   2.64444   9.24074
+     -1.02469   0.69456  15.31506 -15.78117   4.04100
+     -0.91358  -0.53467   0.57832  16.29601   9.99633
+     -0.07407   0.59892  -0.04436   0.37326  -5.70873
+
+   > p ;
+
+     {1,0,4,3,2}
+
+   > let (lower, upper) = lu_triangles lu ;
+
+   > lower * upper ; // yields x_backup!!(p,0..4)
+
+   > let y = { 3.8; -2.7; -0.2; 8.2; 6.4 } ;
+   > let z = backsub lu p y ;
+   > z ;
+
+     0.34126
+    -0.34877
+    -0.32403
+    -0.13315
+     0.94258
+
+   x * z does not yield y as x is destructively updated, so use this instead:
+
+   > x_backup * z ; // yields y
+
+   > let ym = transpose { 3.8, -2.7, -0.2, 8.2, 6.4 ;
+   >                      0.4,  7.9, -3.1, 0.9, 4.7 } ;
+   > let zm = backsub_multiple_rhs lu p ym ;
+   > zm;
+
+     0.34126  -0.36642
+    -0.34877  -0.27678
+    -0.32403   0.50454
+    -0.13315  -0.20376
+     0.94258   0.42316
+
+   > x_backup * zm ; // yields ym
+
+   backsub_multiple_rhs can be used to compute the inverse of the matrix x.
+
+*******************************************************************************/
+
+using pointers ;
+using math ;
+using system ;
+
+infix 1050 := ;
+
+let tiny = 1.0e-20 ;
+
+
+/* update a double vector destructively */
+
+def y ! i::int := a = put_double (pointer y + i * SIZEOF_DOUBLE) a ;
+
+
+/* update a double matrix destructively */
+
+def x ! (i::int,j::int) := a = 
+        put_double (pointer x + (i * numcols + j) * SIZEOF_DOUBLE) a 
+        when (numrows, numcols) = dim x end ;
+
+def for l f = do f l ;
+
+
+__show__ x::matrix =
+     strcat [printd j (x!(i,j)) | i = 0..n-1 ; j = 0..m-1] + "\n" 
+     with printd 0 = sprintf "\n%10.5f";
+          printd _ = sprintf "%10.5f"
+     end
+     when n,m = dim x end if dmatrixp x;
+
+sum = foldl (+) 0.0 ;
+dot x::matrix y::matrix = sum $ zipwith (*) (rowvector x) (rowvector y) ;
+x::matrix * y::matrix = {dot u v | u = rows x; v = cols y} ;
+x::matrix - y:: matrix = zipwith (-) x y ;
+x::matrix / y::double = map (/y) x ;
+
+
+
+write_vec_int x::matrix i::int a::int =
+     put_int (pointer x + i * SIZEOF_INT) a ;
+
+swap_vec x i j = (x!i := xj)  $$  (x!j := xi) 
+                 when xi = x!i ;
+                      xj = x!j end ;
+
+swap_vec_int x i j = (write_vec_int x i xj)  $$  (write_vec_int x j xi) 
+                 when xi = x!i ;
+                      xj = x!j end ;
+
+
+
+swap_els x::matrix r1::int r2::int c::int =
+    x!(r1,c) := x!(r2, c)  $$   x!(r2,c) := x1
+    when x1 = x!(r1,c) end ;
+
+
+swap_rows x::matrix numcols::int r1::int r2::int = 
+       for (0..(numcols-1)) (swap_els x r1 r2) ;
+                    
+
+/* This function computes the reciprocal values of the absolute row maxima   */
+
+recip_max_in_rows x::matrix numrows::int numcols::int = 
+   {(recip_max_row x r) | r = 0..(numrows-1)}
+
+   with maxabs r::int accu::double c::int = 
+           if   abs_el > accu  
+           then abs_el 
+           else accu
+           when abs_el = abs (x!(r,c)) end ;
+
+        recip_max_row x::matrix rr::int = 
+           if   biggest > tiny 
+           then 1.0 / biggest 
+           else throw Singular_matrix_in_mylu
+           when biggest = foldl (maxabs rr) 0.0 (0..(numcols-1)) end ;
+   end ;
+
+
+
+/* The LU decomposition */
+
+mylu x::matrix = (x, pivot) 
+   when 
+      (numrows, numcols) = dim x ;   
+      vv = recip_max_in_rows x numrows numcols ;
+      pivot = {i | i = 0..(numrows-1)} ;
+      for (0..(numcols-1)) (colfunc numrows numcols vv pivot) ;
+   end
+   with 
+      colfunc nr nc vv pivot c = ()
+         when 
+            for (0..(c-1)) (inner_loop c) ;
+
+            (imax,mval) = foldl (rf vv) (0, 0.0) (c..(nr-1)) ;
+
+	    c == imax || (swap_vec vv c imax $$
+			  swap_vec_int pivot c imax $$
+			  swap_rows x nc c imax) ;
+
+	    abs (x!(c,c)) >= tiny || (x!(c,c) := tiny) ;
+
+            coldiv = 1.0 / x!(c,c) ;
+
+	    for ((c+1)..(nr-1)) (\r -> x!(r,c) := x!(r,c) * coldiv) ;
+         end
+         with 
+            rf vvi (im,val) r = if val < temp then (r, temp)
+                                else               (im, val)
+                                when 
+                                   inner_loop c r ;
+                                   temp = abs (x!(r,c)) * vvi!r ;
+                                end ;
+         end ;
+
+      inner_loop c r = 
+         x!(r,c) := (foldl 
+                       (\accu k -> accu - x!(r, k) * x!(k,c)) 
+                       (x!(r,c)) 
+                       (0..(l-1)))
+                    when l = if   c < r then c 
+                             else            r
+                    end ;
+   end ;
+
+
+lu_triangles lu::matrix = (lower, upper)
+      when (nr,nc) = dim lu ;
+           lower = {alpha_sel lu r c | r = 0..(nr-1); c = 0..(nc-1)} ;
+           upper = {beta_sel  lu r c | r = 0..(nr-1); c = 0..(nc-1)} ;
+      end
+      with alpha_sel lu r c = 
+                if r > c       then lu!(r,c)
+                else if r == c then 1.0
+                else                0.0 ;
+
+           beta_sel lu r c = 
+                if   r <= c then lu!(r,c)
+                else             0.0 ;
+      end ;
+
+
+/* solution of a linear equation system by means of the LU decomposition      */
+/* b is the right hand side of the LES                                        */
+
+backsub lu::matrix pivot::matrix b::matrix = transpose z
+   when
+      (numrows, numcols) = dim lu;
+      y = {0.0 | i = 0..(numrows-1)} ;
+      z = {0.0 | i = 0..(numrows-1)} ;
+ 
+      for (0..(numrows-1)) (inner_loop1 y pivot) ;
+      
+      for ((numrows-1):(numrows-2)..0) (inner_loop2 numrows y z) ;
+   end
+   with
+      inner_loop1 y pivot r = 
+         (y!r) := (foldl 
+                       (\accu k -> accu - lu!(r, k) * y!k) 
+                       (b!rn) 
+                       (0..(r-1)))
+                    when 
+                       rn = pivot!r
+                    end ;
+
+      inner_loop2 numrows y z r = 
+         (z!r) := (foldl 
+                     (\accu k -> accu - lu!(r, k) * z!k) 
+                     (y!r) 
+                     ((r+1)..(numrows-1))) / (lu!(r,r)) ;
+   end ;
+
+
+/* Solution of a LES with multiple right hand sides   */
+
+backsub_multiple_rhs lu::matrix pivot::matrix b::matrix = z
+   when
+      (numrows, numcols) = dim lu;
+      (nr_rhs, nc_rhs) = dim b;
+ 
+      y = inner_loop1 nr_rhs ({}) 0 ;
+      z = inner_loop2 nr_rhs y ({}) (nr_rhs-1) ;
+   end
+   with
+      inner_loop1 nr_rhs y r = 
+         if r == 0 then inner_loop1 nr_rhs (row b rn) (r+1)
+         else if r == nr_rhs - 1 then new_y
+         else inner_loop1 nr_rhs new_y (r+1) 
+         when 
+            rn = pivot!r ;
+            lu_part = submat lu (r,0) (1,r) ;
+            new_row = (row b rn) - lu_part * y ;
+            new_y = {y ; 
+                     new_row 
+                    } ;
+         end ;
+
+      inner_loop2 nr_rhs y z r = 
+         if r == nr_rhs - 1 
+            then inner_loop2 nr_rhs y ((row y r) / (lu!(r,r))) (r-1)
+         else if r == 0 then new_z
+         else inner_loop2 nr_rhs y new_z (r-1) 
+         when 
+            lu_part = submat lu (r,r+1) (1,nr_rhs-1-r) ;
+            new_row = ((row y r) - lu_part * z) / (lu!(r,r)) ;
+            new_z = {new_row ;
+                     z
+                    } ;
+         end ;
+   end ;
