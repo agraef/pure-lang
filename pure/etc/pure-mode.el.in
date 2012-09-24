@@ -336,6 +336,10 @@ remote operation of Pd patches, as described in the pd-pure manual."
   ;; Return t when the region is active.
   (and (boundp 'mark-active) mark-active))
 
+(defsubst pure-yank-is-active-p ()
+  ;; Return t when the kill ring has some contents.
+  (not (null kill-ring)))
+
 (defmacro pure-menu-toggle (item cmd var)
   `[,item ,cmd :style toggle :selected ,var])
 
@@ -415,6 +419,7 @@ remote operation of Pd patches, as described in the pd-pure manual."
        (define-key pure-mode-map "\C-c\C-c" 'pure-send-line)
        (define-key pure-mode-map "\C-c\C-f" 'pure-send-defun)
        (define-key pure-mode-map "\C-c\C-r" 'pure-send-region)
+       (define-key pure-mode-map "\C-c\C-y" 'pure-send-yank)
        (define-key pure-mode-map "\C-c:"    'pure-eval)
        (define-key pure-mode-map "\C-c\M-h" 'pure-show)
        (define-key pure-mode-map "\C-c\M-c" 'pure-clear)
@@ -499,6 +504,8 @@ remote operation of Pd patches, as described in the pd-pure manual."
 	       ["Send Current Definition" pure-send-defun t]
 	       ["Send Region"		pure-send-region
 					(pure-region-is-active-p)]
+	       ["Send Yank"		pure-send-yank
+					(pure-yank-is-active-p)]
 	       ["Evaluate Expression..." pure-eval t]
 	       ["Show Symbol..."	pure-show t]
 	       ["Clear Symbol..."	pure-clear t])
@@ -730,9 +737,10 @@ command.
 
 Third, you can also feed lines, definitions or arbitrary regions
 of Pure code into a running interpreter with the
-`pure-send-line' (\\[pure-send-line]), `pure-send-defun' (\\[pure-send-defun]) and
-`pure-send-region' (\\[pure-send-region]) commands. (This starts a new
-interpreter instance without a script if necessary.)
+`pure-send-line' (\\[pure-send-line]), `pure-send-defun' (\\[pure-send-defun]),
+`pure-send-region' (\\[pure-send-region]) and `pure-send-yank' (\\[pure-send-yank])
+commands. (This starts a new interpreter instance without a
+script if necessary.)
 
 When working with these commands, it is often convenient to have
 a scratchpad for entering Pure definitions and expressions; this
@@ -944,8 +952,11 @@ Commands
        (define-key pure-eval-mode-map "\C-c\M-q" 'pure-quit)
        (define-key pure-eval-mode-map "\C-c\M-d" 'pure-toggle-debug-mode)
        (define-key pure-eval-mode-map "\C-x\M-p" 'pure-scratchpad)
+       (define-key pure-eval-mode-map "\C-c\M-h" 'pure-show)
+       (define-key pure-eval-mode-map "\C-c\M-c" 'pure-clear)
        (define-key pure-eval-mode-map "\C-c\M-b" 'pure-break)
        (define-key pure-eval-mode-map "\C-c\M-t" 'pure-trace)
+       (define-key pure-eval-mode-map "\C-c\C-y" 'pure-send-yank)
        (define-key pure-eval-mode-map "\C-c:"    'pure-eval)
        (define-key pure-eval-mode-map "\t" 'comint-dynamic-complete)
        (define-key pure-eval-mode-map "\C-a" 'comint-bol)
@@ -973,6 +984,13 @@ Commands
 					(get-process "pure-eval")]
 	["Quit Interpreter"		pure-quit
 					(get-process "pure-eval")]
+	"-"
+	(list "Execute"
+	       ["Send Yank"		pure-send-yank
+					(pure-yank-is-active-p)]
+	       ["Evaluate Expression..." pure-eval t]
+	       ["Show Symbol..."	pure-show t]
+	       ["Clear Symbol..."	pure-clear t])
 	"-"
 	(list "Debugger"
 	      (pure-menu-toggle "Debugging Mode" pure-toggle-debug-mode
@@ -1787,17 +1805,17 @@ On success, return 0.  Otherwise, go as far as possible and return -1."
   (or arg (setq arg 1))
   (pure-next-code-line (- arg)))
 
-;; Communication with the Pure interpreter. These feed a region or the current
-;; line in a Pure buffer into the interpreter. A new interpreter is started if
-;; none is currently running.
+;; Communication with the Pure interpreter. These feed a given string
+;; (obtained from the kill ring, a region or the current line in a Pure
+;; buffer) into the interpreter. A new interpreter is started if none is
+;; currently running.
 
-(defun pure-send-region (beg end)
-  "Send current region to the Pure interpreter."
-  (interactive "r")
+(defun pure-send-string (string)
+  "Send a string to the Pure interpreter."
+  (interactive "sPure Code: ")
   (pure-start t)
   (let* ((pure-eval-buffer (get-buffer "*pure-eval*"))
 	 (proc (get-buffer-process pure-eval-buffer))
-	 (string (buffer-substring-no-properties beg end))
 	 line)
     (save-excursion
       (set-buffer pure-eval-buffer)
@@ -1817,6 +1835,16 @@ On success, return 0.  Otherwise, go as far as possible and return -1."
 		    "\n"))))
     (if pure-send-show-buffer
 	(display-buffer pure-eval-buffer))))
+
+(defun pure-send-yank ()
+  "Send current contents of the kill buffer to the Pure interpreter."
+  (interactive)
+  (pure-send-string (substring-no-properties (current-kill 0 t))))
+
+(defun pure-send-region (beg end)
+  "Send current region to the Pure interpreter."
+  (interactive "r")
+  (pure-send-string (buffer-substring-no-properties beg end)))
 
 (defun pure-send-line (&optional arg)
   "Send current Pure code line to the Pure interpreter.
