@@ -7013,7 +7013,8 @@ void pure_debug_rule(void *_e, void *_r)
 	cin.clear(ios_base::eofbit);
       }
     } else {
-      cout << ": ";
+      cout << TEXMACS_BEGIN_PROMPT << ": " << TEXMACS_END_PROMPT;
+      cout.flush();
       getline(cin, cmdline);
     }
     parse_cmd(cmdline, cmd, arg, interp.escape_mode);

@@ -137,6 +137,16 @@
 #define ESCAPECHARS "!$%&*,:<>@\\|"
 #endif
 
+/* Texmacs support (http://www.texmacs.org/). */
+#define DATA_BEGIN "\002verbatim:"
+#define DATA_END "\005"
+#define PROMPT_BEGIN "\002verbatim:\002prompt#"
+#define PROMPT_END "\005\005"
+#define TEXMACS_BEGIN (interpreter::g_interp->texmacs?DATA_BEGIN:"")
+#define TEXMACS_END (interpreter::g_interp->texmacs?DATA_END:"")
+#define TEXMACS_BEGIN_PROMPT (interpreter::g_interp->texmacs?PROMPT_BEGIN:"")
+#define TEXMACS_END_PROMPT (interpreter::g_interp->texmacs?PROMPT_END:"")
+
 using namespace std;
 
 /* The Pure interpreter. */
@@ -566,6 +576,7 @@ public:
   bool eager_jit;    // eager JIT (LLVM 2.7 or later)
   bool interactive;  // interactive mode
   bool debugging;    // debugging mode
+  bool texmacs;      // texmacs mode (http://www.texmacs.org/)
   bool checks;	     // extra stack and signal checks (default)
   bool folding;	     // constant folding (default)
   bool consts;	     // precompute constants at compile time (default)

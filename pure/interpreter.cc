@@ -765,7 +765,7 @@ void interpreter::init()
 interpreter::interpreter(int _argc, char **_argv)
     : argc(_argc), argv(_argv),
     verbose(0), compat(false), compat2(false), compiling(false),
-    eager_jit(false), interactive(false), debugging(false),
+    eager_jit(false), interactive(false), debugging(false), texmacs(false),
     checks(true), folding(true), consts(true), bigints(false), use_fastcc(true),
     pic(false), strip(true), restricted(false), ttymode(false), override(false),
     stats(false), stats_mem(false), temp(0),  ps("> "), libdir(""),
@@ -789,7 +789,7 @@ interpreter::interpreter(int32_t nsyms, char *syms,
 			 pure_expr ***_sstk, void **_fptr)
   : argc(0), argv(0),
     verbose(0), compat(false), compat2(false), compiling(false),
-    eager_jit(false), interactive(false), debugging(false),
+    eager_jit(false), interactive(false), debugging(false), texmacs(false),
     checks(true), folding(true), consts(true), bigints(false), use_fastcc(true),
     pic(false), strip(true), restricted(true), ttymode(false), override(false),
     stats(false), stats_mem(false), temp(0), ps("> "), libdir(""),
@@ -4325,7 +4325,7 @@ void interpreter::exec(expr *x)
       fputs(sout.str().c_str(), fp);
       pclose(fp);
     } else
-      cout << result << '\n';
+      cout << TEXMACS_BEGIN << result << '\n' << TEXMACS_END;
     report_stats();
   }
 }

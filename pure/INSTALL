@@ -458,13 +458,15 @@ site-lisp directory. (In fact, you can specify any directory on Emacs'
 loadpath for ``elispdir``.)
 
 Before you can use Pure mode, you still have to add some stuff to your .emacs
-file to load the mode at startup. A minimal setup looks like this::
+file to load the mode at startup. A minimal setup looks like this:
 
-  (require 'pure-mode)
-  (setq auto-mode-alist
-        (cons '("\\.pure\\(rc\\)?$" . pure-mode) auto-mode-alist))
-  (add-hook 'pure-mode-hook 'turn-on-font-lock)
-  (add-hook 'pure-eval-mode-hook 'turn-on-font-lock)
+.. code-block:: scheme
+
+   (require 'pure-mode)
+   (setq auto-mode-alist
+         (cons '("\\.pure\\(rc\\)?$" . pure-mode) auto-mode-alist))
+   (add-hook 'pure-mode-hook 'turn-on-font-lock)
+   (add-hook 'pure-eval-mode-hook 'turn-on-font-lock)
 
 This loads Pure mode, associates the .pure and .purerc filename extensions
 with it, and enables syntax highlighting.
@@ -472,14 +474,18 @@ with it, and enables syntax highlighting.
 Other useful options are described at the beginning of the pure-mode.el
 file. In particular, we recommend installing emacs-w3m and enabling it as
 follows in your .emacs file, so that you can read the online documentation in
-Emacs::
+Emacs:
 
-  (require 'w3m-load)
+.. code-block:: scheme
 
-Also, you can enable code folding by adding this to your .emacs::
+   (require 'w3m-load)
 
-  (require 'hideshow)
-  (add-hook 'pure-mode-hook 'hs-minor-mode)
+Also, you can enable code folding by adding this to your .emacs:
+
+.. code-block:: scheme
+
+   (require 'hideshow)
+   (add-hook 'pure-mode-hook 'hs-minor-mode)
 
 These lines should come before the loading of Pure mode in your .emacs, so
 that Pure mode can adjust accordingly.
@@ -492,6 +498,28 @@ Pure file to check that it works, e.g.::
 The online help about Pure mode can be read with ``C-h m``. The Pure
 documentation can be accessed in Pure mode with ``C-c h``.
 
+
+TeXmacs Mode
+============
+
+.. _GNU TeXmacs: http://www.texmacs.org/
+
+Pure 0.56 has minimal support for running Pure as a session in `GNU TeXmacs`_.
+This is triggered by the (as yet undocumented) ``--texmacs`` option of the
+interpreter. The following little TeXmacs plugin file will do the trick:
+
+.. code-block:: scheme
+
+   (plugin-configure pure
+     (:require (url-exists-in-path? "pure"))
+     (:launch "pure -i --texmacs")
+     (:session "Pure"))
+
+Place this as pure/progs/init-pure.scm in your ~/.TeXmacs/plugins folder.
+After restarting TeXmacs you should find Pure in TeXmacs' Insert / Session
+menu. Note that *both* the ``-i`` and ``--texmacs`` options are required in
+the launch command to make this work (you might also want to add the ``-q``
+option to suppress the signon message of the interpreter).
 
 Installing an LLVM-capable C/C++ Compiler
 =========================================

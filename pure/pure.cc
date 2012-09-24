@@ -549,6 +549,8 @@ main(int argc, char *argv[])
 	interp.tags = 1;
       else if (strcmp(arg, "--etags") == 0)
 	interp.tags = 2;
+      else if (strcmp(arg, "--texmacs") == 0)
+	interp.texmacs = true;
       else if (strcmp(arg, "--eager-jit") == 0)
 	interp.eager_jit = true;
       else if (strcmp(arg, "-n") == 0 || strcmp(arg, "--noprelude") == 0)
@@ -868,6 +870,8 @@ _|                       for license information.)\n\
   if (want_editing && isatty(fileno(stdin))) {
     // initialize readline
     command_input = my_command_input;
+    // make sure that we disable texmacs mode if readline is used
+    interp.texmacs = false;
     exit_handler = my_exit_handler;
     rl_readline_name = (char*)"Pure";
     rl_attempted_completion_function = pure_completion;

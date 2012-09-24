@@ -1140,7 +1140,8 @@ static void lex_input(const char *prompt, char *buf,
     } else {
       // read a new line from stdin
       char s[10000];
-      fputs(prompt, stdout); fflush(stdout);
+      printf("%s%s%s", TEXMACS_BEGIN_PROMPT, prompt, TEXMACS_END_PROMPT);
+      fflush(stdout);
       if (!fgets(s, 10000, stdin)) {
 	// EOF, bail out
 	result = 0;
