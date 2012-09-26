@@ -2003,6 +2003,13 @@ void Index::scan()
 
 static bool is_fun_sym(interpreter &interp, int f)
 {
+  // FIXME: We should really do better than a trivial check here, but we want
+  // to be able to set break- and tracepoints on local symbols as well as
+  // global ones, and there isn't an easy way to detect these, other than
+  // scanning the entire symbol table.
+#if 1
+  return f>0;
+#else
   // check for defined function symbols (Pure function or external)
   if (f <= 0) return false;
   env::const_iterator it = interp.globenv.find(f);
@@ -2011,6 +2018,7 @@ static bool is_fun_sym(interpreter &interp, int f)
     return true;
   else
     return false;
+#endif
 }
 
 static bool is_mac_sym(interpreter &interp, int f)
