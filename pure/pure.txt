@@ -11397,6 +11397,8 @@ using the :func:`evalcmd` primitive. Conversely, the library provides its own
 functions for inspecting and manipulating the source program, which may also
 be useful in custom command definitions; see the :doc:`purelib` for details.
 
+.. _debugging:
+
 Debugging
 ---------
 
@@ -11674,9 +11676,7 @@ including reductions of local and anonymous function applications.
 If you don't need that much detail, you can also switch to skip mode by
 invoking the ``trace`` command with the ``-s`` option. This allows you to see
 a quick summary of the computation which only shows reductions by rules
-directly involving the active tracepoints. (Note that it's only possible to
-see reductions by global functions that way, since there's no way to set
-breakpoints or tracepoints on a local function.) For instance::
+directly involving the active tracepoints. For instance::
 
   > trace -s
   > fact 1;
@@ -11693,7 +11693,7 @@ breakpoints or tracepoints on a local function.) For instance::
   1
 
 Moreover, the ``trace`` command can also be invoked with the ``-a`` option to
-trace all global function calls, which is convenient to quickly obtain a full
+trace all function calls, which is convenient to quickly obtain a full
 transcript of a reduction sequence. The same options also work in an analogous
 fashion with macro calls, see the Macros_ section for some examples.
 
@@ -11704,6 +11704,52 @@ tracepoints, respectively. Please see `Interactive Commands`_ above for
 details. Also note that these are really interpreter commands, so to invoke
 them in the debugger you have to escape them with the ``!`` command
 (or whatever other :option:`--escape` prefix you specified).
+
+The debugger can also be triggered programmatically with the built-in
+parameter-less functions :func:`break` and :func:`trace`. This gives you much
+better control over the precise location and the conditions under which the
+debugger should be invoked. Just place a call to :func:`break` or
+:func:`trace` near the point where you'd like to start debugging or tracing;
+this can be done either with the sequencing operator ':func:`$$`' or with a
+:keyword:`when` clause. The debugger will then be invoked at the next
+opportunity (usually when a function is called or a reduction is completed).
+For instance::
+
+  > fact n::int = if n>0 then break $$ n*fact (n-1) else 1;
+  > fact 10;
+  ++ [2] break: extern void pure_break() = break;
+       --> ()
+  ** [2] fact: fact n::int = if n>0 then break$$n*fact (n-1) else 1;
+       n = 9
+  : 
+
+Here the debugger is invoked right after the call to :func:`break`, when the
+``n*fact (n-1)`` expression in the :keyword:`then` branch is about to be
+evaluated. The debugger thus stops at the recursive invocation of ``fact 9``.
+Tracing works in a similar fashion, using :func:`trace` in lieu of
+:func:`break`, and continues until the current stack frame is exited. One
+major advantage of this method is that it is possible to invoke :func:`break`
+or :func:`trace` only under certain conditions, so that you can focus on
+interesting "events" during evaluation, which can make debugging much less
+tedious. In our example, in order to stop when ``n`` becomes ``1``, we might
+invoke :func:`break` as follows::
+
+  > fact n::int = if n>0 then n>1||break $$ n*fact (n-1) else 1;
+  > fact 3;
+  ++ [4] break: extern void pure_break() = break;
+       --> ()
+  ** [4] fact: fact n::int = if n>0 then n>1||break$$n*fact (n-1) else 1;
+       n = 0
+  : p
+     [1] fact: fact n::int = if n>0 then n>1||break$$n*fact (n-1) else 1;
+       n = 3
+     [2] fact: fact n::int = if n>0 then n>1||break$$n*fact (n-1) else 1;
+       n = 2
+     [3] fact: fact n::int = if n>0 then n>1||break$$n*fact (n-1) else 1;
+       n = 1
+  ** [4] fact: fact n::int = if n>0 then n>1||break$$n*fact (n-1) else 1;
+       n = 0
+  : 
 
 Last Result
 -----------
