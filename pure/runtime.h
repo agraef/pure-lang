@@ -1011,6 +1011,14 @@ void pure_throw(pure_expr* e);
 
 void pure_trap(int32_t action, int32_t sig);
 
+/* Trigger debugging and tracing at a given point in the program. These
+   require that the interpreter is running in debugging mode. The debugger
+   will be invoked at the next opportunity (usually when a function is called
+   or a reduction is completed). */
+
+void pure_break(void);
+void pure_trace(void);
+
 /* Construct arithmetic sequences. */
 
 pure_expr *pure_int_seq(int32_t from, int32_t to, int32_t step);

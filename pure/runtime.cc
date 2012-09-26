@@ -5995,6 +5995,23 @@ pure_expr *pure_applc(pure_expr *x, pure_expr *y)
 }
 
 extern "C"
+void pure_break(void)
+{
+  interpreter& interp = *interpreter::g_interp;
+  if (interp.debugging && interp.stoplevel >= 0)
+    interp.stoplevel = interp.debug_info.size();
+}
+
+extern "C"
+void pure_trace(void)
+{
+  interpreter& interp = *interpreter::g_interp;
+  if (interp.debugging && interp.tracelevel < 0 &&
+      interp.debug_info.size() > 0)
+    interp.tracelevel = interp.debug_info.size()-1;
+}
+
+extern "C"
 void pure_throw(pure_expr* e)
 {
   interpreter::brkflag = 0;

@@ -24,7 +24,7 @@ class PureLexer(RegexLexer):
                 'then', 'using', 'when', 'with', 'type', 'interface']
 
     # These aren't really keywords but we want them to stick out anyway.
-    keywords2 = ['catch', 'throw']
+    keywords2 = ['catch', 'throw', 'break', 'trace']
 
     primitives = ['bigint', 'bool', 'char', 'short', 'int', 'long',
                   'float', 'double', 'expr', 'string', 'pointer', 'void',
