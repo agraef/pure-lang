@@ -1,0 +1,190 @@
+/*
+ * Matrix inversion from the Matrix module for the Q Programming Language.
+ * Copyright (C) 2007 Rob Hubbard
+ *
+ * Port to Pure:
+ * Copyright (C) 2012 Jiri Spitz
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License
+ * as published by the Free Software Foundation; either version 2
+ * of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to
+ * the Free Software Foundation, Inc.,
+ * 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+
+
+/* This code does matrix inversion in a symbolic fashion.
+   It can perform exact matrix inversions. */
+
+
+using math, system;
+
+/* some necessary helper stuff */
+
+/* (+), (-), (*) */
+m1::matrix + m2::matrix
+  = zipwith (+) m1 m2 if dim m1 == dim m2;
+
+m1::matrix - m2::matrix
+  = zipwith (-) m1 m2 if dim m1 == dim m2;
+
+-m::matrix = map (*(-1)) m;
+
+m1::matrix * m2::matrix
+  = redim (r1, c2)
+    {prod (row m1 i) (row m2t j) | i = 0..(r1 - 1);
+                                   j = 0..(c2 - 1)} if c1 == r2
+    with
+      prod v1 v2 = foldl (+) 0 (zipwith (*) v1 v2)
+    end
+    when
+      r1, c1 = dim m1;
+      r2, c2 = dim m2;
+      m2t = transpose m2
+    end;
+
+/* .. function:: inverse m
+                 inverse_exact m
+
+      Functions for calculation of inverses of squared matrices. The function
+      :func:`inverse_exact` does exact calculations.
+      The functions are implemented via blockwise inversion. ::
+
+        inv [ A | B ] = [ W       | - W*Post       ]
+            [ --+-- ]   [ --------+--------------- ]
+            [ C | D ]   [ - Pre*W | V + Pre*W*Post ]
+        where
+	V = inv D
+	W = inv (A - B*V*C),
+	Pre = V*C,
+	Post = B*V
+*/
+
+inverse_exact m::matrix = coeff_inv (1%) m;
+inverse m::matrix       = coeff_inv (1/) m;
+
+coeff_inv recipop {t} = {recipop t};
+coeff_inv recipop m = mjoin ww xx yy zz
+  when
+    r, c = dim m;
+    r==c || throw (bad_matrix_value m);
+    rc = (max r c) div 2;
+    (aa, bb, cc, dd) = msplit m rc rc
+      with msplit m rc cc
+        = (submat m (0, 0) (rc, cc), submat m (0, cc) (rc, c - cc),
+           submat m (rc, 0) (r - rc, cc), submat m (rc, cc) (r - rc, c - cc))
+        when
+          r, c = dim m
+        end
+      end;
+    invdd = coeff_inv recipop dd;
+    ww = coeff_inv recipop (aa - (bb * invdd * cc));
+    pre = invdd * cc;
+    post =  bb * invdd;
+    xx = -(ww * post);
+    yy = -(pre * ww);
+    zz = invdd + (pre * ww * post)
+  end
+  with
+    mjoin aa bb cc dd
+      = redim (r, c) {coef i j | i = 0..r - 1; j = 0..c - 1}
+      with
+        coef i j
+          = if i < ra && j < ca
+            then aa!(i, j)
+            else if i < ra && j >= ca
+                 then bb!(i, j - ca)
+                 else if i >= ra && j < ca
+                      then cc!(i - ra, j)
+                      else dd!(i - ra, j - ca)
+      end
+      when
+        ra, ca = dim aa;
+        rd, cd = dim dd;
+        r = ra + rd;
+        c = ca + cd
+      end
+  end;
+
+
+/******************************************************************************/
+/*                                   EXAMPLE                                  */
+/******************************************************************************/
+
+/* Construction of Hilbert's matrix of size n.
+   Hilbert's matrices are difficult for numeric inversion. */
+
+hilbert n = redim (n, n) {1.0 / (double (i + j - 1)) | i = 1..n; j = 1..n};
+
+/* matrix formatting */
+
+__show__ x::dmatrix =
+strcat [printd j (x!(i,j)) | i = 0..n-1 ; j = 0..m-1] + "\n"
+with printd 0 = sprintf "\n%10.5f";
+printd _ = sprintf "%10.5f"
+end
+when n,m = dim x end;
+
+__show__ x::smatrix =
+strcat [printd j (str (x!(i,j))) | i = 0..n-1 ; j = 0..m-1] + "\n"
+with printd 0 = sprintf "\n%10s";
+printd _ = sprintf "%10s"
+end
+when n,m = dim x end;
+
+/* create Hilbert's matrix and convert it to a rational representation */
+
+let x = map rational (hilbert 8);
+
+/*
+
+> (inverse x) * x; // should produce unitary matrix
+
+   1,00000  -0,00000  -0,00000  -0,00000   0,00000   0,00000   0,00000   0,00000
+
+   0,00000   1,00000  -0,00000   0,00000  -0,00007  -0,00006  -0,00006  -0,00005
+
+  -0,00000   0,00000   1,00000  -0,00000   0,00083   0,00076   0,00070   0,00064
+
+   0,00000  -0,00000   0,00000   1,00000  -0,00437  -0,00398  -0,00366  -0,00339
+
+  -0,00000   0,00000  -0,00000  -0,00000   1,01150   0,01049   0,00965   0,00893
+
+   0,00000  -0,00000  -0,00000   0,00000  -0,01599   0,98542  -0,01341  -0,01241
+
+  -0,00000  -0,00000  -0,00000  -0,00000   0,01121   0,01023   1,00941   0,00870
+
+   0,00000   0,00000   0,00000   0,00000  -0,00313  -0,00285  -0,00262   0,99757
+
+The calculation is far from being exact.
+
+> (inverse_exact x) * x; // should produce unitary matrix
+
+     1L%1L     0L%1L     0L%1L     0L%1L     0L%1L     0L%1L     0L%1L     0L%1L
+
+     0L%1L     1L%1L     0L%1L     0L%1L     0L%1L     0L%1L     0L%1L     0L%1L
+
+     0L%1L     0L%1L     1L%1L     0L%1L     0L%1L     0L%1L     0L%1L     0L%1L
+
+     0L%1L     0L%1L     0L%1L     1L%1L     0L%1L     0L%1L     0L%1L     0L%1L
+
+     0L%1L     0L%1L     0L%1L     0L%1L     1L%1L     0L%1L     0L%1L     0L%1L
+
+     0L%1L     0L%1L     0L%1L     0L%1L     0L%1L     1L%1L     0L%1L     0L%1L
+
+     0L%1L     0L%1L     0L%1L     0L%1L     0L%1L     0L%1L     1L%1L     0L%1L
+
+     0L%1L     0L%1L     0L%1L     0L%1L     0L%1L     0L%1L     0L%1L     1L%1L
+
+The calculation is exact.
+
+*/
