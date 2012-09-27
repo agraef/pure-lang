@@ -5998,7 +5998,7 @@ extern "C"
 void pure_break(void)
 {
   interpreter& interp = *interpreter::g_interp;
-  if (interp.debugging && interp.stoplevel >= 0)
+  if (interp.debugging && !interp.debug_skip && interp.stoplevel >= 0)
     interp.stoplevel = interp.debug_info.size();
 }
 
