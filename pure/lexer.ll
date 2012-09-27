@@ -2205,13 +2205,23 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
     // process option arguments
     for (arg = args.l.begin(); arg != args.l.end(); arg++) {
       const char *s = arg->c_str();
-      if (s[0] != '-' || !s[1] || !strchr("amrs", s[1])) break;
+      if (s[0] != '-' || !s[1] || !strchr("ahmrs", s[1])) break;
       while (*++s) {
 	switch (*s) {
 	case 'a': aflag = true; break;
 	case 'm': mflag = true; break;
 	case 'r': rsflag = true; sflag = false; break;
 	case 's': rsflag = sflag = true; break;
+	case 'h':
+	  cout <<
+"trace command help: trace [options ...] [symbol ...]\n\
+Set tracepoints on functions and macros. Available options are:\n\
+-a  Trace all symbols.\n\
+-h  Print this list.\n\
+-m  Set tracepoints on macros (default is functions).\n\
+-r  Recursive trace mode (default; tracing starts at traced symbols).\n\
+-s  Skip trace mode (tracing only shows calls by traced symbols).\n";
+	  goto trace_out;
 	default:
 	  cerr << "trace: invalid option character '" << *s << "'\n";
 	  goto trace_out;
@@ -2302,6 +2312,17 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
       const char *ty = "break";
       char msg[100];
       if (args.c >= 1) {
+	if (args.l.front() == "-h") {
+	  cout <<
+"del command help: del [-b|-h|-m|-t] [symbol ...]\n\
+Delete breakpoints and/or tracepoints. Default is to delete both. Exactly\n\
+one of the following options may be specified:\n\
+-b  Delete (function) breakpoints.\n\
+-h  Print this list.\n\
+-m  Delete macro tracepoints.\n\
+-t  Delete function tracepoints.\n";
+	  goto del_out;
+	}
 	bflag = args.l.front() == "-b";
 	tflag = args.l.front() == "-t";
 	mflag = args.l.front() == "-m";
@@ -2361,6 +2382,7 @@ static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const 
 	}
       }
     }
+  del_out: ;
   } else if (strcmp(cmd, "help") == 0)  {
     static FILE *fp = NULL;
     const char *s = cmdline+4, *p, *q;
@@ -3454,7 +3476,15 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
     bool debug = false, quiet = true;
     if (!args.ok)
       ;
-    else if (args.c == 0 || (debug = args.c == 1 && args.l.front() == "-g")) {
+    else if (args.c > 0 && args.l.front() == "-h") {
+      cout <<
+"run command help: run [-g|-h|script]\n\
+If a script name is given, source the given script. Otherwise, start a new\n\
+interpreter instance, with the scripts and options given on the original\n\
+command line. Options are:\n\
+-g  Run the interpreter with debugging enabled.\n\
+-h  Print this list.\n";
+    } else if (args.c == 0 || (debug = args.c == 1 && args.l.front() == "-g")) {
       // Rerun the interpreter.
       int argc = interp.argc;
       char **argv = interp.argv;
