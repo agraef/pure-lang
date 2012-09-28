@@ -957,12 +957,13 @@ on (``-Wall``) might give you the warning "dereferencing type-punned pointer
 will break strict-aliasing rules" at some point in util.cc with some gcc
 versions. This is harmless and can be ignored.
 
-If your Pure program runs out of stack space, the interpreter will segfault.
-This is *not* a bug, it happens because runtime stack checks are disabled by
-default for performance reasons. You can enable stack checks by setting the
-``PURE_STACK`` environment variable accordingly; see the Pure manual for
-details. The interpreter will then generate orderly "stack fault" exceptions
-in case of a stack overflow.
+If your Pure program runs out of stack space, the interpreter may segfault.
+While the Pure interpreter does advisory stack checks to avoid that kind of
+mishap and generate an orderly exception instead, it has no way of knowing the
+actual stack size available to programs on your system. So if you're getting
+segfaults due to stack overflows then you'll have to set an appropriate stack
+size limit manually with the :envvar:`PURE_STACK` environment variable; see
+the Pure manual for details.
 
 32 Bit Systems
 --------------

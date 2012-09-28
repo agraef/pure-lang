@@ -75,7 +75,9 @@ uint8_t interpreter::g_verbose = 0;
 bool interpreter::g_interactive = false;
 interpreter* interpreter::g_interp = 0;
 char *interpreter::baseptr = 0;
-int interpreter::stackmax = 0;
+// provide a reasonable default for the stack size (8192K - 128K for
+// interpreter and runtime)
+int interpreter::stackmax = (8192-128)*1024;
 int interpreter::stackdir = 0;
 int interpreter::brkflag = 0;
 int interpreter::brkmask = 0;

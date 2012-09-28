@@ -668,9 +668,8 @@ Currently, the following code generation options are recognized:
    	    --nochecks
 
    Enable or disable various extra stack and signal checks. By default, the
-   interpreter checks for stack overflows (if the :envvar:`PURE_STACK`
-   environment variable is set) and pending signals on entry to every
-   function, see `Stack Size and Tail Recursion`_ and `Handling of
+   interpreter checks for stack overflows and pending signals on entry to
+   every function, see `Stack Size and Tail Recursion`_ and `Handling of
    Asynchronous Signals`_ for details. This is needed to catch these
    conditions in a reliable way, so we recommend to leave this enabled.
    However, these checks also make programs run a little slower (typically
@@ -1112,7 +1111,11 @@ shell environment variables:
 
 .. envvar:: PURE_STACK
 
-   Maximum stack size in kilobytes (default: 0 = unlimited).
+   Maximum stack size in kilobytes (0 = unlimited). A reasonable default is
+   provided (currently this is always 8192K - 128K for interpreter and
+   runtime, which should work on most modern PCs). If you're still getting
+   segfaults due to stack overflow then you'll either have to reduce this
+   value or increase the actual stack space available to programs.
 
 Besides these, the interpreter also understands a number of other environment
 variables for setting various compilation options (see `Compilation Options`_
@@ -4804,45 +4807,36 @@ don't mind the limited precision. ::
   2.65252859812191e+32
 
 However, you'll run into another, more serious obstacle if you want to compute
-factorials for some really big values of ``n``. That's because each recursive
-invocation of ``fact`` needs some small amount of memory on the execution
-stack, a so-called "stack frame". (If you're not familiar with how subroutine
-calls are executed by keeping the execution context on a stack then you should
-revisit your basic computer science lessons now.) When ``n`` becomes big
-enough then the stack space may be exhausted, which usually results in a fatal
-runtime error::
+factorials for some really big values of ``n``.  For instance::
 
-  > fact 1000000L;
-  Segmentation fault
+  > fact 200000L;
+  <stdin>, line 7: unhandled exception 'stack_fault' while evaluating 'fact 200000L'
 
-The Pure interpreter can optionally do stack checks so that at least you get
-an orderly exception when this happens, see `Stack Size and Tail Recursion`_
-for details. To enable this, you'll need to set the :envvar:`PURE_STACK`
-environment variable to the maximum stack size in kilobytes. E.g., on
-Unix-like systems you can type the following in a Bourne-compatible shell, or
-put this command into your shell's startup file:
+Oops. What happened there? Well, each recursive invocation of ``fact`` needs
+some small amount of memory on the execution stack, a so-called "stack
+frame". Thus, when ``n`` becomes big enough then our definition is in danger
+of running out of stack space. (This is also why you keep hearing in most CS
+101 courses that you should try to avoid recursion. If you've forgotten how
+subroutine calls are executed by keeping the execution context on a stack then
+it's time to revisit those CS 101 lecture notes now.)
 
-.. code-block:: console
+So how can we avoid using all that stack space? In a language like C
+we'd be using a specialized loop construct instead of recursion, e.g.:
 
-   $ export PURE_STACK=1024
+.. code-block:: c
 
-(Note that most systems will provide much more stack space than 1024
-kilobytes. We deliberately picked a small limit here so that the stack
-overflows are detected sooner.)
+   int fact(int n)
+   {
+     int p = 1;
+     while (n>0) { p = n*p; n = n-1; }
+     return p;
+   }
 
-Now start the interpreter again, enter the above definition of ``fact`` and
-try it with some large value of ``n``. You'll get something like::
-
-  > fact 100000L;
-  <stdin>, line 3: unhandled exception 'stack_fault' while evaluating 'fact 100000L'
-
-Ok, so we now get an orderly exception, which is much better than being kicked
-out of the interpreter. But this doesn't really solve the problem. How can we
-avoid using all that stack space in the first place? In a language like C we'd
-be using a specialized loop construct instead of recursion. But this isn't an
-option in Pure. Instead, we can rewrite the definition so that it becomes
-`tail-recursive`. This means that the recursive call becomes the final
-operation on the right-hand side of the recursive rule.
+Pure doesn't have a ``while`` loop, but we can rewrite the definition so that
+it becomes `tail-recursive`. This means that the recursive call becomes the
+final operation on the right-hand side of the recursive rule. The Pure
+compiler treats this pretty much like a loop in traditional programming
+languages.
 
 The trick of the trade to turn a recursive function into a tail-recursive one
 is the `accumulating parameter` technique. The idea here is to have a separate
@@ -4865,12 +4859,15 @@ Our worker function is tail-recursive since the recursive call to ``loop`` is
 indeed the final call on the right-hand side of the first equation defining
 ``loop``. The Pure compiler generates code which optimizes such "tail calls"
 so that they reuse the stack frame of the calling function. Thus a
-tail-recursive function like ``loop`` will execute in constant stack
-space. And in fact after entering our new definition of ``fact`` we can now
-compute ``fact 100000L`` just fine::
+tail-recursive function like ``loop`` will execute in constant stack space; in
+fact it will be just as efficient as the ``while`` loop in our little C
+snippet above (up to constant factors, of course). After entering our new
+definition of ``fact`` we can now compute ``fact 200000L`` just fine (this may
+take a little while, though, depending on how fast your computer is; the
+result has 973351 digits)::
 
-  > fact 100000L;
-  2824229407960347874293421578024535518477... // lots of digits follow
+  > fact 200000L;
+  14202253454703144049669463336823059760899... // lots of digits follow
 
 The accumulating parameter technique isn't fully general, but it covers all
 the kinds of simple iterative algorithms which you'd do using loop constructs
@@ -4908,8 +4905,7 @@ the same kind of "wrapper-worker" design::
 
 Note that as a matter of prudence we primed the iteration with the bigints
 ``0L`` and ``1L`` so that we can compute large Fibonacci numbers without
-suffering wrap-around. For instance, try the following. (Sit back and relax,
-this takes a little while; the result has 208988 digits.) ::
+suffering wrap-around. For instance, try the following::
 
   > fib 1000000;
   1953282128707757731632014947596256332443... // lots of digits follow
@@ -8477,9 +8473,7 @@ rules and make use of pattern-matching just like ordinary function definitions.
 .. note:: Pure macros are just as powerful as (unconditional) term rewriting
    systems and thus they are Turing-complete. This implies that a badly
    written macro may well send the Pure compiler into an infinite recursion,
-   which results in a stack overflow at compile time. See `Stack Size and Tail
-   Recursion`_ in the `Caveats and Notes`_ section for information on how to
-   deal with this by setting the :envvar:`PURE_STACK` environment variable.
+   which results in a stack overflow at compile time.
 
 As a simple example, let's see how we can inline invocations of the :func:`#`
 size operator on list constants::
@@ -9248,12 +9242,8 @@ like any other. For instance::
   > fact n = if n>0 then n*fact(n-1) else 1;
   > catch error (fact foo);
   error failed_cond
-  > catch error (fact 100000);
+  > catch error (fact 1000000);
   error stack_fault
-
-(You'll only get the latter kind of exception if the interpreter does stack
-checks, see the discussion of the :envvar:`PURE_STACK` environment variable in
-`Stack Size and Tail Recursion`_.)
 
 Unhandled exceptions are reported by the interpreter with a corresponding
 error message::
@@ -12595,7 +12585,9 @@ involves a substantial amount of manual work, but it can (and has) been done.
 Since its modest beginnings in April 2008, Pure has gone through a lot of
 major and minor revisions which raise various backward compatibility issues.
 We document these in the following, in order to facilitate the porting of
-older Pure scripts.
+older Pure scripts. (Note that this isn't intended to be a full history of
+Pure development, so you may want to consult the NEWS and ChangeLog files
+included in the distribution for more details.)
 
 Pure 0.7 introduced built-in matrix structures, which called for some minor
 changes in the syntax of comprehensions and arithmetic sequences.
@@ -12736,19 +12728,12 @@ details.
 Pure 0.56 fixed the meaning of patterns in comprehensions so that unmatched
 elements are now filtered out automatically, like in Haskell. The previous
 behaviour of raising an exception in such cases offered no real benefits and
-was in fact very inconvenient in most situations.
-
-Pure 0.56 also introduced the :ref:`non-splicing vector brackets<non-splicing>`
-``{| |}`` as an alternative notation for nested vector structures, as well as
-the `namespace brackets`_ to quickly switch namespaces inside an expression.
-The :const:`true` and :const:`false` constants are now declared as
-:keyword:`nonfix` symbols in the prelude so that they can be used in patterns,
-and there's a new :type:`bool/type` type to check for normalized truth values
-and a :func:`bool` function to convert machine integers to normalized truth
-values. There's also a new :mod:`enum` module to facilitate the creation of
-enumerated types. Moreover, interactive commands can now optionally be escaped
-by prefixing them with a special character (see `Interactive Usage`_ for
-details).
+was in fact very inconvenient in most situations. Pure 0.56 also enables stack
+checks by default (see `Stack Size and Tail Recursion`_ for details), and
+interactive commands can optionally be escaped by prefixing them with a
+special character (see `Command Syntax`_). The :const:`true` and
+:const:`false` constants are now declared as :keyword:`nonfix` symbols in the
+prelude so that they can be used in patterns.
 
 Error Recovery
 --------------
@@ -13081,15 +13066,22 @@ Pure programs may need a considerable amount of stack space to handle
 recursive function and macro calls, and the interpreter itself also takes its
 toll. So you should configure your system accordingly (8 MB of stack space is
 recommended for 32 bit systems, systems with 64 bit pointers probably need
-more). If the :envvar:`PURE_STACK` environment variable is defined, the
-interpreter performs advisory stack checks on function entry and raises a Pure
-exception if the current stack size exceeds the given limit. The value of
-:envvar:`PURE_STACK` should be the maximum stack size in kilobytes. Please
-note that this is only an advisory limit which does not change the program's
-physical stack size.  Your operating system should supply you with a command
-such as ulimit(1) to set the real process stack size. (The
-:envvar:`PURE_STACK` limit should be a little less than that, to account for
-temporary stack usage by the interpreter itself.)
+more). The interpreter automatically performs advisory stack checks on
+function entry and raises a Pure exception if the current stack size exceeds a
+given limit. A reasonable default for the stack limit is defined by the
+implementation, please check the description of the :envvar:`PURE_STACK`
+environment variable for details.
+
+You can also change this limit if needed, by setting the :envvar:`PURE_STACK`
+environment variable accordingly. The value of :envvar:`PURE_STACK` should be
+the maximum stack size in kilobytes. Please note that this is only an advisory
+limit which does not change the program's physical stack size, so you can set
+this to any value that seems appropriate. (You can also set
+:envvar:`PURE_STACK` to zero to completely disable the checks, but this isn't
+recommended.) Your operating system should supply you with a command such as
+ulimit(1) to set the real process stack size. (The :envvar:`PURE_STACK` limit
+should be a little less than that, to account for temporary stack usage by the
+interpreter itself.)
 
 Like Scheme, Pure does proper tail calls (if LLVM provides that feature on the
 platform at hand), so tail-recursive definitions should work fine in limited
