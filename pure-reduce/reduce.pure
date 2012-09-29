@@ -533,7 +533,11 @@ simplify x = y when
   // we can use.
   PROC_make_printable;
   // Convert the stacktop back to a Pure expression.
+#! --if mapped
   [y] = to_expr (display PROC_get_value) with
+#! --else
+  [list,y] = to_expr (display PROC_get_value) with
+#! --endif
     display p = [] if PROC_null p;
     = if PROC_symbol p then symval (PROC_symbol_name p)
       else if PROC_fixnum p then PROC_integer_value p
