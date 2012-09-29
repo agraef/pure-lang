@@ -450,7 +450,7 @@ using namespace reduce;
 
 // Some REDUCE symbols. XXXTODO: Complete this list.
 public df solve equal plus minus times quotient expt;
-public _rd_ _gr_ _gi_ _rn_ _mod_;
+nonfix _rd_ _gr_ _gi_ _rn_ _mod_;
 
 // Variadic symbols in REDUCE which may take any number of arguments, together
 // with their Pure counterparts. XXXTODO: Complete this list.
@@ -540,7 +540,9 @@ simplify x = y when
     // Empty list, treated as () right now. XXXFIXME: Is this sensible?
     to_expr [] = ();
     // Special coefficient values.
+    to_expr (_rd_ : x::double) = x;
     to_expr (_rd_ : mant::integer : exp::integer) = mant*2^exp;
+    to_expr (_gr_ : re::double : im::double) = re+:im;
     to_expr (_gr_ :
 	     (rmant::integer : rexp::integer) :
 	     (imant::integer : iexp::integer)) = rmant*2^rexp +: imant*2^iexp;
