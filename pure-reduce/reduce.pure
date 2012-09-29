@@ -499,12 +499,14 @@ public bad_reduce_value;
 simplify x = y when
   // Clear the stack (to be sure).
   PROC_clear_stack;
-  // Push x on the REDUCE stack.
-  from_expr x with
+  // Push x on the REDUCE stack. XXXFIXME: We currently wrap this in an extra
+  // 'list' application which gives us the result as a singleton list and
+  // avoids REDUCE errors in cases where the result is non-scalar. This is a
+  // temporary workaround until we figure out how to do this properly.
+  from_expr ('list x) with
     // These are all the data types natively supported by the interface.
-    // XXXTODO: Does it make sense to pass other Pure data structures such as
-    // lists, tuples, matrices, maybe through some appropriate REDUCE
-    // functions?
+    // XXXTODO: Does it make sense to pass Pure aggregates such as lists,
+    // tuples, matrices, maybe through some appropriate REDUCE functions?
     from_expr x::int = PROC_push_small_integer x;
     from_expr x::bigint = PROC_push_big_integer (init $ str x);
     from_expr x::double = PROC_push_floating x;
@@ -530,7 +532,7 @@ simplify x = y when
   // we can use.
   PROC_make_printable;
   // Convert the stacktop back to a Pure expression.
-  y = to_expr (display PROC_get_value) with
+  [y] = to_expr (display PROC_get_value) with
     display p = [] if PROC_null p;
     = if PROC_symbol p then symval (PROC_symbol_name p)
       else if PROC_fixnum p then PROC_integer_value p
@@ -577,6 +579,8 @@ simplify x = y when
     to_expr x@[f::symbol,n::int] = to_sym x
       if f === arbint || f === arbcomplex;
 #! --endif
+    // Lists seem to be represented with the list symbol in front.
+    to_expr (f::symbol:xs::rlist) = map to_expr xs if f === 'list;
     // List with a variadic symbol in front, map this to the appropriate Pure
     // term (e.g. (plus a b c) -> a+b+c etc.).
     to_expr (f::symbol:xs::rlist) = foldl1 (to_expr f$) (map to_expr xs)
