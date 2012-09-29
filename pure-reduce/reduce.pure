@@ -1,0 +1,572 @@
+
+/* A basic interface to the computer algebra system REDUCE available at
+   http://www.reduce-algebra.com/. */
+
+using "lib:reduce" ;
+
+/* Low-level interface. ******************************************************/
+
+/* This is the low-level "procedural" REDUCE interface (cf. csl/cslbase/proc.h
+   in the REDUCE sources at http://reduce-algebra.svn.sourceforge.net). We
+   declare these routines in their own namespace in order to keep the global
+   namespace clean. */
+
+namespace reduce;
+
+/**************************************************************************
+ * Copyright (C) 2010, Codemist Ltd.                     A C Norman       *
+ *                                                                        *
+ * Redistribution and use in source and binary forms, with or without     *
+ * modification, are permitted provided that the following conditions are *
+ * met:                                                                   *
+ *                                                                        *
+ *     * Redistributions of source code must retain the relevant          *
+ *       copyright notice, this list of conditions and the following      *
+ *       disclaimer.                                                      *
+ *     * Redistributions in binary form must reproduce the above          *
+ *       copyright notice, this list of conditions and the following      *
+ *       disclaimer in the documentation and/or other materials provided  *
+ *       with the distribution.                                           *
+ *                                                                        *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS    *
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT      *
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS      *
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE         *
+ * COPYRIGHT OWNERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,   *
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,   *
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS  *
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND *
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR  *
+ * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF     *
+ * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH   *
+ * DAMAGE.                                                                *
+ *************************************************************************/
+
+//typedef int character_reader(void);
+//typedef int character_writer(int);
+
+/*
+ * When a handle on an expression is returned to the user this is the
+ * type it has. The type should be treated as opaque, please.
+ */
+
+//typedef void *PROC_handle;
+
+/*
+ * Before trying to do anything at all you must call cslstart. This will
+ * allocate memory, load an initial heap image etc etc. The argc and argv
+ * passed here are as per normal C startup. The key issue here is how
+ * Reduce will find the file "reduce.img" that it needs to load. There are
+ * two plausible ways you can achieve this.
+ * (a) argv[0] should contain a (for choice) fully rooted path as in
+ *     /usr/local/bin/reduce
+ * or  c:\my-reduce\binaries\reduce.exe
+ *     In that case the name of the supposed execitable has ".img" tagged
+ *     onto it, so the image is expected to be at say /usr/local/bin/reduce.img
+ *     If the application name is the name of a symbolic link then the
+ *     image file is looked for in the dircetory that the link points to.
+ * (b) You can put "-i" "/path/to/reduce.img" in two consecutive entries
+ *     in argv to give an explicit indication of where the image file
+ *     is to be found. This should override any attempt to look via
+ *     argv[0].
+ * Most users should not need to provide any further options, but options
+ * are decoded just as for the ordinary version of the system.
+ *
+ * Any textual output generated during system-started is sent, character
+ * by character, via the callback function. Eg pass an option "-v" in
+ * argv and see a big banner.
+ */
+
+extern void cslstart(int argc, char **argv, int *wr);
+
+/*
+ * At the end of a run please call cslfinish to close down everything
+ * in a reasonably orderly manner and release memory. I should cautiously
+ * note that the system will have some memory leaks so cslfinish will
+ * not return EVERYTHING that has been allocated - if this worries you
+ * please search for and correct the defects. Again the callback function
+ * is used to process any output generated during close-down.
+ */
+
+extern int cslfinish(int *wr);
+
+/*
+ * As a general-purpose escape it is possible to get a Lisp function
+ * (with no arguments) called. This function does that re-binding
+ * what would otherwise be terminal input and output to the two
+ * callback functions. By writing your own custom Lisp function and then
+ * calling it this way you get almost ultimate flexibility, if not
+ * convenience! For used of the Reduce algebra system I hope that the
+ * suite of more specialised functions listed later on will prove
+ * easier to use.
+ */
+
+extern int execute_lisp_function(char *fname,int *r, int *w);
+
+
+/*
+ * The next collection of functions provide for interaction with the
+ * Reduce algebra system using a model based on a Reverse Polish
+ * Calculator. You use RPN-style calls to build a fragment of parse
+ * tree and can them as Reduce to "simplify" it. Having simplified it
+ * you can ask for a simple prefix-form of the result to be generated and
+ * returned, and there are functions for traversing that.
+ */
+
+/*
+ * Example:
+ *  Task:   differentiate (x+1)^2 with respect to x
+ *  Method: clear_stack();
+ *          push_symbol("x");
+ *          push_small_integer(1);
+ *          make_function_call("plus",2);   function plus has 2 arguments.
+ *          push_small_integer(2);
+ *          make_function_call("expt",2);
+ *          push_symbol("x");
+ *          make_function_call("df",2);     "df" is for differentiate.
+ *                                          To use this you need to learn
+ *                                          the named Reduce uses for all
+ *                                          relevant operations.
+ *          simplify();                     up until now the form built
+ *                                          has been just the prefix form
+ *                                          (expt (plus x 1) 2).
+ *          dup();                          because save will pop the stack
+ *          save(1);                        save in "memory number 1".
+ *          make_printable();               the simplified form is in
+ *                                          a Reduce internal representation,
+ *                                          so this restores it to simple
+ *                                          prefix form.
+ *          p = get_value();
+ * now p holds a handle on the result, and it can be traversed
+ * using functions atom(), first(), rest() and functions that extract the
+ * name of a symbol or the value of an integer. You should assume that the
+ * handle becomes invalid as soon as you call one of the other functions.
+ * this is because they can all trigger garbage collection and that can
+ * relocate data.
+ * The functions used to build expressions all return zero on success or
+ * an error-code otherwise. In the initial release the error-codes are
+ * not documented other than via reading the source files. Furthermore the
+ * consequence of a calculation seeking input or generating output is not
+ * well sorted.
+ */
+
+
+/*
+ * After having called cslstart() you can set the I/O callback functions
+ * using this. If you set one or both to NULL this indicates use of
+ * stdin/stdout as per usual rather than an callback, otherwise whenever
+ * anybody wants to read or write they use these procedures. It is then
+ * your responsibility to cope with whatever text gets exchanged!
+ */
+
+extern int PROC_set_callbacks(int *r, int *w);
+
+/*
+ * Load a Reduce "package".
+ */
+
+extern int PROC_load_package(char *name);
+
+/*
+ * Set of clear a Reduce switch. As on "on expandlogs;"
+ * which you do via PROC_set_switch("expandlogs", 1);
+ * Use 0 to switch something off and 1 to switch it on.
+ */
+
+extern int PROC_set_switch(char *name, int val);
+
+/*
+ * Set level of garbage collector noise. This might often be a bit irrelevant,
+ * but
+ *    0    no messages at all
+ *    +1   messages whenever garbage collection happens
+ *    +2   messages whenever a module of code is loaded
+ *    +4   extra details in the garbage collector messages
+ * Note that if an ALWAYS_NOISY option (probably set as a side effect
+ * of the debugging command line option "-g") is in play then any
+ * call here has +1 and +2 forced active.
+ */
+
+extern int PROC_gc_messages(int n);
+
+/*
+ *    stack = nil;
+ */
+extern int PROC_clear_stack();
+
+/*
+ *    stack = name . stack;
+ */
+
+extern int PROC_push_symbol(char *name);
+
+/*
+ *    stack = the-string . stack;
+ */
+
+extern int PROC_push_string(char *data);
+
+/*
+ *    stack = n . stack;
+ * Small integers may be up to 28-bits of (signed) data, while
+ * big integers can be almost any size and are denoted here by strings.
+ * Eg:  PROC_push_small_integer(134217727);    largest positive small num
+ *      PROC_push_small_integer(-134217728);   extreme negative case 
+ *      PROC_push_big_integer("-12345678901234567890");
+ */
+
+extern int PROC_push_small_integer(int n);
+
+extern int PROC_push_big_integer(char *n);
+
+extern int PROC_push_floating(double n);
+
+/*
+ * Takes n items from the top of the stack and uses them as arguments
+ * for a function as specified by the name. Leaves the result on the
+ * top of the stack. Arguments will have been pushed with arg1 pushed
+ * first and the last argument pushed last.
+ */
+
+extern int PROC_make_function_call(char *name, int n);
+
+/*
+ * Save whatever is on top of the stack in memory location n. At present
+ * I provide 100 memory locations, whihc ar enumbered 0 to 99.
+ */
+
+extern int PROC_save(int n);
+
+/*
+ * Push the contents of memory location n onto the stack.
+ */
+
+extern int PROC_load(int n);
+
+/*
+ * Duplicate the top stack element.
+ */
+
+extern int PROC_dup();
+
+/*
+ * Discard the top stack element.
+ */
+
+extern int PROC_pop();
+
+/*
+ * The top item on the stack is replaced with what happens when Reduce
+ * is asked to "simplify" or "evaluate" it. The result can then be stored
+ * or combined with other items, but it will not in general be in a format
+ * directly convenient for use by humans.
+ */
+
+extern int PROC_simplify();
+
+/*
+ * Replace the top item on the stack with a version of the same expression
+ * in a reasonably simple prefix notation.
+ * This representation is NOT intended for re-input to any calculation -
+ * it is only intended for inspecial by the client code that is using Reduce
+ * via this interface. To that end it may in the future return big integers
+ * in a form where they have been converted to Lisp strings and may make
+ * other transformations that would hurt attempts to re-use the expression.
+ */
+
+extern int PROC_make_printable();
+
+/*
+ * Return a handle to the top item on the stack, and pop the stack. This
+ * will normally be called immediately after a call to PROC_make_printable.
+ * the stack is popped because I view the "printable" version as unsuitable
+ * for further use.
+ */
+
+extern void* PROC_get_value();
+
+/*
+ * The next few functions are predicates that may be applied to handles.
+ * An "atom" is any non-composite form. A fixnum is a small integer, and
+ * a symbol is a name.
+ */
+
+extern int PROC_atom(void* p);
+extern int PROC_null(void* p);
+extern int PROC_fixnum(void* p);
+extern int PROC_floatnum(void* p);
+extern int PROC_string(void* p);
+extern int PROC_symbol(void* p);
+
+/*
+ * If something is not an atom it will be a list, and the following two
+ * functions return the components of it. In general non-atomic items will
+ * be structured as
+ *     (fname arg1 arg2 ...)
+ * with "well understood" function names "plus", "difference", "minus",
+ * "times", "quotient", "expt" being used to denote use of the main
+ * arithmetic connectives. A Lisp fanatic would have named the following
+ * two functions PROC_car and PROC_cdr!
+ */
+
+extern void* PROC_first(void* p);
+extern void* PROC_rest(void* p);
+
+/*
+ * If something is an atom then these make it possible to extract details
+ * of what it represents. In due course I may support floating point values
+ * and big numbers, but release 1 of those code concentrates on the basics.
+ */
+
+extern int PROC_integer_value(void* p);
+extern double PROC_floating_value(void* p);
+extern char *PROC_symbol_name(void* p);
+extern char *PROC_string_data(void* p);
+
+/*
+ * I also provide some calls that support a sort of ultimate cop-out in
+ * that they maye it possible to call Lisp code directly rather than
+ * just invoking the Reduce simplifier. They also allow one to get back a
+ * raw Lisp result which will have had gensym-names solidified but which
+ * is otherwise unaltered. Note that the way this is achieved means that
+ * things will FAIL if the Lisp result were to be a cyclic structure!
+ */
+
+
+/*
+ * Replace the top item on the stack with whatever is obtained by using
+ * the Lisp EVAL operation on it. Note that this is not intended for
+ * casual use - if there is any functionality that you need PLEASE ask
+ * me to put in a cleaner abstraction to support it.
+ */
+
+extern int PROC_lisp_eval();
+
+/*
+ * Return a handle to the top item on the stack, and pop the stack.
+ * The value here will be a RAW LISP structure and NOT at all necessarily
+ * anything neat.
+ */
+
+extern void* PROC_get_raw_value();
+
+namespace;
+
+/* High-level interface. *****************************************************/
+
+/**************************************************************************
+ * Copyright (C) 2012, Albert Graef <Dr.Graef@t-online.de>                *
+ *                                                                        *
+ * Redistribution and use in source and binary forms, with or without     *
+ * modification, are permitted provided that the following conditions are *
+ * met:                                                                   *
+ *                                                                        *
+ *     * Redistributions of source code must retain the relevant          *
+ *       copyright notice, this list of conditions and the following      *
+ *       disclaimer.                                                      *
+ *     * Redistributions in binary form must reproduce the above          *
+ *       copyright notice, this list of conditions and the following      *
+ *       disclaimer in the documentation and/or other materials provided  *
+ *       with the distribution.                                           *
+ *                                                                        *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS    *
+ * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT      *
+ * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS      *
+ * FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE         *
+ * COPYRIGHT OWNERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,   *
+ * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,   *
+ * BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS  *
+ * OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND *
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR  *
+ * TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF     *
+ * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH   *
+ * DAMAGE.                                                                *
+ *************************************************************************/
+
+/* ..
+
+   High-Level Interface to REDUCE
+   ==============================
+
+   The goal here is to make it easy to run REDUCE from Pure; to these ends,
+   the most important features of the low-level PROC interface are wrapped in
+   a convenient way. Currently the following functions are provided:
+
+   .. function:: reduce::init image::string args::smatrix
+
+      Initializes the REDUCE system. You need to specify the name of the
+      REDUCE image file and any desired extra arguments as a string vector.
+      This needs to be called once before doing anything else.
+
+   .. function:: reduce::verbosity n
+
+      Sets the verbosity level; 0 means no messages at all, and the following
+      values may be or'ed together to pick what you need:
+
+        1   messages whenever garbage collection happens
+	2   messages whenever a module of code is loaded
+	4   extra details in the garbage collector messages
+
+   .. function:: reduce::load name::string
+
+      Loads REDUCE packages. Please check the REDUCE documentation for
+      details.
+
+   .. function:: reduce::switch name:string val::int
+
+      Lets you change global REDUCE options. Please check the REDUCE
+      documentation for details.
+
+   .. function:: simplify x
+
+      This is the main entry point. Note that this is in the default namespace
+      for convenience. It takes a REDUCE expression in Pure format and tries
+      to simplify it using REDUCE. The result is then converted back to Pure
+      format.
+
+   See reduce_examp.pure for some basic examples. */
+
+namespace reduce with
+
+// These are repeated here to give them shorter names.
+
+extern int PROC_load_package(char *name) = load;
+extern int PROC_set_switch(char *name, int val) = switch;
+extern int PROC_gc_messages(int n) = verbosity;
+
+// Initialization: run this once before anything else.
+
+init image::string args::smatrix =
+  cslstart (#args+3) {"reduce","-i",image,args} NULL;
+
+// Some special symbol lists, defined below.
+
+public variadic_syms nonvariadic_syms reduce_syms pure_syms;
+
+end;
+
+// The following stuff is in the global namespace for convenience.
+using namespace reduce;
+
+// Some REDUCE symbols. XXXTODO: Complete this list.
+public df solve equal plus minus times quotient expt;
+public _rd_ _gr_ _gi_ _rn_ _mod_;
+
+// Variadic symbols in REDUCE which may take any number of arguments, together
+// with their Pure counterparts. XXXTODO: Complete this list.
+let reduce::variadic_syms = {plus=>(+),times=>(*),min=>min,max=>max};
+
+// Remaining (non-variadic) symbols with their Pure counterparts. Only symbols
+// which need to be remapped on the Pure side need to be listed here. XXXTODO:
+// Complete this list.
+let reduce::nonvariadic_syms = {minus=>neg,quotient=>(/),expt=>(^),equal=>(==)};
+
+// All remapped symbols (from above).
+let reduce::reduce_syms = {variadic_syms, nonvariadic_syms};
+
+// Reverse mapping (Pure -> REDUCE).
+let reduce::pure_syms = {y=>x | x=>y = reduce_syms};
+
+// Exception constructor. This gets thrown on inputs and outputs which
+// 'simplify' doesn't understand (yet).
+public bad_reduce_value;
+/* Uncomment this to get unmapped output in nested list format straight from
+   REDUCE (useful for debugging purposes). */
+//#! --disable mapped
+/* Uncomment this to disable quoting of applications in the output (provided
+   that 'mapped' is also enabled, disabling this will force the evaluation of
+   reducible Pure subterms in the output). */
+//#! --disable quoted
+
+simplify x = y when
+  // Clear the stack (to be sure).
+  PROC_clear_stack;
+  // Push x on the REDUCE stack.
+  from_expr x with
+    // These are all the data types natively supported by the interface.
+    // XXXTODO: Does it make sense to pass other Pure data structures such as
+    // lists, tuples, matrices, maybe through some appropriate REDUCE
+    // functions?
+    from_expr x::int = PROC_push_small_integer x;
+    from_expr x::bigint = PROC_push_big_integer (init $ str x);
+    from_expr x::double = PROC_push_floating x;
+    from_expr x::string = PROC_push_string x;
+    from_expr x::appl = () when
+      f:xs = a [] x with a xs (x@_ y) = a (y:xs) x; a xs x = x:xs end;
+      do from_expr xs;
+      PROC_make_function_call (from_sym f) (#xs);
+    end;
+    from_expr x::symbol = PROC_push_symbol (from_sym x);
+    from_expr x = error x otherwise;
+    // Convert symbols, with mapping as needed.
+    from_sym x = str (catch (cst x) (pure_syms!x));
+  end;
+  // Run REDUCE to simplify the expression.
+  PROC_simplify;
+  // Convert the stacktop from the internal REDUCE format into a format which
+  // we can use.
+  PROC_make_printable;
+  // Convert the stacktop back to a Pure expression.
+  y = to_expr (display PROC_get_value) with
+    display p = [] if PROC_null p;
+    = if PROC_symbol p then symval (PROC_symbol_name p)
+      else if PROC_fixnum p then PROC_integer_value p
+      else if PROC_floatnum p then PROC_floating_value p
+      else if PROC_string p then strval (PROC_string_data p)
+      else error p if PROC_atom p;
+    = display (PROC_first p):display (PROC_rest p) otherwise;
+    // Bigints are also returned as strings. We handle that here.
+    strval x::string = case val x of
+      x::int  = bigint x;
+      x::bigint = x;
+      _ = x;
+    end;
+    symval x::string = case val x of
+      x::symbol = x;
+      // Some REDUCE symbols aren't valid Pure symbols. We mangle them here.
+      _ = val (string (map mangle x)) with
+	mangle c = c if c=="_" || c>="0" && c<="9" ||
+		       c>="a" && c<="z" || c>="A" && c<="Z";
+	mangle ":" = "_";
+	mangle _ = "__" otherwise;
+      end;
+    end;
+#! --if mapped
+#! --if quoted
+    // quote applications in the result, to prevent evaluation of reducible
+    // Pure subterms in the result
+    x$y = 'x y;
+#! --endif
+    // Empty list, treated as () right now. XXXFIXME: Is this sensible?
+    to_expr [] = ();
+    // Special coefficient values.
+    to_expr (_rd_ : mant::integer : exp::integer) = mant*2^exp;
+    to_expr (_gr_ :
+	     (rmant::integer : rexp::integer) :
+	     (imant::integer : iexp::integer)) = rmant*2^rexp +: imant*2^iexp;
+    to_expr (_gi_ : re::integer : im::integer) = re+:im;
+    to_expr (_rn_ : num::integer : den::integer) = num%den;
+    // XXXFIXME: Maybe it's better to not loose the _mod_ symbol here?
+    to_expr (_mod_ : num::integer) = num;
+    // List with a variadic symbol in front, map this to the appropriate Pure
+    // term (e.g. (plus a b c) -> a+b+c etc.).
+    to_expr (f::symbol:xs::rlist) = foldl1 (to_expr f$) (map to_expr xs)
+      if member variadic_syms f;
+    // Other list (no variadic symbol), mapped to a plain application.
+    to_expr xs::rlist = foldl1 ($) (map to_expr xs) otherwise;
+    // Symbols.
+    to_expr x::symbol = to_sym x;
+    // XXXTODO: Any other back conversions that we want to do here?
+#! --endif
+    // Anything else: leave as is right now.
+    to_expr x = x otherwise;
+    // Convert symbols, with reverse mapping as needed.
+    to_sym x = catch (cst x) (reduce_syms!x);
+  end;
+  // Clear the stack once again (clean up).
+  PROC_clear_stack;
+end with
+  // Error handler, this gets invoked if we choke on an input or output x we
+  // don't understand (yet).
+  error x = PROC_clear_stack $$ throw (bad_reduce_value x);
+end;
