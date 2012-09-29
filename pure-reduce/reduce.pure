@@ -424,6 +424,14 @@ namespace;
       to simplify it using REDUCE. The result is then converted back to Pure
       format.
 
+   In Pure land, REDUCE expressions are represented using standard curried
+   notation; some special conversions are applied to make arithmetic
+   operations such as +, * etc. work as expected. For convenience, the REDUCE
+   terms ``arbint n`` and ``arbcomplex n`` are converted from/to Greek symbols
+   ``αn`` and ``ζn``. (All these automatic conversions can also be turned off
+   on the output side by disabling the ``mapped`` compilation option; this may
+   be useful for debugging purposes.)
+
    See reduce_examp.pure for some basic examples. */
 
 namespace reduce with
@@ -452,7 +460,7 @@ using namespace reduce;
 // Pure counterparts in the symbol lists below. (NOTE: intg is actually a Pure
 // replacement for REDUCE's int which is already used as a conversion function
 // in Pure.)  XXXTODO: Complete this list.
-public df intg solve equal plus minus times quotient expt;
+public df intg solve equal plus minus times quotient expt arbint arbcomplex;
 nonfix _rd_ _gr_ _gi_ _rn_ _mod_;
 
 // Variadic symbols in REDUCE which may take any number of arguments, together
@@ -475,6 +483,7 @@ let reduce::pure_syms = {y=>x | x=>y = reduce_syms};
 // Exception constructor. This gets thrown on inputs and outputs which
 // 'simplify' doesn't understand (yet).
 public bad_reduce_value;
+
 /* Uncomment this to get unmapped output in nested list format straight from
    REDUCE (useful for debugging purposes). */
 //#! --disable mapped
@@ -482,6 +491,9 @@ public bad_reduce_value;
    that 'mapped' is also enabled, disabling this will force the evaluation of
    reducible Pure subterms in the output). */
 //#! --disable quoted
+/* Uncomment this to disable the conversion from arbint and arbcomplex to
+   Greek symbols on the Pure side. */
+//#! --disable arbsymbols
 
 simplify x = y when
   // Clear the stack (to be sure).
@@ -501,7 +513,12 @@ simplify x = y when
       do from_expr xs;
       PROC_make_function_call (from_sym f) (#xs);
     end;
-    from_expr x::symbol = PROC_push_symbol (from_sym x);
+    from_expr x::symbol =
+      case head s, val (tail s) when s = str x end of
+	"α",n::int = from_expr (arbint n);
+	"ζ",n::int = from_expr (arbcomplex n);
+	_ = PROC_push_symbol (from_sym x);
+      end;
     from_expr x = error x otherwise;
     // Convert symbols, with mapping as needed.
     from_sym x = str (catch (cst x) (pure_syms!x));
@@ -555,6 +572,10 @@ simplify x = y when
     to_expr (_rn_ : num::integer : den::integer) = num%den;
     // XXXFIXME: Maybe it's better to not loose the _mod_ symbol here?
     to_expr (_mod_ : num::integer) = num;
+#! --if arbsymbols
+    to_expr x@[f::symbol,n::int] = to_sym x
+      if f === arbint || f === arbcomplex;
+#! --endif
     // List with a variadic symbol in front, map this to the appropriate Pure
     // term (e.g. (plus a b c) -> a+b+c etc.).
     to_expr (f::symbol:xs::rlist) = foldl1 (to_expr f$) (map to_expr xs)
@@ -568,6 +589,8 @@ simplify x = y when
     // Anything else: leave as is right now.
     to_expr x = x otherwise;
     // Convert symbols, with reverse mapping as needed.
+    to_sym [f::symbol,n::int] = val ("α"+str n) if f === arbint;
+    to_sym [f::symbol,n::int] = val ("ζ"+str n) if f === arbcomplex;
     to_sym x = catch (cst x) (reduce_syms!x);
   end;
   // Clear the stack once again (clean up).
