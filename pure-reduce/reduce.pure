@@ -448,18 +448,23 @@ end;
 // The following stuff is in the global namespace for convenience.
 using namespace reduce;
 
-// Some REDUCE symbols. XXXTODO: Complete this list.
-public df solve equal plus minus times quotient expt;
+// Some REDUCE symbols. On the Pure side, you can use either these or their
+// Pure counterparts in the symbol lists below. (NOTE: intg is actually a Pure
+// replacement for REDUCE's int which is already used as a conversion function
+// in Pure.)  XXXTODO: Complete this list.
+public df intg solve equal plus minus times quotient expt;
 nonfix _rd_ _gr_ _gi_ _rn_ _mod_;
 
 // Variadic symbols in REDUCE which may take any number of arguments, together
 // with their Pure counterparts. XXXTODO: Complete this list.
-let reduce::variadic_syms = {plus=>(+),times=>(*),min=>min,max=>max};
+let reduce::variadic_syms =
+  {plus=>(+),times=>(*),min=>min,max=>max};
 
 // Remaining (non-variadic) symbols with their Pure counterparts. Only symbols
 // which need to be remapped on the Pure side need to be listed here. XXXTODO:
 // Complete this list.
-let reduce::nonvariadic_syms = {minus=>neg,quotient=>(/),expt=>(^),equal=>(==)};
+let reduce::nonvariadic_syms =
+  {int=>intg,minus=>neg,quotient=>(/),expt=>(^),equal=>(==)};
 
 // All remapped symbols (from above).
 let reduce::reduce_syms = {variadic_syms, nonvariadic_syms};
