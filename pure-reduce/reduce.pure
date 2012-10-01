@@ -464,8 +464,9 @@ public variadic_syms nonvariadic_syms reduce_syms pure_syms;
 // unexpanded SQ forms below, but may be useful in its own right.
 
 expand = reduce with
-  // distributivity
+  // associtivity
   a+(b+c) = (a+b)+c; a*(b*c) = (a*b)*c;
+  // distributivity
   (a+b)*c = a*c+b*c; a*(b+c) = a*b+a*c;
   // move unary minus outward
   (-a)*b = -(a*b); a*(-b) = -(a*b);
@@ -476,6 +477,13 @@ expand = reduce with
   a*b::number | b::number*a = a if b==1;
   a*b::number = b*a if ~numberp a;
   a::real*b = -((-a)*b) if a<0;
+end;
+
+// Another little helper function to further simplify sums by reducing a+-b ->
+// a-b.
+
+pretty = reduce with
+  a+-b = a-b; a+b::real = a-(-b) if b<0;
 end;
 
 end;
@@ -536,7 +544,7 @@ simplify x = y when
     // These are all the data types natively supported by the interface.
     // Marshalling of list and matrix values is supported as well.
     from_expr x::int = PROC_push_small_integer x;
-    from_expr x::bigint = PROC_push_big_integer (init $ str x);
+    from_expr x::bigint = PROC_push_big_integer (init (str x));
     from_expr x::double = PROC_push_floating x;
     from_expr x::string = PROC_push_string x;
     from_expr x::matrix = from_expr (foldl ($) ('mat) (list2 x));
@@ -644,60 +652,57 @@ simplify x = y when
     // Lists seem to be represented with the list symbol in front.
     to_expr (f::symbol:xs::rlist) = map to_expr xs if f === 'list;
     to_expr f::symbol = [] if f === 'list;
-    /* Matrices generally take the form (mat xs ...) in REDUCE's internal
-       representation, where each xs is a row of the matrix represented as a
-       list. Parsing these is complicated a bit by the fact that, at least in
-       the current version of the PROC interface, PROC_simplify doesn't expand
-       embedded SQ terms (REDUCE's internal representation of algebraic terms,
-       cf. Section 3 of the "REDUCE Symbolic Mode Primer"), so we need to do
-       this on our own. */
-    to_expr (f::symbol:xs::rlist) = matrix ys when
-      ys = map to_exprs xs;
-    end with
-      to_exprs (x:xs) = y : to_exprs xs when
-	y = case to_expr x of
-	  // SQ forms. Note that we always assume that t is actually 't' here,
-	  // denoting a valid SQ form, so that we don't have to reevaluate it
-	  // (cf. Section 3.2 of the "REDUCE Symbolic Mode Primer").
-	  __sq (p:q) t = if numberp q && q==1 then p else '(p/q) when
-	    p = expandsf p; q = expandsf q;
-	  end;
-	  // plain coefficient
-	  y = y;
-	end;
-      end;
+    // Matrices generally take the form (mat xs ...) in REDUCE's internal
+    // representation, where each xs is a row of the matrix represented as a
+    // list.
+    to_expr (f::symbol:xs::rlist) = matrix (map to_exprs xs) with
+      to_exprs (x:xs) = to_expr x : to_exprs xs;
       // Empty list.
       to_exprs [] = [];
       // Not a list. This is presumably a singleton coefficient(?).
       to_exprs x = [to_expr x];
-      // This expands a REDUCE standard form (SF) representation of an
-      // algebraic term to the human-readable prefix form. Cf. Section 4 of
-      // the "REDUCE Symbolic Mode Primer".
-      expandsf x = expand (expandsf x) with
-	expandsf (((mvar:ldeg):lc):red) = x when
-	  x = expandsf ((mvar:ldeg):lc);
-	  y = expandsf red;
-	  x = if ~numberp y || y~=0 then x+y else x;
-	end;
-	expandsf ((mvar:ldeg):lc) = x when
-	  x = expandsf (mvar:ldeg);
-	  y = expandsf lc;
-	  x = if ~numberp y then x*y else if y==0 then 0
-				     else if y==1 then x else y*x;
-	end;
-	expandsf (mvar:ldeg) =
-	  if ldeg==0 then 1 else if ldeg==1 then mvar else mvar^ldeg;
-	expandsf [] = 0;
-	expandsf mvar = mvar;
-      end;
     end if f === 'mat;
     to_expr f::symbol = {} if f === 'mat;
     // List with a variadic symbol in front, map this to the appropriate Pure
     // term (e.g. (plus a b c) -> a+b+c etc.).
-    to_expr (f::symbol:xs::rlist) = foldl1 (to_expr f$) (map to_expr xs)
-      if member variadic_syms f;
-    // Other list (no variadic symbol), mapped to a plain application.
-    to_expr xs::rlist = foldl1 ($) (map to_expr xs) otherwise;
+    to_expr (f::symbol:xs::rlist) =
+      pretty (foldl1 (to_expr f$) (map to_expr xs)) if member variadic_syms f;
+    // Other list (with a non-variadic symbol in front). Here we also deal
+    // with the case of unevaluated embedded SQ terms (REDUCE's internal
+    // representation of algebraic terms, cf. Section 3 of the "REDUCE
+    // Symbolic Mode Primer").
+    to_expr xs@(f::symbol:_::rlist) = case xs of
+      // SQ forms. Note that we always assume that t is actually 't' here,
+      // denoting a valid SQ form, so that we don't have to reevaluate it
+      // (cf. Section 3.2 of the "REDUCE Symbolic Mode Primer").
+      [__sq,p:q,t] = if numberp q && q==1 then p else '(p/q) when
+	p = expandsf p; q = expandsf q;
+      end;
+      // Anything else is presumably a value in prefix form, map to a Pure
+      // application.
+      _ = foldl1 ($) (map to_expr xs);
+    end with
+      // This expands a REDUCE standard form (SF) representation of an
+      // algebraic term to the human-readable prefix form. Cf. Section 4 of
+      // the "REDUCE Symbolic Mode Primer".
+      expandsf x = pretty (expand (expandsf x)) with
+	evalsf mvar ldeg lc red = x when
+	  x = to_expr mvar;
+	  x = if ldeg==0 then 1 else if ldeg==1 then x else x^ldeg;
+	  y = expandsf lc;
+	  x = if ~numberp y then x*y else if y==0 then 0
+				     else if y==1 then x else y*x;
+	  y = expandsf red;
+	  x = if ~numberp y || y~=0 then x+y else x;
+	end;
+	expandsf (((mvar:ldeg):lc):red) = evalsf mvar ldeg lc red;
+	// At least some of these abbreviated forms also seem to occur.
+	expandsf ((mvar:ldeg):lc) = evalsf mvar ldeg lc 0;
+	expandsf (mvar:ldeg) = evalsf mvar ldeg 1 0;
+	expandsf [] = 0;
+	expandsf mvar = to_expr mvar;
+      end;
+    end;
     // Symbols.
     to_expr x::symbol = to_sym x;
     // XXXTODO: Any other back conversions that we want to do here?
