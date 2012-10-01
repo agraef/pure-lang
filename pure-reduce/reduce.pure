@@ -400,8 +400,9 @@ namespace;
 
    .. function:: reduce::verbosity n
 
-      Sets the verbosity level; 0 means no messages at all, and the following
-      values may be or'ed together to pick what you need:
+      Sets the verbosity level; 0 means no messages at all (which is the
+      default when using this module), and the following values may be or'ed
+      together to pick what you need:
 
         1   messages whenever garbage collection happens
 	2   messages whenever a module of code is loaded
@@ -443,9 +444,16 @@ extern int PROC_set_switch(char *name, int val) = switch;
 extern int PROC_gc_messages(int n) = verbosity;
 
 // Initialization: run this once before anything else.
+// XXXTODO: We should maybe do a REDUCE_PATH search for the image file.
 
-init image::string args::smatrix =
-  cslstart (#args+3) {"reduce","-i",image,args} NULL;
+init image::string args::smatrix = res when
+  res = cslstart (#args+3) {"reduce","-i",image,args} NULL;
+  // REDUCE is pretty noisy by default, shut it up. You might want to comment
+  // this line for debugging purposes, or call reduce::verbosity yourself.
+  verbosity 0;
+  // We need this to get matrices working, so always load this module.
+  reduce::load "matrix";
+end;
 
 // Some special symbol lists, defined below.
 
