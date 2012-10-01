@@ -492,12 +492,16 @@ end;
 using namespace reduce;
 
 // Some REDUCE symbols. On the Pure side, you can use either these or their
-// Pure counterparts in the symbol lists below. (NOTE: intg is actually a Pure
-// replacement for REDUCE's int which is already used as a conversion function
-// in Pure.)  XXXTODO: Complete this list.
+// Pure counterparts in the symbol lists below. XXXTODO: Complete this list.
+// NOTES: intg is actually a Pure replacement for REDUCE's int which is
+// already used as a conversion function in Pure. Also the ':=' operator is
+// used to denote assignment.
+infix (=>) := ;
 public arbint arbcomplex;
-public list mat det mateigen;
+public set list mat det mateigen;
 public df intg solve equal plus difference minus times quotient expt;
+public factorize remainder resultant decompose nextprime pf deg coeff coeffn
+  mainvar part lcof lpower lterm reduct sub;
 nonfix __sq _rd_ _gr_ _gi_ _rn_ _mod_;
 
 // Variadic symbols in REDUCE which may take any number of arguments, together
@@ -511,7 +515,7 @@ let reduce::variadic_syms =
 // which need to be remapped on the Pure side need to be listed here.
 // XXXTODO: Complete this list.
 let reduce::nonvariadic_syms =
-  {int=>intg,minus=>neg,quotient=>(/),expt=>(^),equal=>(==)};
+  {int=>intg,minus=>neg,quotient=>(/),expt=>(^),equal=>(==),set=>(:=)};
 
 // All remapped symbols (from above).
 let reduce::reduce_syms = {variadic_syms, nonvariadic_syms};

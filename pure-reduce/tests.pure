@@ -1,0 +1,244 @@
+
+/* Some tests provided by Kurt Pagani. */
+
+using math, reduce;
+
+// Initialization (this requires the REDUCE image file in the current dir).
+reduce::init "reduce.img" {};
+
+/* This is part of the Computer Algebra Test Suite (CATS).
+
+   These files show the results that are computed given the set of integrals
+   listed in
+
+     Spiegel, Murray R.
+     Mathematical Handbook of Formulas and Tables
+     Schaum's Outline Series McGraw-Hill 1968
+
+   Each integral is computed and compared against the published result.
+   Each result is differenced from the published result and reduced to a
+   constant (usually 0).
+
+   Source:
+   [0] http://axiom.axiom-developer.org/axiom-website/CATS/index.html
+   [1] http://axiom.axiom-developer.org/axiom-website/CATS/schaum1.input.pamphlet */
+
+integrate(f,x) = simplify $ intg f x ;
+
+let D = [] ;
+
+//1
+let I = integrate(1/(a*x+b),x);
+let R = 1/a*log(a*x+b);
+let D = D +[simplify (I-R)] ;
+//2
+let I = integrate(x/(a*x+b),x);
+let R = x/a-b/a^2*log(a*x+b);
+let D = D +[simplify (I-R)] ;
+//3
+let I = integrate(x^2/(a*x+b),x);
+let R = (a*x+b)^2/(2*a^3)-(2*b*(a*x+b))/a^3+b^2/a^3*log(a*x+b);
+let D = D +[simplify (I-R)] ;
+//4
+let I = integrate(x^3/(a*x+b),x);
+let R = (a*x+b)^3/(3*a^4)-(3*b*(a*x+b)^2)/(2*a^4)+(3*b^2*(a*x+b))/
+         a^4-(b^3/a^4)*log(a*x+b);
+let D = D +[simplify (I-R)] ;
+//5
+let I = integrate(1/(x*(a*x+b)),x);
+let R = 1/b*log(x/(a*x+b));
+let D = D +[simplify (I-R)] ;
+//6
+let I = integrate(1/(x^2*(a*x+b)),x);
+let R = -1/(b*x)+a/b^2*log((a*x+b)/x);
+let D = D +[simplify (I-R)] ;
+//7
+let I = integrate(1/(x^3*(a*x+b)),x);
+let R = (2*a*x-b)/(2*b^2*x^2)+a^2/b^3*log(x/(a*x+b));
+let D = D +[simplify (I-R)] ;
+//8
+let I = integrate(1/(a*x+b)^2,x);
+let R = -1/(a*(a*x+b));
+let D = D +[simplify (I-R)] ;
+//9
+let I = integrate(x/(a*x+b)^2,x);
+let R = b/(a^2*(a*x+b))+1/a^2*log(a*x+b);
+let D = D +[simplify (I-R)] ;
+//10
+let I = integrate(x^2/(a*x+b)^2,x);
+let R = (a*x+b)/a^3-b^2/(a^3*(a*x+b))-((2*b)/a^3)*log(a*x+b);
+let D = D +[simplify (I-R)] ;
+//11
+let I = integrate(x^3/(a*x+b)^2,x);
+let R = (a*x+b)^2/(2*a^4)-(3*b*(a*x+b))/a^4+b^3/(a^4*(a*x+b))+(3*b^2/
+         a^4)*log(a*x+b);
+let D = D +[simplify (I-R)] ;
+//12
+let I = integrate(1/(x*(a*x+b)^2),x);
+let R = (1/(b*(a*x+b))+(1/b^2)*log(x/(a*x+b)));
+let D = D +[simplify (I-R)] ;
+//13
+let I = integrate(1/(x^2*(a*x+b)^2),x);
+let R = (-a/(b^2*(a*x+b)))-(1/(b^2*x))+((2*a)/b^3)*log((a*x+b)/x);
+let D = D +[simplify (I-R)] ;
+//14
+let I = integrate(1/(x^3*(a*x+b)^2),x);
+let R = -(a*x+b)^2/(2*b^4*x^2)+(3*a*(a*x+b))/(b^4*x)-(a^3*x)/
+         (b^4*(a*x+b))-((3*a^2)/b^4)*log((a*x+b)/x);
+let D = D +[simplify (I-R)] ;
+//15
+let I = integrate(1/(a*x+b)^3,x);
+let R = -1/(2*(a*x+b)^2);
+let D = D +[simplify (I/R)] ;
+//16
+let I = integrate(x/(a*x+b)^3,x);
+let R = -1/(a^2*(a*x+b))+b/(2*a^2*(a*x+b)^2);
+let D = D +[simplify (I-R)] ;
+//17
+let I = integrate(x^2/(a*x+b)^3,x);
+let R = (2*b)/(a^3*(a*x+b))-(b^2)/(2*a^3*(a*x+b)^2)+1/a^3*log(a*x+b);
+let D = D +[simplify (I-R)] ;
+//18
+let I = integrate(x^3/(a*x+b)^3,x);
+let R = (x/a^3)-(3*b^2)/(a^4*(a*x+b))+b^3/(2*a^4*(a*x+b)^2)-(3*b)/
+         a^4*log(a*x+b);
+let D = D +[simplify (I-R)] ;
+//19
+let I = integrate(1/(x*(a*x+b)^3),x);
+let R = (a^2*x^2)/(2*b^3*(a*x+b)^2)-(2*a*x)/(b^3*(a*x+b))-
+        (1/b^3)*log((a*x+b)/x);
+let D = D +[simplify (I-R)] ;
+//20
+let I = integrate(1/(x^2*(a*x+b)^3),x);
+let R = -a/(2*b^2*(a*x+b)^2)-(2*a)/(b^3*(a*x+b))-1/(b^3*x)+((3*a)/
+         b^4)*log((a*x+b)/x);
+let D = D +[simplify (I-R)] ;
+//21
+let I = integrate(1/(x^3*(a*x+b)^3),x);
+let R = -1/(2*b*x^2*(a*x+b)^2)+(2*a)/(b^2*x*(a*x+b)^2)+(9*a^2)/(b^3*(a*x+b)^2)
+        +(6*a^3*x)/(b^4*(a*x+b)^2)+(-6*a^2)/b^5*log((a*x+b)/x);
+let D = D +[simplify (I-R)] ;
+//22
+let I = integrate((a*x+b)^n,x);
+let R = (a*x+b)^(n+1)/((n+1)*a);
+let D = D +[simplify (I-R)] ;
+//23
+let I = integrate(x*(a*x+b)^n,x);
+let R = ((a*x+b)^(n+2))/((n+2)*a^2)-(b*(a*x+b)^(n+1))/((n+1)*a^2);
+let D = D +[simplify (I-R)] ;
+//24
+let I = integrate(x^2*(a*x+b)^n,x);
+let R = (a*x+b)^(n+3)/((n+3)*a^3)-(2*b*(a*x+b)^(n+2))/((n+2)*a^3)+
+        (b^2*(a*x+b)^(n+1))/((n+1)*a^3);
+let D = D +[simplify (I-R)] ;
+//25
+let I = integrate(x^m*(a*x+b)^n,x);
+
+// Dx should contain only zeroes.
+let Dx = map (\f-> simplify $ df f x) D ;
+
+/* More examples from the Reduce manual. *************************************/
+
+let r1 = simplify $ nextprime 1002229999 ;
+let r2 = simplify $ pf (2/((x+1)^2*(x+2))) x ; // list of partial fraction
+let r3 = simplify $ solve (log(sin(x+3))^5 == 8) x ;
+let r4 = simplify $ coeff ((y^2+z)^3/z) y ; // coeffs of polynom w.r.t. var
+let r5 = simplify $ coeffn ((y^2+z)^3/z) y 6; // coeff to y^6 -> 1/z
+let r6 = simplify $ part (a+b) 2 ; // part 2 of expr -> b
+let r7 = simplify $ part (a+b) 1 ; // part 1 of expr -> a
+let r8 = simplify $ part (a+b) 0 ; // part 0 of expr -> (+)
+let r9 = simplify $ factorize (x^105-1) ;
+
+reduce::switch "ifactor" 1;
+let r10 = simplify $ factorize (12*x^2 - 12) ;
+reduce::switch "ifactor" 0;  // should -> {{2,2},{3,1},{X + 1,1},{X - 1,1}}.
+
+let r11 = simplify $ gcd (x^2+2*x+1) (x^2+3*x+2) ; // -> X+1
+let r12 = simplify $ gcd (2*x^2-2*y^2) (4*x+4*y) ; // -> 2*X+2*Y
+let r13 = simplify $ gcd (x^2+y^2) (x-y) ;         // -> 1.
+
+let r14 = simplify $ lcm (x^2+2*x+1) (x^2+3*x+2) ; // -> X^3+4*X^2+5*X+2
+let r15 = simplify $ lcm (2*x^2-2*y^2) (4*x+4*y) ; // -> 4*(X^2 - Y^2)
+
+let r16 = simplify $ remainder ((x+y)*(x+2*y)) (x+3*y) ; // -> 2*Y^2
+let r17 = simplify $ remainder (2*x+y) 2 ;               // -> Y.
+
+let r18 = simplify $ resultant (x/r*u+y) (u*y) u ; // -> Y^2
+
+let r19 = simplify $ decompose (x^8-88*x^7+2924*x^6-43912*x^5+263431*x^4-
+                                218900*x^3+65690*x^2-7700*x+234) ;
+                                // -> {U^2+35*U+234, U=V^2+10*V,V=X^2-22*X}
+
+let r20 = simplify $ decompose (u^2+v^2+2*u*v+1) ; // -> {W^2 + 1, W=U + V}
+
+let r21 = simplify $ deg ((a+b)*(c+2*d)^2) d ; //->  2
+let r22 = simplify $ deg ((x+b)*(x^6+2*y)^2) x ; //->  13
+
+let r23 = simplify $ den (x/y^2) ; //-> Y**2
+
+let r24 = simplify $ lcof ((a+b)*(c+2*d)^2) a ; // -> C**2+4*C*D+4*D**2
+let r25 = simplify $ lcof ((a+b)*(c+2*d)^2) d ; // -> 4*(A+B)
+let r26 = simplify $ lcof ((a+b)*(c+2*d)) ('e) ; // -> A*C+2*A*D+B*C+2*B*D
+                                                      // !!! e evals to Euler
+
+let r27 = simplify $ lpower ((a+b)*(c+2*d)^2) a ; // -> A
+let r28 = simplify $ lpower ((a+b)*(c+2*d)^2) d ; // -> D**2
+let r29 = simplify $ lpower ((a+b)*(c+2*d)) x ;   // -> 1
+
+let r30 = simplify $ lterm ((a+b)*(c+2*d)^2) a ;  // -> A*(C**2+4*C*D+4*D**2)
+let r31 = simplify $ lterm ((a+b)*(c+2*d)^2) d ;  // -> 4*D**2*(A+B)
+let r32 = simplify $ lterm ((a+b)*(c+2*d)) x ;  // -> A*C+2*A*D+B*C+2*B*D
+
+
+let r33 = simplify $ mainvar ((a+b)*(c+2*d)^2) ;  //-> A
+let r34 = simplify $ mainvar 2 ; //-> 0
+
+let r35 = simplify $ num (x/y^2) ;           // -> X
+let r36 = simplify $ num ('(100/6)) ;   // -> 50 (quote is necessary!)
+let r37 = simplify $ num (a/4+b/6) ;         // -> 3*A+2*B
+
+let r38 = simplify $ reduct ((a+b)*(c+2*d)) a ; // -> B*(C + 2*D)
+let r39 = simplify $ reduct ((a+b)*(c+2*d)) d ; // -> C*(A + B)
+let r40 = simplify $ reduct ((a+b)*(c+2*d)) x ; // -> 0
+
+let r41 = simplify $ sub [x==a+y,y==y+1] (x^2+y^2) ; //-> A^2+2*A*Y+2*Y^2+2*Y+1
+
+let r42 = simplify $ {a,b,c;d,'e,f;g,h,'i}; //!!  e,i
+
+/*
+reduce::load "odesolve"; // ok
+
+simplify $ depend x y;
+simplify $ odesolve ( df y x == x^2 + 'e^x )  y x ;
+//***** Matrix y not set
+*/
+//simplify $ factor x;
+reduce::switch "rat" 0;
+let r43 = simplify (2*X^2*Y*A*(Y + 2) + X*(Y^2 + Z))/(2*A) ;
+reduce::switch "rat" 1;
+reduce::switch "div" 1;
+let r44 = simplify (2*X^2*Y*A*(Y + 2) + X*(Y^2 + Z))/(2*A) ;
+
+
+// set <==> assignment in REDUCE (:=); however, both sides are evaluated
+let r45 = simplify $ P := a*x^n + b* x^m + c ; // P:=a*x^n + b* x^m + c;
+let r46 = simplify P ;                            // return P (from Reduce)
+let r47 = simplify $ df P x;                      // diff P x
+let r48 = simplify $ Q := intg P x ;           // integrate P x, store in Q
+
+// df(F,x1,2,x2,x3,2)
+let r49 = simplify $ F := x1^2*a*x2*b*x3^3 ;
+let r50 = simplify $ df F x1 2 x2 x3 2 ;          // -> 12*a*b*x3
+
+// df(G,x1,2,x2,2,x3)
+let G = x1^N*x2^M*x3^J ;
+let r51 = simplify $ F := G ;
+let r52 = simplify $ df F x1 2 x2 2 x3 ;
+let r53 = simplify $ df G x1 2 x2 2 x3 ;
+let r54 = simplify (r53-r52) ; // ->  0
+
+// print the results
+using system;
+puts $ str Dx;
+let R = [r=>eval r when r = val ("r"+str i) end | i=1..54];
+do (puts.str) R;
