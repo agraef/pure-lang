@@ -451,9 +451,28 @@ init image::string args::smatrix =
 
 public variadic_syms nonvariadic_syms reduce_syms pure_syms;
 
+// Helper function to simplify arithmetic expressions. This basically expands
+// an arithmetic term to a sum-of-products form. It is used to evaluate
+// unexpanded SQ forms below, but may be useful in its own right.
+
+expand = reduce with
+  // distributivity
+  a+(b+c) = (a+b)+c; a*(b*c) = (a*b)*c;
+  (a+b)*c = a*c+b*c; a*(b+c) = a*b+a*c;
+  // move unary minus outward
+  (-a)*b = -(a*b); a*(-b) = -(a*b);
+  // handle numeric coefficients (simplify trivial cases and move them to the
+  // front)
+  a+b::number | b::number+a = a if b==0;
+  a*b::number | b::number*a = 0 if b==0;
+  a*b::number | b::number*a = a if b==1;
+  a*b::number = b*a if ~numberp a;
+  a::real*b = -((-a)*b) if a<0;
 end;
 
-// The following stuff is in the global namespace for convenience.
+end;
+
+// The following stuff is mostly in the global namespace for convenience.
 using namespace reduce;
 
 // Some REDUCE symbols. On the Pure side, you can use either these or their
@@ -461,17 +480,19 @@ using namespace reduce;
 // replacement for REDUCE's int which is already used as a conversion function
 // in Pure.)  XXXTODO: Complete this list.
 public arbint arbcomplex;
-public df intg solve equal plus difference minus times quotient expt;
-nonfix _rd_ _gr_ _gi_ _rn_ _mod_;
+public mat list df intg solve equal plus difference minus times quotient expt;
+nonfix __sq _rd_ _gr_ _gi_ _rn_ _mod_;
 
 // Variadic symbols in REDUCE which may take any number of arguments, together
-// with their Pure counterparts. XXXTODO: Complete this list.
+// with their Pure counterparts. NOTE: list and mat don't need to be listed
+// here since they're given special treatment anyway.
+// XXXTODO: Complete this list.
 let reduce::variadic_syms =
   {plus=>(+),difference=>(-),times=>(*),min=>min,max=>max};
 
 // Remaining (non-variadic) symbols with their Pure counterparts. Only symbols
-// which need to be remapped on the Pure side need to be listed here. XXXTODO:
-// Complete this list.
+// which need to be remapped on the Pure side need to be listed here.
+// XXXTODO: Complete this list.
 let reduce::nonvariadic_syms =
   {int=>intg,minus=>neg,quotient=>(/),expt=>(^),equal=>(==)};
 
@@ -505,20 +526,46 @@ simplify x = y when
   // temporary workaround until we figure out how to do this properly.
   from_expr ('list x) with
     // These are all the data types natively supported by the interface.
-    // Marshalling of list values is supported as well. XXXTODO: How to
-    // convert matrices?
+    // Marshalling of list and matrix values is supported as well.
     from_expr x::int = PROC_push_small_integer x;
     from_expr x::bigint = PROC_push_big_integer (init $ str x);
     from_expr x::double = PROC_push_floating x;
     from_expr x::string = PROC_push_string x;
+    from_expr x::matrix = from_expr (foldl ($) ('mat) (list2 x));
     from_expr x::rlist = from_expr (foldl ($) ('list) x);
     from_expr x::appl = () when
       f:xs = a [] x with a xs (x@_ y) = a (y:xs) x; a xs x = x:xs end;
-      do from_expr xs;
+      case 'f () of
+	// The mat case needs special treatment here, since we have to eval
+	// the embedded list terms. XXXTODO: Are there other cases like this?
+	mat _ =
+	  do (\x -> if ~listp x then from_expr x
+		    else from_expr (mkquoted x) $$ PROC_lisp_eval) xs
+	with
+	  // We allow a list to be specified either as a plain Pure list or a
+	  // Lisp-style (list ...) term.
+	  listp x::rlist = true;
+	  listp (x@_ y) = listp x;
+	  listp x = symbolp x && x==='list otherwise;
+	  // Kludge: We need to quote the elements of the list arguments here
+	  // in case they're symbolic, so that PROC_lisp_eval doesn't try to
+	  // evaluate them (which crashes PROC_lisp_eval).
+	  mkquoted x::rlist = map ('quote) x;
+	  mkquoted (x@_ y) = 'x y when x = mkquoted x; y = 'quote y end;
+	  mkquoted x = x;
+	end;
+        _ = do from_expr xs;
+      end;
       PROC_make_function_call (from_sym f) (#xs);
     end;
+    // Handle special cases of nullary symbols which are actually
+    // parameterless function calls. XXXTODO: Are there other cases like this?
+    // Note that the case of an empty matrix (mat) isn't really handled by
+    // REDUCE (it gives a 'Matrix mismatch' error), but we allow this case
+    // anyway for consistency.
     from_expr x::symbol =
-      case head s, val (tail s) when s = str x end of
+      PROC_make_function_call (from_sym x) 0 if x === 'list || x === 'mat;
+    = case head s, val (tail s) when s = str x end of
 	"α",n::int = from_expr (arbint n);
 	"ζ",n::int = from_expr (arbcomplex n);
 	_ = PROC_push_symbol (from_sym x);
@@ -530,7 +577,8 @@ simplify x = y when
   // Run REDUCE to simplify the expression.
   PROC_simplify;
   // Convert the stacktop from the internal REDUCE format into a format which
-  // we can use.
+  // we can use. NOTE: Apparently this isn't really needed with the toplevel
+  // call to 'list', but we keep it in here just in case.
   PROC_make_printable;
   // Convert the stacktop back to a Pure expression.
 #! --if mapped
@@ -567,7 +615,8 @@ simplify x = y when
     // Pure subterms in the result
     x$y = 'x y;
 #! --endif
-    // Empty list, treated as () right now. XXXFIXME: Is this sensible?
+    // Empty list, treated as () right now. (Note that proper REDUCE lists are
+    // handled below.) XXXFIXME: Is this sensible?
     to_expr [] = ();
     // Special coefficient values.
     to_expr (_rd_ : x::double) = x;
@@ -586,6 +635,55 @@ simplify x = y when
 #! --endif
     // Lists seem to be represented with the list symbol in front.
     to_expr (f::symbol:xs::rlist) = map to_expr xs if f === 'list;
+    to_expr f::symbol = [] if f === 'list;
+    /* Matrices generally take the form (mat xs ...) in REDUCE's internal
+       representation, where each xs is a row of the matrix represented as a
+       list. Parsing these is complicated a bit by the fact that, at least in
+       the current version of the PROC interface, PROC_simplify doesn't expand
+       embedded SQ terms (REDUCE's internal representation of algebraic terms,
+       cf. Section 3 of the "REDUCE Symbolic Mode Primer"), so we need to do
+       this on our own. */
+    to_expr (f::symbol:xs::rlist) = matrix ys when
+      ys = map to_exprs xs;
+    end with
+      to_exprs (x:xs) = y : to_exprs xs when
+	y = case to_expr x of
+	  // SQ forms. Note that we always assume that t is actually 't' here,
+	  // denoting a valid SQ form, so that we don't have to reevaluate it
+	  // (cf. Section 3.2 of the "REDUCE Symbolic Mode Primer").
+	  __sq (p:q) t = if numberp q && q==1 then p else '(p/q) when
+	    p = expandsf p; q = expandsf q;
+	  end;
+	  // plain coefficient
+	  y = y;
+	end;
+      end;
+      // Empty list.
+      to_exprs [] = [];
+      // Not a list. This is presumably a singleton coefficient(?).
+      to_exprs x = [to_expr x];
+      // This expands a REDUCE standard form (SF) representation of an
+      // algebraic term to the human-readable prefix form. Cf. Section 4 of
+      // the "REDUCE Symbolic Mode Primer".
+      expandsf x = expand (expandsf x) with
+	expandsf (((mvar:ldeg):lc):red) = x when
+	  x = expandsf ((mvar:ldeg):lc);
+	  y = expandsf red;
+	  x = if ~numberp y || y~=0 then x+y else x;
+	end;
+	expandsf ((mvar:ldeg):lc) = x when
+	  x = expandsf (mvar:ldeg);
+	  y = expandsf lc;
+	  x = if ~numberp y then x*y else if y==0 then 0
+				     else if y==1 then x else y*x;
+	end;
+	expandsf (mvar:ldeg) =
+	  if ldeg==0 then 1 else if ldeg==1 then mvar else mvar^ldeg;
+	expandsf [] = 0;
+	expandsf mvar = mvar;
+      end;
+    end if f === 'mat;
+    to_expr f::symbol = {} if f === 'mat;
     // List with a variadic symbol in front, map this to the appropriate Pure
     // term (e.g. (plus a b c) -> a+b+c etc.).
     to_expr (f::symbol:xs::rlist) = foldl1 (to_expr f$) (map to_expr xs)
