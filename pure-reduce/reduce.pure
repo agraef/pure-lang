@@ -554,6 +554,11 @@ simplify x = y when
     from_expr x::string = PROC_push_string x;
     from_expr x::matrix = from_expr (foldl ($) ('mat) (list2 x));
     from_expr x::rlist = from_expr (foldl ($) ('list) x);
+    // Map x%y -> x/y on the fly.
+    from_expr (x%y) = from_expr ('quotient x y);
+    // Map complex numbers.
+    from_expr (x+:y) = from_expr ('(x+y*i));
+    from_expr (x<:y) = from_expr ('(x*e^(y*i)));
     from_expr x::appl = () when
       f:xs = a [] x with a xs (x@_ y) = a (y:xs) x; a xs x = x:xs end;
       case 'f () of
