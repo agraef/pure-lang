@@ -4,9 +4,6 @@ using math, reduce;
 // Initialization (this requires the REDUCE image file in the current dir).
 reduce::init "reduce.img" {"-v"};
 
-// Verbosity level. 0 means no noise at all.
-reduce::verbosity 0;
-
 // Examples:
 
 // Differentiation.
@@ -54,3 +51,19 @@ exact x = x otherwise;
 
 let sol = exact sol; sol;
 map (reduce_with sol) eqs;
+
+// Matrix examples.
+simplify $ mat [1,2] [3,4];
+// You can also write:
+simplify {1,2;3,4};
+
+// Symbolic matrices.
+simplify $ x*{1,2;3,4};
+simplify {(x-1)^2/(x+5)};
+simplify {(x-1+cos x)^2/(x+5)};
+
+// Determinants and eigenvectors.
+simplify $ det {1,2;3,4};
+simplify $ det (x*{1,2;3,4});
+simplify $ mateigen {2,5;1,0} λ;
+simplify $ mateigen (x*{2,5;1,0}) λ;
