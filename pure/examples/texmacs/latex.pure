@@ -1,0 +1,287 @@
+
+/* Template for LaTeX-style TeXmacs output in Pure by Kurt Pagani. Copy this
+   to the Pure library directory (or some other directory on the Pure library
+   path) for easy use. NOTE: This is only an example; you should tailor
+   indentation style etc. according to your preferences and taste.
+
+   This module redefines __show__ to render various kinds of Pure expressions
+   in LaTeX format and is to be used with the Pure session in TeXmacs (other
+   uses are left to the imagination of the reader). See the accompanying
+   latex-example.tm file for a sample TeXmacs document. */
+
+using system;
+
+let _symbols_ = {
+
+  'alpha          =>    "\\alpha" ,
+  'beta           =>    "\\beta"  ,
+  'chi            =>    "\\chi" ,
+  'delta          =>    "\\delta" ,
+  'epsilon        =>    "\\epsilon" ,
+  'eta            =>    "\\eta" ,
+  'gamma          =>    "\\gamma" ,
+  'iota           =>    "\\iota" ,
+  'kappa          =>    "\\kappa" ,
+  'lambda         =>    "\\lambda" ,
+  'mu             =>    "\\mu" ,
+  'nu             =>    "\\nu" ,
+  'omega          =>    "\\omega" ,
+  'phi            =>    "\\phi" ,
+  'pi             =>    "\\pi" ,
+  'psi            =>    "\\psi" ,
+  'rho            =>    "\\rho" ,
+  'sigma          =>    "\\sigma" ,
+  'tau            =>    "\\tau" ,
+  'theta          =>    "\\theta" ,
+  'upsilon        =>    "\\upsilon" ,
+  'xi             =>    "\\xi" ,
+  'zeta           =>    "\\zeta" ,
+  'digamma        =>    "\\digamma" ,
+  'varepsilon     =>    "\\varepsilon" ,
+  'varkappa       =>    "\\varkappa" ,
+  'varphi         =>    "\\varphi" ,
+  'varpi          =>    "\\varpi" ,
+  'varrho         =>    "\\varrho" ,
+  'varsigma       =>    "\\varsigma" ,
+  'vartheta       =>    "\\vartheta" ,
+  'Delta          =>    "\\Delta" ,
+  'Gamma          =>    "\\Gamma" ,
+  'Lambda         =>    "\\Lambda" ,
+  'Omega          =>    "\\Omega" ,
+  'Phi            =>    "\\Phi" ,
+  'Pi             =>    "\\Pi" ,
+  'Psi            =>    "\\Psi" ,
+  'Sigma          =>    "\\Sigma" ,
+  'Theta          =>    "\\Theta" ,
+  'Upsilon        =>    "\\Upsilon" ,
+  'Xi             =>    "\\Xi" ,
+  'aleph          =>    "\\aleph" ,
+  'beth           =>    "\\beth" ,
+  'daleth         =>    "\\daleth" ,
+  'gimel          =>    "\\gimel" ,
+  'pm             =>    "\\pm" ,
+  'mp             =>    "\\mp" ,
+  'times          =>    "\\times" ,
+  'divide         =>    "\\div" ,
+  'cdot           =>    "\\cdot" ,
+  'ast            =>    "\\ast" ,
+  'star           =>    "\\star" ,
+  'dagger         =>    "\\dagger" ,
+  'ddagger        =>    "\\ddagger" ,
+  'amalg          =>    "\\amalg" ,
+  'cap            =>    "\\cap" ,
+  'cup            =>    "\\cup" ,
+  'uplus          =>    "\\uplus" ,
+  'sqcap          =>    "\\sqcap" ,
+  'sqcup          =>    "\\sqcup" ,
+  'vee            =>    "\\vee" ,
+  'wedge          =>    "\\wedge" ,
+  'oplus          =>    "\\oplus" ,
+  'ominus         =>    "\\ominus" ,
+  'otimes         =>    "\\otimes" ,
+  'circ           =>    "\\circ" ,
+  'bullet         =>    "\\bullet" ,
+  'diamond        =>    "\\diamond" ,
+  'lhd            =>    "\\lhd" ,
+  'rhd            =>    "\\rhd" ,
+  'unlhd          =>    "\\unlhd" ,
+  'unrhd          =>    "\\unrhd" ,
+  'oslash         =>    "\\oslash" ,
+  'odot           =>    "\\odot" ,
+  'bigcirc        =>    "\\bigcirc" ,
+  'triangleleft   =>    "\\triangleleft" ,
+  'Diamond        =>    "\\Diamond" ,
+  'bigtriangleup  =>    "\\bigtriangleup" ,
+  'bigtriangledown =>   "\\bigtriangledown" ,
+  'Box            =>    "\\Box" ,
+  'triangleright  =>    "\\triangleright" ,
+  'setminus       =>    "\\setminus" ,
+  'wr             =>    "\\wr" ,
+  'le             =>    "\\le",
+  'ge             =>    "\\ge",
+  'neq            =>    "\\neq",
+  'sim            =>    "\\sim",
+  'll             =>    "\\ll",
+  'gg             =>    "\\gg",
+  'doteq          =>    "\\doteq",
+  'simeq          =>    "\\simeq",
+  'subset         =>    "\\subset",
+  'supset         =>    "\\supset",
+  'approx         =>    "\\approx",
+  'asymp          =>    "\\asymp",
+  'subseteq       =>    "\\subseteq",
+  'supseteq       =>    "\\supseteq",
+  'cong           =>    "\\cong",
+  'smile          =>    "\\smile",
+  'sqsubset       =>    "\\sqsubset",
+  'sqsupset       =>    "\\sqsupset",
+  'equiv          =>    "\\equiv",
+  'frown          =>    "\\frown",
+  'sqsubseteq     =>    "\\sqsubseteq",
+  'sqsupseteq     =>    "\\sqsupseteq",
+  'propto         =>    "\\propto",
+  'in             =>    "\\in",
+  'ni             =>    "\\ni",
+  'prec           =>    "\\prec",
+  'succ           =>    "\\succ",
+  'vdash          =>    "\\vdash",
+  'dashv          =>    "\\dashv",
+  'preceq         =>    "\\preceq",
+  'succeq         =>    "\\succeq",
+  'models         =>    "\\models",
+  'perp           =>    "\\perp",
+  'parallel       =>    "\\parallel",
+  'mid            =>    "\\mid",
+  'nmid           =>    "\\nmid",
+  'nleq           =>    "\\nleq",
+  'ngeq           =>    "\\ngeq",
+  'nsim           =>    "\\nsim",
+  'ncong          =>    "\\ncong",
+  'nparallel      =>    "\\nparallel",
+  'nless          =>    "\\nless",
+  'ngtr           =>    "\\ngtr",
+  'lneq           =>    "\\lneq",
+  'gneq           =>    "\\gneq",
+  'lnsim          =>    "\\lnsim",
+  'lneqq          =>    "\\lneqq",
+  'gneqq          =>    "\\gneqq",
+  'gets           =>    "\\gets",
+  'to             =>    "\\to",
+  'leftarrow      =>    "\\leftarrow",
+  'Leftarrow      =>    "\\Leftarrow",
+  'rightarrow     =>    "\\rightarrow",
+  'Rightarrow     =>    "\\Rightarrow",
+  'leftrightarrow =>    "\\leftrightarrow",
+  'Leftrightarrow =>    "\\Leftrightarrow",
+  'mapsto         =>    "\\mapsto",
+  'hookleftarrow  =>    "\\hookleftarrow",
+  'leftharpoonup  =>    "\\leftharpoonup",
+  'leftharpoondown =>    "\\leftharpoondown",
+  'rightleftharpoons =>    "\\rightleftharpoons",
+  'longleftarrow  =>    "\\longleftarrow",
+  'Longleftarrow  =>    "\\Longleftarrow",
+  'longrightarrow =>    "\\longrightarrow",
+  'Longrightarrow =>    "\\Longrightarrow",
+  'longleftrightarrow =>    "\\longleftrightarrow",
+  'Longleftrightarrow =>    "\\Longleftrightarrow",
+  'longmapsto     =>    "\\longmapsto",
+  'hookrightarrow =>    "\\hookrightarrow",
+  'rightharpoonup =>    "\\rightharpoonup",
+  'rightharpoondown =>    "\\rightharpoondown",
+  'leadsto        =>    "\\leadsto",
+  'uparrow        =>    "\\uparrow",
+  'Uparrow        =>    "\\Uparrow",
+  'downarrow      =>    "\\downarrow",
+  'Downarrow      =>    "\\Downarrow",
+  'updownarrow    =>    "\\updownarrow",
+  'Updownarrow    =>    "\\Updownarrow",
+  'nearrow        =>    "\\nearrow",
+  'searrow        =>    "\\searrow",
+  'swarrow        =>    "\\swarrow",
+  'nwarrow        =>    "\\nwarrow",
+  'ldots          =>    "\\ldots",
+  'vdots          =>    "\\vdots",
+  'cdots          =>    "\\cdots ",
+  'ddots          =>    "\\ddots",
+  'infty          =>    "\\infty",
+  'triangle       =>    "\\triangle",
+  'angle          =>    "\\angle",
+  'aleph          =>    "\\aleph",
+  'hbar           =>    "\\hbar",
+  'imath          =>    "\\imath",
+  'jmath          =>    "\\jmath",
+  'ell            =>    "\\ell",
+  'wp             =>    "\\wp",
+  'Re             =>    "\\Re",
+  'Im             =>    "\\Im",
+  'mho            =>    "\\mho",
+  'prime          =>    "\\prime",
+  'emptyset       =>    "\\emptyset",
+  'nabla          =>    "\\nabla",
+  'partial        =>    "\\partial",
+  'top            =>    "\\top",
+  'bot            =>    "\\bot",
+  'vdash          =>    "\\vdash",
+  'dashv          =>    "\\dashv",
+  'forall         =>    "\\forall",
+  'exists         =>    "\\exists",
+  'neg            =>    "\\neg",
+  'flat           =>    "\\flat",
+  'natural        =>    "\\natural",
+  'sharp          =>    "\\sharp",
+  'backslash      =>    "\\backslash",
+  'clubsuit       =>    "\\clubsuit",
+  'diamondsuit    =>    "\\diamondsuit",
+  'heartsuit      =>    "\\heartsuit",
+  'spadesuit      =>    "\\spadesuit",
+  'blacksquare    =>    "\\blacksquare",
+  'pounds         =>    "\\pounds",
+  'sum            =>    "\\sum",
+  'int            =>    "\\int  ",
+  'oint           =>    "\\oint",
+  'prod           =>    "\\prod",
+  'coprod         =>    "\\coprod",
+  'bigcap         =>    "\\bigcap",
+  'bigcup         =>    "\\bigcup",
+  'bigsqcup       =>    "\\bigsqcup",
+  'bigvee         =>    "\\bigvee",
+  'bigwedge       =>    "\\bigwedge",
+  'bigodot        =>    "\\bigodot",
+  'bigotimes      =>    "\\bigotimes",
+  'bigoplus       =>    "\\bigoplus" } ;
+
+
+par x = sprintf "{(%s)}" (tex x) if applp x ;
+       = tex x otherwise ;
+
+tex s::symbol
+  = sprintf "{%s}" (_symbols_!s) if member _symbols_ s ;
+  = sprintf "{%s}" (str s) otherwise ;
+
+tex s::int | tex s::bigint | tex s::double | tex s::pointer
+  = sprintf "{%s}" (str s) ;
+
+tex s::string = sprintf "{%s}" s ;
+
+vec s = join " & " (map tex (list s)) ;
+tex s::matrix =
+ "\\begin{bmatrix}" +
+  (join " \\\\ " (map vec (rows s))) +
+ "\\end{bmatrix}" ;
+
+
+tex (a+b) = sprintf "{%s+%s}" (tex a, tex b) ;
+tex (a-b) = sprintf "{%s-%s}" (tex a, par b) ;
+tex (a*b) = sprintf "{%s\\cdot%s}" (par a, par b) ;
+tex (a/b) = sprintf "{\\frac{%s}{%s}}" (tex a, tex b) ;
+tex (a%b) = sprintf "{\\frac{%s}{%s}}" (tex a, tex b) ;
+tex (a^b) = sprintf "{{%s}^{%s}}" (par a, tex b) ;
+tex (a!b) = sprintf "{{%s}_{%s}}" (tex a, tex b) ;
+
+tex (a,b) = sprintf "{{%s},{%s}}" (tex a, tex b) ;
+tex (a:b) = sprintf "{{%s}:{%s}}" (tex a, tex b) ;
+
+tex (a||b) = sprintf "{{%s}\\vee{%s}}" (tex a, tex b) ;
+tex (a&&b) = sprintf "{{%s}\\wedge{%s}}" (tex a, tex b) ;
+tex (a==b) = sprintf "{{%s}={%s}}" (tex a, tex b) ;
+tex (a~=b) = sprintf "{{%s}\\neq{%s}}" (tex a, tex b) ;
+tex (a<=b) = sprintf "{{%s}\\le{%s}}" (tex a, tex b) ;
+tex (a>=b) = sprintf "{{%s}\\ge{%s}}" (tex a, tex b) ;
+tex (a<b) = sprintf "{{%s}<{%s}}" (tex a, tex b) ;
+tex (a>b) = sprintf "{{%s}>{%s}}" (tex a, tex b) ;
+tex (~a) = sprintf "{\\urcorner{%s}}" (par a) ;
+tex (-a) = sprintf "{-{%s}}" (par a) ;
+
+tex (a!!b) | tex (a..b) = sprintf "{{%s}\\ldots{%s}}" (tex a, tex b) ;
+
+// user defined appl (examples)
+tex (Integral d f) = sprintf "{\\int_{%s}\\,%s}" (tex d, tex f) ;
+tex (Diff f x) = sprintf "{\\frac{\\partial %s}{\\partial %s}}" (tex f, tex x);
+tex (Bdry x) = sprintf "{\\partial %s}" (tex x) ;
+tex (ExtD x) = sprintf "{{\\tt d}%s}" (tex x) ;
+
+tex x::appl = sprintf "\\tt{%s}" (str x) ;
+
+texmacs x = sprintf "\02latex:$%s$\05" (tex x) ;
+__show__ x = u if stringp u when u = texmacs x end;
+
