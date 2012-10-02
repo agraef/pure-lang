@@ -418,12 +418,24 @@ namespace;
       Lets you change global REDUCE options. Please check the REDUCE
       documentation for details.
 
+   For convenience, the following operations are in the default namespace:
+
    .. function:: simplify x
 
-      This is the main entry point. Note that this is in the default namespace
-      for convenience. It takes a REDUCE expression in Pure format and tries
-      to simplify it using REDUCE. The result is then converted back to Pure
-      format.
+      This is the main entry point. It takes a REDUCE expression in Pure
+      format and tries to simplify it using REDUCE. The result is then
+      converted back to Pure format. Note that you need to quote ``x`` if you
+      want to prevent it from being evaluated on the Pure side.
+
+   .. function:: lisp x
+
+      This can be used to execute arbitrary Lisp code, which is sometimes
+      necessary to perform special functions in the REDUCE system such as
+      declarations. The result is always a Pure list or an atomic value. Note
+      that you need to quote ``x`` if you want to prevent it from being
+      evaluated on the Pure side. Use this with care; at present, the PROC
+      interface isn't very forgiving if you try to execute invalid Lisp code;
+      it will most likely crash in such cases.
 
    In Pure land, REDUCE expressions are represented using standard curried
    notation; some special conversions are applied to make arithmetic
@@ -433,7 +445,41 @@ namespace;
    on the output side by disabling the ``mapped`` compilation option; this may
    be useful for debugging purposes.)
 
-   See reduce_examp.pure for some basic examples. */
+   Here is a simple example showing how to start up REDUCE and do some
+   calculations::
+
+     > using reduce;
+     > reduce::start "reduce.img" {};
+     Reduce (Free CSL version), 27-Sep-12 ...
+     ()
+     > simplify $ df ((x+5)^3) x;
+     3*x^2+30*x+75
+     > simplify $ solve (x^2+7) x;
+     [x==sqrt 7*i,x==-sqrt 7*i]
+
+   Another example showing how to execute Lisp code::
+
+     > lisp ('list a b c d e);
+     [a,b,c,d,e]
+     > lisp ('cdr [a,b,[c,d],e]);
+     [b,[c,d],e]
+
+   Note that Lisp forms are represented in curried notation. Free symbols are
+   quoted automatically, and Pure lists are converted to corresponding Lisp
+   lists. If the result is a Lisp list, it will be converted back to a Pure
+   list. The following example illustrates how you can use the :func:`lisp`
+   function to declare an operator symbol and change or query its properties::
+
+     > lisp ('operator [myop]);
+     []
+     > lisp ('flag [myop] odd);
+     []
+     > lisp ('prop myop);
+     [odd:t,simpfn:simpiden]
+     > simplify (myop (-x));
+     -myop x
+
+   Please see reduce_examp.pure and tests.pure for more examples. */
 
 namespace reduce with
 
@@ -502,7 +548,7 @@ public set list mat det mateigen;
 public df intg solve equal plus difference minus times quotient expt;
 public factorize remainder resultant decompose nextprime pf deg coeff coeffn
   mainvar part lcof lpower lterm reduct sub;
-nonfix __sq _rd_ _gr_ _gi_ _rn_ _mod_;
+nonfix _sq _rd_ _gr_ _gi_ _rn_ _mod_;
 
 // Variadic symbols in REDUCE which may take any number of arguments, together
 // with their Pure counterparts. NOTE: list and mat don't need to be listed
@@ -523,9 +569,9 @@ let reduce::reduce_syms = {variadic_syms, nonvariadic_syms};
 // Reverse mapping (Pure -> REDUCE).
 let reduce::pure_syms = {y=>x | x=>y = reduce_syms};
 
-// Exception constructor. This gets thrown on inputs and outputs which
-// 'simplify' doesn't understand (yet).
-public bad_reduce_value;
+// Exception constructors. This gets thrown on inputs and outputs which
+// 'simplify' and 'lisp' don't understand (yet).
+public bad_reduce_value bad_lisp_value;
 
 /* Uncomment this to get unmapped output in nested list format straight from
    REDUCE (useful for debugging purposes). */
@@ -628,11 +674,16 @@ simplify x = y when
     symval x::string = case val x of
       x::symbol = x;
       // Some REDUCE symbols aren't valid Pure symbols. We mangle them here.
-      _ = val (string (map mangle x)) with
+      _ = case val (string (map mangle x)) of
+	// If the result still isn't a valid Pure symbol then it's probably a
+	// keyword. Mangle it some more.
+	val x::string = val ("_"+x);
+	x::symbol = x;
+	_ = error x;
+      end with
 	mangle c = c if c=="_" || c>="0" && c<="9" ||
 		       c>="a" && c<="z" || c>="A" && c<="Z";
-	mangle ":" = "_";
-	mangle _ = "__" otherwise;
+	mangle _ = "_" otherwise;
       end;
     end;
 #! --if mapped
@@ -685,7 +736,7 @@ simplify x = y when
       // SQ forms. Note that we always assume that t is actually 't' here,
       // denoting a valid SQ form, so that we don't have to reevaluate it
       // (cf. Section 3.2 of the "REDUCE Symbolic Mode Primer").
-      [__sq,p:q,t] = if numberp q && q==1 then p else '(p/q) when
+      [_sq,p:q,t] = if numberp q && q==1 then p else '(p/q) when
 	p = expandsf p; q = expandsf q;
       end;
       // Anything else is presumably a value in prefix form, map to a Pure
@@ -730,4 +781,71 @@ end with
   // Error handler, this gets invoked if we choke on an input or output x we
   // don't understand (yet).
   error x = PROC_clear_stack $$ throw (bad_reduce_value x);
+end;
+
+lisp x = y when
+  // Clear the stack (to be sure).
+  PROC_clear_stack;
+  // Push x on the REDUCE stack.
+  from_expr x with
+    // These are all the data types natively supported by the interface.
+    // Marshalling of list values is supported as well.
+    from_expr x::int = PROC_push_small_integer x;
+    from_expr x::bigint = PROC_push_big_integer (init (str x));
+    from_expr x::double = PROC_push_floating x;
+    from_expr x::string = PROC_push_string x;
+    from_expr x::rlist = from_expr (foldl ($) ('list) x);
+    from_expr x::appl = () when
+      f:xs = a [] x with a xs (x@_ y) = a (y:xs) x; a xs x = x:xs end;
+      do from_expr xs;
+      PROC_make_function_call (str f) (#xs);
+    end;
+    // Handle special cases of nullary symbols which are actually
+    // parameterless function calls. XXXTODO: Are there other cases like this?
+    from_expr x::symbol =
+      PROC_make_function_call (str x) 0 if x === 'list;
+    // Other symbols need to be quoted here so that PROC_lisp_eval doesn't try
+    // to evaluate them.
+    = PROC_push_symbol (str x) $$ PROC_make_function_call "quote" 1;
+    from_expr x = error x otherwise;
+  end;
+  // Invoke the Lisp evaluator.
+  PROC_lisp_eval;
+  // Convert the stacktop back to a Pure expression.
+  y = display PROC_get_value with
+    display p = [] if PROC_null p;
+    = if PROC_symbol p then symval (PROC_symbol_name p)
+      else if PROC_fixnum p then PROC_integer_value p
+      else if PROC_floatnum p then PROC_floating_value p
+      else if PROC_string p then strval (PROC_string_data p)
+      else error p if PROC_atom p;
+    = display (PROC_first p):display (PROC_rest p) otherwise;
+    // Bigints are also returned as strings. We handle that here.
+    strval x::string = case val x of
+      x::int  = bigint x;
+      x::bigint = x;
+      _ = x;
+    end;
+    symval x::string = case val x of
+      x::symbol = x;
+      // Some Lisp symbols aren't valid Pure symbols. We mangle them here.
+      _ = case val (string (map mangle x)) of
+	// If the result still isn't a valid Pure symbol then it's probably a
+	// keyword. Mangle it some more.
+	val x::string = val ("_"+x);
+	x::symbol = x;
+	_ = error x;
+      end with
+	mangle c = c if c=="_" || c>="0" && c<="9" ||
+		       c>="a" && c<="z" || c>="A" && c<="Z";
+	mangle _ = "_" otherwise;
+      end;
+    end;
+  end;
+  // Clear the stack once again (clean up).
+  PROC_clear_stack;
+end with
+  // Error handler, this gets invoked if we choke on an input or output x we
+  // don't understand (yet).
+  error x = PROC_clear_stack $$ throw (bad_lisp_value x);
 end;
