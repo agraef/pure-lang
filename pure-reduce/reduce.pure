@@ -392,7 +392,7 @@ namespace;
    the most important features of the low-level PROC interface are wrapped in
    a convenient way. Currently the following functions are provided:
 
-   .. function:: reduce::init image::string args::smatrix
+   .. function:: reduce::start image::string args::smatrix
 
       Initializes the REDUCE system. You need to specify the name of the
       REDUCE image file and any desired extra arguments as a string vector.
@@ -446,7 +446,7 @@ extern int PROC_gc_messages(int n) = verbosity;
 // Initialization: run this once before anything else.
 // XXXTODO: We should maybe do a REDUCE_PATH search for the image file.
 
-init image::string args::smatrix = res when
+start image::string args::smatrix = res when
   res = cslstart (#args+3) {"reduce","-i",image,args} NULL;
   // REDUCE is pretty noisy by default, shut it up. You might want to comment
   // this line for debugging purposes, or call reduce::verbosity yourself.
@@ -549,7 +549,7 @@ simplify x = y when
     // These are all the data types natively supported by the interface.
     // Marshalling of list and matrix values is supported as well.
     from_expr x::int = PROC_push_small_integer x;
-    from_expr x::bigint = PROC_push_big_integer (::init (str x));
+    from_expr x::bigint = PROC_push_big_integer (init (str x));
     from_expr x::double = PROC_push_floating x;
     from_expr x::string = PROC_push_string x;
     from_expr x::matrix = from_expr (foldl ($) ('mat) (list2 x));
