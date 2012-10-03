@@ -11701,48 +11701,48 @@ them in the debugger you have to escape them with the ``!`` command
 (or whatever other :option:`--escape` prefix you specified).
 
 The debugger can also be triggered programmatically with the built-in
-parameter-less functions :func:`break` and :func:`trace`. This gives you much
-better control over the precise location and the conditions under which the
-debugger should be invoked. Just place a call to :func:`break` or
-:func:`trace` near the point where you'd like to start debugging or tracing;
-this can be done either with the sequencing operator ':func:`$$`' or with a
-:keyword:`when` clause. The debugger will then be invoked at the next
+parameter-less functions :func:`__break__` and :func:`__trace__`. This gives
+you much better control over the precise location and the conditions under
+which the debugger should be invoked. Just place a call to :func:`__break__`
+or :func:`__trace__` near the point where you'd like to start debugging or
+tracing; this can be done either with the sequencing operator ':func:`$$`' or
+with a :keyword:`when` clause. The debugger will then be invoked at the next
 opportunity (usually when a function is called or a reduction is completed).
 For instance::
 
-  > fact n::int = if n>0 then break $$ n*fact (n-1) else 1;
+  > fact n::int = if n>0 then __break__ $$ n*fact (n-1) else 1;
   > fact 10;
-  ++ [2] break: extern void pure_break() = break;
+  ++ [2] __break__: extern void pure_break() = __break__;
        --> ()
-  ** [2] fact: fact n::int = if n>0 then break$$n*fact (n-1) else 1;
+  ** [2] fact: fact n::int = if n>0 then __break__$$n*fact (n-1) else 1;
        n = 9
   : 
 
-Here the debugger is invoked right after the call to :func:`break`, when the
-``n*fact (n-1)`` expression in the :keyword:`then` branch is about to be
+Here the debugger is invoked right after the call to :func:`__break__`, when
+the ``n*fact (n-1)`` expression in the :keyword:`then` branch is about to be
 evaluated. The debugger thus stops at the recursive invocation of ``fact 9``.
-Tracing works in a similar fashion, using :func:`trace` in lieu of
-:func:`break`, and continues until the current stack frame is exited. One
-major advantage of this method is that it is possible to invoke :func:`break`
-or :func:`trace` only under certain conditions, so that you can focus on
-interesting "events" during evaluation, which can make debugging much less
-tedious. In our example, in order to stop when ``n`` becomes ``1``, we might
-invoke :func:`break` as follows::
+Tracing works in a similar fashion, using :func:`__trace__` in lieu of
+:func:`__break__`, and continues until the current stack frame is exited. One
+major advantage of this method is that it is possible to invoke
+:func:`__break__` or :func:`__trace__` only under certain conditions, so that
+you can focus on interesting "events" during evaluation, which can make
+debugging much less tedious. In our example, in order to stop when ``n``
+becomes ``1``, we might invoke :func:`__break__` as follows::
 
-  > fact n::int = if n>0 then n>1||break $$ n*fact (n-1) else 1;
+  > fact n::int = if n>0 then n>1||__break__ $$ n*fact (n-1) else 1;
   > fact 3;
-  ++ [4] break: extern void pure_break() = break;
+  ++ [4] __break__: extern void pure_break() = __break__;
        --> ()
-  ** [4] fact: fact n::int = if n>0 then n>1||break$$n*fact (n-1) else 1;
+  ** [4] fact: fact n::int = if n>0 then n>1||__break__$$n*fact (n-1) else 1;
        n = 0
   : p
-     [1] fact: fact n::int = if n>0 then n>1||break$$n*fact (n-1) else 1;
+     [1] fact: fact n::int = if n>0 then n>1||__break__$$n*fact (n-1) else 1;
        n = 3
-     [2] fact: fact n::int = if n>0 then n>1||break$$n*fact (n-1) else 1;
+     [2] fact: fact n::int = if n>0 then n>1||__break__$$n*fact (n-1) else 1;
        n = 2
-     [3] fact: fact n::int = if n>0 then n>1||break$$n*fact (n-1) else 1;
+     [3] fact: fact n::int = if n>0 then n>1||__break__$$n*fact (n-1) else 1;
        n = 1
-  ** [4] fact: fact n::int = if n>0 then n>1||break$$n*fact (n-1) else 1;
+  ** [4] fact: fact n::int = if n>0 then n>1||__break__$$n*fact (n-1) else 1;
        n = 0
   : 
 
