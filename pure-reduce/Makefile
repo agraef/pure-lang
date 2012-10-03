@@ -50,7 +50,7 @@ clean:
 
 install:
 	test -d $(installdir) || mkdir -p $(installdir)
-	cp reduce.pure $(installdir)
+	sed -e 's?/usr/lib?$(libdir)?' < reduce.pure > $(installdir)/reduce.pure
 	for x in reduce$(DLL) reduce.img; do test -f $$x && cp $$x $(installdir) || true; done
 
 uninstall:
