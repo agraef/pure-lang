@@ -636,6 +636,9 @@ let reduce::pure_syms = {y=>x | x=>y = reduce_syms};
 /* Uncomment this to disable the conversion from arbconst et al to Greek
    symbols on the Pure side. */
 //#! --disable arbsymbols
+/* Uncomment this to disable the automatic conversion of Taylor polynomials to
+   standard form. */
+//#! --disable taylorsf
 
 simplify x = y when
   // Clear the stack (to be sure).
@@ -683,10 +686,12 @@ simplify x = y when
 	_ = error x;
       end;
       PROC_make_function_call (from_sym f) (#xs);
+#! --if taylorsf
       // Special treatment for Taylor polynomials. We convert these to
       // standard form on the fly by inserting a call to taylortostandard.
       all (~==f) ('[taylor,implicit_taylor,inverse_taylor]) ||
       (load "taylor" $$ PROC_make_function_call "taylortostandard" 1);
+#! --endif
     end;
     // Handle special cases of nullary symbols which are actually
     // parameterless function calls. XXXTODO: Are there other cases like this?
