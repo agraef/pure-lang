@@ -457,10 +457,10 @@ namespace;
    In Pure land, REDUCE expressions are represented using standard curried
    notation; some special conversions are applied to make arithmetic
    operations such as +, * etc. work as expected. For convenience, the REDUCE
-   terms ``arbint n`` and ``arbcomplex n`` are converted from/to Greek symbols
-   ``αn`` and ``ζn``. (All these automatic conversions can also be turned off
-   on the output side by disabling the ``mapped`` compilation option; this may
-   be useful for debugging purposes.)
+   terms ``arbconst n`` ``arbint n`` and ``arbcomplex n`` are converted
+   from/to Greek symbols ``αn``, ``βn`` and ``ζn``. (All these automatic
+   conversions can also be turned off on the output side by disabling the
+   ``mapped`` compilation option; this may be useful for debugging purposes.)
 
    Here is a simple example showing how to start up REDUCE and do some
    calculations::
@@ -599,7 +599,7 @@ using namespace reduce;
 // already used as a conversion function in Pure. Also the ':=' operator is
 // used to denote assignment.
 infix (=>) := ;
-public arbint arbcomplex;
+public arbconst arbint arbcomplex;
 public set list mat det mateigen;
 public df intg solve equal plus difference minus times quotient expt;
 public factorize remainder resultant decompose nextprime pf deg coeff coeffn
@@ -632,8 +632,8 @@ let reduce::pure_syms = {y=>x | x=>y = reduce_syms};
    that 'mapped' is also enabled, disabling this will force the evaluation of
    reducible Pure subterms in the output). */
 //#! --disable quoted
-/* Uncomment this to disable the conversion from arbint and arbcomplex to
-   Greek symbols on the Pure side. */
+/* Uncomment this to disable the conversion from arbconst et al to Greek
+   symbols on the Pure side. */
 //#! --disable arbsymbols
 
 simplify x = y when
@@ -690,7 +690,8 @@ simplify x = y when
     from_expr x::symbol =
       PROC_make_function_call (from_sym x) 0 if x === 'list || x === 'mat;
     = case head s, val (tail s) when s = str x end of
-	"α",n::int = from_expr (arbint n);
+	"α",n::int = from_expr (arbconst n);
+	"β",n::int = from_expr (arbint n);
 	"ζ",n::int = from_expr (arbcomplex n);
 	_ = PROC_push_symbol (from_sym x);
       end;
@@ -760,7 +761,7 @@ simplify x = y when
     to_expr (_mod_ : num::integer) = num;
 #! --if arbsymbols
     to_expr x@[f::symbol,n::int] = to_sym x
-      if f === arbint || f === arbcomplex;
+      if f === arbconst || f === arbint || f === arbcomplex;
 #! --endif
     // Lists seem to be represented with the list symbol in front.
     to_expr (f::symbol:xs::rlist) = map to_expr xs if f === 'list;
@@ -823,7 +824,8 @@ simplify x = y when
     // Anything else: leave as is right now.
     to_expr x = x otherwise;
     // Convert symbols, with reverse mapping as needed.
-    to_sym [f::symbol,n::int] = val ("α"+str n) if f === arbint;
+    to_sym [f::symbol,n::int] = val ("α"+str n) if f === arbconst;
+    to_sym [f::symbol,n::int] = val ("β"+str n) if f === arbint;
     to_sym [f::symbol,n::int] = val ("ζ"+str n) if f === arbcomplex;
     to_sym x = catch (cst x) (reduce_syms!x);
   end;
