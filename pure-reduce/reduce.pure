@@ -390,13 +390,30 @@ namespace;
 
    The goal here is to make it easy to run REDUCE from Pure; to these ends,
    the most important features of the low-level PROC interface are wrapped in
-   a convenient way. Currently the following functions are provided:
+   a convenient way. Currently the following variables and functions are
+   provided:
+
+   .. variable:: REDUCE_PATH
+
+      This variable holds a colon-delimited search path used to locate the
+      REDUCE image file (see :func:`reduce::start` below). By default this
+      includes the current directory and the Pure library directory.
 
    .. function:: reduce::start image::string args::smatrix
 
-      Initializes the REDUCE system. You need to specify the name of the
-      REDUCE image file and any desired extra arguments as a string vector.
-      This needs to be called once before doing anything else.
+      Initializes the REDUCE system. This needs to be called once before doing
+      anything else. You need to specify the name of the REDUCE image file and
+      any desired extra arguments as a string vector. Unless the filename
+      contains a slash, :func:`reduce::start` searches the directories in
+      :var:`REDUCE_PATH` for the image file. An exception is raised if the
+      image file isn't found.
+
+   .. function:: reduce::finish
+
+      Finalizes the REDUCE system. You can call this to release the resources
+      of the REDUCE system. (:func:`reduce::start` also invokes this
+      automatically if a REDUCE instance is already running, so it isn't
+      necessary to call :func:`reduce::finish` in this case.)
 
    .. function:: reduce::verbosity n
 
@@ -481,25 +498,64 @@ namespace;
 
    Please see reduce_examp.pure and tests.pure for more examples. */
 
+// Search path for the REDUCE image file. Edit as needed.
+let REDUCE_PATH = ".:/usr/lib/pure";
+
+/* Exception constructors. The bad_reduce_image exception gets thrown when
+   reduce::start fails because it cannot find the REDUCE image file. The other
+   exceptions are raised on inputs and outputs which 'simplify' and 'lisp'
+   don't understand (yet). */
+public bad_reduce_image bad_reduce_value bad_lisp_value;
+
 namespace reduce with
 
-// These are repeated here to give them shorter names.
+let started = ref false;
 
-extern int PROC_load_package(char *name) = load;
-extern int PROC_set_switch(char *name, int val) = switch;
-extern int PROC_gc_messages(int n) = verbosity;
+load name::string = PROC_load_package name if get started;
+switch name::string val::int = PROC_set_switch name val if get started;
+verbosity n::int = PROC_gc_messages n if get started;
 
-// Initialization: run this once before anything else.
-// XXXTODO: We should maybe do a REDUCE_PATH search for the image file.
+namespace __C with
+// We declare these here so that we don't have to pull in the system module.
+extern int fclose(FILE*);
+extern FILE* fopen(char*, char*);
+extern int puts(char*);
+end;
+
+using namespace __C;
+
+// Perform a search for the image file.
+search image::string = () if null image;
+= catch id (if index image "/" > 0 then check ()
+	    else do check (split ":" REDUCE_PATH)) with
+  abspath name = null name || any (==image!0) [".","/"];
+  check dir = () when
+    image = if null dir then image else join "/" [dir,image];
+    fp = fopen image "r";
+    null fp || (fclose fp $$ throw image);
+  end;
+end;
+
+// Initialization and finalization.
+
+finish = put started false $$ cslfinish NULL $$ () if get started;
 
 start image::string args::smatrix = res when
-  res = cslstart (#args+3) {"reduce","-i",image,args} NULL;
+  // Nuke any running instance.
+  finish;
+  // Look for the image and load it.
+  myimage = search image;
+  stringp myimage || throw (bad_reduce_image image);
+  all (~="-v") args || puts $ "Loading image file "+myimage;
+  res = cslstart (#args+3) {"reduce","-i",myimage,args} NULL;
+  // Record that we're up and running.
+  put started true;
   // REDUCE is pretty noisy by default, shut it up. You might want to comment
   // this line for debugging purposes, or call reduce::verbosity yourself.
   verbosity 0;
   // We need this to get matrices working, so always load this module.
-  reduce::load "matrix";
-end;
+  load "matrix";
+end if all stringp args;
 
 // Some special symbol lists, defined below.
 
@@ -568,10 +624,6 @@ let reduce::reduce_syms = {variadic_syms, nonvariadic_syms};
 
 // Reverse mapping (Pure -> REDUCE).
 let reduce::pure_syms = {y=>x | x=>y = reduce_syms};
-
-// Exception constructors. This gets thrown on inputs and outputs which
-// 'simplify' and 'lisp' don't understand (yet).
-public bad_reduce_value bad_lisp_value;
 
 /* Uncomment this to get unmapped output in nested list format straight from
    REDUCE (useful for debugging purposes). */
