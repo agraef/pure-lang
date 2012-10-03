@@ -3,18 +3,19 @@
 A REDUCE Interface for the Pure Programming Language
 ====================================================
 
+.. default-domain:: pure
+.. module:: reduce
+
+Version @version@, |today|
+
 | Albert Graef <Dr.Graef@t-online.de>
 | Kurt Pagani <kp@scios.ch>
 
 This is a module providing access to the REDUCE_ computer algebra system from
 Pure. It is based on the `PROC interface`_ (a "procedural" interface to embed
-REDUCE as a C library). You'll need the shared reduce.so (or reduce.dll)
-library, and a REDUCE image file (reduce.img) to make this work. Kurt Pagani,
-who contributed the original version of this module, has written up a few
-notes which discuss how to build the REDUCE library and image file, see the
-accompanying pure_reduce.txt file for details. More detailed information and a
-discussion of the interface can be found in the `Embedding REDUCE`_ thread on
-the Pure mailing list.
+REDUCE as a C library). More background information and a discussion of the
+interface can be found in the `Embedding REDUCE`_ thread on the Pure mailing
+list.
 
 .. _REDUCE: http://www.reduce-algebra.com/
 .. _PROC interface: http://reduce-algebra.svn.sourceforge.net/viewvc/reduce-algebra/trunk/csl/cslbase/proc.h?view=markup
@@ -26,3 +27,34 @@ reduce_examp.pure. Please note that at present, this module is still highly
 experimental and under heavy development. But the basic functionality appears
 to work, and you're welcome to discuss the new interface on the mailing list
 and/or submit bug reports and patches.
+
+Installation
+============
+
+Get the latest source from
+http://pure-lang.googlecode.com/files/pure-reduce-@version@.tar.gz.
+
+You'll need the shared reduce.so (or reduce.dll) library, and a REDUCE image
+file (reduce.img) to make this module work. A Makefile is included with this
+package so that you can build these yourself from the REDUCE sources. (In
+principle, this only needs to be done once for the initial installation of
+this module, but you may want to repeat this procedure every once in a while
+to get the latest REDUCE version.)
+
+Check out the latest REDUCE version from its svn repository with the following
+command:
+
+.. code-block: console
+
+   svn co https://reduce-algebra.svn.sourceforge.net/svnroot/reduce-algebra/trunk/ reduce-algebra
+
+This may take a while; REDUCE is a *big* package. Once it's finished, just
+drop the resulting reduce-algebra directory into the pure-reduce source
+directory. Run ``make`` and then (if needed) ``make install`` in the
+pure-reduce source directory. You should also run ``make check`` to run a few
+tests in order to check that the interface works ok (this can be done without
+installing the package, but needs the REDUCE image and library).
+
+.. note:: In case the above procedure doesn't work for you, there are more
+   detailed instructions by Kurt Pagani on how to compile the relevant parts
+   of REDUCE, see the accompanying pure_reduce.txt file for details.
