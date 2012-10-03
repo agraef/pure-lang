@@ -604,6 +604,7 @@ public set list mat det mateigen;
 public df intg solve equal plus difference minus times quotient expt;
 public factorize remainder resultant decompose nextprime pf deg coeff coeffn
   mainvar part lcof lpower lterm reduct sub;
+public taylor implicit_taylor inverse_taylor;
 nonfix _sq _rd_ _gr_ _gi_ _rn_ _mod_;
 
 // Variadic symbols in REDUCE which may take any number of arguments, together
@@ -682,6 +683,10 @@ simplify x = y when
 	_ = error x;
       end;
       PROC_make_function_call (from_sym f) (#xs);
+      // Special treatment for Taylor polynomials. We convert these to
+      // standard form on the fly by inserting a call to taylortostandard.
+      all (~==f) ('[taylor,implicit_taylor,inverse_taylor]) ||
+      (load "taylor" $$ PROC_make_function_call "taylortostandard" 1);
     end;
     // Handle special cases of nullary symbols which are actually
     // parameterless function calls. XXXTODO: Are there other cases like this?
