@@ -302,6 +302,8 @@ let r21 = simplify $ limit (1/x) x 0 ; r21; // -> infinity
 let r22 = lisp ('depend [y,x]); r22; // declare: y depends on x
 let r23 = simplify $ odesolve [df y x == x^2+exp(x)] [y] x; r23;
 let r24 = simplify $ odesolve [(df y x 2) == y] [y] x [[x==0,y==A],[x==1,y==B]] ; r24;
+// get rid of the declaration again to avoid bad interactions with code below
+lisp ('nodepend [y,x]);
 //
 // r23: y' = x^2 + e^x
 // r24: y'' = y with boundary cond: y(0)=A, y(1)=B
@@ -316,7 +318,7 @@ let r24 = simplify $ odesolve [(df y x 2) == y] [y] x [[x==0,y==A],[x==1,y==B]] 
 let r25 = simplify $ sum (n^3) n 1 N ; r25;
 let r26 = simplify $ sum (a+k*r) k 0 (n-1) ; r26;
 let r27 = simplify $ sum (1/((p+(k-1)*q)*(p+k*q))) k 1 (n+1) ; r27;
-let r28 = simplify $ prod (k/(k-2)) k 1 N ; r28;
+let r28 = simplify $ prod (k/(k+2)) k 1 N ; r28;
 //***** Zero divisor
 
 //////////////////////////////////////////
