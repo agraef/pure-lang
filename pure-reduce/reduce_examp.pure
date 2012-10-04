@@ -1,11 +1,6 @@
 
 using math, reduce;
 
-// Initialization (this requires the REDUCE image file in the current dir).
-reduce::start "reduce.img" {"-v"};
-
-// Examples:
-
 // Differentiation.
 simplify $ df ((x+1)^2) x;
 simplify $ df ((x+5)^3) x;
@@ -39,8 +34,8 @@ let sol:_ = simplify $ solve eqs [x, y]; sol;
 // Convert the solution to a list of hash pairs.
 let sol = [x=>y | x==y = sol]; sol;
 // This format is more convenient to check the result with reduce_with.
-map (reduce_with sol) eqs;
-map (reduce_with sol) [u-v | u==v = eqs];
+map (eval.reduce_with sol) eqs;
+map (eval.reduce_with sol) [u-v | u==v = eqs];
 
 // Note the inaccuracies. This happens because the x/y terms evaluate to
 // inexact (double) results in Pure. We can fix this with the following little
@@ -50,7 +45,7 @@ exact (x@_ y) = 'x y when x = exact x; y = exact y end;
 exact x = x otherwise;
 
 let sol = exact sol; sol;
-map (reduce_with sol) eqs;
+map (eval.reduce_with sol) eqs;
 
 // Matrix examples.
 simplify $ mat [1,2] [3,4];

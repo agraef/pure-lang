@@ -1,6 +1,8 @@
 
 /* A basic interface to the computer algebra system REDUCE available at
-   http://www.reduce-algebra.com/. */
+   http://www.reduce-algebra.com/. CSL Interface Copyright (C) 2010 by Codemist
+   Ltd., A C Norman (see license statement below), Pure adaption Copyright (C)
+   2012 by Kurt Pagani and Albert Graef. */
 
 using "lib:reduce" ;
 
@@ -401,12 +403,16 @@ namespace;
 
    .. function:: reduce::start image::string args::smatrix
 
-      Initializes the REDUCE system. This needs to be called once before doing
-      anything else. You need to specify the name of the REDUCE image file and
-      any desired extra arguments as a string vector. Unless the filename
-      contains a slash, :func:`reduce::start` searches the directories in
-      :var:`REDUCE_PATH` for the image file. An exception is raised if the
-      image file isn't found.
+      Initializes the REDUCE system. This is done automatically when loading
+      this module, so normally you shouldn't have to call this manually,
+      unless the image file isn't found or you want to restart the REDUCE
+      system with your own image file or your own set of options. In any
+      case, this needs to be executed once before calling any other operation
+      of this module. When calling this operation manually, you need to
+      specify the name of the REDUCE image file and any desired extra
+      arguments as a string vector. Unless the filename contains a slash,
+      :func:`reduce::start` searches the directories in :var:`REDUCE_PATH` for
+      the image file. An exception is raised if the image file isn't found.
 
    .. function:: reduce::finish
 
@@ -466,9 +472,7 @@ namespace;
    calculations::
 
      > using reduce;
-     > reduce::start "reduce.img" {};
      Reduce (Free CSL version), 27-Sep-12 ...
-     ()
      > simplify $ df ((x+5)^3) x;
      3*x^2+30*x+75
      > simplify $ solve (x^2+7) x;
@@ -919,3 +923,9 @@ end with
   // don't understand (yet).
   error x = PROC_clear_stack $$ throw (bad_lisp_value x);
 end;
+
+using namespace __C;
+
+// Initialization. Print an error message if we can't find the image.
+catch (\_->puts "** Couldn't load image file reduce.img")
+  (reduce::start "reduce.img" {});
