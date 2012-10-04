@@ -298,11 +298,11 @@ let r21 = simplify $ limit (1/x) x 0 ; r21; // -> infinity
 //////////////
 // ODESOLVE //
 //////////////
-let r22 = lisp ('depend [y,x]); r22; // declare: y depends on x
+let r22 = declare depend [y,x]; r22; // declare: y depends on x
 let r23 = simplify $ odesolve [df y x == x^2+exp(x)] [y] x; r23;
 let r24 = simplify $ odesolve [(df y x 2) == y] [y] x [[x==0,y==A],[x==1,y==B]] ; r24;
 // get rid of the declaration again to avoid bad interactions with code below
-lisp ('nodepend [y,x]);
+declare nodepend [y,x];
 //
 // r23: y' = x^2 + e^x
 // r24: y'' = y with boundary cond: y(0)=A, y(1)=B

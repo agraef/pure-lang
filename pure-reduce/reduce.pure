@@ -460,6 +460,20 @@ namespace;
       interface isn't very forgiving if you try to execute invalid Lisp code;
       it will most likely crash in such cases.
 
+   .. function:: declare x ys
+
+      Declare symbol properties. Currently, the following common kinds of
+      declarations are supported::
+
+	declare operator [foo,bar,...];
+	declare depend [y,x,...];
+	declare nodepend [y,x,...];
+	declare property [x,y,...];
+
+      In the latter form, ``property`` can be any of ``even``, ``odd``,
+      ``linear`` and ``symmetric``. ``ys`` can also be a singleton symbol if
+      the declaration permits this. Please see the Reduce manual for details.
+
    In Pure land, REDUCE expressions are represented using standard curried
    notation; some special conversions are applied to make arithmetic
    operations such as +, * etc. work as expected. For convenience, the REDUCE
@@ -563,7 +577,7 @@ end if all stringp args;
 
 // Some special symbol lists, defined below.
 
-public variadic_syms nonvariadic_syms reduce_syms pure_syms;
+public variadic_syms nonvariadic_syms reduce_syms pure_syms prop_syms;
 
 // Helper function to simplify arithmetic expressions. This basically expands
 // an arithmetic term to a sum-of-products form. It is used to evaluate
@@ -646,6 +660,9 @@ let reduce::reduce_syms = {variadic_syms, nonvariadic_syms};
 
 // Reverse mapping (Pure -> REDUCE).
 let reduce::pure_syms = {y=>x | x=>y = reduce_syms};
+
+// Property symbols.
+let reduce::prop_syms = '[even,odd,linear,symmetric];
 
 /* Uncomment this to get unmapped output in nested list format straight from
    REDUCE (useful for debugging purposes). */
@@ -942,6 +959,16 @@ end with
   // don't understand (yet).
   error x = PROC_clear_stack $$ throw (bad_lisp_value x);
 end;
+
+declare x::symbol y::symbol = lisp (x [y]) if x === 'operator;
+declare x::symbol ys::rlist = lisp (x ys) if x === 'operator && all symbolp ys;
+declare x::symbol ys::rlist = lisp (x (map mkquoted ys)) with
+  mkquoted y::appl = 'quote y;
+  mkquoted y = y otherwise;
+end if x === 'depend || x === 'nodepend;
+declare x::symbol y::symbol = lisp ('flag [y] x) if any (x===) prop_syms;
+declare x::symbol ys::rlist = lisp ('flag ys x) if any (x===) prop_syms &&
+						  all symbolp ys;
 
 using namespace __C;
 

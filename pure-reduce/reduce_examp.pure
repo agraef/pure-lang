@@ -54,8 +54,7 @@ simplify {1,2;3,4};
 
 // Symbolic matrices.
 simplify $ x*{1,2;3,4};
-simplify {(x-1)^2/(x+5)};
-simplify {(x-1+cos x)^2/(x+5)};
+simplify {(x-1)^2/(x+5);(x-1+cos x)^2/(x+5)};
 
 // Determinants and eigenvectors.
 simplify $ det {1,2;3,4};
@@ -63,16 +62,33 @@ simplify $ det (x*{1,2;3,4});
 simplify $ mateigen {2,5;1,0} λ;
 simplify $ mateigen (x*{2,5;1,0}) λ;
 
-// Lisp evaluation. This should be used with care, as the PROC interface
-// easily crashes if you try to execute some non-existing Lisp function.
+// Lisp evaluation. This should be used with utmost care, as the PROC interface
+// easily crashes if you try to execute some non-existing Lisp function!
 lisp ('car (list a b c d e));
 // Pure lists are automagically converted to Lisp lists. The result is always
 // returned as a Pure list.
 lisp ('cdr [a,b,[c,d],e]);
 
-// You'll need to use Lisp evaluation, in particular, to declare operator
-// symbols and their properties (simplify won't do that). For instance:
+// Lisp evaluation can be used in the REDUCE system, in particular, to declare
+// operator symbols and their properties (simplify won't do that). E.g.:
 lisp ('operator [myop]);
 lisp ('flag [myop] odd);
 lisp ('prop myop); // => [odd:t,simpfn:simpiden]
 simplify (myop (-x)); // => -myop x
+
+// For the most common kinds of declarations, the reduce module already
+// provides the 'declare' function which takes care of the necessary Lisp
+// magic and is safe to use. The above example can also be done as follows:
+declare operator myop;
+declare odd myop;
+simplify (myop (-x)); // => -myop x
+
+// The depend/nodepend declarations are used to declare (or get rid of)
+// dependencies between kernels:
+declare depend [y,x];
+simplify (df (y^2) x);
+declare nodepend [y,x];
+
+declare depend [z,cos x,y];
+simplify (df (sin z) (cos x));
+simplify (df (z^2) x);
