@@ -398,6 +398,24 @@ let r4 = simplify $ intg (x*exp(-1/2*x)) x 0 1 ; r4; // -> 2*sqrt e*(2*sqrt e-3)
 let r5 = simplify $ intg (x*log(1+x)) x 0 1 ; r5; // -> 1/4 ;
 let r6 = simplify $ intg (cos(2*x)) x y (2*y); r6; // -> (sin (4*y)-sin (2*y))/2
 
-// Laplace transform
-// =================
+// Various transforms
 let r7 = simplify $ laplace_transform (exp(-a*x)) x ; r7; // -> 1/(a+s)
+let r8 = simplify $ hankel_transform (exp(-a*x)) x ; r8; // ->
+         //  s^(n/2)*gamma (n/2)*hypergeometric [(n+2)/2] [n+1]
+         // ((-s)/a)*n/(2*a^(n/2)*gamma (n+1)*a)
+let r9 = simplify $ y_transform (exp(-a*x)) x ; r9; // ->
+         // (a^n*gamma (n+1)*gamma ((-n)/2)*gamma ((-2*n-1)/2)*
+         // gamma ((2*n+3)/2)*hypergeometric [(-n+2)/2] [-n+1]
+         // ((-s)/a)+s^n*gamma (-n)*gamma (n/2)*hypergeometric [(n+2)/2] [n+1]
+         // ((-s)/a)*n*pi)/(2*s^(n/2)*a^(n/2)*gamma ((-2*n-1)/2)*
+         // gamma ((2*n+3)/2)*a*pi)
+let r10 = simplify $ k_transform (exp(-a*x)) x ; r10; // ->
+         // (-a^n*gamma (n+1)*gamma ((-n)/2)*hypergeometric [(-n+2)/2] [-n+1]
+         // (s/a)+s^n*gamma (-n)*gamma (n/2)*hypergeometric [(n+2)/2] [n+1]
+         // (s/a)*n)/(4*s^(n/2)*a^(n/2)*a)
+let r11 = simplify $ struveh_transform (exp(-a*x)) x ; r11; // ->
+         // 2*s^((n+1)/2)*gamma ((n+3)/2)*
+         // hypergeometric [1,(n+3)/2] [(2*n+3)/2,1.5] ((-s)/a)/
+         // (sqrt pi*a^((n+1)/2)*gamma ((2*n+3)/2)*a)
+let r12 = simplify $ fourier_sin (exp(-a*x)) x ; r12; // -> s/(a^2+s^2)
+let r13 = simplify $ fourier_cos (exp(-a*x)) x ; r13; // -> a/(a^2+s^2)
