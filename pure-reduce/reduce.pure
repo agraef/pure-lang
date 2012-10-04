@@ -857,6 +857,9 @@ end with
   error x = PROC_clear_stack $$ throw (bad_reduce_value x);
 end;
 
+// If the argument is neither an application nor a callable symbol, then it's
+// presumably a constant which is simply echoed as is.
+lisp x = x if ~applp x && x ~== 'list;
 lisp x = y when
   // Clear the stack (to be sure).
   PROC_clear_stack;
@@ -869,6 +872,7 @@ lisp x = y when
     from_expr x::double = PROC_push_floating x;
     from_expr x::string = PROC_push_string x;
     from_expr x::rlist = from_expr (foldl ($) ('list) x);
+    from_expr (x:y) = from_expr ('cons x y);
     from_expr x::appl = () when
       f:xs = a [] x with a xs (x@_ y) = a (y:xs) x; a xs x = x:xs end;
       do from_expr xs;
