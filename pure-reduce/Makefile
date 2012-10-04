@@ -38,10 +38,10 @@ $(addprefix reduce-algebra/csl/new-embedded/procedural/, $(objects)):
 logs: tests.log
 
 tests.log: tests.pure
-	pure tests.pure | tail -n +2 > tests.log
+	pure -v < tests.pure | tail -n +4 > tests.log
 
 check:
-	pure tests.pure | tail -n +2 | diff tests.log -
+	pure -v < tests.pure | tail -n +4 | diff tests.log -
 
 clean:
 	$(MAKE) -C reduce-algebra/csl/new-embedded/procedural clean
