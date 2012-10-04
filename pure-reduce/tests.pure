@@ -295,7 +295,6 @@ let r21 = simplify $ limit (1/x) x 0 ; r21; // -> infinity
 // - apparently it's not necessary to do a package "load",
 // - map (Pure)inf <-> (Reduce)infinity
 
-
 //////////////
 // ODESOLVE //
 //////////////
@@ -309,7 +308,6 @@ lisp ('nodepend [y,x]);
 // r24: y'' = y with boundary cond: y(0)=A, y(1)=B
 // see manual for initial cond and other features
 //
-
 
 //////////////////////////////////////////
 // SUM: A package for series summation ///
@@ -341,18 +339,9 @@ Reduce (Free CSL version), 14-Apr-11 ...
 let r29 = simplify $ taylor (exp (x^2+y^2)) x 0 2 y 0 2 ; r29;
 let r30 = simplify $ taylor (exp x) x 0 3; r30;
 let r31 = simplify $ implicit_taylor (x^2+y^2-1) x y 0 1 5 ; r31;
-// wth is that?
-// (6*sub (y==1) (df (sub (x==0) (df y x 3)) y)*x^5-7*sub (y==1)
-// (df (sub (x==0) (df y x 2)) y)*sub (y==1) (df (sub (x==0) (df y x)) y)*
-//  x^5+15*sub (y==1) (df (sub (x==0) (df y x 2)) y)*x^4-3*sub (y==1)
-// (df (sub (x==0) (df y x)) y 2)*x^5+sub (y==1) (df (sub (x==0)
-// (df y x)) y)^3*x^5-5*sub (y==1) (df (sub (x==0) (df y x)) y)^2*
-//  x^4-5*sub (y==1) (df (sub (x==0) (df y x)) y)*x^5+20*sub (y==1)
-// (df (sub (x==0) (df y x)) y)*x^3-15*x^4-60*x^2+120)/120
-
+// -> (-x^4-4*x^2+8)/8
 let r32 = simplify $ inverse_taylor (exp(x)-1) x y 0 8; r32;
 // -> (-105*y^8+120*y^7-140*y^6+168*y^5-210*y^4+280*y^3-420*y^2+840*y)/840
-
 
 // Boolean expressions
 // ===================
@@ -376,7 +365,6 @@ let r41 = lisp (primep 5) ; r41; //strange! returns a list of primes if prime el
 // - mapping t,() <--> 1,0 (Pure)
 // - mapping infinity <--> inf
 
-
 // Mathematical Functions
 // ======================
 // REDUCE knows that the following represent mathematical functions that
@@ -395,3 +383,21 @@ let r46 = simplify $ (quote e)^(3*i*(quote pi)/2) ; r46; // -i
 let r47 = simplify $ sec (quote pi); r47; // -> -1
 let r48 = simplify $ log10 10 ; r48; // -> 1
 let r49 = simplify $ erf (-a); r49; // -> -erf a
+
+// Package: DEFINT (definite integrals)
+// Calculating integrals by using the Meijer G integration formula.
+// http://www.reduce-algebra.com/docs/defint.pdf
+reduce::load "defint" ;
+
+// Some definite integrals
+let r1 = simplify $ intg (exp(-x)) x 0 infinity ; r1; // -> 1
+let r2 = simplify $ intg (x*sin(1/x)) x 0 infinity ; r2; // -> uneval
+let r3 = simplify $ intg (x^2*cos(x)*exp(-2*x)) x 0 infinity ; r3; // -> 4/125
+//let r4 = simplify $ intg (x*exp(-1/(2*x))*Heaviside(1-x)) x 0 infinity ; r4;
+let r4 = simplify $ intg (x*exp(-1/2*x)) x 0 1 ; r4; // -> 2*sqrt e*(2*sqrt e-3)/e
+let r5 = simplify $ intg (x*log(1+x)) x 0 1 ; r5; // -> 1/4 ;
+let r6 = simplify $ intg (cos(2*x)) x y (2*y); r6; // -> (sin (4*y)-sin (2*y))/2
+
+// Laplace transform
+// =================
+let r7 = simplify $ laplace_transform (exp(-a*x)) x ; r7; // -> 1/(a+s)
