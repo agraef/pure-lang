@@ -179,8 +179,7 @@ let r27 = simplify $ lpower ((a+b)*(c+2*d)^2) a ; r27; // -> A
 let r28 = simplify $ lpower ((a+b)*(c+2*d)^2) d ; r28; // -> D**2
 let r29 = simplify $ lpower ((a+b)*(c+2*d)) x ; r29;   // -> 1
 
-let r30 = simplify $ lterm ((a+b)*(c+2*d)^2) a ; r30;  // -> A*(C**2+4*C*D
-						       //    +4*D**2)
+let r30 = simplify $ lterm ((a+b)*(c+2*d)^2) a ; r30;  // -> A*(C**2+4*C*D+4*D**2)
 let r31 = simplify $ lterm ((a+b)*(c+2*d)^2) d ; r31;  // -> 4*D**2*(A+B)
 let r32 = simplify $ lterm ((a+b)*(c+2*d)) x ; r32;    // -> A*C+2*A*D+B*C+2*B*D
 
@@ -196,8 +195,7 @@ let r38 = simplify $ reduct ((a+b)*(c+2*d)) a ; r38; // -> B*(C + 2*D)
 let r39 = simplify $ reduct ((a+b)*(c+2*d)) d ; r39; // -> C*(A + B)
 let r40 = simplify $ reduct ((a+b)*(c+2*d)) x ; r40; // -> 0
 
-let r41 = simplify $ sub [x==a+y,y==y+1] (x^2+y^2) ; r41; //-> A^2+2*A*Y
-							  //   +2*Y^2+2*Y+1
+let r41 = simplify $ sub [x==a+y,y==y+1] (x^2+y^2) ; r41; //-> A^2+2*A*Y+2*Y^2+2*Y+1
 
 let r42 = simplify $ {a,b,c;d,'e,f;g,h,'i}; r42; // e, i must be quoted here
 
@@ -224,3 +222,174 @@ let r51 = simplify $ F := G ; r51;
 let r52 = simplify $ df F x1 2 x2 2 x3 ; r52;
 let r53 = simplify $ df G x1 2 x2 2 x3 ; r53;
 let r54 = simplify (r53-r52) ; r54; // ->  0
+
+// Second batch of tests from Kurt. ////////////////////////////////////
+
+// Pauli matrices (sigma 1..3).
+// see e.g. http://en.wikipedia.org/wiki/Pauli_matrices
+let s0 = {1,0;0,1} ;
+let s1 = {0,1;1,0} ;
+let s2 = {0,-i;i,0};
+let s3 = {1,0;0,-1};
+
+// Check the identities: s1^2=s2^2=s3^2=-i*s1*s2*s3=s0
+// Note: s1^2 or s1*s1 works here.
+let r1 = simplify $ (s1*s1) ; r1;
+let r2 = simplify $ (s2*s2) ; r2;
+let r3 = simplify $ (s3*s3) ; r3;
+let r4 = simplify $ (-i*s1*s2*s3) ; r4;
+let r5 = all (==s0) [r1,r2,r3,r4] ; r5; // -> 1
+
+// All det s_i = -1, i=1,2,3 (obviously:)
+let r6 = map (simplify . det) [s1,s2,s3] ; r6; // -> [-1,-1,-1]
+
+// Eigenvalues/-vectors of s2
+let r7 = simplify $ mateigen s2 q; r7;
+let r8 = map head r7; r8; // -> [q-1,q+1] => Eigenvalues q=+/-1
+let r9 = map (head.tail) r7 ; r9; // [1,1], multiplicities
+let r10 = map last r7 ; r10; // [c1*{-i,1},c2*{i,1}], eigenvectors
+
+// Transpose
+let r11 = map (simplify.tp) [s1,s2,s3] ; r11; // -> [s1',s2',s3']
+
+// Trace
+let r11 = map (simplify.trace) [s1,s2,s3] ; r11; // -> [tr s1,tr s2,tr s3]=[0,0,0]
+
+// Cofactor
+let r12 = simplify $ cofactor s2 1 1 ; r12; // -> 0.
+
+// Nullspace of s2+{0,i;0,0}
+let r13 = simplify $ (s2+{0,i;0,0}) ; r13; // -> {0,0;i,0}
+
+// Rank
+let r14 = map (simplify . rank) [s0,s1,s2,s3] ; r14; // -> [2,2,2,2]
+
+// Inverse  (simply 1/matrix)
+let r15 = simplify $ 1/s2 ; r15; // -> {0,1/i;(-1)/i,0}
+let r16 = simplify $ s2*r15 ; r16; // -> {1,0;0,1} == s0 as it should be.
+
+// Solving without 'solve':
+// a11*x(1) + a12*x(2) = y1
+// a21*x(1) + a22*x(2) = y2
+let r17 = simplify $ (1/{a11,a12;a21,a22}*{y1;y2}) ; r17; // A^-1 * y' ;
+// -> {(-a12*y2+a22*y1)/(a11*a22-a12*a21);(a11*y2-a21*y1)/(a11*a22-a12*a21)}
+
+////////////
+// ALGINT //
+////////////
+let r18 = simplify $ intg (sqrt(x+sqrt(x^2+1))/x) x ; r18;
+// -> intg (sqrt(sqrt (x^2+1)+x)/x) x, i.e. unevaluated !
+// load the ALGINT package and retry:
+reduce::load "algint" ;
+let r19 = simplify $ intg  (sqrt(x+sqrt(x^2+1))/x) x ; r19;
+// -> atan ((sqrt (sqrt (x^2+1)+x)*sqrt (x^2+1)-sqrt (sqrt (x^2+1)+x)*x-sqrt
+// (sqrt (x^2+1)+x))/2)+2*sqrt (sqrt (x^2+1)+x)+log
+// (sqrt (sqrt (x^2+1)+x)-1)-log (sqrt (sqrt (x^2+1)+x)+1)
+
+////////////
+// LIMITS //
+////////////
+let r20 = simplify $ limit (x*sin(1/x)) x infinity ; r20; // -> 1
+let r21 = simplify $ limit (1/x) x 0 ; r21; // -> infinity
+// Notes:
+// - apparently it's not necessary to do a package "load",
+// - map (Pure)inf <-> (Reduce)infinity
+
+
+//////////////
+// ODESOLVE //
+//////////////
+let r22 = lisp ('depend [y,x]); r22; // declare: y depends on x
+let r23 = simplify $ odesolve [df y x == x^2+exp(x)] [y] x; r23;
+let r24 = simplify $ odesolve [(df y x 2) == y] [y] x [[x==0,y==A],[x==1,y==B]] ; r24;
+//
+// r23: y' = x^2 + e^x
+// r24: y'' = y with boundary cond: y(0)=A, y(1)=B
+// see manual for initial cond and other features
+//
+
+
+//////////////////////////////////////////
+// SUM: A package for series summation ///
+//////////////////////////////////////////
+// This package implements the Gosper algorithm for the summation of series.
+let r25 = simplify $ sum (n^3) n 1 N ; r25;
+let r26 = simplify $ sum (a+k*r) k 0 (n-1) ; r26;
+let r27 = simplify $ sum (1/((p+(k-1)*q)*(p+k*q))) k 1 (n+1) ; r27;
+let r28 = simplify $ prod (k/(k-2)) k 1 N ; r28;
+//***** Zero divisor
+
+//////////////////////////////////////////
+//TAYLOR: Manipulation of Taylor series //
+//////////////////////////////////////////
+/*
+Reduce (Free CSL version), 14-Apr-11 ...
+
+1: taylor(e^(x^2+y^2),x,0,2,y,0,2);
+
+     2    2    2  2      3  3
+1 + y  + x  + y *x  + O(x ,y )
+
+2: taylor(e^x,x,0,3);
+
+         1   2    1   3      4
+1 + x + ---*x  + ---*x  + O(x )
+         2        6
+*/
+let r29 = simplify $ taylor (exp (x^2+y^2)) x 0 2 y 0 2 ; r29;
+let r30 = simplify $ taylor (exp x) x 0 3; r30;
+let r31 = simplify $ implicit_taylor (x^2+y^2-1) x y 0 1 5 ; r31;
+// wth is that?
+// (6*sub (y==1) (df (sub (x==0) (df y x 3)) y)*x^5-7*sub (y==1)
+// (df (sub (x==0) (df y x 2)) y)*sub (y==1) (df (sub (x==0) (df y x)) y)*
+//  x^5+15*sub (y==1) (df (sub (x==0) (df y x 2)) y)*x^4-3*sub (y==1)
+// (df (sub (x==0) (df y x)) y 2)*x^5+sub (y==1) (df (sub (x==0)
+// (df y x)) y)^3*x^5-5*sub (y==1) (df (sub (x==0) (df y x)) y)^2*
+//  x^4-5*sub (y==1) (df (sub (x==0) (df y x)) y)*x^5+20*sub (y==1)
+// (df (sub (x==0) (df y x)) y)*x^3-15*x^4-60*x^2+120)/120
+
+let r32 = simplify $ inverse_taylor (exp(x)-1) x y 0 8; r32;
+// -> (-105*y^8+120*y^7-140*y^6+168*y^5-210*y^4+280*y^3-420*y^2+840*y)/840
+
+
+// Boolean expressions
+// ===================
+
+let r33 = simplify $ evenp 200 ; r33; // -> t = true
+let r34 = simplify $ evenp 201 ; r34; // -> () = false
+//let r35 = simplify $ fixp 200 ; r35;  // ***** fixp invalid as algebraic operator
+let r35 = lisp (fixp 200) ; r35; // -> t
+let r36 = simplify $ freeof (x^2+y) x ; r36; // -> () = false
+let r37 = simplify $ freeof (x^2+y) z ; r37; // -> t = true
+let r38 = simplify $ freeof (x^n*y^m) (y^m) ; r38; // -> () = false
+//let r39 = simplify $ numberp x ; // ***** numberp invalid as alg op
+let r39 = lisp (numberp x) ; r39; //-> crash! works as of rev. 844497443f5c -ag
+let r39 = lisp (quote (numberp 111)) ; r39; // -> t
+//let r40 = simplify $ ordp x y ; r40; // ***** ordp invalid as alg op
+let r40 = lisp (ordp x y) ; r40; // -> t
+//let r41 = simplify $ primep 5 ; r41; // ***** primep invalid as alg op
+let r41 = lisp (primep 5) ; r41; //strange! returns a list of primes if prime else []
+
+// Notes:
+// - mapping t,() <--> 1,0 (Pure)
+// - mapping infinity <--> inf
+
+
+// Mathematical Functions
+// ======================
+// REDUCE knows that the following represent mathematical functions that
+// can take arbitrary scalar expressions as their single argument:
+// ACOS ACOSH ACOT ACOTH ACSC ACSCH ASEC ASECH ASIN ASINH
+// ATAN ATANH ATAN2 COS COSH COT COTH CSC CSCH DILOG EI EXP
+// HYPOT LN LOG LOGB LOG10 SEC SECH SIN SINH SQRT TAN TANH ERF
+// Note: if not quoted then the Pure function is used, i.e
+// cos x, means cos in Pure, (quote cos) x means cos in REDUCE...
+
+let r42 = simplify $ cos (-x) ; r42; // -> cos x ;
+let r43 = simplify $ cos (n*pi) ; r43; // -> cos (80143857*n/25510582)
+let r44 = simplify $ cos (n*(quote pi)) ; r44; // -> (-1)^n if n integer
+let r45 = simplify $ e^(3*i*pi/2) ; r45;//(-5443926242794616L*i-1)/5443926242794616L
+let r46 = simplify $ (quote e)^(3*i*(quote pi)/2) ; r46; // -i
+let r47 = simplify $ sec (quote pi); r47; // -> -1
+let r48 = simplify $ log10 10 ; r48; // -> 1
+let r49 = simplify $ erf (-a); r49; // -> -erf a
