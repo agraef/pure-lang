@@ -596,9 +596,10 @@ using namespace reduce;
 // Some REDUCE symbols. On the Pure side, you can use either these or their
 // Pure counterparts in the symbol lists below. XXXTODO: Complete this list.
 // NOTES: intg is actually a Pure replacement for REDUCE's int which is
-// already used as a conversion function in Pure. Also the ':=' operator is
-// used to denote assignment.
+// already used as a conversion function in Pure. The ':=' operator is used to
+// denote assignment. Reduce's 'infinity' symbol is synonymous to Pure's 'inf'.
 infix (=>) := ;
+public t infinity;
 public arbconst arbint arbcomplex;
 public set list mat det mateigen;
 public df intg solve equal plus difference minus times quotient expt;
@@ -618,7 +619,8 @@ let reduce::variadic_syms =
 // which need to be remapped on the Pure side need to be listed here.
 // XXXTODO: Complete this list.
 let reduce::nonvariadic_syms =
-  '{int=>intg,minus=>neg,quotient=>(/),expt=>(^),equal=>(==),set=>(:=)};
+  '{infinity=>inf,int=>intg,minus=>neg,quotient=>(/),expt=>(^),
+    equal=>(==),set=>(:=)};
 
 // All remapped symbols (from above).
 let reduce::reduce_syms = {variadic_syms, nonvariadic_syms};
@@ -652,7 +654,9 @@ simplify x = y when
     // Marshalling of list and matrix values is supported as well.
     from_expr x::int = PROC_push_small_integer x;
     from_expr x::bigint = PROC_push_big_integer (init (str x));
-    from_expr x::double = PROC_push_floating x;
+    from_expr x::double = from_expr (if x<0 then '-infinity else 'infinity)
+      if infp x;
+    = PROC_push_floating x otherwise;
     from_expr x::string = PROC_push_string x;
     from_expr x::matrix = from_expr (foldl ($) ('mat) (list2 x));
     from_expr x::rlist = from_expr (foldl ($) ('list) x);
@@ -756,9 +760,9 @@ simplify x = y when
     // Pure subterms in the result
     x$y = 'x y;
 #! --endif
-    // Empty list, treated as () right now. (Note that proper REDUCE lists are
-    // handled below.) XXXFIXME: Is this sensible?
-    to_expr [] = ();
+    // Empty list, treated as 'false' right now. (Note that proper REDUCE
+    // lists are handled below.) XXXFIXME: Is this sensible?
+    to_expr [] = false;
     // Special coefficient values.
     to_expr (_rd_ : x::double) = x;
     to_expr (_rd_ : mant::integer : exp::integer) = mant*2^exp;
@@ -774,7 +778,7 @@ simplify x = y when
     to_expr x@[f::symbol,n::int] = to_sym x
       if f === arbconst || f === arbint || f === arbcomplex;
 #! --endif
-    // Lists seem to be represented with the list symbol in front.
+    // Lists are represented with the list symbol in front.
     to_expr (f::symbol:xs::rlist) = map to_expr xs if f === 'list;
     to_expr f::symbol = [] if f === 'list;
     // Matrices generally take the form (mat xs ...) in REDUCE's internal
@@ -838,6 +842,7 @@ simplify x = y when
     to_sym [f::symbol,n::int] = val ("α"+str n) if f === arbconst;
     to_sym [f::symbol,n::int] = val ("β"+str n) if f === arbint;
     to_sym [f::symbol,n::int] = val ("ζ"+str n) if f === arbcomplex;
+    to_sym x::symbol = true if x === 't;
     to_sym x = catch (cst x) (reduce_syms!x);
   end;
   // Clear the stack once again (clean up).
