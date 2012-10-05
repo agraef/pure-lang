@@ -1,6 +1,6 @@
 
-modname = pure-reduce
-modversion = 0.1
+name = pure-reduce
+version = 0.1
 
 # Platform-specific setup.
 
@@ -61,10 +61,10 @@ uninstall:
 DISTFILES = README Makefile reduce.pure reduce_examp.pure tests.pure tests.log pure_reduce.txt
 SEDFILES = README
 
-dist = $(modname)-$(modversion)
+dist = $(name)-$(version)
 
 date = $(shell date "+%B %-d, %Y")
-datesubst = sed -e "s?@version@?$(modversion)?g" -e "s?|today|?$(date)?g" < $(1) > $(2)
+datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > $(2)
 
 dist: $(DISTFILES)
 	rm -rf $(dist)
@@ -74,3 +74,12 @@ dist: $(DISTFILES)
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
 	rm -rf $(dist)
+
+# Generate the documentation from the library sources.
+
+sources = reduce.pure
+target = pure-reduce
+
+$(target).txt: README $(sources)
+	cp $< $@
+	pure-doc -is $(sources) >> $@

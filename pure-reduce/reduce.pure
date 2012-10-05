@@ -387,8 +387,8 @@ namespace;
 
 /* ..
 
-   High-Level Interface to REDUCE
-   ==============================
+   High-Level Interface
+   ====================
 
    The goal here is to make it easy to run REDUCE from Pure; to these ends,
    the most important features of the low-level PROC interface are wrapped in
@@ -427,9 +427,9 @@ namespace;
       default when using this module), and the following values may be or'ed
       together to pick what you need:
 
-        1   messages whenever garbage collection happens
-	2   messages whenever a module of code is loaded
-	4   extra details in the garbage collector messages
+      | 1: messages whenever garbage collection happens
+      | 2:  messages whenever a module of code is loaded
+      | 4: extra details in the garbage collector messages
 
    .. function:: reduce::load name::string
 
@@ -477,7 +477,7 @@ namespace;
    In Pure land, REDUCE expressions are represented using standard curried
    notation; some special conversions are applied to make arithmetic
    operations such as +, * etc. work as expected. For convenience, the REDUCE
-   terms ``arbconst n`` ``arbint n`` and ``arbcomplex n`` are converted
+   terms ``arbconst n``, ``arbint n`` and ``arbcomplex n`` are converted
    from/to Greek symbols ``αn``, ``βn`` and ``ζn``. (All these automatic
    conversions can also be turned off on the output side by disabling the
    ``mapped`` compilation option; this may be useful for debugging purposes.)
@@ -511,6 +511,15 @@ namespace;
      []
      > lisp ('prop myop);
      [odd:t,simpfn:simpiden]
+     > simplify (myop (-x));
+     -myop x
+
+   The same can also be done with the :func:`declare` function as follows::
+
+     > declare operator myop;
+     []
+     > declare odd myop;
+     []
      > simplify (myop (-x));
      -myop x
 
