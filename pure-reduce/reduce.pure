@@ -498,7 +498,18 @@ namespace;
      > simplify $ solve (x^2+7) x;
      [x==sqrt 7*i,x==-sqrt 7*i]
 
-   Another example showing how to execute Lisp code::
+   Note that the result returned by :func:`simplify` is always a quoted
+   expression. Even if the expression can be further reduced on the Pure side,
+   you'll have to use :func:`eval` to force its evaluation::
+
+     > using math;
+     > eval ans;
+     [x==0.0+:2.64575131106459,x==0.0+:-2.64575131106459]
+
+   You can also execute Lisp code in the CSL interpreter hosting the REDUCE
+   system. This is sometimes necessary to access special functionality, but
+   should be done with care (at present invalid Lisp code can easily crash the
+   interpreter). For instance::
 
      > lisp ('list a b c d e);
      [a,b,c,d,e]
@@ -506,10 +517,15 @@ namespace;
      [b,[c,d],e]
 
    Note that Lisp forms are represented in curried notation. Free symbols are
-   quoted automatically, and Pure lists are converted to corresponding Lisp
+   quoted automatically, and Pure lists are mapped to corresponding Lisp
    lists. If the result is a Lisp list, it will be converted back to a Pure
-   list. The following example illustrates how you can use the :func:`lisp`
-   function to declare an operator symbol and change or query its properties::
+   list. Most simple kinds of Lisp calls should be doable that way, but don't
+   expect any miracles; the :func:`lisp` function is provided to access
+   special functionality in the "symbolic mode" of the REDUCE system, not
+   to turn Pure into a full-featured Lisp frontend.
+
+   The following example illustrates how you can use the :func:`lisp` function
+   to declare an operator symbol and change or query its properties::
 
      > lisp ('operator [myop]);
      []
@@ -520,7 +536,9 @@ namespace;
      > simplify (myop (-x));
      -myop x
 
-   The same can also be done with the :func:`declare` function as follows::
+   If you find it awkward to evaluate Lisp forms in Pure, you can also achieve
+   the same with the :func:`declare` function which covers most of the common
+   REDUCE declarations that might be needed::
 
      > declare operator myop;
      []
@@ -529,7 +547,8 @@ namespace;
      > simplify (myop (-x));
      -myop x
 
-   Please see reduce_examp.pure and tests.pure for more examples. */
+   Many more examples can be found in the reduce_examp.pure and tests.pure
+   scripts included in the distribution. */
 
 // Search path for the REDUCE image file. Edit as needed.
 let REDUCE_PATH = ".:/usr/lib/pure";
