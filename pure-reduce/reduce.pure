@@ -1,5 +1,5 @@
 
-/* A basic interface to the computer algebra system REDUCE available at
+/* A basic interface to the computer algebra system Reduce available at
    http://www.reduce-algebra.com/. CSL Interface Copyright (C) 2010 by Codemist
    Ltd., A C Norman (see license statement below), Pure adaption Copyright (C)
    2012 by Kurt Pagani and Albert Graef. */
@@ -8,8 +8,8 @@ using "lib:reduce" ;
 
 /* Low-level interface. ******************************************************/
 
-/* This is the low-level "procedural" REDUCE interface (cf. csl/cslbase/proc.h
-   in the REDUCE sources at http://reduce-algebra.svn.sourceforge.net). We
+/* This is the low-level "procedural" Reduce interface (cf. csl/cslbase/proc.h
+   in the Reduce sources at http://reduce-algebra.svn.sourceforge.net). We
    declare these routines in their own namespace in order to keep the global
    namespace clean. */
 
@@ -43,6 +43,19 @@ namespace reduce;
  * THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH   *
  * DAMAGE.                                                                *
  *************************************************************************/
+
+/* ..
+
+   Low-Level Interface
+   ===================
+
+   The low-level interface is a straight wrapper of the `PROC interface`_,
+   please check the proc.h file in the Reduce sources for details. These
+   routines are all in the ``reduce`` namespace. Normally you shouldn't have
+   to call these functions directly, since we provide a high-level, idiomatic
+   Pure interface which makes calling Reduce from Pure much more convenient.
+
+*/
 
 //typedef int character_reader(void);
 //typedef int character_writer(int);
@@ -390,7 +403,7 @@ namespace;
    High-Level Interface
    ====================
 
-   The goal here is to make it easy to run REDUCE from Pure; to these ends,
+   The goal here is to make it easy to run Reduce from Pure; to these ends,
    the most important features of the low-level PROC interface are wrapped in
    a convenient way. Currently the following variables and functions are
    provided:
@@ -398,27 +411,27 @@ namespace;
    .. variable:: REDUCE_PATH
 
       This variable holds a colon-delimited search path used to locate the
-      REDUCE image file (see :func:`reduce::start` below). By default this
+      Reduce image file (see :func:`reduce::start` below). By default this
       includes the current directory and the Pure library directory.
 
    .. function:: reduce::start image::string args::smatrix
 
-      Initializes the REDUCE system. This is done automatically when loading
+      Initializes the Reduce system. This is done automatically when loading
       this module, so normally you shouldn't have to call this manually,
-      unless the image file isn't found or you want to restart the REDUCE
+      unless the image file isn't found or you want to restart the Reduce
       system with your own image file or your own set of options. In any
       case, this needs to be executed once before calling any other operation
       of this module. When calling this operation manually, you need to
-      specify the name of the REDUCE image file and any desired extra
+      specify the name of the Reduce image file and any desired extra
       arguments as a string vector. Unless the filename contains a slash,
       :func:`reduce::start` searches the directories in :var:`REDUCE_PATH` for
       the image file. An exception is raised if the image file isn't found.
 
    .. function:: reduce::finish
 
-      Finalizes the REDUCE system. You can call this to release the resources
-      of the REDUCE system. (:func:`reduce::start` also invokes this
-      automatically if a REDUCE instance is already running, so it isn't
+      Finalizes the Reduce system. You can call this to release the resources
+      of the Reduce system. (:func:`reduce::start` also invokes this
+      automatically if a Reduce instance is already running, so it isn't
       necessary to call :func:`reduce::finish` in this case.)
 
    .. function:: reduce::verbosity n
@@ -427,68 +440,82 @@ namespace;
       default when using this module), and the following values may be or'ed
       together to pick what you need:
 
-        1 messages whenever garbage collection happens
+        1: messages whenever garbage collection happens
 
-        2 messages whenever a module of code is loaded
+        2: messages whenever a module of code is loaded
 
-	4 extra details in the garbage collector messages
+	4: extra details in the garbage collector messages
 
    .. function:: reduce::load name::string
 
-      Loads REDUCE packages. This works like REDUCE's ``load_package``
-      command; please check the REDUCE documentation for details.
+      Loads Reduce packages. This works like Reduce's ``load_package``
+      command; please check the Reduce documentation for details.
 
    .. function:: reduce::switch name:string val::int
 
-      Lets you change global REDUCE options. This works like REDUCE's ``on``
-      and ``off`` declarations; please check the REDUCE documentation for
+      Lets you change global Reduce options. This works like Reduce's ``on``
+      and ``off`` declarations; please check the Reduce documentation for
       details.
 
    For convenience, the following operations are in the default namespace:
 
    .. function:: simplify x
 
-      This is the main entry point. It takes a REDUCE expression in Pure
-      format and tries to simplify it using REDUCE. The result is then
+      This is the main entry point. It takes an algebraic expression in Pure
+      format and tries to simplify it using Reduce. The result is then
       converted back to Pure format. Note that you need to quote ``x`` if you
       want to prevent it from being evaluated on the Pure side.
 
    .. function:: lisp x
 
       This can be used to execute arbitrary Lisp code, which is sometimes
-      necessary to perform special functions in the REDUCE system such as
-      declarations. The result is always a Pure list or an atomic value. Note
-      that you need to quote ``x`` if you want to prevent it from being
-      evaluated on the Pure side. Use this with care; at present, the PROC
-      interface isn't very forgiving if you try to execute invalid Lisp code;
-      it will most likely crash in such cases.
+      necessary to perform special functions in the Reduce system. The result
+      is always a Pure list or an atomic value. Note that you need to quote
+      ``x`` if you want to prevent it from being evaluated on the Pure
+      side. This is to be used with care. At present, the PROC interface isn't
+      very forgiving if you try to execute invalid Lisp code; it will most
+      likely crash in such cases.
 
    .. function:: declare declsym [foo,bar,...]
 
       Declare symbols and their properties; please see the Declarations
       section in the Reduce manual for details. The second argument can also
-      be a singleton symbol if the particular kind of declaration permits
-      this. In the present implementation, ``declsym`` must be one of:
+      be a singleton symbol. In the present implementation, ``declsym`` must
+      be one of:
 
       * ``operator`` (declares an operator symbol);
 
       * ``antisymmetric``, ``symmetric``, ``even``, ``odd``, ``linear``,
         ``noncom`` and ``nonzero`` (declares properties of already declared
-        operator symbols).
+        operator symbols);
 
       * ``depend``, ``nodepend``, ``factor``, ``remfac``, ``order``,
-        ``korder`` (declares kernel dependencies and orders, these take both
-        symbols and prefix expressions as arguments).
+        ``korder`` (declares kernel dependencies and orders). These take both
+        symbols and "kernels" as arguments (the latter are simple prefix
+        expressions which denote irreducible subterms such as ``cos x``;
+        Reduce treats these more or less like variables in algebraic
+        simplifications).
 
-   In Pure land, REDUCE expressions are represented using standard curried
-   notation; some special conversions are applied to make arithmetic
-   operations such as +, * etc. work as expected. For convenience, the REDUCE
-   terms ``arbconst n``, ``arbint n`` and ``arbcomplex n`` are converted
-   from/to Greek symbols ``αn``, ``βn`` and ``ζn``. (All these automatic
-   conversions can also be turned off on the output side by disabling the
-   ``mapped`` compilation option; this may be useful for debugging purposes.)
+   At present, this module makes no attempt to capture terminal output such as
+   error messages produced by Reduce, so you should be prepared to read these
+   in the terminal in which Pure is running, or capture them yourself using
+   the output redirection facilities of the shell if needed.
 
-   Here is a simple example showing how to start up REDUCE and do some
+   In Pure land, Reduce and Lisp expressions are represented using Pure's
+   standard curried notation. Some special conversions are applied to
+   algebraic expressions to make arithmetic operations such as ``+``, ``*``
+   etc. work as expected. In addition, the ``==`` and ``:=`` infix operators
+   can be used to denote equations and assignments, and Reduce's ``arbconst
+   n``, ``arbint n`` and ``arbcomplex n`` terms are converted from/to Greek
+   symbols ``αn``, ``βn`` and ``ζn`` on the Pure side. (All these automatic
+   conversions can also be turned off on the output side with the ``#!
+   --disable mapped`` compilation pragma; this may be useful for debugging
+   purposes.)
+
+   Basic Examples
+   ==============
+
+   Here is a simple example showing how to start up Reduce and do some
    calculations::
 
      > using reduce;
@@ -499,14 +526,14 @@ namespace;
      [x==sqrt 7*i,x==-sqrt 7*i]
 
    Note that the result returned by :func:`simplify` is always a quoted
-   expression. Even if the expression can be further reduced on the Pure side,
-   you'll have to use :func:`eval` to force its evaluation::
+   expression. If the expression can be further reduced on the Pure side,
+   you'll have to use Pure's :func:`eval` function to force its evaluation::
 
      > using math;
      > eval ans;
      [x==0.0+:2.64575131106459,x==0.0+:-2.64575131106459]
 
-   You can also execute Lisp code in the CSL interpreter hosting the REDUCE
+   You can also execute Lisp code in the CSL interpreter hosting the Reduce
    system. This is sometimes necessary to access special functionality, but
    should be done with care (at present invalid Lisp code can easily crash the
    interpreter). For instance::
@@ -516,13 +543,12 @@ namespace;
      > lisp ('cdr [a,b,[c,d],e]);
      [b,[c,d],e]
 
-   Note that Lisp forms are represented in curried notation. Free symbols are
-   quoted automatically, and Pure lists are mapped to corresponding Lisp
-   lists. If the result is a Lisp list, it will be converted back to a Pure
-   list. Most simple kinds of Lisp calls should be doable that way, but don't
-   expect any miracles; the :func:`lisp` function is provided to access
-   special functionality in the "symbolic mode" of the REDUCE system, not
-   to turn Pure into a full-featured Lisp frontend.
+   Free symbols are quoted automatically, and Pure lists are mapped to
+   corresponding Lisp lists. If the result is a Lisp list, it will be
+   converted back to a Pure list. Most simple kinds of Lisp calls should be
+   doable that way, but don't expect any miracles; the :func:`lisp` function
+   is provided to access special functionality in the "symbolic mode" of the
+   Reduce system, not to turn Pure into a full-featured Lisp frontend.
 
    The following example illustrates how you can use the :func:`lisp` function
    to declare an operator symbol and change or query its properties::
@@ -538,7 +564,7 @@ namespace;
 
    If you find it awkward to evaluate Lisp forms in Pure, you can also achieve
    the same with the :func:`declare` function which covers most of the common
-   REDUCE declarations that might be needed::
+   Reduce declarations that might be needed::
 
      > declare operator myop;
      []
@@ -550,11 +576,11 @@ namespace;
    Many more examples can be found in the reduce_examp.pure and tests.pure
    scripts included in the distribution. */
 
-// Search path for the REDUCE image file. Edit as needed.
+// Search path for the Reduce image file. Edit as needed.
 let REDUCE_PATH = ".:/usr/lib/pure";
 
 /* Exception constructors. The bad_reduce_image exception gets thrown when
-   reduce::start fails because it cannot find the REDUCE image file. The other
+   reduce::start fails because it cannot find the Reduce image file. The other
    exceptions are raised on inputs and outputs which 'simplify' and 'lisp'
    don't understand (yet). */
 public bad_reduce_image bad_reduce_value bad_lisp_value;
@@ -602,7 +628,7 @@ start image::string args::smatrix = res when
   res = cslstart (#args+3) {"reduce","-i",myimage,args} NULL;
   // Record that we're up and running.
   put started true;
-  // REDUCE is pretty noisy by default, shut it up. You might want to comment
+  // Reduce is pretty noisy by default, shut it up. You might want to comment
   // this line for debugging purposes, or call reduce::verbosity yourself.
   verbosity 0;
   // We need this to get matrices working, so always load this module.
@@ -645,9 +671,9 @@ end;
 // The following stuff is mostly in the global namespace for convenience.
 using namespace reduce;
 
-// Some REDUCE symbols. On the Pure side, you can use either these or their
+// Some Reduce symbols. On the Pure side, you can use either these or their
 // Pure counterparts in the symbol lists below. XXXTODO: Complete this list.
-// NOTES: intg is actually a Pure replacement for REDUCE's int which is
+// NOTES: intg is actually a Pure replacement for Reduce's int which is
 // already used as a conversion function in Pure. The ':=' operator is used to
 // denote assignment. Reduce's 'infinity' symbol is synonymous to Pure's 'inf'.
 infix (=>) := ;
@@ -656,7 +682,7 @@ public arbconst arbint arbcomplex;
 public set list mat det mateigen tp trace cofactor rank;
 public df intg limit solve odesolve sum prod;
 public equal plus difference minus times quotient expt;
-// mathematical functions known to REDUCE
+// mathematical functions known to Reduce
 public acos acosh acot acoth acsc acsch asec asech asin asinh
   atan atanh atan2 cos cosh cot coth csc csch dilog ei exp
   hypot ln log logb log10 sec sech sin sinh sqrt tan tanh erf;
@@ -677,7 +703,7 @@ public precedence precision integer real scalar scientific_notation share
 
 nonfix _sq _rd_ _gr_ _gi_ _rn_ _mod_;
 
-// Variadic symbols in REDUCE which may take any number of arguments, together
+// Variadic symbols in Reduce which may take any number of arguments, together
 // with their Pure counterparts. NOTE: list and mat don't need to be listed
 // here since they're given special treatment anyway.
 // XXXTODO: Complete this list.
@@ -694,7 +720,7 @@ let reduce::nonvariadic_syms =
 // All remapped symbols (from above).
 let reduce::reduce_syms = {variadic_syms, nonvariadic_syms};
 
-// Reverse mapping (Pure -> REDUCE).
+// Reverse mapping (Pure -> Reduce).
 let reduce::pure_syms = {y=>x | x=>y = reduce_syms};
 
 // Property symbols.
@@ -705,7 +731,7 @@ let reduce::prop_syms =
 let reduce::kdec_syms = '[depend,nodepend,factor,remfac,order,korder];
 
 /* Uncomment this to get unmapped output in nested list format straight from
-   REDUCE (useful for debugging purposes). */
+   Reduce (useful for debugging purposes). */
 //#! --disable mapped
 /* Uncomment this to disable quoting of applications in the output (provided
    that 'mapped' is also enabled, disabling this will force the evaluation of
@@ -721,9 +747,9 @@ let reduce::kdec_syms = '[depend,nodepend,factor,remfac,order,korder];
 simplify x = y when
   // Clear the stack (to be sure).
   PROC_clear_stack;
-  // Push x on the REDUCE stack. XXXFIXME: We currently wrap this in an extra
+  // Push x on the Reduce stack. XXXFIXME: We currently wrap this in an extra
   // 'list' application which gives us the result as a singleton list and
-  // avoids REDUCE errors in cases where the result is non-scalar. This is a
+  // avoids Reduce errors in cases where the result is non-scalar. This is a
   // temporary workaround until we figure out how to do this properly.
   from_expr ('list x) with
     // These are all the data types natively supported by the interface.
@@ -776,7 +802,7 @@ simplify x = y when
     // Handle special cases of nullary symbols which are actually
     // parameterless function calls. XXXTODO: Are there other cases like this?
     // Note that the case of an empty matrix (mat) isn't really handled by
-    // REDUCE (it gives a 'Matrix mismatch' error), but we allow this case
+    // Reduce (it gives a 'Matrix mismatch' error), but we allow this case
     // anyway for consistency.
     from_expr x::symbol =
       PROC_make_function_call (from_sym x) 0 if x === 'list || x === 'mat;
@@ -793,9 +819,9 @@ simplify x = y when
     opstr x::symbol = tail (init (str x)) if arity x > 0;
     opstr x = str x otherwise;
   end;
-  // Run REDUCE to simplify the expression.
+  // Run Reduce to simplify the expression.
   PROC_simplify;
-  // Convert the stacktop from the internal REDUCE format into a format which
+  // Convert the stacktop from the internal Reduce format into a format which
   // we can use. NOTE: Apparently this isn't really needed with the toplevel
   // call to 'list', but we keep it in here just in case.
   PROC_make_printable;
@@ -820,7 +846,7 @@ simplify x = y when
     end;
     symval x::string = case val ("("+x+")") of
       x::symbol = x;
-      // Some REDUCE symbols aren't valid Pure symbols. We mangle them here.
+      // Some Reduce symbols aren't valid Pure symbols. We mangle them here.
       _ = case val (string (map mangle x)) of
 	// If the result still isn't a valid Pure symbol then it's probably a
 	// keyword. Mangle it some more.
@@ -839,7 +865,7 @@ simplify x = y when
     // Pure subterms in the result
     x$y = 'x y;
 #! --endif
-    // Empty list, treated as 'false' right now. (Note that proper REDUCE
+    // Empty list, treated as 'false' right now. (Note that proper Reduce
     // lists are handled below.) XXXFIXME: Is this sensible?
     to_expr [] = false;
     // Special coefficient values.
@@ -860,7 +886,7 @@ simplify x = y when
     // Lists are represented with the list symbol in front.
     to_expr (f::symbol:xs::rlist) = map to_expr xs if f === 'list;
     to_expr f::symbol = [] if f === 'list;
-    // Matrices generally take the form (mat xs ...) in REDUCE's internal
+    // Matrices generally take the form (mat xs ...) in Reduce's internal
     // representation, where each xs is a row of the matrix represented as a
     // list.
     to_expr (f::symbol:xs::rlist) = matrix (map to_exprs xs) with
@@ -876,7 +902,7 @@ simplify x = y when
     to_expr (f::symbol:xs::rlist) =
       pretty (foldl1 (to_expr f$) (map to_expr xs)) if member variadic_syms f;
     // Other list (with a non-variadic symbol in front). Here we also deal
-    // with the case of unevaluated embedded SQ terms (REDUCE's internal
+    // with the case of unevaluated embedded SQ terms (Reduce's internal
     // representation of algebraic terms, cf. Section 3 of the "REDUCE
     // Symbolic Mode Primer").
     to_expr xs@(f::symbol:_::rlist) = case xs of
@@ -890,7 +916,7 @@ simplify x = y when
       // application.
       _ = foldl1 ($) (map to_expr xs);
     end with
-      // This expands a REDUCE standard form (SF) representation of an
+      // This expands a Reduce standard form (SF) representation of an
       // algebraic term to the human-readable prefix form. Cf. Section 4 of
       // the "REDUCE Symbolic Mode Primer".
       expandsf x = pretty (expand (expandsf x)) with
@@ -938,7 +964,7 @@ lisp x = x if ~applp x && x ~== 'list;
 lisp x = y when
   // Clear the stack (to be sure).
   PROC_clear_stack;
-  // Push x on the REDUCE stack.
+  // Push x on the Reduce stack.
   from_expr x with
     // These are all the data types natively supported by the interface.
     // Marshalling of list values is supported as well.
@@ -1006,15 +1032,16 @@ end with
   error x = PROC_clear_stack $$ throw (bad_lisp_value x);
 end;
 
-declare x::symbol y::symbol = lisp (x [y]) if x === 'operator;
-declare x::symbol ys::rlist = lisp (x ys) if x === 'operator && all symbolp ys;
-declare x::symbol ys::rlist = lisp (x (map mkquoted ys)) with
-  mkquoted y::appl = 'quote y;
-  mkquoted y = y otherwise;
-end if any (x===) kdec_syms;
-declare x::symbol y::symbol = lisp ('flag [y] x) if any (x===) prop_syms;
-declare x::symbol ys::rlist = lisp ('flag ys x) if any (x===) prop_syms &&
-						  all symbolp ys;
+declare x::symbol y::symbol = declare x [y];
+declare x::symbol ys::rlist = lisp (x ys)
+  if x === 'operator && all symbolp ys;
+declare x::symbol ys::rlist = lisp (x (map mkquoted ys))
+  with
+    mkquoted y::appl = 'quote y;
+    mkquoted y = y otherwise;
+  end if any (x===) kdec_syms;
+declare x::symbol ys::rlist = lisp ('flag ys x)
+  if any (x===) prop_syms && all symbolp ys;
 
 using namespace __C;
 
