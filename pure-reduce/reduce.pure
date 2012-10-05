@@ -769,7 +769,10 @@ simplify x = y when
       end;
     from_expr x = error x otherwise;
     // Convert symbols, with mapping as needed.
-    from_sym x = str (catch (cst x) (pure_syms!x));
+    from_sym x = opstr (catch (cst x) (pure_syms!x));
+    // Strip the parens from symbols which are actually operators.
+    opstr x::symbol = tail (init (str x)) if arity x > 0;
+    opstr x = str x otherwise;
   end;
   // Run REDUCE to simplify the expression.
   PROC_simplify;
@@ -796,7 +799,7 @@ simplify x = y when
       x::bigint = x;
       _ = x;
     end;
-    symval x::string = case val x of
+    symval x::string = case val ("("+x+")") of
       x::symbol = x;
       // Some REDUCE symbols aren't valid Pure symbols. We mangle them here.
       _ = case val (string (map mangle x)) of
@@ -929,7 +932,7 @@ lisp x = y when
     from_expr x::appl = () when
       f:xs = a [] x with a xs (x@_ y) = a (y:xs) x; a xs x = x:xs end;
       do from_expr xs;
-      PROC_make_function_call (str f) (#xs);
+      PROC_make_function_call (opstr f) (#xs);
     end;
     // Handle special cases of nullary symbols which are actually
     // parameterless function calls. XXXTODO: Are there other cases like this?
@@ -937,8 +940,11 @@ lisp x = y when
       PROC_make_function_call (str x) 0 if x === 'list;
     // Other symbols need to be quoted here so that PROC_lisp_eval doesn't try
     // to evaluate them.
-    = PROC_push_symbol (str x) $$ PROC_make_function_call "quote" 1;
+    = PROC_push_symbol (opstr x) $$ PROC_make_function_call "quote" 1;
     from_expr x = error x otherwise;
+    // Strip the parens from symbols which are actually operators.
+    opstr x::symbol = tail (init (str x)) if arity x > 0;
+    opstr x = str x otherwise;
   end;
   // Invoke the Lisp evaluator.
   PROC_lisp_eval;
@@ -957,7 +963,7 @@ lisp x = y when
       x::bigint = x;
       _ = x;
     end;
-    symval x::string = case val x of
+    symval x::string = case val ("("+x+")") of
       x::symbol = x;
       // Some Lisp symbols aren't valid Pure symbols. We mangle them here.
       _ = case val (string (map mangle x)) of
