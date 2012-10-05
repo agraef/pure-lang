@@ -463,21 +463,22 @@ namespace;
       interface isn't very forgiving if you try to execute invalid Lisp code;
       it will most likely crash in such cases.
 
-   .. function:: declare x ys
+   .. function:: declare declsym [foo,bar,...]
 
-      Declare symbol properties. Currently, the following common kinds of
-      declarations are supported::
+      Declare symbols and their properties; please see the Declarations
+      section in the Reduce manual for details. The second argument can also
+      be a singleton symbol if the particular kind of declaration permits
+      this. In the present implementation, ``declsym`` must be one of:
 
-	declare depend   [y,x,...];
-	declare nodepend [y,x,...];
-	declare operator [foo,bar,...];
-	declare property [foo,bar,...];
+      * ``operator`` (declares an operator symbol);
 
-      In the present implementation, ``property`` must be one of
-      ``antisymmetric``, ``symmetric``, ``even``, ``odd``, ``linear``,
-      ``noncomm`` and ``nonzero``; ``ys`` can also be a singleton symbol if
-      the declaration permits this. Please see the Declarations section in the
-      Reduce manual for details.
+      * ``antisymmetric``, ``symmetric``, ``even``, ``odd``, ``linear``,
+        ``noncom`` and ``nonzero`` (declares properties of already declared
+        operator symbols).
+
+      * ``depend``, ``nodepend``, ``factor``, ``remfac``, ``order``,
+        ``korder`` (declares kernel dependencies and orders, these take both
+        symbols and prefix expressions as arguments).
 
    In Pure land, REDUCE expressions are represented using standard curried
    notation; some special conversions are applied to make arithmetic
@@ -591,7 +592,7 @@ end if all stringp args;
 
 // Some special symbol lists, defined below.
 
-public variadic_syms nonvariadic_syms reduce_syms pure_syms prop_syms;
+public variadic_syms nonvariadic_syms reduce_syms pure_syms prop_syms kdec_syms;
 
 // Helper function to simplify arithmetic expressions. This basically expands
 // an arithmetic term to a sum-of-products form. It is used to evaluate
@@ -649,9 +650,11 @@ public laplace_transform hankel_transform y_transform k_transform
 // predicates (to be used with 'lisp')
 public freeof evenp fixp ordp primep;
 // other symbols useful in declarations ('lisp')
-public flag even odd linear symmetric operator prop depend nodepend;
-public factor remfac korder noncom nonzero order precedence precision real
-  scalar scientific_notation share tr untr varname;
+public flag operator prop;
+public even odd linear symmetric antisymmetric noncom nonzero;
+public depend nodepend factor remfac korder order;
+public precedence precision integer real scalar scientific_notation share
+  tr untr varname;
 
 nonfix _sq _rd_ _gr_ _gi_ _rn_ _mod_;
 
@@ -677,7 +680,10 @@ let reduce::pure_syms = {y=>x | x=>y = reduce_syms};
 
 // Property symbols.
 let reduce::prop_syms =
-  '[antisymmetric,symmetric,even,odd,linear,noncomm,nonzero];
+  '[antisymmetric,symmetric,even,odd,linear,noncom,nonzero];
+
+// Symbols used in kernel declarations such as depend, korder etc.
+let reduce::kdec_syms = '[depend,nodepend,factor,remfac,order,korder];
 
 /* Uncomment this to get unmapped output in nested list format straight from
    REDUCE (useful for debugging purposes). */
@@ -980,7 +986,7 @@ declare x::symbol ys::rlist = lisp (x ys) if x === 'operator && all symbolp ys;
 declare x::symbol ys::rlist = lisp (x (map mkquoted ys)) with
   mkquoted y::appl = 'quote y;
   mkquoted y = y otherwise;
-end if x === 'depend || x === 'nodepend;
+end if any (x===) kdec_syms;
 declare x::symbol y::symbol = lisp ('flag [y] x) if any (x===) prop_syms;
 declare x::symbol ys::rlist = lisp ('flag ys x) if any (x===) prop_syms &&
 						  all symbolp ys;
