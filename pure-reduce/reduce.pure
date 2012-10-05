@@ -427,19 +427,22 @@ namespace;
       default when using this module), and the following values may be or'ed
       together to pick what you need:
 
-      | 1: messages whenever garbage collection happens
-      | 2:  messages whenever a module of code is loaded
-      | 4: extra details in the garbage collector messages
+        1 messages whenever garbage collection happens
+
+        2 messages whenever a module of code is loaded
+
+	4 extra details in the garbage collector messages
 
    .. function:: reduce::load name::string
 
-      Loads REDUCE packages. Please check the REDUCE documentation for
-      details.
+      Loads REDUCE packages. This works like REDUCE's ``load_package``
+      command; please check the REDUCE documentation for details.
 
    .. function:: reduce::switch name:string val::int
 
-      Lets you change global REDUCE options. Please check the REDUCE
-      documentation for details.
+      Lets you change global REDUCE options. This works like REDUCE's ``on``
+      and ``off`` declarations; please check the REDUCE documentation for
+      details.
 
    For convenience, the following operations are in the default namespace:
 
@@ -465,14 +468,16 @@ namespace;
       Declare symbol properties. Currently, the following common kinds of
       declarations are supported::
 
-	declare operator [foo,bar,...];
-	declare depend [y,x,...];
+	declare depend   [y,x,...];
 	declare nodepend [y,x,...];
-	declare property [x,y,...];
+	declare operator [foo,bar,...];
+	declare property [foo,bar,...];
 
-      In the latter form, ``property`` can be any of ``even``, ``odd``,
-      ``linear`` and ``symmetric``. ``ys`` can also be a singleton symbol if
-      the declaration permits this. Please see the Reduce manual for details.
+      In the present implementation, ``property`` must be one of
+      ``antisymmetric``, ``symmetric``, ``even``, ``odd``, ``linear``,
+      ``noncomm`` and ``nonzero``; ``ys`` can also be a singleton symbol if
+      the declaration permits this. Please see the Declarations section in the
+      Reduce manual for details.
 
    In Pure land, REDUCE expressions are represented using standard curried
    notation; some special conversions are applied to make arithmetic
@@ -671,7 +676,8 @@ let reduce::reduce_syms = {variadic_syms, nonvariadic_syms};
 let reduce::pure_syms = {y=>x | x=>y = reduce_syms};
 
 // Property symbols.
-let reduce::prop_syms = '[even,odd,linear,symmetric];
+let reduce::prop_syms =
+  '[antisymmetric,symmetric,even,odd,linear,noncomm,nonzero];
 
 /* Uncomment this to get unmapped output in nested list format straight from
    REDUCE (useful for debugging purposes). */
