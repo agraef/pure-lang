@@ -611,11 +611,12 @@ public bad_reduce_image bad_reduce_value bad_lisp_value;
 
 namespace reduce with
 
+public get_started;
 let started = ref false;
 
-load name::string = PROC_load_package name if get started;
-switch name::string val::int = PROC_set_switch name val if get started;
-verbosity n::int = PROC_gc_messages n if get started;
+load name::string = PROC_load_package name if get_started;
+switch name::string val::int = PROC_set_switch name val if get_started;
+verbosity n::int = PROC_gc_messages n if get_started;
 
 namespace __C with
 // We declare these here so that we don't have to pull in the system module.
@@ -661,6 +662,11 @@ start image::string args::smatrix = res when
   // We need this to get matrices working, so always load this module.
   load "matrix";
 end if all stringp args;
+
+// Automatic startup. Print an error message if we can't find the image.
+get_started = true if get started;
+get_started = catch (\_->puts "** Couldn't load image file reduce.img")
+  (reduce::start "reduce.img" {}) $$ get started;
 
 // Some special symbol lists, defined below.
 
@@ -994,7 +1000,7 @@ end with
   // Error handler, this gets invoked if we choke on an input or output x we
   // don't understand (yet).
   error x = PROC_clear_stack $$ throw (bad_reduce_value x);
-end;
+end if get_started;
 
 // If the argument is neither an application nor a callable symbol, then it's
 // presumably a constant which is simply echoed as is.
@@ -1068,7 +1074,7 @@ end with
   // Error handler, this gets invoked if we choke on an input or output x we
   // don't understand (yet).
   error x = PROC_clear_stack $$ throw (bad_lisp_value x);
-end;
+end if get_started;
 
 declare x::symbol y::symbol = declare x [y];
 declare x::symbol ys::rlist = lisp (x ys)
@@ -1084,8 +1090,4 @@ declare x::symbol ys::rlist = lisp ('flag ys x)
 precision prec::int = lisp ('precision prec);
 plotreset = lisp ('plotreset);
 
-using namespace __C;
-
-// Initialization. Print an error message if we can't find the image.
-catch (\_->puts "** Couldn't load image file reduce.img")
-  (reduce::start "reduce.img" {});
+reduce::get_started;
