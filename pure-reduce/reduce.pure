@@ -49,11 +49,17 @@ namespace reduce;
    Low-Level Interface
    ===================
 
-   The low-level interface is a straight wrapper of the `PROC interface`_,
-   please check the proc.h file in the Reduce sources for details. These
-   routines are all in the ``reduce`` namespace. Normally you shouldn't have
-   to call these functions directly, since we provide a high-level, idiomatic
-   Pure interface which makes calling Reduce from Pure much more convenient.
+   The low-level interface is a straight wrapper of the C entry points
+   provided by the Reduce library, also known as the "procedural" or PROC_
+   interface, for short. It uses an embedded version of Reduce which runs on a
+   free and open-source Lisp flavour known as CSL_ (Codemist Standard
+   Lisp). The external C routines are all declared in the ``reduce``
+   namespace. Normally you shouldn't have to call these functions directly,
+   since we provide a high-level, idiomatic Pure interface which makes calling
+   Reduce from Pure much more convenient, see below.
+
+   .. _PROC: http://reduce-algebra.svn.sourceforge.net/viewvc/reduce-algebra/trunk/csl/cslbase/proc.h?view=markup
+   .. _CSL: http://lisp.codemist.co.uk/
 
 */
 
@@ -504,6 +510,13 @@ namespace;
       Note that at present this only affects Reduce's internal precision,
       floating point values are still returned as double precision numbers in
       Pure land.
+
+   .. function:: plotreset
+
+      This is identical to the ``plotreset`` command provided by Reduce's
+      gnuplot_ interface, and is sometimes needed to reset the plot subsystem.
+
+   .. _gnuplot: http://www.gnuplot.info/
 
    At present, this module makes no attempt to capture terminal output such as
    error messages produced by Reduce, so you should be prepared to read these
