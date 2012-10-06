@@ -496,6 +496,15 @@ namespace;
         Reduce treats these more or less like variables in algebraic
         simplifications).
 
+   .. function:: precision prec::int
+
+      Sets the internal Reduce precision in decimal digits for floating point
+      calculations, and returns the previously set precision. This takes
+      effect when rounded mode is enabled (``reduce::switch "rounded" 1``).
+      Note that at present this only affects Reduce's internal precision,
+      floating point values are still returned as double precision numbers in
+      Pure land.
+
    At present, this module makes no attempt to capture terminal output such as
    error messages produced by Reduce, so you should be prepared to read these
    in the terminal in which Pure is running, or capture them yourself using
@@ -1042,6 +1051,8 @@ declare x::symbol ys::rlist = lisp (x (map mkquoted ys))
   end if any (x===) kdec_syms;
 declare x::symbol ys::rlist = lisp ('flag ys x)
   if any (x===) prop_syms && all symbolp ys;
+
+precision prec::int = lisp ('precision prec);
 
 using namespace __C;
 
