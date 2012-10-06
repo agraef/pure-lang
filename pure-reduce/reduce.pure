@@ -651,7 +651,8 @@ end if all stringp args;
 
 // Some special symbol lists, defined below.
 
-public variadic_syms nonvariadic_syms reduce_syms pure_syms prop_syms kdec_syms;
+public variadic_syms nonvariadic_syms reduce_syms pure_syms prop_syms kdec_syms
+  cmd_syms;
 
 // Helper function to simplify arithmetic expressions. This basically expands
 // an arithmetic term to a sum-of-products form. It is used to evaluate
@@ -705,6 +706,9 @@ public factorize remainder resultant decompose nextprime pf deg coeff coeffn
 public taylor implicit_taylor inverse_taylor;
 public laplace_transform hankel_transform y_transform k_transform
   struveh_transform fourier_sin fourier_cos;
+// gnuplot related
+public plot plotreset point points refine xlabel ylabel zlabel title
+  terminal output size view contour nocontour surface nosurface hidden3d;
 // freeof can be used in algebraic mode ('simplify'), the others are Lisp
 // predicates (to be used with 'lisp')
 public freeof evenp fixp ordp primep;
@@ -746,6 +750,10 @@ let reduce::prop_syms =
 
 // Symbols used in kernel declarations such as depend, korder etc.
 let reduce::kdec_syms = '[depend,nodepend,factor,remfac,order,korder,noncom];
+
+// Parameterless "commands" which can be invoked in Lisp mode. XXXTODO: Are
+// there other cases like this?
+let reduce::cmd_syms = '[list,plotreset];
 
 /* Uncomment this to get unmapped output in nested list format straight from
    Reduce (useful for debugging purposes). */
@@ -977,7 +985,7 @@ end;
 
 // If the argument is neither an application nor a callable symbol, then it's
 // presumably a constant which is simply echoed as is.
-lisp x = x if ~applp x && x ~== 'list;
+lisp x = x if ~applp x && all (~==x) reduce::cmd_syms;
 lisp x = y when
   // Clear the stack (to be sure).
   PROC_clear_stack;
@@ -997,9 +1005,9 @@ lisp x = y when
       PROC_make_function_call (opstr f) (#xs);
     end;
     // Handle special cases of nullary symbols which are actually
-    // parameterless function calls. XXXTODO: Are there other cases like this?
+    // parameterless function calls.
     from_expr x::symbol =
-      PROC_make_function_call (str x) 0 if x === 'list;
+      PROC_make_function_call (str x) 0 if any (===x) reduce::cmd_syms;
     // Other symbols need to be quoted here so that PROC_lisp_eval doesn't try
     // to evaluate them.
     = PROC_push_symbol (opstr x) $$ PROC_make_function_call "quote" 1;
@@ -1061,6 +1069,7 @@ declare x::symbol ys::rlist = lisp ('flag ys x)
   if any (x===) prop_syms && all symbolp ys;
 
 precision prec::int = lisp ('precision prec);
+plotreset = lisp ('plotreset);
 
 using namespace __C;
 

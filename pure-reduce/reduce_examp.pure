@@ -1,4 +1,10 @@
 
+/* reduce_examp.pure: Basic Pure/Reduce examples. NOTE: These examples are
+   supposed to be run interactively in the Pure interpreter so that you can
+   see the results. This is done most conveniently in Emacs (having installed
+   Emacs Pure mode), by using the Ctrl-C Ctrl-C (pure-send-line) command to
+   feed the script line by line to the interpreter. */
+
 using math, reduce;
 
 // Differentiation.
@@ -94,16 +100,57 @@ simplify (df (sin z) (cos x));
 simplify (df (z^2) x);
 
 // Plotting (using gnuplot).
-reduce::load "gnuplot";
-// Note that we have to quote the x..y ranges here so that they get through to
-// Reduce, rather than being evaluated on the Pure side.
-simplify $ 'plot (sin x/x) (x==(-15..15));
+
+// The plot function is variadic; arguments can be specified separately, or
+// they may be collected in lists. The latter is usually more convenient in
+// Pure, and it also allows us to define the following useful abbreviations:
+gplot = simplify . plot (terminal=="wxt");
+psplot = simplify . plot (terminal=="postscript");
+
+// A basic function plot. Note that we have to quote the x..y ranges here so
+// that they get through to Reduce instead of being evaluated on the Pure side.
+gplot [sin x/x, x=='(-20..20)];
+
+// Label the dependent variable.
+gplot [sinc == sin x/x, x=='(-20..20)];
+
+// This closes the gnuplot window and resets the plot system, so that a new
+// gnuplot window will be opened for the next plot command. It is the same as
+// Reduce's 'plotreset' command. Normally this shouldn't be necessary, but it
+// can be a life saver if the connection to gnuplot died for some reason
+// (e.g., if you indavertently closed the gnuplot window).
+plotreset;
+
 // Multiple ranges.
-simplify $ 'plot (sin(x^2 + y^2) / sqrt(x^2 + y^2))
-[x==(-12 .. 12), y==(-12 .. 12)];
-// Specifying options.
-simplify $ 'plot (cos (sqrt(x^2 + y^2))) [x==(-3 .. 3),y==(-3 .. 3)] hidden3d;
-// Specifying points.
-simplify $ plot [[0,0],[0,1],[1,1],[0,0],[1,0],[0,1],[0.5,1.5],[1,1],[1,0]];
-// Output options.
-simplify $ plot (sin x) [x=='(0 .. 10),terminal==postscript,output=="sin.ps"];
+gplot [sin(x^2 + y^2)/sqrt(x^2 + y^2), x=='(-12..12), y=='(-12..12)];
+
+// Implicit plot (2D).
+gplot (x^2+y^2-9==0);
+
+// Implicit plot (3D).
+gplot (x^3+y^3+z^3-9==0);
+
+// Contour lines. (The rhs is in fact a Pure list here, not a quoted range!)
+gplot [x^3 + y^3 - 3*x*y == (0..3), x == '(-2.5..2), y == '(-5..5)];
+
+// Playing with options: hidden-line removal.
+gplot [cos (sqrt(x^2 + y^2)), x=='(-3..3), y=='(-3..3), hidden3d];
+
+// Plotting points.
+gplot [[0,0],[0,1],[1,1],[0,0],[1,0],[0,1],[0.5,1.5],[1,1],[1,0]];
+
+// Parametric plot (a globe). The list of points is constructed using a Pure
+// list comprehension here. Note that pi is quoted so that the u and v values
+// remain symbolic and all calculations are done by Reduce. If you remove the
+// quote, all calculations will be done on the Pure side instead and Reduce
+// will only be used for plotting. The results are the same in either case.
+let d = 'pi/15;
+gplot [title=="Globe", [[f (i*d) (j*d) | j = 0..30] | i = 1..14]]
+with f u v = [sin(u)*cos(v), sin(u)*sin(v), cos(u)] end;
+
+// Another parametric plot pilfered from the documentation.
+gplot [point (3*u+3*u*v^2-u^3) (3*v+3*u^2*v-v^3) (3*u^2-3*v^2), hidden3d,
+       title=="Enneper Surface"];
+
+// Postscript output.
+psplot [sin x, x=='(0..10), title=="sin(x)", output=="sin.ps"];
