@@ -513,9 +513,11 @@ namespace;
    In Pure land, Reduce and Lisp expressions are represented using Pure's
    standard curried notation. Some special conversions are applied to
    algebraic expressions to make arithmetic operations such as ``+``, ``*``
-   etc. work as expected. In addition, the ``==`` and ``:=`` infix operators
-   can be used to denote equations and assignments, and Reduce's ``arbconst
-   n``, ``arbint n`` and ``arbcomplex n`` terms are converted from/to Greek
+   etc. work as expected. In addition, the ``==``, ``..`` and ``:=`` infix
+   operators can be used to denote equations, ranges and assignments in
+   Reduce, respectively. (Note that you may have to quote these in some cases
+   so that they don't get evaluated on the Pure side.) Also, Reduce's
+   ``arbconst n``, ``arbint n`` and ``arbcomplex n`` terms are mapped to Greek
    symbols ``αn``, ``βn`` and ``ζn`` on the Pure side. (All these automatic
    conversions can also be turned off on the output side with the ``#!
    --disable mapped`` compilation pragma; this may be useful for debugging
@@ -607,6 +609,9 @@ namespace __C with
 extern int fclose(FILE*);
 extern FILE* fopen(char*, char*);
 extern int puts(char*);
+// These are in the runtime; used for lispsym below.
+extern int pure_sym(void *s);
+extern expr *pure_quoted_symbol(int tag);
 end;
 
 using namespace __C;
@@ -712,6 +717,9 @@ public precedence precision integer real scalar scientific_notation share
 
 nonfix _sq _rd_ _gr_ _gi_ _rn_ _mod_;
 
+// A little helper function which lets us create *any* symbol in Pure.
+lispsym x::string = __C::pure_quoted_symbol (__C::pure_sym x);
+
 // Variadic symbols in Reduce which may take any number of arguments, together
 // with their Pure counterparts. NOTE: list and mat don't need to be listed
 // here since they're given special treatment anyway.
@@ -724,7 +732,7 @@ let reduce::variadic_syms =
 // XXXTODO: Complete this list.
 let reduce::nonvariadic_syms =
   '{infinity=>inf,int=>intg,minus=>neg,quotient=>(/),expt=>(^),
-    equal=>(==),set=>(:=)};
+    equal=>(==),set=>(:=),iv=>(..)} when iv = lispsym "*interval*" end;
 
 // All remapped symbols (from above).
 let reduce::reduce_syms = {variadic_syms, nonvariadic_syms};

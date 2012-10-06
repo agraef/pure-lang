@@ -92,3 +92,18 @@ declare nodepend [y,x];
 declare depend [z,cos x,y];
 simplify (df (sin z) (cos x));
 simplify (df (z^2) x);
+
+// Plotting (using gnuplot).
+reduce::load "gnuplot";
+// Note that we have to quote the x..y ranges here so that they get through to
+// Reduce, rather than being evaluated on the Pure side.
+simplify $ 'plot (sin x/x) (x==(-15..15));
+// Multiple ranges.
+simplify $ 'plot (sin(x^2 + y^2) / sqrt(x^2 + y^2))
+[x==(-12 .. 12), y==(-12 .. 12)];
+// Specifying options.
+simplify $ 'plot (cos (sqrt(x^2 + y^2))) [x==(-3 .. 3),y==(-3 .. 3)] hidden3d;
+// Specifying points.
+simplify $ plot [[0,0],[0,1],[1,1],[0,0],[1,0],[0,1],[0.5,1.5],[1,1],[1,0]];
+// Output options.
+simplify $ plot (sin x) [x=='(0 .. 10),terminal==postscript,output=="sin.ps"];
