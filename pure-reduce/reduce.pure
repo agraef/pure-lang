@@ -411,8 +411,12 @@ namespace;
 
    The goal here is to make it easy to run Reduce from Pure; to these ends,
    the most important features of the low-level PROC interface are wrapped in
-   a convenient way. Currently the following variables and functions are
-   provided:
+   a convenient way. After installing the module, it can be imported in your
+   Pure scripts as follows::
+
+     using reduce;
+
+   This makes the following variables and functions available:
 
    .. variable:: REDUCE_PATH
 
@@ -530,10 +534,13 @@ namespace;
    Reduce, respectively. (Note that you may have to quote these in some cases
    so that they don't get evaluated on the Pure side.) Also, Reduce's
    ``arbconst n``, ``arbint n`` and ``arbcomplex n`` terms are mapped to Greek
-   symbols ``αn``, ``βn`` and ``ζn`` on the Pure side. (All these automatic
-   conversions can also be turned off on the output side with the ``#!
-   --disable mapped`` compilation pragma; this may be useful for debugging
-   purposes.)
+   symbols ``αn``, ``βn`` and ``ζn`` on the Pure side. For debugging purposes,
+   all these automatic conversions can also be turned off on the output side
+   with the '``#!  --disable mapped``' compilation pragma; this needs to be
+   placed *before* the '``using reduce;``' import clause to take effect. There
+   are a number of other conditional compilation options which may be used to
+   selectively turn off some of the conversions; please check the module
+   source for details.
 
    Basic Examples
    ==============
@@ -599,8 +606,7 @@ namespace;
    This example shows how you can do a simple plot using Reduce's gnuplot_
    module::
 
-     > simplify $ plot
-     > [sin x/x, x=='(-20..20), terminal=="wxt"];
+     > simplify $ plot [sin x/x, x=='(-20..20), terminal=="wxt"];
      0
 
    This pops up a wxWidgets window (``terminal=="wxt"``) with a plot of the
@@ -609,8 +615,7 @@ namespace;
    it gets through to Reduce rather than being evaluated on the Pure side).
    The same plot can be written to a PostScript file sinc.ps as follows::
 
-     > simplify $ plot
-     > [sin x/x, x=='(-20..20), terminal=="postscript", output=="sinc.ps"];
+     > simplify $ plot [sin x/x, x=='(-20..20), terminal=="postscript", output=="sinc.ps"];
      0
 
    Many more examples can be found in the reduce_examp.pure and tests.pure
