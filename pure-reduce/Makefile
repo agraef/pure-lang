@@ -106,3 +106,4 @@ target = pure-reduce
 $(target).txt: README $(sources)
 	cp $< $@
 	pure-doc -is $(sources) >> $@
+	cat examples.txt >> $@
