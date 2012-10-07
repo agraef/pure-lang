@@ -111,8 +111,8 @@ psplot = simplify . plot (terminal=="postscript");
 // that they get through to Reduce instead of being evaluated on the Pure side.
 gplot [sin x/x, x=='(-20..20)];
 
-// Label the dependent variable.
-gplot [sinc == sin x/x, x=='(-20..20)];
+// Write the same plot to a PostScript file.
+psplot [sin x/x, x=='(-20..20), output=="sinc.ps"];
 
 // This closes the gnuplot window and resets the plot system, so that a new
 // gnuplot window will be opened for the next plot command. It is the same as
@@ -143,7 +143,7 @@ gplot [[0,0],[0,1],[1,1],[0,0],[1,0],[0,1],[0.5,1.5],[1,1],[1,0]];
 // list comprehension here. Note that pi is quoted so that the u and v values
 // remain symbolic and all calculations are done by Reduce. If you remove the
 // quote, all calculations will be done on the Pure side instead and Reduce
-// will only be used for plotting. The results are the same in either case.
+// will only be used for plotting. (The results are the same in either case.)
 let d = 'pi/15;
 gplot [title=="Globe", [[f (i*d) (j*d) | j = 0..30] | i = 1..14]]
 with f u v = [sin(u)*cos(v), sin(u)*sin(v), cos(u)] end;
@@ -151,6 +151,3 @@ with f u v = [sin(u)*cos(v), sin(u)*sin(v), cos(u)] end;
 // Another parametric plot pilfered from the documentation.
 gplot [point (3*u+3*u*v^2-u^3) (3*v+3*u^2*v-v^3) (3*u^2-3*v^2), hidden3d,
        title=="Enneper Surface"];
-
-// Postscript output.
-psplot [sin x, x=='(0..10), title=="sin(x)", output=="sin.ps"];
