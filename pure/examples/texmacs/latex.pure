@@ -4,9 +4,11 @@
    path) for easy use. NOTE: This is only an example; you should tailor
    indentation style etc. according to your preferences and taste.
 
-   This module redefines __show__ to render various kinds of Pure expressions
+   This module defines __texmacs__ to render various kinds of Pure expressions
    in LaTeX format and is to be used with the Pure session in TeXmacs (other
-   uses are left to the imagination of the reader). See the accompanying
+   uses are left to the imagination of the reader). The __texmacs__ function
+   works like __show__ but is only used in the REPL of the Pure interpreter
+   when it is invoked with the --texmacs option. See the accompanying
    latex-example.tm file for a sample TeXmacs document. */
 
 using system;
@@ -283,5 +285,5 @@ tex (ExtD x) = sprintf "{{\\tt d}%s}" (tex x) ;
 tex x::appl = sprintf "\\tt{%s}" (str x) ;
 
 texmacs x = sprintf "\02latex:$%s$\05" (tex x) ;
-__show__ x = u if stringp u when u = texmacs x end;
+__texmacs__ x = u if stringp u when u = texmacs x end;
 

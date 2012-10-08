@@ -4321,13 +4321,30 @@ void interpreter::exec(expr *x)
     }
     /* If PURE_LESS is set then we pipe the printed expression through it. */
     FILE *fp;
-    if (more && *more && isatty(fileno(stdin)) && (fp = popen(more, "w"))) {
+    if (!texmacs && more && *more && isatty(fileno(stdin)) &&
+	(fp = popen(more, "w"))) {
       ostringstream sout;
       sout << result << '\n';
       fputs(sout.str().c_str(), fp);
       pclose(fp);
-    } else
-      cout << TEXMACS_BEGIN << result << '\n' << TEXMACS_END;
+    } else {
+      if (texmacs) {
+	/* Temporarily replace __show__ with __texmacs__ if it exists, to make
+	   it possible to define a custom unparsing for TeXmacs. */
+	const symbol *sym = symtab.lookup("::__texmacs__");
+	int32_t f = sym?sym->f:0, g = symtab.__show__sym;
+	map<int32_t,GlobalVar>::iterator it;
+	if (f > 0 &&
+	    !((it = globalvars.find(f)) != globalvars.end() &&
+	      it->second.x && it->second.x->tag >= 0 &&
+	      it->second.x->data.clos))
+	  f = 0;
+	if (f > 0) symtab.__show__sym = f;
+	cout << TEXMACS_BEGIN << result << '\n' << TEXMACS_END;
+	if (f > 0) symtab.__show__sym = g;
+      } else
+	cout << result << '\n';
+    }
     report_stats();
   }
 }
