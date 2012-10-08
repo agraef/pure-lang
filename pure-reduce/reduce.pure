@@ -56,7 +56,7 @@ namespace reduce;
    Lisp). The external C routines are all declared in the ``reduce``
    namespace. Normally you shouldn't have to call these functions directly,
    since we provide a high-level, idiomatic Pure interface which makes calling
-   Reduce from Pure much more convenient, see below.
+   Reduce from Pure much easier, see below.
 
    .. _PROC: http://reduce-algebra.svn.sourceforge.net/viewvc/reduce-algebra/trunk/csl/cslbase/proc.h?view=markup
    .. _CSL: http://lisp.codemist.co.uk/
@@ -409,14 +409,14 @@ namespace;
    High-Level Interface
    ====================
 
-   The goal here is to make it easy to run Reduce from Pure; to these ends,
-   the most important features of the low-level PROC interface are wrapped in
-   a convenient way. After installing the module, it can be imported in your
-   Pure scripts as follows::
+   The high-level interface provides a wrapper of the low-level PROC interface
+   which makes calling Reduce from Pure easy and convenient. After installing
+   the module, it can be imported in your Pure scripts as follows::
 
      using reduce;
 
-   This makes the following variables and functions available:
+   This starts up Reduce and makes the following variables and functions
+   available in Pure:
 
    .. variable:: REDUCE_PATH
 
@@ -478,12 +478,14 @@ namespace;
    .. function:: lisp x
 
       This can be used to execute arbitrary Lisp code, which is sometimes
-      necessary to perform special functions in the Reduce system. The result
-      is always a Pure list or an atomic value. Note that you need to quote
-      ``x`` if you want to prevent it from being evaluated on the Pure
-      side. This is to be used with care. At present, the PROC interface isn't
-      very forgiving if you try to execute invalid Lisp code; it will most
-      likely crash in such cases.
+      necessary to perform special functions in the Reduce system. Free
+      symbols are quoted automatically, and Pure lists are mapped to
+      corresponding Lisp lists and vice versa. The result is always a Pure
+      list or an atomic value. Note that you need to quote ``x`` if you want
+      to prevent it from being evaluated on the Pure side. This is to be used
+      with care. At present, the PROC interface isn't very forgiving if you
+      try to execute invalid Lisp code; it will most likely crash in such
+      cases.
 
    .. function:: declare declsym [foo,bar,...]
 
@@ -527,20 +529,22 @@ namespace;
    the output redirection facilities of the shell if needed.
 
    In Pure land, Reduce and Lisp expressions are represented using Pure's
-   standard curried notation. Some special conversions are applied to
-   algebraic expressions to make arithmetic operations such as ``+``, ``*``
-   etc. work as expected. In addition, the ``==``, ``..`` and ``:=`` infix
-   operators can be used to denote equations, ranges and assignments in
-   Reduce, respectively. (Note that you may have to quote these in some cases
-   so that they don't get evaluated on the Pure side.) Also, Reduce's
-   ``arbconst n``, ``arbint n`` and ``arbcomplex n`` terms are mapped to Greek
-   symbols ``αn``, ``βn`` and ``ζn`` on the Pure side. For debugging purposes,
-   all these automatic conversions can also be turned off on the output side
-   with the '``#!  --disable mapped``' compilation pragma; this needs to be
-   placed *before* the '``using reduce;``' import clause to take effect. There
-   are a number of other conditional compilation options which may be used to
-   selectively turn off some of the conversions; please check the module
-   source for details. */
+   standard curried notation. Marshalling of numeric data works in a
+   straightforward fashion and includes all natively supported Pure data types
+   (machine ints, bigints, doubles, rationals and complex numbers). Some
+   special conversions are applied to algebraic expressions to make arithmetic
+   operations such as ``+``, ``*`` etc. work as expected. In addition, the
+   ``==``, ``..`` and ``:=`` infix operators can be used to denote equations,
+   ranges and assignments in Reduce, respectively. (Note that you may have to
+   quote these in some cases so that they don't get evaluated on the Pure
+   side.) Also, Reduce's ``arbconst n``, ``arbint n`` and ``arbcomplex n``
+   terms are mapped to Greek symbols ``αn``, ``βn`` and ``ζn`` on the Pure
+   side. For debugging purposes, all these automatic conversions can also be
+   turned off on the output side with the '``#!  --disable mapped``'
+   compilation pragma; this needs to be placed *before* the '``using
+   reduce;``' import clause to take effect. There are a number of other
+   conditional compilation options which may be used to selectively turn off
+   some of the conversions; please check the module source for details. */
 
 // Search path for the Reduce image file. Edit as needed.
 let REDUCE_PATH = ".:/usr/lib/pure";
