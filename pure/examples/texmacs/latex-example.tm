@@ -116,6 +116,14 @@
     <\unfolded-io>
       \<gtr\>\ 
     <|unfolded-io>
+      (sin x)^2+(cos x)^2;
+    <|unfolded-io>
+      <math|<around|(|sin x|)><rsup|2>+<around|(|cos x|)><rsup|2>>
+    </unfolded-io>
+
+    <\unfolded-io>
+      \<gtr\>\ 
+    <|unfolded-io>
       Integral Omega (ExtD omega);
     <|unfolded-io>
       <math|<big|int><rsub|\<Omega\>><space|0.25spc><text|<with|font-family|tt|d>>\<omega\>>
@@ -150,7 +158,7 @@
     <|unfolded-io>
       F!!(1..10);
     <|unfolded-io>
-      <math|F<rsub|1>:F<rsub|2>:F<rsub|3>:F<rsub|4>:F<rsub|5>:F<rsub|6>:F<rsub|7>:F<rsub|8>:F<rsub|9>:F<rsub|10>:<around|[||]>>
+      <math|<around|[|F<rsub|1>,F<rsub|2>,F<rsub|3>,F<rsub|4>,F<rsub|5>,F<rsub|6>,F<rsub|7>,F<rsub|8>,F<rsub|9>,F<rsub|10>|]>>
     </unfolded-io>
 
     <\unfolded-io>

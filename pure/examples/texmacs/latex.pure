@@ -251,6 +251,7 @@ tex s::matrix =
   (join " \\\\ " (map vec (rows s))) +
  "\\end{bmatrix}" ;
 
+tex xs::rlist = sprintf "{[%s]}" (join "," (map tex xs));
 
 tex (a+b) = sprintf "{%s+%s}" (tex a, tex b) ;
 tex (a-b) = sprintf "{%s-%s}" (tex a, par b) ;
@@ -259,6 +260,9 @@ tex (a/b) = sprintf "{\\frac{%s}{%s}}" (tex a, tex b) ;
 tex (a%b) = sprintf "{\\frac{%s}{%s}}" (tex a, tex b) ;
 tex (a^b) = sprintf "{{%s}^{%s}}" (par a, tex b) ;
 tex (a!b) = sprintf "{{%s}_{%s}}" (tex a, tex b) ;
+
+tex (a!!b) = sprintf "{{%s}_{(%s)}}" (tex a, tex b) ;
+tex (a..b) = sprintf "{{%s}\\ldots{%s}}" (tex a, tex b) ;
 
 tex (a,b) = sprintf "{{%s},{%s}}" (tex a, tex b) ;
 tex (a:b) = sprintf "{{%s}:{%s}}" (tex a, tex b) ;
@@ -274,7 +278,15 @@ tex (a>b) = sprintf "{{%s}>{%s}}" (tex a, tex b) ;
 tex (~a) = sprintf "{\\urcorner{%s}}" (par a) ;
 tex (-a) = sprintf "{-{%s}}" (par a) ;
 
-tex (a!!b) | tex (a..b) = sprintf "{{%s}\\ldots{%s}}" (tex a, tex b) ;
+tex (sin x) = sprintf "\\sin\\ %s" (par x);
+tex (cos x) = sprintf "\\cos\\ %s" (par x);
+tex (tan x) = sprintf "\\tan\\ %s" (par x);
+tex (asin x) = sprintf "\\arcsin\\ %s" (par x);
+tex (acos x) = sprintf "\\arccos\\ %s" (par x);
+tex (atan x) = sprintf "\\arctan\\ %s" (par x);
+tex (sinh x) = sprintf "\\sinh\\ %s" (par x);
+tex (cosh x) = sprintf "\\cosh\\ %s" (par x);
+tex (tanh x) = sprintf "\\tanh\\ %s" (par x);
 
 // user defined appl (examples)
 tex (Integral d f) = sprintf "{\\int_{%s}\\,%s}" (tex d, tex f) ;
