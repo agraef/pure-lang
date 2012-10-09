@@ -378,6 +378,7 @@ extern void* PROC_get_raw_value();
 extern int PROC_capture_output(int flag);
 extern char *PROC_get_output();
 extern void PROC_clear_output();
+extern int PROC_feed_input(char *s);
 extern char *PROC_my_string_data(void* p) = PROC_string_data;
 
 namespace;
@@ -473,6 +474,11 @@ namespace;
       :func:`reduce::output` function which returns a string value. If
       ``flag`` is zero, capturing is disabled so that output goes to stdout
       again.
+
+   .. function:: reduce::feed s::string
+
+      Feeds input to Reduce. Reduce will read input from the given string
+      ``s``, switching back to stdin after ``s`` has been processed.
 
    .. function:: reduce::load name::string
 
@@ -638,6 +644,9 @@ get_started = catch (\_->puts "** Couldn't load image file reduce.img")
 // Capture output from Reduce in a string buffer.
 capture flag::int = PROC_capture_output flag;
 output = PROC_get_output;
+
+// Feed input to Reduce from a string buffer.
+feed s::string = PROC_feed_input s;
 
 // Source a Reduce (.red) file. This captures all output, so you may want to
 // inspect reduce::output for messages while loading the file.

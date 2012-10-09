@@ -5,7 +5,10 @@
 static size_t bufsz = 0, buflen = 0;
 static char *buf = NULL;
 
-static int capture_output(int c)
+static character_reader *proc_input = NULL;
+static character_writer *proc_output = NULL;
+
+static int char_output(int c)
 {
   if (c > 0) {
     if (buflen+2 > bufsz) {
@@ -23,9 +26,10 @@ int PROC_capture_output(int flag)
 {
   if (flag) {
     buflen = 0;
-    return PROC_set_callbacks(NULL, capture_output);
+    proc_output = char_output;
   } else
-    return PROC_set_callbacks(NULL, NULL);
+    proc_output = NULL;
+  return PROC_set_callbacks(proc_input, proc_output);
 }
 
 const char *PROC_get_output(void)
@@ -41,6 +45,34 @@ void PROC_clear_output(void)
 {
   bufsz = buflen = 0;
   free(buf); buf = NULL;
+}
+
+static char *inbuf = NULL, *inbufptr = NULL;
+
+static int char_input(void)
+{
+  if (inbufptr && *inbufptr)
+    return *inbufptr++;
+  else if (inbuf) {
+    free(inbuf);
+    inbufptr = inbuf = NULL;
+    proc_input = NULL;
+    PROC_set_callbacks(proc_input, proc_output);
+  }
+  return EOF;
+}
+
+int PROC_feed_input(const char *s)
+{
+  if (inbuf) free(inbuf);
+  if (s) {
+    inbufptr = inbuf = strdup(s);
+    proc_input = char_input;
+  } else {
+    inbufptr = inbuf = NULL;
+    proc_input = NULL;
+  }
+  return PROC_set_callbacks(proc_input, proc_output);
 }
 
 const char *PROC_my_string_data(PROC_handle p)
