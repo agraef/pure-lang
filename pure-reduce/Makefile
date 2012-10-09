@@ -47,11 +47,14 @@ reduce$(EXE): reduce-algebra/csl/new-embedded/reduce-image/reduce$(EXE) reduce.i
 reduce-algebra/csl/new-embedded/reduce.img reduce-algebra/csl/new-embedded/reduce-image/reduce$(EXE):
 	$(MAKE) -C reduce-algebra/csl/new-embedded CFLAGS="$(CFLAGS)"
 
-reduce$(DLL): $(addprefix reduce-algebra/csl/new-embedded/procedural/, $(objects))
+reduce$(DLL): $(addprefix reduce-algebra/csl/new-embedded/procedural/, $(objects)) proc-add.o
 	$(CC) $(shared) $(PIC) -o reduce$(DLL) $^
 
 $(addprefix reduce-algebra/csl/new-embedded/procedural/, $(objects)):
 	$(MAKE) -C reduce-algebra/csl/new-embedded/procedural CFLAGS="$(CFLAGS) $(PIC)"
+
+proc-add.o: proc-add.c
+	$(CC) -Ireduce-algebra/csl/new-embedded/procedural $(CFLAGS) $(PIC) -c $< -o $@
 
 logs: tests.log
 
@@ -64,7 +67,7 @@ check:
 clean:
 	$(MAKE) -C reduce-algebra/csl/new-embedded/procedural clean
 	$(MAKE) -C reduce-algebra/csl/new-embedded clean
-	rm -f reduce.img reduce$(DLL) reduce$(EXE)
+	rm -f reduce.img reduce$(DLL) reduce$(EXE) proc-add.o
 
 install:
 	test -d $(installdir) || mkdir -p $(installdir)

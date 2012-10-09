@@ -342,7 +342,7 @@ extern void* PROC_rest(void* p);
 extern int PROC_integer_value(void* p);
 extern double PROC_floating_value(void* p);
 extern char *PROC_symbol_name(void* p);
-extern char *PROC_string_data(void* p);
+//extern char *PROC_string_data(void* p);
 
 /*
  * I also provide some calls that support a sort of ultimate cop-out in
@@ -370,6 +370,15 @@ extern int PROC_lisp_eval();
  */
 
 extern void* PROC_get_raw_value();
+
+/*****************************************************************************/
+
+/* Our own addons and replacements, cf. proc-add.c. -ag */
+
+extern int PROC_capture_output(int flag);
+extern char *PROC_get_output();
+extern void PROC_clear_output();
+extern char *PROC_my_string_data(void* p) = PROC_string_data;
 
 namespace;
 
@@ -455,10 +464,25 @@ namespace;
 
 	4: extra details in the garbage collector messages
 
+   .. function:: reduce::capture flag::int
+                 reduce::output
+
+      Captures output from Reduce. If ``flag`` is nonzero,
+      :func:`reduce::capture` arranges for all output from Reduce to be
+      buffered. The contents of the buffer can then be read using the
+      :func:`reduce::output` function which returns a string value. If
+      ``flag`` is zero, capturing is disabled so that output goes to stdout
+      again.
+
    .. function:: reduce::load name::string
 
       Loads Reduce packages. This works like Reduce's ``load_package``
       command; please check the Reduce documentation for details.
+
+   .. function:: reduce::in name::string
+
+      Sources the given Reduce (.red) file. This works like the Lisp ``in``
+      function. Output is captured using :func:`reduce::capture`, see above.
 
    .. function:: reduce::switch name:string val::int
 
@@ -523,11 +547,6 @@ namespace;
 
    .. _gnuplot: http://www.gnuplot.info/
 
-   At present, this module makes no attempt to capture terminal output such as
-   error messages produced by Reduce, so you should be prepared to read these
-   in the terminal in which Pure is running, or capture them yourself using
-   the output redirection facilities of the shell if needed.
-
    In Pure land, Reduce and Lisp expressions are represented using Pure's
    standard curried notation. Marshalling of numeric data works in a
    straightforward fashion and includes all natively supported Pure data types
@@ -554,6 +573,8 @@ let REDUCE_PATH = ".:/usr/lib/pure";
    exceptions are raised on inputs and outputs which 'simplify' and 'lisp'
    don't understand (yet). */
 public bad_reduce_image bad_reduce_value bad_lisp_value;
+
+public lisp;
 
 namespace reduce with
 
@@ -613,6 +634,14 @@ end if all stringp args;
 get_started = true if get started;
 get_started = catch (\_->puts "** Couldn't load image file reduce.img")
   (reduce::start "reduce.img" {}) $$ get started;
+
+// Capture output from Reduce in a string buffer.
+capture flag::int = PROC_capture_output flag;
+output = PROC_get_output;
+
+// Source a Reduce (.red) file. This captures all output, so you may want to
+// inspect reduce::output for messages while loading the file.
+in name = res when capture 1; res = lisp ('::in [name]); capture 0 end;
 
 // Some special symbol lists, defined below.
 
@@ -718,7 +747,7 @@ let reduce::kdec_syms = '[depend,nodepend,factor,remfac,order,korder,noncom];
 
 // Parameterless "commands" which can be invoked in Lisp mode. XXXTODO: Are
 // there other cases like this?
-let reduce::cmd_syms = '[list,plotreset];
+let reduce::cmd_syms = '[list,plotreset]+[lispsym "oem-supervisor"];
 
 /* Uncomment this to get unmapped output in nested list format straight from
    Reduce (useful for debugging purposes). */
