@@ -940,7 +940,9 @@ simplify x = y when
       // the "REDUCE Symbolic Mode Primer".
       expandsf x = pretty (expand (expandsf x)) with
 	evalsf mvar ldeg lc red = x when
-	  x = to_expr mvar;
+	  // XXXFIXME: It seems that mvar may itself be an SF in some cases,
+	  // but according to the manual it should just be a plain kernel?
+	  x = expandsf mvar;
 	  x = if ldeg==0 then 1 else if ldeg==1 then x else x^ldeg;
 	  y = expandsf lc;
 	  x = if ~numberp y then x*y else if y==0 then 0
@@ -948,10 +950,10 @@ simplify x = y when
 	  y = expandsf red;
 	  x = if ~numberp y || y~=0 then x+y else x;
 	end;
-	expandsf (((mvar:ldeg):lc):red) = evalsf mvar ldeg lc red;
+	expandsf (((mvar:ldeg::int):lc):red) = evalsf mvar ldeg lc red;
 	// At least some of these abbreviated forms also seem to occur.
-	expandsf ((mvar:ldeg):lc) = evalsf mvar ldeg lc 0;
-	expandsf (mvar:ldeg) = evalsf mvar ldeg 1 0;
+	expandsf ((mvar:ldeg::int):lc) = evalsf mvar ldeg lc 0;
+	expandsf (mvar:ldeg::int) = evalsf mvar ldeg 1 0;
 	expandsf [] = 0;
 	expandsf mvar = to_expr mvar;
       end;
