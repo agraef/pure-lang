@@ -57,10 +57,12 @@ module::
   0
 
 This pops up a wxWidgets window (``terminal=="wxt"``) with a plot of the given
-function in it, see the screenshot below. The ``x=='(-20..20)`` argument
+function in it, see the screenshot_ below. The ``x=='(-20..20)`` argument
 specifies the desired range of the ``x`` variable (note that the range needs
 to be quoted so that it gets through to Reduce rather than being evaluated on
 the Pure side).
+
+.. _screenshot:
 
 .. figure:: gnuplot.png
    :scale: 70%
@@ -78,7 +80,7 @@ scripts included in the distribution.
 
 Examples by Topic
 =================
-This is a small excerpt from the **REDUCE User's Manual** [REDUM]_,
+This is a small excerpt from the **REDUCE User's Manual** `[REDUM]`_,
 translated to Pure syntax. For any details we refer to that
 document. With this guide it should be straightforward to interprete
 back and forth.
@@ -90,10 +92,11 @@ http://www.reduce-algebra.com/documentation.htm
 
 Differentiation
 ---------------
+
 The operator ``df`` is used to represent partial differentiation with respect
 to one or more variables.
 
-.. pull-quote:: ``syntax: df exprn [var <num>]+.``
+.. describe:: df exprn [var <num>]+
 
 Differentiation of the function :math:`x^2 y^3 z^4` with respect to
 :math:`x,y,z`, two, three and four times respectively, i.e
@@ -114,7 +117,7 @@ The derivative of :math:`\log \sin (x)^2`:
 Note the parentheses.
 
 
-Suppose :math:`z(\cos(x),y)`: Let's calculate :math:`\frac{\partial \sin(z)}
+Suppose :math:`z(\cos(x),y)`. Let's calculate :math:`\frac{\partial \sin(z)}
 {\partial \cos(x)}` and :math:`\frac{\partial z^2}{\partial x}` :
 
 .. code-block:: pure
@@ -129,18 +132,19 @@ Suppose :math:`z(\cos(x),y)`: Let's calculate :math:`\frac{\partial \sin(z)}
 Note how to declare dependencies.
 
 The results are :math:`\cos(z) \frac{\partial z}
-{\partial \cos(x)}` and  :math:`2 z \frac{\partial z} {\partial x})`
+{\partial \cos(x)}` and  :math:`2 z \frac{\partial z} {\partial x}`,
 respectively, as expected.
 
 Integration
 -----------
+
 ``INT`` is an operator in REDUCE for indefinite integration using a
 combination of the Risch-Norman algorithm and pattern matching.
 
-.. pull-quote:: ``syntax: intg exprn var.``
+.. describe:: intg exprn var
 
 Note that in Pure the operator is called ``intg`` in order not to clash
-with the integer type ``int``.
+with the :func:`int` conversion function.
 
 Example 1:
 
@@ -172,21 +176,21 @@ Example 2:
 
 Example 3:
 
-.. math:: \int \frac{\sqrt{x+\sqrt{x^2+1}}}{x}
+.. math:: \int \frac{\sqrt{x+\sqrt{x^2+1}}}{x} dx
 
 .. code-block:: pure
 
   > simplify $ intg (sqrt(x+sqrt(x^2+1))/x) x ;
   intg (sqrt (sqrt (x^2+1)+x)/x) x
 
-Apparently no solution was found. There is a package ``ALGINT`` in REDUCE, that
-is specialized to deal with algebraic functions. The REDUCE User's Manual
-[REDUM]_ says
+Apparently no solution was found. There is a package ``ALGINT`` in REDUCE
+which specifically deals with algebraic functions. The REDUCE User's Manual
+`[REDUM]`_ says:
 
-.. pull-quote:: ... *will analytically integrate a wide range of expressions
-   involving square roots where the answer exists in that class of functions.
-   It is an implementation of the work described in J.H. Davenport*
-   [LNCS102]_
+.. pull-quote:: *This package [...] will analytically integrate a wide range
+   of expressions involving square roots where the answer exists in that class
+   of functions.  It is an implementation of the work described in
+   J.H. Davenport* `[LNCS102]`_
 
 .. code-block:: pure
 
@@ -202,13 +206,14 @@ Note how to load packages.
 
 Length and Map
 --------------
+
 ``LENGTH`` is a generic operator for finding the length of various objects in
 the system, while the ``MAP`` operator applies a uniform evaluation pattern to
 all members of a composite structure: a matrix, a list, or the arguments of an
 operator expression.
 
-.. pull-quote:: ``syntax: length exprn``
-.. pull-quote:: ``syntax: map fun obj``
+.. describe:: length exprn
+   	      map fun obj
 
 .. code-block:: pure
 
@@ -232,11 +237,12 @@ corresponding Pure version.
 
 Partial Fractions
 -----------------
+
 The ``PF`` operator transforms an expression into a list of partial fractions
 with respect to the main variable. ``PF`` does a complete partial fraction
 decomposition.
 
-.. pull-quote:: ``syntax: pf expr var``
+.. describe:: pf expr var
 
 Let us find the decomposition of:
 
@@ -248,7 +254,7 @@ Let us find the decomposition of:
   > simplify $ pf f x;
   [2/(x+2),(-2)/(x+1),2/(x^2+2*x+1)]
 
-this means
+This means:
 
 .. math:: f(x) = \frac{2}{x+2} + \frac{-2}{x+1} + \frac{2}{x^2+2x+1}
 
@@ -262,22 +268,24 @@ switch ``off exp``:
   > simplify $ pf f x;
   [2/(x+2),(-2)/(x+1),2/(x+1)^2]
 
-Note how the switch ``off exp`` is used in Pure.
+Note how the value of a Reduce switch is changed in Pure.
 
 Selection
 ---------
+
 The ``SELECT`` operator extracts from a list, or from the arguments of an
 ``n–ary`` operator, elements corresponding to a boolean predicate.
 It is used with the syntax:
 
-.. pull-quote:: ``syntax: select fun list``
+.. describe:: select fun list
 
 Solving
 -------
+
 ``SOLVE`` is an operator for solving one or more simultaneous algebraic
 equations. It is used with the syntax:
 
-.. pull-quote:: ``syntax: solve expr [var | varlist]``
+.. describe:: solve expr [var | varlist]
 
 where ``expr`` is a list of one or more expressions. Each expression is an
 algebraic equation, or is the difference of the two sides of the equation.
@@ -293,7 +301,8 @@ Find the solutions to
   > let eqn1 = log(sin (x+3))^5 == 8 ;
   > let sol1 = simplify $ solve eqn1 x;
 
-The variable ``sol1`` now contains a huge list of solutions. How many?
+The variable ``sol1`` now contains an entire list of solutions. How many are
+there?
 
 .. code-block:: pure
 
@@ -324,24 +333,24 @@ The first one is:
    )
    -3
 
-where ``n`` is an arbitrary integer constant.
+where ``n`` is an arbitrary integer constant (shown as ``β5`` in the result of
+``simplify``).
 
-It is also possible - for example - to obtain the righthand side of any
-solution in the list via REDUCE commands:
+It is also possible to obtain the right-hand side of any solution in the list
+via REDUCE commands:
 
 .. code-block:: pure
 
   > simplify $ rhs $ first $ solve eqn1 x;
   2*β10*pi+asin (e^(2^(3/5)*cos (2*pi/5))/e^(2^(3/5)*sin (2*pi/5)*i))-3
-  >
 
-where ``first`` gets the first solution in the list and ``rhs`` takes the
-righthand side. Hence there is a wealth of possibilities to process the
+where ``first`` gets the first solution in the list and ``rhs`` obtains the
+right-hand side. Hence there is a wealth of possibilities to process the
 solution list.
 
 Example 2:
 
-For the sake of clarity some simpler examples:
+Here are some simpler examples for the sake of clarity:
 
 .. math:: X^2+1 = 0
 
@@ -357,16 +366,14 @@ For the sake of clarity some simpler examples:
   > simplify $ solve [x+3*y==7,y-x==1] [x,y] ;
   [[x==1,y==2]]
 
-To get the multiplicities turn on the switch ``multiplicities``:
+To get the multiplicities, turn on the switch ``multiplicities``:
 
 .. code-block:: pure
 
   > simplify $ solve [x^2==2*x-1] x;
   [x==1]
-
   > reduce::switch "multiplicities" 1;
   0
-
   > simplify $ solve [x^2==2*x-1] x;
   [x==1,x==1]
 
@@ -374,6 +381,7 @@ For details consult the REDUCE user manual.
 
 Even and Odd Operators
 ----------------------
+
 An operator can be declared to be even or odd in its first argument by the
 declarations ``EVEN`` and ``ODD`` respectively.
 
@@ -397,6 +405,7 @@ declarations ``EVEN`` and ``ODD`` respectively.
 
 Linear Operators
 ----------------
+
 An operator can be declared to be linear in its first argument over powers
 of its second argument.
 
@@ -419,10 +428,11 @@ of its second argument.
   > simplify $ L (a+b+c+d) y;
   L 1 y*a+L 1 y*b+L 1 y*c+L 1 y*d
 
-Note that L x y binds stronger than (*).
+Note that ``L x y`` binds stronger than ``(*)`` in Pure.
 
 Non-commuting Operators
 -----------------------
+
 An operator can be declared to be non-commutative under multiplication by the
 declaration ``NONCOM``.
 
@@ -439,8 +449,9 @@ declaration ``NONCOM``.
 
 Symmetric and Antisymmetric Operators
 -------------------------------------
+
 An operator can be declared to be symmetric with respect to its arguments by
-the declaration ``SYMMETRIC``, Similarly the declaration ``ANTISYMMETRIC``
+the declaration ``SYMMETRIC``. Similarly, the declaration ``ANTISYMMETRIC``
 declares an operator antisymmetric.
 
 .. code-block:: pure
@@ -464,12 +475,13 @@ declares an operator antisymmetric.
   > simplify $ A y x ;
   -A x y
 
-Creating/Removing Variable Dependency
--------------------------------------
-There are several facilities in REDUCE, such as the differentiation
-operator and the linear operator facility, that can utilize knowledge of the
-dependency between various variables. Such dependency may be expressed by the
-command ``DEPEND``.
+Creating/Removing Variable Dependencies
+---------------------------------------
+
+There are several facilities in REDUCE, such as the differentiation operator
+and the linear operator facility, which can utilize knowledge of the
+dependencies between various variables. Such dependencies may be expressed by
+the command ``DEPEND``.
 
 .. code-block:: pure
 
@@ -481,15 +493,16 @@ command ``DEPEND``.
   > simplify $ df D a;
   0
 
-D does not depend on a => 0, but
+``D`` does not depend on ``a``, thus differentiating with respect to ``a``
+yields 0, but
 
 .. code-block:: pure
 
   > simplify $ df D x;
   df D x
 
-because D depends on x by definition.
-If we let a also depend on x, then
+because ``D`` is declared to depend on ``x``.
+If we also let ``a`` depend on ``x``, then:
 
 .. code-block:: pure
 
@@ -510,12 +523,13 @@ If we let a also depend on x, then
 
 Internal Order of Variables
 ---------------------------
+
 It is possible for the user to change the internal order of variables
 by means of the declaration ``KORDER``. The syntax for this is:
 
-.. pull-quote:: ``syntax: declare korder [v1,...,vn];``
+.. describe:: declare korder [v1,...,vn]
 
-Unlike the ORDER declaration, that has a purely cosmetic effect on the way
+Unlike the ORDER declaration, which has a purely cosmetic effect on the way
 results are printed, the use of KORDER can have a significant effect on
 computation time.
 
@@ -531,12 +545,13 @@ computation time.
 
 Parts of Algebraic Expressions
 ------------------------------
+
 The following operators can be used to obtain a specific part of an expression,
 or even change such a part to another expression.
 
- - ``coeff expr::polynomial var``
- - ``coeffn expr::polynomial var n::int``
- - ``part expr::algebraic [n::int])``
+.. describe:: coeff expr::polynomial var
+   	      coeffn expr::polynomial var n::int
+	      part expr::algebraic [n::int]
 
 Examples:
 
@@ -557,9 +572,10 @@ Examples:
   > simplify $ part (a+b) 0 ;
   (+)
 
-``PART`` may also be used to substitute for a given part of an expression.
-In this case, the PART construct appears on the left-hand side of an assignment
-statement, and the expression to replace the given part on the right-hand side.
+``PART`` may also be used to substitute a given part of an expression. In
+this case, the ``PART`` construct appears on the left-hand side of an
+assignment statement, and the expression to replace the given part on the
+right-hand side.
 
 .. code-block:: pure
 
@@ -573,15 +589,12 @@ statement, and the expression to replace the given part on the right-hand side.
 Polynomials and Rationals
 -------------------------
 
-Factorization of Polynomials
+REDUCE is capable of factorizing univariate and multivariate polynomials with
+integer coefficients, finding all factors with integer coefficients. The
+package for doing this was written by Dr. Arthur C. Norman and Ms. P. Mary Ann
+Moore at The University of Cambridge.  It is described in `[SYMSAC81]`_.
 
-REDUCE is capable of factorizing univariate and multivariate polynomials that
-have integer coefficients, finding all factors that also have integer
-coefficients. The package for doing this was written by Dr. Arthur C. Norman
-and Ms. P. Mary Ann Moore at The University of Cambridge.
-It is described in [SYMSAC81]_.
-
-.. pull-quote:: ``factorize expr::polynomial [p::prime]``
+.. describe:: factorize expr::polynomial [p::prime]
 
 Some examples:
 
@@ -589,33 +602,30 @@ Some examples:
 
   > simplify $ factorize (x^105-1) ;
   [[x^48+x^47+x^46-x^43-x^42-2*x^41-x^40 ... ]
-  >
+
   > reduce::switch "ifactor" 1;
   0
   > simplify $ factorize (12*x^2 - 12) ;
   [[2,2],[3,1],[x+1,1],[x-1,1]]
   > reduce::switch "ifactor" 0;
-
+  0
 
 The following operators should be well known:
 
-
-
- - **gcd** ``expr1::polynomial expr2::polynomial -> polynomial``
- - **lcm** ``expr1::polynomial expr2::polynomial -> polynomial``
- - **remainder** ``expr1::polynomial expr2::polynomial -> polynomial``
- - **resultant** ``expr1::polynomial expr2::polynomial var -> polynomial``
- - **decompose** ``expr::polynomial -> list``
- - **interpol** ``<values> <variable> <points>)  -> polynomial``
-
- - **deg** ``expr::polynomial var ->int``
- - **den** ``expr::rational -> polynomial``
- - **lcof** ``expr::polynomial var -> polynomial``
- - **lpower** ``expr::polynomial var-> polynomial``
- - **lterm** ``expr::polynomial var -> polynomial``
- - **mainvar** ``expr::polynomial -> expr``
- - **num** ``expr::rational -> polynomial``
- - **reduct** ``expr::polynomial var -> polynomial``
+.. describe:: gcd expr1::polynomial expr2::polynomial -> polynomial
+   	      lcm expr1::polynomial expr2::polynomial -> polynomial
+	      remainder expr1::polynomial expr2::polynomial -> polynomial
+	      resultant expr1::polynomial expr2::polynomial var -> polynomial
+	      decompose expr::polynomial -> list
+	      interpol <values> <variable> <points>)  -> polynomial
+	      deg expr::polynomial var ->int
+	      den expr::rational -> polynomial
+	      lcof expr::polynomial var -> polynomial
+	      lpower expr::polynomial var-> polynomial
+	      lterm expr::polynomial var -> polynomial
+	      mainvar expr::polynomial -> expr
+	      num expr::rational -> polynomial
+	      reduct expr::polynomial var -> polynomial
 
 Some examples of each operator:
 
@@ -630,12 +640,11 @@ GCD/LCM
 	2*x+2*y
 	> simplify $ gcd (x^2+y^2) (x-y) ;
 	1
-	>
+
 	> simplify $ lcm (x^2+2*x+1) (x^2+3*x+2) ;
 	x^3+4*x^2+5*x+2
 	> simplify $ lcm (2*x^2-2*y^2) (4*x+4*y) ;
 	4*x^2-4*y^2
-	>
 
 REMAINDER/RESULTANT
 
@@ -645,22 +654,20 @@ REMAINDER/RESULTANT
 	2*y^2
 	> simplify $ remainder (2*x+y) 2 ;
 	y
-	>
+
 	> simplify $ resultant (x/r*u+y) (u*y) u ;
 	-y^2
-	>
 
 DECOMPOSE
 
 .. code-block:: pure
 
 	> simplify $ decompose (x^8-88*x^7+2924*x^6-43912*x^5+263431*x^4-
-	>                                 218900*x^3+65690*x^2-7700*x+234) ;
+	>                       218900*x^3+65690*x^2-7700*x+234) ;
 	[u^2+35*u+234,u==v^2+10*v,v==x^2-22*x]
-	>
+
 	> simplify $ decompose (u^2+v^2+2*u*v+1) ;
 	[w^2+1,w==u+v]
-	>
 
 DEG/DEN
 
@@ -670,10 +677,9 @@ DEG/DEN
 	2
 	> simplify $ deg ((x+b)*(x^6+2*y)^2) x ;
 	13
-	>
+
 	> simplify $ den (x/y^2) ;
 	y^2
-	>
 
 LCOF/LPOWER/LTERM
 
@@ -685,21 +691,20 @@ LCOF/LPOWER/LTERM
 	4*a+4*b
 	> simplify $ lcof ((a+b)*(c+2*d)) ('e) ;
 	a*c+2*a*d+b*c+2*b*d
-	>
+
 	> simplify $ lpower ((a+b)*(c+2*d)^2) a ;
 	a
 	> simplify $ lpower ((a+b)*(c+2*d)^2) d ;
 	d^2
 	> simplify $ lpower ((a+b)*(c+2*d)) x ;
 	1
-	>
+
 	> simplify $ lterm ((a+b)*(c+2*d)^2) a ;
 	a*c^2+4*a*c*d+4*a*d^2
 	> simplify $ lterm ((a+b)*(c+2*d)^2) d ;
 	4*a*d^2+4*b*d^2
 	> simplify $ lterm ((a+b)*(c+2*d)) x ;
 	a*c+2*a*d+b*c+2*b*d
-	>
 
 MAINVAR/NUM/REDUCT
 
@@ -709,29 +714,29 @@ MAINVAR/NUM/REDUCT
 	a
 	> simplify $ mainvar 2 ;
 	0
-	>
+
 	> simplify $ num (x/y^2) ;
 	x
 	> simplify $ num ('(100/6)) ;
 	50
 	> simplify $ num (a/4+b/6) ;
 	3*a+2*b
-	>
+
 	> simplify $ reduct ((a+b)*(c+2*d)) a ;
 	b*c+2*b*d
 	> simplify $ reduct ((a+b)*(c+2*d)) d ;
 	a*c+b*c
 	> simplify $ reduct ((a+b)*(c+2*d)) x ;
 	0
-	>
 
 Substitution
 ------------
+
 An important class of commands in REDUCE define substitutions for variables and
 expressions to be made during the evaluation of expressions.
-Such substitutions use (among others) the prefix operator ``SUB``.
+One such operation is the prefix operator ``SUB``.
 
-.. pull-quote:: ``syntax: sub <substlist> exprn::algebraic -> algebraic``
+.. describe:: sub <substlist> exprn::algebraic -> algebraic
 
 .. code-block:: pure
 
@@ -741,13 +746,18 @@ Such substitutions use (among others) the prefix operator ``SUB``.
   > simplify $ sub [a==sin x, b==sin y] (a^2+b^2) ;
   sin x^2+sin y^2
 
+Note that simple substitutions of this kind can also be done directly in Pure,
+using the :macro:`reduce` macro.
+
 Assignment
 ----------
+
 One may assign values to variables in the REDUCE environment. Note that
 in Pure the ``set`` operator and ``:=`` are equivalent, i.e. both sides
 are evaluated, contrary to the ``:=`` version in REDUCE.
 
-.. pull-quote:: ``syntax: set expr expr ; or  expr := expr``
+.. describe:: set expr expr
+   	      expr := expr
 
 .. code-block:: pure
 
@@ -765,20 +775,17 @@ are evaluated, contrary to the ``:=`` version in REDUCE.
 
 Matrix Calculations
 -------------------
+
 A very powerful feature of REDUCE is the ease with which matrix calculations
 can be performed. It fits very well into Pure's native matrix type.
 
 To keep it simple we show the usage of the different operators by examples
-using the well known ``Pauli matrices``. There is no loss of generality using
-only ``(2x2)`` matrices.
+using the well known `Pauli matrices`. See, e.g.,
+http://en.wikipedia.org/wiki/Pauli_matrices for a reference.
 
 .. math:: \sigma_1 = \begin{pmatrix} 0&1\\ 1&0 \end{pmatrix} \,\,\,\,\,
           \sigma_2 = \begin{pmatrix} 0&-i\\i&0 \end{pmatrix} \,\,\,\,\,
           \sigma_3 = \begin{pmatrix} 1&0\\ 0&-1\end{pmatrix}
-
-
-Pauli matrices (sigma 1..3).
-See e.g. http://en.wikipedia.org/wiki/Pauli_matrices for a reference.
 
 .. code-block:: pure
 
@@ -794,7 +801,7 @@ Check the identities
 
 where :math:`\sigma_0` denotes the unit matrix.
 
-Note: ``s1^2`` or ``s1*s1`` works.
+Note: Instead of  ``s1*s1`` we could also write ``s1^2`` here.
 
 .. code-block:: pure
 
@@ -816,7 +823,7 @@ Check: :math:`\det \sigma_i = -1, \forall i \in \{1,2,3\}.`
   > map (simplify . det) [s1,s2,s3] ;
   [-1,-1,-1]
 
-Calculate the Eigenvalues/-vectors of :math:`\sigma_2`:
+Calculate the eigenvalues/-vectors of :math:`\sigma_2`:
 
 .. code-block:: pure
 
@@ -847,28 +854,28 @@ Trace (operator ``trace``):
   > map (simplify.trace) [s1,s2,s3] ;
   [0,0,0]
 
-Cofactor (trivial here)
+Cofactor (trivial here):
 
 .. code-block:: pure
 
   > simplify $ cofactor s2 1 1 ;
   0
 
-Nullspace of :math:`\sigma_2` + {0,i;0,0}
+Nullspace of :math:`\sigma_2` + {0,i;0,0}:
 
 .. code-block:: pure
 
   > simplify $ nullspace (s2+{0,i;0,0}) ;
   [{0;1}]
 
-Rank
+Rank:
 
 .. code-block:: pure
 
  > map (simplify . rank) [s0,s1,s2,s3] ;
  [2,2,2,2]
 
-Inverse (simply :math:`\frac{1}{matrix}`)
+Inverse (simply :math:`\frac{1}{matrix}`):
 
 .. code-block:: pure
 
@@ -890,6 +897,7 @@ Solving without ``solve``:
 
 Limits
 ------
+
 From the package description:
 
 LIMITS is a fast limit package for REDUCE for functions which are continuous
@@ -897,9 +905,9 @@ except for computable poles and singularities, based on some earlier work by
 Ian Cohen and John P. Fitch.
 This package defines a LIMIT operator, called with the syntax:
 
-.. pull-quote:: ``limit expr::alg var limpoint::alg -> alg``
+.. describe:: limit expr::alg var limpoint::alg -> alg
 
-.. math:: \lim_{x \to \infty} x\,\sin \frac{1}{x} = ? \,\,\, \wedge
+.. math:: \lim_{x \to \infty} x\,\sin \frac{1}{x} = ?, \,\,\,
           \lim_{x \to 0} \frac{1}{x} = ?
 
 .. code-block:: pure
@@ -915,6 +923,7 @@ Author: Stanley L. Kameny.
 
 Ordinary differential equations solver
 --------------------------------------
+
 The ``ODESOLVE`` package is a solver for ordinary differential equations.
 
 Problem 1:
@@ -942,7 +951,7 @@ Problem 2:
   [y==(-e^(2*x)*A+e^(2*x)*B*e+A*e^2-B*e)/(e^x*e^2-e^x)]
 
 
-**Remember to remove dependencies**
+Remember to remove dependencies:
 
 .. code-block:: pure
 
@@ -951,6 +960,7 @@ Problem 2:
 
 Series Summation and Products
 -----------------------------
+
 ``SUM``: A package for series summation
 
 From the package description:
@@ -964,8 +974,8 @@ Author: Fujio Kako.
 
 Calculate
 
-.. math:: \sum_{n=1}^N \, n^3 \ldots \sum_{k=0}^{n-1} (a+k\,r) \ldots
-          \sum_{k=1}^{n+1} \frac{1}{(p+(k-1)\,q)\cdot (p+k\,q)} \ldots
+.. math:: \sum_{n=1}^N \, n^3,\,\,\, \sum_{k=0}^{n-1} (a+k\,r),\,\,\,
+          \sum_{k=1}^{n+1} \frac{1}{(p+(k-1)\,q)\cdot (p+k\,q)},\,\,\,
           \prod_{k=1}^N \frac{k}{k+2}
 
 
@@ -985,6 +995,7 @@ Calculate
 
 Taylor Series
 -------------
+
 ``TAYLOR``: Manipulation of Taylor series
 
 From the package description:
@@ -1017,13 +1028,17 @@ For details consult the package documentation in the REDUCE distribution.
   > simplify $ inverse_taylor (exp(x)-1) x y 0 8;
   (-105*y^8+120*y^7-140*y^6+168*y^5-210*y^4+280*y^3-420*y^2+840*y)/840
 
+Note that the "big O" residual terms are omitted in the results returned by
+``simplify``, although REDUCE will print them.
 
 Boolean Expressions
 -------------------
-The truth values within REDUCE are ``t`` and ``nil =  ()`` but are mapped
-to ``1`` and ``0`` respectively when interchanging results using ``simplify``.
+
+The truth values within REDUCE are ``t`` and ``nil = ()`` but are mapped to
+``1`` and ``0`` respectively when interchanging results using ``simplify``.
 Not all predicates (functions returning a truth value), however, can be called
-by ``simplify``, so one has to use the ``lisp`` function in some rare cases.
+by ``simplify``, so one has to use the ``lisp`` function in some
+circumstances.
 
 Some examples:
 
@@ -1037,20 +1052,21 @@ Some examples:
   > lisp (fixp 200) ;
   t
 
-  where fixp tests for integers.
+where ``fixp`` tests for integers.
 
-The following example shows a pitfall. Since there is a ``numberp`` in
-Pure as well as in REDUCE one has to be careful:
+The following example shows a pitfall. Since there is a ``numberp`` function
+in both Pure and REDUCE, the function needs to be quoted to make the
+expression go through to REDUCE:
 
 .. code-block:: pure
 
   > lisp (numberp x) ;
   0
 
-  > lisp (quote (numberp x)) ;
- []
+  > lisp ('numberp x) ;
+  []
 
-  > lisp (quote (numberp 111)) ;
+  > lisp ('numberp 111) ;
   t
 
 In the first case ``numberp x`` evaluates to zero in Pure, so the ``lisp``
@@ -1086,28 +1102,27 @@ Some other useful predicates in REDUCE are ``ordp`` and ``freeof``:
 
 Mathematical Functions
 ----------------------
-REDUCE provides many mathematical functions that
-can take arbitrary scalar expressions as their single argument:
+
+REDUCE provides many mathematical functions which can take arbitrary scalar
+expressions as their single argument:
 
   - ACOS ACOSH ACOT ACOTH ACSC ACSCH ASEC ASECH ASIN ASINH
   - ATAN ATANH ATAN2 COS COSH COT COTH CSC CSCH DILOG EI EXP
   - HYPOT LN LOG LOGB LOG10 SEC SECH SIN SINH SQRT TAN TANH ERF
 
-Note, however, if there is an equally named function in Pure and no quotes
-are used then the Pure function is used, that is for example,
-``cos x``, means cos in Pure, ``(quote cos) x`` means cos in REDUCE ...
-
-See the difference:
+Note that Pure also defines some these functions in its :mod:`math` module, so
+these may have to be quoted to prevent evaluation on the Pure side. For
+instance:
 
 .. code-block:: pure
 
-  > simplify $ (cos 4.3);
+  > simplify $ cos 4.3;
   cos (43/10)
   > using math;
   warning: external 'exp' shadows previous undefined use of this symbol
   warning: external 'sin' shadows previous undefined use of this symbol
   warning: external 'cos' shadows previous undefined use of this symbol
-  > simplify $ (cos 4.3);
+  > simplify $ cos 4.3;
   (-21601483)/53896027
 
 Some examples:
@@ -1166,8 +1181,9 @@ Victor Adamchik, Francis Wright and several others.
 
 Definite Integrals
 ------------------
-Package: DEFINT (definite integrals)
-Calculating integrals by using the Meijer G integration formula.
+
+``DEFINT``: Calculating definite integrals by using the Meijer G integration
+formula.
 
 .. math:: \int_0^\infty e^{-x} \, dx
 
@@ -1244,8 +1260,9 @@ Various transformations:
 
 Declarations, Switches and Loading
 ----------------------------------
+
 Lisp evaluation can be used in the REDUCE system, in particular, to declare
-operator symbols and their properties (simplify won't do that). E.g.:
+operator symbols and their properties (``simplify`` won't do that). E.g.:
 
 .. code-block:: pure
 
@@ -1254,7 +1271,7 @@ operator symbols and their properties (simplify won't do that). E.g.:
   > lisp ('prop myop); // => [odd:t,simpfn:simpiden]
   > simplify (myop (-x)); // => -myop x
 
-For the most common kinds of declarations, the reduce module already provides
+For the most common kinds of declarations, the :mod:`reduce` module provides
 the :func:`declare` function which takes care of the necessary Lisp magic and
 is safe to use. The above example can also be done as follows:
 
@@ -1265,59 +1282,92 @@ is safe to use. The above example can also be done as follows:
   > simplify (myop (-x));
   -myop x
 
-For a list of supported declarations see the description of :func:`declare`.
+Please see the description of :func:`declare` for a list of supported
+declarations.
 
-In Pure the REDUCE switches can be turned ``on/off`` as follows:
+The :mod:`reduce` module also provides a few other basic maintenance functions
+which are done with special commands in REDUCE:
 
-.. pull-quote:: ``reduce::switch "switch-id" 0/1 ;``
+.. describe:: reduce::switch "switch-name" 0|1
+   	      reduce::load "package-name"
+	      reduce::in "path/filename.red"
+	      reduce::capture 0|1
+	      reduce::feed "text"
 
-A package can be loaded by the command
+As already mentioned, REDUCE switches can be turned on and off with
+:func:`reduce::switch`, e.g.::
 
-.. pull-quote:: ``reduce::load "package-id" ;``
+  > reduce::switch "exp" 0 ;
+  0
 
-A REDUCE source file may be *read-in* by the command:
+Packages can be loaded with the :func:`reduce::load` command::
 
-.. pull-quote:: ``reduce::in "path/filename.red" ;``
+  > reduce::load "defint" ;
+  0
 
+REDUCE source files can be read in with the :func:`reduce::in` command::
+
+  > reduce::in "myreduce.red" ;
+  0
+
+Last but not least, REDUCE terminal input and output can also be redirected to
+string buffers using the :func:`reduce::feed` and :func:`reduce::capture`
+functions. For instance, the following code feeds some text with a Lisp form
+to REDUCE, which gets read by evaluating the Lisp form ``(eval read)``. The
+output is captured and can be inspected with the :func:`reduce::output`
+function::
+
+  > reduce::feed "(print '(a b c d))";
+  0
+  > reduce::capture 1; // start capturing output
+  0
+  > lisp ('eval read); // read buffered input and evaluate
+  [a,b,c,d]
+  > reduce::output;    // inspect buffered output
+  "(a b c d)\n"
+  > reduce::capture 0; // stop capturing output
+  0
 
 Plotting
 --------
-Using Gnuplot:
+
+REDUCE can do 2- and 3-dimensional function plots through its gnuplot_
+package. Some examples (note that we have to quote the ``x..y`` ranges here so
+that they get through to Reduce, rather than being evaluated on the Pure
+side):
 
 .. code-block:: pure
 
-  > reduce::load "gnuplot";
-
-Note that we have to quote the x..y ranges here so that they get through to
-Reduce, rather than being evaluated on the Pure side.
-
-.. code-block:: pure
-
-  > simplify $ 'plot (sin x/x) (x==(-15..15));
+  > simplify $ plot (sin x/x) (x=='(-15..15));
 
   // Multiple ranges.
-  > simplify $ 'plot (sin(x^2 + y^2) / sqrt(x^2 + y^2))
-  [x==(-12 .. 12), y==(-12 .. 12)];
+  > simplify $ plot (sin(x^2 + y^2) / sqrt(x^2 + y^2)) [x=='(-12..12), y=='(-12..12)];
 
   // Specifying options.
-  > simplify $ 'plot (cos (sqrt(x^2 + y^2))) [x==(-3 .. 3),y==(-3 .. 3)] hidden3d;
+  > simplify $ plot (cos (sqrt(x^2 + y^2))) [x=='(-3..3),y=='(-3 .. 3)] hidden3d;
 
   // Specifying points.
   > simplify $ plot [[0,0],[0,1],[1,1],[0,0],[1,0],[0,1],[0.5,1.5],[1,1],[1,0]];
 
   // Output options.
-  > simplify $ plot (sin x) [x=='(0 .. 10),terminal==postscript,output=="sin.ps"];
+  > simplify $ plot (sin x) [x=='(0..10),terminal==postscript,output=="sin.ps"];
 
 
-References:
------------
+References
+----------
 
-.. [REDUM] *REDUCE User’s Manual*, Version 3.8, Anthony C. Hearn,
-   Santa Monica, CA, USA.
+.. _[REDUM]:
 
-.. [LNCS102] *On the Integration of Algebraic Functions*, LNCS 102,
-   Springer Verlag, 1981.
+[REDUM]
+  *REDUCE User’s Manual*, Version 3.8, Anthony C. Hearn, Santa Monica, CA, USA.
 
-.. [SYMSAC81] P. M. A. Moore and A.C. Norman,
-   *Implementing a Polynomial Factorization and GCD Package*, Proc.
-   SYMSAC ’81, ACM (New York) (1981), 109-116.
+.. _[LNCS102]:
+
+[LNCS102]
+  *On the Integration of Algebraic Functions*, LNCS 102, Springer Verlag, 1981.
+
+.. _[SYMSAC81]:
+
+[SYMSAC81]
+  P. M. A. Moore and A.C. Norman, *Implementing a Polynomial Factorization and
+  GCD Package*, Proc.  SYMSAC ’81, ACM (New York) (1981), 109-116.
