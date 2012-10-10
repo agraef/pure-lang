@@ -375,11 +375,13 @@ extern void* PROC_get_raw_value();
 
 /* Our own addons and replacements, cf. proc-add.c. -ag */
 
+extern int PROC_make_cons();
 extern int PROC_capture_output(int flag);
 extern char *PROC_get_output();
 extern void PROC_clear_output();
 extern int PROC_feed_input(char *s);
 extern char *PROC_my_string_data(void* p) = PROC_string_data;
+extern int PROC_checksym(char *s) = checksym;
 
 namespace;
 
@@ -508,14 +510,26 @@ namespace;
    .. function:: lisp x
 
       This can be used to execute arbitrary Lisp code, which is sometimes
-      necessary to perform special functions in the Reduce system. Free
-      symbols are quoted automatically, and Pure lists are mapped to
-      corresponding Lisp lists and vice versa. The result is always a Pure
-      list or an atomic value. Note that you need to quote ``x`` if you want
-      to prevent it from being evaluated on the Pure side. This is to be used
-      with care. At present, the PROC interface isn't very forgiving if you
-      try to execute invalid Lisp code; it will most likely crash in such
-      cases.
+      necessary to perform special functions in the Reduce system. For
+      convenience, free symbols are quoted automatically, and Pure lists are
+      mapped to corresponding Lisp lists and vice versa. The result is always
+      a Pure list or an atomic value. Note that you need to quote ``x`` if you
+      want to prevent it from being evaluated on the Pure side. This is to be
+      used with care. An orderly exception is raised if you try to execute a
+      non-existing Lisp function. But there are some internal functions in
+      Reduce which aren't very forgiving if you try to execute them with
+      invalid arguments, and will most likely crash the Reduce system in such
+      cases. You have been warned!
+
+   .. function:: lispsym s::string
+
+      This function creates a special Pure identifier for any symbol given as
+      a string, even symbols which don't conform to Pure syntax. This is
+      sometimes needed to specify special Lisp symbols in calls to
+      :func:`lisp`, such as ``lisp (lispsym "oem-supervisor")``. (Note that if
+      such a special symbol occurs as a literal in a result returned by
+      :func:`lisp` or :func:`simplify` then it will get mangled into a form
+      which conforms to Pure syntax.)
 
    .. function:: declare declsym [foo,bar,...]
 
@@ -574,11 +588,12 @@ namespace;
 // Search path for the Reduce image file. Edit as needed.
 let REDUCE_PATH = ".:/usr/lib/pure";
 
-/* Exception constructors. The bad_reduce_image exception gets thrown when
-   reduce::start fails because it cannot find the Reduce image file. The other
-   exceptions are raised on inputs and outputs which 'simplify' and 'lisp'
-   don't understand (yet). */
-public bad_reduce_image bad_reduce_value bad_lisp_value;
+/* Exception constructors. The bad_reduce_image and bad_reduce_file exceptions
+   get thrown when reduce::start fails because it cannot find the Reduce image
+   file, or if you try to open a non-existing Reduce source file, respectively.
+   The other exceptions are raised on inputs and outputs which 'simplify' and
+   'lisp' don't understand (yet). */
+public bad_reduce_image bad_reduce_file bad_reduce_value bad_lisp_value;
 
 public lisp;
 
@@ -650,12 +665,32 @@ feed s::string = PROC_feed_input s;
 
 // Source a Reduce (.red) file. This captures all output, so you may want to
 // inspect reduce::output for messages while loading the file.
-in name = res when capture 1; res = lisp ('::in [name]); capture 0 end;
+in name::string = res when
+  // 'in' crashes if we try to execute it on a non-existing file, so check for
+  // that here. Note that you'll still get in trouble if you try to source
+  // invalid Reduce code, so don't!
+  fp = fopen name "r";
+  ~null fp || throw (bad_reduce_file name);
+  fclose fp;
+  capture 1; res = lisp ('::in [name]); capture 0;
+end;
 
 // Some special symbol lists, defined below.
 
-public variadic_syms nonvariadic_syms reduce_syms pure_syms prop_syms kdec_syms
-  cmd_syms;
+public variadic_syms nonvariadic_syms reduce_syms pure_syms prop_syms kdec_syms;
+
+// Helper function to return a printable representation for a function
+// symbol. This works like 'str', but strips the parens from symbols which are
+// actually operators.
+
+opstr x::symbol = tail (init (str x)) if arity x > 0;
+opstr x = str x otherwise;
+
+// Helper function to check if a symbol is defined as a function on the
+// Lisp/Reduce side.
+
+lispfunp x::symbol = checksym (opstr x);
+lispfunp _ = false otherwise;
 
 // Helper function to simplify arithmetic expressions. This basically expands
 // an arithmetic term to a sum-of-products form. It is used to evaluate
@@ -754,10 +789,6 @@ let reduce::prop_syms =
 // Symbols used in kernel declarations such as depend, korder etc.
 let reduce::kdec_syms = '[depend,nodepend,factor,remfac,order,korder,noncom];
 
-// Parameterless "commands" which can be invoked in Lisp mode. XXXTODO: Are
-// there other cases like this?
-let reduce::cmd_syms = '[list,read,plotreset]+[lispsym "oem-supervisor"];
-
 /* Uncomment this to get unmapped output in nested list format straight from
    Reduce (useful for debugging purposes). */
 //#! --disable mapped
@@ -843,9 +874,6 @@ simplify x = y when
     from_expr x = error x otherwise;
     // Convert symbols, with mapping as needed.
     from_sym x = opstr (catch (cst x) (pure_syms!x));
-    // Strip the parens from symbols which are actually operators.
-    opstr x::symbol = tail (init (str x)) if arity x > 0;
-    opstr x = str x otherwise;
   end;
   // Run Reduce to simplify the expression.
   PROC_simplify;
@@ -988,38 +1016,45 @@ end with
   error x = PROC_clear_stack $$ throw (bad_reduce_value x);
 end if get_started;
 
-// If the argument is neither an application nor a callable symbol, then it's
-// presumably a constant which is simply echoed as is.
-lisp x = x if ~applp x && all (~==x) reduce::cmd_syms;
+// If the argument is neither an application nor a symbol, then it's
+// presumably a literal which is simply echoed as is.
+lisp x = x if ~applp x && ~symbolp x;
 lisp x = y when
   // Clear the stack (to be sure).
   PROC_clear_stack;
   // Push x on the Reduce stack.
-  from_expr x with
+  from_expr false x with
     // These are all the data types natively supported by the interface.
     // Marshalling of list values is supported as well.
-    from_expr x::int = PROC_push_small_integer x;
-    from_expr x::bigint = PROC_push_big_integer (init (str x));
-    from_expr x::double = PROC_push_floating x;
-    from_expr x::string = PROC_push_string x;
-    from_expr x::rlist = from_expr (foldl ($) ('list) x);
-    from_expr (x:y) = from_expr ('cons x y);
-    from_expr x::appl = () when
+    from_expr _ x::int = PROC_push_small_integer x;
+    from_expr _ x::bigint = PROC_push_big_integer (init (str x));
+    from_expr _ x::double = PROC_push_floating x;
+    from_expr _ x::string = PROC_push_string x;
+    from_expr q [] = from_expr q ('nil);
+    from_expr q (x:y) = () when
+      do (from_expr q) [x,y];
+      if q then PROC_make_cons() else PROC_make_function_call "cons" 2;
+    end;
+    from_expr q x::appl = () when
       f:xs = a [] x with a xs (x@_ y) = a (y:xs) x; a xs x = x:xs end;
-      do from_expr xs;
+      q || lispfunp f || error x;
+      case x of
+	quote x = from_expr true x;
+	_ = do (from_expr q) xs;
+      end;
       PROC_make_function_call (opstr f) (#xs);
     end;
-    // Handle special cases of nullary symbols which are actually
-    // parameterless function calls.
-    from_expr x::symbol =
-      PROC_make_function_call (str x) 0 if any (===x) reduce::cmd_syms;
-    // Other symbols need to be quoted here so that PROC_lisp_eval doesn't try
-    // to evaluate them.
-    = PROC_push_symbol (opstr x) $$ PROC_make_function_call "quote" 1;
-    from_expr x = error x otherwise;
-    // Strip the parens from symbols which are actually operators.
-    opstr x::symbol = tail (init (str x)) if arity x > 0;
-    opstr x = str x otherwise;
+    // Handle special cases of symbols which are actually parameterless
+    // function calls.
+    from_expr q x::symbol =
+      PROC_make_function_call (str x) 0 if ~q && lispfunp x;
+    // Other symbols are auto-quoted here if necessary, so that PROC_lisp_eval
+    // doesn't try to evaluate them.
+    = () when
+      PROC_push_symbol (opstr x);
+      q || PROC_make_function_call "quote" 1;
+    end;
+    from_expr _ x = error x otherwise;
   end;
   // Invoke the Lisp evaluator.
   PROC_lisp_eval;

@@ -91,3 +91,47 @@ const char *PROC_my_string_data(PROC_handle p)
   buf[n] = 0;
   return buf;
 }
+
+int PROC_checksym(const char *s)
+{
+  void *res;
+  PROC_push_symbol(s);
+  PROC_make_function_call("quote", 1);
+  PROC_make_function_call("getd", 1);
+  PROC_lisp_eval();
+  res = PROC_get_value();
+  return !PROC_null(res);
+}
+
+int PROC_make_cons(void)
+{
+    Lisp_Object nil = C_nil;
+    Lisp_Object w;
+#ifdef CONSERVATIVE
+    volatile Lisp_Object sp;
+    C_stackbase = (Lisp_Object *)&sp;
+#endif
+    if (procstack == nil) return 1; /* Not enough args available */
+    w = qcar(procstack);
+    nil = C_nil;
+    if (exception_pending()) {
+      flip_exception();
+      return 2;  /* Failed to pop from stack */
+    }
+    procstack = qcdr(procstack);
+    if (procstack == nil) return 1; /* Not enough args available */
+    w = cons(qcar(procstack), w);
+    nil = C_nil;
+    if (exception_pending()) {
+      flip_exception();
+      return 2;  /* Failed to pop from stack */
+    }
+    procstack = qcdr(procstack);
+    w = cons(w, procstack);
+    if (exception_pending()) {
+      flip_exception();
+      return 5;  /* Failed to push onto stack */
+    }
+    procstack = w;
+    return 0;
+}
