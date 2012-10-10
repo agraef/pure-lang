@@ -648,6 +648,9 @@ start image::string args::smatrix = res when
   // Reduce is pretty noisy by default, shut it up. You might want to comment
   // this line for debugging purposes, or call reduce::verbosity yourself.
   verbosity 0;
+  // We also turn off interactive mode by default, since it may cause trouble
+  // if a program runs unattended, especially when capturing output.
+  reduce::switch "int" 0;
   // We need this to get matrices working, so always load this module.
   load "matrix";
 end if all stringp args;
@@ -1034,11 +1037,15 @@ lisp x = y when
     from_expr _ x::bigint = PROC_push_big_integer (init (str x));
     from_expr _ x::double = PROC_push_floating x;
     from_expr _ x::string = PROC_push_string x;
+    // Convert from Pure lists to Lisp lists.
     from_expr q [] = from_expr q ('nil);
     from_expr q (x:y) = () when
       do (from_expr q) [x,y];
       if q then PROC_make_cons() else PROC_make_function_call "cons" 2;
     end;
+    // Remap (') to quote in order to mimic what the Lisp reader does.
+    from_expr q (') = from_expr q quote;
+    from_expr q ('x) = from_expr q ('quote x);
     from_expr q x::appl = () when
       f:xs = a [] x with a xs (x@_ y) = a (y:xs) x; a xs x = x:xs end;
       q || lispfunp f || error x;
