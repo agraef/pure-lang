@@ -573,17 +573,18 @@ namespace;
    (machine ints, bigints, doubles, rationals and complex numbers). Some
    special conversions are applied to algebraic expressions to make arithmetic
    operations such as ``+``, ``*`` etc. work as expected. In addition, the
-   ``==``, ``..`` and ``:=`` infix operators can be used to denote equations,
-   ranges and assignments in Reduce, respectively. (Note that you may have to
-   quote these in some cases so that they don't get evaluated on the Pure
-   side.) Also, Reduce's ``arbconst n``, ``arbint n`` and ``arbcomplex n``
-   terms are mapped to Greek symbols ``αn``, ``βn`` and ``ζn`` on the Pure
-   side. For debugging purposes, all these automatic conversions can also be
-   turned off on the output side with the '``#!  --disable mapped``'
-   compilation pragma; this needs to be placed *before* the '``using
-   reduce;``' import clause to take effect. There are a number of other
-   conditional compilation options which may be used to selectively turn off
-   some of the conversions; please check the module source for details. */
+   ``==``, ``=>``, ``..`` and ``:=`` infix operators can be used to denote
+   equations, replacement rules, ranges and assignments in Reduce,
+   respectively. (Note that you may have to quote these in some cases so that
+   they don't get evaluated on the Pure side.) Also, Reduce's ``arbconst n``,
+   ``arbint n`` and ``arbcomplex n`` terms are mapped to Greek symbols ``αn``,
+   ``βn`` and ``ζn`` on the Pure side. For debugging purposes, all these
+   automatic conversions can also be turned off on the output side with the
+   '``#!  --disable mapped``' compilation pragma; this needs to be placed
+   *before* the '``using reduce;``' import clause to take effect. There are a
+   number of other conditional compilation options which may be used to
+   selectively turn off some of the conversions; please check the module
+   source for details. */
 
 // Search path for the Reduce image file. Edit as needed.
 let REDUCE_PATH = ".:/usr/lib/pure";
@@ -732,15 +733,15 @@ using namespace reduce;
 infix (=>) := ;
 public t infinity;
 public arbconst arbint arbcomplex;
-public set list mat det mateigen tp trace cofactor rank;
+public list mat det mateigen tp trace cofactor rank;
 public df intg limit solve odesolve sum prod;
-public equal plus difference minus times quotient expt;
+public set equal replaceby plus difference minus times quotient expt;
 // mathematical functions known to Reduce
 public acos acosh acot acoth acsc acsch asec asech asin asinh
   atan atanh atan2 cos cosh cot coth csc csch dilog ei exp
   hypot ln log logb log10 sec sech sin sinh sqrt tan tanh erf;
 public factorize remainder resultant decompose nextprime pf deg coeff coeffn
-  mainvar part lcof lpower lterm reduct sub;
+  mainvar part lcof lpower lterm reduct sub showrules;
 public taylor implicit_taylor inverse_taylor;
 public laplace_transform hankel_transform y_transform k_transform
   struveh_transform fourier_sin fourier_cos;
@@ -774,7 +775,8 @@ let reduce::variadic_syms =
 // XXXTODO: Complete this list.
 let reduce::nonvariadic_syms =
   '{infinity=>inf,int=>intg,minus=>neg,quotient=>(/),expt=>(^),
-    equal=>(==),set=>(:=),iv=>(..)} when iv = lispsym "*interval*" end;
+    equal=>(==),replaceby=>(=>),set=>(:=),iv=>(..)}
+  when iv = lispsym "*interval*" end;
 
 // All remapped symbols (from above).
 let reduce::reduce_syms = {variadic_syms, nonvariadic_syms};
