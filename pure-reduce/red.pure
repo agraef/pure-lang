@@ -1,0 +1,35 @@
+
+// Poor man's REDUCE interpreter. This keeps reading expressions or
+// declaration commands from stdin and evaluates them until you enter an empty
+// line or EOF.
+
+using math, reduce, system;
+
+// Use readline if you have it.
+// using readline;
+// myreadline prompt::string = s
+// when s = readline prompt; null s || add_history s end;
+
+// Otherwise you can use this as a replacement.
+myreadline prompt::string = fputs prompt stdout $$ fflush stdout $$ gets;
+
+// 'on' and 'off' declarations
+public on off;
+
+red = loop with
+  // A simplistic REPL.
+  loop = case myreadline "> " of
+    s::string = process s $$ loop if ~null s;
+    _ = () otherwise;
+  end;
+  // Get rid of trailing blanks and semicolons.
+  process s = process (init s) if any (==last s) [" ",";"];
+  // Process a declaration or REDUCE expression.
+  process s = case val s of
+    val _ = fputs "** syntax error\n" stderr if ~null lasterr;
+    on flag = reduce::switch (str flag) 1;
+    off flag = reduce::switch (str flag) 0;
+    x@(declare _ _) = eval x;
+    x = puts (str (simplify x)) otherwise;
+  end;
+end;
