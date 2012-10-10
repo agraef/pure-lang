@@ -80,13 +80,18 @@ scripts included in the distribution.
 
 Examples by Topic
 =================
-This is a small excerpt from the **REDUCE User's Manual** `[REDUM]`_,
-translated to Pure syntax. For any details we refer to that
-document. With this guide it should be straightforward to interprete
-back and forth.
-The REDUCE User's Manual as well as the documentation of each package and
-other valuable information may be found at
 
+This is a small excerpt from the **REDUCE User's Manual** `[REDUM]`_,
+translated to Pure syntax. For any details we refer to that document. With
+this guide it should be straightforward to translate back and forth between
+Pure and REDUCE syntax for the invocation of REDUCE functions. The one thing
+you have to keep in mind is that Pure uses *curried* notation for function
+applications, so where a function is invoked as ``f(x,y,z)`` in REDUCE, you'll
+have to call it as ``f x y z`` in Pure (with parentheses around each argument
+which is a compound expression).
+
+The REDUCE User's Manual as well as the documentation of each package and
+other valuable information may be found at:
 http://www.reduce-algebra.com/documentation.htm
 
 
@@ -204,16 +209,21 @@ which specifically deals with algebraic functions. The REDUCE User's Manual
 Note how to load packages.
 
 
-Length and Map
---------------
+Length, Map and Select
+----------------------
 
-``LENGTH`` is a generic operator for finding the length of various objects in
-the system, while the ``MAP`` operator applies a uniform evaluation pattern to
-all members of a composite structure: a matrix, a list, or the arguments of an
-operator expression.
+``LENGTH`` is a generic operator for finding the length of compound objects.
+Besides lists and matrices, this also includes algebraic expressions. The
+``MAP`` and ``SELECT`` operators let you manipulate such objects by applying a
+function to each element of the structure, or by picking the elements
+satisfying a given predicate function. Thus these operations serve pretty much
+the same purposes as :func:`#` (or :func:`dim`), :func:`map` and
+:func:`filter` in Pure, but in REDUCE they also work with the operands of an
+algebraic expression.
 
 .. describe:: length exprn
-   	      map fun obj
+   	      map fun exprn
+	      select fun exprn
 
 .. code-block:: pure
 
@@ -222,18 +232,73 @@ operator expression.
   > simplify $ length (x^n+a*x+2);
   3
 
-  > simplify $ map sqrt [1,2,3];
+  > simplify $ 'map sqrt [1,2,3];
   [1,2^(1/2),3^(1/2)]
-  > simplify $ map log  [x^n,x^m,sin x] ;
+  > simplify $ 'map log  [x^n,x^m,sin x];
   [log (x^n),log (x^m),log (sin x)]
 
-  > simplify $ map (\y->df y x)  [x^n,x^m,sin x] ;
+Note that ``map`` must be quoted if we want to evaluate it in REDUCE, since
+it's also a function in Pure. In this case, we might as well do the
+calculation using Pure's ``map``; the result is exactly the same.
+
+.. code-block:: pure
+
+  > simplify $ map sqrt [1,2,3];
+  [1,2^(1/2),3^(1/2)]
+  > simplify $ map log  [x^n,x^m,sin x];
+  [log (x^n),log (x^m),log (sin x)]
+
+If the function to be applied in calls to ``MAP`` or ``SELECT`` is a compound
+expression, it must either contain a single free variable (indicated with the
+``~`` prefix, e.g.: ``~w``) or a replacement rule of the form ``var =>
+exprn``. In either case the current elements are substituted for the free
+variable when the function is applied.
+
+.. code-block:: pure
+
+  > simplify $ 'map (y=>df y x)   [x^n,x^m,sin x];
   [x^n*n/x,x^m*m/x,cos x]
-  > simplify $ map (\y->intg y x)  [x^n,x^m,sin x] ;
+  > simplify $ 'map (y=>intg y x) [x^n,x^m,sin x];
   [x^n*x/(n+1),x^m*x/(m+1),-cos x]
 
-Note that the ``lambda`` expression in REDUCE is replaced by the
-corresponding Pure version.
+  > simplify $ select (evenp (deg (~w) y)) ((x+y)^5);
+  x^5+10*x^3*y^2+5*x*y^4
+  > simplify $ select (w=>evenp (deg w y)) ((x+y)^5);
+  x^5+10*x^3*y^2+5*x*y^4
+
+Contrast this with Pure where the function argument to :func:`map` is often
+specified as a lambda:
+
+.. code-block:: pure
+
+  > simplify $ map (\y->df y x)   [x^n,x^m,sin x];
+  [x^n*n/x,x^m*m/x,cos x]
+  > simplify $ map (\y->intg y x) [x^n,x^m,sin x];
+  [x^n*x/(n+1),x^m*x/(m+1),-cos x]
+
+In principle, the same correspondences also hold between REDUCE's ``select``
+and Pure's :func:`filter`. For instance, consider:
+
+.. code-block:: pure
+
+  > simplify $ select (w=>evenp (deg w x)) [2*x^2,3*x^3,4*x^4];
+  [2*x^2,4*x^4]
+
+The equivalent Pure :func:`filter` is:
+
+.. code-block:: pure
+
+  > filter (\w->simplify $ evenp (deg w x)) [2*x^2,3*x^3,4*x^4];
+  [2*x^2,4*x^4]
+
+Note that REDUCE is now being called inside the predicate function, the rest
+of the processing is done in Pure.
+
+Whether to prefer the calculation of maps and filters in REDUCE or in Pure is
+largely a matter of taste and which environment you feel most comfortable
+with. However, Pure offers a comprehensive collection of list processing
+functions for various purposes, which can at times be easier to use than the
+corresponding REDUCE facilities.
 
 Partial Fractions
 -----------------
@@ -269,15 +334,6 @@ switch ``off exp``:
   [2/(x+2),(-2)/(x+1),2/(x+1)^2]
 
 Note how the value of a Reduce switch is changed in Pure.
-
-Selection
----------
-
-The ``SELECT`` operator extracts from a list, or from the arguments of an
-``n–ary`` operator, elements corresponding to a boolean predicate.
-It is used with the syntax:
-
-.. describe:: select fun list
 
 Solving
 -------
@@ -574,8 +630,8 @@ Examples:
 
 ``PART`` may also be used to substitute a given part of an expression. In
 this case, the ``PART`` construct appears on the left-hand side of an
-assignment statement, and the expression to replace the given part on the
-right-hand side.
+assignment statement (cf. Assignment_), and the expression to replace the
+given part on the right-hand side.
 
 .. code-block:: pure
 
