@@ -9,6 +9,8 @@ calculations::
   Reduce (Free CSL version), 27-Sep-12 ...
   > simplify $ df ((x+5)^3) x;
   3*x^2+30*x+75
+  > simplify $ intg (exp (2*x)) x;
+  e^(2*x)/2
   > simplify $ solve (x^2+7) x;
   [x==sqrt 7*i,x==-sqrt 7*i]
 
@@ -20,38 +22,8 @@ you'll have to use Pure's :func:`eval` function to force its evaluation::
   > eval ans;
   [x==0.0+:2.64575131106459,x==0.0+:-2.64575131106459]
 
-You can also execute Lisp code in the CSL interpreter hosting the Reduce
-system. This is sometimes necessary to access special functionality, but
-should be done with care (at present invalid Lisp code can easily crash the
-interpreter). Most simple kinds of Lisp calls should be doable that way, but
-don't expect any miracles; the :func:`lisp` function is provided to access
-special functionality in the "symbolic mode" of the Reduce system, not to turn
-Pure into a full-featured Lisp frontend. The following example illustrates how
-you can use the :func:`lisp` function to declare an operator symbol and change
-or query its properties::
-
-  > lisp ('operator [myop]);
-  []
-  > lisp ('flag [myop] odd);
-  []
-  > lisp ('prop myop);
-  [odd:t,simpfn:simpiden]
-  > simplify (myop (-x));
-  -myop x
-
-If you find it awkward to evaluate Lisp forms in Pure, you can also achieve
-the same with the :func:`declare` function which covers most of the common
-Reduce declarations that might be needed::
-
-  > declare operator myop;
-  []
-  > declare odd myop;
-  []
-  > simplify (myop (-x));
-  -myop x
-
-This example shows how you can do a simple plot using Reduce's gnuplot_
-module::
+The following example shows how you can do a simple plot using Reduce's
+gnuplot_ module::
 
   > simplify $ plot [sin x/x, x=='(-20..20), terminal=="wxt"];
   0
@@ -75,8 +47,114 @@ The same plot can be written to a PostScript file sinc.ps as follows::
   > simplify $ plot [sin x/x, x=='(-20..20), terminal=="postscript", output=="sinc.ps"];
   0
 
-Many more examples can be found in the reduce_examp.pure and tests.pure
-scripts included in the distribution.
+The :func:`lisp` function can be used to execute Lisp code in the CSL
+interpreter hosting the Reduce system. Here are some basic examples. Note
+that, to be on the safe side, we just always quote the argument to
+:func:`lisp` here to prevent its evaluation on the Pure side. This isn't
+always necessary but won't hurt either, unless you specifically want to
+evaluate a computed expression. ::
+
+  > lisp ('plus 2 3);
+  5
+  > lisp ('car (list a b c d e));
+  a
+  > lisp ('cdr [a,b,[c,d],e]);
+  [b,[c,d],e]
+
+Lisp's truth values are ``t`` and ``nil``; the latter is just the empty list,
+so that's what you get if a Lisp predicate evaluates to "false"::
+
+  > lisp ('lessp 5 3);
+  []
+  > lisp ('greaterp 5 3);
+  t
+
+Most simple kinds of Lisp calls should be doable that way, but don't expect
+any miracles; the :func:`lisp` function is provided to access special
+functionality in the "symbolic mode" of the Reduce system, not to turn Pure
+into a full-featured Lisp frontend. The following example illustrates how you
+can use the :func:`lisp` function to declare an operator symbol and change or
+query its properties::
+
+  > lisp ('operator [myop]);
+  []
+  > lisp ('flag [myop] odd);
+  []
+  > lisp ('prop myop);
+  [odd:t,simpfn:simpiden]
+  > simplify (myop (-x));
+  -myop x
+
+If you find it awkward to evaluate Lisp forms in Pure, you can also achieve
+the same with the :func:`declare` function which covers most of the common
+Reduce declarations that might be needed::
+
+  > declare operator myop;
+  []
+  > declare odd myop;
+  []
+  > simplify (myop (-x));
+  -myop x
+
+For basic Pure-based usage of Reduce, it's convenient to have a simple
+read-eval-print loop which lets you just type some declarations and
+expressions to be simplified (in Pure syntax), and takes care of all the
+quoting and invoking :func:`simplify` for you. Here's a little Pure script
+which does that::
+
+  using math, reduce, system;
+
+  /* You might want to replace this with the real readline if you have the
+     corresponding Pure module installed. See the red.pure script in the
+     distribution for details. */
+  myreadline prompt::string = fputs prompt stdout $$ fflush stdout $$ gets;
+
+  red = loop with
+    // A simplistic REPL.
+    loop = case myreadline "> " of
+      s::string = process s $$ loop if ~null s;
+      _ = () otherwise;
+    end;
+    // Get rid of trailing blanks and semicolons.
+    process s = process (init s) if any (==last s) [" ",";"];
+    // Process a declaration or REDUCE expression.
+    process s = case val s of
+      val _ = fputs "** syntax error\n" stderr if ~null lasterr;
+      on flag = reduce::switch (str flag) 1;
+      off flag = reduce::switch (str flag) 0;
+      x@(declare _ _) = eval x;
+      x = puts (str (simplify x)) otherwise;
+    end;
+  end;
+
+Now you can run ``red`` at the Pure prompt and start typing the stuff you want
+to evaluate, one expression or declaration per line. Enter an empty line or
+:kbd:`Ctrl-D` when you're done to return to the Pure command prompt. ::
+
+  > red;
+  > df ((x+5)^3) x
+  3*x^2+30*x+75
+  > intg (exp (2*x)) x
+  e^(2*x)/2
+  > on rounded
+  > solve (x^2+7==17) x
+  [x==3.16227766016838,x==-3.16227766016838]
+  > off rounded
+  > solve (x^2+7==17) x
+  [x==sqrt 10,x==-sqrt 10]
+  > declare operator myop
+  > declare odd myop
+  > myop (-x)
+  -myop x
+  > plot [sin x/x, x==(-20..20), terminal=="wxt"]
+  0
+  > ^D
+  ()
+
+Note that we barely scratched the surface here; Reduce is a very complex
+system with lots of capabilities. Many more examples can be found in the
+reduce_examp.pure and tests.pure scripts included in the distribution, and in
+the `Examples by Topic`_ section below.
 
 Examples by Topic
 =================
@@ -195,7 +273,7 @@ which specifically deals with algebraic functions. The REDUCE User's Manual
 .. pull-quote:: *This package [...] will analytically integrate a wide range
    of expressions involving square roots where the answer exists in that class
    of functions.  It is an implementation of the work described in
-   J.H. Davenport* `[LNCS102]`_
+   J.H. Davenport* `[LNCS102]`_.
 
 .. code-block:: pure
 

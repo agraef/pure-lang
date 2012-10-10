@@ -428,7 +428,10 @@ namespace;
      using reduce;
 
    This starts up Reduce and makes the following variables and functions
-   available in Pure:
+   available in Pure.
+
+   Starting and Stopping Reduce
+   ----------------------------
 
    .. variable:: REDUCE_PATH
 
@@ -455,6 +458,9 @@ namespace;
       automatically if a Reduce instance is already running, so it isn't
       necessary to call :func:`reduce::finish` in this case.)
 
+   Maintenance Operations
+   ----------------------
+
    .. function:: reduce::verbosity n
 
       Sets the verbosity level; 0 means no messages at all (which is the
@@ -466,6 +472,12 @@ namespace;
         2: messages whenever a module of code is loaded
 
 	4: extra details in the garbage collector messages
+
+   .. function:: reduce::switch name:string val::int
+
+      Lets you change global Reduce options. This works like Reduce's ``on``
+      and ``off`` declarations; please check the Reduce documentation for
+      details.
 
    .. function:: reduce::capture flag::int
                  reduce::output
@@ -492,11 +504,8 @@ namespace;
       Sources the given Reduce (.red) file. This works like the Lisp ``in``
       function. Output is captured using :func:`reduce::capture`, see above.
 
-   .. function:: reduce::switch name:string val::int
-
-      Lets you change global Reduce options. This works like Reduce's ``on``
-      and ``off`` declarations; please check the Reduce documentation for
-      details.
+   Evaluation
+   ----------
 
    For convenience, the following operations are in the default namespace:
 
@@ -510,16 +519,15 @@ namespace;
    .. function:: lisp x
 
       This can be used to execute arbitrary Lisp code, which is sometimes
-      necessary to perform special functions in the Reduce system. For
-      convenience, free symbols are quoted automatically, and Pure lists are
-      mapped to corresponding Lisp lists and vice versa. The result is always
-      a Pure list or an atomic value. Note that you need to quote ``x`` if you
-      want to prevent it from being evaluated on the Pure side. This is to be
-      used with care. An orderly exception is raised if you try to execute a
-      non-existing Lisp function. But there are some internal functions in
-      Reduce which aren't very forgiving if you try to execute them with
-      invalid arguments, and will most likely crash the Reduce system in such
-      cases. You have been warned!
+      necessary to perform special functions in the Reduce system. Note that
+      you need to quote ``x`` if you want to prevent it from being evaluated
+      on the Pure side. This is true, in particular, for the quote itself,
+      which needs an extra level so that one quote goes through to the Lisp
+      system (e.g.: ``lisp (''(a b c))``). For convenience, free symbols are
+      quoted automatically, and Pure lists are mapped to corresponding Lisp
+      lists and vice versa (so ``lisp [a,b,c]`` actually yields the same
+      result as ``lisp (''(a b c))``). The result is always a Pure list or an
+      atomic value.
 
    .. function:: lispsym s::string
 
@@ -567,24 +575,36 @@ namespace;
 
    .. _gnuplot: http://www.gnuplot.info/
 
-   In Pure land, Reduce and Lisp expressions are represented using Pure's
-   standard curried notation. Marshalling of numeric data works in a
-   straightforward fashion and includes all natively supported Pure data types
-   (machine ints, bigints, doubles, rationals and complex numbers). Some
-   special conversions are applied to algebraic expressions to make arithmetic
-   operations such as ``+``, ``*`` etc. work as expected. In addition, the
-   ``==``, ``=>``, ``..`` and ``:=`` infix operators can be used to denote
-   equations, replacement rules, ranges and assignments in Reduce,
-   respectively. (Note that you may have to quote these in some cases so that
-   they don't get evaluated on the Pure side.) Also, Reduce's ``arbconst n``,
-   ``arbint n`` and ``arbcomplex n`` terms are mapped to Greek symbols ``αn``,
-   ``βn`` and ``ζn`` on the Pure side. For debugging purposes, all these
-   automatic conversions can also be turned off on the output side with the
-   '``#!  --disable mapped``' compilation pragma; this needs to be placed
-   *before* the '``using reduce;``' import clause to take effect. There are a
-   number of other conditional compilation options which may be used to
-   selectively turn off some of the conversions; please check the module
-   source for details. */
+   In Pure land, Reduce expressions are represented using Pure's standard
+   curried notation. Marshalling of numeric data works in a straightforward
+   fashion and includes all natively supported Pure data types (machine ints,
+   bigints, doubles, rationals and complex numbers). Some special conversions
+   are applied to algebraic expressions to make arithmetic operations such as
+   ``+``, ``*`` etc. work as expected. In addition, the ``==``, ``=>``, ``..``
+   and ``:=`` infix operators can be used to denote equations, replacement
+   rules, ranges and assignments in Reduce, respectively. (Note that you may
+   have to quote these in some cases so that they don't get evaluated on the
+   Pure side.) Also, Reduce's ``arbconst n``, ``arbint n`` and ``arbcomplex
+   n`` terms are mapped to Greek symbols ``αn``, ``βn`` and ``ζn`` on the Pure
+   side. For debugging purposes, all these automatic conversions can also be
+   turned off on the output side with the '``#!  --disable mapped``'
+   compilation pragma; this needs to be placed *before* the '``using
+   reduce;``' import clause to take effect. There are a number of other
+   conditional compilation options which may be used to selectively turn off
+   some of the conversions; please check the module source for details.
+
+   Lisp expressions are handled in a similar fashion, but here only a few
+   basic Pure data types (integers, doubles, strings and lists) are converted
+   to and from corresponding Lisp data. Function applications in Pure's
+   curried notation are mapped to corresponding Lisp forms. The result of
+   invoking :func:`lisp` is always one of the supported atomic types or a Pure
+   list.
+
+   The :func:`lisp` function is to be used with care. An orderly Pure
+   exception is raised if you try to execute a non-existing Lisp function. But
+   there are some internal functions in Reduce which aren't very forgiving if
+   you try to execute them with invalid arguments, and will most likely crash
+   the Reduce system in such cases. You have been warned! */
 
 // Search path for the Reduce image file. Edit as needed.
 let REDUCE_PATH = ".:/usr/lib/pure";
