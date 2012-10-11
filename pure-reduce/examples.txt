@@ -50,9 +50,7 @@ The same plot can be written to a PostScript file sinc.ps as follows::
 The :func:`lisp` function can be used to execute Lisp code in the CSL
 interpreter hosting the Reduce system. Here are some basic examples. Note
 that, to be on the safe side, we just always quote the argument to
-:func:`lisp` here to prevent its evaluation on the Pure side. This isn't
-always necessary but won't hurt either, unless you specifically want to
-evaluate a computed expression. ::
+:func:`lisp` here to prevent its evaluation on the Pure side. ::
 
   > lisp ('plus 2 3);
   5
@@ -97,10 +95,9 @@ Reduce declarations that might be needed::
   -myop x
 
 For basic Pure-based usage of Reduce, it's convenient to have a simple
-read-eval-print loop which lets you just type some declarations and
-expressions to be simplified (in Pure syntax), and takes care of all the
-quoting and invoking :func:`simplify` for you. Here's a little Pure script
-which does that::
+read-eval-print loop which lets you type some declarations and expressions to
+be simplified (in Pure syntax), and takes care of all the quoting and invoking
+:func:`simplify` for you. Here's a little Pure script which does that::
 
   using math, reduce, system;
 
@@ -152,9 +149,8 @@ to evaluate, one expression or declaration per line. Enter an empty line or
   ()
 
 Note that we barely scratched the surface here; Reduce is a very complex
-system with lots of capabilities. Many more examples can be found in the
-reduce_examp.pure and tests.pure scripts included in the distribution, and in
-the `Examples by Topic`_ section below.
+system with lots of capabilities. The following section explores some of these
+areas in more detail.
 
 Examples by Topic
 =================
@@ -372,11 +368,45 @@ The equivalent Pure :func:`filter` is:
 Note that REDUCE is now being called inside the predicate function, the rest
 of the processing is done in Pure.
 
-Whether to prefer the calculation of maps and filters in REDUCE or in Pure is
-largely a matter of taste and which environment you feel most comfortable
-with. However, Pure offers a comprehensive collection of list processing
-functions for various purposes, which can at times be easier to use than the
-corresponding REDUCE facilities.
+Of course, if you want to apply :func:`map`, :func:`filter` and similar Pure
+functions to an algebraic expression, you'll first have to extract its
+components as a list. Here's a little Pure function which mimics the way in
+which ``MAP`` and ``SELECT`` decompose an expression:
+
+.. code-block:: pure
+
+  terms x = case x of
+    f@_ u v = collect f x with
+      // Collect the operands of variadic Reduce operators.
+      collect f (f@_ u v) = collect f u+collect f v;
+      collect f x = [x] otherwise;
+    end if any (===f) (vals reduce::variadic_syms);
+    = [u,v] if arity f == 2;
+    _ = [x] otherwise;
+  end;
+
+For instance, consider:
+
+.. code-block:: pure
+
+  > simplify $ 'map (w=>w+1) (df ((x+y)^3) x);
+  3*x^2+6*x*y+3*y^2+3
+
+With the help of ``terms`` we can also do this using Pure's :func:`map` as
+follows:
+
+.. code-block:: pure
+
+  > map (+1) $ terms (simplify (df ((x+y)^3) x));
+  [3*x^2+1,6*x*y+1,3*y^2+1]
+  > simplify $ foldl (+) 0 ans;
+  3*x^2+6*x*y+3*y^2+3
+
+While the REDUCE version is shorter and only involves a single call to
+:func:`simplify`, with a little bit of programming the Pure solution can be
+made just as convenient. More importantly, this method easily generalizes to
+other list operations. This makes it possible to apply Pure's full arsenal of
+generic list functions which goes beyond what's available in REDUCE.
 
 Partial Fractions
 -----------------
