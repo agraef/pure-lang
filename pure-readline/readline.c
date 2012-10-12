@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 
 /* You might have to edit this if readline/editline lives elsewhere on your
    system. */
@@ -36,6 +37,28 @@ static void my_init_history(void)
   }
 }
 
+static HISTORY_STATE *save_hist = NULL;
+static int histmax = -1;
+
+static void push_history(void)
+{
+  save_hist = history_get_history_state();
+  histmax = unstifle_history();
+  if (!my_hist) my_init_history();
+  history_set_history_state(my_hist);
+}
+
+static void pop_history(bool save)
+{
+  if (save) {
+    if (my_hist) free(my_hist);
+    my_hist = history_get_history_state();
+  }
+  history_set_history_state(save_hist);
+  free(save_hist);
+  if (histmax>=0) stifle_history(histmax);
+}
+
 extern pure_expr *wrap_readline(const char *prompt)
 {
   pure_expr *res;
@@ -44,81 +67,46 @@ extern pure_expr *wrap_readline(const char *prompt)
     rl_basic_word_break_characters;
   rl_completion_func_t *save_rl_attempted_completion_function =
     rl_attempted_completion_function;
-  HISTORY_STATE *save_hist = history_get_history_state();
-  int histmax = unstifle_history();
   rl_readline_name = NULL;
   rl_basic_word_break_characters = " \t\n\"\\'`@$><=,;!|&{([";
   rl_attempted_completion_function = NULL;
-  if (!my_hist)
-    /* Create a new (and empty) history. */
-    my_init_history();
-  history_set_history_state(my_hist);
+  push_history();
   res = pure_cstring(readline(prompt));
-  if (my_hist) free(my_hist);
-  my_hist = history_get_history_state();
+  pop_history(true);
   rl_readline_name = save_rl_readline_name;
   rl_basic_word_break_characters = save_rl_basic_word_break_characters;
   rl_attempted_completion_function = save_rl_attempted_completion_function;
-  history_set_history_state(save_hist);
-  free(save_hist);
-  if (histmax>=0) stifle_history(histmax);
   return res;
 }
 
 extern void wrap_add_history(const char *s)
 {
-  HISTORY_STATE *save_hist = history_get_history_state();
-  int histmax = unstifle_history();
-  if (!my_hist) my_init_history();
-  history_set_history_state(my_hist);
+  push_history();
   add_history(s);
-  if (my_hist) free(my_hist);
-  my_hist = history_get_history_state();
-  history_set_history_state(save_hist);
-  free(save_hist);
-  if (histmax>=0) stifle_history(histmax);
+  pop_history(true);
 }
 
 extern void wrap_clear_history(void)
 {
-  HISTORY_STATE *save_hist = history_get_history_state();
-  int histmax = unstifle_history();
-  if (!my_hist) my_init_history();
-  history_set_history_state(my_hist);
+  push_history();
   clear_history();
-  if (my_hist) free(my_hist);
-  my_hist = history_get_history_state();
-  history_set_history_state(save_hist);
-  free(save_hist);
-  if (histmax>=0) stifle_history(histmax);
+  pop_history(true);
 }
 
 extern int wrap_read_history(const char *fname)
 {
   int res;
-  HISTORY_STATE *save_hist = history_get_history_state();
-  int histmax = unstifle_history();
-  if (!my_hist) my_init_history();
-  history_set_history_state(my_hist);
+  push_history();
   res = read_history(fname);
-  if (my_hist) free(my_hist);
-  my_hist = history_get_history_state();
-  history_set_history_state(save_hist);
-  free(save_hist);
-  if (histmax>=0) stifle_history(histmax);
+  pop_history(true);
   return res;
 }
 
 extern int wrap_write_history(const char *fname)
 {
   int res;
-  HISTORY_STATE *save_hist = history_get_history_state();
-  int histmax = unstifle_history();
-  if (!my_hist) my_init_history();
-  history_set_history_state(my_hist);
+  push_history();
   res = write_history(fname);
-  history_set_history_state(save_hist);
-  free(save_hist);
-  if (histmax>=0) stifle_history(histmax);
+  pop_history(false);
   return res;
 }
