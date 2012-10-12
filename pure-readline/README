@@ -14,9 +14,11 @@ Get the latest source from
 http://pure-lang.googlecode.com/files/pure-readline-@version@.tar.gz.
 
 This is a trivial wrapper around GNU readline, which gives Pure scripts access
-to the ``readline`` and ``add_history`` functions. The wrapper can also be
-used with the BSD editline a.k.a. libedit library, a readline replacement
-licensed under the 3-clause BSD license. You can find these at:
+to the most important facilities of the readline interface. This includes
+support for the ``readline`` function itself (without custom completion at
+present) and basic history management. The wrapper can also be used with the
+BSD editline a.k.a. libedit library, a readline replacement licensed under the
+3-clause BSD license. You can find these at:
 
 - GNU readline: http://tiswww.tis.case.edu/~chet/readline/rltop.html
 
@@ -38,7 +40,7 @@ To select editline/libedit instead, you only have to uncomment a line at the
 beginning of the Makefile. Also, you might want to check the beginning of
 readline.c for the proper location of the corresponding header files.
 
-The module provides two functions:
+The module provides the following functions:
 
 .. function:: readline prompt
 
@@ -50,6 +52,21 @@ The module provides two functions:
 
    Adds the given line (a string) to the command history.
 
+.. function:: clear_history
+
+   Clears the command history.
+
+.. function:: read_history fname
+
+   Reads the command history from the given file. Note that this in fact
+   *adds* the contents of the history file to the current history, so you may
+   want to call :func:`clear_history` beforehand if this function is called
+   multiple times.
+
+.. function:: write_history fname
+
+   Writes the current command history to the given file.
+
 Example::
 
   > readline "input> ";
@@ -60,3 +77,8 @@ Example::
   > readline "input> ";
   input> <EOF>
   #<pointer 0>
+  > write_history "history"; // save the history
+  0
+  > clear_history;
+  > read_history "history"; // read the history
+  0

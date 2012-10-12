@@ -1,5 +1,5 @@
 
-/* Copyright (c) 2009 Albert Graef
+/* Copyright (c) 2009-2012 Albert Graef
 
    Copying and distribution of this file, with or without modification,
    are permitted in any medium without royalty provided the copyright
@@ -69,9 +69,7 @@ extern void wrap_add_history(const char *s)
 {
   HISTORY_STATE *save_hist = history_get_history_state();
   int histmax = unstifle_history();
-  if (!my_hist)
-    /* Create a new (and empty) history. */
-    my_init_history();
+  if (!my_hist) my_init_history();
   history_set_history_state(my_hist);
   add_history(s);
   if (my_hist) free(my_hist);
@@ -79,4 +77,48 @@ extern void wrap_add_history(const char *s)
   history_set_history_state(save_hist);
   free(save_hist);
   if (histmax>=0) stifle_history(histmax);
+}
+
+extern void wrap_clear_history(void)
+{
+  HISTORY_STATE *save_hist = history_get_history_state();
+  int histmax = unstifle_history();
+  if (!my_hist) my_init_history();
+  history_set_history_state(my_hist);
+  clear_history();
+  if (my_hist) free(my_hist);
+  my_hist = history_get_history_state();
+  history_set_history_state(save_hist);
+  free(save_hist);
+  if (histmax>=0) stifle_history(histmax);
+}
+
+extern int wrap_read_history(const char *fname)
+{
+  int res;
+  HISTORY_STATE *save_hist = history_get_history_state();
+  int histmax = unstifle_history();
+  if (!my_hist) my_init_history();
+  history_set_history_state(my_hist);
+  res = read_history(fname);
+  if (my_hist) free(my_hist);
+  my_hist = history_get_history_state();
+  history_set_history_state(save_hist);
+  free(save_hist);
+  if (histmax>=0) stifle_history(histmax);
+  return res;
+}
+
+extern int wrap_write_history(const char *fname)
+{
+  int res;
+  HISTORY_STATE *save_hist = history_get_history_state();
+  int histmax = unstifle_history();
+  if (!my_hist) my_init_history();
+  history_set_history_state(my_hist);
+  res = write_history(fname);
+  history_set_history_state(save_hist);
+  free(save_hist);
+  if (histmax>=0) stifle_history(histmax);
+  return res;
 }
