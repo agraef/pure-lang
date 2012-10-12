@@ -8,9 +8,11 @@
    notice and this notice are preserved.  This file is offered as-is,
    without any warranty. */
 
-/* Our readline function is actually a simple wrapper around the corresponding
-   C function, so that we don't leak memory on the returned string value. */
+/* Our readline functions are simple wrappers around the corresponding C
+   functions, so that we don't leak memory on the returned string value and so
+   that we can keep the history and other relevant status variables separate
+   from the Pure interpreter. */
 
 using "lib:readline";
 extern expr* wrap_readline(char* prompt) = readline;
-extern void add_history(char* s);
+extern void wrap_add_history(char* s) = add_history;
