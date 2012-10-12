@@ -7020,9 +7020,9 @@ void pure_debug_rule(void *_e, void *_r)
   bool done = false;
   while (!done) {
     string cmdline, cmd, arg;
-    extern char *(*command_input)(const char *prompt);
-    if (!cin.eof() && command_input) {
-      char *s = command_input(": ");
+    extern char *(*command_input2)(const char *prompt);
+    if (!cin.eof() && command_input2) {
+      char *s = command_input2(": ");
       if (s)
 	cmdline = s;
       else {

@@ -340,6 +340,7 @@ pure_completion(const char *text, int start, int end)
 /* Interactive command line, using readline/libedit. */
 
 extern char *(*command_input)(const char *prompt);
+extern char *(*command_input2)(const char *prompt);
 extern void (*exit_handler)();
 
 static char *my_command_input(const char *prompt)
@@ -347,6 +348,33 @@ static char *my_command_input(const char *prompt)
   char *s = readline(prompt);
 #ifdef HAVE_READLINE_HISTORY
   if (s && *s) add_history(s);
+#endif
+  return s;
+}
+
+/* Secondary input routine, to be used by the debugger. We keep this separate,
+   so that the debugger has its own command history. */
+
+#ifdef HAVE_READLINE_HISTORY
+static HISTORY_STATE *my_hist = NULL;
+#endif
+
+static char *my_command_input2(const char *prompt)
+{
+#ifdef HAVE_READLINE_HISTORY
+  HISTORY_STATE *save_hist = history_get_history_state();
+  int histmax = unstifle_history();
+  history_set_history_state(my_hist);
+  stifle_history(600);
+#endif
+  char *s = readline(prompt);
+#ifdef HAVE_READLINE_HISTORY
+  if (s && *s) add_history(s);
+  free(my_hist);
+  my_hist = history_get_history_state();
+  history_set_history_state(save_hist);
+  free(save_hist);
+  unstifle_history(); if (histmax>=0) stifle_history(histmax);
 #endif
   return s;
 }
@@ -870,6 +898,7 @@ _|                       for license information.)\n\
   if (want_editing && isatty(fileno(stdin))) {
     // initialize readline
     command_input = my_command_input;
+    command_input2 = my_command_input2;
     // make sure that we disable texmacs mode if readline is used
     interp.texmacs = false;
     exit_handler = my_exit_handler;
@@ -878,6 +907,7 @@ _|                       for license information.)\n\
     rl_basic_word_break_characters = " \t\n\"\\'`@$><=,;!|&{([";
 #ifdef HAVE_READLINE_HISTORY
     using_history();
+    my_hist = history_get_history_state();
     read_history(interp.histfile.c_str());
     stifle_history(600);
     histfile = strdup(interp.histfile.c_str());

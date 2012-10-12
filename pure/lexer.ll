@@ -73,8 +73,9 @@ static void check(const yy::location& l, const char* s, bool decl);
 // Check for namespace brackets.
 static void nsbracket(symbol* sym);
 
-/* Hook for interactive command input. */
+/* Hooks for interactive command input. */
 char *(*command_input)(const char *prompt);
+char *(*command_input2)(const char *prompt);
 void (*exit_handler)();
 static void lex_input(const char *prompt, char *buf,
 		      size_t &result, size_t max_size);
