@@ -16,4 +16,12 @@
 
   <assign|pure-input|<macro|prompt|body|<style-with|src-compact|none|<generic-input|<with|color|dark
   green|<arg|prompt>>|<with|color|dark blue|<arg|body>>>>>>
+
+  <assign|pure-plain-output|<value|pure-output>>
+
+  <assign|pure-plain-input|<value|pure-input>>
+
+  <assign|pure-quiet-output|<value|pure-output>>
+
+  <assign|pure-quiet-input|<value|pure-input>>
 </body>
