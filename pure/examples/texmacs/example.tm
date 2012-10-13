@@ -451,7 +451,7 @@
   <calc-output|field3|<calc-ref|table1-d4>|2*cos (x^2)*x>. To these ends, we
   set the Ref field of the table to <verbatim|table1>. The reference to cell
   <verbatim|d4> can then be entered with the following key sequence:
-  <verbatim|\\! \\? table1-d4>.
+  <verbatim|\\! \\? table1-d4 Return>.
 </body>
 
 <\initial>
