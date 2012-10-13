@@ -6921,7 +6921,8 @@ static const char *stacklab(interpreter& interp,
 static const bool yes_or_no(const string& msg)
 {
   char ans;
-  cout << msg << " ";
+  cout << TEXMACS_BEGIN_PROMPT << msg << " " << TEXMACS_END_PROMPT;
+  cout.flush();
   cin >> noskipws >> ans;
   bool res = cin.good() && ans == 'y';
   while (cin.good() && ans != '\n') cin >> noskipws >> ans;

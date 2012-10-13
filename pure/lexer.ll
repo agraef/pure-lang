@@ -1744,7 +1744,8 @@ static int argcmp(const char *s, const char *t)
 static const bool yes_or_no(const string& msg)
 {
   char ans;
-  cout << msg << " ";
+  cout << TEXMACS_BEGIN_PROMPT << msg << " " << TEXMACS_END_PROMPT;
+  cout.flush();
   cin >> noskipws >> ans;
   bool res = cin.good() && ans == 'y';
   while (cin.good() && ans != '\n') cin >> noskipws >> ans;
@@ -3317,9 +3318,11 @@ Options may be combined, e.g., clear -fg f* is the same as clear -f -g f*.\n\
       if (tlevel == 0) tlevel = 1;
       bool chk = true;
       if (!interp.output) {
-	cout << "This will clear all temporary definitions at level #"
+	cout << TEXMACS_BEGIN_PROMPT
+	     << "This will clear all temporary definitions at level #"
 	     << tlevel << (tlevel<interp.temp?" and above":"")
-	     << ".\nContinue (y/n)? ";
+	     << ". Continue (y/n)? " << TEXMACS_END_PROMPT;
+	cout.flush();
 	cin >> noskipws >> ans;
 	bool chk = ans == 'y';
 	if (cin.good() && chk) {
