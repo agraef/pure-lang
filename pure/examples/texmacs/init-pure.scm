@@ -7,14 +7,20 @@
   (:launch "pure -i --texmacs")
   (:session "Pure"))
 
-;; same with plain signon (less fancy)
+;; plain signon (less fancy)
 (plugin-configure pure-plain
   (:require (url-exists-in-path? "pure"))
   (:launch "pure -i --plain --texmacs")
   (:session "Pure-plain"))
 
-;; same without signon ("quiet")
+;; without signon ("quiet")
 (plugin-configure pure-quiet
   (:require (url-exists-in-path? "pure"))
   (:launch "pure -i -q --texmacs")
   (:session "Pure-quiet"))
+
+;; debugging session
+(plugin-configure pure-debug
+  (:require (url-exists-in-path? "pure"))
+  (:launch "pure -i -g --texmacs")
+  (:session "Pure-debug"))

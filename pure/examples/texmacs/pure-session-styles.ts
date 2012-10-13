@@ -24,4 +24,8 @@
   <assign|pure-quiet-output|<value|pure-output>>
 
   <assign|pure-quiet-input|<value|pure-input>>
+
+  <assign|pure-debug-output|<value|pure-output>>
+
+  <assign|pure-debug-input|<value|pure-input>>
 </body>
