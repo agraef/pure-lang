@@ -117,14 +117,6 @@
     <\input>
       \<gtr\>\ 
     <|input>
-      <\text>
-        This is normal text.
-      </text>
-    </input>
-
-    <\input>
-      \<gtr\>\ 
-    <|input>
       fact n = if n\<gtr\>0 then n*fact (n-1) else 1;
     </input>
 

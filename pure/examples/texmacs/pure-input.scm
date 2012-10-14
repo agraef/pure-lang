@@ -1,14 +1,11 @@
 
-;; Basic input conversions for the scripting support, pilfered from TeXmacs'
-;; gnuplot plugin and the sample input plugin.
+;; Basic input conversions. This has mostly been pilfered from various TeXmacs
+;; plugins. XXXTODO: Equations and equation arrays are broken right now.
 
 (texmacs-module (pure-input)
   (:use (utils plugins plugin-convert)))
 
-;; This only covers a small part of TeXmacs' math mode right now. I have no
-;; idea what else to put in here, so just add the things that you need.
-;; See http://www.texmacs.org/tmweb/manual/webman-write-itf.en.html, section
-;; "Mathematical and customized input" on how these conversions work.
+;; do something reasonable with sub- and superscripts
 
 (define (pure-rsub r)
   (display "!(")
@@ -27,39 +24,190 @@
   (plugin-input (cadr t))
   (display "))"))
 
-(plugin-input-converters pure
-  (rows plugin-input-var-rows)
-  (rsub pure-rsub)
-  (rsup pure-rsup)
-  (frac pure-frac)
-  ("<mathe>" "e")
-  ("<mathpi>" "pi")
-  ("<backslash>" "\\")
-  ("<ldots>" "..")
-  ("<cdots>" "..")
-  ("<cdot>" "*")
-  ("<times>" "*")
-  ("<neq>" "~=")
-  ("<less>" "<")
-  ("<gtr>" ">")
-  ("<neg>" "~")
-  ("<vee>" "||")
-  ("<wedge>" "&&"))
+(define (pure-mid r)
+  (plugin-input (car r)))
 
-(plugin-input-converters pure-script
+;; matrix support (pilfered from maxima-input.scm, slightly massaged for Pure)
+
+(define (pure-input-var-row r)
+  (if (nnull? r)
+      (begin
+	(display ", ")
+	(plugin-input (car r))
+	(pure-input-var-row (cdr r)))))
+
+(define (pure-input-row r)
+  (display "{")
+  (plugin-input (car r))
+  (pure-input-var-row (cdr r))
+  (display "}"))
+
+(define (pure-input-var-rows t)
+  (if (nnull? t)
+      (begin
+	(display "; ")
+	(pure-input-row (car t))
+	(pure-input-var-rows (cdr t)))))
+
+(define (pure-input-rows t)
+  (display "{")
+  (pure-input-row (car t))
+  (pure-input-var-rows (cdr t))
+  (display "}"))
+
+(define (pure-input-descend-last args)
+  (if (null? (cdr args))
+      (plugin-input (car args))
+      (pure-input-descend-last (cdr args))))
+
+(define (pure-input-det args)
+  (display "det(")
+  (pure-input-descend-last args)
+  (display ")"))
+
+;; roots (pilfered from maxima-input.scm)
+
+(define (pure-input-sqrt args)
+  (if (= (length args) 1)
+      (begin
+        (display "sqrt(")
+        (plugin-input (car args))
+        (display ")"))
+      (begin
+        (display "(")
+        (plugin-input (car args))
+        (display ")^(1/(")
+        (plugin-input (cadr args))
+        (display "))"))))
+
+(plugin-input-converters pure
+  (rows pure-input-rows)
+  (det pure-input-det)
+  (sqrt pure-input-sqrt)
+  (mid pure-mid)
   (rsub pure-rsub)
   (rsup pure-rsup)
   (frac pure-frac)
+  (dfrac pure-frac)
+  (tfrac pure-frac)
+  (frac* pure-frac)
+
+;; These are mostly from the generic converter. Note that some of these aren't
+;; defined in Pure by default, but you might want to declare them yourself.
+;; There's probably stuff missing here and you might want to change some of
+;; these assignments.
+
+  ("<longequal>" "==")
+  ("<assign>" ":=")
+  ("<plusassign>" "+=")
+  ("<minusassign>" "-=")
+  ("<timesassign>" "*=")
+  ("<overassign>" "/=")
+  ("<lflux>" "<<")
+  ("<gflux>" ">>")
   ("<mathe>" "e")
   ("<mathpi>" "pi")
   ("<backslash>" "\\")
-  ("<ldots>" "..")
-  ("<cdots>" "..")
-  ("<cdot>" "*")
-  ("<times>" "*")
-  ("<neq>" "~=")
-  ("<less>" "<")
-  ("<gtr>" ">")
+
+  ("<implies>" "=<gtr>")
+  ("<Rightarrow>" "=<gtr>")
+  ("<equiv>" "===") ; syntactic identity in Pure
+  ("<Leftrightarrow>" "<less>=<gtr>")
   ("<neg>" "~")
+  ("<wedge>" "&&")
   ("<vee>" "||")
-  ("<wedge>" "&&"))
+  ("<neq>" "~=")
+  ("<less>" "<less>")
+  ("<gtr>" "<gtr>")
+  ("<leq>" "<less>=")
+  ("<geq>" "<gtr>=")
+  ("<leqslant>" "<less>=")
+  ("<geqslant>" "<gtr>=")
+  ("<ll>" "<less><less>")
+  ("<gg>" "<gtr><gtr>")
+  ("<into>" "-<gtr>")
+  ("<mapsto>" "|-<gtr>")
+  ("<rightarrow>" "-<gtr>")
+  ("<transtype>" ":<gtr>")
+
+  ("<um>" "-")
+  ("<upl>" "") ; unary plus not supported in Pure
+  ("<times>" "*")
+  ("<ast>" "*")
+  ("<cdot>" "*")
+  ("<cdots>" "..")
+  ("<ldots>" "..")
+  ("<colons>" "::")
+  ("<sharp>" "#")
+  ("<circ>" ".") ; function composition in Pure
+
+  ("<bbb-C>" "CC")
+  ("<bbb-F>" "FF")
+  ("<bbb-N>" "NN")
+  ("<bbb-K>" "KK")
+  ("<bbb-R>" "RR")
+  ("<bbb-Q>" "QQ")
+  ("<bbb-Z>" "ZZ")
+  ("<mathe>" "e")
+  ("<mathpi>" "pi")
+  ("<mathi>" "i")
+
+  ("<infty>"      "inf")
+  ("<emptyset>"   "[]")
+  ("<in>"         "=") ; makes sense only in comprehensions
+
+  ("<alpha>"      "alpha")
+  ("<beta>"       "beta")
+  ("<gamma>"      "gamma")
+  ("<delta>"      "delta")
+  ("<epsilon>"    "epsilon")
+  ("<varepsilon>" "epsilon")
+  ("<zeta>"       "zeta")
+  ("<eta>"        "eta")
+  ("<theta>"      "theta")
+  ("<vartheta>"   "theta")
+  ("<iota>"       "iota")
+  ("<kappa>"      "kappa")
+  ("<lambda>"     "lambda")
+  ("<mu>"         "mu")
+  ("<nu>"         "nu")
+  ("<xi>"         "xi")
+  ("<omicron>"    "omicron")
+  ("<pi>"         "pi")
+  ("<varpi>"      "pi")
+  ("<rho>"        "rho")
+  ("<varrho>"     "varrho")
+  ("<sigma>"      "sigma")
+  ("<varsigma>"   "sigma")
+  ("<tau>"        "tau")
+  ("<upsilon>"    "upsilon")
+  ("<phi>"        "phi")
+  ("<varphi>"     "phi")
+  ("<chi>"        "chi")
+  ("<psi>"        "psi")
+  ("<omega>"      "omega")
+
+  ("<Alpha>"      "Alpha")
+  ("<Beta>"       "Beta")
+  ("<Gamma>"      "Gamma")
+  ("<Delta>"      "Delta")
+  ("<Epsilon>"    "Epsilon")
+  ("<Zeta>"       "Zeta")
+  ("<Eta>"        "Eta")
+  ("<Theta>"      "Theta")
+  ("<Iota>"       "Iota")
+  ("<Kappa>"      "Kappa")
+  ("<Lambda>"     "Lambda")
+  ("<Mu>"         "Mu")
+  ("<Nu>"         "Nu")
+  ("<Xi>"         "Xi")
+  ("<Omicron>"    "Omicron")
+  ("<Pi>"         "Pi")
+  ("<Rho>"        "Rho")
+  ("<Sigma>"      "Sigma")
+  ("<Tau>"        "Tau")
+  ("<Upsilon>"    "Upsilon")
+  ("<Phi>"        "Phi")
+  ("<Chi>"        "Chi")
+  ("<Psi>"        "Psi")
+  ("<Omega>"      "Omega"))

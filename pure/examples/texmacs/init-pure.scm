@@ -3,14 +3,9 @@
 ;; file (along with the pure-input.scm file) into your
 ;; ~/.TeXmacs/plugins/pure/progs folder (create the path if needed).
 
-;; Scripts to be preloaded (if present) in the interpreter used for
-;; pure-script below. Please note that this is just an example; you should
-;; adjust this to your needs.
+;; Scripts to be preloaded (if present) in the pure-script plugin. Note that
+;; this is just an example; you should adjust this to your needs.
 (define pure-scripts (list "reduce.pure"))
-
-;; Some stuff mostly pilfered from the gnuplot plugin. This provides some
-;; basic conversions to make common math stuff work with Pure (see
-;; pure-input.scm), but this is still incomplete at present.
 
 (define (pure-initialize)
   (import-from (utils plugins plugin-convert))
@@ -18,22 +13,12 @@
 
 (define (pure-serialize lan t)
   (import-from (utils plugins plugin-cmd))
-  (with u (pre-serialize lan t)
-    (with s (texmacs->code u)
-      (string-append (escape-verbatim s) "\n"))))
+  (with s (verbatim-serialize lan t)
+	;; (write-line s)
+	s))
 
-(define (pure-script-initialize)
-  (import-from (utils plugins plugin-convert))
-  (lazy-input-converter (pure-script-input) pure-script))
-
-(define (pure-script-serialize lan t)
-  (import-from (utils plugins plugin-cmd))
-  (with u (pre-serialize lan t)
-    (with s (texmacs->code u)
-      (string-append (escape-verbatim (string-replace s "\n" " ")) ";\n"))))
-
-;; A basic session plugin. You might want to add options like --plain, -q
-;; etc. as needed.
+;; A basic session plugin with conversions for math etc. You might want to add
+;; options like --plain, -q etc. as needed.
 (plugin-configure pure
   (:require (url-exists-in-path? "pure"))
   (:initialize (pure-initialize))
@@ -44,10 +29,12 @@
 ;; Debugging session.
 (plugin-configure pure-debug
   (:require (url-exists-in-path? "pure"))
+  (:initialize (pure-initialize))
   (:launch "pure -i -g --texmacs")
+  (:serializer ,pure-serialize)
   (:session "Pure-debug"))
 
-;; Basic scripting support.
+;; Scripting support.
 
 ;; Detect the Pure library path (this needs pkg-config, if you don't have this
 ;; then you probably need to set a suitable default below).
@@ -71,11 +58,18 @@
   (string-join (append (list "pure -i -q --texmacs")
 		       (map pure-script-if-present scripts)) " "))
 
-;; The actual script plugin definition. Note that we keep this separate from
-;; the Pure session plugins, since special input conversions are needed here.
+(define (pure-script-serialize lan t)
+  (import-from (utils plugins plugin-cmd))
+  (with s (string-append (verbatim-serialize lan t) ";\n")
+	(write-line s)
+	s))
+
+;; The script plugin. Note that we keep this separate from the Pure session
+;; plugins, so that it has its environment and scripts can be loaded
+;; automatically at startup.
 (plugin-configure pure-script
   (:require (url-exists-in-path? "pure"))
-  (:initialize (pure-script-initialize))
+  (:initialize (pure-initialize))
   (:launch ,(pure-cmd pure-scripts))
   (:serializer ,pure-script-serialize)
   (:scripts "Pure"))
