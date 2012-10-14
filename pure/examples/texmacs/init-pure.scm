@@ -7,6 +7,11 @@
 ;; this is just an example; you should adjust this to your needs.
 (define pure-scripts (list "reduce.pure"))
 
+;; Convenient keybindings.
+(kbd-map
+ (:mode in-session?)
+ ("C-$" (toggle-session-math-input)))
+
 (define (pure-initialize)
   (import-from (utils plugins plugin-convert))
   (lazy-input-converter (pure-input) pure))
@@ -61,11 +66,11 @@
 (define (pure-script-serialize lan t)
   (import-from (utils plugins plugin-cmd))
   (with s (string-append (verbatim-serialize lan t) ";\n")
-	(write-line s)
+	;; (write-line s)
 	s))
 
 ;; The script plugin. Note that we keep this separate from the Pure session
-;; plugins, so that it has its environment and scripts can be loaded
+;; plugins, so that it has its own environment and scripts can be loaded
 ;; automatically at startup.
 (plugin-configure pure-script
   (:require (url-exists-in-path? "pure"))

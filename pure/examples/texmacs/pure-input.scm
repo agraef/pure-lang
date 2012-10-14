@@ -1,12 +1,23 @@
 
-;; Basic input conversions. This has mostly been pilfered from various TeXmacs
-;; plugins. XXXTODO: Equations and equation arrays are broken right now.
+;; Input conversions. This was mostly pilfered from various TeXmacs plugins.
+;; XXXTODO: Equations and equation arrays still need some work.
 
 (texmacs-module (pure-input)
   (:use (utils plugins plugin-convert)))
 
 ;; do something reasonable with sub- and superscripts
 
+(define (pure-rsub-lim r)
+  (cond ((and (string? (car r)) (string-contains (car r) "<rightarrow>"))
+	 ;; An awful kludge to bring limits into a more digestible form.
+	 ;; This isn't really fool-proof but it's the best that we can do
+	 ;; since texmacs has no special tags for limits.
+	 (display " (")
+	 (plugin-input (string-replace (car r) "<rightarrow>" ") (")))
+	(else (display "!(") (plugin-input (car r))))
+  (display ")"))
+
+;; Use this instead if pure-rsub-lim above gives you trouble.
 (define (pure-rsub r)
   (display "!(")
   (plugin-input (car r))
@@ -17,6 +28,26 @@
   (plugin-input (car r))
   (display ")"))
 
+;; primes and accents
+
+(define (pure-rprime r)
+  (plugin-input (car r)))
+
+(define (pure-wide t)
+  (let* ((op (car t))
+	 (acc (cadr t)))
+    (display "(")
+    (cond ((and (string? acc) (== acc "^"))
+	   (display "hat"))
+	  ((and (string? acc) (== acc "~"))
+	   (display "tilde"))
+	  (else (plugin-input acc)))
+    (display " (")
+    (plugin-input op)
+    (display "))")))
+
+;; fractions
+
 (define (pure-frac t)
   (display "((")
   (plugin-input (car t))
@@ -24,50 +55,75 @@
   (plugin-input (cadr t))
   (display "))"))
 
-(define (pure-mid r)
-  (plugin-input (car r)))
+;; Brackets: |.| and ||.|| are mapped to abs and norm, respectively, others
+;; are left as is.
 
-;; matrix support (pilfered from maxima-input.scm, slightly massaged for Pure)
+(define (pure-around* t)
+  (let* ((left (car t))
+	 (op (cadr t))
+	 (right (caddr t)))
+    (cond ((and (string? left) (== left "|"))
+	   (display "abs (")
+	   (plugin-input op)
+	   (display ")"))
+	  ((and (string? left) (== left "<||>"))
+	   (display "norm (")
+	   (plugin-input op)
+	   (display ")"))
+	  (else
+	   (plugin-input left)
+	   (plugin-input op)
+	   (plugin-input right)))))
 
-(define (pure-input-var-row r)
+;; This removes special markup around some math constructs. It also covers the
+;; case of a singleton | (needed for comprehensions in Pure), which can be
+;; entered as a "middle" | (Alt+M |) in texmacs.
+
+(define (pure-math t)
+  (plugin-input (car t)))
+
+;; Matrix support (pilfered from maxima-input.scm, slightly massaged to make
+;; it work better with Pure).
+
+(define (pure-var-row r)
   (if (nnull? r)
       (begin
 	(display ", ")
 	(plugin-input (car r))
-	(pure-input-var-row (cdr r)))))
+	(pure-var-row (cdr r)))))
 
-(define (pure-input-row r)
+(define (pure-row r)
   (display "{")
   (plugin-input (car r))
-  (pure-input-var-row (cdr r))
+  (pure-var-row (cdr r))
   (display "}"))
 
-(define (pure-input-var-rows t)
+(define (pure-var-rows t)
   (if (nnull? t)
       (begin
 	(display "; ")
-	(pure-input-row (car t))
-	(pure-input-var-rows (cdr t)))))
+	(pure-row (car t))
+	(pure-var-rows (cdr t)))))
 
-(define (pure-input-rows t)
+(define (pure-rows t)
   (display "{")
-  (pure-input-row (car t))
-  (pure-input-var-rows (cdr t))
+  (pure-row (car t))
+  (pure-var-rows (cdr t))
   (display "}"))
 
-(define (pure-input-descend-last args)
+(define (pure-descend-last args)
   (if (null? (cdr args))
       (plugin-input (car args))
-      (pure-input-descend-last (cdr args))))
+      (pure-descend-last (cdr args))))
 
-(define (pure-input-det args)
-  (display "det(")
-  (pure-input-descend-last args)
+(define (pure-det args)
+  (display "det (")
+  (pure-descend-last args)
   (display ")"))
 
-;; roots (pilfered from maxima-input.scm)
+;; roots (also pilfered from maxima-input.scm)
 
-(define (pure-input-sqrt args)
+(define (pure-sqrt args)
   (if (= (length args) 1)
       (begin
         (display "sqrt(")
@@ -80,13 +136,87 @@
         (plugin-input (cadr args))
         (display "))"))))
 
+;; sums, integrals etc.
+
+(define (pure-comp op body args)
+  (display op)
+  (display " [")
+  (plugin-input body)
+  (if (nnull? args)
+      (if (nnull? (cdr args))
+          (begin ;; both lower and upper index
+            (display "|")
+            (plugin-input (car args))
+            (display "..")
+            (plugin-input (cadr args))
+            (display "]"))
+          (begin ;; lower index only
+            (display "|")
+            (plugin-input (car args))
+            (display "]")))
+      (display "]")))
+
+(define (pure-big op body args)
+  (display op)
+  (display " (")
+  (plugin-input body)
+  (if (nnull? args)
+      (let* ((sub (car args)) (sup (cdr args)))
+        (display ") (")
+	;; Yet another awful kludge which massages a subscript of the form
+	;; "n = start" into two separate arguments as Reduce wants them. Where
+	;; things get really awful is when the subscript is a concat node.
+	;; Is there a better way to do this?
+	(cond ((string? sub)
+	       (display (string-replace sub "=" ") (")))
+	      ((and (list? sub) (nnull? sub) (eq? (car sub) 'concat)
+		    (string? (cadr sub)))
+		 (with s (string-replace (cadr sub) "=" ") (")
+		       (plugin-input (append (list 'concat s) (cddr sub)))))
+	      (else (plugin-input sub)))
+        (if (nnull? sup)
+            (begin
+              (display ") (")
+              (plugin-input (car sup))))
+        (display ")"))
+      (display ")")))
+
+(define (pure-big-around args)
+  (let* ((b `(big-around ,@args))
+	 (op (big-name b))
+	 (sub (big-subscript b))
+	 (sup (big-supscript b))
+	 (body (big-body b))
+	 (l (cond ((and sub sup) (list sub sup))
+		  (sub (list sub))
+		  (else (list)))))
+    (cond ((or (== op "intlim") (== op "int"))
+	   ;; supported by Pure/Reduce
+	   (pure-big "intg" body l))
+	  ((and sub sup (or (== op "sum") (== op "prod")))
+	   ;; supported by Pure/Reduce if both lower and upper bound is given
+	   (pure-big op body l))
+	  ;; anything else is assumed to be a Pure aggregate which translates
+	  ;; to a list comprehension
+	  (else (pure-comp op body l)))))
+
 (plugin-input-converters pure
-  (rows pure-input-rows)
-  (det pure-input-det)
-  (sqrt pure-input-sqrt)
-  (mid pure-mid)
-  (rsub pure-rsub)
+  (rows pure-rows)
+  (det pure-det)
+  (sqrt pure-sqrt)
+  (big-around pure-big-around)
+  (around* pure-around*)
+  (mid pure-math)
+  (math-bf pure-math)
+  (math-it pure-math)
+  (math-sl pure-math)
+  (math-ss pure-math)
+  (math-tt pure-math)
+  (math-up pure-math)
+  (rprime pure-rprime)
+  (rsub pure-rsub-lim)
   (rsup pure-rsup)
+  (wide pure-wide)
   (frac pure-frac)
   (dfrac pure-frac)
   (tfrac pure-frac)
@@ -105,17 +235,19 @@
   ("<overassign>" "/=")
   ("<lflux>" "<<")
   ("<gflux>" ">>")
+  ("<mathd>" ") (")
   ("<mathe>" "e")
   ("<mathpi>" "pi")
   ("<backslash>" "\\")
 
   ("<implies>" "=<gtr>")
   ("<Rightarrow>" "=<gtr>")
-  ("<equiv>" "===") ; syntactic identity in Pure
   ("<Leftrightarrow>" "<less>=<gtr>")
   ("<neg>" "~")
   ("<wedge>" "&&")
   ("<vee>" "||")
+  ("<equiv>" "===") ; syntactic identity in Pure
+  ("<nequiv>" "~==") ; dito
   ("<neq>" "~=")
   ("<less>" "<less>")
   ("<gtr>" "<gtr>")
@@ -130,6 +262,24 @@
   ("<rightarrow>" "-<gtr>")
   ("<transtype>" ":<gtr>")
 
+  ("<bar>" "bar")
+  ("<vect>" "vect")
+  ("<check>" "check")
+  ("<breve>" "breve")
+  ("<dot>" "dot")
+  ("<ddot>" "ddot")
+  ("<accute>" "accute")
+  ("<grave>" "grave")
+
+  ("<lfloor>" "floor (")
+  ("<rfloor>" ")")
+  ("<lceil>" "ceil (")
+  ("<rceil>" ")")
+  ("<langle>" "(")
+  ("<rangle>" ")")
+  ("<llbracket>" "[")
+  ("<rrbracket>" "]")
+
   ("<um>" "-")
   ("<upl>" "") ; unary plus not supported in Pure
   ("<times>" "*")
@@ -141,6 +291,21 @@
   ("<sharp>" "#")
   ("<circ>" ".") ; function composition in Pure
 
+;; Here are a few other operators that might be useful. I'm too lazy to do
+;; them all, so add others as needed. Note that none of these except div is
+;; declared in Pure by default, so you'll have to declare them yourself if you
+;; want to use them.
+  ("<pm>" " pm ")
+  ("<mp>" " mp ")
+  ("<div>" " div ")
+  ("<cap>" " bcap ")
+  ("<cup>" " bcup ")
+  ("<uplus>" " uplus ")
+  ("<oplus>" " oplus ")
+  ("<ominus>" " ominus ")
+  ("<otimes>" " otimes ")
+  ("<oslash>" " oslash ")
+
   ("<bbb-C>" "CC")
   ("<bbb-F>" "FF")
   ("<bbb-N>" "NN")
@@ -148,13 +313,159 @@
   ("<bbb-R>" "RR")
   ("<bbb-Q>" "QQ")
   ("<bbb-Z>" "ZZ")
-  ("<mathe>" "e")
-  ("<mathpi>" "pi")
-  ("<mathi>" "i")
+
+  ("<cal-A>" "A")
+  ("<cal-B>" "B")
+  ("<cal-C>" "C")
+  ("<cal-D>" "D")
+  ("<cal-E>" "E")
+  ("<cal-F>" "F")
+  ("<cal-G>" "G")
+  ("<cal-H>" "H")
+  ("<cal-I>" "I")
+  ("<cal-J>" "J")
+  ("<cal-K>" "K")
+  ("<cal-L>" "L")
+  ("<cal-M>" "M")
+  ("<cal-N>" "N")
+  ("<cal-O>" "O")
+  ("<cal-P>" "P")
+  ("<cal-Q>" "Q")
+  ("<cal-R>" "R")
+  ("<cal-S>" "S")
+  ("<cal-T>" "T")
+  ("<cal-U>" "U")
+  ("<cal-V>" "V")
+  ("<cal-W>" "W")
+  ("<cal-X>" "X")
+  ("<cal-Y>" "Y")
+  ("<cal-Z>" "Z")
+
+  ("<frak-A>" "A")
+  ("<frak-B>" "B")
+  ("<frak-C>" "C")
+  ("<frak-D>" "D")
+  ("<frak-E>" "E")
+  ("<frak-F>" "F")
+  ("<frak-G>" "G")
+  ("<frak-H>" "H")
+  ("<frak-I>" "I")
+  ("<frak-J>" "J")
+  ("<frak-K>" "K")
+  ("<frak-L>" "L")
+  ("<frak-M>" "M")
+  ("<frak-N>" "N")
+  ("<frak-O>" "O")
+  ("<frak-P>" "P")
+  ("<frak-Q>" "Q")
+  ("<frak-R>" "R")
+  ("<frak-S>" "S")
+  ("<frak-T>" "T")
+  ("<frak-U>" "U")
+  ("<frak-V>" "V")
+  ("<frak-W>" "W")
+  ("<frak-X>" "X")
+  ("<frak-Y>" "Y")
+  ("<frak-Z>" "Z")
+
+  ("<frak-a>" "a")
+  ("<frak-b>" "b")
+  ("<frak-c>" "c")
+  ("<frak-d>" "d")
+  ("<frak-e>" "e")
+  ("<frak-f>" "f")
+  ("<frak-g>" "g")
+  ("<frak-h>" "h")
+  ("<frak-i>" "i")
+  ("<frak-j>" "j")
+  ("<frak-k>" "k")
+  ("<frak-l>" "l")
+  ("<frak-m>" "m")
+  ("<frak-n>" "n")
+  ("<frak-o>" "o")
+  ("<frak-p>" "p")
+  ("<frak-q>" "q")
+  ("<frak-r>" "r")
+  ("<frak-s>" "s")
+  ("<frak-t>" "t")
+  ("<frak-u>" "u")
+  ("<frak-v>" "v")
+  ("<frak-w>" "w")
+  ("<frak-x>" "x")
+  ("<frak-y>" "y")
+  ("<frak-z>" "z")
+
+  ("<b-up-A>" "A")
+  ("<b-up-B>" "B")
+  ("<b-up-C>" "C")
+  ("<b-up-D>" "D")
+  ("<b-up-E>" "E")
+  ("<b-up-F>" "F")
+  ("<b-up-G>" "G")
+  ("<b-up-H>" "H")
+  ("<b-up-I>" "I")
+  ("<b-up-J>" "J")
+  ("<b-up-K>" "K")
+  ("<b-up-L>" "L")
+  ("<b-up-M>" "M")
+  ("<b-up-N>" "N")
+  ("<b-up-O>" "O")
+  ("<b-up-P>" "P")
+  ("<b-up-Q>" "Q")
+  ("<b-up-R>" "R")
+  ("<b-up-S>" "S")
+  ("<b-up-T>" "T")
+  ("<b-up-U>" "U")
+  ("<b-up-V>" "V")
+  ("<b-up-W>" "W")
+  ("<b-up-X>" "X")
+  ("<b-up-Y>" "Y")
+  ("<b-up-Z>" "Z")
+
+  ("<b-a>" "a")
+  ("<b-b>" "b")
+  ("<b-c>" "c")
+  ("<b-d>" "d")
+  ("<b-e>" "e")
+  ("<b-f>" "f")
+  ("<b-g>" "g")
+  ("<b-h>" "h")
+  ("<b-i>" "i")
+  ("<b-j>" "j")
+  ("<b-k>" "k")
+  ("<b-l>" "l")
+  ("<b-m>" "m")
+  ("<b-n>" "n")
+  ("<b-o>" "o")
+  ("<b-p>" "p")
+  ("<b-q>" "q")
+  ("<b-r>" "r")
+  ("<b-s>" "s")
+  ("<b-t>" "t")
+  ("<b-u>" "u")
+  ("<b-v>" "v")
+  ("<b-w>" "w")
+  ("<b-x>" "x")
+  ("<b-y>" "y")
+  ("<b-z>" "z")
+
+  ("<b-0>" "0")
+  ("<b-1>" "1")
+  ("<b-2>" "2")
+  ("<b-3>" "3")
+  ("<b-4>" "4")
+  ("<b-5>" "5")
+  ("<b-6>" "6")
+  ("<b-7>" "7")
+  ("<b-8>" "8")
+  ("<b-9>" "9")
 
   ("<infty>"      "inf")
   ("<emptyset>"   "[]")
-  ("<in>"         "=") ; makes sense only in comprehensions
+  ("<in>"         "=") ; FIXME: This makes sense only in comprehensions.
+  ("<mathe>" "e")
+  ("<mathpi>" "pi")
+  ("<mathi>" "i")
 
   ("<alpha>"      "alpha")
   ("<beta>"       "beta")
