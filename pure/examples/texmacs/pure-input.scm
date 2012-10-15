@@ -1,6 +1,35 @@
 
-;; Input conversions. This was mostly pilfered from various TeXmacs plugins.
-;; XXXTODO: Equations and equation arrays still need some work.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; MODULE      : pure-input.scm
+;; DESCRIPTION : Pure input conversions
+;; COPYRIGHT   : (C) 1999  Joris van der Hoeven, (C) 2012  Albert Graef
+;;
+;; This software falls under the GNU general public license version 3 or later.
+;; It comes WITHOUT ANY WARRANTY WHATSOEVER. For details, see the file LICENSE
+;; in the root directory or <http://www.gnu.org/licenses/gpl-3.0.html>.
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Pure input conversions by Albert Graef <Dr.Graef@t-online.de>. This was
+;; mostly pilfered from various TeXmacs plugins and the generic plugin code.
+
+;; NOTE: Some kludges are needed to bring some constructs such as limits and
+;; big operators (sums, integrals, etc.) into a form which prevents Pure
+;; syntax errors and allows easy interaction with Reduce. I hope that these
+;; will work correctly in most cases; if it doesn't, please submit a bug
+;; report with the offending expression and I will try to fix it.
+
+;; Equations and equation arrays don't work properly in the input line. I
+;; tried really hard to fix this, but TeXmacs stubbornly refuses to apply any
+;; custom conversion rules for these. If you have an idea how to fix this,
+;; please let me know.
+
+;; So this means that you'll have to stick to ordinary inline formulas for
+;; now. A quick way to get these is to use the Ctrl+$ shortcut to toggle the
+;; input line between verbatim and math mode. For executable input fields and
+;; spreadsheat tables you can just use the normal $ shortcut to enter math
+;; mode.
 
 (texmacs-module (pure-input)
   (:use (utils plugins plugin-convert)))
@@ -11,7 +40,7 @@
   (cond ((and (string? (car r)) (string-contains (car r) "<rightarrow>"))
 	 ;; An awful kludge to bring limits into a more digestible form.
 	 ;; This isn't really fool-proof but it's the best that we can do
-	 ;; since texmacs has no special tags for limits.
+	 ;; since TeXmacs has no special markup for limits.
 	 (display " (")
 	 (plugin-input (string-replace (car r) "<rightarrow>" ") (")))
 	(else (display "!(") (plugin-input (car r))))
@@ -77,7 +106,7 @@
 
 ;; This removes special markup around some math constructs. It also covers the
 ;; case of a singleton | (needed for comprehensions in Pure), which can be
-;; entered as a "middle" | (Alt+M |) in texmacs.
+;; entered as a "middle |" (Alt+M |) in TeXmacs.
 
 (define (pure-math t)
   (plugin-input (car t)))
@@ -136,7 +165,11 @@
         (plugin-input (cadr args))
         (display "))"))))
 
-;; sums, integrals etc.
+;; Sums, integrals etc. This is quite different from the Maxima code to
+;; accommodate the Pure syntax. It also offers support for entering aggregates
+;; of list comprehensions (sum, prod), if you leave away the superscript and
+;; specify the generator and filter clauses of the comprehension in the
+;; subscript.
 
 (define (pure-comp op body args)
   (display op)
@@ -168,7 +201,9 @@
    (if (== op "intg")
        ;; Kludge: We need to rewrite <mathd> to ") (" here to get the
        ;; integration variable as a separate argument, as required by Reduce.
-       (map pure-rewrite-body body)
+       (if (list? body)
+	   (map pure-rewrite-body body)
+	   (pure-rewrite-body body))
        body))
   (if (nnull? args)
       (let* ((sub (car args)) (sup (cdr args)))
@@ -291,6 +326,7 @@
   ("<rangle>" ")")
   ("<llbracket>" "[")
   ("<rrbracket>" "]")
+  ("<nobracket>" " ")
 
   ("<um>" "-")
   ("<upl>" "") ; unary plus not supported in Pure
@@ -305,8 +341,9 @@
 
 ;; Here are a few other operators that might be useful. I'm too lazy to do
 ;; them all, so add others as needed. Note that none of these except div is
-;; declared in Pure by default, so you'll have to declare them yourself if you
+;; predefined in Pure, so you'll have to declare them as infix symbols if you
 ;; want to use them.
+
   ("<pm>" " pm ")
   ("<mp>" " mp ")
   ("<div>" " div ")
@@ -318,13 +355,68 @@
   ("<otimes>" " otimes ")
   ("<oslash>" " oslash ")
 
-  ("<bbb-C>" "CC")
-  ("<bbb-F>" "FF")
-  ("<bbb-N>" "NN")
-  ("<bbb-K>" "KK")
-  ("<bbb-R>" "RR")
-  ("<bbb-Q>" "QQ")
-  ("<bbb-Z>" "ZZ")
+;; Special glyphs available in TeXmacs. Unicode actually has equivalents for
+;; most of these in the MathML character set, which may be used as identifier
+;; constituents in Pure. Unfortunately, those code points are different from
+;; what TeXmacs uses internally, so it won't display the MathML characters
+;; correctly. Thus, in order to make these glyphs work in Pure without causing
+;; too much havoc, for the time being we map them to ordinary Latin letters
+;; instead. Note that this means that Pure won't be able to distinguish, say,
+;; 𝔄, 𝓐 or 𝔸 from A, so these will all denote the same identifier in Pure.
+
+  ("<bbb-A>" "A")
+  ("<bbb-B>" "B")
+  ("<bbb-C>" "C")
+  ("<bbb-D>" "D")
+  ("<bbb-E>" "E")
+  ("<bbb-F>" "F")
+  ("<bbb-G>" "G")
+  ("<bbb-H>" "H")
+  ("<bbb-I>" "I")
+  ("<bbb-J>" "J")
+  ("<bbb-K>" "K")
+  ("<bbb-L>" "L")
+  ("<bbb-M>" "M")
+  ("<bbb-N>" "N")
+  ("<bbb-O>" "O")
+  ("<bbb-P>" "P")
+  ("<bbb-Q>" "Q")
+  ("<bbb-R>" "R")
+  ("<bbb-S>" "S")
+  ("<bbb-T>" "T")
+  ("<bbb-U>" "U")
+  ("<bbb-V>" "V")
+  ("<bbb-W>" "W")
+  ("<bbb-X>" "X")
+  ("<bbb-Y>" "Y")
+  ("<bbb-Z>" "Z")
+
+  ("<bbb-a>" "a")
+  ("<bbb-b>" "b")
+  ("<bbb-c>" "c")
+  ("<bbb-d>" "d")
+  ("<bbb-e>" "e")
+  ("<bbb-f>" "f")
+  ("<bbb-g>" "g")
+  ("<bbb-h>" "h")
+  ("<bbb-i>" "i")
+  ("<bbb-j>" "j")
+  ("<bbb-k>" "k")
+  ("<bbb-l>" "l")
+  ("<bbb-m>" "m")
+  ("<bbb-n>" "n")
+  ("<bbb-o>" "o")
+  ("<bbb-p>" "p")
+  ("<bbb-q>" "q")
+  ("<bbb-r>" "r")
+  ("<bbb-s>" "s")
+  ("<bbb-t>" "t")
+  ("<bbb-u>" "u")
+  ("<bbb-v>" "v")
+  ("<bbb-w>" "w")
+  ("<bbb-x>" "x")
+  ("<bbb-y>" "y")
+  ("<bbb-z>" "z")
 
   ("<cal-A>" "A")
   ("<cal-B>" "B")
@@ -474,10 +566,13 @@
 
   ("<infty>"      "inf")
   ("<emptyset>"   "[]")
-  ("<in>"         "=") ; FIXME: This makes sense only in comprehensions.
-  ("<mathe>" "e")
-  ("<mathpi>" "pi")
-  ("<mathi>" "i")
+  ("<mathe>"      "e")
+  ("<mathpi>"     "pi")
+  ("<mathi>"      "i")
+  ;; The following makes sense only in comprehensions, so that you can write
+  ;; stuff like [2*x|x ∈ 1..10]. If you don't need this then you might want to
+  ;; remap this to an infix membership test predicate instead.
+  ("<in>"         "=")
 
   ("<alpha>"      "alpha")
   ("<beta>"       "beta")
