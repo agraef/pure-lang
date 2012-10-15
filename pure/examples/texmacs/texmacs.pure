@@ -1,0 +1,70 @@
+
+/* Some auxiliary definitions for use with Pure in TeXmacs. This gets loaded
+   automatically if you run the Pure scripting plugin (Document|Scripts|Pure).
+   Inside a Pure session, you can invoke this module with 'using texmacs;'. */
+
+// Additional operators provided by TeXmacs.
+infixl (+) oplus ominus pm mp cup uplus;
+infixl (*) otimes oslash div cap;
+
+// Sum and product (used by the big operators in TeXmacs).
+sum xs::list = foldl (+) 0 xs;
+prod xs::list = foldl (*) 1 xs;
+
+/* These rules bring some TeXmacs constructs into a form which can be readily
+   processed with Reduce. */
+
+// Limits. Simple change of argument order.
+public limit;
+lim v l x = limit x v l;
+
+/* Differentials. Expands d f/d x and variants (d k f/d x k etc.) to the
+   df f x ... form used by Reduce. NOTE: Multiple differentials may be
+   specified in a single expression, but the orders of the differentials must
+   be integer constants; for differentials of variable order you'll have to
+   use the df operator in a direct fashion. */
+
+public d df bad_diff;
+d f/d x = df f x;
+d f/y = d f 1/y;
+f/d x = f/d x 1;
+d k::int f/d x l::int = df f x k if k==l && k>=0;
+f/(y*d x) = f/(y*d x 1);
+d k::int f/(y*d x l::int) = (d (k-l) f/y) x l if k>=l && l>=0;
+x@(d _ _)/y | x/y@(d _ _) = throw (bad_diff ('(x/y))) otherwise;
+
+/* The ? convenience macro simplifies an expression using Reduce. To make
+   this work, you'll also have to import the reduce module. This isn't done
+   here so that this module also works without having the pure-reduce package
+   installed.
+
+   ? passes the argument as a quoted expression and automatically applies the
+   necessary massaging of limits and differentials, see above. ?: does the
+   same but evaluates its argument. We also define these as functions, so that
+   they can be passed around as function arguments if needed, but note that in
+   this case ? looses its call-by-name argument processing.
+
+   These operators are at the lowest possible precendence so that their
+   arguments don't have to be parenthesized (but applications of ?  and ?:
+   must be parenthesized when used in any larger context). */
+
+prefix 0 ? ?: ;
+public simplify preproc;
+def ? x = simplify (preproc ('x));
+def ?:x = simplify (preproc x);
+
+? x = ? x;
+?:x = ?:x;
+
+// Local rule set to expand lim and d f/d x in a safe fashion, without
+// evaluating the argument expression.
+preproc = reduce with
+  lim v l x = limit x v l;
+  d f/d x = df f x;
+  d f/y = d f 1/y;
+  f/d x = f/d x 1;
+  d k::int f/d x l::int = df f x k if k==l && k>=0;
+  f/(y*d x) = f/(y*d x 1);
+  d k::int f/(y*d x l::int) = (d (k-l) f/y) x l if k>=l && l>=0;
+  x@(d _ _)/y | x/y@(d _ _) = throw (bad_diff ('(x/y))) otherwise;
+end;
