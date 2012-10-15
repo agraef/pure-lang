@@ -368,35 +368,37 @@
     </unfolded-io>
   </session>
 
-  Simple formula input already works, as shown below. At present this is
-  still rather limited and output from Pure is in text format only. Making
-  both math input and output work transparently and flawlessly with Pure is
-  being worked on, however, so stay tuned.
+  Math input also works, as shown below. For convenience, you can toggle the
+  input line between math and program (verbatim) mode using the
+  <verbatim|Ctrl+$> key combination. At present this is still a bit
+  experimental, and output from Pure is in text format only. Making both math
+  input and output work transparently and flawlessly is being worked on,
+  however, so stay tuned.
 
   <\session|pure|default>
-    <\unfolded-io>
+    <\unfolded-io-math>
       \<gtr\>\ 
-    <|unfolded-io>
-      <math|simplify <around*|(|df <around*|(|<around*|(|a*x+b*<frac|y|2>|)><rsup|3>|)>
-      x|)>>;
-    <|unfolded-io>
+    <|unfolded-io-math>
+      simplify <around*|(|df <around*|(|<around*|(|a*x+b*<frac|y|2>|)><rsup|3>|)>
+      x|)>;
+    <|unfolded-io-math>
       (12*a^3*x^2+12*a^2*b*x*y+3*a*b^2*y^2)/4
-    </unfolded-io>
+    </unfolded-io-math>
 
-    <\unfolded-io>
+    <\unfolded-io-math>
       \<gtr\>\ 
-    <|unfolded-io>
-      <math|simplify <around*|(|intg <around*|(|cos
-      <around*|(|x+y|)><rsup|2>|)> x|)>>;
-    <|unfolded-io>
+    <|unfolded-io-math>
+      simplify <around*|(|intg <around*|(|cos <around*|(|x+y|)><rsup|2>|)>
+      x|)>;
+    <|unfolded-io-math>
       (cos (x+y)*sin (x+y)+x)/2
-    </unfolded-io>
+    </unfolded-io-math>
 
-    <\input>
+    <\input-math>
       \<gtr\>\ 
-    <|input>
+    <|input-math>
       \;
-    </input>
+    </input-math>
   </session>
 
   <section|Pure Scripting>
