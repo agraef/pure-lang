@@ -58,7 +58,7 @@
 ;; Brackets: |.| and ||.|| are mapped to abs and norm, respectively, others
 ;; are left as is.
 
-(define (pure-around* t)
+(define (pure-around t)
   (let* ((left (car t))
 	 (op (cadr t))
 	 (right (caddr t)))
@@ -205,7 +205,8 @@
   (det pure-det)
   (sqrt pure-sqrt)
   (big-around pure-big-around)
-  (around* pure-around*)
+  (around pure-around)
+  (around* pure-around)
   (mid pure-math)
   (math-bf pure-math)
   (math-it pure-math)

@@ -129,8 +129,7 @@
         map fact (1..10); // <text|This is a <em|plain text> comment with
         math: <math|n! = 1\<times\>\<cdots\>\<times\><around*|(|n-1|)>\<times\>n>.>
       <|unfolded-io>
-        [fact 1,fact 2,fact 3,fact 4,fact 5,fact 6,fact 7,fact 8,fact 9,fact
-        10]
+        [1,2,6,24,120,720,5040,40320,362880,3628800]
       </unfolded-io>
 
       <\unfolded-io>
