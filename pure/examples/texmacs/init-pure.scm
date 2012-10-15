@@ -3,9 +3,11 @@
 ;; file (along with the pure-input.scm file) into your
 ;; ~/.TeXmacs/plugins/pure/progs folder (create the path if needed).
 
-;; Scripts to be preloaded (if present) in the pure-script plugin. Note that
-;; this is just an example; you should adjust this to your needs.
-(define pure-scripts (list "reduce.pure"))
+;; Scripts to be preloaded (if present) in the pure-script plugin. This is
+;; just an example; you should adjust this to your needs.
+(define pure-scripts
+  (list "reduce.pure" "texmacs.pure"
+	(string-join (list (getenv "HOME") "texmacs.pure") "/")))
 
 ;; Convenient keybindings.
 (kbd-map
@@ -54,7 +56,11 @@
 ;; Check if the given script exists on the library path. Return the full
 ;; script name if present, "" otherwise.
 (define (pure-script-if-present name)
-  (with s (string-join (list pure-lib-path "pure" name) "/")
+  (with s (if (string-index name #\/)
+	      ;; filename contains a path designation, take as is
+	      name
+	      ;; look in the library dir
+	      (string-join (list pure-lib-path "pure" name) "/"))
 	(if (url-exists? s) s "")))
 
 ;; Convenience function to create a command running the Pure interpreter with
@@ -65,7 +71,8 @@
 
 (define (pure-script-serialize lan t)
   (import-from (utils plugins plugin-cmd))
-  (with s (string-append (verbatim-serialize lan t) ";\n")
+  (with s (string-append
+	   (string-replace (verbatim-serialize lan t) "\n" " ") ";\n")
 	;; (write-line s)
 	s))
 

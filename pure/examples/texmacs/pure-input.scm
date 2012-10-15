@@ -156,10 +156,20 @@
             (display "]")))
       (display "]")))
 
+(define (pure-rewrite-body s)
+  (if (string? s)
+      (string-replace s "<mathd>" ") (")
+      s))
+
 (define (pure-big op body args)
   (display op)
   (display " (")
-  (plugin-input body)
+  (plugin-input
+   (if (== op "intg")
+       ;; Kludge: We need to rewrite <mathd> to ") (" here to get the
+       ;; integration variable as a separate argument, as required by Reduce.
+       (map pure-rewrite-body body)
+       body))
   (if (nnull? args)
       (let* ((sub (car args)) (sup (cdr args)))
         (display ") (")
@@ -236,9 +246,10 @@
   ("<overassign>" "/=")
   ("<lflux>" "<<")
   ("<gflux>" ">>")
-  ("<mathd>" ") (")
-  ("<mathe>" "e")
-  ("<mathpi>" "pi")
+  ("<partial>" " d ")
+  ("<mathd>" " d ")
+  ("<mathe>" " e ")
+  ("<mathpi>" " pi ")
   ("<backslash>" "\\")
 
   ("<implies>" "=<gtr>")
