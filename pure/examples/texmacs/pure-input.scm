@@ -226,9 +226,18 @@
         (display ")"))
       (display ")")))
 
+;; Symbols in this list have "big" variants created automatically if they are
+;; used as a big operator, e.g.: cap -> bigcap, vee -> bigvee etc., so that
+;; the base symbols can be used as binary functions or operators at the same
+;; time. (TODO: This is probably incomplete, add others as needed.)
+(define pure-big-ops
+  (list "cap" "cup" "vee" "wedge" "uplus" "oplus" "otimes"));
+
 (define (pure-big-around args)
   (let* ((b `(big-around ,@args))
 	 (op (big-name b))
+	 (op (if (list-find pure-big-ops (lambda (s) (== op s)))
+		 (string-append "big" op) op))
 	 (sub (big-subscript b))
 	 (sup (big-supscript b))
 	 (body (big-body b))
@@ -245,7 +254,38 @@
 	  ;; to a list comprehension
 	  (else (pure-comp op body l)))))
 
+(define (pure-concat args)
+  ;; (format #t "~s\n" args)
+  (cond ((null? args) (noop))
+	;; The following rules bring higher-order differentials into a form
+	;; where the order superscript is passed as a proper argument rather
+	;; than a subscript.
+	((and (nnull? (cdr args)) (func? (cadr args) 'rsup)
+	      (string? (car args))
+	      (or (string-contains? (car args) "<mathd>")
+		  (string-contains? (car args) "<partial>")))
+	 (plugin-input (car args))
+	 (display " (")
+	 (plugin-input (cadr (cadr args)))
+	 (display ") ")
+	 (pure-concat (cddr args)))
+	((and (nnull? (cdr args)) (nnull? (cddr args))
+	      (func? (caddr args) 'rsup) (string? (car args))
+	      (or (string-contains? (car args) "<mathd>")
+		  (string-contains? (car args) "<partial>")))
+	 (plugin-input (car args))
+	 (display " (")
+	 (plugin-input (cadr args))
+	 (display ") (")
+	 (plugin-input (cadr (caddr args)))
+	 (display ") ")
+	 (pure-concat (cdddr args)))
+	(else
+	 (plugin-input (car args))
+	 (pure-concat (cdr args)))))
+
 (plugin-input-converters pure
+  (concat pure-concat)
   (rows pure-rows)
   (det pure-det)
   (sqrt pure-sqrt)
@@ -347,8 +387,8 @@
   ("<pm>" " pm ")
   ("<mp>" " mp ")
   ("<div>" " div ")
-  ("<cap>" " bcap ")
-  ("<cup>" " bcup ")
+  ("<cap>" " cap ")
+  ("<cup>" " cup ")
   ("<uplus>" " uplus ")
   ("<oplus>" " oplus ")
   ("<ominus>" " ominus ")

@@ -326,7 +326,7 @@
   The following example shows how to run the Reduce computer algebra system
   in Pure (to make this work, you also need to have the
   <verbatim|pure-reduce> module installed; this is available as an addon from
-  the Pure website).
+  the <hlink|Pure website|http://pure-lang.googlecode.com>).
 
   <\session|pure|default>
     <\output>
@@ -379,10 +379,9 @@
     <\unfolded-io-math>
       \<gtr\>\ 
     <|unfolded-io-math>
-      simplify <around*|(|df <around*|(|<around*|(|a*x+b*<frac|y|2>|)><rsup|3>|)>
-      x|)>;
+      simplify <around*|(|df <around*|(|sin<around*|(|x<rsup|2>|)>|)> x|)>;
     <|unfolded-io-math>
-      (12*a^3*x^2+12*a^2*b*x*y+3*a*b^2*y^2)/4
+      2*cos (x^2)*x
     </unfolded-io-math>
 
     <\unfolded-io-math>
@@ -405,16 +404,16 @@
 
   Last but not least, Pure can also be used as a <em|scripting language> in
   <TeXmacs>, as described at the end of the ``<TeXmacs> \ as an interface''
-  section. To make this work, just enable the <samp|Document \| Scripts \|
-  Pure> option. Scripting uses its own instance of the Pure interpreter which
-  is separate from all Pure sessions that might be included in the same
-  document.
-
-  Scripting gives you both executable input fields and spreadsheets whose
+  section. This is done by enabling the <samp|Document \| Scripts \| Pure>
+  option. Scripting uses its own instance of the Pure interpreter which is
+  separate from all Pure sessions that might be included in the same
+  document. It gives you both executable input fields and spreadsheets whose
   cells can be evaluated in the Pure interpreter. For instance:
 
-  Enter <math|x> here: <calc-inert|x|99>. This is the value of <math|x>
-  squared: <calc-output|x squared|<calc-ref|x>^2|9801.0>.
+  <\bothlined>
+    Enter <math|x> here: <em|<calc-inert|x|99>>. This is the value of
+    <math|x> squared: <em|<calc-output|x squared|<calc-ref|x>^2|9801.0>>.
+  </bothlined>
 
   Position the cursor in the right field above and hit Return to reveal the
   underlying Pure expression, and Return again to recompute it. You can also
@@ -430,12 +429,12 @@
   <\calc-table|table1>
     <textual-table|<tformat|<cwith|1|1|1|-1|cell-background|pastel
     yellow>|<cwith|2|-1|1|-1|cell-hyphen|n>|<cwith|2|2|1|-1|cell-bborder|0>|<cwith|1|-1|1|1|cell-width|>|<cwith|1|-1|1|1|cell-hmode|auto>|<cwith|4|4|1|-1|cell-bborder|0>|<cwith|1|-1|1|1|cell-background|pastel
-    yellow>|<table|<row|<cell|<cell-inert|a1|>>|<cell|<cell-inert|b1|b>>|<cell|<cell-inert|c1|c>>|<cell|<cell-inert|d1|d>>>|<row|<cell|<cell-inert|a2|2>>|<cell|<cell-inert|b2|1>>|<cell|<cell-inert|c2|12>>|<cell|<cell-output|d2|=
+    yellow>|<table|<row|<cell|<cell-inert|a1|a1>>|<cell|<cell-inert|b1|b>>|<cell|<cell-inert|c1|c>>|<cell|<cell-inert|d1|d>>>|<row|<cell|<cell-inert|a2|2>>|<cell|<cell-inert|b2|1>>|<cell|<cell-inert|c2|12>>|<cell|<cell-output|d2|=
     fact (b2+c2) with fact n = if n\<gtr\>0 then n*fact(n-1) else 1
     end|1932053504>>>|<row|<cell|<cell-inert|a3|3>>|<cell|<cell-inert|b3|17>>|<cell|<cell-inert|c3|33>>|<cell|<cell-output|d3|='(b3+c3)|17+33>>>|<row|<cell|<cell-inert|a4|4>>|<cell|<cell-inert|b4|<math|sin
-    <around*|(|x<rsup|2>|)>>>>|<cell|<cell-inert|c4|<math|x>>>|<cell|<cell-output|d4|=simplify
-    (df b4 c4)|2*cos (x^2)*x>>>|<row|<cell|<cell-inert|a5|5>>|<cell|<cell-inert|b5|<math|<around*|(|x+y|)><rsup|3>>>>|<cell|<cell-inert|c5|<math|x>>>|<cell|<cell-output|d5|=simplify
-    (df b5 c5)|3*x^2+6*x*y+3*y^2>>>>>>
+    <around*|(|x<rsup|2>|)>>>>|<cell|<cell-inert|c4|<math|x>>>|<cell|<cell-output|d4|=?df
+    b4 c4|2*cos (x^2)*x>>>|<row|<cell|<cell-inert|a5|5>>|<cell|<cell-inert|b5|<math|<around*|(|x+y|)><rsup|3>>>>|<cell|<cell-inert|c5|<math|x>>>|<cell|<cell-output|d5|=?df
+    b5 c5|3*x^2+6*x*y+3*y^2>>>>>>
 
     \;
   </calc-table>
