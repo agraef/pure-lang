@@ -46,6 +46,7 @@
 
 using namespace std;
 
+static char **pure_completion(const char *text);
 static bool checkcmd(interpreter &interp, const char *s);
 static bool checkusercmd(interpreter &interp, const char *s);
 static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const char *cmd, const char *cmdline, bool esc);
@@ -197,6 +198,53 @@ blank  [ \t\f\v\r]
 {blank}+   yylloc->step();
 [\n]+      yylloc->lines(yyleng); yylloc->step();
 
+^"\020(complete \"".* {
+  if (interp.texmacs) {
+    char *s = yytext+1+strlen("(complete \""), *t = s,
+      *buf = (char*)malloc(strlen(s)+1), *bufp = buf;
+    while (*t && *t != '"') {
+      if (*t == '\\' && *++t == 0) break;
+      *bufp++ = *t++;
+    }
+    if (*t++ == '"') {
+      *bufp = 0;
+      int pos = atoi(t);
+      const char *word_break_chars = " \t\n\"\\'`@$><=,;!|&{([";
+      if (buf[pos] == 0 || strchr(word_break_chars, buf[pos])) {
+	buf[pos] = 0;
+	string line = buf;
+	size_t pos1 = line.find_last_of(word_break_chars);
+	pos1 = (pos1 == string::npos)?0:pos1+1;
+	string tok = line.substr(pos1);
+	pos1 = tok.length();
+	if (!tok.empty()) {
+	  char **matches = pure_completion(tok.c_str());
+	  if (matches) {
+	    if (matches[0]) {
+	      printf("%s(tuple \"%s\"", TEXMACS_BEGIN_SCHEME, tok.c_str());
+	      if (!matches[1]) {
+		printf(" \"%s\"", matches[0]+pos1);
+		free(matches[0]);
+	      } else {
+		int i;
+		free(matches[0]);
+		for (i = 1; matches[i]; i++) {
+		  printf(" \"%s\"", matches[i]+pos1);
+		  free(matches[i]);
+		}
+	      }
+	      printf(")%s", TEXMACS_END_SCHEME);
+	      fflush(stdout);
+	    }
+	    free(matches);
+	  }
+	}
+      }
+    }
+    free(buf);
+  }
+  yylloc->step();
+}
 ^"#!"[ \t]*"--eager"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
   /* --eager pragma. */
   char *s = strchr(yytext, '-')+strlen("--eager"), *t = s;

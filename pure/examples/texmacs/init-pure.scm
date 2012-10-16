@@ -116,6 +116,7 @@
   (:initialize (pure-initialize))
   (:launch ,(pure-cmd "pure -i --texmacs" '()))
   (:serializer ,pure-serialize)
+  (:tab-completion #t)
   (:session "Pure"))
 
 ;; Debugging session.
@@ -124,6 +125,7 @@
   (:initialize (pure-initialize))
   (:launch ,(pure-cmd "pure -i -g --texmacs" '()))
   (:serializer ,pure-serialize)
+  (:tab-completion #t)
   (:session "Pure-debug"))
 
 ;; Scripting support. ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -142,4 +144,5 @@
   (:initialize (pure-initialize))
   (:launch ,(pure-cmd "pure -i -q --texmacs" pure-scripts))
   (:serializer ,pure-script-serialize)
+  (:tab-completion #t)
   (:scripts "Pure"))
