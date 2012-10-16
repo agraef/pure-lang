@@ -69,14 +69,19 @@
     <\unfolded-io-math>
       \<gtr\>\ 
     <|unfolded-io-math>
-      simplify $ <rprime|'>df <around*|(|sin <around*|(|x<rsup|2>|)>|)> x;
+      simplify <around*|(|<rprime|'>df <around*|(|sin
+      <around*|(|x<rsup|2>|)>|)> x|)>;
     <|unfolded-io-math>
       2*cos (x^2)*x
     </unfolded-io-math>
   </session>
 
-  The <verbatim|?:> operator does the same, but evaluates its argument. Note
-  the difference:
+  But it's a lot easier to type, and the <verbatim|?> operator also includes
+  the necessary magic to make the <TeXmacs> syntax of sums, products, limits
+  and differentials work in Pure and Reduce (see below). The <verbatim|?:>
+  operator does the same, but evaluates its argument; you want to use that if
+  the expression includes some Pure functions which should be evaluated
+  before submitting the result to Reduce. Note the difference:
 
   <\session|pure|default>
     <\input-math>
@@ -354,8 +359,8 @@
     <\input>
       \<gtr\>\ 
     <|input>
-      <math|<around*|\<\|\|\>|x\<colons\>matrix|\<\|\|\>> = <sqrt|sum
-      <around*|[|x<rsup|2><mid|\|> x=x|]>>;>
+      <math|<around*|\<\|\|\>|X\<colons\>matrix|\<\|\|\>> = <sqrt|sum
+      <around*|[|x<rsup|2><mid|\|> x=X|]>>;>
     </input>
 
     <\unfolded-io>
@@ -570,7 +575,8 @@
     </unfolded-io-math>
   </session>
 
-  Calculate differentials and integrals using Reduce (<verbatim|?> operator):
+  Calculate differentials, integrals, limits etc. using Reduce (<verbatim|?>
+  operator):
 
   <\session|pure|default>
     <\unfolded-io-math>
@@ -604,6 +610,38 @@
       when b=0 end;
     <|unfolded-io-math>
       x^n*a^n*x^3/(n+3)
+    </unfolded-io-math>
+
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      ?lim<rsub|x\<rightarrow\>\<infty\>><around*|(|x*sin<around*|(|1/x|)>|)>;
+    <|unfolded-io-math>
+      1
+    </unfolded-io-math>
+
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      ?lim<rsub|x\<rightarrow\>0><around*|(|1/x|)>;
+    <|unfolded-io-math>
+      inf
+    </unfolded-io-math>
+
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      ?<big|sum><rsub|k=0><rsup|n-1><around*|(|a+k*r|)>;
+    <|unfolded-io-math>
+      (2*a*n+n^2*r-n*r)/2
+    </unfolded-io-math>
+
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      ?<big|prod><rsub|k=1><rsup|n><frac|k|k+2>;
+    <|unfolded-io-math>
+      2/(n^2+3*n+2)
     </unfolded-io-math>
   </session>
 
@@ -776,3 +814,13 @@
     <associate|auto-1|<tuple|1|?>>
   </collection>
 </references>
+
+<\auxiliary>
+  <\collection>
+    <\associate|toc>
+      <with|par-left|<quote|1.5fn>|Caveat!
+      <datoms|<macro|x|<repeat|<arg|x>|<with|font-series|medium|<with|font-size|1|<space|0.2fn>.<space|0.2fn>>>>>|<htab|5mm>>
+      <no-break><pageref|auto-1>>
+    </associate>
+  </collection>
+</auxiliary>
