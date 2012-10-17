@@ -57,6 +57,30 @@
   (plugin-input (car r))
   (display ")"))
 
+(define (pure-lsub r)
+  (display "(!(")
+  (plugin-input (car r))
+  (display "))"))
+
+(define (pure-lsup r)
+  (display "(^(")
+  (plugin-input (car r))
+  (display "))"))
+
+(define (pure-above t)
+  (display "(above (")
+  (plugin-input (car t))
+  (display ") (")
+  (plugin-input (cadr t))
+  (display "))"))
+
+(define (pure-below t)
+  (display "(below (")
+  (plugin-input (car t))
+  (display ") (")
+  (plugin-input (cadr t))
+  (display "))"))
+
 ;; primes and accents
 
 (define (pure-rprime r)
@@ -74,6 +98,11 @@
     (display " (")
     (plugin-input op)
     (display "))")))
+
+(define (pure-neg r)
+  (display "~(")
+  (plugin-input (car r))
+  (display ")"))
 
 ;; fractions
 
@@ -118,31 +147,41 @@
 ;; Matrix support (pilfered from maxima-input.scm, slightly massaged to make
 ;; it work better with Pure).
 
+(define pure-choice-expr #f)
+(define pure-case-expr #f)
+
+(define (pure-var-row2 r)
+  (if (nnull? r)
+      (begin
+	(display (if pure-choice-expr " " ", "))
+	(plugin-input (car r))
+	(pure-var-row2 (cdr r)))))
+
 (define (pure-var-row r)
   (if (nnull? r)
       (begin
-	(display ", ")
+	(display (if pure-choice-expr " " ", "))
 	(plugin-input (car r))
-	(pure-var-row (cdr r)))))
+	(pure-var-row2 (cdr r)))))
 
 (define (pure-row r)
-  (display "{")
+  (display (if pure-choice-expr "" "{"))
   (plugin-input (car r))
   (pure-var-row (cdr r))
-  (display "}"))
+  (display (if pure-choice-expr "" "}")))
 
 (define (pure-var-rows t)
   (if (nnull? t)
       (begin
-	(display "; ")
+	(display (if pure-choice-expr (if pure-case-expr "; " "; = ") "; "))
 	(pure-row (car t))
 	(pure-var-rows (cdr t)))))
 
 (define (pure-rows t)
-  (display "{")
+  (display (if pure-choice-expr "" "{"))
   (pure-row (car t))
   (pure-var-rows (cdr t))
-  (display "}"))
+  (display (if pure-choice-expr (if pure-case-expr " end " "") "}")))
 
 (define (pure-descend-last args)
   (if (null? (cdr args))
@@ -152,6 +191,21 @@
 (define (pure-det args)
   (display "det (")
   (pure-descend-last args)
+  (display ")"))
+
+(define (pure-stack args)
+  (pure-descend-last args))
+
+(define (pure-choice args)
+  (set! pure-choice-expr #t)
+  (pure-descend-last args)
+  (set! pure-choice-expr #f))
+
+(define (pure-binom args)
+  (display "binom (")
+  (plugin-input (car args))
+  (display ") (")
+  (plugin-input (cadr args))
   (display ")"))
 
 ;; roots (also pilfered from maxima-input.scm)
@@ -284,19 +338,52 @@
 	 (plugin-input (cadr (caddr args)))
 	 (display ") ")
 	 (pure-concat (cdddr args)))
+	;; This rule is used to format 'case of <choice>' expressions.
+	((and (nnull? (cdr args)) (func? (cadr args) 'choice)
+	      (string? (car args)) (string-contains? (car args) " of "))
+	 (plugin-input (car args))
+	 (set! pure-case-expr #t)
+	 (plugin-input (cadr args))
+	 (set! pure-case-expr #f)
+	 (pure-concat (cddr args)))
 	(else
 	 (plugin-input (car args))
 	 (pure-concat (cdr args)))))
 
+(define (pure-tree-args args)
+  (plugin-input (car args))
+  (if (nnull? (cdr args))
+      (begin
+	(display ",")
+	(pure-tree-args (cdr args)))))
+
+(define (pure-tree args)
+  (display "(tree [")
+  (if (nnull? args) (pure-tree-args args))
+  (display "])"))
+
 (plugin-input-converters pure
   (concat pure-concat)
+  (tree pure-tree)
   (rows pure-rows)
   (det pure-det)
+  (stack pure-stack)
+  (choice pure-choice)
+  (binom pure-binom)
   (sqrt pure-sqrt)
   (big-around pure-big-around)
   (around pure-around)
   (around* pure-around)
   (mid pure-math)
+  (really-tiny pure-math)
+  (tiny pure-math)
+  (very-small pure-math)
+  (small pure-math)
+  (normal-size pure-math)
+  (large pure-math)
+  (very-large pure-math)
+  (huge pure-math)
+  (really-huge pure-math)
   (math-bf pure-math)
   (math-it pure-math)
   (math-sl pure-math)
@@ -304,6 +391,10 @@
   (math-tt pure-math)
   (math-up pure-math)
   (rprime pure-rprime)
+  (above pure-above)
+  (below pure-below)
+  (lsub pure-lsub)
+  (lsup pure-lsup)
   (rsub pure-rsub-lim)
   (rsup pure-rsup)
   (wide pure-wide)
@@ -311,6 +402,7 @@
   (dfrac pure-frac)
   (tfrac pure-frac)
   (frac* pure-frac)
+  (neg pure-neg)
 
 ;; These are mostly from the generic converter. Note that some of these aren't
 ;; defined in Pure by default, but you might want to declare them yourself.
@@ -371,6 +463,11 @@
   ("<llbracket>" "[")
   ("<rrbracket>" "]")
   ("<nobracket>" " ")
+  ;; what the heck are these good for??
+  ("<nocomma>" " ")
+  ("<nospace>" " ")
+  ("<comma>" ",")
+  ("<space>" " ")
 
   ("<um>" "-")
   ("<upl>" "") ; unary plus not supported in Pure
