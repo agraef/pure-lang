@@ -941,6 +941,7 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     else
       yylloc->columns(count);
     docmd(interp, yylloc, cmd.c_str(), cmdline.c_str(), esc);
+    yylloc->step();
   } else {
     // Skip over any command prefix. Note that the prefix chars are all ASCII
     // punctuation (except '_'), so the following will stop at the identifier.
