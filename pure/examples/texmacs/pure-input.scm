@@ -20,17 +20,6 @@
 ;; will work correctly in most cases; if it doesn't, please submit a bug
 ;; report with the offending expression and I will try to fix it.
 
-;; Equations and equation arrays don't work properly in the input line. I
-;; tried really hard to fix this, but TeXmacs stubbornly refuses to apply any
-;; custom conversion rules for these. If you have an idea how to fix this,
-;; please let me know.
-
-;; So this means that you'll have to stick to ordinary inline formulas for
-;; now. A quick way to get these is to use the Ctrl+$ shortcut to toggle the
-;; input line between verbatim and math mode. For executable input fields and
-;; spreadsheat tables you can just use the normal $ shortcut to enter math
-;; mode.
-
 (texmacs-module (pure-input)
   (:use (utils plugins plugin-convert)))
 
@@ -139,49 +128,65 @@
 
 ;; This removes special markup around some math constructs. It also covers the
 ;; case of a singleton | (needed for comprehensions in Pure), which can be
-;; entered as a "middle |" (Alt+M |) in TeXmacs.
+;; entered either as Shift-F5 | or as a "middle |" (Alt+M |) in TeXmacs.
 
 (define (pure-math t)
   (plugin-input (car t)))
 
-;; Matrix support (pilfered from maxima-input.scm, slightly massaged to make
-;; it work better with Pure).
+(define (pure-space t)
+  (display " "))
 
-(define pure-choice-expr #f)
-(define pure-case-expr #f)
+;; Support for matrices and various kinds of tables. This was originally
+;; pilfered from maxima-input.scm, but has been heavily modified to support
+;; various kinds of tables including choices.
+
+(define pure-inside-case? #f)
+
+(define pure-matrix-delims (list "{"	"}"	"; "	"{"	"}"	", "))
+(define pure-stack-delims  (list ""	""	" "	""	""	" "))
+(define pure-choice-delims (list ""	""	"; = "	""	""	" "))
+(define pure-case-delims   (list ""	" end "	"; "	""	""	" "))
+(define pure-delims pure-matrix-delims)
+
+(define (pure-outer-left)   (list-ref pure-delims 0))
+(define (pure-outer-right)  (list-ref pure-delims 1))
+(define (pure-outer-middle) (list-ref pure-delims 2))
+(define (pure-inner-left)   (list-ref pure-delims 3))
+(define (pure-inner-right)  (list-ref pure-delims 4))
+(define (pure-inner-middle) (list-ref pure-delims 5))
 
 (define (pure-var-row2 r)
   (if (nnull? r)
       (begin
-	(display (if pure-choice-expr " " ", "))
+	(display (pure-inner-middle))
 	(plugin-input (car r))
 	(pure-var-row2 (cdr r)))))
 
 (define (pure-var-row r)
   (if (nnull? r)
       (begin
-	(display (if pure-choice-expr " " ", "))
+	(display (pure-inner-middle))
 	(plugin-input (car r))
 	(pure-var-row2 (cdr r)))))
 
 (define (pure-row r)
-  (display (if pure-choice-expr "" "{"))
+  (display (pure-inner-left))
   (plugin-input (car r))
   (pure-var-row (cdr r))
-  (display (if pure-choice-expr "" "}")))
+  (display (pure-inner-right)))
 
 (define (pure-var-rows t)
   (if (nnull? t)
       (begin
-	(display (if pure-choice-expr (if pure-case-expr "; " "; = ") "; "))
+	(display (pure-outer-middle))
 	(pure-row (car t))
 	(pure-var-rows (cdr t)))))
 
 (define (pure-rows t)
-  (display (if pure-choice-expr "" "{"))
+  (display (pure-outer-left))
   (pure-row (car t))
   (pure-var-rows (cdr t))
-  (display (if pure-choice-expr (if pure-case-expr " end " "") "}")))
+  (display (pure-outer-right)))
 
 (define (pure-descend-last args)
   (if (null? (cdr args))
@@ -189,17 +194,31 @@
       (pure-descend-last (cdr args))))
 
 (define (pure-det args)
-  (display "det (")
-  (pure-descend-last args)
-  (display ")"))
+  (with delims pure-delims
+	(display "det ")
+	(set! pure-delims pure-matrix-delims)
+	(pure-descend-last args)
+	(set! pure-delims delims)))
+
+(define (pure-matrix args)
+  (with delims pure-delims
+	(set! pure-delims pure-matrix-delims)
+	(pure-descend-last args)
+	(set! pure-delims delims)))
 
 (define (pure-stack args)
-  (pure-descend-last args))
+  (with delims pure-delims
+	(set! pure-delims pure-stack-delims)
+	(pure-descend-last args)
+	(set! pure-delims delims)))
 
 (define (pure-choice args)
-  (set! pure-choice-expr #t)
-  (pure-descend-last args)
-  (set! pure-choice-expr #f))
+  (with delims pure-delims
+	(set! pure-delims
+	      (if pure-inside-case? pure-case-delims pure-choice-delims))
+	(pure-descend-last args)
+	(set! pure-inside-case? #f)
+	(set! pure-delims delims)))
 
 (define (pure-binom args)
   (display "binom (")
@@ -207,6 +226,20 @@
   (display ") (")
   (plugin-input (cadr args))
   (display ")"))
+
+;; trees
+
+(define (pure-tree-args args)
+  (plugin-input (car args))
+  (if (nnull? (cdr args))
+      (begin
+	(display ",")
+	(pure-tree-args (cdr args)))))
+
+(define (pure-tree args)
+  (display "(tree [")
+  (if (nnull? args) (pure-tree-args args))
+  (display "])"))
 
 ;; roots (also pilfered from maxima-input.scm)
 
@@ -312,8 +345,31 @@
 	  ;; to a list comprehension
 	  (else (pure-comp op body l)))))
 
+(define (pure-contains-token? s t)
+  (cond ((null? s) #f)
+	((string? s)
+	 (with toks (string-tokenize s char-set:letter+digit)
+	       (list-find toks (lambda (s) (== s t)))))
+	((and (list? s)
+	      ;; recursively descend into the last argument, to skip over any
+	      ;; character markup
+	      (if (nnull? (cdr s))
+		  (pure-contains-token? (cdr s) t)
+		  (pure-contains-token? (car s) t))))
+	(else #f)))
+
+(define (pure-is-space? arg)
+  (or (func? arg 'space)
+      (and (func? arg 'text) (null? (cdr arg)) (string? (car arg))
+	   (string-every char-set:whitespace (car arg)))
+      (and (string? arg) (string-every char-set:whitespace arg))))
+
+(define (pure-skip-space args)
+  (if (or (null? args) (not (pure-is-space? (car args)))) args
+      (pure-skip-space (cdr args))))
+
 (define (pure-concat args)
-  ;; (format #t "~s\n" args)
+  ;; (format #t "concat: ~s\n" args)
   (cond ((null? args) (noop))
 	;; The following rules bring higher-order differentials into a form
 	;; where the order superscript is passed as a proper argument rather
@@ -339,34 +395,33 @@
 	 (display ") ")
 	 (pure-concat (cdddr args)))
 	;; This rule is used to format 'case of <choice>' expressions.
-	((and (nnull? (cdr args)) (func? (cadr args) 'choice)
-	      (string? (car args)) (string-contains? (car args) " of "))
+	((and (pure-contains-token? (car args) "of")
+	      ;; look ahead, skipping over space, to see whether <choice>
+	      ;; follows
+	      (with l (pure-skip-space (cdr args))
+		    (and (nnull? l) (func? (car l) 'choice))))
 	 (plugin-input (car args))
-	 (set! pure-case-expr #t)
-	 (plugin-input (cadr args))
-	 (set! pure-case-expr #f)
-	 (pure-concat (cddr args)))
+	 (set! pure-inside-case? #t)
+	 (pure-concat (cdr args)))
 	(else
 	 (plugin-input (car args))
 	 (pure-concat (cdr args)))))
-
-(define (pure-tree-args args)
-  (plugin-input (car args))
-  (if (nnull? (cdr args))
-      (begin
-	(display ",")
-	(pure-tree-args (cdr args)))))
-
-(define (pure-tree args)
-  (display "(tree [")
-  (if (nnull? args) (pure-tree-args args))
-  (display "])"))
 
 (plugin-input-converters pure
   (concat pure-concat)
   (tree pure-tree)
   (rows pure-rows)
+  (tabular pure-matrix)
+  (tabular* pure-matrix)
+  (block pure-matrix)
+  (block* pure-matrix)
+  ;; (table pure-matrix)
+  (matrix pure-matrix)
   (det pure-det)
+  (eqnarray pure-stack)
+  (eqnarray* pure-stack)
+  (equation pure-descend-last)
+  (equation* pure-descend-last)
   (stack pure-stack)
   (choice pure-choice)
   (binom pure-binom)
@@ -374,6 +429,7 @@
   (big-around pure-big-around)
   (around pure-around)
   (around* pure-around)
+  (space pure-space)
   (mid pure-math)
   (really-tiny pure-math)
   (tiny pure-math)
@@ -467,7 +523,6 @@
   ("<nocomma>" " ")
   ("<nospace>" " ")
   ("<comma>" ",")
-  ("<space>" " ")
 
   ("<um>" "-")
   ("<upl>" "") ; unary plus not supported in Pure
