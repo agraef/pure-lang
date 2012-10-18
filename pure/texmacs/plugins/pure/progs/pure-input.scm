@@ -14,28 +14,27 @@
 ;; Pure input conversions by Albert Graef <Dr.Graef@t-online.de>. This was
 ;; mostly pilfered from various TeXmacs plugins and the generic plugin code.
 
+(texmacs-module (pure-input)
+  (:use (utils plugins plugin-convert)))
+
 ;; NOTE: Some kludges are needed to bring some constructs such as limits and
 ;; big operators (sums, integrals, etc.) into a form which prevents Pure
 ;; syntax errors and allows easy interaction with Reduce. I hope that these
 ;; will work correctly in most cases; if it doesn't, please submit a bug
 ;; report with the offending expression and I will try to fix it.
 
-(texmacs-module (pure-input)
-  (:use (utils plugins plugin-convert)))
+;; Symbols in the following list have "big" variants created automatically if
+;; they are used as a big operator, e.g.: cap -> bigcap, vee -> bigvee etc.,
+;; so that the base symbols can be used as binary functions or operators at
+;; the same time. (TODO: This is probably incomplete, add others as needed.)
+(define pure-big-ops
+  (list "cap" "cup" "vee" "wedge" "uplus" "oplus" "otimes"));
+
+;; Please also see the end of this file for input conversions which you might
+;; want to adjust for your needs.
 
 ;; do something reasonable with sub- and superscripts
 
-(define (pure-rsub-lim r)
-  (cond ((and (string? (car r)) (string-contains (car r) "<rightarrow>"))
-	 ;; An awful kludge to bring limits into a more digestible form.
-	 ;; This isn't really fool-proof but it's the best that we can do
-	 ;; since TeXmacs has no special markup for limits.
-	 (display " (")
-	 (plugin-input (string-replace (car r) "<rightarrow>" ") (")))
-	(else (display "!(") (plugin-input (car r))))
-  (display ")"))
-
-;; Use this instead if pure-rsub-lim above gives you trouble.
 (define (pure-rsub r)
   (display "!(")
   (plugin-input (car r))
@@ -138,14 +137,15 @@
 
 ;; Support for matrices and various kinds of tables. This was originally
 ;; pilfered from maxima-input.scm, but has been heavily modified to support
-;; various kinds of tables including choices.
+;; various kinds of tables including stacks and choices.
 
 (define pure-inside-case? #f)
+(define pure-inside-eqn? #f)
 
 (define pure-matrix-delims (list "{"	"}"	"; "	"{"	"}"	", "))
-(define pure-stack-delims  (list ""	""	" "	""	""	" "))
-(define pure-choice-delims (list ""	""	"; = "	""	""	" "))
-(define pure-case-delims   (list ""	" end "	"; "	""	""	" "))
+(define pure-stack-delims  (list " "	" "	" "	""	""	" "))
+(define pure-choice-delims (list " "	" "	"; = "	""	""	" "))
+(define pure-case-delims   (list " "	" end "	"; "	""	""	" "))
 (define pure-delims pure-matrix-delims)
 
 (define (pure-outer-left)   (list-ref pure-delims 0))
@@ -215,9 +215,12 @@
 (define (pure-choice args)
   (with delims pure-delims
 	(set! pure-delims
-	      (if pure-inside-case? pure-case-delims pure-choice-delims))
+	      (cond (pure-inside-case? pure-case-delims)
+		    (pure-inside-eqn? pure-choice-delims)
+		    (else pure-stack-delims)))
 	(pure-descend-last args)
 	(set! pure-inside-case? #f)
+	(set! pure-inside-eqn? #f)
 	(set! pure-delims delims)))
 
 (define (pure-binom args)
@@ -317,13 +320,6 @@
         (display ")"))
       (display ")")))
 
-;; Symbols in this list have "big" variants created automatically if they are
-;; used as a big operator, e.g.: cap -> bigcap, vee -> bigvee etc., so that
-;; the base symbols can be used as binary functions or operators at the same
-;; time. (TODO: This is probably incomplete, add others as needed.)
-(define pure-big-ops
-  (list "cap" "cup" "vee" "wedge" "uplus" "oplus" "otimes"));
-
 (define (pure-big-around args)
   (let* ((b `(big-around ,@args))
 	 (op (big-name b))
@@ -345,17 +341,33 @@
 	  ;; to a list comprehension
 	  (else (pure-comp op body l)))))
 
-(define (pure-contains-token? s t)
+(define (pure-check-tag? s t)
+  (cond ((null? s) #f)
+	((string? s) (string-contains? s t))
+	((and (list? s)
+	      ;; recursively descend into the last argument
+	      (if (nnull? (cdr s))
+		  (pure-last-token? (cdr s) t)
+		  (pure-last-token? (car s) t))))
+	(else #f)))
+
+(define (pure-last-token? s t)
   (cond ((null? s) #f)
 	((string? s)
-	 (with toks (string-tokenize s char-set:letter+digit)
-	       (list-find toks (lambda (s) (== s t)))))
+	 (let* ((cs (if (char-set-contains? char-set:letter+digit
+					    (string-ref t 0))
+			char-set:letter+digit
+			(char-set-complement
+			 (string->char-set ";<>()[]{}" char-set:whitespace))))
+		(toks (string-tokenize s cs))
+		(tok (if (null? toks) "" (car (last-pair toks)))))
+	   (and (== t tok)
+		(string-suffix? t (string-delete s char-set:whitespace)))))
 	((and (list? s)
-	      ;; recursively descend into the last argument, to skip over any
-	      ;; character markup
+	      ;; recursively descend into the last argument
 	      (if (nnull? (cdr s))
-		  (pure-contains-token? (cdr s) t)
-		  (pure-contains-token? (car s) t))))
+		  (pure-last-token? (cdr s) t)
+		  (pure-last-token? (car s) t))))
 	(else #f)))
 
 (define (pure-is-space? arg)
@@ -375,18 +387,17 @@
 	;; where the order superscript is passed as a proper argument rather
 	;; than a subscript.
 	((and (nnull? (cdr args)) (func? (cadr args) 'rsup)
-	      (string? (car args))
-	      (or (string-contains? (car args) "<mathd>")
-		  (string-contains? (car args) "<partial>")))
+	      (or (pure-check-tag? (car args) "<mathd>")
+		  (pure-check-tag? (car args) "<partial>")))
 	 (plugin-input (car args))
 	 (display " (")
 	 (plugin-input (cadr (cadr args)))
 	 (display ") ")
 	 (pure-concat (cddr args)))
 	((and (nnull? (cdr args)) (nnull? (cddr args))
-	      (func? (caddr args) 'rsup) (string? (car args))
-	      (or (string-contains? (car args) "<mathd>")
-		  (string-contains? (car args) "<partial>")))
+	      (func? (caddr args) 'rsup)
+	      (or (pure-check-tag? (car args) "<mathd>")
+		  (pure-check-tag? (car args) "<partial>")))
 	 (plugin-input (car args))
 	 (display " (")
 	 (plugin-input (cadr args))
@@ -394,8 +405,21 @@
 	 (plugin-input (cadr (caddr args)))
 	 (display ") ")
 	 (pure-concat (cdddr args)))
-	;; This rule is used to format 'case of <choice>' expressions.
-	((and (pure-contains-token? (car args) "of")
+	;; This rule brings limits into a more digestible form. This isn't
+	;; 100% fool-proof but it's the best that we can do since TeXmacs has
+	;; no special markup for limits.
+	((and (pure-last-token? (car args) "lim")
+	      (func? (cadr args) 'rsub)
+	      (with s (cadr (cadr args))
+		    (and (string? s) (string-contains s "<rightarrow>"))))
+	 (plugin-input (car args))
+	 (display " (")
+	 (with s (cadr (cadr args))
+	       (plugin-input (string-replace s "<rightarrow>" ") (")))
+	 (display ") ")
+	 (pure-concat (cddr args)))
+	;; These rules are used to format <choice> expressions.
+	((and (pure-last-token? (car args) "of")
 	      ;; look ahead, skipping over space, to see whether <choice>
 	      ;; follows
 	      (with l (pure-skip-space (cdr args))
@@ -403,11 +427,25 @@
 	 (plugin-input (car args))
 	 (set! pure-inside-case? #t)
 	 (pure-concat (cdr args)))
+	((and (pure-last-token? (car args) "=")
+	      ;; look ahead, skipping over space, to see whether <choice>
+	      ;; follows
+	      (with l (pure-skip-space (cdr args))
+		    (and (nnull? l) (func? (car l) 'choice))))
+	 (plugin-input (car args))
+	 (set! pure-inside-eqn? #t)
+	 (pure-concat (cdr args)))
 	(else
 	 (plugin-input (car args))
 	 (pure-concat (cdr args)))))
 
+;; XXXTODO: We'd really like to open this up to the user so that he has an
+;; easy way of specifying his own conversions which take precedence over the
+;; ones given here.
+
 (plugin-input-converters pure
+;; Only change these if you know what you are doing. Many special constructs
+;; are defined here.
   (concat pure-concat)
   (tree pure-tree)
   (rows pure-rows)
@@ -415,7 +453,6 @@
   (tabular* pure-matrix)
   (block pure-matrix)
   (block* pure-matrix)
-  ;; (table pure-matrix)
   (matrix pure-matrix)
   (det pure-det)
   (eqnarray pure-stack)
@@ -451,7 +488,7 @@
   (below pure-below)
   (lsub pure-lsub)
   (lsup pure-lsup)
-  (rsub pure-rsub-lim)
+  (rsub pure-rsub)
   (rsup pure-rsup)
   (wide pure-wide)
   (frac pure-frac)
@@ -460,12 +497,32 @@
   (frac* pure-frac)
   (neg pure-neg)
 
-;; These are mostly from the generic converter. Note that some of these aren't
-;; defined in Pure by default, but you might want to declare them yourself.
-;; There's probably stuff missing here and you might want to change some of
-;; these assignments.
+;; Stuff below you might want to change to add your own symbol mappings or
+;; adjust the ones given here. Some the symbols are pilfered from the generic
+;; converter, others I gleaned from the menus or by looking at the tree form
+;; of math formulas. There's surely some stuff missing here. Note that many of
+;; these symbols aren't defined in Pure by default, so you can give them any
+;; meaning that you want.
 
-  ("<longequal>" "==")
+  ;; These all have a predefined meaning in Pure. The e, pi and i symbol will
+  ;; only be defined if the math module is loaded, however.
+  ("<backslash>"  "\\")
+  ("<infty>"      " inf ")
+  ("<mathe>"      " e ")
+  ("<mathpi>"     " pi ")
+  ("<mathi>"      " i ")
+  ;; Differentials. These are taken care of in texmacs.pure.
+  ("<partial>" " d ")
+  ("<mathd>" " d ")
+  ;; Set-related stuff. It makes some sense to map these to list ops in Pure,
+  ;; or you might want to remap them to Pure set or dictionary ops.
+  ("<emptyset>"   "[]")
+  ;; The following makes sense only in comprehensions, so that you can write
+  ;; stuff like [2*x|x ∈ 1..10]. If you don't need this then you might want to
+  ;; remap this to an infix membership test predicate instead.
+  ("<in>"         "=")
+
+  ("<longequal>" "==") ;; equality in Pure
   ("<assign>" ":=")
   ("<plusassign>" "+=")
   ("<minusassign>" "-=")
@@ -473,11 +530,6 @@
   ("<overassign>" "/=")
   ("<lflux>" "<<")
   ("<gflux>" ">>")
-  ("<partial>" " d ")
-  ("<mathd>" " d ")
-  ("<mathe>" " e ")
-  ("<mathpi>" " pi ")
-  ("<backslash>" "\\")
 
   ("<implies>" "=<gtr>")
   ("<Rightarrow>" "=<gtr>")
@@ -501,6 +553,7 @@
   ("<rightarrow>" "-<gtr>")
   ("<transtype>" ":<gtr>")
 
+  ;; accents
   ("<bar>" "bar")
   ("<vect>" "vect")
   ("<check>" "check")
@@ -510,6 +563,7 @@
   ("<accute>" "accute")
   ("<grave>" "grave")
 
+  ;; different kinds of brackets and delimiters
   ("<lfloor>" "floor (")
   ("<rfloor>" ")")
   ("<lceil>" "ceil (")
@@ -555,10 +609,11 @@
 ;; most of these in the MathML character set, which may be used as identifier
 ;; constituents in Pure. Unfortunately, those code points are different from
 ;; what TeXmacs uses internally, so it won't display the MathML characters
-;; correctly. Thus, in order to make these glyphs work in Pure without causing
-;; too much havoc, for the time being we map them to ordinary Latin letters
-;; instead. Note that this means that Pure won't be able to distinguish, say,
-;; 𝔄, 𝓐 or 𝔸 from A, so these will all denote the same identifier in Pure.
+;; correctly if Pure sends them. Thus, in order to make these glyphs just work
+;; without causing too much havoc, for the time being we map them to ordinary
+;; Latin letters instead. Note that this means that Pure won't be able to
+;; distinguish, say, 𝔄, 𝓐 or 𝔸 from A, so these will all denote the same
+;; identifier in Pure.
 
   ("<bbb-A>" "A")
   ("<bbb-B>" "B")
@@ -759,16 +814,6 @@
   ("<b-7>" "7")
   ("<b-8>" "8")
   ("<b-9>" "9")
-
-  ("<infty>"      "inf")
-  ("<emptyset>"   "[]")
-  ("<mathe>"      "e")
-  ("<mathpi>"     "pi")
-  ("<mathi>"      "i")
-  ;; The following makes sense only in comprehensions, so that you can write
-  ;; stuff like [2*x|x ∈ 1..10]. If you don't need this then you might want to
-  ;; remap this to an infix membership test predicate instead.
-  ("<in>"         "=")
 
   ("<alpha>"      "alpha")
   ("<beta>"       "beta")

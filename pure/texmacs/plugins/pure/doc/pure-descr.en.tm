@@ -72,14 +72,10 @@
     <samp|varsession> style package for a somewhat fancier formatting.
 
     <\bothlined>
-      <\unfolded-explain>
-        <strong|Note>
-      <|unfolded-explain>
-        This will not actually be visible if you're reading this in the
-        <TeXmacs> help browser which uses its own style options. In this case
-        you'll have to choose the <samp|varsession> style manually, see
-        <samp|Document \| Add package \| Program \| varsession> in the menu.)
-      </unfolded-explain>
+      <strong|Note: >This will not actually be visible if you're reading this
+      in the <TeXmacs> help browser which uses its own style options. In this
+      case you'll have to choose the <samp|varsession> style manually, see
+      <samp|Document \| Add package \| Program \| varsession> in the menu.)
     </bothlined>
 
     It's also possible to globally override formatting options such as the
@@ -403,13 +399,9 @@
     option.
 
     <\bothlined>
-      <\unfolded-explain>
-        Note
-      <|unfolded-explain>
-        If you're reading this in the <TeXmacs> help browser, then Pure
-        scripting will most likely not be enabled yet, so you should do this
-        now if you'd like to try the examples below.
-      </unfolded-explain>
+      <strong|Note: >If you're reading this in the <TeXmacs> help browser,
+      then Pure scripting will most likely not be enabled yet, so you should
+      do this now if you'd like to try the examples below.
     </bothlined>
 
     Scripting uses its own instance of the Pure interpreter which is separate

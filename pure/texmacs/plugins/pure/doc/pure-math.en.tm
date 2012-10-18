@@ -451,30 +451,29 @@
       {1,0,0;0,1,0;0,0,1}
     </unfolded-io-math>
 
-    <\input>
+    <\input-math>
       \<gtr\>\ 
-    <|input>
-      <math|<math-ss|primes> = <math-ss|sieve> (2\<ldots\>\<infty\>)
-      <math-bf|with> <math-ss|sieve> (p:<math-it|qs>) = p : <math-ss|sieve>
-      [q<mid|\|>q = <math-it|qs>; q <math-ss|mod> p] &; <math-bf|end>;>
-    </input>
+    <|input-math>
+      <math-bf|let> P=sieve (2\<ldots\>\<infty\>)
+      <math-bf|with><space|1spc>sieve(p:<math-it|qs>) = p :sieve[q<mid|\|>q =
+      <math-it|qs>; q <math-ss|mod> p] & <math-bf|end>;
+    </input-math>
 
-    <\unfolded-io>
+    <\unfolded-io-math>
       \<gtr\>\ 
-    <|unfolded-io>
-      <math|<math-ss|primes>!!<around*|(|0\<ldots\>20|)>;>
-    <|unfolded-io>
+    <|unfolded-io-math>
+      P!!<around*|(|0\<ldots\>20|)>;
+    <|unfolded-io-math>
       [2,3,5,7,11,13,17,19,23,29,31,37,41,43,47,53,59,61,67,71,73]
-    </unfolded-io>
+    </unfolded-io-math>
 
-    <\unfolded-io>
+    <\unfolded-io-math>
       \<gtr\>\ 
-    <|unfolded-io>
-      <math|<math-ss|list> <around*|(|<math-ss|take> 20
-      <around*|(|<math-ss|drop> 100 <math-ss|primes>|)>|)>;>
-    <|unfolded-io>
+    <|unfolded-io-math>
+      list <around*|(|take 20 <around*|(|drop 100 P|)>|)>;
+    <|unfolded-io-math>
       [547,557,563,569,571,577,587,593,599,601,607,613,617,619,631,641,643,647,653,659]
-    </unfolded-io>
+    </unfolded-io-math>
   </session>
 
   <subsection|Big operators (integrals, limits, sums, etc.)>
@@ -803,8 +802,8 @@
     </unfolded-io-math>
   </session>
 
-  This isn't usually defined if both <em|xs> and <em|ys> are lists, but we
-  can make it so as follows:
+  As you can see, this kind of expression isn't readily defined in Pure, so
+  we can do it ourselves:
 
   <\session|pure|math>
     <\input-math>
@@ -825,13 +824,18 @@
       ["k","l","m","n","o","p","q"]
     </unfolded-io-math>
 
+    <\input-math>
+      \<gtr\>\ 
+    <|input-math>
+      <math-bf|let> P=sieve (2\<ldots\>\<infty\>)
+      <math-bf|with><space|1spc>sieve(p:<math-it|qs>) = p :sieve[q<mid|\|>q =
+      <math-it|qs>; q <math-ss|mod> p] & <math-bf|end>;
+    </input-math>
+
     <\unfolded-io-math>
       \<gtr\>\ 
     <|unfolded-io-math>
-      <math-ss|primes><rsub|99\<ldots\>117><space|1spc><math-bf|with><space|1spc><math-ss|primes>
-      = <math-ss|sieve> (2\<ldots\>\<infty\>); <math-ss|sieve>
-      (p:<math-it|qs>) = p : <math-ss|sieve> [q\|q = <math-it|qs>; q
-      <math-ss|mod> p] & <math-bf|end>;
+      P<rsub|99\<ldots\>117>;
     <|unfolded-io-math>
       [541,547,557,563,569,571,577,587,593,599,601,607,613,617,619,631,641,643,647]
     </unfolded-io-math>
@@ -850,9 +854,9 @@
   </session>
 
   This function isn't predefined in Pure, so let's do that now. To get nicely
-  aligned equations, we'll use an equation array this time
-  (<verbatim|\\eqnarray*> in math mode; similarly, the binomials can be
-  entered with <verbatim|\\binom>):
+  aligned equations, we'll use an equation array this time. This is available
+  as <verbatim|\\eqnarray*> in math mode; similarly, the binomials can be
+  entered with <verbatim|\\binom>:
 
   <\session|pure|math>
     <\input-math>
@@ -888,13 +892,12 @@
     </unfolded-io-math>
   </session>
 
-  Or how about the entire Pascal triangle? The following comprehension yields
-  a Pure stream (a.k.a.<space|1spc>infinite list):<\footnote>
-    This will become <em|very> slow if you try to access the binomials for
-    larger values of <math|n>, since the algorithm needs
-    <math|O<around*|(|n<rsup|2>|)>> time. A more efficient algorithm is left
-    as an exercise to the reader.
-  </footnote>
+  Or how about the entire Pascal triangle? As we already saw in the prime
+  sieve example, Pure can deal with ``lazy'' lists (called <em|streams> in
+  functional programming parlance) just fine. The following comprehension
+  yields a stream containing all rows of the Pascal triangle. (Note that the
+  algorithm embodied by the binomials function isn't all that efficient, so
+  it will become <em|very> slow even for moderate values of <math|n>.)
 
   <\session|pure|math>
     <\input-math>
@@ -906,12 +909,13 @@
     <\unfolded-io-math>
       \<gtr\>\ 
     <|unfolded-io-math>
-      <around*|(|binomials<rsub|5>|)><rsub|0\<ldots\>5>;
-      <around*|(|binomials<rsub|20>|)><rsub|0\<ldots\>5>;
+      binomials; binomials<rsub|0\<ldots\>5>; binomials<rsub|16>;
     <|unfolded-io-math>
-      [1,5,10,10,5,1]
+      [1]:#\<less\>thunk 0x7f6e3f67e3c8\<gtr\>
 
-      [1,20,190,1140,4845,15504]
+      [[1],[1,1],[1,2,1],[1,3,3,1],[1,4,6,4,1],[1,5,10,10,5,1]]
+
+      [1,16,120,560,1820,4368,8008,11440,12870,11440,8008,4368,1820,560,120,16,1]
     </unfolded-io-math>
   </session>
 
@@ -920,7 +924,7 @@
   stack will expand to just <verbatim|x y z t> in Pure (the converter
   traverses this construct in row-major order).
 
-  So, for \ instance, the following two expressions are exactly the same in
+  So, for instance, the following two expressions are exactly the same in
   Pure syntax:
 
   <\session|pure|math>
@@ -941,14 +945,14 @@
     </unfolded-io-math>
   </session>
 
-  And suddenly Pure starts looking a lot like real mathematical notation! But
-  wait, there's more. The <TeXmacs> <samp|choice> construct can be used to
-  write simple Pure function definitions doing case analysis in a compact and
-  pretty way. For instance:<\footnote>
+  For even more convenience, the <TeXmacs> <samp|choice> construct can be
+  used to write simple Pure function definitions doing case analysis in a
+  compact and pretty way. For instance, here's a definition of the
+  factorial:<\footnote>
     Note that the <strong|if> keyword is mandatory here, as it is required by
-    the Pure syntax (as are the semicolons). The <strong|otherwise> keyword,
-    on the other hand, is just syntactic sugar for an empty guard and is
-    completely optional, although it often improves readability.
+    the Pure syntax (as are the semicolons). The <strong|otherwise> keyword
+    is just syntactic sugar and thus optional, although it often improves
+    readability.
   </footnote>
 
   <\session|pure|math>
@@ -956,8 +960,7 @@
       \<gtr\>\ 
     <|input-math>
       f<around*|(|n|)> = <choice|<tformat|<table|<row|<cell|1>|<cell|<math-bf|if
-      >n\<leqslant\>0>>|<row|<cell|n\<times\>f<around*|(|n-1|)>>|<cell|<math-bf|otherwise>>>>>>;<text|<verbatim|
-      // the factorial>>
+      >n\<leqslant\>0>>|<row|<cell|n\<times\>f<around*|(|n-1|)>>|<cell|<math-bf|otherwise>>>>>>;
     </input-math>
 
     <\unfolded-io-math>
@@ -971,7 +974,7 @@
 
   The above definition is in fact equivalent to the following verbatim Pure
   code (which isn't all that unreadable either, as Pure's function definition
-  syntax mimics mathematical notation very closely):
+  syntax already mimics mathematical notation very closely):
 
   <\session|pure|dummy>
     <\input>
@@ -991,30 +994,55 @@
     </unfolded-io>
   </session>
 
+  Of course, the same construct can also be used to define local functions:
+
+  <\session|pure|math>
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      map f <around*|(|0\<ldots\>12|)><space|1spc><math-bf|with><space|1spc>f<around*|(|n|)>
+      = <choice|<tformat|<table|<row|<cell|1>|<cell|<math-bf|if
+      >n\<leqslant\>0>>|<row|<cell|n\<times\>f<around*|(|n-1|)>>|<cell|<math-bf|otherwise>>>>>><math-bf|end>;
+    <|unfolded-io-math>
+      [1,1,2,6,24,120,720,5040,40320,362880,3628800,39916800,479001600]
+    </unfolded-io-math>
+  </session>
+
   The <samp|choice> construct can also be used with Pure's pattern-matching
-  <verbatim|case> expressions:
+  <verbatim|case> expressions. Note that the closing <verbatim|end> of the
+  <verbatim|case> expression is omitted, the <samp|choice> construct
+  generates it automatically.
 
   <\session|pure|math>
     <\input-math>
       \<gtr\>\ 
     <|input-math>
       <around*|\||<math-it|xs>\<colons\>list|\|>=<math-bf|case>
-      <math-it|xs><space|0.8spc><math-bf|of><space|0.8spc><choice|<tformat|<table|<row|<cell|<around*|[||]>>|<cell|=>|<cell|0>|<cell|>>|<row|<cell|x:<math-it|xs>>|<cell|=>|<cell|1+<around*|\||<math-it|xs>|\|>>|<cell|<math-bf|otherwise>>>>>>;
+      <math-it|xs><space|0.8spc><math-bf|of><space|0.8spc><choice|<tformat|<table|<row|<cell|<around*|[|
+      |]>>|<cell|=>|<cell|0>|<cell|>>|<row|<cell|x:<math-it|xs>>|<cell|=>|<cell|1+<around*|\||<math-it|xs>|\|>>|<cell|<math-bf|otherwise>>>>>>;
     </input-math>
   </session>
 
-  As you probably noticed, we've just defined
+  It's not difficult to see that we've just defined
   <math|<around*|\||<math-it|xs>|\|>> (a.k.a. <verbatim|abs xs> in Pure
-  notation) as our own variant of the list size function. For instance, let's
-  count the number of primes up to 5000 (this may take a little while; alas,
-  our definition of the prime sieve isn't very efficient either!):
+  notation) to compute the size of a list <em|xs> (similar to what Pure's
+  <verbatim|#> operator does). For instance, let's count the number of primes
+  up to 5000 (this may take a little while; alas, our definition of the prime
+  sieve isn't very efficient either!):
 
   <\session|pure|math>
+    <\input-math>
+      \<gtr\>\ 
+    <|input-math>
+      <math-bf|let> P=sieve (2\<ldots\>\<infty\>)
+      <math-bf|with><space|1spc>sieve(p:<math-it|qs>) = p :sieve[q<mid|\|>q =
+      <math-it|qs>; q <math-ss|mod> p] & <math-bf|end>;
+    </input-math>
+
     <\unfolded-io-math>
       \<gtr\>\ 
     <|unfolded-io-math>
-      <around*|\||takewhile <around*|(|\<leqslant\>5000|)>
-      <math-ss|primes>|\|>;
+      <around*|\||takewhile <around*|(|\<leqslant\>5000|)> P|\|>;
     <|unfolded-io-math>
       669
     </unfolded-io-math>
@@ -1030,7 +1058,13 @@
   and <verbatim|when> clauses) and differentials. Even an invisible bracket
   (shortcut: <key|( Space>) will do the trick. For instance:
 
-  <\session|pure|math>
+  <\session|pure|caveats>
+    <\input>
+      \<gtr\>\ 
+    <|input>
+      using texmacs;
+    </input>
+
     <\unfolded-io-math>
       \<gtr\>\ 
     <|unfolded-io-math>
@@ -1038,7 +1072,7 @@
       <math|x<rsup|2> > !>
     <|unfolded-io-math>
       <\errput>
-        \<less\>stdin\<gtr\>, line 83: unhandled exception 'bad_diff (d x 2/d
+        \<less\>stdin\<gtr\>, line 2: unhandled exception 'bad_diff (d x 2/d
         x 1)' while evaluating 'd x 2/d x'
       </errput>
     </unfolded-io-math>
@@ -1064,7 +1098,7 @@
 
   Here's another example:
 
-  <\session|pure|math>
+  <\session|pure|caveats>
     <\unfolded-io-math>
       \<gtr\>\ 
     <|unfolded-io-math>
@@ -1072,14 +1106,14 @@
       <math-bf|when >n = 5<math-bf| end>;
     <|unfolded-io-math>
       <\errput>
-        \<less\>stdin\<gtr\>, line 86: syntax error, unexpected '\|',
+        \<less\>stdin\<gtr\>, line 5: syntax error, unexpected '\|',
         expecting end
       </errput>
     </unfolded-io-math>
   </session>
 
-  The tuple (comma operator) actually binds stronger than the <verbatim|when>
-  clause, so this is valid Pure syntax. But <TeXmacs> doesn't know about the
+  The tuple (comma operator) binds stronger than the <verbatim|when> clause,
+  so this is valid Pure syntax. But <TeXmacs> doesn't know about the
   <verbatim|when> syntax; for it the ``<math|<around*|(|2*k-1|)>
   <math-bf|when >n>'' looks like an ordinary term belonging under the product
   on the right, which is followed by an equals sign and another term
@@ -1091,10 +1125,10 @@
   comprehension where it shouldn't be, hence the somewhat surprising syntax
   error.
 
-  In such cases it is often helpful to have a look at the converted
-  expression. A neat trick to do this is to just copy and paste the entire
-  expression to another input line operated in verbatim mode. This shows us
-  exactly what went wrong here:
+  If you run into such mishaps, it is often helpful to have a look at the
+  converted expression. A neat trick to do this is to just copy and paste the
+  entire expression to another input line operated in verbatim mode. This
+  shows us exactly what went wrong here:
 
   <\session|pure|dummy>
     <\input>
@@ -1109,7 +1143,7 @@
   prefer to insert visible parentheses, since they make the expression easier
   to parse for human readers, too:
 
-  <\session|pure|math>
+  <\session|pure|caveats>
     <\unfolded-io-math>
       \<gtr\>\ 
     <|unfolded-io-math>
@@ -1120,7 +1154,7 @@
     </unfolded-io-math>
   </session>
 
-  We can again copy/paste the expression to a verbatim input line, to confirm
+  We can copy/paste the expression to a verbatim input line again, to confirm
   that it was converted correctly this time:
 
   <\session|pure|dummy>
