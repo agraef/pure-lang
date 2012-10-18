@@ -598,13 +598,15 @@ namespace;
    rules, ranges and assignments in Reduce, respectively. (Note that you may
    have to quote these in some cases so that they don't get evaluated on the
    Pure side.) Also, Reduce's ``arbconst n``, ``arbint n`` and ``arbcomplex
-   n`` terms are mapped to Greek symbols ``αn``, ``βn`` and ``ζn`` on the Pure
-   side. For debugging purposes, all these automatic conversions can also be
-   turned off on the output side with the '``#!  --disable mapped``'
-   compilation pragma; this needs to be placed *before* the '``using
-   reduce;``' import clause to take effect. There are a number of other
-   conditional compilation options which may be used to selectively turn off
-   some of the conversions; please check the module source for details.
+   n`` terms can be mapped to Greek symbols ``αn``, ``βn`` and ``ζn`` on the
+   Pure side. (This may cause issues in environments without proper Unicode
+   support, so it's disabled by default.) For debugging purposes, all these
+   automatic conversions can also be turned off on the output side with the
+   '``#!  --disable mapped``' compilation pragma; this needs to be placed
+   *before* the '``using reduce;``' import clause to take effect. There are a
+   number of other conditional compilation options which may be used to
+   selectively turn off some of the conversions; please check the module
+   source for details.
 
    Lisp expressions are handled in a similar fashion, but here only a few
    basic Pure data types (integers, doubles, strings and lists) are converted
@@ -842,6 +844,10 @@ let reduce::kdec_syms = '[depend,nodepend,factor,remfac,order,korder,noncom];
 /* Uncomment this to disable the automatic conversion of Taylor polynomials to
    standard form. */
 //#! --disable taylorsf
+
+#! --ifndef arbsymbols
+#! --disable arbsymbols
+#! --endif
 
 simplify x = y when
   // Clear the stack (to be sure).
@@ -1124,7 +1130,9 @@ lispval x = y when
     // Convert symbols, with mapping as needed.
     from_sym x = opstr (catch (cst x) (pure_syms!x));
   end;
-  PROC_make_printable;
+  // XXXFIXME: This barks on matrix values. Unfortunately, this means that we
+  // can't marshall bigint values right now.
+  //PROC_make_printable;
   y = display PROC_get_value with
     display p = [] if PROC_null p;
     = if PROC_symbol p then symval (PROC_symbol_name p)

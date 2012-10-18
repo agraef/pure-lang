@@ -4340,8 +4340,20 @@ void interpreter::exec(expr *x)
 	      it->second.x->data.clos))
 	  f = 0;
 	if (f > 0) symtab.__show__sym = f;
-	cout << TEXMACS_BEGIN << result << '\n' << TEXMACS_END;
-	cout.flush();
+	string s;
+	{
+	  ostringstream out;
+	  out << result;
+	  s = out.str();
+	}
+	// Excessive amounts of output make TeXmacs barf, so cut it down to
+	// some reasonable size.
+	size_t maxlen = 10000; // this should be plenty
+	if (s.length() > maxlen) {
+	  s.erase(maxlen-3);
+	  s += "...";
+	}
+	cout << TEXMACS_BEGIN << s << '\n' << TEXMACS_END;
 	if (f > 0) symtab.__show__sym = g;
       } else
 	cout << result << '\n';
