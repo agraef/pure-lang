@@ -4341,6 +4341,7 @@ void interpreter::exec(expr *x)
 	  f = 0;
 	if (f > 0) symtab.__show__sym = f;
 	cout << TEXMACS_BEGIN << result << '\n' << TEXMACS_END;
+	cout.flush();
 	if (f > 0) symtab.__show__sym = g;
       } else
 	cout << result << '\n';

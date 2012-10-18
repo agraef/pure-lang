@@ -918,8 +918,9 @@ simplify x = y when
   // Run Reduce to simplify the expression.
   PROC_simplify;
   // Convert the stacktop from the internal Reduce format into a format which
-  // we can use. NOTE: Apparently this isn't really needed with the toplevel
-  // call to 'list', but we keep it in here just in case.
+  // we can use. This is needed, in particular, to marshall bigint values
+  // which the proc interface can only return as strings in the present
+  // implementation.
   PROC_make_printable;
   // Convert the stacktop back to a Pure expression.
 #! --if mapped
@@ -1123,6 +1124,7 @@ lispval x = y when
     // Convert symbols, with mapping as needed.
     from_sym x = opstr (catch (cst x) (pure_syms!x));
   end;
+  PROC_make_printable;
   y = display PROC_get_value with
     display p = [] if PROC_null p;
     = if PROC_symbol p then symval (PROC_symbol_name p)

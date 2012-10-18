@@ -920,6 +920,7 @@ static inline bool pstr(ostream& os, pure_expr *x)
 	if (interp.sstk[i] && interp.sstk[i]->refc > 0)
 	  pure_free(interp.sstk[i]);
       interp.sstk_sz = sz;
+      recursive = false;
       return false;
     } else {
       recursive = true;
