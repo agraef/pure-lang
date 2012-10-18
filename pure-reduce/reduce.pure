@@ -529,6 +529,19 @@ namespace;
       result as ``lisp (''(a b c))``). The result is always a Pure list or an
       atomic value.
 
+   .. function:: lispval x
+
+      This converts a Pure expression to its Reduce equivalent, like
+      :func:`simplify` does, but without actually simplifying it. As with the
+      other functions, you need to quote ``x`` if you want to prevent it from
+      being evaluated on the Pure side. The result is the Pure representation
+      of a Lisp form which can be passed as a value to other Lisp routines by
+      employing the :func:`lisp` function. (Normally this requires that you
+      double-quote the expression so that it doesn't get evaluated by the Lisp
+      interpreter.) This function isn't for casual usage, but may be useful
+      if you need to pass a Reduce expression to some Lisp function which
+      cannot be called through :func:`simplify`.
+
    .. function:: lispsym s::string
 
       This function creates a special Pure identifier for any symbol given as
@@ -1040,6 +1053,108 @@ simplify x = y when
 end with
   // Error handler, this gets invoked if we choke on an input or output x we
   // don't understand (yet).
+  error x = PROC_clear_stack $$ throw (bad_reduce_value x);
+end if get_started;
+
+lispval x = y when
+  PROC_clear_stack;
+  from_expr x with
+    // These are all the data types natively supported by the interface.
+    // Marshalling of list and matrix values is supported as well.
+    from_expr x::int = PROC_push_small_integer x;
+    from_expr x::bigint = PROC_push_big_integer (init (str x));
+    from_expr x::double = from_expr (if x<0 then '-infinity else 'infinity)
+      if infp x;
+    = PROC_push_floating x otherwise;
+    from_expr x::string = PROC_push_string x;
+    from_expr x::matrix = from_expr (foldl ($) ('mat) (list2 x));
+    from_expr x::rlist = from_expr (foldl ($) ('list) x);
+    // Map x%y -> x/y on the fly.
+    from_expr (x%y) = from_expr ('quotient x y);
+    // Map complex numbers.
+    from_expr (x+:y) = from_expr ('(x+i*y));
+    from_expr (x<:y) = from_expr ('(x*e^(i*y)));
+    from_expr x::appl = () when
+      f:xs = a [] x with a xs (x@_ y) = a (y:xs) x; a xs x = x:xs end;
+      case 'f () of
+	// The mat case needs special treatment here, since we have to eval
+	// the embedded list terms. XXXTODO: Are there other cases like this?
+	mat _ =
+	  do (\x -> if ~listp x then from_expr x
+		    else from_expr (mkquoted x) $$ PROC_lisp_eval) xs
+	with
+	  // We allow a list to be specified either as a plain Pure list or a
+	  // Lisp-style (list ...) term.
+	  listp x::rlist = true;
+	  listp (x@_ y) = listp x;
+	  listp x = symbolp x && x==='list otherwise;
+	  // Kludge: We need to quote the elements of the list arguments here
+	  // in case they're symbolic, so that PROC_lisp_eval doesn't try to
+	  // evaluate them (which crashes PROC_lisp_eval).
+	  mkquoted x::rlist = map ('quote) x;
+	  mkquoted (x@_ y) = 'x y when x = mkquoted x; y = 'quote y end;
+	  mkquoted x = x;
+	end;
+        _::symbol _ = do from_expr xs;
+	_ = error x;
+      end;
+      PROC_make_function_call (from_sym f) (#xs);
+#! --if taylorsf
+      // Special treatment for Taylor polynomials. We convert these to
+      // standard form on the fly by inserting a call to taylortostandard.
+      all (~==f) ('[taylor,implicit_taylor,inverse_taylor]) ||
+      (load "taylor" $$ PROC_make_function_call "taylortostandard" 1);
+#! --endif
+    end;
+    // Handle special cases of nullary symbols which are actually
+    // parameterless function calls. XXXTODO: Are there other cases like this?
+    // Note that the case of an empty matrix (mat) isn't really handled by
+    // Reduce (it gives a 'Matrix mismatch' error), but we allow this case
+    // anyway for consistency.
+    from_expr x::symbol =
+      PROC_make_function_call (from_sym x) 0 if x === 'list || x === 'mat;
+    = case head s, val (tail s) when s = str x end of
+	"α",n::int = from_expr (arbconst n);
+	"β",n::int = from_expr (arbint n);
+	"ζ",n::int = from_expr (arbcomplex n);
+	_ = PROC_push_symbol (from_sym x);
+      end;
+    from_expr x = error x otherwise;
+    // Convert symbols, with mapping as needed.
+    from_sym x = opstr (catch (cst x) (pure_syms!x));
+  end;
+  y = display PROC_get_value with
+    display p = [] if PROC_null p;
+    = if PROC_symbol p then symval (PROC_symbol_name p)
+      else if PROC_fixnum p then PROC_integer_value p
+      else if PROC_floatnum p then PROC_floating_value p
+      else if PROC_string p then strval (PROC_string_data p)
+      else error p if PROC_atom p;
+    = display (PROC_first p):display (PROC_rest p) otherwise;
+    // Bigints are also returned as strings. We handle that here.
+    strval x::string = case val x of
+      x::int  = bigint x;
+      x::bigint = x;
+      _ = x;
+    end;
+    symval x::string = case val ("("+x+")") of
+      x::symbol = x;
+      // Some Reduce symbols aren't valid Pure symbols. We mangle them here.
+      _ = case val (string (map mangle x)) of
+	// If the result still isn't a valid Pure symbol then it's probably a
+	// keyword. Mangle it some more.
+	val x::string = val ("_"+x);
+	x::symbol = x;
+	_ = error x;
+      end with
+	mangle c = c if c=="_" || c>="0" && c<="9" ||
+		       c>="a" && c<="z" || c>="A" && c<="Z";
+	mangle _ = "_" otherwise;
+      end;
+    end;
+  end;
+  PROC_clear_stack;
+end with
   error x = PROC_clear_stack $$ throw (bad_reduce_value x);
 end if get_started;
 
