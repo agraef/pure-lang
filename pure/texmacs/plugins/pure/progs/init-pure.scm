@@ -27,6 +27,9 @@
  (:mode in-session?)
  ("C-$" (toggle-session-math-input)))
 
+;; Uncomment this to make math input the default when TeXmacs starts.
+;;(if (not (session-math-input?)) (toggle-session-math-input))
+
 ;; Additional TeXmacs-specific include path to search for Pure scripts. By
 ;; default we set this to your ~/.TeXmacs/plugins/pure/progs folder.
 (define pure-texmacs-includes
@@ -146,3 +149,12 @@
   (:serializer ,pure-script-serialize)
   (:tab-completion #t)
   (:scripts "Pure"))
+
+;; A variation of the above which has math output enabled by default.
+(plugin-configure pure-script-math
+  (:require (url-exists-in-path? "pure"))
+  (:initialize (pure-initialize))
+  (:launch ,(pure-cmd "pure -i -q --texmacs --enable tmmath" pure-scripts))
+  (:serializer ,pure-script-serialize)
+  (:tab-completion #t)
+  (:scripts "Pure-math"))

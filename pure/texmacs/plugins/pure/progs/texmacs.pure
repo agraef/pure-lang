@@ -1,7 +1,16 @@
 
+/* TeXmacs support module 2012-10-18 AG. */
+
+/* Copyright (c) 2012 Albert Graef
+
+   Copying and distribution of this file, with or without modification,
+   are permitted in any medium without royalty provided the copyright
+   notice and this notice are preserved.  This file is offered as-is,
+   without any warranty. */
+
 /* Some auxiliary definitions for use with Pure in TeXmacs. This gets loaded
    automatically if you run the Pure scripting plugin (Document|Scripts|Pure).
-   Inside a Pure session, you can invoke this module with 'using texmacs;'. */
+   Inside a Pure session, you can invoke this module with `using texmacs;`. */
 
 // Additional operators provided by TeXmacs.
 infixl (+) oplus ominus pm mp cup uplus;
@@ -68,3 +77,61 @@ preproc = reduce with
   d k::int f/(y*d x l::int) = (d (k-l) f/y) x l if k>=l && l>=0;
   x@(d _ _)/y | x/y@(d _ _) = throw (bad_diff ('(x/y))) otherwise;
 end;
+
+/* LaTeX pretty-printing using the tmprint package of Reduce. Thanks are due
+   to Kurt Pagani who figured out the necessary Lisp magic to make that work.
+   You enable this with a call to the parameterless `math` function;
+   `verbatim` switches back to program mode again. This also starts up Reduce
+   in a lazy fashion when `math` is invoked, so that we avoid depending on the
+   pure-reduce package. Note, however, that pure-reduce *is* required to make
+   the pretty-printing work. */
+
+// Enable this pragma to enable math mode by default.
+//#! --enable tmmath
+
+let tminit = ref false;
+let tmmode = ref false;
+
+namespace reduce with
+  public capture output load;
+end;
+
+tmstart = () when
+  eval "using reduce;";
+  reduce::capture 1;
+  reduce::load "tmprint";
+  reduce::capture 0;
+  put tminit true;
+end if ~get tminit;
+
+public lisp lispval lispsym;
+
+tmprint x = s when
+  tmstart;
+  x = lispval x;
+  lisp (lispsym "fancy-output" (''maprin) ('aeval ('x)));
+  reduce::capture 1;
+  lisp (lispsym "fancy-flush");
+  reduce::capture 0;
+  s = reduce::output;
+  // For some reason tmprint prepends a newline to all but the first
+  // invocation. Get rid of that here.
+  s = strip s with
+    strip s::string = tail s if ~null s && s!0=="\n";
+    strip s = s;
+  end;
+end;
+
+// Switch between math and verbatim output.
+math = tmstart $$ put tmmode true;
+verbatim = put tmmode false;
+
+// Pretty-printing routine for Pure's --texmacs mode.
+__texmacs__ x = tmprint x if get tmmode;
+
+#! --ifndef tmmath
+#! --disable tmmath
+#! --endif
+#! --if tmmath
+math;
+#! --endif
