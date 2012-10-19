@@ -8644,7 +8644,16 @@ static pure_expr *subst(map<int32_t,pure_expr*> &env,
 	  force.find(y->data.clos->key) != force.end())
 	force[y->data.clos->key] = true;
       return y;
-    } else
+    } else if (x->tag > 0)
+      /* NOTE: Don't even think of just returning x here! In the (rather
+	 obscure) case that x is a global symbol which has just been
+	 recompiled, the function pointer in x will have become invalid so
+	 that an application of this symbol will try to execute code which has
+	 gone non-existing already. So we effectively quote the symbol here to
+	 prevent its reevaluation; rsubst() then takes care of reconstructing
+	 the closure. */
+      return pure_const(x->tag);
+    else
       return x;
   }
   }
@@ -8716,9 +8725,13 @@ static pure_expr *rsubst(map<uint32_t,pure_expr*> &env,
 	(it = env.find(x->data.clos->key)) != env.end()) {
       /* Resubstitute a global for a local closure from the environment. */
       pure_expr *y = it->second;
-      if (force[x->data.clos->key])
-	return y;
-      else
+      if (force[x->data.clos->key]) {
+	/* We actually reconstruct the closure here since its code might
+	   already have become invalid. See the corresponding note in
+	   subst(). */
+	assert(y->tag > 0);
+	return pure_symbol(y->tag);
+      } else
 	return pure_const(y->tag);
     } else
       return x;
@@ -8756,7 +8769,11 @@ pure_expr *reduce(pure_expr *locals, pure_expr *x)
       }
     }
     free(xs);
-    return rsubst(renv, force, subst(env, force, cons, pair, x));
+    pure_expr *u = pure_new(subst(env, force, cons, pair, x));
+    pure_expr *v = pure_new(rsubst(renv, force, u));
+    pure_free(u);
+    pure_unref(v);
+    return v;
   } else
     return 0;
 }
