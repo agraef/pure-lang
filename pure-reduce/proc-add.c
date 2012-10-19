@@ -135,3 +135,69 @@ int PROC_make_cons(void)
     procstack = w;
     return 0;
 }
+
+/* TeXmacs support. The TeXmacs plugin requires Reduce anyway to do its
+   pretty-printing, so we might just as well include these little helper
+   functions here so that the plugin doesn't need its own C support library.
+   Most of the support functions of the plugin are written in Pure, but the
+   following functions are implemented in C for performance, since they have
+   to be invoked inside the Pure interpreter's pretty-printer. */
+
+#include <ctype.h>
+#include <string.h>
+
+/* stuff from proc.h we have to get rid of now so that we can include the Pure
+   runtime header */
+#undef eval
+#undef symbolp
+#include <pure/runtime.h>
+
+/* Checks an identifier. */
+
+int texmacs_valid(const char *s)
+{
+  while (*s) {
+    if (!isalnum(*s)) return 0;
+    s++;
+  }
+  return 1;
+}
+
+#define MAXLEN 10000
+
+const char *texmacs_post(const char *s)
+{
+  int eq = 0;
+  static char buf[MAXLEN];
+  char *t = buf;
+  while (isspace(*s)) s++;
+  while (*s) {
+    if (*s == '=') {
+      if (eq || s[1] == '=') {
+	if (t-buf+1 >= MAXLEN) break;
+	*t++ = *s++;
+      } else {
+	if (t-buf+12 >= MAXLEN) break;
+	strncpy(t, "{\\longequal}", 12);
+	t += 12; s++;
+      }
+      eq = 1;
+      continue;
+    } else
+      eq = 0;
+    if (strncmp(s, "\\left\\{", 7) == 0) {
+      if (t-buf+7 >= MAXLEN) break;
+      strncpy(t, "\\left\\[", 7);
+      t += 7; s += 7;
+    } else if (strncmp(s, "\\right\\}", 8) == 0) {
+      if (t-buf+8 >= MAXLEN) break;
+      strncpy(t, "\\right\\]", 8);
+      t += 8; s += 8;
+    } else {
+      if (t-buf+1 >= MAXLEN) break;
+      *t++ = *s++;
+    }
+  }
+  *t++ = 0;
+  return buf;
+}

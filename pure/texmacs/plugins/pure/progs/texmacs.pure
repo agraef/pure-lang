@@ -1,5 +1,5 @@
 
-/* TeXmacs support module 2012-10-18 AG. */
+/* texmacs support module 2012-10-18 Albert Graef <Dr.Graef@t-online.de>. */
 
 /* Copyright (c) 2012 Albert Graef
 
@@ -89,15 +89,21 @@ end;
 // Enable this pragma to enable math mode by default.
 //#! --enable tmmath
 
-let tminit = ref false;
-let tmmode = ref false;
+let tminit, tmmode = ref false, ref false;
+let texmacs_valid_fun, texmacs_post_fun = ref (), ref ();
 
+public texmacs_valid texmacs_post;
 namespace reduce with
-  public capture output load;
+  public capture output load pure_syms;
 end;
 
 tmstart = () when
-  eval "using reduce;";
+  // The externals are in the reduce module.
+  eval "using reduce;\
+extern int texmacs_valid(char *s);\
+extern char *texmacs_post(char *s);";
+  put texmacs_valid_fun (eval "texmacs_valid");
+  put texmacs_post_fun (eval "texmacs_post");
   reduce::capture 1;
   reduce::load "tmprint";
   reduce::capture 0;
@@ -105,6 +111,20 @@ tmstart = () when
 end if ~get tminit;
 
 public lisp lispval lispsym;
+
+/* NOTE: This recursively descends into the (already simplified) term to see
+   whether it's actually printable. tmprint chokes on strings (wants them to
+   be symbols) and of course doesn't know about C pointers, closures and
+   similar special Pure objects, so we exclude them here, also any operator
+   symbols which are not in the reduce::pure_syms table.
+
+   If the check fails on this expression, Pure's pretty printer will invoke us
+   again on its subterms so that parts of the expression may still be rendered
+   in LaTeX mode. This shouldn't normally be a problem unless the terms become
+   prohibitively large, in which case you can disable the `recurse`
+   compilation option below to prevent the recursion. */
+
+//#! --disable recurse
 
 tmprint x = s when
   tmstart;
@@ -114,13 +134,27 @@ tmprint x = s when
   lisp (lispsym "fancy-flush");
   reduce::capture 0;
   s = reduce::output;
-  // For some reason tmprint prepends a newline to all but the first
-  // invocation. Get rid of that here.
-  s = strip s with
-    strip s::string = tail s if ~null s && s!0=="\n";
-    strip s = s;
-  end;
+  // There's still have some postprocessing to do...
+  s = get texmacs_post_fun s;
+end if printable x when
+  /* We need to simplify first (even though tmprint will do it anyway), in
+     order to decide whether the expression is printable. However, if the
+     original expression doesn't look printable already, simplify itself will
+     probably choke on it as well (the typical symptom are spurious "operator
+     declared" messages), so we give up right away in this case. */
+  x = if printable x then simplify x else "no";
+end with
+  printable x::number = true;
+  printable x::list |
+  printable x::matrix = all printable x;
+  printable (x@_ y) = printable x && printable y;
+  printable x::symbol = get texmacs_valid_fun (str x) ||
+    member reduce::pure_syms x;
+  printable _ = false;
 end;
+#! --ifnot recurse
+tmprint x = str x;
+#! --endif
 
 // Switch between math and verbatim output.
 math = tmstart $$ put tmmode true;
