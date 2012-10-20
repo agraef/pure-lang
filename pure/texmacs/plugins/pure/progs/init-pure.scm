@@ -27,7 +27,7 @@
  (:mode in-session?)
  ("C-$" (toggle-session-math-input)))
 
-;; Uncomment this to make math input the default when TeXmacs starts.
+;; Uncomment this to make math input the default when this module is loaded.
 ;;(if (not (session-math-input?)) (toggle-session-math-input))
 
 ;; Additional TeXmacs-specific include path to search for Pure scripts. By
