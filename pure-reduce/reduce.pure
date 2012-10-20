@@ -874,15 +874,20 @@ simplify x = y when
     from_expr (x<:y) = from_expr ('(x*e^(i*y)));
     from_expr x::appl = () when
       f:xs = a [] x with a xs (x@_ y) = a (y:xs) x; a xs x = x:xs end;
+      // Arguments may also be specified in uncurried form, as a tuple.
+      xs = curry xs with
+	curry [] = [];
+	curry (x::tuple : xs) = list x + curry xs;
+	curry (x:xs) = x : curry xs otherwise;
+      end;
       case 'f () of
 	// The mat case needs special treatment here, since we have to eval
 	// the embedded list terms. XXXTODO: Are there other cases like this?
-	mat _ =
-	  do (\x -> if ~listp x then from_expr x
-		    else from_expr (mkquoted x) $$ PROC_lisp_eval) xs
-	with
+	mat _ = do convert xs with
 	  // We allow a list to be specified either as a plain Pure list or a
 	  // Lisp-style (list ...) term.
+	  convert x = if ~listp x then from_expr x
+		      else from_expr (mkquoted x) $$ PROC_lisp_eval;
 	  listp x::rlist = true;
 	  listp (x@_ y) = listp x;
 	  listp x = symbolp x && x==='list otherwise;
@@ -970,7 +975,7 @@ simplify x = y when
 #! --endif
     // Empty list, treated as 'false' right now. (Note that proper Reduce
     // lists are handled below.) XXXFIXME: Is this sensible?
-    to_expr [] = false;
+    //to_expr [] = false;
     // Special coefficient values.
     to_expr (_rd_ : x::double) = x;
     to_expr (_rd_ : mant::integer : exp::integer) = mant*2^exp;
@@ -1052,7 +1057,7 @@ simplify x = y when
     to_sym [f::symbol,n::int] = val ("α"+str n) if f === arbconst;
     to_sym [f::symbol,n::int] = val ("β"+str n) if f === arbint;
     to_sym [f::symbol,n::int] = val ("ζ"+str n) if f === arbcomplex;
-    to_sym x::symbol = true if x === 't;
+    //to_sym x::symbol = true if x === 't;
     to_sym x = catch (cst x) (reduce_syms!x);
   end;
   // Clear the stack once again (clean up).
@@ -1083,15 +1088,20 @@ lispval x = y when
     from_expr (x<:y) = from_expr ('(x*e^(i*y)));
     from_expr x::appl = () when
       f:xs = a [] x with a xs (x@_ y) = a (y:xs) x; a xs x = x:xs end;
+      // Arguments may also be specified in uncurried form, as a tuple.
+      xs = curry xs with
+	curry [] = [];
+	curry (x::tuple : xs) = list x + curry xs;
+	curry (x:xs) = x : curry xs otherwise;
+      end;
       case 'f () of
 	// The mat case needs special treatment here, since we have to eval
 	// the embedded list terms. XXXTODO: Are there other cases like this?
-	mat _ =
-	  do (\x -> if ~listp x then from_expr x
-		    else from_expr (mkquoted x) $$ PROC_lisp_eval) xs
-	with
+	mat _ = do convert xs with
 	  // We allow a list to be specified either as a plain Pure list or a
 	  // Lisp-style (list ...) term.
+	  convert x = if ~listp x then from_expr x
+		      else from_expr (mkquoted x) $$ PROC_lisp_eval;
 	  listp x::rlist = true;
 	  listp (x@_ y) = listp x;
 	  listp x = symbolp x && x==='list otherwise;
@@ -1254,17 +1264,16 @@ end with
 end if get_started;
 
 declare x::symbol y::symbol = declare x [y];
-declare x::symbol ys::rlist = lisp (x ys)
+declare x::symbol ys::rlist = lisp (x ys) $$ ()
   if x === 'operator && all symbolp ys;
-declare x::symbol ys::rlist = lisp (x (map mkquoted ys))
-  with
-    mkquoted y::appl = 'quote y;
-    mkquoted y = y otherwise;
-  end if any (x===) kdec_syms;
-declare x::symbol ys::rlist = lisp ('flag ys x)
+declare x::symbol ys::rlist = lisp (x (map mkquoted ys)) $$ () with
+  mkquoted y::appl = 'quote y;
+  mkquoted y = y otherwise;
+end if any (x===) kdec_syms;
+declare x::symbol ys::rlist = lisp ('flag ys x) ()
   if any (x===) prop_syms && all symbolp ys;
 
 precision prec::int = lisp ('precision prec);
-plotreset = lisp ('plotreset);
+plotreset = lisp ('plotreset) $$ ();
 
 reduce::get_started;

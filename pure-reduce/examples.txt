@@ -1198,20 +1198,18 @@ Note that the "big O" residual terms are omitted in the results returned by
 Boolean Expressions
 -------------------
 
-The truth values within REDUCE are ``t`` and ``nil = ()`` but are mapped to
-``1`` and ``0`` respectively when interchanging results using ``simplify``.
-Not all predicates (functions returning a truth value), however, can be called
-by ``simplify``, so one has to use the ``lisp`` function in some
-circumstances.
+The truth values within REDUCE are ``t`` and ``nil = ()``. Not all predicates
+(functions returning a truth value) can be called by ``simplify``, however,
+so one has to use the ``lisp`` function in some circumstances.
 
 Some examples:
 
 .. code-block:: pure
 
   > simplify $ evenp 200 ;
-  1
+  t
   > simplify $ evenp 201 ;
-  0
+  []
 
   > lisp (fixp 200) ;
   t
@@ -1226,10 +1224,11 @@ expression go through to REDUCE:
 
   > lisp (numberp x) ;
   0
+  > lisp (numberp 111) ;
+  1
 
   > lisp ('numberp x) ;
   []
-
   > lisp ('numberp 111) ;
   t
 
