@@ -157,7 +157,15 @@
     <\unfolded-io-math>
       \<gtr\>\ 
     <|unfolded-io-math>
-      declare<space|1spc>operator <around*|[|above,below,binom,tree,hat,tilde,bar,vect,check,breve,dot,ddot,acute,grave|]>;
+      declare<space|1spc>operator <around*|[|above,below,binom,tree|]>;
+    <|unfolded-io-math>
+      ()
+    </unfolded-io-math>
+
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      declare<space|1spc>operator <around*|[|hat,tilde,bar,vect,check,breve,dot,ddot,acute,grave|]>;
     <|unfolded-io-math>
       ()
     </unfolded-io-math>
@@ -446,7 +454,7 @@
     </unfolded-io-math>
   </session>
 
-  More examples using list comprehensions:<\footnote>
+  More examples using list and matrix comprehensions:<\footnote>
     Note that in order to get the single vertical bar <verbatim|\|> in math
     mode, you'll have to type either <key|Shift+F5 \|> or <key|Alt+M \|> (the
     latter gives you a ``big'' <verbatim|\|> symbol which automatically
@@ -517,6 +525,145 @@
       <with|color|black|mode|math|math-display|true|<around*|[|<with|math-font-family|rm|547><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|557><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|563><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|569><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|571><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|577><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|587><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|593><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|599><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|601><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|607><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|613><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|617><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|619><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|631><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>|\<nobracket\>>>
 
       <with|color|black|mode|math|math-display|true|<around*|\<nobracket\>|641<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|643><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|647><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|653><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|659>|]>>
+    </unfolded-io-math>
+  </session>
+
+  List and vector/matrix data can be exchanged between Pure and Reduce in a
+  seamless fashion. This makes it easy to inspect and manipulate compound
+  results returned by Reduce, such as lists of partial fractions:
+
+  <\session|pure|math>
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      let p=2/<around*|(|<around*|(|x+1|)><rsup|2>*<around*|(|x+2|)>|)>; p;
+    <|unfolded-io-math>
+      <with|color|black|mode|math|math-display|true|<frac|2|x<rsup|3>+4*x<rsup|2>+5*x+2>>
+    </unfolded-io-math>
+
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      let pfs = ?:pf p x; pfs;
+    <|unfolded-io-math>
+      <with|color|black|mode|math|math-display|true|<around*|[|<frac|2|x+2><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><frac|-2|x+1><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><frac|2|x<rsup|2>+2*x+1>|]>>
+    </unfolded-io-math>
+
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      map <around*|(|\\y\<rightarrow\>df y<space|1spc>x|)> pfs;
+    <|unfolded-io-math>
+      <with|color|black|mode|math|math-display|true|<around*|[|<frac|-2|x<rsup|2>+4*x+4><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><frac|2|x<rsup|2>+2*x+1><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><frac|-4|x<rsup|3>+3*x<rsup|2>+3*x+1>|]>>
+    </unfolded-io-math>
+  </session>
+
+  Another example: equation solving.
+
+  <\session|pure|math>
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      let<space|1spc>eqn=log<around*|(|sin<around*|(|x+3|)>|)><rsup|5>\<longequal\>8;
+      eqn;
+    <|unfolded-io-math>
+      <with|color|black|mode|math|math-display|true|log<around*|(|sin<around*|(|x+3|)>|)><rsup|5>\<longequal\>8>
+    </unfolded-io-math>
+
+    <\input-math>
+      \<gtr\>\ 
+    <|input-math>
+      let solns=?:solve eqn<space|1spc>x;
+    </input-math>
+
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      #solns; head solns;
+    <|unfolded-io-math>
+      <with|color|black|mode|math|math-display|true|10>
+
+      <with|color|black|mode|math|math-display|true|x\<longequal\>2*<math-up|arbint><around*|(|5|)>*\<pi\>+arcsin<around*|(|<frac|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|2*\<pi\>|5>|)>|)>|exp<around*|(|2<rsup|3/5>*sin<around*|(|<frac|2*\<pi\>|5>|)>*i|)>>|)>-3>
+    </unfolded-io-math>
+
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      tail solns;
+    <|unfolded-io-math>
+      <with|color|black|mode|math|math-display|true|<around*|[|x\<longequal\>2*<math-up|arbint><around*|(|5|)>*\<pi\>-arcsin<around*|(|<frac|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|2*\<pi\>|5>|)>|)>|exp<around*|(|2<rsup|3/5>*sin<around*|(|<frac|2*\<pi\>|5>|)>*i|)>>|)>+\<pi\>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>x\<longequal\>2*<math-up|arbint><around*|(|4|)>*\<pi\>+arcsin<around*|(|<frac|1|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|\<pi\>|5>|)>+2<rsup|3/5>*sin<around*|(|<frac|\<pi\>|5>|)>*i|)>>|)>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>|\<nobracket\>>>
+
+      <with|color|black|mode|math|math-display|true|x\<longequal\>2*<math-up|arbint><around*|(|4|)>*\<pi\>-arcsin<around*|(|<frac|1|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|\<pi\>|5>|)>+2<rsup|3/5>*sin<around*|(|<frac|\<pi\>|5>|)>*i|)>>|)>+\<pi\>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>x\<longequal\>2*<math-up|arbint><around*|(|3|)>*\<pi\>+arcsin<around*|(|<frac|e<rsup|2<rsup|3/5>*sin<around*|(|<frac|\<pi\>|5>|)>*i>|e<rsup|2<rsup|3/5>*cos<around*|(|<frac|\<pi\>|5>|)>>>|)>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>>
+
+      <with|color|black|mode|math|math-display|true|x\<longequal\>2*<math-up|arbint><around*|(|3|)>*\<pi\>-arcsin<around*|(|<frac|e<rsup|2<rsup|3/5>*sin<around*|(|<frac|\<pi\>|5>|)>*i>|e<rsup|2<rsup|3/5>*cos<around*|(|<frac|\<pi\>|5>|)>>>|)>+\<pi\>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>x\<longequal\>2*<math-up|arbint><around*|(|2|)>*\<pi\>+arcsin<around*|(|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|2*\<pi\>|5>|)>+2<rsup|3/5>*sin<around*|(|<frac|2*\<pi\>|5>|)>*i|)>|)>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>>
+
+      <with|color|black|mode|math|math-display|true|x\<longequal\>2*<math-up|arbint><around*|(|2|)>*\<pi\>-arcsin<around*|(|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|2*\<pi\>|5>|)>+2<rsup|3/5>*sin<around*|(|<frac|2*\<pi\>|5>|)>*i|)>|)>+\<pi\>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>x\<longequal\>2*<math-up|arbint><around*|(|1|)>*\<pi\>+arcsin<around*|(|e<rsup|2<rsup|3/5>>|)>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>>
+
+      <with|color|black|mode|math|math-display|true|<around*|\<nobracket\>|x\<longequal\>2*<math-up|arbint><around*|(|1|)>*\<pi\>-arcsin<around*|(|e<rsup|2<rsup|3/5>>|)>+\<pi\>-3|]>>
+    </unfolded-io-math>
+
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      let solns=?:reduce_with <around*|[|arbint\<Rightarrow\>cst
+      0|]><space|1spc>solns; solns;
+    <|unfolded-io-math>
+      <with|color|black|mode|math|math-display|true|<around*|[|x\<longequal\>arcsin<around*|(|<frac|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|2*\<pi\>|5>|)>|)>|exp<around*|(|2<rsup|3/5>*sin<around*|(|<frac|2*\<pi\>|5>|)>*i|)>>|)>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>x\<longequal\>-arcsin<around*|(|<frac|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|2*\<pi\>|5>|)>|)>|exp<around*|(|2<rsup|3/5>*sin<around*|(|<frac|2*\<pi\>|5>|)>*i|)>>|)>+\<pi\>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>x\<longequal\>arcsin<around*|(|<frac|1|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|\<pi\>|5>|)>+2<rsup|3/5>*sin<around*|(|<frac|\<pi\>|5>|)>*i|)>>|)>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>|\<nobracket\>>>
+
+      <with|color|black|mode|math|math-display|true|x\<longequal\>-arcsin<around*|(|<frac|1|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|\<pi\>|5>|)>+2<rsup|3/5>*sin<around*|(|<frac|\<pi\>|5>|)>*i|)>>|)>+\<pi\>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>x\<longequal\>arcsin<around*|(|<frac|e<rsup|2<rsup|3/5>*sin<around*|(|<frac|\<pi\>|5>|)>*i>|e<rsup|2<rsup|3/5>*cos<around*|(|<frac|\<pi\>|5>|)>>>|)>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>x\<longequal\>-arcsin<around*|(|<frac|e<rsup|2<rsup|3/5>*sin<around*|(|<frac|\<pi\>|5>|)>*i>|e<rsup|2<rsup|3/5>*cos<around*|(|<frac|\<pi\>|5>|)>>>|)>+\<pi\>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>>
+
+      <with|color|black|mode|math|math-display|true|x\<longequal\>arcsin<around*|(|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|2*\<pi\>|5>|)>+2<rsup|3/5>*sin<around*|(|<frac|2*\<pi\>|5>|)>*i|)>|)>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>x\<longequal\>-arcsin<around*|(|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|2*\<pi\>|5>|)>+2<rsup|3/5>*sin<around*|(|<frac|2*\<pi\>|5>|)>*i|)>|)>+\<pi\>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>x\<longequal\>arcsin<around*|(|e<rsup|2<rsup|3/5>>|)>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>>
+
+      <with|color|black|mode|math|math-display|true|<around*|\<nobracket\>|x\<longequal\>-arcsin<around*|(|e<rsup|2<rsup|3/5>>|)>+\<pi\>-3|]>>
+    </unfolded-io-math>
+
+    <\input-math>
+      \<gtr\>\ 
+    <|input-math>
+      check \ <around*|(|u\<longequal\>v|)>
+      <around*|(|x\<longequal\>y|)>=eval<around*|(|?:reduce_with
+      <around*|[|x\<Rightarrow\>y|]> <around*|\||u-v|\|>|)>;
+    </input-math>
+
+    <\input-math>
+      \<gtr\>\ 
+    <|input-math>
+      \<Delta\> s=check eqn<space|1spc>s;let \<varepsilon\>=10<rsup|-8>;
+    </input-math>
+
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      <around*|[|y<mid|\|>x\<longequal\>y=solns;\<Delta\><around*|(|x\<longequal\>y|)>\<longequal\>0|]>;<text|<verbatim|
+      // exact solutions>>
+    <|unfolded-io-math>
+      <with|color|black|mode|math|math-display|true|<around*|[|arcsin<around*|(|e<rsup|2<rsup|3/5>>|)>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>-arcsin<around*|(|e<rsup|2<rsup|3/5>>|)>+\<pi\>-3|]>>
+    </unfolded-io-math>
+
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      <around*|[|y<mid|\|> s@<around*|(|x\<longequal\>y|)>=solns;\<Delta\>
+      s\<neq\>0\<wedge\>\<Delta\> s\<leqslant\>\<varepsilon\>|]>;<text|<verbatim|
+      // inexact solutions>>
+    <|unfolded-io-math>
+      <with|color|black|mode|math|math-display|true|<around*|[|arcsin<around*|(|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|2*\<pi\>|5>|)>+2<rsup|3/5>*sin<around*|(|<frac|2*\<pi\>|5>|)>*i|)>|)>-3|]>>
+    </unfolded-io-math>
+
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      <around*|[|y\<Rightarrow\>\<Delta\> s<mid|\|>
+      s@<around*|(|x\<longequal\>y|)>=solns;\<Delta\>
+      s\<gtr\>\<varepsilon\>|]>;<text|<verbatim| // what's up with these??>>
+    <|unfolded-io-math>
+      <with|color|black|mode|math|math-display|true|<around*|[|arcsin<around*|(|<frac|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|2*\<pi\>|5>|)>|)>|exp<around*|(|<around*|(|2<rsup|3/5>*sin<around*|(|<frac|2*\<pi\>|5>|)>|)>*i|)>>|)>-3\<Rightarrow\><with|math-font-family|rm|7.8764><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><around*|(|-arcsin<around*|(|<frac|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|2*\<pi\>|5>|)>|)>|exp<around*|(|<around*|(|2<rsup|3/5>*sin<around*|(|<frac|2*\<pi\>|5>|)>|)>*i|)>>|)>+\<pi\>|)>-3\<Rightarrow\><with|math-font-family|rm|7.8764><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>|\<nobracket\>>>
+
+      <with|color|black|mode|math|math-display|true|arcsin<around*|(|<frac|1|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|\<pi\>|5>|)>+<around*|(|2<rsup|3/5>*sin<around*|(|<frac|\<pi\>|5>|)>|)>*i|)>>|)>-3\<Rightarrow\><with|math-font-family|rm|7.8764><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><around*|(|-arcsin<around*|(|<frac|1|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|\<pi\>|5>|)>+<around*|(|2<rsup|3/5>*sin<around*|(|<frac|\<pi\>|5>|)>|)>*i|)>>|)>+\<pi\>|)>-3\<Rightarrow\><with|math-font-family|rm|7.8764><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>>
+
+      <with|color|black|mode|math|math-display|true|arcsin<around*|(|<frac|exp<around*|(|<around*|(|2<rsup|3/5>*sin<around*|(|<frac|\<pi\>|5>|)>|)>*i|)>|e<rsup|2<rsup|3/5>*cos<around*|(|<frac|\<pi\>|5>|)>>>|)>-3\<Rightarrow\><with|math-font-family|rm|7.8764><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><around*|(|-arcsin<around*|(|<frac|exp<around*|(|<around*|(|2<rsup|3/5>*sin<around*|(|<frac|\<pi\>|5>|)>|)>*i|)>|e<rsup|2<rsup|3/5>*cos<around*|(|<frac|\<pi\>|5>|)>>>|)>+\<pi\>|)>-3\<Rightarrow\><with|math-font-family|rm|7.8764><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>>
+
+      <with|color|black|mode|math|math-display|true|<around*|\<nobracket\>|<around*|(|-arcsin<around*|(|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|2*\<pi\>|5>|)>+<around*|(|2<rsup|3/5>*sin<around*|(|<frac|2*\<pi\>|5>|)>|)>*i|)>|)>+\<pi\>|)>-3\<Rightarrow\><with|math-font-family|rm|7.8764>|]>>
     </unfolded-io-math>
   </session>
 
@@ -1006,7 +1153,7 @@
       binomials; binomials<rsub|0\<ldots\>5>; binomials<rsub|16>;
     <|unfolded-io-math>
       <with|color|black|mode|math|math-display|true|<around*|[|1|]>>:#\<less\>thunk
-      0x7f9ff1cae8d8\<gtr\>
+      0x7ff3bd682c98\<gtr\>
 
       <with|color|black|mode|math|math-display|true|<around*|[|<around*|[|1|]><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><around*|[|1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1|]><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><around*|[|1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>2<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1|]><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><around*|[|1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1|]><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><around*|[|1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>4<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>6<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>4<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1|]><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><around*|[|1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>5<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|10><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|10><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>5<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1|]>|]>>
 
@@ -1028,24 +1175,18 @@
     <\unfolded-io-math>
       \<gtr\>\ 
     <|unfolded-io-math>
-      <around*|[|<binom|n|k><mid|\|>n=0\<ldots\>5;<space|1spc>k=0\<ldots\>n|]>;
+      <around*|[|<binom|n|k><mid|\|>n=0\<ldots\>5;<space|1spc>k=0\<ldots\>n|]>;<around*|[|<binom|n|k><mid|\|><stack|<tformat|<table|<row|<cell|n=0\<ldots\>5;>>|<row|<cell|k=0\<ldots\>n>>>>>|]>;
     <|unfolded-io-math>
       <with|color|black|mode|math|math-display|true|<around*|[|1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>2<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>4<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>6<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>4<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>5<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|10><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|10><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>5<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1|]>>
-    </unfolded-io-math>
 
-    <\unfolded-io-math>
-      \<gtr\>\ 
-    <|unfolded-io-math>
-      <around*|[|<binom|n|k><mid|\|><stack|<tformat|<table|<row|<cell|n=0\<ldots\>5;>>|<row|<cell|k=0\<ldots\>n>>>>>|]>;
-    <|unfolded-io-math>
       <with|color|black|mode|math|math-display|true|<around*|[|1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>2<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>4<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>6<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>4<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>5<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|10><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|10><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>5<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1|]>>
     </unfolded-io-math>
   </session>
 
-  For even more convenience, the <TeXmacs> <samp|choice> construct can be
-  used to write Pure function definitions involving guards in a compact and
-  pretty way. For instance, here's another definition of the factorial, this
-  time entered in math mode:<\footnote>
+  Moreover, the <TeXmacs> <samp|choice> construct can be used to write Pure
+  function definitions involving guards in a compact and pretty way. For
+  instance, here's another definition of the factorial, this time entered in
+  math mode:<\footnote>
     Note that the <strong|if> keyword is mandatory here, as it is required by
     the Pure syntax (as are the semicolons). The <strong|otherwise> keyword
     is just syntactic sugar, however, although it often improves readability.
@@ -1090,8 +1231,8 @@
     </unfolded-io-math>
   </session>
 
-  Moreover, the <samp|choice> construct can also be used with Pure's
-  pattern-matching <verbatim|case> expressions. Note that the closing
+  Last but not least, the <samp|choice> construct can also be used with
+  Pure's pattern-matching <verbatim|case> expressions. Note that the closing
   <verbatim|end> of the <verbatim|case> expression is omitted, the
   <samp|choice> construct generates it automatically.
 
@@ -1103,14 +1244,21 @@
       <math-it|xs><space|0.8spc><math-bf|of><space|0.8spc><choice|<tformat|<table|<row|<cell|<around*|[|
       |]>>|<cell|=>|<cell|0>|<cell|>>|<row|<cell|x:<math-it|xs>>|<cell|=>|<cell|1+<around*|\||<math-it|xs>|\|>>|<cell|<math-bf|otherwise>>>>>>;
     </input-math>
+
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      <around*|\||1:3\<ldots\>100|\|>;
+    <|unfolded-io-math>
+      <with|color|black|mode|math|math-display|true|50>
+    </unfolded-io-math>
   </session>
 
-  It's not difficult to see that we've just defined
-  <math|<around*|\||<math-it|xs>|\|>> (a.k.a. <verbatim|abs xs> in Pure
-  notation) to compute the size of a list <em|xs> (similar to what Pure's
-  <verbatim|#> operator does). For instance, let's count the number of primes
-  up to 5000 (this may take a little while; alas, our definition of the prime
-  sieve isn't very efficient either!):
+  This defines <math|<around*|\||<math-it|xs>|\|>> (a.k.a. <verbatim|abs xs>
+  in Pure notation) to compute the size of a list <em|xs> (similar to what
+  Pure's <verbatim|#> operator does). For instance, let's count the number of
+  primes up to 5000 (this may take a little while; alas, our definition of
+  the prime sieve isn't very efficient either!):
 
   <\session|pure|math>
     <\input-math>
@@ -1142,11 +1290,15 @@
   the trick. For instance:
 
   <\session|pure|caveats>
-    <\input>
+    <\unfolded-io>
       \<gtr\>\ 
-    <|input>
-      using texmacs;
-    </input>
+    <|unfolded-io>
+      using texmacs; math;
+    <|unfolded-io>
+      Reduce (Free CSL version), 09-Oct-12 ...
+
+      ()
+    </unfolded-io>
 
     <\unfolded-io-math>
       \<gtr\>\ 
@@ -1155,7 +1307,11 @@
       <math|x<rsup|2> >, yields <verbatim|(d x)^2> rather than <verbatim|d
       (x^2)> !!>
     <|unfolded-io-math>
-      d x^2/d x
+      \;
+
+      *** d declared operator\ 
+
+      <with|color|black|mode|math|math-display|true|d<around*|(|x|)>>
     </unfolded-io-math>
 
     <\unfolded-io-math>
@@ -1164,7 +1320,7 @@
       \<mathd\><around*|\<nobracket\>|<around*|(|x<rsup|2>|)>|\<nobracket\>>/\<mathd\>x;<text|
       // use parentheses around <math|x<rsup|2>> to disambiguate>
     <|unfolded-io-math>
-      d (x^2)/d x
+      <with|color|black|mode|math|math-display|true|2*x>
     </unfolded-io-math>
 
     <\unfolded-io-math>
@@ -1173,7 +1329,7 @@
       \<mathd\><around*|\<nobracket\>|x<rsup|2>|\<nobracket\>>/\<mathd\>x;<text|
       // invisible brackets around <math|x<rsup|2>> work, too>
     <|unfolded-io-math>
-      d (x^2)/d x
+      <with|color|black|mode|math|math-display|true|2*x>
     </unfolded-io-math>
   </session>
 
@@ -1230,7 +1386,7 @@
       <around*|(|<big|sum><rsub|k=1\<ldots\>n><around*|(|2*k-1|)>,<big|prod><rsub|k=1\<ldots\>n><around*|(|2*k-1|)>|)>
       <math-bf|when >n = 5<math-bf| end>;
     <|unfolded-io-math>
-      25,945
+      <with|color|black|mode|math|math-display|true|25>,<with|color|black|mode|math|math-display|true|945>
     </unfolded-io-math>
   </session>
 
