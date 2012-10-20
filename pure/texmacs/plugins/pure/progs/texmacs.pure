@@ -33,8 +33,6 @@ preproc_diff = reduce with
   ::d^k*x/y = d k x/y;
   x/(::d*y^k) = x/d y k;
   x/(::d*y) = x/d y;
-  x/(::d*y^k*u) = x/(d y k*v) when _/v = x/u end;
-  x/(::d*y*u) = x/(d y*v) when _/v = x/u end;
   x/(u*::d*y^k) = x/(v*d y k) when _/v = x/u end;
   x/(u*::d*y) = x/(v*d y) when _/v = x/u end;
 end;
@@ -61,10 +59,12 @@ preproc1 = reduce with
      df. Note that we require constant orders here to resolve some
      ambiguities, but don't do any checking on these. */
   d f/d x = df f x;
-  d f/y = d 1 f/y;
-  f/d x = f/d x 1;
+  d f/d x l::int = df f x;
+  d f/(y*d x) = (d 0 f/y) x;
+  d f/(y*d x l::int) = (d (1-l) f/y) x l;
+  d k::int f/d x = df f x k;
   d k::int f/d x l::int = df f x k;
-  f/(y*d x) = f/(y*d x 1);
+  d k::int f/(y*d x) = (d (k-1) f/y) x;
   d k::int f/(y*d x l::int) = (d (k-l) f/y) x l;
 end;
 
