@@ -21,26 +21,54 @@ sum xs::list = foldl (+) 0 xs;
 prod xs::list = foldl (*) 1 xs;
 
 /* These rules bring some TeXmacs constructs into a form which can be readily
-   processed with Reduce. */
+   processed with Reduce. They are implemented as a local rule set so as not
+   to interfere with global Pure definitions. */
 
-// Limits. Simple change of argument order.
-public limit;
-lim v l x = limit x v l;
+public ceiling limit d df bad_diff;
 
-/* Differentials. Expands d f/d x and variants (d k f/d x k etc.) to the
-   df f x ... form used by Reduce. NOTE: Multiple differentials may be
-   specified in a single expression, but the orders of the differentials must
-   be integer constants; for differentials of variable order you'll have to
-   use the df operator in a direct fashion. */
+preproc_diff = reduce with
+  // These rules are factored out to make the pattern set slimmer, yielding
+  // much better compilation times.
+  ::d*x/y = d x/y;
+  ::d^k*x/y = d k x/y;
+  x/(::d*y^k) = x/d y k;
+  x/(::d*y) = x/d y;
+  x/(::d*y^k*u) = x/(d y k*v) when _/v = x/u end;
+  x/(::d*y*u) = x/(d y*v) when _/v = x/u end;
+  x/(u*::d*y^k) = x/(v*d y k) when _/v = x/u end;
+  x/(u*::d*y) = x/(v*d y) when _/v = x/u end;
+end;
 
-public d df bad_diff;
-d f/d x = df f x;
-d f/y = d f 1/y;
-f/d x = f/d x 1;
-d k::int f/d x l::int = df f x k if k==l && k>=0;
-f/(y*d x) = f/(y*d x 1);
-d k::int f/(y*d x l::int) = (d (k-l) f/y) x l if k>=l && l>=0;
-x@(d _ _)/y | x/y@(d _ _) = throw (bad_diff ('(x/y))) otherwise;
+preproc1 = reduce with
+  // Ceil. Name change only.
+  ceil x = ceiling x;
+
+  // Limits. Simple change of argument order.
+  lim v l x = limit x v l;
+
+  // Differentials. This is a mess. :(
+  ::d/y*x = d x/y;
+  (::d^k)/y*x = d k x/y;
+  (::d^k) x/y = d k x/y;
+  ::d^k@_ x/y = d k x/y;
+  x/(d y^k) = x/d y k;
+  x/(d (y^k)) = x/d y k;
+  x/(u*d y^k) = x/(u*d y k);
+  x/(u*d (y^k)) = x/(u*d y k);
+
+  /* Base forms where d is simply an operator and all the multiplication and
+     exponentiation sugar has been eliminated. These expand to a Reduce
+     df. Note that we require constant orders here to resolve some
+     ambiguities, but don't do any checking on these. */
+  d f/d x = df f x;
+  d f/y = d 1 f/y;
+  f/d x = f/d x 1;
+  d k::int f/d x l::int = df f x k;
+  f/(y*d x) = f/(y*d x 1);
+  d k::int f/(y*d x l::int) = (d (k-l) f/y) x l;
+end;
+
+preproc x = preproc1 (preproc_diff x);
 
 /* The ? convenience macro simplifies an expression using Reduce. To make
    this work, you'll also have to import the reduce module. This isn't done
@@ -48,7 +76,7 @@ x@(d _ _)/y | x/y@(d _ _) = throw (bad_diff ('(x/y))) otherwise;
    installed.
 
    ? passes the argument as a quoted expression and automatically applies the
-   necessary massaging of limits and differentials, see above. ?: does the
+   rules for massaging of limits and differentials, see above. ?: does the
    same but evaluates its argument. We also define these as functions, so that
    they can be passed around as function arguments if needed, but note that in
    this case ? looses its call-by-name argument processing.
@@ -58,33 +86,20 @@ x@(d _ _)/y | x/y@(d _ _) = throw (bad_diff ('(x/y))) otherwise;
    must be parenthesized when used in any larger context). */
 
 prefix 0 ? ?: ;
-public simplify preproc;
+public simplify;
 def ? x = simplify (preproc ('x));
 def ?:x = simplify (preproc x);
 
 ? x = ? x;
 ?:x = ?:x;
 
-// Local rule set to expand lim and d f/d x in a safe fashion, without
-// evaluating the argument expression.
-preproc = reduce with
-  lim v l x = limit x v l;
-  d f/d x = df f x;
-  d f/y = d f 1/y;
-  f/d x = f/d x 1;
-  d k::int f/d x l::int = df f x k if k==l && k>=0;
-  f/(y*d x) = f/(y*d x 1);
-  d k::int f/(y*d x l::int) = (d (k-l) f/y) x l if k>=l && l>=0;
-  x@(d _ _)/y | x/y@(d _ _) = throw (bad_diff ('(x/y))) otherwise;
-end;
-
 /* LaTeX pretty-printing using the tmprint package of Reduce. Thanks are due
-   to Kurt Pagani who figured out the necessary Lisp magic to make that work.
-   You enable this with a call to the parameterless `math` function;
-   `verbatim` switches back to program mode again. This also starts up Reduce
-   in a lazy fashion when `math` is invoked, so that we avoid depending on the
-   pure-reduce package. Note, however, that pure-reduce *is* required to make
-   the pretty-printing work. */
+   to Kurt Pagani who figured out most of the necessary Lisp magic to make
+   this work. You enable this with a call to the parameterless `math`
+   function; `verbatim` switches back to program mode again. This also starts
+   up Reduce in a lazy fashion when `math` is invoked, so that we avoid
+   depending on the pure-reduce package. Note, however, that pure-reduce *is*
+   required to make the pretty-printing work. */
 
 // Enable this pragma to enable math mode by default.
 //#! --enable tmmath
@@ -92,7 +107,7 @@ end;
 let tminit, tmmode = ref false, ref false;
 let texmacs_valid_fun, texmacs_post_fun = ref (), ref ();
 
-public texmacs_valid texmacs_post;
+public declare operator texmacs_valid texmacs_post;
 namespace reduce with
   public capture output load pure_syms;
 end;
@@ -114,15 +129,16 @@ public lisp lispval lispsym;
 
 /* NOTE: This recursively descends into the (already simplified) term to see
    whether it's actually printable. tmprint chokes on strings (wants them to
-   be symbols) and of course doesn't know about C pointers, closures and
-   similar special Pure objects, so we exclude them here, also any operator
-   symbols which are not in the reduce::pure_syms table.
+   be symbols) and of course doesn't know about C pointers, Pure closures and
+   the like, so we exclude them here, also any operator symbols which are not
+   in the reduce::pure_syms table or valid Reduce identifiers. */
 
-   If the check fails on this expression, Pure's pretty printer will invoke us
-   again on its subterms so that parts of the expression may still be rendered
-   in LaTeX mode. This shouldn't normally be a problem unless the terms become
-   prohibitively large, in which case you can disable the `recurse`
-   compilation option below to prevent the recursion. */
+/* If the following compile time option is enabled, subterms will be tried
+   again by the pretty-printer if the check fails on the parent term. This
+   comes at a cost (pretty-printing will become progressively slower as the
+   terms get larger), but normally this shouldn't be much of a problem and we
+   recommend to leave this enabled so that as much of the term is rendered in
+   latex mode as possible. */
 
 //#! --disable recurse
 
@@ -142,14 +158,16 @@ end if printable x when
      original expression doesn't look printable already, simplify itself will
      probably choke on it as well (the typical symptom are spurious "operator
      declared" messages), so we give up right away in this case. */
-  x = if printable x then simplify x else "no";
+  x = if printable x then simplify (preproc x) else "no";
 end with
   printable x::number = true;
-  printable x::list |
+  printable [] = true;
+  printable (x:xs) = printable x && ~thunkp xs && printable xs;
   printable x::matrix = all printable x;
+  printable (x@_ y::tuple) = printable x && all printable (list y);
   printable (x@_ y) = printable x && printable y;
-  printable x::symbol = get texmacs_valid_fun (str x) ||
-    member reduce::pure_syms x;
+  printable x::symbol = x ~== (..) && x ~== '(..) &&
+    member reduce::pure_syms x || get texmacs_valid_fun (str x);
   printable _ = false;
 end;
 #! --ifnot recurse
@@ -157,8 +175,8 @@ tmprint x = str x;
 #! --endif
 
 // Switch between math and verbatim output.
-math = tmstart $$ put tmmode true;
-verbatim = put tmmode false;
+math = tmstart $$ put tmmode true $$ ();
+verbatim = put tmmode false $$ ();
 
 // Pretty-printing routine for Pure's --texmacs mode.
 __texmacs__ x = tmprint x if get tmmode;
