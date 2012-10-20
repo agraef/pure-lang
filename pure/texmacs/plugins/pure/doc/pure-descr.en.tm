@@ -61,12 +61,12 @@
     these means you can use <TeXmacs> as a frontend for the Pure interpreter;
     please check the <TeXmacs> documentation, section ``<TeXmacs> \ as an
     interface'', for details. To make this work, you'll have to install the
-    accompanying <verbatim|init-pure.scm>, <verbatim|pure-script-input.scm>
-    and <verbatim|texmacs.pure> files in your
-    <verbatim|~/.TeXmacs/plugins/pure/progs> folder (create this directory if
-    needed). The distributed configuration actually defines various different
-    types of Pure sessions, each with their own options for the Pure
-    interpreter, and it's easy to add your own if needed.
+    plugin first so that <TeXmacs> knows about it; instructions for that can
+    be found in the <hlink|Pure installation
+    instructions|http://docs.pure-lang.googlecode.com/hg/install.html#texmacs-mode>.
+    The distributed configuration actually defines various different types of
+    Pure sessions, each with their own options for the Pure interpreter, and
+    it's easy to add your own if needed.
 
     Sessions can be formatted in different ways. Here we use the <TeXmacs>
     <samp|varsession> style package for a somewhat fancier formatting.
@@ -359,20 +359,77 @@
       </unfolded-io>
     </session>
 
-    Math input also works, as shown below. For convenience, you can toggle
-    the input line between math and program (verbatim) mode using the
-    <key|Ctrl+$> key combination. At present this is still a bit
-    experimental, and output from Pure is in text format only. Making both
-    math input and output work transparently and flawlessly is being worked
-    on, however, so stay tuned.
+    Up to now we've only been running Pure in verbatim
+    a.k.a.<space|1spc>program mode. But the Pure plugin also fully supports
+    math input and output. These are enabled as follows:
+
+    <\itemize>
+      <item>To use math <em|input>, you can toggle the input line between
+      math and program (verbatim) mode using the <key|Ctrl+$> key
+      combination. This isn't a standard <TeXmacs> keybinding, but is defined
+      at the beginning of the <verbatim|pure-init.scm> script for your
+      convenience; you can edit the script to change this according to your
+      preferences. Of course, you can also use the corresponding <samp|Focus
+      \| Input options \| Mathematical input> menu option or the equivalent
+      toolbar item; these become visible when the cursor is located at the
+      input line. Or you can make math input the default when the Pure
+      <TeXmacs> plugin is loaded by putting the following Scheme command into
+      your <verbatim|my-init-texmacs.scm> file:
+
+      <\scm-code>
+        (if (not (session-math-input?)) (toggle-session-math-input))
+      </scm-code>
+
+      <item>To enable math <em|output>, you'll need to import the Pure
+      <verbatim|texmacs> module. The <verbatim|math> function in this module
+      switches output to <LaTeX> math, as provided by the Reduce
+      <verbatim|tmprint> package (thus this feature really needs the
+      <verbatim|pure-reduce> module). The <verbatim|verbatim> function
+      switches back to verbatim Pure output. Verbatim output is also used as
+      a fallback in math mode for all Pure expressions which cannot be
+      printed through the Reduce interface (typically because they aren't
+      valid Reduce expressions).
+
+      You can make math output the default by enabling the <verbatim|tmmath>
+      conditional compilation option on the Pure side. This can be set
+      interactively by entering the following pragma at the input line
+      <em|before> loading the <verbatim|texmacs> module:
+
+      <\verbatim-code>
+        #! --enable tmmath
+      </verbatim-code>
+
+      Alternatively, you can also set the <verbatim|PURE_OPTION_TMMATH>
+      variable in your process environment or you shell's startup files to
+      enable this option.
+    </itemize>
+
+    At present this is still a bit experimental and work in progress, but it
+    seems to work pretty well already, as shown below. (If you notice any
+    bugs or missing features in math input and output, please submit a bug
+    report on the <hlink|Pure website|http://code.google.com/p/pure-lang/issues/list>.)
 
     <\session|pure|reduce>
+      <\input>
+        \<gtr\>\ 
+      <|input>
+        #! --enable tmmath
+      </input>
+
+      <\unfolded-io>
+        \<gtr\>\ 
+      <|unfolded-io>
+        using texmacs;
+      <|unfolded-io>
+        Reduce (Free CSL version), 09-Oct-12 ...
+      </unfolded-io>
+
       <\unfolded-io-math>
         \<gtr\>\ 
       <|unfolded-io-math>
         simplify <around*|(|df <around*|(|sin<around*|(|x<rsup|2>|)>|)> x|)>;
       <|unfolded-io-math>
-        2*cos (x^2)*x
+        <with|color|black|mode|math|math-display|true|2*cos<around*|(|x<rsup|2>|)>*x>
       </unfolded-io-math>
 
       <\unfolded-io-math>
@@ -381,14 +438,8 @@
         simplify <around*|(|intg <around*|(|cos <around*|(|x+y|)><rsup|2>|)>
         x|)>;
       <|unfolded-io-math>
-        (cos (x+y)*sin (x+y)+x)/2
+        <with|color|black|mode|math|math-display|true|<frac|cos<around*|(|x+y|)>*sin<around*|(|x+y|)>+x|2>>
       </unfolded-io-math>
-
-      <\input-math>
-        \<gtr\>\ 
-      <|input-math>
-        \;
-      </input-math>
     </session>
 
     <section|Pure Scripting>
@@ -396,7 +447,8 @@
     Last but not least, Pure can also be used as a <em|scripting language> in
     <TeXmacs>, as described at the end of the ``<TeXmacs> \ as an interface''
     section. This is done by enabling the <samp|Document \| Scripts \| Pure>
-    option.
+    option (or <samp|Document \| Scripts \| Pure-math> if you prefer math
+    output; this is what we use here).
 
     <\bothlined>
       <strong|Note: >If you're reading this in the <TeXmacs> help browser,
@@ -409,8 +461,9 @@
     gives you both executable input fields and spreadsheets whose cells can
     be evaluated in the Pure interpreter. For instance:
 
-    Enter <math|x> here: <em|<calc-inert|x|99>>. This is the value of
-    <math|x> squared: <em|<calc-output|x squared|<calc-ref|x>^2|9801.0>>.
+    Enter <math|x> here: <with|font-base-size|14|<calc-inert|x|a+b>>. This is
+    the value of <math|x> squared: <with|font-base-size|14|<calc-output|x
+    squared|<calc-ref|x>^2|<with|color|black|mode|math|math-display|true|a<rsup|2>+2*a*b+b<rsup|2>>>>.
 
     Position the cursor in the right field above and hit <key|Return> twice
     to toggle between the computed Pure expression and its value. You can
@@ -426,24 +479,25 @@
     hitting <key|Return> to recompute the corresponding values in the last
     column.
 
-    <\calc-table|table1>
+    <with|font-base-size|12|<\calc-table|table1>
       <textual-table|<tformat|<cwith|1|1|1|-1|cell-background|pastel
       yellow>|<cwith|2|-1|1|-1|cell-hyphen|n>|<cwith|2|2|1|-1|cell-bborder|0>|<cwith|1|-1|1|1|cell-width|>|<cwith|1|-1|1|1|cell-hmode|auto>|<cwith|4|4|1|-1|cell-bborder|0>|<cwith|1|-1|1|1|cell-background|pastel
-      yellow>|<table|<row|<cell|<cell-inert|a1|a1>>|<cell|<cell-inert|b1|b>>|<cell|<cell-inert|c1|c>>|<cell|<cell-inert|d1|d>>>|<row|<cell|<cell-inert|a2|2>>|<cell|<cell-inert|b2|1>>|<cell|<cell-inert|c2|12>>|<cell|<cell-output|d2|=
+      yellow>|<cwith|2|-1|4|4|cell-background|pastel
+      green>|<table|<row|<cell|<cell-inert|a1|a1>>|<cell|<cell-inert|b1|b>>|<cell|<cell-inert|c1|c>>|<cell|<cell-inert|d1|d>>>|<row|<cell|<cell-inert|a2|2>>|<cell|<cell-inert|b2|1>>|<cell|<cell-inert|c2|12>>|<cell|<cell-output|d2|=
       fact (b2+c2) with fact n = if n\<gtr\>0 then n*fact(n-1) else 1
-      end|1932053504>>>|<row|<cell|<cell-inert|a3|3>>|<cell|<cell-inert|b3|17>>|<cell|<cell-inert|c3|33>>|<cell|<cell-output|d3|='(b3+c3)|17+33>>>|<row|<cell|<cell-inert|a4|4>>|<cell|<cell-inert|b4|<math|sin
+      end|1932053504>>>|<row|<cell|<cell-inert|a3|3>>|<cell|<cell-inert|b3|17>>|<cell|<cell-inert|c3|33>>|<cell|<cell-output|d3|='(b3+c3)|<with|color|black|mode|math|math-display|true|50>>>>|<row|<cell|<cell-inert|a4|4>>|<cell|<cell-inert|b4|<math|sin
       <around*|(|x<rsup|2>|)>>>>|<cell|<cell-inert|c4|<math|x>>>|<cell|<cell-output|d4|=?df
-      b4 c4|2*cos (x^2)*x>>>|<row|<cell|<cell-inert|a5|5>>|<cell|<cell-inert|b5|<math|<around*|(|x+y|)><rsup|3>>>>|<cell|<cell-inert|c5|<math|x>>>|<cell|<cell-output|d5|=?df
-      b5 c5|3*x^2+6*x*y+3*y^2>>>>>>
+      b4 c4|<with|color|black|mode|math|math-display|true|2*cos<around*|(|x<rsup|2>|)>*x>>>>|<row|<cell|<cell-inert|a5|5>>|<cell|<cell-inert|b5|<math|<around*|(|x+y|)><rsup|2>>>>|<cell|<cell-inert|c5|<math|x>>>|<cell|<cell-output|d5|=?df
+      b5 c5|<with|color|black|mode|math|math-display|true|2*<around*|(|x+y|)>>>>>>>>
 
       \;
-    </calc-table>
+    </calc-table>>
 
     You can also refer to a table field in text like this:
-    <calc-output|field3|<calc-ref|table1-d4>|2*cos (x^2)*x>. Here we set the
-    Ref field of the table to <verbatim|table1>; the reference to cell
-    <verbatim|d4> can then be entered with the following series of key
-    strokes: <key|\\ ! \\ ?> <verbatim|table1-d4> <key|Return>.
+    <with|font-base-size|12|<calc-output|field3|<calc-ref|table1-d4>|<with|color|black|mode|math|math-display|true|2*cos<around*|(|x<rsup|2>|)>*x>>>.
+    Here we set the Ref field of the table to <verbatim|table1>; the
+    reference to cell <verbatim|d4> can then be entered with the following
+    series of key strokes: <key|\\ ! \\ ?> <verbatim|table1-d4> <key|Return>.
   </shown>>
 </body>
 
@@ -454,7 +508,7 @@
     <associate|page-type|a4>
     <associate|par-hyphen|normal>
     <associate|preamble|false>
-    <associate|prog-scripts|pure-script>
+    <associate|prog-scripts|pure-script-math>
     <associate|sfactor|4>
   </collection>
 </initial>
