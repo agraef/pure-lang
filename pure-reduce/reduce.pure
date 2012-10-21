@@ -877,6 +877,7 @@ simplify x = y when
       // Arguments may also be specified in uncurried form, as a tuple.
       xs = curry xs with
 	curry [] = [];
+	curry (() : _) = error (); // only nonempty tuples permitted
 	curry (x::tuple : xs) = list x + curry xs;
 	curry (x:xs) = x : curry xs otherwise;
       end;
@@ -924,6 +925,7 @@ simplify x = y when
       end;
     from_expr x = error x otherwise;
     // Convert symbols, with mapping as needed.
+    from_sym () = error ();
     from_sym x = opstr (catch (cst x) (pure_syms!x));
   end;
   // Run Reduce to simplify the expression.
@@ -1091,6 +1093,7 @@ lispval x = y when
       // Arguments may also be specified in uncurried form, as a tuple.
       xs = curry xs with
 	curry [] = [];
+	curry (() : _) = error (); // only nonempty tuples permitted
 	curry (x::tuple : xs) = list x + curry xs;
 	curry (x:xs) = x : curry xs otherwise;
       end;
@@ -1138,6 +1141,7 @@ lispval x = y when
       end;
     from_expr x = error x otherwise;
     // Convert symbols, with mapping as needed.
+    from_sym () = error ();
     from_sym x = opstr (catch (cst x) (pure_syms!x));
   end;
   // XXXFIXME: This barks on matrix values. Unfortunately, this means that we
