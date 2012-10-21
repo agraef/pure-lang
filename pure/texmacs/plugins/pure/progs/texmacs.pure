@@ -24,7 +24,7 @@ prod xs::list = foldl (*) 1 xs;
    processed with Reduce. They are implemented as a local rule set so as not
    to interfere with global Pure definitions. */
 
-public ceiling limit d df bad_diff;
+public ceiling limit d df intg bad_diff;
 
 preproc_diff = reduce with
   // These rules are factored out to make the pattern set slimmer, yielding
@@ -43,6 +43,9 @@ preproc1 = reduce with
 
   // Limits. Simple change of argument order.
   lim v l x = limit x v l;
+
+  // Integrals. Multiplicative form (used by Reduce output).
+  intg (f*::d*x) = intg f x;
 
   // Differentials. This is a mess. :(
   ::d/y*x = d x/y;

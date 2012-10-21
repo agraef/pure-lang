@@ -50,7 +50,7 @@
   </session>
 
   To enter an expression like the one above as a mathematical formula, we
-  must switch first the input line to <em|math input mode>. To do that, you
+  must first switch the input line to <em|math input mode>. To do that, you
   can go search the toolbar for <samp|Input Options \| Mathematical Input>
   and check it, or type the key combination <key|Ctrl $> defined by the Pure
   plugin. Another useful convenience is the <verbatim|?> prefix operator
@@ -83,12 +83,12 @@
   </session>
 
   But it's a lot easier to type, and the <verbatim|?> operator also includes
-  the necessary magic to make the <TeXmacs> syntax of sums, products, limits
-  and differentials work in Pure (we'll see how to use these in a moment).
-  The <verbatim|?:> operator does the same, but evaluates its argument; you
-  want to use that if the expression includes some Pure functions which
-  should be evaluated before submitting the result to Reduce. Note the
-  difference:
+  the necessary magic to make the <TeXmacs> syntax of sums, products, limits,
+  integrals and differentials work in Pure (we'll see how to use these in a
+  moment). The <verbatim|?:> operator does the same, but evaluates its
+  argument; you want to use that if the expression includes some Pure
+  functions which should be evaluated before submitting the result to Reduce.
+  Note the difference:
 
   <\session|pure|math>
     <\input-math>
@@ -118,15 +118,16 @@
     </unfolded-io-math>
   </session>
 
-  Once we change to <em|math output mode>, simplifications are done
-  automatically by the pretty-printer, so the <verbatim|simplify>,
-  <verbatim|?> and <verbatim|?:> operations are not needed at the command
-  line any more (you might still need them if they are used programmatically,
-  though). Note that this only works with expressions which Reduce
-  understands; there are a lot of expression types in Pure which have no
-  Reduce counterparts and are thus printed verbatim. However, the
-  pretty-printer will try to print as much of the results in math mode as it
-  can. In the following, we always leave math output enabled.
+  Once we change to <em|math output mode>, simplifications of expressions are
+  done automatically by the pretty-printer, so the <verbatim|simplify>,
+  <verbatim|?> and <verbatim|?:> operations are not required for expression
+  evaluations any more (you'll still need them for function and variable
+  definitions if you want simplified results there, though). Note that this
+  only works with expressions which Reduce understands; there are a lot of
+  expression types in Pure which have no Reduce counterparts and are thus
+  printed verbatim. However, the pretty-printer will try to print as much of
+  the results in math mode as it can. In the following, we always leave math
+  output enabled.
 
   <\session|pure|math>
     <\unfolded-io-math>
@@ -544,7 +545,7 @@
     <\unfolded-io-math>
       \<gtr\>\ 
     <|unfolded-io-math>
-      let pfs = ?:pf p x; pfs;
+      let pfs = ?:pf p<space|1spc>x; pfs;
     <|unfolded-io-math>
       <with|color|black|mode|math|math-display|true|<around*|[|<frac|2|x+2><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><frac|-2|x+1><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><frac|2|x<rsup|2>+2*x+1>|]>>
     </unfolded-io-math>
@@ -579,42 +580,20 @@
     <\unfolded-io-math>
       \<gtr\>\ 
     <|unfolded-io-math>
-      #solns; head solns;
+      #solns; take 2 solns;
     <|unfolded-io-math>
       <with|color|black|mode|math|math-display|true|10>
 
-      <with|color|black|mode|math|math-display|true|x\<longequal\>2*<math-up|arbint><around*|(|5|)>*\<pi\>+arcsin<around*|(|<frac|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|2*\<pi\>|5>|)>|)>|exp<around*|(|2<rsup|3/5>*sin<around*|(|<frac|2*\<pi\>|5>|)>*i|)>>|)>-3>
-    </unfolded-io-math>
-
-    <\unfolded-io-math>
-      \<gtr\>\ 
-    <|unfolded-io-math>
-      tail solns;
-    <|unfolded-io-math>
-      <with|color|black|mode|math|math-display|true|<around*|[|x\<longequal\>2*<math-up|arbint><around*|(|5|)>*\<pi\>-arcsin<around*|(|<frac|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|2*\<pi\>|5>|)>|)>|exp<around*|(|2<rsup|3/5>*sin<around*|(|<frac|2*\<pi\>|5>|)>*i|)>>|)>+\<pi\>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>x\<longequal\>2*<math-up|arbint><around*|(|4|)>*\<pi\>+arcsin<around*|(|<frac|1|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|\<pi\>|5>|)>+2<rsup|3/5>*sin<around*|(|<frac|\<pi\>|5>|)>*i|)>>|)>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>|\<nobracket\>>>
-
-      <with|color|black|mode|math|math-display|true|x\<longequal\>2*<math-up|arbint><around*|(|4|)>*\<pi\>-arcsin<around*|(|<frac|1|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|\<pi\>|5>|)>+2<rsup|3/5>*sin<around*|(|<frac|\<pi\>|5>|)>*i|)>>|)>+\<pi\>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>x\<longequal\>2*<math-up|arbint><around*|(|3|)>*\<pi\>+arcsin<around*|(|<frac|e<rsup|2<rsup|3/5>*sin<around*|(|<frac|\<pi\>|5>|)>*i>|e<rsup|2<rsup|3/5>*cos<around*|(|<frac|\<pi\>|5>|)>>>|)>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>>
-
-      <with|color|black|mode|math|math-display|true|x\<longequal\>2*<math-up|arbint><around*|(|3|)>*\<pi\>-arcsin<around*|(|<frac|e<rsup|2<rsup|3/5>*sin<around*|(|<frac|\<pi\>|5>|)>*i>|e<rsup|2<rsup|3/5>*cos<around*|(|<frac|\<pi\>|5>|)>>>|)>+\<pi\>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>x\<longequal\>2*<math-up|arbint><around*|(|2|)>*\<pi\>+arcsin<around*|(|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|2*\<pi\>|5>|)>+2<rsup|3/5>*sin<around*|(|<frac|2*\<pi\>|5>|)>*i|)>|)>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>>
-
-      <with|color|black|mode|math|math-display|true|x\<longequal\>2*<math-up|arbint><around*|(|2|)>*\<pi\>-arcsin<around*|(|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|2*\<pi\>|5>|)>+2<rsup|3/5>*sin<around*|(|<frac|2*\<pi\>|5>|)>*i|)>|)>+\<pi\>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>x\<longequal\>2*<math-up|arbint><around*|(|1|)>*\<pi\>+arcsin<around*|(|e<rsup|2<rsup|3/5>>|)>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>>
-
-      <with|color|black|mode|math|math-display|true|<around*|\<nobracket\>|x\<longequal\>2*<math-up|arbint><around*|(|1|)>*\<pi\>-arcsin<around*|(|e<rsup|2<rsup|3/5>>|)>+\<pi\>-3|]>>
+      <with|color|black|mode|math|math-display|true|<around*|[|x\<longequal\>2*<math-up|arbint><around*|(|5|)>*\<pi\>+arcsin<around*|(|<frac|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|2*\<pi\>|5>|)>|)>|exp<around*|(|2<rsup|3/5>*sin<around*|(|<frac|2*\<pi\>|5>|)>*i|)>>|)>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>x\<longequal\>2*<math-up|arbint><around*|(|5|)>*\<pi\>-arcsin<around*|(|<frac|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|2*\<pi\>|5>|)>|)>|exp<around*|(|2<rsup|3/5>*sin<around*|(|<frac|2*\<pi\>|5>|)>*i|)>>|)>+\<pi\>-3|]>>
     </unfolded-io-math>
 
     <\unfolded-io-math>
       \<gtr\>\ 
     <|unfolded-io-math>
       let solns=?:reduce_with <around*|[|arbint\<Rightarrow\>cst
-      0|]><space|1spc>solns; solns;
+      0|]><space|1spc>solns; take 2 solns;
     <|unfolded-io-math>
-      <with|color|black|mode|math|math-display|true|<around*|[|x\<longequal\>arcsin<around*|(|<frac|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|2*\<pi\>|5>|)>|)>|exp<around*|(|2<rsup|3/5>*sin<around*|(|<frac|2*\<pi\>|5>|)>*i|)>>|)>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>x\<longequal\>-arcsin<around*|(|<frac|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|2*\<pi\>|5>|)>|)>|exp<around*|(|2<rsup|3/5>*sin<around*|(|<frac|2*\<pi\>|5>|)>*i|)>>|)>+\<pi\>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>x\<longequal\>arcsin<around*|(|<frac|1|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|\<pi\>|5>|)>+2<rsup|3/5>*sin<around*|(|<frac|\<pi\>|5>|)>*i|)>>|)>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>|\<nobracket\>>>
-
-      <with|color|black|mode|math|math-display|true|x\<longequal\>-arcsin<around*|(|<frac|1|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|\<pi\>|5>|)>+2<rsup|3/5>*sin<around*|(|<frac|\<pi\>|5>|)>*i|)>>|)>+\<pi\>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>x\<longequal\>arcsin<around*|(|<frac|e<rsup|2<rsup|3/5>*sin<around*|(|<frac|\<pi\>|5>|)>*i>|e<rsup|2<rsup|3/5>*cos<around*|(|<frac|\<pi\>|5>|)>>>|)>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>x\<longequal\>-arcsin<around*|(|<frac|e<rsup|2<rsup|3/5>*sin<around*|(|<frac|\<pi\>|5>|)>*i>|e<rsup|2<rsup|3/5>*cos<around*|(|<frac|\<pi\>|5>|)>>>|)>+\<pi\>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>>
-
-      <with|color|black|mode|math|math-display|true|x\<longequal\>arcsin<around*|(|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|2*\<pi\>|5>|)>+2<rsup|3/5>*sin<around*|(|<frac|2*\<pi\>|5>|)>*i|)>|)>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>x\<longequal\>-arcsin<around*|(|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|2*\<pi\>|5>|)>+2<rsup|3/5>*sin<around*|(|<frac|2*\<pi\>|5>|)>*i|)>|)>+\<pi\>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>x\<longequal\>arcsin<around*|(|e<rsup|2<rsup|3/5>>|)>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>>
-
-      <with|color|black|mode|math|math-display|true|<around*|\<nobracket\>|x\<longequal\>-arcsin<around*|(|e<rsup|2<rsup|3/5>>|)>+\<pi\>-3|]>>
+      <with|color|black|mode|math|math-display|true|<around*|[|x\<longequal\>arcsin<around*|(|<frac|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|2*\<pi\>|5>|)>|)>|exp<around*|(|2<rsup|3/5>*sin<around*|(|<frac|2*\<pi\>|5>|)>*i|)>>|)>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>x\<longequal\>-arcsin<around*|(|<frac|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|2*\<pi\>|5>|)>|)>|exp<around*|(|2<rsup|3/5>*sin<around*|(|<frac|2*\<pi\>|5>|)>*i|)>>|)>+\<pi\>-3|]>>
     </unfolded-io-math>
 
     <\input-math>
@@ -635,7 +614,7 @@
       \<gtr\>\ 
     <|unfolded-io-math>
       <around*|[|y<mid|\|>x\<longequal\>y=solns;\<Delta\><around*|(|x\<longequal\>y|)>\<longequal\>0|]>;<text|<verbatim|
-      // exact solutions>>
+      // exact zeros>>
     <|unfolded-io-math>
       <with|color|black|mode|math|math-display|true|<around*|[|arcsin<around*|(|e<rsup|2<rsup|3/5>>|)>-3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>-arcsin<around*|(|e<rsup|2<rsup|3/5>>|)>+\<pi\>-3|]>>
     </unfolded-io-math>
@@ -645,7 +624,7 @@
     <|unfolded-io-math>
       <around*|[|y<mid|\|> s@<around*|(|x\<longequal\>y|)>=solns;\<Delta\>
       s\<neq\>0\<wedge\>\<Delta\> s\<leqslant\>\<varepsilon\>|]>;<text|<verbatim|
-      // inexact solutions>>
+      // inexact zeros>>
     <|unfolded-io-math>
       <with|color|black|mode|math|math-display|true|<around*|[|arcsin<around*|(|exp<around*|(|2<rsup|3/5>*cos<around*|(|<frac|2*\<pi\>|5>|)>+2<rsup|3/5>*sin<around*|(|<frac|2*\<pi\>|5>|)>*i|)>|)>-3|]>>
     </unfolded-io-math>
@@ -797,74 +776,51 @@
   mathematical notation which gets translated to invocations of the Reduce
   <verbatim|df> and <verbatim|int> operators (the latter is actually named
   <verbatim|intg> in Pure, to avoid a name clash with the built-in Pure
-  function <verbatim|int>).
-
-  An integral is written with the big integral symbol (<verbatim|\\big>
-  <verbatim|int> or <key|Shift+F5 I>), followed by the integrand, followed by
-  the upright <math|\<mathd\>> symbol (<verbatim|\\mathd> or <key|d Tab
-  Tab>), followed by the integration variable. There may be spaces around the
-  <math|\<mathd\>> symbol, but nothing else. This will be translated to a
-  Pure/Reduce call of the form <verbatim|intg f x>.
-
-  Differentials use a somewhat more elaborate syntax and may be denoted in a
-  number of ways, each involving the <math|\<mathd\>> symbol (or the partial
-  symbol <math|\<partial\>>) and a fraction (any kind of fraction will do, as
-  will the <verbatim|/> operator, but in the latter case you may have to
-  parenthesize numerator and denominator accordingly). If you're lucky and
-  entered everything correctly, the result is a corresponding Pure/Reduce
-  call of the form <verbatim|df f x>. The following variations are supported:
+  function <verbatim|int>). They are constructed according to the following
+  syntactical rules:
 
   <\itemize>
-    <item>A first-order differential may be written as
-    <math|\<mathd\>f/\<mathd\>x>, with or without spaces around the
-    <math|\<mathd\>> symbol. The Pure syntax requires that the function is
-    put in parentheses if it is a compound expression (likewise the
-    differentiation variable); e.g., <math|\<mathd\><around*|(|f
-    x|)>/\<mathd\>x> works, as does <math|\<mathd\><around*|(|f
-    <around*|(|x|)>|)>/\<mathd\>x>, but <em|not>
-    <math|\<mathd\>f<around*|(|x|)>/\<mathd\>x> (invisible brackets will
-    work, too, cf. Section <reference|Caveats>).
+    <item>The differential operator is written as <math|d*x>, which may be
+    denoted either as a function application (with a space between <math|d>
+    and <math|x>) or as a product with an (invisible) multiplication sign
+    <verbatim|*> between <math|d> and <math|x>. Instead of <math|d>, you can
+    also use the upright d symbol (<verbatim|\\mathd> or <verbatim|d>
+    <key|Tab Tab> in math mode), in which case no delimiter between d and
+    <math|x> is needed. In the case of differentials you may also use the
+    partial symbol <math|\<partial\>> (<verbatim|\\partial> or <verbatim|d>
+    <key|Tab Tab Tab>) instead.
 
-    <item>Higher orders may be denoted simply as <math|\<mathd\> 2
-    f/\<mathd\> x 2> which is easy to type, and is also the way the Pure
-    plugin represents these constructs internally.
+    <item>Integrals take the form <math|<big|int>f*\<mathd\>*x>
+    (<verbatim|\\big int> or <key|Shift+F5 I>) with the appropriate
+    delimiters between <math|f>, <math|\<mathd\>> and <math|x> (either
+    invisible multiplication signs or spaces; again these may be omitted if
+    the special upright d symbol is used).
 
-    <item>Another quick way to type higher-order differentials, which has the
-    advantage that it resembles customary notation, is to just tack on the
-    order as a superscript instead: <math|\<mathd\><rsup|2>f/\<mathd\>x<rsup|2>>
-    (i.e.: <verbatim|d^2 f/d x^2>). Note that according to Pure syntax, this
-    would normally be parsed as <verbatim|d^(2 f)/(d x)^2>, which is bogus,
-    but we can get away with it because the <verbatim|texmacs> module has
-    some magic built into it which translates this to <verbatim|d 2 f/d x 2>.
-    Hence this shortcut only works with math output or when using the
-    <verbatim|?> operator, otherwise the fully multiplicative form below
-    should be used.
-
-    <item>The above form with the superscript can also be written with a
-    multiplication sign between the d operator and the function or variable
-    argument, so that it looks like this:
-    <math|<dfrac|\<mathd\><rsup|2>\<ast\>f|\<mathd\>\<ast\>x<rsup|2>>>. (The
-    multiplication signs are indicated explicitly here for clarity, but of
-    course you will normally just type a literal <verbatim|*> character which
-    is rendered as an invisible multiplication sign in math mode.) This
-    representation is more effort to type, but it has the advantage that it
-    parses correctly in Pure and will thus work even without the <verbatim|?>
-    operator or math output mode.<\footnote>
-      Note, however, that if you write this with the <verbatim|/> operator
-      instead of an explicit fraction, you have to be careful to parenthesize
-      the denominator like this: <math|\<mathd\><rsup|2>f/<around*|(|\<mathd\>x<rsup|2>|)>>.
-      That's because the multiplication operators (which includes
-      <verbatim|/>) are left-associative in Pure.
-    </footnote> It is also the way Reduce itself prints unexpanded
-    differentials in math output mode (albeit using the partial symbol).
-
-    <item>No matter which variant of the notation you use, multiple
+    <item>Differentials are written as a quotient
+    <math|\<mathd\>f/\<mathd\>x>, using either the <verbatim|/> operator or
+    an explicit fraction (<verbatim|\\frac> or <key|Alt+F>).<\footnote>
+      Note that in the former case the denominator <math|\<mathd\>*x> has to
+      be parenthesized if it is written in multiplicative form. This is
+      because the multiplication operators including <verbatim|*> and
+      <verbatim|/> are left-associative in Pure, so <verbatim|d*f/d*x> will
+      be parsed as <verbatim|((d*f)/d)*x> rather than <verbatim|(d*f)/(d*x)>.
+      This pitfall can be avoided by just using an explicit fraction instead.
+    </footnote> Higher-order differentials may be denoted either as an
+    application <math|\<mathd\> k f/\<mathd\> x k> or with a superscript
+    <math|\<mathd\><rsup|k>f/\<mathd\>x<rsup|k>>. In either case, multiple
     differentiation variables can be given as a product of the corresponding
     differential terms in the denominator, such as
-    <math|\<partial\><rsup|4>f/<around*|(|\<partial\>x<rsup|2>*\<partial\>y<rsup|2>|)>>,
-    and the notation <math|\<mathd\>/\<mathd\>x*f> (with a multiplication
-    sign between <math|\<mathd\>/\<mathd\>x*> and <math|f>) is provided as a
-    alternative to <math|\<mathd\>f/\<mathd\>x>, which is often convenient.
+    <math|\<partial\><rsup|2>f/<around*|(|\<partial\>x*\<partial\>y|)>>.
+    Moreover, the notation <math|\<mathd\>/\<mathd\>x*f> (with a
+    multiplication sign between <math|\<mathd\>/\<mathd\>x*> and <math|f>) is
+    provided as an alternative to <math|\<mathd\>f/\<mathd\>x>.
+
+    <item>Note that if <math|f> or <math|x> are compound expressions, you may
+    have to put them in parentheses according to the rules of Pure syntax.
+    (If multiplication signs are used as delimiters and both <math|f> and
+    <math|x> are either symbols or function applications, this is usually
+    unnecessary since the latter bind stronger than both multiplication and
+    exponents.)
   </itemize>
 
   Of course, in either case you may also just write the corresponding
@@ -987,7 +943,7 @@
     <\input-math>
       \<gtr\>\ 
     <|input-math>
-      I a b n = <big|int>x<rsup|2>*<around|(|a*x+b|)><rsup|n>\<mathd\>x;
+      I<space|1spc>a<space|1spc>b<space|1spc>n=<big|int>x<rsup|2>*<around|(|a*x+b|)><rsup|n>\<mathd\>x;
     </input-math>
 
     <\unfolded-io-math>
@@ -1153,7 +1109,7 @@
       binomials; binomials<rsub|0\<ldots\>5>; binomials<rsub|16>;
     <|unfolded-io-math>
       <with|color|black|mode|math|math-display|true|<around*|[|1|]>>:#\<less\>thunk
-      0x7ff3bd682c98\<gtr\>
+      0x7f8251753228\<gtr\>
 
       <with|color|black|mode|math|math-display|true|<around*|[|<around*|[|1|]><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><around*|[|1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1|]><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><around*|[|1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>2<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1|]><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><around*|[|1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1|]><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><around*|[|1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>4<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>6<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>4<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1|]><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><around*|[|1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>5<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|10><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|10><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>5<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1|]>|]>>
 
@@ -1234,7 +1190,7 @@
   Last but not least, the <samp|choice> construct can also be used with
   Pure's pattern-matching <verbatim|case> expressions. Note that the closing
   <verbatim|end> of the <verbatim|case> expression is omitted, the
-  <samp|choice> construct generates it automatically.
+  <samp|choice> construct supplies it automatically.
 
   <\session|pure|math>
     <\input-math>

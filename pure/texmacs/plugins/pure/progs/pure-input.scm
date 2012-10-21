@@ -286,10 +286,34 @@
 
 (define (pure-rewrite-body s)
   (if (string? s)
-      (string-replace s "<mathd>" ",")
+      (cond ((string-contains? s "*<mathd>*")
+	     (string-replace s "*<mathd>*" "*d*"))
+	    ((string-contains? s "<mathd>")
+	     (string-replace s "<mathd>" ","))
+	    ((== s "d") ",")
+	    (else
+	     (let* ((toks (string-tokenize
+			   s (char-set-complement char-set:whitespace)))
+		    (ws1 (if (and (nnull? toks)
+				  (char-whitespace? (string-ref s 0)))
+			     " " ""))
+		    (ws2 (if (and (nnull? toks)
+				  (char-whitespace?
+				   (string-ref s (1- (string-length s)))))
+			     " " "")))
+	       (if (and (nnull? toks)
+			(or (nnull? (cdr toks))
+			    (not (string-null? ws1))
+			    (not (string-null? ws2))))
+		   (string-append
+		    ws1
+		    (string-join (map pure-rewrite-body toks) " ")
+		    ws2)
+		   s))))
       s))
 
 (define (pure-big op body args)
+  (display "(")
   (display op)
   (display " (")
   (plugin-input
@@ -320,8 +344,8 @@
             (begin
               (display ") (")
               (plugin-input (car sup))))
-        (display ")"))
-      (display ")")))
+        (display "))"))
+      (display "))")))
 
 (define (pure-big-around args)
   (let* ((b `(big-around ,@args))
