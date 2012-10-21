@@ -73,26 +73,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; Entry point for Pure help commands.
-
-(define (decompose-url s)
-  (with i (string-index s #\#)
-    (if (not i) (list s "")
-	(list (substring s 0 i) (substring s (+ i 1) (string-length s))))))
-
-(define (pure-help url)
-  (with (name label) (decompose-url url)
-	(cond ((== name "") (go-to-label label))
-	      ((== label "")
-	       (set-message `(concat "Loaded " ,name) "Pure help")
-	       (with u (url-relative (buffer-master) name)
-		     (load-buffer-in-new-window u)))
-	      (else
-	       (set-message `(concat "Loaded " ,name) "Pure help")
-	       (with u (url-relative (buffer-master) name)
-		     (load-buffer-in-new-window u)
-		     (go-to-label label))))))
-
 ;; Detect the Pure library path (this needs pkg-config).
 (use-modules (ice-9 popen))
 (define pure-lib-path
@@ -119,6 +99,25 @@
 			   (list "-I" pure-texmacs-includes)
 			   (list))
 		       (map pure-script-if-present scripts)) " "))
+
+;; Entry point for Pure help commands.
+(define (decompose-url s)
+  (with i (string-index s #\#)
+    (if (not i) (list s "")
+	(list (substring s 0 i) (substring s (+ i 1) (string-length s))))))
+
+(define (pure-help url)
+  (with (name label) (decompose-url url)
+	(cond ((== name "") (go-to-label label))
+	      ((== label "")
+	       (set-message `(concat "Loaded " ,name) "Pure help")
+	       (with u (url-relative (buffer-master) name)
+		     (load-buffer-in-new-window u)))
+	      (else
+	       (set-message `(concat "Loaded " ,name) "Pure help")
+	       (with u (url-relative (buffer-master) name)
+		     (load-buffer-in-new-window u)
+		     (go-to-label label))))))
 
 ;; Session plugin definitions. ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
