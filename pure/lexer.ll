@@ -2492,7 +2492,17 @@ file for instructions on how to do this.\n";
     if (docname[docname.length()-1] == '#')
       docname.erase(docname.length()-1);
     // invoke the browser
-    if (!browser && (browser = getenv("BROWSER"))) {
+    if (!browser && interp.texmacs) {
+      // try to load the document in texmacs
+      if (docname.compare(0, 5, "file:") == 0) {
+	// At the time of this writing (Oct 2012) texmacs crashes on the file:
+	// prefix, so remove it.
+	docname.erase(0, 5);
+      }
+      cout << TEXMACS_BEGIN_COMMAND << "(pure-help \"" << docname << "\")" <<
+	TEXMACS_END_COMMAND;
+      fflush(stdout);
+    } else if (!browser && (browser = getenv("BROWSER"))) {
       char *browsercmd = strdup(browser);
       if (browsercmd) {
 	char *part;

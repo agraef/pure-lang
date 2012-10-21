@@ -144,12 +144,16 @@
 #define PROMPT_END "\005\005"
 #define SCHEME_BEGIN "\002scheme:"
 #define SCHEME_END "\005"
+#define COMMAND_BEGIN "\002command:"
+#define COMMAND_END "\005"
 #define TEXMACS_BEGIN (interpreter::g_interp->texmacs?DATA_BEGIN:"")
 #define TEXMACS_END (interpreter::g_interp->texmacs?DATA_END:"")
 #define TEXMACS_BEGIN_PROMPT (interpreter::g_interp->texmacs?PROMPT_BEGIN:"")
 #define TEXMACS_END_PROMPT (interpreter::g_interp->texmacs?PROMPT_END:"")
 #define TEXMACS_BEGIN_SCHEME (interpreter::g_interp->texmacs?SCHEME_BEGIN:"")
 #define TEXMACS_END_SCHEME (interpreter::g_interp->texmacs?SCHEME_END:"")
+#define TEXMACS_BEGIN_COMMAND (interpreter::g_interp->texmacs?COMMAND_BEGIN:"")
+#define TEXMACS_END_COMMAND (interpreter::g_interp->texmacs?COMMAND_END:"")
 
 using namespace std;
 
