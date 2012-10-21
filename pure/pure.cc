@@ -98,6 +98,7 @@ using namespace std;
 --plain           Minimal sign-on message (no fancy logo).\n\
 -q                Quiet startup (suppresses sign-on message).\n\
 -T filename       Tags file to be written by --ctags or --etags.\n\
+--texmacs         Run Pure inside TeXmacs.\n\
 -u                Do not strip unused functions in batch compilation.\n\
 -v[level]         Set verbosity level (default: 1).\n\
 --version         Print version information and exit.\n\
