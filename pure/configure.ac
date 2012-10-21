@@ -67,6 +67,15 @@ AC_ARG_WITH(elisp,
      no)  elcfiles="" ;;
    esac])
 AC_SUBST(elcfiles)
+AC_PATH_PROG(TEXMACS,texmacs)
+dnl Install texmacs files?
+tmfiles="texmacs/plugins/pure/*/*"
+AC_ARG_WITH(texmacs,
+  [  --with-texmacs          install texmacs files (default if texmacs is available)],
+  [case "${withval}" in
+     no)  tmfiles="" ;;
+   esac])
+AC_SUBST(tmfiles)
 dnl Determine compiler characteristics.
 AC_C_BIGENDIAN
 AC_CHECK_SIZEOF(void *)

@@ -47,6 +47,7 @@ INSTALL = @INSTALL@
 FLEX = @FLEX@
 BISON = @BISON@
 EMACS = @EMACS@
+TEXMACS = @TEXMACS@
 
 # Linker flags and required libraries. These are determined automatically by
 # configure, but if necessary you can also change these on the command line.
@@ -85,6 +86,20 @@ ifeq ($(strip $(EMACS)),)
 EMACS = emacs
 else
 elcfiles = @elcfiles@
+endif
+
+# Likewise for texmacs (TEXMACS variable).
+
+texmacs_prefix = $(patsubst %/bin/texmacs,%,$(TEXMACS))
+ifeq ($(strip $(texmacs_prefix)),)
+# Fall back to $(prefix).
+texmacs_prefix = $(prefix)
+endif
+tmdir = $(texmacs_prefix)/share/TeXmacs/plugins
+ifeq ($(strip $(TEXMACS)),)
+TEXMACS = texmacs
+else
+tmfiles = $(wildcard @tmfiles@)
 endif
 
 # Location of the Pure library directory. Depends on whether we're doing a
@@ -188,8 +203,8 @@ examples/*.c examples/*.f90 examples/libor/COPYING examples/libor/*.pure \
 examples/bitcode/Makefile examples/bitcode/*.c examples/bitcode/*.f90 \
 examples/bitcode/*.dsp examples/bitcode/*.pure \
 examples/hellomod/Makefile examples/hellomod/*.c examples/hellomod/*.pure \
-examples/texmacs/*.pure examples/texmacs/*.scm examples/texmacs/*.tm \
-examples/texmacs/*.ts \
+examples/texmacs/*.pure examples/texmacs/*.tm examples/texmacs/*.ts \
+$(tmfiles) \
 lib/*.pure test/*.pure test/*.log test/*.blob
 # These need special editing (see dist target, datesubst below).
 SEDFILES = INSTALL
@@ -200,7 +215,7 @@ strip dist distcheck cleanlogs logs check config
 
 # compilation
 
-all: pure$(EXE) pure_main.o etc/pure-mode.el $(elcfiles)
+all: pure$(EXE) pure_main.o etc/pure-mode.el $(elcfiles) $(tmfiles)
 
 ifeq ($(sharedlib), yes)
 pure$(EXE): pure.o $(libpure)
@@ -340,6 +355,10 @@ ifneq ($(elcfiles),)
 	$(INSTALL) -d $(DESTDIR)$(elispdir)
 	$(INSTALL) -m 644 etc/pure-mode.el etc/pure-mode.elc $(DESTDIR)$(elispdir)
 endif
+ifneq ($(tmfiles),)
+	for x in $(addprefix $(DESTDIR), $(tmdir)/pure/doc $(tmdir)/pure/progs); do $(INSTALL) -d $$x; done
+	for x in $(patsubst texmacs/plugins/%,%,$(tmfiles)); do $(INSTALL) -m 644 texmacs/plugins/$$x $(DESTDIR)$(tmdir)/$$x; done
+endif
 ifeq ($(versioned), yes)
 	ln -sf $(bindir)/$(pure_exe) $(DESTDIR)$(bindir)/pure$(EXE)
 	ln -sf $(pkgconfigdir)/$(pure_pc) $(DESTDIR)$(pkgconfigdir)/pure.pc
@@ -349,7 +368,7 @@ ifeq ($(versioned), yes)
 endif
 
 uninstall:
-	rm -rf $(addprefix $(DESTDIR), $(bindir)/pure$(EXE) $(pkgconfigdir)/pure.pc $(libdir)/$(libpure_lnkname) $(libdir)/$(libpure_soname) $(libdir)/$(libpure) $(includedir)/pure $(libdir)/pure $(man1dir)/pure.1 $(elispdir)/pure-mode.el $(elispdir)/pure-mode.elc)
+	rm -rf $(addprefix $(DESTDIR), $(bindir)/pure$(EXE) $(pkgconfigdir)/pure.pc $(libdir)/$(libpure_lnkname) $(libdir)/$(libpure_soname) $(libdir)/$(libpure) $(includedir)/pure $(libdir)/pure $(man1dir)/pure.1 $(elispdir)/pure-mode.el $(elispdir)/pure-mode.elc $(tmdir)/pure)
 ifeq ($(versioned), yes)
 	rm -rf $(addprefix $(DESTDIR), $(bindir)/$(pure_exe) $(pkgconfigdir)/$(pure_pc) $(pure_includedir) $(pure_libdir) $(man1dir)/$(pure_1))
 endif
@@ -394,7 +413,7 @@ uninstall-elc:
 date = $(shell date "+%B %-d, %Y")
 datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > $(2)
 
-distdirs = config debian etc examples examples/bitcode examples/hellomod examples/libor examples/texmacs lib test
+distdirs = config debian etc examples examples/bitcode examples/hellomod examples/libor examples/texmacs lib test texmacs texmacs/plugins texmacs/plugins/pure texmacs/plugins/pure/doc texmacs/plugins/pure/progs
 dist: $(addprefix $(srcdir)/, $(filter-out test/%.log, $(DISTFILES)))
 	rm -rf $(dist)
 	mkdir $(dist)
