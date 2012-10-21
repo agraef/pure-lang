@@ -71,7 +71,7 @@ AC_PATH_PROG(TEXMACS,texmacs)
 dnl Install texmacs files?
 tmfiles="texmacs/plugins/pure/*/*"
 AC_ARG_WITH(texmacs,
-  [  --with-texmacs          install texmacs files (default if texmacs is available)],
+  [  --with-texmacs          install texmacs files (default if it is available)],
   [case "${withval}" in
      no)  tmfiles="" ;;
    esac])
