@@ -99,7 +99,7 @@ tmdir = $(texmacs_prefix)/share/TeXmacs/plugins
 ifeq ($(strip $(TEXMACS)),)
 TEXMACS = texmacs
 else
-tmfiles = $(wildcard @tmfiles@)
+tmfiles = $(wildcard $(addprefix $(srcdir)/, @tmfiles@))
 endif
 
 # Location of the Pure library directory. Depends on whether we're doing a
@@ -357,7 +357,7 @@ ifneq ($(elcfiles),)
 endif
 ifneq ($(tmfiles),)
 	for x in $(addprefix $(DESTDIR), $(tmdir)/pure/doc $(tmdir)/pure/progs); do $(INSTALL) -d $$x; done
-	for x in $(patsubst texmacs/plugins/%,%,$(tmfiles)); do $(INSTALL) -m 644 texmacs/plugins/$$x $(DESTDIR)$(tmdir)/$$x; done
+	for x in $(patsubst $(srcdir)/texmacs/plugins/%,%,$(tmfiles)); do $(INSTALL) -m 644 $(srcdir)/texmacs/plugins/$$x $(DESTDIR)$(tmdir)/$$x; done
 endif
 ifeq ($(versioned), yes)
 	ln -sf $(bindir)/$(pure_exe) $(DESTDIR)$(bindir)/pure$(EXE)
