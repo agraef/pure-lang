@@ -559,14 +559,18 @@ namespace;
       be a singleton symbol. In the present implementation, ``declsym`` must
       be one of:
 
-      * ``operator`` (declares an operator symbol);
+      * ``operator``: declares an operator symbol;
+
+      * ``precedence``: declares an infix operator and optionally
+        specifies its precedence (giving the symbol priority over a second
+	given symbol);
 
       * ``antisymmetric``, ``symmetric``, ``even``, ``odd``, ``linear``,
-        ``noncom`` and ``nonzero`` (declares properties of already declared
-        operator symbols);
+        ``noncom`` and ``nonzero``: declares properties of already declared
+        operator symbols;
 
       * ``depend``, ``nodepend``, ``factor``, ``remfac``, ``order``,
-        ``korder`` (declares kernel dependencies and orders). These take both
+        ``korder``: declares kernel dependencies and orders. These take both
         symbols and "kernels" as arguments (the latter are simple prefix
         expressions which denote irreducible subterms such as ``cos x``;
         Reduce treats these more or less like variables in algebraic
@@ -1267,15 +1271,17 @@ end with
   error x = PROC_clear_stack $$ throw (bad_lisp_value x);
 end if get_started;
 
-declare x::symbol y::symbol = declare x [y];
-declare x::symbol ys::rlist = lisp (x ys) $$ ()
-  if x === 'operator && all symbolp ys;
+declare x::symbol y::symbol = declare x [y] if y~==[];
+declare x::symbol ys::rlist = lisp (x (map ('quote) ys)) $$ () when
+  x = if x==='precedence && null (tail ys) then lispsym "infix" else x;
+  ys = map (\y -> catch (cst y) (pure_syms!y)) ys;
+end if any (x===) ['operator,'precedence] && #ys>=1 && all symbolp ys;
 declare x::symbol ys::rlist = lisp (x (map mkquoted ys)) $$ () with
   mkquoted y::appl = 'quote y;
   mkquoted y = y otherwise;
-end if any (x===) kdec_syms;
+end if any (x===) kdec_syms && #ys>=1;
 declare x::symbol ys::rlist = lisp ('flag ys x) ()
-  if any (x===) prop_syms && all symbolp ys;
+  if any (x===) prop_syms && #ys>=1 && all symbolp ys;
 
 precision prec::int = lisp ('precision prec);
 plotreset = lisp ('plotreset) $$ ();
