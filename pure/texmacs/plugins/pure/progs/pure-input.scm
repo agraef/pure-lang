@@ -540,6 +540,7 @@
   ("<Rightarrow>" "=<gtr>")
   ("<Leftrightarrow>" "<less>=<gtr>")
   ("<neg>" "~")
+  ("<sim>" "~")
   ("<wedge>" "&&")
   ("<vee>" "||")
   ("<equiv>" "===") ; syntactic identity in Pure

@@ -12,6 +12,13 @@
    automatically if you run the Pure scripting plugin (Document|Scripts|Pure).
    Inside a Pure session, you can invoke this module with `using texmacs;`. */
 
+// Convenience functions.
+namespace reduce with public switch; end;
+on  flag::string = reduce::switch flag 1;
+off flag::string = reduce::switch flag 0;
+on  flag::symbol = on (str flag);
+off flag::symbol = off (str flag);
+
 // Additional operators provided by TeXmacs.
 infixl (+) oplus ominus pm mp cup uplus;
 infixl (*) otimes oslash div cap;
@@ -156,11 +163,8 @@ tmprint x = s when
   // There's still have some postprocessing to do...
   s = get texmacs_post_fun s;
 end if printable x when
-  /* We need to simplify first (even though tmprint will do it anyway), in
-     order to decide whether the expression is printable. However, if the
-     original expression doesn't look printable already, simplify itself will
-     probably choke on it as well (the typical symptom are spurious "operator
-     declared" messages), so we give up right away in this case. */
+  // If the original expression doesn't look printable then we give up
+  // immediately.
   x = if printable x then simplify (preproc x) else "no";
 end with
   printable x::number = true;
@@ -168,6 +172,7 @@ end with
   printable (x:xs) = printable x && ~thunkp xs && printable xs;
   printable x::matrix = all printable x;
   printable (x@_ y::tuple) = printable x && all printable (list y);
+  printable (x@_ y::list) = false;
   printable (x@_ y) = printable x && printable y;
   printable x::symbol = x ~== (..) && x ~== '(..) &&
     member reduce::pure_syms x || get texmacs_valid_fun (str x);

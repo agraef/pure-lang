@@ -130,13 +130,11 @@
   output enabled.
 
   <\session|pure|math>
-    <\unfolded-io-math>
+    <\input-math>
       \<gtr\>\ 
-    <|unfolded-io-math>
-      math;
-    <|unfolded-io-math>
-      ()
-    </unfolded-io-math>
+    <|input-math>
+      let math;
+    </input-math>
 
     <\unfolded-io-math>
       \<gtr\>\ 
@@ -150,26 +148,16 @@
   <subsection|Basic expressions>
 
   Most mathematical expressions are mapped to corresponding Pure expressions
-  in a sensible way. We start out with some Reduce declarations of operators
-  to be used below. (This isn't strictly necessary, but gets rid of Reduce's
-  noisy ``declared operator'' messages.)
+  in a sensible way. We start out by declaring a few operators to be used
+  below, so that they are known to Reduce. (This isn't strictly necessary,
+  but makes the output nicer.)
 
   <\session|pure|math>
-    <\unfolded-io-math>
+    <\input-math>
       \<gtr\>\ 
-    <|unfolded-io-math>
-      declare<space|1spc>operator <around*|[|above,below,binom,tree|]>;
-    <|unfolded-io-math>
-      ()
-    </unfolded-io-math>
-
-    <\unfolded-io-math>
-      \<gtr\>\ 
-    <|unfolded-io-math>
-      declare<space|1spc>operator <around*|[|hat,tilde,bar,vect,check,breve,dot,ddot,acute,grave|]>;
-    <|unfolded-io-math>
-      ()
-    </unfolded-io-math>
+    <|input-math>
+      let declare<space|1spc>operator <around*|[|above,below,binom,tree|]>;
+    </input-math>
 
     <\unfolded-io-math>
       \<gtr\>\ 
@@ -241,7 +229,9 @@
     <|unfolded-io-math>
       <tree|a|b|c|<tree|x|y|z>>;<text|<verbatim| // trees>>
     <|unfolded-io-math>
-      <with|color|black|mode|math|math-display|true|<around*|[|<math-up|tree><around*|(|a|)><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><math-up|tree><around*|(|b|)><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><math-up|tree><around*|(|c|)><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><around*|[|<math-up|tree><around*|(|<math-up|tree><around*|(|x|)>|)><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><math-up|tree><around*|(|<math-up|tree><around*|(|y|)>|)><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><math-up|tree><around*|(|<math-up|tree><around*|(|z|)>|)>|]>|]>>
+      <with|color|black|mode|math|math-display|true|math-font-family|rm|tree>
+      [<with|color|black|mode|math|math-display|true|a>,<with|color|black|mode|math|math-display|true|b>,<with|color|black|mode|math|math-display|true|c>,<with|color|black|mode|math|math-display|true|math-font-family|rm|tree>
+      <with|color|black|mode|math|math-display|true|<around*|[|x<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>y<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>z|]>>]
     </unfolded-io-math>
 
     <\unfolded-io-math>
@@ -340,11 +330,17 @@
       <with|color|black|mode|math|math-display|true|<math-up|norm><around*|(|x|)>>
     </unfolded-io-math>
 
+    <\input-math>
+      \<gtr\>\ 
+    <|input-math>
+      let declare<space|1spc>operator <around*|[|hat,tilde,bar,vect,check,breve,dot,ddot,acute,grave|]>;
+    </input-math>
+
     <\unfolded-io-math>
       \<gtr\>\ 
     <|unfolded-io-math>
       <wide|x|^>;<wide|x|~>;<wide|x|\<bar\>>;<wide|x|\<vect\>>;<wide|x|\<check\>>;<wide|x|\<breve\>>;<wide|x|\<dot\>>;<wide|x|\<ddot\>>;<wide|x|\<acute\>>;<wide|x|\<grave\>>;<rprime|'>x;<rprime|''>x;
-      <neg|x>;<text|<verbatim| // accents and primes/quotes>>
+      <neg|x>;\<sim\>x;<text|<verbatim| // accents, primes, etc.>>
     <|unfolded-io-math>
       <with|color|black|mode|math|math-display|true|<math-up|hat><around*|(|x|)>>
 
@@ -369,6 +365,8 @@
       <with|color|black|mode|math|math-display|true|x>
 
       '<with|color|black|mode|math|math-display|true|x>
+
+      ~<with|color|black|mode|math|math-display|true|x>
 
       ~<with|color|black|mode|math|math-display|true|x>
     </unfolded-io-math>
@@ -545,15 +543,31 @@
     <\unfolded-io-math>
       \<gtr\>\ 
     <|unfolded-io-math>
+      let off exp; p;<text|<verbatim| // expansion switched off>>
+    <|unfolded-io-math>
+      <with|color|black|mode|math|math-display|true|<frac|2|<around*|(|x+2|)>*<around*|(|x+1|)><rsup|2>>>
+    </unfolded-io-math>
+
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
       let pfs = ?:pf p<space|1spc>x; pfs;
     <|unfolded-io-math>
-      <with|color|black|mode|math|math-display|true|<around*|[|<frac|2|x+2><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><frac|-2|x+1><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><frac|2|x<rsup|2>+2*x+1>|]>>
+      <with|color|black|mode|math|math-display|true|<around*|[|<frac|2|x+2><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><frac|-2|x+1><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><frac|2|<around*|(|x+1|)><rsup|2>>|]>>
     </unfolded-io-math>
 
     <\unfolded-io-math>
       \<gtr\>\ 
     <|unfolded-io-math>
       map <around*|(|\\y\<rightarrow\>df y<space|1spc>x|)> pfs;
+    <|unfolded-io-math>
+      <with|color|black|mode|math|math-display|true|<around*|[|<frac|-2|<around*|(|x+2|)><rsup|2>><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><frac|2|<around*|(|x+1|)><rsup|2>><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><frac|-4|<around*|(|x+1|)><rsup|3>>|]>>
+    </unfolded-io-math>
+
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      let on exp; ans;<text|<verbatim| // expansion switched back on again>>
     <|unfolded-io-math>
       <with|color|black|mode|math|math-display|true|<around*|[|<frac|-2|x<rsup|2>+4*x+4><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><frac|2|x<rsup|2>+2*x+1><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><frac|-4|x<rsup|3>+3*x<rsup|2>+3*x+1>|]>>
     </unfolded-io-math>
@@ -831,13 +845,11 @@
   some examples.
 
   <\session|pure|math>
-    <\unfolded-io-math>
+    <\input-math>
       \<gtr\>\ 
-    <|unfolded-io-math>
-      declare<space|1spc>depend <around*|[|f,x|]>;
-    <|unfolded-io-math>
-      ()
-    </unfolded-io-math>
+    <|input-math>
+      let declare<space|1spc>depend <around*|[|f,x|]>;
+    </input-math>
 
     <\unfolded-io-math>
       \<gtr\>\ 
@@ -1109,7 +1121,7 @@
       binomials; binomials<rsub|0\<ldots\>5>; binomials<rsub|16>;
     <|unfolded-io-math>
       <with|color|black|mode|math|math-display|true|<around*|[|1|]>>:#\<less\>thunk
-      0x7f8251753228\<gtr\>
+      0x7f8f119dd138\<gtr\>
 
       <with|color|black|mode|math|math-display|true|<around*|[|<around*|[|1|]><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><around*|[|1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1|]><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><around*|[|1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>2<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1|]><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><around*|[|1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1|]><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><around*|[|1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>4<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>6<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>4<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1|]><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><around*|[|1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>5<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|10><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|10><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>5<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>1|]>|]>>
 
