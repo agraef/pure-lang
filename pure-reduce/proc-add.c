@@ -136,12 +136,10 @@ int PROC_make_cons(void)
     return 0;
 }
 
-/* TeXmacs support. The TeXmacs plugin requires Reduce anyway to do its
-   pretty-printing, so we might just as well include these little helper
-   functions here so that the plugin doesn't need its own C support library.
-   Most of the support functions of the plugin are written in Pure, but the
-   following functions are implemented in C for performance, since they have
-   to be invoked inside the Pure interpreter's pretty-printer. */
+/* TeXmacs pretty-printing support. The following functions are provided for
+   the benefit of the texmacs.pure module in the Pure distribution. They are
+   implemented in C for performance, since they have to be invoked inside the
+   Pure interpreter's pretty-printer. */
 
 #include <ctype.h>
 #include <string.h>

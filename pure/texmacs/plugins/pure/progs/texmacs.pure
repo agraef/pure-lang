@@ -12,14 +12,14 @@
    automatically if you run the Pure scripting plugin (Document|Scripts|Pure).
    Inside a Pure session, you can invoke this module with `using texmacs;`. */
 
-// Convenience functions.
+// Convenience functions for setting Reduce flags.
 namespace reduce with public switch; end;
 on  flag::string = reduce::switch flag 1;
 off flag::string = reduce::switch flag 0;
 on  flag::symbol = on (str flag);
 off flag::symbol = off (str flag);
 
-// Additional operators provided by TeXmacs.
+// Additional operators commonly used in TeXmacs (cf. pure-input.scm).
 infixl (+) oplus ominus pm mp cup uplus;
 infixl (*) otimes oslash div cap;
 
@@ -27,79 +27,25 @@ infixl (*) otimes oslash div cap;
 sum xs::list = foldl (+) 0 xs;
 prod xs::list = foldl (*) 1 xs;
 
-/* These rules bring some TeXmacs constructs into a form which can be readily
-   processed with Reduce. They are implemented as a local rule set so as not
-   to interfere with global Pure definitions. */
+/* Convenience macros to simplify expressions using Reduce. To make this work,
+   you'll also have to import the reduce module. This isn't done here by
+   default so that this module also works without having the pure-reduce
+   package installed. */
 
-public ceiling limit d df intg bad_diff;
-
-preproc_diff = reduce with
-  // These rules are factored out to make the pattern set slimmer, yielding
-  // much better compilation times.
-  ::d*x/y = d x/y;
-  ::d^k*x/y = d k x/y;
-  x/(::d*y^k) = x/d y k;
-  x/(::d*y) = x/d y;
-  x/(u*::d*y^k) = x/(v*d y k) when _/v = x/u end;
-  x/(u*::d*y) = x/(v*d y) when _/v = x/u end;
-end;
-
-preproc1 = reduce with
-  // Ceil. Name change only.
-  ceil x = ceiling x;
-
-  // Limits. Simple change of argument order.
-  lim v l x = limit x v l;
-
-  // Integrals. Multiplicative form (used by Reduce output).
-  intg (f*::d*x) = intg f x;
-
-  // Differentials. This is a mess. :(
-  ::d/y*x = d x/y;
-  (::d^k)/y*x = d k x/y;
-  (::d^k) x/y = d k x/y;
-  ::d^k@_ x/y = d k x/y;
-  x/(d y^k) = x/d y k;
-  x/(d (y^k)) = x/d y k;
-  x/(u*d y^k) = x/(u*d y k);
-  x/(u*d (y^k)) = x/(u*d y k);
-
-  /* Base forms where d is simply an operator and all the multiplication and
-     exponentiation sugar has been eliminated. These expand to a Reduce
-     df. Note that we require constant orders here to resolve some
-     ambiguities, but don't do any checking on these. */
-  d f/d x = df f x;
-  d f/d x l::int = df f x;
-  d f/(y*d x) = (d 0 f/y) x;
-  d f/(y*d x l::int) = (d (1-l) f/y) x l;
-  d k::int f/d x = df f x k;
-  d k::int f/d x l::int = df f x k;
-  d k::int f/(y*d x) = (d (k-1) f/y) x;
-  d k::int f/(y*d x l::int) = (d (k-l) f/y) x l;
-end;
-
-preproc x = preproc1 (preproc_diff x);
-
-/* The ? convenience macro simplifies an expression using Reduce. To make
-   this work, you'll also have to import the reduce module. This isn't done
-   here so that this module also works without having the pure-reduce package
-   installed.
-
-   ? passes the argument as a quoted expression and automatically applies the
-   rules for massaging of limits and differentials, see above. ?: does the
-   same but evaluates its argument. We also define these as functions, so that
-   they can be passed around as function arguments if needed, but note that in
-   this case ? looses its call-by-name argument processing.
-
-   These operators are at the lowest possible precendence so that their
-   arguments don't have to be parenthesized (but applications of ?  and ?:
-   must be parenthesized when used in any larger context). */
+/* ? passes the argument as a quoted expression, while ?: evaluates its
+   argument. Thus ?x and ?: are just the same as simplifyd ('x) and simplifyd
+   x, respectively, but they require much less typing. Also, these operators
+   are at the lowest possible precendence so that their arguments don't have
+   to be parenthesized (OTOH applications of ? and ?: must be parenthesized
+   when used in any larger context). */
 
 prefix 0 ? ?: ;
-public simplify;
-def ? x = simplify (preproc ('x));
-def ?:x = simplify (preproc x);
+public simplifyd;
+def ? x = simplifyd ('x);
+def ?:x = simplifyd x;
 
+// Also make these available as functions, but note that in this case ? looses
+// the call-by-name argument passing.
 ? x = ? x;
 ?:x = ?:x;
 
@@ -113,29 +59,27 @@ def ?:x = simplify (preproc x);
 
 // Enable this pragma to enable math mode by default.
 //#! --enable tmmath
+#! --ifndef tmmath
+#! --disable tmmath
+#! --endif
 
 let tminit, tmmode = ref false, ref false;
-let texmacs_valid_fun, texmacs_post_fun = ref (), ref ();
 
-public declare operator texmacs_valid texmacs_post;
+public lisp lispval lispsym;
 namespace reduce with
-  public capture output load pure_syms;
+public capture output load pure_syms tmvalid tmpost;
 end;
 
 tmstart = () when
-  // The externals are in the reduce module.
-  eval "using reduce;\
-extern int texmacs_valid(char *s);\
-extern char *texmacs_post(char *s);";
-  put texmacs_valid_fun (eval "texmacs_valid");
-  put texmacs_post_fun (eval "texmacs_post");
+  put tminit true;
+  // Lazy loading of the reduce module.
+  eval "using reduce;";
+  // This module is needed for the TeXmacs pretty-printing. It is pretty noisy
+  // during startup, so capture its output.
   reduce::capture 1;
   reduce::load "tmprint";
   reduce::capture 0;
-  put tminit true;
 end if ~get tminit;
-
-public lisp lispval lispsym;
 
 /* NOTE: This recursively descends into the (already simplified) term to see
    whether it's actually printable. tmprint chokes on strings (wants them to
@@ -161,11 +105,11 @@ tmprint x = s when
   reduce::capture 0;
   s = reduce::output;
   // There's still have some postprocessing to do...
-  s = get texmacs_post_fun s;
+  s = reduce::tmpost s;
 end if printable x when
   // If the original expression doesn't look printable then we give up
   // immediately.
-  x = if printable x then simplify (preproc x) else "no";
+  x = if printable x then simplifyd x else "no";
 end with
   printable x::number = true;
   printable [] = true;
@@ -175,7 +119,7 @@ end with
   printable (x@_ y::list) = false;
   printable (x@_ y) = printable x && printable y;
   printable x::symbol = x ~== (..) && x ~== '(..) &&
-    member reduce::pure_syms x || get texmacs_valid_fun (str x);
+    member reduce::pure_syms x || reduce::tmvalid (str x);
   printable _ = false;
 end;
 #! --ifnot recurse
@@ -189,9 +133,6 @@ verbatim = put tmmode false $$ ();
 // Pretty-printing routine for Pure's --texmacs mode.
 __texmacs__ x = tmprint x if get tmmode;
 
-#! --ifndef tmmath
-#! --disable tmmath
-#! --endif
 #! --if tmmath
 math;
 #! --endif

@@ -383,6 +383,11 @@ extern int PROC_feed_input(char *s);
 extern char *PROC_my_string_data(void* p) = PROC_string_data;
 extern int PROC_checksym(char *s) = checksym;
 
+// TeXmacs pretty-printing support. This is needed by the texmacs.pure module
+// in the Pure distribution.
+extern int texmacs_valid(char *s);
+extern char *texmacs_post(char *s);
+
 namespace;
 
 /* High-level interface. *****************************************************/
@@ -507,6 +512,8 @@ namespace;
    Evaluation
    ----------
 
+   .. _TeXmacs: http://www.texmacs.org
+
    For convenience, the following operations are in the default namespace:
 
    .. function:: simplify x
@@ -515,6 +522,16 @@ namespace;
       format and tries to simplify it using Reduce. The result is then
       converted back to Pure format. Note that you need to quote ``x`` if you
       want to prevent it from being evaluated on the Pure side.
+
+   .. function:: simplifyd x
+
+      A variation of :func:`simplify` which takes care of customary
+      mathematical notation for limits, integrals and differentials, so that
+      you can write stuff like ``d f/d x`` and ``lim n inf (1/n)`` and have
+      that expanded to the corresponding Reduce calls automatically. This also
+      tries to support most of the idioms and variations of notation which can
+      be seen in output of the Reduce ``tmprint`` module and which are
+      commonly used in TeXmacs_ documents.
 
    .. function:: lisp x
 
@@ -646,6 +663,18 @@ load name::string = PROC_load_package name if get_started;
 switch name::string val::int = PROC_set_switch name val if get_started;
 verbosity n::int = PROC_gc_messages n if get_started;
 
+// Capture output from Reduce in a string buffer.
+capture flag::int = PROC_capture_output flag;
+output = PROC_get_output;
+
+// Feed input to Reduce from a string buffer.
+feed s::string = PROC_feed_input s;
+
+// tmprint helpers, for the benefit of the texmacs.pure module included in the
+// Pure distribution.
+tmvalid s::string = texmacs_valid s;
+tmpost s::string = texmacs_post s;
+
 namespace __C with
 // We declare these here so that we don't have to pull in the system module.
 extern int fclose(FILE*);
@@ -689,7 +718,7 @@ start image::string args::smatrix = res when
   verbosity 0;
   // We also turn off interactive mode by default, since it may cause trouble
   // if a program runs unattended, especially when capturing output.
-  reduce::switch "int" 0;
+  switch "int" 0;
   // We need this to get matrices working, so always load this module.
   load "matrix";
 end if all stringp args;
@@ -697,14 +726,7 @@ end if all stringp args;
 // Automatic startup. Print an error message if we can't find the image.
 get_started = true if get started;
 get_started = catch (\_->puts "** Couldn't load image file reduce.img")
-  (reduce::start "reduce.img" {}) $$ get started;
-
-// Capture output from Reduce in a string buffer.
-capture flag::int = PROC_capture_output flag;
-output = PROC_get_output;
-
-// Feed input to Reduce from a string buffer.
-feed s::string = PROC_feed_input s;
+  (start "reduce.img" {}) $$ get started;
 
 // Source a Reduce (.red) file. This captures all output, so you may want to
 // inspect reduce::output for messages while loading the file.
@@ -735,32 +757,10 @@ opstr x = str x otherwise;
 lispfunp x::symbol = checksym (opstr x);
 lispfunp _ = false otherwise;
 
-// Helper function to simplify arithmetic expressions. This basically expands
-// an arithmetic term to a sum-of-products form. It is used to evaluate
-// unexpanded SQ forms below, but may be useful in its own right.
+// Helper functions to simplify arithmetic expressions, see below.
 
-expand = reduce with
-  // associtivity
-  a+(b+c) = (a+b)+c; a*(b*c) = (a*b)*c;
-  // distributivity
-  (a+b)*c = a*c+b*c; a*(b+c) = a*b+a*c;
-  // move unary minus outward
-  (-a)*b = -(a*b); a*(-b) = -(a*b);
-  // handle numeric coefficients (simplify trivial cases and move them to the
-  // front)
-  a+b::number | b::number+a = a if b==0;
-  a*b::number | b::number*a = 0 if b==0;
-  a*b::number | b::number*a = a if b==1;
-  a*b::number = b*a if ~numberp a;
-  a::real*b = -((-a)*b) if a<0;
-end;
-
-// Another little helper function to further simplify sums by reducing a+-b ->
-// a-b.
-
-pretty = reduce with
-  a+-b = a-b; a+b::real = a-(-b) if b<0;
-end;
+// Preprocessing for special differential constructs, see below.
+public expand pretty preproc preproc1 preproc_diff;
 
 end;
 
@@ -776,8 +776,8 @@ infix (=>) := ;
 public t infinity;
 public arbconst arbint arbcomplex;
 public list mat det mateigen tp trace cofactor rank;
-public df intg limit solve odesolve sum prod;
-public set equal replaceby plus difference minus times quotient expt;
+public d df intg limit solve odesolve sum prod;
+public set equal replaceby plus difference minus times quotient expt ceiling;
 // mathematical functions known to Reduce
 public acos acosh acot acoth acsc acsch asec asech asin asinh
   atan atanh atan2 cos cosh cot coth csc csch dilog ei exp
@@ -809,31 +809,31 @@ lispsym x::string = __C::pure_quoted_symbol (__C::pure_sym x);
 // with their Pure counterparts. NOTE: list and mat don't need to be listed
 // here since they're given special treatment anyway.
 // XXXTODO: Complete this list.
-let reduce::variadic_syms =
+let variadic_syms =
   '{plus=>(+),difference=>(-),times=>(*),min=>min,max=>max};
 
 // Remaining (non-variadic) symbols with their Pure counterparts. Only symbols
 // which need to be remapped on the Pure side need to be listed here.
 // XXXTODO: Complete this list.
-let reduce::nonvariadic_syms =
-  '{infinity=>inf,int=>intg,minus=>neg,quotient=>(/),expt=>(^),
+let nonvariadic_syms =
+  '{infinity=>inf,int=>intg,ceiling=>ceil,minus=>neg,quotient=>(/),expt=>(^),
     equal=>(==),replaceby=>(=>),set=>(:=),_interval_=>(..),_map=>map} when
       _interval_ = lispsym "*interval*";
       _map = lispsym "~map";
     end;
 
 // All remapped symbols (from above).
-let reduce::reduce_syms = {variadic_syms, nonvariadic_syms};
+let reduce_syms = {variadic_syms, nonvariadic_syms};
 
 // Reverse mapping (Pure -> Reduce).
-let reduce::pure_syms = {y=>x | x=>y = reduce_syms};
+let pure_syms = {y=>x | x=>y = reduce_syms};
 
 // Property symbols.
-let reduce::prop_syms =
+let prop_syms =
   '[antisymmetric,symmetric,even,odd,linear,nonzero];
 
 // Symbols used in kernel declarations such as depend, korder etc.
-let reduce::kdec_syms = '[depend,nodepend,factor,remfac,order,korder,noncom];
+let kdec_syms = '[depend,nodepend,factor,remfac,order,korder,noncom];
 
 /* Uncomment this to get unmapped output in nested list format straight from
    Reduce (useful for debugging purposes). */
@@ -852,6 +852,79 @@ let reduce::kdec_syms = '[depend,nodepend,factor,remfac,order,korder,noncom];
 #! --ifndef arbsymbols
 #! --disable arbsymbols
 #! --endif
+
+// Expand an arithmetic term to a sum-of-products form. This is used to
+// evaluate unexpanded SQ forms below, but may be useful in its own right.
+expand = reduce with
+  // associtivity
+  a+(b+c) = (a+b)+c; a*(b*c) = (a*b)*c;
+  // distributivity
+  (a+b)*c = a*c+b*c; a*(b+c) = a*b+a*c;
+  // move unary minus outward
+  (-a)*b = -(a*b); a*(-b) = -(a*b);
+  // handle numeric coefficients (simplify trivial cases and move them to the
+  // front)
+  a+b::number | b::number+a = a if b==0;
+  a*b::number | b::number*a = 0 if b==0;
+  a*b::number | b::number*a = a if b==1;
+  a*b::number = b*a if ~numberp a;
+  a::real*b = -((-a)*b) if a<0;
+end;
+
+// Further simplify sums by reducing a+-b -> a-b.
+pretty = reduce with
+  a+-b = a-b; a+b::real = a-(-b) if b<0;
+end;
+
+/* Local rulesets to deal with special limit, integral and differential
+   terms. We try to mimic customary mathematical notation as closely as
+   possible here, so that you can write stuff like ``d f/d x`` and
+   ``lim n inf (1/n)`` and have that expanded to the corresponding Reduce
+   calls automatically. */
+
+preproc_diff = reduce with
+  // These rules are factored out to make the pattern set slimmer, yielding
+  // much better compilation times.
+  ::d*x/y = d x/y;
+  ::d^k*x/y = d k x/y;
+  x/(::d*y^k) = x/d y k;
+  x/(::d*y) = x/d y;
+  x/(u*::d*y^k) = x/(v*d y k) when _/v = x/u end;
+  x/(u*::d*y) = x/(v*d y) when _/v = x/u end;
+end;
+
+preproc1 = reduce with
+  // Limits. Simple change of argument order.
+  lim v l x = limit x v l;
+
+  // Integrals, multiplicative form (this is also used by tmprint output).
+  intg (f*::d*x) = intg f x;
+
+  // Differentials. This is a mess. :(
+  ::d/y*x = d x/y;
+  (::d^k)/y*x = d k x/y;
+  (::d^k) x/y = d k x/y;
+  ::d^k@_ x/y = d k x/y;
+  x/(d y^k) = x/d y k;
+  x/(d (y^k)) = x/d y k;
+  x/(u*d y^k) = x/(u*d y k);
+  x/(u*d (y^k)) = x/(u*d y k);
+
+  /* Base forms where d is simply an operator and all the multiplication and
+     exponentiation sugar has been eliminated. These directly expand to a
+     Reduce df. Note that we require constant orders here to resolve some
+     syntactic ambiguities, but don't do any checking on these. */
+  d f/d x = df f x;
+  d f/d x l::int = df f x;
+  d f/(y*d x) = (d 0 f/y) x;
+  d f/(y*d x l::int) = (d (1-l) f/y) x l;
+  d k::int f/d x = df f x k;
+  d k::int f/d x l::int = df f x k;
+  d k::int f/(y*d x) = (d (k-1) f/y) x;
+  d k::int f/(y*d x l::int) = (d (k-l) f/y) x l;
+end;
+
+preproc x = preproc1 $ preproc_diff x;
 
 simplify x = y when
   // Clear the stack (to be sure).
@@ -1074,6 +1147,10 @@ end with
   error x = PROC_clear_stack $$ throw (bad_reduce_value x);
 end if get_started;
 
+// Variation of simplify which also takes care of differentials etc. written
+// in customary notation.
+simplifyd x = simplify $ preproc x;
+
 lispval x = y when
   PROC_clear_stack;
   from_expr x with
@@ -1286,4 +1363,4 @@ declare x::symbol ys::rlist = lisp ('flag ys x) ()
 precision prec::int = lisp ('precision prec);
 plotreset = lisp ('plotreset) $$ ();
 
-reduce::get_started;
+get_started;
