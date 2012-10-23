@@ -339,7 +339,8 @@ directory. make tries to guess the proper location of the TeXmacs plugins
 directory, but if it guesses wrong or if you want to install in some custom
 location then you can also set the ``tmdir`` make variable accordingly. If you
 prefer, you can also disable the automatic installation of the TeXmacs plugin
-by running configure with ``./configure --without-texmacs``.
+by running configure with ``./configure --without-texmacs``. (In that case, it's
+still possible to install the plugin manually with ``make install-tm``.)
 
 On some systems you have to tell the dynamic linker to update its cache so
 that it finds the Pure runtime library. E.g., on Linux this is done as
@@ -518,34 +519,39 @@ TeXmacs Plugin
 
 .. _GNU TeXmacs: http://savannah.gnu.org/projects/texmacs/
 
-Pure 0.56 has fairly complete support for running Pure as a session in `GNU
-TeXmacs`_. This is triggered by the :option:`--texmacs` option of the
-interpreter.  If TeXmacs was detected by configure then after running ``make``
-and ``sudo make install`` the required plugin files should already be
-installed in the system-wide TeXmacs plugins directory and you should be able
-to find Pure in TeXmacs' Insert / Session and Document / Scripts menus.
-TeXmacs help is also included; after installation this should be available
-with the Help / Plug-ins / Pure menu option. Or you can just go and read the
-TeXmacs documents (.tm files) in texmacs/plugins/pure/doc included in the
-distribution.
+Pure 0.56 has full support for running Pure as a session in `GNU TeXmacs`_.
+This is triggered by the :option:`--texmacs` option of the interpreter. If
+TeXmacs was detected by configure then after running ``make`` and ``sudo make
+install`` the required plugin files should already be installed in the
+system-wide TeXmacs plugins directory and you should be able to find Pure in
+TeXmacs' Insert / Session and Document / Scripts menus. TeXmacs help is also
+included; after installation this should be available with the Help / Plug-ins
+/ Pure menu option. Or you can just go and read the TeXmacs documents (.tm
+files) in texmacs/plugins/pure/doc included in the distribution.
 
 Note: make tries to guess the TeXmacs installation prefix. If it gets this
 wrong, you can also set the make variable ``tmdir`` to point to your TeXmacs
-plugins directory (you can use ~/.TeXmacs/plugins if you prefer to install the
-plugin into your personal TeXmacs folder). By default, the plugin files will
-be installed in the plugins/pure subdirectory of your system-wide TeXmacs
-directory, usually /usr/local/share/TeXmacs or similar. Removing the
-plugins/pure directory is sufficient to uninstall the plugin.
+plugins directory. By default, the plugin files will be installed in the
+plugins/pure subdirectory of your system-wide TeXmacs directory, usually
+/usr/local/share/TeXmacs or similar. Removing the plugins/pure directory is
+sufficient to uninstall the plugin; you can also do this with ``sudo make
+uninstall-tm``.
 
-You can also disable the automatic installation by invoking configure with the
-``--without-texmacs`` option. To do a manual installation, it should be
-sufficient to drop the texmacs/plugins/pure directory in the distribution into
-your personal TeXmacs plugins folder.
+It's also possible to disable the automatic installation by invoking configure
+with the ``--without-texmacs`` option. To do a manual installation, it should
+be sufficient to drop the texmacs/plugins/pure directory in the distribution
+into your personal TeXmacs plugins folder, usually ~/.TeXmacs/plugins. You can
+also do this with ``make install-tm tmdir=~/.TeXmacs/plugins`` (in this case,
+uninstall with ``make uninstall-tm tmdir=~/.TeXmacs/plugins``). This has the
+advantage that it doesn't require root access and you can easily edit the
+plugin files under ~/.TeXmacs/plugins/pure/progs afterwards to tailor them to
+your needs.
 
-If the distributed plugin doesn't work for you, you can try the following
-minimal setup which lacks most of the bells and whistles of the distributed
-plugin, but should be sufficient to run a Pure session in TeXmacs (install
-this as ~/.TeXmacs/plugins/pure/progs/init-pure.scm):
+If the distributed plugin doesn't work for you, as a fallback option you can
+try the following minimal setup instead. It lacks all the bells and whistles
+of the distributed plugin, but should be sufficient to run a basic Pure
+session in TeXmacs, and should hopefully work with any TeXmacs version which
+has plugin support at all.
 
 .. code-block:: scheme
 
@@ -554,13 +560,10 @@ this as ~/.TeXmacs/plugins/pure/progs/init-pure.scm):
      (:launch "pure -i --texmacs")
      (:session "Pure"))
 
+This Scheme file should go into ~/.TeXmacs/plugins/pure/progs/init-pure.scm.
 Note that *both* the ``-i`` and ``--texmacs`` options are required in the
 launch command to make this work (you might also want to add the ``-q`` option
 to suppress the signon message of the interpreter).
-
-The distributed plugin files can be found under texmacs/plugins/pure in the
-sources. If you're a seasoned TeXmacs user then you may want to have a look at
-these and tailor them to your needs before installation.
 
 
 Installing an LLVM-capable C/C++ Compiler

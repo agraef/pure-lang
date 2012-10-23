@@ -96,10 +96,11 @@ ifeq ($(strip $(texmacs_prefix)),)
 texmacs_prefix = $(prefix)
 endif
 tmdir = $(texmacs_prefix)/share/TeXmacs/plugins
+tmsrc = $(wildcard $(addprefix $(srcdir)/, texmacs/plugins/pure/doc/*.tm texmacs/plugins/pure/progs/*.scm texmacs/plugins/pure/progs/*.pure))
 ifeq ($(strip $(TEXMACS)),)
 TEXMACS = texmacs
 else
-tmfiles = $(wildcard $(addprefix $(srcdir)/, @tmfiles@))
+tmfiles = @tmfiles@
 endif
 
 # Location of the Pure library directory. Depends on whether we're doing a
@@ -408,6 +409,21 @@ uninstall-el:
 
 uninstall-elc:
 	rm -rf $(DESTDIR)$(elispdir)/pure-mode.elc
+
+# install the TeXmacs plugin
+
+# This will normally be done automatically with 'make install' if texmacs is
+# detected on your system. However, these targets also allow you to do this
+# manually, e.g., if texmacs is installed in an unusual location, or if you
+# want to install the files in a custom location (in the latter case you will
+# also want to set tmdir accordingly).
+
+install-tm: $(tmsrc)
+	for x in $(addprefix $(DESTDIR), $(tmdir)/pure/doc $(tmdir)/pure/progs); do $(INSTALL) -d $$x; done
+	for x in $(patsubst $(srcdir)/texmacs/plugins/%,%,$(tmsrc)); do $(INSTALL) -m 644 $(srcdir)/texmacs/plugins/$$x $(DESTDIR)$(tmdir)/$$x; done
+
+uninstall-tm:
+	rm -rf $(DESTDIR)$(tmdir)/pure
 
 # roll a distribution tarball
 

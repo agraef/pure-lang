@@ -69,7 +69,7 @@ AC_ARG_WITH(elisp,
 AC_SUBST(elcfiles)
 AC_PATH_PROG(TEXMACS,texmacs)
 dnl Install texmacs files?
-tmfiles="texmacs/plugins/pure/doc/*.tm texmacs/plugins/pure/progs/*.scm texmacs/plugins/pure/progs/*.pure"
+tmfiles="$(tmsrc)"
 AC_ARG_WITH(texmacs,
   [  --with-texmacs          install texmacs files (default if it is available)],
   [case "${withval}" in
