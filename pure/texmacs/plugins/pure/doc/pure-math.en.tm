@@ -55,7 +55,7 @@
   and check it, or type the key combination <key|Ctrl $> defined by the Pure
   plugin. Another useful convenience is the <verbatim|?> prefix operator
   (defined in <verbatim|texmacs.pure>) which does a Reduce
-  <verbatim|simplify> of its expression argument which is quoted
+  <verbatim|simplifyd> of its expression argument which is quoted
   automagically. So here's how we can enter the expression <verbatim|? df
   (sin (x^2)) x)> in math mode:
 
@@ -69,7 +69,7 @@
     </unfolded-io-math>
   </session>
 
-  This has pretty much the same effect as:
+  This is in fact the same as:
 
   <\session|pure|math>
     <\unfolded-io-math>
@@ -82,13 +82,13 @@
     </unfolded-io-math>
   </session>
 
-  But it's a lot easier to type, and the <verbatim|?> operator also includes
-  the necessary magic to make the <TeXmacs> syntax of sums, products, limits,
-  integrals and differentials work in Pure (we'll see how to use these in a
-  moment). The <verbatim|?:> operator does the same, but evaluates its
-  argument; you want to use that if the expression includes some Pure
-  functions which should be evaluated before submitting the result to Reduce.
-  Note the difference:
+  But it's a lot easier to type. Also note that the <verbatim|?> operator
+  uses <verbatim|simplifyd> rather than just <verbatim|simplify>, which also
+  supports some customary notation for limits, integrals and differentials
+  which are commonly used in <TeXmacs>. The <verbatim|?:> operator does the
+  same, but evaluates its argument; you want to use that if the expression
+  includes some Pure functions which should be evaluated before submitting
+  the result to Reduce. Note the difference:
 
   <\session|pure|math>
     <\input-math>
@@ -122,12 +122,14 @@
   done automatically by the pretty-printer, so the <verbatim|simplify>,
   <verbatim|?> and <verbatim|?:> operations are not required for expression
   evaluations any more (you'll still need them for function and variable
-  definitions if you want simplified results there, though). Note that this
-  only works with expressions which Reduce understands; there are a lot of
-  expression types in Pure which have no Reduce counterparts and are thus
-  printed verbatim. However, the pretty-printer will try to print as much of
-  the results in math mode as it can. In the following, we always leave math
-  output enabled.
+  definitions if you want simplified results there, though). Let's switch to
+  math output now:<\footnote>
+    Note the <verbatim|let> keyword before the call to <verbatim|math>. In
+    Pure this executes the <verbatim|math> function as usual, but suppresses
+    the printing of the result, similar to what the <verbatim|$> terminator
+    does in Reduce. We'll use this trick a lot in the following, to suppress
+    uninteresting evaluation results.
+  </footnote>
 
   <\session|pure|math>
     <\input-math>
@@ -145,12 +147,52 @@
     </unfolded-io-math>
   </session>
 
+  Note that the <verbatim|df> term got simplified, but that's only in the
+  display:
+
+  <\session|pure|math>
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      str ans;
+    <|unfolded-io-math>
+      "df (sin (x^2)) x"
+    </unfolded-io-math>
+  </session>
+
+  To actually obtain a simplified result which we can be processed further on
+  the Pure side (passed to Pure functions or assigned to Pure variables), you
+  still need to use <verbatim|?> et al:
+
+  <\session|pure|math>
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      ?df <around*|(|sin <around*|(|x<rsup|2>|)>|)> x;
+    <|unfolded-io-math>
+      <with|color|black|mode|math|math-display|true|2*cos<around*|(|x<rsup|2>|)>*x>
+    </unfolded-io-math>
+
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      str ans;
+    <|unfolded-io-math>
+      "2*cos (x^2)*x"
+    </unfolded-io-math>
+  </session>
+
+  Also note that there are some Pure expressions (such as strings, lambdas
+  and pointers) which are always printed verbatim. However, the
+  pretty-printer will try to print as much of the results in math mode as it
+  can. In the following, we always leave math output enabled.
+
   <subsection|Basic expressions>
 
   Most mathematical expressions are mapped to corresponding Pure expressions
   in a sensible way. We start out by declaring a few operators to be used
   below, so that they are known to Reduce. (This isn't strictly necessary,
-  but makes the output nicer.)
+  but silences the ``<verbatim|declared operator>'' messages from Reduce.)
 
   <\session|pure|math>
     <\input-math>
@@ -955,9 +997,15 @@
     <\input-math>
       \<gtr\>\ 
     <|input-math>
-      I<space|1spc>a<space|1spc>b<space|1spc>n=<big|int>x<rsup|2>*<around|(|a*x+b|)><rsup|n>\<mathd\>x;
+      I<space|1spc>a<space|1spc>b<space|1spc>n=?<big|int>x<rsup|2>*<around|(|a*x+b|)><rsup|n>\<mathd\>x;
     </input-math>
+  </session>
 
+  Note that we employed the <verbatim|?> operator here so that the
+  <verbatim|I> function produces a simplified result rather than just a
+  literal integral which then needs to be simplified when pretty-printed.
+
+  <\session|pure|math>
     <\unfolded-io-math>
       \<gtr\>\ 
     <|unfolded-io-math>
@@ -1064,7 +1112,7 @@
 
   This function isn't predefined in Pure either, so let's do that now. To get
   nicely aligned equations, we'll use an equation array this time. This is
-  available as <verbatim|\\eqnarray*> in math mode; similarly, the binomials
+  available as <verbatim|\\eqnarray> in math mode; similarly, the binomials
   can be entered with <verbatim|\\binom>:
 
   <\session|pure|math>

@@ -73,7 +73,7 @@
     <strong|Note: >This will not actually be visible if you're reading this
     in the <TeXmacs> help browser which uses its own style options. In this
     case you'll have to choose the <samp|varsession> style manually, see
-    <samp|Document \| Add package \| Program \| varsession> in the menu.)
+    <samp|Document \| Add package \| Program \| varsession> in the menu.
   </bothlined>
 
   It's also possible to globally override formatting options such as the
@@ -315,7 +315,17 @@
   Completion of Pure keywords and functions is fully supported in <TeXmacs>.
   Just type <key|Tab> as usual and <TeXmacs> displays a list of possible
   completions in its status line. Pressing <key|Tab> again you can cycle
-  through the completions and pick the one that you want.
+  through the completions and pick the one that you want. For instance, you
+  can try this yourself on the following input line by placing the cursor
+  behind the <verbatim|f> and hitting the <key|Tab> key:
+
+  <\session|pure|default>
+    <\input>
+      \<gtr\>\ 
+    <|input>
+      f
+    </input>
+  </session>
 
   The Pure <verbatim|help> command also works in <TeXmacs>. By default, this
   will pop up a new <TeXmacs> window with the help file in it. Search terms
@@ -449,13 +459,11 @@
       #! --enable tmmath
     </input>
 
-    <\unfolded-io>
+    <\input>
       \<gtr\>\ 
-    <|unfolded-io>
+    <|input>
       using texmacs;
-    <|unfolded-io>
-      Reduce (Free CSL version), 09-Oct-12 ...
-    </unfolded-io>
+    </input>
 
     <\unfolded-io-math>
       \<gtr\>\ 

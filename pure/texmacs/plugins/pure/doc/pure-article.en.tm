@@ -12,8 +12,6 @@
   <include|pure-descr.en.tm>
 
   <include|pure-math.en.tm>
-
-  <include|pure-demo.en.tm>
 </body>
 
 <\initial>
