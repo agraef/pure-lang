@@ -1014,9 +1014,15 @@ simplify x = y when
   PROC_make_printable;
   // Convert the stacktop back to a Pure expression.
 #! --if mapped
-  [y] = to_expr (display PROC_get_value) with
+  y = case to_expr (display PROC_get_value) of
+    [y] = y;
+    y = y;
+  end with
 #! --else
-  [list,y] = to_expr (display PROC_get_value) with
+  y = case to_expr (display PROC_get_value) of
+    [x,y] = y if x === 'list;
+    y = y;
+  end with
 #! --endif
     display p = [] if PROC_null p;
     = if PROC_symbol p then symval (PROC_symbol_name p)
@@ -1027,6 +1033,11 @@ simplify x = y when
     = display (PROC_first p):display (PROC_rest p) otherwise;
     // Bigints are also returned as strings. We handle that here.
     strval x::string = case val x of
+      neg y = case y of
+	_::int = -bigint y;
+	_::bigint = -y;
+	_ = x;
+      end;
       x::int  = bigint x;
       x::bigint = x;
       _ = x;
@@ -1056,16 +1067,27 @@ simplify x = y when
     // lists are handled below.) XXXFIXME: Is this sensible?
     //to_expr [] = false;
     // Special coefficient values.
-    to_expr (_rd_ : x::double) = x;
-    to_expr (_rd_ : mant::integer : exp::integer) = mant*2^exp;
-    to_expr (_gr_ : re::double : im::double) = re+:im;
-    to_expr (_gr_ :
-	     (rmant::integer : rexp::integer) :
-	     (imant::integer : iexp::integer)) = rmant*2^rexp +: imant*2^iexp;
-    to_expr (_gi_ : re::integer : im::integer) = re+:im;
-    to_expr (_rn_ : num::integer : den::integer) = num%den;
+    realval x::real = double x;
+    realval x::string = case __break__ $$ strval x of
+      x::bigint = double x;
+      _ = error x otherwise;
+    end;
+    realval x = error x otherwise;
+    intval x::integer = x;
+    intval x::string = case __break__ $$ strval x of
+      x::bigint = x;
+      _ = error x otherwise;
+    end;
+    intval x = error x otherwise;
+    to_expr (_rd_ : mant : exp::integer) = realval mant*2^exp;
+    to_expr (_rd_ : x) = realval x;
+    to_expr (_gr_ : (rmant : rexp::integer) : (imant : iexp::integer)) =
+      realval rmant*2^rexp +: realval imant*2^iexp;
+    to_expr (_gr_ : re : im) = realval re+:realval im;
+    to_expr (_gi_ : re : im) = intval re+:intval im;
+    to_expr (_rn_ : num : den) = intval num%intval den;
     // XXXFIXME: Maybe it's better to not loose the _mod_ symbol here?
-    to_expr (_mod_ : num::integer) = num;
+    to_expr (_mod_ : num) = intval num;
 #! --if arbsymbols
     to_expr x@[f::symbol,n::int] = to_sym x
       if f === arbconst || f === arbint || f === arbcomplex;
