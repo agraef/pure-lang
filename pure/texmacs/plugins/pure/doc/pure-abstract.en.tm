@@ -28,12 +28,12 @@
   And these formulas don't just sit there looking nice, they can be executed,
   too! The plugin supports all major features of the <TeXmacs> interface,
   including Pure sessions and scripting, completion of Pure keywords and
-  function names, as well as mathematical input and output (the latter is
-  implemented using the Reduce <samp|<verbatim|tmprint>> package and thus
-  requires Reduce). The examples in this document show off some of Pure's
-  symbolic computing capabilities in <TeXmacs>, using Pure's onboard
-  facilities as well as the Reduce interface which nicely integrates with
-  Pure and <TeXmacs>.<\footnote>
+  function names, accessing the Pure online help facility, as well as
+  mathematical input and output (the latter is implemented using the Reduce
+  <samp|<verbatim|tmprint>> package and thus requires Reduce). The examples
+  in this document show off some of Pure's symbolic computing capabilities in
+  <TeXmacs>, using Pure's onboard facilities as well as the Reduce interface
+  which nicely integrates with Pure and <TeXmacs>.<\footnote>
     Note that the examples in each section are to be executed in the given
     order, as some calculations rely on earlier definitions.
   </footnote>

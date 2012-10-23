@@ -7,7 +7,7 @@
     The <name|Pure> plug-in
   </tmdoc-title>
 
-  <doc-data|<doc-title|The <TeXmacs> Pure
+  <doc-data|<doc-title|The Pure <TeXmacs>
   Plugin>|<doc-author-data|<author-name|Albert
   Gräf>|<author-email|dr.graef@t-online.de>|<author-homepage|http://pure-lang.googlecode.com/>>|<doc-date|<date>>>
 
@@ -22,7 +22,7 @@
   More detailed examples for Pure math input and output in <TeXmacs> are
   available in the <hlink|pure-math|pure-math.en.tm> document, and the full
   version of this manual in printable format can be found in the
-  <hlink|pure-article|pure-article.en.tm> file.
+  <hlink|pure-texmacs|pure-texmacs.en.tm> file.
 
   <tmdoc-copyright|2012|Albert Gräf>
 

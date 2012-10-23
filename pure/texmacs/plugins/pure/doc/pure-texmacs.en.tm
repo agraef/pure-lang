@@ -3,7 +3,7 @@
 <style|<tuple|tmdoc|varsession>>
 
 <\body>
-  <doc-data|<doc-title|The <TeXmacs> Pure
+  <doc-data|<doc-title|The Pure <TeXmacs>
   Plugin>|<doc-author-data|<author-name|Albert
   Gräf>|<author-email|dr.graef@t-online.de>|<author-homepage|http://pure-lang.googlecode.com/>>|<doc-date|<date>>>
 
