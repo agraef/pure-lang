@@ -483,6 +483,114 @@
     </unfolded-io-math>
   </session>
 
+  <section|Pure and Octave>
+
+  It's also possible to call Octave from Pure in order to do numeric
+  calculations, and use the <verbatim|texmacs> module to do the
+  pretty-printing via Reduce. To do this, you also need to have the
+  <verbatim|pure-octave> package installed. For instance:
+
+  <\session|pure|octave>
+    <\output>
+      \;
+
+      \ __ \\ \ \| \ \ \| \ __\| _ \\ \ \ \ Pure 0.56
+      (x86_64-unknown-linux-gnu)
+
+      \ \| \ \ \| \| \ \ \| \| \ \ \ __/ \ \ \ Copyright (c) 2008-2012 by
+      Albert Graef
+
+      \ .__/ \\__,_\|_\| \ \\___\| \ \ \ (Type 'help' for help, 'help
+      copying'
+
+      _\| \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ for license
+      information.)
+
+      \;
+
+      Loaded prelude from /usr/lib/pure/prelude.pure.
+
+      \;
+    </output>
+
+    <\unfolded-io>
+      \<gtr\>\ 
+    <|unfolded-io>
+      using octave, texmacs; let math;
+    <|unfolded-io>
+      Reduce (Free CSL version), 23-Oct-12 ...
+    </unfolded-io>
+
+    <\input-math>
+      \<gtr\>\ 
+    <|input-math>
+      <\eqnarray>
+        <tformat|<table|<row|<cell|eig x>|<cell|=>|<cell|octave_call "eig"
+        1<space|1spc><around*|(|dmatrix x|)>;>>|<row|<cell|eig2<space|1spc>x>|<cell|=>|<cell|octave_call
+        "eig" 2<space|1spc><around*|(|dmatrix x|)>;>>>>
+      </eqnarray>
+    </input-math>
+
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      eig <matrix|<tformat|<table|<row|<cell|1>|<cell|2>>|<row|<cell|3>|<cell|4>>>>>;<text|
+      // eigenvalues only>
+    <|unfolded-io-math>
+      <with|color|black|mode|math|math-display|true|<around*|(|<tabular*|<tformat|<table|<row|<cell|-0.372281323269>>|<row|<cell|5.37228132327>>>>>|)>>
+    </unfolded-io-math>
+
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      eig2 <matrix|<tformat|<table|<row|<cell|1>|<cell|2>>|<row|<cell|3>|<cell|4>>>>>;<text|//
+      eigenvectors and diagonalized matrix>
+    <|unfolded-io-math>
+      <with|color|black|mode|math|math-display|true|<around*|(|<tabular*|<tformat|<table|<row|<cell|-0.824564840132>|<cell|-0.415973557919>>|<row|<cell|0.565767464969>|<cell|-0.909376709132>>>>>|)>>,<with|color|black|mode|math|math-display|true|<around*|(|<tabular*|<tformat|<table|<row|<cell|-0.372281323269>|<cell|0>>|<row|<cell|0>|<cell|5.37228132327>>>>>|)>>
+    </unfolded-io-math>
+  </session>
+
+  It goes without saying that this is pretty useful if a problem calls for a
+  mix of symbolic and numeric algorithms. It's also possible to call back
+  into Pure from Octave, and thereby into Reduce. To do this, you need to
+  wrap up the computation as a Pure function which in turn uses <verbatim|?>
+  or <verbatim|?:> to invoke Reduce. Just to illustrate how this works,
+  here's a somewhat contrived example where we call the Reduce transpose
+  function <verbatim|tp> from Octave:
+
+  <\session|pure|octave>
+    <\input-math>
+      \<gtr\>\ 
+    <|input-math>
+      tp x\<colons\>matrix=?tp<around*|(|x|)>;
+    </input-math>
+
+    <\unfolded-io>
+      \<gtr\>\ 
+    <|unfolded-io>
+      octave_call "pure_call" 1 ("tp",{1,2;3,4});
+    <|unfolded-io>
+      <with|color|black|mode|math|math-display|true|<around*|(|<tabular*|<tformat|<table|<row|<cell|1>|<cell|3>>|<row|<cell|2>|<cell|4>>>>>|)>>
+    </unfolded-io>
+
+    <\unfolded-io>
+      \<gtr\>\ 
+    <|unfolded-io>
+      let octave_eval "pure_call('tp',[1 2;3 4])"; // Octave output!
+    <|unfolded-io>
+      ans =
+
+      \;
+
+      \ \ \ 1 \ \ 3
+
+      \ \ \ 2 \ \ 4
+    </unfolded-io>
+  </session>
+
+  In a similar fashion you might, e.g., have Octave call Pure to solve an
+  equation which Octave itself can't handle.
+
   <section|Pure Scripting>
 
   Last but not least, Pure can also be used as a <em|scripting language> in
