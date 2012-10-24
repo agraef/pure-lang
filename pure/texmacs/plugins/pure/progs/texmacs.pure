@@ -126,6 +126,63 @@ end;
 tmprint x = str x;
 #! --endif
 
+// PostScript output.
+
+namespace __C with
+// We declare these here so that we don't have to pull in the system module.
+extern int fclose(FILE*);
+extern FILE* fopen(char*, char*);
+extern char* fgets(void* buf, int size, FILE* fp);
+extern int puts(char* s);
+extern int pure_errno() = errno;
+extern char* strerror(int);
+extern int feof(FILE* fp), int ferror(FILE* fp);
+extern char *getenv(char *name);
+end;
+
+using namespace __C;
+
+ps s::string = () when
+  s = if index s "\n" < 0 then psfile s else ps s;
+  s = if last s == "\n" then init s else s;
+  puts s;
+end with
+  // If s has no newline in it, assume that it's the name of a PostScript file.
+  psfile name::string = ps s when
+    path = getenv "TEXMACS_DOC_PATH";
+    path = if null path then "" else path;
+    fp = search name path;
+    ~null fp || throw (name+": "+strerror errno);
+    s = fget fp;
+    fclose fp;
+    // Do a little sanity check on the file (it *must* be plain PostScript,
+    // not gzipped, otherwise TeXmacs will choke on it).
+    ~null s && take 2 s == "%!" || throw (name+": Not a postscript file");
+  end;
+  // Otherwise we assume that it's just verbatim PostScript code.
+  ps s::string = "\002ps:"+s+"\005";
+  // Helper function to search a file on the given TeXmacs path.
+  search name::string path::string = catch id
+    (void [check (join "/" [dir,name]) | dir = split ":" path] $$ check name)
+    if index name "/" < 0;
+  search name::string _ = catch id (check name $$ NULL) otherwise;
+  check name::string = NULL when
+    fp = fopen name          "r"; null fp || throw fp;
+    fp = fopen (name+".eps") "r"; null fp || throw fp;
+    fp = fopen (name+".ps")  "r"; null fp || throw fp;
+  end;
+  // Helper function to slurp in a text file (from system.pure).
+  fget f::pointer = read_a_file f buf [] when buf = malloc 0x10000 end;
+  read_a_file f buf t = check s when s = fgets buf 0x10000 f end with
+    check s::string   = return (s:t) if feof f || ferror f;
+                      = read_a_file f buf (s:t) otherwise;
+    check s           = return s if null t;
+                      = return t otherwise;
+    return x::pointer = free buf $$ x;
+    return x          = free buf $$ strcat $ reverse $ x;
+  end;
+end;
+
 // Switch between math and verbatim output.
 math = tmstart $$ put tmmode true $$ ();
 verbatim = put tmmode false $$ ();
