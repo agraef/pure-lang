@@ -38,8 +38,8 @@ endif
 # Pure loads the module.
 RLD_FLAG=`mkoctfile -p RLD_FLAG`
 
-DISTFILES = COPYING Makefile README config.guess \
-embed.cc embed.h gsl_structs.h octave.pure debian/* examples/*.pure
+DISTFILES = COPYING Makefile README config.guess embed.cc embed.h \
+gsl_structs.h gnuplot.pure octave.pure debian/* examples/*.pure
 SEDFILES = README
 
 all: octave_embed$(DLL)
@@ -54,10 +54,10 @@ clean:
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
-	cp octave.pure octave_embed$(DLL) "$(DESTDIR)$(libdir)/pure"
+	cp gnuplot.pure octave.pure octave_embed$(DLL) "$(DESTDIR)$(libdir)/pure"
 
 uninstall:
-	rm -f "$(DESTDIR)$(libdir)/pure/octave.pure" "$(DESTDIR)$(libdir)/pure/octave_embed$(DLL)"
+	rm -f "$(DESTDIR)$(libdir)/pure/gnuplot.pure" "$(DESTDIR)$(libdir)/pure/octave.pure" "$(DESTDIR)$(libdir)/pure/octave_embed$(DLL)"
 
 date = $(shell date "+%B %-d, %Y")
 datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > $(2)

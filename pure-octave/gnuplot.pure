@@ -1,0 +1,271 @@
+
+/* An interface to Gnuplot via Octave 2012-10-26 AG <dr.graef@t-online.de> */
+
+/* This is mostly a simple wrapper for the most important Octave gnuplot
+   routines. Please refer to the Octave manual, section 15.2 High-Level
+   Plotting, for a description of these functions. Most of the plotting
+   examples given in the Octave documentation can be translated to Pure in a
+   fairly straghtforward manner.
+
+   This module is largely untested, so expect some bugs (and please report
+   them). Also, a few routines may require Octave data structures such as
+   tensors which aren't directly supported in pure-octave right now, so you'll
+   have to call octave_eval or octave_func directly if you run into such
+   cases.
+
+   To keep the default namespace clean, these routines are all in the gnuplot
+   namespace; you may want to use a 'using namespace gnuplot;' declaration in
+   your scripts for convenience.
+
+   IMPORTANT: To display a plot, you'll have to call refresh() (shg() or
+   drawnow() will also work) after creating or updating a plot. This is done
+   automatically in Octave's command line, but since there's no command line
+   in the embedded Octave interpreter, you'll have to take care of this
+   yourself when using this module.
+
+   There doesn't seem to be a direct way to specify the default output
+   terminal in the Octave gnuplot interface, so if you need to do this then
+   you'll have to set the GNUTERM environment variable as described in the
+   gnuplot manual page. */
+
+using octave;
+
+namespace gnuplot;
+
+// 2D plots
+plot args = octave_call "plot" 1 args;
+plotyy args = octave_call "plotyy" 1 args;
+semilogx args = octave_call "semilogx" 1 args;
+semilogy args = octave_call "semilogy" 1 args;
+loglog args = octave_call "loglog" 1 args;
+bar args = octave_call "bar" 1 args;
+barh args = octave_call "barh" 1 args;
+hist args = octave_call "hist" 0 args;
+hist2 args = octave_call "hist" 2 args;
+stairs args = octave_call "stairs" 1 args;
+stairs2 args = octave_call "stairs" 2 args;
+stem args = octave_call "stem" 1 args;
+stem3 args = octave_call "stem3" 1 args;
+scatter args = octave_call "scatter" 1 args;
+plotmatrix args = octave_call "plotmatrix" 1 args;
+pareto args = octave_call "pareto" 1 args;
+rose args = octave_call "rose" 1 args;
+rose2 args = octave_call "rose" 2 args;
+contour args = octave_call "contour" 2 args;
+contourf args = octave_call "contourf" 2 args;
+contourc args = octave_call "contourc" 2 args;
+contour3 args = octave_call "contour3" 2 args;
+errorbar args = octave_call "errorbar" 1 args;
+semilogxerr args = octave_call "semilogxerr" 1 args;
+semilogyerr args = octave_call "semilogyerr" 1 args;
+loglogerr args = octave_call "loglogerr" 1 args;
+polar args = octave_call "polar" 1 args;
+pie args = octave_call "pie" 1 args;
+pie3 args = octave_call "pie3" 1 args;
+quiver args = octave_call "quiver" 1 args;
+quiver3 args = octave_call "quiver3" 1 args;
+compass args = octave_call "compass" 1 args;
+feather args = octave_call "feather" 1 args;
+pcolor args = octave_call "pcolor" 1 args;
+area args = octave_call "area" 1 args;
+comet args = octave_call "comet" 1 args;
+comet3 args = octave_call "comet3" 1 args;
+
+fplot args = octave_call "fplot" 1 args;
+ezplot args = octave_call "ezplot" 1 args;
+ezcontour args = octave_call "ezcontour" 1 args;
+ezcontourf args = octave_call "ezcontourf" 1 args;
+ezpolar args = octave_call "ezpolar" 1 args;
+
+rectangle args = octave_call "rectangle" 1 args;
+
+// 3D plots
+plot3 args = octave_call "plot3" 1 args;
+mesh args = octave_call "mesh" 1 args;
+meshc args = octave_call "meshc" 1 args;
+meshz args = octave_call "meshz" 1 args;
+meshgrid args = octave_call "meshgrid" n args if n<=3 when n = #args end;
+meshgrid args = octave_call "meshgrid" 2 args;
+ndgrid args::tuple = octave_call "ndgrid" n args if n<=3 when n = #args end;
+ndgrid args = octave_call "ndgrid" 1 args;
+hidden args = octave_call "hidden" 0 args;
+surf args = octave_call "surf" 1 args;
+surfc args = octave_call "surfc" 1 args;
+surfl args = octave_call "surfl" 1 args;
+surfnorm args = octave_call "surfnorm" 0 args;
+surfnorm3 args = octave_call "surfnorm" 3 args;
+isosurface args = octave_call "isosurface" 0 args;
+isosurface1 args = octave_call "isosurface" 1 args;
+isosurface3 args = octave_call "isosurface" 3 args;
+isonormals args = octave_call "isonormals" 0 args;
+isonormals1 args = octave_call "isonormals" 1 args;
+isocolors args = octave_call "isocolors" 0 args;
+isocolors1 args = octave_call "isocolors" 1 args;
+diffuse args = octave_call "diffuse" 1 args;
+specular args = octave_call "specular" 1 args;
+scatter3 args = octave_call "scatter3" 1 args;
+view () = octave_call "view" 2 ();
+view args = octave_call "view" 0 args;
+slice args = octave_call "slice" 1 args;
+ribbon args = octave_call "ribbon" 1 args;
+shading args = octave_call "shading" 0 args;
+daspect args = octave_call "daspect" 0 args;
+pbaspect args = octave_call "pbaspect" 0 args;
+
+ezplot3 args = octave_call "ezplot3" 1 args;
+ezmesh args = octave_call "ezmesh" 1 args;
+ezmeshc args = octave_call "ezmeshc" 1 args;
+ezsurf args = octave_call "ezsurf" 1 args;
+ezsurfc args = octave_call "ezsurfc" 1 args;
+
+cylinder args = octave_call "cylinder" 0 args;
+cylinder3 args = octave_call "cylinder" 3 args;
+sphere args = octave_call "sphere" 0 args;
+sphere3 args = octave_call "sphere" 3 args;
+ellipsoid args = octave_call "ellipsoid" 0 args;
+ellipsoid3 args = octave_call "ellipsoid" 3 args;
+
+// test plots
+sombrero args = octave_call "sombrero" 0 args;
+peaks args = octave_call "peaks" 0 args;
+peaks1 args = octave_call "peaks" 1 args;
+peaks3 args = octave_call "peaks" 3 args;
+
+// plot annotations
+title args = octave_call "title" 0 args;
+legend args = octave_call "legend" 0 args;
+text args = octave_call "text" 0 args;
+xlabel args = octave_call "xlabel" 0 args;
+ylabel args = octave_call "ylabel" 0 args;
+zlabel args = octave_call "zlabel" 0 args;
+clabel args = octave_call "clabel" 0 args;
+box args = octave_call "box" 0 args;
+grid args = octave_call "grid" 0 args;
+colorbar args = octave_call "colorbar" 0 args;
+
+// axis configuration
+axis () = octave_call "axis" 1 ();
+axis args = octave_call "axis" 0 args;
+caxis () = octave_call "caxis" 1 ();
+caxis args = octave_call "caxis" 0 args;
+xlim () = octave_call "xlim" 1 ();
+xlim "mode" = octave_call "xlim" 1 "mode";
+xlim args = octave_call "xlim" 0 args;
+ylim () = octave_call "ylim" 1 ();
+ylim "mode" = octave_call "ylim" 1 "mode";
+ylim args = octave_call "ylim" 0 args;
+zlim () = octave_call "zlim" 1 ();
+zlim "mode" = octave_call "zlim" 1 "mode";
+zlim args = octave_call "zlim" 0 args;
+
+// axis, line and patch functions
+axes args = octave_call "axes" 1 args;
+line args = octave_call "line" 1 args;
+patch args = octave_call "patch" 1 args;
+fill args = octave_call "fill" 1 args;
+surface args = octave_call "surface" 1 args;
+
+// figures and subplots
+figure args = octave_call "figure" 0 args;
+subplot args = octave_call "subplot" 0 args;
+
+// plot windows
+drawnow args = octave_call "drawnow" 0 args;
+refresh args = octave_call "refresh" 0 args;
+hold args = octave_call "hold" 0 args;
+ishold args = octave_call "ishold" 1 args;
+clf args = octave_call "clf" 1 args;
+cla args = octave_call "cla" 0 args;
+shg args = octave_call "shg" 0 args;
+delete args = octave_call "delete" 0 args;
+close args = octave_call "close" 0 args;
+closereq args = octave_call "closereq" 0 args;
+
+// gui interaction
+ginput args = octave_call "ginput" 3 args;
+waitforbuttonpress args = octave_call "waitforbuttonpress" 1 args;
+gtext args = octave_call "gtext" 0 args;
+uimenu args = octave_call "uimenu" 0 args;
+
+// saving and printing
+print args = octave_call "print" 0 args;
+saveas args = octave_call "saveas" 0 args;
+orient () = octave_call "orient" 1 ();
+orient args = octave_call "orient" 0 args;
+
+// graphics object handles and properties
+ishandle args = octave_call "ishandle" 1 args;
+isfigure args = octave_call "isfigure" 1 args;
+gcf args = octave_call "gcf" 1 args;
+gca args = octave_call "gca" 1 args;
+get args = octave_call "get" 1 args;
+set args = octave_call "set" 0 args;
+ancestor args = octave_call "ancestor" 1 args;
+allchild args = octave_call "allchild" 1 args;
+findobj args = octave_call "findobj" 1 args;
+findall args = octave_call "findall" 1 args;
+
+// Convenience functions to hide and show a plot window. The optional argument
+// denotes the number of the plot to be hidden or restored.
+popdn () = popdn (gcf()); popdn n::real = set(n,"visible","off");
+popup () = popup (gcf()); popup n::real = set(n,"visible","on") $$ refresh(n);
+
+// graphics toolkits
+graphics_toolkit args@(_,_) = octave_call "graphics_toolkit" 0 args;
+graphics_toolkit args = octave_call "graphics_toolkit" 1 args;
+available_graphics_toolkits args =
+  octave_call "available_graphics_toolkits" 1 args;
+loaded_graphics_toolkits args =
+  octave_call "loaded_graphics_toolkits" 1 args;
+register_graphics_toolkit args =
+  octave_call "register_graphics_toolkit" 0 args;
+gnuplot_binary args = octave_call "gnuplot_binary" 1 args;
+gui_mode () = octave_call "gui_mode" 1 ();
+gui_mode args = octave_call "gui_mode" 0 args;
+mouse_wheel_zoom () = octave_call "mouse_wheel_zoom" 1 ();
+mouse_wheel_zoom args = octave_call "mouse_wheel_zoom" 0 args;
+
+/* The following aren't plotting functions, but they are useful in many plot
+   commands, so we supply them here for convenience. */
+
+// colormaps
+colormap () = octave_call "colormap" 1 ();
+colormap args = octave_call "colormap" 0 args;
+autumn args = octave_call "autumn" 1 args;
+bone args = octave_call "bone" 1 args;
+cool args = octave_call "cool" 1 args;
+copper args = octave_call "copper" 1 args;
+flag args = octave_call "flag" 1 args;
+gray args = octave_call "gray" 1 args;
+hot args = octave_call "hot" 1 args;
+hsv args = octave_call "hsv" 1 args;
+jet args = octave_call "jet" 1 args;
+ocean args = octave_call "ocean" 1 args;
+pink args = octave_call "pink" 1 args;
+prism args = octave_call "prism" 1 args;
+rainbow args = octave_call "rainbow" 1 args;
+spring args = octave_call "spring" 1 args;
+summer args = octave_call "summer" 1 args;
+white args = octave_call "white" 1 args;
+winter args = octave_call "winter" 1 args;
+gmap40 args = octave_call "gmap40" 1 args;
+brighten args = octave_call "brighten" 1 args;
+
+// matrix construction
+eps args = octave_call "eps" 1 args;
+eye args = octave_call "eye" 1 args;
+ones args = octave_call "ones" 1 args;
+zeros args = octave_call "zeros" 1 args;
+linspace args = octave_call "linspace" 1 args;
+logspace args = octave_call "logspace" 1 args;
+
+// random data
+rand args = octave_call "rand" 1 args;
+randi args = octave_call "randi" 1 args;
+randn args = octave_call "randn" 1 args;
+rande args = octave_call "rande" 1 args;
+randp args = octave_call "randp" 1 args;
+randg args = octave_call "randg" 1 args;
+
+// temporary file name (useful for printing and saving)
+tmpnam args = octave_call "tmpnam" 1 args;
