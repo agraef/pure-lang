@@ -183,6 +183,21 @@ end with
   end;
 end;
 
+/* Here's a little convenience function to output a plot done with Octave's
+   Gnuplot interface in PostScript format. The given arguments are passed on
+   to the gnuplot::print command. You need the latest version of the
+   pure-octave package to make this work. Import the gnuplot module as
+   follows: using gnuplot; */
+
+namespace gnuplot with public delete print tmpnam; end;
+psplot args = () when
+  name = gnuplot::tmpnam()+".eps";
+  // Default options are -color for color output and -S750,500 to set a
+  // reasonable resolution. You might want to adjust these as needed.
+  gnuplot::print (name,"-deps","-color","-S750,500",args);
+  ps name; gnuplot::delete name;
+end;
+
 // Switch between math and verbatim output.
 math = tmstart $$ put tmmode true $$ ();
 verbatim = put tmmode false $$ ();
