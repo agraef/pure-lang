@@ -13,8 +13,8 @@
   <hlink|LLVM|http://llvm.org/> as a backend to JIT-compile Pure programs to
   fast native code.
 
-  Pure is by itself a very advanced language for the symbolic computations.
-  In addition, both <hlink|Octave|http://www.octave.org/> and
+  Pure is by itself a very advanced language for symbolic computations. In
+  addition, both <hlink|Octave|http://www.octave.org/> and
   <hlink|Reduce|http://reduce-algebra.com/> can be run as embedded components
   in Pure, which creates a nicely integrated and powerful environment for
   scientific computing. But Pure gives you much more than that; it provides

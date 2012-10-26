@@ -14,15 +14,8 @@
   <\traverse>
     <branch|A brief introduction to Pure|pure-abstract.en.tm>
 
-    <branch|Description of the plugin|pure-descr.en.tm>
+    <branch|A brief description of the plugin|pure-descr.en.tm>
   </traverse>
-
-  <section|More Information>
-
-  More detailed examples for Pure math input and output in <TeXmacs> are
-  available in the <hlink|pure-math|pure-math.en.tm> document, and the full
-  version of this manual in printable format can be found in the
-  <hlink|pure-texmacs|pure-texmacs.en.tm> file.
 
   <tmdoc-copyright|2012|Albert Gräf>
 

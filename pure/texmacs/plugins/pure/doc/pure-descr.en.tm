@@ -66,110 +66,6 @@
   Pure sessions, each with their own options for the Pure interpreter, and
   it's easy to add your own if needed.
 
-  Sessions can be formatted in different ways. Here we use the <TeXmacs>
-  <samp|varsession> style package for a somewhat fancier formatting.
-
-  <\bothlined>
-    <strong|Note: >This will not actually be visible if you're reading this
-    in the <TeXmacs> help browser which uses its own style options. In this
-    case you'll have to choose the <samp|varsession> style manually, see
-    <samp|Document \| Add package \| Program \| varsession> in the menu.
-  </bothlined>
-
-  It's also possible to globally override formatting options such as the
-  color of prompts, input and output fields, by defining the
-  <verbatim|pure-input> and <verbatim|pure-output> macros accordingly; see
-  the <TeXmacs> manual, section ``Writing <TeXmacs> style files'', for
-  details. An example can be found in the accompanying
-  <verbatim|pure-session-styles.ts> file; install this in your
-  <verbatim|~/.TeXmacs/packages> directory if you want to give it a try.
-
-  Here's another session showing plain text formatting and subsessions.
-
-  <\session|pure|subsession-example>
-    <\output>
-      \;
-
-      \ __ \\ \ \| \ \ \| \ __\| _ \\ \ \ \ Pure 0.56
-      (x86_64-unknown-linux-gnu)
-
-      \ \| \ \ \| \| \ \ \| \| \ \ \ __/ \ \ \ Copyright (c) 2008-2012 by
-      Albert Graef
-
-      \ .__/ \\__,_\|_\| \ \\___\| \ \ \ (Type 'help' for help, 'help
-      copying'
-
-      _\| \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ for license
-      information.)
-
-      \;
-
-      Loaded prelude from /usr/lib/pure/prelude.pure.
-
-      \;
-    </output>
-
-    <\input>
-      \<gtr\>\ 
-    <|input>
-      fact n = if n\<gtr\>0 then n*fact (n-1) else 1;
-    </input>
-
-    <\unfolded>
-      This is a subsession.
-    <|unfolded>
-      <\unfolded-io>
-        \<gtr\>\ 
-      <|unfolded-io>
-        map fact (1..10); // <text|This is a <em|plain text> comment with
-        math: <math|n! = 1\<times\>\<cdots\>\<times\><around*|(|n-1|)>\<times\>n>.>
-      <|unfolded-io>
-        [1,2,6,24,120,720,5040,40320,362880,3628800]
-      </unfolded-io>
-
-      <\unfolded-io>
-        \<gtr\>\ 
-      <|unfolded-io>
-        show fact
-      <|unfolded-io>
-        fact n = if n\<gtr\>0 then n*fact (n-1) else 1;
-      </unfolded-io>
-
-      <\input>
-        \<gtr\>\ 
-      <|input>
-        \;
-      </input>
-    </unfolded>
-
-    <\unfolded-io>
-      \<gtr\>\ 
-    <|unfolded-io>
-      fact fact;
-    <|unfolded-io>
-      <\errput>
-        \<less\>stdin\<gtr\>, line 4: unhandled exception 'failed_cond' while
-        evaluating 'fact fact'
-      </errput>
-    </unfolded-io>
-
-    <\unfolded-io>
-      \<gtr\>\ 
-    <|unfolded-io>
-      fact 30L;
-    <|unfolded-io>
-      265252859812191058636308480000000L
-    </unfolded-io>
-
-    <\unfolded-io>
-      \<gtr\>\ 
-    <|unfolded-io>
-      quit
-    <|unfolded-io>
-      <script-dead>
-    </unfolded-io>
-  </session>
-
   Another session type (<verbatim|pure-debug>, this runs the interpreter in
   debugging mode):
 
@@ -355,56 +251,10 @@
     program for use outside of <TeXmacs> only.
   </footnote>
 
-  <section|Pure and Reduce>
+  <section|Math Input and Output>
 
-  The following example shows how to run the Reduce computer algebra system
-  in Pure (to make this work, you also need to have the
-  <verbatim|pure-reduce> module installed; this is available as an addon from
-  the <hlink|Pure website|http://pure-lang.googlecode.com>).
-
-  <\session|pure|reduce>
-    <\output>
-      \;
-
-      \ __ \\ \ \| \ \ \| \ __\| _ \\ \ \ \ Pure 0.56
-      (x86_64-unknown-linux-gnu)
-
-      \ \| \ \ \| \| \ \ \| \| \ \ \ __/ \ \ \ Copyright (c) 2008-2012 by
-      Albert Graef
-
-      \ .__/ \\__,_\|_\| \ \\___\| \ \ \ (Type 'help' for help, 'help
-      copying'
-
-      _\| \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ for license
-      information.)
-
-      \;
-
-      Loaded prelude from /usr/lib/pure/prelude.pure.
-
-      \;
-    </output>
-
-    <\unfolded-io>
-      \<gtr\>\ 
-    <|unfolded-io>
-      using reduce;
-    <|unfolded-io>
-      Reduce (Free CSL version), 09-Oct-12 ...
-    </unfolded-io>
-
-    <\unfolded-io>
-      \<gtr\>\ 
-    <|unfolded-io>
-      simplify (df (sin (x^2)) x);
-    <|unfolded-io>
-      2*cos (x^2)*x
-    </unfolded-io>
-  </session>
-
-  Up to now we've only been running Pure in verbatim
-  a.k.a.<space|1spc>program mode. But the Pure plugin also fully supports
-  math input and output. These are enabled as follows:
+  The Pure plugin fully supports math input and output. These are enabled as
+  follows:
 
   <\itemize>
     <item>To use math <em|input>, you can toggle the input line between math
@@ -447,30 +297,27 @@
     enable this option.
   </itemize>
 
-  At present this is still a bit experimental and work in progress, but it
-  seems to work pretty well already, as shown below. (If you notice any bugs
-  or missing features in math input and output, please submit a bug report on
-  the <hlink|Pure website|http://code.google.com/p/pure-lang/issues/list>.)
+  Here's a little example, running the Reduce computer algebra system in
+  Pure:
 
   <\session|pure|reduce>
-    <\input>
+    <\unfolded-io>
       \<gtr\>\ 
-    <|input>
-      #! --enable tmmath
-    </input>
+    <|unfolded-io>
+      using reduce, texmacs; math;
+    <|unfolded-io>
+      Reduce (Free CSL version), 23-Oct-12 ...
 
-    <\input>
-      \<gtr\>\ 
-    <|input>
-      using texmacs;
-    </input>
+      ()
+    </unfolded-io>
 
     <\unfolded-io-math>
       \<gtr\>\ 
     <|unfolded-io-math>
       simplify <around*|(|df <around*|(|sin<around*|(|x<rsup|2>|)>|)> x|)>;
     <|unfolded-io-math>
-      <with|color|black|mode|math|math-display|true|2*cos<around*|(|x<rsup|2>|)>*x>
+      <with|color|black|mode|math|math-display|true|2*cos
+      <around*|(|x<rsup|2>|)>*x>
     </unfolded-io-math>
 
     <\unfolded-io-math>
@@ -479,117 +326,45 @@
       simplify <around*|(|intg <around*|(|cos <around*|(|x+y|)><rsup|2>|)>
       x|)>;
     <|unfolded-io-math>
-      <with|color|black|mode|math|math-display|true|<frac|cos<around*|(|x+y|)>*sin<around*|(|x+y|)>+x|2>>
+      <with|color|black|mode|math|math-display|true|<frac|cos
+      <around*|(|x+y|)>*sin <around*|(|x+y|)>+x|2>>
     </unfolded-io-math>
   </session>
 
-  <section|Pure and Octave>
+  <section|PostScript Output>
 
-  It's also possible to call Octave from Pure in order to do numeric
-  calculations, and use the <verbatim|texmacs> module to do the
-  pretty-printing via Reduce. To do this, you also need to have the
-  <verbatim|pure-octave> package installed. For instance:
+  Like the Python plugin, Pure can pipe PostScript graphics directly into
+  <TeXmacs>. This is done with the <verbatim|ps> function from the
+  <verbatim|texmacs> module which takes either verbatim PostScript code
+  (indicated by a <verbatim|%!> header) or a PostScript filename as its
+  string argument. In the latter case, if the PostScript filename doesn't
+  have a slash in it, it is searched for in all directories on the
+  <verbatim|TEXMACS_DOC_PATH>, and a <verbatim|.eps> or <verbatim|.ps> suffix
+  is added automatically when needed. Otherwise the filename is interpreted
+  relative to the directory in which <TeXmacs> was started.
 
-  <\session|pure|octave>
-    <\output>
-      \;
+  Here is a simple example illustrating verbatim PostScript code:
 
-      \ __ \\ \ \| \ \ \| \ __\| _ \\ \ \ \ Pure 0.56
-      (x86_64-unknown-linux-gnu)
-
-      \ \| \ \ \| \| \ \ \| \| \ \ \ __/ \ \ \ Copyright (c) 2008-2012 by
-      Albert Graef
-
-      \ .__/ \\__,_\|_\| \ \\___\| \ \ \ (Type 'help' for help, 'help
-      copying'
-
-      _\| \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ \ for license
-      information.)
-
-      \;
-
-      Loaded prelude from /usr/lib/pure/prelude.pure.
-
-      \;
-    </output>
+  <\session|pure|postscript>
+    <\input>
+      \<gtr\>\ 
+    <|input>
+      using texmacs;
+    </input>
 
     <\unfolded-io>
       \<gtr\>\ 
     <|unfolded-io>
-      using octave, texmacs; let math;
+      ps "%!\\n%%BoundingBox: 195 295 405 405\\n/Times-Roman findfont 20
+      scalefont setfont newpath 200 300 moveto 200 0 rlineto 0 100 rlineto
+      -200 0 rlineto 0 -100 rlineto 235 345 moveto (Hello, world!) show
+      closepath stroke showpage";
     <|unfolded-io>
-      Reduce (Free CSL version), 23-Oct-12 ...
-    </unfolded-io>
+      <image|<tuple|<#25210A2525426F756E64696E67426F783A203139352032393520343035203430350A2F54696D65732D526F6D616E2066696E64666F6E74203230207363616C65666F6E7420736574666F6E74206E6577706174682032303020333030206D6F7665746F20323030203020726C696E65746F20302031303020726C696E65746F202D323030203020726C696E65746F2030202D31303020726C696E65746F2032333520333435206D6F7665746F202848656C6C6F2C20776F726C6421292073686F7720636C6F736570617468207374726F6B652073686F7770616765>|ps>||||>
 
-    <\input-math>
-      \<gtr\>\ 
-    <|input-math>
-      <\eqnarray>
-        <tformat|<table|<row|<cell|eig x>|<cell|=>|<cell|octave_call "eig"
-        1<space|1spc><around*|(|dmatrix x|)>;>>|<row|<cell|eig2<space|1spc>x>|<cell|=>|<cell|octave_call
-        "eig" 2<space|1spc><around*|(|dmatrix x|)>;>>>>
-      </eqnarray>
-    </input-math>
-
-    <\unfolded-io-math>
-      \<gtr\>\ 
-    <|unfolded-io-math>
-      eig <matrix|<tformat|<table|<row|<cell|1>|<cell|2>>|<row|<cell|3>|<cell|4>>>>>;<text|
-      // eigenvalues only>
-    <|unfolded-io-math>
-      <with|color|black|mode|math|math-display|true|<around*|(|<tabular*|<tformat|<table|<row|<cell|-0.372281323269>>|<row|<cell|5.37228132327>>>>>|)>>
-    </unfolded-io-math>
-
-    <\unfolded-io-math>
-      \<gtr\>\ 
-    <|unfolded-io-math>
-      eig2 <matrix|<tformat|<table|<row|<cell|1>|<cell|2>>|<row|<cell|3>|<cell|4>>>>>;<text|//
-      eigenvectors and diagonalized matrix>
-    <|unfolded-io-math>
-      <with|color|black|mode|math|math-display|true|<around*|(|<tabular*|<tformat|<table|<row|<cell|-0.824564840132>|<cell|-0.415973557919>>|<row|<cell|0.565767464969>|<cell|-0.909376709132>>>>>|)>>,<with|color|black|mode|math|math-display|true|<around*|(|<tabular*|<tformat|<table|<row|<cell|-0.372281323269>|<cell|0>>|<row|<cell|0>|<cell|5.37228132327>>>>>|)>>
-    </unfolded-io-math>
-  </session>
-
-  It goes without saying that this is pretty useful if a problem calls for a
-  mix of symbolic and numeric algorithms. It's also possible to call back
-  into Pure from Octave, and thereby into Reduce. To do this, you need to
-  wrap up the computation as a Pure function which in turn uses <verbatim|?>
-  or <verbatim|?:> to invoke Reduce. Just to illustrate how this works,
-  here's a somewhat contrived example where we call the Reduce transpose
-  function <verbatim|tp> from Octave:
-
-  <\session|pure|octave>
-    <\input-math>
-      \<gtr\>\ 
-    <|input-math>
-      tp x\<colons\>matrix=?tp<around*|(|x|)>;
-    </input-math>
-
-    <\unfolded-io>
-      \<gtr\>\ 
-    <|unfolded-io>
-      octave_call "pure_call" 1 ("tp",{1,2;3,4});
-    <|unfolded-io>
-      <with|color|black|mode|math|math-display|true|<around*|(|<tabular*|<tformat|<table|<row|<cell|1>|<cell|3>>|<row|<cell|2>|<cell|4>>>>>|)>>
-    </unfolded-io>
-
-    <\unfolded-io>
-      \<gtr\>\ 
-    <|unfolded-io>
-      let octave_eval "pure_call('tp',[1 2;3 4])"; // Octave output!
-    <|unfolded-io>
-      ans =
-
-      \;
-
-      \ \ \ 1 \ \ 3
-
-      \ \ \ 2 \ \ 4
+      ()
     </unfolded-io>
   </session>
-
-  In a similar fashion you might, e.g., have Octave call Pure to solve an
-  equation which Octave itself can't handle.
 
   <section|Pure Scripting>
 
@@ -646,6 +421,19 @@
   Here we set the Ref field of the table to <verbatim|table1>; the reference
   to cell <verbatim|d4> can then be entered with the following series of key
   strokes: <key|\\ ! \\ ?> <verbatim|table1-d4> <key|Return>.
+
+  <section|More Information>
+
+  This is just a very brief overview of the facilities provided by this
+  plugin. Using Pure's Octave and Reduce interfaces, Pure can be employed as
+  a full-featured scientific computing environment in <TeXmacs>, and with the
+  other addon modules available for Pure you can extend <TeXmacs> in various
+  useful ways. More information can be found in the full version of this
+  manual, which is available in printable format in the
+  <hlink|pure-texmacs.en.tm|pure-texmacs.en.tm> file. (This file won't be
+  rendered correctly inside the <TeXmacs> help system, so you should locate
+  it in the plugins/doc directory and open it as a regular <TeXmacs> document
+  in order to print it.)
 </body>
 
 <\initial>
