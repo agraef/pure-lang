@@ -201,9 +201,13 @@ end;
    pure-octave package to make this work. Import the gnuplot module as
    follows: using gnuplot; */
 
-namespace gnuplot with public delete print tmpnam; end;
+namespace gnuplot with public print tmpnam; end;
 psplot args = name when
-  name = gnuplot::tmpnam()+".eps";
+  name:args = case args of
+    name::string = name:() if ~null name && name!0~="-";
+    name::string,args = name:args if ~null name && name!0~="-";
+    _ = gnuplot::tmpnam()+".eps":args;
+  end;
   // Default options are -color for color output and -S750,500 to set a
   // reasonable resolution. You might want to adjust these as needed.
   gnuplot::print (name,"-deps","-color","-S750,500",args);
