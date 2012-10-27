@@ -1179,7 +1179,8 @@ lispval x = y when
     // These are all the data types natively supported by the interface.
     // Marshalling of list and matrix values is supported as well.
     from_expr x::int = PROC_push_small_integer x;
-    from_expr x::bigint = PROC_push_big_integer (init (str x));
+    from_expr x::bigint = PROC_push_big_integer (init (str x)) $$
+      PROC_make_printable;
     from_expr x::double = from_expr (if x<0 then '-infinity else 'infinity)
       if infp x;
     = PROC_push_floating x otherwise;
@@ -1247,8 +1248,11 @@ lispval x = y when
     from_sym () = error ();
     from_sym x = opstr (catch (cst x) (pure_syms!x));
   end;
-  // XXXFIXME: This barks on matrix values. Unfortunately, this means that we
-  // can't marshall bigint values right now.
+  /* XXXFIXME: This barks on matrix values, so we can't just run
+     PROC_make_printable on the entire expression here. Unfortunately, this is
+     needed to properly marshall bigint values. But this seems to be the only
+     case which really needs the PROC_make_printable(?), so we can handle that
+     case on the spot above. */
   //PROC_make_printable;
   y = display PROC_get_value with
     display p = [] if PROC_null p;
