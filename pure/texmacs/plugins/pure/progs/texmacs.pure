@@ -26,6 +26,18 @@ infixl (*) otimes oslash div cap;
 // Sum and product (used by the big operators in TeXmacs).
 sum xs::list = foldl (+) 0 xs;
 prod xs::list = foldl (*) 1 xs;
+// These macros take care of sums and products written with both sub- and
+// superscripts. They expand to the proper Pure term if they can be evaluated
+// using a list comprehension in Pure, and are left as is otherwise (so that
+// Reduce may be used to evaluate them as a symbolic sum or product).
+def sum x k a b = case a..b of
+  xs::list = __eval__ ('sum [x|k = xs]);
+  _ = 'sum x k a b otherwise;
+end;
+def prod x k a b = case a..b of
+  xs::list = __eval__ ('prod [x|k = xs]);
+  _ = 'prod x k a b otherwise;
+end;
 
 /* Convenience macros to simplify expressions using Reduce. To make this work,
    you'll also have to import the reduce module. This isn't done here by
