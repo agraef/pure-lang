@@ -46,12 +46,17 @@ extern void octave_free(void *val);
 /* Convert some special types of Octave values to corresponding Pure values.
    This adds support for marshalling n-dimensional matrices, cell arrays and
    structs. For convenience, we also allow list input which gets converted to
-   vectors automagically. Other converters can be added by the programmer as
-   needed. The converters are by default invoked automatically and thus aren't
-   normally to be called directly by the user. However, the octave_converters()
-   routine can be used to enable or disable the automatic converters as
-   needed. E.g., disabling the converters may be appropriate for debugging
-   purposes, when testing new converters, or if performance is critical. */
+   vectors automagically. N-dimensional matrices and cell arrays are denoted
+   as symbolic Pure matrices; the first two dimensions become the rows and
+   columns of the Pure matrix, and the remaining dimensions are represented as
+   subvectors (and subsubvectors etc.) inside this matrix.
+
+   Other converters can be added by the programmer as needed. The converters
+   are by default enabled and thus aren't normally to be called directly by
+   the user. However, the octave_converters() routine can be used to enable or
+   disable the converters as needed. Disabling the converters may be
+   appropriate, e.g., for debugging purposes, when testing new converters, or
+   if performance is critical. */
 
 // Enable or disable converters. Returns the previous value of the flag.
 extern bool octave_converters(bool enable);
@@ -227,7 +232,8 @@ __pure2oct__ x = data when
          structs) are treated separately. We also try to keep track of whether
          a submatrix denotes a regular array (numeric matrix in Pure). This
          may not be 100% foolproof but will hopefully produce sensible results
-         most of the time. */
+         most of the time. Use the cell and struct constructors to set off
+         embedded cell arrays and structs/struct arrays as needed. */
       getelems dims x = nmatrixp x||null x,reverse dims,x
 	if nmatrixp x || null x || ~all nmatrixp x &&  ~all smatrixp x ||
 	  any (\x->recordp x || dim x!0~=1) x;
