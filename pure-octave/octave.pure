@@ -1,5 +1,5 @@
 
-/* Copyright (c) 2010 by Albert Graef.
+/* Copyright (c) 2010-2012 by Albert Graef.
 
    This file is part of pure-octave.
 
@@ -42,3 +42,216 @@ extern bool octave_valuep(expr *x);
 
 // Finalizer for special Octave values. You must not call this directly.
 extern void octave_free(void *val);
+
+/* Convert some special types of Octave values to corresponding Pure values.
+   This adds support for marshalling n-dimensional matrices, cell arrays and
+   structs. Other converters can be added by the programmer as needed. The
+   converters are by default invoked automatically and thus aren't normally to
+   be called directly by the user. However, the following octave_converters()
+   routine can be used to enable or disable the automatic converters as
+   needed. E.g., disabling the converters may be appropriate for debugging
+   purposes, when testing new converters, or if performance is critical. */
+
+// Enable or disable converters. Returns the previous value of the flag.
+extern bool octave_converters(bool enable);
+
+/* Constructor symbols for cell arrays and structs. The cell symbol, when
+   applied to a symbolic matrix, causes a numeric array to be treated as a
+   cell array, and is also used to set off nested cell arrays when needed.
+   Note that this is really just a constructor interpreted by the conversion
+   routines, it doesn't modify its argument value in any way. Similarly, the
+   struct symbol can be used to set off nested Octave structs when needed. */
+
+public cell struct;
+
+/* A useful helper function to display the Pure representation of an Octave
+   struct array in a compact form, as a Pure record which maps each field name
+   to all values of the field. */
+
+struct_array x = struct x if structp x with
+  structp (struct x::matrix) | structp x::matrix = ~null x &&
+    all recordp x && all (===map key (x!0)) (map (map key) x);
+  structp _ = false otherwise;
+  struct x = data when
+    keys = list $ map key (x!0); d = dim x;
+    data = smatrix [k=>redim d (smatrix [s!k|s=x])|k=keys];
+  end;
+end;
+
+public __oct2pure__;
+__try_oct2pure__ x::pointer = case __oct2pure__ x of
+  x::matrix | x::number = x;
+  _ = x;
+end if octave_valuep x;
+__try_oct2pure__ x = x otherwise;
+__try_oct2pure_cell__ x::pointer = case __oct2pure__ x of
+  // Scalar struct. It isn't really necessary to flag these but it makes them
+  // stick out.
+  x::record = struct x;
+  // Symbolic matrix. This might either be a struct array or a cell array. We
+  // can only guess here, but presumably a cell array of structs which have
+  // all the same fields in the same order actually denotes a struct array.
+  x::smatrix = if structp x then struct x else cell x with
+    structp x = ~null x && all recordp x &&
+      all (===map key (x!0)) (map (map key) x);
+  end;
+  x::matrix | x::number = x;
+  _ = x;
+end if octave_valuep x;
+__try_oct2pure_cell__ x = x otherwise;
+
+__oct2pure__ x::pointer = data when
+  // ordinary matrix/tensor -> Pure matrix (symbolic matrix of vectors for
+  // dimensions >2)
+  dims = map int $ list $ octave_call "size" 1 x;
+  sz = if null dims then 0 else foldl1 (*) dims;
+  // Octave stores matrices and arrays in a column-major layout, so we first
+  // transpose it.
+  x = if #dims<=1 || sz<=1 then x
+      else octave_call "permute" 1 (x,vector (reverse (1..#dims)));
+  data = vector $ octave_call (octave_func ("x(:)","x")) 1 x;
+  data = case dims of
+    [] = {};
+    [n] | [1,1] = map __try_oct2pure__ data;
+    n:m:dims = redim (n,m) (collect (n*m) dims data) with
+      collect n [] data = map __try_oct2pure__ data;
+      collect n (m:dims) data =
+	smatrix [collect m dims (subseq data ((i-1)*k) (i*k-1)) | i = 1..n]
+      when k = #data div n end;
+    end;
+  end;
+end if octave_valuep x && octave_call "ismatrix" 1 x;
+
+__oct2pure__ x::pointer = smatrix data when
+  // cell array -> symbolic matrix
+  dims = map int $ list $ octave_call "size" 1 x;
+  sz = if null dims then 0 else foldl1 (*) dims;
+  x = if #dims<=1 || sz<=1 then x
+      else octave_call "permute" 1 (x,vector (reverse (1..#dims)));
+  data = cslist $ octave_call (octave_func ("x{:}","x")) 1 x with
+    cslist xs::tuple = smatrix $ list xs;
+    cslist x = {x} otherwise; // singleton
+  end;
+  data = case dims of
+    [] = {};
+    [n] | [1,1] = map __try_oct2pure_cell__ data;
+    n:m:dims = redim (n,m) (collect (n*m) dims data) with
+      collect n [] data = map __try_oct2pure_cell__ data;
+      collect n (m:dims) data =
+	smatrix [collect m dims (subseq data ((i-1)*k) (i*k-1)) | i = 1..n]
+      when k = #data div n end;
+    end;
+  end;
+end if octave_valuep x && octave_call "iscell" 1 x;
+
+__oct2pure__ x::pointer = data when
+  // struct (or struct array) -> (matrix of) records
+  dims = map int $ list $ octave_call "size" 1 x;
+  sz = if null dims then 0 else foldl1 (*) dims;
+  x = if #dims<=1 then x
+      else octave_call "permute" 1 (x,vector (reverse (1..#dims)));
+  elem = octave_func ("x(i)","x","i");
+  data = smatrix
+    [octave_call elem 1 (x,i) | i = 1..sz];
+  data = case dims of
+    [] = {};
+    [1] | [1,1] = data when
+      flds = __oct2pure__ $ octave_call "fieldnames" 1 x;
+      elem = octave_func "getfield";
+      data = smatrix [n=>octave_call elem 1 (x,n)|n=flds];
+    end;
+    [n] = map __oct2pure__ data;
+    n:m:dims = redim (n,m) (collect (n*m) dims data) with
+      collect n [] data = map __oct2pure__ data;
+      collect n (m:dims) data =
+	smatrix [collect m dims (subseq data ((i-1)*k) (i*k-1)) | i = 1..n]
+      when k = #data div n end;
+    end;
+  end;
+end if octave_valuep x && octave_call "isstruct" 1 x;
+
+public __pure2oct__;
+__try_pure2oct__ x = case x of
+  x::nmatrix | x::number = x;
+  _ = case __pure2oct__ x of
+    x::pointer = x;
+    _ = x;
+  end;
+end;
+
+__pure2oct__ x = data if pointerp data when
+  // Pure record -> Octave struct
+  data =
+    if (case x of struct _::record | _::record = 1; _ = 0 end) then
+      (data when
+	 x = case x of struct x = x; _ = x end;
+	 data = octave_call "struct" 1 $ tuple
+	   [sym k,__try_pure2oct__ v|k=>v=x] with
+	     sym k = if stringp k then k else str k;
+	   end;
+       end)
+    else ();
+end;
+
+__pure2oct__ x = data if pointerp data when
+  data = if structp x then struct x else () with
+    structp (struct x::matrix) | structp x::matrix = ~null x &&
+      all recordp x && all (===map key (x!0)) (map (map key) x);
+    structp _ = false otherwise;
+    // Pure matrix of records -> Octave struct array
+    struct x = data when
+      x = case x of struct x = x; _ = x end;
+      keys = list $ map key (x!0); d = dim x;
+      vals = [__try_pure2oct__ (redim d $ smatrix [s!k|s=x])|k=keys];
+      data = octave_call "struct" 1 $ tuple $ zip keys vals;
+    end;
+  end;
+end;
+
+__pure2oct__ x = data when
+  // Determine the dimensions of the array and collect all the elements in one
+  // big vector for easier processing.
+  ismat,dims,x = getelems x with
+    getelems (cell x) = case getelems x of
+      _,dims,x = false,dims,x;
+      x = x;
+    end;
+    getelems x = getelems [m,n] x when n,m = dim x end with
+      /* This repeatedly invokes matcat to flatten out the matrix until the
+         result becomes irreducible. Embedded records (presumably Octave
+         structs) are treated separately. We also try to keep track of whether
+         a submatrix denotes a regular array (numeric matrix in Pure). This
+         may not be 100% foolproof but will hopefully produce sensible results
+         most of the time. */
+      getelems dims x = nmatrixp x,reverse dims,x
+	if nmatrixp x || null x || ~all nmatrixp x &&  ~all smatrixp x ||
+	  any (\x->recordp x || dim x!0~=1) x;
+      = catch (\_->false,reverse dims,x) $
+        getelems (dim (x!0)!1:dims) (matcat x);
+    end;
+  end;
+  x = vector x;
+  data = case ismat && octave_call "reshape" 1 (x,tuple (reverse dims)) of
+    // Data is a numeric matrix or array:
+    data::matrix | data::pointer = data;
+    // Otherwise we try to construct a cell array:
+    _ = data when
+      /* FIXME: There doesn't seem to be a direct way to create a cell array
+         from its elements, so we create an empty cell array of the right
+         dimensions first and then assign its elements one by one. */
+      data = octave_call "cell" 1 (tuple (reverse dims));
+      setelem = octave_func ("subsasgn(x,substruct('{}',{i}),y)","x","i","y");
+      data = foldl asgn data $ zip (vector (1..#x)) x with
+	asgn x (i,y) = case octave_call setelem 1 (x,i,__try_pure2oct__ y) of
+	  x::pointer = x;
+	  // One of the elements isn't convertible to Octave, bail out.
+	  _ = throw y;
+	end;
+      end;
+    end;
+  end;
+  // Finally we have to transpose the resulting array to translate it to
+  // Octave's column-major layout.
+  data = if #dims<=1 then data
+	 else octave_call "permute" 1 (data,vector (reverse (1..#dims)));
+end if (case x of cell _::matrix | _::matrix = 1; _ = 0 end);

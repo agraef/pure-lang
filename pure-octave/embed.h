@@ -15,6 +15,7 @@ extern pure_expr *octave_get(const char *id);
 extern pure_expr *octave_set(const char *id, pure_expr *x);
 extern pure_expr *octave_func(pure_expr *fun);
 extern bool octave_valuep(pure_expr *x);
+extern bool octave_converters(bool enable);
 extern void octave_free(void *val);
 
 #ifdef __cplusplus

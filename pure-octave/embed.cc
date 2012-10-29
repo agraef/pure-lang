@@ -1,7 +1,7 @@
 
 /* Copyright (c) 1996-2009 by John W. Eaton.
    Copyright (c) 2003 by Paul Kienzle.
-   Copyright (c) 2010 by Albert Graef.
+   Copyright (c) 2010-2012 by Albert Graef.
 
    This file is part of pure-octave.
 
@@ -399,13 +399,48 @@ bool octave_valuep(pure_expr *x)
   return is_octave_pointer(x, 0);
 }
 
+static bool recursive = false, converters_enabled = true;
+
+bool octave_converters(bool enable)
+{
+  bool save = converters_enabled;
+  converters_enabled = enable;
+  return save;
+}
+
+static pure_expr *try_octave_to_pure(const octave_value& val)
+{
+  pure_expr *x = octave_pointer(val);
+  if (!x || !converters_enabled || recursive) return x;
+  pure_new(x);
+  int32_t fno = pure_sym("__oct2pure__");
+  pure_expr *f = pure_symbol(fno);
+  if (!f) return x;
+  recursive = true;
+  pure_expr *e = 0, *y = pure_appx(f, x, &e), *u, *v;
+  recursive = false;
+  if (!y) {
+    // exception, return the pointer object as is
+    if (e) pure_freenew(e); pure_unref(x);
+    return x;
+  } else if (pure_is_app(y, &u, &v) && u->tag == fno && v == x) {
+    // conversion failed, return the pointer object as is
+    pure_freenew(y); pure_unref(x);
+    return x;
+  } else {
+    pure_new(y); pure_free(x);
+    return y;
+  }
+}
+
 static pure_expr *octave_to_pure(const octave_value& val)
 {
   if (val.is_defined()) {
     int n = val.ndims();
     /* We only support Octave's basic scalar and matrix values right now, and
-       these are all represented as matrices with two dimensions. */
-    if (n != 2) return octave_pointer(val);
+       these are all represented as matrices with two dimensions. Otherwise,
+       we try the appropriate hooks provided by Pure code. */
+    if (n != 2) return try_octave_to_pure(val);
     dim_vector dim = val.dims();
     size_t k = dim(0), l = dim(1);
     if (val.is_double_type()) {
@@ -624,11 +659,65 @@ static pure_expr *octave_to_pure(const octave_value& val)
       pure_expr *ret = pure_matrix_rowsv(n, xv);
       free(xv);
       return ret;
+    } else if (val.is_cs_list()) {
+      // "Comma-separated" value (argument) lists, translated to Pure tuples.
+      octave_value_list l = val.list_value();
+      octave_idx_type n = l.length();
+      if (n==0) return pure_tuplel(0);
+      pure_expr **xv = (pure_expr**)malloc(n*sizeof(pure_expr*));
+      if (!xv) return 0;
+      for (octave_idx_type i = 0; i < n; i++) {
+	xv[i] = octave_to_pure(l(i));
+	if (!xv[i]) {
+	  for (octave_idx_type j = 0; j < i; j++)
+	    pure_freenew(xv[j]);
+	  free(xv);
+	  return 0;
+	}
+      }
+      pure_expr *ret = pure_tuplev(n, xv);
+      free(xv);
+      return ret;
     } else {
-      return octave_pointer(val);
+      return try_octave_to_pure(val);
     }
   } else
     return 0;
+}
+
+static octave_value *pure_to_octave(pure_expr *x);
+static octave_value *try_pure_to_octave(pure_expr *x)
+{
+  if (!x || !converters_enabled || recursive) return 0;
+  int32_t fno = pure_sym("__pure2oct__");
+  pure_expr *f = pure_symbol(fno);
+  if (!f) return 0;
+  recursive = true;
+  pure_expr *e = 0, *y = pure_appx(f, x, &e), *a, *b;
+  recursive = false;
+  octave_value *v;
+  if (!y) {
+    // exception
+    if (e) pure_freenew(e);
+    return 0;
+  } else if (is_octave_pointer(y, &v)) {
+    // conversion to Octave pointer value, take as is
+    octave_value *ret = new octave_value(*v);
+    pure_freenew(y);
+    return ret;
+  } else if (pure_is_app(y, &a, &b) && a->tag == fno && b == x) {
+    // conversion failed
+    pure_freenew(y);
+    return 0;
+  } else {
+    // we got another Pure value, recursively try the built-in conversions on
+    // that
+    recursive = true;
+    octave_value *ret = pure_to_octave(y);
+    recursive = false;
+    pure_freenew(y);
+    return ret;
+  }
 }
 
 static octave_value *pure_to_octave(pure_expr *x)
@@ -680,20 +769,20 @@ static octave_value *pure_to_octave(pure_expr *x)
   } else if (pure_is_symbolic_matrix(x, &p)) {
     gsl_matrix_symbolic *mat = (gsl_matrix_symbolic*)p;
     size_t k = mat->size1, l = mat->size2;
-    if (k== 0 || l!=1) return 0;
+    if (k==0 || l!=1) return try_pure_to_octave(x);
     string_vector v(k);
     for (size_t i = 0; i < k; i++)
       if (pure_is_cstring_dup(mat->data[i*mat->tda], &s)) {
 	v[i] = s; free(s);
       } else
-	return 0;
+	return try_pure_to_octave(x);
     charMatrix m(v);
     return new octave_value(m);
   } else if (is_octave_pointer(x, &v)) {
     return new octave_value(*v);
   } else
-    // TODO: Might want to convert symbolic matrices to Octave cell arrays.
-    return 0;
+    // Try the appropriate hooks provided by Pure code.
+    return try_pure_to_octave(x);
 }
 
 /* Get and set global Octave variables. Note that in order to access global
