@@ -1,0 +1,326 @@
+
+/* Plotting examples using the gnuplot module. 2012-10-30 AG */
+
+using gnuplot, math;
+using namespace gnuplot;
+
+/* Octave has a very comprehensive gnuplot interface which, through the
+   pure-octave module, we can put to good use in Pure. The following are
+   mostly straightforward adaptions of the plotting examples in the Octave
+   manual. The calculations of the plotted functions are usually done on the
+   Pure side, Octave is only called for generating the input data (linspace,
+   meshgrid, rand et al) and for producing the plots. NOTE: To save any of the
+   plots in a file, simply use something like: print "plot.png". */
+
+/* 2D plots (mostly) *******************************************************/
+
+// simple function plot
+let t = 0:0.1..6.3;
+plot (t, map cos t, "-;cos(t);", t, map sin t, "+3;sin(t);");
+popup(); // show the plot window
+
+// two axes
+let x1 = 0:0.1..2*pi;
+let y1 = map sin x1;
+let x2 = map (+-1) x1;
+let y2 = map exp x2;
+let ax = plotyy (x1, y1, x2, y2, "plot", "semilogy");
+xlabel ("x");
+ylabel (ax!0, "Axis 1");
+ylabel (ax!1, "Axis 2");
+refresh(); // refresh the plot window
+
+// annotations (title, legend etc.)
+clf(); // start from a blank figure here, otherwise strange things may happen
+let x = -10:-9.9..10;
+plot (x, map sin x);
+title ("sin(x) for x = -10:0.1:10");
+xlabel ("x");
+ylabel ("sin (x)");
+text (pi, 0.7, "arbitrary text");
+legend ("sin (x)");
+grid("on");
+refresh();
+
+// multiple plots on one page
+clf();
+subplot (2, 1, 1);
+plot (x, map sin x);
+title ("sin(x)");
+subplot (2.0, 1.0, 2.0);
+plot (x, map cos x);
+title ("cos(x)");
+refresh();
+
+/****************************************************************************/
+
+/* A brief detour on accessing properties of graphic objecs. Make sure that
+   you still have the previous plot open when you run this stuff. We can only
+   sketch out some of the possibilities here; there's much more which can be
+   put to good use with a little programming. Please check the Octave manual
+   for details. */
+
+get 0; // all properties of the root figure (an Octave struct)
+get (gcf()); // all properties of the current figure
+get (gca()); // all properties of the current axis object
+get (gca (), "xlim"); // get a specific property
+set (gca (), "xlim", [-8,8]); // set a property
+refresh(); // refresh the plot so that the property change takes effect
+
+/* You can also search for all graphic objects which have a given property as
+   follows. Note that the weird double values returned by findobj are actually
+   "object handles" which can be used to query the corresponding objects for
+   their properties and change them. (The current figure and axis objects also
+   have such handles, they are returned by the gcf and gca functions.) */
+
+// Look for objects carrying the linewidth property:
+let objs = findobj ("-property", "linewidth"); objs;
+// Query those objects for their linewidth value:
+map (\obj -> get (obj,"linewidth")) objs;
+// Change it to something else and refresh the plot:
+do (\obj -> set (obj,"linewidth",1.0)) objs;
+refresh();
+
+/****************************************************************************/
+
+/* NOTE: The hist function is very picky about its arguments. Here the number
+   of the bins (see 2nd example below) *must* actually be specified as a
+   floating point number.
+
+   In this case the conversion is handled automatically by the gnuplot module,
+   but there may be other cases like this which we haven't discovered yet. So
+   if one of the plotting routines seems to behave erratically, it's a good
+   idea to change all your int parameters to double and see whether that makes
+   the problem go away.
+
+   Another quirk with some of the plotting routines is that they assume that
+   you start from a blank slate, which is why we first call clf() here. */
+
+// hist (histograms)
+clf();
+hist (rand(10,3));
+refresh();
+clf();
+hist (randn (10000, 1), 30);
+refresh();
+
+// stem plot (this one is actually the 3d variation)
+let theta = 0:0.2..6;
+stem3 (map cos theta, map sin theta, theta);
+refresh();
+
+// scatter (x-y) plot with colored markers
+let x = randn (100, 1);
+let y = randn (100, 1);
+scatter (x, y, {}, {sqrt (x^2 + y^2) | x,y = zip x y});
+refresh();
+
+// this does a collection of scatter plots of the columns of one matrix
+// against another (histograms in the diagonal)
+plotmatrix (randn (100, 3), "g+");
+refresh();
+
+// Pareto chart
+let cheese = {"Cheddar", "Swiss", "Camembert", "Munster", "Stilton", "Blue"};
+let sold = {105, 30, 70, 10, 15, 20};
+pareto (sold, cheese);
+refresh();
+
+// rose plot (angular histogram)
+clf();
+let r, t = rose2 ({{2*x|x=randn(1e5,1)}, {pi+2*x|x=randn(1e5,1)}});
+polar (r, t);
+refresh();
+
+// contour plot
+let x = 0..2;
+let y = x;
+let z = {x*y | x=x; y=y};
+contour (x, y, z, 2..3);
+refresh();
+
+// filled contour plot
+let x, y, z = peaks3 50;
+contourf (x, y, z, -7..9);
+refresh();
+
+// 3d contour lines (level curves)
+contour3 (peaks1 19);
+hold "on";
+surface (peaks1 19, "facecolor", "none", "EdgeColor", "black");
+hold "off";
+refresh();
+
+// error bars
+let x = 0:0.1..10;
+let y = map sin x;
+let yp = map  (0.1*) (randn (#x));
+let ym = map (-0.1*) (randn (#x));
+errorbar (x, map sin x, ym, yp);
+refresh();
+
+// polar plot (spiral)
+let x = 0:0.1..10*pi;
+polar (x, x);
+refresh();
+
+// pie chart (also illustrates the use of "exploded" and labelled slices)
+pie([0.1,0.3,0.6], [0,1,0], ["Foo","Bar","Baz"]);
+colormap "hot";
+refresh();
+colormap "default";
+
+let x, y = meshgrid2 (1:3..20);
+let h = quiver (x, y, {sin (2*pi*x/10) | x = x}, {sin (2*pi*y/10) | y = y});
+set (h, "maxheadsize", 0.33);
+refresh();
+
+// quiver (vector field) plot
+let x, y, z = peaks3 25;
+surf (x, y, z);
+hold "on";
+let u, v, w = surfnorm3 (x, y, map (/10) z);
+let h = quiver3 (x, y, z, u, v, w);
+set (h, "maxheadsize", 0.33);
+hold "off";
+refresh();
+
+// feather (vector field) plot
+let phi = map (*pi/180) (0:15..360);
+feather (map sin phi, map cos phi);
+refresh();
+
+// 2d objects
+
+// a rectangle
+rectangle("Position",{5.0,-0.5,7.0,1.0});
+refresh();
+
+// colored rectangle with rounded corners
+rectangle("Position",{15.0,-0.75,10.0,0.8},"Curvature",{0.3,0.3},
+	  "FaceColor", "red");
+refresh();
+
+/* 3D plots ****************************************************************/
+
+// demo plots
+sombrero();
+refresh();
+peaks 25;
+refresh();
+
+// simple 3d function plots
+let z = 0:0.05..5;
+plot3 ({cos (2*pi*z)|z=z}, {sin (2*pi*z)|z=z}, z, ";helix;");
+refresh();
+plot3 (z, {exp (2*i*pi*z)|z=z}, ";complex sinusoid;");
+refresh();
+
+// parametric plot (3d spiral)
+let t = vector $ 0:0.1..10*pi;
+let r = linspace (0, 1, #t);
+let z = linspace (0, 1, #t);
+plot3 ({r*sin(t)|r,t=zip r t}, {r*cos(t)|r,t=zip r t}, z);
+refresh();
+
+// 3d scatter plot
+let [x,y,z] = map vector $ list $ peaks3 20;
+scatter3 (x, y, z, {}, z);
+refresh();
+
+// lighted surface
+colormap "bone";
+surfl (peaks1());
+shading "interp";
+refresh();
+colormap "default";
+
+// surface with normals
+surfnorm (peaks1 25);
+refresh();
+
+// basic isosurface plot
+let x,y,z = meshgrid3 (1..5);
+let v = rand (5, 5, 5); // random vertices
+isosurface (x, y, z, v, 0.5);
+refresh();
+
+// zipwith and map on 3d tensors. These are useful helpers for the
+// calculations below, as matrix comprehensions at present only work with
+// ordinary (2d) matrices in Pure.
+zipv3 = zipwith3.zipwith3;
+mapv3 = map.map;
+
+// some isosurface examples from the manual
+
+let n = 30;    // number of vertices in each direction
+let iso = 0.2; // try different isovalues
+let lin = linspace (0, 2, n);
+let x, y, z = meshgrid (lin, lin, lin);
+let c = zipv3 (\x y z->abs ((x-0.5)^2 + (y-0.5)^2 + (z-0.5)^2)) x y z;
+let f, v = isosurface2 (x, y, z, c, iso);
+
+// helper function to finish off by setting various plot parameters
+isofinish = () when
+  set (gca(),
+       "PlotBoxAspectRatioMode", "manual",
+       "PlotBoxAspectRatio", {1,1,1});
+  set (p, "FaceColor", "interp");
+  view (-38, 20);
+end;
+
+figure(); // start a new figure
+let p = patch ("Faces", f, "Vertices", v, "EdgeColor", "none");
+let cdat = rand (size c); // random colors
+isocolors (x, y, z, cdat, p);
+isofinish;
+refresh();
+
+figure();
+let p = patch ("Faces", f, "Vertices", v, "EdgeColor", "none");
+let r, g, b = meshgrid (lin, map (2-) lin, map (2-) lin); // gradients
+isocolors (r, g, b, c, p);
+isofinish;
+refresh();
+
+figure();
+let p = patch ("Faces", f, "Vertices", v, "EdgeColor", "none");
+let g = repmat ({k/n|k=1..n},{n,1,n}); // grayscale
+let cdat = isocolors1 (x, y, z, g, g, g, p);
+set (p, "FaceVertexCData", cdat);
+isofinish;
+refresh();
+
+// mesh plot (the sombrero)
+let u = linspace (-8, 8, 41);
+let x,y = meshgrid2 u;
+let z = {sin r/r | r = {sqrt (x^2+y^2)+eps() | x,y = zip x y}};
+mesh (u, u, z);
+refresh();
+
+// slices of 3d data
+let x,y,z = meshgrid3 (linspace (-8, 8, 32));
+let r = zipv3 (\x y z->sqrt (x^2+y^2+z^2)) x y z;
+let v = mapv3 (\r->sin r/r) r;
+slice (x, y, z, v, {}, 0, {});
+refresh();
+
+let xi,yi = meshgrid2 (linspace(-7, 7));
+let zi = zipwith (+) xi yi;
+slice (x, y, z, v, xi, yi, zi);
+refresh();
+
+// 3d objects
+let x, y, z = cylinder3 (10:9.5..0, 50);
+surf (x, y, z);
+title "a cone";
+refresh();
+
+sphere 40;
+title "a sphere";
+refresh();
+
+// Note: You should really wind down Octave properly here so that all plot
+// windows get closed before exiting the Pure interpreter. Otherwise you may
+// get spurious segfaults.
+octave_fini;
