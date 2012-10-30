@@ -164,11 +164,12 @@ __oct2pure__ x::pointer = data when
     [1] | [1,1] = data when
       flds = __oct2pure__ $ octave_call "fieldnames" 1 x;
       elem = octave_func "getfield";
-      data = smatrix [n=>octave_call elem 1 (x,n)|n=flds];
+      data = smatrix [n=> __try_oct2pure__
+		      (octave_call elem 1 (x,n))|n=flds];
     end;
     [n] = map __oct2pure__ data;
     n:m:dims = redim (n,m) (collect (n*m) dims data) with
-      collect n [] data = map __oct2pure__ data;
+      collect n [] data = map __try_oct2pure__ data;
       collect n (m:dims) data =
 	smatrix [collect m dims (subseq data ((i-1)*k) (i*k-1)) | i = 1..n]
       when k = #data div n end;
