@@ -374,10 +374,12 @@ create_int_matrix(size_t nrows, size_t ncols)
    values are indistinguishable from 1x1 matrices, so when converting from
    Octave to Pure, we always assume that a 1x1 matrix denotes a scalar.
 
-   Currently, there's no marshalling of Octave's more advanced data types
-   (cell arrays and structures), so these will show as opaque pointers in Pure
-   land. Converting these to Pure's symbolic matrices and structures should be
-   straightfoward, though, so we might add these in the future. */
+   In the C++ interface, there's no marshalling of Octave's more advanced data
+   types (n-dimensional matrices, cell arrays and structures), so these will
+   show as opaque pointers in Pure land. However, converting these to Pure's
+   symbolic matrices and records is supported through the appropriate Pure
+   function hooks (__pure2oct__ and __oct2pure__), see octave.pure for
+   details. */
 
 static inline pure_expr *octave_pointer(const octave_value& val)
 {
@@ -437,9 +439,10 @@ static pure_expr *octave_to_pure(const octave_value& val)
 {
   if (val.is_defined()) {
     int n = val.ndims();
-    /* We only support Octave's basic scalar and matrix values right now, and
-       these are all represented as matrices with two dimensions. Otherwise,
-       we try the appropriate hooks provided by Pure code. */
+    /* We only support Octave's basic scalar and matrix values here, and these
+       are all represented as matrices with two dimensions. Anything else is
+       handled through the appropriate hooks provided by Pure code, or becomes
+       an Octave pointer object by default. */
     if (n != 2) return try_octave_to_pure(val);
     dim_vector dim = val.dims();
     size_t k = dim(0), l = dim(1);
@@ -641,11 +644,11 @@ static pure_expr *octave_to_pure(const octave_value& val)
 	    mat->data[i*mat->tda+j] = (uint64_t)v[j*k+i];
 	return pure_int_matrix(mat);
       } else
-	return 0;
+	return try_octave_to_pure(val);
     } else if (val.is_string()) {
       charMatrix s = val.char_matrix_value();
       int n = s.rows();
-      if (n==0) return 0;
+      if (n==0) return pure_matrix_rowsl(0);
       if (n==1) {
 	std::string tmp = s.row_as_string(0);
 	return pure_cstring_dup(tmp.c_str());
@@ -907,9 +910,8 @@ void octave_free(void *val)
   [RES, ...] = pure_call(NAME, ARG, ...)\n\
 \n\
   Execute the Pure function named NAME (a string) with the given arguments.\n\
-  Arguments and result types may be scalars and matrices of boolean, integer,\n\
-  double, complex and character data. The Pure function may return multiple\n\
-  results as a tuple. Example: pure_call('succ', 99) => 100.\n"
+  The Pure function may return multiple results as a tuple. Example:\n\
+  pure_call('succ', 99) => 100.\n"
 
 DEFUN_DLD(pure_call, args, nargout, PURE_HELP)
 {
