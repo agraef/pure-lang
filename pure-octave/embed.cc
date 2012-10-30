@@ -844,7 +844,7 @@ pure_expr *octave_func(pure_expr *fun)
 
    - nargout denotes the desired number of return values;
 
-   - args is a list or tuple with the argument values. */
+   - args is a tuple with the argument values. */
 
 pure_expr *octave_call(pure_expr *fun, int nargout, pure_expr *args)
 {
@@ -861,7 +861,7 @@ pure_expr *octave_call(pure_expr *fun, int nargout, pure_expr *args)
   } else if (!pure_is_cstring_dup(fun, &s))
     return 0;
   if (nargout < 0) return 0;
-  if (pure_is_listv(args, &n, &xs) || pure_is_tuplev(args, &n, &xs)) {
+  if (pure_is_tuplev(args, &n, &xs)) {
     octave_value_list args, ret;
     for (size_t i = 0; i < n; i++) {
       octave_value *val = pure_to_octave(xs[i]);
