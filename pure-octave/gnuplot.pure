@@ -32,6 +32,14 @@ using octave;
 
 namespace gnuplot;
 
+// Some routines are *very* picky about their arguments, int arguments won't
+// work with those. We work around this with this little helper function.
+dblargs args::tuple = tuple (map dblargs (list args));
+dblargs args::int = double args;
+dblargs args::imatrix = map double args;
+dblargs args::list = map dblargs args;
+dblargs args = args;
+
 // 2D plots
 plot args = octave_call "plot" 1 args;
 plotyy args = octave_call "plotyy" 1 args;
@@ -40,8 +48,8 @@ semilogy args = octave_call "semilogy" 1 args;
 loglog args = octave_call "loglog" 1 args;
 bar args = octave_call "bar" 1 args;
 barh args = octave_call "barh" 1 args;
-hist args = octave_call "hist" 0 args;
-hist2 args = octave_call "hist" 2 args;
+hist args = octave_call "hist" 0 (dblargs args);
+hist2 args = octave_call "hist" 2 (dblargs args);
 stairs args = octave_call "stairs" 1 args;
 stairs2 args = octave_call "stairs" 2 args;
 stem args = octave_call "stem" 1 args;
@@ -84,12 +92,12 @@ plot3 args = octave_call "plot3" 1 args;
 mesh args = octave_call "mesh" 1 args;
 meshc args = octave_call "meshc" 1 args;
 meshz args = octave_call "meshz" 1 args;
-meshgrid args::tuple = octave_call "meshgrid" (#args) args;
-meshgrid args = octave_call "meshgrid" 1 args;
-meshgrid2 args = octave_call "meshgrid" 2 args;
-meshgrid3 args = octave_call "meshgrid" 3 args;
-ndgrid args::tuple = octave_call "ndgrid" (#args) args;
-ndgrid args = octave_call "ndgrid" 1 args;
+meshgrid args::tuple = octave_call "meshgrid" (#args) (dblargs args);
+meshgrid args = octave_call "meshgrid" 1 (dblargs args);
+meshgrid2 args = octave_call "meshgrid" 2 (dblargs args);
+meshgrid3 args = octave_call "meshgrid" 3 (dblargs args);
+ndgrid args::tuple = octave_call "ndgrid" (#args) (dblargs args);
+ndgrid args = octave_call "ndgrid" 1 (dblargs args);
 hidden args = octave_call "hidden" 0 args;
 surf args = octave_call "surf" 1 args;
 surfc args = octave_call "surfc" 1 args;
@@ -170,7 +178,7 @@ surface args = octave_call "surface" 1 args;
 
 // figures and subplots
 figure args = octave_call "figure" 0 args;
-subplot args = octave_call "subplot" 0 args;
+subplot args = octave_call "subplot" 0 (dblargs args);
 
 // plot windows
 drawnow args = octave_call "drawnow" 0 args;
