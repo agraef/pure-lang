@@ -161,8 +161,10 @@ ps s::string = () when
 end with
   // If s has no newline in it, assume that it's the name of a PostScript file.
   psfile name::string = ps s when
+    docdir = getenv "TEXMACS_DOC_DIR";
     path = getenv "TEXMACS_DOC_PATH";
-    path = if null path then "" else path;
+    path = if null path then if null docdir then "" else docdir
+           else if null docdir then path else docdir+":"+path;
     fp = search name path;
     ~null fp || throw (name+": "+strerror errno);
     s = fget fp;

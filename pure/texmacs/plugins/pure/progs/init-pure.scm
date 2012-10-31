@@ -61,14 +61,25 @@
     (close-pipe port)
     (if (string? str) str pure-default-lib-path)))
 
+;; Detect the document path. This always returns a list value, the empty list
+;; if the current buffer is a scratch buffer, a singleton list with the
+;; document directory otherwise.
+(define (pure-doc-path)
+  (with
+   name (url->unix (current-buffer))
+   (if (url-scratch? name) (list)
+       (with
+	l (string-tokenize name (char-set-complement (char-set #\/)))
+	(list (string-join (reverse (cdr (reverse l))) "/" 'prefix))))))
+
 ;; Check if the given script exists on the library path or in one of the
-;; texmacs-specific paths. Return the full script name if present, ""
-;; otherwise.
+;; texmacs-specific paths, or in the document directory. Return the full
+;; script name if present, "" otherwise.
 (define (pure-script-if-present name)
   (if (string-index name #\/)
       ;; filename contains a path designation, take as is
       name
-      (let ((l (append pure-texmacs-includes
+      (let ((l (append (pure-doc-path) pure-texmacs-includes
 		       (list (string-append pure-lib-path "/pure"))))
 	    (fullname ""))
 	(while (and (string-null? fullname) (nnull? l))
@@ -85,7 +96,7 @@
    (append (list cmd)
 	   (map (lambda (s)
 		  (string-append "-I " (format #f "~s" s)))
-		pure-texmacs-includes)
+		(append (pure-doc-path) pure-texmacs-includes))
 	   (map (lambda (s)
 		  (format #f "~s" (pure-script-if-present s)))
 		scripts))
@@ -160,6 +171,8 @@
 ;; Session plugin definitions. ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (define (pure-initialize)
+  (with path (pure-doc-path)
+	(if (nnull? path) (setenv "TEXMACS_DOC_DIR" (car path))))
   (import-from (utils plugins plugin-convert))
   (lazy-input-converter (pure-input) pure))
 

@@ -338,10 +338,11 @@
   <verbatim|texmacs> module which takes either verbatim PostScript code
   (indicated by a <verbatim|%!> header) or a PostScript filename as its
   string argument. In the latter case, if the PostScript filename doesn't
-  have a slash in it, it is searched for in all directories on the
-  <verbatim|TEXMACS_DOC_PATH>, and a <verbatim|.eps> or <verbatim|.ps> suffix
-  is added automatically when needed. Otherwise the filename is interpreted
-  relative to the directory in which <TeXmacs> was started.
+  have a slash in it, it is searched for in the directory of the current
+  buffer (if any) and all directories on the <verbatim|TEXMACS_DOC_PATH>, and
+  a <verbatim|.eps> or <verbatim|.ps> suffix is added automatically when
+  needed. Otherwise the filename is interpreted relative to the directory in
+  which <TeXmacs> was started.
 
   Here is a simple example illustrating verbatim PostScript code:
 
