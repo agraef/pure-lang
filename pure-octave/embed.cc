@@ -54,7 +54,7 @@ void octave_init(int argc, char *argv[])
     octave_main(argc,argv,1);
     init = true;
     if (!first_init) {
-      atexit(octave_fini);
+      pure_atexit(octave_fini);
       first_init = true;
       install_builtins();
     }
