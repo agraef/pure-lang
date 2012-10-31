@@ -6042,7 +6042,16 @@ void pure_throw(pure_expr* e)
     if (e)
       cerr << "throw: unhandled exception '" << e << "'\n";
     else
-      cerr << "throw: unhandled exception\n";
+      // No exception value. This most likely indicates a failed match. Report
+      // that to the user.
+      cerr << "throw: unhandled exception (failed match)\n";
+    // Let's be a little more verbose here for the benefit of the user who may
+    // not even be aware that he's running a Pure program.
+    cerr << "\n\
+Your Pure program has died with an unhandled exception. Running the program\n\
+with the debugger (pure -g) may provide additional information.\n\n\
+For further help and information about Pure please try the 'help' command in\n\
+the interpreter or visit http://pure-lang.googlecode.com.\n\n";
     abort(); // no exception handler, bail out
   } else {
     interp.astk->e = e;
