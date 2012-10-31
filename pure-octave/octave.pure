@@ -85,11 +85,13 @@ struct_array x = struct x if structp x with
 end;
 
 public __oct2pure__;
+#! --required __try_oct2pure__
 __try_oct2pure__ x::pointer = case __oct2pure__ x of
   __oct2pure__ _ = x;
   x = x;
 end if octave_valuep x;
 __try_oct2pure__ x = x otherwise;
+#! --required __try_oct2pure_cell__
 __try_oct2pure_cell__ x::pointer = case __oct2pure__ x of
   __oct2pure__ _ = x;
   // Scalar struct. It isn't really necessary to flag these but it makes them
@@ -106,6 +108,7 @@ __try_oct2pure_cell__ x::pointer = case __oct2pure__ x of
 end if octave_valuep x;
 __try_oct2pure_cell__ x = x otherwise;
 
+#! --required __oct2pure__
 __oct2pure__ x::pointer = data when
   // ordinary matrix/tensor -> Pure matrix (symbolic matrix of vectors for
   // dimensions >2)
@@ -178,6 +181,7 @@ __oct2pure__ x::pointer = data when
 end if octave_valuep x && octave_call "isstruct" 1 x;
 
 public __pure2oct__;
+#! --required __try_pure2oct__
 __try_pure2oct__ x = case x of
   x::nmatrix | x::number = x;
   _ = case __pure2oct__ x of
@@ -186,6 +190,7 @@ __try_pure2oct__ x = case x of
   end;
 end;
 
+#! --required __pure2oct__
 __pure2oct__ x = data if pointerp data when
   // Pure record -> Octave struct
   data =
