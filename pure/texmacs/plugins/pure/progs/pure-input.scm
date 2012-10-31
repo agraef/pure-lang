@@ -28,7 +28,8 @@
 ;; so that the base symbols can be used as binary functions or operators at
 ;; the same time. (TODO: This is probably incomplete, add others as needed.)
 (define pure-big-ops
-  (list "cap" "cup" "vee" "wedge" "uplus" "oplus" "otimes"));
+  (list "cap" "cup" "sqcap" "sqcup" "vee" "wedge" "curlyvee" "curlywedge"
+	"uplus" "box" "oplus" "otimes" "odot"));
 
 ;; Please also see the end of this file for input conversions which you might
 ;; want to adjust for your needs.
@@ -358,8 +359,8 @@
 	 (l (cond ((and sub sup) (list sub sup))
 		  (sub (list sub))
 		  (else (list)))))
-    (cond ((or (== op "intlim") (== op "int"))
-	   ;; supported by Pure/Reduce
+    (cond ((or (== op "intlim") (== op "int") (== op "oint"))
+	   ;; not sure about oint, but the rest is supported by Pure/Reduce
 	   (pure-big "intg" body l))
 	  ((and sub sup (or (== op "sum") (== op "prod")))
 	   ;; supported by Pure/Reduce if both lower and upper bound is given
@@ -509,23 +510,17 @@
 ;; these symbols aren't defined in Pure by default, so you can give them any
 ;; meaning that you want.
 
-  ;; These all have a predefined meaning in Pure. The e, pi and i symbol will
-  ;; only be defined if the math module is loaded, however.
+  ;; These all have a predefined meaning in Pure (except matheuler). The e, pi
+  ;; and i symbol will only be defined if the math module is loaded, however.
   ("<backslash>"  "\\")
   ("<infty>"      " inf ")
   ("<mathe>"      " e ")
   ("<mathpi>"     " pi ")
   ("<mathi>"      " i ")
+  ("<matheuler>"  " matheuler ")
   ;; Differentials. These are taken care of in texmacs.pure.
   ("<partial>" " d ")
   ("<mathd>" " d ")
-  ;; Set-related stuff. It makes some sense to map these to list ops in Pure,
-  ;; or you might want to remap them to Pure set or dictionary ops.
-  ("<emptyset>"   "[]")
-  ;; The following makes sense only in comprehensions, so that you can write
-  ;; stuff like [2*x|x ∈ 1..10]. If you don't need this then you might want to
-  ;; remap this to an infix membership test predicate instead.
-  ("<in>"         "=")
 
   ("<longequal>" "==") ;; equality in Pure
   ("<assign>" ":=")
@@ -539,8 +534,8 @@
   ("<implies>" "=<gtr>")
   ("<Rightarrow>" "=<gtr>")
   ("<Leftrightarrow>" "<less>=<gtr>")
-  ("<neg>" "~")
-  ("<sim>" "~")
+  ("<neg>" "~") ; negation symbol
+  ("<sim>" "~") ; tilde
   ("<wedge>" "&&")
   ("<vee>" "||")
   ("<equiv>" "===") ; syntactic identity in Pure
@@ -559,16 +554,6 @@
   ("<rightarrow>" "-<gtr>")
   ("<transtype>" ":<gtr>")
 
-  ;; accents
-  ("<bar>" "bar")
-  ("<vect>" "vect")
-  ("<check>" "check")
-  ("<breve>" "breve")
-  ("<dot>" "dot")
-  ("<ddot>" "ddot")
-  ("<accute>" "accute")
-  ("<grave>" "grave")
-
   ;; different kinds of brackets and delimiters
   ("<lfloor>" "floor (")
   ("<rfloor>" ")")
@@ -586,30 +571,75 @@
 
   ("<um>" "-")
   ("<upl>" "") ; unary plus not supported in Pure
+  ("<circ>" ".") ; function composition in Pure
+  ("<colons>" "::")
+  ("<div>" "%")
   ("<times>" "*")
   ("<ast>" "*")
   ("<cdot>" "*")
-  ("<cdots>" "..")
   ("<ldots>" "..")
-  ("<colons>" "::")
-  ("<sharp>" "#")
-  ("<circ>" ".") ; function composition in Pure
 
-;; Here are a few other operators that might be useful. I'm too lazy to do
-;; them all, so add others as needed. Note that none of these except div is
-;; predefined in Pure, so you'll have to declare them as infix symbols if you
-;; want to use them.
+;; Here are a few other operators that might be useful. This list is probably
+;; incomplete, add others as needed. Note that none of these is predefined in
+;; Pure, so you'll have to declare them as infix symbols if you want to use
+;; them.
 
   ("<pm>" " pm ")
   ("<mp>" " mp ")
-  ("<div>" " div ")
+  ("<in>" " in ")
+  ("<angle>" " angle ")
+  ("<star>" " star ")
+  ("<bullet>" " bullet ")
+  ("<cdots>" " cdots ")
+  ("<hdots>" " hdots ")
+  ("<vdots>" " vdots ")
+  ("<ddots>" " ddots ")
+  ("<udots>" " udots ")
+  ("<flat>" "flat ")
+  ("<natural>" "natural ")
+  ("<sharp>" "sharp ")
+  ("<forall>" "forall ")
+  ("<exists>" "exists ")
+  ("<curlywedge>" " curlywedge ")
+  ("<curlyvee>" " curlyvee ")
+  ("<barwedge>" " barwedge ")
+  ("<veebar>" " veebar ")
+  ("<vdash>" " vdash ")
+  ("<Vdash>" " Vdash ")
+  ("<Vvdash>" " Vvdash ")
+  ("<vDash>" " vDash ")
+  ("<dashv>" " dashv ")
+  ("<vdash>" " vdash ")
   ("<cap>" " cap ")
   ("<cup>" " cup ")
+  ("<sqcap>" " sqcap ")
+  ("<sqcup>" " sqcup ")
   ("<uplus>" " uplus ")
   ("<oplus>" " oplus ")
   ("<ominus>" " ominus ")
   ("<otimes>" " otimes ")
   ("<oslash>" " oslash ")
+  ("<odot>" " odot ")
+  ("<obar>" " obar ")
+  ("<varocircle>" " varocircle ")
+  ("<circledast>" " circledast ")
+  ("<boxplus>" " boxplus ")
+  ("<boxminus>" " boxminus ")
+  ("<boxtimes>" " boxtimes ")
+  ("<boxslash>" " boxslash ")
+  ("<boxbox>" " boxbox ")
+  ("<boxbar>" " boxbar ")
+  ("<boxast>" " boxast ")
+
+  ;; accents
+  ("<bar>" "bar ")
+  ("<vect>" "vect ")
+  ("<check>" "check ")
+  ("<breve>" "breve ")
+  ("<dot>" "dot ")
+  ("<ddot>" "ddot ")
+  ("<accute>" "accute ")
+  ("<grave>" "grave ")
 
 ;; Special glyphs available in TeXmacs. Unicode actually has equivalents for
 ;; most of these in the MathML character set, which may be used as identifier

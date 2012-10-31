@@ -973,8 +973,7 @@
       <with|color|black|mode|math|math-display|true|x> mp
       <with|color|black|mode|math|math-display|true|y>
 
-      <with|color|black|mode|math|math-display|true|x> div
-      <with|color|black|mode|math|math-display|true|y>
+      <with|color|black|mode|math|math-display|true|x>%<with|color|black|mode|math|math-display|true|y>
 
       <with|color|black|mode|math|math-display|true|x> cap
       <with|color|black|mode|math|math-display|true|y>
