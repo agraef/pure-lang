@@ -488,6 +488,8 @@ static string unixize(const string& s)
 
 #define BUFSIZE 1024
 
+extern void pure_finalize(void);
+
 int
 main(int argc, char *argv[])
 {
@@ -839,6 +841,7 @@ main(int argc, char *argv[])
     /* interp.compiler() apparently leaves the code module in a dangling
        state, so make sure that we take the quick way out. There's really no
        need to clean up the interpreter instance if we're exiting anyway. */
+    pure_finalize();
     exit((status>=0)?status:1);
   }
   interp.symtab.init_builtins();
@@ -947,5 +950,6 @@ _|                       for license information.)\n\
   if (interp.ttymode) cout << endl;
   /* Take the quick way out. There's really no need to clean up the
      interpreter instance if we're exiting anyway. */
+  pure_finalize();
   exit(0);
 }

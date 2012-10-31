@@ -4028,6 +4028,23 @@ void *pure_interp_get(pure_interp_key_t key)
   return (it != interp->locals.end())?it->second:NULL;
 }
 
+static list<void (*)(void)> exit_funs;
+
+extern "C"
+int pure_atexit(void (*function)(void))
+{
+  exit_funs.push_front(function);
+  return 0;
+}
+
+extern "C"
+void pure_finalize(void)
+{
+  for (list<void (*)(void)>::const_iterator it = exit_funs.begin(),
+	 end = exit_funs.end(); it != end; ++it)
+    (*it)();
+}
+
 /* END OF PUBLIC API. *******************************************************/
 
 extern "C"

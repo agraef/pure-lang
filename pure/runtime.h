@@ -678,6 +678,16 @@ pure_interp_key_t pure_interp_key(void (*destroy)(void*));
 void pure_interp_set(pure_interp_key_t key, void *ptr);
 void *pure_interp_get(pure_interp_key_t key);
 
+/* Application-defined finalizers. This is for the benefit of addon modules
+   which need to do their cleanup *before* the usual system atexit() handlers
+   are called. The Pure interpreter main program and standalone compiled
+   programs do this automatically. If you're running Pure in some other way
+   (e.g., calling it yourself via C/C++) then you should call pure_finalize()
+   when your main program is about to exit. */
+
+int pure_atexit(void (*function)(void));
+void pure_finalize(void);
+
 /* END OF PUBLIC API. *******************************************************/
 
 /* Stuff below this line is for internal use by the Pure interpreter. Don't
