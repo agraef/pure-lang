@@ -742,7 +742,8 @@ end;
 
 // Some special symbol lists, defined below.
 
-public variadic_syms nonvariadic_syms reduce_syms pure_syms prop_syms kdec_syms;
+public variadic_syms nonvariadic_syms reduce_syms pure_syms special_syms
+  prop_syms kdec_syms;
 
 // Helper function to return a printable representation for a function
 // symbol. This works like 'str', but strips the parens from symbols which are
@@ -817,7 +818,11 @@ let variadic_syms =
 // XXXTODO: Complete this list.
 let nonvariadic_syms =
   '{infinity=>inf,int=>intg,ceiling=>ceil,minus=>neg,quotient=>(/),expt=>(^),
-    equal=>(==),replaceby=>(=>),set=>(:=),_interval_=>(..),_map=>map} when
+    // NOTE: By default Logical operators other than 'equal' aren't valid in
+    // algebraic mode.
+    equal=>(==),neq=>(~=),geq=>(>=),leq=>(<=),greaterp=>(>),lessp=>(<),
+    (not)=>(~),(and)=>(&&),(or)=>(||),
+    replaceby=>(=>),set=>(:=),_interval_=>(..),_map=>map} when
       _interval_ = lispsym "*interval*";
       _map = lispsym "~map";
     end;
@@ -827,6 +832,11 @@ let reduce_syms = {variadic_syms, nonvariadic_syms};
 
 // Reverse mapping (Pure -> Reduce).
 let pure_syms = {y=>x | x=>y = reduce_syms};
+
+// Special symbols not valid in algebraic mode (see above).
+let special_syms =
+  '{(~=)=>neq,(>=)=>geq,(<=)=>leq,(>)=>greaterp,(<)=>lessp,
+    (~)=>(not),(&&)=>(and),(||)=>(or)};
 
 // Property symbols.
 let prop_syms =

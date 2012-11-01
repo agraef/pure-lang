@@ -64,23 +64,33 @@ def ?:x = simplifyd x;
 
 /* LaTeX pretty-printing using the tmprint package of Reduce. Thanks are due
    to Kurt Pagani who figured out most of the necessary Lisp magic to make
-   this work. You enable this with a call to the parameterless `math`
-   function; `verbatim` switches back to program mode again. This also starts
-   up Reduce in a lazy fashion when `math` is invoked, so that we avoid
-   depending on the pure-reduce package. Note, however, that pure-reduce *is*
-   required to make the pretty-printing work. */
+   this work. You enable this with a call to the parameterless `math`,
+   `mathalg` and `mathsymb` functions; `verbatim` switches back to program
+   mode again.
 
-// Enable this pragma to enable math mode by default.
+   Note that `math` mode actually has two submodes. `mathalg` corresponds to
+   Reduce's algebraic mode and causes printed expressions to be simplified
+   first. `mathsymb` corresponds to Reduce's symbolic mode and prints the raw
+   (unsimplified) expression. There are some kinds of expressions (e.g.,
+   logical expressions other than equality) which aren't by default valid in
+   algebraic mode, but work in symbolic mode.
+
+   Just calling `math` is the same as `mathalg`. Using any of the `math` modes
+   also starts up Reduce in a lazy fashion, so that we avoid depending on the
+   pure-reduce package, but note that pure-reduce *is* required to make the
+   pretty-printing work. */
+
+// Enable this pragma to enable math (a.k.a. mathalg) mode by default.
 //#! --enable tmmath
 #! --ifndef tmmath
 #! --disable tmmath
 #! --endif
 
-let tminit, tmmode = ref false, ref false;
+let tminit, tmmode, tmsave = ref 0, ref false, ref ();
 
 public lisp lispval lispsym;
 namespace reduce with
-public capture output load pure_syms tmvalid tmpost;
+public capture output load pure_syms special_syms preproc tmvalid tmpost;
 end;
 
 tmstart = () when
@@ -111,29 +121,36 @@ end if ~get tminit;
 
 tmprint x = s when
   tmstart;
-  x = lispval x;
-  lisp (lispsym "fancy-output" (''maprin) ('aeval ('x)));
+  x = lispval (reduce::preproc x);
+  lisp (lispsym "fancy-output" (''maprin)
+	(if (get tmmode==2) then ''x else ('aeval ('x))));
   reduce::capture 1;
   lisp (lispsym "fancy-flush");
   reduce::capture 0;
   s = reduce::output;
-  // There's still have some postprocessing to do...
+  // There's still some postprocessing to do...
   s = reduce::tmpost s;
-end if printable x when
-  // If the original expression doesn't look printable then we give up
-  // immediately.
-  x = if printable x then simplifyd x else "no";
-end with
+end if printable x with
   printable x::number = true;
   printable [] = true;
   printable (x:xs) = printable x && ~thunkp xs && printable xs;
   printable x::matrix = all printable x;
   printable (x@_ y::tuple) = printable x && all printable (list y);
-  printable (x@_ y::list) = false;
+  //printable (x@_ y::list) = false;
   printable (x@_ y) = printable x && printable y;
   printable x::symbol = x ~== (..) && x ~== '(..) &&
-    member reduce::pure_syms x || reduce::tmvalid (str x);
+    member reduce::pure_syms x && valid x || reduce::tmvalid (str x);
   printable _ = false;
+  // There are some symbols in the conversion tables which aren't by default
+  // valid in algebraic mode. We check for these here.
+  valid x = true if get tmmode==2;
+  valid x = ~member reduce::special_syms x ||
+    any (member (getprops (reduce::special_syms!x)))
+    // If a symbol is a valid Reduce operator then it *must* have one of these
+    // properties defined.
+    ['polyfn,'psopfn,'opfn,'simpfn];
+  // Retrieve the properties of a symbol.
+  getprops x::symbol = {k=>v | k::symbol : v = lisp ('prop ('x)); k~=='klist};
 end;
 #! --ifnot recurse
 tmprint x = str x;
@@ -218,8 +235,22 @@ psplot args = name when
 end;
 
 // Switch between math and verbatim output.
-math = tmstart $$ put tmmode true $$ ();
-verbatim = put tmmode false $$ ();
+mathalg = tmstart $$ put tmmode 1 $$ ();
+mathsymb = tmstart $$ put tmmode 2 $$ ();
+math = mathalg;
+verbatim = put tmmode 0 $$ ();
+
+// The following functions can be used to temporarily switch to a different
+// output mode for a given result.
+mthalg x = put tmsave (get tmmode) $$ put tmmode 1 $$ x;
+mthsymb x = put tmsave (get tmmode) $$ put tmmode 2 $$ x;
+verb x = put tmsave (get tmmode) $$ put tmmode 0 $$ x;
+mth x = mthalg x;
+__texmacs__ x = res when
+  save = get tmsave; put tmsave ();
+  res = if get tmmode then tmprint x else str x;
+  put tmmode save;
+end if intp (get tmsave);
 
 // Pretty-printing routine for Pure's --texmacs mode.
 __texmacs__ x = tmprint x if get tmmode;

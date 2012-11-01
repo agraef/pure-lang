@@ -242,9 +242,9 @@
 	(pure-tree-args (cdr args)))))
 
 (define (pure-tree args)
-  (display "(tree [")
+  (display "(tree (")
   (if (nnull? args) (pure-tree-args args))
-  (display "])"))
+  (display "))"))
 
 ;; roots (also pilfered from maxima-input.scm)
 
@@ -257,7 +257,7 @@
       (begin
         (display "(")
         (plugin-input (car args))
-        (display ")^(1/(")
+        (display ")^(1%(")
         (plugin-input (cadr args))
         (display "))"))))
 
