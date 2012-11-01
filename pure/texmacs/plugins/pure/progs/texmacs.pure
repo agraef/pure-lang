@@ -65,22 +65,22 @@ def ?:x = simplifyd x;
 /* LaTeX pretty-printing using the tmprint package of Reduce. Thanks are due
    to Kurt Pagani who figured out most of the necessary Lisp magic to make
    this work. You enable this with a call to the parameterless `math`,
-   `mathalg` and `mathsymb` functions; `verbatim` switches back to program
+   `algebraic` and `symbolic` functions; `verbatim` switches back to program
    mode again.
 
-   Note that `math` mode actually has two submodes. `mathalg` corresponds to
+   Note that `math` mode actually has two submodes. `algebraic` corresponds to
    Reduce's algebraic mode and causes printed expressions to be simplified
-   first. `mathsymb` corresponds to Reduce's symbolic mode and prints the raw
+   first. `symbolic` corresponds to Reduce's symbolic mode and prints the raw
    (unsimplified) expression. There are some kinds of expressions (e.g.,
    logical expressions other than equality) which aren't by default valid in
    algebraic mode, but work in symbolic mode.
 
-   Just calling `math` is the same as `mathalg`. Using any of the `math` modes
+   Just calling `math` is the same as `algebraic`. Using any of the `math` modes
    also starts up Reduce in a lazy fashion, so that we avoid depending on the
    pure-reduce package, but note that pure-reduce *is* required to make the
    pretty-printing work. */
 
-// Enable this pragma to enable math (a.k.a. mathalg) mode by default.
+// Enable this pragma to enable math (a.k.a. algebraic) mode by default.
 //#! --enable tmmath
 #! --ifndef tmmath
 #! --disable tmmath
@@ -235,17 +235,17 @@ psplot args = name when
 end;
 
 // Switch between math and verbatim output.
-mathalg = tmstart $$ put tmmode 1 $$ ();
-mathsymb = tmstart $$ put tmmode 2 $$ ();
-math = mathalg;
+algebraic = tmstart $$ put tmmode 1 $$ ();
+symbolic = tmstart $$ put tmmode 2 $$ ();
+math = algebraic;
 verbatim = put tmmode 0 $$ ();
 
 // The following functions can be used to temporarily switch to a different
 // output mode for a given result.
-mthalg x = put tmsave (get tmmode) $$ put tmmode 1 $$ x;
-mthsymb x = put tmsave (get tmmode) $$ put tmmode 2 $$ x;
-verb x = put tmsave (get tmmode) $$ put tmmode 0 $$ x;
-mth x = mthalg x;
+alg x = put tmsave (get tmmode) $$ algebraic $$ x;
+symb x = put tmsave (get tmmode) $$ symbolic $$ x;
+verb x = put tmsave (get tmmode) $$ verbatim $$ x;
+mth x = alg x;
 __texmacs__ x = res when
   save = get tmsave; put tmsave ();
   res = if get tmmode then tmprint x else str x;

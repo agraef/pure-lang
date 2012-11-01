@@ -442,7 +442,7 @@
     <|unfolded-io>
       using reduce;
     <|unfolded-io>
-      Reduce (Free CSL version), 09-Oct-12 ...
+      Reduce (Free CSL version), 23-Oct-12 ...
     </unfolded-io>
 
     <\unfolded-io>
@@ -478,12 +478,15 @@
     <item>To enable math <em|output>, you'll need to import the Pure
     <verbatim|texmacs> module. The <verbatim|math> function in this module
     switches output to <LaTeX> math, as provided by the Reduce
-    <verbatim|tmprint> package (thus this feature really needs the
-    <verbatim|pure-reduce> module). The <verbatim|verbatim> function switches
-    back to verbatim Pure output. Verbatim output is also used as a fallback
-    in math mode for all Pure expressions which cannot be printed through the
-    Reduce interface (typically because they aren't valid Reduce
-    expressions).
+    <verbatim|tmprint> package. Thus this feature really needs
+    <verbatim|pure-reduce>; calling <verbatim|math> will cause the
+    <verbatim|reduce> module to be imported automatically if it hasn't been
+    loaded yet.
+
+    The <verbatim|verbatim> function switches back to verbatim Pure output.
+    Verbatim output is also used as a fallback in math mode for all Pure
+    expressions which cannot be printed through the Reduce interface
+    (typically because they aren't valid Reduce expressions).
 
     You can make math output the default by enabling the <verbatim|tmmath>
     conditional compilation option on the Pure side. This can be set
@@ -522,7 +525,8 @@
     <|unfolded-io-math>
       simplify <around*|(|df <around*|(|sin<around*|(|x<rsup|2>|)>|)> x|)>;
     <|unfolded-io-math>
-      <with|color|black|mode|math|math-display|true|2*cos<around*|(|x<rsup|2>|)>*x>
+      <with|color|black|mode|math|math-display|true|2*cos
+      <around*|(|x<rsup|2>|)>*x>
     </unfolded-io-math>
 
     <\unfolded-io-math>
@@ -531,7 +535,8 @@
       simplify <around*|(|intg <around*|(|cos <around*|(|x+y|)><rsup|2>|)>
       x|)>;
     <|unfolded-io-math>
-      <with|color|black|mode|math|math-display|true|<frac|cos<around*|(|x+y|)>*sin<around*|(|x+y|)>+x|2>>
+      <with|color|black|mode|math|math-display|true|<frac|cos
+      <around*|(|x+y|)>*sin <around*|(|x+y|)>+x|2>>
     </unfolded-io-math>
   </session>
 
@@ -543,7 +548,7 @@
   For the purposes of this section, let's start up a Pure session and load
   the <verbatim|math> and <verbatim|reduce> modules, as well as the
   <verbatim|texmacs> module which, as explained in the previous section,
-  provides some convenience functions for use with Pure in <TeXmacs>.
+  provides the necessary facilities for math output in <TeXmacs>.
 
   <\session|pure|math>
     <\output>
@@ -590,10 +595,9 @@
   can go search the toolbar for <samp|Input Options \| Mathematical Input>
   and check it, or type the key combination <key|Ctrl $> defined by the Pure
   plugin. Another useful convenience is the <verbatim|?> prefix operator
-  (defined in <verbatim|texmacs.pure>) which does a Reduce
-  <verbatim|simplifyd> of its expression argument which is quoted
-  automagically. So here's how we can enter the expression <verbatim|? df
-  (sin (x^2)) x)> in math mode:
+  (defined in <verbatim|texmacs.pure>) which simplifies its expression
+  argument, which is quoted automagically. Here's how the expression
+  <verbatim|? df (sin (x^2)) x)> looks like when typed in math input mode:
 
   <\session|pure|math>
     <\unfolded-io-math>
@@ -605,7 +609,7 @@
     </unfolded-io-math>
   </session>
 
-  This is in fact the same as:
+  This is pretty much the same as:
 
   <\session|pure|math>
     <\unfolded-io-math>
@@ -618,13 +622,13 @@
     </unfolded-io-math>
   </session>
 
-  But it's a lot easier to type. Also note that the <verbatim|?> operator
-  uses <verbatim|simplifyd> rather than just <verbatim|simplify>, which also
+  But it's a lot easier to type, and the <verbatim|?> operator uses
+  <verbatim|simplifyd> rather than just <verbatim|simplify>, which also
   supports some customary notation for limits, integrals and differentials
-  which are commonly used in <TeXmacs>. The <verbatim|?:> operator does the
-  same, but evaluates its argument; you want to use that if the expression
-  includes some Pure functions which should be evaluated before submitting
-  the result to Reduce. Note the difference:
+  commonly used in <TeXmacs>. The <verbatim|?:> operator does the same, but
+  evaluates its argument; you want to use that if the expression includes
+  some Pure functions which should be evaluated before submitting the result
+  to Reduce. Note the difference:
 
   <\session|pure|math>
     <\input-math>
@@ -654,6 +658,12 @@
     </unfolded-io-math>
   </session>
 
+  Note that both <verbatim|?> and <verbatim|?:> are at the lowest possible
+  precedence level in Pure so that their arguments don't have to be
+  parenthesized (but this also means that you'll have to parenthesize the
+  entire <verbatim|?> or <verbatim|?:> expression if you want to use it in
+  the context of a larger expression).
+
   Once we change to <em|math output mode>, simplifications of expressions are
   done automatically by the pretty-printer, so we can often do without
   explicitly using the <verbatim|simplify>, <verbatim|?> and <verbatim|?:>
@@ -661,10 +671,11 @@
   to it now. As explained in the previous section, this is done by invoking
   the <verbatim|math> function from the <verbatim|texmacs> module.<\footnote>
     Note the <verbatim|let> keyword before the call to <verbatim|math>. In
-    Pure this executes the following expression as usual, but suppresses the
-    printing of the result, similar to what the <verbatim|$> terminator does
-    in Reduce. We'll use this trick a lot in the following, to suppress
-    uninteresting evaluation results.
+    Pure this normally indicates a global variable definition, but if the
+    left-hand side is omitted, the interpreter executes the right-hand side
+    expression as usual and skips the printing of the result, similar to what
+    the <verbatim|$> terminator does in Reduce. We'll use this trick a lot in
+    the following, to suppress uninteresting evaluation results.
   </footnote>
 
   <\session|pure|math>
@@ -685,16 +696,7 @@
   </session>
 
   Note that the <verbatim|df> term got simplified, but that's only in the
-  display:<\footnote>
-    Here we employ a little convenience function <verbatim|verb> provided by
-    the <verbatim|texmacs> module, which lets us peek at how the verbatim
-    result looks like, without actually switching to verbatim mode.
-    Similarly, the <verbatim|mth> function shows an expression in math mode
-    when in verbatim mode. (The functions <verbatim|mthalg> and
-    <verbatim|mthsymb> are also defined to temporarily switch to the
-    ''algebraic'' and ``symbolic'' variations of math output mode to be
-    described shortly.)
-  </footnote>
+  display:
 
   <\session|pure|math>
     <\unfolded-io-math>
@@ -706,8 +708,8 @@
     </unfolded-io-math>
   </session>
 
-  To actually obtain a simplified result which we can be processed further on
-  the Pure side (passed to Pure functions or assigned to Pure variables), you
+  To actually obtain a simplified result which we can be processed further in
+  Pure land (passed to Pure functions or assigned to Pure variables), you
   still need to use <verbatim|?>, <verbatim|?:> etc.:
 
   <\session|pure|math>
@@ -729,28 +731,37 @@
     </unfolded-io-math>
   </session>
 
-  Also note that there are some Pure expressions (such as strings, lambdas
-  and pointers) which are always printed verbatim (as can be seen in the
-  string result above). However, the pretty-printer will try to print as much
-  of the results in math mode as it can. For instance:
+  Note that the function <verbatim|verb> from the <verbatim|texmacs> module
+  lets us peek at how the verbatim result looks like, without actually
+  switching to verbatim mode. Similarly, the <verbatim|mth> function
+  temporarily switches the output mode to math mode when in verbatim mode.
+
+  There are some Pure expressions (such as strings, lambdas and pointers)
+  which are always printed verbatim. However, the pretty-printer will try to
+  print as much of the result in math mode as it can. For instance:
 
   <\session|pure|math>
     <\unfolded-io>
       \<gtr\>\ 
     <|unfolded-io>
-      NULL,"abc",df (sin (x^2)) x*y;
+      (\\x-\<gtr\>x^2),"abc",df (sin (x^2)) x*y;
     <|unfolded-io>
-      #\<less\>pointer 0\<gtr\>,"abc",<with|color|black|mode|math|math-display|true|2*cos
+      #\<less\>closure 0x7f1db00e3580\<gtr\>,"abc",<with|color|black|mode|math|math-display|true|2*cos
       <around*|(|x<rsup|2>|)>*x*y>
     </unfolded-io>
   </session>
 
   There are in fact two different variations of math output mode. Just
-  calling <verbatim|math> is the same as <verbatim|mathalg> which corresponds
-  to Reduce's algebraic mode and causes printed expressions to be simplified
-  before they are printed. In contrast, <verbatim|mathsymb> corresponds to
-  Reduce's symbolic mode and pretty-prints the raw expression <em|without>
-  simplifying it. For instance:
+  calling <verbatim|math> is the same as <verbatim|algebraic> which mimics
+  Reduce's <em|algebraic mode> and causes printed expressions to be
+  simplified before they are printed. In contrast, <verbatim|symbolic>
+  employs Reduce's <em|symbolic mode> and pretty-prints the raw results
+  <em|without> simplifying them.<\footnote>
+    Note that these commands don't actually change Reduce's internal mode of
+    operation, they only affect the math display in <TeXmacs>.
+  </footnote> Likewise, there are functions <verbatim|alg> (which is a
+  synonym for <verbatim|mth>) and <verbatim|symb> to temporarily switch to
+  the algebraic and symbolic math output modes, respectively. For instance:
 
   <\session|pure|math>
     <\unfolded-io-math>
@@ -766,7 +777,7 @@
     <\unfolded-io-math>
       \<gtr\>\ 
     <|unfolded-io-math>
-      mthsymb ans;<text|<verbatim| // the same in symbolic math mode>>
+      symb ans;<text|<verbatim| // the same in symbolic math mode>>
     <|unfolded-io-math>
       <with|color|black|mode|math|math-display|true|<frac|\<partial\>*sin
       <around*|(|x<rsup|2>|)>|\<partial\>*x>>
@@ -797,7 +808,7 @@
     <\unfolded-io-math>
       \<gtr\>\ 
     <|unfolded-io-math>
-      mthsymb ans;
+      symb ans;
     <|unfolded-io-math>
       <with|color|black|mode|math|math-display|true|x\<geq\>y\<wedge\>y\<gtr\>0>
     </unfolded-io-math>
@@ -819,11 +830,10 @@
     </unfolded-io-math>
   </session>
 
-  A remedy to make the logical operators work in algebraic mode is to just
-  declare them as operators; this won't actually convince Reduce to simplify
-  them, but at least they can then be used as literal expressions without
-  Reduce getting noisy about them, and the pretty-printer will then also do
-  its job on them:
+  As a remedy, you can just declare the logical operations as Reduce
+  operators; this won't actually convince Reduce to simplify them, but at
+  least it gets rid of those annoying error messages and also makes the
+  pretty-printer do a nicer job in algebraic mode:
 
   <\session|pure|math>
     <\unfolded-io-math>
@@ -863,7 +873,7 @@
     <\input-math>
       \<gtr\>\ 
     <|input-math>
-      let declare<space|1spc>operator <around*|[|above,below,binom,tree|]>;
+      let declare<space|1spc>operator <around*|[|above,below,binom|]>;
     </input-math>
 
     <\unfolded-io-math>
@@ -891,6 +901,15 @@
       fractions>
     <|unfolded-io-math>
       <with|color|black|mode|math|math-display|true|<frac|x|y>>,<with|color|black|mode|math|math-display|true|<frac|x|y>>,<with|color|black|mode|math|math-display|true|<frac|x|y>>,<with|color|black|mode|math|math-display|true|<frac|x|y>>,<with|color|black|mode|math|math-display|true|<frac|x|y>>
+    </unfolded-io-math>
+
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      189\<div\>30;<text|<verbatim| // exact division p%q, yields Pure
+      rationals>>
+    <|unfolded-io-math>
+      <with|color|black|mode|math|math-display|true|<frac|<with|math-font-family|rm|63>|<with|math-font-family|rm|10>>>
     </unfolded-io-math>
 
     <\unfolded-io-math>
@@ -967,8 +986,16 @@
     <\unfolded-io-math>
       \<gtr\>\ 
     <|unfolded-io-math>
-      x\<equiv\>y, x\<nequiv\>y;<text|<verbatim| // syntactic equality (=== /
-      ~== in Pure)>>
+      <rprime|'><around*|(|x\<equiv\>y, x\<nequiv\>y|)>;<text|<verbatim| //
+      syntactic equality (=== / ~== in Pure)>>
+    <|unfolded-io-math>
+      <with|color|black|mode|math|math-display|true|x>===<with|color|black|mode|math|math-display|true|y>,<with|color|black|mode|math|math-display|true|x>~==<with|color|black|mode|math|math-display|true|y>
+    </unfolded-io-math>
+
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      eval ans;
     <|unfolded-io-math>
       <with|color|black|mode|math|math-display|true|0>,<with|color|black|mode|math|math-display|true|1>
     </unfolded-io-math>
@@ -1229,10 +1256,18 @@
     </unfolded-io-math>
   </session>
 
-  <TeXmacs> has a nice and convenient notation for trees, these are handled
-  gracefully in Pure as well:
+  <subsection|Trees>
+
+  <TeXmacs> has a nice and convenient notation for labelled trees. These are
+  handled gracefully in Pure as well:
 
   <\session|pure|math>
+    <\input-math>
+      \<gtr\>\ 
+    <|input-math>
+      let declare operator tree;
+    </input-math>
+
     <\unfolded-io-math>
       \<gtr\>\ 
     <|unfolded-io-math>
@@ -1242,17 +1277,25 @@
     </unfolded-io-math>
   </session>
 
-  Note that the first argument of <verbatim|tree> is always the root node,
-  the remaining arguments are the subtrees. If you'd like to translate this
-  into a nested Pure list structure, it's sufficient to just define
-  <verbatim|tree> to be the same as the standard Pure function
-  <verbatim|list>:
+  Because <verbatim|tree> is variadic (a tree may have any number of
+  subtrees), it's denoted as an uncurried function in Pure. The first
+  argument of <verbatim|tree> is always the label of the root node, the
+  remaining arguments (if any) are the subtrees. The simplest way to
+  translate this into a nested Pure list for easier processing is to just
+  define <verbatim|tree> using the standard Pure function <verbatim|list> as
+  follows:
 
   <\session|pure|math>
     <\input-math>
       \<gtr\>\ 
     <|input-math>
-      tree=list;
+      mklist x\<colons\>tuple=list x; mklist x=<around*|[|x|]>;
+    </input-math>
+
+    <\input-math>
+      \<gtr\>\ 
+    <|input-math>
+      tree=mklist;
     </input-math>
 
     <\unfolded-io-math>
@@ -1264,8 +1307,9 @@
     </unfolded-io-math>
   </session>
 
-  Or, if you prefer to have the labels of the tree nodes as separate
-  arguments then you might use a definition like the following:
+  This corresponds to a preorder traversal of the tree. If you prefer to have
+  the labels of the branches as separate arguments then you might use a
+  definition like the following instead:
 
   <\session|pure|math>
     <\input-math>
@@ -1277,24 +1321,30 @@
     <\unfolded-io-math>
       \<gtr\>\ 
     <|unfolded-io-math>
-      declare operator node;tree <around*|(|x,<math-it|ys>|)>=node x
-      <around*|(|list <math-it|ys>|)>;
+      declare operator branch;
     <|unfolded-io-math>
       ()
     </unfolded-io-math>
+
+    <\input-math>
+      \<gtr\>\ 
+    <|input-math>
+      tree <around*|(|x,<math-it|ys>|)>=branch x <around*|(|mklist
+      <math-it|ys>|)>; tree x=branch x <around*|[| |]>;
+    </input-math>
 
     <\unfolded-io-math>
       \<gtr\>\ 
     <|unfolded-io-math>
       <tree|a|b|c|<tree|x|y|z>>;
     <|unfolded-io-math>
-      <with|color|black|mode|math|math-display|true|<math-up|node><around*|(|a,<around*|[|b<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>c<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><math-up|node><around*|(|x,<around*|[|y<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>z|]>|)>|]>|)>>
+      <with|color|black|mode|math|math-display|true|<math-up|branch><around*|(|a,<around*|[|b<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>c<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><math-up|branch><around*|(|x,<around*|[|y<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>z|]>|)>|]>|)>>
     </unfolded-io-math>
   </session>
 
-  The applications of <verbatim|node> are in fact curried, the uncurried
-  notation is only an artifact of the pretty-printing here. As a verbatim
-  Pure term the result looks like this:
+  Note that the way we defined <verbatim|tree>, <verbatim|branch> is in fact
+  a curried constructor; the uncurried notation is an artifact of the
+  pretty-printing here. As a verbatim Pure term the result looks like this:
 
   <\session|pure|math>
     <\unfolded-io-math>
@@ -1302,9 +1352,70 @@
     <|unfolded-io-math>
       verb ans;
     <|unfolded-io-math>
-      node a [b,c,node x [y,z]]
+      branch a [b,c,branch x [y,z]]
     </unfolded-io-math>
   </session>
+
+  If the trees denote valid Pure terms then you might wish to get rid of all
+  the extra baggage and just translate them to plain Pure applications.
+  Here's a third variation of <verbatim|tree> which does this:
+
+  <\session|pure|math>
+    <\input-math>
+      \<gtr\>\ 
+    <|input-math>
+      clear tree
+    </input-math>
+
+    <\input-math>
+      \<gtr\>\ 
+    <|input-math>
+      tree x=foldl1 <around*|(|$|)> <around*|(|mklist x|)>;
+    </input-math>
+
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      <tree|f|a|b|<tree|<around*|(|\<times\>|)>|y|z>>;
+    <|unfolded-io-math>
+      \;
+
+      *** f declared operator\ 
+
+      <with|color|black|mode|math|math-display|true|f*<around*|(|a,b,y*z|)>>
+    </unfolded-io-math>
+
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      verb ans;
+    <|unfolded-io-math>
+      f a b (y*z)
+    </unfolded-io-math>
+  </session>
+
+  With this definition of <verbatim|tree> you can now enter arbitrary Pure
+  expressions as trees if you like:
+
+  <\session|pure|math>
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      <tree|df|<tree|<around*|(|^|)>|<tree|<around*|(|+|)>|x|y>|3>|x>;
+    <|unfolded-io-math>
+      <with|color|black|mode|math|math-display|true|3*<around*|(|x<rsup|2>+2*x*y+y<rsup|2>|)>>
+    </unfolded-io-math>
+
+    <\unfolded-io-math>
+      \<gtr\>\ 
+    <|unfolded-io-math>
+      verb ans;
+    <|unfolded-io-math>
+      df ((x+y)^3) x
+    </unfolded-io-math>
+  </session>
+
+  <subsection|Lists>
 
   List and vector/matrix data can be exchanged between Pure and Reduce in a
   seamless fashion. This makes it easy to inspect and manipulate compound
@@ -1352,7 +1463,7 @@
     </unfolded-io-math>
   </session>
 
-  Another example: equation solving.
+  Let's consider another typical example, equation solving:
 
   <\session|pure|math>
     <\unfolded-io-math>
@@ -1500,7 +1611,7 @@
     <\unfolded-io>
       \<gtr\>\ 
     <|unfolded-io>
-      reduce::load "defint";
+      reduce::load "defint"; // we need this for the definite integrals
     <|unfolded-io>
       <with|color|black|mode|math|math-display|true|0>
     </unfolded-io>
@@ -1701,10 +1812,6 @@
     <|unfolded-io-math>
       <big|int>2*f<around*|(|x|)>\<mathd\>x;
     <|unfolded-io-math>
-      \;
-
-      *** f declared operator\ 
-
       <with|color|black|mode|math|math-display|true|2*<big|int>f<around*|(|x|)>*<space|0.25spc>d*<space|0.25spc>x>
     </unfolded-io-math>
 
@@ -1831,11 +1938,14 @@
 
   <subsection|Programming>
 
-  Note that all the supported math elements not only work in expression
-  evaluation, but also when defining Pure functions, on both sides of the
-  definition. For instance, let's define a prettier notation for the list
-  slicing operator (<verbatim|!!> in Pure). We'd actually like to write an
-  ordinary index in math mode, like this:
+  We've already seen various simple kinds of Pure programs (i.e., function
+  definitions) throughout this section. One important thing to note here is
+  that all supported math elements not only work in expressions to be
+  evaluated, but also when defining functions, on <em|both> sides of the
+  definition. We can make good use of this to make Pure code look like real
+  mathematical formulas. For instance, let's define a prettier notation for
+  the list slicing operator (<verbatim|!!> in Pure). We'd actually like to
+  write an ordinary index in math mode, like this:
 
   <\session|pure|math>
     <\unfolded-io-math>
@@ -1888,7 +1998,7 @@
     </unfolded-io-math>
   </session>
 
-  For another example, let's consider the binomials:
+  Let's consider another example, the binomials:
 
   <\session|pure|math>
     <\unfolded-io-math>
@@ -1903,7 +2013,7 @@
   This function isn't predefined in Pure either, so let's do that now. To get
   nicely aligned equations, we'll use an equation array this time. This is
   available as <verbatim|\\eqnarray> in math mode; similarly, the binomials
-  can be entered with <verbatim|\\binom>:
+  can be entered with <verbatim|\\binom> in math mode:
 
   <\session|pure|math>
     <\input-math>
@@ -1939,9 +2049,9 @@
     </unfolded-io-math>
   </session>
 
-  Of course, there are better ways to compute the binomials. The following is
-  a lot faster than the basic recursion formula we employed above. We also
-  use bigints here to avoid wrapover.
+  Of course, the text book formula we used above is dead-slow. The following
+  algorithm employing factorials is much better. We also use bigints here to
+  prevent wrapover.
 
   <\session|pure|math>
     <\input-math>
@@ -1960,9 +2070,9 @@
     <\unfolded-io-math>
       \<gtr\>\ 
     <|unfolded-io-math>
-      <binom|30|12>;
+      <binom|30|14>;
     <|unfolded-io-math>
-      <with|color|black|mode|math|math-display|true|86493225>
+      <with|color|black|mode|math|math-display|true|145422675>
     </unfolded-io-math>
   </session>
 
@@ -2579,7 +2689,6 @@
     <associate|page-type|a4>
     <associate|par-hyphen|normal>
     <associate|preamble|false>
-    <associate|prog-scripts|pure-script-math>
     <associate|sfactor|3>
   </collection>
 </initial>

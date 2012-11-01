@@ -519,8 +519,12 @@
   ("<mathi>"      " i ")
   ("<matheuler>"  " matheuler ")
   ;; Differentials. These are taken care of in texmacs.pure.
-  ("<partial>" " d ")
-  ("<mathd>" " d ")
+  ("<partial>"    " d ")
+  ("<mathd>"      " d ")
+  ;; Reduce/tmprint uses this to display empty lists, so we follow suit and
+  ;; allow this on the input side as well. Change this if you'd like this
+  ;; symbol to produce a different Pure container (such as a set) instead.
+  ("<emptyset>"   "[]")
 
   ("<longequal>" "==") ;; equality in Pure
   ("<assign>" ":=")
