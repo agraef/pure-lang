@@ -1,0 +1,709 @@
+/* ..
+  
+   Package: ASSIST
+   ===============
+   
+   Quote from the introduction of the package documentation:
+   
+   The package ``ASSIST`` contains an appreciable number of additional general
+   purpose functions which allow one to better adapt ``REDUCE`` to various
+   calculational strategies, to make the programming task more straightforward
+   and, sometimes, more efficient.
+
+   :Documentation: http://www.reduce-algebra.com/docs/assist.pdf
+   :Version: 0.1
+
+   Usage
+   -----
+   
+   Most of the functions work in the algebraic mode, that is the usual call
+   sequence would be ::
+   
+     simplify $ <func> <parameters>
+     
+   To give an example how the user may introduce a new naming scheme, a great
+   number of the functions were wrapped up in such a way that the call is as
+   close as in the package documentation itself. 
+   
+   To load the package into ``Pure``, call ::
+   
+     using "assist" ;
+     
+   This will start ``REDUCE`` (if necessary) and loads the package ``ASSIST``.
+   
+   In the sequel only examples of the various functions are given without any
+   further comments. The description of each function may be easily found in
+   the documentation.
+   
+   The user may of course redefine this package interface to fit his/her needs.
+   The source code is in ::
+   
+     assist.pure
+   
+*/
+
+using reduce;
+
+reduce::load "assist" ;
+
+assisthelp n::int 
+  = simplify $ (quote assisthelp) n if (n>=3) && (n<=14) ;
+  = simplify $ (quote assisthelp) (quote assist) otherwise ;
+
+def assist = assisthelp 0 ;   
+def switches = lisp ('switches) ;
+def switchorg = lisp ('switchorg) ;
+
+/* ..
+
+   assist ::
+   
+     > assist ;
+
+     Argument of ASSISTHELP must be an integer between 3 and 14.
+     Each integer corresponds to a section number in the documentation:
+
+     3: switches    4: lists        5: bags      6: sets
+     7: utilities   8: properties and flags  9: control functions
+    10: handling of polynomials
+    11: handling of transcendental functions
+    12: handling of n-dimensional vectors
+    13: grassmann variables           14: matrices
+
+  assisthelp ::
+
+    > assisthelp 13 ;
+    ["putgrass","remgrass","grassp","grassparity","ghostfactor"]
+  
+  switches ::
+  
+    > switches;
+
+      **** exp:=t .................... allfac:= t ****
+      **** ezgcd:=nil ................. gcd:= nil ****
+      **** mcd:=t ....................... lcm:= t ****
+      **** div:=nil ................... rat:= nil ****
+      **** intstr:=nil ........... rational:= nil ****
+      **** precise:=t ............. reduced:= nil ****
+      **** complex:=nil ....... rationalize:= nil ****
+      **** factor:= nil ....... combineexpt:= nil ****
+      **** revpri:= nil ........ distribute:= nil ****
+
+      
+*/
+
+
+//Manipulation of the List Structure
+mklist n::int = simplify $ (quote mklist) n ;
+sequences n::int = lisp ('sequences n) ;
+split x::list y::list = simplify $ (quote split) x y ;
+algnlist x::list n::int = simplify $ (quote algnlist) x n;
+kernlist expr = simplify $ (quote kernlist) expr ;
+
+/* ..
+
+   **Manipulation of the List Structure**
+   
+   mklist ::
+ 
+     > mklist 10 ;
+     [0,0,0,0,0,0,0,0,0,0]
+
+   sequences ::
+   
+     > sequences 3 ;
+     [[0,0,0],[1,0,0],[0,1,0],[1,1,0],[0,0,1],[1,0,1],[0,1,1],[1,1,1]]
+
+   split ::
+   
+     > split [a,b,c,d] [1,1,2] ;
+     [[a],[b],[c,d]]
+
+   algnlist ::
+   
+     > algnlist [a,b,c,d] 3 ;
+     [[a,b,c,d],[a,b,c,d],[a,b,c,d]]
+
+   kernlist ::
+   
+     > kernlist (x^n);
+     [x,n]
+     
+     
+*/
+
+delete x y::list = simplify $ (quote delete) x y ;   
+remove x::list n::int =simplify $ (quote remove) x n ;     
+delete_all x y::list = simplify $ (quote delete_all) x y ;    
+delpair x y::list = simplify $ (quote delpair) x y ;  
+
+elmult x y::list = simplify $ (quote elmult) x y ;
+frequency x::list = simplify $ (quote frequency) x ;
+
+/* ..
+   
+   delete ::
+   
+     > delete x [a,b,x,f,x] ;
+     [a,b,f,x]
+
+   remove ::
+   
+     > remove [a,b,x,f,x] 3 ;
+     [a,b,f,x]
+   
+   delete ::
+   
+     > delete_all x [a,b,x,f,x] ;
+     [a,b,f]
+     
+   delpair ::
+   
+     > delpair a [[a,1],[b,2],[c,3]] ;
+     [[b,2],[c,3]]
+
+   elmult ::
+   
+     > elmult x [a,b,x,f,x] ;
+     2
+     
+   frequency ::
+   
+    > frequency [a,b,c,a] ;
+    [[a,2],[b,1],[c,1]]
+
+*/
+
+
+
+//insert x y::list n::int = simplify $ (quote insert) x y n ;
+
+position x y::list = simplify  $ (quote position) x y;
+depth x::list = simplify  $ (quote depth) x;
+mkdepth_one x::list = simplify  $ (quote mkdepth_one) x;
+pair x::list y::list = simplify  $ (quote pair) x y;
+//simplify  $ appendn [a,b,c] [1,2,3] [u] [w,5];
+
+
+/* ..
+
+   position ::
+   
+     > position x [a,b,c,x,d,e,x] ;
+     4
+     
+   depth ::
+   
+     > depth [a,b,c,[d],e,f] ;
+     "bag or list of unequal depths"
+
+   mkdepth_one ::
+   
+     > mkdepth_one [a,b,c,[d],e,f] ;
+     [a,b,c,d,e,f]
+
+   pair ::
+   
+     > pair [a,b,c] [1,2,3] ;
+     [[a,1],[b,2],[c,3]]
+     
+*/
+
+
+//General Purpose Utility Functions
+mkidnew s::symbol = simplify $ (quote mkidnew) s ; //mkidnew nil|a
+dellastdigit n::int = simplify $ (quote dellastdigit) n ;
+detidnum s::symbol = simplify $ (quote detidnum) s ;
+list_to_ids x::list = simplify $ (quote list_to_ids) x ;
+randomlist r::int n::int = simplify $ (quote randomlist) r n ;
+mkrandtabl l::list b::int s::symbol = simplify $ (quote mkrandtabl)l b n ;
+
+permutations x::list = simplify $ (quote permutations) x ;
+cyclicpermlist x::list = simplify $ (quote cyclicpermlist) x ;
+perm_to_num x::list y::list = simplify $ (quote perm_to_num) x y ;
+num_to_perm n::int x::list = simplify $ (quote num_to_perm) n x ;
+combnum n::int p::int = simplify $ (quote combnum) n p ;
+combinations x::list n::int = simplify $ (quote combinations) x n ;
+remsym = simplify $ (quote remsym) ;
+symmetrize x::list op::symbol y::symbol = simplify $ (quote symmetrize) x op y ;
+
+sortnumlist x::list = simplify $ (quote sortnumlist) x ;
+sortlist x::list f::symbol = simplify $ (quote sortlist) x f ; // psl only
+extremum x::list f::symbol = simplify $ (quote extremum) x f ;
+gcdnl x::list = simplify $ (quote gcdnl) x ;
+
+funcvar expr = simplify $ (quote funcvar) expr ;
+depatom x = simplify $ (quote depatom) x ;
+explicit =  simplify $ (quote explicit) x ;
+implicit =  simplify $ (quote implicit) x ;
+korderlist = lisp ('korderlist); ;
+remnoncom s = lisp ('remnoncom (list s)); ;
+
+checkproplist x::list f::symbol = simplify $ (quote checkproplist) x f ;
+extractlist x::list f::symbol = simplify $ (quote extractlist) x f ;
+
+array_to_list a = simplify $ (quote array_to_list) a ;
+list_to_array x::list d::int s::symbol = simplify $ (quote list_to_array) x d s;
+//list_to_array [1,2,3] 1 mya;
+//array_to_list mya;
+
+/* ..
+
+   **General Purpose Utility Functions**
+
+   mkidnew ::
+   
+     > mkidnew nil ;
+     g0001
+     > mkidnew foo ;
+     foog0002
+ 
+   dellastdigit ::
+     
+     > dellastdigit 456 ;
+     45
+     
+   detidnum ::
+   
+     > detidnum a23;
+     23
+   
+   list_to_ids ::
+   
+     > list_to_ids [a,1,id,10] ;
+     a1id10
+   
+   randomlist ::
+   
+     > randomlist 10 5 ;
+     [0,5,5,9,0]
+   
+   mkrandtabl ::
+   
+     > mkrandtabl [3,4] 10 ar ;
+     [3,4]  
+
+   permutations ::
+   
+     > permutations [1,2,3] ;
+     [[1,2,3],[1,3,2],[2,1,3],[2,3,1],[3,1,2],[3,2,1]]
+     
+   cyclicpermlist ::
+   
+     > cyclicpermlist [1,2,3,4];
+     [[1,2,3,4],[2,3,4,1],[3,4,1,2],[4,1,2,3]]
+   
+  
+   perm_to_num ::
+   
+     > perm_to_num [4,3,2,1] [1,2,3,4] ;
+     23
+     
+   num_to_perm ::
+   
+     > num_to_perm 23 [1,2,3,4] ;
+     [4,3,2,1]
+
+   combnum ::
+   
+     > combnum 12 4 ;
+     495
+
+   combinations ::
+   
+     > combinations [1,2,3] 2 ;
+     [[2,3],[1,2],[1,3]]
+  
+   remsym ::
+   
+     > remsym ;
+     
+   symmetrize ::
+   
+     > symmetrize [a,b,c] op cyclicpermlist ;
+     op a b c + op b c a + op c a b
+     
+     > symmetrize [a,b,c] op permutations ;
+     op a b c + op a c b + op b a c + op b c a + op c a b + op c b a  
+   
+   sortnumlist ::
+   
+     > sortnumlist [23,1,2,4,8,456,32,1,2,3,7,66,1,7] ;
+     [1,1,1,2,2,3,4,7,7,8,23,32,66,456]
+     
+   sortlist ::
+   
+     > sortlist [tt,1,z,a,v] ordp  ;
+     [a,tt,v,z,1]
+     
+   extremum ::
+   
+     > extremum [tt,1,z,a,v] ordp  ;
+     a
+     > extremum  [23,1,2,4,8,456,32,1,2,3,7,66,1,7]  ordp ;
+     456
+     
+   gcdnl ::  
+   
+     > gcdnl  [112,84,6,18,72]  ;
+     2
+     
+   funcvar ::
+   
+     > funcvar (log (x*sin y^2)+e/pi) ;
+    [y,x]
+   
+   depatom ::
+   
+     > declare depend [myfun,r,s];
+     []
+     > depatom myfun ;
+     [r,s]
+
+   explicit/implicit ::
+   
+     > declare depend [myfun,x] ;
+     []
+     > declare depend [x,y,z] ;
+     []
+     > depatom myfun ;
+     [x]
+     > explicit  myfun ;
+     x y z myfun
+     > implicit  myfun ;
+     x myfun
+     
+   korderlist ::
+   
+     > declare korder [z,x,y] ;
+     > korderlist ;
+     [z,x,y]
+     
+   remnoncom ::
+     
+     > remnoncom myfun ;
+     t
+     
+   checkproplist ::
+   
+     tbd
+   
+   extractlist ::
+   
+     > extractlist [1,a,2,b,3,c,d,4] fixp ;
+     [1,2,3,4]
+    
+   list_to_array/array_to_list ::
+   
+     > list_to_array [1,2,3] 1 mya;
+     0
+     
+     > array_to_list mya;
+     [1,2,3]
+     
+*/
+
+//Properties and Flags
+putflag x f::symbol b = simplify $ (quote putflag) x f b ;
+displayflag x = simplify $ (quote displayflag) x ;
+clearflag x = simplify $ (quote clearflag) x ; //not yet
+
+putprop x p::symbol v b = simplify $ (quote putprop) x p v b ;
+displayprop x p = simplify $ (quote displayprop) x p ;
+cleaprop x = simplify $ (quote clearprop) x ; //not yet
+
+/* .. 
+
+   **Properties and Flags**
+
+   putflag ::
+   
+     > putflag z1 flag_name t ;
+     flag_name
+     > putflag [z1,z2] flag1_name t ;
+     1
+     > putflag z2 flag1_name 0 ;
+     0 
+   
+   displayflag ::
+   
+     > displayflag z1;
+     [flag_name,flag1_name]
+     > displayflag z2;
+     []
+
+   clearflag ::
+     
+     tbd 
+     
+   putprop ::
+   
+     > putprop z1 property (x^2) t ;
+     z1
+     
+   displayprop ::
+   
+     > displayprop z1 property ;
+     [property,x^2]
+   
+   clearprop ::
+     
+     tbd
+         
+*/
+
+
+
+// 9 Control functions
+alatomp x = simplify $ (quote alatomp) x ;
+alkernp x = simplify $ (quote alkernp) x ;
+depvarp x v = simplify $ (quote depvarp) x v ;
+
+rshow k::symbol = lisp ('show (list k));  //show is reserved
+
+/* ..
+
+   **Control functions**
+
+   alatomp ::
+   
+     > alatomp (x^n);
+     0
+     > alatomp (3);
+     1
+     
+   alkernp ::
+   
+     > alkernp (x^n);
+     1
+     > alkernp (3);
+     0
+     
+   depvarp ::
+   
+     > depvarp (2^(x^p)) p ;
+     1
+     > depvarp (2^(x^p)) (x^p) ;
+     1
+     > depvarp (2^(x^p)) (2^x) ;
+     0
+   
+   rshow (actually ``show``) ::
+
+     > rshow all ;
+     scalars are: nil
+     arrays are: nil
+     lists are: nil
+     matrices are: nil
+     vectors are: nil
+     forms are: nil
+     []
+   
+*/
+
+// 10 Handling of Polynomials
+
+alg_to_symb expr = lisp ('alg_to_symb expr) ;
+symb_to_alg expr = lisp ('symb_to_alg expr) ;
+
+leadterm p = simplify $ (quote leadterm) p ;
+redexpr p = simplify $ (quote redexpr) p ;
+distribute p = simplify $ (quote distribute) p ; //note: iff  "on distribute"
+monom p = simplify $ (quote monom) p ;
+splitterms p = simplify $ (quote splitterms) p ;
+splitplusminus p = simplify $ (quote splitplusminus) p ;
+lowestdeg p x = simplify $ (quote lowestdeg) p x ;
+divpol p q = simplify $ (quote divpol) p q ;
+
+/*  .. 
+
+    **Handling of Polynomials**
+    
+    For this section ::
+    
+      let P = a * X^m * Y^n + b*X^3 + c*Y^2 ;
+      let Q = d*(X-Y)^3 ;
+    
+    alg_to_symb/symb_to_alg ::
+    
+      tbd
+    
+    leadterm ::
+      
+      > leadterm P;
+      Y^n*X^m*a
+    
+    redexpr ::
+      
+      > redexpr P ;
+      X^3*b+Y^2*c
+    
+    distribute ::
+      
+      > distribute Q ;
+      X^3*d-3*X^2*Y*d+3*X*Y^2*d-Y^3*d  
+    
+    monom ::
+    
+      > monom P;
+      [X^m*Y^n*a,X^3*b,Y^2*c]
+    
+    splitterms :: 
+    
+      > splitterms P;
+      [[X^m*Y^n*a,X^3*b,Y^2*c],[0]]
+      > splitterms Q;
+      [[X^3*d,3*X*Y^2*d],[3*X^2*Y*d,Y^3*d]]
+    
+    splitplusminus :: 
+    
+      > splitplusminus Q;
+      [X^3*d+3*X*Y^2*d,-3*X^2*Y*d-Y^3*d]
+      
+    lowestdeg ::
+    
+      > lowestdeg (x^2+x^6) x ;
+      2
+      
+    divpol ::
+
+      > divpol P Q ;
+      [0,X^m*Y^n*a+X^3*b+Y^2*c]
+      
+      > divpol Q P ;
+      [0,X^3*d-3*X^2*Y*d+3*X*Y^2*d-Y^3*d]
+      
+      > divpol (x^2 - y^2) (x+y);
+      [x-y,0]
+    
+*/
+
+
+// 11 Handling of Transcendental Functions
+trigexpand x = simplify $ (quote trigexpand) x ;
+trigreduce x = simplify $ (quote trigreduce) x ;
+hypexpand x = simplify $ (quote hypexpand) x ;
+hypreduce x = simplify $ (quote hypreduce) x ;
+
+/* ..
+
+   **Handling of Transcendental Functions**
+
+   trigexpand ::
+   
+     > trigexpand (sin(x+y));
+     cos x*sin y+cos y*sin x
+   
+   trigreduce ::
+   
+     > trigreduce (cos x*sin y+cos y*sin x);
+     sin (x+y)
+   
+   hypexpand ::
+   
+     > hypexpand (sinh(x-y));
+     -cosh x*sinh y+cosh y*sinh x
+     
+   hypreduce ::
+   
+     > hypreduce (-cosh x*sinh y+cosh y*sinh x) ;
+     sinh (x-y)
+   
+*/   
+
+
+// 12 Handling of n–dimensional Vectors
+sumvect x::list y::list = simplify $ (quote sumvect) x y ;
+minvect x::list y::list = simplify $ (quote minvect) x y ;
+scalvect x::list y::list = simplify $ (quote scalvect) x y ;
+crossvect x::list y::list = simplify $ (quote crossvect) x y ;
+mpvect x::list y::list z::list = simplify $ (quote mpvect) x y z ;
+
+/* ..
+
+   **Handling of n–dimensional Vectors**
+
+   For this section ::
+   
+     let x = [a,b,c] ;
+     let y = [u,v,w] ;
+     let z = [1,2,3] ;
+     
+   sumvect ::
+   
+     > sumvect x y ;
+     [a+u,b+v,c+w]
+   
+     > sumvect (x+z) (y+z) ; // (+) in Pure !!
+     [a+u,b+v,c+w,2,4,6]
+     
+   minvect ::
+
+     > minvect x y ;
+     [a-u,b-v,c-w]
+     
+   scalvect ::
+   
+     > scalvect x y ;
+     a*u+b*v+c*w  
+   
+   crossvect ::
+   
+     > crossvect x y ;
+     [b*w-c*v,-a*w+c*u,a*v-b*u]
+     
+     > crossvect [1,2,3,4] [a,b,c,d] ;
+     ***** not 3-space vectors
+     
+   mpvect ::
+   
+     > mpvect x y z;
+     3*a*v-2*a*w-3*b*u+b*w+2*c*u-c*v
+   
+*/
+
+
+
+// 13 Handling of Grassmann Operators
+// simplify $ (eta 1)*(eta 2)-(eta 2)*(eta 1);
+
+putgrass w = lisp ('putgrass (list w));
+remgrass w = lisp ('remgrass (list w));
+grassp w = lisp ('grassp (list w));
+grassparity w n::int = simplify $ grassparity (w n);
+ghostfactor u m::int w n::int = simplify $ ghostfactor (u m) (w n) ;
+
+/* ..
+
+   **Handling of Grassmann Operators**
+   
+   putgrass ::
+   
+     > putgrass eta ;
+     []
+   
+     > simplify $ (eta 1)*(eta 2)-(eta 2)*(eta 1);
+     -eta 2*eta 1+eta 1*eta 2
+     
+   remgrass ::
+     
+     > remgrass eta;
+     []
+     > grassp eta;
+     []
+   
+   grassp ::
+   
+     > grassp eta;
+     t
+   
+   
+   grassparity ::
+   
+     tbd
+   
+   ghostfactor ::
+   
+     tbd 
+   
+*/
