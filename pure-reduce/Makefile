@@ -84,7 +84,8 @@ uninstall:
 
 # Roll a distribution tarball.
 
-DISTFILES = README Makefile reduce.pure reduce_examp.pure red.pure tests.pure tests.log pure_reduce.txt
+DISTFILES = README Makefile reduce.pure tests.pure tests.log pure_reduce.txt \
+examples/*.pure
 SEDFILES = README
 
 dist = $(name)-$(version)
@@ -94,7 +95,7 @@ datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > 
 
 dist: $(DISTFILES)
 	rm -rf $(dist)
-	mkdir $(dist)
+	mkdir $(dist) && mkdir $(dist)/examples
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	for x in $(SEDFILES); do rm -f $(dist)/$$x; $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
 	rm -f $(dist).tar.gz
