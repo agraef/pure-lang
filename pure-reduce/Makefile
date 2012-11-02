@@ -84,8 +84,7 @@ uninstall:
 
 # Roll a distribution tarball.
 
-DISTFILES = README Makefile reduce.pure tests.pure tests.log pure_reduce.txt \
-examples.txt examples/*.pure
+DISTFILES = COPYING README Makefile reduce.pure tests.pure tests.log pure_reduce.txt examples.txt examples/*.pure
 SEDFILES = README
 
 dist = $(name)-$(version)
