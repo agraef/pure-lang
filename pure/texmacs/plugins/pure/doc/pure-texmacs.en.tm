@@ -586,7 +586,7 @@
     <|unfolded-io>
       using math, reduce, texmacs;
     <|unfolded-io>
-      Reduce (Free CSL version), 23-Oct-12 ...
+      Reduce (Free CSL version), 02-Nov-12 ...
     </unfolded-io>
 
     <\unfolded-io>
@@ -760,13 +760,13 @@
   </session>
 
   There are in fact two different variations of math output mode. Just
-  calling <verbatim|math> is the same as <verbatim|algebraic> which mimics
-  Reduce's <em|algebraic mode> and causes printed expressions to be
-  simplified before they are printed. In contrast, <verbatim|symbolic>
-  employs Reduce's <em|symbolic mode> and pretty-prints the raw results
+  calling <verbatim|math> is the same as <verbatim|algebraic> which
+  corresponds to Reduce's <em|algebraic mode> and causes printed expressions
+  to be simplified before they are printed. In contrast, <verbatim|symbolic>
+  employs Reduce's <em|symbolic mode> to pretty-print the raw expressions
   <em|without> simplifying them.<\footnote>
     Note that these commands don't actually change Reduce's internal mode of
-    operation, they only affect the math display in <TeXmacs>.
+    operation, they only affect the display mode in <TeXmacs>.
   </footnote> Likewise, there are functions <verbatim|alg> (which is a
   synonym for <verbatim|mth>) and <verbatim|symb> to temporarily switch to
   the algebraic and symbolic math output modes, respectively. For instance:
@@ -1288,22 +1288,16 @@
   Because <verbatim|tree> is variadic (a tree may have any number of
   subtrees), it's denoted as an uncurried function in Pure. The first
   argument of <verbatim|tree> is always the label of the root node, the
-  remaining arguments (if any) are the subtrees. The simplest way to
-  translate this into a nested Pure list for easier processing is to just
-  define <verbatim|tree> using the standard Pure function <verbatim|list> as
-  follows:
+  remaining arguments are the subtrees and/or leaves beneath the root node.
+  The simplest way to translate this into a nested Pure list for easier
+  processing is to just define <verbatim|tree> as the standard Pure function
+  <verbatim|list>:
 
   <\session|pure|math>
     <\input-math>
       \<gtr\>\ 
     <|input-math>
-      mklist x\<colons\>tuple=list x; mklist x=<around*|[|x|]>;
-    </input-math>
-
-    <\input-math>
-      \<gtr\>\ 
-    <|input-math>
-      tree=mklist;
+      tree=list;
     </input-math>
 
     <\unfolded-io-math>
@@ -1337,8 +1331,9 @@
     <\input-math>
       \<gtr\>\ 
     <|input-math>
-      tree <around*|(|x,<math-it|ys>|)>=branch x <around*|(|mklist
-      <math-it|ys>|)>; tree x=branch x <around*|[| |]>;
+      tree <around*|(|x,<math-it|ys>\<colons\>tuple|)>=branch x
+      <around*|(|list <math-it|ys>|)>; tree <around*|(|x,y|)>=branch x
+      <around*|[|y|]>;
     </input-math>
 
     <\unfolded-io-math>
@@ -1378,7 +1373,7 @@
     <\input-math>
       \<gtr\>\ 
     <|input-math>
-      tree x=foldl1 <around*|(|$|)> <around*|(|mklist x|)>;
+      tree x=foldl1 <around*|(|$|)> <around*|(|list x|)>;
     </input-math>
 
     <\unfolded-io-math>
@@ -1409,9 +1404,9 @@
     <\unfolded-io-math>
       \<gtr\>\ 
     <|unfolded-io-math>
-      <tree|df|<tree|<around*|(|^|)>|<tree|<around*|(|+|)>|x|y>|3>|x>;
+      <tree|<around*|(|^|)>|<tree|<around*|(|+|)>|a|b>|2>;
     <|unfolded-io-math>
-      <with|color|black|mode|math|math-display|true|3*<around*|(|x<rsup|2>+2*x*y+y<rsup|2>|)>>
+      <with|color|black|mode|math|math-display|true|a<rsup|2>+2*a*b+b<rsup|2>>
     </unfolded-io-math>
 
     <\unfolded-io-math>
@@ -1419,7 +1414,7 @@
     <|unfolded-io-math>
       verb ans;
     <|unfolded-io-math>
-      df ((x+y)^3) x
+      (a+b)^2
     </unfolded-io-math>
   </session>
 
