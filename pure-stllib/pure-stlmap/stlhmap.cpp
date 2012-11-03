@@ -407,16 +407,7 @@ bool stl_shm_equal(px* pxshp1, px* pxshp2)
 {
   sh *shp1, *shp2;
   if ( !get_shp(pxshp1,&shp1) || !get_shp(pxshp2,&shp2) ) bad_argument();
-  pxhmap& hmp1 = shp1->hm;
-  pxhmap& hmp2 = shp2->hm;
-  px_pair_same eql;
-  try {
-    return equal(hmp1.begin(), hmp1.end(), hmp2.begin(), eql);
-  }
-  catch (px* e) {
-    pure_throw(e);
-  }
-  return true;
+  return shp1->hm == shp2->hm;
 }
 
 px* stl_shm_make_vector(px* pxshp) 

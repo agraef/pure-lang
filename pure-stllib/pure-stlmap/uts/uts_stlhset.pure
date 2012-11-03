@@ -172,11 +172,11 @@ sort (\(x,_) (y,_) -> x<y) $ { (k,k) | k = shm1};
 let shm1 = stlhset ["a","b","c","d","e"];
 //- ()
 
-foldl (\r k ->r+k) "" shm1;
-//- "cdeab"
+sort (<) $ chars $ foldl (\r k ->r+k) "" shm1;
+//- ["a","b","c","d","e"]
 
-foldl1 (\r k -> r+k) shm1;
-//- "cdeab"
+sort (<) $ chars $ foldl1 (\r k -> r+k) shm1;
+//- ["a","b","c","d","e"]
 
 let shm2 = emptystlhset;
 //- ()
@@ -192,20 +192,20 @@ hs_elms shm2;
 let shm1 = stlhset ["a","b","c","d","e"];
 //- ()
 
-rowmap (\k->(k,ord k - ord "a" + 1)) shm1;
-//- {("c",3);("d",4);("e",5);("a",1);("b",2)}
+rowmap (\k->(k,ord k - ord "a" + 1)) shm1; ();
+//- ()
 
-rowcatmap (\k->{k,ord k - ord "a" + 1})shm1;
-//- {"c",3;"d",4;"e",5;"a",1;"b",2}
+rowcatmap (\k->{k,ord k - ord "a" + 1})shm1; ();
+//- ()
 
-rowcatmap (\k->if (ord k) mod 2 then {k, ord k - ord "a" + 1} else {}) shm1;
-//- {"c",3;"e",5;"a",1}
+rowcatmap (\k->if (ord k) mod 2 then {k, ord k - ord "a" + 1} else {}) shm1; ();
+//- ()
 
-colmap (\k->(k,k+1)) shm1;
-//- {("c","d"),("d","e"),("e","f"),("a","b"),("b","c")}
+colmap (\k->(k,k+1)) shm1; ();
+//- ()
 
-colcatmap (\k->{k;ord k - ord "a" + 1})shm1;
-//- {"c","d","e","a","b";3,4,5,1,2}
+colcatmap (\k->{k;ord k - ord "a" + 1})shm1; ();
+//- ()
 
 //*** Key Oriented Functions *********************************************
 

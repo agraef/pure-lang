@@ -2,7 +2,7 @@
 
 pkgname = stllib
 
-version = 0.3
+version = 0.4
 
 .PHONY: all stlvec stlmap dist check install uninstall clean dist distcheck
 

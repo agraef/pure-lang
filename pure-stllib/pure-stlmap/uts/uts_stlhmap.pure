@@ -189,20 +189,16 @@ sort elmless $ [ k=>v | (k=>v) = shm1; v mod 2];
 sort (<) $ { k+1 | (k=>y) = shm1};
 //- {"b","c","d","e","f"}
 
-{ {k;v} | (k=>v) = shm1; v mod 2};
-//- {"c","e","a";3,5,1}
-
-
 //*** foldl, foldl1 **************************************************
 
 let shm1 = stlhmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
 //- ()
 
-foldl (\{r,l} (k=>v) -> {r+k,l+v}) {"",0} shm1;
-//- {"cdeab",15}
+foldl (\{r,l} (k=>v) -> {r+k,l+v}) {"",0} shm1; ();
+//- ()
 
-foldl1 (\(r=>l) (k=>v) -> (r+k=>l+v)) shm1;
-//- "cdeab"=>15
+foldl1 (\(r=>l) (k=>v) -> (r+k=>l+v)) shm1; ();
+//- ()
 
 let shm2 = emptystlhmap;
 //- ()
@@ -218,23 +214,23 @@ hm_elms shm2;
 let shm1 = stlhmap ["a"=>1,"b"=>2,"c"=>3,"d"=>4,"e"=>5];
 //- ()
 
-rowmap (\(k=>v)->(k,v)) shm1;
-//- {("c",3);("d",4);("e",5);("a",1);("b",2)}
+rowmap (\(k=>v)->(k,v)) shm1; ();
+//- ()
 
-rowcatmap (\(k=>v)->{k,v})shm1;
-//- {"c",3;"d",4;"e",5;"a",1;"b",2}
+rowcatmap (\(k=>v)->{k,v})shm1; ();
+//- ()
 
-rowcatmap (\(k=>v)->if v mod 2 then {k,v} else {}) shm1;
-//- {"c",3;"e",5;"a",1}
+rowcatmap (\(k=>v)->if v mod 2 then {k,v} else {}) shm1; ();
+//- ()
 
-colmap (\(k=>v)->(k,v)) shm1;
-//- {("c",3),("d",4),("e",5),("a",1),("b",2)}
+colmap (\(k=>v)->(k,v)) shm1; ();
+//- ()
 
-colcatmap (\(k=>v)->{k;v})shm1;
-//- {"c","d","e","a","b";3,4,5,1,2}
+colcatmap (\(k=>v)->{k;v})shm1; ();
+//- ()
 
-colcatmap (\(k=>v)->if v mod 2 then {v;k} else {}) shm1;
-//- {3,5,1;"c","e","a"}
+colcatmap (\(k=>v)->if v mod 2 then {v;k} else {}) shm1; ();
+//- ()
 
 //*** Key Oriented Functions *********************************************
 
