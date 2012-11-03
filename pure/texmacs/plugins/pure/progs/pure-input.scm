@@ -235,7 +235,9 @@
 ;; trees
 
 (define (pure-tree-args args)
+  (display "(")
   (plugin-input (car args))
+  (display ")")
   (if (nnull? (cdr args))
       (begin
 	(display ",")
