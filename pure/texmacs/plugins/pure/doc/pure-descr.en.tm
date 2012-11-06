@@ -236,13 +236,16 @@
     </input>
   </session>
 
-  Note that Pure's online help is in html format. While <TeXmacs> can load
-  html files, it has to convert them to its own format first, which at least
-  in the current version of <TeXmacs> is quite slow and the rendering isn't
-  perfect. Hopefully this will improve in future <TeXmacs> versions, but for
-  the time being you may prefer to use an external graphical html browser
-  instead. If the <verbatim|PURE_HELP> shell environment variable is set, the
-  interpreter will use that command to display the online help.<\footnote>
+  Note that Pure's online help is in html format by default. While <TeXmacs>
+  can load html files, it has to convert them to its own format first, which
+  at least in the current version of <TeXmacs> is quite slow and the
+  rendering isn't perfect. There's <TeXmacs>-formatted online documentation
+  available on the Pure website which you can install to alleviate this, see
+  the Pure installation instructions for details. If you still prefer the
+  html documentation, then it's also possible to use an external graphical
+  html browser instead. Just set the <verbatim|PURE_HELP> shell environment
+  variable accordingly, the interpreter will then use that command to display
+  the online help.<\footnote>
     Note that the <verbatim|PURE_HELP> environment variable also works
     outside of <TeXmacs>, i.e., when the interpreter is run from Emacs or the
     shell. The <verbatim|BROWSER> environment variable, however, does
