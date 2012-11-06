@@ -67,7 +67,8 @@ rst_extra = index.txt purepad.txt windows.txt
 # are to be found in the appropriate subdirs (html, latex) of the $(BUILDDIR)
 # directory.
 
-htmlfiles = genindex.html pure-modindex.html $(patsubst %.txt,%.html,$(rst_extra) $(notdir $(rst_sources))) search.html searchindex.js
+htmlfiles = $(patsubst %.txt,%.html,$(rst_extra) $(notdir $(rst_sources))) genindex.html pure-modindex.html search.html searchindex.js
+tmfiles = $(patsubst %.txt,%.tm,$(rst_extra) $(notdir $(rst_sources))) genindex.tm pure-modindex.tm
 pdffiles = puredoc.pdf
 
 # You can set these variables from the command line.
@@ -133,6 +134,12 @@ allinfo:
 	@(manifest=`ls */*.txt */*/*.txt 2>/dev/null || true`; test -n "$$manifest" && cp $$manifest .; rm -rf $(rst_dirs); true)
 	@$(MAKE) texinfo && (cd $(BUILDDIR)/texinfo && $(MAKE) info)
 
+# Same as above, but update the texmacs docs. This is used internally for the
+# 'update-texmacs' target.
+
+alltexmacs: allhtml
+	@$(MAKE) texmacs
+
 # Same as above, but don't run sphinx-builder yet, leave that to the user.
 # This can be run without having any of the docutils/Sphinx tools installed,
 # but then you won't be able to do anything with the rst files.
@@ -175,6 +182,10 @@ install: # allhtml
 	test -d $(DESTDIR)$(datadir) || mkdir -p $(DESTDIR)$(datadir)
 	cp -r $(addprefix $(BUILDDIR)/html/, _images _sources _static $(htmlfiles)) $(DESTDIR)$(datadir)
 
+install-tm:
+	test -d $(DESTDIR)$(datadir) || mkdir -p $(DESTDIR)$(datadir)
+	cp -r $(addprefix $(BUILDDIR)/texmacs/, $(tmfiles)) $(DESTDIR)$(datadir)
+
 uninstall:
 	rm -rf $(DESTDIR)$(datadir)
 
@@ -205,9 +216,16 @@ update-info: allinfo $(docsdir)/Makefile
 	rm -rf $(docsdir)/texinfo
 	cp -r $(BUILDDIR)/texinfo $(docsdir)
 
+# Same as above, but update the texmacs docs.
+
+update-texmacs: alltexmacs $(docsdir)/Makefile
+	rm -f $(docsdir)/*.tm
+	cp -r $(BUILDDIR)/texmacs/*.tm $(docsdir)
+
 # Dist target.
 
 htmldist = _images/* _sources/* _static/* $(htmlfiles)
+tmdist = $(tmfiles)
 pdfdist = $(pdffiles)
 
 docs/Makefile: docs/Makefile.in Makefile
@@ -219,6 +237,7 @@ dist: alldocs docs/Makefile
 	ln -sf $$PWD/docs/Makefile $(dist)/Makefile
 	for x in debian/*; do ln -sf $$PWD/$$x $(dist)/$$x; done
 	(cd $(BUILDDIR)/html && for x in $(htmldist); do ln -sf $$PWD/$$x ../../$(dist)/$$x; done)
+	(cd $(BUILDDIR)/texmacs && for x in $(tmdist); do if test -f $$PWD/$$x; then ln -sf $$PWD/$$x ../../$(dist)/$$x; fi; done)
 	(cd $(BUILDDIR)/latex && for x in $(pdfdist); do ln -sf $$PWD/$$x ../../$(dist)/$$x; done)
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
@@ -298,6 +317,30 @@ man:
 texinfo:
 	$(SPHINXBUILD) -b texinfo $(ALLSPHINXOPTS) $(BUILDDIR)/texinfo
 	@(cd $(BUILDDIR)/texinfo && (for x in *.texi; do sed -e 's/command line option --/command line option ---/g' -e 's/{option} --/{option} ---/g' -e 's/\(@pxref{[^-]*\)--/\1---/g' < $$x > $$x.fixed && rm -f $$x && mv $$x.fixed $$x; done))
+
+# Conversion html -> texmacs. Sphinx doesn't support this, so we use homegrown
+# code here. This needs texmacs and pandoc, and the html docs have to be
+# created already. NOTE: At present this is *very* slow; most of the time is
+# spent by texmacs importing the tex documents created from the html
+# docs. There are also various horrible kludges involved, including the need
+# to preprocess the html source and postprocess the pandoc output, so that we
+# get to keep most of the formatting and link targets. (Unfortunately, the
+# direct rst -> tex route supported by pandoc doesn't work here, because
+# pandoc doesn't understand the special Sphinx markup.)
+
+$(BUILDDIR)/texmacs/%.tm: $(BUILDDIR)/html/%.html
+	@(./html2tm.sh $<)
+	@(mv $(notdir $@) $@)
+
+tmdocs = $(addprefix $(BUILDDIR)/texmacs/,$(tmfiles))
+
+$(BUILDDIR)/texmacs:
+	test -d $(BUILDDIR)/texmacs || (mkdir -p $(BUILDDIR)/texmacs && (for x in _images _static; do ln -s ../html/$$x $(BUILDDIR)/texmacs; done))
+
+texmacs: $(BUILDDIR)/texmacs $(tmdocs)
+
+cleantexmacs:
+	rm -f $(BUILDDIR)/texmacs/*.tm
 
 changes:
 	$(SPHINXBUILD) -b changes $(ALLSPHINXOPTS) $(BUILDDIR)/changes

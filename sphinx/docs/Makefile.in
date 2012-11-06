@@ -15,6 +15,7 @@ endif
 libdir = $(prefix)/lib
 
 htmlfiles = $(wildcard *.html) $(wildcard *.js)
+tmfiles = $(wildcard *.tm)
 pdffiles = $(wildcard *.pdf)
 
 datadir = $(libdir)/pure/docs
@@ -31,10 +32,14 @@ install:
 	test -d $(DESTDIR)$(datadir) || mkdir -p $(DESTDIR)$(datadir)
 	cp -r _images _sources _static $(htmlfiles) $(DESTDIR)$(datadir)
 
+# Run this too if you also want to install the documentation in texmacs format.
+install-tm:
+	cp -r $(tmfiles) $(DESTDIR)$(datadir)
+
 uninstall:
 	rm -rf $(DESTDIR)$(datadir)
 
-distfiles = Makefile debian/* _images/* _sources/* _static/* $(htmlfiles) $(pdffiles)
+distfiles = Makefile debian/* _images/* _sources/* _static/* $(htmlfiles) $(tmfiles) $(pdffiles)
 
 dist:
 	rm -rf $(dist)
