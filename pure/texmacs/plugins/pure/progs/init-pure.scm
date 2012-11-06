@@ -108,12 +108,7 @@
     (if (not i) (list s "")
 	(list (substring s 0 i) (substring s (+ i 1) (string-length s))))))
 
-;; We make an attempt here to cache the tm documents that texmacs creates when
-;; importing the html files from the Pure documentation, by saving these files
-;; to the ~/.TeXmacs/plugins/pure/cache directory if it exists. To enable
-;; this, you just have to create the cache directory. Links to other documents
-;; will be broken if you employ this, but documents load much faster on
-;; subsequent invocations.
+;; We use the tm documents if they are installed.
 (define (pure-help url)
   (with
    (name label) (pure-decompose url #\#)
@@ -129,17 +124,10 @@
 		     (pure-decompose (car (last-pair l)) #\.)
 		     basename)
 	       ""))
-	  (new-dir
-	   (with texmacs-home (getenv "TEXMACS_HOME_PATH")
-		 (string-append texmacs-home "/plugins/pure/cache")))
-	  (new-name (string-append new-dir "/" basename ".tm")))
-     (if (and (url-exists? name) (url-exists? new-name))
-	 ;; Check modification times.
-	 (let* ((st (stat name)) (mtime (stat:mtime st))
-		(new-st (stat new-name)) (new-mtime (stat:mtime new-st)))
-	   (if (>= new-mtime mtime)
-	       ;; Cached file is newer, use that.
-	       (set! name new-name))))
+	  (tm-name (string-append dir "/" basename ".tm")))
+     (if (url-exists? tm-name)
+	 ;; tm documentation exists, use that instead of the html docs
+	 (set! name tm-name)))
      (cond ((== name "") (go-to-label label))
 	   ((== label "")
 	    (set-message `(concat "Loaded " ,name) "Pure help")
@@ -149,24 +137,7 @@
 	    (set-message `(concat "Loaded " ,name) "Pure help")
 	    (with u (url-relative (buffer-master) name)
 		  (load-buffer-in-new-window u)
-		  (go-to-label label))))
-     ;; make sure that we have symlinks pointing to images and static content
-     ;; (this probably won't work on Windows)
-     (if (url-exists? new-dir)
-	 (for-each
-	  (lambda (x)
-	    (let ((src (string-append dir x))
-		  (dest (string-append new-dir x)))
-	      (if (and (url-exists? src) (not (url-exists? dest)))
-		  (symlink src dest))))
-	  (list "/_images" "/_sources" "/_static")))
-     (if (and (url-exists? new-dir) (not (== name new-name)))
-	 ;; rename the file so that it can be saved in a tmpdir
-	 (begin
-	   (buffer-rename name new-name)
-	   (buffer-pretend-modified new-name)
-	   ;; (write-line new-name)
-	   (save-buffer new-name))))))
+		  (go-to-label label))))))
 
 ;; Session plugin definitions. ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

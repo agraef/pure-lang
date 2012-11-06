@@ -95,8 +95,8 @@ ifeq ($(strip $(texmacs_prefix)),)
 # Fall back to $(prefix).
 texmacs_prefix = $(prefix)
 endif
-tmdir = $(texmacs_prefix)/share/TeXmacs/plugins
-tmsrc = $(wildcard $(addprefix $(srcdir)/, texmacs/plugins/pure/doc/*.tm texmacs/plugins/pure/progs/*.scm texmacs/plugins/pure/progs/*.pure))
+tmdir = $(texmacs_prefix)/share/TeXmacs
+tmsrc = $(wildcard $(addprefix $(srcdir)/, texmacs/packages/*.ts texmacs/plugins/pure/doc/*.tm texmacs/plugins/pure/progs/*.scm texmacs/plugins/pure/progs/*.pure))
 ifeq ($(strip $(TEXMACS)),)
 TEXMACS = texmacs
 else
@@ -205,8 +205,8 @@ examples/bitcode/Makefile examples/bitcode/*.c examples/bitcode/*.f90 \
 examples/bitcode/*.dsp examples/bitcode/*.pure \
 examples/hellomod/Makefile examples/hellomod/*.c examples/hellomod/*.pure \
 examples/texmacs/*.pure examples/texmacs/*.tm examples/texmacs/*.ts \
-texmacs/plugins/pure/doc/*.tm texmacs/plugins/pure/progs/*.scm \
-texmacs/plugins/pure/progs/*.pure \
+texmacs/packages/*.ts texmacs/plugins/pure/doc/*.tm \
+texmacs/plugins/pure/progs/*.scm texmacs/plugins/pure/progs/*.pure \
 lib/*.pure test/*.pure test/*.log test/*.blob
 # These need special editing (see dist target, datesubst below).
 SEDFILES = INSTALL
@@ -358,8 +358,8 @@ ifneq ($(elcfiles),)
 	$(INSTALL) -m 644 etc/pure-mode.el etc/pure-mode.elc $(DESTDIR)$(elispdir)
 endif
 ifneq ($(tmfiles),)
-	for x in $(addprefix $(DESTDIR), $(tmdir)/pure/doc $(tmdir)/pure/progs); do $(INSTALL) -d $$x; done
-	for x in $(patsubst $(srcdir)/texmacs/plugins/%,%,$(tmfiles)); do $(INSTALL) -m 644 $(srcdir)/texmacs/plugins/$$x $(DESTDIR)$(tmdir)/$$x; done
+	for x in $(addprefix $(DESTDIR), $(tmdir)/packages $(tmdir)/plugins/pure/doc $(tmdir)/plugins/pure/progs); do $(INSTALL) -d $$x; done
+	for x in $(patsubst $(srcdir)/texmacs/%,%,$(tmfiles)); do $(INSTALL) -m 644 $(srcdir)/texmacs/$$x $(DESTDIR)$(tmdir)/$$x; done
 endif
 ifeq ($(versioned), yes)
 	ln -sf $(bindir)/$(pure_exe) $(DESTDIR)$(bindir)/pure$(EXE)
@@ -370,7 +370,7 @@ ifeq ($(versioned), yes)
 endif
 
 uninstall:
-	rm -rf $(addprefix $(DESTDIR), $(bindir)/pure$(EXE) $(pkgconfigdir)/pure.pc $(libdir)/$(libpure_lnkname) $(libdir)/$(libpure_soname) $(libdir)/$(libpure) $(includedir)/pure $(libdir)/pure $(man1dir)/pure.1 $(elispdir)/pure-mode.el $(elispdir)/pure-mode.elc $(tmdir)/pure)
+	rm -rf $(addprefix $(DESTDIR), $(bindir)/pure$(EXE) $(pkgconfigdir)/pure.pc $(libdir)/$(libpure_lnkname) $(libdir)/$(libpure_soname) $(libdir)/$(libpure) $(includedir)/pure $(libdir)/pure $(man1dir)/pure.1 $(elispdir)/pure-mode.el $(elispdir)/pure-mode.elc $(addprefix $(tmdir)/,$(patsubst $(srcdir)/texmacs/%,%,$(tmsrc)) plugins/pure))
 ifeq ($(versioned), yes)
 	rm -rf $(addprefix $(DESTDIR), $(bindir)/$(pure_exe) $(pkgconfigdir)/$(pure_pc) $(pure_includedir) $(pure_libdir) $(man1dir)/$(pure_1))
 endif
@@ -410,7 +410,7 @@ uninstall-el:
 uninstall-elc:
 	rm -rf $(DESTDIR)$(elispdir)/pure-mode.elc
 
-# install the TeXmacs plugin
+# install the TeXmacs plugin and accompanying files
 
 # This will normally be done automatically with 'make install' if texmacs is
 # detected on your system. However, these targets also allow you to do this
@@ -419,18 +419,18 @@ uninstall-elc:
 # also want to set tmdir accordingly).
 
 install-tm: $(tmsrc)
-	for x in $(addprefix $(DESTDIR), $(tmdir)/pure/doc $(tmdir)/pure/progs); do $(INSTALL) -d $$x; done
-	for x in $(patsubst $(srcdir)/texmacs/plugins/%,%,$(tmsrc)); do $(INSTALL) -m 644 $(srcdir)/texmacs/plugins/$$x $(DESTDIR)$(tmdir)/$$x; done
+	for x in $(addprefix $(DESTDIR), $(tmdir)/packages $(tmdir)/plugins/pure/doc $(tmdir)/plugins/pure/progs); do $(INSTALL) -d $$x; done
+	for x in $(patsubst $(srcdir)/texmacs/%,%,$(tmsrc)); do $(INSTALL) -m 644 $(srcdir)/texmacs/$$x $(DESTDIR)$(tmdir)/$$x; done
 
 uninstall-tm:
-	rm -rf $(DESTDIR)$(tmdir)/pure
+	rm -rf $(addprefix $(DESTDIR)$(tmdir)/, $(patsubst $(srcdir)/texmacs/%,%,$(tmsrc)) plugins/pure)
 
 # roll a distribution tarball
 
 date = $(shell date "+%B %-d, %Y")
 datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > $(2)
 
-distdirs = config debian etc examples examples/bitcode examples/hellomod examples/libor examples/texmacs lib test texmacs texmacs/plugins texmacs/plugins/pure texmacs/plugins/pure/doc texmacs/plugins/pure/progs
+distdirs = config debian etc examples examples/bitcode examples/hellomod examples/libor examples/texmacs lib test texmacs texmacs/packages texmacs/plugins texmacs/plugins/pure texmacs/plugins/pure/doc texmacs/plugins/pure/progs
 dist: $(addprefix $(srcdir)/, $(filter-out test/%.log, $(DISTFILES)))
 	rm -rf $(dist)
 	mkdir $(dist)
