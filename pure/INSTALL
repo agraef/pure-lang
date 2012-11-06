@@ -101,10 +101,12 @@ the documentation files::
 
   $ sudo make install-docs
 
-This needs the ``wget`` program. You can also download the pure-docs tarball
-manually and then install it from a local file, e.g.::
+This needs the ``wget`` program. You can also download and install the
+pure-docs tarball manually in the usual way, e.g.::
 
-  $ sudo make install-docs docs=pure-docs-@version@.tar.gz
+  $ tar xfvz pure-docs-@version@.tar.gz
+  $ cd pure-docs-@version@
+  $ sudo make install
 
 That's it, Pure should be ready to go now::
 
@@ -418,13 +420,21 @@ variable accordingly.
 By default, the ``install-docs`` target requires a working Internet connection
 and the wget command. Instead, you can also download the pure-docs-x.y.tar.gz
 tarball manually and then install the documentation from the downloaded
-tarball (the x.y version number of the documentation tarball should correspond
-to your interpreter version)::
+tarball in the usual way (the x.y version number of the documentation tarball
+should correspond to your interpreter version)::
 
-  $ sudo make install-docs docs=pure-docs-x.y.tar.gz
+  $ tar xfvz pure-docs-x.y.tar.gz
+  $ cd pure-docs-x.y
+  $ sudo make install
 
 As a bonus, downloading the package manually also gives you the documentation
-in pdf format, so that you can print it if you like.
+in pdf format, so that you can print it if you like. In addition, as of
+version 0.56 the tarball also contains the documentation in TeXmacs format so
+that you can read it inside TeXmacs (see `TeXmacs Plugin`_ below). After
+unpacking the tarball and installing the html documentation, you can install
+the TeXmacs-formatted documentation as follows::
+
+  $ sudo make install-tm
 
 **Step 7.** The Pure interpreter should be ready to go now.
 
@@ -547,8 +557,13 @@ advantage that it doesn't require root access and you can easily edit the
 plugin files under ~/.TeXmacs/plugins/pure/progs afterwards to tailor them to
 your needs.
 
+The distributed plugin has support for reading the Pure online help in TeXmacs
+format. See Step 6 under `Basic Installation`_ above for instructions on how
+you can obtain the necessary TeXmacs files and install them in the Pure
+library directory along with the html documentation.
+
 If the distributed plugin doesn't work for you, as a fallback option you can
-try the following minimal setup instead. It lacks all the bells and whistles
+try the following minimal setup instead. This lacks all the bells and whistles
 of the distributed plugin, but should be sufficient to run a basic Pure
 session in TeXmacs, and should hopefully work with any TeXmacs version which
 has plugin support at all.
