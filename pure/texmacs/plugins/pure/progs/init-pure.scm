@@ -102,13 +102,48 @@
 		scripts))
    " "))
 
-;; Entry point for Pure help commands.
+;; Online Pure help. ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; If the TeXmacs-formatted documentation is available, this creates a static
+;; menu in the texmacs-extra-menu with the most important help files in it.
+
+(import-from (doc help-funcs))
+(menu-bind
+ pure-menu
+ ("Pure Help"
+  (load-help-buffer
+   (string-append pure-lib-path "/pure/docs/index.tm")))
+ ---
+ ("Pure Manual"
+  (load-help-buffer
+   (string-append pure-lib-path "/pure/docs/pure.tm")))
+ ("Pure Library Manual"
+  (load-help-buffer
+   (string-append pure-lib-path "/pure/docs/purelib.tm")))
+ ---
+ ("Module Index"
+  (load-help-buffer
+   (string-append pure-lib-path "/pure/docs/pure-modindex.tm")))
+ ("Index"
+  (load-help-buffer
+   (string-append pure-lib-path "/pure/docs/genindex.tm"))))
+
+(tm-menu
+ (texmacs-extra-menu)
+ (former)
+ (when (url-exists-in-help? (string-append pure-lib-path "/pure/docs/index.tm"))
+       (=> "Pure" (link pure-menu))))
+
+;; The following code provides an entry point for remote help commands issued
+;; by the Pure interpreter. This also lets you look up index entries using the
+;; Pure 'help' command with the appropriate argument, see the Pure Manual,
+;; section 'Online Help' for details.
+
 (define (pure-decompose s ch)
   (with i (string-index s ch)
     (if (not i) (list s "")
 	(list (substring s 0 i) (substring s (+ i 1) (string-length s))))))
 
-;; We use the tm documents if they are installed.
 (define (pure-help url)
   (with
    (name label) (pure-decompose url #\#)
@@ -130,14 +165,14 @@
 	 (set! name tm-name)))
      (cond ((== name "") (go-to-label label))
 	   ((== label "")
-	    (set-message `(concat "Loaded " ,name) "Pure help")
-	    (with u (url-relative (buffer-master) name)
-		  (load-buffer-in-new-window u)))
+	    ;; uncomment this if you'd like to pop up a new help window
+	    ;; (open-window)
+	    (load-help-buffer name))
 	   (else
-	    (set-message `(concat "Loaded " ,name) "Pure help")
-	    (with u (url-relative (buffer-master) name)
-		  (load-buffer-in-new-window u)
-		  (go-to-label label))))))
+	    ;; uncomment this if you'd like to pop up a new help window
+	    ;; (open-window)
+	    (load-help-buffer name)
+	    (go-to-label label)))))
 
 ;; Session plugin definitions. ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
