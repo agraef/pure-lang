@@ -142,7 +142,7 @@ mode==5 { next; }
     # gsub(/©/, "(c)");
 
     # Enforce smart quotes in simple cases where Sphinx doesn't get it right.
-    $0 = gensub(/`(\\?[^`]|\\verb.[^`].)`/, "`\\1'", "g");
+    #$0 = gensub(/`(\\?[^`]|\\verb.[^`].)`/, "`\\1'", "g");
 
     # Enforce line breaks in option lists.
     gsub(/^-[a-zA-Z-]+$/, "\n&");
