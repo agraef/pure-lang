@@ -39,11 +39,11 @@
 	(with texmacs-dir (getenv "TEXMACS_PATH")
 	      (string-append texmacs-dir "/plugins/pure/progs")))))
 
-;; Scripts to be preloaded (if present) by the Pure script plugin. Filenames
-;; without a slash in them are looked for first in the pure-texmacs-includes
+;; Scripts to be preloaded (if present) by the Pure plugins. Filenames without
+;; a slash in them are looked for first in the pure-texmacs-includes
 ;; directories and then in the Pure library directory.
 (if (not (defined? 'pure-scripts))
-(define pure-scripts (list "reduce.pure" "texmacs.pure")))
+(define pure-scripts (list "texmacs.pure")))
 
 ;; Default Pure library path. This is normally auto-detected (see below), but
 ;; if the auto-detection doesn't work for you then you'll have to set this
@@ -105,7 +105,7 @@
 ;; Online Pure help. ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; If the TeXmacs-formatted documentation is available, this creates a static
-;; menu in the texmacs-extra-menu with the most important help files in it.
+;; submenu in the texmacs help menu with the most important help files in it.
 
 (import-from (doc help-funcs))
 (menu-bind
@@ -129,9 +129,10 @@
    (string-append pure-lib-path "/pure/docs/genindex.tm"))))
 
 (tm-menu
- (texmacs-extra-menu)
+ (help-menu)
  (former)
  (when (url-exists-in-help? (string-append pure-lib-path "/pure/docs/index.tm"))
+       ---
        (=> "Pure" (link pure-menu))))
 
 ;; The following code provides an entry point for remote help commands issued
@@ -165,12 +166,10 @@
 	 (set! name tm-name)))
      (cond ((== name "") (go-to-label label))
 	   ((== label "")
-	    ;; uncomment this if you'd like to pop up a new help window
-	    ;; (open-window)
+	    (open-window)
 	    (load-help-buffer name))
 	   (else
-	    ;; uncomment this if you'd like to pop up a new help window
-	    ;; (open-window)
+	    (open-window)
 	    (load-help-buffer name)
 	    (go-to-label label)))))
 
@@ -193,7 +192,7 @@
 (plugin-configure pure
   (:require (url-exists-in-path? "pure"))
   (:initialize (pure-initialize))
-  (:launch ,(pure-cmd "pure -i --texmacs" '()))
+  (:launch ,(pure-cmd "pure -i --texmacs" pure-scripts))
   (:serializer ,pure-serialize)
   (:tab-completion #t)
   (:session "Pure"))
@@ -202,13 +201,23 @@
 (plugin-configure pure-debug
   (:require (url-exists-in-path? "pure"))
   (:initialize (pure-initialize))
-  (:launch ,(pure-cmd "pure -i -g --texmacs" '()))
+  (:launch ,(pure-cmd "pure -i -g --texmacs" pure-scripts))
   (:serializer ,pure-serialize)
   (:tab-completion #t)
   (:session "Pure-debug"))
 
+;; Math session. This has math output enabled (and Reduce loaded) by default.
+(plugin-configure pure-math
+  (:require (url-exists-in-path? "pure"))
+  (:initialize (pure-initialize))
+  (:launch ,(pure-cmd "pure -i --texmacs --enable tmmath" pure-scripts))
+  (:serializer ,pure-serialize)
+  (:tab-completion #t)
+  (:session "Pure-math"))
+
 ;; Scripting support. ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
+;; This is like pure-serialize, but adds the terminating ';' automatically.
 (define (pure-script-serialize lan t)
   (import-from (utils plugins plugin-cmd))
   (with s (string-append
@@ -217,7 +226,7 @@
 	s))
 
 ;; The script plugin. Note that we keep this separate from the other plugins,
-;; so that it can have its own environment and input serialization.
+;; so that it can have its own input serialization.
 (plugin-configure pure-script
   (:require (url-exists-in-path? "pure"))
   (:initialize (pure-initialize))
