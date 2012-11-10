@@ -164,6 +164,9 @@ extern int fclose(FILE*);
 extern FILE* fopen(char*, char*);
 extern char* fgets(void* buf, int size, FILE* fp);
 extern int puts(char* s);
+extern int printf(char*, ...) = printf;
+extern int printf(char*, char*) = printf_s;
+extern int fflush(FILE*);
 extern int pure_errno() = errno;
 extern char* strerror(int);
 extern int feof(FILE* fp), int ferror(FILE* fp);
@@ -179,10 +182,8 @@ ps s::string = () when
 end with
   // If s has no newline in it, assume that it's the name of a PostScript file.
   psfile name::string = ps s when
-    docdir = getenv "TEXMACS_DOC_DIR";
     path = getenv "TEXMACS_DOC_PATH";
-    path = if null path then if null docdir then "" else docdir
-           else if null docdir then path else docdir+":"+path;
+    path = if null path then "" else path;
     fp = search name path;
     ~null fp || throw (name+": "+strerror errno);
     s = fget fp;
@@ -258,3 +259,11 @@ __texmacs__ x = tmprint x if get tmmode;
 #! --if tmmath
 math;
 #! --endif
+
+namespace __cmd__;
+cwd s = () when
+  printf_s "%s" "\002command:(pure-cwd)\005";
+  fflush NULL;
+end if null s;
+= evalcmd $ "cd "+s;
+namespace;

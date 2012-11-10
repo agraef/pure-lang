@@ -198,6 +198,26 @@ blank  [ \t\f\v\r]
 {blank}+   yylloc->step();
 [\n]+      yylloc->lines(yyleng); yylloc->step();
 
+^"\020(chdir \"".* {
+  if (interp.texmacs) {
+    const char *s = yytext+1+strlen("(chdir \""), *t = s;
+    char *buf = (char*)malloc(strlen(s)+1), *bufp = buf;
+    while (*t && *t != '"') {
+      if (*t == '\\' && *++t == 0) break;
+      *bufp++ = *t++;
+    }
+    if (*t++ == '"') {
+      *bufp = 0;
+      if (*buf) {
+	// printf("chdir('%s')\n", buf);
+	if (chdir(buf)) perror("chdir");
+      }
+    }
+    free(buf);
+  }
+  yylloc->step();
+  yylloc->lines(-1);
+}
 ^"\020(complete \"".* {
   if (interp.texmacs) {
     char *s = yytext+1+strlen("(complete \""), *t = s,
