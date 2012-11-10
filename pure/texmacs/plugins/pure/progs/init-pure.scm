@@ -106,49 +106,77 @@
      (string-append (char->string #\020)
 		    (format #f "(chdir ~s)\n" dir)))))
 
-;; Online Pure help. ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Pure menu. ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; If the TeXmacs-formatted documentation is available, this creates a static
-;; submenu in the texmacs help menu with the most important help files in it.
+;; This provides the usual kind of plugin menu for the Pure language. If the
+;; TeXmacs-formatted documentation is available, this also includes a submenu
+;; with the most important help files in it.
+
+(define pure-texmacs-help-available
+  (url-exists-in-help? (string-append pure-lib-path "/pure/docs/index.tm")))
 
 (import-from (doc help-funcs))
+
 (menu-bind
- pure-menu
- ("Pure Help"
+ pure-help-menu
+ ("Pure help"
   (load-help-buffer
    (string-append pure-lib-path "/pure/docs/index.tm")))
  ---
- ("Pure Manual"
+ ("Pure manual"
   (load-help-buffer
    (string-append pure-lib-path "/pure/docs/pure.tm")))
- ("Pure Library Manual"
+ ("Pure library manual"
   (load-help-buffer
    (string-append pure-lib-path "/pure/docs/purelib.tm")))
  ---
- ("Module Index"
+ ("Module index"
   (load-help-buffer
    (string-append pure-lib-path "/pure/docs/pure-modindex.tm")))
  ("Index"
   (load-help-buffer
    (string-append pure-lib-path "/pure/docs/genindex.tm"))))
 
-(tm-menu
- (help-menu)
- (former)
- (when (url-exists-in-help? (string-append pure-lib-path "/pure/docs/index.tm"))
-       ---
-       (=> "Pure" (link pure-menu))))
+(menu-bind
+ pure-menu
+ (if (not-in-session?)
+     (link scripts-eval-menu)
+     ---
+     (link scripts-eval-toggle-menu)
+     (if pure-texmacs-help-available
+	 ---))
+ (if pure-texmacs-help-available
+     (link pure-help-menu)))
 
-;; The following code provides an entry point for remote help commands issued
-;; by the Pure interpreter. This also lets you look up index entries using the
-;; Pure 'help' command with the appropriate argument, see the Pure Manual,
-;; section 'Online Help' for details.
+;; NOTE: If you add more Pure session and script plugins below, you'll have to
+;; adjust the :require clause below accordingly.
+(menu-bind
+ plugin-menu
+ (:require
+  (or (in-pure?) (in-pure-debug?) (in-pure-math?)
+      (and (not-in-session?)
+	   (or (pure-script-scripts?) (pure-script-math-scripts?)))))
+ (=> "Pure" (link pure-menu)))
+
+(menu-bind pure-help-icons
+  (if (and (or (in-pure?) (in-pure-debug?) (in-pure-math?))
+	   pure-texmacs-help-available)
+      /
+      (=> (balloon (icon "tm_help.xpm") "Pure Help")
+	  (link pure-help-menu))))
+
+(menu-bind session-help-icons
+  (:require (and (or (in-pure?) (in-pure-debug?) (in-pure-math?))
+		 (in-session?)))
+  (link pure-help-icons))
 
 (define (pure-decompose s ch)
   (with i (string-index s ch)
     (if (not i) (list s "")
 	(list (substring s 0 i) (substring s (+ i 1) (string-length s))))))
 
+;; We also offer an entry point for the Pure interpreter to pop up help
+;; requested with the Pure help command in a TeXmacs window.
 (define (pure-help url)
   (with
    (name label) (pure-decompose url #\#)
