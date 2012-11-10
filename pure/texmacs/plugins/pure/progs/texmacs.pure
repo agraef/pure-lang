@@ -260,10 +260,13 @@ __texmacs__ x = tmprint x if get tmmode;
 math;
 #! --endif
 
+// Custom command to change the cwd of the interpreter to the current document
+// directory, as reported by TeXmacs. Note that this only sends the
+// corresponding request to TeXmacs, the actual processing of the TeXmacs
+// reply is done by the interpreter.
 namespace __cmd__;
-cwd s = () when
-  printf_s "%s" "\002command:(pure-cwd)\005";
+cdd _ = () when
+  printf_s "%s" "\002command:(pure-cdd)\005";
   fflush NULL;
-end if null s;
-= evalcmd $ "cd "+s;
+end;
 namespace;

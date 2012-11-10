@@ -93,7 +93,7 @@
 
 ;; This provides an entry point to the interpreter to query the current
 ;; document directory, so that the interpreter's cwd can be set accordingly.
-(define (pure-cwd)
+(define (pure-cdd)
   (let* ((lan (get-env "prog-language"))
 	 (ses (get-env "prog-session"))
 	 (name (url->unix (current-buffer)))
