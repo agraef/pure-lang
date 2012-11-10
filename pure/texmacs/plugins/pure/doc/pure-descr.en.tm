@@ -206,6 +206,44 @@
     </unfolded-io>
   </session>
 
+  Note that <TeXmacs> always runs plugins in the current working directory in
+  which itself was started, which is also the directory from which the Pure
+  interpreter will read its startup files. If you start <TeXmacs> from the
+  GUI, this will most likely be your home directory. It often makes more
+  sense to run the interpreter in the directory of the <TeXmacs> document
+  hosting the Pure sessions, so that you can keep scripts and other files
+  needed by your sessions in the same directory. Unfortunately, <TeXmacs>
+  offers no help with this; there's simply no way to specify a working
+  directory when running a session. Thus you'll either have to run <TeXmacs>
+  in the right directory (by invoking it from the command line), or change
+  the working directory manually inside the Pure session. To help with the
+  latter, the <TeXmacs>-hosted interpreter offers a special <verbatim|cdd>
+  (``current document directory'') command:
+
+  <\session|pure|default>
+    <\unfolded-io>
+      \<gtr\>\ 
+    <|unfolded-io>
+      pwd
+    <|unfolded-io>
+      /home/ag
+    </unfolded-io>
+
+    <\input>
+      \<gtr\>\ 
+    <|input>
+      cdd
+    </input>
+
+    <\unfolded-io>
+      \<gtr\>\ 
+    <|unfolded-io>
+      pwd
+    <|unfolded-io>
+      /home/ag/.TeXmacs/plugins/pure/doc
+    </unfolded-io>
+  </session>
+
   <section|Completion and Help>
 
   Completion of Pure keywords and functions is fully supported in <TeXmacs>.
@@ -223,10 +261,10 @@
     </input>
   </session>
 
-  The Pure <verbatim|help> command also works in <TeXmacs>. By default, this
-  will pop up a new <TeXmacs> window with the help file in it. Search terms
-  also work as usual; you might want to try the following to find out how the
-  Pure help system works (this may take a while to load, so be patient):
+  The Pure <verbatim|help> command also works in <TeXmacs>. This pops up a
+  new <TeXmacs> window with the help file in it. Search terms also work as
+  usual; you might want to try the following to find out how the Pure help
+  system works (this may take a while to load, so be patient):
 
   <\session|pure|default>
     <\input>
@@ -239,13 +277,16 @@
   Note that Pure's online help is in html format by default. While <TeXmacs>
   can load html files, it has to convert them to its own format first, which
   at least in the current version of <TeXmacs> is quite slow and the
-  rendering isn't perfect. There's <TeXmacs>-formatted online documentation
-  available on the Pure website which you can install to alleviate this, see
-  the Pure installation instructions for details. If you still prefer the
-  html documentation, then it's also possible to use an external graphical
-  html browser instead. Just set the <verbatim|PURE_HELP> shell environment
-  variable accordingly, the interpreter will then use that command to display
-  the online help.<\footnote>
+  rendering isn't perfect. As a remedy, there's <TeXmacs>-formatted online
+  documentation available on the Pure website, see the Pure installation
+  instructions for details. If these files are installed then the Pure help
+  can also be accessed using the corresponding options in the <samp|Pure>
+  plugin menu which automatically appears when the cursor is inside a Pure
+  session. If you still prefer the html documentation, then it's also
+  possible to use an external graphical html browser instead. Just set the
+  <verbatim|PURE_HELP> shell environment variable accordingly, the
+  interpreter will then use that command to display the online
+  help.<\footnote>
     Note that the <verbatim|PURE_HELP> environment variable also works
     outside of <TeXmacs>, i.e., when the interpreter is run from Emacs or the
     shell. The <verbatim|BROWSER> environment variable, however, does
@@ -276,28 +317,20 @@
       (if (not (session-math-input?)) (toggle-session-math-input))
     </scm-code>
 
-    <item>To enable math <em|output>, you'll need to import the Pure
-    <verbatim|texmacs> module. The <verbatim|math> function in this module
-    switches output to <LaTeX> math, as provided by the Reduce
-    <verbatim|tmprint> package (thus this feature really needs the
-    <verbatim|pure-reduce> module). The <verbatim|verbatim> function switches
-    back to verbatim Pure output. Verbatim output is also used as a fallback
-    in math mode for all Pure expressions which cannot be printed through the
-    Reduce interface (typically because they aren't valid Reduce
-    expressions).
+    <item>To enable math <em|output>, you'll have to invoke the
+    <verbatim|math> function from the Pure <verbatim|texmacs> module. This
+    module is always loaded when running Pure inside <TeXmacs>. The
+    <verbatim|math> function uses the Reduce <verbatim|tmprint> package, so
+    the <verbatim|pure-reduce> module <em|must> be installed to make this
+    work. The <verbatim|verbatim> function switches back to verbatim Pure
+    output. Verbatim output is also used as a fallback in math mode for all
+    Pure expressions which cannot be printed through the Reduce interface
+    (typically because they aren't valid Reduce expressions).
 
-    You can make math output the default by enabling the <verbatim|tmmath>
-    conditional compilation option on the Pure side. This can be set
-    interactively by entering the following pragma at the input line
-    <em|before> loading the <verbatim|texmacs> module:
-
-    <\verbatim-code>
-      #! --enable tmmath
-    </verbatim-code>
-
-    Alternatively, you can also set the <verbatim|PURE_OPTION_TMMATH>
-    variable in your process environment or you shell's startup files to
-    enable this option.
+    To make math output the default, you can also run a <verbatim|pure-math>
+    session (<samp|Insert \| Session \| Pure-math>) which works like a
+    regular Pure session but enables math output and loads the
+    <verbatim|reduce> module at startup.
   </itemize>
 
   Here's a little example, running the Reduce computer algebra system in
@@ -307,9 +340,9 @@
     <\unfolded-io>
       \<gtr\>\ 
     <|unfolded-io>
-      using reduce, texmacs; math;
+      math;
     <|unfolded-io>
-      Reduce (Free CSL version), 23-Oct-12 ...
+      Reduce (Free CSL version), 03-Nov-12 ...
 
       ()
     </unfolded-io>
@@ -341,21 +374,15 @@
   <verbatim|texmacs> module which takes either verbatim PostScript code
   (indicated by a <verbatim|%!> header) or a PostScript filename as its
   string argument. In the latter case, if the PostScript filename doesn't
-  have a slash in it, it is searched for in the directory of the current
-  buffer (if any) and all directories on the <verbatim|TEXMACS_DOC_PATH>, and
-  a <verbatim|.eps> or <verbatim|.ps> suffix is added automatically when
-  needed. Otherwise the filename is interpreted relative to the directory in
-  which <TeXmacs> was started.
+  have a slash in it, it is searched for in all directories on the
+  <verbatim|TEXMACS_DOC_PATH>, and a <verbatim|.eps> or <verbatim|.ps> suffix
+  is added automatically when needed. Otherwise the filename is interpreted
+  relative to the current directory of the interpreter (which is normally the
+  directory in which <TeXmacs> was started).
 
   Here is a simple example illustrating verbatim PostScript code:
 
   <\session|pure|postscript>
-    <\input>
-      \<gtr\>\ 
-    <|input>
-      using texmacs;
-    </input>
-
     <\unfolded-io>
       \<gtr\>\ 
     <|unfolded-io>
@@ -373,10 +400,13 @@
   <section|Pure Scripting>
 
   Last but not least, Pure can also be used as a <em|scripting language> in
-  <TeXmacs>, as described at the end of the ``<TeXmacs> \ as an interface''
-  section. This is done by enabling the <samp|Document \| Scripts \| Pure>
+  <TeXmacs>. This is done by enabling the <samp|Document \| Scripts \| Pure>
   option (or <samp|Document \| Scripts \| Pure-math> if you prefer math
-  output; this is what we use here).
+  output; this is what we use here). This enables a few additional options in
+  the <samp|Pure> plugin menu, as well as the <samp|Insert \| Link> menu and
+  the corresponding toolbar button. These facilities are described in more
+  detail at the end of the ``<TeXmacs> \ as an interface'' section in the
+  <TeXmacs> online help, so we only give a few basic examples here.
 
   <\bothlined>
     <strong|Note: >If you're reading this in the <TeXmacs> help browser, then
@@ -384,47 +414,48 @@
     now if you'd like to try the examples below.
   </bothlined>
 
-  Scripting uses its own instance of the Pure interpreter which is separate
-  from all Pure sessions that might be included in the same document. It
-  gives you both executable input fields and spreadsheets whose cells can be
-  evaluated in the Pure interpreter. For instance:
+  For instance, you can just select any valid Pure expression in the text and
+  evaluate it with the <samp|Evaluate> option of the <samp|Pure> menu or
+  <key|Ctrl+Return> like this: <math|<around*|(|a+b|)><rsup|2>>
+  <math|\<rightarrow\>> <with|color|black|mode|math|math-display|true|a<rsup|2>+2*a*b+b<rsup|2>>.
+  It's also possible to create an <em|executable switch> such as
+  <script-input|pure-script-math|default|<math|df<around*|(|<around*|(|x+y|)><rsup|3>,x|)>>|<with|color|black|mode|math|math-display|true|3*<around*|(|x<rsup|2>+2*x*y+y<rsup|2>|)>>>
+  which can be toggled between input and computed result by pressing
+  <key|Return> inside the field (try it!).
 
-  Enter <math|x> here: <with|font-base-size|14|<calc-inert|x|a+b>>. This is
-  the value of <math|x> squared: <with|font-base-size|14|<calc-output|x
-  squared|<calc-ref|x>^2|<with|color|black|mode|math|math-display|true|a<rsup|2>+2*a*b+b<rsup|2>>>>.
-
-  Position the cursor in the right field above and hit <key|Return> twice to
-  toggle between the computed Pure expression and its value. You can also
-  change the value in the left field and hit <key|Return> to have the right
-  field recomputed.
-
-  An even more convenient way to have Pure compute values in a <TeXmacs>
-  document are spreadsheets. Here is an example of a textual spreadsheet
+  There's also the possibility to work with <em|executable fields> and
+  <em|spreadsheets>. These offer the advantage that fields may depend on
+  other fields in the same document or table. (Be warned that this might
+  become <em|very> slow in large documents; however, it's possible to work
+  around this limitation by breaking your document into smaller include
+  files.) For instance, here is an example of a textual spreadsheet
   (<samp|Insert \| Table \| Textual spreadsheet>) showing some Pure and
-  Reduce calculations. As before, you can type <key|Return> in the cells of
-  the last column to reveal the underlying Pure formulas; also try changing
-  some of the values in the <verbatim|b> and <verbatim|c> columns and hitting
-  <key|Return> to recompute the corresponding values in the last column.
+  Reduce calculations. Type <key|Return> in the cells of the last column to
+  reveal the underlying Pure formulas; also try changing some of the values
+  in the <verbatim|b> and <verbatim|c> columns and hitting <key|Return> to
+  recompute the corresponding values in the last column.
 
   <with|font-base-size|12|<\calc-table|table1>
-    <textual-table|<tformat|<cwith|1|1|1|-1|cell-background|pastel
-    yellow>|<cwith|2|-1|1|-1|cell-hyphen|n>|<cwith|2|2|1|-1|cell-bborder|0>|<cwith|1|-1|1|1|cell-width|>|<cwith|1|-1|1|1|cell-hmode|auto>|<cwith|4|4|1|-1|cell-bborder|0>|<cwith|1|-1|1|1|cell-background|pastel
-    yellow>|<cwith|2|-1|4|4|cell-background|pastel
-    green>|<table|<row|<cell|<cell-inert|a1|a1>>|<cell|<cell-inert|b1|b>>|<cell|<cell-inert|c1|c>>|<cell|<cell-inert|d1|d>>>|<row|<cell|<cell-inert|a2|2>>|<cell|<cell-inert|b2|1>>|<cell|<cell-inert|c2|12>>|<cell|<cell-output|d2|=
-    fact (b2+c2) with fact n = if n\<gtr\>0 then n*fact(n-1) else 1
-    end|1932053504>>>|<row|<cell|<cell-inert|a3|3>>|<cell|<cell-inert|b3|17>>|<cell|<cell-inert|c3|33>>|<cell|<cell-output|d3|='(b3+c3)|<with|color|black|mode|math|math-display|true|50>>>>|<row|<cell|<cell-inert|a4|4>>|<cell|<cell-inert|b4|<math|sin
-    <around*|(|x<rsup|2>|)>>>>|<cell|<cell-inert|c4|<math|x>>>|<cell|<cell-output|d4|=?df
-    b4 c4|<with|color|black|mode|math|math-display|true|2*cos<around*|(|x<rsup|2>|)>*x>>>>|<row|<cell|<cell-inert|a5|5>>|<cell|<cell-inert|b5|<math|<around*|(|x+y|)><rsup|2>>>>|<cell|<cell-inert|c5|<math|x>>>|<cell|<cell-output|d5|=?df
-    b5 c5|<with|color|black|mode|math|math-display|true|2*<around*|(|x+y|)>>>>>>>>
-
-    \;
+    <\with|par-mode|center>
+      <textual-table|<tformat|<cwith|1|1|1|-1|cell-background|pastel
+      yellow>|<cwith|2|-1|1|-1|cell-hyphen|n>|<cwith|2|2|1|-1|cell-bborder|0>|<cwith|1|-1|1|1|cell-width|>|<cwith|1|-1|1|1|cell-hmode|auto>|<cwith|4|4|1|-1|cell-bborder|0>|<cwith|1|-1|1|1|cell-background|pastel
+      yellow>|<cwith|2|-1|4|4|cell-background|pastel
+      green>|<table|<row|<cell|<cell-inert|a1|a1>>|<cell|<cell-inert|b1|b>>|<cell|<cell-inert|c1|c>>|<cell|<cell-inert|d1|d>>>|<row|<cell|<cell-inert|a2|2>>|<cell|<cell-inert|b2|1>>|<cell|<cell-inert|c2|12>>|<cell|<cell-output|d2|=
+      fact (b2+c2) with fact n = if n\<gtr\>0 then n*fact(n-1) else 1
+      end|1932053504>>>|<row|<cell|<cell-inert|a3|3>>|<cell|<cell-inert|b3|17>>|<cell|<cell-inert|c3|33>>|<cell|<cell-output|d3|='(b3+c3)|<with|color|black|mode|math|math-display|true|50>>>>|<row|<cell|<cell-inert|a4|4>>|<cell|<cell-inert|b4|<math|sin
+      <around*|(|x<rsup|2>|)>>>>|<cell|<cell-inert|c4|<math|x>>>|<cell|<cell-output|d4|=?df
+      b4 c4|<with|color|black|mode|math|math-display|true|2*cos
+      <around*|(|x<rsup|2>|)>*x>>>>|<row|<cell|<cell-inert|a5|5>>|<cell|<cell-inert|b5|<math|<around*|(|x+y|)><rsup|3>>>>|<cell|<cell-inert|c5|<math|x>>>|<cell|<cell-output|d5|=?df
+      b5 c5|<with|color|black|mode|math|math-display|true|3*<around*|(|x<rsup|2>+2*x*y+y<rsup|2>|)>>>>>>>>
+    </with>
   </calc-table>>
 
   You can also refer to a table field in text like this:
-  <with|font-base-size|12|<calc-output|field3|<calc-ref|table1-d4>|<with|color|black|mode|math|math-display|true|2*cos<around*|(|x<rsup|2>|)>*x>>>.
-  Here we set the Ref field of the table to <verbatim|table1>; the reference
-  to cell <verbatim|d4> can then be entered with the following series of key
-  strokes: <key|\\ ! \\ ?> <verbatim|table1-d4> <key|Return>.
+  <with|font-base-size|12|<calc-output|field3|<calc-ref|table1-d4>|<with|color|black|mode|math|math-display|true|2*cos
+  <around*|(|x<rsup|2>|)>*x>>>. Here we set the Ref field of the table to
+  <verbatim|table1>; the reference to cell <verbatim|d4> can then be entered
+  with the following series of key strokes: <key|\\ ! \\ ?>
+  <verbatim|table1-d4> <key|Return>.
 
   <section|More Information>
 
