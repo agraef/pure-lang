@@ -244,6 +244,7 @@ blank  [ \t\f\v\r]
     free(buf);
   }
   yylloc->step();
+  yylloc->lines(-1);
 }
 ^"#!"[ \t]*"--eager"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
   /* --eager pragma. */
