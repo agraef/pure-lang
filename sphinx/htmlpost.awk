@@ -15,7 +15,7 @@ BEGIN { verbatim = 0; }
     # Stuff that the texmacs latex importer gets wrong.
     gsub(/\\<copyright\\>/, "<copyright>");
     if (!verbatim) $0 = gensub(/^([ ]+)\\ /, "\\1", "g");
-    gsub(/> \\ /, "> ");
+    $0 = gensub(/([^\\]>) \\ /, "\\1 ", "g");
     gsub(/<quote-env\| +/, "<quote-env|");
     gsub(/<cell\| +/, "<cell|");
     print $0;
