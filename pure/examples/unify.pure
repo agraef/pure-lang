@@ -1,0 +1,145 @@
+/* ..
+
+   A syntactic unification algorithm in Pure
+   =========================================
+
+   References:
+   -----------
+   Baader/Synder
+   http://www.cs.bu.edu/~snyder/publications/UnifChapter.pdf
+   2.2.3. A rule-based approach, p. 448 ff
+
+   Martelli-Montanari
+   www.nsl.com/misc/papers/martelli-montanari.pdf
+
+   Wikipedia
+   http://en.wikipedia.org/wiki/Unification_(computer_science)
+
+*/
+
+// expr to prefix tree (list)
+parse (x@_ y)
+  = parse x + [parse y] if applp y ;
+  = parse x + parse y otherwise ;
+
+parse s = [s] ;
+
+
+
+//  Term reduction (alias Decomposition)
+// (f t_1 ... t_n) == (f s_1 ... s_n) -> t_1 == s_1, ... ,t_n == s_n.
+tred ((a@_ b) == (c@_ d)) = tred (a==c), quote(b==d) ;
+tred (x==y) = quote(x==y) ;
+
+// Symbol clash
+// (f t_1 ... t_n) == (f s_1 ... s_n), n > 0.
+check_tred (X==Y) = (head u === head v) && (#u==#v) && (#u>1)
+  when u = parse X; v = parse Y end ;
+
+
+// Deep membership in a list
+deep_memberp x [] = false ;
+deep_memberp x (y:ys)
+  = true if x === y ;
+  = deep_memberp x y || deep_memberp x ys if listp y ;
+  = deep_memberp x ys otherwise ;
+
+// Occur check
+occur_check x::var y = (x~==y) && ~(deep_memberp x (parse y)) ;
+
+// Unification
+unify ((x==y) : xs) S = unify xs S if (x===y) ;
+unify ((x::appl == y::var)  : xs) S = unify ((y==x):xs) S ;
+unify ((x::var  == y)       : xs) S
+  = 0 if ~(occur_check x y) ;
+  = unify (reduce_with [x=>y] xs) ((reduce_with [x=>y] S)+[x=>y]) ;
+unify ((x::appl == y::appl) : xs) S
+  = 0 if ~check_tred (x==y) ;
+  = unify ((list (tred (x==y)))+xs) S ;
+unify [] X = X ;
+
+//
+// Usage:  unify P S
+// where P = [lhs1 == rhs1, ..., lhs_n == rhs_n] is a list of equations
+// {to avoid eval use quote(lhs == rhs)}, and S is a list of substitutions
+// of the form [s_1 => t_1, ... , s_n => t_n] as it is used in
+// reduce_with [a=>b] expr.
+//
+// Note that 'reduce_with S P' may be used to check if S is correct.
+//
+
+
+// Examples:
+
+let P1 = [f (g x) x == f y a];
+let P2 = [f x (h x) y == f (g z) u z] ;
+let P3 = [p a x (f y) == p u v w, p a x (f y)== p a s (f c),
+          p u v w == p a s (f c) ] ;
+
+let P4 = [f x b (g z) == f (f y) y (g u)] ;
+let P5 = [p a x (h (g z)) == p z (h y) (h y)] ;
+let P6 = [p (f a) (g x) == p y y] ; // should fail => 0
+let P7 = [p x x == p y (f y)] ;     // should fail => 0
+
+let P8 = [sin (x+y) == sin (u^2+v^2)] ;
+
+let P9  = [c+b==a+c,a+b==b+c] ;
+let P10 = [c+b==a+c,a+b==b+c,a*b==c*d] ;
+
+/* Run:
+
+> unify P1 [] ;
+[y=>g a,x=>a]
+
+> reduce_with ans P1 ;
+[f (g a) a==f (g a) a]
+
+> unify P2 [] ;
+[x=>g z,u=>h (g z),y=>z]
+
+> reduce_with ans P2 ;
+[f (g z) (h (g z)) z==f (g z) (h (g z)) z]
+
+> unify P3 [] ;
+[a=>u,x=>s,w=>f c,v=>s,y=>c]
+
+> reduce_with ans P3 ;
+[p u s (f c)==p u s (f c),p u s (f c)==p u s (f c),p u s (f c)==p u s (f c)]
+
+> unify P4 [] ;
+[x=>f y,b=>y,z=>u]
+
+> reduce_with ans P4 ;
+[f (f y) y (g u)==f (f y) y (g u)]
+
+> unify P5 [] ;
+[a=>z,x=>h (g z),y=>g z]
+
+> reduce_with ans P5 ;
+[p z (h (g z)) (h (g z))==p z (h (g z)) (h (g z))]
+
+> unify P6 [] ;
+0
+
+> unify P7 [] ;
+0
+
+> unify P8 [] ;
+[x=>u^2,y=>v^2]
+
+> reduce_with ans P8 ;
+[sin (u^2+v^2)==sin (u^2+v^2)]
+
+> unify P9 [] ;
+[c=>a,b=>a]
+
+> reduce_with ans P9 ;
+[a+a==a+a,a+a==a+a]
+
+> unify P10 [] ;
+[c=>d,b=>d,a=>d]
+
+> reduce_with ans P10 ;
+[d+d==d+d,d+d==d+d,d*d==d*d]
+
+*/
