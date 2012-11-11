@@ -743,7 +743,7 @@
     </unfolded-io-math>
   </session>
 
-  To actually obtain a simplified result which we can be processed further in
+  To actually obtain a simplified result which can be processed further in
   Pure land (passed to Pure functions or assigned to Pure variables), you
   still need to use <verbatim|?>, <verbatim|?:> etc.:
 
