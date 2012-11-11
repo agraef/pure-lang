@@ -16,6 +16,7 @@ BEGIN { verbatim = 0; }
     gsub(/\\<copyright\\>/, "<copyright>");
     if (!verbatim) $0 = gensub(/^([ ]+)\\ /, "\\1", "g");
     gsub(/> \\ /, "> ");
-    gsub(/<quote-env\| /, "<quote-env|");
+    gsub(/<quote-env\| +/, "<quote-env|");
+    gsub(/<cell\| +/, "<cell|");
     print $0;
 }

@@ -35,13 +35,19 @@
 #   but this part of the code might still need adjusting for special kinds of
 #   index entries.
 
+# - Similar remarks apply to tables. Pandoc doesn't handle these at all, so we
+#   recover them from some simplistic homegrown markup added in the
+#   preprocessing phase. This seems to be good enough for the simple kinds of
+#   rst tables used in the Pure documentation, but we don't handle more
+#   sophisticated table markup in the html yet.
+
 ##############################################################################
 
 # Add the bare minimum necessary so that TeXmacs recognizes the encoding.
 BEGIN {
     print "\\usepackage[utf8x]{inputenc}";
     # parse modes
-    mode = 0; lastlabels = ""; lastbreak = "";
+    mode = ta = 0; lastlabels = lastbreak = "";
     # scaling of figures
     scale = 66;
 }
@@ -245,6 +251,43 @@ mode==5 { next; }
 	lastlabels = "";
     }
 
+    # Translate pseudo table markup inserted by htmlpre.awk.
+    if (/^[.]TA [0-9]+$/) {
+	format = "";
+	if (match($0, /^[.]TA ([0-9]+)$/, matches)) {
+	    columns = strtonum(matches[1]);
+	    for (i = 1; i <= columns; i++)
+		format = format "l";
+	}
+	$0 = "\\begin{tabular}{" format "}";
+	ta = 1; th = 0; rowno = 0; colno = 0;
+    } else if (/^[.]TH$/) {
+	$0 = "";
+	th = 1; rowno = 0; colno = 0;
+    } else if (/^[.]TB$/) {
+	if (th && rowno > 0)
+	    $0 = "\\\\\n\\hline";
+	else
+	    $0 = "";
+	th = 0; rowno = 0; colno = 0;
+    } else if (/^[.]TR$/) {
+	if (rowno > 0)
+	    $0 = "\\\\";
+	else
+	    $0 = "";
+	rowno++;
+	colno = 0;
+    } else if (/^[.]TC$/) {
+	colno++;
+	if (colno > 1)
+	    $0 = "&";
+	else
+	    $0 = "";
+    } else if (/^[.]TE$/) {
+	$0 = "\\end{tabular}\n";
+	rowno = colno = 0; ta = 0;
+    }
+
     # Finally, mangle all link targets containing characters with a special
     # meaning in TeX. TeXmacs doesn't like these.
     x = $0; $0 = "";
@@ -265,5 +308,5 @@ mode==5 { next; }
     }
     $0 = $0 x;
 
-    print;
+    if (!ta || $0) print;
 }
