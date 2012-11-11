@@ -519,9 +519,8 @@
     can also use the corresponding <samp|Focus \| Input options \|
     Mathematical input> menu option or the equivalent toolbar item; these
     become visible when the cursor is located at the input line. Or you can
-    make math input the default when the Pure <TeXmacs> plugin is loaded by
-    putting the following Scheme command into your
-    <verbatim|my-init-texmacs.scm> file:
+    make math input the default by putting the following Scheme command into
+    your <verbatim|my-init-texmacs.scm> file:
 
     <\scm-code>
       (if (not (session-math-input?)) (toggle-session-math-input))
@@ -532,9 +531,11 @@
     module is always loaded when running Pure inside <TeXmacs>. The
     <verbatim|math> function uses the Reduce <verbatim|tmprint> package, so
     the <verbatim|pure-reduce> module <em|must> be installed to make this
-    work. The <verbatim|verbatim> function switches back to verbatim Pure
-    output. Verbatim output is also used as a fallback in math mode for all
-    Pure expressions which cannot be printed through the Reduce interface
+    work.
+
+    The <verbatim|verbatim> function switches back to verbatim Pure output.
+    Verbatim output is also used as a fallback in math mode for all Pure
+    expressions which cannot be printed through the Reduce interface
     (typically because they aren't valid Reduce expressions).
 
     To make math output the default, you can also run a <verbatim|pure-math>
@@ -2654,15 +2655,15 @@
 
   There's also the possibility to work with <em|executable fields> and
   <em|spreadsheets>. These offer the advantage that fields may depend on
-  other fields in the same document or table. (Be warned that this might
-  become <em|very> slow in large documents; however, it's possible to work
-  around this limitation by breaking your document into smaller include
-  files.) For instance, here is an example of a textual spreadsheet
-  (<samp|Insert \| Table \| Textual spreadsheet>) showing some Pure and
-  Reduce calculations. Type <key|Return> in the cells of the last column to
-  reveal the underlying Pure formulas; also try changing some of the values
-  in the <verbatim|b> and <verbatim|c> columns and hitting <key|Return> to
-  recompute the corresponding values in the last column.
+  other fields in the same document. (Be warned that this might become
+  <em|very> slow in large documents; however, it's possible to work around
+  this limitation by breaking your document into smaller include files.) For
+  instance, here is an example of a textual spreadsheet (<samp|Insert \|
+  Table \| Textual spreadsheet>) showing some Pure and Reduce calculations.
+  Type <key|Return> in the cells of the last column to reveal the underlying
+  Pure formulas; also try changing some of the values in the <verbatim|b> and
+  <verbatim|c> columns and hitting <key|Return> to recompute the
+  corresponding values in the last column.
 
   <with|font-base-size|12|<\calc-table|table1>
     <\with|par-mode|center>
