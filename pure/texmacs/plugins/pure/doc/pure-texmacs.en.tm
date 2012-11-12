@@ -1,4 +1,4 @@
-<TeXmacs|1.0.7.16>
+<TeXmacs|1.0.7.17>
 
 <style|<tuple|tmdoc|varsession>>
 
@@ -415,7 +415,7 @@
   completions in its status line. Pressing <key|Tab> again you can cycle
   through the completions and pick the one that you want. For instance, you
   can try this yourself on the following input line by placing the cursor
-  behind the <verbatim|f> and hitting the <key|Tab> key:
+  behind the <verbatim|f> and hitting the <key|Tab> key repeatedly:
 
   <\session|pure|default>
     <\input>
@@ -2653,17 +2653,27 @@
   which can be toggled between input and computed result by pressing
   <key|Return> inside the field (try it!).
 
+  Note that as an additional convenience, the scripting plugins accept a
+  simple expression without the trailing semicolon as input. This is in
+  contrast to the regular Pure plugins which allow you to enter definitions
+  and expressions spanning multiple input lines, but also require you to
+  terminate each input item with a semicolon. With the scripting plugins the
+  terminating semicolon is optional and will be added automatically when
+  needed, but it also doesn't hurt if you type it anyway:
+  <script-input|pure-script-math|default|<math|df<around*|(|<around*|(|x+y|)><rsup|3>,x|)>;>|<with|color|black|mode|math|math-display|true|3*<around*|(|x<rsup|2>+2*x*y+y<rsup|2>|)>>>
+
   There's also the possibility to work with <em|executable fields> and
   <em|spreadsheets>. These offer the advantage that fields may depend on
-  other fields in the same document. (Be warned that this might become
-  <em|very> slow in large documents; however, it's possible to work around
-  this limitation by breaking your document into smaller include files.) For
-  instance, here is an example of a textual spreadsheet (<samp|Insert \|
-  Table \| Textual spreadsheet>) showing some Pure and Reduce calculations.
-  Type <key|Return> in the cells of the last column to reveal the underlying
-  Pure formulas; also try changing some of the values in the <verbatim|b> and
-  <verbatim|c> columns and hitting <key|Return> to recompute the
-  corresponding values in the last column.
+  other fields in the same document.<\footnote>
+    Be warned that this might become <em|very> slow in large documents;
+    however, it's possible to work around this limitation by breaking your
+    document into smaller include files.
+  </footnote> For instance, here is an example of a textual spreadsheet
+  (<samp|Insert \| Table \| Textual spreadsheet>) showing some Pure and
+  Reduce calculations. Type <key|Return> in the cells of the last column to
+  reveal the underlying Pure formulas; also try changing some of the values
+  in the <verbatim|b> and <verbatim|c> columns and hitting <key|Return> to
+  recompute the corresponding values in the last column.
 
   <with|font-base-size|12|<\calc-table|table1>
     <\with|par-mode|center>
@@ -2706,9 +2716,8 @@
   or imported in that session. To do this, you'll have to create an
   executable switch for a specific session type (<samp|Insert \| Fold \|
   Executable>). (Also note that in this case the expressions <em|must> be
-  terminated with a semicolon, just like in a regular Pure session; the
-  scripting plugin does this automatically.) For instance, the following
-  switch hooks into the Octave session from above:
+  terminated with a semicolon, just like in a regular Pure session.) For
+  instance, the following switch hooks into the Octave session from above:
 
   \;
 

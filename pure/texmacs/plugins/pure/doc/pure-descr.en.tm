@@ -1,4 +1,4 @@
-<TeXmacs|1.0.7.16>
+<TeXmacs|1.0.7.17>
 
 <style|<tuple|tmdoc|varsession>>
 
@@ -207,7 +207,7 @@
   </session>
 
   Note that <TeXmacs> always runs plugins in the current working directory in
-  which itself was started, which is also the directory from which the Pure
+  which it was started, which is also the directory from which the Pure
   interpreter will read its startup files. If you start <TeXmacs> from the
   GUI, this will most likely be your home directory. It often makes more
   sense to run the interpreter in the directory of the <TeXmacs> document
@@ -251,7 +251,7 @@
   completions in its status line. Pressing <key|Tab> again you can cycle
   through the completions and pick the one that you want. For instance, you
   can try this yourself on the following input line by placing the cursor
-  behind the <verbatim|f> and hitting the <key|Tab> key:
+  behind the <verbatim|f> and hitting the <key|Tab> key repeatedly:
 
   <\session|pure|default>
     <\input>
@@ -368,6 +368,121 @@
     </unfolded-io-math>
   </session>
 
+  It's useful to remember the following key bindings and special constructs
+  in math input mode:
+
+  <\itemize>
+    <item>To enter a Pure lambda you need to type the backslash. The <key|\\>
+    key will enter a special <TeXmacs> command, but you can escape the
+    backslash character as follows: <key|Shift+F5 \\>. For instance (note
+    that to type the right arrow, you just enter <key|- \<gtr\>>; likewise,
+    the <key|..> operator shows as a ``<math|\<ldots\>>'' symbol in math
+    input):
+
+    <\session|pure|reduce>
+      <\unfolded-io-math>
+        \<gtr\>\ 
+      <|unfolded-io-math>
+        \\x\<rightarrow\>2*x+1;
+      <|unfolded-io-math>
+        #\<less\>closure 0x7f13e5b3f9f0\<gtr\>
+      </unfolded-io-math>
+
+      <\unfolded-io-math>
+        \<gtr\>\ 
+      <|unfolded-io-math>
+        map ans <around*|(|1\<ldots\>10|)>;
+      <|unfolded-io-math>
+        <with|color|black|mode|math|math-display|true|<around*|[|3<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>5<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>7<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>9<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|11><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|13><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|15><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|17><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|19><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|21>|]>>
+      </unfolded-io-math>
+    </session>
+
+    <item>The key combination <key|, Tab Tab> produces an ``invisible
+    comma''. This is useful, in particular, to enter matrix subscripts in
+    Pure, such as:
+
+    <\session|pure|reduce>
+      <\unfolded-io-math>
+        \<gtr\>\ 
+      <|unfolded-io-math>
+        x<rsub|i\<nocomma\>j>;
+      <|unfolded-io-math>
+        <with|color|black|mode|math|math-display|true|x>!(<with|color|black|mode|math|math-display|true|i>,<with|color|black|mode|math|math-display|true|j>)
+      </unfolded-io-math>
+
+      <\unfolded-io-math>
+        \<gtr\>\ 
+      <|unfolded-io-math>
+        let x=<matrix|<tformat|<table|<row|<cell|1>|<cell|2>>|<row|<cell|3>|<cell|4>>>>>;
+        <around*|{|x<rsub|j\<nocomma\>i><mid|\|>i=0\<ldots\>1;j=0\<ldots\>1|}>;
+      <|unfolded-io-math>
+        <with|color|black|mode|math|math-display|true|<around*|(|<tabular*|<tformat|<table|<row|<cell|1>|<cell|3>>|<row|<cell|2>|<cell|4>>>>>|)>>
+      </unfolded-io-math>
+    </session>
+
+    <item>Matrices, sub- and superscripts (<key|_> and <key|^>) and the usual
+    arithmetic and logical operators will work in Pure. In particular, note
+    that <key|*> will by default produce an ``invisible multiplication'' in
+    <TeXmacs> which will be interpreted correctly in Pure, but you can also
+    enter a visible multiplication instead (type <key|*> and then repeat
+    <key|Tab> to cycle through the alternatives). For instance:
+
+    <\session|pure|reduce>
+      <\unfolded-io-math>
+        \<gtr\>\ 
+      <|unfolded-io-math>
+        <around*|(|a+b*c|)><rsup|2>;
+      <|unfolded-io-math>
+        <with|color|black|mode|math|math-display|true|a<rsup|2>+2*a*b*c+b<rsup|2>*c<rsup|2>>
+      </unfolded-io-math>
+    </session>
+
+    <item>Typing <key|\\eqnarray> gives you an equation array, i.e., a table
+    of aligned display equations. This is useful, in particular, to enter
+    Pure equations defining a function in a nicely formatted way:
+
+    <\session|pure|reduce>
+      <\input-math>
+        \<gtr\>\ 
+      <|input-math>
+        <\eqnarray>
+          <tformat|<table|<row|<cell|fact<around*|(|n|)>>|<cell|=>|<cell|n\<times\>fact<around*|(|n-1|)>
+          if n\<gtr\>0;>>|<row|<cell|>|<cell|=>|<cell|1 otherwise;>>>>
+        </eqnarray>
+      </input-math>
+
+      <\unfolded-io-math>
+        \<gtr\>\ 
+      <|unfolded-io-math>
+        map fact <around*|(|1\<ldots\>10|)>;
+      <|unfolded-io-math>
+        <with|color|black|mode|math|math-display|true|<around*|[|1<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>2<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc>6<space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|24><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|120><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|720><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|5040><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|40320><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|362880><space|0.25spc><with|math-font-family|rm|,<space|0.25spc>><space|0.25spc><with|math-font-family|rm|3628800>|]>>
+      </unfolded-io-math>
+
+      <item>The <TeXmacs> <samp|choice> construct (<samp|Insert \| Table \|
+      Choice>) can also be used to give nicely formatted definitions. For
+      instance, the above definition of the factorial can also be written as
+      follows:
+
+      <\session|pure|reduce>
+        <\input-math>
+          \<gtr\>\ 
+        <|input-math>
+          <\equation*>
+            fact<around*|(|n|)>=<choice|<tformat|<table|<row|<cell|n\<times\>fact<around*|(|n-1|)>>|<cell|if
+            n\<gtr\>0>>|<row|<cell|1>|<cell|otherwise>>>>>;
+          </equation*>
+        </input-math>
+      </session>
+    </session>
+  </itemize>
+
+  This is only the tip of the iceberg; generally you can expect most
+  <TeXmacs> math constructs to work as Pure code, as long as you keep to Pure
+  syntax (using the right keywords and delimiters in the right places). The
+  full version of this article gives a much more thorough overview of the
+  available math constructs and how they are interpreted in Pure.
+
   <section|PostScript Output>
 
   Like the Python plugin, Pure can pipe PostScript graphics directly into
@@ -424,17 +539,27 @@
   which can be toggled between input and computed result by pressing
   <key|Return> inside the field (try it!).
 
+  Note that as an additional convenience, the scripting plugins accept a
+  simple expression without the trailing semicolon as input. This is in
+  contrast to the regular Pure plugins which allow you to enter definitions
+  and expressions spanning multiple input lines, but also require you to
+  terminate each input item with a semicolon. With the scripting plugins the
+  terminating semicolon is optional and will be added automatically when
+  needed, but it also doesn't hurt if you type it anyway:
+  <script-input|pure-script-math|default|<math|df<around*|(|<around*|(|x+y|)><rsup|3>,x|)>;>|<with|color|black|mode|math|math-display|true|3*<around*|(|x<rsup|2>+2*x*y+y<rsup|2>|)>>>
+
   There's also the possibility to work with <em|executable fields> and
   <em|spreadsheets>. These offer the advantage that fields may depend on
-  other fields in the same document. (Be warned that this might become
-  <em|very> slow in large documents; however, it's possible to work around
-  this limitation by breaking your document into smaller include files.) For
-  instance, here is an example of a textual spreadsheet (<samp|Insert \|
-  Table \| Textual spreadsheet>) showing some Pure and Reduce calculations.
-  Type <key|Return> in the cells of the last column to reveal the underlying
-  Pure formulas; also try changing some of the values in the <verbatim|b> and
-  <verbatim|c> columns and hitting <key|Return> to recompute the
-  corresponding values in the last column.
+  other fields in the same document.<\footnote>
+    Be warned that this might become <em|very> slow in large documents;
+    however, it's possible to work around this limitation by breaking your
+    document into smaller include files.
+  </footnote> For instance, here is an example of a textual spreadsheet
+  (<samp|Insert \| Table \| Textual spreadsheet>) showing some Pure and
+  Reduce calculations. Type <key|Return> in the cells of the last column to
+  reveal the underlying Pure formulas; also try changing some of the values
+  in the <verbatim|b> and <verbatim|c> columns and hitting <key|Return> to
+  recompute the corresponding values in the last column.
 
   <with|font-base-size|12|<\calc-table|table1>
     <\with|par-mode|center>
