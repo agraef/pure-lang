@@ -21,11 +21,14 @@
 
 ;; Convenient keybindings. The toggle-session-math-input binding (Ctrl+$ by
 ;; default) provides a quick way to toggle between program/verbatim and math
-;; mode on the session input line.
+;; mode on the session input line. The other bindings get rid of some of the
+;; default math mode bindings.
 
 (kbd-map
- (:mode in-session?)
- ("C-$" (toggle-session-math-input)))
+ (:require (or (in-pure?) (in-pure-debug?) (in-pure-math?)))
+ ("C-$" (toggle-session-math-input))
+ ("$"  (insert "$"))
+ ("\"" (insert "\"")))
 
 ;; Uncomment this to make math input the default when this module is loaded.
 ;;(if (not (session-math-input?)) (toggle-session-math-input))

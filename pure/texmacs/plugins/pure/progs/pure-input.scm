@@ -72,7 +72,7 @@
 
 ;; primes and accents
 
-(define (pure-rprime r)
+(define (pure-prime r)
   (plugin-input (car r)))
 
 (define (pure-wide t)
@@ -492,7 +492,8 @@
   (math-ss pure-math)
   (math-tt pure-math)
   (math-up pure-math)
-  (rprime pure-rprime)
+  (rprime pure-prime)
+  (lprime pure-prime)
   (above pure-above)
   (below pure-below)
   (lsub pure-lsub)
