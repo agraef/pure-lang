@@ -593,8 +593,8 @@
   manual, which is available in printable format in the
   <hlink|pure-texmacs.en.tm|pure-texmacs.en.tm> file. (This file won't be
   rendered correctly inside the <TeXmacs> help system, so you should locate
-  it in the plugins/doc directory and open it as a regular <TeXmacs> document
-  in order to print it.)
+  it in the plugins/pure/doc directory and open it as a regular <TeXmacs>
+  document in order to print it.)
 </body>
 
 <\initial>
