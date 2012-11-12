@@ -16,37 +16,41 @@
 
 ;; Configurable items. ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-;; NOTE: We allow these to be overridden by corresponding definitions in the
-;; user's init file. FIXME: Doesn't TeXmacs have a standard way of doing this?
-
 ;; Convenient keybindings. In particular, the toggle-session-math-input
 ;; binding (Ctrl+$ by default) provides a quick way to toggle between
 ;; program/verbatim and math mode on the session input line.
 
 (kbd-map
-
  ;; enable these in any of the Pure session types
  (:require (or (in-pure?) (in-pure-debug?) (in-pure-math?)))
-
  ;; math input toggle
- ("C-$" (toggle-session-math-input))
+ ("C-$" (toggle-session-math-input)))
 
- ;; Some people find the default "symbol+space" bindings annoying, so you can
- ;; disable them here. (There are other ways to get these "invisible" symbols
- ;; with the Tab key.) OTOH, regular TeXmacs users might expect these to work
- ;; as usual, and at least the "invisible comma" can be useful when indexing
- ;; matrices, so we leave these enabled by default.
- ;; (", space"  (insert ","))
- ;; (". space"  (insert "."))
- ;; ("+ space"  (insert "+"))
+;; The default "<symbol> space" math bindings are quite annoying when entering
+;; Pure expressions, so we disable them here; there are other ways to get
+;; these "invisible" symbols with the Tab key. (The only one that's relevant
+;; in Pure is the invisible comma which you can also get with ", Tab Tab".)
 
- ;; Make $ and " self-inserting; we really need them in Pure and it's annoying
- ;; if we always have to escape these characters.
+;; We also make both $ and " self-inserting in math mode; we really need them
+;; in Pure and it's annoying if we always have to escape these characters.
+;; Note that you still have to escape the backslash (Shift-F5 \) to enter a
+;; Pure lambda; the default binding is preserved in this case so that you can
+;; enter special TeXmacs commands such as \eqnarray and \binom in math mode.
+
+(kbd-map
+ ;; enable these only in math mode
+ (:require (and (in-math?) (or (in-pure?) (in-pure-debug?) (in-pure-math?))))
+ ;; get rid of the default "<symbol> space" bindings for invisible symbols
+ ;; (comment the following lines if you really can't live without these)
+ (", space" (insert ", "))
+ (". space" (insert ". "))
+ ("+ space" (insert "+ "))
+ ;; make $ and " self-inserting
  ("$"  (insert "$"))
  ("\"" (insert "\"")))
 
-;; Uncomment this to make math input the default when this module is loaded.
-;;(if (not (session-math-input?)) (toggle-session-math-input))
+;; Some configuration variables. We allow these to be overridden by
+;; corresponding definitions in the user's init file.
 
 ;; Additional TeXmacs-specific include paths to search for Pure scripts.
 (if (not (defined? 'pure-texmacs-includes))
