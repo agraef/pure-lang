@@ -451,9 +451,10 @@
 ;; easy way of specifying his own conversions which take precedence over the
 ;; ones given here.
 
-(plugin-input-converters pure
-;; Only change these if you know what you are doing. Many special constructs
-;; are defined here.
+(define pure-converters
+'(
+  ;; Only change these if you know what you are doing. Many special
+  ;; constructs are defined here.
   (concat pure-concat)
   (tree pure-tree)
   (rows pure-rows)
@@ -911,4 +912,15 @@
   ("<Phi>"        "Phi")
   ("<Chi>"        "Chi")
   ("<Psi>"        "Psi")
-  ("<Omega>"      "Omega"))
+  ("<Omega>"      "Omega")))
+
+;; FIXME: Is it really necessary to register a separate converter for each and
+;; every plugin here even though the converters are all the same? This is
+;; awfully clumsy. But AFAICT plugin and converter *must* always have the same
+;; name to make them work together.
+
+(eval `(plugin-input-converters pure ,@pure-converters))
+(eval `(plugin-input-converters pure-debug ,@pure-converters))
+(eval `(plugin-input-converters pure-math ,@pure-converters))
+(eval `(plugin-input-converters pure-script ,@pure-converters))
+(eval `(plugin-input-converters pure-script-math ,@pure-converters))

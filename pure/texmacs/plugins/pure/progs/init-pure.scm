@@ -209,7 +209,11 @@
 
 (define (pure-initialize)
   (import-from (utils plugins plugin-convert))
-  (lazy-input-converter (pure-input) pure))
+  (lazy-input-converter (pure-input) pure)
+  (lazy-input-converter (pure-input) pure-debug)
+  (lazy-input-converter (pure-input) pure-math)
+  (lazy-input-converter (pure-input) pure-script)
+  (lazy-input-converter (pure-input) pure-script-math))
 
 (define (pure-serialize lan t)
   (import-from (utils plugins plugin-cmd))
