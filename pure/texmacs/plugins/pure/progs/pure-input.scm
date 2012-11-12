@@ -572,10 +572,12 @@
   ("<llbracket>" "[")
   ("<rrbracket>" "]")
   ("<nobracket>" " ")
-  ;; what the heck are these good for??
-  ("<nocomma>" " ")
-  ("<nospace>" " ")
+  ;; various kinds of "non-symbols" (typically symbol+space combinations)
   ("<comma>" ",")
+  ("<nocomma>" ",")
+  ("<nospace>" " ")
+  ("<nosymbol>" ".")
+  ("<noplus>" "+")
 
   ("<um>" "-")
   ("<upl>" "") ; unary plus not supported in Pure

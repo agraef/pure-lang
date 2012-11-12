@@ -19,14 +19,29 @@
 ;; NOTE: We allow these to be overridden by corresponding definitions in the
 ;; user's init file. FIXME: Doesn't TeXmacs have a standard way of doing this?
 
-;; Convenient keybindings. The toggle-session-math-input binding (Ctrl+$ by
-;; default) provides a quick way to toggle between program/verbatim and math
-;; mode on the session input line. The other bindings get rid of some of the
-;; default math mode bindings.
+;; Convenient keybindings. In particular, the toggle-session-math-input
+;; binding (Ctrl+$ by default) provides a quick way to toggle between
+;; program/verbatim and math mode on the session input line.
 
 (kbd-map
+
+ ;; enable these in any of the Pure session types
  (:require (or (in-pure?) (in-pure-debug?) (in-pure-math?)))
+
+ ;; math input toggle
  ("C-$" (toggle-session-math-input))
+
+ ;; Some people find the default "symbol+space" bindings annoying, so you can
+ ;; disable them here. (There are other ways to get these "invisible" symbols
+ ;; with the Tab key.) OTOH, regular TeXmacs users might expect these to work
+ ;; as usual, and at least the "invisible comma" can be useful when indexing
+ ;; matrices, so we leave these enabled by default.
+ ;; (", space"  (insert ","))
+ ;; (". space"  (insert "."))
+ ;; ("+ space"  (insert "+"))
+
+ ;; Make $ and " self-inserting; we really need them in Pure and it's annoying
+ ;; if we always have to escape these characters.
  ("$"  (insert "$"))
  ("\"" (insert "\"")))
 
