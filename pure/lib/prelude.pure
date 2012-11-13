@@ -862,8 +862,8 @@ def void [x] | void {x} = void x;
    map keys to values. Here we only define equality of such pairs, as well as
    the key and val operations for extracting the components of a hash pair. */
 
-(x=>v)==(y=>w)	= x==y && v==w;
-(x=>v)~=(y=>w)	= x~=y || v~=w;
+(x=>v)==(y=>w)	= if x==y then v==w else 0;
+(x=>v)~=(y=>w)	= if x~=y then 1 else v~=w;
 
 key (x=>v)	= x;
 val (x=>v)	= v;
@@ -879,14 +879,14 @@ x,()		= x;
 (x,y),z		= x,(y,z);
 
 ()==()		= 1;
-(x,xs)==(y,ys)	= x==y && xs==ys;
+(x,xs)==(y,ys)	= if x==y then xs==ys else 0;
 (x,xs)==_	|
 ()==_		|
 _==(x,xs)	|
 _==()		= 0;
 
 ()~=()		= 0;
-(x,xs)~=(y,ys)	= x~=y || xs~=ys;
+(x,xs)~=(y,ys)	= if x~=y then 1 else xs~=ys;
 (x,xs)~=_	|
 ()~=_		|
 _~=(x,xs)	|
@@ -928,12 +928,12 @@ end;
 []==[]		= 1;
 (x:xs)==[]	= 0;
 []==(x:xs)	= 0;
-(x:xs)==(y:ys)	= x==y && xs==ys;
+(x:xs)==(y:ys)	= if x==y then xs==ys else 0;
 
 []~=[]		= 0;
 (x:xs)~=[]	= 1;
 []~=(x:xs)	= 1;
-(x:xs)~=(y:ys)	= x~=y || xs~=ys;
+(x:xs)~=(y:ys)	= if x~=y then 1 else xs~=ys;
 
 null []		= 1;
 null (x:xs)	= 0;
@@ -1250,10 +1250,10 @@ n..m		= if nanp n || nanp m || double m===-inf then []
    tail-recursive and handle lazy lists as gracefully as possible. */
 
 all p []		= 1;
-all p (x:xs)		= p x && all p xs;
+all p (x:xs)		= if p x then all p xs else 0;
 
 any p []		= 0;
-any p (x:xs)		= p x || any p xs;
+any p (x:xs)		= if p x then 1 else any p xs;
 
 do f []			= ();
 do f (x:xs)		= f x $$ do f xs;
