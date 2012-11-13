@@ -102,7 +102,11 @@ using namespace __C;
    the thunking operator ``&`` so that they may be used as function values and
    in partial applications, but when used in this manner they lose all their
    special call-by-name properties; see :ref:`Special Forms` in the Pure
-   Manual for details.
+   Manual for details. The rules for the logical connectives are actually
+   slightly more general than the built-in rules so that an expression of the
+   form ``x&&y`` or ``x||y`` will always be simplified in a sensible way if at
+   least one of the operands is a machine int; e.g., both ``x&&1`` and
+   ``1&&x`` will reduce to just ``x`` if ``x`` is not a machine int.
 
    A detailed listing of the basic arithmetic and logical operations follows
    below.
@@ -143,7 +147,9 @@ using namespace __C;
 		 infix || x y
 
       Logical negation, conjunction and disjunction. These work with machine
-      ints only and are evaluated in short-circuit mode.
+      ints only and are evaluated in short-circuit mode, unless they are
+      invoked as higher-order functions or with operands which aren't machine
+      ints. See the explanations above.
 
    .. function:: prefix not x
       		 infix and x y
@@ -1363,8 +1369,8 @@ x::double~=y::int	= x~=y;
    short-circuit evaluation only as explicit calls! But we still want them to
    work if they are applied partially, so we add these rules here. */
 
-x::int&&y		= x&&y;
-x::int||y		= x||y;
+x::int&&y | y&&x::int	= if x then y else x;
+x::int||y | y||x::int	= if x then x else y;
 x$$y			= y;
 x&			= x;
 'x			= x;
