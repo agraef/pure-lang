@@ -972,7 +972,7 @@ void pure_free_internal(pure_expr *x)
       mpz_clear(x->data.z);
       break;
     case EXPR::STR:
-      free(x->data.s);
+      my_strfree(x->data.s);
       break;
     case EXPR::MATRIX:
     case EXPR::DMATRIX:
@@ -1311,7 +1311,7 @@ pure_expr *pure_string_dup(const char *s)
   if (!s) return pure_pointer(0);
   pure_expr *x = new_expr();
   x->tag = EXPR::STR;
-  x->data.s = strdup(s);
+  x->data.s = my_strdup(s);
   MEMDEBUG_NEW(x)
   return x;
 }
@@ -1322,7 +1322,7 @@ pure_expr *pure_cstring_dup(const char *s)
   if (!s) return pure_pointer(0);
   pure_expr *x = new_expr();
   x->tag = EXPR::STR;
-  x->data.s = toutf8(s, 0);
+  x->data.s = my_toutf8(s, 0);
   MEMDEBUG_NEW(x)
   return x;
 }
@@ -4353,7 +4353,7 @@ char *pure_get_cstring(pure_expr *x)
   interpreter& interp = *interpreter::g_interp;
   list<char*>& temps = interp.temps;
   assert(x && x->tag == EXPR::STR);
-  char *s = fromutf8(x->data.s, 0);
+  char *s = my_fromutf8(x->data.s, 0);
   assert(s);
   temps.push_back(s);
   return s;
@@ -4365,7 +4365,7 @@ void pure_free_cstrings()
   interpreter& interp = *interpreter::g_interp;
   list<char*>& temps = interp.temps;
   for (list<char*>::iterator t = temps.begin(); t != temps.end(); t++)
-    if (*t) free(*t);
+    if (*t) my_strfree(*t);
   temps.clear();
 }
 

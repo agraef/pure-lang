@@ -73,6 +73,23 @@ extern "C"
 int mkstemp(char *tmpl);
 #endif
 
+/* strdup/free can be slow on some systems and cause memory fragmentation. We
+   provide an alternative implementation which at least optimizes the simple
+   cases where a program uses only a few strings at a time which can be cached
+   and reused in a round-robin fashion. Otherwise it falls back to using
+   malloc/free. Note that if you allocate a string using my_strdup() then you
+   *must* free it with my_strfree(). */
+
+#define MY_STRDUP
+
+#ifdef MY_STRDUP
+char *my_strdup(const char *s);
+void my_strfree(char *s);
+#else
+#define my_strdup strdup
+#define my_strfree free
+#endif
+
 /* utf-8 string helpers. */
 
 /* Convert between utf-8 and the given encoding (the system encoding by
@@ -81,6 +98,10 @@ int mkstemp(char *tmpl);
 
 char *toutf8(const char *s, const char *codeset = 0);
 char *fromutf8(const char *s, char *codeset = 0);
+
+// These variants use my_strdup(). Result must be freed with my_strfree().
+char *my_toutf8(const char *s, const char *codeset = 0);
+char *my_fromutf8(const char *s, char *codeset = 0);
 
 /* Determine the length of a string (i.e., the number of utf-8 chars it
    contains), or the number of utf-8 chars up to the given position in the

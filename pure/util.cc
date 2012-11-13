@@ -188,6 +188,79 @@ static char *my_nl_langinfo(nl_item item)
 
 #endif
 
+#ifdef MY_STRDUP
+
+/* Optimize strdup/free. Due to the way that Pure creates dynamic and
+   temporary string values on the fly, calling strdup() on each and every such
+   operation is inefficient and may lead to memory fragmentation. Therefore we
+   keep a fixed-size cache here so that the last N allocations may be reused
+   without allocating additional memory if possible.
+
+   NOTE: This is experimental. The current code is a bit simplistic but seems
+   to work reasonably well. We assign the cache slots in a round-robin
+   fashion, and reuse previously freed strings using a first-fit policy. Newly
+   allocated strings kick out old cache entries if they can't be stored in
+   free cache entries, so that long-living strings are eventually removed from
+   the cache in an automatic fashion. */
+
+#define NCACHE 10
+static char *lastalloc[NCACHE], *lastfree[NCACHE];
+static size_t lastlen[NCACHE];
+static int lasti = 0;
+
+//#define DEBUG_CACHE
+
+char *my_strdup(const char *s)
+{
+  if (!s) return 0;
+  size_t l = strlen(s);
+  for (int i = 0; i < NCACHE; i++)
+    if (lastfree[i] && lastlen[i] >= l) {
+      char *t = strcpy(lastfree[i], s);
+#ifdef DEBUG_CACHE
+      printf("my_strdup: reusing slot #%d len=%lu '%s' (%p)\n", i,
+	     lastlen[i], t, t);
+#endif
+      lastfree[i] = 0; lastlen[i] = strlen(t); lastalloc[i] = t;
+      return t;
+    }
+  char *t = strdup(s);
+  if (!t) return 0;
+#ifdef DEBUG_CACHE
+  printf("** my_strdup: initializing slot #%d '%s' (%p)\n", lasti, t, t);
+#endif
+  // fill the cache in a round-robin fashion
+  lastlen[lasti] = strlen(t);
+  if (lastfree[lasti]) {
+    free(lastfree[lasti]);
+    lastfree[lasti] = 0;
+  }
+  lastalloc[lasti++] = t;
+  if (lasti >= NCACHE) lasti = 0;
+  return t;
+}
+
+void my_strfree(char *s)
+{
+  if (!s) return;
+  for (int i = 0; i < NCACHE; i++)
+    if (s == lastalloc[i]) {
+#ifdef DEBUG_CACHE
+      printf("my_strfree: freeing slot #%d (%p)\n", i, s);
+#endif
+      if (lastfree[i]) free(lastfree[i]);
+      lastfree[i] = s; lastalloc[i] = 0;
+      return;
+    }
+  // not in cache, free right away
+#ifdef DEBUG_CACHE
+  printf("** my_strfree: freeing '%s' %p\n", s, s);
+#endif
+  free(s);
+}
+
+#endif
+
 /* decoding and encoding of UTF-8 chars */
 
 static inline long
@@ -625,6 +698,140 @@ fromutf8(const char *s, char *codeset)
       return t;
     else
       return t1;
+  }
+}
+
+char *
+my_toutf8(const char *s, const char *codeset)
+{
+  iconv_t ic;
+  if (!codeset || !*codeset)
+    codeset = default_encoding();
+  if (codeset && strcmp(codeset, "UTF-8"))
+    ic = iconv_open("UTF-8", codeset);
+  else
+    ic = (iconv_t)-1;
+
+  if (ic == (iconv_t)-1)
+    return my_strdup(s);
+
+  else {
+    size_t l = strlen(s);
+    char *t = (char*)malloc(l+1), *t1;
+    char *inbuf = (char*)s, *outbuf = t; // const char* -> char*. Ugh.
+    size_t inbytes = l, outbytes = l;
+
+    while (myiconv(ic, &inbuf, &inbytes, &outbuf, &outbytes) ==
+	   (size_t)-1)
+      if (errno == E2BIG) {
+	/* try to enlarge the output buffer */
+	size_t k = outbuf-t;
+	if ((t1 = (char*)realloc(t, l+CHUNKSZ+1))) {
+	  t = t1;
+	  outbuf = t+k;
+	  l += CHUNKSZ;
+	  outbytes += CHUNKSZ;
+	} else {
+	  /* memory overflow */
+	  free(t);
+	  return my_strdup(s);
+	}
+      } else {
+	/* conversion error */
+	free(t);
+	return my_strdup(s);
+      }
+
+    /* terminate the output string */
+    *outbuf = 0;
+    iconv_close(ic);
+
+    if (!(t1 = my_strdup(t)))
+      /* this shouldn't happen */
+      return t;
+    else {
+      free(t);
+      return t1;
+    }
+  }
+}
+
+char *
+my_fromutf8(const char *s, char *codeset)
+{
+  iconv_t ic;
+  if (!codeset || !*codeset)
+    codeset = default_encoding();
+  if (codeset && strcmp(codeset, "UTF-8"))
+    ic = iconv_open(codeset, "UTF-8");
+  else
+    ic = (iconv_t)-1;
+
+  if (ic == (iconv_t)-1)
+    return my_strdup(s);
+
+  else {
+    size_t l = strlen(s);
+    char *t = (char*)malloc(l+1), *t1;
+    char *inbuf = (char*)s, *outbuf = t; // const char* -> char*. Ugh.
+    size_t inbytes = l, outbytes = l;
+
+    while (myiconv(ic, &inbuf, &inbytes, &outbuf, &outbytes) ==
+	   (size_t)-1)
+      if (errno == E2BIG) {
+	/* try to enlarge the output buffer */
+	size_t k = outbuf-t;
+	if ((t1 = (char*)realloc(t, l+CHUNKSZ+1))) {
+	  t = t1;
+	  outbuf = t+k;
+	  l += CHUNKSZ;
+	  outbytes += CHUNKSZ;
+	} else {
+	  /* memory overflow */
+	  free(t);
+	  return my_strdup(s);
+	}
+      } else {
+	/* conversion error */
+	free(t);
+	return my_strdup(s);
+      }
+
+    /* here we might have to deal with a stateful encoding, so make sure that
+       we emit the closing shift sequence */
+
+    while (myiconv(ic, NULL, NULL, &outbuf, &outbytes) ==
+	   (size_t)-1)
+      if (errno == E2BIG) {
+	/* try to enlarge the output buffer */
+	size_t k = outbuf-t;
+	if ((t1 = (char*)realloc(t, l+CHUNKSZ+1))) {
+	  t = t1;
+	  outbuf = t+k;
+	  l += CHUNKSZ;
+	  outbytes += CHUNKSZ;
+	} else {
+	  /* memory overflow */
+	  free(t);
+	  return my_strdup(s);
+	}
+      } else {
+	/* conversion error */
+	free(t);
+	return my_strdup(s);
+      }
+
+    /* terminate the output string */
+    *outbuf = 0;
+    iconv_close(ic);
+
+    if (!(t1 = my_strdup(t)))
+      /* this shouldn't happen */
+      return t;
+    else {
+      free(t);
+      return t1;
+    }
   }
 }
 
