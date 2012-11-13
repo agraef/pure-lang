@@ -983,18 +983,17 @@ dowith f x::matrix y::matrix
 dowith3 f x::matrix y::matrix z::matrix
 			= do (uncurry3 f) (zip3 x y z);
 
-unzip x::matrix		= {u | u,_ = x},{v | _,v = x}
-			    if all check x
-			    with
-			      check (_,_) = true;
-			      check x = throw (bad_tuple_value x) otherwise;
-			    end;
-unzip3 x::matrix	= {u | u,_ = x},{v | _,v,_ = x},{w | _,_,w = x}
-			    if all check x
-			    with
-			      check (_,_,_) = true;
-			      check x = throw (bad_tuple_value x) otherwise;
-			    end;
+unzip x::matrix		= map fst x,map snd x
+with
+  fst u			= case u of x,_ = x; _ = u end;
+  snd u			= case u of _,y = y; _ = () end;
+end;
+unzip3 x::matrix	= map fst x,map snd x,map trd x
+with
+  fst u			= case u of x,_ = x; _ = u end;
+  snd u			= case u of _,y,_ | _,y = y; _ = () end;
+  trd u			= case u of _,_,z = z; _ = () end;
+end;
 
 /* ..
 

@@ -2326,7 +2326,116 @@ dowith f/*0:001*/ _/*0:01*/ _/*0:1*/ = ();
 dowith3 f/*0:0001*/ (x/*0:00101*/:xs/*0:0011*/) (y/*0:0101*/:ys/*0:011*/) (z/*0:101*/:zs/*0:11*/) = f/*0:0001*/ x/*0:00101*/ y/*0:0101*/ z/*0:101*/$$dowith3 f/*0:0001*/ xs/*0:0011*/ ys/*0:011*/ zs/*0:11*/;
 dowith3 f/*0:0001*/ _/*0:001*/ _/*0:01*/ _/*0:1*/ = ();
 unzip [] = [],[];
-unzip us@(_/*0:101*/:_/*0:11*/) = foldr accum/*0*/ ([],[]) us/*0:1*/ with check us@(_/*0:101*/,_/*0:11*/) = us/*0:1*/; check (foldr _/*0:1001*/ _/*0:101*/ us/*0:11*/) = throw (bad_list_value us/*0:11*/); check us/*0:1*/ = throw (bad_tuple_value us/*0:1*/) {
+unzip us@(_/*0:101*/:_/*0:11*/) = foldr accum/*0*/ ([],[]) us/*0:1*/ with fst u/*0:1*/ = case u/*0:1*/ of x/*0:01*/,_/*0:1*/ = x/*0:01*/; _/*0:*/ = u/*1:1*/ {
+  rule #0: x,_ = x
+  rule #1: _ = u
+  state 0: #0 #1
+	<var> state 1
+	<app> state 2
+  state 1: #1
+  state 2: #0 #1
+	<var> state 3
+	<app> state 5
+  state 3: #1
+	<var> state 4
+  state 4: #1
+  state 5: #0 #1
+	<var> state 6
+	, state 9
+  state 6: #1
+	<var> state 7
+  state 7: #1
+	<var> state 8
+  state 8: #1
+  state 9: #0 #1
+	<var> state 10
+  state 10: #0 #1
+	<var> state 11
+  state 11: #0 #1
+} end {
+  rule #0: fst u = case u of x,_ = x; _ = u end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}; snd u/*0:1*/ = case u/*0:1*/ of _/*0:01*/,y/*0:1*/ = y/*0:1*/; _/*0:*/ = () {
+  rule #0: _,y = y
+  rule #1: _ = ()
+  state 0: #0 #1
+	<var> state 1
+	<app> state 2
+  state 1: #1
+  state 2: #0 #1
+	<var> state 3
+	<app> state 5
+  state 3: #1
+	<var> state 4
+  state 4: #1
+  state 5: #0 #1
+	<var> state 6
+	, state 9
+  state 6: #1
+	<var> state 7
+  state 7: #1
+	<var> state 8
+  state 8: #1
+  state 9: #0 #1
+	<var> state 10
+  state 10: #0 #1
+	<var> state 11
+  state 11: #0 #1
+} end {
+  rule #0: snd u = case u of _,y = y; _ = () end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}; accum u/*0:01*/ us/*0:1*/ = fst/*1*/ u/*0:01*/:(xs/*0:01*/ when xs/*0:01*/,_/*0:1*/ = check/*2*/ us/*1:1*/ {
+  rule #0: xs,_ = check us
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+} end)&,snd/*1*/ u/*0:01*/:(ys/*0:1*/ when _/*0:01*/,ys/*0:1*/ = check/*2*/ us/*1:1*/ {
+  rule #0: _,ys = check us
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+} end)& if thunkp us/*0:1*/; accum u/*0:01*/ us/*0:1*/ = fst/*2*/ u/*1:01*/:xs/*0:01*/,snd/*2*/ u/*1:01*/:ys/*0:1*/ when xs/*0:01*/,ys/*0:1*/ = check/*1*/ us/*0:1*/ {
+  rule #0: xs,ys = check us
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<var> state 5
+  state 5: #0
+} end {
+  rule #0: accum u us = fst u:(xs when xs,_ = check us end)&,snd u:(ys when _,ys = check us end)& if thunkp us
+  rule #1: accum u us = fst u:xs,snd u:ys when xs,ys = check us end
+  state 0: #0 #1
+	<var> state 1
+  state 1: #0 #1
+	<var> state 2
+  state 2: #0 #1
+}; check us@(_/*0:101*/,_/*0:11*/) = us/*0:1*/; check (foldr _/*0:1001*/ _/*0:101*/ us/*0:11*/) = throw (bad_list_value us/*0:11*/); check us/*0:1*/ = throw (bad_tuple_value us/*0:1*/) {
   rule #0: check us@(_,_) = us
   rule #1: check (foldr _ _ us) = throw (bad_list_value us)
   rule #2: check us = throw (bad_tuple_value us)
@@ -2371,83 +2480,235 @@ unzip us@(_/*0:101*/:_/*0:11*/) = foldr accum/*0*/ ([],[]) us/*0:1*/ with check 
   state 19: #0 #2
 	<var> state 20
   state 20: #0 #2
-}; accum u@(x/*0:0101*/,y/*0:011*/) us/*0:1*/ = x/*0:0101*/:(xs/*0:01*/ when xs/*0:01*/,_/*0:1*/ = check/*2*/ us/*1:1*/ {
-  rule #0: xs,_ = check us
-  state 0: #0
-	<app> state 1
-  state 1: #0
-	<app> state 2
-  state 2: #0
-	, state 3
-  state 3: #0
-	<var> state 4
-  state 4: #0
-	<var> state 5
-  state 5: #0
-} end)&,y/*0:011*/:(ys/*0:1*/ when _/*0:01*/,ys/*0:1*/ = check/*2*/ us/*1:1*/ {
-  rule #0: _,ys = check us
-  state 0: #0
-	<app> state 1
-  state 1: #0
-	<app> state 2
-  state 2: #0
-	, state 3
-  state 3: #0
-	<var> state 4
-  state 4: #0
-	<var> state 5
-  state 5: #0
-} end)& if thunkp us/*0:1*/; accum u@(x/*0:0101*/,y/*0:011*/) us/*0:1*/ = x/*1:0101*/:xs/*0:01*/,y/*1:011*/:ys/*0:1*/ when xs/*0:01*/,ys/*0:1*/ = check/*1*/ us/*0:1*/ {
-  rule #0: xs,ys = check us
-  state 0: #0
-	<app> state 1
-  state 1: #0
-	<app> state 2
-  state 2: #0
-	, state 3
-  state 3: #0
-	<var> state 4
-  state 4: #0
-	<var> state 5
-  state 5: #0
-} end; accum u/*0:01*/ _/*0:1*/ = throw (bad_tuple_value u/*0:01*/) {
-  rule #0: accum u@(x,y) us = x:(xs when xs,_ = check us end)&,y:(ys when _,ys = check us end)& if thunkp us
-  rule #1: accum u@(x,y) us = x:xs,y:ys when xs,ys = check us end
-  rule #2: accum u _ = throw (bad_tuple_value u)
-  state 0: #0 #1 #2
-	<var> state 1
-	<app> state 3
-  state 1: #2
-	<var> state 2
-  state 2: #2
-  state 3: #0 #1 #2
-	<var> state 4
-	<app> state 7
-  state 4: #2
-	<var> state 5
-  state 5: #2
-	<var> state 6
-  state 6: #2
-  state 7: #0 #1 #2
-	<var> state 8
-	, state 12
-  state 8: #2
-	<var> state 9
-  state 9: #2
-	<var> state 10
-  state 10: #2
-	<var> state 11
-  state 11: #2
-  state 12: #0 #1 #2
-	<var> state 13
-  state 13: #0 #1 #2
-	<var> state 14
-  state 14: #0 #1 #2
-	<var> state 15
-  state 15: #0 #1 #2
 } end;
 unzip3 [] = [],[],[];
-unzip3 us@(_/*0:101*/:_/*0:11*/) = foldr accum/*0*/ ([],[],[]) us/*0:1*/ with check us@(_/*0:101*/,_/*0:1101*/,_/*0:111*/) = us/*0:1*/; check (foldr _/*0:1001*/ _/*0:101*/ us/*0:11*/) = throw (bad_list_value us/*0:11*/); check us/*0:1*/ = throw (bad_tuple_value us/*0:1*/) {
+unzip3 us@(_/*0:101*/:_/*0:11*/) = foldr accum/*0*/ ([],[],[]) us/*0:1*/ with fst u/*0:1*/ = case u/*0:1*/ of x/*0:01*/,_/*0:1*/ = x/*0:01*/; _/*0:*/ = u/*1:1*/ {
+  rule #0: x,_ = x
+  rule #1: _ = u
+  state 0: #0 #1
+	<var> state 1
+	<app> state 2
+  state 1: #1
+  state 2: #0 #1
+	<var> state 3
+	<app> state 5
+  state 3: #1
+	<var> state 4
+  state 4: #1
+  state 5: #0 #1
+	<var> state 6
+	, state 9
+  state 6: #1
+	<var> state 7
+  state 7: #1
+	<var> state 8
+  state 8: #1
+  state 9: #0 #1
+	<var> state 10
+  state 10: #0 #1
+	<var> state 11
+  state 11: #0 #1
+} end {
+  rule #0: fst u = case u of x,_ = x; _ = u end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}; snd u/*0:1*/ = case u/*0:1*/ of _/*0:01*/,y/*0:101*/,_/*0:11*/ = y/*0:101*/; _/*0:01*/,y/*0:1*/ = y/*0:1*/; _/*0:*/ = () {
+  rule #0: _,y,_ = y
+  rule #1: _,y = y
+  rule #2: _ = ()
+  state 0: #0 #1 #2
+	<var> state 1
+	<app> state 2
+  state 1: #2
+  state 2: #0 #1 #2
+	<var> state 3
+	<app> state 5
+  state 3: #2
+	<var> state 4
+  state 4: #2
+  state 5: #0 #1 #2
+	<var> state 6
+	, state 9
+  state 6: #2
+	<var> state 7
+  state 7: #2
+	<var> state 8
+  state 8: #2
+  state 9: #0 #1 #2
+	<var> state 10
+  state 10: #0 #1 #2
+	<var> state 11
+	<app> state 12
+  state 11: #1 #2
+  state 12: #0 #1 #2
+	<var> state 13
+	<app> state 15
+  state 13: #1 #2
+	<var> state 14
+  state 14: #1 #2
+  state 15: #0 #1 #2
+	<var> state 16
+	, state 19
+  state 16: #1 #2
+	<var> state 17
+  state 17: #1 #2
+	<var> state 18
+  state 18: #1 #2
+  state 19: #0 #1 #2
+	<var> state 20
+  state 20: #0 #1 #2
+	<var> state 21
+  state 21: #0 #1 #2
+} end {
+  rule #0: snd u = case u of _,y,_ = y; _,y = y; _ = () end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}; trd u/*0:1*/ = case u/*0:1*/ of _/*0:01*/,_/*0:101*/,z/*0:11*/ = z/*0:11*/; _/*0:*/ = () {
+  rule #0: _,_,z = z
+  rule #1: _ = ()
+  state 0: #0 #1
+	<var> state 1
+	<app> state 2
+  state 1: #1
+  state 2: #0 #1
+	<var> state 3
+	<app> state 5
+  state 3: #1
+	<var> state 4
+  state 4: #1
+  state 5: #0 #1
+	<var> state 6
+	, state 9
+  state 6: #1
+	<var> state 7
+  state 7: #1
+	<var> state 8
+  state 8: #1
+  state 9: #0 #1
+	<var> state 10
+  state 10: #0 #1
+	<var> state 11
+	<app> state 12
+  state 11: #1
+  state 12: #0 #1
+	<var> state 13
+	<app> state 15
+  state 13: #1
+	<var> state 14
+  state 14: #1
+  state 15: #0 #1
+	<var> state 16
+	, state 19
+  state 16: #1
+	<var> state 17
+  state 17: #1
+	<var> state 18
+  state 18: #1
+  state 19: #0 #1
+	<var> state 20
+  state 20: #0 #1
+	<var> state 21
+  state 21: #0 #1
+} end {
+  rule #0: trd u = case u of _,_,z = z; _ = () end
+  state 0: #0
+	<var> state 1
+  state 1: #0
+}; accum u/*0:01*/ us/*0:1*/ = fst/*1*/ u/*0:01*/:(xs/*0:01*/ when xs/*0:01*/,_/*0:101*/,_/*0:11*/ = check/*2*/ us/*1:1*/ {
+  rule #0: xs,_,_ = check us
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<app> state 5
+  state 5: #0
+	<app> state 6
+  state 6: #0
+	, state 7
+  state 7: #0
+	<var> state 8
+  state 8: #0
+	<var> state 9
+  state 9: #0
+} end)&,snd/*1*/ u/*0:01*/:(ys/*0:101*/ when _/*0:01*/,ys/*0:101*/,_/*0:11*/ = check/*2*/ us/*1:1*/ {
+  rule #0: _,ys,_ = check us
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<app> state 5
+  state 5: #0
+	<app> state 6
+  state 6: #0
+	, state 7
+  state 7: #0
+	<var> state 8
+  state 8: #0
+	<var> state 9
+  state 9: #0
+} end)&,trd/*1*/ u/*0:01*/:(zs/*0:11*/ when _/*0:01*/,_/*0:101*/,zs/*0:11*/ = check/*2*/ us/*1:1*/ {
+  rule #0: _,_,zs = check us
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<app> state 5
+  state 5: #0
+	<app> state 6
+  state 6: #0
+	, state 7
+  state 7: #0
+	<var> state 8
+  state 8: #0
+	<var> state 9
+  state 9: #0
+} end)& if thunkp us/*0:1*/; accum u/*0:01*/ us/*0:1*/ = fst/*2*/ u/*1:01*/:xs/*0:01*/,snd/*2*/ u/*1:01*/:ys/*0:101*/,trd/*2*/ u/*1:01*/:zs/*0:11*/ when xs/*0:01*/,ys/*0:101*/,zs/*0:11*/ = check/*1*/ us/*0:1*/ {
+  rule #0: xs,ys,zs = check us
+  state 0: #0
+	<app> state 1
+  state 1: #0
+	<app> state 2
+  state 2: #0
+	, state 3
+  state 3: #0
+	<var> state 4
+  state 4: #0
+	<app> state 5
+  state 5: #0
+	<app> state 6
+  state 6: #0
+	, state 7
+  state 7: #0
+	<var> state 8
+  state 8: #0
+	<var> state 9
+  state 9: #0
+} end {
+  rule #0: accum u us = fst u:(xs when xs,_,_ = check us end)&,snd u:(ys when _,ys,_ = check us end)&,trd u:(zs when _,_,zs = check us end)& if thunkp us
+  rule #1: accum u us = fst u:xs,snd u:ys,trd u:zs when xs,ys,zs = check us end
+  state 0: #0 #1
+	<var> state 1
+  state 1: #0 #1
+	<var> state 2
+  state 2: #0 #1
+}; check us@(_/*0:101*/,_/*0:1101*/,_/*0:111*/) = us/*0:1*/; check (foldr _/*0:1001*/ _/*0:101*/ us/*0:11*/) = throw (bad_list_value us/*0:11*/); check us/*0:1*/ = throw (bad_tuple_value us/*0:1*/) {
   rule #0: check us@(_,_,_) = us
   rule #1: check (foldr _ _ us) = throw (bad_list_value us)
   rule #2: check us = throw (bad_tuple_value us)
@@ -2512,151 +2773,6 @@ unzip3 us@(_/*0:101*/:_/*0:11*/) = foldr accum/*0*/ ([],[],[]) us/*0:1*/ with ch
   state 29: #0 #2
 	<var> state 30
   state 30: #0 #2
-}; accum u@(x/*0:0101*/,y/*0:01101*/,z/*0:0111*/) us/*0:1*/ = x/*0:0101*/:(xs/*0:01*/ when xs/*0:01*/,_/*0:101*/,_/*0:11*/ = check/*2*/ us/*1:1*/ {
-  rule #0: xs,_,_ = check us
-  state 0: #0
-	<app> state 1
-  state 1: #0
-	<app> state 2
-  state 2: #0
-	, state 3
-  state 3: #0
-	<var> state 4
-  state 4: #0
-	<app> state 5
-  state 5: #0
-	<app> state 6
-  state 6: #0
-	, state 7
-  state 7: #0
-	<var> state 8
-  state 8: #0
-	<var> state 9
-  state 9: #0
-} end)&,y/*0:01101*/:(ys/*0:101*/ when _/*0:01*/,ys/*0:101*/,_/*0:11*/ = check/*2*/ us/*1:1*/ {
-  rule #0: _,ys,_ = check us
-  state 0: #0
-	<app> state 1
-  state 1: #0
-	<app> state 2
-  state 2: #0
-	, state 3
-  state 3: #0
-	<var> state 4
-  state 4: #0
-	<app> state 5
-  state 5: #0
-	<app> state 6
-  state 6: #0
-	, state 7
-  state 7: #0
-	<var> state 8
-  state 8: #0
-	<var> state 9
-  state 9: #0
-} end)&,z/*0:0111*/:(zs/*0:11*/ when _/*0:01*/,_/*0:101*/,zs/*0:11*/ = check/*2*/ us/*1:1*/ {
-  rule #0: _,_,zs = check us
-  state 0: #0
-	<app> state 1
-  state 1: #0
-	<app> state 2
-  state 2: #0
-	, state 3
-  state 3: #0
-	<var> state 4
-  state 4: #0
-	<app> state 5
-  state 5: #0
-	<app> state 6
-  state 6: #0
-	, state 7
-  state 7: #0
-	<var> state 8
-  state 8: #0
-	<var> state 9
-  state 9: #0
-} end)& if thunkp us/*0:1*/; accum u@(x/*0:0101*/,y/*0:01101*/,z/*0:0111*/) us/*0:1*/ = x/*1:0101*/:xs/*0:01*/,y/*1:01101*/:ys/*0:101*/,z/*1:0111*/:zs/*0:11*/ when xs/*0:01*/,ys/*0:101*/,zs/*0:11*/ = check/*1*/ us/*0:1*/ {
-  rule #0: xs,ys,zs = check us
-  state 0: #0
-	<app> state 1
-  state 1: #0
-	<app> state 2
-  state 2: #0
-	, state 3
-  state 3: #0
-	<var> state 4
-  state 4: #0
-	<app> state 5
-  state 5: #0
-	<app> state 6
-  state 6: #0
-	, state 7
-  state 7: #0
-	<var> state 8
-  state 8: #0
-	<var> state 9
-  state 9: #0
-} end; accum u/*0:01*/ _/*0:1*/ = throw (bad_tuple_value u/*0:01*/) {
-  rule #0: accum u@(x,y,z) us = x:(xs when xs,_,_ = check us end)&,y:(ys when _,ys,_ = check us end)&,z:(zs when _,_,zs = check us end)& if thunkp us
-  rule #1: accum u@(x,y,z) us = x:xs,y:ys,z:zs when xs,ys,zs = check us end
-  rule #2: accum u _ = throw (bad_tuple_value u)
-  state 0: #0 #1 #2
-	<var> state 1
-	<app> state 3
-  state 1: #2
-	<var> state 2
-  state 2: #2
-  state 3: #0 #1 #2
-	<var> state 4
-	<app> state 7
-  state 4: #2
-	<var> state 5
-  state 5: #2
-	<var> state 6
-  state 6: #2
-  state 7: #0 #1 #2
-	<var> state 8
-	, state 12
-  state 8: #2
-	<var> state 9
-  state 9: #2
-	<var> state 10
-  state 10: #2
-	<var> state 11
-  state 11: #2
-  state 12: #0 #1 #2
-	<var> state 13
-  state 13: #0 #1 #2
-	<var> state 14
-	<app> state 16
-  state 14: #2
-	<var> state 15
-  state 15: #2
-  state 16: #0 #1 #2
-	<var> state 17
-	<app> state 20
-  state 17: #2
-	<var> state 18
-  state 18: #2
-	<var> state 19
-  state 19: #2
-  state 20: #0 #1 #2
-	<var> state 21
-	, state 25
-  state 21: #2
-	<var> state 22
-  state 22: #2
-	<var> state 23
-  state 23: #2
-	<var> state 24
-  state 24: #2
-  state 25: #0 #1 #2
-	<var> state 26
-  state 26: #0 #1 #2
-	<var> state 27
-  state 27: #0 #1 #2
-	<var> state 28
-  state 28: #0 #1 #2
 } end;
 def void (catmap f/*0:101*/ x/*0:11*/) = __std__::__do__ f/*0:101*/ x/*0:11*/;
 def void (listmap f/*0:101*/ x/*0:11*/) = __std__::__do__ f/*0:101*/ x/*0:11*/;
@@ -5619,9 +5735,9 @@ def __std__::__voidchk1__ x/*0:01*/ y/*0:1*/ = x/*0:01*/;
   state 55: #2 #3
 }
 {
-  rule #0: unzip x::matrix = colcatmap (\__v1__ -> case __v1__ of u,_ = {u}; _ = {} end) x,colcatmap (\__v2__ -> case __v2__ of _,v = {v}; _ = {} end) x if all check x with check (_,_) = 1; check x = throw (bad_tuple_value x) end
+  rule #0: unzip x::matrix = map fst x,map snd x with fst u = case u of x,_ = x; _ = u end; snd u = case u of _,y = y; _ = () end end
   rule #1: unzip [] = [],[]
-  rule #2: unzip us@(_:_) = foldr accum ([],[]) us with check us@(_,_) = us; check (foldr _ _ us) = throw (bad_list_value us); check us = throw (bad_tuple_value us); accum u@(x,y) us = x:(xs when xs,_ = check us end)&,y:(ys when _,ys = check us end)& if thunkp us; accum u@(x,y) us = x:xs,y:ys when xs,ys = check us end; accum u _ = throw (bad_tuple_value u) end
+  rule #2: unzip us@(_:_) = foldr accum ([],[]) us with fst u = case u of x,_ = x; _ = u end; snd u = case u of _,y = y; _ = () end; accum u us = fst u:(xs when xs,_ = check us end)&,snd u:(ys when _,ys = check us end)& if thunkp us; accum u us = fst u:xs,snd u:ys when xs,ys = check us end; check us@(_,_) = us; check (foldr _ _ us) = throw (bad_list_value us); check us = throw (bad_tuple_value us) end
   state 0: #0 #1 #2
 	<var>::matrix state 1
 	<app> state 2
@@ -5639,9 +5755,9 @@ def __std__::__voidchk1__ x/*0:01*/ y/*0:1*/ = x/*0:01*/;
   state 7: #1
 }
 {
-  rule #0: unzip3 x::matrix = colcatmap (\__v3__ -> case __v3__ of u,_ = {u}; _ = {} end) x,colcatmap (\__v4__ -> case __v4__ of _,v,_ = {v}; _ = {} end) x,colcatmap (\__v5__ -> case __v5__ of _,_,w = {w}; _ = {} end) x if all check x with check (_,_,_) = 1; check x = throw (bad_tuple_value x) end
+  rule #0: unzip3 x::matrix = map fst x,map snd x,map trd x with fst u = case u of x,_ = x; _ = u end; snd u = case u of _,y,_ = y; _,y = y; _ = () end; trd u = case u of _,_,z = z; _ = () end end
   rule #1: unzip3 [] = [],[],[]
-  rule #2: unzip3 us@(_:_) = foldr accum ([],[],[]) us with check us@(_,_,_) = us; check (foldr _ _ us) = throw (bad_list_value us); check us = throw (bad_tuple_value us); accum u@(x,y,z) us = x:(xs when xs,_,_ = check us end)&,y:(ys when _,ys,_ = check us end)&,z:(zs when _,_,zs = check us end)& if thunkp us; accum u@(x,y,z) us = x:xs,y:ys,z:zs when xs,ys,zs = check us end; accum u _ = throw (bad_tuple_value u) end
+  rule #2: unzip3 us@(_:_) = foldr accum ([],[],[]) us with fst u = case u of x,_ = x; _ = u end; snd u = case u of _,y,_ = y; _,y = y; _ = () end; trd u = case u of _,_,z = z; _ = () end; accum u us = fst u:(xs when xs,_,_ = check us end)&,snd u:(ys when _,ys,_ = check us end)&,trd u:(zs when _,_,zs = check us end)& if thunkp us; accum u us = fst u:xs,snd u:ys,trd u:zs when xs,ys,zs = check us end; check us@(_,_,_) = us; check (foldr _ _ us) = throw (bad_list_value us); check us = throw (bad_tuple_value us) end
   state 0: #0 #1 #2
 	<var>::matrix state 1
 	<app> state 2

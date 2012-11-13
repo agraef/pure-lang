@@ -1689,10 +1689,11 @@ dowith3 f _ _ _		= () otherwise;
 unzip []		= [],[];
 unzip us@(_:_)		= foldr accum ([],[]) us
 with
-  accum u@(x,y) us	= x:(xs when xs,_ = check us end)&,
-			  y:(ys when _,ys = check us end)& if thunkp us;
-			= x:xs,y:ys when xs,ys = check us end;
-  accum u _		= throw (bad_tuple_value u);
+  accum u us		= fst u:(xs when xs,_ = check us end)&,
+			  snd u:(ys when _,ys = check us end)& if thunkp us;
+			= fst u:xs,snd u:ys when xs,ys = check us end;
+  fst u			= case u of x,_ = x; _ = u end;
+  snd u			= case u of _,y = y; _ = () end;
   check us@(_,_)	= us;
   check (foldr _ _ us)	= throw (bad_list_value us);
   check us		= throw (bad_tuple_value us);
@@ -1701,11 +1702,14 @@ end;
 unzip3 []		= [],[],[];
 unzip3 us@(_:_)		= foldr accum ([],[],[]) us
 with
-  accum u@(x,y,z) us	= x:(xs when xs,_,_ = check us end)&,
-			  y:(ys when _,ys,_ = check us end)&,
-			  z:(zs when _,_,zs = check us end)& if thunkp us;
-			= x:xs,y:ys,z:zs when xs,ys,zs = check us end;
-  accum u _		= throw (bad_tuple_value u);
+  accum u us		= fst u:(xs when xs,_,_ = check us end)&,
+			  snd u:(ys when _,ys,_ = check us end)&,
+			  trd u:(zs when _,_,zs = check us end)& if thunkp us;
+			= fst u:xs,snd u:ys,trd u:zs
+			    when xs,ys,zs = check us end;
+  fst u			= case u of x,_ = x; _ = u end;
+  snd u			= case u of _,y,_ | _,y = y; _ = () end;
+  trd u			= case u of _,_,z = z; _ = () end;
   check us@(_,_,_)	= us;
   check (foldr _ _ us)	= throw (bad_list_value us);
   check us		= throw (bad_tuple_value us);
