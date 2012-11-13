@@ -1158,6 +1158,11 @@ pure_expr *string_ord(const char *c);
 char *str(const pure_expr *x);
 pure_expr *eval(pure_expr *x);
 
+/* Variation of str() which returns a Pure string as the result, or fails
+   (returning 0). */
+
+pure_expr *pure_str(const pure_expr *x);
+
 /* A special version of str() which pretty-prints quoted specials like
    '(x->x+1) only. This can be used with __show__. */
 

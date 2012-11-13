@@ -8437,6 +8437,19 @@ char *str(const pure_expr *x)
   }
 }
 
+extern "C"
+pure_expr *pure_str(const pure_expr *x)
+{
+  assert(x);
+  ostringstream os;
+  try {
+    os << x;
+    return pure_cstring_dup(os.str().c_str());
+  } catch (err &e) {
+    return 0;
+  }
+}
+
 extern bool __print_pretty__;
 
 extern "C"
