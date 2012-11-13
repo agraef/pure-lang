@@ -5463,8 +5463,8 @@ int interpreter::add_sub_interface(env &e, int32_t tag, int32_t iface)
 void interpreter::finalize_interface_rules(env &e, int32_t tag, size_t count,
 					   exprl::iterator *p)
 {
-  env::iterator it = typeenv.find(tag);
-  if (it == typeenv.end()) {
+  env::iterator it = e.find(tag);
+  if (it == e.end() || it->second.t == env_info::none) {
     if ((verbose&verbosity::defs) != 0) {
       const symbol& sym = symtab.sym(tag);
       cout << "interface " << sym.s << " with\nend;\n";
@@ -5722,6 +5722,22 @@ rulel *interpreter::compile_interface(env &e, int32_t tag)
 	kt->second.argc != n) {
       // No matching function, so the interface can't be matched either.
       nomatch = true;
+      if (first && warnings) {
+	// Do a quick check on all expression patterns to see if any of them
+	// could be matched at all. If this isn't the case, then the interface
+	// is abstract, i.e., it hasn't been implemented yet. We don't want to
+	// warn about these.
+	warnings = false;
+	for (exprl::iterator it = xs.begin(); it != xs.end(); ++it) {
+	  int32_t f;
+	  exprl args = get_args(*it, f);
+	  if (f <= 0) continue;
+	  env::iterator kt = globenv.find(f);
+	  if (kt == globenv.end() || kt->second.t != env_info::fun)
+	    continue;
+	  warnings = true; break;
+	}
+      }
       // If we're not warning about these symbols, we might as well bail out
       // now. Otherwise, we keep at it, to give proper diagnostics for all
       // functions required by the interface.
