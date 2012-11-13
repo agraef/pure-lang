@@ -925,6 +925,26 @@ using namespace __C;
      > reduce_with [x=>u+v] y;
      [u+v,(u+v)^2,(u+v)^3]
 
+   .. note::
+
+      If the call to :macro:`reduce` (or :macro:`__locals__`) is inside a
+      local function then that local function will itself be in the
+      constructed environment. This causes trouble (infinite recursion) if
+      that function is parameterless (which is a common idiom). This isn't
+      easy to fix in the current implementation, since the :macro:`__locals__`
+      macro isn't aware of which function it is being called in.
+
+      You can avoid this mishap by calling :macro:`reduce` in a global
+      function, as shown in the ``factor`` and ``expand`` examples above, or,
+      if you have to call it from a local function, by making sure that this
+      function takes at least one argument.
+
+      It is always a good idea to confine calls to :macro:`reduce` to global
+      functions if possible, since this gives you better control over which
+      local functions are in scope at the point of the call. Otherwise it
+      might be necessary to call :macro:`__locals__` manually and filter the
+      resulting list before submitting it to the :func:`reduce_with` function.
+
    Expression Serialization
    ~~~~~~~~~~~~~~~~~~~~~~~~
 
