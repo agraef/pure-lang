@@ -17,44 +17,32 @@
 
 */
 
-// expr to prefix tree (list)
-parse (x@_ y)
-  = parse x + [parse y] if applp y ;
-  = parse x + parse y otherwise ;
-
-parse s = [s] ;
-
-
 
 //  Term reduction (alias Decomposition)
 // (f t_1 ... t_n) == (f s_1 ... s_n) -> t_1 == s_1, ... ,t_n == s_n.
 tred ((a@_ b) == (c@_ d)) = tred (a==c), quote(b==d) ;
 tred (x==y) = quote(x==y) ;
 
-// Symbol clash
+// Symbol clash if not
 // (f t_1 ... t_n) == (f s_1 ... s_n), n > 0.
-check_tred (X==Y) = (head u === head v) && (#u==#v) && (#u>1)
-  when u = parse X; v = parse Y end ;
-
-
-// Deep membership in a list
-deep_memberp x [] = false ;
-deep_memberp x (y:ys)
-  = true if x === y ;
-  = deep_memberp x y || deep_memberp x ys if listp y ;
-  = deep_memberp x ys otherwise ;
+clash ((f@_ s)==(g@_ t)) = clash (f==g) ;
+clash (x==y) = x~==y ;
 
 // Occur check
-occur_check x::var y = (x~==y) && ~(deep_memberp x (parse y)) ;
+// x in (f t_1 ... t_n) ?
+occurs x::var (f@_ s)
+  = true if x === s ;
+  = occurs x f || occurs x s ;
+occurs x f = f===x ;
 
 // Unification
 unify ((x==y) : xs) S = unify xs S if (x===y) ;
 unify ((x::appl == y::var)  : xs) S = unify ((y==x):xs) S ;
 unify ((x::var  == y)       : xs) S
-  = 0 if ~(occur_check x y) ;
+  = false if occurs x y ;
   = unify (reduce_with [x=>y] xs) ((reduce_with [x=>y] S)+[x=>y]) ;
 unify ((x::appl == y::appl) : xs) S
-  = 0 if ~check_tred (x==y) ;
+  = false if clash (x==y) ;
   = unify ((list (tred (x==y)))+xs) S ;
 unify [] X = X ;
 
