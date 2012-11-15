@@ -306,7 +306,9 @@ strptime_internal (rp, fmt, tm, decided, era_cnt LOCALE_PARAM)
   struct locale_data *const current = locale->__locales[LC_TIME];
 #endif
 
+#ifdef _NL_CURRENT
   const char *rp_backup;
+#endif
   int cnt;
   size_t val;
   int have_I, is_pm;
@@ -356,10 +358,10 @@ strptime_internal (rp, fmt, tm, decided, era_cnt LOCALE_PARAM)
 #ifndef _NL_CURRENT
       /* We need this for handling the `E' modifier.  */
     start_over:
-#endif
-
+#else
       /* Make back up of current processing pointer.  */
       rp_backup = rp;
+#endif
 
       switch (*fmt++)
         {

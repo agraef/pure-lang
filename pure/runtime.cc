@@ -4168,7 +4168,7 @@ pure_expr *pure_int64(int64_t l)
   uint64_t v = (uint64_t)(l>=0?l:-l);
   if (sizeof(mp_limb_t) == 8) {
     // 8 byte limbs, value fits in a single limb.
-    limb_t u[1] = { v };
+    limb_t u[1] = { (limb_t)v };
     return pure_bigint(sgn, u);
   } else {
     // 4 byte limbs, put least significant word in the first limb.
@@ -4183,7 +4183,7 @@ pure_expr *pure_uint64(uint64_t l)
   int sgn = (l!=0);
   if (sizeof(mp_limb_t) == 8) {
     // 8 byte limbs, value fits in a single limb.
-    limb_t u[1] = { l };
+    limb_t u[1] = { (limb_t)l };
     return pure_bigint(sgn, u);
   } else {
     // 4 byte limbs, put least significant word in the first limb.
@@ -7763,9 +7763,9 @@ static pure_expr *pointer_to_bigint(void *p)
   if (sizeof(mp_limb_t) == 8) {
     // In this case the pointer value ought to fit into a single limb.
 #if SIZEOF_VOID_P==8
-    limb_t u[1] = { (uint64_t)p };
+    limb_t u[1] = { (limb_t)(uint64_t)p };
 #else
-    limb_t u[1] = { (uint64_t)(uint32_t)p };
+    limb_t u[1] = { (limb_t)(uint64_t)(uint32_t)p };
 #endif
     return pure_bigint(1, u);
   }
@@ -9332,7 +9332,7 @@ struct Blob {
   }
   void write_header()
   {
-    hdrdata h = { MAGIC, // magic header
+    hdrdata h = { (int32_t)MAGIC, // magic header
 		  // these will be patched up later
 		  0,   // crc
 		  0,   // size
