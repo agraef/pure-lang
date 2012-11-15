@@ -10,8 +10,10 @@ shared      = $(shell pkg-config pure --variable shared)
 
 ifeq ($(DLL),.dll)
 EXE = .exe
+DIFF = diff --strip-trailing-cr
 else
 EXE =
+DIFF = diff
 endif
 
 # Default installation directory. DESTDIR is supported for staging purposes to
@@ -62,7 +64,7 @@ tests.log: tests.pure
 	pure -v < tests.pure | tail -n +2 > tests.log
 
 check:
-	pure -v < tests.pure | tail -n +2 | diff tests.log -
+	pure -v < tests.pure | tail -n +2 | $(DIFF) tests.log -
 
 clean:
 	$(MAKE) -C reduce-algebra/csl/new-embedded/procedural clean

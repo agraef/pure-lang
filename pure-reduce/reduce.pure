@@ -680,6 +680,7 @@ namespace __C with
 extern int fclose(FILE*);
 extern FILE* fopen(char*, char*);
 extern int puts(char*);
+extern char *getenv(char*);
 // These are in the runtime; used for lispsym below.
 extern int pure_sym(void *s);
 extern expr *pure_quoted_symbol(int tag);
@@ -690,7 +691,7 @@ using namespace __C;
 // Perform a search for the image file.
 search image::string = () if null image;
 = catch id (if index image "/" > 0 then check ()
-	    else do check (split ":" REDUCE_PATH)) with
+	    else do check (split ":" REDUCE_PATH+[getenv "PURELIB"])) with
   abspath name = null name || any (==image!0) [".","/"];
   check dir = () when
     image = if null dir then image else join "/" [dir,image];
