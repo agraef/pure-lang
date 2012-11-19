@@ -3548,7 +3548,9 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
 	  pure_expr **x = new pure_expr*;
 	  *x = it->second.x;
 	  globalvars.erase(it);
-	  JIT->addGlobalMapping(oldv, x);
+	  // Erasing the binding from globalvars doesn't actually affect the
+	  // LLVM mapping, so there's no need to reinstate it.
+	  //JIT->addGlobalMapping(oldv, x);
 	}
 	pure_expr **xp = new pure_expr*; *xp = 0;
 	globalvars.insert(pair<int32_t,GlobalVar>(f, GlobalVar(xp)));
