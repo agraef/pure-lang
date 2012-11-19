@@ -53,7 +53,6 @@ char *alloca ();
 #include <llvm/Transforms/Utils/BasicBlockUtils.h>
 
 #include <llvm/ExecutionEngine/JIT.h>
-#include <llvm/Target/TargetData.h>
 #include <llvm/Bitcode/ReaderWriter.h>
 #include <llvm/Support/MemoryBuffer.h>
 #include <llvm/Linker.h>

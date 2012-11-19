@@ -238,7 +238,7 @@ if test $fastcc = yes; then
 fi
 
 dnl Check for LLVM (try various LLVM versions).
-AC_CHECK_PROGS(LLVMCONF,[${llvm_config_pre} llvm-config-3.1 llvm-config-3.0 llvm-config-2.9 llvm-config-2.8 llvm-config-2.7 llvm-config-2.6 llvm-config-2.5],no,"$PATH:/")
+AC_CHECK_PROGS(LLVMCONF,[${llvm_config_pre} llvm-config-3.2 llvm-config-3.1 llvm-config-3.0 llvm-config-2.9 llvm-config-2.8 llvm-config-2.7 llvm-config-2.6 llvm-config-2.5],no,"$PATH:/")
 if test "$LLVMCONF" = no; then
   AC_MSG_ERROR([Cannot find LLVM.])
 fi
@@ -294,6 +294,17 @@ dnl Check for the new-style template arguments of the IRBuilder class.
 AC_LANG_PUSH([C++])
 save_CPPFLAGS=$CPPFLAGS
 CPPFLAGS="`$LLVMCONF --cppflags` $CPPFLAGS"
+AC_CACHE_CHECK([for new LLVM IRBuilder class (LLVM >= 3.2)], [pure_cv_new_builder32],
+  [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
+       #include <llvm/IRBuilder.h>
+      ], [
+        llvm::IRBuilder<> b(llvm::getGlobalContext());
+      ])
+    ], [pure_cv_new_builder32=yes], [pure_cv_new_builder32=no])
+  ])
+if test "$pure_cv_new_builder32" = yes; then
+pure_cv_new_builder26=yes
+else
 AC_CACHE_CHECK([for new LLVM IRBuilder class (LLVM >= 2.6)], [pure_cv_new_builder26],
   [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
        #include <llvm/LLVMContext.h>
@@ -303,6 +314,7 @@ AC_CACHE_CHECK([for new LLVM IRBuilder class (LLVM >= 2.6)], [pure_cv_new_builde
       ])
     ], [pure_cv_new_builder26=yes], [pure_cv_new_builder26=no])
   ])
+fi
 if test "$pure_cv_new_builder26" = yes; then
   AC_DEFINE(NEW_BUILDER, 1, [Define when building with new-style LLVM IRBuilder template class.])
   AC_DEFINE(LLVM26, 1, [Define when building with new-style LLVM API (LLVM 2.6 or later).])
@@ -333,7 +345,7 @@ if test "$pure_cv_new_builder" = yes; then
 fi
 fi
 AC_CHECK_HEADERS([llvm/Support/DynamicLibrary.h], [], [], [[#include <llvm/ADT/StringRef.h>]])
-AC_CHECK_HEADERS([llvm/Support/raw_ostream.h llvm/Support/raw_os_ostream.h llvm/ModuleProvider.h llvm/TypeSymbolTable.h llvm/Support/TargetSelect.h])
+AC_CHECK_HEADERS([llvm/Support/raw_ostream.h llvm/Support/raw_os_ostream.h llvm/ModuleProvider.h llvm/TypeSymbolTable.h llvm/DataLayout.h llvm/IRBuilder.h llvm/Support/TargetSelect.h])
 if test "$pure_cv_new_builder26" = yes; then
   AC_CHECK_DECLS([llvm::PerformTailCallOpt, llvm::GuaranteedTailCallOpt], [], [], [[#include <llvm/ADT/StringRef.h>
 #include <llvm/Target/TargetOptions.h>]])

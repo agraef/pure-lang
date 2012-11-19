@@ -26,10 +26,8 @@
 #include <llvm/PassManager.h>
 #include <llvm/GlobalValue.h>
 #include <llvm/Analysis/Verifier.h>
-#include <llvm/Target/TargetData.h>
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/Transforms/Scalar.h>
-#include <llvm/Support/IRBuilder.h>
 
 #include <time.h>
 #include <set>
@@ -38,6 +36,21 @@
 #include "matcher.hh"
 #include "symtable.hh"
 #include "runtime.h"
+
+#ifdef HAVE_LLVM_DATALAYOUT_H
+// This class has been renamed and moved to LLVMCore in LLVM 3.2.
+#include <llvm/DataLayout.h>
+#define LLVM32 1
+#else
+#include <llvm/Target/TargetData.h>
+#endif
+
+#ifdef HAVE_LLVM_IRBUILDER_H
+// LLVM 3.2 and later have this header in a different directory.
+#include <llvm/IRBuilder.h>
+#else
+#include <llvm/Support/IRBuilder.h>
+#endif
 
 #ifdef HAVE_LLVM_MODULEPROVIDER_H
 #include <llvm/ModuleProvider.h>
@@ -198,6 +211,12 @@ struct VarInfo {
 #define Builder llvm::IRBuilder<>
 #else
 #define Builder llvm::IRBuilder
+#endif
+
+#ifdef LLVM32
+/* Workarounds for LLVM 3.2 API breakage. */
+#define TargetData DataLayout
+#define getTargetData getDataLayout
 #endif
 
 #ifdef LLVM30
