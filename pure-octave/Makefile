@@ -3,7 +3,7 @@
 
 # Package name and version number:
 dist = pure-octave-$(version)
-version = 0.2
+version = 0.3
 
 # Try to guess the installation prefix (this needs GNU make):
 prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
