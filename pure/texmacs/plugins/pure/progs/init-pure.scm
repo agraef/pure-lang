@@ -20,11 +20,9 @@
 ;; binding (Ctrl+$ by default) provides a quick way to toggle between
 ;; program/verbatim and math mode on the session input line.
 
-(kbd-map
- ;; enable these in any of the Pure session types
- (:require (or (in-pure?) (in-pure-debug?) (in-pure-math?)))
- ;; math input toggle
- ("C-$" (toggle-session-math-input)))
+(define pure-keymap
+'(;; math input toggle
+  ("C-$" (toggle-session-math-input))))
 
 ;; The default "<symbol> space" math bindings are quite annoying when entering
 ;; Pure expressions, so we disable them here; there are other ways to get
@@ -37,17 +35,15 @@
 ;; Pure lambda; the default binding is preserved in this case so that you can
 ;; enter special TeXmacs commands such as \eqnarray and \binom in math mode.
 
-(kbd-map
- ;; enable these only in math mode
- (:require (and (in-math?) (or (in-pure?) (in-pure-debug?) (in-pure-math?))))
- ;; get rid of the default "<symbol> space" bindings for invisible symbols
- ;; (comment the following lines if you really can't live without these)
- (", space" (insert ", "))
- (". space" (insert ". "))
- ("+ space" (insert "+ "))
- ;; make $ and " self-inserting
- ("$"  (insert "$"))
- ("\"" (insert "\"")))
+(define pure-math-keymap
+'(;; get rid of the default "<symbol> space" bindings for invisible symbols
+  ;; (comment the following lines if you really can't live without these)
+  (", space" (insert ", "))
+  (". space" (insert ". "))
+  ("+ space" (insert "+ "))
+  ;; make $ and " self-inserting
+  ("$"  (insert "$"))
+  ("\"" (insert "\""))))
 
 ;; Some configuration variables. We allow these to be overridden by
 ;; corresponding definitions in the user's init file.
@@ -74,6 +70,27 @@
 (define pure-default-lib-path "/usr/local/lib"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; Kludge to deal with old TeXmacs versions which have a slightly different
+;; interface for defining keyboard maps and menus.
+(define (pure-texmacs-version)
+  (map string->number
+       (string-tokenize (texmacs-version)
+			(char-set-complement (char-set #\.)))))
+(define (pure-compare xs ys)
+  (cond ((null? xs) (nnull? ys))
+	((null? ys) #f)
+	((== (car xs) (car ys)) (pure-compare (cdr xs) (cdr ys)))
+	(else (< (car xs) (car ys)))))
+;; I believe that the new interface was introduced somewhere around 1.0.7.16,
+;; but if the following doesn't work for you then you might want to try
+;; decreasing this number.
+(define pure-old-texmacs? (pure-compare (pure-texmacs-version) '(1 0 7 16)))
+
+;; You'll have to adjust these accordingly if adding more session and script
+;; plugin types below.
+(define (pure-session?) (or (in-pure?) (in-pure-debug?) (in-pure-math?)))
+(define (pure-script?) (or (pure-script-scripts?) (pure-script-math-scripts?)))
 
 ;; Detect the Pure library path (this needs pkg-config).
 (use-modules (ice-9 popen))
@@ -139,8 +156,7 @@
 
 (import-from (doc help-funcs))
 
-(menu-bind
- pure-help-menu
+(menu-bind pure-help-menu
  ("Pure help"
   (load-help-buffer
    (string-append pure-lib-path "/pure/docs/index.tm")))
@@ -159,8 +175,7 @@
   (load-help-buffer
    (string-append pure-lib-path "/pure/docs/genindex.tm"))))
 
-(menu-bind
- pure-menu
+(menu-bind pure-menu
  (if (not-in-session?)
      (link scripts-eval-menu)
      ---
@@ -170,35 +185,43 @@
  (if pure-texmacs-help-available
      (link pure-help-menu)))
 
-;; NOTE: If you add more Pure session and script plugins below, you'll have to
-;; adjust the :require clause below accordingly.
-(menu-bind
- plugin-menu
- (:require
-  (or (in-pure?) (in-pure-debug?) (in-pure-math?)
-      (and (not-in-session?)
-	   (or (pure-script-scripts?) (pure-script-math-scripts?)))))
- (=> "Pure" (link pure-menu)))
-
 (menu-bind pure-help-icons
-  (if (and (or (in-pure?) (in-pure-debug?) (in-pure-math?))
-	   pure-texmacs-help-available)
-      /
+  (if (and (pure-session?) pure-texmacs-help-available)
+      |
       (=> (balloon (icon "tm_help.xpm") "Pure Help")
 	  (link pure-help-menu))))
 
-(menu-bind session-help-icons
-  (:require (and (or (in-pure?) (in-pure-debug?) (in-pure-math?))
-		 (in-session?)))
-  (link pure-help-icons))
+;; Activate the menus and keymaps.
+(cond
+ (pure-old-texmacs?
+  ;; Old-style keyboard and menu interface.
+  (eval `(kbd-map ,@pure-keymap))
+  (eval `(kbd-map ,@pure-math-keymap))
+  (menu-extend texmacs-extra-menu
+   (if (or (pure-session?) (and (not-in-session?) (pure-script?)))
+       (=> "Pure" (link pure-menu))))
+  (menu-extend session-help-icons
+   (link pure-help-icons)))
+ (else
+  (eval `(kbd-map (:require (pure-session?))
+		  ,@pure-keymap))
+  (eval `(kbd-map (:require (and (in-math?) (pure-session?)))
+		  ,@pure-math-keymap))
+  (menu-bind plugin-menu
+   (:require (or (pure-session?) (and (not-in-session?) (pure-script?))))
+   (=> "Pure" (link pure-menu)))
+  (menu-bind session-help-icons
+   (:require (pure-session?))
+   (link pure-help-icons))))
+
+;; We also offer an entry point for the Pure interpreter to pop up help
+;; requested with the Pure help command in a TeXmacs window.
 
 (define (pure-decompose s ch)
   (with i (string-index s ch)
     (if (not i) (list s "")
 	(list (substring s 0 i) (substring s (+ i 1) (string-length s))))))
 
-;; We also offer an entry point for the Pure interpreter to pop up help
-;; requested with the Pure help command in a TeXmacs window.
 (define (pure-help url)
   (with
    (name label) (pure-decompose url #\#)
