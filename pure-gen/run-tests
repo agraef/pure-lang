@@ -34,7 +34,7 @@ fi
 
 # Check that pure-gen works:
 
-DUMP_AST=dump-ast pure-gen dummy.h
+DUMP_AST=dump-ast pure-gen -x '^(linux|unix)$' dummy.h
 $diff dummy.pure - > /dev/null <<EOF
 /* dummy.h: */
 const DUMMY = 99;
@@ -48,7 +48,7 @@ if [ $? != 0 ]; then
 fi
 
 # darktjm: check that duplicate prototypes are removed
-DUMP_AST=dump-ast pure-gen -fc dummy.h
+DUMP_AST=dump-ast pure-gen -x '^(linux|unix)$' -fc dummy.h
 $diff dummy.c - > /dev/null <<EOF
 #include "dummy.h"
 
