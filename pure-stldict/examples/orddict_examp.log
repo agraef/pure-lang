@@ -38,9 +38,9 @@ list m;
 ["bar"=>bar 4711L,"baz"=>[1,2,3,4,5]]
 member m "foo",member m "bar";
 0,1
-listmap (\(x=>y) -> x,y) m1;
+catmap (\__v3__ -> case __v3__ of x=>y = [(x,y)]; _ = [] end) m1;
 [("bar",bar 4711L),("baz",[1,2,3,4,5]),("foo",99)]
-colcatmap (\(x=>y) -> if listp y then {(x,y)} else {}) m1;
+colcatmap (\__v4__ -> case __v4__ of x=>y = if listp y then {(x,y)} else {}; _ = {} end) m1;
 {("baz",[1,2,3,4,5])}
 m===m,m===m1,m===copy m,orddict [97=>98]===orddict [97.0=>98];
 1,0,1,0
