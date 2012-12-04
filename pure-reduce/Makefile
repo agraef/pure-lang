@@ -67,8 +67,8 @@ check:
 	pure -v < tests.pure | tail -n +2 | $(DIFF) tests.log -
 
 clean:
-	$(MAKE) -C reduce-algebra/csl/new-embedded/procedural clean
-	$(MAKE) -C reduce-algebra/csl/new-embedded clean
+	-$(MAKE) -C reduce-algebra/csl/new-embedded/procedural clean
+	-$(MAKE) -C reduce-algebra/csl/new-embedded clean
 	rm -f reduce.img reduce$(DLL) reduce$(EXE) proc-add.o
 
 install:
