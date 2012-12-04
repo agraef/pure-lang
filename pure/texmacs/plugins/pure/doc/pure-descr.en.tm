@@ -551,9 +551,11 @@
   There's also the possibility to work with <em|executable fields> and
   <em|spreadsheets>. These offer the advantage that fields may depend on
   other fields in the same document.<\footnote>
-    Be warned that this might become <em|very> slow in large documents;
-    however, it's possible to work around this limitation by breaking your
-    document into smaller include files.
+    Note that the spreadsheet functionality requires <TeXmacs> 1.0.7.15 or
+    later to work. Also be warned that, at least at the time of this writing,
+    this might become <em|very> slow in large documents; however, it's
+    possible to work around this limitation by breaking your document into
+    smaller include files.
   </footnote> For instance, here is an example of a textual spreadsheet
   (<samp|Insert \| Table \| Textual spreadsheet>) showing some Pure and
   Reduce calculations. Type <key|Return> in the cells of the last column to
