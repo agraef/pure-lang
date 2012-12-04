@@ -86,7 +86,7 @@ uninstall:
 
 # Roll a distribution tarball.
 
-DISTFILES = COPYING README Makefile reduce.pure tests.pure tests.log pure_reduce.txt examples.txt examples/*.pure
+DISTFILES = COPYING README Makefile reduce.pure tests.pure tests.log pure_reduce.txt examples.txt debian/* examples/*.pure reduce-files/*
 SEDFILES = README
 
 dist = $(name)-$(version)
@@ -96,7 +96,7 @@ datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > 
 
 dist: $(DISTFILES)
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/examples
+	mkdir $(dist) && mkdir $(dist)/debian && mkdir $(dist)/examples && mkdir $(dist)/reduce-files
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	for x in $(SEDFILES); do rm -f $(dist)/$$x; $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
 	rm -f $(dist).tar.gz
@@ -112,3 +112,15 @@ $(target).txt: README $(sources)
 	cp $< $@
 	pure-doc -is $(sources) >> $@
 	cat examples.txt >> $@
+
+# Debian package.
+
+debsrc = $(shell echo $(dist) | sed -e 's/-$(version)/_$(version)/').orig.tar.gz
+
+deb: $(debsrc) dist
+	tar xfz $(dist).tar.gz
+	cd $(dist) && debuild $(DEBUILD_FLAGS)
+	rm -rf $(dist)
+
+$(debsrc):
+	wget -nv http://pure-lang.googlecode.com/files/$(dist).tar.gz -O $@
