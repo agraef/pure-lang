@@ -2092,7 +2092,10 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
       vector<Value*> args;
       Function::arg_iterator a = f->arg_begin();
       llvm_const_FunctionType *gt = getNumInputs->getFunctionType();
-      args.push_back(b.CreateBitCast(a, gt->getParamType(0)));
+      // In some revisions getNumInputs and getNumOutputs are parameterless
+      // functions; avoid a failed assertion for these.
+      if (gt->getNumParams() > 0)
+	args.push_back(b.CreateBitCast(a, gt->getParamType(0)));
       Value *n_in = b.CreateCall(getNumInputs, mkargs(args));
       Value *n_out = b.CreateCall(getNumOutputs, mkargs(args));
       // Call the runtime function to create the internal UI data structure.

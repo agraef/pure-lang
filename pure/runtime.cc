@@ -17107,16 +17107,30 @@ void PureFaustUI::run() {}
    on whether floating point parameters are passed as double (faust -double)
    or not. */
 
+// You might have to disable this if you're still running an old Faust2 version.
+#define FAUST_NEW_META 1
+
 extern "C" {
 
 struct MetaGlue {
+#if FAUST_NEW_META
+  void *data;
+#endif
   void *declare;
 };
 
-// XXXFIXME: Faust doesn't pass the glue pointer here, so we have to use a
-// static FaustMeta object to process the metadata right now.
+// XXXFIXME: Faust didn't use to pass the metadata here, so we use a static
+// FaustMeta object to process the metadata right now. NOTE: This has been
+// fixed in the latest Faust2, but we still keep it this way for now, in order
+// not to break compatibility with older Faust2 versions. Eventually, the
+// global data should be replaced with the first member of the glue data
+// structure.
 static FaustMeta *__faust_metadata; // TLD
+#if FAUST_NEW_META
+static void declareMetaGlue(void *data, const char* key, const char* value)
+#else
 static void declareMetaGlue(const char* key, const char* value)
+#endif
 {
   if (__faust_metadata) __faust_metadata->declare(key, value);
 }
@@ -17126,6 +17140,9 @@ void *faust_new_metadata()
   MetaGlue *glue = (MetaGlue*)malloc(sizeof(MetaGlue));
   glue->declare = (void*)declareMetaGlue;
   __faust_metadata = new FaustMeta;
+#if FAUST_NEW_META
+  glue->data = __faust_metadata;
+#endif
   return glue;
 }
 
