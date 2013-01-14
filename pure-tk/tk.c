@@ -26,6 +26,17 @@ static int XErrorProc(ClientData data, XErrorEvent *errEventPtr)
 
 /* Helper functions for error handling. */
 
+static inline const char *get_result(Tcl_Interp* interp)
+{
+  return Tcl_GetStringResult(interp);
+}
+
+static inline bool check_result(Tcl_Interp* interp)
+{
+  const char *res = Tcl_GetStringResult(interp);
+  return res && *res;
+}
+
 static inline void set_result(char **result, const char *s)
 {
   *result = malloc(strlen(s)+1);
@@ -115,8 +126,8 @@ static bool tk_start(char **result)
   /* start up a new interpreter */
   if (!(interp = Tcl_CreateInterp())) return false;
   if (Tcl_Init(interp) != TCL_OK) {
-    if (interp->result && *interp->result)
-      set_result(result, interp->result);
+    if (check_result(interp))
+      set_result(result, get_result(interp));
     else
       set_result(result, "error initializing Tcl");
     tk_stop();
@@ -128,8 +139,8 @@ static bool tk_start(char **result)
   /* oddly, there are no `env' variables passed, and this one is needed */
   Tcl_SetVar2(interp, "env", "DISPLAY", getenv("DISPLAY"), TCL_GLOBAL_ONLY);
   if (Tk_Init(interp) != TCL_OK) {
-    if (interp->result && *interp->result)
-      set_result(result, interp->result);
+    if (check_result(interp))
+      set_result(result, get_result(interp));
     else
       set_result(result, "error initializing Tk");
     tk_stop();
@@ -182,8 +193,8 @@ static bool tk_eval(const char *s, char **result)
   if (!cmd) return false;
   strcpy(cmd, s);
   status = Tcl_Eval(interp, cmd);
-  if (interp && interp->result && *interp->result)
-    set_result(result, interp->result);
+  if (interp && check_result(interp))
+    set_result(result, get_result(interp));
   else if (status == TCL_BREAK)
     set_result(result, "invoked \"break\" outside of a loop");
   else if (status == TCL_CONTINUE)
