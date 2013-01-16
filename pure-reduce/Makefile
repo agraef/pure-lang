@@ -86,7 +86,7 @@ uninstall:
 
 # Roll a distribution tarball.
 
-DISTFILES = COPYING README Makefile proc-add.c reduce.pure tests.pure tests.log pure_reduce.txt examples.txt debian/* examples/*.pure reduce-files/*
+DISTFILES = COPYING README Makefile proc-add.c reduce.pure tests.pure tests.log examples.txt debian/* examples/*.pure reduce-files/*
 SEDFILES = README
 
 dist = $(name)-$(version)
