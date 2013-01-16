@@ -10792,10 +10792,21 @@ int interpreter::compiler(string out, list<string> libnames)
       unlink(asmfile.c_str());
       if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
 	// Link.
+#ifdef __linux__
+	string extra_linkopts = (cxx=="g++")?
+	  // XXXFIXME: This used to be the default, but some Linux
+	  // distributions have started shipping gcc versions which have the
+	  // --as-needed linker option enabled by default, which breaks some
+	  // Pure modules. Thus we always enforce --no-as-needed now in order
+	  // to get back the old behaviour. This might change in the future.
+	  " -Wl,--no-as-needed":"";
+#else
+	string extra_linkopts = "";
+#endif
 #ifdef LIBDIR
 	string auxlibdir = LIBDIR;
 #endif
-	string linkopts = quote(obj)+libs+
+	string linkopts = quote(obj)+extra_linkopts+libs+
 #ifdef __MINGW32__
 	  /* Link some extra libs and beef up the stack size on Windows. */
 	  " -Wl,--stack=0x800000 -lregex -lglob"+

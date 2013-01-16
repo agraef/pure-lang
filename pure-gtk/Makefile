@@ -27,6 +27,11 @@ shared = -shared
 PURE_COPTS=-I.. -L..
 
 # Take care of some common systems.
+ifneq "$(findstring -linux,$(host))" ""
+# Some newer Linux systems make --as-needed the default, we need the old
+# behaviour here.
+EXTRA_LD_FLAGS = -Wl,--no-as-needed
+endif
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows
 EXE = .exe
@@ -181,7 +186,7 @@ gladedir = $(includedir)/libglade-2.0
 
 GTK_CFLAGS = $(shell pkg-config --cflags gtk+-2.0)
 GTK_INCLUDES = $(shell pkg-config --cflags-only-I gtk+-2.0)
-GTK_LIBS = $(shell pkg-config --libs gtk+-2.0)
+GTK_LIBS = $(EXTRA_LD_FLAGS) $(shell pkg-config --libs gtk+-2.0)
 ifdef windows
 GTK_DLLS = $(call dllopts, gtk+-2.0) -lgtk
 endif
@@ -226,7 +231,7 @@ endif
 
 ATK_CFLAGS = $(shell pkg-config --cflags atk)
 ATK_INCLUDES = $(shell pkg-config --cflags-only-I atk)
-ATK_LIBS = $(shell pkg-config --libs atk)
+ATK_LIBS = $(EXTRA_LD_FLAGS) $(shell pkg-config --libs atk)
 ifdef windows
 ATK_DLLS = $(call dllopts, atk) -latk
 endif
@@ -242,7 +247,7 @@ atk.pure atk.c:
 
 CAIRO_CFLAGS = $(shell pkg-config --cflags cairo)
 CAIRO_INCLUDES = $(shell pkg-config --cflags-only-I cairo)
-CAIRO_LIBS = $(shell pkg-config --libs cairo)
+CAIRO_LIBS = $(EXTRA_LD_FLAGS) $(shell pkg-config --libs cairo)
 ifdef windows
 CAIRO_DLLS = $(call dllopts, cairo) -lcairo
 endif
@@ -258,7 +263,7 @@ cairo.pure cairo.c:
 
 PANGO_CFLAGS = $(shell pkg-config --cflags pango)
 PANGO_INCLUDES = $(shell pkg-config --cflags-only-I pango)
-PANGO_LIBS = $(shell pkg-config --libs pango)
+PANGO_LIBS = $(EXTRA_LD_FLAGS) $(shell pkg-config --libs pango)
 ifdef windows
 PANGO_DLLS = $(call dllopts, pango) -lpango
 endif
@@ -274,7 +279,7 @@ pango.pure pango.c:
 
 GLADE_CFLAGS = $(shell pkg-config --cflags libglade-2.0)
 GLADE_INCLUDES = $(shell pkg-config --cflags-only-I libglade-2.0)
-GLADE_LIBS = $(shell pkg-config --libs libglade-2.0)
+GLADE_LIBS = $(EXTRA_LD_FLAGS) $(shell pkg-config --libs libglade-2.0)
 ifdef windows
 GLADE_DLLS = $(call dllopts, libglade-2.0) -lglade
 endif
