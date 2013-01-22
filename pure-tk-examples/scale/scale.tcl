@@ -297,8 +297,15 @@ proc question_dg {msg} {
 	-buttons {"%#Yes" "%#No"} \
 }
 
-proc about_dg {text} {
-    global WEBKIT about helpfile browser
+proc about_dg {} {
+    global about about_text
+    set about [gnocl::dialog -title "About" -type info -child \
+		   [gnocl::label -wrap 1 -selectable 1 -text $about_text] \
+		   -modal 0 -onResponse {$about delete}]
+}
+
+proc help_dg {} {
+    global WEBKIT about about_text helpfile browser
     if {$WEBKIT && [file exists $helpfile]} {
 	# Show the html manual using WebKit.
 	set wk [gnocl::webKit -url "file:$helpfile"]
@@ -309,8 +316,8 @@ proc about_dg {text} {
 	exec $browser $helpfile &
     } else {
 	# Fallback: Show a simple About box.
-	set about [gnocl::dialog -title "About" -type info \
-		       -child [gnocl::label -wrap 1 -text $text] \
+	set about [gnocl::dialog -title "About" -type info -child \
+		       [gnocl::label -wrap 1 -selectable 1 -text $about_text] \
 		       -modal 0 -onResponse {$about delete}]
     }
 }
@@ -526,7 +533,7 @@ $tbox add $scl 0 0 -expand {1 0} -fill {1 0}
 $tbox add [gnocl::spinButton -variable dmax -digits 2 \
 	       -onValueChanged {pure dmax_cb %v} \
 	       -tooltip "Weight threshold"] 1 0 -expand 0
-$tbox add [gnocl::button -text %#Help -onClicked {pure about_cb} \
+$tbox add [gnocl::button -text %#Help -onClicked {pure help_cb} \
 	       -tooltip "Display the manual"] 2 0 -expand 0
 $tbox add $des 0 1 -expand {1 0} -fill {1 0}
 set progress [gnocl::progressBar]
@@ -541,8 +548,8 @@ $bbox add [gnocl::button -text %#Save -onClicked {pure save_cb} \
 	       -tooltip "Save scale file"]
 $bbox add [gnocl::button -text %#RevertToSaved -onClicked {pure revert_cb} \
 	       -tooltip "Revert scale file"]
-#$bbox add [gnocl::button -text %_A_bout -onClicked {pure about_cb} \
-#	       -icon %#About -tooltip "About this program"]
+$bbox add [gnocl::button -text %_A_bout -onClicked {pure about_cb} \
+	       -icon %#About -tooltip "About this program"]
 $bbox add [gnocl::button -text %#Quit -onClicked fini \
 	       -tooltip "Exit program"]
 $box add $bbox

@@ -307,12 +307,10 @@ information msg::string = () when
   tk_set "msg" msg; tk "info_dg $msg";
 end;
 
-#! --required about_cb
-about_cb = () when
-  tk_set "about" $ sprintf
+const about_text = sprintf
 "This is <b>scale version %s</b>, a program for musical scale visualization \
 and rationalization.\n\n\
-Copyright (c) 2010 by Albert Gräf, \
+Copyright (c) 2010-2013 by Albert Gräf, \
 <span foreground=\"blue\" underline=\"single\">Dr.Graef@t-online.de</span>. \
 The source of this program is available from the Pure website, see \
 <span foreground=\"blue\" underline=\"single\">\
@@ -330,10 +328,19 @@ The scale program is distributed in the hope that it will be useful, but \
 Please see the COPYING file accompanying this program for the precise \
 license terms. The GPL can also be read online at \
 <span foreground=\"blue\" underline=\"single\">\
-http://www.gnu.org/licenses</span>.\n\n\
-Documentation can be found in the html manual accompanying this software."
+http://www.gnu.org/licenses</span>."
   prog_version;
-  tk "about_dg $about";
+
+#! --required about_cb
+about_cb = () when
+  tk_set "about_text" about_text;
+  tk "about_dg";
+end;
+
+#! --required help_cb
+help_cb = () when
+  tk_set "about_text" about_text;
+  tk "help_dg";
 end;
 
 #! --required collapse_cb
