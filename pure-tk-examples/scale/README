@@ -53,7 +53,7 @@ the theory behind this.
 Copying
 =======
 
-Copyright (c) 2010 by Albert Gräf, all rights reserved.
+Copyright (c) 2010-2013 by Albert Gräf, all rights reserved.
 
 The scale program is free software: you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the Free
@@ -95,14 +95,6 @@ You need the following dependencies:
 You probably need fairly recent versions of all these. Pure 0.44, Octave
 3.2.4, Tcl/Tk 8.5 (+ Gnocl 0.9.94g) and VTK 5.4.2 have been tested and are
 known to work.
-
-**IMPORTANT:** There seems to be an incompatibility between some versions of
-Octave and VTK which cause the scale program to segfault at startup. If you're
-running into this, you may have to build Octave *without* native graphics
-support. The `Caveats and Notes`_ section of the pure-octave manual has
-instructions on how to do this.
-
-.. _Caveats and Notes: http://docs.pure-lang.googlecode.com/hg/pure-octave.html#caveats-and-notes
 
 After installing all the dependencies, type ``make`` to compile and ``sudo
 make install`` to install the scale program. (This just copies the scale
@@ -153,9 +145,10 @@ below.
 
 To exit the program, click the ``Quit`` button at the right end of the button
 strip (equivalently, you can also use the ``Alt-Q`` keyboard shortcut), or
-just close the main window. The ``Help`` button in the lower part of the main
-window (keyboard shortcut: ``Alt-H``) displays some useful information about
-the program.
+just close the main window. The ``About`` button in the lower part of the main
+window (keyboard shortcut: ``Alt-B``) shows some useful information about the
+program, while the ``Help`` button (keyboard shortcut: ``Alt-H``) displays
+this manual in a web browser.
 
 File Operations
 ===============
@@ -176,6 +169,73 @@ window.
 Keyboard shortcuts are generally indicated using underlining in the button
 texts. So, e.g., the ``Open`` command can be invoked with ``Alt-O``, ``Save``
 with ``Alt-S``, etc.
+
+As of version 0.2, the scale program can also save scales as binary sysex
+(.syx) files in the `MIDI Tuning Standard`_ (MTS) format, so that you can
+easily retune any MTS-compatible synthesizer to a scale by just sending the
+corresponding sysex file to it. Currently this only works with octave-based
+scales which have exactly 13 scale points (including the base tone 1/1 and the
+octave 2/1). The written sysex files follow the *MIDI Tuning Scale/Octave
+Extensions*, please check the MTS documentation for details.
+
+.. _MIDI Tuning Standard: http://www.midi.org/techspecs/midituning.php
+
+To save a scale as a sysex file, simply invoke the ``Save`` operation as
+usual. When prompted to enter the scale filename, edit the filename so that it
+ends in the extension ``.syx``, then press ``Save``. A special dialog will
+appear which allows you to choose various MTS format options. Adjust these to
+your liking and press ``Save`` again (you can also cancel the operation at
+this point). The available MTS format options are as follows:
+
+* ``Realtime``: If this option is checked, a realtime sysex message will be
+  written, otherwise a non-realtime message. Note that in either case, the
+  tuning changes will take effect immediately if the sysex file is sent to an
+  MTS-capable synthesizer. However, realtime messages will also affect already
+  sounding notes, whereas non-realtime messages only apply to new notes played
+  after the message is sent.
+
+* ``Encoding``: This is a combobox which allows you to pick the desired
+  encoding of the MTS message. MTS octave tunings can be encoded in either
+  1-byte or 2-byte format, meaning that each tuning offset is represented as
+  one or two bytes, respectively. This affects both range and precision of the
+  tuning offsets, please check the MTS documentation for details. Usually it
+  is a good idea to pick the 2-byte encoding, since it offers a wider range
+  (-100..+100 ct) and better precision. However, if your synthesizer only
+  supports the 1-byte encoding, or if you are really concerned about
+  transmission bandwidth then it may be necessary to choose the 1-byte
+  encoding instead. (Note that 2-byte messages need roughly twice the size of
+  1-byte messages; this may affect how quickly the messages are processed,
+  although this is rarely a problem with modern hardware any more).
+
+* ``Base``: This spinbox enables you to select the reference tone of the
+  tuning, given as the index of a scale point in the range 0..11. A value of 0
+  indicates that the base tone of the scale will be at its nominal tuning
+  (i.e., at a tuning offset of 0 ct). The spinbox allows you to change this as
+  needed. Most of the time, you will want to choose the value 9 to have the
+  9th scale tone (which usually corresponds to the chamber pitch A) at a
+  tuning offset of 0 ct, so that A4 will be exactly at 440 Hz; this shifts the
+  other tuning offsets accordingly.
+
+By default, realtime messages and 2-byte encodings are enabled, and the base
+tone is set to 9, which should be sensible defaults in most cases.
+
+Note that in order to actually use the resulting sysex files, you need an
+MTS-compatible synthesizer. Unfortunately, the MIDI Tuning Standard isn't
+supported by many hardware synthesizers, so you'll probably have to use a
+software synthesizer instead. A good MTS-compatible software synthesizer is
+Fluidsynth_ which uses SoundFonts and has a nice graphical frontend called
+Qsynth_. It is available for Linux, Mac OS X and Windows.
+
+.. _Fluidsynth: http://www.fluidsynth.org/
+.. _Qsynth: http://qsynth.sourceforge.net
+
+In addition, you'll need a program which can read sysex files and transmit
+them to the synthesizer. There are many such programs freely available for
+different platforms, such as `Simple Sysexxer`_ on Linux and `Midi-Ox`_ on
+Windows. Also, many MIDI sequencing programs have this capability.
+
+.. _Simple Sysexxer: http://www.christeck.de/wp/products/simple-sysexxer/
+.. _Midi-Ox: http://www.midiox.com/
 
 Editing The Scale
 =================

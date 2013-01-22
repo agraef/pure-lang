@@ -3,13 +3,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta name="generator" content="Docutils 0.6: http://docutils.sourceforge.net/" />
+<meta name="generator" content="Docutils 0.7: http://docutils.sourceforge.net/" />
 <title>Scale - Visualizing and Rationalizing Musical Scales</title>
 <style type="text/css">
 
 /*
 :Author: David Goodger (goodger@python.org)
-:Id: $Id: html4css1.css 5631 2008-08-24 13:01:23Z goodger $
+:Id: $Id: html4css1.css 6253 2010-03-02 00:24:53Z milde $
 :Copyright: This stylesheet has been placed in the public domain.
 
 Default cascading style sheet for the HTML output of Docutils.
@@ -157,11 +157,38 @@ h2.subtitle {
 hr.docutils {
   width: 75% }
 
-img.align-left {
-  clear: left }
+img.align-left, .figure.align-left, object.align-left {
+  clear: left ;
+  float: left ;
+  margin-right: 1em }
 
-img.align-right {
-  clear: right }
+img.align-right, .figure.align-right, object.align-right {
+  clear: right ;
+  float: right ;
+  margin-left: 1em }
+
+img.align-center, .figure.align-center, object.align-center {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.align-left {
+  text-align: left }
+
+.align-center {
+  clear: both ;
+  text-align: center }
+
+.align-right {
+  text-align: right }
+
+/* reset inner alignment in figures */
+div.align-right {
+  text-align: left }
+
+/* div.align-center * { */
+/*   text-align: left } */
 
 ol.simple, ul.simple {
   margin-bottom: 1em }
@@ -343,7 +370,7 @@ the theory behind this.</p>
 </div>
 <div class="section" id="copying">
 <h1><a class="toc-backref" href="#id2">2&nbsp;&nbsp;&nbsp;Copying</a></h1>
-<p>Copyright (c) 2010 by Albert Gräf, all rights reserved.</p>
+<p>Copyright (c) 2010-2013 by Albert Gräf, all rights reserved.</p>
 <p>The scale program is free software: you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the Free
 Software Foundation, either version 3 of the License, or (at your option) any
@@ -371,47 +398,42 @@ any other use please write to <a class="reference external" href="mailto:coul&#6
 <p>You probably need fairly recent versions of all these. Pure 0.44, Octave
 3.2.4, Tcl/Tk 8.5 (+ Gnocl 0.9.94g) and VTK 5.4.2 have been tested and are
 known to work.</p>
-<p><strong>IMPORTANT:</strong> There seems to be an incompatibility between some versions of
-Octave and VTK which cause the scale program to segfault at startup. If you're
-running into this, you may have to build Octave <em>without</em> native graphics
-support. The <a class="reference external" href="http://docs.pure-lang.googlecode.com/hg/pure-octave.html#caveats-and-notes">Caveats and Notes</a> section of the pure-octave manual has
-instructions on how to do this.</p>
-<p>After installing all the dependencies, type <tt class="docutils literal"><span class="pre">make</span></tt> to compile and <tt class="docutils literal"><span class="pre">sudo</span>
-<span class="pre">make</span> <span class="pre">install</span></tt> to install the scale program. (This just copies the scale
+<p>After installing all the dependencies, type <tt class="docutils literal">make</tt> to compile and <tt class="docutils literal">sudo
+make install</tt> to install the scale program. (This just copies the scale
 program to /usr/local/bin and the html version of this manual to
 /usr/local/share/doc. You can specify an alternative installation prefix with
-the <tt class="docutils literal"><span class="pre">prefix</span></tt> variable.)</p>
+the <tt class="docutils literal">prefix</tt> variable.)</p>
 </div>
 <div class="section" id="usage">
 <h1><a class="toc-backref" href="#id4">4&nbsp;&nbsp;&nbsp;Usage</a></h1>
 <p>The scale program reads and writes files in the <a class="reference external" href="http://www.huygens-fokker.org/scala/">Scala</a> scale file format.
 (The Scala file format is the de facto standard for musical scale data. Please
 check the Scala website for details on Scala and its big repository of scale
-files.) To open a scale (.scl) file, use the <tt class="docutils literal"><span class="pre">Open</span></tt> button in the main
+files.) To open a scale (.scl) file, use the <tt class="docutils literal">Open</tt> button in the main
 window, or specify the file on the command line, e.g.:</p>
 <pre class="literal-block">
 scale b12tone.scl
 </pre>
 <p>The main window is divided into two panes, a notebook widget with the
-<tt class="docutils literal"><span class="pre">Graph</span></tt>, <tt class="docutils literal"><span class="pre">Scale</span></tt> and <tt class="docutils literal"><span class="pre">Metric</span></tt> tabs in the upper half, and a box with
+<tt class="docutils literal">Graph</tt>, <tt class="docutils literal">Scale</tt> and <tt class="docutils literal">Metric</tt> tabs in the upper half, and a box with
 various entry fields, global parameter values, a strip of buttons and a status
 line in the lower half. The status line gives feedback during operations which
 may take a while to complete (in particular, when drawing and rationalizing a
-scale). The <tt class="docutils literal"><span class="pre">Graph</span></tt> tab displays a 3-dimensional rendering of the scale. The
-<tt class="docutils literal"><span class="pre">Scale</span></tt> and <tt class="docutils literal"><span class="pre">Metric</span></tt> tabs have additional related information about the
+scale). The <tt class="docutils literal">Graph</tt> tab displays a 3-dimensional rendering of the scale. The
+<tt class="docutils literal">Scale</tt> and <tt class="docutils literal">Metric</tt> tabs have additional related information about the
 scale points and the disharmonicity metric of the scale.</p>
-<p>Scales can be loaded and saved with the <tt class="docutils literal"><span class="pre">Open</span></tt> and <tt class="docutils literal"><span class="pre">Save</span></tt> buttons at the
+<p>Scales can be loaded and saved with the <tt class="docutils literal">Open</tt> and <tt class="docutils literal">Save</tt> buttons at the
 bottom of the main window, see <a class="reference internal" href="#file-operations">File Operations</a> below for details. If you
 load a plain Scala file, you will be prompted if you first want to draw
-it. This is also needed to generate some useful information on the <tt class="docutils literal"><span class="pre">Scale</span></tt>
-and <tt class="docutils literal"><span class="pre">Metric</span></tt> tabs, so you should answer <tt class="docutils literal"><span class="pre">Yes</span></tt> there. You can also just
+it. This is also needed to generate some useful information on the <tt class="docutils literal">Scale</tt>
+and <tt class="docutils literal">Metric</tt> tabs, so you should answer <tt class="docutils literal">Yes</tt> there. You can also just
 enter a scale in Scala format (ratios as p/q where p and q are positive
 integers, cent values as nonnegative floating point values) in the upper entry
-field in the lower half of the main window and then click the <tt class="docutils literal"><span class="pre">Draw</span></tt> button
+field in the lower half of the main window and then click the <tt class="docutils literal">Draw</tt> button
 to render the scale. Some already rendered examples are included in the scl
 subdirectory in the sources, so have a look at those to get an idea how this
 works.</p>
-<p>Note that the <tt class="docutils literal"><span class="pre">Graph</span></tt> and <tt class="docutils literal"><span class="pre">Metric</span></tt> tabs will only have interesting
+<p>Note that the <tt class="docutils literal">Graph</tt> and <tt class="docutils literal">Metric</tt> tabs will only have interesting
 information if all scale points are rational; this is required to compute the
 disharmonicity metric. In this case the scale display shows an approximation
 of the harmonic distances of the scale points in three-dimensional Euclidean
@@ -419,28 +441,82 @@ space, computed using a multidimensional scaling (MDS) algorithm (also
 described in the author's <a class="reference external" href="http://www.musikwissenschaft.uni-mainz.de/Musikinformatik/schriftenreihe/nr45/scale.pdf">report</a>). The necessary operations to create a
 rational scale from any input scale are provided, see <a class="reference internal" href="#rationalizing-a-scale">Rationalizing a Scale</a>
 below.</p>
-<p>To exit the program, click the <tt class="docutils literal"><span class="pre">Quit</span></tt> button at the right end of the button
+<p>To exit the program, click the <tt class="docutils literal">Quit</tt> button at the right end of the button
 strip (equivalently, you can also use the <tt class="docutils literal"><span class="pre">Alt-Q</span></tt> keyboard shortcut), or
-just close the main window. The <tt class="docutils literal"><span class="pre">Help</span></tt> button in the lower part of the main
-window (keyboard shortcut: <tt class="docutils literal"><span class="pre">Alt-H</span></tt>) displays some useful information about
-the program.</p>
+just close the main window. The <tt class="docutils literal">About</tt> button in the lower part of the main
+window (keyboard shortcut: <tt class="docutils literal"><span class="pre">Alt-B</span></tt>) shows some useful information about the
+program, while the <tt class="docutils literal">Help</tt> button (keyboard shortcut: <tt class="docutils literal"><span class="pre">Alt-H</span></tt>) displays
+this manual in a web browser.</p>
 </div>
 <div class="section" id="file-operations">
 <h1><a class="toc-backref" href="#id5">5&nbsp;&nbsp;&nbsp;File Operations</a></h1>
 <p>The file operations can be found in the button strip at the bottom of the main
 window.</p>
 <ul class="simple">
-<li><tt class="docutils literal"><span class="pre">New</span></tt>, <tt class="docutils literal"><span class="pre">Open</span></tt>, <tt class="docutils literal"><span class="pre">Save</span></tt>: Creates a new, loads an existing, or saves the
+<li><tt class="docutils literal">New</tt>, <tt class="docutils literal">Open</tt>, <tt class="docutils literal">Save</tt>: Creates a new, loads an existing, or saves the
 current scale, respectively. With the latter two commands you are prompted
 to enter a scale (.scl) filename.</li>
-<li><tt class="docutils literal"><span class="pre">Revert</span></tt>: Reverts to the most recently saved version of the loaded scale.
+<li><tt class="docutils literal">Revert</tt>: Reverts to the most recently saved version of the loaded scale.
 This provides a quick way to revert your changes after editing the scale or
 experimenting with different scale rationalizations.</li>
-<li><tt class="docutils literal"><span class="pre">Quit</span></tt>: Exit the application.</li>
+<li><tt class="docutils literal">Quit</tt>: Exit the application.</li>
 </ul>
 <p>Keyboard shortcuts are generally indicated using underlining in the button
-texts. So, e.g., the <tt class="docutils literal"><span class="pre">Open</span></tt> command can be invoked with <tt class="docutils literal"><span class="pre">Alt-O</span></tt>, <tt class="docutils literal"><span class="pre">Save</span></tt>
+texts. So, e.g., the <tt class="docutils literal">Open</tt> command can be invoked with <tt class="docutils literal"><span class="pre">Alt-O</span></tt>, <tt class="docutils literal">Save</tt>
 with <tt class="docutils literal"><span class="pre">Alt-S</span></tt>, etc.</p>
+<p>As of version 0.2, the scale program can also save scales as binary sysex
+(.syx) files in the <a class="reference external" href="http://www.midi.org/techspecs/midituning.php">MIDI Tuning Standard</a> (MTS) format, so that you can
+easily retune any MTS-compatible synthesizer to a scale by just sending the
+corresponding sysex file to it. Currently this only works with octave-based
+scales which have exactly 13 scale points (including the base tone 1/1 and the
+octave 2/1). The written sysex files follow the <em>MIDI Tuning Scale/Octave
+Extensions</em>, please check the MTS documentation for details.</p>
+<p>To save a scale as a sysex file, simply invoke the <tt class="docutils literal">Save</tt> operation as
+usual. When prompted to enter the scale filename, edit the filename so that it
+ends in the extension <tt class="docutils literal">.syx</tt>, then press <tt class="docutils literal">Save</tt>. A special dialog will
+appear which allows you to choose various MTS format options. Adjust these to
+your liking and press <tt class="docutils literal">Save</tt> again (you can also cancel the operation at
+this point). The available MTS format options are as follows:</p>
+<ul class="simple">
+<li><tt class="docutils literal">Realtime</tt>: If this option is checked, a realtime sysex message will be
+written, otherwise a non-realtime message. Note that in either case, the
+tuning changes will take effect immediately if the sysex file is sent to an
+MTS-capable synthesizer. However, realtime messages will also affect already
+sounding notes, whereas non-realtime messages only apply to new notes played
+after the message is sent.</li>
+<li><tt class="docutils literal">Encoding</tt>: This is a combobox which allows you to pick the desired
+encoding of the MTS message. MTS octave tunings can be encoded in either
+1-byte or 2-byte format, meaning that each tuning offset is represented as
+one or two bytes, respectively. This affects both range and precision of the
+tuning offsets, please check the MTS documentation for details. Usually it
+is a good idea to pick the 2-byte encoding, since it offers a wider range
+(-100..+100 ct) and better precision. However, if your synthesizer only
+supports the 1-byte encoding, or if you are really concerned about
+transmission bandwidth then it may be necessary to choose the 1-byte
+encoding instead. (Note that 2-byte messages need roughly twice the size of
+1-byte messages; this may affect how quickly the messages are processed,
+although this is rarely a problem with modern hardware any more).</li>
+<li><tt class="docutils literal">Base</tt>: This spinbox enables you to select the reference tone of the
+tuning, given as the index of a scale point in the range 0..11. A value of 0
+indicates that the base tone of the scale will be at its nominal tuning
+(i.e., at a tuning offset of 0 ct). The spinbox allows you to change this as
+needed. Most of the time, you will want to choose the value 9 to have the
+9th scale tone (which usually corresponds to the chamber pitch A) at a
+tuning offset of 0 ct, so that A4 will be exactly at 440 Hz; this shifts the
+other tuning offsets accordingly.</li>
+</ul>
+<p>By default, realtime messages and 2-byte encodings are enabled, and the base
+tone is set to 9, which should be sensible defaults in most cases.</p>
+<p>Note that in order to actually use the resulting sysex files, you need an
+MTS-compatible synthesizer. Unfortunately, the MIDI Tuning Standard isn't
+supported by many hardware synthesizers, so you'll probably have to use a
+software synthesizer instead. A good MTS-compatible software synthesizer is
+<a class="reference external" href="http://www.fluidsynth.org/">Fluidsynth</a> which uses SoundFonts and has a nice graphical frontend called
+<a class="reference external" href="http://qsynth.sourceforge.net">Qsynth</a>. It is available for Linux, Mac OS X and Windows.</p>
+<p>In addition, you'll need a program which can read sysex files and transmit
+them to the synthesizer. There are many such programs freely available for
+different platforms, such as <a class="reference external" href="http://www.christeck.de/wp/products/simple-sysexxer/">Simple Sysexxer</a> on Linux and <a class="reference external" href="http://www.midiox.com/">Midi-Ox</a> on
+Windows. Also, many MIDI sequencing programs have this capability.</p>
 </div>
 <div class="section" id="editing-the-scale">
 <h1><a class="toc-backref" href="#id6">6&nbsp;&nbsp;&nbsp;Editing The Scale</a></h1>
@@ -450,28 +526,28 @@ description of the scale. You can write anything in the second field (you can
 also just leave it empty), but the scale data must follow the Scala
 conventions:</p>
 <ul class="simple">
-<li>A quotient in the form <tt class="docutils literal"><span class="pre">p/q</span></tt>, where <tt class="docutils literal"><span class="pre">p</span></tt> and <tt class="docutils literal"><span class="pre">q</span></tt> are positive integer
-values, denotes an interval by its frequency ratio, e.g.: <tt class="docutils literal"><span class="pre">1/1</span></tt> (unison),
-<tt class="docutils literal"><span class="pre">3/2</span></tt> (fifth), <tt class="docutils literal"><span class="pre">2/1</span></tt> (octave), etc.</li>
-<li>A nonnegative floating point value such as <tt class="docutils literal"><span class="pre">0.0</span></tt>, <tt class="docutils literal"><span class="pre">701.955</span></tt> or
-<tt class="docutils literal"><span class="pre">1200.0</span></tt> denotes a Cent value (percent of an equal-tempered semitone).</li>
+<li>A quotient in the form <tt class="docutils literal">p/q</tt>, where <tt class="docutils literal">p</tt> and <tt class="docutils literal">q</tt> are positive integer
+values, denotes an interval by its frequency ratio, e.g.: <tt class="docutils literal">1/1</tt> (unison),
+<tt class="docutils literal">3/2</tt> (fifth), <tt class="docutils literal">2/1</tt> (octave), etc.</li>
+<li>A nonnegative floating point value such as <tt class="docutils literal">0.0</tt>, <tt class="docutils literal">701.955</tt> or
+<tt class="docutils literal">1200.0</tt> denotes a Cent value (percent of an equal-tempered semitone).</li>
 </ul>
 <p>No other values are allowed in this field. Different scale tones are usually
-entered in ascending order, starting with the base tone <tt class="docutils literal"><span class="pre">1/1</span></tt> or <tt class="docutils literal"><span class="pre">0.0</span></tt>,
-with whitespace in between. For instance: <tt class="docutils literal"><span class="pre">1/1</span> <span class="pre">100.0</span> <span class="pre">3/2</span> <span class="pre">1200.0</span></tt>. (Note that
+entered in ascending order, starting with the base tone <tt class="docutils literal">1/1</tt> or <tt class="docutils literal">0.0</tt>,
+with whitespace in between. For instance: <tt class="docutils literal">1/1 100.0 3/2 1200.0</tt>. (Note that
 the base tone is implicit in the Scala file format, so it is not actually
 stored in scale files. That's why even if you don't enter the base tone it
 will be added automatically.)</p>
 <p>To the right of the scale entry field there's another control, the &quot;weight
 threshold&quot; spinbox which allows you to enter a harmonic distance threshold
-used to render the scale graph in the <tt class="docutils literal"><span class="pre">Graph</span></tt> tab, and to determine rational
-tuning alternatives in the <tt class="docutils literal"><span class="pre">Scale</span></tt> view. You'll have to adjust this value
+used to render the scale graph in the <tt class="docutils literal">Graph</tt> tab, and to determine rational
+tuning alternatives in the <tt class="docutils literal">Scale</tt> view. You'll have to adjust this value
 accordingly when drawing or rationalizing a scale.</p>
 </div>
 <div class="section" id="the-graph-view">
 <h1><a class="toc-backref" href="#id7">7&nbsp;&nbsp;&nbsp;The Graph View</a></h1>
 <p>Once a scale has been entered or loaded, you can draw it by pushing the
-<tt class="docutils literal"><span class="pre">Draw</span></tt> button on the <tt class="docutils literal"><span class="pre">Graph</span></tt> tab. This produces a graphical rendering of
+<tt class="docutils literal">Draw</tt> button on the <tt class="docutils literal">Graph</tt> tab. This produces a graphical rendering of
 the scale. The graphical rendering is also stored in the scale file when you
 save it. Next time you load this file, the same graphical view is recreated
 automatically.</p>
@@ -482,7 +558,7 @@ scale, called a &quot;harmonicity graph.&quot; The nodes of this graph are the s
 points and the edges represent color-coded harmonic distances between some
 pairs of scale points (see below).</p>
 <p>Note that the graphical rendering isn't arbitrary, but approximates the
-harmonic distances (shown on the <tt class="docutils literal"><span class="pre">Metric</span></tt> tab) between scale points by their
+harmonic distances (shown on the <tt class="docutils literal">Metric</tt> tab) between scale points by their
 Euclidean distances in the drawing, so that it becomes easy to analyse the
 harmonic relationships in the scale. This is achieved using a technique
 called &quot;multidimensional scaling&quot; (MDS), see the author's <a class="reference external" href="http://www.musikwissenschaft.uni-mainz.de/Musikinformatik/schriftenreihe/nr45/scale.pdf">report</a> for details.</p>
@@ -496,34 +572,34 @@ with the right mouse button pressed move the mouse cursor up and down,
 respectively.</p>
 <p>The following keyboard commands are recognized in the graphical view:</p>
 <ul class="simple">
-<li><tt class="docutils literal"><span class="pre">r</span></tt>: Resets the view to the default camera position (horizontal x and
+<li><tt class="docutils literal">r</tt>: Resets the view to the default camera position (horizontal x and
 vertical y axis, with positive z coordinates in front).</li>
-<li><tt class="docutils literal"><span class="pre">j</span></tt>: Switches to an alternative &quot;joystick&quot; mode in which you only have to
+<li><tt class="docutils literal">j</tt>: Switches to an alternative &quot;joystick&quot; mode in which you only have to
 press the left/right/middle mouse button inside the view to rotate/pan/zoom.</li>
-<li><tt class="docutils literal"><span class="pre">t</span></tt>: Switches back to the default &quot;trackball&quot; mode in which you drag the
+<li><tt class="docutils literal">t</tt>: Switches back to the default &quot;trackball&quot; mode in which you drag the
 mouse cursor with the left/right/middle mouse button to rotate/pan/zoom.</li>
 </ul>
 <p>Various controls for the display can be found in the strip at the bottom of
-the <tt class="docutils literal"><span class="pre">Graph</span></tt> pane:</p>
+the <tt class="docutils literal">Graph</tt> pane:</p>
 <ul class="simple">
-<li><tt class="docutils literal"><span class="pre">Draw</span></tt>: Updates the scale information and redraws the scale. Progress will
+<li><tt class="docutils literal">Draw</tt>: Updates the scale information and redraws the scale. Progress will
 be shown in the progress bar in the main window (to the right of the scale
 description field). You can run this as often as you want, e.g., after
 editing the scale. Also, note that the MDS algorithm starts from a random
 start embedding, so for some scales you might get different renderings when
 you redraw the scale.</li>
-<li><tt class="docutils literal"><span class="pre">Axes</span></tt>: Enables or disables x, y and z axes display in the view.</li>
-<li><tt class="docutils literal"><span class="pre">Labels</span></tt>: Enables or disables the node label display which shows
+<li><tt class="docutils literal">Axes</tt>: Enables or disables x, y and z axes display in the view.</li>
+<li><tt class="docutils literal">Labels</tt>: Enables or disables the node label display which shows
 information about the scale points in the graph.</li>
-<li><tt class="docutils literal"><span class="pre">Node</span> <span class="pre">label</span> <span class="pre">type</span></tt>: A combobox which lets you choose between &quot;Pitch&quot; (show
+<li><tt class="docutils literal">Node label type</tt>: A combobox which lets you choose between &quot;Pitch&quot; (show
 ratios or cent values; this is the default), &quot;Factors&quot; (prime factors of
 ratios), &quot;Cent&quot; (cent values), &quot;Note&quot; (note names, if known), &quot;Interval&quot;
 (interval descriptions, for known intervals) and &quot;Ordinal&quot; (scale index).
 These items have the same meaning as the corresponding columns on the
-<tt class="docutils literal"><span class="pre">Scale</span></tt> tab, see <a class="reference internal" href="#the-scale-view">The Scale View</a> below for details.</li>
-<li><tt class="docutils literal"><span class="pre">Weights</span></tt>: Enables or disables the edge weight display, which shows the
+<tt class="docutils literal">Scale</tt> tab, see <a class="reference internal" href="#the-scale-view">The Scale View</a> below for details.</li>
+<li><tt class="docutils literal">Weights</tt>: Enables or disables the edge weight display, which shows the
 harmonic distances between scale points.</li>
-<li><tt class="docutils literal"><span class="pre">Edge</span> <span class="pre">weight</span> <span class="pre">function</span></tt>: A combobox which lets you choose between various
+<li><tt class="docutils literal">Edge weight function</tt>: A combobox which lets you choose between various
 harmonic distance functions, currently: &quot;Barlow&quot; (Barlow's indigestability
 metric) and &quot;Euler&quot; (Euler's gradus suavitatis). The other functions are
 variations of these (the &quot;/2&quot; versions set the harmonic distance of octaves
@@ -540,19 +616,19 @@ are color-coded (blue denotes low, red high harmonic distances).</p>
 </div>
 <div class="section" id="the-scale-view">
 <h1><a class="toc-backref" href="#id8">8&nbsp;&nbsp;&nbsp;The Scale View</a></h1>
-<p>The <tt class="docutils literal"><span class="pre">Scale</span></tt> tab shows detailed information about the current scale in the
+<p>The <tt class="docutils literal">Scale</tt> tab shows detailed information about the current scale in the
 form of a table whose columns include the following information:</p>
 <ul class="simple">
-<li><tt class="docutils literal"><span class="pre">Select</span></tt>: This column allows you to select pitches for the rationalization
+<li><tt class="docutils literal">Select</tt>: This column allows you to select pitches for the rationalization
 algorithm, see the comments below and <a class="reference internal" href="#rationalizing-a-scale">Rationalizing a Scale</a> for details.</li>
-<li><tt class="docutils literal"><span class="pre">#</span></tt>: Ordinal numbers (starting at zero = base tone).</li>
-<li><tt class="docutils literal"><span class="pre">Pitch</span></tt>: The ratio or cent value, as given in the scale entry field.</li>
-<li><tt class="docutils literal"><span class="pre">Factors</span></tt>: The factorization of the pitch, if it is rational.</li>
-<li><tt class="docutils literal"><span class="pre">Cent</span></tt>: The corresponding cent value.</li>
-<li><tt class="docutils literal"><span class="pre">Weight</span></tt>: The disharmonicity value of the interval (for rational pitches
-only), as given by the weight function on the <tt class="docutils literal"><span class="pre">Graph</span></tt> tab.</li>
-<li><tt class="docutils literal"><span class="pre">Note</span></tt>: The note name, if available.</li>
-<li><tt class="docutils literal"><span class="pre">Interval</span></tt>: The name of the interval from the Scala intnam.par file, if
+<li><tt class="docutils literal">#</tt>: Ordinal numbers (starting at zero = base tone).</li>
+<li><tt class="docutils literal">Pitch</tt>: The ratio or cent value, as given in the scale entry field.</li>
+<li><tt class="docutils literal">Factors</tt>: The factorization of the pitch, if it is rational.</li>
+<li><tt class="docutils literal">Cent</tt>: The corresponding cent value.</li>
+<li><tt class="docutils literal">Weight</tt>: The disharmonicity value of the interval (for rational pitches
+only), as given by the weight function on the <tt class="docutils literal">Graph</tt> tab.</li>
+<li><tt class="docutils literal">Note</tt>: The note name, if available.</li>
+<li><tt class="docutils literal">Interval</tt>: The name of the interval from the Scala intnam.par file, if
 available.</li>
 </ul>
 <p>Note names are computed automatically from a factorization of the ratios,
@@ -569,33 +645,33 @@ column. Clicking on the arrowhead symbol expands the corresponding scale point
 and shows the available candidate tunings.</p>
 <p>You can also click on the column headers to sort the scale view based on the
 values in the corresponding column. This is most useful for the numeric
-columns (<tt class="docutils literal"><span class="pre">#</span></tt>, <tt class="docutils literal"><span class="pre">Cent</span></tt> and <tt class="docutils literal"><span class="pre">Weight</span></tt>). By default, the table is ordered by
-ordinals (<tt class="docutils literal"><span class="pre">#</span></tt>), meaning that the scale points are listed in the order in
+columns (<tt class="docutils literal">#</tt>, <tt class="docutils literal">Cent</tt> and <tt class="docutils literal">Weight</tt>). By default, the table is ordered by
+ordinals (<tt class="docutils literal">#</tt>), meaning that the scale points are listed in the order in
 which they are written in the scale entry field. Clicking on a column title
 once sorts the table in ascending order. Clicking the same column title again
 reverses the order so that the values in the column are listed in descending
 order.</p>
-<p>At the bottom of the <tt class="docutils literal"><span class="pre">Scale</span></tt> tab there is a strip with operations and
+<p>At the bottom of the <tt class="docutils literal">Scale</tt> tab there is a strip with operations and
 parameters for selecting scale points and alternative tunings and controlling
 the rationalization algorithm:</p>
 <ul class="simple">
-<li><tt class="docutils literal"><span class="pre">Clear</span></tt>: Deselect all scale points and alternative tunings.</li>
-<li><tt class="docutils literal"><span class="pre">Select</span> <span class="pre">All</span></tt>: Select all candidate tunings for which the corresponding
+<li><tt class="docutils literal">Clear</tt>: Deselect all scale points and alternative tunings.</li>
+<li><tt class="docutils literal">Select All</tt>: Select all candidate tunings for which the corresponding
 scale point is <em>not</em> selected (i.e., unlocked).</li>
-<li><tt class="docutils literal"><span class="pre">Refresh</span></tt>: Refresh the scale display (in particular, this updates the
+<li><tt class="docutils literal">Refresh</tt>: Refresh the scale display (in particular, this updates the
 available candidate tunings). This is usually done after changing the number
 of candidate tunings and tuning tolerance parameters (see below) as well as
 the weight threshold parameter in the main window.</li>
-<li><tt class="docutils literal"><span class="pre">Number</span> <span class="pre">of</span> <span class="pre">tuning</span> <span class="pre">alternatives</span></tt>: A spinbox which allows you to select the
+<li><tt class="docutils literal">Number of tuning alternatives</tt>: A spinbox which allows you to select the
 maximum number of alternative tunings to be shown for each scale point.</li>
-<li><tt class="docutils literal"><span class="pre">Tuning</span> <span class="pre">tolerance</span></tt>: Another spinbox with which you choose the maximum
+<li><tt class="docutils literal">Tuning tolerance</tt>: Another spinbox with which you choose the maximum
 tuning tolerance for the alternative tunings for each scale point.</li>
-<li><tt class="docutils literal"><span class="pre">Rationalization</span> <span class="pre">heuristic</span></tt>: This lets you choose between different
+<li><tt class="docutils literal">Rationalization heuristic</tt>: This lets you choose between different
 candidate tuning selection heuristics for the automatic rationalization
 algorithm. The present implementation provides two alternatives, &quot;First&quot; and
 &quot;Best&quot;.</li>
-<li><tt class="docutils literal"><span class="pre">Rationalize</span></tt>: Automatic scale rationalization algorithm.</li>
-<li><tt class="docutils literal"><span class="pre">Update</span></tt>: After selecting some alternative tunings, clicking this button
+<li><tt class="docutils literal">Rationalize</tt>: Automatic scale rationalization algorithm.</li>
+<li><tt class="docutils literal">Update</tt>: After selecting some alternative tunings, clicking this button
 updates and redraws the scale in the main window accordingly.</li>
 </ul>
 <p>Besides these, the &quot;weight threshold&quot; spinbox to the right of the scale entry
@@ -603,7 +679,7 @@ field determines which tuning alternatives are shown for each scale point.
 Only tuning alternatives with a disharmonicity value of at most the threshold
 value are shown. Moreover, for each scale point the table shows at most n
 tuning alternatives in the range c-tol ... c+tol, where c is the cent value of
-the scale point (as given in the <tt class="docutils literal"><span class="pre">Cent</span></tt> column of the table), and tol and n
+the scale point (as given in the <tt class="docutils literal">Cent</tt> column of the table), and tol and n
 are the tuning tolerance and the number of tuning alternatives, as given by
 the corresponding spinboxes.</p>
 <p>The order of the alternative tunings for each scale tone depends not only on
@@ -618,73 +694,73 @@ criterion, which is a compromise between harmonicity and tuning accuracy.</p>
 </div>
 <div class="section" id="the-metric-view">
 <h1><a class="toc-backref" href="#id9">9&nbsp;&nbsp;&nbsp;The Metric View</a></h1>
-<p>For rational scales, the <tt class="docutils literal"><span class="pre">Metric</span></tt> tab shows the harmonic distance metric
+<p>For rational scales, the <tt class="docutils literal">Metric</tt> tab shows the harmonic distance metric
 used in drawing and rationalizing a scale. It takes the form of a matrix which
 shows for each pair x,y of scale points their harmonic distance, i.e., the
 disharmonicity of the interval x/y between the scale points. The weight
 function used to determine these values can be chosen with the &quot;edge weight
-function&quot; combobox on the <tt class="docutils literal"><span class="pre">Graph</span></tt> tab.</p>
+function&quot; combobox on the <tt class="docutils literal">Graph</tt> tab.</p>
 </div>
 <div class="section" id="rationalizing-a-scale">
 <h1><a class="toc-backref" href="#id10">10&nbsp;&nbsp;&nbsp;Rationalizing a Scale</a></h1>
 <p>If a scale isn't rational yet then it is not possible to analyze the interval
 structure of a scale since this requires knowing the rational relationships
-between the scale tones. On the <tt class="docutils literal"><span class="pre">Scale</span></tt> tab you find the necessary tools to
+between the scale tones. On the <tt class="docutils literal">Scale</tt> tab you find the necessary tools to
 rationalize a scale using the following methods:</p>
 <ul class="simple">
 <li><cite>Manual rationalization</cite>: Here you simply select the desired rational tuning
-alternatives for each scale tone and then use <tt class="docutils literal"><span class="pre">Update</span></tt> to update the scale
+alternatives for each scale tone and then use <tt class="docutils literal">Update</tt> to update the scale
 data and redraw the scale. You can select more than one tuning alternative
 for each scale tone. In such a case the first alternative will be chosen,
 depending on the current order of the alternatives in the table. Thus the
-easiest way to quickly obtain a rationalization is to just click <tt class="docutils literal"><span class="pre">Select</span>
-<span class="pre">All</span></tt> and then <tt class="docutils literal"><span class="pre">Update</span></tt>.</li>
+easiest way to quickly obtain a rationalization is to just click <tt class="docutils literal">Select
+All</tt> and then <tt class="docutils literal">Update</tt>.</li>
 <li><cite>Automatic rationalization</cite>: This uses a clique search algorithm on the
 harmonicity graph to determine a collection of selected tuning alternatives
 (at most one per scale point) for which the mutual harmonic distances do not
 exceed the bound given in the &quot;weight threshold&quot; spinbox. The selection of
 the tuning alternatives is then modified to reflect the computed solution.
-When done, just click <tt class="docutils literal"><span class="pre">Update</span></tt> as with the manual method to update the
+When done, just click <tt class="docutils literal">Update</tt> as with the manual method to update the
 scale using the computed solution.</li>
 </ul>
 <div class="section" id="fixing-parts-of-the-scale">
 <h2><a class="toc-backref" href="#id11">10.1&nbsp;&nbsp;&nbsp;Fixing Parts of the Scale</a></h2>
 <p>With either method, selected scale points are considered <em>locked</em>, i.e., they
-will not be modified by <tt class="docutils literal"><span class="pre">Rationalize</span></tt> and <tt class="docutils literal"><span class="pre">Update</span></tt>. (However, the
+will not be modified by <tt class="docutils literal">Rationalize</tt> and <tt class="docutils literal">Update</tt>. (However, the
 automatic rationalization algorithm does take into account locked <em>rational</em>
 scale points when computing the eligible tuning alternatives.) By default,
 rational scale points are selected and thus considered locked. If you want to
 re-rationalize these as well, you first need to deselect them in order to
-unlock them. The quickest way to do this is to click the <tt class="docutils literal"><span class="pre">Clear</span></tt> button
+unlock them. The quickest way to do this is to click the <tt class="docutils literal">Clear</tt> button
 which deselects all scale points (as well as all tuning alternatives). Then
-use <tt class="docutils literal"><span class="pre">Select</span> <span class="pre">All</span></tt> to select all tuning alternatives (or select the ones that
-you want manually) before running <tt class="docutils literal"><span class="pre">Rationalize</span></tt> and/or <tt class="docutils literal"><span class="pre">Update</span></tt>.</p>
+use <tt class="docutils literal">Select All</tt> to select all tuning alternatives (or select the ones that
+you want manually) before running <tt class="docutils literal">Rationalize</tt> and/or <tt class="docutils literal">Update</tt>.</p>
 </div>
 <div class="section" id="automatic-rationalization">
 <h2><a class="toc-backref" href="#id12">10.2&nbsp;&nbsp;&nbsp;Automatic Rationalization</a></h2>
-<p>The <tt class="docutils literal"><span class="pre">Rationalize</span></tt> command employs a backtracking clique search algorithm
+<p>The <tt class="docutils literal">Rationalize</tt> command employs a backtracking clique search algorithm
 which explores exponentially many possibilities in the worst case and thus may
 be <em>very</em> slow, depending on the number of available tuning alternatives. To
 deal with this, you may try to restrict the number of tuning alternatives or
 fix some tunings manually beforehand.</p>
 <p>You can also just run the algorithm and interrupt it at any time using the
-<tt class="docutils literal"><span class="pre">Esc</span></tt> key. The progress of the algorithm towards an optimum solution which
+<tt class="docutils literal">Esc</tt> key. The progress of the algorithm towards an optimum solution which
 rationalizes all unlocked scale points is shown in the progress bar in the
 main window. Usually, the algorithm will converge to a local optimum pretty
 quickly (indicated by no further changes in the progress bar), at which point
-you may hit <tt class="docutils literal"><span class="pre">Esc</span></tt> to interrupt the algorithm and see whether the computed
+you may hit <tt class="docutils literal">Esc</tt> to interrupt the algorithm and see whether the computed
 solution provides at least a viable partial rationalization of the scale.</p>
 <p>The rationalization algorithm can also be adjusted by employing different
-search heuristics. You can find these in the <tt class="docutils literal"><span class="pre">Rationalization</span> <span class="pre">heuristic</span></tt>
+search heuristics. You can find these in the <tt class="docutils literal">Rationalization heuristic</tt>
 combobox. In the current program version, only two search heuristics are
 provided:</p>
 <ul class="simple">
-<li><tt class="docutils literal"><span class="pre">First</span></tt>: Scale points and tuning alternatives are considered in the order
+<li><tt class="docutils literal">First</tt>: Scale points and tuning alternatives are considered in the order
 in which they are shown in the table. This strategy works pretty well if
 enough &quot;good&quot; candidate tunings are available and is the default.</li>
-<li><tt class="docutils literal"><span class="pre">Best</span></tt>: This strategy selects tuning alternatives dynamically in order to
+<li><tt class="docutils literal">Best</tt>: This strategy selects tuning alternatives dynamically in order to
 minimize the total disharmonicity in the chosen rationalization. This tends
-to produce overall better solutions, but is slower than the <tt class="docutils literal"><span class="pre">First</span></tt>
+to produce overall better solutions, but is slower than the <tt class="docutils literal">First</tt>
 strategy and may also produce &quot;funny&quot; tunings for some scale points at
 times.</li>
 </ul>
@@ -703,26 +779,26 @@ process:</p>
 <li>Make sure that the current scale is saved, so that you can easily reload it
 and start over if things go awry.</li>
 <li>Choose a weight threshold value (and possibly a tuning tolerance and a
-number of tuning alternatives) and do a <tt class="docutils literal"><span class="pre">Refresh</span></tt> until a suitable set of
+number of tuning alternatives) and do a <tt class="docutils literal">Refresh</tt> until a suitable set of
 tuning alternatives is shown.</li>
 <li>Select the scale points that you want to stay fixed, and deselect the ones
 that you want to be rationalized. By default, all rational scale points are
 selected already which is often a sensible choice, so you can skip this
 step if you're content with the default selection. You can also use
-<tt class="docutils literal"><span class="pre">Clear</span></tt> if you want to just re-rationalize everything.</li>
-<li>Select the eligible tuning alternatives. Or just do <tt class="docutils literal"><span class="pre">Select</span> <span class="pre">All</span></tt> to
+<tt class="docutils literal">Clear</tt> if you want to just re-rationalize everything.</li>
+<li>Select the eligible tuning alternatives. Or just do <tt class="docutils literal">Select All</tt> to
 select all tuning alternatives. (This also expands the corresponding scale
 points if necessary to show all selected alternatives.)</li>
-<li>Use <tt class="docutils literal"><span class="pre">Rationalize</span></tt> to try an automatic rationalization. (Use the <tt class="docutils literal"><span class="pre">Esc</span></tt>
+<li>Use <tt class="docutils literal">Rationalize</tt> to try an automatic rationalization. (Use the <tt class="docutils literal">Esc</tt>
 key to interrupt it if it takes too long.) You might need to increase the
 weight threshold and/or fine-tune the selection of tuning alternatives to
 obtain a satisfactory result using this method. (If you already selected
 some suitable tuning alternatives that you want to use, you can also just
 skip this step and directly proceed to step 5.)</li>
-<li>Use <tt class="docutils literal"><span class="pre">Update</span></tt> to update the scale and redraw it.</li>
+<li>Use <tt class="docutils literal">Update</tt> to update the scale and redraw it.</li>
 <li>If all scale tones are rational now then you're done. Otherwise, just
 repeat the steps 1-5 above until you're satisfied with the result.</li>
-<li>If the solution you got is not what you wanted, just use <tt class="docutils literal"><span class="pre">Revert</span></tt> to
+<li>If the solution you got is not what you wanted, just use <tt class="docutils literal">Revert</tt> to
 revert to the original version of the scale and start over.</li>
 </ol>
 </div>
