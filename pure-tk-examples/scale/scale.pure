@@ -409,8 +409,12 @@ end if ~null name when name = tk_get "lastfile" end;
 #! --required save_cb
 save_cb = () when
   tk "$status push {Saving scale...}";
-  save_scale name;
-  tk_set "fname" name; tk "new_file $fname";
+  ext = last $ split "." $ last $ split "/" name;
+  if ext=="syx" then save_sysex name
+  else (() when
+    save_scale name;
+    tk_set "fname" name; tk "new_file $fname";
+  end);
   tk "$status pop";
 end if ~null name when name = tk "save_dg" end;
 
@@ -702,6 +706,70 @@ end) with
     fprintf stderr "scale: %s: Invalid format (not a scale file)\n" name;
   end;
 end;
+
+// convert a scale to an MTS 1 or 2 byte scale/octave tuning
+
+convert rt::int b::int r::int t =
+  [0xf0, // sysex
+   0x7f-~rt, // realtime / non-realtime
+   0x7f, // device id (any device)
+   8, 8+~~b, // MTS 1/2 byte scale/octave tuning
+   3, 0x7f, 0x7f] + // MIDI channel mask (all channels)
+  t + // the tuning itself
+  [0xf7] // EOX
+when
+  // shift the tuning so that the reference tone is at 0 cent
+  r = (max 0.min 11) r;
+  x0 = t!r;
+  t = [x-x0 | x = t];
+  // encode the tuning
+  t = catmap val t with
+    // In the 2-byte encoding the value denotes a single 14 bit number in the
+    // range 0..16383 (most significant byte first). 0 denotes -100 cent, 8192
+    // is the center (0 cent) and 16384 would be +100 cent (corresponding to
+    // an effective resolution of 100/2^14 == .012207 cent).
+    val x = [msb,lsb] when
+      y::int = max (-8192) $ min 8191 $ int $ round (x*8192.0/100.0);
+      y::int = y+8192; msb = y >> 7; lsb = y - (msb << 7);
+    end if b;
+    // In the 1-byte encoding we simply have cent values in the range 0..127
+    // where 64 is the center (0 cents).
+    val x = [y+64] when
+      y::int = max (-64) $ min 63 $ int $ round x;
+    end;
+  end;
+end;
+
+// Save in sysex format.
+save_sysex name::string = catch err (true when
+  t = parse_scale;
+  //puts $ str t;
+  // check that we have an octave-based 12 tone scale
+  #t == 13 || throw
+"<b>Not a 12-tone scale.</b> To save a tuning in one of the MTS octave-based \
+formats, the scale must have exactly 12 tones plus the octave (2/1).";
+  cent (last t) == 1200.0 || throw
+"<b>Not an octave scale.</b> To save a tuning in one of the MTS octave-based \
+formats, the scale must have exactly 12 tones plus the octave (2/1).";
+  // get the desired MTS options
+  res = tk "mts_dg";
+  res == "Save" &&
+  (() when
+     realtime = tk_get "mts_realtime" == "1";
+     encoding = tk_get "mts_encoding" == "2-byte";
+     basetone = val $ tk_get "mts_basetone";
+     //puts $ str [realtime, encoding, basetone];
+     // convert to cent values and compute the tuning offsets
+     t = zipwith (-) (map cent (init t)) [i*100.0 | i = 0..11];
+     data = imatrix $ convert realtime encoding basetone t;
+     //puts $ str data;
+     fp = fopen name "w";
+     pointerp fp || throw $ sprintf "Error writing file\n%s" name;
+     buf = byte_pointer NULL data;
+     fwrite buf 1 (#data) fp;
+     free buf;
+   end);
+end);
 
 save_scale name::string = catch err (true when
   fp = fopen name "w";

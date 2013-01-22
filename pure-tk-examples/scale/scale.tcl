@@ -315,6 +315,40 @@ proc about_dg {text} {
     }
 }
 
+set mts_realtime 1
+set mts_encoding "2-byte"
+set mts_basetone 0
+
+proc mts_dg {} {
+    global mts_realtime mts_encoding mts_basetone
+    set box [gnocl::box -orientation vertical -spacing big]
+    set cbox [gnocl::box -orientation horizontal -spacing big]
+    $cbox add [gnocl::checkButton -text "%__Realtime" -variable mts_realtime \
+		   -tooltip "Select realtime mode"] \
+	-expand 1 -fill 0 -align center
+    $cbox add [gnocl::comboBox -variable mts_encoding \
+		   -items {"1-byte" "2-byte"} \
+		   -tooltip "Pick the type of the encoding"] \
+	-expand 1 -fill 0 -align center
+    set base [gnocl::spinButton -variable mts_basetone \
+		  -upper 11 -digits 0 \
+		  -tooltip "Choose the reference tone of the scale"]
+    # This doesn't seem to work in older gnocl versions.
+    #$cbox add [gnocl::label -mnemonicText "_Base:" -mnemonicWidget $base]
+    $cbox add [gnocl::label -text "Base:"]
+    $cbox add $base -expand 1 -fill 0 -align center
+    $box add [gnocl::label -widthChars 60 -wrap 1 -text \
+"This dialog allows you to save the scale as a binary sysex file in\
+one of the octave-based formats of the MIDI Tuning Standard.\
+The available options are:\n\
+- <b>Realtime</b>: tuning changes affect already sounding notes\n\
+- <b>Encoding</b>: 1-byte or 2-byte format, affects range and precision\n\
+- <b>Base</b>: Reference tone of the tuning which will be at 0 ct \(0..11\)"]
+    $box add $cbox
+    gnocl::dialog -title "Choose MTS Format" -child $box \
+	-buttons {"%#Save" "%#Cancel"} \
+}
+
 set lastfile ""
 set filename ""
 set dirname ""
