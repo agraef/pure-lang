@@ -350,7 +350,7 @@ one of the octave-based formats of the MIDI Tuning Standard.\
 The available options are:\n\
 - <b>Realtime</b>: tuning changes affect already sounding notes\n\
 - <b>Encoding</b>: 1-byte or 2-byte format, affects range and precision\n\
-- <b>Base</b>: Reference tone of the tuning which will be at 0 ct \(0..11\)"]
+- <b>Base</b>: reference tone of the tuning which will be at 0 ct \(0..11\)"]
     $box add $cbox
     gnocl::dialog -title "Choose MTS Format" -child $box \
 	-buttons {"%#Save" "%#Cancel"} \
