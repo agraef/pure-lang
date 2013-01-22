@@ -358,7 +358,7 @@ The available options are:\n\
 
 set lastfile ""
 set filename ""
-set dirname ""
+set dirname [pwd]
 
 proc new_file {fname} {
     global lastfile dirname filename

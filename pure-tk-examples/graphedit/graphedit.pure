@@ -82,7 +82,7 @@ end if modified_check;
 
 open_cb = if ~null fname then open_file fname else () when
   // Pick a file, using the GTK+ file chooser dialog.
-  fname = tk "gnocl::fileChooserDialog -action open -title {Open}";
+  fname = tk "gnocl::fileChooserDialog -currentFolder [pwd] -action open -title {Open}";
 end if modified_check;
 
 pop_status x = tk "$statusbar pop" $$ x;
@@ -106,7 +106,7 @@ end);
 save_cb = case get current_file of () = save_as_cb; fname = save_file fname end;
 
 save_as_cb = save_file fname if ~null fname && file_check fname when
-  fname = tk "gnocl::fileChooserDialog -action save -title {Save As}";
+  fname = tk "gnocl::fileChooserDialog -currentFolder [pwd] -action save -title {Save As}";
 end;
 
 save_file fname = catch (pop_status.error_dg) (() when
