@@ -324,7 +324,7 @@ proc help_dg {} {
 
 set mts_realtime 1
 set mts_encoding "2-byte"
-set mts_basetone 0
+set mts_basetone 9
 
 proc mts_dg {} {
     global mts_realtime mts_encoding mts_basetone
