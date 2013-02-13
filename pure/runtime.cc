@@ -3107,7 +3107,7 @@ bool pure_is_tuplev(pure_expr *x, size_t *_size, pure_expr ***_elems)
      adapted accordingly. */
   pure_expr *u = x, *y, *z;
   size_t size = 1;
-  if (is_void(x)) {
+  if (::is_void(x)) {
     if (_size) *_size = 0;
     if (_elems) *_elems = 0;
     return true;
@@ -9466,13 +9466,15 @@ struct Blob {
     assert(tag > 0 && tag == sym.f);
     symdata d = {tag, clos};
     write(sizeof(symdata), &d);
-    symentry e = {sym.f, sym.g, sym.prec, sym.fix, sym.priv, sym.s.c_str()};
+    symentry e =
+      {sym.f, sym.g, sym.prec, (myfix_t)sym.fix, sym.priv, sym.s.c_str()};
     if (symtab.find(tag) == symtab.end())
       symtab[tag] = e;
   }
   void dump(const symbol &sym)
   {
-    symentry e = {sym.f, sym.g, sym.prec, sym.fix, sym.priv, sym.s.c_str()};
+    symentry e =
+      {sym.f, sym.g, sym.prec, (myfix_t)sym.fix, sym.priv, sym.s.c_str()};
     if (symtab.find(sym.f) == symtab.end())
       symtab[sym.f] = e;
   }
@@ -12364,9 +12366,9 @@ uint32_t hash(pure_expr *x)
   case EXPR::APP: {
     checkstk(test);
     int h;
-    h = hash(x->data.x[0]);
+    h = ::hash(x->data.x[0]);
     h = (h<<1) | (h<0 ? 1 : 0);
-    h ^= hash(x->data.x[1]);
+    h ^= ::hash(x->data.x[1]);
     return (uint32_t)h;
   }
   case EXPR::MATRIX: {
@@ -12377,7 +12379,7 @@ uint32_t hash(pure_expr *x)
     for (size_t i = 0; i < m->size1; i++)
       for (size_t j = 0; j < m->size2; j++) {
 	h = (h<<1) | (h<0 ? 1 : 0);
-	h ^= hash(m->data[i*tda+j]);
+	h ^= ::hash(m->data[i*tda+j]);
       }
     return (uint32_t)h;
   }
@@ -12423,7 +12425,7 @@ uint32_t hash(pure_expr *x)
       int h = x->tag ^ x->data.clos->key;
       for (uint32_t i = 0; i < x->data.clos->m; i++) {
 	h = (h<<1) | (h<0 ? 1 : 0);
-	h ^= hash(x->data.clos->env[i]);
+	h ^= ::hash(x->data.clos->env[i]);
       }
       return (uint32_t)h;
     } else
@@ -14441,9 +14443,7 @@ static inline pure_expr* to_expr(double & d) { return pure_double(d); }
 static inline pure_expr* to_expr(int32_t i) { return pure_int(i); }
 static inline pure_expr* to_expr(Complex & c)
 {
-  return pure_complex(&c.real());
-  //ASSUMPTION: real, imag fields are contiguous, in order.
-  //This is the case for GNU C++.
+  return make_complex(c.real(), c.imag());
 }
 static inline pure_expr* to_expr(pure_expr* e) { return e; }
 
@@ -14454,7 +14454,14 @@ inline bool from_expr( pure_expr* e, double & d )
 inline bool from_expr( pure_expr* e, int32_t & i )
 { return pure_is_int(e,&i); }
 inline bool from_expr( pure_expr* e, Complex & c )
-{ return pure_is_complex(e,&c.real()); }
+{
+  double a, b;
+  if (get_complex(e, a, b)) {
+    c = Complex(a, b);
+    return true;
+  } else
+    return false;
+}
 
 
 // generix matrix do

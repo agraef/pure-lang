@@ -3531,7 +3531,7 @@ pure_expr *interpreter::const_defn(expr pat, expr& x, pure_expr*& e)
       int32_t f = it->first;
       expr v = subterm(u, *it->second.p);
       globenv[f] = env_info(v, temp);
-      if (!is_scalar(v) || (compiling && (nwrapped||!consts))) {
+      if (!::is_scalar(v) || (compiling && (nwrapped||!consts))) {
 	/* As of Pure 0.38, we only inline scalar constants. Aggregate values
 	   are cached in a read-only variable for better efficiency. As of
 	   Pure 0.44, we actually do this for all variables bound in the

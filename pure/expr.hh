@@ -107,8 +107,8 @@ class path {
   bitset<MAXDEPTH> v;
   bitset<MAXDEPTH> m;
 public:
-  path() : size(0), v(0), m(0) { }
-  path(size_t sz) : size(sz), v(0), m(0) { assert(size<=MAXDEPTH); }
+  path() : size(0) { }
+  path(size_t sz) : size(sz) { assert(size<=MAXDEPTH); }
   path(const path& p) : size(p.size), v(p.v), m(p.m) { }
   path(const path& p, bool n) : size(p.size+1), v(p.v), m(p.m)
   { assert(size<=MAXDEPTH); v[size-1] = n; m[size-1] = false; }
