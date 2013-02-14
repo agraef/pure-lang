@@ -932,10 +932,18 @@ runtime library. We only provide this as a workaround for older LLVM versions
 which cannot be linked into shared libraries on some systems.
 
 In general, the build options can be combined freely with the variables
-described in the previous section, but note that ``--enable-release`` and
-``--enable-debug`` will always overwrite the value of ``CXXFLAGS``. If this is
-a problem then it is best to just set up the required flags manually using the
-variables described in the previous section.
+described in the previous section, except that ``--enable-release`` and
+``--enable-debug`` will always override the debugging (``-g``) and
+optimization (``-O``) options in ``CFLAGS`` and ``CXXFLAGS``. Other options
+will be preserved. For instance, the following configures for a release build,
+but sets the warning flags manually and enables C++0x support in gcc::
+
+  $ ./configure --enable-release CFLAGS="-Wall" CXXFLAGS="-std=c++0x -Wall"
+
+If you mix build types and manual compilation flags in this way then it's
+always a good idea to check the resulting compilation options printed out at
+the end of the ``configure`` run. If ``configure`` seems to get things wrong
+then you'll have to set up all required flags manually instead.
 
 Running Pure From The Source Directory
 --------------------------------------
@@ -975,7 +983,7 @@ installation to verify that your tarball contains all needed bits and pieces).
 Last but not least, if you modify configure.ac for some reason then you can
 regenerate the configure script and config.h.in with ``make config``. This
 needs autoconf, of course. (The distribution was prepared using autoconf
-2.67.)
+2.68.)
 
 Pkg-config Support
 ------------------
