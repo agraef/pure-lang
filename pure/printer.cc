@@ -287,6 +287,19 @@ static inline ostream& print_ttag(ostream& os, int32_t ttag, bool pad = false)
   }
 }
 
+static inline string ptrstr(void *p)
+{
+  // We're bypassing C++ I/O here to get more consistent output, especially
+  // for the NULL pointer which is rendered differently depending on the C++
+  // library.
+  if (p) {
+    char buf[30];
+    int res = snprintf(buf, 30, "%p", p);
+    return (res>=0)?buf:"???";
+  } else
+    return "0x0";
+}
+
 ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
 {
   char buf[64];
@@ -378,7 +391,7 @@ ostream& printx(ostream& os, const expr& x, bool pat, bool aspat)
     return os;
   }
   case EXPR::PTR:
-    return os << "#<pointer " << x.pval() << ">";
+    return os << "#<pointer " << ptrstr(x.pval()) << ">";
   case EXPR::WRAP: {
     assert(x.pval());
     GlobalVar *v = (GlobalVar*)x.pval();
@@ -996,7 +1009,7 @@ ostream& operator << (ostream& os, const pure_expr *x)
     if (printer && (s = printer(x->data.p)))
       return os << s;
     else
-      return os << "#<pointer " << x->data.p << ">";
+      return os << "#<pointer " << ptrstr(x->data.p) << ">";
   }
   /* NOTE: For performance reasons, we don't do any custom representations for
      matrix elements. As a workaround, you can define __show__ on matrices as
