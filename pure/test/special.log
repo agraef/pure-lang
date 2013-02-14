@@ -345,7 +345,7 @@ let R = listmap (\sym/*0:1*/ -> sym/*0:1*/ __with__ get_fundef sym/*0:1*/ {
 '(sin __with__ [(sin (x __type__ int)-->sin (double x)),(sin (x __type__ bigint)-->sin (double x)),(sin (x+:y)-->sin x*cosh y+:cos x*sinh y),(sin (z __as__ (r<:t))-->polar (sin (rect z))),(sin (x%y)-->sin (x/y))]);
 '(sinh __with__ [(sinh (x __type__ int)-->sinh (double x)),(sinh (x __type__ bigint)-->sinh (double x)),(sinh (x+:y)-->sinh x*cos y+:cosh x*sin y),(sinh (z __as__ (r<:t))-->polar (sinh (rect z))),(sinh (x%y)-->sinh (x/y))]);
 '(slice __with__ [slice x y-->x!!y]);
-'(smatrix __with__ [smatrix x-->y __if__ matrixp y __when__ [y-->__C::matrix_symbolic x]]);
+'(smatrix __with__ [(smatrix (n __type__ int,m __type__ int)-->map (cst 0L) (imatrix (n,m))),(smatrix (n __type__ int)-->smatrix (1,n)),(smatrix x-->y __if__ matrixp y __when__ [y-->__C::matrix_symbolic x])]);
 '(smatrixp __with__ [smatrixp x-->__case__ x [(_ __type__ matrix-->matrix_type x==0),(_-->0)]]);
 '(sort __with__ [sort p (x __type__ matrix)-->__case__ (sort p (smatrix x)) [(y __type__ matrix-->imatrix y __if__ imatrixp x),(y __type__ matrix-->dmatrix y __if__ dmatrixp x),(y __type__ matrix-->cmatrix y __if__ cmatrixp x),(y-->y)]]);
 '(spawnv __with__ [spawnv (mode __type__ int) (prog __type__ string) (argv __type__ rlist)-->spawnv mode prog (smatrix argv)]);
@@ -731,7 +731,7 @@ let R2 = catmap (\x/*0:1*/ -> if (stringp s/*0:*/&&index s/*0:*/ "#<"<0&&(eval (
 '(sin __with__ [(sin (x __type__ int)-->sin (double x)),(sin (x __type__ bigint)-->sin (double x)),(sin (x+:y)-->sin x*cosh y+:cos x*sinh y),(sin (z __as__ (r<:t))-->polar (sin (rect z))),(sin (x%y)-->sin (x/y))]);
 '(sinh __with__ [(sinh (x __type__ int)-->sinh (double x)),(sinh (x __type__ bigint)-->sinh (double x)),(sinh (x+:y)-->sinh x*cos y+:cosh x*sin y),(sinh (z __as__ (r<:t))-->polar (sinh (rect z))),(sinh (x%y)-->sinh (x/y))]);
 '(slice __with__ [slice x y-->x!!y]);
-'(smatrix __with__ [smatrix x-->y __if__ matrixp y __when__ [y-->__C::matrix_symbolic x]]);
+'(smatrix __with__ [(smatrix (n __type__ int,m __type__ int)-->map (cst 0L) (imatrix (n,m))),(smatrix (n __type__ int)-->smatrix (1,n)),(smatrix x-->y __if__ matrixp y __when__ [y-->__C::matrix_symbolic x])]);
 '(smatrixp __with__ [smatrixp x-->__case__ x [(_ __type__ matrix-->matrix_type x==0),(_-->0)]]);
 '(sort __with__ [sort p (x __type__ matrix)-->__case__ (sort p (smatrix x)) [(y __type__ matrix-->imatrix y __if__ imatrixp x),(y __type__ matrix-->dmatrix y __if__ dmatrixp x),(y __type__ matrix-->cmatrix y __if__ cmatrixp x),(y-->y)]]);
 '(spawnv __with__ [spawnv (mode __type__ int) (prog __type__ string) (argv __type__ rlist)-->spawnv mode prog (smatrix argv)]);
@@ -1112,7 +1112,7 @@ let R2 = listmap (\x/*0:1*/ -> eval (sprintf "'(%s)" (__str__ x/*0:1*/)) {
 '(sin __with__ [(sin (x __type__ int)-->sin (double x)),(sin (x __type__ bigint)-->sin (double x)),(sin (x+:y)-->sin x*cosh y+:cos x*sinh y),(sin (z __as__ (r<:t))-->polar (sin (rect z))),(sin (x%y)-->sin (x/y))]);
 '(sinh __with__ [(sinh (x __type__ int)-->sinh (double x)),(sinh (x __type__ bigint)-->sinh (double x)),(sinh (x+:y)-->sinh x*cos y+:cosh x*sin y),(sinh (z __as__ (r<:t))-->polar (sinh (rect z))),(sinh (x%y)-->sinh (x/y))]);
 '(slice __with__ [slice x y-->x!!y]);
-'(smatrix __with__ [smatrix x-->y __if__ matrixp y __when__ [y-->__C::matrix_symbolic x]]);
+'(smatrix __with__ [(smatrix (n __type__ int,m __type__ int)-->map (cst 0L) (imatrix (n,m))),(smatrix (n __type__ int)-->smatrix (1,n)),(smatrix x-->y __if__ matrixp y __when__ [y-->__C::matrix_symbolic x])]);
 '(smatrixp __with__ [smatrixp x-->__case__ x [(_ __type__ matrix-->matrix_type x==0),(_-->0)]]);
 '(sort __with__ [sort p (x __type__ matrix)-->__case__ (sort p (smatrix x)) [(y __type__ matrix-->imatrix y __if__ imatrixp x),(y __type__ matrix-->dmatrix y __if__ dmatrixp x),(y __type__ matrix-->cmatrix y __if__ cmatrixp x),(y-->y)]]);
 '(spawnv __with__ [spawnv (mode __type__ int) (prog __type__ string) (argv __type__ rlist)-->spawnv mode prog (smatrix argv)]);
