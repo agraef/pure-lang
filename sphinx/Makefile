@@ -61,7 +61,7 @@ rst_dirs = $(dir $(rst_sources))
 
 # Extra (static) rst sources.
 
-rst_extra = index.txt purepad.txt windows.txt
+rst_extra = index.txt purepad.txt windows.txt bugs.txt
 
 # Default target files. These are the ones we package. After generation, they
 # are to be found in the appropriate subdirs (html, latex) of the $(BUILDDIR)
