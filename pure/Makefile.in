@@ -370,7 +370,13 @@ ifeq ($(versioned), yes)
 endif
 
 uninstall:
-	rm -rf $(addprefix $(DESTDIR), $(bindir)/pure$(EXE) $(pkgconfigdir)/pure.pc $(libdir)/$(libpure_lnkname) $(libdir)/$(libpure_soname) $(libdir)/$(libpure) $(includedir)/pure $(libdir)/pure $(man1dir)/pure.1 $(elispdir)/pure-mode.el $(elispdir)/pure-mode.elc $(addprefix $(tmdir)/,$(patsubst $(srcdir)/texmacs/%,%,$(tmsrc)) plugins/pure))
+	rm -rf $(addprefix $(DESTDIR), $(bindir)/pure$(EXE) $(pkgconfigdir)/pure.pc $(libdir)/$(libpure_lnkname) $(libdir)/$(libpure_soname) $(libdir)/$(libpure) $(includedir)/pure $(libdir)/pure $(man1dir)/pure.1)
+ifneq ($(elcfiles),)
+	rm -rf $(addprefix $(DESTDIR), $(elispdir)/pure-mode.el $(elispdir)/pure-mode.elc)
+endif
+ifneq ($(tmfiles),)
+	rm -rf $(addprefix $(DESTDIR), $(addprefix $(tmdir)/,$(patsubst $(srcdir)/texmacs/%,%,$(tmsrc)) plugins/pure))
+endif
 ifeq ($(versioned), yes)
 	rm -rf $(addprefix $(DESTDIR), $(bindir)/$(pure_exe) $(pkgconfigdir)/$(pure_pc) $(pure_includedir) $(pure_libdir) $(man1dir)/$(pure_1))
 endif
