@@ -33,14 +33,31 @@
 #include "config.h"
 
 #ifdef HAVE_LIBREADLINE
+// prefer readline if it was selected and we have it
+#ifdef USE_READLINE
 #ifdef HAVE_READLINE_READLINE_H
+#undef USE_EDITLINE
+#else
+#undef USE_READLINE
+#endif
+#else
+#ifndef USE_EDITLINE
+// for backward compatibility
+#define USE_READLINE HAVE_READLINE_READLINE_H
+#endif
+#endif
+
+#ifdef USE_READLINE
 
 #include <readline/readline.h>
 #ifdef HAVE_READLINE_HISTORY_H
 #include <readline/history.h>
 #endif /* HAVE_READLINE_HISTORY_H */
 
-#else /* HAVE_READLINE_READLINE_H */
+// editline doesn't have this
+#define HAVE_HISTORY_STATE 1
+
+#else /* USE_READLINE */
 
 #ifdef HAVE_EDITLINE_READLINE_H
 #include <editline/readline.h>
@@ -58,7 +75,7 @@
 #endif /* HAVE_EDIT_READLINE_READLINE_H */
 #endif /* HAVE_EDITLINE_READLINE_H */
 
-#endif /* HAVE_READLINE_READLINE_H */
+#endif /* USE_READLINE */
 #endif /* HAVE_LIBREADLINE */
 
 using namespace std;
@@ -356,13 +373,13 @@ static char *my_command_input(const char *prompt)
 /* Secondary input routine, to be used by the debugger. We keep this separate,
    so that the debugger has its own command history. */
 
-#ifdef HAVE_READLINE_HISTORY
+#ifdef HAVE_HISTORY_STATE
 static HISTORY_STATE *my_hist = NULL;
 #endif
 
 static char *my_command_input2(const char *prompt)
 {
-#ifdef HAVE_READLINE_HISTORY
+#ifdef HAVE_HISTORY_STATE
   HISTORY_STATE *save_hist = history_get_history_state();
   int histmax = unstifle_history();
   history_set_history_state(my_hist);
@@ -371,11 +388,13 @@ static char *my_command_input2(const char *prompt)
   char *s = readline(prompt);
 #ifdef HAVE_READLINE_HISTORY
   if (s && *s) add_history(s);
+#ifdef HAVE_HISTORY_STATE
   free(my_hist);
   my_hist = history_get_history_state();
   history_set_history_state(save_hist);
   free(save_hist);
   unstifle_history(); if (histmax>=0) stifle_history(histmax);
+#endif
 #endif
   return s;
 }
@@ -908,10 +927,12 @@ _|                       for license information.)\n\
     exit_handler = my_exit_handler;
     rl_readline_name = (char*)"Pure";
     rl_attempted_completion_function = pure_completion;
-    rl_basic_word_break_characters = " \t\n\"\\'`@$><=,;!|&{([";
+    rl_basic_word_break_characters = (char*)" \t\n\"\\'`@$><=,;!|&{([";
 #ifdef HAVE_READLINE_HISTORY
     using_history();
+#ifdef HAVE_HISTORY_STATE
     my_hist = history_get_history_state();
+#endif
     read_history(interp.histfile.c_str());
     stifle_history(600);
     histfile = strdup(interp.histfile.c_str());

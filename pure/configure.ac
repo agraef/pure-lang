@@ -141,17 +141,19 @@ dnl These are just dummy options to make the Debian package builder happy.
 AC_ARG_ENABLE(maintainer-mode, [  --enable-maintainer-mode (ignored)], [])
 AC_ARG_ENABLE(dependency-tracking, [  --enable-dependency-tracking (ignored)], [])
 dnl Readline/libedit support.
+rl_use_readline="yes"
+rl_use_editline="yes"
 vl_readline_libs="readline"
 vl_editline_libs="edit editline"
 AC_ARG_WITH(readline,
   [  --with-readline         readline support, if available (default)],
   [case "${withval}" in
-     no)  vl_readline_libs="" ;;
+     no)  vl_readline_libs=""; rl_use_readline="no" ;;
    esac])
 AC_ARG_WITH(editline,
   [  --with-editline         editline support, if available (default)],
   [case "${withval}" in
-     no)  vl_editline_libs="" ;;
+     no)  vl_editline_libs=""; rl_use_editline="no" ;;
    esac])
 if test -z "$vl_readline_libs" -a -z "$vl_editline_libs"; then
   vl_readline_libs=""
@@ -221,6 +223,12 @@ AC_CHECK_LIB(glob, glob)
 AC_CHECK_LIB(regex, regcomp)
 dnl readline/editline support (macro by Ville Laurikari).
 AC_CHECK_READLINE
+if test $rl_use_readline = yes; then
+  AC_DEFINE(USE_READLINE, 1, [Define to use the readline library.])
+fi
+if test $rl_use_editline = yes; then
+  AC_DEFINE(USE_EDITLINE, 1, [Define to use the editline library.])
+fi
 dnl iconv and nl_langinfo need special treatment (macros by Bruno Haible).
 AM_ICONV
 if test "$am_cv_func_iconv" != yes; then
