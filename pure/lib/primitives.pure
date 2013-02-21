@@ -495,34 +495,49 @@ using namespace __C;
 	> f 99 when _=>f = ans!1 end;
 	100
 
-      The :macro:`__locals__` function is useful for debugging purposes, as
-      well as to implement dynamic environments. It is also used internally to
-      implement the :macro:`reduce` macro, see `Eval and Friends`_.
+   The :macro:`__locals__` macro is useful for debugging purposes, as well as
+   to implement dynamic environments. It is also used internally to implement
+   the :macro:`reduce` macro, see `Eval and Friends`_. Here are some things
+   that you should keep in mind when working with this macro:
 
-      Note that :macro:`__locals__` always evaluates parameterless functions
-      and returns the resulting value instead of a closure (as can be seen in
-      the binding ``x=>a+b`` in the example above). Normally this is what you
-      want, but it can be a problem with parameterless functions involving
-      side effects. In such a case, if you want to evaluate the function at a
-      later time, you'll either have to use a thunk or massage the local
-      function so that it takes a dummy argument such as ``()``.
+   * :macro:`__locals__` always evaluates parameterless functions and returns
+     the resulting value instead of a closure (as can be seen in the binding
+     ``x=>a+b`` in the example above). Normally this is what you want, but it
+     can be a problem with parameterless functions involving side effects. In
+     such a case, if you want to evaluate the function at a later time, you'll
+     either have to use a thunk or massage the local function so that it takes
+     a dummy argument such as ``()``.
 
-      Also note that :macro:`__locals__` will use as keys in the resulting list
-      whatever global symbols are in scope at the point of the call. By
-      default, i.e., if no global symbol with the same print name as the local
-      is visible at the point of the call, a symbol in the default namespace
-      is used, as we've seen above. Otherwise the result may be also be a
-      qualified symbol if such a symbol has already been declared or defined
-      at the point of the call. For instance::
+   * If the call to :macro:`__locals__` is inside a local function then that
+     local function will itself be *excluded* from the constructed
+     environment. This is done in order to prevent infinite recursion if the
+     calling function does not have any parameters (which is a common idiom,
+     especially in applications of the :macro:`reduce` macro).  If you really
+     want the calling function to be in the environment, you'll have to add it
+     to the result of :macro:`__locals__` yourself. Using the :func:`__func__`
+     primitive from above, we can implement this as a macro::
 
-        > namespace foo;
+       def __mylocals__ = [val (str __func__)=>__func__]+__locals__;
+
+     You can then use ``__mylocals__`` instead of ``__locals__`` whenever you
+     want the calling function to be included in the computed environment.
+
+   * :macro:`__locals__` will use as keys in the resulting list whatever
+     global symbols are in scope at the point of the call. By default, i.e.,
+     if no global symbol with the same print name as the local is visible at
+     the point of the call, a symbol in the default namespace is used, as
+     we've seen above. Otherwise the result may be also be a qualified symbol
+     if such a symbol has already been declared or defined at the point of the
+     call. For instance::
+
+	> namespace foo;
 	> public foo;
 	> __locals__ with foo x = x+1 end;
 	[foo::foo=>foo]
 
-      This behaviour may be a bit surprising at first sight, but is consistent
-      with the way the interpreter performs its symbol lookup, see
-      :ref:`Symbol Lookup and Creation` for details.
+     This behaviour may be a bit surprising at first sight, but is consistent
+     with the way the interpreter performs its symbol lookup, see :ref:`Symbol
+     Lookup and Creation` for details.
 
    The following functions allow you to inspect or modify the function, type,
    macro, constant and variable definitions of the running program. This uses
@@ -925,25 +940,11 @@ using namespace __C;
      > reduce_with [x=>u+v] y;
      [u+v,(u+v)^2,(u+v)^3]
 
-   .. note::
-
-      If the call to :macro:`reduce` (or :macro:`__locals__`) is inside a
-      local function then that local function will itself be in the
-      constructed environment. This causes trouble (infinite recursion) if
-      that function is parameterless (which is a common idiom). This isn't
-      easy to fix in the current implementation, since the :macro:`__locals__`
-      macro isn't aware of which function it is being called in.
-
-      You can avoid this mishap by calling :macro:`reduce` in a global
-      function, as shown in the ``factor`` and ``expand`` examples above, or,
-      if you have to call it from a local function, by making sure that this
-      function takes at least one argument.
-
-      It is always a good idea to confine calls to :macro:`reduce` to global
-      functions if possible, since this gives you better control over which
-      local functions are in scope at the point of the call. Otherwise it
-      might be necessary to call :macro:`__locals__` manually and filter the
-      resulting list before submitting it to the :func:`reduce_with` function.
+   It is always a good idea to confine calls to :macro:`reduce` to global
+   functions if possible, since this gives you better control over which local
+   functions are in scope at the point of the call. Otherwise it might be
+   necessary to call :macro:`__locals__` manually and filter the resulting
+   list before submitting it to the :func:`reduce_with` function.
 
    Expression Serialization
    ~~~~~~~~~~~~~~~~~~~~~~~~

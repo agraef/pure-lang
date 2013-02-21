@@ -895,18 +895,18 @@ public:
   expr vsubst(expr x, int offs, int offs1, uint8_t idx = 0);
   expr vsubst(expr x, int offs) { return vsubst(x, offs, offs, 0); }
   expr vsubst(expr x);
-  expr macsubst(expr x, bool quote = false)
-  { envstack estk; return macsubst(false, x, estk, 0, quote); }
-  expr macsubst(bool trace, expr x, envstack& estk, uint8_t idx,
+  expr macsubst(int32_t h, expr x, bool quote = false)
+  { envstack estk; return macsubst(h, false, x, estk, 0, quote); }
+  expr macsubst(int32_t h, bool trace, expr x, envstack& estk, uint8_t idx,
 		bool quote = false);
   expr varsubst(expr x, uint8_t offs, uint8_t offs1, uint8_t idx = 0);
   expr varsubst(expr x, int offs) { return varsubst(x, offs, 0, 0); }
   expr macred(expr x, expr y, uint8_t idx = 0);
-  expr macval(bool trace, expr x, envstack& estk, uint8_t idx);
-  expr maceval(bool trace, expr x, envstack& estk, uint8_t idx);
+  expr macval(int32_t h, bool trace, expr x, envstack& estk, uint8_t idx);
+  expr maceval(int32_t h, bool trace, expr x, envstack& estk, uint8_t idx);
   expr macsval(pure_expr *x);
   bool specials_only;
-  expr *macspecial(bool trace, expr x, envstack& estk, uint8_t idx);
+  expr *macspecial(int32_t h, bool trace, expr x, envstack& estk, uint8_t idx);
   exprl get_macargs(expr x, bool quote);
   expr tagsubst(expr x);
   bool parse_rulel(exprl& xs, rulel& r);
