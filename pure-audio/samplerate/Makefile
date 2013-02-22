@@ -53,7 +53,7 @@ generate:
 	make samplerate.pure
 
 samplerate.pure: srcprocess.h src.pure
-	pure-gen -s '$(includedir)/samplerate.h;' $(includedir)/samplerate.h -lsrcprocess -o $@
+	pure-gen -C -ansi -s '$(includedir)/samplerate.h;' $(includedir)/samplerate.h -lsrcprocess -o $@
 	pure-gen -N -s 'srcprocess.h;' srcprocess.h -o $@
 	cat src.pure >> $@
 ifdef windows

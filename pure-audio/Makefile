@@ -99,7 +99,7 @@ generate:
 portaudio.pure:
 ifdef windows
 	echo 'using "lib:libportaudio-2.dll";' > $@
-	pure-gen -N -m Pa -p Pa -s '$(includedir)/portaudio.h;' $(includedir)/portaudio.h -laudio -o $@
+	pure-gen -C -ansi -N -m Pa -p Pa -s '$(includedir)/portaudio.h;' $(includedir)/portaudio.h -laudio -o $@
 	mv $@ $@.tmp
 	tr -d '\r' < $@.tmp > $@
 	rm -f $@.tmp
