@@ -40,7 +40,7 @@ uninstall:
 # Examples and tests.
 
 testdir = examples
-tests = $(patsubst %.cc, $(testdir)/%_examp.pure, $(cppsource))
+tests = $(testdir)/test.pure
 logs = $(patsubst %.pure, %.log, $(tests))
 
 check:
