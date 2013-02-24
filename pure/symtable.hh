@@ -88,6 +88,8 @@ class symtable {
   // these are cached here to speed up predefined symbol lookups
   symbol* __gensym_sym;
   symbol* __namespace_sym;
+  symbol* __dir_sym;
+  symbol* __file_sym;
   symbol* __locals_sym;
   symbol* __func_sym;
   symbol* __list_sym;
@@ -286,6 +288,10 @@ public:
   { return *sym_p("__gensym__", __gensym_sym); }
   symbol& namespace_sym()
   { return *sym_p("__namespace__", __namespace_sym); }
+  symbol& dir_sym()
+  { return *sym_p("__dir__", __dir_sym); }
+  symbol& file_sym()
+  { return *sym_p("__file__", __file_sym); }
   symbol& locals_sym()
   { return *sym_p("__locals__", __locals_sym); }
   symbol& func_sym()

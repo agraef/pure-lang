@@ -24,6 +24,8 @@ symtable::symtable()
   : fno(0), rtab(1024),
     __gensym_sym(0),
     __namespace_sym(0),
+    __dir_sym(0),
+    __file_sym(0),
     __locals_sym(0),
     __func_sym(0),
     __list_sym(0),
@@ -108,6 +110,8 @@ void symtable::init_builtins()
 {
   gensym_sym();
   namespace_sym();
+  dir_sym();
+  file_sym();
   locals_sym();
   func_sym();
   list_sym();

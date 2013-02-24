@@ -440,6 +440,34 @@ using namespace __C;
 	> foo::foo;
 	"foo"
 
+   .. macro:: __dir__
+              __file__
+
+      Returns the directory and absolute filename of the current script, using
+      the canonicalized pathname of the script, as explained in :ref:`Modules
+      and Imports`. The directory name is always terminated with a trailing
+      slash. These macros are useful, e.g., for debugging purposes or if a
+      script needs to locate other files relative to the script file. Like
+      :macro:`__namespace__`, these are built-in macros which expand to string
+      values.
+
+      The script name is resolved at compile time, so these macros are most
+      useful if a script is run through the interpreter. Also note that both
+      macros return the empty string if the code containing the call is not in
+      a script (i.e., if it is executed directly at the interactive command
+      line or through :func:`eval`). For instance, assume that the following
+      code is stored in the file /home/user/test.pure::
+
+        foo = __file__,__dir__;
+	bar = eval "__file__,__dir__";
+
+      Then running this script interactively you'll get the following::
+
+        > foo;
+	"/home/user/test.pure","/home/user/"
+	> bar;
+	"",""
+
    .. macro:: __list__
 
       This expands a (literal) tuple to a list, preserving embedded tuples in

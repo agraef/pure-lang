@@ -8444,6 +8444,14 @@ expr *interpreter::macspecial(int32_t h, bool trace, expr x,
     if (x.tag() == symtab.gensym_sym().f) {
       return new expr(gensym_expr('x'));
     }
+    if (x.tag() == symtab.dir_sym().f) {
+      const char *s = srcdir.c_str();
+      return new expr(EXPR::STR, strdup(s));
+    }
+    if (x.tag() == symtab.file_sym().f) {
+      const char *s = srcabs.c_str();
+      return new expr(EXPR::STR, strdup(s));
+    }
     if (x.tag() == symtab.namespace_sym().f) {
       const char *s = symtab.current_namespace?
 	symtab.current_namespace->c_str():"";
