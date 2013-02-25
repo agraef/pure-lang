@@ -309,7 +309,7 @@ static int buffer_fill(csv_t *csv, long *offset)
 {
   buffer_t *b = csv->buffer;
   dialect_t *d = csv->dialect;
-  int ch, brk = 0;
+  int ch = 0, brk = 0;
   size_t n = b->growto - b->len;
   char *s = b->c + b->len;
   char *ofs = b->c;
@@ -325,7 +325,6 @@ static int buffer_fill(csv_t *csv, long *offset)
       }
     }
     *s = '\0';
-    ++n;
     if (ferror(csv->fp)) return ERR_READ;
     if (brk)
       break;
@@ -335,11 +334,12 @@ static int buffer_fill(csv_t *csv, long *offset)
       break;
     }
     char *t;
-    n = b->growto;
+    size_t m = s-b->c;
+    n += b->growto;
     b->growto <<= 1;
     if ((t = (char *)realloc(b->c, b->growto))) {
       b->c = t;
-      s = b->c + n;
+      s = b->c + m;
     } else
       return ERR_MEM;
   }
