@@ -329,7 +329,7 @@ static int buffer_fill(csv_t *csv, long *offset)
     if (brk)
       break;
     else if (ch == EOF) {
-      if (s-1 == b->c)
+      if (s == b->c)
 	return FILE_END;
       break;
     }
