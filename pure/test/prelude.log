@@ -681,11 +681,11 @@ dropwhile p/*0:01*/ [] = [];
 dropwhile p/*0:01*/ ys@(x/*0:101*/:xs/*0:11*/) = dropwhile p/*0:01*/ xs/*0:11*/ if p/*0:01*/ x/*0:101*/;
 dropwhile p/*0:01*/ ys@(x/*0:101*/:xs/*0:11*/) = ys/*0:1*/;
 filter p/*0:01*/ [] = [];
-filter p/*0:01*/ xs@(_/*0:101*/:_/*0:11*/) = tick/*0*/ [] xs/*0:1*/ with tick zs/*0:01*/ (x/*0:101*/:xs/*0:11*/) = tack/*1*/ (add/*1*/ p/*1:01*/ x/*0:101*/ zs/*0:01*/) (filter p/*2:01*/ xs/*1:11*/&) if thunkp xs/*0:11*/; tick zs/*0:01*/ (x/*0:101*/:xs/*0:11*/) = tick/*1*/ (add/*1*/ p/*1:01*/ x/*0:101*/ zs/*0:01*/) xs/*0:11*/; tick zs/*0:01*/ [] = tack/*1*/ zs/*0:01*/ []; tick _/*0:01*/ xs/*0:1*/ = throw (bad_list_value xs/*0:1*/) {
+filter p/*0:01*/ xs@(_/*0:101*/:_/*0:11*/) = tick/*0*/ [] xs/*0:1*/ with tick zs/*0:01*/ (x/*0:101*/:xs/*0:11*/) = tack/*1*/ (add/*1*/ p/*1:01*/ x/*0:101*/ zs/*0:01*/) (filter p/*2:01*/ xs/*1:11*/&) if thunkp xs/*0:11*/; tick zs/*0:01*/ (x/*0:101*/:xs/*0:11*/) = tick/*1*/ (add/*1*/ p/*1:01*/ x/*0:101*/ zs/*0:01*/) xs/*0:11*/; tick zs/*0:01*/ [] = tack/*1*/ zs/*0:01*/ []; tick zs/*0:01*/ xs/*0:1*/ = tack/*1*/ zs/*0:01*/ (filter p/*1:01*/ xs/*0:1*/) {
   rule #0: tick zs (x:xs) = tack (add p x zs) (filter p xs&) if thunkp xs
   rule #1: tick zs (x:xs) = tick (add p x zs) xs
   rule #2: tick zs [] = tack zs []
-  rule #3: tick _ xs = throw (bad_list_value xs)
+  rule #3: tick zs xs = tack zs (filter p xs)
   state 0: #0 #1 #2 #3
 	<var> state 1
   state 1: #0 #1 #2 #3
@@ -4731,7 +4731,7 @@ def __std__::__voidchk1__ x/*0:01*/ y/*0:1*/ = x/*0:01*/;
   rule #0: filter p x::matrix = __C::matrix_filter p x
   rule #1: filter p s::string = strcat (filter p (chars s))
   rule #2: filter p [] = []
-  rule #3: filter p xs@(_:_) = tick [] xs with tick zs (x:xs) = tack (add p x zs) (filter p xs&) if thunkp xs; tick zs (x:xs) = tick (add p x zs) xs; tick zs [] = tack zs []; tick _ xs = throw (bad_list_value xs); tack (x:xs) ys = tack xs (x:ys); tack [] ys = ys; add p x xs = if p x then x:xs else xs end
+  rule #3: filter p xs@(_:_) = tick [] xs with tick zs (x:xs) = tack (add p x zs) (filter p xs&) if thunkp xs; tick zs (x:xs) = tick (add p x zs) xs; tick zs [] = tack zs []; tick zs xs = tack zs (filter p xs); tack (x:xs) ys = tack xs (x:ys); tack [] ys = ys; add p x xs = if p x then x:xs else xs end
   state 0: #0 #1 #2 #3
 	<var> state 1
   state 1: #0 #1 #2 #3
