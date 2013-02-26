@@ -1,0 +1,24 @@
+#! /bin/bash
+
+host=`./config.guess`
+diff=diff
+case "$host" in
+  *-*-mingw*) diff="diff --strip-trailing-cr";;
+esac
+
+testdir=test
+rc=0
+
+for x in $(find $testdir -name \*.log | sort); do
+    f=$(basename $x .log)
+    if (cd $testdir && (pure -v -I.. -L.. < "$f.pure" 2>&1 | $diff -u "$f.log" - > $f.diff))
+    then
+	rm -f "$testdir/$f.diff"
+	echo "$f: ok"
+    else
+	rc=1
+	echo "$f: FAILED"
+    fi
+done
+
+exit $rc

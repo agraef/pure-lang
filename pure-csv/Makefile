@@ -48,7 +48,7 @@ CFLAGS = -g -O2
 
 FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
 
-DISTFILES = COPYING Makefile README config.guess csv.c csv.pure debian/*
+DISTFILES = COPYING Makefile README config.guess csv.c csv.pure run-tests debian/* test/*
 SEDFILES = README
 
 all: csv$(DLL)
@@ -91,11 +91,16 @@ datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > 
 
 dist:
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/debian
+	mkdir $(dist) && mkdir $(dist)/debian && mkdir $(dist)/test
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	for x in $(SEDFILES); do rm -f $(dist)/$$x; $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
 	rm -f $(dist).tar.gz
 	tar cfzh $(dist).tar.gz $(dist)
+	rm -rf $(dist)
+
+distcheck: dist
+	tar xfz $(dist).tar.gz
+	cd $(dist) && make && make check && make install DESTDIR=./BUILD
 	rm -rf $(dist)
 
 debsrc = $(shell echo $(dist) | sed -e 's/-$(version)/_$(version)/').orig.tar.gz
@@ -107,3 +112,20 @@ deb: $(debsrc) dist
 
 $(debsrc):
 	wget -nv http://pure-lang.googlecode.com/files/$(dist).tar.gz -O $@
+
+# Examples and tests.
+
+testdir = test
+tests = $(wildcard $(testdir)/*.pure)
+logs = $(patsubst %.pure, %.log, $(tests))
+
+check:
+	./run-tests
+
+cleanlogs:
+	rm -f $(logs)
+
+logs: $(logs)
+
+%.log: %.pure csv.pure csv$(DLL)
+	(cd $(testdir) && pure -v -I.. -L.. < $(notdir $<) > $(notdir $@) 2>&1)
