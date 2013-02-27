@@ -940,6 +940,12 @@ preproc x = preproc1 $ preproc_diff x;
 simplify x = y when
   // Clear the stack (to be sure).
   PROC_clear_stack;
+  // Check the status of the rounded flag.
+  PROC_push_symbol "*rounded";
+  PROC_make_function_call "quote" 1;
+  PROC_make_function_call "eval" 1;
+  PROC_lisp_eval;
+  rounded = ~PROC_null PROC_get_value;
   // Push x on the Reduce stack. XXXFIXME: We currently wrap this in an extra
   // 'list' application which gives us the result as a singleton list and
   // avoids Reduce errors in cases where the result is non-scalar. This is a
@@ -951,6 +957,16 @@ simplify x = y when
     from_expr x::bigint = PROC_push_big_integer (init (str x));
     from_expr x::double = from_expr (if x<0 then '-infinity else 'infinity)
       if infp x;
+    // Convert a floatnum to its exact representation in exact mode.
+    = () when
+      PROC_push_symbol ":rd:";
+      PROC_push_floating x;
+      PROC_make_cons;
+      PROC_make_function_call "quote" 1;
+      PROC_make_function_call "reval" 1;
+      PROC_lisp_eval;
+    end if ~rounded;
+    // Otherwise just push the floatnum.
     = PROC_push_floating x otherwise;
     from_expr x::string = PROC_push_string x;
     from_expr x::matrix = from_expr (foldl ($) ('mat) (list2 x));
@@ -1318,7 +1334,7 @@ lisp x = y when
     from_expr q [] = from_expr q ('nil);
     from_expr q (x:y) = () when
       do (from_expr q) [x,y];
-      if q then PROC_make_cons() else PROC_make_function_call "cons" 2;
+      if q then PROC_make_cons else PROC_make_function_call "cons" 2;
     end;
     // Remap (') to quote in order to mimic what the Lisp reader does.
     from_expr q (') = from_expr q quote;
