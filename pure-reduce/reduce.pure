@@ -1337,12 +1337,6 @@ lisp x = x if ~applp x && ~symbolp x;
 lisp x = y when
   // Clear the stack (to be sure).
   PROC_clear_stack;
-  // Check the status of the rounded flag.
-  PROC_push_symbol "*rounded";
-  PROC_make_function_call "quote" 1;
-  PROC_make_function_call "eval" 1;
-  PROC_lisp_eval;
-  rounded = ~PROC_null PROC_get_value;
   // Push x on the Reduce stack.
   from_expr false x with
     // These are all the data types natively supported by the interface.
