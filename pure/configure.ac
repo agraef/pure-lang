@@ -189,8 +189,6 @@ AC_ARG_WITH(tool-prefix,
      	  llvm_config_pre="${withval}/llvm-config ${llvm_config_pre}";
 	  ;;
    esac])
-AC_SUBST(TOOL_PREFIX)
-AC_DEFINE_UNQUOTED(TOOL_PREFIX, "${TOOL_PREFIX}", [Define to the prefix under which the LLVM toolchain is installed.])
 dnl How to link GMP/MPIR.
 pure_cv_gmp="gmp"
 AC_ARG_WITH(mpir,
@@ -260,7 +258,7 @@ if test $fastcc = yes; then
 fi
 
 dnl Check for LLVM (try various LLVM versions).
-AC_CHECK_PROGS(LLVMCONF,[${llvm_config_pre} llvm-config-3.2 llvm-config-3.1 llvm-config-3.0 llvm-config-2.9 llvm-config-2.8 llvm-config-2.7 llvm-config-2.6 llvm-config-2.5],no,"$PATH:/")
+AC_CHECK_PROGS(LLVMCONF,[${llvm_config_pre} llvm-config-3.3 llvm-config-3.2 llvm-config-3.1 llvm-config-3.0 llvm-config-2.9 llvm-config-2.8 llvm-config-2.7 llvm-config-2.6 llvm-config-2.5],no,"$PATH:/")
 if test "$LLVMCONF" = no; then
   AC_MSG_ERROR([Cannot find LLVM.])
 fi
@@ -268,6 +266,13 @@ fi
 dnl Determine the LLVM version.
 llvm_version=`$LLVMCONF --version`
 AC_DEFINE_UNQUOTED(LLVM_VERSION, "${llvm_version}", [Define to the LLVM version string.])
+
+dnl Some systems have the LLVM tools under /usr/lib/llvm-${llvm_version}/bin.
+if test -z "${TOOL_PREFIX}" -a -x "/usr/lib/llvm-${llvm_version}/bin/opt"; then
+  TOOL_PREFIX="/usr/lib/llvm-${llvm_version}/bin/"
+fi
+AC_SUBST(TOOL_PREFIX)
+AC_DEFINE_UNQUOTED(TOOL_PREFIX, "${TOOL_PREFIX}", [Define to the prefix under which the LLVM toolchain is installed.])
 
 dnl If we got LLVM installed as a shared library, use that unless the user
 dnl specified --with-static-llvm.
