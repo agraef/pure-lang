@@ -1415,23 +1415,14 @@ glp::term_hook sw info =
 // Get memory usage information
 private extern expr *glpk_mem_usage();
 glp::mem_usage =
-  (count, cpeak, total, tpeak)
+  (count, cpeak, tot, tp)
     when
-      (count, cpeak, tothi, totlo, tphi, tplo) = glpk_mem_usage;
-      total = ((pow 2L 32L) - 1L) * tothi + totlo;
-      tpeak = ((pow 2L 32L) - 1L) * tphi + tplo
+      (count, cpeak, tot, tp) = glpk_mem_usage;
     end;
 
 // Set memory usage limit
 public extern expr *glpk_mem_limit(int limit) =
   mem_limit;
-
-// Determine current universal time
-private extern expr *glpk_time();
-glp::time = ((pow 2L 32L) - 1L) * high + low
-    when
-      (high, low) = glpk_time;
-    end;
 
 // Free GLPK library environment
 public extern expr *glpk_free_env() =
