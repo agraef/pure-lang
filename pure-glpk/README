@@ -22,7 +22,7 @@ The interface uses native Pure data types - lists and tuples - so that you
 need not perform any data conversions to/from GLPK internal data structures.
 
 To make this module work, you must have a GLPK installation on your system,
-the version 4.48 or higher is required.
+the version 4.42 or higher is required.
 
 .. contents::
 .. sectnum::
@@ -45,6 +45,10 @@ need to have Pure installed.
 
 The default make options suppose that GLPK was configured with the following
 options:
+``--enable-dl --enable-odbc --enable-mysql --with-zlib --with-gmp``
+
+The zlib library is a part of the GLPK source distribution from the
+version 4.46 onwards, so the the configure options for newer GLPK versions are:
 ``--enable-dl --enable-odbc --enable-mysql --with-gmp``
 
 Using the given options the depndencies are:
@@ -55,7 +59,10 @@ Using the given options the depndencies are:
   within the GNU MathProg language translator through the ODBC interface.
 - MySQL client library - serves for reading data directly from MySQL tables
   within the GNU MathProg language translator.
-- ltdl dlopen library - must be enabled together with any of ODBC or MySQL.
+- zlib compression library - enables reading and writing gzip compressed
+  problem and solution files.
+- ltdl dlopen library - must be enabled together with any of ODBC or MySQL
+  (or zlib for GLPK versions 4.45 and earlier).
 
 ``make`` tries to guess your Pure installation directory and platform-specific
 setup. If it gets this wrong, you can set some variables manually. In

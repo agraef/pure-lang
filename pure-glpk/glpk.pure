@@ -1415,9 +1415,18 @@ glp::term_hook sw info =
 // Get memory usage information
 private extern expr *glpk_mem_usage();
 glp::mem_usage =
-  (count, cpeak, tot, tp)
+    (count, cpeak, total, tpeak)
     when
-      (count, cpeak, tot, tp) = glpk_mem_usage;
+      tpl = glpk_mem_usage;
+      count = tpl!0;
+      cpeak = tpl!1;
+      (total, tpeak) = 
+        if #tpl == 4
+        then
+          (tpl!2, tpl!3)
+        else
+          (((pow 2L 32L) - 1L) * (tpl!2) + (tpl!3),
+           ((pow 2L 32L) - 1L) * (tpl!4) + (tpl!5))
     end;
 
 // Set memory usage limit

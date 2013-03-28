@@ -34,7 +34,7 @@
 extern "C" {
 #endif
 
-#if GLP_MAJOR_VERSION != 4 || GLP_MINOR_VERSION < 48
+#if GLP_MAJOR_VERSION != 4 || GLP_MINOR_VERSION < 42
 #error GLPK version 4.48 or higher required
 #endif
 
@@ -4051,6 +4051,30 @@ pure_expr *glpk_term_hook(int sw, void *info)
 pure_expr *glpk_mem_usage()
 {
   // Get memory usage information
+
+#if GLP_MINOR_VERSION < 48
+  glp_long total, tpeak;
+  mpz_t totlo, tothi, tplo, tphi;
+  int count, cpeak;
+  pure_expr *res;
+  glp_mem_usage(&count, &cpeak, &total, &tpeak);
+  mpz_init(totlo);
+  mpz_init(tothi);
+  mpz_init(tplo);
+  mpz_init(tphi);
+  mpz_set_ui(totlo, (unsigned long int)total.lo);
+  mpz_set_ui(tothi, (unsigned long int)total.hi);
+  mpz_set_ui(tplo, (unsigned long int)tpeak.lo);
+  mpz_set_ui(tphi, (unsigned long int)tpeak.hi);
+  res = pure_tuplel(6, pure_int(count), pure_int(cpeak),
+                       pure_mpz(tothi), pure_mpz(totlo),
+                       pure_mpz(tphi), pure_mpz(tplo));
+  mpz_clear(totlo);
+  mpz_clear(tothi);
+  mpz_clear(tplo);
+  mpz_clear(tphi);
+  return res;
+#else    
   size_t total, tpeak;
   mpz_t tot, tp;
   int count, cpeak;
@@ -4065,6 +4089,7 @@ pure_expr *glpk_mem_usage()
   mpz_clear(tot);
   mpz_clear(tp);
   return res;
+#endif
 }
 
 pure_expr *glpk_mem_limit(int limit)
