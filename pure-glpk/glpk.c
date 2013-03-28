@@ -35,7 +35,7 @@ extern "C" {
 #endif
 
 #if GLP_MAJOR_VERSION != 4 || GLP_MINOR_VERSION < 42
-#error GLPK version 4.48 or higher required
+#error GLPK version 4.42 or higher required
 #endif
 
 
