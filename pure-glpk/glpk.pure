@@ -311,6 +311,16 @@ private nonfix
   ordalg	// factorization ordering options
 ;
 
+/* Karush - Kuhn - Tucker checks */
+private nonfix
+kkt_pe          // check primal equality constraints (KKT.PE)
+kkt_pb          // check primal bound constraints (KKT.PB)
+kkt_de          // check dual equality constraints (KKT.DE). This conditions
+                // can be checked only for basic or interior-point solution
+kkt_db          // check dual bound constraints (KKT.DB). This conditions
+                // can be checked only for basic or interior-point solution
+kkt_cs          // complementary slackness
+;
 
 /*****************************************************************************/
 /*                    Assign values to symbolic constants                    */
@@ -458,7 +468,14 @@ let symlist =
     (ordalg,       ord_none,   0),  // use natural (original) ordering
     (ordalg,       ord_qmd,    1),  // quotient minimum degree (QMD)
     (ordalg,       ord_amd,    2),  // approximate minimum degree (AMD)
-    (ordalg,       ord_sysamd, 3)  // approximate minimum degree (SYSAMD)
+    (ordalg,       ord_sysamd, 3),  // approximate minimum degree (SYSAMD)
+
+    /* KKT checks */
+    (kkt,          kkt_pe,     1),  // check primal equality constraints
+    (kkt,          kkt_pb,     2),  // check primal bound constraints
+    (kkt,          kkt_de,     3),  // check dual equality constraints
+    (kkt,          kkt_db,     4),  // check dual bound constraints
+    (kkt,          kkt_cs,     5)   // complementary slackness
   ];
 
 private s2v v2s;
@@ -995,10 +1012,15 @@ public extern expr *glpk_mip_col_val(expr *lp, int colind) =
   mip_col_val;
 
 // Check Karush-Kuhn-Tucker conditions
+// GLPK version <= 4.48
 namespace lpx;
 public extern expr *glpx_check_kkt(expr *lp, int scaled) =
   check_kkt;
 namespace glp;
+// GLPK version > 4.48
+private extern expr *glpk_check_kkt(expr *lp, int sol, int cond);
+glp::check_kkt lp sol cond = 
+  glpk_check_kkt lp (s2v!(solind, sol)) (s2v!(kkt, cond));
 
 // Read LP problem data from a MPS file
 private extern expr *glpk_read_mps(expr *lp, int fmt, char *fname);

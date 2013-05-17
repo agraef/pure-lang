@@ -1958,6 +1958,7 @@ static inline pure_expr *kkt_quality(int quality)
   return pure_cstring_dup(c);
 }
 
+#if GLP_MINOR_VERSION <= 48
 pure_expr *glpx_check_kkt(pure_expr *ptr, int scaled)
 {
   // Check Karush-Kuhn-Tucker conditions
@@ -2002,6 +2003,45 @@ pure_expr *glpx_check_kkt(pure_expr *ptr, int scaled)
     return pure_err_internal("insufficient memory");
   }
 }
+#else
+pure_expr *glpx_check_kkt(pure_expr *ptr, int scaled)
+{
+  return pure_err_internal("function lpx::check_kkt is not available for GLPK version > 4.48");
+}
+#endif
+
+#if GLP_MINOR_VERSION > 48
+pure_expr *glpk_check_kkt(pure_expr *ptr, int sol, int cond)
+{
+  double ae_max, re_max;
+  int ae_ind, re_ind;
+  pure_expr *res;
+  glp_obj *glpobj;
+  if (!is_glp_pointer(ptr, &glpobj)) {
+    return 0;
+  }
+  if (sol == GLP_MIP && (cond == GLP_KKT_DE || cond == GLP_KKT_DB)) {
+    return pure_err_internal("dual KKT check is not available for MIP");
+  }
+  if (cond == GLP_KKT_CS) {
+    return pure_err_internal("KKT complementary slackness check is not yet implemented");
+  }
+  glp_check_kkt(glpobj->lp, sol, cond, &ae_max, &ae_ind, &re_max, &re_ind);
+  res = pure_tuplel(4, pure_double(ae_max),
+		       pure_int(ae_ind),
+		       pure_double(re_max),
+		       pure_int(re_ind));
+  if (res)
+    return res;
+  else
+    return pure_err_internal("insufficient memory");
+}
+#else
+pure_expr *glpk_check_kkt(pure_expr *ptr, int sol, int cond)
+{
+  return pure_err_internal("function glp::check_kkt is not available for GLPK version < 4.49");
+}
+#endif
 
 pure_expr *glpk_read_mps(pure_expr *ptr,  int fmt, const char *fname)
 {
