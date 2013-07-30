@@ -4600,28 +4600,6 @@ static void *double_array_to_matrix(pure_expr *x, void *q)
   }
 }
 
-// This isn't in the library API, so we provide a (stripped-down) version here.
-static void *matrix_to_int64_array(void *p, pure_expr *x)
-{
-  switch (x->tag) {
-  case EXPR::IMATRIX: {
-    gsl_matrix_int *m1 = (gsl_matrix_int*)x->data.mat.p;
-    size_t n = m1->size1, m = m1->size2;
-    if (n==0 || m==0) return p;
-    if (!p) p = malloc(n*m*sizeof(int64_t));
-    if (!p) return 0;
-    int64_t *q = (int64_t*)p;
-    size_t k = 0;
-    for (size_t i = 0; i < n; i++)
-      for (size_t j = 0; j < m; j++)
-	q[k++] = m1->data[i*m1->tda+j];
-    return p;
-  }
-  default:
-    return 0;
-  }
-}
-
 void *pure_get_matrix_data_byte(pure_expr *x)
 {
   interpreter& interp = *interpreter::g_interp;
@@ -12008,6 +11986,31 @@ pure_expr *matrix_from_complex_float_array(uint32_t n1, uint32_t n2, void *p)
 }
 
 extern "C"
+pure_expr *matrix_from_int64_array(uint32_t n1, uint32_t n2, void *p)
+{
+  gsl_matrix_symbolic *mat = create_symbolic_matrix(n1, n2);
+  if (!mat) return 0;
+  if (n1 == 0 || n2 == 0) // empty matrix
+    return pure_symbolic_matrix(mat);
+  pure_expr **data = mat->data;
+  size_t tda = mat->tda, k = 0;
+  const int64_t *q = (int64_t*)p;
+  if (q) {
+    // convert int64 values to bigints
+    for (size_t i = 0; i < n1; i++)
+      for (size_t j = 0; j < n2; j++)
+	data[i*tda+j] = pure_int64(q[k++]);
+  } else {
+    // create a zero matrix
+    pure_expr *x = pure_int64(0);
+    for (size_t i = 0; i < n1; i++)
+      for (size_t j = 0; j < n2; j++)
+	data[i*tda+j] = x;
+  }
+  return pure_symbolic_matrix(mat);
+}
+
+extern "C"
 pure_expr *matrix_from_short_array(uint32_t n1, uint32_t n2, void *p)
 {
   if (n1 == 0 || n2 == 0) // empty matrix
@@ -12169,6 +12172,75 @@ void *matrix_to_complex_float_array(void *p, pure_expr *x)
       for (size_t j = 0; j < m; j++) {
 	q[k++] = (float)m1->data[i*m1->tda+j];
 	q[k++] = 0.0;
+      }
+    return p;
+  }
+  default:
+    return 0;
+  }
+}
+
+extern "C"
+void *matrix_to_int64_array(void *p, pure_expr *x)
+{
+  switch (x->tag) {
+  case EXPR::CMATRIX: {
+    gsl_matrix_complex *m1 = (gsl_matrix_complex*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    if (n==0 || m==0) return p;
+    if (!p) p = malloc(2*n*m*sizeof(int64_t));
+    if (!p) return 0;
+    int64_t *q = (int64_t*)p;
+    size_t k = 0;
+    for (size_t i = 0; i < n; i++)
+      for (size_t j = 0; j < m; j++) {
+	size_t l = 2*(i*m1->tda+j);
+	q[k++] = (int64_t)m1->data[l];
+	q[k++] = (int64_t)m1->data[l+1];
+      }
+    return p;
+  }
+  case EXPR::DMATRIX: {
+    gsl_matrix *m1 = (gsl_matrix*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    if (n==0 || m==0) return p;
+    if (!p) p = malloc(n*m*sizeof(int64_t));
+    if (!p) return 0;
+    int64_t *q = (int64_t*)p;
+    size_t k = 0;
+    for (size_t i = 0; i < n; i++)
+      for (size_t j = 0; j < m; j++)
+	q[k++] = (int64_t)m1->data[i*m1->tda+j];
+    return p;
+  }
+  case EXPR::IMATRIX: {
+    gsl_matrix_int *m1 = (gsl_matrix_int*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    if (n==0 || m==0) return p;
+    if (!p) p = malloc(n*m*sizeof(int64_t));
+    if (!p) return 0;
+    int64_t *q = (int64_t*)p;
+    size_t k = 0;
+    for (size_t i = 0; i < n; i++)
+      for (size_t j = 0; j < m; j++)
+	q[k++] = (int64_t)m1->data[i*m1->tda+j];
+    return p;
+  }
+  case EXPR::MATRIX: {
+    gsl_matrix_symbolic *m1 = (gsl_matrix_symbolic*)x->data.mat.p;
+    size_t n = m1->size1, m = m1->size2;
+    if (n==0 || m==0) return p;
+    if (!p) p = malloc(n*m*sizeof(int64_t));
+    if (!p) return 0;
+    int64_t *q = (int64_t*)p;
+    size_t k = 0;
+    for (size_t i = 0; i < n; i++)
+      for (size_t j = 0; j < m; j++) {
+	pure_expr *x = m1->data[i*m1->tda+j];
+	if (x->tag == EXPR::BIGINT)
+	  q[k++] = pure_get_int64(x);
+	else
+	  q[k++] = 0;
       }
     return p;
   }

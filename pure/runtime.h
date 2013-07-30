@@ -1443,16 +1443,18 @@ void *matrix_to_int_array(void *p, pure_expr *x);
 
 /* Additional routines for alternative base types. These work like the
    routines above but take data consisting of base types which are not
-   directly supported by Pure GSL matrices: float, complex float, short,
-   byte. */
+   directly supported by Pure GSL matrices: float, complex float, int64_t,
+   short, byte. */
 
 pure_expr *matrix_from_float_array(uint32_t n, uint32_t m, void *p);
 pure_expr *matrix_from_complex_float_array(uint32_t n, uint32_t m, void *p);
+pure_expr *matrix_from_int64_array(uint32_t n, uint32_t m, void *p);
 pure_expr *matrix_from_short_array(uint32_t n, uint32_t m, void *p);
 pure_expr *matrix_from_byte_array(uint32_t n, uint32_t m, void *p);
 
 void *matrix_to_float_array(void *p, pure_expr *x);
 void *matrix_to_complex_float_array(void *p, pure_expr *x);
+void *matrix_to_int64_array(void *p, pure_expr *x);
 void *matrix_to_short_array(void *p, pure_expr *x);
 void *matrix_to_byte_array(void *p, pure_expr *x);
 

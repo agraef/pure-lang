@@ -1027,6 +1027,7 @@ pointer x::matrix	= pure_pointerval x;
                  float_pointer p x
                  complex_pointer p x
                  complex_float_pointer p x
+                 int64_pointer p x
                  int_pointer p x
                  short_pointer p x
                  byte_pointer p x
@@ -1036,13 +1037,17 @@ pointer x::matrix	= pure_pointerval x;
       necessary. The given pointer may also be :const:`NULL`, in which case
       suitable memory is malloced and returned; otherwise the caller must
       ensure that the memory pointed to by ``p`` is big enough for the
-      contents of the given matrix. */
+      contents of the given matrix. The source matrix ``x`` may be an
+      arbitrary numeric matrix. In the case of :func:`int64_pointer`, ``x``
+      may also be a symbolic matrix holding bigint values which are converted
+      to 64 bit machine integers. */
 
 namespace __C;
 extern void* matrix_to_double_array(void* p, expr* x);
 extern void* matrix_to_float_array(void* p, expr* x);
 extern void* matrix_to_complex_array(void* p, expr* x);
 extern void* matrix_to_complex_float_array(void* p, expr* x);
+extern void* matrix_to_int64_array(void* p, expr* x);
 extern void* matrix_to_int_array(void* p, expr* x);
 extern void* matrix_to_short_array(void* p, expr* x);
 extern void* matrix_to_byte_array(void* p, expr* x);
@@ -1056,6 +1061,9 @@ complex_pointer p::pointer x::matrix
 			= matrix_to_complex_array p x if nmatrixp x;
 complex_float_pointer p::pointer x::matrix
 			= matrix_to_complex_float_array p x if nmatrixp x;
+int64_pointer p::pointer x::matrix
+			= matrix_to_int64_array p x
+			  if nmatrixp x || all bigintp x;
 int_pointer p::pointer x::matrix
 			= matrix_to_int_array p x if nmatrixp x;
 short_pointer p::pointer x::matrix
@@ -1067,23 +1075,28 @@ byte_pointer p::pointer x::matrix
                  float_matrix (n,m) p
                  complex_matrix (n,m) p
                  complex_float_matrix (n,m) p
+                 int64_matrix (n,m) p
                  int_matrix (n,m) p
                  short_matrix (n,m) p
                  byte_matrix (n,m) p
 
-      These functions allow you to create a numeric matrix from a pointer,
-      copying the data and converting it from the source type on the fly if
-      necessary. The source pointer ``p`` may also be :const:`NULL`, in which
-      case the new matrix is filled with zeros instead.  Otherwise the caller
-      must ensure that the pointer points to properly initialized memory big
-      enough for the requested dimensions. The given dimension may also be
-      just an integer ``n`` if a row vector is to be created. */
+      These functions allow you to create a matrix from a pointer, copying the
+      data and converting it from the source type on the fly if necessary. The
+      result will be a numeric matrix of the appropriate type, except in the
+      case of :func:`int64_matrix` where the result is a symbolic matrix
+      consisting of bigint values. The source pointer ``p`` may also be
+      :const:`NULL`, in which case the new matrix is filled with zeros
+      instead. Otherwise the caller must ensure that the pointer points to
+      properly initialized memory big enough for the requested dimensions. The
+      given dimension may also be just an integer ``n`` if a row vector is to
+      be created. */
 
 namespace __C;
 extern expr* matrix_from_double_array(int n, int m, void* p);
 extern expr* matrix_from_float_array(int n, int m, void* p);
 extern expr* matrix_from_complex_array(int n, int m, void* p);
 extern expr* matrix_from_complex_float_array(int n, int m, void* p);
+extern expr* matrix_from_int64_array(int n, int m, void* p);
 extern expr* matrix_from_int_array(int n, int m, void* p);
 extern expr* matrix_from_short_array(int n, int m, void* p);
 extern expr* matrix_from_byte_array(int n, int m, void* p);
@@ -1097,6 +1110,8 @@ complex_matrix (n::int,m::int) p::pointer
 			= matrix_from_complex_array n m p;
 complex_float_matrix (n::int,m::int) p::pointer
 			= matrix_from_complex_float_array n m p;
+int64_matrix (n::int,m::int) p::pointer
+			= matrix_from_int64_array n m p;
 int_matrix (n::int,m::int) p::pointer
 			= matrix_from_int_array n m p;
 short_matrix (n::int,m::int) p::pointer
@@ -1112,6 +1127,8 @@ complex_matrix n::int p::pointer
 			= complex_matrix (1,n) p;
 complex_float_matrix n::int p::pointer
 			= complex_float_matrix (1,n) p;
+int64_matrix n::int p::pointer
+			= int64_matrix (1,n) p;
 int_matrix n::int p::pointer
 			= int_matrix (1,n) p;
 short_matrix n::int p::pointer
