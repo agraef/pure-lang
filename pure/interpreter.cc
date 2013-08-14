@@ -47,7 +47,11 @@ char *alloca ();
 #include <fnmatch.h>
 #include <glob.h>
 
+#if LLVM33
+#include <llvm/IR/CallingConv.h>
+#else
 #include <llvm/CallingConv.h>
+#endif
 #include <llvm/PassManager.h>
 #include <llvm/Support/CallSite.h>
 #include <llvm/Transforms/Utils/BasicBlockUtils.h>

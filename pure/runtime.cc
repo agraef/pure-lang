@@ -15397,7 +15397,6 @@ pure_expr* matrix_scanl( pure_expr *f, pure_expr *z, pure_expr *x )
   pure_ref(f);
   pure_ref(x);
 
-  typedef typename element_of<matrix_type>::type elem_type;
   matrix_type *xm = static_cast<matrix_type*>(x->data.mat.p);
   size_t lasti,lastj;
   pure_expr *out; //result matrix
@@ -15666,7 +15665,6 @@ pure_expr* matrix_scanr( pure_expr *f, pure_expr *z, pure_expr *x )
   pure_ref(f);
   pure_ref(x);
 
-  typedef typename element_of<matrix_type>::type elem_type;
   matrix_type *xm = static_cast<matrix_type*>(x->data.mat.p);
   ptrdiff_t lasti,lastj;
   pure_expr *out; //result matrix

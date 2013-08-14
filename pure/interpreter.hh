@@ -19,12 +19,20 @@
 #ifndef INTERPRETER_HH
 #define INTERPRETER_HH
 
+#ifdef HAVE_LLVM_DERIVEDTYPES_H
+// LLVM 3.3 and later have these headers in a different directory.
 #include <llvm/DerivedTypes.h>
+#include <llvm/Module.h>
+#include <llvm/GlobalValue.h>
+#else
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/GlobalValue.h>
+#endif
+
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/JIT.h>
-#include <llvm/Module.h>
 #include <llvm/PassManager.h>
-#include <llvm/GlobalValue.h>
 #include <llvm/Analysis/Verifier.h>
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/Transforms/Scalar.h>
@@ -42,14 +50,24 @@
 #include <llvm/DataLayout.h>
 #define LLVM32 1
 #else
+#ifdef HAVE_LLVM_IR_DATALAYOUT_H
+#include <llvm/IR/DataLayout.h>
+#define LLVM32 1
+#define LLVM33 1
+#else
 #include <llvm/Target/TargetData.h>
+#endif
 #endif
 
 #ifdef HAVE_LLVM_IRBUILDER_H
 // LLVM 3.2 and later have this header in a different directory.
 #include <llvm/IRBuilder.h>
 #else
+#ifdef HAVE_LLVM_IR_IRBUILDER_H
+#include <llvm/IR/IRBuilder.h>
+#else
 #include <llvm/Support/IRBuilder.h>
+#endif
 #endif
 
 #ifdef HAVE_LLVM_MODULEPROVIDER_H
@@ -75,7 +93,11 @@
 #endif
 
 #if LLVM26
+#if LLVM33
+#include "llvm/IR/LLVMContext.h"
+#else
 #include "llvm/LLVMContext.h"
+#endif
 #endif
 
 #include "parserdefs.hh"
