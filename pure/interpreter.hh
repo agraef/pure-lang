@@ -19,17 +19,6 @@
 #ifndef INTERPRETER_HH
 #define INTERPRETER_HH
 
-#ifdef HAVE_LLVM_DERIVEDTYPES_H
-// LLVM 3.3 and later have these headers in a different directory.
-#include <llvm/DerivedTypes.h>
-#include <llvm/Module.h>
-#include <llvm/GlobalValue.h>
-#else
-#include <llvm/IR/DerivedTypes.h>
-#include <llvm/IR/Module.h>
-#include <llvm/IR/GlobalValue.h>
-#endif
-
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/JIT.h>
 #include <llvm/PassManager.h>
@@ -44,6 +33,17 @@
 #include "matcher.hh"
 #include "symtable.hh"
 #include "runtime.h"
+
+#ifdef HAVE_LLVM_DERIVEDTYPES_H
+// LLVM 3.3 and later have these headers in a different directory.
+#include <llvm/DerivedTypes.h>
+#include <llvm/Module.h>
+#include <llvm/GlobalValue.h>
+#else
+#include <llvm/IR/DerivedTypes.h>
+#include <llvm/IR/Module.h>
+#include <llvm/IR/GlobalValue.h>
+#endif
 
 #ifdef HAVE_LLVM_DATALAYOUT_H
 // This class has been renamed and moved to LLVMCore in LLVM 3.2.
