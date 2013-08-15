@@ -36,6 +36,16 @@
 #include "printer.hh"
 #include "util.hh"
 
+// Work around undefined symbols in C++ parsers generated with Bison 3.0.
+// NOTE: For the time being, you have to enable this manually by uncommenting
+// the line below.
+//#define HAVE_BISON30 1
+#if HAVE_BISON30
+#define yychar yyla.type
+#define yylloc yyla.location
+#define yyloc yylhs.location
+#endif
+
 // Get rid of silly warnings in bison-generated position.hh.
 #pragma GCC diagnostic ignored "-Wparentheses"
 

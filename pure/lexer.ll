@@ -49,7 +49,7 @@ using namespace std;
 static char **pure_completion(const char *text);
 static bool checkcmd(interpreter &interp, const char *s);
 static bool checkusercmd(interpreter &interp, const char *s);
-static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const char *cmd, const char *cmdline, bool esc);
+static void docmd(interpreter &interp, yy::parser::location_type* mylloc, const char *cmd, const char *cmdline, bool esc);
 static string pstring(const char *s);
 static string format_namespace(const string& name);
 static bool find_namespace(interpreter& interp, const string& name);
@@ -177,9 +177,9 @@ blank  [ \t\f\v\r]
 %x escape comment srcoption xcode xcode_comment xdecl xdecl_comment xusing xusing_comment xsyms xsyms_comment xtag rescan xsyms_rescan
 
 %{
-# define YY_USER_ACTION  yylloc->columns(yyleng);
+# define YY_USER_ACTION  mylloc->columns(yyleng);
 /* This should be called after yyless. */
-# define yylloc_update() yylloc->end = yylloc->begin; yylloc->columns(yyleng)
+# define mylloc_update() mylloc->end = mylloc->begin; mylloc->columns(yyleng)
 %}
 
 %%
@@ -192,11 +192,11 @@ blank  [ \t\f\v\r]
 #else
   static int s_compat = -1, s_compat2 = -1;
 #endif
-  yylloc->step();
+  mylloc->step();
 %}
 
-{blank}+   yylloc->step();
-[\n]+      yylloc->lines(yyleng); yylloc->step();
+{blank}+   mylloc->step();
+[\n]+      mylloc->lines(yyleng); mylloc->step();
 
 ^"\020(chdir \"".* {
   if (interp.texmacs) {
@@ -215,8 +215,8 @@ blank  [ \t\f\v\r]
     }
     free(buf);
   }
-  yylloc->step();
-  yylloc->lines(-1);
+  mylloc->step();
+  mylloc->lines(-1);
 }
 ^"\020(complete \"".* {
   if (interp.texmacs) {
@@ -263,8 +263,8 @@ blank  [ \t\f\v\r]
     }
     free(buf);
   }
-  yylloc->step();
-  yylloc->lines(-1);
+  mylloc->step();
+  mylloc->lines(-1);
 }
 ^"#!"[ \t]*"--eager"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
   /* --eager pragma. */
@@ -277,9 +277,9 @@ blank  [ \t\f\v\r]
   if (f > 0)
     interp.eager.insert(f);
   else
-    interp.warning(*yylloc, "warning: bad symbol '"+sym+
+    interp.warning(*mylloc, "warning: bad symbol '"+sym+
 		   "' in --eager pragma");
-  yylloc->step();
+  mylloc->step();
 }
 ^"#!"[ \t]*"--required"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
   /* --required pragma. */
@@ -292,9 +292,9 @@ blank  [ \t\f\v\r]
   if (f > 0)
     interp.required.push_back(f);
   else
-    interp.warning(*yylloc, "warning: bad symbol '"+sym+
+    interp.warning(*mylloc, "warning: bad symbol '"+sym+
 		   "' in --required pragma");
-  yylloc->step();
+  mylloc->step();
 }
 ^"#!"[ \t]*"--defined"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
   /* --defined pragma. */
@@ -315,9 +315,9 @@ blank  [ \t\f\v\r]
 	interp.clearsym(f);
     }
   } else
-    interp.warning(*yylloc, "warning: bad symbol '"+sym+
+    interp.warning(*mylloc, "warning: bad symbol '"+sym+
 		   "' in --defined pragma");
-  yylloc->step();
+  mylloc->step();
 }
 ^"#!"[ \t]*"--nodefined"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
   /* --nodefined pragma. */
@@ -338,9 +338,9 @@ blank  [ \t\f\v\r]
 	interp.clearsym(f);
     }
   } else
-    interp.warning(*yylloc, "warning: bad symbol '"+sym+
+    interp.warning(*mylloc, "warning: bad symbol '"+sym+
 		   "' in --nodefined pragma");
-  yylloc->step();
+  mylloc->step();
 }
 ^"#!"[ \t]*"--quoteargs"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
   /* --quoteargs pragma. */
@@ -353,9 +353,9 @@ blank  [ \t\f\v\r]
   if (f > 0)
     interp.quoteargs.insert(f);
   else
-    interp.warning(*yylloc, "warning: bad symbol '"+sym+
+    interp.warning(*mylloc, "warning: bad symbol '"+sym+
 		   "' in --quoteargs pragma");
-  yylloc->step();
+  mylloc->step();
 }
 ^"#!"[ \t]*"--enable"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
   /* --enable pragma. */
@@ -365,7 +365,7 @@ blank  [ \t\f\v\r]
   while (*t && !isspace(*t)) t++;
   string sym = string(s, t-s);
   interp.enable(sym, true);
-  yylloc->step();
+  mylloc->step();
 }
 ^"#!"[ \t]*"--disable"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
   /* --disable pragma. */
@@ -375,7 +375,7 @@ blank  [ \t\f\v\r]
   while (*t && !isspace(*t)) t++;
   string sym = string(s, t-s);
   interp.enable(sym, false);
-  yylloc->step();
+  mylloc->step();
 }
 ^"#!"[ \t]*"--if"[ \t]+[^ \t\n]+([ \t]+"//".*)? {
   /* --if pragma. */
@@ -387,7 +387,7 @@ blank  [ \t\f\v\r]
   if (interp.source_level < 64)
     interp.else_stack[interp.source_level] = 0;
   interp.source_level++;
-  yylloc->step();
+  mylloc->step();
   if (!interp.is_enabled(sym)) {
     interp.skip_level = interp.source_level-1;
     BEGIN(srcoption);
@@ -403,7 +403,7 @@ blank  [ \t\f\v\r]
   if (interp.source_level < 64)
     interp.else_stack[interp.source_level] = 0;
   interp.source_level++;
-  yylloc->step();
+  mylloc->step();
   if (!interp.is_defined(sym)) {
     interp.skip_level = interp.source_level-1;
     BEGIN(srcoption);
@@ -419,7 +419,7 @@ blank  [ \t\f\v\r]
   if (interp.source_level < 64)
     interp.else_stack[interp.source_level] = 0;
   interp.source_level++;
-  yylloc->step();
+  mylloc->step();
   if (interp.is_enabled(sym)) {
     interp.skip_level = interp.source_level-1;
     BEGIN(srcoption);
@@ -435,7 +435,7 @@ blank  [ \t\f\v\r]
   if (interp.source_level < 64)
     interp.else_stack[interp.source_level] = 0;
   interp.source_level++;
-  yylloc->step();
+  mylloc->step();
   if (interp.is_defined(sym)) {
     interp.skip_level = interp.source_level-1;
     BEGIN(srcoption);
@@ -444,13 +444,13 @@ blank  [ \t\f\v\r]
 ^"#!"[ \t]*"--else"([ \t]+"//".*)? {
   /* --else pragma. */
   if (interp.source_level == 0) {
-    interp.error(*yylloc, "unmatched '--else' pragma");
+    interp.error(*mylloc, "unmatched '--else' pragma");
     // We reset the error count here so that the parser doesn't gobble up the
     // following code, thinking that it is in error.
     interp.nerrs--;
   } else if (interp.source_level <= 64 &&
 	     interp.else_stack[interp.source_level-1]) {
-    interp.error(*yylloc, "double '--else' pragma");
+    interp.error(*mylloc, "double '--else' pragma");
     interp.nerrs--;
   } else {
     if (interp.source_level <= 64)
@@ -458,16 +458,16 @@ blank  [ \t\f\v\r]
     interp.skip_level = interp.source_level-1;
     BEGIN(srcoption);
   }
-  yylloc->step();
+  mylloc->step();
 }
 ^"#!"[ \t]*"--endif"([ \t]+"//".*)? {
   /* --endif pragma. */
   if (interp.source_level == 0) {
-    interp.error(*yylloc, "unmatched '--endif' pragma");
+    interp.error(*mylloc, "unmatched '--endif' pragma");
     interp.nerrs--;
   } else
     interp.source_level--;
-  yylloc->step();
+  mylloc->step();
 }
 ^"#!"[ \t]*"--rewarn"[ \t]*("//".*)? {
   /* --rewarn pragma. */
@@ -507,66 +507,66 @@ blank  [ \t\f\v\r]
     interp.bigints = flag;
 #endif
   } else {
-    interp.warning(*yylloc, "warning: unrecognized pragma '--"+opt0+"'");
+    interp.warning(*mylloc, "warning: unrecognized pragma '--"+opt0+"'");
   }
-  yylloc->step();
+  mylloc->step();
 }
 ^"#!"[ \t]*"--".* {
   char *s = strchr(yytext, '-');
-  interp.warning(*yylloc, "warning: unrecognized pragma '"+string(s)+"'");
-  yylloc->step();
+  interp.warning(*mylloc, "warning: unrecognized pragma '"+string(s)+"'");
+  mylloc->step();
 }
 
 <srcoption>^"#!"[ \t]*"--if"("not"?)[ \t]+[^ \t\n]+([ \t]+"//".*)? {
   if (interp.source_level < 64)
     interp.else_stack[interp.source_level] = 0;
   interp.source_level++;
-  yylloc->step();
+  mylloc->step();
 }
 <srcoption>^"#!"[ \t]*"--else"([ \t]+"//".*)? {
   if (interp.source_level == 0) {
-    interp.error(*yylloc, "unmatched '--else' pragma");
+    interp.error(*mylloc, "unmatched '--else' pragma");
     interp.nerrs--;
   } else if (interp.source_level <= 64 &&
 	     interp.else_stack[interp.source_level-1]) {
-    interp.error(*yylloc, "double '--else' pragma");
+    interp.error(*mylloc, "double '--else' pragma");
     interp.nerrs--;
   } else {
     if (interp.source_level <= 64)
       interp.else_stack[interp.source_level-1] = 1;
     if (interp.source_level-1 == interp.skip_level) BEGIN(INITIAL);
   }
-  yylloc->step();
+  mylloc->step();
 }
 <srcoption>^"#!"[ \t]*"--endif"([ \t]+"//".*)? {
   if (interp.source_level == 0) {
-    interp.error(*yylloc, "unmatched '--endif' pragma");
+    interp.error(*mylloc, "unmatched '--endif' pragma");
     interp.nerrs--;
   } else if (--interp.source_level == interp.skip_level) {
     BEGIN(INITIAL);
   }
-  yylloc->step();
+  mylloc->step();
 }
-<srcoption>.*      yylloc->step();
-<srcoption>[\n]+   yylloc->lines(yyleng); yylloc->step();
+<srcoption>.*      mylloc->step();
+<srcoption>[\n]+   mylloc->lines(yyleng); mylloc->step();
 <srcoption><<EOF>> {
-  interp.error(*yylloc, "missing '--endif' pragma at end of file");
+  interp.error(*mylloc, "missing '--endif' pragma at end of file");
   interp.source_level = interp.skip_level = 0;
   BEGIN(INITIAL);
 }
 
 ^"#!".*    |
-"//".*     yylloc->step();
+"//".*     mylloc->step();
 
 "/*"       { parse_comment: BEGIN(comment); }
 
 <escape>""            { BEGIN(INITIAL); esc_mode = true; return token::ESCAPE; }
 
-<comment>[^*\n]*        yylloc->step();
-<comment>"*"+[^*/\n]*   yylloc->step();
-<comment>[\n]+          yylloc->lines(yyleng); yylloc->step();
-<comment>"*"+"/"        yylloc->step(); BEGIN(INITIAL);
-<comment><<EOF>>	interp.error(*yylloc, "open comment at end of file"); BEGIN(INITIAL);
+<comment>[^*\n]*        mylloc->step();
+<comment>"*"+[^*/\n]*   mylloc->step();
+<comment>[\n]+          mylloc->lines(yyleng); mylloc->step();
+<comment>"*"+"/"        mylloc->step(); BEGIN(INITIAL);
+<comment><<EOF>>	interp.error(*mylloc, "open comment at end of file"); BEGIN(INITIAL);
 
 "%<"       { interp.begin_code(); BEGIN(xcode); }
 
@@ -577,25 +577,25 @@ blank  [ \t\f\v\r]
   int count = 0;
   for (int i = 1; i < (int)yyleng-1; i++)
     if (yytext[i] == '\n') count++;
-  yylloc->lines(count);
+  mylloc->lines(count);
 }
-<xcode>[\n]+	interp.add_code(yytext); yylloc->lines(yyleng);
+<xcode>[\n]+	interp.add_code(yytext); mylloc->lines(yyleng);
 <xcode>.	interp.add_code(yytext);
 <xcode>"%>"	interp.end_code(); BEGIN(INITIAL); return token::CODE;
-<xcode><<EOF>>	interp.error(*yylloc, "open code section at end of file"); interp.end_code(); BEGIN(INITIAL); return token::CODE;
+<xcode><<EOF>>	interp.error(*mylloc, "open code section at end of file"); interp.end_code(); BEGIN(INITIAL); return token::CODE;
 
-<xcode_comment>[^*\n]*		interp.add_code(yytext); yylloc->step();
-<xcode_comment>"*"+[^*/\n]*	interp.add_code(yytext); yylloc->step();
-<xcode_comment>[\n]+		interp.add_code(yytext); yylloc->lines(yyleng); yylloc->step();
-<xcode_comment>"*"+"/"		interp.add_code(yytext); yylloc->step(); BEGIN(xcode);
-<xcode_comment><<EOF>>		interp.error(*yylloc, "open comment at end of file"); BEGIN(xcode);
+<xcode_comment>[^*\n]*		interp.add_code(yytext); mylloc->step();
+<xcode_comment>"*"+[^*/\n]*	interp.add_code(yytext); mylloc->step();
+<xcode_comment>[\n]+		interp.add_code(yytext); mylloc->lines(yyleng); mylloc->step();
+<xcode_comment>"*"+"/"		interp.add_code(yytext); mylloc->step(); BEGIN(xcode);
+<xcode_comment><<EOF>>		interp.error(*mylloc, "open comment at end of file"); BEGIN(xcode);
 
 <xdecl>extern     return token::EXTERN;
-<xdecl>infix      yylval->fix = infix; return token::FIX;
-<xdecl>infixl     yylval->fix = infixl; return token::FIX;
-<xdecl>infixr     yylval->fix = infixr; return token::FIX;
-<xdecl>prefix     yylval->fix = prefix; return token::FIX;
-<xdecl>postfix    yylval->fix = postfix; return token::FIX;
+<xdecl>infix      mylval->fix = infix; return token::FIX;
+<xdecl>infixl     mylval->fix = infixl; return token::FIX;
+<xdecl>infixr     mylval->fix = infixr; return token::FIX;
+<xdecl>prefix     mylval->fix = prefix; return token::FIX;
+<xdecl>postfix    mylval->fix = postfix; return token::FIX;
 <xdecl>outfix     return token::OUTFIX;
 <xdecl>nonfix     return token::NONFIX;
 <xdecl>private    return token::PRIVATE;
@@ -622,42 +622,42 @@ blank  [ \t\f\v\r]
     goto parse_cmd;
   else if (yytext[0] == ',') {
     // This is a valid token in xdecl mode.
-    yyless(1); yylloc_update();
+    yyless(1); mylloc_update();
     return yy::parser::token_type(yytext[0]);
   } else if (yytext[0] == '!' || yytext[0] == '^' ||
 	     (interp.escape_mode && yytext[0] == interp.escape_mode)) {
-    yyless(1); yylloc_update();
+    yyless(1); mylloc_update();
     goto xdecl_bad_char;
   } else
     goto xdecl_parse_id;
 }
 
-<xdecl>{id}	  { xdecl_parse_id: check(*yylloc, yytext, true); yylval->sval = new string(yytext); return token::ID; }
+<xdecl>{id}	  { xdecl_parse_id: check(*mylloc, yytext, true); mylval->sval = new string(yytext); return token::ID; }
 <xdecl>[()*,=]	  return yy::parser::token_type(yytext[0]);
 <xdecl>"..."	  return token::ELLIPSIS;
-<xdecl>"//".*	  yylloc->step();
+<xdecl>"//".*	  mylloc->step();
 <xdecl>"/*"	  BEGIN(xdecl_comment);
 <xdecl>;	  BEGIN(INITIAL); return yy::parser::token_type(yytext[0]);
-<xdecl>{blank}+	  yylloc->step();
-<xdecl>[\n]+	  yylloc->lines(yyleng); yylloc->step();
+<xdecl>{blank}+	  mylloc->step();
+<xdecl>[\n]+	  mylloc->lines(yyleng); mylloc->step();
 <xdecl>(.|{punct}|{letter})	{
  xdecl_bad_char:
   string msg = "invalid character '"+string(yytext)+"'";
-  interp.error(*yylloc, msg);
+  interp.error(*mylloc, msg);
 }
      
-<xdecl_comment>[^*\n]*        yylloc->step();
-<xdecl_comment>"*"+[^*/\n]*   yylloc->step();
-<xdecl_comment>[\n]+          yylloc->lines(yyleng); yylloc->step();
-<xdecl_comment>"*"+"/"        yylloc->step(); BEGIN(xdecl);
-<xdecl_comment><<EOF>>        interp.error(*yylloc, "open comment at end of file"); BEGIN(xdecl);
+<xdecl_comment>[^*\n]*        mylloc->step();
+<xdecl_comment>"*"+[^*/\n]*   mylloc->step();
+<xdecl_comment>[\n]+          mylloc->lines(yyleng); mylloc->step();
+<xdecl_comment>"*"+"/"        mylloc->step(); BEGIN(xdecl);
+<xdecl_comment><<EOF>>        interp.error(*mylloc, "open comment at end of file"); BEGIN(xdecl);
 
 <xusing>extern     BEGIN(INITIAL); return token::EXTERN;
-<xusing>infix      BEGIN(INITIAL); yylval->fix = infix; return token::FIX;
-<xusing>infixl     BEGIN(INITIAL); yylval->fix = infixl; return token::FIX;
-<xusing>infixr     BEGIN(INITIAL); yylval->fix = infixr; return token::FIX;
-<xusing>prefix     BEGIN(INITIAL); yylval->fix = prefix; return token::FIX;
-<xusing>postfix    BEGIN(INITIAL); yylval->fix = postfix; return token::FIX;
+<xusing>infix      BEGIN(INITIAL); mylval->fix = infix; return token::FIX;
+<xusing>infixl     BEGIN(INITIAL); mylval->fix = infixl; return token::FIX;
+<xusing>infixr     BEGIN(INITIAL); mylval->fix = infixr; return token::FIX;
+<xusing>prefix     BEGIN(INITIAL); mylval->fix = prefix; return token::FIX;
+<xusing>postfix    BEGIN(INITIAL); mylval->fix = postfix; return token::FIX;
 <xusing>outfix     BEGIN(INITIAL); return token::OUTFIX;
 <xusing>nonfix     BEGIN(INITIAL); return token::NONFIX;
 <xusing>const      BEGIN(INITIAL); return token::CONST;
@@ -684,42 +684,42 @@ blank  [ \t\f\v\r]
     goto parse_cmd;
   else if (yytext[0] == ',') {
     // This is a valid token in xusing mode.
-    yyless(1); yylloc_update();
+    yyless(1); mylloc_update();
     return yy::parser::token_type(yytext[0]);
   } else if (yytext[0] == '!' || yytext[0] == '^' ||
 	     (interp.escape_mode && yytext[0] == interp.escape_mode)) {
-    yyless(1); yylloc_update();
+    yyless(1); mylloc_update();
     goto xusing_bad_char;
   } else
     goto xusing_parse_id;
 }
 
-<xusing>{qual}?{id}  { xusing_parse_id: yylval->sval = new string(yytext); return token::ID; }
+<xusing>{qual}?{id}  { xusing_parse_id: mylval->sval = new string(yytext); return token::ID; }
 <xusing>"("        BEGIN(xsyms); return yy::parser::token_type(yytext[0]);
 <xusing>,	   return yy::parser::token_type(yytext[0]);
-<xusing>"//".*	   yylloc->step();
+<xusing>"//".*	   mylloc->step();
 <xusing>"/*"	   BEGIN(xusing_comment);
 <xusing>;	   BEGIN(INITIAL); return yy::parser::token_type(yytext[0]);
-<xusing>{blank}+   yylloc->step();
-<xusing>[\n]+	   yylloc->lines(yyleng); yylloc->step();
+<xusing>{blank}+   mylloc->step();
+<xusing>[\n]+	   mylloc->lines(yyleng); mylloc->step();
 <xusing>\"{str}\"  {
   char *msg;
   yytext[yyleng-1] = 0;
-  yylval->csval = parsestr(yytext+1, msg);
+  mylval->csval = parsestr(yytext+1, msg);
   yytext[yyleng-1] = '"';
-  if (msg) interp.error(*yylloc, msg);
+  if (msg) interp.error(*mylloc, msg);
   return token::STR;
 }
 <xusing>\"{str}    {
   char *msg;
-  interp.error(*yylloc, "unterminated string constant");
-  yylval->csval = parsestr(yytext+1, msg);
+  interp.error(*mylloc, "unterminated string constant");
+  mylval->csval = parsestr(yytext+1, msg);
   return token::STR;
 }
 <xusing>(.|{punct}|{letter})	{
  xusing_bad_char:
   string msg = "invalid character '"+string(yytext)+"'";
-  interp.error(*yylloc, msg);
+  interp.error(*mylloc, msg);
 }
 
 <xsyms>^{cmd} {
@@ -732,18 +732,18 @@ blank  [ \t\f\v\r]
     while (ispunct(yytext[n]) && yytext[n] != '_') n++;
     if (n > 0) {
       // strip off the trailing identifier
-      yyless(n); yylloc_update();
+      yyless(n); mylloc_update();
       goto xsyms_parse_op;
     } else
       goto xsyms_parse_id;
   }
 }
 
-<xsyms>"//".*	   yylloc->step();
+<xsyms>"//".*	   mylloc->step();
 <xsyms>"/*"	   { xsyms_parse_comment: BEGIN(xsyms_comment); }
 <xsyms,xsyms_rescan>")"	   BEGIN(xusing); return yy::parser::token_type(yytext[0]);
-<xsyms>{blank}+    yylloc->step();
-<xsyms>[\n]+	   yylloc->lines(yyleng); yylloc->step();
+<xsyms>{blank}+    mylloc->step();
+<xsyms>[\n]+	   mylloc->lines(yyleng); mylloc->step();
 <xsyms>{qual}?{id}  {
  xsyms_parse_id:
   symbol* sym = interp.symtab.lookup(xsym(interp.xsym_prefix, yytext));
@@ -758,22 +758,22 @@ blank  [ \t\f\v\r]
     }
   }
   if (sym && !res2) {
-    yylval->ival = sym->f;
+    mylval->ival = sym->f;
     return token::XID;
   }
   string msg = res2?"qualified symbol '"+string(yytext)+"' has wrong namespace":
     res?("symbol '"+string(yytext)+"' is private here"):
     ("undeclared symbol '")+string(yytext)+"'";
-  interp.error(*yylloc, msg);
+  interp.error(*mylloc, msg);
 }
 <xsyms>{qual}?([[:punct:]]|{punct})+  {
  xsyms_parse_op:
   if (yytext[0] == '/' && yytext[1] == '*') {
-    yyless(2); yylloc_update();
+    yyless(2); mylloc_update();
     goto xsyms_parse_comment; // comment starter
   }
   while (yyleng > 1 && yytext[yyleng-1] == ';') yyless(yyleng-1);
-  yylloc_update();
+  mylloc_update();
   symbol* sym = interp.symtab.lookup(xsym(interp.xsym_prefix, yytext));
   bool res = interp.symtab.count > 0, res2 = false;
   size_t k = 0;
@@ -790,45 +790,45 @@ blank  [ \t\f\v\r]
   while (!sym && !res && !res2 && yyleng > (int)k+1) {
     if (yyleng == 2 && yytext[0] == '-' && yytext[1] == '>')
       return token::MAPSTO;
-    yyless(yyleng-1); yylloc_update();
+    yyless(yyleng-1); mylloc_update();
     sym = interp.symtab.lookup(xsym(interp.xsym_prefix, yytext));
     res = interp.symtab.count > 0;
   }
   if (res2) {
     string msg = "qualified symbol '"+string(yytext)+"' has wrong namespace";
-    interp.error(*yylloc, msg);
+    interp.error(*mylloc, msg);
   } else if (sym) {
-    yylval->ival = sym->f;
+    mylval->ival = sym->f;
     return token::XID;
   } else if (res) {
     string msg = "symbol '"+string(yytext)+"' is private here";
-    interp.error(*yylloc, msg);
+    interp.error(*mylloc, msg);
   } else {
     assert(yyleng == (int)k+1);
     /* If we come here, we failed to recognize the input as a special symbol
        and have to rescan everything in a special mode which excludes this
        rule. This hack is necessary in order to avoid the use of REJECT. */
-    yyless(0); yylloc_update();
+    yyless(0); mylloc_update();
     BEGIN(xsyms_rescan);
   }
 }
 <xsyms_rescan>(.|{punct}|{letter}) {
   string msg = "invalid character '"+pstring(yytext)+"'";
-  interp.error(*yylloc, msg);
+  interp.error(*mylloc, msg);
   BEGIN(xsyms);
 }
 
-<xusing_comment>[^*\n]*        yylloc->step();
-<xusing_comment>"*"+[^*/\n]*   yylloc->step();
-<xusing_comment>[\n]+          yylloc->lines(yyleng); yylloc->step();
-<xusing_comment>"*"+"/"        yylloc->step(); BEGIN(xusing);
-<xusing_comment><<EOF>>        interp.error(*yylloc, "open comment at end of file"); BEGIN(xusing);
+<xusing_comment>[^*\n]*        mylloc->step();
+<xusing_comment>"*"+[^*/\n]*   mylloc->step();
+<xusing_comment>[\n]+          mylloc->lines(yyleng); mylloc->step();
+<xusing_comment>"*"+"/"        mylloc->step(); BEGIN(xusing);
+<xusing_comment><<EOF>>        interp.error(*mylloc, "open comment at end of file"); BEGIN(xusing);
 
-<xsyms_comment>[^*\n]*        yylloc->step();
-<xsyms_comment>"*"+[^*/\n]*   yylloc->step();
-<xsyms_comment>[\n]+          yylloc->lines(yyleng); yylloc->step();
-<xsyms_comment>"*"+"/"        yylloc->step(); BEGIN(xsyms);
-<xsyms_comment><<EOF>>        interp.error(*yylloc, "open comment at end of file"); BEGIN(xsyms);
+<xsyms_comment>[^*\n]*        mylloc->step();
+<xsyms_comment>"*"+[^*/\n]*   mylloc->step();
+<xsyms_comment>[\n]+          mylloc->lines(yyleng); mylloc->step();
+<xsyms_comment>"*"+"/"        mylloc->step(); BEGIN(xsyms);
+<xsyms_comment><<EOF>>        interp.error(*mylloc, "open comment at end of file"); BEGIN(xsyms);
 
 [0-9]+{exp} goto float_const; // this case must be treated separately
 {int}L     {
@@ -839,12 +839,12 @@ blank  [ \t\f\v\r]
     yytext[yyleng-1] = 0;
     mpz_set_str(*z, yytext, 0);
     yytext[yyleng-1] = 'L';
-    yylval->zval = z;
+    mylval->zval = z;
   } else {
     mpz_t *z = (mpz_t*)malloc(sizeof(mpz_t));
     mpz_init_set_si(*z, 0);
-    yylval->zval = z;
-    interp.error(*yylloc, msg);
+    mylval->zval = z;
+    interp.error(*mylloc, msg);
   }
   return token::BIGINT;
 }
@@ -857,25 +857,25 @@ blank  [ \t\f\v\r]
     if (!interp.bigints && mpz_fits_sint_p(*z)) {
       int n = mpz_get_si(*z);
       mpz_clear(*z); free(z);
-      yylval->ival = n;
+      mylval->ival = n;
       return token::INT;
     } else {
-      yylval->zval = z;
+      mylval->zval = z;
       return interp.bigints?token::BIGINT:token::CBIGINT;
     }
   } else {
-    yylval->ival = 0;
-    interp.error(*yylloc, msg);
+    mylval->ival = 0;
+    interp.error(*mylloc, msg);
     return token::INT;
   }
 }
 {float}    {
  float_const:
   char *p = NULL;
-  yylval->dval = my_strtod(yytext, &p);
+  mylval->dval = my_strtod(yytext, &p);
   if (p && *p) {
     string msg = "invalid digit '"+string(1, *p)+"' in floating point constant";
-    interp.error(*yylloc, msg);
+    interp.error(*mylloc, msg);
   }
   return token::DBL;
 }
@@ -886,10 +886,10 @@ blank  [ \t\f\v\r]
   int count = 0;
   for (int i = 1; i < (int)yyleng-1; i++)
     if (yytext[i] == '\n') count++;
-  yylloc->lines(count);
-  yylval->csval = parsestr(yytext+1, msg);
+  mylloc->lines(count);
+  mylval->csval = parsestr(yytext+1, msg);
   yytext[yyleng-1] = '"';
-  if (msg) interp.error(*yylloc, msg);
+  if (msg) interp.error(*mylloc, msg);
   BEGIN(INITIAL);
   return token::STR;
 }
@@ -899,18 +899,18 @@ blank  [ \t\f\v\r]
   int count = 0;
   for (int i = 1; i < (int)yyleng; i++)
     if (yytext[i] == '\n') count++;
-  yylloc->lines(count);
-  interp.error(*yylloc, "unterminated string constant");
-  yylval->csval = parsestr(yytext+1, msg);
+  mylloc->lines(count);
+  interp.error(*mylloc, "unterminated string constant");
+  mylval->csval = parsestr(yytext+1, msg);
   BEGIN(INITIAL);
   return token::STR;
 }
 extern     BEGIN(xdecl); return token::EXTERN;
-infix      yylval->fix = infix; interp.declare_op = false; return token::FIX;
-infixl     yylval->fix = infixl; interp.declare_op = false; return token::FIX;
-infixr     yylval->fix = infixr; interp.declare_op = false; return token::FIX;
-prefix     yylval->fix = prefix; interp.declare_op = false; return token::FIX;
-postfix    yylval->fix = postfix; interp.declare_op = false; return token::FIX;
+infix      mylval->fix = infix; interp.declare_op = false; return token::FIX;
+infixl     mylval->fix = infixl; interp.declare_op = false; return token::FIX;
+infixr     mylval->fix = infixr; interp.declare_op = false; return token::FIX;
+prefix     mylval->fix = prefix; interp.declare_op = false; return token::FIX;
+postfix    mylval->fix = postfix; interp.declare_op = false; return token::FIX;
 outfix     return token::OUTFIX;
 nonfix     return token::NONFIX;
 private    return token::PRIVATE;
@@ -958,11 +958,11 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
       count++;
     }
     if (c == '\n')
-      yylloc->lines(1);
+      mylloc->lines(1);
     else
-      yylloc->columns(count);
-    docmd(interp, yylloc, cmd.c_str(), cmdline.c_str(), esc);
-    yylloc->step();
+      mylloc->columns(count);
+    docmd(interp, mylloc, cmd.c_str(), cmdline.c_str(), esc);
+    mylloc->step();
   } else {
     // Skip over any command prefix. Note that the prefix chars are all ASCII
     // punctuation (except '_'), so the following will stop at the identifier.
@@ -970,10 +970,10 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     while (ispunct(yytext[n]) && yytext[n] != '_') n++;
     if (n > 0) {
       // strip off the trailing identifier
-      yyless(n); yylloc_update();
+      yyless(n); mylloc_update();
       goto parse_op;
     } else {
-      check(*yylloc, yytext, false);
+      check(*mylloc, yytext, false);
       goto parse_id;
     }
   }
@@ -991,16 +991,16 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     if (might_be_tag && find_namespace(interp, qual) &&
 	(tag || (tag = maketag(id.c_str())))) {
       // we can still parse this as an identifier with a type tag
-      yyless(k); yylloc_update(); qualid = yytext; BEGIN(xtag);
-      //check(*yylloc, yytext, false);
+      yyless(k); mylloc_update(); qualid = yytext; BEGIN(xtag);
+      //check(*mylloc, yytext, false);
     } else {
       string msg = "unknown namespace '"+qual+"'";
       if (might_be_tag && !tag) msg += ", or invalid type tag '"+id+"'";
-      interp.error(*yylloc, msg);
+      interp.error(*mylloc, msg);
     }
   }
   if (interp.declare_op) {
-    yylval->sval = new string(yytext);
+    mylval->sval = new string(yytext);
     return token::ID;
   }
   symbol* sym = interp.symtab.lookup(yytext);
@@ -1008,10 +1008,10 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
       ((sym->prec >= 0 && sym->prec < PREC_MAX) || sym->fix == outfix)) {
     if (strstr(yytext, "::")) {
       // Return a new qualified instance here.
-      yylval->xval = new expr(sym->f);
-      yylval->xval->flags() |= EXPR::QUAL;
+      mylval->xval = new expr(sym->f);
+      mylval->xval->flags() |= EXPR::QUAL;
     } else
-      yylval->xval = new expr(sym->x);
+      mylval->xval = new expr(sym->x);
     if (sym->fix == outfix) {
       nsbracket(sym);
       return sym->g?token::LO:token::RO;
@@ -1024,36 +1024,36 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
       if (qual.compare(0, 2, "::") == 0) qual.erase(0, 2);
       if (qual != *interp.symtab.current_namespace) {
 	string msg = "undeclared symbol '"+string(yytext)+"'";
-	interp.error(*yylloc, msg);
+	interp.error(*mylloc, msg);
       }
     }
-    yylval->sval = new string(yytext);
+    mylval->sval = new string(yytext);
     return token::ID;
   }
 }
 {id}       {
  parse_id:
   if (interp.declare_op) {
-    yylval->sval = new string(yytext);
+    mylval->sval = new string(yytext);
     int c = yyinput(); unput(c);
     if (ispunct(c) && c != ';') {
-      string id = *yylval->sval, sym = string(1, c);
+      string id = *mylval->sval, sym = string(1, c);
       string msg = "warning: dubious trailing punctuation '"+sym+
 	"' at symbol '"+id+"'";
-      interp.warning(*yylloc, msg);
+      interp.warning(*mylloc, msg);
     }
     return token::ID;
   }
   symbol* sym = interp.symtab.lookup(yytext);
   if (sym && ((sym->prec >= 0 && sym->prec < PREC_MAX) || sym->fix == outfix)) {
-    yylval->xval = new expr(sym->x);
+    mylval->xval = new expr(sym->x);
     if (sym->fix == outfix) {
       nsbracket(sym);
       return sym->g?token::LO:token::RO;
     } else
       return optok(sym->f, sym->fix);
   } else {
-    yylval->sval = new string(yytext);
+    mylval->sval = new string(yytext);
     return token::ID;
   }
 }
@@ -1061,12 +1061,12 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
  parse_tag:
   char *s = yytext+2;
   while (isspace(*s)) s++;
-  yylval->ival = maketag(s);
-  if (yylval->ival)
+  mylval->ival = maketag(s);
+  if (mylval->ival)
     return token::TAG;
   else {
     string msg = "invalid type tag '"+string(s)+"'";
-    interp.error(*yylloc, msg);
+    interp.error(*mylloc, msg);
   }
 }
 <rescan>[@=|;()\[\]{}\\] |
@@ -1080,81 +1080,81 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
   if (!find_namespace(interp, qualid)) {
     // not a valid namespace prefix
     string msg = "unknown namespace '"+qual+"'";
-    interp.error(*yylloc, msg);
+    interp.error(*mylloc, msg);
   }
   k+=2;
   if (yytext[k] == '/' && yytext[k+1] == '*') {
     /* This is actually a comment starter. Back out and complain about a bad
        qualified symbol */
-    yyless(k); yylloc_update();
+    yyless(k); mylloc_update();
     string msg = "invalid qualified symbol '"+pstring(yytext)+"'";
-    interp.error(*yylloc, msg);
+    interp.error(*mylloc, msg);
     break;
   }
   while ((int)yyleng > (int)k+1 && yytext[yyleng-1] == ';') yyless(yyleng-1);
-  yylloc_update();
+  mylloc_update();
   if (interp.declare_op) {
-    yylval->sval = new string(yytext);
+    mylval->sval = new string(yytext);
     return token::ID;
   }
   symbol* sym = interp.symtab.lookup(yytext);
   while (!sym && (int)yyleng > (int)k+1) {
     if (yyleng == 2 && yytext[0] == '-' && yytext[1] == '>')
       return token::MAPSTO;
-    yyless(yyleng-1); yylloc_update();
+    yyless(yyleng-1); mylloc_update();
     sym = interp.symtab.lookup(yytext);
   }
   if (sym) {
     if (sym->prec < PREC_MAX || sym->fix == outfix) {
       if (strstr(yytext, "::")) {
 	// Return a new qualified instance here.
-	yylval->xval = new expr(sym->f);
-	yylval->xval->flags() |= EXPR::QUAL;
+	mylval->xval = new expr(sym->f);
+	mylval->xval->flags() |= EXPR::QUAL;
       } else
-	yylval->xval = new expr(sym->x);
+	mylval->xval = new expr(sym->x);
       if (sym->fix == outfix) {
 	nsbracket(sym);
 	return sym->g?token::LO:token::RO;
       } else
 	return optok(sym->f, sym->fix);
     } else {
-      yylval->sval = new string(yytext);
+      mylval->sval = new string(yytext);
       return token::ID;
     }
   }
   /* Not a valid symbol. */
   string msg = "invalid qualified symbol '"+pstring(yytext)+"'";
-  interp.error(*yylloc, msg);
+  interp.error(*mylloc, msg);
 }
 ([[:punct:]]|{punct})+  {
  parse_op:
   if (yytext[0] == '/' && yytext[1] == '*') {
-    yyless(2); yylloc_update();
+    yyless(2); mylloc_update();
     goto parse_comment; // comment starter
   }
   while (yyleng > 1 && yytext[yyleng-1] == ';') yyless(yyleng-1);
-  yylloc_update();
+  mylloc_update();
   if (interp.declare_op) {
-    yylval->sval = new string(yytext);
+    mylval->sval = new string(yytext);
     return token::ID;
   }
   symbol* sym = interp.symtab.lookup(yytext);
   while (!sym && yyleng > 1) {
     if (yyleng == 2 && yytext[0] == '-' && yytext[1] == '>')
       return token::MAPSTO;
-    yyless(yyleng-1); yylloc_update();
+    yyless(yyleng-1); mylloc_update();
     sym = interp.symtab.lookup(yytext);
   }
   if (sym) {
     if (sym->prec < PREC_MAX || sym->fix == outfix) {
-      yylval->xval = new expr(sym->x);
+      mylval->xval = new expr(sym->x);
       if (sym->fix == outfix) {
 	nsbracket(sym);
 	return sym->g?token::LO:token::RO;
       } else
 	return optok(sym->f, sym->fix);
     } else {
-      yylval->sval = new string(yytext);
+      mylval->sval = new string(yytext);
       return token::ID;
     }
   }
@@ -1162,13 +1162,13 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
   /* If we come here, we failed to recognize the input as a special symbol and
      have to rescan everything in a special mode which excludes this
      rule. This hack is necessary in order to avoid the use of REJECT. */
-  yyless(0); yylloc_update();
+  yyless(0); mylloc_update();
   BEGIN(rescan);
 }
 <rescan>.|{punct}|{letter} |
 .|{punct}|{letter} {
   string msg = "invalid character '"+pstring(yytext)+"'";
-  interp.error(*yylloc, msg);
+  interp.error(*mylloc, msg);
   BEGIN(INITIAL);
 }
 
@@ -1178,7 +1178,7 @@ namespace  BEGIN(xusing); return token::NAMESPACE;
     return token::EOX;
   }
   if (interp.source_level>0) {
-    interp.error(*yylloc, "missing '--endif' pragma at end of file");
+    interp.error(*mylloc, "missing '--endif' pragma at end of file");
     interp.source_level = interp.skip_level = 0;
   }
   yyterminate();
@@ -2167,7 +2167,7 @@ static void check_symbols(interpreter &interp, const list<string>& l,
   }
 }
 
-static void docmd(interpreter &interp, yy::parser::location_type* yylloc, const char *cmd, const char *cmdline, bool esc)
+static void docmd(interpreter &interp, yy::parser::location_type* mylloc, const char *cmd, const char *cmdline, bool esc)
 {
   static Index *idx = NULL;
   if (interp.restricted) {
@@ -3622,7 +3622,7 @@ command line. Options are:\n\
       cerr << "run: extra parameter\n";
     else {
       try { interp.run(*args.l.begin(), false, true); } catch (err &e) {
-	interp.error(*yylloc, e.what());
+	interp.error(*mylloc, e.what());
 	interp.nerrs = 0;
       }
     }
