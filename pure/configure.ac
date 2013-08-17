@@ -41,12 +41,6 @@ if test -z "$BISON"; then
 fi
 if test "$BISON" = bison-missing; then
   AC_MSG_WARN([Cannot find bison, won't be able to regenerate parser.cc.])
-else
-  bisonver=`"$BISON" --version 2>&1 | sed -n 1p`
-  if test "$bisonver" = "bison (GNU Bison) 3.0"; then
-    AC_MSG_WARN([Detected bison 3.0, enabling workarounds.])
-    AC_DEFINE(HAVE_BISON30, 1, [Define to work around compilation problems with Bison 3.0.])
-  fi
 fi
 AC_ARG_VAR(BISON, [how to invoke bison (version 2.3 or later required)])
 if test -z "$FLEX"; then

@@ -36,15 +36,6 @@
 #include "printer.hh"
 #include "util.hh"
 
-// Work around undefined symbols in C++ parsers generated with Bison 3.0.
-// NOTE: This setting should be determined automatically by configure.
-//#define HAVE_BISON30 1
-#if HAVE_BISON30
-#define yychar yyla.type
-#define yylloc yyla.location
-#define yyloc yylhs.location
-#endif
-
 // Get rid of silly warnings in bison-generated position.hh.
 #pragma GCC diagnostic ignored "-Wparentheses"
 
@@ -122,6 +113,15 @@ class interpreter;
 };
 
 %{
+// Work around undefined symbols in C++ parsers generated with Bison 3.0.
+// NOTE: This setting should be determined automatically when the parser is
+// regenerated.
+#if HAVE_BISON30
+#define yychar yyla.type
+#define yylloc yyla.location
+#define yyloc yylhs.location
+#endif
+
 #include "lexerdefs.hh"
 #include "interpreter.hh"
 static int extern_priv;
