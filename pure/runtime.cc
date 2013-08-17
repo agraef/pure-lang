@@ -13124,6 +13124,9 @@ int spawnve(int mode, const char *prog, char * const argv[],
 #ifdef __MINGW32__
 /* Windows compatibility. */
 
+#if !__MINGW64__
+/* mingw64 has these, so we only need these wrappers for mingw32 */
+
 extern "C"
 int execv(const char* prog, const char* const* argv)
 {
@@ -13160,6 +13163,7 @@ int spawnve(int mode, const char* prog, const char* const* argv,
 {
   return _spawnve(mode, prog, argv, envp);
 }
+#endif
 
 #undef fileno
 
@@ -13174,6 +13178,9 @@ FILE *fdopen(int fd, const char *mode)
 {
   return _fdopen(fd, mode);
 }
+
+#undef popen
+#undef pclose
 
 extern "C"
 FILE *popen(const char *command, const char *type)

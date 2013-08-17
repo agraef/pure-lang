@@ -317,6 +317,7 @@ case $host in
 *x86_64-*)
   case $host in
   *-darwin*) ;;
+  *-*-mingw*) ;;
   *) PIC=-fPIC ;;
   esac
   ;;
