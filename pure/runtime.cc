@@ -3690,7 +3690,7 @@ pure_interp *pure_create_interp(int argc, char *argv[])
   char base;
   interpreter *_interp = new interpreter(0, 0), &interp = *_interp;
   int count = 0;
-  bool want_prelude = true;
+  bool batch = false, want_prelude = true;
   // We use some stuff which is not safe to call while another interpreter is
   // active, so we temporarily switch to the new interpreter now.
   interpreter *s_interp = interpreter::g_interp;
@@ -3736,11 +3736,11 @@ pure_interp *pure_create_interp(int argc, char *argv[])
   if (argv && *argv) for (char **args = ++argv; *args; ++args) {
     if (**args == '-') {
       char *arg = *args;
-      if ((arg[1] && arg[2] == 0 && strchr("hcgiqsu", arg[1])) ||
+      if ((arg[1] && arg[2] == 0 && strchr("hbcgiqsu", arg[1])) ||
 	  strcmp(arg, "--help") == 0 || strcmp(arg, "--version") == 0 ||
 	  strcmp(arg, "-fPIC") == 0 || strcmp(arg, "-fpic") == 0 ||
 	  strcmp(arg, "--norc") == 0 || strcmp(arg, "--noediting") == 0)
-	/* ignored */;
+	batch = arg[2] == 0 && strchr("bci", arg[1]);
       else if (strcmp(arg, "-n") == 0 || strcmp(arg, "--noprelude") == 0)
 	want_prelude = false;
       else if (strcmp(arg, "--nochecks") == 0)
@@ -3891,6 +3891,9 @@ pure_interp *pure_create_interp(int argc, char *argv[])
 	delete _interp;
 	return 0;
       }
+    } else if (!batch) {
+      while (*args) myargs.push_back(*args++);
+      break;
     }
   }
 #if USE_FASTCC && !LLVM31
@@ -3965,6 +3968,7 @@ pure_interp *pure_create_interp(int argc, char *argv[])
 	delete _interp;
 	return 0;
       }
+      if (!batch) break;
     }
   interp.symtab.init_builtins();
   interp.temp = 1;

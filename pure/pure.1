@@ -1,14 +1,17 @@
-.TH Pure 1 "February 2013" "Pure" "Pure Manual"
+.TH Pure 1 "August 2013" "Pure" "Pure Manual"
 .SH NAME
 pure \- the Pure interpreter
 .SH SYNOPSIS
-\fBpure\fP [\fIoptions\fP ...] [\fIscript\fP ...] [-- \fIargs\fP ...]
+\fBpure\fP [\fIoptions\fP ...] [-x] \fIscript\fP [\fIargs\fP ...]
 .br
-\fBpure\fP [\fIoptions\fP ...] -x \fIscript\fP [\fIargs\fP ...]
+\fBpure\fP [\fIoptions\fP ...] [-b|-c|-i] [\fIscript\fP ...] [-- \fIargs\fP ...]
 .SH OPTIONS
 .TP
+.B -b
+Batch mode (execute the given scripts and exit).
+.TP
 .B -c
-Batch compilation.
+Batch compilation (compile the scripts to a native binary).
 .TP
 \fB--ctags\fP, \fB--etags\fP
 Create a tags file in ctags (vi) or etags (emacs) format.
@@ -37,7 +40,8 @@ Enable symbolic debugging.
 Print help message and exit.
 .TP
 .B -i
-Force interactive mode (read commands from stdin).
+Interactive mode (read commands from stdin after sourcing the given scripts,
+if any).
 .TP
 .BI -I directory
 Add a directory to be searched for included source scripts.
@@ -86,7 +90,7 @@ Enable compiler warnings about various dubious constructs and backward
 compatibility issues.
 .TP
 .B -x
-Execute script with given command line arguments.
+Execute a script with the given command line arguments.
 .TP
 .B --
 Stop option processing and pass the remaining command line arguments in the
@@ -105,9 +109,10 @@ convenient, fully interactive environment for running Pure scripts and
 evaluating expressions.
 .PP
 Basically, to run a Pure script with the interpreter, just specifiy the
-filename of the script on the command line. You can also invoke the
-interpreter without arguments, in which case it starts up in interactive mode.
-Or you can compile a script to a native executable (as well as a number of
+filename of the script on the command line (optionally followed by additional
+arguments to be passed to the script). You can also invoke the interpreter
+without arguments, in which case it starts up in interactive mode. Or you can
+compile one or more scripts to a native executable (as well as a number of
 other recognized LLVM and native code formats) with the
 .B -c
 option (use
@@ -124,7 +129,7 @@ and
 .B --ctags
 options.
 .PP
-The full version of this manual can be read inside the interpreter, by typing
+The full Pure manual can be read inside the interpreter, by typing
 .B help
 on the interpreter's command line. This requires
 .BR w3m (1)
@@ -160,7 +165,8 @@ and link native executables. Defaults to \fBgcc\fP and \fBg++\fP, respectively.
 If the
 .B PURE_HELP
 variable is not set (see below), this specifies a colon-separated list of
-browsers to try for reading the online documentation. See
+browsers to try for reading the online documentation. More information about
+the \fBBROWSER\fP variable can be found at
 \fIhttp://www.catb.org/~esr/BROWSER/\fP.
 .TP
 .B PURELIB
@@ -209,8 +215,8 @@ actual stack space available to programs.
 .SH LICENSE
 LGPL V3 or later. See the accompanying COPYING file for details.
 .SH AUTHOR
-Albert Graef <Dr.Graef@t-online.de>, Dept. of Computer Music, Johannes
-Gutenberg University of Mainz, Germany.
+Albert Graef <aggraef@gmail.com>, Dept. of Computer Music, Johannes Gutenberg
+University of Mainz, Germany.
 .SH SEE ALSO
 You can find the latest releases, as well as the complete manual and the
 mailing list at the Pure website, \fIhttp://purelang.bitbucket.org\fP.

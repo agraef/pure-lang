@@ -76,8 +76,8 @@ care of incrementally compiling Pure code to native (machine) code. This has
 the benefit that the compiled code runs much faster than the usual kinds of
 "bytecode" that you find in traditional programming language interpreters.
 
-You can use the interpreter as a sophisticated kind of "desktop calculator"
-program. Simply run the program from the shell as follows:
+You can use the interpreter interactively as a sophisticated kind of "desktop
+calculator" program. Simply run the program from the shell as follows:
 
 .. code-block:: console
 
@@ -106,12 +106,13 @@ Typing the ``quit`` command or the end-of-file character (:kbd:`Ctrl-d` on
 Unix systems) at the beginning of the command line exits the interpreter and
 takes you back to the shell.
 
-Instead of typing definitions and evaluating expressions in an interactive
-fashion as shown above, you can also put the same code in an (ASCII or UTF-8)
-text file called a `Pure program` or `script` which can then be executed by
-the interpreter in "batch mode", or compiled to a standalone executable which
-can be run directly from the command line. As an aid for writing script files,
-a bunch of syntax highlighting files and programming modes for various popular
+The interpreter can actually be invoked in a number of different ways. Instead
+of typing definitions and evaluating expressions in an interactive fashion as
+shown above, you can also put the same code in an (ASCII or UTF-8) text file
+called a `Pure program` or `script` which can then be executed by the
+interpreter in "batch mode", or compiled to a standalone executable which can
+be run directly from the command line. As an aid for writing script files, a
+bunch of syntax highlighting files and programming modes for various popular
 text editors are included in the Pure sources.
 
 More information about invoking the Pure interpreter can be found in the
@@ -200,31 +201,68 @@ Invoking Pure
 
 .. program:: pure
 
-The Pure interpreter is invoked as follows:
+The Pure interpreter can be invoked from the shell in one of two different
+ways:
 
 .. code-block:: console
 
-   pure [options ...] [script ...] [-- args ...]
-   pure [options ...] -x script [args ...]
+   pure [options ...] [-x] script [args ...]
+   pure [options ...] [-b|-c|-i] [script ...] [-- args ...]
 
-Use ``pure -h`` to get help about the command line options. As already
-mentioned, just the ``pure`` command without any command line parameters
-invokes the interpreter in interactive mode, see `Running Interactively`_
-below for details. Some other important ways to invoke the interpreter are
-summarized below.
+Use ``pure -h`` to get help about the command line options. Just the ``pure``
+command without any command line parameters invokes the interpreter in
+`interactive mode`, see `Running Interactively`_ below for details.
+
+The first form above is used if the interpreter is invoked on exactly one
+script file, which is loaded and executed, after which the interpreter
+exits. Any arguments following the script name are *not* processed by the
+interpreter, but are passed to the executing script by means of the ``argv``
+variable. This is also known as `script mode`, and is commonly used if a
+script is to be run as a standalone program. Script mode can also be indicated
+explicitly with the ``-x`` option, but this is optional unless you want to
+combine it with one of the ``-b``, ``-c`` and ``-i`` options discussed
+below. If the ``-x`` option is present, it *must* be followed by the name of a
+script to be executed. Also note that in script mode, *all* interpreter
+options need to be specified before the script name; all remaining arguments
+(including options) are simply passed to the executing script.
+
+The second form is used if there may be any number of scripts which are to be
+executed in `batch mode` (``-b``, ``-c``) or `interactive mode` (``-i``),
+respectively. In this case *all* options on the command line will be processed
+by the interpreter, up to the ``--`` option (if any), which stops option
+processing and indicates that the remaining arguments should be passed in the
+``argv`` variable. Any non-option arguments (before the ``--`` option, if any)
+are interpreted as scripts which should be loaded by the interpreter. If no
+scripts are specified, or if the ``-i`` option is present, the interpreter
+starts in interactive mode (after loading the given scripts, if any).
+Otherwise, if one of the ``-b`` and ``-c`` options is specified, the given
+scripts are run in batch mode, after which the interpreter exits. (In the case
+of ``-c``, the interpreter then also dumps the program as a native executable,
+performing `batch compilation`, see `Compiling Scripts`_ below.)
+
+Batch mode is also entered if the interpreter is invoked with one of the
+``--ctags`` and ``--etags`` options. However, in this case the given scripts
+are not executed at all, but only parsed in order to produce a vi or emacs
+tags file, see `Tagging Scripts`_ below.
+
+Here are some common ways to invoke the interpreter:
+
+``pure``
+  Runs the interpreter interactively, without any script. Only the prelude
+  gets loaded.
 
 ``pure -g``
   Runs the interpreter interactively, with debugging support.
 
-``pure script ...``
+``pure -b script ...``
   Runs the given scripts in batch mode.
 
 ``pure -i script ...``
   Runs the given scripts in batch mode as above, but then enters the
-  interactive command loop. (Add :option:`-g` to also get debugging support,
-  and :option:`-q` to suppress the sign-on message.)
+  interactive command loop. (Add ``-g`` to also get debugging support, and
+  ``-q`` to suppress the sign-on message.)
 
-``pure -x script [arg ...]``
+``pure script [arg ...]``
   Runs the given script with the given parameters. The script name and command
   line arguments are available in the global ``argv`` variable.
 
@@ -232,13 +270,28 @@ summarized below.
   Batch compilation: Runs the given script, compiling it to a native
   executable ``prog`` (a.out by default).
 
+``pure --etags script ... [-T TAGS]``
+  Parses the given scripts and produces an emacs tags file. (Use ``--ctags``
+  to create a vi tags file instead. In either case, the actual name of the
+  tags file can be set with the ``-T`` option.)
+
+The following commands provide helpful information about the interpreter,
+after which the interpreter exits immediately:
+
+``pure --help``
+  Print a short help message describing the command line syntax and available
+  options. This can also be abbreviated as ``pure -h``.
+
+``pure --version``
+  Print version information.
+
 Depending on your local setup, there may be additional ways to run the Pure
 interpreter. In particular, if you have Emacs Pure mode installed, then you
 can just open a script in Emacs and run it with the :kbd:`C-c C-k` keyboard
 command. For Emacs aficionados, this is probably the most convenient way to
 execute a Pure script interactively in the interpreter. Pure mode actually
-turns Emacs into an advanced IDE (integrated development environment) for
-Pure, which offers a lot of convenient features such as syntax highlighting,
+turns Emacs into a full IDE (integrated development environment) for Pure,
+which offers a lot of convenient features such as syntax highlighting,
 automatic indentation, online help and different ways to interact with the
 Pure interpreter.
 
@@ -248,9 +301,13 @@ Options
 The interpreter accepts various options which are described in more detail
 below.
 
+.. option:: -b
+
+   Batch mode (execute the given scripts and exit).
+
 .. option:: -c
 
-   Batch compilation.
+   Batch compilation (compile the given scripts to a native binary).
 
 .. option:: --ctags
    	    --etags
@@ -291,7 +348,8 @@ below.
 
 .. option:: -i
 
-   Force interactive mode (read commands from stdin).
+   Interactive mode (read commands from stdin after sourcing the given
+   scripts, if any).
 
 .. option:: -I directory
 
@@ -356,7 +414,7 @@ below.
 
 .. option:: -x
 
-   Execute script with given command line arguments.
+   Script mode (execute a script with the given command line arguments).
 
 .. option:: --
 
@@ -372,8 +430,9 @@ Options`_ below for details.
    possible to combine short options, and there are no abbreviations for
    "long" options. Mixing options and other command line parameters is
    generally possible, but note that all option processing stops right after
-   ``-x`` and ``--``, passing the remaining parameters to the executing script
-   in the Pure ``argv`` variable.
+   ``-x`` and ``--`` (or the first non-option parameter in script mode),
+   passing the remaining parameters to the executing script in the Pure
+   ``argv`` variable.
 
    As usual, if an option takes a required argument, the argument may be
    written either as a separate command line parameter immediately following
@@ -394,20 +453,21 @@ reading from stdin) even after processing some source scripts.
 
 Options and source files are processed in the order in which they are given on
 the command line. Processing of options and source files ends when either the
-:option:`--` or the :option:`-x` option is encountered. The :option:`-x`
-option must be followed by the name of a script to be executed, which becomes
-the "main script" of the application. In either case, any remaining parameters
-are passed to the executing script by means of the global :var:`argc` and
-:var:`argv` variables, denoting the number of arguments and the list of the
-actual parameter strings, respectively. In the case of :option:`-x` this also
-includes the script name as ``argv!0``. The :option:`-x` option is useful, in
-particular, to turn Pure scripts into executable programs by including a
-"shebang" like the following as the first line in your main script. (This
-trick only works with Unix shells, though.)
+:option:`--` or the :option:`-x` option is encountered, or after the first
+script (non-option) argument in `script mode` (i.e., if none of the options
+:option:`-b`, :option:`-i`, :option:`--ctags` and :option:`--etags` is
+present). In either case, any remaining parameters are passed to the executing
+script by means of the global :var:`argc` and :var:`argv` variables, denoting
+the number of arguments and the list of the actual parameter strings,
+respectively. In script mode this also includes the script name as ``argv!0``.
+
+Script mode is useful, in particular, to turn Pure scripts into executable
+programs by including a "shebang" like the following as the first line in your
+main script. (This trick only works with Unix shells, though.)
 
 ::
 
-  #!/usr/local/bin/pure -x
+  #!/usr/local/bin/pure
 
 The following variables are always predefined by the interpreter:
 
@@ -472,18 +532,18 @@ otherwise this option will be ignored.
 
 It is also possible to compile your scripts to native code beforehand, using
 the :option:`-c` batch compilation option. This option forces the interpreter
-to non-interactive mode (unless :option:`-i` is specified as well, which
-overrides :option:`-c`). Any scripts specified on the command line are then
-executed as usual, but after execution the interpreter takes a snapshot of the
-program and compiles it to one of several supported output formats, LLVM
-assembler (.ll) or bitcode (.bc), native assembler (.s) or object (.o), or a
-native executable, depending on the output filename specified with
-:option:`-o`. If the output filename ends in the .ll extension, an LLVM
-assembler file is created which can then be processed with the LLVM
-toolchain. If the output filename is just '-', the assembler file is written
-to standard output, which is useful if you want to pass the generated code to
-the LLVM tools in a pipeline. If the output filename ends in the .bc
-extension, an LLVM bitcode file is created instead.
+to batch mode (unless :option:`-i` is specified as well, which overrides
+:option:`-c`). Any scripts specified on the command line are then executed as
+usual, but after execution the interpreter takes a snapshot of the program and
+compiles it to one of several supported output formats, LLVM assembler (.ll)
+or bitcode (.bc), native assembler (.s) or object (.o), or a native
+executable, depending on the output filename specified with :option:`-o`. If
+the output filename ends in the .ll extension, an LLVM assembler file is
+created which can then be processed with the LLVM toolchain. If the output
+filename is just '-', the assembler file is written to standard output, which
+is useful if you want to pass the generated code to the LLVM tools in a
+pipeline. If the output filename ends in the .bc extension, an LLVM bitcode
+file is created instead.
 
 The .ll and .bc formats are supported natively by the Pure interpreter, no
 external tools are required to generate these. If the target is an .s, .o or
@@ -526,14 +586,14 @@ quickly locate these items in text editors such as :program:`vi` and
 .. _tags: http://en.wikipedia.org/wiki/Ctags
 
 If :option:`--ctags` or :option:`--etags` is specified, the interpreter enters
-a special mode in which it only parses source files without executing them and
-collects information about the locations of global symbol declarations and
-definitions. The collected information is then written to a tags file in the
-ctags or etags format used by :program:`vi` and :program:`emacs`,
-respectively. The desired name of the tags file can be specified with the
-:option:`-T` option; it defaults to tags for :option:`--ctags` and TAGS for
-:option:`--etags` (which matches the default tags file names used by
-:program:`vi` and :program:`emacs`, respectively).
+a special variation of batch mode in which it only parses source files without
+executing them and collects information about the locations of global symbol
+declarations and definitions. The collected information is then written to a
+tags file in the ctags or etags format used by :program:`vi` and
+:program:`emacs`, respectively. The desired name of the tags file can be
+specified with the :option:`-T` option; it defaults to tags for
+:option:`--ctags` and TAGS for :option:`--etags` (which matches the default
+tags file names used by :program:`vi` and :program:`emacs`, respectively).
 
 The tags file contains information about the global constant, variable, macro,
 function and operator symbols of all scripts specified on the command line, as
@@ -561,8 +621,8 @@ immediately before entering the interactive loop, unless the :option:`--norc`
 option is specified. First .purerc in the user's home directory is read, then
 .purerc in the current working directory. These are ordinary Pure scripts
 which can be used to provide additional definitions for interactive
-usage. Finally, a .pure file in the current directory (containing a dump from
-a previous interactive session) is loaded if it is present.
+usage. Finally, a .pure file in the current directory (usually containing a
+dump from a previous interactive session) is loaded if it is present.
 
 When the interpreter is in interactive mode and reads from a tty, unless the
 :option:`--noediting` option is specified, commands are usually read using
@@ -3353,12 +3413,12 @@ Passing Parameters
 ~~~~~~~~~~~~~~~~~~
 
 Sometimes you may want to pass parameters to a script from the command line.
-The easiest way to do that is to invoke the interpreter as ``pure -x``
-followed by the script name and the parameters. The interpreter then makes the
-command line parameters available as a list of strings in the :var:`argv`
-variable. For instance, here is a version of the "hello world" program which
-uses :func:`printf` to print the line ``Hello, foo!`` where ``foo`` is
-whatever was specified as the first command line parameter::
+To these ends, just follow the script name with the required parameters. The
+interpreter makes the command line parameters (including the script name)
+available as a list of strings in the :var:`argv` variable. For instance, here
+is a version of the "hello world" program which uses :func:`printf` to print
+the line ``Hello, foo!`` where ``foo`` is whatever was specified as the first
+command line parameter::
 
   using system;
   printf "Hello, %s!\n" (argv!1);
@@ -3367,7 +3427,7 @@ This script is invoked as:
 
 .. code-block:: console
 
-   $ pure -x hello.pure foo
+   $ pure hello.pure foo
    Hello, foo!
 
 Of course, many real-world programs will require more elaborate processing of
@@ -3401,20 +3461,15 @@ already mentioned in `Overview of Operation`_, this is done by adding a
 special kind of comment, a "shebang", to the beginning of the script, so that
 it looks like::
 
-  #!/usr/local/bin/pure -x
+  #!/usr/local/bin/pure
   using system;
   puts "Hello, world!";
 
-Note that the ``-x`` option is only needed if the script actually processes
-its command line parameters. But it's a good idea to include it anyway, so
-that any extra arguments aren't accidentally read and processed by the
-interpreter instead.
-
-Also note that you *must* give the full path to the Pure interpreter in the
-shebang line. This path of course depends on where you installed Pure. The
-above shebang will work with an installation from source, unless you changed
-the installation prefix when configuring the source package. If you installed
-the interpreter from a binary package, the proper path will often be
+Note that you *must* give the full path to the Pure interpreter in the shebang
+line. This path of course depends on where you installed Pure. The above
+shebang will work with an installation from source, unless you changed the
+installation prefix when configuring the source package. If you installed the
+interpreter from a binary package, the proper path will often be
 ``/usr/bin/pure`` instead. In any case, you can find out where the interpreter
 lives by typing the following command in the shell:
 
@@ -3433,21 +3488,14 @@ accordingly. You should then be able to run the script as follows:
 
 .. note:: Many modern Unix-like systems provide the ``/usr/bin/env`` utility
    which can perform a search for the interpreter executable, so that you can
-   use a shebang like::
+   also use a shebang like::
 
      #!/usr/bin/env pure
 
-   This will always work if the Pure interpreter is installed somewhere on the
-   system :envvar:`PATH`. However, due to incompatibilities in the ways
-   shebang lines are parsed by the shell on different Unix systems, the
-   following might *not* work as expected::
-
-     #!/usr/bin/env pure -x
-
-   In particular, on Linux this causes ``env`` to look for an executable named
-   "``pure -x``", which won't work. So, while ``env`` may be more convenient
-   for simple shebangs, we generally advise against using it because of these
-   limitations.
+   This has the advantage that you don't have to hardcode the path to the Pure
+   interpreter into the shebang; the ``/usr/bin/env`` utility will locate the
+   interpreter for you, provided that it is installed somewhere on the system
+   :envvar:`PATH`.
 
 Compiled Scripts
 ~~~~~~~~~~~~~~~~
@@ -12180,7 +12228,7 @@ When invoked from the command line, with the number ``n`` as the first
 parameter, this program will print the string ``"Hello, world!"`` and the list
 of the first ``n`` factorials::
 
-  $ pure -x hello.pure 10
+  $ pure hello.pure 10
   Hello, world!
   [1,2,6,24,120,720,5040,40320,362880,3628800]
 
@@ -12245,7 +12293,7 @@ interpreter in both batch and interactive mode, too::
   ()
   > quit
 
-  $ pure -x hello.pure 7
+  $ pure hello.pure 7
   Hello, world!
   [1,2,6,24,120,720,5040]
 
@@ -12288,11 +12336,11 @@ is finished it gets compiled and installed as a native executable.
   ()
   > quit
 
-  $ pure -x hello.pure 7
+  $ pure hello.pure 7
   Hello, world!
   [1,2,6,24,120,720,5040]
 
-  $ pure -o hello -c -x hello.pure
+  $ pure -o hello -c hello.pure
 
   $ ./hello
   Hello, world!
@@ -12741,6 +12789,14 @@ interactive commands can optionally be escaped by prefixing them with a
 special character (see `Command Syntax`_). The :const:`true` and
 :const:`false` constants are now declared as :keyword:`nonfix` symbols in the
 prelude so that they can be used in patterns.
+
+Pure 0.58 made the :option:`-x` option optional, so that a script can now be
+invoked with arguments simply as ``pure script arg1 arg2 ...``, which matches
+the default behaviour of most other command language interpreters. This also
+has the advantage that shebangs like ``#!/usr/bin/env pure`` can now be used
+without any caveats. If you do want to execute multiple script files in batch
+mode then you now have to explicitly indicate this with the new :option:`-b`
+option. Please see `Invoking Pure`_ for details.
 
 Error Recovery
 --------------

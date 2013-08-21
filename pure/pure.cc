@@ -92,9 +92,10 @@ using namespace std;
 
 #define COPYRIGHT "Copyright (c) 2008-2013 by Albert Graef"
 #define USAGE \
-"Usage:            pure [options ...] [script ...] [-- args ...]\n\
-                  pure [options ...] -x script [args ...]\n\
--c                Batch compilation.\n\
+"Usage:            pure [options ...] [-x] script [args ...]\n\
+                  pure [options ...] [-b|-c|-i] [script ...] [-- args ...]\n\
+-b                Batch mode (execute given scripts and exit).\n\
+-c                Batch compilation (compile scripts to native binary).\n\
 --ctags, --etags  Create a tags file in ctags (vi) or etags (emacs) format.\n\
 --disable=optname Disable source option (conditional compilation).\n\
 --eager-jit       Enable eager JIT compilation (LLVM 2.7 or later).\n\
@@ -103,7 +104,7 @@ using namespace std;
 -fPIC             Create position-independent code (batch compilation).\n\
 -g                Enable symbolic debugging.\n\
 --help, -h        Print this message and exit.\n\
--i                Force interactive mode (read commands from stdin).\n\
+-i                Interactive mode (read commands from stdin after scripts).\n\
 -I directory      Add directory to search for included source files.\n\
 -L directory      Add directory to search for dynamic libraries.\n\
 -l libname        Library to be linked in batch compilation.\n\
@@ -121,6 +122,7 @@ using namespace std;
 --version         Print version information and exit.\n\
 -w                Enable compiler warnings.\n\
 -x                Execute script with given command line arguments.\n\
+--                Stop option processing and pass remaining arguments.\n\
 Type 'help' in the interpreter for more help.\n"
 #define LICENSE \
 "(Type 'help' for help, 'help copying' for license information.)\n"
@@ -516,7 +518,7 @@ main(int argc, char *argv[])
   interpreter interp(argc, argv);
   const string prog = *argv;
   int count = 0;
-  bool quiet = false, spiffy = true, force_interactive = false,
+  bool batch = false, quiet = false, spiffy = true, force_interactive = false,
     want_prelude = true, have_prelude = false,
     want_rcfile = true, want_editing = true;
   string rcfile;
@@ -587,19 +589,21 @@ main(int argc, char *argv[])
 	     << COPYRIGHT << '\n';
 	cout << "Compiled for LLVM " << LLVM_VERSION << " (http://llvm.org)\n";
 	return 0;
+      } else if (strcmp(arg, "-b") == 0) {
+	batch = true; force_interactive = false;
       } else if (strcmp(arg, "-c") == 0)
-	interp.compiling = true;
+	batch = interp.compiling = true;
       else if (strcmp(arg, "-fPIC") == 0 || strcmp(arg, "-fpic") == 0)
 	interp.pic = true;
       else if (strcmp(arg, "-g") == 0)
 	interp.debugging = true;
       else if (strcmp(arg, "-i") == 0)
-	force_interactive = true;
-      else if (strcmp(arg, "--ctags") == 0)
-	interp.tags = 1;
-      else if (strcmp(arg, "--etags") == 0)
-	interp.tags = 2;
-      else if (strcmp(arg, "--texmacs") == 0)
+	batch = force_interactive = true;
+      else if (strcmp(arg, "--ctags") == 0) {
+	batch = true; interp.tags = 1;
+      } else if (strcmp(arg, "--etags") == 0) {
+	batch = true; interp.tags = 2;
+      } else if (strcmp(arg, "--texmacs") == 0)
 	interp.texmacs = true;
       else if (strcmp(arg, "--eager-jit") == 0)
 	interp.eager_jit = true;
@@ -769,6 +773,9 @@ main(int argc, char *argv[])
 	interp.error(prog + ": invalid option " + *args);
 	return 1;
       }
+    } else if (!batch) {
+      while (*args) myargs.push_back(*args++);
+      break;
     }
   }
 #if USE_FASTCC && !LLVM31
@@ -846,6 +853,7 @@ main(int argc, char *argv[])
 	interp.error(prog + ": " + e.what());
 	return 1;
       }
+      if (!batch) break;
     }
   if ((count > 0 || interp.compiling || interp.tags) && !force_interactive) {
     int status = 0;
