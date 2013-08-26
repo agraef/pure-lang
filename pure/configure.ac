@@ -83,8 +83,8 @@ AC_CHECK_SIZEOF(long)
 AC_CHECK_SIZEOF(size_t)
 dnl Parse --enable options.
 fastcc=yes
-XCFLAGS=`echo $CFLAGS | sed -e 's/-g\|-O.//g' -e 's/   */ /g' -e 's/^  *//' -e 's/  *$//'`
-XCXXFLAGS=`echo $CXXFLAGS | sed -e 's/-g\|-O.//g' -e 's/   */ /g' -e 's/^  *//' -e 's/  *$//'`
+CFLAGS_user=`echo $CFLAGS     | sed -e 's/^  *//' -e 's/  *$//'`
+CXXFLAGS_user=`echo $CXXFLAGS | sed -e 's/^  *//' -e 's/  *$//'`
 buildtype=no
 AC_ARG_ENABLE(fastcc,
   [  --enable-fastcc         enable fast calls/tail call optimization (default)],
@@ -105,8 +105,8 @@ AC_ARG_ENABLE(debug2,
 AC_ARG_ENABLE(release,
   [  --enable-release        enable the release build],
   [case "${enableval}" in
-    yes)  CPPFLAGS="$CPPFLAGS -DNDEBUG -DDEBUG=0"; CXXFLAGS="-O3";
-          CFLAGS="-O3"; buildtype=yes ;;
+    yes)  CPPFLAGS="$CPPFLAGS -DNDEBUG -DDEBUG=0"; CXXFLAGS="-g0 -O3";
+          CFLAGS="-g0 -O3"; buildtype=yes ;;
   esac])
 sharedlib=yes
 AC_ARG_ENABLE(shared,
@@ -127,14 +127,14 @@ AC_ARG_ENABLE(warnings,
   [case "${enableval}" in
     yes)  CXXFLAGS="$CXXFLAGS -Wall"; CFLAGS="$CFLAGS -Wall" ;;
   esac])
-dnl Add extra (non-debug/optimize) CFLAGS/CXXFLAGS specified by the user if a
+dnl Add extra CFLAGS/CXXFLAGS specified by the user if a
 dnl build type was specified.
 if test $buildtype = yes; then
-  if test -n "$XCFLAGS"; then
-    CFLAGS="$CFLAGS $XCFLAGS"
+  if test -n "$CFLAGS_user"; then
+    CFLAGS="$CFLAGS_user $CFLAGS"
   fi
-  if test -n "$XCXXFLAGS"; then
-    CXXFLAGS="$CXXFLAGS $XCXXFLAGS"
+  if test -n "$CXXFLAGS_user"; then
+    CXXFLAGS="$CXXFLAGS_user $CXXFLAGS"
   fi
 fi
 dnl These are just dummy options to make the Debian package builder happy.
