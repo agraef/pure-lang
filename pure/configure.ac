@@ -94,13 +94,13 @@ AC_ARG_ENABLE(fastcc,
 AC_ARG_ENABLE(debug,
   [  --enable-debug          enable the debug build],
   [case "${enableval}" in
-    yes)  CXXFLAGS="-g"; CFLAGS="-g"; buildtype=yes ;;
+    yes)  CXXFLAGS="-g -O0"; CFLAGS="-g -O0"; buildtype=yes ;;
   esac])
 AC_ARG_ENABLE(debug2,
   [  --enable-debug2         enable the maintenance build],
   [case "${enableval}" in
-    yes)  CPPFLAGS="$CPPFLAGS -DDEBUG=2"; CXXFLAGS="-g";
-    	  CFLAGS="-g"; buildtype=yes ;;
+    yes)  CPPFLAGS="$CPPFLAGS -DDEBUG=2"; CXXFLAGS="-g -O0";
+    	  CFLAGS="-g -O0"; buildtype=yes ;;
   esac])
 AC_ARG_ENABLE(release,
   [  --enable-release        enable the release build],
@@ -130,10 +130,10 @@ AC_ARG_ENABLE(warnings,
 dnl Add extra CFLAGS/CXXFLAGS specified by the user if a
 dnl build type was specified.
 if test $buildtype = yes; then
-  if test -n "$CFLAGS_USER"; then
+  if test -n "$CFLAGS_USER" -a "$CFLAGS_USER" != "-g -O2" ; then
     CFLAGS="$CFLAGS_USER $CFLAGS"
   fi
-  if test -n "$CXXFLAGS_USER"; then
+  if test -n "$CXXFLAGS_USER" -a "$CXXFLAGS_USER" != "-g -O2"; then
     CXXFLAGS="$CXXFLAGS_USER $CXXFLAGS"
   fi
 fi
