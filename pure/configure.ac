@@ -83,8 +83,8 @@ AC_CHECK_SIZEOF(long)
 AC_CHECK_SIZEOF(size_t)
 dnl Parse --enable options.
 fastcc=yes
-CFLAGS_user=`echo $CFLAGS     | sed -e 's/^  *//' -e 's/  *$//'`
-CXXFLAGS_user=`echo $CXXFLAGS | sed -e 's/^  *//' -e 's/  *$//'`
+CFLAGS_USER=`echo $CFLAGS     | sed -e 's/^  *//' -e 's/  *$//'`
+CXXFLAGS_USER=`echo $CXXFLAGS | sed -e 's/^  *//' -e 's/  *$//'`
 buildtype=no
 AC_ARG_ENABLE(fastcc,
   [  --enable-fastcc         enable fast calls/tail call optimization (default)],
@@ -130,11 +130,11 @@ AC_ARG_ENABLE(warnings,
 dnl Add extra CFLAGS/CXXFLAGS specified by the user if a
 dnl build type was specified.
 if test $buildtype = yes; then
-  if test -n "$CFLAGS_user"; then
-    CFLAGS="$CFLAGS_user $CFLAGS"
+  if test -n "$CFLAGS_USER"; then
+    CFLAGS="$CFLAGS_USER $CFLAGS"
   fi
-  if test -n "$CXXFLAGS_user"; then
-    CXXFLAGS="$CXXFLAGS_user $CXXFLAGS"
+  if test -n "$CXXFLAGS_USER"; then
+    CXXFLAGS="$CXXFLAGS_USER $CXXFLAGS"
   fi
 fi
 dnl These are just dummy options to make the Debian package builder happy.
