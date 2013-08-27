@@ -1,6 +1,6 @@
 
 pkgname = pure-stldict
-version = 0.5
+version = 0.6
 
 # platform-specific setup
 
