@@ -23,7 +23,7 @@ ifneq "$(findstring -mingw,$(host))" ""
 EXE = .exe
 endif
 
-DISTFILES = COPYING Makefile README fixdoc pure-doc.ll pure-doc.cc debian/*
+DISTFILES = COPYING Makefile README config.guess fixdoc pure-doc.ll pure-doc.cc debian/*
 SEDFILES = README
 
 all: pure-doc
