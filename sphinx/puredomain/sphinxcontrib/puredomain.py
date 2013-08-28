@@ -367,7 +367,7 @@ class PureModuleIndex(Index):
         ignores = self.domain.env.config['modindex_common_prefix']
         ignores = sorted(ignores, key=len, reverse=True)
         # list of all modules, sorted by module name
-        modules = sorted(self.domain.data['modules'].iteritems(),
+        modules = sorted(self.domain.data['modules'].items(),
                          key=lambda x: x[0].lower())
         # sort out collapsable modules
         prev_modname = ''
@@ -416,7 +416,7 @@ class PureModuleIndex(Index):
         collapse = len(modules) - num_toplevels < num_toplevels
 
         # sort by first letter
-        content = sorted(content.iteritems())
+        content = sorted(content.items())
 
         return content, collapse
 
@@ -468,13 +468,13 @@ class PureDomain(Domain):
     ]
 
     def clear_doc(self, docname):
-        for fullname, objs in self.data['objects'].items():
-            for tag, (fn, _, _) in objs.items():
+        for fullname, objs in list(self.data['objects'].items()):
+            for tag, (fn, _, _) in list(objs.items()):
                 if fn == docname:
                     del self.data['objects'][fullname][tag]
             if not self.data['objects'][fullname]:
                 del self.data['objects'][fullname]
-        for modname, (fn, _, _, _) in self.data['modules'].items():
+        for modname, (fn, _, _, _) in list(self.data['modules'].items()):
             if fn == docname:
                 del self.data['modules'][modname]
 
@@ -524,8 +524,8 @@ class PureDomain(Domain):
                                     contnode, fname)
 
     def get_objects(self):
-        for refname, tags in self.data['objects'].iteritems():
-            for tag, (docname, type, targetname) in tags.iteritems():
+        for refname, tags in self.data['objects'].items():
+            for tag, (docname, type, targetname) in tags.items():
                 yield (refname, refname, type, docname, refname, 1)
 
 
