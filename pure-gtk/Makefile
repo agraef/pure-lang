@@ -28,8 +28,10 @@ PURE_COPTS=-I.. -L..
 
 # Take care of some common systems.
 ifneq "$(findstring -linux,$(host))" ""
-# Some newer Linux systems make --as-needed the default, we need the old
-# behaviour here.
+# Some newer Linux systems make --as-needed the default, we need the
+# old behaviour here. NOTE: This seems to be broken with recent gcc
+# versions, so you may have to link batch-compiled pure-gtk scripts
+# against the required GTK+ libraries anyway. :(
 EXTRA_LD_FLAGS = -Wl,--no-as-needed
 endif
 ifneq "$(findstring -mingw,$(host))" ""
@@ -107,10 +109,14 @@ generate:
 
 # Compile the examples.
 
+# NOTE: Recent gcc versions require that we link in the GTK+ libs when
+# batch-compiling these programs.
+EXTRA_LD_LIBS = $(shell pkg-config --libs gtk+-2.0)
+
 examples: $(examples)
 
 examples/%: examples/%.pure
-	(cd examples && pure $(PURE_COPTS) -c $(notdir $<) -o $(notdir $@))
+	(cd examples && pure $(PURE_COPTS) -c $(notdir $<) -o $(notdir $@) $(EXTRA_LD_LIBS))
 
 # Install targets.
 
