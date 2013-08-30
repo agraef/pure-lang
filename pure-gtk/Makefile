@@ -42,6 +42,8 @@ PURE_COPTS += -L$(dlldir)
 # additional magic needed to locate gtk stuff on Windows
 windows = true
 dllopts = $(foreach dllname, $(foreach dll,$(shell pkg-config --libs-only-l $(1)),$(basename $(notdir $(wildcard $(patsubst -l%,$(dlldir)/lib%*.dll,$(dll)))))), -l$(dllname))
+else
+atk_missing = -x '^(linux|unix)$$'
 endif
 ifneq "$(findstring -darwin,$(host))" ""
 # OSX (untested)
@@ -195,8 +197,8 @@ gtk$(DLL): gtk.c
 	$(CC) $(shared) $(FLAGS) $(GTK_CFLAGS) -o $@ $< $(GTK_LIBS)
 
 gtk.pure gtk.c:
-	pure-gen $(PGFLAGS) $(GTK_INCLUDES) -s '$(gtkdir)/gdk*/*.h;' -p gdk -m gdk -o gtk.pure -c gtk.c -fc-auto $(gtkdir)/gdk/gdk.h $(GTK_DLLS)
-	pure-gen $(PGFLAGS) -N $(GTK_INCLUDES) -s '$(gtkdir)/gtk/*.h;' -x '^ubuntu_' -p gtk -m gtk -fc-auto $(gtkdir)/gtk/gtk.h
+	pure-gen $(PGFLAGS) $(GTK_INCLUDES) -s '$(gtkdir)/gdk*/*.h;' -x '^(linux|unix)$$' -p gdk -m gdk -o gtk.pure -c gtk.c -fc-auto $(gtkdir)/gdk/gdk.h $(GTK_DLLS)
+	pure-gen $(PGFLAGS) -N $(GTK_INCLUDES) -s '$(gtkdir)/gtk/*.h;' -x '^(linux|unix|ubuntu_.*)$$' -p gtk -m gtk -fc-auto $(gtkdir)/gtk/gtk.h
 	sed -e 's|#include \"$(gtkdir)/\(\([A-Za-z-]\+/\)\?[A-Za-z-]\+\.h\)\"|#include <\1>|g' < gtk.c > gtk.c.new && rm gtk.c && mv gtk.c.new gtk.c
 
 # glib et al
@@ -215,16 +217,16 @@ glib$(DLL): glib.c
 # for Pure-GTK applications. Also note that the glib headers declare some junk
 # which isn't actually available in the libraries, we get rid of this with -x.
 glib.pure glib.c:
-	pure-gen $(PGFLAGS) $(GTK_INCLUDES) -s '$(glibdir)/glib/*.h;' -x '^(G_GNUC_[A-Z_]*|atexit|glib_dummy_decl|g_thread_init(_with_errorcheck_mutexes)?)$$' -p g -m glib -fc-auto $(glibdir)/glib.h $(GLIB_DLLS)
-	pure-gen $(PGFLAGS) -N $(GTK_INCLUDES) -s '$(glibdir)/gobject/*.h;' -x '^(g_value_c_init|g_value_types_init|g_enum_types_init|g_param_type_init|g_boxed_type_init|g_object_type_init|g_param_spec_types_init|g_value_transforms_init|g_signal_init)$$' -p g -m glib -o glib.pure -c glib.c -fc-auto $(glibdir)/glib-object.h
+	pure-gen $(PGFLAGS) $(GTK_INCLUDES) -s '$(glibdir)/glib/*.h;' -x '^(linux|unix|G_GNUC_[A-Z_]*|atexit|glib_dummy_decl|g_thread_init(_with_errorcheck_mutexes)?)$$' -p g -m glib -fc-auto $(glibdir)/glib.h $(GLIB_DLLS)
+	pure-gen $(PGFLAGS) -N $(GTK_INCLUDES) -s '$(glibdir)/gobject/*.h;' -x '^(linux|unix|g_value_c_init|g_value_types_init|g_enum_types_init|g_param_type_init|g_boxed_type_init|g_object_type_init|g_param_spec_types_init|g_value_transforms_init|g_signal_init)$$' -p g -m glib -o glib.pure -c glib.c -fc-auto $(glibdir)/glib-object.h
 ifeq ($(HAVE_GIO),yes)
 ifdef windows
 	pure-gen $(PGFLAGS) -N $(GTK_INCLUDES) -s '$(glibdir)/gio/*.h;' -x '^(g_io_module_(un)?load|g_io_module_query|g_dbus.*)$$' -p g -m glib -o glib.pure -c glib.c -fc-auto $(glibdir)/gio/gio.h
 else
-	pure-gen $(PGFLAGS) -N $(GTK_INCLUDES) -s '$(glibdir)/gio/*.h;' -x '^(g_io_module_(un)?load|g_io_module_query)$$' -p g -m glib -o glib.pure -c glib.c -fc-auto $(glibdir)/gio/gio.h
+	pure-gen $(PGFLAGS) -N $(GTK_INCLUDES) -s '$(glibdir)/gio/*.h;' -x '^(unix|linux|g_io_module_(un)?load|g_io_module_query)$$' -p g -m glib -o glib.pure -c glib.c -fc-auto $(glibdir)/gio/gio.h
 endif
 endif
-	pure-gen $(PGFLAGS) -N $(GTK_INCLUDES) -s '$(glibdir)/gmodule.h;' -p g -m glib -o glib.pure -c glib.c -fc-auto $(glibdir)/gmodule.h
+	pure-gen $(PGFLAGS) -N $(GTK_INCLUDES) -s '$(glibdir)/gmodule.h;' -x '^(linux|unix)$$' -p g -m glib -o glib.pure -c glib.c -fc-auto $(glibdir)/gmodule.h
 	sed -e 's|#include \"$(glibdir)/\(\([A-Za-z-]\+/\)\?[A-Za-z-]\+\.h\)\"|#include <\1>|g' < glib.c > glib.c.new && rm glib.c && mv glib.c.new glib.c
 
 # atk
@@ -256,7 +258,7 @@ cairo$(DLL): cairo.c
 	$(CC) $(shared) $(FLAGS) $(CAIRO_CFLAGS) -o $@ $< $(CAIRO_LIBS)
 
 cairo.pure cairo.c:
-	pure-gen $(PGFLAGS) $(CAIRO_INCLUDES) -s '$(cairodir)/cairo/*.h;' -p cairo -m cairo -fc-auto $(cairodir)/cairo/cairo.h $(CAIRO_DLLS)
+	pure-gen $(PGFLAGS) $(CAIRO_INCLUDES) -s '$(cairodir)/cairo/*.h;' -x '^(linux|unix)$$' -p cairo -m cairo -fc-auto $(cairodir)/cairo/cairo.h $(CAIRO_DLLS)
 	sed -e 's|#include \"$(cairodir)/\(\([A-Za-z-]\+/\)\?[A-Za-z-]\+\.h\)\"|#include <\1>|g' < cairo.c > cairo.c.new && rm cairo.c && mv cairo.c.new cairo.c
 
 # pango
@@ -272,7 +274,7 @@ pango$(DLL): pango.c
 	$(CC) $(shared) $(FLAGS) $(PANGO_CFLAGS) -o $@ $< $(PANGO_LIBS)
 
 pango.pure pango.c:
-	pure-gen $(PGFLAGS) $(PANGO_INCLUDES) -s '$(pangodir)/pango/*.h;' -p pango -m pango -fc-auto $(pangodir)/pango/pango.h $(PANGO_DLLS)
+	pure-gen $(PGFLAGS) $(PANGO_INCLUDES) -s '$(pangodir)/pango/*.h;' -x '^(linux|unix)$$' -p pango -m pango -fc-auto $(pangodir)/pango/pango.h $(PANGO_DLLS)
 	sed -e 's|#include \"$(pangodir)/\(\([A-Za-z-]\+/\)\?[A-Za-z-]\+\.h\)\"|#include <\1>|g' < pango.c > pango.c.new && rm pango.c && mv pango.c.new pango.c
 
 # libglade
