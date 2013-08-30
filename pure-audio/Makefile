@@ -104,7 +104,7 @@ ifdef windows
 	tr -d '\r' < $@.tmp > $@
 	rm -f $@.tmp
 else
-	pure-gen -m Pa -p Pa -s '$(includedir)/portaudio.h;' $(includedir)/portaudio.h -laudio -o $@
+	pure-gen -m Pa -p Pa -s '$(includedir)/portaudio.h;' -x '^(linux|unix)$$' $(includedir)/portaudio.h -laudio -o $@
 endif
 
 # Type 'make diffs' to generate the wrappers for this platform and compare
