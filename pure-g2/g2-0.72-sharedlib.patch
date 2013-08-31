@@ -1,0 +1,214 @@
+diff -rup g2-0.72.orig/Makefile g2-0.72/Makefile
+--- g2-0.72.orig/Makefile	2006-10-17 20:38:16.000000000 +0200
++++ g2-0.72/Makefile	2013-08-31 10:15:20.942415332 +0200
+@@ -22,16 +22,17 @@ INCDIR = /usr/local/include
+ SHELL = /bin/sh
+ 
+ CC           = gcc
+-CFLAGS       = -I./src -O2  -I/usr/local/include -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DLINUX=1 -DDO_PS=1 -DDO_FIG=1 -DDO_X11=1 -DDO_XDBE=1 -DDO_GD=1 -DDO_GIF=1 -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_LIMITS_H=1 
++CFLAGS       = -I./src -g -O2  -I/usr/local/include -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DLINUX=1 -DDO_PS=1 -DDO_FIG=1 -DDO_X11=1 -DDO_XDBE=1 -DDO_GD=1 -DDO_GIF=1 -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_LIMITS_H=1  -fPIC
+ INSTALL      = /usr/bin/install -c
+ INSTALL_DATA = ${INSTALL} -m 644
+ FIND         = find
+-MAKEDEPEND   = makedepend
++MAKEDEPEND   = :
+ AR           = ar
+ ARFLAGS      = -cr
+ RANLIB       = ranlib
+ LD           = ld
+ LDFLAGS      = 
++LIBS         =  -L/usr/local/lib -lm -lX11 -lXext -lgd
+ 
+ 
+ BASE_DIR = ./src
+@@ -82,7 +83,7 @@ INS =  $(BASE_INS) $(PS_INS) $(FIG_INS)
+ 	$(CC) $(CFLAGS) -c $< -o $@
+ 
+ 
+-all: libg2.a
++all: libg2.a libg2.so
+ 	test -d ./include || mkdir ./include
+ 	cp $(INS) ./include/
+ 
+@@ -95,19 +96,24 @@ libg2.a: $(OBJ)
+ 	test ! -n "$(RANLIB)" || $(RANLIB) $@
+ 
+ libg2.so.0.$(G2_VERSION): $(OBJ)
+-	ld -shared -soname libg2.so.0 -o $@ $(OBJ) 
++	ld -shared -soname libg2.so.0 -o $@ $(OBJ)  $(LIBS)
+ 
+ libg2.so: libg2.so.0.$(G2_VERSION)
+ 	ln -f -s libg2.so.0.$(G2_VERSION) $@
+ 
+-install: libg2.a
+-	test -d $(LIBDIR) || mkdir -p $(LIBDIR)
+-	test -d $(INCDIR) || mkdir -p $(INCDIR)
+-	$(INSTALL_DATA) libg2.a $(LIBDIR)
++install: libg2.a libg2.so
++	test -d $(DESTDIR)$(LIBDIR) || mkdir -p $(DESTDIR)$(LIBDIR)
++	test -d $(DESTDIR)$(INCDIR) || mkdir -p $(DESTDIR)$(INCDIR)
++	$(INSTALL_DATA) libg2.a libg2.so.0.$(G2_VERSION) $(DESTDIR)$(LIBDIR)
++	ln -sf $(LIBDIR)/libg2.so.0.$(G2_VERSION) $(DESTDIR)$(LIBDIR)/libg2.so
+ 	for IFILE in $(INS); do \
+-		$(INSTALL_DATA) $$IFILE  $(INCDIR); \
++		$(INSTALL_DATA) $$IFILE  $(DESTDIR)$(INCDIR); \
+ 	done
+ 
++uninstall:
++	rm -f $(addprefix $(DESTDIR)$(LIBDIR)/, libg2.a libg2.so libg2.so.0 libg2.so.0.$(G2_VERSION))
++	rm -f $(addprefix $(DESTDIR)$(INCDIR)/, $(notdir $(INS)));
++
+ release: clean doc
+ 	cp ./doc/latex/refman.ps  ./doc/g2_refman.ps
+ 	cp ./doc/latex/refman.pdf ./doc/g2_refman.pdf
+@@ -125,13 +131,13 @@ clean:
+ 	-rm -f libg2.a config.cache config.log Makefile.bak config.status
+ 	-rm -f ./include/*.h
+ 	-$(FIND) . -name "*~" -exec rm -f {} \;
+-	-(cd ./g2_perl ; make clean)
++#	-(cd ./g2_perl ; make clean)
+ 	-rm -f ./g2_perl/test.ps
+ 	-rm -f ./g2_perl/test.png
+ 	-rm -f ./g2_perl/test.jpg
+ 	-rm -f ./g2_perl/test.fig
+ 	-rm -f ./g2_perl/Makefile.old
+-	-rm -f ./libg2.so.0.$(G2_VERSION)
++	-rm -f ./libg2.so.0.$(G2_VERSION) ./libg2.so
+ 	-rm -f libg2.$(G2_VERSION).a
+ 	-rm -f a.out
+ 	-rm -fr doc/html/ doc/latex/ doc/g2_refman.ps doc/g2_refman.pdf
+diff -rup g2-0.72.orig/Makefile.in g2-0.72/Makefile.in
+--- g2-0.72.orig/Makefile.in	2006-10-17 20:38:16.000000000 +0200
++++ g2-0.72/Makefile.in	2013-08-31 09:42:22.105639673 +0200
+@@ -22,7 +22,7 @@ INCDIR = @prefix@/include
+ SHELL = /bin/sh
+ 
+ CC           = @CC@
+-CFLAGS       = -I./src @CFLAGS@ @DEFS@
++CFLAGS       = -I./src @CFLAGS@ @DEFS@ -fPIC
+ INSTALL      = @INSTALL@
+ INSTALL_DATA = @INSTALL_DATA@
+ FIND         = @FIND@
+@@ -32,6 +32,7 @@ ARFLAGS      = -cr
+ RANLIB       = @RANLIB@
+ LD           = ld
+ LDFLAGS      = @LDFLAGS@
++LIBS         = @LIBS@
+ 
+ 
+ BASE_DIR = ./src
+@@ -82,7 +83,7 @@ INS =  $(BASE_INS) $(PS_INS) $(FIG_INS)
+ 	$(CC) $(CFLAGS) -c $< -o $@
+ 
+ 
+-all: libg2.a
++all: libg2.a libg2.so
+ 	test -d ./include || mkdir ./include
+ 	cp $(INS) ./include/
+ 
+@@ -95,19 +96,24 @@ libg2.a: $(OBJ)
+ 	test ! -n "$(RANLIB)" || $(RANLIB) $@
+ 
+ libg2.@LD_SHARED_EXT@: $(OBJ)
+-	@LD_SHARED@ @LD_SHARED_FLAGS@ -o $@ $(OBJ) @LD_SHARED_OPT@
++	@LD_SHARED@ @LD_SHARED_FLAGS@ -o $@ $(OBJ) @LD_SHARED_OPT@ $(LIBS)
+ 
+ libg2.so: libg2.@LD_SHARED_EXT@
+ 	ln -f -s libg2.@LD_SHARED_EXT@ $@
+ 
+-install: libg2.a
+-	test -d $(LIBDIR) || mkdir -p $(LIBDIR)
+-	test -d $(INCDIR) || mkdir -p $(INCDIR)
+-	$(INSTALL_DATA) libg2.a $(LIBDIR)
++install: libg2.a libg2.so
++	test -d $(DESTDIR)$(LIBDIR) || mkdir -p $(DESTDIR)$(LIBDIR)
++	test -d $(DESTDIR)$(INCDIR) || mkdir -p $(DESTDIR)$(INCDIR)
++	$(INSTALL_DATA) libg2.a libg2.@LD_SHARED_EXT@ $(DESTDIR)$(LIBDIR)
++	ln -sf $(LIBDIR)/libg2.@LD_SHARED_EXT@ $(DESTDIR)$(LIBDIR)/libg2.so
+ 	for IFILE in $(INS); do \
+-		$(INSTALL_DATA) $$IFILE  $(INCDIR); \
++		$(INSTALL_DATA) $$IFILE  $(DESTDIR)$(INCDIR); \
+ 	done
+ 
++uninstall:
++	rm -f $(addprefix $(DESTDIR)$(LIBDIR)/, libg2.a libg2.so libg2.so.0 libg2.@LD_SHARED_EXT@)
++	rm -f $(addprefix $(DESTDIR)$(INCDIR)/, $(notdir $(INS)));
++
+ release: clean doc
+ 	cp ./doc/latex/refman.ps  ./doc/g2_refman.ps
+ 	cp ./doc/latex/refman.pdf ./doc/g2_refman.pdf
+@@ -125,13 +131,13 @@ clean:
+ 	-rm -f libg2.a config.cache config.log Makefile.bak config.status
+ 	-rm -f ./include/*.h
+ 	-$(FIND) . -name "*~" -exec rm -f {} \;
+-	-(cd ./g2_perl ; make clean)
++#	-(cd ./g2_perl ; make clean)
+ 	-rm -f ./g2_perl/test.ps
+ 	-rm -f ./g2_perl/test.png
+ 	-rm -f ./g2_perl/test.jpg
+ 	-rm -f ./g2_perl/test.fig
+ 	-rm -f ./g2_perl/Makefile.old
+-	-rm -f ./libg2.@LD_SHARED_EXT@
++	-rm -f ./libg2.@LD_SHARED_EXT@ ./libg2.so
+ 	-rm -f libg2.$(G2_VERSION).a
+ 	-rm -f a.out
+ 	-rm -fr doc/html/ doc/latex/ doc/g2_refman.ps doc/g2_refman.pdf
+diff -rup g2-0.72.orig/demo/Makefile g2-0.72/demo/Makefile
+--- g2-0.72.orig/demo/Makefile	2006-10-17 20:38:16.000000000 +0200
++++ g2-0.72/demo/Makefile	2013-08-31 10:15:20.972415334 +0200
+@@ -23,9 +23,9 @@ CPP = /lib/cpp
+ #F77 = f77 -n32
+ #CPP = /lib/cpp -P -DFORTRAN
+ 
+-CFLAGS = -I../src -I../src/X11 -I../src/PS -I../src/Win32 -I../src/GD -I../src/FIG -O2  -I/usr/local/include -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DLINUX=1 -DDO_PS=1 -DDO_FIG=1 -DDO_X11=1 -DDO_XDBE=1 -DDO_GD=1 -DDO_GIF=1 -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_LIMITS_H=1 
+-CXXFLAGS = -I../src -I../src/X11 -I../src/PS -I../src/Win32 -I../src/GD/ -I../src/FIG -O2 -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DLINUX=1 -DDO_PS=1 -DDO_FIG=1 -DDO_X11=1 -DDO_XDBE=1 -DDO_GD=1 -DDO_GIF=1 -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_LIMITS_H=1 
+-LIBS =  -L.. -lg2  -L/usr/X11R6/lib -L/usr/local/lib -lm -lX11 -lXext -lgd
++CFLAGS = -I../src -I../src/X11 -I../src/PS -I../src/Win32 -I../src/GD -I../src/FIG -g -O2  -I/usr/local/include -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DLINUX=1 -DDO_PS=1 -DDO_FIG=1 -DDO_X11=1 -DDO_XDBE=1 -DDO_GD=1 -DDO_GIF=1 -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_LIMITS_H=1 
++CXXFLAGS = -I../src -I../src/X11 -I../src/PS -I../src/Win32 -I../src/GD/ -I../src/FIG -g -O2 -DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DLINUX=1 -DDO_PS=1 -DDO_FIG=1 -DDO_X11=1 -DDO_XDBE=1 -DDO_GD=1 -DDO_GIF=1 -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_LIMITS_H=1 
++LIBS =  -L.. -lg2  -L/usr/local/lib -lm -lX11 -lXext -lgd
+ 
+ DEMO_PS = simple_PS
+ DEMO_FIG = simple_FIG
+@@ -86,6 +86,6 @@ g2testf: g2_test.f
+ 	$(F77) g2testf.f $(LDFLAGS) -o g2testf
+ 
+ clean:
+-	-rm $(DEMO) g2testf g2testf.f demo_f *~ core *.ps *.fig *.eps *.png *.jpg *.fig.bak
++	rm -f $(DEMO) g2testf g2testf.f demo_f *~ core *.ps *.fig *.eps *.png *.jpg *.fig.bak
+ 
+ 
+diff -rup g2-0.72.orig/demo/Makefile.in g2-0.72/demo/Makefile.in
+--- g2-0.72.orig/demo/Makefile.in	2005-08-13 20:24:38.000000000 +0200
++++ g2-0.72/demo/Makefile.in	2013-08-31 09:25:02.785582440 +0200
+@@ -86,6 +86,6 @@ g2testf: g2_test.f
+ 	$(F77) g2testf.f $(LDFLAGS) -o g2testf
+ 
+ clean:
+-	-rm $(DEMO) g2testf g2testf.f demo_f *~ core *.ps *.fig *.eps *.png *.jpg *.fig.bak
++	rm -f $(DEMO) g2testf g2testf.f demo_f *~ core *.ps *.fig *.eps *.png *.jpg *.fig.bak
+ 
+ 
+diff -rup g2-0.72.orig/g2_perl/Makefile.PL g2-0.72/g2_perl/Makefile.PL
+--- g2-0.72.orig/g2_perl/Makefile.PL	2006-10-12 22:53:41.000000000 +0200
++++ g2-0.72/g2_perl/Makefile.PL	2013-08-31 10:15:21.002415336 +0200
+@@ -4,7 +4,7 @@ use ExtUtils::MakeMaker;
+ WriteMakefile(
+     'NAME'	=> 'G2',
+     'VERSION_FROM' => 'G2.pm', # finds $VERSION
+-    'LIBS'	=> ['-L./.. -lg2  -L/usr/X11R6/lib -L/usr/local/lib -lm -lX11 -lXext -lgd'],  # e.g., '-lm' 
++    'LIBS'	=> ['-L./.. -lg2  -L/usr/local/lib -lm -lX11 -lXext -lgd'],  # e.g., '-lm' 
+     'DEFINE'	=> '-DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DLINUX=1 -DDO_PS=1 -DDO_FIG=1 -DDO_X11=1 -DDO_XDBE=1 -DDO_GD=1 -DDO_GIF=1 -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_LIMITS_H=1 ',                   # e.g., '-DHAVE_SOMETHING' 
+     'INC'	=> '-I./../include',           # e.g., '-I/usr/local/include' 
+ );
+diff -rup g2-0.72.orig/g2_python/Makefile g2-0.72/g2_python/Makefile
+--- g2-0.72.orig/g2_python/Makefile	2006-10-17 20:38:16.000000000 +0200
++++ g2-0.72/g2_python/Makefile	2013-08-31 10:15:21.032415338 +0200
+@@ -3,7 +3,7 @@
+ .PHONY: all build install demo clean
+ 
+ DEFS=-DPACKAGE_NAME=\"\" -DPACKAGE_TARNAME=\"\" -DPACKAGE_VERSION=\"\" -DPACKAGE_STRING=\"\" -DPACKAGE_BUGREPORT=\"\" -DLINUX=1 -DDO_PS=1 -DDO_FIG=1 -DDO_X11=1 -DDO_XDBE=1 -DDO_GD=1 -DDO_GIF=1 -DSTDC_HEADERS=1 -DHAVE_SYS_TYPES_H=1 -DHAVE_SYS_STAT_H=1 -DHAVE_STDLIB_H=1 -DHAVE_STRING_H=1 -DHAVE_MEMORY_H=1 -DHAVE_STRINGS_H=1 -DHAVE_INTTYPES_H=1 -DHAVE_STDINT_H=1 -DHAVE_UNISTD_H=1 -DHAVE_LIMITS_H=1 
+-LIBS= -L/usr/X11R6/lib -L/usr/local/lib -lm -lX11 -lXext -lgd
++LIBS= -L/usr/local/lib -lm -lX11 -lXext -lgd
+ LDSHARED=ld
+ 
+ # either ../libg2.so or ../libg2.a must be there
