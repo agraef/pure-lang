@@ -21,7 +21,7 @@ g2libdir = $(g2prefix)/lib
 includedir = $(g2prefix)/include
 includefile = $(includedir)/g2.h
 
-DISTFILES = COPYING Makefile README g2.pure g2_*.pure penguin.pure debian/*
+DISTFILES = COPYING Makefile README g2.pure g2_*.pure penguin.pure debian/* g2-0.72-sharedlib.patch
 SEDFILES = README
 
 %: %.pure
