@@ -5,6 +5,9 @@ progs = tk_hello tk_examp earth uiexample
 
 all: $(progs)
 
+uiexample: uiexample.pure
+	pure -c $< -o $@ $(shell pkg-config --libs gtk+-2.0)
+
 %: %.pure %.tcl
 	pure -c $< -o $@
 
