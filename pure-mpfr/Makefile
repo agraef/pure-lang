@@ -66,4 +66,4 @@ deb: $(debsrc) dist
 	rm -rf $(dist)
 
 $(debsrc):
-	wget -nv http://pure-lang.googlecode.com/files/$(dist).tar.gz -O $@
+	wget -nv https://bitbucket.org/purelang/pure-lang/downloads/$(dist).tar.gz -O $@

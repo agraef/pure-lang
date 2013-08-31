@@ -5,7 +5,7 @@
 <\body>
   <section|About Pure>
 
-  <hlink|Pure|http://pure-lang.googlecode.com/> is a modern-style functional
+  <hlink|Pure|http://purelang.bitbucket.org/> is a modern-style functional
   programming language based on term rewriting. It offers equational
   definitions with pattern matching, full symbolic rewriting capabilities,
   dynamic typing, eager and lazy evaluation, lexical closures, built-in list

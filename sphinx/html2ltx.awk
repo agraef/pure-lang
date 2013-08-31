@@ -1,5 +1,5 @@
 
-# html2ltx.awk by Albert Graef <Dr.Graef@t-online.de> 2012-11-04
+# html2ltx.awk by Albert Graef <aggraef@gmail.com> 2012-11-04
 
 # This is a little awk script to fix up various glitches when converting
 # Sphinx html docs to LaTeX input for TeXmacs using pandoc. The script

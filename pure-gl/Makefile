@@ -129,7 +129,7 @@ deb: $(debsrc) dist
 	rm -rf $(dist)
 
 $(debsrc):
-	wget -nv http://pure-lang.googlecode.com/files/$(dist).tar.gz -O $@
+	wget -nv https://bitbucket.org/purelang/pure-lang/downloads/$(dist).tar.gz -O $@
 
 #############################################################################
 # Generator stuff. You only need this if you want to regenerate the wrappers.
