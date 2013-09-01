@@ -3,7 +3,7 @@
 
 # Package name and version number:
 dist = gnumeric-pure-$(version)
-version = 0.12
+version = 0.13
 
 # NOTE: This version of the module is set up to build with Gnumeric 1.12. It
 # will *not* compile with Gnumeric 1.10 and earlier because of changes in the
