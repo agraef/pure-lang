@@ -6,9 +6,9 @@ dist = gnumeric-pure-$(version)
 version = 0.13
 
 # NOTE: This version of the module is set up to build with Gnumeric 1.12. It
-# will *not* compile with Gnumeric 1.10 and earlier because of changes in the
-# plugin API, and OpenGL support isn't available right now. To compile with
-# Gnumeric <= 1.10, please use version 0.12 of the module.
+# will *not* compile with Gnumeric 1.10 and earlier any more because of
+# changes in the plugin API. To compile with Gnumeric <= 1.10, please use
+# version 0.12 of the module.
 
 # Build and installation instructions:
 
@@ -38,11 +38,13 @@ GODEPS=libspreadsheet-1.12
 INCLUDES = `pkg-config --cflags $(GODEPS)`
 GTKLIBS = `pkg-config --libs $(GODEPS)`
 
-#     Adjust the following as needed to build with OpenGL support (requires
-#     GtkGLExt). NOTE: This is disabled for now, so that the module works with
-#     the latest Gnumeric versions.
+#     Adjust the following as needed to build with OpenGL support. NOTE: This
+#     requires a GtkGLExt version which is compatible with GTK3, see
+#     https://github.com/tdz/gtkglext. Also, there are still some issues with
+#     the OpenGL support under GTK3 right now, so this is disabled by
+#     default. Uncomment the following line if you want to give it a try.
 
-#GLDEPS=gtkglext-1.0 gtkglext-x11-1.0
+#GLDEPS=gtkglext-3.0 gtkglext-x11-3.0
 
 # 3.  Run 'make' to build the plugin.
 

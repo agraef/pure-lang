@@ -1610,6 +1610,16 @@ sheet_widget_list_base_get_content_link(SheetObject *so)
 
 #endif
 
+static GtkFrame *get_frame_widget(GtkWidget *w)
+{
+  /* In newer Gnumeric versions, the GtkFrame widget of a frame sheet object
+     is actually a child inside a GtkEventBox. */
+  if (GTK_IS_FRAME(w))
+    return GTK_FRAME(w);
+  else
+    return GTK_FRAME(gtk_bin_get_child(GTK_BIN(w)));
+}
+
 pure_expr *pure_sheet_objects(void)
 {
   if (eval_info && eval_info->ei) {
@@ -1681,7 +1691,8 @@ pure_expr *pure_sheet_objects(void)
 	if (t == SHEET_WIDGET_FRAME_TYPE) {
 	  /* Frame objects don't expose any properties right now, so we take
 	     the label from the widget if it's available. */
-	  const gchar *str = widget?gtk_frame_get_label(GTK_FRAME(widget)):NULL;
+	  const gchar *str =
+	    widget?gtk_frame_get_label(get_frame_widget(widget)):NULL;
 	  info = pure_tuplel(5, sheet_name_str, pure_string_dup("frame"),
 			     pure_string_dup(str),
 			     NA_expr(),
@@ -1843,7 +1854,7 @@ static GtkWidget *get_frame_sheet(const Sheet *sheet, const char *name)
       GocItem *item = get_goc_item(view);
       if (item && GOC_IS_WIDGET(item)) {
 	GtkWidget *widget = GOC_WIDGET(item)->widget;
-	const gchar *label = gtk_frame_get_label(GTK_FRAME(widget));
+	const gchar *label = gtk_frame_get_label(get_frame_widget(widget));
 	if (check_name(so, name) ||
 	    (label && strcmp(label, name) == 0))
 	  return widget;
@@ -1876,6 +1887,7 @@ static GtkWidget *get_frame(const GnmEvalPos *pos, const char *name)
 }
 
 #ifdef USE_GL
+
 static gint ptrcmp(gconstpointer a, gconstpointer b)
 {
   if (a < b)
@@ -1898,7 +1910,7 @@ static GSList *search_frame_so(SheetObject *so, const char *name,
       GocItem *item = get_goc_item(view);
       if (item && GOC_IS_WIDGET(item)) {
 	GtkWidget *widget = GOC_WIDGET(item)->widget;
-	const gchar *label = gtk_frame_get_label(GTK_FRAME(widget));
+	const gchar *label = gtk_frame_get_label(get_frame_widget(widget));
 	if (ok || (label && strcmp(label, name) == 0))
 	  l = g_slist_insert_sorted(l, widget, ptrcmp);
       }
@@ -1965,6 +1977,7 @@ bool pure_check_window(const char *name)
 
 #include <gtk/gtk.h>
 #include <gtk/gtkgl.h>
+#include <gdk/gdkgl.h>
 #include <GL/gl.h>
 
 static gboolean gl_destroy_cb(GtkWidget *drawing_area, GLWindow *glw)
@@ -1973,7 +1986,8 @@ static gboolean gl_destroy_cb(GtkWidget *drawing_area, GLWindow *glw)
     GSList *windows = g_slist_copy(glw->windows), *l;
     for (l = windows; l; l = l->next) {
       GtkWidget *w = GTK_WIDGET(l->data);
-      GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
+      GtkWidget *drawing_area =
+	gtk_bin_get_child(GTK_BIN(get_frame_widget(w)));
       if (!drawing_area) {
 	glw->windows = g_slist_remove(glw->windows, w);
 #if 0
@@ -1997,6 +2011,11 @@ static void do_callback(pure_expr *cb, GtkWidget *drawing_area,
   if (ret) pure_freenew(ret);
 }
 
+/* These have been superseded in GtkGLExt 3.0, map them to the new calls. */
+
+#define gdk_gl_drawable_gl_begin(drawable, glcontext) gdk_gl_context_make_current(glcontext, drawable, drawable)
+#define gdk_gl_drawable_gl_end(gldrawable) gdk_gl_context_release_current()
+
 static gboolean gl_setup_cb(GtkWidget *drawing_area, GdkEvent *event,
 			    GLWindow *glw)
 {
@@ -2015,16 +2034,19 @@ static gboolean gl_config_cb(GtkWidget *drawing_area, GdkEvent *event,
 {
   GdkGLContext *glContext = gtk_widget_get_gl_context(drawing_area);
   GdkGLDrawable *glDrawable = gtk_widget_get_gl_drawable(drawing_area);
+  GtkAllocation *allocation = g_new0(GtkAllocation, 1);
   if (!gdk_gl_drawable_gl_begin(glDrawable, glContext))
     g_assert_not_reached();
+  gtk_widget_get_allocation(drawing_area, allocation);
   do_callback(glw->config_cb, drawing_area, glw->user_data,
-	      pure_tuplel(2, pure_int(drawing_area->allocation.width),
-			  pure_int(drawing_area->allocation.height)));
+	      pure_tuplel(2, pure_int(allocation->width),
+			  pure_int(allocation->height)));
+  g_free(allocation);
   gdk_gl_drawable_gl_end(glDrawable);
   return TRUE;
 }
 
-static gboolean gl_display_cb(GtkWidget *drawing_area, GdkEvent *event,
+static gboolean gl_display_cb(GtkWidget *drawing_area, cairo_t *cr,
 			      GLWindow *glw)
 {
   GdkGLContext *glContext = gtk_widget_get_gl_context(drawing_area);
@@ -2046,17 +2068,22 @@ static gboolean gl_timer_cb(GLWindow *glw)
     GSList *l = glw->windows;
     for (; l; l = l->next) {
       GtkWidget *w = GTK_WIDGET(l->data);
-      GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
+      GtkWidget *drawing_area =
+	gtk_bin_get_child(GTK_BIN(get_frame_widget(w)));
       if (drawing_area) {
-	GdkRectangle r = { 0, 0, drawing_area->allocation.width,
-			   drawing_area->allocation.height };
+	GtkAllocation *allocation = g_new0(GtkAllocation, 1);
+	gtk_widget_get_allocation(drawing_area, allocation);
+	GdkRectangle r = { 0, 0, allocation->width,
+			   allocation->height };
+	g_free(allocation);
 	GdkGLContext *glContext = gtk_widget_get_gl_context(drawing_area);
 	GdkGLDrawable *glDrawable = gtk_widget_get_gl_drawable(drawing_area);
 	if (!gdk_gl_drawable_gl_begin(glDrawable, glContext))
 	  g_assert_not_reached();
 	do_callback(glw->timer_cb, drawing_area, glw->user_data,
 		    pure_tuplel(0));
-	gdk_window_invalidate_rect(drawing_area->window, &r, FALSE);
+	gdk_window_invalidate_rect(gtk_widget_get_window(drawing_area),
+				   &r, FALSE);
 	gdk_gl_drawable_gl_end(glDrawable);
       }
     }
@@ -2067,7 +2094,7 @@ static gboolean gl_timer_cb(GLWindow *glw)
 static gboolean init_gl_window(GLWindow *glw, GtkWidget *w)
 {
   /* Check to see whether we already added a drawable to the frame widget. */
-  if (gtk_bin_get_child(GTK_BIN(w)))
+  if (gtk_bin_get_child(GTK_BIN(get_frame_widget(w))))
     return false;
   else {
     GtkWidget *drawing_area = gtk_drawing_area_new();
@@ -2082,13 +2109,13 @@ static gboolean init_gl_window(GLWindow *glw, GtkWidget *w)
       return false;
     }
     /* Set up the callbacks. */
-    g_signal_connect(drawing_area, "configure-event",
+    g_signal_connect(G_OBJECT(drawing_area), "configure-event",
 		     G_CALLBACK(gl_config_cb), glw);
-    g_signal_connect(drawing_area, "expose-event",
+    g_signal_connect(G_OBJECT(drawing_area), "draw",
 		     G_CALLBACK(gl_display_cb), glw);
-    g_signal_connect(drawing_area, "destroy",
+    g_signal_connect(G_OBJECT(drawing_area), "destroy",
 		     G_CALLBACK(gl_destroy_cb), glw);
-    gtk_container_add(GTK_CONTAINER(w), drawing_area);
+    gtk_container_add(GTK_CONTAINER(get_frame_widget(w)), drawing_area);
     gtk_widget_show(drawing_area);
     return true;
   }
@@ -2153,7 +2180,8 @@ pure_expr *pure_gl_window(const char *name, int timeout,
 	for (l = ws; l; l = l->next) {
 	  GtkWidget *w = GTK_WIDGET(l->data);
 	  if (!g_slist_find(windows, w)) {
-	    GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
+	    GtkWidget *drawing_area =
+	      gtk_bin_get_child(GTK_BIN(get_frame_widget(w)));
 	    /* Destroy the GL window. */
 #if 0
 	    fprintf(stderr, "removing old view %p\n", w);
@@ -2197,7 +2225,8 @@ pure_expr *pure_gl_window(const char *name, int timeout,
 	/* Run the setup callback on the new views. */
 	for (l = windows; l; l = l->next) {
 	  GtkWidget *w = GTK_WIDGET(l->data);
-	  GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
+	  GtkWidget *drawing_area =
+	    gtk_bin_get_child(GTK_BIN(get_frame_widget(w)));
 	  gl_setup_cb(drawing_area, NULL, glw);
 	}
 	g_slist_free(windows);
@@ -2246,7 +2275,8 @@ pure_expr *pure_gl_window(const char *name, int timeout,
 	/* Run the setup callback. */
 	for (l = glw->windows; l; l = l->next) {
 	  GtkWidget *w = GTK_WIDGET(l->data);
-	  GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
+	  GtkWidget *drawing_area =
+	    gtk_bin_get_child(GTK_BIN(get_frame_widget(w)));
 	  gl_setup_cb(drawing_area, NULL, glw);
 	}
 	return pure_pointer(glw->windows->data);
@@ -2256,6 +2286,13 @@ pure_expr *pure_gl_window(const char *name, int timeout,
   } else
     return NULL;
 }
+
+/* The GTK3 version of GtkGLExt doesn't include these convenience functions,
+   so we simply include the source from GtkGLExt 1.0 here. */
+
+#define __GDKGL_H_INSIDE__
+#define GDK_GL_COMPILATION
+#include "gdkglshapes.c"
 
 #else
 
