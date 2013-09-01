@@ -7,7 +7,7 @@ myplugin = dsps.pure
 # Platform-specific defaults, you may have to edit this if the
 # auto-configuration below doesn't properly handle your system.
 
-#PIC = -fPIC # uncomment for x86-64 compilation
+PIC = -fPIC # uncomment for x86-64 compilation
 DLL = .so
 shared = -shared
 
@@ -51,7 +51,7 @@ clean:
 
 # NOTE: This requires GNU make and that you have the Gnumeric development
 # files installed.
-gnmversion=$(shell pkg-config --modversion libspreadsheet-1.10)
+gnmversion=$(shell pkg-config --modversion libspreadsheet-1.12)
 plugindir=$(HOME)/.gnumeric/$(gnmversion)/plugins/faust
 
 install: $(myplugin)

@@ -155,8 +155,7 @@ call_pure_function_nodes(GnmFuncEvalInfo *ei, int argc,
   return v;
 }
 
-static DependentFlags func_link(GnmFuncEvalInfo *ei);
-static void func_unlink(GnmFuncEvalInfo *ei);
+static GnmDependentFlags func_link(GnmFuncEvalInfo *ei, gboolean qlink);
 
 static gboolean
 gplp_func_desc_load(GOPluginService *service,
@@ -218,7 +217,6 @@ gplp_func_desc_load(GOPluginService *service,
   else
     res->fn_nodes = &call_pure_function_nodes;
   res->linker = func_link;
-  res->unlinker = func_unlink;
   res->impl_status = GNM_FUNC_IMPL_STATUS_UNIQUE_TO_GNUMERIC;
   res->test_status = GNM_FUNC_TEST_STATUS_UNKNOWN;
 
@@ -704,55 +702,59 @@ void pure_remove_gl_window(const DepKey *key)
 
 /****************************************************************************/
 
-static DependentFlags
-func_link(GnmFuncEvalInfo *ei)
-{
-  return DEPENDENT_ALWAYS_UNLINK;
-}
+/* NOTE: Unfortunately, this interface was changed in rev. 90c2eaa3 of
+   Gnumeric (2012-07-21 "Dependencies: reduce code duplication."). There used
+   to be two separate link and unlink functions which were merged into
+   one. Adjusted to the new interface 20130901 ag; this code thus won't
+   compile with older Gnumeric versions (<1.11) any more. */
 
-static void
-func_unlink(GnmFuncEvalInfo *ei)
+static GnmDependentFlags
+func_link(GnmFuncEvalInfo *ei, gboolean qlink)
 {
-  DepKey key = { ei->func_call, ei->pos->dep, 0 };
-  GLWindow *glw;
+  if (qlink) {
+  } else {
+    DepKey key = { ei->func_call, ei->pos->dep, 0 };
+    GLWindow *glw;
 #ifndef _WIN32
-  DataSource *ds;
-  while ((ds = g_hash_table_lookup(datasources, &key)) != NULL) {
+    DataSource *ds;
+    while ((ds = g_hash_table_lookup(datasources, &key)) != NULL) {
 #if 0
-    fprintf(stderr, "delete datasource = %p-%p-%u [%d]\n",
-	    ei->func_call, ei->pos->dep, ds->key.id, ds->pid);
+      fprintf(stderr, "delete datasource = %p-%p-%u [%d]\n",
+        ei->func_call, ei->pos->dep, ds->key.id, ds->pid);
 #endif
-    if (ds->pid > 0) {
-      // get rid of the inferior process
-      int status;
-      kill(ds->pid, SIGTERM);
-      if (waitpid(ds->pid, &status, 0) < 0) perror("waitpid");
+      if (ds->pid > 0) {
+        // get rid of the inferior process
+        int status;
+	kill(ds->pid, SIGTERM);
+	if (waitpid(ds->pid, &status, 0) < 0) perror("waitpid");
+      }
+      if (ds->value) pure_free(ds->value);
+      if (ds->expr) pure_free(ds->expr);
+      g_free(ds);
+      key.id++;
     }
-    if (ds->value) pure_free(ds->value);
-    if (ds->expr) pure_free(ds->expr);
-    g_free(ds);
-    key.id++;
-  }
-  key.id = 0;
+    key.id = 0;
 #endif
-  while ((glw = g_hash_table_lookup(gl_windows, &key)) != NULL) {
-    GSList *l = glw->windows;
-    if (glw->timeout > 0) g_source_remove(glw->timer_id);
-    glw->timer_id = 0; glw->timeout = 0;
-    glw->being_destroyed = TRUE;
-    for (; l; l = l->next) {
-      GtkWidget *w = GTK_WIDGET(l->data);
-      GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
-      /* Destroy the GL window. */
+    while ((glw = g_hash_table_lookup(gl_windows, &key)) != NULL) {
+      GSList *l = glw->windows;
+      if (glw->timeout > 0) g_source_remove(glw->timer_id);
+      glw->timer_id = 0; glw->timeout = 0;
+      glw->being_destroyed = TRUE;
+      for (; l; l = l->next) {
+        GtkWidget *w = GTK_WIDGET(l->data);
+	GtkWidget *drawing_area = gtk_bin_get_child(GTK_BIN(w));
+	/* Destroy the GL window. */
 #if 0
-      fprintf(stderr, "delete GL window = %p-%p-%u [%p]\n",
-	      ei->func_call, ei->pos->dep, glw->key.id, drawing_area);
+	fprintf(stderr, "delete GL window = %p-%p-%u [%p]\n",
+                ei->func_call, ei->pos->dep, glw->key.id, drawing_area);
 #endif
-      gtk_widget_destroy(drawing_area);
+	gtk_widget_destroy(drawing_area);
+      }
+      pure_remove_gl_window(&key);
+      key.id++;
     }
-    pure_remove_gl_window(&key);
-    key.id++;
   }
+  return DEPENDENT_NO_FLAG;
 }
 
 /****************************************************************************/

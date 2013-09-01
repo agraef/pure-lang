@@ -1875,6 +1875,7 @@ static GtkWidget *get_frame(const GnmEvalPos *pos, const char *name)
   return w;
 }
 
+#ifdef USE_GL
 static gint ptrcmp(gconstpointer a, gconstpointer b)
 {
   if (a < b)
@@ -1947,6 +1948,7 @@ static GSList *get_frames(const GnmEvalPos *pos, const char *name,
   }
   return l;
 }
+#endif
 
 bool pure_check_window(const char *name)
 {

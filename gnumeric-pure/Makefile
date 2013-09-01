@@ -5,6 +5,11 @@
 dist = gnumeric-pure-$(version)
 version = 0.12
 
+# NOTE: This version of the module is set up to build with Gnumeric 1.12. It
+# will *not* compile with Gnumeric 1.10 and earlier because of changes in the
+# plugin API, and OpenGL support isn't available right now. To compile with
+# Gnumeric <= 1.10, please use version 0.12 of the module.
+
 # Build and installation instructions:
 
 # 1.  Make sure that you have gnumeric and the corresponding development
@@ -28,15 +33,16 @@ version = 0.12
 
 # 2.  Adjust the following as needed for your GTK+/GOffice installation:
 
-GODEPS=libspreadsheet-1.10
+GODEPS=libspreadsheet-1.12
 
 INCLUDES = `pkg-config --cflags $(GODEPS)`
 GTKLIBS = `pkg-config --libs $(GODEPS)`
 
 #     Adjust the following as needed to build with OpenGL support (requires
-#     GtkGLExt). Or comment out the following line if you don't want this.
+#     GtkGLExt). NOTE: This is disabled for now, so that the module works with
+#     the latest Gnumeric versions.
 
-GLDEPS=gtkglext-1.0 gtkglext-x11-1.0
+#GLDEPS=gtkglext-1.0 gtkglext-x11-1.0
 
 # 3.  Run 'make' to build the plugin.
 
@@ -57,7 +63,7 @@ GLDEPS=gtkglext-1.0 gtkglext-x11-1.0
 
 # Try to guess the Gnumeric version number:
 #gnmversion=$(shell gnumeric --version | sed -n -e "s/^gnumeric version '\([0-9.]*\)'.*/\1/" -e "/^[0-9.]*$$/p")
-gnmversion=$(shell pkg-config --modversion libspreadsheet-1.10)
+gnmversion=$(shell pkg-config --modversion libspreadsheet-1.12)
 
 # Try to guess the Gnumeric installation prefix:
 prefix = $(patsubst %/bin/gnumeric,%,$(shell which gnumeric 2>/dev/null))

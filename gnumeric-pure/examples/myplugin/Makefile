@@ -17,7 +17,7 @@ clean:
 
 # NOTE: This requires GNU make and that you have the Gnumeric development
 # files installed.
-gnmversion=$(shell pkg-config --modversion libspreadsheet-1.10)
+gnmversion=$(shell pkg-config --modversion libspreadsheet-1.12)
 plugindir=$(HOME)/.gnumeric/$(gnmversion)/plugins/myplugin
 
 install: $(myplugin)
