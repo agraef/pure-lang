@@ -79,7 +79,7 @@ detail.
 Copying
 =======
 
-Copyright (c) 2009-2012 by Albert Graef.
+Copyright (c) 2009-2013 by Albert Graef.
 
 Gnumeric/Pure is free software: you can redistribute it and/or modify it under
 the terms of the GNU General Public License as published by the Free Software
@@ -97,28 +97,33 @@ this program.  If not, see <http://www.gnu.org/licenses/>.
 Installation
 ============
 
-Get the latest source from
-https://bitbucket.org/purelang/pure-lang/downloads/gnumeric-pure-@version@.tar.gz.
-
 Obviously, you need to have both Pure and Gnumeric installed. Pure 0.36 and
-Gnumeric 1.9.13 or later are known to work. We recommend Gnumeric 1.9.14 or
-later since it has improved support for GUI widgets. (Older Gnumeric versions
-probably work as well if you're willing to fiddle with the Makefile and/or the
-sources. See the beginning of the Makefile for related information.)
+Gnumeric 1.9.13 or later are known to work. The current version of this module
+(0.13, currently only available in Pure's Mercurial repository) will work with
+the latest, GTK3-based versions of Gnumeric (Gnumeric 1.11 and later, 1.12 has
+been tested). To obtain this version, clone the Pure repository or download it
+as a zip file at https://bitbucket.org/purelang/pure-lang; the module can be
+found in the gnumeric-pure subdirectory of the repository.
 
-.. note:: At present, Gnumeric/Pure will *not* work with the current Gnumeric
-   1.11 development series which is based on GTK3 and reportedly has a
-   different plugin interface. (At least nobody has tried porting
-   Gnumeric/Pure to it yet.) So you'll have to stick to the stable Gnumeric
-   series for the time being.
+Unfortunately, the Gnumeric plugin interface changed in recent releases, so if
+you are still running Gnumeric 1.10 or earlier then you should use version
+0.12 of the module instead:
 
-As shipped, the Makefile is set up to build Gnumeric/Pure with OpenGL support,
-which requires that you have the OpenGL libraries as well as GtkGLExt_ (the
-Gtk OpenGL extension) installed. These should be readily available on most
-systems, but you can also disable this feature by invoking ``make`` as ``make
-GLDEPS=``.
+  https://bitbucket.org/purelang/pure-lang/downloads/gnumeric-pure-0.12.tar.gz
+
+In the 0.12 version of the module, the Makefile is set up to build
+Gnumeric/Pure with OpenGL support, which requires that you have the OpenGL
+libraries as well as GtkGLExt_ (the Gtk OpenGL extension) for GTK2 installed.
+These should be readily available on most systems, but you can also disable
+this feature by invoking ``make`` as ``make GLDEPS=``.
 
 .. _GtkGLExt: http://gtkglext.sourceforge.net
+
+For the repository version, you'll need a GTK3-compatible version of GtkGLExt
+which can be found at https://github.com/tdz/gtkglext. The OpenGL support
+under GTK3 is still under development and currently has some issues, however,
+so it is disabled by default. If you want to give it a try then you'll have to
+uncomment the ``GLDEPS`` line at the beginning of the Makefile.
 
 Run ``make`` to compile the software. You might have to adjust the settings at
 the beginning of the Makefile to make this work. Once the compile goes
@@ -145,7 +150,7 @@ Makefile variables ``prefix`` and ``gnmversion``, respectively. For instance:
 
 .. code-block:: sh
 
-  $ make prefix=/usr gnmversion=1.10.13
+  $ make prefix=/usr gnmversion=1.12.4
 
 In either case, ``make install`` also installs the ``pure-gnm`` helper script
 under the Pure installation prefix. (This is a little convenience script to
@@ -523,7 +528,7 @@ of the Makefile described previously under `Creating a Simple Plugin`_.
 
 .. code-block:: make
 
-  gnmversion=$(shell pkg-config --modversion libspreadsheet-1.10)
+  gnmversion=$(shell pkg-config --modversion libspreadsheet-1.12)
   plugindir=$(HOME)/.gnumeric/$(gnmversion)/plugins/myplugin
 
   install: $(myplugin)
