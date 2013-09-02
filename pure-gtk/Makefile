@@ -3,7 +3,7 @@
 
 # Package name and version number:
 dist = pure-gtk-$(version)
-version = 0.11
+version = 0.12
 
 # Try to guess the installation prefix:
 prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
