@@ -30,4 +30,4 @@ install:
 	cp plugin.xml "$(DESTDIR)$(pkgdatadir)"
 
 uninstall:
-	rm -rf "$(DESTDIR)$(bindir)/pure-gnm$(EXE)"
+	rm -rf "$(DESTDIR)$(bindir)/pure-gnm$(EXE)" "$(DESTDIR)$(pkgdatadir)"
