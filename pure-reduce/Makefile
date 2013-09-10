@@ -114,6 +114,11 @@ dist: $(DISTFILES)
 	tar cfzh $(dist).tar.gz $(dist)
 	rm -rf $(dist)
 
+distcheck: dist
+	tar xfz $(dist).tar.gz
+	cd $(dist) && ln -s ../reduce-algebra . && make && make check && make install DESTDIR=./BUILD
+	rm -rf $(dist)
+
 # Generate the documentation from the library sources.
 
 sources = reduce.pure
