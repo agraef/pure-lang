@@ -33,8 +33,19 @@ objects = arith01.o arith02.o arith03.o arith04.o arith05.o arith06.o arith07.o 
 
 all: reduce.img reduce$(DLL)
 
+# NOTE: The following requires that the Reduce sources are in the
+# reduce-algebra subdirectory (this may also be a symbolic link pointing to
+# the appropriate directory containing the sources).
+
 reduce.img: reduce-algebra/csl/new-embedded/reduce.img
 	cp $< .
+
+# The latest svn revisions of Reduce exhibit various compilation problems on
+# newer Linux systems. Run 'make patch' once after checking out the Reduce
+# sources to get rid of these.
+
+patch: reduce-csl.patch
+	patch -p0 < $<
 
 # Use the reduce target to create a minimal Reduce executable if you want that
 # to be installed as well.

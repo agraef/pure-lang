@@ -1,0 +1,157 @@
+Index: reduce-algebra/csl/cslbase/fns1.c
+===================================================================
+--- reduce-algebra/csl/cslbase/fns1.c	(revision 2204)
++++ reduce-algebra/csl/cslbase/fns1.c	(working copy)
+@@ -2414,7 +2414,7 @@
+  */
+ {
+     if (SIXTY_FOUR_BIT)
+-    {   if (b != nil) trace_printf(" %.16" PRIx64 " ", (uint64_t)a);
++    {   if (b != nil) trace_printf(" %.16llx ", (uint64_t)a);
+         a = make_lisp_integer64((int64_t)a);
+         errexit();
+         return onevalue(a);
+Index: reduce-algebra/csl/new-embedded/procedural/Makefile
+===================================================================
+--- reduce-algebra/csl/new-embedded/procedural/Makefile	(revision 2204)
++++ reduce-algebra/csl/new-embedded/procedural/Makefile	(working copy)
+@@ -4,58 +4,9 @@
+ 
+ COMMON=-O2 -I. -DPAGE_BITS=19 -DHAVE_CONFIG_H=1 -DEMBEDDED=1
+ 
+-# The idea here is that I want a C compiler and set of flags that will
+-# generate a 32-bit executable. Rather than use a separate configuration
+-# step I will use GNU Make trickery to detect a collection of cases
+-# I expect to be enough to get me going rather often. I will assume I am
+-# going to use (a version of) gcc...
+-# If this does not work or you do not like it merely set CC and CFLAGS
+-# manually for yourself.
+-
+-ifeq ($(findstring Windows, $(OS)), Windows)
+-
+-CC1:=$(shell i686-w64-mingw32-gcc -v 2>&1)
+-CC2:=$(shell gcc-3 -v 2>&1)
+-CC3:=$(shell gcc hello.c -o hello && ./hello 2>&1)
+-
+-ifneq ($(CC1),)
+-CC=i686-w64-mingw32-gcc
+-CFLAGS=$(COMMON)
+-else
+-ifneq ($(CC2),)
+-CC=gcc-3
+-CFLAGS=-mno-cygwin $(COMMON)
+-else
+-ifeq ($(findstring [[4]], $(CC3)), [[4]])
+ CC=gcc
+ CFLAGS=$(COMMON)
+-else
+-CC=echo "Unable to build 32 bit application" && exit 1 &&
+-CFLAGS=
+-endif
+-endif
+-endif
+ 
+-else
+-
+-CC3:=$(shell gcc hello.c -o hello && ./hello 2>&1)
+-CC4:=$(shell gcc -m32 hello.c -o hello && ./hello 2>&1)
+-
+-ifeq ($(findstring [[4]], $(CC3)), [[4]])
+-CC=gcc
+-CFLAGS=$(COMMON)
+-else
+-ifeq ($(findstring [[4]], $(CC4)), [[4]])
+-CC=gcc
+-CFLAGS=-m32 $(COMMON)
+-else
+-CC=echo "Unable to build 32 bit application" && exit 1 &&
+-CFLAGS=
+-endif
+-endif
+-
+-endif
+-
+ S=../../cslbase
+ 
+ VPATH=$(S)
+@@ -75,7 +26,7 @@
+ 		embedcsl.o cslmpi.o cslread.o eval1.o eval2.o eval3.o \
+ 		eval4.o fasl.o fns1.o fns2.o fns3.o fwin.o gc.o \
+ 		preserve.o print.o restart.o sysfwin.o termed.o \
+-		stubs.o -lm -o reduce
++		stubs.o -lm -ldl -o reduce
+ 	cp ../reduce.img .
+ 
+ .c.o:                                                                          <
+Index: reduce-algebra/csl/new-embedded/reduce-image/Makefile
+===================================================================
+--- reduce-algebra/csl/new-embedded/reduce-image/Makefile	(revision 2204)
++++ reduce-algebra/csl/new-embedded/reduce-image/Makefile	(working copy)
+@@ -4,58 +4,9 @@
+ 
+ COMMON=-O2 -I. -DPAGE_BITS=19 -DHAVE_CONFIG_H=1 -DEMBEDDED=1
+ 
+-# The idea here is that I want a C compiler and set of flags that will
+-# generate a 32-bit executable. Rather than use a separate configuration
+-# step I will use GNU Make trickery to detect a collection of cases
+-# I expect to be enough to get me going rather often. I will assume I am
+-# going to use (a version of) gcc...
+-# If this does not work or you do not like it merely set CC and CFLAGS
+-# manually for yourself.
+-
+-ifeq ($(findstring Windows, $(OS)), Windows)
+-
+-CC1:=$(shell i686-w64-mingw32-gcc -v 2>&1)
+-CC2:=$(shell gcc-3 -v 2>&1)
+-CC3:=$(shell gcc hello.c -o hello && ./hello 2>&1)
+-
+-ifneq ($(CC1),)
+-CC=i686-w64-mingw32-gcc
+-CFLAGS=$(COMMON)
+-else
+-ifneq ($(CC2),)
+-CC=gcc-3
+-CFLAGS=-mno-cygwin $(COMMON)
+-else
+-ifeq ($(findstring [[4]], $(CC3)), [[4]])
+ CC=gcc
+ CFLAGS=$(COMMON)
+-else
+-CC=echo "Unable to build 32 bit application" && exit 1 &&
+-CFLAGS=
+-endif
+-endif
+-endif
+ 
+-else
+-
+-CC3:=$(shell gcc hello.c -o hello && ./hello 2>&1)
+-CC4:=$(shell gcc -m32 hello.c -o hello && ./hello 2>&1)
+-
+-ifeq ($(findstring [[4]], $(CC3)), [[4]])
+-CC=gcc
+-CFLAGS=$(COMMON)
+-else
+-ifeq ($(findstring [[4]], $(CC4)), [[4]])
+-CC=gcc
+-CFLAGS=-m32 $(COMMON)
+-else
+-CC=echo "Unable to build 32 bit application" && exit 1 &&
+-CFLAGS=
+-endif
+-endif
+-
+-endif
+-
+ S=../../cslbase
+ R=../../..
+ 
+@@ -76,7 +27,7 @@
+ 		csl.o cslmpi.o cslread.o eval1.o eval2.o eval3.o \
+ 		eval4.o fasl.o fns1.o fns2.o fns3.o fwin.o gc.o \
+ 		preserve.o print.o restart.o sysfwin.o termed.o \
+-		stubs.o -lm -o reduce
++		stubs.o -lm -ldl -o reduce
+ 
+ .c.o:                                                                          <
+ 	$(CC) $(CFLAGS) -c -o $@ $<
