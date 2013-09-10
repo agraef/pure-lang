@@ -70,43 +70,49 @@ principle, this only needs to be done once for the initial installation of
 this module, but you may want to repeat this procedure every once in a while
 to get the latest Reduce version.)
 
-You can check out the latest Reduce version from its svn repository with the
-following command:
+The full Reduce system is a big package, so we have packaged a stripped-down
+version of the Reduce source which contains all the bits and pieces needed to
+compile the Reduce library and image, and has also been patched up so that it
+compiles cleanly on recent Linux systems. At the time of this writing, you can
+find this package here:
 
-.. code-block:: console
+    https://bitbucket.org/purelang/pure-lang/downloads/reduce-algebra-csl-r2204.tar.bz2
 
-   svn co svn://svn.code.sf.net/p/reduce-algebra/code/trunk reduce-algebra
+(You may want to check the download section on the Pure website for newer
+revisions of this package, since we may update the package from time to time
+to the latest source from the Reduce svn repository.)
 
-This may take a while; Reduce is a *big* package. Once it's finished, just
-drop the resulting reduce-algebra directory into the pure-reduce source
-directory. Run ``make`` and then (if needed) ``make install`` in the
-pure-reduce directory (*not* in the reduce-algebra directory!). You should
-also run ``make check`` which performs a few tests in order to verify that the
-interface works ok (this can be done without installing the package, but needs
-the Reduce image and library).
-
-.. note:: On some 64 bit systems (this has been reported for Debian-based
-   systems), you may have to install the libc6-dev-i386 package or similar to
-   make the compile go through; the CSL Makefiles included in the Reduce
-   sources require this for some reason.
-
-Also note that the pure-reduce module requires neither a full Reduce
-installation nor a full build of the Reduce package; just the Reduce library
-and image. Thus the additional items discussed below are all completely
-optional.
+Unpack the reduce-algebra-csl tarball and move the resulting reduce-algebra
+directory into the pure-reduce source directory. Run ``make`` and then (if
+needed) ``make install`` in the pure-reduce directory (*not* in the
+reduce-algebra directory!). You should also run ``make check`` which performs
+a few tests in order to verify that the interface works ok (this can be done
+without installing the package, but needs the Reduce image and library).
 
 For convenience, the Makefile also has a ``make reduce`` target which builds a
 minimal Reduce executable. If you use that option, ``make install`` installs
 this executable along with the library and image files, so that you can then
 run Reduce directly from the command line by just typing ``reduce``. Please
-note that this is a really minimalistic Reduce frontend. It's small, easy to
-build and doesn't need any support files other than the image file, but it
-doesn't have any of the bells and whistles of the full Reduce version either.
+note that this is a really minimalistic Reduce frontend which is mostly useful
+for testing purposes. (If you want the full Reduce version then you can find
+binary Reduce packages for various systems at SourceForge_. But note that
+neither the minimalistic nor the full Reduce frontend is required for the
+pure-reduce module in any way.)
 
-If you want to install the full Reduce version, there are binary packages for
-various systems available on SourceForge_. You can also build Reduce yourself
-from the sources; please check the build instructions in the reduce-algebra
-folder for details. (Basically, you'll need to run ``./configure --with-csl``
-or ``./configure --with-psl`` and then ``make`` there. Be patient, this takes
-a while.)
+It is also possible to build the Reduce library and image directly from the
+latest source in the Reduce svn repository. You can check out the repository
+with the following command:
 
+.. code-block:: console
+
+   svn co svn://svn.code.sf.net/p/reduce-algebra/code/trunk reduce-algebra
+
+This pulls down many hundreds of megabytes, so this may take a while. Once the
+checkout is finished, you'll end up with a reduce-algebra directory which you
+can drop into the pure-reduce source directory and proceed with the
+compilation as described above. Note that if you go that route then you should
+be prepared to deal with compilation problems in the Reduce sources. Reduce is
+a big and complicated software, so the svn sources are not always in a state
+which guarantees smooth compilation on all supported systems. If you run into
+problems then please consider using our streamlined reduce-algebra-csl package
+instead.
