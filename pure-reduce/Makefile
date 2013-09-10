@@ -1,6 +1,6 @@
 
 name = pure-reduce
-version = 0.2
+version = 0.3
 
 # Platform-specific setup.
 
