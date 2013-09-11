@@ -2840,6 +2840,8 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
       // we first dump the entire listing into a string and then output that
       // string through more
       ostringstream sout;
+      string errmsg;
+      try {
       for (list<env_sym>::const_iterator it = l.begin();
 	   it != l.end(); ++it) {
 	const symbol& sym = *it->sym;
@@ -3036,7 +3038,10 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	  }
 	}
       }
-      if (sflag) {
+      } catch (err &e) {
+	errmsg = e.what();
+      }
+      if (errmsg.empty() && sflag) {
 	ostringstream summary;
 	if (cflag)
 	  summary << ncsts << " constants, ";
@@ -3063,6 +3068,10 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	  pclose(fp);
 	} else
 	  cout << sout.str();
+      }
+      if (!errmsg.empty()) {
+	interp.error(*mylloc, errmsg);
+	interp.nerrs = 0;
       }
     }
   out:

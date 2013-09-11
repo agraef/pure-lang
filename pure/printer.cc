@@ -791,15 +791,22 @@ static bool pure_is_pair(const pure_expr *x)
 
 static bool pure_is_list(const pure_expr *x)
 {
-  while (pure_is_cons(x))
+  // Detect cycles, needed to prevent issue #6.
+  set <const pure_expr*> ys;
+  while (ys.find(x) == ys.end() && pure_is_cons(x)) {
+    ys.insert(x);
     x = x->data.x[1];
+  }
   return pure_is_nil(x);
 }
 
 static bool pure_is_list(const pure_expr *x, list<const pure_expr*>& xs,
 			 const pure_expr*& tl)
 {
-  while (pure_is_cons(x)) {
+  // Detect cycles, needed to prevent issue #6.
+  set <const pure_expr*> ys;
+  while (ys.find(x) == ys.end() && pure_is_cons(x)) {
+    ys.insert(x);
     xs.push_back(x->data.x[0]->data.x[1]);
     x = x->data.x[1];
   }
