@@ -175,6 +175,7 @@ void interpreter::init()
   source_options[HOST] = true;
   codegen_options.insert(pair<string,bool*>("interactive", &interactive_mode));
   codegen_options.insert(pair<string,bool*>("debugging", &debugging));
+  codegen_options.insert(pair<string,bool*>("symbolic", &symbolic));
   codegen_options.insert(pair<string,bool*>("checks", &checks));
   codegen_options.insert(pair<string,bool*>("const", &consts));
   codegen_options.insert(pair<string,bool*>("fold", &folding));
@@ -781,8 +782,10 @@ interpreter::interpreter(int _argc, char **_argv)
     : argc(_argc), argv(_argv),
     verbose(0), compat(false), compat2(false), compiling(false),
     eager_jit(false), interactive(false), debugging(false), texmacs(false),
-    checks(true), folding(true), consts(true), bigints(false), use_fastcc(true),
-    pic(false), strip(true), restricted(false), ttymode(false), override(false),
+    symbolic(true), checks(true), folding(true), consts(true),
+    bigints(false), use_fastcc(true),
+    pic(false), strip(true), restricted(false), ttymode(false),
+    override(false),
     stats(false), stats_mem(false), temp(0),  ps("> "), libdir(""),
     histfile("/.pure_history"), modname("pure"),
     interactive_mode(false), escape_mode(0),
@@ -805,7 +808,8 @@ interpreter::interpreter(int32_t nsyms, char *syms,
   : argc(0), argv(0),
     verbose(0), compat(false), compat2(false), compiling(false),
     eager_jit(false), interactive(false), debugging(false), texmacs(false),
-    checks(true), folding(true), consts(true), bigints(false), use_fastcc(true),
+    symbolic(true), checks(true), folding(true), consts(true),
+    bigints(false), use_fastcc(true),
     pic(false), strip(true), restricted(true), ttymode(false), override(false),
     stats(false), stats_mem(false), temp(0), ps("> "), libdir(""),
     histfile("/.pure_history"), modname("pure"),
@@ -2810,8 +2814,8 @@ pure_expr* interpreter::run(int priv, const string &_s,
   int32_t l_modno = modno;
   string *l_current_namespace = symtab.current_namespace;
   map< string, set<int32_t> > *l_search_namespaces = symtab.search_namespaces;
-  bool l_checks = checks, l_folding = folding, l_consts = consts,
-    l_bigints = bigints, l_use_fastcc = use_fastcc;
+  bool l_symbolic = symbolic, l_checks = checks, l_folding = folding,
+    l_consts = consts, l_bigints = bigints, l_use_fastcc = use_fastcc;
   bool l_source_level = source_level, l_skip_level = skip_level;
   bitset<64> l_else_stack = else_stack;
   // save global data
@@ -2875,9 +2879,10 @@ pure_expr* interpreter::run(int priv, const string &_s,
     delete symtab.search_namespaces;
     symtab.current_namespace = l_current_namespace;
     symtab.search_namespaces = l_search_namespaces;
-    if (checks != l_checks || use_fastcc != l_use_fastcc) compile();
-    checks = l_checks; folding = l_folding; consts = l_consts;
-    bigints = l_bigints; use_fastcc = l_use_fastcc;
+    if (symbolic != l_symbolic || checks != l_checks ||
+	use_fastcc != l_use_fastcc) compile();
+    symbolic = l_symbolic; checks = l_checks; folding = l_folding;
+    consts = l_consts; bigints = l_bigints; use_fastcc = l_use_fastcc;
   }
   // return last computed result, if any
   return result;
@@ -2913,8 +2918,8 @@ pure_expr *interpreter::runstr(const string& s)
   int32_t l_modno = modno;
   string *l_current_namespace = symtab.current_namespace;
   map< string, set<int32_t> > *l_search_namespaces = symtab.search_namespaces;
-  bool l_checks = checks, l_folding = folding, l_consts = consts,
-    l_bigints = bigints, l_use_fastcc = use_fastcc;
+  bool l_symbolic = symbolic, l_checks = checks, l_folding = folding,
+    l_consts = consts, l_bigints = bigints, l_use_fastcc = use_fastcc;
   bool l_source_level = source_level, l_skip_level = skip_level;
   bitset<64> l_else_stack = else_stack;
   // save global data
@@ -2964,9 +2969,10 @@ pure_expr *interpreter::runstr(const string& s)
   delete symtab.search_namespaces;
   symtab.current_namespace = l_current_namespace;
   symtab.search_namespaces = l_search_namespaces;
-  if (checks != l_checks || use_fastcc != l_use_fastcc) compile();
-  checks = l_checks; folding = l_folding; consts = l_consts;
-  bigints = l_bigints; use_fastcc = l_use_fastcc;
+  if (symbolic != l_symbolic || checks != l_checks ||
+      use_fastcc != l_use_fastcc) compile();
+  symbolic = l_symbolic; checks = l_checks; folding = l_folding;
+  consts = l_consts; bigints = l_bigints; use_fastcc = l_use_fastcc;
   // return last computed result, if any
   return result;
 }
@@ -2983,8 +2989,8 @@ pure_expr *interpreter::parsestr(const string& s)
   int32_t l_modno = modno;
   string *l_current_namespace = symtab.current_namespace;
   map< string, set<int32_t> > *l_search_namespaces = symtab.search_namespaces;
-  bool l_checks = checks, l_folding = folding, l_consts = consts,
-    l_bigints = bigints, l_use_fastcc = use_fastcc;
+  bool l_symbolic = symbolic, l_checks = checks, l_folding = folding,
+    l_consts = consts, l_bigints = bigints, l_use_fastcc = use_fastcc;
   bool l_source_level = source_level, l_skip_level = skip_level;
   bitset<64> l_else_stack = else_stack;
   // save global data
@@ -3055,9 +3061,10 @@ pure_expr *interpreter::parsestr(const string& s)
   delete symtab.search_namespaces;
   symtab.current_namespace = l_current_namespace;
   symtab.search_namespaces = l_search_namespaces;
-  if (checks != l_checks || use_fastcc != l_use_fastcc) compile();
-  checks = l_checks; folding = l_folding; consts = l_consts;
-  bigints = l_bigints; use_fastcc = l_use_fastcc;
+  if (symbolic != l_symbolic || checks != l_checks ||
+      use_fastcc != l_use_fastcc) compile();
+  symbolic = l_symbolic; checks = l_checks; folding = l_folding;
+  consts = l_consts; bigints = l_bigints; use_fastcc = l_use_fastcc;
   // return last computed result, if any
   return result;
 }
@@ -3919,7 +3926,7 @@ void interpreter::compile()
 	// regenerate LLVM code (body)
 	Env& f = globalfuns[ftag];
 	push("compile", &f);
-	fun_body(info.m, 0, defined.find(ftag) != defined.end());
+	fun_body(info.m, 0, defined_sym(ftag));
 	pop(&f);
 	if (eager.find(ftag) != eager.end())
 	  to_be_jited.insert(ftag);
@@ -4495,7 +4502,7 @@ void interpreter::clearsym(int32_t f)
        pragma. In this case the cbox is reset to NULL so that the wrapper
        function knows that we want an exception rather than a normal form. */
     bool defined_external = externals.find(f) != externals.end() &&
-      defined.find(f) != defined.end();
+      defined_sym(f);
     pure_expr *cv = defined_external? 0 : pure_new(pure_const(f));
     if (v->second.x) pure_free(v->second.x);
     v->second.x = cv;
@@ -5743,7 +5750,7 @@ rulel *interpreter::compile_interface(env &e, int32_t tag)
     // "Defined functions" are always considered complete, and thus don't
     // place any additional restrictions on their arguments. That's why we
     // don't have to consider them in pass #2 of the algorithm.
-    bool complete = defined.find(f) != defined.end();
+    bool complete = defined_sym(f);
     // Check to see whether we have a matching function. NOTE: We currently
     // require that the number of arguments must match exactly. Maybe we
     // should also allow argc<n?
@@ -13063,8 +13070,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   // equations, but note that the external C function will always be tried
   // first. (Note that, as of Pure 0.48, the default value may also be NULL in
   // the case of a --defined function without equations.)
-  pure_expr *cv = defined.find(sym.f) != defined.end() ? 0 :
-    pure_new(pure_const(sym.f));
+  pure_expr *cv = defined_sym(sym.f) ? 0 : pure_new(pure_const(sym.f));
   assert(JIT);
   GlobalVar& v = globalvars[sym.f];
   if (!v.v) {

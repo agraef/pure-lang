@@ -1,3 +1,23 @@
+2013-09-13  Albert Graef  <aggraef@gmail.com>
+
+	* pure.cc, lexer.ll, interpreter.cc/hh, runtime.cc: Added
+	--symbolic/--nosymbolic pragmas, cf. issue #12. This compilation
+	option allows you to set the interpreter's default mode to
+	non-symbolic so that all global functions with rules are treated
+	as "defined" functions (as with the --defined pragma). Note that
+	this interferes with Pure's symbolic evaluation capabilities and
+	thus the same caveats as for the --defined pragma apply.
+
+	Please note that this feature is still highly experimental and a
+	bit rough around the edges. For consistency, we also provide a
+	--nosymbolic command line option and an equivalent PURE_NOSYMBOLIC
+	environment variable, but it isn't really advisable to use these
+	right now since they may break some standard library functions, as
+	well as functions in other addon modules. But it's possible to use
+	a pair of --nosymbolic and --symbolic pragmas to delineate
+	sections of code in which all global functions are to be marked as
+	--defined.
+
 2013-09-11  Albert Graef  <aggraef@gmail.com>
 
 	* printer.cc (pure_is_list): Detect cycles in lazy list structures

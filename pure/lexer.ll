@@ -306,8 +306,10 @@ blank  [ \t\f\v\r]
   int32_t f = pure_sym(sym.c_str());
   env::const_iterator it = interp.globenv.find(f);
   if (f > 0 && (it == interp.globenv.end() || it->second.t == env_info::fun)) {
-    if (interp.defined.find(f) == interp.defined.end()) {
-      interp.defined.insert(f);
+    bool defined = interp.defined_sym(f);
+    interp.defined.insert(f);
+    interp.nodefined.erase(f);
+    if (!defined) {
       if (it != interp.globenv.end())
 	interp.mark_dirty(f);
       else
@@ -329,8 +331,10 @@ blank  [ \t\f\v\r]
   int32_t f = pure_sym(sym.c_str());
   env::const_iterator it = interp.globenv.find(f);
   if (f > 0 && (it == interp.globenv.end() || it->second.t == env_info::fun)) {
-    if (interp.defined.find(f) != interp.defined.end()) {
-      interp.defined.erase(f);
+    bool defined = interp.defined_sym(f);
+    interp.nodefined.insert(f);
+    interp.defined.erase(f);
+    if (defined) {
       if (it != interp.globenv.end())
 	interp.mark_dirty(f);
       else
@@ -484,7 +488,11 @@ blank  [ \t\f\v\r]
   string opt0 = string(s, t-s);
   bool flag = opt0.substr(0,2) != "no";
   string opt = flag?opt0:opt0.substr(2);
-  if (opt == "checks") {
+  if (opt == "symbolic") {
+    if (interp.symbolic != flag) {
+      interp.compile(); interp.symbolic = flag;
+    }
+  } else if (opt == "checks") {
     if (interp.checks != flag) {
       interp.compile(); interp.checks = flag;
     }
@@ -1860,8 +1868,10 @@ static string decl_str(interpreter &interp, const symbol& sym,
     }
     sout << " " << (int)sym.prec << " " << sym.s << ";\n";
   }
-  if (defined)
+  if (defined && interp.defined.find(sym.f) != interp.defined.end())
     sout << "#! --defined " << sym.s << "\n";
+  else if (!defined && interp.nodefined.find(sym.f) != interp.nodefined.end())
+    sout << "#! --nodefined " << sym.s << "\n";
   return sout.str();
 }
 
@@ -2909,7 +2919,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	if (_it == interp.globenv.end() && _jt == interp.macenv.end() &&
 	    xt != interp.externals.end()) {
 	  const ExternInfo& info = xt->second;
-	  bool defined = interp.defined.find(sym.f) != interp.defined.end();
+	  bool defined = interp.defined_sym(sym.f);
 	  sout << decl_str(interp, sym, defined);
 	  if (sym.priv) sout << "private ";
 	  sout << info << ";";
@@ -2953,7 +2963,7 @@ Options may be combined, e.g., show -fg f* is the same as show -f -g f*.\n\
 	    sout << "const " << sym.s << " = " << *_it->second.cval
 		 << ";\n";
 	} else {
-	  bool defined = interp.defined.find(sym.f) != interp.defined.end();
+	  bool defined = interp.defined_sym(sym.f);
 	  sout << decl_str(interp, sym, defined);
 	  if (fflag && xt != interp.externals.end()) {
 	    const ExternInfo& info = xt->second;
@@ -3275,7 +3285,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	}
 	if (_it == interp.globenv.end() && _jt == interp.macenv.end() &&
 	    _xt != interp.externals.end()) {
-	  bool defined = interp.defined.find(sym.f) != interp.defined.end();
+	  bool defined = interp.defined_sym(sym.f);
 	  fout << decl_str(interp, sym, defined);
 	  const ExternInfo& info = _xt->second;
 	  if (sym.priv) fout << "private ";
@@ -3291,7 +3301,7 @@ Options may be combined, e.g., dump -fg f* is the same as dump -f -g f*.\n\
 	  fout << "const " << sym.s << " = " << *_it->second.cval
 	       << ";\n";
 	} else {
-	  bool defined = interp.defined.find(sym.f) != interp.defined.end();
+	  bool defined = interp.defined_sym(sym.f);
 	  fout << decl_str(interp, sym, defined);
 	  if (fflag && _xt != interp.externals.end()) {
 	    const ExternInfo& info = _xt->second;

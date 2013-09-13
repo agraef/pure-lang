@@ -626,6 +626,7 @@ public:
   bool interactive;  // interactive mode
   bool debugging;    // debugging mode
   bool texmacs;      // texmacs mode (http://www.texmacs.org/)
+  bool symbolic;     // symbolic mode (--symbolic pragma)
   bool checks;	     // extra stack and signal checks (default)
   bool folding;	     // constant folding (default)
   bool consts;	     // precompute constants at compile time (default)
@@ -688,6 +689,7 @@ public:
   list<int> required; // required symbols (--required pragma)
   set<int> eager;    // eager compilation symbols (--eager pragma)
   set<int> defined;  // defined symbols (--defined pragma)
+  set<int> nodefined; // non-defined symbols (--nodefined pragma)
   set<int> quoteargs; // macros with autoquoted args (--quoteargs pragma)
   ostream *output;   // redirected output stream for interactive commands
   symtable symtab;   // the symbol table
@@ -704,6 +706,13 @@ public:
   pure_expr *tmps;   // temporaries list (to be collected after exceptions)
   size_t freectr;    // size of the free list
   map<uint32_t,void*> locals; // interpreter-local storage for applications
+
+  bool defined_sym(int fno) {
+    if (symbolic)
+      return defined.find(fno) != defined.end();
+    else
+      return nodefined.find(fno) == nodefined.end();
+  }
 
   /*************************************************************************
              Stuff below is to be used by application programs.

@@ -239,6 +239,7 @@ main(int argc, char *argv[])
     size_t n = strtoul(env, &end, 0);
     if (!*end) interpreter::stackmax = n*1024;
   }
+  if ((env = getenv("PURE_NOSYMBOLIC"))) interp.symbolic = false;
   if ((env = getenv("PURE_NOCHECKS"))) interp.checks = false;
   if ((env = getenv("PURE_NOCONST"))) interp.consts = false;
   if ((env = getenv("PURE_NOFOLD"))) interp.folding = false;
@@ -298,6 +299,10 @@ main(int argc, char *argv[])
 	want_rcfile = false;
       else if (strcmp(arg, "--noediting") == 0)
 	want_editing = false;
+      else if (strcmp(arg, "--nosymbolic") == 0)
+	interp.symbolic = false;
+      else if (strcmp(arg, "--symbolic") == 0)
+	interp.symbolic = true;
       else if (strcmp(arg, "--nochecks") == 0)
 	interp.checks = false;
       else if (strcmp(arg, "--checks") == 0)

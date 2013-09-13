@@ -3708,6 +3708,7 @@ pure_interp *pure_create_interp(int argc, char *argv[])
     size_t n = strtoul(env, &end, 0);
     if (!*end) interpreter::stackmax = n*1024;
   }
+  if ((env = getenv("PURE_NOSYMBOLIC"))) interp.symbolic = false;
   if ((env = getenv("PURE_NOCHECKS"))) interp.checks = false;
   if ((env = getenv("PURE_NOCONST"))) interp.consts = false;
   if ((env = getenv("PURE_NOFOLD"))) interp.folding = false;
@@ -3743,6 +3744,10 @@ pure_interp *pure_create_interp(int argc, char *argv[])
 	batch = arg[2] == 0 && strchr("bci", arg[1]);
       else if (strcmp(arg, "-n") == 0 || strcmp(arg, "--noprelude") == 0)
 	want_prelude = false;
+      else if (strcmp(arg, "--nosymbolic") == 0)
+	interp.symbolic = false;
+      else if (strcmp(arg, "--symbolic") == 0)
+	interp.symbolic = true;
       else if (strcmp(arg, "--nochecks") == 0)
 	interp.checks = false;
       else if (strcmp(arg, "--checks") == 0)
@@ -4092,6 +4097,7 @@ pure_interp *pure_interp_main(int argc, char *argv[],
     size_t n = strtoul(env, &end, 0);
     if (!*end) interpreter::stackmax = n*1024;
   }
+  if ((env = getenv("PURE_NOSYMBOLIC"))) interp.symbolic = false;
   if ((env = getenv("PURE_NOCHECKS"))) interp.checks = false;
   if ((env = getenv("PURE_NOCONST"))) interp.consts = false;
   if ((env = getenv("PURE_NOFOLD"))) interp.folding = false;
