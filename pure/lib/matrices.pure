@@ -627,16 +627,17 @@ colvector ()		= redim (0,1) {};
 colvector xs@(_,_)	= colvector (list xs);
 
 rowvector []		= redim (1,0) {};
-rowvector xs::rlist	= case cmatrix xs of
-  	  		    x::matrix = x;
-  			    _ = case dmatrix xs of
-    			      x::matrix = x;
-    			      _ = case imatrix xs of
-      			        x::matrix = x;
-      				_ = smatrix xs;
-    			      end;
-  			    end;
-			  end;
+rowvector xs::rlist	= catch (\_->smatrix xs)
+			  (case cmatrix xs of
+			     x::matrix = x;
+			     _ = case dmatrix xs of
+			       x::matrix = x;
+			       _ = case imatrix xs of
+				 x::matrix = x;
+				 _ = smatrix xs;
+			       end;
+			     end;
+			   end);
 
 colvector xs		= redim (#x,1) x if matrixp x
 	  		  when x = rowvector xs end;
