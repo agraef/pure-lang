@@ -40,6 +40,11 @@
 # undef yywrap
 # define yywrap() 1
 
+/* Some newer Flex versions define yyleng as type size_t which leads to
+   warnings about signed-unsigned comparisons even in Flex's own scanner
+   skeleton. Silence these. */
+#pragma GCC diagnostic ignored "-Wsign-compare"
+
 /* By default yylex returns int, we use token_type.  Unfortunately yyterminate
    by default returns 0, which is not of token_type.  */
 #define yyterminate() return yy::parser::token_type(0)
