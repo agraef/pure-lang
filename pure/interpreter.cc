@@ -3926,7 +3926,7 @@ void interpreter::compile()
 	// regenerate LLVM code (body)
 	Env& f = globalfuns[ftag];
 	push("compile", &f);
-	fun_body(info.m, 0, defined_sym(ftag));
+	fun_body(info.m, 0, set_defined_sym(ftag));
 	pop(&f);
 	if (eager.find(ftag) != eager.end())
 	  to_be_jited.insert(ftag);
@@ -4502,7 +4502,7 @@ void interpreter::clearsym(int32_t f)
        pragma. In this case the cbox is reset to NULL so that the wrapper
        function knows that we want an exception rather than a normal form. */
     bool defined_external = externals.find(f) != externals.end() &&
-      defined_sym(f);
+      set_defined_sym(f);
     pure_expr *cv = defined_external? 0 : pure_new(pure_const(f));
     if (v->second.x) pure_free(v->second.x);
     v->second.x = cv;
@@ -5750,7 +5750,7 @@ rulel *interpreter::compile_interface(env &e, int32_t tag)
     // "Defined functions" are always considered complete, and thus don't
     // place any additional restrictions on their arguments. That's why we
     // don't have to consider them in pass #2 of the algorithm.
-    bool complete = defined_sym(f);
+    bool complete = set_defined_sym(f);
     // Check to see whether we have a matching function. NOTE: We currently
     // require that the number of arguments must match exactly. Maybe we
     // should also allow argc<n?
@@ -13070,7 +13070,7 @@ Function *interpreter::declare_extern(int priv, string name, string restype,
   // equations, but note that the external C function will always be tried
   // first. (Note that, as of Pure 0.48, the default value may also be NULL in
   // the case of a --defined function without equations.)
-  pure_expr *cv = defined_sym(sym.f) ? 0 : pure_new(pure_const(sym.f));
+  pure_expr *cv = set_defined_sym(sym.f) ? 0 : pure_new(pure_const(sym.f));
   assert(JIT);
   GlobalVar& v = globalvars[sym.f];
   if (!v.v) {

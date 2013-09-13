@@ -1873,9 +1873,9 @@ static string decl_str(interpreter &interp, const symbol& sym,
     }
     sout << " " << (int)sym.prec << " " << sym.s << ";\n";
   }
-  if (defined && interp.defined.find(sym.f) != interp.defined.end())
+  if (defined && interp.symbolic)
     sout << "#! --defined " << sym.s << "\n";
-  else if (!defined && interp.nodefined.find(sym.f) != interp.nodefined.end())
+  else if (!defined && !interp.symbolic)
     sout << "#! --nodefined " << sym.s << "\n";
   return sout.str();
 }

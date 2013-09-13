@@ -714,6 +714,18 @@ public:
       return nodefined.find(fno) == nodefined.end();
   }
 
+  bool set_defined_sym(int fno) {
+    bool act_defined = defined_sym(fno);
+    if (defined.find(fno) == defined.end() &&
+	nodefined.find(fno) == nodefined.end()) {
+      if (act_defined)
+	defined.insert(fno);
+      else
+	nodefined.insert(fno);
+    }
+    return act_defined;
+  }
+
   /*************************************************************************
              Stuff below is to be used by application programs.
    *************************************************************************/
