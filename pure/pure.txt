@@ -777,6 +777,48 @@ Currently, the following code generation options are recognized:
    The same option also determines the handling of type aliases at compile
    time, see `Type Rules`_.
 
+.. option:: --symbolic
+   	    --nosymbolic
+
+   Enable or disable `symbolic mode`. Pure's default behaviour is to evaluate
+   function applications in a symbolic fashion using the equations (rewriting
+   rules) supplied by the programmer, cf. `Definitions and Expression
+   Evaluation`_. This means that it is *not* normally an error if there is no
+   equation which applies to the given function application to be evaluated;
+   rather, the unevaluated function becomes a "constructor symbol" which is
+   applied to the provided arguments to form a literal ("normal form") term
+   which stands for itself. E.g., here's what you get if you try to add an
+   (undefined) symbol and a number::
+
+     > a+1;
+     a+1
+
+   The :option:`--nosymbolic` option changes this behaviour so that if a
+   global function has *any* defining equations, then an attempt to invoke the
+   function on a combination of arguments for which there is no applicable
+   equation, raises an exception. So if the interpreter is invoked with
+   :option:`--nosymbolic` then you'll see this instead::
+
+     > a+1;
+     <stdin>, line 1: unhandled exception 'failed_match' while evaluating 'a+1'
+
+   This behaviour is more in line with traditional languages where it is an
+   error if a "defined function" cannot be evaluated in case of argument
+   mismatch. It makes it easier to spot argument mismatch errors which might
+   well go unnoticed if a program is executed in Pure's default symbolic
+   mode. However, it also makes it impossible to perform symbolic expression
+   evaluations which is one of the key features of term rewriting as a
+   programming language.
+
+   Much of Pure's library and many programming examples assume Pure's default
+   mode of symbolic evaluation, so that it is generally not advisable to run
+   the interpreter with a global :option:`--nosymbolic` option, except maybe
+   for debugging purposes. More commonly :option:`--nosymbolic` is used as a
+   pragma in source code where it only applies to a specific collection of
+   function definitions. In addition, there's a
+   :option:`--defined <pure-pragma --defined>` pragma which enables you to
+   mark individual functions as "defined functions", see below.
+
 .. option:: --tc
    	    --notc
 
@@ -831,25 +873,17 @@ Declarations`_).
 .. option:: --defined fun
    	    --nodefined fun
 
-   These pragmas change the behaviour of functions defined in a Pure program.
-   Pure's default mode is to evaluate function applications in a symbolic
-   fashion using the equations (rewriting rules) supplied by the programmer,
-   cf. `Definitions and Expression Evaluation`_. This means that it is *not*
-   normally an error if there is no equation which applies to the given
-   function application to be evaluated; rather, the application simply
-   becomes a "normal form" which stands for itself. E.g., here's what you get
-   if you try to add an (undefined) symbol and a number::
-
-     > a+1;
-     a+1
-
-   The :option:`--defined` pragma allows you to declare a function symbol as a
-   "defined" function, so that it will raise a proper exception when no
-   equation is applicable::
+   These pragmas change the behaviour of global functions defined in a Pure
+   program. The :option:`--defined` pragma marks the given function or
+   operator symbol as a "defined function" so that an exception is raised if
+   the function is applied to a combination of arguments for which there is no
+   applicable equation. This works similarly to the
+   :option:`--nosymbolic <pure --nosymbolic>` pragma (see above), but allows
+   you to mark individual functions as "defined". For instance::
 
      > #! --defined +
      > a+1;
-     <stdin>, line 3: unhandled exception 'failed_match' while evaluating 'a+1'
+     <stdin>, line 2: unhandled exception 'failed_match' while evaluating 'a+1'
 
    The :option:`--defined` status of a function can be changed at any time
    (causing the function to be recompiled on the fly if necessary), and the
@@ -861,8 +895,8 @@ Declarations`_).
      a+1
 
    More information and examples for common uses of the :option:`--defined`
-   pragma can be found under `Defined Functions`_ in the `Caveats and Notes`_
-   section.
+   and :option:`--nosymbolic <pure --nosymbolic>` pragmas can be found under
+   `Defined Functions`_ in the `Caveats and Notes`_ section.
 
 .. option:: --quoteargs fun
 
@@ -1557,11 +1591,11 @@ This symbolic mode of evaluation is rather unusual outside of the realm of
 symbolic algebra systems, but it provides the programmer with a very flexible
 model of computation and is one of Pure's most distinguishing features. In
 some cases, however, the unevaluated normal forms may also become a nuisance
-since they may obscure possible programming errors. Therefore Pure provides a
-special :option:`--defined <pure-pragma --defined>` pragma (cf. `Code
-Generation Options`_) which forces a function to be treated as a defined
-function, so that it becomes more like functions in traditional untyped
-languages such as Lisp and Python which raise an exception under such
+since they may obscure possible programming errors. Therefore Pure provides
+special :option:`--nosymbolic` and :option:`--defined <pure-pragma --defined>`
+pragmas (cf. `Code Generation Options`_) which force functions to be treated
+as defined functions, so that they become more like functions in traditional
+untyped languages such as Lisp and Python which raise an exception under such
 conditions. This is described in more detail under `Defined Functions`_ in the
 `Caveats and Notes`_ section.
 
@@ -12796,7 +12830,10 @@ the default behaviour of most other command language interpreters. This also
 has the advantage that shebangs like ``#!/usr/bin/env pure`` can now be used
 without any caveats. If you do want to execute multiple script files in batch
 mode then you now have to explicitly indicate this with the new :option:`-b`
-option. Please see `Invoking Pure`_ for details.
+option; please see `Invoking Pure`_ for details. Pure 0.58 also adds two new
+code generation options :option:`--symbolic` and :option:`--nosymbolic` to set
+the default evaluation mode of global functions; these are discussed in
+`Defined Functions`_ below.
 
 Error Recovery
 --------------
@@ -13053,8 +13090,8 @@ As explained in `Definitions and Expression Evaluation`_, Pure doesn't really
 distinguish "constructors" from "defined functions" and thus allows any
 function symbol to become part of a normal form expression yielded by an
 evaluation. This behaviour follows the usual semantics of (typeless) term
-rewriting and is actually quite useful if you also want to evaluate
-expressions symbolically.
+rewriting and is essential if you also want to evaluate expressions
+symbolically.
 
 However, this becomes a nuisance if you really expect the given function to
 reduce to something else, and just accidentally supplied the wrong arguments
@@ -13083,11 +13120,18 @@ applicable to the subject expression::
 
 This is the same kind of :cons:`failed_match` exception that you'll get, e.g.,
 if the subject term fails to match all patterns in a :keyword:`case`
-construct, cf. `Exception Handling`_. However, note that the exception will
-only be generated if the symbol actually has any defining equations, so a
-"pure constructor" (i.e., a symbol without defining equations) will still
-return a normal form even if it is also declared :option:`--defined <pure
-pragma --defined>`::
+construct, cf. `Exception Handling`_.
+
+Note that the :option:`--defined <pure pragma --defined>` pragma only has an
+effect on global functions; local functions in a :keyword:`with` expression
+will always be evaluated in Pure's default symbolic mode. Thus, if you need
+the above behaviour with a local function then you'll either have to add the
+exception handling yourself or turn the local function into a global one.
+
+Also note that an exception will only be generated if the symbol actually has
+any defining equations, so a "pure constructor" (i.e., a symbol without
+defining equations) will still return a normal form even if it is also
+declared :option:`--defined <pure pragma --defined>`::
 
   > #! --defined foo
   > foo bar;
@@ -13112,15 +13156,58 @@ As indicated, the :option:`--defined <pure-pragma --defined>` and
 at any time, and the interpreter takes care that the affected function is
 recompiled automatically as needed.
 
-Please note that the :option:`--defined <pure-pragma --defined>` pragma is
-still considered experimental. It interferes with Pure's symbolic evaluation
-capabilities, so the pragma isn't currently used in the standard library and
-we recommend that programmers shouldn't use it in a careless fashion
-either. However, while most error conditions stemming from unexpected normal
-forms can also be caught with diligent unit testing, the pragma can sometimes
-save you some time and trouble, especially when testing programs which are to
-be executed mostly in batch mode. Future versions of the interpreter might
-also make good use of this pragma for static checks and optimization purposes.
+Pure 0.58 and later also provide a :option:`--nosymbolic` compilation option
+which lets you switch the interpreter to the non-symbolic mode of operation,
+so that *every* global function with equations becomes a defined function.
+This option is most commonly used as a pragma to delineate code sections with
+defined functions, so that you don't have to write out the :option:`--defined
+<pure-pragma --defined>` pragmas for each function. The :option:`--symbolic`
+pragma is then used to switch back to the default symbolic mode. For
+instance::
+
+  > run
+  > #! --nosymbolic
+  > extern int puts(char*);
+  > foo x::int = x+1;
+  > puts 99;
+  <stdin>, line 4: unhandled exception 'failed_match' while evaluating 'puts 99'
+  > foo bar;
+  <stdin>, line 5: unhandled exception 'failed_match' while evaluating 'foo bar'
+  > #! --symbolic
+  > bar x::int = x-1;
+  > bar foo;
+  bar foo
+
+Note that these pragmas only adjust the default behaviour of functions. It is
+still possible to change the status of individual functions with the
+:option:`--defined <pure-pragma --defined>` and :option:`--nodefined
+<pure-pragma --nodefined>` pragmas::
+
+  > #! --nodefined foo
+  > foo bar;
+  foo bar
+  > #! --defined bar
+  > bar foo;
+  <stdin>, line 12: unhandled exception 'failed_match' while evaluating 'bar foo'
+
+You can even invoke the interpreter with the :option:`--nosymbolic` command
+line option so that the non-symbolic mode becomes the global default. However,
+this affects *all* functions in a program, including the library functions
+used by your program. It isn't really advisable to do this, because at the
+time of this writing many library modules still assume Pure's default mode of
+symbolic evaluation, and so a global switch to :option:`--nosymbolic` may well
+break some of these functions.
+
+At this time, the :option:`--defined <pure-pragma --defined>` and
+:option:`--nosymbolic` pragmas are still considered experimental. They
+interfere with Pure's symbolic evaluation capabilities, so they aren't
+currently used in the standard library and we recommend that programmers
+shouldn't use them in a careless fashion either. However, while most error
+conditions stemming from unexpected normal forms can also be caught with
+diligent unit testing, these pragmas can save you time and trouble, especially
+when testing programs which are to be executed mostly in batch mode. Future
+versions of the interpreter might also make good use of these pragmas for
+static checks and optimization purposes.
 
 Stack Size and Tail Recursion
 -----------------------------
