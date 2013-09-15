@@ -1093,7 +1093,7 @@ ostream& operator << (ostream& os, const pure_expr *x)
     return os << "}";
   case EXPR::APP: {
     list<const pure_expr*> xs;
-    const pure_expr *tl;
+    const pure_expr *tl = 0;
     prec_t p;
     if (pure_is_list(x, xs, tl)) {
       size_t n = xs.size();
