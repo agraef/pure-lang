@@ -19,12 +19,15 @@ outdir="./test"
 
 failed=0
 usage=0
+verbosity=0
 
-while getopts :fh opt; do
+while getopts :fhv opt; do
   case $opt in
   f) failed=1
     ;;
   \?|h) usage=1
+    ;;
+  v) verbosity=1
     ;;
   esac
 done
@@ -36,9 +39,10 @@ if test 0 -ne $failed && test 0 -ne $#; then
 fi
 
 if test 0 -ne $usage; then
-  echo "usage: $0 [-h|-f|test...]"
+  echo "usage: $0 [-v] [-h|-f|test...]"
   echo "  -h          display this help"
   echo "  -f          run previously failed tests"
+  echo "  -v          show result diffs for failed tests"
   echo "  test...     test file(s) to run"
   exit 1
 fi >&2
@@ -95,6 +99,7 @@ for t in "$@"; do
     rc=1
     mv "$tmp" "$diff"
     echo "${ECHO_T}FAILED"
+    test "$verbosity" -gt 0 && cat "$diff"
   fi
 done
 

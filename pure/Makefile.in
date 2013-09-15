@@ -520,11 +520,17 @@ $(srcdir)/test/special.log: test/special.pure lib/*.pure
 %.log: %.pure
 	./run-test  < $< > $@ 2>&1
 
+ifneq ($(verbosity), )
+ifneq ($(verbosity), 0)
+rtflags=-v
+endif
+endif
+
 check: pure
-	./run-tests
+	./run-tests $(rtflags)
 
 recheck: pure
-	./run-tests -f
+	./run-tests -f $(rtflags)
 
 # DO NOT DELETE
 
