@@ -6296,6 +6296,8 @@ pure_expr *pure_invoke(void *f, pure_expr** _e)
     // normal return
     interp.pop_aframe();
     MEMDEBUG_SUMMARY(res)
+    assert(res);
+    res->refc++;
     /* Collect any new garbage that might have accumulated during the
        call. Normally there shouldn't be any, but it might be that some badly
        written external function does this. */
@@ -6312,8 +6314,6 @@ pure_expr *pure_invoke(void *f, pure_expr** _e)
     }
     // restore the old list of temporaries
     interp.tmps = old_tmps;
-    assert(res);
-    res->refc++;
     pure_unref_internal(res);
     if (interp.sstk_sz > oldsz) {
       // The called function didn't clean up our stack frame, do it now.
