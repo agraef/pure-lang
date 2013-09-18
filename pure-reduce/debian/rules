@@ -9,17 +9,11 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
-DEB_BUILD_ARCH ?= $(shell dpkg-architecture -qDEB_BUILD_ARCH)
-
 %:
 	dh $@ 
 
 override_dh_auto_build:
-#	dh_auto_build -- prefix=/usr
-	cp reduce-files/$(DEB_BUILD_ARCH)/reduce.* .
-
-override_dh_auto_clean:
-#	dh_auto_clean
+	dh_auto_build -- prefix=/usr
 
 override_dh_auto_install:
 	dh_auto_install -- prefix=/usr

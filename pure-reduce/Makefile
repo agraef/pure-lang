@@ -131,12 +131,20 @@ $(target).txt: README $(sources)
 
 # Debian package.
 
-debsrc = $(shell echo $(dist) | sed -e 's/-$(version)/_$(version)/').orig.tar.gz
+reduce_rev=2204
+reduce_src=reduce-algebra-csl-r$(reduce_rev).tar.bz2
+debname=$(shell echo $(dist) | sed -e 's/-$(version)/_$(version)/')
 
-deb: $(debsrc) dist
+debsrc = $(debname).orig.tar.gz
+debsrc2 = $(debname).orig-reduce-algebra.tar.bz2
+
+deb: $(debsrc) $(debsrc2) dist
 	tar xfz $(dist).tar.gz
 	cd $(dist) && debuild $(DEBUILD_FLAGS)
 	rm -rf $(dist)
 
 $(debsrc):
 	wget -nv https://bitbucket.org/purelang/pure-lang/downloads/$(dist).tar.gz -O $@
+
+$(debsrc2):
+	wget -nv https://bitbucket.org/purelang/pure-lang/downloads/$(reduce_src) -O $@
