@@ -52,8 +52,8 @@ instfiles = $(pure_source) $(objects)
 
 # The stuff below is pretty generic.
 
-CC = gcc
-CXX = g++
+#CC = gcc
+#CXX = g++
 
 CFLAGS = -g -O2
 CXXFLAGS = -g -O2
