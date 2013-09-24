@@ -51,7 +51,7 @@ cleanlogs:
 
 logs: $(logs)
 
-%.log: %.pure $(puresource) $(objects)
+%.log: %.pure $(puresource)
 	pure -v -I. -L. < $< > $@ 2>&1
 
 # compile the 'life' example
