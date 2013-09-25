@@ -61,7 +61,7 @@
   please check the <TeXmacs> documentation, section ``<TeXmacs> \ as an
   interface'', for details. To make this work, you'll have to install the
   plugin first so that <TeXmacs> knows about it; instructions for that can be
-  found in the <hlink|Pure installation instructions|http://purelang.bitbucket.org/docs/install.html#texmacs-mode>.
+  found in the <hlink|Pure installation instructions|http://puredocs.bitbucket.org/install.html#texmacs-mode>.
   The distributed configuration actually defines various different types of
   Pure sessions, each with their own options for the Pure interpreter, and
   it's easy to add your own if needed.
