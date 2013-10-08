@@ -65,7 +65,7 @@ mode==1 { next; }
 mode==2 && /\\item/ { next; }
 mode==2 && /\\end{itemize}/ { mode = 3; print ""; next; }
 mode==2 {
-    gsub(/\\textbar{}/, " |");
+    gsub(/\\textbar\{\}/, " |");
     gsub(/»/, "");
     $0 = gensub(/\\href{([^:/]+)[.]html((#[^}]*)?)}{([^}]*)}/, "\\\\href{\\1.tm\\2}{\\4}", "g");
     print $0;
@@ -130,9 +130,9 @@ mode==5 { next; }
 # All other content.
 {
     # Some special TeX commands and characters causing trouble with TeXmacs.
-    gsub(/\\textbar{}/, "|");
-    gsub(/\\textless{}/, "<");
-    gsub(/\\textgreater{}/, ">");
+    gsub(/\\textbar\{\}/, "|");
+    gsub(/\\textless\{\}/, "<");
+    gsub(/\\textgreater\{\}/, ">");
     gsub(/«/, "<<");
     gsub(/»/, ">>");
     gsub(/≡/, "==");
@@ -238,7 +238,7 @@ mode==5 { next; }
 	    $0 = gensub(/^\\subsection{(.*)}$/, "\\\\subsection*{\\1\\\\label{\\1}}", "g");
 	else if (/^\\textbf{[a-z]}$/)
 	    $0 = gensub(/^\\textbf{(.*)}$/, "\\\\subsection*{\\1\\\\label{cap-\\1}}", "g");
-	else if (/^~$/ || /^\\emph{}$/ || /^\\includegraphics.*{.*}$/)
+	else if (/^~$/ || /^\\emph\{\}$/ || /^\\includegraphics.*{.*}$/)
 	    $0 = "";
 	else if (/^~~~/)
 	    gsub(/^~~~/, "\\ \\ \\ ");
