@@ -227,6 +227,11 @@ fi
 if test $rl_use_editline = yes; then
   AC_DEFINE(USE_EDITLINE, 1, [Define to use the editline library.])
 fi
+dnl editline doesn't have this
+save_LIBS="$LIBS"
+LIBS="$LIBS $rllib"
+AC_CHECK_FUNCS(history_set_history_state)
+LIBS="$save_LIBS"
 dnl iconv and nl_langinfo need special treatment (macros by Bruno Haible).
 AM_ICONV
 if test "$am_cv_func_iconv" != yes; then

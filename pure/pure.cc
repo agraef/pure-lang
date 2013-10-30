@@ -54,8 +54,9 @@
 #include <readline/history.h>
 #endif /* HAVE_READLINE_HISTORY_H */
 
-// editline doesn't have this
+#ifdef HAVE_HISTORY_SET_HISTORY_STATE
 #define HAVE_HISTORY_STATE 1
+#endif /* HAVE_HISTORY_SET_HISTORY_STATE */
 
 #else /* USE_READLINE */
 
@@ -74,6 +75,11 @@
 #undef HAVE_READLINE_HISTORY
 #endif /* HAVE_EDIT_READLINE_READLINE_H */
 #endif /* HAVE_EDITLINE_READLINE_H */
+
+// At the time of this writing, editline doesn't have this.
+#ifdef HAVE_HISTORY_SET_HISTORY_STATE
+#define HAVE_HISTORY_STATE 1
+#endif /* HAVE_HISTORY_SET_HISTORY_STATE */
 
 #endif /* USE_READLINE */
 #endif /* HAVE_LIBREADLINE */
