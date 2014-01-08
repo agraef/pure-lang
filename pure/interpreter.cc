@@ -10240,6 +10240,9 @@ static string& quote(string& s)
 #define ostream_clear_error(os) os.clear()
 #endif
 
+#if NEW_OSTREAM34 // LLVM 3.4 cosmetic changes
+#define new_raw_fd_ostream(s,binary,msg) new llvm::raw_fd_ostream(s,msg,(binary)?llvm::sys::fs::F_Binary:llvm::sys::fs::F_None)
+#else
 #if NEW_OSTREAM // LLVM >= 2.7 takes an enumeration as the last parameter
 #define new_raw_fd_ostream(s,binary,msg) new llvm::raw_fd_ostream(s,msg,(binary)?llvm::raw_fd_ostream::F_Binary:0)
 #else
@@ -10247,6 +10250,7 @@ static string& quote(string& s)
 #define new_raw_fd_ostream(s,binary,msg) new llvm::raw_fd_ostream(s,binary,1,msg)
 #else // LLVM 2.5 and earlier only have the Binary flag
 #define new_raw_fd_ostream(s,binary,msg) new llvm::raw_fd_ostream(s,binary,msg)
+#endif
 #endif
 #endif
 

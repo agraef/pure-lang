@@ -263,7 +263,7 @@ if test $fastcc = yes; then
 fi
 
 dnl Check for LLVM (try various LLVM versions).
-AC_CHECK_PROGS(LLVMCONF,[${llvm_config_pre} llvm-config-3.3 llvm-config-3.2 llvm-config-3.1 llvm-config-3.0 llvm-config-2.9 llvm-config-2.8 llvm-config-2.7 llvm-config-2.6 llvm-config-2.5],no,"$PATH:/")
+AC_CHECK_PROGS(LLVMCONF,[${llvm_config_pre} llvm-config-3.4 llvm-config-3.3 llvm-config-3.2 llvm-config-3.1 llvm-config-3.0 llvm-config-2.9 llvm-config-2.8 llvm-config-2.7 llvm-config-2.6 llvm-config-2.5],no,"$PATH:/")
 if test "$LLVMCONF" = no; then
   AC_MSG_ERROR([Cannot find LLVM.])
 fi
@@ -375,6 +375,19 @@ AC_CACHE_CHECK([for new llvm::raw_fd_ostream interface (LLVM >= 2.7)], [pure_cv_
   ])
 if test "$pure_cv_new_ostream" = yes; then
   AC_DEFINE(NEW_OSTREAM, 1, [Define when building with new llvm::raw_fd_ostream interface (LLVM >= 2.7).])
+fi
+AC_CACHE_CHECK([for new llvm::raw_fd_ostream interface (LLVM >= 3.4)], [pure_cv_new_ostream34],
+  [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
+	#include <string>
+        #include <llvm/Support/raw_ostream.h>
+      ], [
+  	std::string error;
+        llvm::raw_fd_ostream os("xxxjunk", error, llvm::sys::fs::F_Excl);
+      ])
+    ], [pure_cv_new_ostream34=yes], [pure_cv_new_ostream34=no])
+  ])
+if test "$pure_cv_new_ostream34" = yes; then
+  AC_DEFINE(NEW_OSTREAM34, 1, [Define when building with new llvm::raw_fd_ostream interface (LLVM >= 3.4).])
 fi
 else
 AC_CACHE_CHECK([for new LLVM IRBuilder class (LLVM >= 2.4)], [pure_cv_new_builder],
