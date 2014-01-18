@@ -214,15 +214,14 @@ extern "C" pure_expr *orddict_list(myorddict *m);
 
 static const char *orddict_str(myorddict *m)
 {
-  static char *buf = 0; // TLD
-  if (buf) free(buf);
+  static char *buf0 = 0; // TLD
   /* Instead of building the string representation directly, it's much easier
      to just construct the real term on the fly and have str() do all the hard
      work for us. */
   int32_t fsym = omsym()?omsym():pure_sym("orddict");
   pure_expr *f = pure_const(fsym), *xs = orddict_list(m),
     *x = pure_applc(pure_new(f), pure_new(xs));
-  buf = str(x);
+  char *buf = str(x);
   pure_freenew(x);
   /* Note that in the case of an outfix symbol we now have something like LEFT
      [...] RIGHT, but we actually want that to be just LEFT ... RIGHT. We fix
@@ -233,19 +232,20 @@ static const char *orddict_str(myorddict *m)
     size_t k = strlen(s), l = strlen(t), m = strlen(buf);
     // sanity check
     if (strncmp(buf, s, k) || strncmp(buf+m-l, t, l)) {
-      free(buf); buf = 0;
+      free(buf);
       return 0;
     }
     char *p = buf+k, *q = buf+m-l;
     while (p < buf+m && *p == ' ') p++;
     while (q > buf && *--q == ' ') ;
     if (p >= q || *p != '[' || *q != ']') {
-      free(buf); buf = 0;
+      free(buf);
       return 0;
     }
     memmove(q, q+1, buf+m-q);
     memmove(p, p+1, buf+m-p);
   }
+  if (buf0) free(buf0); buf0 = buf;
   return buf;
 }
 
@@ -803,31 +803,31 @@ extern "C" pure_expr *ordmdict_list(myordmdict *m);
 
 static const char *ordmdict_str(myordmdict *m)
 {
-  static char *buf = 0; // TLD
-  if (buf) free(buf);
+  static char *buf0 = 0; // TLD
   int32_t fsym = ommsym()?ommsym():pure_sym("ordmdict");
   pure_expr *f = pure_const(fsym), *xs = ordmdict_list(m),
     *x = pure_applc(pure_new(f), pure_new(xs));
-  buf = str(x);
+  char *buf = str(x);
   pure_freenew(x);
   if (ommsym() && pure_sym_other(ommsym())) {
     const char *s = pure_sym_pname(ommsym()),
       *t = pure_sym_pname(pure_sym_other(ommsym()));
     size_t k = strlen(s), l = strlen(t), m = strlen(buf);
     if (strncmp(buf, s, k) || strncmp(buf+m-l, t, l)) {
-      free(buf); buf = 0;
+      free(buf);
       return 0;
     }
     char *p = buf+k, *q = buf+m-l;
     while (p < buf+m && *p == ' ') p++;
     while (q > buf && *--q == ' ') ;
     if (p >= q || *p != '[' || *q != ']') {
-      free(buf); buf = 0;
+      free(buf);
       return 0;
     }
     memmove(q, q+1, buf+m-q);
     memmove(p, p+1, buf+m-p);
   }
+  if (buf0) free(buf0); buf0 = buf;
   return buf;
 }
 

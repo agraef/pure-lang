@@ -179,15 +179,14 @@ extern "C" pure_expr *hashdict_list(myhashdict *m);
 
 static const char *hashdict_str(myhashdict *m)
 {
-  static char *buf = 0; // TLD
-  if (buf) free(buf);
+  static char *buf0 = 0; // TLD
   /* Instead of building the string representation directly, it's much easier
      to just construct the real term on the fly and have str() do all the hard
      work for us. */
   int32_t fsym = hmsym()?hmsym():pure_sym("hashdict");
   pure_expr *f = pure_const(fsym), *xs = hashdict_list(m),
     *x = pure_applc(pure_new(f), pure_new(xs));
-  buf = str(x);
+  char *buf = str(x);
   pure_freenew(x);
   /* Note that in the case of an outfix symbol we now have something like LEFT
      [...] RIGHT, but we actually want that to be just LEFT ... RIGHT. We fix
@@ -198,19 +197,26 @@ static const char *hashdict_str(myhashdict *m)
     size_t k = strlen(s), l = strlen(t), m = strlen(buf);
     // sanity check
     if (strncmp(buf, s, k) || strncmp(buf+m-l, t, l)) {
-      free(buf); buf = 0;
+      free(buf);
       return 0;
     }
     char *p = buf+k, *q = buf+m-l;
     while (p < buf+m && *p == ' ') p++;
     while (q > buf && *--q == ' ') ;
     if (p >= q || *p != '[' || *q != ']') {
-      free(buf); buf = 0;
+      free(buf);
       return 0;
     }
     memmove(q, q+1, buf+m-q);
     memmove(p, p+1, buf+m-p);
   }
+  /* We use a static variable to keep track of memory allocations and get rid
+     of previously allocated buffers in order to prevent memory leaks. This is
+     ugly, but it works. Note that updating the static buffer must be the last
+     thing here in order to make the routine reentrant, as the call to the
+     str() routine may invoke hashdict_str() recursively if components of the
+     dictionary are themselves dictionaries. */
+  if (buf0) free(buf0); buf0 = buf;
   return buf;
 }
 
@@ -819,31 +825,31 @@ extern "C" pure_expr *hashmdict_list(myhashmdict *m);
 
 static const char *hashmdict_str(myhashmdict *m)
 {
-  static char *buf = 0; // TLD
-  if (buf) free(buf);
+  static char *buf0 = 0; // TLD
   int32_t fsym = hmmsym()?hmmsym():pure_sym("hashmdict");
   pure_expr *f = pure_const(fsym), *xs = hashmdict_list(m),
     *x = pure_applc(pure_new(f), pure_new(xs));
-  buf = str(x);
+  char *buf = str(x);
   pure_freenew(x);
   if (hmmsym() && pure_sym_other(hmmsym())) {
     const char *s = pure_sym_pname(hmmsym()),
       *t = pure_sym_pname(pure_sym_other(hmmsym()));
     size_t k = strlen(s), l = strlen(t), m = strlen(buf);
     if (strncmp(buf, s, k) || strncmp(buf+m-l, t, l)) {
-      free(buf); buf = 0;
+      free(buf);
       return 0;
     }
     char *p = buf+k, *q = buf+m-l;
     while (p < buf+m && *p == ' ') p++;
     while (q > buf && *--q == ' ') ;
     if (p >= q || *p != '[' || *q != ']') {
-      free(buf); buf = 0;
+      free(buf);
       return 0;
     }
     memmove(q, q+1, buf+m-q);
     memmove(p, p+1, buf+m-p);
   }
+  if (buf0) free(buf0); buf0 = buf;
   return buf;
 }
 
