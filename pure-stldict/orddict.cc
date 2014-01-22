@@ -328,13 +328,16 @@ static bool eqsame(pure_expr *x, pure_expr *y)
   static ILS<int32_t> _fno = 0; int32_t &fno = _fno();
   if (!fno) fno = pure_getsym("==");
   assert(fno > 0);
-  pure_expr *res = pure_appl(pure_symbol(fno), 2, x, y);
+  pure_expr *e = 0, *res = pure_appxl(pure_symbol(fno), &e, 2, x, y);
   int32_t rc;
-  if (pure_is_int(res, &rc)) {
+  if (res && pure_is_int(res, &rc)) {
     pure_freenew(res);
     return rc!=0;
   }
-  pure_freenew(res);
+  if (res)
+    pure_freenew(res);
+  else if (e)
+    pure_freenew(e);
   return same(x, y);
 }
 
