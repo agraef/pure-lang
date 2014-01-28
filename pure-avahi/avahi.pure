@@ -1,0 +1,65 @@
+
+/* avahi.pure: Avahi wrapper for the Pure programming language 2014-01-27 AG */
+
+/* This module allows you to advertise and query Zeroconf network services
+   using Avahi (http://avahi.org/), the Linux implementation of the Zeroconf
+   protocol. Please note that this module only exposes the most essential
+   functionality of Ahavi. The idea is to make the module simple to use while
+   offering a set of features sufficient for most programs which require
+   interoperability with other Avahi or Apple Bonjour applications. */
+
+using "lib:avahi";
+
+namespace avahi;
+
+/* Service publishing. *****************************************************/
+
+/* Publish a service given by name, service type and port number. Note that
+   this operation is actually carried out asynchronously. Use avahi::check
+   below to wait for and report the result of the operation. The returned
+   result is a pointer to the service object which can be passed to the
+   following operations, or NULL in case of error. (A NULL pointer can be
+   passed safely to the other operations; they will fail in this case.) The
+   service will be unpublished automatically when the service object is
+   garbage-collected. */
+
+private extern avahi_service_t *avahi_publish(char *name, char *ty, int port);
+private extern void avahi_unpublish(avahi_service_t *t);
+
+publish name::string stype::string port::int =
+  sentry avahi_unpublish (avahi_publish name stype port);
+
+/* Check for the result of a publish operation. This blocks until a result is
+   available. A negative integer value indicates failure (in this case the
+   result is the Avahi error code). Otherwise the result is a triple with the
+   actual service name, type and port. Note that the name may be different
+   from the one passed to avahi::publish if there was a name collision with
+   another service. Such collisions are resolved automatically by tacking on a
+   suffix of the form #n to the service name. */
+
+extern expr *avahi_check(avahi_service_t *t) = check;
+
+/* Service discovery. ******************************************************/
+
+/* Browse available services of a given type. Again, this operation is carried
+   out asynchronously; use avahi::avail below to check whether new information
+   is available, and avahi::get to retrieve the actual service list. The
+   result returned by avahi::browse is a pointer to the browser object which
+   can be passed to the following operations, or NULL in case of error. (A
+   NULL pointer can be passed safely to the other operations; they will fail
+   in this case.) Any resources allocated to the browser will be released
+   automatically when the browser object is garbage-collected. */
+
+private extern avahi_browser_t *avahi_browse(char *ty);
+private extern void avahi_close(avahi_browser_t *t);
+
+browse stype::string = sentry avahi_close (avahi_browse stype);
+
+/* Use avahi::get to retrieve the current list of services. Each list entry is
+   a tuple with the name, type, domain, IP address and port number of a
+   service. Use avahi::avail to check whether the information was updated
+   since the last invocation of avahi::get. Both operations may also return a
+   negative integer (Avahi error code) in case of error. */
+
+extern expr *avahi_get(avahi_browser_t *t) = get;
+extern int avahi_avail(avahi_browser_t *t) = avail;

@@ -1,0 +1,46 @@
+
+/* Avahi/Zeroconf example. */
+
+using avahi;
+using namespace avahi;
+
+// Publish a service.
+let s = publish "TouchOSC Server" "_osc._udp" 8000;
+
+/* The previous operation is executed asynchronously. The following call
+   blocks until the service has been advertised, then returns a triple with
+   the actual name, type and port of the service. Note that the returned name
+   may be different from the one passed to avahi::publish if there was a name
+   collision with another service (which are resolved automatically by tacking
+   on a suffix of the form #n to the service name). The result may also be a
+   negative integer in case of error, indicating the Avahi error code. */
+check s;
+
+// If the operation was successful, the service remains published until the
+// service object s is garbage-collected.
+evalcmd "clear s";
+
+// Browse available services of a given type.
+let t = browse "_osc._udp";
+
+/* Again, this operation is carried out asynchronously. The avahi::avail
+   function can be used to check whether new data is available. */
+avail t;
+
+/* At any time, the list of currently known services can be retrieved using
+   the avahi::get function, which returns a list of services or an Avahi error
+   code. In the former case, each entry of the list is a tuple
+   (name,type,domain,addr,port) indicating the name, type and domain of the
+   service, along with its IP address and port number. (The avahi::browse
+   function will only look for services in the default Zeroconf domain,
+   "local" by default.) */
+get t;
+
+// This function can be invoked as often as you like. Typically, applications
+// will check for new data with avahi::avail, then use avahi::get to retrieve
+// the updated service list.
+avail t && get t;
+
+// The service browser remains usable until the browser object t is
+// garbage-collected, in which case all allocated resources are released.
+evalcmd "clear t";
