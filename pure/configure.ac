@@ -16,12 +16,14 @@ AC_SUBST(host)
 dnl Figure out special programs and filename extensions for various systems.
 dnl XXXFIXME: This is probably incomplete.
 DIFF="diff"
+EXEEXT=""
 DLLEXT=".so"
 LD_LIB_PATH="LD_LIBRARY_PATH"
 rdynamic="-rdynamic"
 shared="-shared"
 case "$host" in
-    *-*-mingw*)       DLLEXT=".dll"; DIFF="diff --strip-trailing-cr";;
+    *-*-mingw*)       EXEEXT = ".exe"; DLLEXT=".dll";
+    		      DIFF="diff --strip-trailing-cr";;
     *-*-darwin*)      rdynamic=""; shared="-dynamiclib"; DLLEXT=".dylib";
                       LD_LIB_PATH="DYLD_LIBRARY_PATH";
                       ;;
@@ -30,8 +32,10 @@ esac
 AC_SUBST(shared)
 AC_SUBST(DIFF)
 AC_SUBST(DLLEXT)
+AC_SUBST(EXEEXT)
 AC_SUBST(LD_LIB_PATH)
 AC_DEFINE_UNQUOTED(DLLEXT, "${DLLEXT}", [Define to the filename extension for shared libraries.])
+AC_DEFINE_UNQUOTED(EXEEXT, "${EXEEXT}", [Define to the filename extension for executables.])
 dnl Check for programs.
 AC_PROG_INSTALL
 AC_PROG_CC

@@ -2566,6 +2566,10 @@ static string lang_tag(string &code, string &modname)
 
 static string tool_prefix = TOOL_PREFIX;
 
+#ifndef EXEEXT
+#define EXEEXT ""
+#endif
+
 void interpreter::inline_code(bool priv, string &code)
 {
   // Get the language tag and configure accordingly.
@@ -2607,6 +2611,9 @@ void interpreter::inline_code(bool priv, string &code)
     throw err("bad tag '"+tag+
 	      "' in inline code (try one of c, fortran, dsp:name)");
   }
+  // LLVM tools used in the build process.
+  string llvm_as = (chkfile(libdir+"/llvm-as"+EXEEXT)?
+		    libdir:tool_prefix)+"llvm-as";
   // Create a temporary file holding the code.
   size_t n = code.size();
   string src = modname;
@@ -2667,7 +2674,7 @@ void interpreter::inline_code(bool priv, string &code)
     if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
       if (ext == ".ll") {
 	// Invoke llvm-as to translate intermediate assembler to real bitcode.
-	string cmd = tool_prefix+"llvm-as "+bcname+" -o "+bcname2;
+	string cmd = llvm_as+" "+bcname+" -o "+bcname2;
 	if (vflag) std::cerr << cmd << '\n';
 	status = system(cmd.c_str());
 	if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
@@ -10444,6 +10451,13 @@ int interpreter::compiler(string out, list<string> libnames)
   if (file_target && !bc_target && ext != ".ll") {
     target += ".bc"; bc_target = true;
   }
+  // LLVM tools used in the build process.
+  /* XXXFIXME: Some LLVM versions have toolchains which are broken in some way
+     so that the resulting native assembler code won't compile. As a
+     workaround, we allow the user to install his own custom builds of the llc
+     and opt tools into the /usr/lib/pure directory. */
+  string llc = (chkfile(libdir+"llc"+EXEEXT)?libdir:tool_prefix)+"llc";
+  string opt = (chkfile(libdir+"opt"+EXEEXT)?libdir:tool_prefix)+"opt";
   /* Everything is already compiled at this point, so all we have to do here
      is to emit the code. We also prepare a main entry point, void
      __pure_main__ (int argc, char **argv), which initializes the interpreter
@@ -10830,8 +10844,8 @@ int interpreter::compiler(string out, list<string> libnames)
     // The -disable-cfi seems to be needed on OSX as of LLVM 3.0.
     custom_opts = "-disable-cfi ";
 #endif
-    string cmd = tool_prefix+"opt -f -std-compile-opts "+quote(target)+
-      " | "+tool_prefix+"llc "+custom_opts+
+    string cmd = opt+" -f -std-compile-opts "+quote(target)+
+      " | "+llc+" "+custom_opts+
       string(pic?"-relocation-model=pic ":"")+
       "-o "+quote(asmfile);
     if (vflag) std::cerr << cmd << '\n';
