@@ -20,7 +20,7 @@ necessary to make Pure compile and run on various other platforms. More
 information about installing LLVM and the required LLVM source packages can be
 found at http://llvm.org.
 
-Pure is known to work on Linux, FreeBSD, NetBSD, Mac OSX and MS Windows, and
+Pure is known to work on Linux, FreeBSD, NetBSD, Mac OS X and MS Windows, and
 should compile (with the usual amount of tweaking) on all recent UNIX/POSIX-
 based platforms. We recommend using version 4.x of the GNU C++ compiler; it
 should be available almost everywhere (in fact, since you'll need LLVM anyway,
@@ -59,12 +59,6 @@ this writing, are available here:
 | http://llvm.org/releases/3.4/llvm-3.4.src.tar.gz
 | http://llvm.org/releases/3.4/clang-3.4.src.tar.gz
 | http://llvm.org/releases/3.4/dragonegg-3.4.src.tar.gz
-
-.. note:: LLVM 3.4 is known to have issues with its ``llc`` program, which
-   affects Pure's batch compiler (``pure -c``). If you find that you get lots
-   of error messages when running ``pure -c`` then you might want to stick to
-   LLVM 3.3 for now. (As a workaround, it's also be possible to replace the
-   ``llc`` and ``opt`` programs from LLVM 3.4 with the ones from LLVM 3.3.)
 
 Installing LLVM and clang (the latter is optional but recommended)::
 
@@ -1024,10 +1018,11 @@ examples/hellomod directory in the sources.
 System Notes
 ============
 
-Pure is known to work on recent Linux, Mac OSX and BSD versions under x86,
+Pure is known to work on recent Linux, Mac OS X and BSD versions under x86,
 x86-64 (AMD/Intel x86, 32 and 64 bit) and ppc (PowerPC), as well as on MS
-Windows (AMD/Intel x86, 32 bit). There are a few known system-specific quirks
-and corresponding workarounds which are discussed below.
+Windows (AMD/Intel x86, 32 bit). There are a few known quirks for specific
+platforms and/or LLVM versions which are discussed below, along with
+corresponding workarounds.
 
 All Platforms
 -------------
@@ -1045,28 +1040,59 @@ segfaults due to stack overflows then you'll have to set an appropriate stack
 size limit manually with the :envvar:`PURE_STACK` environment variable; see
 the Pure manual for details.
 
-32 Bit Systems
---------------
+LLVM 2.5
+--------
 
-With LLVM 2.5 and earlier, the JIT is broken on x86-32 if it is built with
-``--enable-pic``, so make sure you do *not* use this option when compiling
-LLVM <=2.5 on 32 bit systems.
+The LLVM 2.5 JIT is broken on x86-32 if it is built with ``--enable-pic``, so
+make sure you do *not* use this option when compiling LLVM <=2.5 on 32 bit
+systems. Some older LLVM 2.5 packages for Linux are broken on x86-32 for this
+reason (this has been reported for Ubuntu 9.04 and Fedora Core 10), the
+symptom being that the Pure interpreter fails a lot of checks and/or segfaults
+right at startup. In that case you'll have to find a newer, corrected package
+or build your own LLVM from source instead.
 
-Some older LLVM 2.5 packages for Linux are broken on x86-32 for this reason
-(this has been reported for Ubuntu 9.04 and Fedora Core 10), the symptom being
-that the Pure interpreter fails a lot of checks and/or segfaults right at
-startup. In that case you'll have to find a newer, corrected package or build
-your own LLVM from source instead.
+On the other hand, building the Pure runtime library (libpure) on x86-64
+systems *requires* that you configure LLVM 2.5 with ``--enable-pic`` so that
+the static LLVM libraries can be linked into the runtime library. With LLVM
+2.6 and later, this option isn't needed anymore.
 
-64 Bit Systems
---------------
+This LLVM version also has issues on PowerPC. Use LLVM 2.6 or later instead
+and check the notes on PowerPC_ below.
 
-64 bit systems are fully supported by Pure (as far as LLVM supports them).
+Please also note that LLVM 2.5 is the oldest LLVM version that we still
+support right now. If you're still running this version (or any of the 2.x
+versions) then you should really upgrade. Newer LLVM versions offer
+substantial improvements in both compilation time and code quality. Support
+for LLVM versions older than 3.0 is likely to be dropped in future Pure
+releases.
 
-With LLVM 2.5 and earlier, building the Pure runtime library (libpure)
-requires that you configure LLVM with ``--enable-pic`` so that the static LLVM
-libraries can be linked into the runtime library. With LLVM 2.6 and later,
-this option isn't needed anymore.
+LLVM 3.3
+--------
+
+Reportedly the Pure batch compiler is broken when using LLVM 3.3 on Mac OS X.
+If you need the batch compiler then use either LLVM 3.2 or 3.4 on OS X
+instead, these are known to work on that platform.
+
+LLVM 3.4
+--------
+
+On Linux, the ``llc`` program from LLVM 3.4 is known to have issues which
+cause Pure's batch compiler to fail. As a remedy, you can use the ``llc`` and
+``opt`` executables from LLVM 3.3 instead (note that both programs are needed
+since the ``llc`` from LLVM 3.3 won't work with the ``opt`` program from LLVM
+3.4). To these ends, simply copy these executables to the Pure library
+directory (/usr/local/lib/pure by default). The Pure interpreter will then use
+these executables instead of the LLVM tools installed on your system. Prebuilt
+``llc`` and ``opt`` binaries for Linux can be found in the download section on
+Bitbucket:
+
+  https://bitbucket.org/purelang/pure-lang/downloads/llvm-3.3-tools.tar.bz2
+
+The tarball contains ELF executables for both 32 and 64 bit Linux systems
+which have been linked statically and thus don't need the LLVM 3.3 libraries
+to be installed on your system. The binaries should hopefully work on most
+recent Linux systems; if they don't work for you then please check the README
+file included in the tarball for instructions on how to build your own.
 
 PowerPC
 -------
@@ -1085,22 +1111,21 @@ should build out of the box on all recent Linux distributions. Packages for
 various Linux distributions are also available, please check the Pure website
 for details.
 
-Mac OSX
--------
+Mac OS X
+--------
 
-Pure should build fine on recent OSX versions, and a port by Ryan Schmidt
+Pure should build fine on recent OS X versions, and a port by Ryan Schmidt
 exists in the MacPorts collection, see http://www.macports.org/. If you
 install straight from the source, make sure that you use a recent LLVM version
 (LLVM 2.7 or later should work fine on all flavours of Intel Macs). On
 PowerPC, you might have to build Pure with ``--disable-fastcc``, see the
 `PowerPC`_ section above.
 
-Also note that with at least some versions of the Apple gcc compiler, with all
+Also note that with some older versions of the Apple gcc compiler, with all
 warnings turned on you may get the (bogus) warning "control reaches end of
 non-void function" a couple of times in interpreter.cc. These are due to a bug
 in older gcc versions (see http://gcc.gnu.org/bugzilla/show_bug.cgi?id=16558),
-but they are harmless and can be ignored. These warnings should also go away
-once Apple upgrades its SDK to a newer gcc version.
+but they are harmless and can be ignored.
 
 BSD
 ---
