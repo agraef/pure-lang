@@ -549,12 +549,24 @@ The .ll and .bc formats are supported natively by the Pure interpreter, no
 external tools are required to generate these. If the target is an .s, .o or
 executable file, the Pure interpreter creates a temporary bitcode file on
 which it invokes the LLVM tools :program:`opt` and :program:`llc` to create a
-native assembler file, and then uses the C/C++ compiler (normally
-:program:`gcc`, but you can change this with the :envvar:`CC` and
-:envvar:`CXX` environment variables) to assemble and link the resulting
-program (if requested). You can also specify additional libraries to be linked
-into the executable with the :option:`-l` option. If the output filename is
-omitted, it defaults to a.out (a.exe on Windows).
+native assembler file, and then uses the C/C++ compiler to assemble and link
+the resulting program (if requested). You can also specify additional
+libraries to be linked into the executable with the :option:`-l` option. If
+the output filename is omitted, it defaults to a.out (a.exe on Windows).
+
+The C/C++ compiler invoked by the batch compiler is normally :program:`gcc` by
+default, but you can change this with the :envvar:`CC` and :envvar:`CXX`
+environment variables. The LLVM tools :program:`opt` and :program:`llc` are
+usually located on the :envvar:`PATH` or in a system-specific directory
+determined at installation time. It is also possible to use custom versions of
+these programs with the batch compiler, by placing them into the Pure library
+directory, as specified at installation time or by the :envvar:`PURELIB`
+environment variable. (Note that this lets you use the batch compiler on
+systems which don't have the LLVM toolchain installed. In fact, you could even
+deploy a stand-alone version of the interpreter together with the requisite
+LLVM tools on systems which don't have LLVM installed at all, by linking both
+the Pure runtime and the :program:`opt` and :program:`llc` programs statically
+against LLVM.)
 
 The :option:`-c` option provides a convenient way to quickly turn a Pure
 script into a standalone executable which can be invoked directly from the
