@@ -407,13 +407,14 @@ if test "$pure_cv_new_builder" = yes; then
 fi
 fi
 AC_CHECK_HEADERS([llvm/Support/DynamicLibrary.h], [], [], [[#include <llvm/ADT/StringRef.h>]])
-AC_CHECK_HEADERS([llvm/Support/raw_ostream.h llvm/Support/raw_os_ostream.h llvm/ModuleProvider.h llvm/TypeSymbolTable.h llvm/DataLayout.h llvm/IR/DataLayout.h llvm/DerivedTypes.h llvm/IRBuilder.h llvm/IR/IRBuilder.h llvm/Support/TargetSelect.h])
+AC_CHECK_HEADERS([llvm/Support/raw_ostream.h llvm/Support/raw_os_ostream.h llvm/ModuleProvider.h llvm/TypeSymbolTable.h llvm/DataLayout.h llvm/IR/DataLayout.h llvm/DerivedTypes.h llvm/IRBuilder.h llvm/IR/IRBuilder.h llvm/IR/Verifier.h llvm/Support/TargetSelect.h])
 if test "$pure_cv_new_builder26" = yes; then
   AC_CHECK_DECLS([llvm::PerformTailCallOpt, llvm::GuaranteedTailCallOpt], [], [], [[#include <llvm/ADT/StringRef.h>
 #include <llvm/Target/TargetOptions.h>]])
 else
   AC_CHECK_DECLS([llvm::PerformTailCallOpt, llvm::GuaranteedTailCallOpt], [], [], [[#include <llvm/Target/TargetOptions.h>]])
 fi
+AC_CHECK_DECLS([llvm::parseBitcodeFile], [], [], [[#include <llvm/Bitcode/ReaderWriter.h>]])
 CPPFLAGS=$save_CPPFLAGS
 AC_LANG_POP([C++])
 

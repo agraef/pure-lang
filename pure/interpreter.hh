@@ -22,7 +22,6 @@
 #include <llvm/ExecutionEngine/ExecutionEngine.h>
 #include <llvm/ExecutionEngine/JIT.h>
 #include <llvm/PassManager.h>
-#include <llvm/Analysis/Verifier.h>
 #include <llvm/Target/TargetOptions.h>
 #include <llvm/Transforms/Scalar.h>
 
@@ -33,6 +32,14 @@
 #include "matcher.hh"
 #include "symtable.hh"
 #include "runtime.h"
+
+#if HAVE_LLVM_IR_VERIFIER_H
+// LLVM 3.5 and later has this header in a different directory.
+#include <llvm/IR/Verifier.h>
+#define LLVM35 1
+#else
+#include <llvm/Analysis/Verifier.h>
+#endif
 
 #ifdef HAVE_LLVM_DERIVEDTYPES_H
 // LLVM 3.3 and later have these headers in a different directory.

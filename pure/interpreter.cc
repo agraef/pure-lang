@@ -1860,6 +1860,23 @@ static llvm::MemoryBuffer *get_membuf(const char *name, string *msg)
   return buf;
 }
 
+#if HAVE_DECL_LLVM__PARSEBITCODEFILE
+// We have parseBitcodeFile(), this is in LLVM 3.5 and later. Must emulate
+// ParseBitcodeFile.
+static llvm::Module *ParseBitcodeFile(llvm::MemoryBuffer *Buffer,
+				      llvm::LLVMContext& Context,
+				      std::string *ErrMsg)
+{
+  using namespace llvm;
+  ErrorOr<Module *> ModuleOrErr = parseBitcodeFile(Buffer, Context);
+  if (error_code EC = ModuleOrErr.getError()) {
+    if (ErrMsg) *ErrMsg = EC.message();
+    return 0;
+  } else
+  return ModuleOrErr.get();
+}
+#endif
+
 bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
 			       const char *modnm)
 {
