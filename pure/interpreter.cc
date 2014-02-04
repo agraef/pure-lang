@@ -10438,8 +10438,8 @@ int interpreter::compiler(string out, list<string> libnames)
   /* We allow either '-' or *.ll to indicate an LLVM assembler file. In the
      former case, output is written to stdout, which is useful if the output
      is to be processed by other LLVM utilities in a pipe. Other recognized
-     extensions for the ouput file are .bc (LLVM bitcode) as well as .s and .o
-     (native assembler and object code). In all other cases, output code is
+     extensions for the output file are .bc (LLVM bitcode) as well as .s and
+     .o (native assembler and object code). In all other cases, output code is
      written to a temporary .bc file which is then passed to llc+opt+gcc to
      create an object file, which is linked with a minimal 'main' to create an
      executable. */
