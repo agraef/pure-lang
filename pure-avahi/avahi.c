@@ -492,6 +492,7 @@ pure_expr *avahi_get(avahi_browser_t *t)
 				  pure_cstring_dup(s->addr),
 				  pure_int(s->port)),
 		      ret);
+    pure_freenew(cons);
     t->avail = 0;
   }
   pthread_mutex_unlock(&t->mutex);
