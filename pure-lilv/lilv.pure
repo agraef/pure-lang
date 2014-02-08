@@ -1,0 +1,66 @@
+
+/* Lilv bindings for the Pure programming language, Copyright (c) 2014 by
+   Albert Gräf <aggraef@gmail.com>. Distributed under a 3-clause BSD license,
+   please see the COPYING file included in the distribution for details. */
+
+using "lib:lilv";
+
+namespace lilv;
+
+private extern LilvWorld* lilv_world_new();
+private extern void lilv_world_load_all(LilvWorld*);
+private extern void lilv_world_free(LilvWorld*);
+
+/* Load the lilv world state, including the list of all available plugins.
+   This returns a pointer which can be passed to the other operations.
+   Resources are freed automatically when the returned object is
+   garbage-collected. Note that each call to this function returns a new (the
+   current) state which may change over time, as LV2 plugins are installed or
+   deleted on your system. */
+
+world = sentry lilv_world_free w when
+  w = lilv_world_new;
+  lilv_world_load_all w;
+end;
+
+/* Return the list of all plugins, as pairs of plugin names and URIs. The
+   latter are what you need to pass to lilv::info to get all the information
+   about a particular plugin. */
+
+extern expr *lilv_plugins(LilvWorld* world) = plugins;
+
+/* This gives the description of a specific plugin. The result is a tuple with
+   the following fields: name, uri, class, author, email, homepage, bundle
+   uri, binary (shared lib) uri, data uris (ttl files), required properties,
+   optional properties, extension data, presets, and ports.
+
+   The latter field is a list with descriptions of all ports the plugin
+   provides. Each entry in the ports list is a tuple with port number, symbol,
+   name, type (1 = control, 2 = audio, 3 = CV (control data at audio rate),
+   4 = atom, 5 = event port, 0 = unknown), flags (or'ed together: 1 = input,
+   2 = output, 4 = midi atom/event port), groups, designations, properties,
+   and (in the case of control ports) the minimum, maximum and default value
+   and the list of scale points of the control.
+
+   Please check the LV2 documentation for information about these elements.
+   The essential information is in the name, uri and class fields, and in the
+   port descriptions; most notably, port number, type, flags and (in the case
+   of control ports) the minimum, maximum and default value, and the list of
+   scale points of the control. To make it easier to handle the amount of
+   information, we also provide a helper function which just returns the
+   essential information (lilv::basic_info); this will contain everything
+   needed by a basic LV2 host. */
+
+extern expr *lilv_plugin_info(LilvWorld* world, char* uri) = info;
+
+basic_info world uri::string = case info world uri of
+  name, uri, class, author, email, homepage, bundle, binary, data_uris,
+  required, optional, extension_data, presets, ports =
+    name, uri, class, map port_info ports with
+      port_info (num,sym,name,ty,flags,groups,designations,properties,attr) =
+	num,sym,name,ty,flags,attr;
+      port_info (num,sym,name,ty,flags,groups,designations,properties) =
+	num,sym,name,ty,flags;
+      port_info x = x otherwise;
+    end;
+end;

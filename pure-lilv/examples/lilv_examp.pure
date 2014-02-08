@@ -1,0 +1,134 @@
+
+using lilv;
+
+// Load all plugins.
+let world = lilv::world;
+
+// This gives the names and URIs of all plugins as a list.
+lilv::plugins world;
+
+/* This gives the description of a specific plugin identified by its URI. The
+   fields are: name, uri, class, author, email, homepage, bundle uri, binary
+   (shared lib) uri, data uris (ttl files), required properties, optional
+   properties, extension data, presets and ports. Please check lilv.pure for
+   details. */
+
+lilv::info world "http://calf.sourceforge.net/plugins/Organ";
+
+/* Most of the time just the basic info is needed (name, uri, class, and basic
+   ports info which includes port number, type, flags and (in the case of
+   control ports) the minimum, maximum and default value, and the list of
+   scale points of the control). */
+
+lilv::basic_info world "http://calf.sourceforge.net/plugins/Organ";
+
+// A little helper function to print the (basic or extended) info of a plugin
+// in a readable format.
+
+using system;
+
+print (name, uri, class, author, email, homepage, bundle, binary, data_uris,
+       required, optional, extension_data, presets, ports) = ()
+when
+  printf "%s - %s\n" (name, uri);
+  null class || printf "class: %s\n" class;
+  null author || printf "author: %s\n" author;
+  null email || printf "email: %s\n" email;
+  null homepage || printf "homepage: %s\n" homepage;
+  printf "bundle: %s\n" bundle;
+  null binary || printf "binary: %s\n" binary;
+  null data_uris || (puts "data uris:" $$ do puts data_uris);
+  null required || (puts "required features:" $$ do puts required);
+  null optional || (puts "optional features:" $$ do puts optional);
+  null extension_data || (puts "extension data:" $$ do puts extension_data);
+  null presets || (puts "presets:" $$ do puts presets);
+  printf "%d ports:\n" (#ports);
+  do print_port ports with
+    print_port (num,sym,name,ty,flags,groups,designations,properties,
+		min,max,defl,sp) =
+      printf "#%d: [%s] %s \"%s\" %s %g .. %g [%g]%s%s%s%s\n"
+      (num,flags,sym,name,ty,min,max,defl,sp,
+       groups,designations,properties) when
+	in = flags and 1; out = flags and 2; midi = flags and 4;
+	flags = if in&&out then "in/out" else if in then "in"
+					 else if out then "out" else "???";
+	types = {"UNKNOWN", "CONTROL", "AUDIO", "CV", "ATOM", "EVENT"};
+	ty = types!ty;
+	ty = if midi then ty+" [MIDI]" else ty;
+	groups =
+	  if null groups then ""
+	  else "\ngroups:" + strcat (map (sprintf "\n\t%s") groups);
+	designations =
+	  if null designations then ""
+	  else "\ndesignations:" +
+	    strcat (map (sprintf "\n\t%s") designations);
+	properties =
+	  if null properties then ""
+	  else "\nproperties:" + strcat (map (sprintf "\n\t%s") properties);
+	sp =
+	  if null sp then ""
+	  else "\nscale points:" + 
+	    strcat [sprintf "\n\t%s: %g" (name,val) | name=>val = sp];
+      end;
+    print_port (num,sym,name,ty,flags,groups,designations,properties) =
+      printf "#%d: [%s] %s \"%s\" %s%s%s%s\n"
+      (num,flags,sym,name,ty,groups,designations,properties) when
+	in = flags and 1; out = flags and 2; midi = flags and 4;
+	flags = if in&&out then "in/out" else if in then "in"
+					 else if out then "out" else "???";
+	types = {"UNKNOWN", "CONTROL", "AUDIO", "CV", "ATOM", "EVENT"};
+	ty = types!ty;
+	ty = if midi then ty+" [MIDI]" else ty;
+	groups =
+	  if null groups then ""
+	  else "\ngroups:" + strcat (map (sprintf "\n\t%s") groups);
+	designations =
+	  if null designations then ""
+	  else "\ndesignations:" +
+	    strcat (map (sprintf "\n\t%s") designations);
+	properties =
+	  if null properties then ""
+	  else "\nproperties:" + strcat (map (sprintf "\n\t%s") properties);
+      end;
+    print_port num::int = printf "#%d: unknown/illegal\n" num;
+  end;
+end;
+
+print (name, uri, class, ports) = ()
+when
+  printf "%s - %s\n" (name, uri);
+  null class || printf "class: %s\n" class;
+  printf "%d ports:\n" (#ports);
+  do print_port ports with
+    print_port (num,sym,name,ty,flags,min,max,defl,sp) =
+      printf "#%d: [%s] %s \"%s\" %s %g .. %g [%g]%s\n"
+      (num,flags,sym,name,ty,min,max,defl,sp) when
+	in = flags and 1; out = flags and 2; midi = flags and 4;
+	flags = if in&&out then "in/out" else if in then "in"
+					 else if out then "out" else "???";
+	types = {"UNKNOWN", "CONTROL", "AUDIO", "CV", "ATOM", "EVENT"};
+	ty = types!ty;
+	ty = if midi then ty+" [MIDI]" else ty;
+	sp =
+	  if null sp then ""
+	  else "\nscale points:" + 
+	    strcat [sprintf "\n\t%s: %g" (name,val) | name=>val = sp];
+      end;
+    print_port (num,sym,name,ty,flags) =
+      printf "#%d: [%s] %s \"%s\" %s\n" (num,flags,sym,name,ty) when
+	in = flags and 1; out = flags and 2; midi = flags and 4;
+	flags = if in&&out then "in/out" else if in then "in"
+					 else if out then "out" else "???";
+	types = {"UNKNOWN", "CONTROL", "AUDIO", "CV", "ATOM", "EVENT"};
+	ty = types!ty;
+	ty = if midi then ty+" [MIDI]" else ty;
+      end;
+    print_port num::int = printf "#%d: unknown/illegal\n" num;
+  end;
+end;
+
+puts "\n** complete info:";
+print $ lilv::info world "http://calf.sourceforge.net/plugins/Organ";
+
+puts "\n** basic info:";
+print $ lilv::basic_info world "http://calf.sourceforge.net/plugins/Organ";
