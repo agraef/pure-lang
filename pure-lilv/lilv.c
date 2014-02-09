@@ -146,6 +146,9 @@ pure_expr *lilv_plugin_info(LilvWorld* world, const char* plugin_uri)
   xv = calloc(l, sizeof(pure_expr*));
   if (data) {
     LILV_FOREACH (nodes, i, data) {
+      pure_expr *plabel = 0;
+      pure_expr *puri = pure_cstring_dup
+	(lilv_node_as_uri(lilv_nodes_get(data, i)));
       const LilvNode* preset = lilv_nodes_get(data, i);
       lilv_world_load_resource(world, preset);
       LilvNodes* titles =
@@ -153,9 +156,12 @@ pure_expr *lilv_plugin_info(LilvWorld* world, const char* plugin_uri)
       if (titles) {
 	const LilvNode* title = lilv_nodes_get_first(titles);
 	assert(k<l);
-	xv[k++] = pure_cstring_dup(lilv_node_as_string(title));
+	plabel = pure_cstring_dup(lilv_node_as_string(title));
 	lilv_nodes_free(titles);
       }
+      if (!plabel) plabel = pure_cstring_dup("");
+      assert(k<l);
+      xv[k++] = pure_tuplel(2, plabel, puri);
     }
     lilv_nodes_free(data);
   }

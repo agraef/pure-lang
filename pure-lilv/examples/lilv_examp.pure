@@ -10,15 +10,18 @@ lilv::plugins world;
 /* This gives the description of a specific plugin identified by its URI. The
    fields are: name, uri, class, author, email, homepage, bundle uri, binary
    (shared lib) uri, data uris (ttl files), required properties, optional
-   properties, extension data, presets and ports. Please check lilv.pure for
-   details. */
+   properties, extension data, presets and ports. Most of the items are either
+   simple strings or URIs. Presets are given as a list of pairs of preset
+   names and URIs. Port descriptions are given as a list of tuples with port
+   numbers, symbols, names, type of port and various other attributes and
+   properties pertaining to a port. Please check lilv.pure for details. */
 
 lilv::info world "http://calf.sourceforge.net/plugins/Organ";
 
 /* Most of the time just the basic info is needed (name, uri, class, and basic
-   ports info which includes port number, type, flags and (in the case of
-   control ports) the minimum, maximum and default value, and the list of
-   scale points of the control). */
+   ports info which includes port number, symbol, name, type, flags and (in
+   the case of control ports) the minimum, maximum and default value, and the
+   list of scale points of the control). */
 
 lilv::basic_info world "http://calf.sourceforge.net/plugins/Organ";
 
@@ -41,7 +44,7 @@ when
   null required || (puts "required features:" $$ do puts required);
   null optional || (puts "optional features:" $$ do puts optional);
   null extension_data || (puts "extension data:" $$ do puts extension_data);
-  null presets || (puts "presets:" $$ do puts presets);
+  null presets || (puts "presets:" $$ do (printf "%s - %s\n") presets);
   printf "%d ports:\n" (#ports);
   do print_port ports with
     print_port (num,sym,name,ty,flags,groups,designations,properties,

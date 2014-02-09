@@ -34,22 +34,24 @@ extern expr *lilv_plugins(LilvWorld* world) = plugins;
    uri, binary (shared lib) uri, data uris (ttl files), required properties,
    optional properties, extension data, presets, and ports.
 
-   The latter field is a list with descriptions of all ports the plugin
-   provides. Each entry in the ports list is a tuple with port number, symbol,
-   name, type (1 = control, 2 = audio, 3 = CV (control data at audio rate),
-   4 = atom, 5 = event port, 0 = unknown), flags (or'ed together: 1 = input,
-   2 = output, 4 = midi atom/event port), groups, designations, properties,
-   and (in the case of control ports) the minimum, maximum and default value
-   and the list of scale points of the control.
+   Most of these items are either simple strings or URIs. Presets are given as
+   a list of pairs of preset names and URIs. The ports list contains
+   descriptions of all ports the plugin provides. Each entry in the ports list
+   is a tuple with port number, symbol, name, type (1 = control, 2 = audio,
+   3 = CV (control data at audio rate), 4 = atom, 5 = event port, 0 = unknown),
+   flags (or'ed together: 1 = input, 2 = output, 4 = midi atom/event port),
+   groups, designations, properties, and (in the case of control ports) the
+   minimum, maximum and default value and the list of scale points of the
+   control.
 
    Please check the LV2 documentation for information about these elements.
    The essential information is in the name, uri and class fields, and in the
-   port descriptions; most notably, port number, type, flags and (in the case
-   of control ports) the minimum, maximum and default value, and the list of
-   scale points of the control. To make it easier to handle the amount of
-   information, we also provide a helper function which just returns the
-   essential information (lilv::basic_info); this will contain everything
-   needed by a basic LV2 host. */
+   port descriptions; most notably, port number, symbol, name, type, flags and
+   (in the case of control ports) the minimum, maximum and default value, and
+   the list of scale points of the control. To make it easier to handle the
+   amount of information, we also provide a helper function which just returns
+   the essential information (lilv::basic_info); this will contain most things
+   needed by a basic LV2 host implementation. */
 
 extern expr *lilv_plugin_info(LilvWorld* world, char* uri) = info;
 
