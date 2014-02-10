@@ -620,10 +620,9 @@ pure_expr *lilv_plugin_run(PluginInstance *p, pure_expr *in, pure_expr *out)
     count = (in_ncols<out_ncols)?in_ncols:out_ncols;
   if (count > p->block_size) count = p->block_size;
   if (count == 0) return out; // nothing to do
-  /* Copy the samples from the input matrix to the audio/CV input buffers. It
-     would be much preferable to just pass pointers to the matrix rows, but
-     since Pure uses double and LV2 single precision, we have to do the
-     conversion anyway. */
+  /* Copy the samples from the input matrix to the audio/CV input buffers.
+     XXXTODO: Pass pointers to the matrix rows instead, as soon as Pure has
+     native support for single precision floating point matrices. */
   for (uint32_t i = 0; i < n; i++) {
     const uint32_t k = p->in[i];
     float *x = p->buffer[k];
