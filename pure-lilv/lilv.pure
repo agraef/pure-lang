@@ -11,9 +11,9 @@ private extern LilvWorld* lilv_world_new();
 private extern void lilv_world_load_all(LilvWorld*);
 private extern void lilv_world_free(LilvWorld*);
 
-/* Load the lilv world state, including the list of all available plugins.
-   This returns a pointer which can be passed to the other operations.
-   Resources are freed automatically when the returned object is
+/* lilv::world: Load the lilv world state, including the list of all available
+   plugins. This returns a pointer which can be passed to the other
+   operations. Resources are freed automatically when the returned object is
    garbage-collected. Note that each call to this function returns a new (the
    current) state which may change over time, as LV2 plugins are installed or
    deleted on your system. */
@@ -23,16 +23,16 @@ world = sentry lilv_world_free w when
   lilv_world_load_all w;
 end;
 
-/* Return the list of all plugins, as pairs of plugin names and URIs. The
-   latter are what you need to pass to lilv::info to get all the information
-   about a particular plugin. */
+/* lilv::plugins: Return the list of all plugins, as pairs of plugin names and
+   URIs. The latter are what you need to pass to lilv::info or lilv::plugin to
+   get information about a particular plugin or instantiate it. */
 
 extern expr *lilv_plugins(LilvWorld* world) = plugins;
 
-/* This gives the description of a specific plugin. The result is a tuple with
-   the following fields: name, uri, class, author, email, homepage, bundle
-   uri, binary (shared lib) uri, data uris (ttl files), required properties,
-   optional properties, extension data, presets, and ports.
+/* lilv::info: Retrieve the description of a specific plugin. The result is a
+   tuple with the following fields: name, uri, class, author, email, homepage,
+   bundle uri, binary (shared lib) uri, data uris (ttl files), required
+   properties, optional properties, extension data, presets, and ports.
 
    Most of these items are either simple strings or URIs. Presets are given as
    a list of pairs of preset names and URIs. The ports list contains
@@ -51,7 +51,12 @@ extern expr *lilv_plugins(LilvWorld* world) = plugins;
    the list of scale points of the control. To make it easier to handle the
    amount of information, we also provide a helper function which just returns
    the essential information (lilv::basic_info); this will contain most things
-   needed by a basic LV2 host implementation. */
+   needed by a basic LV2 host implementation.
+
+   Please note that this data is for purely informational purposes, it is not
+   needed to actually instantiate and run a plugin. Runnable instances of a
+   plugin, which can be obtained with lilv::plugin below, provide all the data
+   necessary to operate the plugin. */
 
 extern expr *lilv_plugin_info(LilvWorld* world, char* uri) = info;
 
@@ -66,3 +71,84 @@ basic_info world uri::string = case info world uri of
       port_info x = x otherwise;
     end;
 end;
+
+/* lilv::plugin: Instantiate a plugin given by its URI. This also takes care
+   of setting up the required data structures and binding the ports. You need
+   to specify the sample rate and a maximum block size (the actual number of
+   samples used in a run of the plugin can be adjusted as needed, but may not
+   exceed this number). The return value is a pointer to the plugin instance
+   (or NULL in case of error), which can be passed to the other operations
+   below. The object takes care of freeing all its resources when it is
+   garbage-collected. */
+
+private extern PluginInstance *lilv_plugin_new
+  (LilvWorld* world, char* uri, double sample_rate, int block_size);
+private extern void lilv_plugin_free(PluginInstance *p);
+
+plugin world uri sample_rate::int block_size =
+  plugin world uri (double sample_rate) block_size;
+plugin world::pointer uri::string sample_rate::double block_size::int =
+  sentry lilv_plugin_free (lilv_plugin_new world uri sample_rate block_size);
+
+// Activate and deactivate the plugin.
+
+extern void lilv_plugin_activate(PluginInstance *p) = activate;
+extern void lilv_plugin_deactivate(PluginInstance *p) = deactivate;
+
+/* lilv::run: Run the plugin on a given block of samples.
+
+   The input samples are given as a k x n Pure double matrix. The k rows of
+   the input matrix specify the sample blocks for the audio/CV input ports of
+   the plugin (where k >= lilv::num_inputs(p), see below).
+
+   The output samples produced by the plugin are written to a second l x m
+   double matrix, whose l rows correspond to the audio/CV output ports of the
+   plugin (where l >= lilv::num_outputs(p), see below). The output matrix is
+   modified in-place and also returned as the result of the operation.
+
+   The number of rows in the input and output matrices may exceed the actual
+   number of audio/CV input/output ports, in which case only the first
+   lilv::num_inputs(p) and lilv::num_outputs(p) rows are used, respectively
+   (the rest of the output matrix remains unchanged). If the input or output
+   matrix doesn't have enough rows then the operation fails.
+
+   The actual block size (number of samples to be processed) is given by the
+   minimum row size (min n m) of the input and output matrices. Moreover, the
+   number of samples may not exceed the maximum block size set when
+   instantiating the plugin (or with a call to lilv::set_block_size, see
+   below); any extra columns of the input and output matrices will be silently
+   ignored. */
+
+extern expr *lilv_plugin_run(PluginInstance *p, expr *in, expr *out) = run;
+
+/* Retrieve and manipulate the plugin data. You can retrieve the sample rate,
+   maximum block size, total number of ports, and the number of (audio/CV)
+   input and output ports. You can also adjust the maximum block size, but
+   note that this is a fairly expensive operation involving the reallocation
+   of the input/output buffers, so this shouldn't be done during realtime
+   processing. */
+
+extern double lilv_plugin_sample_rate(PluginInstance *p) = sample_rate;
+extern int lilv_plugin_block_size(PluginInstance *p) = block_size;
+extern int lilv_plugin_num_ports(PluginInstance *p) = num_ports;
+extern int lilv_plugin_num_inputs(PluginInstance *p) = num_inputs;
+extern int lilv_plugin_num_outputs(PluginInstance *p) = num_outputs;
+extern void lilv_plugin_set_block_size(PluginInstance *p, int block_size)
+  = set_block_size;
+
+/* lilv::port_info: Retrieve port information. For a given port number, this
+   yields a tuple with the port symbol and name, type, flags and, in the case
+   of a control or CV port, the minimum, maximum and default value of the
+   port. The meaning of the fields is the same as with the lilv::info
+   operation. */
+
+extern expr *lilv_plugin_port_info(PluginInstance *p, int k) = port_info;
+
+/* Get and set the control port values, given the port number. When setting a
+   value, it is always clamped to the prescribed range (minimum and maximum
+   port value, as given by lilv::info), if available. */
+
+extern double lilv_plugin_get_control(PluginInstance *p, int k) = get_control;
+extern void lilv_plugin_set_control(PluginInstance *p, int k, double x)
+  = set_control;
+set_control p k x::int = set_control p k (double x);

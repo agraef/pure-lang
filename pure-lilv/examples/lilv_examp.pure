@@ -7,6 +7,13 @@ let world = lilv::world;
 // This gives the names and URIs of all plugins as a list.
 lilv::plugins world;
 
+/***************************************************************************
+ * Getting information about a plugin. Lilv can do this without actually
+ * loading the plugin, by just looking at the ttl files in a bundle.
+ * NOTE: The following example requires the Calf LV2 plugins to work
+ * (http://calf.sourceforge.net/).
+ ***************************************************************************/
+
 /* This gives the description of a specific plugin identified by its URI. The
    fields are: name, uri, class, author, email, homepage, bundle uri, binary
    (shared lib) uri, data uris (ttl files), required properties, optional
@@ -135,3 +142,59 @@ print $ lilv::info world "http://calf.sourceforge.net/plugins/Organ";
 
 puts "\n** basic info:";
 print $ lilv::basic_info world "http://calf.sourceforge.net/plugins/Organ";
+
+/***************************************************************************
+ * Instantiating and running a plugin. NOTE: The following example requires
+ * the Faust-LV2 plugins to work (http://code.google.com/p/faust-lv2/).
+ ***************************************************************************/
+
+// Instantiate a plugin. We need to specify the intended sampling rate and
+// the maximum block size (number of samples to be processed in one go).
+
+let p = lilv::plugin world "http://faust-lv2.googlecode.com/amp" 44100 64;
+
+// Let's get some information about the plugin (number of audio input/output
+// ports, port descriptions).
+
+let n,m = lilv::num_inputs p, lilv::num_outputs p;
+let ports = [i, lilv::port_info p i | i = 0..lilv::num_ports p-1];
+
+n,m; ports;
+
+// Create some buffers. Note that we can use any block size here, as long as
+// it doesn't exceed the maximum block size we specified when instantiating
+// the plugin. The number of rows needs to match up with the number of audio
+// input/output ports, however.
+
+// Input buffer with some pulses.
+let in = dmatrix {0,1,0,-1,0,1,-1,0;0,1,0,-1,0,1,-1,0};
+// Output buffer (just a zero matrix).
+let out = dmatrix (2,8);
+
+// Activate the plugin.
+lilv::activate p;
+
+// Let's run this through the plugin.
+lilv::run p in out;
+
+// Port #0 is used to set the amplification in dB.
+lilv::get_control p 0;
+// Let's change it and run the plugin again.
+lilv::set_control p 0 10;
+lilv::get_control p 0;
+lilv::run p in out;
+
+// Port #4 and 5 are control outputs of the plugin with the SPL in dB on the
+// left and the right channel.
+map (lilv::get_control p) [4,5];
+
+// Let's compute some more samples.
+lilv::run p in out;
+map (lilv::get_control p) [4,5];
+
+// You get the idea...
+lilv::set_control p 0 (-96);
+lilv::run p in out;
+map (lilv::get_control p) [4,5];
+lilv::run p in out;
+map (lilv::get_control p) [4,5];
