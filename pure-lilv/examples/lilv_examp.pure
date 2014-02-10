@@ -156,10 +156,17 @@ let p = lilv::plugin world "http://faust-lv2.googlecode.com/amp" 44100 64;
 // Let's get some information about the plugin (number of audio input/output
 // ports, port descriptions).
 
-let n,m = lilv::num_inputs p, lilv::num_outputs p;
+let n,m = lilv::num_audio_inputs p, lilv::num_audio_outputs p;
 let ports = [i, lilv::port_info p i | i = 0..lilv::num_ports p-1];
 
 n,m; ports;
+
+// The lilv:audio_inputs and lilv:audio_outputs functions return the list of
+// audio input/output port numbers, so you can retrieve the descriptions of
+// just the audio ports as follows:
+
+ports!!lilv::audio_inputs p;
+ports!!lilv::audio_outputs p;
 
 // Create some buffers. Note that we can use any block size here, as long as
 // it doesn't exceed the maximum block size we specified when instantiating
@@ -198,3 +205,26 @@ lilv::run p in out;
 map (lilv::get_control p) [4,5];
 lilv::run p in out;
 map (lilv::get_control p) [4,5];
+
+// Plugins may also have MIDI (LV2 atom or event) ports. Let's have a look at
+// the MIDI ports of this plugin.
+ports!!lilv::midi_inputs p;
+ports!!lilv::midi_outputs p;
+
+// So there's one MIDI input port (port #10). Looking at the Faust code of the
+// plugin, we see that MIDI controller #7 can be used to control the gain
+// value, so we can do this to crank up the gain to its maximum:
+lilv::set_midi p 10 [{0xb0, 7, 127}];
+lilv::run p in out;
+map (lilv::get_control p) [4,5];
+
+// Also, MIDI controller #8 controls the balance, so we can do this to move
+// the balance to the right:
+lilv::set_midi p 10 [{0xb0, 8, 100}];
+lilv::run p in out;
+map (lilv::get_control p) [4,5];
+
+// Again, you get the idea. A typical iteration of a realtime loop would
+// involve setting up the input controls and any MIDI input, then run the
+// plugin on its audio input to give the audio output, and finally grab any
+// output control values and MIDI messages from the plugin.

@@ -24,8 +24,8 @@ objects = $(patsubst %.c, %$(DLL), $(csource))
 
 all: $(objects)
 
-%$(DLL): %.c
-	gcc $(shared) -o $@ $(MOD_CFLAGS) -std=c99 $< $(MOD_LDFLAGS) $(LIBS)
+lilv$(DLL): lilv.c lv2_evbuf.c symap.c
+	gcc $(shared) -o $@ $(MOD_CFLAGS) -std=c99 $^ $(MOD_LDFLAGS) $(LIBS)
 
 clean:
 	rm -f *$(DLL)
@@ -39,7 +39,8 @@ uninstall:
 
 # Roll a distribution tarball.
 
-DISTFILES = COPYING Makefile $(csource) $(puresource) examples/*.pure
+DISTFILES = COPYING Makefile $(puresource) $(csource) \
+lv2_evbuf.c lv2_evbuf.h symap.c symap.h examples/*.pure
 SEDFILES = README
 
 dist = $(pkgname)-$(version)

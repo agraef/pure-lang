@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <alloca.h>
 
 #include <pure/runtime.h>
 
@@ -302,22 +303,60 @@ pure_expr *lilv_plugin_info(LilvWorld* world, const char* plugin_uri)
 		     p_extension_data, p_presets, p_ports);
 }
 
-// Plugin host features that we support. This is only a minimal set right now,
-// which will hopefully be enough to run most plugins.
-
-// Note that the uri-map extension is deprecated, but since older plugins may
-// still be using it instead of the newer urid extension, we still support it
-// for now.
+/* uri-map and urid support. Note that we only keep one global URI table right
+   now, so all plugin instances use the same set of URI ids and implementing
+   several independent LV2 hosts in the same Pure program isn't really
+   supported right now. Also note that the uri-map extension is deprecated,
+   but since older plugins may still be using it instead of the newer urid
+   extension, we still support it for now. */
 
 #include <lv2/lv2plug.in/ns/ext/uri-map/uri-map.h>
 #include <lv2/lv2plug.in/ns/ext/urid/urid.h>
 
-#define NS_EXT "http://lv2plug.in/ns/ext/"
+#include "symap.h"
 
-static uint32_t uri_to_id
-(LV2_URI_Map_Callback_Data callback_data, const char* map, const char* uri);
-static LV2_URID map_uri(LV2_URID_Map_Handle handle, const char* uri);
-static const char* unmap_uri(LV2_URID_Unmap_Handle handle, LV2_URID urid);
+static Symap *symap;
+
+static inline void symap_init()
+{
+  if (!symap) {
+    symap = symap_new();
+    assert(symap);
+  }
+}
+
+static uint32_t
+uri_to_id(LV2_URI_Map_Callback_Data callback_data,
+          const char*               map,
+          const char*               uri)
+{
+  symap_init();
+  const LV2_URID id = symap_map(symap, uri);
+  return id;
+}
+
+static LV2_URID
+map_uri(LV2_URID_Map_Handle handle,
+        const char*         uri)
+{
+  symap_init();
+  const LV2_URID id = symap_map(symap, uri);
+  return id;
+}
+
+static const char*
+unmap_uri(LV2_URID_Unmap_Handle handle,
+          LV2_URID              urid)
+{
+  symap_init();
+  const char* uri = symap_unmap(symap, urid);
+  return uri;
+}
+
+// Plugin host features that we support. This is only a minimal set right now,
+// which will hopefully be enough to run most plugins.
+
+#define NS_EXT "http://lv2plug.in/ns/ext/"
 
 static LV2_URI_Map_Feature uri_map   = { NULL, &uri_to_id };
 static LV2_URID_Map map              = { NULL, map_uri };
@@ -337,11 +376,19 @@ const LV2_Feature* features[] = {
    a run of the plugin can be adjusted as needed, but may not exceed this
    number). */
 
+#include "lv2_evbuf.h"
+
+// Default buffer size for MIDI events. Adjust this as needed.
+#ifndef EV_BUF_SIZE
+#define EV_BUF_SIZE 4096
+#endif
+
 typedef struct {
   // Lilv plugin instance and associated data.
   LilvInstance *instance;
   double sample_rate;
-  uint32_t block_size;
+  uint32_t block_size, ev_buf_size;
+  uint32_t atom_chunk, atom_sequence, midi_event;
   // Total number of ports.
   uint32_t n;
   // Port names and symbols.
@@ -350,11 +397,19 @@ typedef struct {
   uint8_t *ty, *flags;
   // Ranges and default values of control ports (0..n-1).
   float *mins, *maxs, *defs;
-  // Control port data, sample buffers for audio/CV ports (0..n-1).
-  float *data, **buffer;
+  // Control port data (0..n-1).
+  float *data;
+  // Port buffers (0..n-1). For control ports, these point to a single float
+  // in the data vector. For audio/CV and atom/event (MIDI) ports, they point
+  // to a buffer (float* for audio/CV, LV2_Evbuf* for atom/event) of the
+  // appropriate size (block_size or ev_buf_size).
+  void **buffer;
   // Number and port indices of audio/CV input/output ports (index range of
   // in: 0..n_in-1, out: 0..n_out-1).
   uint32_t n_in, n_out, *in, *out;
+  // Number and port indices of atom/event input/output ports (index range of
+  // evin: 0..n_evin-1, evout: 0..n_evout-1).
+  uint32_t n_evin, n_evout, *evin, *evout;
 } PluginInstance;
 
 PluginInstance *lilv_plugin_new(LilvWorld* world, const char* plugin_uri,
@@ -374,6 +429,7 @@ PluginInstance *lilv_plugin_new(LilvWorld* world, const char* plugin_uri,
   }
   ret->sample_rate = sample_rate;
   ret->block_size = block_size;
+  ret->ev_buf_size = EV_BUF_SIZE;
   // Cached URIs.
   LilvNode* input_class = lilv_new_uri(world, LILV_URI_INPUT_PORT);
   LilvNode* output_class = lilv_new_uri(world, LILV_URI_OUTPUT_PORT);
@@ -383,9 +439,15 @@ PluginInstance *lilv_plugin_new(LilvWorld* world, const char* plugin_uri,
   LilvNode* event_class = lilv_new_uri(world, LILV_URI_EVENT_PORT);
   LilvNode* atom_class = lilv_new_uri(world, MY_URI_ATOM_PORT);
   LilvNode* midi_event = lilv_new_uri(world, LILV_URI_MIDI_EVENT);
+  LilvNode* atom_Chunk = lilv_new_uri(world, LV2_ATOM__Chunk);
+  LilvNode* atom_Sequence = lilv_new_uri(world, LV2_ATOM__Sequence);
+  // We need these URIs later when dealing with the event buffers.
+  ret->midi_event = map.map(map.handle, LILV_URI_MIDI_EVENT);
+  ret->atom_chunk = map.map(map.handle, LV2_ATOM__Chunk);
+  ret->atom_sequence = map.map(map.handle, LV2_ATOM__Sequence);
   // Make a first pass through the port list to fill in the basic port data
-  // and determine the number of audio/CV input/output ports. We also connect
-  // all ports to their corresponding buffers here.
+  // and determine the number of audio/CV and atom/event input/output ports.
+  // We also connect all ports to their corresponding buffers here.
   ret->n = lilv_plugin_get_num_ports(p);
   ret->mins = (float*)calloc(ret->n, sizeof(float));
   ret->maxs = (float*)calloc(ret->n, sizeof(float));
@@ -396,8 +458,9 @@ PluginInstance *lilv_plugin_new(LilvWorld* world, const char* plugin_uri,
   ret->ty = (uint8_t*)calloc(ret->n, sizeof(uint8_t));
   ret->flags = (uint8_t*)calloc(ret->n, sizeof(uint8_t));
   ret->data = (float*)calloc(ret->n, sizeof(float));
-  ret->buffer = (float**)calloc(ret->n, sizeof(float*));
+  ret->buffer = (void**)calloc(ret->n, sizeof(void*));
   ret->n_in = ret->n_out = 0;
+  ret->n_evin = ret->n_evout = 0;
   for (uint32_t i = 0; i < ret->n; ++i) {
     const LilvPort* port = lilv_plugin_get_port_by_index(p, i);
     if (!port) continue;
@@ -411,7 +474,7 @@ PluginInstance *lilv_plugin_new(LilvWorld* world, const char* plugin_uri,
     bool in = lilv_port_is_a(p, port, input_class);
     bool out = lilv_port_is_a(p, port, output_class);
     // Check for MIDI event/atom port (set below).
-    bool midi = false;
+    bool midi = false, atom;
     if (lilv_port_is_a(p, port, control_class)) {
       // Control port.
       ret->ty[i] = 1;
@@ -421,39 +484,51 @@ PluginInstance *lilv_plugin_new(LilvWorld* world, const char* plugin_uri,
     } else if (lilv_port_is_a(p, port, audio_class)) {
       // Audio port (blocks of samples).
       ret->ty[i] = 2;
-      ret->buffer[i] = (float*)calloc(ret->block_size, sizeof(float));
+      ret->buffer[i] = calloc(ret->block_size, sizeof(float));
       lilv_instance_connect_port(ret->instance, i, ret->buffer[i]);
       if (in) ret->n_in++; if (out) ret->n_out++;
     } else if (lilv_port_is_a(p, port, cv_class)) {
       // CV port (like an audio port, but for control data).
       ret->ty[i] = 3;
-      ret->buffer[i] = (float*)calloc(ret->block_size, sizeof(float));
+      ret->buffer[i] = calloc(ret->block_size, sizeof(float));
       lilv_instance_connect_port(ret->instance, i, ret->buffer[i]);
       if (in) ret->n_in++; if (out) ret->n_out++;
-    } else if (lilv_port_is_a(p, port, atom_class)) {
-      // New-style atom port, check for MIDI capability.
-      ret->ty[i] = 4;
+    } else if ((atom = lilv_port_is_a(p, port, atom_class)) ||
+	       lilv_port_is_a(p, port, event_class)) {
+      // New-style atom or old-style event port, check for MIDI capability.
+      ret->ty[i] = atom?4:5;
       midi = lilv_port_supports_event(p, port, midi_event);
-      // TODO: set up MIDI event buffer
-    } else if (lilv_port_is_a(p, port, event_class)) {
-      // Old-style event port, check for MIDI capability.
-      ret->ty[i] = 5;
-      midi = lilv_port_supports_event(p, port, midi_event);
-      // TODO: set up MIDI event buffer
+      if (midi) {
+	if (in) ret->n_evin++; if (out) ret->n_evout++;
+	ret->buffer[i] = lv2_evbuf_new
+	  (ret->ev_buf_size, atom?LV2_EVBUF_ATOM:LV2_EVBUF_EVENT,
+	   ret->atom_chunk, ret->atom_sequence);
+	lilv_instance_connect_port(ret->instance, i,
+				   lv2_evbuf_get_buffer(ret->buffer[i]));
+      }
     }
     ret->flags[i] = in | (out<<1) | (midi<<2);
   }
-  // Second pass to fill in the audio/CV port indices.
+  // Second pass to fill in the audio/CV and atom/event port indices.
   ret->in = (uint32_t*)calloc(ret->n_in, sizeof(uint32_t));
   ret->out = (uint32_t*)calloc(ret->n_out, sizeof(uint32_t));
-  uint32_t k = 0, l = 0;
+  ret->evin = (uint32_t*)calloc(ret->n_evin, sizeof(uint32_t));
+  ret->evout = (uint32_t*)calloc(ret->n_evout, sizeof(uint32_t));
+  uint32_t k_in = 0, k_out = 0, k_evin = 0, k_evout = 0;
   for (uint32_t i = 0; i < ret->n; ++i) {
-    const LilvPort* port = lilv_plugin_get_port_by_index(p, i);
-    if (!port || (ret->ty[i] != 2 && ret->ty[i] != 3)) continue;
-    if (ret->flags[i]&1)
-      ret->in[k++] = i;
-    if (ret->flags[i]&2)
-      ret->out[l++] = i;
+    if (ret->ty[i] == 2 || ret->ty[i] == 3) {
+      // audio/CV port
+      if (ret->flags[i]&1)
+	ret->in[k_in++] = i;
+      if (ret->flags[i]&2)
+	ret->out[k_out++] = i;
+    } else if (ret->ty[i] == 4 || ret->ty[i] == 5) {
+      // atom/event port
+      if (ret->flags[i]&1)
+	ret->evin[k_evin++] = i;
+      if (ret->flags[i]&2)
+	ret->evout[k_evout++] = i;
+    }
   }
   lilv_node_free(input_class);
   lilv_node_free(output_class);
@@ -462,6 +537,8 @@ PluginInstance *lilv_plugin_new(LilvWorld* world, const char* plugin_uri,
   lilv_node_free(event_class);
   lilv_node_free(atom_class);
   lilv_node_free(midi_event);
+  lilv_node_free(atom_Chunk);
+  lilv_node_free(atom_Sequence);
   return ret;
 }
 
@@ -498,6 +575,21 @@ void lilv_plugin_free(PluginInstance *p)
     const uint32_t k = p->out[i];
     if (p->buffer[k]) {
       free(p->buffer[k]);
+      p->buffer[k] = NULL;
+    }
+  }
+  // Get rid of the atom/event buffers.
+  for (uint32_t i = 0; i < p->n_evin; i++) {
+    const uint32_t k = p->evin[i];
+    if (p->buffer[k]) {
+      lv2_evbuf_free((LV2_Evbuf*)p->buffer[k]);
+      p->buffer[k] = NULL;
+    }
+  }
+  for (uint32_t i = 0; i < p->n_evout; i++) {
+    const uint32_t k = p->evout[i];
+    if (p->buffer[k]) {
+      lv2_evbuf_free((LV2_Evbuf*)p->buffer[k]);
       p->buffer[k] = NULL;
     }
   }
@@ -539,6 +631,22 @@ typedef struct _gsl_matrix
   gsl_block *block;
   int owner;
 } gsl_matrix;
+
+typedef struct _gsl_block_int
+{
+  size_t size;
+  int *data;
+} gsl_block_int;
+
+typedef struct _gsl_matrix_int
+{
+  size_t size1;
+  size_t size2;
+  size_t tda;
+  int *data;
+  gsl_block_int *block;
+  int owner;
+} gsl_matrix_int;
 
 typedef struct _gsl_block_symbolic
 {
@@ -619,23 +727,34 @@ pure_expr *lilv_plugin_run(PluginInstance *p, pure_expr *in, pure_expr *out)
   else
     count = (in_ncols<out_ncols)?in_ncols:out_ncols;
   if (count > p->block_size) count = p->block_size;
-  if (count == 0) return out; // nothing to do
+  if (count == 0 && p->n_evin == 0 && p->n_evout == 0)
+    return out; // nothing to do
   /* Copy the samples from the input matrix to the audio/CV input buffers.
      XXXTODO: Pass pointers to the matrix rows instead, as soon as Pure has
      native support for single precision floating point matrices. */
   for (uint32_t i = 0; i < n; i++) {
     const uint32_t k = p->in[i];
-    float *x = p->buffer[k];
+    float *x = (float*)p->buffer[k];
     double *y = in_data+i*in_tda;
     for (uint32_t j = 0; j < count; j++)
       x[j] = y[j];
   }
+  // Prepare the event output buffers.
+  for (uint32_t i = 0; i < p->n_evout; i++) {
+    const uint32_t k = p->evout[i];
+    lv2_evbuf_reset((LV2_Evbuf*)p->buffer[k], false);
+  }
   // Run the plugin.
   lilv_instance_run(p->instance, p->block_size);
+  // Reset the event input buffers.
+  for (uint32_t i = 0; i < p->n_evin; i++) {
+    const uint32_t k = p->evin[i];
+    lv2_evbuf_reset((LV2_Evbuf*)p->buffer[k], true);
+  }
   // Copy the audio/CV output buffers back to the output matrix.
   for (size_t i = 0; i < m; i++) {
     const uint32_t k = p->out[i];
-    float *x = p->buffer[k];
+    float *x = (float*)p->buffer[k];
     double *y = out_data+i*out_tda;
     for (uint32_t j = 0; j < count; j++)
       y[j] = x[j];
@@ -644,11 +763,12 @@ pure_expr *lilv_plugin_run(PluginInstance *p, pure_expr *in, pure_expr *out)
 }
 
 /* Retrieve and manipulate the plugin data. You can retrieve the sample rate,
-   maximum block size, total number of ports, and the number of (audio/CV)
-   input and output ports. You can also adjust the maximum block size, but
-   note that this is a fairly expensive operation involving the reallocation
-   of the input/output buffers, so this shouldn't be done during realtime
-   processing. */
+   maximum block and event buffer sizes, total number of ports, and the number
+   of audio/CV and MIDI atom/event input and output ports, as well as their
+   port numbers. You can also adjust the maximum block and and event buffer
+   sizes, but note that these are a fairly expensive operations involving the
+   reallocation of the input/output buffers, so this shouldn't be done during
+   realtime processing. */
 
 double lilv_plugin_sample_rate(PluginInstance *p)
 {
@@ -662,22 +782,80 @@ uint32_t lilv_plugin_block_size(PluginInstance *p)
   return p->block_size;
 }
 
+uint32_t lilv_plugin_event_buffer_size(PluginInstance *p)
+{
+  if (!p) return 0;
+  return p->ev_buf_size;
+}
+
 uint32_t lilv_plugin_num_ports(PluginInstance *p)
 {
   if (!p) return 0;
   return p->n;
 }
 
-uint32_t lilv_plugin_num_inputs(PluginInstance *p)
+uint32_t lilv_plugin_num_audio_inputs(PluginInstance *p)
 {
   if (!p) return 0;
   return p->n_in;
 }
 
-uint32_t lilv_plugin_num_outputs(PluginInstance *p)
+uint32_t lilv_plugin_num_audio_outputs(PluginInstance *p)
 {
   if (!p) return 0;
   return p->n_out;
+}
+
+pure_expr *lilv_plugin_audio_inputs(PluginInstance *p)
+{
+  if (!p) return 0;
+  size_t n = p->n_in;
+  pure_expr **xv = (pure_expr**)calloc(n, sizeof(pure_expr*));
+  for (size_t i = 0; i < n; i++)
+    xv[i] = pure_int(p->in[i]);
+  return pure_listv(n, xv);
+}
+
+pure_expr *lilv_plugin_audio_outputs(PluginInstance *p)
+{
+  if (!p) return 0;
+  size_t n = p->n_out;
+  pure_expr **xv = (pure_expr**)calloc(n, sizeof(pure_expr*));
+  for (size_t i = 0; i < n; i++)
+    xv[i] = pure_int(p->out[i]);
+  return pure_listv(n, xv);
+}
+
+uint32_t lilv_plugin_num_midi_inputs(PluginInstance *p)
+{
+  if (!p) return 0;
+  return p->n_evin;
+}
+
+uint32_t lilv_plugin_num_midi_outputs(PluginInstance *p)
+{
+  if (!p) return 0;
+  return p->n_evout;
+}
+
+pure_expr *lilv_plugin_midi_inputs(PluginInstance *p)
+{
+  if (!p) return 0;
+  size_t n = p->n_evin;
+  pure_expr **xv = (pure_expr**)calloc(n, sizeof(pure_expr*));
+  for (size_t i = 0; i < n; i++)
+    xv[i] = pure_int(p->evin[i]);
+  return pure_listv(n, xv);
+}
+
+pure_expr *lilv_plugin_midi_outputs(PluginInstance *p)
+{
+  if (!p) return 0;
+  size_t n = p->n_evout;
+  pure_expr **xv = (pure_expr**)calloc(n, sizeof(pure_expr*));
+  for (size_t i = 0; i < n; i++)
+    xv[i] = pure_int(p->evout[i]);
+  return pure_listv(n, xv);
 }
 
 void lilv_plugin_set_block_size(PluginInstance *p, uint32_t block_size)
@@ -687,10 +865,38 @@ void lilv_plugin_set_block_size(PluginInstance *p, uint32_t block_size)
   for (uint32_t i = 0; i < p->n_in; i++) {
     const uint32_t k = p->in[i];
     p->buffer[k] = realloc(p->buffer[k], block_size*sizeof(float));
+    lilv_instance_connect_port(p->instance, k, p->buffer[k]);
   }
   for (uint32_t i = 0; i < p->n_out; i++) {
     const uint32_t k = p->out[i];
     p->buffer[k] = realloc(p->buffer[k], block_size*sizeof(float));
+    lilv_instance_connect_port(p->instance, k, p->buffer[k]);
+  }
+}
+
+void lilv_plugin_set_event_buffer_size(PluginInstance *p, uint32_t buffer_size)
+{
+  if (!p) return;
+  p->ev_buf_size = buffer_size;
+  for (uint32_t i = 0; i < p->n_evin; i++) {
+    const uint32_t k = p->evin[i];
+    const bool atom = p->ty[i] == 4;
+    lv2_evbuf_free((LV2_Evbuf*)p->buffer[k]);
+    p->buffer[k] = lv2_evbuf_new
+      (buffer_size, atom?LV2_EVBUF_ATOM:LV2_EVBUF_EVENT,
+       p->atom_chunk, p->atom_sequence);
+    lilv_instance_connect_port(p->instance, k,
+			       lv2_evbuf_get_buffer(p->buffer[k]));
+  }
+  for (uint32_t i = 0; i < p->n_evout; i++) {
+    const uint32_t k = p->evout[i];
+    const bool atom = p->ty[i] == 4;
+    lv2_evbuf_free((LV2_Evbuf*)p->buffer[k]);
+    p->buffer[k] = lv2_evbuf_new
+      (buffer_size, atom?LV2_EVBUF_ATOM:LV2_EVBUF_EVENT,
+       p->atom_chunk, p->atom_sequence);
+    lilv_instance_connect_port(p->instance, k,
+			       lv2_evbuf_get_buffer(p->buffer[k]));
   }
 }
 
@@ -731,221 +937,55 @@ void lilv_plugin_set_control(PluginInstance *p, uint32_t k, double x)
   p->data[k] = x;
 }
 
-/* symap implementation pilfered from Jalv. This is needed to implement the
-   URI mapping stuff below. */
+/* Get and set MIDI data from/to atom/event ports. */
 
-/*****************************************************************************/
-
-/*
-  Copyright 2011-2012 David Robillard <http://drobilla.net>
-
-  Permission to use, copy, modify, and/or distribute this software for any
-  purpose with or without fee is hereby granted, provided that the above
-  copyright notice and this permission notice appear in all copies.
-
-  THIS SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
-  WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
-  MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
-  ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
-  WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
-  ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
-  OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-*/
-
-#include <assert.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
-
-struct SymapImpl;
-
-typedef struct SymapImpl Symap;
-
-struct SymapImpl {
-	/**
-	   Unsorted array of strings, such that the symbol for ID i is found
-	   at symbols[i - 1].
-	*/
-	char** symbols;
-
-	/**
-	   Array of IDs, sorted by corresponding string in @ref symbols.
-	*/
-	uint32_t* index;
-
-	/**
-	   Number of symbols (number of items in @ref symbols and @ref index).
-	*/
-	uint32_t size;
-};
-
-static Symap*
-symap_new(void)
+pure_expr *lilv_plugin_get_midi(PluginInstance *p, uint32_t k)
 {
-	Symap* map = (Symap*)malloc(sizeof(Symap));
-	map->symbols = NULL;
-	map->index   = NULL;
-	map->size    = 0;
-	return map;
-}
-
-static void
-symap_free(Symap* map)
-{
-	for (uint32_t i = 0; i < map->size; ++i) {
-		free(map->symbols[i]);
-	}
-
-	free(map->symbols);
-	free(map->index);
-	free(map);
-}
-
-static char*
-symap_strdup(const char* str)
-{
-	const size_t len  = strlen(str);
-	char*        copy = (char*)malloc(len + 1);
-	memcpy(copy, str, len + 1);
-	return copy;
-}
-
-/**
-   Return the index into map->index (not the ID) corresponding to @c sym,
-   or the index where a new entry for @c sym should be inserted.
-*/
-static uint32_t
-symap_search(const Symap* map, const char* sym, bool* exact)
-{
-	*exact = false;
-	if (map->size == 0) {
-		return 0;  // Empty map, insert at 0
-	} else if (strcmp(map->symbols[map->index[map->size - 1] - 1], sym) < 0) {
-		return map->size;  // Greater than last element, append
-	}
-
-	uint32_t lower = 0;
-	uint32_t upper = map->size - 1;
-	uint32_t i     = upper;
-	int      cmp;
-
-	while (upper >= lower) {
-		i   = lower + ((upper - lower) / 2);
-		cmp = strcmp(map->symbols[map->index[i] - 1], sym);
-
-		if (cmp == 0) {
-			*exact = true;
-			return i;
-		} else if (cmp > 0) {
-			if (i == 0) {
-				break;  // Avoid underflow
-			}
-			upper = i - 1;
-		} else {
-			lower = ++i;
-		}
-	}
-
-	assert(!*exact || strcmp(map->symbols[map->index[i] - 1], sym) > 0);
-	return i;
-}
-
-static uint32_t
-symap_try_map(Symap* map, const char* sym)
-{
-	bool           exact;
-	const uint32_t index = symap_search(map, sym, &exact);
-	if (exact) {
-		assert(!strcmp(map->symbols[map->index[index]], sym));
-		return map->index[index];
-	}
-
-	return 0;
-}
-
-static uint32_t
-symap_map(Symap* map, const char* sym)
-{
-	bool           exact;
-	const uint32_t index = symap_search(map, sym, &exact);
-	if (exact) {
-		assert(!strcmp(map->symbols[map->index[index] - 1], sym));
-		return map->index[index];
-	}
-
-	const uint32_t id  = ++map->size;
-	char* const    str = symap_strdup(sym);
-
-	/* Append new symbol to symbols array */
-	map->symbols = (char**)realloc(map->symbols, map->size * sizeof(str));
-	map->symbols[id - 1] = str;
-
-	/* Insert new index element into sorted index */
-	map->index = (uint32_t*)realloc(map->index, map->size * sizeof(uint32_t));
-	if (index < map->size - 1) {
-		memmove(map->index + index + 1,
-		        map->index + index,
-		        (map->size - index - 1) * sizeof(uint32_t));
-	}
-
-	map->index[index] = id;
-
-	return id;
-}
-
-static const char*
-symap_unmap(Symap* map, uint32_t id)
-{
-	if (id == 0) {
-		return NULL;
-	} else if (id <= map->size) {
-		return map->symbols[id - 1];
-	}
-	return NULL;
-}
-
-/*****************************************************************************/
-
-/* uri-map and urid support. Note that we only keep one global URI table right
-   now, so all plugin instances use the same set of URI ids and implementing
-   several independent LV2 hosts in the same Pure program isn't really
-   supported right now. */
-
-static Symap *symap;
-
-static inline void symap_init()
-{
-  if (!symap) {
-    symap = symap_new();
-    assert(symap);
+  if (!p || k >= p->n || p->ty[k] != 4 && p->ty[k] != 5 || !(p->flags[k]&4))
+    return 0;
+  size_t n = 0;
+  // Note that in any case p->ev_buf_size is an upper limit for number of MIDI
+  // events in the buffer.
+  pure_expr **xv = (pure_expr**)calloc(p->ev_buf_size, sizeof(pure_expr*));
+  for (LV2_Evbuf_Iterator i = lv2_evbuf_begin((LV2_Evbuf*)p->buffer[k]);
+       lv2_evbuf_is_valid(i); i = lv2_evbuf_next(i)) {
+    uint32_t frames, subframes, type, size;
+    uint8_t* body;
+    lv2_evbuf_get(i, &frames, &subframes, &type, &size, &body);
+    if (type == p->midi_event && size>0) {
+      int *v = (int*)alloca(size*sizeof(int));
+      if (!v) continue;
+      for (uint32_t k = 0; k < size; k++)
+	v[k] = body[k];
+      assert(n < p->ev_buf_size);
+      xv[n++] = matrix_from_int_array(1, size, v);
+    }
   }
+  return pure_listv(n, xv);
 }
 
-static uint32_t
-uri_to_id(LV2_URI_Map_Callback_Data callback_data,
-          const char*               map,
-          const char*               uri)
+pure_expr *lilv_plugin_set_midi(PluginInstance *p, uint32_t k, pure_expr *x)
 {
-  symap_init();
-  const LV2_URID id = symap_map(symap, uri);
-  return id;
-}
-
-static LV2_URID
-map_uri(LV2_URID_Map_Handle handle,
-        const char*         uri)
-{
-  symap_init();
-  const LV2_URID id = symap_map(symap, uri);
-  return id;
-}
-
-static const char*
-unmap_uri(LV2_URID_Unmap_Handle handle,
-          LV2_URID              urid)
-{
-  symap_init();
-  const char* uri = symap_unmap(symap, urid);
-  return uri;
+  if (!p || k >= p->n || p->ty[k] != 4 && p->ty[k] != 5 || !(p->flags[k]&4))
+    return 0;
+  size_t n;
+  pure_expr **xv;
+  if (!pure_is_listv(x, &n, &xv)) return 0;
+  lv2_evbuf_reset((LV2_Evbuf*)p->buffer[k], true);
+  LV2_Evbuf_Iterator iter = lv2_evbuf_begin((LV2_Evbuf*)p->buffer[k]);
+  for (size_t i = 0; i < n; i++) {
+    void *data;
+    if (!pure_is_int_matrix(xv[i], &data)) goto err;
+    uint32_t m = matrix_size(xv[i]);
+    if (m == 0) goto err;
+    uint8_t *v = matrix_to_byte_array(NULL, xv[i]);
+    if (!v) goto err;
+    lv2_evbuf_write(&iter, 0, 0, p->midi_event, m, v);
+    free(v);
+  }
+  free(xv);
+  return pure_tuplel(0, 0);
+ err:
+  free(xv);
+  return 0;
 }
