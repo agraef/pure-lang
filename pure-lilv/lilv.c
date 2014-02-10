@@ -765,8 +765,8 @@ pure_expr *lilv_plugin_run(PluginInstance *p, pure_expr *in, pure_expr *out)
 /* Retrieve and manipulate the plugin data. You can retrieve the sample rate,
    maximum block and event buffer sizes, total number of ports, and the number
    of audio/CV and MIDI atom/event input and output ports, as well as their
-   port numbers. You can also adjust the maximum block and and event buffer
-   sizes, but note that these are a fairly expensive operations involving the
+   port numbers. You can also adjust the maximum block and event buffer sizes,
+   but note that these are a fairly expensive operations involving the
    reallocation of the input/output buffers, so this shouldn't be done during
    realtime processing. */
 
@@ -782,7 +782,7 @@ uint32_t lilv_plugin_block_size(PluginInstance *p)
   return p->block_size;
 }
 
-uint32_t lilv_plugin_event_buffer_size(PluginInstance *p)
+uint32_t lilv_plugin_midi_buffer_size(PluginInstance *p)
 {
   if (!p) return 0;
   return p->ev_buf_size;
@@ -874,7 +874,7 @@ void lilv_plugin_set_block_size(PluginInstance *p, uint32_t block_size)
   }
 }
 
-void lilv_plugin_set_event_buffer_size(PluginInstance *p, uint32_t buffer_size)
+void lilv_plugin_set_midi_buffer_size(PluginInstance *p, uint32_t buffer_size)
 {
   if (!p) return;
   p->ev_buf_size = buffer_size;

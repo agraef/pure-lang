@@ -122,16 +122,16 @@ extern void lilv_plugin_deactivate(PluginInstance *p) = deactivate;
 extern expr *lilv_plugin_run(PluginInstance *p, expr *in, expr *out) = run;
 
 /* Retrieve and manipulate the plugin data. You can retrieve the sample rate,
-   maximum block size, total number of ports, and the number of audio/CV and
-   MIDI atom/event input and output ports, as well as their port numbers. You
-   can also adjust the maximum block and and event buffer sizes, but note that
-   these are a fairly expensive operations involving the reallocation of the
-   input/output buffers, so this shouldn't be done during realtime
-   processing. */
+   maximum block and event buffer sizes, total number of ports, and the number
+   of audio/CV and MIDI atom/event input and output ports, as well as their
+   port numbers. You can also adjust the maximum block and event buffer sizes,
+   but note that these are a fairly expensive operations involving the
+   reallocation of the input/output buffers, so this shouldn't be done during
+   realtime processing. */
 
 extern double lilv_plugin_sample_rate(PluginInstance *p) = sample_rate;
 extern int lilv_plugin_block_size(PluginInstance *p) = block_size;
-extern int lilv_plugin_event_buffer_size(PluginInstance *p) = event_buffer_size;
+extern int lilv_plugin_midi_buffer_size(PluginInstance *p) = midi_buffer_size;
 extern int lilv_plugin_num_ports(PluginInstance *p) = num_ports;
 extern int lilv_plugin_num_audio_inputs(PluginInstance *p) = num_audio_inputs;
 extern int lilv_plugin_num_audio_outputs(PluginInstance *p) = num_audio_outputs;
@@ -143,9 +143,9 @@ extern expr *lilv_plugin_midi_inputs(PluginInstance *p) = midi_inputs;
 extern expr *lilv_plugin_midi_outputs(PluginInstance *p) = midi_outputs;
 extern void lilv_plugin_set_block_size(PluginInstance *p, int block_size)
   = set_block_size;
-extern void lilv_plugin_set_event_buffer_size(PluginInstance *p,
+extern void lilv_plugin_set_midi_buffer_size(PluginInstance *p,
 					      int buffer_size)
-  = set_event_buffer_size;
+  = set_midi_buffer_size;
 
 /* lilv::port_info: Retrieve port information. For a given port number, this
    yields a tuple with the port symbol and name, type, flags and, in the case
@@ -169,7 +169,28 @@ set_control p k x::int = set_control p k (double x);
    running the plugin, and retrieve its MIDI outputs afterwards. Typically
    these steps are repeated in a realtime loop which interprets incoming and
    outgoing control changes and MIDI events while processing and/or generating
-   audio and CV data. */
+   audio and CV data.
+
+   lilv::get_midi returns MIDI messages available on the given MIDI port, as a
+   list of Pure int vectors. Each vector contains the bytes making up a single
+   MIDI message, in a format compatible with the pure-midi module. Conversely,
+   lilv::set_midi takes a list of int matrices representing MIDI messages and
+   delivers them to the given MIDI port so that they can be read by the plugin
+   next time lilv::run is executed.
+
+   Note that in either case the given port may be either an input or an output
+   port, so that it's possible to use lilv::get_midi to read back MIDI data
+   written with lilv::set_midi. But it must be an atom or event port which is
+   MIDI-capable (i.e., has bit 3 in the port flags set). Also note that
+   lilv::set_midi will overwrite the current contents of the port (not add to
+   it), so the last call to lilv::set_midi on a given MIDI input port
+   determines which messages are passed to the plugin when lilv::run is
+   invoked. Moreover, the contents of each MIDI input port is automatically
+   reset after lilv::run has executed.
+
+   The size of the buffers used for MIDI events is limited. It is usually set
+   to 4096 bytes total capacity by default, but this can be adjusted with
+   lilv:set_midi_buffer_size. */
 
 extern expr *lilv_plugin_get_midi(PluginInstance *p, int k) = get_midi;
 extern expr *lilv_plugin_set_midi(PluginInstance *p, int k, expr *x) = set_midi;
