@@ -177,14 +177,14 @@ lilv::activate p;
 // Let's run this through the plugin.
 lilv::run p in out;
 
-// Port #0 is used to set the amplification in dB.
-lilv::get_control p 0;
+// Port #2 is used to set the gain (amplification in dB).
+lilv::get_control p 2;
 // Let's change it and run the plugin again.
-lilv::set_control p 0 10;
-lilv::get_control p 0;
+lilv::set_control p 2 10;
+lilv::get_control p 2;
 lilv::run p in out;
 
-// Port #4 and 5 are control outputs of the plugin with the SPL in dB on the
+// Port #4 and #5 are control outputs of the plugin with the SPL in dB on the
 // left and the right channel.
 map (lilv::get_control p) [4,5];
 
@@ -193,7 +193,7 @@ lilv::run p in out;
 map (lilv::get_control p) [4,5];
 
 // You get the idea...
-lilv::set_control p 0 (-96);
+lilv::set_control p 2 (-96);
 lilv::run p in out;
 map (lilv::get_control p) [4,5];
 lilv::run p in out;
