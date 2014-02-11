@@ -937,7 +937,7 @@ void lilv_plugin_set_control(PluginInstance *p, uint32_t k, double x)
   p->data[k] = x;
 }
 
-/* Get and set MIDI data from/to atom/event ports. */
+/* Get and set MIDI data of atom/event ports. */
 
 pure_expr *lilv_plugin_get_midi(PluginInstance *p, uint32_t k)
 {
@@ -958,7 +958,8 @@ pure_expr *lilv_plugin_get_midi(PluginInstance *p, uint32_t k)
       for (uint32_t k = 0; k < size; k++)
 	v[k] = body[k];
       assert(n < p->ev_buf_size);
-      xv[n++] = matrix_from_int_array(1, size, v);
+      xv[n++] = pure_tuplel(2, pure_int(frames),
+			    matrix_from_int_array(1, size, v));
     }
   }
   return pure_listv(n, xv);
@@ -975,12 +976,24 @@ pure_expr *lilv_plugin_set_midi(PluginInstance *p, uint32_t k, pure_expr *x)
   LV2_Evbuf_Iterator iter = lv2_evbuf_begin((LV2_Evbuf*)p->buffer[k]);
   for (size_t i = 0; i < n; i++) {
     void *data;
-    if (!pure_is_int_matrix(xv[i], &data)) goto err;
-    uint32_t m = matrix_size(xv[i]);
-    if (m == 0) goto err;
-    uint8_t *v = matrix_to_byte_array(NULL, xv[i]);
+    uint32_t frames = 0;
+    size_t m;
+    pure_expr *x, **yv;
+    pure_is_tuplev(xv[i], &m, &yv);
+    if (m == 1)
+      x = yv[0];
+    else if (m ==2 && pure_is_int(yv[0], &frames))
+      x = yv[1];
+    else {
+      free(yv); goto err;
+    }
+    free(yv);
+    if (!pure_is_int_matrix(x, &data)) goto err;
+    uint32_t k = matrix_size(x);
+    if (k == 0) goto err;
+    uint8_t *v = matrix_to_byte_array(NULL, x);
     if (!v) goto err;
-    lv2_evbuf_write(&iter, 0, 0, p->midi_event, m, v);
+    lv2_evbuf_write(&iter, frames, 0, p->midi_event, k, v);
     free(v);
   }
   free(xv);

@@ -206,8 +206,13 @@ map (lilv::get_control p) [4,5];
 lilv::run p in out;
 map (lilv::get_control p) [4,5];
 
-// Plugins may also have MIDI (LV2 atom or event) ports. Let's have a look at
-// the MIDI ports of this plugin.
+// Plugins may also have MIDI (LV2 atom or event) ports. Thus a typical
+// iteration of a realtime loop would actually involve setting up the input
+// controls and/or passing any MIDI input, then run the plugin on its audio
+// input (if any) to give the audio output, and finally grab the control and
+// MIDI output from the plugin (if needed).
+
+// Let's have a look at the MIDI ports of this plugin:
 ports!!lilv::midi_inputs p;
 ports!!lilv::midi_outputs p;
 
@@ -224,7 +229,9 @@ lilv::set_midi p 10 [{0xb0, 8, 100}];
 lilv::run p in out;
 map (lilv::get_control p) [4,5];
 
-// Again, you get the idea. A typical iteration of a realtime loop would
-// involve setting up the input controls and any MIDI input, then run the
-// plugin on its audio input to give the audio output, and finally grab any
-// output control values and MIDI messages from the plugin.
+// If the plugin supports it (the faust-lv2 plugins actually don't, but let's
+// pretend this for the sake of illustration), it is also possible to specify
+// sample-accurate offsets as timestamps for the MIDI messages as follows:
+lilv::set_midi p 10 [(4,{0xb0, 8, 64})];
+lilv::run p in out;
+map (lilv::get_control p) [4,5];

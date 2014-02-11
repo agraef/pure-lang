@@ -165,32 +165,68 @@ extern void lilv_plugin_set_control(PluginInstance *p, int k, double x)
 set_control p k x::int = set_control p k (double x);
 
 /* Get and set MIDI data. These are transmitted using atom or event ports.
-   Use these functions to send MIDI output to the plugin's MIDI inputs before
-   running the plugin, and retrieve its MIDI outputs afterwards. Typically
-   these steps are repeated in a realtime loop which interprets incoming and
-   outgoing control changes and MIDI events while processing and/or generating
-   audio and CV data.
+   The following functions are used to send MIDI input to the plugin's MIDI
+   inputs before running the plugin, and retrieve its MIDI outputs
+   afterwards. Typically these steps are repeated in a realtime loop which
+   interprets incoming and outgoing control changes and MIDI events while
+   processing and/or generating audio and CV data.
 
-   lilv::get_midi returns MIDI messages available on the given MIDI port, as a
-   list of Pure int vectors. Each vector contains the bytes making up a single
-   MIDI message, in a format compatible with the pure-midi module. Conversely,
-   lilv::set_midi takes a list of int matrices representing MIDI messages and
-   delivers them to the given MIDI port so that they can be read by the plugin
-   next time lilv::run is executed.
+   NOTE: There's no essential difference between atom and event ports, both
+   represent sequences of (timestamped) MIDI messages. Atom ports are the new,
+   recommended representation. Event ports have been deprecated for a while,
+   but for the time being they are still supported in this implementation for
+   backward compatibility. Which of these types is actually used depends on
+   the particular plugin, but the operation of the MIDI port from Pure is the
+   same no matter which type of port is being used.
 
-   Note that in either case the given port may be either an input or an output
-   port, so that it's possible to use lilv::get_midi to read back MIDI data
-   written with lilv::set_midi. But it must be an atom or event port which is
-   MIDI-capable (i.e., has bit 3 in the port flags set). Also note that
-   lilv::set_midi will overwrite the current contents of the port (not add to
-   it), so the last call to lilv::set_midi on a given MIDI input port
-   determines which messages are passed to the plugin when lilv::run is
-   invoked. Moreover, the contents of each MIDI input port is automatically
-   reset after lilv::run has executed.
+   Each MIDI atom or event port has a buffer holding a sequence of timestamped
+   MIDI messages. The size of these buffers is always limited. It is usually
+   set to 4096 bytes total capacity by default, but this can be adjusted with
+   lilv:set_midi_buffer_size. The timestamps are offsets in terms of audio
+   frames (sample numbers) which are relative to the beginning of the current
+   block of audio samples. If desired (and supported by the plugin), they can
+   be used to provide for sample-accurate timing of MIDI messages. (Our
+   current implementation only provides integral frame numbers as timestamps,
+   however. The subframe counts, which are also in the LV2 standard to give
+   even greater accuracy, are not supported right now.)
 
-   The size of the buffers used for MIDI events is limited. It is usually set
-   to 4096 bytes total capacity by default, but this can be adjusted with
-   lilv:set_midi_buffer_size. */
+   In Pure land, a MIDI sequence is denoted as a list of pairs consisting of a
+   timestamp and an int vector holding the status byte and data bytes of the
+   message. On input (lilv::set_midi), the timestamp can also be omitted if it
+   is zero. This format is also compatible with the pure-midi module. E.g., a
+   sequence of three note on messages and zero timestamps would look like
+   this: [(0,{0x90,60,127}),(0,{0x90,64,127}),(0,{0x90,67,127})]. The same
+   sequence might also be specified as [{0x90,60,127},{0x90,64,127},
+   {0x90,67,127}] with lilv::set_midi, omitting the zero timestamps.
+
+   Please note that the LV2 spec requires that only properly formatted MIDI
+   messages are written to an input port (beginning with a valid status byte
+   and followed by the appropriate number of data bytes). Moreover, the use of
+   note on messages with a velocity of 0 to denote note offs is not mandated
+   by the spec (you should use a proper note off message instead). These rules
+   should be taken into account when delivering a message, since they are not
+   enforced by the lilv::midi_set operation.
+
+   Provided Operations: lilv::get_midi returns the MIDI messages available on
+   the given MIDI port, as a list of pairs of ints (the timestamps) and Pure
+   int vectors (the MIDI messages). Conversely, lilv::set_midi takes a list of
+   timestamp (int) / MIDI message (int vector) pairs or just int vectors
+   (assuming a zero timestamp in the latter case), and delivers them to the
+   given MIDI port so that they can be read by the plugin next time lilv::run
+   is executed. Note that lilv::set_midi will overwrite the current contents
+   of the port buffer (not add to it), so the last call to lilv::set_midi on a
+   given MIDI input port determines which messages are passed to the plugin
+   when lilv::run is invoked. Moreover, the buffer contents of each MIDI input
+   port is automatically reset after lilv::run has executed. Likewise, the
+   buffer contents of each MIDI output port is reset before lilv::run
+   executes, so that reading the port with lilv::get_midi after invoking
+   lilv::run will retrieve the messages for the current block of samples only.
+
+   Note that both lilv::get_midi and lilv::set_midi can be used with either
+   input or output ports, so that it's always possible to use lilv::get_midi
+   to read back MIDI data written with lilv::set_midi. But the port *must* be
+   an atom or event port which is MIDI-capable (i.e., has bit 3 in the port
+   flags set), otherwise these operations will fail. */
 
 extern expr *lilv_plugin_get_midi(PluginInstance *p, int k) = get_midi;
 extern expr *lilv_plugin_set_midi(PluginInstance *p, int k, expr *x) = set_midi;
