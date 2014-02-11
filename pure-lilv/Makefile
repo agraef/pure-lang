@@ -40,7 +40,8 @@ uninstall:
 # Roll a distribution tarball.
 
 DISTFILES = COPYING Makefile $(puresource) $(csource) \
-lv2_evbuf.c lv2_evbuf.h symap.c symap.h examples/*.pure
+lv2_evbuf.c lv2_evbuf.h symap.c symap.h \
+examples/Makefile examples/*.pure examples/*mid
 SEDFILES = README
 
 dist = $(pkgname)-$(version)

@@ -1,0 +1,230 @@
+
+// Standalone MIDI synth using LV2 plugins.
+
+// NOTE: You can compile this to a native executable as follows:
+// pure -c synth.pure -o synth `pkg-config --libs lilv-0` -lportaudio
+// Or just run `make` in this directory.
+
+using lilv, system;
+
+// Load all plugins.
+let world = lilv::world;
+
+// This lets us find plugin URIs by their names, which makes things easier.
+let plugins = record {name=>uri | name,uri = lilv::plugins world};
+
+// Synth and effect plugins to be used. The defaults here require the
+// faust-lv2 plugins (http://code.google.com/p/faust-lv2/).
+let synth_name,chorus_name,reverb_name = "organ","chorus","freeverb";
+
+// Here are some alternatives from the Calf LV2 plugin collection
+// (http://calf.sourceforge.net/).
+//let synth_name,chorus_name,reverb_name = "Calf Organ","Calf MultiChorus","Calf Reverb";
+
+/* This gives the lists of all LV2 stereo synth and effect units installed on
+   your system which should be suitable to be run with this script. To pick
+   any of these, edit the plugin names in the definition of the synth_name,
+   chorus_name and reverb_name variables above accordingly. */
+
+let synths,effects = [name | name=>uri = plugins; instrp uri],
+  [name | name=>uri = plugins; effectp uri] with
+  instrp uri = case lilv::basic_info world uri of
+    name,uri,class,ports = class == "Instrument" &&
+      num_inputs ports == 0 && num_outputs ports == 2 &&
+      num_midi ports >= 1;
+    _ = false;
+  end;
+  effectp uri = case lilv::basic_info world uri of
+    name,uri,class,ports = num_inputs ports == 2 && num_outputs ports == 2;
+    _ = false;
+  end;
+  num_inputs ports = #filter inputp ports;
+  num_outputs ports = #filter outputp ports;
+  num_midi ports = #filter midip ports;
+  inputp (no,sym,name,ty,flags) = ty==2 && (flags and 1);
+  inputp _ = false;
+  outputp (no,sym,name,ty,flags) = ty==2 && (flags and 2);
+  outputp _ = false;
+  midip (no,sym,name,ty,flags) = ty>=4 && (flags and 1);
+  midip _ = false;
+end;
+
+#! --if compiled
+// In the compiled script, allow the user to pick a synth from the command
+// line.
+let synth_name = if compiling || argc<=2 then synth_name else argv!1;
+// Print a short usage message and the list of available synth units if we're
+// invoked without arguments.
+compiling || argc>=2 ||
+(fprintf stderr "Usage: %s [synth] midifile\nAvailable synth units:\n%s\n"
+ (head argv,join ", " synths) $$ exit 1);
+#! --endif
+
+// Audio setup.
+
+using audio, realtime;
+
+using namespace audio;
+let devs = devices;
+let outdev = output;
+
+// Sample rate.
+let SR = devs!outdev!4;
+
+/* Some magic numbers, the block size for running the synth, and the buffer
+   size for the audio playback. The latter (size) must be a multiple (m) of
+   the former (n). You want the block size to be as small as possible to
+   attain good timing of the MIDI events, and the audio buffer size as large
+   as necessary to achieve smooth playback. The following assumes a fairly
+   large buffer size of 16*64 = 1024 and thus should work on almost any
+   system, but YMMV. If you get crackling noises, then most likely your system
+   uses a larger audio buffer size, in which case you should try to increase
+   the m factor. If you get very high cpu usage, then increasing the block
+   size n (while simultaneously decreasing m) may help in some cases, but most
+   likely this just means that the plugins need a faster cpu. */
+const n = 64;
+const m = 16;
+const size = m*n;
+
+// Open an audio stream (output only).
+let as = open_stream {} {outdev,2,Pa::Float32} SR size 0;
+
+let SR = int SR;
+
+/* Load a sequence from a (type 0 or 1) MIDI file. All tracks are mixed down
+   to a single sequence, meta events are removed, and timestamps are converted
+   to milliseconds, according to the division and the tempo map of the file.
+   Note that the mixing and the conversion of the timestamps is done lazily,
+   so that we don't have to keep the entire mixed-down sequence in memory.
+   This should also prevent stack overflows. */
+
+using midifile;
+
+load name::string = filter not_meta $ convert $
+  foldl mix [] $ midifile::get_tracks mf
+with
+  // Check for meta events.
+  not_meta (_,msg) = msg!0~=0xff;
+  // Convert to msec timestamps. NOTE: We assume a default tempo of 120 BPM
+  // (500000 msecs per quarter note) here.
+  convert = convert_smpte (division*resolution) if division > 0;
+  	  = convert_ppqn resolution (500000,0,0);
+  // Convert SMPTE timestamps.
+  convert_smpte 1000 xs = xs; // timestamps are msecs already
+  convert_smpte f xs = [int (round (t/f*1000)),msg | t,msg = xs];
+  // Convert musical time.
+  convert_ppqn _ _ [] = [];
+  convert_ppqn ppqn (tempo,t0,ms0) ((t,msg):xs)
+    = (ms,msg) : convert_ppqn ppqn (tempo,t,ms) xs & when
+        ms = int $ round (ms0+tempo/ppqn*(t-t0)/1000);
+	tempo = (msg!2<<16)+(msg!3<<8)+msg!4; // new tempo
+      end if msg!0 == 0xff && msg!1 == 0x51; // tempo message?
+    = (ms,msg) : convert_ppqn ppqn (tempo,t,ms) xs & when
+        ms = int $ round (ms0+tempo/ppqn*(t-t0)/1000);
+      end;
+  // Mix two tracks.
+  mix xs [] = xs;
+  mix [] ys = ys;
+  mix xs@(x1@(t1,msg1):xs1) ys@(y2@(t2,msg2):ys2)
+    = x1 : mix xs1 ys & if t1<=t2;
+    = y2 : mix xs ys2 & otherwise;
+end when
+  ty,division,resolution,ntracks = midifile::info mf;
+end if ~null mf when
+  mf::pointer = midifile::load name;
+end;
+
+/* A little helper function to print MIDI messages and events with the status
+   byte in hexadecimal format. */
+
+printmsg (t::int,msg::matrix) = () when
+  printf "%d: " t; printmsg msg;
+end;
+
+printmsg msg::matrix = () when
+  status:data = list msg;
+  printf "%s\n" $ join " " (sprintf "0x%0x" status:map (sprintf "%d") data);
+end;
+
+// Instantiate the synth and effect plugins.
+let synth = lilv::plugin world (plugins!synth_name) SR n;
+let chorus = lilv::plugin world (plugins!chorus_name) SR n;
+let reverb = lilv::plugin world (plugins!reverb_name) SR n;
+
+// Get the numbers of audio inputs and outputs, and check them for
+// compatibility.
+let k,l = lilv::num_audio_inputs synth, lilv::num_audio_outputs synth;
+let k1,l1 = lilv::num_audio_inputs chorus, lilv::num_audio_outputs chorus;
+let k2,l2 = lilv::num_audio_inputs reverb, lilv::num_audio_outputs reverb;
+
+// NOTE: The code below assumes that the synth output is stereo, and that the
+// effect units all process stereo signals. Verify that here.
+(k,l) == (0,2) && (k1,l1) == (2,2) && (k2,l2) == (2,2) ||
+  throw "incompatible dimensions, check your synth and effect units";
+
+// MIDI inputs. We always use the first MIDI input on the synth plugin.
+// TODO: We might also want to pass MIDI controllers to the effect plugins.
+lilv::num_midi_inputs synth >= 1 ||
+  throw "no MIDI input, check your synth unit";
+let midi_in:_ = lilv::midi_inputs synth;
+
+// Create buffers.
+let in,out = dmatrix (k,n), dmatrix (l,n);
+let out1,out2 = dmatrix (l1,n), dmatrix (l2,n);
+
+// Activate the plugins.
+do lilv::activate [synth,chorus,reverb];
+
+/* This implements the basic synth/effects chain. The single argument is the
+   list of MIDI messages to be processed for this block of samples. Output is
+   a stereo signal with interleaved samples, ready to be written to the audio
+   interface. */
+
+// Uncomment this to bypass the effect chain.
+//#! --disable effects
+
+run_synth msgs = transpose out2 when
+  lilv::set_midi synth midi_in msgs;
+  lilv::run synth in out;
+#! --if effects
+  // pass through the effects chain
+  lilv::run chorus out out1;
+  lilv::run reverb out1 out2;
+#! --else
+  out2 = out;
+#! --endif
+end;
+
+// Play a MIDI sequence using the LV2 plugins.
+
+#! --eager play
+play [] = ();
+play ((s0,msg):seq) = () when
+  printmsg (s0,msg);
+  // Uncomment this to get realtime priority.
+  realtime SCHED_RR 88;
+  catch id $ play s0 0.0 0.0 [msg] seq;
+  realtime SCHED_OTHER 0;
+end with
+  // finished (give some extra time for the note envelops)
+  play s0 t0 t2 msgs [] = () if t2 >= t0+3000;
+  // next message is due to be processed
+  play s0 t0 t2 msgs ((s1,msg):seq) = play s1 t1 t2 (msg:msgs) seq when
+    printmsg (s1,msg);
+  end if t1 <= t2 when t1 = t0+s1-s0 end;
+  // process pending MIDI messages and output a block of samples, advance the
+  // current time t2 accordingly
+  play s0 t0 t2 msgs seq = play s0 t0 (t2+dt) [] seq when
+    dt = n/SR*1000;
+    //printf "s0 = %d, t0 = %g, t2 = %g, dt = %g\n" (s0,t0,t2,dt);
+    out = run_synth msgs;
+    audio::write_stream as out n;
+  end;
+end;
+
+// Main program, lets you specify a midi file on the command line.
+
+#! --if compiled
+main = play (load (last argv));
+compiling || catch (\_->exit 1) main;
+#! --endif
