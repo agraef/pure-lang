@@ -557,7 +557,6 @@ void lilv_plugin_free(PluginInstance *p)
     free(p->name);
   }
   if (p->ty) free(p->ty);
-  if (p->ty) free(p->ty);
   if (p->flags) free(p->flags);
   if (p->mins) free(p->mins);
   if (p->maxs) free(p->maxs);
@@ -596,6 +595,8 @@ void lilv_plugin_free(PluginInstance *p)
   if (p->buffer) free(p->buffer);
   if (p->in) free(p->in);
   if (p->out) free(p->out);
+  if (p->evin) free(p->evin);
+  if (p->evout) free(p->evout);
   free(p);
 }
 
