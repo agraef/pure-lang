@@ -164,12 +164,12 @@ extern void lilv_plugin_set_control(PluginInstance *p, int k, double x)
   = set_control;
 set_control p k x::int = set_control p k (double x);
 
-/* Get and set MIDI data. These are transmitted using atom or event ports.
-   The following functions are used to send MIDI input to the plugin's MIDI
-   inputs before running the plugin, and retrieve its MIDI outputs
-   afterwards. Typically these steps are repeated in a realtime loop which
-   interprets incoming and outgoing control changes and MIDI events while
-   processing and/or generating audio and CV data.
+/* Get and set MIDI data using atom or event ports. The following functions
+   are used to send MIDI input to the plugin's MIDI inputs before running the
+   plugin, and retrieve its MIDI outputs afterwards. Typically these steps are
+   repeated in a realtime loop which interprets incoming and outgoing control
+   changes and MIDI events while processing and/or generating audio and CV
+   data.
 
    NOTE: There's no essential difference between atom and event ports, both
    represent sequences of (timestamped) MIDI messages. Atom ports are the new,
@@ -198,14 +198,6 @@ set_control p k x::int = set_control p k (double x);
    this: [(0,{0x90,60,127}),(0,{0x90,64,127}),(0,{0x90,67,127})]. The same
    sequence might also be specified as [{0x90,60,127},{0x90,64,127},
    {0x90,67,127}] with lilv::set_midi, omitting the zero timestamps.
-
-   Please note that the LV2 spec requires that only properly formatted MIDI
-   messages are written to an input port (beginning with a valid status byte
-   and followed by the appropriate number of data bytes). Moreover, the use of
-   note on messages with a velocity of 0 to denote note offs is not mandated
-   by the spec (you should use a proper note off message instead). These rules
-   should be taken into account when delivering a message, since they are not
-   enforced by the lilv::midi_set operation.
 
    Provided Operations: lilv::get_midi returns the MIDI messages available on
    the given MIDI port, as a list of pairs of ints (the timestamps) and Pure

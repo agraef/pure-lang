@@ -994,8 +994,22 @@ pure_expr *lilv_plugin_set_midi(PluginInstance *p, uint32_t k, pure_expr *x)
     if (k == 0) goto err;
     uint8_t *v = matrix_to_byte_array(NULL, x);
     if (!v) goto err;
-    lv2_evbuf_write(&iter, frames, 0, p->midi_event, k, v);
+    /* pure-midi will often give padded events, for convenience we undo that
+       here. At present, we're not trying to any further sanitization of the
+       MIDI input, though. In particular, we don't adjust any note ons with
+       velocity 0, even though the LV2 spec mandates this. Those messages are
+       standard in MIDI, so changing them to explicit note offs just doesn't
+       feel right; in fact they seem to be treated correctly by every plugin I
+       tried. */
+    switch (v[0]&0xf0) {
+    case 0x80: case 0x90: case 0xa0: case 0xb0: case 0xe0:
+      if (k > 3) k = 3; break;
+    case 0xc0: case 0xd0:
+      if (k > 2) k = 2; break;
+    }
+    bool ret = lv2_evbuf_write(&iter, frames, 0, p->midi_event, k, v);
     free(v);
+    if (!ret) goto err;
   }
   free(xv);
   return pure_tuplel(0, 0);
