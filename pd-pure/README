@@ -213,7 +213,10 @@ the Pure function at object creation time. For instance::
   add x y = x+y;
 
 This object can then be invoked, e.g., as ``[add 5]`` in the Pd patch to
-supply the needed creation argument ``x``.
+supply the needed creation argument ``x``. Please note that only a fixed
+number of creation arguments can be processed this way. However, the Pure
+loader also provides a mechanism to handle a variable number of creation
+arguments, see `Variadic Creation Functions`_ below.
 
 The [pure] Object
 -----------------
@@ -297,25 +300,65 @@ ignored anyway)::
   using system;
   echo = 1,0,puts.str;
 
+Variadic Creation Functions
+---------------------------
+
+Sometimes you may wish to implement an object which accepts a variable number
+of creation arguments. To these ends, the creation function ``foo`` may return
+an application of the form ``varargs bar``. In this case, the function ``bar``
+becomes the actual object creation function which is applied to a single
+argument, the list of all supplied creation arguments. For instance, if you
+invoke ``foo`` through an object like ``[foo a b c]`` in a patch, the loader
+would then create the object by calling ``bar [a,b,c]`` instead. Likewise, if
+the object gets created without any arguments at all, i.e., ``[foo]``, then
+``bar`` would be called as ``bar []``. The function ``bar`` may then be used
+as the runtime function of the object, or it may yield the object function to
+be used, along with the desired number of inlets and outlets, as described in
+the previous subsection. This makes it possible to configure the inlets and
+outlets of the object according to the number and values of the supplied
+creation arguments, pretty much like some of the built-in Pd objects do, such
+as ``pack`` and ``sel``.
+
+For instance, here is how you could implement something like Pd's built-in
+``sel`` object in Pure. The object compares its input against a number of
+values given as creation arguments, and bangs the corresponding outlet if it
+is found, or passes on the input on the rightmost outlet otherwise::
+
+  mysel = varargs mysel with
+    mysel xs = 1,#xs+1,mysel with
+      mysel x = i,bang if i<#xs when i = #takewhile (~==x) xs end;
+              = #xs,x otherwise;
+    end;
+  end;
+
+Note that the runtime function is the innermost local ``mysel`` function (at
+line 3 in the example). The outermost local ``mysel`` function (at line 2) is
+the actual creation function which gets invoked by the loader on the list of
+all creation arguments; here it yields the number of inlets and outlets (where
+the latter depends on the number of creation arguments) along with the runtime
+function. You can invoke this object as, e.g., ``[mysel a b c]``, in which
+case there will be four outlets, one for each given value and one for the
+rightmost "default" outlet.
+
 Local State
 -----------
 
 Local state can be kept in Pure reference values. For instance, the following
-``[counter]`` object produces the next counter value when receiving a ``bang``
-message::
+``[mycounter]`` object produces the next counter value when receiving a
+``bang`` message::
 
   nonfix bang;
-  counter = next (ref 0) with
+  mycounter = next (ref 0) with
     next r bang = put r (get r+1);
     next _ _    = () otherwise;
   end;
 
 Note that the state is kept as an additional first parameter to the local
 function ``next`` here. Alternatively, you can also make the state a local
-variable of ``counter``::
+variable of ``mycounter``::
 
   nonfix bang;
-  counter = next with
+  mycounter = next with
     next bang = put r (get r+1);
     next _    = () otherwise;
   end when r = ref 0 end;
@@ -896,12 +939,12 @@ to the following two messages:
 In order to participate in the ``pd_save``/``pd_restore`` protocol, an object
 must subscribe to it. This is done by setting ``pd_save`` as a sentry on the
 object function (see the description of the :pure:func:`sentry` function in
-the :doc:`purelib` for details). For instance, here's the counter example from
-`Local State`_ again, with the necessary additions to support the
+the :doc:`purelib` for details). For instance, here's the mycounter example
+from `Local State`_ again, with the necessary additions to support the
 ``pd_save``/``pd_restore`` protocol::
 
   nonfix bang pd_save;
-  counter = sentry pd_save $ next (ref 0) with
+  mycounter = sentry pd_save $ next (ref 0) with
     next r bang = put r (get r+1);
     next r pd_save = get r;
     next r (pd_restore n) = put r n;

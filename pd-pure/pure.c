@@ -397,6 +397,7 @@ extern void pd_setbuffer(const char *name, pure_expr *x)
 static pure_interp *interp = 0, *s_interp = 0;
 static int void_sym = 0, delay_sym = 0;
 static int save_sym = 0, restore_sym = 0;
+static int varargs_sym = 0;
 
 static inline int get_void_sym(void)
 {
@@ -412,6 +413,14 @@ static inline int get_delay_sym(void)
     return delay_sym;
   else
     return pure_sym("pd_delay");
+}
+
+static inline int get_varargs_sym(void)
+{
+  if (!s_interp)
+    return varargs_sym;
+  else
+    return pure_sym("varargs");
 }
 
 /* The Pure object class. */
@@ -1473,8 +1482,19 @@ static void *pure_init(t_symbol *s, int argc, t_atom *argv)
     if (f) {
       int k = !is_dsp;
       size_t n;
-      pure_expr **xv = 0;
+      pure_expr **xv = 0, *g;
       pure_new(f);
+      /* process variadic arguments if requested */
+      if (pure_is_appv(f, &g, &n, &xv)) {
+	int32_t sym;
+	if (n>0 && pure_is_symbol(g, &sym) && sym==get_varargs_sym()) {
+	  pure_expr *xs = pure_listv(n-1, xv+1), *y = pure_appxx(x, xv[0], xs);
+	  if (y) {
+	    x->foo = pure_new(y); pure_free(f); f = x->foo;
+	  }
+	}
+	if (xv) free(xv); xv = 0;
+      }
       /* handle custom inlet/outlet configurations (n_in,n_out,foo) */
       if (pure_is_tuplev(f, &n, &xv) && n == 3 &&
 	  pure_is_int(xv[0], &n_in) && pure_is_int(xv[1], &n_out)) {
@@ -1647,8 +1667,18 @@ static void pure_reinit(t_pure *x)
     x->foo = f;
     if (f) {
       size_t n;
-      pure_expr **xv = 0;
+      pure_expr **xv = 0, *g;
       pure_new(f);
+      if (pure_is_appv(f, &g, &n, &xv)) {
+	int32_t sym;
+	if (n>0 && pure_is_symbol(g, &sym) && sym==get_varargs_sym()) {
+	  pure_expr *xs = pure_listv(n-1, xv+1), *y = pure_appxx(x, xv[0], xs);
+	  if (y) {
+	    x->foo = pure_new(y); pure_free(f); f = x->foo;
+	  }
+	}
+	if (xv) free(xv); xv = 0;
+      }
       if (pure_is_tuplev(f, &n, &xv) && n == 3 &&
 	  pure_is_int(xv[0], &n_in) && pure_is_int(xv[1], &n_out)) {
 	x->foo = pure_new(xv[2]); pure_free(f);
@@ -1865,6 +1895,7 @@ static void pure_restart(void)
   delay_sym = pure_sym("pd_delay");
   save_sym = pure_sym("pd_save");
   restore_sym = pure_sym("pd_restore");
+  varargs_sym = pure_sym("varargs");
   for (x = xhead; x; x = x->next)
     pure_reinit(x);
 }
@@ -1892,6 +1923,7 @@ static void pure_reload(void)
   delay_sym = pure_sym("pd_delay");
   save_sym = pure_sym("pd_save");
   restore_sym = pure_sym("pd_restore");
+  varargs_sym = pure_sym("varargs");
   for (x = xhead; x; x = x->next)
     pure_reinit(x);
 }
@@ -2002,6 +2034,7 @@ extern void pure_setup(void)
     delay_sym = pure_sym("pd_delay");
     save_sym = pure_sym("pd_save");
     restore_sym = pure_sym("pd_restore");
+    varargs_sym = pure_sym("varargs");
   } else
     error("pd-pure: error initializing interpreter; loader not registered");
 }
