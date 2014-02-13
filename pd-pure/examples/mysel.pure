@@ -1,0 +1,13 @@
+
+/* A simple selection object. Compares its input against the given creation
+   arguments and bangs the corresponding outlet if found, or routes the input
+   through the rightmost "default" outlet otherwise. This illustrates the use
+   of 'varargs' in the creation function to process a variable number of
+   creation arguments.  */
+
+mysel = varargs mysel with
+  mysel xs = 1,#xs+1,mysel with
+    mysel x = i,bang if i<#xs when i = #takewhile (~==x) xs end;
+            = #xs,x otherwise;
+  end;
+end;
