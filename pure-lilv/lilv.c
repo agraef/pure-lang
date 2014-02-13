@@ -41,7 +41,8 @@ pure_expr *lilv_plugins(LilvWorld* world)
        pure_cstring_dup(lilv_node_as_uri(lilv_plugin_get_uri(p))));
     lilv_node_free(n);
   }
-  return pure_listv(k, xv);
+  pure_expr *ret = pure_listv(k, xv); free(xv);
+  return ret;
 }
 
 pure_expr *lilv_plugin_info(LilvWorld* world, const char* plugin_uri)
@@ -105,7 +106,7 @@ pure_expr *lilv_plugin_info(LilvWorld* world, const char* plugin_uri)
 	(lilv_node_as_uri(lilv_nodes_get(data_uris, i)));
     }
   }
-  pure_expr *p_data_uris = pure_listv(k, xv);
+  pure_expr *p_data_uris = pure_listv(k, xv); free(xv);
   // Required and optional features, as declared by the plugin.
   LilvNodes* data = lilv_plugin_get_required_features(p);
   k = 0; l = lilv_nodes_size(data);
@@ -118,7 +119,7 @@ pure_expr *lilv_plugin_info(LilvWorld* world, const char* plugin_uri)
     }
     lilv_nodes_free(data);
   }
-  pure_expr *p_required = pure_listv(k, xv);
+  pure_expr *p_required = pure_listv(k, xv); free(xv);
   data = lilv_plugin_get_optional_features(p);
   k = 0; l = lilv_nodes_size(data);
   xv = calloc(l, sizeof(pure_expr*));
@@ -130,7 +131,7 @@ pure_expr *lilv_plugin_info(LilvWorld* world, const char* plugin_uri)
     }
     lilv_nodes_free(data);
   }
-  pure_expr *p_optional = pure_listv(k, xv);
+  pure_expr *p_optional = pure_listv(k, xv); free(xv);
   // Extension data.
   data = lilv_plugin_get_extension_data(p);
   k = 0; l = lilv_nodes_size(data);
@@ -143,7 +144,7 @@ pure_expr *lilv_plugin_info(LilvWorld* world, const char* plugin_uri)
     }
     lilv_nodes_free(data);
   }
-  pure_expr *p_extension_data = pure_listv(k, xv);
+  pure_expr *p_extension_data = pure_listv(k, xv); free(xv);
   // Presets.
   data = lilv_plugin_get_related(p, preset_class);
   k = 0; l = lilv_nodes_size(data);
@@ -169,7 +170,7 @@ pure_expr *lilv_plugin_info(LilvWorld* world, const char* plugin_uri)
     }
     lilv_nodes_free(data);
   }
-  pure_expr *p_presets = pure_listv(k, xv);
+  pure_expr *p_presets = pure_listv(k, xv); free(xv);
   // Ports.
   const uint32_t num_ports = lilv_plugin_get_num_ports(p);
   float* mins = (float*)calloc(num_ports, sizeof(float));
@@ -223,7 +224,7 @@ pure_expr *lilv_plugin_info(LilvWorld* world, const char* plugin_uri)
       }
       pure_freenew(mapsto);
       lilv_scale_points_free(points);
-      pure_expr *p_points = pure_listv(k, yv);
+      pure_expr *p_points = pure_listv(k, yv); free(yv);
       // Note that some of the min/max/default values can be nan, which means
       // that they are undefined.
       attr = pure_tuplel
@@ -251,7 +252,7 @@ pure_expr *lilv_plugin_info(LilvWorld* world, const char* plugin_uri)
 	(lilv_node_as_string(lilv_nodes_get(groups, i)));
     }
     lilv_nodes_free(groups);
-    pure_expr *p_groups = pure_listv(k, yv);
+    pure_expr *p_groups = pure_listv(k, yv); free(yv);
     // Port designations.
     LilvNodes* designations = lilv_port_get_value(p, port, designation_pred);
     k = 0; l = lilv_nodes_size(designations);
@@ -262,7 +263,7 @@ pure_expr *lilv_plugin_info(LilvWorld* world, const char* plugin_uri)
 	(lilv_node_as_string(lilv_nodes_get(designations, i)));
     }
     lilv_nodes_free(designations);
-    pure_expr *p_designations = pure_listv(k, yv);
+    pure_expr *p_designations = pure_listv(k, yv); free(yv);
     // Port properties.
     LilvNodes* properties = lilv_port_get_properties(p, port);
     k = 0; l = lilv_nodes_size(properties);
@@ -273,7 +274,7 @@ pure_expr *lilv_plugin_info(LilvWorld* world, const char* plugin_uri)
 	(lilv_node_as_uri(lilv_nodes_get(properties, i)));
     }
     lilv_nodes_free(properties);
-    pure_expr *p_properties = pure_listv(k, yv);
+    pure_expr *p_properties = pure_listv(k, yv); free(yv);
     // Assemble the port info.
     if (attr)
       xv[i] = pure_tuplel(9, pure_int(i), p_psym, p_pname, pure_int(ty),
@@ -286,7 +287,7 @@ pure_expr *lilv_plugin_info(LilvWorld* world, const char* plugin_uri)
     assert(xv[i]);
   }
   free(mins); free(maxs); free(defs);
-  pure_expr *p_ports = pure_listv(num_ports, xv);
+  pure_expr *p_ports = pure_listv(num_ports, xv); free(xv);
   lilv_node_free(input_class);
   lilv_node_free(output_class);
   lilv_node_free(audio_class);
@@ -814,7 +815,8 @@ pure_expr *lilv_plugin_audio_inputs(PluginInstance *p)
   pure_expr **xv = (pure_expr**)calloc(n, sizeof(pure_expr*));
   for (size_t i = 0; i < n; i++)
     xv[i] = pure_int(p->in[i]);
-  return pure_listv(n, xv);
+  pure_expr *ret = pure_listv(n, xv); free(xv);
+  return ret;
 }
 
 pure_expr *lilv_plugin_audio_outputs(PluginInstance *p)
@@ -824,7 +826,8 @@ pure_expr *lilv_plugin_audio_outputs(PluginInstance *p)
   pure_expr **xv = (pure_expr**)calloc(n, sizeof(pure_expr*));
   for (size_t i = 0; i < n; i++)
     xv[i] = pure_int(p->out[i]);
-  return pure_listv(n, xv);
+  pure_expr *ret = pure_listv(n, xv); free(xv);
+  return ret;
 }
 
 uint32_t lilv_plugin_num_midi_inputs(PluginInstance *p)
@@ -846,7 +849,8 @@ pure_expr *lilv_plugin_midi_inputs(PluginInstance *p)
   pure_expr **xv = (pure_expr**)calloc(n, sizeof(pure_expr*));
   for (size_t i = 0; i < n; i++)
     xv[i] = pure_int(p->evin[i]);
-  return pure_listv(n, xv);
+  pure_expr *ret = pure_listv(n, xv); free(xv);
+  return ret;
 }
 
 pure_expr *lilv_plugin_midi_outputs(PluginInstance *p)
@@ -856,7 +860,8 @@ pure_expr *lilv_plugin_midi_outputs(PluginInstance *p)
   pure_expr **xv = (pure_expr**)calloc(n, sizeof(pure_expr*));
   for (size_t i = 0; i < n; i++)
     xv[i] = pure_int(p->evout[i]);
-  return pure_listv(n, xv);
+  pure_expr *ret = pure_listv(n, xv); free(xv);
+  return ret;
 }
 
 void lilv_plugin_set_block_size(PluginInstance *p, uint32_t block_size)
@@ -963,7 +968,8 @@ pure_expr *lilv_plugin_get_midi(PluginInstance *p, uint32_t k)
 			    matrix_from_int_array(1, size, v));
     }
   }
-  return pure_listv(n, xv);
+  pure_expr *ret = pure_listv(n, xv); free(xv);
+  return ret;
 }
 
 pure_expr *lilv_plugin_set_midi(PluginInstance *p, uint32_t k, pure_expr *x)
