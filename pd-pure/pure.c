@@ -1381,7 +1381,11 @@ static void pure_dsp(t_pure *x, t_signal **sp)
        to the object function in some way? */
     x->sr = sr;
   if (x->n != n) x->n = n;
+#if 0
+  /* Disabled since some plugins may want to have an audio callback even
+     though they have zero signal inlets and outlets. 2014-02-18 AG */
   if (x->n_dspin == 0 && x->n_dspout == 0) return;
+#endif
   dsp_add(pure_perform, 2, x, n);
   for (i = 0; i < x->n_dspin; i++)
     x->dspin[i] = sp[i+1]->s_vec;
