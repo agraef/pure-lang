@@ -259,7 +259,7 @@ static bool pure_is_matrixv(pure_expr *x, size_t *size, pure_expr ***elems)
     size_t i, j, l = 0, n = smat->size1, m = smat->size2, k = n*m;
     if (k == 0) {
       /* empty matrix */
-      *size = 0; elems = 0;
+      *size = 0; *elems = 0;
       return true;
     }
     *size = k;
@@ -275,7 +275,7 @@ static bool pure_is_matrixv(pure_expr *x, size_t *size, pure_expr ***elems)
     size_t i, j, l = 0, n = dmat->size1, m = dmat->size2, k = n*m;
     if (k == 0) {
       /* empty matrix */
-      *size = 0; elems = 0;
+      *size = 0; *elems = 0;
       return true;
     }
     *size = k;
@@ -291,7 +291,7 @@ static bool pure_is_matrixv(pure_expr *x, size_t *size, pure_expr ***elems)
     size_t i, j, l = 0, n = imat->size1, m = imat->size2, k = n*m;
     if (k == 0) {
       /* empty matrix */
-      *size = 0; elems = 0;
+      *size = 0; *elems = 0;
       return true;
     }
     *size = k;
