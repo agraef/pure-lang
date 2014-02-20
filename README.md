@@ -11,9 +11,12 @@ programs to fast native code.
 Please check our website at [purelang.bitbucket.org][1] for more information.
 Previous releases are available from the old Pure website at [GoogleCode][2].
 The Pure Language and Library Documentation is available in [html][3] and
-[pdf][4] format. Ubuntu packages for all things Pure can be found at
-[Launchpad][5]. Please also check our [mailing list][6] / Google group and
-[IRC chat][7] if you need any help or if you want to discuss Pure.
+[pdf][4] format. A very complete and up-to-date collection of packages for
+Arch Linux are available from the [Arch User Repositories][5], please also
+check our [Arch Packaging Guide][6] for details. We also offer a reasonably
+complete set of Ubuntu packages at [Launchpad][7]. Please also have a look at
+our [mailing list][8] / Google group and [IRC chat][9] if you need any help or
+if you want to discuss Pure.
 
 Enjoy. :)
 
@@ -22,6 +25,8 @@ Enjoy. :)
 [2]: http://pure-lang.googlecode.com/
 [3]: http://puredocs.bitbucket.org/
 [4]: http://puredocs.bitbucket.org/puredoc.pdf
-[5]: https://launchpad.net/~dr-graef
-[6]: http://groups.google.com/group/pure-lang
-[7]: irc://irc.freenode.net/pure-lang
+[5]: https://aur.archlinux.org/packages/?SeB=m&K=pure-aur&PP=100
+[6]: https://bitbucket.org/purelang/pure-lang/wiki/ArchPackaging
+[7]: https://launchpad.net/~dr-graef
+[8]: http://groups.google.com/group/pure-lang
+[9]: irc://irc.freenode.net/pure-lang
