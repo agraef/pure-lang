@@ -3,7 +3,11 @@
 
 # Package name and version number:
 dist = pure-octave-$(version)
-version = 0.3
+version = 0.4
+
+# Try to guess the Octave version number. We're only interested in the
+# major/minor version here, to cope with the C/C++ API breakage in Octave 3.8.
+octversion=$(shell mkoctfile --version 2>&1 | sed -e 's/^mkoctfile, version \([0-9.]*\).*/\1/' | sed -e 's/\([0-9]*\)[.]\([0-9]*\).*/-DOCTAVE_\1_\2/')
 
 # Try to guess the installation prefix (this needs GNU make):
 prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
@@ -46,7 +50,7 @@ all: octave_embed$(DLL)
 
 octave_embed$(DLL): embed.cc embed.h
 	rm -f $@
-	mkoctfile -v -o $@ $< -lpure $(RLD_FLAG)
+	mkoctfile -v $(octversion) -o $@ $< -lpure $(RLD_FLAG)
 	if test -f $@.oct; then mv $@.oct $@; fi
 
 clean:

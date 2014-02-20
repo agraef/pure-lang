@@ -1,5 +1,5 @@
 
-/* Copyright (c) 2010-2012 by Albert Graef.
+/* Copyright (c) 2010-2014 by Albert Graef.
 
    This file is part of pure-octave.
 
@@ -17,12 +17,14 @@
 
 using "lib:octave_embed";
 
-// Normally you don't have to call these directly.
+// Normally you shouldn't call these directly.
 extern void octave_init(int argc, char **argv);
 extern void octave_fini();
 
-// Initialize Octave.
-octave_init 2 (byte_string_pointer ["octave","-q"]);
+// Initialize Octave. The command line options are for quiet startup (no
+// sign-on message) and to disable Octave's command history (to prevent Octave
+// from clobbering Pure's readline).
+octave_init 3 (byte_string_pointer ["octave","-q","-H"]);
 
 // Execute an Octave command.
 extern int octave_eval(char *cmd);

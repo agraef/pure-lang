@@ -1,7 +1,7 @@
 
 /* Copyright (c) 1996-2009 by John W. Eaton.
    Copyright (c) 2003 by Paul Kienzle.
-   Copyright (c) 2010-2012 by Albert Graef.
+   Copyright (c) 2010-2014 by Albert Graef.
 
    This file is part of pure-octave.
 
@@ -51,6 +51,14 @@ static void install_builtins();
 void octave_init(int argc, char *argv[])
 {
   if (!init) {
+#ifdef OCTAVE_3_8
+    if (first_init) {
+      // octave_main() segfaults when called a second time, so let's at least
+      // try to terminate gracefully here.
+      fprintf(stderr, "error: octave_init called twice, exiting\n");
+      exit(1);
+    }
+#endif
     octave_main(argc,argv,1);
     init = true;
     if (!first_init) {
@@ -64,7 +72,15 @@ void octave_init(int argc, char *argv[])
 void octave_fini(void)
 {
   if (init) {
+#ifdef OCTAVE_3_8
+    // Octave 3.8 doesn't expose do_octave_atexit() any more, so we call
+    // clean_up_and_exit() instead, and prevent Octave from exiting the
+    // process.
+    octave_exit = 0;
+    clean_up_and_exit(0, true);
+#else
     do_octave_atexit();
+#endif
     init = false;
   }
 }
@@ -983,5 +999,9 @@ DEFUN_DLD(pure_call, args, nargout, PURE_HELP)
 
 static void install_builtins()
 {
+#ifdef OCTAVE_3_8
+  install_builtin_function(Fpure_call, "pure_call", "embed.cc", PURE_HELP);
+#else
   install_builtin_function(Fpure_call, "pure_call", PURE_HELP);
+#endif
 }
