@@ -1191,7 +1191,11 @@ pure_expr *lilv_plugin_get_preset(LilvWorld* world, const char* preset_uri,
 				  PluginInstance *p)
 {
   if (!p) return 0;
-  LilvNode* uri = lilv_new_uri(world, lilv_instance_get_uri(p->instance));
+  // Check to see whether the given URI is valid.
+  LilvNode* uri = lilv_new_uri(world, preset_uri);
+  if (!uri) return 0;
+  lilv_node_free(uri);
+  uri = lilv_new_uri(world, lilv_instance_get_uri(p->instance));
   if (!uri) return 0;
   const LilvPlugins* plugins = lilv_world_get_all_plugins(world);
   const LilvPlugin* plugin = lilv_plugins_get_by_uri(plugins, uri);

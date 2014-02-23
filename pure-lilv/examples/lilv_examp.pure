@@ -243,15 +243,39 @@ lilv::presets p;
 
 // Ok, so the amp plugin doesn't have any presets. But we can make our own
 // from the current state of our plugin instance:
-let ps =
-  lilv::get_preset world "http://faust-lv2.googlecode.com/presets#myamp" p;
+let ps = lilv::get_preset world "urn:myamp" p;
 
-// Note that we invented our own URI for the preset there. The result is a
-// string in Turtle syntax. Here is how it looks like:
+// Note that we invented our own URI for the preset there. We can choose
+// anything we like, but the given string *must* be a valid URI, otherwise the
+// operation will fail. The result is a string in Turtle syntax. Here is how
+// it looks like:
 puts ps;
 
-// You can reload the saved plugin state at any time:
+// Let's change a few controls:
 lilv::set_control p 2 10, lilv::set_control p 3 1;
 map (lilv::get_control p) [2,3];
+
+// We can reload the preset at any time like this:
+lilv::set_preset world ps p;
+
+// The state has now been restored, so the controls are back to the values we
+// stored in the preset:
+map (lilv::get_control p) [2,3];
+
+// We can also write the preset to disk:
+fputs ps (fopen "myamp.ttl" "w");
+
+// Exit the interpreter now, then run these lines to start from scratch,
+// reloading the lilv world state and the plugin:
+using lilv, system;
+let world = lilv::world;
+let p = lilv::plugin world "http://faust-lv2.googlecode.com/amp" 44100 64;
+
+map (lilv::get_control p) [2,3];
+
+// Reload the saved preset:
+let ps = fget (fopen "myamp.ttl" "r");
+
+// Apply it again:
 lilv::set_preset world ps p;
 map (lilv::get_control p) [2,3];
