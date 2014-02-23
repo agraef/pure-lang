@@ -205,6 +205,10 @@ map (lilv::get_control p) [4,5];
 lilv::run p in out;
 map (lilv::get_control p) [4,5];
 
+/***************************************************************************
+ * Dealing with MIDI.
+ ***************************************************************************/
+
 // Plugins may also have MIDI (LV2 atom or event) ports. Thus a typical
 // iteration of a realtime loop would actually involve setting up the input
 // controls and/or passing any MIDI input, then run the plugin on its audio
@@ -235,47 +239,58 @@ lilv::set_midi p 10 [(4,{0xb0, 8, 64})];
 lilv::run p in out;
 map (lilv::get_control p) [4,5];
 
-// Finally, the presets. If an LV2 plugin has any presets associated with it,
-// the lilv::presets function will return their names and corresponding URIs
-// (as with plugins, the latter are used to identify a preset and may be
-// specified to load it).
-lilv::presets p;
+/***************************************************************************
+ * Handling presets.
+ ***************************************************************************/
 
-// Ok, so the amp plugin doesn't have any presets. But we can make our own
-// from the current state of our plugin instance:
-let ps = lilv::get_preset world "urn:myamp" p;
+// Everybody loves presets, right? pure-lilv provides all the operations you
+// need to discover the presets available for a plugin, load the plugin state
+// from a preset, or create new presets from the current plugin state.
 
-// Note that we invented our own URI for the preset there. We can choose
-// anything we like, but the given string *must* be a valid URI, otherwise the
-// operation will fail. The result is a string in Turtle syntax. Here is how
-// it looks like:
-puts ps;
+// If an LV2 plugin has any presets associated with it, the lilv::presets
+// function will return their names and corresponding URIs (as with plugins,
+// the latter are used to identify a preset and load it).
+lilv::presets world p;
+
+// Ok, so the amp plugin doesn't have any presets yet. But we can make our own
+// from the current state of our plugin instance. The following stores a
+// temporary preset bundle "myamp.lv2" in the current directory and also
+// modifies the world state so that the preset can be reloaded later. (Note
+// that if you want the bundle to really become part of LV2's persistent
+// state, so that it gets reloaded across program invocations, you'll have to
+// store it in some location on the LV2 search path, such as ~/.lv2. Also
+// note that we invented our own URI "urn:myamp" for the preset here. We can
+// choose anything we like, but the given string *must* be a valid URI,
+// otherwise the operation will fail.)
+lilv::save_preset world "urn:myamp" "myamp" p;
+
+// Let's check that we really have a new preset for the amp plugin now:
+lilv::presets world p;
 
 // Let's change a few controls:
 lilv::set_control p 2 10, lilv::set_control p 3 1;
 map (lilv::get_control p) [2,3];
 
 // We can reload the preset at any time like this:
-lilv::set_preset world ps p;
+lilv::load_preset world "urn:myamp" p;
 
 // The state has now been restored, so the controls are back to the values we
 // stored in the preset:
 map (lilv::get_control p) [2,3];
 
-// We can also write the preset to disk:
-fputs ps (fopen "myamp.ttl" "w");
+// The Pure lilv module also offers an alternative way to serialize plugin
+// state using a string representation, without having to actually store files
+// or modify the world state. First, let's retrieve the state of our plugin as
+// a string in Turtle syntax:
+let ps = lilv::get_preset world "urn:myamp" p;
 
-// Exit the interpreter now, then run these lines to start from scratch,
-// reloading the lilv world state and the plugin:
-using lilv, system;
-let world = lilv::world;
-let p = lilv::plugin world "http://faust-lv2.googlecode.com/amp" 44100 64;
+// Here's how it looks like:
+puts ps;
 
+// Let's change a few controls again:
+lilv::set_control p 2 10, lilv::set_control p 3 1;
 map (lilv::get_control p) [2,3];
 
-// Reload the saved preset:
-let ps = fget (fopen "myamp.ttl" "r");
-
-// Apply it again:
+// Apply the preset string to our plugin:
 lilv::set_preset world ps p;
 map (lilv::get_control p) [2,3];

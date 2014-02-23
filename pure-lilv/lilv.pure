@@ -223,30 +223,44 @@ set_control p k x::int = set_control p k (double x);
 extern expr *lilv_plugin_get_midi(PluginInstance *p, int k) = get_midi;
 extern expr *lilv_plugin_set_midi(PluginInstance *p, int k, expr *x) = set_midi;
 
-/* Handle preset information. lilv::presets returns a list with (name,uri)
-   pairs of known presets for the plugin. Each of the listed uris can then be
-   used with lilv::load_preset to load the preset into the plugin, modifying
-   its control values accordingly. The presets are loaded from the lilv world
-   state, so the world pointer needs to be passed as the first argument of
-   lilv::load_preset. */
+/* Retrieve and manipulate preset data. To discover presets for a given plugin
+   (passed as the second argument) in the world state (passed as the first
+   argument), lilv::presets returns a list with (name,uri) pairs of known
+   presets. */
 
-extern expr *lilv_plugin_presets(PluginInstance *p) = presets;
-extern expr *lilv_plugin_load_preset(LilvWorld* world, char* preset_uri,
+extern expr *lilv_plugin_presets(LilvWorld* world,
+				 PluginInstance *p) = presets;
+
+/* lilv::load_preset loads the preset (given by its uri, as returned by
+   lilv::presets) into the plugin, modifying its control values accordingly.
+   Conversely, lilv::save_preset creates a new preset from the current state
+   of the control values of the plugin, given a valid uri and the path where
+   the preset bundle should be stored. This also modifies the world state, so
+   that the preset can be reloaded using lilv::load_preset later. The path
+   must be given *without* the .lv2 bundle extension (this will be added
+   automatically). It should be inside a directory which gets scanned when the
+   world state is loaded, such as ~/.lv2. (You can in fact specify any
+   directory whose parent exists and is writeable, but note that the preset
+   bundle will only be reloaded into the world state across program
+   invocations if it is somewhere on the LV2 search path.) */
+
+extern expr *lilv_plugin_load_preset(LilvWorld* world,
+				     char* preset_uri,
 				     PluginInstance *p) = load_preset;
+extern expr *lilv_plugin_save_preset(LilvWorld* world,
+				     char* preset_uri, char* path,
+				     PluginInstance *p) = save_preset;
 
 /* Alternatively, the current state can also be retrieved from a plugin as a
    string in Turtle syntax (lilv::get_preset) and later restored from that
    string (lilv::set_preset). Both operations take the lilv world state as the
    first and the plugin instance as the last parameter. These functions give
-   you a way to serialize the state of a plugin using a format which can
-   easily be stored in memory or written to disk and reloaded later.
-
-   The second parameter of lilv::get_preset *must* denote a valid uri for the
-   preset (given as a string). The function returns the preset in Turtle
-   syntax, as a string. The second parameter of lilv::set_preset is the preset
-   itself, as returned by a previous call to lilv::get_preset. The function
-   modifies the controls of the plugin accordingly and returns (). Both
-   operations fail in case of error. */
+   you a way to serialize the state of a plugin without modifying the world
+   state. The second parameter of lilv::get_preset *must* denote a valid uri
+   for the preset (given as a string). The function returns the preset in
+   Turtle syntax, as a string. The second parameter of lilv::set_preset is the
+   preset itself, as returned by a previous call to lilv::get_preset. The
+   function modifies the controls of the plugin accordingly and returns (). */
 
 extern expr *lilv_plugin_get_preset(LilvWorld* world, char* preset_uri,
 				    PluginInstance *p) = get_preset;

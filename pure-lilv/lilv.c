@@ -10,6 +10,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 #include <alloca.h>
 
@@ -21,6 +22,7 @@
 #include <lv2/lv2plug.in/ns/ext/port-groups/port-groups.h>
 
 #include <lilv/lilv.h>
+#include <serd/serd.h>
 
 // These seem to be missing in the lilv headers right now.
 #define MY_URI_ATOM_PORT "http://lv2plug.in/ns/ext/atom#AtomPort"
@@ -392,10 +394,6 @@ typedef struct {
   uint32_t block_size, ev_buf_size;
   uint32_t atom_chunk, atom_sequence, midi_event,
     atom_float, atom_double, atom_int, atom_long;
-  // Number of associated presets.
-  uint32_t n_presets;
-  // Preset names and URIs.
-  char **preset_names, **preset_uris;
   // Total number of ports.
   uint32_t n;
   // Port names and symbols.
@@ -446,8 +444,6 @@ PluginInstance *lilv_plugin_new(LilvWorld* world, const char* plugin_uri,
   LilvNode* cv_class = lilv_new_uri(world, MY_URI_CV_PORT);
   LilvNode* event_class = lilv_new_uri(world, LILV_URI_EVENT_PORT);
   LilvNode* atom_class = lilv_new_uri(world, MY_URI_ATOM_PORT);
-  LilvNode* preset_class = lilv_new_uri(world, LV2_PRESETS__Preset);
-  LilvNode* label_pred = lilv_new_uri(world, LILV_NS_RDFS "label");
   LilvNode* midi_event = lilv_new_uri(world, LILV_URI_MIDI_EVENT);
   LilvNode* atom_Chunk = lilv_new_uri(world, LV2_ATOM__Chunk);
   LilvNode* atom_Sequence = lilv_new_uri(world, LV2_ATOM__Sequence);
@@ -459,33 +455,6 @@ PluginInstance *lilv_plugin_new(LilvWorld* world, const char* plugin_uri,
   ret->atom_double = map.map(map.handle, LV2_ATOM__Double);
   ret->atom_int = map.map(map.handle, LV2_ATOM__Int);
   ret->atom_long = map.map(map.handle, LV2_ATOM__Long);
-  // Presets.
-  LilvNodes *data = lilv_plugin_get_related(p, preset_class);
-  size_t k = 0, l = lilv_nodes_size(data);
-  ret->preset_names = calloc(l, sizeof(char*));
-  ret->preset_uris = calloc(l, sizeof(char*));
-  if (data) {
-    LILV_FOREACH (nodes, i, data) {
-      const char *plabel = 0;
-      const char *puri = lilv_node_as_uri(lilv_nodes_get(data, i));
-      const LilvNode* preset = lilv_nodes_get(data, i);
-      lilv_world_load_resource(world, preset);
-      LilvNodes* titles =
-	lilv_world_find_nodes(world, preset, label_pred, NULL);
-      if (titles) {
-	const LilvNode* title = lilv_nodes_get_first(titles);
-	plabel = lilv_node_as_string(title);
-	lilv_nodes_free(titles);
-      }
-      if (!plabel) plabel = "";
-      assert(k<l);
-      ret->preset_names[k] = strdup(plabel);
-      ret->preset_uris[k] = strdup(puri);
-      k++;
-    }
-    lilv_nodes_free(data);
-  }
-  ret->n_presets = k;
   // Make a first pass through the port list to fill in the basic port data
   // and determine the number of audio/CV and atom/event input/output ports.
   // We also connect all ports to their corresponding buffers here.
@@ -577,8 +546,6 @@ PluginInstance *lilv_plugin_new(LilvWorld* world, const char* plugin_uri,
   lilv_node_free(control_class);
   lilv_node_free(event_class);
   lilv_node_free(atom_class);
-  lilv_node_free(preset_class);
-  lilv_node_free(label_pred);
   lilv_node_free(midi_event);
   lilv_node_free(atom_Chunk);
   lilv_node_free(atom_Sequence);
@@ -589,16 +556,6 @@ void lilv_plugin_free(PluginInstance *p)
 {
   if (!p) return;
   lilv_instance_free(p->instance);
-  if (p->preset_names) {
-    for (uint32_t i = 0; i < p->n_presets; i++)
-      free(p->preset_names[i]);
-    free(p->preset_names);
-  }
-  if (p->preset_uris) {
-    for (uint32_t i = 0; i < p->n_presets; i++)
-      free(p->preset_uris[i]);
-    free(p->preset_uris);
-  }
   if (p->sym) {
     for (uint32_t i = 0; i < p->n; i++)
       free(p->sym[i]);
@@ -1085,14 +1042,43 @@ pure_expr *lilv_plugin_set_midi(PluginInstance *p, uint32_t k, pure_expr *x)
 
 #include <lv2/lv2plug.in/ns/ext/state/state.h>
 
-pure_expr *lilv_plugin_presets(PluginInstance *p)
+pure_expr *lilv_plugin_presets(LilvWorld* world, PluginInstance *p)
 {
   if (!p) return 0;
-  pure_expr **xv = (pure_expr**)calloc(p->n_presets, sizeof(pure_expr*));
-  for (int32_t i = 0; i < p->n_presets; i++)
-    xv[i] = pure_tuplel(2, pure_cstring_dup(p->preset_names[i]),
-			pure_cstring_dup(p->preset_uris[i]));
-  pure_expr *ret = pure_listv(p->n_presets, xv); free(xv);
+  LilvNode* uri = lilv_new_uri(world, lilv_instance_get_uri(p->instance));
+  if (!uri) return 0;
+  const LilvPlugins* plugins = lilv_world_get_all_plugins(world);
+  const LilvPlugin* plugin = lilv_plugins_get_by_uri(plugins, uri);
+  lilv_node_free(uri);
+  if (!plugin) return 0;
+  LilvNode* preset_class = lilv_new_uri(world, LV2_PRESETS__Preset);
+  LilvNode* label_pred = lilv_new_uri(world, LILV_NS_RDFS "label");
+  LilvNodes *data = lilv_plugin_get_related(plugin, preset_class);
+  size_t k = 0, l = lilv_nodes_size(data);
+  pure_expr **xv = (pure_expr**)calloc(l, sizeof(pure_expr*));
+  if (data) {
+    LILV_FOREACH (nodes, i, data) {
+      const char *plabel = 0;
+      const char *puri = lilv_node_as_uri(lilv_nodes_get(data, i));
+      const LilvNode* preset = lilv_nodes_get(data, i);
+      lilv_world_load_resource(world, preset);
+      LilvNodes* titles =
+	lilv_world_find_nodes(world, preset, label_pred, NULL);
+      if (titles) {
+	const LilvNode* title = lilv_nodes_get_first(titles);
+	plabel = lilv_node_as_string(title);
+	lilv_nodes_free(titles);
+      }
+      if (!plabel) plabel = "";
+      assert(k<l);
+      xv[k++] = pure_tuplel(2, pure_cstring_dup(plabel),
+			    pure_cstring_dup(puri));
+    }
+    lilv_nodes_free(data);
+  }
+  lilv_node_free(preset_class);
+  lilv_node_free(label_pred);
+  pure_expr *ret = pure_listv(k, xv); free(xv);
   return ret;
 }
 
@@ -1146,26 +1132,15 @@ pure_expr *lilv_plugin_load_preset(LilvWorld* world, const char* preset_uri,
     return 0;
 }
 
-/* Load a preset from the given string (as returned by a previous call to
-   lilv_plugin_get_preset, see below) and modify the control values of the
-   given plugin accordingly. */
-
-pure_expr *lilv_plugin_set_preset(LilvWorld* world, const char* preset,
-				  PluginInstance *p)
-{
-  if (!p) return 0;
-  LilvState* state = lilv_state_new_from_string(world, &map, preset);
-  if (state) {
-    lilv_state_restore(state, p->instance, set_port_value, p, 0, NULL);
-    lilv_state_free(state);
-    return pure_tuplel(0, 0);
-  } else
-    return 0;
-}
-
-/* This returns the current state of a plugin as an LV2 preset in Turtle
-   format. The resulting string can be passed to lilv_plugin_set_preset to
-   restore the corresponding plugin state. */
+/* Save a preset to a file (actually an LV2 bundle), using the given URI.
+   This modifies the world state accordingly, so that the preset can be
+   reloaded using lilv_plugin_load_preset later. The given path is the path to
+   where the bundle will be stored, *without* the .lv2 suffix (this will be
+   added automatically). This should be inside a directory which gets scanned
+   when the world state is loaded, such as ~/.lv2. (You can in fact specify
+   any directory whose parent exists and is writeable, but the preset bundle
+   will only be reloaded into the world state across program invocations if it
+   is on the LV2 search path.) */
 
 static const void*
 get_port_value(const char* port_symbol,
@@ -1186,6 +1161,80 @@ get_port_value(const char* port_symbol,
     return NULL;
   }
 }
+
+#define PATH_MAX 4096
+
+pure_expr *lilv_plugin_save_preset(LilvWorld* world, const char* preset_uri,
+				   const char* path,
+				   PluginInstance *p)
+{
+  if (!p) return 0;
+  // Check to see whether the given URI is valid.
+  LilvNode* uri = lilv_new_uri(world, preset_uri);
+  if (!uri) return 0;
+  lilv_node_free(uri);
+  // Lilv needs an absolute pathname here, so make sure that we create one if
+  // necessary.
+  char mypath[PATH_MAX];
+  if (*path != '/') {
+    if (!getcwd(mypath, PATH_MAX)) return 0;
+    if (strlen(mypath)+strlen(path)+1 >= PATH_MAX) return 0;
+    strcat(strcat(mypath, "/"), path);
+    path = mypath;
+  }
+  // Parse the filename and construct the basename, bundle dir and filename
+  // from it.
+  const char *basename = strrchr(path, '/');
+  if (!basename) return 0;
+  basename++;
+  if (!*basename) return 0;
+  char *dir = alloca(strlen(path)+6);
+  strcat(strcpy(dir, path), ".lv2/");
+  char *filename = alloca(strlen(basename)+5);
+  strcat(strcpy(filename, basename), ".ttl");
+  uri = lilv_new_uri(world, lilv_instance_get_uri(p->instance));
+  if (!uri) return 0;
+  const LilvPlugins* plugins = lilv_world_get_all_plugins(world);
+  const LilvPlugin* plugin = lilv_plugins_get_by_uri(plugins, uri);
+  lilv_node_free(uri);
+  if (!plugin) return 0;
+  LilvState* const state = lilv_state_new_from_instance
+    (plugin, p->instance, &map,	NULL, dir, dir, dir,
+     get_port_value, p, LV2_STATE_IS_POD|LV2_STATE_IS_PORTABLE, NULL);
+  if (!state) return 0;
+  lilv_state_set_label(state, basename);
+  int ret = lilv_state_save
+    (world, &map, &unmap, state, preset_uri, dir, filename);
+  lilv_state_free(state);
+  // Reload the preset so that it is known in the world state.
+  SerdNode sdir = serd_node_new_file_uri((const uint8_t*)dir, 0, 0, 0);
+  LilvNode* ldir = lilv_new_uri(world, (const char*)sdir.buf);
+  lilv_world_load_bundle(world, ldir);
+  serd_node_free(&sdir);
+  lilv_node_free(ldir);
+  return pure_tuplel(0, 0);
+}
+
+/* Load a preset from the given string (as returned by a previous call to
+   lilv_plugin_get_preset, see below) and modify the control values of the
+   given plugin accordingly. */
+
+pure_expr *lilv_plugin_set_preset(LilvWorld* world, const char* preset,
+				  PluginInstance *p)
+{
+  if (!p) return 0;
+  LilvState* state = lilv_state_new_from_string(world, &map, preset);
+  if (state) {
+    lilv_state_restore(state, p->instance, set_port_value, p, 0, NULL);
+    lilv_state_free(state);
+    return pure_tuplel(0, 0);
+  } else
+    return 0;
+}
+
+/* This returns the current state of a plugin as an LV2 preset in Turtle
+   format. The resulting string can be passed to lilv_plugin_set_preset to
+   restore the corresponding plugin state. */
 
 pure_expr *lilv_plugin_get_preset(LilvWorld* world, const char* preset_uri,
 				  PluginInstance *p)
