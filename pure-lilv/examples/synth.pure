@@ -16,6 +16,8 @@ let plugins = record {name=>uri | name,uri = lilv::plugins world};
 // Synth and effect plugins to be used. The defaults here require the
 // faust-lv2 plugins (http://code.google.com/p/faust-lv2/).
 let synth_name,chorus_name,reverb_name = "organ","chorus","freeverb";
+// Pick a preset for the synth.
+let preset_name = "";
 
 // Here are some alternatives from the Calf LV2 plugin collection
 // (http://calf.sourceforge.net/).
@@ -49,18 +51,32 @@ let synths,effects = [name | name=>uri = plugins; instrp uri],
   midip _ = false;
 end;
 
+let have_synth, have_midi = false, true;
+
 #! --if compiled
-// In the compiled script, allow the user to pick a synth from the command
-// line.
-let synth_name = if compiling || argc<=2 then synth_name else argv!1;
+// Parse the command line. Check whether we got a synth in argv!1.
+let have_synth = argc>=2 && any (==argv!1) synths;
+// Check whether we got a MIDI file as well.
+let have_midi = argc~=2 || ~have_synth;
+// In the compiled script, allow the user to pick a synth (and, optionally, a
+// preset) from the command line.
+let synth_name = if compiling || ~have_synth then synth_name else argv!1;
+let preset_name = if compiling || ~have_synth || argc<=3 then "" else argv!2;
 // Print a short usage message and the list of available synth units if we're
 // invoked without arguments.
+let USAGE = "Usage: %s [synth-name [preset-name]] midifile\n\
+Or use %s synth-name to get a list of all presets for the given synth.\n\
+E.g., if you have the Calf Organ installed, try something like:\n\
+%s 'Calf Organ' Shamrock prelude3.mid\n\
+\nAvailable synth units:\n%s\n";
 compiling || argc>=2 ||
-(fprintf stderr "Usage: %s [synth] midifile\nAvailable synth units:\n%s\n"
- (head argv,join ", " synths) $$ exit 1);
+(fprintf stderr USAGE (prog,prog,prog,join ", " synths) $$ exit 1 when
+   prog = head argv;
+ end);
 #! --endif
 
-// Audio setup.
+// Audio setup. We have to do that here before instantiating the plugins
+// because we need to know our sample rate for that. Ugh.
 
 using audio, realtime;
 
@@ -169,6 +185,23 @@ lilv::num_midi_inputs synth >= 1 ||
   throw "no MIDI input, check your synth unit";
 let midi_in:_ = lilv::midi_inputs synth;
 
+// Let the user select presets for the synth unit by their names.
+let presets = record {name=>uri | name,uri = lilv::presets synth};
+~stringp preset_name || null preset_name || ~member presets preset_name ||
+lilv::load_preset world (presets!preset_name) synth;
+
+#! --if compiled
+// Print the name of the synth that was chosen and the preset.
+compiling || printf "Synth: %s\n" synth_name;
+let have_preset = stringp preset_name && ~null preset_name;
+compiling || ~have_preset || printf "Preset: %s\n" preset_name;
+// If no MIDI file or preset was given, print the available presets.
+compiling || have_preset || have_midi || null presets ||
+printf "Available presets:\n%s\n" (join ", " (list (keys presets)));
+// If we were invoked with just the synth name, bail out now.
+compiling || have_midi || exit 1;
+#! --endif
+
 // Create buffers.
 let in,out = dmatrix (k,n), dmatrix (l,n);
 let out1,out2 = dmatrix (l1,n), dmatrix (l2,n);
@@ -226,6 +259,7 @@ end;
 // Main program, lets you specify a midi file on the command line.
 
 #! --if compiled
-main = play (load (last argv));
+main = play seq if listp seq when seq = load (last argv) end;
+= fprintf stderr "bad MIDI file: %s\n" (last argv) $$ exit 1 otherwise;
 compiling || catch (\_->exit 1) main;
 #! --endif

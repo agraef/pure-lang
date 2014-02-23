@@ -222,3 +222,33 @@ set_control p k x::int = set_control p k (double x);
 
 extern expr *lilv_plugin_get_midi(PluginInstance *p, int k) = get_midi;
 extern expr *lilv_plugin_set_midi(PluginInstance *p, int k, expr *x) = set_midi;
+
+/* Handle preset information. lilv::presets returns a list with (name,uri)
+   pairs of known presets for the plugin. Each of the listed uris can then be
+   used with lilv::load_preset to load the preset into the plugin, modifying
+   its control values accordingly. The presets are loaded from the lilv world
+   state, so the world pointer needs to be passed as the first argument of
+   lilv::load_preset. */
+
+extern expr *lilv_plugin_presets(PluginInstance *p) = presets;
+extern expr *lilv_plugin_load_preset(LilvWorld* world, char* preset_uri,
+				     PluginInstance *p) = load_preset;
+
+/* Alternatively, the current state can also be retrieved from a plugin as a
+   string in Turtle syntax (lilv::get_preset) and later restored from that
+   string (lilv::set_preset). Both operations take the lilv world state as the
+   first and the plugin instance as the last parameter. When used in concert,
+   these functions give you a way to serialize the state of a plugin using a
+   format which can easily be written to disk and reloaded later.
+
+   The second parameter of lilv::get_preset must denote a valid uri for the
+   preset (given as a string). The function returns the preset in Turtle
+   syntax, as a string. The second parameter of lilv::set_preset is the preset
+   itself, as returned by a previous call to lilv::get_preset. The function
+   modifies the controls of the plugin accordingly and returns (). Both
+   operations fail in case of error. */
+
+extern expr *lilv_plugin_get_preset(LilvWorld* world, char* preset_uri,
+				    PluginInstance *p) = get_preset;
+extern expr *lilv_plugin_set_preset(LilvWorld* world, char* preset,
+				    PluginInstance *p) = set_preset;

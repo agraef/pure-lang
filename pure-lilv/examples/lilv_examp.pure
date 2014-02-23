@@ -1,5 +1,5 @@
 
-using lilv;
+using lilv, system;
 
 // Load all plugins.
 let world = lilv::world;
@@ -34,8 +34,6 @@ lilv::basic_info world "http://calf.sourceforge.net/plugins/Organ";
 
 // A little helper function to print the (basic or extended) info of a plugin
 // in a readable format.
-
-using system;
 
 print (name, uri, class, author, email, homepage, bundle, binary, data_uris,
        required, optional, extension_data, presets, ports) = ()
@@ -178,10 +176,10 @@ let in = dmatrix {0,1,0,-1,0,1,-1,0;0,1,0,-1,0,1,-1,0};
 // Output buffer (just a zero matrix).
 let out = dmatrix (2,8);
 
-// Activate the plugin.
+// We first need to activate the plugin.
 lilv::activate p;
 
-// Let's run this through the plugin.
+// Now let's run some samples through the plugin.
 lilv::run p in out;
 
 // Port #2 is used to set the gain (amplification in dB).
@@ -195,7 +193,8 @@ lilv::run p in out;
 // left and the right channel.
 map (lilv::get_control p) [4,5];
 
-// Let's compute some more samples.
+// Let's compute some more samples. This will show that the values of port #4
+// and #5 continue to change.
 lilv::run p in out;
 map (lilv::get_control p) [4,5];
 
@@ -235,3 +234,24 @@ map (lilv::get_control p) [4,5];
 lilv::set_midi p 10 [(4,{0xb0, 8, 64})];
 lilv::run p in out;
 map (lilv::get_control p) [4,5];
+
+// Finally, the presets. If an LV2 plugin has any presets associated with it,
+// the lilv::presets function will return their names and corresponding URIs
+// (as with plugins, the latter are used to identify a preset and may be
+// specified to load it).
+lilv::presets p;
+
+// Ok, so the amp plugin doesn't have any presets. But we can make our own
+// from the current state of our plugin instance:
+let ps =
+  lilv::get_preset world "http://faust-lv2.googlecode.com/presets#myamp" p;
+
+// Note that we invented our own URI for the preset there. The result is a
+// string in Turtle syntax. Here is how it looks like:
+puts ps;
+
+// You can reload the saved plugin state at any time:
+lilv::set_control p 2 10, lilv::set_control p 3 1;
+map (lilv::get_control p) [2,3];
+lilv::set_preset world ps p;
+map (lilv::get_control p) [2,3];
