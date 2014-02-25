@@ -22,8 +22,11 @@ version = 0.17
 
 PD=pd
 
+# Pd executable name variants.
+PDEXE=$(subst pd-extended,pdextended,$(PD))
+
 # Try to guess the Pd installation prefix (this needs GNU make):
-prefix = $(patsubst %/bin/$(PD)$(EXE),%,$(shell which $(PD) 2>/dev/null))
+prefix = $(patsubst %/bin/$(PDEXE)$(EXE),%,$(shell which $(PDEXE) 2>/dev/null))
 ifeq ($(strip $(prefix)),)
 # Fall back to /usr/local.
 prefix = /usr/local
