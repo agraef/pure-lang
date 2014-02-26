@@ -18,6 +18,11 @@ complete set of Ubuntu packages at [Launchpad][7]. Please also have a look at
 our [mailing list][8] / Google group and [IRC chat][9] if you need any help or
 if you want to discuss Pure.
 
+Please also check my [personal Bitbucket site][10] for some fun side projects
+that I've written in or for Pure (mostly about computer music and multimedia).
+
+Albert Gräf <aggraef@gmail.com>
+
 Enjoy. :)
 
 [0]: http://llvm.org/
@@ -30,3 +35,4 @@ Enjoy. :)
 [7]: https://launchpad.net/~dr-graef
 [8]: http://groups.google.com/group/pure-lang
 [9]: irc://irc.freenode.net/pure-lang
+[10]: https://bitbucket.org/agraef/agraef.bitbucket.org
