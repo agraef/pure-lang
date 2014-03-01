@@ -188,9 +188,10 @@ void interpreter::init()
   readonly_options.insert("interactive");
   readonly_options.insert("debugging");
 
-  nwrapped = 0; fptr = 0;
+  nwrapped = 0; fptr = 0; __fptr_save = 0;
   sstk_sz = 0; sstk_cap = 0x10000; // 64K
   sstk = (pure_expr**)malloc(sstk_cap*sizeof(pure_expr*));
+  __sstk_save = 0;
   assert(sstk);
 
   ap = (pure_aframe*)malloc(ASTACKSZ*sizeof(pure_aframe));
@@ -830,6 +831,11 @@ interpreter::interpreter(int32_t nsyms, char *syms,
 {
   using namespace llvm;
   init();
+  // In a batch-compiled module, there is only a single global instance of the
+  // fptr and sstk variables. When switching interpreters, these values have
+  // to be saved somewhere.
+  __fptr_save = (Env**)malloc(sizeof(Env*));
+  __sstk_save = (pure_expr***)malloc(sizeof(pure_expr**));
   string s_syms = syms, s_externs;
   size_t p = s_syms.find("%%\n");
   if (p != string::npos) {
@@ -916,7 +922,10 @@ interpreter::~interpreter()
   globenv.clear(); typeenv.clear(); macenv.clear();
   globalfuns.clear(); globaltypes.clear(); globalvars.clear();
   // free the shadow stack
-  free(sstk);
+  if (g_interp != this && __sstk_save)
+    free(*__sstk_save);
+  else
+    free(sstk);
   // free the activation stack
   for (list<pure_aframe*>::iterator it = aplist.begin(); it != aplist.end();
        ++it) free(*it);
@@ -955,12 +964,21 @@ cdf(interpreter& interp, const char* s, pure_expr *x)
   pure_freenew(x);
 }
 
+void interpreter::swap_interpreters(interpreter *interp)
+{
+  if (g_interp != interp) {
+    if (g_interp) g_interp->save_context();
+    g_interp = interp;
+    if (interp) interp->restore_context();
+  }
+}
+
 void interpreter::init_sys_vars(const string& version,
 				const string& host,
 				const list<string>& argv)
 {
   interpreter* s_interp = g_interp;
-  g_interp = this;
+  swap_interpreters(this);
   // command line arguments, system and version information
   pure_expr *args = pure_const(symtab.nil_sym().f);
   for (list<string>::const_reverse_iterator it = argv.rbegin();
@@ -992,7 +1010,7 @@ void interpreter::init_sys_vars(const string& version,
   cdf(interp, "SIZEOF_COMPLEX_DOUBLE",	pure_int(sizeof(_Complex double)));
 #endif
   cdf(interp, "SIZEOF_POINTER",	pure_int(sizeof(void*)));
-  g_interp = s_interp;
+  swap_interpreters(s_interp);
 }
 
 // Activation stack.
@@ -2848,7 +2866,7 @@ pure_expr* interpreter::run(int priv, const string &_s,
   interpreter* s_interp = g_interp;
   g_verbose = verbose;
   g_interactive = interactive = interactive && s.empty();
-  g_interp = this;
+  swap_interpreters(this);
   // initialize
   nerrs = 0;
   source_level = skip_level = 0;
@@ -2885,7 +2903,7 @@ pure_expr* interpreter::run(int priv, const string &_s,
   // restore global data
   g_verbose = s_verbose;
   g_interactive = s_interactive;
-  g_interp = s_interp;
+  swap_interpreters(s_interp);
   // restore local data
   interactive = l_interactive;
   source = l_source;
@@ -2952,7 +2970,7 @@ pure_expr *interpreter::runstr(const string& s)
   interpreter* s_interp = g_interp;
   g_verbose = 0;
   g_interactive = interactive = false;
-  g_interp = this;
+  swap_interpreters(this);
   // initialize
   nerrs = 0;
   source_level = skip_level = 0;
@@ -2976,7 +2994,7 @@ pure_expr *interpreter::runstr(const string& s)
   // restore global data
   g_verbose = s_verbose;
   g_interactive = s_interactive;
-  g_interp = s_interp;
+  swap_interpreters(s_interp);
   // restore local data
   compiling = l_compiling;
   interactive = l_interactive;
@@ -3023,7 +3041,7 @@ pure_expr *interpreter::parsestr(const string& s)
   interpreter* s_interp = g_interp;
   g_verbose = 0;
   g_interactive = interactive = false;
-  g_interp = this;
+  swap_interpreters(this);
   // initialize
   nerrs = 0;
   source_level = skip_level = 0;
@@ -3068,7 +3086,7 @@ pure_expr *interpreter::parsestr(const string& s)
   // restore global data
   g_verbose = s_verbose;
   g_interactive = s_interactive;
-  g_interp = s_interp;
+  swap_interpreters(s_interp);
   // restore local data
   compiling = l_compiling;
   interactive = l_interactive;

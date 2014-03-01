@@ -1294,7 +1294,7 @@ public:
   map<int32_t,GlobalVar> globalvars;
   map<int32_t,Env> globalfuns, globaltypes;
   pure_aframe *astk;
-  pure_expr **__sstk;
+  pure_expr **__sstk, ***__sstk_save;
   pure_expr **&sstk;
   size_t sstk_cap, sstk_sz;
   llvm::GlobalVariable *sstkvar;
@@ -1362,11 +1362,27 @@ public:
   bool LoadBitcode(bool priv, const char *name, string *msg);
   // Handle inline code.
   void inline_code(bool priv, string &code);
+  // Global context switching for batch modules.
+  inline void save_context()
+  {
+    if (__sstk_save) {
+      *__sstk_save = sstk;
+      *__fptr_save = fptr;
+    }
+  }
+  inline void restore_context()
+  {
+    if (__sstk_save) {
+      sstk = *__sstk_save;
+      fptr = *__fptr_save;
+    }
+  }
+  void swap_interpreters(interpreter *interp);
 private:
   void init();
   void init_llvm_target();
   int nwrapped;
-  Env *__fptr;
+  Env *__fptr, **__fptr_save;
   Env *&fptr;
   llvm::GlobalVariable *fptrvar;
   llvm::Value *envptr(bool local);

@@ -1,3 +1,13 @@
+2014-03-01  Albert Graef  <aggraef@gmail.com>
+
+	* interpreter.cc/hh, runtime.cc: Keep track of global context in
+	batch-compiled modules. Specifically, there's only a single global
+	instance of the shadow stack (sstk) and environment (fptr)
+	variables, so we need to ensure that these aren't clobbered if
+	multiple interpreter instances run in concert, by saving and
+	restoring the state of these variables when switching
+	interpreters.
+
 2014-02-26  Albert Graef  <aggraef@gmail.com>
 
 	* 0.59 release.

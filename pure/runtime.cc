@@ -3685,6 +3685,7 @@ static string unixize(const string& s)
 extern "C"
 pure_interp *pure_create_interp(int argc, char *argv[])
 {
+  if (interpreter::g_interp) interpreter::g_interp->save_context();
   // This is pretty much the same as pure.cc:main(), except that some options
   // are ignored and there's no user interaction.
   char base;
@@ -3978,7 +3979,11 @@ pure_interp *pure_create_interp(int argc, char *argv[])
   interp.symtab.init_builtins();
   interp.temp = 1;
   interp.modno = interp.modctr++;
-  if (s_interp) interpreter::g_interp = s_interp;
+  if (s_interp) {
+    if (interpreter::g_interp) interpreter::g_interp->save_context();
+    interpreter::g_interp = s_interp;
+    if (interpreter::g_interp) interpreter::g_interp->restore_context();
+  }
   return (pure_interp*)_interp;
 }
 
@@ -3994,7 +3999,10 @@ extern "C"
 void pure_switch_interp(pure_interp *interp)
 {
   assert(interp);
+  if (interpreter::g_interp == (interpreter*)interp) return;
+  if (interpreter::g_interp) interpreter::g_interp->save_context();
   interpreter::g_interp = (interpreter*)interp;
+  if (interpreter::g_interp) interpreter::g_interp->restore_context();
 }
 
 extern "C"
@@ -4085,6 +4093,7 @@ pure_interp *pure_interp_main(int argc, char *argv[],
       std::cerr << f << " = " << externs[f] << '\n';
   std::cerr << "\n** sstk = " << sstk << ", fptr = " << fptr << endl;
 #endif
+  if (interpreter::g_interp) interpreter::g_interp->save_context();
   interpreter *_interp =
     new interpreter(nsyms, syms, vars, vals, arities, externs, sstk, fptr),
     &interp = *_interp;
