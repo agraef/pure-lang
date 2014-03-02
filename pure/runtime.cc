@@ -3697,7 +3697,7 @@ pure_interp *pure_create_interp(int argc, char *argv[])
   interpreter *s_interp = interpreter::g_interp;
   interpreter::g_interp = _interp;
   // This is used in advisory stack checks.
-  if (!interpreter::baseptr) interpreter::baseptr = &base;
+  interpreter::baseptr = &base;
   // get some settings from the environment
   const char *env;
   if ((env = getenv("HOME")))
@@ -3998,11 +3998,23 @@ void pure_delete_interp(pure_interp *interp)
 extern "C"
 void pure_switch_interp(pure_interp *interp)
 {
+  char base;
   assert(interp);
-  if (interpreter::g_interp == (interpreter*)interp) return;
-  if (interpreter::g_interp) interpreter::g_interp->save_context();
-  interpreter::g_interp = (interpreter*)interp;
-  if (interpreter::g_interp) interpreter::g_interp->restore_context();
+  if (interpreter::g_interp != (interpreter*)interp) {
+    if (interpreter::g_interp) interpreter::g_interp->save_context();
+    interpreter::g_interp = (interpreter*)interp;
+    if (interpreter::g_interp) interpreter::g_interp->restore_context();
+  }
+  /* Check our base pointer to see whether it still looks valid. If we're
+     wildly off from the calculated base pointer, chances are that we're being
+     invoked from a new context with its own stack. In this case we update the
+     base pointer and proceed with fingers crossed. XXXFIXME: This is only
+     guesswork. A better way to deal with this situation would be to turn
+     interpreter::baseptr into a thread-local variable, but this isn't cheap
+     and we want the switching between interpreters to be as efficient as
+     possible. */
+  long d = &base - interpreter::baseptr;
+  if (d < -100000 || d > 100000) interpreter::baseptr = &base;
 }
 
 extern "C"
@@ -4098,7 +4110,7 @@ pure_interp *pure_interp_main(int argc, char *argv[],
     new interpreter(nsyms, syms, vars, vals, arities, externs, sstk, fptr),
     &interp = *_interp;
   interpreter::g_interp = _interp;
-  if (!interpreter::baseptr) interpreter::baseptr = &base;
+  interpreter::baseptr = &base;
   // get some settings from the environment
   const char *env;
   if ((env = getenv("PURE_STACK"))) {

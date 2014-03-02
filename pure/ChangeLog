@@ -1,12 +1,15 @@
-2014-03-01  Albert Graef  <aggraef@gmail.com>
+2014-03-02  Albert Graef  <aggraef@gmail.com>
 
-	* interpreter.cc/hh, runtime.cc: Keep track of global context in
-	batch-compiled modules. Specifically, there's only a single global
-	instance of the shadow stack (sstk) and environment (fptr)
-	variables, so we need to ensure that these aren't clobbered if
-	multiple interpreter instances run in concert, by saving and
-	restoring the state of these variables when switching
-	interpreters.
+	* interpreter.cc/hh, runtime.cc: Keep track of global interpreter
+	contexts, to make switching between interpreter instances more
+	robust. Specifically, in batch-compiled modules there's only a
+	single global instance of the sstk (shadow stack) and fptr
+	(environment) variables, so we need to ensure that these aren't
+	clobbered if multiple interpreter instances run in concert.
+	Similar considerations apply to the static baseptr member which is
+	used to check for stack overflows; in this case we also try to
+	detect situations where the baseptr needs to be updated due to
+	context switches.
 
 2014-02-26  Albert Graef  <aggraef@gmail.com>
 

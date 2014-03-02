@@ -188,6 +188,7 @@ void interpreter::init()
   readonly_options.insert("interactive");
   readonly_options.insert("debugging");
 
+  __baseptr_save = 0;
   nwrapped = 0; fptr = 0; __fptr_save = 0;
   sstk_sz = 0; sstk_cap = 0x10000; // 64K
   sstk = (pure_expr**)malloc(sstk_cap*sizeof(pure_expr*));

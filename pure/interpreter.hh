@@ -1362,9 +1362,10 @@ public:
   bool LoadBitcode(bool priv, const char *name, string *msg);
   // Handle inline code.
   void inline_code(bool priv, string &code);
-  // Global context switching for batch modules.
+  // Global context switching for interpreters.
   inline void save_context()
   {
+    __baseptr_save = interpreter::baseptr;
     if (__sstk_save) {
       *__sstk_save = sstk;
       *__fptr_save = fptr;
@@ -1372,6 +1373,7 @@ public:
   }
   inline void restore_context()
   {
+    interpreter::baseptr = __baseptr_save;
     if (__sstk_save) {
       sstk = *__sstk_save;
       fptr = *__fptr_save;
@@ -1381,6 +1383,7 @@ public:
 private:
   void init();
   void init_llvm_target();
+  char *__baseptr_save;
   int nwrapped;
   Env *__fptr, **__fptr_save;
   Env *&fptr;
