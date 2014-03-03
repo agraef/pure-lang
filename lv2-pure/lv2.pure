@@ -1,0 +1,51 @@
+
+/* Some interface operations for use by LV2 Pure plugins. 2014-02-28 Copyright
+   (c) 2014 by Albert Gräf <aggraef@gmail.com>. Distributed under the new BSD
+   license, please see the accompanying COPYING file for details. */
+
+using "lib:lv2";
+namespace lv2;
+
+// This is passed to the plugin in order to retrieve the manifest (port
+// descriptions).
+nonfix info;
+
+// Some constants for the manifest (port types and flags).
+const control_port, audio_port, cv_port, atom_port = 1,2,3,4;
+const input_port, output_port, midi_port = 1,2,4;
+// Add these flags to indicate a toggle (0/1) or integer control.
+const toggle, integer = 8,16;
+
+// Some common type/flag combinations.
+const controlin  = control_port, input_port;
+const controlout = control_port, output_port;
+const audioin    = audio_port, input_port;
+const audioout   = audio_port, output_port;
+const cvin       = cv_port, input_port;
+const cvout      = cv_port, output_port;
+const midiin     = atom_port, input_port or midi_port;
+const midiout    = atom_port, output_port or midi_port;
+
+const controlin_toggle   = control_port, input_port or toggle;
+const controlout_toggle  = control_port, output_port or toggle;
+const controlin_integer  = control_port, input_port or integer;
+const controlout_integer = control_port, output_port or integer;
+
+/* Retrieve various information about the plugin (manifest, activation status,
+   sample rate, block size, bundle path). Note that the plugin parameter to be
+   passed to these routines should be the same as the first argument passed to
+   the plugin function. Also note that this data only becomes available after
+   the plugin has been initialized and starts running. */
+
+extern expr *lv2pure_info(LV2Plugin *p) = get_info;
+extern int lv2pure_active(LV2Plugin *p) = active;
+extern double lv2pure_rate(LV2Plugin *p) = rate;
+extern int lv2pure_nsamples(LV2Plugin *p) = nsamples;
+extern expr *lv2pure_path(LV2Plugin *p) = path;
+
+/* Get and set port values. The actual values depend on the port type (double
+   for control ports, double vector for audio and cv ports, list of int
+   vectors for midi ports). */
+
+extern expr *lv2pure_get(LV2Plugin *p, int k) = get_port;
+extern expr *lv2pure_set(LV2Plugin *p, int k, expr *x) = set_port;

@@ -1,0 +1,33 @@
+
+// A simple LV2 midi plugin.
+
+using lv2, system;
+
+// Please see pure_amp.pure for an explanation of the plugin function and its
+// arguments. To compile this to an LV2 plugin bundle: pure2lv2 pure_amp.pure
+
+// Manifest: one control port, one midi input and output.
+pure_transp self lv2::info =
+  [("amount", lv2::controlin_integer, 0, -12, 12),
+   ("midiin", lv2::midiin), ("midiout", lv2::midiout)];
+
+// Run the plugin. This just transposes incoming MIDI notes by the number of
+// semitones indicated by the amount control.
+pure_transp self () = () when
+  // Get the current amount value from port #0 (control input).
+  amount = int $ lv2::get_port self 0;
+  // Get incoming midi messages from port #1 (midi input).
+  seq = lv2::get_port self 1;
+  // Print our input on stdout.
+  ~listp seq || null seq || do (printf "midiin:  %s\n".str) seq;
+  // Transpose.
+  seq = map transp seq with
+    transp {0x80,n,v} = {0x80,n+amount,v};
+    transp {0x90,n,v} = {0x90,n+amount,v};
+    transp x = x otherwise;
+  end;
+  // Print our output on stdout.
+  ~listp seq || null seq || do (printf "midiout: %s\n".str) seq;
+  // Output the messages on port #2 (midi output).
+  lv2::set_port self 2 seq;
+end;

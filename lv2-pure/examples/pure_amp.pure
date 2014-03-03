@@ -1,0 +1,75 @@
+
+// A simple LV2 audio plugin.
+
+/* To compile this to an LV2 plugin bundle: pure2lv2 pure_amp.pure
+
+   You then need to move the resulting bundle directory pure_amp.lv2 to a
+   location on your LV2 search path, such as ~/.lv2 for personal or
+   /usr/lib/lv2 for system-wide installation. */
+
+using lv2, system;
+
+/* Note that the "main" function of a plugin is named after the plugin script.
+   This function is invoked with the plugin object (a pointer) as the first
+   argument. The function gets invoked once at instantiation time with a
+   second argument of lv2::info, in which case the function should return
+   the port descriptions from which the plugin manifest is constructed. All
+   subsequent invocations call the plugin function with the argument () to
+   indicate that it should process a block of samples.
+
+   The port descriptions should be returned as a list of tuples which take the
+   following form: (symbol, name, type, flags, default, min, max)
+
+   - symbol is the port symbol (a string).
+
+   - name is a more descriptive port name which is typically used as a label
+     in the LV2 host GUI.
+
+   - type is the type of port (control, audio, CV, midi), and flags the
+     bitwise disjunction of some flags which indicate whether the port is an
+     input or output port, along with some additional information. The
+     lv2.pure module has symbolic constants for valid type and flags values,
+     as well as a number of common type,flag combination such as
+     lv2::controlin, lv2:audioout, etc.
+
+   - default, min and max indicate the default, minimum and maximum values of
+     a port, if required. These fields only apply to control or CV ports.
+
+   The first field is mandatory; all other fields are optional. If no port
+   name is specified, it is assumed to be the same as the port symbol. If no
+   port type is specified, a control port is assumed. If no flags are
+   specified, an input port is assumed. If the default, min and max fields are
+   omitted, no default values and range is set for the port. This makes it
+   easy to specify a basic setup of control input ports by just listing their
+   names. For other port types, you'll have to specify at least the port type
+   (and the flags, unless it's an input port). */
+
+pure_amp self = plugin with
+  // This gets invoked when the plugin is created. We return the list of port
+  // descriptions from which the plugin manifest is constructed.
+  plugin lv2::info =
+    [// a control port
+     ("vol", "Volume", lv2::controlin, 0.5, 0.0, 1.0),
+     // audio input and output ports
+     ("audioin", lv2::audioin), ("audioout", lv2::audioout)];
+  // This gets invoked to process a block of samples.
+  plugin () = () when
+    // Invoke this exactly once to print some information about the plugin.
+    // Note that this information only becomes available *after* the plugin
+    // has been created, and thus needs to be printed when the plugin runs for
+    // the first time, not during `plugin lv2::info`.
+    get first_run ||
+    printf "path = %s\ninfo = %s\nrate = %g, block size = %d, vol = %g\n"
+    (str (lv2::path self), str (lv2::get_info self), lv2::rate self,
+     lv2::nsamples self, lv2::get_port self 0);
+    put first_run true;
+    // Process a block of samples.
+    vol = lv2::get_port self 0; // control value from port #0 (control input)
+    wav = lv2::get_port self 1; // sample data from port #1 (audio input)
+    // Multiply the sample data with the vol control value and output the
+    // resulting wave on port #2 (audio output).
+    lv2::set_port self 2 (map (*vol) wav);
+  end;
+end when
+  first_run = ref false;
+end;

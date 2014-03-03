@@ -1,0 +1,117 @@
+#! /bin/bash
+
+# Copyright (c) 2014 by Albert Gräf <aggraef@gmail.com>. Distributed under
+# the new BSD license, please see the accompanying COPYING file for details.
+
+# This script compiles a Pure module to an LV2 plugin bundle. The required
+# wrapper code and manifest are added automatically. All you have to do is to
+# pass the Pure script name (and the URI prefix, if you want to use a custom
+# URI) on the command line. The script must contain a "main" function, named
+# after the plugin, which gets run by the wrapper code to implement the
+# plugin, please check the examples included in the package.
+
+#set -x
+
+# compiler flags (you can change these by setting them in the environment)
+CC="${CC:-gcc}"
+CFLAGS="${CFLAGS:--O3}"
+CPPFLAGS="${CPPFLAGS:-}"
+LIBS="${LIBS:-}"
+
+if [ -z "$1" ]; then
+  echo "USAGE: $0 pure-script [uri-prefix]" >&2
+  exit 1
+fi
+
+uriprefix="${2:-http://purelang.bitbucket.org}"
+filename="$1"
+plugin=`basename "$1" .pure`
+# This symbol ought to be a valid C identifier, so we mangle the plugin name
+# if necessary.
+name=`echo -n "$plugin" | tr -c [:alnum:] _`
+bundledir="$plugin.lv2"
+loader="__${name}_main__"
+tmpname="__${plugin}_main__.pure"
+objname="${plugin}.o"
+
+if [ "$name" != "$plugin" ] ; then
+  echo "$0: WARNING: mangled plugin function '$name'" >&2
+fi
+
+# Platform-specific setup.
+DLL=`pkg-config pure --variable DLL`
+PIC=`pkg-config pure --variable PIC`
+shared=`pkg-config pure --variable shared`
+libdir=`pkg-config pure --variable libdir`
+
+MOD_CFLAGS="$PIC `pkg-config pure --cflags` $CFLAGS $CPPFLAGS"
+MOD_LDFLAGS="`pkg-config pure --libs` $LDFLAGS"
+
+# NOTE: This requires a linker that handles the -rpath option. Otherwise you
+# may have to add the $libdir directory to your system dll search path so
+# that the linked library modules are found when the plugin module is loaded.
+extralibs="-Wl,-rpath=\"$libdir/pure\" $libdir/pure/lv2$DLL"
+
+# NOTE: The following requires that the cwd is writeable, since we create some
+# temp files and the bundle there.
+
+# Invoke Pure to compile the plugin.
+echo "#! --required $name" > $tmpname
+pure $PIC -c $tmpname $filename -o $objname --main=$loader
+# check the result, in case anything went wrong during compilation
+rc=$?
+rm -f $tmpname
+if [ $rc -ne 0 ] ; then
+  exit $rc
+fi
+
+# We should have an object file now; if not then something went wrong and we
+# bail out with an error message.
+if [ ! -f $objname ] ; then
+  echo "$0: couldn't create object file $objname" >&2
+  exit 1
+fi
+
+# Create the bundle directory.
+rm -Rf "$bundledir"
+mkdir "$bundledir"
+if [ ! -d "$bundledir" ] ; then
+  echo "$0: couldn't create bundle directory $bundledir" >&2
+  exit 1
+fi
+
+# Link with the wrapper module.
+$CC $shared -o "$bundledir/$plugin$DLL" $MOD_CFLAGS -DURI_PREFIX="\"$uriprefix/\"" -DPLUGIN_NAME="\"$plugin\"" -DPLUGIN_FUN="\"$name\"" -DLOADER_NAME="$loader" -std=c99 $libdir/pure/lv2pure.c $objname $MOD_LDFLAGS $extralibs $LIBS
+rm -f $objname
+
+# Create the manifest.
+sed -e"s?@name@?$plugin?g" -e"s?@uri@?$uriprefix/$plugin?g" -e"s?@dllext@?$DLL?g" > "$bundledir/manifest.ttl" <<EOF
+
+########## @uri@ ##########
+
+@prefix doap: <http://usefulinc.com/ns/doap#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix lv2:  <http://lv2plug.in/ns/lv2core#> .
+@prefix dman: <http://lv2plug.in/ns/ext/dynmanifest#> .
+
+<@uri@/manifest>
+    lv2:binary <@name@@dllext@> ;
+    a dman:DynManifest .
+
+# Here's how you can declare the category of the plugin. See
+# http://lv2plug.in/ns/lv2core/ for a list of known plugin classes.
+
+# <@uri@> a lv2:FilterPlugin .
+
+# You might also want to set the license and author information below.
+
+# <@uri@>
+#     doap:license <http://opensource.org/licenses/isc> ;
+#     doap:maintainer [
+#         foaf:name "Your Name Here" ;
+#         foaf:homepage <http://somewhere.org/> ;
+#         foaf:mbox <mailto:your@mail.here> ;
+#     ] .
+EOF
+
+exit 0
