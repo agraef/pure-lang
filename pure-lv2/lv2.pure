@@ -35,7 +35,39 @@ const controlout_integer = control_port, output_port or integer;
    sample rate, block size, bundle path). Note that the plugin parameter to be
    passed to these routines should be the same as the first argument passed to
    the plugin function. Also note that this data only becomes available after
-   the plugin has been initialized and starts running. */
+   the plugin has been initialized and starts running.
+
+   The manifest (port descriptions) is returned as a list of tuples for each
+   port of the plugin which take the following form: (symbol, name, type,
+   flags, default, min, max)
+
+   - symbol is the port symbol (a string).
+
+   - name is a more descriptive port name which is typically used as a label
+     in the LV2 host GUI.
+
+   - type is the type of port (control, audio, CV, midi), and flags the
+     bitwise disjunction of some flags which indicate whether the port is an
+     input or output port, along with some additional information. The
+     symbolic constants defined above denote valid type and flags values, as
+     well as a number of common type,flag combinations such as lv2::controlin,
+     lv2:audioout, etc.
+
+   - default, min and max indicate the default, minimum and maximum values of
+     a port, if set. These fields are only returned for control and CV ports
+     (in this case a nan value indicates that the corresponding field was not
+     set when creating the plugin).
+
+   These fields are in 1-1 correspondence with the manifest data returned by
+   the plugin at instantiation time, when the plugin function is invoked with
+   the lv2::info parameter. However, in the manifest returned by the plugin
+   only the first field is mandatory. All other fields can be omitted, in
+   which case reasonable defaults will be provided; you can then use
+   lv2::get_info to see exactly which defaults were provided. (If no port name
+   was specified, it is assumed to be the same as the port symbol. If no port
+   type was specified, a control port is assumed. If no flags were specified,
+   an input port is assumed. If the default, min and max fields were omitted,
+   no default value and range is set for the port.) */
 
 extern expr *lv2pure_info(LV2Plugin *p) = get_info;
 extern int lv2pure_active(LV2Plugin *p) = active;
