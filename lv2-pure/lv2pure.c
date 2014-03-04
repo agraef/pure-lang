@@ -83,6 +83,7 @@ static inline bool pure_is_number(pure_expr *x, double *num)
 
 static lv2plugin_t *create_plugin(void)
 {
+  pure_interp *interp = pure_current_interp();
   lv2plugin_t *plugin = calloc(1, sizeof(lv2plugin_t));
   assert(plugin);
 
@@ -264,6 +265,7 @@ static lv2plugin_t *create_plugin(void)
   }
 
   plugin->uri = PLUGIN_URI;
+  pure_switch_interp(interp);
   return plugin;
 
  fail2:
@@ -271,6 +273,7 @@ static lv2plugin_t *create_plugin(void)
   pure_delete_interp(plugin->interp);
   
  fail:
+  pure_switch_interp(interp);
   free(plugin);
   return 0;
 }
@@ -321,9 +324,13 @@ instantiate(const LV2_Descriptor*     descriptor,
 static void cleanup(LV2_Handle instance)
 {
   lv2plugin_t* plugin = (lv2plugin_t*)instance;
-  pure_switch_interp(plugin->interp);
-  pure_free(plugin->fun);
-  pure_delete_interp(plugin->interp);
+  if (plugin->interp) {
+    pure_interp *interp = pure_current_interp();
+    pure_switch_interp(plugin->interp);
+    //pure_free(plugin->fun);
+    pure_delete_interp(plugin->interp);
+    pure_switch_interp(interp);
+  }
   if (plugin->path) free(plugin->path);
   if (plugin->sym) {
     for (uint32_t i = 0; i < plugin->n; i++)
@@ -363,6 +370,7 @@ static void deactivate(LV2_Handle instance)
 static void run(LV2_Handle instance, uint32_t sample_count)
 {
   lv2plugin_t* plugin = (lv2plugin_t*)instance;
+  pure_interp *interp = pure_current_interp();
   pure_switch_interp(plugin->interp);
   plugin->nsamples = sample_count;
   pure_expr *e, *ret = pure_appx(plugin->fun, pure_tuplel(0, 0), &e);
@@ -375,6 +383,7 @@ static void run(LV2_Handle instance, uint32_t sample_count)
     }
   } else
     pure_freenew(ret);
+  pure_switch_interp(interp);
 }
 
 const void* extension_data(const char* uri)
@@ -415,7 +424,16 @@ int lv2_dyn_manifest_open(LV2_Dyn_Manifest_Handle *handle,
   // information.
   lv2plugin_t *plugin = create_plugin();
   *handle = (LV2_Dyn_Manifest_Handle)plugin;
-  return plugin?0:-1;
+  if (plugin) {
+    // We can get rid of the interpreter now, only the port data is needed.
+    pure_interp *interp = pure_current_interp();
+    pure_switch_interp(plugin->interp);
+    pure_delete_interp(plugin->interp);
+    pure_switch_interp(interp);
+    plugin->interp = 0;
+    return 0;
+  } else
+    return -1;
 }
 
 extern LV2_SYMBOL_EXPORT
