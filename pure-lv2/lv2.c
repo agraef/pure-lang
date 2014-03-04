@@ -61,6 +61,56 @@ int lv2pure_nsamples(lv2plugin_t *p)
   return p->nsamples;
 }
 
+/* Return the audio inputs and outputs of the plugin, as a list of port
+   indices. */
+
+pure_expr *lv2pure_audio_inputs(lv2plugin_t *p)
+{
+  if (!p) return 0;
+  size_t n = p->n_in;
+  pure_expr **xv = (pure_expr**)calloc(n, sizeof(pure_expr*));
+  for (size_t i = 0; i < n; i++)
+    xv[i] = pure_int(p->in[i]);
+  pure_expr *ret = pure_listv(n, xv); free(xv);
+  return ret;
+}
+
+pure_expr *lv2pure_audio_outputs(lv2plugin_t *p)
+{
+  if (!p) return 0;
+  size_t n = p->n_out;
+  pure_expr **xv = (pure_expr**)calloc(n, sizeof(pure_expr*));
+  for (size_t i = 0; i < n; i++)
+    xv[i] = pure_int(p->out[i]);
+  pure_expr *ret = pure_listv(n, xv); free(xv);
+  return ret;
+}
+
+/* Return the MIDI inputs and outputs of the plugin, as a list of port
+   indices. */
+
+pure_expr *lv2pure_midi_inputs(lv2plugin_t *p)
+{
+  if (!p) return 0;
+  size_t n = p->n_evin;
+  pure_expr **xv = (pure_expr**)calloc(n, sizeof(pure_expr*));
+  for (size_t i = 0; i < n; i++)
+    xv[i] = pure_int(p->evin[i]);
+  pure_expr *ret = pure_listv(n, xv); free(xv);
+  return ret;
+}
+
+pure_expr *lv2pure_midi_outputs(lv2plugin_t *p)
+{
+  if (!p) return 0;
+  size_t n = p->n_evout;
+  pure_expr **xv = (pure_expr**)calloc(n, sizeof(pure_expr*));
+  for (size_t i = 0; i < n; i++)
+    xv[i] = pure_int(p->evout[i]);
+  pure_expr *ret = pure_listv(n, xv); free(xv);
+  return ret;
+}
+
 /* Return the plugin path. After plugin instantiation is complete, this points
    to the bundle directory, so that the plugin may find any auxiliary data
    files there. NOTE: This information is *not* yet available at instantiation
