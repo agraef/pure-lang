@@ -127,6 +127,61 @@ pure_expr *lv2pure_path(lv2plugin_t *p)
     return 0;
 }
 
+// Helper function to process transport information.
+
+static pure_expr *position(lv2plugin_t *p, const LV2_Atom_Object* obj)
+{
+  LV2_Atom *beat = NULL, *bpm = NULL, *speed = NULL, *bar = NULL,
+    *beats_per_bar = NULL, *beat_unit = NULL;
+  pure_expr *xv[5], *mapsto = pure_symbol(pure_sym("=>"));
+  uint32_t n = 0;
+  lv2_atom_object_get(obj,
+		      p->time_beat, &beat,
+		      p->time_bpm, &bpm,
+		      p->time_beats_per_bar, &beats_per_bar,
+		      p->time_beat_unit, &beat_unit,
+		      p->time_speed, &speed,
+		      p->time_bar, &bar,
+		      NULL);
+  if (bpm && bpm->type == p->atom_float) {
+    // tempo
+    const float _bpm = ((LV2_Atom_Float*)bpm)->body;
+    xv[n++] = pure_appl(mapsto, 2, pure_symbol(pure_sym("lv2::bpm")),
+			pure_double(_bpm));
+  }
+  if (beats_per_bar && beats_per_bar->type == p->atom_float &&
+      beat_unit && beat_unit->type == p->atom_int) {
+    // meter
+    const float _beats_per_bar = ((LV2_Atom_Float*)beats_per_bar)->body;
+    bool is_int = _beats_per_bar == (int)_beats_per_bar;
+    pure_expr *x = is_int?pure_int((int)_beats_per_bar):
+      pure_double(_beats_per_bar);
+    const unsigned _beat_unit = ((LV2_Atom_Int*)beat_unit)->body;
+    xv[n++] = pure_appl(mapsto, 2, pure_symbol(pure_sym("lv2::meter")),
+			pure_tuplel(2, x, pure_int(_beat_unit)));
+  }
+  if (speed && speed->type == p->atom_float) {
+    // speed change, e.g. 0 (stop) to 1 (play)
+    const float _speed = ((LV2_Atom_Float*)speed)->body;
+    xv[n++] = pure_appl(mapsto, 2, pure_symbol(pure_sym("lv2::speed")),
+			pure_double(_speed));
+  }
+  if (bar && bar->type == p->atom_long) {
+    // bar number
+    const long _bar = ((LV2_Atom_Long*)bar)->body;
+    xv[n++] = pure_appl(mapsto, 2, pure_symbol(pure_sym("lv2::bar")),
+			pure_int(_bar));
+  }
+  if (beat && beat->type == p->atom_float) {
+    // beat position
+    const float _beat = ((LV2_Atom_Float*)beat)->body;
+    xv[n++] = pure_appl(mapsto, 2, pure_symbol(pure_sym("lv2::beat")),
+			pure_double(_beat));
+  }
+  pure_freenew(mapsto);
+  return pure_matrix_columnsv(n, xv);
+}
+
 /* Get a port value. The port is specified using its index. For a control port
    this yields a double, for audio and CV ports a double vector (containing a
    block of audio samples). For MIDI ports the result is a list of pairs of
@@ -146,19 +201,24 @@ pure_expr *lv2pure_get(lv2plugin_t *p, int k)
   case 2: case 3:
     return matrix_from_float_array(1, p->nsamples, p->data[k]);
   case 4:
-    if (p->ty[k] & 4) {
+    if (p->flags[k] & 12) {
       LV2_Atom_Sequence *seq = (LV2_Atom_Sequence*)p->data[k];
-      LV2_Atom_Event* i;
       size_t n = 0;
       pure_expr **xv;
+      bool have_midi = p->flags[k] & 4, have_time = p->flags[k] & 8;
       LV2_ATOM_SEQUENCE_FOREACH(seq, ev) {
-	if (ev->body.type == p->midi_event) n++;
+	if (have_midi && ev->body.type == p->midi_event)
+	  n++;
+	else if (have_time && ev->body.type == p->atom_blank) {
+	  const LV2_Atom_Object *obj = (const LV2_Atom_Object*)&ev->body;
+	  if (obj->body.otype == p->time_pos) n++;
+	}
       }
       if (n == 0) return pure_listv(0, 0);
       xv = alloca(n*sizeof(pure_expr*));
       n = 0;
       LV2_ATOM_SEQUENCE_FOREACH(seq, ev) {
-	if (ev->body.type == p->midi_event) {
+	if (have_midi && ev->body.type == p->midi_event) {
 	  uint8_t *data = (uint8_t*)(ev+1);
 	  uint32_t size = ev->body.size;
 	  int *v = (int*)alloca(size*sizeof(int));
@@ -168,6 +228,13 @@ pure_expr *lv2pure_get(lv2plugin_t *p, int k)
 	  // that the 32 most significant bits are never used?
 	  xv[n++] = pure_tuplel(2, pure_int((uint32_t)ev->time.frames),
 				matrix_from_int_array(1, size, v));
+	} else if (have_time && ev->body.type == p->atom_blank) {
+	  const LV2_Atom_Object *obj = (const LV2_Atom_Object*)&ev->body;
+	  if (obj->body.otype == p->time_pos) {
+	    // transport information
+	    xv[n++] = pure_tuplel(2, pure_int((uint32_t)ev->time.frames),
+				  position(p, obj));
+	  }
 	}
       }
       return pure_listv(n, xv);

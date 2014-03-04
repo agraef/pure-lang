@@ -8,6 +8,7 @@
 #include <lv2/lv2plug.in/ns/ext/urid/urid.h>
 #include <lv2/lv2plug.in/ns/ext/atom/atom.h>
 #include <lv2/lv2plug.in/ns/ext/atom/forge.h>
+#include <lv2/lv2plug.in/ns/ext/time/time.h>
 
 typedef struct {
   // features
@@ -15,7 +16,9 @@ typedef struct {
 
   // URIs
   uint32_t atom_chunk, atom_sequence, midi_event,
-    atom_float, atom_double, atom_int, atom_long;
+    atom_blank, atom_float, atom_double, atom_int, atom_long,
+    time_pos, time_beat, time_bpm, time_speed, time_bar,
+    time_beats_per_bar, time_beat_unit;
 
   // atom forge
   LV2_Atom_Forge forge;

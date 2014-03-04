@@ -188,9 +188,9 @@ static lv2plugin_t *create_plugin(void)
       // Standard LV2 hosts like jalv don't seem to like ports which are both
       // input (bit 1 of flags set) and output (bit 2) ports, so make sure
       // that it is either one or the other.
-      if (m > l && check(i, "flags", pure_is_int(yv[l], &k) && k>0 && k<32 &&
+      if (m > l && check(i, "flags", pure_is_int(yv[l], &k) && k>0 && k<64 &&
 			 (k&3) != 0 && (k&3) != 3))
-	plugin->flags[i] = k | ((plugin->ty[i] == 4)?4:0);
+	plugin->flags[i] = k;
       else
 	plugin->flags[i] = 1 | (k&4);
       l++;
@@ -304,10 +304,18 @@ instantiate(const LV2_Descriptor*     descriptor,
   plugin->atom_chunk = map->map(map->handle, LV2_ATOM__Chunk);
   plugin->atom_sequence = map->map(map->handle, LV2_ATOM__Sequence);
   plugin->midi_event = map->map(map->handle, MIDI_EVENT_URI);
+  plugin->atom_blank = map->map(map->handle, LV2_ATOM__Blank);
   plugin->atom_float = map->map(map->handle, LV2_ATOM__Float);
   plugin->atom_double = map->map(map->handle, LV2_ATOM__Double);
   plugin->atom_int = map->map(map->handle, LV2_ATOM__Int);
   plugin->atom_long = map->map(map->handle, LV2_ATOM__Long);
+  plugin->time_pos = map->map(map->handle, LV2_TIME__Position);
+  plugin->time_beat = map->map(map->handle, LV2_TIME__barBeat);
+  plugin->time_bpm = map->map(map->handle, LV2_TIME__beatsPerMinute);
+  plugin->time_speed = map->map(map->handle, LV2_TIME__speed);
+  plugin->time_bar = map->map(map->handle, LV2_TIME__bar);
+  plugin->time_beats_per_bar = map->map(map->handle, LV2_TIME__beatsPerBar);
+  plugin->time_beat_unit = map->map(map->handle, LV2_TIME__beatUnit);
 
   plugin->map = map;
 
@@ -459,6 +467,7 @@ int lv2_dyn_manifest_get_data(LV2_Dyn_Manifest_Handle handle,
 @prefix rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n\
 @prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .\n\
 @prefix units: <http://lv2plug.in/ns/extensions/units#> .\n\
+@prefix time:  <http://lv2plug.in/ns/ext/time#> .\n\
 <%s>\n\
        a lv2:Plugin ;\n\
        doap:name \"%s\" ;\n\
@@ -479,10 +488,10 @@ int lv2_dyn_manifest_get_data(LV2_Dyn_Manifest_Handle handle,
 	      ((plugin->flags[i]&3)==1)?"Input":
 	      ((plugin->flags[i]&3)==2)?"Output":"",
 	      i, plugin->sym[i], plugin->name[i]);
-      if (plugin->flags[i]&8)
+      if (plugin->flags[i]&16)
 	fprintf(fp, "\
 	lv2:portProperty lv2:toggled ;\n");
-      if (plugin->flags[i]&16)
+      if (plugin->flags[i]&32)
 	fprintf(fp, "\
 	lv2:portProperty lv2:integer ;\n");
       if (!isnan(plugin->mins[i]) || !isnan(plugin->maxs[i]))
@@ -532,20 +541,23 @@ int lv2_dyn_manifest_get_data(LV2_Dyn_Manifest_Handle handle,
 	fprintf(fp, "\
 	lv2:default %g ;\n", plugin->defs[i]);
       break;
-    case 4: // event (MIDI) port
+    case 4: // atom (MIDI) port
       fprintf(fp, "\
 	a atom:AtomPort ;\n\
 	a lv2:%sPort ;\n\
 	lv2:index %d ;\n\
 	lv2:symbol \"%s\" ;\n\
-	lv2:name \"%s\" ;\n",
+	lv2:name \"%s\" ;\n\
+	atom:bufferType atom:Sequence ;\n",
 	      ((plugin->flags[i]&3)==1)?"Input":
 	      ((plugin->flags[i]&3)==2)?"Output":"",
 	      i, plugin->sym[i], plugin->name[i]);
       if (plugin->flags[i]&4)
 	fprintf(fp, "\
-	atom:bufferType atom:Sequence ;\n\
 	atom:supports <http://lv2plug.in/ns/ext/midi#MidiEvent> ;\n");
+      if (plugin->flags[i]&8)
+	fprintf(fp, "\
+	atom:supports time:Position ;\n");
       break;
     }
     fprintf(fp, "    ]");
