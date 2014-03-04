@@ -38,7 +38,7 @@ uninstall:
 	rm -f $(addprefix "$(DESTDIR)$(purelibdir)/", lv2$(DLL) lv2.pure lv2pure.c lv2pure.h) "$(DESTDIR)$(bindir)/pure2lv2"
 
 DISTFILES = COPYING Makefile README lv2.c lv2.pure lv2pure.c lv2pure.h \
-pure2lv2 *.ttl examples/*.pure
+pure2lv2 *.ttl examples/Makefile examples/*.pure
 
 dist:
 	rm -rf $(dist)
