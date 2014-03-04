@@ -1,5 +1,5 @@
 
-/* Some interface operations for use by LV2 Pure plugins. 2014-02-28 Copyright
+/* Some interface operations for use by Pure LV2 plugins. 2014-02-28 Copyright
    (c) 2014 by Albert Gräf <aggraef@gmail.com>. Distributed under the new BSD
    license, please see the accompanying COPYING file for details. */
 

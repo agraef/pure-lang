@@ -1,5 +1,5 @@
 
-dist = lv2-pure-$(version)
+dist = pure-lv2-$(version)
 version = 0.1
 
 # compiler flags (these can be overridden)
