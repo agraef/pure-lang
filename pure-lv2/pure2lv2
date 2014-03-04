@@ -32,6 +32,7 @@ name=`echo -n "$plugin" | tr -c [:alnum:] _`
 bundledir="$plugin.lv2"
 loader="__${name}_main__"
 tmpname="__${plugin}_main__.pure"
+logname="${plugin}.log"
 objname="${plugin}.o"
 
 if [ "$name" != "$plugin" ] ; then
@@ -47,23 +48,24 @@ libdir=`pkg-config pure --variable libdir`
 MOD_CFLAGS="$PIC `pkg-config pure --cflags` $CFLAGS $CPPFLAGS"
 MOD_LDFLAGS="`pkg-config pure --libs` $LDFLAGS"
 
-# NOTE: This requires a linker that handles the -rpath option. Otherwise you
-# may have to add the $libdir directory to your system dll search path so
-# that the linked library modules are found when the plugin module is loaded.
-extralibs="-Wl,-rpath=\"$libdir/pure\" $libdir/pure/lv2$DLL"
-
 # NOTE: The following requires that the cwd is writeable, since we create some
 # temp files and the bundle there.
 
-# Invoke Pure to compile the plugin.
+# Invoke Pure to compile the plugin, capture output in a logfile.
+echo pure $PIC -c $filename -o $objname --main=$loader
 echo "#! --required $name" > $tmpname
-pure $PIC -c $tmpname $filename -o $objname --main=$loader
+(pure -v0100 $PIC -c $tmpname $filename -o $objname --main=$loader 2>&1) | tee $logname
 # check the result, in case anything went wrong during compilation
 rc=$?
 rm -f $tmpname
 if [ $rc -ne 0 ] ; then
+  rm -f $logname
   exit $rc
 fi
+
+# Grab the libraries we need to link against from the logfile.
+extralibs=`tail -1 $logname | sed -e "s/^Link with: .*[.]o//"`
+rm -f $logname
 
 # We should have an object file now; if not then something went wrong and we
 # bail out with an error message.
@@ -81,6 +83,7 @@ if [ ! -d "$bundledir" ] ; then
 fi
 
 # Link with the wrapper module.
+echo $CC $shared -o "$bundledir/$plugin$DLL" $MOD_CFLAGS -DURI_PREFIX="\"$uriprefix/\"" -DPLUGIN_NAME="\"$plugin\"" -DPLUGIN_FUN="\"$name\"" -DLOADER_NAME="$loader" -std=c99 $libdir/pure/lv2pure.c $objname $MOD_LDFLAGS $extralibs $LIBS
 $CC $shared -o "$bundledir/$plugin$DLL" $MOD_CFLAGS -DURI_PREFIX="\"$uriprefix/\"" -DPLUGIN_NAME="\"$plugin\"" -DPLUGIN_FUN="\"$name\"" -DLOADER_NAME="$loader" -std=c99 $libdir/pure/lv2pure.c $objname $MOD_LDFLAGS $extralibs $LIBS
 rm -f $objname
 
@@ -114,4 +117,5 @@ sed -e"s?@name@?$plugin?g" -e"s?@uri@?$uriprefix/$plugin?g" -e"s?@dllext@?$DLL?g
 #     ] .
 EOF
 
+echo bundle written to $bundledir
 exit 0
