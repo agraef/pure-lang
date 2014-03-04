@@ -76,8 +76,13 @@ extern int lv2pure_nsamples(LV2Plugin *p) = nsamples;
 extern expr *lv2pure_path(LV2Plugin *p) = path;
 
 /* Get and set port values. The actual values depend on the port type (double
-   for control ports, double vector for audio and cv ports, list of int
-   vectors for midi ports). */
+   for control ports, double vector for audio and cv ports, list of
+   timestamped midi events for midi ports). In the latter case, each midi
+   message is denoted as a pair consisting of an int (the timestamp, which is
+   a frame count relative to the beginning of the current block of samples)
+   and an int vector (the bytes making up a single MIDI message). On output
+   (lv2::set_port), the timestamp is optional (a zero default value is used in
+   this case). */
 
 extern expr *lv2pure_get(LV2Plugin *p, int k) = get_port;
 extern expr *lv2pure_set(LV2Plugin *p, int k, expr *x) = set_port;

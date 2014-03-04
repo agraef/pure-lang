@@ -3,14 +3,11 @@
 
 using lv2, orddict, system;
 
-/* Please note that this plugin requires the pure-stldict module. To compile
-   this to an LV2 plugin bundle:
+// Please note that this plugin requires the pure-stldict module. To compile
+// this to an LV2 plugin bundle: pure2lv2 pure_transp.pure
 
-   LIBS=`pkg-config pure --variable libdir`/pure/orddict.so \
-   pure2lv2 pure_transp.pure
-
-   Please also see pure_amp.pure for an explanation of the plugin function and
-   its arguments. */
+// Please also see pure_amp.pure for an explanation of the plugin function and
+// its arguments.
 
 pure_transp self = plugin with
   // Manifest: one control port, one midi input and output.
@@ -34,7 +31,7 @@ pure_transp self = plugin with
     //~listp seq || null seq || do (printf "midiin:  %s\n".str) seq;
     // Transpose.
     seq = map transp seq with
-      transp {s,n,v} = {s,n+amount,v} if h == 0x80 || h == 0x90 when
+      transp (t,{s,n,v}) = t,{s,n+amount,v} if h == 0x80 || h == 0x90 when
 	h = s and 0xf0;
       end;
       transp x = x otherwise;
@@ -47,9 +44,9 @@ pure_transp self = plugin with
     // Output the messages on port #2 (midi output).
     lv2::set_port self 2 seq;
     // Keep track of sounding notes.
-    do (delete notes) [n | {s,n,v} = seq; s and 0xf0 == 0x80];
+    do (delete notes) [n | t,{s,n,v} = seq; s and 0xf0 == 0x80];
     do (insert notes)
-    [n=>{0x80 or (s and 0xf),n,64} | {s,n,v} = seq; s and 0xf0 == 0x90];
+    [n=>{0x80 or (s and 0xf),n,64} | t,{s,n,v} = seq; s and 0xf0 == 0x90];
   end;
 end when
   notes = orddict [];

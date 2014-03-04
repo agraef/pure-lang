@@ -79,9 +79,11 @@ pure_expr *lv2pure_path(lv2plugin_t *p)
 
 /* Get a port value. The port is specified using its index. For a control port
    this yields a double, for audio and CV ports a double vector (containing a
-   block of audio samples), for MIDI ports a list of int vectors, where each
-   vector contains the bytes of a single MIDI message. This operation fails if
-   the port number is out of range or the port data isn't recognized. */
+   block of audio samples). For MIDI ports the result is a list of pairs of
+   ints and int vectors; the int value denotes a timestamp (frame number
+   relative to the current block of audio samples), and the vector contains
+   the bytes of a single MIDI message. This operation fails if the port number
+   is out of range or the type of port data isn't recognized. */
 
 pure_expr *lv2pure_get(lv2plugin_t *p, int k)
 {
@@ -112,7 +114,10 @@ pure_expr *lv2pure_get(lv2plugin_t *p, int k)
 	  int *v = (int*)alloca(size*sizeof(int));
 	  for (uint32_t k = 0; k < size; k++)
 	    v[k] = data[k];
-	  xv[n++] = matrix_from_int_array(1, size, v);
+	  // NOTE: ev->time.frames is actually a 64 byte value, but it seems
+	  // that the 32 most significant bits are never used?
+	  xv[n++] = pure_tuplel(2, pure_int((uint32_t)ev->time.frames),
+				matrix_from_int_array(1, size, v));
 	}
       }
       return pure_listv(n, xv);
@@ -174,18 +179,32 @@ pure_expr *lv2pure_set(lv2plugin_t *p, int k, pure_expr *x)
 	if (n == 0) return pure_tuplel(0, 0);
 	bool ret = true;
 	for (size_t i = 0; i < n; i++) {
+	  uint32_t frames = 0;
+	  size_t m;
+	  pure_expr *x, **yv;
 	  void *data; uint8_t *v;
-	  if (!pure_is_int_matrix(xv[i], &data) || matrix_size(xv[i]) == 0 ||
-	      !(v = matrix_to_byte_array(NULL, xv[i]))) {
-#if 1 // you might want to enable this for debugging purposes
-	    char *s = str(xv[i]);
+	  bool ok = pure_is_tuplev(xv[i], &m, &yv); // always true
+	  // We allow the timestamp to be omitted (assuming 0), so we expect a
+	  // tuple of one or two values here.
+	  if (m == 1)
+	    x = yv[0];
+	  else if (m ==2 && pure_is_int(yv[0], &frames))
+	    x = yv[1];
+	  else
+	    ok = false;
+	  free(yv);
+	  ok = ok && pure_is_int_matrix(x, &data);
+	  uint32_t k = ok?matrix_size(x):0;
+	  ok = ok && k != 0 && (v = matrix_to_byte_array(NULL, x));
+	  if (!ok) {
+#if 0 // you might want to enable this for debugging purposes
+	    char *s = str(x);
 	    fprintf(stderr, "%s: dropped invalid MIDI event '%s'\n", p->uri, s);
 	    free(s);
 #endif
 	    continue;
 	  }
-	  uint32_t k = matrix_size(xv[i]);
-	  ret = forge_midi(p, 0, v, k);
+	  ret = forge_midi(p, frames, v, k);
  	  free(v);
 	  if (!ret) {
 #if 1
