@@ -141,7 +141,7 @@ static lv2plugin_t *create_plugin(void)
     plugin->sym = calloc(n, sizeof(char*));
     plugin->name = calloc(n, sizeof(char*));
     plugin->ty = calloc(n, sizeof(uint8_t));
-    plugin->flags = calloc(n, sizeof(uint8_t));
+    plugin->flags = calloc(n, sizeof(uint16_t));
     plugin->mins = calloc(n, sizeof(float));
     plugin->maxs = calloc(n, sizeof(float));
     plugin->defs = calloc(n, sizeof(float));
@@ -188,7 +188,7 @@ static lv2plugin_t *create_plugin(void)
       // Standard LV2 hosts like jalv don't seem to like ports which are both
       // input (bit 1 of flags set) and output (bit 2) ports, so make sure
       // that it is either one or the other.
-      if (m > l && check(i, "flags", pure_is_int(yv[l], &k) && k>0 && k<64 &&
+      if (m > l && check(i, "flags", pure_is_int(yv[l], &k) &&
 			 (k&3) != 0 && (k&3) != 3))
 	plugin->flags[i] = k;
       else
@@ -494,6 +494,35 @@ int lv2_dyn_manifest_get_data(LV2_Dyn_Manifest_Handle handle,
       if (plugin->flags[i]&32)
 	fprintf(fp, "\
 	lv2:portProperty lv2:integer ;\n");
+      // special port designations for time/transport information (Qtractor)
+      uint8_t bit = 5;
+      if (plugin->flags[i]&(1<<++bit))
+	fprintf(fp, "\
+	lv2:designation time:position ;\n");
+      if (plugin->flags[i]&(1<<++bit))
+	fprintf(fp, "\
+	lv2:designation time:bar ;\n");
+      if (plugin->flags[i]&(1<<++bit))
+	fprintf(fp, "\
+	lv2:designation time:beat ;\n");
+      if (plugin->flags[i]&(1<<++bit))
+	fprintf(fp, "\
+	lv2:designation time:beatUnit ;\n");
+      if (plugin->flags[i]&(1<<++bit))
+	fprintf(fp, "\
+	lv2:designation time:beatsPerBar ;\n");
+      if (plugin->flags[i]&(1<<++bit))
+	fprintf(fp, "\
+	lv2:designation time:beatsPerMinute ;\n");
+      if (plugin->flags[i]&(1<<++bit))
+	fprintf(fp, "\
+	lv2:designation time:frame ;\n");
+      if (plugin->flags[i]&(1<<++bit))
+	fprintf(fp, "\
+	lv2:designation time:framesPerSecond ;\n");
+      if (plugin->flags[i]&(1<<++bit))
+	fprintf(fp, "\
+	lv2:designation time:speed ;\n");
       if (!isnan(plugin->mins[i]) || !isnan(plugin->maxs[i]))
 	fprintf(fp, "\
         lv2:portProperty epp:hasStrictBounds ;\n");
@@ -555,6 +584,7 @@ int lv2_dyn_manifest_get_data(LV2_Dyn_Manifest_Handle handle,
       if (plugin->flags[i]&4)
 	fprintf(fp, "\
 	atom:supports <http://lv2plug.in/ns/ext/midi#MidiEvent> ;\n");
+      // time/transport messages (Ardour)
       if (plugin->flags[i]&8)
 	fprintf(fp, "\
 	atom:supports time:Position ;\n");

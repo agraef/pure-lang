@@ -18,8 +18,12 @@ nonfix bpm meter speed bar beat;
 // Some constants for the manifest (port types and flags).
 const control_port, audio_port, cv_port, atom_port = 1,2,3,4;
 const input_port, output_port, midi_port, time_port = 1,2,4,8;
-// Add these flags to indicate a toggle (0/1) or integer control.
+// Flags to indicate a toggle (0/1) or integer control.
 const toggle, integer = 16,32;
+// Flags for special control input port designations for transport data.
+const time_ticks, time_bar, time_beat, time_beat_unit, time_beats_per_bar,
+  time_bpm, time_frame, time_fps, time_speed = 1<<6, 1<<7, 1<<8, 1<<9, 1<<10,
+    1<<11, 1<<12, 1<<13, 1<<14;
 
 // Some common type/flag combinations.
 const controlin   = control_port, input_port;
@@ -31,7 +35,7 @@ const cvout       = cv_port, output_port;
 const midiin      = atom_port, input_port or midi_port;
 const midiout     = atom_port, output_port or midi_port;
 
-// atom/midi inputs with transport information
+// atom/midi inputs with transport information (Ardour)
 const timein      = atom_port, input_port or time_port;
 const time_midiin = atom_port, input_port or midi_port or time_port;
 
@@ -40,6 +44,17 @@ const controlin_toggle   = control_port, input_port or toggle;
 const controlout_toggle  = control_port, output_port or toggle;
 const controlin_integer  = control_port, input_port or integer;
 const controlout_integer = control_port, output_port or integer;
+
+// time/transport controls (Qtractor)
+const controlin_ticks         = control_port, input_port or time_ticks;
+const controlin_bar           = control_port, input_port or time_bar;
+const controlin_beat          = control_port, input_port or time_beat;
+const controlin_beat_unit     = control_port, input_port or time_beat_unit;
+const controlin_beats_per_bar = control_port, input_port or time_beats_per_bar;
+const controlin_bpm           = control_port, input_port or time_bpm;
+const controlin_frame         = control_port, input_port or time_frame;
+const controlin_fps           = control_port, input_port or time_fps;
+const controlin_speed         = control_port, input_port or time_speed;
 
 /* Retrieve various information about the plugin (manifest, activation status,
    sample rate, block size, bundle path). Note that the plugin parameter to be

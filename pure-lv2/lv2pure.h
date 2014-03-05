@@ -42,7 +42,8 @@ typedef struct {
   // Port names and symbols.
   char **sym, **name;
   // Port types and flags (index range: 0..n-1).
-  uint8_t *ty, *flags;
+  uint8_t *ty;
+  uint16_t *flags;
   // Ranges and default values of control ports (0..n-1).
   float *mins, *maxs, *defs;
   // Port data (0..n-1).
