@@ -118,14 +118,14 @@ extern expr *lv2pure_midi_outputs(LV2Plugin *p) = midi_outputs;
    MIDI message). On output (lv2::set_port), the timestamp is optional (a zero
    default value is used in this case).
 
-   lv2::get_port also offers basic support for the LV2 time extension. On atom
-   input ports, if the lv2::time_port flag is set then you receive transport
-   information such as current tempo, meter etc., if the LV2 host supports it
-   (Ardour does, many other hosts don't). Note that if the port has both the
-   lv2::midi_port and the lv2::time_port flag set, then transport information
-   and midi events will be intermingled, as the host delivers them. The
-   transport information is encoded as a pair consisting of a timestamp and a
-   Pure record containing the available information. The record may have the
+   lv2::get_port also offers basic support for the LV2 time extension.
+   Unfortunately, LV2 hosts implement this extension in very different ways,
+   if at all. Specifically, Ardour will deliver special position events if an
+   atom input port has the lv2::time_port flag is set. Note that if the port
+   has both the lv2::midi_port and the lv2::time_port flag set, then transport
+   information and midi events will be intermingled, as the host delivers
+   them. The position data is encoded as a pair consisting of a timestamp and
+   a Pure record containing the available information. The record may have the
    following fields:
 
    - lv2::bpm (double): Tempo in beats per minute.
@@ -149,13 +149,20 @@ extern expr *lv2pure_midi_outputs(LV2Plugin *p) = midi_outputs;
      so a beat number of, say, 1.5 in a 4/4 meter would indicate the fourth
      quaver of the bar.
 
-   Note that some or all of these fields may be missing; it is completely up
-   to the LV2 host if and how it provides this information. Also note that
-   these messages will generally only be delivered if there is a change in the
-   transport state (tempo change, transport started or stopped, manual change
-   of the playback position, etc.). So this information can be used to
-   synchronize playback with the LV2 host, but the plugin still needs to count
-   off musical time by itself if this information is needed. */
+   Note that these messages will generally only be delivered if there is a
+   change in the transport state (tempo change, transport started or stopped,
+   manual change of the playback position, etc.). So this information can be
+   used to synchronize playback with the LV2 host, but the plugin still needs
+   to count off musical time by itself if this information is needed.
+
+   Qtractor implements the time extension in a completely different way, by
+   assigning them to control input ports which have some special designations
+   set on them. The interpretation of the position data is also slightly
+   different (e.g., Qtractor counts bars and beats from 1, not from 0). To
+   access this data from a Pure plugin, you'll have to set the corresponding
+   flags in the port descriptions (lv2::time_ticks, lv2::time_bar, etc.). You
+   can then use lv2::get_port on the corresponding control ports to read the
+   position data as usual. */
 
 extern expr *lv2pure_get(LV2Plugin *p, int k) = get_port;
 extern expr *lv2pure_set(LV2Plugin *p, int k, expr *x) = set_port;
