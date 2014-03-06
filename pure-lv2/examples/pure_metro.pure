@@ -41,9 +41,13 @@ pure_metro self = plugin with
     get beat < beats_per_bar ||
     (put beat (get beat-floor (get beat)) $$ put bar (get bar+1));
   end;
-  // Process the transport information. Returns the new beat value at the end
-  // of the cycle, along with the sample number at which the next beat is due
-  // (if any). This is a bit tricky since the tempo may change along the way.
+  // This is the core of the algorithm which processes the transport
+  // information. The tricky part is that the tempo may change along the way,
+  // so we need to apply the bpm value in effect at a certain point in time
+  // when translating between musical time and sample counts (i.e., physical
+  // time). The algorithm returns the new beat value at the end of the cycle,
+  // along with the sample number in the range 0..nsamples-1 at which the next
+  // beat is due (if any).
   process seq = b2,tn when
     t,b1,tn = foldl process (0,get beat,-1) seq;
     b2,tn = next (b1,tn) (t,nsamples);
