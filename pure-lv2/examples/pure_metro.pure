@@ -1,0 +1,85 @@
+
+/* A metronome. This illustrates how to employ musical time and position data
+   in a plugin. It requires an LV2 host supporting the time extension to work.
+   Ardour works, Qtractor doesn't right now (it delivers the transport
+   information in a different way). */
+
+using lv2, system;
+
+pure_metro self = plugin with
+  plugin lv2::info =
+    // Note the midi input port which has the lv2::time_port flag set. This
+    // instructs the host to deliver transport events along with the midi
+    // messages.
+    [("midiin", lv2::time_midiin), ("midiout", lv2::midiout)];
+  plugin () = () when
+    // Our midi/time event input (midi messages will be simply passed through).
+    seq = lv2::get_port self 0;
+    // Process the transport information.
+    next_beat,offset = process seq;
+    rolling = get speed > 0.0;
+    beats_per_bar,_ = get meter;
+    // If transport is rolling and the next beat is due...
+    seq = if rolling && offset >= 0 then seq when
+      // Add a metronome click to the output sequence.
+      beat = ceil (get beat);
+      n = if beat == 0 || beat == beats_per_bar then 76 else 77;
+      seq = (offset,{0x89,n,127}) : (offset,{0x99,n,127}) : seq;
+      // Not sure whether this is really needed, but to be on the safe side we
+      // sort the midi events w.r.t. timestamps here.
+      seq = sort less seq with
+	less (t1,_) (t2,_) = t1 < t2;
+	less _ (t2,_) = 0 < t2;
+	less (t1,_) _ = t1 < 0;
+	less _ _ = false;
+      end;
+    end else seq;
+    // midi output
+    lv2::set_port self 1 seq;
+    // Update for the next cycle.
+    ~rolling || put beat next_beat;
+    get beat < beats_per_bar ||
+    (put beat (get beat-floor (get beat)) $$ put bar (get bar+1));
+  end;
+  // Process the transport information. Returns the new beat value at the end
+  // of the cycle, along with the sample number at which the next beat is due
+  // (if any). This is a bit tricky since the tempo may change along the way.
+  process seq = b2,tn when
+    t,b1,tn = foldl process (0,get beat,-1) seq;
+    b2,tn = next (b1,tn) (t,nsamples);
+    tn = min tn (nsamples-1);
+  end with
+    next (b1,tn) (t1,t2) = (b2,tn) when
+      samples_per_beat = 60.0/get bpm*4/beat_unit*rate;
+      b2 = b1+(t2-t1)/samples_per_beat;
+      tn = if tn>=0 then tn
+	   else if b2>=due then t1+int ((b2-b1)*samples_per_beat)
+	   else -1;
+    end;
+    process (t1,b1,tn) (t2,msg) = (t2,b2,tn) when
+      b2,tn = next (b1,tn) (t1,t2);
+      // Update all the transport information we got.
+      ~member msg lv2::bpm || put bpm (msg!lv2::bpm);
+      ~member msg lv2::meter || put meter (msg!lv2::meter);
+      ~member msg lv2::speed || put speed (msg!lv2::speed);
+      ~member msg lv2::bar || put bar (msg!lv2::bar);
+      ~member msg lv2::beat || put beat (msg!lv2::beat);
+      printf "%d:%g %d/%d bpm %g speed %g\n"
+      (get bar,get beat,get meter,get bpm,get speed);
+      fflush NULL;
+    end if recordp msg;
+    // Just ignore other MIDI messages here.
+    process x _ = x otherwise;
+  end when
+    // sample rate (samples/s) and block size (samples/cycle)
+    rate = lv2::rate self; nsamples = lv2::nsamples self;
+    // meter
+    beats_per_bar,beat_unit = get meter;
+    // musical time is now:
+    now = get beat;
+    // next beat is due:
+    due = ceil now;
+  end;
+end when
+  bpm,meter,speed,bar,beat = ref 120.0,ref (4,4),ref 0.0,ref 0,ref 0.0;
+end;
