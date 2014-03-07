@@ -6,84 +6,135 @@
 
 using lv2, system;
 
+/* Plugin state (current transport information). We start out with some
+   reasonable defaults here, but note that this plugin won't do anything
+   unless it receives at least one transport message which sets speed to a
+   nonzero value. */
+
+let bpm,meter,speed,bar,beat = ref 120.0,ref (4,4),ref 0.0,ref 0,ref 0.0;
+
 pure_metro self = plugin with
+
   plugin lv2::info =
     // Note the midi input port which has the lv2::time_port flag set. This
     // instructs the host to deliver transport events along with the midi
     // messages.
     [("midiin", lv2::time_midiin), ("midiout", lv2::midiout)];
+
   plugin () = () when
     // Our midi/time event input (midi messages will be simply passed through).
     seq = lv2::get_port self 0;
-    // Process the transport information.
-    next_beat,offset = process seq;
-    rolling = get speed > 0.0;
-    beats_per_bar,_ = get meter;
-    // If transport is rolling and the next beat is due...
-    seq = if rolling && offset >= 0 then seq when
-      // Add a metronome click to the output sequence.
-      beat = ceil (get beat);
-      n = if beat == 0 || beat == beats_per_bar then 76 else 77;
-      seq = (offset,{0x89,n,127}) : (offset,{0x99,n,127}) : seq;
-      // Not sure whether this is really needed, but to be on the safe side we
-      // sort the midi events w.r.t. timestamps here.
-      seq = sort less seq with
-	less (t1,_) (t2,_) = t1 < t2;
-	less _ (t2,_) = 0 < t2;
-	less (t1,_) _ = t1 < 0;
-	less _ _ = false;
-      end;
-    end else seq;
-    // midi output
+    // Process all midi messages and the transport information of this cycle.
+    seq = process id metro seq;
+    // Resulting midi output.
     lv2::set_port self 1 seq;
-    // Update for the next cycle.
-    ~rolling || put beat next_beat;
-    get beat < beats_per_bar ||
-    (put beat (get beat-floor (get beat)) $$ put bar (get bar+1));
   end;
-  // This is the core of the algorithm which processes the transport
-  // information. The tricky part is that the tempo may change along the way,
-  // so we need to apply the bpm value in effect at a certain point in time
-  // when translating between musical time and sample counts (i.e., physical
-  // time). The algorithm returns the new beat value at the end of the cycle,
-  // along with the sample number in the range 0..nsamples-1 at which the next
-  // beat is due (if any).
-  process seq = b2,tn when
-    t,b1,tn = foldl process (0,get beat,-1) seq;
-    b2,tn = next (b1,tn) (t,nsamples);
-    tn = min tn (nsamples-1);
+
+  // Check whether transport is rolling.
+  rolling = get speed > 0.0;
+  // Current meter (this may change during the cycle).
+  beats_per_bar = get meter!0;
+  beat_unit = get meter!1;
+
+  // Add a metronome click at a given offset.
+  metro (offset,beat) = [(offset,{0x89,n,127}), (offset,{0x99,n,127})] when
+    // Uncomment this to have beats printed on stdout, for debugging purposes.
+    //printf "beat at %g / %d, offset %d\n" (beat,beats_per_bar,offset);
+    n = if beat == 0 then 76 else 77;
+  end if rolling;
+  metro _ = [] otherwise;
+
+  /* This is the core of the algorithm which processes midi messages and
+     updates the transport information along the way. The result sequence is
+     pieced together by applying the midifun function to each midi message and
+     the beatfun function to the current sample offset and musical time at a
+     beat. These functions may return either a single MIDI event or a list of
+     such events. The beatfun function is invoked at most once at the exact
+     sample offset of the next beat if it falls within the current cycle. The
+     algorithm returns the constructed sequence and updates the beat value
+     (musical time) at the end of the cycle accordingly.
+
+     The tricky part here is that the bpm value and other transport parameters
+     may change along the way, so we need to apply the tempo in effect at a
+     certain point in time when translating between musical time and sample
+     offsets.
+
+     NOTE: We denote musical time in beats using the variable b1, b2, etc.,
+     and physical time (sample offsets) using t1, t2, etc. tn denotes the
+     calculated offset of the beat as soon as we hit it. The process function
+     works on a state denoted as a tuple (t,b,tn,seq) where t is the current
+     sample offset, b the current musical time, tn the beat offset (or -1 if
+     not yet determined) and seq the output sequence constructed so far. The
+     output sequence is actually constructed in reverse, to get linear
+     complexity; the process function finally reverses it again to bring the
+     MIDI events back into the original order. The calling function is assumed
+     to leave midi event times untouched, which is trivially the case in this
+     plugin, as the midi events are simply passed through unchanged. However,
+     if you use this code in a more general setting then it may be necessary
+     to sort the resulting sequence w.r.t. timestamps afterwards, as LV2 hosts
+     will not generally do this. */
+
+  process midifun beatfun seq = reverse seq when
+    t,b1,tn,seq = foldl process (0,get beat,-1,[]) seq;
+    b2,tn,seq = next (b1,tn,seq) (t,nsamples);
+    fini b2;
   end with
-    next (b1,tn) (t1,t2) = (b2,tn) when
-      samples_per_beat = 60.0/get bpm*4/beat_unit*rate;
-      b2 = b1+(t2-t1)/samples_per_beat;
-      tn = if tn>=0 then tn
-	   else if b2>=due then t1+int ((b2-b1)*samples_per_beat)
-	   else -1;
-    end;
-    process (t1,b1,tn) (t2,msg) = (t2,b2,tn) when
-      b2,tn = next (b1,tn) (t1,t2);
-      // Update all the transport information we got.
+    // Update musical time for the next cycle.
+    fini b = () when
+      // next bar, beat
+      nbar,nbeat = if b < beats_per_bar then get bar, b
+		   else get bar+1, frac b;
+      put bar nbar; put beat nbeat;
+    end if rolling;
+    // Update the transport information.
+    update msg = () when
       ~member msg lv2::bpm || put bpm (msg!lv2::bpm);
       ~member msg lv2::meter || put meter (msg!lv2::meter);
       ~member msg lv2::speed || put speed (msg!lv2::speed);
       ~member msg lv2::bar || put bar (msg!lv2::bar);
       ~member msg lv2::beat || put beat (msg!lv2::beat);
+      // Print the transport information, for debugging purposes.
       printf "%d:%g %d/%d bpm %g speed %g\n"
       (get bar,get beat,get meter,get bpm,get speed);
-      fflush NULL;
-    end if recordp msg;
-    // Just ignore other MIDI messages here.
-    process x _ = x otherwise;
+    end;
+    // Process a MIDI message.
+    process (t1,b1,tn,seq) ev@(_,msg) = (t1,b1,tn,seq) when
+      // invoke midifun and add the result to the output sequence
+      seq = addseq seq (midifun ev);
+    end if ~recordp msg;
+    process (t1,b1,tn,seq) (t2,msg) = (t1,b1,tn,seq) when
+      update msg;
+    end if t1>=t2;
+    // Process a time/pos event.
+    process (t1,b1,tn,seq) (t2,msg) = (t2,b2,tn,seq) when
+      b2,tn,seq = next (b1,tn,seq) (t1,t2);
+      update msg;
+    end otherwise;
+    // Advance musical time and check for a beat.
+    next (b1,tn,seq) (t1,t2) = (b2,tn,seq) when
+      samples_per_beat = 60.0/get bpm*4/beat_unit*rate;
+      b2 = b1+(t2-t1)/samples_per_beat;
+      tn,seq =
+	if tn>=0 then tn,seq // beat already processed
+	else if b2<due then -1,seq // no beat due yet
+	else (tn,seq when
+		// beat is due now, calculate its offset
+		tn = t1+int ((due-b1)*samples_per_beat);
+		// invoke beatfun and add the result to the output sequence
+		b = if due >= beats_per_bar then frac due else due;
+		seq = addseq seq (beatfun (tn,b));
+	      end);
+    end;
+    // Add a midi event or list of such events to the output sequence.
+    addseq seq seq1::list = foldl (flip (:)) seq seq1;
+    addseq seq ev = ev:seq otherwise;
   end when
     // sample rate (samples/s) and block size (samples/cycle)
     rate = lv2::rate self; nsamples = lv2::nsamples self;
-    // meter
-    beats_per_bar,beat_unit = get meter;
     // musical time is now:
     now = get beat;
     // next beat is due:
     due = ceil now;
   end;
-end when
-  bpm,meter,speed,bar,beat = ref 120.0,ref (4,4),ref 0.0,ref 0,ref 0.0;
+
 end;
