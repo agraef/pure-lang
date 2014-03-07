@@ -27,20 +27,24 @@
 #define MIDI_EVENT_URI "http://lv2plug.in/ns/ext/midi#MidiEvent"
 
 // You'll have to set these if you want to compile your own plugins.
+// (The pure2lv2 script automatically takes care of this.)
 #ifndef URI_PREFIX
 #define URI_PREFIX "http://purelang.bitbucket.org/"
 #endif
 #ifndef PLUGIN_NAME
 #define PLUGIN_NAME "lv2pure"
 #endif
-#ifndef PLUGIN_FUN
-#define PLUGIN_FUN PLUGIN_NAME
-#endif
 #ifndef LOADER_NAME
 #define LOADER_MAIN __lv2pure_main__
 #endif
 
 #define PLUGIN_URI URI_PREFIX PLUGIN_NAME
+
+// You can also define this if the main function of your plugin is named
+// something else than `plugin`. But this should rarely be necessary.
+#ifndef PLUGIN_FUN
+#define PLUGIN_FUN "plugin"
+#endif
 
 #include "lv2pure.h"
 

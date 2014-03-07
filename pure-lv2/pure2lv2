@@ -35,10 +35,6 @@ tmpname="__${plugin}_main__.pure"
 logname="${plugin}.log"
 objname="${plugin}.o"
 
-if [ "$name" != "$plugin" ] ; then
-  echo "$0: WARNING: mangled plugin function '$name'" >&2
-fi
-
 # Platform-specific setup.
 DLL=`pkg-config pure --variable DLL`
 PIC=`pkg-config pure --variable PIC`
@@ -53,7 +49,7 @@ MOD_LDFLAGS="`pkg-config pure --libs` $LDFLAGS"
 
 # Invoke Pure to compile the plugin, capture output in a logfile.
 echo pure $PIC -c $filename -o $objname --main=$loader
-echo "#! --required $name" > $tmpname
+echo "#! --required plugin" > $tmpname
 (pure -v0100 $PIC -c $tmpname $filename -o $objname --main=$loader 2>&1) | tee $logname
 # check the result, in case anything went wrong during compilation
 rc=$?
@@ -83,8 +79,8 @@ if [ ! -d "$bundledir" ] ; then
 fi
 
 # Link with the wrapper module.
-echo $CC $shared -o "$bundledir/$plugin$DLL" $MOD_CFLAGS -DURI_PREFIX="\"$uriprefix/\"" -DPLUGIN_NAME="\"$plugin\"" -DPLUGIN_FUN="\"$name\"" -DLOADER_NAME="$loader" -std=c99 $libdir/pure/lv2pure.c $objname $MOD_LDFLAGS $extralibs $LIBS
-$CC $shared -o "$bundledir/$plugin$DLL" $MOD_CFLAGS -DURI_PREFIX="\"$uriprefix/\"" -DPLUGIN_NAME="\"$plugin\"" -DPLUGIN_FUN="\"$name\"" -DLOADER_NAME="$loader" -std=c99 $libdir/pure/lv2pure.c $objname $MOD_LDFLAGS $extralibs $LIBS
+echo $CC $shared -o "$bundledir/$plugin$DLL" $MOD_CFLAGS -DURI_PREFIX="\"$uriprefix/\"" -DPLUGIN_NAME="\"$plugin\"" -DLOADER_NAME="$loader" -std=c99 $libdir/pure/lv2pure.c $objname $MOD_LDFLAGS $extralibs $LIBS
+$CC $shared -o "$bundledir/$plugin$DLL" $MOD_CFLAGS -DURI_PREFIX="\"$uriprefix/\"" -DPLUGIN_NAME="\"$plugin\"" -DLOADER_NAME="$loader" -std=c99 $libdir/pure/lv2pure.c $objname $MOD_LDFLAGS $extralibs $LIBS
 rm -f $objname
 
 # Create the manifest.

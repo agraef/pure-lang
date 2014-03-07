@@ -9,13 +9,12 @@
 
 using lv2, system;
 
-/* Note that the "main" function of a plugin is named after the plugin script.
-   This function is invoked with the plugin object (a pointer) as the first
-   argument. The resulting closure or partial application becomes the "plugin
-   function" which is cached, so that subsequently the same closure is called
-   each time the plugin is run. This makes it possible to maintain some local
-   state in the plugin function (such as the first_run value in the example
-   below).
+/* Note that `plugin` is the "main" function of a plugin which is invoked with
+   the plugin object (a pointer) as the first argument. The resulting closure
+   or partial application becomes the "plugin function" which is cached, so
+   that subsequently the same closure is called each time the plugin is
+   run. This makes it possible to maintain some local state in the plugin
+   function (such as the first_run value in the example below).
 
    The plugin function gets invoked once at instantiation time with an
    additional argument of lv2::info, in which case the function should return
@@ -53,7 +52,7 @@ using lv2, system;
    names. For other port types, you'll have to specify at least the port type
    (and the flags, unless it's an input port). */
 
-pure_amp self = plugin with
+plugin self = plugin with
   // This gets invoked when the plugin is created. We return the list of port
   // descriptions from which the plugin manifest is constructed.
   plugin lv2::info =
