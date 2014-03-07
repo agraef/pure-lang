@@ -10586,6 +10586,8 @@ int interpreter::compiler(string out, list<string> libnames)
       var_to_be_deleted.push_back(&v);
       continue;
     }
+    if (!v.isDeclaration() && !mainname.empty())
+      v.setLinkage(GlobalVariable::InternalLinkage);
     // While we're at it, also check for variables pointing to Faust functions
     // and update their initializations.
     string name = v.getName();
@@ -10593,8 +10595,6 @@ int interpreter::compiler(string out, list<string> libnames)
       Function *f = module->getFunction(name.substr(1));
       assert(f);
       v.setInitializer(f);
-      if (!mainname.empty())
-	v.setLinkage(Function::InternalLinkage);
       continue;
     }
     map<GlobalVariable*,Function*>::iterator jt = varmap.find(&v);
@@ -10603,8 +10603,6 @@ int interpreter::compiler(string out, list<string> libnames)
       Function *f = jt->second;
       if (strip && used.find(f) == used.end())
 	var_to_be_deleted.push_back(&v);
-      else if (!mainname.empty())
-	v.setLinkage(Function::InternalLinkage);
     }
   }
   // Remove unused functions.
