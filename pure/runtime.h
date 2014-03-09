@@ -633,7 +633,7 @@ typedef struct _pure_interp pure_interp;
    destroys an interpreter instance; if the destroyed instance is currently
    active, the active instance will be undefined afterwards, so you'll have to
    either create or switch to another instance before calling any other
-   operations. The pure_current_interp returns the currently active
+   operations. The pure_current_interp function returns the currently active
    instance. If the application is hosted by the command line interpreter,
    this will return a handle to the command line interpreter if it is invoked
    before switching to any other interpreter instance.
@@ -648,6 +648,31 @@ pure_interp *pure_create_interp(int argc, char *argv[]);
 void pure_delete_interp(pure_interp *interp);
 void pure_switch_interp(pure_interp *interp);
 pure_interp *pure_current_interp();
+
+/* POSIX multithreading support. As the Pure runtime isn't thread-safe right
+   now, it is *not* safe to concurrently run Pure code in a multithreaded
+   program. This means that if you run multiple interpreter instances (or even
+   a single instance) in a multithreaded C/C++ application then you'll have to
+   serialize accesses to the runtime. The following routines implement a
+   global interpreter lock (GIL) which lets you switch between different
+   interpreter instances in a thread-safe way. Note that in a multithreaded
+   application you'll have to explicitly call these whenever running an
+   interpreter in a critical code section which may be run concurrently, even
+   if there is only a single global interpreter instance. (Depending on your
+   application, this may become a major bottleneck, so beware!)
+
+   To use these functions, call pure_lock_interp() on the interpreter instance
+   to be used when entering a critical section. This obtains the GIL, switches
+   to the given interpreter (as with pure_switch_interp()) and returns the
+   previously active interpreter instance (the previous pure_current_interp()).
+   Save the returned instance in a local variable and do whatever processing
+   is needed. When exiting the critical section, call pure_unlock_interp() on
+   the saved interpreter instance which releases the GIL and restores the
+   saved instance. (Note that you *must* call pure_unlock_interp() some time
+   after pure_lock_interp() in order to prevent deadlocks.) */
+
+pure_interp *pure_lock_interp(pure_interp *interp);
+pure_interp *pure_unlock_interp(pure_interp *interp);
 
 /* Eager compilation. This runs the JIT, as necessary, on the given global
    function and transitively all other functions it might use. This often

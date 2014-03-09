@@ -4017,6 +4017,30 @@ void pure_switch_interp(pure_interp *interp)
   if (d < -100000 || d > 100000) interpreter::baseptr = &base;
 }
 
+#include <pthread.h>
+
+// Global interpreter lock. This is evil, but may be needed in multithreaded
+// code as long as the internals of the Pure interpreter are not thread-safe.
+static pthread_mutex_t GIL = PTHREAD_MUTEX_INITIALIZER;
+
+extern "C"
+pure_interp *pure_lock_interp(pure_interp *interp)
+{
+  pthread_mutex_lock(&GIL);
+  pure_interp *s_interp = pure_current_interp();
+  pure_switch_interp(interp);
+  return s_interp;
+}
+
+extern "C"
+pure_interp *pure_unlock_interp(pure_interp *interp)
+{
+  pure_interp *s_interp = pure_current_interp();
+  pure_switch_interp(interp);
+  pthread_mutex_unlock(&GIL);
+  return s_interp;
+}
+
 extern "C"
 pure_interp *pure_current_interp()
 {
