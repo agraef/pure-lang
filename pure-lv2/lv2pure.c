@@ -122,7 +122,8 @@ static lv2plugin_t *create_plugin(void)
   pure_new(plugin->fun);
 
   // Create a pointer object representing ourselves and pass it as the first
-  // argument to the plugin function.
+  // argument to the plugin function. This should yield a closure (or partial
+  // application) which is then used on all subsequent invocations.
   pure_expr *p = pure_tag(pure_pointer_tag("LV2Plugin*"), pure_pointer(plugin));
   if (!p) goto fail2;
   pure_expr *fun = pure_appx(plugin->fun, p, &e);
@@ -135,15 +136,12 @@ static lv2plugin_t *create_plugin(void)
     }
     goto fail2;
   }
-  // Replace the plugin function with the constructed application, so that the
-  // plugin pointer argument is passed on all subsequent invocations.
   pure_new(fun);
   pure_free(plugin->fun);
   plugin->fun = fun;
 
-  // Invoke the plugin function to get the port information.
-  pure_expr *info =
-    pure_appx(plugin->fun, pure_symbol(pure_sym("lv2::info")), &e);
+  // Invoke the manifest function to get the port information.
+  pure_expr *info = pure_symbolx(pure_sym("manifest"), &e);
   size_t n;
   pure_expr **xv;
   bool ok = info && pure_is_listv(info, &n, &xv);
@@ -259,19 +257,19 @@ static lv2plugin_t *create_plugin(void)
 #endif
   } else if (info) {
     char *s = str(info);
-    fprintf(stderr, "%s: bad plugin info '%s'\n", PLUGIN_URI, s);
+    fprintf(stderr, "%s: bad manifest '%s'\n", PLUGIN_URI, s);
     free(s);
     pure_freenew(info);
     goto fail2;
   } else {
     if (e) {
       char *s = str(e);
-      fprintf(stderr, "%s: bad plugin info (unhandled exception '%s')\n",
+      fprintf(stderr, "%s: bad manifest (unhandled exception '%s')\n",
 	      PLUGIN_URI, s);
       free(s);
       pure_freenew(e);
     } else
-      fprintf(stderr, "%s: bad plugin info (unknown error)\n", PLUGIN_URI);
+      fprintf(stderr, "%s: bad manifest (unknown error)\n", PLUGIN_URI);
     goto fail2;
   }
 
@@ -371,16 +369,33 @@ static void cleanup(LV2_Handle instance)
   free(plugin);
 }
 
+static void activation_cb(lv2plugin_t* plugin, bool active)
+{
+  plugin->active = active;
+  pure_interp *s_interp = pure_lock_interp(interp);
+  pure_expr *e, *ret = pure_appx(plugin->fun, pure_int(active), &e);
+  if (!ret) {
+    if (e) {
+      char *s = str(e);
+      fprintf(stderr, "%s: unhandled exception '%s'\n", PLUGIN_URI, s);
+      free(s);
+      pure_freenew(e);
+    }
+  } else
+    pure_freenew(ret);
+  pure_unlock_interp(s_interp);
+}
+
 static void activate(LV2_Handle instance)
 {
   lv2plugin_t* plugin = (lv2plugin_t*)instance;
-  if (plugin) plugin->active = true;
+  if (plugin) activation_cb(plugin, true);
 }
 
 static void deactivate(LV2_Handle instance)
 {
   lv2plugin_t* plugin = (lv2plugin_t*)instance;
-  if (plugin) plugin->active = false;
+  if (plugin) activation_cb(plugin, false);
 }
 
 static void run(LV2_Handle instance, uint32_t sample_count)

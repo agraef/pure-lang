@@ -9,24 +9,10 @@
 
 using lv2, system;
 
-/* Note that `plugin` is the "main" function of a plugin which is invoked with
-   the plugin object (a pointer) as the first argument. The resulting closure
-   or partial application becomes the "plugin function" which is cached, so
-   that subsequently the same closure is called each time the plugin is run.
-   This makes it possible to maintain some local state in the plugin function
-   (such as the first_run value in the example below).
-
-   The plugin function gets invoked once at instantiation time with an
-   additional argument of lv2::info, in which case the function should return
-   the list of port descriptions (explained below) from which the plugin
-   manifest is constructed. All subsequent invocations call the plugin
-   function with the dummy argument () to indicate that it should process a
-   block of samples. The lv2.pure module provides us with some functions to
-   read the input and write the output port values, including the sample data
-   of audio ports.
-
-   The port descriptions should be returned as a list of tuples which take the
-   following form: (symbol, name, type, flags, default, min, max)
+/* The `manifest` can be implemented either as a global variable or a
+   parameterless function. In either case it must yield a list of port
+   descriptions from which the plugin manifest is constructed. Each port
+   description is a tuple with the following fields:
 
    - symbol is the port symbol (a string).
 
@@ -47,25 +33,42 @@ using lv2, system;
    name is specified, it is assumed to be the same as the port symbol. If no
    port type is specified, a control port is assumed. If no flags are
    specified, an input port is assumed. If the default, min and max fields are
-   omitted, no default value and range is set for the port. This makes it
-   easy to specify a basic setup of control input ports by just listing their
+   omitted, no default value and range is set for the port. This makes it easy
+   to specify a basic setup of control input ports by just listing their
    names. For other port types, you'll have to specify at least the port type
    (and the flags, unless it's an input port). */
 
+manifest =
+  [// a control port
+   ("vol", "Volume", lv2::controlin, 0.5, 0.0, 1.0),
+   // audio input and output ports
+   ("audioin", lv2::audioin), ("audioout", lv2::audioout)];
+
+/* The `plugin` function is the "main" function of a plugin which is invoked
+   with the plugin object (a pointer) as the first argument. The resulting
+   closure or partial application is stored in the plugin object, so that
+   subsequently the same closure is called each time the plugin is run or its
+   activation status changes. This makes it possible to maintain some local
+   state in the plugin function (such as the first_run value in the example
+   below).
+
+   The plugin function is invoked either with a truth value (true, false) or
+   an empty tuple (). In the former case, the activation status (lv2::active)
+   has changed, so the plugin can respond to these conditions by adjusting its
+   internal state when it becomes active or inactive, respectively.
+
+   The latter case (() argument) indicates that the plugin is run on a block
+   of samples. The lv2.pure module provides us with some functions to read the
+   input and write the output port values, including the sample data of audio
+   ports, in order to implement the functionality of the plugin. */
+
 plugin self = plugin with
-  // This gets invoked when the plugin is created. We return the list of port
-  // descriptions from which the plugin manifest is constructed.
-  plugin lv2::info =
-    [// a control port
-     ("vol", "Volume", lv2::controlin, 0.5, 0.0, 1.0),
-     // audio input and output ports
-     ("audioin", lv2::audioin), ("audioout", lv2::audioout)];
-  // This gets invoked to process a block of samples.
+  // The local plugin closure gets invoked to process a block of samples.
   plugin () = () when
-    // Invoke this exactly once to print some information about the plugin.
-    // Note that this information only becomes available *after* the plugin
-    // has been created, and thus needs to be printed when the plugin runs for
-    // the first time, not during `plugin lv2::info`.
+    // We use a local reference variable here (see below) which lets us
+    // remember whether we have invoked this code already. So the following
+    // code gets invoked exactly once, at the time the plugin is first run, to
+    // print some information about the plugin.
     get first_run ||
     printf "path = %s\ninfo = %s\nrate = %g, block size = %d, vol = %g\n"
     (str (lv2::path self), str (lv2::get_info self), lv2::rate self,

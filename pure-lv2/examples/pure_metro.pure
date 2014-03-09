@@ -1,18 +1,18 @@
 
 /* A metronome. This illustrates how to employ musical time and position data
    in a plugin. It requires an LV2 host supporting the time extension to work.
-   Ardour works, Qtractor doesn't right now (it delivers the transport
-   information in a different way). */
+   Ardour works, but Qtractor doesn't right now as it delivers the transport
+   information in a different way. */
 
 using lv2, system;
 
-plugin self = plugin with
+let manifest =
+  // Note the midi input port which has the lv2::time_port flag set. This
+  // instructs the host to deliver transport events along with the midi
+  // messages.
+  [("midiin", lv2::time_midiin), ("midiout", lv2::midiout)];
 
-  plugin lv2::info =
-    // Note the midi input port which has the lv2::time_port flag set. This
-    // instructs the host to deliver transport events along with the midi
-    // messages.
-    [("midiin", lv2::time_midiin), ("midiout", lv2::midiout)];
+plugin self = plugin with
 
   plugin () = () when
     // Our midi/time event input (midi messages will be simply passed through).
@@ -102,6 +102,7 @@ plugin self = plugin with
     process (t1,b1,tn,seq) (t2,msg) = (t2,b2,tn,seq) when
       b2,tn,seq = next (b1,tn,seq) (t1,t2);
       update msg;
+      // XXXTODO: Sync our internal clock with Ardour's time.
     end otherwise;
     // Advance musical time and check for a beat.
     next (b1,tn,seq) (t1,t2) = (b2,tn,seq) when
@@ -131,12 +132,9 @@ plugin self = plugin with
   end;
 
 end when
-
-  /* Plugin state (current transport information). We start out with some
-     reasonable defaults here, but note that this plugin won't do anything
-     unless it receives at least one transport message which sets speed to a
-     nonzero value. */
-
+  // Plugin state (current transport information). We start out with some
+  // reasonable defaults here, but note that this plugin won't do anything
+  // unless it receives at least one transport message which sets the speed to
+  // a nonzero value.
   bpm,meter,speed,bar,beat = ref 120.0,ref (4,4),ref 0.0,ref 0,ref 0.0;
-
 end;

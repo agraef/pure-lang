@@ -49,7 +49,10 @@ MOD_LDFLAGS="`pkg-config pure --libs` $LDFLAGS"
 
 # Invoke Pure to compile the plugin, capture output in a logfile.
 echo pure $PIC -c $filename -o $objname --main=$loader
-echo "#! --required plugin" > $tmpname
+# This makes sure that both the manifest and the plugin function aren't
+# stripped from the binary during batch compilation.
+echo "#! --required manifest" > $tmpname
+echo "#! --required plugin" >> $tmpname
 (pure -v0100 $PIC -c $tmpname $filename -o $objname --main=$loader 2>&1) | tee $logname
 # check the result, in case anything went wrong during compilation
 rc=$?
