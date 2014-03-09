@@ -12,9 +12,9 @@ using lv2, system;
 /* Note that `plugin` is the "main" function of a plugin which is invoked with
    the plugin object (a pointer) as the first argument. The resulting closure
    or partial application becomes the "plugin function" which is cached, so
-   that subsequently the same closure is called each time the plugin is
-   run. This makes it possible to maintain some local state in the plugin
-   function (such as the first_run value in the example below).
+   that subsequently the same closure is called each time the plugin is run.
+   This makes it possible to maintain some local state in the plugin function
+   (such as the first_run value in the example below).
 
    The plugin function gets invoked once at instantiation time with an
    additional argument of lv2::info, in which case the function should return
@@ -79,5 +79,9 @@ plugin self = plugin with
     lv2::set_port self 2 (map (*vol) wav);
   end;
 end when
+  // Local state. Note that all state which should be local to a single plugin
+  // instance must be implemented as a local variable of the plugin function.
+  // Global state may be shared between different instances of the same plugin
+  // by assigning the state to a global Pure variable.
   first_run = ref false;
 end;
