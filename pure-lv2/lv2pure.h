@@ -33,8 +33,7 @@ typedef struct {
   // activation status
   bool active;
 
-  // Pure interpreter instance and plugin function.
-  pure_interp *interp;
+  // Plugin function.
   pure_expr *fun;
 
   // Total number of ports.

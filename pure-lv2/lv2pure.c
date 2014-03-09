@@ -48,6 +48,9 @@
 
 #include "lv2pure.h"
 
+// Global interpreter instance.
+static pure_interp *interp = 0;
+
 // This is the main entry point in the batch-compiled Pure module.
 extern void LOADER_NAME(int argc, char** argv);
 
@@ -87,14 +90,19 @@ static inline bool pure_is_number(pure_expr *x, double *num)
 
 static lv2plugin_t *create_plugin(void)
 {
-  pure_interp *interp = pure_current_interp();
+  pure_interp *s_interp = pure_current_interp();
   lv2plugin_t *plugin = calloc(1, sizeof(lv2plugin_t));
   assert(plugin);
 
-  // Create an interpreter instance.
-  LOADER_NAME(0, 0);
-  plugin->interp = pure_current_interp();
-  if (!plugin->interp) {
+  if (interp)
+    // We already created the interpreter, switch to it.
+    pure_switch_interp(interp);
+  else {
+    // Create a new interpreter instance.
+    LOADER_NAME(0, 0);
+    interp = pure_current_interp();
+  }
+  if (!interp) {
     fprintf(stderr, "%s: couldn't load Pure interpreter\n", PLUGIN_URI);
     goto fail;
   }
@@ -109,7 +117,6 @@ static lv2plugin_t *create_plugin(void)
       free(s);
       pure_freenew(e);
     }
-    pure_delete_interp(plugin->interp);
     goto fail;
   }
   pure_new(plugin->fun);
@@ -269,15 +276,14 @@ static lv2plugin_t *create_plugin(void)
   }
 
   plugin->uri = PLUGIN_URI;
-  pure_switch_interp(interp);
+  pure_switch_interp(s_interp);
   return plugin;
 
  fail2:
   pure_free(plugin->fun);
-  pure_delete_interp(plugin->interp);
   
  fail:
-  pure_switch_interp(interp);
+  pure_switch_interp(s_interp);
   free(plugin);
   return 0;
 }
@@ -336,12 +342,10 @@ instantiate(const LV2_Descriptor*     descriptor,
 static void cleanup(LV2_Handle instance)
 {
   lv2plugin_t* plugin = (lv2plugin_t*)instance;
-  if (plugin->interp) {
-    pure_interp *interp = pure_current_interp();
-    pure_switch_interp(plugin->interp);
-    //pure_free(plugin->fun);
-    pure_delete_interp(plugin->interp);
-    pure_switch_interp(interp);
+  if (plugin->fun) {
+    pure_interp *s_interp = pure_lock_interp(interp);
+    pure_free(plugin->fun);
+    pure_unlock_interp(s_interp);
   }
   if (plugin->path) free(plugin->path);
   if (plugin->sym) {
@@ -370,20 +374,26 @@ static void cleanup(LV2_Handle instance)
 static void activate(LV2_Handle instance)
 {
   lv2plugin_t* plugin = (lv2plugin_t*)instance;
-  plugin->active = true;
+  if (plugin) plugin->active = true;
 }
 
 static void deactivate(LV2_Handle instance)
 {
   lv2plugin_t* plugin = (lv2plugin_t*)instance;
-  plugin->active = false;
+  if (plugin) plugin->active = false;
 }
 
 static void run(LV2_Handle instance, uint32_t sample_count)
 {
   lv2plugin_t* plugin = (lv2plugin_t*)instance;
-  pure_interp *interp = pure_current_interp();
-  pure_switch_interp(plugin->interp);
+  if (!plugin) return;
+  // XXXFIXME: As some LV2 hosts such as Ardour are heavily multi-threaded and
+  // the Pure runtime isn't thread-safe yet, we need to obtain the global
+  // interpreter lock here so that invocations of the plugin functions are
+  // effectively serialized. Until the Pure runtime becomes fully thread-safe,
+  // this may be a major bottleneck if you run many Pure plugin instances in
+  // the same process.
+  pure_interp *s_interp = pure_lock_interp(interp);
   plugin->nsamples = sample_count;
   pure_expr *e, *ret = pure_appx(plugin->fun, pure_tuplel(0, 0), &e);
   if (!ret) {
@@ -395,7 +405,7 @@ static void run(LV2_Handle instance, uint32_t sample_count)
     }
   } else
     pure_freenew(ret);
-  pure_switch_interp(interp);
+  pure_unlock_interp(s_interp);
 }
 
 const void* extension_data(const char* uri)
@@ -436,15 +446,9 @@ int lv2_dyn_manifest_open(LV2_Dyn_Manifest_Handle *handle,
   // information.
   lv2plugin_t *plugin = create_plugin();
   *handle = (LV2_Dyn_Manifest_Handle)plugin;
-  if (plugin) {
-    // We can get rid of the interpreter now, only the port data is needed.
-    pure_interp *interp = pure_current_interp();
-    pure_switch_interp(plugin->interp);
-    pure_delete_interp(plugin->interp);
-    pure_switch_interp(interp);
-    plugin->interp = 0;
+  if (plugin)
     return 0;
-  } else
+  else
     return -1;
 }
 
