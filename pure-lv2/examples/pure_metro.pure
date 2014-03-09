@@ -6,13 +6,6 @@
 
 using lv2, system;
 
-/* Plugin state (current transport information). We start out with some
-   reasonable defaults here, but note that this plugin won't do anything
-   unless it receives at least one transport message which sets speed to a
-   nonzero value. */
-
-let bpm,meter,speed,bar,beat = ref 120.0,ref (4,4),ref 0.0,ref 0,ref 0.0;
-
 plugin self = plugin with
 
   plugin lv2::info =
@@ -136,5 +129,14 @@ plugin self = plugin with
     // next beat is due:
     due = ceil now;
   end;
+
+end when
+
+  /* Plugin state (current transport information). We start out with some
+     reasonable defaults here, but note that this plugin won't do anything
+     unless it receives at least one transport message which sets speed to a
+     nonzero value. */
+
+  bpm,meter,speed,bar,beat = ref 120.0,ref (4,4),ref 0.0,ref 0,ref 0.0;
 
 end;
