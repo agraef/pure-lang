@@ -182,6 +182,12 @@ static pure_expr *position(lv2plugin_t *p, const LV2_Atom_Object* obj)
   return pure_matrix_columnsv(n, xv);
 }
 
+/* Functions to read and write port values. XXXFIXME: There seems to be no
+   reliable way to determine the lifetime of the connected port data. We
+   therefore enforce that these routines are only called inside the plugin's
+   run() method which should always be safe. However, this seems overly
+   restrictive for hosts that do offer persistent buffers. */
+
 /* Get a port value. The port is specified using its index. For a control port
    this yields a double, for audio and CV ports a double vector (containing a
    block of audio samples). For MIDI ports the result is a list of pairs of
@@ -192,7 +198,7 @@ static pure_expr *position(lv2plugin_t *p, const LV2_Atom_Object* obj)
 
 pure_expr *lv2pure_get(lv2plugin_t *p, int k)
 {
-  if (!p || k<0 || k>=p->n || !p->data[k]) return 0;
+  if (!p || k<0 || k>=p->n || !p->data[k] || !p->running) return 0;
   // FIXME: We should preallocate some static Pure vectors here, to avoid
   // dynamic allocations as much as possible.
   switch (p->ty[k]) {
@@ -201,7 +207,7 @@ pure_expr *lv2pure_get(lv2plugin_t *p, int k)
   case 2: case 3:
     return matrix_from_float_array(1, p->nsamples, p->data[k]);
   case 4:
-    if (p->flags[k] & 12) {
+    if ((p->flags[k] & 12) && (p->flags[k] & 1)) {
       LV2_Atom_Sequence *seq = (LV2_Atom_Sequence*)p->data[k];
       size_t n = 0;
       pure_expr **xv;
@@ -268,7 +274,7 @@ static bool forge_midi(lv2plugin_t* self,
 
 pure_expr *lv2pure_set(lv2plugin_t *p, int k, pure_expr *x)
 {
-  if (!p || k<0 || k>=p->n || !p->data[k]) return 0;
+  if (!p || k<0 || k>=p->n || !p->data[k] || !p->running) return 0;
   switch (p->ty[k]) {
   case 1: {
     double d;
@@ -284,7 +290,7 @@ pure_expr *lv2pure_set(lv2plugin_t *p, int k, pure_expr *x)
     else
       return 0;
   case 4:
-    if (p->flags[k] & 4) {
+    if ((p->flags[k] & 4) && (p->flags[k] & 2)) {
       LV2_Atom_Sequence *seq = (LV2_Atom_Sequence*)p->data[k];
       size_t n;
       pure_expr **xv;

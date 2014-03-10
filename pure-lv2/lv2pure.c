@@ -410,7 +410,9 @@ static void run(LV2_Handle instance, uint32_t sample_count)
   // the same process.
   pure_interp *s_interp = pure_lock_interp(interp);
   plugin->nsamples = sample_count;
+  plugin->running = true;
   pure_expr *e, *ret = pure_appx(plugin->fun, pure_tuplel(0, 0), &e);
+  plugin->running = false;
   if (!ret) {
     if (e) {
       char *s = str(e);

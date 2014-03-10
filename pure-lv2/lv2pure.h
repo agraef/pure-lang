@@ -30,8 +30,8 @@ typedef struct {
   char *path;
   const char *uri;
 
-  // activation status
-  bool active;
+  // activation and running status
+  bool active, running;
 
   // Plugin function.
   pure_expr *fun;
