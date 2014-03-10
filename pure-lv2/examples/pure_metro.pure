@@ -90,6 +90,11 @@ plugin self = plugin with
       printf "%d:%g %d/%d bpm %g speed %g\n"
       (get bar,get beat,get meter,get bpm,get speed);
     end;
+    // Sync with transport.
+    sync b1 b2 = b2 if b1==b2;
+    sync b1 b2 = b1 when
+      put due (ceil b1);
+    end;
     // Process a MIDI message.
     process (t1,b1,tn,seq) ev@(_,msg) = (t1,b1,tn,seq) when
       // invoke midifun and add the result to the output sequence
@@ -97,12 +102,13 @@ plugin self = plugin with
     end if ~recordp msg;
     process (t1,b1,tn,seq) (t2,msg) = (t1,b1,tn,seq) when
       update msg;
+      b1 = sync (get beat) b1;
     end if t1>=t2;
     // Process a time/pos event.
     process (t1,b1,tn,seq) (t2,msg) = (t2,b2,tn,seq) when
       b2,tn,seq = next (b1,tn,seq) (t1,t2);
       update msg;
-      // XXXTODO: Sync our internal clock with Ardour's time.
+      b2 = sync (get beat) b2;
     end otherwise;
     // Advance musical time and check for a beat.
     next (b1,tn,seq) (t1,t2) = (b2,tn,seq) when
@@ -110,12 +116,13 @@ plugin self = plugin with
       b2 = b1+(t2-t1)/samples_per_beat;
       tn,seq =
 	if tn>=0 then tn,seq // beat already processed
-	else if b2<due then -1,seq // no beat due yet
+	else if b2<get due then -1,seq // no beat due yet
 	else (tn,seq when
 		// beat is due now, calculate its offset
-		tn = t1+int ((due-b1)*samples_per_beat);
+		tn = t1+int ((get due-b1)*samples_per_beat);
 		// invoke beatfun and add the result to the output sequence
-		b = if due >= beats_per_bar then frac due else due;
+		b = if get due >= beats_per_bar then frac (get due)
+		    else get due;
 		seq = addseq seq (beatfun (tn,b));
 	      end);
     end;
@@ -125,10 +132,8 @@ plugin self = plugin with
   end when
     // sample rate (samples/s) and block size (samples/cycle)
     rate = lv2::rate self; nsamples = lv2::nsamples self;
-    // musical time is now:
-    now = get beat;
     // next beat is due:
-    due = ceil now;
+    due = ref $ ceil $ get beat;
   end;
 
 end when
