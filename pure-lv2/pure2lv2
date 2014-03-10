@@ -84,7 +84,13 @@ fi
 # Link with the wrapper module.
 echo $CC $shared -o "$bundledir/$plugin$DLL" $MOD_CFLAGS -DURI_PREFIX="\"$uriprefix/\"" -DPLUGIN_NAME="\"$plugin\"" -DLOADER_NAME="$loader" -std=c99 $libdir/pure/lv2pure.c $objname $MOD_LDFLAGS $extralibs $LIBS
 $CC $shared -o "$bundledir/$plugin$DLL" $MOD_CFLAGS -DURI_PREFIX="\"$uriprefix/\"" -DPLUGIN_NAME="\"$plugin\"" -DLOADER_NAME="$loader" -std=c99 $libdir/pure/lv2pure.c $objname $MOD_LDFLAGS $extralibs $LIBS
+# check the result again, in case anything went wrong during linkage
+rc=$?
 rm -f $objname
+if [ $rc -ne 0 ] ; then
+  rm -Rf "$bundledir"
+  exit $rc
+fi
 
 # Create the manifest.
 sed -e"s?@name@?$plugin?g" -e"s?@uri@?$uriprefix/$plugin?g" -e"s?@dllext@?$DLL?g" > "$bundledir/manifest.ttl" <<EOF
