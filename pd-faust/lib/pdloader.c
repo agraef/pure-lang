@@ -53,7 +53,7 @@ extern void pdfaust_setup(void)
       int l = strlen(pd_libdir())+strlen(HELP);
       char *help = malloc(l+1);
       strcpy(help, pd_libdir()); strcat(help, HELP);
-      post("%s %s (c) 2011-2012 Albert Graef <Dr.Graef@t-online.de>",
+      post("%s %s (c) 2011-2014 Albert Graef <aggraef@gmail.com>",
 	   loader_name, VERSION);
       for (c = classes; *c; c++) {
 	if (!pure_register_class(*c, interp, help)) {
