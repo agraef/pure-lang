@@ -58,21 +58,22 @@ const controlin_speed         = control_port, input_port or time_speed;
    the plugin function. Also note that this data only becomes available after
    the plugin has been initialized and starts running.
 
-   The manifest (port descriptions) is returned as a list of tuples for each
-   port of the plugin which take the following form: (symbol, name, type,
-   flags, default, min, max)
+   The lv2::info function returns the manifest with the port descriptions as a
+   list of tuples with the following fields:
 
-   - symbol is the port symbol (a string).
+   - symbol: the port symbol (a string).
 
-   - name is a more descriptive port name which is typically used as a label
+   - name: a more descriptive port name which is typically used as a label
      in the LV2 host GUI.
 
-   - type is the type of port (control, audio, CV, midi), and flags the
-     bitwise disjunction of some flags which indicate whether the port is an
-     input or output port, along with some additional information. The
-     symbolic constants defined above denote valid type and flags values, as
-     well as a number of common type,flag combinations such as lv2::controlin,
-     lv2:audioout, etc.
+   - type: the type of port (control, audio, CV, midi).
+
+   - flags: the bitwise disjunction of some flags which indicate whether the
+     port is an input or output port, along with some additional information.
+
+     Note: The symbolic constants defined above denote valid type and flags
+     values, as well as a number of common type,flag combinations such as
+     lv2::controlin, lv2:audioout, etc.
 
    - default, min and max indicate the default, minimum and maximum values of
      a port, if set. These fields are only returned for control and CV ports
@@ -80,15 +81,14 @@ const controlin_speed         = control_port, input_port or time_speed;
      set when creating the plugin).
 
    These fields are in 1-1 correspondence with the manifest data returned by
-   the plugin at instantiation time, when the plugin function is invoked with
-   the lv2::info parameter. However, in the manifest returned by the plugin
-   only the first field is mandatory. All other fields can be omitted, in
-   which case reasonable defaults will be provided; you can then use
-   lv2::get_info to see exactly which defaults were provided. (If no port name
-   was specified, it is assumed to be the same as the port symbol. If no port
-   type was specified, a control port is assumed. If no flags were specified,
-   an input port is assumed. If the default, min and max fields were omitted,
-   no default value and range is set for the port.) */
+   the plugin at instantiation time. However, in the manifest returned by the
+   plugin only the first field is mandatory. All other fields can be omitted,
+   in which case reasonable defaults will be provided; you can then use
+   lv2::info to see exactly which defaults were provided. (If no port name was
+   specified, it is assumed to be the same as the port symbol. If no port type
+   was specified, a control port is assumed. If no flags were specified, an
+   input port is assumed. If the default, min and max fields were omitted, no
+   default value and range is set for the port.) */
 
 extern expr *lv2pure_info(LV2Plugin *p) = info;
 extern int lv2pure_active(LV2Plugin *p) = active;
@@ -104,25 +104,28 @@ extern expr *lv2pure_audio_outputs(LV2Plugin *p) = audio_outputs;
 extern expr *lv2pure_midi_inputs(LV2Plugin *p) = midi_inputs;
 extern expr *lv2pure_midi_outputs(LV2Plugin *p) = midi_outputs;
 
-/* Get and set port values. The actual values depend on the port type (double
-   for control ports, double vector for audio and cv ports, list of
-   timestamped midi events for midi ports).
+/* Get and set port values. Note that since the port data is only guaranteed
+   to exist in the plugin's run callback (i.e., if the plugin function is
+   invoked with the () argument), these functions will fail if they are
+   invoked outside the callback.
 
-   In the latter case, each midi message is denoted as a pair consisting of an
-   int (the timestamp, which is a frame count relative to the beginning of the
-   current block of samples) and an int vector (the bytes making up a single
-   MIDI message). On output (lv2::set_port), the timestamp is optional (a zero
-   default value is used in this case).
+   The actual port values depend on the port type (double for control ports,
+   double vector for audio and cv ports, list of timestamped midi events for
+   midi ports). In the latter case, each midi message is denoted as a pair
+   consisting of an int (the timestamp, which is a frame count relative to the
+   beginning of the current block of samples) and an int vector (the bytes
+   making up a single MIDI message). On output (lv2::set_port), the timestamp
+   can be omitted (a zero default value is used in this case).
 
    lv2::get_port also offers basic support for the LV2 time extension.
    Unfortunately, LV2 hosts implement this extension in very different ways,
    if at all. Specifically, Ardour will deliver special position events if an
    atom input port has the lv2::time_port flag is set. Note that if the port
    has both the lv2::midi_port and the lv2::time_port flag set, then transport
-   information and midi events will be intermingled, as the host delivers
-   them. The position data is encoded as a pair consisting of a timestamp and
-   a Pure record containing the available information. The record may have the
-   following fields:
+   information and midi events will be intermingled, in the order in which the
+   host delivers them. The position data is encoded as a pair consisting of a
+   timestamp and a Pure record containing the available information. The
+   record may have the following fields:
 
    - lv2::bpm (double): Tempo in beats per minute.
 
