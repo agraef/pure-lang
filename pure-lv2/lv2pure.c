@@ -46,13 +46,186 @@
 #define PLUGIN_FUN "plugin"
 #endif
 
+// This is to be set *only* if the plugin is to be loaded from the source
+// script rather than being linked into the plugin binary (useful for
+// debugging purposes). The plugin script is searched for in the bundle
+// directory.
+//#define PLUGIN_SCRIPT "lv2pure.pure"
+
+// This search path is used to discover the local path of the plugin when
+// generating the dynamic manifest, if the plugin is loaded from a source
+// script.
+#ifdef PLUGIN_SCRIPT
+#ifndef DEFAULT_LV2_PATH
+#define DEFAULT_LV2_PATH "~/.lv2:/usr/lib/lv2:/usr/local/lib/lv2"
+#endif
+#endif
+
 #include "lv2pure.h"
 
 // Global interpreter instance.
 static pure_interp *interp = 0;
 
+#ifndef PLUGIN_SCRIPT
 // This is the main entry point in the batch-compiled Pure module.
 extern void LOADER_NAME(int argc, char** argv);
+#endif
+
+#ifdef PLUGIN_SCRIPT
+
+// Some helper functions to discover the bundle path which holds the plugin
+// script, when the script is loaded from source.
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
+static const char *dirstr = "/\\", *volstr = "";
+#define PATHDELIM ':'
+#define MAXSTRLEN 1024
+
+static const char *lv2_path(void)
+{
+  static char *path = NULL;
+  if (!path && !(path = getenv("LV2_PATH")))
+    path = DEFAULT_LV2_PATH;
+  return path;
+}
+
+static char *home(void)
+{
+  static char *homedir = NULL;
+  if (!homedir && !(homedir = getenv("HOME"))) {
+    homedir = strdup("/");
+    *homedir = *dirstr;
+  }
+  return homedir;
+}
+
+#define tilde(s) (s[0] == '~' && (!s[1] || strchr(dirstr, s[1]) && !strchr(volstr, s[1])))
+
+static int absolute(char *s)
+{
+  char *t = s;
+  if (!s || !*s)
+    return 0;
+  else if (tilde(s))
+    return 1;
+  else {
+    while (*s && !strchr(dirstr, *s)) ++s;
+    return *s && (s == t || strchr(volstr, *s));
+  }
+}
+
+static int dirprefix(char *s, char *prefix)
+{
+  int l = strlen(prefix);
+  return s && *s && strncmp(s, prefix, l) == 0 &&
+    (!s[l] || strchr(dirstr, s[l]) && !strchr(volstr, s[l]));
+}
+
+static char *dirname(char *t, char *s)
+{
+  char *s1, *s2 = NULL;
+  for (s1 = s; *s1; s1++)
+    if (strchr(dirstr, *s1))
+      s2 = s1+1;
+  if (s2) {
+    strncpy(t, s, s2-s);
+    t[s2-s] = 0;
+  } else
+    *t = 0;
+  return t;
+}
+
+static char *basename(char *t, char *s, char c)
+{
+  char *s1, *s2;
+  for (s1 = s2 = s; *s1; s1++)
+    if (strchr(dirstr, *s1))
+      s2 = s1+1;
+  if ((s1 = strchr(strcpy(t, s2), c)))
+    *s1 = 0;
+  return t;
+}
+
+static char *absname(char *t, char *s)
+{
+  if (absolute(s))
+    strcpy(t, s);
+  else {
+    if (!getcwd(t, MAXSTRLEN))
+      strcpy(t, s);
+    else {
+      int l = strlen(t);
+      if (l <= 1 || !strchr(dirstr, t[l-1]))
+	t[l++] = *dirstr;
+      strcpy(t+l, s);
+    }
+  }
+  return t;
+}
+
+static char *expand(char *s1, char *s2)
+{
+  if (tilde(s2)) {
+    char *h = home();
+    int l = strlen(h);
+    strcpy(s1, h);
+    if (l > 0 && strchr(dirstr, h[l-1]))
+      strcpy(s1+l, s2+2);
+    else
+      strcpy(s1+l, s2+1);
+  } else
+    strcpy(s1, s2);
+  return s1;
+}
+
+static int chkfile(char *s)
+{
+  struct stat st;
+  return !stat(s, &st) && S_ISREG(st.st_mode);
+}
+
+static char *lv2path = 0;
+
+static char *searchlib(char *s1, char *s2)
+{
+  const char *s, *t;
+  if (tilde(s2))
+    return expand(s1, s2);
+  else if (absolute(s2) || dirprefix(s2, ".") || dirprefix(s2, ".."))
+    return strcpy(s1, s2);
+  for (s = lv2_path(); *s; s = t) {
+    int l;
+    char p[MAXSTRLEN];
+    if (!(t = strchr(s, PATHDELIM)))
+      t = strchr(s, 0);
+    if (s == t) goto next;
+    if (s[0] == '.')
+      if (t == s+1)
+	s = t;
+      else if (strchr(dirstr, s[1]) &&
+	       !strchr(volstr, s[1]))
+	s += 2;
+    l = t-s;
+    strncpy(p, s, l);
+    p[l] = 0;
+    expand(s1, p);
+    l = strlen(s1);
+    if (l > 0 && (!strchr(dirstr, s1[l-1]) || 
+		  strchr(volstr, s1[l-1])))
+      s1[l] = *dirstr, l++;
+    strcpy(s1+l, s2);
+    if (chkfile(s1))
+      return s1;
+  next:
+    if (*t) t++;
+  }
+  return strcpy(s1, s2);
+}
+
+#endif
 
 static void connect_port(LV2_Handle instance, uint32_t port, void* data)
 {
@@ -99,8 +272,25 @@ static lv2plugin_t *create_plugin(void)
     pure_switch_interp(interp);
   else {
     // Create a new interpreter instance.
+#ifdef PLUGIN_SCRIPT
+    // Locate the script file in the bundle, searching the LV2 plugin path.
+    char path[MAXSTRLEN], script[MAXSTRLEN];
+    snprintf(path, MAXSTRLEN, "%s.lv2%c%s",
+             PLUGIN_NAME, *dirstr, PLUGIN_SCRIPT);
+    searchlib(script, path);
+    if (!chkfile(script)) {
+      fprintf(stderr, "%s: couldn't find script '%s'\n",
+              PLUGIN_URI, PLUGIN_SCRIPT);
+      goto fail;
+    }
+    printf("** %s: loading %s\n", PLUGIN_URI, script);
+    char *argv[] = {script, script, NULL};
+    interp = pure_create_interp(2, argv);
+    pure_switch_interp(interp);
+#else
     LOADER_NAME(0, 0);
     interp = pure_current_interp();
+#endif
   }
   if (!interp) {
     fprintf(stderr, "%s: couldn't load Pure interpreter\n", PLUGIN_URI);
@@ -109,6 +299,11 @@ static lv2plugin_t *create_plugin(void)
 
   // Get the plugin function.
   pure_expr *e;
+#ifdef PLUGIN_SCRIPT
+  // Make sure that the plugin function is compiled eagerly right now, since
+  // we don't want the JIT to kick in later when we're running in realtime.
+  pure_interp_compile(interp, pure_sym(PLUGIN_FUN));
+#endif
   plugin->fun = pure_symbolx(pure_sym(PLUGIN_FUN), &e);
   if (!plugin->fun) {
     if (e) {

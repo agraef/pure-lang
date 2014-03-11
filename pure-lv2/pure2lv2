@@ -3,12 +3,13 @@
 # Copyright (c) 2014 by Albert Gräf <aggraef@gmail.com>. Distributed under
 # the new BSD license, please see the accompanying COPYING file for details.
 
-# This script compiles a Pure module to an LV2 plugin bundle. The required
-# wrapper code and manifest are added automatically. All you have to do is to
-# pass the Pure script name (and the URI prefix, if you want to use a custom
-# URI) on the command line. The script must contain a "main" function, named
-# after the plugin, which gets run by the wrapper code to implement the
-# plugin, please check the examples included in the package.
+# Please check the README file included in the distribution for information on
+# how to use this script. Normally, the script is simply run as `pure2lv2
+# script-name` which compiles the given Pure script to an LV2 bundle. The -o
+# option can be used to specify the name of the bundle directory, and the -u
+# option lets you specify a custom URI prefix for the bundle. You can also run
+# `pure2lv2 -h` to print a brief message describing how to invoke this script
+# and which options are available.
 
 #set -x
 
@@ -18,18 +19,46 @@ CFLAGS="${CFLAGS:--O3}"
 CPPFLAGS="${CPPFLAGS:-}"
 LIBS="${LIBS:-}"
 
+prog=`basename "$0"`
+uriprefix="http://purelang.bitbucket.org"
+script=no
+
+usage() {
+  echo "USAGE: $prog [-h|-s] [-o bundle-name] [-u uri-prefix] script-name ..." >&2
+  echo "-h, --help:      print this message and exit" >&2
+  echo "-o, --output:    specify the bundle directory" >&2
+  echo "-s, --script:    include the source script in the bundle" >&2
+  echo "-u, --uriprefix: specify the URI prefix of the bundle" >&2
+}
+
+# Parse options using getopt(1).
+args=`getopt  -o hso:u: -l help,script,output:,uriprefix: -n "$prog" -- "$@"`
+if [ $? != 0 ] ; then exit 1 ; fi
+eval set -- "$args"
+
+while true; do
+  case "$1" in
+    -h|--help) usage; exit 1 ;;
+    -s|--script) script=yes; shift ;;
+    -o|--output) bundledir="$2"; shift 2 ;;
+    -u|--uriprefix) uriprefix="$2"; shift 2 ;;
+    --) shift; break ;;
+  esac
+done
+
 if [ -z "$1" ]; then
-  echo "USAGE: $0 pure-script [uri-prefix]" >&2
+  echo "$prog: no script name specified (try '$prog -h' for help)" >&2
   exit 1
 fi
 
-uriprefix="${2:-http://purelang.bitbucket.org}"
 filename="$1"
-plugin=`basename "$1" .pure`
+shift
+
+plugin=`basename "$filename" .pure`
 # This symbol ought to be a valid C identifier, so we mangle the plugin name
 # if necessary.
 name=`echo -n "$plugin" | tr -c [:alnum:] _`
-bundledir="$plugin.lv2"
+bundledir="${bundledir:-$plugin.lv2}"
 loader="__${name}_main__"
 tmpname="__${plugin}_main__.pure"
 logname="${plugin}.log"
@@ -47,49 +76,73 @@ MOD_LDFLAGS="`pkg-config pure --libs` $LDFLAGS"
 # NOTE: The following requires that the cwd is writeable, since we create some
 # temp files and the bundle there.
 
-# Invoke Pure to compile the plugin, capture output in a logfile.
-echo pure $PIC -c $filename -o $objname --main=$loader
-# This makes sure that both the manifest and the plugin function aren't
-# stripped from the binary during batch compilation.
-echo "#! --required manifest" > $tmpname
-echo "#! --required plugin" >> $tmpname
-(pure -v0100 $PIC -c $tmpname $filename -o $objname --main=$loader 2>&1) | tee $logname
-# check the result, in case anything went wrong during compilation
-rc=$?
-rm -f $tmpname
-if [ $rc -ne 0 ] ; then
+if [ "$script" == "no" ]; then
+
+  # Invoke Pure to compile the plugin, capture output in a logfile.
+  echo pure $PIC -c $filename -o $objname --main=$loader
+  # This makes sure that both the manifest and the plugin function aren't
+  # stripped from the binary during batch compilation.
+  echo "#! --required manifest" > $tmpname
+  echo "#! --required plugin" >> $tmpname
+  (pure -v0100 $PIC -c $tmpname $filename -o $objname --main=$loader 2>&1) | tee $logname
+  # check the result, in case anything went wrong during compilation
+  rc=$?
+  rm -f $tmpname
+  if [ $rc -ne 0 ] ; then
+    rm -f $logname
+    exit $rc
+  fi
+
+  # Grab the libraries we need to link against from the logfile.
+  extralibs=`tail -1 $logname | sed -e "s/^Link with: .*[.]o//"`
   rm -f $logname
-  exit $rc
-fi
 
-# Grab the libraries we need to link against from the logfile.
-extralibs=`tail -1 $logname | sed -e "s/^Link with: .*[.]o//"`
-rm -f $logname
+  # We should have an object file now; if not then something went wrong and we
+  # bail out with an error message.
+  if [ ! -f $objname ] ; then
+    echo "$0: couldn't create object file $objname" >&2
+    exit 1
+  fi
 
-# We should have an object file now; if not then something went wrong and we
-# bail out with an error message.
-if [ ! -f $objname ] ; then
-  echo "$0: couldn't create object file $objname" >&2
-  exit 1
 fi
 
 # Create the bundle directory.
 rm -Rf "$bundledir"
 mkdir "$bundledir"
 if [ ! -d "$bundledir" ] ; then
-  echo "$0: couldn't create bundle directory $bundledir" >&2
+  echo "$prog: couldn't create bundle directory $bundledir" >&2
   exit 1
 fi
 
-# Link with the wrapper module.
-echo $CC $shared -o "$bundledir/$plugin$DLL" $MOD_CFLAGS -DURI_PREFIX="\"$uriprefix/\"" -DPLUGIN_NAME="\"$plugin\"" -DLOADER_NAME="$loader" -std=c99 $libdir/pure/lv2pure.c $objname $MOD_LDFLAGS $extralibs $LIBS
-$CC $shared -o "$bundledir/$plugin$DLL" $MOD_CFLAGS -DURI_PREFIX="\"$uriprefix/\"" -DPLUGIN_NAME="\"$plugin\"" -DLOADER_NAME="$loader" -std=c99 $libdir/pure/lv2pure.c $objname $MOD_LDFLAGS $extralibs $LIBS
-# check the result again, in case anything went wrong during linkage
-rc=$?
-rm -f $objname
-if [ $rc -ne 0 ] ; then
-  rm -Rf "$bundledir"
-  exit $rc
+if [ "$script" == "no" ]; then
+
+  # Link with the wrapper module.
+  echo $CC $shared -o "$bundledir/$plugin$DLL" $MOD_CFLAGS -DURI_PREFIX="\"$uriprefix/\"" -DPLUGIN_NAME="\"$plugin\"" -DLOADER_NAME="$loader" -std=c99 $libdir/pure/lv2pure.c $objname $MOD_LDFLAGS $extralibs $LIBS
+  $CC $shared -o "$bundledir/$plugin$DLL" $MOD_CFLAGS -DURI_PREFIX="\"$uriprefix/\"" -DPLUGIN_NAME="\"$plugin\"" -DLOADER_NAME="$loader" -std=c99 $libdir/pure/lv2pure.c $objname $MOD_LDFLAGS $extralibs $LIBS
+  # check the result, in case anything went wrong during linkage
+  rc=$?
+  rm -f $objname
+  if [ $rc -ne 0 ] ; then
+    rm -Rf "$bundledir"
+    exit $rc
+  fi
+
+else
+
+  # Compile the wrapper module.
+  echo $CC $shared -o "$bundledir/$plugin$DLL" $MOD_CFLAGS -DURI_PREFIX="\"$uriprefix/\"" -DPLUGIN_NAME="\"$plugin\"" -DPLUGIN_SCRIPT="\"$filename\"" -std=c99 $libdir/pure/lv2pure.c $MOD_LDFLAGS $LIBS
+  $CC $shared -o "$bundledir/$plugin$DLL" $MOD_CFLAGS -DURI_PREFIX="\"$uriprefix/\"" -DPLUGIN_NAME="\"$plugin\"" -DPLUGIN_SCRIPT="\"$filename\"" -std=c99 $libdir/pure/lv2pure.c $MOD_LDFLAGS $LIBS
+  # check the result
+  rc=$?
+  if [ $rc -ne 0 ] ; then
+    rm -Rf "$bundledir"
+    exit $rc
+  fi
+
+  # Copy the script to the bundle, as well as any other files that were
+  # specified on the command line.
+  cp "$filename" "$@" "$bundledir"
+
 fi
 
 # Create the manifest.
