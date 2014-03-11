@@ -41,49 +41,143 @@ the Makefile for details.
 Description
 ===========
 
-This package provides a generic LV2 plugin wrapper for Pure. LV2_ is the new
-Linux audio plugin standard (LADSPA successor) which aims to be portable and
-extensible. The package contains some C wrapper code which can be linked with
-a batch-compiled Pure script to obtain an LV2 plugin module. A shell script
-named pure2lv2 is included, which lets you compile the plugin and turn it into
-an LV2 bundle, ready to be loaded by any LV2 host. There's also an lv2.pure
-module which provides some operations needed to implement the functionality of
-a plugin, such as functions to read and write LV2 ports in Pure.
+LV2_ is the new Linux audio plugin standard (successor of the venerable
+LADSPA_ standard) which aims to be portable and extensible. LV2 plugins can
+process any combination of audio, MIDI and control data in order to implement
+various kinds of real-time signal processing modules for use in digital audio
+and MIDI software such as Ardour_ and Qtractor_.  A companion module is
+available which lets you implement LV2 plugin hosts in Pure, see
+:doc:`pure-lilv`. Support for Miller Puckette's graphical computer music and
+multimedia software Pd_ is available through the author's `lv2plugin~`_
+external. Moreover, stand-alone LV2 hosts such as jalv_ can be used to
+interface with other software which doesn't support LV2 directly, via the
+`Jack audio connection kit`_.
 
 .. _LV2: http://lv2plug.in/
+.. _LADSPA: http://www.ladspa.org/
+.. _Ardour: http://ardour.org/
+.. _Qtractor: http://qtractor.sourceforge.net/
+.. _Pd: http://puredata.info/
+.. _jalv: http://drobilla.net/software/jalv/
+.. _lv2plugin~: https://bitbucket.org/agraef/pd-lv2plugin
+.. _Jack audio connection kit: http://jackaudio.org/
 
-Documentation still needs to be written. For the time being, please refer to
-the lv2.pure script for a description of the programming interface, and to the
-scripts in the examples folder for LV2 plugin examples written in Pure.
+This package provides a generic LV2 plugin wrapper for Pure which can be
+linked with batch-compiled Pure scripts to obtain LV2 plugin modules. For
+convenience, a shell script named pure2lv2 is included, which lets you compile
+the plugin and turn it into a complete LV2 bundle (consisting of an LV2 plugin
+manifest and the plugin binary), ready to be loaded by any LV2 host. The
+package also includes an lv2.pure module which provides the operations needed
+to implement the functionality of a plugin, such as functions to read and
+write LV2 port data in Pure.
+
+Our implementation supports all standard LV2 port types (including MIDI via
+LV2 atom ports) and should thus be able to work with most LV2 hosts right out
+of the box. Experimental support for the LV2 time extension is also available,
+so that MIDI plugins written in Pure can obtain musical time and position data
+if the host supports this; please check lv2.pure for details. The package
+includes several examples which demonstrate how to write LV2 plugins of
+various kinds in Pure, specifically:
+
+* pure_amp.pure shows how to do basic audio and control processing in order to
+  amplify an incoming audio signal.
+
+* pure_transp.pure demonstrates how to implement a simple MIDI processing
+  module which transposes incoming MIDI notes.
+
+* pure_metro.pure shows how to implement a MIDI metronome by making use of the
+  musical time and tempo data provided by the LV2 time extension (this
+  currently requires Ardour to work).
+
+Please also check the Usage_ section below for information on how to run the
+pure2lv2 script.
+
+Requirements and Limitations
+============================
+
+Our implementation uses LV2's `dynamic manifests`_, so that the plugin
+manifest, which describes the ports and other properties of the plugin, can be
+included in the plugin module. This makes things easier, but requires an LV2
+host which supports the dynamic manifest extension (most LV2 hosts nowadays
+do; this includes all the hosts we mentioned above).
+
+.. _dynamic manifests: http://lv2plug.in/ns/ext/dynmanifest/
+
+As the Pure runtime isn't thread-safe yet, our implementation effectively
+serializes the plugin callbacks (invocations of the ``plugin`` function)
+across *all* Pure plugins running inside a host. While this won't make a
+difference for single-threaded LV2 hosts such as jalv and Pd, it also makes
+the Pure plugins work reliably in heavily multi-threaded hosts such as Ardour.
+However, the serialization of callbacks may become a major bottleneck if a
+multi-threaded host runs many Pure plugins concurrently on a multi-processor
+machine. At present there is no way around this, but hopefully this limitation
+will go away in the not-too-distant future when the Pure runtime becomes
+thread-safe.
 
 Usage
 =====
 
-The pure2lv2 script is invoked simply as ``pure2lv2 myplugin.pure`` where
-``myplugin.pure`` is the Pure script implementing the plugin. The plugin
-script must provide two functions ``manifest``, which returns the port
-descriptions from which the plugin manifest is created, and ``plugin`` which
-implements the plugin itself. Please check the included examples to get an
-idea how the plugin scripts look like.
+A summary of the command syntax and options of the pure2lv2 script can be
+printed with ``purelv2 -h``. Usually the script is invoked simply as
+``pure2lv2 myplugin.pure``, where ``myplugin.pure`` is the Pure script
+implementing the plugin. The plugin script must provide two functions in order
+to implement the functionality of the plugin:
+
+* The ``manifest`` function returns the port descriptions from which the
+  plugin manifest is created when the LV2 host performs plugin discovery. This
+  may be implemented either as a parameter-less function or a global variable
+  in the Pure script. In either case it should return the list of port
+  descriptions in a format described in the lv2.pure module.
+
+* The ``plugin`` function implements the plugin itself. It gets invoked with a
+  pointer object representing the plugin data which can be passed to the
+  operations in the lv2.pure module. Often the plugin will actually be
+  implemented as a closure which also encapsulates the local state maintained
+  by the plugin; please check the included examples for details. At runtime,
+  the ``plugin`` function gets invoked repeatedly with an additional
+  parameter, either a truth value denoting a change in the activation status,
+  or the value ``()`` to indicate that a block of samples (and/or MIDI
+  messages and control data) is to be processed.
+
+Please check the included examples to get an idea how the plugin scripts look
+like. Here is a simple example (an abridged version of pure_amp.pure) which
+multiplies an incoming audio signal with a volume control::
+
+  using lv2;
+
+  manifest = [("vol", "Volume", lv2::controlin, 0.5, 0.0, 1.0),
+              ("audioin", lv2::audioin), ("audioout", lv2::audioout)];
+
+  plugin self () = () when
+    // Process a block of samples.
+    vol = lv2::get_port self 0; // control value from port #0 (control input)
+    wav = lv2::get_port self 1; // sample data from port #1 (audio input)
+    // Multiply the sample data with the vol control value and output the
+    // resulting wave on port #2 (audio output).
+    lv2::set_port self 2 (map (*vol) wav);
+  end;
 
 Running ``pure2lv2 myplugin.pure`` turns the plugin script into an LV2 bundle,
-which will be written to ``myplugin.lv2`` by default. You can also specify a
-different name for the bundle directory with the ``-o`` (or ``--output``)
-option, and a custom URI prefix for the bundle with the ``-u`` (or
-``--uriprefix``) option. In either case, you still have to move the bundle
-directory to a directory on your ``LV2_PATH`` before you can use it with your
-LV2 hosts.
+which will be written to ``myplugin.lv2`` by default (i.e., using the same
+basename as the plugin script). You can also specify a different name and path
+for the bundle directory with the ``-o`` (or ``--output``) option, and a
+custom URI prefix for the bundle with the ``-u`` (or ``--uriprefix``) option.
+Before you can use the plugin with your LV2 hosts, you still have to move the
+bundle directory to a directory on your ``LV2_PATH`` (unless you already
+specified a suitable target path with ``-o``). The examples folder in the
+source package contains a GNU Makefile which shows how to automate this
+process.
 
-Normally the code of the plugin will be compiled to a native object file which
-gets linked into the plugin binary. However, there's also a ``-s`` (or
-``--script``) option which copies the source script (along with any additional
-source files specified after the plugin script on the command line) to the
-bundle directory instead, from where it will be loaded dynamically when the
-plugin is used.  This increases load times (sometimes substantially), but lets
-you modify the plugin more easily, by just changing the plugin script inside
-the bundle, which may be more convenient during plugin development.
-
-A summary of the command syntax and options of the pure2lv2 script can be
-printed with ``purelv2 -h``.
+Normally the Pure code of the plugin will be compiled to a native object file
+which gets linked directly into the plugin binary. However, there's also a
+``-s`` (or ``--script``) option which copies the source script (along with any
+additional source files specified after the plugin script on the command line)
+to the bundle directory instead, from where it will be loaded dynamically when
+the plugin is used. This increases load times, sometimes substantially, since
+the Pure interpreter will have to JIT-compile the Pure script every time the
+host starts up and loads the plugins. But it also reduces turnaround times
+since you can easily change the plugin script right inside the bundle, without
+having to run pure2lv2 in between; this may be convenient when developing and
+testing a plugin.
 
 .. Enjoy!
