@@ -56,4 +56,34 @@ Documentation still needs to be written. For the time being, please refer to
 the lv2.pure script for a description of the programming interface, and to the
 scripts in the examples folder for LV2 plugin examples written in Pure.
 
+Usage
+=====
+
+The pure2lv2 script is invoked simply as ``pure2lv2 myplugin.pure`` where
+``myplugin.pure`` is the Pure script implementing the plugin. The plugin
+script must provide two functions ``manifest``, which returns the port
+descriptions from which the plugin manifest is created, and ``plugin`` which
+implements the plugin itself. Please check the included examples to get an
+idea how the plugin scripts look like.
+
+Running ``pure2lv2 myplugin.pure`` turns the plugin script into an LV2 bundle,
+which will be written to ``myplugin.lv2`` by default. You can also specify a
+different name for the bundle directory with the ``-o`` (or ``--output``)
+option, and a custom URI prefix for the bundle with the ``-u`` (or
+``--uriprefix``) option. In either case, you still have to move the bundle
+directory to a directory on your ``LV2_PATH`` before you can use it with your
+LV2 hosts.
+
+Normally the code of the plugin will be compiled to a native object file which
+gets linked into the plugin binary. However, there's also a ``-s`` (or
+``--script``) option which copies the source script (along with any additional
+source files specified after the plugin script on the command file) to the
+bundle directory instead, from where it will be loaded dynamically when the
+plugin is used.  This increases load times (sometimes substantially), but lets
+you modify the plugin more easily, by just changing the plugin script inside
+the bundle, which may be more convenient during plugin development.
+
+A summary of the command syntax and options of the pure2lv2 script can be
+printed with ``purelv2 -h``.
+
 .. Enjoy!
