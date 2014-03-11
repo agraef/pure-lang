@@ -213,7 +213,7 @@ static char *searchlib(char *s1, char *s2)
     p[l] = 0;
     expand(s1, p);
     l = strlen(s1);
-    if (l > 0 && (!strchr(dirstr, s1[l-1]) || 
+    if (l > 0 && (!strchr(dirstr, s1[l-1]) ||
 		  strchr(volstr, s1[l-1])))
       s1[l] = *dirstr, l++;
     strcpy(s1+l, s2);
