@@ -777,8 +777,7 @@ static octave_value *pure_to_octave(pure_expr *x)
     for (size_t i = 0; i < k; i++)
       for (size_t j = 0; j < l; j++) {
 	size_t p = 2*(i*mat->tda+j);
-	v[j*k+i].real() = mat->data[p];
-	v[j*k+i].imag() = mat->data[p+1];
+	v[j*k+i] = std::complex<double>(mat->data[p], mat->data[p+1]);
       }
     return new octave_value(m);
   } else if (pure_is_cstring_dup(x, &s)) {
