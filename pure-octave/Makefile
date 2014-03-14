@@ -3,7 +3,7 @@
 
 # Package name and version number:
 dist = pure-octave-$(version)
-version = 0.4
+version = 0.5
 
 # Try to guess the Octave version number. We're only interested in the
 # major/minor version here, to cope with the C/C++ API breakage in Octave 3.8.
