@@ -34,7 +34,7 @@ EXE = .exe
 DLL = .dll
 endif
 ifneq "$(findstring -darwin,$(host))" ""
-# OSX (untested)
+# OSX
 DLL = .dylib
 endif
 
@@ -48,10 +48,23 @@ SEDFILES = README
 
 all: octave_embed$(DLL)
 
+ifneq "$(findstring -darwin,$(host))" ""
+# OS X quirk: mkoctfile wants to create a bundle, but we want just a
+# dylib which can be linked into other modules.
+embed.o: embed.cc embed.h
+	rm -f $@
+	mkoctfile -v $(octversion) -o $@ -c $<
+MKOCT_LDCXX = $(shell mkoctfile -p LD_CXX)
+MKOCT_LDFLAGS = $(shell mkoctfile -p LFLAGS) $(shell mkoctfile -p OCTAVE_LIBS) $(shell mkoctfile -p LDFLAGS)
+octave_embed$(DLL): embed.o
+	rm -f $@
+	$(MKOCT_LDCXX) -dynamiclib -install_name "$(libdir)/pure/$@" -o $@ embed.o $(MKOCT_LDFLAGS) -lpure $(RLD_FLAG)
+else
 octave_embed$(DLL): embed.cc embed.h
 	rm -f $@
 	mkoctfile -v $(octversion) -o $@ $< -lpure $(RLD_FLAG)
 	if test -f $@.oct; then mv $@.oct $@; fi
+endif
 
 clean:
 	rm -f embed.o octave_embed$(DLL) *~ core octave-core
