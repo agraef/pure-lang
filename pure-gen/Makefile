@@ -29,9 +29,15 @@ man1dir = $(mandir)/man1
 
 # Try to guess the host system type and do platform-specific setup.
 host = $(shell ./config.guess)
+gcc = gcc
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows
 EXE = .exe
+endif
+ifneq "$(findstring -darwin,$(host))" ""
+# OSX: Try to find a suitable gcc version. This requires a recent gcc version
+# from MacPorts.
+gcc = $(lastword gcc $(sort $(wildcard /opt/local/bin/gcc-mp-*)))
 endif
 
 DISTFILES = COPYING ChangeLog Makefile config.guess README README.dump-ast \
@@ -45,7 +51,7 @@ all: pure-gen dump-ast
 dump_ast = $(pkgdatadir)/dump-ast
 
 pure-gen: pure-gen.pure
-	sed -e 's?@version@?$(version)?' -e 's?./dump-ast?$(dump_ast)?' < $< > xx$<
+	sed -e 's?@version@?$(version)?' -e 's?@gcc@?$(gcc)?' -e 's?./dump-ast?$(dump_ast)?' < $< > xx$<
 	pure -c xx$< -o $@
 	rm -f xx$<
 
