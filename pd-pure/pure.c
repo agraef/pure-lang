@@ -1962,11 +1962,12 @@ static void runtime_any(t_runtime *x, t_symbol *s, int argc, t_atom *argv)
     outlet_bang(x->out2);
     pure_restart();
     outlet_bang(x->out1);
-  } else if (s->s_thing)
+  } else if (s->s_thing) {
     if (argc > 0 && argv[0].a_type == A_SYMBOL)
       pd_typedmess(s->s_thing, argv[0].a_w.w_symbol, argc-1, argv+1);
     else
       pd_list(s->s_thing, &s_list, argc, argv);
+  }
 }
 
 /* Hook to register external object classes residing in preloaded

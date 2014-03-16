@@ -37,6 +37,10 @@ endif
 pureminor = $(shell pure --version 2>/dev/null | sed -n -e 's/^Pure 0\.\([0-9]*\).*/\1/' -e '/^[0-9]*$$/p' 2>/dev/null)
 EAGER = $(shell (test -z "$(pureminor)" || test "$(pureminor)" -ge 34) && echo '-DEAGER')
 
+# Pure include and library dir.
+pureinc = $(shell pkg-config pure --cflags)
+purelib = $(shell pkg-config pure --libs)
+
 # Installation goes into $(libdir)/$(PD), you can also set this directly
 # instead of $(prefix).
 libdir = $(prefix)/lib
@@ -73,9 +77,9 @@ ifneq "$(findstring -linux,$(host))" ""
 DLL = .pd_linux
 endif
 ifneq "$(findstring -darwin,$(host))" ""
-# OSX (untested)
+# OSX
 DLL = .pd_darwin
-shared = -dynamiclib
+shared = -dynamiclib -Wl,-undefined -Wl,dynamic_lookup
 endif
 ifneq "$(findstring x86_64-,$(host))" ""
 # 64 bit, needs -fPIC flag
@@ -97,7 +101,7 @@ ifneq "$(VERBOSE)" ""
 override CPPFLAGS += $(VERBOSE)
 endif
 
-override CPPFLAGS += -I$(pdincludedir)
+override CPPFLAGS += -I$(pdincludedir) $(pureinc)
 
 DISTFILES = COPYING Makefile README config.guess pure.c \
 debian/* examples/*.pure examples/*.pd examples/*.el \
@@ -107,7 +111,7 @@ SEDFILES = README
 all: pure$(DLL)
 
 pure$(DLL): pure.o
-	$(CC) $(shared) -o $@ $(PIC) $(LDFLAGS) $< -lpure $(LIBS)
+	$(CC) $(shared) -o $@ $(PIC) $(LDFLAGS) $< $(purelib) $(LIBS)
 
 pure.o: pure.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) $(PIC) -o $@ -c $< -DPD="\"$(PD)\"" -DVERSION="\"$(version)\"" -DLIBDIR="\"$(pdlibdir)\""
