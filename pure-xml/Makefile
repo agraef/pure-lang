@@ -10,6 +10,9 @@ ifeq ($(strip $(prefix)),)
 prefix = /usr/local
 endif
 
+pureinc = -I$(prefix)/include
+purelib = -L$(prefix)/lib -lpure
+
 # Installation goes into $(libdir)/pure, you can also set this directly
 # instead of $(prefix).
 libdir = $(prefix)/lib
@@ -37,6 +40,8 @@ ifneq "$(findstring -darwin,$(host))" ""
 # OSX (untested)
 DLL = .dylib
 shared = -dynamiclib
+# OSX: hardcode installation path into the dll.
+dllname = -install_name "$(datadir)/xml$(DLL)"
 endif
 ifneq "$(findstring x86_64-,$(host))" ""
 # 64 bit, needs -fPIC flag
@@ -64,7 +69,7 @@ SEDFILES = README
 all: xml$(DLL)
 
 xml$(DLL): xml.c
-	$(CC) $(shared) -o $@ $< $(XMLFLAGS) $(FLAGS) $(XMLLIBS) -lpure $(LIBS)
+	$(CC) $(shared) $(dllname) -o $@ $< $(XMLFLAGS) $(FLAGS) $(pureinc) $(XMLLIBS) $(purelib) $(LIBS)
 
 clean:
 	rm -f *$(DLL) *~ *.a *.o
