@@ -72,7 +72,7 @@ xml$(DLL): xml.c
 	$(CC) $(shared) $(dllname) -o $@ $< $(XMLFLAGS) $(FLAGS) $(pureinc) $(XMLLIBS) $(purelib) $(LIBS)
 
 clean:
-	rm -f *$(DLL) *~ *.a *.o
+	rm -Rf *$(DLL)* *~ *.a *.o
 
 install:
 	test -d "$(DESTDIR)$(datadir)" || mkdir -p "$(DESTDIR)$(datadir)"
