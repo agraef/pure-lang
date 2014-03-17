@@ -71,9 +71,42 @@ extern const char *pd_version_s(void)
 
 /* Return the Pd library directory. */
 
+static const char *get_libdir(const char *path)
+{
+  static char s_libdir[MAXPDSTRING];
+  static const char *libdir = NULL;
+  if (!libdir) {
+#ifndef WIN32
+    /* Make an educated guess at where the Pd library directory actually is. */
+    static char dirbuf[MAXPDSTRING];
+    char *nameptr;
+    int fd = open_via_path(LIBDIR, "pure/pure-help.pd", "",
+			   dirbuf, &nameptr, MAXPDSTRING, 0);
+    if (fd >= 0) {
+      size_t k = strlen("/extra/pure"), l = strlen(dirbuf);
+      char *p = dirbuf+l;
+      if (k <= l && strcmp(p-k, "/extra/pure") == 0) {
+	p -= k;
+	*p = 0;
+#ifdef VERBOSE
+	printf("pd-pure: found Pd library directory at '%s'\n", dirbuf);
+#endif
+	libdir = dirbuf;
+      } else
+	libdir = LIBDIR;
+      close(fd);
+    } else
+      // fall back to the hardcoded default
+#endif
+      libdir = LIBDIR;
+  }
+  snprintf(s_libdir, MAXPDSTRING, "%s%s", libdir, path?path:"");
+  return s_libdir;
+}
+
 extern const char *pd_libdir(void)
 {
-  return LIBDIR;
+  return get_libdir(NULL);
 }
 
 /* Return the Pd search path, as a list of directory names. */
@@ -1736,9 +1769,9 @@ static void class_setup(const char *name, char *dir)
   class_addanything(class, pure_any);
   if (is_dsp) {
     class_addmethod(class, nullfn, &s_signal, A_NULL);
-    class_sethelpsymbol(class, gensym(LIBDIR "/extra/pure/pure~-help.pd"));
+    class_sethelpsymbol(class, gensym(get_libdir("/extra/pure/pure~-help.pd")));
   } else
-    class_sethelpsymbol(class, gensym(LIBDIR "/extra/pure/pure-help.pd"));
+    class_sethelpsymbol(class, gensym(get_libdir("/extra/pure/pure-help.pd")));
   class_addmethod(class, (t_method)pure_menu_open,
 		  gensym((char*)"menu-open"), A_NULL);
   add_class(class_s, class, dir);
@@ -2028,7 +2061,7 @@ extern void pure_setup(void)
 			      A_GIMME, A_NULL);
     class_addanything(runtime_class, runtime_any);
     class_sethelpsymbol(runtime_class,
-			gensym(LIBDIR "/extra/pure/pure-help.pd"));
+			gensym(get_libdir("/extra/pure/pure-help.pd")));
     /* Create classes for 'pure' and 'pure~' objects which allows you to
        access any predefined Pure function without loading a script. */
     class_setup("pure", "");
