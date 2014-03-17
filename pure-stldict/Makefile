@@ -16,6 +16,11 @@ MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS)
 
 CXXFLAGS = -g -O2 -std=c++0x -Wall
 
+ifeq ($(DLL),.dylib)
+# OSX: hardcode installation path into the dll.
+dllname = -install_name "$(installdir)/$@"
+endif
+
 # Basic rules to build the modules, clean, install and uninstall.
 
 cppsource = hashdict.cc orddict.cc
@@ -25,7 +30,7 @@ objects = $(patsubst %.cc, %$(DLL), $(cppsource))
 all: $(objects)
 
 %$(DLL): %.cc
-	g++ $(shared) -o $@ $(MOD_CXXFLAGS) $< $(MOD_LDFLAGS) $(LIBS)
+	g++ $(shared) $(dllname) -o $@ $(MOD_CXXFLAGS) $< $(MOD_LDFLAGS) $(LIBS)
 
 clean:
 	rm -f *.o *$(DLL) examples/life *~

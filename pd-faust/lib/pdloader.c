@@ -6,6 +6,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
+#include <stdlib.h>
 #include <pure/runtime.h>
 #include <m_pd.h>
 

@@ -30,9 +30,14 @@ DLL = .dll
 windows = true
 endif
 ifneq "$(findstring -darwin,$(host))" ""
-# OSX (untested)
+# OSX
 DLL = .dylib
 shared = -dynamiclib
+dllname = -install_name "$(libdir)/pure/pmlib$(DLL)"
+# MacPorts defaults
+CPPFLAGS = -I/opt/local/include
+LDFLAGS = -L/opt/local/lib
+PUREGEN_FLAGS = -I/opt/local/include
 endif
 ifneq "$(findstring x86_64-,$(host))" ""
 # 64 bit, needs -fPIC flag
@@ -73,7 +78,7 @@ realclean: clean
 	rm -f portmidi.pure
 
 pmlib$(DLL): pmdev.c
-	$(CC) $(shared) -o $@ $< $(FLAGS) -lportmidi -lpure $(LIBS)
+	$(CC) $(shared) $(dllname) -o $@ $< $(FLAGS) -lportmidi -lpure $(LIBS)
 
 # Type 'make generate' to force a rebuild of the PortMidi wrapper. This
 # requires pure-gen and that you have portmidi.h and porttime.h in the current
@@ -86,12 +91,12 @@ generate:
 portmidi.pure: portmidi.h porttime.h pmdev.h
 ifdef windows
 	echo 'using "lib:portmidi";' > $@
-	pure-gen -N -m Pm -p Pm -sportmidi.h:: portmidi.h -lpmlib -o $@
+	pure-gen $(PUREGEN_FLAGS) -N -m Pm -p Pm -sportmidi.h:: portmidi.h -lpmlib -o $@
 else
-	pure-gen -m Pm -p Pm -sportmidi.h:: portmidi.h -lpmlib -o $@
+	pure-gen $(PUREGEN_FLAGS) -m Pm -p Pm -sportmidi.h:: portmidi.h -lpmlib -o $@
 endif
-	pure-gen -N -m Pt -p Pt -sporttime.h:: porttime.h -o $@
-	pure-gen -N -m midi -p pm -spmdev.h:: pmdev.h -o $@
+	pure-gen $(PUREGEN_FLAGS) -N -m Pt -p Pt -sporttime.h:: porttime.h -o $@
+	pure-gen $(PUREGEN_FLAGS) -N -m midi -p pm -spmdev.h:: pmdev.h -o $@
 ifdef windows
 	mv $@ $@.tmp
 	sed -e "s?extern int Pm_Synchronize?//extern int Pm_Synchronize?" < $@.tmp > $@

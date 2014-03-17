@@ -2,7 +2,7 @@
 override srcdir = ../..
 include $(srcdir)/Makefile.common
 
-somodules  := $(dsp_source:.dsp=.so)
+somodules  := $(dsp_source:.dsp=$(DLL))
 bcmodules  := $(dsp_source:.dsp=.bc)
 modules    := $(somodules) $(bcmodules)
 

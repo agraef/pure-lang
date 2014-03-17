@@ -28,9 +28,13 @@ ifneq "$(findstring -mingw,$(host))" ""
 DLL = .dll
 endif
 ifneq "$(findstring -darwin,$(host))" ""
-# OSX (untested)
+# OSX
 DLL = .dylib
 shared = -dynamiclib
+dllname = -install_name "$(libdir)/pure/faust$(DLL)"
+# MacPorts defaults
+CPPFLAGS = -I/opt/local/include
+LDFLAGS = -L/opt/local/lib
 endif
 ifneq "$(findstring x86_64-,$(host))" ""
 # 64 bit, needs -fPIC flag
@@ -54,7 +58,7 @@ SEDFILES = README
 all: faust$(DLL)
 
 faust$(DLL): faust.o
-	$(CXX) $(shared) -o $@ $(PIC) $(LDFLAGS) $< -lpure -lltdl $(LIBS)
+	$(CXX) $(shared) $(dllname) -o $@ $(PIC) $(LDFLAGS) $< -lpure -lltdl $(LIBS)
 
 faust.o: faust.cc
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(PIC) -o $@ -c $<

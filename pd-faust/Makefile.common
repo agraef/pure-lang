@@ -46,7 +46,7 @@ CXXFLAGS = -O3 -ffast-math -msse
 # path (gcc -print-file-name=plugin).
 dragonegg=dragonegg
 
-LLVM_CONFIG = $(word 1,$(wildcard /usr/local/bin/llvm-config*) $(wildcard /usr/bin/llvm-config*))
+LLVM_CONFIG = $(word 1,$(wildcard /opt/local/bin/llvm-config*) $(wildcard /usr/local/bin/llvm-config*) $(wildcard /usr/bin/llvm-config*))
 LLVM_PATH = $(shell $(LLVM_CONFIG) --bindir)
 PATH := $(LLVM_PATH):$(PATH)
 
@@ -61,13 +61,16 @@ LLVMFC = gfortran -fplugin=dragonegg -flto
 #FAUST = faust -double
 FAUST = faust -double -cn $(<:.dsp=)
 
+PURE_INCLUDES = $(shell pkg-config pure --cflags)
+PURE_LIBS = $(shell pkg-config pure --libs)
+
 # Enable optimization of Faust bitcode modules for direct Faust bitcode output
 # (faust -lang llvm).
 OPT = | opt -O3
 
 # This is the collection of flags which actually gets passed in the C/C++
 # recipes. Normally you shouldn't have to edit or override these.
-ALL_CFLAGS = $(PIC) $(CFLAGS) $(CPPFLAGS) -I.
+ALL_CFLAGS = $(PIC) $(CFLAGS) $(CPPFLAGS) $(PURE_INCLUDES) -I.
 ALL_CXXFLAGS = $(PIC) $(CXXFLAGS) $(CPPFLAGS) -I.
 ALL_LDFLAGS = $(LDFLAGS) $(LIBS)
 
@@ -91,10 +94,10 @@ cppsource  := $(dsp_source:%.dsp=%.cpp)
 asmsource  := $(dsp_source:%.dsp=%.ll)
 
 %$(DLL): %.cpp
-	$(CXX) $(shared) $(ALL_CXXFLAGS) $< -o $@ $(ALL_LDFLAGS)
+	$(CXX) $(shared) $(ALL_CXXFLAGS) $< -o $@ $(ALL_LDFLAGS) $(PURE_LIBS)
 
 %$(DLL): %.c
-	$(CC) $(shared) $(ALL_CFLAGS) $< -o $@ $(ALL_LDFLAGS)
+	$(CC) $(shared) $(ALL_CFLAGS) $< -o $@ $(ALL_LDFLAGS) $(PURE_LIBS)
 
 ifdef faustllvm
 # compile Faust source to LLVM bitcode (needs faust2)

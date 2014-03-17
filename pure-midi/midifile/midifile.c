@@ -338,6 +338,7 @@ static void free_events_in_track(MidiFileTrack_t track)
 				free(event->u.meta.data_buffer);
 				break;
 			}
+			default: ;
 		}
 
 		free(event);
@@ -613,6 +614,7 @@ int MidiFile_save(MidiFile_t midi_file, const char* filename)
 			fputc(MidiFile_getResolution(midi_file), out);
 			break;
 		}
+		default: ;
 	}
 
 	for (track = MidiFile_getFirstTrack(midi_file); track != NULL; track = MidiFileTrack_getNextTrack(track))
@@ -704,6 +706,7 @@ int MidiFile_save(MidiFile_t midi_file, const char* filename)
 					fwrite(data, 1, data_length, out);
 					break;
 				}
+				default: ;
 			}
 
 			previous_tick = tick;
@@ -1420,6 +1423,7 @@ int MidiFileEvent_delete(MidiFileEvent_t event)
 			free(event->u.meta.data_buffer);
 			break;
 		}
+		default: ;
 	}
 
 	free(event);

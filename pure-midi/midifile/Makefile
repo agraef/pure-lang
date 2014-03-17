@@ -2,6 +2,12 @@
 # Try to guess the host system type.
 host = $(shell ../config.guess)
 
+prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
+ifeq ($(strip $(prefix)),)
+prefix = /usr/local
+endif
+libdir = $(prefix)/lib
+
 # Platform-specific defaults, edit this as needed.
 #PIC = -fPIC # uncomment for x86-64 compilation
 DLL = .so
@@ -13,9 +19,14 @@ ifneq "$(findstring -mingw,$(host))" ""
 DLL = .dll
 endif
 ifneq "$(findstring -darwin,$(host))" ""
-# OSX (untested)
+# OSX
 DLL = .dylib
 shared = -dynamiclib
+dllname = -install_name "$(libdir)/pure/midifile$(DLL)"
+# MacPorts defaults
+CPPFLAGS = -I/opt/local/include
+LDFLAGS = -L/opt/local/lib
+PUREGEN_FLAGS = -I/opt/local/include
 endif
 ifneq "$(findstring x86_64-,$(host))" ""
 # 64 bit, needs -fPIC flag
@@ -38,7 +49,7 @@ clean:
 	rm -f *.o *$(DLL)
 
 midifile$(DLL): midifile.c mf.c
-	$(CC) $(shared) -o $@ $^ $(FLAGS) -lpure $(LIBS)
+	$(CC) $(shared) $(dllname) -o $@ $^ $(FLAGS) -lpure $(LIBS)
 
 # You can use this to regenerate midifile.pure from mf.h using pure-gen.
 # CAVEAT: This is for maintainers only and shouldn't normally be necessary.
