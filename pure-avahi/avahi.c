@@ -1,6 +1,7 @@
 #include <time.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <assert.h>
 #include <pthread.h>
 
@@ -18,7 +19,7 @@
 
 #ifndef DEBUG
 // Set this to a nonzero value to enable debugging output.
-#define DEBUG 0
+#define DEBUG 1
 #endif
 
 /* Service publishing. *****************************************************/
@@ -168,6 +169,7 @@ static void client_callback(AvahiClient *c, AvahiClientState state, void *data)
 avahi_service_t *avahi_publish(const char *name, const char *type, int port)
 {
   avahi_service_t *t = malloc(sizeof(avahi_service_t));
+  int err = 0;
   assert(t);
   t->group = NULL;
   t->client = NULL;
@@ -181,12 +183,19 @@ avahi_service_t *avahi_publish(const char *name, const char *type, int port)
   if (!(t->simple_poll = avahi_simple_poll_new())) goto fail;
   // Create the client.
   t->client = avahi_client_new(avahi_simple_poll_get(t->simple_poll), 0,
-			       client_callback, t, NULL);
+			       client_callback, t, &err);
   if (!t->client) goto fail;
   return t;
  fail:
+#if DEBUG
+  fprintf(stderr, "couldn't create service: %s (%s)\n",
+	  !t->simple_poll?"failed to create main loop":
+	  !t->client?"failed to create client":"unknown error",
+	  !t->client?avahi_strerror(err):"unknown error");
+#endif
   if (t->client) avahi_client_free(t->client);
   if (t->simple_poll) avahi_simple_poll_free(t->simple_poll);
+  free(t);
   return NULL;
 }
 
@@ -413,6 +422,7 @@ static void *browser_loop(void *data)
 avahi_browser_t *avahi_browse(const char *type)
 {
   avahi_browser_t *t = malloc(sizeof(avahi_browser_t));
+  int err = 0;
   assert(t);
   t->sb = NULL;
   t->client = NULL;
@@ -425,7 +435,7 @@ avahi_browser_t *avahi_browse(const char *type)
   if (!(t->simple_poll = avahi_simple_poll_new())) goto fail;
   // Create the client.
   t->client = avahi_client_new(avahi_simple_poll_get(t->simple_poll), 0,
-			       browser_client_callback, t, NULL);
+			       browser_client_callback, t, &err);
   if (!t->client) goto fail;
   // Create the service browser.
   t->sb = avahi_service_browser_new
@@ -436,6 +446,13 @@ avahi_browser_t *avahi_browse(const char *type)
   pthread_mutex_init(&t->mutex, NULL);
   return t;
  fail:
+#if DEBUG
+  fprintf(stderr, "couldn't create service browser: %s (%s)\n",
+	  !t->simple_poll?"failed to create main loop":
+	  !t->client?"failed to create client":
+	  !t->sb?"failed to create service browser":"unknown error",
+	  !t->client?avahi_strerror(err):"unknown error");
+#endif
   if (t->sb) avahi_service_browser_free(t->sb);
   if (t->client) avahi_client_free(t->client);
   if (t->simple_poll) avahi_simple_poll_free(t->simple_poll);
@@ -460,10 +477,9 @@ void avahi_close(avahi_browser_t *t)
 int avahi_avail(avahi_browser_t *t)
 {
   int ret;
+  if (!t) return 0;
   pthread_mutex_lock(&t->mutex);
-  if (!t)
-    ret = 0;
-  else if (t->ret < 0)
+  if (t->ret < 0)
     ret = t->ret;
   else
     ret = t->avail;
@@ -474,10 +490,9 @@ int avahi_avail(avahi_browser_t *t)
 pure_expr *avahi_get(avahi_browser_t *t)
 {
   pure_expr *ret;
+  if (!t) return 0;
   pthread_mutex_lock(&t->mutex);
-  if (!t)
-    ret = NULL;
-  else if (t->ret < 0)
+  if (t->ret < 0)
     ret = pure_int(t->ret);
   else {
     pure_expr *cons = pure_symbol(pure_sym(":"));

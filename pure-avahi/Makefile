@@ -16,6 +16,11 @@ MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS)
 
 LIBS = -lavahi-core -lavahi-common -lavahi-client
 
+ifeq ($(DLL),.dylib)
+# OSX: hardcode installation path into the dll.
+dllname = -install_name "$(installdir)/$@"
+endif
+
 # Basic rules to build the module, clean, install and uninstall.
 
 csource = avahi.c
@@ -25,7 +30,7 @@ objects = $(patsubst %.c, %$(DLL), $(csource))
 all: $(objects)
 
 %$(DLL): %.c
-	gcc $(shared) -o $@ $(MOD_CFLAGS) $< $(MOD_LDFLAGS) $(LIBS)
+	gcc $(shared) $(dllname) -o $@ $(MOD_CFLAGS) $< $(MOD_LDFLAGS) $(LIBS)
 
 clean:
 	rm -f *$(DLL)
