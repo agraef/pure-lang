@@ -14,7 +14,10 @@ installdir  = $(addprefix $(DESTDIR), $(libdir)/pure)
 MOD_CFLAGS  = $(PIC) $(shell pkg-config pure --cflags) $(CFLAGS) $(CPPFLAGS)
 MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS)
 
-#LIBS = -framework CoreFoundation
+ifeq ($(DLL),.so)
+# Linux: link against Avahi (default Zeroconf implementation)
+LIBS = -ldns_sd
+endif
 
 ifeq ($(DLL),.dylib)
 # OSX: hardcode installation path into the dll.
