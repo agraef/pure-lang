@@ -1,0 +1,65 @@
+
+/* bonjour.pure: Bonjour wrapper for the Pure programming language 2014-03-19 AG */
+
+/* This module allows you to advertise and query Zeroconf network services
+   using Apple's Bonjour (http://bonjour.org/)or compatible implementations.
+   Please note that this module only exposes the most essential functionality
+   of Bonjour. The idea is to make the module simple to use while offering a
+   set of features sufficient for most programs which require interoperability
+   with other Zeroconf applications. */
+
+using "lib:bonjour";
+
+namespace bonjour;
+
+/* Service publishing. *****************************************************/
+
+/* Publish a service given by name, service type and port number. Note that
+   this operation is actually carried out asynchronously. Use bonjour::check
+   below to wait for and report the result of the operation. The returned
+   result is a pointer to the service object which can be passed to the
+   following operations, or NULL in case of error. (A NULL pointer can be
+   passed safely to the other operations; they will fail in this case.) The
+   service will be unpublished automatically when the service object is
+   garbage-collected. */
+
+private extern bonjour_service_t *bonjour_publish(char *name, char *ty, int port);
+private extern void bonjour_unpublish(bonjour_service_t *t);
+
+publish name::string stype::string port::int =
+  sentry bonjour_unpublish (bonjour_publish name stype port);
+
+/* Check for the result of a publish operation. This blocks until a result is
+   available. A negative integer value indicates failure (in this case the
+   result is the Bonjour error code). Otherwise the result is a triple with the
+   actual service name, type and port. Note that the name may be different
+   from the one passed to bonjour::publish if there was a name collision with
+   another service. Such collisions are resolved automatically by tacking on a
+   suffix of the form #n to the service name. */
+
+extern expr *bonjour_check(bonjour_service_t *t) = check;
+
+/* Service discovery. ******************************************************/
+
+/* Browse available services of a given type. Again, this operation is carried
+   out asynchronously; use bonjour::avail below to check whether new information
+   is available, and bonjour::get to retrieve the actual service list. The
+   result returned by bonjour::browse is a pointer to the browser object which
+   can be passed to the following operations, or NULL in case of error. (A
+   NULL pointer can be passed safely to the other operations; they will fail
+   in this case.) Any resources allocated to the browser will be released
+   automatically when the browser object is garbage-collected. */
+
+private extern bonjour_browser_t *bonjour_browse(char *ty);
+private extern void bonjour_close(bonjour_browser_t *t);
+
+browse stype::string = sentry bonjour_close (bonjour_browse stype);
+
+/* Use bonjour::get to retrieve the current list of services. Each list entry is
+   a tuple with the name, type, domain, IP address and port number of a
+   service. Use bonjour::avail to check whether the information was updated
+   since the last invocation of bonjour::get. Both operations may also return a
+   negative integer (Bonjour error code) in case of error. */
+
+extern expr *bonjour_get(bonjour_browser_t *t) = get;
+extern int bonjour_avail(bonjour_browser_t *t) = avail;
