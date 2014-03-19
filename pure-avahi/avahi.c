@@ -19,7 +19,7 @@
 
 #ifndef DEBUG
 // Set this to a nonzero value to enable debugging output.
-#define DEBUG 1
+#define DEBUG 0
 #endif
 
 /* Service publishing. *****************************************************/
