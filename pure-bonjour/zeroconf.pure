@@ -1,0 +1,81 @@
+
+/* zeroconf.pure: Avahi/Bonjour compatibility module 2014-03-20 AG */
+
+/* This module implements a compatibility layer for the Avahi and Bonjour
+   modules. At present, Avahi (the Linux implementation of Zeroconf) only
+   provides an incomplete emulation of the Bonjour API which isn't sufficient
+   to support all operations of Pure's Bonjour module. OTOH, Bonjour is
+   generally only available on Mac OS X and Windows systems (a Linux
+   implementation exists, but most Linux systems ship with Avahi by default).
+   So it makes sense to have a compatibility module which supports both
+   implementations.
+
+   While the underlying implementations of the Zeroconf protocol are
+   completely different, both Pure modules implement exactly the same API,
+   albeit in different namespaces. The zeroconf module gives access to these
+   operations in the zeroconf namespace, so that applications can interface to
+   both implementations in a transparent way, without the need for any source
+   code changes. We also provide a dummy implementation of the API functions
+   for systems which have neither Avahi nor Bonjour installed.
+
+   Configuration is fully automatic. The Avahi module will be tried first,
+   then Bonjour. If neither of these modules is installed, the dummy
+   implementation will be provided. If you have both the Avahi and Bonjour
+   modules installed but would prefer to use the Bonjour module, you'll have
+   to explicitly disable the `avahi` option when compiling this module. */
+
+namespace zeroconf;
+
+#! --if avahi
+eval "using \"lib:avahi\";" === () &&
+(eval "#! --enable avahi\n#! --disable bonjour\n"$$true) ||
+eval "#! --disable avahi\n";
+#! --endif
+#! --if bonjour
+eval "using \"lib:bonjour\";" === () &&
+(eval "#! --enable bonjour\n#! --disable avahi\n"$$true) ||
+eval "#! --disable bonjour\n";
+#! --endif
+
+#! --if avahi
+
+private extern zeroconf_service_t *avahi_publish(char *name, char *ty, int port);
+private extern void avahi_unpublish(zeroconf_service_t *t);
+
+publish name::string stype::string port::int =
+  sentry avahi_unpublish (avahi_publish name stype port);
+extern expr *avahi_check(zeroconf_service_t *t) = check;
+
+private extern zeroconf_browser_t *avahi_browse(char *ty);
+private extern void avahi_close(zeroconf_browser_t *t);
+browse stype::string = sentry avahi_close (avahi_browse stype);
+extern expr *avahi_get(zeroconf_browser_t *t) = get;
+extern int avahi_avail(zeroconf_browser_t *t) = avail;
+
+#! --else // ~avahi
+
+#! --if bonjour
+
+private extern zeroconf_service_t *bonjour_publish(char *name, char *ty, int port);
+private extern void bonjour_unpublish(zeroconf_service_t *t);
+
+publish name::string stype::string port::int =
+  sentry bonjour_unpublish (bonjour_publish name stype port);
+extern expr *bonjour_check(zeroconf_service_t *t) = check;
+
+private extern zeroconf_browser_t *bonjour_browse(char *ty);
+private extern void bonjour_close(zeroconf_browser_t *t);
+browse stype::string = sentry bonjour_close (bonjour_browse stype);
+extern expr *bonjour_get(zeroconf_browser_t *t) = get;
+extern int bonjour_avail(zeroconf_browser_t *t) = avail;
+
+#! --else // ~bonjour
+
+public publish check browse get avail;
+check _ = -1;
+avail _ = false;
+get _ = [];
+
+#! --endif // ~bonjour
+
+#! --endif // ~avahi

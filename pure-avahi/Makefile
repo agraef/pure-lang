@@ -45,7 +45,7 @@ uninstall:
 # Roll a distribution tarball.
 
 DISTFILES = COPYING COPYING.LESSER Makefile $(csource) $(puresource) \
-examples/*.pure
+zeroconf.pure examples/*.pure
 SEDFILES = README
 
 dist = $(pkgname)-$(version)
