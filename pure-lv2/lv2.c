@@ -302,7 +302,7 @@ pure_expr *lv2pure_set(lv2plugin_t *p, int k, pure_expr *x)
 	if (n == 0) return pure_tuplel(0, 0);
 	bool ret = true;
 	for (size_t i = 0; i < n; i++) {
-	  uint32_t frames = 0;
+	  int32_t frames = 0;
 	  size_t m;
 	  pure_expr *x, **yv;
 	  void *data; uint8_t *v;

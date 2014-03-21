@@ -16,6 +16,11 @@
 
 #include <pure/runtime.h>
 
+// Set this to the proper shared library extension for your system
+#ifndef DLLEXT
+#define DLLEXT ".so"
+#endif
+
 #include <lv2/lv2plug.in/ns/ext/atom/atom.h>
 #include <lv2/lv2plug.in/ns/ext/atom/forge.h>
 #include <lv2/lv2plug.in/ns/ext/atom/util.h>
@@ -691,10 +696,10 @@ int lv2_dyn_manifest_get_data(LV2_Dyn_Manifest_Handle handle,
 <%s>\n\
        a lv2:Plugin ;\n\
        doap:name \"%s\" ;\n\
-       lv2:binary <%s.so> ;\n\
+       lv2:binary <%s%s> ;\n\
        lv2:optionalFeature epp:supportsStrictBounds ;\n\
        lv2:optionalFeature lv2:hardRtCapable ;\n",
-	  PLUGIN_URI, PLUGIN_NAME, PLUGIN_NAME);
+	  PLUGIN_URI, PLUGIN_NAME, PLUGIN_NAME, DLLEXT);
   for (unsigned i = 0; i < plugin->n; i++) {
     fprintf(fp, "%s [\n", i==0?"    lv2:port":" ,");
     switch (plugin->ty[i]) {

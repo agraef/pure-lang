@@ -17,13 +17,17 @@ bindir      = $(prefix)/bin
 libdir      = $(shell pkg-config pure --variable libdir)
 purelibdir  = $(libdir)/pure
 
+ifeq ($(DLL),.dylib)
+dllname = -install_name "$(purelibdir)/$@"
+endif
+
 MOD_CFLAGS  = $(PIC) $(shell pkg-config pure --cflags) $(CFLAGS) $(CPPFLAGS)
 MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS)
 
 all: lv2$(DLL)
 
 lv2$(DLL): lv2.c
-	gcc $(shared) -o $@ $(MOD_CFLAGS) -std=c99 $< $(MOD_LDFLAGS) $(LIBS)
+	gcc $(shared) $(dllname) -o $@ $(MOD_CFLAGS) -std=c99 $< $(MOD_LDFLAGS) $(LIBS)
 
 clean:
 	rm -rf *$(DLL)
