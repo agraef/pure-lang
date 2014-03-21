@@ -11,6 +11,10 @@ shared      = $(shell pkg-config pure --variable shared)
 libdir      = $(shell pkg-config pure --variable libdir)
 installdir  = $(addprefix $(DESTDIR), $(libdir)/pure)
 
+ifeq ($(DLL),.dylib)
+dllname = -install_name "$(installdir)/$@"
+endif
+
 MOD_CFLAGS  = $(PIC) $(shell pkg-config pure --cflags) $(shell pkg-config --cflags lilv-0) $(CFLAGS) $(CPPFLAGS)
 MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS)
 
@@ -25,7 +29,7 @@ objects = $(patsubst %.c, %$(DLL), $(csource))
 all: $(objects)
 
 lilv$(DLL): lilv.c lv2_evbuf.c symap.c
-	gcc $(shared) -o $@ $(MOD_CFLAGS) -std=c99 $^ $(MOD_LDFLAGS) $(LIBS)
+	gcc $(shared) $(dllname) -o $@ $(MOD_CFLAGS) -std=c99 $^ $(MOD_LDFLAGS) $(LIBS)
 
 clean:
 	rm -f *$(DLL)

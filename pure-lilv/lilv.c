@@ -956,7 +956,7 @@ void lilv_plugin_set_control(PluginInstance *p, uint32_t k, double x)
 
 pure_expr *lilv_plugin_get_midi(PluginInstance *p, uint32_t k)
 {
-  if (!p || k >= p->n || p->ty[k] != 4 && p->ty[k] != 5 || !(p->flags[k]&4))
+  if (!p || k >= p->n || (p->ty[k] != 4 && p->ty[k] != 5) || !(p->flags[k]&4))
     return 0;
   size_t n = 0;
   // Note that in any case p->ev_buf_size is an upper limit for number of MIDI
@@ -983,7 +983,7 @@ pure_expr *lilv_plugin_get_midi(PluginInstance *p, uint32_t k)
 
 pure_expr *lilv_plugin_set_midi(PluginInstance *p, uint32_t k, pure_expr *x)
 {
-  if (!p || k >= p->n || p->ty[k] != 4 && p->ty[k] != 5 || !(p->flags[k]&4))
+  if (!p || k >= p->n || (p->ty[k] != 4 && p->ty[k] != 5) || !(p->flags[k]&4))
     return 0;
   size_t n;
   pure_expr **xv;
@@ -992,7 +992,7 @@ pure_expr *lilv_plugin_set_midi(PluginInstance *p, uint32_t k, pure_expr *x)
   LV2_Evbuf_Iterator iter = lv2_evbuf_begin((LV2_Evbuf*)p->buffer[k]);
   for (size_t i = 0; i < n; i++) {
     void *data;
-    uint32_t frames = 0;
+    int32_t frames = 0;
     size_t m;
     pure_expr *x, **yv;
     pure_is_tuplev(xv[i], &m, &yv);
