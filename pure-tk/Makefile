@@ -1,7 +1,7 @@
 
 # Package name and version number:
 dist = pure-tk-$(version)
-version = 0.4
+version = 0.5
 
 # compiler flags -- these can be overridden from the command line if needed,
 # as well as CPPFLAGS, LDFLAGS and LIBS
