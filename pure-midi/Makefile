@@ -59,15 +59,17 @@ generate:
 	rm -f portmidi.pure
 	make portmidi.pure
 
+excludes = '^(linux|unix)$$'
+
 portmidi.pure: portmidi.h porttime.h pmdev.h
 ifeq ($(DLL),.dll)
 	echo 'using "lib:portmidi";' > $@
 	pure-gen -N -m Pm -p Pm -sportmidi.h:: portmidi.h -lpmlib -o $@
 else
-	pure-gen -m Pm -p Pm -sportmidi.h:: portmidi.h -lpmlib -o $@
+	pure-gen -m Pm -p Pm -x $(excludes) -sportmidi.h:: portmidi.h -lpmlib -o $@
 endif
-	pure-gen -N -m Pt -p Pt -sporttime.h:: porttime.h -o $@
-	pure-gen -N -m midi -p pm -spmdev.h:: pmdev.h -o $@
+	pure-gen -N -m Pt -p Pt -x $(excludes) -sporttime.h:: porttime.h -o $@
+	pure-gen -N -m midi -p pm -x $(excludes) -spmdev.h:: pmdev.h -o $@
 ifeq ($(DLL),.dll)
 	mv $@ $@.tmp
 	sed -e "s?extern int Pm_Synchronize?//extern int Pm_Synchronize?" < $@.tmp > $@
