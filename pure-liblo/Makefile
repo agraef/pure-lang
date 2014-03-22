@@ -1,7 +1,7 @@
 
 # Package name and version number:
 dist = pure-liblo-$(version)
-version = 0.8
+version = 0.9
 
 # compiler flags -- these can be overridden from the command line if needed,
 # as well as CPPFLAGS, LDFLAGS and LIBS
