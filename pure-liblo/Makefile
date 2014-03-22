@@ -97,7 +97,7 @@ includedir = $(shell pkg-config --variable=prefix liblo)/include
 # treatment. In the latter case we provide Purified wrappers in lo-add.c/pure
 # instead.
 
-excludes = '^(lo_address_get_url|lo_server_get_url|lo_server_thread_get_url|lo_message_add|lo_message_add_varargs|lo_send|lo_send_timestamped|lo_send_from|lo_.+_internal|LO_MARKER_A|LO_MARKER_B)$$'
+excludes = '^(linux|unix|lo_address_get_url|lo_server_get_url|lo_server_thread_get_url|lo_message_add|lo_message_add_varargs|lo_send|lo_send_timestamped|lo_send_from|lo_.+_internal|LO_MARKER_A|LO_MARKER_B)$$'
 
 ############################################################################
 
