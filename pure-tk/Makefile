@@ -3,12 +3,27 @@
 dist = pure-tk-$(version)
 version = 0.4
 
-# Try to guess the installation prefix (this needs GNU make):
-prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
-ifeq ($(strip $(prefix)),)
-# Fall back to /usr/local.
-prefix = /usr/local
+# compiler flags -- these can be overridden from the command line if needed,
+# as well as CPPFLAGS, LDFLAGS and LIBS
+CFLAGS = -O3
+#CFLAGS = -g -O2
+
+# platform-specific setup
+
+DLL         = $(shell pkg-config pure --variable DLL)
+PIC         = $(shell pkg-config pure --variable PIC)
+shared      = $(shell pkg-config pure --variable shared)
+
+prefix      = $(shell pkg-config pure --variable prefix)
+bindir      = $(prefix)/bin
+libdir      = $(shell pkg-config pure --variable libdir)
+
+ifeq ($(DLL),.dylib)
+dllname = -install_name "$(libdir)/pure/$@"
 endif
+
+MOD_CFLAGS  = $(PIC) $(shell pkg-config pure --cflags) $(CFLAGS) $(CPPFLAGS)
+MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS) $(LIBS)
 
 # Try to guess the Tcl version.
 tclvers = $(shell echo 'puts $$tcl_version' | tclsh)
@@ -16,54 +31,21 @@ ifeq ($(strip $(tclvers)),)
 tclvers = 8.5
 endif
 
-# Installation goes into $(libdir)/pure, you can also set this directly
-# instead of $(prefix).
-libdir = $(prefix)/lib
+# Try to figure out where the Tcl/Tk includes and libraries are.
+tk_includes = $(shell pkg-config tcl --cflags-only-I 2>/dev/null)
+tk_libs = $(shell pkg-config tcl --libs-only-L 2>/dev/null)
 
-# Try to guess the host system type.
-host = $(shell ./config.guess)
+MOD_CFLAGS += $(tk_includes)
+MOD_LDFLAGS += $(tk_libs)
 
-# Platform-specific defaults, edit this as needed.
-#PIC = -fPIC # uncomment for x86-64 compilation
-DLL = .so
-shared = -shared
-
-# Take care of some common systems.
-ifneq "$(findstring -mingw,$(host))" ""
-# Windows (untested)
-EXE = .exe
-DLL = .dll
-endif
-ifneq "$(findstring -darwin,$(host))" ""
-# OSX (untested)
-DLL = .dylib
-shared = -dynamiclib
-endif
-ifneq "$(findstring x86_64-,$(host))" ""
-# 64 bit, needs -fPIC flag
-PIC = -fPIC
-endif
-
-# Default CFLAGS are -g -O2, CPPFLAGS, LDFLAGS and LIBS are empty by default.
-# These can be set from the command line as usual. Use CFLAGS, CPPFLAGS and
-# LDFLAGS for compiler (-O etc.), preprocessor (-I etc.) and linker (-L etc.) 
-# options, respectively. LIBS is to be used for additional libraries to be
-# linked (-l etc.).
-
-CFLAGS = -g -O2
-
-FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
-
-DISTFILES = COPYING Makefile README config.guess tk.c tk.pure gnocl.pure \
+DISTFILES = COPYING Makefile README tk.c tk.pure gnocl.pure \
 debian/* examples/Makefile examples/*.pure examples/*.tcl examples/*.glade
 SEDFILES = README
 
 all: tk$(DLL)
 
-# Some installations have the Tcl/Tk header files in subdirs of /usr/include.
-
 tk$(DLL): tk.c
-	$(CC) $(shared) -o $@ -Wall -I/usr/include/tcl$(tclvers) -I/usr/include/tk$(tclvers) $< $(FLAGS) -ltcl$(tclvers) -ltk$(tclvers) -lpure $(LIBS)
+	$(CC) $(shared) $(dllname) -o $@ -Wall $(MOD_CFLAGS) $< $(MOD_LDFLAGS) -ltcl$(tclvers) -ltk$(tclvers)
 
 clean:
 	rm -f *$(DLL) *~ *.a *.o
