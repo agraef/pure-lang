@@ -3,66 +3,50 @@
 dist = pure-glpk-$(version)
 version = 0.4
 
-# Try to guess the installation prefix (this needs GNU make):
-prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
-ifeq ($(strip $(prefix)),)
-# Fall back to /usr/local.
-prefix = /usr/local
-endif
+# compiler flags -- these can be overridden from the command line if needed,
+# as well as CPPFLAGS, LDFLAGS and LIBS
+CFLAGS = -O3
+#CFLAGS = -g -O2
 
-# Installation goes into $(libdir)/pure, you can also set this directly
-# instead of $(prefix).
-libdir = $(prefix)/lib
+# platform-specific setup
 
-# Try to guess the host system type.
-host = $(shell ./config.guess)
+DLL         = $(shell pkg-config pure --variable DLL)
+PIC         = $(shell pkg-config pure --variable PIC)
+shared      = $(shell pkg-config pure --variable shared)
 
-# Platform-specific defaults, edit this as needed.
-#PIC = -fPIC # uncomment for x86-64 compilation
-DLL = .so
-shared = -shared
+prefix      = $(shell pkg-config pure --variable prefix)
+bindir      = $(prefix)/bin
+libdir      = $(shell pkg-config pure --variable libdir)
+
 ODBCLIB = -lodbc
 
-# Take care of some common systems.
-ifneq "$(findstring -mingw,$(host))" ""
-# Windows
-EXE = .exe
-DLL = .dll
-ODBCLIB = -lodbc32
-# This is needed to link with GMP.
+ifeq ($(DLL),.dylib)
+# OSX: hardcode the installation path into the module, so that the module can
+# be linked in by the batch compiler.
+dllname = -install_name "$(libdir)/pure/$@"
+endif
+
+ifeq ($(DLL),.dll)
+# Windows: This is needed to link with GMP and ODBC.
 LDFLAGS = -Wl,--enable-auto-import
-endif
-ifneq "$(findstring -darwin,$(host))" ""
-# OSX (untested)
-DLL = .dylib
-shared = -dynamiclib
-endif
-ifneq "$(findstring x86_64-,$(host))" ""
-# 64 bit, needs -fPIC flag
-PIC = -fPIC
+ODBCLIB = -lodbc32
 endif
 
-# Default CFLAGS are -g -O2, CPPFLAGS, LDFLAGS and LIBS are empty by default.
-# These can be set from the command line as usual. Use CFLAGS, CPPFLAGS and
-# LDFLAGS for compiler (-O etc.), preprocessor (-I etc.) and linker (-L etc.) 
-# options, respectively. LIBS is to be used for additional libraries to be
-# linked (-l etc.).
+LIBS = $(ODBCLIB) -lglpk -lgmp -lltdl -lz
 
-CFLAGS = -g -O2
+MOD_CFLAGS  = $(PIC) $(shell pkg-config pure --cflags) $(CFLAGS) $(CPPFLAGS)
+MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS) $(LIBS)
 
-FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
-
-DISTFILES = COPYING Makefile README config.guess \
-debian/* examples/*.pure glpk.c glpk.pure
+DISTFILES = COPYING Makefile README debian/* examples/*.pure glpk.c glpk.pure
 SEDFILES = README
 
 all: glpk$(DLL)
 
 glpk$(DLL): glpk.c
-	$(CC) $(shared) -o $@ $< $(FLAGS) $(ODBCLIB) -lglpk -lpure -lgmp -lltdl -lz $(LIBS)
+	$(CC) $(shared) $(dllname) -o $@ $(MOD_CFLAGS) $< $(MOD_LDFLAGS)
 
 clean:
-	rm -f *$(DLL) *~ *.a *.o
+	rm -Rf *$(DLL)* *~ *.a *.o
 
 # documentation (this needs docutils)
 
