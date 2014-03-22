@@ -239,11 +239,13 @@ sort (\x y -> mykey x < mykey y) {x,y | x=>y = m1; listp y};
 
 /* You can check two hashdicts for syntactic equality, which holds if and only
    if they contain the same elements, in the same order. But note that this is
-   somewhat flaky because the order of elements in a hashdict may depend on how
-   it is constructed. */
+   somewhat flaky because the order of elements in a hashdict may depend on
+   how it is constructed. In particular, note that in some implementations
+   `m === copy m` may fail even though the two dicts are copies of each other
+   and thus contain exactly the same elements. */
 
-m===m, m===m1, m === copy m,
-hashdict [97=>98,"a"=>"b"] === hashdict ["a"=>"b",97=>98]; // => 1,0,1,0
+m===m, m===m1, //m === copy m,
+hashdict [97=>98,"a"=>"b"] === hashdict ["a"=>"b",97=>98]; // => 1,0,0
 
 /* So the above isn't useful if you want to verify that two hashdicts contain
    the same elements, irrespective of the particular order in which the
