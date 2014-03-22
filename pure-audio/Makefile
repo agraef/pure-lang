@@ -1,7 +1,7 @@
 
 # Package name and version number:
 dist = pure-audio-$(version)
-version = 0.5
+version = 0.6
 
 # check Makefile.common for compiler flags and platform-specific settings
 include Makefile.common
