@@ -1,7 +1,7 @@
 
 # Package name and version number:
 dist = pure-xml-$(version)
-version = 0.6
+version = 0.7
 
 # compiler flags -- these can be overridden from the command line if needed,
 # as well as CPPFLAGS, LDFLAGS and LIBS
