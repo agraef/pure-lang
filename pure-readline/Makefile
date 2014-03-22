@@ -1,7 +1,7 @@
 
 # Package name and version number:
 dist = pure-readline-$(version)
-version = 0.2
+version = 0.3
 
 # Uncomment this to use BSD libedit instead of GNU readline.
 #READLINE = edit
