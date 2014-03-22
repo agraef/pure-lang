@@ -1,7 +1,7 @@
 
 # Package name and version number:
 dist = pure-odbc-$(version)
-version = 0.9
+version = 0.10
 
 # compiler flags -- these can be overridden from the command line if needed,
 # as well as CPPFLAGS, LDFLAGS and LIBS
