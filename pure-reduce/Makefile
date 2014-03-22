@@ -16,7 +16,7 @@ EXE =
 DIFF = diff
 ifeq ($(DLL),.dylib)
 # OSX: hardcode installation path into the dll.
-dllname = -install_name "$(installdir)/reduce$(DLL)"
+dllname = -install_name "$(libdir)/pure/reduce$(DLL)"
 endif
 endif
 
