@@ -3,60 +3,44 @@
 pkgname = pure-sockets
 version = 0.6
 
-# Try to guess the host system type.
-host = $(shell ./config.guess)
+# compiler flags -- these can be overridden from the command line if needed,
+# as well as CPPFLAGS, LDFLAGS and LIBS
+CFLAGS = -O3
+#CFLAGS = -g -O2
 
-# Try to guess the installation prefix (this needs GNU make):
-prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
-ifeq ($(strip $(prefix)),)
-# Fall back to /usr/local.
-prefix = /usr/local
+# platform-specific setup
+
+DLL         = $(shell pkg-config pure --variable DLL)
+PIC         = $(shell pkg-config pure --variable PIC)
+shared      = $(shell pkg-config pure --variable shared)
+
+prefix      = $(shell pkg-config pure --variable prefix)
+bindir      = $(prefix)/bin
+libdir      = $(shell pkg-config pure --variable libdir)
+
+ifeq ($(DLL),.dylib)
+dllname = -install_name "$(libdir)/pure/$@"
 endif
 
-# Platform-specific defaults, edit this as needed.
-#PIC = -fPIC # uncomment for x86-64 compilation
-DLL = .so
-shared = -shared
-
-# Take care of some common systems.
-ifneq "$(findstring -mingw,$(host))" ""
-# Windows
-DLL = .dll
-EXE = .exe
+ifeq ($(DLL),.dll)
 LIBS = -lws2_32
 endif
-ifneq "$(findstring -darwin,$(host))" ""
-# OSX (untested)
-DLL = .dylib
-shared = -dynamiclib
-endif
-ifneq "$(findstring x86_64-,$(host))" ""
-# 64 bit, needs -fPIC flag
-PIC = -fPIC
-endif
 
-# Installation goes into $(libdir)/pure, you can also set this directly
-# instead of $(prefix).
-libdir = $(prefix)/lib
+MOD_CFLAGS  = $(PIC) $(shell pkg-config pure --cflags) $(CFLAGS) $(CPPFLAGS)
+MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS) $(LIBS)
 
 # Anything listed below will also be included in the tarball. Adjust as needed.
 extradirs = examples debian
 extradist = examples/*.pure debian/*
 
 # Distribution files for dist and distcheck targets below.
-distfiles = COPYING COPYING.LESSER Makefile README config.guess $(source) $(extradist)
+distfiles = COPYING COPYING.LESSER Makefile README $(source) $(extradist)
 sedfiles = README
 
 # Installation files for install and uninstall targets.
 instfiles = $(pure_source) $(objects)
 
 # The stuff below is pretty generic.
-
-#CC = gcc
-#CXX = g++
-
-CFLAGS = -g -O2
-CXXFLAGS = -g -O2
 
 pure_source := $(wildcard *.pure)
 c_source    := $(wildcard *.c)
@@ -71,11 +55,11 @@ clean:
 
 # compile C source to shared library
 %$(DLL): %.c
-	$(CC) $(shared) $(CPPFLAGS) $(CFLAGS) $(PIC) $< -o $@ $(LDFLAGS) -lpure $(LIBS)
+	$(CC) $(shared) $(dllname) $(MOD_CFLAGS) $< -o $@ $(MOD_LDFLAGS)
 
 # compile C++ source to shared library
 %$(DLL): %.cc
-	$(CXX) $(shared) $(CPPFLAGS) $(CXXFLAGS) $(PIC) $< -o $@ $(LDFLAGS) -lpure $(LIBS)
+	$(CXX) $(shared) $(dllname) $(MOD_CFLAGS) $< -o $@ $(MOD_LDFLAGS)
 
 # install and uninstall targets.
 
