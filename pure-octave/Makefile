@@ -5,50 +5,35 @@
 dist = pure-octave-$(version)
 version = 0.5
 
+# platform-specific setup
+
+DLL         = $(shell pkg-config pure --variable DLL)
+PIC         = $(shell pkg-config pure --variable PIC)
+shared      = $(shell pkg-config pure --variable shared)
+
+prefix      = $(shell pkg-config pure --variable prefix)
+bindir      = $(prefix)/bin
+libdir      = $(shell pkg-config pure --variable libdir)
+
+ifeq ($(DLL),.dylib)
+dllname = -install_name "$(libdir)/pure/$@"
+endif
+
 # Try to guess the Octave version number. We're only interested in the
 # major/minor version here, to cope with the C/C++ API breakage in Octave 3.8.
 octversion=$(shell mkoctfile --version 2>&1 | sed -e 's/^mkoctfile, version \([0-9.]*\).*/\1/' | sed -e 's/\([0-9]*\)[.]\([0-9]*\).*/-DOCTAVE_\1_\2/')
 
-# Try to guess the installation prefix (this needs GNU make):
-prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
-ifeq ($(strip $(prefix)),)
-# Fall back to /usr/local.
-prefix = /usr/local
-endif
-
-# Installation goes into $(libdir)/pure, you can also set this directly
-# instead of $(prefix).
-libdir = $(prefix)/lib
-
-# Try to guess the host system type.
-host = $(shell ./config.guess)
-
-# Platform-specific defaults, edit this as needed.
-#PIC = -fPIC # uncomment for x86-64 compilation
-DLL = .so
-
-# Take care of some common systems.
-ifneq "$(findstring -mingw,$(host))" ""
-# Windows (untested)
-EXE = .exe
-DLL = .dll
-endif
-ifneq "$(findstring -darwin,$(host))" ""
-# OSX
-DLL = .dylib
-endif
-
 # Add the -rpath flag so that the dynamic linker finds liboctave.so etc. when
 # Pure loads the module.
-RLD_FLAG=`mkoctfile -p RLD_FLAG`
+RLD_FLAG=$(shell mkoctfile -p RLD_FLAG)
 
-DISTFILES = COPYING Makefile README config.guess embed.cc embed.h \
+DISTFILES = COPYING Makefile README embed.cc embed.h \
 gsl_structs.h gnuplot.pure octave.pure debian/* examples/*.pure
 SEDFILES = README
 
 all: octave_embed$(DLL)
 
-ifneq "$(findstring -darwin,$(host))" ""
+ifeq ($(DLL),.dylib)
 # OS X quirk: mkoctfile wants to create a bundle, but we want just a
 # dylib which can be linked into other modules.
 embed.o: embed.cc embed.h
@@ -58,7 +43,7 @@ MKOCT_LDCXX = $(shell mkoctfile -p LD_CXX)
 MKOCT_LDFLAGS = $(shell mkoctfile -p LFLAGS) $(shell mkoctfile -p OCTAVE_LIBS) $(shell mkoctfile -p LDFLAGS)
 octave_embed$(DLL): embed.o
 	rm -f $@
-	$(MKOCT_LDCXX) -dynamiclib -install_name "$(libdir)/pure/$@" -o $@ embed.o $(MKOCT_LDFLAGS) -lpure $(RLD_FLAG)
+	$(MKOCT_LDCXX) $(shared) $(dllname) -o $@ embed.o $(MKOCT_LDFLAGS) -lpure $(RLD_FLAG)
 else
 octave_embed$(DLL): embed.cc embed.h
 	rm -f $@
