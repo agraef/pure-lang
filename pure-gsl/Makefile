@@ -1,7 +1,7 @@
 
 # Package name and version number:
 dist = pure-gsl-$(version)
-version = 0.11
+version = 0.12
 
 # compiler flags -- these can be overridden from the command line if needed,
 # as well as CPPFLAGS, LDFLAGS and LIBS
