@@ -41,7 +41,7 @@ bool fft(int n, double *wave, double *mag, double *phase)
     mag[i] = myabs(x[i], x[n-i])/n_2;
     phase[i] = myarg(x[i], x[n-i]);
   }
-  if (n > 1)
+  if (n > 1) {
     if (n%2 == 0) {
       mag[n2] = myabs(x[n2], 0.0)/n;
       phase[n2] = myarg(x[n2], 0.0);
@@ -49,6 +49,7 @@ bool fft(int n, double *wave, double *mag, double *phase)
       mag[n2] = myabs(x[n2], x[n-n2])/n_2;
       phase[n2] = myarg(x[n2], x[n-n2]);
     }
+  }
   fftw_destroy_plan(p);
   fftw_free(x);
   return true;
