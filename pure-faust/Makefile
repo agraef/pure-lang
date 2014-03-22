@@ -3,54 +3,32 @@
 dist = pure-faust-$(version)
 version = 0.9
 
-# Try to guess the Pure installation prefix:
-prefix = $(patsubst %/bin/pure,%,$(shell which pure 2>/dev/null))
-ifeq ($(strip $(prefix)),)
-# Fall back to /usr/local.
-prefix = /usr/local
+# compiler flags -- these can be overridden from the command line if needed,
+# as well as CPPFLAGS, LDFLAGS and LIBS
+CFLAGS = -O3
+#CFLAGS = -g -O2
+
+# platform-specific setup
+
+DLL         = $(shell pkg-config pure --variable DLL)
+PIC         = $(shell pkg-config pure --variable PIC)
+shared      = $(shell pkg-config pure --variable shared)
+
+prefix      = $(shell pkg-config pure --variable prefix)
+bindir      = $(prefix)/bin
+libdir      = $(shell pkg-config pure --variable libdir)
+
+ifeq ($(DLL),.dylib)
+# OSX: hardcode the installation path into the module, so that the module can
+# be linked in by the batch compiler.
+dllname = -install_name "$(libdir)/pure/$@"
 endif
 
-# Installation goes into $(libdir)/pure, you can also set this directly
-# instead of $(prefix).
-libdir = $(prefix)/lib
-
-# Try to guess the host system type.
-host = $(shell ./config.guess)
-
-# Platform-specific defaults, edit this as needed.
-#PIC = -fPIC # uncomment for x86-64 compilation
-DLL = .so
-shared = -shared
-
-# Take care of some common systems.
-ifneq "$(findstring -mingw,$(host))" ""
-# Windows
-DLL = .dll
-endif
-ifneq "$(findstring -darwin,$(host))" ""
-# OSX
-DLL = .dylib
-shared = -dynamiclib
-dllname = -install_name "$(libdir)/pure/faust$(DLL)"
-# MacPorts defaults
-CPPFLAGS = -I/opt/local/include
-LDFLAGS = -L/opt/local/lib
-endif
-ifneq "$(findstring x86_64-,$(host))" ""
-# 64 bit, needs -fPIC flag
-PIC = -fPIC
-endif
-
-# Default CXXFLAGS are -g -O2, CPPFLAGS, LDFLAGS and LIBS are empty by default.
-# These can be set from the command line as usual. Use CXXFLAGS, CPPFLAGS and
-# LDFLAGS for additional compiler (-O etc.), preprocessor (-I etc.) and linker
-# (-L etc.) options, respectively. LIBS is to be used for additional libraries
-# to be linked (-l etc.).
-
-CXXFLAGS = -g -O2
+MOD_CFLAGS  = $(PIC) $(shell pkg-config pure --cflags) $(CFLAGS) $(CPPFLAGS)
+MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS) $(LIBS)
 
 DISTFILES = COPYING COPYING.LESSER Makefile README \
-config.guess faust.cc faust.pure faust2.pure \
+faust.cc faust.pure faust2.pure \
 debian/* examples/Makefile examples/pure.c examples/pure.cpp \
 examples/*.pure examples/*.dsp
 SEDFILES = README
@@ -58,13 +36,13 @@ SEDFILES = README
 all: faust$(DLL)
 
 faust$(DLL): faust.o
-	$(CXX) $(shared) $(dllname) -o $@ $(PIC) $(LDFLAGS) $< -lpure -lltdl $(LIBS)
+	$(CXX) $(shared) $(dllname) -o $@ $< $(MOD_LDFLAGS) -lltdl
 
 faust.o: faust.cc
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(PIC) -o $@ -c $<
+	$(CXX) $(MOD_CFLAGS) -o $@ -c $<
 
 clean:
-	rm -f faust$(DLL) *~ *.a *.o
+	rm -Rf faust$(DLL)* *~ *.a *.o
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
