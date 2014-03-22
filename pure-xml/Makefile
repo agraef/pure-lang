@@ -3,76 +3,53 @@
 dist = pure-xml-$(version)
 version = 0.6
 
-# Try to guess the installation prefix (this needs GNU make):
-prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
-ifeq ($(strip $(prefix)),)
-# Fall back to /usr/local.
-prefix = /usr/local
+# compiler flags -- these can be overridden from the command line if needed,
+# as well as CPPFLAGS, LDFLAGS and LIBS
+CFLAGS = -O3
+#CFLAGS = -g -O2
+
+# platform-specific setup
+
+DLL         = $(shell pkg-config pure --variable DLL)
+PIC         = $(shell pkg-config pure --variable PIC)
+shared      = $(shell pkg-config pure --variable shared)
+
+prefix      = $(shell pkg-config pure --variable prefix)
+bindir      = $(prefix)/bin
+libdir      = $(shell pkg-config pure --variable libdir)
+
+ifeq ($(DLL),.dylib)
+dllname = -install_name "$(libdir)/pure/$@"
 endif
 
-pureinc = -I$(prefix)/include
-purelib = -L$(prefix)/lib -lpure
+MOD_CFLAGS  = $(PIC) $(shell pkg-config pure --cflags) $(CFLAGS) $(CPPFLAGS)
+MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS) $(LIBS)
 
-# Installation goes into $(libdir)/pure, you can also set this directly
-# instead of $(prefix).
-libdir = $(prefix)/lib
-datadir = $(libdir)/pure
-
-# Try to guess the host system type.
-host = $(shell ./config.guess)
-
-# Platform-specific defaults, edit this as needed.
-#PIC = -fPIC # uncomment for x86-64 compilation
-DLL = .so
-shared = -shared
-
-# Take care of some common systems.
-ifneq "$(findstring -mingw,$(host))" ""
-# Windows
-EXE = .exe
-DLL = .dll
+# Compilation options to link with XML/XSLT.
+ifeq ($(DLL),.dll)
 XMLLIBS = -lxslt -lxml2
 XMLFLAGS = 
-# This is needed to link with GMP.
-#LDFLAGS = -Wl,--enable-auto-import
-endif
-ifneq "$(findstring -darwin,$(host))" ""
-# OSX (untested)
-DLL = .dylib
-shared = -dynamiclib
-# OSX: hardcode installation path into the dll.
-dllname = -install_name "$(datadir)/xml$(DLL)"
-endif
-ifneq "$(findstring x86_64-,$(host))" ""
-# 64 bit, needs -fPIC flag
-PIC = -fPIC
-endif
-ifeq "$(findstring -mingw,$(host))" ""
+else
 XMLLIBS = $(shell xml2-config --libs) $(shell xslt-config --libs)
 XMLFLAGS = $(shell xml2-config --cflags)
 endif
 
-# Default CFLAGS are -g -O2, CPPFLAGS, LDFLAGS and LIBS are empty by default.
-# These can be set from the command line as usual. Use CFLAGS, CPPFLAGS and
-# LDFLAGS for compiler (-O etc.), preprocessor (-I etc.) and linker (-L etc.) 
-# options, respectively. LIBS is to be used for additional libraries to be
-# linked (-l etc.).
+MOD_CFLAGS += $(XMLFLAGS)
+MOD_LDFLAGS += $(XMLLIBS)
 
-CFLAGS = -g -O2
-
-FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
-
-DISTFILES = COPYING COPYING.LESSER Makefile README config.guess \
+DISTFILES = COPYING COPYING.LESSER Makefile README \
 xml.c xml.pure debian/* examples/*.pure examples/*.xml examples/*.xsl
 SEDFILES = README
 
 all: xml$(DLL)
 
 xml$(DLL): xml.c
-	$(CC) $(shared) $(dllname) -o $@ $< $(XMLFLAGS) $(FLAGS) $(pureinc) $(XMLLIBS) $(purelib) $(LIBS)
+	$(CC) $(shared) $(dllname) -o $@ $(MOD_CFLAGS) $< $(MOD_LDFLAGS)
 
 clean:
 	rm -Rf *$(DLL)* *~ *.a *.o
+
+datadir = $(libdir)/pure
 
 install:
 	test -d "$(DESTDIR)$(datadir)" || mkdir -p "$(DESTDIR)$(datadir)"
