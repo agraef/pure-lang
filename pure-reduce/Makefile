@@ -35,7 +35,10 @@ CFLAGS=-O2 -I. $(shell pkg-config pure --cflags) -DPAGE_BITS=19 -DHAVE_CONFIG_H=
 
 objects = arith01.o arith02.o arith03.o arith04.o arith05.o arith06.o arith07.o arith08.o arith09.o arith10.o arith11.o arith12.o bytes.o char.o driver.o embedcsl.o cslmpi.o cslread.o eval1.o eval2.o eval3.o eval4.o fasl.o fns1.o fns2.o fns3.o fwin.o gc.o preserve.o print.o restart.o sysfwin.o termed.o stubs.o
 
-all: reduce.img reduce$(DLL)
+# NOTE: The reduce.img and reduce$(DLL) subtargets must be executed
+# sequentially, in this order, to make parallel builds (-j) work.
+all:
+	$(MAKE) reduce.img && $(MAKE) reduce$(DLL)
 
 # NOTE: The following requires that the Reduce sources are in the
 # reduce-algebra subdirectory (this may also be a symbolic link pointing to
@@ -58,8 +61,8 @@ ifneq ($(EXE),)
 reduce: reduce$(EXE)
 endif
 
-reduce$(EXE): reduce-algebra/csl/new-embedded/reduce-image/reduce$(EXE) reduce.img
-	cp $< .
+reduce$(EXE): all
+	cp reduce-algebra/csl/new-embedded/reduce-image/reduce$(EXE) .
 
 reduce-algebra/csl/new-embedded/reduce.img reduce-algebra/csl/new-embedded/reduce-image/reduce$(EXE):
 	$(MAKE) -C reduce-algebra/csl/new-embedded CFLAGS="$(CFLAGS)"
