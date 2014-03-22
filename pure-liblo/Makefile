@@ -3,67 +3,48 @@
 dist = pure-liblo-$(version)
 version = 0.8
 
-# Try to guess the installation prefix (this needs GNU make):
-prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
-ifeq ($(strip $(prefix)),)
-# Fall back to /usr/local.
-prefix = /usr/local
-endif
+# compiler flags -- these can be overridden from the command line if needed,
+# as well as CPPFLAGS, LDFLAGS and LIBS
+CFLAGS = -O3
+#CFLAGS = -g -O2
 
-# Installation goes into $(libdir)/pure, you can also set this directly
-# instead of $(prefix).
-libdir = $(prefix)/lib
+# platform-specific setup
 
-# Try to guess the host system type.
-host = $(shell ./config.guess)
+DLL         = $(shell pkg-config pure --variable DLL)
+PIC         = $(shell pkg-config pure --variable PIC)
+shared      = $(shell pkg-config pure --variable shared)
 
-# Platform-specific defaults, edit this as needed.
-#PIC = -fPIC # uncomment for x86-64 compilation
-DLL = .so
-shared = -shared
+prefix      = $(shell pkg-config pure --variable prefix)
+bindir      = $(prefix)/bin
+libdir      = $(shell pkg-config pure --variable libdir)
+
 LIBS = -lgmp
 
-# Take care of some common systems.
-ifneq "$(findstring -mingw,$(host))" ""
-# Windows
-EXE = .exe
-DLL = .dll
+ifeq ($(DLL),.dylib)
+dllname = -install_name "$(libdir)/pure/$@"
+endif
+
+ifeq ($(DLL),.dll)
 LIBS = -lws2_32 -lgmp
 endif
-ifneq "$(findstring -darwin,$(host))" ""
-# OSX (untested)
-DLL = .dylib
-shared = -dynamiclib
-endif
-ifneq "$(findstring x86_64-,$(host))" ""
-# 64 bit, needs -fPIC flag
-PIC = -fPIC
-endif
 
-# Default CFLAGS are -g -O2, CPPFLAGS, LDFLAGS and LIBS are empty by default.
-# These can be set from the command line as usual. Use CFLAGS, CPPFLAGS and
-# LDFLAGS for compiler (-O etc.), preprocessor (-I etc.) and linker (-L etc.) 
-# options, respectively. LIBS is to be used for additional libraries to be
-# linked (-l etc.).
-
-CFLAGS = -g -O2
-
-FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
+MOD_CFLAGS  = $(PIC) $(shell pkg-config pure --cflags) $(CFLAGS) $(CPPFLAGS)
+MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS) $(LIBS)
 
 LO_CFLAGS = $(shell pkg-config --cflags liblo) $(shell pkg-config --atleast-version=0.26 liblo && echo '-DHAVE_TIMETAG=1')
 LO_LIBS = $(shell pkg-config --libs liblo)
 
-DISTFILES = COPYING COPYING.LESSER Makefile README config.guess \
+DISTFILES = COPYING COPYING.LESSER Makefile README \
 debian/* examples/*.pure lo.c lo.pure lo-add.c lo-add.pure osc.pure
 SEDFILES = README
 
 all: lo$(DLL)
 
 lo$(DLL): lo.c lo-add.c
-	$(CC) $(shared) -o $@ $^ $(LO_CFLAGS) $(FLAGS) -lpure $(LO_LIBS) $(LIBS)
+	$(CC) $(shared) $(dllname) -o $@ $(LO_CFLAGS) $(MOD_CFLAGS) $^ $(LO_LIBS) $(MOD_LDFLAGS)
 
 clean:
-	rm -f *$(DLL) *~ *.a *.o
+	rm -Rf *$(DLL)* *~ *.a *.o
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
