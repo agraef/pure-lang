@@ -3,61 +3,45 @@
 dist = pure-gsl-$(version)
 version = 0.11
 
-# Try to guess the installation prefix (this needs GNU make):
-prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
-ifeq ($(strip $(prefix)),)
-# Fall back to /usr/local.
-prefix = /usr/local
+# compiler flags -- these can be overridden from the command line if needed,
+# as well as CPPFLAGS, LDFLAGS and LIBS
+CFLAGS = -O3
+#CFLAGS = -g -O2
+
+# platform-specific setup
+
+DLL         = $(shell pkg-config pure --variable DLL)
+PIC         = $(shell pkg-config pure --variable PIC)
+shared      = $(shell pkg-config pure --variable shared)
+
+prefix      = $(shell pkg-config pure --variable prefix)
+bindir      = $(prefix)/bin
+libdir      = $(shell pkg-config pure --variable libdir)
+
+ifeq ($(DLL),.dylib)
+# OSX: hardcode the installation path into the module, so that the module can
+# be linked in by the batch compiler.
+dllname = -install_name "$(libdir)/pure/$@"
 endif
 
-# Installation goes into $(libdir)/pure, you can also set this directly
-# instead of $(prefix).
-libdir = $(prefix)/lib
-
-# Try to guess the host system type.
-host = $(shell ./config.guess)
-
-# Platform-specific defaults, edit this as needed.
-#PIC = -fPIC # uncomment for x86-64 compilation
-DLL = .so
-shared = -shared
-
-# Take care of some common systems.
-ifneq "$(findstring -mingw,$(host))" ""
-# Windows
-EXE = .exe
-DLL = .dll
+ifeq ($(DLL),.dll)
 LDFLAGS = -Wl,--enable-auto-import
 endif
-ifneq "$(findstring -darwin,$(host))" ""
-# OSX (untested)
-DLL = .dylib
-shared = -dynamiclib
-endif
-ifneq "$(findstring x86_64-,$(host))" ""
-# 64 bit, needs -fPIC flag
-PIC = -fPIC
-endif
 
-# Default CFLAGS are -g -O2, CPPFLAGS, LDFLAGS and LIBS are empty by default.
-# These can be set from the command line as usual. Use CFLAGS, CPPFLAGS and
-# LDFLAGS for compiler (-O etc.), preprocessor (-I etc.) and linker (-L etc.) 
-# options, respectively. LIBS is to be used for additional libraries to be
-# linked (-l etc.).
+LIBS = -lgsl -lgslcblas -lm
 
-CFLAGS = -g -O2
+MOD_CFLAGS  = $(PIC) $(shell pkg-config pure --cflags) $(CFLAGS) $(CPPFLAGS)
+MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS) $(LIBS)
 
-FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
-
-DISTFILES = COPYING Makefile README config.guess debian/* examples/*.pure gsl/*.pure gsl.c gsl.pure
+DISTFILES = COPYING Makefile README debian/* examples/*.pure gsl/*.pure gsl.c gsl.pure
 
 all: gsl$(DLL)
 
 gsl$(DLL): gsl.c
-	$(CC) $(shared) -o $@ $< $(FLAGS) -lgsl -lgslcblas -lm -lpure $(LIBS)
+	$(CC) $(shared) $(dllname) -o $@ $(MOD_CFLAGS) $< $(MOD_LDFLAGS)
 
 clean:
-	rm -f *$(DLL) *~ *.a *.o
+	rm -Rf *$(DLL)* *~ *.a *.o
 
 install:
 	test -d "$(DESTDIR)$(libdir)/pure" || mkdir -p "$(DESTDIR)$(libdir)/pure"
