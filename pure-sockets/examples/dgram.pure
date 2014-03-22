@@ -1,4 +1,4 @@
-#!/usr/local/bin/pure -x
+#!/usr/bin/env pure
 
 /* dgram.pure: Connectionless datagram server/client example. */
 
@@ -48,7 +48,7 @@ using sockets, system;
 
 const bufsz = 1024;
 
-/* Helper macro to handle for all kinds of socket errors. This is invoked as
+/* Helper macro to handle all kinds of socket errors. This is invoked as
    'check fd x' where fd is the socket descriptor and x the condition to be
    evaluated. If x returns anything but true, check closes the socket (if
    fd>=0) and throws a socket_error exception. */
@@ -84,6 +84,8 @@ end;
 
 // Fixed server address, so that the clients know where to find it.
 let server_addr = sockaddr ("localhost",5001);
+// Adress family (may be AF_INET, but usually AF_INET6 on modern systems).
+let addr_family = sockaddr_family server_addr;
 
 server = server_loop
 with
@@ -106,7 +108,7 @@ end when
   buf = cooked $ malloc bufsz; addr = sockaddr ();
   ~null buf && ~null addr || throw malloc_error;
   // Open the socket and bind it to the server address.
-  fd = socket AF_INET SOCK_DGRAM 0;
+  fd = socket addr_family SOCK_DGRAM 0;
   check fd (fd >= 0 && bind fd server_addr >= 0);
   print_addr "server" server_addr;
 end;
@@ -137,7 +139,7 @@ end when
   ~null buf || throw malloc_error;
   // Open the socket and bind it to the client address.
   addr = sockaddr ("localhost",port);
-  fd = socket AF_INET SOCK_DGRAM 0;
+  fd = socket addr_family SOCK_DGRAM 0;
   check fd (fd >= 0 && bind fd addr >= 0);
   print_addr "client" addr;
 end;
@@ -145,7 +147,8 @@ end;
 /* This is a little main program which lets us run this script directly from
    the command line. */
 
-main with
+catch error main with
+  error x = fprintf stderr "dgram: caught exception '%s', exiting\n" (str x);
   main = case argv of
     [_,"server"] = server;
     [_,"client"] = client 5002;

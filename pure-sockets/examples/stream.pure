@@ -1,8 +1,12 @@
-#!/usr/local/bin/pure -x
+#!/usr/bin/env pure
 
 /* Unix stream socket example. This illustrates AF_UNIX sockets, and opening
    the socket as a FILE* so that we can use the standard I/O operations from
-   the system module on the socket. */
+   the system module on the socket.
+
+   Please note that this example won't work on Windows which doesn't support
+   AF_UNIX sockets. Otherwise, usage is the same as with dgram.pure (which
+   see), just using stream.pure instead of dgram.pure. */
 
 using sockets, system;
 
@@ -77,7 +81,11 @@ end;
 /* This is a little main program which lets us run this script directly from
    the command line. */
 
-main with
+catch error main with
+  error x = () when
+    fprintf stderr "stream: caught exception '%s', exiting\n" (str x);
+    unlink path;
+  end;
   main = case argv of
     [_,"server"] = server;
     [_,"client"] = client;
