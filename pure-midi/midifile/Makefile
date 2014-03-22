@@ -2,46 +2,27 @@
 # Try to guess the host system type.
 host = $(shell ../config.guess)
 
-prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
-ifeq ($(strip $(prefix)),)
-prefix = /usr/local
-endif
-libdir = $(prefix)/lib
+# compiler flags -- these can be overridden from the command line if needed,
+# as well as CPPFLAGS, LDFLAGS and LIBS
+CFLAGS = -O3
+#CFLAGS = -g -O2
 
-# Platform-specific defaults, edit this as needed.
-#PIC = -fPIC # uncomment for x86-64 compilation
-DLL = .so
-shared = -shared
+# platform-specific setup
 
-# Take care of some common systems.
-ifneq "$(findstring -mingw,$(host))" ""
-# Windows (untested)
-DLL = .dll
-endif
-ifneq "$(findstring -darwin,$(host))" ""
-# OSX
-DLL = .dylib
-shared = -dynamiclib
-dllname = -install_name "$(libdir)/pure/midifile$(DLL)"
-# MacPorts defaults
-CPPFLAGS = -I/opt/local/include
-LDFLAGS = -L/opt/local/lib
-PUREGEN_FLAGS = -I/opt/local/include
-endif
-ifneq "$(findstring x86_64-,$(host))" ""
-# 64 bit, needs -fPIC flag
-PIC = -fPIC
+DLL         = $(shell pkg-config pure --variable DLL)
+PIC         = $(shell pkg-config pure --variable PIC)
+shared      = $(shell pkg-config pure --variable shared)
+
+prefix      = $(shell pkg-config pure --variable prefix)
+bindir      = $(prefix)/bin
+libdir      = $(shell pkg-config pure --variable libdir)
+
+ifeq ($(DLL),.dylib)
+dllname = -install_name "$(libdir)/pure/$@"
 endif
 
-# Default CFLAGS are -g -O2, CPPFLAGS, LDFLAGS and LIBS are empty by default.
-# These can be set from the command line as usual. Use CFLAGS, CPPFLAGS and
-# LDFLAGS for compiler (-O etc.), preprocessor (-I etc.) and linker (-L etc.) 
-# options, respectively. LIBS is to be used for additional libraries to be
-# linked (-l etc.).
-
-CFLAGS = -g -O2
-
-FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
+MOD_CFLAGS  = $(PIC) $(shell pkg-config pure --cflags) $(CFLAGS) $(CPPFLAGS)
+MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS) $(LIBS)
 
 all: midifile$(DLL)
 
@@ -49,7 +30,7 @@ clean:
 	rm -f *.o *$(DLL)
 
 midifile$(DLL): midifile.c mf.c
-	$(CC) $(shared) $(dllname) -o $@ $^ $(FLAGS) -lpure $(LIBS)
+	$(CC) $(shared) $(dllname) -o $@ $(MOD_CFLAGS) $^ $(MOD_LDFLAGS)
 
 # You can use this to regenerate midifile.pure from mf.h using pure-gen.
 # CAVEAT: This is for maintainers only and shouldn't normally be necessary.
