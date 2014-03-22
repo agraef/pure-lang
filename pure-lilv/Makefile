@@ -12,7 +12,7 @@ libdir      = $(shell pkg-config pure --variable libdir)
 installdir  = $(addprefix $(DESTDIR), $(libdir)/pure)
 
 ifeq ($(DLL),.dylib)
-dllname = -install_name "$(installdir)/$@"
+dllname = -install_name "$(libdir)/pure/$@"
 endif
 
 MOD_CFLAGS  = $(PIC) $(shell pkg-config pure --cflags) $(shell pkg-config --cflags lilv-0) $(CFLAGS) $(CPPFLAGS)
