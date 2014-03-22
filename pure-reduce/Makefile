@@ -31,7 +31,7 @@ binstalldir = $(addprefix $(DESTDIR), $(bindir))
 # Special flags and objects needed to build the reduce dll pilfered from
 # reduce-algebra/csl/new-embedded/procedural/.
 
-CFLAGS=-O2 -I. $(shell pkg-config pure --cflags) -DPAGE_BITS=19 -DHAVE_CONFIG_H=1 -DEMBEDDED=1
+CFLAGS=-O2 -I. $(shell pkg-config pure --cflags) -DPAGE_BITS=19 -DHAVE_CONFIG_H=1 -DEMBEDDED=1 -w
 
 objects = arith01.o arith02.o arith03.o arith04.o arith05.o arith06.o arith07.o arith08.o arith09.o arith10.o arith11.o arith12.o bytes.o char.o driver.o embedcsl.o cslmpi.o cslread.o eval1.o eval2.o eval3.o eval4.o fasl.o fns1.o fns2.o fns3.o fwin.o gc.o preserve.o print.o restart.o sysfwin.o termed.o stubs.o
 
