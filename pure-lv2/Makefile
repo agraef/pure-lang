@@ -30,7 +30,7 @@ lv2$(DLL): lv2.c
 	gcc $(shared) $(dllname) -o $@ $(MOD_CFLAGS) -std=c99 $< $(MOD_LDFLAGS) $(LIBS)
 
 clean:
-	rm -rf *$(DLL)
+	rm -rf *$(DLL)*
 
 install:
 	test -d "$(DESTDIR)$(purelibdir)" || mkdir -p "$(DESTDIR)$(purelibdir)"

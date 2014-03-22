@@ -11,6 +11,10 @@ shared      = $(shell pkg-config pure --variable shared)
 libdir      = $(shell pkg-config pure --variable libdir)
 installdir  = $(addprefix $(DESTDIR), $(libdir)/pure)
 
+ifeq ($(DLL),.dylib)
+dllname = -install_name "$(libdir)/pure/$@"
+endif
+
 MOD_CFLAGS  = $(PIC) $(shell pkg-config pure --cflags) $(CFLAGS) $(CPPFLAGS)
 MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS)
 
@@ -21,10 +25,10 @@ CFLAGS = -g -O2
 all: $(modname)$(DLL)
 
 $(modname)$(DLL): $(modname).c
-	$(CC) $(shared) -o $@ $(MOD_CFLAGS) $^ $(MOD_LDFLAGS) $(LIBS) -lmpfr -lgmp
+	$(CC) $(shared) $(dllname) -o $@ $(MOD_CFLAGS) $^ $(MOD_LDFLAGS) $(LIBS) -lmpfr -lgmp
 
 clean:
-	rm -f $(modname)$(DLL)
+	rm -Rf $(modname)$(DLL)*
 
 install: $(modname).pure $(modname)$(DLL)
 	test -d $(installdir) || mkdir -p $(installdir)

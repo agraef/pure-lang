@@ -27,7 +27,7 @@ MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS) $(LIBS)
 all: midifile$(DLL)
 
 clean:
-	rm -f *.o *$(DLL)
+	rm -Rf *.o *$(DLL)*
 
 midifile$(DLL): midifile.c mf.c
 	$(CC) $(shared) $(dllname) -o $@ $(MOD_CFLAGS) $^ $(MOD_LDFLAGS)

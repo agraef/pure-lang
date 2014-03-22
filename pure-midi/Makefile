@@ -42,7 +42,7 @@ subdirs:
 	$(MAKE) -C midifile all
 
 clean:
-	rm -f *.o *$(DLL)
+	rm -Rf *.o *$(DLL)*
 	$(MAKE) -C midifile clean
 
 realclean: clean

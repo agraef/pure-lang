@@ -32,7 +32,7 @@ lilv$(DLL): lilv.c lv2_evbuf.c symap.c
 	gcc $(shared) $(dllname) -o $@ $(MOD_CFLAGS) -std=c99 $^ $(MOD_LDFLAGS) $(LIBS)
 
 clean:
-	rm -f *$(DLL)
+	rm -rf *$(DLL)*
 
 install: $(puresource) $(objects)
 	test -d $(installdir) || mkdir -p $(installdir)
