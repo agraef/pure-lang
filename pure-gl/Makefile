@@ -48,7 +48,7 @@ modules = GL.pure GL_ARB.pure GL_EXT.pure GL_NV.pure GL_ATI.pure \
 GLU.pure GLUT.pure
 c-modules = $(patsubst %.pure,%.c,$(modules))
 
-DISTFILES = COPYING Makefile README config.guess gl.templ debian/* \
+DISTFILES = COPYING Makefile README gl.templ debian/* \
 examples/*.pure examples/*.jpg examples/flexi-line/*.pure \
 GL/all_gl.h GL/all_gl_freeglut.h $(modules) $(c-modules)
 SEDFILES = README
