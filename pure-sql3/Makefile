@@ -3,62 +3,42 @@
 dist = pure-sql3-$(version)
 version = 0.4
 
-# Try to guess the installation prefix (this needs GNU make):
-prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
-ifeq ($(strip $(prefix)),)
-# Fall back to /usr/local.
-prefix = /usr/local
+# compiler flags -- these can be overridden from the command line if needed,
+# as well as CPPFLAGS, LDFLAGS and LIBS
+CFLAGS = -O3
+#CFLAGS = -g -O2
+
+# platform-specific setup
+
+DLL         = $(shell pkg-config pure --variable DLL)
+PIC         = $(shell pkg-config pure --variable PIC)
+shared      = $(shell pkg-config pure --variable shared)
+
+prefix      = $(shell pkg-config pure --variable prefix)
+bindir      = $(prefix)/bin
+libdir      = $(shell pkg-config pure --variable libdir)
+
+ifeq ($(DLL),.dylib)
+dllname = -install_name "$(libdir)/pure/$@"
 endif
 
-# Installation goes into $(libdir)/pure, you can also set this directly
-# instead of $(prefix).
-libdir = $(prefix)/lib
+MOD_CFLAGS  = $(PIC) $(shell pkg-config pure --cflags) $(CFLAGS) $(CPPFLAGS)
+MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS) $(LIBS)
 
-# Try to guess the host system type.
-host = $(shell ./config.guess)
+# Compilation options to link with SQLite3.
+SQL3LIBS = $(shell pkg-config sqlite3 --libs)
+SQL3FLAGS = $(shell pkg-config sqlite3 --cflags)
 
-# Platform-specific defaults, edit this as needed.
-#PIC = -fPIC # uncomment for x86-64 compilation
-DLL = .so
-shared = -shared
-# Some systems have the headers in /usr/include/sqlite3. Adjust as needed.
-INCLUDES = -I/usr/include/sqlite3
+MOD_CFLAGS += $(SQL3FLAGS)
+MOD_LDFLAGS += $(SQL3LIBS)
 
-# Take care of some common systems.
-ifneq "$(findstring -mingw,$(host))" ""
-# Windows
-EXE = .exe
-DLL = .dll
-endif
-ifneq "$(findstring -darwin,$(host))" ""
-# OSX (untested)
-DLL = .dylib
-shared = -dynamiclib
-endif
-ifneq "$(findstring x86_64-,$(host))" ""
-# 64 bit, needs -fPIC flag
-PIC = -fPIC
-endif
-
-# Default CFLAGS are -g -O2, CPPFLAGS, LDFLAGS and LIBS are empty by default.
-# These can be set from the command line as usual. Use CFLAGS, CPPFLAGS and
-# LDFLAGS for compiler (-O etc.), preprocessor (-I etc.) and linker (-L etc.) 
-# options, respectively. LIBS is to be used for additional libraries to be
-# linked (-l etc.).
-
-CFLAGS = -g -O2 -std=c99
-
-FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC) $(LDFLAGS)
-
-DISTFILES = COPYING Makefile README config.guess \
-sql3util.c sql3.pure debian/* examples/*.pure
+DISTFILES = COPYING Makefile README sql3util.c sql3.pure debian/* examples/*.pure
 SEDFILES = README
 
 all: sql3util$(DLL)
 
 sql3util$(DLL): sql3util.c 
-	$(CC) $(shared) -o $@ $(INCLUDES) -Wall $< $(FLAGS) \
-	-lpure -lsqlite3 -lgmp $(LIBS)
+	$(CC) $(shared) $(dllname) -o $@ $(MOD_CFLAGS) -Wall -std=c99 $< $(MOD_LDFLAGS) -lgmp
 
 clean:
 	rm -f *$(DLL) *~ *.a *.o
