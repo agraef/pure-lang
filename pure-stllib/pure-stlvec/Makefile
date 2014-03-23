@@ -39,12 +39,12 @@ stlvec$(DLL): stlvec.cpp
 	$(CXX) $(shared) $(DLL_FLAGS) -o $@ $(MOD_CXXFLAGS) \
         stlvec.cpp $(MOD_LDFLAGS) $(EXTRA_LIBS) $(LIBS)
 
-stlalgorithm$(DLL): $(algo_source) 
+stlalgorithm$(DLL): $(algo_source) stlvec$(DLL)
 	$(CXX) $(shared) -o $@ $(MOD_CXXFLAGS) \
         $(algo_source) $(MOD_LDFLAGS) $(EXTRA_LIBS) $(STLVECLIB) $(LIBS)
 
 clean:
-	rm -f *.o *$(DLL)
+	rm -Rf *.o *$(DLL)*
 
 install: $(puresource) $(objects)
 	test -d $(installdir) || mkdir -p $(installdir)

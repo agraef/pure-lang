@@ -36,7 +36,7 @@ all: $(objects)
 	$(MOD_LDFLAGS) $(EXTRA_LIBS) $(LIBS)
 
 clean:
-	rm -f *.o *$(DLL)
+	rm -Rf *.o *$(DLL)*
 
 install: $(puresource) $(objects)
 	test -d $(installdir) || mkdir -p $(installdir)

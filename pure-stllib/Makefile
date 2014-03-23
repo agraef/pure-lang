@@ -35,14 +35,14 @@ $(object): $(cppsource)
 	$(CXX) $(shared) $(DLL_FLAGS) -o $@ $(MOD_CXXFLAGS) $(cppsource) \
 	$(MOD_LDFLAGS) $(LIBS) -lgmp
 
-stlvec:
+stlvec: $(object)
 	$(MAKE) --directory=pure-stlvec
 
-stlmap:
+stlmap: $(object)
 	$(MAKE) --directory=pure-stlmap
 
 clean:
-	rm -f *.o *$(DLL)
+	rm -Rf *.o *$(DLL)*
 	rm -fr BUILD
 	$(MAKE) clean --directory=pure-stlvec
 	$(MAKE) clean --directory=pure-stlmap
