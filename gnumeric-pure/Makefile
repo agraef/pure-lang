@@ -112,9 +112,10 @@ GLDEPS = gtkglext-1.0 gtkglext-win32-1.0
 export EXE
 endif
 ifneq "$(findstring -darwin,$(host))" ""
-# OSX (untested)
-DLL = .dylib
+# OSX
+#DLL = .dylib
 shared = -dynamiclib
+dllname = -install_name "$(gnmplugindir)/$(pureloaderdir)/$(notdir $@)"
 endif
 ifneq "$(findstring x86_64-,$(host))" ""
 # 64 bit, needs -fPIC flag
@@ -150,7 +151,7 @@ all: pure-loader/pure_loader$(DLL) pure-func/plugin.xml pure-glfunc/plugin.xml
 	$(MAKE) -C pure-gnm
 
 pure-loader/pure_loader$(DLL): pure-loader/boot.o pure-loader/pure-gnumeric.o pure-loader/pure-loader.o
-	$(CC) $(shared) -o $@ $(LDFLAGS) $^ $(GTKLIBS) -lpure $(LIBS)
+	$(CC) $(shared) $(dllname) -o $@ $(LDFLAGS) $^ $(GTKLIBS) -lpure -lgmp $(LIBS)
 
 %.o: %.c
 	$(CC) $(INCLUDES) -I. -I.. $(CPPFLAGS) -DGNM_VERSION='"$(gnmversion)"' -DPLUGIN_VERSION='"$(version)"' -DPURE_INCLUDES='"-I$(gnmplugindir)/$(purefuncdir)","-I$(gnmlocalplugindir)/$(purefuncdir)"' $(CFLAGS) $(PIC) -o $@ -c $<
