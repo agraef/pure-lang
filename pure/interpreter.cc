@@ -10231,6 +10231,7 @@ static bool parse_faust_name(const string& name, string& mod, string& fun)
   return true;
 }
 
+#if 0
 static inline bool is_tmpvar(const string& name, string& label)
 {
   if (name.compare(0, 8, "$$tmpvar") == 0) {
@@ -10241,6 +10242,7 @@ static inline bool is_tmpvar(const string& name, string& label)
   } else
     return false;
 }
+#endif
 
 static string& quote(string& s)
 {

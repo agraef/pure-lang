@@ -16693,11 +16693,13 @@ pure_expr* matrix_any ( pure_expr *p, pure_expr *x )
 /* Additional record functions. These deal with symbolic vectors of hash pairs
    with symbols or strings as keys. */
 
+#if 0
 static inline bool is_hash_pair(interpreter& interp, pure_expr *x)
 {
   return x->tag == EXPR::APP && x->data.x[0]->tag == EXPR::APP &&
     x->data.x[0]->data.x[0]->tag == interp.symtab.mapsto_sym().f;
 }
+#endif
 
 static inline bool is_hash_pair(interpreter& interp, pure_expr *x,
 				pure_expr*& y, pure_expr*& z)
