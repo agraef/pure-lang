@@ -22,7 +22,6 @@ EXTRA_LIBS = ../stlbase$(DLL)
 STLVECLIB = stlvec$(DLL)
 endif
 ifeq "$(DLL)" ".dylib"
-# OSX may need this (untested)
 DLL_FLAGS = -install_name "$(libdir)/pure/$@"
 endif
 

@@ -1,4 +1,4 @@
-#! /bin/sh
+#! /bin/bash
 
 # check_script - called by make check
 
@@ -6,6 +6,11 @@ DESTDIR=$1
 
 libdir=`pkg-config pure --variable libdir`
 installdir=${DESTDIR}${libdir}/pure
+
+# Linux might need this
+export LD_LIBRARY_PATH=${installdir}
+# OS X needs this
+export DYLD_LIBRARY_PATH=${installdir}
 
 curdir=$PWD
 

@@ -19,6 +19,9 @@ ifneq "$(DLL)" ".so"
 # additional libraries to be linked (Mac/Windows only)
 EXTRA_LIBS = ../stlbase$(DLL)
 endif
+ifeq "$(DLL)" ".dylib"
+DLL_FLAGS = -install_name "$(libdir)/pure/$@"
+endif
 
 # Basic rules to build the modules, clean, install and uninstall.
 
@@ -29,7 +32,7 @@ objects = $(patsubst %.cpp, %$(DLL), $(cppsource))
 all: $(objects)
 
 %$(DLL) : %.cpp
-	$(CXX) $(shared) -std=c++0x $< -o $@ $(MOD_CXXFLAGS) \
+	$(CXX) $(shared) $(DLL_FLAGS) -std=c++0x $< -o $@ $(MOD_CXXFLAGS) \
 	$(MOD_LDFLAGS) $(EXTRA_LIBS) $(LIBS)
 
 clean:

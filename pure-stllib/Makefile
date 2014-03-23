@@ -2,7 +2,7 @@
 
 pkgname = stllib
 
-version = 0.5
+version = 0.6
 
 .PHONY: all stlvec stlmap dist check install uninstall clean dist distcheck
 
@@ -20,7 +20,6 @@ MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS)
 CFLAGS = -g -O2 -Wall -Wextra
 
 ifeq "$(DLL)" ".dylib"
-# OSX may need this (untested)
 DLL_FLAGS = -install_name "$(libdir)/pure/$@"
 endif
 
