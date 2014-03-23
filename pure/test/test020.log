@@ -308,6 +308,7 @@ print_double x/*0:1*/ = case split "e" s/*0:*/ of [x/*0:01*/,y/*0:101*/] = case 
 } end;
 print (x/*0:101*/+:y/*0:11*/) = print x/*0:101*/+"+:"+print y/*0:11*/;
 print (x/*0:101*/ :: double<:y/*0:11*/ :: double) = print x/*0:101*/+"<:"+print 0.0 if abs x/*0:101*/~==0.0&&roundz x/*0:101*/==0.0&&~infp y/*0:11*/&&~nanp y/*0:11*/;
+print (x/*0:101*/ :: double<:y/*0:11*/ :: double) = print x/*0:101*/+"<:"+print (-y/*0:11*/) if roundz (y/*0:11*/+3.14159265358979)==0.0;
 print (x/*0:101*/<:y/*0:11*/) = print x/*0:101*/+"<:"+print y/*0:11*/;
 print x/*0:1*/ = str x/*0:1*/;
 tests = puts "*** UNARY ***"$$do (\f/*0:1*/ -> do (\x/*0:1*/ -> test (f/*1:1*/,x/*0:1*/) {
@@ -336,45 +337,46 @@ tests = puts "*** UNARY ***"$$do (\f/*0:1*/ -> do (\x/*0:1*/ -> test (f/*1:1*/,x
   rule #1: print x::double = print_double (roundz x)
   rule #2: print (x+:y) = print x+"+:"+print y
   rule #3: print (x::double<:y::double) = print x+"<:"+print 0.0 if abs x~==0.0&&roundz x==0.0&&~infp y&&~nanp y
-  rule #4: print (x<:y) = print x+"<:"+print y
-  rule #5: print x = str x
-  state 0: #0 #1 #2 #3 #4 #5
+  rule #4: print (x::double<:y::double) = print x+"<:"+print (-y) if roundz (y+3.14159265358979)==0.0
+  rule #5: print (x<:y) = print x+"<:"+print y
+  rule #6: print x = str x
+  state 0: #0 #1 #2 #3 #4 #5 #6
 	<var> state 1
 	<var>::double state 2
 	<app> state 3
-  state 1: #5
-  state 2: #0 #1 #5
-  state 3: #2 #3 #4 #5
+  state 1: #6
+  state 2: #0 #1 #6
+  state 3: #2 #3 #4 #5 #6
 	<var> state 4
 	<app> state 6
-  state 4: #5
+  state 4: #6
 	<var> state 5
-  state 5: #5
-  state 6: #2 #3 #4 #5
+  state 5: #6
+  state 6: #2 #3 #4 #5 #6
 	<var> state 7
 	+: state 10
 	<: state 13
-  state 7: #5
+  state 7: #6
 	<var> state 8
-  state 8: #5
+  state 8: #6
 	<var> state 9
-  state 9: #5
-  state 10: #2 #5
+  state 9: #6
+  state 10: #2 #6
 	<var> state 11
-  state 11: #2 #5
+  state 11: #2 #6
 	<var> state 12
-  state 12: #2 #5
-  state 13: #3 #4 #5
+  state 12: #2 #6
+  state 13: #3 #4 #5 #6
 	<var> state 14
 	<var>::double state 16
-  state 14: #4 #5
+  state 14: #5 #6
 	<var> state 15
-  state 15: #4 #5
-  state 16: #3 #4 #5
+  state 15: #5 #6
+  state 16: #3 #4 #5 #6
 	<var> state 17
 	<var>::double state 18
-  state 17: #4 #5
-  state 18: #3 #4 #5
+  state 17: #5 #6
+  state 18: #3 #4 #5 #6
 }
 {
   rule #0: roundz x::double = if abs x<eps then 0.0 else x

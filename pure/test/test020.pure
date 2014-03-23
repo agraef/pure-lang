@@ -75,9 +75,11 @@ end;
 
 print (x+:y) = print x+"+:"+print y;
 // Kludge: Normalize the argument in polar representation if the absolute
-// value is near zero.
+// value is near zero, or the argument is near -pi.
 print (x::double<:y::double) = print x+"<:"+print 0.0
   if abs x ~== 0.0 && roundz x == 0.0 && ~infp y && ~nanp y;
+print (x::double<:y::double) = print x+"<:"+print (-y)
+  if roundz (y+pi) == 0.0;
 print (x<:y) = print x+"<:"+print y otherwise;
 print x = str x otherwise;
 
