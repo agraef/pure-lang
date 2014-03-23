@@ -67,7 +67,7 @@ static int range_size(sm* smp, pmi b, pmi e)
   else if (b == e)
     sz = 0;
   else
-    while(b++ != e) sz++;
+    while(b != mp.end() && b++ != e) sz++;
   return sz;
 }
 

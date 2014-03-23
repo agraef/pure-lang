@@ -24,7 +24,7 @@ int  stl_sva_min_element(px* tpl, px* cmp)
 {
   int res = 0;
   sv_range rng(tpl);
-  if (!rng.is_valid || !rng.num_iters == 2) bad_argument();
+  if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   try {
     pxh_pred2 fun(cmp);
     svi p = min_element(rng.beg(), rng.end(), fun);
@@ -39,7 +39,7 @@ int  stl_sva_max_element(px* tpl, px* cmp)
 {
   int res = 0;
   sv_range rng(tpl);
-  if (!rng.is_valid || !rng.num_iters == 2) bad_argument();
+  if (!rng.is_valid || rng.num_iters != 2) bad_argument();
   try {
     pxh_pred2 fun(cmp);
     svi p = max_element(rng.beg(), rng.end(), fun);

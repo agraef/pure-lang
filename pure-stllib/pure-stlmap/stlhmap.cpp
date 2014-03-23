@@ -405,7 +405,7 @@ int stl_shm_erase(px* pxshp, px* key)
 
 bool stl_shm_equal(px* pxshp1, px* pxshp2)
 {
-  sh *shp1, *shp2;
+  sh *shp1 = 0, *shp2 = 0;
   if ( !get_shp(pxshp1,&shp1) || !get_shp(pxshp2,&shp2) ) bad_argument();
   return shp1->hm == shp2->hm;
 }
