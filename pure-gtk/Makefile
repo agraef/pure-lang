@@ -3,41 +3,33 @@
 
 # Package name and version number:
 dist = pure-gtk-$(version)
-version = 0.12
+version = 0.13
 
-# Try to guess the installation prefix:
-prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
-ifeq ($(strip $(prefix)),)
-# Fall back to /usr/local.
-prefix = /usr/local
-endif
+# compiler flags -- these can be overridden from the command line if needed,
+# as well as CPPFLAGS, LDFLAGS and LIBS
+CFLAGS = -O3
+#CFLAGS = -g -O2
 
-# Installation goes into $(libdir)/pure, you can also set this directly
-# instead of $(prefix).
-libdir = $(prefix)/lib
+# platform-specific setup
 
-# Try to guess the host system type.
-host = $(shell ./config.guess)
+DLL         = $(shell pkg-config pure --variable DLL)
+PIC         = $(shell pkg-config pure --variable PIC)
+shared      = $(shell pkg-config pure --variable shared)
 
-# Platform-specific defaults, edit this as needed.
-#PIC = -fPIC # uncomment for x86-64 compilation
-DLL = .so
-shared = -shared
+prefix      = $(shell pkg-config pure --variable prefix)
+bindir      = $(prefix)/bin
+libdir      = $(shell pkg-config pure --variable libdir)
+
+MOD_CFLAGS  = $(PIC) $(shell pkg-config pure --cflags) $(CFLAGS) $(CPPFLAGS)
+MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS) $(LIBS)
 
 PURE_COPTS=-I.. -L..
 
 # Take care of some common systems.
-ifneq "$(findstring -linux,$(host))" ""
-# Some newer Linux systems make --as-needed the default, we need the
-# old behaviour here. NOTE: This seems to be broken with recent gcc
-# versions, so you may have to link batch-compiled pure-gtk scripts
-# against the required GTK+ libraries anyway. :(
-EXTRA_LD_FLAGS = -Wl,--no-as-needed
-endif
-ifneq "$(findstring -mingw,$(host))" ""
-# Windows
-EXE = .exe
-DLL = .dll
+ifeq ($(DLL),.dylib)
+dllname = -install_name "$(libdir)/pure/$@"
+else
+ifeq ($(DLL),.dll)
 atk_missing = -x '^(atk_value_get_minimum_increment|atk_streamable_content_get_uri|atk_relation_remove_target|atk_hyperlink_impl_get_hyperlink|atk_hyperlink_impl_get_type|atk_get_version|atk_(plug|socket).*)$$'
 dlldir = $(patsubst %/include,%/bin,$(includedir))
 PURE_COPTS += -L$(dlldir)
@@ -45,27 +37,10 @@ PURE_COPTS += -L$(dlldir)
 windows = true
 dllopts = $(foreach dllname, $(foreach dll,$(shell pkg-config --libs-only-l $(1)),$(basename $(notdir $(wildcard $(patsubst -l%,$(dlldir)/lib%*.dll,$(dll)))))), -l$(dllname))
 else
+EXTRA_LD_FLAGS = -Wl,--no-as-needed
 atk_missing = -x '^(linux|unix)$$'
 endif
-ifneq "$(findstring -darwin,$(host))" ""
-# OSX (untested)
-DLL = .dylib
-shared = -dynamiclib
 endif
-ifneq "$(findstring x86_64-,$(host))" ""
-# 64 bit, needs -fPIC flag
-PIC = -fPIC
-endif
-
-# Default CFLAGS are -g -O2, CPPFLAGS is empty by default. These can be set
-# from the command line as usual. Use CFLAGS and CPPFLAGS for compiler (-O
-# etc.) and preprocessor (-I etc.) options, respectively. NOTE: LDFLAGS and
-# LIBS aren't supported here, as the necessary linker options and libraries to
-# be linked are determined automatically using pkg-config. If you really need
-# to change these, you'll have to edit the compilation commands for each
-# supported module below.
-
-CFLAGS = -g -O2
 
 # Extra pure-gen flags.
 #PGFLAGS = -v
@@ -87,9 +62,7 @@ examples = examples/hello examples/uiexample examples/life
 
 # No need to edit below this line, usually.
 
-FLAGS = $(CPPFLAGS) $(CFLAGS) $(PIC)
-
-DISTFILES = COPYING COPYING.LESSER Makefile README config.guess debian/* \
+DISTFILES = COPYING COPYING.LESSER Makefile README debian/* \
 examples/*.pure examples/*.glade $(modules) $(c-modules)
 SEDFILES = README
 
@@ -200,7 +173,7 @@ GTK_DLLS = $(call dllopts, gtk+-2.0) -lgtk
 endif
 
 gtk$(DLL): gtk.c
-	$(CC) $(shared) $(FLAGS) $(GTK_CFLAGS) -o $@ $< $(GTK_LIBS)
+	$(CC) $(shared) $(dllname) $(MOD_CFLAGS) $(GTK_CFLAGS) -o $@ $< $(MOD_LDFLAGS) $(GTK_LIBS)
 
 gtk.pure gtk.c:
 	pure-gen $(PGFLAGS) $(GTK_INCLUDES) -s '$(gtkdir)/gdk*/*.h;' -x '^(linux|unix)$$' -p gdk -m gdk -o gtk.pure -c gtk.c -fc-auto $(gtkdir)/gdk/gdk.h $(GTK_DLLS)
@@ -217,7 +190,7 @@ endif
 HAVE_GIO = $(shell pkg-config --exists gio-2.0 && echo yes || echo no)
 
 glib$(DLL): glib.c
-	$(CC) $(shared) $(FLAGS) $(GTK_CFLAGS) -o $@ $< $(GTK_LIBS)
+	$(CC) $(shared) $(dllname) $(MOD_CFLAGS) $(GTK_CFLAGS) -o $@ $< $(MOD_LDFLAGS) $(GTK_LIBS)
 
 # We should maybe strip this down so that it only contains the stuff needed
 # for Pure-GTK applications. Also note that the glib headers declare some junk
@@ -245,7 +218,7 @@ ATK_DLLS = $(call dllopts, atk) -latk
 endif
 
 atk$(DLL): atk.c
-	$(CC) $(shared) $(FLAGS) $(ATK_CFLAGS) -o $@ $< $(ATK_LIBS)
+	$(CC) $(shared) $(dllname) $(MOD_CFLAGS) $(ATK_CFLAGS) -o $@ $< $(MOD_LDFLAGS) $(ATK_LIBS)
 
 atk.pure atk.c:
 	pure-gen $(PGFLAGS) $(ATK_INCLUDES) -s '$(atkdir)/atk/*.h;' $(atk_missing) -p atk -m atk -fc-auto $(atkdir)/atk/atk.h $(ATK_DLLS)
@@ -261,7 +234,7 @@ CAIRO_DLLS = $(call dllopts, cairo) -lcairo
 endif
 
 cairo$(DLL): cairo.c
-	$(CC) $(shared) $(FLAGS) $(CAIRO_CFLAGS) -o $@ $< $(CAIRO_LIBS)
+	$(CC) $(shared) $(dllname) $(MOD_CFLAGS) $(CAIRO_CFLAGS) -o $@ $< $(MOD_LDFLAGS) $(CAIRO_LIBS)
 
 cairo.pure cairo.c:
 	pure-gen $(PGFLAGS) $(CAIRO_INCLUDES) -s '$(cairodir)/cairo/*.h;' -x '^(linux|unix)$$' -p cairo -m cairo -fc-auto $(cairodir)/cairo/cairo.h $(CAIRO_DLLS)
@@ -277,7 +250,7 @@ PANGO_DLLS = $(call dllopts, pango) -lpango
 endif
 
 pango$(DLL): pango.c
-	$(CC) $(shared) $(FLAGS) $(PANGO_CFLAGS) -o $@ $< $(PANGO_LIBS)
+	$(CC) $(shared) $(dllname) $(MOD_CFLAGS) $(PANGO_CFLAGS) -o $@ $< $(MOD_LDFLAGS) $(PANGO_LIBS)
 
 pango.pure pango.c:
 	pure-gen $(PGFLAGS) $(PANGO_INCLUDES) -s '$(pangodir)/pango/*.h;' -x '^(linux|unix)$$' -p pango -m pango -fc-auto $(pangodir)/pango/pango.h $(PANGO_DLLS)
@@ -293,7 +266,7 @@ GLADE_DLLS = $(call dllopts, libglade-2.0) -lglade
 endif
 
 glade$(DLL): glade.c
-	$(CC) $(shared) $(FLAGS) $(GLADE_CFLAGS) -o $@ $< $(GLADE_LIBS)
+	$(CC) $(shared) $(dllname) $(MOD_CFLAGS) $(GLADE_CFLAGS) -o $@ $< $(MOD_LDFLAGS) $(GLADE_LIBS)
 
 glade.pure glade.c:
 	pure-gen $(PGFLAGS) $(GLADE_INCLUDES) -s '$(gladedir)/glade/*.h;' -p glade -m glade -fc-auto $(gladedir)/glade/glade.h $(GLADE_DLLS)
