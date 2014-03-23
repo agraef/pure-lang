@@ -99,7 +99,7 @@ endif
 
 override CPPFLAGS += -Ipd $(pureinc)
 
-DISTFILES = COPYING Makefile README config.guess pure.c \
+DISTFILES = COPYING Makefile README config.guess pure.c pd/*.h \
 debian/* examples/*.pure examples/*.pd examples/*.el \
 examples/lib/Makefile examples/lib/*.pure examples/lib/*.c examples/lib/*.pd
 SEDFILES = README
@@ -129,7 +129,7 @@ datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > 
 
 dist:
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/debian && mkdir $(dist)/examples && mkdir $(dist)/examples/lib
+	mkdir $(dist) && mkdir $(dist)/debian && mkdir $(dist)/pd && mkdir $(dist)/examples && mkdir $(dist)/examples/lib
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	for x in $(SEDFILES); do rm -f $(dist)/$$x; $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
 	rm -f $(dist).tar.gz

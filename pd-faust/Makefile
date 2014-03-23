@@ -28,7 +28,7 @@ Makefile.common README TODO config.guess *.pure etc/*.el etc/*.pd \
 debian/* examples/*.pd examples/midi/*.mid examples/osc/*.osc \
 examples/dsp/README* examples/dsp/Makefile \
 examples/dsp/*.dsp examples/dsp/*.lib examples/dsp/*.h \
-lib/Makefile lib/*.c lib/*.dsp lib/*.pure
+lib/Makefile lib/*.c lib/*.dsp lib/*.pure pd/*.h
 SEDFILES = README
 
 subdirs = lib examples/dsp
@@ -66,7 +66,7 @@ datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > 
 
 dist:
 	rm -rf $(dist)
-	for x in $(dist) $(addprefix $(dist)/, debian etc lib examples $(addprefix examples/, dsp midi osc)); do mkdir $$x; done
+	for x in $(dist) $(addprefix $(dist)/, debian etc lib pd examples $(addprefix examples/, dsp midi osc)); do mkdir $$x; done
 	for x in $(DISTFILES); do ln -sf "$$PWD"/$$x $(dist)/$$x; done
 	for x in $(SEDFILES); do rm -f $(dist)/$$x; $(call datesubst,"$$PWD"/$$x,$(dist)/$$x); done
 	rm -f $(dist).tar.gz

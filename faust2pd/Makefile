@@ -27,7 +27,7 @@ endif
 
 DESTDIR=
 
-DISTFILES = Makefile COPYING ChangeLog README config.guess *.pure *.pd examples/README debian/* examples/*/Makefile examples/*/*.dsp examples/*/*.syn examples/*/*.pd examples/*/*.pure examples/*/*.xml
+DISTFILES = Makefile COPYING ChangeLog README config.guess *.pure *.pd examples/README debian/* examples/*/Makefile examples/*/*.dsp examples/*/*.syn examples/*/*.pd examples/*/*.pure examples/*/*.xml pd/*.h
 SEDFILES = README
 
 .PHONY: all examples clean distclean realclean install uninstall
@@ -87,7 +87,7 @@ datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > 
 
 dist:
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/debian && mkdir $(dist)/examples
+	mkdir $(dist) && mkdir $(dist)/debian && mkdir $(dist)/pd && mkdir $(dist)/examples
 	for x in basic faust seqdemo synth; do mkdir $(dist)/examples/$$x; done
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	for x in $(SEDFILES); do rm -f $(dist)/$$x; $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
