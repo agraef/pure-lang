@@ -3,53 +3,43 @@
 
 # Package name and version number:
 dist = pure-gl-$(version)
-version = 0.8
+version = 0.9
 
-# Try to guess the installation prefix:
-prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
-ifeq ($(strip $(prefix)),)
-# Fall back to /usr/local.
-prefix = /usr/local
+# compiler flags -- these can be overridden from the command line if needed,
+# as well as CPPFLAGS, LDFLAGS and LIBS
+CFLAGS = -O3
+#CFLAGS = -g -O2
+
+# platform-specific setup
+
+DLL         = $(shell pkg-config pure --variable DLL)
+PIC         = $(shell pkg-config pure --variable PIC)
+shared      = $(shell pkg-config pure --variable shared)
+
+prefix      = $(shell pkg-config pure --variable prefix)
+bindir      = $(prefix)/bin
+libdir      = $(shell pkg-config pure --variable libdir)
+
+ifeq ($(DLL),.dylib)
+dllname = -install_name "$(libdir)/pure/$@"
 endif
 
-# Installation goes into $(libdir)/pure, you can also set this directly
-# instead of $(prefix).
-libdir = $(prefix)/lib
+MOD_CFLAGS  = $(PIC) $(shell pkg-config pure --cflags) $(CFLAGS) $(CPPFLAGS)
+MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS) $(LIBS)
 
-# Try to guess the host system type.
-host = $(shell ./config.guess)
-
-# Platform-specific defaults, edit this as needed.
-#PIC = -fPIC # uncomment for x86-64 compilation
-DLL = .so
-shared = -shared
-LinkGL = -lGL -lglut -ldl
-
-# Take care of some common systems.
-ifneq "$(findstring -mingw,$(host))" ""
-# Windows
-EXE = .exe
-DLL = .dll
-LinkGL = -lopengl32 -lglu32
-endif
-ifneq "$(findstring -darwin,$(host))" ""
-# OSX (untested)
-DLL = .dylib
-shared = -dynamiclib
+# Compilation options to link with OpenGL.
+ifeq ($(DLL),.dylib)
+MOD_CFLAGS += -Wno-deprecated-declarations
 LinkGL = -framework GLUT -framework OpenGL
+else
+ifeq ($(DLL),.dll)
+LinkGL = -lopengl32 -lglu32
+else
+LinkGL = -lGL -lglut -ldl
 endif
-ifneq "$(findstring x86_64-,$(host))" ""
-# 64 bit, needs -fPIC flag
-PIC = -fPIC
 endif
 
-# Default CFLAGS are -g -O2, CPPFLAGS, LDFLAGS and LIBS are empty by default.
-# These can be set from the command line as usual. Use CFLAGS, CPPFLAGS and
-# LDFLAGS for compiler (-O etc.), preprocessor (-I etc.) and linker (-L etc.) 
-# options, respectively. LIBS is to be used for additional libraries to be
-# linked (-l etc.).
-
-CFLAGS = -g -O2
+MOD_LDFLAGS += $(LinkGL)
 
 # No need to edit below this line, usually.
 
@@ -68,12 +58,12 @@ SEDFILES = README
 all: pure-gl$(DLL)
 
 pure-gl$(DLL): $(c-modules)
-	$(CC) $(shared) $(CPPFLAGS) $(CFLAGS) $(PIC) $(c-modules) -o $@ $(LDFLAGS) $(LinkGL) -lpure $(LIBS)
+	$(CC) $(shared) $(dllname) $(MOD_CFLAGS) $(c-modules) -o $@ $(MOD_LDFLAGS)
 
 # Clean, but keep generated modules.
 
 clean:
-	rm -f *$(DLL) *~ *.a *.o
+	rm -Rf *$(DLL)* *~ *.a *.o
 
 # Clean all, including generated modules. NOTE: This will delete stuff that
 # needs special tools to rebuild (see below), so only do this if you know what
