@@ -22,13 +22,7 @@ ifneq "$(findstring x86,$(host))" ""
 EXTRA_CFLAGS += -msse -ffast-math
 endif
 
-# Try to figure out the Pd include directory.
-pdincdir = $(strip $(shell pkg-config pd --cflags-only-I 2>/dev/null))
-ifeq "$(pdincdir)" ""
-# Try some common locations.
-pdincdir = $(addprefix -I,$(shell ls -d /usr/local/include/pdextended /usr/local/include/pd /usr/include/pdextended /usr/include/pd 2>/dev/null))
-endif
-EXTRA_CFLAGS += $(patsubst %/pd, %, $(pdincdir)) $(pdincdir)
+EXTRA_CFLAGS += -I ../../pd
 
 dspsrc  := $(wildcard *.dsp)
 cppsrc  := $(dspsrc:.dsp=.cpp)

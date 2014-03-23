@@ -46,10 +46,6 @@ purelib = $(shell pkg-config pure --libs)
 libdir = $(prefix)/lib
 includedir = $(prefix)/include
 
-# Pd include path. Note: This removes the hyphen from the Pd distribution
-# name, since this is what pd-extended and pd-l2ork need.
-pdincludedir = $(includedir)/$(shell echo $(PD) | sed -e s/-//)
-
 # Pd library path.
 pdlibdir = $(libdir)/$(PD)
 
@@ -101,7 +97,7 @@ ifneq "$(VERBOSE)" ""
 override CPPFLAGS += $(VERBOSE)
 endif
 
-override CPPFLAGS += -I$(pdincludedir) $(pureinc)
+override CPPFLAGS += -Ipd $(pureinc)
 
 DISTFILES = COPYING Makefile README config.guess pure.c \
 debian/* examples/*.pure examples/*.pd examples/*.el \
