@@ -48,6 +48,7 @@ FLEX = @FLEX@
 BISON = @BISON@
 EMACS = @EMACS@
 TEXMACS = @TEXMACS@
+LLVMCONF = @LLVMCONF@
 
 # Linker flags and required libraries. These are determined automatically by
 # configure, but if necessary you can also change these on the command line.
@@ -180,6 +181,8 @@ ifneq "$(findstring -darwin,$(host))" ""
 libpure_soname = lib$(libpure_name).$(major)$(DLL)
 libpure = lib$(libpure_name).$(major).$(minor)$(DLL)
 soname = -install_name $(libdir)/$(libpure_soname) -compatibility_version $(major) -current_version $(major).$(minor)
+# Convenience for making `make distcheck` work with MacPorts.
+DISTCHECK_CONFIGURE_FLAGS = --with-libgmp-prefix=/opt/local --with-libmpfr-prefix=/opt/local --with-libiconv-prefix=/opt/local --with-tool-prefix=$(shell $(LLVMCONF) --bindir)
 endif
 
 # No need to edit below this line. Unless you really have to. :) ############
