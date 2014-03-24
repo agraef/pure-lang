@@ -1,7 +1,7 @@
 
 # Package name and version number:
 dist = pure-gen-$(version)
-version = 0.16
+version = 0.17
 
 # Try to guess the installation prefix (this needs GNU make):
 prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
@@ -35,8 +35,10 @@ ifneq "$(findstring -mingw,$(host))" ""
 EXE = .exe
 endif
 ifneq "$(findstring -darwin,$(host))" ""
-# OSX: Try to find a suitable gcc version. This requires a recent gcc version
-# from MacPorts.
+# OSX: Try to find a suitable gcc version to be used as the C preprocessor.
+# The following assumes that a recent gcc version from MacPorts is installed.
+# Note that we *really* need gcc (4.3+) here, pure-gen does *not* work when
+# using clang (the system compiler on newer OS X versions) instead.
 gcc = $(lastword gcc $(sort $(wildcard /opt/local/bin/gcc-mp-*)))
 endif
 
@@ -74,7 +76,7 @@ dump-ast: dump-ast.hs dump-ast-old.hs
 # Minimal test suite:
 
 check:
-	./run-tests
+	./run-tests $(gcc)
 
 clean:
 	rm -f pure-gen$(EXE) dump-ast$(EXE) *~ *.hi *.o

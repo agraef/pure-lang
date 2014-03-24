@@ -11,11 +11,14 @@ most useful to parse C header files, which is what pure-gen needs.
 
 Normally you won't have to invoke dump-ast yourself since this is handled by
 pure-gen automatically, but the program may also be useful for other utilities
-which have to parse C header files. dump-ast takes the name of the file to be
-parsed as the *last* command line parameter, all other command line arguments
+which have to parse C header files. dump-ast takes the C preprocessor program
+to be used (normally gcc) as its *first*, and the name of the file to be
+parsed as its *last* command line parameter. All other command line arguments
 are just passed on to the C preprocessor without any checking. Also note that
-dump-ast calls gcc to do the preprocessing, so on Windows you will need MinGW
-installed when running this program.
+dump-ast really needs gcc to do the preprocessing, so on Windows you will need
+MinGW installed when running this program. Likewise, on recent Mac OS X
+versions which ship with clang as the system compiler, you'll have to install
+a suitable gcc version (available in MacPorts).
 
 The sources of the dump-ast program can be found in dump-ast.hs. Compilation
 is simple, just run 'ghc --make dump-ast.hs -o dump-ast'. The pure-gen
@@ -27,6 +30,10 @@ have provided statically linked binaries of dump-ast for x86 Linux, both 32
 and 64 bits. You can find them at:
 
 http://pure-lang.googlecode.com/svn/stuff
+
+**NOTE:** The provided binaries are for pure-gen 0.16 and earlier. They won't
+work with pure-gen 0.17 and later any more, so you may want to stick to
+pure-gen 0.16 if you can't get dump-ast to compile.
 
 Specifically, the following gzipped executables are available:
 

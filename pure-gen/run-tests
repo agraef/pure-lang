@@ -1,13 +1,14 @@
 #! /bin/bash
 
-# This needs gcc >=4.3 on your PATH or in /c/gcc-4.3/bin on Windows.
-# If not, you'll have to set PATH accordingly.
-export PATH=.:/c/gcc-4.3/bin:$PATH
+gcc=${1:-gcc}
 
-host=`config.guess`
+host=`./config.guess`
 diff=diff
 case "$host" in
-  *-*-mingw*) diff="diff --strip-trailing-cr";;
+  # This needs gcc >=4.3 on your PATH or in /c/gcc-4.3/bin on Windows.
+  # If not, you'll have to set PATH accordingly.
+  *-*-mingw*) export PATH=.:/c/gcc-4.3/bin:$PATH; diff="diff --strip-trailing-cr";;
+  *) export PATH=.:$PATH;;
 esac
 
 # darktjm: check that duplicate prototypes are removed
@@ -17,7 +18,7 @@ echo "extern int rand(void);" >> dummy.h
 
 # Check that dump-ast works:
 
-dump-ast dummy.h > dummy.ast
+dump-ast $gcc dummy.h > dummy.ast
 $diff dummy.ast - > /dev/null <<EOF
 (CDeclExt (CDecl [(CStorageSpec CExtern),(CTypeSpec CIntType)] [((Just (CDeclr (Just "rand") [(CFunDeclr (Right ([(CDecl [(CTypeSpec CVoidType)] [])],0)) [])] Nothing [])),Nothing,Nothing)]) "dummy.h")
 (CDeclExt (CDecl [(CStorageSpec CExtern),(CTypeSpec CIntType)] [((Just (CDeclr (Just "rand") [(CFunDeclr (Right ([(CDecl [(CTypeSpec CVoidType)] [])],0)) [])] Nothing [])),Nothing,Nothing)]) "dummy.h")

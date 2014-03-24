@@ -19,9 +19,9 @@ main =
   getArgs >>= parseFile >>= return.dump >>= putStrLn
 
 parseFile :: [String] -> IO CTranslUnit
-parseFile args =
+parseFile (arg:args) =
   do
-  parseResult <- parseCFile (newGCC "gcc") Nothing (init args) (last args)
+  parseResult <- parseCFile (newGCC arg) Nothing (init args) (last args)
   case parseResult of 
     Left err -> error $ show err
     Right ast -> return $ ast

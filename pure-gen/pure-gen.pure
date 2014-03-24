@@ -1,4 +1,4 @@
-#! /usr/local/bin/pure -x
+#! /usr/bin/env pure
 
 #! --nowarn
 
@@ -8,7 +8,8 @@ using system, regex, getopt, dict;
    an input file as well as all its includes, so the -fdirectives-only option
    is required to keep those intact. This is pretty much tied to gcc right
    now, but as dump-ast also uses gcc you'll need it anyway. */
-let cpp = "@gcc@ -E -fdirectives-only";
+const gcc = "@gcc@";
+const cpp = sprintf "%s -E -fdirectives-only" gcc;
 
 // This path is set at build time. For the uninstalled version we assume the
 // current directory.
@@ -23,7 +24,7 @@ let dumper = if stringp env then env else dumper
 let version = "@version@";
 
 let copyright = sprintf
-  "pure-gen version %s Copyright (c) 2009 Scott E. Dillard, Albert Graef"
+  "pure-gen version %s Copyright (c) 2009-2014 Scott E. Dillard, Albert Graef"
   version;
 
 // Set up PATH so that we pick up the proper C preprocessor.
@@ -879,9 +880,11 @@ regchk _ x = x;
 
 // Filter out builtins and stuff commonly found in system header files.
 const sys_excludes = ["","<built-in>"];
+const junk_symbols = ["unix","linux"];
 valid_name fname name = true if all_opt;
 		      = false if substr name 0 1 == "_";
-		      = ~any ((==) fname) sys_excludes;
+		      = ~any ((==) fname) sys_excludes &&
+		        ~any ((==) name) junk_symbols;
 
 //misc helpful stuff
 
@@ -1168,7 +1171,7 @@ let lines = if compiling then []
 
 echo 1 "Loading syntax tree";
 let ast = if compiling then []
-  else fgetlines $ popen (sprintf "%s %s %s" (dumper,cpp_opts,in_name)) "r";
+  else fgetlines $ popen (sprintf "%s %s %s %s" (dumper,gcc,cpp_opts,in_name)) "r";
 
 echo 1 "Parsing syntax tree";
 let declarations = filter ((~==) ()) $ map check_eval ast
