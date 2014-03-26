@@ -601,6 +601,8 @@ gnocl::update
 # OS X, so make sure you leave the $GRAPHWIN option enabled there.)
 if {$GRAPHWIN} {
     toplevel .embed
+    set wd $mywd
+    set ht $myht
     wm title .embed "Graph (VTK Window)"
 } else {
     toplevel .embed -use [format "0x%x" [$socket getID]]
