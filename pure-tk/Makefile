@@ -27,6 +27,8 @@ MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS) $(LIBS)
 
 # Try to guess the Tcl version.
 tclvers = $(shell echo 'puts $$tcl_version' | tclsh)
+# OS X: Use this instead to link against the native (Apple) Tcl/Tk.
+#tclvers = $(shell echo 'puts $$tcl_version' | /usr/bin/tclsh)
 ifeq ($(strip $(tclvers)),)
 tclvers = 8.5
 endif
@@ -34,6 +36,9 @@ endif
 # Try to figure out where the Tcl/Tk includes and libraries are.
 tk_includes = $(shell pkg-config tcl --cflags-only-I 2>/dev/null)
 tk_libs = $(shell pkg-config tcl --libs-only-L 2>/dev/null)
+# OS X: Use this instead to link against the native (Apple) Tcl/Tk.
+#tk_includes = -I/System/Library/Frameworks/Tcl.framework/Headers -I/System/Library/Frameworks/Tk.framework/Headers
+#tk_libs = -framework tcl -framework tk
 
 MOD_CFLAGS += $(tk_includes)
 MOD_LDFLAGS += $(tk_libs)
