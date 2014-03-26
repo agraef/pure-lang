@@ -2,6 +2,18 @@
 package require vtk
 package require vtkinteraction
 
+vtkVersion vtkversion
+set vtkversion [vtkversion GetVTKMajorVersion]
+set os [lindex [array get tcl_platform os] 1]
+
+# Set this to 1 to show the graph display in a separate VTK window. This is
+# the default now, but you can also set this flag to 0 if you prefer to have
+# the graph as an additional pane in the scale main window. NOTE: You *always*
+# want to leave this option enabled on OS X, since there it is not possible to
+# embed the VTK widget in a Gnocl application anyway.
+set GRAPHWIN 1
+if {$os == "Darwin"} { set GRAPHWIN 1 }
+
 wm withdraw .
 
 # Create a color map for the edge weights.
@@ -18,7 +30,6 @@ set fact 1.0
 # Get the coordinates of the nodes in world coordinates.
 proc get_points {} {
     set data [reader GetOutput]
-    $data Update
     set n [$data GetNumberOfPoints]
     set res {}
     for {set i 0} {$i<$n} {incr i} {
@@ -67,6 +78,7 @@ proc reload_data {reset} {
     # reread the data
     reader SetInputString $data
     reader Modified
+    reader Update
     glyph SetScaleFactor $fact
     txt SetInput $title
     if {$title != ""} {
@@ -199,7 +211,14 @@ vtkScalarBarActor scalarBar
     [scalarBar GetPositionCoordinate] SetValue 0.1 0.01
     scalarBar SetOrientationToHorizontal
     scalarBar SetWidth 0.8
+if {$vtkversion >= 6} {
+# YMMV, but for me the title text on the color legend looks awfully huge with
+# VTK 6.x. There doesn't seem to be an easy way to set the size manually, so
+# we adjust the vertical size of the bar here to make it look a little nicer.
+    scalarBar SetHeight 0.07
+} else {
     scalarBar SetHeight 0.12
+}
 
 # Create the renderer and the render window. This needs to be done before we
 # can create the axes (see below).
@@ -221,7 +240,11 @@ vtkTextProperty tprop
 
 # Create the axes (initially invisible).
 vtkCubeAxesActor2D axes
+if {$vtkversion >= 6} {
+    axes SetInputConnection [reader GetOutputPort]
+} else {
     axes SetInput [reader GetOutput]
+}
     axes SetCamera [ren1 GetActiveCamera]
     axes SetLabelFormat "%6.4g"
     axes SetFlyModeToOuterEdges
@@ -252,6 +275,7 @@ if {$WEBKIT && [catch {package require GnoclWebKit}]} { set WEBKIT 0 }
 # read the documentation. If the program exists then it will be invoked on the
 # html manual.
 set browser "firefox"
+if {$os == "Darwin"} { set browser "open" }
 
 if {[info exists browser]} {
     set browser [auto_execok $browser]
@@ -425,6 +449,7 @@ proc fini {} {
 	set h [$top cget -height]
 	gnocl::gconf set /apps/scale/geom [list $w $h]
     }
+    pure fini_cb
     ::vtk::cb_exit
 }
 
@@ -446,9 +471,15 @@ set top [gnocl::window -title "Unnamed - scale" \
 	     -onKeyPress {pure key_cb %s %K} -onDestroy fini]
 set notebook [gnocl::notebook]
 $box add $notebook -expand 1 -fill 1
-set vbox [gnocl::box -orientation vertical -borderWidth 0]
-set socket [gnocl::socket]
-$vbox add $socket -expand 1 -fill 1
+# If the $GRAPHWIN option is unset, we create an additional vbox here which
+# holds both the socket for the graph display and the strip with the graph
+# controls; these eventually go into a separate Graph tab in the notebook (see
+# below).
+if {!$GRAPHWIN} {
+    set vbox [gnocl::box -orientation vertical -borderWidth 0]
+    set socket [gnocl::socket]
+    $vbox add $socket -expand 1 -fill 1
+}
 set cbox [gnocl::box]
 #$cbox add [gnocl::checkButton -text "%__Trackball" -variable interactor \
 #	       -value 1 -onToggled {pure interactor_cb %v} \
@@ -480,8 +511,14 @@ $cbox add [gnocl::comboBox -variable pval \
 	   -onChanged {pure pval_cb %v} \
 	   -tooltip "Pick an edge weight function"] \
     -expand 1 -fill 0 -align center
-$vbox add $cbox
-$notebook addPage $vbox "%__Graph"
+# If the $GRAPHWIN option is set, we simply add the graph controls to the main
+# box, otherwise it goes into a separate Graph tab in the notebook.
+if {$GRAPHWIN} {
+    $box add $cbox
+} else {
+    $vbox add $cbox
+    $notebook addPage $vbox "%__Graph"
+}
 set sbox [gnocl::box -orientation vertical -borderWidth 0]
 init_list
 set rbox [gnocl::box]
@@ -558,8 +595,16 @@ $box add $status
 $status push "Ready"
 gnocl::update
 
-# Embed a Tk toplevel which is used to host the vtk render window.
-toplevel .embed -use [format "0x%x" [$socket getID]]
+# If $GRAPHWIN is unset, we embed a Tk toplevel here which is used to host the
+# VTK render window with the graph display. Otherwise we just create a
+# separate toplevel for the display instead. (NOTE: The former doesn't work on
+# OS X, so make sure you leave the $GRAPHWIN option enabled there.)
+if {$GRAPHWIN} {
+    toplevel .embed
+    wm title .embed "Graph (VTK Window)"
+} else {
+    toplevel .embed -use [format "0x%x" [$socket getID]]
+}
 wm minsize .embed $wd $ht
 pack [frame .embed.f -width $wd -height $ht] -expand 1 -fill both
 update

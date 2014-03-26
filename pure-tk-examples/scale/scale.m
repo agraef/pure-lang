@@ -34,8 +34,7 @@ function S = stress1 (M0,M)
 
   if nargin != 2
     usage("stress1 (M0,M)")
-  elseif !ismatrix(M0) || !ismatrix(M) || rows(M) != columns(M) || \
-	size(M) != size(M0)
+  elseif !ismatrix(M0) || !ismatrix(M) || rows(M) != columns(M) || size(M) != size(M0)
     error("stress1: arguments must be compatible square matrices");
   endif
 

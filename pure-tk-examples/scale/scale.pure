@@ -307,6 +307,11 @@ information msg::string = () when
   tk_set "msg" msg; tk "info_dg $msg";
 end;
 
+#! --required fini_cb
+// This is called when we're about to exit. Octave is a finicky beast, so we
+// call octave_fini here to prevent the embedded Octave from segfaulting.
+fini_cb = octave_fini;
+
 const about_text = sprintf
 "This is <b>scale version %s</b>, a program for musical scale visualization \
 and rationalization.\n\n\

@@ -3,13 +3,13 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<meta name="generator" content="Docutils 0.7: http://docutils.sourceforge.net/" />
+<meta name="generator" content="Docutils 0.11: http://docutils.sourceforge.net/" />
 <title>Scale - Visualizing and Rationalizing Musical Scales</title>
 <style type="text/css">
 
 /*
 :Author: David Goodger (goodger@python.org)
-:Id: $Id: html4css1.css 6253 2010-03-02 00:24:53Z milde $
+:Id: $Id: html4css1.css 7614 2013-02-21 15:55:51Z milde $
 :Copyright: This stylesheet has been placed in the public domain.
 
 Default cascading style sheet for the HTML output of Docutils.
@@ -47,6 +47,10 @@ blockquote.epigraph {
 dl.docutils dd {
   margin-bottom: 0.5em }
 
+object[type="image/svg+xml"], object[type="application/x-shockwave-flash"] {
+  overflow: hidden;
+}
+
 /* Uncomment (and remove this text!) to get bold-faced definition list terms
 dl.docutils dt {
   font-weight: bold }
@@ -73,7 +77,7 @@ div.tip p.admonition-title {
 
 div.attention p.admonition-title, div.caution p.admonition-title,
 div.danger p.admonition-title, div.error p.admonition-title,
-div.warning p.admonition-title {
+div.warning p.admonition-title, .code .error {
   color: red ;
   font-weight: bold ;
   font-family: sans-serif }
@@ -185,7 +189,7 @@ img.align-center, .figure.align-center, object.align-center {
 
 /* reset inner alignment in figures */
 div.align-right {
-  text-align: left }
+  text-align: inherit }
 
 /* div.align-center * { */
 /*   text-align: left } */
@@ -245,9 +249,18 @@ pre.address {
   margin-top: 0 ;
   font: inherit }
 
-pre.literal-block, pre.doctest-block {
+pre.literal-block, pre.doctest-block, pre.math, pre.code {
   margin-left: 2em ;
   margin-right: 2em }
+
+pre.code .ln { color: grey; } /* line numbers */
+pre.code, code { background-color: #eeeeee }
+pre.code .comment, code .comment { color: #5C6576 }
+pre.code .keyword, code .keyword { color: #3B0D06; font-weight: bold }
+pre.code .literal.string, code .literal.string { color: #0C5404 }
+pre.code .name.builtin, code .name.builtin { color: #352B84 }
+pre.code .deleted, code .deleted { background-color: #DEB0A1}
+pre.code .inserted, code .inserted { background-color: #A3D289}
 
 span.classifier {
   font-family: sans-serif ;
@@ -300,6 +313,21 @@ table.docutils th.field-name, table.docinfo th.docinfo-name {
   white-space: nowrap ;
   padding-left: 0 }
 
+/* "booktabs" style (no vertical lines) */
+table.docutils.booktabs {
+  border: 0px;
+  border-top: 2px solid;
+  border-bottom: 2px solid;
+  border-collapse: collapse;
+}
+table.docutils.booktabs * {
+  border: 0px;
+}
+table.docutils.booktabs th {
+  border-bottom: thin solid;
+  text-align: left;
+}
+
 h1 tt.docutils, h2 tt.docutils, h3 tt.docutils,
 h4 tt.docutils, h5 tt.docutils, h6 tt.docutils {
   font-size: 100% }
@@ -313,7 +341,7 @@ ul.auto-toc {
 <div class="document" id="scale-visualizing-and-rationalizing-musical-scales">
 <h1 class="title">Scale - Visualizing and Rationalizing Musical Scales</h1>
 
-<p>Albert Graef &lt;<a class="reference external" href="mailto:Dr.Graef&#64;t-online.de">Dr.Graef&#64;t-online.de</a>&gt;</p>
+<p>Albert Graef &lt;<a class="reference external" href="mailto:aggraef&#64;gmail.com">aggraef&#64;gmail.com</a>&gt;</p>
 <div class="contents topic" id="contents">
 <p class="topic-title first">Contents</p>
 <ul class="auto-toc simple">
@@ -343,11 +371,14 @@ approach&quot;, but isn't available on the web any more. The present version is 
 complete rewrite in the <a class="reference external" href="http://purelang.bitbucket.org/">Pure</a> programming language. Compared to the original
 version, it has a nicer GTK+ GUI (using <a class="reference external" href="http://www.gnocl.org/">Gnocl</a>) and visualization component
 (using <a class="reference external" href="http://www.vtk.org/">VTK</a>), and the automatic scale rationalization algorithm has been
-simplified quite a bit to make it easier to use. On the other hand, the
-present version still lacks the MIDI tuning applet which was part of the
-original program. However, the scale program uses the scale file format of
-Manuel Op de Coul's very comprehensive <a class="reference external" href="http://www.huygens-fokker.org/scala/">Scala</a> program, so for the time being,
-Scala can be used for tuning your MIDI files.</p>
+improved to make it easier to use. On the other hand, the present version
+lacks the MIDI tuning applet which was part of the original program. However,
+the scale program uses the scale file format of Manuel Op de Coul's very
+comprehensive <a class="reference external" href="http://www.huygens-fokker.org/scala/">Scala</a> program, so you can use either Scala or the author's
+<a class="reference external" href="https://bitbucket.org/agraef/sclsyx">sclsyx</a> program (also written in Pure) for tuning your MIDI synthesizers. In
+recent versions of the scale program, we've also added an option to save
+tunings in sysex format (.syx files), so that no separate utility is needed
+any more if that's all you need.</p>
 <p>The scale program generally computes <em>disharmonicities</em> using an additive
 measure which assigns basic &quot;indigestibility&quot; values to prime numbers. A
 simple example of this approach is Euler's <em>gradus suavitatis</em>, but the scale
@@ -370,7 +401,7 @@ the theory behind this.</p>
 </div>
 <div class="section" id="copying">
 <h1><a class="toc-backref" href="#id2">2&nbsp;&nbsp;&nbsp;Copying</a></h1>
-<p>Copyright (c) 2010-2013 by Albert Gräf, all rights reserved.</p>
+<p>Copyright (c) 2010-2014 by Albert Gräf, all rights reserved.</p>
 <p>The scale program is free software: you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the Free
 Software Foundation, either version 3 of the License, or (at your option) any
@@ -422,6 +453,11 @@ may take a while to complete (in particular, when drawing and rationalizing a
 scale). The <tt class="docutils literal">Graph</tt> tab displays a 3-dimensional rendering of the scale. The
 <tt class="docutils literal">Scale</tt> and <tt class="docutils literal">Metric</tt> tabs have additional related information about the
 scale points and the disharmonicity metric of the scale.</p>
+<p><strong>Note:</strong> The latest version of the scale program will usually have the graph
+display in a separate window, which improves both usability and portability of
+the program (if you want, you can change this back by editing an option in the
+scale.tcl file). In this case, the controls on the <tt class="docutils literal">Graph</tt> tab can be found
+in the main window instead.</p>
 <p>Scales can be loaded and saved with the <tt class="docutils literal">Open</tt> and <tt class="docutils literal">Save</tt> buttons at the
 bottom of the main window, see <a class="reference internal" href="#file-operations">File Operations</a> below for details. If you
 load a plain Scala file, you will be prompted if you first want to draw

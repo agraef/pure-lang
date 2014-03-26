@@ -18,9 +18,13 @@ package require vtkinteraction
 
 # If you have Gnocl installed (http://www.gnocl.org/) then you'll get a
 # somewhat fancier GTK+ GUI, otherwise you'll have to be content with plain
-# Tk. Set GTK to 0 below if you always want the Tk GUI anyway.
+# Tk. Set GTK to 0 below if you always want the Tk GUI anyway. NOTE: We make
+# Tk the default on OS X since there seems to be no way to actually embed the
+# VTK rendering window in a Gnocl (X11) widget there.
 
 set GTK 1
+set os [lindex [array get tcl_platform os] 1]
+if {$os == "Darwin"} { set GTK 0 }
 if {$GTK && [catch {package require Gnocl}]} { set GTK 0 }
 
 wm withdraw .
