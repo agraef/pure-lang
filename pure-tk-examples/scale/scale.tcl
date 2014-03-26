@@ -443,11 +443,16 @@ proc reinit_list {} {
 }
 
 proc fini {} {
-    global GCONF top
+    global GCONF GRAPHWIN top
     if {$GCONF} {
 	set w [$top cget -width]
 	set h [$top cget -height]
-	gnocl::gconf set /apps/scale/geom [list $w $h]
+	set x [$top cget -x]
+	set y [$top cget -y]
+	gnocl::gconf set /apps/scale/geom [list $w $h $x $y]
+	if {$GRAPHWIN} {
+	    gnocl::gconf set /apps/scale/graphwin/geom [wm geometry .embed]
+	}
     }
     pure fini_cb
     ::vtk::cb_exit
@@ -455,20 +460,31 @@ proc fini {} {
 
 # check for saved gconf settings
 set geom {}
-if {$GCONF} {set geom [gnocl::gconf get /apps/scale/geom]}
-if {$geom == {}} {
-    # provide some reasonable defaults
-    set mywd [expr $wd+10]; set myht [expr $ht+180]
-} else {
-    foreach {w h} $geom {
-	set mywd $w; set myht $h
+set gwgeom {}
+if {$GCONF} {
+    set geom [gnocl::gconf get /apps/scale/geom]
+    if {$GRAPHWIN} {
+	set gwgeom [gnocl::gconf get /apps/scale/graphwin/geom]
     }
+}
+# provide some reasonable defaults
+set mywd [expr $wd+10]; set myht [expr $ht+180]
+set myx -1; set myy -1
+foreach {w h x y} $geom {
+    set mywd $w; set myht $h
+    set myx $x; set myy $y
 }
 
 set box [gnocl::box -orientation vertical -borderWidth 0]
-set top [gnocl::window -title "Unnamed - scale" \
-	     -width $mywd -height $myht -child $box \
-	     -onKeyPress {pure key_cb %s %K} -onDestroy fini]
+if {$myx >= 0 && $myy >= 0} {
+    set top [gnocl::window -title "Unnamed - scale" \
+		 -width $mywd -height $myht -x $myx -y $myy -child $box \
+		 -onKeyPress {pure key_cb %s %K} -onDestroy fini]
+} else {
+    set top [gnocl::window -title "Unnamed - scale" \
+		 -width $mywd -height $myht -child $box \
+		 -onKeyPress {pure key_cb %s %K} -onDestroy fini]
+}
 set notebook [gnocl::notebook]
 $box add $notebook -expand 1 -fill 1
 # If the $GRAPHWIN option is unset, we create an additional vbox here which
@@ -601,9 +617,8 @@ gnocl::update
 # OS X, so make sure you leave the $GRAPHWIN option enabled there.)
 if {$GRAPHWIN} {
     toplevel .embed
-    set wd $mywd
-    set ht $myht
     wm title .embed "Graph (VTK Window)"
+    if {$gwgeom != {}} { wm geometry .embed $gwgeom }
 } else {
     toplevel .embed -use [format "0x%x" [$socket getID]]
 }
