@@ -215,7 +215,7 @@ if {$vtkversion >= 6} {
 # YMMV, but for me the title text on the color legend looks awfully huge with
 # VTK 6.x. There doesn't seem to be an easy way to set the size manually, so
 # we adjust the vertical size of the bar here to make it look a little nicer.
-    scalarBar SetHeight 0.07
+    scalarBar SetHeight 0.06
 } else {
     scalarBar SetHeight 0.12
 }
@@ -467,6 +467,7 @@ if {$GCONF} {
 	set gwgeom [gnocl::gconf get /apps/scale/graphwin/geom]
     }
 }
+
 # provide some reasonable defaults
 set mywd [expr $wd+10]; set myht [expr $ht+180]
 set myx -1; set myy -1
@@ -479,11 +480,11 @@ set box [gnocl::box -orientation vertical -borderWidth 0]
 if {$myx >= 0 && $myy >= 0} {
     set top [gnocl::window -title "Unnamed - scale" \
 		 -width $mywd -height $myht -x $myx -y $myy -child $box \
-		 -onKeyPress {pure key_cb %s %K} -onDestroy fini]
+		 -onDestroy fini]
 } else {
     set top [gnocl::window -title "Unnamed - scale" \
 		 -width $mywd -height $myht -child $box \
-		 -onKeyPress {pure key_cb %s %K} -onDestroy fini]
+		 -onDestroy fini]
 }
 set notebook [gnocl::notebook]
 $box add $notebook -expand 1 -fill 1
@@ -505,6 +506,9 @@ set drawbut [gnocl::button -text %__Draw -onClicked {pure draw_cb} \
 		 -icon %#Refresh \
 		 -tooltip "Draw scale and update scale information"]
 $cbox add $drawbut -expand 1 -fill 0 -align center
+set resetbut [gnocl::button -text %_R_eset -onClicked {reset_camera; renWin Render} \
+		  -tooltip "Reset the camera position"]
+$cbox add $resetbut -expand 1 -fill 0 -align center
 $cbox add [gnocl::checkButton -text "%__Axes" -variable axes \
 	       -onToggled {pure axes_cb %v} \
 	       -tooltip "Show axes"] \
@@ -622,6 +626,7 @@ if {$GRAPHWIN} {
 } else {
     toplevel .embed -use [format "0x%x" [$socket getID]]
 }
+bind .embed <Key> {pure key_cb %s %K}
 wm minsize .embed $wd $ht
 pack [frame .embed.f -width $wd -height $ht] -expand 1 -fill both
 update
