@@ -24,8 +24,8 @@
 
 BEGIN {
     mode = 0; def = ""; counter = 0;
-    # These are just defaults, you should specify some real values on the
-    # command line.
+    # These are just defaults, you can specify values for these on the command
+    # line.
     if (!version) version = "@version@";
     if (!date) date = strftime("%B %d, %Y", systime());
 }
@@ -50,7 +50,7 @@ ENDFILE { if (prev) print ""; }
 # Continuation lines of Sphinx decriptions (see below).
 mode == 1 && /[[:blank:]]+.+/ {
     print "";
-    printf("%s%s\n", def, gensub(/[[:blank:]]+(.+)/, "``\\1``", "g", $0));
+    printf("%s%s\n", def, gensub(/[[:blank:]]+(.+)/, "``\\1``", "g"));
     next;
 }
 
@@ -58,12 +58,25 @@ mode == 1 {
     mode = 0;
 }
 
+# Special RST link targets. Pandoc doesn't seem to understand this either.
+/^__\s+.*/ {
+    print gensub(/^__\s+(.*)/, sprintf("!hdefx(``id%d``)!``\\1``", counter++), "g");
+    next;
+}
+
+/^..\s+_[^:]+:.*/ {
+    print gensub(/^..\s+_([^:]+):\s*(.*)/, "!hdefx(``\\1``)!``\\2``", "g");
+    next;
+}
+
+# This RST construct might be mistaken for a Sphinx description below, so we
+# get rid of this case here.
 /\.\. note::/ { print; next; }
 
 # Sphinx descriptions (.. foo:: bar ...)
 /\.\.[[:blank:]]+[a-z:]+::[[:blank:]]+.*/ {
-    print gensub(/\.\.[[:blank:]]+([a-z:]+)::[[:blank:]]+(.*)/, "!hdef(\\1)!``\\2``", "g", $0);
-    def = gensub(/\.\.[[:blank:]]+([a-z:]+)::[[:blank:]]+(.*)/, "!hdef(\\1)!", "g", $0);
+    print gensub(/\.\.[[:blank:]]+([a-z:]+)::[[:blank:]]+(.*)/, "!hdef(\\1)!``\\2``", "g");
+    def = gensub(/\.\.[[:blank:]]+([a-z:]+)::[[:blank:]]+(.*)/, "!hdef(\\1)!", "g");
     mode = 1;
     next;
 }
@@ -86,50 +99,35 @@ mode == 1 {
 	x = substr(x, RSTART+RLENGTH);
     }
     $0 = $0 x;
-    print;
-    next;
 }
 
-# Special link targets.
-/^__\s+.*/ {
-    print gensub(/^__\s+(.*)/, sprintf("!hdefx(``id%d``)!``\\1``", counter++), "g", $0);
-    next;
+# RST links (`foo bar`_ and similar)
+
+# Deal with left-overs from the previous line.
+/^[^`]+`_/ {
+    $0 = gensub(/^([^`]+)`_/, "\\1!end!", "g");
 }
 
-/^..\s+_[^:]+:.*/ {
-    print gensub(/^..\s+_([^:]+):\s*(.*)/, "!hdefx(``\\1``)!``\\2``", "g", $0);
-    next;
-}
-
-# RST links (`foo bar`_)
+# Complete links on the current line.
 /`[^`]+`__/ {
-    print gensub(/`([^`]+)`__/, sprintf("!hrefx(id%d)!\\1!end!", counter), "g", $0);
-    next;
+    $0 = gensub(/`([^`]+)`__/, sprintf("!hrefx(id%d)!\\1!end!", counter), "g");
 }
 
 /\<\S+__\>/ {
-    print gensub(/\<(\S+)__\>/, sprintf("!hrefx(id%d)!\\1!end!", counter), "g", $0);
-    next;
+    $0 = gensub(/\<(\S+)__\>/, sprintf("!hrefx(id%d)!\\1!end!", counter), "g");
 }
 
 /`[^`]+`_/ {
-    print gensub(/`([^`]+)`_/, "!href!\\1!end!", "g", $0);
-    next;
+    $0 = gensub(/`([^`]+)`_/, "!href!\\1!end!", "g");
 }
 
 /\<\S+_\>/ {
-    print gensub(/\<(\S+)_\>/, "!href!\\1!end!", "g", $0);
-    next;
+    $0 = gensub(/\<(\S+)_\>/, "!href!\\1!end!", "g");
 }
 
-# These are sometimes continued across line breaks.
+# These are continued across line breaks.
 /\<`[^`]+$/ {
-    print gensub(/`([^`]+)$/, "!href!\\1", "g", $0);
-    next;
-}
-/^[^`]+`_/ {
-    print gensub(/^([^`]+)`_/, "\\1!end!", "g", $0);
-    next;
+    $0 = gensub(/`([^`]+)$/, "!href!\\1", "g");
 }
 
 { print; }

@@ -1,68 +1,83 @@
 #! /bin/bash
 
+# NOTE: To make this script self-contained, it includes embedded awk
+# scripts. Do not remove the marker comments at the beginning and end of the
+# awk scripts, otherwise we won't be able to find and extract them from the
+# script source!
+
 # This script lets you convert manuals from the Sphinx documentation of the
 # Pure project to Markdown format, using Pandoc. Some effort is made to keep
-# at least the internal document links intact. Some Sphinx constructs are also
-# recognized. This certainly isn't perfect, but the script does a reasonably
-# good job at least for simple input files, and it gives you a quick way to
-# obtain a Markdown document from the Pure manuals which can then be edited
-# and formatted in various ways.
+# at least the internal document links to RST section headers intact, as well
+# as Sphinx markup for descriptions of functions, variables, etc. For the rest
+# of the conversion we rely on Pandoc. This certainly isn't perfect, but the
+# script does a reasonably good job at least for simple input files, and it
+# gives you a quick way to obtain a Markdown document from the Pure manuals
+# which can then be edited and formatted in various ways.
 
 # The script lets you pick the Markdown dialect to use for the target document
 # with the -t / --to option, which is simply passed to Pandoc. The default is
 # markdown_mmd (MultiMarkdown), which seems to provide the best compatibility
 # with 3rd party tools. YMMV, though, so you may want to experiment with
 # different Markdown variants to find the one which gives you the best
-# results.
-
-# Known Bugs:
-
-# - Cross-document links do not work. We generate inline links for these so
-#   that you have a starting point to edit them if needed, but they all point
-#   to local link targets, which obviously doesn't work if the link target
-#   actually is in another document.
-
-# - Inline Links to function and variable definitions should work in html and
-#   pdf output generated with Pandoc, if there is Sphinx markup for these in
-#   the document source.
-
-# - Internal section links are currently rendered as Markdown reference links.
-#   These often work in generated html and pdf as well, even though Pandoc
-#   makes no attempt to retain the RST link targets. This is by virtue of
-#   Pandoc's implicit_header_references extension. Case is significant for
-#   these, however, so the reference [Foo bar] to a section "Foo bar" will
-#   work, but [foo bar] won't. (Marked, a popular Markdown previewer for the
-#   Mac, is a bit more lenient, though, and renders such links correctly.
-#   ReText, on the other hand, won't recognize any of them.)
-
-# - At present, the script only recognizes a small subset of the RST and
-#   Sphinx cross-referencing syntax, so anything beyond simple documents
-#   will most likely give bad results.
+# results. You can also choose whether RST links should be rendered in
+# Markdown as inline links (the default) or reference links (-r /
+# --reference-links), see the notes below for further details.
 
 # Prerequisites:
 
-# - Make sure that you have Pandoc and GNU awk (as `gawk`) installed. The
-#   script probably needs a fairly recent Pandoc version (1.12.x should do).
+# Make sure that you have Pandoc and GNU awk (as `gawk`) installed. The script
+# probably needs a fairly recent Pandoc version (1.12.x should do).
 
-# - To get proper syntax highlighting for Pure, you'll have to build your own
-#   versions of the pandoc and highlighting-kate Haskell modules, so that the
-#   latter includes the highlighting rules for Pure.
-
-# (To do this, grab the latest sources from https://github.com/jgm/pandoc and
+# To get proper syntax highlighting for Pure, at present you have to build
+# your own versions of the pandoc and highlighting-kate Haskell modules.
+# To do this, grab the latest sources from https://github.com/jgm/pandoc and
 # https://github.com/jgm/highlighting-kate, drop the Kate syntax-highlighting
 # for Pure from pure/etc/pure.xml into the highlighting-kate/xml folder, then
 # rebuild highlighting-kate and pandoc. Detailed instructions can be found at
-# http://bakerjd99.wordpress.com/2012/09/20/pandoc-based-j-syntax-highlighting/.)
+# http://bakerjd99.wordpress.com/2012/09/20/pandoc-based-j-syntax-highlighting/.
+
+# Notes:
+
+# - At present, the script only recognizes a small subset of the RST and
+#   Sphinx cross-referencing syntax, so anything beyond simple documents
+#   will most likely give funky results or not work at all.
+
+# - Internal section links are rendered as Markdown inline links by default,
+#   which provides better compatibility with Pandoc's auto-generated link
+#   targets for section headers. Since implicit reference links of the form
+#   [link] work better with some 3rd party Markdown viewers such as "Marked",
+#   we also support these (specify -r / --reference-links on the command
+#   line). These often work in Pandoc-generated html and pdf as well, by
+#   virtue of Pandoc's implicit_header_references extension. Case is
+#   significant for these, however, so the reference [Foo bar] to a section
+#   "Foo bar" will work, but [foo bar] won't. (Marked is a bit more lenient,
+#   so that it renders such links correctly even if the case differs. ReText,
+#   on the other hand, won't recognize any of these.)
+
+# - Inline links to function and variable definitions work in html and pdf
+#   output generated with Pandoc, if there is Sphinx markup for these in the
+#   document source. Since rst-markdown automatically creates the appropriate
+#   Markdown link targets for these, they should also work with 3rd party
+#   Markdown processors if they implement any link targets at all. They do
+#   work with "Marked" on the Mac, but YMMV.
+
+# - Cross-document links do *not* work at present. We generate inline links
+#   for these so that you have a starting point to edit them if needed, but
+#   they all point to local link targets. This obviously doesn't work if the
+#   link target actually is in another document, but rst-markdown has no way
+#   of knowing this. Maybe we'll provide an indexing tool which will remedy
+#   this in the future.
 
 prog=`basename "$0"`
 
 usage() {
   echo "USAGE: $prog [options ...] [file ...]" >&2
-  echo "-h, --help:    print this message and exit" >&2
-  echo "-o, --output:  markdown output file" >&2
-  echo "-t, --to:      markdown output format" >&2
-  echo "-d, --date:    date to be used for |today|" >&2
-  echo "-v, --version: version number to be used for @version@" >&2
+  echo "-h, --help:            print this message and exit" >&2
+  echo "-o, --output:          markdown output file" >&2
+  echo "-r, --reference-links: use reference links for header targets" >&2
+  echo "-t, --to:              markdown output format" >&2
+  echo "-d, --date:            date to be used for |today|" >&2
+  echo "-v, --version:         version number to be used for @version@" >&2
 }
 
 infiles=/dev/stdin
@@ -70,6 +85,7 @@ outfile=/dev/stdout
 date=`date "+%B %d, %Y"`
 version="0.0"
 format=markdown_mmd
+reference_links=no
 
 # If we have a Makefile in the current directory, try to determine the version
 # number from there.
@@ -78,7 +94,7 @@ if [ -r Makefile ]; then
 fi
 
 # Parse options using getopt(1).
-args=`getopt  -o ho:t:d:v: -l help,output:,to:,date:,version: -n "$prog" -- "$@"`
+args=`getopt  -o ho:rt:d:v: -l help,output:,reference-links,to:,date:,version: -n "$prog" -- "$@"`
 if [ $? != 0 ] ; then exit 1 ; fi
 eval set -- "$args"
 
@@ -86,6 +102,7 @@ while true; do
   case "$1" in
     -h|--help) usage; exit 1 ;;
     -o|--output) outfile="$2"; shift 2 ;;
+    -r|--reference-links) reference_links=yes; shift ;;
     -t|--to) format="$2"; shift 2 ;;
     -d|--date) date="$2"; shift 2 ;;
     -v|--version) version="$2"; shift 2 ;;
@@ -95,6 +112,6 @@ done
 
 infiles="$@"
 
-gawk -f <(sed -e '/^# rst-pre[.]awk$/,/^# end rst-pre[.]awk$/!d' $0) version="$version" date="$date" "$@" | pandoc -f rst -t $format --reference-links --column 78 | gawk -f <(sed -e '/^# rst-post[.]awk$/,/^# end rst-post[.]awk$/!d' $0) - > $outfile
+gawk -f <(sed -e '/^# rst-pre[.]awk$/,/^# end rst-pre[.]awk$/!d' $0) version="$version" date="$date" "$@" | pandoc -f rst -t $format --reference-links --column 78 | gawk -f <(sed -e '/^# rst-post[.]awk$/,/^# end rst-post[.]awk$/!d' $0) reference_links="$reference_links" - > $outfile
 
 exit $?
