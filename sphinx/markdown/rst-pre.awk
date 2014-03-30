@@ -70,7 +70,23 @@ mode == 1 {
 
 # Sphinx cross references (:foo:`bar`)
 /:[a-z:]+:`[^`]+`/ {
-    print gensub(/:([a-z:]+):`([^`]+)`/, "!href(\\2)!\\2!end!", "g", $0);
+    # Iterate over all matches, to fill in the proper link classes (:doc: and
+    # :mod: are handled for now).
+    x = $0; $0 = "";
+    while (match(x, /:([a-z:]+):`([^`]+)`/, matches)) {
+	class = matches[1];
+	text = matches[2];
+	target = text;
+	if (class == "doc")
+	    target = "doc-" text;
+	else if (class == "mod")
+	    target = "module-" text;
+	y = sprintf("!href(%s)!%s!end!", target, text);
+	$0 = $0 substr(x, 1, RSTART-1) y;
+	x = substr(x, RSTART+RLENGTH);
+    }
+    $0 = $0 x;
+    print;
     next;
 }
 
