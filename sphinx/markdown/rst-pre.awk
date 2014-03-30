@@ -28,6 +28,9 @@ BEGIN {
     # line.
     if (!version) version = "@version@";
     if (!date) date = strftime("%B %d, %Y", systime());
+    if (!tmpfile) tmpfile = ".rst-markdown-targets";
+    # Initialize the index file.
+    system("rm -f " tmpfile);
 }
 
 # If the file didn't end with an empty line, we add one, just in case.
@@ -58,20 +61,24 @@ mode == 1 {
     mode = 0;
 }
 
-# Special RST link targets. Pandoc doesn't seem to understand this either.
+# Special RST link targets. Pandoc doesn't seem to understand these either.
 /^__\s+.*/ {
     print gensub(/^__\s+(.*)/, sprintf("!hdefx(``id%d``)!``\\1``", counter++), "g");
     next;
 }
 
-/^..\s+_[^:]+:.*/ {
+/^\.\.\s+_[^:]+:.*/ {
     print gensub(/^..\s+_([^:]+):\s*(.*)/, "!hdefx(``\\1``)!``\\2``", "g");
+    print gensub(/^..\s+_([^:]+):\s*(.*)/, "\\1", "g") >> tmpfile;
     next;
 }
 
-# This RST construct might be mistaken for a Sphinx description below, so we
-# get rid of this case here.
-/\.\. note::/ { print; next; }
+# Look for RST constructs which might be mistaken for Sphinx descriptions
+# below; we simply pass these through to Pandoc instead.
+/\.\.[[:blank:]]+[a-z:]+::[[:blank:]]+.*/ &&
+! /\.\. ([a-z:]+:)?(function|macro|variable|constant|constructor|type|index)::/ {
+    print; next;
+}
 
 # Sphinx descriptions (.. foo:: bar ...)
 /\.\.[[:blank:]]+[a-z:]+::[[:blank:]]+.*/ {
@@ -113,16 +120,16 @@ mode == 1 {
     $0 = gensub(/`([^`]+)`__/, sprintf("!hrefx(id%d)!\\1!end!", counter), "g");
 }
 
-/\<\S+__\>/ {
-    $0 = gensub(/\<(\S+)__\>/, sprintf("!hrefx(id%d)!\\1!end!", counter), "g");
+/\<[^[:space:]_]+__\>/ {
+    $0 = gensub(/\<([^[:space:]_]+)__\>/, sprintf("!hrefx(id%d)!\\1!end!", counter), "g");
 }
 
 /`[^`]+`_/ {
     $0 = gensub(/`([^`]+)`_/, "!href!\\1!end!", "g");
 }
 
-/\<\S+_\>/ {
-    $0 = gensub(/\<(\S+)_\>/, "!href!\\1!end!", "g");
+/\<[^[:space:]_]+_\>/ {
+    $0 = gensub(/\<([^[:space:]_]+)_\>/, "!href!\\1!end!", "g");
 }
 
 # These are continued across line breaks.

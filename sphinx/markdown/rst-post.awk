@@ -8,9 +8,14 @@
 
 BEGIN {
     mode = 0; level = 0; prev = ""; header = "######"; saved_text = "";
-    # This is just a default, you can specify a value for this on the command
+    # These are just defaults, you can specify values for these on the command
     # line.
     if (!reference_links) reference_links = "no";
+    if (!tmpfile) tmpfile = ".rst-markdown-targets";
+    while ((getline line < tmpfile) > 0)
+	targets[line] = 1
+    close(tmpfile)
+    system("rm -f " tmpfile);
 }
 
 # We get rid of escaped underscores in identifiers here. Pandoc/markdown is
@@ -100,16 +105,13 @@ mode == 1 && /^>[[:space:]]*$/ {
 # with 3rd party tools like "Marked" on the Mac. However, simple reference
 # links of the form [link] do work in Marked, so we support them as an option
 # as well, but note that these are unreliable in Pandoc because, in difference
-# to RST, the auto-generated link targets are case-sensitive. Another gotcha
-# is that implicit references of the form [link] or [link][] aren't supported
-# by all tools either, so we actually use explicit links of the form
-# [link][link] instead. Yes, this is a mess. :(
+# to RST, the auto-generated link targets are case-sensitive.
 
 # Deal with an incomplete reference continued across a line break.
 /^[^!]+!end!/ {
     if (match($0, /^([^!]+)!end!/, matches)) {
 	text = saved_text matches[1];
-	if (reference_links == "no") {
+	if (reference_links == "no" && !(text in targets)) {
 	    target = text;
 	    saved_text = "";
 	    gsub(/\s+/, "-", target);
@@ -118,7 +120,7 @@ mode == 1 && /^>[[:space:]]*$/ {
 	    gsub(/^[^[:alpha:]]+/, "", target);
 	    y = sprintf("[%s](#%s)", text, target);
 	} else {
-	    y = sprintf("[%s][%s]", text, text);
+	    y = sprintf("[%s][]", text);
 	}
 	$0 = y substr($0, RSTART+RLENGTH);
     }
@@ -132,20 +134,24 @@ mode == 1 && /^>[[:space:]]*$/ {
 	x = $0; $0 = "";
 	while (match(x, /!href!([^!]+)!end!/, matches)) {
 	    text = matches[1];
-	    target = text;
-	    # Mangle the target name according to Pandoc's rules.
-	    gsub(/\s+/, "-", target);
-	    gsub(/[^[:alnum:]_.-]/, "", target);
-	    target = tolower(target);
-	    gsub(/^[^[:alpha:]]+/, "", target);
-	    y = sprintf("[%s](#%s)", text, target);
+	    if (!(text in targets)) {
+		# Mangle the target name according to Pandoc's rules.
+		target = text;
+		gsub(/\s+/, "-", target);
+		gsub(/[^[:alnum:]_.-]/, "", target);
+		target = tolower(target);
+		gsub(/^[^[:alpha:]]+/, "", target);
+		y = sprintf("[%s](#%s)", text, target);
+	    } else {
+		y = sprintf("[%s][]", text);
+	    }
 	    $0 = $0 substr(x, 1, RSTART-1) y;
 	    x = substr(x, RSTART+RLENGTH);
 	}
 	$0 = $0 x;
     } else {
 	# Produce reference links.
-	$0 = gensub(/!href!([^!]+)!end!/, "[\\1][\\1]", "g");
+	$0 = gensub(/!href!([^!]+)!end!/, "[\\1][]", "g");
     }
 }
 

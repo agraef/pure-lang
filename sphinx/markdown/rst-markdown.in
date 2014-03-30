@@ -5,19 +5,21 @@
 # awk scripts, otherwise we won't be able to find and extract them from the
 # script source!
 
-# This script lets you convert manuals from the Sphinx documentation of the
-# Pure project to Markdown format, using Pandoc. Some effort is made to keep
-# at least the internal document links to RST section headers intact, as well
-# as Sphinx markup for descriptions of functions, variables, etc. For the rest
-# of the conversion we rely on Pandoc. This certainly isn't perfect, but the
-# script does a reasonably good job at least for simple input files, and it
-# gives you a quick way to obtain a Markdown document from the Pure manuals
-# which can then be edited and formatted in various ways.
+# This script lets you convert plain RST and (some) Sphinx documentation to
+# Markdown format using Pandoc. It was primarily written for converting the
+# Pure documentation files, but might also work with other, similar RST-based
+# documents. Some effort is made to keep at least the internal document links
+# to RST section headers intact, as well as Sphinx markup for descriptions of
+# functions, variables, etc. For the rest of the conversion we rely on Pandoc.
+# The script certainly isn't perfect, but it does a reasonably good job at
+# least for simple input files, and it gives you a quick way to obtain a
+# Markdown document from the Pure manuals which can then be edited and
+# formatted in various ways.
 
 # The script lets you pick the Markdown dialect to use for the target document
 # with the -t / --to option, which is simply passed to Pandoc. The default is
 # markdown_mmd (MultiMarkdown), which seems to provide the best compatibility
-# with 3rd party tools. YMMV, though, so you may want to experiment with
+# with 3rd party tools. YMMV, though, so you may have to experiment with
 # different Markdown variants to find the one which gives you the best
 # results. You can also choose whether RST links should be rendered in
 # Markdown as inline links (the default) or reference links (-r /
@@ -26,7 +28,7 @@
 # Prerequisites:
 
 # Make sure that you have Pandoc and GNU awk (as `gawk`) installed. The script
-# probably needs a fairly recent Pandoc version (1.12.x should do).
+# probably needs a fairly recent Pandoc version (1.12.3 has been tested).
 
 # To get proper syntax highlighting for Pure, at present you have to build
 # your own versions of the pandoc and highlighting-kate Haskell modules.
@@ -38,14 +40,14 @@
 
 # Notes:
 
-# - At present, the script only recognizes a small subset of the RST and
-#   Sphinx cross-referencing syntax, so anything beyond simple documents
-#   will most likely give funky results or not work at all.
+# - At present, the script only recognizes a subset of the RST and Sphinx
+#   cross-referencing syntax, so anything beyond simple documents will most
+#   likely give funky results or not work at all.
 
 # - Internal section links are rendered as Markdown inline links by default,
 #   which provides better compatibility with Pandoc's auto-generated link
 #   targets for section headers. Since implicit reference links of the form
-#   [link] work better with some 3rd party Markdown viewers such as "Marked",
+#   [link][] work better with some 3rd party Markdown viewers such as "Marked",
 #   we also support these (specify -r / --reference-links on the command
 #   line). These often work in Pandoc-generated html and pdf as well, by
 #   virtue of Pandoc's implicit_header_references extension. Case is
@@ -57,16 +59,16 @@
 # - Inline links to function and variable definitions work in html and pdf
 #   output generated with Pandoc, if there is Sphinx markup for these in the
 #   document source. Since rst-markdown automatically creates the appropriate
-#   Markdown link targets for these, they should also work with 3rd party
-#   Markdown processors if they implement any link targets at all. They do
-#   work with "Marked" on the Mac, but YMMV.
+#   Markdown link targets, they should also work with 3rd party Markdown
+#   processors if they implement any link targets at all. They do work with
+#   "Marked" on the Mac, but YMMV.
 
-# - Cross-document links do *not* work at present. We generate inline links
-#   for these so that you have a starting point to edit them if needed, but
-#   they all point to local link targets. This obviously doesn't work if the
-#   link target actually is in another document, but rst-markdown has no way
-#   of knowing this. Maybe we'll provide an indexing tool which will remedy
-#   this in the future.
+# - Cross-document links do *not* work yet. We generate inline links for these
+#   so that you have a starting point to edit them if needed, but they all
+#   point to local link targets. This obviously doesn't work if the link
+#   target actually is in another document, but at present rst-markdown has no
+#   way of knowing this. Maybe we'll provide an indexing tool which will
+#   remedy this in the future.
 
 prog=`basename "$0"`
 
@@ -112,6 +114,20 @@ done
 
 infiles="$@"
 
-gawk -f <(sed -e '/^# rst-pre[.]awk$/,/^# end rst-pre[.]awk$/!d' $0) version="$version" date="$date" "$@" | pandoc -f rst -t $format --reference-links --column 78 | gawk -f <(sed -e '/^# rst-post[.]awk$/,/^# end rst-post[.]awk$/!d' $0) reference_links="$reference_links" - > $outfile
+tmpdir=`mktemp -d /tmp/rst-markdown.XXXXXX`
+tmpfile="$tmpdir/targets"
+tmpout="$tmpdir/outfile.md"
 
-exit $?
+rm -Rf "$tmpdir"
+mkdir -p "$tmpdir"
+
+# Note that these two commands *must* be executed in sequence, to give
+# rst-pre.awk the opportunity to finish writing the index file with the RST
+# link targets before rst-post.awk is run.
+gawk -f <(sed -e '/^# rst-pre[.]awk$/,/^# end rst-pre[.]awk$/!d' $0) -v version="$version" -v date="$date" -v tmpfile="$tmpfile" "$@" > "$tmpout" && \
+pandoc -f rst -t $format --reference-links --column 78 "$tmpout" | gawk -f <(sed -e '/^# rst-post[.]awk$/,/^# end rst-post[.]awk$/!d' $0) -v reference_links="$reference_links" -v tmpfile="$tmpfile" - > $outfile
+
+rc=$?
+rm -Rf "$tmpdir"
+
+exit $rc
