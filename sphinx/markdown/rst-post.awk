@@ -81,6 +81,19 @@ mode == 1 && /^>[[:space:]]*$/ {
     next;
 }
 
+/^!opt\([^)]+\)!`.*`/ {
+    if (match($0, /!opt\(([^)]+)\)!`(.*)`/, matches)) {
+	opt = matches[1]; target = matches[2];
+	if (match(target, /^\s*([+-]*\w+)/, m)) {
+	    target = opt m[1];
+	}
+    }
+    hdr = substr(header, 1, level+1);
+    printf("%s {#%s}\n", gensub(/!opt\(([^)]+)\)!(.*)/, hdr " \\2", "g"), target);
+    mode = 1;
+    next;
+}
+
 /^!hdefx\([^)]+\)!.*/ {
     print gensub(/!hdefx\(`([^)]+)`\)!`(.*)`/, "[\\1]: \\2", "g");
     next;
