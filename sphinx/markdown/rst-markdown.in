@@ -79,6 +79,7 @@ usage() {
   echo "-h, --help:            print this message and exit" >&2
   echo "-o, --output:          markdown output file" >&2
   echo "-r, --reference-links: use reference links for header targets" >&2
+  echo "-R, --raw:             include raw markup in output" >&2
   echo "-t, --to:              markdown output format" >&2
   echo "-d, --date:            date to be used for |today|" >&2
   echo "-v, --version:         version number to be used for @version@" >&2
@@ -90,6 +91,7 @@ date=`date "+%B %d, %Y"`
 version="0.0"
 format=markdown
 reference_links=no
+raw=no
 
 # If we have a Makefile in the current directory, try to determine the version
 # number from there.
@@ -98,7 +100,7 @@ if [ -r Makefile ]; then
 fi
 
 # Parse options using getopt(1).
-args=`getopt  -o ho:rt:d:v: -l help,output:,reference-links,to:,date:,version: -n "$prog" -- "$@"`
+args=`getopt  -o ho:rRt:d:v: -l help,output:,reference-links,raw,to:,date:,version: -n "$prog" -- "$@"`
 if [ $? != 0 ] ; then exit 1 ; fi
 eval set -- "$args"
 
@@ -107,6 +109,7 @@ while true; do
     -h|--help) usage; exit 1 ;;
     -o|--output) outfile="$2"; shift 2 ;;
     -r|--reference-links) reference_links=yes; shift ;;
+    -R|--raw) raw=yes; shift ;;
     -t|--to) format="$2"; shift 2 ;;
     -d|--date) date="$2"; shift 2 ;;
     -v|--version) version="$2"; shift 2 ;;
@@ -126,7 +129,7 @@ mkdir -p "$tmpdir"
 # Note that these two commands *must* be executed in sequence, to give
 # rst-pre.awk the opportunity to finish writing the index file with the RST
 # link targets before rst-post.awk is run.
-gawk -f <(sed -e '/^# rst-pre[.]awk$/,/^# end rst-pre[.]awk$/!d' $0) -v version="$version" -v date="$date" -v tmpfile="$tmpfile" "$@" > "$tmpout" && \
+gawk -f <(sed -e '/^# rst-pre[.]awk$/,/^# end rst-pre[.]awk$/!d' $0) -v raw="$raw" -v version="$version" -v date="$date" -v tmpfile="$tmpfile" "$@" > "$tmpout" && \
 pandoc -f rst -t $format --reference-links --column 78 "$tmpout" | gawk -f <(sed -e '/^# rst-post[.]awk$/,/^# end rst-post[.]awk$/!d' $0) -v reference_links="$reference_links" -v tmpfile="$tmpfile" - > $outfile
 
 rc=$?
