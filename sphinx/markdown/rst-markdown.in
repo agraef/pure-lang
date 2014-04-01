@@ -111,20 +111,23 @@ prog=`basename "$0"`
 
 usage() {
   echo "USAGE: $prog [options ...] [file ...]" >&2
+  echo "Options marked [pandoc] are simply passed to pandoc." >&2
   echo "General options:" >&2
   echo "-h, --help:            print this message and exit" >&2
+  echo "-O, --options:         pass any options to pandoc (cumulative)" >&2
   echo "Preprocessing options:" >&2
   echo "-d, --date:            date to be inserted for |today|" >&2
   echo "-v, --version:         version number to be inserted for @version@" >&2
+  echo "-R, --raw:             include raw markup in document" >&2
   echo "-T, --title-block:     include Pandoc-style title block" >&2
   echo "Output options:" >&2
   echo "-H, --headers:         use section headers for definitions" >&2
   echo "-n, --no-links:        suppress all links (show link text only)" >&2
-  echo "-o, --output:          name of pandoc output file" >&2
-  echo "-O, --options:         pass options to pandoc (cumulative)" >&2
-  echo "-r, --reference-links: use reference rather than inline links" >&2
-  echo "-R, --raw:             include raw markup in output" >&2
-  echo "-t, --to:              pandoc output format" >&2
+  echo "-o, --output:          [pandoc] name of pandoc output file" >&2
+  echo "-r, --reference-links: [pandoc] use reference rather than inline links" >&2
+  echo "-s, --standalone:      [pandoc] produce a standalone document" >&2
+  echo "-S, --smart:           [pandoc] smart quotes, dashes etc." >&2
+  echo "-t, --to:              [pandoc] pandoc output format" >&2
 }
 
 infiles=/dev/stdin
@@ -143,7 +146,7 @@ if [ -r Makefile ]; then
 fi
 
 # Parse options using getopt(1).
-args=`getopt  -o hd:v:To:O:HnrRt: -l help,date:,version:,title-block,output:,options:,headers,no-links,reference-links,raw,to: -n "$prog" -- "$@"`
+args=`getopt  -o hd:v:To:O:HnrRsSt: -l help,date:,version:,title-block,output:,options:,headers,no-links,reference-links,rawstandalone,smart,to: -n "$prog" -- "$@"`
 if [ $? != 0 ] ; then exit 1 ; fi
 eval set -- "$args"
 
@@ -159,6 +162,8 @@ while true; do
     -n|--no-links) no_links=yes; shift ;;
     -r|--reference-links) options="$options --reference-links"; shift ;;
     -R|--raw) raw=yes; shift ;;
+    -s|--standalone) options="$options -s"; shift ;;
+    -S|--smart) options="$options -S"; shift ;;
     -t|--to) options="$options -t $2"; shift 2 ;;
     --) shift; break ;;
   esac
