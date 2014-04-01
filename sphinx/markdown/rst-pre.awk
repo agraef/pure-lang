@@ -87,7 +87,10 @@ verbatim > 0 {
 	indent = 1;
     if (indent <= verbatim && !match($0, /^\s*$/))
 	verbatim = skipped = 0;
-    if (skipped == 0) print; next;
+    if (verbatim > 0) {
+	if (skipped == 0) print;
+	next;
+    }
 }
 
 # Substitute version and date placeholders.
