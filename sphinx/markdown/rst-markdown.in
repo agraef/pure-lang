@@ -5,27 +5,22 @@
 # awk scripts, otherwise we won't be able to find and extract them from the
 # script source!
 
-# This script lets you convert plain RST and (some) Sphinx documentation to
-# Markdown format using Pandoc. It was primarily written for converting the
-# Pure documentation files, but might also work with other, similar RST-based
-# documents. Some effort is made to keep at least the internal document links
-# to RST section headers intact, as well as Sphinx markup for descriptions of
-# functions, variables, etc. For the rest of the conversion we rely on Pandoc.
-# The script certainly isn't perfect, but it does a reasonably good job at
-# least for simple input files, and it gives you a quick way to obtain a
-# Markdown document from the Pure manuals which can then be edited and
-# formatted in various ways.
+# This script uses Pandoc to convert plain RST and (some) Sphinx documentation
+# to Markdown format (or any other output format supported by Pandoc). It was
+# primarily written for converting the Pure documentation files, but might
+# also work with other, similar RST-based documents. Some effort is made to
+# keep at least the internal document links to RST section headers intact, as
+# well as Sphinx markup for descriptions of functions, variables, etc. For the
+# rest of the conversion we rely on Pandoc. The script certainly isn't
+# perfect, but it does a reasonably good job at least for simple input files,
+# and it gives you a quick way to obtain a Markdown document from the Pure
+# manuals which can then be edited and formatted in various ways.
 
-# The script lets you pick the Markdown dialect to use for the target document
-# with the -t / --to option, which is simply passed to Pandoc. The default is
-# pandoc's extended markdown format, which isn't supported by all that many
-# 3rd party tools, so you may have to experiment with different Markdown
-# variants to find the one which gives you the best results. You can also
-# choose whether RST links should be rendered in Markdown as inline links (the
-# default) or reference links (-r / --reference-links), see the notes below
-# for further details. For instance, the "Marked" previewer on the Mac wants
-# MultiMarkdown format and reference links, so invoking rst-markdown with the
-# options -t markdown_mmd -r will produce a suitable Markdown document.
+# The output format is usually auto-detected if an output filename is
+# specified with -o, otherwise you can specify the desired target format with
+# the -t / --to option. The script understands a number of other options which
+# are mostly passed to pandoc, and the -O / --options option lets you pass any
+# options not directly supported by the script.
 
 # Prerequisites:
 
@@ -46,51 +41,54 @@
 #   cross-referencing syntax, so anything beyond simple documents will most
 #   likely give funky results or not work at all.
 
-# - Internal section links are rendered as Markdown inline links by default,
-#   which provides better compatibility with Pandoc's auto-generated link
-#   targets for section headers. Since implicit reference links of the form
-#   [link][] work better with some 3rd party Markdown viewers such as "Marked",
-#   we also support these (specify -r / --reference-links on the command
-#   line). These often work in Pandoc-generated html and pdf as well, by
-#   virtue of Pandoc's implicit_header_references extension. Case is
-#   significant for these, however, so the reference [Foo bar] to a section
-#   "Foo bar" will work, but [foo bar] won't. (Marked is a bit more lenient,
-#   so that it renders such links correctly even if the case differs. ReText,
-#   on the other hand, won't recognize any of these.)
+# - Internal section links are rendered as Markdown inline links by default.
+#   If you prefer, you can force implicit reference links of the form [link][]
+#   by specifying the -r / --reference-links option on the command line (this
+#   option is simply passed to pandoc in the post-processing stage).
 
-# - Inline links to function and variable definitions work in html and pdf
-#   output generated with Pandoc, if there is Sphinx markup for these in the
-#   document source. Since rst-markdown automatically creates the appropriate
-#   Markdown link targets, they should also work with 3rd party Markdown
-#   processors if they implement any link targets at all. They do work with
-#   "Marked" on the Mac, but YMMV.
+# - Sphinx descriptions for options, functions, variables, etc. are by default
+#   rendered as Markdown definition lists. This works fairly well, but has the
+#   downside that list items can't be link targets in Markdown. As a remedy,
+#   you can also translate such descriptions to Markdown section headers
+#   instead, by using the -H / --headers option. This doesn't look very nice
+#   in formatted documents, but has the advantage that local references to
+#   functions, variables, etc. will work in html output generated with
+#   Pandoc. (The -H option employs Pandoc's PHP Markdown-style header
+#   attribute syntax, which isn't widely supported by 3rd party tools, but it
+#   works with a few of Pandoc's own writer backends at least. We're still
+#   looking for a better solution, but given Markdown's limitations in this
+#   area this seems to be the best that we can do right now.)
 
-# - Cross-document links do *not* work yet. We generate inline links for these
-#   so that you have a starting point to edit them if needed, but they all
-#   point to local link targets. This obviously doesn't work if the link
-#   target actually is in another document, but at present rst-markdown has no
-#   way of knowing this. Maybe we'll provide an indexing tool which will
-#   remedy this in the future.
+# - Cross-document links do *not* work at present. We generate inline links
+#   for these so that you have a starting point to edit them if needed, but
+#   they all point to local link targets right now. This obviously doesn't
+#   work if the link target actually is in another document, but the script
+#   has no way of knowing this. Maybe we'll provide an indexing tool which
+#   will remedy this in the future.
 
 prog=`basename "$0"`
 
 usage() {
   echo "USAGE: $prog [options ...] [file ...]" >&2
+  echo "General options:" >&2
   echo "-h, --help:            print this message and exit" >&2
-  echo "-o, --output:          markdown output file" >&2
-  echo "-r, --reference-links: use reference links for header targets" >&2
+  echo "Preprocessing options:" >&2
+  echo "-d, --date:            date to be inserted for |today|" >&2
+  echo "-v, --version:         version number to be inserted for @version@" >&2
+  echo "Output options:" >&2
+  echo "-H, --headers:         use section headers for definitions" >&2
+  echo "-o, --output:          name of pandoc output file" >&2
+  echo "-O, --options:         pass options to pandoc (cumulative)" >&2
+  echo "-r, --reference-links: use reference rather than inline links" >&2
   echo "-R, --raw:             include raw markup in output" >&2
-  echo "-t, --to:              markdown output format" >&2
-  echo "-d, --date:            date to be used for |today|" >&2
-  echo "-v, --version:         version number to be used for @version@" >&2
+  echo "-t, --to:              pandoc output format" >&2
 }
 
 infiles=/dev/stdin
-outfile=/dev/stdout
 date=`date "+%B %d, %Y"`
 version="0.0"
-format=markdown
-reference_links=no
+options=
+headers=no
 raw=no
 
 # If we have a Makefile in the current directory, try to determine the version
@@ -100,19 +98,21 @@ if [ -r Makefile ]; then
 fi
 
 # Parse options using getopt(1).
-args=`getopt  -o ho:rRt:d:v: -l help,output:,reference-links,raw,to:,date:,version: -n "$prog" -- "$@"`
+args=`getopt  -o hd:v:o:O:HrRt: -l help,date:,version:,output:,options:,headers,reference-links,raw,to: -n "$prog" -- "$@"`
 if [ $? != 0 ] ; then exit 1 ; fi
 eval set -- "$args"
 
 while true; do
   case "$1" in
     -h|--help) usage; exit 1 ;;
-    -o|--output) outfile="$2"; shift 2 ;;
-    -r|--reference-links) reference_links=yes; shift ;;
-    -R|--raw) raw=yes; shift ;;
-    -t|--to) format="$2"; shift 2 ;;
     -d|--date) date="$2"; shift 2 ;;
     -v|--version) version="$2"; shift 2 ;;
+    -o|--output) options="$options -o $2"; shift 2 ;;
+    -O|--options) options="$options $2"; shift 2 ;;
+    -H|--headers) headers=yes; shift ;;
+    -r|--reference-links) options="$options --reference-links"; shift ;;
+    -R|--raw) raw=yes; shift ;;
+    -t|--to) options="$options -t $2"; shift 2 ;;
     --) shift; break ;;
   esac
 done
@@ -130,7 +130,7 @@ mkdir -p "$tmpdir"
 # rst-pre.awk the opportunity to finish writing the index file with the RST
 # link targets before rst-post.awk is run.
 gawk -f <(sed -e '/^# rst-pre[.]awk$/,/^# end rst-pre[.]awk$/!d' $0) -v raw="$raw" -v version="$version" -v date="$date" -v tmpfile="$tmpfile" "$@" > "$tmpout" && \
-pandoc -f rst -t $format --reference-links --column 78 "$tmpout" | gawk -f <(sed -e '/^# rst-post[.]awk$/,/^# end rst-post[.]awk$/!d' $0) -v reference_links="$reference_links" -v tmpfile="$tmpfile" - > $outfile
+pandoc -f rst -t markdown "$tmpout" | gawk -f <(sed -e '/^# rst-post[.]awk$/,/^# end rst-post[.]awk$/!d' $0) -v headers="$headers" -v tmpfile="$tmpfile" - | pandoc -f markdown --columns 78 $options
 
 rc=$?
 rm -Rf "$tmpdir"
