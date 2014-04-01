@@ -29,10 +29,12 @@ BEGIN {
     # line.
     if (!version) version = "@version@";
     if (!date) date = strftime("%B %d, %Y", systime());
+    if (!title_block) title_block = "no";
     if (!tmpfile) tmpfile = ".rst-markdown-targets";
     if (!raw) raw = "no";
     # Initialize the index file.
     system("rm -f " tmpfile);
+    if (title_block == "yes") mode = 2;
 }
 
 # If the file didn't end with an empty line, we add one, just in case.
@@ -40,6 +42,26 @@ ENDFILE { if (prev) print ""; }
 
 # Keep track of the previous line.
 { prev = current; current = $0; }
+
+# Scrape the title block, if requested. This stops as soon as we have
+# processed the title block. Any extra frontmatter is discarded.
+
+# This marks the beginning of the title block.
+mode == 2 && /^\s*\.\.\s*(%.*)$/ { print ".. code-block:: pandoc-title-block\n"; mode = 3; }
+# Get rid of extra frontmatter.
+mode == 2 { next; }
+# Scrape the title block.
+mode == 3 && /^\s*\.\.\s*(.*)$/ {
+    gsub(/@version@/, version);
+    gsub(/\|today\|/, date);
+    print gensub(/^\s*\.\.\s*(.*)$/, "   \\1", "g");
+    next;
+}
+# The title block stops at the first empty line or anything else which doesn't
+# look like a RST directive.
+mode == 3 { mode = 0; }
+
+# Processing of the document body starts here.
 
 # Deal with left-overs from the previous line.
 link_prefix {

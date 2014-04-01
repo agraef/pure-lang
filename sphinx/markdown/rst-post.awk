@@ -7,15 +7,23 @@
 # tries to translate them to the corresponding markdown syntax.
 
 BEGIN {
-    mode = 0; level = 0; prev = ""; header = "######"; saved_text = "";
+    mode = 3; level = 0; prev = ""; header = "######"; saved_text = "";
     # These are just defaults, you can specify values for these on the command
     # line.
+    if (!no_links) no_links = "no";
     if (!tmpfile) tmpfile = ".rst-markdown-targets";
     while ((getline line < tmpfile) > 0)
 	targets[line] = 1
     close(tmpfile)
     system("rm -f " tmpfile);
 }
+
+# Process a generated pandoc-style header block at the beginning of the
+# document.
+mode == 3 && /^(```|~~~).*\.pandoc-title-block/ { mode = 2; next; }
+mode == 2 && /^(```|~~~)/ { mode = 0; next; }
+mode == 2 { print; next; }
+mode == 3 { mode = 0; }
 
 # We get rid of escaped underscores in identifiers here. Pandoc/markdown is
 # usually clever enough not to mistake these for emphasis.
@@ -130,14 +138,17 @@ mode == 1 && /^\s*> / {
 # XXXFIXME: In Sphinx, these may point to other documents, how to handle that
 # here?
 /!href\([^)]+\)![^!]+!end!/ {
-    if (headers == "yes")
+    if (headers == "yes" && no_links != "yes")
 	$0 = gensub(/!href\(([^)]+)\)!([^!]+)!end!/, "[`\\2`](#\\1)", "g");
     else
 	$0 = gensub(/!href\(([^)]+)\)!([^!]+)!end!/, "`\\2`", "g");
 }
 
 /!hrefx\([^)]+\)![^!]+!end!/ {
-    $0 = gensub(/!hrefx\(([^)]+)\)!([^!]+)!end!/, "[\\2][\\1]", "g");
+    if (no_links == "yes")
+	$0 = gensub(/!hrefx\(([^)]+)\)!([^!]+)!end!/, "'\\2'", "g");
+    else
+	$0 = gensub(/!hrefx\(([^)]+)\)!([^!]+)!end!/, "[\\2][\\1]", "g");
 }
 
 # Finally the regular RST links. We turn these into inline links (using
@@ -149,13 +160,17 @@ mode == 1 && /^\s*> / {
 /^[^!]+!end!/ {
     if (match($0, /^([^!]+)!end!/, matches)) {
 	text = saved_text matches[1];
-	target = text;
 	saved_text = "";
-	gsub(/\s+/, "-", target);
-	gsub(/[^[:alnum:]_.-]/, "", target);
-	target = tolower(target);
-	gsub(/^[^[:alpha:]]+/, "", target);
-	y = sprintf("[%s](#%s)", text, target);
+	if (no_links == "yes")
+	    y = sprintf("'%s'", text);
+	else {
+	    target = text;
+	    gsub(/\s+/, "-", target);
+	    gsub(/[^[:alnum:]_.-]/, "", target);
+	    target = tolower(target);
+	    gsub(/^[^[:alpha:]]+/, "", target);
+	    y = sprintf("[%s](#%s)", text, target);
+	}
 	$0 = y substr($0, RSTART+RLENGTH);
     }
 }
@@ -167,7 +182,9 @@ mode == 1 && /^\s*> / {
     x = $0; $0 = "";
     while (match(x, /!href!([^!]+)!end!/, matches)) {
 	text = matches[1];
-	if (!(text in targets)) {
+	if (no_links == "yes")
+	    y = sprintf("'%s'", text);
+	else if (!(text in targets)) {
 	    # Mangle the target name according to Pandoc's rules.
 	    target = text;
 	    gsub(/\s+/, "-", target);

@@ -5,27 +5,12 @@
 # awk scripts, otherwise we won't be able to find and extract them from the
 # script source!
 
-# This script uses Pandoc to convert plain RST and (some) Sphinx documentation
-# to Markdown format (or any other output format supported by Pandoc). It was
-# primarily written for converting the Pure documentation files, but might
-# also work with other, similar RST-based documents. Some effort is made to
-# keep at least the internal document links to RST section headers intact, as
-# well as Sphinx markup for descriptions of functions, variables, etc. For the
-# rest of the conversion we rely on Pandoc. The script certainly isn't
-# perfect, but it does a reasonably good job at least for simple input files,
-# and it gives you a quick way to obtain a Markdown document from the Pure
-# manuals which can then be edited and formatted in various ways.
-
-# The output format is usually auto-detected if an output filename is
-# specified with -o, otherwise you can specify the desired target format with
-# the -t / --to option. The script understands a number of other options which
-# are mostly passed to pandoc, and the -O / --options option lets you pass any
-# options not directly supported by the script.
-
 # Prerequisites:
 
 # Make sure that you have Pandoc and GNU awk (as `gawk`) installed. The script
-# probably needs a fairly recent Pandoc version (1.12.3 has been tested).
+# probably needs a fairly recent Pandoc version (1.12.3 has been tested). To
+# install the script, simply run `make install` (the installation prefix
+# defaults to `/usr/local`; you can set this with the `prefix`make variable).
 
 # To get proper syntax highlighting for Pure, at present you have to build
 # your own versions of the pandoc and highlighting-kate Haskell modules.
@@ -34,6 +19,62 @@
 # for Pure from pure/etc/pure.xml into the highlighting-kate/xml folder, then
 # rebuild highlighting-kate and pandoc. Detailed instructions can be found at
 # http://bakerjd99.wordpress.com/2012/09/20/pandoc-based-j-syntax-highlighting/.
+
+# Usage:
+
+# This script uses Pandoc to convert plain RST documents and (some) Sphinx
+# elements to Markdown format (or any other output format supported by
+# Pandoc). It was primarily written for converting the Pure documentation
+# files, but might also work with other, similar RST-based documents. Some
+# effort is made to keep at least the internal document links to RST section
+# headers intact, as well as Sphinx markup for descriptions of program
+# options, functions, variables, etc. For the rest of the conversion we rely
+# on Pandoc. The script certainly isn't perfect, but it does a reasonably good
+# job at least for simple input files, and it gives you a quick way to obtain
+# a Markdown document from the Pure manuals which can then be edited and
+# formatted in various ways.
+
+# The output format is usually auto-detected if an output filename is
+# specified with -o / --output, otherwise you can specify the desired target
+# format with the -t / --to option. The script understands a number of other
+# options which are mostly passed to pandoc, and the -O / --options option
+# lets you pass any other options not directly supported by the script. There
+# are also a number of special pre- and post-processing options which affect
+# the generated output:
+
+# -d / --date and -v / --version allow you to substitute values for the most
+# commonly used meta variables (|today| and @version@) in RST source files.
+
+# -H / --headers uses Markdown section headers rather than definition lists
+# for Sphinx descriptions of options, functions, variables, etc., which makes
+# links to these items work at least for some output formats. Please check the
+# notes below for details.
+
+# -n / --no-links strips all inline and reference links from the Markdown
+# output, leaving just the link text in single quotes. This is useful when
+# generating Pandoc output formats such as manpages (-tman) which don't
+# support links and where the resulting output looks weird if they are
+# included.
+
+# -R / --raw includes raw sections from the RST source (`.. raw::`). Pandoc
+# seems to unconditionally include these sections, which usually messes up the
+# output, so rst-markdown will by default strip them from the RST source
+# during pre-processing, so that Pandoc never sees them. But if you really
+# want to have this material included in the output then this option will give
+# you that.
+
+# -T / --title-block scrapes a Pandoc-style title block from the RST source.
+# The title block should be formatted as follows (please also check the Pandoc
+# documentation for a description of the title block syntax):
+
+# .. % Title
+# .. % Author
+# .. % Date
+
+# Note that this will be treated as a comment by RST processors. If the -T
+# option is used, then any additional frontmatter (i.e., everything leading up
+# to the title block) will be stripped from the RST source, so that the output
+# document begins with the Pandoc title block.
 
 # Notes:
 
@@ -75,8 +116,10 @@ usage() {
   echo "Preprocessing options:" >&2
   echo "-d, --date:            date to be inserted for |today|" >&2
   echo "-v, --version:         version number to be inserted for @version@" >&2
+  echo "-T, --title-block:     include Pandoc-style title block" >&2
   echo "Output options:" >&2
   echo "-H, --headers:         use section headers for definitions" >&2
+  echo "-n, --no-links:        suppress all links (show link text only)" >&2
   echo "-o, --output:          name of pandoc output file" >&2
   echo "-O, --options:         pass options to pandoc (cumulative)" >&2
   echo "-r, --reference-links: use reference rather than inline links" >&2
@@ -89,7 +132,9 @@ date=`date "+%B %d, %Y"`
 version="0.0"
 options=
 headers=no
+no_links=no
 raw=no
+title_block=no
 
 # If we have a Makefile in the current directory, try to determine the version
 # number from there.
@@ -98,7 +143,7 @@ if [ -r Makefile ]; then
 fi
 
 # Parse options using getopt(1).
-args=`getopt  -o hd:v:o:O:HrRt: -l help,date:,version:,output:,options:,headers,reference-links,raw,to: -n "$prog" -- "$@"`
+args=`getopt  -o hd:v:To:O:HnrRt: -l help,date:,version:,title-block,output:,options:,headers,no-links,reference-links,raw,to: -n "$prog" -- "$@"`
 if [ $? != 0 ] ; then exit 1 ; fi
 eval set -- "$args"
 
@@ -107,9 +152,11 @@ while true; do
     -h|--help) usage; exit 1 ;;
     -d|--date) date="$2"; shift 2 ;;
     -v|--version) version="$2"; shift 2 ;;
+    -T|--title-block) title_block=yes; shift ;;
     -o|--output) options="$options -o $2"; shift 2 ;;
     -O|--options) options="$options $2"; shift 2 ;;
     -H|--headers) headers=yes; shift ;;
+    -n|--no-links) no_links=yes; shift ;;
     -r|--reference-links) options="$options --reference-links"; shift ;;
     -R|--raw) raw=yes; shift ;;
     -t|--to) options="$options -t $2"; shift 2 ;;
@@ -129,8 +176,8 @@ mkdir -p "$tmpdir"
 # Note that these two commands *must* be executed in sequence, to give
 # rst-pre.awk the opportunity to finish writing the index file with the RST
 # link targets before rst-post.awk is run.
-gawk -f <(sed -e '/^# rst-pre[.]awk$/,/^# end rst-pre[.]awk$/!d' $0) -v raw="$raw" -v version="$version" -v date="$date" -v tmpfile="$tmpfile" "$@" > "$tmpout" && \
-pandoc -f rst -t markdown "$tmpout" | gawk -f <(sed -e '/^# rst-post[.]awk$/,/^# end rst-post[.]awk$/!d' $0) -v headers="$headers" -v tmpfile="$tmpfile" - | pandoc -f markdown --columns 78 $options
+gawk -f <(sed -e '/^# rst-pre[.]awk$/,/^# end rst-pre[.]awk$/!d' $0) -v raw="$raw" -v version="$version" -v date="$date" -v title_block="$title_block" -v tmpfile="$tmpfile" "$@" > "$tmpout" && \
+pandoc -f rst -t markdown "$tmpout" | gawk -f <(sed -e '/^# rst-post[.]awk$/,/^# end rst-post[.]awk$/!d' $0) -v headers="$headers" -v no_links="$no_links" -v tmpfile="$tmpfile" - | pandoc -f markdown --columns 78 $options
 
 rc=$?
 rm -Rf "$tmpdir"
