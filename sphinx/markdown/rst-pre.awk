@@ -22,6 +22,83 @@
 # idiosyncrasies of the Pure documentation files which are in Sphinx format.
 # They may or may not work with other Sphinx/RST documentation.
 
+# Helper function to mangle the target name according to Pandoc's rules.
+function mangle(target) {
+    gsub(/\s+/, "-", target);
+    gsub(/[^[:alnum:]_.-]/, "", target);
+    target = tolower(target);
+    gsub(/^[^[:alpha:]]+/, "", target);
+    gsub(/-+/, "-", target);
+    return target;
+}
+
+# Helper function to format a Sphinx cross-reference of the form
+# :class:`text`, filling in the proper link target and text for the given
+# class. The classes :doc:, :mod:, :opt:, :envvar:, :kbd:, :program: and :ref:
+# are given special treatment for now, other links are assumed to point to
+# descriptions of functions, variables, etc. XXXFIXME: Apart from :doc:, the
+# following code produces local links only, which of course won't work for
+# cross-document links. Some kind of indexing utility would be needed to
+# properly resolve the links and fill in the appropriate target documents, but
+# this hasn't been written yet.
+
+function sphinx_ref(class, text)
+{
+    # Spinx allows a link text to be specified explicitly using the syntax
+    # text<name>.
+    i = index(text, "<"); l = length(text);
+    if (i > 0 && substr(text, l) == ">") {
+	target = substr(text, i+1, l-i-1); text = substr(text, 1, i-1);
+	gsub(/\s+$/, "", text);
+    } else
+	target = text;
+    if (class == "doc")
+	target = target ".html";
+    else if (class == "mod")
+	target = "#module-" target;
+    else if (class == "ref")
+	target = "#" mangle(target);
+    else if (class == "option") {
+	i = index(target, " ");
+	if (i > 0) {
+	    # program is given explicitly
+	    myprog = substr(target, 1, i-1);
+	    myopt = substr(target, i+1);
+	    gsub(/^\s+/, "", myopt);
+	    target = "#cmdoption-" myprog myopt;
+	} else
+	    target = "#cmdoption" prog target;
+	text = "``" text "``";
+    } else if (class == "envvar") {
+	target = "#envvar-" target;
+	text = "``" text "``";
+    } else if (class == "program") {
+	target = "";
+	text = "**" text "**";
+    } else if (class == "kbd") {
+	target = "";
+	text = "``" text "``";
+    } else {
+	# Anything else probably denotes a function, variable or similar
+	# description item. In the case of Pure domain, these can have a tag
+	# of the from `/tag` attached to them in order to distinguish
+	# overloaded instances of operations. Please note that this part is
+	# somewhat domain-specific and might need to be adjusted for Sphinx
+	# domains other than the C and Pure domains.
+	i = index(text, "/");
+	if (i > 1) {
+	    # Tagged link, remove tag from link text.
+	    text = substr(text, 1, i-1);
+	}
+	target = "#" target;
+	text = "``" text "``";
+    }
+    if (target)
+	return sprintf("!href(``%s``)!%s!end!", target, text);
+    else
+	return text;
+}
+
 BEGIN {
     mode = 0; verbatim = 0; skipped = 0; def = ""; counter = 0; prog = "";
     blanks = "                                                             ";
@@ -63,9 +140,50 @@ mode == 3 { mode = 0; }
 
 # Processing of the document body starts here.
 
+# Nothing gets expanded during a verbatim code section (see below).
+verbatim > 0 {
+    if (match($0, /^(\s*)/))
+	indent = RLENGTH+1;
+    else
+	indent = 1;
+    if (productionlist > 0) {
+	gsub(/`/, ""); gsub(/: \|/, "|");
+	$0 = gensub(/^(\s*): /, "\\1  ", "g");
+    }
+    if (indent <= verbatim && !match($0, /^\s*$/))
+	verbatim = productionlist = skipped = 0;
+    if (verbatim > 0) {
+	if (skipped == 0) print;
+	next;
+    }
+}
+
+# Handle quote blocks such as notes (see below).
+quote > 0 {
+    if (match($0, /^(\s*)/))
+	indent = RLENGTH+1;
+    else
+	indent = 1;
+    if (indent <= quote && !match($0, /^\s*$/)) {
+	print substr(blanks, 1, quote-3) "-----\n";
+	quote = 0;
+    }
+}
+
 # Deal with left-overs from the previous line.
 link_prefix {
-    if (match($0, /^(\s*)(([^`]|\\`)+)`__\>/, matches)) {
+    if (match(link_prefix, /^:([a-z:]+)+:/) &&
+	match($0, /^(\s*)(([^`]|\\`)+`)(.*)/, matches)) {
+	spc = matches[1]; link_suffix = matches[2]; rest = matches[4];
+	x = link_prefix link_suffix;
+	if (match(x, /:([a-z:]+):`(([^`]|\\`)+)`/, matches)) {
+	    print link_line;
+	    class = matches[1]; text = matches[2];
+	    y = sphinx_ref(class, text);
+	    $0 = spc y rest;
+	} else
+	    print link_prev;
+    } else if (match($0, /^(\s*)(([^`]|\\`)+)`__\>/, matches)) {
 	print link_line;
 	gsub(/^(\s*)(([^`]|\\`)+)`__\>/,
 	     sprintf("%s!hrefx(id%d)!%s%s!end!", matches[1], counter, link_prefix, matches[2]));
@@ -77,20 +195,6 @@ link_prefix {
 	print link_prev;
     }
     link_prefix = link_line = link_prev = "";
-}
-
-# Nothing gets expanded during a verbatim code section (see below).
-verbatim > 0 {
-    if (match($0, /^(\s*)/))
-	indent = RLENGTH+1;
-    else
-	indent = 1;
-    if (indent <= verbatim && !match($0, /^\s*$/))
-	verbatim = skipped = 0;
-    if (verbatim > 0) {
-	if (skipped == 0) print;
-	next;
-    }
 }
 
 # Substitute version and date placeholders.
@@ -114,12 +218,12 @@ verbatim > 0 {
 
 # Handle verbatim code sections. Pandoc handles these all right by itself, but
 # we need to be aware of these so that we don't mess with them.
-/^(\s*)\.\.\s+(code-block|sourcecode)::\s+.*/ || /^(\s*)::\s*$/ {
+/^(\s*)\.\.\s+(code-block|sourcecode)::\s+.*/ ||
+/::\s*$/ && !/^\s*\.\.\s/ {
     if (match($0, /^(\s*)/))
 	verbatim = RLENGTH+1;
     else
 	verbatim = 1;
-    print; next;
 }
 
 # Raw code sections are treated similarly, but we remove these by default.
@@ -135,10 +239,30 @@ verbatim > 0 {
     next;
 }
 
+# XXXFIXME: Not really sure what to do with these; rendered as a code block
+# for now.
+/^(\s*)\.\.\s+productionlist::.*/ {
+    if (match($0, /^(\s*)/))
+	verbatim = RLENGTH+1;
+    else
+	verbatim = 1;
+    productionlist = 1;
+    print gensub(/^(\s*)\.\.\s+productionlist::(.*)/, "\\1.. code-block:: bnf\n", "g");
+    next;
+}
+
+# Notes aren't rendered very nicely by pandoc, fix them up a bit.
+/^(\s*)\.\.\s+note::\s+.*/ {
+    if (match($0, /^(\s*)\.\.\s+/))
+	quote = RLENGTH;
+    else
+	quote = 1;
+    $0 = gensub(/^(\s*)\.\.\s+note::\s+/, "\n\\1-----\n\n\\1   **Note:** ", "g");
+}
+
 # Continuation lines of Sphinx decriptions (see below).
 mode == 1 && /\s+.+/ {
-    print "";
-    printf("%s%s\n", def, gensub(/\s+(.+)/, "``\\1``", "g"));
+    printf("\n%s%s\n", def, gensub(/\s+(.+)/, "\\1", "g"));
     next;
 }
 
@@ -146,41 +270,74 @@ mode == 1 {
     mode = 0;
 }
 
-# Special RST link targets. Pandoc doesn't seem to understand these either.
+# RST substitutions. Pandoc handles these, but we need to keep track of them
+# to make substituted targets work correctly (see below).
+/^\s*\.\.\s+\|[^|]+\|\s*replace::\s*.*/ {
+    if (match($0, /^\s*\.\.\s+\|([^|]+)\|\s*replace::\s*(.*)/, matches)) {
+	name = matches[1]; repl = matches[2];
+	sub(/\s*$/, "", repl);
+	replacement[name] = repl;
+    }
+    print; next;
+}
+
+# Special RST link targets. Pandoc doesn't seem to understand these, so we
+# produce explicit link targets for them. We also record the targets in a
+# temporary index file so that links to these targets can be resolved
+# correctly.
 /^(\s*)__\s+.*/ {
-    print gensub(/^(\s*)__\s+(.*)/, sprintf("\\1!hdefx(``id%d``)!``\\2``", counter++), "g");
+    print gensub(/^(\s*)__\s+(.*)/, sprintf("\n\\1!hdefx(``id%d``)!\\2", counter++), "g");
     next;
 }
 
 /^(\s*)\.\.\s+_[^:]+:.*/ {
-    print gensub(/^(\s*)..\s+_([^:]+):\s*(.*)/, "\\1!hdefx(``\\2``)!``\\3``", "g");
-    print gensub(/^(\s*)..\s+_([^:]+):\s*(.*)/, "\\2", "g") >> tmpfile;
+    if (match($0, /^(\s*)..\s+_([^:]+):\s*(.*)/, matches)) {
+	spc = matches[1]; name = matches[2]; link = matches[3];
+	if (name in replacement) name = replacement[name];
+	print sprintf("\n%s!hdefx(``%s``)!%s", spc, name, link);
+	print name >> tmpfile;
+    }
+    next;
+}
+
+# Likewise for Sphinx module markup.
+/^(\s*)\.\.\s+module::.*/ {
+    if (match($0, /^(\s*)..\s+module::\s*(.*)/, matches)) {
+	spc = matches[1]; name = matches[2];
+	name = "module-" name;
+	print sprintf("\n%s!hdefx(``%s``)!", spc, name);
+	print name >> tmpfile;
+    }
     next;
 }
 
 # Look for RST constructs which might be mistaken for Sphinx descriptions
 # below; we simply pass these through to Pandoc instead.
 /^(\s*)\.\.\s+[a-z:]+::\s+.*/ &&
-! /^(\s*)\.\. ([a-z:]+:)?(program|option|function|macro|variable|constant|constructor|type|index)::/ {
+! /^(\s*)\.\. ([a-z:]+:)?(program|option|envvar|function|macro|variable|constant|constructor|type|describe|index)::/ {
     print; next;
 }
 
-# Program/options.
+# Program/options. We need to keep track of the program names here, so that
+# the proper links for option descriptions can be constructed.
 /^(\s*)\.\.\s+program::\s+.*/ {
     prog = gensub(/^(\s*)\.\.\s+program::\s+(.*)/, "-\\2", "g");
     next;
 }
 
 /^(\s*)\.\.\s+option::\s+.*/ {
-    print gensub(/^(\s*)\.\.\s+option::\s+(.*)/, sprintf("\\1!opt(%s)!``\\2``", "cmdoption" prog), "g");
+    print gensub(/^(\s*)\.\.\s+option::\s+(.*)/, sprintf("\\1!opt(%s)!\\2", "cmdoption" prog), "g");
     def = gensub(/^(\s*)\.\.\s+option::\s+(.*)/, sprintf("\\1!opt(%s)!", "cmdoption" prog), "g");
     mode = 1;
     next;
 }
 
+# Index entries. Not sure what to do with these, they're just ignored for now.
+/^(\s*)\.\.\s+index::\s+.*/ { next; }
+
 # Other Sphinx descriptions (.. foo:: bar ...)
 /^(\s*)\.\.\s+[a-z:]+::\s+.*/ {
-    print gensub(/^(\s*)\.\.\s+([a-z:]+)::\s+(.*)/, "\\1!hdef(\\2)!``\\3``", "g");
+    print gensub(/^(\s*)\.\.\s+([a-z:]+)::\s+(.*)/, "\\1!hdef(\\2)!\\3", "g");
     def = gensub(/^(\s*)\.\.\s+([a-z:]+)::\s+(.*)/, "\\1!hdef(\\2)!", "g");
     mode = 1;
     next;
@@ -188,20 +345,12 @@ mode == 1 {
 
 # Sphinx cross references (:foo:`bar`)
 /:[a-z:]+:`([^`]|\\`)+`/ {
-    # Iterate over all matches, to fill in the proper link classes (:doc:,
-    # :mod: and :opt: are handled for now).
+    # Iterate over all matches, to fill in the proper link targets and texts
+    # for the corresponding classes (see sphinx_ref() above).
     x = $0; $0 = "";
     while (match(x, /:([a-z:]+):`(([^`]|\\`)+)`/, matches)) {
-	class = matches[1];
-	text = matches[2];
-	target = text;
-	if (class == "doc")
-	    target = "doc-" text;
-	else if (class == "mod")
-	    target = "module-" text;
-	else if (class == "option")
-	    target = "cmdoption" prog text;
-	y = sprintf("!href(%s)!%s!end!", target, text);
+	class = matches[1]; text = matches[2];
+	y = sphinx_ref(class, text);
 	$0 = $0 substr(x, 1, RSTART-1) y;
 	x = substr(x, RSTART+RLENGTH);
     }
@@ -209,27 +358,30 @@ mode == 1 {
 }
 
 # RST links (`foo bar`_ and similar)
-
 {
     # Full links on the current line.
     $0 = gensub(/`(([^`]|\\`)+)`__\>/, sprintf("!hrefx(id%d)!\\1!end!", counter), "g");
     $0 = gensub(/`(([^`]|\\`)+)`_\>/, "!href!\\1!end!", "g");
+    $0 = gensub(/(\|[^|]+\|)_\>/, "!href!\\1!end!", "g");
     # "Naked" links (without the backticks). We need to be careful here not to
     # match literals which happen to look like a link. XXXFIXME: This can't
     # really be done reliably without looking at an arbitrarily large amount
     # of context. Right now we just check that the pattern isn't surrounded by
     # backticks, so there may still be false positives.
-    $0 = gensub(/(^|[^`])\<(\w+)__\>($|[^`])/, sprintf("\\1!hrefx(id%d)!\\2!end!\\3", counter), "g");
-    $0 = gensub(/(^|[^`])\<(\w+)_\>($|[^`])/, "\\1!href!\\2!end!\\3", "g");
-    # Incomplete link at the end of a line.
-    if (match($0, /`(([^`]|\\`)+)$/, matches) && (RSTART==1||substr($0, RSTART-1, 1)!="`")) {
+    $0 = gensub(/(^|[^`])\<(\S+)__\>($|[^`])/, sprintf("\\1!hrefx(id%d)!\\2!end!\\3", counter), "g");
+    $0 = gensub(/(^|[^`])\<(\S+)_\>($|[^`])/, "\\1!href!\\2!end!\\3", "g");
+    # Incomplete (Sphinx or RST) link at the end of a line. Since links inside
+    # backticks may contain spaces, they may well be continued on the next
+    # line.
+    if (match($0, /(:[a-z:]+:`([^`]|\\`)+)$/, matches) ||
+	match($0, /`(([^`]|\\`)+)$/, matches) && (RSTART==1||substr($0, RSTART-1, 1)!="`")) {
 	# We need to peek ahead here so that we can be sure that this is
 	# actually a link completed at the beginning of the next line. So we
-	# output nothing yet and defer all further processing until the next
-	# cycle.
+	# just record the state of the match, output nothing yet and defer all
+	# further processing until the next cycle.
 	link_prefix = matches[1] " ";
 	link_prev = $0;
-	link_line = gensub(/`(([^`]|\\`)+)$/, "", "g");
+	link_line = gensub(/(:[a-z:]+:)?`(([^`]|\\`)+)$/, "", "g");
 	next;
     }
     print;

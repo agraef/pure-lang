@@ -6,6 +6,22 @@
 # and Sphinx constructs recognized in the original RST document, and
 # tries to translate them to the corresponding markdown syntax.
 
+# Helper function to mangle the target name according to Pandoc's rules.
+function mangle(target) {
+    gsub(/\s+/, "-", target);
+    gsub(/[^[:alnum:]_.-]/, "", target);
+    target = tolower(target);
+    gsub(/^[^[:alpha:]]+/, "", target);
+    gsub(/-+/, "-", target);
+    return target;
+}
+
+# Minimal mangler to get a valid html link name.
+function html_name(target) {
+    gsub(/>/, "\\&gt;", target);
+    return target;
+}
+
 BEGIN {
     mode = 3; level = 0; prev = ""; header = "######"; saved_text = "";
     # These are just defaults, you can specify values for these on the command
@@ -43,34 +59,43 @@ mode == 3 { mode = 0; }
 # Rules to translate Sphinx definitions. These generally take a form like
 # .. function:: fun args ... in the source, with the description of the item
 # (function, variable, etc.) on subsequent lines, indented by three spaces.
-# The preprocessor escapes them using the format !hdef($1)!`$2` where $1 is
+# The preprocessor escapes them using the format !hdef($1)!$2 where $1 is
 # the item class (function, variable etc.), $2 the prototype (either fun args,
 # var, or extern type fun(args...) for an external C function). The following
-# rules turn these into Markdown definition lists by default. Optionally (if
-# the header option is set), sections with the appropriate Markdown link
-# targets of the form {#...} will be generated instead, so that the described
-# items can be linked to in the document text, as it is in the
-# Sphinx-generated documentation. (Unfortunately, this isn't possible with
-# Markdown definition lists, as items in these lists can't be link targets.)
+# rules turn these into Markdown definition lists by default. If you prefer,
+# you can also generate proper section headers instead (set the headers option
+# if you want this). In either case link targets will be created, so that the
+# described items can be linked to in the document text. (In the case of
+# definition lists, this is done with inline html, as there is no special
+# Markdown syntax for link anchors in definition list items.)
 
 # If mode is 1, we're parsing a Sphinx definition, check whether it's
-# terminated on the current line.
+# terminated on the current line and do some preprocessing of the headers
+# along the way.
 mode == 1 && !/^\s*$/ && !/^\s*>\s*/ {
-    if (match($0, /^\s*!hdef\([^)]+\)!.*/)) {
-	if (buffer) print buffer; buffer = "";
-	if (indent) print indent "\n";
+    if (match($0, /^\s*!hdef\(([^)]+)\)!.*/, matches)) {
+	class = matches[1];
+	if (class == "constant" || class == "constructor" ||
+	    class == "variable" || class == "envvar") {
+	    # This collapses adjacent headers. Looks nicer for some item
+	    # classes IMHO. TODO: Maybe this should be an option.
+	    if (buffer) buffer = buffer ", ";
+	} else {
+	    if (buffer) print buffer; buffer = "";
+	    if (indent) print indent;
+	}
     } else if (match($0, /^\s*!opt\([^)]+\)!.*/)) {
-	# This collapses adjacent option entries. Looks nicer IMHO.
 	if (buffer) buffer = buffer ", ";
     } else {
 	if (buffer) print buffer;
-	mode = 0; indent = buffer = "";
+	if (indent) print indent;
+	mode = 0; indent = buffer = last_class = "";
     }
 }
 
 # Get rid of a lone ">" from a block quote in the description text.
 mode == 1 && /^\s*>\s*$/ {
-    #print "";
+    print "";
     next;
 }
 
@@ -86,62 +111,130 @@ mode == 1 && /^\s*> / {
 }
 
 # Recognize Sphinx definitions, turn them into Markdown headers or descriptions.
-/^\s*!hdef\([^)]+\)!`.*`/ {
+# Note that program options are dealt with in a separate rule below.
+/^>?\s*!hdef\([^)]+\)!.*/ {
     # Parse the name of the object, so that we can create the appropriate link
     # target.
-    if (match($0, /^(\s*)!hdef\(([^)]+)\)!`(.*)`/, matches)) {
-	indent = matches[1]; target = matches[3];
-	if (match(target, /^(public|private)?\s*extern\s+\w+(\*|\s)+(\w+)/, m)) {
+    if (match($0, /^(>?\s*)!hdef\(([^)]+)\)!(.*)/, matches)) {
+	indent = matches[1]; class = matches[2]; target = matches[3];
+	gsub(/^(\w+:)+/, "", class);
+	target = gensub(/\\(.)/, "\\1", "g", target);
+	text = target;
+	# For clarity, some item classes have a descriptive label shown before
+	# the item header.
+	if (buffer && last_class == class)
+	    label = "";
+	else if (class == "constant" || class == "constructor" ||
+		 class == "variable" || class == "macro" || class == "type")
+	    label = "*" class "* ";
+	else
+	    label = "";
+	# XXXFIXME: This is highly domain-specific, so surely needs
+	# adjustments for domains other than Pure. The syntax recognized for
+	# functions and similar items is that of Pure, as it is written in the
+	# Pure docs (basically extern declarations and Pure function headers).
+	if (class != "function" && class != "constructor" && class != "macro") {
+	    if (class == "envvar") target = "envvar-" target;
+	    if (class == "describe") target = "";
+	} else if (match(target, /^(public|private)?\s*extern\s+\w+(\*|\s)+(\w+)/, m)) {
 	    target = m[3];
-	} else if (match(target, /^(infix[lr]?|prefix|postfix|nonfix)\s*\s+(\S+)\s+((\/\w+)?)/, m)) {
-	    target = m[2] m[3];
+	} else if (match(target, /^((infix[lr]?|prefix|postfix|nonfix)\s+)?(\S+)(\s+(\/\w+)?)(.*)/, m)) {
+	    decl = m[2]; op = m[3]; tag = m[5]; args = m[6];
+	    gsub(/^\s+/, "", args);
+	    target = op tag;
+	    # Handle operator descriptions (bring the operands in the right
+	    # order, depending on the kind of operator).
+	    if (decl == "infix" || decl == "infixl" || decl == "infixr") {
+		if (match(args, /(\S+)\s+(.*)/, m))
+		    text = m[1] " " op " " m[2];
+		else
+		    text = op " " args;
+	    } else if (decl == "postfix") {
+		text = args " " op;
+	    } else {
+		text = op " " args;
+	    }
 	}
     }
+    target = html_name(target);
     if (headers == "yes") {
 	hdr = substr(header, 1, level+1);
-	printf("%s {#%s}\n", gensub(/!hdef\(([^)]+)\)!(.*)/, hdr " \\2", "g"), target);
-	indent = "";
+	if (target)
+	    printf("%s {#%s}\n", hdr " " label "`" text "`", target);
+	else
+	    printf("%s\n", hdr " " label "`" text "`");
+	indent = buffer = last_class = "";
     } else {
-	# Definition list items can't be link targets, alas.
-	printf("%s%s\n", indent, gensub(/!hdef\(([^)]+)\)!(.*)/, "\\2", "g"));
-	indent = indent ":   ";
-    }
-    mode = 1; buffer = "";
-    next;
-}
-
-/^\s*!opt\([^)]+\)!`.*`/ {
-    if (match($0, /^(\s*)!opt\(([^)]+)\)!`(.*)`/, matches)) {
-	indent = matches[1]; opt = matches[2]; target = matches[3];
-	if (match(target, /^\s*([+-]*\w+)/, m)) {
-	    target = opt m[1];
-	}
-    }
-    if (headers == "yes") {
-	hdr = substr(header, 1, level+1);
-	printf("%s {#%s}\n", gensub(/!opt\(([^)]+)\)!(.*)/, hdr " \\2", "g"), target);
-	indent = buffer = "";
-    } else {
-	buffer = buffer sprintf("%s%s", indent, gensub(/!opt\(([^)]+)\)!(.*)/, "\\2", "g"));
-	indent = indent ":   ";
+	# For definition list items there isn't any special syntax to create
+	# the link target, so we do it in html. Also note that we defer output
+	# of the item header since adjacent headers for some item classes are
+	# collapsed to a single item (see above).
+	if (target)
+	    buffer = buffer sprintf("%s<a name=\"%s\"></a>%s", indent, target,
+				    label "`" text "`");
+	else
+	    buffer = buffer sprintf("%s%s", indent,
+				    label "`" text "`");
+	indent = indent ":   "; last_class = class;
     }
     mode = 1;
     next;
 }
 
-/^\s*!hdefx\([^)]+\)!.*/ {
-    print gensub(/^(\s*)!hdefx\(`([^)]+)`\)!`(.*)`/, "\\1[\\2]: \\3", "g");
+/^>?\s*!opt\([^)]+\)!.*/ {
+    if (match($0, /^(>?\s*)!opt\(([^)]+)\)!(.*)/, matches)) {
+	indent = matches[1]; opt = matches[2]; target = matches[3];
+	if (match(target, /^\s*([+-]*[^\[=[:space:]]+)/, m)) {
+	    target = opt m[1];
+	}
+    }
+    target = html_name(target);
+    if (headers == "yes") {
+	hdr = substr(header, 1, level+1);
+	printf("%s {#%s}\n", gensub(/!opt\(([^)]+)\)!(.*)/, hdr " `\\2`", "g"), target);
+	indent = buffer = last_class = "";
+    } else {
+	buffer = buffer sprintf("%s<a name=\"%s\"></a>%s", indent, target, gensub(/!opt\(([^)]+)\)!(.*)/, "`\\2`", "g"));
+	indent = indent ":   ";
+    }
+    last_class = "";
+    mode = 1;
+    next;
+}
+
+/^>?\s*!hdefx\(`[^)]+`\)!.*/ {
+    if (match($0, /^(>?\s*)!hdefx\(`([^)]+)`\)!(.*)/, matches)) {
+	spc = matches[1]; target = matches[2]; link = matches[3];
+	if (link)
+	    print sprintf("%s[%s]: %s", spc, target, link);
+	else {
+	    # Internal link target, create it on the spot (the only way to do
+	    # that in Markdown is with inline html):
+	    link = mangle(target);
+	    print sprintf("%s[%s]: #%s", spc, target, link);
+	    print sprintf("\n%s<a name=\"%s\"></a>", spc, link);
+	}
+    }
     next;
 }
 
 # Recognize Sphinx cross references, turn them into Markdown reference links.
-# XXXFIXME: In Sphinx, these may point to other documents, how to handle that
-# here?
-/!href\([^)]+\)![^!]+!end!/ {
-    if (headers == "yes" && no_links != "yes")
-	$0 = gensub(/!href\(([^)]+)\)!([^!]+)!end!/, "[`\\2`](#\\1)", "g");
-    else
-	$0 = gensub(/!href\(([^)]+)\)!([^!]+)!end!/, "`\\2`", "g");
+# XXXFIXME: In Sphinx, these may point to other documents. To properly resolve
+# such links, we'd need to have some kind of indexing facility which can be
+# applied either here or in the rule in rst-pre.awk which generates the links.
+/!href\(`(([^`]|\\`)+)`\)!([^!]|\\!)+!end!/ {
+    x = $0; $0 = "";
+    while (match(x, /!href\(`(([^`]|\\`)+)`\)!(([^!]|\\!)+)!end!/, matches)) {
+	link = matches[1]; text = matches[3];
+	text = gensub(/\\(.)/, "\\1", "g", text);
+	if (no_links == "yes")
+	    y = sprintf("'%s'", text);
+	else
+	    y = sprintf("[%s](%s)", text, link);
+	$0 = $0 substr(x, 1, RSTART-1) y;
+	x = substr(x, RSTART+RLENGTH);
+    }
+    $0 = $0 x;
 }
 
 /!hrefx\([^)]+\)![^!]+!end!/ {
@@ -164,11 +257,7 @@ mode == 1 && /^\s*> / {
 	if (no_links == "yes")
 	    y = sprintf("'%s'", text);
 	else {
-	    target = text;
-	    gsub(/\s+/, "-", target);
-	    gsub(/[^[:alnum:]_.-]/, "", target);
-	    target = tolower(target);
-	    gsub(/^[^[:alpha:]]+/, "", target);
+	    target = mangle(text);
 	    y = sprintf("[%s](#%s)", text, target);
 	}
 	$0 = y substr($0, RSTART+RLENGTH);
@@ -185,12 +274,7 @@ mode == 1 && /^\s*> / {
 	if (no_links == "yes")
 	    y = sprintf("'%s'", text);
 	else if (!(text in targets)) {
-	    # Mangle the target name according to Pandoc's rules.
-	    target = text;
-	    gsub(/\s+/, "-", target);
-	    gsub(/[^[:alnum:]_.-]/, "", target);
-	    target = tolower(target);
-	    gsub(/^[^[:alpha:]]+/, "", target);
+	    target = mangle(text);
 	    y = sprintf("[%s](#%s)", text, target);
 	} else {
 	    y = sprintf("[%s][]", text);

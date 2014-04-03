@@ -46,9 +46,9 @@
 # commonly used meta variables (|today| and @version@) in RST source files.
 
 # -H / --headers uses Markdown section headers rather than definition lists
-# for Sphinx descriptions of options, functions, variables, etc., which makes
-# links to these items work at least for some output formats. Please check the
-# notes below for details.
+# for Sphinx descriptions of options, functions, variables, etc., which
+# potentially makes links to these items work in some output
+# formats other than html. Please check the notes below for details.
 
 # -n / --no-links strips all inline and reference links from the Markdown
 # output, leaving just the link text in single quotes. This is useful when
@@ -71,10 +71,12 @@
 # .. % Author
 # .. % Date
 
-# Note that this will be treated as a comment by RST processors. If the -T
-# option is used, then any additional frontmatter (i.e., everything leading up
-# to the title block) will be stripped from the RST source, so that the output
-# document begins with the Pandoc title block.
+# This will be treated as a comment by RST processors. If the -T option is
+# used, then any additional frontmatter (i.e., everything leading up to the
+# title block) will be stripped from the RST source, so that the output
+# document begins with the Pandoc title block. (Note that this means that the
+# resulting document will be empty if there's no title block in the source at
+# all, so beware!)
 
 # Notes:
 
@@ -83,29 +85,38 @@
 #   likely give funky results or not work at all.
 
 # - Internal section links are rendered as Markdown inline links by default.
-#   If you prefer, you can force implicit reference links of the form [link][]
+#   If you prefer, you can force implicit reference links of the form [name][]
 #   by specifying the -r / --reference-links option on the command line (this
 #   option is simply passed to pandoc in the post-processing stage).
 
-# - Sphinx descriptions for options, functions, variables, etc. are by default
-#   rendered as Markdown definition lists. This works fairly well, but has the
-#   downside that list items can't be link targets in Markdown. As a remedy,
-#   you can also translate such descriptions to Markdown section headers
-#   instead, by using the -H / --headers option. This doesn't look very nice
-#   in formatted documents, but has the advantage that local references to
-#   functions, variables, etc. will work in html output generated with
-#   Pandoc. (The -H option employs Pandoc's PHP Markdown-style header
-#   attribute syntax, which isn't widely supported by 3rd party tools, but it
-#   works with a few of Pandoc's own writer backends at least. We're still
-#   looking for a better solution, but given Markdown's limitations in this
-#   area this seems to be the best that we can do right now.)
+# - Other RST link targets (`.. _name:`) in the source document should also
+#   work, and references to these will use implicit reference links in
+#   Markdown. Note, however, that inline html will be used to create the
+#   anchors for internal link targets, which may not work with Pandoc target
+#   document types other than html.
 
-# - Cross-document links do *not* work at present. We generate inline links
-#   for these so that you have a starting point to edit them if needed, but
-#   they all point to local link targets right now. This obviously doesn't
-#   work if the link target actually is in another document, but the script
-#   has no way of knowing this. Maybe we'll provide an indexing tool which
-#   will remedy this in the future.
+# - Sphinx definitions for options, functions, variables, etc. are by default
+#   rendered as Markdown definition lists. This works fairly well, but has the
+#   downside that the corresponding link targets are coded using inline html,
+#   which may not work with Pandoc target document types other than html. As a
+#   remedy, you can also translate such descriptions to Markdown section
+#   headers instead, by using the -H / --headers option. Definition lists
+#   often look better in formatted documents, but using section headers has
+#   the advantage that Pandoc supports special PHP Markdown-style syntax for
+#   the section link targets. This syntax isn't widely supported by 3rd party
+#   tools, but it works with a few of Pandoc's own writer backends, and so
+#   might be useful in cases where the target document type doesn't support
+#   inline html anchors.
+
+# - Cross-references to sections and definition items in other documents do
+#   *not* work at present. The only exception are document links
+#   (:doc:`docname`) where the target document is known and so an external
+#   link to the document's html file can be created. For other
+#   cross-references we generate inline links so that you have a starting
+#   point to edit them if needed, but they all point to local link targets
+#   right now. This obviously doesn't work if the link target actually is in
+#   another document, but the script has no way of knowing this. Maybe we'll
+#   provide an indexing tool which will remedy this in the future.
 
 prog=`basename "$0"`
 
@@ -182,7 +193,7 @@ mkdir -p "$tmpdir"
 # rst-pre.awk the opportunity to finish writing the index file with the RST
 # link targets before rst-post.awk is run.
 gawk -f <(sed -e '/^# rst-pre[.]awk$/,/^# end rst-pre[.]awk$/!d' $0) -v raw="$raw" -v version="$version" -v date="$date" -v title_block="$title_block" -v tmpfile="$tmpfile" "$@" > "$tmpout" && \
-pandoc -f rst -t markdown "$tmpout" | gawk -f <(sed -e '/^# rst-post[.]awk$/,/^# end rst-post[.]awk$/!d' $0) -v headers="$headers" -v no_links="$no_links" -v tmpfile="$tmpfile" - | pandoc -f markdown --columns 78 $options
+pandoc -f rst -t markdown --no-wrap "$tmpout" | gawk -f <(sed -e '/^# rst-post[.]awk$/,/^# end rst-post[.]awk$/!d' $0) -v headers="$headers" -v no_links="$no_links" -v tmpfile="$tmpfile" - | pandoc -f markdown --columns 78 $options
 
 rc=$?
 rm -Rf "$tmpdir"
