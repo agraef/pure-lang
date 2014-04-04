@@ -45,17 +45,19 @@ function rst_link(target)
 	return target;
 }
 
-# Helper function to format a Sphinx cross-reference of the form
-# :class:`text`, filling in the proper link target and text for the given
-# class. The classes :doc:, :mod:, :opt:, :envvar:, :kbd:, :program: and :ref:
-# are given special treatment for now, other links are assumed to point to
-# descriptions of functions, variables, etc. XXXFIXME: Apart from :doc:, the
-# following code produces local links only, which of course won't work for
-# cross-document links. Some kind of indexing utility would be needed to
-# properly resolve the links and fill in the appropriate target documents, but
-# this hasn't been written yet.
+# Helper function to format a Sphinx cross-reference (or RST text roles) of
+# the form :class:`text`, filling in the proper link target and text for the
+# given class. The classes :doc:, :mod:, :opt:, :envvar:, :program: and :ref:
+# are given special treatment for now, as well as various common RST text
+# roles. Other links are assumed to point to descriptions of functions,
+# variables, etc. XXXFIXME: Apart from :doc:, the following code produces
+# local links only, which of course won't work for cross-document links. Some
+# kind of indexing utility would be needed to properly resolve the links and
+# fill in the appropriate target documents, but this hasn't been written yet.
 function sphinx_ref(class, text)
 {
+    # Handle RST text roles.
+    if (class in roles) return ":" class ":`" text "`";
     # Sphinx allows a link text to be specified explicitly using the syntax
     # text<name>.
     i = index(text, "<"); l = length(text);
@@ -87,16 +89,13 @@ function sphinx_ref(class, text)
     } else if (class == "program") {
 	target = "";
 	text = "**" text "**";
-    } else if (class == "kbd") {
-	target = "";
-	text = "``" text "``";
     } else {
 	# Anything else probably denotes a function, variable or similar
 	# description item. In the case of Pure domain, these can have a tag
 	# of the from `/tag` attached to them in order to distinguish
 	# overloaded instances of operations. Please note that this part is
-	# somewhat domain-specific and might need to be adjusted for Sphinx
-	# domains other than the C and Pure domains.
+	# somewhat domain-specific and might need to be adjusted for other
+	# Sphinx domains.
 	i = index(text, "/");
 	if (i > 1) {
 	    # Tagged link, remove tag from link text.
@@ -105,7 +104,12 @@ function sphinx_ref(class, text)
 	if (namespace && index(target, "::") == 0) {
 	    # Unqualified target name, add the namespace if set.
 	    target = namespace "::" target;
+	} else if (index(target, "::") > 0 && index(target, "~") == 1) {
+	    # Leading ~ => namespace is suppressed in display.
+	    gsub(/^~/, "", target);
+	    gsub(/^~.*::/, "", text);
 	}
+	gsub(/^::/, "", target);
 	target = "#" target;
 	text = "``" text "``";
     }
@@ -129,6 +133,20 @@ BEGIN {
     # Initialize the index file.
     system("rm -f " tmpfile);
     if (title_block == "yes") mode = 2;
+    # RST text roles we know about. This is from the RST documentation and
+    # should cover the common roles used in most documents. We expect these to
+    # be handled by pandoc.
+    roles["emphasis"] = 1;
+    roles["literal"] = 1;
+    roles["code"] = 1;
+    roles["math"] = 1;
+    roles["pep-reference"] = roles["PEP"] = 1;
+    roles["rfc-reference"] = roles["RFC"] = 1;
+    roles["strong"] = 1;
+    roles["subscript"] = roles["sub"] = 1;
+    roles["superscript"] = roles["sup"] = 1;
+    roles["title-reference"] = roles["title"] = roles["t"] = 1;
+    roles["raw"] = 1;
 }
 
 ENDFILE {
@@ -138,7 +156,7 @@ ENDFILE {
     # that the next file starts from a clean slate.
     verbatim = productionlist = skipped = quote = 0;
     link_prefix = link_line = link_prev = "";
-    if (namespace) print "!hdefns(````)!\n";
+    if (namespace) print "!hdefns()!\n";
     namespace = prog = "";
     mode = 0;
 }
@@ -235,7 +253,7 @@ link_prefix {
 
 # pandoc doesn't seem to understand the double colon at the end of the line,
 # so we expand it to a proper code section.
-/\s+::\s*$/ {
+/\s+::\s*$/ && !/^(\s*)\.\.\s/ {
     if (match($0, /^(\s*)/))
 	verbatim = RLENGTH+1;
     else
@@ -245,13 +263,13 @@ link_prefix {
 
 # Handle verbatim code sections. Pandoc handles these all right by itself, but
 # we need to be aware of these so that we don't mess with them.
-/^(\s*)\.\.\s+(code-block|sourcecode)::\s+.*/ ||
+/^(\s*)\.\.\s+(code-block|sourcecode)::.*/ ||
 /::\s*$/ && !/^\s*\.\.\s/ {
     if (match($0, /^(\s*)/))
 	verbatim = RLENGTH+1;
     else
 	verbatim = 1;
-    if (match($0, /^\s*(::\s*|\.\.\s+(code-block|sourcecode)::\s+.*)$/)) {
+    if (match($0, /^\s*(::\s*|\.\.\s+(code-block|sourcecode)::.*)$/)) {
 	print; next;
     }
 }
@@ -281,29 +299,14 @@ link_prefix {
     next;
 }
 
-# Notes aren't rendered very nicely by pandoc, fix them up a bit if requested.
-callouts == "yes" && /^(\s*)\.\.\s+note::.*/ {
-    if (match($0, /^(\s*)\.\.\s+/))
-	quote = RLENGTH;
-    else
-	quote = 1;
-    $0 = gensub(/^(\s*)\.\.\s+note::\s*/, "\n\\1-----\n\n\\1   **Note:** ", "g");
-}
-
-# RST short option lists. These actually look a lot like ordinary text, so we
-# are *very* explicit about the syntax here.
-/^(\s*)(-[a-zA-Z]( ?[a-zA-Z0-9_-]+| ?<[^>]+>)?|--[a-zA-Z0-9_-]+([ =][a-zA-Z0-9_-]+|[ =]<[^>]+>)?)(, (-[a-zA-Z]( ?[a-zA-Z0-9_-]+| ?<[^>]+>)?|--[a-zA-Z0-9_-]+([ =][a-zA-Z0-9_-]+|[ =]<[^>]+>)?))*  .*/ {
-    $0 = gensub(/^(\s*)(\S+( \S+)*)  \s*(.*)/, "\n\\1!optx(``\\2``)!\\4", "g");
-}
-
 # Continuation lines of Sphinx descriptions (see below).
-mode == 1 && /\s+.+/ {
+mode == 1 && /^\s+\S.*/ {
     printf("\n%s%s\n", def, gensub(/\s+(.+)/, "\\1", "g"));
     next;
 }
 
 mode == 1 {
-    mode = 0;
+    mode = 0; if (match($0, /\S/)) print "";
 }
 
 # RST substitutions. Pandoc handles these, but we need to keep track of them
@@ -332,9 +335,13 @@ mode == 1 {
     next;
 }
 
+# XXXFIXME: This requires that the link is on the same line, apparently RST
+# also allows it to be on the next line if it's properly indented.
 /^(\s*)\.\.\s+_[^:]+:.*/ {
     if (match($0, /^(\s*)\.\.\s+_([^:]+):\s*(.*)/, matches)) {
 	spc = matches[1]; name = matches[2]; link = matches[3];
+	gsub(/^(`|\s)+/, "", name);
+	gsub(/(`|\s)+$/, "", name);
 	if (name in replacement) name = replacement[name];
 	# The given link might actually be an RST link instead of a real URL,
 	# expand that if needed.
@@ -361,9 +368,20 @@ mode == 1 {
     if (match($0, /^(\s*)\.\.\s+namespace::\s*(.*)/, matches)) {
 	spc = matches[1]; namespace = matches[2];
 	if (namespace == "None") namespace = "";
-	print sprintf("\n%s!hdefns(``%s``)!", spc, namespace);
+	gsub(/^::/, "", namespace);
+	gsub(/\s*$/, "", namespace);
+	print sprintf("\n%s!hdefns(%s)!", spc, namespace);
     }
     next;
+}
+
+# Notes aren't rendered very nicely by pandoc, fix them up a bit if requested.
+callouts == "yes" && /^(\s*)\.\.\s+note::.*/ {
+    if (match($0, /^(\s*)\.\.\s+/))
+	quote = RLENGTH;
+    else
+	quote = 1;
+    $0 = gensub(/^(\s*)\.\.\s+note::\s*/, "\n\\1-----\n\n\\1   **Note:** ", "g");
 }
 
 # Field values. Pandoc will render these in a generic fashion, but we handle
@@ -381,12 +399,21 @@ mode == 1 {
     next;
 }
 
+# RST short option lists. These actually look a lot like ordinary text, so we
+# are *very* explicit about the syntax here.
+/^(\s*)(-[a-zA-Z]( ?[a-zA-Z0-9_-]+| ?<[^>]+>)?|--[a-zA-Z0-9_-]+([ =][a-zA-Z0-9_-]+|[ =]<[^>]+>)?)(, (-[a-zA-Z]( ?[a-zA-Z0-9_-]+| ?<[^>]+>)?|--[a-zA-Z0-9_-]+([ =][a-zA-Z0-9_-]+|[ =]<[^>]+>)?))*  .*/ && !/^(\s*)---/ {
+    $0 = gensub(/^(\s*)(\S+( \S+)*)  \s*(.*)/, "\n\\1!optx(``\\2``)!\\4", "g");
+}
+
 # Look for RST constructs which might be mistaken for Sphinx descriptions
 # below; we simply pass these through to Pandoc instead.
 /^(\s*)\.\.\s+[a-z:]+::\s+.*/ &&
 ! /^(\s*)\.\. ([a-z:]+:)?(program|option|envvar|function|macro|variable|constant|constructor|type|describe|index)::/ {
     print; next;
 }
+
+# Index entries. Not sure what to do with these, they're just ignored for now.
+/^(\s*)\.\.\s+index::\s+.*/ { next; }
 
 # Program/options. We need to keep track of the program names here, so that
 # the proper links for option descriptions can be constructed.
@@ -402,9 +429,6 @@ mode == 1 {
     next;
 }
 
-# Index entries. Not sure what to do with these, they're just ignored for now.
-/^(\s*)\.\.\s+index::\s+.*/ { next; }
-
 # Other Sphinx descriptions (.. foo:: bar ...)
 /^(\s*)\.\.\s+[a-z:]+::\s+.*/ {
     print gensub(/^(\s*)\.\.\s+([a-z:]+)::\s+(.*)/, "\\1!hdef(\\2)!\\3", "g");
@@ -413,7 +437,7 @@ mode == 1 {
     next;
 }
 
-# Sphinx cross references (:foo:`bar`)
+# RST text roles and Sphinx cross references (:foo:`bar`).
 /:[a-z:]+:`([^`]|\\`)+`/ {
     # Iterate over all matches, to fill in the proper link targets and texts
     # for the corresponding classes (see sphinx_ref() above).
@@ -439,8 +463,8 @@ mode == 1 {
     # of context. To be on the safe side, we look for a word (alphanumeric
     # characters only) surrounded by whitespace or a few selected
     # delimiters. Hopefully this won't give too many false positives.
-    $0 = gensub(/(^|\s)\<(\w+)__\>($|\s|,)/, sprintf("\\1!hrefx(id%d)!\\2!end!\\3", counter), "g");
-    $0 = gensub(/(^|\s)\<(\w+)_\>($|\s|,)/, "\\1!href!\\2!end!\\3", "g");
+    $0 = gensub(/(^|\s)\<(\w+)__\>($|\s|[,.])/, sprintf("\\1!hrefx(id%d)!\\2!end!\\3", counter), "g");
+    $0 = gensub(/(^|\s)\<(\w+)_\>($|\s|[,.])/, "\\1!href!\\2!end!\\3", "g");
     # Incomplete (Sphinx or RST) link at the end of a line. Since links inside
     # backticks may contain spaces, they may well be continued on the next
     # line.

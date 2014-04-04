@@ -178,12 +178,14 @@ mode == 1 && /^\s*> / {
 	    leftop = m[1]; rightop = m[2]; tag = m[4]; args = m[5];
 	    if (namespace && index(leftop, "::") == 0) leftop = namespace "::" leftop;
 	    if (namespace && index(rightop, "::") == 0) rightop = namespace "::" rightop;
+	    gsub(/^::/, "", leftop);
 	    gsub(/^\s+/, "", args);
 	    target = leftop tag;
 	    text = leftop " " args " " rightop;
 	} else if (match(target, /^((infix[lr]?|prefix|postfix|nonfix)\s+)?(\S+)(\s+(\/\w+)?)(.*)/, m)) {
 	    decl = m[2]; op = m[3]; tag = m[5]; args = m[6];
 	    if (namespace && index(op, "::") == 0) op = namespace "::" op;
+	    gsub(/^::/, "", op);
 	    gsub(/^\s+/, "", args);
 	    target = op tag;
 	    # Handle operator descriptions (bring the operands in the right
@@ -274,8 +276,8 @@ mode == 1 && /^\s*> / {
     next;
 }
 
-/^>?\s*!hdefns\(`[^)]*`\)!$/ {
-    if (match($0, /^>?\s*!hdefns\(`([^)]*)`\)!/, matches))
+/^>?\s*!hdefns\([^)]*\)!$/ {
+    if (match($0, /^>?\s*!hdefns\(([^)]*)\)!/, matches))
 	namespace = matches[1];
     next;
 }
