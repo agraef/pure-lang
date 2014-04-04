@@ -95,7 +95,7 @@ mode == 1 && !/^\s*$/ && !/^\s*>\s*/ {
 	class = matches[1]; target = matches[2];
 	gsub(/^(\w+:)+/, "", class);
 	if (headers != "yes" && last_class == class &&
-	    num_items < max_items &&
+	    !match(target, /\s\/\//) &&
 	    (class == "constant" || class == "constructor" ||
 	     class == "type" || class == "macro" || class == "function" &&
 	     !match(target, /^(public|private)?\s*extern\s+/) ||
@@ -274,8 +274,8 @@ mode == 1 && /^\s*> / {
     next;
 }
 
-/^>?\s*!hdefns\(`[^)]+`\)!$/ {
-    if (match($0, /^>?\s*!hdefns\(`([^)]+)`\)!/, matches))
+/^>?\s*!hdefns\(`[^)]*`\)!$/ {
+    if (match($0, /^>?\s*!hdefns\(`([^)]*)`\)!/, matches))
 	namespace = matches[1];
     next;
 }

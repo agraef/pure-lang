@@ -131,8 +131,17 @@ BEGIN {
     if (title_block == "yes") mode = 2;
 }
 
-# If the file didn't end with an empty line, we add one, just in case.
-ENDFILE { if (prev) print ""; }
+ENDFILE {
+    # If the file didn't end with an empty line, we add one, just in case.
+    if (prev) print "";
+    # We also reset the mode, namespace and various other state variables, so
+    # that the next file starts from a clean slate.
+    verbatim = productionlist = skipped = quote = 0;
+    link_prefix = link_line = link_prev = "";
+    if (namespace) print "!hdefns(````)!\n";
+    namespace = prog = "";
+    mode = 0;
+}
 
 # Keep track of the previous line.
 { prev = current; current = $0; }
@@ -287,7 +296,7 @@ callouts == "yes" && /^(\s*)\.\.\s+note::.*/ {
     $0 = gensub(/^(\s*)(\S+( \S+)*)  \s*(.*)/, "\n\\1!optx(``\\2``)!\\4", "g");
 }
 
-# Continuation lines of Sphinx decriptions (see below).
+# Continuation lines of Sphinx descriptions (see below).
 mode == 1 && /\s+.+/ {
     printf("\n%s%s\n", def, gensub(/\s+(.+)/, "\\1", "g"));
     next;
