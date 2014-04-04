@@ -248,6 +248,15 @@ mode == 1 && /^\s*> / {
     next;
 }
 
+# Short option lists. We render these as definition lists.
+/^>?\s*!optx\(`[^)]+`\)!.*/ {
+    if (match($0, /^(>?\s*)!optx\((`[^)]+`)\)!(.*)/, matches)) {
+	spc = matches[1]; opt = matches[2]; descr = matches[3];
+	print sprintf("%s%s\n%s  : %s", spc, opt, spc, descr);
+    }
+    next;
+}
+
 /^>?\s*!hdefx\(`[^)]+`\)!.*/ {
     if (match($0, /^(>?\s*)!hdefx\(`([^)]+)`\)!(.*)/, matches)) {
 	spc = matches[1]; target = matches[2]; link = matches[3];

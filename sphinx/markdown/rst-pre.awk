@@ -281,6 +281,12 @@ callouts == "yes" && /^(\s*)\.\.\s+note::.*/ {
     $0 = gensub(/^(\s*)\.\.\s+note::\s*/, "\n\\1-----\n\n\\1   **Note:** ", "g");
 }
 
+# RST short option lists. These actually look a lot like ordinary text, so we
+# are *very* explicit about the syntax here.
+/^(\s*)(-[a-zA-Z]( [a-zA-Z0-9_-]+|<[^>]+>)?|--[a-zA-Z0-9_-]+([ =][a-zA-Z0-9_-]+|<[^>]+>)?)(, (-[a-zA-Z]( [a-zA-Z0-9_-]+|<[^>]+>)?|--[a-zA-Z0-9_-]+([ =][a-zA-Z0-9_-]+|<[^>]+>)?))*  .*/ {
+    $0 = gensub(/^(\s*)(\S+( \S+)*)  \s*(.*)/, "\n\\1!optx(``\\2``)!\\4", "g");
+}
+
 # Continuation lines of Sphinx decriptions (see below).
 mode == 1 && /\s+.+/ {
     printf("\n%s%s\n", def, gensub(/\s+(.+)/, "\\1", "g"));
