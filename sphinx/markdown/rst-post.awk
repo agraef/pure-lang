@@ -22,6 +22,23 @@ function html_name(target) {
     return target;
 }
 
+# Expand an RST link in a link target.
+function rst_link(target)
+{
+    if (match(target, /^!href!([^!]+)!end!$/, matches)) {
+	text = matches[1];
+	if (no_links == "yes")
+	    return sprintf("'%s'", text);
+	else if (!(text in targets)) {
+	    target = mangle(text);
+	    return sprintf("[%s](#%s)", text, target);
+	} else {
+	    return sprintf("[%s][]", text);
+	}
+    } else
+	return target;
+}
+
 BEGIN {
     mode = 3; level = 0; prev = ""; header = "######"; saved_text = "";
     # These are just defaults, you can specify values for these on the command
@@ -159,11 +176,14 @@ mode == 1 && /^\s*> / {
 	    target = m[3];
 	else if (match(target, /^outfix\s+(\S+)\s+(\S+)(\s+(\/\w+)?)(.*)/, m)) {
 	    leftop = m[1]; rightop = m[2]; tag = m[4]; args = m[5];
+	    if (namespace && index(leftop, "::") == 0) leftop = namespace "::" leftop;
+	    if (namespace && index(rightop, "::") == 0) rightop = namespace "::" rightop;
 	    gsub(/^\s+/, "", args);
 	    target = leftop tag;
 	    text = leftop " " args " " rightop;
 	} else if (match(target, /^((infix[lr]?|prefix|postfix|nonfix)\s+)?(\S+)(\s+(\/\w+)?)(.*)/, m)) {
 	    decl = m[2]; op = m[3]; tag = m[5]; args = m[6];
+	    if (namespace && index(op, "::") == 0) op = namespace "::" op;
 	    gsub(/^\s+/, "", args);
 	    target = op tag;
 	    # Handle operator descriptions (bring the operands in the right
@@ -231,9 +251,10 @@ mode == 1 && /^\s*> / {
 /^>?\s*!hdefx\(`[^)]+`\)!.*/ {
     if (match($0, /^(>?\s*)!hdefx\(`([^)]+)`\)!(.*)/, matches)) {
 	spc = matches[1]; target = matches[2]; link = matches[3];
-	if (link)
+	if (link) {
+	    #link = rst_link(link);
 	    print sprintf("%s[%s]: %s", spc, target, link);
-	else {
+	} else {
 	    # Internal link target, create it on the spot (the only way to do
 	    # that in Markdown is with inline html):
 	    link = mangle(target);
@@ -241,6 +262,12 @@ mode == 1 && /^\s*> / {
 	    print sprintf("\n%s<a name=\"%s\"></a>", spc, link);
 	}
     }
+    next;
+}
+
+/^>?\s*!hdefns\(`[^)]+`\)!$/ {
+    if (match($0, /^>?\s*!hdefns\(`([^)]+)`\)!/, matches))
+	namespace = matches[1];
     next;
 }
 

@@ -32,6 +32,19 @@ function mangle(target) {
     return target;
 }
 
+# Helper function to format a recursive RST link inside a local RST link
+# target such as `.. _target: link_`. This kind of indirection doesn't work in
+# Markdown, however, so we just mangle the link, interpreting it as an html
+# link, and hope for the best.
+function rst_link(target)
+{
+    if (match(target, /^`(.+)`_$/, matches) ||
+	match(target, /^(.+)_$/, matches))
+	return "#" mangle(matches[1]);
+    else
+	return target;
+}
+
 # Helper function to format a Sphinx cross-reference of the form
 # :class:`text`, filling in the proper link target and text for the given
 # class. The classes :doc:, :mod:, :opt:, :envvar:, :kbd:, :program: and :ref:
@@ -41,10 +54,9 @@ function mangle(target) {
 # cross-document links. Some kind of indexing utility would be needed to
 # properly resolve the links and fill in the appropriate target documents, but
 # this hasn't been written yet.
-
 function sphinx_ref(class, text)
 {
-    # Spinx allows a link text to be specified explicitly using the syntax
+    # Sphinx allows a link text to be specified explicitly using the syntax
     # text<name>.
     i = index(text, "<"); l = length(text);
     if (i > 0 && substr(text, l) == ">") {
@@ -89,6 +101,10 @@ function sphinx_ref(class, text)
 	if (i > 1) {
 	    # Tagged link, remove tag from link text.
 	    text = substr(text, 1, i-1);
+	}
+	if (namespace && index(target, "::") == 0) {
+	    # Unqualified target name, add the namespace if set.
+	    target = namespace "::" target;
 	}
 	target = "#" target;
 	text = "``" text "``";
@@ -291,14 +307,23 @@ mode == 1 {
 # temporary index file so that links to these targets can be resolved
 # correctly.
 /^(\s*)__\s+.*/ {
-    print gensub(/^(\s*)__\s+(.*)/, sprintf("\n\\1!hdefx(``id%d``)!\\2", counter++), "g");
+    if (match($0, /^(\s*)__\s+(.*)/, matches)) {
+	spc = matches[1]; link = matches[2];
+	# The given link might actually be an RST link instead of a real URL,
+	# expand that if needed.
+	link = rst_link(link);
+	print sprintf("\n%s!hdefx(``id%d``)!%s", spc, counter++, link);
+    }
     next;
 }
 
 /^(\s*)\.\.\s+_[^:]+:.*/ {
-    if (match($0, /^(\s*)..\s+_([^:]+):\s*(.*)/, matches)) {
+    if (match($0, /^(\s*)\.\.\s+_([^:]+):\s*(.*)/, matches)) {
 	spc = matches[1]; name = matches[2]; link = matches[3];
 	if (name in replacement) name = replacement[name];
+	# The given link might actually be an RST link instead of a real URL,
+	# expand that if needed.
+	link = rst_link(link);
 	print sprintf("\n%s!hdefx(``%s``)!%s", spc, name, link);
 	print name >> tmpfile;
     }
@@ -307,11 +332,21 @@ mode == 1 {
 
 # Likewise for Sphinx module markup.
 /^(\s*)\.\.\s+module::.*/ {
-    if (match($0, /^(\s*)..\s+module::\s*(.*)/, matches)) {
+    if (match($0, /^(\s*)\.\.\s+module::\s*(.*)/, matches)) {
 	spc = matches[1]; name = matches[2];
 	name = "module-" name;
 	print sprintf("\n%s!hdefx(``%s``)!", spc, name);
 	print name >> tmpfile;
+    }
+    next;
+}
+
+# Keep track of namespaces in Sphinx markup.
+/^(\s*)\.\.\s+namespace::.*/ {
+    if (match($0, /^(\s*)\.\.\s+namespace::\s*(.*)/, matches)) {
+	spc = matches[1]; namespace = matches[2];
+	if (namespace == "None") namespace = "";
+	print sprintf("\n%s!hdefns(``%s``)!", spc, namespace);
     }
     next;
 }
