@@ -283,7 +283,7 @@ callouts == "yes" && /^(\s*)\.\.\s+note::.*/ {
 
 # RST short option lists. These actually look a lot like ordinary text, so we
 # are *very* explicit about the syntax here.
-/^(\s*)(-[a-zA-Z]( [a-zA-Z0-9_-]+|<[^>]+>)?|--[a-zA-Z0-9_-]+([ =][a-zA-Z0-9_-]+|<[^>]+>)?)(, (-[a-zA-Z]( [a-zA-Z0-9_-]+|<[^>]+>)?|--[a-zA-Z0-9_-]+([ =][a-zA-Z0-9_-]+|<[^>]+>)?))*  .*/ {
+/^(\s*)(-[a-zA-Z]( ?[a-zA-Z0-9_-]+| ?<[^>]+>)?|--[a-zA-Z0-9_-]+([ =][a-zA-Z0-9_-]+|[ =]<[^>]+>)?)(, (-[a-zA-Z]( ?[a-zA-Z0-9_-]+| ?<[^>]+>)?|--[a-zA-Z0-9_-]+([ =][a-zA-Z0-9_-]+|[ =]<[^>]+>)?))*  .*/ {
     $0 = gensub(/^(\s*)(\S+( \S+)*)  \s*(.*)/, "\n\\1!optx(``\\2``)!\\4", "g");
 }
 
