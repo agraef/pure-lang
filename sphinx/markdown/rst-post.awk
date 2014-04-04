@@ -26,6 +26,7 @@ BEGIN {
     mode = 3; level = 0; prev = ""; header = "######"; saved_text = "";
     # These are just defaults, you can specify values for these on the command
     # line.
+    if (!max_items) max_items = 0;
     if (!no_links) no_links = "no";
     if (!tmpfile) tmpfile = ".rst-markdown-targets";
     while ((getline line < tmpfile) > 0)
@@ -73,23 +74,39 @@ mode == 3 { mode = 0; }
 # terminated on the current line and do some preprocessing of the headers
 # along the way.
 mode == 1 && !/^\s*$/ && !/^\s*>\s*/ {
-    if (match($0, /^\s*!hdef\(([^)]+)\)!.*/, matches)) {
-	class = matches[1];
-	if (class == "constant" || class == "constructor" ||
-	    class == "variable" || class == "envvar") {
-	    # This collapses adjacent headers. Looks nicer for some item
-	    # classes IMHO. TODO: Maybe this should be an option.
+    if (match($0, /^>?\s*!hdef\(([^)]+)\)!(.*)/, matches)) {
+	class = matches[1]; target = matches[2];
+	gsub(/^(\w+:)+/, "", class);
+	if (headers != "yes" && last_class == class &&
+	    num_items < max_items &&
+	    (class == "constant" || class == "constructor" ||
+	     class == "type" || class == "macro" || class == "function" &&
+	     !match(target, /^(public|private)?\s*extern\s+/) ||
+	     class == "variable" || class == "envvar") &&
+	    num_items < max_items) {
+	    # This collapses adjacent headers for some item classes. Looks
+	    # nicer IMHO. TODO: Maybe this should be an option.
 	    if (buffer) buffer = buffer ", ";
+	    num_items++;
 	} else {
 	    if (buffer) print buffer; buffer = "";
 	    if (indent) print indent;
+	    num_items = 1;
 	}
     } else if (match($0, /^\s*!opt\([^)]+\)!.*/)) {
-	if (buffer) buffer = buffer ", ";
+	if (num_items < max_items) {
+	    if (buffer) buffer = buffer ", ";
+	    num_items++;
+	} else {
+	    if (buffer) print buffer; buffer = "";
+	    if (indent) print indent;
+	    num_items = 1;
+	}
     } else {
 	if (buffer) print buffer;
 	if (indent) print indent;
 	mode = 0; indent = buffer = last_class = "";
+	num_items = 0;
     }
 }
 
@@ -103,6 +120,7 @@ mode == 1 && /^\s*>\s*$/ {
 # into ordinary text.
 mode == 1 && /^\s*> / {
     if (buffer) print buffer; buffer = "";
+    num_items = 0;
     gsub(/^\s*> /, "");
     if (indent) {
 	$0 = indent $0;
@@ -124,8 +142,8 @@ mode == 1 && /^\s*> / {
 	# the item header.
 	if (buffer && last_class == class)
 	    label = "";
-	else if (class == "constant" || class == "constructor" ||
-		 class == "variable" || class == "macro" || class == "type")
+	else if (class == "constant" || class == "variable" ||
+		 class == "macro" || class == "type")
 	    label = "*" class "* ";
 	else
 	    label = "";
@@ -133,11 +151,17 @@ mode == 1 && /^\s*> / {
 	# adjustments for domains other than Pure. The syntax recognized for
 	# functions and similar items is that of Pure, as it is written in the
 	# Pure docs (basically extern declarations and Pure function headers).
-	if (class != "function" && class != "constructor" && class != "macro") {
-	    if (class == "envvar") target = "envvar-" target;
-	    if (class == "describe") target = "";
-	} else if (match(target, /^(public|private)?\s*extern\s+\w+(\*|\s)+(\w+)/, m)) {
+	if (class == "envvar")
+	    target = "envvar-" target;
+	else if (class == "describe")
+	    target = "";
+	else if (match(target, /^(public|private)?\s*extern\s+\w+(\*|\s)+(\w+)/, m))
 	    target = m[3];
+	else if (match(target, /^outfix\s+(\S+)\s+(\S+)(\s+(\/\w+)?)(.*)/, m)) {
+	    leftop = m[1]; rightop = m[2]; tag = m[4]; args = m[5];
+	    gsub(/^\s+/, "", args);
+	    target = leftop tag;
+	    text = leftop " " args " " rightop;
 	} else if (match(target, /^((infix[lr]?|prefix|postfix|nonfix)\s+)?(\S+)(\s+(\/\w+)?)(.*)/, m)) {
 	    decl = m[2]; op = m[3]; tag = m[5]; args = m[6];
 	    gsub(/^\s+/, "", args);
@@ -164,6 +188,7 @@ mode == 1 && /^\s*> / {
 	else
 	    printf("%s\n", hdr " " label "`" text "`");
 	indent = buffer = last_class = "";
+	num_items = 0;
     } else {
 	# For definition list items there isn't any special syntax to create
 	# the link target, so we do it in html. Also note that we defer output
@@ -193,6 +218,7 @@ mode == 1 && /^\s*> / {
 	hdr = substr(header, 1, level+1);
 	printf("%s {#%s}\n", gensub(/!opt\(([^)]+)\)!(.*)/, hdr " `\\2`", "g"), target);
 	indent = buffer = last_class = "";
+	num_items = 0;
     } else {
 	buffer = buffer sprintf("%s<a name=\"%s\"></a>%s", indent, target, gensub(/!opt\(([^)]+)\)!(.*)/, "`\\2`", "g"));
 	indent = indent ":   ";

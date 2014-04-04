@@ -109,6 +109,7 @@ BEGIN {
     if (!title_block) title_block = "no";
     if (!tmpfile) tmpfile = ".rst-markdown-targets";
     if (!raw) raw = "no";
+    if (!callouts) callouts = "no";
     # Initialize the index file.
     system("rm -f " tmpfile);
     if (title_block == "yes") mode = 2;
@@ -146,13 +147,14 @@ verbatim > 0 {
 	indent = RLENGTH+1;
     else
 	indent = 1;
-    if (productionlist > 0) {
-	gsub(/`/, ""); gsub(/: \|/, "|");
-	$0 = gensub(/^(\s*): /, "\\1  ", "g");
-    }
     if (indent <= verbatim && !match($0, /^\s*$/))
 	verbatim = productionlist = skipped = 0;
     if (verbatim > 0) {
+	if (productionlist > 0) {
+	    gsub(/`/, "");
+	    gsub(/^\s+: \|/, substr(blanks, 1, verbatim-1) "       |");
+	    gsub(/^\s+:/, substr(blanks, 1, verbatim-1) "         ");
+	}
 	if (skipped == 0) print;
 	next;
     }
@@ -224,6 +226,9 @@ link_prefix {
 	verbatim = RLENGTH+1;
     else
 	verbatim = 1;
+    if (match($0, /^\s*(::\s*|\.\.\s+(code-block|sourcecode)::\s+.*)$/)) {
+	print; next;
+    }
 }
 
 # Raw code sections are treated similarly, but we remove these by default.
@@ -251,13 +256,13 @@ link_prefix {
     next;
 }
 
-# Notes aren't rendered very nicely by pandoc, fix them up a bit.
-/^(\s*)\.\.\s+note::\s+.*/ {
+# Notes aren't rendered very nicely by pandoc, fix them up a bit if requested.
+callouts == "yes" && /^(\s*)\.\.\s+note::.*/ {
     if (match($0, /^(\s*)\.\.\s+/))
 	quote = RLENGTH;
     else
 	quote = 1;
-    $0 = gensub(/^(\s*)\.\.\s+note::\s+/, "\n\\1-----\n\n\\1   **Note:** ", "g");
+    $0 = gensub(/^(\s*)\.\.\s+note::\s*/, "\n\\1-----\n\n\\1   **Note:** ", "g");
 }
 
 # Continuation lines of Sphinx decriptions (see below).
@@ -308,6 +313,21 @@ mode == 1 {
 	print sprintf("\n%s!hdefx(``%s``)!", spc, name);
 	print name >> tmpfile;
     }
+    next;
+}
+
+# Field values. Pandoc will render these in a generic fashion, but we handle
+# some common cases here to make them look a little nicer.
+
+# This is associated with the module markup.
+/^(\s*):platform:.*/ {
+    print gensub(/^(\s*):platform:(.*)/, "\n*Platforms:* \\2", "g");
+    next;
+}
+
+# Parameter descriptions, associated with the function markup.
+/^(\s*):param\s+[^:]+:.*/ {
+    print gensub(/^(\s*):param\s+([^:]+):(.*)/, "\\1:\\2: \\3", "g");
     next;
 }
 
@@ -366,10 +386,11 @@ mode == 1 {
     # "Naked" links (without the backticks). We need to be careful here not to
     # match literals which happen to look like a link. XXXFIXME: This can't
     # really be done reliably without looking at an arbitrarily large amount
-    # of context. Right now we just check that the pattern isn't surrounded by
-    # backticks, so there may still be false positives.
-    $0 = gensub(/(^|[^`])\<(\S+)__\>($|[^`])/, sprintf("\\1!hrefx(id%d)!\\2!end!\\3", counter), "g");
-    $0 = gensub(/(^|[^`])\<(\S+)_\>($|[^`])/, "\\1!href!\\2!end!\\3", "g");
+    # of context. To be on the safe side, we look for a word (alphanumeric
+    # characters only) surrounded by whitespace or a few selected
+    # delimiters. Hopefully this won't give too many false positives.
+    $0 = gensub(/(^|\s)\<(\w+)__\>($|\s|,)/, sprintf("\\1!hrefx(id%d)!\\2!end!\\3", counter), "g");
+    $0 = gensub(/(^|\s)\<(\w+)_\>($|\s|,)/, "\\1!href!\\2!end!\\3", "g");
     # Incomplete (Sphinx or RST) link at the end of a line. Since links inside
     # backticks may contain spaces, they may well be continued on the next
     # line.
