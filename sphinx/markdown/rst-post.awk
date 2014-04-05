@@ -150,7 +150,7 @@ mode == 1 && /^\s*> / {
 /^>?\s*!hdef\([^)]+\)!.*/ {
     # Parse the name of the object, so that we can create the appropriate link
     # target.
-    if (match($0, /^(>?\s*)!hdef\(([^)]+)\)!(.*)/, matches)) {
+    if (match($0, /^(>?\s*)!hdef\(([^)]+)\)!`(.*)`/, matches)) {
 	indent = matches[1]; class = matches[2]; target = matches[3];
 	gsub(/^(\w+:)+/, "", class);
 	target = gensub(/\\(.)/, "\\1", "g", target);
@@ -202,13 +202,22 @@ mode == 1 && /^\s*> / {
 	    }
 	}
     }
+    if (class == "describe" && match(text, /(\w+(\s+\w+)*:\s+)(.*)/, m))
+	# Try to make generic descriptions look prettier, by formatting a
+	# prefix of the form `Descriptive text:` in the normal typeface.
+	# XXXFIXME: Maybe we shouldn't do this. It works with the way the
+	# present docs are written, but it's hidden magic and at some time
+	# some docs will surely break this.
+	text = m[1] "`" m[3] "`";
+    else
+	text = "`" text "`";
     target = html_name(target);
     if (headers == "yes") {
 	hdr = substr(header, 1, level+1);
 	if (target)
-	    printf("%s {#%s}\n", hdr " " label "`" text "`", target);
+	    printf("%s {#%s}\n", hdr " " label text, target);
 	else
-	    printf("%s\n", hdr " " label "`" text "`");
+	    printf("%s\n", hdr " " label text);
 	indent = buffer = last_class = "";
 	num_items = 0;
     } else {
@@ -218,10 +227,9 @@ mode == 1 && /^\s*> / {
 	# collapsed to a single item (see above).
 	if (target)
 	    buffer = buffer sprintf("%s<a name=\"%s\"></a>%s", indent, target,
-				    label "`" text "`");
+				    label text);
 	else
-	    buffer = buffer sprintf("%s%s", indent,
-				    label "`" text "`");
+	    buffer = buffer sprintf("%s%s", indent, label text);
 	indent = indent ":   "; last_class = class;
     }
     mode = 1;
@@ -229,7 +237,7 @@ mode == 1 && /^\s*> / {
 }
 
 /^>?\s*!opt\([^)]+\)!.*/ {
-    if (match($0, /^(>?\s*)!opt\(([^)]+)\)!(.*)/, matches)) {
+    if (match($0, /^(>?\s*)!opt\(([^)]+)\)!`(.*)`/, matches)) {
 	indent = matches[1]; opt = matches[2]; target = matches[3];
 	if (match(target, /^\s*([+-]*[^\[=[:space:]]+)/, m)) {
 	    target = opt m[1];
@@ -252,7 +260,7 @@ mode == 1 && /^\s*> / {
 
 # Short option lists. We render these as definition lists.
 /^>?\s*!optx\(`[^)]+`\)!.*/ {
-    if (match($0, /^(>?\s*)!optx\((`[^)]+`)\)!(.*)/, matches)) {
+    if (match($0, /^(>?\s*)!optx\((`[^)]+`)\)!`(.*)`/, matches)) {
 	spc = matches[1]; opt = matches[2]; descr = matches[3];
 	print sprintf("%s%s\n%s  : %s", spc, opt, spc, descr);
     }
