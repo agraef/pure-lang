@@ -1674,12 +1674,9 @@ Block        ``\x y->2*x-y``                   anonymous function (lambda)
 \            ``case f u of x,y = x+y end``     case expression
 \            ``x+y when x,y = f u end``        local variable definition
 \            ``f u with f (x,y) = x+y end``    local function definition
------------  --------------------------------  ----------------------------
 Conditional  ``if x>0 then x else -x``         conditional expression
------------  --------------------------------  ----------------------------
 Simple       ``x+y``, ``-x``, ``x mod y``      operator application
 \            ``sin x``, ``max a b``            function application
------------  --------------------------------  ----------------------------
 Primary      ``4711``, ``4711L``, ``1.2e-3``   number
 \            ``"Hello, world!\n"``             string
 \            ``foo``, ``x``, ``(+)``           function or variable symbol
@@ -2069,16 +2066,16 @@ functions, and the following equivalences which reduce lambdas as well as
 functions or local function applications::
 
   \x1 ... xn -> y
-  ≡ f with f x1 ... xn = y; f _ ... _ = throw failed_match end
+  == f with f x1 ... xn = y; f _ ... _ = throw failed_match end
 
   case x of y1 = z1; ...; yn = zn end
-  ≡ f x with f y1 = z1; ...; f yn = zn; f _ = throw failed_match end
+  == f x with f y1 = z1; ...; f yn = zn; f _ = throw failed_match end
 
   x when y = z end
-  ≡ f z with f y = x; f _ = throw failed_match end
+  == f z with f y = x; f _ = throw failed_match end
 
   x when y1 = z1; ...; yn = zn end
-  ≡ x when yn = zn end ... when y1 = z1 end
+  == x when yn = zn end ... when y1 = z1 end
 
 .. _lambda lifting: http://en.wikipedia.org/wiki/Lambda_lifting
 
