@@ -217,7 +217,16 @@ mode == 3 { mode = 0; }
 
 # Processing of the document body starts here.
 
-# Nothing gets expanded during a verbatim code section (see below).
+# Substitute version and date placeholders.
+/@version@/ {
+    gsub(/@version@/, version);
+}
+
+/\|today\|/ {
+    gsub(/\|today\|/, date);
+}
+
+# Nothing else gets expanded during a verbatim code section (see below).
 verbatim > 0 {
     if (match($0, /^(\s*)/))
 	indent = RLENGTH+1;
@@ -277,15 +286,6 @@ link_prefix {
 	print link_prev;
     }
     link_prefix = link_line = link_prev = "";
-}
-
-# Substitute version and date placeholders.
-/@version@/ {
-    gsub(/@version@/, version);
-}
-
-/\|today\|/ {
-    gsub(/\|today\|/, date);
 }
 
 # pandoc doesn't seem to understand the double colon at the end of the line,
@@ -499,26 +499,35 @@ callouts == "yes" && /^(\s*)\.\.\s+(note|NOTE)::.*/ {
 }
 
 # RST text roles and Sphinx cross references (:foo:`bar` or just `bar`).
-/:[a-z:]+:`([^`]|\\`)+`/ {
+/(:[a-z:]+:)?`([^`]|\\`)+`/ {
     # Iterate over all matches, to fill in the proper link targets and texts
     # for the corresponding classes (see rst_role()).
     x = $0; $0 = "";
-    while (match(x, /:([a-z:]+):`(([^`]|\\`)+)`/, matches)) {
-	class = matches[1]; text = matches[2];
+    while (match(x, /(:([a-z:]+):)?`(([^`]|\\`)+)`/, matches)) {
+	class = matches[2]; text = matches[3];
+	if (!class) {
+	    # This looks like a text role. Look at the surrounding context to
+	    # make sure.
+	    if (RSTART > 1)
+		ldelim = substr(x, RSTART-1, 1);
+	    else if ($0)
+		ldelim = substr($0, length($0));
+	    else
+		ldelim = "";
+	    rdelim = substr(x, RSTART+RLENGTH, 1);
+	    test = ldelim rdelim;
+	    gsub(/[^`_[:alnum:]]/, "", test);
+	    if (test) {
+		$0 = $0 substr(x, 1, RSTART);
+		x = substr(x, RSTART+1);
+		continue;
+	    }
+	    # Assume the default role.
+	    class = default_role;
+	}
 	y = rst_role(class, text);
 	$0 = $0 substr(x, 1, RSTART-1) y;
 	x = substr(x, RSTART+RLENGTH);
-    }
-    $0 = $0 x;
-}
-
-/`([^`]|\\`)+`/ {
-    x = $0; $0 = "";
-    while (match(x, /(^|[^`_[:alnum:]])`(([^`]|\\`)+)`($|[^`_[:alnum:]])/, matches)) {
-	ldelim = matches[1]; text = matches[2]; rdelim = matches[4];
-	y = rst_role(default_role, text);
-	$0 = $0 substr(x, 1, RSTART-1+length(ldelim)) y;
-	x = substr(x, RSTART+RLENGTH-length(rdelim));
     }
     $0 = $0 x;
 }

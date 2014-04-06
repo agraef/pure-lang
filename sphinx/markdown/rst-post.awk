@@ -59,10 +59,6 @@ mode == 2 && /^(```|~~~)/ { mode = 0; next; }
 mode == 2 { print; next; }
 mode == 3 { mode = 0; }
 
-# We get rid of escaped underscores in identifiers here. Pandoc/markdown is
-# usually clever enough not to mistake these for emphasis.
-/\\_/ { gsub(/\\_/, "_"); }
-
 # Keep track of Markdown headers. We need to know at which header level we
 # currently are so that we can assign a suitable level below that to Sphinx
 # definitions.
