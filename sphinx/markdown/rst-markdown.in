@@ -42,7 +42,7 @@
 # are also a number of special pre-, post-processing and formatting options
 # which affect the generated output:
 
-# -d / --date and -v / --version allow you to substitute values for the most
+# -d / --date and -V / --version allow you to substitute values for the most
 # commonly used meta variables (|today| and @version@) in RST source files.
 # By default, the current date is used, and the script also tries to detect
 # the version number from the `version` variable in a Makefile in the current
@@ -141,14 +141,16 @@ usage() {
   echo "General options:" >&2
   echo "-h, --help:            print this message and exit" >&2
   echo "-O, --options:         pass any options to pandoc (cumulative)" >&2
+  echo "-v, --verbose:         print debugging information to stderr" >&2
   echo "Preprocessing options:" >&2
-  echo "-d, --date:            date to be inserted for |today|" >&2
-  echo "-v, --version:         version number to be inserted for @version@" >&2
+  echo "-d, --date:            insert date for |today|" >&2
   echo "-R, --raw:             include raw markup in document" >&2
   echo "-T, --title-block:     include Pandoc-style title block" >&2
+  echo "-V, --version:         insert version number for @version@" >&2
   echo "Formatting options:" >&2
   echo "-c, --collapse-items:  collapse adjacent description items" >&2
   echo "-C, --callouts:        fancier formatting of note blocks" >&2
+  echo "-D, --describe:        formatting of describe blocks (regex)" >&2
   echo "-H, --headers:         use section headers for definitions" >&2
   echo "-n, --no-links:        suppress all links (show link text only)" >&2
   echo "Output options:" >&2
@@ -168,7 +170,9 @@ no_links=no
 raw=no
 title_block=no
 callouts=no
+describe=
 max_items=0
+verbose=no
 
 # If we have a Makefile in the current directory, try to determine the version
 # number from there.
@@ -177,20 +181,22 @@ if [ -r Makefile ]; then
 fi
 
 # Parse options using getopt(1).
-args=`getopt -o hd:v:To:O:c::CHnrRsSt: -l help,date:,version:,title-block,output:,options:,collapse-items::,callouts,headers,no-links,reference-links,rawstandalone,smart,to: -n "$prog" -- "$@"`
+args=`getopt -o hvd:V:To:O:c::CD::HnrRsSt: -l help,verbose,date:,version:,title-block,output:,options:,collapse-items::,callouts,describe::,headers,no-links,reference-links,rawstandalone,smart,to: -n "$prog" -- "$@"`
 if [ $? != 0 ] ; then exit 1 ; fi
 eval set -- "$args"
 
 while true; do
   case "$1" in
     -h|--help) usage; exit 1 ;;
+    -v|--verbose) verbose=yes; shift ;;
     -d|--date) date="$2"; shift 2 ;;
-    -v|--version) version="$2"; shift 2 ;;
+    -V|--version) version="$2"; shift 2 ;;
     -T|--title-block) title_block=yes; shift ;;
     -o|--output) options="$options -o $2"; shift 2 ;;
     -O|--options) options="$options $2"; shift 2 ;;
     -c|--collapse-items) max_items=${2:-9999}; shift 2 ;;
     -C|--callouts) callouts=yes; shift ;;
+    -D|--describe) describe=${2:-'/(\\w+(\\s+\\w+)*):\\s+(.*)/\\1: `\\3`/'}; shift 2 ;;
     -H|--headers) headers=yes; shift ;;
     -n|--no-links) no_links=yes; shift ;;
     -r|--reference-links) options="$options --reference-links"; shift ;;
@@ -211,11 +217,15 @@ tmpout="$tmpdir/outfile.md"
 rm -Rf "$tmpdir"
 mkdir -p "$tmpdir"
 
+if [ "$verbose" == "yes" ]; then
+    echo "rst-markdown      : pandoc $options"
+fi
+
 # Note that these two commands *must* be executed in sequence, to give
 # rst-pre.awk the opportunity to finish writing the index file with the RST
 # link targets before rst-post.awk is run.
-gawk -f <(sed -e '/^# rst-pre[.]awk$/,/^# end rst-pre[.]awk$/!d' $0) -v raw="$raw" -v version="$version" -v date="$date" -v title_block="$title_block" -v callouts="$callouts" -v tmpfile="$tmpfile" "$@" > "$tmpout" && \
-pandoc -f rst -t markdown --no-wrap "$tmpout" | gawk -f <(sed -e '/^# rst-post[.]awk$/,/^# end rst-post[.]awk$/!d' $0) -v headers="$headers" -v max_items="$max_items" -v no_links="$no_links" -v tmpfile="$tmpfile" - | pandoc -f markdown --columns 78 $options
+gawk -f <(sed -e '/^# rst-pre[.]awk$/,/^# end rst-pre[.]awk$/!d' $0) -v verbose="$verbose" -v raw="$raw" -v version="$version" -v date="$date" -v title_block="$title_block" -v callouts="$callouts" -v tmpfile="$tmpfile" "$@" > "$tmpout" && \
+pandoc -f rst -t markdown --no-wrap "$tmpout" | gawk -f <(sed -e '/^# rst-post[.]awk$/,/^# end rst-post[.]awk$/!d' $0) -v verbose="$verbose" -v headers="$headers" -v max_items="$max_items" -v describe="$describe" -v no_links="$no_links" -v tmpfile="$tmpfile" - | pandoc -f markdown --columns 78 $options
 
 rc=$?
 rm -Rf "$tmpdir"

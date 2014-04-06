@@ -150,6 +150,11 @@ BEGIN {
     if (!tmpfile) tmpfile = ".rst-markdown-targets";
     if (!raw) raw = "no";
     if (!callouts) callouts = "no";
+    if (verbose == "yes") {
+	print "rst-markdown[pre] : version = " version > "/dev/stderr";
+	print "rst-markdown[pre] : date = " date > "/dev/stderr";
+	print "rst-markdown[pre] : writing index file " tmpfile > "/dev/stderr";
+    }
     # Initialize the index file.
     system("rm -f " tmpfile);
     if (title_block == "yes") mode = 2;
@@ -209,6 +214,8 @@ mode == 3 && /^\s*\.\.\s*(.*)$/ {
     gsub(/@version@/, version);
     gsub(/\|today\|/, date);
     print gensub(/^\s*\.\.\s*(.*)$/, "   \\1", "g");
+    if (verbose == "yes")
+	print "rst-markdown[pre] : title block: " gensub(/^\s*\.\.\s*(.*)$/, "\\1", "g") > "/dev/stderr";
     next;
 }
 # The title block stops at the first empty line or anything else which doesn't

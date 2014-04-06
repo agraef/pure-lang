@@ -45,9 +45,20 @@ BEGIN {
     # line.
     if (!max_items) max_items = 0;
     if (!no_links) no_links = "no";
+    if (describe && match(describe, /^\/(([^\/]|\\\/)*)\/(([^\/]|\\\/)*)\//, matches)) {
+	describe_pat = matches[1]; describe_repl = matches[3];
+	if (verbose == "yes")
+	    print "rst-markdown[post]: describe: " describe_pat " -> " describe_repl > "/dev/stderr";
+    } else if (describe)
+	print "rst-markdown[post]: invalid argument to --describe: " describe > "/dev/stderr";
     if (!tmpfile) tmpfile = ".rst-markdown-targets";
-    while ((getline line < tmpfile) > 0)
+    if (verbose == "yes")
+	print "rst-markdown[post]: reading index file " tmpfile > "/dev/stderr";
+    while ((getline line < tmpfile) > 0) {
 	targets[line] = 1
+#	if (verbose == "yes")
+#	    print "rst-markdown[post]: index entry " line > "/dev/stderr";
+    }
     close(tmpfile)
     system("rm -f " tmpfile);
 }
@@ -198,13 +209,10 @@ mode == 1 && /^\s*> / {
 	    }
 	}
     }
-    if (class == "describe" && match(text, /(\w+(\s+\w+)*:\s+)(.*)/, m))
-	# Try to make generic descriptions look prettier, by formatting a
-	# prefix of the form `Descriptive text:` in the normal typeface.
-	# XXXFIXME: Maybe we shouldn't do this. It works with the way the
-	# present docs are written, but it's hidden magic and at some time
-	# some docs will surely break this.
-	text = m[1] "`" m[3] "`";
+    if (class == "describe" && describe && match(text, describe_pat))
+	# Format generic descriptions using a regex replacement, as requested
+	# by the user.
+	text = gensub(describe_pat, describe_repl, "g", text);
     else
 	text = "`" text "`";
     target = html_name(target);
