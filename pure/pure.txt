@@ -3402,10 +3402,10 @@ explicit patterns in order to make the definition extensible.)
 Since the right-hand side of a type definition may in general be any
 predicate, it is up to the programmer to ensure that the definition of a type
 is actually computable. In fact, you should strive for the best possible
-efficiency in type predicates. A type definition which has worse than O(1)
-complexity may well be a serious performance hog depending on the way in which
-it is used, see `Recursive Types`_ in the `Caveats and Notes`_ section for
-more information about this.
+efficiency in type predicates. A type definition which has worse than
+:math:`O(1)` complexity may well be a serious performance hog depending on the
+way in which it is used, see `Recursive Types`_ in the `Caveats and Notes`_
+section for more information about this.
 
 Finally, note that in general it may be hard or even impossible to predict
 exactly when the code of a type definition will be executed at runtime. Thus,
@@ -13378,15 +13378,15 @@ a tail-recursive form using a technique like `continuation passing`_.
 
 There's yet another important issue with recursive type definitions, namely
 the *time* it takes to check the definition. In the above example, checking
-:type:`rlist/type` takes O(n) time, where n is the size of the list. This will
-have dire consequences if you do this check repeatedly while traversing a
-list, as in the following ``sum`` function::
+:type:`rlist/type` takes :math:`O(n)` time, where n is the size of the
+list. This will have dire consequences if you do this check repeatedly while
+traversing a list, as in the following ``sum`` function::
 
   sum xs::rlist = if null xs then 0 else head xs+sum (tail xs);
 
 As this function repeatedly checks its entire argument, the total time it
-takes to compute the sum of a list this way becomes O(n^2). To see how slow
-this function is, just try it on successively larger lists ``1..1000``,
+takes to compute the sum of a list this way becomes :math:`O(n^2)`. To see how
+slow this function is, just try it on successively larger lists ``1..1000``,
 ``1..2000``, etc. One way to work around this is to write a "wrapper" function
 which simply checks the type of its argument in advance and then invokes a
 "worker" function to do the actual computation::
@@ -13404,10 +13404,10 @@ defined as follows::
   type list [] | list (x:xs);
 
 Note that the recursion is missing here and thus this type can always be
-checked in O(1) time, performing just a single pattern match, which is
+checked in :math:`O(1)` time, performing just a single pattern match, which is
 efficient. Hence, if we replace :type:`rlist/type` with the :type:`list/type`
-type in our original definition then ``sum`` will now run in O(n) time, as
-desired. On the other hand, this approach also has its drawbacks. For
+type in our original definition then ``sum`` will now run in :math:`O(n)`
+time, as desired. On the other hand, this approach also has its drawbacks. For
 instance, consider::
 
   > sum xs::list = if null xs then 0 else head xs+sum (tail xs);
