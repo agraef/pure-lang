@@ -29,7 +29,7 @@ function rst_link(target)
 	text = matches[1];
 	if (no_links == "yes")
 	    return sprintf("'%s'", text);
-	else if (!(text in targets)) {
+	else if (!(tolower(text) in targets)) {
 	    target = mangle(text);
 	    return sprintf("[%s](#%s)", text, target);
 	} else {
@@ -51,16 +51,19 @@ BEGIN {
 	    print "rst-markdown[post]: describe: " describe_pat " -> " describe_repl > "/dev/stderr";
     } else if (describe)
 	print "rst-markdown[post]: invalid argument to --describe: " describe > "/dev/stderr";
-    if (!tmpfile) tmpfile = ".rst-markdown-targets";
+    if (!auxfile) auxfile = ".rst-markdown-targets";
     if (verbose == "yes")
-	print "rst-markdown[post]: reading index file " tmpfile > "/dev/stderr";
-    while ((getline line < tmpfile) > 0) {
-	targets[line] = 1
-#	if (verbose == "yes")
-#	    print "rst-markdown[post]: index entry " line > "/dev/stderr";
+	print "rst-markdown[post]: reading index file: " auxfile > "/dev/stderr";
+    while ((getline line < auxfile) > 0) {
+	if (match(line, /^(([^:]|:[^:]|\\:)+)::\s*(.*)/, matches)) {
+	    target = matches[1]; filename = matches[3];
+	    gsub(/\\:/, ":", target);
+	    targets[target] = filename;
+	}
     }
-    close(tmpfile)
-    system("rm -f " tmpfile);
+    close(auxfile);
+    if (auxfile == ".rst-markdown-targets")
+	system("rm -f " auxfile);
 }
 
 # Process a generated pandoc-style header block at the beginning of the
@@ -295,9 +298,6 @@ mode == 1 && /^\s*> / {
 }
 
 # Recognize Sphinx cross references, turn them into Markdown reference links.
-# XXXFIXME: In Sphinx, these may point to other documents. To properly resolve
-# such links, we'd need to have some kind of indexing facility which can be
-# applied either here or in the rule in rst-pre.awk which generates the links.
 /!href\(`(([^`]|\\`)+)`\)!([^!]|\\!)+!end!/ {
     x = $0; $0 = "";
     while (match(x, /!href\(`(([^`]|\\`)+)`\)!(([^!]|\\!)+)!end!/, matches)) {
@@ -332,9 +332,11 @@ mode == 1 && /^\s*> / {
 	saved_text = "";
 	if (no_links == "yes")
 	    y = sprintf("'%s'", text);
-	else {
+	else if (!(tolower(text) in targets)) {
 	    target = mangle(text);
 	    y = sprintf("[%s](#%s)", text, target);
+	} else {
+	    y = sprintf("[%s][]", text);
 	}
 	$0 = y substr($0, RSTART+RLENGTH);
     }
@@ -349,7 +351,7 @@ mode == 1 && /^\s*> / {
 	text = matches[1];
 	if (no_links == "yes")
 	    y = sprintf("'%s'", text);
-	else if (!(text in targets)) {
+	else if (!(tolower(text) in targets)) {
 	    target = mangle(text);
 	    y = sprintf("[%s](#%s)", text, target);
 	} else {

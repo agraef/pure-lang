@@ -144,6 +144,7 @@ usage() {
   echo "-v, --verbose:         print debugging information to stderr" >&2
   echo "Preprocessing options:" >&2
   echo "-d, --date:            insert date for |today|" >&2
+  echo "-i, --index:           create/update given index file" >&2
   echo "-R, --raw:             include raw markup in document" >&2
   echo "-T, --title-block:     include Pandoc-style title block" >&2
   echo "-V, --version:         insert version number for @version@" >&2
@@ -162,8 +163,10 @@ usage() {
 }
 
 infiles=/dev/stdin
+outfile=
 date=`date "+%B %d, %Y"`
 version="0.0"
+index=
 options=
 headers=no
 no_links=no
@@ -181,7 +184,7 @@ if [ -r Makefile ]; then
 fi
 
 # Parse options using getopt(1).
-args=`getopt -o hvd:V:To:O:c::CD::HnrRsSt: -l help,verbose,date:,version:,title-block,output:,options:,collapse-items::,callouts,describe::,headers,no-links,reference-links,rawstandalone,smart,to: -n "$prog" -- "$@"`
+args=`getopt -o hvd:V:i:To:O:c::CD::HnrRsSt: -l help,verbose,date:,version:,index:,title-block,output:,options:,collapse-items::,callouts,describe::,headers,no-links,reference-links,rawstandalone,smart,to: -n "$prog" -- "$@"`
 if [ $? != 0 ] ; then exit 1 ; fi
 eval set -- "$args"
 
@@ -191,8 +194,9 @@ while true; do
     -v|--verbose) verbose=yes; shift ;;
     -d|--date) date="$2"; shift 2 ;;
     -V|--version) version="$2"; shift 2 ;;
+    -i|--index) index="$2"; shift 2 ;;
     -T|--title-block) title_block=yes; shift ;;
-    -o|--output) options="$options -o $2"; shift 2 ;;
+    -o|--output) options="$options -o $2"; outfile="$2"; shift 2 ;;
     -O|--options) options="$options $2"; shift 2 ;;
     -c|--collapse-items) max_items=${2:-9999}; shift 2 ;;
     -C|--callouts) callouts=yes; shift ;;
@@ -209,9 +213,15 @@ while true; do
 done
 
 infiles="$@"
+if [ -n "$outfile" ]; then
+    outfile=`echo "$outfile" | sed -e 's?.[^./]*$??'`
+    outfile=`basename $outfile`
+    outfile="-v filename=$outfile"
+fi
+echo "--- $infiles -> $outfile"
 
 tmpdir=`mktemp -d /tmp/rst-markdown.XXXXXX`
-tmpfile="$tmpdir/targets"
+auxfile=${index:-"$tmpdir/targets"}
 tmpout="$tmpdir/outfile.md"
 
 rm -Rf "$tmpdir"
@@ -224,8 +234,8 @@ fi
 # Note that these two commands *must* be executed in sequence, to give
 # rst-pre.awk the opportunity to finish writing the index file with the RST
 # link targets before rst-post.awk is run.
-gawk -f <(sed -e '/^# rst-pre[.]awk$/,/^# end rst-pre[.]awk$/!d' $0) -v verbose="$verbose" -v raw="$raw" -v version="$version" -v date="$date" -v title_block="$title_block" -v callouts="$callouts" -v tmpfile="$tmpfile" "$@" > "$tmpout" && \
-pandoc -f rst -t markdown --no-wrap "$tmpout" | gawk -f <(sed -e '/^# rst-post[.]awk$/,/^# end rst-post[.]awk$/!d' $0) -v verbose="$verbose" -v headers="$headers" -v max_items="$max_items" -v describe="$describe" -v no_links="$no_links" -v tmpfile="$tmpfile" - | pandoc -f markdown --columns 78 $options
+gawk -f <(sed -e '/^# rst-pre[.]awk$/,/^# end rst-pre[.]awk$/!d' $0) $outfile -v verbose="$verbose" -v raw="$raw" -v version="$version" -v date="$date" -v title_block="$title_block" -v callouts="$callouts" -v auxfile="$auxfile" "$@" > "$tmpout" && \
+pandoc -f rst -t markdown --no-wrap "$tmpout" | gawk -f <(sed -e '/^# rst-post[.]awk$/,/^# end rst-post[.]awk$/!d' $0) -v verbose="$verbose" -v headers="$headers" -v max_items="$max_items" -v describe="$describe" -v no_links="$no_links" -v auxfile="$auxfile" - | pandoc -f markdown --columns 78 $options
 
 rc=$?
 rm -Rf "$tmpdir"

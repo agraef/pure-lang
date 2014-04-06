@@ -50,10 +50,7 @@ function rst_link(target)
 # given class. The classes :doc:, :mod:, :opt:, :envvar:, :program: and :ref:
 # are given special treatment for now, as well as various common RST text
 # roles. Other links are assumed to point to descriptions of functions,
-# variables, etc. XXXFIXME: Apart from :doc:, the following code produces
-# local links only, which of course won't work for cross-document links. Some
-# kind of indexing utility would be needed to properly resolve the links and
-# fill in the appropriate target documents, but this hasn't been written yet.
+# variables, etc.
 function rst_role(class, text)
 {
     # Handle RST text roles.
@@ -91,11 +88,20 @@ function rst_role(class, text)
 	target = text;
     if (class == "doc")
 	target = target ".html";
-    else if (class == "mod")
-	target = "#module-" target;
-    else if (class == "ref")
-	target = "#" mangle(target);
-    else if (class == "option") {
+    else if (class == "mod") {
+	target = "module-" target;
+	if (target in targets && targets[target] != filename)
+	    # cross-document link
+	    target = targets[target] ".html#" target;
+	else
+	    target = "#" target;
+    } else if (class == "ref") {
+	if (tolower(target) in targets && targets[tolower(target)] != filename)
+	    # cross-document link
+	    target = targets[tolower(target)] ".html#" mangle(target);
+	else
+	    target = "#" mangle(target);
+    } else if (class == "option") {
 	i = index(target, " ");
 	if (i > 0) {
 	    # program is given explicitly
@@ -111,8 +117,8 @@ function rst_role(class, text)
 	text = "``" text "``";
     } else {
 	# Anything else probably denotes a function, variable or similar
-	# description item. In the case of Pure domain, these can have a tag
-	# of the from `/tag` attached to them in order to distinguish
+	# description item. In the case of the Pure domain, these can have a
+	# tag of the from `/tag` attached to them in order to distinguish
 	# overloaded instances of operations. Please note that this part is
 	# somewhat domain-specific and might need to be adjusted for other
 	# Sphinx domains.
@@ -130,13 +136,52 @@ function rst_role(class, text)
 	    gsub(/^~.*::/, "", text);
 	}
 	gsub(/^::/, "", target);
-	target = "#" target;
+	if (target in targets && targets[target] != filename)
+	    # cross-document link
+	    target = targets[target] ".html#" target;
+	else
+	    target = "#" target;
 	text = "``" text "``";
     }
     if (target)
 	return sprintf("!href(``%s``)!%s!end!", target, text);
     else
 	return text;
+}
+
+# Helper function to *create* a link target for a Sphinx description item and
+# enter it into the index.
+function make_target(class, target) {
+    if (class == "opt" || class == "envvar" || class == "describe")
+	# These don't need a link target in the index, either since they have
+	# none or they don't need any.
+	return "";
+    target = gensub(/\\(.)/, "\\1", "g", target);
+    # XXXFIXME: This is highly domain-specific, so surely needs adjustments
+    # for domains other than Pure. The syntax recognized for functions and
+    # similar items is that of Pure, as it is written in the Pure docs
+    # (basically extern declarations and Pure function headers).
+    if (match(target, /^(public|private)?\s*extern\s+\w+(\*|\s)+(\w+)/, m))
+	target = m[3];
+    else if (match(target, /^outfix\s+(\S+)\s+(\S+)(\s+(\/\w+)?)(.*)/, m)) {
+	leftop = m[1]; rightop = m[2]; tag = m[4]; args = m[5];
+	if (namespace && index(leftop, "::") == 0) leftop = namespace "::" leftop;
+	if (namespace && index(rightop, "::") == 0) rightop = namespace "::" rightop;
+	gsub(/^::/, "", leftop);
+	gsub(/^\s+/, "", args);
+	target = leftop tag;
+    } else if (match(target, /^((infix[lr]?|prefix|postfix|nonfix)\s+)?(\S+)(\s+(\/\w+)?)(.*)/, m)) {
+	decl = m[2]; op = m[3]; tag = m[5]; args = m[6];
+	if (namespace && index(op, "::") == 0) op = namespace "::" op;
+	gsub(/^::/, "", op);
+	gsub(/^\s+/, "", args);
+	target = op tag;
+    }
+    # Minimal mangling to get a valid html link name.
+    gsub(/>/, "\\&gt;", target);
+    if (target)
+	targets[target] = filename;
+    return target;
 }
 
 BEGIN {
@@ -147,16 +192,25 @@ BEGIN {
     if (!version) version = "@version@";
     if (!date) date = strftime("%B %d, %Y", systime());
     if (!title_block) title_block = "no";
-    if (!tmpfile) tmpfile = ".rst-markdown-targets";
+    if (!auxfile) auxfile = ".rst-markdown-targets";
     if (!raw) raw = "no";
     if (!callouts) callouts = "no";
     if (verbose == "yes") {
 	print "rst-markdown[pre] : version = " version > "/dev/stderr";
 	print "rst-markdown[pre] : date = " date > "/dev/stderr";
-	print "rst-markdown[pre] : writing index file " tmpfile > "/dev/stderr";
+	print "rst-markdown[pre] : writing index file: " auxfile > "/dev/stderr";
     }
     # Initialize the index file.
-    system("rm -f " tmpfile);
+    if (auxfile != ".rst-markdown-targets") {
+	# Read the index file if present.
+	while ((getline line < auxfile) > 0) {
+	    if (match(line, /^(([^:]|:[^:]|\\:)+)::\s*(.*)/, matches)) {
+		target = matches[1]; fname = matches[3];
+		gsub(/\\:/, ":", target);
+		targets[target] = fname;
+	    }
+	}
+    }
     if (title_block == "yes") mode = 2;
     # RST text roles we know about. This is from the RST documentation and
     # should cover the built-in roles. User-defined roles are added as we
@@ -185,6 +239,39 @@ BEGIN {
     # The default role which is used if no role is specified explicitly.
     # This can be set in the document.
     default_role = "emphasis";
+}
+
+END {
+    # Write the updated targets information to the index file.
+    system("rm -f " auxfile);
+    for (target in targets) {
+	# We need to quote `::` in the target, since that delimits target from
+	# filename in the index file.
+	gsub(/:/, "\\:", target);
+	print target ":: " targets[target] >> auxfile;
+    }
+    close(auxfile);
+}
+
+BEGINFILE {
+    if (!filename) {
+	# No basename for the target file was set, use the basename of the
+	# first input file instead.
+	filename = FILENAME;
+	gsub(/^.*\//, "", filename);
+	gsub(/\.[^.]*$/, "", filename);
+	if (verbose == "yes")
+	    print "rst-markdown[pre] : assumed basename for index: " filename > "/dev/stderr";
+    } else if (verbose == "yes")
+	print "rst-markdown[pre] : basename for index: " filename > "/dev/stderr";
+    if (!first_run) {
+	# Remove outdated targets information from the index file.
+	for (target in targets) {
+	    if (targets[target] == filename)
+		delete targets[target];
+	}
+	first_run = "yes";
+    }
 }
 
 ENDFILE {
@@ -345,8 +432,12 @@ link_prefix {
 
 # Continuation lines of Sphinx descriptions (see below).
 mode == 1 && /^\s+\S.*/ {
-    printf("\n%s%s\n", def, gensub(/\s+(.+)/, "``\\1``", "g"));
-    next;
+    if (match($0, /\s+(.+)/, matches)) {
+	text = matches[1];
+	printf("\n%s``%s``\n", def, text);
+	make_target(class, text);
+	next;
+    }
 }
 
 mode == 1 {
@@ -361,7 +452,7 @@ mode == 1 {
 	sub(/\s*$/, "", repl);
 	replacement[name] = repl;
     }
-    print; next;
+    print "\n" $0; next;
 }
 
 # Special RST link targets. Pandoc doesn't seem to understand these, so we
@@ -391,7 +482,9 @@ mode == 1 {
 	# expand that if needed.
 	link = rst_link(link);
 	print sprintf("\n%s!hdefx(``%s``)!%s", spc, name, link);
-	print name >> tmpfile;
+	# We only keep the basename of the file here. Also, the target is
+	# converted to lower case since RST doesn't distinguish case here.
+	targets[tolower(name)] = filename;
     }
     next;
 }
@@ -402,7 +495,7 @@ mode == 1 {
 	spc = matches[1]; name = matches[2];
 	name = "module-" name;
 	print sprintf("\n%s!hdefx(``%s``)!", spc, name);
-	print name >> tmpfile;
+	targets[name] = filename;
     }
     next;
 }
@@ -419,14 +512,13 @@ mode == 1 {
     next;
 }
 
-# Keep track of text roles. We also pass these directives through to Pandoc,
-# just in case. However, Pandoc doesn't seem to handle most text roles
+# Keep track of text roles. Pandoc doesn't seem to handle most text roles
 # understood by RST and Sphinx, so we do our own handling of those.
 /^(\s*)\.\.\s+default-role::.*/ {
     if (match($0, /^\s*\.\.\s+default-role::\s*(.*)/, matches)) {
 	default_role = matches[1];
     }
-    print; next;
+    next;
 }
 
 /^(\s*)\.\.\s+role::.*/ {
@@ -436,7 +528,7 @@ mode == 1 {
 	    role = roles[role];
 	roles[name] = role;
     }
-    print; next;
+    next;
 }
 
 # Notes aren't rendered very nicely by pandoc, fix them up a bit if requested.
@@ -493,16 +585,21 @@ callouts == "yes" && /^(\s*)\.\.\s+(note|NOTE)::.*/ {
 /^(\s*)\.\.\s+option::\s+.*/ {
     print gensub(/^(\s*)\.\.\s+option::\s+(.*)/, sprintf("\\1!opt(%s)!``\\2``", "cmdoption" prog), "g");
     def = gensub(/^(\s*)\.\.\s+option::\s+(.*)/, sprintf("\\1!opt(%s)!", "cmdoption" prog), "g");
+    class = "opt";
     mode = 1;
     next;
 }
 
 # Other Sphinx descriptions (.. foo:: bar ...)
 /^(\s*)\.\.\s+[a-z:]+::\s+.*/ {
-    print gensub(/^(\s*)\.\.\s+([a-z:]+)::\s+(.*)/, "\\1!hdef(\\2)!``\\3``", "g");
-    def = gensub(/^(\s*)\.\.\s+([a-z:]+)::\s+(.*)/, "\\1!hdef(\\2)!", "g");
-    mode = 1;
-    next;
+    if (match($0, /^(\s*)\.\.\s+([a-z:]+)::\s+(.*)/, matches)) {
+	spc = matches[1]; class = matches[2]; text = matches[3];
+	printf("%s!hdef(%s)!``%s``\n", spc, class, text);
+	def = sprintf("%s!hdef(%s)!", spc, class);
+	make_target(class, text);
+	mode = 1;
+	next;
+    }
 }
 
 # RST text roles and Sphinx cross references (:foo:`bar` or just `bar`).
