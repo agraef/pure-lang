@@ -7,6 +7,7 @@
 # tries to translate them to the corresponding markdown syntax.
 
 # Helper function to mangle the target name according to Pandoc's rules.
+
 function mangle(target) {
     gsub(/\s+/, "-", target);
     gsub(/[^[:alnum:]_.-]/, "", target);
@@ -16,27 +17,22 @@ function mangle(target) {
     return target;
 }
 
-# Minimal mangler to get a valid html link name.
+# Mangle `>` in html targets so that Pandoc does the right thing and produces
+# valid html. This is utter madness, but Pandoc will create bogus html link
+# anchors if we don't go through these incantations. In addition, Pandoc
+# insists on expanding the `&gt;` in Markdown inline links, so we also need to
+# quote the `&` with an extra backslash there, so that the `&gt;` gets
+# through.
+
 function html_name(target) {
     gsub(/>/, "\\&gt;", target);
     return target;
 }
 
-# Expand an RST link in a link target.
-function rst_link(target)
-{
-    if (match(target, /^!href!([^!]+)!end!$/, matches)) {
-	text = matches[1];
-	if (no_links == "yes")
-	    return sprintf("'%s'", text);
-	else if (!(tolower(text) in targets)) {
-	    target = mangle(text);
-	    return sprintf("[%s](#%s)", text, target);
-	} else {
-	    return sprintf("[%s][]", text);
-	}
-    } else
-	return target;
+function html_link(target) {
+    gsub(/>/, "\\&gt;", target);
+    gsub(/&/, "\\&", target);
+    return target;
 }
 
 BEGIN {
@@ -278,7 +274,6 @@ mode == 1 && /^\s*> / {
     if (match($0, /^(>?\s*)!hdefx\(`([^)]+)`\)!(.*)/, matches)) {
 	spc = matches[1]; target = matches[2]; link = matches[3];
 	if (link) {
-	    #link = rst_link(link);
 	    print sprintf("%s[%s]: %s", spc, target, link);
 	} else {
 	    # Internal link target, create it on the spot (the only way to do
@@ -301,12 +296,12 @@ mode == 1 && /^\s*> / {
 /!href\(`(([^`]|\\`)+)`\)!([^!]|\\!)+!end!/ {
     x = $0; $0 = "";
     while (match(x, /!href\(`(([^`]|\\`)+)`\)!(([^!]|\\!)+)!end!/, matches)) {
-	link = matches[1]; text = matches[3];
+	target = matches[1]; text = matches[3];
 	text = gensub(/\\(.)/, "\\1", "g", text);
 	if (no_links == "yes")
 	    y = sprintf("'%s'", text);
 	else
-	    y = sprintf("[%s](%s)", text, link);
+	    y = sprintf("[%s](%s)", text, html_link(target));
 	$0 = $0 substr(x, 1, RSTART-1) y;
 	x = substr(x, RSTART+RLENGTH);
     }

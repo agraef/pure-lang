@@ -87,18 +87,18 @@ function rst_role(class, text)
     } else
 	target = text;
     if (class == "doc")
-	target = target ".html";
+	target = sprintf(template, target);
     else if (class == "mod") {
 	target = "module-" target;
 	if (target in targets && targets[target] != filename)
 	    # cross-document link
-	    target = targets[target] ".html#" target;
+	    target = sprintf(template, targets[target]) "#" target;
 	else
 	    target = "#" target;
     } else if (class == "ref") {
 	if (tolower(target) in targets && targets[tolower(target)] != filename)
 	    # cross-document link
-	    target = targets[tolower(target)] ".html#" mangle(target);
+	    target = sprintf(template, targets[tolower(target)]) "#" mangle(target);
 	else
 	    target = "#" mangle(target);
     } else if (class == "option") {
@@ -136,9 +136,10 @@ function rst_role(class, text)
 	    gsub(/^~.*::/, "", text);
 	}
 	gsub(/^::/, "", target);
+	target = gensub(/\\(.)/, "\\1", "g", target);
 	if (target in targets && targets[target] != filename)
 	    # cross-document link
-	    target = targets[target] ".html#" target;
+	    target = sprintf(template, targets[target]) "#" target;
 	else
 	    target = "#" target;
 	text = "``" text "``";
@@ -177,8 +178,6 @@ function make_target(class, target) {
 	gsub(/^\s+/, "", args);
 	target = op tag;
     }
-    # Minimal mangling to get a valid html link name.
-    gsub(/>/, "\\&gt;", target);
     if (target)
 	targets[target] = filename;
     return target;
@@ -195,10 +194,12 @@ BEGIN {
     if (!auxfile) auxfile = ".rst-markdown-targets";
     if (!raw) raw = "no";
     if (!callouts) callouts = "no";
+    if (!template) template = "%s.html";
     if (verbose == "yes") {
 	print "rst-markdown[pre] : version = " version > "/dev/stderr";
 	print "rst-markdown[pre] : date = " date > "/dev/stderr";
-	print "rst-markdown[pre] : writing index file: " auxfile > "/dev/stderr";
+	print "rst-markdown[pre] : document template: " template > "/dev/stderr";
+	print "rst-markdown[pre] : index file: " auxfile > "/dev/stderr";
     }
     # Initialize the index file.
     if (auxfile != ".rst-markdown-targets") {
@@ -330,6 +331,8 @@ verbatim > 0 {
 	verbatim = productionlist = skipped = 0;
     if (verbatim > 0) {
 	if (productionlist > 0) {
+	    # Do some extra alignment and prettyfying of BNF grammar rules (we
+	    # currently treat these as code blocks, see below).
 	    gsub(/`/, "");
 	    gsub(/^\s+: \|/, substr(blanks, 1, verbatim-1) "       |");
 	    gsub(/^\s+:/, substr(blanks, 1, verbatim-1) "         ");
@@ -456,10 +459,10 @@ mode == 1 {
 }
 
 # Special RST link targets. Pandoc doesn't seem to understand these, so we
-# produce explicit link targets for them. We also record the targets in a
-# temporary index file so that links to these targets can be resolved
-# correctly.
+# produce explicit link targets for them. We also record the named targets in
+# the index file so that links to these targets can be resolved correctly.
 /^(\s*)__\s+.*/ {
+    # anonymous target
     if (match($0, /^(\s*)__\s+(.*)/, matches)) {
 	spc = matches[1]; link = matches[2];
 	# The given link might actually be an RST link instead of a real URL,
@@ -473,6 +476,7 @@ mode == 1 {
 # XXXFIXME: This requires that the link is on the same line, apparently RST
 # also allows it to be on the next line if it's properly indented.
 /^(\s*)\.\.\s+_[^:]+:.*/ {
+    # named target
     if (match($0, /^(\s*)\.\.\s+_([^:]+):\s*(.*)/, matches)) {
 	spc = matches[1]; name = matches[2]; link = matches[3];
 	gsub(/^(`|\s)+/, "", name);
@@ -489,7 +493,8 @@ mode == 1 {
     next;
 }
 
-# Likewise for Sphinx module markup.
+# Likewise for Sphinx module markup. The link targets take the form
+# `module-name` here.
 /^(\s*)\.\.\s+module::.*/ {
     if (match($0, /^(\s*)\.\.\s+module::\s*(.*)/, matches)) {
 	spc = matches[1]; name = matches[2];
@@ -513,12 +518,15 @@ mode == 1 {
 }
 
 # Keep track of text roles. Pandoc doesn't seem to handle most text roles
-# understood by RST and Sphinx, so we do our own handling of those.
+# understood by RST and Sphinx, so we do our own handling of those. We also
+# pass the directives to Pandoc, just in case. (Note that an extra newline is
+# inserted in front of the directives, to prevent Pandoc from lumping them all
+# together when run in --no-wrap mode.)
 /^(\s*)\.\.\s+default-role::.*/ {
     if (match($0, /^\s*\.\.\s+default-role::\s*(.*)/, matches)) {
 	default_role = matches[1];
     }
-    next;
+    print "\n" $0; next;
 }
 
 /^(\s*)\.\.\s+role::.*/ {
@@ -528,7 +536,7 @@ mode == 1 {
 	    role = roles[role];
 	roles[name] = role;
     }
-    next;
+    print "\n" $0; next;
 }
 
 # Notes aren't rendered very nicely by pandoc, fix them up a bit if requested.
@@ -555,7 +563,8 @@ callouts == "yes" && /^(\s*)\.\.\s+(note|NOTE)::.*/ {
     next;
 }
 
-# RST short option lists. These actually look an awful lot like ordinary text,
+# RST short option lists. Pandoc doesn't seem to understand these, even though
+# it's plain RST syntax. They actually look an awful lot like ordinary text,
 # so we need to be *very* specific about the syntax here.
 /^(\s*)(-[a-zA-Z]( ?[a-zA-Z0-9_-]+| ?<[^>]+>)?|--[a-zA-Z0-9_-]+([ =][a-zA-Z0-9_-]+|[ =]<[^>]+>)?)(, (-[a-zA-Z]( ?[a-zA-Z0-9_-]+| ?<[^>]+>)?|--[a-zA-Z0-9_-]+([ =][a-zA-Z0-9_-]+|[ =]<[^>]+>)?))*  .*/ && !/^(\s*)---/ {
     $0 = gensub(/^(\s*)(\S+( \S+)*)  \s*(.*)/, "\n\\1!optx(``\\2``)!``\\4``", "g");
@@ -565,11 +574,11 @@ callouts == "yes" && /^(\s*)\.\.\s+(note|NOTE)::.*/ {
     $0 = gensub(/^(\s*)(\S+( \S+)*)\s*$/, "\n\\1``\\2``", "g");
 }
 
-# Look for RST constructs which might be mistaken for Sphinx descriptions
+# Look for RST directives which might be mistaken for Sphinx descriptions
 # below; we simply pass these through to Pandoc instead.
 /^(\s*)\.\.\s+[a-z:]+::\s+.*/ &&
 ! /^(\s*)\.\. ([a-z:]+:)?(program|option|envvar|function|macro|variable|constant|constructor|type|describe|index)::/ {
-    print; next;
+    print "\n" $0; next;
 }
 
 # Index entries. Not sure what to do with these, they're just ignored for now.
@@ -611,7 +620,9 @@ callouts == "yes" && /^(\s*)\.\.\s+(note|NOTE)::.*/ {
 	class = matches[2]; text = matches[3];
 	if (!class) {
 	    # This looks like a text role. Look at the surrounding context to
-	    # make sure.
+	    # make sure. (This is only heuristic, so it might still give false
+	    # positives, but there's not much else we can do short of
+	    # implementing a full RST parser.)
 	    if (RSTART > 1)
 		ldelim = substr(x, RSTART-1, 1);
 	    else if ($0)
