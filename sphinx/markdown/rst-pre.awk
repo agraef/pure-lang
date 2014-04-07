@@ -1,5 +1,12 @@
 # rst-pre.awk
 
+# Copyright (c) 2014 Albert Graef
+
+# Copying and distribution of this file, with or without modification, are
+# permitted in any medium without royalty provided the copyright notice and
+# this notice are preserved.  This file is offered as-is, without any
+# warranty.
+
 # This script requires GNU awk.
 
 # This script recognizes some RST and Sphinx constructs which pandoc doesn't

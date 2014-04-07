@@ -1,0 +1,257 @@
+
+============
+rst-markdown
+============
+
+Version @version@, |today|
+
+Albert Gräf <aggraef@gmail.com>
+
+This script acts as a frontend to Pandoc_ which allows you to convert plain
+RST documents and (some) Sphinx elements to Markdown format (or any other
+output format supported by Pandoc). It was primarily written for converting
+the Pure documentation files, but might also work with other, similar
+RST-based documents. (The recognition of Sphinx description items assumes the
+Pure domain, though, so the script will surely need some work if you want to
+use it for anything else.)
+
+.. _Pandoc: http://johnmacfarlane.net/pandoc/
+
+.. note:: This document is written in RST syntax, but you can easily convert
+   it to Markdown format using the rst-markdown script itself! For
+   convenience, the Makefile offers a target for this, just run ``make
+   markdown``. Similarly, ``make html`` and ``make pdf`` will format the manual
+   as an html or pdf file, respectively.
+
+Copying
+=======
+
+This script is in the public domain; please check the script itself for
+copyright notices and the precise license conditions.
+
+Installation
+============
+
+You can find the latest release at
+https://bitbucket.org/purelang/pure-lang/downloads/rst-markdown-@version@.tar.gz.
+
+To run this script, you need to have Pandoc and GNU awk (as ``gawk``)
+installed. The script probably needs a fairly recent Pandoc version (1.12.3
+has been tested). To install the script, simply run ``make install`` (the
+installation prefix defaults to ``/usr/local``; you can set this with the
+``prefix`` make variable).
+
+To get proper syntax highlighting for Pure, at present you have to build your
+own versions of the pandoc and highlighting-kate Haskell modules. To do this,
+grab the latest sources from https://github.com/jgm/pandoc and
+https://github.com/jgm/highlighting-kate, drop the Kate syntax-highlighting
+for Pure from pure/etc/pure.xml into the highlighting-kate/xml folder, then
+rebuild highlighting-kate and pandoc. Detailed instructions on how to do this
+(albeit for the J language, but otherwise the steps are exactly the same) can
+be found at
+http://bakerjd99.wordpress.com/2012/09/20/pandoc-based-j-syntax-highlighting/.
+
+Usage
+=====
+
+The script is invoked as follows: ``rst-markdown`` [*options* ...] [*files* ...]
+
+The input files must all be in RST format. If none are specified, input is
+read from stdin. Output goes to stdout, unless an output filename is given
+with :option:`-o` / :option:`--output`. Use ``rst-markdown -h`` to get a brief
+summary of the available options.
+
+Some effort is made to keep the internal document links to RST section headers
+intact, as well as RST link targets and Sphinx markup for descriptions of
+program options, functions, variables, etc. For the rest of the conversion we
+rely on Pandoc. The script certainly isn't perfect, but it does a reasonably
+good job (much better than just pandoc on its own), and it gives you a quick
+way to obtain Markdown documents from the Pure manuals which can then be
+edited and formatted in various ways.
+
+The output format is usually auto-detected if an output filename is specified
+with :option:`-o` / :option:`--output`, otherwise you can specify the desired
+target format with the :option:`-t` / :option:`--to` option. The script
+understands a number of other options which are mostly passed to pandoc, and
+the :option:`-O` / :option:`--options` option lets you pass any other options
+not directly supported by the script. There are also a number of special pre-,
+post-processing and formatting options which affect the generated output:
+
+.. option:: -d
+.. option:: --date
+.. option:: -V
+.. option:: --version
+
+   These options allow you to substitute values for the most commonly used
+   meta variables (:verb:`\|today\|` and :verb:`\@version\@`) in RST
+   source files. By default, the current date is used, and the script also
+   tries to detect the version number from the ``version`` variable in a
+   Makefile in the current directory, if present.
+
+.. option:: -C
+.. option:: --callouts
+
+   Use a somewhat fancier formatting for RST note blocks (``.. note::``),
+   which makes the Markdown rendering look a bit more like in the
+   Sphinx-formatted docs.
+
+.. option:: -c[max-items]
+.. option:: --collapse-items[=max-items]
+
+   Collapse adjacent item headers in Sphinx markup for options, functions,
+   variables, etc., if possible. This gives a denser format if there are
+   multiple items for the same description text, but only works if the items
+   are rendered as Markdown definition lists (which is the default, but can be
+   disabled with the :option:`-H` / :option:`--headers` option, see below).
+   This option takes an optional argument which, if specified, denotes the
+   desired maximum number of items per header line.
+
+.. option:: -D['/pattern/format/']
+.. option:: --describe[='/pattern/format/']
+
+   This lets you adjust the format of generic Sphinx description items
+   (``.. describe::``). The optional argument takes the form of a regex
+   replacement which is applied to the item text; the result should be valid
+   Markdown text. The default format is ``/.*/`\0`/`` which formats the entire
+   item text as literal (typewriter) text. Something like, e.g.,
+   ``/(\w+(\s+\w+)*):\s+(.*)/\1: `\3`/`` might be used to format a description
+   of the form ``some text: foo bar`` so that the text up to the colon is set
+   in regular text font (you can use :option:`-D` / :option:`--describe`
+   without argument to give this specific example a try). This option is not
+   straightforward to use (it's much too easy to mess up the replacement and
+   end up with invalid Markdown), but may be useful for scripted conversions
+   if you're not content with the default formatting of these items.
+
+.. option:: -H
+.. option:: --headers
+
+   Uses Markdown section headers rather than definition lists for Sphinx
+   descriptions of options, functions, variables, etc., which potentially
+   makes links to these items work in some output formats other than
+   html. Please check the notes_ below for details.
+
+.. option:: -i index-file
+.. option:: --index index-file
+
+   Creates an index file in order to make cross references between separate
+   documents work (see `External Document Links`_ below for details). The
+   argument denotes the name of the index file to be created or updated.
+
+.. option:: -N template
+.. option:: --name template
+
+   Document name template for cross-document links. This must be a printf
+   template with exactly one ``%s`` in it; the default is ``"%s.html"``.
+   Please check `External Document Links`_  below for details.
+
+.. option:: -n
+.. option:: --no-links
+
+   Strips all inline and reference links from the Markdown output, leaving
+   just the link text in single quotes. This is useful when generating Pandoc
+   output formats such as manpages (``-tman``) which don't support links and
+   where the resulting output looks confusing if they are included.
+
+.. option:: -R
+.. option:: --raw
+
+   Includes raw sections from the RST source (``.. raw::``). Pandoc seems to
+   unconditionally include these sections, which usually messes up the output,
+   so rst-markdown will by default strip them from the RST source during
+   pre-processing, so that Pandoc never sees them. But if you really want to
+   have this material included in the output then this option will give you
+   that.
+
+.. option:: -T
+.. option:: --title-block
+
+   Scrapes a Pandoc-style title block from the RST source. The title block
+   should be formatted as follows (please also check the Pandoc documentation
+   for a description of the title block syntax)::
+
+     .. % Title
+     .. % Author
+     .. % Date
+
+   This will be treated as a comment by RST processors. If the :option:`-T`
+   option is used, then any additional frontmatter (i.e., everything leading
+   up to the title block) will be stripped from the RST source, so that the
+   output document begins with the Pandoc title block. (Note that this means
+   that the resulting document will be empty if there's no title block in the
+   source at all, so beware!)
+
+Notes
+=====
+
+- At present, the script only recognizes a subset of the RST and Sphinx
+  cross-referencing syntax, so complex documents will most likely give funky
+  results or not work at all.
+
+- Math elements (LaTeX inline and display formulas, ``:math:`` in RST) such as
+  :math:`E=mc^2` are fully supported. Note that depending on the complexity of
+  your formulas, you may have to use a suitable math rendering engine for html
+  output (i.e., ``pandoc --latexmathml`` or ``pandoc --mathjax``); please
+  check the Pandoc documentation for details.
+
+- Internal section links are rendered as Markdown inline links by default. If
+  you prefer, you can force implicit reference links of the form ``[name][]``
+  by specifying the :option:`-r` / :option:`--reference-links` option on the
+  command line (this option is simply passed to pandoc in the post-processing
+  stage).
+
+- Other RST link targets (``.. _name:``) in the source document should also
+  work, and references to these will use implicit reference links in
+  Markdown. Note, however, that inline html will be used to create the anchors
+  for internal link targets, which may not work with Pandoc target document
+  types other than html.
+
+- Sphinx definitions for options, functions, variables, etc. are by default
+  rendered as Markdown definition lists. This works fairly well, but has the
+  downside that the corresponding link targets are coded using inline html,
+  which may not work with Pandoc target document types other than html. As a
+  remedy, you can also translate such descriptions to Markdown section headers
+  instead, by using the :option:`-H` / :option:`--headers` option. Definition
+  lists often look better in formatted documents, but using section headers
+  has the advantage that Pandoc supports special PHP Markdown-style syntax for
+  the section link targets. This syntax isn't widely supported by 3rd party
+  tools, but it works with a few of Pandoc's own writer backends, please check
+  the Pandoc documentation for details. This might be useful in cases where
+  you need the links to work and the target document type doesn't support
+  inline html anchors.
+
+External Document Links
+=======================
+
+Links across different documents (one of Sphinx's hallmark features) are
+supported by rst-markdown as well (in html output at least), if you explicitly
+create an index file for all the documents using the :option:`-i` /
+:option:`--index` option. This is one of rst-markdown's addon features; pandoc
+doesn't seem to support this kind of feature as far as I can tell.
+
+External document links generally require that you run rst-markdown on all
+individual source documents *twice* (the index entries will be created or
+updated during the first round of invocations, then the correct link targets
+will be inserted during the second round). For instance, if you have two
+documents ``a.rst`` and ``b.rst`` which link to each other, then you can run
+rst-markdown twice as follows::
+
+  rst-markdown a.rst -o a.md -i index && rst-markdown a.rst -o a.md -i index
+  rst-markdown a.rst -o a.md -i index && rst-markdown a.rst -o a.md -i index
+
+The resulting Markdown documents ``a.md`` and ``b.md`` will have
+cross-document links of the form ``a.html#id`` and ``b.html#id`` so that the
+links can be correctly resolved in generated html output. This generally
+assumes that the final output will be html documents located in the same
+directory, and that the final documents have the same basenames as the
+corresponding output files (if :option:`-o` is given; otherwise, the script
+uses the basename of the first RST input file for each document). If necessary
+(i.e., to use other filename extensions and/or document paths), you can also
+specify a printf-style template for the document part of the link targets with
+the :option:`-N` / :option:`--name` option; the default naming scheme
+corresponds to ``-N "%s.html"``.
+
+Please note that this elaborate procedure is only necessary if individual
+Markdown documents are created from each RST source. If you pass the entire
+collection of source documents to rst-markdown in one go, then only a single
+output file will be created, so all links between documents become internal
+links in the output document.
