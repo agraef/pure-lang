@@ -198,18 +198,18 @@ BEGIN {
     if (!version) version = "@version@";
     if (!date) date = strftime("%B %d, %Y", systime());
     if (!title_block) title_block = "no";
-    if (!auxfile) auxfile = ".rst-markdown-targets";
+    if (!auxfile) auxfile = ".pure-pandoc-targets";
     if (!raw) raw = "no";
     if (!callouts) callouts = "no";
     if (!template) template = "%s.html";
     if (verbose == "yes") {
-	print "rst-markdown[pre] : version = " version > "/dev/stderr";
-	print "rst-markdown[pre] : date = " date > "/dev/stderr";
-	print "rst-markdown[pre] : document template: " template > "/dev/stderr";
-	print "rst-markdown[pre] : index file: " auxfile > "/dev/stderr";
+	print "pure-pandoc[pre] : version = " version > "/dev/stderr";
+	print "pure-pandoc[pre] : date = " date > "/dev/stderr";
+	print "pure-pandoc[pre] : document template: " template > "/dev/stderr";
+	print "pure-pandoc[pre] : index file: " auxfile > "/dev/stderr";
     }
     # Initialize the index file.
-    if (auxfile != ".rst-markdown-targets") {
+    if (auxfile != ".pure-pandoc-targets") {
 	# Read the index file if present.
 	while ((getline line < auxfile) > 0) {
 	    if (match(line, /^(([^:]|:[^:]|\\:)+)::\s*(.*)/, matches)) {
@@ -269,9 +269,9 @@ BEGINFILE {
 	gsub(/^.*\//, "", filename);
 	gsub(/\.[^.]*$/, "", filename);
 	if (verbose == "yes")
-	    print "rst-markdown[pre] : assumed basename for index: " filename > "/dev/stderr";
+	    print "pure-pandoc[pre] : assumed basename for index: " filename > "/dev/stderr";
     } else if (verbose == "yes")
-	print "rst-markdown[pre] : basename for index: " filename > "/dev/stderr";
+	print "pure-pandoc[pre] : basename for index: " filename > "/dev/stderr";
     if (!first_run) {
 	# Remove outdated targets information from the index file.
 	for (target in targets) {
@@ -310,7 +310,7 @@ mode == 3 && /^\s*\.\.\s*(.*)$/ {
     gsub(/\|today\|/, date);
     print gensub(/^\s*\.\.\s*(.*)$/, "   \\1", "g");
     if (verbose == "yes")
-	print "rst-markdown[pre] : title block: " gensub(/^\s*\.\.\s*(.*)$/, "\\1", "g") > "/dev/stderr";
+	print "pure-pandoc[pre] : title block: " gensub(/^\s*\.\.\s*(.*)$/, "\\1", "g") > "/dev/stderr";
     next;
 }
 # The title block stops at the first empty line or anything else which doesn't

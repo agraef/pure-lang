@@ -51,12 +51,12 @@ BEGIN {
     if (describe && match(describe, /^\/(([^\/]|\\\/)*)\/(([^\/]|\\\/)*)\//, matches)) {
 	describe_pat = matches[1]; describe_repl = matches[3];
 	if (verbose == "yes")
-	    print "rst-markdown[post]: describe: " describe_pat " -> " describe_repl > "/dev/stderr";
+	    print "pure-pandoc[post]: describe: " describe_pat " -> " describe_repl > "/dev/stderr";
     } else if (describe)
-	print "rst-markdown[post]: invalid argument to --describe: " describe > "/dev/stderr";
-    if (!auxfile) auxfile = ".rst-markdown-targets";
+	print "pure-pandoc[post]: invalid argument to --describe: " describe > "/dev/stderr";
+    if (!auxfile) auxfile = ".pure-pandoc-targets";
     if (verbose == "yes")
-	print "rst-markdown[post]: reading index file: " auxfile > "/dev/stderr";
+	print "pure-pandoc[post]: reading index file: " auxfile > "/dev/stderr";
     while ((getline line < auxfile) > 0) {
 	if (match(line, /^(([^:]|:[^:]|\\:)+)::\s*(.*)/, matches)) {
 	    target = matches[1]; filename = matches[3];
@@ -65,7 +65,7 @@ BEGIN {
 	}
     }
     close(auxfile);
-    if (auxfile == ".rst-markdown-targets")
+    if (auxfile == ".pure-pandoc-targets")
 	system("rm -f " auxfile);
 }
 

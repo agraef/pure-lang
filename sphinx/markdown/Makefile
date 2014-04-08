@@ -1,47 +1,54 @@
 
-dist = rst-markdown-$(version)
+dist = pure-pandoc-$(version)
 version = 0.1
 prefix=/usr/local
 
-all: rst-markdown rst-markdown.1
+all: pure-pandoc pure-pandoc.1
 
 # This includes the awk scripts in the shell script, to make the script
 # self-contained.
-rst-markdown: rst-markdown.in rst-pre.awk rst-post.awk
+pure-pandoc: pure-pandoc.in rst-pre.awk rst-post.awk
 	cat $^ > $@
 	chmod a+x $@
 
 # Targets to build the documentation in Markdown, html and pdf format.
-markdown: rst-markdown.md
-html: rst-markdown.html
-pdf: rst-markdown.pdf
+markdown: pure-pandoc.md
+html: pure-pandoc.html
+pdf: pure-pandoc.pdf
 
-rst-markdown.md: README rst-markdown
-	./rst-markdown -c $< -o $@
+# If you need any special pandoc options to format the Markdown, html and pdf
+# output then you can specify with the MD_FLAGS, HTML_FLAGS and PDF_FLAGS
+# variables, respectively. E.g., to produce a MultiMarkdown document suitable
+# for viewing with `Marked` on the Mac, the option `MD_FLAGS=-tmarkdown_mmd`
+# might be used.
+MD_FLAGS   = -tmarkdown
+HTML_FLAGS = -thtml
+PDF_FLAGS  = -V "geometry:paperwidth=21cm" -V "geometry:paperheight=29.7cm" -V "geometry:vmargin=2cm" -V "geometry:hmargin=2cm" -V "fontsize:12pt" --latex-engine=xelatex
 
-rst-markdown.1: README rst-markdown
-	./rst-markdown -s -c -n -T -tman $< | sed -e 's/ä/ae/g' -e 's/<<aggraef@gmail.com>>/<aggraef@gmail.com>/g' > $@
+pure-pandoc.md: README pure-pandoc
+	./pure-pandoc -c -O "$(MD_FLAGS)" $< -o $@
+
+pure-pandoc.1: README pure-pandoc
+	./pure-pandoc -s -c -n -T -tman $< | sed -e 's/ä/ae/g' -e 's/<<aggraef@gmail.com>>/<aggraef@gmail.com>/g' > $@
 
 %.html: %.md
-	pandoc -s -S $< -o $@
-
-PDF_FORMAT = -V "geometry:paperwidth=21cm" -V "geometry:paperheight=29.7cm" -V "geometry:vmargin=2cm" -V "geometry:hmargin=2cm" -V "fontsize:12pt" --latex-engine=xelatex
+	pandoc -s -S $(HTML_FLAGS) $< -o $@
 
 %.pdf: %.md
-	pandoc -s -S $(PDF_FORMAT) $< -o $@
+	pandoc -s -S $(PDF_FLAGS) $< -o $@
 
 clean:
-	rm -f rst-markdown *.md *.1 *.html *.pdf
+	rm -f pure-pandoc *.md *.1 *.html *.pdf
 
-install: rst-markdown rst-markdown.1
-	cp rst-markdown "$(DESTDIR)$(prefix)/bin"
-	cp rst-markdown.1 "$(DESTDIR)$(prefix)/share/man/man1"
+install: pure-pandoc pure-pandoc.1
+	cp pure-pandoc "$(DESTDIR)$(prefix)/bin"
+	cp pure-pandoc.1 "$(DESTDIR)$(prefix)/share/man/man1"
 
 uninstall:
-	rm -f "$(DESTDIR)$(prefix)/bin/rst-markdown"
-	rm -f "$(DESTDIR)$(prefix)/share/man/man1/rst-markdown.1"
+	rm -f "$(DESTDIR)$(prefix)/bin/pure-pandoc"
+	rm -f "$(DESTDIR)$(prefix)/share/man/man1/pure-pandoc.1"
 
-DISTFILES = Makefile README rst-markdown.in rst-post.awk rst-pre.awk
+DISTFILES = Makefile README pure-pandoc.in rst-post.awk rst-pre.awk
 SEDFILES = README
 
 date = $(shell date "+%B %-d, %Y")
