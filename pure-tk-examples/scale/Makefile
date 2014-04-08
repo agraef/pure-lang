@@ -1,7 +1,7 @@
 
 # Package name and version number:
 dist = scale-$(version)
-version = 0.1
+version = 0.3
 
 # Default installation prefix.
 prefix = /usr/local
@@ -9,7 +9,7 @@ prefix = /usr/local
 bindir = $(prefix)/bin
 docdir = $(prefix)/share/doc/scale
 
-DISTFILES = COPYING Makefile README scale.html *.pure intnam.par *.m *.tcl \
+DISTFILES = COPYING Makefile README.md scale.html *.pure intnam.par *.m *.tcl \
 scl/*.scl
 
 GTK_LIBS = $(shell pkg-config --libs-only-L --libs-only-l gtk+-2.0)
@@ -22,25 +22,19 @@ scale: scale.pure scale.tcl scale.m factor.pure hrm.pure nomen.pure mds.pure int
 clean:
 	rm -f scale *~
 
-# documentation (this needs docutils)
+# documentation (this needs pandoc)
 
-rst2html = $(shell which rst2html 2>/dev/null || which rst2html.py 2>/dev/null || echo rst2html)
-rst2latex = $(shell which rst2latex 2>/dev/null || which rst2latex.py 2>/dev/null || echo rst2latex)
+PDF_FLAGS = -V "geometry:paperwidth=21cm" -V "geometry:paperheight=29.7cm" \
+-V "geometry:vmargin=2cm" -V "geometry:hmargin=2cm" -V "fontsize:12pt"
 
 html: scale.html
-latex: scale.tex
 pdf: scale.pdf
 
-scale.html: README
-	$(rst2html) $< $@
+scale.html: README.md
+	pandoc -s -S $< -o $@
 
-scale.tex: README
-	$(rst2latex) $< $@
-
-scale.pdf: scale.tex
-	pdflatex $<
-	pdflatex $<
-	rm -f *.aux *.log *.out
+scale.pdf: README.md
+	pandoc -s -S $< -o $@ $(PDF_FLAGS)
 
 install:
 	test -d "$(DESTDIR)$(bindir)" || mkdir -p "$(DESTDIR)$(bindir)"
