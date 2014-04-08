@@ -35,12 +35,12 @@ work if you want to use it for other Sphinx domains such as C/C++ and Python.
 .. _RST: http://docutils.sourceforge.net
 .. _Sphinx: http://sphinx-doc.org
 
-Considerable effort is spent to keep the internal document links to RST
+The script goes to some lengths to keep the internal document links to RST
 section headers intact, as well as RST link targets and Sphinx markup for
 descriptions of program options, functions, variables, etc. For the rest of
 the conversion we rely on Pandoc. The script certainly isn't perfect, but it
 does a reasonably good job (usually much better than just pandoc on its own),
-and it gives you a quick way to obtain Markdown documents from the Pure
+and it gives you a quick way to obtain usable Markdown documents from the Pure
 manuals which can then be edited and formatted in various ways.
 
 Working with Markdown and Pandoc offers many benefits. For most purposes,
@@ -56,9 +56,11 @@ become the prevalent format for plain text documents.
 
 Markdown also has some drawbacks; most notably, it doesn't support
 cross-referencing between documents in large collections very well. This is
-also the main reason that the Pure project still relies on RST and Sphinx for
-its dozens of manuals with more than 900 pages worth of documentation, and
-this isn't likely to change anytime soon. But we'd also like to leverage
+also the main reason that the Pure project still relies on RST and Sphinx. The
+Pure documentation consists of dozens of manuals which are created from
+various sources, including "docstrings" scraped from a large collection of
+Pure scripts. RST/Sphinx works very well for that, so Pure's documentation
+format isn't likely to change anytime soon. But we'd still like to leverage
 Markdown's advantages, by making it easy to convert the Pure manuals to
 Markdown. This is what the pure-pandoc script is for.
 
@@ -318,31 +320,36 @@ instance::
 
   pure-pandoc pure.txt -o pure.html -O --mathjax
 
-Internal section links are rendered as Markdown inline links by default. If
-you prefer, you can force implicit reference links of the form ``[name][]`` by
-specifying the :option:`-r` / :option:`--reference-links` option on the
-command line (this option is simply passed to pandoc in the post-processing
-stage).
+Internal section links, as well as links to RST link targets (see below), are
+rendered as standard Markdown links by default. Normally these will become
+inline links in generated Markdown output. If you prefer, you can force
+implicit reference links of the form ``[name][]`` throughout by specifying the
+:option:`-r` / :option:`--reference-links` option on the command line; this
+option is simply passed to pandoc in the post-processing stage. Note, however,
+that this may cause issues with generated link targets for Sphinx definitions
+(see below), since these generally are case-sensitive whereas Markdown's
+implicit link targets aren't, which might result in duplicate link targets in
+the Markdown output. (You probably won't notice this until the Markdown
+document gets processed with Pandoc again, so beware!)
 
-Other RST link targets (``.. _name:``) in the source document should also
-work, and references to these will use implicit reference links in
-Markdown. Note, however, that inline html will be used to create the anchors
-for internal link targets, which may not work with Pandoc target document
-types other than html.
+Explicit RST link targets (``.. _name:``) in the source document are
+translated to html link anchors (``<a name="id">``), so they should work as
+expected at least in html output. There's no guarantee that they will work
+with other target document types, though (most likely they won't), but since
+Markdown doesn't offer any other possibility to link to arbitrary locations
+inside a document, there's not much else we can do.
 
 Sphinx definitions for options, functions, variables, etc. are by default
 rendered as Markdown definition lists. This works fairly well, but has the
-downside that the corresponding link targets are coded using inline html,
-which may not work with Pandoc target document types other than html. As a
-remedy, you can also translate such descriptions to Markdown section headers
-instead, by using the :option:`-H` / :option:`--headers` option. Definition
-lists often look better in formatted documents, but using section headers has
-the advantage that Pandoc supports special PHP Markdown-style syntax for the
-section link targets. This syntax isn't widely supported by 3rd party tools,
-but it works with a few of Pandoc's own writer backends, please check the
-Pandoc documentation for details. This might be useful in cases where you need
-the links to work and the target document type doesn't support inline html
-anchors.
+downside that the corresponding link targets must be coded using inline html,
+which may not work with target document types other than html. As a remedy,
+you can also translate such descriptions to Markdown section headers instead,
+by using the :option:`-H` / :option:`--headers` option. pure-pandoc will then
+use Pandoc's special PHP Markdown-style syntax for the section link targets.
+This syntax isn't widely supported by 3rd party tools, but supposedy it works
+at least with a few of Pandoc's own writer backends, so you *might* have
+better luck getting these links to work with some non-html document types;
+please check the Pandoc documentation for details.
 
 External Document Links
 =======================

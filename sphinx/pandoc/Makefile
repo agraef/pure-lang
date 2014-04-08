@@ -23,10 +23,10 @@ pdf: pure-pandoc.pdf
 # might be used.
 MD_FLAGS   = -tmarkdown
 HTML_FLAGS = -thtml
-PDF_FLAGS  = -V "geometry:paperwidth=21cm" -V "geometry:paperheight=29.7cm" -V "geometry:vmargin=2cm" -V "geometry:hmargin=2cm" -V "fontsize:12pt" --latex-engine=xelatex
+PDF_FLAGS  = -V "geometry:paperwidth=21cm" -V "geometry:paperheight=29.7cm" -V "geometry:vmargin=2cm" -V "geometry:hmargin=2cm" -V "fontsize:12pt"
 
 pure-pandoc.md: README pure-pandoc
-	./pure-pandoc -c -O "$(MD_FLAGS)" $< -o $@
+	./pure-pandoc -c $(MD_FLAGS) $< -o $@
 
 pure-pandoc.1: README pure-pandoc
 	./pure-pandoc -s -c -n -T -tman $< | sed -e 's/ä/ae/g' -e 's/<<aggraef@gmail.com>>/<aggraef@gmail.com>/g' > $@
