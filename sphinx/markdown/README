@@ -7,75 +7,118 @@ Version @version@, |today|
 
 Albert Gräf <aggraef@gmail.com>
 
+.. % rst-markdown(1) | Version @version@
+
+.. Note: This document is written in RST syntax, but you can easily convert
+.. it to Markdown format using the rst-markdown script itself! For
+.. convenience, the Makefile offers a target for this, just run ``make
+.. markdown``. Similarly, ``make html`` and ``make pdf`` will format the
+.. manual as an html or pdf file, respectively.
+
+Synopsis
+========
+
+rst-markdown [*options* ...] [*files* ...]
+
+Description
+===========
+
 This script acts as a frontend to Pandoc_ which allows you to convert plain
 RST documents and (some) Sphinx elements to Markdown format (or any other
 output format supported by Pandoc). It was primarily written for converting
 the Pure documentation files, but might also work with other, similar
 RST-based documents. (The recognition of Sphinx description items assumes the
 Pure domain, though, so the script will surely need some work if you want to
-use it for anything else.)
+use it for other Sphinx domains.)
 
 .. _Pandoc: http://johnmacfarlane.net/pandoc/
 
-.. note:: This document is written in RST syntax, but you can easily convert
-   it to Markdown format using the rst-markdown script itself! For
-   convenience, the Makefile offers a target for this, just run ``make
-   markdown``. Similarly, ``make html`` and ``make pdf`` will format the manual
-   as an html or pdf file, respectively.
-
-Copying
-=======
-
-This script is in the public domain; please check the script itself for
-copyright notices and the precise license conditions.
-
-Installation
-============
-
-You can find the latest release at
-https://bitbucket.org/purelang/pure-lang/downloads/rst-markdown-@version@.tar.gz.
-
-To run this script, you need to have Pandoc and GNU awk (as ``gawk``)
-installed. The script probably needs a fairly recent Pandoc version (1.12.3
-has been tested). To install the script, simply run ``make install`` (the
-installation prefix defaults to ``/usr/local``; you can set this with the
-``prefix`` make variable).
-
-To get proper syntax highlighting for Pure, at present you have to build your
-own versions of the pandoc and highlighting-kate Haskell modules. To do this,
-grab the latest sources from https://github.com/jgm/pandoc and
-https://github.com/jgm/highlighting-kate, drop the Kate syntax-highlighting
-for Pure from pure/etc/pure.xml into the highlighting-kate/xml folder, then
-rebuild highlighting-kate and pandoc. Detailed instructions on how to do this
-(albeit for the J language, but otherwise the steps are exactly the same) can
-be found at
-http://bakerjd99.wordpress.com/2012/09/20/pandoc-based-j-syntax-highlighting/.
+Considerable effort is spent to keep the internal document links to RST
+section headers intact, as well as RST link targets and Sphinx markup for
+descriptions of program options, functions, variables, etc. For the rest of
+the conversion we rely on Pandoc. The script certainly isn't perfect, but it
+does a reasonably good job (usually much better than just pandoc on its own),
+and it gives you a quick way to obtain Markdown documents from the Pure
+manuals which can then be edited and formatted in various ways.
 
 Usage
 =====
 
-The script is invoked as follows: ``rst-markdown`` [*options* ...] [*files* ...]
-
 The input files must all be in RST format. If none are specified, input is
 read from stdin. Output goes to stdout, unless an output filename is given
-with :option:`-o` / :option:`--output`. Use ``rst-markdown -h`` to get a brief
-summary of the available options.
+with :option:`-o` / :option:`--output`.
 
-Some effort is made to keep the internal document links to RST section headers
-intact, as well as RST link targets and Sphinx markup for descriptions of
-program options, functions, variables, etc. For the rest of the conversion we
-rely on Pandoc. The script certainly isn't perfect, but it does a reasonably
-good job (much better than just pandoc on its own), and it gives you a quick
-way to obtain Markdown documents from the Pure manuals which can then be
-edited and formatted in various ways.
+The output format is usually auto-detected by pandoc if an output filename is
+specified with :option:`-o` / :option:`--output`, otherwise you can specify
+the desired target format with the :option:`-t` / :option:`--to` option. The
+script understands a number of other pandoc options which are simply passed
+through, and the :option:`-O` / :option:`--options` option lets you pass any
+other options not directly supported by the script. Please use ``rst-markdown
+-h`` to get a brief summary of the available options.
 
-The output format is usually auto-detected if an output filename is specified
-with :option:`-o` / :option:`--output`, otherwise you can specify the desired
-target format with the :option:`-t` / :option:`--to` option. The script
-understands a number of other options which are mostly passed to pandoc, and
-the :option:`-O` / :option:`--options` option lets you pass any other options
-not directly supported by the script. There are also a number of special pre-,
-post-processing and formatting options which affect the generated output:
+Options
+=======
+
+General Options
+---------------
+
+.. option:: -h
+.. option:: --help
+
+   Print a short help message, including a brief summary of the available
+   options.
+
+.. option:: -v
+.. option:: --verbose
+
+   Print some progress information useful for debugging purposes.
+
+Pandoc Options
+--------------
+
+The recognized pandoc options are listed below. They are simply passed
+through. Please see the pandoc documentation for a closer description of
+these.
+
+.. option:: -o output-file
+.. option:: --output output-file
+
+   Set the name of the pandoc output file.
+
+.. option:: -r
+.. option:: --reference-links
+
+   Use reference rather than inline links.
+
+.. option:: -s
+.. option:: --standalone
+
+   Produce a standalone document.
+
+.. option:: -S
+.. option:: --smart
+
+   Produce smart quotes, dashes, etc. in the output.
+
+.. option:: -t output-format
+.. option:: --to output-format
+
+   Set the pandoc output format.
+
+The following option can be used to pass any other pandoc option which isn't
+directly supported by the script.
+
+.. option:: -O pandoc-options
+.. option:: --options pandoc-options
+
+   Additional options to be passed to pandoc. This is cumulative, so each
+   argument given with :option:`-O` is added to the pandoc options.
+
+Special Options
+---------------
+
+There are also a number of special pre-, post-processing and formatting
+options which affect the generated output. They are listed below.
 
 .. option:: -d
 .. option:: --date
@@ -106,8 +149,8 @@ post-processing and formatting options which affect the generated output:
    This option takes an optional argument which, if specified, denotes the
    desired maximum number of items per header line.
 
-.. option:: -D['/pattern/format/']
-.. option:: --describe[='/pattern/format/']
+.. option:: -D[/pattern/format/]
+.. option:: --describe[=/pattern/format/]
 
    This lets you adjust the format of generic Sphinx description items
    (``.. describe::``). The optional argument takes the form of a regex
@@ -128,7 +171,7 @@ post-processing and formatting options which affect the generated output:
    Uses Markdown section headers rather than definition lists for Sphinx
    descriptions of options, functions, variables, etc., which potentially
    makes links to these items work in some output formats other than
-   html. Please check the notes_ below for details.
+   html. Please check the notes below for details.
 
 .. option:: -i index-file
 .. option:: --index index-file
@@ -180,53 +223,13 @@ post-processing and formatting options which affect the generated output:
    that the resulting document will be empty if there's no title block in the
    source at all, so beware!)
 
-Notes
-=====
-
-- At present, the script only recognizes a subset of the RST and Sphinx
-  cross-referencing syntax, so complex documents will most likely give funky
-  results or not work at all.
-
-- Math elements (LaTeX inline and display formulas, ``:math:`` in RST) such as
-  :math:`E=mc^2` are fully supported. Note that depending on the complexity of
-  your formulas, you may have to use a suitable math rendering engine for html
-  output (i.e., ``pandoc --latexmathml`` or ``pandoc --mathjax``); please
-  check the Pandoc documentation for details.
-
-- Internal section links are rendered as Markdown inline links by default. If
-  you prefer, you can force implicit reference links of the form ``[name][]``
-  by specifying the :option:`-r` / :option:`--reference-links` option on the
-  command line (this option is simply passed to pandoc in the post-processing
-  stage).
-
-- Other RST link targets (``.. _name:``) in the source document should also
-  work, and references to these will use implicit reference links in
-  Markdown. Note, however, that inline html will be used to create the anchors
-  for internal link targets, which may not work with Pandoc target document
-  types other than html.
-
-- Sphinx definitions for options, functions, variables, etc. are by default
-  rendered as Markdown definition lists. This works fairly well, but has the
-  downside that the corresponding link targets are coded using inline html,
-  which may not work with Pandoc target document types other than html. As a
-  remedy, you can also translate such descriptions to Markdown section headers
-  instead, by using the :option:`-H` / :option:`--headers` option. Definition
-  lists often look better in formatted documents, but using section headers
-  has the advantage that Pandoc supports special PHP Markdown-style syntax for
-  the section link targets. This syntax isn't widely supported by 3rd party
-  tools, but it works with a few of Pandoc's own writer backends, please check
-  the Pandoc documentation for details. This might be useful in cases where
-  you need the links to work and the target document type doesn't support
-  inline html anchors.
-
 External Document Links
 =======================
 
-Links across different documents (one of Sphinx's hallmark features) are
-supported by rst-markdown as well (in html output at least), if you explicitly
-create an index file for all the documents using the :option:`-i` /
-:option:`--index` option. This is one of rst-markdown's addon features; pandoc
-doesn't seem to support this kind of feature as far as I can tell.
+Links across different documents are supported by rst-markdown (in html output
+at least), if you explicitly create an index file for all the documents using
+the :option:`-i` / :option:`--index` option. This is one of rst-markdown's
+addon features; pandoc doesn't seem to support this as far as I can tell.
 
 External document links generally require that you run rst-markdown on all
 individual source documents *twice* (the index entries will be created or
@@ -255,3 +258,82 @@ Markdown documents are created from each RST source. If you pass the entire
 collection of source documents to rst-markdown in one go, then only a single
 output file will be created, so all links between documents become internal
 links in the output document.
+
+Notes
+=====
+
+To run this script, you need to have Pandoc and GNU awk (as ``gawk``)
+installed. The script probably needs a fairly recent Pandoc version (1.12.3
+has been tested). To install the script, simply run ``make install`` in the
+source directory (the installation prefix defaults to ``/usr/local``; you can
+set this with the ``prefix`` make variable).
+
+To get proper syntax highlighting for Pure, at present you have to build your
+own versions of the pandoc and highlighting-kate Haskell modules. To do this,
+grab the latest sources from https://github.com/jgm, and drop the Kate
+syntax-highlighting for Pure (available as etc/pure.xml in the Pure sources)
+into the highlighting-kate/xml folder. Then rebuild highlighting-kate and
+pandoc. This is described in more detail (for the J language, but otherwise
+the steps are the same) in John Baker's blog at
+http://bakerjd99.wordpress.com/2012/09/20/pandoc-based-j-syntax-highlighting/.
+
+Once the Pure highlighting is installed, you can set the default language for
+code sections and the desired highlighting style with Pandoc's
+``--indented-code-classes`` and ``--highlight-style`` options when creating
+the target document. For instance::
+
+  rst-markdown pure.txt -o pure.md
+  pandoc --indented-code-classes=pure --highlight-style=kate pure.md -o pure.html
+
+At present, the script only recognizes a subset of the RST and Sphinx
+cross-referencing syntax, so complex documents will most likely give funky
+results or not work at all.
+
+Math elements (LaTeX inline and display formulas, ``:math:`` in RST) are fully
+supported (as far as Pandoc supports them in the target document format). Note
+that depending on the complexity of your formulas, you may have to use a
+suitable math rendering engine for html output (i.e., ``pandoc --latexmathml``
+or ``pandoc --mathjax``); please check the Pandoc documentation for details.
+
+Internal section links are rendered as Markdown inline links by default. If
+you prefer, you can force implicit reference links of the form ``[name][]`` by
+specifying the :option:`-r` / :option:`--reference-links` option on the
+command line (this option is simply passed to pandoc in the post-processing
+stage).
+
+Other RST link targets (``.. _name:``) in the source document should also
+work, and references to these will use implicit reference links in
+Markdown. Note, however, that inline html will be used to create the anchors
+for internal link targets, which may not work with Pandoc target document
+types other than html.
+
+Sphinx definitions for options, functions, variables, etc. are by default
+rendered as Markdown definition lists. This works fairly well, but has the
+downside that the corresponding link targets are coded using inline html,
+which may not work with Pandoc target document types other than html. As a
+remedy, you can also translate such descriptions to Markdown section headers
+instead, by using the :option:`-H` / :option:`--headers` option. Definition
+lists often look better in formatted documents, but using section headers has
+the advantage that Pandoc supports special PHP Markdown-style syntax for the
+section link targets. This syntax isn't widely supported by 3rd party tools,
+but it works with a few of Pandoc's own writer backends, please check the
+Pandoc documentation for details. This might be useful in cases where you need
+the links to work and the target document type doesn't support inline html
+anchors.
+
+Author
+======
+
+Albert Gräf <aggraef@gmail.com>
+
+See Also
+========
+
+pandoc(1)
+
+Docutils/RST: http://docutils.sourceforge.net
+
+Sphinx: http://sphinx-doc.org
+
+The source code of this program can be downloaded at
+http://purelang.bitbucket.org/.

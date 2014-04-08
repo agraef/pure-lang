@@ -1,11 +1,9 @@
 
 dist = rst-markdown-$(version)
 version = 0.1
-
 prefix=/usr/local
 
-pre = $(shell cat rst-pre.awk)
-post = $(shell cat rst-post.awk)
+all: rst-markdown rst-markdown.1
 
 # This includes the awk scripts in the shell script, to make the script
 # self-contained.
@@ -14,12 +12,15 @@ rst-markdown: rst-markdown.in rst-pre.awk rst-post.awk
 	chmod a+x $@
 
 # Targets to build the documentation in Markdown, html and pdf format.
-markdown: README.md
-html: README.html
-pdf: README.pdf
+markdown: rst-markdown.md
+html: rst-markdown.html
+pdf: rst-markdown.pdf
 
-README.md: README rst-markdown
-	./rst-markdown -C -c $< -o $@
+rst-markdown.md: README rst-markdown
+	./rst-markdown -c $< -o $@
+
+rst-markdown.1: README rst-markdown
+	./rst-markdown -s -c -n -T -tman $< | sed -e 's/ä/ae/g' -e 's/<<aggraef@gmail.com>>/<aggraef@gmail.com>/g' > $@
 
 %.html: %.md
 	pandoc -s -S $< -o $@
@@ -30,13 +31,15 @@ PDF_FORMAT = -V "geometry:paperwidth=21cm" -V "geometry:paperheight=29.7cm" -V "
 	pandoc -s -S $(PDF_FORMAT) $< -o $@
 
 clean:
-	rm -f rst-markdown *.md *.html *.pdf
+	rm -f rst-markdown *.md *.1 *.html *.pdf
 
-install:
+install: rst-markdown rst-markdown.1
 	cp rst-markdown "$(DESTDIR)$(prefix)/bin"
+	cp rst-markdown.1 "$(DESTDIR)$(prefix)/share/man/man1"
 
 uninstall:
 	rm -f "$(DESTDIR)$(prefix)/bin/rst-markdown"
+	rm -f "$(DESTDIR)$(prefix)/share/man/man1/rst-markdown.1"
 
 DISTFILES = Makefile README rst-markdown.in rst-post.awk rst-pre.awk
 SEDFILES = README
