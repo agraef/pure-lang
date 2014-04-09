@@ -140,6 +140,14 @@ allinfo:
 alltexmacs: allhtml
 	@$(MAKE) texmacs
 
+# Same as above, but update the markdown docs.
+
+allmarkdown:
+	@rm -rf $(rst_dirs)
+	@$(MAKE) --no-print-directory sources
+	@(manifest=`ls */*.txt */*/*.txt 2>/dev/null || true`; test -n "$$manifest" && cp $$manifest .; rm -rf $(rst_dirs); true)
+	@$(MAKE) markdown
+
 # Same as above, but don't run sphinx-builder yet, leave that to the user.
 # This can be run without having any of the docutils/Sphinx tools installed,
 # but then you won't be able to do anything with the rst files.
@@ -341,6 +349,101 @@ texmacs: $(BUILDDIR)/texmacs $(tmdocs)
 
 cleantexmacs:
 	rm -f $(BUILDDIR)/texmacs/*.tm
+
+# Conversion RST -> markdown. These needs pure-pandoc (and pandoc itself, of
+# course). NOTE: Right now we only provide this as a testing ground and as a
+# convenience so that users can try the documentation in Markdown and derived
+# formats (html, tex, pdf). This isn't needed to create the Sphinxed docs in
+# any way, but you can use the pandoc-formatted docs as an alternative to the
+# Sphinxed documentation if you like. Please keep in mind that there may still
+# be bugs in our RST->Markdown translator, and due to inherent limitations of
+# the Markdown format the cross-referencing generally works better in the
+# Sphinxed documentation. However, the Markdown docs are somewhat easier to
+# build (less dependencies; you just need Pandoc and a reasonably complete TeX
+# installation), and also easier to customize to your taste with custom
+# templates (see the Pandoc documentation for details).
+
+# Rearrange the sources so that they appear roughly in the same order as in
+# the Sphinxed documentation.
+mdsources = index.txt $(filter-out install.txt,$(notdir $(rst_sources))) install.txt windows.txt purepad.txt bugs.txt
+mdfiles = $(patsubst %.txt,%.md,$(mdsources))
+mddocs = $(addprefix $(BUILDDIR)/markdown/,$(mdfiles))
+# The index file is needed to get proper cross-referencing in html output.
+indexfile = $(BUILDDIR)/markdown/puredoc.index
+
+# Kate highlighting options. Use these if you have the Pure syntax
+# highlighting installed in pandocs, as described in the pure-pandoc
+# manual. Otherwise just comment this out. You can also set your preferred
+# hightlighting style with Pandoc's --highlight-style option in HTML_FLAGS and
+# TEX_FLAGS below (the default is Pygments).
+HL_FLAGS = --indented-code-classes=pure
+# Additional options for html output.
+HTML_FLAGS = $(HL_FLAGS) --highlight-style=tango
+# LaTeX options (engine, sections numbering, toc and highlighting style),
+# adjust as needed.
+TEX_FLAGS = $(HL_FLAGS) --highlight-style=monochrome --latex-engine=xelatex -N --toc
+# Pdf options. These options are for DIN A4 paper, adjust as needed.
+PDF_FLAGS = -V 'geometry:paperwidth=21cm' -V 'geometry:paperheight=29.7cm' -V 'geometry:vmargin=2cm' -V 'geometry:hmargin=2cm' -V 'fontsize:12pt'
+
+# Build Markdown files from the RST source. The index.txt file is treated
+# separately since we scrape the main document title from it (-T option).
+$(BUILDDIR)/markdown/index.md: index.txt
+	pure-pandoc -c4 -C -D -T -s $< -o $@ -i $(indexfile)
+$(BUILDDIR)/markdown/%.md: %.txt
+	pure-pandoc -c4 -C -D $< -o $@ -i $(indexfile)
+
+# Build html from the individual Markdown files.
+$(BUILDDIR)/markdown/%.html: $(BUILDDIR)/markdown/%.md
+	pandoc -s -S $< -o $@ --mathjax $(HTML_FLAGS)
+
+# Build pdf from the individual Markdown files.
+$(BUILDDIR)/markdown/%.pdf: $(BUILDDIR)/markdown/%.md
+	pandoc -s -S $< -o $@ $(TEX_FLAGS) $(PDF_FLAGS)
+
+# Build LaTeX source from the individual Markdown files.
+$(BUILDDIR)/markdown/%.tex: $(BUILDDIR)/markdown/%.md
+	pandoc -s -S $< -o $@ $(TEX_FLAGS)
+
+$(BUILDDIR)/markdown/puredoc.pdf: $(mddocs)
+	pandoc -s -S -o $@ $^ $(TEX_FLAGS) $(PDF_FLAGS)
+
+$(BUILDDIR)/markdown/puredoc.tex: $(mddocs)
+	pandoc -s -S -o $@ $^ $(TEX_FLAGS)
+
+$(BUILDDIR)/markdown:
+	test -d $(BUILDDIR)/markdown || (mkdir -p $(BUILDDIR)/markdown &&  (for x in $(BUILDDIR)/html/_images/*; do ln -s ../../$$x $(BUILDDIR)/markdown; done))
+
+# Phony targets to build the entire shebang.
+
+# Note that generally you'll have to run pure-pandoc *twice* on each source
+# file to make sure that the index is fully in sync with the sources. This is
+# accomplished by running `make markdown markdown2`.
+markdown: $(BUILDDIR)/markdown $(mddocs)
+# This forces another build if the index is newer than the Markdown docs
+# (which is generally the case if any document was regenerated at all).
+markdown2: $(BUILDDIR)/markdown $(mddocs) $(indexfile)
+	rm -f $(BUILDDIR)/markdown/*.md
+	$(MAKE) markdown
+
+# Individual html, pdf and tex files.
+markdown-html: $(BUILDDIR)/markdown $(patsubst %.md,%.html,$(mddocs))
+
+markdown-pdf: $(BUILDDIR)/markdown $(patsubst %.md,%.pdf,$(mddocs))
+
+markdown-tex: $(BUILDDIR)/markdown $(patsubst %.md,%.tex,$(mddocs))
+
+# One big pdf and tex file made from all the manuals.
+markdown-puredoc-pdf: $(BUILDDIR)/markdown $(BUILDDIR)/markdown/puredoc.pdf
+
+markdown-puredoc-tex: $(BUILDDIR)/markdown $(BUILDDIR)/markdown/puredoc.text
+
+# Clean all generated files, except the index file.
+cleanmarkdown:
+	rm -f $(BUILDDIR)/markdown/*.md $(BUILDDIR)/markdown/*.html $(BUILDDIR)/markdown/*.tex $(BUILDDIR)/markdown/*.pdf
+
+# Get rid of the index file as well.
+realcleanmarkdown: cleanmarkdown
+	rm -f $(indexfile)
 
 changes:
 	$(SPHINXBUILD) -b changes $(ALLSPHINXOPTS) $(BUILDDIR)/changes
