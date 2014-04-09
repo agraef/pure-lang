@@ -48,11 +48,11 @@ dist:
 	rm -rf $(dist)
 	for x in $(dist) $(dist)/examples; do mkdir $$x; done
 	for x in $(DISTFILES); do ln -sf "$$PWD"/$$x $(dist)/$$x; done
-	rm -f $(dist).tar.bz2
-	tar cfjh $(dist).tar.bz2 $(dist)
+	rm -f $(dist).tar.gz
+	tar -czhf $(dist).tar.gz $(dist)
 	rm -rf $(dist)
 
 distcheck: dist
-	tar xfj $(dist).tar.bz2
+	tar -xzf $(dist).tar.gz
 	cd $(dist) && make && make install DESTDIR=./BUILD
 	rm -rf $(dist)
