@@ -306,7 +306,7 @@ mode == 2 && /^\s*\.\.\s*(%.*)$/ { print ".. code-block:: pandoc-title-block\n";
 mode == 2 { next; }
 # Scrape the title block.
 mode == 3 && /^\s*\.\.\s*(.*)$/ {
-    gsub(/@version@/, version);
+    gsub(/@version@|\|version\|/, version);
     gsub(/\|today\|/, date);
     print gensub(/^\s*\.\.\s*(.*)$/, "   \\1", "g");
     if (verbose == "yes")
@@ -320,8 +320,8 @@ mode == 3 { mode = 0; }
 # Processing of the document body starts here.
 
 # Substitute version and date placeholders.
-/@version@/ {
-    gsub(/@version@/, version);
+/@version@|\|version\|/ {
+    gsub(/@version@|\|version\|/, version);
 }
 
 /\|today\|/ {

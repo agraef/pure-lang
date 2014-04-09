@@ -103,7 +103,7 @@ mode == 3 { mode = 0; }
 # If mode is 1, we're parsing a Sphinx definition, check whether it's
 # terminated on the current line and do some preprocessing of the headers
 # along the way.
-mode == 1 && !/^\s*$/ && !/^\s*>\s*/ {
+mode == 1 && !/^\s*$/ {
     if (match($0, /^>?\s*!hdef\(([^)]+)\)!(.*)/, matches)) {
 	class = matches[1]; target = matches[2];
 	gsub(/^(\w+:)+/, "", class);
@@ -132,10 +132,15 @@ mode == 1 && !/^\s*$/ && !/^\s*>\s*/ {
 	    if (indent) print indent;
 	    num_items = 1;
 	}
-    } else {
+    } else if (!match($0, /^(\s*)>\s*/, matches) ||
+	       length(matches[1]) > length(actindent)) {
 	if (buffer) print buffer;
 	if (indent) print indent;
-	mode = 0; indent = buffer = last_class = "";
+	# If we're doing definition lists then make sure to break the list
+	# here, in case some indented material (or another list) follows
+	# immediately.
+	if (headers != "yes") print actindent "<!-- -->\n";
+	mode = 0; indent = actindent = buffer = last_class = "";
 	num_items = 0;
     }
 }
@@ -164,7 +169,7 @@ mode == 1 && /^\s*> / {
     # Parse the name of the object, so that we can create the appropriate link
     # target.
     if (match($0, /^(>?\s*)!hdef\(([^)]+)\)!`(.*)`/, matches)) {
-	indent = matches[1]; class = matches[2]; target = matches[3];
+	indent = actindent = matches[1]; class = matches[2]; target = matches[3];
 	gsub(/^(\w+:)+/, "", class);
 	target = gensub(/\\(.)/, "\\1", "g", target);
 	text = target;
