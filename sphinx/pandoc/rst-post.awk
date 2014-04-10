@@ -327,10 +327,10 @@ mode == 1 && /^\s*> / {
 	$0 = gensub(/!hrefx\(([^)]+)\)!([^!]+)!end!/, "[\\2][\\1]", "g");
 }
 
-# Finally the regular RST links. It's enough to just turn these into implicit
-# reference links here, since Pandoc will handle them automagically no matter
-# whether the link refers to a target we created ourselves, or whether it's an
-# auto-generated section header link.
+# Finally the regular RST links. Unless they're known targets in the index, we
+# turn these into inline links (using Pandoc's rules for generating a link
+# target from the link text) so that they will work with Pandoc's
+# auto-generated link targets for section headers.
 
 # Deal with an incomplete reference continued across a line break.
 /^[^!]+!end!/ {
@@ -339,7 +339,10 @@ mode == 1 && /^\s*> / {
 	saved_text = "";
 	if (no_links == "yes")
 	    y = sprintf("'%s'", text);
-	else
+	else if (!(text in targets)) {
+	    target = mangle(text);
+	    y = sprintf("[%s](#%s)", text, target);
+	} else
 	    y = sprintf("[%s][]", text);
 	$0 = y substr($0, RSTART+RLENGTH);
     }
@@ -354,7 +357,10 @@ mode == 1 && /^\s*> / {
 	text = matches[1];
 	if (no_links == "yes")
 	    y = sprintf("'%s'", text);
-	else
+	else if (!(text in targets)) {
+	    target = mangle(text);
+	    y = sprintf("[%s](#%s)", text, target);
+	} else
 	    y = sprintf("[%s][]", text);
 	$0 = $0 substr(x, 1, RSTART-1) y;
 	x = substr(x, RSTART+RLENGTH);

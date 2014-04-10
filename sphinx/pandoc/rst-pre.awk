@@ -103,9 +103,9 @@ function rst_role(class, text)
 	else
 	    target = "#" target;
     } else if (class == "ref") {
-	if (tolower(target) in targets && targets[tolower(target)] != filename)
+	if (target in targets && targets[target] != filename)
 	    # cross-document link
-	    target = sprintf(template, targets[tolower(target)]) "#" mangle(target);
+	    target = sprintf(template, targets[target]) "#" mangle(target);
 	else
 	    target = "#" mangle(target);
     } else if (class == "option") {
@@ -255,8 +255,8 @@ END {
     for (target in targets) {
 	# We need to quote `::` in the target, since that delimits target from
 	# filename in the index file.
-	gsub(/:/, "\\:", target);
-	print target ":: " targets[target] >> auxfile;
+	qtarget = gensub(/:/, "\\\\:", "g", target);
+	print qtarget ":: " targets[target] >> auxfile;
     }
     close(auxfile);
 }
@@ -493,9 +493,8 @@ mode == 1 {
 	# expand that if needed.
 	link = rst_link(link);
 	print sprintf("\n%s!hdefx(``%s``)!%s", spc, name, link);
-	# We only keep the basename of the file here. Also, the target is
-	# converted to lower case since RST doesn't distinguish case here.
-	targets[tolower(name)] = filename;
+	# We only keep the basename of the file here.
+	targets[name] = filename;
     }
     next;
 }
