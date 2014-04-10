@@ -363,9 +363,7 @@ cleantexmacs:
 # installation), and also easier to customize to your taste with custom
 # templates (see the Pandoc documentation for details).
 
-# Rearrange the sources so that they appear roughly in the same order as in
-# the Sphinxed documentation.
-mdsources = index.txt $(filter-out install.txt,$(notdir $(rst_sources))) install.txt windows.txt purepad.txt bugs.txt
+mdsources = index.txt $(notdir $(rst_sources)) windows.txt purepad.txt bugs.txt
 mdfiles = $(patsubst %.txt,%.md,$(mdsources))
 mddocs = $(addprefix $(BUILDDIR)/markdown/,$(mdfiles))
 # The index file is needed to get proper cross-referencing in html output.
@@ -387,8 +385,8 @@ PDF_FLAGS = -V 'geometry:paperwidth=21cm' -V 'geometry:paperheight=29.7cm' -V 'g
 
 # Build Markdown files from the RST source. The index.txt file is treated
 # separately since we scrape the main document title from it (-T option).
-$(BUILDDIR)/markdown/index.md: index.txt
-	pure-pandoc -c4 -C -D -T -s $< -o $@ -i $(indexfile)
+$(BUILDDIR)/markdown/index.md: index.txt index2.txt
+	pure-pandoc -c4 -C -D -T -s $^ -o $@ -i $(indexfile)
 $(BUILDDIR)/markdown/%.md: %.txt
 	pure-pandoc -c4 -C -D $< -o $@ -i $(indexfile)
 
@@ -409,11 +407,11 @@ $(BUILDDIR)/markdown/%.tex: $(BUILDDIR)/markdown/%.md
 # many duplicate section names in the different manuals so that section
 # references will often point to the wrong section.
 $(BUILDDIR)/markdown/puredoc.pdf: $(mddocs)
-	pandoc -s -S -o $@ $^ -N --toc $(TEX_FLAGS) $(PDF_FLAGS)
+	pandoc -s -S -o $@ $^ -N --toc --toc-depth=2 $(TEX_FLAGS) $(PDF_FLAGS)
 
 # Same for LaTeX output format. The same caveats apply.
 $(BUILDDIR)/markdown/puredoc.tex: $(mddocs)
-	pandoc -s -S -o $@ $^ -N --toc $(TEX_FLAGS)
+	pandoc -s -S -o $@ $^ -N --toc --toc-depth=2 $(TEX_FLAGS)
 
 $(BUILDDIR)/markdown:
 	test -d $(BUILDDIR)/markdown || (mkdir -p $(BUILDDIR)/markdown &&  (for x in $(BUILDDIR)/html/_images/*; do ln -s ../../$$x $(BUILDDIR)/markdown; done))
