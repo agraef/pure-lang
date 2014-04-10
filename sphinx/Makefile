@@ -381,7 +381,7 @@ HL_FLAGS = --indented-code-classes=pure
 HTML_FLAGS = $(HL_FLAGS) --highlight-style=tango
 # LaTeX options (engine, sections numbering, toc and highlighting style),
 # adjust as needed.
-TEX_FLAGS = $(HL_FLAGS) --highlight-style=monochrome --latex-engine=xelatex -N --toc
+TEX_FLAGS = $(HL_FLAGS) --highlight-style=monochrome --latex-engine=xelatex
 # Pdf options. These options are for DIN A4 paper, adjust as needed.
 PDF_FLAGS = -V 'geometry:paperwidth=21cm' -V 'geometry:paperheight=29.7cm' -V 'geometry:vmargin=2cm' -V 'geometry:hmargin=2cm' -V 'fontsize:12pt'
 
@@ -404,11 +404,16 @@ $(BUILDDIR)/markdown/%.pdf: $(BUILDDIR)/markdown/%.md
 $(BUILDDIR)/markdown/%.tex: $(BUILDDIR)/markdown/%.md
 	pandoc -s -S $< -o $@ $(TEX_FLAGS)
 
+# Build one big pdf file from all the manuals. XXXFIXME: This doesn't work
+# very well right now, since the manuals are in the wrong order, and there are
+# many duplicate section names in the different manuals so that section
+# references will often point to the wrong section.
 $(BUILDDIR)/markdown/puredoc.pdf: $(mddocs)
-	pandoc -s -S -o $@ $^ $(TEX_FLAGS) $(PDF_FLAGS)
+	pandoc -s -S -o $@ $^ -N --toc $(TEX_FLAGS) $(PDF_FLAGS)
 
+# Same for LaTeX output format. The same caveats apply.
 $(BUILDDIR)/markdown/puredoc.tex: $(mddocs)
-	pandoc -s -S -o $@ $^ $(TEX_FLAGS)
+	pandoc -s -S -o $@ $^ -N --toc $(TEX_FLAGS)
 
 $(BUILDDIR)/markdown:
 	test -d $(BUILDDIR)/markdown || (mkdir -p $(BUILDDIR)/markdown &&  (for x in $(BUILDDIR)/html/_images/*; do ln -s ../../$$x $(BUILDDIR)/markdown; done))
