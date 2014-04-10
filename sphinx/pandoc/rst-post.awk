@@ -58,10 +58,11 @@ BEGIN {
     if (verbose == "yes")
 	print "pure-pandoc[post]: reading index file: " auxfile > "/dev/stderr";
     while ((getline line < auxfile) > 0) {
+	if (match(line, /^%%$/)) break;
 	if (match(line, /^(([^:]|:[^:]|\\:)+)::\s*(.*)/, matches)) {
-	    target = matches[1]; filename = matches[3];
+	    target = matches[1]; fname = matches[3];
 	    gsub(/\\:/, ":", target);
-	    targets[target] = filename;
+	    targets[target] = fname;
 	}
     }
     close(auxfile);

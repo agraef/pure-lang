@@ -71,7 +71,10 @@ function rst_role(class, text)
 	    # to rely on Pandoc to do the right thing with them.
 	    if (class == "literal" || class == "code")
 		return "``" text "``";
-	    else if (class == "emphasis")
+	    else if (class == "verb") {
+		text = gensub(/\\(.)/, "\\1", "g", text);
+		return "``" text "``";
+	    } else if (class == "emphasis")
 		return "*" text "*";
 	    else if (class == "strong")
 		return "**" text "**";
@@ -91,8 +94,12 @@ function rst_role(class, text)
     if (i > 0 && substr(text, l) == ">") {
 	target = substr(text, i+1, l-i-1); text = substr(text, 1, i-1);
 	gsub(/\s+$/, "", text);
-    } else
+    } else {
 	target = text;
+	if (class == "doc" && text in titles)
+	    # fill in the document title from the index data
+	    text = titles[text];
+    }
     if (class == "doc")
 	target = sprintf(template, target);
     else if (class == "mod") {
@@ -212,10 +219,18 @@ BEGIN {
     if (auxfile != ".pure-pandoc-targets") {
 	# Read the index file if present.
 	while ((getline line < auxfile) > 0) {
+	    if (match(line, /^%%$/)) break;
 	    if (match(line, /^(([^:]|:[^:]|\\:)+)::\s*(.*)/, matches)) {
 		target = matches[1]; fname = matches[3];
 		gsub(/\\:/, ":", target);
 		targets[target] = fname;
+	    }
+	}
+	while ((getline line < auxfile) > 0) {
+	    if (match(line, /^(([^:]|:[^:]|\\:)+)::\s*(.*)/, matches)) {
+		fname = matches[1]; title = matches[3];
+		gsub(/\\:/, ":", fname);
+		titles[fname] = title;
 	    }
 	}
     }
@@ -234,6 +249,11 @@ BEGIN {
     roles["superscript"] = roles["sup"] = 1;
     roles["title-reference"] = roles["title"] = roles["t"] = 1;
     roles["raw"] = 1;
+    # Special `verb` role which works like `literal` or `code`, but also
+    # allows you to escape characters with `\`. The main purpose of this role
+    # is that it enables us to escape the meta variables `@version@`,
+    # `|version|` and `|today|` to prevent them from being substituted away.
+    roles["verb"] = 1;
     # Sphinx also defines some roles of its own. For now we only support those
     # which are commonly used in the Pure docs, and mostly alias them to the
     # equivalent built-in roles.
@@ -242,6 +262,7 @@ BEGIN {
     roles["file"] = "literal";
     roles["guilabel"] = "literal";
     roles["kbd"] = "literal";
+    roles["menuselection"] = "literal";
     roles["program"] = "strong";
     roles["samp"] = "literal";
     # The default role which is used if no role is specified explicitly.
@@ -250,13 +271,18 @@ BEGIN {
 }
 
 END {
-    # Write the updated targets information to the index file.
+    # Write the updated targets and titles information to the index file.
     system("rm -f " auxfile);
     for (target in targets) {
 	# We need to quote `::` in the target, since that delimits target from
 	# filename in the index file.
 	qtarget = gensub(/:/, "\\\\:", "g", target);
 	print qtarget ":: " targets[target] >> auxfile;
+    }
+    print "%%" >> auxfile;
+    for (fname in titles) {
+	qfname = gensub(/:/, "\\\\:", "g", fname);
+	print qfname ":: " titles[fname] >> auxfile;
     }
     close(auxfile);
 }
@@ -272,14 +298,14 @@ BEGINFILE {
 	    print "pure-pandoc[pre] : assumed basename for index: " filename > "/dev/stderr";
     } else if (verbose == "yes")
 	print "pure-pandoc[pre] : basename for index: " filename > "/dev/stderr";
-    if (!first_run) {
-	# Remove outdated targets information from the index file.
-	for (target in targets) {
-	    if (targets[target] == filename)
-		delete targets[target];
-	}
-	first_run = "yes";
+    # Remove outdated targets information from the index file.
+    for (target in targets) {
+	if (targets[target] == filename)
+	    delete targets[target];
     }
+    # Set up for scraping the RST document title.
+    delete titles[filename];
+    title_mode = 1;
 }
 
 ENDFILE {
@@ -291,17 +317,33 @@ ENDFILE {
     link_prefix = link_line = link_prev = "";
     if (namespace) print "!hdefns()!\n";
     namespace = prog = "";
-    mode = 0;
+    mode = title_mode = 0;
 }
 
 # Keep track of the previous line.
 { prev = current; current = $0; }
 
+# Scrape the RST document title. This takes the form of a single line of text
+# following an "overline" such as `=====` at the beginning of the document
+# (not counting any extra frontmatter such as RST comments and directives).
+# FIXME: Currently we only support a limited range of overline characters,
+# this should be adjusted as needed.
+title_mode == 2 { titles[filename] = $0; title_mode = 0; }
+title_mode == 1 {
+    if (match($0, /^(===+|---+|\*\*\*+)$/))
+	title_mode = 2;
+    else if (!match($0, /^(\.\..*|\s*)$/))
+	title_mode = 0;
+}
+
 # Scrape the title block, if requested. This stops as soon as we have
 # processed the title block. Any extra frontmatter is discarded.
 
 # This marks the beginning of the title block.
-mode == 2 && /^\s*\.\.\s*(%.*)$/ { print ".. code-block:: pandoc-title-block\n"; mode = 3; }
+mode == 2 && /^\s*\.\.\s+(%.*|---)$/ {
+    print ".. code-block:: pandoc-title-block\n";
+    mode = 3;
+}
 # Get rid of extra frontmatter.
 mode == 2 { next; }
 # Scrape the title block.

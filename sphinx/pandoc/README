@@ -7,6 +7,7 @@ Version @version@, |today|
 
 Albert Gräf <aggraef@gmail.com>
 
+.. pandoc title block for the manpage:
 .. % pure-pandoc(1) | Version @version@
 
 .. Note: This document is written in RST syntax, but you can easily convert
@@ -159,10 +160,10 @@ pure-pandoc script which affect the generated output.
 .. option:: --version
 
    These options allow you to substitute values for the most commonly used
-   meta variables (:verb:`\|today\|` and :verb:`\@version\@`) in RST
-   source files. By default, the current date is used, and the script also
-   tries to detect the version number from the ``version`` variable in a
-   Makefile in the current directory, if present.
+   meta variables (:verb:`\|today\|`, :verb:`\|version\|` and
+   :verb:`\@version\@`) in RST source files. By default, the current date is
+   used, and the script also tries to detect the version number from the
+   ``version`` variable in a Makefile in the current directory, if present.
 
 .. option:: -C
 .. option:: --callouts
@@ -241,9 +242,9 @@ pure-pandoc script which affect the generated output.
 .. option:: -T
 .. option:: --title-block
 
-   Scrapes a Pandoc-style title block from the RST source. The title block
-   should be formatted as follows (please also check the Pandoc documentation
-   for a description of the title block syntax)::
+   Scrapes a title block from the RST source. The title block should be
+   formatted as follows (please check the Pandoc documentation for a
+   description of the title block syntax)::
 
      .. % Title
      .. % Author
@@ -252,9 +253,16 @@ pure-pandoc script which affect the generated output.
    This will be treated as a comment by RST processors. If the :option:`-T`
    option is used, then any additional frontmatter (i.e., everything leading
    up to the title block) will be stripped from the RST source, so that the
-   output document begins with the Pandoc title block. (Note that this means
-   that the resulting document will be empty if there's no title block in the
-   source at all, so beware!)
+   output document begins with the title block. (Note that this means that the
+   resulting document will be empty if there's no title block in the source at
+   all, so beware!)
+
+   Instead of a Pandoc title block, the script also recognizes a block with
+   YAML metadata beginning with three dashes. In fact, the "title block" can
+   be any contiguous block of RST comment lines beginning with either ``.. %``
+   or ``.. ---``. The title block will be copied verbatim, after removing the
+   ``..`` prefixes (the :verb:`\|today\|`, :verb:`\|version\|` and
+   :verb:`\@version\@` meta variables will be substituted, however).
 
 Installation Requirements
 =========================
@@ -406,7 +414,10 @@ Markdown documents are created from each RST source. If you pass the entire
 collection of source documents to pure-pandoc in one go, then only a single
 output file will be created, so all links between documents become internal
 links in the output document. In this case no special processing is needed to
-make links between different source documents work.
+make links between different source documents work. Note, however, that this
+approach requires that all link targets (especially the section names) in all
+source documents be unique; otherwise you'll get duplicate link targets and
+cross-references may point to the wrong locations in the output document.
 
 Author
 ======
