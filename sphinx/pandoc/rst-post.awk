@@ -16,11 +16,11 @@
 # Helper function to mangle the target name according to Pandoc's rules.
 
 function mangle(target) {
+    gsub(/[^[:alnum:][:space:]_.-]/, "", target);
     gsub(/\s+/, "-", target);
-    gsub(/[^[:alnum:]_.-]/, "", target);
     target = tolower(target);
     gsub(/^[^[:alpha:]]+/, "", target);
-    gsub(/-+/, "-", target);
+    #gsub(/-+/, "-", target);
     return target;
 }
 
@@ -65,6 +65,21 @@ BEGIN {
 	    targets[target] = fname;
 	}
     }
+    while ((getline line < auxfile) > 0) {
+	if (match(line, /^%%$/)) break;
+	if (match(line, /^(([^:]|:[^:]|\\:)+)::\s*(.*)/, matches)) {
+	    xref = matches[1]; fname = matches[3];
+	    gsub(/\\:/, ":", xref);
+	    xrefs[xref] = fname;
+	}
+    }
+    while ((getline line < auxfile) > 0) {
+	if (match(line, /^(([^:]|:[^:]|\\:)+)::\s*(.*)/, matches)) {
+	    fname = matches[1]; title = matches[3];
+	    gsub(/\\:/, ":", fname);
+	    titles[fname] = title;
+	}
+    }
     close(auxfile);
     if (auxfile == ".pure-pandoc-targets")
 	system("rm -f " auxfile);
@@ -80,8 +95,8 @@ mode == 3 { mode = 0; }
 # Keep track of Markdown headers. We need to know at which header level we
 # currently are so that we can assign a suitable level below that to Sphinx
 # definitions.
-/^==[=]+\s*$/ && !prev { level = 1; }
-/^--[-]+\s*$/ && !prev { level = 2; }
+/^==[=]+\s*$/ && prev { level = 1; }
+/^--[-]+\s*$/ && prev { level = 2; }
 /^#+/ && !prev { level = length(gensub(/^(#+).*/, "\\1", "g")); }
 
 # Keep track of the previous line (trimming whitespace), so that we can detect
@@ -231,7 +246,7 @@ mode == 1 && /^\s*> / {
     if (headers == "yes") {
 	hdr = substr(header, 1, level+1);
 	if (target)
-	    printf("%s {#%s}\n", hdr " " label text, target);
+	    printf("%s {#%s .unnumbered}\n", hdr " " label text, target);
 	else
 	    printf("%s\n", hdr " " label text);
 	indent = buffer = last_class = "";
@@ -262,7 +277,7 @@ mode == 1 && /^\s*> / {
     target = html_name(target);
     if (headers == "yes") {
 	hdr = substr(header, 1, level+1);
-	printf("%s {#%s}\n", gensub(/!opt\(([^)]+)\)!(.*)/, hdr " `\\2`", "g"), target);
+	printf("%s {#%s .unnumbered}\n", gensub(/!opt\(([^)]+)\)!(.*)/, hdr " `\\2`", "g"), target);
 	indent = buffer = last_class = "";
 	num_items = 0;
     } else {
@@ -340,7 +355,7 @@ mode == 1 && /^\s*> / {
 	saved_text = "";
 	if (no_links == "yes")
 	    y = sprintf("'%s'", text);
-	else if (!(text in targets)) {
+	else if (!(tolower(text) in targets)) {
 	    target = mangle(text);
 	    y = sprintf("[%s](#%s)", text, target);
 	} else
@@ -358,7 +373,7 @@ mode == 1 && /^\s*> / {
 	text = matches[1];
 	if (no_links == "yes")
 	    y = sprintf("'%s'", text);
-	else if (!(text in targets)) {
+	else if (!(tolower(text) in targets)) {
 	    target = mangle(text);
 	    y = sprintf("[%s](#%s)", text, target);
 	} else

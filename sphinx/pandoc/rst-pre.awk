@@ -31,11 +31,11 @@
 
 # Helper function to mangle the target name according to Pandoc's rules.
 function mangle(target) {
+    gsub(/[^[:alnum:][:space:]_.-]/, "", target);
     gsub(/\s+/, "-", target);
-    gsub(/[^[:alnum:]_.-]/, "", target);
     target = tolower(target);
     gsub(/^[^[:alpha:]]+/, "", target);
-    gsub(/-+/, "-", target);
+    #gsub(/-+/, "-", target);
     return target;
 }
 
@@ -50,6 +50,14 @@ function rst_link(target)
 	return "#" mangle(matches[1]);
     else
 	return target;
+}
+
+# Helper function to format a linked document according to the template.
+function doc_template(docname) {
+    if (template)
+	return sprintf(template, docname);
+    else
+	return "";
 }
 
 # Helper function to format a Sphinx cross-reference (or RST text role) of
@@ -100,19 +108,32 @@ function rst_role(class, text)
 	    # fill in the document title from the index data
 	    text = titles[text];
     }
-    if (class == "doc")
-	target = sprintf(template, target);
-    else if (class == "mod") {
+    # NOTE: Due to Markdown's and Pandoc's limitations, chances are that none
+    # of these links will work unless the final document is in html format.
+    # Other formats generally only create working links for section titles.
+    if (class == "doc") {
+	if (template)
+	    # Standalone document, use the given template.
+	    target = sprintf(template, target);
+	else if (target in titles)
+	    # The document title is also a section link, use that as the link
+	    # target.
+	    target = "#" mangle(titles[target]);
+	else
+	    # Use the fallback link target for the document instead.
+	    target = "#doc-" target;
+    } else if (class == "mod") {
 	target = "module-" target;
-	if (target in targets && targets[target] != filename)
+	if (target in xrefs && xrefs[target] != filename)
 	    # cross-document link
-	    target = sprintf(template, targets[target]) "#" target;
+	    target = doc_template(xrefs[target]) "#" target;
 	else
 	    target = "#" target;
     } else if (class == "ref") {
+	target = tolower(target);
 	if (target in targets && targets[target] != filename)
 	    # cross-document link
-	    target = sprintf(template, targets[target]) "#" mangle(target);
+	    target = doc_template(targets[target]) "#" mangle(target);
 	else
 	    target = "#" mangle(target);
     } else if (class == "option") {
@@ -151,9 +172,9 @@ function rst_role(class, text)
 	}
 	gsub(/^::/, "", target);
 	target = gensub(/\\(.)/, "\\1", "g", target);
-	if (target in targets && targets[target] != filename)
+	if (target in xrefs && xrefs[target] != filename)
 	    # cross-document link
-	    target = sprintf(template, targets[target]) "#" target;
+	    target = doc_template(xrefs[target]) "#" target;
 	else
 	    target = "#" target;
 	text = "``" text "``";
@@ -193,7 +214,7 @@ function make_target(class, target) {
 	target = op tag;
     }
     if (target)
-	targets[target] = filename;
+	xrefs[target] = filename;
     return target;
 }
 
@@ -205,25 +226,34 @@ BEGIN {
     if (!version) version = "@version@";
     if (!date) date = strftime("%B %d, %Y", systime());
     if (!title_block) title_block = "no";
-    if (!auxfile) auxfile = ".pure-pandoc-targets";
     if (!raw) raw = "no";
     if (!callouts) callouts = "no";
-    if (!template) template = "%s.html";
+    if (!auxfile) auxfile = ".pure-pandoc-targets";
+    #if (!template) template = "%s.html";
     if (verbose == "yes") {
 	print "pure-pandoc[pre] : version = " version > "/dev/stderr";
 	print "pure-pandoc[pre] : date = " date > "/dev/stderr";
-	print "pure-pandoc[pre] : document template: " template > "/dev/stderr";
-	print "pure-pandoc[pre] : index file: " auxfile > "/dev/stderr";
+	if (template)
+	    print "pure-pandoc[pre] : document template: " template > "/dev/stderr";
+	if (auxfile != ".pure-pandoc-targets")
+	    print "pure-pandoc[pre] : index file: " auxfile > "/dev/stderr";
     }
-    # Initialize the index file.
+    # Read the index file if present.
     if (auxfile != ".pure-pandoc-targets") {
-	# Read the index file if present.
 	while ((getline line < auxfile) > 0) {
 	    if (match(line, /^%%$/)) break;
 	    if (match(line, /^(([^:]|:[^:]|\\:)+)::\s*(.*)/, matches)) {
 		target = matches[1]; fname = matches[3];
 		gsub(/\\:/, ":", target);
 		targets[target] = fname;
+	    }
+	}
+	while ((getline line < auxfile) > 0) {
+	    if (match(line, /^%%$/)) break;
+	    if (match(line, /^(([^:]|:[^:]|\\:)+)::\s*(.*)/, matches)) {
+		xref = matches[1]; fname = matches[3];
+		gsub(/\\:/, ":", xref);
+		xrefs[xref] = fname;
 	    }
 	}
 	while ((getline line < auxfile) > 0) {
@@ -271,13 +301,18 @@ BEGIN {
 }
 
 END {
-    # Write the updated targets and titles information to the index file.
     system("rm -f " auxfile);
+    # Write the updated targets and titles information to the index file.
     for (target in targets) {
 	# We need to quote `::` in the target, since that delimits target from
 	# filename in the index file.
 	qtarget = gensub(/:/, "\\\\:", "g", target);
 	print qtarget ":: " targets[target] >> auxfile;
+    }
+    print "%%" >> auxfile;
+    for (xref in xrefs) {
+	qxref = gensub(/:/, "\\\\:", "g", xref);
+	print qxref ":: " xrefs[xref] >> auxfile;
     }
     print "%%" >> auxfile;
     for (fname in titles) {
@@ -288,24 +323,26 @@ END {
 }
 
 BEGINFILE {
-    if (!filename) {
-	# No basename for the target file was set, use the basename of the
-	# first input file instead.
-	filename = FILENAME;
-	gsub(/^.*\//, "", filename);
-	gsub(/\.[^.]*$/, "", filename);
-	if (verbose == "yes")
-	    print "pure-pandoc[pre] : assumed basename for index: " filename > "/dev/stderr";
-    } else if (verbose == "yes")
-	print "pure-pandoc[pre] : basename for index: " filename > "/dev/stderr";
+    filename = FILENAME;
+    gsub(/^.*\//, "", filename);
+    gsub(/\.[^.]*$/, "", filename);
     # Remove outdated targets information from the index file.
     for (target in targets) {
 	if (targets[target] == filename)
 	    delete targets[target];
     }
+    for (xref in xrefs) {
+	if (xrefs[xref] == filename)
+	    delete xrefs[xref];
+    }
     # Set up for scraping the RST document title.
     delete titles[filename];
     title_mode = 1;
+    # Create a link target for the source document so that the Sphinx :doc:
+    # links work even if the document becomes part of a larger document.
+    # The link is emitted after the title block, if any.
+    doc_link = sprintf("!hdefx(``doc-%s``)!\n", filename);
+    if (mode != 2) print doc_link;
 }
 
 ENDFILE {
@@ -330,6 +367,8 @@ ENDFILE {
 # this should be adjusted as needed.
 title_mode == 2 { titles[filename] = $0; title_mode = 0; }
 title_mode == 1 {
+    # Windows' UTF-8 BOM should die a horrible death.
+    if (NR==1) sub(/^\xef\xbb\xbf/, "");
     if (match($0, /^(===+|---+|\*\*\*+)$/))
 	title_mode = 2;
     else if (!match($0, /^(\.\..*|\s*)$/))
@@ -357,7 +396,7 @@ mode == 3 && /^\s*\.\.\s*(.*)$/ {
 }
 # The title block stops at the first empty line or anything else which doesn't
 # look like a RST directive.
-mode == 3 { mode = 0; }
+mode == 3 { if (doc_link) print "\n" doc_link; mode = 0; }
 
 # Processing of the document body starts here.
 
@@ -535,20 +574,23 @@ mode == 1 {
 	# expand that if needed.
 	link = rst_link(link);
 	print sprintf("\n%s!hdefx(``%s``)!%s", spc, name, link);
-	# We only keep the basename of the file here.
-	targets[name] = filename;
+	# We only keep the basename of the file here. We also convert the
+	# target name to lowercase since RST targets are case-insensitive.
+	targets[tolower(name)] = filename;
     }
     next;
 }
 
 # Likewise for Sphinx module markup. The link targets take the form
-# `module-name` here.
+# `module-name` here. Note that we keep the Sphinx targets in their own index
+# table to prevent accidental name clashes with regular RST targets. The same
+# applies to Sphinx markup for options, functions, etc. (see below).
 /^(\s*)\.\.\s+module::.*/ {
     if (match($0, /^(\s*)\.\.\s+module::\s*(.*)/, matches)) {
 	spc = matches[1]; name = matches[2];
 	name = "module-" name;
 	print sprintf("\n%s!hdefx(``%s``)!", spc, name);
-	targets[name] = filename;
+	xrefs[name] = filename;
     }
     next;
 }
