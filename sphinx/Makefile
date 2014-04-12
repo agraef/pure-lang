@@ -366,8 +366,6 @@ cleantexmacs:
 mdsources = index.txt $(notdir $(rst_sources)) windows.txt purepad.txt bugs.txt
 mdfiles = $(patsubst %.txt,%.md,$(mdsources))
 mddocs = $(addprefix $(BUILDDIR)/markdown/,$(mdfiles))
-# The index file is needed to get proper cross-referencing in html output.
-indexfile = $(BUILDDIR)/markdown/puredoc.index
 
 # Kate highlighting options. Use these if you have the Pure syntax
 # highlighting installed in pandocs, as described in the pure-pandoc
@@ -383,12 +381,34 @@ TEX_FLAGS = $(HL_FLAGS) --highlight-style=monochrome --latex-engine=xelatex
 # Pdf options. These options are for DIN A4 paper, adjust as needed.
 PDF_FLAGS = -V 'geometry:paperwidth=21cm' -V 'geometry:paperheight=29.7cm' -V 'geometry:vmargin=2cm' -V 'geometry:hmargin=2cm' -V 'fontsize:12pt'
 
+# Some available templates for nicer LaTeX/pdf output. Use one of these if you
+# have the corresponding fonts installed. These both use mathpazo for math and
+# BitStream Sans Vera for typewriter, and either Palatino or Minion Pro for
+# the main text. If you have a reasonably complete LiveTeX installation then
+# mathpazo should be included. Palatino and Minion Pro are system fonts.
+# (Palatino should be readily available on many systems; Minion Pro is
+# included, e.g., with Acrobat Reader.)
+
+#TEX_FLAGS += --template=mydefault-palatino.latex
+#TEX_FLAGS += --template=mydefault-minion.latex
+
+# Index file name.
+indexfile = $(BUILDDIR)/markdown/puredoc.index
+
+# Create the build directory.
+$(BUILDDIR)/markdown:
+	test -d $(BUILDDIR)/markdown || (mkdir -p $(BUILDDIR)/markdown &&  (for x in $(BUILDDIR)/html/_images/*; do ln -s ../../$$x $(BUILDDIR)/markdown; done))
+
+# This creates the index file if it doesn't exist yet.
+$(indexfile):
+	touch $@
+
 # Build Markdown files from the RST source. The index.txt file is treated
 # separately since we scrape the main document title from it (-T option).
-$(BUILDDIR)/markdown/index.md: index.txt index2.txt
-	pure-pandoc -c4 -C -D -T -s $^ -o $@ -i $(indexfile)
-$(BUILDDIR)/markdown/%.md: %.txt
-	pure-pandoc -c4 -C -D $< -o $@ -i $(indexfile)
+$(BUILDDIR)/markdown/index.md: index.txt index2.add $(indexfile)
+	pure-pandoc -c4 -C -D -T -s $< index2.add -o $@ -i $(indexfile) -N "%s.html"
+$(BUILDDIR)/markdown/%.md: %.txt $(indexfile)
+	pure-pandoc -c4 -C -D $< -o $@ -i $(indexfile) -N "%s.html"
 
 # Build html from the individual Markdown files.
 $(BUILDDIR)/markdown/%.html: $(BUILDDIR)/markdown/%.md
@@ -402,31 +422,33 @@ $(BUILDDIR)/markdown/%.pdf: $(BUILDDIR)/markdown/%.md
 $(BUILDDIR)/markdown/%.tex: $(BUILDDIR)/markdown/%.md
 	pandoc -s -S $< -o $@ $(TEX_FLAGS)
 
-# Build one big pdf file from all the manuals. XXXFIXME: This doesn't work
-# very well right now, since the manuals are in the wrong order, and there are
-# many duplicate section names in the different manuals so that section
-# references will often point to the wrong section.
-$(BUILDDIR)/markdown/puredoc.pdf: $(mddocs)
+# Special versions of the Markdown docs for building one big html/pdf/tex doc.
+mdpuredocs = $(addprefix $(BUILDDIR)/markdown/puredoc-,$(mdfiles))
+
+$(BUILDDIR)/markdown/puredoc-index.md: index.txt index2.add $(indexfile)
+	pure-pandoc -c4 -C -D -T -s $< index2.add -o $@ -i $(indexfile)
+$(BUILDDIR)/markdown/puredoc-%.md: %.txt $(indexfile)
+	pure-pandoc -c4 -C -D $< -o $@ -i $(indexfile)
+
+puredocname = puredoc
+
+# Build one big html doc from all the Markdown files.
+$(BUILDDIR)/markdown/$(puredocname).html: $(mdpuredocs)
+	pandoc -s -S -o $@ $^ --mathjax $(HTML_FLAGS)
+
+# Build one big pdf doc from all the Markdown files.
+$(BUILDDIR)/markdown/$(puredocname).pdf: $(mdpuredocs)
 	pandoc -s -S -o $@ $^ -N --toc --toc-depth=2 $(TEX_FLAGS) $(PDF_FLAGS)
 
-# Same for LaTeX output format. The same caveats apply.
-$(BUILDDIR)/markdown/puredoc.tex: $(mddocs)
-	pandoc -s -S -o $@ $^ -N --toc --toc-depth=2 $(TEX_FLAGS)
-
-$(BUILDDIR)/markdown:
-	test -d $(BUILDDIR)/markdown || (mkdir -p $(BUILDDIR)/markdown &&  (for x in $(BUILDDIR)/html/_images/*; do ln -s ../../$$x $(BUILDDIR)/markdown; done))
+# Build one big LaTeX source from all the Markdown files.
+$(BUILDDIR)/markdown/$(puredocname).tex: $(mdpuredocs)
+	pandoc -s -S -o $@ $^ -N --toc --toc-depth=2 $(TEX_FLAGS) $(PDF_FLAGS)
 
 # Phony targets to build the entire shebang.
 
-# Note that generally you'll have to run pure-pandoc *twice* on each source
-# file to make sure that the index is fully in sync with the sources. This is
-# accomplished by running `make markdown markdown2`.
+# Note that generally you'll have to run `make markdown` *twice* to make sure
+# that the index is fully in sync with the sources.
 markdown: $(BUILDDIR)/markdown $(mddocs)
-# This forces another build if the index is newer than the Markdown docs
-# (which is generally the case if any document was regenerated at all).
-markdown2: $(BUILDDIR)/markdown $(mddocs) $(indexfile)
-	rm -f $(BUILDDIR)/markdown/*.md
-	$(MAKE) markdown
 
 # Individual html, pdf and tex files.
 markdown-html: $(BUILDDIR)/markdown $(patsubst %.md,%.html,$(mddocs))
@@ -435,18 +457,26 @@ markdown-pdf: $(BUILDDIR)/markdown $(patsubst %.md,%.pdf,$(mddocs))
 
 markdown-tex: $(BUILDDIR)/markdown $(patsubst %.md,%.tex,$(mddocs))
 
-# One big pdf and tex file made from all the manuals.
+# One big html, pdf and tex file made from all the manuals.
+markdown-puredoc: $(BUILDDIR)/markdown $(mdpuredocs)
+
+markdown-puredoc-html: $(BUILDDIR)/markdown $(BUILDDIR)/markdown/puredoc.html
+
 markdown-puredoc-pdf: $(BUILDDIR)/markdown $(BUILDDIR)/markdown/puredoc.pdf
 
-markdown-puredoc-tex: $(BUILDDIR)/markdown $(BUILDDIR)/markdown/puredoc.text
+markdown-puredoc-tex: $(BUILDDIR)/markdown $(BUILDDIR)/markdown/puredoc.tex
 
 # Clean all generated files, except the index file.
-cleanmarkdown:
+clean-markdown:
 	rm -f $(BUILDDIR)/markdown/*.md $(BUILDDIR)/markdown/*.html $(BUILDDIR)/markdown/*.tex $(BUILDDIR)/markdown/*.pdf
 
 # Get rid of the index file as well.
-realcleanmarkdown: cleanmarkdown
+realclean-markdown: cleanmarkdown
 	rm -f $(indexfile)
+
+# Get rid of the entire build directory.
+distclean-markdown:
+	rm -rf $(BUILDDIR)/markdown
 
 changes:
 	$(SPHINXBUILD) -b changes $(ALLSPHINXOPTS) $(BUILDDIR)/changes
