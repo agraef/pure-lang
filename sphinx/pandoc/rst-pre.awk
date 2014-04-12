@@ -213,7 +213,7 @@ function make_target(class, target) {
 	gsub(/^\s+/, "", args);
 	target = op tag;
     }
-    if (target)
+    if (target && !(target in xrefs))
 	xrefs[target] = filename;
     return target;
 }
@@ -242,25 +242,25 @@ BEGIN {
     if (auxfile != ".pure-pandoc-targets") {
 	while ((getline line < auxfile) > 0) {
 	    if (match(line, /^%%$/)) break;
-	    if (match(line, /^(([^:]|:[^:]|\\:)+)::\s*(.*)/, matches)) {
+	    if (match(line, /^(([^:]|:[^:]|\\:)+)::\s+(.*)/, matches)) {
 		target = matches[1]; fname = matches[3];
 		gsub(/\\:/, ":", target);
-		targets[target] = fname;
+		oldtargets[target] = targets[target] = fname;
 	    }
 	}
 	while ((getline line < auxfile) > 0) {
 	    if (match(line, /^%%$/)) break;
-	    if (match(line, /^(([^:]|:[^:]|\\:)+)::\s*(.*)/, matches)) {
+	    if (match(line, /^(([^:]|:[^:]|\\:)+)::\s+(.*)/, matches)) {
 		xref = matches[1]; fname = matches[3];
 		gsub(/\\:/, ":", xref);
-		xrefs[xref] = fname;
+		oldxrefs[xref] = xrefs[xref] = fname;
 	    }
 	}
 	while ((getline line < auxfile) > 0) {
-	    if (match(line, /^(([^:]|:[^:]|\\:)+)::\s*(.*)/, matches)) {
+	    if (match(line, /^(([^:]|:[^:]|\\:)+)::\s+(.*)/, matches)) {
 		fname = matches[1]; title = matches[3];
 		gsub(/\\:/, ":", fname);
-		titles[fname] = title;
+		oldtitles[fname] = titles[fname] = title;
 	    }
 	}
     }
@@ -300,33 +300,65 @@ BEGIN {
     default_role = "emphasis";
 }
 
-END {
-    system("rm -f " auxfile);
-    # Write the updated targets and titles information to the index file.
+# We want to avoid touching the index file if its contents hasn't changed.
+# This routine checks whether any entries were modified, added or removed.
+function modified() {
     for (target in targets) {
-	# We need to quote `::` in the target, since that delimits target from
-	# filename in the index file.
-	qtarget = gensub(/:/, "\\\\:", "g", target);
-	print qtarget ":: " targets[target] >> auxfile;
+	if (!(target in oldtargets) || oldtargets[target] != targets[target])
+	    return "yes";
     }
-    print "%%" >> auxfile;
+    for (target in oldtargets) {
+	if (!(target in targets))
+	    return "yes";
+    }
     for (xref in xrefs) {
-	qxref = gensub(/:/, "\\\\:", "g", xref);
-	print qxref ":: " xrefs[xref] >> auxfile;
+	if (!(xref in oldxrefs) || oldxrefs[xref] != xrefs[xref])
+	    return "yes";
     }
-    print "%%" >> auxfile;
+    for (xref in oldxrefs) {
+	if (!(xref in xrefs))
+	    return "yes";
+    }
     for (fname in titles) {
-	qfname = gensub(/:/, "\\\\:", "g", fname);
-	print qfname ":: " titles[fname] >> auxfile;
+	if (!(fname in oldtitles) || oldtitles[fname] != titles[fname])
+	    return "yes";
     }
-    close(auxfile);
+    for (fname in oldtitles) {
+	if (!(fname in titles))
+	    return "yes";
+    }
+    return "no";
+}
+
+END {
+    if (modified() == "yes") {
+	system("rm -f " auxfile);
+	# Write the updated targets and titles information to the index file.
+	for (target in targets) {
+	    # We need to quote `::` in the target, since that delimits target from
+	    # filename in the index file.
+	    qtarget = gensub(/:/, "\\\\:", "g", target);
+	    print qtarget ":: " targets[target] >> auxfile;
+	}
+	print "%%" >> auxfile;
+	for (xref in xrefs) {
+	    qxref = gensub(/:/, "\\\\:", "g", xref);
+	    print qxref ":: " xrefs[xref] >> auxfile;
+	}
+	print "%%" >> auxfile;
+	for (fname in titles) {
+	    qfname = gensub(/:/, "\\\\:", "g", fname);
+	    print qfname ":: " titles[fname] >> auxfile;
+	}
+	close(auxfile);
+    }
 }
 
 BEGINFILE {
     filename = FILENAME;
     gsub(/^.*\//, "", filename);
     gsub(/\.[^.]*$/, "", filename);
-    # Remove outdated targets information from the index file.
+    # Remove possibly outdated targets information from the index file.
     for (target in targets) {
 	if (targets[target] == filename)
 	    delete targets[target];
@@ -576,7 +608,8 @@ mode == 1 {
 	print sprintf("\n%s!hdefx(``%s``)!%s", spc, name, link);
 	# We only keep the basename of the file here. We also convert the
 	# target name to lowercase since RST targets are case-insensitive.
-	targets[tolower(name)] = filename;
+	if (!(tolower(name) in targets))
+	    targets[tolower(name)] = filename;
     }
     next;
 }
@@ -590,7 +623,8 @@ mode == 1 {
 	spc = matches[1]; name = matches[2];
 	name = "module-" name;
 	print sprintf("\n%s!hdefx(``%s``)!", spc, name);
-	xrefs[name] = filename;
+	if (!(name in xrefs))
+	    xrefs[name] = filename;
     }
     next;
 }
