@@ -381,6 +381,10 @@ TEX_FLAGS = $(HL_FLAGS) --highlight-style=monochrome --latex-engine=xelatex
 # Pdf options. These options are for DIN A4 paper, adjust as needed.
 PDF_FLAGS = -V 'geometry:paperwidth=21cm' -V 'geometry:paperheight=29.7cm' -V 'geometry:vmargin=2cm' -V 'geometry:hmargin=2cm' -V 'fontsize:12pt'
 
+# CSS styles for nicer html output.
+#HTML_FLAGS += -c john-full.css
+#HTML_FLAGS += -c modern.css
+
 # Some available templates for nicer LaTeX/pdf output. Use one of these if you
 # have the corresponding fonts installed. These both use mathpazo for math and
 # BitStream Sans Vera for typewriter, and either Palatino or Minion Pro for
@@ -397,7 +401,7 @@ indexfile = $(BUILDDIR)/markdown/puredoc.index
 
 # Create the build directory.
 $(BUILDDIR)/markdown:
-	test -d $(BUILDDIR)/markdown || (mkdir -p $(BUILDDIR)/markdown &&  (for x in $(BUILDDIR)/html/_images/*; do ln -s ../../$$x $(BUILDDIR)/markdown; done))
+	test -d $(BUILDDIR)/markdown || (mkdir -p $(BUILDDIR)/markdown && cp *.css *.png $(BUILDDIR)/markdown)
 
 # This creates the index file if it doesn't exist yet.
 $(indexfile):
@@ -410,9 +414,12 @@ $(BUILDDIR)/markdown/index.md: index.txt index2.add $(indexfile)
 $(BUILDDIR)/markdown/%.md: %.txt $(indexfile)
 	pure-pandoc -c4 -C -D $< -o $@ -i $(indexfile) -N "%s.html"
 
-# Build html from the individual Markdown files.
-$(BUILDDIR)/markdown/%.html: $(BUILDDIR)/markdown/%.md
+# Build html from the individual Markdown files. pure-reduce.html is treated
+# separately in order to include MathJAX.
+$(BUILDDIR)/markdown/pure-reduce.html: $(BUILDDIR)/markdown/pure-reduce.md
 	pandoc -s -S $< -o $@ --mathjax $(HTML_FLAGS)
+$(BUILDDIR)/markdown/%.html: $(BUILDDIR)/markdown/%.md
+	pandoc -s -S $< -o $@ $(HTML_FLAGS)
 
 # Build pdf from the individual Markdown files.
 $(BUILDDIR)/markdown/%.pdf: $(BUILDDIR)/markdown/%.md
