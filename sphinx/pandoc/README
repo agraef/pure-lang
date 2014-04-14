@@ -65,30 +65,6 @@ format isn't likely to change anytime soon. But we'd still like to leverage
 Markdown's advantages, by making it easy to convert the Pure manuals to
 Markdown. This is what the pure-pandoc script is for.
 
-Usage
-=====
-
-pure-pandoc is invoked as follows: pure-pandoc [*options* ...] [*files* ...].
-For simple stand-alone documents, this usually boils down to: pure-pandoc
-*in-file* -o *out-file*. Use ``pure-pandoc -h`` to get a brief summary of the
-available options.  Here's a typical invocation, which translates the RST
-source document ``pure.txt`` to a Markdown document ``pure.md``::
-
-  pure-pandoc pure.txt -o pure.md
-
-The input files must all be in RST format. If none are specified, input is
-read from stdin. Output goes to stdout, unless an output filename is given
-with :option:`-o` / :option:`--output`.
-
-The output format is usually auto-detected by pandoc if an output filename is
-specified with :option:`-o` / :option:`--output`, otherwise you can specify
-the desired target format with the :option:`-t` / :option:`--to` option. The
-script understands a number of other pandoc options which are simply passed
-through, and the :option:`-O` / :option:`--options` option lets you pass any
-other options not directly supported by the script. The script also offers a
-number of special pre-, post-processing and formatting options which affect
-the generated output. All available options are listed below.
-
 Options
 =======
 
@@ -204,7 +180,7 @@ pure-pandoc script which affect the generated output.
    Uses Markdown section headers rather than definition lists for Sphinx
    descriptions of options, functions, variables, etc., which potentially
    makes links to these items work in some output formats other than html.
-   Please check the notes below for details.
+   Please check the notes under Usage_ below for details.
 
 .. option:: -i index-file
 .. option:: --index index-file
@@ -289,19 +265,36 @@ the target document. For instance::
   pure-pandoc pure.txt -o pure.md
   pandoc --indented-code-classes=pure --highlight-style=kate pure.md -o pure.html
 
-Notes
+Usage
 =====
 
-At present, the script only recognizes a subset of the RST and Sphinx
-cross-referencing syntax, so arbitrary complex documents will most likely give
-funky results or not work at all. The script has been tested on the entire
-Pure documentation, however, and should give proper results there.
+pure-pandoc is invoked as follows: pure-pandoc [*options* ...] [*files* ...].
+For simple stand-alone documents, this usually boils down to: pure-pandoc
+*in-file* -o *out-file*. Use ``pure-pandoc -h`` to get a brief summary of the
+available options.  Here's a typical invocation, which translates the RST
+source document ``pure.txt`` to a Markdown document ``pure.md``::
 
-Pandoc produces its own Markdown flavour by default. This is usually what you
-want if further processing of the output document will be done with Pandoc.
-However, many 3rd party tools work with other Markdown variants, such as
-"strict" a.k.a. "basic" Markdown, or MultiMarkdown. Using the :option:`-t` /
-:option:`--to` option, you can specify the target Markdown dialect like this::
+  pure-pandoc pure.txt -o pure.md
+
+The input files must all be in RST format. If none are specified, input is
+read from stdin. Output goes to stdout, unless an output filename is given
+with :option:`-o` / :option:`--output`.
+
+The output format is usually auto-detected by pandoc if an output filename is
+specified with :option:`-o` / :option:`--output`, otherwise you can specify
+the desired target format with the :option:`-t` / :option:`--to` option. The
+script understands a number of other pandoc options which are simply passed
+through, and the :option:`-O` / :option:`--options` option lets you pass any
+other options not directly supported by the script. The script also offers a
+number of special pre-, post-processing and formatting options which affect
+the generated output, please check the Options_ section below for details.
+
+Note that Pandoc produces its own Markdown flavour by default. This is usually
+what you want if further processing of the output document will be done with
+Pandoc. However, many 3rd party tools work with other Markdown variants, such
+as "strict" a.k.a. "basic" Markdown, or MultiMarkdown. Using the :option:`-t`
+/ :option:`--to` option, you can specify the target Markdown dialect like
+this::
 
   # for basic Markdown:
   pure-pandoc pure.txt -o pure.md -tmarkdown_strict
@@ -328,15 +321,12 @@ instance::
   pure-pandoc pure.txt -o pure.html -O --mathjax
 
 As already mentioned, the script goes to some lengths to preserve links to
-explicit RST link targets ('``.. _name:``') as well as Sphinx definitions of
-program options, functions, variables, etc. ('``.. option::``',
-'``.. function::``', etc.). Unfortunately, due to limitations in Pandoc and
-the Markdown format itself, which requires links to random locations inside a
-document to be encoded as html link anchors, most of these links will only
-work in html output. However, references to section and document titles
-('``:ref:``' and '``:doc:``' in Sphinx) should work in other document formats
-such as pdf, even across different source documents if the appropriate
-measures are taken (see `Multiple Documents`_ below).
+explicit RST link targets and Sphinx definitions. Unfortunately, due to
+limitations in Pandoc and the Markdown format itself, this doesn't always work
+in output formats other than html. However, references to section and
+document titles ('``:ref:``' and '``:doc:``' in Sphinx) should work in other
+document formats such as pdf, even across different source documents if the
+appropriate measures are taken (see `Multiple Documents`_ below).
 
 Sphinx definitions are by default rendered as Markdown definition lists, but
 the :option:`-H` / :option:`--headers` option can be used to have them
@@ -385,22 +375,20 @@ and to ensure that the index file is at least as new as any of the sources::
   index: $(sources)
       touch $@
 
-Finally, we can generate the final output in, say, html and pdf format as
-follows (this creates one big file with all the source documents in it)::
-
-  mydoc.html: $(targets)
-      pandoc -s $^ -o $@
+Finally, we can generate output in, say, pdf format as follows::
 
   mydoc.pdf: $(targets)
       pandoc -s $^ -o $@
 
-If you'd rather have separate output documents for each source document then
-the procedure is slightly different. In this case, pure-pandoc needs to know
-about the names of the output documents for each source file, which are
-specified as a printf-style pattern with the :option:`-N` / :option:`--name`
-option. The pattern must contain exactly one '``%s``' where the basename of
-the source file is to be inserted. In most cases you can just use
-``"%s.html"``.  So the rule to generate the target files becomes::
+Note that this creates one big file with all the source documents in it. It
+is often preferable to create separate output documents for each source
+document instead. In this case the procedure is slightly different; we
+illustrate it with html output below. The main difference is that pure-pandoc
+needs to know about the names of the output documents for each source file,
+which are specified as a printf-style pattern with the :option:`-N` /
+:option:`--name` option. The pattern must contain exactly one '``%s``' where
+the basename of the source file is to be inserted. In most cases you can just
+use ``"%s.html"``. So the rule to generate the target files becomes::
 
   %.md: %.txt index
       pure-pandoc $< -o $@ -i index -N "%s.html"
@@ -438,13 +426,31 @@ want to distribute the files or generate different output formats from them.
 In some cases the elaborate procedure sketched out above can also be avoided,
 if you just pass the entire collection of source documents to pure-pandoc in
 one go and have it compiled to a single output document. However, this
-simplistic approach requires that *all* link targets and section names in all
-provided source documents be unique; otherwise you'll get duplicate link
-targets and cross-references will often point to the wrong locations in the
-output document. This kind of mishap can usually be avoided with the procedure
-sketched out above. It will also generally be needed if your RST sources
-involve the Sphinx directives ``:doc:`` and ``:ref:``, or if you want to
-create separate output documents from the sources, as shown above.
+approach only works when producing a single output document. Also, if your
+RST sources involve the Sphinx directives ``:doc:`` and ``:ref:`` then you'll
+still need to create an index file in order to properly resolve document
+titles and cross-references across source documents.
+
+Bugs
+====
+
+At present, the script only recognizes a subset of the RST and Sphinx
+cross-referencing syntax, so arbitrary complex documents will most likely give
+funky results or not work at all. The script has been tested on the entire
+Pure documentation, however, and should give proper results there.
+
+Markdown requires links to random locations inside a document to be encoded as
+html link anchors which generally works in html output only. This means that
+most of the special RST and Sphinx link targets will not work in other output
+formats either. However, references to section and document titles should
+still work in document formats such as pdf, even across different source
+documents (see `Multiple Documents`_ above).
+
+Another limitation of Markdown and Pandoc is that if you compile a collection
+of source files to a single output document, then *all* link targets and
+section names in the source documents must be unique; otherwise you'll get
+duplicate link targets and cross-references may point to the wrong locations
+in the output document.
 
 Author
 ======
