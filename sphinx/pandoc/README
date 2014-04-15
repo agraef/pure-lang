@@ -38,9 +38,9 @@ work if you want to use it for other Sphinx domains such as C/C++ and Python.
 
 The script goes to some lengths to preserve RST link targets and Sphinx
 cross-references to program options, functions, variables, etc. For the rest
-of the conversion we mostly rely on Pandoc. The script certainly isn't
-perfect, but it does a reasonably good job (usually much better than just
-pandoc on its own), and it gives you a quick way to obtain usable Markdown
+of the conversion we rely on Pandoc. The script certainly isn't perfect, but
+it does a reasonably good job on the RST and Sphinx elements that Pandoc
+doesn't handle, and thereby gives you a quick way to obtain usable Markdown
 documents from the Pure manuals which can then be edited and formatted in
 various ways.
 
@@ -64,6 +64,32 @@ Pure scripts. RST/Sphinx works very well for that, so Pure's documentation
 format isn't likely to change anytime soon. But we'd still like to leverage
 Markdown's advantages, by making it easy to convert the Pure manuals to
 Markdown. This is what the pure-pandoc script is for.
+
+Installation
+============
+
+To run this script, you need to have Pandoc and GNU awk (as ``gawk``)
+installed. The script probably needs a fairly recent Pandoc version (1.12.3
+has been tested). To install the script, simply run ``make install`` in the
+source directory (the installation prefix defaults to ``/usr/local``; you can
+set this with the ``prefix`` make variable).
+
+To get proper syntax highlighting for Pure, at present you have to build your
+own versions of the pandoc and highlighting-kate Haskell modules. To do this,
+grab the latest sources from https://github.com/jgm, and drop the Kate
+syntax-highlighting for Pure (available as etc/pure.xml in the Pure sources)
+into the highlighting-kate/xml folder. Then rebuild and install
+highlighting-kate and pandoc (in that order). This is described in more detail
+(for the J language, but the steps are analogous) in John Baker's blog at
+http://bakerjd99.wordpress.com/2012/09/20/pandoc-based-j-syntax-highlighting/.
+
+Once the Pure highlighting is installed, you can set the default language for
+code sections and the desired highlighting style with Pandoc's
+``--indented-code-classes`` and ``--highlight-style`` options when creating
+the target document. For instance::
+
+  pure-pandoc pure.txt -o pure.md
+  pandoc --indented-code-classes=pure --highlight-style=kate pure.md -o pure.html
 
 Options
 =======
@@ -126,8 +152,8 @@ directly supported by the script.
 Special Options
 ---------------
 
-These are the special pre-, post-processing and formatting options of the
-pure-pandoc script which affect the generated output.
+The script also understands some additional pre-, post-processing and
+formatting options which affect the generated output.
 
 .. option:: -d
 .. option:: --date
@@ -239,32 +265,6 @@ pure-pandoc script which affect the generated output.
    ``..`` prefixes (the :verb:`\|today\|`, :verb:`\|version\|` and
    :verb:`\@version\@` meta variables will be substituted, however).
 
-Installation Requirements
-=========================
-
-To run this script, you need to have Pandoc and GNU awk (as ``gawk``)
-installed. The script probably needs a fairly recent Pandoc version (1.12.3
-has been tested). To install the script, simply run ``make install`` in the
-source directory (the installation prefix defaults to ``/usr/local``; you can
-set this with the ``prefix`` make variable).
-
-To get proper syntax highlighting for Pure, at present you have to build your
-own versions of the pandoc and highlighting-kate Haskell modules. To do this,
-grab the latest sources from https://github.com/jgm, and drop the Kate
-syntax-highlighting for Pure (available as etc/pure.xml in the Pure sources)
-into the highlighting-kate/xml folder. Then rebuild and install
-highlighting-kate and pandoc (in that order). This is described in more detail
-(for the J language, but the steps are analogous) in John Baker's blog at
-http://bakerjd99.wordpress.com/2012/09/20/pandoc-based-j-syntax-highlighting/.
-
-Once the Pure highlighting is installed, you can set the default language for
-code sections and the desired highlighting style with Pandoc's
-``--indented-code-classes`` and ``--highlight-style`` options when creating
-the target document. For instance::
-
-  pure-pandoc pure.txt -o pure.md
-  pandoc --indented-code-classes=pure --highlight-style=kate pure.md -o pure.html
-
 Usage
 =====
 
@@ -287,7 +287,7 @@ script understands a number of other pandoc options which are simply passed
 through, and the :option:`-O` / :option:`--options` option lets you pass any
 other options not directly supported by the script. The script also offers a
 number of special pre-, post-processing and formatting options which affect
-the generated output, please check the Options_ section below for details.
+the generated output, please check the Options_ section above for details.
 
 Note that Pandoc produces its own Markdown flavour by default. This is usually
 what you want if further processing of the output document will be done with
@@ -322,11 +322,11 @@ instance::
 
 As already mentioned, the script goes to some lengths to preserve links to
 explicit RST link targets and Sphinx definitions. Unfortunately, due to
-limitations in Pandoc and the Markdown format itself, this doesn't always work
-in output formats other than html. However, references to section and
-document titles ('``:ref:``' and '``:doc:``' in Sphinx) should work in other
-document formats such as pdf, even across different source documents if the
-appropriate measures are taken (see `Multiple Documents`_ below).
+limitations in Pandoc and the Markdown format itself, most of these links will
+only work in html output. However, references to section and document titles
+('``:ref:``' and '``:doc:``' in Sphinx) should work in other document formats
+such as pdf, even across different source documents if the appropriate
+measures are taken (see `Multiple Documents`_ below).
 
 Sphinx definitions are by default rendered as Markdown definition lists, but
 the :option:`-H` / :option:`--headers` option can be used to have them
@@ -352,14 +352,17 @@ such as the document titles. This is done by invoking pure-pandoc with the
 
 When working with big collections of documents, entering all the required
 commands can become quite tedious; you will want to automatize the process
-with a Makefile. Here are some simple rules which will process a collection of
-``.txt`` (RST source) files in the current directory and generate the index
-file along the way::
+with a Makefile. Here are some simple rules which will translate a collection
+of ``.txt`` (RST source) files in the current directory to Markdown and
+generate the index file along the way::
 
   sources = $(wildcard *.txt)
   targets = $(patsubst %.txt, %.md, $(sources))
 
   all: $(targets)
+
+  index: $(sources)
+      touch $@
 
   %.md: %.txt index
       pure-pandoc $< -o $@ -i index
@@ -367,47 +370,91 @@ file along the way::
 Note that the rule to generate the ``.md`` files also has a dependency on the
 index file so that *all* targets will be regenerated whenever the index
 changes. Usually it will be necessary to run ``make`` twice so that the index
-information used to generate the target documents is up-to-date.
+information used to generate the target documents is up-to-date. We also need
+a rule to create an empty index file if it doesn't exist yet, and to ensure
+that the index file is at least as new as any of the sources.
 
-We'll also need a rule to create an empty index file if it doesn't exist yet,
-and to ensure that the index file is at least as new as any of the sources::
+Finally, we can generate output in pdf format from the Markdown documents as
+follows::
 
-  index: $(sources)
-      touch $@
-
-Finally, we can generate output in, say, pdf format as follows::
+  pdf: mydoc.pdf
 
   mydoc.pdf: $(targets)
       pandoc -s $^ -o $@
 
-Note that this creates one big file with all the source documents in it. It
-is often preferable to create separate output documents for each source
-document instead. In this case the procedure is slightly different; we
-illustrate it with html output below. The main difference is that pure-pandoc
-needs to know about the names of the output documents for each source file,
-which are specified as a printf-style pattern with the :option:`-N` /
-:option:`--name` option. The pattern must contain exactly one '``%s``' where
-the basename of the source file is to be inserted. In most cases you can just
-use ``"%s.html"``. So the rule to generate the target files becomes::
+As a convenience, we also added a phony ``pdf`` target so that running just
+``make pdf`` will create the pdf document. Similar targets can be used to
+create html output or any other output format supported by Pandoc.
 
-  %.md: %.txt index
+Note that this creates one big file with all the source documents in it. This
+is most appropriate when creating document formats like pdf which are intended
+for offline viewing or printing. For html output it is often preferable to
+create separate output documents for each source document instead. In this
+case the procedure is slightly different. Specifically, pure-pandoc needs to
+know about the names of the output documents for each source file, which are
+specified as a printf-style pattern with the :option:`-N` / :option:`--name`
+option. The pattern must contain exactly one '``%s``' where the basename of
+the source file is to be inserted. In most cases you can just use
+``"%s.html"``. So the rule to generate the Markdown files becomes::
+
+  %-html.md: %.txt index
       pure-pandoc $< -o $@ -i index -N "%s.html"
 
-The ``.md`` target files will now contain proper cross-document links of the
-form ``name.html#id``, so that the links are resolved correctly if we create
+There's a little gotcha here, namely that the contents of the files generated
+with the ``-N`` option will be slightly different from the Markdown files we
+created earlier in order to produce the pdf document. In order not to clobber
+these, we added a special ``-html`` suffix here, so that the new rule can be
+combined with the rules for creating pdf output from above. (The index
+information is the same in either case, however, so there's no need to create
+a separate index file for the html targets.)
+
+The ``-html.md`` files will contain proper cross-document links of the form
+``name.html#id``, so that the links are resolved correctly if we create
 individual html files as the final output::
 
-  %.html: %.md
+  html: $(patsubst %.txt, %.html, $(sources))
+
+  %.html: %-html.md
       pandoc -s $< -o $@
 
-We also change the definition of ``targets`` so that the ``all`` goal now
-builds all the html files (along with the ``.md`` targets which are needed to
-produce them)::
+Here's the complete Makefile with targets for both pdf and html output as it
+stands now::
 
-  targets = $(patsubst %.txt, %.html, $(sources))
+  sources = $(wildcard *.txt)
+  targets = $(patsubst %.txt, %.md, $(sources))
 
-*Note:* If all you need is the html output, then you might just as well create
-it directly with the following Makefile::
+  all: $(targets)
+
+  index: $(sources)
+      touch $@
+
+  %.md: %.txt index
+      pure-pandoc $< -o $@ -i index
+
+  pdf: mydoc.pdf
+
+  mydoc.pdf: $(targets)
+      pandoc -s $^ -o $@
+
+  %-html.md: %.txt index
+      pure-pandoc $< -o $@ -i index -N "%s.html"
+
+  html: $(patsubst %.txt, %.html, $(sources))
+
+  %.html: %-html.md
+      pandoc -s $< -o $@
+
+To use this Makefile, just run ``make`` twice to make sure that the index is
+up-to-date, then run ``make pdf`` and/or ``make html`` in any order to produce
+the final output documents. If you need additional output formats such as
+EPUB, DOC, ODT, Texinfo etc., they can easily be created in an analogous
+fashion.
+
+The above procedure can be simplified considerably if you only need to create
+a single output format. In this case you may just skip the generation of the
+intermediate Markdown files and have pure-pandoc create the target format
+directly. E.g., creating just the individual html documents can be done simply
+as follows::
 
   sources = $(wildcard *.txt)
   targets = $(patsubst %.txt, %.html, $(sources))
@@ -420,15 +467,24 @@ it directly with the following Makefile::
   %.html: %.txt index
       pure-pandoc -s $< -o $@ -i index -N "%s.html"
 
-But creating intermediate files in Markdown format will be preferable if you
-want to distribute the files or generate different output formats from them.
+Or, to create a single pdf document from all sources::
 
-In some cases the elaborate procedure sketched out above can also be avoided,
-if you just pass the entire collection of source documents to pure-pandoc in
-one go. However, this approach only allows you to produce a single output
-document. Also, if your RST sources involve the Sphinx directives ``:doc:``
-and ``:ref:`` then you'll still need to create an index file in order to
-properly resolve document titles and cross-references across source documents.
+  sources = $(wildcard *.txt)
+
+  all: mydoc.pdf
+
+  index: $(sources)
+      touch $@
+
+  mydoc.pdf: $(sources) index
+      pure-pandoc -s $(sources) -o $@ -i index
+
+Note that even with this simplified setup you generally have to run ``make``
+twice so that the index information is updated before the final output is
+produced. This will be inefficient with output formats such as pdf which
+involve a time-consuming formatting step. Therefore it is usually preferable
+to use the more elaborate procedure above which employs Markdown as an
+intermediate representation.
 
 Bugs
 ====
@@ -449,7 +505,8 @@ above.
 Another limitation of Markdown and Pandoc is that if you compile a collection
 of source files to a single output document, then *all* referenced link
 targets and section names in the source documents must be unique; otherwise
-cross-references may point to the wrong locations in the output document.
+you'll get duplicate link targets and cross-references may point to the wrong
+locations in the output document.
 
 Author
 ======
