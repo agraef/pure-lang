@@ -350,7 +350,7 @@ texmacs: $(BUILDDIR)/texmacs $(tmdocs)
 cleantexmacs:
 	rm -f $(BUILDDIR)/texmacs/*.tm
 
-# Conversion RST -> markdown. These needs pure-pandoc (and pandoc itself, of
+# Conversion RST -> markdown. This needs pure-pandoc (and pandoc itself, of
 # course). NOTE: Right now we only provide this as a testing ground and as a
 # convenience so that users can try the documentation in Markdown and derived
 # formats (html, tex, pdf). This isn't needed to create the Sphinxed docs in
