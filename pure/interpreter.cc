@@ -53,13 +53,11 @@ char *alloca ();
 #include <llvm/CallingConv.h>
 #endif
 #include <llvm/PassManager.h>
-#include <llvm/Support/CallSite.h>
 #include <llvm/Transforms/Utils/BasicBlockUtils.h>
 
 #include <llvm/ExecutionEngine/JIT.h>
 #include <llvm/Bitcode/ReaderWriter.h>
 #include <llvm/Support/MemoryBuffer.h>
-#include <llvm/Linker.h>
 
 #include "config.h"
 
@@ -70,6 +68,17 @@ char *alloca ();
 #endif
 #ifdef HAVE_LLVM_SUPPORT_RAW_OSTREAM_H
 #include <llvm/Support/raw_ostream.h>
+#endif
+// LLVM 3.5
+#ifdef HAVE_LLVM_IR_CALLSITE_H
+#include <llvm/IR/CallSite.h>
+#else
+#include <llvm/Support/CallSite.h>
+#endif
+#ifdef HAVE_LLVM_LINKER_LINKER_H
+#include <llvm/Linker/Linker.h>
+#else
+#include <llvm/Linker.h>
 #endif
 
 #include "gsl_structs.h"
@@ -282,7 +291,11 @@ void interpreter::init()
 
   // Set up the optimizer pipeline. Start with registering info about how the
   // target lays out data structures.
+#if LLVM35
+  module->setDataLayout(JIT->getDataLayout());
+#else
   FPM->add(new TargetData(*JIT->getTargetData()));
+#endif
   // Promote allocas to registers.
   FPM->add(createPromoteMemoryToRegisterPass());
   // Do simple "peephole" optimizations and bit-twiddling optimizations.
@@ -2424,7 +2437,11 @@ bool interpreter::LoadBitcode(bool priv, const char *name, string *msg)
     return false;
   }
 #endif
+#if LLVM35
+  if (!loaded && !M->getDataLayoutStr().empty() && M->getDataLayoutStr() != layout) {
+#else
   if (!loaded && !M->getDataLayout().empty() && M->getDataLayout() != layout) {
+#endif
     // Clang 2.9 has some minor mismatches with the JIT data layout (bug?),
     // which are irrelevant for our purposes, so for the time being we just
     // check endianness and pointer sizes here.
@@ -2432,7 +2449,13 @@ bool interpreter::LoadBitcode(bool priv, const char *name, string *msg)
     if (jit_dl.isLittleEndian() != mod_dl.isLittleEndian() ||
 	jit_dl.getPointerSize() != mod_dl.getPointerSize()) {
       if (msg)
-	*msg = "Mismatch in data layout '"+M->getDataLayout()+"'";
+	*msg = "Mismatch in data layout '"+
+#if LLVM35
+	  M->getDataLayoutStr()
+#else
+	  M->getDataLayout()
+#endif
+	  +"'";
       bc_errmsg(name, msg);
       return false;
     }
@@ -10285,6 +10308,14 @@ static string& quote(string& s)
 #define ostream_clear_error(os) os.clear()
 #endif
 
+#if NEW_OSTREAM34 && LLVM35
+#define NEW_OSTREAM35 1
+#endif
+
+#if NEW_OSTREAM35 // LLVM 3.5 cosmetic changes
+#include <llvm/Support/FileSystem.h>
+#define new_raw_fd_ostream(s,binary,msg) new llvm::raw_fd_ostream(s,msg,(binary)?llvm::sys::fs::F_None:llvm::sys::fs::F_Text)
+#else
 #if NEW_OSTREAM34 // LLVM 3.4 cosmetic changes
 #define new_raw_fd_ostream(s,binary,msg) new llvm::raw_fd_ostream(s,msg,(binary)?llvm::sys::fs::F_Binary:llvm::sys::fs::F_None)
 #else
@@ -10295,6 +10326,7 @@ static string& quote(string& s)
 #define new_raw_fd_ostream(s,binary,msg) new llvm::raw_fd_ostream(s,binary,1,msg)
 #else // LLVM 2.5 and earlier only have the Binary flag
 #define new_raw_fd_ostream(s,binary,msg) new llvm::raw_fd_ostream(s,binary,msg)
+#endif
 #endif
 #endif
 #endif

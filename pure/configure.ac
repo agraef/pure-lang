@@ -63,6 +63,17 @@ AC_PATH_PROG(EMACS,emacs)
 if test -z "$EMACS"; then
   AC_MSG_WARN([Cannot find emacs, won't be able to byte-compile pure-mode.el.])
 fi
+
+dnl Check for C++11 support, enable if necessary.
+save_CXXFLAGS=$CXXFLAGS
+CXXFLAGS=""
+AX_CXX_COMPILE_STDCXX_11([noext],[optional])
+CXX11FLAG=$CXXFLAGS
+CXXFLAGS=$save_CXXFLAGS
+if test -n "$CXX11FLAG"; then
+  CXXFLAGS="$CXXFLAGS $CXX11FLAG"
+fi
+
 dnl Install elisp files?
 elcfiles="etc/pure-mode.elc"
 AC_ARG_WITH(elisp,
@@ -330,7 +341,7 @@ AC_SUBST(PIC)
 dnl Check for the new-style template arguments of the IRBuilder class.
 AC_LANG_PUSH([C++])
 save_CPPFLAGS=$CPPFLAGS
-CPPFLAGS="`$LLVMCONF --cppflags` $CPPFLAGS"
+CPPFLAGS="`$LLVMCONF --cppflags` $CXX11FLAG $CPPFLAGS"
 AC_CACHE_CHECK([for new LLVM IRBuilder class (LLVM >= 3.3)], [pure_cv_new_builder33],
   [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
        #include <llvm/IR/IRBuilder.h>
@@ -383,6 +394,7 @@ fi
 AC_CACHE_CHECK([for new llvm::raw_fd_ostream interface (LLVM >= 3.4)], [pure_cv_new_ostream34],
   [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
 	#include <string>
+        #include <llvm/Support/FileSystem.h>
         #include <llvm/Support/raw_ostream.h>
       ], [
   	std::string error;
@@ -407,7 +419,8 @@ if test "$pure_cv_new_builder" = yes; then
 fi
 fi
 AC_CHECK_HEADERS([llvm/Support/DynamicLibrary.h], [], [], [[#include <llvm/ADT/StringRef.h>]])
-AC_CHECK_HEADERS([llvm/Support/raw_ostream.h llvm/Support/raw_os_ostream.h llvm/ModuleProvider.h llvm/TypeSymbolTable.h llvm/DataLayout.h llvm/IR/DataLayout.h llvm/DerivedTypes.h llvm/IRBuilder.h llvm/IR/IRBuilder.h llvm/IR/Verifier.h llvm/Support/TargetSelect.h])
+AC_CHECK_HEADERS([llvm/Support/CallSite.h], [], [], [[#include <llvm/IR/StringRef.h>]])
+AC_CHECK_HEADERS([llvm/Support/raw_ostream.h llvm/Support/raw_os_ostream.h llvm/ModuleProvider.h llvm/TypeSymbolTable.h llvm/DataLayout.h llvm/IR/DataLayout.h llvm/DerivedTypes.h llvm/IRBuilder.h llvm/IR/IRBuilder.h llvm/IR/Verifier.h llvm/IR/CallSite.h llvm/Linker/Linker.h llvm/Support/TargetSelect.h])
 if test "$pure_cv_new_builder26" = yes; then
   AC_CHECK_DECLS([llvm::PerformTailCallOpt, llvm::GuaranteedTailCallOpt], [], [], [[#include <llvm/ADT/StringRef.h>
 #include <llvm/Target/TargetOptions.h>]])
