@@ -464,13 +464,13 @@ with this, you may try to restrict the number of tuning alternatives or fix
 some tunings manually beforehand.
 
 You can also just run the algorithm and interrupt it at any time by hitting
-the `Rationalize` button (which is now labelled Ìnterrupt) again. The progress
-of the algorithm towards an optimum solution which rationalizes all unlocked
-scale points is shown in the progress bar in the main window. Usually, the
-algorithm will converge to a local optimum pretty quickly (indicated by no
-further changes in the progress bar), at which point you may interrupt the
-algorithm and see whether the computed solution provides at least a viable
-partial rationalization of the scale.
+the `Rationalize` button (which is now labelled `Interrupt`) again. The
+progress of the algorithm towards an optimum solution which rationalizes all
+unlocked scale points is shown in the progress bar in the main window.
+Usually, the algorithm will converge to a local optimum pretty quickly
+(indicated by no further changes in the progress bar), at which point you may
+interrupt the algorithm and see whether the computed solution provides at
+least a viable partial rationalization of the scale.
 
 The rationalization algorithm can also be adjusted by employing different
 search heuristics. You can find these in the Rationalization heuristic\`
