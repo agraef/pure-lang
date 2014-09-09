@@ -10522,10 +10522,8 @@ int interpreter::compiler(string out, list<string> libnames)
     target += ".bc"; bc_target = true;
   }
   // LLVM tools used in the build process.
-  /* XXXFIXME: Some LLVM versions have toolchains which are broken in some way
-     so that the resulting native assembler code won't compile. As a
-     workaround, we allow the user to install his own custom builds of the llc
-     and opt tools into the /usr/lib/pure directory. */
+  /* We allow the user to install his own custom builds of the llc and opt
+     tools into the /usr/lib/pure directory. */
   string llc = (chkfile(libdir+"llc"+EXEEXT)?libdir:tool_prefix)+"llc";
   string opt = (chkfile(libdir+"opt"+EXEEXT)?libdir:tool_prefix)+"opt";
   /* Everything is already compiled at this point, so all we have to do here
@@ -10904,13 +10902,27 @@ int interpreter::compiler(string out, list<string> libnames)
     for (list<string>::iterator it = libnames.begin();
 	 it != libnames.end(); ++it)
       libs += " -l"+quote(*it);
-    /* Call llc (and opt) to create a native assembler file which can then be
-       passed to gcc to handle assembly and linkage (if requested). */
+    /* Call llc (and opt) to create a native assembler (or object) file which
+       can then be passed to gcc to handle linkage (if requested). */
     string asmfile = (ext==".s")?out:out+".s";
+    bool obj_target = false;
     string custom_opts = "";
+#if LLVM33
+    /* LLVM 3.3 and later generate assembler code which doesn't compile with
+       native assemblers on some systems. OTOH, they offer the capability to
+       directly generate native object files via llc, which speeds up
+       compilation and works around issues with native assembly. This is the
+       route we take here. */
+    if (ext != ".s") {
+      asmfile = (ext==".o")?out:out+".o";
+      obj_target = true;
+      custom_opts = "-filetype=obj ";
+    }
+#else
 #if LLVM30 && __APPLE__
     // The -disable-cfi seems to be needed on OSX as of LLVM 3.0.
     custom_opts = "-disable-cfi ";
+#endif
 #endif
     string cmd = opt+" -f -std-compile-opts "+quote(target)+
       " | "+llc+" "+custom_opts+
@@ -10921,12 +10933,14 @@ int interpreter::compiler(string out, list<string> libnames)
     int status = system(cmd.c_str());
     unlink(target.c_str());
     if (WIFEXITED(status) && WEXITSTATUS(status) == 0 && ext!=".s") {
-      // Assemble.
+      // Assemble, if needed.
       string obj = (ext==".o")?out:out+".o";
-      cmd = cc+" -c "+quote(asmfile)+" -o "+quote(obj);
-      if (vflag) std::cerr << cmd << '\n';
-      status = system(cmd.c_str());
-      unlink(asmfile.c_str());
+      if (!obj_target) {
+	cmd = cc+" -c "+quote(asmfile)+" -o "+quote(obj);
+	if (vflag) std::cerr << cmd << '\n';
+	status = system(cmd.c_str());
+	unlink(asmfile.c_str());
+      }
       if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
 	// Link.
 #ifdef __linux__
