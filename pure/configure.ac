@@ -278,7 +278,7 @@ if test $fastcc = yes; then
 fi
 
 dnl Check for LLVM (try various LLVM versions).
-AC_CHECK_PROGS(LLVMCONF,[${llvm_config_pre} llvm-config-3.4 llvm-config-3.3 llvm-config-3.2 llvm-config-3.1 llvm-config-3.0 llvm-config-2.9 llvm-config-2.8 llvm-config-2.7 llvm-config-2.6 llvm-config-2.5],no,"$PATH:/")
+AC_CHECK_PROGS(LLVMCONF,[${llvm_config_pre} llvm-config-3.5 llvm-config-3.4 llvm-config-3.3 llvm-config-3.2 llvm-config-3.1 llvm-config-3.0 llvm-config-2.9 llvm-config-2.8 llvm-config-2.7 llvm-config-2.6 llvm-config-2.5],no,"$PATH:/")
 if test "$LLVMCONF" = no; then
   AC_MSG_ERROR([Cannot find LLVM.])
 fi
@@ -293,6 +293,13 @@ if test -z "${TOOL_PREFIX}" -a -x "/usr/lib/llvm-${llvm_version}/bin/opt"; then
 fi
 AC_SUBST(TOOL_PREFIX)
 AC_DEFINE_UNQUOTED(TOOL_PREFIX, "${TOOL_PREFIX}", [Define to the prefix under which the LLVM toolchain is installed.])
+
+dnl LLVM 3.5 lists some extra system libraries with the --system-libs options.
+LLVM_SYS_LIBS="`$LLVMCONF --system-libs 2>/dev/null`"
+if test -n "${LLVM_SYS_LIBS}"; then
+dnl But actually we only need these to make the linker happy:
+LLVM_SYS_LIBS="-lz -lpthread -ldl"
+fi
 
 dnl If we got LLVM installed as a shared library, use that unless the user
 dnl specified --with-static-llvm.
@@ -310,11 +317,13 @@ char LLVMFreeMachineCodeForFunction ();],
  return 0;],
 [LLVM_LIBS="${llvm_lib_flags} -lLLVM-${llvm_version}"; LLVM_EXE_LIBS="${LLVM_LIBS}"
 AC_MSG_RESULT([$]LLVM_LIBS)],
-[LLVM_LIBS=$($LLVMCONF --ldflags --libs core bitreader bitwriter linker jit native | tr '\r\n' '  ')
+[LLVM_LIBS="$($LLVMCONF --ldflags --libs core bitreader bitwriter linker jit native | tr '\r\n' '  ') ${LLVM_SYS_LIBS}"
+LLVM_EXE_LIBS=${LLVM_SYS_LIBS}
 AC_MSG_RESULT(no)])
 LIBS="$save_LIBS"
 else
-LLVM_LIBS=$($LLVMCONF --ldflags --libs core bitreader bitwriter linker jit native | tr '\r\n' '  ')
+LLVM_LIBS="$($LLVMCONF --ldflags --libs core bitreader bitwriter linker jit native | tr '\r\n' '  ') ${LLVM_SYS_LIBS}"
+LLVM_EXE_LIBS=${LLVM_SYS_LIBS}
 fi
 AC_SUBST(LLVM_LIBS)
 AC_SUBST(LLVM_EXE_LIBS)
