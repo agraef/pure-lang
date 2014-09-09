@@ -418,6 +418,17 @@ if test "$pure_cv_new_builder" = yes; then
   AC_DEFINE(NEW_BUILDER, 1, [Define when building with new-style LLVM IRBuilder template class.])
 fi
 fi
+AC_CACHE_CHECK([for new user_iterator class (LLVM >= 3.5)], [pure_cv_new_user_iterator],
+  [AC_COMPILE_IFELSE([AC_LANG_PROGRAM([
+       #include <llvm/IR/Value.h>
+      ], [
+        llvm::Value::user_iterator it;
+      ])
+    ], [pure_cv_new_user_iterator=yes], [pure_cv_new_user_iterator=no])
+  ])
+if test "$pure_cv_new_user_iterator" = yes; then
+  AC_DEFINE(NEW_USER_ITERATOR, 1, [Define when building with new-style user_iterator class.])
+fi
 AC_CHECK_HEADERS([llvm/Support/DynamicLibrary.h], [], [], [[#include <llvm/ADT/StringRef.h>]])
 AC_CHECK_HEADERS([llvm/Support/CallSite.h], [], [], [[#include <llvm/IR/StringRef.h>]])
 AC_CHECK_HEADERS([llvm/Support/raw_ostream.h llvm/Support/raw_os_ostream.h llvm/ModuleProvider.h llvm/TypeSymbolTable.h llvm/DataLayout.h llvm/IR/DataLayout.h llvm/DerivedTypes.h llvm/IRBuilder.h llvm/IR/IRBuilder.h llvm/IR/Verifier.h llvm/IR/CallSite.h llvm/Linker/Linker.h llvm/Support/TargetSelect.h])

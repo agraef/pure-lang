@@ -3963,7 +3963,7 @@ void interpreter::compile()
 	void *fp = JIT->getPointerToFunction(f.h);
 	pure_add_rtty(ftag, f.n, fp);
 #if DEBUG>1
-	std::cerr << "JIT " << f.f->getNameStr() << " -> " << fp << '\n';
+	std::cerr << "JIT " << f.f->getName().str() << " -> " << fp << '\n';
 #endif
       }
     }
@@ -4004,7 +4004,7 @@ void interpreter::compile()
 	if (f.f != f.h) JIT->getPointerToFunction(f.f);
 	void *fp = JIT->getPointerToFunction(f.h);
 #if DEBUG>1
-	std::cerr << "JIT " << f.f->getNameStr() << " -> " << fp << '\n';
+	std::cerr << "JIT " << f.f->getName().str() << " -> " << fp << '\n';
 #endif
 #endif
 	// do a direct call to the runtime to create the fbox and cache it in
@@ -10372,8 +10372,8 @@ void interpreter::check_used(set<Function*>& used,
     }
     if (f) {
       varmap[v] = f;
-      for (Value::use_iterator it = v->use_begin(), end = v->use_end();
-	   it != end; it++) {
+      for (value_user_iterator it = value_user_begin(v),
+	     end = value_user_end(v); it != end; it++) {
 	if (Instruction *inst = dyn_cast<Instruction>(*it)) {
 	  Function *g = inst->getParent()->getParent();
 	  // Indirect reference through a variable. Note that we're not
@@ -10381,8 +10381,8 @@ void interpreter::check_used(set<Function*>& used,
 	  // caller is different from the callee.
 	  if (g && g != f) {
 #if 0
-	    std::cout << g->getNameStr() << " calls " << f->getNameStr()
-		      << " via var " << v->getNameStr() << '\n';
+	    std::cout << g->getName().str() << " calls " << f->getName().str()
+		      << " via var " << v->getName().str() << '\n';
 #endif
 #if DEBUG_USED||DEBUG_UNUSED
 	    callers[f].insert(g);
@@ -10402,14 +10402,14 @@ void interpreter::check_used(set<Function*>& used,
       roots.insert(f);
     } else if (f->hasNUsesOrMore(1)) {
       // Look for uses of the function.
-      for (Value::use_iterator it = f->use_begin(), end = f->use_end();
-	   it != end; it++) {
+      for (value_user_iterator it = value_user_begin(f),
+	     end = value_user_end(f); it != end; it++) {
 	if (Instruction *inst = dyn_cast<Instruction>(*it)) {
 	  Function *g = inst->getParent()->getParent();
 	  // This is a direct call.
 	  if (g && g != f) {
 #if 0
-	    std::cout << g->getNameStr() << " calls " << f->getNameStr() << '\n';
+	    std::cout << g->getName().str() << " calls " << f->getName().str() << '\n';
 #endif
 #if DEBUG_USED||DEBUG_UNUSED
 	    callers[f].insert(g);
@@ -10418,15 +10418,15 @@ void interpreter::check_used(set<Function*>& used,
 	  }
 	} else if (Constant *c = dyn_cast<Constant>(*it)) {
 	  // A function pointer. Check its uses.
-	  for (Value::use_iterator jt = c->use_begin(), end = c->use_end();
-	       jt != end; jt++) {
+	  for (value_user_iterator jt = value_user_begin(c),
+		 end = value_user_end(c); jt != end; jt++) {
 	    if (Instruction *inst = dyn_cast<Instruction>(*jt)) {
 	      // This is a function that refers to f via a pointer.
 	      Function *g = inst->getParent()->getParent();
 	      if (g && g != f) {
 #if 0
-		std::cout << g->getNameStr() << " calls " << f->getNameStr()
-			  << " via cst " << c->getNameStr() << '\n';
+		std::cout << g->getName().str() << " calls " << f->getName().str()
+			  << " via cst " << c->getName().str() << '\n';
 #endif
 #if DEBUG_USED||DEBUG_UNUSED
 		callers[f].insert(g);
@@ -10464,17 +10464,17 @@ void interpreter::check_used(set<Function*>& used,
   for (set<Function*>::iterator it = used.begin(), end = used.end();
        it != end; it++) {
     Function *f = *it;
-    std::cout << "** used function: " << f->getNameStr() << " callers:";
+    std::cout << "** used function: " << f->getName().str() << " callers:";
     for (set<Function*>::iterator jt = callers[f].begin(),
 	   end = callers[f].end(); jt != end; jt++) {
       Function *g = *jt;
-      std::cout << " " << g->getNameStr();
+      std::cout << " " << g->getName().str();
     }
     std::cout << " callees:";
     for (set<Function*>::iterator jt = callees[f].begin(),
 	   end = callees[f].end(); jt != end; jt++) {
       Function *g = *jt;
-      std::cout << " " << g->getNameStr();
+      std::cout << " " << g->getName().str();
     }
     std::cout << '\n';
   }
@@ -10485,17 +10485,17 @@ void interpreter::check_used(set<Function*>& used,
        it != end; ++it) {
     Function *f = &*it;
     if (used.find(f) == used.end()) {
-      std::cout << "** unused function: " << f->getNameStr() << " callers:";
+      std::cout << "** unused function: " << f->getName().str() << " callers:";
       for (set<Function*>::iterator jt = callers[f].begin(),
 	     end = callers[f].end(); jt != end; jt++) {
 	Function *g = *jt;
-	std::cout << " " << g->getNameStr();
+	std::cout << " " << g->getName().str();
       }
       std::cout << " callees:";
       for (set<Function*>::iterator jt = callees[f].begin(),
 	     end = callees[f].end(); jt != end; jt++) {
 	Function *g = *jt;
-	std::cout << " " << g->getNameStr();
+	std::cout << " " << g->getName().str();
       }
       std::cout << '\n';
     }

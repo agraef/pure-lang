@@ -242,6 +242,17 @@ struct VarInfo {
 #define Builder llvm::IRBuilder
 #endif
 
+#ifdef NEW_USER_ITERATOR
+/* Workarounds for LLVM 3.5 API breakage. */
+#define value_user_iterator Value::user_iterator
+#define value_user_begin(x) x->user_begin()
+#define value_user_end(x) x->user_end()
+#else
+#define value_user_iterator Value::use_iterator
+#define value_user_begin(x) x->use_begin()
+#define value_user_end(x) x->use_end()
+#endif
+
 #ifdef LLVM32
 /* Workarounds for LLVM 3.2 API breakage. */
 #define TargetData DataLayout
