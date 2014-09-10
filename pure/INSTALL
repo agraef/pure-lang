@@ -1073,29 +1073,19 @@ LLVM 3.3
 --------
 
 Reportedly the Pure batch compiler is broken when using LLVM 3.3 on Mac OS X.
-If you need the batch compiler then use either LLVM 3.2 or 3.4 on OS X
+If you need the batch compiler then use either LLVM 3.2 or 3.4+ on OS X
 instead, these are known to work on that platform.
 
-LLVM 3.4
---------
+LLVM 3.4+
+---------
 
-On Linux, the ``llc`` program from LLVM 3.4 is known to have issues which
-cause Pure's batch compiler to fail. As a remedy, you can use the ``llc`` and
-``opt`` executables from LLVM 3.3 instead (note that both programs are needed
-since the ``llc`` from LLVM 3.3 won't work with the ``opt`` program from LLVM
-3.4). To these ends, simply copy these executables to the Pure library
-directory (/usr/local/lib/pure by default). The Pure interpreter will then use
-these executables instead of the LLVM tools installed on your system. Prebuilt
-``llc`` and ``opt`` binaries for Linux can be found in the download section on
-Bitbucket:
-
-  https://bitbucket.org/purelang/pure-lang/downloads/llvm-3.3-tools.tar.bz2
-
-The tarball contains ELF executables for both 32 and 64 bit Linux systems
-which have been linked statically and thus don't need the LLVM 3.3 libraries
-to be installed on your system. The binaries should hopefully work on most
-recent Linux systems; if they don't work for you then please check the README
-file included in the tarball for instructions on how to build your own.
+On Linux, the ``llc`` program from LLVM 3.4 and 3.5 is known to create native
+assembler (.s) code which doesn't mangle assembler symbols as it used to be in
+earlier releases. When compiling Pure modules with the batch compiler, this
+results in native assembler code which can't be compiled using the system
+assemblers. As a remedy, the batch compiler in Pure 0.61 and later now creates
+native object (.o) files directly using llc, without going through the native
+assembler stage.
 
 PowerPC
 -------
