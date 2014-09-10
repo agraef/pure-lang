@@ -22,7 +22,7 @@ LD_LIB_PATH="LD_LIBRARY_PATH"
 rdynamic="-rdynamic"
 shared="-shared"
 case "$host" in
-    *-*-mingw*)       EXEEXT = ".exe"; DLLEXT=".dll";
+    *-*-mingw*)       EXEEXT=".exe"; DLLEXT=".dll";
     		      DIFF="diff --strip-trailing-cr";;
     *-*-darwin*)      rdynamic=""; shared="-dynamiclib"; DLLEXT=".dylib";
                       LD_LIB_PATH="DYLD_LIBRARY_PATH";
@@ -67,7 +67,7 @@ fi
 dnl Check for C++11 support, enable if necessary.
 save_CXXFLAGS=$CXXFLAGS
 CXXFLAGS=""
-AX_CXX_COMPILE_STDCXX_11([noext],[optional])
+AX_CXX_COMPILE_STDCXX_11([ext],[optional])
 CXX11FLAG=$CXXFLAGS
 CXXFLAGS=$save_CXXFLAGS
 if test -n "$CXX11FLAG"; then
