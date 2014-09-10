@@ -295,11 +295,10 @@ AC_SUBST(TOOL_PREFIX)
 AC_DEFINE_UNQUOTED(TOOL_PREFIX, "${TOOL_PREFIX}", [Define to the prefix under which the LLVM toolchain is installed.])
 
 dnl LLVM 3.5 lists some extra system libraries with the --system-libs options.
-LLVM_SYS_LIBS="`$LLVMCONF --system-libs 2>/dev/null`"
-if test -n "${LLVM_SYS_LIBS}"; then
-dnl But actually we only need these to make the linker happy:
-LLVM_SYS_LIBS="-lz -lpthread -ldl"
-fi
+dnl These are required when linking against the static LLVM libs. Note that
+dnl we edit some of the linker options to prevent collisions with Pure's
+dnl readline support.
+LLVM_SYS_LIBS="`$LLVMCONF --system-libs 2>/dev/null | sed -e 's/-ledit[ ]*//g' -e 's/-lcurses/-lncurses/g'`"
 
 dnl If we got LLVM installed as a shared library, use that unless the user
 dnl specified --with-static-llvm.
