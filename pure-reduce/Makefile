@@ -147,6 +147,7 @@ debsrc2 = $(debname).orig-reduce-algebra.tar.bz2
 
 deb: $(debsrc) $(debsrc2) dist
 	tar xfz $(dist).tar.gz
+	cd $(dist) && tar xfj ../$(debsrc2)
 	cd $(dist) && debuild $(DEBUILD_FLAGS)
 	rm -rf $(dist)
 
