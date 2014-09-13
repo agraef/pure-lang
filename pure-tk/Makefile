@@ -30,7 +30,7 @@ tclvers = $(shell echo 'puts $$tcl_version' | tclsh)
 # OS X: Use this instead to link against the native (Apple) Tcl/Tk.
 #tclvers = $(shell echo 'puts $$tcl_version' | /usr/bin/tclsh)
 ifeq ($(strip $(tclvers)),)
-tclvers = 8.5
+tclvers = 8.6
 endif
 
 # Try to figure out where the Tcl/Tk includes and libraries are.
