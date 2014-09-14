@@ -1,6 +1,6 @@
 
 dist = pure-lv2-$(version)
-version = 0.1
+version = 0.2
 
 # compiler flags (these can be overridden)
 CFLAGS = -O3
@@ -42,11 +42,11 @@ uninstall:
 	rm -f $(addprefix "$(DESTDIR)$(purelibdir)/", lv2$(DLL) lv2.pure lv2pure.c lv2pure.h) "$(DESTDIR)$(bindir)/pure2lv2"
 
 DISTFILES = COPYING Makefile README lv2.c lv2.pure lv2pure.c lv2pure.h \
-pure2lv2 *.ttl examples/Makefile examples/*.pure
+pure2lv2 *.ttl debian/* examples/Makefile examples/*.pure
 
 dist:
 	rm -rf $(dist)
-	for x in $(dist) $(dist)/examples; do mkdir $$x; done
+	for x in $(dist) $(dist)/debian $(dist)/examples; do mkdir $$x; done
 	for x in $(DISTFILES); do ln -sf "$$PWD"/$$x $(dist)/$$x; done
 	rm -f $(dist).tar.gz
 	tar -czhf $(dist).tar.gz $(dist)
@@ -56,3 +56,13 @@ distcheck: dist
 	tar -xzf $(dist).tar.gz
 	cd $(dist) && make && make install DESTDIR=./BUILD
 	rm -rf $(dist)
+
+debsrc = $(shell echo $(dist) | sed -e 's/-$(version)/_$(version)/').orig.tar.gz
+
+deb: $(debsrc) dist
+	tar xfz $(dist).tar.gz
+	cd $(dist) && debuild $(DEBUILD_FLAGS)
+	rm -rf $(dist)
+
+$(debsrc):
+	wget -nv https://bitbucket.org/purelang/pure-lang/downloads/$(dist).tar.gz -O $@

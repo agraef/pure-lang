@@ -1,6 +1,6 @@
 
 pkgname = pure-lilv
-version = 0.3
+version = 0.4
 
 # platform-specific setup
 
@@ -44,7 +44,7 @@ uninstall:
 # Roll a distribution tarball.
 
 DISTFILES = COPYING Makefile $(puresource) $(csource) \
-lv2_evbuf.c lv2_evbuf.h symap.c symap.h \
+lv2_evbuf.c lv2_evbuf.h symap.c symap.h debian/* \
 examples/Makefile examples/*.pure examples/*mid
 SEDFILES = README
 
@@ -55,7 +55,7 @@ datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > 
 
 dist: $(DISTFILES)
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/examples
+	mkdir $(dist) && mkdir $(dist)/debian && mkdir $(dist)/examples
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	for x in $(SEDFILES); do rm -f $(dist)/$$x; $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
 	rm -f $(dist).tar.gz
@@ -66,3 +66,13 @@ distcheck: dist
 	tar xfz $(dist).tar.gz
 	cd $(dist) && make && make install DESTDIR=./BUILD
 	rm -rf $(dist)
+
+debsrc = $(shell echo $(dist) | sed -e 's/-$(version)/_$(version)/').orig.tar.gz
+
+deb: $(debsrc) dist
+	tar xfz $(dist).tar.gz
+	cd $(dist) && debuild $(DEBUILD_FLAGS)
+	rm -rf $(dist)
+
+$(debsrc):
+	wget -nv https://bitbucket.org/purelang/pure-lang/downloads/$(dist).tar.gz -O $@
