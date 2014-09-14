@@ -1323,7 +1323,7 @@ public:
 				 string asname = "", bool dll_check = true);
   void check_used(set<llvm::Function*>& used,
 		  map<llvm::GlobalVariable*,llvm::Function*>& varmap);
-  int compiler(string out, list<string> libnames);
+  int compiler(string out, list<string> libnames, string llcopts = "");
   list<DebugInfo> debug_info;
   set<int32_t> breakpoints, tmp_breakpoints, tracepoints, mac_tracepoints;
   int32_t stoplevel, tracelevel;

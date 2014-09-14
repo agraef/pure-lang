@@ -10503,7 +10503,7 @@ void interpreter::check_used(set<Function*>& used,
 #endif
 }
 
-int interpreter::compiler(string out, list<string> libnames)
+ int interpreter::compiler(string out, list<string> libnames, string llcopts)
 {
   /* We allow either '-' or *.ll to indicate an LLVM assembler file. In the
      former case, output is written to stdout, which is useful if the output
@@ -10924,8 +10924,9 @@ int interpreter::compiler(string out, list<string> libnames)
     custom_opts = "-disable-cfi ";
 #endif
 #endif
+    if (!llcopts.empty()) llcopts += " ";
     string cmd = opt+" -f -std-compile-opts "+quote(target)+
-      " | "+llc+" "+custom_opts+
+      " | "+llc+" "+llcopts+custom_opts+
       string(pic?"-relocation-model=pic ":"")+
       "-o "+quote(asmfile);
     if (vflag) std::cerr << cmd << '\n';

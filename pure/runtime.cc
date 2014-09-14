@@ -3846,6 +3846,14 @@ pure_interp *pure_create_interp(int argc, char *argv[])
 	  }
 	}
 	/* ignored */
+      } else if (strncmp(*args, "-m", 2) == 0) {
+	string s = string(*args).substr(2);
+	if (s.empty()) {
+	  cerr << "pure_create_interp: -m lacks option argument\n";
+	  delete _interp;
+	  return 0;
+	}
+	/* ignored */
       } else if (strncmp(*args, "-I", 2) == 0) {
 	string s = string(*args).substr(2);
 	if (s.empty()) {

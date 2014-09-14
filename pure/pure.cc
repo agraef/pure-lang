@@ -534,6 +534,7 @@ main(int argc, char *argv[])
   string outname = "a.out";
 #endif
   list<string> libnames;
+  string llcopts;
   // This is used in advisory stack checks.
   interpreter::baseptr = &base;
   // We always ignore SIGPIPE by default.
@@ -737,6 +738,13 @@ main(int argc, char *argv[])
 	  s = *args;
 	}
 	libnames.push_back(unixize(s));
+      } else if (strncmp(*args, "-m", 2) == 0) {
+	string s = string(*args).substr(2);
+	if (s.empty()) {
+	  interp.error(prog + ": -m lacks option argument");
+	  return 1;
+	}
+	llcopts = *args;
       } else if (strncmp(*args, "-I", 2) == 0) {
 	string s = string(*args).substr(2);
 	if (s.empty()) {
@@ -873,7 +881,8 @@ main(int argc, char *argv[])
     else {
       if (interp.compiling || interp.verbose&verbosity::dump)
 	interp.compile();
-      if (interp.compiling) status = interp.compiler(outname, libnames);
+      if (interp.compiling)
+	status = interp.compiler(outname, libnames, llcopts);
       //printf("status = %d\n", status);
     }
     /* interp.compiler() apparently leaves the code module in a dangling
