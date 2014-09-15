@@ -745,7 +745,12 @@ main(int argc, char *argv[])
 	  interp.error(prog + ": -m lacks option argument");
 	  return 1;
 	}
-	llcopts = *args;
+	if (llcopts.empty())
+	  llcopts = *args;
+	else {
+	  llcopts += " ";
+	  llcopts += *args;
+	}
       } else if (strncmp(*args, "-I", 2) == 0) {
 	string s = string(*args).substr(2);
 	if (s.empty()) {
