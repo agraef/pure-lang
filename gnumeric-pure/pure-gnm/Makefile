@@ -17,7 +17,7 @@ template = $(pkgdatadir)/plugin.xml
 
 pure-gnm$(EXE): pure-gnm.pure
 	sed -e 's?plugin.xml?$(template)?' < $< > xx$<
-	pure -c xx$< -o $@
+	pure $(PUREC_FLAGS) -c xx$< -o $@
 	rm -f xx$<
 
 clean:

@@ -34,10 +34,10 @@ SEDFILES = README
 subdirs = lib examples/dsp
 
 all:
-	for x in $(subdirs); do $(MAKE) -C $$x all; done
+	for x in $(subdirs); do $(MAKE) -C $$x PUREC_FLAGS="$(PUREC_FLAGS)" all; done
 
 bitcode:
-	for x in $(subdirs); do $(MAKE) -C $$x bitcode; done
+	for x in $(subdirs); do $(MAKE) -C $$x PUREC_FLAGS="$(PUREC_FLAGS)" bitcode; done
 
 clean:
 	for x in $(subdirs); do $(MAKE) -C $$x clean; done

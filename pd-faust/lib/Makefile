@@ -46,10 +46,10 @@ pdfaustsrc = $(addprefix ../, fdsp~.pure fsynth~.pure midiseq.pure oscseq.pure)
 pdfaustdeps = $(wildcard ../*.pure)
 
 pdfaust.o: $(pdfaustdeps)
-	pure $(PIC) -I.. -L.. -c $(pdfaustsrc) -o $@ --main __pdfaust_main__
+	pure $(PIC) $(PUREC_FLAGS) -I.. -L.. -c $(pdfaustsrc) -o $@ --main __pdfaust_main__
 
 pdfaust2.o: $(pdfaustdeps)
-	pure $(PIC) -I.. -L.. -c $(pdfaustsrc) -o $@ --main __pdfaust_main__ --enable faust2
+	pure $(PIC) $(PUREC_FLAGS) -I.. -L.. -c $(pdfaustsrc) -o $@ --main __pdfaust_main__ --enable faust2
 
 pdloader.o: pdloader.c
 	gcc $(ALL_CFLAGS) -DVERSION="\"$(version)\"" -c $< -o $@
