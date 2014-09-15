@@ -78,6 +78,7 @@ using namespace std;
 -I directory      Add directory to search for included source files.\n\
 -L directory      Add directory to search for dynamic libraries.\n\
 -l libname        Library to be linked in batch compilation.\n\
+-mopt=val         Add llc machine options in batch compilation.\n\
 --main=name       Name of main entry point in batch compilation.\n\
 --noediting       Disable command-line editing.\n\
 --noprelude, -n   Do not load the prelude.\n\
