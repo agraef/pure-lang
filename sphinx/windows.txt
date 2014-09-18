@@ -16,10 +16,14 @@ Windows version:
   to the directory containing the prelude and other library modules, available
   in the ``lib`` subdirectory of the Pure program directory. Also, the
   ``PATH`` environment variable should contain both the Pure program directory
-  and the ``lib`` subdirectory, so that you can run the interpreter and
-  compiled programs from the command line. Both environment variables are set
-  automatically during installation. To make this work, you have to install
-  the package with administrator rights.
+  and the ``lib`` subdirectory, so that you can run the interpreter and the
+  LLVM tools needed for batch compilation from the command line. Both
+  environment variables are set automatically during installation. To make
+  this work, you have to install the package with administrator rights.
+
+* The package includes the requisite LLVM tools (llc, opt, llvm-as) from LLVM,
+  so that Pure's batch compiler can be used to compile Pure scripts to native
+  code, without having to install a full LLVM toolchain on the target system.
 
 * The package includes a shortcut to run the Pure interpreter in a command
   window, as well as a shortcut for the online documentation that you're
@@ -49,12 +53,11 @@ Windows version:
 .. _LLVM download page: http://llvm.org/releases
 .. _clang: http://clang.llvm.org/
 .. _dragonegg: http://dragonegg.llvm.org/
-.. _7-Zip: http://www.7-zip.org/
 
-The Windows package contains all that's needed to run Pure programs with the
-interpreter. However, in order to be able to run the Pure batch compiler and
-to make full use of the Pure/C interface on Windows, you may need to install
-some third-party programming tools:
+The Windows package contains all that's needed to run and compile Pure
+programs with the interpreter. However, in order to make full use of the
+Pure/C interface on Windows, you may need to install some third-party
+programming tools:
 
 * mingw_ is a full version of the GNU C/C++ compiler for Windows systems.
   You'll need this in order to create native executables and libraries with
@@ -71,29 +74,15 @@ some third-party programming tools:
   that it points to the directory containing the mingw binaries, usually
   ``c:\mingw\bin``.
 
-* The batch compiler also requires the LLVM toolchain for mingw32/x86,
-  available from the `LLVM download page`_. In addition, in order to use the
-  C/C++ code inlining feature of the Pure interpreter, you'll need an
-  LLVM-enabled C/C++ compiler such as clang_. (That's pretty much the only
-  option on Windows right now; at the time of this writing, the dragonegg_
-  plugin for gcc hasn't been ported to Windows yet.)
+* In order to use the C/C++ code inlining feature of the Pure interpreter,
+  you'll also need an LLVM-enabled C/C++ compiler such as clang_. (That's
+  pretty much the only option on Windows right now; at the time of this
+  writing, the dragonegg_ plugin for gcc hasn't been ported to Windows yet.)
+  This Pure release has been built and tested with LLVM 3.5, so this is the
+  version of clang that you should get. Windows binaries for clang 3.5 can be
+  found at the `LLVM download page`_:
 
-  This Pure release has been built and tested with LLVM 3.5, so that is the
-  version that you should get. A binary Windows release of clang 3.5 is
-  available from the `LLVM download page`_, but unfortunately it lacks the
-  LLVM toolchain needed by Pure's batch compiler. Thus you'll either have to
-  compile LLVM+clang 3.5 yourself (which isn't that hard to do, once you have
-  all the requisite tools installed), or use the precompiled binaries that we
-  provide at the Pure website:
-
-  https://bitbucket.org/purelang/pure-lang/downloads/clang+llvm-3.5-x86-mingw32.zip
-
-  You should unpack this package (using, e.g., 7-Zip_) to a directory on your
-  harddisk (say, ``c:\llvm``), and modify the ``PATH`` environment variable so
-  that it points to the ``bin`` subdirectory of this folder.
-
-  Please note that these binaries were compiled with mingw 4.4 and depend on
-  some of its libraries, so mingw 4.4 needs to be installed to make them work.
+  http://llvm.org/releases/3.5.0/LLVM-3.5.0-win32.exe
 
 * Finally, the Pure program directory needs to be added to the gcc
   ``LIBRARY_PATH`` environment variable, so that some Windows-specific addon
