@@ -76,7 +76,6 @@ static const char *get_libdir(const char *path)
   static char s_libdir[MAXPDSTRING];
   static const char *libdir = NULL;
   if (!libdir) {
-#ifndef WIN32
     /* Make an educated guess at where the Pd library directory actually is. */
     static char dirbuf[MAXPDSTRING];
     char *nameptr;
@@ -97,7 +96,6 @@ static const char *get_libdir(const char *path)
       close(fd);
     } else
       // fall back to the hardcoded default
-#endif
       libdir = LIBDIR;
   }
   snprintf(s_libdir, MAXPDSTRING, "%s%s", libdir, path?path:"");
