@@ -10267,6 +10267,20 @@ static inline bool is_tmpvar(const string& name, string& label)
 }
 #endif
 
+#ifdef __MINGW32__
+// The Windows shell doesn't understand backslash escapes, but double
+// quotes should work.
+static string& quote(string& s)
+{
+  size_t p = 0, q;
+  while ((q = s.find_first_of(" \t", p)) != string::npos) {
+    string dq = "\"";
+    s = dq+s+dq;
+    return s;
+  }
+  return s;
+}
+#else
 static string& quote(string& s)
 {
   size_t p = 0, q;
@@ -10276,6 +10290,7 @@ static string& quote(string& s)
   }
   return s;
 }
+#endif
 
 #define DEBUG_USED 0
 #define DEBUG_UNUSED 0
