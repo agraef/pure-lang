@@ -1202,11 +1202,19 @@ static void timeout(t_pure *x)
 /* Menu callback. Thanks to Martin Peach for pointing out on pd-dev how this
    works. */
 
+#ifndef PD_MENU_COMMANDS
+#if PD_MAJOR_VERSION > 0 || PD_MINOR_VERSION >= 43
+/* This needs a fairly recent Pd version (probably 0.43 or later). */
+#define PD_MENU_COMMANDS 1
+#else
+#undef PD_MENU_COMMANDS
+#endif
+#endif
+
 static void pure_menu_open(t_pure *x)
 {
   if (x->open_filename) {
-#if PD_MAJOR_VERSION > 0 || PD_MINOR_VERSION >= 43
-    /* This needs a fairly recent Pd version (probably 0.43 or later). */
+#if PD_MENU_COMMANDS
     sys_vgui("::pd_menucommands::menu_openfile {%s}\n", x->open_filename);
 #else
     /* An older Pd version before the GUI rewrite. Let's just fire up emacs
@@ -1217,7 +1225,7 @@ static void pure_menu_open(t_pure *x)
     t_classes *c = x->cls;
     if (!c) return; /* this should never happen */
     if (c->dir && *c->dir) {
-#if PD_MAJOR_VERSION > 0 || PD_MINOR_VERSION >= 43
+#if PD_MENU_COMMANDS
       sys_vgui("::pd_menucommands::menu_openfile {%s/%s.pure}\n",
 	       c->dir, c->sym->s_name);
 #else

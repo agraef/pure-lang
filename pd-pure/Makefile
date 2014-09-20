@@ -1,7 +1,7 @@
 
 # Package name and version number:
 dist = pd-pure-$(version)
-version = 0.18
+version = 0.19
 
 # Here are some variables you can specify when invoking 'make', besides the
 # usual CXXFLAGS, CPPFLAGS etc.:
@@ -21,6 +21,11 @@ version = 0.18
 # passing 'EAGER='.
 
 PD=pd
+
+ifeq ($(PD),pd-l2ork)
+# pd-l2ork apparently doesn't support the menu command facility.
+PD_MENU_FLAGS=-DPD_MENU_COMMANDS=0
+endif
 
 # Pd executable name variants.
 PDEXE=$(subst pd-extended,pdextended,$(PD))
@@ -110,7 +115,7 @@ pure$(DLL): pure.o
 	$(CC) $(shared) -o $@ $(PIC) $(LDFLAGS) $< $(purelib) $(LIBS)
 
 pure.o: pure.c
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(PIC) -o $@ -c $< -DPD="\"$(PD)\"" -DVERSION="\"$(version)\"" -DLIBDIR="\"$(pdlibdir)\""
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(PIC) -o $@ -c $< -DPD="\"$(PD)\"" -DVERSION="\"$(version)\"" -DLIBDIR="\"$(pdlibdir)\"" $(PD_MENU_FLAGS)
 
 clean:
 	rm -f pure$(DLL) *~ *.a *.o
