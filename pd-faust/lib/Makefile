@@ -2,7 +2,7 @@
 override srcdir = ..
 include $(srcdir)/Makefile.common
 
-override CPPFLAGS += -I../pd
+override CPPFLAGS += -I$(pdincdir) -I../pd
 
 solibs     := util$(DLL) pdstub$(DLL)
 somodules  := $(dsp_source:.dsp=$(DLL))

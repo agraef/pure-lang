@@ -52,6 +52,20 @@ endif
 libdir = $(prefix)/lib
 includedir = $(prefix)/include
 
+# Specific setup for the various Pd flavours.
+ifeq ($(PD),pd-l2ork)
+PD_INC=/pdl2ork
+endif
+ifeq ($(PD),pd-extended)
+PD_INC=/pdextended
+endif
+
+# Pd include path. This is searched for m_pd.h if we have it. Otherwise the
+# generic header file pd/m_pd.h in the sources is used. This enables us to
+# compile pd-faust on systems where Pd isn't installed in the usual places
+# (most importantly, Mac and Windows).
+pdincdir = $(includedir)$(PD_INC)
+
 # Pd library path.
 pdlibdir = $(libdir)/$(PD)
 
