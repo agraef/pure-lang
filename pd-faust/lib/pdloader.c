@@ -28,7 +28,7 @@ extern const char *pd_libdir(void);
 extern int pure_register_class(const char *name, pure_interp *interp,
 			       const char *help);
 
-#define HELP "/extra/faust/faust-help.pd"
+#define HELP "/extra/faust/faust.pd"
 
 #ifdef FAUST2
 extern void pdfaust2_setup(void)

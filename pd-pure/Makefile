@@ -22,11 +22,6 @@ version = 0.19
 
 PD=pd
 
-ifeq ($(PD),pd-l2ork)
-# pd-l2ork apparently doesn't support the menu command facility.
-PD_MENU_FLAGS=-DPD_MENU_COMMANDS=0
-endif
-
 # Pd executable name variants.
 PDEXE=$(subst pd-extended,pdextended,$(PD))
 
@@ -50,6 +45,20 @@ purelib = $(shell pkg-config pure --libs)
 # instead of $(prefix).
 libdir = $(prefix)/lib
 includedir = $(prefix)/include
+
+# Specific setup for the various Pd flavours.
+ifeq ($(PD),pd-l2ork)
+PD_INC=/pdl2ork
+endif
+ifeq ($(PD),pd-extended)
+PD_INC=/pdextended
+endif
+
+# Pd include path. This is searched for m_pd.h if we have it. Otherwise the
+# generic header file pd/m_pd.h in the sources is used. This enables us to
+# compile pd-pure on systems where Pd isn't installed in the usual places
+# (most importantly, Mac and Windows).
+pdincdir = $(includedir)$(PD_INC)
 
 # Pd library path.
 pdlibdir = $(libdir)/$(PD)
@@ -102,7 +111,7 @@ ifneq "$(VERBOSE)" ""
 override CPPFLAGS += $(VERBOSE)
 endif
 
-override CPPFLAGS += -Ipd $(pureinc)
+override CPPFLAGS += -I$(pdincdir) -Ipd $(pureinc)
 
 DISTFILES = COPYING Makefile README config.guess pure.c pd/*.h \
 debian/* examples/*.pure examples/*.pd examples/*.el \
