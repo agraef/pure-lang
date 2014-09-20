@@ -24,6 +24,9 @@ ifneq "$(findstring -darwin,$(host))" ""
 # set when the libraries are linked. Also note that we need the -undefined
 # dynamic_lookup linker flag here to link back into the Pd executable.
 extralibs = -Wl,-undefined -Wl,dynamic_lookup $(addprefix $(purelib)/, orddict$(DLL) faust$(DLL) midifile$(DLL))
+else ifneq "$(findstring -mingw,$(host))" ""
+# Windows requires linking against the Pd library and the Pure plugin loader.
+extralibs = -Wl,--enable-auto-import $(addprefix $(purelib)/, orddict$(DLL) faust$(DLL) midifile$(DLL)) $(libdir)/$(PD)/extra/pure/pure.dll -lpd -lglob
 else
 # This requires a linker that handles the -rpath option. Otherwise you may
 # have to add the Pure library directory to your system dll search path so
