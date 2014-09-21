@@ -2570,6 +2570,9 @@ bool interpreter::LoadBitcode(bool priv, const char *name, string *msg)
      standards). If this is omitted, the default is old-style (fixed form)
      Fortran.
 
+   - "-*- ats -*-" selects ATS (PURE_ATSCC environment variable,
+     patscc -fplugin=dragonegg by default).
+
    - "-*- dsp:name -*-" selects Faust (PURE_FAUST environment variable, faust
      by default), where 'name' denotes the name of the Faust dsp, which is
      used as the namespace for the dsp interface functions.
@@ -2652,6 +2655,11 @@ void interpreter::inline_code(bool priv, string &code)
     // gfortran doesn't understand -x, so we have to do some trickery with
     // filename extensions instead.
     args = " -emit-llvm -c "; ext = ".f"+std;
+  } else if (tag == "ats") {
+    env = "PURE_ATSCC";
+    drv = "patscc -fplugin=dragonegg";
+    args = " -emit-llvm -c ";
+    ext = ".dats";
   } else if (tag == "dsp") {
     env = "PURE_FAUST"; drv = "faust -double";
     args = " -lang llvm ";
