@@ -17,6 +17,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <string.h>
+#include <string.h>
 #include <math.h>
 #include <ltdl.h>
 
@@ -428,6 +429,7 @@ static inline void clone_module(module_t *mod)
    DSP object itself. */
 
 struct faust_t {
+  char *name;
   module_t *mod;
   time_t mtime;
   int rate;
@@ -481,7 +483,23 @@ void faust_exit(faust_t *fd)
   if (fd->inbuf) free(fd->inbuf);
   if (fd->outbuf) free(fd->outbuf);
   if (fd->mod) unload_module(fd->mod);
+  if (fd->name) free(fd->name);
   free(fd);
+}
+
+static char *dsp_name(const char *name)
+{
+  // get the basename, strip off any trailing suffix
+  const char *p = strrchr(name, '/');
+  if (p) p++; else p = name;
+  const char *q = strchr(p, '.');
+  size_t l = q?q-p:strlen(p);
+  char *res = (char*)malloc(l+1);
+  if (res) {
+    strncpy(res, p, l);
+    res[l] = 0;
+  }
+  return res;
 }
 
 extern "C"
@@ -491,6 +509,7 @@ faust_t *faust_init(const char *name, int rate)
   if (!name) return NULL;
   fd = (faust_t*)malloc(sizeof(faust_t));
   if (!fd) return NULL;
+  fd->name = dsp_name(name);
   fd->rate = 0;
   fd->mod = NULL;
   fd->d = NULL;
@@ -507,6 +526,23 @@ faust_t *faust_init(const char *name, int rate)
   fd->ui = new PureUI();
   if (!fd->ui) goto error;
   fd->d->buildUserInterface(fd->ui);
+  // Get rid of bogus "0x00" labels in recent Faust revisions. Also, for
+  // backward compatibility with old Faust versions, make sure that default
+  // toplevel groups and explicit toplevel groups with an empty label are
+  // treated alike (these both return "0x00" labels in the latest Faust, but
+  // would be treated inconsistently in earlier versions).
+  for (int i = 0; i < fd->ui->nelems; i++) {
+    if (!fd->ui->elems[i].label) continue;
+    if (!*fd->ui->elems[i].label ||
+	strcmp(fd->ui->elems[i].label, "0x00") == 0) {
+      if (i == 0)
+	// toplevel group with empty label, map to dsp name
+	fd->ui->elems[i].label = fd->name;
+      else
+	// empty label
+	fd->ui->elems[i].label = "";
+    }
+  }
   init_bufs(fd);
   return fd;
  error:
@@ -528,6 +564,7 @@ faust_t *faust_clone(faust_t *fd1)
   faust_t *fd = (faust_t*)malloc(sizeof(faust_t));
   if (!fd) return NULL;
   *fd = *fd1;
+  fd->name = strdup(fd->name);
   fd->d = fd->mod->newdsp();
   if (!fd->d) {
     free(fd);
@@ -541,6 +578,16 @@ faust_t *faust_clone(faust_t *fd1)
     return NULL;
   }
   fd->d->buildUserInterface(fd->ui);
+  for (int i = 0; i < fd->ui->nelems; i++) {
+    if (!fd->ui->elems[i].label) continue;
+    if (!*fd->ui->elems[i].label ||
+	strcmp(fd->ui->elems[i].label, "0x00") == 0) {
+      if (i == 0)
+	fd->ui->elems[i].label = fd->name;
+      else
+	fd->ui->elems[i].label = "";
+    }
+  }
   init_bufs(fd);
   clone_module(fd->mod);
   return fd;

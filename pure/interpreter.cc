@@ -782,7 +782,8 @@ void interpreter::init()
   declare_extern((void*)faust_free_ui,
 		 "faust_free_ui", "void",     1, "void*");
   declare_extern((void*)faust_make_info,
-		 "faust_make_info","expr*",   3, "int", "int", "void*");
+		 "faust_make_info","expr*",   4, "int", "int", "void*",
+		 "char*");
   declare_extern((void*)faust_new_metadata,
 		 "faust_new_metadata", "void*", 0);
   declare_extern((void*)faust_free_metadata,
@@ -2178,10 +2179,20 @@ bool interpreter::LoadFaustDSP(bool priv, const char *name, string *msg,
       b.CreateCall(buildUserInterface, mkargs(args));
       // Construct the info tuple.
       Function *infofun = module->getFunction("faust_make_info");
+      // Pass the module name so that faust_make_info knows about the dsp name.
+      GlobalVariable *w = global_variable
+	(module, ArrayType::get(int8_type(), modname.size()+1), true,
+	 GlobalVariable::InternalLinkage, constant_char_array(modname.c_str()),
+	 "$$faust_str");
+      // "cast" the char array to a char*
+      Value *idx[2] = { ConstantInt::get(interpreter::int32_type(), 0),
+			ConstantInt::get(interpreter::int32_type(), 0) };
+      Value *p = b.CreateGEP(w, mkidxs(idx, idx+2));
       args.clear();
       args.push_back(n_in);
       args.push_back(n_out);
       args.push_back(v);
+      args.push_back(p);
       Value *u = b.CreateCall(infofun, mkargs(args));
       // Get rid of the internal UI data structure.
       Function *freefun = module->getFunction("faust_free_ui");

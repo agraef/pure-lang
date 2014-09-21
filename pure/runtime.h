@@ -996,7 +996,7 @@ void pure_add_rtti(const char *name, int tag);
 void *faust_float_ui();
 void *faust_double_ui();
 void faust_free_ui(void *ui);
-pure_expr *faust_make_info(int n_in, int n_out, void *ui);
+pure_expr *faust_make_info(int n_in, int n_out, void *ui, const char *modname);
 
 void *faust_new_metadata();
 void faust_free_metadata(void *m);

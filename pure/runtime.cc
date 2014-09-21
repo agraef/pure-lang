@@ -17564,7 +17564,7 @@ static int pop(int &i, int &n, pure_expr **&xv)
   return 1;
 }
 
-static pure_expr *faust_make_ui(void *p)
+static pure_expr *faust_make_ui(void *p, const char *name)
 {
   UIGlue *glue = (UIGlue*)p;
   PureFaustUI *ui = static_cast<PureFaustUI*>(glue->uiInterface);
@@ -17573,6 +17573,23 @@ static pure_expr *faust_make_ui(void *p)
   if (ui->nelems <= 0) return pure_tuplel(0);
   pure_expr **xv = NULL;
   int n = 0;
+  // Get rid of bogus "0x00" labels in recent Faust revisions. Also, for
+  // backward compatibility with old Faust versions, make sure that default
+  // toplevel groups and explicit toplevel groups with an empty label are
+  // treated alike (these both return "0x00" labels in the latest Faust, but
+  // would be treated inconsistently in earlier versions).
+  for (int i = 0; i < ui->nelems; i++) {
+    if (!ui->elems[i].label) continue;
+    if (!*ui->elems[i].label ||
+	strcmp(ui->elems[i].label, "0x00") == 0) {
+      if (i == 0)
+	// toplevel group with empty label, map to dsp name
+	ui->elems[i].label = name;
+      else
+	// empty label
+	ui->elems[i].label = "";
+    }
+  }
   for (int i = 0; i < ui->nelems; i++) {
     pure_expr *x;
     pure_expr **xv1 = (pure_expr**)realloc(xv, (n+1)*sizeof(pure_expr*));
@@ -17693,9 +17710,11 @@ static pure_expr *faust_make_ui(void *p)
 
 /* Create dsp-related information, including the UI data. */
 
-pure_expr *faust_make_info(int n_in, int n_out, void *ui)
+pure_expr *faust_make_info(int n_in, int n_out, void *ui,
+			   const char *modname)
 {
-  return pure_tuplel(3, pure_int(n_in), pure_int(n_out), faust_make_ui(ui));
+  return pure_tuplel(3, pure_int(n_in), pure_int(n_out),
+		     faust_make_ui(ui, modname));
 }
 
 /* Initialize runtime type information about Faust dsps in batch-compiled
