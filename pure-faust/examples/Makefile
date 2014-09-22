@@ -15,7 +15,7 @@ shared = -shared
 CXXFLAGS = -g -O2
 
 # Try to guess the host system type and figure out compilation flags.
-host = $(shell ../config.guess)
+host = $(shell ./config.guess)
 ifneq "$(findstring -mingw,$(host))" ""
 # Windows
 DLL = .dll

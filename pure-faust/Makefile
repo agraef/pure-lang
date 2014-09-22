@@ -29,7 +29,8 @@ MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS) $(LIBS)
 
 DISTFILES = COPYING COPYING.LESSER Makefile README \
 faust.cc faust.pure faust2.pure \
-debian/* examples/Makefile examples/pure.c examples/pure.cpp \
+debian/* examples/Makefile examples/config.guess \
+examples/pure.c examples/pure.cpp \
 examples/*.pure examples/*.dsp
 SEDFILES = README
 
