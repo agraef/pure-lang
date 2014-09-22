@@ -28,7 +28,7 @@ extern const char *pd_libdir(void);
 extern int pure_register_class(const char *name, pure_interp *interp,
 			       const char *help);
 
-#define HELP "/extra/faust/faust.pd"
+#define HELP "faust/faust.pd"
 
 #ifdef FAUST2
 extern void pdfaust2_setup(void)
@@ -51,13 +51,10 @@ extern void pdfaust_setup(void)
     if (interp) {
       bool ok = true;
       const char **c;
-      int l = strlen(pd_libdir())+strlen(HELP);
-      char *help = malloc(l+1);
-      strcpy(help, pd_libdir()); strcat(help, HELP);
       post("%s %s (c) 2011-2014 Albert Graef <aggraef@gmail.com>",
 	   loader_name, VERSION);
       for (c = classes; *c; c++) {
-	if (!pure_register_class(*c, interp, help)) {
+	if (!pure_register_class(*c, interp, HELP)) {
 	  ok = false;
 	  error("%s: failed to register class %s", loader_name, *c);
 	}

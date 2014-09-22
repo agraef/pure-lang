@@ -1775,9 +1775,9 @@ static void class_setup(const char *name, char *dir)
   class_addanything(class, pure_any);
   if (is_dsp) {
     class_addmethod(class, nullfn, &s_signal, A_NULL);
-    class_sethelpsymbol(class, gensym(get_libdir("/extra/pure/pure~.pd")));
+    class_sethelpsymbol(class, gensym("pure/pure~.pd"));
   } else
-    class_sethelpsymbol(class, gensym(get_libdir("/extra/pure/pure.pd")));
+    class_sethelpsymbol(class, gensym("pure/pure.pd"));
   class_addmethod(class, (t_method)pure_menu_open,
 		  gensym((char*)"menu-open"), A_NULL);
   add_class(class_s, class, dir);
@@ -2066,8 +2066,7 @@ extern void pure_setup(void)
 			      sizeof(t_runtime), CLASS_DEFAULT,
 			      A_GIMME, A_NULL);
     class_addanything(runtime_class, runtime_any);
-    class_sethelpsymbol(runtime_class,
-			gensym(get_libdir("/extra/pure/pure.pd")));
+    class_sethelpsymbol(runtime_class, gensym("pure/pure.pd"));
     /* Create classes for 'pure' and 'pure~' objects which allows you to
        access any predefined Pure function without loading a script. */
     class_setup("pure", "");
