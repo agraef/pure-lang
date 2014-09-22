@@ -1,0 +1,114 @@
+
+/* Examples of inline code written in ATS. */
+
+/****************************************************************************/
+
+%< -*- ATS -*-
+
+// An implementation of the GCD of two positive integers, along with
+// proof that it terminates with a positive result. (This
+// implementation does not include proof that the result is the GCD.)
+
+#include "share/atspre_staload.hats"
+
+%{^
+#define imod_c_macro(x, y) ((x) % (y))
+%}
+
+extern fun
+  imod_c_macro {x, y : nat | 1 <= y} (x : int x, y : int y) :<>
+    [q, r : nat] (DIVMOD (x, y, q, r) | int r) = "mac#"
+    
+prfun mod_is_less_than_divisor
+  {x, y, q, r : int | 0 <= x; 1 <= y}
+  .<>.
+  (pf_divmod : DIVMOD (x, y, q, r)) :<prf> [r < y] void =
+    divmod_mul_elim (pf_divmod)
+    
+extern fun gcd_in_ats
+  {m, n : pos}
+  (x : int m, y : int n) :<> [d : pos] int d = "ext#"
+
+implement gcd_in_ats (x, y) =
+  begin
+    if y < x then
+      gcd_lesser_first (y, x)
+    else
+      gcd_lesser_first (x, y)
+  end
+    where
+      {
+        fun gcd_lesser_first
+            {m, n : pos}
+            .<m>.
+            (x : int m, y : int n) :<> [d : pos] int d =
+          begin
+            if y_mod_x = 0 then
+              x
+            else
+              gcd_lesser_first (y_mod_x, x)
+          end
+            where
+              {
+                val (pf_divmod | y_mod_x) = imod_c_macro (y, x)
+                prval () = mod_is_less_than_divisor (pf_divmod)
+              }
+      }
+
+%>
+
+map (gcd_in_ats 25) (30..35);
+
+/****************************************************************************/
+
+%< -*- ATS -*-
+
+// A factorial function with proof of correctness, based on an example
+// ‘Introduction to Programming in ATS’ (which is available at
+// http://www.ats-lang.org).
+
+#include "share/atspre_staload.hats"
+
+dataprop FACT (int, int) =
+  | FACTbas (0, 1)
+  | {n : nat} {r1, r : int}
+    FACTind (n, r) of
+      (FACT (n-1, r1), MUL (n, r1, r))
+
+%{^
+#define imul2(x, y) ((x)*(y))
+%}
+
+extern fun imul2
+  {i, j : int} (i : int i, j : int j) :<>
+    [ij : int] (MUL (i, j, ij) | int ij) = "mac#"
+
+extern fun ifact
+  {n : nat} (n : int n) :<>
+    [r : int] (FACT (n, r) | int r) = "ext#"
+    
+implement ifact (n) =
+  let
+    fun fact {n : nat} .<n>. (n : int n) :<>
+        [r : int] (FACT (n, r) | int r) =
+      begin
+        if n > 0 then
+          let
+            val (pf1 | r1) = ifact (n-1)
+            val (pfmul | r) = imul2 (n, r1)
+          in
+            (FACTind (pf1, pfmul) | r)
+          end
+        else
+          (FACTbas () | 1)
+      end
+  in
+    fact n
+  end
+
+%>
+
+map ifact (0..9);
+
+/****************************************************************************/
+
