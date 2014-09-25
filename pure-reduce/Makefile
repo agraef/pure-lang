@@ -28,10 +28,13 @@ installdir  = $(addprefix $(DESTDIR), $(libdir)/pure)
 bindir      = $(shell pkg-config pure --variable prefix)/bin
 binstalldir = $(addprefix $(DESTDIR), $(bindir))
 
+CFLAGS = -O2
+ALL_CFLAGS = $(CFLAGS) $(EXTRA_CFLAGS)
+
 # Special flags and objects needed to build the reduce dll pilfered from
 # reduce-algebra/csl/new-embedded/procedural/.
 
-CFLAGS=-O2 -I. $(shell pkg-config pure --cflags) -DPAGE_BITS=19 -DHAVE_CONFIG_H=1 -DEMBEDDED=1 -w
+EXTRA_CFLAGS = -I. $(shell pkg-config pure --cflags) -DPAGE_BITS=19 -DHAVE_CONFIG_H=1 -DEMBEDDED=1 -w
 
 objects = arith01.o arith02.o arith03.o arith04.o arith05.o arith06.o arith07.o arith08.o arith09.o arith10.o arith11.o arith12.o bytes.o char.o driver.o embedcsl.o cslmpi.o cslread.o eval1.o eval2.o eval3.o eval4.o fasl.o fns1.o fns2.o fns3.o fwin.o gc.o preserve.o print.o restart.o sysfwin.o termed.o stubs.o
 
@@ -65,16 +68,16 @@ reduce$(EXE): all
 	cp reduce-algebra/csl/new-embedded/reduce-image/reduce$(EXE) .
 
 reduce-algebra/csl/new-embedded/reduce.img reduce-algebra/csl/new-embedded/reduce-image/reduce$(EXE):
-	$(MAKE) -C reduce-algebra/csl/new-embedded CFLAGS="$(CFLAGS)"
+	$(MAKE) -C reduce-algebra/csl/new-embedded CFLAGS="$(ALL_CFLAGS)"
 
 reduce$(DLL): $(addprefix reduce-algebra/csl/new-embedded/procedural/, $(objects)) proc-add.o
 	$(CC) $(shared) $(PIC) $(dllname) -o reduce$(DLL) $^
 
 $(addprefix reduce-algebra/csl/new-embedded/procedural/, $(objects)):
-	$(MAKE) -C reduce-algebra/csl/new-embedded/procedural CFLAGS="$(CFLAGS) $(PIC)"
+	$(MAKE) -C reduce-algebra/csl/new-embedded/procedural CFLAGS="$(ALL_CFLAGS) $(PIC)"
 
 proc-add.o: proc-add.c
-	$(CC) -Ireduce-algebra/csl/new-embedded/procedural $(CFLAGS) $(PIC) -c $< -o $@
+	$(CC) -Ireduce-algebra/csl/new-embedded/procedural $(ALL_CFLAGS) $(PIC) -c $< -o $@
 
 logs: tests.log
 
