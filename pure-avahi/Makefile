@@ -30,7 +30,7 @@ objects = $(patsubst %.c, %$(DLL), $(csource))
 all: $(objects)
 
 %$(DLL): %.c
-	gcc $(shared) $(dllname) -o $@ $(MOD_CFLAGS) $< $(MOD_LDFLAGS) $(LIBS)
+	$(CC) $(shared) $(dllname) -o $@ $(MOD_CFLAGS) $< $(MOD_LDFLAGS) $(LIBS)
 
 clean:
 	rm -f *$(DLL)

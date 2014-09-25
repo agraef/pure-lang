@@ -65,6 +65,13 @@ if test -z "$EMACS"; then
 fi
 
 dnl Check for C++11 support, enable if necessary.
+cpp11check="yes"
+AC_ARG_ENABLE(c++11,
+  [  --enable-c++11          C++11 support (default, needed for LLVM 3.5+)],
+  [case "${enableval}" in
+     no)  cpp11check="no" ;;
+   esac])
+if test "$cpp11check" = "yes"; then
 save_CXXFLAGS=$CXXFLAGS
 CXXFLAGS=""
 AX_CXX_COMPILE_STDCXX_11([ext],[optional])
@@ -72,6 +79,7 @@ CXX11FLAG=$CXXFLAGS
 CXXFLAGS=$save_CXXFLAGS
 if test -n "$CXX11FLAG"; then
   CXXFLAGS="$CXXFLAGS $CXX11FLAG"
+fi
 fi
 
 dnl Install elisp files?

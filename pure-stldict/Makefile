@@ -11,10 +11,13 @@ shared      = $(shell pkg-config pure --variable shared)
 libdir      = $(shell pkg-config pure --variable libdir)
 installdir  = $(addprefix $(DESTDIR), $(libdir)/pure)
 
-MOD_CXXFLAGS  = $(PIC) $(shell pkg-config pure --cflags) $(CXXFLAGS) $(CPPFLAGS)
+MOD_CXXFLAGS  = $(PIC) $(shell pkg-config pure --cflags) $(CXXFLAGS) $(EXTRA_CXXFLAGS) $(CPPFLAGS)
 MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS)
 
-CXXFLAGS = -g -O2 -std=c++0x -Wall
+# These can be overridden.
+CXXFLAGS = -g -O2 -Wall
+# Make sure to add this as well, to force C++0x compatibility.
+EXTRA_CXXFLAGS = -std=c++0x
 
 ifeq ($(DLL),.dylib)
 # OSX: hardcode installation path into the dll.
@@ -30,7 +33,7 @@ objects = $(patsubst %.cc, %$(DLL), $(cppsource))
 all: $(objects)
 
 %$(DLL): %.cc
-	g++ $(shared) $(dllname) -o $@ $(MOD_CXXFLAGS) $< $(MOD_LDFLAGS) $(LIBS)
+	$(CXX) $(shared) $(dllname) -o $@ $(MOD_CXXFLAGS) $< $(MOD_LDFLAGS) $(LIBS)
 
 clean:
 	rm -f *.o *$(DLL) examples/life *~
