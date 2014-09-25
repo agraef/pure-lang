@@ -45,6 +45,11 @@
    skeleton. Silence these. */
 #pragma GCC diagnostic ignored "-Wsign-compare"
 
+#ifdef __clang__
+// clang complains about these.
+#pragma clang diagnostic ignored "-Wdeprecated-register"
+#endif
+
 /* By default yylex returns int, we use token_type.  Unfortunately yyterminate
    by default returns 0, which is not of token_type.  */
 #define yyterminate() return yy::parser::token_type(0)
