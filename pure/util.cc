@@ -837,6 +837,9 @@ my_fromutf8(const char *s, char *codeset)
 
 /* conversion between UTF-8 and wchar_t */
 
+#ifdef __STDC_ISO_10646__
+#define towchar(c) ((wchar_t)(c))
+#else
 static inline wchar_t *
 ictowcs(wchar_t *t, char *s)
 {
@@ -859,9 +862,6 @@ ictowcs(wchar_t *t, char *s)
   }
 }
 
-#ifdef __STDC_ISO_10646__
-#define towchar(c) ((wchar_t)(c))
-#else
 static wchar_t towchar(unsigned long c)
 {
   char s[5]; /* single utf-8 char can have at most 4 bytes, plus terminal 0 */
