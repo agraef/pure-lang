@@ -37,12 +37,12 @@ endif
 
 pdfaust$(PDDLL): pdfaust.o pdloader.o util.o
 	rm -f pdfaust$(PDDLL)
-	gcc $(PIC) $(shared) $^ $(extralibs) -o pdfaust$(DLL) $(PURE_LIBS)
+	$(CC) $(PIC) $(shared) $^ $(extralibs) -o pdfaust$(DLL) $(PURE_LIBS)
 	test "$(DLL)" = "$(PDDLL)" || mv pdfaust$(DLL) pdfaust$(PDDLL)
 
 pdfaust2$(PDDLL): pdfaust2.o pdloader2.o util.o
 	rm -f pdfaust2$(PDDLL)
-	gcc $(PIC) $(shared) $^ $(extralibs) -o pdfaust2$(DLL) $(PURE_LIBS)
+	$(CC) $(PIC) $(shared) $^ $(extralibs) -o pdfaust2$(DLL) $(PURE_LIBS)
 	test "$(DLL)" = "$(PDDLL)" || mv pdfaust2$(DLL) pdfaust2$(PDDLL)
 
 pdfaustsrc = $(addprefix ../, fdsp~.pure fsynth~.pure midiseq.pure oscseq.pure)
@@ -55,13 +55,13 @@ pdfaust2.o: $(pdfaustdeps)
 	pure $(PIC) $(PUREC_FLAGS) -I.. -L.. -c $(pdfaustsrc) -o $@ --main __pdfaust_main__ --enable faust2
 
 pdloader.o: pdloader.c
-	gcc $(ALL_CFLAGS) -DVERSION="\"$(version)\"" -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -DVERSION="\"$(version)\"" -c $< -o $@
 
 pdloader2.o: pdloader.c
-	gcc $(ALL_CFLAGS) -DVERSION="\"$(version)\"" -DFAUST2 -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -DVERSION="\"$(version)\"" -DFAUST2 -c $< -o $@
 
 util.o: util.c
-	gcc $(ALL_CFLAGS) -c $< -o $@
+	$(CC) $(ALL_CFLAGS) -c $< -o $@
 
 # Faust-specific stuff
 svg: $(svg)
