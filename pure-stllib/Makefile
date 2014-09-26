@@ -1,4 +1,4 @@
-# Makfile for stllib
+# Makefile for stllib
 
 pkgname = stllib
 
@@ -14,10 +14,10 @@ shared      = $(shell pkg-config pure --variable shared)
 libdir      = $(shell pkg-config pure --variable libdir)
 installdir  = $(addprefix $(DESTDIR), $(libdir)/pure)
 
-MOD_CXXFLAGS = $(PIC) $(shell pkg-config pure --cflags) $(CFLAGS) $(CPPFLAGS)
+MOD_CXXFLAGS = $(PIC) $(shell pkg-config pure --cflags) $(CXXFLAGS) $(CPPFLAGS)
 MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS)
 
-CFLAGS = -g -O2 -Wall -Wextra
+CXXFLAGS = -g -O2 -Wall -Wextra
 
 ifeq "$(DLL)" ".dylib"
 DLL_FLAGS = -install_name "$(libdir)/pure/$@"
