@@ -19,7 +19,20 @@ included with the pure-stlmap distribution package for details.
 
 #include <iostream>
 #include <utility>
+
+/* Define this for C++ TR1 extensions support. This is needed to get
+   unordered_map for some older C++ libraries which don't provide full C++11
+   support yet. */
+//#define HAVE_TR1
+#ifdef HAVE_TR1
+#include <tr1/unordered_map>
+using namespace std;
+using namespace std::tr1;
+#else
 #include <unordered_map>
+using namespace std;
+#endif
+
 #include "stlbase.hpp"
 
 typedef pure_expr px;
@@ -28,7 +41,7 @@ typedef std::pair<px*,px*> pxp_pair;
 struct px_hash
 {
   size_t operator()(px* x) const
-  { return hash(x); };
+  { return ::hash(x); };
 };
 
 struct px_same {
@@ -52,7 +65,7 @@ struct px_pair_same {
   }
 };
 
-typedef std::unordered_map<px*,px*,px_hash,px_same> pxhmap;
+typedef unordered_map<px*,px*,px_hash,px_same> pxhmap;
 typedef pxhmap::iterator pxhmapi;
 
 struct stlhmap {

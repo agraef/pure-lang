@@ -403,11 +403,69 @@ int stl_shm_erase(px* pxshp, px* key)
   return ret;
 }
 
+#ifdef HAVE_TR1
+// There's no equality defined for tr1::unordered_map, we have to do it
+// ourselves. (Code pilfered from pure-stldict. -ag)
+static bool myequal(pair<pure_expr*,pure_expr*> x,
+		    pair<pure_expr*,pure_expr*> y)
+{
+  return same(x.second, y.second);
+}
+
+#include <functional>
+#include <tr1/tuple>
+
+template<class ForwardIterator1, class ForwardIterator2, class BinaryPredicate>
+static bool my_is_permutation(ForwardIterator1 first, ForwardIterator1 last,
+			      ForwardIterator2 d_first, BinaryPredicate p)
+{
+  // skip common prefix
+  tie(first, d_first) = mismatch(first, last, d_first, p);
+  // iterate over the rest, counting how many times each element
+  // from [first, last) appears in [d_first, d_last)
+  if (first != last) {
+    ForwardIterator2 d_last = d_first;
+    advance(d_last, distance(first, last));
+    for (ForwardIterator1 i = first; i != last; ++i) {
+      using placeholders::_1;
+      if (i != find_if(first, i, bind(p, _1, *i)))
+	continue; // already counted this *i
+      auto m = count_if(d_first, d_last, bind(p, _1, *i));
+      if (m==0 || count_if(i, last, bind(p, _1, *i)) != m) {
+	return false;
+      }
+    }
+  }
+  return true;
+}
+
+static bool pxhmequal(pxhmap &x, pxhmap &y)
+{
+  if (&x == &y) return true;
+  if (x.size() != y.size()) return false;
+  for (pxhmap::iterator it = x.begin(); it != x.end(); ) {
+    pair<pxhmap::iterator, pxhmap::iterator>
+      r1 = x.equal_range(it->first),
+      r2 = y.equal_range(it->first);
+    if (distance(r1.first, r1.second) != distance(r2.first, r2.second))
+      return false;
+    if (!my_is_permutation(r1.first, r1.second, r2.first, myequal))
+      return false;
+    it = r1.second;
+  }
+  return true;
+}
+#endif
+
 bool stl_shm_equal(px* pxshp1, px* pxshp2)
 {
   sh *shp1 = 0, *shp2 = 0;
   if ( !get_shp(pxshp1,&shp1) || !get_shp(pxshp2,&shp2) ) bad_argument();
+#ifdef HAVE_TR1
+  return pxhmequal(shp1->hm, shp2->hm);
+#else
   return shp1->hm == shp2->hm;
+#endif
 }
 
 px* stl_shm_make_vector(px* pxshp) 

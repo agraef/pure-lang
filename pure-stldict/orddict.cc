@@ -8,6 +8,19 @@
 #include <map>
 #include <algorithm>
 
+/* Define this for C++ TR1 extensions support. This is needed to get tuple and
+   unordered_map for some older C++ libraries which don't provide full C++11
+   support yet. */
+//#define HAVE_TR1
+#ifdef HAVE_TR1
+#include <tr1/tuple>
+using namespace std;
+using namespace std::tr1;
+#else
+#include <tuple>
+using namespace std;
+#endif
+
 // Enable this for some additional (possibly costly) assertions in the code.
 //#define DEBUG 1
 
@@ -582,8 +595,6 @@ static bool myequal(pair<pure_expr*,pure_expr*> x,
   return eqchk(x.second, y.second);
 }
 
-#include <tuple>
-
 #ifdef HAVE_STD_IS_PERMUTATION
 #define my_is_permutation is_permutation
 #else
@@ -595,16 +606,16 @@ static bool my_is_permutation(ForwardIterator1 first, ForwardIterator1 last,
 			      ForwardIterator2 d_first, BinaryPredicate p)
 {
   // skip common prefix
-  std::tie(first, d_first) = std::mismatch(first, last, d_first, p);
+  tie(first, d_first) = mismatch(first, last, d_first, p);
   // iterate over the rest, counting how many times each element
   // from [first, last) appears in [d_first, d_last)
   if (first != last) {
     ForwardIterator2 d_last = d_first;
-    std::advance(d_last, std::distance(first, last));
+    advance(d_last, distance(first, last));
     for (ForwardIterator1 i = first; i != last; ++i) {
-      if (i != std::find(first, i, *i)) continue; // already counted this *i
-      auto m = std::count(d_first, d_last, *i);
-      if (m==0 || std::count(i, last, *i) != m) {
+      if (i != find(first, i, *i)) continue; // already counted this *i
+      auto m = count(d_first, d_last, *i);
+      if (m==0 || count(i, last, *i) != m) {
 	return false;
       }
     }

@@ -5,8 +5,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include <pure/runtime.h>
-#include <unordered_map>
 #include <algorithm>
+
+/* Define this for C++ TR1 extensions support. This is needed to get tuple and
+   unordered_map for some older C++ libraries which don't provide full C++11
+   support yet. */
+//#define HAVE_TR1
+#ifdef HAVE_TR1
+#include <tr1/unordered_map>
+#include <tr1/tuple>
+using namespace std;
+using namespace std::tr1;
+#else
+#include <unordered_map>
+#include <tuple>
+using namespace std;
+#endif
 
 // Enable this for some additional (possibly costly) assertions in the code.
 //#define DEBUG 1
@@ -116,8 +130,6 @@ static bool pure_is_symbolic_vectorv(pure_expr *x, size_t *n, pure_expr ***xv)
   }
   return true;
 }
-
-using namespace std;
 
 // Hashing and comparing Pure expressions. The required functionality is in
 // the Pure runtime (hash() and same() functions, see pure/runtime.h).
@@ -560,8 +572,6 @@ static bool myequal(pair<pure_expr*,pure_expr*> x,
   return eqchk(x.second, y.second);
 }
 
-#include <tuple>
-
 #ifdef HAVE_STD_IS_PERMUTATION
 #define my_is_permutation is_permutation
 #else
@@ -575,18 +585,18 @@ static bool my_is_permutation(ForwardIterator1 first, ForwardIterator1 last,
 			      ForwardIterator2 d_first, BinaryPredicate p)
 {
   // skip common prefix
-  std::tie(first, d_first) = std::mismatch(first, last, d_first, p);
+  tie(first, d_first) = mismatch(first, last, d_first, p);
   // iterate over the rest, counting how many times each element
   // from [first, last) appears in [d_first, d_last)
   if (first != last) {
     ForwardIterator2 d_last = d_first;
-    std::advance(d_last, std::distance(first, last));
+    advance(d_last, distance(first, last));
     for (ForwardIterator1 i = first; i != last; ++i) {
-      using std::placeholders::_1;
-      if (i != std::find_if(first, i, std::bind(p, _1, *i)))
+      using placeholders::_1;
+      if (i != find_if(first, i, bind(p, _1, *i)))
 	continue; // already counted this *i
-      auto m = std::count_if(d_first, d_last, std::bind(p, _1, *i));
-      if (m==0 || std::count_if(i, last, std::bind(p, _1, *i)) != m) {
+      auto m = count_if(d_first, d_last, bind(p, _1, *i));
+      if (m==0 || count_if(i, last, bind(p, _1, *i)) != m) {
 	return false;
       }
     }
