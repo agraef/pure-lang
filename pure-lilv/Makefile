@@ -29,7 +29,7 @@ objects = $(patsubst %.c, %$(DLL), $(csource))
 all: $(objects)
 
 lilv$(DLL): lilv.c lv2_evbuf.c symap.c
-	gcc $(shared) $(dllname) -o $@ $(MOD_CFLAGS) -std=c99 $^ $(MOD_LDFLAGS) $(LIBS)
+	$(CC) $(shared) $(dllname) -o $@ $(MOD_CFLAGS) -std=c99 $^ $(MOD_LDFLAGS) $(LIBS)
 
 clean:
 	rm -rf *$(DLL)*

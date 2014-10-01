@@ -27,7 +27,7 @@ MOD_LDFLAGS = $(shell pkg-config pure --libs) $(LDFLAGS)
 all: lv2$(DLL)
 
 lv2$(DLL): lv2.c
-	gcc $(shared) $(dllname) -o $@ $(MOD_CFLAGS) -std=c99 $< $(MOD_LDFLAGS) $(LIBS)
+	$(CC) $(shared) $(dllname) -o $@ $(MOD_CFLAGS) -std=c99 $< $(MOD_LDFLAGS) $(LIBS)
 
 clean:
 	rm -rf *$(DLL)*
