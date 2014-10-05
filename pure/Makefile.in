@@ -64,7 +64,13 @@ LLVM_LDFLAGS = @LLVM_LDFLAGS@
 LLVM_LIBS = @LLVM_LIBS@
 LLVM_EXE_LIBS = @LLVM_EXE_LIBS@
 
-RL_LIBS  = @RL_LIBS@
+RL_LIBS = @RL_LIBS@
+
+# Needed to get the pthreads library on some systems.
+PTHREAD_LIBS = @PTHREAD_LIBS@
+# FIXME: These aren't used right now.
+PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
+PTHREAD_CC = @PTHREAD_CC@
 
 CPPFLAGS = @CPPFLAGS@
 CFLAGS   = @CFLAGS@
@@ -231,7 +237,7 @@ pure$(EXE): pure.o $(OBJECT)
 endif
 
 $(libpure): $(OBJECT)
-	$(CXX) $(shared) $(soname) -o $@ $(LDFLAGS) $(OBJECT) $(LLVM_LIBS) $(LLVM_LDFLAGS) $(LIBS)
+	$(CXX) $(shared) $(soname) -o $@ $(LDFLAGS) $(OBJECT) $(LLVM_LIBS) $(LLVM_LDFLAGS) $(LIBS) $(PTHREAD_LIBS)
 ifneq ($(libpure), $(libpure_soname))
 	ln -sf $(libpure) $(libpure_soname)
 endif

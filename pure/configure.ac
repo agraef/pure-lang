@@ -255,6 +255,8 @@ save_LIBS="$LIBS"
 LIBS="$LIBS $rllib"
 AC_CHECK_FUNCS(history_set_history_state)
 LIBS="$save_LIBS"
+dnl How to get the pthread library.
+AX_PTHREAD
 dnl iconv and nl_langinfo need special treatment (macros by Bruno Haible).
 AM_ICONV
 if test "$am_cv_func_iconv" != yes; then
@@ -475,6 +477,7 @@ Pure ${PACKAGE_VERSION} is now configured for LLVM ${llvm_version} on ${host}.
   Linker:               $CXX $LDFLAGS $LIBS
   LLVM tool prefix:     ${TOOL_PREFIX}
   Readline support:	$rllib
+  POSIX threads:	$PTHREAD_LIBS
   Build libpure:        $sharedlib
   fastcc/TCO support:   $fastcc
 
