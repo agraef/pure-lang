@@ -477,7 +477,7 @@ Pure ${PACKAGE_VERSION} is now configured for LLVM ${llvm_version} on ${host}.
   Linker:               $CXX $LDFLAGS $LIBS
   LLVM tool prefix:     ${TOOL_PREFIX}
   Readline support:	$rllib
-  POSIX threads:	$PTHREAD_LIBS
+  POSIX threads:	$PTHREAD_CFLAGS $PTHREAD_LIBS
   Build libpure:        $sharedlib
   fastcc/TCO support:   $fastcc
 

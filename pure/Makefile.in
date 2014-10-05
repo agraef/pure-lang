@@ -68,8 +68,8 @@ RL_LIBS = @RL_LIBS@
 
 # Needed to get the pthreads library on some systems.
 PTHREAD_LIBS = @PTHREAD_LIBS@
-# FIXME: These aren't used right now.
 PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
+# FIXME: This isn't used right now.
 PTHREAD_CC = @PTHREAD_CC@
 
 CPPFLAGS = @CPPFLAGS@
@@ -230,14 +230,14 @@ all: pure$(EXE) pure_main.o etc/pure-mode.el $(elcfiles) $(tmfiles)
 
 ifeq ($(sharedlib), yes)
 pure$(EXE): pure.o $(libpure)
-	$(CXX) -o $@ -L. $(LDFLAGS) pure.o -l$(libpure_name) $(LLVM_EXE_LIBS) $(LLVM_LDFLAGS) $(LIBS) $(RL_LIBS)
+	$(CXX) -o $@ -L. $(LDFLAGS) $(PTHREAD_CFLAGS) pure.o -l$(libpure_name) $(LLVM_EXE_LIBS) $(LLVM_LDFLAGS) $(LIBS) $(RL_LIBS) $(PTHREAD_LIBS)
 else
 pure$(EXE): pure.o $(OBJECT)
-	$(CXX) -o $@ $(LDFLAGS) pure.o $(OBJECT) $(LLVM_LIBS) $(LLVM_LDFLAGS) $(LIBS) $(RL_LIBS)
+	$(CXX) -o $@ $(LDFLAGS) $(PTHREAD_CFLAGS) pure.o $(OBJECT) $(LLVM_LIBS) $(LLVM_LDFLAGS) $(LIBS) $(RL_LIBS) $(PTHREAD_LIBS)
 endif
 
 $(libpure): $(OBJECT)
-	$(CXX) $(shared) $(soname) -o $@ $(LDFLAGS) $(OBJECT) $(LLVM_LIBS) $(LLVM_LDFLAGS) $(LIBS) $(PTHREAD_LIBS)
+	$(CXX) $(shared) $(soname) -o $@ $(LDFLAGS) $(PTHREAD_CFLAGS) $(OBJECT) $(LLVM_LIBS) $(LLVM_LDFLAGS) $(LIBS) $(PTHREAD_LIBS)
 ifneq ($(libpure), $(libpure_soname))
 	ln -sf $(libpure) $(libpure_soname)
 endif
@@ -246,13 +246,13 @@ ifneq ($(libpure), $(libpure_lnkname))
 endif
 
 pure.o: pure.cc
-	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LLVM_FLAGS) -I. -I$(srcdir) $(AUXDEFS) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) $(CPPFLAGS) $(LLVM_FLAGS) $(PTHREAD_CFLAGS) -I. -I$(srcdir) $(AUXDEFS) -c -o $@ $<
 
 runtime.o: runtime.cc
-	$(CXX) $(CXXFLAGS) $(PIC) $(CPPFLAGS) $(LLVM_FLAGS) -I. -I$(srcdir) $(AUXDEFS) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) $(PIC) $(CPPFLAGS) $(LLVM_FLAGS) $(PTHREAD_CFLAGS) -I. -I$(srcdir) $(AUXDEFS) -c -o $@ $<
 
 interpreter.o: interpreter.cc
-	$(CXX) $(CXXFLAGS) $(PIC) $(CPPFLAGS) $(LLVM_FLAGS) -I. -I$(srcdir) $(AUXLIBS) -c -o $@ $<
+	$(CXX) $(CXXFLAGS) $(PIC) $(CPPFLAGS) $(LLVM_FLAGS) $(PTHREAD_CFLAGS) -I. -I$(srcdir) $(AUXLIBS) -c -o $@ $<
 
 %.o: %.cc
 	$(CXX) $(CXXFLAGS) $(PIC) $(CPPFLAGS) $(LLVM_FLAGS) -I. -I$(srcdir) -c -o $@ $<
