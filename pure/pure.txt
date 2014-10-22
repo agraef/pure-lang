@@ -10191,12 +10191,12 @@ this is a problem then it's usually better to import a separate bitcode module
 instead (see `Importing LLVM Bitcode`_), or batch-compile your script to an
 executable (see `Batch Compilation`_).
 
-At present, C, C++, Fortran and Faust are supported as foreign source
-languages, with clang, clang++, gfortran (with the dragonegg plugin) and faust
-as the corresponding (default) compilers. C is the default language. The
-desired source language can be selected by placing an appropriate tag into the
-inline code section, immediately after the opening brace. (The tag is removed
-before the code is submitted to compilation.) For instance::
+At present, C, C++, Fortran, ATS and Faust are supported as foreign source
+languages, with clang, clang++, gfortran (with the dragonegg plugin), patscc
+and faust as the corresponding (default) compilers. C is the default language.
+The desired source language can be selected by placing an appropriate tag into
+the inline code section, immediately after the opening brace. (The tag is
+removed before the code is submitted to compilation.) For instance::
 
   %< -*- Fortran90 -*-
   function fact(n) result(p)
@@ -10212,16 +10212,17 @@ before the code is submitted to compilation.) For instance::
   map fact (1..10);
 
 As indicated, the language tag takes the form ``-*- lang -*-`` where ``lang``
-can currently be any of ``c``, ``c++``, ``fortran`` and ``dsp`` (the latter
-indicates the Faust language). Case is insignificant here, so you can also
-write ``C``, ``C++``, ``Fortran``, ``DSP`` etc. For the ``fortran`` tag, you
-may also have to specify the appropriate language standard, such as
-``fortran90`` which is used in the example above. The language tag can also be
-followed by a module name, using the format ``-*- lang:name -*-``. This is
-optional for all languages except Faust (where the module name specifies the
-namespace for the interface routines of the Faust module; see `Interfacing to
-Faust`_ below). So, e.g., a Faust DSP named ``test`` would be specified with a
-``dsp:test`` tag. Case is *significant* in the module name.
+can currently be any of ``c``, ``c++``, ``fortran``, ``ats`` and ``dsp`` (the
+latter indicates the Faust language). Case is insignificant here, so you can
+also write ``C``, ``C++``, ``Fortran``, ``ATS``, ``DSP`` etc. For the
+``fortran`` tag, you may also have to specify the appropriate language
+standard, such as ``fortran90`` which is used in the example above. The
+language tag can also be followed by a module name, using the format ``-*-
+lang:name -*-``. This is optional for all languages except Faust (where the
+module name specifies the namespace for the interface routines of the Faust
+module; see `Interfacing to Faust`_ below). So, e.g., a Faust DSP named
+``test`` would be specified with a ``dsp:test`` tag. Case is *significant* in
+the module name.
 
 The Pure interpreter has some built-in knowledge on how to invoke the LLVM
 compilers to produce a working bitcode file ready to be loaded by the
@@ -10231,8 +10232,9 @@ some environment variables you can set for customization purposes.
 Specifically, :envvar:`PURE_CC` is the command to invoke the C compiler. This
 variable lets you specify the exact name of the executable along with any
 debugging and optimization options that you may want to add. Likewise,
-:envvar:`PURE_CXX`, :envvar:`PURE_FC` and :envvar:`PURE_FAUST` are used for
-the C++, Fortran and Faust compilers, respectively.
+:envvar:`PURE_CXX`, :envvar:`PURE_FC`, :envvar:`PURE_ATS` and
+:envvar:`PURE_FAUST` are used for the C++, Fortran, ATS and Faust compilers,
+respectively.
 
 For instance, if you prefer to use llvm-gcc_ as your C compiler, and you'd
 like to invoke it with the ``-O3`` optimization option, you would set
@@ -10338,6 +10340,83 @@ the following example shows how to work with STL maps from Pure. ::
   map_del m "foo";
   map_keys m; // => ["bar","baz"]
   map (map_get m) (map_keys m); // => [bar 4711L,[1,2,3,4,5]]
+
+Interfacing to ATS
+------------------
+
+ATS_ is a statically typed functional programming language somewhat similar to
+ML, which also offers imperative and concurrent programming features. One of
+ATS's most unusual and interesting aspects is its highly expressive Applied
+Type System, which gives the language its name. ATS has a very elaborate `C
+interface`__ which lets you expose functions written in the language using C
+linkage. This makes it easy to call ATS functions from Pure via Pure's C
+interface.
+
+__ http://ats-lang.sourceforge.net/DOCUMENT/INT2PROGINATS/HTML/c1995.html
+
+Here is a simple example which illustrates how to implement the factorial in
+ATS and call that function from Pure::
+
+  %< -*- ATS -*-
+
+  #include "share/atspre_staload.hats"
+
+  // A recursive definition of the factorial relation.
+  // FACT (n, r) means ‘the factorial of n equals r’.
+  // MUL (i, j, k) means ‘the product of i and j equals k’.
+  dataprop FACT (int, int) =
+    | FACT_base (0, 1)
+    | {n : nat} {r1, r : int}
+      FACT_induction (n, r) of
+        (FACT (n-1, r1), MUL (n, r1, r))
+
+  // Declare ifact as an ATS function that is referred to in C by the
+  // name ‘ifact_nonneg’. The ‘ifact_nonneg’ function returns an integer
+  // equal to r, where r satisfies the relation FACT (n, r).
+  extern fun ifact :
+      {n : nat} (int n) -<> [r : int] (FACT (n, r) | int r) =
+        "ext#ifact_nonneg"
+
+  implement ifact (n) =
+    let
+      fun fact {n : nat} .<n>. (n : int n) :<>
+          [r : int] (FACT (n, r) | int r) =
+        begin
+          if n > 0 then
+            let
+              val (pf1 | r1) = ifact (n - 1)
+              val (pfmul | r) = g1int_mul2 (n, r1)
+            in
+              (FACT_induction (pf1, pfmul) | r)
+            end
+          else
+            (FACT_base () | 1)
+        end
+    in
+      fact n
+    end
+
+  %>
+
+  ifact n::int = ifact_nonneg n if 0 <= n;
+
+  map ifact (0..9);
+
+To make this work in Pure, you need to have ATS2 (the current version of the
+ATS compiler) installed. ATS2 in turn needs a suitable C compiler for
+generating LLVM bitcode. By default, Pure uses clang for that purpose. If you
+have gcc's dragonegg plugin installed , you can also use gcc as the C compiler
+instead, by setting the :envvar:`PURE_ATS` environment variable to ``patscc
+-fplugin=dragonegg``. Also make sure that you have the :envvar:`PATSHOME`
+environment variable set to ATS's library directory, as explained in the
+`ATS installation instructions`__.
+
+__ http://www.ats-lang.org/Downloads.html#Install_source_compile
+
+More information about ATS, as well as sources and binary packages of the ATS
+compiler can be found on the `ATS website`_.
+
+.. _ATS website: http://www.ats-lang.org/
 
 .. _Interfacing to Faust:
 
@@ -13971,6 +14050,13 @@ Aardappel
 Alice ML
     A version of ML (see below) from which Pure borrows its model of lazy
     evaluation, http://www.ps.uni-sb.de/alice.
+
+.. _ATS:
+
+ATS
+    "Applied Type System", a statically typed, ML-like programming language
+    which unifies implementation with formal specification,
+    http://www.ats-lang.org/.
 
 .. _Baader and Nipkow:
 
