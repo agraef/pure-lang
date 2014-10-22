@@ -2581,8 +2581,9 @@ bool interpreter::LoadBitcode(bool priv, const char *name, string *msg)
      standards). If this is omitted, the default is old-style (fixed form)
      Fortran.
 
-   - "-*- ats -*-" selects ATS (PURE_ATSCC environment variable,
-     patscc -fplugin=dragonegg by default).
+   - "-*- ats -*-" selects ATS (PURE_ATSCC environment variable, patscc by
+     default). Contributed by Barry Schwartz <sortsmill@crudfactory.com>, see
+     http://www.ats-lang.org/.
 
    - "-*- dsp:name -*-" selects Faust (PURE_FAUST environment variable, faust
      by default), where 'name' denotes the name of the Faust dsp, which is
@@ -2670,13 +2671,29 @@ void interpreter::inline_code(bool priv, string &code)
     args = " -emit-llvm -c "; ext = ".f"+std;
   } else if (tag == "ats") {
     env = "PURE_ATSCC";
-    // The default command is for ATS2-Postiats with gcc as the C
-    // compiler.
-    drv = "patscc -fplugin=dragonegg";
+    // The default command is for ATS2-Postiats, which uses gcc as its C
+    // compiler by default. We prefer to use clang instead (set by means of
+    // the PATSCCOMP environment variable). If you have a working dragonegg
+    // plugin installed, you can still override this by setting the PURE_ATSCC
+    // variable to 'patscc -fplugin=dragonegg'. NOTE: In any case you should
+    // set the PATSHOME environment variable as explained in the ATS2
+    // installation instructions.
+    drv = "patscc";
     args = " -emit-llvm -c ";
     ext = ".dats";
     intermediate_ext = "_dats.c";
     remove_intermediate = true;
+    // We only override patscc's default C compiler if neither PURE_ATSCC nor
+    // PATSCCOMP has been set, so that the user still has full control over
+    // which AST and C compilers will be used.
+    if (!getenv("PURE_ATSCC") && !getenv("PATSCCOMP")) {
+      static char *patsccomp = NULL;
+      if (!patsccomp) {
+	patsccomp = strdup("PATSCCOMP=clang -emit-llvm -std=c99 -D_XOPEN_SOURCE -I${PATSHOME} -I${PATSHOME}/ccomp/runtime");
+	putenv(patsccomp);
+      }
+      args = " -c ";
+    }
   } else if (tag == "dsp") {
     env = "PURE_FAUST"; drv = "faust -double";
     args = " -lang llvm ";
@@ -2693,7 +2710,7 @@ void interpreter::inline_code(bool priv, string &code)
     optargs = " -cn "+name+optargs;
   } else {
     throw err("bad tag '"+tag+
-	      "' in inline code (try one of c, fortran, dsp:name)");
+	      "' in inline code (try one of c, fortran, ats, dsp:name)");
   }
   // LLVM tools used in the build process.
   string llvm_as = (chkfile(libdir+"/llvm-as"+EXEEXT)?
