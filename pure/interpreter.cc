@@ -2581,6 +2581,9 @@ bool interpreter::LoadBitcode(bool priv, const char *name, string *msg)
      standards). If this is omitted, the default is old-style (fixed form)
      Fortran.
 
+   - "-*- ats -*-" selects ATS (PURE_ATSCC environment variable,
+     patscc -fplugin=dragonegg by default).
+
    - "-*- dsp:name -*-" selects Faust (PURE_FAUST environment variable, faust
      by default), where 'name' denotes the name of the Faust dsp, which is
      used as the namespace for the dsp interface functions.
@@ -2644,8 +2647,10 @@ void interpreter::inline_code(bool priv, string &code)
 {
   // Get the language tag and configure accordingly.
   string modname, tag = lang_tag(code, modname), ext = "", optargs = "";
+  string intermediate_ext = "";
   const char *env, *drv, *args;
   char *asmargs = 0;
+  bool remove_intermediate = false;
   if (tag == "c") {
     env = "PURE_CC";
     drv = "clang";
@@ -2663,6 +2668,15 @@ void interpreter::inline_code(bool priv, string &code)
     // gfortran doesn't understand -x, so we have to do some trickery with
     // filename extensions instead.
     args = " -emit-llvm -c "; ext = ".f"+std;
+  } else if (tag == "ats") {
+    env = "PURE_ATSCC";
+    // The default command is for ATS2-Postiats with gcc as the C
+    // compiler.
+    drv = "patscc -fplugin=dragonegg";
+    args = " -emit-llvm -c ";
+    ext = ".dats";
+    intermediate_ext = "_dats.c";
+    remove_intermediate = true;
   } else if (tag == "dsp") {
     env = "PURE_FAUST"; drv = "faust -double";
     args = " -lang llvm ";
@@ -2740,6 +2754,10 @@ void interpreter::inline_code(bool priv, string &code)
     if (vflag) std::cerr << cmd << '\n';
     int status = system(cmd.c_str());
     unlink(nm.c_str());
+    if (remove_intermediate) {
+      string intermediate_name = string(fnm)+intermediate_ext;
+      unlink(intermediate_name.c_str());
+    }
     if (asmargs) free(asmargs);
     if (WIFEXITED(status) && WEXITSTATUS(status) == 0) {
       if (ext == ".ll") {

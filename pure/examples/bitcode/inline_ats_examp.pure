@@ -1,0 +1,56 @@
+
+/* Example of inline code written in ATS. */
+
+%< -*- ATS -*-
+
+// A factorial function that verifies its result is the factorial;
+// based on an example given in ‘Introduction to Programming in ATS’
+// (which is available at http://www.ats-lang.org).
+//
+// The ifact function returns both the factorial and a proof, but the
+// proof code is ‘erased’ after type-checking, so the Pure program
+// sees only a function returning the factorial.
+
+#include "share/atspre_staload.hats"
+
+// A recursive definition of the factorial relation.
+// FACT (n, r) means ‘the factorial of n equals r’.
+// MUL (i, j, k) means ‘the product of i and j equals k’.
+dataprop FACT (int, int) =
+  | FACT_base (0, 1)
+  | {n : nat} {r1, r : int}
+    FACT_induction (n, r) of
+      (FACT (n-1, r1), MUL (n, r1, r))
+
+// Declare ifact as an ATS function that is referred to in C by the
+// name ‘ifact_nonneg’. The ‘ifact_nonneg’ function returns an integer
+// equal to r, where r satisfies the relation FACT (n, r).
+extern fun ifact :
+    {n : nat} (int n) -<> [r : int] (FACT (n, r) | int r) =
+      "ext#ifact_nonneg"
+    
+implement ifact (n) =
+  let
+    fun fact {n : nat} .<n>. (n : int n) :<>
+        [r : int] (FACT (n, r) | int r) =
+      begin
+        if n > 0 then
+          let
+            val (pf1 | r1) = ifact (n - 1)
+            val (pfmul | r) = g1int_mul2 (n, r1)
+          in
+            (FACT_induction (pf1, pfmul) | r)
+          end
+        else
+          (FACT_base () | 1)
+      end
+  in
+    fact n
+  end
+
+%>
+
+ifact n::int = ifact_nonneg n if 0 <= n;
+
+map ifact (0..9);
+
