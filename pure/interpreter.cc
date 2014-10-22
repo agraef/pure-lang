@@ -2652,21 +2652,20 @@ void interpreter::inline_code(bool priv, string &code)
   const char *env, *drv, *args;
   char *asmargs = 0;
   bool remove_intermediate = false;
+  // Check to see where we can find clang (used for C, C++ and ATS). If it's
+  // not under the tool prefix then assume that it's somewhere on the PATH.
+  string clang = tool_prefix + "clang";
+  if (!chkfile(clang+EXEEXT)) clang = "clang";
+  string clangpp = clang+"++";
   if (tag == "c") {
     static char *cc = NULL;
-    if (!cc) {
-      string clang = tool_prefix + "clang";
-      cc = strdup(clang.c_str());
-    }
+    if (!cc) cc = strdup(clang.c_str());
     env = "PURE_CC";
     drv = cc;
     args = " -x c -emit-llvm -c ";
   } else if (tag == "c++") {
     static char *cc = NULL;
-    if (!cc) {
-      string clang = tool_prefix + "clang++";
-      cc = strdup(clang.c_str());
-    }
+    if (!cc) cc = strdup(clangpp.c_str());
     env = "PURE_CXX";
     drv = cc;
     args = " -x c++ -emit-llvm -c ";
@@ -2699,7 +2698,7 @@ void interpreter::inline_code(bool priv, string &code)
     if (!getenv("PURE_ATSCC") && !getenv("PATSCCOMP")) {
       static char *patsccomp = NULL;
       if (!patsccomp) {
-	string ccomp = string("PATSCCOMP=") + tool_prefix + "clang -emit-llvm -std=c99 -D_XOPEN_SOURCE -I${PATSHOME} -I${PATSHOME}/ccomp/runtime";
+	string ccomp = string("PATSCCOMP=") + clang + " -emit-llvm -std=c99 -D_XOPEN_SOURCE -I${PATSHOME} -I${PATSHOME}/ccomp/runtime";
 	patsccomp = strdup(ccomp.c_str());
 	putenv(patsccomp);
       }
