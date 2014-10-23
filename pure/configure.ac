@@ -190,6 +190,14 @@ else
   vl_readline_libs="$vl_readline_libs $vl_editline_libs"
 fi
 vl_editline_libs=""
+dnl libpcre support (replaces GNU/POSIX regex if available).
+pure_use_pcre="no"
+pcrelib="no (use --with-pcre to enable)"
+AC_ARG_WITH(pcre,
+  [  --with-pcre             libpcre support, if available],
+  [case "${withval}" in
+     yes)  pure_use_pcre="yes"; pcrelib="" ;;
+   esac])
 dnl How to link LLVM.
 static_llvm_libs="no"
 AC_ARG_WITH(static-llvm,
@@ -244,10 +252,19 @@ AC_CHECK_LIB(iconv, libiconv)
 if test $ac_cv_lib_iconv_libiconv = no; then
   AC_CHECK_LIB(iconv, iconv)
 fi
+dnl libpcre support (replaces GNU/POSIX regex if available).
+if test $pure_use_pcre = yes; then
+  AC_CHECK_LIB(pcreposix, regcomp, [pcrelib=-lpcreposix; LIBS="$LIBS -lpcreposix"], [pure_use_pcre="no"; pcrelib="no (not available)"])
+fi
+if test $pure_use_pcre = yes; then
+  AC_DEFINE(USE_PCRE, 1, [Define to use the pcre library.])
+fi
 dnl On non-POSIX systems like Windows, we have to get the glob and regex
 dnl functions from separate libraries, too.
 AC_CHECK_LIB(glob, glob)
-AC_CHECK_LIB(regex, regcomp)
+if test $pure_use_pcre != yes; then
+  AC_CHECK_LIB(regex, regcomp)
+fi
 dnl readline/editline support (macro by Ville Laurikari).
 AC_CHECK_READLINE
 if test $rl_use_readline = yes; then
@@ -483,6 +500,7 @@ Pure ${PACKAGE_VERSION} is now configured for LLVM ${llvm_version} on ${host}.
   Linker:               $CXX $LDFLAGS $LIBS
   LLVM tool prefix:     ${TOOL_PREFIX}
   Readline support:	$rllib
+  Perl regex support:	$pcrelib
   POSIX threads:	$PTHREAD_CFLAGS $PTHREAD_LIBS
   Build libpure:        $sharedlib
   fastcc/TCO support:   $fastcc

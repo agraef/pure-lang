@@ -43,7 +43,11 @@ char *alloca ();
 #ifndef __MINGW32__
 #include <sys/wait.h>
 #endif
+#if USE_PCRE
+#include <pcreposix.h>
+#else
 #include <regex.h>
+#endif
 #include <fnmatch.h>
 #include <glob.h>
 

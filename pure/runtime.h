@@ -1718,21 +1718,6 @@ pure_expr *pure_readdir(const char *name);
 /* Decode the result of glob into a Pure list. */
 pure_expr *globlist(const glob_t *pglob);
 
-/* regexec/regcomp(3) support. */
-
-#include <sys/types.h>
-#include <regex.h>
-
-/* Old regex interface (Pure 0.41 and earlier). */
-
-#if 0
-/* Return the number of subre's and allocate storage for the matches. */
-pure_expr *regmatches(const regex_t *preg, int flags);
-/* Decode the result of regexec into a list of matches. */
-pure_expr *reglist(const regex_t *preg, const char *s,
-		   const regmatch_t *matches);
-#endif
-
 /* New regex interface (Pure 0.42 and later). */
 
 #ifdef __cplusplus

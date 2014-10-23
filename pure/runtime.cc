@@ -13826,7 +13826,11 @@ pure_expr *globlist(const glob_t *pglob)
 }
 
 #include <sys/types.h>
+#if USE_PCRE
+#include <pcreposix.h>
+#else
 #include <regex.h>
+#endif
 
 static int translate_pos(char *s, int p, int l)
 {
