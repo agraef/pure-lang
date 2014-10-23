@@ -10979,7 +10979,7 @@ int interpreter::compiler(string out, list<string> libnames, string llcopts)
 	// conventions.
 	if (libnm.find("/") == string::npos && libnm.find("lib") == 0) {
 	  libnm.erase(0, 3);
-	  size_t l = libnm.rfind(".");
+	  size_t l = libnm.find(".");
 	  libnm = string("-l")+libnm.substr(0, l);
 	}
 #endif
