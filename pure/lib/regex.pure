@@ -462,4 +462,30 @@ if ~(cflags and REG_NOSUB);
      > env!!["SHELL","HOME"];
      {"/bin/bash","/home/ag"}
 
+   Perl Regex Compatibility
+   ~~~~~~~~~~~~~~~~~~~~~~~~
+
+   Pure 0.64 and later can be built with support for Perl-style regular
+   expressions in the runtime. This is disabled by default, but you can build
+   the interpreter with the ``--with-pcre`` configure option to enable it.
+   You need to have the pcreposix library installed to make that work, see
+   http://www.pcre.org/.
+
+   Once this option is enabled, Pure's regex operations will work as discussed
+   above, except that they will now understand Perl-style regular expressions,
+   as implemented by the libpcre library, instead of the (much more limited)
+   POSIX syntax. For instance, you can now write::
+
+     > using regex;
+     > regex "(?:Bob says: (\\w+))" 0 "Bob says: Go" 0;
+     1,0,"Bob says: Go",10,"Go"
+
+   Note that in Perl-style regexes the ``(?:...)`` construct indicates a
+   non-capturing group, so that the above invocation returns just a single
+   submatch for the second ``(\w+)`` group.
+
+   A discussion of Perl regexes is beyond the scope of this manual, so you may
+   want to refer to http://www.rexegg.com/ for more information or read a good
+   book on the subject.
+
 */
