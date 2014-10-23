@@ -82,6 +82,12 @@ if test -n "$CXX11FLAG"; then
 fi
 fi
 
+dnl Check for special linker options.
+AX_CHECK_COMPILE_FLAG([-l:libm.a], [pure_cv_gnu_linker="yes"])
+if test "$pure_cv_gnu_linker" = yes; then
+  AC_DEFINE(GNU_LINKER, 1, [Define if your linker understands the '-l:' option.])
+fi
+
 dnl Install elisp files?
 elcfiles="etc/pure-mode.elc"
 AC_ARG_WITH(elisp,

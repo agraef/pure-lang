@@ -10574,7 +10574,7 @@ void interpreter::check_used(set<Function*>& used,
 #endif
 }
 
- int interpreter::compiler(string out, list<string> libnames, string llcopts)
+int interpreter::compiler(string out, list<string> libnames, string llcopts)
 {
   /* We allow either '-' or *.ll to indicate an LLVM assembler file. In the
      former case, output is written to stdout, which is useful if the output
@@ -10965,9 +10965,28 @@ void interpreter::check_used(set<Function*>& used,
     set<string> libset;
     for (list<string>::iterator it = loaded_libs.begin();
 	 it != loaded_libs.end(); ++it) {
-      if (libset.find(*it) == libset.end()) {
-	libs += " "+quote(*it);
-	libset.insert(*it);
+      string libnm = *it;
+      if (!chkfile(libnm)) {
+	// This is not a real library file, so it will presumably give us a
+	// linker error. But, as suggested by Alastair Pharo, ld may still be
+	// able to find the library file if we add a little magic here.
+#if GNU_LINKER
+	// Good. Linker supports -l:libname, let's use that.
+	libnm = string("-l:")+libnm;
+#else
+	// The linker doesn't seem to support -l:, but we may still be able to
+	// use a standard -l option if the library name follows the usual
+	// conventions.
+	if (libnm.find("/") == string::npos && libnm.find("lib") == 0) {
+	  libnm.erase(0, 3);
+	  size_t l = libnm.rfind(".");
+	  libnm = string("-l")+libnm.substr(0, l);
+	}
+#endif
+      }
+      if (libset.find(libnm) == libset.end()) {
+	libs += " "+quote(libnm);
+	libset.insert(libnm);
       }
     }
     for (list<string>::iterator it = libnames.begin();
