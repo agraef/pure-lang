@@ -670,10 +670,10 @@ check_number name val::string fname
   = check_number name (substr val 1 (#val-2)) fname
       if regex "^[(].*[)]$" REG_NOSUB val 0;
   = constant name (sscanf val "%i") fname
-      if regex "^[+-]?([1-9][0-9]*|0[0-7]*|0[xX][0-9a-fA-F]+)([ \t].*)?$"
+      if regex "^[+-]?([1-9][0-9]*|0[0-7]*|0[xX][0-9a-fA-F]+)[uUlL]*([ \t].*)?$"
 	(REG_EXTENDED or REG_NOSUB) val 0;
   = constant name (sscanf val "%g") fname
-      if regex "^[+-]?([0-9]*\\.?[0-9]*([Ee][+-]?[0-9]+)?)([ \t].*)?$"
+      if regex "^[+-]?([0-9]*\\.?[0-9]*([Ee][+-]?[0-9]+)?)[dDfFlL]*([ \t].*)?$"
 	(REG_EXTENDED or REG_NOSUB) val 0;
   = throw (bad_number val);
 check_string name val::string fname
