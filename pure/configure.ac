@@ -193,6 +193,8 @@ vl_editline_libs=""
 dnl libpcre support (replaces GNU/POSIX regex if available).
 pure_use_pcre="no"
 pcrelib="no (use --with-pcre to enable)"
+PCRE_CFLAGS=""
+PCRE_LIBS=""
 AC_ARG_WITH(pcre,
   [  --with-pcre             libpcre support, if available],
   [case "${withval}" in
@@ -254,11 +256,17 @@ if test $ac_cv_lib_iconv_libiconv = no; then
 fi
 dnl libpcre support (replaces GNU/POSIX regex if available).
 if test $pure_use_pcre = yes; then
-  AC_CHECK_LIB(pcreposix, regcomp, [pcrelib=-lpcreposix; LIBS="$LIBS -lpcreposix"], [pure_use_pcre="no"; pcrelib="no (not available)"])
+  AC_CHECK_LIB(pcreposix, regcomp, [pcrelib=-lpcreposix], [pure_use_pcre="no"; pcrelib="no (not available)"])
 fi
 if test $pure_use_pcre = yes; then
   AC_DEFINE(USE_PCRE, 1, [Define to use the pcre library.])
+  PCRE_CFLAGS=$(pkg-config --cflags libpcreposix 2>/dev/null)
+  PCRE_LIBS=$(pkg-config --static --libs libpcreposix 2>/dev/null)
+  pcrelib="$PCRE_LIBS"
 fi
+AC_SUBST(PCRE_CFLAGS)
+AC_SUBST(PCRE_LIBS)
+AC_DEFINE_UNQUOTED(PCRE_LIBS, "${PCRE_LIBS}", [Libraries to be linked for Perl regex support.])
 dnl On non-POSIX systems like Windows, we have to get the glob and regex
 dnl functions from separate libraries, too.
 AC_CHECK_LIB(glob, glob)

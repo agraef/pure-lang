@@ -6,6 +6,15 @@
 	expressions. Configuring with --with-pcre enables it in the
 	runtime (this needs libpcreposix, see http://www.pcre.org/).
 
+	NOTE: If the runtime was built with the --with-pcre configure
+	option, then *every* application utilizing Pure's regex functions
+	must be linked against libpcreposix as well, otherwise the linker
+	will usually pick up regex functions from the C library which are
+	*not* binary compatible. Pure's batch compiler will usually take
+	care of this. If Pure's regex functions appear to misbehave in
+	mysterious ways then it's probably because of incompatible regex
+	libraries being used in the same program; this must be avoided.
+
 2014-10-23  Albert Graef  <aggraef@gmail.com>
 
 	* interpreter.cc (compiler): As proposed by Alastair Pharo, use

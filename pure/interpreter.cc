@@ -11055,7 +11055,17 @@ int interpreter::compiler(string out, list<string> libnames, string llcopts)
 	string linkopts = quote(obj)+extra_linkopts+libs+
 #ifdef __MINGW32__
 	  /* Link some extra libs and beef up the stack size on Windows. */
-	  " -Wl,--stack=0x800000 -lregex -lglob"+
+	  " -Wl,--stack=0x800000 -lglob"+
+#if !USE_PCRE
+	  " -lregex"+
+#endif
+#endif
+#if USE_PCRE
+	  /* Extra libraries for Perl regex support. Note that these *must* be
+	     linked in if the runtime was configured with --with-pcre.
+	     Otherwise the linker will presumably use the GNU regex function
+	     from the C library which are *not* binary compatible! */
+	  " "+PCRE_LIBS+
 #endif
 #ifdef LIBDIR
 	  " -L"+quote(auxlibdir)+
