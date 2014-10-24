@@ -1,9 +1,15 @@
 /* Definitions and declarations common to all pure-gsl modules. This loads the
    C module and performs some necessary initializations. */
 
-// Force libgsl to be loaded on Windows.
+// First, load libgsl explicitly. This is needed on some systems to make
+// linking against the module work in batch compilation. Also, on Windows it
+// prevents errors from the dynamic linker when loading the module.
 #! --if *-mingw32
+// Windows/mingw-specific dll name.
 using "lib:libgsl-0";
+#! --else
+// This should hopefully work on other systems (Linux, Mac OS X, Un*x).
+using "lib:libgsl";
 #! --endif
 
 using "lib:gsl";
