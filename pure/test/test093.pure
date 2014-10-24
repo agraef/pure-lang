@@ -1,0 +1,80 @@
+
+// regex regression test. These should work with both with POSIX regex and
+// PCRE regex (except for the last test which is commented out on purpose in
+// order to not make 'make check' fail).
+
+using regex, system;
+
+// The values of the REG_ constants differ between POSIX and PCRE, so we need
+// to go to some lengths here to retrieve the values of these constants in a
+// way that prevents them to show up in the golden log.
+using regex_defs;
+
+let pat = "[[:alpha:]][[:alnum:]]*";
+let s = "1var foo 99 BAR $%&";
+
+regex pat 0 s 0;
+// 1,1,"var"
+regex pat _REG_NOSUB s 0;
+// 1
+regexg id pat 0 s 0;
+// [(1,"var"),(5,"foo"),(12,"BAR")]
+regexgg id pat 0 s 0;
+// [(1,"var"),(2,"ar"),(3,"r"),(5,"foo"),(6,"oo"),(7,"o"),(12,"BAR"),(13,"AR"),(14,"R")]
+regexg (!1) pat 0 s 0;
+// ["var","foo","BAR"]
+list $ regexgs id pat 0 s 0;
+// ["var","foo","BAR"]
+
+regsub (sprintf "<%d:%s>") pat 0 s 0;
+// "1<1:var> <5:foo> 99 <12:BAR> $%&"
+let delim = "[[:space:]]+";
+regsplit delim _REG_EXTENDED s 0;
+// ["1var","foo","99","BAR","$%&"]
+regsplit delim _REG_EXTENDED "The   quick brown    fox" 0;
+// ["The","quick","brown","fox"]
+list $ regsplits "[[:space:]]+" _REG_EXTENDED "The   quick brown    fox" 0;
+// ["The","quick","brown","fox"]
+
+regexg id "" _REG_EXTENDED "foo" 0;
+// [(0,""),(1,""),(2,""),(3,"")]
+regexg id "o*" _REG_EXTENDED "foo" 0;
+// [(0,""),(1,"oo"),(3,"")]
+regexgg id "o*" _REG_EXTENDED "foo" 0;
+// [(0,""),(1,"oo"),(2,"o"),(3,"")]
+
+regsub (cst " ") "" _REG_EXTENDED "some text" 0;
+// " s o m e   t e x t "
+regsub (cst " ") " ?" _REG_EXTENDED "some text" 0;
+// " s o m e  t e x t "
+regsplit "" _REG_EXTENDED "some text" 0;
+// ["","s","o","m","e"," ","t","e","x","t",""]
+regsplit " ?" _REG_EXTENDED "some text" 0;
+// ["","s","o","m","e","","t","e","x","t",""]
+
+// CAREFUL HERE. POSIX always excludes \n from complement character classes in
+// multiline matches, while PCRE always includes it, even in POSIX mode. So
+// it's better to always include \n in complement character classes anyway.
+let env_pat = "^([^=\n]+)=(.*)$";
+let env_str = "SHELL=/bin/sh\nHOME=/home/bar\n";
+
+regex env_pat (_REG_EXTENDED or _REG_NEWLINE) "SHELL=/bin/sh" 0;
+// 1,0,"SHELL=/bin/sh",0,"SHELL",6,"/bin/sh"
+
+parse_env s = regexg (\info -> info!3 => info!5) env_pat (_REG_EXTENDED or _REG_NEWLINE) s 0;
+parse_env env_str;
+// ["SHELL"=>"/bin/sh","HOME"=>"/home/bar"]
+
+regexg id env_pat (_REG_EXTENDED or _REG_NEWLINE) env_str 0;
+//[(0,"SHELL=/bin/sh",0,"SHELL",6,"/bin/sh"),(14,"HOME=/home/bar",14,"HOME",19,"/home/bar")]
+
+let env = record $ parse_env env_str;
+#env;
+// 2
+env!!["SHELL","HOME"];
+// {"/bin/sh","/home/ag"}
+
+// This requires pcre to work!
+//regex "(?:Bob says: (\\w+))" 0 "Bob says: Go" 0;
+// POSIX:  0
+// PCRE:   1,0,"Bob says: Go",10,"Go"
