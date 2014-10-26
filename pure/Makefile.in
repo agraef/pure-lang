@@ -64,9 +64,11 @@ LLVM_LDFLAGS = @LLVM_LDFLAGS@
 LLVM_LIBS = @LLVM_LIBS@
 LLVM_EXE_LIBS = @LLVM_EXE_LIBS@
 
-PCRE_CFLAGS = @PCRE_CFLAGS@
-PCRE_LIBS = @PCRE_LIBS@
 RL_LIBS = @RL_LIBS@
+
+PCRE_LIBS = @PCRE_LIBS@
+PCRE_STATIC_LIBS = @PCRE_STATIC_LIBS@
+PCRE_CFLAGS = @PCRE_CFLAGS@
 
 # Needed to get the pthreads library on some systems.
 PTHREAD_LIBS = @PTHREAD_LIBS@
@@ -232,14 +234,14 @@ all: pure$(EXE) pure_main.o etc/pure-mode.el $(elcfiles) $(tmfiles)
 
 ifeq ($(sharedlib), yes)
 pure$(EXE): pure.o $(libpure)
-	$(CXX) -o $@ -L. $(LDFLAGS) $(PTHREAD_CFLAGS) pure.o -l$(libpure_name) $(LLVM_EXE_LIBS) $(LLVM_LDFLAGS) $(LIBS) $(RL_LIBS) $(PCRE_LIBS) $(PTHREAD_LIBS)
+	$(CXX) -o $@ -L. $(LDFLAGS) $(PTHREAD_CFLAGS) pure.o -l$(libpure_name) $(PCRE_LIBS) $(LLVM_EXE_LIBS) $(LLVM_LDFLAGS) $(LIBS) $(RL_LIBS) $(PTHREAD_LIBS)
 else
 pure$(EXE): pure.o $(OBJECT)
-	$(CXX) -o $@ $(LDFLAGS) $(PTHREAD_CFLAGS) pure.o $(OBJECT) $(LLVM_LIBS) $(LLVM_LDFLAGS) $(LIBS) $(RL_LIBS) $(PCRE_LIBS) $(PTHREAD_LIBS)
+	$(CXX) -o $@ $(LDFLAGS) $(PTHREAD_CFLAGS) pure.o $(OBJECT) $(PCRE_STATIC_LIBS) $(PCRE_LIBS) $(LLVM_LIBS) $(LLVM_LDFLAGS) $(LIBS) $(RL_LIBS) $(PTHREAD_LIBS)
 endif
 
 $(libpure): $(OBJECT)
-	$(CXX) $(shared) $(soname) -o $@ $(LDFLAGS) $(PTHREAD_CFLAGS) $(OBJECT) $(LLVM_LIBS) $(LLVM_LDFLAGS) $(LIBS) $(PCRE_LIBS) $(PTHREAD_LIBS)
+	$(CXX) $(shared) $(soname) -o $@ $(LDFLAGS) $(PTHREAD_CFLAGS) $(OBJECT) $(PCRE_STATIC_LIBS) $(PCRE_LIBS) $(LLVM_LIBS) $(LLVM_LDFLAGS) $(LIBS) $(PTHREAD_LIBS)
 ifneq ($(libpure), $(libpure_soname))
 	ln -sf $(libpure) $(libpure_soname)
 endif

@@ -11060,13 +11060,6 @@ int interpreter::compiler(string out, list<string> libnames, string llcopts)
 	  " -lregex"+
 #endif
 #endif
-#if USE_PCRE
-	  /* Extra libraries for Perl regex support. Note that these *must* be
-	     linked in if the runtime was configured with --with-pcre.
-	     Otherwise the linker will presumably use the GNU regex function
-	     from the C library which are *not* binary compatible! */
-	  " "+PCRE_LIBS+
-#endif
 #ifdef LIBDIR
 	  " -L"+quote(auxlibdir)+
 #endif
