@@ -14530,28 +14530,27 @@ void pure_regex_vars(void)
   interpreter& interp = *interpreter::g_interp;
   // regex stuff
   // This one isn't actually needed more, we should get rid of it eventually.
-  cdf(interp, "SIZEOF_REGEX",	pure_int(sizeof(regex_t)));
-  cdf(interp, "REG_EXTENDED",	pure_int(REG_EXTENDED));
-  cdf(interp, "REG_ICASE",	pure_int(REG_ICASE));
-  cdf(interp, "REG_NOSUB",	pure_int(REG_NOSUB));
-  cdf(interp, "REG_NEWLINE",	pure_int(REG_NEWLINE));
-  cdf(interp, "REG_NOTBOL",	pure_int(REG_NOTBOL));
-  cdf(interp, "REG_NOTEOL",	pure_int(REG_NOTEOL));
+  df(interp, "REG_EXTENDED",	pure_int(REG_EXTENDED));
+  df(interp, "REG_ICASE",	pure_int(REG_ICASE));
+  df(interp, "REG_NOSUB",	pure_int(REG_NOSUB));
+  df(interp, "REG_NEWLINE",	pure_int(REG_NEWLINE));
+  df(interp, "REG_NOTBOL",	pure_int(REG_NOTBOL));
+  df(interp, "REG_NOTEOL",	pure_int(REG_NOTEOL));
   // regcomp error codes
-  cdf(interp, "REG_BADBR",	pure_int(REG_BADBR));
-  cdf(interp, "REG_BADPAT",	pure_int(REG_BADPAT));
-  cdf(interp, "REG_BADRPT",	pure_int(REG_BADRPT));
-  cdf(interp, "REG_ECOLLATE",	pure_int(REG_ECOLLATE));
-  cdf(interp, "REG_ECTYPE",	pure_int(REG_ECTYPE));
-  cdf(interp, "REG_EESCAPE",	pure_int(REG_EESCAPE));
-  cdf(interp, "REG_ESUBREG",	pure_int(REG_ESUBREG));
-  cdf(interp, "REG_EBRACK",	pure_int(REG_EBRACK));
-  cdf(interp, "REG_EPAREN",	pure_int(REG_EPAREN));
-  cdf(interp, "REG_EBRACE",	pure_int(REG_EBRACE));
-  cdf(interp, "REG_ERANGE",	pure_int(REG_ERANGE));
-  cdf(interp, "REG_ESPACE",	pure_int(REG_ESPACE));
+  df(interp, "REG_BADBR",	pure_int(REG_BADBR));
+  df(interp, "REG_BADPAT",	pure_int(REG_BADPAT));
+  df(interp, "REG_BADRPT",	pure_int(REG_BADRPT));
+  df(interp, "REG_ECOLLATE",	pure_int(REG_ECOLLATE));
+  df(interp, "REG_ECTYPE",	pure_int(REG_ECTYPE));
+  df(interp, "REG_EESCAPE",	pure_int(REG_EESCAPE));
+  df(interp, "REG_ESUBREG",	pure_int(REG_ESUBREG));
+  df(interp, "REG_EBRACK",	pure_int(REG_EBRACK));
+  df(interp, "REG_EPAREN",	pure_int(REG_EPAREN));
+  df(interp, "REG_EBRACE",	pure_int(REG_EBRACE));
+  df(interp, "REG_ERANGE",	pure_int(REG_ERANGE));
+  df(interp, "REG_ESPACE",	pure_int(REG_ESPACE));
   // regexec error codes
-  cdf(interp, "REG_NOMATCH",	pure_int(REG_NOMATCH));
+  df(interp, "REG_NOMATCH",	pure_int(REG_NOMATCH));
 }
 
 /* Optimized matrix functions contributed by Scott E. Dillard. */

@@ -178,7 +178,9 @@ void interpreter::init()
     llvm::sys::DynamicLibrary::LoadLibraryPermanently(LIBGLOB, 0);
 #endif
 #ifdef LIBREGEX
+#if !USE_PCRE
     llvm::sys::DynamicLibrary::LoadLibraryPermanently(LIBREGEX, 0);
+#endif
 #endif
     g_init = true;
   }
