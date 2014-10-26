@@ -11060,6 +11060,15 @@ int interpreter::compiler(string out, list<string> libnames, string llcopts)
 	  " -lregex"+
 #endif
 #endif
+#if USE_PCRE && defined(PCRE_LIBS)
+	  /* Extra libraries for Perl regex support. PCRE_LIBS will be defined
+	     if the runtime was linked with the dynamic PCRE libs. On some
+	     systems the batch-compiled module must then be linked against the
+	     same libraries, so that the linker doesn't accidentally pick up
+	     some other, incompatible POSIX regex functions from the system
+	     libraries. */
+	  " "+PCRE_LIBS+
+#endif
 #ifdef LIBDIR
 	  " -L"+quote(auxlibdir)+
 #endif
