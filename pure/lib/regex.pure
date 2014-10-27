@@ -79,13 +79,18 @@ public regerr;
       :param int eflags: the matching execution flags (bitwise or of any of the
       	     	 	 flags accepted by regexec(3))
 
-   Symbolic :const:`REG_*` constants are provided for the different flag
-   values, see the regcomp(3) manpage for an explanation of these. Two
-   particularly important compilation flags (to be included in the ``cflags``
-   argument) are :const:`REG_NOSUB`, which prevents submatches to be computed,
-   and :const:`REG_EXTENDED`, which switches :func:`regex` from "basic" to
-   "extended" regular expressions so that it understands all the regular
-   expression elements of egrep(1) in the pattern argument.
+   Symbolic :var:`REG_*` constants are provided for the different flag values,
+   see the regcomp(3) manpage for an explanation of these. (Please note that
+   these symbolic "constants" aren't really constants, but are actually
+   implemented as variables, since their values may depend on which underlying
+   regex library is being used. Please check `Perl Regex Compatibility`_ below
+   for details.)
+
+   Two particularly important compilation flags (to be included in the
+   ``cflags`` argument) are :var:`REG_NOSUB`, which prevents submatches to be
+   computed, and :var:`REG_EXTENDED`, which switches :func:`regex` from
+   "basic" to "extended" regular expressions so that it understands all the
+   regular expression elements of egrep(1) in the pattern argument.
 
    Depending on the flags and the outcome of the operation, the result of this
    function can take one of the following forms:
@@ -98,14 +103,14 @@ public regerr;
      (e.g., if you'd like to print an error message or throw an exception).
 
    - ``0`` or ``1``: Just a truth value indicates whether the pattern matched
-     or not. This will be the form of the result if the :const:`REG_NOSUB`
+     or not. This will be the form of the result if the :var:`REG_NOSUB`
      flag was specified for compilation, indicating that no submatch
      information is to be computed.
 
    - ``0`` (indicating no match), or ``1`` (indicating a successful match),
      where the latter value is followed by a tuple of ``(pos,substr)`` pairs
      for each submatch. This will be the form of the result only if the
-     :const:`REG_NOSUB` flag was *not* specified for compilation, so that
+     :var:`REG_NOSUB` flag was *not* specified for compilation, so that
      submatch information is available.
 
    Note that, according to POSIX semantics, a return value of 1 does *not*
@@ -185,7 +190,7 @@ end;
       entire string for (non-overlapping) instances of the pattern, applies
       the given function ``f`` to the ``reg_info`` for each match, and
       collects all results in a list. Note: Never specify the
-      :const:`REG_NOSUB` flag with this function, it needs the submatch
+      :var:`REG_NOSUB` flag with this function, it needs the submatch
       info. */
 
 regexg f pat::string cflags::int s::string eflags::int
@@ -432,13 +437,13 @@ if ~(cflags and REG_NOSUB);
    lines, such as those returned by the shell's ``set`` command. These can be
    dissected using the following regex::
 
-     > const env_pat = "^([^=]+)=(.*)$";
-     > const env_flags = REG_EXTENDED or REG_NEWLINE;
+     > let env_pat = "^([^=]+)=(.*)$";
+     > let env_flags = REG_EXTENDED or REG_NEWLINE;
      > regex env_pat env_flags "SHELL=/bin/sh" 0;
      1,0,"SHELL=/bin/sh",0,"SHELL",6,"/bin/sh"
 
    Note that we again used an extended regex here, and we also added the
-   :const:`REG_NEWLINE` flag so that we properly deal with multiline input.
+   :var:`REG_NEWLINE` flag so that we properly deal with multiline input.
    The desired information is in the 4th and 6th element of the submatch info,
    we can retrieve that as follows::
 
@@ -487,5 +492,24 @@ if ~(cflags and REG_NOSUB);
    A discussion of Perl regexes is beyond the scope of this manual, so you may
    want to refer to http://www.rexegg.com/ for more information or read a good
    book on the subject.
+
+   Pure scripts can detect whether Perl regexes are enabled by inspecting the
+   value of the :var:`pcre_version` variable. This variable will only be
+   defined if the interpreter was built with the ``--with-pcre`` configure
+   option, in which case its value is the version number of the libpcre
+   library as a string.
+
+   Please note that enabling this option will change the meaning of some
+   constructs in the regular expression syntax, even if you don't actually use
+   any of the Perl-specific extensions. It's possible to write Pure scripts
+   which work with either libpcre or the default (POSIX) regex library, but
+   you need to be aware of the discrepancies. The most notable differences are
+   that :var:`REG_EXTENDED` is always enabled and the treatment of newlines is
+   different in some situations if :var:`REG_NEWLINE` is used; please check
+   the pcreposix(3) manual page for details. Also, the :var:`REG_*`
+   "constants" differ between libpcre and the POSIX regex functions, so you
+   should never hard-code these into batch-compiled scripts (simply avoid
+   :keyword:`const` definitions involving these values, then you should be
+   fine).
 
 */
