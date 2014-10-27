@@ -192,20 +192,13 @@ fi
 vl_editline_libs=""
 dnl libpcre support (replaces GNU/POSIX regex if available).
 pure_use_pcre="no"
-pure_static_pcre="no"
 pcrelib="no (use --with-pcre to enable)"
 PCRE_CFLAGS=""
 PCRE_LIBS=""
 AC_ARG_WITH(pcre,
   [  --with-pcre             libpcre support (shared libraries)],
   [case "${withval}" in
-     yes)  pure_use_pcre="yes"; pure_static_pcre="no"; pcrelib="" ;;
-     no)  pure_use_pcre="no"; pcrelib="no (use --with-pcre to enable)" ;;
-   esac])
-AC_ARG_WITH(static-pcre,
-  [  --with-static-pcre      libpcre support (static libraries)],
-  [case "${withval}" in
-     yes)  pure_use_pcre="yes"; pure_static_pcre="yes"; pcrelib="" ;;
+     yes)  pure_use_pcre="yes"; pcrelib="" ;;
      no)  pure_use_pcre="no"; pcrelib="no (use --with-pcre to enable)" ;;
    esac])
 dnl How to link LLVM.
@@ -268,29 +261,12 @@ if test $pure_use_pcre = yes; then
 fi
 if test $pure_use_pcre = yes; then
   AC_DEFINE(USE_PCRE, 1, [Define to use the pcre library.])
-  # Locate the PCRE libraries. We prefer the static ones if --with-static-pcre
-  # was specified.
-  PCRE_CFLAGS=$(pkg-config --cflags libpcreposix 2>/dev/null)
-  PCRE_LIBDIR=$(pkg-config --variable=libdir libpcreposix 2>/dev/null)
-  if test $pure_static_pcre = yes -a -f "${PCRE_LIBDIR}/libpcreposix.a"; then
-    # Use the static libraries. This is usually preferable since it guarantees
-    # that the regex support in the runtime will always be linked against the
-    # right regex library.
-    PCRE_STATIC_LIBS=[$(pkg-config --static --libs-only-l libpcreposix | sed -e "s?-l\([^ ]*\)?${PCRE_LIBDIR}/lib\1.a?g")]
-    AC_DEFINE_UNQUOTED(PCRE_STATIC_LIBS, "${PCRE_STATIC_LIBS}", [Libraries to be linked for Perl regex support (static linkage).])
-    pcrelib="$PCRE_STATIC_LIBS"
-  else
-    # Use the shared libraries. Note that this will cause trouble if an
-    # application is accidentally linked against system libraries which offer
-    # incompatible versions of the same POSIX regex functions.
-    PCRE_LIBS=$(pkg-config --libs libpcreposix 2>/dev/null)
-    AC_DEFINE_UNQUOTED(PCRE_LIBS, "${PCRE_LIBS}", [Libraries to be linked for Perl regex support.])
-    pcrelib="$PCRE_LIBS"
-  fi
+  PCRE_LIBS=$(pkg-config --libs libpcreposix 2>/dev/null)
+  AC_DEFINE_UNQUOTED(PCRE_LIBS, "${PCRE_LIBS}", [Libraries to be linked for Perl regex support.])
+  pcrelib="$PCRE_LIBS"
 fi
 AC_SUBST(PCRE_CFLAGS)
 AC_SUBST(PCRE_LIBS)
-AC_SUBST(PCRE_STATIC_LIBS)
 dnl On non-POSIX systems like Windows, we have to get the glob and regex
 dnl functions from separate libraries, too.
 AC_CHECK_LIB(glob, glob)

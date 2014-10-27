@@ -44,6 +44,7 @@ char *alloca ();
 #include <sys/wait.h>
 #endif
 #if USE_PCRE
+#include <pcre.h>
 #include <pcreposix.h>
 #else
 #include <regex.h>
@@ -177,10 +178,8 @@ void interpreter::init()
 #ifdef LIBGLOB
     llvm::sys::DynamicLibrary::LoadLibraryPermanently(LIBGLOB, 0);
 #endif
-#ifdef LIBREGEX
-#if !USE_PCRE
+#if defined(LIBREGEX) && !USE_PCRE
     llvm::sys::DynamicLibrary::LoadLibraryPermanently(LIBREGEX, 0);
-#endif
 #endif
     g_init = true;
   }
@@ -1014,6 +1013,11 @@ void interpreter::init_sys_vars(const string& version,
   defn("compiling",	pure_int(compiling));
   defn("version",	pure_cstring_dup(version.c_str()));
   defn("sysinfo",	pure_cstring_dup(host.c_str()));
+#if USE_PCRE
+  char buf[100];
+  sprintf(buf, "%d.%d", PCRE_MAJOR, PCRE_MINOR);
+  defn("pcre_version",	pure_cstring_dup(buf));
+#endif
   // memory sizes
   interpreter& interp = *this;
   cdf(interp, "SIZEOF_BYTE",	pure_int(1));
@@ -11061,15 +11065,6 @@ int interpreter::compiler(string out, list<string> libnames, string llcopts)
 #if !USE_PCRE
 	  " -lregex"+
 #endif
-#endif
-#if USE_PCRE && defined(PCRE_LIBS)
-	  /* Extra libraries for Perl regex support. PCRE_LIBS will be defined
-	     if the runtime was linked with the dynamic PCRE libs. On some
-	     systems the batch-compiled module must then be linked against the
-	     same libraries, so that the linker doesn't accidentally pick up
-	     some other, incompatible POSIX regex functions from the system
-	     libraries. */
-	  " "+PCRE_LIBS+
 #endif
 #ifdef LIBDIR
 	  " -L"+quote(auxlibdir)+

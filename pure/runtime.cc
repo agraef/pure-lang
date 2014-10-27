@@ -13939,6 +13939,67 @@ pure_expr *reglist(const regex_t *preg, const char *s,
    POSIX regex functions, so don't try passing instances of pure_regex_t to
    those!) */
 
+// TLD: POSIX-compatible regex API. We define these as function pointers here
+// which get resolved after the necessary system libraries have been loaded,
+// so that we always get the right collection of functions depending on
+// whether we're using pcre or not.
+static int (*myregcomp)(regex_t *, const char *, int);
+static int (*myregexec)(const regex_t *, const char *, size_t, regmatch_t *, int);
+static size_t (*myregerror)(int, const regex_t *, char *, size_t);
+static void (*myregfree)(regex_t *);
+
+#ifdef HAVE_LLVM_SUPPORT_DYNAMICLIBRARY_H
+#include <llvm/Support/DynamicLibrary.h>
+#else
+#include <llvm/System/DynamicLibrary.h>
+#endif
+
+static bool init_regex()
+{
+  if (!myregcomp) {
+#if USE_PCRE && defined(LIBPCRE)
+    string msg;
+    llvm::sys::DynamicLibrary lib =
+      llvm::sys::DynamicLibrary::getPermanentLibrary(LIBPCRE, &msg);
+    if (lib.isValid()) {
+      myregcomp = (int (*)(regex_t*, const char*, int))
+	lib.getAddressOfSymbol("regcomp");
+      myregexec = (int (*)(const regex_t*, const char*, size_t, regmatch_t*, int))
+	lib.getAddressOfSymbol("regexec");
+      myregerror = (size_t (*)(int, const regex_t*, char*, size_t))
+	lib.getAddressOfSymbol("regerror");
+      myregfree = (void (*)(regex_t*))
+	lib.getAddressOfSymbol("regfree");
+      if (myregcomp && myregexec && myregerror && myregfree) return true;
+      msg = LIBPCRE ": missing regex functions";
+    }
+    // Otherwise we fall through to the default case below which just loads
+    // whatever regex functions are available. This should still do the right
+    // thing if libpcreposix.a was linked directly into the runtime. Otherwise
+    // you *will* presumably get incompatible regex functions from system
+    // libraries, which may cause anything from faulty behavior to downright
+    // crashes.
+#if 0
+    std::cerr << "warning: " << msg << '\n';
+#endif
+#endif
+    myregcomp = (int (*)(regex_t*, const char*, int))
+      llvm::sys::DynamicLibrary::SearchForAddressOfSymbol("regcomp");
+    myregexec = (int (*)(const regex_t*, const char*, size_t, regmatch_t*, int))
+      llvm::sys::DynamicLibrary::SearchForAddressOfSymbol("regexec");
+    myregerror = (size_t (*)(int, const regex_t*, char*, size_t))
+      llvm::sys::DynamicLibrary::SearchForAddressOfSymbol("regerror");
+    myregfree = (void (*)(regex_t*))
+      llvm::sys::DynamicLibrary::SearchForAddressOfSymbol("regfree");
+    if (!myregcomp || !myregexec || !myregerror || !myregfree) {
+      myregcomp = 0; myregexec = 0; myregerror = 0; myregfree = 0;
+      std::cerr << "error: couldn't find any regex functions" << '\n';
+      return false;
+    }
+  }
+  return true;
+}
+
 struct pure_regex_t {
   regex_t reg; // compiled pattern
   int res; // last result
@@ -13950,7 +14011,8 @@ struct pure_regex_t {
   pure_regex_t(const char *pat, int cflags)
     : n(0), matches(0), s(0), p(0), q(0), eflags(0)
   {
-    res = regcomp(&reg, pat, cflags);
+    if (!init_regex()) exit(1);
+    res = myregcomp(&reg, pat, cflags);
     if (res == 0) {
       memset(&st, 0, sizeof(mbstate_t));
       n = (cflags&REG_NOSUB)?0:reg.re_nsub+1;
@@ -13959,35 +14021,38 @@ struct pure_regex_t {
   }
   ~pure_regex_t()
   {
-    regfree(&reg);
+    if (!init_regex()) exit(1);
+    myregfree(&reg);
     if (matches) delete[] matches;
     if (s) free(s);
   }
   // start a new match
   int start_match(const char *_s, int _eflags)
   {
+    if (!init_regex()) exit(1);
     if (res == 0 || res == REG_NOMATCH) {
       if (s) free(s);
       s = strdup(_s); p = q = s; assert(s);
       eflags = _eflags;
       memset(&st, 0, sizeof(mbstate_t));
-      res = regexec(&reg, s, n, matches, eflags);
+      res = myregexec(&reg, s, n, matches, eflags);
     }
     return res;
   }
   // next match
   int next_match(bool overlap = false)
   {
+    if (!init_regex()) exit(1);
     if (res == 0 && s) {
       if (n > 0) {
 	regoff_t k = overlap?matches[0].rm_so:matches[0].rm_eo;
 	if (k > 0) {
 	  skipchars(k);
 	  if (overlap) nextchar();
-	  res = regexec(&reg, p, n, matches, eflags);
+	  res = myregexec(&reg, p, n, matches, eflags);
 	} else if (*p) {
 	  nextchar();
-	  res = regexec(&reg, p, n, matches, eflags);
+	  res = myregexec(&reg, p, n, matches, eflags);
 	} else
 	  res = REG_NOMATCH;
       } else
@@ -14026,9 +14091,10 @@ struct pure_regex_t {
   // retrieve error information
   char *error_info()
   {
-    size_t size = regerror(res, &reg, 0, 0);
+    if (!init_regex()) exit(1);
+    size_t size = myregerror(res, &reg, 0, 0);
     char *buf = (char*)malloc(size);
-    regerror(res, &reg, buf, size);
+    myregerror(res, &reg, buf, size);
     return buf;
   }
   // retrieve match information
@@ -14170,12 +14236,6 @@ pure_expr *pure_regskip(pure_regex_t *reg)
 {
   return reg?reg->skip_info():0;
 }
-
-#ifdef HAVE_LLVM_SUPPORT_DYNAMICLIBRARY_H
-#include <llvm/Support/DynamicLibrary.h>
-#else
-#include <llvm/System/DynamicLibrary.h>
-#endif
 
 extern "C"
 pure_expr *pure_addr(const char *s)
