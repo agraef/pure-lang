@@ -13963,6 +13963,14 @@ static bool init_regex()
     llvm::sys::DynamicLibrary lib =
       llvm::sys::DynamicLibrary::getPermanentLibrary(LIBPCRE, &msg);
     if (lib.isValid()) {
+      // On some systems (e.g., Ubuntu), the libpcreposix functions are
+      // actually #defined as the real function names which are stropped with
+      // a prefix for disambiguation purposes. In this case we just fall
+      // through to the default case below, which should pick up the right
+      // functions the runtime gets linked with at load time. Otherwise we use
+      // explicit dlopen/dlsym calls to make sure that we get the functions
+      // from the right library.
+#ifndef regcomp
       myregcomp = (int (*)(regex_t*, const char*, int))
 	lib.getAddressOfSymbol("regcomp");
       myregexec = (int (*)(const regex_t*, const char*, size_t, regmatch_t*, int))
@@ -13973,25 +13981,22 @@ static bool init_regex()
 	lib.getAddressOfSymbol("regfree");
       if (myregcomp && myregexec && myregerror && myregfree) return true;
       msg = LIBPCRE ": missing regex functions";
+#endif
     }
-    // Otherwise we fall through to the default case below which just loads
-    // whatever regex functions are available. This should still do the right
-    // thing if libpcreposix.a was linked directly into the runtime. Otherwise
-    // you *will* presumably get incompatible regex functions from system
-    // libraries, which may cause anything from faulty behavior to downright
-    // crashes.
 #if 0
-    std::cerr << "warning: " << msg << '\n';
+    if (!msg.empty()) std::cerr << "warning: " << msg << '\n';
 #endif
+    // If we couldn't find the functions by these means, we fall through to
+    // the default case below which just uses whatever regex functions the
+    // runtime is linked with. This should still do the right thing in most
+    // cases, but we're at the mercy of the linker here. On some systems, we
+    // might get incompatible regex functions from system libraries, which may
+    // cause anything from faulty behavior to downright crashes.
 #endif
-    myregcomp = (int (*)(regex_t*, const char*, int))
-      llvm::sys::DynamicLibrary::SearchForAddressOfSymbol("regcomp");
-    myregexec = (int (*)(const regex_t*, const char*, size_t, regmatch_t*, int))
-      llvm::sys::DynamicLibrary::SearchForAddressOfSymbol("regexec");
-    myregerror = (size_t (*)(int, const regex_t*, char*, size_t))
-      llvm::sys::DynamicLibrary::SearchForAddressOfSymbol("regerror");
-    myregfree = (void (*)(regex_t*))
-      llvm::sys::DynamicLibrary::SearchForAddressOfSymbol("regfree");
+    myregcomp = (int (*)(regex_t*, const char*, int))regcomp;
+    myregexec = (int (*)(const regex_t*, const char*, size_t, regmatch_t*, int))regexec;
+    myregerror = (size_t (*)(int, const regex_t*, char*, size_t))regerror;
+    myregfree = (void (*)(regex_t*))regfree;
     if (!myregcomp || !myregexec || !myregerror || !myregfree) {
       myregcomp = 0; myregexec = 0; myregerror = 0; myregfree = 0;
       std::cerr << "error: couldn't find any regex functions" << '\n';
