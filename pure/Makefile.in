@@ -161,7 +161,12 @@ AUXLIBS = -DLIBDIR='"$(libdir)"' -DLIBPURE='"$(libpure_soname)"'
 endif
 
 ifneq ($(PCRE_LIBS),)
-AUXDEFS += -DLIBPCRE='"libpcreposix$(DLL)"'
+pcrelibdir = $(shell pkg-config --variable=libdir libpcreposix)
+pcrelib = $(strip $(shell pkg-config --libs-only-l libpcreposix | sed -e 's/-l/lib/'))
+LIBPCRE = $(pcrelibdir)/$(pcrelib)$(DLL)
+ifneq ($(LIBPCRE),)
+AUXDEFS += -DLIBPCRE='"$(LIBPCRE)"'
+endif
 endif
 
 # Other platform-specific defaults, edit this as needed. XXXFIXME: This is a
