@@ -144,6 +144,9 @@ building and installing Pure.
 
 - the GNU multiprecision floating point library (``libmpfr``, ``-dev``);
 
+- the PCRE library (``libpcre``, ``-dev``), if you want Perl-compatible regex
+  support (see below);
+
 - GNU readline (``libreadline``, ``-dev``) or some compatible replacement
   (only needed if you want command line editing support in the interpreter;
   see comments below).
@@ -229,6 +232,18 @@ license reasons or because it's what the operating system provides. Pure's
 configuration script automatically detects the presence of both packages and
 also lets you disable readline and/or editline support using the
 ``--without-readline`` and ``--without-editline`` options.
+
+Pure normally uses the system's POSIX regex functions for its regular
+expression support (:mod:`regex` module). Instead, you can also build it with
+support for Perl-style regular expressions. This is done by linking in the
+POSIX compatibility layer of the PCRE library:
+
+- PCRE: http://www.pcre.org/
+
+Please note that the PCRE support is still experimental and currently disabled
+by default. Configuring with ``--with-pcre`` enables it. Also note that at
+present this is only available as a compile-time switch; to change the regex
+library used by the Pure runtime you need to recompile the interpreter.
 
 **Step 2.** Get and unpack the latest LLVM sources.
 
