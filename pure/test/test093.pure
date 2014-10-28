@@ -75,7 +75,8 @@ let env = record $ parse_env env_str;
 env!!["SHELL","HOME"];
 // {"/bin/sh","/home/ag"}
 
-// This requires pcre to work!
-//regex "(?:Bob says: (\\w+))" 0 "Bob says: Go" 0;
-// POSIX:  0
-// PCRE:   1,0,"Bob says: Go",10,"Go"
+if stringp pcre_version then
+  regex "(?:Bob says: (\\w+))" 0 "Bob says: Go" 0 ===
+  (1,0,"Bob says: Go",10,"Go")
+else
+  regex "(?:Bob says: (\\w+))" 0 "Bob says: Go" 0 === 0;
