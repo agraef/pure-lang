@@ -13827,6 +13827,7 @@ pure_expr *globlist(const glob_t *pglob)
 
 #include <sys/types.h>
 #if USE_PCRE
+#include <pcre.h>
 #include <pcreposix.h>
 #else
 #include <regex.h>
@@ -14589,11 +14590,19 @@ void pure_regex_vars(void)
 {
   interpreter& interp = *interpreter::g_interp;
   // regex stuff
-  // This one isn't actually needed more, we should get rid of it eventually.
+#if USE_PCRE
+  // This sets the pcre_version variable if the runtime is built with PCRE
+  // support.
+  char buf[100];
+  sprintf(buf, "%d.%d", PCRE_MAJOR, PCRE_MINOR);
+  df(interp, "pcre_version",	pure_cstring_dup(buf));
+#endif
+  // regcomp flags
   df(interp, "REG_EXTENDED",	pure_int(REG_EXTENDED));
   df(interp, "REG_ICASE",	pure_int(REG_ICASE));
   df(interp, "REG_NOSUB",	pure_int(REG_NOSUB));
   df(interp, "REG_NEWLINE",	pure_int(REG_NEWLINE));
+  // regexec flags
   df(interp, "REG_NOTBOL",	pure_int(REG_NOTBOL));
   df(interp, "REG_NOTEOL",	pure_int(REG_NOTEOL));
   // regcomp error codes
