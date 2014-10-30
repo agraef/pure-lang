@@ -2696,10 +2696,12 @@ void interpreter::inline_code(bool priv, string &code)
     ext = ".dats";
     intermediate_ext = "_dats.c";
     remove_intermediate = true;
-    // We only override patscc's default C compiler if neither PURE_ATSCC nor
-    // PATSCCOMP has been set, so that the user still has full control over
-    // which AST and C compilers will be used.
-    if (!getenv("PURE_ATSCC") && !getenv("PATSCCOMP")) {
+    // Unless dragonegg is being used or PATSCCOMP has been set, we override
+    // patscc's default C compiler so that clang is used to generate bitcode.
+    // This still gives the user full control over which AST and C compilers
+    // will be used.
+    const char *atscc = getenv(env);
+    if ((!atscc || !strstr(atscc, "dragonegg")) && !getenv("PATSCCOMP")) {
       static char *patsccomp = NULL;
       if (!patsccomp) {
 	string ccomp = string("PATSCCOMP=") + clang + " -emit-llvm -std=c99 -D_XOPEN_SOURCE -I${PATSHOME} -I${PATSHOME}/ccomp/runtime";
