@@ -189,7 +189,8 @@ using system;
 using math;
 using gsl::matrix;
 
-let matrixref_ptr = pointer_tag "char*";
+extern int double_gauss_jordan(int, int, double*, int, double)
+  = ats_double_gauss_jordan;
 
 // Return the inverse of a dmatrix.
 invgj A::dmatrix =
@@ -198,8 +199,7 @@ invgj A::dmatrix =
     (m, n) = dim A;
     _ = if m ~= n then throw (::non_square m n) else ();
     A_aug = {dmatrix A, dmatrix {i == j | i = 1 .. m; j = 1 .. m}};
-    A_aug_ptr = (pointer_cast matrixref_ptr $ pointer A_aug);
-    singular = double_gauss_jordan m (2 * m) A_aug_ptr 1 (-1.0);
+    singular = ats_double_gauss_jordan m (2 * m) A_aug 1 (-1.0);
     _ = if singular then throw (::singular A) else ();
   end;
 
