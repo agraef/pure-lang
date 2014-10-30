@@ -1,0 +1,250 @@
+#! /usr/bin/env pure
+
+// Gauss-Jordan elimination. Both row echelon and reduced row echelon
+// form are supported.
+//
+// Try modifying the ATS code, for instance to introduce a buffer
+// overrun (for instance by changing ‘k != n - 1’ to ‘k != n’ in
+// row_swap). The ATS compiler should catch such attempted buffer
+// overruns.
+
+%< -*- ATS -*-
+
+#define ATS_DYNLOADFLAG 0
+
+#include "share/atspre_define.hats"
+#include "share/atspre_staload.hats"
+
+%{^
+#include <float.h>                     /* For the machine epsilons. */
+%}
+
+macdef FLT_EPSILON = $extval (float, "FLT_EPSILON")
+macdef DBL_EPSILON = $extval (double, "DBL_EPSILON")
+
+macdef b2i = bool2int0
+macdef i2b = int2bool0
+
+fn {tk : tkind} gauss_jordan
+    {m, n : int | 1 < m; m < n}
+    (m : int m, n : int n, A : matrixref (g0float tk, m, n),
+     reduced : bool, epsilon : g0float tk) : bool =
+  let
+    fn row_swap (i : row, j : row) :<cloref1> void =
+      loop 0
+       where
+        {
+          fun loop (k : col) :<cloref1> void =
+            let
+              val temp = A[j, k]
+            in
+              A[j, k] := A[i, k];
+              A[i, k] := temp;
+              if k != n - 1 then
+                loop (k + 1)
+            end
+        }
+
+    fn select_pivot (i : natLt (m - 1)) :<cloref1> row =
+      loop (i, i + 1)
+       where
+        {
+          fun loop (pivot : natLt m, k : natLt m) :<cloref1> row =
+            let
+              val new_pivot =
+                if abs A[pivot, i] < abs A[k, i] then k else pivot
+            in
+              if k != m - 1 then
+                loop (new_pivot, k + 1)
+              else
+                new_pivot
+            end
+        }
+
+    fn row_subtract (pivot : row, i : row) :<cloref1> void =
+      begin
+        A[i, pivot] := zero;
+        loop (pivot + 1)
+      end
+       where
+        {
+          val scale = A[i, pivot] / A[pivot, pivot]
+
+          fun loop (k : col) :<cloref1> void =
+            begin
+              A[i, k] := A[i, k] - scale * A[pivot, k];
+              if k != n - 1 then
+                loop (k + 1)
+            end
+        }
+
+    fn pivot_row_normalize (pivot : row) :<cloref1> void =
+      begin
+        A[pivot, pivot] := one;
+        loop (pivot + 1)
+      end
+       where
+        {
+          val pivot_val = A[pivot, pivot]
+
+          fun loop (k : col) :<cloref1> void =
+            begin
+              A[pivot, k] := A[pivot, k] / pivot_val;
+              if k != n - 1 then
+                loop (k + 1)
+            end
+        }
+
+    fn pivot_row_apply (pivot : row) :<cloref1> void =
+      begin
+        if reduced then
+          if pivot != 0 then
+            loop (0, pivot - 1);
+        if pivot != m - 1 then
+          loop (pivot + 1, m - 1);
+        pivot_row_normalize pivot
+      end
+       where
+        {
+          fun loop {j : nat | j < m}
+                   (i : natLte j, j : int j) :<cloref1> void =
+            begin
+              row_subtract (pivot, i);
+              if i != j then
+                loop (i + 1, j)
+            end
+        }
+
+    fn do_gauss_jordan () :<cloref1> bool =
+      loop 0
+       where
+        {
+          fun loop (i : row) :<cloref1> bool =
+            let
+              val pivot =
+                (if i != m - 1 then select_pivot i else i) : row
+            in
+              if abs A[pivot, pivot] < epsilon then
+                true
+              else
+                begin
+                  if pivot != i then row_swap (pivot, i);
+                  pivot_row_apply i;
+                  if i != m - 1 then
+                    loop (i + 1)
+                  else
+                    false
+                end
+            end
+        }
+  in
+    do_gauss_jordan ()
+  end
+   where
+    {
+      val zero = g0int2float<int_kind, tk> 0
+      val one = g0int2float<int_kind, tk> 1
+
+      typedef mat = matrixref (g0float tk, m, n)
+      typedef row = natLt m
+      typedef col = natLt n
+
+      fn get (A : mat, i : row, j : col) : g0float tk =
+        matrixref_get_at (A, i, n, j)
+
+      fn set (A : mat, i : row, j : col, x : g0float tk) : void =
+        matrixref_set_at (A, i, n, j, x)
+
+      overload [] with get
+      overload [] with set
+    }
+
+extern fun float_gauss_jordan
+    {m, n : int | 1 < m; m < n}
+    (m : int m, n : int n, A : matrixref (float, m, n),
+     reduced : int, epsilon : float) : int = "ext#"
+
+extern fun double_gauss_jordan
+    {m, n : int | 1 < m; m < n}
+    (m : int m, n : int n, A : matrixref (double, m, n),
+     reduced : int, epsilon : double) : int = "ext#"
+
+implement float_gauss_jordan (m, n, A, reduced, epsilon) =
+  b2i (gauss_jordan<float_kind> (m, n, A, i2b reduced, eps))
+   where
+    {
+      val eps = if epsilon < 0.f then 100.f * FLT_EPSILON else epsilon
+    }
+
+implement double_gauss_jordan (m, n, A, reduced, epsilon) =
+  b2i (gauss_jordan<double_kind> (m, n, A, i2b reduced, eps))
+   where
+    {
+      val eps = if epsilon < 0. then 100. * DBL_EPSILON else epsilon
+    }
+
+%> // end of ATS code.
+
+using system;
+using math;
+using gsl::matrix;
+
+let matrixref_ptr = pointer_tag "char*";
+
+// Return the inverse of a dmatrix.
+invgj A::dmatrix =
+  {A_aug!(i, j) | i = 0 .. m - 1; j = m .. 2 * m - 1}
+  when
+    (m, n) = dim A;
+    _ = if m ~= n then throw (::non_square m n) else ();
+    A_aug = {dmatrix A, dmatrix {i == j | i = 1 .. m; j = 1 .. m}};
+    A_aug_ptr = (pointer_cast matrixref_ptr $ pointer A_aug);
+    singular = double_gauss_jordan m (2 * m) A_aug_ptr 1 (-1.0);
+    _ = if singular then throw (::singular A) else ();
+  end;
+
+demo A::dmatrix =
+  ()
+  when
+    _ = printf "---------------\n\n" ();
+
+    (m, n) = dim A;
+
+    _ = printf "A :" ();
+    _ = void [printd j (A!(i, j)) | i = 0 .. m - 1; j = 0 .. n - 1];
+    _ = printf "\n\n" ();
+
+    A_inv = invgj A;
+
+   _ = printf "A inverse :" ();
+   _ = void [printd j (A_inv!(i, j)) | i = 0 .. m - 1; j = 0 .. m - 1];
+   _ = printf "\n\n" ();
+
+    I = A * A_inv;
+
+    _ = printf "A times (A inverse) :" ();
+    _ = void [printd j (I!(i, j)) | i = 0 .. m - 1; j = 0 .. m - 1];
+    _ = printf "\n\n" ();
+  end
+  with
+    printd 0 = printf "\n%10.5f";
+    printd _ = printf "%10.5f";
+  end;
+
+handler (::singular A) =
+  printf "The matrix is singular or approximately singular.\n\n" ();
+handler (::non_square m n) =
+  printf "The %dx%d matrix is not square.\n\n" (m, n);
+
+catch handler (demo (dmatrix {0, 5, 5;
+                              0, 0, 5;
+                              5, 5, 5}));
+
+catch handler (demo (dmatrix {1, 2, 3;
+                              4, 5, 6;
+                              7, 8, 9}));
+
+catch handler (demo (dmatrix {1, 2, 3;
+                              4, 5, 6}));
+
+printf "---------------\n" ();
