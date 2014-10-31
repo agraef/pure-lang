@@ -197,7 +197,7 @@ invgj A::dmatrix =
   {A_aug!(i, j) | i = 0 .. m - 1; j = m .. 2 * m - 1}
   when
     (m, n) = dim A;
-    _ = if m ~= n then throw (::non_square m n) else ();
+    _ = if m ~= n then throw (::non_square A) else ();
     A_aug = {dmatrix A, dmatrix {i == j | i = 1 .. m; j = 1 .. m}};
     singular = ats_double_gauss_jordan m (2 * m) A_aug 1 (-1.0);
     _ = if singular then throw (::singular A) else ();
@@ -233,8 +233,11 @@ demo A::dmatrix =
 
 handler (::singular A) =
   printf "The matrix is singular or approximately singular.\n\n" ();
-handler (::non_square m n) =
-  printf "The %dx%d matrix is not square.\n\n" (m, n);
+handler (::non_square A) =
+  printf "The %dx%d matrix is not square.\n\n" (m, n)
+  when
+    (m, n) = dim A;
+  end;
 
 catch handler (demo (dmatrix {0, 5, 5;
                               0, 0, 5;
