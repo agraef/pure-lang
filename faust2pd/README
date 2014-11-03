@@ -9,9 +9,10 @@ Albert Graef <aggraef@gmail.com>
 
 This package contains software which makes it easier to use Faust DSPs with Pd
 and the Pure programming language. The main component is the faust2pd script
-which creates GUI wrappers for Faust DSPs. The package also includes a bunch
-of examples. The software is distributed under the GPL; see the COPYING file
-for details.
+which creates Pd GUI wrappers for Faust DSPs. The package also includes a Pure
+script faustxml.pure for parsing Faust dsp descriptions in XML or JSON format,
+as well as a bunch of examples. The software is distributed under the GPL; see
+the COPYING file for details.
 
 .. note:: This faust2pd version is written in Pure and was ported from an
    earlier version written in Pure's predecessor Q. The version of the script
@@ -73,9 +74,10 @@ To run the seqdemo example, you'll also need the Pd Pure external
 (pd-pure*.tar.gz), also available at the Pure_ website.
 
 To compile the examples, you'll need GNU C++ and make, Pd_ and, of course,
-Faust_. Make sure you get a recent version of Faust; Faust releases >0.9.8
-include the puredata architecture necessary to create Pd externals from Faust
-DSPs.
+Faust_. Make sure you get a recent version of Faust; Faust 0.9.67 or later is
+recommended. Faust 0.9.70 and later have support for the new JSON format and
+offer some other new and convenient capabilities, such as retrieving the JSON
+description directly from a running dsp instance via Faust's httpd interface.
 
 .. _Pd: http://puredata.info
 .. _Faust: http://faudiostream.sf.net
@@ -99,8 +101,8 @@ installation, if it guesses wrong, you can specify the prefix explicitly by
 running make as ``make install-pd pdprefix=/some/path``.
 
 The included faustxml.pure script provides access to Faust-generated dsp
-descriptions in xml files to Pure scripts. This module is described in its own
-appendix__ below. It may have uses beyond faust2pd, but isn't normally
+descriptions in XML or JSON files to Pure scripts. This module is described in
+its own appendix__ below. It may have uses beyond faust2pd, but isn't normally
 installed. If you want to use this module, you can just copy it to your Pure
 library directory.
 
@@ -167,7 +169,9 @@ Faust compiler and run faust2pd on the resulting XML file:
   # generate the Pd patch from the xml file
   faust2pd freeverb.dsp.xml
 
-Please see `Wrapping DSPs with faust2pd`_ below for further details.
+As of version 2.10, faust2pd can also process dsp descriptions in Faust's new
+JSON format (-json option). Please see `Wrapping DSPs with faust2pd`_ below
+for further details.
 
 Note that, just as with other Pd externals and abstractions, the compiled
 .pd_linux modules and wrapper patches must be put somewhere where Pd can find
@@ -307,6 +311,37 @@ The default output filename is ``input-file`` with new extension
 ``.pd``. Thus, ``faust2pd filename.dsp.xml`` creates a Pd patch named
 ``filename.pd`` from the Faust XML description in ``filename.dsp.xml``.
 
+JSON Support
+------------
+
+As of version 2.10, faust2pd also fully supports Faust's new JSON-based
+description format, which is generated with the -json option. In this case the
+filename extension is ``.dsp.json``, so faust2pd is invoked as ``faust2pd
+filename.dsp.json`` instead. This format is only supported in the latest Faust
+versions (Faust 0.9.70 and later, or Faust 2.0.a30 and later if you are
+running the Faust2 development version). At the time of this writing, these
+are only available in the Faust git repository.
+
+Instead of generating a JSON file with the Faust compiler, you can also read
+the JSON description straight from a running dsp instance via the httpd
+interface. This works with both stand-alone Faust applications which have the
+httpd interface enabled (e.g., created with ``faust2jaqt -httpd mydsp.dsp``)
+and instances running in Grame's FaustLive application. To these ends, you
+just specify the URL of the running dsp instance instead of the JSON
+filename. For instance, assuming that there's a Faust dsp running locally at
+port 5510, you can run faust2pd as follows to create a GUI patch for it:
+``faust2pd http://localhost:5510``. You can find out about the port a Faust
+dsp runs on by inspecting the terminal output of a stand-alone Faust
+application. In FaustLive, use the ``Window / View QRcode`` menu option to
+retrieve the IP under which the httpd interface of a dsp window can be
+accessed. If FaustLive is running locally on its default port (7777), then you
+can also retrieve a list of dsp instances currently running in FaustLive using
+``faust2pd http://localhost:7777/availableInterfaces``. This prints the dsp
+names along with their URLs on stdout.
+
+faust2pd Options
+----------------
+
 The faust2pd program understands a number of options which affect the layout
 of the GUI elements and the contents of the generated patch. Here is a brief
 list of the available options:
@@ -408,15 +443,14 @@ control surfaces and interfaces to be used on stage you'll probably have to
 edit the generated GUI layouts by hand.)
 
 For convenience, all the content-related command line options mentioned above
-can also be specified in the Faust source, as special tags in the label of the
-toplevel group of the dsp. These take the form ``[pd:option]`` or
-``[pd:option=value]`` where ``option`` is any of the (long) options understood
-by faust2pd. For instance::
+can also be specified as global meta data in the Faust source. For instance::
 
-  process = vgroup("mysynth [pd:nvoices=8] [pd:slider-nums]", ...);
+  declare faust2pd "--nvoices=8 --slider-nums";
 
-Source options carrying arguments, like ``nvoices`` in the above example, can
-also be overridden with corresponding command line options.
+Note that source options carrying arguments, like ``--nvoices`` in the above
+example, can still be overridden with corresponding command line options. Also
+note that all this works with the JSON format only, as custom global meta data
+in the Faust source isn't recorded in the XML format.
 
 Conclusion
 ==========

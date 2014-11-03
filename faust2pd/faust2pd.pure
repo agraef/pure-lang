@@ -577,7 +577,7 @@ Options:\n\
 -X, --exclude       exclude controls matching the given glob patterns\n\
 -x, --width         maximum width of the GUI area\n\
 -y, --height        maximum height of the GUI area\n\
-input-file          input file name ('.dsp.xml' file)\n\
+input-file          input file name ('.dsp.xml' or '.dsp.json') or URL\n\
 Default output-file is input-file with new extension '.pd'.\n"
 		  (version,prog) $$ exit 0;
 
@@ -598,7 +598,8 @@ let opts        = [("--help", "-h", NOARG),
 		   ("--output-file", "-o", REQARG)];
 
 //let compiling = 1;
-//let argv = ["faust2pd","test/organ.dsp.xml"];
+//let argv = ["faust2pd","http://127.0.0.1:7777/availableInterfaces"];
+//let argv = ["faust2pd","http://127.0.0.1:7777/5510"];
 let prog,myargs = case argv of prog:args = prog,args; _ = "faust2pd",[] end;
 
 //let prog = "faust2pd";
@@ -630,18 +631,35 @@ if outname===xmlname then
   error "output would overwrite source file, aborting"
 else ();
 
-attrs s		= regexg (\info->info!3) "\\[pd:([^]]+)\\]" REG_EXTENDED s 0;
-
 let dsp_info => (src_opts,_) =
   if compiling then () => ([],[])
   else
   (dsp_info => catch invalid_src_option (getopt opts src_opts) when
      setlocale LC_ALL "C";
      dsp_info = catch error (faustxml::info xmlname);
-     src_opts = case dsp_info!5 of
-                  _ (label,_) = ["--"+opt | opt = attrs label];
-                  _ = [];
-                end;
+     ~listp dsp_info ||
+     (() when
+	// Output is a list of dsp/url hash pairs. Print them on stdout and
+	// exit.
+	maxlen = foldl (\l (name=>url) -> max l (#name)) 0 dsp_info;
+	format = sprintf "%%-%ds  %%s\n" maxlen;
+	puts "Available interfaces:";
+	do (\(name=>url) -> printf format (name,url)) dsp_info;
+	exit 0;
+      end);
+     // This is for backward compatibility with older faust2pd versions, where
+     // the options were recorded in the toplevel group. This doesn't work
+     // with the latest Faust versions any more, however.
+     src_opts1 = case dsp_info!5 of
+       _ (label,_) = ["--"+opt | opt = attrs label] with
+	 attrs s = regexg (\info->info!3) "\\[pd:([^]]+)\\]" REG_EXTENDED s 0;
+       end;
+       _ = [];
+     end;
+     // For newer Faust versions we take the options from global meta data.
+     src_opts2 = dsp_info!6;
+     src_opts = src_opts1 + src_opts2;
+     dsp_info = dsp_info!!(0..5);
    end);
 
 /* Command line options always override what's in the source. */
