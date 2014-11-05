@@ -181,12 +181,12 @@ implement pure_list_rotate (lst, n) =
                   end
               end
 
-          val () = rotate (!arr, i2sz 0, n, arr->[0])
-          val result = pure_listv (size, !arr)
-          val () = free_purexp_array (pf_view, pf_free | arr);
-        in
-          result
-        end
+            val () = rotate (!arr, i2sz 0, n, arr->[0])
+            val result = pure_listv (size, !arr)
+            val () = free_purexp_array (pf_view, pf_free | arr);
+          in
+            result
+          end
       end
   end
 
