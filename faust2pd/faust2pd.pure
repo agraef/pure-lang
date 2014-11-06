@@ -696,8 +696,9 @@ let exclude = get_set_opt "--exclude";
 
 let fn1,fn2 = if fnsize>0 then fnsize,fnsize else fn1,fn2;
 
-main		= catch error mainprog $$ exit 0;
-mainprog	= write_synth nvoices dsp_info outname if nvoices>0;
+main		= catch error mainprog $$ exit 0 with
+  mainprog	= write_synth nvoices dsp_info outname if nvoices>0;
 		= write_dsp dsp_info outname otherwise;
+end;
 
 if compiling then () else main;
