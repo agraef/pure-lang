@@ -456,14 +456,24 @@ control surfaces and interfaces to be used on stage you'll probably have to
 edit the generated GUI layouts by hand.)
 
 For convenience, all the content-related command line options mentioned above
-can also be specified as global meta data in the Faust source. For instance::
+can also be specified in the Faust source, as special meta data in the label
+of the toplevel group of the dsp. These take the form ``[pd:option]`` or
+``[pd:option=value]`` where ``option`` is any of the (long) options understood
+by faust2pd. For instance::
+
+  process = vgroup("mysynth [pd:nvoices=8] [pd:slider-nums]", ...);
+
+Alternatively, as of faust2pd 2.11, these options can also be specified in a
+single chunk as global meta data, using the ``faust2pd`` key. So the above can
+also be written as::
 
   declare faust2pd "--nvoices=8 --slider-nums";
 
 Note that source options carrying arguments, like ``--nvoices`` in the above
 example, can still be overridden with corresponding command line options. Also
-note that all this works with the JSON format only, as custom global meta data
-in the Faust source isn't recorded in the XML format.
+note that all this works with the JSON format only, as meta data in the Faust
+source isn't recorded in the XML format produced by recent Faust versions any
+more.
 
 Conclusion
 ==========
