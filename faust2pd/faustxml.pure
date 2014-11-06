@@ -342,6 +342,12 @@ end when
   // Faust source in one chunk using the global 'faust2pd' meta data key.
   opts = catch (cst [])
     (regsplit "[[:space:]]+" REG_EXTENDED (meta!"faust2pd") 0);
+  // For compatibility with pd-faust and older faust2pd versions, we also
+  // still allow options to be specified using 'pd' meta data on the toplevel
+  // group.
+  meta_ui = catch (cst {}) (data!"ui"!0!"meta");
+  opts_ui = map ("--"+) (cat (map (list.(!!["pd"])) meta_ui));
+  opts = opts+opts_ui;
   in = catch (cst 0) (val (data!"inputs"));
   out = catch (cst 0) (val (data!"outputs"));
 end;
