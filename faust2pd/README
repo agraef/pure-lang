@@ -19,20 +19,21 @@ the COPYING file for details.
    provided here should be 100% backward-compatible to those previous
    versions, except for the following changes:
 
-   - The (rarely used) -f (a.k.a. --fake-buttons) option was renamed to -b.
+   - The (rarely used) -f (a.k.a. --fake-buttons) option was renamed to -b,
+     and a new -f (a.k.a. --font-size) option was added to change the font
+     size of the GUI elements.
 
-   - A new -f (a.k.a. --font-size) option was added to change the font size
-     of the GUI elements.
+   - For compatibility with pd-faust, the -s (a.k.a. --slider-nums) flag is
+     enabled by default now. The corresponding option is still supported for
+     backward compatibility, and for overriding the new --no-slider-nums
+     option which can be used to disable this feature.
 
    - Most command line options can now also be specified using special meta
      data in the Faust source.
 
-   Also note that you can now run the script on 64 bit systems (Q never worked
-   there).
-
 As of version 2.1, the faust2pd script is now compiled to a native executable
 before installation. This makes the program start up much faster, which is a
-big advantage because most xml files don't take long to be processed.
+big advantage because most xml and json files don't take long to be processed.
 
 faust2pd version 2.11 and later have full support for Faust's new JSON-based
 description format, which is generated with the -json option. The JSON-based
@@ -410,7 +411,9 @@ work around these limitations.
   to figure out what the current value is. Therefore faust2pd has an option -s
   a.k.a. --slider-nums which causes it to add a number box to each slider
   control. (This flag also applies to Faust's passive bargraph controls, as
-  these are implemented using sliders, see below.)
+  these are implemented using sliders, see below. As of faust2pd 2.12, this
+  option is actually the default now, but you can still disable it with the
+  --no-slider-nums option.)
 
 - Pd's sliders also have no provision for specifying a stepsize, so they are
   an awkward way to input integral values from a small range. OTOH, Faust
@@ -461,13 +464,13 @@ of the toplevel group of the dsp. These take the form ``[pd:option]`` or
 ``[pd:option=value]`` where ``option`` is any of the (long) options understood
 by faust2pd. For instance::
 
-  process = vgroup("mysynth [pd:nvoices=8] [pd:slider-nums]", ...);
+  process = vgroup("mysynth [pd:nvoices=8] [pd:no-slider-nums]", ...);
 
-Alternatively, as of faust2pd 2.11, these options can also be specified in a
-single chunk as global meta data, using the ``faust2pd`` key. So the above can
+Alternatively, as of faust2pd 2.11, these options can also be specified as a
+single chunk of global meta data, using the ``faust2pd`` key. So the above can
 also be written as::
 
-  declare faust2pd "--nvoices=8 --slider-nums";
+  declare faust2pd "--nvoices=8 --no-slider-nums";
 
 Note that source options carrying arguments, like ``--nvoices`` in the above
 example, can still be overridden with corresponding command line options. Also

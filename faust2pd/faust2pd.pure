@@ -578,17 +578,19 @@ Options:\n\
 -x, --width         maximum width of the GUI area\n\
 -y, --height        maximum height of the GUI area\n\
 input-file          input file name ('.dsp.xml' or '.dsp.json') or URL\n\
-Default output-file is input-file with new extension '.pd'.\n"
+NOTE: --slider-nums is the default as of faust2pd 2.12; use --no-slider-nums\n\
+to disable. Default output-file is input-file with new extension '.pd'.\n"
 		  (version,prog) $$ exit 0;
 
 print_version	= printf
-"faust2pd version %s, Copyright (c) 2009 by Albert Graef\n" version $$
+"faust2pd version %s, Copyright (c) 2009-2014 by Albert Graef\n" version $$
 		  exit 0;
 
 let opts        = [("--help", "-h", NOARG),
 		   ("--version", "-V", NOARG),
 		   ("--fake-buttons", "-b", NOARG),
 		   ("--slider-nums", "-s", NOARG),
+		   ("--no-slider-nums", "", NOARG),
 		   ("--radio-sliders", "-r", REQARG),
 		   ("--nvoices", "-n", REQARG),
 		   ("--font-size", "-f", REQARG),
@@ -666,10 +668,12 @@ let dsp_info => (src_opts,_) =
    end);
 
 /* Command line options always override what's in the source. */
+let mycmdopts = myopts;
 let myopts = dict (src_opts+members myopts);
 
 let fake_buttons_flag = member myopts "--fake-buttons";
-let slider_nums_flag = member myopts "--slider-nums";
+let slider_nums_flag = member mycmdopts "--slider-nums" ||
+  !member myopts "--no-slider-nums";
 let [radio_sliders,nvoices,height,width,fnsize] = map get_int_opt
   ["--radio-sliders","--nvoices","--height","--width","--font-size"];
 let exclude = get_set_opt "--exclude";
