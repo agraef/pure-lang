@@ -34,6 +34,17 @@ As of version 2.1, the faust2pd script is now compiled to a native executable
 before installation. This makes the program start up much faster, which is a
 big advantage because most xml files don't take long to be processed.
 
+faust2pd version 2.11 and later have full support for Faust's new JSON-based
+description format, which is generated with the -json option. The JSON-based
+interface offers some advantages, such as accessing additional meta data in
+the Faust source (the XML format doesn't offer this in the latest Faust
+versions any more), and the capability to read dsp descriptions straight from
+running dsp instances in httpd-enabled Faust applications and Grame's new
+FaustLive environment. However, this format is only supported in the latest
+Faust versions (Faust 0.9.70 and later, or Faust 2.0.a30 and later if you are
+running the Faust2 development version). At the time of this writing, these
+versions are only available in the Faust git repository.
+
 .. _Pure: http://purelang.bitbucket.org
 
 .. contents::
@@ -171,7 +182,7 @@ Faust compiler and run faust2pd on the resulting XML file:
   # generate the Pd patch from the xml file
   faust2pd freeverb.dsp.xml
 
-As of version 2.10, faust2pd can also process dsp descriptions in Faust's new
+As of version 2.11, faust2pd can also process dsp descriptions in Faust's new
 JSON format (-json option). Please see `Wrapping DSPs with faust2pd`_ below
 for further details.
 
@@ -316,13 +327,11 @@ The default output filename is ``input-file`` with new extension
 JSON Support
 ------------
 
-As of version 2.10, faust2pd also fully supports Faust's new JSON-based
+As of version 2.11, faust2pd also fully supports Faust's new JSON-based
 description format, which is generated with the -json option. In this case the
 filename extension is ``.dsp.json``, so faust2pd is invoked as ``faust2pd
-filename.dsp.json`` instead. This format is only supported in the latest Faust
-versions (Faust 0.9.70 and later, or Faust 2.0.a30 and later if you are
-running the Faust2 development version). At the time of this writing, these
-are only available in the Faust git repository.
+filename.dsp.json`` instead. Please note that this format is only supported in
+the latest Faust versions (Faust 0.9.70 and later).
 
 Instead of generating a JSON file with the Faust compiler, you can also read
 the JSON description straight from a running dsp instance via the httpd

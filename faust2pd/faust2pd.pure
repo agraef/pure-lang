@@ -647,16 +647,19 @@ let dsp_info => (src_opts,_) =
 	do (\(name=>url) -> printf format (name,url)) dsp_info;
 	exit 0;
       end);
-     // This is for backward compatibility with older faust2pd versions, where
-     // the options were recorded in the toplevel group. This doesn't work
-     // with the latest Faust versions any more, however.
+     // This is for backward compatibility with older faust2pd and faust
+     // versions, where the options were encoded as meta data in the label of
+     // the toplevel group. This doesn't work with the latest faust versions
+     // any more, however.
      src_opts1 = case dsp_info!5 of
        _ (label,_) = ["--"+opt | opt = attrs label] with
 	 attrs s = regexg (\info->info!3) "\\[pd:([^]]+)\\]" REG_EXTENDED s 0;
        end;
        _ = [];
      end;
-     // For newer Faust versions we take the options from global meta data.
+     // In the latest faust2pd versions we now take the options from global
+     // meta data. This requires a recent faust version and only works with
+     // JSON descriptions (-json).
      src_opts2 = dsp_info!6;
      src_opts = src_opts1 + src_opts2;
      dsp_info = dsp_info!!(0..5);

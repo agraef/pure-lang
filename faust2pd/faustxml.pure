@@ -338,6 +338,8 @@ end when
   meta = if recordp meta then meta else colcat meta;
   recordp meta || throw "invalid JSON data";
   version = catch (cst "") (meta!"version");
+  // As of faust2pd 2.11, we allow faust2pd options to be specified in the
+  // Faust source in one chunk using the global 'faust2pd' meta data key.
   opts = catch (cst [])
     (regsplit "[[:space:]]+" REG_EXTENDED (meta!"faust2pd") 0);
   in = catch (cst 0) (val (data!"inputs"));
