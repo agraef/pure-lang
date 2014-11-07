@@ -4,6 +4,10 @@
 # install the module. You can use this as a starting point and
 # template to create your own packages with Pure modules.
 
+# The source files are laid out in a manner that is conventional for
+# ATS sources, and so that they easily could be installed somewhere
+# for reuse.
+
 # Note that pkg-config is used to query the installed Pure for the
 # necessary information required to build and install the module. (The
 # original author of this demo actually uses the pkg-config clone from

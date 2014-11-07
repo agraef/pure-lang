@@ -1,14 +1,110 @@
 using "lib:ats_list_demo";
 
+// list_merge pred list1 list2
+//
+// Stably merge two ordered lists. The ‘pred’ argument is a predicate
+// that returns true if the first argument is less than the second.
+// An exception is thrown if the other input arguments are not lists.
+//
+// The implementation is not tail recursive, and thus should not be
+// used for extremely long lists.
+//
+// For example:
+//
+//   > using "ats_list_demo";
+//   > list_merge (\a b -> a div 10 < b div 10) [15,25,20,39] [1,36,35];
+//   [1,15,25,20,39,36,35]
+//
 extern expr *pure_list_merge (expr *, expr *, expr *) = list_merge;
+
+// list_mergesort pred list
+//
+// Stably mergesort a list. The ‘pred’ argument is a predicate that
+// returns true if the first argument is less than the second. An
+// exception is thrown if the other input argument is not a list.
+//
+// The implementation is not tail recursive, and thus should not be
+// used for extremely long lists.
+//
+// For example:
+//
+//   > using "ats_list_demo";
+//   > list_mergesort (\a b -> a div 10 < b div 10) [15,20,25,4,3,2,1,35,35,5,7,6];
+//   [4,3,2,1,5,7,6,15,20,25,35,35]
+//
 extern expr *pure_list_mergesort (expr *, expr *) = list_mergesort;
+
+// list_rotate list n
+//
+// Rotate the first n elements of a list to the end of the list. An
+// exception is thrown if the first input argument is not a list, or
+// if n is not between zero and the length of the list, inclusive.
+//
+// The implementation uses a temporary array of the same length as the
+// list.
+//
+// For example:
+//
+//   > using "ats_list_demo";
+//   > list_rotate [1,2,3,4,5,6,7] 4;
+//   [5,6,7,1,2,3,4]
+//
 extern expr *pure_list_rotate (expr *, size_t) = list_rotate;
 
+
+// The following functions exist mainly to demonstrate and test
+// corresponding ‘primitive’ ATS functions.
+
+// pure_nil
+//
+// A synonym for the empty list []
+//
 extern expr *pure_nil__extern () = pure_nil;
+
+// pure_is_nil expr
+//
+// Is the expression an empty list?
+//
 extern int pure_is_nil__extern (expr *) = pure_is_nil;
+
+// pure_cons a b
+//
+// A synonym for a:b
+//
 extern expr *pure_cons__extern (expr *, expr *) = pure_cons;
+
+// pure_is_cons expr
+//
+// Is the expression of the form a:b ?
+//
+// In Lisp terminology: is the expression a cons cell?
+//
 extern int pure_is_cons__extern (expr *) = pure_is_cons;
+
+// pure_head list
+//
+// Return the head of a cons cell. (In Lisp terminology, the ‘car’.)
+// Throw an exception if the expression is not a cons cell.
+//
 extern expr *pure_head__extern (expr *) = pure_head;
+
+// pure_tail list
+//
+// Return the tail of a cons cell. (In Lisp terminology, the ‘cdr’.)
+// Throw an exception if the expression is not a cons cell.
+//
 extern expr *pure_tail__extern (expr *) = pure_tail;
+
+// pure_list_length list
+//
+// Return the length of a list. Throw an exception if the expression
+// is not a list.
+//
 extern size_t pure_list_length__extern (expr *) = pure_list_length;
+
+// pure_list_reverse list
+//
+// Return the reverse of a list. Throw an exception if the expression
+// is not a list.
+//
 extern expr *pure_list_reverse__extern (expr *) = pure_list_reverse;
