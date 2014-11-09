@@ -17156,12 +17156,12 @@ void interpreter::try_rules(matcher *pm, state *s, BasicBlock *failedbb,
       debug(msg.str().c_str()); }
 #endif
     if (retv) {
+      if (rp) debug_redn(rp, retv);
       if (f.n+f.m != 0 || !debugging) {
 	// do cleanup
 	Function *free_fun = module->getFunction("pure_pop_args");
 	f.builder.CreateCall3(free_fun, retv, UInt(f.n), UInt(f.m));
       }
-      if (rp) debug_redn(rp, retv);
       f.builder.CreateRet(retv);
     } else if (tail) {
       // Tail-recursive type rule. Perform a direct tail call on the rightmost
