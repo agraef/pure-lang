@@ -917,6 +917,7 @@ ostream& operator << (ostream& os, const pure_paren& p)
 static inline bool pstr(ostream& os, pure_expr *x)
 {
   static bool recursive = false;
+  if (!x) return false;
   if (recursive ||
       // We don't want to force a thunk here. Unfortunately, this means that
       // currently you can't define a print representation for a thunk, at
@@ -928,7 +929,6 @@ static inline bool pstr(ostream& os, pure_expr *x)
   map<int32_t,GlobalVar>::iterator it;
   if (f > 0 && (it = interp.globalvars.find(f)) != interp.globalvars.end() &&
       it->second.x && it->second.x->tag >= 0 && it->second.x->data.clos) {
-    assert(x->refc > 0);
     pure_aframe *ex = interp.push_aframe(interp.sstk_sz);
     if (setjmp(ex->jmp)) {
       // caught an exception
@@ -943,21 +943,27 @@ static inline bool pstr(ostream& os, pure_expr *x)
       recursive = false;
       return false;
     } else {
+      bool ret = false;
       recursive = true;
+      // The argument expression may well be a temporary if we're being
+      // invoked internally, so make sure that it doesn't get collected
+      // prematurely.
+      pure_ref(x);
       pure_expr *y = pure_app(it->second.x, x);
       interp.pop_aframe();
       recursive = false;
-      assert(y);
-      if (y->tag == EXPR::STR) {
-	char *s = fromutf8(y->data.s);
+      if (y) {
+	if (y->tag == EXPR::STR) {
+	  char *s = fromutf8(y->data.s);
+	  if (s) {
+	    os << s; free(s);
+	    ret = true;
+	  }
+	}
 	pure_freenew(y);
-	if (s) {
-	  os << s; free(s);
-	  return true;
-	} else
-	  return false;
-      } else
-	return false;
+      }
+      pure_unref(x);
+      return ret;
     }
   } else
     return false;
