@@ -87,3 +87,16 @@ deb: $(debsrc) dist
 
 $(debsrc):
 	wget -nv https://bitbucket.org/purelang/pure-lang/downloads/$(dist).tar.gz -O $@
+
+# Special rules to build the Pd-L2Ork version.
+
+l2ork-debsrc = $(shell echo $(dist) | sed -e 's/pd-faust/pdl2ork-faust/' -e 's/-$(version)/_$(version)/').orig.tar.gz
+
+l2ork-deb: $(l2ork-debsrc) dist
+	tar xfz $(dist).tar.gz
+	cd $(dist)/debian && mkdir l2ork && (sed -e 's/pd-faust/pdl2ork-faust/g' changelog > l2ork/changelog) && (sed -e 's/pd-faust/pdl2ork-faust/g' -e 's/pd-pure/pdl2ork-pure/g' -e 's/puredata/pd-l2ork/g' control > l2ork/control) && (sed -e 's/--/-- PD=pd-l2ork/g' rules > l2ork/rules) && chmod a+x l2ork/rules && mv -f l2ork/* . && rmdir l2ork
+	cd $(dist) && debuild $(DEBUILD_FLAGS)
+	rm -rf $(dist)
+
+$(l2ork-debsrc):
+	wget -nv https://bitbucket.org/purelang/pure-lang/downloads/$(dist).tar.gz -O $@

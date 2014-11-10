@@ -171,7 +171,7 @@ l2ork-debsrc = $(shell echo $(dist) | sed -e 's/pd-pure/pdl2ork-pure/' -e 's/-$(
 
 l2ork-deb: $(l2ork-debsrc) dist
 	tar xfz $(dist).tar.gz
-	cd $(dist)/debian && mkdir l2ork && (sed -e 's/pd-pure/pdl2ork-pure/g' changelog > l2ork/changelog) && (sed -e 's/pd-pure/pdl2ork-pure/g' -e 's/puredata/pd-l2ork/g' control > l2ork/control) && (sed -e 's/--/-- PD=pd-l2ork/g' rules > l2ork/rules) && mv -f l2ork/* . && rmdir l2ork
+	cd $(dist)/debian && mkdir l2ork && (sed -e 's/pd-pure/pdl2ork-pure/g' changelog > l2ork/changelog) && (sed -e 's/pd-pure/pdl2ork-pure/g' -e 's/puredata/pd-l2ork/g' control > l2ork/control) && (sed -e 's/--/-- PD=pd-l2ork/g' rules > l2ork/rules) && chmod a+x l2ork/rules && mv -f l2ork/* . && rmdir l2ork
 	cd $(dist) && debuild $(DEBUILD_FLAGS)
 	rm -rf $(dist)
 
