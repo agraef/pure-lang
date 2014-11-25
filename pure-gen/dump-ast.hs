@@ -9,6 +9,7 @@
 -- "Pass" term.
 
 import Data.List
+import Data.Char
 import Language.C
 import Language.C.System.GCC
 import Language.C.Syntax.AST
@@ -778,11 +779,16 @@ instance Dump CBuiltin where
 --            | CStrConst   CString NodeInfo
 
 instance Dump CConst where
-  dump (CIntConst i _)   = parens $ "CIntConst "++show i
+  dump (CIntConst i _)   = parens $ "CIntConst "++shownum i where
+    shownum i = showint (show i)
+    -- remove trailing 'u', 'l' etc. which aren't recognized by Pure
+    showint s = if null s || isHexDigit (last s) then s else showint (init s)
   dump (CCharConst c _)  = parens $ "CCharConst "++show (getCChar c)
-  dump (CFloatConst f _) = parens $ "CFloatConst "++show f
+  dump (CFloatConst f _) = parens $ "CFloatConst "++shownum f where
+    shownum f = showflt (show f)
+    -- remove trailing 'f', 'l' etc. which aren't recognized by Pure
+    showflt s = if null s || last s == '.' || isDigit (last s) then s else showflt (init s)
   dump (CStrConst s _)   = parens $ "CStrConst "++show s 
-
 
 -- | Attributed string literals
 --data CStrLit = CStrLit CString NodeInfo
