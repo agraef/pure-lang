@@ -1,0 +1,126 @@
+#! /bin/bash
+
+# Copyright (c) 2014 by Albert Gräf <aggraef@gmail.com>. Distributed under
+# the LGPL, please see the accompanying COPYING files for details.
+
+#set -x
+
+# compiler flags (you can change these by setting them in the environment)
+CXX="${CXX:-g++}"
+CFLAGS="${CFLAGS:--O3}"
+CPPFLAGS="${CPPFLAGS:-}"
+LIBS="${LIBS:-}"
+
+# These should be detected properly at build time, but you can also set them
+# to alternative locations using the SDK and SDKSRC environment variables.
+# Set this to the location where you keep your VST SDK files.
+[ -z $SDK ] && SDK=@SDK@
+# SDKSRC should point to the SDK source files (vstplugmain.cpp et al).
+# Usually these are either directly under $SDK or in the
+# public.sdk/source/vst2.x subdirectory.
+[ -z $SDKSRC ] && SDKSRC=@SDKSRC@
+
+if [ "$SDK" = "$SDKSRC" ]; then
+  INCLUDES="-I$SDK"
+else
+  INCLUDES="-I$SDK -I$SDKSRC"
+fi
+
+prog=`basename "$0"`
+
+usage() {
+  echo "USAGE: $prog [-h] [-o output-filename] script-name ..." >&2
+  echo "-h, --help:      print this message and exit" >&2
+  echo "-o, --output:    specify the output filename" >&2
+}
+
+# Parse options using getopt(1).
+args=`getopt  -o ho: -l help,output: -n "$prog" -- "$@"`
+if [ $? != 0 ] ; then exit 1 ; fi
+eval set -- "$args"
+
+while true; do
+  case "$1" in
+    -h|--help) usage; exit 1 ;;
+    -o|--output) output="$2"; shift 2 ;;
+    --) shift; break ;;
+  esac
+done
+
+if [ -z "$1" ]; then
+  echo "$prog: no script name specified (try '$prog -h' for help)" >&2
+  exit 1
+fi
+
+filename="$1"
+shift
+
+plugin=`basename "$filename" .pure`
+dirname=`dirname "$filename"`
+# This symbol ought to be a valid C identifier, so we mangle the plugin name
+# if necessary.
+name=`echo -n "$plugin" | tr -c [:alnum:] _`
+loader="__${name}_main__"
+tmpname="__${plugin}_main__.pure"
+logname="$dirname/$plugin.log"
+objname="$dirname/$plugin.o"
+
+# Platform-specific setup.
+DLL=`pkg-config pure --variable DLL`
+PIC=`pkg-config pure --variable PIC`
+shared=`pkg-config pure --variable shared`
+libdir=`pkg-config pure --variable libdir`
+
+MOD_CFLAGS="$PIC `pkg-config pure --cflags` $CFLAGS $CPPFLAGS"
+MOD_LDFLAGS="`pkg-config pure --libs` $LDFLAGS"
+
+output="${output:-$dirname/$plugin$DLL}"
+
+# Extra sources with VST-specific code needed to build the plugins.
+main=$SDKSRC/vstplugmain.cpp
+afx=$SDKSRC/audioeffect.cpp
+afxx=$SDKSRC/audioeffectx.cpp
+extrasources="$main $afx $afxx"
+
+# NOTE: The following requires that the cwd is writeable, since we create some
+# files there.
+
+# Invoke Pure to compile the plugin, capture output in a logfile.
+echo pure $PIC -c $filename -o $objname --main=$loader
+# This makes sure that both the manifest and the plugin function aren't
+# stripped from the binary during batch compilation.
+echo "#! --required manifest" > $tmpname
+echo "#! --required plugin" >> $tmpname
+(pure -v0100 $PIC -c $tmpname $filename -o $objname --main=$loader 2>&1) | tee $logname
+# check the result, in case anything went wrong during compilation
+rc=$?
+rm -f $tmpname
+if [ $rc -ne 0 ] ; then
+  rm -f $logname
+  exit $rc
+fi
+
+# Grab the libraries we need to link against from the logfile.
+extralibs=`tail -1 $logname | sed -e "s/^Link with: .*[.]o//"`
+rm -f $logname
+
+# We should have an object file now; if not then something went wrong and we
+# bail out with an error message.
+if [ ! -f $objname ] ; then
+  echo "$0: couldn't create object file $objname" >&2
+  exit 1
+fi
+
+# Link with the wrapper module.
+echo $CXX $shared -o "$output" $MOD_CFLAGS $INCLUDES -D__cdecl= -DPLUGIN_NAME="\"$plugin\"" -DLOADER_NAME="$loader" $libdir/pure/pureplugin.cc $extrasources $objname $MOD_LDFLAGS $extralibs $LIBS
+$CXX $shared -o "$output" $MOD_CFLAGS $INCLUDES -D__cdecl= -DPLUGIN_NAME="\"$plugin\"" -DLOADER_NAME="$loader" $libdir/pure/pureplugin.cc $extrasources $objname $MOD_LDFLAGS $extralibs $LIBS
+# check the result, in case anything went wrong during linkage
+rc=$?
+rm -f $objname
+if [ $rc -ne 0 ] ; then
+  rm -f "$output"
+  exit $rc
+fi
+
+echo output written to $output
+exit 0

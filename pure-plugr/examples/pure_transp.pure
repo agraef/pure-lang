@@ -1,0 +1,62 @@
+
+// A simple PlugR midi plugin.
+
+using plugr, orddict, system;
+
+// Please note that this plugin requires the pure-stldict module. To compile
+// this to a PlugR plugin: pure2plugr pure_transp.pure. Please also see
+// pure_amp.pure for an explanation of the manifest and plugin functions.
+
+// Manifest: one control port, one midi input and output.
+let manifest =
+  [("amount", plugr::controlin, 0, -12, 12),
+   ("midiin", plugr::midiin), ("midiout", plugr::midiout)];
+
+// The plugin function. This transposes incoming MIDI notes by the number of
+// semitones indicated by the amount control.
+plugin self = plugin with
+  plugin () = () when
+    // Get the current amount value from port #0 (control input).
+    amount = int $ plugr::get_port self 0;
+    // This is the tricky part. If the amount has changed, we'll have to send
+    // note offs for all currently sounding notes in order to avoid hanging
+    // notes. But to achieve smoother playback, we defer this until we
+    // actually have some midi input or the activation status of the plugin
+    // changes (see below).
+    get old_amount == amount || put old_notes (vals notes);
+    put old_amount amount;
+    // Get incoming midi messages from port #1 (midi input).
+    seq = plugr::get_port self 1;
+    // Print our input on stdout.
+    //~listp seq || null seq || do (printf "midiin:  %s\n".str) seq;
+    // Transpose (only if plugin is active).
+    seq = if plugr::active self then map transp seq else seq with
+      transp (t,{s,n,v}) = t,{s,n+amount,v} if h == 0x80 || h == 0x90 when
+	h = s and 0xf0;
+      end;
+      transp x = x otherwise;
+    end;
+    // Output the sequence along with any note-offs for old notes.
+    have_midi = ~null seq || ~plugr::active self && ~null (get old_notes);
+    seq = if have_midi then get old_notes + seq else seq;
+    have_midi && put old_notes [];
+    // Print our output on stdout.
+    //~listp seq || null seq || do (printf "midiout: %s\n".str) seq;
+    // Output the messages on port #2 (midi output).
+    plugr::set_port self 2 seq;
+    // Keep track of sounding notes.
+    do (delete notes) [n | t,{s,n,v} = seq; s and 0xf0 == 0x80];
+    do (insert notes)
+    [n=>{0x80 or (s and 0xf),n,64} | t,{s,n,v} = seq; s and 0xf0 == 0x90];
+  end;
+  // Turn off sounding notes and reset the internal state if the activation
+  // status changes. XXXFIXME: This doesn't work properly in most hosts since
+  // these simply stop running the plugin if it is deactivated.
+  plugin _ = () when
+    put old_notes (vals notes); clear notes;
+  end;
+end when
+  // This is the local state used by this plugin instance.
+  notes = orddict [];
+  old_amount = ref 0; old_notes = ref [];
+end;

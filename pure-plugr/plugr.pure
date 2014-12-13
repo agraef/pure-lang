@@ -1,0 +1,89 @@
+
+/* Some interface operations for use by Pure PlugR plugins. 2014-12-12
+   Copyright (c) 2014 by Albert Gräf <aggraef@gmail.com>. Distributed under
+   the LGPL, please see the accompanying COPYING and COPYING.LESSER files for
+   details. */
+
+using "lib:plugr";
+namespace plugr;
+
+// Some constants for the manifest (port types and flags).
+const control_port, audio_port, cv_port, event_port = 1,2,3,4;
+// XXXTODO: time_port isn't implemented yet.
+const input_port, output_port, midi_port, time_port = 1,2,4,8;
+
+// Some common type/flag combinations.
+const controlin   = control_port, input_port;
+const controlout  = control_port, output_port;
+const audioin     = audio_port, input_port;
+const audioout    = audio_port, output_port;
+const cvin        = cv_port, input_port;
+const cvout       = cv_port, output_port;
+const midiin      = event_port, input_port or midi_port;
+const midiout     = event_port, output_port or midi_port;
+
+/* Retrieve various information about the plugin (manifest, activation status,
+   sample rate, block size). Note that the plugin parameter to be passed to
+   these routines should be the same as the first argument passed to the
+   plugin function.
+
+   The plugr::info function returns the manifest with the port descriptions as
+   a list of tuples with the following fields:
+
+   - symbol: the port symbol (a string).
+
+   - name: a more descriptive port name which is typically used as a label
+     in the host GUI.
+
+   - type: the type of port (control, audio, CV, midi).
+
+   - flags: the bitwise disjunction of some flags which indicate whether the
+     port is an input or output port, along with some additional information.
+
+     Note: The symbolic constants defined above denote valid type and flags
+     values, as well as a number of common type,flag combinations such as
+     plugr::controlin, plugr:audioout, etc.
+
+   - default, min and max indicate the default, minimum and maximum values of
+     a port, if set. These fields are only returned for control and CV ports
+     (in this case a nan value indicates that the corresponding field was not
+     set when creating the plugin).
+
+   These fields are in 1-1 correspondence with the manifest data returned by
+   the plugin at instantiation time. However, in the manifest returned by the
+   plugin only the first field is mandatory. All other fields can be omitted,
+   in which case reasonable defaults will be provided; you can then use
+   plugr::info to see exactly which defaults were provided. (If no port name
+   was specified, it is assumed to be the same as the port symbol. If no port
+   type was specified, a control port is assumed. If no flags were specified,
+   an input port is assumed. If the default, min and max fields were omitted,
+   no default value and range is set for the port.) */
+
+extern expr *plugr_info(PurePlugin *p) = info;
+extern int plugr_active(PurePlugin *p) = active;
+extern double plugr_rate(PurePlugin *p) = rate;
+extern int plugr_nsamples(PurePlugin *p) = nsamples;
+
+/* Audio and midi inputs and outputs of the plugin. Each of these functions
+   returns a list of the corresponding port indices. */
+
+extern expr *plugr_audio_inputs(PurePlugin *p) = audio_inputs;
+extern expr *plugr_audio_outputs(PurePlugin *p) = audio_outputs;
+extern expr *plugr_midi_inputs(PurePlugin *p) = midi_inputs;
+extern expr *plugr_midi_outputs(PurePlugin *p) = midi_outputs;
+
+/* Get and set port values. Note that since the port data is only guaranteed
+   to exist in the plugin's run callback (i.e., if the plugin function is
+   invoked with the () argument), these functions will fail if they are
+   invoked outside the callback.
+
+   The actual port values depend on the port type (double for control ports,
+   double vector for audio and cv ports, list of timestamped midi events for
+   midi ports). In the latter case, each midi message is denoted as a pair
+   consisting of an int (the timestamp, which is a frame count relative to the
+   beginning of the current block of samples) and an int vector (the bytes
+   making up a single MIDI message). On output (plugr::set_port), the
+   timestamp can be omitted (a zero default value is used in this case). */
+
+extern expr *plugr_get(PurePlugin *p, int k) = get_port;
+extern expr *plugr_set(PurePlugin *p, int k, expr *x) = set_port;
