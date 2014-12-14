@@ -50,6 +50,10 @@ struct PurePlugin {
 
   // Static data. This is the same for all plugin instances.
 
+  // Meta data. This can be set with corresponding variables in the source
+  // script, otherwise some reasonable defaults are used.
+  static const char *Name, *Vendor, *Description, *Version;
+
   /* Recorded result from previous invocation of ncontrols(). Normally this is
      a nonnegative number indicating the number of (input and output)
      controls. If this is -1 then the plugin failed to load for some reason

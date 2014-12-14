@@ -39,7 +39,7 @@ extern "C" void LOADER_NAME(int argc, char** argv);
 static bool check(unsigned i, const char *s, bool chk)
 {
   if (!chk)
-    fprintf(stderr, "%s: port #%u: bad %s\n", PLUGIN_NAME, i, s);
+    fprintf(stderr, "%s: port #%u: bad %s\n", PurePlugin::Name, i, s);
   return chk;
 }
 
@@ -55,6 +55,10 @@ static inline bool pure_is_number(pure_expr *x, double *num)
     return false;
 }
 
+const char *PurePlugin::Name = PLUGIN_NAME,
+  *PurePlugin::Vendor = "Anonymous",
+  *PurePlugin::Description = PLUGIN_NAME " (PlugR)",
+  *PurePlugin::Version = "0.1";
 int PurePlugin::res;
 bool PurePlugin::owner = true;
 pure_interp *PurePlugin::interp = 0;
@@ -80,7 +84,7 @@ int PurePlugin::ncontrols()
   LOADER_NAME(0, 0);
   interp = pure_current_interp();
   if (!interp) {
-    fprintf(stderr, "%s: couldn't load Pure interpreter\n", PLUGIN_NAME);
+    fprintf(stderr, "%s: couldn't load Pure interpreter\n", PurePlugin::Name);
     res = -1;
     pure_unlock_interp(s_interp);
     return res;
@@ -120,7 +124,7 @@ int PurePlugin::ncontrols()
       // not specified. FIXME: Maybe some of these error conditions should
       // rather cause us to bail out and refuse to create the plugin.
       if (m == 0 || m > 9) {
-	fprintf(stderr, "%s: port #%u: bad port description\n", PLUGIN_NAME, i);
+	fprintf(stderr, "%s: port #%u: bad port description\n", PurePlugin::Name, i);
 	m = 0;
       }
       if (m > 0 && check(i, "symbol", pure_is_cstring_dup(yv[0], &s)))
@@ -218,12 +222,12 @@ int PurePlugin::ncontrols()
     n_ctl = k_ctl;
 #if 0
     fprintf(stderr, "%s: successfully loaded plugin\n%u ports, %u/%u audio ports, %u/%u midi ports\n",
-	    PLUGIN_NAME, n, n_in, n_out,
+	    PurePlugin::Name, n, n_in, n_out,
 	    n_evin, n_evout);
 #endif
   } else if (info) {
     char *s = str(info);
-    fprintf(stderr, "%s: bad manifest '%s'\n", PLUGIN_NAME, s);
+    fprintf(stderr, "%s: bad manifest '%s'\n", PurePlugin::Name, s);
     free(s);
     pure_freenew(info);
     goto fail;
@@ -231,12 +235,52 @@ int PurePlugin::ncontrols()
     if (e) {
       char *s = str(e);
       fprintf(stderr, "%s: bad manifest (unhandled exception '%s')\n",
-	      PLUGIN_NAME, s);
+	      PurePlugin::Name, s);
       free(s);
       pure_freenew(e);
     } else
-      fprintf(stderr, "%s: bad manifest (unknown error)\n", PLUGIN_NAME);
+      fprintf(stderr, "%s: bad manifest (unknown error)\n", PurePlugin::Name);
     goto fail;
+  }
+  // Get the other meta data. These are all optional, so we just ignore any
+  // errors here.
+  if ((info = pure_symbolx(pure_sym("Name"), &e))) {
+    char *s;
+    if (pure_is_cstring_dup(info, &s))
+      Name = s;
+    pure_freenew(info);
+  } else if (e) {
+    pure_freenew(e);
+  }
+  if ((info = pure_symbolx(pure_sym("Author"), &e))) {
+    char *s;
+    if (pure_is_cstring_dup(info, &s))
+      Vendor = s;
+    pure_freenew(info);
+  } else if (e) {
+    pure_freenew(e);
+  }
+  if ((info = pure_symbolx(pure_sym("Description"), &e))) {
+    char *s;
+    if (pure_is_cstring_dup(info, &s))
+      Description = s;
+    pure_freenew(info);
+  } else if (e) {
+    pure_freenew(e);
+  }
+  if ((info = pure_symbolx(pure_sym("Version"), &e))) {
+    char *s;
+    double d;
+    if (pure_is_cstring_dup(info, &s))
+      Version = s;
+    else if (pure_is_double(info, &d)) {
+      char buf[10];
+      sprintf(buf, "%0.3f", d);
+      Version = strdup(buf);
+    }
+    pure_freenew(info);
+  } else if (e) {
+    pure_freenew(e);
   }
   pure_unlock_interp(s_interp);
   res = n_ctl;
@@ -282,7 +326,7 @@ PurePlugin::PurePlugin(double sr)
   if (!fun) {
     if (e) {
       char *s = str(e);
-      fprintf(stderr, "%s: unhandled exception '%s'\n", PLUGIN_NAME, s);
+      fprintf(stderr, "%s: unhandled exception '%s'\n", PurePlugin::Name, s);
       return;
     }
   }
@@ -302,7 +346,7 @@ PurePlugin::PurePlugin(double sr)
   if (!fun2) {
     if (e) {
       char *s = str(e);
-      fprintf(stderr, "%s: unhandled exception '%s'\n", PLUGIN_NAME, s);
+      fprintf(stderr, "%s: unhandled exception '%s'\n", PurePlugin::Name, s);
       free(s);
       pure_freenew(e);
     }
@@ -419,7 +463,7 @@ void PurePlugin::activate(bool state)
   if (!ret) {
     if (e) {
       char *s = str(e);
-      fprintf(stderr, "%s: unhandled exception '%s'\n", PLUGIN_NAME, s);
+      fprintf(stderr, "%s: unhandled exception '%s'\n", PurePlugin::Name, s);
       free(s);
       pure_freenew(e);
     }
@@ -450,7 +494,7 @@ void PurePlugin::process(float **inputs, float **outputs, int blocksz)
   if (!ret) {
     if (e) {
       char *s = str(e);
-      fprintf(stderr, "%s: unhandled exception '%s'\n", PLUGIN_NAME, s);
+      fprintf(stderr, "%s: unhandled exception '%s'\n", PurePlugin::Name, s);
       free(s);
       pure_freenew(e);
     }
@@ -646,7 +690,7 @@ pure_expr *PurePlugin::set(int k, pure_expr *x)
 #if 0 // you might want to enable this for debugging purposes
 	    char *s = str(x);
 	    fprintf(stderr, "%s: dropped invalid MIDI event '%s'\n",
-		    PLUGIN_NAME, s);
+		    PurePlugin::Name, s);
 	    free(s);
 #endif
 	    continue;
@@ -902,7 +946,7 @@ VSTPlugR::VSTPlugR(audioMasterCallback audioMaster)
     // input and at least one audio output.
     if (plugin->n_evin > 0 && plugin->n_out > 0) isSynth();
     // XXXFIXME: Maybe do something more clever for the unique id.
-    setUniqueID((VstInt32)idhash(PLUGIN_NAME));
+    setUniqueID((VstInt32)idhash(PurePlugin::Name));
   }
   // We only provide one "program" (a.k.a. built-in control preset), which
   // corresponds to the initial control values of the plugin.
@@ -1129,33 +1173,29 @@ bool VSTPlugR::getOutputProperties(VstInt32 index,
   return true;
 }
 
-// global meta data: only the plugin name is available in the manifest right
-// now, so we fill the remaining data with dummy information
-
-// XXXTODO: add optional fields for the other meta data to the plugin
-// manifest, so that we can provide some more meaningful values here
+// global meta data
 
 bool VSTPlugR::getEffectName(char *name)
 {
-  vst_strncpy(name, PLUGIN_NAME, kVstMaxEffectNameLen);
+  vst_strncpy(name, PurePlugin::Name, kVstMaxEffectNameLen);
   return true;
 }
 
 bool VSTPlugR::getVendorString(char *text)
 {
-  strcpy(text, "");
+  vst_strncpy(text, PurePlugin::Vendor, kVstMaxVendorStrLen);
   return true;
 }
 
 bool VSTPlugR::getProductString(char *text)
 {
-  snprintf(text, kVstMaxEffectNameLen, "%s (UPlugR)", PLUGIN_NAME);
+  vst_strncpy(text, PurePlugin::Description, kVstMaxProductStrLen);
   return true;
 }
 
 VstInt32 VSTPlugR::getVendorVersion()
-{ 
-  return 1000;
+{
+  return (VstInt32)(atof(PurePlugin::Version)*1000.0);
 }
 
 VstInt32 VSTPlugR::canDo(char *text)
@@ -1259,7 +1299,7 @@ VstInt32 VSTPlugR::processEvents(VstEvents* events)
       plugin->receive_midi(plugin->evin[0], frames, sz, data);
     } else {
       fprintf(stderr, "%s: unknown event type %d\n",
-	      PLUGIN_NAME, events->events[i]->type);
+	      PurePlugin::Name, events->events[i]->type);
     }
   }
   plugin->unlock();

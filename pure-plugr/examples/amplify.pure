@@ -8,10 +8,26 @@
 
 using plugr, system;
 
-/* The `manifest` can be implemented either as a global variable or a
-   parameterless function. In either case it must yield a list of port
-   descriptions from which the plugin configuration is constructed. Each port
-   description is a tuple with the following fields:
+// NOTE: Both the manifest below and the meta data may be specified either as
+// variables or parameter-less functions, whatever seems more convenient.
+
+/* The following variables may be used to specify some descriptive meta data
+   about the plugin. It is up to the plugin host and the implementation of the
+   particular architecture how this data is used. In contrast to the manifest,
+   the meta data is optional. There are some generic defaults for the Name and
+   Description fields which are constructed automatically from the basename of
+   the script file, so usually you don't need to provide these explicitly.
+   However, it is a good idea to at least specify a meaningful author (or
+   vendor) name and a version number, as shown below. */
+
+Name = "amplify";
+Description = "amplify (PlugR)";
+Author = "Albert Graef <aggraef@gmail.com>";
+Version = "1.0";
+
+/* The manifest must yield a list of port descriptions from which the plugin
+   configuration is constructed. Each port description is a tuple with the
+   following fields:
 
    - symbol is the port symbol (a string).
 
@@ -50,7 +66,7 @@ manifest =
    ("left-in", plugr::audioin), ("right-in", plugr::audioin),
    ("left-out", plugr::audioout), ("right-out", plugr::audioout)];
 
-/* The `plugin` function is the "main" function of a plugin which is invoked
+/* The plugin function is the "main" function of a plugin which is invoked
    with the plugin object (a pointer) as the first argument. The resulting
    closure or partial application is stored in the plugin object, so that
    subsequently the same closure is called each time the plugin is run or its

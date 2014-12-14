@@ -87,10 +87,12 @@ extrasources="$main $afx $afxx"
 
 # Invoke Pure to compile the plugin, capture output in a logfile.
 echo pure $PIC -c $filename -o $objname --main=$loader
-# This makes sure that both the manifest and the plugin function aren't
-# stripped from the binary during batch compilation.
-echo "#! --required manifest" > $tmpname
-echo "#! --required plugin" >> $tmpname
+# This makes sure that the requisite functions and variables aren't
+# accidentally stripped from the binary during batch compilation.
+rm -f $tmpname
+for x in manifest plugin Name Author Description Version; do
+  echo "#! --required $x" >> $tmpname
+done
 (pure -v0100 $PIC -c $tmpname $filename -o $objname --main=$loader 2>&1) | tee $logname
 # check the result, in case anything went wrong during compilation
 rc=$?
