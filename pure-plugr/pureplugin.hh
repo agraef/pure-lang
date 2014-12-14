@@ -3,13 +3,13 @@
    Albert Gräf <aggraef@gmail.com>.  Distributed under the LGPL, please see
    the accompanying COPYING and COPYING.LESSER files for details. */
 
-/* This has been derived from the pure-lv2 plugin. Right now it only supports
-   VST, but support for other plugin architectures like AU, LV2, Pd etc. is
-   planned. As with JUCE, the idea is to make the same plugin binary usable
-   with different kinds of plugin hosts, by providing entry points for all
-   supported architectures. The core logic of the plugin is factored out as a
-   separate generic base class, so that new plugin types can be supported with
-   a minimal amount of additional code. */
+/* This has been derived from the pure-lv2 plugin. As with JUCE, the idea is
+   to make the same plugin binary usable with different kinds of plugin hosts,
+   by providing entry points for all supported architectures. The core logic
+   of the plugin is factored out as a separate generic base class, so that new
+   plugin types can be supported with a minimal amount of additional code.
+   Right now it only supports VST, but support for other plugin architectures
+   like AU, LV2, Pd etc. (and even JUCE) is planned. */
 
 #ifndef __pureplugin_hh__
 #define __pureplugin_hh__
@@ -60,13 +60,16 @@ struct PurePlugin {
   
   // Total number of ports.
   static uint32_t n;
-  // Port names and symbols.
+  // Port symbols and names (index range: 0..n-1).
   static char **sym, **name;
-  // Port types and flags (index range: 0..n-1).
+  // Port types and flags.
   static uint8_t *ty;
   static uint16_t *flags;
-  // Ranges and default values of CV and control ports (0..n-1).
-  static float *mins, *maxs, *defs;
+  // Ranges, step sizes, default values and unit names of CV and control ports.
+  // These values may be NAN to indicate a missing value.
+  static float *mins, *maxs, *steps, *defs;
+  // Unit names of CV and control ports (0 indicates no unit).
+  static char **units;
 
   // Number and port indices of audio input/output ports (index range of in:
   // 0..n_in-1, out: 0..n_out-1).

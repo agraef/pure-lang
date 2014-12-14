@@ -59,10 +59,11 @@ int PurePlugin::res;
 bool PurePlugin::owner = true;
 pure_interp *PurePlugin::interp = 0;
 uint32_t PurePlugin::n;
-char **PurePlugin::sym, **PurePlugin::name;
+char **PurePlugin::sym, **PurePlugin::name, **PurePlugin::units;
 uint8_t *PurePlugin::ty;
 uint16_t *PurePlugin::flags;
-float *PurePlugin::mins, *PurePlugin::maxs, *PurePlugin::defs;
+float *PurePlugin::mins, *PurePlugin::maxs, *PurePlugin::steps,
+  *PurePlugin::defs;
 uint32_t PurePlugin::n_in, PurePlugin::n_out,
   *PurePlugin::in, *PurePlugin::out;
 uint32_t PurePlugin::n_evin, PurePlugin::n_evout,
@@ -97,7 +98,9 @@ int PurePlugin::ncontrols()
     flags = (uint16_t*)calloc(n, sizeof(uint16_t));
     mins = (float*)calloc(n, sizeof(float));
     maxs = (float*)calloc(n, sizeof(float));
+    steps = (float*)calloc(n, sizeof(float));
     defs = (float*)calloc(n, sizeof(float));
+    units = (char**)calloc(n, sizeof(char*));
     in = (uint32_t*)calloc(n, sizeof(uint32_t));
     out = (uint32_t*)calloc(n, sizeof(uint32_t));
     evin = (uint32_t*)calloc(n, sizeof(uint32_t));
@@ -115,7 +118,7 @@ int PurePlugin::ncontrols()
       // name to be omitted, assuming it to be identical to the port symbol if
       // not specified. FIXME: Maybe some of these error conditions should
       // rather cause us to bail out and refuse to create the plugin.
-      if (m == 0 || m > 7) {
+      if (m == 0 || m > 9) {
 	fprintf(stderr, "%s: port #%u: bad port description\n", PLUGIN_NAME, i);
 	m = 0;
       }
@@ -134,8 +137,7 @@ int PurePlugin::ncontrols()
       l++;
       // We offer the same set of port types and flags for all supported
       // architectures (even though some of these don't make sense for some
-      // architectures), so that manifests work across different architectures
-      // in an analogous fashion.
+      // architectures), so that manifests work across different architectures.
       if (m > l && check(i, "type", pure_is_int(yv[l], &k) && k>0 && k<5))
 	ty[i] = k;
       else
@@ -165,6 +167,16 @@ int PurePlugin::ncontrols()
 	maxs[i] = x;
       else
 	maxs[i] = NAN;
+      l++;
+      if (m > l && check(i, "step size", pure_is_number(yv[l], &x)))
+	steps[i] = x;
+      else
+	steps[i] = NAN;
+      l++;
+      if (m > l && check(i, "unit name", pure_is_cstring_dup(yv[l], &s)))
+	units[i] = s;
+      else
+	units[i] = 0;
       bool is_ctrl = ty[i] == 1;
       bool is_audio = ty[i] == 2 || ty[i] == 3;
       bool is_midi = ty[i] == 4 && (flags[i]&4);
@@ -413,17 +425,20 @@ pure_expr *PurePlugin::manifest()
 {
   pure_expr **xv = (pure_expr**)alloca(n*sizeof(pure_expr*));
   for (unsigned i = 0; i < n; i++) {
-    if (ty[i] == 1 || ty[i] == 3)
-      xv[i] = pure_tuplel(7, pure_cstring_dup(sym[i]),
+    if (ty[i] == 1 || ty[i] == 3) {
+      xv[i] = pure_tuplel(9, pure_cstring_dup(sym[i]),
 			  pure_cstring_dup(name[i]),
 			  pure_int(ty[i]), pure_int(flags[i]),
 			  pure_double(defs[i]),
 			  pure_double(mins[i]),
-			  pure_double(maxs[i]));
-    else
+			  pure_double(maxs[i]),
+			  pure_double(steps[i]),
+			  pure_cstring_dup(units[i]?units[i]:""));
+    } else {
       xv[i] = pure_tuplel(4, pure_cstring_dup(sym[i]),
 			  pure_cstring_dup(name[i]),
 			  pure_int(ty[i]), pure_int(flags[i]));
+    }
   }
   pure_expr *ret = pure_listv(n, xv);
   return ret;
@@ -923,16 +938,33 @@ void VSTPlugR::getParameterName(VstInt32 index, char *label)
 
 void VSTPlugR::getParameterLabel(VstInt32 index, char *label)
 {
-  // XXXTODO (unit meta data isn't in the manifest yet!)
+  strcpy(label, "");
+  if (index >= 0 && index < plugin->n_ctl) {
+    int j = plugin->ctl[index];
+    if (plugin->units[j])
+      vst_strncpy(label, plugin->units[j], 32);
+  }
 }
 
 // NOTE: VST parameters are always floats with unit range (0..1). So we need
 // to convert between Pure control values with a given range and the VST range
 // here (if the range isn't fully specified, i.e., if min or max values are
-// NAN then we just take the values as is).
+// NAN then we just take the values as is). We use the following quantization
+// algorithm for mapping VST to Faust control values.
 
-// XXXTODO: Implement quantization using step sizes, like in the Faust VST
-// architecture.
+static double quantize(double x, double d)
+{
+  if (isnan(d) || d == 0.0) return x;
+  // Round off x to the nearest increment of d. Note that this may produce
+  // rounding artifacts if d is some power of 10 less than 0, since these
+  // can't be represented exactly in binary.
+  double i;
+  if (x*d < 0.0)
+    modf(x/d-0.5, &i);
+  else
+    modf(x/d+0.5, &i);
+  return i*d;
+}
 
 void VSTPlugR::getParameterDisplay(VstInt32 index, char *text)
 {
@@ -966,10 +998,11 @@ void VSTPlugR::setParameter(VstInt32 index, float value)
     int j = plugin->ctl[index];
     float min = plugin->mins[j];
     float max = plugin->maxs[j];
+    float step = plugin->steps[j];
     float val = (isnan(min) || isnan(max))?value:
-      (min == max)?min:min+value*(max-min);
+      (min == max)?min:min+quantize(value*(max-min), step);
     // prevent some rounding artifacts near zero
-    if (fabs(val)/fabs(max-min) < eps)
+    if (fabs(val) < fabs(step) || fabs(val)/fabs(max-min) < eps)
       val = 0.0;
     *(float*)plugin->data[j] = val;
   }
@@ -982,8 +1015,12 @@ bool VSTPlugR::string2parameter(VstInt32 index, char *text)
     int j = plugin->ctl[index];
     float min = plugin->mins[j];
     float max = plugin->maxs[j];
+    float step = plugin->steps[j];
     double val = atof(text);
-    if (min == max) val = min;
+    if (min == max)
+      val = min;
+    else if (!isnan(min) && !isnan(step))
+      val = min+quantize(val-min, step);
     if (min > max) {
       float m = max;
       max = min; min = m;

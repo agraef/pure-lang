@@ -2,8 +2,9 @@
 // A simple PlugR audio plugin.
 
 /* To compile this to a PlugR plugin: pure2plugr pure_amp.pure. You then need
-   to move the resulting plugin binary to a location on your VST search path,
-   such as ~/.vst for a personal or /usr/lib/vst for a system-wide install. */
+   to move the resulting plugin binary to a location where your host
+   application finds it. E.g., for VST plugins on Linux you'd use ~/.vst for a
+   personal or /usr/lib/vst for a system-wide install. */
 
 using plugr, system;
 
@@ -24,21 +25,26 @@ using plugr, system;
      as well as a number of common type,flag combinations such as
      plugr::controlin, plugr:audioout, etc.
 
-   - default, min and max indicate the default, minimum and maximum values of
-     a port, if required. These fields only apply to control or CV ports.
+   - default, min, max and step indicate the default, minimum and maximum
+     values and the step size of a port, if required. In addition, you can
+     also specify a unit name such as "Hz" or "dB" for the port. These fields
+     only apply to control or CV ports.
 
    The first field is mandatory; all other fields are optional. If no port
    name is specified, it is assumed to be the same as the port symbol. If no
    port type is specified, a control port is assumed. If no flags are
-   specified, an input port is assumed. If the default, min and max fields are
-   omitted, no default value and range is set for the port. This makes it easy
-   to specify a basic setup of control input ports by just listing their
-   names. For other port types, you'll have to specify at least the port type
-   (and the flags, unless it's an input port). */
+   specified, an input port is assumed. This makes it easy to specify a basic
+   setup of unrestricted control input ports by just listing their names. For
+   other port types, you'll have to specify at least the port type (and the
+   flags, unless it's an input port). If the default, min, max and step fields
+   are specified, then the implementation will ensure that the control is
+   clamped to the given range and is quantized according to the given step
+   size. The unit field may be used to display a unit name in the control GUI
+   if the plugin host supports that. */
 
 manifest =
   [// a control port
-   ("vol", "Volume", plugr::controlin, 0.5, 0.0, 1.0),
+   ("vol", "Volume", plugr::controlin, 0.5, 0.0, 1.0, 0.01),
    // stereo audio input and output ports
    ("left-in", plugr::audioin), ("right-in", plugr::audioin),
    ("left-out", plugr::audioout), ("right-out", plugr::audioout)];
