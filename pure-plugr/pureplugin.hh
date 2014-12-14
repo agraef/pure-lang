@@ -11,6 +11,14 @@
    Right now it only supports VST, but support for other plugin architectures
    like AU, LV2, Pd etc. (and even JUCE) is planned. */
 
+/* XXXFIXME: As many plugin hosts are heavily multi-threaded and the Pure
+   runtime isn't thread-safe yet, we need to obtain the global interpreter
+   lock (GIL) during calls to some of the internal plugin methods (including
+   the central process callback), so that invocations of these methods are
+   effectively serialized. This should be fixed as soon as the Pure runtime
+   becomes fully thread-safe. Until then this may be a major bottleneck if you
+   run many Pure plugin instances in the same process. */
+
 #ifndef __pureplugin_hh__
 #define __pureplugin_hh__
 
@@ -112,6 +120,13 @@ struct PurePlugin {
   // Check whether the plugin was instantiated correctly.
   bool ok() { return res>=0 && fun; }
 
+  // Obtain and release the GIL (global interpreter lock). This is done
+  // automatically whenever one of the methods below is invoked, but it can
+  // also be done explicitly if a longer series of such calls is to be
+  // executed as a single critical section.
+  void lock();
+  void unlock();
+
   // Receive and send MIDI events.
   void receive_midi(int port, int offs, int sz, unsigned char *data);
   void send_midi(send_midi_cb cb, void *user_data);
@@ -156,6 +171,16 @@ struct PurePlugin {
   // Get and set port values.
   virtual pure_expr *get(int port);
   virtual pure_expr *set(int port, pure_expr *x);
+
+private:
+  int locked;
+  pure_interp *s_interp;
+  // Manage MIDI buffers. These methods are used internally to maintain the
+  // buffers necessary to make MIDI output data persist between cycles.
+  uint8_t *midibuf;
+  int midibufsz, midibufptr;
+  void prepare_midi_buffers();
+  uint8_t *make_midi_buffer(int sz);
 };
 
 #endif /* __pureplugin_hh__ */

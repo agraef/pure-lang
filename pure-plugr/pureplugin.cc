@@ -74,14 +74,15 @@ int PurePlugin::ncontrols()
 {
   if (interp) return res;
   // We're running for the first time. Create an interpreter instance and
-  // initialize the static data.
-  pure_interp *s_interp = pure_current_interp();
+  // initialize the static data. Note that even here we need to obtain the GIL
+  // since some hosts may execute multiple plugin initializations in parallel.
+  pure_interp *s_interp = pure_lock_interp(0);
   LOADER_NAME(0, 0);
   interp = pure_current_interp();
   if (!interp) {
     fprintf(stderr, "%s: couldn't load Pure interpreter\n", PLUGIN_NAME);
     res = -1;
-    if (s_interp) pure_switch_interp(s_interp);
+    pure_unlock_interp(s_interp);
     return res;
   }
   // Invoke the manifest function to get the port information.
@@ -237,12 +238,12 @@ int PurePlugin::ncontrols()
       fprintf(stderr, "%s: bad manifest (unknown error)\n", PLUGIN_NAME);
     goto fail;
   }
-  if (s_interp) pure_switch_interp(s_interp);
+  pure_unlock_interp(s_interp);
   res = n_ctl;
   return res;
  fail:
   res = -1;
-  if (s_interp) pure_switch_interp(s_interp);
+  pure_unlock_interp(s_interp);
   return res;
 }
 
@@ -253,6 +254,7 @@ PurePlugin::PurePlugin(double sr)
   nsamples = 0;
   active = running = false;
   fun = 0;
+  locked = 0; s_interp = 0;
   // initialize the plugin
   int m = ncontrols();
   if (m < 0) return;
@@ -270,9 +272,11 @@ PurePlugin::PurePlugin(double sr)
       }
     }
   }
+  midibufsz = 32; midibufptr = 0;
+  midibuf = (uint8_t*)calloc(midibufsz, 1);
   // initialize the plugin function
   assert(interp);
-  pure_interp *s_interp = pure_lock_interp(interp);
+  lock();
   pure_expr *e;
   fun = pure_symbolx(pure_sym(PLUGIN_FUN), &e);
   if (!fun) {
@@ -291,7 +295,7 @@ PurePlugin::PurePlugin(double sr)
   if (!p) {
     pure_free(fun);
     fun = 0;
-    pure_unlock_interp(s_interp);
+    unlock();
     return;
   }
   pure_expr *fun2 = pure_appx(fun, p, &e);
@@ -309,46 +313,67 @@ PurePlugin::PurePlugin(double sr)
     pure_free(fun);
     fun = fun2;
   }
-  pure_unlock_interp(s_interp);
+  unlock();
 }
 
 PurePlugin::~PurePlugin()
 {
   if (fun) {
-    pure_interp *s_interp = pure_lock_interp(interp);
+    lock();
+    reset_midi();
     pure_free(fun);
-    pure_unlock_interp(s_interp);
+    unlock();
   }
   if (data) {
     free(data);
     if (owner && control_data) free(control_data);
   }
-  reset_midi();
+  if (midibuf) free(midibuf);
+}
+
+void PurePlugin::lock()
+{
+  assert(locked>=0);
+  if (locked++ == 0)
+    s_interp  = pure_lock_interp(interp);
+}
+
+void PurePlugin::unlock()
+{
+  assert(locked>0);
+  if (--locked == 0)
+    pure_unlock_interp(s_interp);
 }
 
 void PurePlugin::receive_midi(int port, int offs, int sz, unsigned char *data)
 {
+  lock();
   pure_expr *x = matrix_from_byte_array(1, sz, data);
   assert(x);
   midiin.push_back(PureMidiData(port, offs, pure_new(x)));
+  unlock();
 }
 
 void PurePlugin::send_midi(send_midi_cb cb, void *user_data)
 {
+  lock();
+  prepare_midi_buffers();
   for (std::vector<PureMidiData>::iterator it = midiout.begin(),
 	 end = midiout.end(); it != end; it++) {
     uint8_t *v;
     int sz = matrix_size(it->ev);
-    if (sz != 0 && (v = (uint8_t*)matrix_to_byte_array(NULL, it->ev))) {
+    if (sz != 0 &&
+	(v = (uint8_t*)matrix_to_byte_array(make_midi_buffer(sz), it->ev))) {
       cb(it->port, it->offs, sz, v, user_data);
-      free(v);
     }
   }
   reset_midi();
+  unlock();
 }
 
 void PurePlugin::reset_midi()
 {
+  lock();
   for (std::vector<PureMidiData>::iterator it = midiin.begin(),
 	 end = midiin.end(); it != end; it++)
     pure_free(it->ev);
@@ -357,12 +382,39 @@ void PurePlugin::reset_midi()
 	 end = midiout.end(); it != end; it++)
     pure_free(it->ev);
   midiout.clear();
+  unlock();
+}
+
+void PurePlugin::prepare_midi_buffers()
+{
+  // Make sure that we have enough memory to hold all the MIDI events to be
+  // output during this cycle.
+  int total = 0;
+  for (std::vector<PureMidiData>::iterator it = midiout.begin(),
+	 end = midiout.end(); it != end; it++) {
+    int sz = matrix_size(it->ev);
+    total += sz;
+  }
+  if (total > midibufsz) {
+    midibufsz = total;
+    midibuf = (uint8_t*)realloc(midibuf, midibufsz);
+    assert(midibuf);
+  }
+  midibufptr = 0;
+}
+
+uint8_t *PurePlugin::make_midi_buffer(int sz)
+{
+  uint8_t *buf = midibuf+midibufptr;
+  midibufptr += sz;
+  return buf;
 }
 
 void PurePlugin::activate(bool state)
 {
+  if (active == state) return;
   active = state;
-  pure_interp *s_interp = pure_lock_interp(interp);
+  lock();
   pure_expr *e, *ret = pure_appx(fun, pure_int(active), &e);
   if (!ret) {
     if (e) {
@@ -373,7 +425,7 @@ void PurePlugin::activate(bool state)
     }
   } else
     pure_freenew(ret);
-  pure_unlock_interp(s_interp);
+  unlock();
 }
 
 void PurePlugin::process(float **inputs, float **outputs, int blocksz)
@@ -390,13 +442,8 @@ void PurePlugin::process(float **inputs, float **outputs, int blocksz)
       data[out[i]] = outputs[i];
   }
   // Invoke the plugin function. Note that the MIDI input queue should already
-  // be set up at this point. XXXFIXME: As many plugin hosts are heavily
-  // multi-threaded and the Pure runtime isn't thread-safe yet, we need to
-  // obtain the global interpreter lock here so that invocations of the plugin
-  // functions are effectively serialized. Until the Pure runtime becomes
-  // fully thread-safe, this may be a major bottleneck if you run many Pure
-  // plugin instances in the same process.
-  pure_interp *s_interp = pure_lock_interp(interp);
+  // be set up at this point.
+  lock();
   running = true;
   pure_expr *e, *ret = pure_appx(fun, pure_tuplel(0, 0), &e);
   running = false;
@@ -409,7 +456,7 @@ void PurePlugin::process(float **inputs, float **outputs, int blocksz)
     }
   } else
     pure_freenew(ret);
-  pure_unlock_interp(s_interp);
+  unlock();
   // Reset the audio inputs and outputs if necessary.
   if (inputs) {
     for (int i = 0; i < n_in; i++)
@@ -423,6 +470,7 @@ void PurePlugin::process(float **inputs, float **outputs, int blocksz)
 
 pure_expr *PurePlugin::manifest()
 {
+  lock();
   pure_expr **xv = (pure_expr**)alloca(n*sizeof(pure_expr*));
   for (unsigned i = 0; i < n; i++) {
     if (ty[i] == 1 || ty[i] == 3) {
@@ -441,42 +489,51 @@ pure_expr *PurePlugin::manifest()
     }
   }
   pure_expr *ret = pure_listv(n, xv);
+  unlock();
   return ret;
 }
 
 pure_expr *PurePlugin::audio_inputs()
 {
+  lock();
   pure_expr **xv = (pure_expr**)alloca(n_in*sizeof(pure_expr*));
   for (int i = 0; i < n_in; i++)
     xv[i] = pure_int(in[i]);
   pure_expr *ret = pure_listv(n_in, xv);
+  unlock();
   return ret;
 }
 
 pure_expr *PurePlugin::audio_outputs()
 {
+  lock();
   pure_expr **xv = (pure_expr**)alloca(n_out*sizeof(pure_expr*));
   for (int i = 0; i < n_out; i++)
     xv[i] = pure_int(out[i]);
   pure_expr *ret = pure_listv(n_out, xv);
+  unlock();
   return ret;
 }
 
 pure_expr *PurePlugin::midi_inputs()
 {
+  lock();
   pure_expr **xv = (pure_expr**)alloca(n_evin*sizeof(pure_expr*));
   for (int i = 0; i < n_evin; i++)
     xv[i] = pure_int(evin[i]);
   pure_expr *ret = pure_listv(n_evin, xv);
+  unlock();
   return ret;
 }
 
 pure_expr *PurePlugin::midi_outputs()
 {
+  lock();
   pure_expr **xv = (pure_expr**)alloca(n_evout*sizeof(pure_expr*));
   for (int i = 0; i < n_evout; i++)
     xv[i] = pure_int(evout[i]);
   pure_expr *ret = pure_listv(n_evout, xv);
+  unlock();
   return ret;
 }
 
@@ -497,12 +554,14 @@ pure_expr *PurePlugin::midi_outputs()
 pure_expr *PurePlugin::get(int k)
 {
   if (k<0 || k>=n || !running) return 0;
-  // FIXME: We should preallocate some static Pure vectors here, to avoid
-  // dynamic allocations as much as possible.
+  // Note that there's no need to call lock() here, as we're running inside
+  // the process() callback and thus the GIL is already ours.
   switch (ty[k]) {
   case 1:
     return pure_double(*(float*)data[k]);
   case 2: case 3:
+    // FIXME: We should really preallocate some static Pure vectors here, to
+    // avoid dynamic allocations as much as possible.
     return matrix_from_float_array(1, nsamples, data[k]);
   case 4:
     // XXXTODO: Provide some way to handle time/tempo and transport
@@ -685,6 +744,7 @@ bool VSTMidiEvents::add(int offs, int sz, unsigned char *data)
     ev->byteSize = sizeof(VstMidiSysexEvent);
     ev->deltaFrames = offs;
     ev->dumpBytes = sz;
+    // this buffer is guaranteed to persist until the next cycle
     ev->sysexDump = (char*)data;
     evs->events[size] = (VstEvent*)ev;
   } else {
@@ -1131,11 +1191,13 @@ static void midi_out_cb(int port, int offs, int sz, unsigned char *data,
 void VSTPlugR::processReplacing(float **inputs, float **outputs,
 				VstInt32 n_samples)
 {
+  plugin->lock();
   plugin->process(inputs, outputs, n_samples);
   // Make sure that we have a VstEvents struct of sufficient size.
   evs.reserve(plugin->midiout.size());
   // Send any MIDI messages in the output queue.
   plugin->send_midi(midi_out_cb, this);
+  plugin->unlock();
   sendVstEventsToHost(evs.evs);
   evs.clear();
   // Some hosts may require this to force a GUI update of the output
@@ -1149,6 +1211,7 @@ VstInt32 VSTPlugR::processEvents(VstEvents* events)
   // input port, so all events will be received on the first available MIDI
   // input port of the plugin.
   if (plugin->n_evin <= 0) return 0;
+  plugin->lock();
   for (VstInt32 i = 0; i < events->numEvents; i++) {
     if (events->events[i]->type == kVstMidiType) {
       VstMidiEvent* ev = (VstMidiEvent*)events->events[i];
@@ -1184,8 +1247,8 @@ VstInt32 VSTPlugR::processEvents(VstEvents* events)
 	  break;
 	}
       default:
-	// not a valid status byte
-	return 0;
+	// not a valid status byte, ignore this message
+	continue;
       }
       plugin->receive_midi(plugin->evin[0], frames, sz, data);
     } else if (events->events[i]->type == kVstSysExType) {
@@ -1199,5 +1262,6 @@ VstInt32 VSTPlugR::processEvents(VstEvents* events)
 	      PLUGIN_NAME, events->events[i]->type);
     }
   }
+  plugin->unlock();
   return 1;
 }
