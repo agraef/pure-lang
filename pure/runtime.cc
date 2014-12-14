@@ -4007,7 +4007,6 @@ extern "C"
 void pure_switch_interp(pure_interp *interp)
 {
   char base;
-  assert(interp);
   if (interpreter::g_interp != (interpreter*)interp) {
     if (interpreter::g_interp) interpreter::g_interp->save_context();
     interpreter::g_interp = (interpreter*)interp;
