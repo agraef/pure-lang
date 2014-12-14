@@ -43,8 +43,9 @@ using plugr, system;
    if the plugin host supports that. */
 
 manifest =
-  [// a control port
+  [// control ports for volume and balance
    ("vol", "Volume", plugr::controlin, 0.5, 0.0, 1.0, 0.01),
+   ("bal", "Balance", plugr::controlin, 0.0, -1.0, 1.0, 0.01),
    // stereo audio input and output ports
    ("left-in", plugr::audioin), ("right-in", plugr::audioin),
    ("left-out", plugr::audioout), ("right-out", plugr::audioout)];
@@ -75,18 +76,20 @@ plugin self = plugin with
     // code gets invoked exactly once, at the time the plugin is first run, to
     // print some information about the plugin.
     get first_run ||
-    printf "info = %s\nrate = %g, block size = %d, vol = %g\n"
+    printf "info = %s\nrate = %g, block size = %d, vol = %g, bal = %g\n"
     (str (plugr::info self), plugr::rate self,
-     plugr::nsamples self, plugr::get_port self 0);
+     plugr::nsamples self, plugr::get_port self 0, plugr::get_port self 1);
     put first_run true;
     // Process a block of samples.
-    vol = plugr::get_port self 0; // control value from port #0 (control input)
-    left = plugr::get_port self 1; // sample data from port #1 (audio input)
-    right = plugr::get_port self 2; // sample data from port #2 (audio input)
-    // Multiply the sample data with the vol control value and output the
-    // resulting wave on port #3 and #4 (audio output).
-    plugr::set_port self 3 (map (*vol) left);
-    plugr::set_port self 4 (map (*vol) right);
+    vol = plugr::get_port self 0; // control value from port #0 (volume)
+    bal = plugr::get_port self 1; // control value from port #1 (balance)
+    left = plugr::get_port self 2; // sample data from port #2 (left)
+    right = plugr::get_port self 3; // sample data from port #3 (right)
+    // Modify the sample data using the vol and bal control values and output
+    // the resulting wave on port #4 and #5 (audio output).
+    l, r = 1 - max 0 bal, 1 - max 0 (-bal);
+    plugr::set_port self 4 (map (*vol*l) left);
+    plugr::set_port self 5 (map (*vol*r) right);
   end;
 end when
   // Local state. Note that all state which should be local to a single plugin

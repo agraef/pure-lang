@@ -7,17 +7,20 @@ using plugr, orddict, system;
 // this to a PlugR plugin: pure2plugr pure_transp.pure. Please also see
 // pure_amp.pure for an explanation of the manifest and plugin functions.
 
-// Manifest: one control port, one midi input and output.
+// Manifest: two control ports, one midi input and output.
 let manifest =
-  [("amount", plugr::controlin, 0, -12, 12, 1, "semitones"),
+  [("octaves", plugr::controlin, 0, -5, 5, 1),
+   ("semitones", plugr::controlin, 0, -12, 12, 1),
    ("midiin", plugr::midiin), ("midiout", plugr::midiout)];
 
 // The plugin function. This transposes incoming MIDI notes by the number of
-// semitones indicated by the amount control.
+// octaves and semitones indicated by the control values.
 plugin self = plugin with
   plugin () = () when
-    // Get the current amount value from port #0 (control input).
-    amount = int $ plugr::get_port self 0;
+    // Get the current amount in semitones from port #0 and #1.
+    octaves = int $ plugr::get_port self 0;
+    semitones = int $ plugr::get_port self 1;
+    amount = 12*octaves+semitones;
     // This is the tricky part. If the amount has changed, we'll have to send
     // note offs for all currently sounding notes in order to avoid hanging
     // notes. But to achieve smoother playback, we defer this until we
@@ -25,16 +28,22 @@ plugin self = plugin with
     // changes (see below).
     get old_amount == amount || put old_notes (vals notes);
     put old_amount amount;
-    // Get incoming midi messages from port #1 (midi input).
-    seq = plugr::get_port self 1;
+    // Get incoming midi messages from port #2 (midi input).
+    seq = plugr::get_port self 2;
     // Print our input on stdout.
     //~listp seq || null seq || do (printf "midiin:  %s\n".str) seq;
     // Transpose (only if plugin is active).
     seq = if plugr::active self then map transp seq else seq with
-      transp (t,{s,n,v}) = t,{s,n+amount,v} if h == 0x80 || h == 0x90 when
-	h = s and 0xf0;
+      transp (t,{s,n,v}) = t,{s,n,v} if h == 0x80 || h == 0x90 when
+	h = s and 0xf0; // status byte
+	n = n+amount; // transposed note number
       end;
       transp x = x otherwise;
+    end;
+    // Filter out invalid notes.
+    seq = filter ok seq with
+      ok (t,{s,n,v}) = n>=0 && n<128;
+      ok x = true otherwise;
     end;
     // Output the sequence along with any note-offs for old notes.
     have_midi = ~null seq || ~plugr::active self && ~null (get old_notes);
@@ -42,8 +51,8 @@ plugin self = plugin with
     have_midi && put old_notes [];
     // Print our output on stdout.
     //~listp seq || null seq || do (printf "midiout: %s\n".str) seq;
-    // Output the messages on port #2 (midi output).
-    plugr::set_port self 2 seq;
+    // Output the messages on port #3 (midi output).
+    plugr::set_port self 3 seq;
     // Keep track of sounding notes.
     do (delete notes) [n | t,{s,n,v} = seq; s and 0xf0 == 0x80];
     do (insert notes)
