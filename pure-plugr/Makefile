@@ -32,6 +32,10 @@ purelibdir  = $(libdir)/pure
 
 ifeq ($(DLL),.dylib)
 dllname = -install_name "$(purelibdir)/$@"
+# OS X: Uncomment this to compile the plugr module to a universal binary
+# (you'll need a universal install of Pure to make that work). pure2plugr
+# requires this if you use the -u option to create universal plugin binaries.
+#arch = -arch i386 -arch x86_64
 endif
 
 MOD_CFLAGS  = $(PIC) $(shell pkg-config pure --cflags) $(CFLAGS) $(CPPFLAGS)
@@ -46,7 +50,7 @@ pure2plugr: pure2plugr.in
 	chmod a+x $@
 
 plugr$(DLL): plugr.cc
-	$(CXX) $(shared) $(dllname) -o $@ $(MOD_CFLAGS) $< $(MOD_LDFLAGS) $(LIBS)
+	$(CXX) $(shared) $(dllname) $(arch) -o $@ $(MOD_CFLAGS) $< $(MOD_LDFLAGS) $(LIBS)
 
 clean:
 	rm -rf *$(DLL)* *.o pure2plugr

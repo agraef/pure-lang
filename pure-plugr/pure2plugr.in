@@ -29,13 +29,14 @@ fi
 prog=`basename "$0"`
 
 usage() {
-  echo "USAGE: $prog [-h] [-o output-filename] script-name ..." >&2
+  echo "USAGE: $prog [-h] [-u] [-o output-filename] script-name ..." >&2
   echo "-h, --help:      print this message and exit" >&2
   echo "-o, --output:    specify the output filename" >&2
+  echo "-u, --universal: create a universal binary (Mac OS X only)" >&2
 }
 
 # Parse options using getopt(1).
-args=`getopt  -o ho: -l help,output: -n "$prog" -- "$@"`
+args=`getopt  -o ho:u -l help,output:,universal -n "$prog" -- "$@"`
 if [ $? != 0 ] ; then exit 1 ; fi
 eval set -- "$args"
 
@@ -43,6 +44,7 @@ while true; do
   case "$1" in
     -h|--help) usage; exit 1 ;;
     -o|--output) output="$2"; shift 2 ;;
+    -u|--universal) universal="yes"; shift ;;
     --) shift; break ;;
   esac
 done
@@ -74,7 +76,20 @@ libdir=`pkg-config pure --variable libdir`
 MOD_CFLAGS="$PIC `pkg-config pure --cflags` $CFLAGS $CPPFLAGS"
 MOD_LDFLAGS="`pkg-config pure --libs` $LDFLAGS"
 
-output="${output:-$dirname/$plugin$DLL}"
+if [[ $(uname) == Darwin ]]; then
+  # Mac-specific setup (output is a MachO bundle)
+  shared=-bundle
+  output="${output:-$dirname/$plugin.vst}"
+  soname="$output/Contents/MacOS/$plugin"
+  if [ "$universal" = "yes" ]; then
+    # Options to create universal binaries on the Mac.
+    llcarch="-march=x86 -march=x86-64"
+    cxxarch="-arch i386 -arch x86_64"
+  fi
+else
+  output="${output:-$dirname/$plugin$DLL}"
+  soname="$output"
+fi
 
 # Extra sources with VST-specific code needed to build the plugins.
 main=$SDKSRC/vstplugmain.cpp
@@ -85,21 +100,49 @@ extrasources="$main $afx $afxx"
 # NOTE: The following requires that the cwd is writeable, since we create some
 # files there.
 
-# Invoke Pure to compile the plugin, capture output in a logfile.
-echo pure $PIC -c $filename -o $objname --main=$loader
 # This makes sure that the requisite functions and variables aren't
 # accidentally stripped from the binary during batch compilation.
 rm -f $tmpname
 for x in manifest plugin Name Author Description Version; do
   echo "#! --required $x" >> $tmpname
 done
-(pure -v0100 $PIC -c $tmpname $filename -o $objname --main=$loader 2>&1) | tee $logname
-# check the result, in case anything went wrong during compilation
-rc=$?
-rm -f $tmpname
-if [ $rc -ne 0 ] ; then
-  rm -f $logname
-  exit $rc
+# Invoke Pure to compile the plugin, capture output in a logfile.
+if [ -n "$llcarch" ]; then
+  # universal binary (OS X): llc accepts only a single arch, so we need to
+  # iterate over the requested architectures and use lipo to assemble the
+  # final object file
+  objs=""
+  for arch in $llcarch; do
+    a=`echo $arch|sed -e "s/^-march=//"`
+    archobjname=`echo $objname|sed -e "s/\.o\$/-$a.o/"`
+    echo pure $PIC $arch -c $filename -o $archobjname --main=$loader
+    (pure -v0100 $PIC $arch -c $tmpname $filename -o $archobjname --main=$loader 2>&1) | tee $logname
+    # check the result, in case anything went wrong during compilation
+    rc=$?
+    if [ $rc -ne 0 ] ; then
+      rm -f $logname $tmpname $objs
+      exit $rc
+    fi
+    objs="$objs $archobjname"
+  done
+  echo lipo -create $objs -output $objname
+  lipo -create $objs -output $objname
+  rc=$?
+  rm -f $tmpname $objs
+  if [ $rc -ne 0 ] ; then
+    rm -f $logname
+    exit $rc
+  fi
+else
+  echo pure $PIC -c $filename -o $objname --main=$loader
+  (pure -v0100 $PIC -c $tmpname $filename -o $objname --main=$loader 2>&1) | tee $logname
+  # check the result, in case anything went wrong during compilation
+  rc=$?
+  rm -f $tmpname
+  if [ $rc -ne 0 ] ; then
+    rm -f $logname
+    exit $rc
+  fi
 fi
 
 # Grab the libraries we need to link against from the logfile.
@@ -113,14 +156,47 @@ if [ ! -f $objname ] ; then
   exit 1
 fi
 
+if [[ $(uname) == Darwin ]]; then
+  # Initialize the bundle.
+  mkdir -p $output/Contents/MacOS
+  printf '%s' 'BNDL????' > $output/Contents/PkgInfo
+  sed -e "s?@name@?$plugin?g;s?@version@?1.0.0?g" > $output/Contents/Info.plist <<EOF
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>English</string>
+	<key>CFBundleExecutable</key>
+	<string>@name@</string>
+	<key>CFBundleIdentifier</key>
+	<string>@name@</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>@name@</string>
+	<key>CFBundlePackageType</key>
+	<string>BNDL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>@version@</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<key>CFBundleVersion</key>
+	<string>@version@</string>
+	<key>CSResourcesFileMapped</key>
+	<true/>
+</dict>
+</plist>
+EOF
+fi
+
 # Link with the wrapper module.
-echo $CXX $shared -o "$output" $MOD_CFLAGS $INCLUDES -D__cdecl= -DPLUGIN_NAME="\"$plugin\"" -DLOADER_NAME="$loader" $libdir/pure/pureplugin.cc $extrasources $objname $MOD_LDFLAGS $extralibs $LIBS
-$CXX $shared -o "$output" $MOD_CFLAGS $INCLUDES -D__cdecl= -DPLUGIN_NAME="\"$plugin\"" -DLOADER_NAME="$loader" $libdir/pure/pureplugin.cc $extrasources $objname $MOD_LDFLAGS $extralibs $LIBS
+echo $CXX $shared -o "$soname" $cxxarch $MOD_CFLAGS $INCLUDES -D__cdecl= -DPLUGIN_NAME="\"$plugin\"" -DLOADER_NAME="$loader" $libdir/pure/pureplugin.cc $extrasources $objname $MOD_LDFLAGS $extralibs $LIBS
+$CXX $shared -o "$soname" $cxxarch $MOD_CFLAGS $INCLUDES -D__cdecl= -DPLUGIN_NAME="\"$plugin\"" -DLOADER_NAME="$loader" $libdir/pure/pureplugin.cc $extrasources $objname $MOD_LDFLAGS $extralibs $LIBS
 # check the result, in case anything went wrong during linkage
 rc=$?
 rm -f $objname
 if [ $rc -ne 0 ] ; then
-  rm -f "$output"
+  rm -Rf "$output"
   exit $rc
 fi
 
