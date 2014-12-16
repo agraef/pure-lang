@@ -83,8 +83,8 @@ if [[ $(uname) == Darwin ]]; then
   soname="$output/Contents/MacOS/$plugin"
   if [ "$universal" = "yes" ]; then
     # Options to create universal binaries on the Mac.
-    llcarch="-march=x86 -march=x86-64"
-    cxxarch="-arch i386 -arch x86_64"
+    cxxarch="i386 x86_64"
+    ARCH=`printf -- "-arch %s -arch %s" $cxxarch`
   fi
 else
   output="${output:-$dirname/$plugin$DLL}"
@@ -107,21 +107,22 @@ for x in manifest plugin Name Author Description Version; do
   echo "#! --required $x" >> $tmpname
 done
 # Invoke Pure to compile the plugin, capture output in a logfile.
-if [ -n "$llcarch" ]; then
+if [ -n "$cxxarch" ]; then
   # Universal binary (OS X): Pure can't do this on its own, so we need to run
   # it twice with the appropriate options for the architecture and use lipo to
   # assemble the final object file. Note that this requires that Pure itself
   # was built as a universal binary so that we can invoke it as a 32 bit
-  # program.
+  # program. You'll also need universal binaries for all addon modules used by
+  # the compiled script.
   objs=""
-  for arch in $llcarch; do
-    a=`echo $arch|sed -e "s/^-march=//"`
-    if [ "$a" = "x86" ]; then pure="arch -arch i386 pure"; else pure="pure"; fi
-    archobjname=`echo $objname|sed -e "s/\.o\$/-$a.o/"`
+  for arch in $cxxarch; do
+    if [ "$arch" = "i386" ]; then march="x86"; fi
+    if [ "$arch" = "x86_64" ]; then march="x86-64"; fi
+    archobjname=`echo $objname|sed -e "s/\.o\$/-$march.o/"`
     # NOTE: The -fPIC option is always needed here, in order to make llc
     # produce a relocatable binary also for x86.
-    echo $pure -fPIC $arch -c $filename -o $archobjname --main=$loader
-    ($pure -v0100 -fPIC $arch -c $tmpname $filename -o $archobjname --main=$loader 2>&1) | tee $logname
+    echo arch -arch $arch pure -fPIC -march=$march -c $filename -o $archobjname --main=$loader
+    (arch -arch $arch pure -v0100 -fPIC -march=$march -c $tmpname $filename -o $archobjname --main=$loader 2>&1) | tee $logname
     # check the result, in case anything went wrong during compilation
     rc=$?
     if [ $rc -ne 0 ] ; then
@@ -195,8 +196,8 @@ EOF
 fi
 
 # Link with the wrapper module.
-echo $CXX $shared -o "$soname" $cxxarch $MOD_CFLAGS $INCLUDES -D__cdecl= -DPLUGIN_NAME="\"$plugin\"" -DLOADER_NAME="$loader" $libdir/pure/pureplugin.cc $extrasources $objname $MOD_LDFLAGS $extralibs $LIBS
-$CXX $shared -o "$soname" $cxxarch $MOD_CFLAGS $INCLUDES -D__cdecl= -DPLUGIN_NAME="\"$plugin\"" -DLOADER_NAME="$loader" $libdir/pure/pureplugin.cc $extrasources $objname $MOD_LDFLAGS $extralibs $LIBS
+echo $CXX $shared -o "$soname" $ARCH $MOD_CFLAGS $INCLUDES -D__cdecl= -DPLUGIN_NAME="\"$plugin\"" -DLOADER_NAME="$loader" $libdir/pure/pureplugin.cc $extrasources $objname $MOD_LDFLAGS $extralibs $LIBS
+$CXX $shared -o "$soname" $ARCH $MOD_CFLAGS $INCLUDES -D__cdecl= -DPLUGIN_NAME="\"$plugin\"" -DLOADER_NAME="$loader" $libdir/pure/pureplugin.cc $extrasources $objname $MOD_LDFLAGS $extralibs $LIBS
 # check the result, in case anything went wrong during linkage
 rc=$?
 rm -f $objname
