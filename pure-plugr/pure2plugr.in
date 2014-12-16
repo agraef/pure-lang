@@ -108,15 +108,20 @@ for x in manifest plugin Name Author Description Version; do
 done
 # Invoke Pure to compile the plugin, capture output in a logfile.
 if [ -n "$llcarch" ]; then
-  # universal binary (OS X): llc accepts only a single arch, so we need to
-  # iterate over the requested architectures and use lipo to assemble the
-  # final object file
+  # Universal binary (OS X): Pure can't do this on its own, so we need to run
+  # it twice with the appropriate options for the architecture and use lipo to
+  # assemble the final object file. Note that this requires that Pure itself
+  # was built as a universal binary so that we can invoke it as a 32 bit
+  # program.
   objs=""
   for arch in $llcarch; do
     a=`echo $arch|sed -e "s/^-march=//"`
+    if [ "$a" = "x86" ]; then pure="arch -arch i386 pure"; else pure="pure"; fi
     archobjname=`echo $objname|sed -e "s/\.o\$/-$a.o/"`
-    echo pure $PIC $arch -c $filename -o $archobjname --main=$loader
-    (pure -v0100 $PIC $arch -c $tmpname $filename -o $archobjname --main=$loader 2>&1) | tee $logname
+    # NOTE: The -fPIC option is always needed here, in order to make llc
+    # produce a relocatable binary also for x86.
+    echo $pure -fPIC $arch -c $filename -o $archobjname --main=$loader
+    ($pure -v0100 -fPIC $arch -c $tmpname $filename -o $archobjname --main=$loader 2>&1) | tee $logname
     # check the result, in case anything went wrong during compilation
     rc=$?
     if [ $rc -ne 0 ] ; then
