@@ -4,11 +4,12 @@ pure-plugr
 Albert Gräf <aggraef@gmail.com>, 2014-12-13
 
 PlugR (pronounced "plug-ar" with a rolling "r") is a research project which
-aims at developing a generic plugin architecture for the Pure programming
+aims at developing a universal plugin architecture for the Pure programming
 language. The idea is quite similar to JUCE (but without all the extra GUI and
-graphics baggage), in that the Pure core of the plugin architecture is
+graphics baggage), in that the created plugins contain entry points for all
+the supported architectures. The Pure core of the plugin architecture is
 implemented as a separate base class, which provides all the stuff needed to
-add the entry points for the supported architectures quite easily.
+add support for new plugin architectures quite easily.
 
 This code is still highly experimental and the only supported target
 architecture is Steinberg's [VST][1] right now. Other target architectures
@@ -29,9 +30,10 @@ already and are known to work).
 Of course, you can also create your own plugin scripts and compile them with
 the pure2plugr script included in the distribution. On Mac OS X the script
 understands the `-u` option which lets you create universal (32+64 bit Intel)
-plugin binaries. (Alas, at present this doesn't work yet due to Pure-related
-issues. We hope to get these sorted out soon. For the time being, only the 64
-bit version appears to work, so you'll need a 64 bit VST host to run the
-compiled plugins.)
+plugin binaries which will work with both 32 and 64 bit VST hosts. To make
+this work, you need to have a universal build of the Pure interpreter
+installed (`sudo port install pure +universal` if you're using MacPorts), as
+well as universal builds of all the Pure addon modules used by your plugin
+scripts.
 
 [1]: http://www.steinberg.net/en/company/developers.html
