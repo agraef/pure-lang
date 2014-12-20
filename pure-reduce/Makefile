@@ -71,7 +71,7 @@ reduce-algebra/csl/new-embedded/reduce.img reduce-algebra/csl/new-embedded/reduc
 	$(MAKE) -C reduce-algebra/csl/new-embedded CFLAGS="$(ALL_CFLAGS)"
 
 reduce$(DLL): $(addprefix reduce-algebra/csl/new-embedded/procedural/, $(objects)) proc-add.o
-	$(CC) $(shared) $(PIC) $(dllname) -o reduce$(DLL) $^
+	$(CC) $(shared) $(PIC) $(dllname) $(LDFLAGS) -o reduce$(DLL) $^
 
 $(addprefix reduce-algebra/csl/new-embedded/procedural/, $(objects)):
 	$(MAKE) -C reduce-algebra/csl/new-embedded/procedural CFLAGS="$(ALL_CFLAGS) $(PIC)"
