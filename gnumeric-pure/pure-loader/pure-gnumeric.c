@@ -260,7 +260,7 @@ static GnmValue *str2rangeref(const GnmEvalPos *pos, const char *s)
 pure_expr *
 value2pure(const GnmEvalPos *pos, const GnmValue *v, const char *spec)
 {
-  switch (v->type) {
+  switch (v->v_any.type) {
   case VALUE_ERROR:
     return pure_app(pure_symbol(pure_sym("gnm_error")),
 		    pure_string_dup(v->v_err.mesg->str));
@@ -279,7 +279,7 @@ value2pure(const GnmEvalPos *pos, const GnmValue *v, const char *spec)
       for (j = 0; dblmat && j < ncols; j++) {
 	gint x = (gint)j, y = (gint)i;
 	const GnmValue *val = v->v_array.vals[x][y];
-	if (val->type != VALUE_FLOAT)
+	if (val->v_any.type != VALUE_FLOAT)
 	  dblmat = false;
       }
     if (dblmat) {
@@ -345,7 +345,7 @@ value2pure(const GnmEvalPos *pos, const GnmValue *v, const char *spec)
       for (x = x1; x <= x2; x++)
 	for (y = y1; y <= y2; y++) {
 	  const GnmCell *cell = sheet_cell_get(sheet, x, y);
-	  if (cell && cell->value->type != VALUE_FLOAT)
+	  if (cell && cell->value->v_any.type != VALUE_FLOAT)
 	    dblmat = false;
 	}
       if (dblmat) {
@@ -659,19 +659,19 @@ static bool compat(GnmValue *v, const char *spec)
     return true;
   // errors or scalars
   if (*spec == 'E')
-    return v->type != VALUE_ARRAY && v->type != VALUE_CELLRANGE;
+    return v->v_any.type != VALUE_ARRAY && v->v_any.type != VALUE_CELLRANGE;
   // we don't allow any errors past this point
-  if (v->type == VALUE_ERROR)
+  if (v->v_any.type == VALUE_ERROR)
     return false;
   // ordinary scalars
   if (*spec == 'S')
-    return v->type != VALUE_ARRAY && v->type != VALUE_CELLRANGE;
+    return v->v_any.type != VALUE_ARRAY && v->v_any.type != VALUE_CELLRANGE;
   // we don't allow any empty values past this point
   /* XXXFIXME: We should actually allow empty values for optional arguments,
      but we don't keep track of this right now. */
-  if (v->type == VALUE_EMPTY)
+  if (v->v_any.type == VALUE_EMPTY)
     return false;
-  switch (v->type) {
+  switch (v->v_any.type) {
   case VALUE_BOOLEAN:
   case VALUE_FLOAT:
     // Gnumeric doesn't actually distinguish these.
@@ -1017,7 +1017,7 @@ pure_expr *pure_parse_range(const char *s)
 {
   if (eval_info && eval_info->ei) {
     GnmValue *v = str2rangeref(eval_info->ei->pos, s);
-    assert(!v || v->type == VALUE_CELLRANGE);
+    assert(!v || v->v_any.type == VALUE_CELLRANGE);
     if (v) {
       GnmRangeRef const *rr = &v->v_range.cell;
       pure_expr *x = rangeref2tuple(eval_info->ei->pos, rr);
@@ -1033,7 +1033,7 @@ pure_expr *pure_make_range(pure_expr *x)
 {
   if (eval_info && eval_info->ei) {
     GnmValue *v = tuple2rangeref(eval_info->ei->pos, x);
-    assert(!v || v->type == VALUE_CELLRANGE);
+    assert(!v || v->v_any.type == VALUE_CELLRANGE);
     if (v) {
       GnmRangeRef const *rr = &v->v_range.cell;
       char *s = rangeref2str(eval_info->ei->pos, rr);
@@ -1230,7 +1230,7 @@ pure_expr *pure_get_range(const char *s)
       for (x = x1; x <= x2; x++)
 	for (y = y1; y <= y2; y++) {
 	  const GnmCell *cell = sheet_cell_get(sheet, x, y);
-	  if (cell && cell->value->type != VALUE_FLOAT)
+	  if (cell && cell->value->v_any.type != VALUE_FLOAT)
 	    dblmat = false;
 	}
       if (dblmat) {
