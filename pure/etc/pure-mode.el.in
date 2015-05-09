@@ -979,7 +979,7 @@ Commands
        (define-key pure-eval-mode-map "\C-c\M-t" 'pure-trace)
        (define-key pure-eval-mode-map "\C-c\C-y" 'pure-send-yank)
        (define-key pure-eval-mode-map "\C-c:"    'pure-eval)
-       (define-key pure-eval-mode-map "\t" 'comint-dynamic-complete)
+       (define-key pure-eval-mode-map "\t" 'completion-at-point)
        (define-key pure-eval-mode-map "\C-a" 'comint-bol)
        (define-key pure-eval-mode-map [home] 'comint-bol)
 ;;       (define-key pure-eval-mode-map [up] 'comint-previous-input)
@@ -1036,7 +1036,7 @@ Commands
 	      ["Last Message"		pure-last-msg
 					(get-buffer "*pure-eval*")])
 	"-"
-	["Complete Symbol"		comint-dynamic-complete
+	["Complete Symbol"		completion-at-point
 					(pure-at-command-prompt-p)])
   "Menu for `pure-eval-mode'.")
 
@@ -1099,7 +1099,7 @@ are listed below:
 \\[comint-interrupt-subjob] sends a Ctl-C to the interpreter.
 \\[comint-send-eof] sends a Ctl-D to the interpreter.
 \\[comint-dynamic-list-input-ring] lists the command history.
-\\[comint-dynamic-complete] performs symbol and filename completion.
+\\[completion-at-point] performs symbol and filename completion.
 
 Note that in difference to standard comint mode, the C-a/Home
 keys are rebound to `comint-bol', to mimic the behaviour of the
@@ -1771,7 +1771,9 @@ preceding point."
 	  (t
 	   (let ((list (all-completions string completion-alist))
 		 (conf (current-window-configuration)))
-	     ;; Taken from comint.el
+	     ;; Taken from comint.el. This probably needs to be reworked for
+	     ;; Emacs 24.x to prevent some warnings about deprecated calling
+	     ;; conventions, but I'm not sure how. -ag
 	     (message "Making completion list...")
 	     (with-output-to-temp-buffer "*Completions*"
 	       (display-completion-list list string))
