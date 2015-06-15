@@ -20,8 +20,9 @@ dllname = -install_name "$(libdir)/pure/$@"
 endif
 
 # Try to guess the Octave version number. We're only interested in the
-# major/minor version here, to cope with the C/C++ API breakage in Octave 3.8.
-octversion=$(shell mkoctfile --version 2>&1 | sed -e 's/^mkoctfile, version \([0-9.]*\).*/\1/' | sed -e 's/\([0-9]*\)[.]\([0-9]*\).*/-DOCTAVE_\1_\2/')
+# major/minor version here, to cope with the C/C++ API breakage in Octave 3.8+.
+octversion=$(shell mkoctfile --version 2>&1 | sed -e 's/^mkoctfile, version \([0-9.]*\).*/\1/' | sed -e 's/\([0-9]*\)[.]\([0-9]*\).*/\1 \2/')
+octversionflag=$(shell if [ $(word 1,$(octversion)) -gt 3 ] || ( [ $(word 1,$(octversion)) -ge 3 ] && [ $(word 2,$(octversion)) -ge 8 ] ); then echo -n '-DOCTAVE_3_8_PLUS'; fi)
 
 # Add the -rpath flag so that the dynamic linker finds liboctave.so etc. when
 # Pure loads the module.
@@ -38,7 +39,7 @@ ifeq ($(DLL),.dylib)
 # dylib which can be linked into other modules.
 embed.o: embed.cc embed.h
 	rm -f $@
-	mkoctfile -v $(octversion) -o $@ -c $<
+	mkoctfile -v $(octversionflag) -o $@ -c $<
 MKOCT_LDCXX = $(shell mkoctfile -p LD_CXX)
 MKOCT_LDFLAGS = $(shell mkoctfile -p LFLAGS) $(shell mkoctfile -p OCTAVE_LIBS) $(shell mkoctfile -p LDFLAGS)
 octave_embed$(DLL): embed.o
@@ -47,7 +48,7 @@ octave_embed$(DLL): embed.o
 else
 octave_embed$(DLL): embed.cc embed.h
 	rm -f $@
-	mkoctfile -v $(octversion) -o $@ $< -lpure $(RLD_FLAG)
+	mkoctfile -v $(octversionflag) -o $@ $< -lpure $(RLD_FLAG)
 	if test -f $@.oct; then mv $@.oct $@; fi
 endif
 

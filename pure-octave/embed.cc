@@ -51,7 +51,7 @@ static void install_builtins();
 void octave_init(int argc, char *argv[])
 {
   if (!init) {
-#ifdef OCTAVE_3_8
+#ifdef OCTAVE_3_8_PLUS
     if (first_init) {
       // octave_main() segfaults when called a second time, so let's at least
       // try to terminate gracefully here.
@@ -72,7 +72,7 @@ void octave_init(int argc, char *argv[])
 void octave_fini(void)
 {
   if (init) {
-#ifdef OCTAVE_3_8
+#ifdef OCTAVE_3_8_PLUS
     // Octave 3.8 doesn't expose do_octave_atexit() any more, so we call
     // clean_up_and_exit() instead, and prevent Octave from exiting the
     // process.
@@ -998,7 +998,7 @@ DEFUN_DLD(pure_call, args, nargout, PURE_HELP)
 
 static void install_builtins()
 {
-#ifdef OCTAVE_3_8
+#ifdef OCTAVE_3_8_PLUS
   install_builtin_function(Fpure_call, "pure_call", "embed.cc", PURE_HELP);
 #else
   install_builtin_function(Fpure_call, "pure_call", PURE_HELP);
