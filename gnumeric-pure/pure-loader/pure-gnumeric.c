@@ -1560,6 +1560,15 @@ pure_expr *pure_set_range_format(const char *s, pure_expr *xs)
 #define SHEET_WIDGET_LIST_TYPE		(sheet_widget_list_get_type ())
 #define SHEET_WIDGET_COMBO_TYPE		(sheet_widget_combo_get_type ())
 
+/* Gnumeric 1.12.21+? */
+#ifndef SHEET_OBJECT
+#define SHEET_OBJECT(obj) (G_TYPE_CHECK_INSTANCE_CAST((obj), GNM_SO_TYPE, SheetObject))
+#endif
+#ifndef SHEET_OBJECT_IMAGE_TYPE
+#define SHEET_OBJECT_IMAGE_TYPE (sheet_object_image_get_type ())
+#define SHEET_OBJECT_GRAPH_TYPE (sheet_object_graph_get_type ())
+#endif
+
 static GocItem *get_goc_item (SheetObjectView *view)
 {
   GocGroup *group = GOC_GROUP(view);

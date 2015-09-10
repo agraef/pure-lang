@@ -38,6 +38,12 @@
 #define GNM_PURE_PLUGIN_LOADER(o)	(G_TYPE_CHECK_INSTANCE_CAST ((o), TYPE_GNM_PURE_PLUGIN_LOADER, GnmPurePluginLoader))
 #define IS_GNM_PURE_PLUGIN_LOADER(o)	(G_TYPE_CHECK_INSTANCE_TYPE ((o), TYPE_GNM_PURE_PLUGIN_LOADER))
 
+/* Gnumeric 1.12.21+? */
+#ifndef IS_GNM_PLUGIN_SERVICE_FUNCTION_GROUP
+#define IS_GNM_PLUGIN_SERVICE_FUNCTION_GROUP(o) (G_TYPE_CHECK_INSTANCE_TYPE ((o), GNM_PLUGIN_SERVICE_FUNCTION_GROUP_TYPE))
+#define PluginServiceFunctionGroupCallbacks GnmPluginServiceFunctionGroupCallbacks
+#endif
+
 static pure_interp *interp;
 
 typedef struct {

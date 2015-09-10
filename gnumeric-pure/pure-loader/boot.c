@@ -11,6 +11,11 @@
 
 #include "pure-loader.h"
 
+/* Gnumeric 1.12.21+? */
+#ifndef IS_GNM_PLUGIN_SERVICE_FUNCTION_GROUP
+#define ModulePluginUIActions GnmModulePluginUIActions
+#endif
+
 GNM_PLUGIN_MODULE_HEADER;
 
 GType pure_get_loader_type(GOErrorInfo **ret_error);
