@@ -17,12 +17,16 @@ libdir      = $(shell pkg-config pure --variable libdir)
 
 ifeq ($(DLL),.dylib)
 dllname = -install_name "$(libdir)/pure/$@"
+# MAC-specific quirk: echo -n doesn't work in the standard shell
+ECHON = /bin/echo -n
+else
+ECHON = echo -n
 endif
 
 # Try to guess the Octave version number. We're only interested in the
 # major/minor version here, to cope with the C/C++ API breakage in Octave 3.8+.
 octversion=$(shell mkoctfile --version 2>&1 | sed -e 's/^mkoctfile, version \([0-9.]*\).*/\1/' | sed -e 's/\([0-9]*\)[.]\([0-9]*\).*/\1 \2/')
-octversionflag=$(shell if [ $(word 1,$(octversion)) -gt 3 ] || ( [ $(word 1,$(octversion)) -ge 3 ] && [ $(word 2,$(octversion)) -ge 8 ] ); then echo -n '-DOCTAVE_3_8_PLUS'; fi)
+octversionflag=$(shell if [ $(word 1,$(octversion)) -gt 3 ] || ( [ $(word 1,$(octversion)) -ge 3 ] && [ $(word 2,$(octversion)) -ge 8 ] ); then $(ECHON) '-DOCTAVE_3_8_PLUS'; fi)
 
 # Add the -rpath flag so that the dynamic linker finds liboctave.so etc. when
 # Pure loads the module.
