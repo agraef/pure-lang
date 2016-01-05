@@ -1,0 +1,110 @@
+// CC-Rider: Simple CC mapping module.
+
+// The idea is the same as with Kyle's "CC-Rider" plugin originally created
+// for use with Tracktion, which seems to have disappeared from the net. The
+// plugin lets you "ride" an arbitrary collection of MIDI controllers and
+// expose them as VST parameters so that they become automatable in pretty
+// much any VST host. Other MIDI input is passed through unchanged. This is
+// useful, in particular, with MIDI hardware which in many hosts can't be
+// operated like VST instruments by themselves. Just place the plugin on the
+// track with output routed to the hardware device and you should be ready to
+// go. In addition, the plugin lets you remap CCs in the plugin's input on the
+// fly, which can also be useful in some situations.
+
+// Note: The code below is just an example for 8 MIDI CCs (1-8) on the first
+// MIDI channel, using generic VST parameter names C1-8. You can easily adjust
+// the module to your own needs, by editing the plugin manifest and controller
+// lists below as needed. E.g.: change the control names to something more
+// meaningful, add as many controllers as you want, change the CC mapping,
+// etc. It's also possible to adjust the MIDI input and output channels by
+// changing the inch and outch variables accordingly, or disable MIDI input or
+// output altogether if it's not needed, by setting the corresponding variable
+// to -1.
+
+using plugr, orddict, system;
+
+// Author and version information.
+Author = "Albert Graef <aggraef@gmail.com>";
+Version = "1.0";
+
+// Manifest
+let manifest =
+  [// the controls (add controls and adjust names, initial values, ranges
+   // and step sizes as needed; mapping to MIDI data is automatic)
+   ("C1", plugr::controlin, 0, 0, 127, 1),
+   ("C2", plugr::controlin, 0, 0, 127, 1),
+   ("C3", plugr::controlin, 0, 0, 127, 1),
+   ("C4", plugr::controlin, 0, 0, 127, 1),
+   ("C5", plugr::controlin, 0, 0, 127, 1),
+   ("C6", plugr::controlin, 0, 0, 127, 1),
+   ("C7", plugr::controlin, 0, 0, 127, 1),
+   ("C8", plugr::controlin, 0, 0, 127, 1),
+   // MIDI input and output
+   ("midiin", plugr::midiin), ("midiout", plugr::midiout)];
+
+// MIDI input/output channels we process (use -1 to disable controller input
+// or output, respectively)
+let inch, outch = 0, 0;
+
+// MIDI input and corresponding output CCs; adjust as needed. Note that the
+// number of input and output CCs must be equal and match the number of
+// control parameters in the manifest above.
+let inccs = [1, 2, 3, 4, 5, 6, 7, 8];
+let outccs = [1, 2, 3, 4, 5, 6, 7, 8];
+
+// Usually there's no need to edit below this line.
+
+// Manifest data used by the mapping function
+let nccs = #outccs;
+let config = [x0,x1,x2,dx | name,ty,fl,x0,x1,x2,dx = manifest];
+
+// The plugin function.
+plugin self = plugin with
+  plugin () = () when
+    // Process incoming midi messages.
+    in = plugr::get_port self nccs;
+    // Update the current control values with incoming CCs on our input
+    // channel. Other MIDI data is passed through unchanged.
+    in, ccin = if plugr::active self && inch >= 0 then
+		 filter (notchan inch) in, filter (chan inch) in
+	       else in, [] with
+		 chan c (t,{st,no,val}) = true if ubyte st == 0xb0+c;
+		 chan _ _ = false otherwise;
+		 notchan c msg = ~chan c msg;
+	       end;
+    vals = orddict [i=>v | t,{st,i,v} = ccin];
+    null ccin || void
+    [plugr::set_port self i (midi2val c (vals!j)) |
+     i,j,c = zip3 (0..nccs-1) inccs config; member vals j];
+    // Get the current control values.
+    actvals = [plugr::get_port self i | i = 0..nccs-1];
+    // Update the old control values as needed and generate corresponding CC
+    // messages on out output channel.
+    ccout = if plugr::active self && outch >= 0 then
+	      filter ok [update i x r c |
+			 i,x,r,c = zip (zip3 outccs actvals oldvals) config]
+	    else [] with
+	      update i x r c = if x ~= get r then
+			       put r x $$ {0xb0+outch,i,val2midi c x}
+			     else ();
+	      ok () = false; ok _ = true otherwise;
+	    end;
+    // Output is the remaining input along with any generated CC messages.
+    out = if plugr::active self then ccout+in else [];
+    // Print our output on stdout, for debugging purposes.
+    //~listp out || null out || do (printf "midiout: %s\n".str) out;
+    // Output the messages on midi output.
+    plugr::set_port self (nccs+1) out;
+  end;
+  // Translate between CC and control values.
+  midi2val (x0,x1,x2,dx) v = double
+    (clamp x1 x2 (roundto dx (v/127*(x2-x1))+x1));
+  val2midi (x0,x1,x2,dx) v = int
+    (clamp 0 127 (round ((v-x1)/(x2-x1)*127)));
+  clamp x1 x2 x = clamp x2 x1 x if x1>x2;
+  clamp x1 x2 x = max x1 (min x2 x);
+  roundto dx x = x if dx==0;
+  roundto dx x = round (x/dx) * dx;
+end when
+  oldvals = [ref x0 | x0,_ = config];
+end;
