@@ -30,6 +30,13 @@
 // variables accordingly, or disable MIDI input or output altogether if it's
 // not needed, by setting the corresponding variable to -1.
 
+// The following preset function is used to check whether any of the
+// customizable configuration variables below already has a preset value, in
+// which case that value is preserved. This lets you create custom versions of
+// ccrider without touching ccrider.pure (cf. ccrider128.pure for an example).
+
+preset val default = if ~symbolp val then val else default;
+
 using plugr, orddict, system;
 
 // Author and version information.
@@ -38,12 +45,12 @@ Version = "1.0";
 
 // MIDI input/output channels we process (use -1 to disable controller input
 // or output, respectively)
-let inch, outch = 0, 0;
+let inch, outch = preset inch 0, preset outch 0;
 
 // Number of VST parameters. By default, these also specify the number of MIDI
 // CCs (in the range 1..nparams) we process (see the definitions of inccs and
 // outccs below).
-let nparams = 8;
+let nparams = preset nparams 8;
 
 // MIDI input and corresponding output CCs. You can either edit these directly
 // for custom setups, or go with the default setup and just modify the nparams
@@ -51,13 +58,13 @@ let nparams = 8;
 // should be equal. Also note that in the current version of the plugin the CC
 // mapping is static, but the plugin code could easily be changed to make the
 // CC mapping adjustable at run-time through additional VST parameters.
-let inccs = 1..nparams;
-let outccs = 1..nparams;
+let inccs = preset inccs $ 1..nparams;
+let outccs = preset outccs $ 1..nparams;
 
 // Control names. In the generic version this is just "C" + the (input) CC
 // numbers, but you can adjust this as needed. Note that these are the
 // parameter names which will be exposed to the VST host.
-let ccnames = map (sprintf "C%d") inccs;
+let ccnames = preset ccnames $ map (sprintf "C%d") inccs;
 
 // Initial values, ranges and step size of the VST parameters. In the generic
 // version the initial values are all zero and the ranges are 0..127 with a
@@ -68,7 +75,7 @@ let ccnames = map (sprintf "C%d") inccs;
 // integer and floating point ranges and step sizes are possible, and step
 // sizes may also be negative; the only restriction is that step sizes should
 // never be zero.)
-let ccvals = [(0,0,127,1) | cc = inccs];
+let ccvals = preset ccvals [(0,0,127,1) | cc = inccs];
 
 // Usually there's no need to edit below this line. //////////////////////////
 
