@@ -8,13 +8,13 @@
 // useful, in particular, with MIDI hardware which in many hosts can't be
 // operated like VST instruments by themselves. Just place the plugin on the
 // track with output routed to the hardware device and you should be ready to
-// go. In addition, the plugin lets you remap CCs in the plugin's input on the
-// fly, which can also be useful in some situations.
+// go. In addition, the plugin optionally lets you remap CCs in the plugin's
+// input on the fly, which can also be useful in some situations.
 
 // Note: The code below is just an example for 8 MIDI CCs (1-8) on the first
 // MIDI channel, using generic VST parameter names C1-8. You can easily adjust
-// the module to your own needs, by editing the plugin manifest and controller
-// lists below as needed. E.g.: change the control names to something more
+// the module to your own needs, by editing the lists of controller names and
+// numbers below as needed. E.g.: change the control names to something more
 // meaningful, add as many controllers as you want, change the CC mapping,
 // etc. It's also possible to adjust the MIDI input and output channels by
 // changing the inch and outch variables accordingly, or disable MIDI input or
@@ -27,36 +27,45 @@ using plugr, orddict, system;
 Author = "Albert Graef <aggraef@gmail.com>";
 Version = "1.0";
 
-// Manifest
-let manifest =
-  [// the controls (add controls and adjust names, initial values, ranges
-   // and step sizes as needed; mapping to MIDI data is automatic)
-   ("C1", plugr::controlin, 0, 0, 127, 1),
-   ("C2", plugr::controlin, 0, 0, 127, 1),
-   ("C3", plugr::controlin, 0, 0, 127, 1),
-   ("C4", plugr::controlin, 0, 0, 127, 1),
-   ("C5", plugr::controlin, 0, 0, 127, 1),
-   ("C6", plugr::controlin, 0, 0, 127, 1),
-   ("C7", plugr::controlin, 0, 0, 127, 1),
-   ("C8", plugr::controlin, 0, 0, 127, 1),
-   // MIDI input and output
-   ("midiin", plugr::midiin), ("midiout", plugr::midiout)];
-
 // MIDI input/output channels we process (use -1 to disable controller input
 // or output, respectively)
 let inch, outch = 0, 0;
 
 // MIDI input and corresponding output CCs; adjust as needed. Note that the
-// number of input and output CCs must be equal and match the number of
-// control parameters in the manifest above.
-let inccs = [1, 2, 3, 4, 5, 6, 7, 8];
-let outccs = [1, 2, 3, 4, 5, 6, 7, 8];
+// number of input and output CCs must be equal. Also note that in the current
+// version of the plugin the CC mapping is static, but the plugin code could
+// easily be changed to make the CC mapping adjustable at run-time through
+// additional VST parameters.
+let inccs = 1..8;
+let outccs = 1..8;
 
-// Usually there's no need to edit below this line.
+// Control names. In the generic version this is just "C" + the (input) CC
+// numbers, but you can adjust this as needed. Note that these are the
+// parameter names which will be exposed to the VST host.
+let ccnames = map (sprintf "C%d") inccs;
+
+// Initial values, ranges and step size of the VST parameters. In the generic
+// version the initial values are all zero and the ranges are 0..127 with a
+// step size of 1, corresponding to the usual MIDI CC data range. But the
+// parameter ranges and step sizes are in fact independent of the MIDI CC
+// ranges, so that you can adjust them freely for each control as needed.
+// Mapping between the parameter ranges and MIDI CC data is automatic. (Both
+// integer and floating point ranges and step sizes are possible, and step
+// sizes may also be negative; the only restriction is that step sizes should
+// never be zero.)
+let ccvals = [(0,0,127,1) | cc = inccs];
+
+// Usually there's no need to edit below this line. //////////////////////////
+
+// The plugin manifest. This is constructed automatically from the data above.
+let manifest =
+  // the controls
+  [(name, plugr::controlin, vals) | name,vals = zip ccnames ccvals] +
+  // MIDI input and output
+  [("midiin", plugr::midiin), ("midiout", plugr::midiout)];
 
 // Manifest data used by the mapping function
-let nccs = #outccs;
-let config = [x0,x1,x2,dx | name,ty,fl,x0,x1,x2,dx = manifest];
+let nccs = #ccvals;
 
 // The plugin function.
 plugin self = plugin with
@@ -75,14 +84,14 @@ plugin self = plugin with
     vals = orddict [i=>v | t,{st,i,v} = ccin];
     null ccin || void
     [plugr::set_port self i (midi2val c (vals!j)) |
-     i,j,c = zip3 (0..nccs-1) inccs config; member vals j];
+     i,j,c = zip3 (0..nccs-1) inccs ccvals; member vals j];
     // Get the current control values.
     actvals = [plugr::get_port self i | i = 0..nccs-1];
     // Update the old control values as needed and generate corresponding CC
     // messages on out output channel.
     ccout = if plugr::active self && outch >= 0 then
 	      filter ok [update i x r c |
-			 i,x,r,c = zip (zip3 outccs actvals oldvals) config]
+			 i,x,r,c = zip (zip3 outccs actvals oldvals) ccvals]
 	    else [] with
 	      update i x r c = if x ~= get r then
 			       put r x $$ {0xb0+outch,i,val2midi c x}
@@ -106,5 +115,5 @@ plugin self = plugin with
   roundto dx x = x if dx==0;
   roundto dx x = round (x/dx) * dx;
 end when
-  oldvals = [ref x0 | x0,_ = config];
+  oldvals = [ref x0 | x0,_ = ccvals];
 end;
