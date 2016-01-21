@@ -1,25 +1,34 @@
-// CC-Rider: Simple CC mapping module.
+// CC-Rider: Simple CC mapping and automation module.
 
-// The idea is the same as with Kyle's "CC-Rider" plugin originally created
-// for use with Tracktion, which seems to have disappeared from the net. The
-// plugin lets you "ride" an arbitrary collection of MIDI controllers and
+// NOTE: The basic idea behind this plugin goes back to a guy named "Kyle" who
+// created a "CC-Rider" plugin for use with Tracktion. Kyle's original
+// (Windows) plugin seems to have disappeared from the net, so this little
+// Pure implementation of the plugin will hopefully provide you with a
+// suitable replacement.
+
+// The ccrider plugin is deceptively simple and incredibly useful at the same
+// time. It lets you "ride" an arbitrary collection of MIDI controllers and
 // expose them as VST parameters so that they become automatable in pretty
-// much any VST host. Other MIDI input is passed through unchanged. This is
-// useful, in particular, with MIDI hardware which in many hosts can't be
-// operated like VST instruments by themselves. Just place the plugin on the
-// track with output routed to the hardware device and you should be ready to
-// go. In addition, the plugin optionally lets you remap CCs in the plugin's
-// input on the fly, which can also be useful in some situations.
+// much any VST host; other MIDI input is passed through unchanged. This is
+// useful, in particular, with external MIDI gear. Placing ccrider right
+// before the DAW's MIDI output to the hardware device will expose the MIDI
+// CCs as standard VST parameters, so that they can be operated, assigned to
+// MIDI controls and automated just like any other VST controls. In addition,
+// the plugin can also be used to process incoming MIDI CCs directly, and pass
+// them on to its MIDI output, possibly remapping CCs on the fly (if you
+// change the definition of the outccs variable below accordingly). Of course,
+// to make all of this work, you'll need MIDI gear or software which actually
+// processes MIDI CCs.
 
-// Note: The code below is just an example for 8 MIDI CCs (1-8) on the first
-// MIDI channel, using generic VST parameter names C1-8. You can easily adjust
-// the module to your own needs, by editing the lists of controller names and
-// numbers below as needed. E.g.: change the control names to something more
-// meaningful, add as many controllers as you want, change the CC mapping,
-// etc. It's also possible to adjust the MIDI input and output channels by
-// changing the inch and outch variables accordingly, or disable MIDI input or
-// output altogether if it's not needed, by setting the corresponding variable
-// to -1.
+// The generic version of ccrider implemented below provides 8 MIDI CCs (1-8)
+// on the first MIDI channel, using generic VST parameter names C1-8. But you
+// can easily adjust the module to your own needs, by editing the lists of
+// controller names and numbers below as needed. E.g., you might want to
+// change the parameter names to something more meaningful, add as many
+// controls as you want, change the CC mapping, etc. It's also possible to
+// adjust the MIDI input and output channels by changing the inch and outch
+// variables accordingly, or disable MIDI input or output altogether if it's
+// not needed, by setting the corresponding variable to -1.
 
 using plugr, orddict, system;
 
@@ -31,13 +40,19 @@ Version = "1.0";
 // or output, respectively)
 let inch, outch = 0, 0;
 
-// MIDI input and corresponding output CCs; adjust as needed. Note that the
-// number of input and output CCs must be equal. Also note that in the current
-// version of the plugin the CC mapping is static, but the plugin code could
-// easily be changed to make the CC mapping adjustable at run-time through
-// additional VST parameters.
-let inccs = 1..8;
-let outccs = 1..8;
+// Number of VST parameters. By default, these also specify the number of MIDI
+// CCs (in the range 1..nparams) we process (see the definitions of inccs and
+// outccs below).
+let nparams = 8;
+
+// MIDI input and corresponding output CCs. You can either edit these directly
+// for custom setups, or go with the default setup and just modify the nparams
+// setting above. Note that in any case the number of input and output CCs
+// should be equal. Also note that in the current version of the plugin the CC
+// mapping is static, but the plugin code could easily be changed to make the
+// CC mapping adjustable at run-time through additional VST parameters.
+let inccs = 1..nparams;
+let outccs = 1..nparams;
 
 // Control names. In the generic version this is just "C" + the (input) CC
 // numbers, but you can adjust this as needed. Note that these are the
