@@ -645,7 +645,7 @@ mode == 1 {
 # understood by RST and Sphinx, so we do our own handling of those. We also
 # pass the directives to Pandoc, just in case. (Note that an extra newline is
 # inserted in front of the directives, to prevent Pandoc from lumping them all
-# together when run in --no-wrap mode.)
+# together when run in --wrap=none mode.)
 /^(\s*)\.\.\s+default-role::.*/ {
     if (match($0, /^\s*\.\.\s+default-role::\s*(.*)/, matches)) {
 	default_role = matches[1];

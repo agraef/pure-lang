@@ -118,7 +118,7 @@ fi
 # rst-pre.awk the opportunity to finish writing the index file with the RST
 # link targets before rst-post.awk is run.
 gawk -f <(sed -e '/^# rst-pre[.]awk$/,/^# end rst-pre[.]awk$/!d' $0) $outfile -v verbose="$verbose" -v raw="$raw" -v version="$version" -v date="$date" -v template="$template" -v title_block="$title_block" -v callouts="$callouts" -v auxfile="$auxfile" "$@" > "$tmpout" && \
-pandoc -f rst -t markdown --no-wrap "$tmpout" | gawk -f <(sed -e '/^# rst-post[.]awk$/,/^# end rst-post[.]awk$/!d' $0) -v verbose="$verbose" -v headers="$headers" -v max_items="$max_items" -v describe="$describe" -v no_links="$no_links" -v auxfile="$auxfile" - | pandoc -f markdown --columns 78 $options
+pandoc -f rst -t markdown --wrap=none "$tmpout" | gawk -f <(sed -e '/^# rst-post[.]awk$/,/^# end rst-post[.]awk$/!d' $0) -v verbose="$verbose" -v headers="$headers" -v max_items="$max_items" -v describe="$describe" -v no_links="$no_links" -v auxfile="$auxfile" - | pandoc -f markdown --columns 78 $options
 
 rc=$?
 rm -Rf "$tmpdir"
