@@ -11,8 +11,8 @@ declare copyright 	"(c)GRAME 2006";
 
 import("music.lib");
 
-B = checkbox("Capture");	// Capture sound while pressed
-I = int(B);			// convert button signal from float to integer
+B = button("Capture");	// Capture sound while pressed
+I = int(B);				// convert button signal from float to integer
 R = (I-I') <= 0;		// Reset capture when button is pressed
 D = (+(I):*(R))~_;		// Compute capture duration while button is pressed: 0..NNNN0..MMM
 

@@ -4,12 +4,13 @@ declare author 		"Grame";
 declare license 	"BSD";
 declare copyright 	"(c)GRAME 2006";
 
+
 //-----------------------------------------------
 // 				karplus-strong
 //		with 32 resonators in parallel
 //-----------------------------------------------
 
-import("music.lib");
+import("music.lib"); 
 
 
 // Excitator
