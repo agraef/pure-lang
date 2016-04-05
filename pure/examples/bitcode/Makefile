@@ -16,9 +16,14 @@
 # path (gcc -print-file-name=plugin).
 dragonegg=dragonegg
 
+# Note that dragonegg hasn't been ported to gcc versions >= 4.9 yet, so we
+# currently use clang for C compilation by default. If you're still running an
+# older version of gcc+dragonegg instead of clang then change the CC lines
+# below accordingly.
+
 #CC = llvm-gcc -emit-llvm
-CC = gcc -fplugin=dragonegg -flto
-#CC = clang -emit-llvm
+#CC = gcc -fplugin=dragonegg -flto
+CC = clang -emit-llvm
 #FC = llvm-gfortran -emit-llvm
 FC = gfortran -fplugin=dragonegg -flto
 FAUST = faust -double -lang llvm
