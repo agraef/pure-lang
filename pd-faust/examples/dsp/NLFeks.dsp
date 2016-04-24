@@ -25,15 +25,15 @@ gate = button("gate");                    // 0 or 1
 pickangle = 0.9 * hslider("pick_angle",0,0,0.9,0.1);
 
 // Normalized pick-position in [0,0.5]:
-beta = hslider("pick_position [midi: ctrl 0x81]", 0.13, 0.02, 0.5, 0.01);
-       // MIDI Control 0x81 often "highpass filter frequency"
+beta = hslider("pick_position [midi: ctrl 81]", 0.13, 0.02, 0.5, 0.01);
+       // MIDI Control 81 often "highpass filter frequency"
 
 // String decay time in seconds:
 t60 = hslider("decaytime_T60", 4, 0, 10, 0.01);  // -60db decay time (sec)
 
 // Normalized brightness in [0,1]:
-B = hslider("brightness [midi:ctrl 0x74]", 0.5, 0, 1, 0.01);// 0-1
-    // MIDI Controller 0x74 is often "brightness" 
+B = hslider("brightness [midi:ctrl 74]", 0.5, 0, 1, 0.01);// 0-1
+    // MIDI Controller 74 is often "brightness"
     // (or VCF lowpass cutoff freq)
 
 // Dynamic level specified as dB level desired at Nyquist limit:
