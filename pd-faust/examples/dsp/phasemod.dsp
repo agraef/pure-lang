@@ -9,7 +9,7 @@ import("music.lib");
 
 // master volume and pan
 vol = hslider("/v:[1]/vol [style:knob] [midi:ctrl 7]", 0.3, 0, 1, 0.01);
-pan = hslider("/v:[1]/pan [style:knob] [midi:ctrl 8]", 0.5, 0, 1, 0.01);
+pan = hslider("/v:[1]/pan [style:knob] [midi:ctrl 10]", 0.5, 0, 1, 0.01);
 
 // ADSR envelop
 attack	= hslider("/v:[3]/[1] attack", 0.01, 0, 1, 0.001);	// sec

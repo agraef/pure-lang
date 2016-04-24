@@ -9,7 +9,7 @@ import("music.lib");
 
 // master volume and pan
 vol = hslider("/v:[1]/vol [style:knob] [midi:ctrl 7]", 0.3, 0, 1, 0.01);
-pan = hslider("/v:[1]/pan [style:knob] [midi:ctrl 8]", 0.5, 0, 1, 0.01);
+pan = hslider("/v:[1]/pan [style:knob] [midi:ctrl 10]", 0.5, 0, 1, 0.01);
 
 // modulation (filter parameters)
 res	= hslider("/v:[2]/res [unit:dB] [style:knob] [midi:ctrl 1]", 3, 0, 20, 0.1);

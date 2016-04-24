@@ -11,7 +11,7 @@ import("music.lib");
 
 // master controls (volume and stereo panning)
 vol = hslider("/v:[1]/vol [style:knob] [midi:ctrl 7]", 0.3, 0, 1, 0.01);
-pan = hslider("/v:[1]/pan [style:knob] [midi:ctrl 8]", 0.5, 0, 1, 0.01);
+pan = hslider("/v:[1]/pan [style:knob] [midi:ctrl 10]", 0.5, 0, 1, 0.01);
 
 // relative amplitudes of the different partials
 amp(1)	= hslider("/v:[2]/amp1 [style:knob]", 1.0, 0, 3, 0.01);

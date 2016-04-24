@@ -9,7 +9,7 @@ import("music.lib");
 
 // master volume and pan
 vol	= hslider("/v:[1]/vol [style:knob] [midi:ctrl 7]", 0.3, 0, 1, 0.01);
-pan	= hslider("/v:[1]/pan [style:knob] [midi:ctrl 8]", 0.5, 0, 1, 0.01);
+pan	= hslider("/v:[1]/pan [style:knob] [midi:ctrl 10]", 0.5, 0, 1, 0.01);
 
 // modulation (excitator and resonator parameters)
 size	= hslider("/v:[2]/samples [style:knob]", 512, 1, 1024, 1); // #samples
