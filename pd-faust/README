@@ -13,7 +13,9 @@ improvements and some major additional features:
 
 * Faust dsps are implemented using two Pd objects, ``fsynth~`` and ``fdsp~``,
   which provide the necessary infrastructure to run Faust synthesizer and
-  effect units in Pd, respectively.
+  effect units in Pd, respectively. As of pd-faust 0.10, there's also a
+  ``faust~`` convenience object which unifies ``fsynth~`` and ``fdsp~`` and
+  provides reasonable defaults for most creation arguments.
 
 * In contrast to faust2pd, the Pd GUI of Faust units is generated dynamically,
   inside Pd. While pd-faust supports the same global GUI layout options as
@@ -122,12 +124,12 @@ Pd, you'll have to pick one or the other.)
 Usage
 =====
 
-Working with pd-faust basically involves adding a bunch of ``fsynth~`` and
-``fdsp~`` objects to a Pd patch along with the corresponding GUI subpatches,
-and wiring up the Faust units in some variation of a synth-effects chain which
-typically takes input from Pd's MIDI interface (``notein``, ``ctlin``, etc.)
-and outputs the signals produced by the Faust units to Pd's audio interface
-(``dac~``).
+Working with pd-faust basically involves adding a bunch of ``faust~`` (or the
+underlying ``fsynth~`` and ``fdsp~``) objects to a Pd patch along with the
+corresponding GUI subpatches, and wiring up the Faust units in some variation
+of a synth-effects chain which typically takes input from Pd's MIDI interface
+(``notein``, ``ctlin``, etc.) and outputs the signals produced by the Faust
+units to Pd's audio interface (``dac~``).
 
 For convenience, pd-faust also includes the ``midiseq`` and ``oscseq`` objects
 and a corresponding ``midiosc`` abstraction which can be used to handle MIDI
@@ -248,28 +250,82 @@ corresponding control changes in the Faust unit.
    object by right-clicking on the object and choosing ``Open`` from the
    context menu.
 
+The faust~ Object
+-----------------
+
+Starting with version 0.10, pd-faust includes the ``faust~`` external as a
+convenience which provides the functionality of both ``fdsp~`` and ``fsynth~``
+in a single object. This object also supplies reasonable defaults for most
+arguments. While the underlying ``fdsp~`` and ``fsynth~`` objects are still
+available for backward compatibility, the ``faust~`` object is often much
+easier to use and should be considered the preferred way to create Faust
+objects in a Pd patch now.
+
+The ``faust~`` object is invoked as follows::
+
+  fsynth~ dspname [instname] [channel] [numvoices]
+
+As indicated, all creation arguments except the first, ``dspname`` argument
+are optional. The meaning of these arguments is the same as with the ``fdsp~``
+and ``fsynth~`` objects. A ``numvoices`` value of zero can be used to indicate
+an effect unit. If the ``numvoices`` argument is omitted, the ``faust~``
+object checks the meta data of the Faust module to see whether the loaded
+Faust module is an effect or a synth and creates an instance of the
+corresponding underlying object (``fdsp~`` or ``fsynth~``).
+
+Note that if only a single number follows the ``dspname`` or ``instname``
+argument then it is always interpreted as a channel number; thus, if you want
+to denote the ``numvoices`` argument then you'll have to specify *both*
+``channel`` and ``numvoices``, in that order.
+
+By default, the instance name is assumed to be the same as the dsp name, the
+default MIDI channel is 0 (omni), and the number of voices of an instrument is
+determined using the value of the ``nvoices`` meta key declared in the dsp
+source. Thus, to turn a Faust dsp into a synth with 8 voices you can use a
+declaration like the following anywhere in the Faust program::
+
+  declare nvoices "8";
+
+The format of this declaration is the same as for the faust-lv2_ and
+faust-vst_ plugin architectures.
+
+.. _faust-lv2: https://bitbucket.org/agraef/faust-lv2
+.. _faust-vst: https://bitbucket.org/agraef/faust-vst
+
+If the ``nvoices`` declaration isn't present, the dsp is considered to be an
+effect unit by default. All default choices can be overridden by explicitly
+specifying the corresponding creation argument. In particular, you can specify
+the number of synth voices (overriding the ``nvoices`` key in the dsp source),
+or use a ``numvoices`` value of zero to force a synth to be loaded as an
+ordinary effect unit. Also, if there are multiple instances of the same dsp in
+a patch then you can explicitly specify different instance names using the
+``instname`` argument, and the default ``channel`` value of zero (denoting
+omni input) can be overridden as needed if the unit should only listen on a
+specific MIDI channel.
+
 GUI Subpatches
 --------------
 
-For each ``fdsp~`` and ``fsynth~`` object, the Pd patch should also contain an
-(initially empty) "one-off" graph-on-parent subpatch with the same name as the
-instance name of the Faust unit::
+For each ``faust~``, ``fdsp~`` and ``fsynth~`` object, the Pd patch may
+contain an (initially empty) "one-off" graph-on-parent subpatch with the same
+name as the instance name of the Faust unit::
 
   pd instname
 
 You shouldn't insert anything into this subpatch, its contents (a bunch of Pd
 GUI elements corresponding to the control elements of the Faust unit) will be
-generated automatically by pd-faust when the corresponding ``fdsp~`` or
-``fsynth~`` object is created, and whenever the unit gets reloaded at runtime.
+generated automatically by pd-faust when the corresponding ``faust~``,
+``fdsp~`` or ``fsynth~`` object is created, and whenever the unit gets
+reloaded at runtime.
 
 As with faust2pd, the default appearance of the GUI can be adjusted in various
 ways; see `Tweaking the GUI Layout`_ below for details.
 
-The relative order in which you insert an ``fdsp~`` or ``fsynth~`` object and
-its GUI subpatch into the main patch matters. Normally, the GUI subpatch
-should be inserted *first*, so that it will be updated automatically when its
-associated Faust unit is first created, and also when the main patch is saved
-and then reloaded later.
+The relative order in which you insert a ``faust~``, ``fdsp~`` or ``fsynth~``
+object and its GUI subpatch into the main patch matters. Normally, the GUI
+subpatch should be inserted *first*, so that it will be updated automatically
+when its associated Faust unit is first created, and also when the main patch
+is saved and then reloaded later.
 
 However, in some situations it may be preferable to insert the GUI subpatch
 *after* its associated Faust unit. If you do this, the GUI will *not* be
@@ -437,11 +493,11 @@ Here is a brief rundown of the available controls:
 
 Please note that ``midiosc`` is merely an example which should cover most
 common uses. If you don't need all the fancy functionality it provides, your
-patches may simply feed control messages directly into ``fdsp~`` and
-``fsynth~`` objects instead. On the other hand, if you need even more
+patches may simply feed control messages directly into ``faust~``, ``fdsp~``
+and ``fsynth~`` objects instead. On the other hand, if you need even more
 elaborate input/output interfacing than what ``midiosc`` provides, ``midiosc``
 can be used as a starting point for your own input/output abstractions driving
-the ``fdsp~`` and ``fsynth~`` objects in your patch.
+the ``faust~``, ``fdsp~`` and ``fsynth~`` objects in your patch.
 
 External MIDI and OSC Controllers
 ---------------------------------
@@ -455,11 +511,11 @@ interpreted according to the controller mappings defined in the Faust source
 control variables of the Faust dsp. For obvious reasons, this only works with
 *active* Faust controls.
 
-An ``fdsp~`` or ``fsynth~`` object can also be put in *write mode* by feeding
-a message of the form ``write 1`` into its control inlet (the ``write 0``
-message disables write mode again). For convenience, the ``write`` toggle in
-the ``midiosc`` abstraction allows you to do this simultaneously for all Faust
-units connected to ``midiosc``\ 's control outlet.
+A ``faust~``, ``fdsp~`` or ``fsynth~`` object can also be put in *write mode*
+by feeding a message of the form ``write 1`` into its control inlet (the
+``write 0`` message disables write mode again). For convenience, the ``write``
+toggle in the ``midiosc`` abstraction allows you to do this simultaneously for
+all Faust units connected to ``midiosc``\ 's control outlet.
 
 When an object is in write mode, it also *outputs* MIDI and OSC controller
 data in response to both automation data and the manual operation of the Pd
@@ -585,7 +641,7 @@ but are tailored for the remote control of Faust dsps in a Pd patch. In
 particular, they enable you to quickly reload the Faust dsps in Pd using a
 simple keyboard command (``C-C C-X`` by default) from Emacs. The
 faust-remote.el program was designed to be used with Juan Romero's Emacs
-`Faust mode`_; please see etc/pure-remote.el in the pd-faust source for usage
+`Faust mode`_; please see etc/faust-remote.el in the pd-faust source for usage
 instructions.
 
 .. _Faust mode:  https://github.com/rukano/emacs-faust-mode
