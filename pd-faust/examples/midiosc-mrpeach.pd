@@ -1,4 +1,4 @@
-#N canvas 446 266 695 582 10;
+#N canvas 292 77 695 582 10;
 #X obj 17 528 outlet;
 #X obj 477 388 r oscout;
 #X obj 592 426 print oscout;
@@ -23,7 +23,7 @@
 -1 -1;
 #X obj 160 62 tgl 15 0 \$0-loop \$0-loop loop 17 7 0 10 -262144 -1
 -1 0 1;
-#X obj 160 21 tgl 15 0 \$0-print-midi \$0-print-midi echo 17 7 0 10
+#X obj 160 21 tgl 15 0 \$0-print-midi \$0-print-midi midi 17 7 0 10
 -262144 -1 -1 0 1;
 #X obj 109 62 tgl 15 0 \$0-thru \$0-thru thru 17 7 0 10 -262144 -1
 -1 0 1;
@@ -59,7 +59,7 @@
 #X obj 7 41 bng 15 250 50 0 \$0-save \$0-save save 17 7 0 10 -262130
 -1 -1;
 #X obj 542 159 r \$0-save;
-#X obj 160 41 tgl 15 0 \$0-print-osc \$0-print-osc echo 17 7 0 10 -262144
+#X obj 160 41 tgl 15 0 \$0-print-osc \$0-print-osc osc 17 7 0 10 -262144
 -1 -1 0 1;
 #X obj 185 239 r \$0-print-midi;
 #X text 256 454 OSC input;
@@ -266,7 +266,6 @@
 #X restore 17 314 pd midi;
 #X obj 243 512 unpackOSC;
 #X obj 477 532 udpsend;
-#X msg 477 505 connect localhost 9002;
 #X obj 477 479 loadbang;
 #X obj 477 457 packOSC;
 #X obj 477 411 list prepend send;
@@ -275,7 +274,6 @@
 -1 -1;
 #X msg 589 205 send;
 #X obj 589 181 r \$0-send;
-#X obj 243 479 udpreceive 9001;
 #X text 350 479 <-- edit here;
 #X text 390 503 and here -->;
 #X obj 456 292 spigot;
@@ -287,8 +285,10 @@
 #X msg 370 330 bang;
 #X obj 321 307 s \$0-rec;
 #X text 171 410 midiosc version with OSC input/output support.;
+#X obj 243 479 udpreceive 8000;
+#X msg 477 505 connect 255.255.255.255 9000;
 #X connect 1 0 4 0;
-#X connect 1 0 78 0;
+#X connect 1 0 77 0;
 #X connect 3 0 4 1;
 #X connect 4 0 2 0;
 #X connect 6 0 14 0;
@@ -323,7 +323,7 @@
 #X connect 53 0 26 0;
 #X connect 54 0 55 0;
 #X connect 55 0 53 0;
-#X connect 56 0 90 0;
+#X connect 56 0 88 0;
 #X connect 58 0 56 0;
 #X connect 62 0 10 0;
 #X connect 62 0 72 0;
@@ -336,19 +336,19 @@
 #X connect 71 2 68 0;
 #X connect 72 0 0 0;
 #X connect 73 0 0 0;
-#X connect 75 0 74 0;
-#X connect 76 0 75 0;
-#X connect 77 0 74 0;
-#X connect 78 0 79 0;
-#X connect 79 0 77 0;
-#X connect 81 0 32 0;
-#X connect 82 0 81 0;
-#X connect 83 0 73 0;
-#X connect 86 0 91 0;
-#X connect 89 0 86 1;
-#X connect 90 0 93 0;
-#X connect 90 1 92 0;
-#X connect 90 2 86 0;
-#X connect 90 2 88 0;
-#X connect 92 0 88 0;
+#X connect 75 0 94 0;
+#X connect 76 0 74 0;
+#X connect 77 0 78 0;
+#X connect 78 0 76 0;
+#X connect 80 0 32 0;
+#X connect 81 0 80 0;
+#X connect 84 0 89 0;
+#X connect 87 0 84 1;
+#X connect 88 0 91 0;
+#X connect 88 1 90 0;
+#X connect 88 2 84 0;
+#X connect 88 2 86 0;
+#X connect 90 0 86 0;
+#X connect 93 0 73 0;
+#X connect 94 0 74 0;
 #X coords 0 -1 1 1 210 100 1 0 0;
