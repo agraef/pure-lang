@@ -431,7 +431,7 @@ Here is a brief rundown of the available controls:
 
 * The ``start``, ``stop`` and ``cont`` controls in the *first* row of control
   elements start, stop and continue MIDI and OSC playback, respectively. The
-  ``echo`` toggle in this row causes played MIDI events to be printed in the
+  ``midi`` toggle in this row causes played MIDI events to be printed in the
   Pd main window.
 
 * The gray "record" toggle in the upper right corner of the abstraction
@@ -469,7 +469,7 @@ Here is a brief rundown of the available controls:
 
 * Once some automation data has been recorded, it will be played back along
   with the MIDI file. You can then just listen to it, or go on to record more
-  automation data as needed. Use the ``echo`` toggle in the second row to
+  automation data as needed. Use the ``osc`` toggle in the second row to
   print the OSC messages as they are played back. If you save the automation
   data with the ``save`` button, it will be reloaded from its OSC file next
   time the patch is opened.
@@ -491,25 +491,27 @@ Here is a brief rundown of the available controls:
   to the current parameter values at the given point, for *all* parameters
   which have been recorded up to (and including) this point.
 
-Please note that ``midiosc`` is merely an example which should cover most
-common uses. If you don't need all the fancy functionality it provides, your
-patches may simply feed control messages directly into ``faust~``, ``fdsp~``
-and ``fsynth~`` objects instead. On the other hand, if you need even more
-elaborate input/output interfacing than what ``midiosc`` provides, ``midiosc``
-can be used as a starting point for your own input/output abstractions driving
-the ``faust~``, ``fdsp~`` and ``fsynth~`` objects in your patch.
+Please note that ``midiosc`` is merely a prototypical implementation which
+should cover most common uses. It can also be used as a starting point for
+your own abstractions if you need more elaborate input/output interfacing than
+what ``midiosc`` provides. On the other hand, for simple uses your patches may
+just feed control messages directly into ``faust~``, ``fdsp~`` and ``fsynth~``
+objects instead. If you just need plain MIDI input, another possibility is to
+use the ``midi-input`` abstraction contained in the author's pd-lv2plugin_
+package which encodes incoming MIDI messages in a format compatible with the
+``faust~``, ``fdsp~`` and ``fsynth~`` objects.
+
+.. _pd-lv2plugin: https://bitbucket.org/agraef/pd-lv2plugin
 
 External MIDI and OSC Controllers
 ---------------------------------
 
 The ``fsynth~`` object has built-in (and hard-wired) support for MIDI notes,
-pitch bend and MIDI controller 123 (all notes off).
-
-Other controller data received from external MIDI and OSC devices is
-interpreted according to the controller mappings defined in the Faust source
-(this is explained below), by updating the corresponding GUI elements and the
-control variables of the Faust dsp. For obvious reasons, this only works with
-*active* Faust controls.
+pitch bend and MIDI controller 123 (all notes off). Other controller data
+received from external MIDI and OSC devices is interpreted according to the
+controller mappings defined in the Faust source (this is explained below), by
+updating the corresponding GUI elements and the control variables of the Faust
+dsp. For obvious reasons, this only works with *active* Faust controls.
 
 A ``faust~``, ``fdsp~`` or ``fsynth~`` object can also be put in *write mode*
 by feeding a message of the form ``write 1`` into its control inlet (the
@@ -551,22 +553,26 @@ messages for the OSC ``/pan`` address::
    glob-style OSC patterns are not supported as values for the ``osc``
    attribute.
 
-Also note that while the necessary infrastructure to support OSC input and
-output is already provided by pd-faust, the OSC input and output facilities
-themselves which are needed to make this actually work are not implemented in
-the default version of the ``midiosc`` abstraction distributed with pd-faust.
-That's because Pd doesn't provide any built-in objects for OSC input and
-output, although a few different solutions exist and are included in
-Hans-Christoph Steiner's Pd-extended_ distribution, such as Martin Peach's
-`OSC externals`_.
+To actually connect with external OSC devices, you will also need some OSC
+input and output facilities. Neither vanilla Pd nor pd-faust includes any of
+these, so you will have to rely on 3rd party externals for that. We recommend
+Martin Peach's `OSC externals`_ which are included in Hans-Christoph Steiner's
+Pd-extended_ distribution. pd-faust includes a version of the ``midiosc``
+abstraction named ``midiosc-mrpeach`` which can be used as a drop-in
+replacement for ``midiosc`` and implements OSC input and output using Martin
+Peach's objects. You most likely have to edit this abstraction to make it work
+for your local network setup; at least you'll probably have to change the
+network addresses in the abstraction so that it works with the OSC device or
+application that you use.
 
 .. _OSC externals: http://puredata.info/Members/martinrp/OSCobjects
 
-The distribution includes a version of the ``midiosc`` abstraction which
-implements OSC input and output using Martin Peach's objects in the
-midiosc-mrpeach.pd file. You most likely have to edit this abstraction for
-your purposes; at least you'll have to change the network addresses so that it
-works with the OSC device or application that you use.
+Another useful abstraction is the ``mdnsbrowser`` object available in the
+author's separate pd-mdnsbrowser_ package. It lets you discover and publish
+Zeroconf (Avahi/Bonjour) services in the local network, so that your Pd
+patches can establish OSC connections in an automatic fashion.
+
+.. _pd-mdnsbrowser: https://bitbucket.org/agraef/pd-mdnsbrowser
 
 Tweaking the GUI Layout
 -----------------------
