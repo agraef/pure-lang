@@ -51,8 +51,8 @@ fsynth_dsp name instance chan::int nvoices::int =
     put active 1;
     put writing 0; put recording 0;
     // Give some feedback that we're up and running again.
-    pd_post $ sprintf "%s (%s): %d inputs, %d outputs *** reloaded ***"
-    (instance,name,k,l);
+    pd_post $ sprintf "%s (%s): %d inputs, %d outputs, %d voices *** reloaded ***"
+    (instance,name,k,l,nvoices);
   end);
 
   fsynth (reload _) = fsynth reload; // reload receiver
@@ -273,7 +273,8 @@ end when
   // Writing and recording flags.
   writing = ref 0; recording = ref 0;
   // Give some feedback that we're up and running.
-  pd_post $ sprintf "%s (%s): %d inputs, %d outputs" (instance,name,k,l);
+  pd_post $ sprintf "%s (%s): %d inputs, %d outputs, %d voices"
+  (instance,name,k,l,nvoices);
 end with
 
   // Convert controller symbols to the corresponding OSC pathname.
