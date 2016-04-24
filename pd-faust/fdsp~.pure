@@ -55,12 +55,18 @@ fdsp_dsp name instance chan::int = catch error (k,l,fdsp with
 
   // The dsp loop.
   fdsp in::matrix = out,cout when
-    faust_compute (get dsp) in out2;
+    // Make sure to use the out2 submatrix consisting of the first n columns
+    // here so that faust_compute gets a matrix with the proper dimensions.
+    // (Otherwise we'd get incorrect results in the corner case of an empty
+    // input matrix.)
+    faust_compute (get dsp) in out2sub;
     // Do smooth cross fades depending on the status of the 'active' control.
     sig = if k==l /* pass through */ then in else ();
     // Fill the right half of the out2 buffer with sig. Note that this will
-    // only be executed if sig equals in; otherwise the alternate signal is
-    // just silence anyway.
+    // only have an effect if sig equals in (pass through), in which case we
+    // do a cross-fade between the incoming (dry) and the generated (wet)
+    // signal; otherwise the "dry" signal is just silence and we do a simple
+    // fade instead.
     fill sig out2;
     // Do crossfades for each channel. This corresponds to the following Pure
     // code, but is done in C to avoid costly allocations in the dsp loop:
@@ -215,6 +221,7 @@ end when
   n = blocksize;
   out = dmatrix (l,n);
   out2 = dmatrix (l,2*n);
+  out2sub = submat out2 (0,0) (l,n);
   // Helper dsp to do smooth cross fades when the 'active' control changes.
   pointerp xfade || throw "fdsp~: error loading 'xfade'";
   xfade = {faust_clone xfade | i = 1..l};
