@@ -5,6 +5,7 @@ declare license "STK-4.3";
 declare copyright "Julius Smith";
 declare reference "http://ccrma.stanford.edu/~jos/pasp/vegf.html";
 // -> Virtual\_Electric\_Guitars\_Faust.html";
+declare nvoices "8";
 
 import("music.lib");    // Define SR, delay
 import("instrument.lib");

@@ -1,9 +1,10 @@
 declare name "Bass";
 declare description "Nonlinear WaveGuide Acoustic Bass";
-declare author "Romain Michon";
-declare copyright "Romain Michon (rmichon@ccrma.stanford.edu)";
+declare author "Romain Michon (rmichon@ccrma.stanford.edu)";
+declare copyright "Romain Michon";
 declare version "1.0";
-declare licence "STK-4.3"; // Synthesis Tool Kit 4.3 (MIT style license);
+declare license "STK-4.3"; // Synthesis Tool Kit 4.3 (MIT style license);
+declare nvoices "8";
 
 import("instrument.lib");
 import("music.lib");

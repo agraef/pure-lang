@@ -2,7 +2,8 @@
 /* Stereo amplifier stage with bass, treble, gain and balance controls and a
    dB meter. */
 
-declare name "amp -- stereo amplifier stage";
+declare name "amp";
+declare description "stereo amplifier stage";
 declare author "Albert Graef";
 declare version "1.0";
 
@@ -15,19 +16,24 @@ import("music.lib");
 bass_freq	= 300;
 treble_freq	= 1200;
 
+/* Smoothing (lowpass) filter from filter.lib. We use this for the gain and
+   balance controls to avoid zipper noise. */
+
+smooth = library("filter.lib").smooth(0.99);
+
 /* Bass and treble gain controls in dB. The range of +/-20 corresponds to a
    boost/cut factor of 10. */
 
-bass_gain	= nentry("bass", 0, -20, 20, 0.1);
-treble_gain	= nentry("treble", 0, -20, 20, 0.1);
+bass_gain	= nentry("[1] bass [style:knob] [unit:dB]", 0, -20, 20, 0.1);
+treble_gain	= nentry("[2] treble [style:knob] [unit:dB]", 0, -20, 20, 0.1);
 
 /* Gain and balance controls. */
 
-gain		= db2linear(
-		  nentry("gain [midi:ctrl 7] [osc:/gain]",
-		  	  0, -96, 10, 0.1));
-bal		= hslider("balance [midi:ctrl 8] [osc:/balance]",
-		          0, -1, 1, 0.001);
+gain		= smooth(db2linear(
+		  nentry("[3] gain [midi:ctrl 7] [style:knob] [unit:dB]",
+		  	  0, -96, 10, 0.1)));
+bal		= smooth(hslider("balance [midi:ctrl 8]",
+		          0, -1, 1, 0.001));
 
 /* Balance a stereo signal by attenuating the left channel if balance is on
    the right and vice versa. I found that a linear control works best here. */
@@ -100,12 +106,11 @@ sqr(x)		= x*x;
 
 /* The dB meters for left and right channel. These are passive controls. */
 
-left_meter(x)	= attach(x, env(x) : hbargraph("left", -96, 10));
-right_meter(x)	= attach(x, env(x) : hbargraph("right", -96, 10));
+left_meter(x)	= attach(x, env(x) : hbargraph("left [unit:dB]", -96, 10));
+right_meter(x)	= attach(x, env(x) : hbargraph("right [unit:dB]", -96, 10));
 
 /* The main program. */
 
-process		= hgroup("0-amp", hgroup("1-tone", tone, tone) :
-				  hgroup("2-gain", (_*gain, _*gain)))
-		: vgroup("3-balance", balance)
-		: vgroup("4-meter", (left_meter, right_meter));
+process		= hgroup("[1]", (tone, tone) : (_*gain, _*gain))
+		: vgroup("[2]", balance)
+		: vgroup("[3]", (left_meter, right_meter));

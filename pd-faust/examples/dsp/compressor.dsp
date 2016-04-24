@@ -1,7 +1,8 @@
 
 /* Compressor unit. */
 
-declare name "compressor -- compressor/limiter unit";
+declare name "compressor";
+declare description "compressor/limiter unit";
 declare author "Albert Graef";
 declare version "1.0";
 
@@ -10,22 +11,22 @@ import("music.lib");
 /* Controls. */
 
 // partition the controls into these three groups
-comp_group(x)	= hgroup("1-compression", x);
-env_group(x)	= vgroup("2-envelop", x);
-gain_group(x)	= vgroup("3-gain", x);
+comp_group(x)	= hgroup("[1]", x); // compression
+env_group(x)	= vgroup("[2]", x); // envelop
+gain_group(x)	= vgroup("[3]", x); // gain
 
 // compressor controls: ratio, threshold and knee size
-ratio		= comp_group(nentry("ratio", 2, 1, 20, 0.1));
-threshold	= comp_group(nentry("threshold", -20, -96, 10, 0.1));
-knee		= comp_group(nentry("knee", 3, 0, 20, 0.1));
+ratio		= comp_group(nentry("[1]ratio[style:knob]", 2, 1, 20, 0.1));
+threshold	= comp_group(nentry("[2]threshold[style:knob]", -20, -96, 10, 0.1));
+knee		= comp_group(nentry("[3]knee[style:knob]", 3, 0, 20, 0.1));
 
 // attack and release controls; clamped to a minimum of 1 sample
 attack		= env_group(hslider("attack", 0.002, 0, 1, 0.001)) : max(1/SR);
 release		= env_group(hslider("release", 0.5, 0, 10, 0.01)) : max(1/SR);
 
 // gain controls: make-up gain, compression gain meter
-makeup_gain	= gain_group(hslider("makeup gain", 0, -96, 96, 0.1));
-gain(x)		= attach(x, x : gain_group(hbargraph("gain", -96, 0)));
+makeup_gain	= gain_group(hslider("[1]makeup gain[unit:dB]", 0, -96, 96, 0.1));
+gain(x)		= attach(x, x : gain_group(hbargraph("[2]gain[unit:dB]", -96, 0)));
 
 /* Envelop detector. This is basically the same as in amp.dsp. */
 

@@ -1,25 +1,25 @@
 
-declare name "karplus -- Karplus-Strong string synth";
+declare name "karplus";
+declare description "Karplus-Strong string synth";
 declare author "Yann Orlarey";
 declare version "1.0";
+declare nvoices "8";
 
 import("music.lib");
 
-// control variables
-
 // master volume and pan
-vol	= hslider("vol", -10, -96, 96, 0.1);	// dB
-pan	= hslider("pan", 0, -1, 1, 0.01);	// %
+vol	= hslider("/v:[1]/vol [style:knob] [midi:ctrl 7]", 0.3, 0, 1, 0.01);
+pan	= hslider("/v:[1]/pan [style:knob] [midi:ctrl 8]", 0.5, 0, 1, 0.01);
 
-// excitator and resonator parameters
-size	= hslider("samples", 512, 1, 1024, 1);	// #samples
-dtime	= hslider("decay time", 4, 0, 10, 0.01);// -60db decay time
+// modulation (excitator and resonator parameters)
+size	= hslider("/v:[2]/samples [style:knob]", 512, 1, 1024, 1); // #samples
+dtime	= hslider("/v:[2]/decay time [style:knob]", 4, 0, 10, 0.01); // -60db decay time
+bend	= hslider("/v:[3]/pitch bend", 0, -2, 2, 0.01); // pitch bend/semitones
 
 // voice parameters
-freq	= nentry("freq", 440, 20, 20000, 1);	// Hz
-gain	= nentry("gain", 1, 0, 10, 0.01);	// %
-gate	= button("gate");			// 0/1
-bend	= hslider("pitch bend", 0, -2, 2, 0.01);// semitones
+freq	= nentry("/freq", 440, 20, 20000, 1);	// Hz
+gain	= nentry("/gain", 1, 0, 10, 0.01);	// %
+gate	= button("/gate");			// 0/1
 
 /* The excitator: */
 
@@ -43,7 +43,9 @@ dcblocker(x)	= (x-x') : (+ ~ *(0.995));
 
 /* Karplus-Strong string synthesizer: */
 
-process	= vgroup("1-excitator", noise*gain : *(gate : excitator))
-	: vgroup("2-resonator", resonator(SR/(freq*pow(2,bend/12))))
+smooth(c)	= *(1-c) : +~*(c);
+
+process	= noise*gain : *(gate : excitator)
+	: resonator(SR/(freq*pow(2,bend/12)))
 	: dcblocker
-        : vgroup("3-master", *(db2linear(vol)) : panner((pan+1)/2));
+	: (*(smooth(0.99, vol)) : panner(smooth(0.99, pan)));

@@ -1,8 +1,9 @@
 declare name "NLFfm";
 declare description "FM synthesizer implemented with a nonlinear passive allpass filter";
-declare author "Romain Michon";
-declare copyright "Romain Michon (rmichon@ccrma.stanford.edu)";
+declare author "Romain Michon (rmichon@ccrma.stanford.edu)";
+declare copyright "Romain Michon";
 declare version "1.0";
+declare nvoices "8";
 
 import("instrument.lib");
 import("music.lib");

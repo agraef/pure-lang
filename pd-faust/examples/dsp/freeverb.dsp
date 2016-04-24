@@ -5,7 +5,8 @@
 //
 //======================================================
 
-declare name "freeverb -- a Schroeder reverb";
+declare name "freeverb";
+declare description "a Schroeder reverb";
 declare author "Yann Orlarey";
 declare version "1.0";
 
@@ -105,6 +106,6 @@ fxctrl(g,w,Fx) =  _,_ <: (*(g),*(g) : Fx : *(w),*(w)), *(1-w), *(1-w) +> _,_;
 // Freeverb 
 //---------
 
-freeverb = vgroup("freeverb", fxctrl(fixedgain, wetSlider, stereoReverb(combfeed, allpassfeed, dampSlider, stereospread)));
+freeverb = fxctrl(fixedgain, wetSlider, stereoReverb(combfeed, allpassfeed, dampSlider, stereospread));
 
 process = freeverb;

@@ -1,16 +1,17 @@
 
 /* Stereo delay with feedback. */
 
-declare name "echo -- stereo delay effect";
+declare name "echo";
+declare description "stereo delay effect";
 declare author "Albert Graef";
 declare version "1.0";
 
 import("music.lib");
 
-level		= hslider("level", 1, 0, 1, 0.01);
-dtime		= hslider("delay", 0.040, 0, 5, 0.001);
-feedback	= hslider("feedback", 0, 0, 1, 0.001);
-stereo		= hslider("stereo", 1, 0, 1, 0.001);
+level		= hslider("v:[1]/[1]level[style:knob]", 1, 0, 1, 0.01);
+dtime		= hslider("v:[1]/[2]delay[style:knob]", 0.040, 0, 5, 0.001);
+feedback	= hslider("v:[2]/[1]feedback[style:knob]", 0, 0, 1, 0.001);
+stereo		= hslider("v:[2]/[2]stereo[style:knob]", 1, 0, 1, 0.001);
 
 /* The stereo parameter controls the amount of stereo spread. For stereo=0 you
    get a plain delay, without crosstalk between the channels. For stereo=1 you
@@ -36,4 +37,4 @@ with {
 	d(x)	= x*(1-stereo);
 };
 
-process		= vgroup("echo", echo(dtime,level,feedback,stereo));
+process		= echo(dtime,level,feedback,stereo);

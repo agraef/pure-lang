@@ -2,53 +2,55 @@
 /* A simple "chimes" patch, using a bank of resonz filters (cf. Steiglitz, DSP
    Primer, pp. 89f.). */
 
-declare name "chimes -- chimes synth using a bank of resonz filters";
+declare name "chimes";
+declare description "chimes synth using a bank of resonz filters";
 declare author "Albert Graef";
 declare version "2.0";
+declare nvoices "8";
 
 import("music.lib");
 
 /* Control variables: */
 
 // master volume, pan
-vol		= hslider("vol", 0.5, 0, 10, 0.01);		// %
-pan		= hslider("pan", 0.5, 0, 1, 0.01);		// %
+vol	= hslider("/v:[0]/vol [style:knob]", 0.5, 0, 1, 0.01);	// %
+pan	= hslider("/v:[0]/pan [style:knob]", 0.5, 0, 1, 0.01);		// %
 
 // excitator and resonator parameters
 
 // excitator decay time [sec]
-xdecay		= nentry("decay", 0.01, 0, 1, 0.001);
+xdecay	= hslider("decay", 0.01, 0, 1, 0.001);
 
 // resonator #0
-hrm0		= nentry("harmonic0", 1, 0, 50, 0.001);		// harmonic
-amp0		= nentry("amplitude0", 0.167, 0, 1, 0.001);	// amplitude
-decay0		= nentry("decay0", 3.693, 0, 10, 0.001);	// decay time
-rq0		= nentry("rq0", 0.002, 0, 1, 0.0001);		// filter 1/Q
+hrm0	= nentry("harm0 [style:knob]", 1, 0, 50, 0.001);	// harmonic
+amp0	= nentry("amp0 [style:knob]", 0.167, 0, 1, 0.001);	// amplitude
+decay0	= nentry("decay0 [style:knob]", 3.693, 0, 10, 0.001);	// decay time
+rq0	= nentry("rq0 [style:knob]", 0.002, 0, 1, 0.0001);	// filter 1/Q
 // resonator #1
-hrm1		= nentry("harmonic1", 3.007, 0, 50, 0.001);	// harmonic
-amp1		= nentry("amplitude1", 0.083, 0, 1, 0.001);	// amplitude
-decay1		= nentry("decay1", 2.248, 0, 10, 0.001);	// decay time
-rq1		= nentry("rq1", 0.002, 0, 1, 0.0001);		// filter 1/Q
+hrm1	= nentry("harm1 [style:knob]", 3.007, 0, 50, 0.001);	// harmonic
+amp1	= nentry("amp1 [style:knob]", 0.083, 0, 1, 0.001);	// amplitude
+decay1	= nentry("decay1 [style:knob]", 2.248, 0, 10, 0.001);	// decay time
+rq1	= nentry("rq1 [style:knob]", 0.002, 0, 1, 0.0001);	// filter 1/Q
 // resonator #2
-hrm2		= nentry("harmonic2", 4.968, 0, 50, 0.001);	// harmonic
-amp2		= nentry("amplitude2", 0.087, 0, 1, 0.001);	// amplitude
-decay2		= nentry("decay2", 2.828, 0, 10, 0.001);	// decay time
-rq2		= nentry("rq2", 0.002, 0, 1, 0.0001);		// filter 1/Q
+hrm2	= nentry("harm2 [style:knob]", 4.968, 0, 50, 0.001);	// harmonic
+amp2	= nentry("amp2 [style:knob]", 0.087, 0, 1, 0.001);	// amplitude
+decay2	= nentry("decay2 [style:knob]", 2.828, 0, 10, 0.001);	// decay time
+rq2	= nentry("rq2 [style:knob]", 0.002, 0, 1, 0.0001);	// filter 1/Q
 // resonator #3
-hrm3		= nentry("harmonic3", 8.994, 0, 50, 0.001);	// harmonic
-amp3		= nentry("amplitude3", 0.053, 0, 1, 0.001);	// amplitude
-decay3		= nentry("decay3", 3.364, 0, 10, 0.001);	// decay time
-rq3		= nentry("rq3", 0.002, 0, 1, 0.0001);		// filter 1/Q
+hrm3	= nentry("harm3 [style:knob]", 8.994, 0, 50, 0.001);	// harmonic
+amp3	= nentry("amp3 [style:knob]", 0.053, 0, 1, 0.001);	// amplitude
+decay3	= nentry("decay3 [style:knob]", 3.364, 0, 10, 0.001);	// decay time
+rq3	= nentry("rq3 [style:knob]", 0.002, 0, 1, 0.0001);	// filter 1/Q
 // resonator #4
-hrm4		= nentry("harmonic4", 12.006, 0, 50, 0.001);	// harmonic
-amp4		= nentry("amplitude4", 0.053, 0, 1, 0.001);	// amplitude
-decay4		= nentry("decay4", 2.488, 0, 10, 0.001);	// decay time
-rq4		= nentry("rq4", 0.002, 0, 1, 0.0001);		// filter 1/Q
+hrm4	= nentry("harm4 [style:knob]", 12.006, 0, 50, 0.001);	// harmonic
+amp4	= nentry("amp4 [style:knob]", 0.053, 0, 1, 0.001);	// amplitude
+decay4	= nentry("decay4 [style:knob]", 2.488, 0, 10, 0.001);	// decay time
+rq4	= nentry("rq4 [style:knob]", 0.002, 0, 1, 0.0001);	// filter 1/Q
 
 // frequency, gain, gate
-freq		= nentry("freq", 440, 20, 20000, 1);		// Hz
-gain		= nentry("gain", 1, 0, 10, 0.01);		// %
-gate		= button("gate");				// 0/1
+freq	= nentry("/freq", 440, 20, 20000, 1);	// Hz
+gain	= nentry("/gain", 1, 0, 10, 0.01);	// %
+gate	= button("/gate");			// 0/1
 
 /* Definition of the resonz filter. This is basically a biquad filter with
    pairs of poles near the desired resonance frequency and zeroes at -1 and
@@ -66,12 +68,12 @@ with {
 
 /* The excitator, a short burst of noise. */
 
-excitator(t)	= t : hgroup("1-excitator", adsr(0, xdecay, 0, 0) : *(noise));
+excitator(t)	= t : hgroup("[2]excitator", adsr(0, xdecay, 0, 0) : *(noise));
 
 /* Bank of 5 resonators. */
 
 resonator(f,t,i,hrm,amp,decay,rq)
-		= (f,t,_) : hgroup("2-resonator-%i", g)
+		= (f,t,_) : vgroup("[3]resonators", hgroup("[%i]", g))
 with {
 	g(f,t)	= resonz(R,h)*(amp*b*env)
 	with {
@@ -91,5 +93,7 @@ resonators(f,t)	= resonator(f,t,0,hrm0,amp0,decay0,rq0)
 
 /* The synth. */
 
+smooth(c)	= *(1-c) : +~*(c);
+
 process		= excitator(gate)*gain <: resonators(freq, gate)
-		: vgroup("3-master", *(vol) : panner(pan));
+		: (*(vol:smooth(0.99)) : panner(pan:smooth(0.99)));

@@ -3,8 +3,9 @@ declare description "Nonlinear WaveGuide Commuted Harpsichord";
 declare author "Romain Michon (rmichon@ccrma.stanford.edu)";
 declare copyright "Romain Michon";
 declare version "1.0";
-declare licence "STK-4.3"; // Synthesis Tool Kit 4.3 (MIT style license);
+declare license "STK-4.3"; // Synthesis Tool Kit 4.3 (MIT style license);
 declare description "A commuted WaveGuide Harpsichord."; 
+declare nvoices "8";
 
 import("music.lib");
 import("instrument.lib");

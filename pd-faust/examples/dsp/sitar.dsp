@@ -3,8 +3,9 @@ declare description "WaveGuide Sitar";
 declare author "Romain Michon (rmichon@ccrma.stanford.edu)";
 declare copyright "Romain Michon";
 declare version "1.0";
-declare licence "STK-4.3"; // Synthesis Tool Kit 4.3 (MIT style license);
+declare license "STK-4.3"; // Synthesis Tool Kit 4.3 (MIT style license);
 declare description "This instrument implements a sitar plucked string physical model based on the Karplus-Strong algorithm using a randomly modulated delay line.";
+declare nvoices "8";
 
 import("music.lib");
 import("instrument.lib");

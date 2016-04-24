@@ -5,6 +5,7 @@ declare copyright "Romain Michon";
 declare version "1.0";
 declare licence "STK-4.3"; // Synthesis Tool Kit 4.3 (MIT style license);
 declare description "This object implements a helmholtz resonator (biquad filter) with a polynomial jet excitation (a la Cook).";
+declare nvoices "8";
 
 import("math.lib");
 import("music.lib");
