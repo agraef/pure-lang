@@ -15,7 +15,7 @@ static const char *loader_name = "pd-faust2";
 #else
 static const char *loader_name = "pd-faust";
 #endif
-static const char *classes[] = {"fdsp~", "fsynth~", "midiseq", "oscseq", NULL};
+static const char *classes[] = {"faust~", "fdsp~", "fsynth~", "midiseq", "oscseq", NULL};
 
 #ifndef VERSION
 #define VERSION "0.0"
@@ -51,7 +51,7 @@ extern void pdfaust_setup(void)
     if (interp) {
       bool ok = true;
       const char **c;
-      post("%s %s (c) 2011-2014 Albert Graef <aggraef@gmail.com>",
+      post("%s %s (c) 2011-2016 Albert Graef <aggraef@gmail.com>",
 	   loader_name, VERSION);
       for (c = classes; *c; c++) {
 	if (!pure_register_class(*c, interp, HELP)) {

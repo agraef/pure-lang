@@ -45,7 +45,7 @@ pdfaust2$(PDDLL): pdfaust2.o pdloader2.o util.o
 	$(CC) $(PIC) $(shared) $^ $(extralibs) -o pdfaust2$(DLL) $(PURE_LIBS)
 	test "$(DLL)" = "$(PDDLL)" || mv pdfaust2$(DLL) pdfaust2$(PDDLL)
 
-pdfaustsrc = $(addprefix ../, fdsp~.pure fsynth~.pure midiseq.pure oscseq.pure)
+pdfaustsrc = $(addprefix ../, faust~.pure midiseq.pure oscseq.pure)
 pdfaustdeps = $(wildcard ../*.pure)
 
 pdfaust.o: $(pdfaustdeps)

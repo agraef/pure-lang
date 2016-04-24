@@ -1,0 +1,59 @@
+
+using pdfaust;
+using namespace pdfaust;
+
+using "fdsp~.pure", "fsynth~.pure";
+
+// Invoke as: faust~ dsp-name [instance-name] [channel] [nvoices]
+
+// This is a more convenient front-end to fdsp~/fsynth~ which makes most of
+// the creation arguments optional and checks automatically whether we're
+// loading an effect or a synth. By default, the instance name is assumed to
+// be the same as the dsp name, the default MIDI channel is 0 (omni), and the
+// number of voices is determined using the value of the 'nvoices' meta key
+// declared in the dsp source. All arguments but the first (dsp-name) are
+// optional and can be used to override the default choice (use a zero nvoices
+// value to turn a synth into an ordinary effect). Note that if the nvoices
+// value is specified then it *must* be preceded by a channel value.
+
+#! --required faust_dsp
+faust_dsp = varargs load_plugin with
+  load_plugin args = catch error (plugin when
+    name,instance,chan,nvoices = case args of
+      [name] = name,name,0,"none";
+      [name,chan::int] = name,name,chan,"none";
+      [name,instance] = name,instance,0,"none"
+	if symbolp instance || stringp instance;
+      [name,instance,chan::int] = name,instance,chan,"none"
+	if symbolp instance || stringp instance;
+      [name,chan::int,nvoices::int] = name,name,chan,nvoices;
+      [name,instance,chan::int,nvoices::int] = name,instance,chan,nvoices
+	if symbolp instance || stringp instance;
+      _ = throw "faust~: bad arguments (must be: dsp-name [instance-name] [channel])"
+    end;
+    name = if symbolp name then str name else name;
+    instance = if symbolp instance then str instance else instance;
+    stringp name && stringp instance ||
+    throw "faust~: bad name or instance parameter (must be symbol or string)";
+    chan>=0 || throw "faust~: bad MIDI channel parameter (must be >= 0)";
+    nvoices = if intp nvoices then nvoices else
+    (nvoices when
+       // try to load the dsp so that we can determine its meta data
+       dsp = load_dsp name 44100;
+       meta = record $ faust_meta dsp;
+       // check for the nvoices key which indicates a synth
+       nvoices = if member meta "nvoices" then val (meta!"nvoices") else 0;
+       intp nvoices && nvoices>= 0 ||
+       throw "faust~: bad number of voices (must be integer)";
+     end);
+    // if nvoices>0 then it is a synth (instantiated with fsynth~), otherwise
+    // an effect (instantiated with fdsp~)
+    plugin = if nvoices>0 then fsynth_dsp name instance chan nvoices
+	     else fdsp_dsp name instance chan;
+  end);
+  load_dsp name::string samplerate::int = dsp when
+    fname = libsearch synthdir name;
+    dsp = faust_init fname samplerate;
+    pointerp dsp || throw $ sprintf "faust~: error loading '%s'" name;
+  end;
+end;
