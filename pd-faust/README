@@ -549,9 +549,10 @@ messages for the OSC ``/pan`` address::
   pan = hslider("pan [osc:/pan]", 0, -1, 1, 0.01);
 
 .. note:: In contrast to some other architectures included in the Faust
-   distribution, pd-faust only allows literal OSC addresses here. That is,
-   glob-style OSC patterns are not supported as values for the ``osc``
-   attribute.
+   distribution, at present pd-faust only allows literal OSC addresses (no
+   glob-style patterns), and there is no way to specify an OSC value range (so
+   the value ranges of the controls of an external OSC device must match the
+   ranges of the corresponding controls in the Faust program).
 
 To actually connect with external OSC devices, you will also need some OSC
 input and output facilities. Neither vanilla Pd nor pd-faust includes any of
@@ -650,7 +651,7 @@ faust-remote.el program was designed to be used with Juan Romero's Emacs
 `Faust mode`_; please see etc/faust-remote.el in the pd-faust source for usage
 instructions.
 
-.. _Faust mode:  https://github.com/rukano/emacs-faust-mode
+.. _Faust mode: https://github.com/rukano/emacs-faust-mode
 
 Caveats and Bugs
 ================
@@ -675,6 +676,14 @@ implementation:
   for these parameters instead. Coarse/fine pairs of MIDI controllers aren't
   directly supported either, so you'll have to implement these yourself as two
   separate Faust controls.
+
+* There's no translation of OSC values. pd-faust thus always assumes that the
+  controls of an external OSC device have the ranges specified in the Faust
+  program. If this isn't the case then you'll have to adjust either the OSC
+  controller setup or the control ranges in the Faust program, or use an
+  external tool like OSCulator_ to translate the messages.
+
+.. _OSCulator: http://www.osculator.net/
 
 Also, please check the TODO file included in the distribution for other issues
 which we are already aware of and which will hopefully be addressed in future
