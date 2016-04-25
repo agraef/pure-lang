@@ -50,10 +50,12 @@ realclean:
 
 install:
 	test -d "$(DESTDIR)$(pdextradir)" || mkdir -p "$(DESTDIR)$(pdextradir)"
-	cp COPYING COPYING.LESSER README TODO *.pure examples/*.pd etc/*.el lib/pdfaust*$(PDDLL) "$(DESTDIR)$(pdextradir)"
+	cp COPYING COPYING.LESSER README TODO examples/*.pd etc/*.el lib/pdfaust*$(PDDLL) "$(DESTDIR)$(pdextradir)"
 	cp -R examples/dsp examples/midi examples/osc "$(DESTDIR)$(pdextradir)"
 	test -d "$(DESTDIR)$(pdextradir)/lib" || mkdir -p "$(DESTDIR)$(pdextradir)/lib"
 	cp lib/util.* lib/xfade.* "$(DESTDIR)$(pdextradir)/lib"
+	test -d "$(DESTDIR)$(pdextradir)/src" || mkdir -p "$(DESTDIR)$(pdextradir)/src"
+	cp *.pure "$(DESTDIR)$(pdextradir)/src"
 
 uninstall:
 	rm -rf "$(DESTDIR)$(pdextradir)"
