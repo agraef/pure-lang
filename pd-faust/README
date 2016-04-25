@@ -67,11 +67,22 @@ dsps and the example instruments; please check the Makefile for details.
 .. _Pure: http://purelang.bitbucket.org/
 
 For a basic installation run ``make``, then ``sudo make install``. This will
-install the pd-faust objects in your lib/pd/extra/faust folder. Add this
-directory to your Pd library search path (``-path`` option or
-``Preferences/Path`` in Pd) and you should be set. The ``make`` command also
-compiles the Faust dsps included in the distribution, so that the provided
-examples will be ready to run afterwards as well (see Examples_ below).
+install the pd-faust objects in your lib/pd/extra/faust folder as a Pd object
+library which can be loaded with Pd's ``-lib`` option. To complete the
+installation, you still have to make sure that the library is loaded
+automatically at startup. This is done most conveniently by adding
+``faust/pdfaust`` to your preloaded library modules in Pd's
+``Preferences/Startup`` dialog.
+
+.. note:: The ``faust/pdfaust`` module must come *after* the ``pure`` entry
+   which loads pd-pure, otherwise you'll get an error message. In any case the
+   pd-pure loader will be required to run these objects, so it should be
+   configured accordingly; please check the :doc:`pd-pure<pd-pure>`
+   documentation for details.
+
+The ``make`` command also compiles the Faust dsps included in the
+distribution, so that the provided examples will be ready to run afterwards
+well (see Examples_ below).
 
 The Makefile tries to guess the installation prefix under which Pd is
 installed. If it guesses wrong, you can tell it the right prefix with ``make
@@ -86,21 +97,6 @@ two popular alternative Pd distributions available on the web.
 
 .. _pd-extended: http://puredata.info/downloads/pd-extended
 .. _pd-l2ork: http://l2ork.music.vt.edu/main/?page_id=56
-
-The pd-faust objects are installed both in source form (so you can customize
-them for your own purposes) and in binary form as a Pd object library which
-can be loaded with Pd's ``-lib`` option. The latter substantially reduces
-startup times and is thus the recommended way to run pd-faust if you don't
-need to customize the pd-faust objects on the fly. To these ends, after
-completing installation and setting up ``Preferences/Path`` in Pd, simply add
-``pdfaust`` to your preloaded library modules in Pd's ``Preferences/Startup``
-dialog.
-
-.. note:: The ``pdfaust`` module must come *after* the ``pure`` entry which
-   loads pd-pure, otherwise you'll get an error message. In any case the
-   pd-pure loader will be required to run these objects, so it should be
-   configured accordingly; please check the :doc:`pd-pure<pd-pure>`
-   documentation for details.
 
 Some further build options are described in the Makefile. In particular, it is
 possible to compile the Faust dsps to LLVM bitcode which can be loaded
