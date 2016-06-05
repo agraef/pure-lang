@@ -11,7 +11,7 @@
 
 # See which LLVM we're building against.
 LLVM_CONFIG = $(lastword $(wildcard /usr/bin/llvm-config*))
-LLVM_VERSION = $(shell $(LLVM_CONFIG) --version)
+LLVM_VERSION = $(shell echo $(LLVM_CONFIG) | sed -e 's/^.*llvm-config-//')
 LLVM_PREFIX = $(shell test ! -d /usr/lib/llvm-$(LLVM_VERSION)/bin || echo "--with-tool-prefix=/usr/lib/llvm-$(LLVM_VERSION)/bin")
 
 %:
