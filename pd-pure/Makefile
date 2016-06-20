@@ -48,7 +48,7 @@ includedir = $(prefix)/include
 
 # Specific setup for the various Pd flavours.
 ifeq ($(PD),pd-l2ork)
-PD_INC=/pdl2ork
+PD_INC=/pd-l2ork
 endif
 ifeq ($(PD),pd-extended)
 PD_INC=/pdextended
