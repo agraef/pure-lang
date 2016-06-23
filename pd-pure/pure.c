@@ -1201,7 +1201,7 @@ static void timeout(t_pure *x)
    works. */
 
 #ifndef PD_MENU_COMMANDS
-#if PD_MAJOR_VERSION > 0 || PD_MINOR_VERSION >= 43
+#if PD_MAJOR_VERSION > 0 || PD_MINOR_VERSION >= 43 || defined(PDL2ORK)
 /* This needs a fairly recent Pd version (probably 0.43 or later). */
 #define PD_MENU_COMMANDS 1
 #else
@@ -1209,11 +1209,20 @@ static void timeout(t_pure *x)
 #endif
 #endif
 
+// Define this for nw.js JavaScript GUI (Jonathan Wilkes' Pd-L2Ork variant).
+//#define NWJS 1
+
 static void pure_menu_open(t_pure *x)
 {
   if (x->open_filename) {
 #if PD_MENU_COMMANDS
+#if NWJS
+    char buf[PATH_MAX];
+    snprintf(buf, PATH_MAX, "file://%s", x->open_filename);
+    gui_vmess("external_doc_open", "s", buf);
+#else
     sys_vgui("::pd_menucommands::menu_openfile {%s}\n", x->open_filename);
+#endif
 #else
     /* An older Pd version before the GUI rewrite. Let's just fire up emacs
        instead. */
@@ -1224,8 +1233,15 @@ static void pure_menu_open(t_pure *x)
     if (!c) return; /* this should never happen */
     if (c->dir && *c->dir) {
 #if PD_MENU_COMMANDS
+#if NWJS
+      char buf[PATH_MAX];
+      snprintf(buf, PATH_MAX, "file://%s/%s.pure",
+	       c->dir, c->sym->s_name);
+      gui_vmess("external_doc_open", "s", buf);
+#else
       sys_vgui("::pd_menucommands::menu_openfile {%s/%s.pure}\n",
 	       c->dir, c->sym->s_name);
+#endif
 #else
       sys_vgui("exec -- sh -c {emacs '%s/%s.pure'} &\n",
 	       c->dir, c->sym->s_name);
