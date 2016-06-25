@@ -1197,8 +1197,12 @@ static void timeout(t_pure *x)
   pure_pop_interp(x_interp);
 }
 
-/* Menu callback. Thanks to Martin Peach for pointing out on pd-dev how this
-   works. */
+/* Menu edit callback. Thanks to Martin Peach for pointing out on pd-dev how
+   this works. This is used to provide an edit callback for the source file
+   associated with a Pure external, by invoking the appropriate Tcl code. We
+   use ::pd_menucommands::menu_openfile if it is available (Pd 0.43 and later)
+   and generic Tcl code otherwise. We also detect Jonathan Wilkes' Pd-L2Ork
+   variant which uses a JavaScript call instead. */
 
 #ifndef PD_MENU_COMMANDS
 #if PD_MAJOR_VERSION > 0 || PD_MINOR_VERSION >= 43 || defined(PDL2ORK)
@@ -1209,20 +1213,20 @@ static void timeout(t_pure *x)
 #endif
 #endif
 
-// Define this for nw.js JavaScript GUI (Jonathan Wilkes' Pd-L2Ork variant).
-//#define NWJS 1
+/* nw.js support. If this is non-NULL then we're running inside Jonathan
+   Wilkes' Pd-L2Ork variant and access to the GUI uses JavaScript. */
+static void (*nw_gui_vmess)(const char *sel, char *fmt, ...) = NULL;
 
 static void pure_menu_open(t_pure *x)
 {
   if (x->open_filename) {
 #if PD_MENU_COMMANDS
-#if NWJS
-    char buf[PATH_MAX];
-    snprintf(buf, PATH_MAX, "file://%s", x->open_filename);
-    gui_vmess("external_doc_open", "s", buf);
-#else
-    sys_vgui("::pd_menucommands::menu_openfile {%s}\n", x->open_filename);
-#endif
+    if (nw_gui_vmess) {
+      char buf[PATH_MAX];
+      snprintf(buf, PATH_MAX, "file://%s", x->open_filename);
+      nw_gui_vmess("external_doc_open", "s", buf);
+    } else
+      sys_vgui("::pd_menucommands::menu_openfile {%s}\n", x->open_filename);
 #else
     /* An older Pd version before the GUI rewrite. Let's just fire up emacs
        instead. */
@@ -1233,15 +1237,14 @@ static void pure_menu_open(t_pure *x)
     if (!c) return; /* this should never happen */
     if (c->dir && *c->dir) {
 #if PD_MENU_COMMANDS
-#if NWJS
-      char buf[PATH_MAX];
-      snprintf(buf, PATH_MAX, "file://%s/%s.pure",
-	       c->dir, c->sym->s_name);
-      gui_vmess("external_doc_open", "s", buf);
-#else
-      sys_vgui("::pd_menucommands::menu_openfile {%s/%s.pure}\n",
-	       c->dir, c->sym->s_name);
-#endif
+      if (nw_gui_vmess) {
+	char buf[PATH_MAX];
+	snprintf(buf, PATH_MAX, "file://%s/%s.pure",
+		 c->dir, c->sym->s_name);
+	nw_gui_vmess("external_doc_open", "s", buf);
+      } else
+	sys_vgui("::pd_menucommands::menu_openfile {%s/%s.pure}\n",
+		 c->dir, c->sym->s_name);
 #else
       sys_vgui("exec -- sh -c {emacs '%s/%s.pure'} &\n",
 	       c->dir, c->sym->s_name);
@@ -2056,6 +2059,16 @@ extern int pure_register_class(const char *name, pure_interp *interp,
 
 /* Loader setup. */
 
+#ifndef WIN32
+#define __USE_GNU // to get RTLD_DEFAULT
+#include <dlfcn.h> // for dlsym
+#ifndef RTLD_DEFAULT
+/* If RTLD_DEFAULT still isn't defined then just passing NULL will hopefully
+   do the trick. */
+#define RTLD_DEFAULT NULL
+#endif
+#endif
+
 extern void pure_setup(void)
 {
   char buf[MAXPDSTRING];
@@ -2094,6 +2107,15 @@ extern void pure_setup(void)
     save_sym = pure_sym("pd_save");
     restore_sym = pure_sym("pd_restore");
     varargs_sym = pure_sym("varargs");
+#if PD_MENU_COMMANDS
+#ifndef WIN32
+    /* nw.js support (currently only supported on Linux and Mac). XXXTODO:
+       Make this work on Windows as well. */
+    nw_gui_vmess = dlsym(RTLD_DEFAULT, "gui_vmess");
+    if (nw_gui_vmess)
+      post("pd-pure: using JavaScript interface (Pd-L2Ork nw.js version)");
+#endif
+#endif
   } else
     error("pd-pure: error initializing interpreter; loader not registered");
 }
