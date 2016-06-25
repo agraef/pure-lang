@@ -111,12 +111,6 @@ ifneq "$(VERBOSE)" ""
 override CPPFLAGS += $(VERBOSE)
 endif
 
-# Detect NW.js flavor of Pd-L2Ork.
-NWJS=$(shell test -d $(pdlibdir)/bin/nw && echo "-DNWJS=1")
-ifneq "$(NWJS)" ""
-override CPPFLAGS += $(NWJS)
-endif
-
 override CPPFLAGS += -I$(pdincdir) -Ipd $(pureinc)
 
 DISTFILES = COPYING Makefile README config.guess pure.c pd/*.h \
