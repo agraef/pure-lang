@@ -1,4 +1,3 @@
-
 # The Pure Programming Language
 
 Pure is a modern-style functional programming language based on term
@@ -14,7 +13,7 @@ The Pure Language and Library Documentation is available in [html][3] and
 Arch Linux are available from the [Arch User Repositories][5], please also
 check our [Pure on Arch Linux][6] wiki page for details. We also offer a
 reasonably complete set of Ubuntu packages at [Launchpad][7]. Instructions for
-installing Pure on the Mac can be found on the [Pure on Mac OS X][6a] wiki
+installing Pure on the Mac can be found on the [Pure on Mac OS X][6b] wiki
 page. Windows packages can be found on the [Download][2] page. Please also
 have a look at our [mailing list][8] / Google group and [IRC chat][9] if you
 need any help or if you want to discuss Pure.
