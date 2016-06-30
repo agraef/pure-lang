@@ -15,8 +15,8 @@ check our [Pure on Arch Linux][6] wiki page for details. We also offer a
 reasonably complete set of Ubuntu packages at [Launchpad][7]. Instructions for
 installing Pure on the Mac can be found on the [Pure on Mac OS X][6b] wiki
 page. Windows packages can be found on the [Download][2] page. Please also
-have a look at our [mailing list][8] / Google group and [IRC chat][9] if you
-need any help or if you want to discuss Pure.
+have a look at our [mailing list][8] / Google group and [IRC chat][9]
+(#pure-lang on freenode) if you need any help or if you want to discuss Pure.
 
 Please also check my [personal Bitbucket site][10] for some fun side projects
 that I've written in or for Pure (mostly about computer music and multimedia).
@@ -35,5 +35,5 @@ Enjoy. :)
 [6b]: https://bitbucket.org/purelang/pure-lang/wiki/PureOnMacOSX
 [7]: https://launchpad.net/~dr-graef
 [8]: http://groups.google.com/group/pure-lang
-[9]: irc://irc.freenode.net/pure-lang
+[9]: http://webchat.freenode.net/?channels=pure-lang
 [10]: https://bitbucket.org/agraef/agraef.bitbucket.org
