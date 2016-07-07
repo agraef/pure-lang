@@ -9,6 +9,8 @@ BEGIN { verbatim = 0; }
     # texmacs/ guile, but it seems easier to just edit the texmacs document
     # preamble instead.
     gsub(/<style\|generic>/, "<style|<tuple|generic|puredoc>>");
+    # Newer TeXmacs versions use the std-latex style:
+    gsub(/<style\|<tuple\|generic\|std-latex>>/, "<style|<tuple|generic|puredoc>>");
     # Turn standard images into puredoc-image, so that we can do some extra
     # tweaks with the formatting.
     gsub(/<image\|/, "<puredoc-image|");
