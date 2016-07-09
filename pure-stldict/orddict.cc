@@ -258,7 +258,8 @@ static const char *orddict_str(myorddict *m)
     memmove(q, q+1, buf+m-q);
     memmove(p, p+1, buf+m-p);
   }
-  if (buf0) free(buf0); buf0 = buf;
+  if (buf0) free(buf0);
+  buf0 = buf;
   return buf;
 }
 
@@ -841,7 +842,8 @@ static const char *ordmdict_str(myordmdict *m)
     memmove(q, q+1, buf+m-q);
     memmove(p, p+1, buf+m-p);
   }
-  if (buf0) free(buf0); buf0 = buf;
+  if (buf0) free(buf0);
+  buf0 = buf;
   return buf;
 }
 

@@ -228,7 +228,8 @@ static const char *hashdict_str(myhashdict *m)
      thing here in order to make the routine reentrant, as the call to the
      str() routine may invoke hashdict_str() recursively if components of the
      dictionary are themselves dictionaries. */
-  if (buf0) free(buf0); buf0 = buf;
+  if (buf0) free(buf0);
+  buf0 = buf;
   return buf;
 }
 
@@ -862,7 +863,8 @@ static const char *hashmdict_str(myhashmdict *m)
     memmove(q, q+1, buf+m-q);
     memmove(p, p+1, buf+m-p);
   }
-  if (buf0) free(buf0); buf0 = buf;
+  if (buf0) free(buf0);
+  buf0 = buf;
   return buf;
 }
 
