@@ -96,7 +96,7 @@ using namespace std;
 #define PURELIB "/usr/local/lib/pure-" PACKAGE_VERSION
 #endif
 
-#define COPYRIGHT "Copyright (c) 2008-2014 by Albert Graef"
+#define COPYRIGHT "Copyright (c) 2008-2016 by Albert Graef"
 #define USAGE \
 "Usage:            pure [options ...] [-x] script [args ...]\n\
                   pure [options ...] [-b|-c|-i] [script ...] [-- args ...]\n\
