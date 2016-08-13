@@ -2,7 +2,7 @@
 /* The Pure main program. This is currently rather simplistic. See the README
    file and the man page for details. */
 
-/* Copyright (c) 2008-2013 by Albert Graef <Dr.Graef@t-online.de>.
+/* Copyright (c) 2008-2016 by Albert Graef <aggraef@gmail.com>.
 
    The Pure main program is free software: you can redistribute it and/or
    modify it under the terms of the GNU General Public License as published by

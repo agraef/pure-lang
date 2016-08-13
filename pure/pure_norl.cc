@@ -3,7 +3,7 @@
    is provided to be used freely under a BSD-style license, see below, as a
    starting point for your own interpreter frontends. */
 
-/* Copyright (c) 2009-2013 by Albert Graef <Dr.Graef@t-online.de>.
+/* Copyright (c) 2009-2016 by Albert Graef <aggraef@gmail.com>.
 
    All rights reserved.
 
