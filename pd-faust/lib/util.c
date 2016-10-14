@@ -23,7 +23,7 @@ typedef struct _gsl_matrix_symbolic
 
 /* Mix down a collection of voices to a single signal. */
 
-void mix(pure_expr *in, double *out)
+void pdfaust_mix(pure_expr *in, double *out)
 {
   gsl_matrix_symbolic *m;
   gsl_matrix **ms;
@@ -57,7 +57,7 @@ void mix(pure_expr *in, double *out)
    ith row of out, starting in the lth column of out, for i=0..k-1. The two
    matrices must not overlap. */
 
-void fill(pure_expr *in, double *out)
+void pdfaust_fill(pure_expr *in, double *out)
 {
   gsl_matrix *m;
   if (pure_is_double_matrix(in, (void**)&m)) {
@@ -72,7 +72,7 @@ void fill(pure_expr *in, double *out)
 /* Helper function to perform a multichannel crossfade. We do all this
    in-place, to avoid costly allocations inside the dsp loop. */
 
-void crossfade(pure_expr *f, pure_expr *d, pure_expr *x, pure_expr *y)
+void pdfaust_crossfade(pure_expr *f, pure_expr *d, pure_expr *x, pure_expr *y)
 {
   gsl_matrix_symbolic *m;
   gsl_matrix *m1, *m2;
