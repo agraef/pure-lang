@@ -77,7 +77,7 @@ fsynth_dsp name instance chan::int nvoices::int =
     //printf "[%d] %d %d %d\n" (i,num,vel,ch);
     // update the control variables
     {freq,gain,gate} = get vctrls!i!!["freq","gain","gate"];
-    put_control freq (midicps (num+get_bend ch));
+    put_control freq (midicps (num+get_bend ch+get_tune ch num));
     put_control gain (vel/127);
     trigger!i < pd_time ||
     // Force a voice to be retriggered immediately by resetting its gate and
@@ -115,9 +115,60 @@ fsynth_dsp name instance chan::int nvoices::int =
     val = int val; ch = int ch;
     set_bend ch (2*(val-8192)/8192);
     do adjust_freq (get_notes (get voc) ch) with
-      adjust_freq (num=>i) = put_control freq (midicps (num+get_bend ch)) when
+      adjust_freq (num=>i) = put_control freq (midicps (num+get_bend ch+get_tune ch num)) when
 	freq = get vctrls!i!"freq";
       end;
+    end;
+  end;
+
+  // Respond to MTS messages.
+  fsynth (sysex data) = () if ~get active;
+  = case decode_mts data of
+    rt,ch,t = () when
+      // we convert the list of tuning offsets to a vector here, which allows
+      // constant-time accesses
+      t = vector t;
+      // Update the tuning tables for each channel.
+      do (\ch -> set_tune ch t) ch;
+      // If this is a realtime message then we also want to adjust notes which
+      // are already playing.
+      ~rt || do (\ch -> do (adjust_freq ch) (get_notes (get voc) ch)) ch with
+	adjust_freq ch (num=>i) = put_control freq (midicps (num+get_bend ch+get_tune ch num)) when
+	  freq = get vctrls!i!"freq";
+	end;
+      end;
+    end;
+    _ = ();
+  end with
+    decode_mts data = () if ~listp data || ~all doublep data;
+    decode_mts (id:_) = () if id ~= 0x7e && id ~= 0x7f;
+    decode_mts data = case map int data of
+      // we only handle octave-based tunings here
+      id:_:8:8:msk1:msk2:msk3:data = rt,ch,t when
+	// 1-byte encoding (-64..63 ct), check for realtime message
+	rt = id == 0x7f;
+	// extract the list of MIDI channels for which this tuning is valid;
+	// this is given as a 3 byte sequence (21 bits in total, with the most
+	// significant byte first) which is to be interpreted as a bitmask
+	ch = decode_chans msk1 msk2 msk3;
+	t = [(x-64)/100.0 | x = data];
+	//pd_post $ sprintf "MTS 1-byte: %s" (str t);
+      end if #data == 12;
+      id:_:8:9:msk1:msk2:msk3:data = rt,ch,t when
+	// 2-byte encoding (-100..100 ct, resolution approx. 1/100 ct)
+	rt = id == 0x7f;
+	ch = decode_chans msk1 msk2 msk3;
+	// the tuning offsets are given as 14 bit quantities here, as usual
+	// the MSBs come first
+	even = 0:2..22; odd = 1:3..23;
+	data = zipwith (\msb lsb -> (msb<<7) or lsb) (data!!even) (data!!odd);
+	t = [(x-8192)/8192.0 | x = data];
+	//pd_post $ sprintf "MTS 2-byte: %s" (str t);
+      end if #data == 24;
+      _ = ();
+    end;
+    decode_chans msk1 msk2 msk3 = [i+1 | i = 0..15; (1<<i) and msk] when
+      msk = (msk1<<14) or (msk2<<7) or msk3;
     end;
   end;
 
@@ -225,9 +276,19 @@ fsynth_dsp name instance chan::int nvoices::int =
     _ = (); // ignore
   end if ~null id && id!0=="/";
 
-  // Ignore everything else.
-  //fsynth msg = pd_post $ sprintf "unknown: %s" $ str msg;
-  fsynth _ = ();
+  // Check for sysex messages. These are delivered as Pd meta messages with a
+  // variable number of data byte arguments which is rather inconvenient, so
+  // we massage them into a form which can be parsed more easily.
+  fsynth msg = case a [] msg of
+    id:data = fsynth (sysex data) if id === sysex;
+    // Ignore everything else.
+    // _ = pd_post $ sprintf "unknown: %s" $ str msg;
+    _ = ();
+  end with
+    // A little helper function to convert a multi-arg function application
+    // into a list, you can find this in the Pure manual.
+    a xs (x@_ y) = a (y:xs) x; a xs x = x:xs;
+  end;
 
   // Translate MIDI note numbers to frequencies in Hz.
   midicps num = 440*2^((num-69)/12);
@@ -235,6 +296,15 @@ fsynth_dsp name instance chan::int nvoices::int =
   // Keep track of pitch bends.
   set_bend chan val = insert bend (chan=>val);
   get_bend chan = if member bend chan then bend!chan else 0.0;
+
+  // Keep track of MTS tunings.
+  set_tune chan tuning = insert tune (chan=>tuning);
+  get_tune chan num = //debug_mts (member tune chan) chan num
+    (if member tune chan then tune!chan!(num mod 12) else 0.0);
+  debug_mts dbg chan num val = val when
+    ~dbg ||
+    pd_post (sprintf "tuning ch#%d, note %d => %g ct" (chan,num,val*100));
+  end;
 
 end when
   nvoices > 0 || throw "fsynth~: bad number of voices";
@@ -268,6 +338,8 @@ end when
   trigger = orddict [i-1 => 0.0 | i = 1..nvoices];
   // Pitch bends.
   bend = orddict [];
+  // Tunings.
+  tune = orddict [];
   // Activity flag.
   active = ref 1;
   // Writing and recording flags.
