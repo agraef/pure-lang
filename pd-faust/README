@@ -135,13 +135,17 @@ and a corresponding ``midiosc`` abstraction which can be used to handle MIDI
 input and playback as well as OSC controller automation. This useful helper
 abstraction is described in more detail under `Operating the Patches`_ below.
 
-.. note:: pd-faust interprets MIDI, OSC and Faust dsp filenames relative to
-   the hosting Pd patch by default. It will also search the ``midi``, ``osc``
-   and ``dsp`` subfolders, if they exist, for the corresponding types of
-   files. Failing that, it finally searches the directories on the Pd library
-   path (including their ``midi``, ``osc`` and ``dsp`` subfolders). To disable
-   this search, just use absolute pathnames (or pathnames relative to the
-   ``.`` or ``..`` directory) instead.
+pd-faust interprets MIDI, OSC and Faust dsp filenames relative to the hosting
+Pd patch by default. It will also search the ``midi``, ``osc`` and ``dsp``
+subfolders, if they exist, for the corresponding types of files. Failing that,
+it finally searches the directories on the Pd library path (including their
+``midi``, ``osc`` and ``dsp`` subfolders). To disable this search, just use
+absolute pathnames (or pathnames relative to the ``.`` or ``..`` directory)
+instead.
+
+Like pd-pure, pd-faust remaps Pd's ``menu-open`` command so that it lets you
+edit the Faust source of a ``faust~``, ``fdsp~`` or ``fsynth~`` object by
+right-clicking on the object and choosing ``Open`` from the context menu.
 
 The fdsp~ and fsynth~ Objects
 -----------------------------
@@ -240,17 +244,28 @@ The ``fdsp~`` and ``fsynth~`` objects respond to the following messages:
   This is also used internally for communication with the Pd GUI and for
   controller automation.
 
-In addition, the ``fdsp~`` and ``fsynth~`` objects respond to MIDI controller
-messages of the form ``ctl val num chan``, and the ``fsynth~`` object also
-understands note-related messages of the form ``note num vel chan`` (note
-on/off) and ``bend val chan`` (pitch bend). In either case, pd-faust provides
-the necessary logic to map controller and note-related messages to the
+The ``fdsp~`` and ``fsynth~`` objects also respond to MIDI controller messages
+of the form ``ctl val num chan``, and the ``fsynth~`` object understands
+note-related messages of the form ``note num vel chan`` (note on/off) and
+``bend val chan`` (pitch bend). In either case, pd-faust provides the
+necessary logic to map controller and note-related messages to the
 corresponding control changes in the Faust unit.
 
-.. note:: Like pd-pure, pd-faust also remaps Pd's ``menu-open`` command so
-   that it lets you edit the Faust source of an ``fdsp~`` or ``fsynth~``
-   object by right-clicking on the object and choosing ``Open`` from the
-   context menu.
+In addition, pd-faust 0.13 and later offer support for the MIDI Tuning
+Standard (MTS), so that instruments can be retuned using the corresponding
+sysex messages for octave-based tunings. To these ends, the ``fsynth~`` object
+accepts messages of the form ``sysex b1 b2 ...`` where ``b1``, ``b2``, ... are
+the individual data bytes of the message. A description of the MIDI Tuning
+Standard is beyond the scope of this manual. However, there are some tools
+which let you construct such messages from various input formats, such as the
+author's sclsyx_ program. You can then either include the tuning messages in a
+MIDI file or transmit them directly to Pd's MIDI input. There's also a version
+of sclsyx.pure included in the author's pd-smmf_ package, which can be run as
+a Pd external to output tunings in the format understood by the ``fsynth~``
+object.
+
+.. _sclsyx: https://bitbucket.org/agraef/sclsyx
+.. _pd-smmf: https://bitbucket.org/agraef/pd-smmf
 
 The faust~ Object
 -----------------
