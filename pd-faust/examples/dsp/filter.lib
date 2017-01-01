@@ -3,7 +3,7 @@
 declare name "Faust Filter Library";
 declare author "Julius O. Smith (jos at ccrma.stanford.edu)";
 declare copyright "Julius O. Smith III";
-declare version "1.28";
+declare version "1.29";
 declare license "STK-4.3"; // Synthesis Tool Kit 4.3 (MIT style license)
 declare reference "https://ccrma.stanford.edu/~jos/filters/";
 
@@ -29,11 +29,15 @@ pole(p) = + ~ *(p);
 
 integrator = + ~ _ ;
 
-//----------------------- tau2pole ---------------------------
+//------------------ tau2pole, pole2tau ----------------------
 // tau2pole(tau) returns a real pole giving exponential decay with
 // tau = time-constant in seconds
-//
-tau2pole(tau) = exp(-1.0/(tau*SR));
+// Note that t60 (time to decay 60 dB) is ~6.91 time constants.
+// pole2tau(pole) returns the time-constant, in seconds, 
+// corresponding to the given real, positive pole in (0,1).
+
+tau2pole(tau) = if(tau>0, exp(-1.0/(tau*SR)), 0.0);
+pole2tau(pole) = if(pole<1.0, -1.0/(log(pole)*SR), 1.0e10);
 
 //---------------------- smooth(s) --------------------------
 // Exponential smoothing by a unity-dc-gain one-pole lowpass
@@ -98,12 +102,20 @@ with {
   b2 = b0;
 };
 
+//---------------------------- latch(c) --------------------------------
+// Latch input on positive-going transition of "clock" ("sample-and-hold")
+//
+// USAGE:
+//   _ : latch(clocksig) : _
+
+latch(c,x) = x * s : + ~ *(1-s) with { s = ((c'<=0)&(c>0)); };
+
 //========================= Comb Filters ===============================
 
 //----------------------- ff_comb, ff_fcomb ----------------------------
 // Feed-Forward Comb Filter
 // 
-// USAGE: 
+// USAGE:
 //   _ : ff_comb(maxdel,intdel,b0,bM) : _
 //   _ : ff_fcomb(maxdel,del,b0,bM) : _
 // where
@@ -116,13 +128,13 @@ with {
 // Note that ff_comb requires integer delays  (uses delay()  internally)
 // while ff_fcomb takes floating-point delays (uses fdelay() internally).
 //
-// REFERENCE: 
+// REFERENCE:
 //   https://ccrma.stanford.edu/~jos/pasp/Feedforward_Comb_Filters.html
 
 ff_comb (maxdel,M,b0,bM) = _ <: *(b0), bM *  delay(maxdel,M) : + ;
 ff_fcomb(maxdel,M,b0,bM) = _ <: *(b0), bM * fdelay(maxdel,M) : + ;
 
-// TEMPORARILY PROVIDED FOR BACKWARD COMPATIBILITY:
+// Typical special case:
 ffcombfilter(maxdel,del,g) = ff_comb(maxdel,del,1,g);
 
 //----------------------- fb_comb, fb_fcomb, rev1 -----------------------
@@ -143,14 +155,14 @@ ffcombfilter(maxdel,del,g) = ff_comb(maxdel,del,1,g);
 // Reference: 
 //   https://ccrma.stanford.edu/~jos/pasp/Feedback_Comb_Filters.html
 
-fb_comb (maxdel,N,b0,aN) = (+ <:  delay(maxdel,N),_) ~ *(-aN) : !,*(b0);
-fb_fcomb(maxdel,N,b0,aN) = (+ <: fdelay(maxdel,N),_) ~ *(-aN) : !,*(b0);
+fb_comb (maxdel,N,b0,aN) = (+ <:  delay(maxdel,N-1),_) ~ *(-aN) : !,*(b0):mem;
+fb_fcomb(maxdel,N,b0,aN) = (+ <: fdelay(maxdel,float(N)-1.0),_) ~ *(-aN) : !,*(b0):mem;
 
 // The "rev1 section" dates back to the 1960s in computer-music reverberation.
 // See the jcrev and brassrev in effect.lib for usage examples.
 rev1(maxdel,N,g) = fb_comb (maxdel,N,1,-g);
 
-// TEMPORARILY PROVIDED FOR BACKWARD COMPATIBILITY:
+// Typical special case:
 fbcombfilter(maxdel,intdel,g) = (+ : delay(maxdel,intdel)) ~ *(g);
 ffbcombfilter(maxdel,del,g) = (+ : fdelay(maxdel,del)) ~ *(g);
 
@@ -173,7 +185,7 @@ ffbcombfilter(maxdel,del,g) = (+ : fdelay(maxdel,del)) ~ *(g);
 // which is a direct-form-1 implementation, requiring two delay lines.
 // The implementation here is direct-form-2 requiring only one delay line.
 // 
-// REFERENCES: 
+// REFERENCES:
 //   https://ccrma.stanford.edu/~jos/pasp/Allpass_Two_Combs.html
 //   https://ccrma.stanford.edu/~jos/pasp/Schroeder_Allpass_Sections.html
 //   https://ccrma.stanford.edu/~jos/filters/Four_Direct_Forms.html
@@ -182,62 +194,299 @@ allpass_comb(maxdel,N,aN) = (+ <:
    delay(maxdel,N-1),*(aN)) ~ *(-aN)
    : mem,_ : + ;
 
+allpass_fcomb(maxdel,N,aN) = (+ <: fdelay(maxdel,N-1),*(aN)) ~ *(-aN) : mem,_ : + ;
+allpass_fcomb5(maxdel,N,aN) = (+ <: fdelay5(maxdel,N-1),*(aN)) ~ *(-aN) : mem,_ : + ;
+allpass_fcomb1a(maxdel,N,aN) = (+ <: fdelay1a(maxdel,N-1),*(aN)) ~ *(-aN) : mem,_ : + ;
+// Interpolation helps - look at an fft of faust2octave on
+// 1-1' <: allpass_fcomb(1024,10.5,0.95), allpass_fcomb5(1024,10.5,0.95);
+
 // The "rev2 section" dates back to the 1960s in computer-music reverberation:
 rev2(maxlen,len,g) = allpass_comb(maxlen,len,-g);
 
-//================ Second Order Digital Filter Sections ================
+//================ Direct-Form Digital Filter Sections ================
 
 // Specified by transfer-function polynomials B(z)/A(z) as in matlab
 
-//----------------------------- tf1 ---------------------------------
-// First-order direct-form digital filter
+//---------------------------- iir (tfN) -------------------------------
+// Nth-order Infinite-Impulse-Response (IIR) digital filter,
+// implemented in terms of the Transfer-Function (TF) coefficients.
+// Such filter structures are termed "direct form".
+//
+// USAGE:
+//   _ : iir(bcoeffs,acoeffs) : _
+// where
+//   order = filter order (int) = max(#poles,#zeros)
+//   bcoeffs = (b0,b1,...,b_order) = TF numerator coefficients
+//   acoeffs =    (a1,...,a_order) = TF denominator coeffs (a0=1)
+//
+// REFERENCE:
+//   https://ccrma.stanford.edu/~jos/filters/Four_Direct_Forms.html
 
-tf1(b0,b1,a1) = _ <: *(b0), (mem : *(b1)) :> + ~ *(0-a1);
+iir(bv,av) = sub ~ fir(av) : fir(bv);
 
-//----------------------------- tf2 ---------------------------------
-// Second-order direct-form digital filter.
-// This is just a copy of TF2(b0,b1,b2,a1,a2) from Faust's music.lib.
-
-tf2(b0,b1,b2,a1,a2) = sub ~ conv2(a1,a2) : conv3(b0,b1,b2)
-with {
-  conv3(k0,k1,k2,x)     = k0*x + k1*x' + k2*x'';
-  conv2(k0,k1,x)        = k0*x + k1*x';
-  sub(x,y)              = y-x;
-};
-
-//----------------------------- tf3 ---------------------------------
-// Third-order direct-form digital filter
-
-tf3(b0,b1,b2,b3,a1,a2,a3) = sub ~ conv3(a1,a2,a3) : conv4(b0,b1,b2,b3)
-with {
-  conv3(k0,k1,k2,x)     = k0*x + k1*x' + k2*x'';
-  conv4(k0,k1,k2,k3,x)  = k0*x + k1*x' + k2*x'' + k3*x''';
-  sub(x,y)              = y-x;
-};
-
-//----------------------------- tf4 ---------------------------------
-// Fourth-order direct-form digital filter
-
-tf4(b0,b1,b2,b3,b4,a1,a2,a3,a4) = sub ~ conv4(a1,a2,a3,a4) 
-                                      : conv5(b0,b1,b2,b3,b4)
-with {
-  conv4(k0,k1,k2,k3,x)    = k0*x + k1*x' + k2*x'' + k3*x''';
-  conv5(k0,k1,k2,k3,k4,x) = k0*x + k1*x' + k2*x'' + k3*x''' + k4*x'''';
-  sub(x,y)                = y-x;
-};
+//----------------------------- sub ---------------------------------
+sub(x,y) = y-x; // move to math.lib?
 
 //----------------------------- fir ---------------------------------
 // FIR filter (convolution of FIR filter coefficients with a signal)
+//
 // USAGE: 
-//   _ : fir(B) : _
-// where B = B0,B1,...,BN is a parallel bank of coefficient signals.
-// NOTE: B is processed using pattern-matching at compile time, 
+//   _ : fir(bv) : _
+// where bv = b0,b1,...,bn is a parallel bank of coefficient signals.
+// NOTE: bv is processed using pattern-matching at compile time,
 //       so it must have this normal form (parallel signals).
 // EXAMPLE: Smoothing white noise with a five-point moving average:
-//   B = .2,.2,.2,.2,.2;
-//   process = noise : fir(B);
+//   bv = .2,.2,.2,.2,.2;
+//   process = noise : fir(bv);
+// EQUIVALENT (note double parens):
+//   process = noise : fir((.2,.2,.2,.2,.2));
 
-fir(B,x) = sum(i,count(B),take(i+1,B)*(x@i)); // count & take in math.lib
+//fir(bv) = conv(bv);
+fir((b0,bv)) = _ <: *(b0), R(1,bv) :> _ with {
+	R(n,(bn,bv)) = (@(n):*(bn)), R(n+1,bv);
+	R(n, bn)     = (@(n):*(bn));              };
+fir(b0) = *(b0);
+
+//--------------------------- conv, convN -------------------------------
+// Convolution of input signal with given coefficients
+//
+// USAGE:
+//  _ : conv((k1,k2,k3,...,kN)) : _; // Argument = one signal bank
+//  _ : convN(N,(k1,k2,k3,...)) : _; // Useful when N < count((k1,...))
+
+//convN(N,kv,x) = sum(i,N,take(i+1,kv) * x@i); // take() defined in math.lib
+convN(N,kv)     = sum(i,N, @(i)*take(i+1,kv)); // take() defined in math.lib
+
+//conv(kv,x) = sum(i,count(kv),take(i+1,kv) * x@i); // count() from math.lib
+conv(kv) = fir(kv);
+
+
+// Named special cases:
+//----------------------------- tf1, tf2 ---------------------------------
+// tfN = N'th-order direct-form digital filter
+tf1(b0,b1,a1) = _ <: *(b0), (mem : *(b1)) :> + ~ *(0-a1);
+tf2(b0,b1,b2,a1,a2) = iir((b0,b1,b2),(a1,a2)); // cf. TF2 in music.lib)
+// tf2 is a variant of tf22 below with duplicated mems
+tf3(b0,b1,b2,b3,a1,a2,a3) = iir((b0,b1,b2,b3),(a1,a2,a3));
+
+//=============== Direct-Form second-order biquad sections ================
+// REFERENCE: https://ccrma.stanford.edu/~jos/filters/Four_Direct_Forms.html
+
+//---------------------- tf21, tf21t, tf22, tf22t ------------------------
+tf21(b0,b1,b2,a1,a2) = // tf2, direct-form 1:
+    _ <:(mem<:((mem:*(b2)),*(b1))),*(b0) :>_
+    : ((_,_,_:>_) ~(_<:*(-a1),(mem:*(-a2))));
+tf22(b0,b1,b2,a1,a2) = // tf2, direct-form 2:
+    _ : (((_,_,_:>_)~*(-a1)<:mem,*(b0))~*(-a2))
+      : (_<:mem,*(b1)),_ : *(b2),_,_ :> _;
+tf22t(b0,b1,b2,a1,a2) = // tf2, direct-form 2 transposed:
+    _ : (_,_,(_ <: *(b2)',*(b1)',*(b0))
+      : _,+',_,_ :> _)~*(-a1)~*(-a2) : _;
+tf21t(b0,b1,b2,a1,a2) = // tf2, direct-form 1 transposed:
+    tf22t(1,0,0,a1,a2) : tf22t(b0,b1,b2,0,0); // or write it out if you want
+
+//===================== Ladder/Lattice Digital Filters ======================
+// Ladder and lattice digital filters generally have superior numerical
+// properties relative to direct-form digital filters.  They can be derived
+// from digital waveguide filters, which gives them a physical interpretation.
+
+// REFERENCES: 
+//  F. Itakura and S. Saito: "Digital Filtering Techniques for Speech Analysis and Synthesis",
+//     7th Int. Cong. Acoustics, Budapest, 25 C 1, 1971.
+//  J. D. Markel and A. H. Gray: Linear Prediction of Speech, New York: Springer Verlag, 1976.
+//  https://ccrma.stanford.edu/~jos/pasp/Conventional_Ladder_Filters.html
+
+//------------------------- block, crossn,crossn1 -----------------------------
+// signal block/crossing utilities
+// (move to math.lib?)
+
+// block - terminate n signals (goes with bus(n) in math.lib)
+block(n) = par(i,n,!);
+
+// crossnn - cross two bus(n)s:
+crossnn(n) = bus(n),bus(n) <: block(n),bus(n),bus(n),block(n);
+
+// crossn1 - cross bus(n) and bus(1):
+crossn1(n) = bus(n),(bus(1)<:bus(n)) <: block(n),bus(n),bus(n),block(n):bus(1),block(n-1),bus(n);
+
+//------------------------------- av2sv -----------------------------------
+// Compute reflection coefficients sv from transfer-function denominator av
+//
+// USAGE:
+//   sv = av2sv(av)
+// where
+//   av = parallel signal bank a1,...,aN
+//   sv = parallel signal bank s1,...,sN
+// where si = ith reflection coefficient, and
+//       ai = coefficient of z^(-i) in the filter
+//          transfer-function denominator A(z).
+//
+// REFERENCE:
+//   https://ccrma.stanford.edu/~jos/filters/Step_Down_Procedure.html
+//   (where reflection coefficients are denoted by k rather than s).
+
+av2sv(av) = par(i,M,s(i+1)) with {
+  M = count(av);
+  s(m) = sr(M-m+1); // m=1..M
+  sr(m) = Ari(m,M-m+1); // s_{M-1-m}
+  Ari(m,i) = take(i+1,Ar(m-1));
+  //step-down recursion for lattice/ladder digital filters:
+  Ar(0) = (1,av); // Ar(m) is order M-m (i.e. "reverse-indexed")
+  Ar(m) = 1,par(i,M-m, (Ari(m,i+1) - sr(m)*Ari(m,M-m-i))/(1-sr(m)*sr(m)));
+};
+
+//---------------------------- bvav2nuv --------------------------------
+// Compute lattice tap coefficients from transfer-function coefficients
+//
+// USAGE:
+//   nuv = bvav2nuv(bv,av)
+// where
+//   av = parallel signal bank    a1,...,aN
+//   bv = parallel signal bank b0,b1,...,aN
+//  nuv = parallel signal bank   nu1,...,nuN
+// where nui is the i'th tap coefficient,
+//       bi is the coefficient of z^(-i) in the filter numerator,
+//       ai is the coefficient of z^(-i) in the filter denominator
+
+bvav2nuv(bv,av) = par(m,M+1,nu(m)) with {
+  M = count(av);
+  nu(m) = take(m+1,Pr(M-m)); // m=0..M
+  // lattice/ladder tap parameters:
+  Pr(0) = bv; // Pr(m) is order M-m, 'r' means "reversed"
+  Pr(m) = par(i,M-m+1, (Pri(m,i) - nu(M-m+1)*Ari(m,M-m-i+1)));
+  Pri(m,i) = take(i+1,Pr(m-1));
+  Ari(m,i) = take(i+1,Ar(m-1));
+  //step-down recursion for lattice/ladder digital filters:
+  Ar(0) = (1,av); // Ar(m) is order M-m (recursion index must start at constant)
+  Ar(m) = 1,par(i,M-m, (Ari(m,i+1) - sr(m)*Ari(m,M-m-i))/(1-sr(m)*sr(m)));
+  sr(m) = Ari(m,M-m+1); // s_{M-1-m}
+};
+
+//--------------------------- iir_lat2, allpassnt -----------------------
+
+iir_lat2(bv,av) = allpassnt(M,sv) : sum(i,M+1,*(take(M-i+1,tg)))
+with {
+  M = count(av);
+  sv = av2sv(av); // sv = vector of sin(theta) reflection coefficients
+  tg = bvav2nuv(bv,av); // tg = vector of tap gains
+};
+
+// two-multiply lattice allpass (nested order-1 direct-form-ii allpasses):
+allpassnt(0,sv) = _;
+allpassnt(n,sv) =
+//0:   x <: ((+ <: (allpassnt(n-1,sv)),*(s))~(*(-s))) : _',_ :+
+       _ : ((+ <: (allpassnt(n-1,sv),*(s)))~*(-s)) : fsec(n)
+with {
+  fsec(1) = crossnn(1) : _, (_<:mem,_) : +,_;
+  fsec(n) = crossn1(n) : _, (_<:mem,_),par(i,n-1,_) : +, par(i,n,_);
+  innertaps(n) = par(i,n,_);
+  s = take(n,sv); // reflection coefficient s = sin(theta)
+};
+
+//------------------------------- iir_kl, allpassnklt -------------------------
+iir_kl(bv,av) = allpassnklt(M,sv) : sum(i,M+1,*(tghr(i)))
+with {
+  M = count(av);
+  sv = av2sv(av); // sv = vector of sin(theta) reflection coefficients
+  tg = bvav2nuv(bv,av); // tg = vector of tap gains for 2mul case
+  tgr(i) = take(M+1-i,tg);
+  tghr(n) = tgr(n)/pi(n);
+  pi(0) = 1;
+  pi(n) = pi(n-1)*(1+take(M-n+1,sv)); // all sign parameters '+'
+};
+
+// Kelly-Lochbaum ladder allpass with tap lines:
+allpassnklt(0,sv) = _;
+allpassnklt(n,sv) = _ <: *(s),(*(1+s) : (+
+                   : allpassnklt(n-1,sv))~(*(-s))) : fsec(n)
+with {
+  fsec(1) = _, (_<:mem*(1-s),_) : sumandtaps(n);
+  fsec(n) = _, (_<:mem*(1-s),_), par(i,n-1,_) : sumandtaps(n);
+  s = take(n,sv);
+  sumandtaps(n) = +,par(i,n,_);
+};
+
+
+//------------------------------- iir_lat1, allpassn1mt -------------------------
+iir_lat1(bv,av) = allpassn1mt(M,sv) : sum(i,M+1,*(tghr(i+1)))
+with {
+  M = count(av);
+  sv = av2sv(av); // sv = vector of sin(theta) reflection coefficients
+  tg = bvav2nuv(bv,av); // tg = vector of tap gains
+  tgr(i) = take(M+2-i,tg); // i=1..M+1 (for "takability")
+  tghr(n)=tgr(n)/pi(n);
+  pi(1) = 1;
+  pi(n) = pi(n-1)*(1+take(M-n+2,sv)); // all sign parameters '+'
+};
+
+// one-multiply lattice allpass with tap lines:
+allpassn1mt(0,sv) = _;
+allpassn1mt(n,sv)= _ <: _,_ : ((+:*(s) <: _,_),_ : _,+ : crossnn(1)
+		  : allpassn1mt(n-1,sv),_)~(*(-1)) : fsec(n)
+with {
+//0:  fsec(n) = _',_ : +
+  fsec(1) = crossnn(1) : _, (_<:mem,_) : +,_;
+  fsec(n) = crossn1(n) : _, (_<:mem,_),par(i,n-1,_) : +, par(i,n,_);
+  innertaps(n) = par(i,n,_);
+  s = take(n,sv); // reflection coefficient s = sin(theta)
+};
+
+//------------------------------- iir_nl, allpassnnlt -------------------------
+// Normalized ladder filter
+//
+// REFERENCES:
+//   J. D. Markel and A. H. Gray, Linear Prediction of Speech, New York: Springer Verlag, 1976.
+//   https://ccrma.stanford.edu/~jos/pasp/Normalized_Scattering_Junctions.html
+
+iir_nl(bv,av) = allpassnnlt(M,sv) : sum(i,M+1,*(tghr(i)))
+with {
+  M = count(av);
+  sv = av2sv(av); // sv = vector of sin(theta) reflection coefficients
+  tg = bvav2nuv(bv,av); // tg = vector of tap gains for 2mul case
+  tgr(i) = take(M+1-i,tg);
+  tghr(n) = tgr(n)/pi(n);
+  pi(0) = 1;
+  s(n) = take(M-n+1,sv); // reflection coefficient = sin(theta) 
+  c(n) = sqrt(max(0,1-s(n)*s(n))); // compiler crashes on sqrt(-)
+  pi(n) = pi(n-1)*c(n);
+};
+
+// Normalized ladder allpass with tap lines:
+allpassnnlt(0,sv) = _;
+allpassnnlt(n,scl*(sv)) = allpassnnlt(n,par(i,count(sv),scl*(sv(i))));
+allpassnnlt(n,sv) = _ <: *(s),(*(c) : (+
+                   : allpassnnlt(n-1,sv))~(*(-s))) : fsec(n)
+with {
+  fsec(1) = _, (_<:mem*(c),_) : sumandtaps(n);
+  fsec(n) = _, (_<:mem*(c),_), par(i,n-1,_) : sumandtaps(n);
+  s = take(n,sv);
+  c = sqrt(max(0,1-s*s));
+  sumandtaps(n) = +,par(i,n,_);
+};
+
+//========================= Useful special cases ============================
+
+//-------------------------------- tf2np ------------------------------------
+// tf2np - biquad based on a stable second-order Normalized Ladder Filter
+// (more robust to modulation than tf2 and protected against instability)
+tf2np(b0,b1,b2,a1,a2) = allpassnnlt(M,sv) : sum(i,M+1,*(tghr(i)))
+with {
+  smax = 0.9999; // maximum reflection-coefficient magnitude allowed
+  s2 = max(-smax, min(smax,a2)); // Project both reflection-coefficients
+  s1 = max(-smax, min(smax,a1/(1+a2))); // into the defined stability-region.
+  sv = (s1,s2); // vector of sin(theta) reflection coefficients
+  M = 2;
+  nu(2) = b2;
+  nu(1) = b1 - b2*a1;
+  nu(0) = (b0-b2*a2) - nu(1)*s1;
+  tg = (nu(0),nu(1),nu(2));
+  tgr(i) = take(M+1-i,tg); // vector of tap gains for 2mul case
+  tghr(n) = tgr(n)/pi(n);  // apply pi parameters for NLF case
+  pi(0) = 1;
+  s(n) = take(M-n+1,sv);
+  c(n) = sqrt(1-s(n)*s(n));
+  pi(n) = pi(n-1)*c(n);
+};
 
 //----------------------------- wgr ---------------------------------
 // Second-order transformer-normalized digital waveguide resonator
@@ -248,14 +497,15 @@ fir(B,x) = sum(i,count(B),take(i+1,B)*(x@i)); // count & take in math.lib
 //   r = loss factor for exponential decay
 //        (set to 1 to make a numerically stable oscillator)
 //
-// Reference:
-// https://ccrma.stanford.edu/~jos/pasp/Digital_Waveguide_Oscillator.html
+// REFERENCES:
+//  https://ccrma.stanford.edu/~jos/pasp/Power_Normalized_Waveguide_Filters.html
+//  https://ccrma.stanford.edu/~jos/pasp/Digital_Waveguide_Oscillator.html
 //
 wgr(f,r,x) = (*(G),_<:_,((+:*(C))<:_,_),_:+,_,_:+(x),-) ~ cross : _,*(0-gi)
 with { 
   C = cos(2*PI*f/SR);
-  gi = sqrt((1+C)/(1-C)); // compensate amplitude (only needed when 
-  G = r*(1-1' + gi')/gi;  //   frequency changes substantially)
+  gi = sqrt(max(0,(1+C)/(1-C))); // compensate amplitude (only needed when
+  G = r*(1-1' + gi')/gi;         //   frequency changes substantially)
   cross = _,_ <: !,_,_,!;
 };
 
@@ -317,20 +567,20 @@ with { s = take(n,sv); };
 // power-normalized (reflection coefficients s = sin(t)):
 allpassnn(0,tv) = _;
 allpassnn(n,tv) = _ <: *(s), (*(c) : (+ 
-          : allpassnn(n-1,tv))~(*(-s))) : _,*(c)' : +
+        : allpassnn(n-1,tv))~(*(-s))) : _, mem*c : +
 with { c=cos(take(n,tv));  s=sin(take(n,tv)); };
 
 // power-normalized with sparse delays dv(n)>1:
 allpassnns(0,tv,dmax,dv) = _;
 allpassnns(n,tv,dmax,dv) = _ <: *(s), (*(c) : (+ : dl
-           : allpassnns(n-1,tv,dmax,dv))~(*(-s))) : _,*(c)' : +
+           : allpassnns(n-1,tv,dmax,dv))~(*(-s))) : _, mem*c : +
 with { c=cos(take(n,tv));  s=sin(take(n,tv));
        dl=delay(dmax,(take(n,dv)-1)); };
 
 // Kelly-Lochbaum:
 allpassnkl(0,sv) = _;
 allpassnkl(n,sv) = _ <: *(s),(*(1+s) : (+
-                   : allpassnn(n-1,sv))~(*(-s))) : _,*(1-s)' : +
+                   : allpassnkl(n-1,sv))~(*(-s))) : _, mem*(1-s) : +
 with { s = take(n,sv); };
 
 // one-multiply:
@@ -341,7 +591,7 @@ with {s = take(n,sv); cross = _,_ <: !,_,_,!; };
 
 //===== Digital Filter Sections Specified as Analog Filter Sections =====
 //
-//----------------------------- tf2s --------------------------------
+//------------------------- tf2s, tf2snp --------------------------------
 // Second-order direct-form digital filter,
 // specified by ANALOG transfer-function polynomials B(s)/A(s),
 // and a frequency-scaling parameter.  Digitization via the
@@ -373,7 +623,7 @@ with {s = take(n,sv); cross = _,_ <: !,_,_,!; };
 //
 tf2s(b2,b1,b0,a1,a0,w1) = tf2(b0d,b1d,b2d,a1d,a2d)
 with {
-  c   = 1/tan((w1)*0.5/SR); // bilinear-transform scale-factor
+  c   = 1/tan(w1*0.5/SR); // bilinear-transform scale-factor
   csq = c*c;
   d   = a0 + a1 * c + csq;
   b0d = (b0 + b1 * c + b2 * csq)/d;
@@ -381,6 +631,40 @@ with {
   b2d = (b0 - b1 * c + b2 * csq)/d;
   a1d = 2 * (a0 - csq)/d;
   a2d = (a0 - a1*c + csq)/d;
+};
+
+// tf2snp = tf2s but using a protected normalized ladder filter for tf2:
+tf2snp(b2,b1,b0,a1,a0,w1) = tf2np(b0d,b1d,b2d,a1d,a2d)
+with {
+  c   = 1/tan(w1*0.5/SR); // bilinear-transform scale-factor
+  csq = c*c;
+  d   = a0 + a1 * c + csq;
+  b0d = (b0 + b1 * c + b2 * csq)/d;
+  b1d = 2 * (b0 - b2 * csq)/d;
+  b2d = (b0 - b1 * c + b2 * csq)/d;
+  a1d = 2 * (a0 - csq)/d;
+  a2d = (a0 - a1*c + csq)/d;
+};
+
+//----------------------------- tf3slf -------------------------------
+// Analogous to tf2s above, but third order, and using the typical
+// low-frequency-matching bilinear-transform constant 2/T ("lf" series)
+// instead of the specific-frequency-matching value used in tf2s and tf1s.
+// Note the lack of a "w1" argument.
+//
+tf3slf(b3,b2,b1,b0,a3,a2,a1,a0) = tf3(b0d,b1d,b2d,b3d,a1d,a2d,a3d) with {
+  c   = 2.0 * SR; // bilinear-transform scale-factor ("lf" case)
+  csq = c*c;
+  cc = csq*c;
+  // Thank you maxima:
+  b3d = (b3*c^3-b2*c^2+b1*c-b0)/d;
+  b2d = (-3*b3*c^3+b2*c^2+b1*c-3*b0)/d;
+  b1d = (3*b3*c^3+b2*c^2-b1*c-3*b0)/d;
+  b0d = (-b3*c^3-b2*c^2-b1*c-b0)/d;
+  a3d = (a3*c^3-a2*c^2+a1*c-a0)/d;
+  a2d = (-3*a3*c^3+a2*c^2+a1*c-3*a0)/d;
+  a1d = (3*a3*c^3+a2*c^2-a1*c-3*a0)/d;
+  d = (-a3*c^3-a2*c^2-a1*c-a0);
 };
 
 //----------------------------- tf1s --------------------------------
@@ -416,7 +700,7 @@ with {
 //
 tf1s(b1,b0,a0,w1) = tf1(b0d,b1d,a1d)
 with {
-  c   = 1/tan((w1)*0.5/SR); // bilinear-transform scale-factor
+  c   = 1/tan(w1*0.5/SR); // bilinear-transform scale-factor
   d   = a0 + c;
   b1d = (b0 - b1*c) / d;
   b0d = (b0 + b1*c) / d;
@@ -435,7 +719,7 @@ with {
 // usual scale parameter 2*SR.  Algebra carried out in maxima and pasted here.
 //
 tf2sb(b2,b1,b0,a1,a0,w1,wc) = 
-  tf4(b0d/a0d,b1d/a0d,b2d/a0d,b3d/a0d,b4d/a0d,a1d/a0d,a2d/a0d,a3d/a0d,a4d/a0d) with {
+  iir((b0d/a0d,b1d/a0d,b2d/a0d,b3d/a0d,b4d/a0d),(a1d/a0d,a2d/a0d,a3d/a0d,a4d/a0d)) with {
   T = 1.0/float(SR);
   b0d = (4*b0*w1^2+8*b2*wc^2)*T^2+8*b1*w1*T+16*b2;
   b1d = 4*b2*wc^4*T^4+4*b1*wc^2*w1*T^3-16*b1*w1*T-64*b2;
@@ -470,7 +754,7 @@ tf1sb(b1,b0,a0,w1,wc) = tf2(b0d/a0d,b1d/a0d,b2d/a0d,a1d/a0d,a2d/a0d) with {
 resonlp(fc,Q,gain) = tf2s(b2,b1,b0,a1,a0,wc)
 with {
      wc = 2*PI*fc;
-     a1 = 2/Q;
+     a1 = 1/Q;
      a0 = 1;
      b2 = 0;
      b1 = 0;
@@ -484,7 +768,7 @@ resonhp(fc,Q,gain,x) = gain*x-resonlp(fc,Q,gain,x);
 resonbp(fc,Q,gain) = tf2s(b2,b1,b0,a1,a0,wc) 
 with {
      wc = 2*PI*fc;
-     a1 = 2/Q;
+     a1 = 1/Q;
      a0 = 1;
      b2 = 0;
      b1 = gain;
@@ -498,7 +782,7 @@ with {
 //   _ : lowpass(N,fc) : _
 //   _ : highpass(N,fc) : _
 // where
-//   N = filter order (number of poles) [nonnegative integer]
+//   N = filter order (number of poles) [nonnegative constant integer]
 //   fc = desired cut-off frequency (-3dB frequency) in Hz
 // REFERENCE: 
 //  https://ccrma.stanford.edu/~jos/filters/Butterworth_Lowpass_Design.html
@@ -519,10 +803,6 @@ with {
     w1 = 2*PI*fc;
   };
 };
-
-//--- named special cases for (temporary) backward compatibility:
-lowpass1 = lowpass(1);
-highpass1 = highpass(1);
 
 //========== Special Filter-Bank Delay-Equalizing Allpass Filters ===========
 //
@@ -722,9 +1002,6 @@ with {
   };
 };
 
-// Named special case for (temporary) backward compatibility:
-bandpass6(fl,fu) = bandpass(3,fl,fu);
-  
 //======================= Elliptic Bandpass Filters ============================
 
 //----------------------------- bandpass6e -----------------------------
@@ -790,40 +1067,77 @@ with { // octave script output:
 //================= Parametric Equalizers (Shelf, Peaking)  ==================
 // REFERENCES
 // - http://en.wikipedia.org/wiki/Equalization
+// - filterbank (below, here in filter.lib)
+// - http://www.musicdsp.org/files/Audio-EQ-Cookbook.txt
 // - Digital Audio Signal Processing, Udo Zolzer, Wiley, 1999, p. 124
-// - http://www.harmony-central.com/Computer/Programming/Audio-EQ-Cookbook.txt
-//   http://www.musicdsp.org/files/Audio-EQ-Cookbook.txt
 // - https://ccrma.stanford.edu/~jos/filters/Low_High_Shelving_Filters.html
 // - https://ccrma.stanford.edu/~jos/filters/Peaking_Equalizers.html
 // - maxmsp.lib in the Faust distribution
 // - bandfilter.dsp in the faust2pd distribution 
 
-//----------------------------- low_shelf ------------------------------------
+//------------------------------ low_shelf -------------------------------------
 // First-order "low shelf" filter (gain boost|cut between dc and some frequency)
-// USAGE: lowshelf(L0,fx), where
-//  L0 = desired boost (dB) between dc and fx
-//  fx = desired transition frequency (Hz) from boost to unity gain
-// The gain at SR/2 is constrained to be 1.
 //
-low_shelf = low_shelf3; // default
-low_shelf1(L0,fx,x) = x + (db2linear(L0)-1)*lowpass(1,fx,x);
-low_shelf1_l(G0,fx,x) = x + (G0-1)*lowpass(1,fx,x);
-low_shelf3(L0,fx,x) = x + (db2linear(L0)-1)*lowpass(3,fx,x);
-low_shelf5(L0,fx,x) = x + (db2linear(L0)-1)*lowpass(5,fx,x);
+// USAGE: 
+//   _ : lowshelf(N,L0,fx) : _
+// where
+//   N = filter order 1, 3, 5, ... (odd only).
+//  L0 = desired level (dB) between dc and fx (boost L0>0 or cut L0<0)
+//  fx = -3dB frequency of lowpass band (L0>0) or upper band (L0<0)
+//       (see "SHELF SHAPE" below).
+//
+// The gain at SR/2 is constrained to be 1.
+// The generalization to arbitrary odd orders is based on the well known
+// fact that odd-order Butterworth band-splits are allpass-complementary
+// (see filterbank documentation below for references).
+//
+// SHELF SHAPE 
+//  The magnitude frequency response is approximately piecewise-linear
+//  on a log-log plot ("BODE PLOT").  The Bode "stick diagram" approximation
+//  L(lf) is easy to state in dB versus dB-frequency lf = dB(f):
+// L0 > 0:
+//  L(lf) = L0, f between 0 and fx = 1st corner frequency;
+//  L(lf) = L0 - N * (lf - lfx), f between fx and f2 = 2nd corner frequency;
+//  L(lf) = 0, lf > lf2.
+//    lf2 = lfx + L0/N = dB-frequency at which level gets back to 0 dB.
+//    See lowshelf_other_freq() below.
+// L0 < 0:
+//  L(lf) = L0, f between 0 and f1 = 1st corner frequency;
+//  L(lf) = - N * (lfx - lf), f between f1 and lfx = 2nd corner frequency;
+//  L(lf) = 0, lf > lfx.
+//    lf1 = lfx + L0/N = dB-frequency at which level goes up from L0.
+//    See lowshelf_other_freq() below.
 
-//----------------------------- high_shelf -----------------------------------
+lowshelf(N,L0,fx) = filterbank(N,(fx)) : _, *(db2linear(L0)) :> _;
+// Special cases and optimization:
+low_shelf  = lowshelf(3); // default = 3rd order Butterworth
+low_shelf1(L0,fx,x) = x + (db2linear(L0)-1)*lowpass(1,fx,x); // optimized
+low_shelf1_l(G0,fx,x) = x + (G0-1)*lowpass(1,fx,x); // optimized
+
+lowshelf_other_freq(N, L0, fx) = db2linear(linear2db(fx) + L0/N); // convenience
+
+//------------------------------ high_shelf ------------------------------------
 // First-order "high shelf" filter (gain boost|cut above some frequency)
 //
-// USAGE: high_shelf(Lpi,fx), where
-//  Lpi = desired boost or cut (dB) between fx and SR/2
-//  fx = desired transition frequency in Hz
-// The gain at dc is constrained to be 1
+// USAGE: 
+//   _ : highshelf(N,Lpi,fx) : _
+// where
+//    N = filter order 1, 3, 5, ... (odd only).
+//  Lpi = desired level (dB) between fx and SR/2 (boost Lpi>0 or cut Lpi<0)
+//   fx = -3dB frequency of highpass band (L0>0) or lower band (L0<0)
+//        (Use highshelf_other_freq() below to find the other one.)
 //
-high_shelf=high_shelf3; //default
-high_shelf1(Lpi,fx,x) = x + (db2linear(Lpi)-1)*highpass(1,fx,x);
-high_shelf1_l(Gpi,fx,x) = x + (Gpi-1)*highpass(1,fx,x);
-high_shelf3(Lpi,fx,x) = x + (db2linear(Lpi)-1)*highpass(3,fx,x);
-high_shelf5(Lpi,fx,x) = x + (db2linear(Lpi)-1)*highpass(5,fx,x);
+// The gain at dc is constrained to be 1.
+// See lowshelf documentation above regarding SHELF SHAPE.
+
+highshelf(N,Lpi,fx) = filterbank(N,(fx)) : *(db2linear(Lpi)), _ :> _;
+// Special cases and optimization:
+high_shelf = highshelf(3); // default = 3rd order Butterworth
+high_shelf1(Lpi,fx,x) = x + (db2linear(Lpi)-1)*highpass(1,fx,x); // optimized
+high_shelf1_l(Gpi,fx,x) = x + (Gpi-1)*highpass(1,fx,x); //optimized
+
+// shelf transitions between frequency fx and this one:
+highshelf_other_freq(N, Lpi, fx) = db2linear(linear2db(fx) - Lpi/N);
 
 //-------------------------------- peak_eq -----------------------------------
 // Second order "peaking equalizer" section 
@@ -831,7 +1145,7 @@ high_shelf5(Lpi,fx,x) = x + (db2linear(Lpi)-1)*highpass(5,fx,x);
 //   Also called a "parametric equalizer" section
 // USAGE: _ : peak_eq(Lfx,fx,B) : _;
 // where
-//    Lfx = level (dB) at fx
+//    Lfx = level (dB) at fx (boost Lfx>0 or cut Lfx<0)
 //     fx = peak frequency (Hz)
 //      B = bandwidth (B) of peak in Hz
 //
@@ -878,7 +1192,8 @@ peak_eq_rm(Lfx,fx,tanPiBT) = _ <: _,A,_ : +,- : *(0.5),*(K/2.0) : + with {
 };
 
 //-------------------------- parametric_eq_demo ------------------------------
-// USAGE: _ : parametric_eq_demo: _ ;
+// USAGE:
+//   _ : parametric_eq_demo: _ ;
 parametric_eq_demo = // input_signal : 
 	low_shelf(LL,FL) :
         peak_eq(LP,FP,BP) :
@@ -893,7 +1208,7 @@ with {
   LL = ls_group(hslider("[0] Low Boost|Cut [unit:dB] [style:knob]
                 [tooltip: Amount of low-frequency boost or cut in decibels]",
                 0,-40,40,0.1));
-  FL = ls_group(hslider("[1] Transition Frequency [unit:Hz] [style:knob]
+  FL = ls_group(hslider("[1] Transition Frequency [unit:Hz] [style:knob] [scale:log]
                 [tooltip: Transition-frequency from boost (cut) to unity gain]",
                 200,1,5000,1));
 
@@ -903,13 +1218,13 @@ with {
                 [tooltip: Amount of local boost or cut in decibels]",
                 0,-40,40,0.1));
   FP = pq_group(hslider("[1] Peak Frequency [unit:PK] [style:knob]
-       [tooltip: Peak Frequency in Piano Key (PK) units (A-440= 49 PK)]",
+       [tooltip: Peak Frequency in Piano Key (PK) units (A440 = 49PK)]",
                 49,1,100,1)) : smooth(0.999) : pianokey2hz 
 		with { pianokey2hz(x) = 440.0*pow(2.0, (x-49.0)/12); };
 
-  Q = pq_group(hslider("[2] Peak Q [style:knob]
+  Q = pq_group(hslider("[2] Peak Q [style:knob] [scale:log]
               [tooltip: Quality factor (Q) of the peak = center-frequency/bandwidth]",
-              40,1,50,0.1));
+              40,1,1000,0.1));
 
   BP = FP/Q;
 
@@ -919,100 +1234,120 @@ with {
   LH = hs_group(hslider("[0] High Boost|Cut [unit:dB] [style:knob]
                 [tooltip: Amount of high-frequency boost or cut in decibels]",
                 0,-40,40,.1));
-  FH = hs_group(hslider("[1] Transition Frequency [unit:Hz] [style:knob]
+  FH = hs_group(hslider("[1] Transition Frequency [unit:Hz] [style:knob] [scale:log]
                 [tooltip: Transition-frequency from boost (cut) to unity gain]",
                 8000,20,10000,1));
 };
 
+//------------------------- spectral_tilt --------------------------------
+// Spectral tilt filter, providing an arbitrary spectral rolloff factor
+// alpha in (-1,1), where
+//  -1 corresponds to one pole (-6 dB per octave), and
+//  +1 corresponds to one zero (+6 dB per octave).
+// In other words, alpha is the slope of the ln magnitude versus ln frequency.
+// For a "pinking filter" (e.g., to generate 1/f noise from white noise),
+// set alpha to -1/2.
+//
+// USAGE:
+//   _ : spectral_tilt(N,f0,bw,alpha) : _
+// where
+//     N = desired integer filter order (fixed at compile time)
+//    f0 = lower frequency limit for desired roll-off band
+//    bw = bandwidth of desired roll-off band
+// alpha = slope of roll-off desired in nepers per neper
+//         (ln mag / ln radian freq)
+//
+// EXAMPLE:
+//    spectral_tilt_demo below
+//
+// REFERENCE:
+//    http://arxiv.org/abs/1606.06154
+//
+spectral_tilt(N,f0,bw,alpha) = seq(i,N,sec(i)) with {
+  sec(i) = g * tf1s(b1,b0,a0,1) with {
+    g = a0/b0; // unity dc-gain scaling
+    b1 = 1.0;
+    b0 = mzh(i);
+    a0 = mph(i);
+    mzh(i) = prewarp(mz(i),SR,w0); // prewarping for bilinear transform
+    mph(i) = prewarp(mp(i),SR,w0);
+    prewarp(w,SR,wp) = wp * tan(w*T/2) / tan(wp*T/2) with { T = 1/SR; };
+    mz(i) = w0 * r ^ (-alpha+i); // minus zero i in s plane
+    mp(i) = w0 * r ^ i; // minus pole i in s plane
+    w0 = 2 * PI * f0; // radian frequency of first pole
+    f1 = f0 + bw; // upper band limit
+    r = (f1/f0)^(1.0/float(N-1)); // pole ratio (2 => octave spacing)
+  };
+};
+
+//-------------------------- spectral_tilt_demo ------------------------------
+// USAGE:
+//   _ : spectral_tilt_demo(N) : _ ;
+// where
+//   N = filter order (integer)
+// All other parameters interactive
+//
+spectral_tilt_demo(N) = spectral_tilt(N,f0,bw,alpha) with {
+	alpha = hslider("[1] Slope of Spectral Tilt across Band",-1/2,-1,1,0.001);
+	f0 = hslider("[2] Band Start Frequency [unit:Hz]",100,20,10000,1);
+	bw = hslider("[3] Band Width [unit:Hz]",5000,100,10000,1);
+};
+
 //========================= Lagrange Interpolation ========================
-// Reference:
+
+//-------------------------- fdelaylti, fdelayltv -------------------------
+// Fractional delay line using Lagrange interpolation
+// USAGE: _ : fdelaylt[i|v](order, maxdelay, delay, inputsignal) : _
+// where order=1,2,3,... is the order of the Lagrange interpolation polynomial.
+// fdelaylti is most efficient, but designed for constant/slowly-varying delay.
+// fdelayltv is more expensive and more robust when the delay varies rapidly.
+//
+// NOTE: The requested delay should not be less than (N-1)/2.
+//
+// The first-order case (linear interpolation) is equivalent to 
+// fdelay in music.lib (delay d in [0,1])
+//
+// REFERENCES:
+//
 // https://ccrma.stanford.edu/~jos/pasp/Lagrange_Interpolation.html
-// 
-//------------------ fdelay1, fdelay2, fdelay3, fdelay4 ---------------
-// Delay lines interpolated using Lagrange interpolation
-// USAGE: _ : fdelayN(maxdelay, delay, inputsignal) : _
-//        (exactly like fdelay in music.lib)
-// where N=1,2,3, or 4 is the order of the Lagrange interpolation polynomial.
 //
-// NOTE: requested delay should not be less than (N-1)/2.
+// Timo I. Laakso et al., "Splitting the Unit Delay - Tools for Fractional
+//         Delay Filter Design", IEEE Signal Processing Magazine,
+//         vol. 13, no. 1, pp. 30-60, Jan 1996.
 //
-// NOTE: While the implementations below appear to use multiple delay lines,
-//  they in fact use only one thanks to optimization by the Faust compiler.
+// Philippe Depalle and Stephan Tassart, "Fractional Delay Lines using
+//         Lagrange Interpolators", ICMC Proceedings, pp. 341-343, 1996.
 
-// first-order case (linear interpolation) - equivalent to fdelay in music.lib
-// delay d in [0,1] 
-fdelay1(n,d,x)  = delay(n,id,x)*(1 - fd) + delay(n,id+1,x)*fd
+fdelaylti(N,n,d,x)  = delay(n,id,x) <: seq(i,N,section(i)) : !,_
 with {
-  id = int(d);
-  fd = frac(d);
-};
-
-// second-order (quadratic) case, delay in [0.5,1.5]
-// delay d should be at least 0.5
-fdelay2(n,d,x) = delay(n,id,x)*(1-fd)*(2-fd)/2 
-               + delay(n,id+1,x)*(2-fd)*fd
-               + delay(n,id+2,x)*(fd-1)*fd/2
-with {
-  o = 0.49999; // offset to make life easy for interpolator
-  dmo = d - o; // assumed nonnegative
+  o = (N-1.00001)/2; // offset to ~center FIR interpolator
+  dmo = d - o; // assumed nonnegative [d > (N-1)/2]
   id = int(dmo);
   fd = o + frac(dmo);
+  section(i,x,y) = (x-x') * c(i) <: _,+(y);
+  c(i) = (i - fd)/(i+1);
 };
 
-// third-order (cubic) case, delay in [1,2]
-// delay d should be at least 1
-fdelay3(n,d,x) = delay(n,id,x) * (0-fdm1*fdm2*fdm3)/6
-               + delay(n,id+1,x) * fd*fdm2*fdm3/2
-               + delay(n,id+2,x) * (0-fd*fdm1*fdm3)/2
-               + delay(n,id+3,x) * fd*fdm1*fdm2/6
+fdelayltv(N,n,d,x) = sum(i, N+1, delay(n,id+i,x) * h(N,fd,i))
 with {
-  id = int(d-1); 
-  fd = 1+frac(d);
-  fdm1 = fd-1;
-  fdm2 = fd-2;
-  fdm3 = fd-3;
-};
-
-// fourth-order (quartic) case, delay in [1.5,2.5]
-// delay d should be at least 1.5
-fdelay4(n,d,x) = delay(n,id,x)   * fdm1*fdm2*fdm3*fdm4/24 
-               + delay(n,id+1,x) * (0-fd*fdm2*fdm3*fdm4)/6
-               + delay(n,id+2,x) * fd*fdm1*fdm3*fdm4/4
-               + delay(n,id+3,x) * (0-fd*fdm1*fdm2*fdm4)/6
-               + delay(n,id+4,x) * fd*fdm1*fdm2*fdm3/24
-with {
-//v1:  o = 1;
-  o = 1.49999;
-  dmo = d - o; // assumed nonnegative
+  o = (N-1.00001)/2;  // ~center FIR interpolator
+  dmo = d - o; // assumed >=0 [d > (N-1)/2]
   id = int(dmo);
   fd = o + frac(dmo);
-  fdm1 = fd-1;
-  fdm2 = fd-2;
-  fdm3 = fd-3;
-  fdm4 = fd-4;
+  h(N,d,n) = facs1(N,d,n) * facs2(N,d,n);
+  facs1(N,d,n) = select2(n,1,prod(k,max(1,n),select2(k<n,1,fac(d,n,k))));
+  facs2(N,d,n) = select2(n<N,1,prod(l,max(1,N-n),fac(d,n,l+n+1)));
+  fac(d,n,k) = (d-k)/((n-k)+(n==k));
+  // Explicit formula for Lagrange interpolation coefficients:
+  // h_d(n) = \prod_{\stackrel{k=0}{k\neq n}}^N \frac{d-k}{n-k}, n=0:N
 };
 
-// fifth-order case, delay in [2,3]
-// delay d should be at least 2
-fdelay5(n,d,x) = 
-   delay(n,id,x)   *    -fdm1*fdm2*fdm3*fdm4*fdm5/120
- + delay(n,id+1,x) *  fd*     fdm2*fdm3*fdm4*fdm5/24
- + delay(n,id+2,x) * -fd*fdm1*     fdm3*fdm4*fdm5/12
- + delay(n,id+3,x) *  fd*fdm1*fdm2*     fdm4*fdm5/12
- + delay(n,id+4,x) * -fd*fdm1*fdm2*fdm3*     fdm5/24
- + delay(n,id+5,x) *  fd*fdm1*fdm2*fdm3*fdm4     /120
-with {
-//v1:  o = 1;
-  o = 1.99999;
-  dmo = d - o; // assumed nonnegative
-  id = int(dmo);
-  fd = o + frac(dmo);
-  fdm1 = fd-1;
-  fdm2 = fd-2;
-  fdm3 = fd-3;
-  fdm4 = fd-4;
-  fdm5 = fd-5;
-};
+// Backward compatibility:
+fdelay1 = fdelayltv(1);
+fdelay2 = fdelayltv(2);
+fdelay3 = fdelayltv(3);
+fdelay4 = fdelayltv(4);
+fdelay5 = fdelayltv(5);
 
 //====================== Thiran Allpass Interpolation =====================
 // Reference:
@@ -1040,8 +1375,7 @@ with {
 //       as Lagrange interpolation under time-varying conditions.
 //       (You may hear clicks when changing the delay rapidly.)
 //
-// first-order allpass interpolation, allpass delay in [0.5,1.5]
-// delay d should be at least 0.5
+// first-order allpass interpolation, delay d in [0.5,1.5]
 fdelay1a(n,d,x)  = delay(n,id,x) : tf1(eta,1,eta)
 with {
   o = 0.49999; // offset to make life easy for allpass
@@ -1052,7 +1386,6 @@ with {
 };
 
 // second-order allpass delay in [1.5,2.5]
-// delay d should be at least 1.5
 fdelay2a(n,d,x) = delay(n,id,x) : tf2(a2,a1,1,a1,a2)
 with {
   o = 1.49999;
@@ -1066,7 +1399,7 @@ with {
 
 // third-order allpass delay in [2.5,3.5]
 // delay d should be at least 2.5
-fdelay3a(n,d,x) = delay(n,id,x) : tf3(a3,a2,a1,1,a1,a2,a3)
+fdelay3a(n,d,x) = delay(n,id,x) : iir((a3,a2,a1,1),(a1,a2,a3))
 with {
   o = 2.49999;
   dmo = d - o;
@@ -1081,7 +1414,7 @@ with {
 
 // fourth-order allpass delay in [3.5,4.5]
 // delay d should be at least 3.5
-fdelay4a(n,d,x) = delay(n,id,x) : tf4(a4,a3,a2,a1,1,a1,a2,a3,a4)
+fdelay4a(n,d,x) = delay(n,id,x) : iir((a4,a3,a2,a1,1),(a1,a2,a3,a4))
 with {
   o = 3.49999;
   dmo = d - o;
@@ -1127,8 +1460,9 @@ with {
 // "power complementary", i.e., the power spectra of the individual bands
 // sum to the original power spectrum (to within some negligible tolerance).
 //
-// The filter-banks below are implemented as Butterworth spectrum-analyzers 
-// followed by delay equalizers that make them allpass-complementary.
+// The filter-banks below are implemented as Butterworth or Elliptic
+// spectrum-analyzers followed by delay equalizers that make them 
+// allpass-complementary.
 //
 // INCREASING CHANNEL ISOLATION
 //   Go to higher filter orders - see Regalia et al. or Vaidyanathan (cited 
@@ -1232,13 +1566,13 @@ mth_octave_spectral_level6e(M,ftop,N,tau,dB_offset) = _<:
      meter(N-i-1);
     meter(i) = speclevel_group(vbargraph("[%2i] [unit:dB] 
      [tooltip: Spectral Band Level in dB]", -50, 10));
-  // Can M be included in the label string somehow?
-  speclevel_group(x)  = hgroup("[0] CONSTANT-Q SPECTRUM ANALYZER (6E)
+  O = int(((N-2)/M)+0.4999);
+  speclevel_group(x)  = hgroup("[0] CONSTANT-Q SPECTRUM ANALYZER (6E), %N bands spanning LP, %O octaves below %ftop Hz, HP
      [tooltip: See Faust's filter.lib for documentation and references]", x);
 };
 
 mth_octave_spectral_level_default = mth_octave_spectral_level6e;
-spectral_level = mth_octave_spectral_level(2,10000,20);  // simplest case
+spectral_level = mth_octave_spectral_level(2,10000,20);  // simple default
 
 //---------------------- mth_octave_spectral_level_demo ----------------------
 // Demonstrate mth_octave_spectral_level in a standalone GUI.
@@ -1248,14 +1582,14 @@ spectral_level = mth_octave_spectral_level(2,10000,20);  // simplest case
 mth_octave_spectral_level_demo(M) = 
   mth_octave_spectral_level_default(M,ftop,N,tau,dB_offset) 
 with {
-  // Span nearly 10 octaves so that lowest band-edge is at 
-  // ftop*2^(-Noct+2) = 40 Hz when ftop=10 kHz:
-  N = int(10*M); // without 'int()', segmentation fault observed for M=1.67
-  ftop = 10000;
+  ftop = 16000;
+  Noct = 10; // number of octaves down from ftop
+  // Lowest band-edge is at ftop*2^(-Noct+2) = 62.5 Hz when ftop=16 kHz:
+  N = int(Noct*M); // without 'int()', segmentation fault observed for M=1.67
   ctl_group(x)  = hgroup("[1] SPECTRUM ANALYZER CONTROLS", x);
-  tau = ctl_group(hslider("[0] Level Averaging Time [unit:sec]
-        [tooltip: band-level averaging time in seconds]",
-        0.1,0,1,0.01)); 
+  tau = ctl_group(hslider("[0] Level Averaging Time [unit:ms] [scale:log]
+        [tooltip: band-level averaging time in milliseconds]",
+        100,1,10000,1)) * 0.001; 
   dB_offset = ctl_group(hslider("[1] Level dB Offset [unit:dB]
         [tooltip: Level offset in decibels]",
         50,0,100,1)); 
@@ -1345,12 +1679,13 @@ analyzer(O,lfreqs) = _ <: bsplit(nb) with
 };
 
 //----------------------------- filterbank -------------------------------------
-filterbank(O,lfreqs) = analyzer(O,lfreqs) : delayeq with
+filterbank(O,lfreqs) = analyzer(O,lfreqs) : delayeq(nb) with
 {
    nb = count(lfreqs);
    fc(n) = take(n, lfreqs);
    ap(n) = highpass_plus_lowpass(O,fc(n));
-   delayeq = par(i,nb-1,apchain(nb-1-i)),_,_;
+   delayeq(1) = _,_; // par(i,0,...) does not fly
+   delayeq(nb) = par(i,nb-1,apchain(nb-1-i)),_,_;
    apchain(0) = _;
    apchain(i) =  ap(i) : apchain(i-1);
 };
@@ -1367,9 +1702,3 @@ filterbanki(O,lfreqs) = _ <: bsplit(nb) with
    delayeq(0) = _; // moving the *(-1) here inverts all outputs BUT dc
    delayeq(i) =  ap(i) : delayeq(i-1);
 };
-
-//--- named special cases for (temporary) backward compatibility:
-analyzer3(lfreqs) = analyzer(3,lfreqs);
-analyzer5(lfreqs) = analyzer(5,lfreqs);
-filterbank3(lfreqs) = filterbank(3,lfreqs);
-filterbank5(lfreqs) = filterbank(5,lfreqs);
