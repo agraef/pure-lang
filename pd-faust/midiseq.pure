@@ -5,7 +5,7 @@
 
 using midifile;
 
-public note polytouch ctl pgm touch bend;
+public note polytouch ctl pgm touch bend sysex;
 nonfix start stop continue;
 public loop offset;
 
@@ -48,14 +48,16 @@ end;
 /* Convert the sequence to a format more suitable for playback. Absolute
    timestamps are converted to relative ones and MIDI voice messages are
    converted to a symbolic format, using message selectors familiar from the
-   Pd midi objects. System messages are discarded. */
+   Pd midi objects. System messages other than sysex are discarded. */
 
 decode xs = convert $ filter valid xs with
-  valid (t,msg) = (msg!0 and 0xf0) ~= 0xf0;
+  valid (t,msg) = (msg!0 and 0xf0) ~= 0xf0 || msg!0 == 0xf0;
   convert [] = [];
   convert ((t,msg):xs) = (0,decode msg):convert t xs with
     convert t1 [] = [];
     convert t1 ((t2,msg):xs) = (t2-t1,decode msg):convert t2 xs;
+    decode msg = foldl ($) sysex (init (tail (list msg))) // sysex
+      if msg!0 == 0xf0;
     decode {status,num,val,_} = case status of
       0x80 | 0x90 = note num val chan; // note on/off
       0xa0 = polytouch num val chan; // key pressure aka polyphonic aftertouch
