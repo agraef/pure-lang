@@ -9,7 +9,6 @@ declare nvoices "8";
 
 import("music.lib");    // Define SR, delay
 import("instrument.lib");
-import("effect.lib");   // stereopanner
 
 //==================== GUI SPECIFICATION ================
 

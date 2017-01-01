@@ -9,7 +9,6 @@ declare nvoices "8";
 
 import("music.lib");
 import("instrument.lib");
-import("effect.lib");
 
 //==================== GUI SPECIFICATION ================
 
