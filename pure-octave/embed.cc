@@ -17,7 +17,12 @@
    Please see the accompanying COPYING file for the precise license terms. The
    GPL are also be read online at http://www.gnu.org/licenses/. */
 
+#ifdef OCTAVE_4_2_PLUS
+#include "octave-config.h"
+#undef OCTAVE_USE_DEPRECATED_FUNCTIONS
+#else
 #include "octave/config.h"
+#endif
 
 #include <iostream>
 #include "octave.h"
@@ -26,7 +31,11 @@
 #if 0
 #include "unwind-prot.h"
 #endif
+#ifdef OCTAVE_4_2_PLUS
+#include "interpreter.h"
+#else
 #include "toplev.h"
+#endif
 #include "error.h" 
 #include "quit.h"
 #include "variables.h"
@@ -39,6 +48,16 @@
 #endif
 
 #include "embed.h"
+
+#ifdef OCTAVE_4_2_PLUS
+// These aren't in the public API any more.
+extern "C" void octave_save_signal_mask (void);
+extern "C" void octave_restore_signal_mask (void);
+// These are named differently.
+#define can_interrupt octave::can_interrupt
+#define octave_catch_interrupts octave::catch_interrupts
+#define octave_interrupt_exception octave::interrupt_exception
+#endif
 
 /* Basic Octave interface. This is a heavily hacked version of octave_embed by
    Paul Kienzle (http://wiki.octave.org/wiki.pl?OctaveEmbedded) which in turn
@@ -107,6 +126,13 @@ int octave_eval(const char *cmd)
 {
   int parse_status;
 
+  // XXXFIXME: Need to look at this because octave_save_signal_mask and
+  // octave_restore_signal_mask are not available in the public API of Octave
+  // 4.2+ any more. Also, eval_string() segfaults somewhere in
+  // octave::application::interactive() (deep down in liboctinterp) with
+  // Octave 4.2.0 at least, so while the code compiles it doesn't work at
+  // present. (No workaround for this is known yet, so we recommend sticking
+  // to Octave 4.0 until this is fixed.)
   octave_save_signal_mask ();
   if (octave_set_current_context)
     {
