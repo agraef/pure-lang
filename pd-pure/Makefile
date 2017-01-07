@@ -47,6 +47,9 @@ libdir = $(prefix)/lib
 includedir = $(prefix)/include
 
 # Specific setup for the various Pd flavours.
+ifeq ($(PD),purr-data)
+PD_INC=/purr-data
+endif
 ifeq ($(PD),pd-l2ork)
 PD_INC=/pd-l2ork
 endif
@@ -165,7 +168,7 @@ deb: $(debsrc) dist
 $(debsrc):
 	wget -nv https://bitbucket.org/purelang/pure-lang/downloads/$(dist).tar.gz -O $@
 
-# Special rules to build the Pd-L2Ork version.
+# Special rules to build the Pd-L2Ork and Purr-Data versions.
 
 l2ork-debsrc = $(shell echo $(dist) | sed -e 's/pd-pure/pdl2ork-pure/' -e 's/-$(version)/_$(version)/').orig.tar.gz
 
@@ -176,4 +179,15 @@ l2ork-deb: $(l2ork-debsrc) dist
 	rm -rf $(dist)
 
 $(l2ork-debsrc):
+	wget -nv https://bitbucket.org/purelang/pure-lang/downloads/$(dist).tar.gz -O $@
+
+purrdata-debsrc = $(shell echo $(dist) | sed -e 's/pd-pure/purrdata-pure/' -e 's/-$(version)/_$(version)/').orig.tar.gz
+
+purrdata-deb: $(purrdata-debsrc) dist
+	tar xfz $(dist).tar.gz
+	cd $(dist)/debian && mkdir purrdata && (sed -e 's/pd-pure/purrdata-pure/g' changelog > purrdata/changelog) && (sed -e 's/pd-pure/purrdata-pure/g' -e 's/puredata/purr-data/g' control > purrdata/control) && (sed -e 's/--/-- PD=purr-data/g' rules > purrdata/rules) && chmod a+x purrdata/rules && mv -f purrdata/* . && rmdir purrdata
+	cd $(dist) && debuild $(DEBUILD_FLAGS)
+	rm -rf $(dist)
+
+$(purrdata-debsrc):
 	wget -nv https://bitbucket.org/purelang/pure-lang/downloads/$(dist).tar.gz -O $@
