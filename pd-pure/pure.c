@@ -2079,7 +2079,7 @@ extern void pure_setup(void)
     pure_expr *x = pure_symbol(pure_sym("version"));
     char *pure_version = 0;
     pure_is_cstring_dup(x, &pure_version);
-    post("pd-pure %s (pure-%s) (c) 2009-2016 Albert Graef <aggraef@gmail.com>", VERSION, pure_version);
+    post("pd-pure %s (pure-%s) (c) 2009-2017 Albert Graef <aggraef@gmail.com>", VERSION, pure_version);
     post("pd-pure: compiled for %s-%d.%d on %s %s", PD, PD_MAJOR_VERSION, PD_MINOR_VERSION, __DATE__, __TIME__);
     if (pure_version) free (pure_version);
     /* Register the loader for Pure externals. */
