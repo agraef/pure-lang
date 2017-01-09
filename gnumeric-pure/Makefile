@@ -120,6 +120,7 @@ endif
 ifneq "$(findstring x86_64-,$(host))" ""
 # 64 bit, needs -fPIC flag
 PIC = -fPIC
+export PIC
 endif
 
 # GtkGLExt support, if requested.

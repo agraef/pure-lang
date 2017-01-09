@@ -24,6 +24,10 @@ ifneq "$(findstring -mingw,$(host))" ""
 # Windows
 EXE = .exe
 endif
+ifneq "$(findstring x86_64-,$(host))" ""
+# 64 bit, needs -fPIC flag
+PIC = -fPIC
+endif
 
 DESTDIR=
 
@@ -52,7 +56,7 @@ realclean:
 # as of pure-0.21, we can compile the script to an executable
 faust2pd$(EXE): faust2pd.pure faustxml.pure
 	sed -e 's?@version@?$(version)?' < $< > xx$<
-	pure $(PUREC_FLAGS) -I. -c xx$< -o $@
+	pure $(PIC) $(PUREC_FLAGS) -I. -c xx$< -o $@
 	rm -f xx$<
 
 # install faust2pd

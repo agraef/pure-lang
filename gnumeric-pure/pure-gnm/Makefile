@@ -1,6 +1,6 @@
 
 # Try to guess the installation prefix (this needs GNU make). NOTE: The EXE
-# variable is imported from the main Makefile.
+# and PIC variables are imported from the main Makefile.
 prefix = $(patsubst %/bin/pure$(EXE),%,$(shell which pure 2>/dev/null))
 ifeq ($(strip $(prefix)),)
 # Fall back to /usr/local.
@@ -17,7 +17,7 @@ template = $(pkgdatadir)/plugin.xml
 
 pure-gnm$(EXE): pure-gnm.pure
 	sed -e 's?plugin.xml?$(template)?' < $< > xx$<
-	pure $(PUREC_FLAGS) -c xx$< -o $@
+	pure $(PIC) $(PUREC_FLAGS) -c xx$< -o $@
 	rm -f xx$<
 
 clean:

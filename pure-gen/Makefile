@@ -41,6 +41,10 @@ ifneq "$(findstring -darwin,$(host))" ""
 # using clang (the system compiler on newer OS X versions) instead.
 gcc = $(lastword gcc $(sort $(wildcard /opt/local/bin/gcc-mp-*)))
 endif
+ifneq "$(findstring x86_64-,$(host))" ""
+# 64 bit, needs -fPIC flag
+PIC = -fPIC
+endif
 
 DISTFILES = COPYING ChangeLog Makefile config.guess README README.dump-ast \
 dump-ast.hs dump-ast-old.hs pure-gen.pure pure-gen.1 pure-gen.txt run-tests \
@@ -54,7 +58,7 @@ dump_ast = $(pkgdatadir)/dump-ast
 
 pure-gen: pure-gen.pure
 	sed -e 's?@version@?$(version)?' -e 's?@gcc@?$(gcc)?' -e 's?./dump-ast?$(dump_ast)?' < $< > xx$<
-	pure $(PUREC_FLAGS) -c xx$< -o $@
+	pure $(PIC) $(PUREC_FLAGS) -c xx$< -o $@
 	rm -f xx$<
 
 # NOTE: This requires ghc (http://www.haskell.org/ghc/) and language-c
