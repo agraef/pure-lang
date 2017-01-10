@@ -1223,8 +1223,8 @@ static void pure_menu_open(t_pure *x)
 #if PD_MENU_COMMANDS
     if (nw_gui_vmess) {
       char buf[PATH_MAX];
-      snprintf(buf, PATH_MAX, "file://%s", x->open_filename);
-      nw_gui_vmess("external_doc_open", "s", buf);
+      snprintf(buf, PATH_MAX, "%s", x->open_filename);
+      nw_gui_vmess("open_textfile", "s", buf);
     } else
       sys_vgui("::pd_menucommands::menu_openfile {%s}\n", x->open_filename);
 #else
@@ -1239,9 +1239,9 @@ static void pure_menu_open(t_pure *x)
 #if PD_MENU_COMMANDS
       if (nw_gui_vmess) {
 	char buf[PATH_MAX];
-	snprintf(buf, PATH_MAX, "file://%s/%s.pure",
+	snprintf(buf, PATH_MAX, "%s/%s.pure",
 		 c->dir, c->sym->s_name);
-	nw_gui_vmess("external_doc_open", "s", buf);
+	nw_gui_vmess("open_textfile", "s", buf);
       } else
 	sys_vgui("::pd_menucommands::menu_openfile {%s/%s.pure}\n",
 		 c->dir, c->sym->s_name);
