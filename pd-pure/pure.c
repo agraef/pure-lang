@@ -55,22 +55,10 @@ extern t_namelist *sys_searchpath;
 
 /* Note that we require a version of Pd which has the loader extension API
    (sys_register_loader et al). Also note that the most recent incarnation of
-   that API from Pd 0.47.0+ has an extra argument in the loader callback. */
-
-#ifndef NEW_LOADER
-#if PD_MAJOR_VERSION == 0 && PD_MINOR_VERSION < 47
-#undef NEW_LOADER
-#else
-#define NEW_LOADER 1
-#endif
-#endif
-
-#ifdef NEW_LOADER
-typedef int (*loader_t)(t_canvas *canvas, const char *classname,
-			const char *path);
-#else
-typedef int (*loader_t)(t_canvas *canvas, char *classname);
-#endif
+   that API from Pd 0.47.0+ has an extra argument in the loader callback. The
+   following declarations will hopefully work with either of these, so that we
+   can adjust the interface at runtime. */
+typedef int (*loader_t)();
 extern void sys_register_loader(loader_t loader);
 
 /* Current object during creation and method call (pd_receive). */
@@ -1868,22 +1856,18 @@ static void pure_printmsgs(char *res)
 
 #endif
 
-#ifdef NEW_LOADER
 static int pure_loader(t_canvas *canvas, const char *name,
 		       const char *path)
-#else
-static int pure_loader(t_canvas *canvas, char *name)
-#endif
 {
   char *ptr;
-#ifdef NEW_LOADER
-  /* The new loader in Pd 0.47.0+ indicates a library path to be searched in
-     the additional path argument. In the future we may want to use that to
-     preload Pure objects at startup time via the -lib mechanism, but right
-     now we just ignore that argument. */
-  //post("pd-pure: trying to load '%s' from '%s'", name, path);
-#endif
-  // Bail out if we don't have a canvas (do nothing at startup time).
+  if (path) {
+    /* The new loader in Pd 0.47.0+ indicates a library path to be searched in
+       the additional path argument. In the future we may want to use that to
+       preload Pure objects at startup time via the -lib mechanism, but right
+       now we just ignore that argument. */
+    //post("pd-pure: trying to load '%s' from '%s'", name, path);
+  }
+  // Bail out if we don't have a canvas (do nothing at startup time right now).
   if (!canvas) return 0;
   int fd = canvas_open(canvas, name, ".pure", dirbuf, &ptr, MAXPDSTRING, 1);
   if (fd >= 0) {
@@ -1929,6 +1913,11 @@ static int pure_loader(t_canvas *canvas, char *name)
     return lookup(sym) != 0;
   } else
     return 0;
+}
+
+static int pure_loader_legacy(t_canvas *canvas, const char *name)
+{
+  return pure_loader(canvas, name, 0);
 }
 
 static int pure_load(t_canvas *canvas, char *name)
@@ -2144,7 +2133,12 @@ extern void pure_setup(void)
     post("pd-pure: compiled for %s-%d.%d on %s %s", PD, PD_MAJOR_VERSION, PD_MINOR_VERSION, __DATE__, __TIME__);
     if (pure_version) free (pure_version);
     /* Register the loader for Pure externals. */
-    sys_register_loader(pure_loader);
+    int major, minor, bugfix;
+    sys_getversion(&major, &minor, &bugfix);
+    if (major > 0 || minor >= 47)
+      sys_register_loader(pure_loader);
+    else
+      sys_register_loader(pure_loader_legacy);
     /* Create the proxy class for extra inlets. */
     px_class = class_new(gensym("pure proxy"), 0, 0,
 			 sizeof(t_px), CLASS_PD|CLASS_NOINLET,
