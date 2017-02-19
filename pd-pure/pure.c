@@ -2124,17 +2124,27 @@ extern void pure_setup(void)
   char buf[MAXPDSTRING];
   char *ptr;
   int fd;
+  int major, minor, bugfix;
+  sys_getversion(&major, &minor, &bugfix);
   interp = pure_create_interp(0, 0);
   if (interp) {
     pure_expr *x = pure_symbol(pure_sym("version"));
     char *pure_version = 0;
     pure_is_cstring_dup(x, &pure_version);
     post("pd-pure %s (pure-%s) (c) 2009-2017 Albert Graef <aggraef@gmail.com>", VERSION, pure_version);
-    post("pd-pure: compiled for %s-%d.%d on %s %s", PD, PD_MAJOR_VERSION, PD_MINOR_VERSION, __DATE__, __TIME__);
+#ifdef PD_L2ORK_VERSION
+    /* The latest Purr Data (a.k.a. Pd-l2ork 2.x) versions have a proper
+       version number now, which is different from the vanilla compatibility
+       version, so use that instead of the generic flavor-vanilla-version
+       moniker. We still indicate the vanilla compatibility version in
+       parentheses, however, since this determines the revision of the Pd API
+       that the source was compiled against. */
+    post("pd-pure: compiled for Pd-l2ork-%s (Pd %d.%d) on %s", PD_L2ORK_VERSION, PD_MAJOR_VERSION, PD_MINOR_VERSION, __DATE__);
+#else
+    post("pd-pure: compiled for %s-%d.%d on %s", PD, PD_MAJOR_VERSION, PD_MINOR_VERSION, __DATE__);
+#endif
     if (pure_version) free (pure_version);
     /* Register the loader for Pure externals. */
-    int major, minor, bugfix;
-    sys_getversion(&major, &minor, &bugfix);
     if (major > 0 || minor >= 47)
       sys_register_loader(pure_loader);
     else
@@ -2168,7 +2178,7 @@ extern void pure_setup(void)
        Make this work on Windows as well. */
     nw_gui_vmess = dlsym(RTLD_DEFAULT, "gui_vmess");
     if (nw_gui_vmess)
-      post("pd-pure: using JavaScript interface (Pd-L2Ork nw.js version)");
+      post("pd-pure: using JavaScript interface (Pd-l2ork nw.js version)");
 #endif
 #endif
   } else
