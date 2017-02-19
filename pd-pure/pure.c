@@ -53,7 +53,24 @@ typedef struct _namelist
 
 extern t_namelist *sys_searchpath;
 
+/* Note that we require a version of Pd which has the loader extension API
+   (sys_register_loader et al). Also note that the most recent incarnation of
+   that API from Pd 0.47.0+ has an extra argument in the loader callback. */
+
+#ifndef NEW_LOADER
+#if PD_MAJOR_VERSION == 0 && PD_MINOR_VERSION < 47
+#undef NEW_LOADER
+#else
+#define NEW_LOADER 1
+#endif
+#endif
+
+#ifdef NEW_LOADER
+typedef int (*loader_t)(t_canvas *canvas, const char *classname,
+			const char *path);
+#else
 typedef int (*loader_t)(t_canvas *canvas, char *classname);
+#endif
 extern void sys_register_loader(loader_t loader);
 
 /* Current object during creation and method call (pd_receive). */
@@ -543,10 +560,45 @@ typedef struct _runtime {
 
 static t_pure *xhead = 0, *xtail = 0;
 
+/* Helper function to map between Pd symbols and the corresponding Pure
+   names. There are some special cases here, as Pd symbols may have a
+   namespace prefix and/or a trailing tilde to indicate dsp objects. */
+
+static bool is_dsp_fun(t_symbol *sym)
+{
+  int l = strlen(sym->s_name);
+  return l>0 && sym->s_name[l-1] == '~';
+}
+
+static const char *fun_name_s(const char *name)
+{
+  /* strip off the namespace qualifier if any */
+  const char *basename = strrchr(name, '/');
+  name = basename?basename+1:name;
+  int l = strlen(name);
+  if (l>0 && name[l-1] == '~') {
+    static char buf[1024];
+    if (l >= 1020) {
+      strncpy(buf, name, 1023);
+      buf[1023] = 0;
+    } else {
+      strncpy(buf, name, l-1);
+      strcpy(buf+l-1, "_dsp");
+    }
+    return buf;
+  } else
+    return name;
+}
+
+static inline const char *fun_name(t_symbol *sym)
+{
+  return fun_name_s(sym->s_name);
+}
+
 /* We keep track of the different classes in a linked list for now. */
 
 typedef struct _classes {
-  t_symbol *sym;
+  t_symbol *sym, *fsym;
   t_class *class;
   pure_interp *interp;
   char *dir;
@@ -561,6 +613,7 @@ static void add_class(t_symbol *sym, t_class *class, char *dir)
   t_classes *new = malloc(sizeof(t_classes));
   if (!new) return;
   new->sym = sym;
+  new->fsym = gensym(fun_name(sym));
   new->class = class;
   new->interp = NULL;
   new->dir = strdup(dir);
@@ -581,7 +634,14 @@ static t_classes *lookup(t_symbol *sym)
 static t_classes *lookup_script(t_symbol *sym, const char *dir)
 {
   t_classes *act = pure_classes;
-  while (act && (act->sym != sym || (!act->interp && strcmp(act->dir, dir))))
+  /* We look up Pure classes using the corresponding Pure function symbols
+     rather than the raw Pd symbols, because the latter may be disguised by
+     namespace prefixes. Note that we still (intentionally) treat identically
+     named Pure scripts in different directories as being different objects.
+     This works because we also keep track of the script directories in the
+     Pure class table. */
+  t_symbol *fsym = gensym(fun_name(sym));
+  while (act && (act->fsym != fsym || (!act->interp && strcmp(act->dir, dir))))
     act = act->next;
   if (act)
     return act;
@@ -616,34 +676,6 @@ static pure_expr *parse_blob(void *p)
 }
 
 /* Helper functions to convert between Pd atoms and Pure expressions. */
-
-static bool is_dsp_fun(t_symbol *sym)
-{
-  int l = strlen(sym->s_name);
-  return l>0 && sym->s_name[l-1] == '~';
-}
-
-static const char *fun_name_s(const char *name)
-{
-  int l = strlen(name);
-  if (l>0 && name[l-1] == '~') {
-    static char buf[1024];
-    if (l >= 1020) {
-      strncpy(buf, name, 1023);
-      buf[1023] = 0;
-    } else {
-      strncpy(buf, name, l-1);
-      strcpy(buf+l-1, "_dsp");
-    }
-    return buf;
-  } else
-    return name;
-}
-
-static inline const char *fun_name(t_symbol *sym)
-{
-  return fun_name_s(sym->s_name);
-}
 
 static char *get_expr(t_symbol *sym, int argc, t_atom *argv)
 {
@@ -1236,18 +1268,23 @@ static void pure_menu_open(t_pure *x)
     t_classes *c = x->cls;
     if (!c) return; /* this should never happen */
     if (c->dir && *c->dir) {
+      /* If there is a non-trivial namespace prefix in the object symbol, that
+	 portion of the path will already have been tacked on to the
+	 directory, so we have to use the basename of the script here. */
+      const char *basename = strrchr(c->sym->s_name, '/');
+      basename = basename?basename+1:c->sym->s_name;
 #if PD_MENU_COMMANDS
       if (nw_gui_vmess) {
 	char buf[PATH_MAX];
 	snprintf(buf, PATH_MAX, "%s/%s.pure",
-		 c->dir, c->sym->s_name);
+		 c->dir, basename);
 	nw_gui_vmess("open_textfile", "s", buf);
       } else
 	sys_vgui("::pd_menucommands::menu_openfile {%s/%s.pure}\n",
-		 c->dir, c->sym->s_name);
+		 c->dir, basename);
 #else
       sys_vgui("exec -- sh -c {emacs '%s/%s.pure'} &\n",
-	       c->dir, c->sym->s_name);
+	       c->dir, basename);
 #endif
     } else
       pd_error(x, "pd-pure: %s object doesn't have a script file",
@@ -1831,13 +1868,32 @@ static void pure_printmsgs(char *res)
 
 #endif
 
+#ifdef NEW_LOADER
+static int pure_loader(t_canvas *canvas, const char *name,
+		       const char *path)
+#else
 static int pure_loader(t_canvas *canvas, char *name)
+#endif
 {
   char *ptr;
+#ifdef NEW_LOADER
+  /* The new loader in Pd 0.47.0+ indicates a library path to be searched in
+     the additional path argument. In the future we may want to use that to
+     preload Pure objects at startup time via the -lib mechanism, but right
+     now we just ignore that argument. */
+  //post("pd-pure: trying to load '%s' from '%s'", name, path);
+#endif
+  // Bail out if we don't have a canvas (do nothing at startup time).
+  if (!canvas) return 0;
   int fd = canvas_open(canvas, name, ".pure", dirbuf, &ptr, MAXPDSTRING, 1);
   if (fd >= 0) {
     t_symbol *sym = gensym(name);
     close(fd);
+    /* We make no attempt to canonicalize the path here, but let's at least
+       strip off a trailing "/." resulting from the "./" namespace qualifier,
+       which is a fairly common idiom. */
+    char *suffix = strrchr(dirbuf, '/');
+    if (suffix && strcmp(suffix, "/.") == 0) *suffix = 0;
     class_set_extern_dir(gensym(dirbuf));
     /* Skip the loading step if the script is already loaded. */
     if (!lookup_script(sym, dirbuf)) {
@@ -1847,7 +1903,12 @@ static int pure_loader(t_canvas *canvas, char *name)
 	 rather than 'using', so that the definitions become temporaries which
 	 can be removed and reloaded later (cf. pure_reload). */
       if (chdir(dirbuf)) {}
-      sprintf(cmdbuf, "run \"%s.pure\"", name);
+      /* If there is a non-trivial namespace prefix in the object symbol,
+	 canvas_open will already haved tacked on that portion of the path to
+	 the dirbuf, so we have to use the basename of the script here. */
+      const char *basename = strrchr(name, '/');
+      basename = basename?basename+1:name;
+      sprintf(cmdbuf, "run \"%s.pure\"", basename);
 #ifdef VERBOSE
       printf("pd-pure: compiling %s.pure\n", name);
 #endif
