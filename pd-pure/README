@@ -989,30 +989,33 @@ scratch and reloads everything, including the prelude and imported modules.
 This will usually take much longer, but is only necessary if you edited
 imported library modules which won't be reloaded with the ``bang`` message.
 
-While this facility is very useful for interactive development, it does have
-some limitations:
+While this facility is tremendously useful for interactive development, there
+are some caveats and corresponding workarounds that you should keep in mind.
 
-* At present, the number of inlets and outlets of Pure objects never changes
-  after reloading scripts. Pd does not support this through its API right now.
-  Thus by editing and reloading the Pure scripts you can change the
-  functionality of existing Pure objects in a running patch, but not their
-  interfaces. (It is possible to make changes to inlets and outlets take
-  effect by manually editing the affected objects afterwards. But this will be
-  cumbersome when you have to edit a lot of objects, so it might be easier to
-  just restart Pd and reload the patches in such cases.)
+First, since the compilation is done in Pd's main thread, it may lead to
+undesirable pauses in Pd's audio and control processing. With the ``bang``
+message the delays will usually be small, but may still be noticeable. There's
+no way around this in the current implementation, but as a remedy you can try
+to keep the compilation times to a minimum. This can be achieved by putting
+all code which you don't plan to edit "live" into library modules which are
+imported in the object scripts. By these means, the number of definitions in
+the object scripts themselves can be kept small, resulting in faster
+compilation.
 
-* Reloading scripts may need some time depending on how much Pure code has to
-  be recompiled and how fast your cpu is. With the ``bang`` message the delays
-  will usually be small, but still noticable. In order to keep the compilation
-  times to a minimum, it is a good idea to put all code which you don't plan
-  to edit "live" into library modules which are imported in the object
-  scripts. By these means, the number of definitions in the object scripts
-  themselves can be kept small, resulting in faster compilation.
+Second, Pd doesn't allow objects to change their inlet/outlet configuration on
+the fly. If a code change in a Pure object involves any such modifications,
+the reloaded objects will still appear to have the same inlets and outlets as
+before (and often cease to function properly). The quickest way to force an
+update of all affected Pure objects in one go, while preserving the current
+object connections, is to select the corresponding part of the patch and use
+Pd's cut and paste commands to reinsert it into the patch (if there are a lot
+of Pure objects scattered out all over the patch then you might just want to
+select and reinsert the entire contents of the patch).
 
-Also note that the reloading of object scripts amounts to a "cold restart" of
-the Pure objects in your patches. If a Pure object keeps some `local state`_,
-it will be lost. As a remedy, the loader implements a simple protocol which
-allows Pure objects to record their internal state before a script gets
+Finally, note that the reloading of object scripts amounts to a "cold restart"
+of the Pure objects in your patches. If a Pure object keeps some `local
+state`_, it will be lost. As a remedy, the loader implements a simple protocol
+which allows Pure objects to record their internal state before a script gets
 reloaded, and restore it afterwards. To these ends, a Pure object may respond
 to the following two messages:
 
