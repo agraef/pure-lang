@@ -1859,17 +1859,17 @@ static void pure_printmsgs(char *res)
 static int pure_loader(t_canvas *canvas, const char *name,
 		       const char *path)
 {
-  char *ptr;
-  if (path) {
+  char *ptr, namebuf[MAXPDSTRING];
+  const char *fname = name;
+  if (path && !canvas) {
     /* The new loader in Pd 0.47.0+ indicates a library path to be searched in
-       the additional path argument. In the future we may want to use that to
-       preload Pure objects at startup time via the -lib mechanism, but right
-       now we just ignore that argument. */
-    //post("pd-pure: trying to load '%s' from '%s'", name, path);
-  }
-  // Bail out if we don't have a canvas (do nothing at startup time right now).
-  if (!canvas) return 0;
-  int fd = canvas_open(canvas, name, ".pure", dirbuf, &ptr, MAXPDSTRING, 1);
+       the additional path argument. We use that here to preload Pure objects
+       at startup time in order to support the -lib mechanism. */
+    snprintf(namebuf, MAXPDSTRING, "%s/%s", path, name);
+    fname = namebuf;
+  } else if (!canvas)
+    return 0;
+  int fd = canvas_open(canvas, fname, ".pure", dirbuf, &ptr, MAXPDSTRING, 1);
   if (fd >= 0) {
     t_symbol *sym = gensym(name);
     close(fd);
@@ -1910,7 +1910,11 @@ static int pure_loader(t_canvas *canvas, const char *name,
     /* Create the object class. */
     class_setup(name, dirbuf);
     class_set_extern_dir(&s_);
-    return lookup(sym) != 0;
+    /* When invoked during startup, give some feedback that we loaded the
+       script. */
+    if (path && !canvas)
+      post("pd-pure: loaded '%s' from %s", name, dirbuf);
+    return !!lookup(sym);
   } else
     return 0;
 }
