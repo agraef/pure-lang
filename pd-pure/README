@@ -7,20 +7,31 @@ Version @version@, |today|
 
 Albert Graef <aggraef@gmail.com>
 
-This is a Pd_ loader plugin for the Pure programming language which lets you
-write external Pd objects in Pure.
+This is a Pd_ loader plugin for the Pure_ programming language which lets you
+write external Pd objects in Pure. This is generally much easier and a lot
+more fun than having to code externals in a comparatively low-level language
+such as C or C++. Being a full-featured functional programming language, Pure
+certainly has its own learning curve, but once mastered, it makes programming
+many kinds of Pd objects a walk in the park. Its Pd interface is very
+convenient to use and has livecoding support, i.e., the ability to reload Pure
+externals at any time while your Pd patch keeps running. Pure also offers a
+comprehensive library of its own and many interfaces to third-party software
+useful for implementing Pd objects, such as Octave_ and Grame's Faust_.
 
+.. _Pure: https://purelang.bitbucket.io/
 .. _Pd: http://puredata.info/
+.. _Octave: http://www.octave.org/
+.. _Faust: http://faust.grame.fr/
 
-Please note that the present version of the module is still somewhat
-experimental, but it seems to work fairly well at least with Pure versions
-0.34 and later. In particular, note that Pure is a *compiled* language and
-thus there are some inevitable latencies at startup, when the embedded Pure
-interpreter loads your Pure scripts and compiles them on the fly. However,
-once the scripts have been compiled, they are executed very efficiently. As of
-pd-pure 0.15, it is also possible to *precompile* a collection of Pure objects
-to a library in binary format which can be loaded much faster with Pd's
-``-lib`` option. (This requires Pure 0.50 or later.)
+**Caveat:** Please note that Pure is a *JIT-compiled* language and thus there
+may be some noticeable latencies when the embedded Pure runtime first loads
+your Pure scripts and compiles them on the fly. This shouldn't be much of an
+issue on reasonably modern hardware, however, and once the scripts *have* been
+loaded, they are executed very efficiently. As of pd-pure 0.15, it is also
+possible to *precompile* a collection of Pure objects to a binary external
+library which can be loaded just like any other library of Pd externals with
+Pd's ``-lib`` option. In addition, pd-pure 0.24 and later offer the ability to
+*preload* Pure scripts with the ``-lib`` option at startup.
 
 .. contents::
 .. sectnum::
@@ -34,7 +45,9 @@ Copyright (c) 2009-2017 by Albert Graef. pd-pure is distributed under a
 Installation
 ============
 
-MS Windows users please see `pd-pure on Windows`_ below.
+You'll need Pure 0.50+ and Pd 0.43+. We recommend using Pd versions 0.47.0 and
+above, since these offer substantial improvements in Pd's "loader" functionality
+which pd-pure hooks into to provide Pure object creation.
 
 Get the latest source from
 https://bitbucket.org/purelang/pure-lang/downloads/pd-pure-@version@.tar.gz.
@@ -49,42 +62,45 @@ prefix=/some/path``. Or you can specify the exact path of the lib/pd directory
 with ``make pdlibdir=/some/path``; by default the Makefile assumes
 ``$(prefix)/lib/pd``.
 
-It is also possible to specify an alternative flavour of Pd when building and
+It is also possible to specify an alternative flavor of Pd when building and
 installing the module, by adding a definition like ``PD=pd-extended`` to the
 ``make`` command line. This is known to work with pd-extended_ and pd-l2ork_,
 two popular alternative Pd distributions available on the web, as well as
-purr-data_ (the new cross-platform version of pd-l2ork_).
+pd-l2ork_'s latest cross-platform version purr-data_. (If you're going with
+one of these, we recommend using purr-data_ since it has all the latest loader
+improvements.)
 
 .. _pd-extended: http://puredata.info/downloads/pd-extended
 .. _pd-l2ork: http://l2ork.music.vt.edu/main/?page_id=56
-.. _purr-data: https://git.purrdata.net/jwilkes/purr-data
+.. _purr-data: https://agraef.github.io/purr-data-intro/
 
 The Makefile also tries to guess the host system type and Pure version, and
 set up some platform-specific things accordingly. If this doesn't work for
 your system then you'll have to edit the Makefile accordingly.
 
-pd-pure on Windows
-------------------
+MS Windows users please note that there's a binary package in MSI format
+available at the Pure website:
+https://bitbucket.org/purelang/pure-lang/downloads/pd-pure-@version@.msi.
 
-There's a binary package in MSI format available at the Pure website:
-https://bitbucket.org/purelang/pure-lang/downloads/pd-pure-@version@.msi. Use that if you
-can. You'll also need the latest Pure version (0.50 at the time of this
-writing), and Pd 0.43 or later, which is available from Miller Puckette's
-website: http://crca.ucsd.edu/~msp/software.html.
+Mac users can find pd-pure and all its dependencies in MacPorts_. Please also
+check the "Pure on Mac OS X" `wiki page`_ for details.
+
+.. _MacPorts: http://www.macports.org/
+.. _wiki page: https://bitbucket.org/purelang/pure-lang/wiki/PureOnMacOSX#markdown-header-pd-and-friends
 
 Usage
 =====
 
 After installation, you still have to tell Pd to load the Pure external at
 startup, either with the ``-lib`` option (``pd -lib pure``), or by specifying
-``pure`` in the File/Startup options (Media/Preferences/Startup in Pd 0.43 and
-later). This setting can be saved so that the Pure loader is always available
-when you run Pd. Once the Pure loader has been installed, you should see a
-message in the Pd main window indicating that the external has been loaded.
+``pure`` in Pd's startup options. This setting can be saved so that the Pure
+loader is always available when you run Pd. Once the Pure loader has been
+installed, you should see a message in the Pd main window indicating that the
+external has been loaded.
 
 Since version 0.12 pd-pure supports the definition of both `control` and
-`audio objects` in Pure. The latter are also known as "tilde objects" in Pd
-parlance; pd-pure follows the Pd convention in that audio objects have a
+`audio objects` in Pure. The latter are also known as "tilde" or "dsp objects"
+in Pd parlance; pd-pure follows the Pd convention in that these objects have a
 trailing tilde in their name. Audio objects are used primarily for processing
 audio signals, whereas control objects are employed for asynchronous message
 processing.
@@ -137,7 +153,7 @@ These can also be accessed in Pd by right-clicking on any Pure object and
 selecting the ``Help`` option. (Recent pd-pure versions also allow you to
 right-click and select ``Open`` to open the script of a named Pure object in a
 text editor, provided that your Pd version supports the ``menu-open``
-command.)
+command. Most reasonably recent Pd versions and flavors do.)
 
 In the following section, we first discuss in detail how `control objects`_
 are defined and used. After that, the necessary adjustments for implementing
@@ -151,14 +167,18 @@ Basically, to implement a Pd control object named ``foo``, all you have to do
 is supply a Pure script named foo.pure which defines a function ``foo`` (and
 anything else that you might need to define the function). This function is
 also called the `object function`. You can put the script containing the
-object function in the same directory as the Pd patch in which you want to use
-the ``foo`` object, or anywhere on Pd's search path. (The latter is useful if
-the object is to be used in several patches located in different
-subdirectories.) The script will be executed once, at the time the first
-object with the given name is created, and will be executed in the directory
-where it is located. Thus, if the script needs to import other Pure scripts or
-load some data files, you can put these into the same directory so that the
-object script can find them.
+object function either in the same directory as the Pd patch in which you want
+to use the ``foo`` object, or anywhere on Pd's search path. (The latter is
+useful if the object is to be used in several patches located in different
+subdirectories. Also note that the former requires that you already *saved*
+the Pd patch in the directory containing the foo.pure script *before* you
+create a ``foo`` object in it, so that the Pure loader finds the script.)
+
+The script will be executed once, at the time the first object with the given
+name is created, and will be executed in the directory where it is
+located. Thus, if the script needs to import other Pure scripts or load some
+data files, you can put these into the same directory so that the object
+script can find them.
 
 The ``foo`` function gets evaluated at object creation time, receiving any
 additional parameters the object is created with. The resulting Pure
@@ -227,9 +247,9 @@ For simple kinds of objects like the above, the Pure loader provides the
 generic ``[pure]`` object as a quick means to create Pure control objects
 without actually preparing a script file. The creation parameter of ``[pure]``
 is the object function. This can be a predefined Pure function, or you can
-define it on the fly in a ``with`` clause. (It is also possible to explicitly
-load additional script files needed to implement objects defined using
-``[pure]``; see `Controlling the Runtime`_ for details.)
+define it on the fly in a ``with`` clause. You can also just load additional
+script files defining the functions you use with ``[pure]``; see `Controlling
+the Runtime`_ and `Loading Script Files at Startup`_ for details.
 
 For instance, ``[pure succ]`` uses the predefined Pure function ``succ`` which
 adds 1 to its input, while the object ``[pure add 5 with add x y = x+y end]``
@@ -523,8 +543,6 @@ branch of the Faust compiler so that the dsp can be inlined into the Pure
 program. Note that the entire section inside the ``%< %>`` braces is Faust
 code.)
 
-.. _Faust: http://faudiostream.sf.net/
-
 ::
 
   %< -*- dsp:amp -*-
@@ -667,15 +685,17 @@ it avoids the overhead of the extra Pure layer. However, invoking Faust dsps
 via Pure also offers some benefits. In particular, it enables you to add more
 sophisticated control processing, interface to other 3rd party software for
 additional pre- and postprocessing of the signal data, or do live editing of
-Faust programs using the facilities described in Livecoding_ below.
+Faust programs using the facilities described in Livecoding_ below. An actual
+Pure implementation of a Faust external which does all this *and* provides the
+extra conveniences of faust2pd under one hood can be found in :doc:`pd-faust`.
 
 Advanced Features
 =================
 
 This section discusses some advanced features of the Pd Pure loader. It
-explains the use of timer callbacks, wireless connections and wave arrays, and
-the livecoding and interactive control facilities. We also give an overview of
-the API provided for pd-pure programmers.
+explains the use of timer callbacks, "wireless" connections (send/receive),
+wave arrays, and the runtime control and livecoding facilities. We also give
+an overview of the API provided for pd-pure programmers.
 
 Asynchronous Messages
 ---------------------
@@ -848,7 +868,12 @@ possible to control the embedded Pure interpreter in some ways. There can be
 any number of ``[pure-runtime]`` objects in a patch, which all refer to the
 same instance of the Pure interpreter.
 
-The first use of ``[pure-runtime]`` is to load additional Pure scripts. To
+First and foremost, the ``[pure-runtime]`` object accepts some control
+messages which can be used to dynamically reload all loaded scripts, and to
+implement "remote control" of a patch using the :program:`pdsend`
+program. This is described in more detail in the Livecoding_ subsection.
+
+The second use of ``[pure-runtime]`` is to load additional Pure scripts. To
 these ends, ``[pure-runtime]`` can be invoked with the names of scripts to be
 loaded at object creation time as arguments. The script names should be
 specified without the ``.pure`` suffix; it will be added automatically. The
@@ -859,19 +884,85 @@ your patch::
 
   [pure-runtime foo bar]
 
-This facility can be used, e.g., to load any additional scripts needed for
-anonymous objects defined with ``[pure]`` and ``[pure~]``.
+This facility can be used, in particular, to load any additional scripts
+needed for anonymous objects defined with ``[pure]`` and ``[pure~]``.
+However, the present implementation of the ``[pure-runtime]`` script loader
+suffers from some technical shortcomings. In particular, it mostly bypasses
+pd-pure's internal tracking of script files, so you should *never* use it to
+load scripts which implement named Pure objects; these are better handled
+automatically by the Pure loader. Another caveat is that you *must* ensure
+that the ``[pure-runtime]`` object is inserted into the patch *before* any
+anonymous objects which depend on the loaded scripts.
 
-.. note:: You'll have to make sure that the ``[pure-runtime]`` object is
-   inserted into the patch before any anonymous objects which depend on the
-   loaded scripts. Also note that you shouldn't explicitly load the scripts
-   which implement named Pure objects; this will be handled automatically by
-   the Pure loader.
+In fact, the script loading facility of ``[pure-runtime]`` is considered a
+"legacy" feature now that ``[declare -lib]`` (discussed in the next
+subsection) offers a better way to load additional script files using Pd's
+built-in ``-lib`` mechanism. However, the implementation of the latter
+requires a recent Pd version (0.47.0 or later) and thus the ``[pure-runtime]``
+script loader is still provided for backwards compatibility.
 
-The ``[pure-runtime]`` object also accepts control messages which can be used
-to dynamically reload all loaded scripts, and to implement "remote control" of
-a patch using the :program:`pdsend` program. This is described in the
-following subsection.
+Loading Script Files at Startup
+-------------------------------
+
+As of version 0.24, pd-pure provides an easier and more familiar way to load
+additional Pure scripts using Pd's ``-lib`` mechanism during Pd's startup or
+when a patch is loaded. Compared to the rather rudimentary script loading
+facility provided by the ``[pure-runtime]`` object, this also offers two chief
+advantages:
+
+- It works with *both* named Pure objects and auxiliary library scripts
+  defining functions to be used with the ``[pure]`` and ``[pure~]`` objects.
+
+- The Pure loader keeps track of the loaded scripts and allows them to be
+  reloaded at any time using the livecoding_ facility.
+
+Note that at present, this feature requires the latest incarnation of the Pd
+loader, which means that you should make sure that you're using Pd 0.47.0 or
+later, or a suitable Pd flavor such as purr-data_.
+
+To load some script files at startup, just add the corresponding script names
+(without the ``.pure`` suffix) to Pd's startup libraries, or invoke them from
+the command line using the ``-lib`` option, just like you'd do with any other
+Pd externals and libraries. E.g.::
+
+  pd -lib foo -lib bar
+
+Note that these options *must* come after any options required to launch the
+Pure loader (see Usage_ above), otherwise Pd will *not* recognize the scripts
+as loadable libraries. You can also specify the relative or absolute path to
+the scripts if needed, for instance::
+
+  pd -lib ~/pd-pure-externals/foo -lib ~/pd-pure-externals/bar
+
+Or you can use Pd's ``-path`` option (or Pd's search path configuration
+dialog) to specify where Pd should go looking for the script files::
+
+  pd -path ~/pd-pure-externals -lib foo -lib bar
+
+Note that no special search path will be needed if you just drop the Pure
+scripts to be loaded into one of the directories on Pd's default search path.
+E.g., on Linux this usually includes the ``~/pd-externals`` folder
+(``~/pd-l2ork-externals`` when using pd-l2ork_ or purr-data_). The default
+path will be different depending on the platform and Pd flavor you use, so
+please check your local Pd documentation for details.
+
+The ``-lib`` mechanism also works with Pd's ``[declare]`` object, so that,
+like the ``[pure-runtime]`` object, it can also be used on a per-patch
+basis. For instance, you can invoke the ``foo`` and ``bar`` script files in a
+patch by inserting the following object (using the same ``-lib`` and ``-path``
+options that you'd use on the command line)::
+
+  [declare -lib foo -lib bar]
+
+The scripts will then be loaded automagically as soon as you open the patch in
+Pd. (Note that, as with the ``[pure-runtime]`` object, the ``[declare]``
+object needs to be inserted *before* any objects which depend on the loaded
+scripts.) This facility is most useful with anonymous objects, since named
+objects will be loaded anyway if needed, if you just type their name into an
+object box. But it works with named objects, too, and it also allows you to
+mix and match named and anonymous objects in a single script file, *and* make
+sure that the script gets loaded (and reloaded when livecoding) even if the
+patch doesn't contain any instance of the named object at all.
 
 Livecoding
 ----------
