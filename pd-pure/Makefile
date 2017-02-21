@@ -6,7 +6,7 @@ version = 0.24
 # Here are some variables you can specify when invoking 'make', besides the
 # usual CXXFLAGS, CPPFLAGS etc.:
 
-# PD=pd: This sets the flavour of Pd for which pd-pure is to be installed. By
+# PD=pd: This sets the flavor of Pd for which pd-pure is to be installed. By
 # default this is just 'pd', which will work with Miller Puckette's "vanilla"
 # distribution of Pd. You can set this, e.g., to 'pd-extended' or 'pd-l2ork'
 # if you're running these alternative Pd distributions instead.
@@ -46,13 +46,8 @@ purelib = $(shell pkg-config pure --libs)
 libdir = $(prefix)/lib
 includedir = $(prefix)/include
 
-# Specific setup for the various Pd flavours.
-ifeq ($(PD),purr-data)
-PD_INC=/purr-data
-endif
-ifeq ($(PD),pd-l2ork)
-PD_INC=/pd-l2ork
-endif
+# Specific setup for the various Pd flavors.
+PD_INC=/$(PD)
 ifeq ($(PD),pd-extended)
 PD_INC=/pdextended
 endif
