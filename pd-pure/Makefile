@@ -118,7 +118,7 @@ override CPPFLAGS += -I$(pdincdir) -Ipd $(pureinc)
 
 DISTFILES = COPYING Makefile README config.guess pure.c pd/*.h \
 debian/* examples/*.pure examples/*.pd examples/*.el \
-examples/lib/Makefile examples/lib/*.pure examples/lib/*.c examples/lib/*.pd
+examples/libexample/Makefile examples/libexample/*.pure examples/libexample/*.c examples/libexample/*.pd
 SEDFILES = README
 
 all: pure$(DLL)
@@ -136,7 +136,7 @@ install:
 	test -d "$(DESTDIR)$(pdextradir)" || mkdir -p "$(DESTDIR)$(pdextradir)"
 	cp COPYING README Makefile pure.c pure$(DLL) examples/*.pure examples/*.pd examples/*.el "$(DESTDIR)$(pdextradir)"
 	test -d "$(DESTDIR)$(pdextradir)/lib" || mkdir -p "$(DESTDIR)$(pdextradir)/lib"
-	cp examples/lib/Makefile examples/lib/*.pure examples/lib/*.c examples/lib/*.pd "$(DESTDIR)$(pdextradir)/lib"
+	cp examples/libexample/Makefile examples/libexample/*.pure examples/libexample/*.c examples/libexample/*.pd "$(DESTDIR)$(pdextradir)/lib"
 
 uninstall:
 	rm -rf "$(DESTDIR)$(pdextradir)"
@@ -146,7 +146,7 @@ datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > 
 
 dist:
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/debian && mkdir $(dist)/pd && mkdir $(dist)/examples && mkdir $(dist)/examples/lib
+	mkdir $(dist) && mkdir $(dist)/debian && mkdir $(dist)/pd && mkdir $(dist)/examples && mkdir $(dist)/examples/libexample
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	for x in $(SEDFILES); do rm -f $(dist)/$$x; $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
 	rm -f $(dist).tar.gz
