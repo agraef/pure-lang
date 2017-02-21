@@ -1989,13 +1989,18 @@ static void reload(t_classes *c)
 /* Create a new interpreter instance and reinitialize all objects. This must
    be invoked in a safe context, where no evaluations are in progress. */
 
+/* The command line arguments the embedded interpreter is to be invoked with.
+   This gets modified as needed in pure_setup. */
+static char *argv[] = { PD, "-I", LIBDIR "/extra/pure/lib", NULL };
+static int argc = sizeof(argv)/sizeof(char*)-1;
+
 static void pure_restart(void)
 {
   t_pure *x;
   for (x = xhead; x; x = x->next)
     pure_refini(x);
   pure_delete_interp(interp);
-  interp = pure_create_interp(0, 0);
+  interp = pure_create_interp(argc, argv);
   pure_switch_interp(interp);
 #ifdef VERBOSE
   printf("pd-pure: restarting, please wait...\n");
@@ -2125,12 +2130,15 @@ extern int pure_register_class(const char *name, pure_interp *interp,
 
 extern void pure_setup(void)
 {
-  char buf[MAXPDSTRING];
+  static char buf[MAXPDSTRING];
   char *ptr;
   int fd;
   int major, minor, bugfix;
   sys_getversion(&major, &minor, &bugfix);
-  interp = pure_create_interp(0, 0);
+  /* Determine the pd-pure include path at runtime. */
+  strncpy(buf, get_libdir("/extra/pure/lib"), MAXPDSTRING);
+  argv[2] = buf;
+  interp = pure_create_interp(argc, argv);
   if (interp) {
     pure_expr *x = pure_symbol(pure_sym("version"));
     char *pure_version = 0;
@@ -2184,6 +2192,9 @@ extern void pure_setup(void)
     if (nw_gui_vmess)
       post("pd-pure: using JavaScript interface (Pd-l2ork nw.js version)");
 #endif
+#endif
+#ifdef VERBOSE
+    post("pd-pure: adding '%s' to include path", buf);
 #endif
   } else
     error("pd-pure: error initializing interpreter; loader not registered");
