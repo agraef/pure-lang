@@ -1,0 +1,80 @@
+
+/* actor.pure: A basic framework to wrap up stream processing functions in
+   simple imperative-style actors, which are ready to be used in dataflow
+   systems such as Pd. */
+
+/* Copyright (c) 2009-2017 by Albert Graef <aggraef@gmail.com>. Originally
+   presented at the Linux Audio Conference 2009 at Parma, cf. "Signal
+   Processing in the Pure Programming Language", Proc. LAC 2009, pp. 137-144,
+   Case della Musica, Parma. The code is distributed under the new BSD
+   license, see the accompanying COPYING file for details. */
+
+/* Constant symbol used to signal the current end of realtime input. */
+nonfix nodata;
+
+/* The actor function takes a stream function mapping a stream of inputs to a
+   stream of outputs and turns it into a function which takes single inputs as
+   arguments and returns the resulting outputs. Each element of the output
+   stream is returned exactly once, as soon as it becomes available. Our
+   implementation supports both synchronous and asynchronous stream functions,
+   i.e., the stream function may produce any number (including zero) of output
+   elements in response to each input element. The empty tuple () plays the
+   role of a "dummy" or "pause" message (also known as a "hiaton") which can
+   be inserted freely into input and output streams, e.g., for synchronization
+   purposes.
+
+   Note that this function is completely agnostic about the hosting realtime
+   environment, so it should work in any context which allows Pure scripts to
+   be run as realtime plugins. At the time of this writing, besides Pd this
+   also includes LV2 and VST hosts (using the Pure LV2 and "PlugR" modules
+   available from the Pure website). */
+
+/* There *are* a few gotchas in the current implementation which shouldn't
+   affect normal operation but are worth keeping in mind, so we explain them
+   in some detail below.
+
+   Since Pure doesn't support concurrency at this time, exception handling is
+   used to provide the "context switching" necessary to handle the end of
+   realtime input. Specifically, the 'nodata' exception interrupts the stream
+   function when it hits the current end of the input. Therefore you *must*
+   ensure that any exceptions raised during evaluation of the input stream are
+   delivered to the actor function. (When in doubt, just don't do any
+   exception handling in the stream function at all.) Moreover, if the stream
+   processing function gets interrupted while no output has been produced yet,
+   then the same inputs will be reread on the next invocation. To avoid this,
+   it is recommended that the stream function yields at least the () hiaton
+   value in response to messages which don't produce any other output. */
+
+/* Implementation: The local process function of the actor function feeds its
+   argument into the input queue q and then reads as many elements from the
+   output stream r as possible. The current end of the stream is signaled with
+   a 'nodata' exception.
+
+   The input stream is constructed dynamically from the messages passed to the
+   process function. Pending messages are buffered in the input queue q, from
+   which they are retrieved when they are needed. The 'nodata' exception is
+   raised if the actor reads past the current end of the stream. There is one
+   tricky issue here: We must keep a handle to the initial input stream so
+   that its elements get memoized even before the output stream r has been
+   primed. To avoid leaking memory, we keep this handle in a reference
+   variable s which is cleared as soon as we've successfully read an element
+   of the output stream. */
+
+actor f = process with
+  process ()          = digest [];
+  process msg         = digest [] when put q (get q+[msg]) end;
+  digest msgs         = catch (check msgs) (retrieve msgs);
+  retrieve msgs       = case get r of
+    y:ys = digest (y:msgs) when put s (); put r ys end;
+    ys = if null msgs then throw (bad_list_value ys) else return msgs;
+  end;
+  check msgs nodata   = return msgs;
+  check _ x           = throw x otherwise;
+  return msgs         = {x | x = reverse msgs; x~==()};
+end
+when s = ref (inputs&); r = ref (f (get s)&) end
+with inputs = case get q of
+                x:xs = x:inputs& when put q xs end;
+                _ = throw nodata;
+              end;
+end when q = ref [] end;

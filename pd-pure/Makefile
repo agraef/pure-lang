@@ -117,7 +117,7 @@ endif
 override CPPFLAGS += -I$(pdincdir) -Ipd $(pureinc)
 
 DISTFILES = COPYING Makefile README config.guess pure.c pd/*.h \
-debian/* examples/*.pure examples/*.pd examples/*.el \
+debian/* lib/*.pure examples/*.pure examples/*.pd examples/*.el \
 examples/libexample/Makefile examples/libexample/*.pure examples/libexample/*.c examples/libexample/*.pd
 SEDFILES = README
 
@@ -136,7 +136,9 @@ install:
 	test -d "$(DESTDIR)$(pdextradir)" || mkdir -p "$(DESTDIR)$(pdextradir)"
 	cp COPYING README Makefile pure.c pure$(DLL) examples/*.pure examples/*.pd examples/*.el "$(DESTDIR)$(pdextradir)"
 	test -d "$(DESTDIR)$(pdextradir)/lib" || mkdir -p "$(DESTDIR)$(pdextradir)/lib"
-	cp examples/libexample/Makefile examples/libexample/*.pure examples/libexample/*.c examples/libexample/*.pd "$(DESTDIR)$(pdextradir)/lib"
+	cp lib/*.pure "$(DESTDIR)$(pdextradir)/lib"
+	test -d "$(DESTDIR)$(pdextradir)/libexample" || mkdir -p "$(DESTDIR)$(pdextradir)/libexample"
+	cp examples/libexample/Makefile examples/libexample/*.pure examples/libexample/*.c examples/libexample/*.pd "$(DESTDIR)$(pdextradir)/libexample"
 
 uninstall:
 	rm -rf "$(DESTDIR)$(pdextradir)"
@@ -146,7 +148,7 @@ datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > 
 
 dist:
 	rm -rf $(dist)
-	mkdir $(dist) && mkdir $(dist)/debian && mkdir $(dist)/pd && mkdir $(dist)/examples && mkdir $(dist)/examples/libexample
+	mkdir $(dist) && mkdir $(dist)/debian && mkdir $(dist)/lib && mkdir $(dist)/pd && mkdir $(dist)/examples && mkdir $(dist)/examples/libexample
 	for x in $(DISTFILES); do ln -sf $$PWD/$$x $(dist)/$$x; done
 	for x in $(SEDFILES); do rm -f $(dist)/$$x; $(call datesubst,$$PWD/$$x,$(dist)/$$x); done
 	rm -f $(dist).tar.gz
