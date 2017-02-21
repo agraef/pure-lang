@@ -62,7 +62,10 @@ pdincdir = $(includedir)$(PD_INC)
 pdlibdir = $(libdir)/$(PD)
 
 # Install dir for the external and accompanying stuff.
-pdextradir = $(pdlibdir)/extra/pure
+pdextradir = $(pdlibdir)/extra
+
+# pd-pure external goes into the pure subdir.
+pdpuredir = $(pdextradir)/pure
 
 # Try to guess the host system type.
 host = $(shell ./config.guess)
@@ -128,15 +131,17 @@ clean:
 	rm -f pure$(DLL) *~ *.a *.o
 
 install:
+	test -d "$(DESTDIR)$(pdpuredir)" || mkdir -p "$(DESTDIR)$(pdpuredir)"
+	cp COPYING README Makefile pure.c pure$(DLL) examples/*.pure examples/*.pd examples/*.el "$(DESTDIR)$(pdpuredir)"
 	test -d "$(DESTDIR)$(pdextradir)" || mkdir -p "$(DESTDIR)$(pdextradir)"
-	cp COPYING README Makefile pure.c pure$(DLL) examples/*.pure examples/*.pd examples/*.el "$(DESTDIR)$(pdextradir)"
-	test -d "$(DESTDIR)$(pdextradir)/lib" || mkdir -p "$(DESTDIR)$(pdextradir)/lib"
-	cp lib/*.pure "$(DESTDIR)$(pdextradir)/lib"
-	test -d "$(DESTDIR)$(pdextradir)/libexample" || mkdir -p "$(DESTDIR)$(pdextradir)/libexample"
-	cp examples/libexample/Makefile examples/libexample/*.pure examples/libexample/*.c examples/libexample/*.pd "$(DESTDIR)$(pdextradir)/libexample"
+	cp examples/pure-remote.pd "$(DESTDIR)$(pdextradir)"
+	test -d "$(DESTDIR)$(pdpuredir)/lib" || mkdir -p "$(DESTDIR)$(pdpuredir)/lib"
+	cp lib/*.pure "$(DESTDIR)$(pdpuredir)/lib"
+	test -d "$(DESTDIR)$(pdpuredir)/libexample" || mkdir -p "$(DESTDIR)$(pdpuredir)/libexample"
+	cp examples/libexample/Makefile examples/libexample/*.pure examples/libexample/*.c examples/libexample/*.pd "$(DESTDIR)$(pdpuredir)/libexample"
 
 uninstall:
-	rm -rf "$(DESTDIR)$(pdextradir)"
+	rm -rf "$(DESTDIR)$(pdpuredir)" "$(DESTDIR)$(pdextradir)/pure-remote.pd"
 
 date = $(shell date "+%B %-d, %Y")
 datesubst = sed -e "s?@version@?$(version)?g" -e "s?|today|?$(date)?g" < $(1) > $(2)
