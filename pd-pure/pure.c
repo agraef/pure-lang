@@ -1,5 +1,5 @@
 
-/* Copyright (c) 2009 by Albert Graef <aggraef@gmail.com>.  Distributed
+/* Copyright (c) 2009-2017 by Albert Graef <aggraef@gmail.com>.  Distributed
    under the new BSD license, see the accompanying COPYING file for details. */
 
 #include <stdlib.h>
