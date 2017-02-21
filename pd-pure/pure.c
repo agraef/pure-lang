@@ -1829,7 +1829,7 @@ static void class_setup(const char *name, char *dir)
 
 /* Loader setup, pilfered from pd-lua (claudiusmaximus@goto10.org). */
 
-void class_set_extern_dir(t_symbol *s);
+EXTERN void class_set_extern_dir(t_symbol *s);
 
 static char dirbuf[MAXPDSTRING], cmdbuf[1000];
 
