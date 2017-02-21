@@ -1108,8 +1108,8 @@ external library of Pd objects. This basically involves using the Pure
 interpreter as a batch compiler to translate the Pure scripts implementing the
 objects to a shared library. You also have to link in a small amount of C code
 so that the shared module can be loaded by Pd and registers its Pd object
-classes with pd-pure. The examples/lib folder contains a complete example
-showing how this is done.
+classes with pd-pure. The examples/libexample folder contains a complete
+example showing how this is done.
 
 Note that even if you load all your pd-pure objects from such libraries, you
 still need to load the pd-pure module first, since it provides the basic
@@ -1120,9 +1120,14 @@ Programming Interface
 ---------------------
 
 The Pure loader provides a number of interface routines which can be called by
-Pure scripts running in the Pd environment. Note that in order to access these
-functions, you'll have to add the corresponding ``extern`` declarations to
-your scripts.
+Pure scripts running in the Pd environment. There's a ``pd.pure`` script
+included in the sources which contains all the required ``extern``
+declarations for these functions, so in order to use these you can just import
+this script into your Pure scripts. (The ``pd.pure`` script will be installed
+in the ``lib`` subfolder along with the Pd Pure loader external and the
+examples, and the embedded Pure runtime has been set up so that it always has
+this directory in its search path, so that it's enough to just include a
+declaration like ``using pd;`` in your Pure scripts.)
 
 .. c:function:: extern char *pd_version_s()
 
