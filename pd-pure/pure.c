@@ -42,6 +42,10 @@
 #define LOG_MSGS 1
 #endif
 
+/* Global flag, determined at runtime, which indicates whether we need a main
+   signalin to make secondary signal inlets work. */
+static bool need_mainsignalin;
+
 /* These aren't in the official API, but have been around at least since Pd
    0.39, so are hopefully stable. */
 
@@ -1456,8 +1460,20 @@ static t_int *pure_perform(t_int *w)
 
 static void pure_dsp(t_pure *x, t_signal **sp)
 {
-  int i, n = sp[0]->s_n;
-  t_float sr = sp[0]->s_sr;
+  /* If we have a main signalin, then the leftmost inlet is a signal inlet,
+     and the real signal inlets start at an offset of 1 into sp. Otherwise, we
+     might not have any signal inlets and outlets at all, so we check that
+     before we look at the data, and assume the defaults n = 0 and sr = 0 if
+     it isn't available. XXXFIXME: A zero default value for the sample rate
+     doesn't seem to be a great idea, but currently this value apparently
+     isn't used anyway. */
+  const int offs = need_mainsignalin;
+  int i, n = 0;
+  t_float sr = 0;
+  if (x->n_dspin + x->n_dspout > 0 && sp[0]) {
+    n = sp[0]->s_n;
+    sr = sp[0]->s_sr;
+  }
   if (x->sr != sr)
     /* The sample rate at which this dsp object is supposed to run. NOTE:
        Currently this value isn't used anywhere, maybe we'd like to pass this
@@ -1471,9 +1487,9 @@ static void pure_dsp(t_pure *x, t_signal **sp)
 #endif
   dsp_add(pure_perform, 2, x, n);
   for (i = 0; i < x->n_dspin; i++)
-    x->dspin[i] = sp[i+1]->s_vec;
+    x->dspin[i] = sp[i+offs]->s_vec;
   for (i = 0; i < x->n_dspout; i++)
-    x->dspout[i] = sp[x->n_dspin+i+1]->s_vec;
+    x->dspout[i] = sp[x->n_dspin+i+offs]->s_vec;
   /* If we haven't created it yet or the block size has changed, prepare a GSL
      matrix and the corresponding Pure expression to be passed to the object
      function. The matrix has one row for each signal inlet and the row size
@@ -1818,7 +1834,13 @@ static void class_setup(const char *name, char *dir)
     class_addmethod(class, (t_method)pure_dsp, gensym((char*)"dsp"), A_NULL);
   class_addanything(class, pure_any);
   if (is_dsp) {
-    class_addmethod(class, nullfn, &s_signal, A_NULL);
+    if (need_mainsignalin) {
+      /* Create a main signalin, which is required by older Pd versions to
+	 make the other signal inlets work. */
+      class_addmethod(class, nullfn, &s_signal, A_NULL);
+      /* The above seems to be deprecated, maybe use this instead: */
+      //class_domainsignalin(class, -1);
+    }
     class_sethelpsymbol(class, gensym("pure/pure~.pd"));
   } else
     class_sethelpsymbol(class, gensym("pure/pure.pd"));
@@ -2135,6 +2157,13 @@ extern void pure_setup(void)
   int fd;
   int major, minor, bugfix;
   sys_getversion(&major, &minor, &bugfix);
+  /* Check whether we need to work around a bug in older Pd versions which
+     breaks secondary signal inlets if no main signalin is present. This bug
+     has been fixed in 0.47.0, so we require the workaround for all minor
+     versions before that. Note that this has the side-effect of turning the
+     leftmost inlet into a dummy signal inlet, which is confusing for the
+     user, but there's no way around that for Pd 0.46 and earlier. */
+  need_mainsignalin = minor < 47;
   /* Determine the pd-pure include path at runtime. */
   strncpy(buf, get_libdir("/extra/pure/lib"), MAXPDSTRING);
   argv[2] = buf;
