@@ -2015,8 +2015,12 @@ static void reload(t_classes *c)
       pure_stop_logging();
       pure_printmsgs(res);
 #ifdef EAGER
-      if (c->class)
+      if (c->class) {
+	pure_start_logging();
 	pure_interp_compile(interp, pure_sym(fun_name(c->sym)));
+	pure_stop_logging();
+	pure_printmsgs(0);
+      }
 #endif
       class_set_extern_dir(&s_);
     }
