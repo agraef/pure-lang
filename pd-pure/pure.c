@@ -1978,6 +1978,18 @@ static int pure_load(t_canvas *canvas, char *name)
     return 0;
 }
 
+static void pure_enable_warnings(void)
+{
+  sprintf(cmdbuf, "#! --warn");
+#ifdef VERBOSE
+  printf("pd-pure: enable warnings\n");
+#endif
+  pure_start_logging();
+  char *res = pure_evalcmd(cmdbuf);
+  pure_stop_logging();
+  pure_printmsgs(res);
+}
+
 /* Reload all loaded Pure scripts. */
 
 static void reload(t_classes *c)
@@ -2082,7 +2094,9 @@ static void *runtime_init(t_symbol *s, int argc, t_atom *argv)
   x->out2 = outlet_new(&x->obj, 0);
   for (i = 0; i < argc; i++)
     if (argv[i].a_type != A_SYMBOL)
-      pd_error(x, "pure-runtime: bad argument #%d, expected filename", i+1);
+      pd_error(x, "pure-runtime: bad argument #%d, expected filename or -w", i+1);
+    else if (!strcmp(argv[i].a_w.w_symbol->s_name, "-w"))
+      pure_enable_warnings();
     else if (!pure_load(canvas, argv[i].a_w.w_symbol->s_name))
       pd_error(x, "pure-runtime: error loading script '%s.pure'",
 	       argv[i].a_w.w_symbol->s_name);
