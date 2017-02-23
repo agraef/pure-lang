@@ -918,21 +918,27 @@ your patch::
   [pure-runtime foo bar]
 
 This facility can be used, in particular, to load any additional scripts
-needed for anonymous objects defined with ``[pure]`` and ``[pure~]``.
-However, the present implementation of the ``[pure-runtime]`` script loader
-suffers from some technical shortcomings. In particular, it mostly bypasses
-pd-pure's internal tracking of script files, so you should *never* use it to
-load scripts which implement named Pure objects; these are better handled
-automatically by the Pure loader. Another caveat is that you *must* ensure
-that the ``[pure-runtime]`` object is inserted into the patch *before* any
-anonymous objects which depend on the loaded scripts.
+needed for anonymous objects defined with ``[pure]`` and ``[pure~]``. Note
+that you shouldn't use this to load named Pure objects, you should let the
+Pure loader handle these as it also keeps track of the scripts in livecoding_.
+Another caveat is that you *must* ensure that the ``[pure-runtime]`` object is
+inserted into the patch *before* any anonymous objects which depend on the
+loaded scripts. (Also note that the script loading facility of
+``[pure-runtime]`` is by and large considered a legacy feature now that
+``[declare -lib]``, discussed in the next subsection, offers a better way to
+load additional script files using Pd's built-in ``-lib`` mechanism.)
 
-In fact, the script loading facility of ``[pure-runtime]`` is considered a
-"legacy" feature now that ``[declare -lib]`` (discussed in the next
-subsection) offers a better way to load additional script files using Pd's
-built-in ``-lib`` mechanism. However, the implementation of the latter
-requires a recent Pd version (0.47.0 or later) and thus the ``[pure-runtime]``
-script loader is still provided for backwards compatibility.
+Last but not least, you can also specify ``-w`` as an argument to
+``[pure-runtime]`` in order to enable warnings in the embedded Pure
+interpreter. This has the same effect as running ``pure -w`` on the command
+line. It causes the interpreter to produce additional warning messages for
+some dubious (albeit correct) constructs, which may be a useful aid, in
+particular, for Pure novices. This is a global option; once enabled, it
+applies to all subsequently loaded Pure scripts until the interpreter is
+restarted from scratch (see Livecoding_). The ``-w`` option can also be
+combined with names of scripts to be loaded, e.g.::
+
+  [pure-runtime -w foo bar]
 
 Loading Script Files at Startup
 -------------------------------
